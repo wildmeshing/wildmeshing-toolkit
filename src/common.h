@@ -9,8 +9,13 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <array>
 
-typedef std::array<double, 3> Vector3f;
-typedef std::array<double, 3> Vector3;
+namespace wmtk {
+    typedef std::array<double, 3> Vector3f;
+    typedef std::array<double, 3> Vector3;
+
+    typedef double Scalar;
+}
 
 #endif //WILDMESHING_TOOLKIT_COMMON_H

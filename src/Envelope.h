@@ -4,6 +4,8 @@
 
 #ifndef WILDMESHING_TOOLKIT_ENVELOPE_H
 #define WILDMESHING_TOOLKIT_ENVELOPE_H
+#include "common.h"
+
 namespace wmtk{
     class Envelope{
         double get_point_dist(const Vector3f& p);
