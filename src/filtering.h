@@ -12,13 +12,13 @@ namespace wmtk {
             //output:
             TriangleSoup &surface);
 
-    void remove_tetmesh_exterior(
+    void remove_tetmesh_exterior( // what does this do?
             //input:
             const TriangleSoup &surface,
             //in&out:
             TetMesh &mesh);
 
-    void mark_tetmesh_exterior(
+    void mark_tetmesh_exterior( // what does this one do?
             //input:
             const TriangleSoup &surface,
             TetMesh &mesh,

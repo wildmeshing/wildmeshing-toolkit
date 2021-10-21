@@ -8,18 +8,22 @@
 #include "Envelope.h"
 namespace wmtk{
     ////connectivity
-    class Vertex{
-    public:
+    class VertexConnectivity{
+    private:
         std::vector<size_t> m_conn_tets;
         bool m_is_removed = false;
     };
 
-    class Edge{
-    public:
+    class FaceConnectivity{
+    private:
     };
 
-    class Tet{
-    public:
+    class EdgeConnectivity{
+    private:
+    };
+
+    class TetConnectivity{
+    private:
         std::array<size_t, 4> m_indices;
         bool m_is_removed = false;
 
@@ -51,6 +55,13 @@ namespace wmtk{
         virtual void smoothing_update_vertex(size_t v_id) = 0;
     };
 
+    class BaseEdgeAttr{
+
+    };
+
+    class BaseFaceAttr{
+
+    };
     class BaseTetAttr{
     public:
         virtual ~BaseTetAttr(){}
@@ -67,79 +78,40 @@ namespace wmtk{
     };
 
 
-    ////derived attributes
-    class VertexAttr: BaseVertexAttr {
-    public:
-        std::vector<Vertex>& m_vertices;
-        std::vector<Tet>& m_tets;
-        Parameters& m_params;
-        Envelope& m_envelope;
+class T{
+        void splitting_update_tet(size_t v1_id, size_t v2_id, size_t v_id) = 0;
+        void collapsing_update_tet(size_t v1_id, size_t v2_id) = 0;
+        void swapping_update_tet(size_t v1_id, size_t v2_id) = 0;
+        void smoothing_update_tet(size_t v_id) = 0;
 
-        VertexAttr(std::vector<Vertex>& _vertices, std::vector<Tet>& _tets, Parameters& _param, Envelope& _envelope):
-                m_vertices(_vertices), m_tets(_tets), m_params(_param), m_envelope(_envelope){}
-        ~VertexAttr(){}
+}
 
-        std::vector<Vector3> m_pos;
-        std::vector<Vector3f> m_posf;
-
-        std::vector<bool> m_is_on_surface;
-        std::vector<bool> m_is_on_boundary;
-        std::vector<bool> m_is_on_bbox;
-        std::vector<bool> m_is_outside;
-
-        std::vector<Scalar> m_sizing_scalars;
-        std::vector<Scalar> m_scalars;
-        std::vector<bool> m_is_freezed;
-
-        void splitting_check_vertex(size_t v1_id, size_t v2_id, size_t v_id) override;
-        void collapsing_check_vertex(size_t v1_id, size_t v2_id) override;
-        void swapping_check_vertex(size_t v1_id, size_t v2_id) override;
-        void smoothing_check_vertex(size_t v_id) override;
-
-        void splitting_update_vertex(size_t v1_id, size_t v2_id, size_t v_id) override;
-        void collapsing_update_vertex(size_t v1_id, size_t v2_id) override;
-        void swapping_update_vertex(size_t v1_id, size_t v2_id) override;
-        void smoothing_update_vertex(size_t v_id) override;
-    };
-
-    class TetAttr: BaseTetAttr{
-    public:
-        std::vector<Vertex> m_vertices;
-        std::vector<Tet> m_tets;
-        Parameters& m_params;
-        Envelope& m_envelope;
-
-        TetAttr(std::vector<Vertex>& _vertices, std::vector<Tet>& _tets, Parameters& _param, Envelope& _envelope):
-                m_vertices(_vertices), m_tets(_tets), m_params(_param), m_envelope(_envelope){}
-        ~TetAttr(){}
-
-        std::vector<std::array<char, 4>> m_is_surface_fs;
-        std::vector<std::array<char, 4>> m_is_bbox_fs;
-        std::vector<std::array<int, 4>> m_opp_t_ids;
-        std::vector<std::array<char, 4>> m_surface_tags;
-
-        std::vector<Scalar> m_qualities;
-        std::vector<Scalar> m_scalars;
-        std::vector<bool> m_is_outside;
-
-        void splitting_check_tet(size_t v1_id, size_t v2_id, size_t v_id) override;
-        void collapsing_check_tet(size_t v1_id, size_t v2_id) override;
-        void swapping_check_tet(size_t v1_id, size_t v2_id) override;
-        void smoothing_check_tet(size_t v_id) override;
-
-        void splitting_update_tet(size_t v1_id, size_t v2_id, size_t v_id) override;
-        void collapsing_update_tet(size_t v1_id, size_t v2_id) override;
-        void swapping_update_tet(size_t v1_id, size_t v2_id) override;
-        void smoothing_update_tet(size_t v_id) override;
-    };
-
+    template<class VertexAttr,class TetAttr>
     class TetMesh{
     public:
-        std::vector<Vertex> m_vertices;
+        std::vector<Vertex> m_vertices; 
+        // missing edge and faces
         std::vector<Tet> m_tets;
-        //
-        std::unique_ptr<VertexAttr> m_v_attribute;
-        std::unique_ptr<TetAttr> m_t_attribute;
+        
+        std::vector<VertexAttr> m_v_attribute;
+        // // missing edge and face
+        std::vector<TetAttr> m_t_attribute;
+
+        virtual bool splitting_check_tet(size_t v1_id, size_t v2_id, size_t v_id) = 0;
+        virtual bool collapsing_check_tet(size_t v1_id, size_t v2_id) = 0;
+        virtual bool swapping_check_tet(size_t v1_id, size_t v2_id) = 0;
+        virtual bool smoothing_check_tet(size_t v_id) = 0;
+
+        virtual void splitting_update_tet(size_t v1_id, size_t v2_id, size_t v_id) = 0;
+        virtual void collapsing_update_tet(size_t v1_id, size_t v2_id) = 0;
+        virtual void swapping_update_tet(size_t v1_id, size_t v2_id) = 0;
+        virtual void smoothing_update_tet(size_t v_id) = 0;
+
+        void splitting(size_t v1_id, size_t v2_id, size_t v_id) = 0;
+        void collapsing(size_t v1_id, size_t v2_id) = 0;
+        void swapping(size_t v1_id, size_t v2_id) = 0;
+        void smoothing(size_t v_id) = 0;
+
     };
 
     struct TriangleSoup{

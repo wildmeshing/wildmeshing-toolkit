@@ -6,7 +6,7 @@
 #include "Mesh.h"
 
 namespace wmtk{
-    double get_quality(TetMesh& mesh, int t_id);
+    double get_quality(TetMesh& mesh, int t_id); // why does it need the mesh? this could be separate I think
     double get_quality(TetMesh& mesh, const Vector3f& v1, const Vector3f& v2, const Vector3f& v3, const Vector3f& v4);
 
     //private:
