@@ -2,8 +2,7 @@
 // Created by Yixin Hu on 10/12/21.
 //
 
-#ifndef WILDMESHING_TOOLKIT_VERTEX_SMOOTHING_H
-#define WILDMESHING_TOOLKIT_VERTEX_SMOOTHING_H
+#pragma once
 #include "Mesh.h"
 
 namespace wmtk {
@@ -15,4 +14,3 @@ namespace wmtk {
             std::function<bool(TetMesh&, int, int)> pre_checks,
             std::function<bool(TetMesh&, int, int)> post_checks);
 }
-#endif //WILDMESHING_TOOLKIT_VERTEX_SMOOTHING_H

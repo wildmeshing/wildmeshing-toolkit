@@ -2,8 +2,4 @@
 // Created by Yixin Hu on 10/12/21.
 //
 
-#ifndef WILDMESHING_TOOLKIT_KDTREE_H
-#define WILDMESHING_TOOLKIT_KDTREE_H
-
-
-#endif //WILDMESHING_TOOLKIT_KDTREE_H
+#pragma once

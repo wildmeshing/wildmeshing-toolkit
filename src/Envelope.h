@@ -2,8 +2,7 @@
 // Created by Yixin Hu on 10/12/21.
 //
 
-#ifndef WILDMESHING_TOOLKIT_ENVELOPE_H
-#define WILDMESHING_TOOLKIT_ENVELOPE_H
+#pragma once
 #include "common.h"
 
 namespace wmtk{
@@ -25,4 +24,3 @@ namespace wmtk{
                 std::vector<Vector3f>& ps);
     };
 }
-#endif //WILDMESHING_TOOLKIT_ENVELOPE_H

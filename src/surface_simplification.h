@@ -2,8 +2,7 @@
 // Created by Yixin Hu on 10/12/21.
 //
 
-#ifndef WILDMESHING_TOOLKIT_SURFACE_SIMPLIFICATION_H
-#define WILDMESHING_TOOLKIT_SURFACE_SIMPLIFICATION_H
+#pragma once
 #include "Mesh.h"
 
 namespace wmtk{
@@ -15,4 +14,3 @@ namespace wmtk{
             //output:
             TriangleSoup& output);
 }
-#endif //WILDMESHING_TOOLKIT_SURFACE_SIMPLIFICATION_H

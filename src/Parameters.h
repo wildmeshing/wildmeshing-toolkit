@@ -2,8 +2,7 @@
 // Created by Yixin Hu on 10/12/21.
 //
 
-#ifndef WILDMESHING_TOOLKIT_PARAMETERS_H
-#define WILDMESHING_TOOLKIT_PARAMETERS_H
+#pragma once
 #include "common.h"
 
 namespace wmtk{
@@ -17,4 +16,3 @@ namespace wmtk{
     };
 }
 
-#endif //WILDMESHING_TOOLKIT_PARAMETERS_H

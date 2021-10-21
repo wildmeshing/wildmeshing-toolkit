@@ -2,8 +2,7 @@
 // Created by Yixin Hu on 10/12/21.
 //
 
-#ifndef WILDMESHING_TOOLKIT_COMMON_H
-#define WILDMESHING_TOOLKIT_COMMON_H
+#pragma once
 
 #include <iostream>
 #include <vector>
@@ -18,4 +17,3 @@ namespace wmtk {
     typedef double Scalar;
 }
 
-#endif //WILDMESHING_TOOLKIT_COMMON_H

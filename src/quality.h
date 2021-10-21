@@ -2,8 +2,7 @@
 // Created by Yixin Hu on 10/12/21.
 //
 
-#ifndef WILDMESHING_TOOLKIT_QUALITY_H
-#define WILDMESHING_TOOLKIT_QUALITY_H
+#pragma once
 #include "Mesh.h"
 
 namespace wmtk{
@@ -15,4 +14,3 @@ namespace wmtk{
     void AMIPS_jacobian(const std::array<double, 12>& T, Vector3f& result_0);
     void AMIPS_hessian(const std::array<double, 12>& T, Matrix3f& result_0);
 }
-#endif //WILDMESHING_TOOLKIT_QUALITY_H

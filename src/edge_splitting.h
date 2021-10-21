@@ -2,8 +2,7 @@
 // Created by Yixin Hu on 10/12/21.
 //
 
-#ifndef WILDMESHING_TOOLKIT_EDGE_SPLITTING_H
-#define WILDMESHING_TOOLKIT_EDGE_SPLITTING_H
+#pragma once
 #include "Mesh.h"
 
 namespace wmtk {
@@ -19,4 +18,3 @@ namespace wmtk {
             //output:
             std::vector<std::array<int, 2>> &new_edges);
 }
-#endif //WILDMESHING_TOOLKIT_EDGE_SPLITTING_H

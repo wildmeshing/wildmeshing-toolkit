@@ -2,8 +2,7 @@
 // Created by Yixin Hu on 10/12/21.
 //
 
-#ifndef WILDMESHING_TOOLKIT_TRIANGLE_INSERTION_H
-#define WILDMESHING_TOOLKIT_TRIANGLE_INSERTION_H
+#pragma once
 
 #include "Mesh.h"
 namespace wmtk {
@@ -13,4 +12,3 @@ namespace wmtk {
             //output:
             TetMesh &mesh);
 }
-#endif //WILDMESHING_TOOLKIT_TRIANGLE_INSERTION_H

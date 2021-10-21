@@ -2,8 +2,7 @@
 // Created by Yixin Hu on 10/12/21.
 //
 
-#ifndef WILDMESHING_TOOLKIT_FILTERING_H
-#define WILDMESHING_TOOLKIT_FILTERING_H
+#pragma once
 #include "Mesh.h"
 
 namespace wmtk {
@@ -26,4 +25,3 @@ namespace wmtk {
             //out
             std::<bool>& is_tet_outside);
 }
-#endif //WILDMESHING_TOOLKIT_FILTERING_H
