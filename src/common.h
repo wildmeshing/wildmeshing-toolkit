@@ -11,7 +11,7 @@
 #include <array>
 
 namespace wmtk {
-    typedef std::array<double, 3> Vector3f;
+    typedef std::array<double, 3> Vector3f; // float?
     typedef std::array<double, 3> Vector3;
 
     typedef double Scalar;

@@ -6,7 +6,7 @@
 #include "Mesh.h"
 
 namespace wmtk {
-    void edge_splitting(TetMesh &mesh,
+    void edge_splitting(TetMesh &mesh, // why not in the mesh class?
                         std::function<bool(TetMesh&, int, int)> pre_checks,
                         std::function<bool(TetMesh&, int, int)> post_checks);
 
