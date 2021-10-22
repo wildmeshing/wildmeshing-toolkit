@@ -14,14 +14,6 @@ namespace wmtk{
         bool m_is_removed = false;
     };
 
-    // class FaceConnectivity{
-    // private:
-    // };
-
-    // class EdgeConnectivity{
-    // private:
-    // };
-
     class TetConnectivity{
     private:
         std::array<size_t, 4> m_indices;
@@ -38,17 +30,13 @@ namespace wmtk{
         }
     };
 
-    ////attributes
-    class AttributeDummy{
-    };
-
     template<class TetMesh>
     class TupleIndex{
         void flip_vertex(const TetMesh& t);
         void flip_edge(const TetMesh& t);
         void flip_triangle(const TetMesh& t);
         void flip_tetrahedron(const TetMesh& t);
-    }
+    };
 
     template<class VertexAttribute,class EdgeAttribute,class TriangleAttribute, class TetrahedronAttribute>
     class TetMesh{
@@ -104,18 +92,12 @@ namespace wmtk{
         virtual bool smoothing_postcondition(const TupleIndex& t);
 
         // Invariants that are called on all the new or modified elements after an operation is performed
-        virtual bool VertexInvariant(size_t v1);
-        virtual bool EdgeInvariant(size_t v1, size_t v2);
-        virtual bool TriangleInvariant(size_t v1, size_t v2, size_t v3);
-        virtual bool TetrahedronInvariant(size_t t1);
+        virtual bool VertexInvariant(const TupleIndex& t);
+        virtual bool EdgeInvariant(const TupleIndex& t);
+        virtual bool TriangleInvariant(const TupleIndex& t);
+        virtual bool TetrahedronInvariant(const TupleIndex& t);
 
-
+        void compact(); // cleans up the deleted vertices or tetrahedra, and fixes the corresponding indices
     };
 
-    struct TriangleSoup{
-        std::vector<Vector3f> m_vertices;
-        std::vector<std::array<size_t, 3>> m_faces;
-        //
-        std::vector<int> m_tags;
-    };
 }
