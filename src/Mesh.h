@@ -38,64 +38,64 @@ namespace wmtk{
         void flip_tetrahedron(const TetMesh& t);
     };
 
-    template<class VertexAttribute,class EdgeAttribute,class TriangleAttribute, class TetrahedronAttribute>
+    template<class VertexAttribute, class EdgeAttribute, class TriangleAttribute, class TetrahedronAttribute>
     class TetMesh{
     public:
         
         // Stores the connectivity of the mesh
         std::vector<VertexConnectivity>         m_vertex_connectivity; 
-        std::vector<TetrahedronConnectivity>    m_tetrahedron_connectivity; 
+        std::vector<TetConnectivity>    m_tetrahedron_connectivity;
         
         // Stores the attributes attached to simplices
-        std::vector<VertexAttributes>         m_vertex_attribute;
-        std::vector<EdgeAttributes>           m_edge_attribute;
-        std::vector<TriangleAttributes>       m_triangle_attribute;
-        std::vector<TetrahedronAttributes>    m_tetrahedron_attribute;
+        std::vector<VertexAttribute>         m_vertex_attribute;
+        std::vector<EdgeAttribute>           m_edge_attribute;
+        std::vector<TriangleAttribute>       m_triangle_attribute;
+        std::vector<TetrahedronAttribute>    m_tetrahedron_attribute;
         
         // Local operations
 
         // Split the edge in the tuple
-        void split(const TupleIndex& t);
+        void split(const TupleIndex<TetMesh>& t);
         
         // Checks if the split should be performed or not (user controlled)
-        virtual bool split_precondition(const TupleIndex& t);
+        virtual bool split_precondition(const TupleIndex<TetMesh>& t);
 
         // This function computes the attributes for the added simplices
         // if it returns false then the operation is undone
-        virtual bool split_postcondition(const TupleIndex& t);
+        virtual bool split_postcondition(const TupleIndex<TetMesh>& t);
 
         // Collapse the edge in the tuple
-        void collapse(const TupleIndex& t);
+        void collapse(const TupleIndex<TetMesh>& t);
         
         // Checks if the collapse should be performed or not (user controlled)
-        virtual bool collapse_precondition(const TupleIndex& t);
+        virtual bool collapse_precondition(const TupleIndex<TetMesh>& t);
 
         // If it returns false then the operation is undone (the tuple indexes a vertex and tet that survived)
-        virtual bool collapse_postcondition(const TupleIndex& t);
+        virtual bool collapse_postcondition(const TupleIndex<TetMesh>& t);
 
         // Collapse the edge in the tuple
-        void swapping(const TupleIndex& t);
+        void swapping(const TupleIndex<TetMesh>& t);
         
         // Checks if the swapping should be performed or not (user controlled)
-        virtual bool swapping_precondition(const TupleIndex& t);
+        virtual bool swapping_precondition(const TupleIndex<TetMesh>& t);
 
         // If it returns false then the operation is undone (the tuple indexes TODO)
-        virtual bool swapping_postcondition(const TupleIndex& t);
+        virtual bool swapping_postcondition(const TupleIndex<TetMesh>& t);
 
         // Collapse the edge in the tuple
-        void smoothing(const TupleIndex& t);
+        void smoothing(const TupleIndex<TetMesh>& t);
         
         // Checks if the smoothing should be performed or not (user controlled)
-        virtual bool smoothing_precondition(const TupleIndex& t);
+        virtual bool smoothing_precondition(const TupleIndex<TetMesh>& t);
 
         // If it returns false then the operation is undone (the tuple indexes TODO)
-        virtual bool smoothing_postcondition(const TupleIndex& t);
+        virtual bool smoothing_postcondition(const TupleIndex<TetMesh>& t);
 
         // Invariants that are called on all the new or modified elements after an operation is performed
-        virtual bool VertexInvariant(const TupleIndex& t);
-        virtual bool EdgeInvariant(const TupleIndex& t);
-        virtual bool TriangleInvariant(const TupleIndex& t);
-        virtual bool TetrahedronInvariant(const TupleIndex& t);
+        virtual bool VertexInvariant(const TupleIndex<TetMesh>& t);
+        virtual bool EdgeInvariant(const TupleIndex<TetMesh>& t);
+        virtual bool TriangleInvariant(const TupleIndex<TetMesh>& t);
+        virtual bool TetrahedronInvariant(const TupleIndex<TetMesh>& t);
 
         void compact(); // cleans up the deleted vertices or tetrahedra, and fixes the corresponding indices
     };
