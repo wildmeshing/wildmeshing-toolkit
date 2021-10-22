@@ -14,13 +14,13 @@ namespace wmtk{
         bool m_is_removed = false;
     };
 
-    class FaceConnectivity{
-    private:
-    };
+    // class FaceConnectivity{
+    // private:
+    // };
 
-    class EdgeConnectivity{
-    private:
-    };
+    // class EdgeConnectivity{
+    // private:
+    // };
 
     class TetConnectivity{
     private:
@@ -39,78 +39,76 @@ namespace wmtk{
     };
 
     ////attributes
-    class BaseVertexAttr{
-    public:
-        //virtual functions
-        virtual ~BaseVertexAttr(){}
-
-        virtual void splitting_check_vertex(size_t v1_id, size_t v2_id, size_t v_id) = 0;
-        virtual void collapsing_check_vertex(size_t v1_id, size_t v2_id) = 0;
-        virtual void swapping_check_vertex(size_t v1_id, size_t v2_id) = 0;
-        virtual void smoothing_check_vertex(size_t v_id) = 0;
-
-        virtual void splitting_update_vertex(size_t v1_id, size_t v2_id, size_t v_id) = 0;
-        virtual void collapsing_update_vertex(size_t v1_id, size_t v2_id) = 0;
-        virtual void swapping_update_vertex(size_t v1_id, size_t v2_id) = 0;
-        virtual void smoothing_update_vertex(size_t v_id) = 0;
+    class AttributeDummy{
     };
 
-    class BaseEdgeAttr{
+    template<class TetMesh>
+    class TupleIndex{
+        void flip_vertex(const TetMesh& t);
+        void flip_edge(const TetMesh& t);
+        void flip_triangle(const TetMesh& t);
+        void flip_tetrahedron(const TetMesh& t);
+    }
 
-    };
-
-    class BaseFaceAttr{
-
-    };
-    class BaseTetAttr{
-    public:
-        virtual ~BaseTetAttr(){}
-
-        virtual void splitting_check_tet(size_t v1_id, size_t v2_id, size_t v_id) = 0;
-        virtual void collapsing_check_tet(size_t v1_id, size_t v2_id) = 0;
-        virtual void swapping_check_tet(size_t v1_id, size_t v2_id) = 0;
-        virtual void smoothing_check_tet(size_t v_id) = 0;
-
-        virtual void splitting_update_tet(size_t v1_id, size_t v2_id, size_t v_id) = 0;
-        virtual void collapsing_update_tet(size_t v1_id, size_t v2_id) = 0;
-        virtual void swapping_update_tet(size_t v1_id, size_t v2_id) = 0;
-        virtual void smoothing_update_tet(size_t v_id) = 0;
-    };
-
-
-class T{
-        void splitting_update_tet(size_t v1_id, size_t v2_id, size_t v_id) = 0;
-        void collapsing_update_tet(size_t v1_id, size_t v2_id) = 0;
-        void swapping_update_tet(size_t v1_id, size_t v2_id) = 0;
-        void smoothing_update_tet(size_t v_id) = 0;
-
-}
-
-    template<class VertexAttr,class TetAttr>
+    template<class VertexAttribute,class EdgeAttribute,class TriangleAttribute, class TetrahedronAttribute>
     class TetMesh{
     public:
-        std::vector<Vertex> m_vertices; 
-        // missing edge and faces
-        std::vector<Tet> m_tets;
         
-        std::vector<VertexAttr> m_v_attribute;
-        // // missing edge and face
-        std::vector<TetAttr> m_t_attribute;
+        // Stores the connectivity of the mesh
+        std::vector<VertexConnectivity>         m_vertex_connectivity; 
+        std::vector<TetrahedronConnectivity>    m_tetrahedron_connectivity; 
+        
+        // Stores the attributes attached to simplices
+        std::vector<VertexAttributes>         m_vertex_attribute;
+        std::vector<EdgeAttributes>           m_edge_attribute;
+        std::vector<TriangleAttributes>       m_triangle_attribute;
+        std::vector<TetrahedronAttributes>    m_tetrahedron_attribute;
+        
+        // Local operations
 
-        virtual bool splitting_check_tet(size_t v1_id, size_t v2_id, size_t v_id) = 0;
-        virtual bool collapsing_check_tet(size_t v1_id, size_t v2_id) = 0;
-        virtual bool swapping_check_tet(size_t v1_id, size_t v2_id) = 0;
-        virtual bool smoothing_check_tet(size_t v_id) = 0;
+        // Split the edge in the tuple
+        void split(const TupleIndex& t);
+        
+        // Checks if the split should be performed or not (user controlled)
+        virtual bool split_precondition(const TupleIndex& t);
 
-        virtual void splitting_update_tet(size_t v1_id, size_t v2_id, size_t v_id) = 0;
-        virtual void collapsing_update_tet(size_t v1_id, size_t v2_id) = 0;
-        virtual void swapping_update_tet(size_t v1_id, size_t v2_id) = 0;
-        virtual void smoothing_update_tet(size_t v_id) = 0;
+        // This function computes the attributes for the added simplices
+        // if it returns false then the operation is undone
+        virtual bool split_postcondition(const TupleIndex& t);
 
-        void splitting(size_t v1_id, size_t v2_id, size_t v_id) = 0;
-        void collapsing(size_t v1_id, size_t v2_id) = 0;
-        void swapping(size_t v1_id, size_t v2_id) = 0;
-        void smoothing(size_t v_id) = 0;
+        // Collapse the edge in the tuple
+        void collapse(const TupleIndex& t);
+        
+        // Checks if the collapse should be performed or not (user controlled)
+        virtual bool collapse_precondition(const TupleIndex& t);
+
+        // If it returns false then the operation is undone (the tuple indexes a vertex and tet that survived)
+        virtual bool collapse_postcondition(const TupleIndex& t);
+
+        // Collapse the edge in the tuple
+        void swapping(const TupleIndex& t);
+        
+        // Checks if the swapping should be performed or not (user controlled)
+        virtual bool swapping_precondition(const TupleIndex& t);
+
+        // If it returns false then the operation is undone (the tuple indexes TODO)
+        virtual bool swapping_postcondition(const TupleIndex& t);
+
+        // Collapse the edge in the tuple
+        void smoothing(const TupleIndex& t);
+        
+        // Checks if the smoothing should be performed or not (user controlled)
+        virtual bool smoothing_precondition(const TupleIndex& t);
+
+        // If it returns false then the operation is undone (the tuple indexes TODO)
+        virtual bool smoothing_postcondition(const TupleIndex& t);
+
+        // Invariants that are called on all the new or modified elements after an operation is performed
+        virtual bool VertexInvariant(size_t v1);
+        virtual bool EdgeInvariant(size_t v1, size_t v2);
+        virtual bool TriangleInvariant(size_t v1, size_t v2, size_t v3);
+        virtual bool TetrahedronInvariant(size_t t1);
+
 
     };
 
