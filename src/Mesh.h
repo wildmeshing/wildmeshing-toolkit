@@ -53,43 +53,28 @@ namespace wmtk {
             std::array<size_t, 4> m_indices;
             bool m_is_removed = false;
 
-            inline size_t &operator[](const size_t index) {
+            inline size_t &operator[](size_t index) {
                 assert(index >= 0 && index < 4);
                 return m_indices[index];
             }
 
-            inline size_t operator[](const size_t index) const {
+            inline size_t operator[](size_t index) const {
                 assert(index >= 0 && index < 4);
                 return m_indices[index];
+            }
+
+            inline int find(int v_id) const {
+                for(int j=0;j<4;j++) {
+                    if (v_id == m_indices[j])
+                        return j;
+                }
+                return -1;
             }
         };
 
         virtual ~TetMesh(){};
 
-        void split_edge(const Tuple &t)
-        {
-            if (!split_before(t))
-                return;
-            
-            // backup of everything
-
-            // update connectivity
-            // possibly call the resize_attributes
-
-            if (!split_after(t))
-            {
-                // undo changes
-                return;
-            }
-                
-            // call invariants on all entities
-            if (false) // if any invariant fails
-            {
-                // undo changes
-                return;
-            }
-
-        };
+        void split_edge(const Tuple &t);
 
         void collapse_edge(const Tuple &t);
         void swapping_edge(const Tuple &t, int type);
@@ -98,6 +83,11 @@ namespace wmtk {
         // Stores the connectivity of the mesh
         std::vector<VertexConnectivity> m_vertex_connectivity;
         std::vector<TetrahedronConnectivity> m_tetrahedron_connectivity;
+
+        int t_empty_slot = 0;
+        int v_empty_slot = 0;
+        int find_next_empty_slot_t();
+        int find_next_empty_slot_v();
 
         //// Split the edge in the tuple
         // Checks if the split should be performed or not (user controlled)

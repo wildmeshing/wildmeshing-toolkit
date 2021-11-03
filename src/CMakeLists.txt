@@ -1,11 +1,14 @@
 set(SOURCES
 		common.h
 
-#		Mesh_old.h
 		Mesh.h
+		Mesh.cpp
 
 		Parameters.h
 		Envelope.h
+
+		TetWild.cpp
+		TetWild.h
 )
 
 prepend_current_path(SOURCES)

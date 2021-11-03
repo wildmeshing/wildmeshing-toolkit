@@ -1,3 +1,7 @@
+#pragma once
+
+#include "Mesh.h"
+
 namespace wmtk {
 
     class VertexAttributes {
@@ -60,6 +64,9 @@ namespace wmtk {
         void smoothing(const Tuple &t);
 
         // all the other functions
+    private:
+        bool split_before(const Tuple &t) override;
+        bool split_after(const Tuple &t) override;
     };
 
 }

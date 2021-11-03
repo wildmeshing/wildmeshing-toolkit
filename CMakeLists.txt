@@ -76,10 +76,10 @@ include(FloatTetwildDependencies)
 # FloatTetwild library
 ################################################################################
 
-find_package(GMPfTetWild)
-IF(NOT ${GMP_FOUND})
-	MESSAGE(FATAL_ERROR "Cannot find GMP")
-ENDIF()
+#find_package(GMPfTetWild)
+#IF(NOT ${GMP_FOUND})
+#	MESSAGE(FATAL_ERROR "Cannot find GMP")
+#ENDIF()
 
 # find_package(MPFR)
 # IF(NOT ${MPFR_FOUND})
@@ -87,7 +87,7 @@ ENDIF()
 # ENDIF()
 
 # add_library() can only be called without any source since CMake 3.11 ...
-add_library(${PROJECT_NAME} src/main.cpp)
+add_library(${PROJECT_NAME} src/Mesh.h src/Mesh.cpp)
 
 # Public include directory for FloatTetwild
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_BINARY_DIR}/include)
@@ -148,7 +148,7 @@ endif()
 
 # Main executable
 if(FLOAT_TETWILD_TOPLEVEL_PROJECT)
-	add_executable(${PROJECT_NAME}_bin src/main.cpp)
+	add_executable(${PROJECT_NAME}_bin main.cpp)
 	target_compile_features(${PROJECT_NAME}_bin PUBLIC ${CXX14_FEATURES})
 
 	target_link_libraries(${PROJECT_NAME}_bin
