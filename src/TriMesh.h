@@ -76,7 +76,7 @@ namespace wmtk {
     protected:
         // Stores the connectivity of the mesh
         std::vector<VertexConnectivity> m_vertex_connectivity;
-        std::vector<TriangleConnectivity> m_tetrahedron_connectivity;
+        std::vector<TriangleConnectivity> m_tet_connectivity;
 
         int t_empty_slot = 0;
         int v_empty_slot = 0;

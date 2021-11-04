@@ -1,8 +1,8 @@
 set(SOURCES
 		common.h
 
-		Mesh.h
-		Mesh.cpp
+		TetMesh.h
+		TetMesh.cpp
 
 		Parameters.h
 		Envelope.h

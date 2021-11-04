@@ -9,10 +9,11 @@
 #include <map>
 #include <set>
 #include <array>
+#include <Eigen/Core>
 
 namespace wmtk {
-    typedef std::array<double, 3> Vector3f; // float?
-    typedef std::array<double, 3> Vector3;
+    typedef Eigen::Vector3d Vector3f; // float?
+    typedef Eigen::Vector3d Vector3;
 
     typedef double Scalar;
 
@@ -20,6 +21,11 @@ namespace wmtk {
 
     template<class T>
     void vector_unique(std::vector<T>& v){
+        //todo
+    }
+
+    template<class T>
+    void vector_erase(std::vector<T>& v, const T& t){
         //todo
     }
 }

@@ -12,24 +12,38 @@ namespace wmtk {
     public:
         // Cell Tuple Navigator
         class Tuple {
-        public:
             size_t vid;
             size_t eid;
             size_t fid;
             size_t tid;
 
-            void flip_vertex(const TetMesh &m);//along edge
+        public:
+            Tuple(){}
+            Tuple(size_t _vid, size_t _eid, size_t _fid, size_t _tid): vid(_vid), eid(_eid), fid(_fid), tid(_tid){}
 
-            void flip_edge(const TetMesh &m);//along face
+            inline size_t get_vid() const { return vid; }
+            inline size_t get_eid() const { return eid; }
+            inline size_t get_fid() const { return fid; }
+            inline size_t get_tid() const { return tid; }
 
-            void flip_face(const TetMesh &m);//along tet
+            inline std::vector<size_t> get_conn_tets(const TetMesh &m) const {
+                return m.m_vertex_connectivity[vid].m_conn_tets;
+            }
 
-            void flip_tetrahedron(const TetMesh &m);//todo: along face?
+            Tuple switch_vertex(const TetMesh &m);//along edge
+
+            Tuple switch_edge(const TetMesh &m);//along face
+
+            Tuple switch_face(const TetMesh &m);//along tet
+
+            Tuple switch_tetrahedron(const TetMesh &m);
 
             size_t get_vertex_attribute_id(const TetMesh &m);
             size_t get_edge_attribute_id(const TetMesh &m);
             size_t get_face_attribute_id(const TetMesh &m);
             size_t get_tetrahedron_attribute_id(const TetMesh &m);
+
+
         };
 
         class VertexConnectivity {
@@ -82,10 +96,10 @@ namespace wmtk {
     protected:
         // Stores the connectivity of the mesh
         std::vector<VertexConnectivity> m_vertex_connectivity;
-        std::vector<TetrahedronConnectivity> m_tetrahedron_connectivity;
+        std::vector<TetrahedronConnectivity> m_tet_connectivity;
 
-        int t_empty_slot = 0;
-        int v_empty_slot = 0;
+        int m_t_empty_slot = 0;
+        int m_v_empty_slot = 0;
         int find_next_empty_slot_t();
         int find_next_empty_slot_v();
 
@@ -116,7 +130,7 @@ namespace wmtk {
         virtual bool FaceInvariant(const Tuple &t);
         virtual bool TetrahedronInvariant(const Tuple &t);
 
-        virtual void resize_attributes(size_t v, size_t e, size_t t, size_t tt);
+        virtual void resize_attributes(size_t v, size_t e, size_t f, size_t t);
 
         void compact(); // cleans up the deleted vertices or tetrahedra, and fixes the corresponding indices
     };

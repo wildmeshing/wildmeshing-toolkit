@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Mesh.h"
+#include "TetMesh.h"
 
 namespace wmtk {
 
@@ -52,13 +52,13 @@ namespace wmtk {
         std::vector<VertexAttributes> m_vertex_attribute;
         std::vector<EdgeAttributes> m_edge_attribute;
         std::vector<FaceAttributes> m_face_attribute;
-        std::vector<TetrahedronAttributes> m_tetrahedron_attribute;
+        std::vector<TetrahedronAttributes> m_tet_attribute;
 
         void resize_attributes(size_t v, size_t e, size_t t, size_t tt) {
             m_vertex_attribute.resize(v);
             m_edge_attribute.resize(e);
             m_face_attribute.resize(t);
-            m_tetrahedron_attribute.resize(tt);
+            m_tet_attribute.resize(tt);
         }
 
         void smoothing(const Tuple &t);
@@ -67,6 +67,10 @@ namespace wmtk {
     private:
         bool split_before(const Tuple &t) override;
         bool split_after(const Tuple &t) override;
+
+        bool is_inverted(size_t t_id);
+        double get_quality(size_t t_id);
+
     };
 
 }

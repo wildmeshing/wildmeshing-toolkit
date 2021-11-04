@@ -2,7 +2,7 @@
 // Created by Yixin Hu on 10/17/21.
 //
 
-#include "src/Mesh.h"
+#include "src/TetMesh.h"
 
 int main(int argc, char** argv){
 
