@@ -87,7 +87,7 @@ include(FloatTetwildDependencies)
 # ENDIF()
 
 # add_library() can only be called without any source since CMake 3.11 ...
-add_library(${PROJECT_NAME} src/TetMesh.h src/TetMesh.cpp)
+add_library(${PROJECT_NAME} src/TetMesh.h src/TetMesh.cpp src/AMIPS.cpp src/AMIPS.h)
 
 # Public include directory for FloatTetwild
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_BINARY_DIR}/include)

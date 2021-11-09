@@ -9,6 +9,9 @@ set(SOURCES
 
 		TetWild.cpp
 		TetWild.h
+
+		AMIPS.cpp
+		AMIPS.h
 )
 
 prepend_current_path(SOURCES)
