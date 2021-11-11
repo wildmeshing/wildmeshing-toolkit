@@ -18,7 +18,19 @@ namespace wmtk {
             size_t tid;
 
         public:
-            Tuple(){}
+            //todo: where to put these
+            std::array<std::array<int, 2>, 6> l_edges = {{{{0, 1}}, {{1, 2}}, {{2, 0}}, {{0, 3}}, {{1, 3}}, {{2, 3}}}};
+            std::array<std::array<int, 3>, 6> l_faces = {{{{0, 1, 2}}, {{0, 2, 3}}, {{0, 3, 1}}, {{3, 2, 1}}}};
+
+            std::map<std::vector<int>, int> map_l_edges;
+
+            Tuple(){
+                for (int i = 0; i < 6; i++) {
+                    map_l_edges[{l_edges[i][0], l_edges[i][1]}] = i;
+                    //todo
+                }
+                //todo map face
+            }
             Tuple(size_t _vid, size_t _eid, size_t _fid, size_t _tid): vid(_vid), eid(_eid), fid(_fid), tid(_tid){}
 
             inline size_t get_vid() const { return vid; }
@@ -34,9 +46,14 @@ namespace wmtk {
                 return locs;
             }
 
-            inline Tuple switch_vertex(const TetMesh &m){
-                Tuple loc;
-                //todo
+            inline Tuple switch_vertex(const TetMesh &m) {
+                Tuple loc = *this;
+                int l_vid1 = l_edges[eid][0];
+                int l_vid2 = l_edges[eid][1];
+                loc.vid = m.m_tet_connectivity[tid][l_vid1] == vid ?
+                          m.m_tet_connectivity[tid][l_vid2] :
+                          m.m_tet_connectivity[tid][l_vid1];
+
                 return loc;
             }//along edge
 
@@ -51,6 +68,38 @@ namespace wmtk {
             size_t get_face_attribute_id(const TetMesh &m);
             size_t get_tetrahedron_attribute_id(const TetMesh &m);
 
+            inline void set_l_eid(const TetMesh &m, const std::vector<size_t>& vids){
+                std::vector<int> l_vids;
+                for(int vid0: vids) {
+                    for (int j = 0; j < 4; j++)
+                        if(vid0 == m.m_tet_connectivity[tid][j])
+                            l_vids.push_back(j);
+                }
+                if(l_vids[0]>l_vids[1])
+                    std::swap(l_vids[0], l_vids[1]);
+
+                if(vids.size() == 1){
+                    //todo
+                } else if (vids.size() == 2) {
+                    eid = map_l_edges[l_vids];
+                }
+            }
+            inline void set_l_fid(const TetMesh &m, const std::vector<size_t>& vids){
+                std::vector<int> l_vids;
+                for(int vid0: vids) {
+                    for (int j = 0; j < 4; j++)
+                        if(vid0 == m.m_tet_connectivity[tid][j])
+                            l_vids.push_back(j);
+                }
+
+                if(vids.size() == 1){
+                    //todo
+                } else if (vids.size() == 2){
+                    //todo
+                } else if (vids.size() == 3){
+                    //todo
+                }
+            }
         };
 
         class VertexConnectivity {
@@ -101,8 +150,8 @@ namespace wmtk {
         TetMesh(){}
         virtual ~TetMesh() {}
 
-        inline void create_mesh(const std::vector<Vector3f>& vertices, const std::vector<std::array<size_t, 4>>& tets) {
-            m_vertex_connectivity.resize(vertices.size());
+        inline void create_mesh(size_t n_vertices, const std::vector<std::array<size_t, 4>>& tets) {
+            m_vertex_connectivity.resize(n_vertices);
             m_tet_connectivity.resize(tets.size());
             for (int i = 0; i < tets.size(); i++) {
                 m_tet_connectivity[i].m_indices = tets[i];

@@ -34,7 +34,7 @@ namespace wmtk {
         int m_surface_tags;
     };
 
-    class TetrahedronAttributes {
+    class TetAttributes {
     public:
         Scalar m_qualities;
         Scalar m_scalars;
@@ -56,11 +56,17 @@ namespace wmtk {
         TetWild(Parameters& _m_params, Envelope& _m_envelope): m_params(_m_params), m_envelope(_m_envelope){}
         ~TetWild(){}
 
+        void create_mesh_attributes(const std::vector<VertexAttributes> &_vertex_attribute,
+                                    const std::vector<TetAttributes> &_tet_attribute){
+            m_vertex_attribute = _vertex_attribute;
+            m_tet_attribute = _tet_attribute;
+        }
+
         // Stores the attributes attached to simplices
         std::vector<VertexAttributes> m_vertex_attribute;
         std::vector<EdgeAttributes> m_edge_attribute;
         std::vector<FaceAttributes> m_face_attribute;
-        std::vector<TetrahedronAttributes> m_tet_attribute;
+        std::vector<TetAttributes> m_tet_attribute;
 
         inline void resize_attributes(size_t v, size_t e, size_t t, size_t tt) override {
             m_vertex_attribute.resize(v);

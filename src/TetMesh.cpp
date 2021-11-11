@@ -43,7 +43,14 @@ void wmtk::TetMesh::split_all_edges() {
 
     int cnt_suc = 0;
     for (const auto &e: edges) {
-        if (split_edge(Tuple(e[0], 0, 0, m_vertex_connectivity[0].m_conn_tets.front())))
+        //todo: convenient way to convert e into tuple?
+        auto n12_t_ids = set_intersection(m_vertex_connectivity[e[0]].m_conn_tets,
+                                          m_vertex_connectivity[e[1]].m_conn_tets);
+        int tid = n12_t_ids.front();
+        Tuple loc(e[0], 0, 0, tid);
+        loc.set_l_eid(*this, {e[0], e[1]});
+        loc.set_l_fid(*this, {e[0], e[1]});
+        if (split_edge(loc))
             cnt_suc++;
     }
 
