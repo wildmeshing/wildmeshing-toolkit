@@ -4,10 +4,56 @@
 
 #include "TetMesh.h"
 
-void wmtk::TetMesh::split_edge(const Tuple &loc0) {
+int wmtk::TetMesh::find_next_empty_slot_t() {
+    for (int i = m_t_empty_slot; i < m_tet_connectivity.size(); i++) {
+        if (m_tet_connectivity[i].m_is_removed) {
+            m_t_empty_slot = i + 1;
+            return i;
+        }
+    }
+    m_tet_connectivity.emplace_back();
+    return m_tet_connectivity.size() - 1;
+}
+
+int wmtk::TetMesh::find_next_empty_slot_v() {
+    for (int i = m_v_empty_slot; i < m_vertex_connectivity.size(); i++) {
+        if (m_vertex_connectivity[i].m_is_removed) {
+            m_v_empty_slot = i + 1;
+            return i;
+        }
+    }
+    m_vertex_connectivity.emplace_back();
+    return m_vertex_connectivity.size() - 1;
+}
+
+void wmtk::TetMesh::split_all_edges() {
+    std::vector<std::array<size_t, 2>> edges;
+    for (int i = 0; i < m_tet_connectivity.size(); i++) {
+        for (int j = 0; j < 3; j++) {
+            std::array<size_t, 2> e = {{m_tet_connectivity[i][0], m_tet_connectivity[i][j + 1]}};
+            if (e[0] > e[1])
+                std::swap(e[0], e[1]);
+            edges.push_back(e);
+            e = {{m_tet_connectivity[i][j + 1], m_tet_connectivity[i][(j + 1) % 3 + 1]}};
+            if (e[0] > e[1])
+                std::swap(e[0], e[1]);
+        }
+    }
+    vector_unique(edges);
+
+    int cnt_suc = 0;
+    for (const auto &e: edges) {
+        if (split_edge(Tuple(e[0], 0, 0, m_vertex_connectivity[0].m_conn_tets.front())))
+            cnt_suc++;
+    }
+
+    cout << cnt_suc << " " << edges.size() << endl;
+}
+
+bool wmtk::TetMesh::split_edge(const Tuple &loc0) {
     std::shared_ptr<InfoCache> info = std::make_shared<InfoCache>();
     if (!split_before(loc0, info))
-        return;
+        return false;
 
     // backup of everything
     auto loc1 = loc0;
@@ -64,17 +110,25 @@ void wmtk::TetMesh::split_edge(const Tuple &loc0) {
         m_vertex_connectivity[v_id].m_is_removed = true;
         for (int t_id: new_t_ids)
             m_tet_connectivity[t_id].m_is_removed = true;
+        //
+        for (int i = 0; i < old_tets.size(); i++) {
+            int t_id = old_tets[i].first;
+            m_tet_connectivity[t_id] = old_tets[i].second;
+        }
+        for (int i = 0; i < old_vertices.size(); i++) {
+            int v_id = old_vertices[i].first;
+            m_vertex_connectivity[v_id] = old_vertices[i].second;
+        }
 
-        //todo copy back old tets/vertices
-
-        return;
+        return false;
     }
 
     // call invariants on all entities
     if (false) // if any invariant fails
     {
         // undo changes
-        return;
+        return false;
     }
 
+    return true;
 }

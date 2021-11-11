@@ -101,7 +101,18 @@ namespace wmtk {
         TetMesh(){}
         virtual ~TetMesh() {}
 
-        void split_edge(const Tuple &t);
+        inline void create_mesh(const std::vector<Vector3f>& vertices, const std::vector<std::array<size_t, 4>>& tets) {
+            m_vertex_connectivity.resize(vertices.size());
+            m_tet_connectivity.resize(tets.size());
+            for (int i = 0; i < tets.size(); i++) {
+                m_tet_connectivity[i].m_indices = tets[i];
+                for (int j = 0; j < 4; j++)
+                    m_vertex_connectivity[tets[i][j]].m_conn_tets.push_back(i);
+            }
+        }
+
+        void split_all_edges();
+        bool split_edge(const Tuple &t);
 
         void collapse_edge(const Tuple &t);
         void swapping_edge(const Tuple &t, int type);
