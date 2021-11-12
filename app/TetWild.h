@@ -6,6 +6,8 @@
 
 #include <wmtk/TetMesh.h>
 
+#include <memory>
+
 namespace tetwild
 {
 
