@@ -1,13 +1,11 @@
 set(SOURCES
-	AMIPS.cpp
-	AMIPS.h
+	Logger.cpp
+	Logger.hpp
 
-	TetMesh.h
-	TetMesh.cpp
+	DisableWarnings.hpp
+	EnableWarnings.hpp
 
-
-	TetMesh.h
-	TetMesh.cpp
+	VectorUtils.h
 
 )
 
@@ -20,4 +18,3 @@ target_sources(WildMeshingToolkit PRIVATE ${SOURCES})
 # Subfolders
 ################################################################################
 
-add_subdirectory(utils)
