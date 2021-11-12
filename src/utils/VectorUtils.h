@@ -8,6 +8,7 @@
 #include <map>
 #include <set>
 #include <array>
+#include <algorithm>
 
 namespace wmtk
 {
