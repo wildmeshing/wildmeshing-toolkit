@@ -19,17 +19,18 @@ namespace wmtk
 		// Cell Tuple Navigator
 		class Tuple
 		{
+		private:
 			size_t vid;
 			size_t eid;
 			size_t fid;
 			size_t tid;
 
+			std::map<std::vector<int>, int> map_l_edges;
+
 		public:
 			// todo: where to put these
 			std::array<std::array<int, 2>, 6> l_edges = {{{{0, 1}}, {{1, 2}}, {{2, 0}}, {{0, 3}}, {{1, 3}}, {{2, 3}}}};
 			std::array<std::array<int, 3>, 6> l_faces = {{{{0, 1, 2}}, {{0, 2, 3}}, {{0, 3, 1}}, {{3, 2, 1}}}};
-
-			std::map<std::vector<int>, int> map_l_edges;
 
 			Tuple()
 			{
@@ -47,6 +48,7 @@ namespace wmtk
 			inline size_t get_fid() const { return fid; }
 			inline size_t get_tid() const { return tid; }
 
+			// REMOVE ME!!!!
 			inline std::vector<Tuple> get_conn_tets(const TetMesh &m) const
 			{
 				std::vector<Tuple> locs;
@@ -78,6 +80,7 @@ namespace wmtk
 			size_t get_face_attribute_id(const TetMesh &m);
 			size_t get_tetrahedron_attribute_id(const TetMesh &m);
 
+			// REMOVE ME!!!!
 			inline void set_l_eid(const TetMesh &m, const std::vector<size_t> &vids)
 			{
 				std::vector<int> l_vids;
@@ -99,6 +102,8 @@ namespace wmtk
 					eid = map_l_edges[l_vids];
 				}
 			}
+
+			// REMOVE ME!!!!
 			inline void set_l_fid(const TetMesh &m, const std::vector<size_t> &vids)
 			{
 				std::vector<int> l_vids;
@@ -187,13 +192,16 @@ namespace wmtk
 			}
 		}
 
+		// REMOVE ME!!!!
 		void split_all_edges();
+
 		bool split_edge(const Tuple &t);
-
 		void collapse_edge(const Tuple &t);
-		void swapping_edge(const Tuple &t, int type);
+		void swap_edge(const Tuple &t, int type);
 
-	protected:
+		void compact(); // cleans up the deleted vertices or tetrahedra, and fixes the corresponding indices
+
+	protected: // THESE SHOULD BE PRIVATE!!!!
 		// Stores the connectivity of the mesh
 		std::vector<VertexConnectivity> m_vertex_connectivity;
 		std::vector<TetrahedronConnectivity> m_tet_connectivity;
@@ -203,6 +211,7 @@ namespace wmtk
 		int find_next_empty_slot_t();
 		int find_next_empty_slot_v();
 
+	protected:
 		//// Split the edge in the tuple
 		// Checks if the split should be performed or not (user controlled)
 		virtual bool split_before(const Tuple &t) = 0; // check edge condition
@@ -231,8 +240,6 @@ namespace wmtk
 		//        virtual bool TetrahedronInvariant(const Tuple &t) = 0;
 
 		virtual void resize_attributes(size_t v, size_t e, size_t f, size_t t) = 0;
-
-		void compact(); // cleans up the deleted vertices or tetrahedra, and fixes the corresponding indices
 	};
 
 } // namespace wmtk
