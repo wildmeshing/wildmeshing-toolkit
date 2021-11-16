@@ -5,10 +5,8 @@ set(SOURCES
 	TetMesh.h
 	TetMesh.cpp
 
-
-	TetMesh.h
-	TetMesh.cpp
-
+#	TriMesh.h
+#	TriMesh.cpp
 )
 
 prepend_current_path(SOURCES)

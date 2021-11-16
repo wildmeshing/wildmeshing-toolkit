@@ -4,12 +4,12 @@ project(TetWild)
 ################################################################################
 
 # Detects whether this is a top-level project
-get_directory_property(HAS_PARENT PARENT_DIRECTORY)
-if(HAS_PARENT)
-	set(FLOAT_TETWILD_TOPLEVEL_PROJECT OFF)
-else()
+#get_directory_property(HAS_PARENT PARENT_DIRECTORY)
+#if(HAS_PARENT)
+#	set(FLOAT_TETWILD_TOPLEVEL_PROJECT OFF)
+#else()
 	set(FLOAT_TETWILD_TOPLEVEL_PROJECT ON)
-endif()
+#endif()
 
 if(INPUT_THIRD_PARTY_DIR)
 	set(FLOAT_TETWILD_EXTERNAL ${CMAKE_CURRENT_SOURCE_DIR}/${INPUT_THIRD_PARTY_DIR}/)
@@ -87,7 +87,24 @@ endif()
 # ENDIF()
 
 # add_library() can only be called without any source since CMake 3.11 ...
-add_library(${PROJECT_NAME} TetWild.cpp TetWild.h main.cpp)
+#set(SOURCES
+#		TetWild.cpp TetWild.h
+#				common.h
+#				Parameters.h
+#				Envelope.h
+#		)
+#
+#prepend_current_path(SOURCES)
+#wildmeshing_toolkit_copy_headers(${SOURCES})
+#wildmeshing_toolkit_set_source_group(${SOURCES})
+#target_sources(${PROJECT_NAME} PRIVATE ${SOURCES})
+
+add_library(${PROJECT_NAME} #SOURCES)
+		TetWild.cpp TetWild.h
+		common.h
+		Parameters.h
+		Envelope.h
+		main.cpp)
 
 ################################################################################
 # Required libraries
@@ -113,3 +130,29 @@ target_link_libraries(${PROJECT_NAME} PUBLIC igl::predicates WildMeshingToolkit
 # 	target_compile_definitions(${PROJECT_NAME} PUBLIC NEW_ENVELOPE)
 # endif()
 
+####
+message(STATUS "hehehehehehe ${FLOAT_TETWILD_TOPLEVEL_PROJECT}")
+
+if(FLOAT_TETWILD_TOPLEVEL_PROJECT)
+	add_executable(${PROJECT_NAME}_bin main.cpp)
+	target_compile_features(${PROJECT_NAME}_bin PUBLIC ${CXX14_FEATURES})
+
+	target_link_libraries(${PROJECT_NAME}_bin
+			PUBLIC
+			${PROJECT_NAME}
+			warnings::all
+			)
+
+	if(TARGET igl::tetgen)
+		target_link_libraries(${PROJECT_NAME} PUBLIC igl::tetgen)
+		target_compile_definitions(${PROJECT_NAME} PUBLIC -DLIBIGL_WITH_TETGEN)
+	endif()
+
+	if(FLOAT_TETWILD_WITH_SANITIZERS)
+		add_sanitizers(${PROJECT_NAME}_bin)
+	endif()
+
+	if(NOT (${CMAKE_VERSION} VERSION_LESS "3.6.0"))
+		set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME}_bin)
+	endif()
+endif()
