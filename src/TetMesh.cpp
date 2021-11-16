@@ -65,7 +65,7 @@ void wmtk::TetMesh::split_all_edges()
 			cnt_suc++;
 	}
 
-	logger().debug("{} {}", cnt_suc, edges.size());
+	logger().info("{} {}", cnt_suc, edges.size());
 }
 
 bool wmtk::TetMesh::split_edge(const Tuple &loc0)

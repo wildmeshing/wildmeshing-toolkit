@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <iostream>
 #include <vector>
 #include <map>
 #include <set>
@@ -12,6 +13,9 @@
 
 namespace wmtk
 {
+    using std::cin;//todo: temp
+    using std::cout;
+    using std::endl;
 
 	template <class T>
 	inline std::vector<T> set_intersection(const std::vector<T> &v1, const std::vector<T> &v2)

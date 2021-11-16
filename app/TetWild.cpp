@@ -55,19 +55,16 @@ bool tetwild::TetWild::split_before(const Tuple &loc0)
 	if (length < m_params.l * 4 / 3)
 		return false;
 
-	std::shared_ptr<InfoCacheSplit> info = std::make_shared<InfoCacheSplit>();
-
-	info->mid_p = (m_vertex_attribute[v1_id].m_posf + m_vertex_attribute[v2_id].m_posf) / 2;
+    split_cache.vertex_info.m_posf = (m_vertex_attribute[v1_id].m_posf + m_vertex_attribute[v2_id].m_posf) / 2;
 
 	return true;
 }
 
 bool tetwild::TetWild::split_after(const Tuple &loc0)
 {
-	std::shared_ptr<InfoCacheSplit> info; // todo = std::dynamic_pointer_cast<InfoCacheSplit>(info0);
 	int v_id = loc0.get_vid();
 	auto old_pos = m_vertex_attribute[v_id].m_posf;
-	m_vertex_attribute[v_id].m_posf = info->mid_p;
+	m_vertex_attribute[v_id].m_posf = split_cache.vertex_info.m_posf;
 
 	// check inversion
 	auto locs = loc0.get_conn_tets(*this);

@@ -23,9 +23,10 @@ int main(int argc, char **argv)
 	std::vector<TetAttributes> tet_attrs(1);
 
 	tetwild.create_mesh(vertices.size(), tets);
-	tetwild.create_mesh_attributes(vertices, tet_attrs);
-
-	tetwild.split_all_edges();
+    cout<<"ok1"<<endl;
+    tetwild.create_mesh_attributes(vertices, tet_attrs);
+    cout<<"ok1"<<endl;
+    tetwild.split_all_edges();
 
 	return 0;
 }

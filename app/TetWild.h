@@ -3,6 +3,9 @@
 #include "common.h"
 #include "Parameters.h"
 #include "Envelope.h"
+//#include <floattetwild/common.h>
+//#include <floattetwild/Parameters.h>
+//#include <floattetwild/Envelope.h>
 
 #include <wmtk/TetMesh.h>
 
@@ -55,13 +58,6 @@ namespace tetwild
 	class TetWild : public wmtk::TetMesh
 	{
 	public:
-		class InfoCacheSplit
-		{
-		public:
-			Vector3f mid_p;
-			~InfoCacheSplit() {}
-		};
-
 		Parameters &m_params;
 		Envelope &m_envelope;
 
@@ -81,7 +77,7 @@ namespace tetwild
 		std::vector<FaceAttributes> m_face_attribute;
 		std::vector<TetAttributes> m_tet_attribute;
 
-		inline void resize_attributes(size_t v, size_t e, size_t t, size_t tt) override
+		void resize_attributes(size_t v, size_t e, size_t t, size_t tt) override
 		{
 			m_vertex_attribute.resize(v);
 			m_edge_attribute.resize(e);
@@ -92,23 +88,27 @@ namespace tetwild
 		void smoothing(const Tuple &t);
 
 		// all the other functions
-		inline void test()
-		{
-			std::shared_ptr<InfoCacheSplit> info0 = std::make_shared<InfoCacheSplit>();
-			std::shared_ptr<InfoCacheSplit> info = std::make_shared<InfoCacheSplit>();
-			info->mid_p = Vector3f(1, 2, 3);
-			info0 = info;
-
-			auto testtest = [](std::shared_ptr<InfoCacheSplit> info1)
-			{
-				std::shared_ptr<InfoCacheSplit> info2 = std::dynamic_pointer_cast<InfoCacheSplit>(info1);
-				cout << info2->mid_p << endl;
-			};
-
-			testtest(info0);
-		}
+//		inline void test()
+//		{
+//			std::shared_ptr<InfoCacheSplit> info0 = std::make_shared<InfoCacheSplit>();
+//			std::shared_ptr<InfoCacheSplit> info = std::make_shared<InfoCacheSplit>();
+//			info->mid_p = Vector3f(1, 2, 3);
+//			info0 = info;
+//
+//			auto testtest = [](std::shared_ptr<InfoCacheSplit> info1)
+//			{
+//				std::shared_ptr<InfoCacheSplit> info2 = std::dynamic_pointer_cast<InfoCacheSplit>(info1);
+//				cout << info2->mid_p << endl;
+//			};
+//
+//			testtest(info0);
+//		}
 
 	protected:
+        struct SplitInfoCache{
+            VertexAttributes vertex_info;
+        } split_cache;//todo: change for parallel
+
 		bool split_before(const Tuple &t) override;
 		bool split_after(const Tuple &t) override;
 

@@ -10,6 +10,7 @@
 #include <set>
 #include <array>
 #include <Eigen/Core>
+#include <wmtk/Logger.hpp>
 
 namespace tetwild
 {
