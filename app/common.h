@@ -25,4 +25,5 @@ namespace tetwild
 
 	typedef double Scalar;
 	typedef Eigen::Matrix<Scalar, 3, 3> Matrix3;
+
 } // namespace tetwild

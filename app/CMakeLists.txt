@@ -100,11 +100,18 @@ endif()
 #target_sources(${PROJECT_NAME} PRIVATE ${SOURCES})
 
 add_library(${PROJECT_NAME} #SOURCES)
-		TetWild.cpp TetWild.h
+		external/Exception.h
+		external/MshSaver.cpp
+		external/MshSaver.h
+
+		TetWild.cpp
+		TetWild.h
+
 		common.h
 		Parameters.h
 		Envelope.h
-		main.cpp)
+		main.cpp
+		)
 
 ################################################################################
 # Required libraries

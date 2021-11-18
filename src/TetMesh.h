@@ -29,9 +29,31 @@ namespace wmtk
 			std::map<std::vector<int>, int> map_l_edges;
 
 		public:
-			// todo: where to put these
+            void print_info(){
+                cout<<vid<<" "<<eid<<" "<<fid<<" "<<tid<<endl;
+            }
+
 			std::array<std::array<int, 2>, 6> l_edges = {{{{0, 1}}, {{1, 2}}, {{2, 0}}, {{0, 3}}, {{1, 3}}, {{2, 3}}}};
+			std::array<int, 6> map_edge2face = {{0, 0, 0, 1, 2, 1}};
 			std::array<std::array<int, 3>, 6> l_faces = {{{{0, 1, 2}}, {{0, 2, 3}}, {{0, 3, 1}}, {{3, 2, 1}}}};
+
+            bool compare_edges(const TetMesh &m, const Tuple& loc2) const {
+                const auto& loc1 = *this;
+                std::array<int, 2> e1 = {{m.m_tet_connectivity[loc1.tid][l_edges[loc1.eid][0]],
+                                          m.m_tet_connectivity[loc1.tid][l_edges[loc1.eid][1]]}};
+                std::array<int, 2> e2 = {{m.m_tet_connectivity[loc2.tid][l_edges[loc2.eid][0]],
+                                          m.m_tet_connectivity[loc2.tid][l_edges[loc2.eid][1]]}};
+                if (e1[0] > e1[1])
+                    std::swap(e1[0], e1[1]);
+                if (e2[0] > e2[1])
+                    std::swap(e2[0], e2[1]);
+                if (e1 < e2)
+                    return -1;
+                else if (e1 == e2)
+                    return 0;
+                else
+                    return 1;
+            }
 
 			Tuple()
 			{
@@ -49,7 +71,6 @@ namespace wmtk
 			inline size_t get_fid() const { return fid; }
 			inline size_t get_tid() const { return tid; }
 
-			// REMOVE ME!!!!
 			inline std::vector<Tuple> get_conn_tets(const TetMesh &m) const
 			{
 				std::vector<Tuple> locs;

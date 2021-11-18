@@ -87,6 +87,8 @@ namespace tetwild
 
 		void smoothing(const Tuple &t);
 
+        void output_mesh(std::string file);
+
 		// all the other functions
 //		inline void test()
 //		{
@@ -104,7 +106,7 @@ namespace tetwild
 //			testtest(info0);
 //		}
 
-	protected:
+//	protected:
         struct SplitInfoCache{
             VertexAttributes vertex_info;
         } split_cache;//todo: change for parallel

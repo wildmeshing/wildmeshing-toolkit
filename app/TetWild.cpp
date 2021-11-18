@@ -3,6 +3,7 @@
 //
 
 #include "TetWild.h"
+#include "external/MshSaver.h"
 
 #include <wmtk/AMIPS.h>
 
@@ -66,24 +67,41 @@ bool tetwild::TetWild::split_after(const Tuple &loc0)
 	auto old_pos = m_vertex_attribute[v_id].m_posf;
 	m_vertex_attribute[v_id].m_posf = split_cache.vertex_info.m_posf;
 
-	// check inversion
-	auto locs = loc0.get_conn_tets(*this);
-	for (auto &loc : locs)
-	{
-		int t_id = loc.get_tid();
-		if (is_inverted(t_id))
-		{
-			m_vertex_attribute[v_id].m_posf = old_pos;
-			return false;
-		}
-	}
-
-	// update quality
-	for (auto &loc : locs)
-	{
-		int t_id = loc.get_tid();
-		m_tet_attribute[t_id].m_qualities = get_quality(t_id);
-	}
+//	// check inversion
+//	auto locs = loc0.get_conn_tets(*this);
+//	for (auto &loc : locs)
+//	{
+//		int t_id = loc.get_tid();
+//		if (is_inverted(t_id))
+//		{
+//			m_vertex_attribute[v_id].m_posf = old_pos;
+//			return false;
+//		}
+//	}
+//
+//	// update quality
+//	for (auto &loc : locs)
+//	{
+//		int t_id = loc.get_tid();
+//		m_tet_attribute[t_id].m_qualities = get_quality(t_id);
+//	}
 
 	return true;
+}
+
+void tetwild::TetWild::output_mesh(std::string file) {
+    PyMesh::MshSaver mSaver(file, true);
+
+    Eigen::VectorXd V_flat(3 * m_vertex_attribute.size());
+    for (int i = 0; i < m_vertex_attribute.size(); i++) {
+        for (int j = 0; j < 3; j++)
+            V_flat(3 * i + j) = m_vertex_attribute[i].m_posf[j];
+    }
+    Eigen::VectorXi T_flat(4 * m_tet_connectivity.size());
+    for (int i = 0; i < m_tet_connectivity.size(); i++) {
+        for (int j = 0; j < 4; j++)
+            T_flat(4 * i + j) = m_tet_connectivity[i][j];
+    }
+
+    mSaver.save_mesh(V_flat, T_flat, 3, mSaver.TET);
 }
