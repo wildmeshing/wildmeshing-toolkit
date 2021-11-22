@@ -61,7 +61,10 @@ namespace tetwild
 		Parameters &m_params;
 		Envelope &m_envelope;
 
-		TetWild(Parameters &_m_params, Envelope &_m_envelope) : m_params(_m_params), m_envelope(_m_envelope) {}
+		TetWild(Parameters &_m_params, Envelope &_m_envelope) : m_params(_m_params), m_envelope(_m_envelope) {
+            m_params.init();
+        }
+
 		~TetWild() {}
 
 		void create_mesh_attributes(const std::vector<VertexAttributes> &_vertex_attribute,
@@ -111,7 +114,8 @@ namespace tetwild
             VertexAttributes vertex_info;
         } split_cache;//todo: change for parallel
 
-		bool split_before(const Tuple &t) override;
+        void split_all_edges();
+        bool split_before(const Tuple &t) override;
 		bool split_after(const Tuple &t) override;
 
 		bool is_inverted(size_t t_id);

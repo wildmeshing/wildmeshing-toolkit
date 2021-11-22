@@ -10,10 +10,10 @@
 #include <vector>
 #include <map>
 #include <cassert>
+#include <queue>
 
 namespace wmtk
 {
-
 	class TetMesh
 	{
 	public:
@@ -29,6 +29,8 @@ namespace wmtk
 			std::map<std::vector<int>, int> map_l_edges;
 
 		public:
+            int timestamp = 0;
+
             void print_info(){
                 cout<<vid<<" "<<eid<<" "<<fid<<" "<<tid<<endl;
             }
@@ -37,11 +39,11 @@ namespace wmtk
 			std::array<int, 6> map_edge2face = {{0, 0, 0, 1, 2, 1}};
 			std::array<std::array<int, 3>, 6> l_faces = {{{{0, 1, 2}}, {{0, 2, 3}}, {{0, 3, 1}}, {{3, 2, 1}}}};
 
-            bool compare_edges(const TetMesh &m, const Tuple& loc2) const {
+            int compare_edges(const TetMesh &m, const Tuple& loc2) const {
                 const auto& loc1 = *this;
-                std::array<int, 2> e1 = {{m.m_tet_connectivity[loc1.tid][l_edges[loc1.eid][0]],
+                std::array<size_t, 2> e1 = {{m.m_tet_connectivity[loc1.tid][l_edges[loc1.eid][0]],
                                           m.m_tet_connectivity[loc1.tid][l_edges[loc1.eid][1]]}};
-                std::array<int, 2> e2 = {{m.m_tet_connectivity[loc2.tid][l_edges[loc2.eid][0]],
+                std::array<size_t, 2> e2 = {{m.m_tet_connectivity[loc2.tid][l_edges[loc2.eid][0]],
                                           m.m_tet_connectivity[loc2.tid][l_edges[loc2.eid][1]]}};
                 if (e1[0] > e1[1])
                     std::swap(e1[0], e1[1]);
@@ -176,6 +178,8 @@ namespace wmtk
 			std::array<size_t, 4> m_indices;
 			bool m_is_removed = false;
 
+            int timestamp = 0;
+
 			inline size_t &operator[](size_t index)
 			{
 				assert(index >= 0 && index < 4);
@@ -214,10 +218,7 @@ namespace wmtk
 			}
 		}
 
-		// REMOVE ME!!!!
-		void split_all_edges();
-
-		bool split_edge(const Tuple &t);
+		bool split_edge(const Tuple &t, std::vector<Tuple>& new_edges);
 		void collapse_edge(const Tuple &t);
 		void swap_edge(const Tuple &t, int type);
 
@@ -232,6 +233,11 @@ namespace wmtk
 		int m_v_empty_slot = 0;
 		int find_next_empty_slot_t();
 		int find_next_empty_slot_v();
+
+        void reset_timestamp(){
+            for(auto& t: m_tet_connectivity)
+                t.timestamp = 0;
+        }
 
 	protected:
 		//// Split the edge in the tuple
@@ -263,5 +269,28 @@ namespace wmtk
 
 		virtual void resize_attributes(size_t v, size_t e, size_t f, size_t t) = 0;
 	};
+
+    class ElementInQueue{
+    public:
+        TetMesh::Tuple edge;
+        double weight;
+
+        ElementInQueue(){}
+        ElementInQueue(const TetMesh::Tuple& e, double w): edge(e), weight(w){}
+    };
+    struct cmp_l {
+        bool operator()(const ElementInQueue &e1, const ElementInQueue &e2) {
+            if (e1.weight == e2.weight)
+                return e1.edge.get_vid() > e2.edge.get_vid();
+            return e1.weight < e2.weight;
+        }
+    };
+    struct cmp_s {
+        bool operator()(const ElementInQueue &e1, const ElementInQueue &e2) {
+            if (e1.weight == e2.weight)
+                return e1.edge.get_vid() < e2.edge.get_vid();
+            return e1.weight > e2.weight;
+        }
+    };
 
 } // namespace wmtk

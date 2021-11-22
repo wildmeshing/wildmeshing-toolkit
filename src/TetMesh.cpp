@@ -33,71 +33,7 @@ int wmtk::TetMesh::find_next_empty_slot_v()
 	return m_vertex_connectivity.size() - 1;
 }
 
-void wmtk::TetMesh::split_all_edges() {
-    std::vector<Tuple> edges;
-    for (int i = 0; i < m_tet_connectivity.size(); i++){
-        for(int j=0;j<6;j++){
-            Tuple loc;
-            int vid = m_tet_connectivity[i][loc.l_edges[j][0]];
-            int eid = j;
-            int fid = loc.map_edge2face[eid];
-            int tid = i;
-            edges.push_back(Tuple(vid, eid, fid, tid));
-        }
-    }
-    std::sort(edges.begin(), edges.end(), [&](const Tuple& a, const Tuple& b) {
-        return a.compare_edges(*this, b) < 0;
-    });
-    edges.erase(std::unique(edges.begin(), edges.end(), [&](const Tuple& a, const Tuple& b) {
-        return a.compare_edges(*this, b) == 0;
-    }), edges.end());
-
-    cout<<"edges.size() = "<<edges.size()<<endl;
-
-    int cnt_suc = 0;
-    for (const auto &loc : edges){
-        if (split_edge(loc)) {
-            cnt_suc++;
-            cout<<"ok"<<endl;
-            cout<<this->m_tet_connectivity.size()<<endl;
-        }
-    }
-
-//	std::vector<std::array<size_t, 2>> edges;
-//	for (int i = 0; i < m_tet_connectivity.size(); i++)
-//	{
-//		for (int j = 0; j < 3; j++)
-//		{
-//			std::array<size_t, 2> e = {{m_tet_connectivity[i][0], m_tet_connectivity[i][j + 1]}};
-//			if (e[0] > e[1])
-//				std::swap(e[0], e[1]);
-//			edges.push_back(e);
-//			e = {{m_tet_connectivity[i][j + 1], m_tet_connectivity[i][(j + 1) % 3 + 1]}};
-//			if (e[0] > e[1])
-//				std::swap(e[0], e[1]);
-//		}
-//	}
-//	vector_unique(edges);
-//
-//	int cnt_suc = 0;
-//	for (const auto &e : edges)
-//	{
-//		// todo: convenient way to convert e into tuple?
-//		auto n12_t_ids = set_intersection(m_vertex_connectivity[e[0]].m_conn_tets,
-//										  m_vertex_connectivity[e[1]].m_conn_tets);
-//		int tid = n12_t_ids.front();
-//		Tuple loc(e[0], 0, 0, tid);
-//		loc.set_l_eid(*this, {e[0], e[1]});
-//		loc.set_l_fid(*this, {e[0], e[1]});
-//		if (split_edge(loc))
-//			cnt_suc++;
-//	}
-//
-//	logger().info("{} {}", cnt_suc, edges.size());
-}
-
-bool wmtk::TetMesh::split_edge(const Tuple &loc0)
-{
+bool wmtk::TetMesh::split_edge(const Tuple &loc0, std::vector<Tuple>& new_edges){
 	if (!split_before(loc0))
 		return false;
 
@@ -160,7 +96,7 @@ bool wmtk::TetMesh::split_edge(const Tuple &loc0)
 
 
 	Tuple loc(v_id, 0, 0, old_tets.front().first);
-	if (!split_after(loc)) {
+	if (!split_after(loc)) {//todo: more input???????
         m_vertex_connectivity[v_id].m_is_removed = true;
         for (int t_id: new_t_ids)
             m_tet_connectivity[t_id].m_is_removed = true;
@@ -184,5 +120,16 @@ bool wmtk::TetMesh::split_edge(const Tuple &loc0)
 		return false;
 	}
 
-	return true;
+    //todo: new_edges
+
+//    for(auto& new_loc: new_edges)//==0 in default
+//        new_loc.timestamp = 0;
+
+    for (size_t t_id : n12_t_ids)
+        m_tet_connectivity[t_id].timestamp++;
+//    for(size_t t_id: new_t_ids)//==0 in default
+//        m_tet_connectivity[t_id].timestamp = 0;
+
+
+    return true;
 }

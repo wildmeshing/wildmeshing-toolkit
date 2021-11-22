@@ -9,6 +9,8 @@
 #include <map>
 #include <set>
 #include <array>
+#include <queue>
+
 #include <Eigen/Core>
 #include <wmtk/Logger.hpp>
 

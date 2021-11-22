@@ -10,6 +10,8 @@ int main(int argc, char **argv)
 
 	Parameters params;
 	params.l = 1 / 20.;
+    params.init();
+
 	Envelope envelope;
 	TetWild tetwild(params, envelope);
 	//    tetwild.test();
