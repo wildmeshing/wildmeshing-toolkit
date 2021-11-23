@@ -36,8 +36,9 @@ double tetwild::TetWild::get_quality(size_t t_id)
 	std::array<double, 12> T;
 	for (int i = 0; i < 4; i++)
 	{
-		for (int j = 0; j < 3; j++)
-			T[i * 4 + j] = m_vertex_attribute[m_tet_connectivity[t_id][i]].m_posf[j];
+		for (int j = 0; j < 3; j++) {
+            T[i * 3 + j] = m_vertex_attribute[m_tet_connectivity[t_id][i]].m_posf[j];
+        }
 	}
 	double energy = wmtk::AMIPS_energy(T);
 	if (std::isinf(energy) || std::isnan(energy) || energy < 3 - 1e-3)
@@ -52,9 +53,9 @@ void tetwild::TetWild::split_all_edges() {
     for (int i = 0; i < m_tet_connectivity.size(); i++) {
         for (int j = 0; j < 6; j++) {
             Tuple loc;
-            int vid = m_tet_connectivity[i][loc.l_edges[j][0]];
+            int vid = m_tet_connectivity[i][l_edges[j][0]];
             int eid = j;
-            int fid = loc.map_edge2face[eid];
+            int fid = map_edge2face[eid];
             int tid = i;
             edges.push_back(Tuple(vid, eid, fid, tid));
         }
@@ -71,8 +72,8 @@ void tetwild::TetWild::split_all_edges() {
     int cnt_suc = 0;
     std::priority_queue<wmtk::ElementInQueue, std::vector<wmtk::ElementInQueue>, wmtk::cmp_l> es_queue;
     for (auto& loc: edges) {
-        int v1_id = m_tet_connectivity[loc.get_tid()][loc.l_edges[loc.get_eid()][0]];
-        int v2_id = m_tet_connectivity[loc.get_tid()][loc.l_edges[loc.get_eid()][1]];
+        int v1_id = m_tet_connectivity[loc.get_tid()][l_edges[loc.get_eid()][0]];
+        int v2_id = m_tet_connectivity[loc.get_tid()][l_edges[loc.get_eid()][1]];
         double length = (m_vertex_attribute[v1_id].m_posf-m_vertex_attribute[v2_id].m_posf).squaredNorm();
         if (length < m_params.splitting_l2)
             continue;
@@ -95,8 +96,8 @@ void tetwild::TetWild::split_all_edges() {
             cout << this->m_tet_connectivity.size() << endl;
 
             for(auto& new_loc:new_edges) {
-                int v1_id = m_tet_connectivity[new_loc.get_tid()][new_loc.l_edges[new_loc.get_eid()][0]];
-                int v2_id = m_tet_connectivity[new_loc.get_tid()][new_loc.l_edges[new_loc.get_eid()][1]];
+                int v1_id = m_tet_connectivity[new_loc.get_tid()][l_edges[new_loc.get_eid()][0]];
+                int v2_id = m_tet_connectivity[new_loc.get_tid()][l_edges[new_loc.get_eid()][1]];
                 double length = (m_vertex_attribute[v1_id].m_posf - m_vertex_attribute[v2_id].m_posf).squaredNorm();
                 if (length < m_params.splitting_l2)
                     continue;
@@ -121,32 +122,27 @@ bool tetwild::TetWild::split_before(const Tuple &loc0){
 	return true;
 }
 
-bool tetwild::TetWild::split_after(const Tuple &loc0)//todo: change to vector of tuple as input
-{
-	int v_id = loc0.get_vid();
-	auto old_pos = m_vertex_attribute[v_id].m_posf;
-	m_vertex_attribute[v_id].m_posf = split_cache.vertex_info.m_posf;
+bool tetwild::TetWild::split_after(const std::vector<Tuple> &locs){//input: locs pointing to a list of tets and v_id
+    int v_id = locs[0].get_vid();
+    auto old_pos = m_vertex_attribute[v_id].m_posf;
+    m_vertex_attribute[v_id].m_posf = split_cache.vertex_info.m_posf;
 
-//	// check inversion
-//	auto locs = loc0.get_conn_tets(*this);
-//	for (auto &loc : locs)
-//	{
-//		int t_id = loc.get_tid();
-//		if (is_inverted(t_id))
-//		{
-//			m_vertex_attribute[v_id].m_posf = old_pos;
-//			return false;
-//		}
-//	}
-//
-//	// update quality
-//	for (auto &loc : locs)
-//	{
-//		int t_id = loc.get_tid();
-//		m_tet_attribute[t_id].m_qualities = get_quality(t_id);
-//	}
+    // check inversion
+    for (auto &loc: locs) {
+        size_t t_id = loc.get_tid();
+        if (is_inverted(t_id)) {
+            m_vertex_attribute[v_id].m_posf = old_pos;
+            return false;
+        }
+    }
 
-	return true;
+    // update quality
+    for (auto &loc: locs) {
+        size_t t_id = loc.get_tid();
+        m_tet_attribute[t_id].m_qualities = get_quality(t_id);
+    }
+
+    return true;
 }
 
 void tetwild::TetWild::output_mesh(std::string file) {

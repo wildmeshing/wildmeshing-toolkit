@@ -17,6 +17,10 @@ namespace wmtk
 	class TetMesh
 	{
 	public:
+        const std::array<std::array<int, 2>, 6> l_edges = {{{{0, 1}}, {{1, 2}}, {{2, 0}}, {{0, 3}}, {{1, 3}}, {{2, 3}}}};
+        const std::array<int, 6> map_edge2face = {{0, 0, 0, 1, 2, 1}};
+        const std::array<std::array<int, 3>, 6> l_faces = {{{{0, 1, 2}}, {{0, 2, 3}}, {{0, 3, 1}}, {{3, 2, 1}}}};
+
 		// Cell Tuple Navigator
 		class Tuple
 		{
@@ -35,16 +39,12 @@ namespace wmtk
                 cout<<vid<<" "<<eid<<" "<<fid<<" "<<tid<<endl;
             }
 
-			std::array<std::array<int, 2>, 6> l_edges = {{{{0, 1}}, {{1, 2}}, {{2, 0}}, {{0, 3}}, {{1, 3}}, {{2, 3}}}};
-			std::array<int, 6> map_edge2face = {{0, 0, 0, 1, 2, 1}};
-			std::array<std::array<int, 3>, 6> l_faces = {{{{0, 1, 2}}, {{0, 2, 3}}, {{0, 3, 1}}, {{3, 2, 1}}}};
-
             int compare_edges(const TetMesh &m, const Tuple& loc2) const {
                 const auto& loc1 = *this;
-                std::array<size_t, 2> e1 = {{m.m_tet_connectivity[loc1.tid][l_edges[loc1.eid][0]],
-                                          m.m_tet_connectivity[loc1.tid][l_edges[loc1.eid][1]]}};
-                std::array<size_t, 2> e2 = {{m.m_tet_connectivity[loc2.tid][l_edges[loc2.eid][0]],
-                                          m.m_tet_connectivity[loc2.tid][l_edges[loc2.eid][1]]}};
+                std::array<size_t, 2> e1 = {{m.m_tet_connectivity[loc1.tid][m.l_edges[loc1.eid][0]],
+                                          m.m_tet_connectivity[loc1.tid][m.l_edges[loc1.eid][1]]}};
+                std::array<size_t, 2> e2 = {{m.m_tet_connectivity[loc2.tid][m.l_edges[loc2.eid][0]],
+                                          m.m_tet_connectivity[loc2.tid][m.l_edges[loc2.eid][1]]}};
                 if (e1[0] > e1[1])
                     std::swap(e1[0], e1[1]);
                 if (e2[0] > e2[1])
@@ -57,15 +57,21 @@ namespace wmtk
                     return 1;
             }
 
-			Tuple()
-			{
-				for (int i = 0; i < 6; i++)
-				{
-					map_l_edges[{l_edges[i][0], l_edges[i][1]}] = i;
-					// todo
-				}
-				// todo map face
-			}
+            int compare_directed_edges(const TetMesh &m, const Tuple& loc2) const {
+                const auto& loc1 = *this;
+                std::array<size_t, 2> e1 = {{m.m_tet_connectivity[loc1.tid][m.l_edges[loc1.eid][0]],
+                                             m.m_tet_connectivity[loc1.tid][m.l_edges[loc1.eid][1]]}};
+                std::array<size_t, 2> e2 = {{m.m_tet_connectivity[loc2.tid][m.l_edges[loc2.eid][0]],
+                                             m.m_tet_connectivity[loc2.tid][m.l_edges[loc2.eid][1]]}};
+                if (e1 < e2)
+                    return -1;
+                else if (e1 == e2)
+                    return 0;
+                else
+                    return 1;
+            }
+
+			Tuple(){}
 			Tuple(size_t _vid, size_t _eid, size_t _fid, size_t _tid) : vid(_vid), eid(_eid), fid(_fid), tid(_tid) {}
 
 			inline size_t get_vid() const { return vid; }
@@ -86,8 +92,8 @@ namespace wmtk
 			inline Tuple switch_vertex(const TetMesh &m)
 			{
 				Tuple loc = *this;
-				int l_vid1 = l_edges[eid][0];
-				int l_vid2 = l_edges[eid][1];
+				int l_vid1 = m.l_edges[eid][0];
+				int l_vid2 = m.l_edges[eid][1];
 				loc.vid = m.m_tet_connectivity[tid][l_vid1] == vid ? m.m_tet_connectivity[tid][l_vid2] : m.m_tet_connectivity[tid][l_vid1];
 
 				return loc;
@@ -234,7 +240,9 @@ namespace wmtk
 		int find_next_empty_slot_t();
 		int find_next_empty_slot_v();
 
+        int timestamp = 0;
         void reset_timestamp(){
+            timestamp = 0;
             for(auto& t: m_tet_connectivity)
                 t.timestamp = 0;
         }
@@ -245,7 +253,7 @@ namespace wmtk
 		virtual bool split_before(const Tuple &t) = 0; // check edge condition
 		// This function computes the attributes for the added simplices
 		// if it returns false then the operation is undone
-		virtual bool split_after(const Tuple &t) = 0; // check tet condition
+		virtual bool split_after(const std::vector<Tuple> &locs) = 0; // check tet condition
 
 		//        //// Collapse the edge in the tuple
 		//        // Checks if the collapse should be performed or not (user controlled)

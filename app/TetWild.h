@@ -116,7 +116,7 @@ namespace tetwild
 
         void split_all_edges();
         bool split_before(const Tuple &t) override;
-		bool split_after(const Tuple &t) override;
+		bool split_after(const std::vector<Tuple> &locs) override;
 
 		bool is_inverted(size_t t_id);
 		double get_quality(size_t t_id);

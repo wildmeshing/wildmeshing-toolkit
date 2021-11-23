@@ -93,7 +93,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_BINARY_DIR}/include)
 target_link_libraries(${PROJECT_NAME} PRIVATE warnings::all)
 
 # Use C++11
-target_compile_features(${PROJECT_NAME} PUBLIC ${CXX11_FEATURES})
+target_compile_features(${PROJECT_NAME} PUBLIC ${CXX14_FEATURES})
 
 if(WILDMESHING_TOOLKIT_WITH_SANITIZERS)
 	add_sanitizers(${PROJECT_NAME})
