@@ -17,9 +17,9 @@ namespace wmtk
 	class TetMesh
 	{
 	public:
-        const std::array<std::array<int, 2>, 6> l_edges = {{{{0, 1}}, {{1, 2}}, {{2, 0}}, {{0, 3}}, {{1, 3}}, {{2, 3}}}};
+        const std::array<std::array<int, 2>, 6> local_edges = {{{{0, 1}}, {{1, 2}}, {{2, 0}}, {{0, 3}}, {{1, 3}}, {{2, 3}}}};//local edges within a tet
         const std::array<int, 6> map_edge2face = {{0, 0, 0, 1, 2, 1}};
-        const std::array<std::array<int, 3>, 6> l_faces = {{{{0, 1, 2}}, {{0, 2, 3}}, {{0, 3, 1}}, {{3, 2, 1}}}};
+        const std::array<std::array<int, 3>, 6> local_faces = {{{{0, 1, 2}}, {{0, 2, 3}}, {{0, 3, 1}}, {{3, 2, 1}}}};
 
 		// Cell Tuple Navigator
 		class Tuple
@@ -30,10 +30,23 @@ namespace wmtk
 			size_t fid;
 			size_t tid;
 
-			std::map<std::vector<int>, int> map_l_edges;
+			std::map<std::vector<int>, int> map_local_edges;
 
-		public:
             int timestamp = 0;
+
+        public:
+
+            void update_version_number(const TetMesh &m){
+                timestamp = m.m_tet_connectivity[tid].timestamp;
+            }
+            int get_version_number(){
+                return timestamp;
+            }
+            bool is_version_number_valid(const TetMesh &m) const {
+                if(timestamp != m.m_tet_connectivity[tid].timestamp)
+                    return false;
+                return true;
+            }
 
             void print_info(){
                 cout<<vid<<" "<<eid<<" "<<fid<<" "<<tid<<endl;
@@ -41,10 +54,10 @@ namespace wmtk
 
             int compare_edges(const TetMesh &m, const Tuple& loc2) const {
                 const auto& loc1 = *this;
-                std::array<size_t, 2> e1 = {{m.m_tet_connectivity[loc1.tid][m.l_edges[loc1.eid][0]],
-                                          m.m_tet_connectivity[loc1.tid][m.l_edges[loc1.eid][1]]}};
-                std::array<size_t, 2> e2 = {{m.m_tet_connectivity[loc2.tid][m.l_edges[loc2.eid][0]],
-                                          m.m_tet_connectivity[loc2.tid][m.l_edges[loc2.eid][1]]}};
+                std::array<size_t, 2> e1 = {{m.m_tet_connectivity[loc1.tid][m.local_edges[loc1.eid][0]],
+                                          m.m_tet_connectivity[loc1.tid][m.local_edges[loc1.eid][1]]}};
+                std::array<size_t, 2> e2 = {{m.m_tet_connectivity[loc2.tid][m.local_edges[loc2.eid][0]],
+                                          m.m_tet_connectivity[loc2.tid][m.local_edges[loc2.eid][1]]}};
                 if (e1[0] > e1[1])
                     std::swap(e1[0], e1[1]);
                 if (e2[0] > e2[1])
@@ -59,10 +72,10 @@ namespace wmtk
 
             int compare_directed_edges(const TetMesh &m, const Tuple& loc2) const {
                 const auto& loc1 = *this;
-                std::array<size_t, 2> e1 = {{m.m_tet_connectivity[loc1.tid][m.l_edges[loc1.eid][0]],
-                                             m.m_tet_connectivity[loc1.tid][m.l_edges[loc1.eid][1]]}};
-                std::array<size_t, 2> e2 = {{m.m_tet_connectivity[loc2.tid][m.l_edges[loc2.eid][0]],
-                                             m.m_tet_connectivity[loc2.tid][m.l_edges[loc2.eid][1]]}};
+                std::array<size_t, 2> e1 = {{m.m_tet_connectivity[loc1.tid][m.local_edges[loc1.eid][0]],
+                                             m.m_tet_connectivity[loc1.tid][m.local_edges[loc1.eid][1]]}};
+                std::array<size_t, 2> e2 = {{m.m_tet_connectivity[loc2.tid][m.local_edges[loc2.eid][0]],
+                                             m.m_tet_connectivity[loc2.tid][m.local_edges[loc2.eid][1]]}};
                 if (e1 < e2)
                     return -1;
                 else if (e1 == e2)
@@ -92,8 +105,8 @@ namespace wmtk
 			inline Tuple switch_vertex(const TetMesh &m)
 			{
 				Tuple loc = *this;
-				int l_vid1 = m.l_edges[eid][0];
-				int l_vid2 = m.l_edges[eid][1];
+				int l_vid1 = m.local_edges[eid][0];
+				int l_vid2 = m.local_edges[eid][1];
 				loc.vid = m.m_tet_connectivity[tid][l_vid1] == vid ? m.m_tet_connectivity[tid][l_vid2] : m.m_tet_connectivity[tid][l_vid1];
 
 				return loc;
@@ -109,54 +122,6 @@ namespace wmtk
 			size_t get_edge_attribute_id(const TetMesh &m);
 			size_t get_face_attribute_id(const TetMesh &m);
 			size_t get_tetrahedron_attribute_id(const TetMesh &m);
-
-			// REMOVE ME!!!!
-			inline void set_l_eid(const TetMesh &m, const std::vector<size_t> &vids)
-			{
-				std::vector<int> l_vids;
-				for (int vid0 : vids)
-				{
-					for (int j = 0; j < 4; j++)
-						if (vid0 == m.m_tet_connectivity[tid][j])
-							l_vids.push_back(j);
-				}
-				if (l_vids[0] > l_vids[1])
-					std::swap(l_vids[0], l_vids[1]);
-
-				if (vids.size() == 1)
-				{
-					// todo
-				}
-				else if (vids.size() == 2)
-				{
-					eid = map_l_edges[l_vids];
-				}
-			}
-
-			// REMOVE ME!!!!
-			inline void set_l_fid(const TetMesh &m, const std::vector<size_t> &vids)
-			{
-				std::vector<int> l_vids;
-				for (int vid0 : vids)
-				{
-					for (int j = 0; j < 4; j++)
-						if (vid0 == m.m_tet_connectivity[tid][j])
-							l_vids.push_back(j);
-				}
-
-				if (vids.size() == 1)
-				{
-					// todo
-				}
-				else if (vids.size() == 2)
-				{
-					// todo
-				}
-				else if (vids.size() == 3)
-				{
-					// todo
-				}
-			}
 		};
 
 		class VertexConnectivity
@@ -185,6 +150,13 @@ namespace wmtk
 			bool m_is_removed = false;
 
             int timestamp = 0;
+
+            void set_version_number(int version){
+                timestamp = version;
+            }
+            int get_version_number(){
+                return timestamp;
+            }
 
 			inline size_t &operator[](size_t index)
 			{
@@ -277,28 +249,5 @@ namespace wmtk
 
 		virtual void resize_attributes(size_t v, size_t e, size_t f, size_t t) = 0;
 	};
-
-    class ElementInQueue{
-    public:
-        TetMesh::Tuple edge;
-        double weight;
-
-        ElementInQueue(){}
-        ElementInQueue(const TetMesh::Tuple& e, double w): edge(e), weight(w){}
-    };
-    struct cmp_l {
-        bool operator()(const ElementInQueue &e1, const ElementInQueue &e2) {
-            if (e1.weight == e2.weight)
-                return e1.edge.get_vid() > e2.edge.get_vid();
-            return e1.weight < e2.weight;
-        }
-    };
-    struct cmp_s {
-        bool operator()(const ElementInQueue &e1, const ElementInQueue &e2) {
-            if (e1.weight == e2.weight)
-                return e1.edge.get_vid() < e2.edge.get_vid();
-            return e1.weight > e2.weight;
-        }
-    };
 
 } // namespace wmtk

@@ -122,4 +122,27 @@ namespace tetwild
 		double get_quality(size_t t_id);
 	};
 
+    class ElementInQueue{
+    public:
+        wmtk::TetMesh::Tuple edge;
+        double weight;
+
+        ElementInQueue(){}
+        ElementInQueue(const wmtk::TetMesh::Tuple& e, double w): edge(e), weight(w){}
+    };
+    struct cmp_l {
+        bool operator()(const ElementInQueue &e1, const ElementInQueue &e2) {
+            if (e1.weight == e2.weight)
+                return e1.edge.get_vid() > e2.edge.get_vid();
+            return e1.weight < e2.weight;
+        }
+    };
+    struct cmp_s {
+        bool operator()(const ElementInQueue &e1, const ElementInQueue &e2) {
+            if (e1.weight == e2.weight)
+                return e1.edge.get_vid() < e2.edge.get_vid();
+            return e1.weight > e2.weight;
+        }
+    };
+
 } // namespace tetwild

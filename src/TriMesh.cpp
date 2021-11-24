@@ -38,7 +38,7 @@ void wmtk::TetMesh::split_all_edges() {
     for (int i = 0; i < m_tet_connectivity.size(); i++){
         for(int j=0;j<6;j++){
             Tuple loc;
-            int vid = m_tet_connectivity[i][loc.l_edges[j][0]];
+            int vid = m_tet_connectivity[i][loc.local_edges[j][0]];
             int eid = j;
             int fid = loc.map_edge2face[eid];
             int tid = i;

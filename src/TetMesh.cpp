@@ -130,7 +130,7 @@ bool wmtk::TetMesh::split_edge(const Tuple &loc0, std::vector<Tuple>& new_edges)
         for(int j=0;j<6;j++){
             Tuple loc;
             int eid = j;
-            int vid = m_tet_connectivity[t_id][l_edges[j][0]];
+            int vid = m_tet_connectivity[t_id][local_edges[j][0]];
             int fid = map_edge2face[eid];
             new_edges.push_back(Tuple(vid, eid, fid, t_id));
         }
@@ -139,7 +139,7 @@ bool wmtk::TetMesh::split_edge(const Tuple &loc0, std::vector<Tuple>& new_edges)
         for(int j=0;j<6;j++){
             Tuple loc;
             int eid = j;
-            int vid = m_tet_connectivity[t_id][l_edges[j][0]];
+            int vid = m_tet_connectivity[t_id][local_edges[j][0]];
             int fid = map_edge2face[eid];
             new_edges.push_back(Tuple(vid, eid, fid, t_id));
         }
@@ -152,14 +152,13 @@ bool wmtk::TetMesh::split_edge(const Tuple &loc0, std::vector<Tuple>& new_edges)
     }), new_edges.end());
 
     ///update timestamps
-    timestamp++;
-    for(auto& new_loc: new_edges)
-        new_loc.timestamp = timestamp;
+    timestamp++;//todo: thread
     for (size_t t_id : n12_t_ids)
-        m_tet_connectivity[t_id].timestamp = timestamp;
+        m_tet_connectivity[t_id].set_version_number(timestamp);
     for(size_t t_id: new_t_ids)
-        m_tet_connectivity[t_id].timestamp = timestamp;
-
+        m_tet_connectivity[t_id].set_version_number(timestamp);
+    for(auto& new_loc: new_edges)//update edge timestamp from tets
+        new_loc.update_version_number(*this);
 
     return true;
 }

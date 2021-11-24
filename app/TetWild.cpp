@@ -53,7 +53,7 @@ void tetwild::TetWild::split_all_edges() {
     for (int i = 0; i < m_tet_connectivity.size(); i++) {
         for (int j = 0; j < 6; j++) {
             Tuple loc;
-            int vid = m_tet_connectivity[i][l_edges[j][0]];
+            int vid = m_tet_connectivity[i][local_edges[j][0]];
             int eid = j;
             int fid = map_edge2face[eid];
             int tid = i;
@@ -70,14 +70,14 @@ void tetwild::TetWild::split_all_edges() {
     cout << "edges.size() = " << edges.size() << endl;
 
     int cnt_suc = 0;
-    std::priority_queue<wmtk::ElementInQueue, std::vector<wmtk::ElementInQueue>, wmtk::cmp_l> es_queue;
+    std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_l> es_queue;
     for (auto& loc: edges) {
-        int v1_id = m_tet_connectivity[loc.get_tid()][l_edges[loc.get_eid()][0]];
-        int v2_id = m_tet_connectivity[loc.get_tid()][l_edges[loc.get_eid()][1]];
-        double length = (m_vertex_attribute[v1_id].m_posf-m_vertex_attribute[v2_id].m_posf).squaredNorm();
+        Tuple& v1 = loc;
+        Tuple v2 = loc.switch_vertex(*this);
+        double length = (m_vertex_attribute[v1.get_vid()].m_posf-m_vertex_attribute[v2.get_vid()].m_posf).squaredNorm();
         if (length < m_params.splitting_l2)
             continue;
-        es_queue.push(wmtk::ElementInQueue(loc, length));
+        es_queue.push(ElementInQueue(loc, length));
     }
 
     while(!es_queue.empty()){
@@ -86,22 +86,19 @@ void tetwild::TetWild::split_all_edges() {
         es_queue.pop();
 
         //check timestamp
-        if (loc.timestamp != m_tet_connectivity[loc.get_tid()].timestamp)
+        if (loc.is_version_number_valid(*this))
             continue;
 
         std::vector <Tuple> new_edges;
         if (split_edge(loc, new_edges)) {
             cnt_suc++;
-            cout << "ok" << endl;
-            cout << this->m_tet_connectivity.size() << endl;
-
             for(auto& new_loc:new_edges) {
-                int v1_id = m_tet_connectivity[new_loc.get_tid()][l_edges[new_loc.get_eid()][0]];
-                int v2_id = m_tet_connectivity[new_loc.get_tid()][l_edges[new_loc.get_eid()][1]];
-                double length = (m_vertex_attribute[v1_id].m_posf - m_vertex_attribute[v2_id].m_posf).squaredNorm();
+                Tuple& v1 = new_loc;
+                Tuple v2 = new_loc.switch_vertex(*this);
+                double length = (m_vertex_attribute[v1.get_vid()].m_posf-m_vertex_attribute[v2.get_vid()].m_posf).squaredNorm();
                 if (length < m_params.splitting_l2)
                     continue;
-                es_queue.push(wmtk::ElementInQueue(new_loc, length));
+                es_queue.push(ElementInQueue(new_loc, length));
             }
         }
     }
@@ -111,7 +108,7 @@ bool tetwild::TetWild::split_before(const Tuple &loc0){
 	auto loc1 = loc0;
 	int v1_id = loc1.get_vid();
 	auto loc2 = loc1.switch_vertex(*this);
-	int v2_id = loc2.get_vid();//todo: still need get id
+	int v2_id = loc2.get_vid();
 
 //	double length = (m_vertex_attribute[v1_id].m_posf - m_vertex_attribute[v2_id].m_posf).norm();
 //	if (length < m_params.l * 4 / 3)
