@@ -30,7 +30,7 @@ namespace wmtk
 			size_t fid;
 			size_t tid;
 
-			std::map<std::vector<int>, int> map_local_edges;
+			std::map<std::vector<int>, int> map_local_edges; // DP: what is this?
 
             int timestamp = 0;
 
@@ -48,10 +48,13 @@ namespace wmtk
                 return true;
             }
 
+			// DP: we need a is_valid function similar to the 2D version
+
             void print_info(){
-                cout<<vid<<" "<<eid<<" "<<fid<<" "<<tid<<endl;
+                cout<<vid<<" "<<eid<<" "<<fid<<" "<<tid<<endl; // DP: no cout
             }
 
+			// DP: Why do we need this one? if we really need it it should be private.
             int compare_edges(const TetMesh &m, const Tuple& loc2) const {
                 const auto& loc1 = *this;
                 std::array<size_t, 2> e1 = {{m.m_tet_connectivity[loc1.tid][m.local_edges[loc1.eid][0]],
@@ -70,6 +73,7 @@ namespace wmtk
                     return 1;
             }
 
+			// DP: Why do we need this one? if we really need it it should be private.
             int compare_directed_edges(const TetMesh &m, const Tuple& loc2) const {
                 const auto& loc1 = *this;
                 std::array<size_t, 2> e1 = {{m.m_tet_connectivity[loc1.tid][m.local_edges[loc1.eid][0]],
@@ -85,13 +89,14 @@ namespace wmtk
             }
 
 			Tuple(){}
-			Tuple(size_t _vid, size_t _eid, size_t _fid, size_t _tid) : vid(_vid), eid(_eid), fid(_fid), tid(_tid) {}
+			Tuple(size_t _vid, size_t _eid, size_t _fid, size_t _tid) : vid(_vid), eid(_eid), fid(_fid), tid(_tid) {} // DP: the counter should be initialized here?
 
-			inline size_t get_vid() const { return vid; }
+			inline size_t get_vid() const { return vid; } // DP: these should not be exposed
 			inline size_t get_eid() const { return eid; }
 			inline size_t get_fid() const { return fid; }
 			inline size_t get_tid() const { return tid; }
 
+			// DP: we need to discuss this one, is it used often? why not implement it using switch?
 			inline std::vector<Tuple> get_conn_tets(const TetMesh &m) const
 			{
 				std::vector<Tuple> locs;
@@ -112,12 +117,16 @@ namespace wmtk
 				return loc;
 			} // along edge
 
+			// DP: this is missing
 			Tuple switch_edge(const TetMesh &m); // along face
 
+			// DP: this is missing
 			Tuple switch_face(const TetMesh &m); // along tet
 
+			// DP: this is missing
 			Tuple switch_tetrahedron(const TetMesh &m);
 
+			// DP: how do you access properties without these?
 			size_t get_vertex_attribute_id(const TetMesh &m);
 			size_t get_edge_attribute_id(const TetMesh &m);
 			size_t get_face_attribute_id(const TetMesh &m);
