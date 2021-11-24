@@ -52,20 +52,23 @@ void tetwild::TetWild::split_all_edges() {
     std::vector <Tuple> edges;
     for (int i = 0; i < m_tet_connectivity.size(); i++) {
         for (int j = 0; j < 6; j++) {
-            Tuple loc;
-            int vid = m_tet_connectivity[i][local_edges[j][0]];
-            int eid = j;
-            int fid = map_edge2face[eid];
-            int tid = i;
-            edges.push_back(Tuple(vid, eid, fid, tid));
+            edges.push_back(Tuple::get_edge_tuple(*this, i, j));
+
+//            Tuple loc;
+//            int vid = m_tet_connectivity[i][local_edges[j][0]];
+//            int eid = j;
+//            int fid = map_edge2face[eid];
+//            int tid = i;
+//            edges.push_back(Tuple(vid, eid, fid, tid));
         }
     }
-    std::sort(edges.begin(), edges.end(), [&](const Tuple &a, const Tuple &b) {
-        return a.compare_edges(*this, b) < 0;
-    });
-    edges.erase(std::unique(edges.begin(), edges.end(), [&](const Tuple &a, const Tuple &b) {
-        return a.compare_edges(*this, b) == 0;
-    }), edges.end());
+    Tuple::unique_edge_tuples(*this, edges);
+//    std::sort(edges.begin(), edges.end(), [&](const Tuple &a, const Tuple &b) {
+//        return a.compare_edges(*this, b) < 0;
+//    });
+//    edges.erase(std::unique(edges.begin(), edges.end(), [&](const Tuple &a, const Tuple &b) {
+//        return a.compare_edges(*this, b) == 0;
+//    }), edges.end());
 
     cout << "edges.size() = " << edges.size() << endl;
 
@@ -86,7 +89,7 @@ void tetwild::TetWild::split_all_edges() {
         es_queue.pop();
 
         //check timestamp
-        if (loc.is_version_number_valid(*this))
+        if (!loc.is_version_number_valid(*this))
             continue;
 
         std::vector <Tuple> new_edges;
