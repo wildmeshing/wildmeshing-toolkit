@@ -5,6 +5,7 @@
 #include <wmtk/TetMesh.h>
 #include <wmtk/Logger.hpp>
 
+// DP: I do not understand the logic here
 int wmtk::TetMesh::find_next_empty_slot_t()
 {
 	for (int i = m_t_empty_slot; i < m_tet_connectivity.size(); i++)

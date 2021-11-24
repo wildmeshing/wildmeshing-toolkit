@@ -9,6 +9,7 @@ namespace tetwild
 {
 	class Envelope
 	{ // shall we make this virtual too as we have multiple options?
+	  // DP: I would like to get rid of the sampling, why are we keeping it?
 		double get_point_dist(const Vector3f &p);
 		double get_segment_dist(const Vector3f &p1, const Vector3f &p2);
 		double get_triangle_dist(const Vector3f &p1, const Vector3f &p2, const Vector3f &p3);
