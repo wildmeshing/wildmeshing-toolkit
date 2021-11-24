@@ -52,8 +52,13 @@ namespace wmtk
                 cout<<vid<<" "<<eid<<" "<<fid<<" "<<tid<<endl;
             }
 
-            int compare_edges(const TetMesh &m, const Tuple& loc2) const {
-                const auto& loc1 = *this;
+            static Tuple get_edge_tuple(const TetMesh &m, int _tid, int local_eid){
+                int _vid = m.m_tet_connectivity[_tid][m.local_edges[local_eid][0]];
+                int _fid = m.map_edge2face[local_eid];
+                return Tuple(_vid, local_eid, _fid, _tid);
+            }
+
+            static int compare_edges(const TetMesh &m, const Tuple& loc1, const Tuple& loc2) {
                 std::array<size_t, 2> e1 = {{m.m_tet_connectivity[loc1.tid][m.local_edges[loc1.eid][0]],
                                           m.m_tet_connectivity[loc1.tid][m.local_edges[loc1.eid][1]]}};
                 std::array<size_t, 2> e2 = {{m.m_tet_connectivity[loc2.tid][m.local_edges[loc2.eid][0]],
@@ -70,8 +75,7 @@ namespace wmtk
                     return 1;
             }
 
-            int compare_directed_edges(const TetMesh &m, const Tuple& loc2) const {
-                const auto& loc1 = *this;
+            static int compare_directed_edges(const TetMesh &m, const Tuple& loc1, const Tuple& loc2) {
                 std::array<size_t, 2> e1 = {{m.m_tet_connectivity[loc1.tid][m.local_edges[loc1.eid][0]],
                                              m.m_tet_connectivity[loc1.tid][m.local_edges[loc1.eid][1]]}};
                 std::array<size_t, 2> e2 = {{m.m_tet_connectivity[loc2.tid][m.local_edges[loc2.eid][0]],
@@ -82,6 +86,24 @@ namespace wmtk
                     return 0;
                 else
                     return 1;
+            }
+
+            static void unique_edge_tuples(const TetMesh &m, std::vector<Tuple>& edges){
+                std::sort(edges.begin(), edges.end(), [&](const Tuple &a, const Tuple &b) {
+                    return compare_edges(m, a, b) < 0;
+                });
+                edges.erase(std::unique(edges.begin(), edges.end(), [&](const Tuple &a, const Tuple &b) {
+                    return compare_edges(m, a, b) == 0;
+                }), edges.end());
+            }
+
+            static void unique_directed_edge_tuples(const TetMesh &m, std::vector<Tuple>& edges){
+                std::sort(edges.begin(), edges.end(), [&](const Tuple &a, const Tuple &b) {
+                    return compare_directed_edges(m, a, b) < 0;
+                });
+                edges.erase(std::unique(edges.begin(), edges.end(), [&](const Tuple &a, const Tuple &b) {
+                    return compare_directed_edges(m, a, b) == 0;
+                }), edges.end());
             }
 
 			Tuple(){}
