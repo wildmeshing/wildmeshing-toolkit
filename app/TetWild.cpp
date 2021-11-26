@@ -145,6 +145,130 @@ bool tetwild::TetWild::split_after(const std::vector<Tuple> &locs){//input: locs
     return true;
 }
 
+bool tetwild::TetWild::smooth_before(const Tuple &t) {
+	return true;
+}
+
+bool tetwild::TetWild::smooth_after(const std::vector<Tuple> &locs)
+{
+	// Newton iterations are encapsulated here.
+	// TODO: tags. envelope check.
+	using vec = Vector3f;
+	auto v_id = locs.front().get_vid();
+
+	std::vector<std::array<double, 12>> assembles(locs.size());
+    auto loc_id = 0;
+	for (auto &loc : locs)
+	{
+		auto &T = assembles[loc_id];
+		auto t_id = loc.get_tid();
+		assert(loc.get_vid() == v_id);
+		// if local traversal is required, v0 (EV) v1 (EV) v2 (FEV) v3
+		auto vl_id = m_tet_connectivity[t_id].find(v_id);
+
+		for (auto i = 0; i < 4; i++) // assuming cyclic orientation preservation.
+		{
+			for (auto j = 0; j < 3; i++)
+			{
+				T[i * 3 + j] = m_vertex_attribute[m_tet_connectivity[t_id][(vl_id + i) % 4]].m_posf[j];
+			}
+		}
+        loc_id ++;
+	}
+
+	// Compute New Coordinate.
+	auto newton_direction = [&assembles](auto &pos) {
+		auto total_energy = 0.;
+		auto total_jac = vec();
+		auto total_hess = Eigen::Matrix3d();
+
+		// E = \sum_i E_i(x)
+		// J = \sum_i J_i(x)
+		// H = \sum_i H_i(x)
+		auto local_id = 0;
+		for (auto &T : assembles)
+		{
+			for (auto j = 0; j < 3; j++)
+			{
+				T[j] = pos[j]; // only filling the front point.
+			}
+			auto jac = decltype(total_jac)();
+			auto hess = decltype(total_hess)();
+			total_energy += wmtk::AMIPS_energy(T);
+			wmtk::AMIPS_jacobian(T, jac);
+			wmtk::AMIPS_hessian(T, hess);
+            total_jac += jac;
+            total_hess += hess;
+			assert(!std::isnan(total_energy));
+		}
+
+		vec x = total_hess.ldlt().solve(total_jac);
+		if (total_jac.isApprox(total_hess * x)) // a hacky PSD trick. TODO: change this.
+			return -x;
+		else
+			return -total_jac;
+	};
+	auto compute_energy = [&assembles](const vec &pos) -> double {
+		auto total_energy = 0.;
+		for (auto &T : assembles)
+		{
+			for (auto j = 0; j < 3; j++)
+			{
+				T[j] = pos[j]; // only filling the front point x,y,z.
+			}
+			total_energy += wmtk::AMIPS_energy(T);
+		}
+		return total_energy;
+	};
+    auto linesearch = [&compute_energy](const vec &pos, const vec &dir, const int &max_iter) {
+		auto lr = 0.8;
+		auto old_energy = compute_energy(pos);
+		for (auto iter = 1; iter <= max_iter; iter++)
+		{
+			vec newpos = pos + std::pow(lr, iter) * dir;
+			if (compute_energy(newpos) < old_energy)
+				return newpos; // TODO: armijo conditions.
+		}
+		return pos;
+	};
+	auto compute_new_valid_pos = [&linesearch, &newton_direction](const vec &old_pos) {
+		auto current_pos = old_pos;
+		auto line_search_iters = 12;
+		auto newton_iters = 10;
+		for (auto iter = 0; iter < newton_iters; iter++)
+		{
+			auto dir = newton_direction(current_pos);
+			auto newpos = linesearch(current_pos, dir, line_search_iters);
+			if ((newpos - current_pos).norm() < 1e-9) // barely moves
+			{
+				break;
+			}
+			current_pos = newpos;
+		}
+		return current_pos;
+	};
+
+	auto old_pos = m_vertex_attribute[v_id].m_posf;
+	m_vertex_attribute[v_id].m_posf = compute_new_valid_pos(old_pos);
+
+	// note: duplicate code snippets.
+	for (auto &loc : locs)
+	{
+		auto t_id = loc.get_tid();
+		if (is_inverted(t_id))
+		{
+			m_vertex_attribute[v_id].m_posf = old_pos;
+			return false;
+		}
+	}
+	for (auto &loc : locs)
+	{
+		size_t t_id = loc.get_tid();
+		m_tet_attribute[t_id].m_qualities = get_quality(t_id);
+	}
+	return true;
+}
+
 void tetwild::TetWild::output_mesh(std::string file) {
     PyMesh::MshSaver mSaver(file, true);
 
