@@ -9,8 +9,10 @@
 
 #include <igl/predicates/predicates.h>
 
-bool tetwild::TetWild::is_inverted(size_t t_id)
+bool tetwild::TetWild::is_inverted(const Tuple &loc)
 {
+    size_t t_id = loc.get_tid();//todo: remove
+
 	auto &p1 = m_vertex_attribute[m_tet_connectivity[t_id][0]].m_posf;
 	auto &p2 = m_vertex_attribute[m_tet_connectivity[t_id][1]].m_posf;
 	auto &p3 = m_vertex_attribute[m_tet_connectivity[t_id][2]].m_posf;
@@ -31,9 +33,11 @@ bool tetwild::TetWild::is_inverted(size_t t_id)
 	return false;
 }
 
-double tetwild::TetWild::get_quality(size_t t_id)
+double tetwild::TetWild::get_quality(const Tuple &loc)
 {
-	std::array<double, 12> T;
+    size_t t_id = loc.get_tid();//todo: remove
+
+    std::array<double, 12> T;
 	for (int i = 0; i < 4; i++)
 	{
 		for (int j = 0; j < 3; j++) {
@@ -129,8 +133,7 @@ bool tetwild::TetWild::split_after(const std::vector<Tuple> &locs){//input: locs
 
     // check inversion
     for (auto &loc: locs) {
-        size_t t_id = loc.get_tid();
-        if (is_inverted(t_id)) {
+        if (is_inverted(loc)) {
             m_vertex_attribute[v_id].m_posf = old_pos;
             return false;
         }
@@ -138,14 +141,14 @@ bool tetwild::TetWild::split_after(const std::vector<Tuple> &locs){//input: locs
 
     // update quality
     for (auto &loc: locs) {
-        size_t t_id = loc.get_tid();
-        m_tet_attribute[t_id].m_qualities = get_quality(t_id);
+        m_tet_attribute[loc.get_tid()].m_qualities = get_quality(loc);
     }
 
     return true;
 }
 
-bool tetwild::TetWild::smooth_before(const Tuple &t) {
+bool tetwild::TetWild::smooth_before(const Tuple &t)
+{
 	return true;
 }
 
@@ -157,7 +160,7 @@ bool tetwild::TetWild::smooth_after(const std::vector<Tuple> &locs)
 	auto v_id = locs.front().get_vid();
 
 	std::vector<std::array<double, 12>> assembles(locs.size());
-    auto loc_id = 0;
+	auto loc_id = 0;
 	for (auto &loc : locs)
 	{
 		auto &T = assembles[loc_id];
@@ -173,7 +176,7 @@ bool tetwild::TetWild::smooth_after(const std::vector<Tuple> &locs)
 				T[i * 3 + j] = m_vertex_attribute[m_tet_connectivity[t_id][(vl_id + i) % 4]].m_posf[j];
 			}
 		}
-        loc_id ++;
+		loc_id++;
 	}
 
 	// Compute New Coordinate.
@@ -197,8 +200,8 @@ bool tetwild::TetWild::smooth_after(const std::vector<Tuple> &locs)
 			total_energy += wmtk::AMIPS_energy(T);
 			wmtk::AMIPS_jacobian(T, jac);
 			wmtk::AMIPS_hessian(T, hess);
-            total_jac += jac;
-            total_hess += hess;
+			total_jac += jac;
+			total_hess += hess;
 			assert(!std::isnan(total_energy));
 		}
 
@@ -220,7 +223,7 @@ bool tetwild::TetWild::smooth_after(const std::vector<Tuple> &locs)
 		}
 		return total_energy;
 	};
-    auto linesearch = [&compute_energy](const vec &pos, const vec &dir, const int &max_iter) {
+	auto linesearch = [&compute_energy](const vec &pos, const vec &dir, const int &max_iter) {
 		auto lr = 0.8;
 		auto old_energy = compute_energy(pos);
 		for (auto iter = 1; iter <= max_iter; iter++)
@@ -254,8 +257,7 @@ bool tetwild::TetWild::smooth_after(const std::vector<Tuple> &locs)
 	// note: duplicate code snippets.
 	for (auto &loc : locs)
 	{
-		auto t_id = loc.get_tid();
-		if (is_inverted(t_id))
+		if (is_inverted(loc))
 		{
 			m_vertex_attribute[v_id].m_posf = old_pos;
 			return false;
@@ -263,8 +265,8 @@ bool tetwild::TetWild::smooth_after(const std::vector<Tuple> &locs)
 	}
 	for (auto &loc : locs)
 	{
-		size_t t_id = loc.get_tid();
-		m_tet_attribute[t_id].m_qualities = get_quality(t_id);
+		auto t_id = loc.get_tid();
+		m_tet_attribute[t_id].m_qualities = get_quality(loc);
 	}
 	return true;
 }

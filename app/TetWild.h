@@ -120,8 +120,8 @@ namespace tetwild
 		bool smooth_before(const Tuple &t);
 		bool smooth_after(const std::vector<Tuple> &locs);
 
-		bool is_inverted(size_t t_id);
-		double get_quality(size_t t_id);
+		bool is_inverted(const Tuple &loc);
+		double get_quality(const Tuple &loc);
 	};
 
     class ElementInQueue{
