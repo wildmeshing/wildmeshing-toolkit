@@ -9,8 +9,10 @@
 
 #include <igl/predicates/predicates.h>
 
-bool tetwild::TetWild::is_inverted(size_t t_id)
+bool tetwild::TetWild::is_inverted(const Tuple &loc)
 {
+    size_t t_id = loc.get_tid();//todo: remove
+
 	auto &p1 = m_vertex_attribute[m_tet_connectivity[t_id][0]].m_posf;
 	auto &p2 = m_vertex_attribute[m_tet_connectivity[t_id][1]].m_posf;
 	auto &p3 = m_vertex_attribute[m_tet_connectivity[t_id][2]].m_posf;
@@ -31,9 +33,11 @@ bool tetwild::TetWild::is_inverted(size_t t_id)
 	return false;
 }
 
-double tetwild::TetWild::get_quality(size_t t_id)
+double tetwild::TetWild::get_quality(const Tuple &loc)
 {
-	std::array<double, 12> T;
+    size_t t_id = loc.get_tid();//todo: remove
+
+    std::array<double, 12> T;
 	for (int i = 0; i < 4; i++)
 	{
 		for (int j = 0; j < 3; j++) {
@@ -129,8 +133,7 @@ bool tetwild::TetWild::split_after(const std::vector<Tuple> &locs){//input: locs
 
     // check inversion
     for (auto &loc: locs) {
-        size_t t_id = loc.get_tid();
-        if (is_inverted(t_id)) {
+        if (is_inverted(loc)) {
             m_vertex_attribute[v_id].m_posf = old_pos;
             return false;
         }
@@ -138,8 +141,7 @@ bool tetwild::TetWild::split_after(const std::vector<Tuple> &locs){//input: locs
 
     // update quality
     for (auto &loc: locs) {
-        size_t t_id = loc.get_tid();
-        m_tet_attribute[t_id].m_qualities = get_quality(t_id);
+        m_tet_attribute[loc.get_tid()].m_qualities = get_quality(loc);
     }
 
     return true;

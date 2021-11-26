@@ -118,8 +118,8 @@ namespace tetwild
         bool split_before(const Tuple &t) override;
 		bool split_after(const std::vector<Tuple> &locs) override;
 
-		bool is_inverted(size_t t_id);
-		double get_quality(size_t t_id);
+		bool is_inverted(const Tuple &loc);
+		double get_quality(const Tuple &loc);
 	};
 
     class ElementInQueue{
