@@ -8,7 +8,7 @@ using namespace wmtk;
 TEST_CASE("test_get_edges", "[test_tuple]")
 {
 	TetMesh mesh;
-	mesh.init(4, {{0, 1, 2, 3}});
+	mesh.init(4, {{{0, 1, 2, 3}}});
 	const auto edges = mesh.get_edges();
 
 	REQUIRE(edges.size() == 4);
@@ -17,7 +17,7 @@ TEST_CASE("test_get_edges", "[test_tuple]")
 TEST_CASE("swith_vertex", "[test_tuple]")
 {
 	TetMesh mesh;
-	mesh.init(4, {{0, 1, 2, 3}});
+	mesh.init(4, {{{0, 1, 2, 3}}});
 	const auto tuple = mesh.tuple_from_edge(0, 0);
 	REQUIRE(tuple.vid() == 0);
 

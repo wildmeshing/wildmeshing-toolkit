@@ -152,14 +152,14 @@ namespace wmtk
 		{
 			for (int j = 0; j < 6; j++)
 			{
-				new_edges.push_back(Tuple::init_from_edge(*this, t_id, j));
+				new_edges.push_back(tuple_from_edge(t_id, j));
 			}
 		}
 		for (size_t t_id : new_t_ids)
 		{
 			for (int j = 0; j < 6; j++)
 			{
-				new_edges.push_back(Tuple::init_from_edge(*this, t_id, j));
+				new_edges.push_back(tuple_from_edge(t_id, j));
 			}
 		}
 		unique_edge_tuples(*this, new_edges);
@@ -189,7 +189,7 @@ namespace wmtk
 		{
 			for (int j = 0; j < 6; j++)
 			{
-				edges.push_back(Tuple::init_from_edge(*this, i, j));
+				edges.push_back(tuple_from_edge(i, j));
 
 				//            Tuple loc;
 				//            int vid = m_tet_connectivity[i][local_edges[j][0]];
