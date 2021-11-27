@@ -61,9 +61,10 @@ namespace tetwild
 		Parameters &m_params;
 		Envelope &m_envelope;
 
-		TetWild(Parameters &_m_params, Envelope &_m_envelope) : m_params(_m_params), m_envelope(_m_envelope) {
-            m_params.init();
-        }
+		TetWild(Parameters &_m_params, Envelope &_m_envelope) : m_params(_m_params), m_envelope(_m_envelope)
+		{
+			m_params.init();
+		}
 
 		~TetWild() {}
 
@@ -90,59 +91,65 @@ namespace tetwild
 
 		void smoothing(const Tuple &t);
 
-        void output_mesh(std::string file);
+		void output_mesh(std::string file);
 
 		// all the other functions
-//		inline void test()
-//		{
-//			std::shared_ptr<InfoCacheSplit> info0 = std::make_shared<InfoCacheSplit>();
-//			std::shared_ptr<InfoCacheSplit> info = std::make_shared<InfoCacheSplit>();
-//			info->mid_p = Vector3f(1, 2, 3);
-//			info0 = info;
-//
-//			auto testtest = [](std::shared_ptr<InfoCacheSplit> info1)
-//			{
-//				std::shared_ptr<InfoCacheSplit> info2 = std::dynamic_pointer_cast<InfoCacheSplit>(info1);
-//				cout << info2->mid_p << endl;
-//			};
-//
-//			testtest(info0);
-//		}
+		//		inline void test()
+		//		{
+		//			std::shared_ptr<InfoCacheSplit> info0 = std::make_shared<InfoCacheSplit>();
+		//			std::shared_ptr<InfoCacheSplit> info = std::make_shared<InfoCacheSplit>();
+		//			info->mid_p = Vector3f(1, 2, 3);
+		//			info0 = info;
+		//
+		//			auto testtest = [](std::shared_ptr<InfoCacheSplit> info1)
+		//			{
+		//				std::shared_ptr<InfoCacheSplit> info2 = std::dynamic_pointer_cast<InfoCacheSplit>(info1);
+		//				cout << info2->mid_p << endl;
+		//			};
+		//
+		//			testtest(info0);
+		//		}
 
-//	protected:
-        struct SplitInfoCache{
-            VertexAttributes vertex_info;
-        } split_cache;//todo: change for parallel
+		//	protected:
+		struct SplitInfoCache
+		{
+			VertexAttributes vertex_info;
+		} split_cache; // todo: change for parallel
 
-        void split_all_edges();
-        bool split_before(const Tuple &t) override;
+		void split_all_edges();
+		bool split_before(const Tuple &t) override;
 		bool split_after(const std::vector<Tuple> &locs) override;
 
 		bool is_inverted(const Tuple &loc);
 		double get_quality(const Tuple &loc);
 	};
 
-    class ElementInQueue{
-    public:
-        wmtk::TetMesh::Tuple edge;
-        double weight;
+	class ElementInQueue
+	{
+	public:
+		wmtk::TetMesh::Tuple edge;
+		double weight;
 
-        ElementInQueue(){}
-        ElementInQueue(const wmtk::TetMesh::Tuple& e, double w): edge(e), weight(w){}
-    };
-    struct cmp_l {
-        bool operator()(const ElementInQueue &e1, const ElementInQueue &e2) {
-            if (e1.weight == e2.weight)
-                return e1.edge.get_vid() > e2.edge.get_vid();
-            return e1.weight < e2.weight;
-        }
-    };
-    struct cmp_s {
-        bool operator()(const ElementInQueue &e1, const ElementInQueue &e2) {
-            if (e1.weight == e2.weight)
-                return e1.edge.get_vid() < e2.edge.get_vid();
-            return e1.weight > e2.weight;
-        }
-    };
+		ElementInQueue() {}
+		ElementInQueue(const wmtk::TetMesh::Tuple &e, double w) : edge(e), weight(w) {}
+	};
+	struct cmp_l
+	{
+		bool operator()(const ElementInQueue &e1, const ElementInQueue &e2)
+		{
+			if (e1.weight == e2.weight)
+				return e1.edge.vid() > e2.edge.vid();
+			return e1.weight < e2.weight;
+		}
+	};
+	struct cmp_s
+	{
+		bool operator()(const ElementInQueue &e1, const ElementInQueue &e2)
+		{
+			if (e1.weight == e2.weight)
+				return e1.edge.vid() < e2.edge.vid();
+			return e1.weight > e2.weight;
+		}
+	};
 
 } // namespace tetwild

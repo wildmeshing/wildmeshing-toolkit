@@ -5,6 +5,9 @@ set(SOURCES
 	DisableWarnings.hpp
 	EnableWarnings.hpp
 
+	TupleUtils.cpp
+	TupleUtils.hpp
+
 	VectorUtils.h
 
 )
