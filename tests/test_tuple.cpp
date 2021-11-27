@@ -18,7 +18,7 @@ TEST_CASE("swith_vertex", "[test_tuple]")
 {
 	TetMesh mesh;
 	mesh.init(4, {{0, 1, 2, 3}});
-	const auto tuple = TetMesh::Tuple::init_from_edge(mesh, 0, 0);
+	const auto tuple = mesh.tuple_from_edge(0, 0);
 	REQUIRE(tuple.vid() == 0);
 
 	const auto t1 = mesh.switch_vertex(tuple);

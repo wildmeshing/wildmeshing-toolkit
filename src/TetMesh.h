@@ -258,6 +258,8 @@ namespace wmtk
 		inline Tuple switch_edge(const Tuple &t) const { return t.switch_edge(*this); }
 		inline Tuple switch_face(const Tuple &t) const { return t.switch_face(*this); }
 		inline Tuple switch_tetrahedron(const Tuple &t) const { return t.switch_tetrahedron(*this); }
+
+		inline Tuple tuple_from_edge(int tid, int local_eid) const { return Tuple::init_from_edge(*this, tid, local_eid); }
 	};
 
 } // namespace wmtk
