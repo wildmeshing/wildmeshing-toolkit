@@ -5,6 +5,7 @@
 set(test_sources
 	main.cpp
 
+	test_tuple.cpp
 	test_operations.cpp
 )
 

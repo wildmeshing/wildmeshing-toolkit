@@ -107,6 +107,9 @@ add_library(${PROJECT_NAME} #SOURCES)
 		TetWild.cpp
 		TetWild.h
 
+		Logger.cpp
+		Logger.hpp
+
 		common.h
 		Parameters.h
 		Envelope.h
@@ -138,7 +141,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC igl::predicates WildMeshingToolkit
 # endif()
 
 ####
-message(STATUS "hehehehehehe ${FLOAT_TETWILD_TOPLEVEL_PROJECT}")
 
 if(FLOAT_TETWILD_TOPLEVEL_PROJECT)
 	add_executable(${PROJECT_NAME}_bin main.cpp)
