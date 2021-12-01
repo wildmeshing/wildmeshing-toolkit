@@ -182,6 +182,35 @@ namespace wmtk
 		return true;
 	}
 
+	bool TetMesh::smooth_vertex(const Tuple &loc0)
+	{
+		if (!smooth_before(loc0)) return false;
+		if (!smooth_after(loc0)) return false;
+		auto new_t_ids =	m_vertex_connectivity[loc0.vid()];
+
+		std::vector<Tuple> new_edges;
+		for (size_t t_id : new_t_ids)
+			{
+				for (int j = 0; j < 6; j++)
+				{
+					new_edges.push_back(tuple_from_edge(t_id, j));
+				}
+			}
+			unique_edge_tuples(*this, new_edges);
+
+
+		/// update timestamps
+		m_timestamp++; // todo: thread
+		for (size_t t_id : n12_t_ids)
+			m_tet_connectivity[t_id].set_version_number(m_timestamp);
+		for (size_t t_id : new_t_ids)
+			m_tet_connectivity[t_id].set_version_number(m_timestamp);
+		for (auto &new_loc : new_edges) // update edge timestamp from tets
+			new_loc.update_version_number(*this);
+
+		return true;
+	}
+
 	std::vector<TetMesh::Tuple> TetMesh::get_edges() const
 	{
 		std::vector<TetMesh::Tuple> edges;

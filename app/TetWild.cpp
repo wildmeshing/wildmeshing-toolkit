@@ -158,20 +158,22 @@ bool tetwild::TetWild::smooth_before(const Tuple &t)
 	return true;
 }
 
-bool tetwild::TetWild::smooth_after(const std::vector<Tuple> &locs)
+bool tetwild::TetWild::smooth_after(const Tuple &t)
 {
 	// Newton iterations are encapsulated here.
 	// TODO: tags. envelope check.
 	using vec = Vector3f;
-	auto v_id = locs.front().get_vid();
+	auto v_id = t.vid();
+
+	auto locs = t.get_conn_tets()
 
 	std::vector<std::array<double, 12>> assembles(locs.size());
 	auto loc_id = 0;
 	for (auto &loc : locs)
 	{
 		auto &T = assembles[loc_id];
-		auto t_id = loc.get_tid();
-		assert(loc.get_vid() == v_id);
+		auto t_id = loc.tid();
+		assert(loc.vid() == v_id);
 		// if local traversal is required, v0 (EV) v1 (EV) v2 (FEV) v3
 		auto vl_id = m_tet_connectivity[t_id].find(v_id);
 
@@ -271,7 +273,7 @@ bool tetwild::TetWild::smooth_after(const std::vector<Tuple> &locs)
 	}
 	for (auto &loc : locs)
 	{
-		auto t_id = loc.get_tid();
+		auto t_id = loc.tid();
 		m_tet_attribute[t_id].m_qualities = get_quality(loc);
 	}
 	return true;

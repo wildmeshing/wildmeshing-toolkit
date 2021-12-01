@@ -196,6 +196,8 @@ namespace wmtk
 		bool split_edge(const Tuple &t, std::vector<Tuple> &new_edges);
 		void collapse_edge(const Tuple &t);
 		void swap_edge(const Tuple &t, int type);
+		bool smooth_vertex(const Tuple &);
+
 
 		void compact(); // cleans up the deleted vertices or tetrahedra, and fixes the corresponding indices
 
@@ -230,6 +232,9 @@ namespace wmtk
 		// This function computes the attributes for the added simplices
 		// if it returns false then the operation is undone
 		virtual bool split_after(const std::vector<Tuple> &locs) { return true; } // check tet condition
+
+		virtual bool smooth_before(const Tuple &t) { return true; } 
+		virtual bool smooth_after(const Tuple &t) { return true; } 
 
 		//        //// Collapse the edge in the tuple
 		//        // Checks if the collapse should be performed or not (user controlled)
