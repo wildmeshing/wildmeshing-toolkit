@@ -166,24 +166,27 @@ TEST_CASE("Delaunay3D", "[delaunay][3d]")
 		REQUIRE(tets.size() == 12);
 		validate(vertices, tets);
 	}
-    SECTION("Regular grid")
-    {
-        constexpr size_t N = 10;
-        std::vector<Point3D> points;
-        points.reserve(N * N * N);
-        for (size_t i=0; i<N; i++) {
-            for (size_t j=0; j<N; j++) {
-                for (size_t k=0; k<N; k++) {
-                    double x = i;
-                    double y = j;
-                    double z = k;
-                    points.push_back({x, y, z});
-                }
-            }
-        }
+	SECTION("Regular grid")
+	{
+		constexpr size_t N = 10;
+		std::vector<Point3D> points;
+		points.reserve(N * N * N);
+		for (size_t i = 0; i < N; i++)
+		{
+			for (size_t j = 0; j < N; j++)
+			{
+				for (size_t k = 0; k < N; k++)
+				{
+					double x = i;
+					double y = j;
+					double z = k;
+					points.push_back({x, y, z});
+				}
+			}
+		}
 		auto [vertices, tets] = delaunay3D(points);
 		REQUIRE(vertices.size() == N * N * N);
-		REQUIRE(tets.size() == (N-1) * (N-1) * (N-1) * 6);
+		REQUIRE(tets.size() == (N - 1) * (N - 1) * (N - 1) * 6);
 		validate(vertices, tets);
-    }
+	}
 }
