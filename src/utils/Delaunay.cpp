@@ -1,5 +1,5 @@
 #include "Delaunay.hpp"
-#include "Delaunay/Delaunay_psm.h"
+#include <Delaunay_psm.h>
 
 #include <mutex>
 

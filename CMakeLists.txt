@@ -100,7 +100,8 @@ if(WILDMESHING_TOOLKIT_WITH_SANITIZERS)
 endif()
 
 
-target_link_libraries(${PROJECT_NAME} PUBLIC spdlog::spdlog igl::core)
+target_link_libraries(${PROJECT_NAME} PUBLIC spdlog::spdlog igl::core
+    geogram::delaunay_psm)
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_BINARY_DIR}/include)
 
 

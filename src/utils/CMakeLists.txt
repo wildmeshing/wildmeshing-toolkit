@@ -4,8 +4,6 @@ set(SOURCES
 
     Delaunay.cpp
     Delaunay.hpp
-    Delaunay/Delaunay_psm.cpp
-    Delaunay/Delaunay_psm.h
 
 	DisableWarnings.hpp
 	EnableWarnings.hpp
