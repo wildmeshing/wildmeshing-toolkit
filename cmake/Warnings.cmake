@@ -1,6 +1,4 @@
 ################################################################################
-cmake_minimum_required(VERSION 2.6.3)
-################################################################################
 # See comments and discussions here:
 # http://stackoverflow.com/questions/5088460/flags-to-enable-thorough-and-verbose-g-warnings
 ################################################################################

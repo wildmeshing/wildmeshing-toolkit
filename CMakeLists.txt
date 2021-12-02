@@ -1,7 +1,3 @@
-################################################################################
-project(WildMeshingToolkit DESCRIPTION "A mesh optimization toolkit")
-################################################################################
-
 # Detects whether this is a top-level project
 get_directory_property(HAS_PARENT PARENT_DIRECTORY)
 if(HAS_PARENT)
@@ -26,6 +22,11 @@ else()
         message(FATAL_ERROR "CMake required version to build the toolkit is ${REQUIRED_CMAKE_VERSION}")
     endif()
 endif()
+
+################################################################################
+project(WildMeshingToolkit DESCRIPTION "A mesh optimization toolkit")
+################################################################################
+
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/recipes/")

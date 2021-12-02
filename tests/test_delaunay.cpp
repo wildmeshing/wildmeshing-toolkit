@@ -48,10 +48,10 @@ TEST_CASE("Delaunay3D", "[delaunay][3d]")
 	SECTION("Simple")
 	{
 		std::vector<Point3D> points{
-			{0, 0, 0},
-			{1, 0, 0},
-			{0, 1, 0},
-			{0, 0, 1}};
+            {{0, 0, 0}},
+			{{1, 0, 0}},
+			{{0, 1, 0}},
+			{{0, 0, 1}}};
 
 		auto [vertices, tets] = delaunay3D(points);
 		REQUIRE(vertices.size() == 4);
@@ -61,9 +61,9 @@ TEST_CASE("Delaunay3D", "[delaunay][3d]")
 	SECTION("Insufficient points should not fail")
 	{
 		std::vector<Point3D> points{
-			{1, 0, 0},
-			{0, 1, 0},
-			{0, 0, 1}};
+            {{1, 0, 0}},
+			{{0, 1, 0}},
+			{{0, 0, 1}}};
 
 		auto [vertices, tets] = delaunay3D(points);
 		REQUIRE(tets.size() == 0);
@@ -72,10 +72,10 @@ TEST_CASE("Delaunay3D", "[delaunay][3d]")
 	SECTION("Coplanar pts")
 	{
 		std::vector<Point3D> points{
-			{0, 0, 0},
-			{1, 0, 0},
-			{0, 1, 0},
-			{0.5, 0.5, 0}};
+            {{0, 0, 0}},
+			{{1, 0, 0}},
+			{{0, 1, 0}},
+			{{0.5, 0.5, 0}}};
 
 		auto [vertices, tets] = delaunay3D(points);
 		REQUIRE(vertices.size() == 4);
@@ -85,12 +85,12 @@ TEST_CASE("Delaunay3D", "[delaunay][3d]")
 	SECTION("Duplicate pts")
 	{
 		std::vector<Point3D> points{
-			{0, 0, 0},
-			{1, 0, 0},
-			{0, 1, 0},
-			{0, 0, 1},
-			{0, 1, 0},
-			{0, 1, 0}};
+            {{0, 0, 0}},
+			{{1, 0, 0}},
+			{{0, 1, 0}},
+			{{0, 0, 1}},
+			{{0, 1, 0}},
+			{{0, 1, 0}}};
 
 		auto [vertices, tets] = delaunay3D(points);
 		REQUIRE(vertices.size() == 6); // duplicate pts are kept in the output.
@@ -100,12 +100,12 @@ TEST_CASE("Delaunay3D", "[delaunay][3d]")
 	SECTION("Triangle prism")
 	{
 		std::vector<Point3D> points{
-			{0, 0, 0},
-			{1, 0, 0},
-			{0, 1, 0},
-			{0, 0, 1},
-			{1, 0, 1},
-			{0, 1, 1}};
+            {{0, 0, 0}},
+			{{1, 0, 0}},
+			{{0, 1, 0}},
+			{{0, 0, 1}},
+			{{1, 0, 1}},
+			{{0, 1, 1}}};
 
 		auto [vertices, tets] = delaunay3D(points);
 		REQUIRE(vertices.size() == 6);
@@ -115,15 +115,15 @@ TEST_CASE("Delaunay3D", "[delaunay][3d]")
 	SECTION("Cube with centroid")
 	{
 		std::vector<Point3D> points{
-			{0, 0, 0},
-			{1, 0, 0},
-			{1, 1, 0},
-			{0, 1, 0},
-			{0, 0, 1},
-			{1, 0, 1},
-			{1, 1, 1},
-			{0, 1, 1},
-			{0.5, 0.5, 0.5}};
+            {{0, 0, 0}},
+			{{1, 0, 0}},
+			{{1, 1, 0}},
+			{{0, 1, 0}},
+			{{0, 0, 1}},
+			{{1, 0, 1}},
+			{{1, 1, 1}},
+			{{0, 1, 1}},
+			{{0.5, 0.5, 0.5}}};
 
 		auto [vertices, tets] = delaunay3D(points);
 		REQUIRE(vertices.size() == 9);
@@ -133,15 +133,15 @@ TEST_CASE("Delaunay3D", "[delaunay][3d]")
 	SECTION("Cube with face center")
 	{
 		std::vector<Point3D> points{
-			{0, 0, 0},
-			{1, 0, 0},
-			{1, 1, 0},
-			{0, 1, 0},
-			{0, 0, 1},
-			{1, 0, 1},
-			{1, 1, 1},
-			{0, 1, 1},
-			{0.5, 0.5, 0}};
+            {{0, 0, 0}},
+			{{1, 0, 0}},
+			{{1, 1, 0}},
+			{{0, 1, 0}},
+			{{0, 0, 1}},
+			{{1, 0, 1}},
+			{{1, 1, 1}},
+			{{0, 1, 1}},
+			{{0.5, 0.5, 0}}};
 
 		auto [vertices, tets] = delaunay3D(points);
 		REQUIRE(vertices.size() == 9);
@@ -151,15 +151,15 @@ TEST_CASE("Delaunay3D", "[delaunay][3d]")
 	SECTION("Cube with point near face")
 	{
 		std::vector<Point3D> points{
-			{0, 0, 0},
-			{1, 0, 0},
-			{1, 1, 0},
-			{0, 1, 0},
-			{0, 0, 1},
-			{1, 0, 1},
-			{1, 1, 1},
-			{0, 1, 1},
-			{0.5, 0.5, 1e-12}};
+            {{0, 0, 0}},
+			{{1, 0, 0}},
+			{{1, 1, 0}},
+			{{0, 1, 0}},
+			{{0, 0, 1}},
+			{{1, 0, 1}},
+			{{1, 1, 1}},
+			{{0, 1, 1}},
+			{{0.5, 0.5, 1e-12}}};
 
 		auto [vertices, tets] = delaunay3D(points);
 		REQUIRE(vertices.size() == 9);
