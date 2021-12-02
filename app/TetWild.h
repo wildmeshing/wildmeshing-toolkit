@@ -120,8 +120,8 @@ namespace tetwild
 		bool split_before(const Tuple &t) override;
 		bool split_after(const std::vector<Tuple> &locs) override;
 		void smooth_all_vertices();
-		bool smooth_before(const Tuple &t);
-		bool smooth_after(const Tuple &t);
+		bool smooth_before(const Tuple &t) override;
+		bool smooth_after(const Tuple &t) override;
 
 		bool is_inverted(const Tuple &loc);
 		double get_quality(const Tuple &loc);

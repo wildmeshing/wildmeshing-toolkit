@@ -184,20 +184,21 @@ namespace wmtk
 
 	bool TetMesh::smooth_vertex(const Tuple &loc0)
 	{
-		if (!smooth_before(loc0)) return false;
-		if (!smooth_after(loc0)) return false;
-		auto new_t_ids =	m_vertex_connectivity[loc0.vid()];
+		if (!smooth_before(loc0))
+			return false;
+		if (!smooth_after(loc0))
+			return false;
+		auto new_t_ids = m_vertex_connectivity[loc0.vid()];
 
 		std::vector<Tuple> new_edges;
 		for (size_t t_id : new_t_ids)
+		{
+			for (int j = 0; j < 6; j++)
 			{
-				for (int j = 0; j < 6; j++)
-				{
-					new_edges.push_back(tuple_from_edge(t_id, j));
-				}
+				new_edges.push_back(tuple_from_edge(t_id, j));
 			}
-			unique_edge_tuples(*this, new_edges);
-
+		}
+		unique_edge_tuples(*this, new_edges);
 
 		/// update timestamps
 		m_timestamp++; // todo: thread
@@ -231,6 +232,24 @@ namespace wmtk
 
 		unique_edge_tuples(*this, edges);
 
+		return edges;
+	}
+
+	std::vector<TetMesh::Tuple> TetMesh::get_vertices() const
+	{
+		std::vector<TetMesh::Tuple> edges;
+		for (auto i=0; i<m_vertex_connectivity.size(); i++) {
+			auto &vc = m_vertex_connectivity[i];
+			if (vc.m_is_removed) continue;
+			assert(!vc.m_conn_tets.empty());
+			auto tid = vc[0];
+			auto local_vid = m_tet_connectivity[tid].find(i);
+
+			// note: the following conversion of local_vid-eid is dependent on the specifics of m_local_edges 
+			edges.emplace_back(tuple_from_edge(tid, local_vid));
+			if (local_vid == 3) edges.back() = switch_vertex(edges.back());
+			assert(edges.back().vid() == i);
+		}
 		return edges;
 	}
 

@@ -209,6 +209,7 @@ namespace wmtk
 		}
 
 		std::vector<Tuple> get_edges() const;
+		std::vector<Tuple> get_vertices() const;
 
 		inline size_t n_tets() const { return m_tet_connectivity.size(); }
 		inline size_t v_id(int tid, int lvid) const { return m_tet_connectivity[tid][lvid]; }

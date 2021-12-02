@@ -153,6 +153,19 @@ bool tetwild::TetWild::split_after(const std::vector<Tuple> &locs)
 	return true;
 }
 
+void tetwild::TetWild::smooth_all_vertices()
+{
+	reset_timestamp();
+
+	auto tuples = get_vertices();
+	auto cnt_suc = 0;
+	for (auto t : tuples)
+	{ // TODO: threads
+		if (smooth_vertex(t))
+			cnt_suc++;
+	}
+}
+
 bool tetwild::TetWild::smooth_before(const Tuple &t)
 {
 	return true;
@@ -165,9 +178,10 @@ bool tetwild::TetWild::smooth_after(const Tuple &t)
 	using vec = Vector3f;
 	auto v_id = t.vid();
 
-	auto locs = t.get_conn_tets()
+	auto locs = t.get_conn_tets();
 
-	std::vector<std::array<double, 12>> assembles(locs.size());
+	std::vector<std::array<double, 12>>
+		assembles(locs.size());
 	auto loc_id = 0;
 	for (auto &loc : locs)
 	{
@@ -278,7 +292,6 @@ bool tetwild::TetWild::smooth_after(const Tuple &t)
 	}
 	return true;
 }
-
 
 void tetwild::TetWild::output_mesh(std::string file)
 {
