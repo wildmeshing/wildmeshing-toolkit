@@ -180,7 +180,7 @@ TEST_CASE("Delaunay3D", "[delaunay][3d]")
 					double x = i;
 					double y = j;
 					double z = k;
-					points.push_back({x, y, z});
+					points.push_back({{x, y, z}});
 				}
 			}
 		}
