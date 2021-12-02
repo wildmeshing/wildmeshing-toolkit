@@ -188,7 +188,7 @@ namespace wmtk
 			return false;
 		if (!smooth_after(loc0))
 			return false;
-		auto new_t_ids = m_vertex_connectivity[loc0.vid()];
+		auto new_t_ids = m_vertex_connectivity[loc0.vid()].m_conn_tets;
 
 		std::vector<Tuple> new_edges;
 		for (size_t t_id : new_t_ids)
@@ -202,8 +202,6 @@ namespace wmtk
 
 		/// update timestamps
 		m_timestamp++; // todo: thread
-		for (size_t t_id : n12_t_ids)
-			m_tet_connectivity[t_id].set_version_number(m_timestamp);
 		for (size_t t_id : new_t_ids)
 			m_tet_connectivity[t_id].set_version_number(m_timestamp);
 		for (auto &new_loc : new_edges) // update edge timestamp from tets

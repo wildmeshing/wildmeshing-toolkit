@@ -176,9 +176,9 @@ bool tetwild::TetWild::smooth_after(const Tuple &t)
 	// Newton iterations are encapsulated here.
 	// TODO: tags. envelope check.
 	using vec = Vector3f;
-	auto v_id = t.vid();
+	auto vid = t.vid();
 
-	auto locs = t.get_conn_tets();
+	auto locs = t.get_conn_tets(*this);
 
 	std::vector<std::array<double, 12>>
 		assembles(locs.size());
@@ -187,15 +187,23 @@ bool tetwild::TetWild::smooth_after(const Tuple &t)
 	{
 		auto &T = assembles[loc_id];
 		auto t_id = loc.tid();
-		assert(loc.vid() == v_id);
+		assert(loc.vid() == vid);
 		// if local traversal is required, v0 (EV) v1 (EV) v2 (FEV) v3
-		auto vl_id = m_tet_connectivity[t_id].find(v_id);
+		auto vl_id = [this, vid, t_id]() {
+			for (auto i = 0; i < 4; i++)
+			{
+				if (this->v_id(t_id, i) == vid)
+					return i;
+			}
+			assert(false);
+			return -1;
+		}();
 
 		for (auto i = 0; i < 4; i++) // assuming cyclic orientation preservation.
 		{
 			for (auto j = 0; j < 3; i++)
 			{
-				T[i * 3 + j] = m_vertex_attribute[m_tet_connectivity[t_id][(vl_id + i) % 4]].m_posf[j];
+				T[i * 3 + j] = m_vertex_attribute[v_id(t_id, (vl_id + i) % 4)].m_posf[j];
 			}
 		}
 		loc_id++;
@@ -273,15 +281,15 @@ bool tetwild::TetWild::smooth_after(const Tuple &t)
 		return current_pos;
 	};
 
-	auto old_pos = m_vertex_attribute[v_id].m_posf;
-	m_vertex_attribute[v_id].m_posf = compute_new_valid_pos(old_pos);
+	auto old_pos = m_vertex_attribute[vid].m_posf;
+	m_vertex_attribute[vid].m_posf = compute_new_valid_pos(old_pos);
 
 	// note: duplicate code snippets.
 	for (auto &loc : locs)
 	{
 		if (is_inverted(loc))
 		{
-			m_vertex_attribute[v_id].m_posf = old_pos;
+			m_vertex_attribute[vid].m_posf = old_pos;
 			return false;
 		}
 	}
