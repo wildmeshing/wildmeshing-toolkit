@@ -93,23 +93,6 @@ namespace tetwild
 
 		void output_mesh(std::string file);
 
-		// all the other functions
-		//		inline void test()
-		//		{
-		//			std::shared_ptr<InfoCacheSplit> info0 = std::make_shared<InfoCacheSplit>();
-		//			std::shared_ptr<InfoCacheSplit> info = std::make_shared<InfoCacheSplit>();
-		//			info->mid_p = Vector3f(1, 2, 3);
-		//			info0 = info;
-		//
-		//			auto testtest = [](std::shared_ptr<InfoCacheSplit> info1)
-		//			{
-		//				std::shared_ptr<InfoCacheSplit> info2 = std::dynamic_pointer_cast<InfoCacheSplit>(info1);
-		//				cout << info2->mid_p << endl;
-		//			};
-		//
-		//			testtest(info0);
-		//		}
-
 		//	protected:
 		struct SplitInfoCache
 		{
