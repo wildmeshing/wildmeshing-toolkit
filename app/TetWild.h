@@ -103,6 +103,10 @@ namespace tetwild
 		bool split_before(const Tuple &t) override;
 		bool split_after(const std::vector<Tuple> &locs) override;
 
+        void collapse_all_edges();
+        bool collapse_before(const Tuple &t) override;
+        bool collapse_after(const std::vector<Tuple> &locs) override;
+
 		bool is_inverted(const Tuple &loc);
 		double get_quality(const Tuple &loc);
 	};

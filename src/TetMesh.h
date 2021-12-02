@@ -47,6 +47,12 @@ namespace wmtk
                 return true;
             }
 
+            bool is_valid(const TetMesh &m) const {
+                if(m.m_vertex_connectivity[m_vid].m_is_removed || m.m_tet_connectivity[m_tid].m_is_removed)
+                    return false;
+                return true;
+            }
+
             void update_version_number(const TetMesh &m)
             {
                 assert(m_timestamp >= m.m_tet_connectivity[m_tid].timestamp);
@@ -96,17 +102,6 @@ namespace wmtk
             }
             size_t tid() const { return m_tid; }
 
-            // DP: we need to discuss this one, is it used often? why not implement it using switch?
-            std::vector<Tuple> get_conn_tets(const TetMesh &m) const
-            {
-                std::vector<Tuple> locs;
-                for (int t_id : m.m_vertex_connectivity[m_vid].m_conn_tets)
-                {
-                    locs.push_back(Tuple(m.m_tet_connectivity[t_id][0], 0, 0, t_id));
-                }
-                return locs;
-            }
-
             Tuple switch_vertex(const TetMesh &m) const
             {
                 Tuple loc = *this;
@@ -125,7 +120,7 @@ namespace wmtk
                         return loc;
                     }
                 }
-                throw "switch edge failed.";
+                assert("switch edge failed");
                 return loc;
             }
 
@@ -146,7 +141,7 @@ namespace wmtk
                         }
                     }
                 }
-                throw "switch face failed";
+                assert("switch face failed");
                 return loc;
             }
 
@@ -247,7 +242,7 @@ namespace wmtk
         void init(size_t n_vertices, const std::vector<std::array<size_t, 4>> &tets);
 
         bool split_edge(const Tuple &t, std::vector<Tuple> &new_edges);
-        void collapse_edge(const Tuple &t);
+        bool collapse_edge(const Tuple &t, std::vector<Tuple> &new_edges);
         void swap_edge(const Tuple &t, int type);
 
         void compact(); // cleans up the deleted vertices or tetrahedra, and fixes the corresponding indices
@@ -284,13 +279,13 @@ namespace wmtk
         // if it returns false then the operation is undone
         virtual bool split_after(const std::vector<Tuple> &locs) { return true; } // check tet condition
 
-        //        //// Collapse the edge in the tuple
-        //        // Checks if the collapse should be performed or not (user controlled)
-        //        virtual bool collapse_before(const Tuple &t) { return true; }
-        //        // If it returns false then the operation is undone (the tuple indexes a vertex and tet that survived)
-        //        virtual bool collapse_after(const Tuple &t) { return true; }
-        //        //todo: quality, inversion, envelope: change v1 pos before this, only need to change partial attributes
-        //
+        //// Collapse the edge in the tuple
+        // Checks if the collapse should be performed or not (user controlled)
+        virtual bool collapse_before(const Tuple &t) { return true; }
+        // If it returns false then the operation is undone (the tuple indexes a vertex and tet that survived)
+        virtual bool collapse_after(const std::vector<Tuple> &locs) { return true; }
+        //todo: quality, inversion, envelope: change v1 pos before this, only need to change partial attributes
+
         //        //// Swap the edge in the tuple
         //        // Checks if the swapping should be performed or not (user controlled)
         //        virtual bool swapping_before(const Tuple &t) { return true; }
