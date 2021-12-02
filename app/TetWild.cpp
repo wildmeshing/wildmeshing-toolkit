@@ -12,7 +12,7 @@
 
 bool tetwild::TetWild::is_inverted(const Tuple &loc)
 {
-	size_t t_id = loc.tid(); // todo: remove
+//	size_t t_id = loc.tid(); // todo: remove
 
 	// auto &p1 = m_vertex_attribute[m_tet_connectivity[t_id][0]].m_posf;
 	// auto &p2 = m_vertex_attribute[m_tet_connectivity[t_id][1]].m_posf;
@@ -20,14 +20,20 @@ bool tetwild::TetWild::is_inverted(const Tuple &loc)
 	// auto &p4 = m_vertex_attribute[m_tet_connectivity[t_id][3]].m_posf;
 	// NO!!!!
 
-	auto &p1 = m_vertex_attribute[loc.vid()].m_posf;
-	auto &p2 = m_vertex_attribute[switch_vertex(loc).vid()].m_posf;
-	auto &p3 = m_vertex_attribute[switch_vertex(switch_edge(loc)).vid()].m_posf;
-	auto &p4 = m_vertex_attribute[switch_vertex(switch_edge(switch_face(loc))).vid()].m_posf;
+//	auto &p1 = m_vertex_attribute[loc.vid()].m_posf;
+//	auto &p2 = m_vertex_attribute[switch_vertex(loc).vid()].m_posf;
+//	auto &p3 = m_vertex_attribute[switch_vertex(switch_edge(loc)).vid()].m_posf;
+//	auto &p4 = m_vertex_attribute[switch_vertex(switch_edge(switch_face(loc))).vid()].m_posf;//todo: wrong orientation
+
+    std::array<Vector3f, 4> ps;
+    auto its = loc.iterate_tet_vertices(*this);
+    for(int j=0;j<4;j++){
+        ps[j] = m_vertex_attribute[its[j].vid()].m_posf;
+    }
 
 	//
 	igl::predicates::exactinit();
-	auto res = igl::predicates::orient3d(p1, p2, p3, p4);
+	auto res = igl::predicates::orient3d(ps[0], ps[1], ps[2], ps[3]);
 	Scalar result;
 	if (res == igl::predicates::Orientation::POSITIVE)
 		result = 1;
@@ -43,20 +49,26 @@ bool tetwild::TetWild::is_inverted(const Tuple &loc)
 
 double tetwild::TetWild::get_quality(const Tuple &loc)
 {
-	size_t t_id = loc.tid(); // todo: remove
+//	size_t t_id = loc.tid(); // todo: remove
 
 	std::array<double, 12> T;
-	auto &p1 = m_vertex_attribute[loc.vid()].m_posf;
-	auto &p2 = m_vertex_attribute[switch_vertex(loc).vid()].m_posf;
-	auto &p3 = m_vertex_attribute[switch_vertex(switch_edge(loc)).vid()].m_posf;
-	auto &p4 = m_vertex_attribute[switch_vertex(switch_edge(switch_face(loc))).vid()].m_posf;
+//	auto &p1 = m_vertex_attribute[loc.vid()].m_posf;
+//	auto &p2 = m_vertex_attribute[switch_vertex(loc).vid()].m_posf;
+//	auto &p3 = m_vertex_attribute[switch_vertex(switch_edge(loc)).vid()].m_posf;
+//	auto &p4 = m_vertex_attribute[switch_vertex(switch_edge(switch_face(loc))).vid()].m_posf;
 
-	for (int j = 0; j < 3; j++)
+    std::array<Vector3f, 4> ps;
+    auto its = loc.iterate_tet_vertices(*this);
+    for(int j=0;j<4;j++){
+        ps[j] = m_vertex_attribute[its[j].vid()].m_posf;
+    }
+
+    for (int j = 0; j < 3; j++)
 	{
-		T[0 * 3 + j] = p1[j];
-		T[1 * 3 + j] = p2[j];
-		T[2 * 3 + j] = p3[j];
-		T[3 * 3 + j] = p4[j];
+        T[0 * 3 + j] = ps[0][j];
+		T[1 * 3 + j] = ps[1][j];
+		T[2 * 3 + j] = ps[2][j];
+		T[3 * 3 + j] = ps[3][j];
 	}
 
 	double energy = wmtk::AMIPS_energy(T);
