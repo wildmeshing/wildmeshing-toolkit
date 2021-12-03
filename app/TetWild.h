@@ -105,9 +105,9 @@ public:
     bool split_before(const Tuple& t) override;
     bool split_after(const std::vector<Tuple>& locs) override;
 
-		void smooth_all_vertices();
-		bool smooth_before(const Tuple &t) override;
-		bool smooth_after(const Tuple &t) override;
+    void smooth_all_vertices();
+    bool smooth_before(const Tuple& t) override;
+    bool smooth_after(const Tuple& t) override;
 
     void collapse_all_edges();
     bool collapse_before(const Tuple& t) override;

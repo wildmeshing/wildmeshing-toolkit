@@ -238,6 +238,7 @@ public:
     bool split_edge(const Tuple& t, std::vector<Tuple>& new_edges);
     bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_edges);
     void swap_edge(const Tuple& t, int type);
+    bool smooth_vertex(const Tuple& t);
 
     void
     compact(); // cleans up the deleted vertices or tetrahedra, and fixes the corresponding indices
@@ -249,6 +250,7 @@ public:
     }
 
     std::vector<Tuple> get_edges() const;
+    std::vector<Tuple> get_vertices() const;
 
     size_t n_tets() const { return m_tet_connectivity.size(); }
     size_t v_id(int tid, int lvid) const { return m_tet_connectivity[tid][lvid]; }
