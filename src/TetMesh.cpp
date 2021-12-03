@@ -7,12 +7,10 @@
 #include <wmtk/TupleUtils.hpp>
 
 // DP: I do not understand the logic here
-int wmtk::TetMesh::find_next_empty_slot_t()//todo: always append in the end
+int wmtk::TetMesh::find_next_empty_slot_t() // todo: always append in the end
 {
-    for (int i = m_t_empty_slot; i < m_tet_connectivity.size(); i++)
-    {
-        if (m_tet_connectivity[i].m_is_removed)
-        {
+    for (int i = m_t_empty_slot; i < m_tet_connectivity.size(); i++) {
+        if (m_tet_connectivity[i].m_is_removed) {
             m_t_empty_slot = i + 1;
             return i;
         }
@@ -23,10 +21,8 @@ int wmtk::TetMesh::find_next_empty_slot_t()//todo: always append in the end
 
 int wmtk::TetMesh::find_next_empty_slot_v()
 {
-    for (int i = m_v_empty_slot; i < m_vertex_connectivity.size(); i++)
-    {
-        if (m_vertex_connectivity[i].m_is_removed)
-        {
+    for (int i = m_v_empty_slot; i < m_vertex_connectivity.size(); i++) {
+        if (m_vertex_connectivity[i].m_is_removed) {
             m_v_empty_slot = i + 1;
             return i;
         }
@@ -35,22 +31,19 @@ int wmtk::TetMesh::find_next_empty_slot_v()
     return m_vertex_connectivity.size() - 1;
 }
 
-void wmtk::TetMesh::init(size_t n_vertices, const std::vector<std::array<size_t, 4>> &tets)
+void wmtk::TetMesh::init(size_t n_vertices, const std::vector<std::array<size_t, 4>>& tets)
 {
     m_vertex_connectivity.resize(n_vertices);
     m_tet_connectivity.resize(tets.size());
-    for (int i = 0; i < tets.size(); i++)
-    {
+    for (int i = 0; i < tets.size(); i++) {
         m_tet_connectivity[i].m_indices = tets[i];
-        for (int j = 0; j < 4; j++)
-            m_vertex_connectivity[tets[i][j]].m_conn_tets.push_back(i);
+        for (int j = 0; j < 4; j++) m_vertex_connectivity[tets[i][j]].m_conn_tets.push_back(i);
     }
 }
 
-bool wmtk::TetMesh::split_edge(const Tuple &loc0, std::vector<Tuple> &new_edges)
+bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
 {
-    if (!split_before(loc0))
-        return false;
+    if (!split_before(loc0)) return false;
 
     // backup of everything
     auto loc1 = loc0;
@@ -61,13 +54,12 @@ bool wmtk::TetMesh::split_edge(const Tuple &loc0, std::vector<Tuple> &new_edges)
     //    loc1.print_info();
     //    loc2.print_info();
     //
-    auto n12_t_ids = set_intersection(m_vertex_connectivity[v1_id].m_conn_tets,
-                                      m_vertex_connectivity[v2_id].m_conn_tets);
+    auto n12_t_ids = set_intersection(
+        m_vertex_connectivity[v1_id].m_conn_tets,
+        m_vertex_connectivity[v2_id].m_conn_tets);
     std::vector<size_t> n12_v_ids;
-    for (size_t t_id : n12_t_ids)
-    {
-        for (int j = 0; j < 4; j++)
-            n12_v_ids.push_back(m_tet_connectivity[t_id][j]);
+    for (size_t t_id : n12_t_ids) {
+        for (int j = 0; j < 4; j++) n12_v_ids.push_back(m_tet_connectivity[t_id][j]);
     }
     vector_unique(n12_v_ids);
     std::vector<std::pair<size_t, TetrahedronConnectivity>> old_tets(n12_t_ids.size());
@@ -80,8 +72,7 @@ bool wmtk::TetMesh::split_edge(const Tuple &loc0, std::vector<Tuple> &new_edges)
     // update connectivity
     int v_id = find_next_empty_slot_v();
     std::vector<size_t> new_t_ids;
-    for (size_t t_id : n12_t_ids)
-    {
+    for (size_t t_id : n12_t_ids) {
         size_t new_t_id = find_next_empty_slot_t();
         new_t_ids.push_back(new_t_id);
         //
@@ -92,8 +83,7 @@ bool wmtk::TetMesh::split_edge(const Tuple &loc0, std::vector<Tuple> &new_edges)
         m_vertex_connectivity[v_id].m_conn_tets.push_back(t_id);
         m_vertex_connectivity[v_id].m_conn_tets.push_back(new_t_id);
         //
-        for (int j = 0; j < 4; j++)
-        {
+        for (int j = 0; j < 4; j++) {
             if (m_tet_connectivity[t_id][j] != v1_id && m_tet_connectivity[t_id][j] != v2_id)
                 m_vertex_connectivity[m_tet_connectivity[t_id][j]].m_conn_tets.push_back(new_t_id);
         }
@@ -106,31 +96,28 @@ bool wmtk::TetMesh::split_edge(const Tuple &loc0, std::vector<Tuple> &new_edges)
     }
 
     // possibly call the resize_attributes
-    resize_attributes(m_vertex_connectivity.size(), m_tet_connectivity.size() * 6,
-                      m_tet_connectivity.size() * 4, m_tet_connectivity.size());
+    resize_attributes(
+        m_vertex_connectivity.size(),
+        m_tet_connectivity.size() * 6,
+        m_tet_connectivity.size() * 4,
+        m_tet_connectivity.size());
 
     std::vector<Tuple> locs;
-    for (size_t t_id : n12_t_ids)
-    {
+    for (size_t t_id : n12_t_ids) {
         locs.push_back(Tuple(v_id, 0, 0, t_id));
     }
-    for (size_t t_id : new_t_ids)
-    {
+    for (size_t t_id : new_t_ids) {
         locs.push_back(Tuple(v_id, 0, 0, t_id));
     }
-    if (!split_after(locs))
-    {
+    if (!split_after(locs)) {
         m_vertex_connectivity[v_id].m_is_removed = true;
-        for (int t_id : new_t_ids)
-            m_tet_connectivity[t_id].m_is_removed = true;
+        for (int t_id : new_t_ids) m_tet_connectivity[t_id].m_is_removed = true;
         //
-        for (int i = 0; i < old_tets.size(); i++)
-        {
+        for (int i = 0; i < old_tets.size(); i++) {
             int t_id = old_tets[i].first;
             m_tet_connectivity[t_id] = old_tets[i].second;
         }
-        for (int i = 0; i < old_vertices.size(); i++)
-        {
+        for (int i = 0; i < old_vertices.size(); i++) {
             int v_id = old_vertices[i].first;
             m_vertex_connectivity[v_id] = old_vertices[i].second;
         }
@@ -142,8 +129,7 @@ bool wmtk::TetMesh::split_edge(const Tuple &loc0, std::vector<Tuple> &new_edges)
     if (false) // if any invariant fails
     {
         m_vertex_connectivity[v_id].m_is_removed = true;
-        for (int t_id: new_t_ids)
-            m_tet_connectivity[t_id].m_is_removed = true;
+        for (int t_id : new_t_ids) m_tet_connectivity[t_id].m_is_removed = true;
         //
         for (int i = 0; i < old_tets.size(); i++) {
             int t_id = old_tets[i].first;
@@ -158,17 +144,13 @@ bool wmtk::TetMesh::split_edge(const Tuple &loc0, std::vector<Tuple> &new_edges)
     }
 
     // new_edges
-    for (size_t t_id : n12_t_ids)
-    {
-        for (int j = 0; j < 6; j++)
-        {
+    for (size_t t_id : n12_t_ids) {
+        for (int j = 0; j < 6; j++) {
             new_edges.push_back(tuple_from_edge(t_id, j));
         }
     }
-    for (size_t t_id : new_t_ids)
-    {
-        for (int j = 0; j < 6; j++)
-        {
+    for (size_t t_id : new_t_ids) {
+        for (int j = 0; j < 6; j++) {
             new_edges.push_back(tuple_from_edge(t_id, j));
         }
     }
@@ -176,24 +158,24 @@ bool wmtk::TetMesh::split_edge(const Tuple &loc0, std::vector<Tuple> &new_edges)
     //    std::sort(new_edges.begin(), new_edges.end(), [&](const Tuple &a, const Tuple &b) {
     //        return a.compare_edges(*this, b) < 0;
     //    });
-    //    new_edges.erase(std::unique(new_edges.begin(), new_edges.end(), [&](const Tuple &a, const Tuple &b) {
+    //    new_edges.erase(std::unique(new_edges.begin(), new_edges.end(), [&](const Tuple &a, const
+    //    Tuple &b) {
     //        return a.compare_edges(*this, b) == 0;
     //    }), new_edges.end());
 
     /// update timestamps
     m_timestamp++; // todo: thread
-    for (size_t t_id : n12_t_ids)
-        m_tet_connectivity[t_id].set_version_number(m_timestamp);
-    for (size_t t_id : new_t_ids)
-        m_tet_connectivity[t_id].set_version_number(m_timestamp);
-    for (auto &new_loc : new_edges) // update edge timestamp from tets
+    for (size_t t_id : n12_t_ids) m_tet_connectivity[t_id].set_version_number(m_timestamp);
+    for (size_t t_id : new_t_ids) m_tet_connectivity[t_id].set_version_number(m_timestamp);
+    for (auto& new_loc : new_edges) // update edge timestamp from tets
         new_loc.update_version_number(*this);
 
     return true;
 }
 
-bool wmtk::TetMesh::collapse_edge(const Tuple &t, std::vector<Tuple> &new_edges){
-    //todo
+bool wmtk::TetMesh::collapse_edge(const Tuple& t, std::vector<Tuple>& new_edges)
+{
+    // todo
 
     return true;
 }
@@ -201,10 +183,8 @@ bool wmtk::TetMesh::collapse_edge(const Tuple &t, std::vector<Tuple> &new_edges)
 std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_edges() const
 {
     std::vector<TetMesh::Tuple> edges;
-    for (int i = 0; i < m_tet_connectivity.size(); i++)
-    {
-        for (int j = 0; j < 6; j++)
-        {
+    for (int i = 0; i < m_tet_connectivity.size(); i++) {
+        for (int j = 0; j < 6; j++) {
             edges.push_back(tuple_from_edge(i, j));
 
             //            Tuple loc;
