@@ -41,12 +41,21 @@ namespace wmtk
             int m_timestamp = 0;
 
         public:
-            bool is_valid() const {
-                if (m_vid < 0 || m_eid < 0 || m_fid < 0 || m_tid < 0)
-                    return false;
-                return true;
+            static Tuple init_from_edge(const TetMesh &m, int tid, int local_eid)
+            {
+                int vid = m.m_tet_connectivity[tid][m_local_edges[local_eid][0]];
+                int fid = m_map_edge2face[local_eid];
+                return Tuple(vid, local_eid, fid, tid);
             }
 
+            static Tuple init_from_vertex(const TetMesh &m, int vid)
+            {
+                //todo
+                Tuple loc;
+                return loc;
+            }
+
+        public:
             bool is_valid(const TetMesh &m) const {
                 if(m.m_vertex_connectivity[m_vid].m_is_removed || m.m_tet_connectivity[m_tid].m_is_removed)
                     return false;
@@ -64,8 +73,7 @@ namespace wmtk
                 return m_timestamp;
             }
 
-            bool is_version_number_valid(const TetMesh &m) const
-            {
+            bool is_version_number_valid(const TetMesh &m) const {
                 if (m_timestamp != m.m_tet_connectivity[m_tid].timestamp)
                     return false;
                 return true;
@@ -74,14 +82,6 @@ namespace wmtk
             void print_info()
             {
                 logger().trace("tuple: {} {} {} {}", m_vid, m_eid, m_fid, m_tid);
-            }
-
-            // DP: Why do we need this one? if we really need it it should be private.
-            static Tuple init_from_edge(const TetMesh &m, int tid, int local_eid)
-            {
-                int vid = m.m_tet_connectivity[tid][m_local_edges[local_eid][0]];
-                int fid = m_map_edge2face[local_eid];
-                return Tuple(vid, local_eid, fid, tid);
             }
 
             Tuple()
@@ -145,7 +145,7 @@ namespace wmtk
                 return loc;
             }
 
-            Tuple switch_tetrahedron(const TetMesh &m) const {
+            std::optional<Tuple> switch_tetrahedron(const TetMesh &m) const {
                 // TODO: eid and fid are local, so they will be changed after switch tets
                 int v1_id = m.m_tet_connectivity[m_tid][m_local_faces[m_fid][0]];
                 int v2_id = m.m_tet_connectivity[m_tid][m_local_faces[m_fid][1]];
@@ -154,7 +154,7 @@ namespace wmtk
                                             m.m_vertex_connectivity[v2_id].m_conn_tets);
                 auto n123_tids = set_intersection(tmp, m.m_vertex_connectivity[v3_id].m_conn_tets);
                 if (n123_tids.size() == 1)
-                    return Tuple(-1, -1, -1, -1);//todo: discuss: if no other tet, return an invalid tuple
+                    return {};
                 else {
                     Tuple loc = *this;
                     loc.m_tid = n123_tids[0] == m_tid ? n123_tids[1] : n123_tids[0];
@@ -165,7 +165,7 @@ namespace wmtk
                 }
             }
 
-            std::array<Tuple, 4> iterate_tet_vertices(const TetMesh &m) const {//todo: discuss
+            std::array<Tuple, 4> oriented_tet_vertices(const TetMesh &m) const {
                 std::array<Tuple, 4> vs;
                 for (int j = 0; j < 4; j++) {
                     vs[j].m_vid = m.m_tet_connectivity[m_tid][j];
@@ -180,7 +180,7 @@ namespace wmtk
         class VertexConnectivity
         {
         public:
-            std::vector<size_t> m_conn_tets;
+            std::vector<size_t> m_conn_tets;//todo: always keep it sorted
             bool m_is_removed = false;
 
             size_t &operator[](const size_t index)
@@ -293,11 +293,11 @@ namespace wmtk
         //        virtual bool swapping_after(const Tuple &t) { return true; }
         //        //quality, inversion
         //
-        //        // Invariants that are called on all the new or modified elements after an operation is performed
-        //        virtual bool VertexInvariant(const Tuple &t) { return true; }
-        //        virtual bool EdgeInvariant(const Tuple &t) { return true; }
-        //        virtual bool FaceInvariant(const Tuple &t) { return true; }
-        //        virtual bool TetrahedronInvariant(const Tuple &t) { return true; }
+        // Invariants that are called on all the new or modified elements after an operation is performed
+        virtual bool vertex_invariant(const Tuple &t) { return true; }
+        virtual bool edge_invariant(const Tuple &t) { return true; }
+        virtual bool face_invariant(const Tuple &t) { return true; }
+        virtual bool tetrahedron_invariant(const Tuple &t) { return true; }
 
         virtual void resize_attributes(size_t v, size_t e, size_t f, size_t t) {}
 
@@ -305,7 +305,7 @@ namespace wmtk
         Tuple switch_vertex(const Tuple &t) const { return t.switch_vertex(*this); }
         Tuple switch_edge(const Tuple &t) const { return t.switch_edge(*this); }
         Tuple switch_face(const Tuple &t) const { return t.switch_face(*this); }
-        Tuple switch_tetrahedron(const Tuple &t) const { return t.switch_tetrahedron(*this); }
+        std::optional<Tuple> switch_tetrahedron(const Tuple &t) const { return t.switch_tetrahedron(*this); }
 
         Tuple tuple_from_edge(int tid, int local_eid) const { return Tuple::init_from_edge(*this, tid, local_eid); }
     };

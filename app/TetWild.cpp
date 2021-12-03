@@ -12,21 +12,8 @@
 
 bool tetwild::TetWild::is_inverted(const Tuple &loc)
 {
-//	size_t t_id = loc.tid(); // todo: remove
-
-	// auto &p1 = m_vertex_attribute[m_tet_connectivity[t_id][0]].m_posf;
-	// auto &p2 = m_vertex_attribute[m_tet_connectivity[t_id][1]].m_posf;
-	// auto &p3 = m_vertex_attribute[m_tet_connectivity[t_id][2]].m_posf;
-	// auto &p4 = m_vertex_attribute[m_tet_connectivity[t_id][3]].m_posf;
-	// NO!!!!
-
-//	auto &p1 = m_vertex_attribute[loc.vid()].m_posf;
-//	auto &p2 = m_vertex_attribute[switch_vertex(loc).vid()].m_posf;
-//	auto &p3 = m_vertex_attribute[switch_vertex(switch_edge(loc)).vid()].m_posf;
-//	auto &p4 = m_vertex_attribute[switch_vertex(switch_edge(switch_face(loc))).vid()].m_posf;//todo: wrong orientation
-
     std::array<Vector3f, 4> ps;
-    auto its = loc.iterate_tet_vertices(*this);
+    auto its = loc.oriented_tet_vertices(*this);
     for(int j=0;j<4;j++){
         ps[j] = m_vertex_attribute[its[j].vid()].m_posf;
     }
@@ -49,20 +36,13 @@ bool tetwild::TetWild::is_inverted(const Tuple &loc)
 
 double tetwild::TetWild::get_quality(const Tuple &loc)
 {
-//	size_t t_id = loc.tid(); // todo: remove
-
-	std::array<double, 12> T;
-//	auto &p1 = m_vertex_attribute[loc.vid()].m_posf;
-//	auto &p2 = m_vertex_attribute[switch_vertex(loc).vid()].m_posf;
-//	auto &p3 = m_vertex_attribute[switch_vertex(switch_edge(loc)).vid()].m_posf;
-//	auto &p4 = m_vertex_attribute[switch_vertex(switch_edge(switch_face(loc))).vid()].m_posf;
-
     std::array<Vector3f, 4> ps;
-    auto its = loc.iterate_tet_vertices(*this);
+    auto its = loc.oriented_tet_vertices(*this);
     for(int j=0;j<4;j++){
         ps[j] = m_vertex_attribute[its[j].vid()].m_posf;
     }
 
+    std::array<double, 12> T;
     for (int j = 0; j < 3; j++)
 	{
         T[0 * 3 + j] = ps[0][j];
@@ -229,6 +209,14 @@ bool tetwild::TetWild::collapse_before(const Tuple &t) {
 }
 
 bool tetwild::TetWild::collapse_after(const std::vector<Tuple> &locs) {
+    return true;
+}
+
+bool tetwild::TetWild::vertex_invariant(const Tuple &t) {
+    return true;
+}
+
+bool tetwild::TetWild::tetrahedron_invariant(const Tuple &t) {
     return true;
 }
 
