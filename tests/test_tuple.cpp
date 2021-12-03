@@ -11,7 +11,7 @@ TEST_CASE("test_get_edges", "[test_tuple]")
 	mesh.init(4, {{{0, 1, 2, 3}}});
 	const auto edges = mesh.get_edges();
 
-	REQUIRE(edges.size() == 4);
+	REQUIRE(edges.size() == 6);
 }
 
 TEST_CASE("swith_vertex", "[test_tuple]")
