@@ -1,7 +1,3 @@
-################################################################################
-project(WildMeshingToolkit DESCRIPTION "A mesh optimization toolkit")
-################################################################################
-
 # Detects whether this is a top-level project
 get_directory_property(HAS_PARENT PARENT_DIRECTORY)
 if(HAS_PARENT)
@@ -26,6 +22,11 @@ else()
         message(FATAL_ERROR "CMake required version to build the toolkit is ${REQUIRED_CMAKE_VERSION}")
     endif()
 endif()
+
+################################################################################
+project(WildMeshingToolkit DESCRIPTION "A mesh optimization toolkit")
+################################################################################
+
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/recipes/")
@@ -100,7 +101,8 @@ if(WILDMESHING_TOOLKIT_WITH_SANITIZERS)
 endif()
 
 
-target_link_libraries(${PROJECT_NAME} PUBLIC spdlog::spdlog igl::core)
+target_link_libraries(${PROJECT_NAME} PUBLIC spdlog::spdlog igl::core
+    geogram::delaunay_psm)
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_BINARY_DIR}/include)
 
 

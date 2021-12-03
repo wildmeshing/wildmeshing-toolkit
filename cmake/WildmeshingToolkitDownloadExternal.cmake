@@ -47,3 +47,10 @@ function(wildmeshing_toolkit_download_spdlog)
         URL_MD5     3c17dd6983de2a66eca8b5a0b213d29f
     )
 endfunction()
+
+function(wildmeshing_toolkit_download_delaunay_psm)
+    wildmeshing_toolkit_download_project(delaunay_psm
+        URL         https://members.loria.fr/BLevy/PACKAGES/Delaunay_psm_1.7.7.tar.gz
+        URL_MD5     f69d1ed5465814960e3d6379ba237728
+    )
+endfunction()
