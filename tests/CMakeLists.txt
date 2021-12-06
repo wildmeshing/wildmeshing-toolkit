@@ -6,6 +6,7 @@ set(test_sources
 	main.cpp
 
 	test_tuple.cpp
+	2d_tests.cpp
 	test_operations.cpp
 	test_delaunay.cpp
 )
