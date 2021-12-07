@@ -333,7 +333,7 @@ public:
                 size_t vid = m.m_tri_connectivity[i].m_indices[j];
                 size_t eid = (j + 2) % 3;
                 Tuple e_tuple = Tuple(vid, eid, i, m);
-                assert(e_tuple.is_valid());
+                assert(e_tuple.is_valid(m));
                 Tuple e_tuple2 = e_tuple.switch_face(m).value_or(
                     e_tuple); // return itdlrf if it is a boundary triangle
                 size_t fid2 = e_tuple2.get_fid();
