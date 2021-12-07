@@ -36,8 +36,8 @@ namespace wmtk
     inline void vector_print(std::vector<T> &v)
     {
         for(auto& e: v)
-            cout<<e<<" "<<;
-        cout<<endl;
+            std::cout<<e<<" ";
+        std::cout<<std::endl;
     }
 
     template <class T>
