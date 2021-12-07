@@ -94,6 +94,26 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
         vector_erase(m_vertex_connectivity[v2_id].m_conn_tets, t_id);
         m_vertex_connectivity[v2_id].m_conn_tets.push_back(new_t_id);
     }
+    //sort m_conn_tets
+    vector_sort(m_vertex_connectivity[v_id].m_conn_tets);
+    vector_sort(m_vertex_connectivity[v1_id].m_conn_tets);
+    vector_sort(m_vertex_connectivity[v2_id].m_conn_tets);
+    for (size_t t_id : n12_t_ids) {
+        for(int j=0;j<4;j++){
+            if(m_tet_connectivity[t_id][j] == v_id || m_tet_connectivity[t_id][j] == v1_id
+                || m_tet_connectivity[t_id][j] == v2_id)
+                continue;
+            vector_sort(m_vertex_connectivity[m_tet_connectivity[t_id][j]].m_conn_tets);
+        }
+    }
+    for (size_t t_id : new_t_ids) {
+        for(int j=0;j<4;j++){
+            if(m_tet_connectivity[t_id][j] == v_id || m_tet_connectivity[t_id][j] == v1_id
+                || m_tet_connectivity[t_id][j] == v2_id)
+                continue;
+            vector_sort(m_vertex_connectivity[m_tet_connectivity[t_id][j]].m_conn_tets);
+        }
+    }
 
     // possibly call the resize_attributes
     resize_attributes(
