@@ -54,156 +54,6 @@ double tetwild::TetWild::get_quality(const Tuple& loc)
     return energy;
 }
 
-void tetwild::TetWild::split_all_edges()
-{
-    reset_timestamp();
-
-    std::vector<Tuple> edges = get_edges();
-
-    logger().debug("edges.size() = {}", edges.size());
-
-    int cnt_suc = 0;
-    std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_l> es_queue;
-    for (auto& loc : edges) {
-        Tuple& v1 = loc;
-        Tuple v2 = loc.switch_vertex(*this);
-        double length = (m_vertex_attribute[v1.vid()].m_posf - m_vertex_attribute[v2.vid()].m_posf)
-                            .squaredNorm();
-        if (length < m_params.splitting_l2) continue;
-        es_queue.push(ElementInQueue(loc, length));
-    }
-
-    bool is_failed = false;
-    while (!es_queue.empty()) {
-        auto loc = es_queue.top().edge;
-        //        double weight = es_queue.top().weight;
-        es_queue.pop();
-
-        // check timestamp
-        if (!loc.is_version_number_valid(*this)) continue;
-
-        std::vector<Tuple> new_edges;
-        if (split_edge(loc, new_edges)) {
-            cnt_suc++;
-            if (!is_failed) {
-                for (auto& new_loc : new_edges) {
-                    Tuple& v1 = new_loc;
-                    Tuple v2 = new_loc.switch_vertex(*this);
-                    double length =
-                        (m_vertex_attribute[v1.vid()].m_posf - m_vertex_attribute[v2.vid()].m_posf)
-                            .squaredNorm();
-                    if (length < m_params.splitting_l2) continue;
-                    es_queue.push(ElementInQueue(new_loc, length));
-                }
-            }
-        } else
-            is_failed = true;
-    }
-}
-
-bool tetwild::TetWild::split_before(const Tuple& loc0)
-{
-    auto loc1 = loc0;
-    int v1_id = loc1.vid();
-    auto loc2 = loc1.switch_vertex(*this);
-    int v2_id = loc2.vid();
-
-    //	double length = (m_vertex_attribute[v1_id].m_posf -
-    // m_vertex_attribute[v2_id].m_posf).norm();
-    //	if (length < m_params.l * 4 / 3)
-    //		return false;
-
-    split_cache.vertex_info.m_posf =
-        (m_vertex_attribute[v1_id].m_posf + m_vertex_attribute[v2_id].m_posf) / 2;
-
-    return true;
-}
-
-bool tetwild::TetWild::split_after(const std::vector<Tuple>& locs)
-{ // input: locs pointing to a list of tets and v_id
-    int v_id = locs[0].vid();
-    auto old_pos = m_vertex_attribute[v_id].m_posf;
-    m_vertex_attribute[v_id].m_posf = split_cache.vertex_info.m_posf;
-
-    // check inversion
-    for (auto& loc : locs) {
-        if (is_inverted(loc)) {
-            m_vertex_attribute[v_id].m_posf = old_pos;
-            return false;
-        }
-    }
-
-    // update quality
-    for (auto& loc : locs) {
-        m_tet_attribute[loc.tid()].m_qualities = get_quality(loc);
-    }
-
-    return true;
-}
-
-void tetwild::TetWild::collapse_all_edges()
-{
-    reset_timestamp();
-
-    std::vector<Tuple> edges = get_edges();
-
-    logger().debug("edges.size() = {}", edges.size());
-
-    int cnt_suc = 0;
-    std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_s> ec_queue;
-    for (auto& loc : edges) {
-        Tuple& v1 = loc;
-        Tuple v2 = loc.switch_vertex(*this);
-        double length = (m_vertex_attribute[v1.vid()].m_posf - m_vertex_attribute[v2.vid()].m_posf)
-                            .squaredNorm();
-        if (length > m_params.collapsing_l2) continue;
-        ec_queue.push(ElementInQueue(loc, length));
-    }
-
-    while (!ec_queue.empty()) {
-        auto loc = ec_queue.top().edge;
-        double weight = ec_queue.top().weight;
-        ec_queue.pop();
-
-        // check timestamp
-        if (!loc.is_version_number_valid(*this)) continue;
-        if (!loc.is_valid(*this)) continue;
-        { // check weight
-            Tuple& v1 = loc;
-            Tuple v2 = loc.switch_vertex(*this);
-            double length =
-                (m_vertex_attribute[v1.vid()].m_posf - m_vertex_attribute[v2.vid()].m_posf)
-                    .squaredNorm();
-            if (length != weight) continue;
-        }
-
-        std::vector<Tuple> new_edges;
-        if (collapse_edge(loc, new_edges)) {
-            cnt_suc++;
-            for (auto& new_loc : new_edges) {
-                Tuple& v1 = new_loc;
-                Tuple v2 = new_loc.switch_vertex(*this);
-                double length =
-                    (m_vertex_attribute[v1.vid()].m_posf - m_vertex_attribute[v2.vid()].m_posf)
-                        .squaredNorm();
-                if (length < m_params.collapsing_l2) continue;
-                ec_queue.push(ElementInQueue(new_loc, length));
-            }
-        }
-    }
-}
-
-bool tetwild::TetWild::collapse_before(const Tuple& t)
-{
-    //check if on bbox/surface/boundary
-
-    return true;
-}
-
-bool tetwild::TetWild::collapse_after(const std::vector<Tuple>& locs)
-{
-    return true;
-}
 
 bool tetwild::TetWild::vertex_invariant(const Tuple& t)
 {
@@ -221,12 +71,17 @@ void tetwild::TetWild::output_mesh(std::string file)
 
     Eigen::VectorXd V_flat(3 * m_vertex_attribute.size());
     for (int i = 0; i < m_vertex_attribute.size(); i++) {
-        for (int j = 0; j < 3; j++) V_flat(3 * i + j) = m_vertex_attribute[i].m_posf[j];
+        for (int j = 0; j < 3; j++)
+            V_flat(3 * i + j) = m_vertex_attribute[i].m_posf[j];
     }
 
     Eigen::VectorXi T_flat(4 * n_tets());
     for (int i = 0; i < n_tets(); i++) {
-        for (int j = 0; j < 4; j++) T_flat(4 * i + j) = v_id(i, j);
+        Tuple loc = tuple_from_tet(i);
+        auto vs = oriented_tet_vertices(loc);
+        for (int j = 0; j < 4; j++) {
+            T_flat(4 * i + j) = vs[j].vid();
+        }
     }
 
     mSaver.save_mesh(V_flat, T_flat, 3, mSaver.TET);

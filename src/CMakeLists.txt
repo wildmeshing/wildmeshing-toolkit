@@ -5,6 +5,8 @@ set(SOURCES
 	TetMesh.h
 	TetMesh.cpp
 
+		Tuple.cpp
+
 #	TriMesh.h
 #	TriMesh.cpp
 )

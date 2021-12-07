@@ -40,67 +40,6 @@ public:
         int m_timestamp = 0;
 
     public:
-        /**
-         * Generate a Tuple from global tetra index and __local__ edge index (from 0-5).
-         *
-         * @param m TetMesh where the current Tuple belongs.
-         * @param tid Global tetra index
-         * @param local_eid local edge index
-         * @return Tuple
-         */
-        static Tuple init_from_edge(const TetMesh& m, int tid, int local_eid)
-        {
-            int vid = m.m_tet_connectivity[tid][m_local_edges[local_eid][0]];
-            int fid = m_map_edge2face[local_eid];
-            return Tuple(vid, local_eid, fid, tid);
-        }
-
-        /**
-         * TODO
-         *
-         * @param m
-         * @param vid
-         * @return Tuple
-         */
-        static Tuple init_from_vertex(const TetMesh& m, int vid)
-        {
-            // todo
-            Tuple loc;
-            return loc;
-        }
-
-    public:
-        /**
-         * Check if the current tuple is already invalid (removed during editing).
-         *
-         * @param m TetMesh where the tuple belongs.
-         * @return if not removed
-         */
-        bool is_valid(const TetMesh& m) const
-        {
-            if (m.m_vertex_connectivity[m_vid].m_is_removed ||
-                m.m_tet_connectivity[m_tid].m_is_removed)
-                return false;
-            return true;
-        }
-
-        void update_version_number(const TetMesh& m)
-        {
-            assert(m_timestamp >= m.m_tet_connectivity[m_tid].timestamp);
-            m_timestamp = m.m_tet_connectivity[m_tid].timestamp;
-        }
-
-        int get_version_number() { return m_timestamp; }
-
-        bool is_version_number_valid(const TetMesh& m) const
-        {
-            if (m_timestamp != m.m_tet_connectivity[m_tid].timestamp) return false;
-            return true;
-        }
-
-        // FIXME: ZJ: local indices should not be printed.
-        void print_info() { logger().trace("tuple: {} {} {} {}", m_vid, m_eid, m_fid, m_tid); }
-
         Tuple() {}
 
         /**
@@ -117,8 +56,43 @@ public:
             , m_fid(fid)
             , m_tid(tid)
         {} // DP: the counter should be initialized here?
+      
+        /**
+         * Generate a Tuple from global tetra index and __local__ edge index (from 0-5).
+         *
+         * @param m TetMesh where the current Tuple belongs.
+         * @param tid Global tetra index
+         * @param local_eid local edge index
+         * @return Tuple
+         */
+        static Tuple init_from_edge(const TetMesh& m, int tid, int local_eid);
+          
+        /**
+         * TODO
+         *
+         * @param m
+         * @param vid
+         * @return Tuple
+         */
+        static Tuple init_from_vertex(const TetMesh& m, int vid);
+        static Tuple init_from_tet(const TetMesh& m, int tid);
 
-        size_t vid() const { return m_vid; } // update eid and fid
+        /**
+         * Check if the current tuple is already invalid (removed during editing).
+         *
+         * @param m TetMesh where the tuple belongs.
+         * @return if not removed
+         */
+        bool is_valid(const TetMesh& m) const;
+
+
+        void update_version_number(const TetMesh& m);
+        int get_version_number();
+        bool is_version_number_valid(const TetMesh& m) const;
+
+        void print_info();
+
+        size_t vid() const;
 
         /**
          * returns a global unique edge id
@@ -127,125 +101,50 @@ public:
          * @note The global id may not be consecutive. The edges are undirected and different tetra
          * share the same edge.
          */
-        size_t eid() const
-        { // todo: discuss
-            return m_tid * 6 + m_eid;
-        }
-
-        /**
+        size_t eid(const TetMesh& m) const;
+          
+         /**
          * returns a global unique face id
          *
          * @return size_t
          * @note The global id may not be consecutive. The face are undirected.
          */
-        size_t fid() const
-        { // todo: discuss: if output same global fid for the two sides(tets) of face, how to give
-          // the two sides different value?
-            return m_tid * 4 + m_fid;
-        }
-
-        /**
+        size_t fid(const TetMesh& m) const;
+          
+          /**
          * returns global tetra id.
          *
          * @return size_t
          */
-        size_t tid() const { return m_tid; }
+        size_t tid() const;
 
-        /**
+          /**
          * Switch operation. See (URL-TO-DOCUMENT) for explaination.
          *
          * @param m
          * @return Tuple another Tuple that share the same tetra, face, edge, but different vertex.
          */
-        Tuple switch_vertex(const TetMesh& m) const
-        {
-            Tuple loc = *this;
-            int l_vid1 = m_local_edges[m_eid][0];
-            int l_vid2 = m_local_edges[m_eid][1];
-            loc.m_vid = m.m_tet_connectivity[m_tid][l_vid1] == m_vid
-                            ? m.m_tet_connectivity[m_tid][l_vid2]
-                            : m.m_tet_connectivity[m_tid][l_vid1];
-
-            return loc;
-        } // along edge
-
-        Tuple switch_edge(const TetMesh& m) const
-        {
-            Tuple loc = *this;
-            for (int j = 0; j < 3; j++) {
-                if (m_local_edges_in_a_face[m_fid][j] == m_eid) {
-                    loc.m_eid = m_local_edges_in_a_face[m_fid][(j + 1) % 3];
-                    return loc;
-                }
-            }
-            assert("switch edge failed");
-            return loc;
-        }
-
-        Tuple switch_face(const TetMesh& m) const
-        {
-            Tuple loc = *this;
-            int l_v1_id = m_local_edges[m_eid][0];
-            int l_v2_id = m_local_edges[m_eid][1];
-            for (int j = 0; j < 4; j++) {
-                if (j == m_fid) continue;
-                int cnt = 0;
-                for (int k = 0; k < 3; k++) {
-                    if (m_local_faces[j][k] == l_v1_id || m_local_faces[j][k] == l_v2_id) cnt++;
-                    if (cnt == 2) {
-                        loc.m_fid = j;
-                        return loc;
-                    }
-                }
-            }
-            assert("switch face failed");
-            return loc;
-        }
-
-        /**
+        Tuple switch_vertex(const TetMesh& m) const;
+        Tuple switch_edge(const TetMesh& m) const;
+        Tuple switch_face(const TetMesh& m) const;
+          
+          /**
          * Switch operation for the adjacent tetra.
          *
          * @param m Mesh
          * @return Tuple for the face-adjacent tetra, sharing same face, edge, and vertex.
          * @return nullopt if the Tuple is the switch goes off the boundary.
          */
-        std::optional<Tuple> switch_tetrahedron(const TetMesh& m) const
-        {
-            // TODO: eid and fid are local, so they will be changed after switch tets
-            int v1_id = m.m_tet_connectivity[m_tid][m_local_faces[m_fid][0]];
-            int v2_id = m.m_tet_connectivity[m_tid][m_local_faces[m_fid][1]];
-            int v3_id = m.m_tet_connectivity[m_tid][m_local_faces[m_fid][2]];
-            auto tmp = set_intersection(
-                m.m_vertex_connectivity[v1_id].m_conn_tets,
-                m.m_vertex_connectivity[v2_id].m_conn_tets);
-            auto n123_tids = set_intersection(tmp, m.m_vertex_connectivity[v3_id].m_conn_tets);
-            if (n123_tids.size() == 1)
-                return {};
-            else {
-                Tuple loc = *this;
-                loc.m_tid = n123_tids[0] == m_tid ? n123_tids[1] : n123_tids[0];
-                int j = m.m_tet_connectivity[loc.m_tid].find(loc.m_vid);
-                loc.m_eid = m_map_vertex2edge[j];
-                loc.m_fid = m_map_vertex2edge[loc.m_eid];
-                return loc;
-            }
-        }
+        std::optional<Tuple> switch_tetrahedron(const TetMesh& m) const;
 
-        /**
+        std::vector<Tuple> get_conn_tets(const TetMesh& m) const;
+          
+          /**
          * Positively oriented 4 vertices (represented by Tuples) in a tetra.
          * @return std::array<Tuple, 4> each tuple owns a different vertex.
          */
-        std::array<Tuple, 4> oriented_tet_vertices(const TetMesh& m) const
-        {
-            std::array<Tuple, 4> vs;
-            for (int j = 0; j < 4; j++) {
-                vs[j].m_vid = m.m_tet_connectivity[m_tid][j];
-                vs[j].m_eid = m_map_vertex2edge[j];
-                vs[j].m_fid = m_map_edge2face[vs[j].m_eid];
-                vs[j].m_tid = m_tid;
-            }
-            return vs;
-        }
+        std::array<Tuple, 4> oriented_tet_vertices(const TetMesh& m) const;
+
     };
 
     /**
@@ -354,11 +253,6 @@ public:
      */
     size_t n_tets() const { return m_tet_connectivity.size(); }
 
-    /**
-     * @deprecated Deprecated, use `oriented_tet_vertices` instead.
-     */
-    size_t v_id(int tid, int lvid) const { return m_tet_connectivity[tid][lvid]; }
-
 private:
     // Stores the connectivity of the mesh
     std::vector<VertexConnectivity> m_vertex_connectivity;
@@ -419,6 +313,19 @@ public:
     Tuple tuple_from_edge(int tid, int local_eid) const
     {
         return Tuple::init_from_edge(*this, tid, local_eid);
+    }
+    Tuple tuple_from_vertex(int vid) const
+    {
+        return Tuple::init_from_vertex(*this, vid);
+    }
+    Tuple tuple_from_tet(int tid) const
+    {
+        return Tuple::init_from_tet(*this, tid);
+    }
+
+    std::array<Tuple, 4> oriented_tet_vertices(const Tuple& t) const
+    {
+        return t.oriented_tet_vertices(*this);
     }
 };
 
