@@ -60,7 +60,7 @@ TEST_CASE("test generate tuples with 2 triangle", "[test_tuple_generation]")
     //     \ /
     // 	    v0
     TriMesh m;
-    std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}, {1, 2, 3}}};
+    std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 2, 3}}};
     m.create_mesh(4, tris);
 
     std::vector<TriMesh::TriangleConnectivity> m_tri_connectivity = m.get_tri_connectivity();
@@ -108,7 +108,7 @@ TEST_CASE("test generate tuples with 2 triangle", "[test_tuple_generation]")
 TEST_CASE("random 10 switches on 2 traingles", "[test_operation]")
 {
     TriMesh m;
-    std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}, {1, 2, 3}}};
+    std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 2, 3}}};
     m.create_mesh(4, tris);
 
     SECTION("test all tuples generated using vertices")
@@ -205,7 +205,7 @@ bool tuple_equal(TriMesh::Tuple t1, TriMesh::Tuple t2)
 TEST_CASE("double switches is identity", "[test_operation]")
 {
     TriMesh m;
-    std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}, {1, 2, 3}}};
+    std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 2, 3}}};
     m.create_mesh(4, tris);
 
     SECTION("test all tuples generated using vertices")
@@ -258,7 +258,7 @@ TEST_CASE("double switches is identity", "[test_operation]")
 TEST_CASE("vertex_edge switches equals indentity", "[test_operation]")
 {
     TriMesh m;
-    std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}, {1, 2, 3}}};
+    std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 2, 3}}};
     m.create_mesh(4, tris);
 
     SECTION("test all tuples generated using vertices")
