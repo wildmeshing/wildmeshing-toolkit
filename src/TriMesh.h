@@ -87,7 +87,7 @@ public:
 
         const Tuple switch_edge(const TriMesh& m)
         {
-            assert(is_valid());
+            assert(is_valid(m));
 
             const int lvid = m.m_tri_connectivity[m_fid].find(m_vid);
             assert(lvid == 0 || lvid == 1 || lvid == 2);
@@ -296,7 +296,7 @@ public:
                 eid = 1;
 
             Tuple v_tuple = Tuple(i, eid, fid, m);
-            assert(v_tuple.is_valid());
+            assert(v_tuple.is_valid(m));
             all_vertices_tuples[i] = v_tuple;
         }
         return all_vertices_tuples;
@@ -314,7 +314,7 @@ public:
             const std::array<size_t, 3>& f_conn_verts = m.m_tri_connectivity[i].m_indices;
             size_t vid = f_conn_verts[0];
             Tuple f_tuple = Tuple(vid, 2, i, m);
-            assert(f_tuple.is_valid());
+            assert(f_tuple.is_valid(m));
             all_faces_tuples[i] = f_tuple;
         }
         return all_faces_tuples;
