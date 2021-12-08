@@ -11,6 +11,7 @@
 #include <array>
 #include <cassert>
 #include <map>
+#include <optional>
 #include <vector>
 
 namespace wmtk {
