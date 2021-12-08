@@ -40,21 +40,51 @@ public:
         int m_timestamp = 0;
 
     public:
-
         Tuple() {}
 
+        /**
+         * Construct a new Tuple object with global vertex/tetra index and local edge/face index
+         *
+         * @param vid vertex id
+         * @param eid edge id (local)
+         * @param fid face id (local)
+         * @param tid tetra id (local)
+         */
         Tuple(size_t vid, size_t eid, size_t fid, size_t tid)
             : m_vid(vid)
             , m_eid(eid)
             , m_fid(fid)
             , m_tid(tid)
         {} // DP: the counter should be initialized here?
-
+      
+        /**
+         * Generate a Tuple from global tetra index and __local__ edge index (from 0-5).
+         *
+         * @param m TetMesh where the current Tuple belongs.
+         * @param tid Global tetra index
+         * @param local_eid local edge index
+         * @return Tuple
+         */
         static Tuple init_from_edge(const TetMesh& m, int tid, int local_eid);
+          
+        /**
+         * TODO
+         *
+         * @param m
+         * @param vid
+         * @return Tuple
+         */
         static Tuple init_from_vertex(const TetMesh& m, int vid);
         static Tuple init_from_tet(const TetMesh& m, int tid);
 
+        /**
+         * Check if the current tuple is already invalid (removed during editing).
+         *
+         * @param m TetMesh where the tuple belongs.
+         * @return if not removed
+         */
         bool is_valid(const TetMesh& m) const;
+
 
         void update_version_number(const TetMesh& m);
         int get_version_number();
@@ -64,19 +94,64 @@ public:
 
         size_t vid() const;
 
+        /**
+         * returns a global unique edge id
+         *
+         * @return size_t
+         * @note The global id may not be consecutive. The edges are undirected and different tetra
+         * share the same edge.
+         */
         size_t eid(const TetMesh& m) const;
+          
+         /**
+         * returns a global unique face id
+         *
+         * @return size_t
+         * @note The global id may not be consecutive. The face are undirected.
+         */
         size_t fid(const TetMesh& m) const;
+          
+          /**
+         * returns global tetra id.
+         *
+         * @return size_t
+         */
         size_t tid() const;
 
+          /**
+         * Switch operation. See (URL-TO-DOCUMENT) for explaination.
+         *
+         * @param m
+         * @return Tuple another Tuple that share the same tetra, face, edge, but different vertex.
+         */
         Tuple switch_vertex(const TetMesh& m) const;
         Tuple switch_edge(const TetMesh& m) const;
         Tuple switch_face(const TetMesh& m) const;
+          
+          /**
+         * Switch operation for the adjacent tetra.
+         *
+         * @param m Mesh
+         * @return Tuple for the face-adjacent tetra, sharing same face, edge, and vertex.
+         * @return nullopt if the Tuple is the switch goes off the boundary.
+         */
         std::optional<Tuple> switch_tetrahedron(const TetMesh& m) const;
 
         std::vector<Tuple> get_conn_tets(const TetMesh& m) const;
+          
+          /**
+         * Positively oriented 4 vertices (represented by Tuples) in a tetra.
+         * @return std::array<Tuple, 4> each tuple owns a different vertex.
+         */
         std::array<Tuple, 4> oriented_tet_vertices(const TetMesh& m) const;
+
     };
 
+    /**
+     * (internal use) Maintains a list of tetra connected to the given vertex, and a flag to
+     * mark removal.
+     *
+     */
     class VertexConnectivity
     {
     public:
@@ -96,6 +171,10 @@ public:
         }
     };
 
+    /**
+     * (internal use) Maintains the vertices of a given tetra.
+     *
+     */
     class TetrahedronConnectivity
     {
     public:
@@ -131,8 +210,24 @@ public:
     TetMesh() {}
     virtual ~TetMesh() {}
 
+    /**
+     * Initialize TetMesh data structure
+     *
+     * @param n_vertices number of vertices
+     * @param tets vector of array. Each element represents one tet, which is defined by four
+     * vertices.
+     * @note Assuming oriented and manifold, but no embedding. The maximum index in `tets` should
+     * not exceed `n_vertices`
+     */
     void init(size_t n_vertices, const std::vector<std::array<size_t, 4>>& tets);
 
+    /**
+     * Split an edge
+     *
+     * @param t Input Tuple for the edge to split.
+     * @param[out] new_edges a vector of Tuples for all the edges from the newly introduced tetra.
+     * @return if split succeed
+     */
     bool split_edge(const Tuple& t, std::vector<Tuple>& new_edges);
     bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_edges);
     void swap_edge(const Tuple& t, int type);
@@ -146,10 +241,17 @@ public:
         for (auto& t : m_tet_connectivity) t.timestamp = 0;
     }
 
+    /**
+     * Get all unique undirected edges in the mesh.
+     *
+     * @return std::vector<Tuple> each Tuple owns a distinct edge.
+     */
     std::vector<Tuple> get_edges() const;
 
+    /**
+     * Number of tetra in the mesh
+     */
     size_t n_tets() const { return m_tet_connectivity.size(); }
-//    size_t v_id(int tid, int lvid) const { return m_tet_connectivity[tid][lvid]; }
 
 private:
     // Stores the connectivity of the mesh
@@ -197,6 +299,9 @@ protected:
     virtual void resize_attributes(size_t v, size_t e, size_t f, size_t t) {}
 
 public:
+    /**
+     * Thin wrapper for switch tuples
+     */
     Tuple switch_vertex(const Tuple& t) const { return t.switch_vertex(*this); }
     Tuple switch_edge(const Tuple& t) const { return t.switch_edge(*this); }
     Tuple switch_face(const Tuple& t) const { return t.switch_face(*this); }
