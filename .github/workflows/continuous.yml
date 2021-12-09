@@ -75,7 +75,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [macos-latest]
-        arch: [x86, arm64]
+        arch: [x86_64, arm64]
         config: [Debug, Release]
         include:
           - os: macos-latest
@@ -106,17 +106,7 @@ jobs:
           ccache --max-size=1.0G
           ccache -V && ccache --show-stats && ccache --zero-stats
 
-      - name: Configure x86
-        if: matrix.arch == 'x86'
-        run: |
-          mkdir -p build
-          cd build
-          cmake .. \
-            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-            -DCMAKE_BUILD_TYPE=${{ matrix.config }}
-
       - name: Configure arm64
-        if: matrix.arch == 'arm64'
         run: |
           mkdir -p build
           cd build
@@ -129,7 +119,7 @@ jobs:
         run: cd build; make -j2; ccache --show-stats
 
       - name: Tests
-        if: matrix.arch == 'x86' # no ARM vm on actions yet
+        if: matrix.arch == 'x86_64' # no ARM vm on actions yet
         run: cd build; ctest --verbose --output-on-failure
 
   ####################
