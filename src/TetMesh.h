@@ -66,6 +66,7 @@ public:
          * @return Tuple
          */
         static Tuple init_from_edge(const TetMesh& m, int tid, int local_eid);
+        static Tuple init_from_face(const TetMesh& m, int tid, int local_fid);
 
         /**
          * TODO
@@ -308,6 +309,12 @@ public:
     Tuple tuple_from_edge(int tid, int local_eid) const
     {
         auto loc = Tuple::init_from_edge(*this, tid, local_eid);
+        check_tuple_validity(loc);
+        return loc;
+    }
+    Tuple tuple_from_face(int tid, int local_fid) const
+    {
+        auto loc = Tuple::init_from_edge(*this, tid, local_fid);
         check_tuple_validity(loc);
         return loc;
     }

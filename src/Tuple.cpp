@@ -16,6 +16,26 @@ TetMesh::Tuple TetMesh::Tuple::init_from_edge(const TetMesh& m, int tid, int loc
     return Tuple(vid, local_eid, fid, tid);
 }
 
+TetMesh::Tuple TetMesh::Tuple::init_from_face(const TetMesh& m, int tid, int local_fid)
+{
+    assert(tid >= 0 && tid < m.m_tet_connectivity.size());
+    assert(local_fid >= 0 && local_fid < m_local_faces.size());
+
+    int vid = m.m_tet_connectivity[tid][m_local_faces[local_fid][0]];
+    int lvid1 = m_local_faces[local_fid][0];
+    int lvid2 = m_local_faces[local_fid][1];
+    int eid = -1;
+    for(int i=0;i<6;i++){
+        if(m_local_edges[i][0] == lvid1 && m_local_edges[i][1] == lvid2
+            || m_local_edges[i][0] == lvid2 && m_local_edges[i][1] == lvid1) {
+            eid = i;
+            break;
+        }
+    }
+    int fid = m_map_edge2face[local_fid];
+    return Tuple(vid, eid, local_fid, tid);
+}
+
 TetMesh::Tuple TetMesh::Tuple::init_from_vertex(const TetMesh& m, int vid)
 {
     assert(vid >= 0 && vid < m.m_vertex_connectivity.size());
