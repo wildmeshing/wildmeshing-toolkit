@@ -218,8 +218,20 @@ std::array<TetMesh::Tuple, 4> TetMesh::Tuple::oriented_tet_vertices(const TetMes
 
 void TetMesh::Tuple::check_validity(const TetMesh& m) const
 {
+    //check indices
     assert(!(m_tid >= 0 && m_tid < m.m_tet_connectivity.size()));
     assert(!(m_vid >= 0 && m_vid < m.m_vertex_connectivity.size()));
     assert(!(m_eid >= 0 && m_eid < 6));
     assert(!(m_fid >= 0 && m_fid < 4));
+
+    //check existence
+    assert(!is_valid(m));
+
+    //check connectivity
+    assert(m.m_tet_connectivity[m_tid].find(m_vid) < 0);
+    auto it = std::find(
+        m.m_vertex_connectivity[m_vid].m_conn_tets.begin(),
+        m.m_vertex_connectivity[m_vid].m_conn_tets.end(),
+        m_tid);
+    assert(it == m.m_vertex_connectivity[m_vid].m_conn_tets.end());
 }

@@ -146,7 +146,6 @@ public:
         std::array<Tuple, 4> oriented_tet_vertices(const TetMesh& m) const;
 
 
-    private:
         ////testing code
         void check_validity(const TetMesh& m) const;
 
@@ -305,16 +304,8 @@ protected:
 
 public:
     /**
-     * Thin wrapper for switch tuples
+     * Thin wrapper for tuple functions
      */
-    Tuple switch_vertex(const Tuple& t) const { return t.switch_vertex(*this); }
-    Tuple switch_edge(const Tuple& t) const { return t.switch_edge(*this); }
-    Tuple switch_face(const Tuple& t) const { return t.switch_face(*this); }
-    std::optional<Tuple> switch_tetrahedron(const Tuple& t) const
-    {
-        return t.switch_tetrahedron(*this);
-    }
-
     Tuple tuple_from_edge(int tid, int local_eid) const
     {
         return Tuple::init_from_edge(*this, tid, local_eid);
@@ -328,9 +319,27 @@ public:
         return Tuple::init_from_tet(*this, tid);
     }
 
+    Tuple switch_vertex(const Tuple& t) const { return t.switch_vertex(*this); }
+    Tuple switch_edge(const Tuple& t) const { return t.switch_edge(*this); }
+    Tuple switch_face(const Tuple& t) const { return t.switch_face(*this); }
+    std::optional<Tuple> switch_tetrahedron(const Tuple& t) const
+    {
+        return t.switch_tetrahedron(*this);
+    }
+
+    std::vector<Tuple> get_conn_tets(const Tuple& t) const
+    {
+        return t.get_conn_tets(*this);
+    }
+
     std::array<Tuple, 4> oriented_tet_vertices(const Tuple& t) const
     {
         return t.oriented_tet_vertices(*this);
+    }
+
+    void check_tuple_validity(const Tuple& t) const
+    {
+        t.check_validity(*this);
     }
 };
 
