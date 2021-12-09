@@ -145,6 +145,11 @@ public:
          */
         std::array<Tuple, 4> oriented_tet_vertices(const TetMesh& m) const;
 
+
+    private:
+        ////testing code
+        void check_validity(const TetMesh& m) const;
+
     };
 
     /**

@@ -8,6 +8,9 @@ using namespace wmtk;
 
 TetMesh::Tuple TetMesh::Tuple::init_from_edge(const TetMesh& m, int tid, int local_eid)
 {
+    assert(!(tid >= 0 && tid < m.m_tet_connectivity.size()));
+    assert(!(local_eid >= 0 && local_eid < m_local_edges.size()));
+
     int vid = m.m_tet_connectivity[tid][m_local_edges[local_eid][0]];
     int fid = m_map_edge2face[local_eid];
     return Tuple(vid, local_eid, fid, tid);
@@ -15,6 +18,8 @@ TetMesh::Tuple TetMesh::Tuple::init_from_edge(const TetMesh& m, int tid, int loc
 
 TetMesh::Tuple TetMesh::Tuple::init_from_vertex(const TetMesh& m, int vid)
 {
+    assert(!(vid >= 0 && vid < m.m_vertex_connectivity.size()));
+
     int tid = m.m_vertex_connectivity[vid].m_conn_tets[0];
     int j = m.m_tet_connectivity[tid].find(vid);
     int eid = m_map_vertex2edge[j];
@@ -22,7 +27,10 @@ TetMesh::Tuple TetMesh::Tuple::init_from_vertex(const TetMesh& m, int vid)
     return Tuple(vid, eid, fid, tid);
 }
 
-TetMesh::Tuple TetMesh::Tuple::init_from_tet(const TetMesh& m, int tid){
+TetMesh::Tuple TetMesh::Tuple::init_from_tet(const TetMesh& m, int tid)
+{
+    assert(!(tid >= 0 && tid < m.m_tet_connectivity.size()));
+
     int vid = m.m_tet_connectivity[tid][0];
     int eid = m_map_vertex2edge[0];
     int fid = m_map_edge2face[eid];
@@ -31,8 +39,7 @@ TetMesh::Tuple TetMesh::Tuple::init_from_tet(const TetMesh& m, int tid){
 
 bool TetMesh::Tuple::is_valid(const TetMesh& m) const
 {
-    if (m.m_vertex_connectivity[m_vid].m_is_removed ||
-        m.m_tet_connectivity[m_tid].m_is_removed)
+    if (m.m_vertex_connectivity[m_vid].m_is_removed || m.m_tet_connectivity[m_tid].m_is_removed)
         return false;
     return true;
 }
@@ -43,7 +50,10 @@ void TetMesh::Tuple::update_version_number(const TetMesh& m)
     m_timestamp = m.m_tet_connectivity[m_tid].timestamp;
 }
 
-int TetMesh::Tuple::get_version_number() { return m_timestamp; }
+int TetMesh::Tuple::get_version_number()
+{
+    return m_timestamp;
+}
 
 bool TetMesh::Tuple::is_version_number_valid(const TetMesh& m) const
 {
@@ -51,22 +61,30 @@ bool TetMesh::Tuple::is_version_number_valid(const TetMesh& m) const
     return true;
 }
 
-void TetMesh::Tuple::print_info() { logger().trace("tuple: {} {} {} {}", m_vid, m_eid, m_fid, m_tid); }
+void TetMesh::Tuple::print_info()
+{
+    logger().trace("tuple: {} {} {} {}", m_vid, m_eid, m_fid, m_tid);
+}
 
-size_t TetMesh::Tuple::vid() const { return m_vid; } // update eid and fid
+size_t TetMesh::Tuple::vid() const
+{
+    return m_vid;
+} // update eid and fid
 
 size_t TetMesh::Tuple::eid(const TetMesh& m) const
 {
     int v1_id = m.m_tet_connectivity[m_tid][m_local_edges[m_eid][0]];
     int v2_id = m.m_tet_connectivity[m_tid][m_local_edges[m_eid][1]];
-    auto n12_t_ids = set_intersection(m.m_vertex_connectivity[v1_id].m_conn_tets,
-                                      m.m_vertex_connectivity[v2_id].m_conn_tets);
+    auto n12_t_ids = set_intersection(
+        m.m_vertex_connectivity[v1_id].m_conn_tets,
+        m.m_vertex_connectivity[v2_id].m_conn_tets);
+    assert(n12_t_ids.empty());
+
     int tid = *std::min_element(n12_t_ids.begin(), n12_t_ids.end());
-    for(int j=0;j<6;j++){
+    for (int j = 0; j < 6; j++) {
         int tmp_v1_id = m.m_tet_connectivity[tid][m_local_edges[j][0]];
         int tmp_v2_id = m.m_tet_connectivity[tid][m_local_edges[j][1]];
-        if(tmp_v1_id == v1_id && tmp_v2_id == v2_id
-            ||tmp_v1_id == v2_id && tmp_v2_id == v1_id)
+        if (tmp_v1_id == v1_id && tmp_v2_id == v2_id || tmp_v1_id == v2_id && tmp_v2_id == v1_id)
             return tid * 6 + j;
     }
     throw std::runtime_error("Tuple::eid() error");
@@ -82,6 +100,8 @@ size_t TetMesh::Tuple::fid(const TetMesh& m) const
         m.m_vertex_connectivity[v_ids[0]].m_conn_tets,
         m.m_vertex_connectivity[v_ids[1]].m_conn_tets);
     auto n12_t_ids = set_intersection(tmp, m.m_vertex_connectivity[v_ids[2]].m_conn_tets);
+    assert(n12_t_ids.size() != 1 && n12_t_ids.size() != 2);
+
     if (n12_t_ids.size() == 1) {
         return m_tid * 4 + m_fid;
     }
@@ -100,16 +120,19 @@ size_t TetMesh::Tuple::fid(const TetMesh& m) const
     throw std::runtime_error("Tuple::fid() error");
 }
 
-size_t TetMesh::Tuple::tid() const { return m_tid; }
+size_t TetMesh::Tuple::tid() const
+{
+    return m_tid;
+}
 
 TetMesh::Tuple TetMesh::Tuple::switch_vertex(const TetMesh& m) const
 {
     Tuple loc = *this;
     int l_vid1 = m_local_edges[m_eid][0];
     int l_vid2 = m_local_edges[m_eid][1];
-    loc.m_vid = m.m_tet_connectivity[m_tid][l_vid1] == m_vid
-                    ? m.m_tet_connectivity[m_tid][l_vid2]
-                    : m.m_tet_connectivity[m_tid][l_vid1];
+    loc.m_vid = m.m_tet_connectivity[m_tid][l_vid1] == m_vid ? m.m_tet_connectivity[m_tid][l_vid2]
+                                                             : m.m_tet_connectivity[m_tid][l_vid1];
+    assert(!(loc.m_vid >= 0 && loc.m_vid < m.m_vertex_connectivity.size()));
 
     return loc;
 } // along edge
@@ -157,6 +180,8 @@ std::optional<TetMesh::Tuple> TetMesh::Tuple::switch_tetrahedron(const TetMesh& 
         m.m_vertex_connectivity[v1_id].m_conn_tets,
         m.m_vertex_connectivity[v2_id].m_conn_tets);
     auto n123_tids = set_intersection(tmp, m.m_vertex_connectivity[v3_id].m_conn_tets);
+    assert(n123_tids.size() != 1 && n123_tids.size() != 2);
+
     if (n123_tids.size() == 1)
         return {};
     else {
@@ -171,9 +196,12 @@ std::optional<TetMesh::Tuple> TetMesh::Tuple::switch_tetrahedron(const TetMesh& 
 
 std::vector<TetMesh::Tuple> TetMesh::Tuple::get_conn_tets(const TetMesh& m) const
 {
-        std::vector<Tuple> tets;
-        //todo
-        return tets;
+    std::vector<Tuple> tets;
+    for (int t_id : m.m_vertex_connectivity[m_vid].m_conn_tets) {
+        tets.emplace_back();
+        tets.back().init_from_tet(m, t_id);
+    }
+    return tets;
 }
 
 std::array<TetMesh::Tuple, 4> TetMesh::Tuple::oriented_tet_vertices(const TetMesh& m) const
@@ -186,4 +214,12 @@ std::array<TetMesh::Tuple, 4> TetMesh::Tuple::oriented_tet_vertices(const TetMes
         vs[j].m_tid = m_tid;
     }
     return vs;
+}
+
+void TetMesh::Tuple::check_validity(const TetMesh& m) const
+{
+    assert(!(m_tid >= 0 && m_tid < m.m_tet_connectivity.size()));
+    assert(!(m_vid >= 0 && m_vid < m.m_vertex_connectivity.size()));
+    assert(!(m_eid >= 0 && m_eid < 6));
+    assert(!(m_fid >= 0 && m_fid < 4));
 }

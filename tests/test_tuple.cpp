@@ -27,3 +27,5 @@ TEST_CASE("swith_vertex", "[test_tuple]")
 	const auto t2 = mesh.switch_vertex(t1);
 	REQUIRE(tuple.vid() == t2.vid());
 }
+
+
