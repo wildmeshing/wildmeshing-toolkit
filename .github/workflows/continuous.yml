@@ -69,7 +69,7 @@ jobs:
   ####################
 
   MacOS:
-    name: ${{ matrix.name }}-${{ matrix.archh }} (${{ matrix.config }})
+    name: ${{ matrix.name }}-${{ matrix.arch }} (${{ matrix.config }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
