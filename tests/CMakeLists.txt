@@ -7,6 +7,7 @@ set(test_sources
 
 	test_tuple.cpp
 	test_operations.cpp
+	test_delaunay.cpp
 )
 
 add_executable(unit_tests ${test_sources})

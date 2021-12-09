@@ -34,3 +34,16 @@ if(NOT TARGET igl::core)
     wildmeshing_toolkit_download_libigl()
     add_subdirectory(${WILDMESHING_TOOLKIT_EXTERNAL}/libigl)
 endif()
+
+
+# delaunay_psm
+if (NOT TARGET geogram::delauanay_psm)
+    wildmeshing_toolkit_download_delaunay_psm()
+    add_library(delaunay_psm STATIC
+        ${WILDMESHING_TOOLKIT_EXTERNAL}/delaunay_psm/Delaunay_psm.cpp)
+    target_compile_definitions(delaunay_psm PUBLIC GEO_STATIC_LIBS)
+    target_compile_features(delaunay_psm PRIVATE cxx_std_11)
+    target_include_directories(delaunay_psm PUBLIC
+        ${WILDMESHING_TOOLKIT_EXTERNAL}/delaunay_psm/)
+    add_library(geogram::delaunay_psm ALIAS delaunay_psm)
+endif()

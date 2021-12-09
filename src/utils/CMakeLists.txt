@@ -2,6 +2,9 @@ set(SOURCES
 	Logger.cpp
 	Logger.hpp
 
+    Delaunay.cpp
+    Delaunay.hpp
+
 	DisableWarnings.hpp
 	EnableWarnings.hpp
 

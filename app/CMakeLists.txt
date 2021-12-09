@@ -114,6 +114,9 @@ add_library(${PROJECT_NAME} #SOURCES)
 		Parameters.h
 		Envelope.h
 		main.cpp
+
+		EdgeSplitting.cpp
+		EdgeCollapsing.cpp
 		)
 
 ################################################################################
