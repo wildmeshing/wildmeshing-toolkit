@@ -51,6 +51,6 @@ endfunction()
 function(wildmeshing_toolkit_download_delaunay_psm)
     wildmeshing_toolkit_download_project(delaunay_psm
         GIT_REPOSITORY https://github.com/wildmeshing/Delaunay_psm.git
-        GIT_TAG        8a71d2d51e9967d895dbd5d4b25cf54b491c3ce8
+        GIT_TAG        3ecb4d6a1ccdcf5f3325a67470f18ae5b4074343
     )
 endfunction()
