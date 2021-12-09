@@ -99,7 +99,7 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
         auto local_tuples = loc.oriented_tet_vertices(*this);
         std::array<size_t, 4> local_verts;
         for (auto i=0; i<4; i++) {
-            local_verts[i] = local_tuples[i].vid()
+            local_verts[i] = local_tuples[i].vid();
         }
         // if local traversal is required, v0 (EV) v1 (EV) v2 (FEV) v3
         auto vl_id = [local_verts, vid, t_id]() {
