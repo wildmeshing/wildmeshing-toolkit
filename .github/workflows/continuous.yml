@@ -69,7 +69,7 @@ jobs:
   ####################
 
   MacOS:
-    name: ${{ matrix.name }}-${{ matrix.arch }} (${{ matrix.config }})
+    name: ${{ matrix.name }}-${{ matrix.archh }} (${{ matrix.config }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -98,8 +98,8 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ env.CACHE_PATH }}
-          key: ${{ runner.os }}-${{ matrix.config }}-cache-${{ github.sha }}
-          restore-keys: ${{ runner.os }}-${{ matrix.config }}-cache
+          key: ${{ runner.os }}-${{ matrix.config }}-${{ matrix.arch }}-cache-${{ github.sha }}
+          restore-keys: ${{ runner.os }}-${{ matrix.config }}-${{ matrix.arch }}-cache
 
       - name: Prepare ccache
         run: |
@@ -107,7 +107,7 @@ jobs:
           ccache -V && ccache --show-stats && ccache --zero-stats
 
       - name: Configure x86
-        if: matrix.arc == 'x86'
+        if: matrix.arch == 'x86'
         run: |
           mkdir -p build
           cd build
@@ -116,7 +116,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=${{ matrix.config }}
 
       - name: Configure arm64
-        if: matrix.arc == 'arm64'
+        if: matrix.arch == 'arm64'
         run: |
           mkdir -p build
           cd build
@@ -129,7 +129,7 @@ jobs:
         run: cd build; make -j2; ccache --show-stats
 
       - name: Tests
-        if: matrix.arc == 'x86' # no ARM vm on actions yet
+        if: matrix.arch == 'x86' # no ARM vm on actions yet
         run: cd build; ctest --verbose --output-on-failure
 
   ####################
