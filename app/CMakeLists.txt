@@ -1,15 +1,7 @@
 ################################################################################
 cmake_minimum_required(VERSION 3.8)
-project(TetWild)
+project(Apps)
 ################################################################################
-
-# Detects whether this is a top-level project
-#get_directory_property(HAS_PARENT PARENT_DIRECTORY)
-#if(HAS_PARENT)
-#	set(FLOAT_TETWILD_TOPLEVEL_PROJECT OFF)
-#else()
-	set(FLOAT_TETWILD_TOPLEVEL_PROJECT ON)
-#endif()
 
 if(INPUT_THIRD_PARTY_DIR)
 	set(FLOAT_TETWILD_EXTERNAL ${CMAKE_CURRENT_SOURCE_DIR}/${INPUT_THIRD_PARTY_DIR}/)
@@ -24,9 +16,6 @@ include(UseColors)
 
 # Prepend function
 include(PrependCurrentPath)
-
-# FloatTetwild utils
-# include(FloatTetwildUtils)
 
 # Extra warnings
 include(Warnings)
@@ -69,102 +58,56 @@ if(FLOAT_TETWILD_WITH_SANITIZERS)
 	list(APPEND CMAKE_MODULE_PATH ${FLOAT_TETWILD_EXTERNAL}/sanitizers-cmake/cmake)
 endif()
 
-# Setup dependencies
-# include(FloatTetwildDependencies)
 
 ################################################################################
-# FloatTetwild library
+# FloatTetwild
 ################################################################################
 
-#find_package(GMPfTetWild)
-#IF(NOT ${GMP_FOUND})
-#	MESSAGE(FATAL_ERROR "Cannot find GMP")
-#ENDIF()
+add_executable(TetWild_bin
+		tetwild/main.cpp
 
-# find_package(MPFR)
-# IF(NOT ${MPFR_FOUND})
-# 	MESSAGE(FATAL_ERROR "Cannot find MPFR")
-# ENDIF()
-
-# add_library() can only be called without any source since CMake 3.11 ...
-#set(SOURCES
-#		TetWild.cpp TetWild.h
-#				common.h
-#				Parameters.h
-#				Envelope.h
-#		)
-#
-#prepend_current_path(SOURCES)
-#wildmeshing_toolkit_copy_headers(${SOURCES})
-#wildmeshing_toolkit_set_source_group(${SOURCES})
-#target_sources(${PROJECT_NAME} PRIVATE ${SOURCES})
-
-add_library(${PROJECT_NAME} #SOURCES)
 		external/Exception.h
 		external/MshSaver.cpp
 		external/MshSaver.h
 
-		TetWild.cpp
-		TetWild.h
+		tetwild/TetWild.cpp
+		tetwild/TetWild.h
 
 		Logger.cpp
 		Logger.hpp
 
-		common.h
-		Parameters.h
-		Envelope.h
-		main.cpp
+		tetwild/common.h
+		tetwild/Parameters.h
+		tetwild/Envelope.h
+		tetwild/main.cpp
 
-		EdgeSplitting.cpp
-		EdgeCollapsing.cpp
+		tetwild/EdgeSplitting.cpp
+		tetwild/EdgeCollapsing.cpp
 		)
 
 ################################################################################
 # Required libraries
 ################################################################################
 
-# if(FLOAT_TETWILD_USE_FLOAT)
-# 	target_compile_definitions(${PROJECT_NAME} PUBLIC -DFLOAT_TETWILD_USE_FLOAT)
-# endif()
-
-# target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${GMP_INCLUDE_DIRS})
-
-target_link_libraries(${PROJECT_NAME} PUBLIC igl::predicates WildMeshingToolkit
-		# ${GMP_LIBRARIES}
-		# ${MPFR_LIBRARIES}
-)
-# if(FLOAT_TETWILD_ENABLE_TBB)
-# 	target_link_libraries(${PROJECT_NAME} PUBLIC tbb::tbb)
-# 	target_compile_definitions(${PROJECT_NAME} PUBLIC FLOAT_TETWILD_USE_TBB)
-# endif()
+target_link_libraries(TetWild_bin PUBLIC igl::predicates WildMeshingToolkit warnings::all)
+target_include_directories(TetWild_bin PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 # if(FLOAT_TETWILD_WITH_EXACT_ENVELOPE)
-# 	target_link_libraries(${PROJECT_NAME} PUBLIC FastEnvelope)
-# 	target_compile_definitions(${PROJECT_NAME} PUBLIC NEW_ENVELOPE)
+# 	target_link_libraries(TetWild PUBLIC FastEnvelope)
+# 	target_compile_definitions(TetWild PUBLIC NEW_ENVELOPE)
 # endif()
 
 ####
 
-if(FLOAT_TETWILD_TOPLEVEL_PROJECT)
-	add_executable(${PROJECT_NAME}_bin main.cpp)
-	target_compile_features(${PROJECT_NAME}_bin PUBLIC ${CXX14_FEATURES})
 
-	target_link_libraries(${PROJECT_NAME}_bin
-			PUBLIC
-			${PROJECT_NAME}
-			warnings::all
-			)
+target_compile_features(TetWild_bin PUBLIC ${CXX14_FEATURES})
 
-	if(TARGET igl::tetgen)
-		target_link_libraries(${PROJECT_NAME} PUBLIC igl::tetgen)
-		target_compile_definitions(${PROJECT_NAME} PUBLIC -DLIBIGL_WITH_TETGEN)
-	endif()
+if(FLOAT_TETWILD_WITH_SANITIZERS)
+	add_sanitizers(TetWild_bin)
+endif()
 
-	if(FLOAT_TETWILD_WITH_SANITIZERS)
-		add_sanitizers(${PROJECT_NAME}_bin)
-	endif()
 
-	if(NOT (${CMAKE_VERSION} VERSION_LESS "3.6.0"))
-		set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME}_bin)
-	endif()
+
+if(NOT (${CMAKE_VERSION} VERSION_LESS "3.6.0"))
+	set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT TetWild_bin)
 endif()
