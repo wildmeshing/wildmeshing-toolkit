@@ -1,5 +1,5 @@
 ################################################################################
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.14.0)
 project(Apps)
 ################################################################################
 
@@ -8,6 +8,7 @@ if(INPUT_THIRD_PARTY_DIR)
 else()
 	set(TWTK_APPS_EXTERNAL ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/)
 endif()
+
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
@@ -60,7 +61,7 @@ endif()
 # FloatTetwild
 ################################################################################
 
-add_executable(TetWild_bin
+add_library(TetWild
 		tetwild/main.cpp
 
 		external/Exception.h
@@ -81,24 +82,17 @@ add_executable(TetWild_bin
 		tetwild/EdgeCollapsing.cpp
 		)
 
-target_link_libraries(TetWild_bin PUBLIC igl::predicates WildMeshingToolkit warnings::all)
-target_include_directories(TetWild_bin PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(TetWild PUBLIC igl::predicates WildMeshingToolkit warnings::all)
+target_include_directories(TetWild PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/tetwild)
 # 	target_link_libraries(TetWild PUBLIC FastEnvelope)
-####
-
-target_compile_features(TetWild_bin PUBLIC ${CXX14_FEATURES})
+target_compile_features(TetWild PUBLIC ${CXX14_FEATURES})
 
 if(TWTK_APPS_WITH_SANITIZERS)
-	add_sanitizers(TetWild_bin)
+	add_sanitizers(TetWild)
 endif()
 
-
-if(NOT (${CMAKE_VERSION} VERSION_LESS "3.6.0"))
-	set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT TetWild_bin)
-endif()
-
-
-
+add_executable(TetWild_bin tetwild/main.cpp)
+target_link_libraries(TetWild_bin PUBLIC TetWild)
 
 
 
@@ -106,9 +100,7 @@ endif()
 # Quadric Edge Collapse 2D
 ################################################################################
 
-add_executable(QuadricEdgeCollapse_bin
-		QuadricEdgeCollapse/main.cpp
-
+add_library(QuadricEdgeCollapse
 		external/Exception.h
 		external/MshSaver.cpp
 		external/MshSaver.h
@@ -117,17 +109,24 @@ add_executable(QuadricEdgeCollapse_bin
 		Logger.hpp
 		)
 
-target_link_libraries(QuadricEdgeCollapse_bin PUBLIC igl::predicates WildMeshingToolkit warnings::all)
-target_include_directories(QuadricEdgeCollapse_bin PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(QuadricEdgeCollapse PUBLIC igl::predicates WildMeshingToolkit warnings::all)
+target_include_directories(QuadricEdgeCollapse PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 
-target_compile_features(QuadricEdgeCollapse_bin PUBLIC ${CXX14_FEATURES})
+target_compile_features(QuadricEdgeCollapse PUBLIC ${CXX14_FEATURES})
 
 if(TWTK_APPS_WITH_SANITIZERS)
-	add_sanitizers(QuadricEdgeCollapse_bin)
+	add_sanitizers(QuadricEdgeCollapse)
 endif()
 
+add_executable(QuadricEdgeCollapse_bin QuadricEdgeCollapse/main.cpp)
+target_link_libraries(QuadricEdgeCollapse_bin PUBLIC QuadricEdgeCollapse)
 
-if(NOT (${CMAKE_VERSION} VERSION_LESS "3.6.0"))
-	set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT QuadricEdgeCollapse_bin)
-endif()
+
+################################################################################
+# Quadric Edge Collapse 2D
+################################################################################
+
+include(CTest)
+enable_testing()
+add_subdirectory(tests)
