@@ -7,6 +7,9 @@ set(SOURCES
 
 		Tuple.cpp
 
+		EdgeCollapsingConn.cpp
+		EdgeSplittingConn.cpp
+
 #	TriMesh.h
 #	TriMesh.cpp
 )

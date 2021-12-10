@@ -57,11 +57,22 @@ double tetwild::TetWild::get_quality(const Tuple& loc)
 
 bool tetwild::TetWild::vertex_invariant(const Tuple& t)
 {
+    int v_id = t.vid();
+
+    //check rounded
+
+    //check surface
+    if(m_vertex_attribute[v_id].m_is_on_surface){
+
+    }
+
     return true;
 }
 
 bool tetwild::TetWild::tetrahedron_invariant(const Tuple& t)
 {
+    //check inversion
+
     return true;
 }
 
