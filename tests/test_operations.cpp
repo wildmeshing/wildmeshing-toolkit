@@ -30,7 +30,7 @@ TEST_CASE("edge_splitting", "[test_operation]")
 
     tetwild.split_all_edges();
 
-	REQUIRE(true);
+	REQUIRE(tetwild.check_mesh_connectivity_validity());
 }
 
 
