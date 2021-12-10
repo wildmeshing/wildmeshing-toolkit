@@ -7,6 +7,7 @@ set(SOURCES
 
 	TriMesh.h
 	TriMesh.cpp
+	Tuple.cpp
 )
 
 prepend_current_path(SOURCES)

@@ -50,7 +50,7 @@ endfunction()
 
 function(wildmeshing_toolkit_download_delaunay_psm)
     wildmeshing_toolkit_download_project(delaunay_psm
-        URL         https://members.loria.fr/BLevy/PACKAGES/Delaunay_psm_1.7.7.tar.gz
-        URL_MD5     f69d1ed5465814960e3d6379ba237728
+        GIT_REPOSITORY https://github.com/wildmeshing/Delaunay_psm.git
+        GIT_TAG        3ecb4d6a1ccdcf5f3325a67470f18ae5b4074343
     )
 endfunction()
