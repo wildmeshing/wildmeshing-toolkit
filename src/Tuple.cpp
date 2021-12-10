@@ -104,7 +104,7 @@ size_t TetMesh::Tuple::eid(const TetMesh& m) const
     for (int j = 0; j < 6; j++) {
         int tmp_v1_id = m.m_tet_connectivity[tid][m_local_edges[j][0]];
         int tmp_v2_id = m.m_tet_connectivity[tid][m_local_edges[j][1]];
-        if (tmp_v1_id == v1_id && tmp_v2_id == v2_id || tmp_v1_id == v2_id && tmp_v2_id == v1_id)
+        if ((tmp_v1_id == v1_id && tmp_v2_id == v2_id) || (tmp_v1_id == v2_id && tmp_v2_id == v1_id))
             return tid * 6 + j;
     }
     throw std::runtime_error("Tuple::eid() error");
