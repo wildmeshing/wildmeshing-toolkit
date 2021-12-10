@@ -156,7 +156,6 @@ TetMesh::Tuple TetMesh::Tuple::switch_vertex(const TetMesh& m) const
     loc.m_vid = m.m_tet_connectivity[m_tid][l_vid1] == m_vid ? m.m_tet_connectivity[m_tid][l_vid2]
                                                              : m.m_tet_connectivity[m_tid][l_vid1];
     assert(loc.m_vid >= 0 && loc.m_vid < m.m_vertex_connectivity.size());
-//    std::cout<<"->"<<loc.m_vid<<" "<<loc.m_eid<<" "<<loc.m_fid<<" "<<loc.m_tid<<std::endl;
 
     return loc;
 } // along edge
