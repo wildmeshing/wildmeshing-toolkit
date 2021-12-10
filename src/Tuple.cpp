@@ -148,8 +148,6 @@ size_t TetMesh::Tuple::tid() const
 TetMesh::Tuple TetMesh::Tuple::switch_vertex(const TetMesh& m) const
 {
     Tuple loc = *this;
-//    std::cout<<"switch_vertex"<<std::endl;
-//    std::cout<<loc.m_vid<<" "<<loc.m_eid<<" "<<loc.m_fid<<" "<<loc.m_tid<<std::endl;
 
     int l_vid1 = m_local_edges[m_eid][0];
     int l_vid2 = m_local_edges[m_eid][1];
