@@ -56,7 +56,7 @@ public:
             , m_fid(fid)
             , m_tid(tid)
         {} // DP: the counter should be initialized here?
-      
+
         /**
          * Generate a Tuple from global tetra index and __local__ edge index (from 0-5).
          *
@@ -66,7 +66,8 @@ public:
          * @return Tuple
          */
         static Tuple init_from_edge(const TetMesh& m, int tid, int local_eid);
-          
+        static Tuple init_from_face(const TetMesh& m, int tid, int local_fid);
+
         /**
          * TODO
          *
@@ -102,23 +103,23 @@ public:
          * share the same edge.
          */
         size_t eid(const TetMesh& m) const;
-          
-         /**
+
+        /**
          * returns a global unique face id
          *
          * @return size_t
          * @note The global id may not be consecutive. The face are undirected.
          */
         size_t fid(const TetMesh& m) const;
-          
-          /**
+
+        /**
          * returns global tetra id.
          *
          * @return size_t
          */
         size_t tid() const;
 
-          /**
+        /**
          * Switch operation. See (URL-TO-DOCUMENT) for explaination.
          *
          * @param m
@@ -127,8 +128,8 @@ public:
         Tuple switch_vertex(const TetMesh& m) const;
         Tuple switch_edge(const TetMesh& m) const;
         Tuple switch_face(const TetMesh& m) const;
-          
-          /**
+
+        /**
          * Switch operation for the adjacent tetra.
          *
          * @param m Mesh
@@ -138,13 +139,16 @@ public:
         std::optional<Tuple> switch_tetrahedron(const TetMesh& m) const;
 
         std::vector<Tuple> get_conn_tets(const TetMesh& m) const;
-          
-          /**
+
+        /**
          * Positively oriented 4 vertices (represented by Tuples) in a tetra.
          * @return std::array<Tuple, 4> each tuple owns a different vertex.
          */
         std::array<Tuple, 4> oriented_tet_vertices(const TetMesh& m) const;
 
+
+        ////testing code
+        void check_validity(const TetMesh& m) const;
     };
 
     /**
@@ -304,33 +308,75 @@ protected:
 
 public:
     /**
-     * Thin wrapper for switch tuples
+     * Thin wrapper for tuple functions
      */
-    Tuple switch_vertex(const Tuple& t) const { return t.switch_vertex(*this); }
-    Tuple switch_edge(const Tuple& t) const { return t.switch_edge(*this); }
-    Tuple switch_face(const Tuple& t) const { return t.switch_face(*this); }
-    std::optional<Tuple> switch_tetrahedron(const Tuple& t) const
-    {
-        return t.switch_tetrahedron(*this);
-    }
-
     Tuple tuple_from_edge(int tid, int local_eid) const
     {
-        return Tuple::init_from_edge(*this, tid, local_eid);
+        auto loc = Tuple::init_from_edge(*this, tid, local_eid);
+        check_tuple_validity(loc);
+        return loc;
+    }
+    Tuple tuple_from_face(int tid, int local_fid) const
+    {
+        auto loc = Tuple::init_from_edge(*this, tid, local_fid);
+        check_tuple_validity(loc);
+        return loc;
     }
     Tuple tuple_from_vertex(int vid) const
     {
-        return Tuple::init_from_vertex(*this, vid);
+        auto loc = Tuple::init_from_vertex(*this, vid);
+        check_tuple_validity(loc);
+        return loc;
     }
     Tuple tuple_from_tet(int tid) const
     {
-        return Tuple::init_from_tet(*this, tid);
+        auto loc = Tuple::init_from_tet(*this, tid);
+        check_tuple_validity(loc);
+        return loc;
+    }
+
+    Tuple switch_vertex(const Tuple& t) const
+    {
+        auto loc = t.switch_vertex(*this);
+        check_tuple_validity(loc);
+        return loc;
+    }
+    Tuple switch_edge(const Tuple& t) const
+    {
+        auto loc = t.switch_edge(*this);
+        check_tuple_validity(loc);
+        return loc;
+    }
+    Tuple switch_face(const Tuple& t) const
+    {
+        auto loc = t.switch_face(*this);
+        check_tuple_validity(loc);
+        return loc;
+    }
+    std::optional<Tuple> switch_tetrahedron(const Tuple& t) const
+    {
+        auto loc = t.switch_tetrahedron(*this);
+        if (loc.has_value()) check_tuple_validity(loc.value());
+        return loc;
+    }
+
+    std::vector<Tuple> get_conn_tets(const Tuple& t) const
+    {
+        auto locs = t.get_conn_tets(*this);
+        for (const auto& loc : locs) check_tuple_validity(loc);
+        return locs;
     }
 
     std::array<Tuple, 4> oriented_tet_vertices(const Tuple& t) const
     {
-        return t.oriented_tet_vertices(*this);
+        auto locs = t.oriented_tet_vertices(*this);
+        for (const auto& loc : locs) check_tuple_validity(loc);
+        return locs;
     }
+
+    void check_tuple_validity(const Tuple& t) const { t.check_validity(*this); }
+
+    bool check_mesh_connectivity_validity() const;
 };
 
 } // namespace wmtk
