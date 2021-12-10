@@ -9,6 +9,7 @@
 #include "Logger.hpp"
 
 #include <igl/predicates/predicates.h>
+#include <spdlog/fmt/ostr.h>
 
 bool tetwild::TetWild::is_inverted(const Tuple& loc)
 {
@@ -67,13 +68,13 @@ bool tetwild::TetWild::tetrahedron_invariant(const Tuple& t)
 
 void tetwild::TetWild::smooth_all_vertices()
 {
-    reset_timestamp();
-
     auto tuples = get_vertices();
+    logger().debug("tuples");
     auto cnt_suc = 0;
     for (auto t : tuples) { // TODO: threads
         if (smooth_vertex(t)) cnt_suc++;
     }
+    logger().debug("Smoothing Success Count {}", cnt_suc);
 }
 
 bool tetwild::TetWild::smooth_before(const Tuple& t)
@@ -84,24 +85,25 @@ bool tetwild::TetWild::smooth_before(const Tuple& t)
 bool tetwild::TetWild::smooth_after(const Tuple& t)
 {
     // Newton iterations are encapsulated here.
-    // TODO: tags. envelope check.
-    using vec = Vector3f;
+    // TODO: bbox/surface tags.
+    // TODO: envelope check.
+    logger().trace("Newton iteration for vertex smoothing.");
+    using vec = Eigen::Vector3d;
     auto vid = t.vid();
 
     auto locs = t.get_conn_tets(*this);
-
+    assert(locs.size() > 0);
     std::vector<std::array<double, 12>> assembles(locs.size());
     auto loc_id = 0;
     for (auto& loc : locs) {
         auto& T = assembles[loc_id];
         auto t_id = loc.tid();
-        assert(loc.vid() == vid);
+
         auto local_tuples = loc.oriented_tet_vertices(*this);
         std::array<size_t, 4> local_verts;
-        for (auto i=0; i<4; i++) {
+        for (auto i = 0; i < 4; i++) {
             local_verts[i] = local_tuples[i].vid();
         }
-        // if local traversal is required, v0 (EV) v1 (EV) v2 (FEV) v3
         auto vl_id = [local_verts, vid, t_id]() {
             for (auto i = 0; i < 4; i++) {
                 if (local_verts[i] == vid) return i;
@@ -110,20 +112,37 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
             return -1;
         }();
 
-        for (auto i = 0; i < 4; i++) // assuming cyclic orientation preservation.
-        {
-            for (auto j = 0; j < 3; i++) {
-                T[i * 3 + j] = m_vertex_attribute[local_verts[(vl_id + i) % 4]].m_posf[j];
+        // flatten and reorder v_id to be the first.
+        //
+        switch (vl_id) { // ABCD
+        case 1: // BA-DC
+            std::swap(local_verts[0], local_verts[1]);
+            std::swap(local_verts[2], local_verts[3]);
+            break;
+        case 2: // (CAB)D
+            std::swap(local_verts[1], local_verts[2]);
+            std::swap(local_verts[0], local_verts[1]);
+            break;
+        case 3: // CBAD -> DBAC
+            std::swap(local_verts[0], local_verts[2]);
+            std::swap(local_verts[0], local_verts[3]);
+            break;
+        case 0:
+        default: break;
+        }
+        for (auto i = 0; i < 4; i++) {
+            for (auto j = 0; j < 3; j++) {
+                T[i * 3 + j] = m_vertex_attribute[local_verts[i]].m_posf[j];
             }
         }
         loc_id++;
     }
 
     // Compute New Coordinate.
-    auto newton_direction = [&assembles](auto& pos) {
+    auto newton_direction = [&assembles](auto& pos) -> vec {
         auto total_energy = 0.;
-        auto total_jac = vec();
-        auto total_hess = Eigen::Matrix3d();
+        vec total_jac = vec::Zero();
+        Eigen::Matrix3d total_hess = Eigen::Matrix3d::Zero();
 
         // E = \sum_i E_i(x)
         // J = \sum_i J_i(x)
@@ -142,12 +161,14 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
             total_hess += hess;
             assert(!std::isnan(total_energy));
         }
-
         vec x = total_hess.ldlt().solve(total_jac);
+        logger().trace("energy {}", total_energy);
         if (total_jac.isApprox(total_hess * x)) // a hacky PSD trick. TODO: change this.
             return -x;
-        else
+        else {
+            logger().trace("gradient descent instead.");
             return -total_jac;
+        }
     };
     auto compute_energy = [&assembles](const vec& pos) -> double {
         auto total_energy = 0.;
@@ -162,9 +183,13 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
     auto linesearch = [&compute_energy](const vec& pos, const vec& dir, const int& max_iter) {
         auto lr = 0.8;
         auto old_energy = compute_energy(pos);
+        logger().trace("dir {}", dir);
         for (auto iter = 1; iter <= max_iter; iter++) {
             vec newpos = pos + std::pow(lr, iter) * dir;
-            if (compute_energy(newpos) < old_energy) return newpos; // TODO: armijo conditions.
+            logger().trace("pos {}, dir {}, [{}]", pos, dir, std::pow(lr, iter));
+            auto new_energy = compute_energy(newpos);
+            logger().trace("iter {}, {}, [{}]", iter, new_energy, newpos);
+            if (new_energy < old_energy) return newpos; // TODO: armijo conditions.
         }
         return pos;
     };
@@ -186,7 +211,10 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
 
     auto old_pos = m_vertex_attribute[vid].m_posf;
     m_vertex_attribute[vid].m_posf = compute_new_valid_pos(old_pos);
-
+    logger().trace(
+        "old pos {} -> new pos {}",
+        old_pos.transpose(),
+        m_vertex_attribute[vid].m_posf.transpose());
     // note: duplicate code snippets.
     for (auto& loc : locs) {
         if (is_inverted(loc)) {
@@ -207,8 +235,7 @@ void tetwild::TetWild::output_mesh(std::string file)
 
     Eigen::VectorXd V_flat(3 * m_vertex_attribute.size());
     for (int i = 0; i < m_vertex_attribute.size(); i++) {
-        for (int j = 0; j < 3; j++)
-            V_flat(3 * i + j) = m_vertex_attribute[i].m_posf[j];
+        for (int j = 0; j < 3; j++) V_flat(3 * i + j) = m_vertex_attribute[i].m_posf[j];
     }
 
     Eigen::VectorXi T_flat(4 * n_tets());

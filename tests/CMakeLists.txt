@@ -7,6 +7,7 @@ set(test_sources
 
 	test_tuple.cpp
 	test_operations.cpp
+	test_operation_smooth.cpp
 	test_delaunay.cpp
 )
 
@@ -17,6 +18,7 @@ add_executable(unit_tests ${test_sources})
 ################################################################################
 
 target_link_libraries(unit_tests PUBLIC WildMeshingToolkit)
+target_link_libraries(unit_tests PUBLIC TetWild)
 
 target_link_libraries(unit_tests PUBLIC warnings::all)
 

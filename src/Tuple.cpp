@@ -171,9 +171,12 @@ std::optional<TetMesh::Tuple> TetMesh::Tuple::switch_tetrahedron(const TetMesh& 
 
 std::vector<TetMesh::Tuple> TetMesh::Tuple::get_conn_tets(const TetMesh& m) const
 {
-        std::vector<Tuple> tets;
-        //todo
-        return tets;
+    std::vector<Tuple> tets;
+    for (int t_id : m.m_vertex_connectivity[m_vid].m_conn_tets) {
+        tets.emplace_back();
+        tets.back().init_from_tet(m, t_id);
+    }
+    return tets;
 }
 
 std::array<TetMesh::Tuple, 4> TetMesh::Tuple::oriented_tet_vertices(const TetMesh& m) const
