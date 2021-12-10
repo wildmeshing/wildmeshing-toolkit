@@ -1,5 +1,6 @@
 #pragma once
 
+// clang-format off
 #include <wmtk/DisableWarnings.hpp>
 #include <spdlog/spdlog.h>
 #include <spdlog/async.h>
@@ -7,6 +8,7 @@
 #include <wmtk/EnableWarnings.hpp>
 
 #include <ostream>
+// clang-format on
 
 namespace apps {
 
