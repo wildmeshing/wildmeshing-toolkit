@@ -162,7 +162,6 @@ TetMesh::Tuple TetMesh::Tuple::switch_vertex(const TetMesh& m) const
 
 TetMesh::Tuple TetMesh::Tuple::switch_edge(const TetMesh& m) const
 {
-//    std::cout<<"switch_edge"<<std::endl;
     Tuple loc = *this;
 //    std::cout<<loc.m_vid<<" "<<loc.m_eid<<" "<<loc.m_fid<<" "<<loc.m_tid<<std::endl;
     for (int leid: m_local_edges_in_a_face[m_fid]) {
