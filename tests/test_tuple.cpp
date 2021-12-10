@@ -33,7 +33,6 @@ TEST_CASE("switch_vertex", "[test_tuple]")
 
 TEST_CASE("switch_edge", "[test_tuple]")
 {
-//    std::cout<<"TEST_CASE(\"switch_edge\", \"[test_tuple]\")"<<std::endl;
 
     TetMesh mesh;
     mesh.init(4, {{{0, 1, 2, 3}}});
