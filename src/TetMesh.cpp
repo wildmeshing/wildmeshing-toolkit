@@ -127,26 +127,6 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& t, std::vector<Tuple>& new_edges)
     return true;
 }
 
-std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_edges() const
-{
-    std::vector<TetMesh::Tuple> edges;
-    for (int i = 0; i < m_tet_connectivity.size(); i++) {
-        for (int j = 0; j < 6; j++) {
-            edges.push_back(tuple_from_edge(i, j));
-
-            //            Tuple loc;
-            //            int vid = m_tet_connectivity[i][local_edges[j][0]];
-            //            int eid = j;
-            //            int fid = map_edge2face[eid];
-            //            int tid = i;
-            //            edges.push_back(Tuple(vid, eid, fid, tid));
-        }
-    }
-
-    unique_edge_tuples(*this, edges);
-
-    return edges;
-}
 
 std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_vertices() const
 {
