@@ -45,10 +45,10 @@ public:
         /**
          * Construct a new Tuple object with global vertex/tetra index and local edge/face index
          *
-         * @param vid vertex id
+         * @param vid vertex id (global)
          * @param eid edge id (local)
          * @param fid face id (local)
-         * @param tid tetra id (local)
+         * @param tid tetra id (global)
          */
         Tuple(size_t vid, size_t eid, size_t fid, size_t tid)
             : m_vid(vid)
@@ -234,7 +234,8 @@ public:
      */
     bool split_edge(const Tuple& t, std::vector<Tuple>& new_edges);
     bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_edges);
-    void swap_edge(const Tuple& t, int type);
+    bool swap_edge(const Tuple& t);
+    bool smooth_vertex(const Tuple& t);
 
     void
     compact(); // cleans up the deleted vertices or tetrahedra, and fixes the corresponding indices
