@@ -58,32 +58,43 @@ endif()
 
 
 ################################################################################
+# Shared Lib
+################################################################################
+
+add_library(app_shared
+	shared/Logger.cpp
+	shared/Logger.hpp
+
+
+	shared/external/Exception.h
+	shared/external/MshSaver.cpp
+	shared/external/MshSaver.h
+)
+target_include_directories(app_shared PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/shared ${CMAKE_CURRENT_SOURCE_DIR}/shared/external)
+target_link_libraries(app_shared PUBLIC WildMeshingToolkit warnings::all)
+target_compile_features(app_shared PUBLIC ${CXX14_FEATURES})
+if(TWTK_APPS_WITH_SANITIZERS)
+	add_sanitizers(app_shared)
+endif()
+
+################################################################################
 # FloatTetwild
 ################################################################################
 
 add_library(TetWild
-		tetwild/main.cpp
+	tetwild/TetWild.cpp
+	tetwild/TetWild.h
 
-		external/Exception.h
-		external/MshSaver.cpp
-		external/MshSaver.h
+	tetwild/common.h
+	tetwild/Parameters.h
+	tetwild/Envelope.h
 
-		tetwild/TetWild.cpp
-		tetwild/TetWild.h
+	tetwild/EdgeSplitting.cpp
+	tetwild/EdgeCollapsing.cpp
+)
 
-		Logger.cpp
-		Logger.hpp
-
-		tetwild/common.h
-		tetwild/Parameters.h
-		tetwild/Envelope.h
-
-		tetwild/EdgeSplitting.cpp
-		tetwild/EdgeCollapsing.cpp
-		)
-
-target_link_libraries(TetWild PUBLIC igl::predicates WildMeshingToolkit warnings::all)
-target_include_directories(TetWild PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/tetwild)
+target_link_libraries(TetWild PUBLIC igl::predicates app_shared)
+target_include_directories(TetWild PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/tetwild)
 # 	target_link_libraries(TetWild PUBLIC FastEnvelope)
 target_compile_features(TetWild PUBLIC ${CXX14_FEATURES})
 
@@ -101,15 +112,10 @@ target_link_libraries(TetWild_bin PUBLIC TetWild)
 ################################################################################
 
 add_library(QuadricEdgeCollapse
-		external/Exception.h
-		external/MshSaver.cpp
-		external/MshSaver.h
+	QuadricEdgeCollapse/QEC.cpp
+)
 
-		Logger.cpp
-		Logger.hpp
-		)
-
-target_link_libraries(QuadricEdgeCollapse PUBLIC igl::predicates WildMeshingToolkit warnings::all)
+target_link_libraries(QuadricEdgeCollapse PUBLIC igl::predicates app_shared)
 target_include_directories(QuadricEdgeCollapse PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 
@@ -124,7 +130,7 @@ target_link_libraries(QuadricEdgeCollapse_bin PUBLIC QuadricEdgeCollapse)
 
 
 ################################################################################
-# Quadric Edge Collapse 2D
+# Tests
 ################################################################################
 
 enable_testing()
