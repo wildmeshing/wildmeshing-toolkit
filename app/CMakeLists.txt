@@ -127,6 +127,5 @@ target_link_libraries(QuadricEdgeCollapse_bin PUBLIC QuadricEdgeCollapse)
 # Quadric Edge Collapse 2D
 ################################################################################
 
-include(CTest)
 enable_testing()
 add_subdirectory(tests)

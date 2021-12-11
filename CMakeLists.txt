@@ -116,7 +116,6 @@ add_subdirectory(src)
 # Compile extras only if this is a top-level project
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
 	# Unit tests
-	include(CTest)
 	enable_testing()
 	add_subdirectory(tests)
 endif()

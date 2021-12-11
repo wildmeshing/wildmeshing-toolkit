@@ -49,8 +49,6 @@ foreach(source IN ITEMS ${test_sources})
     source_group("tests" FILES "${source}")
 endforeach()
 
-set(PARSE_CATCH_TESTS_ADD_TO_CONFIGURE_DEPENDS ON)
-
 # Include Catch2 and provide function `catch_discover_tests` to register tests.
 FetchContent_GetProperties(catch2)
 include("${catch2_SOURCE_DIR}/contrib/Catch.cmake")
