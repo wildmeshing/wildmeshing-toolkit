@@ -99,7 +99,7 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
     // TODO: bbox/surface tags.
     // TODO: envelope check.
     logger().trace("Newton iteration for vertex smoothing.");
-    using vec = Eigen::Vector3d;
+    using vec = Vector3f;
     auto vid = t.vid();
 
     auto locs = t.get_conn_tets(*this);
@@ -150,7 +150,7 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
     auto newton_direction = [&assembles](auto& pos) -> vec {
         auto total_energy = 0.;
         vec total_jac = vec::Zero();
-        Eigen::Matrix3d total_hess = Eigen::Matrix3d::Zero();
+        Matrix3 total_hess = Matrix3::Zero();
 
         // E = \sum_i E_i(x)
         // J = \sum_i J_i(x)
@@ -230,6 +230,7 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
             return false;
         }
     }
+
     for (auto& loc : locs) {
         auto t_id = loc.tid();
         m_tet_attribute[t_id].m_qualities = get_quality(loc);
