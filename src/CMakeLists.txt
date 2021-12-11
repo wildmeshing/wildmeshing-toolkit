@@ -7,7 +7,10 @@ set(SOURCES
 
 	TriMesh.h
 	TriMesh.cpp
-	Tuple.cpp
+
+	EdgeCollapsingConn.cpp
+	EdgeSplittingConn.cpp
+
 )
 
 prepend_current_path(SOURCES)

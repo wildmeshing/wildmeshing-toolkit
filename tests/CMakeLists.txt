@@ -17,7 +17,7 @@ add_executable(unit_tests ${test_sources})
 # Required Libraries
 ################################################################################
 
-target_link_libraries(unit_tests PUBLIC WildMeshingToolkit)
+target_link_libraries(unit_tests PUBLIC WildMeshingToolkit TetWild)
 
 target_link_libraries(unit_tests PUBLIC warnings::all)
 
