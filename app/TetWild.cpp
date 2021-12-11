@@ -116,16 +116,13 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
         //
         switch (vl_id) { // ABCD
         case 1: // BA-DC
-            std::swap(local_verts[0], local_verts[1]);
-            std::swap(local_verts[2], local_verts[3]);
+            local_verts = {local_verts[1], local_verts[0], local_verts[3], local_verts[2]};
             break;
         case 2: // (CAB)D
-            std::swap(local_verts[1], local_verts[2]);
-            std::swap(local_verts[0], local_verts[1]);
+            local_verts = {local_verts[2], local_verts[0], local_verts[1], local_verts[3]};
             break;
-        case 3: // CBAD -> DBAC
-            std::swap(local_verts[0], local_verts[2]);
-            std::swap(local_verts[0], local_verts[3]);
+        case 3: // 3102
+            local_verts = {local_verts[3], local_verts[1], local_verts[0], local_verts[2]};
             break;
         case 0:
         default: break;
