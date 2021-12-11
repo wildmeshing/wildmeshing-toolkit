@@ -72,7 +72,7 @@ add_library(app_shared
 )
 target_include_directories(app_shared PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/shared ${CMAKE_CURRENT_SOURCE_DIR}/shared/external)
 target_link_libraries(app_shared PUBLIC WildMeshingToolkit warnings::all)
-target_compile_features(app_shared PUBLIC ${CXX14_FEATURES})
+target_compile_features(app_shared PUBLIC cxx_std_17)
 if(TWTK_APPS_WITH_SANITIZERS)
 	add_sanitizers(app_shared)
 endif()
@@ -96,7 +96,7 @@ add_library(TetWild
 target_link_libraries(TetWild PUBLIC igl::predicates app_shared)
 target_include_directories(TetWild PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/tetwild)
 # 	target_link_libraries(TetWild PUBLIC FastEnvelope)
-target_compile_features(TetWild PUBLIC ${CXX14_FEATURES})
+target_compile_features(TetWild PUBLIC cxx_std_17)
 
 if(TWTK_APPS_WITH_SANITIZERS)
 	add_sanitizers(TetWild)
@@ -119,7 +119,7 @@ target_link_libraries(QuadricEdgeCollapse PUBLIC igl::predicates app_shared)
 target_include_directories(QuadricEdgeCollapse PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 
-target_compile_features(QuadricEdgeCollapse PUBLIC ${CXX14_FEATURES})
+target_compile_features(QuadricEdgeCollapse PUBLIC cxx_std_17)
 
 if(TWTK_APPS_WITH_SANITIZERS)
 	add_sanitizers(QuadricEdgeCollapse)
