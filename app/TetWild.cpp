@@ -82,7 +82,7 @@ void tetwild::TetWild::smooth_all_vertices()
     auto tuples = get_vertices();
     logger().debug("tuples");
     auto cnt_suc = 0;
-    for (auto t : tuples) { // TODO: threads
+    for (auto& t : tuples) { // TODO: threads
         if (smooth_vertex(t)) cnt_suc++;
     }
     logger().debug("Smoothing Success Count {}", cnt_suc);
