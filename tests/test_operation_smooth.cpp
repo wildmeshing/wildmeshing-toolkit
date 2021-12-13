@@ -46,7 +46,9 @@ TEST_CASE("smooth_double_tet", "[test_operation]")
     vertices[2].m_posf = Vector3f(0, 1, 0);
     vertices[3].m_posf = Vector3f(0, 0, 1);
     vertices[4].m_posf = Vector3f(1, 1, 1);
-    std::vector<std::array<size_t, 4>> tets = {{{0, 1, 3, 2}, {1, 3, 2, 4}}};
+    std::vector<std::array<size_t, 4>> tets;
+    tets.emplace_back(std::array<size_t, 4>{{0, 1, 3, 2}});
+    tets.emplace_back(std::array<size_t, 4>{{1, 3, 2, 4}});
     std::vector<TetAttributes> tet_attrs(tets.size());
 
     tetwild.init(vertices.size(), tets);
