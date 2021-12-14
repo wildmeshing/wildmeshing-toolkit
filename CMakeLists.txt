@@ -122,4 +122,7 @@ if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
 	add_subdirectory(tests)
 endif()
 
-add_subdirectory(app)
+
+if(WILDMESHING_TOOLKIT_WITH_TBB)
+	add_subdirectory(app)
+endif()
