@@ -81,12 +81,12 @@ bool tetwild::TetWild::tetrahedron_invariant(const Tuple& t)
 void tetwild::TetWild::smooth_all_vertices()
 {
     auto tuples = get_vertices();
-    logger().debug("tuples");
+    apps::logger().debug("tuples");
     auto cnt_suc = 0;
     for (auto& t : tuples) { // TODO: threads
         if (smooth_vertex(t)) cnt_suc++;
     }
-    logger().debug("Smoothing Success Count {}", cnt_suc);
+    apps::logger().debug("Smoothing Success Count {}", cnt_suc);
 }
 
 bool tetwild::TetWild::smooth_before(const Tuple& t)
@@ -99,7 +99,7 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
     // Newton iterations are encapsulated here.
     // TODO: bbox/surface tags.
     // TODO: envelope check.
-    logger().trace("Newton iteration for vertex smoothing.");
+    apps::logger().trace("Newton iteration for vertex smoothing.");
     using vec = Vector3f;
     auto vid = t.vid();
 
@@ -171,11 +171,11 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
             assert(!std::isnan(total_energy));
         }
         vec x = total_hess.ldlt().solve(total_jac);
-        logger().trace("energy {}", total_energy);
+        apps::logger().trace("energy {}", total_energy);
         if (total_jac.isApprox(total_hess * x)) // a hacky PSD trick. TODO: change this.
             return -x;
         else {
-            logger().trace("gradient descent instead.");
+            apps::logger().trace("gradient descent instead.");
             return -total_jac;
         }
     };
@@ -192,12 +192,12 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
     auto linesearch = [&compute_energy](const vec& pos, const vec& dir, const int& max_iter) {
         auto lr = 0.8;
         auto old_energy = compute_energy(pos);
-        logger().trace("dir {}", dir);
+        apps::logger().trace("dir {}", dir);
         for (auto iter = 1; iter <= max_iter; iter++) {
             vec newpos = pos + std::pow(lr, iter) * dir;
-            logger().trace("pos {}, dir {}, [{}]", pos, dir, std::pow(lr, iter));
+            apps::logger().trace("pos {}, dir {}, [{}]", pos, dir, std::pow(lr, iter));
             auto new_energy = compute_energy(newpos);
-            logger().trace("iter {}, {}, [{}]", iter, new_energy, newpos);
+            apps::logger().trace("iter {}, {}, [{}]", iter, new_energy, newpos);
             if (new_energy < old_energy) return newpos; // TODO: armijo conditions.
         }
         return pos;
@@ -220,7 +220,7 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
 
     auto old_pos = m_vertex_attribute[vid].m_posf;
     m_vertex_attribute[vid].m_posf = compute_new_valid_pos(old_pos);
-    logger().trace(
+    apps::logger().trace(
         "old pos {} -> new pos {}",
         old_pos.transpose(),
         m_vertex_attribute[vid].m_posf.transpose());

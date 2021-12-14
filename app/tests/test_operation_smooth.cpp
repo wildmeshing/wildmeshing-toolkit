@@ -1,6 +1,6 @@
 #include <wmtk/TetMesh.h>
 #include <catch2/catch.hpp>
-#include "../app/TetWild.h"
+#include <TetWild.h>
 #include "spdlog/spdlog.h"
 
 #include <spdlog/fmt/ostr.h>

@@ -7,7 +7,6 @@ set(test_sources
 
 	test_tuple.cpp
 	test_operations.cpp
-	test_operation_smooth.cpp
 	test_delaunay.cpp
 )
 
