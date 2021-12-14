@@ -5,40 +5,29 @@
 set(test_sources
 	main.cpp
 
-	test_tuple.cpp
 	test_operations.cpp
-	test_delaunay.cpp
 )
 
-add_executable(unit_tests ${test_sources})
+add_executable(app_unit_tests ${test_sources})
 
-################################################################################
-# Required Libraries
-################################################################################
-
-target_link_libraries(unit_tests PUBLIC WildMeshingToolkit)
-
-target_link_libraries(unit_tests PUBLIC warnings::all)
+target_link_libraries(app_unit_tests PUBLIC WildMeshingToolkit TetWild QuadricEdgeCollapse)
+target_link_libraries(app_unit_tests PUBLIC warnings::all)
 
 include(catch2)
-target_link_libraries(unit_tests PUBLIC Catch2::Catch2)
+target_link_libraries(app_unit_tests PUBLIC Catch2::Catch2)
 
-################################################################################
-# Compiler options
-################################################################################
 
-# wildmeshing_toolkit_polyfem_data()
+# data()
 # set(DATA_DIR "${THIRD_PARTY_DIR}/data/")
-# target_compile_definitions(unit_tests PUBLIC -DWILDMESHING_TOOLKIT_DATA_DIR=\"${DATA_DIR}\")
-
-target_compile_definitions(unit_tests PUBLIC CATCH_CONFIG_ENABLE_BENCHMARKING)
+# target_compile_definitions(app_unit_tests PUBLIC -DWILDMESHING_TOOLKIT_DATA_DIR=\"${DATA_DIR}\")
+target_compile_definitions(app_unit_tests PUBLIC CATCH_CONFIG_ENABLE_BENCHMARKING)
 
 ################################################################################
 # Sanitizers
 ################################################################################
 
 if(WILDMESHING_TOOLKIT_WITH_SANITIZERS)
-	add_sanitizers(unit_tests)
+	add_sanitizers(app_unit_tests)
 endif()
 
 ################################################################################
@@ -53,4 +42,4 @@ endforeach()
 FetchContent_GetProperties(catch2)
 include("${catch2_SOURCE_DIR}/contrib/Catch.cmake")
 
-catch_discover_tests(unit_tests)
+catch_discover_tests(app_unit_tests)
