@@ -47,6 +47,8 @@ void wmtk::TetMesh::init(size_t n_vertices, const std::vector<std::array<size_t,
 bool wmtk::TetMesh::swap_edge(const Tuple& t)
 {
     // 3-2 edge to face.
+    // only swap internal edges, not on boundary.
+    if (t.is_boundary_edge(*this)) return false;
     if (!swap_edge_before(t)) return false;
     auto v1_id = t.vid();
     auto v2_id = switch_vertex(t).vid();

@@ -85,6 +85,7 @@ public:
          * @return if not removed
          */
         bool is_valid(const TetMesh& m) const;
+        bool is_boundary_edge(const TetMesh& m) const;
 
 
         void update_version_number(const TetMesh& m);
