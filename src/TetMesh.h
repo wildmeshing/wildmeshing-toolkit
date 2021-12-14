@@ -7,6 +7,10 @@
 #include <wmtk/VectorUtils.h>
 #include <wmtk/Logger.hpp>
 
+#ifdef WILDMESHING_TOOLKIT_WITH_TBB
+#include <tbb/concurrent_vector.h>
+#endif
+
 #include <array>
 #include <cassert>
 #include <map>
@@ -259,8 +263,13 @@ public:
 
 private:
     // Stores the connectivity of the mesh
+#ifdef WILDMESHING_TOOLKIT_WITH_TBB
+    tbb::concurrent_vector<VertexConnectivity> m_vertex_connectivity;
+    tbb::concurrent_vector<TetrahedronConnectivity> m_tet_connectivity;
+#else
     std::vector<VertexConnectivity> m_vertex_connectivity;
     std::vector<TetrahedronConnectivity> m_tet_connectivity;
+#endif
 
     int m_t_empty_slot = 0;
     int m_v_empty_slot = 0;
