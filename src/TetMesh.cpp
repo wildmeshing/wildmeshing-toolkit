@@ -44,21 +44,29 @@ void wmtk::TetMesh::init(size_t n_vertices, const std::vector<std::array<size_t,
     }
 }
 
-bool wmtk::TetMesh::swap_edge(const Tuple& t) {
+bool wmtk::TetMesh::swap_edge(const Tuple& t)
+{
     // 3-2 edge to face.
-    auto v1_id= t.vid();
+    if (!swap_edge_before(t)) return false;
+    auto v1_id = t.vid();
     auto v2_id = switch_vertex(t).vid();
     auto& nb1 = m_vertex_connectivity[v1_id];
     auto& nb2 = m_vertex_connectivity[v2_id];
     auto affected = set_intersection(nb1.m_conn_tets, nb2.m_conn_tets);
     assert(!affected.empty());
     if (affected.size() != 3) {
+        logger().trace("selected edges need 3 neighbors to swap.");
         return false;
     }
 
-    // TODO: if (!bnd_faces.empty()) return false; // NOT handling boundary edges for now.
+    using tet_conn_t = decltype(TetrahedronConnectivity::m_indices);
+    auto old_tets = [&tet_attrs = m_tet_connectivity, &tets = affected]() {
+        auto tet_conn = std::vector<tet_conn_t>();
+        for (auto i : tets) tet_conn.push_back(tet_attrs[i].m_indices);
+        return tet_conn;
+    }();
 
-    auto new_tets = [&tet_attrs=m_tet_connectivity, v1_id, v2_id, &affected]() {
+    auto new_tets = [&tet_attrs = m_tet_connectivity, v1_id, v2_id, &affected]() {
         auto t0_id = affected[0];
         auto t1_id = affected[1];
         auto t2_id = affected[2];
@@ -76,7 +84,7 @@ bool wmtk::TetMesh::swap_edge(const Tuple& t) {
         // T0 = (n1,n2,v1,v2) -> (n1,n2,v1,n0)
         // T1 = (n0, n1, v1,v2) ->  (n0, n1, n2,v2)
         // T2 = (n0,n2, v1,v2) -> (-1,-1,-1,-1)
-        auto new_tets = std::vector<std::array<size_t, 4>>(2);
+        auto new_tets = std::vector<tet_conn_t>(2);
         auto new_tids = std::vector<size_t>({t0_id, t1_id});
         auto replace = [](auto& arr, auto v0, auto v1) {
             for (auto j = 0; j < arr.size(); j++)
@@ -90,16 +98,64 @@ bool wmtk::TetMesh::swap_edge(const Tuple& t) {
         return new_tets;
     }();
 
+    auto update_connectivity = [](auto& tet_conn,
+                                  auto& vert_conn,
+                                  auto& remove_id,
+                                  std::vector<tet_conn_t>& new_tet_conn) {
+        auto new_tid = std::vector<size_t>();
+        auto affected_vid = std::set<size_t>();
+        std::sort(remove_id.begin(), remove_id.end());
+        for (auto i : remove_id) {
+            tet_conn[i].m_is_removed = true;
+            auto& conn = tet_conn[i].m_indices;
+            for (auto j = 0; j < 4; j++) {
+                affected_vid.insert(conn[j]);
+            }
+        }
+
+        for (auto& conn : new_tet_conn) {
+            auto tid = tet_conn.size();
+            new_tid.push_back(tid);
+            auto new_tet = TetrahedronConnectivity();
+            new_tet.m_indices = conn;
+            tet_conn.emplace_back(new_tet);
+            for (auto j = 0; j < 4; j++) {
+                auto vid = conn[j];
+                assert(affected_vid.find(vid) != affected_vid.end() && "not introducing new verts");
+                assert(vert_conn.size() > vid && "Sufficient number of verts");
+                vert_conn[vid].m_conn_tets.push_back(tid);
+            }
+        }
+
+        for (auto v : affected_vid) {
+            auto new_tets = decltype(VertexConnectivity::m_conn_tets)();
+            for (auto t : vert_conn[v].m_conn_tets) {
+                if (!tet_conn[t].m_is_removed) {
+                    new_tets.push_back(t);
+                }
+            }
+            std::sort(new_tets.begin(), new_tets.end());
+            vert_conn[v].m_conn_tets = std::move(new_tets);
+        }
+        return new_tid;
+    };
+
+    auto new_tids =
+        update_connectivity(m_tet_connectivity, m_vertex_connectivity, affected, new_tets);
+    if (!swap_edge_after(t)) {
+        update_connectivity(m_tet_connectivity, m_vertex_connectivity, new_tids, old_tets);
+        return false;
+    }
 
     return true;
 }
-
 
 
 std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_edges() const
 {
     std::vector<TetMesh::Tuple> edges;
     for (int i = 0; i < m_tet_connectivity.size(); i++) {
+        if (m_tet_connectivity[i].m_is_removed) continue;
         for (int j = 0; j < 6; j++) {
             edges.push_back(tuple_from_edge(i, j));
         }
@@ -118,7 +174,7 @@ bool wmtk::TetMesh::check_mesh_connectivity_validity() const
         for (int j = 0; j < 4; j++) conn_tets[m_tet_connectivity[i][j]].push_back(i);
     }
 
-    //check conn_tets duplication, order, amount ...
+    // check conn_tets duplication, order, amount ...
     for (size_t i = 0; i < m_vertex_connectivity.size(); i++) {
         if (m_vertex_connectivity[i].m_is_removed) continue;
         assert(
@@ -126,19 +182,21 @@ bool wmtk::TetMesh::check_mesh_connectivity_validity() const
             "m_vertex_connectivity[i].m_conn_tets!=conn_tets[i]");
     }
 
-    //check is_removed
+    // check is_removed
     for (size_t i = 0; i < m_tet_connectivity.size(); i++) {
-        for(int j=0;j<4;j++)
-            assert(!m_vertex_connectivity[m_tet_connectivity[i][j]].m_is_removed
-                   &&"m_vertex_connectivity[m_tet_connectivity[i][j]].m_is_removed");
+        for (int j = 0; j < 4; j++)
+            assert(
+                !m_vertex_connectivity[m_tet_connectivity[i][j]].m_is_removed &&
+                "m_vertex_connectivity[m_tet_connectivity[i][j]].m_is_removed");
     }
     for (size_t i = 0; i < m_vertex_connectivity.size(); i++) {
         for (int tid : m_vertex_connectivity[i].m_conn_tets)
             assert(!m_tet_connectivity[tid].m_is_removed && "m_tet_connectivity[tid].m_is_removed");
     }
 
-    //check tuple
+    // check tuple
     for (size_t i = 0; i < m_vertex_connectivity.size(); i++) {
+        if (m_vertex_connectivity[i].m_is_removed) continue;
         Tuple loc = tuple_from_vertex(i);
         check_tuple_validity(loc);
         //
@@ -149,11 +207,12 @@ bool wmtk::TetMesh::check_mesh_connectivity_validity() const
         check_tuple_validity(locv);
         check_tuple_validity(loce);
         check_tuple_validity(locf);
-        if(loct.has_value()) {
+        if (loct.has_value()) {
             check_tuple_validity(loct.value());
         }
     }
     for (size_t i = 0; i < m_tet_connectivity.size(); i++) {
+        if (m_tet_connectivity[i].m_is_removed) continue;
         Tuple loc = tuple_from_tet(i);
         check_tuple_validity(loc);
         //
@@ -164,7 +223,7 @@ bool wmtk::TetMesh::check_mesh_connectivity_validity() const
         check_tuple_validity(locv);
         check_tuple_validity(loce);
         check_tuple_validity(locf);
-        if(loct.has_value()) {
+        if (loct.has_value()) {
             check_tuple_validity(loct.value());
         }
     }

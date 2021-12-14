@@ -284,6 +284,11 @@ protected:
     // If it returns false then the operation is undone (the tuple indexes a vertex and tet that
     // survived)
     virtual bool collapse_after(const std::vector<Tuple>& locs) { return true; }
+    
+    virtual bool swap_edge_before(const Tuple& t) { return true; }
+    virtual bool swap_edge_after(const Tuple& t) { return true; }
+    virtual bool swap_face_before(const Tuple& t) { return true; }
+    virtual bool swap_face_after(const Tuple& t) { return true; }
     // todo: quality, inversion, envelope: change v1 pos before this, only need to change partial
     // attributes
 
