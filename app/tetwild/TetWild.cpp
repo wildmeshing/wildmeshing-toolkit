@@ -111,6 +111,7 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
         auto& T = assembles[loc_id];
         auto t_id = loc.tid();
 
+        assert(!is_inverted(loc));
         auto local_tuples = loc.oriented_tet_vertices(*this);
         std::array<size_t, 4> local_verts;
         for (auto i = 0; i < 4; i++) {
@@ -118,7 +119,7 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
         }
 
         local_verts = wmtk::orient_preserve_tet_reorder(local_verts, vid);
-        
+
         for (auto i = 0; i < 4; i++) {
             for (auto j = 0; j < 3; j++) {
                 T[i * 3 + j] = m_vertex_attribute[local_verts[i]].m_posf[j];

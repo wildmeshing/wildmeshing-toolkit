@@ -3,12 +3,14 @@
 #include "AMIPS.h"
 #include "Logger.hpp"
 
-#include <array>
+#include <spdlog/fmt/ostr.h>
 #include <Eigen/Core>
 #include <Eigen/Dense>
-#include <spdlog/fmt/ostr.h>
+#include <array>
 
-std::array<size_t, 4> wmtk::orient_preserve_tet_reorder(const std::array<size_t, 4>& conn, size_t v0)
+std::array<size_t, 4> wmtk::orient_preserve_tet_reorder(
+    const std::array<size_t, 4>& conn,
+    size_t v0)
 {
     auto id_in_array = [](const auto& arr, auto a) {
         for (auto i = 0; i < arr.size(); i++)
@@ -18,7 +20,7 @@ std::array<size_t, 4> wmtk::orient_preserve_tet_reorder(const std::array<size_t,
     auto vl_id = id_in_array(conn, v0);
     assert(vl_id != -1);
     auto reorder = std::array<std::array<size_t, 4>, 4>{
-        {{0, 1, 2, 3}, {1, 0, 3, 2}, {2, 0, 1, 3}, {3, 1, 0, 2}}};
+        {{{0, 1, 2, 3}}, {{1, 0, 3, 2}}, {{2, 0, 1, 3}}, {{3, 1, 0, 2}}}};
     auto newconn = conn;
     for (auto j = 0; j < 4; j++) newconn[j] = conn[reorder[vl_id][j]];
     return newconn;
@@ -70,7 +72,10 @@ Eigen::Vector3d wmtk::newton_direction_from_stack(std::vector<std::array<double,
         }
         return total_energy;
     };
-    auto linesearch = [&compute_energy](const Eigen::Vector3d& pos, const Eigen::Vector3d& dir, const int& max_iter) {
+    auto linesearch = [&compute_energy](
+                          const Eigen::Vector3d& pos,
+                          const Eigen::Vector3d& dir,
+                          const int& max_iter) {
         auto lr = 0.8;
         auto old_energy = compute_energy(pos);
         logger().trace("dir {}", dir);
