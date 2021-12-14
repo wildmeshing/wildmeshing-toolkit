@@ -3,10 +3,12 @@
 //
 
 #include "TetWild.h"
-#include "external/MshSaver.h"
+
+#include <MshSaver.h>
+#include <Logger.hpp>
 
 #include <wmtk/AMIPS.h>
-#include "Logger.hpp"
+
 
 #include <igl/predicates/predicates.h>
 #include <spdlog/fmt/ostr.h>
@@ -60,11 +62,10 @@ bool tetwild::TetWild::vertex_invariant(const Tuple& t)
 {
     int v_id = t.vid();
 
-    //check rounded
+    // check rounded
 
-    //check surface
-    if(m_vertex_attribute[v_id].m_is_on_surface){
-
+    // check surface
+    if (m_vertex_attribute[v_id].m_is_on_surface) {
     }
 
     return true;
@@ -72,7 +73,7 @@ bool tetwild::TetWild::vertex_invariant(const Tuple& t)
 
 bool tetwild::TetWild::tetrahedron_invariant(const Tuple& t)
 {
-    //check inversion
+    // check inversion
 
     return true;
 }

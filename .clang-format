@@ -90,17 +90,17 @@ BinPackParameters: false
 # BS_Allman (in configuration: Allman) Always break before braces.
 # BS_GNU (in configuration: GNU) Always break before braces and add an extra level of indentation to braces of control statements, not to those of class, function or other definitions.
 BraceWrapping:
-  AfterClass:      true
+  AfterClass: true
   AfterControlStatement: false
-  AfterEnum:       false
-  AfterFunction:   true
-  AfterNamespace:  false
+  AfterEnum: false
+  AfterFunction: true
+  AfterNamespace: false
   AfterObjCDeclaration: false
-  AfterStruct:     true
-  AfterUnion:      false
-  BeforeCatch:     false
-  BeforeElse:      false
-  IndentBraces:    false
+  AfterStruct: true
+  AfterUnion: false
+  BeforeCatch: false
+  BeforeElse: false
+  IndentBraces: false
   SplitEmptyFunction: false
 BreakBeforeBraces: Custom
 

@@ -13,7 +13,7 @@ else()
 endif()
 
 # Check required CMake version
-set(REQUIRED_CMAKE_VERSION "3.14.0")
+set(REQUIRED_CMAKE_VERSION "3.15.0")
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
     cmake_minimum_required(VERSION ${REQUIRED_CMAKE_VERSION})
 else()
@@ -42,9 +42,6 @@ include(WildmeshingToolkitUtils)
 
 # Extra warnings
 include(Warnings)
-
-# Use C++11/14
-include(CXXFeatures)
 
 # Sort projects inside the solution
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -94,7 +91,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_BINARY_DIR}/include)
 target_link_libraries(${PROJECT_NAME} PRIVATE warnings::all)
 
 # Use C++17
-target_compile_features(${PROJECT_NAME} PUBLIC ${CXX17_FEATURES})
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 
 if(WILDMESHING_TOOLKIT_WITH_SANITIZERS)
 	add_sanitizers(${PROJECT_NAME})
@@ -116,7 +113,6 @@ add_subdirectory(src)
 # Compile extras only if this is a top-level project
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
 	# Unit tests
-	include(CTest)
 	enable_testing()
 	add_subdirectory(tests)
 endif()
