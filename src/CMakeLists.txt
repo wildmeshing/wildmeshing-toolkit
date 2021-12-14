@@ -5,14 +5,22 @@ set(SOURCES
 	TetMesh.h
 	TetMesh.cpp
 
-		Tuple.cpp
+	Tuple.cpp
 
-		EdgeCollapsingConn.cpp
-		EdgeSplittingConn.cpp
+	EdgeCollapsingConn.cpp
+	EdgeSplittingConn.cpp
 
 #	TriMesh.h
 #	TriMesh.cpp
 )
+
+if(WILDMESHING_TOOLKIT_WITH_TBB)
+	list(APPEND SOURCES
+
+		ConcurrentTetMesh.h
+		ConcurrentTetMesh.cpp
+	)
+endif()
 
 prepend_current_path(SOURCES)
 wildmeshing_toolkit_copy_headers(${SOURCES})
