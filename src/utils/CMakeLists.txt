@@ -1,4 +1,7 @@
 set(SOURCES
+	AMIPS.cpp
+	AMIPS.h
+
 	Logger.cpp
 	Logger.hpp
 
