@@ -16,6 +16,8 @@ set(SOURCES
 
 	VectorUtils.h
 
+	TetraQualityUtils.hpp
+	TetraQualityUtils.cpp
 )
 
 prepend_current_path(SOURCES)

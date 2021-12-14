@@ -8,7 +8,7 @@
 #include <Logger.hpp>
 
 #include <wmtk/AMIPS.h>
-
+#include <wmtk/TetraQualityUtils.hpp>
 
 #include <igl/predicates/predicates.h>
 #include <spdlog/fmt/ostr.h>
@@ -100,13 +100,13 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
     // TODO: bbox/surface tags.
     // TODO: envelope check.
     apps::logger().trace("Newton iteration for vertex smoothing.");
-    using vec = Vector3f;
     auto vid = t.vid();
 
     auto locs = t.get_conn_tets(*this);
     assert(locs.size() > 0);
     std::vector<std::array<double, 12>> assembles(locs.size());
     auto loc_id = 0;
+
     for (auto& loc : locs) {
         auto& T = assembles[loc_id];
         auto t_id = loc.tid();
@@ -116,29 +116,9 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
         for (auto i = 0; i < 4; i++) {
             local_verts[i] = local_tuples[i].vid();
         }
-        auto vl_id = [local_verts, vid, t_id]() {
-            for (auto i = 0; i < 4; i++) {
-                if (local_verts[i] == vid) return i;
-            }
-            assert(false);
-            return -1;
-        }();
 
-        // flatten and reorder v_id to be the first.
-        //
-        switch (vl_id) { // ABCD
-        case 1: // BA-DC
-            local_verts = {local_verts[1], local_verts[0], local_verts[3], local_verts[2]};
-            break;
-        case 2: // (CAB)D
-            local_verts = {local_verts[2], local_verts[0], local_verts[1], local_verts[3]};
-            break;
-        case 3: // 3102
-            local_verts = {local_verts[3], local_verts[1], local_verts[0], local_verts[2]};
-            break;
-        case 0:
-        default: break;
-        }
+        local_verts = wmtk::orient_preserve_tet_reorder(local_verts, vid);
+        
         for (auto i = 0; i < 4; i++) {
             for (auto j = 0; j < 3; j++) {
                 T[i * 3 + j] = m_vertex_attribute[local_verts[i]].m_posf[j];
@@ -147,79 +127,9 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
         loc_id++;
     }
 
-    // Compute New Coordinate.
-    auto newton_direction = [&assembles](auto& pos) -> vec {
-        auto total_energy = 0.;
-        vec total_jac = vec::Zero();
-        Matrix3 total_hess = Matrix3::Zero();
-
-        // E = \sum_i E_i(x)
-        // J = \sum_i J_i(x)
-        // H = \sum_i H_i(x)
-        auto local_id = 0;
-        for (auto& T : assembles) {
-            for (auto j = 0; j < 3; j++) {
-                T[j] = pos[j]; // only filling the front point.
-            }
-            auto jac = decltype(total_jac)();
-            auto hess = decltype(total_hess)();
-            total_energy += wmtk::AMIPS_energy(T);
-            wmtk::AMIPS_jacobian(T, jac);
-            wmtk::AMIPS_hessian(T, hess);
-            total_jac += jac;
-            total_hess += hess;
-            assert(!std::isnan(total_energy));
-        }
-        vec x = total_hess.ldlt().solve(total_jac);
-        apps::logger().trace("energy {}", total_energy);
-        if (total_jac.isApprox(total_hess * x)) // a hacky PSD trick. TODO: change this.
-            return -x;
-        else {
-            apps::logger().trace("gradient descent instead.");
-            return -total_jac;
-        }
-    };
-    auto compute_energy = [&assembles](const vec& pos) -> double {
-        auto total_energy = 0.;
-        for (auto& T : assembles) {
-            for (auto j = 0; j < 3; j++) {
-                T[j] = pos[j]; // only filling the front point x,y,z.
-            }
-            total_energy += wmtk::AMIPS_energy(T);
-        }
-        return total_energy;
-    };
-    auto linesearch = [&compute_energy](const vec& pos, const vec& dir, const int& max_iter) {
-        auto lr = 0.8;
-        auto old_energy = compute_energy(pos);
-        apps::logger().trace("dir {}", dir);
-        for (auto iter = 1; iter <= max_iter; iter++) {
-            vec newpos = pos + std::pow(lr, iter) * dir;
-            apps::logger().trace("pos {}, dir {}, [{}]", pos, dir, std::pow(lr, iter));
-            auto new_energy = compute_energy(newpos);
-            apps::logger().trace("iter {}, {}, [{}]", iter, new_energy, newpos);
-            if (new_energy < old_energy) return newpos; // TODO: armijo conditions.
-        }
-        return pos;
-    };
-    auto compute_new_valid_pos = [&linesearch, &newton_direction](const vec& old_pos) {
-        auto current_pos = old_pos;
-        auto line_search_iters = 12;
-        auto newton_iters = 10;
-        for (auto iter = 0; iter < newton_iters; iter++) {
-            auto dir = newton_direction(current_pos);
-            auto newpos = linesearch(current_pos, dir, line_search_iters);
-            if ((newpos - current_pos).norm() < 1e-9) // barely moves
-            {
-                break;
-            }
-            current_pos = newpos;
-        }
-        return current_pos;
-    };
 
     auto old_pos = m_vertex_attribute[vid].m_posf;
-    m_vertex_attribute[vid].m_posf = compute_new_valid_pos(old_pos);
+    m_vertex_attribute[vid].m_posf = wmtk::newton_direction_from_stack(assembles);
     apps::logger().trace(
         "old pos {} -> new pos {}",
         old_pos.transpose(),
