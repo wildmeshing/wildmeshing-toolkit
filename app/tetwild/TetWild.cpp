@@ -3,10 +3,12 @@
 //
 
 #include "TetWild.h"
-#include "external/MshSaver.h"
+
+#include <MshSaver.h>
+#include <Logger.hpp>
 
 #include <wmtk/AMIPS.h>
-#include "Logger.hpp"
+
 
 #include <igl/predicates/predicates.h>
 
@@ -59,11 +61,10 @@ bool tetwild::TetWild::vertex_invariant(const Tuple& t)
 {
     int v_id = t.vid();
 
-    //check rounded
+    // check rounded
 
-    //check surface
-    if(m_vertex_attribute[v_id].m_is_on_surface){
-
+    // check surface
+    if (m_vertex_attribute[v_id].m_is_on_surface) {
     }
 
     return true;
@@ -71,7 +72,7 @@ bool tetwild::TetWild::vertex_invariant(const Tuple& t)
 
 bool tetwild::TetWild::tetrahedron_invariant(const Tuple& t)
 {
-    //check inversion
+    // check inversion
 
     return true;
 }
@@ -82,8 +83,7 @@ void tetwild::TetWild::output_mesh(std::string file)
 
     Eigen::VectorXd V_flat(3 * m_vertex_attribute.size());
     for (int i = 0; i < m_vertex_attribute.size(); i++) {
-        for (int j = 0; j < 3; j++)
-            V_flat(3 * i + j) = m_vertex_attribute[i].m_posf[j];
+        for (int j = 0; j < 3; j++) V_flat(3 * i + j) = m_vertex_attribute[i].m_posf[j];
     }
 
     Eigen::VectorXi T_flat(4 * n_tets());

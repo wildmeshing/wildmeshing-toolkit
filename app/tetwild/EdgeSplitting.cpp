@@ -11,7 +11,7 @@ void tetwild::TetWild::split_all_edges()
 
     std::vector<Tuple> edges = get_edges();
 
-    logger().debug("edges.size() = {}", edges.size());
+    apps::logger().debug("edges.size() = {}", edges.size());
 
     int cnt_suc = 0;
     std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_l> es_queue;
