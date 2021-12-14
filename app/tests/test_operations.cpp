@@ -16,7 +16,7 @@ TEST_CASE("edge_splitting", "[test_operation]")
     params.l = 1 / 20.;
     params.init();
 
-    Envelope envelope;
+    fastEnvelope::FastEnvelope envelope;
     TetWild tetwild(params, envelope);
 
     std::vector<VertexAttributes> vertices(4);

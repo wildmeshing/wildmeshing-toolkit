@@ -10,7 +10,8 @@ else()
 endif()
 
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/recipes/")
 
 # Color output
 include(UseColors)
@@ -87,13 +88,14 @@ add_library(TetWild
 
 	tetwild/common.h
 	tetwild/Parameters.h
-	tetwild/Envelope.h
 
 	tetwild/EdgeSplitting.cpp
 	tetwild/EdgeCollapsing.cpp
 )
 
-target_link_libraries(TetWild PUBLIC igl::predicates app_shared)
+include(fenvelope)
+
+target_link_libraries(TetWild PUBLIC igl::predicates FastEnvelope app_shared)
 target_include_directories(TetWild PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/tetwild)
 # 	target_link_libraries(TetWild PUBLIC FastEnvelope)
 target_compile_features(TetWild PUBLIC cxx_std_17)
