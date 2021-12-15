@@ -13,8 +13,8 @@ using namespace tetwild;
 TEST_CASE("edge_splitting", "[test_operation]")
 {
     Parameters params;
-    params.l = 1 / 20.;
-    params.init();
+    params.lr = 1 / 20.;
+    params.init(Vector3f(0, 0, 0), Vector3f(1, 1, 1));
 
     Envelope envelope;
     TetWild tetwild(params, envelope);

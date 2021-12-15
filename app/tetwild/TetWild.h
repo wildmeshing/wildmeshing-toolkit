@@ -63,9 +63,7 @@ public:
     TetWild(Parameters& _m_params, Envelope& _m_envelope)
         : m_params(_m_params)
         , m_envelope(_m_envelope)
-    {
-        m_params.init();
-    }
+    {}
 
     ~TetWild() {}
 

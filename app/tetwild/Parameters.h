@@ -18,12 +18,6 @@ struct Parameters
     double splitting_l2;
     double collapsing_l2;
 
-    void init()
-    {
-        splitting_l2 = l * l * (16 / 9.);
-        collapsing_l2 = l * l * (16 / 25.);
-    }
-
     void init(const Vector3f& min_, const Vector3f& max_)
     {
         min = min_;
