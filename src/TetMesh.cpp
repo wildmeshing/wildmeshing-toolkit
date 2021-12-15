@@ -142,7 +142,9 @@ std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_vertices() const
         // m_local_edges
         edges.emplace_back(tuple_from_edge(tid, local_vid));
         if (local_vid == 3) edges.back() = switch_vertex(edges.back());
+        edges.back().update_version_number(*this);
         assert(edges.back().vid() == i);
+        assert(edges.back().is_version_number_valid(*this));
     }
     return edges;
 }
