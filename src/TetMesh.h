@@ -22,14 +22,14 @@ namespace wmtk {
 class TetMesh
 {
 private:
-    //YH: should be visible for all connectivity classes!
+    // YH: should be visible for all connectivity classes!
     static constexpr std::array<std::array<int, 2>, 6> m_local_edges = {
         {{{0, 1}}, {{1, 2}}, {{0, 2}}, {{0, 3}}, {{1, 3}}, {{2, 3}}}}; // local edges within a
     // tet
     static constexpr std::array<int, 6> m_map_vertex2edge = {{0, 0, 1, 3}};
     static constexpr std::array<int, 6> m_map_edge2face = {{0, 0, 0, 1, 2, 1}};
     static constexpr std::array<std::array<int, 3>, 6> m_local_faces = {
-        {{{0, 1, 2}}, {{0, 2, 3}}, {{0, 1, 3}}, {{1, 2, 3}}}};//sorted local vids
+        {{{0, 1, 2}}, {{0, 2, 3}}, {{0, 1, 3}}, {{1, 2, 3}}}}; // sorted local vids
     static constexpr std::array<std::array<int, 3>, 6> m_local_edges_in_a_face = {
         {{{0, 1, 2}}, {{2, 5, 3}}, {{3, 4, 0}}, {{5, 1, 4}}}};
 
@@ -37,17 +37,6 @@ public:
     // Cell Tuple Navigator
     class Tuple
     {
-//    private:
-//        static constexpr std::array<std::array<int, 2>, 6> m_local_edges = {
-//            {{{0, 1}}, {{1, 2}}, {{2, 0}}, {{0, 3}}, {{1, 3}}, {{2, 3}}}}; // local edges within a
-//                                                                           // tet
-//        static constexpr std::array<int, 6> m_map_vertex2edge = {{0, 0, 1, 3}};
-//        static constexpr std::array<int, 6> m_map_edge2face = {{0, 0, 0, 1, 2, 1}};
-//        static constexpr std::array<std::array<int, 3>, 6> m_local_faces = {
-//            {{{0, 1, 2}}, {{0, 2, 3}}, {{0, 3, 1}}, {{3, 2, 1}}}};
-//        static constexpr std::array<std::array<int, 3>, 6> m_local_edges_in_a_face = {
-//            {{{0, 1, 2}}, {{2, 5, 3}}, {{3, 4, 0}}, {{5, 1, 4}}}};
-
         size_t m_vid;
         size_t m_eid;
         size_t m_fid;
@@ -196,7 +185,8 @@ public:
      * (internal use) Maintains the vertices of a given tetra.
      *
      */
-    class TetrahedronConnectivity {
+    class TetrahedronConnectivity
+    {
     public:
         std::array<size_t, 4> m_indices;
         bool m_is_removed = false;
@@ -207,48 +197,57 @@ public:
 
         int get_version_number() { return timestamp; }
 
-        size_t &operator[](size_t index) {
+        size_t& operator[](size_t index)
+        {
             assert(index >= 0 && index < 4);
             return m_indices[index];
         }
 
-        size_t operator[](size_t index) const {
+        size_t operator[](size_t index) const
+        {
             assert(index >= 0 && index < 4);
             return m_indices[index];
         }
 
-        int find(size_t v_id) const {
+        int find(size_t v_id) const
+        {
             for (int j = 0; j < 4; j++) {
                 if (v_id == m_indices[j]) return j;
             }
             return -1;
         }
 
-        int find_local_edge(size_t v1_id, size_t v2_id) const {
+        int find_local_edge(size_t v1_id, size_t v2_id) const
+        {
             std::array<int, 2> e;
             for (int j = 0; j < 4; j++) {
-                if (v1_id == m_indices[j]) e[0] = j;
-                else if (v2_id == m_indices[j]) e[1] = j;
+                if (v1_id == m_indices[j])
+                    e[0] = j;
+                else if (v2_id == m_indices[j])
+                    e[1] = j;
             }
-            if (e[0] > e[1])
-                std::swap(e[0], e[1]);
-            int i = std::find(m_local_edges.begin(), m_local_edges.end(), e) - m_local_edges.begin();
-            if (i >= m_local_edges.size())
-                return -1;
+            if (e[0] > e[1]) std::swap(e[0], e[1]);
+            int i =
+                std::find(m_local_edges.begin(), m_local_edges.end(), e) - m_local_edges.begin();
+            if (i >= m_local_edges.size()) return -1;
             return i;
         }
 
-        int find_local_face(size_t v1_id, size_t v2_id, size_t v3_id) const {
+        int find_local_face(size_t v1_id, size_t v2_id, size_t v3_id) const
+        {
             std::array<int, 3> f;
             for (int j = 0; j < 4; j++) {
-                if (v1_id == m_indices[j]) f[0] = j;
-                else if (v2_id == m_indices[j]) f[1] = j;
-                else if (v3_id == m_indices[j]) f[2] = j;
+                if (v1_id == m_indices[j])
+                    f[0] = j;
+                else if (v2_id == m_indices[j])
+                    f[1] = j;
+                else if (v3_id == m_indices[j])
+                    f[2] = j;
             }
             std::sort(f.begin(), f.end());
-            int i = std::find(m_local_faces.begin(), m_local_faces.end(), f) - m_local_faces.begin();
-            if (i >= m_local_edges.size())
-                return -1;
+            int i =
+                std::find(m_local_faces.begin(), m_local_faces.end(), f) - m_local_faces.begin();
+            if (i >= m_local_edges.size()) return -1;
             return i;
         }
     };
