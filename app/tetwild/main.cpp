@@ -9,7 +9,7 @@ int main(int argc, char **argv)
 	using namespace tetwild;
 
 	Parameters params;
-	params.l = 1 / 20.;
+	params.lr = 1 / 20.;
 	params.init();
 
 	Envelope envelope;
