@@ -54,6 +54,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # Sanitizer options
 option(WILDMESHING_TOOLKIT_WITH_SANITIZERS	  "Enable sanitizers in compilation targets"   OFF)
+option(WILDMESHING_TOOLKIT_WITH_TBB			  "Enable TBB" 								   ON)
 option(WILDMESHING_TOOLKIT_SANITIZE_ADDRESS   "Sanitize Address"       OFF)
 option(WILDMESHING_TOOLKIT_SANITIZE_MEMORY    "Sanitize Memory"        OFF)
 option(WILDMESHING_TOOLKIT_SANITIZE_THREAD    "Sanitize Thread"        OFF)
@@ -97,10 +98,14 @@ if(WILDMESHING_TOOLKIT_WITH_SANITIZERS)
 	add_sanitizers(${PROJECT_NAME})
 endif()
 
-
-target_link_libraries(${PROJECT_NAME} PUBLIC spdlog::spdlog igl::core
-    geogram::delaunay_psm)
+target_link_libraries(${PROJECT_NAME} PUBLIC spdlog::spdlog igl::core geogram::delaunay_psm)
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_BINARY_DIR}/include)
+
+if(WILDMESHING_TOOLKIT_WITH_TBB)
+	include(onetbb)
+	target_link_libraries(${PROJECT_NAME} PUBLIC TBB::tbb)
+	target_compile_definitions(${PROJECT_NAME} PUBLIC WILDMESHING_TOOLKIT_WITH_TBB)
+endif()
 
 
 ################################################################################
@@ -117,4 +122,7 @@ if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
 	add_subdirectory(tests)
 endif()
 
-add_subdirectory(app)
+
+if(WILDMESHING_TOOLKIT_WITH_TBB)
+	add_subdirectory(app)
+endif()
