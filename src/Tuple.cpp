@@ -5,6 +5,7 @@
 #include <cassert>
 #include "TetMesh.h"
 #include "spdlog/spdlog.h"
+#include "wmtk/VectorUtils.h"
 
 using namespace wmtk;
 
@@ -59,29 +60,44 @@ TetMesh::Tuple TetMesh::Tuple::init_from_tet(const TetMesh& m, int tid)
     return Tuple(vid, eid, fid, tid);
 }
 
+bool TetMesh::Tuple::is_boundary_face(const TetMesh& m) const
+{
+    auto v0 = this->vid();
+    auto oppo = this->switch_vertex(m);
+    auto v1 = oppo.vid();
+    auto v2 = oppo.switch_edge(m).switch_vertex(m).vid();
+    assert(v0 != v1 && v1 != v2 && v2 != v0);
+
+    auto inter01= set_intersection(m.m_vertex_connectivity[v0].m_conn_tets, m.m_vertex_connectivity[v1].m_conn_tets);
+    auto inter012 = set_intersection(inter01, m.m_vertex_connectivity[v2].m_conn_tets);
+
+    assert(inter012.size() == 1 || inter012.size() == 2) ;
+    return inter012.size() == 1;
+}
+
 bool TetMesh::Tuple::is_boundary_edge(const TetMesh& m) const
 {
     Tuple e(0, 0, 0, 0);
     auto tet_id = this->tid();
-    spdlog::critical("edge {} {} {} {}", tid(),fid(m), eid(m), vid());
-    spdlog::critical("edge info {}-{}", vid(), switch_vertex(m).vid());
+    logger().trace("edge {} {} {} {}", tid(), fid(m), eid(m), vid());
+    logger().trace("edge info {}-{}", vid(), switch_vertex(m).vid());
 
     e = *this;
     auto cnt = 0;
     do {
         e = e.switch_face(m);
-        spdlog::critical("edge {} ({}) {} {}", e.tid(),e.fid(m), e.eid(m), e.vid());
+        logger().trace("edge {} ({}) {} {}", e.tid(), e.fid(m), e.eid(m), e.vid());
         auto e_opt = e.switch_tetrahedron(m);
         if (!e_opt) {
-            spdlog::critical(">> No adjacent tetra");
+            logger().trace(">> No adjacent tetra");
             return true;
         }
         e = e_opt.value();
-        cnt ++;
-        spdlog::critical("edge ({}) {} {} {}", e.tid(),e.fid(m), e.eid(m), e.vid());
+        cnt++;
+        logger().trace("edge ({}) {} {} {}", e.tid(), e.fid(m), e.eid(m), e.vid());
         assert(cnt < m.n_tets() + 1 && "Avoid infinite loop.");
     } while (e.tid() != tet_id);
-            spdlog::critical(">> Internal");
+    logger().trace(">> Internal");
     return false;
 }
 

@@ -10,6 +10,8 @@ set(SOURCES
 	EdgeCollapsingConn.cpp
 	EdgeSplittingConn.cpp
 
+	SwapMeshConnectivity.cpp
+
 #	TriMesh.h
 #	TriMesh.cpp
 )
