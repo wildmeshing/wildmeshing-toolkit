@@ -63,8 +63,8 @@ bool wmtk::TetMesh::swap_edge(const Tuple& t)
 
     using tet_conn_t = decltype(TetrahedronConnectivity::m_indices);
     auto old_tets = [&tet_attrs = m_tet_connectivity, &tets = affected]() {
-        auto tet_conn = std::vector<tet_conn_t>();
-        for (auto i : tets) tet_conn.push_back(tet_attrs[i].m_indices);
+        auto tet_conn = std::vector<TetrahedronConnectivity>();
+        for (auto i : tets) tet_conn.push_back(tet_attrs[i]);
         return tet_conn;
     }();
 
@@ -114,6 +114,8 @@ bool wmtk::TetMesh::swap_edge(const Tuple& t)
                 affected_vid.insert(conn[j]);
             }
         }
+        std::map<size_t, VertexConnectivity> rollback_vert_conn;
+        for (auto v : affected_vid) rollback_vert_conn.emplace(v, vert_conn[v]); // here is a copy
 
         for (auto& conn : new_tet_conn) {
             auto tid = tet_conn.size();
@@ -139,13 +141,22 @@ bool wmtk::TetMesh::swap_edge(const Tuple& t)
             std::sort(new_tets.begin(), new_tets.end());
             vert_conn[v].m_conn_tets = std::move(new_tets);
         }
-        return new_tid;
+        return rollback_vert_conn;
     };
 
-    auto new_tids =
+    auto rollback_vert_conn =
         update_connectivity(m_tet_connectivity, m_vertex_connectivity, affected, new_tets);
-    if (!swap_edge_after(t)) {
-        update_connectivity(m_tet_connectivity, m_vertex_connectivity, new_tids, old_tets);
+
+    resize_attributes(
+        m_vertex_connectivity.size(),
+        m_tet_connectivity.size() * 6,
+        m_tet_connectivity.size() * 4,
+        m_tet_connectivity.size());
+
+    if (!swap_edge_after(t)) { // rollback post-operation
+        assert(affected.size() == old_tets.size());
+        for (auto i = 0; i < affected.size(); i++) m_tet_connectivity[affected[i]] = old_tets[i];
+        for (auto& [v, conn] : rollback_vert_conn) m_vertex_connectivity[v] = std::move(conn);
         return false;
     }
 
