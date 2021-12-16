@@ -52,6 +52,16 @@ option(LIBIGL_WITH_TRIANGLE          	"Use Triangle"                 OFF)
 option(LIBIGL_WITH_PREDICATES        	"Use exact predicates"         ON)
 option(LIBIGL_WITH_XML               	"Use XML"                      OFF)
 
+
+# Options for envelope module
+option(FAST_ENVELOPE_WITH_UNIT_TESTS 				"unit test project" 					OFF)
+option(FAST_ENVELOPE_ENABLE_TBB        				"Enable TBB"                			OFF)
+option(FAST_ENVELOPE_WITH_GEOGRAM_PREDICATES        "Use whole Geogram for predicates"      OFF)
+option(FAST_ENVELOPE_WITH_GEOGRAM_PSM_PREDICATES    "Use Geogram predicates only"           OFF)
+option(FAST_ENVELOPE_WITH_GMP						"Use gmp to have rational predicates"   OFF)
+option(FAST_ENVELOPE_WITH_TIMER  				 	"use timer in the library for debug" 	OFF)
+
+
 # Sanitizers
 if(TWTK_APPS_WITH_SANITIZERS)
 	list(APPEND CMAKE_MODULE_PATH ${TWTK_APPS_EXTERNAL}/sanitizers-cmake/cmake)
