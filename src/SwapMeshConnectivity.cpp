@@ -1,16 +1,17 @@
 
 #include <wmtk/TetMesh.h>
 
-#include <wmtk/TupleUtils.hpp>
 #include <algorithm>
+#include <vector>
+#include <wmtk/TupleUtils.hpp>
 
 auto replace = [](auto& arr, auto v0, auto v1) {
     for (auto j = 0; j < arr.size(); j++)
         if (arr[j] == v0) arr[j] = v1;
 };
 
-auto record_old_tet_connectivity = [](
-    const auto& tet_attrs,
+std::vector<wmtk::TetMesh::TetrahedronConnectivity> record_old_tet_connectivity(
+    const wmtk::TetMesh::vector<wmtk::TetMesh::TetrahedronConnectivity>& tet_attrs,
     const std::vector<size_t>& tets)
 {
     auto tet_conn = std::vector<wmtk::TetMesh::TetrahedronConnectivity>();
@@ -18,47 +19,51 @@ auto record_old_tet_connectivity = [](
     return tet_conn;
 };
 
-auto update_connectivity =
-    [](auto& tet_conn, auto& vert_conn, auto& remove_id, auto& new_tet_conn) {
-        auto new_tid = std::vector<size_t>();
-        auto affected_vid = std::set<size_t>();
-        std::sort(remove_id.begin(), remove_id.end());
-        for (auto i : remove_id) {
-            tet_conn[i].m_is_removed = true;
-            auto& conn = tet_conn[i].m_indices;
-            for (auto j = 0; j < 4; j++) {
-                affected_vid.insert(conn[j]);
-            }
+std::map<size_t, wmtk::TetMesh::VertexConnectivity> update_connectivity(
+    wmtk::TetMesh::vector<wmtk::TetMesh::TetrahedronConnectivity>& tet_conn,
+    wmtk::TetMesh::vector<wmtk::TetMesh::VertexConnectivity>& vert_conn,
+    std::vector<size_t>& remove_id,
+    std::vector<std::array<size_t, 4>>& new_tet_conn)
+{
+    auto new_tid = std::vector<size_t>();
+    auto affected_vid = std::set<size_t>();
+    std::sort(remove_id.begin(), remove_id.end());
+    for (auto i : remove_id) {
+        tet_conn[i].m_is_removed = true;
+        auto& conn = tet_conn[i].m_indices;
+        for (auto j = 0; j < 4; j++) {
+            affected_vid.insert(conn[j]);
         }
-        std::map<size_t, wmtk::TetMesh::VertexConnectivity> rollback_vert_conn;
-        for (auto v : affected_vid) rollback_vert_conn.emplace(v, vert_conn[v]); // here is a copy
+    }
+    std::map<size_t, wmtk::TetMesh::VertexConnectivity> rollback_vert_conn;
+    for (auto v : affected_vid) rollback_vert_conn.emplace(v, vert_conn[v]); // here is a copy
 
-        for (auto& conn : new_tet_conn) {
-            auto tid = tet_conn.size();
-            new_tid.push_back(tid);
-            auto new_tet = wmtk::TetMesh::TetrahedronConnectivity();
-            new_tet.m_indices = conn;
-            tet_conn.emplace_back(new_tet);
-            for (auto j = 0; j < 4; j++) {
-                auto vid = conn[j];
-                assert(affected_vid.find(vid) != affected_vid.end() && "not introducing new verts");
-                assert(vert_conn.size() > vid && "Sufficient number of verts");
-                vert_conn[vid].m_conn_tets.push_back(tid);
-            }
+    for (auto& conn : new_tet_conn) {
+        auto tid = tet_conn.size();
+        new_tid.push_back(tid);
+        auto new_tet = wmtk::TetMesh::TetrahedronConnectivity();
+        new_tet.m_indices = conn;
+        tet_conn.emplace_back(new_tet);
+        for (auto j = 0; j < 4; j++) {
+            auto vid = conn[j];
+            assert(affected_vid.find(vid) != affected_vid.end() && "not introducing new verts");
+            assert(vert_conn.size() > vid && "Sufficient number of verts");
+            vert_conn[vid].m_conn_tets.push_back(tid);
         }
+    }
 
-        for (auto v : affected_vid) {
-            auto new_tets = decltype(wmtk::TetMesh::VertexConnectivity::m_conn_tets)();
-            for (auto t : vert_conn[v].m_conn_tets) {
-                if (!tet_conn[t].m_is_removed) {
-                    new_tets.push_back(t);
-                }
+    for (auto v : affected_vid) {
+        auto new_tets = decltype(wmtk::TetMesh::VertexConnectivity::m_conn_tets)();
+        for (auto t : vert_conn[v].m_conn_tets) {
+            if (!tet_conn[t].m_is_removed) {
+                new_tets.push_back(t);
             }
-            std::sort(new_tets.begin(), new_tets.end());
-            vert_conn[v].m_conn_tets = std::move(new_tets);
         }
-        return rollback_vert_conn;
-    };
+        std::sort(new_tets.begin(), new_tets.end());
+        vert_conn[v].m_conn_tets = std::move(new_tets);
+    }
+    return rollback_vert_conn;
+};
 
 
 bool wmtk::TetMesh::swap_edge(const Tuple& t)
@@ -124,7 +129,13 @@ bool wmtk::TetMesh::swap_edge(const Tuple& t)
         for (auto& [v, conn] : rollback_vert_conn) m_vertex_connectivity[v] = std::move(conn);
         return false;
     }
-    // TODO: update timestamp.
+
+    // TODO: invariants. what is the order of user-defined check vs invariant check?
+    
+    // update timestamp.
+    // TODO: we need to update timestamp outside of this function, for a queue of tuples.
+    // but this is private.
+    m_timestamp++;
 
     return true;
 }
