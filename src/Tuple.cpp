@@ -66,7 +66,7 @@ bool TetMesh::Tuple::is_valid(const TetMesh& m) const
 
 void TetMesh::Tuple::update_version_number(const TetMesh& m)
 {
-    assert(m_timestamp < m.m_tet_connectivity[m_tid].timestamp);
+    assert(m_timestamp <= m.m_tet_connectivity[m_tid].timestamp);
     m_timestamp = m.m_tet_connectivity[m_tid].timestamp;
 }
 
