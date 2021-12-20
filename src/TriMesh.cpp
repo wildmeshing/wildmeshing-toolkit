@@ -4,6 +4,119 @@
 #include <wmtk/TupleUtils.hpp>
 using namespace wmtk;
 
+TriMesh::Tuple TriMesh::Tuple::switch_vertex(const TriMesh& m) const
+{
+    assert(is_valid(m));
+
+    const int v0 = m.m_tri_connectivity[m_fid][0];
+    const int v1 = m.m_tri_connectivity[m_fid][1];
+    const int v2 = m.m_tri_connectivity[m_fid][2];
+
+    Tuple loc = *this;
+    switch (m_eid) {
+    case 0:
+        assert(m_vid == v1 || m_vid == v2);
+        loc.m_vid = m_vid == v1 ? v2 : v1;
+        break;
+    case 1:
+        assert(m_vid == v0 || m_vid == v2);
+        loc.m_vid = m_vid == v0 ? v2 : v0;
+        break;
+    case 2:
+        assert(m_vid == v0 || m_vid == v1);
+        loc.m_vid = m_vid == v0 ? v1 : v0;
+        break;
+    }
+
+    assert(loc.is_valid(m));
+    return loc;
+}
+
+TriMesh::Tuple TriMesh::Tuple::switch_edge(const TriMesh& m) const
+{
+    assert(is_valid(m));
+
+    const int lvid = m.m_tri_connectivity[m_fid].find(m_vid);
+    assert(lvid == 0 || lvid == 1 || lvid == 2);
+
+    Tuple loc = *this;
+    switch (lvid) {
+    case 0:
+        assert(m_eid == 1 || m_eid == 2);
+        loc.m_eid = m_eid == 1 ? 2 : 1;
+        break;
+    case 1:
+        assert(m_eid == 0 || m_eid == 2);
+        loc.m_eid = m_eid == 0 ? 2 : 0;
+        break;
+    case 2:
+        assert(m_eid == 0 || m_eid == 1);
+        loc.m_eid = m_eid == 0 ? 1 : 0;
+        break;
+    }
+
+    assert(loc.is_valid(m));
+    return loc;
+}
+
+std::optional<TriMesh::Tuple> TriMesh::Tuple::switch_face(const TriMesh& m) const
+{
+    assert(is_valid(m));
+
+    const size_t v0 = m_vid;
+    const size_t v1 = this->switch_vertex(m).m_vid;
+
+    // Intersect the 1-ring of the two vertices in the edge pointed by the tuple
+    std::vector<size_t> v0_fids = m.m_vertex_connectivity[v0].m_conn_tris;
+    std::vector<size_t> v1_fids = m.m_vertex_connectivity[v1].m_conn_tris;
+
+    std::sort(v0_fids.begin(), v0_fids.end());
+    std::sort(v1_fids.begin(), v1_fids.end());
+    std::vector<int> fids;
+    std::set_intersection(
+        v0_fids.begin(),
+        v0_fids.end(),
+        v1_fids.begin(),
+        v1_fids.end(),
+        std::back_inserter(fids)); // make sure this is correct
+    assert(fids.size() == 1 || fids.size() == 2);
+
+    if (fids.size() == 1) return {};
+
+    Tuple loc = *this;
+
+    // There is a triangle on the other side
+    if (fids.size() == 2) {
+        // Find the fid of the triangle on the other side
+        size_t fid2 = fids[0] == m_fid ? fids[1] : fids[0];
+        loc.m_fid = fid2;
+
+        // Get sorted local indices of the two vertices in the new triangle
+        size_t lv0_2 = m.m_tri_connectivity[fid2].find(v0);
+        assert(lv0_2 == 0 || lv0_2 == 1 || lv0_2 == 2);
+        size_t lv1_2 = m.m_tri_connectivity[fid2].find(v1);
+        assert(lv1_2 == 0 || lv1_2 == 1 || lv1_2 == 2);
+
+        if (lv0_2 > lv1_2) std::swap(lv0_2, lv1_2);
+
+        // Assign the edge id depending on the table
+        if (lv0_2 == 0 && lv1_2 == 1) {
+            loc.m_eid = 2;
+        } else if (lv0_2 == 1 && lv1_2 == 2) {
+            loc.m_eid = 0;
+        } else if (lv0_2 == 0 && lv1_2 == 2) {
+            loc.m_eid = 1;
+        } else {
+            assert(false);
+        }
+
+        loc.m_version_number = m.m_tri_connectivity[loc.m_fid].version_number;
+    }
+
+    assert(loc.is_valid(m));
+    return loc;
+}
+
 size_t TriMesh::find_next_empty_slot_t()
 {
     // check removed of the elements on hole_list
