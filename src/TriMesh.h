@@ -70,7 +70,7 @@ public:
          * @param m
          * @return Tuple another Tuple that share the same face, edge, but different vertex.
          */
-        const Tuple switch_vertex(const TriMesh& m)
+        Tuple switch_vertex(const TriMesh& m) const
         {
             assert(is_valid(m));
 
@@ -98,7 +98,7 @@ public:
             return loc;
         }
 
-        const Tuple switch_edge(const TriMesh& m)
+        Tuple switch_edge(const TriMesh& m) const
         {
             assert(is_valid(m));
 
@@ -132,7 +132,7 @@ public:
          * @return Tuple for the edge-adjacent triangle, sharing same edge, and vertex.
          * @return nullopt if the Tuple of the switch goes off the boundary.
          */
-        const std::optional<Tuple> switch_face(const TriMesh& m)
+        std::optional<Tuple> switch_face(const TriMesh& m) const
         {
             assert(is_valid(m));
 
@@ -321,7 +321,7 @@ public:
      * @note each vertex generate tuple that has the fid to be the smallest among connected
      * triangles' fid local vid to be in the same order as thier indices in the m_conn_tris local
      * eid assigned counter clockwise as in the ilustrated example
-     * @return vector of Tuple
+     * @return vector of Tuples
      */
 
     std::vector<Tuple> generate_tuples_from_vertices()
@@ -356,7 +356,7 @@ public:
      * Generate a vector of Tuples from global face index
      * @note vid is the first of the m_idices
      * local eid assigned counter clockwise as in the ilustrated example
-     * @return vector of Tuple
+     * @return vector of Tuples
      */
     std::vector<Tuple> generate_tuples_from_faces()
     {
@@ -376,8 +376,8 @@ public:
 
     /**
      * Generate a vector of Tuples for each edge
-     * @note ensures the fid assigned is the smallest between faces adjacent to the edge ß
-     * @return vector of Tuple
+     * @note ensures the fid assigned is the smallest between faces adjacent to the edge
+     * @return vector of Tuples
      */
     std::vector<Tuple> generate_tuples_from_edges()
     {
@@ -391,7 +391,7 @@ public:
                 Tuple e_tuple = Tuple(vid, eid, i, m);
                 assert(e_tuple.is_valid(m));
                 Tuple e_tuple2 = e_tuple.switch_face(m).value_or(
-                    e_tuple); // return itdlrf if it is a boundary triangle
+                    e_tuple); // return itself if it is a boundary triangle
                 size_t fid2 = e_tuple2.get_fid();
                 if (fid2 < i)
                     continue;
@@ -402,15 +402,19 @@ public:
         return all_edges_tuples;
     }
 
-    std::vector<Tuple> get_all_vertices();
-    std::vector<Tuple> get_all_edges();
-    std::vector<Tuple> get_all_tris();
-
-
 private:
     std::vector<VertexConnectivity> m_vertex_connectivity;
     std::vector<TriangleConnectivity> m_tri_connectivity;
+    std::vector<size_t> hole_list_v;
+    std::vector<size_t> hole_list_t;
+    size_t find_next_empty_slot_t();
+    size_t find_next_empty_slot_v();
 
+protected:
+    virtual bool split_before(const Tuple& t) { return true; }
+    virtual bool split_after(const std::vector<Tuple>& locs) { return true; }
+    virtual bool collapse_before(const Tuple& t) { return true; }
+    virtual bool collapse_after(const std::vector<Tuple>& locs) { return true; }
 
 public:
     std::vector<VertexConnectivity> get_vertex_connectivity()
@@ -419,9 +423,9 @@ public:
     }
     std::vector<TriangleConnectivity> get_tri_connectivity() { return this->m_tri_connectivity; }
 
-    Tuple switch_vertex(Tuple& t) const { return t.switch_vertex(*this); }
-    Tuple switch_edge(Tuple& t) const { return t.switch_edge(*this); }
-    std::optional<Tuple> switch_face(Tuple& t) const { return t.switch_face(*this); }
+    Tuple switch_vertex(const Tuple& t) const { return t.switch_vertex(*this); }
+    Tuple switch_edge(const Tuple& t) const { return t.switch_edge(*this); }
+    std::optional<Tuple> switch_face(const Tuple& t) const { return t.switch_face(*this); }
 
     /**
      * Split an edge
