@@ -55,12 +55,13 @@ public:
          * @param fid face id (local)
          * @param tid tetra id (local)
          */
-        Tuple(size_t vid, size_t eid, size_t fid, size_t tid)
+        Tuple(size_t vid, size_t eid, size_t fid, size_t tid, int ts = 0)
             : m_vid(vid)
             , m_eid(eid)
             , m_fid(fid)
             , m_tid(tid)
-        {} // DP: the counter should be initialized here?
+            , m_timestamp(ts)
+        {}
 
         /**
          * Generate a Tuple from global tetra index and __local__ edge index (from 0-5).
@@ -276,6 +277,7 @@ public:
     bool split_edge(const Tuple& t, std::vector<Tuple>& new_edges);
     bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_edges);
     void swap_edge(const Tuple& t, int type);
+    bool smooth_vertex(const Tuple& t);
 
     void
     compact(); // cleans up the deleted vertices or tetrahedra, and fixes the corresponding indices
@@ -292,6 +294,7 @@ public:
      * @return std::vector<Tuple> each Tuple owns a distinct edge.
      */
     std::vector<Tuple> get_edges() const;
+    std::vector<Tuple> get_vertices() const;
 
     /**
      * Number of tetra in the mesh
@@ -329,6 +332,8 @@ protected:
     // If it returns false then the operation is undone (the tuple indexes a vertex and tet that
     // survived)
     virtual bool collapse_after(const std::vector<Tuple>& locs) { return true; }
+    virtual bool smooth_before(const Tuple &t) { return true; } 
+    virtual bool smooth_after(const Tuple &t) { return true; } 
     // todo: quality, inversion, envelope: change v1 pos before this, only need to change partial
     // attributes
 

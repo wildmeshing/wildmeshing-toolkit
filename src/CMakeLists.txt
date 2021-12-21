@@ -1,7 +1,4 @@
 set(SOURCES
-	AMIPS.cpp
-	AMIPS.h
-
 	TetMesh.h
 	TetMesh.cpp
 
