@@ -284,7 +284,6 @@ public:
 
     void reset_timestamp()
     {
-        m_timestamp = 0;
         for (auto& t : m_tet_connectivity) t.timestamp = 0;
     }
 
@@ -315,8 +314,6 @@ private:
     int m_v_empty_slot = 0;
     int find_next_empty_slot_t();
     int find_next_empty_slot_v();
-
-    int m_timestamp = 0;
 
 protected:
     //// Split the edge in the tuple
