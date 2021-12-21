@@ -94,6 +94,7 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     for (size_t t_id : new_t_ids) {
         locs.push_back(Tuple(v_id, 0, 0, t_id));
     }
+    //todo: update timestamp of tets and tuple, change locs to loc
     if (!split_after(locs)) {
         m_vertex_connectivity[v_id].m_is_removed = true;
         for (int t_id : new_t_ids) m_tet_connectivity[t_id].m_is_removed = true;

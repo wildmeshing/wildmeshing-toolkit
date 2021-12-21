@@ -31,14 +31,15 @@ void tetwild::TetWild::split_all_edges()
         es_queue.pop();
 
         // check timestamp
+        if (!loc.is_valid(*this)) continue;
         if (!loc.is_version_number_valid(*this)) continue;
 
         std::vector<Tuple> new_edges;
         if (split_edge(loc, new_edges)) {
             cnt_suc++;
             if (!is_failed) {
-                for (auto& new_loc : new_edges) {
-                    Tuple& v1 = new_loc;
+                for (auto &new_loc: new_edges) {
+                    Tuple &v1 = new_loc;
                     Tuple v2 = new_loc.switch_vertex(*this);
                     double length =
                         (m_vertex_attribute[v1.vid()].m_posf - m_vertex_attribute[v2.vid()].m_posf)
@@ -72,6 +73,9 @@ bool tetwild::TetWild::split_before(const Tuple& loc0)
 
 bool tetwild::TetWild::split_after(const std::vector<Tuple>& locs)
 { // input: locs pointing to a list of tets and v_id
+    if(!TetMesh::split_after(locs))//note: call from super class, cannot be done with pure virtual classes
+        return false;
+
     int v_id = locs[0].vid();
     auto old_pos = m_vertex_attribute[v_id].m_posf;
     m_vertex_attribute[v_id].m_posf = split_cache.vertex_info.m_posf;
