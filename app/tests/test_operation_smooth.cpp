@@ -1,6 +1,6 @@
+#include <TetWild.h>
 #include <wmtk/TetMesh.h>
 #include <catch2/catch.hpp>
-#include <TetWild.h>
 #include "spdlog/spdlog.h"
 
 #include <spdlog/fmt/ostr.h>
@@ -11,7 +11,7 @@ TEST_CASE("smooth_in_single_tet", "[test_operation]")
     using namespace tetwild;
 
     Parameters params;
-    params.init();
+    params.init(Vector3f(0, 0, 0), Vector3f(1, 1, 1));
 
     Envelope envelope;
     TetWild tetwild(params, envelope);
@@ -36,7 +36,7 @@ TEST_CASE("smooth_double_tet", "[test_operation]")
     using namespace tetwild;
 
     Parameters params;
-    params.init();
+    params.init(Vector3f(0, 0, 0), Vector3f(1, 1, 1));
 
     Envelope envelope;
     TetWild tetwild(params, envelope);
