@@ -26,15 +26,12 @@ public:
         size_t m_vid;
         size_t m_eid;
         size_t m_fid;
-        size_t m_version_number;
+        size_t m_hash;
 
     public:
         void print_info() { logger().trace("tuple: {} {} {}", m_vid, m_eid, m_fid); }
 
-        void update_version_number(const TriMesh& m)
-        {
-            m_version_number = m.m_tri_connectivity[m_fid].version_number;
-        }
+        void update_hash(const TriMesh& m) { m_hash = m.m_tri_connectivity[m_fid].hash; }
         //        v2
         //      /    \ 
 		// e1  /      \  e0
@@ -53,7 +50,7 @@ public:
             , m_eid(eid)
             , m_fid(fid)
         {
-            update_version_number(m);
+            update_hash(m);
         }
 
 
@@ -83,18 +80,21 @@ public:
          */
         std::optional<Tuple> switch_face(const TriMesh& m) const;
 
-        bool is_valid(const TriMesh& m)
+        bool is_valid(const TriMesh& m) const
         {
+            // Condition 3: tuple m_hash check
+            if (m_hash == m.m_tri_connectivity[m_fid].hash)
+                return true;
+            else
+                return false;
             // Condition 0: Elements exist
-            if (m_vid < 0 || m_vid >= m.m_vertex_connectivity.size()) return false;
-
-            if (m_eid < 0 || m_eid > 2) return false;
-
-            if (m_fid < 0 || m_fid > m.m_tri_connectivity.size()) return false;
+            assert(m_vid < m.m_vertex_connectivity.size());
+            assert(m_eid <= 2);
+            assert(m_fid <= m.m_tri_connectivity.size());
 
             // Condition 1: tid and vid are consistent
             const int lvid = m.m_tri_connectivity[m_fid].find(m_vid);
-            if (!(lvid == 0 || lvid == 1 || lvid == 2)) return false;
+            assert(lvid == 0 || lvid == 1 || lvid == 2);
 
             // Condition 2: eid is valid
             const int v0 = m.m_tri_connectivity[m_fid][0];
@@ -102,21 +102,10 @@ public:
             const int v2 = m.m_tri_connectivity[m_fid][2];
 
             switch (m_eid) {
-            case 0:
-                if (!(m_vid == v1 || m_vid == v2)) return false;
-                break;
-            case 1:
-                if (!(m_vid == v0 || m_vid == v2)) return false;
-                break;
-            case 2:
-                if (!(m_vid == v0 || m_vid == v1)) return false;
-                break;
+            case 0: assert(m_vid == v1 || m_vid == v2);
+            case 1: assert(m_vid == v0 || m_vid == v2);
+            case 2: assert(m_vid == v0 || m_vid == v1);
             }
-
-            // Condition 3: the counter is up to date
-            if (m_version_number != m.m_tri_connectivity[m_fid].version_number) return false;
-
-            return true;
         }
 
         /**
@@ -172,7 +161,7 @@ public:
     public:
         std::array<size_t, 3> m_indices;
         bool m_is_removed = false;
-        size_t version_number;
+        size_t hash;
 
         inline size_t& operator[](size_t index)
         {
@@ -202,8 +191,11 @@ public:
     {
         m_vertex_connectivity.resize(n_vertices);
         m_tri_connectivity.resize(tris.size());
+        size_t hash_cnt = 0;
         for (int i = 0; i < tris.size(); i++) {
             m_tri_connectivity[i].m_indices = tris[i];
+            m_tri_connectivity[i].hash = hash_cnt;
+            hash_cnt++;
             for (int j = 0; j < 3; j++) m_vertex_connectivity[tris[i][j]].m_conn_tris.push_back(i);
         }
     }
@@ -305,9 +297,9 @@ private:
 
 protected:
     virtual bool split_before(const Tuple& t) { return true; }
-    virtual bool split_after(const std::vector<Tuple>& locs) { return true; }
+    virtual bool split_after(const Tuple& t) { return true; }
     virtual bool collapse_before(const Tuple& t) { return true; }
-    virtual bool collapse_after(const std::vector<Tuple>& locs) { return true; }
+    virtual bool collapse_after(const Tuple& t) { return true; }
 
 public:
     std::vector<VertexConnectivity> get_vertex_connectivity()
@@ -328,7 +320,7 @@ public:
      * @return if split succeed
      */
     bool split_edge(const Tuple& t, std::vector<Tuple>& new_edges);
-    bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_edges);
+    bool collapse_edge(const Tuple& t, Tuple& new_t);
     void swap_edge(const Tuple& t, int type);
 };
 
