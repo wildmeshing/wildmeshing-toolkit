@@ -168,8 +168,8 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     size_t test_fid2 = loc1.get_fid();
 
     assert(
-        ((std::count(n12_intersect_fids.begin(), n12_intersect_fids.end(), n1_fids) &&
-          std::count(n12_intersect_fids.begin(), n12_intersect_fids.end(), n2_fids)),
+        ((std::count(n12_intersect_fids.begin(), n12_intersect_fids.end(), n1_fids.size()) &&
+          std::count(n12_intersect_fids.begin(), n12_intersect_fids.end(), n2_fids.size())),
          "faces at the edge is not correct"));
 
     std::vector<size_t> n12_union_fids;
@@ -255,7 +255,7 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
         size_t fid = vid_fid.second;
         int j = m_tri_connectivity[fid].find(new_vid);
         Tuple e_tuple = Tuple(new_vid, (j + 2) % 3, fid, *this);
-        assert(e_tuple.is_valid(m));
+        assert(e_tuple.is_valid(*this));
         Tuple e_tuple2 =
             switch_face(e_tuple).value_or(e_tuple); // return itself if it is a boundary triangle
         size_t fid2 = e_tuple2.get_fid();

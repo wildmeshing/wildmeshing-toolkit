@@ -36,7 +36,7 @@ public:
             m_version_number = m.m_tri_connectivity[m_fid].version_number;
         }
         //        v2
-        //      /    \ 
+        //      /    \
 		// e1  /      \  e0
         //    v0 - - - v1
         //        e2
@@ -83,7 +83,7 @@ public:
          */
         std::optional<Tuple> switch_face(const TriMesh& m) const;
 
-        bool is_valid(const TriMesh& m)
+        bool is_valid(const TriMesh& m) const
         {
             // Condition 0: Elements exist
             if (m_vid < 0 || m_vid >= m.m_vertex_connectivity.size()) return false;
