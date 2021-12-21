@@ -55,12 +55,13 @@ public:
          * @param fid face id (local)
          * @param tid tetra id (local)
          */
-        Tuple(size_t vid, size_t eid, size_t fid, size_t tid)
+        Tuple(size_t vid, size_t eid, size_t fid, size_t tid, int ts = 0)
             : m_vid(vid)
             , m_eid(eid)
             , m_fid(fid)
             , m_tid(tid)
-        {} // DP: the counter should be initialized here?
+            , m_timestamp(ts)
+        {}
 
         /**
          * Generate a Tuple from global tetra index and __local__ edge index (from 0-5).
