@@ -7,6 +7,10 @@
 #include <wmtk/VectorUtils.h>
 #include <wmtk/Logger.hpp>
 
+#ifdef WILDMESHING_TOOLKIT_WITH_TBB
+#include <tbb/concurrent_vector.h>
+#endif
+
 #include <array>
 #include <cassert>
 #include <map>
@@ -17,21 +21,22 @@
 namespace wmtk {
 class TetMesh
 {
+private:
+    // YH: should be visible for all connectivity classes!
+    static constexpr std::array<std::array<int, 2>, 6> m_local_edges = {
+        {{{0, 1}}, {{1, 2}}, {{0, 2}}, {{0, 3}}, {{1, 3}}, {{2, 3}}}}; // local edges within a
+    // tet
+    static constexpr std::array<int, 6> m_map_vertex2edge = {{0, 0, 1, 3}};
+    static constexpr std::array<int, 6> m_map_edge2face = {{0, 0, 0, 1, 2, 1}};
+    static constexpr std::array<std::array<int, 3>, 6> m_local_faces = {
+        {{{0, 1, 2}}, {{0, 2, 3}}, {{0, 1, 3}}, {{1, 2, 3}}}}; // sorted local vids
+    static constexpr std::array<std::array<int, 3>, 6> m_local_edges_in_a_face = {
+        {{{0, 1, 2}}, {{2, 5, 3}}, {{3, 4, 0}}, {{5, 1, 4}}}};
+
 public:
     // Cell Tuple Navigator
     class Tuple
     {
-    private:
-        static constexpr std::array<std::array<int, 2>, 6> m_local_edges = {
-            {{{0, 1}}, {{1, 2}}, {{2, 0}}, {{0, 3}}, {{1, 3}}, {{2, 3}}}}; // local edges within a
-                                                                           // tet
-        static constexpr std::array<int, 6> m_map_vertex2edge = {{0, 0, 1, 3}};
-        static constexpr std::array<int, 6> m_map_edge2face = {{0, 0, 0, 1, 2, 1}};
-        static constexpr std::array<std::array<int, 3>, 6> m_local_faces = {
-            {{{0, 1, 2}}, {{0, 2, 3}}, {{0, 3, 1}}, {{3, 2, 1}}}};
-        static constexpr std::array<std::array<int, 3>, 6> m_local_edges_in_a_face = {
-            {{{0, 1, 2}}, {{2, 5, 3}}, {{3, 4, 0}}, {{5, 1, 4}}}};
-
         size_t m_vid;
         size_t m_eid;
         size_t m_fid;
@@ -50,12 +55,13 @@ public:
          * @param fid face id (local)
          * @param tid tetra id (local)
          */
-        Tuple(size_t vid, size_t eid, size_t fid, size_t tid)
+        Tuple(size_t vid, size_t eid, size_t fid, size_t tid, int ts = 0)
             : m_vid(vid)
             , m_eid(eid)
             , m_fid(fid)
             , m_tid(tid)
-        {} // DP: the counter should be initialized here?
+            , m_timestamp(ts)
+        {}
 
         /**
          * Generate a Tuple from global tetra index and __local__ edge index (from 0-5).
@@ -91,7 +97,8 @@ public:
         int get_version_number();
         bool is_version_number_valid(const TetMesh& m) const;
 
-        void print_info();
+        void print_info() const;
+        void print_info(const TetMesh& m) const;
 
         size_t vid() const;
 
@@ -188,6 +195,7 @@ public:
         int timestamp = 0;
 
         void set_version_number(int version) { timestamp = version; }
+
         int get_version_number() { return timestamp; }
 
         size_t& operator[](size_t index)
@@ -202,12 +210,46 @@ public:
             return m_indices[index];
         }
 
-        int find(int v_id) const
+        int find(size_t v_id) const
         {
             for (int j = 0; j < 4; j++) {
                 if (v_id == m_indices[j]) return j;
             }
             return -1;
+        }
+
+        int find_local_edge(size_t v1_id, size_t v2_id) const
+        {
+            std::array<int, 2> e;
+            for (int j = 0; j < 4; j++) {
+                if (v1_id == m_indices[j])
+                    e[0] = j;
+                else if (v2_id == m_indices[j])
+                    e[1] = j;
+            }
+            if (e[0] > e[1]) std::swap(e[0], e[1]);
+            int i =
+                std::find(m_local_edges.begin(), m_local_edges.end(), e) - m_local_edges.begin();
+            if (i >= m_local_edges.size()) return -1;
+            return i;
+        }
+
+        int find_local_face(size_t v1_id, size_t v2_id, size_t v3_id) const
+        {
+            std::array<int, 3> f;
+            for (int j = 0; j < 4; j++) {
+                if (v1_id == m_indices[j])
+                    f[0] = j;
+                else if (v2_id == m_indices[j])
+                    f[1] = j;
+                else if (v3_id == m_indices[j])
+                    f[2] = j;
+            }
+            std::sort(f.begin(), f.end());
+            int i =
+                std::find(m_local_faces.begin(), m_local_faces.end(), f) - m_local_faces.begin();
+            if (i >= m_local_edges.size()) return -1;
+            return i;
         }
     };
 
@@ -235,6 +277,7 @@ public:
     bool split_edge(const Tuple& t, std::vector<Tuple>& new_edges);
     bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_edges);
     void swap_edge(const Tuple& t, int type);
+    bool smooth_vertex(const Tuple& t);
 
     void
     compact(); // cleans up the deleted vertices or tetrahedra, and fixes the corresponding indices
@@ -251,6 +294,7 @@ public:
      * @return std::vector<Tuple> each Tuple owns a distinct edge.
      */
     std::vector<Tuple> get_edges() const;
+    std::vector<Tuple> get_vertices() const;
 
     /**
      * Number of tetra in the mesh
@@ -259,8 +303,13 @@ public:
 
 private:
     // Stores the connectivity of the mesh
+#ifdef WILDMESHING_TOOLKIT_WITH_TBB
+    tbb::concurrent_vector<VertexConnectivity> m_vertex_connectivity;
+    tbb::concurrent_vector<TetrahedronConnectivity> m_tet_connectivity;
+#else
     std::vector<VertexConnectivity> m_vertex_connectivity;
     std::vector<TetrahedronConnectivity> m_tet_connectivity;
+#endif
 
     int m_t_empty_slot = 0;
     int m_v_empty_slot = 0;
@@ -283,6 +332,8 @@ protected:
     // If it returns false then the operation is undone (the tuple indexes a vertex and tet that
     // survived)
     virtual bool collapse_after(const std::vector<Tuple>& locs) { return true; }
+    virtual bool smooth_before(const Tuple &t) { return true; } 
+    virtual bool smooth_after(const Tuple &t) { return true; } 
     // todo: quality, inversion, envelope: change v1 pos before this, only need to change partial
     // attributes
 

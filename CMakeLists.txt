@@ -13,7 +13,7 @@ else()
 endif()
 
 # Check required CMake version
-set(REQUIRED_CMAKE_VERSION "3.14.0")
+set(REQUIRED_CMAKE_VERSION "3.15.0")
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
     cmake_minimum_required(VERSION ${REQUIRED_CMAKE_VERSION})
 else()
@@ -43,9 +43,6 @@ include(WildmeshingToolkitUtils)
 # Extra warnings
 include(Warnings)
 
-# Use C++11/14
-include(CXXFeatures)
-
 # Sort projects inside the solution
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
@@ -57,6 +54,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # Sanitizer options
 option(WILDMESHING_TOOLKIT_WITH_SANITIZERS	  "Enable sanitizers in compilation targets"   OFF)
+option(WILDMESHING_TOOLKIT_WITH_TBB			  "Enable TBB" 								   ON)
 option(WILDMESHING_TOOLKIT_SANITIZE_ADDRESS   "Sanitize Address"       OFF)
 option(WILDMESHING_TOOLKIT_SANITIZE_MEMORY    "Sanitize Memory"        OFF)
 option(WILDMESHING_TOOLKIT_SANITIZE_THREAD    "Sanitize Thread"        OFF)
@@ -94,16 +92,20 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_BINARY_DIR}/include)
 target_link_libraries(${PROJECT_NAME} PRIVATE warnings::all)
 
 # Use C++17
-target_compile_features(${PROJECT_NAME} PUBLIC ${CXX17_FEATURES})
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 
 if(WILDMESHING_TOOLKIT_WITH_SANITIZERS)
 	add_sanitizers(${PROJECT_NAME})
 endif()
 
-
-target_link_libraries(${PROJECT_NAME} PUBLIC spdlog::spdlog igl::core
-    geogram::delaunay_psm)
+target_link_libraries(${PROJECT_NAME} PUBLIC spdlog::spdlog igl::core geogram::delaunay_psm)
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_BINARY_DIR}/include)
+
+if(WILDMESHING_TOOLKIT_WITH_TBB)
+	include(onetbb)
+	target_link_libraries(${PROJECT_NAME} PUBLIC TBB::tbb)
+	target_compile_definitions(${PROJECT_NAME} PUBLIC WILDMESHING_TOOLKIT_WITH_TBB)
+endif()
 
 
 ################################################################################
@@ -116,9 +118,11 @@ add_subdirectory(src)
 # Compile extras only if this is a top-level project
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
 	# Unit tests
-	include(CTest)
 	enable_testing()
 	add_subdirectory(tests)
 endif()
 
-add_subdirectory(app)
+
+if(WILDMESHING_TOOLKIT_WITH_TBB)
+	add_subdirectory(app)
+endif()
