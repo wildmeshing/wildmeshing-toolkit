@@ -2,7 +2,7 @@
 // Created by Yixin Hu on 11/9/21.
 //
 
-#include <wmtk/AMIPS.h>
+#include "AMIPS.h"
 
 namespace wmtk
 {

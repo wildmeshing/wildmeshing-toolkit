@@ -279,6 +279,7 @@ public:
     bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_edges);
     bool swap_edge(const Tuple& t);
     bool swap_face(const Tuple& t);
+    bool smooth_vertex(const Tuple& t);
 
     void
     compact(); // cleans up the deleted vertices or tetrahedra, and fixes the corresponding indices
@@ -295,6 +296,7 @@ public:
      * @return std::vector<Tuple> each Tuple owns a distinct edge.
      */
     std::vector<Tuple> get_edges() const;
+    std::vector<Tuple> get_vertices() const;
 
     /**
      * Number of tetra in the mesh
@@ -337,6 +339,8 @@ protected:
     virtual bool swap_edge_after(const Tuple& t) { return true; }
     virtual bool swap_face_before(const Tuple& t) { return true; }
     virtual bool swap_face_after(const Tuple& t) { return true; }
+    virtual bool smooth_before(const Tuple &t) { return true; } 
+    virtual bool smooth_after(const Tuple &t) { return true; } 
     // todo: quality, inversion, envelope: change v1 pos before this, only need to change partial
     // attributes
 
