@@ -6,6 +6,7 @@ set(test_sources
 	main.cpp
 
 	test_operations.cpp
+	test_operation_smooth.cpp
 )
 
 add_executable(app_unit_tests ${test_sources})

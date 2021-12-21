@@ -66,7 +66,7 @@ bool TetMesh::Tuple::is_valid(const TetMesh& m) const
 
 void TetMesh::Tuple::update_version_number(const TetMesh& m)
 {
-    assert(m_timestamp < m.m_tet_connectivity[m_tid].timestamp);
+    assert(m_timestamp <= m.m_tet_connectivity[m_tid].timestamp);
     m_timestamp = m.m_tet_connectivity[m_tid].timestamp;
 }
 
@@ -252,8 +252,7 @@ std::vector<TetMesh::Tuple> TetMesh::Tuple::get_conn_tets(const TetMesh& m) cons
 {
     std::vector<Tuple> tets;
     for (int t_id : m.m_vertex_connectivity[m_vid].m_conn_tets) {
-        tets.emplace_back();
-        tets.back().init_from_tet(m, t_id);
+        tets.emplace_back(init_from_tet(m, t_id));
     }
     return tets;
 }
