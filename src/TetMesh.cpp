@@ -137,10 +137,12 @@ std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_vertices() const
         assert(!vc.m_conn_tets.empty());
         auto tid = vc[0];
         auto local_vid = m_tet_connectivity[tid].find(i);
-
-        // note: the following conversion of local_vid-eid is dependent on the specifics of
-        // m_local_edges
-        edges.emplace_back(tuple_from_edge(tid, local_vid));
+        
+        // note: the following conversion of local_vid-eid is **heavily** dependent on the specifics of
+        // `m_local_edges`
+        auto local_eid = local_vid;
+        if (local_vid >= 2) local_eid = 5; 
+        edges.emplace_back(tuple_from_edge(tid, local_eid));
         if (local_vid == 3) edges.back() = switch_vertex(edges.back());
         edges.back().update_version_number(*this);
         assert(edges.back().vid() == i);
