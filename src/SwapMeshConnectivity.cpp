@@ -2,6 +2,8 @@
 #include <wmtk/TetMesh.h>
 
 #include <algorithm>
+#include <cstdio>
+#include <iterator>
 #include <vector>
 #include <wmtk/TupleUtils.hpp>
 
@@ -19,6 +21,25 @@ std::vector<wmtk::TetMesh::TetrahedronConnectivity> record_old_tet_connectivity(
     return tet_conn;
 };
 
+auto post_rollback = [](auto& m_tet_connectivity, auto& m_vertex_connectivity, auto &rollback_vert_conn,
+        auto& affected, auto& new_tet_id, auto& old_tets){
+        for (auto ti : new_tet_id) {
+            m_tet_connectivity[ti].m_is_removed = true;
+            m_tet_connectivity[ti].timestamp--;
+        }
+        for (auto i = 0; i < affected.size(); i++) m_tet_connectivity[affected[i]] = old_tets[i];
+        for (auto& [v, conn] : rollback_vert_conn) m_vertex_connectivity[v] = std::move(conn);
+        };
+
+/**
+ * @brief
+ *
+ * @param tet_conn
+ * @param vert_conn
+ * @param remove_id: this will be modified as new_tet_id, useful for rollback etc.
+ * @param new_tet_conn
+ * @return std::map<size_t, wmtk::TetMesh::VertexConnectivity>
+ */
 std::map<size_t, wmtk::TetMesh::VertexConnectivity> update_connectivity(
     wmtk::TetMesh::vector<wmtk::TetMesh::TetrahedronConnectivity>& tet_conn,
     wmtk::TetMesh::vector<wmtk::TetMesh::VertexConnectivity>& vert_conn,
@@ -38,22 +59,35 @@ std::map<size_t, wmtk::TetMesh::VertexConnectivity> update_connectivity(
     std::map<size_t, wmtk::TetMesh::VertexConnectivity> rollback_vert_conn;
     for (auto v : affected_vid) rollback_vert_conn.emplace(v, vert_conn[v]); // here is a copy
 
-    for (auto& conn : new_tet_conn) {
-        auto tid = tet_conn.size();
-        new_tid.push_back(tid);
-        auto new_tet = wmtk::TetMesh::TetrahedronConnectivity();
-        new_tet.m_indices = conn;
-        tet_conn.emplace_back(new_tet);
+    if (new_tet_conn.size() <= remove_id.size()) { // tet number decrease
+        remove_id.resize(new_tet_conn.size());
+    } else {
+        auto hole_size = remove_id.size();
+
+        remove_id.resize(new_tet_conn.size());
+        auto old_tet_size = tet_conn.size();
+        auto add_size = new_tet_conn.size() - remove_id.size();
+        for (auto i = 0; i < add_size; i++) {
+            remove_id[i + hole_size] = old_tet_size + i;
+        }
+        tet_conn.resize(old_tet_size + add_size);
+    }
+    assert(remove_id.size() == new_tet_conn.size());
+    for (auto i = 0; i < new_tet_conn.size(); i++) {
+        auto id = remove_id[i];
+        tet_conn[id].m_indices = new_tet_conn[i];
+        tet_conn[id].m_is_removed = false;
+        tet_conn[id].timestamp++;
         for (auto j = 0; j < 4; j++) {
-            auto vid = conn[j];
+            auto vid = new_tet_conn[i][j];
             assert(affected_vid.find(vid) != affected_vid.end() && "not introducing new verts");
             assert(vert_conn.size() > vid && "Sufficient number of verts");
-            vert_conn[vid].m_conn_tets.push_back(tid);
+            vert_conn[vid].m_conn_tets.push_back(id);
         }
     }
 
-    for (auto v : affected_vid) {
-        auto new_tets = decltype(wmtk::TetMesh::VertexConnectivity::m_conn_tets)();
+    for (auto v : affected_vid) { // recalculate `m_conn_tets`.
+        auto new_tets = std::vector<size_t>();
         for (auto t : vert_conn[v].m_conn_tets) {
             if (!tet_conn[t].m_is_removed) {
                 new_tets.push_back(t);
@@ -114,8 +148,10 @@ bool wmtk::TetMesh::swap_edge(const Tuple& t)
         replace(new_tets[1], v1_id, n2_id);
         return new_tets;
     }();
+    auto new_tet_id = affected;
     auto rollback_vert_conn =
-        update_connectivity(m_tet_connectivity, m_vertex_connectivity, affected, new_tets);
+        update_connectivity(m_tet_connectivity, m_vertex_connectivity, new_tet_id, new_tets);
+    assert(new_tet_id.size() == 2);
 
     resize_attributes(
         m_vertex_connectivity.size(),
@@ -123,19 +159,16 @@ bool wmtk::TetMesh::swap_edge(const Tuple& t)
         m_tet_connectivity.size() * 4,
         m_tet_connectivity.size());
 
-    if (!swap_edge_after(t)) { // rollback post-operation
+    auto u0id = m_tet_connectivity[new_tet_id.front()].find(u0);
+    assert(u0id != -1);
+    auto newt = tuple_from_face(new_tet_id.front(), u0id);
+
+    if (!swap_edge_after(newt)) { // rollback post-operation
         assert(affected.size() == old_tets.size());
-        for (auto i = 0; i < affected.size(); i++) m_tet_connectivity[affected[i]] = old_tets[i];
-        for (auto& [v, conn] : rollback_vert_conn) m_vertex_connectivity[v] = std::move(conn);
+        post_rollback(m_tet_connectivity, m_vertex_connectivity, rollback_vert_conn, affected, new_tet_id, old_tets);
         return false;
     }
 
-    // TODO: invariants. what is the order of user-defined check vs invariant check?
-    
-    // update timestamp.
-    // TODO: we need to update timestamp outside of this function, for a queue of tuples.
-    // but this is private.
-    m_timestamp++;
 
     return true;
 }
@@ -190,8 +223,9 @@ bool wmtk::TetMesh::swap_face(const Tuple& t)
         return new_tets;
     }();
 
+    auto new_tet_id = affected;
     auto rollback_vert_conn =
-        update_connectivity(m_tet_connectivity, m_vertex_connectivity, affected, new_tets);
+        update_connectivity(m_tet_connectivity, m_vertex_connectivity, new_tet_id, new_tets);
 
     resize_attributes(
         m_vertex_connectivity.size(),
@@ -199,12 +233,12 @@ bool wmtk::TetMesh::swap_face(const Tuple& t)
         m_tet_connectivity.size() * 4,
         m_tet_connectivity.size());
 
-    if (!swap_face_after(t)) { // rollback post-operation
-        assert(affected.size() == old_tets.size());
-        for (auto i = 0; i < affected.size(); i++) m_tet_connectivity[affected[i]] = old_tets[i];
-        for (auto& [v, conn] : rollback_vert_conn) m_vertex_connectivity[v] = std::move(conn);
+    assert(affected.size() == old_tets.size());
+    auto newt = tuple_from_edge(new_tet_id.front(), {u0, u1});
+
+    if (!swap_face_after(newt)) { // rollback post-operation
+        post_rollback(m_tet_connectivity, m_vertex_connectivity, rollback_vert_conn, affected, new_tet_id, old_tets);
         return false;
     }
-    // TODO: timestamp update
     return true;
 }
