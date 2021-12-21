@@ -29,7 +29,7 @@ namespace wmtk
     inline std::vector<T> set_intersection(const std::vector<T> &v1, const std::vector<T> &v2)
     {
         std::vector<T> v;
-        std::set_intersection(s1.begin(), s1.end(), s2.begin(), s2.end(), std::back_inserter(v));
+        std::set_intersection(v1.begin(), v1.end(), v2.begin(), v2.end(), std::back_inserter(v));
         return v;
     }
 

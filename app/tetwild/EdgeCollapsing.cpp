@@ -64,7 +64,9 @@ bool tetwild::TetWild::collapse_before(const Tuple& t)
     return true;
 }
 
-bool tetwild::TetWild::collapse_after(const std::vector<Tuple>& locs)
+bool tetwild::TetWild::collapse_after(const Tuple& loc)
 {
+    auto locs = get_conn_tets(loc);
+
     return true;
 }

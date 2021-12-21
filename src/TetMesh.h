@@ -324,14 +324,14 @@ protected:
     virtual bool split_before(const Tuple& t) { return true; } // check edge condition
     // This function computes the attributes for the added simplices
     // if it returns false then the operation is undone
-    virtual bool split_after(const std::vector<Tuple>& locs) { return true; } // check tet condition
+    virtual bool split_after(const Tuple& t) { return true; } // check tet condition
 
     //// Collapse the edge in the tuple
     // Checks if the collapse should be performed or not (user controlled)
     virtual bool collapse_before(const Tuple& t) { return true; }
     // If it returns false then the operation is undone (the tuple indexes a vertex and tet that
     // survived)
-    virtual bool collapse_after(const std::vector<Tuple>& locs) { return true; }
+    virtual bool collapse_after(const Tuple& t) { return true; }
     virtual bool smooth_before(const Tuple &t) { return true; } 
     virtual bool smooth_after(const Tuple &t) { return true; } 
     // todo: quality, inversion, envelope: change v1 pos before this, only need to change partial
