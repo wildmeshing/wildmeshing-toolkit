@@ -303,16 +303,18 @@ public:
      */
     size_t n_tets() const { return m_tet_connectivity.size(); }
 
-private:
-    // Stores the connectivity of the mesh
+public:
+    template <typename T>
 #ifdef WILDMESHING_TOOLKIT_WITH_TBB
-    tbb::concurrent_vector<VertexConnectivity> m_vertex_connectivity;
-    tbb::concurrent_vector<TetrahedronConnectivity> m_tet_connectivity;
+    using vector = tbb::concurrent_vector<T>;
 #else
-    std::vector<VertexConnectivity> m_vertex_connectivity;
-    std::vector<TetrahedronConnectivity> m_tet_connectivity;
+    using vector = std::vector<T>;
 #endif
 
+private:
+    // Stores the connectivity of the mesh
+    vector<VertexConnectivity> m_vertex_connectivity;
+    vector<TetrahedronConnectivity> m_tet_connectivity;
     int m_t_empty_slot = 0;
     int m_v_empty_slot = 0;
     int find_next_empty_slot_t();
