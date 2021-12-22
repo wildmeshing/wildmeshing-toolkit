@@ -8,7 +8,7 @@ include(FetchContent)
 FetchContent_Declare(
     fenvelope
     GIT_REPOSITORY https://github.com/wangbolun300/fast-envelope.git
-    GIT_TAG 2a73d21433b0dd24c76bca7fb262db494d4784c3
+    GIT_TAG 8a3441778655fc6b0140964548508d4e5a32289d
     GIT_SHALLOW TRUE
 )
 FetchContent_MakeAvailable(fenvelope)
