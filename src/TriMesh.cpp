@@ -166,7 +166,7 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
     }
     // modify the triangles
     // the m_conn_tris needs to be sorted
-    size_t new_vid = m_vertex_connectivity.size();
+    size_t new_vid = get_next_empty_slot_v();
     for (size_t fid : n1_fids) {
         if (std::count(n12_intersect_fids.begin(), n12_intersect_fids.end(), fid))
             continue;
@@ -192,8 +192,7 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
     if (new_vid < m_vertex_connectivity.size()) {
         assert(m_vertex_connectivity[new_vid].m_is_removed);
         m_vertex_connectivity[new_vid].m_conn_tris.clear();
-    } else
-        m_vertex_connectivity.resize(new_vid);
+    }
 
     for (size_t fid : n12_union_fids) {
         if (std::count(n12_intersect_fids.begin(), n12_intersect_fids.end(), fid))
@@ -239,6 +238,8 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
             size_t vid = rollback.first;
             m_vertex_connectivity[vid] = rollback.second;
         }
+        m_vertex_connectivity[new_vid].m_conn_tris.clear();
+        m_vertex_connectivity[new_vid].m_is_removed = true;
         for (auto vid_fid : same_edge_vid_fid) {
             size_t vid = vid_fid.first;
             size_t fid = vid_fid.second;
@@ -246,7 +247,7 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
             conn_tris.push_back(fid);
             std::sort(conn_tris.begin(), conn_tris.end());
         }
-
+        // by the end the new_t and old t both exist and both valid
         return false;
     }
     return true;
