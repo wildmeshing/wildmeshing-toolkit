@@ -38,12 +38,13 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     int v_id = find_next_empty_slot_v();
     std::vector<size_t> new_t_ids;
     for (size_t t_id : n12_t_ids) {
-        size_t new_t_id = find_next_empty_slot_t();
+        const size_t new_t_id = find_next_empty_slot_t();
         new_t_ids.push_back(new_t_id);
         //
         int j = m_tet_connectivity[t_id].find(v1_id);
         m_tet_connectivity[new_t_id] = m_tet_connectivity[t_id];
         m_tet_connectivity[new_t_id][j] = v_id;
+
         //
         m_vertex_connectivity[v_id].m_conn_tets.push_back(t_id);
         m_vertex_connectivity[v_id].m_conn_tets.push_back(new_t_id);
@@ -58,6 +59,9 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
         //
         vector_erase(m_vertex_connectivity[v2_id].m_conn_tets, t_id);
         m_vertex_connectivity[v2_id].m_conn_tets.push_back(new_t_id);
+
+        m_tet_connectivity[new_t_id].timestamp++; // new timestamp is +1 old one
+        m_tet_connectivity[t_id].timestamp++; // new timestamp is +1 old one
     }
     // sort m_conn_tets
     vector_sort(m_vertex_connectivity[v_id].m_conn_tets);
@@ -96,7 +100,10 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     }
     if (!split_after(locs)) {
         m_vertex_connectivity[v_id].m_is_removed = true;
-        for (int t_id : new_t_ids) m_tet_connectivity[t_id].m_is_removed = true;
+        for (int t_id : new_t_ids) {
+            m_tet_connectivity[t_id].m_is_removed = true;
+            m_tet_connectivity[t_id].timestamp--; // Decrease the vnumber, not necessary
+        }
         //
         for (int i = 0; i < old_tets.size(); i++) {
             int t_id = old_tets[i].first;
@@ -140,20 +147,6 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
         }
     }
     unique_edge_tuples(*this, new_edges);
-    //    std::sort(new_edges.begin(), new_edges.end(), [&](const Tuple &a, const Tuple &b) {
-    //        return a.compare_edges(*this, b) < 0;
-    //    });
-    //    new_edges.erase(std::unique(new_edges.begin(), new_edges.end(), [&](const Tuple &a, const
-    //    Tuple &b) {
-    //        return a.compare_edges(*this, b) == 0;
-    //    }), new_edges.end());
-
-    /// update timestamps
-    m_timestamp++; // todo: thread
-    for (size_t t_id : n12_t_ids) m_tet_connectivity[t_id].set_version_number(m_timestamp);
-    for (size_t t_id : new_t_ids) m_tet_connectivity[t_id].set_version_number(m_timestamp);
-    for (auto& new_loc : new_edges) // update edge timestamp from tets
-        new_loc.update_version_number(*this);
 
     return true;
 }

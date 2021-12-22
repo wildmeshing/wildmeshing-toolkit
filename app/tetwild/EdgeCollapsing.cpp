@@ -2,8 +2,8 @@
 // Created by Yixin Hu on 12/7/21.
 //
 
-#include "TetWild.h"
 #include "Logger.hpp"
+#include "TetWild.h"
 
 void tetwild::TetWild::collapse_all_edges()
 {
@@ -30,7 +30,6 @@ void tetwild::TetWild::collapse_all_edges()
         ec_queue.pop();
 
         // check timestamp
-        if (!loc.is_version_number_valid(*this)) continue;
         if (!loc.is_valid(*this)) continue;
         { // check weight
             Tuple& v1 = loc;
