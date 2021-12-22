@@ -108,6 +108,7 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
         for (int i = 0; i < old_tets.size(); i++) {
             int t_id = old_tets[i].first;
             m_tet_connectivity[t_id] = old_tets[i].second;
+            m_tet_connectivity[t_id].timestamp--; // Decrease the vnumber, **necessary**
         }
         for (int i = 0; i < old_vertices.size(); i++) {
             int v_id = old_vertices[i].first;
