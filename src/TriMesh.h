@@ -28,10 +28,11 @@ public:
         size_t m_fid;
         size_t m_hash;
 
+        void update_hash(const TriMesh& m) { m_hash = m.m_tri_connectivity[m_fid].hash; }
+
     public:
         void print_info() { logger().trace("tuple: {} {} {}", m_vid, m_eid, m_fid); }
 
-        void update_hash(const TriMesh& m) { m_hash = m.m_tri_connectivity[m_fid].hash; }
         //        v2
         //      /    \
 		// e1  /      \  e0
@@ -82,12 +83,15 @@ public:
 
         bool is_valid(const TriMesh& m) const
         {
-            // Condition 3: tuple m_hash check
-            if (m_hash == m.m_tri_connectivity[m_fid].hash)
-                return true;
-            else
+            if (m.m_vertex_connectivity[m_vid].m_is_removed ||
+                m.m_tri_connectivity[m_fid].m_is_removed)
                 return false;
-            // Condition 0: Elements exist
+
+            // Condition 3: tuple m_hash check
+            if (m_hash != m.m_tri_connectivity[m_fid].hash) return false;
+
+#ifndef NDEBUG
+            //  Condition 0: Elements exist
             assert(m_vid < m.m_vertex_connectivity.size());
             assert(m_eid <= 2);
             assert(m_fid <= m.m_tri_connectivity.size());
@@ -102,10 +106,13 @@ public:
             const int v2 = m.m_tri_connectivity[m_fid][2];
 
             switch (m_eid) {
-            case 0: assert(m_vid == v1 || m_vid == v2);
-            case 1: assert(m_vid == v0 || m_vid == v2);
-            case 2: assert(m_vid == v0 || m_vid == v1);
+            case 0: assert(m_vid == v1 || m_vid == v2); break;
+            case 1: assert(m_vid == v0 || m_vid == v2); break;
+            case 2: assert(m_vid == v0 || m_vid == v1); break;
             }
+#endif
+
+            return true;
         }
 
         /**
@@ -208,10 +215,9 @@ public:
      * eid assigned counter clockwise as in the ilustrated example
      * @return vector of Tuples
      */
-
-    std::vector<Tuple> generate_tuples_from_vertices()
+    std::vector<Tuple> get_vertices() const
     {
-        TriMesh m = *this;
+        const TriMesh& m = *this;
         const size_t n_vertices = m_vertex_connectivity.size();
         std::vector<Tuple> all_vertices_tuples;
         all_vertices_tuples.resize(n_vertices);
@@ -243,9 +249,9 @@ public:
      * local eid assigned counter clockwise as in the ilustrated example
      * @return vector of Tuples
      */
-    std::vector<Tuple> generate_tuples_from_faces()
+    std::vector<Tuple> get_faces() const
     {
-        const TriMesh m = *this;
+        const TriMesh& m = *this;
         std::vector<Tuple> all_faces_tuples;
         all_faces_tuples.resize(m.m_tri_connectivity.size());
         for (size_t i = 0; i < m.m_tri_connectivity.size(); i++) {
@@ -264,9 +270,9 @@ public:
      * @note ensures the fid assigned is the smallest between faces adjacent to the edge
      * @return vector of Tuples
      */
-    std::vector<Tuple> generate_tuples_from_edges()
+    std::vector<Tuple> get_edges() const
     {
-        const TriMesh m = *this;
+        const TriMesh& m = *this;
         std::vector<Tuple> all_edges_tuples;
         all_edges_tuples.reserve(m.m_tri_connectivity.size() * 3 / 2);
         for (size_t i = 0; i < m.m_tri_connectivity.size(); i++) {
@@ -290,10 +296,17 @@ public:
 private:
     std::vector<VertexConnectivity> m_vertex_connectivity;
     std::vector<TriangleConnectivity> m_tri_connectivity;
-    std::vector<size_t> hole_list_v;
-    std::vector<size_t> hole_list_t;
-    size_t find_next_empty_slot_t();
-    size_t find_next_empty_slot_v();
+
+    size_t get_next_empty_slot_t()
+    {
+        m_tri_connectivity.emplace_back();
+        return m_tri_connectivity.size() - 1;
+    }
+    size_t find_next_empty_slot_v()
+    {
+        m_vertex_connectivity.emplace_back();
+        return m_vertex_connectivity.size() - 1;
+    }
 
 protected:
     virtual bool split_before(const Tuple& t) { return true; }
@@ -302,11 +315,8 @@ protected:
     virtual bool collapse_after(const Tuple& t) { return true; }
 
 public:
-    std::vector<VertexConnectivity> get_vertex_connectivity()
-    {
-        return this->m_vertex_connectivity;
-    }
-    std::vector<TriangleConnectivity> get_tri_connectivity() { return this->m_tri_connectivity; }
+    size_t n_triangles() const { return m_tri_connectivity.size(); }
+    size_t n_vertices() const { return m_vertex_connectivity.size(); }
 
     Tuple switch_vertex(const Tuple& t) const { return t.switch_vertex(*this); }
     Tuple switch_edge(const Tuple& t) const { return t.switch_edge(*this); }
@@ -319,7 +329,7 @@ public:
      * @param[out] new_edges a vector of Tuples for all the edges from the newly introduced triangle
      * @return if split succeed
      */
-    bool split_edge(const Tuple& t, std::vector<Tuple>& new_edges);
+    bool split_edge(const Tuple& t, Tuple& new_t);
     bool collapse_edge(const Tuple& t, Tuple& new_t);
     void swap_edge(const Tuple& t, int type);
 };

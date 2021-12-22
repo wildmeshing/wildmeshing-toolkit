@@ -110,7 +110,7 @@ std::optional<TriMesh::Tuple> TriMesh::Tuple::switch_face(const TriMesh& m) cons
             assert(false);
         }
 
-        loc.m_hash = m.m_tri_connectivity[loc.m_fid].hash;
+        loc.update_hash(m);
     }
 
     assert(loc.is_valid(m));
@@ -119,6 +119,8 @@ std::optional<TriMesh::Tuple> TriMesh::Tuple::switch_face(const TriMesh& m) cons
 
 bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
 {
+    // TODO: use the get_next_empty_slot_v
+
     if (!collapse_before(loc0)) return false; // what is checked at pre and post screenings?
     // get the vids
     size_t vid1 = loc0.get_vid();
@@ -248,4 +250,15 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
         return false;
     }
     return true;
+}
+
+
+bool TriMesh::split_edge(const Tuple& t, Tuple& new_t)
+{
+    throw "Not implemented";
+}
+
+void TriMesh::swap_edge(const Tuple& t, int type)
+{
+    throw "Not implemented";
 }
