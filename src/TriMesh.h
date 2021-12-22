@@ -33,7 +33,7 @@ public:
 
         void update_hash(const TriMesh& m) { m_hash = m.m_tri_connectivity[m_fid].hash; }
         //        v2
-        //      /    \ 
+        //      /    \
 		// e1  /      \  e0
         //    v0 - - - v1
         //        e2

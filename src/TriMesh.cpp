@@ -142,8 +142,8 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
     size_t test_fid2 = loc1.get_fid();
 
     assert(
-        ((std::count(n12_intersect_fids.begin(), n12_intersect_fids.end(), n1_fids) &&
-          std::count(n12_intersect_fids.begin(), n12_intersect_fids.end(), n2_fids)),
+        ((std::count(n12_intersect_fids.begin(), n12_intersect_fids.end(), test_fid1) &&
+          std::count(n12_intersect_fids.begin(), n12_intersect_fids.end(), test_fid2)),
          "faces at the edge is not correct"));
 
     std::vector<size_t> n12_union_fids;
