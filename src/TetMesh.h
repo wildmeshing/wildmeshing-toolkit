@@ -88,7 +88,7 @@ public:
          * Check if the current tuple is already invalid (removed during editing).
          *
          * @param m TetMesh where the tuple belongs.
-         * @return if not removed and thet connectivity is up to date
+         * @return if not removed and the tuple is up to date with respect to the connectivity.
          */
         bool is_valid(const TetMesh& m) const;
 
