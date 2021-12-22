@@ -274,13 +274,12 @@ public:
     void swap_edge(const Tuple& t, int type);
     bool smooth_vertex(const Tuple& t);
 
-    void
-    compact(); // cleans up the deleted vertices or tetrahedra, and fixes the corresponding indices
-
-    void reset_timestamp()
-    {
-        for (auto& t : m_tet_connectivity) t.timestamp = 0;
-    }
+    /**
+     * @brief cleans up the deleted vertices or tetrahedra, fixes the corresponding indices, and
+     * reset the version number. WARNING: it invalidates all tuples!
+     *
+     */
+    void compact();
 
     /**
      * Get all unique undirected edges in the mesh.

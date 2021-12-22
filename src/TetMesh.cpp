@@ -160,3 +160,10 @@ bool wmtk::TetMesh::smooth_vertex(const Tuple& loc0)
 
     return true;
 }
+
+
+void wmtk::TetMesh::compact()
+{
+    // TODO: implement me
+    for (auto& t : m_tet_connectivity) t.timestamp = 0;
+}

@@ -7,7 +7,7 @@
 
 void tetwild::TetWild::collapse_all_edges()
 {
-    reset_timestamp();
+    compact();
 
     std::vector<Tuple> edges = get_edges();
 
