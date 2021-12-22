@@ -10,7 +10,7 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
 {
     if (!split_before(loc0)) return false;
 
-    // backup of everything
+    /// backup of everything
     auto loc1 = loc0;
     int v1_id = loc1.vid();
     auto loc2 = switch_vertex(loc1);
@@ -34,7 +34,7 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     for (size_t v_id : n12_v_ids)
         old_vertices.push_back(std::make_pair(v_id, m_vertex_connectivity[v_id]));
 
-    // update connectivity
+    /// update connectivity
     int v_id = find_next_empty_slot_v();
     std::vector<size_t> new_t_ids;
     for (size_t t_id : n12_t_ids) {
@@ -80,7 +80,7 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
         }
     }
 
-    // possibly call the resize_attributes
+    /// checks (possibly call the resize_attributes
     resize_attributes(
         m_vertex_connectivity.size(),
         m_tet_connectivity.size() * 6,
@@ -112,7 +112,7 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
         return false;
     }
 
-    // call invariants on all entities
+    /// call invariants on all entities
     if (false) // if any invariant fails
     {
         m_vertex_connectivity[v_id].m_is_removed = true;

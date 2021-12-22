@@ -99,6 +99,12 @@ public:
         VertexAttributes vertex_info;
     } split_cache; // todo: change for parallel
 
+    struct CollapseInfoCache
+    {
+        double max_energy;
+        double edge_length;
+    } collapse_cache; // todo: change for parallel
+
     void split_all_edges();
     bool split_before(const Tuple& t) override;
     bool split_after(const Tuple& loc) override;

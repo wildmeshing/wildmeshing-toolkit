@@ -147,6 +147,9 @@ public:
 
         std::vector<Tuple> get_conn_tets(const TetMesh& m) const;
 
+        std::vector<Tuple> get_one_ring_tets_for_edge(const TetMesh& m) const;
+        std::vector<Tuple> get_incident_tets_for_edge(const TetMesh& m) const;
+
         /**
          * Positively oriented 4 vertices (represented by Tuples) in a tetra.
          * @return std::array<Tuple, 4> each tuple owns a different vertex.
@@ -408,6 +411,20 @@ public:
     }
 
     std::vector<Tuple> get_conn_tets(const Tuple& t) const
+    {
+        auto locs = t.get_conn_tets(*this);
+        for (const auto& loc : locs) check_tuple_validity(loc);
+        return locs;
+    }
+
+    std::vector<Tuple> get_incident_tets_for_edge(const Tuple& t) const
+    {
+        auto locs = t.get_conn_tets(*this);
+        for (const auto& loc : locs) check_tuple_validity(loc);
+        return locs;
+    }
+
+    std::vector<Tuple> get_one_ring_tets_for_edge(const Tuple& t) const
     {
         auto locs = t.get_conn_tets(*this);
         for (const auto& loc : locs) check_tuple_validity(loc);
