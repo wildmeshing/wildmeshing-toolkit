@@ -61,22 +61,7 @@ bool TetMesh::Tuple::is_valid(const TetMesh& m) const
 {
     if (m.m_vertex_connectivity[m_vid].m_is_removed || m.m_tet_connectivity[m_tid].m_is_removed)
         return false;
-    return true;
-}
 
-void TetMesh::Tuple::update_version_number(const TetMesh& m)
-{
-    assert(m_timestamp <= m.m_tet_connectivity[m_tid].timestamp);
-    m_timestamp = m.m_tet_connectivity[m_tid].timestamp;
-}
-
-int TetMesh::Tuple::get_version_number()
-{
-    return m_timestamp;
-}
-
-bool TetMesh::Tuple::is_version_number_valid(const TetMesh& m) const
-{
     if (m_timestamp != m.m_tet_connectivity[m_tid].timestamp) return false;
     return true;
 }
