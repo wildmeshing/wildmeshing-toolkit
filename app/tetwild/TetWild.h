@@ -63,9 +63,7 @@ public:
     TetWild(Parameters& _m_params, Envelope& _m_envelope)
         : m_params(_m_params)
         , m_envelope(_m_envelope)
-    {
-        m_params.init();
-    }
+    {}
 
     ~TetWild() {}
 
@@ -104,6 +102,10 @@ public:
     void split_all_edges();
     bool split_before(const Tuple& t) override;
     bool split_after(const std::vector<Tuple>& locs) override;
+
+    void smooth_all_vertices();
+    bool smooth_before(const Tuple& t) override;
+    bool smooth_after(const Tuple& t) override;
 
     void collapse_all_edges();
     bool collapse_before(const Tuple& t) override;

@@ -1,19 +1,26 @@
 set(SOURCES
-	AMIPS.cpp
-	AMIPS.h
-
 	TetMesh.h
 	TetMesh.cpp
 	
 	Tuple.cpp
 
+
 	TriMesh.h
 	TriMesh.cpp
+	Tuple.cpp
 
 	EdgeCollapsingConn.cpp
 	EdgeSplittingConn.cpp
 
 )
+
+if(WILDMESHING_TOOLKIT_WITH_TBB)
+	list(APPEND SOURCES
+
+		ConcurrentTetMesh.h
+		ConcurrentTetMesh.cpp
+	)
+endif()
 
 prepend_current_path(SOURCES)
 wildmeshing_toolkit_copy_headers(${SOURCES})

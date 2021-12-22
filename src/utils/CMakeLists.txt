@@ -1,4 +1,7 @@
 set(SOURCES
+	AMIPS.cpp
+	AMIPS.h
+
 	Logger.cpp
 	Logger.hpp
 
@@ -13,6 +16,8 @@ set(SOURCES
 
 	VectorUtils.h
 
+	TetraQualityUtils.hpp
+	TetraQualityUtils.cpp
 )
 
 prepend_current_path(SOURCES)
