@@ -137,8 +137,6 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     }
 
     // new_edges
-    for (size_t t_id : n12_t_ids) m_tet_connectivity[t_id].set_version_number(m_tet_connectivity[t_id].timestamp + 1);
-    for (size_t t_id : new_t_ids) m_tet_connectivity[t_id].set_version_number(0);
     for (size_t t_id : n12_t_ids) {
         for (int j = 0; j < 6; j++) {
             new_edges.push_back(tuple_from_edge(t_id, j));
