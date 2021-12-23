@@ -88,6 +88,8 @@ if(TWTK_APPS_WITH_SANITIZERS)
 	add_sanitizers(app_shared)
 endif()
 
+include(fenvelope)
+
 ################################################################################
 # FloatTetwild
 ################################################################################
@@ -102,8 +104,6 @@ add_library(TetWild
 	tetwild/EdgeSplitting.cpp
 	tetwild/EdgeCollapsing.cpp
 )
-
-include(fenvelope)
 
 target_link_libraries(TetWild PUBLIC igl::predicates FastEnvelope app_shared)
 target_include_directories(TetWild PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/tetwild)
@@ -127,7 +127,7 @@ add_library(QuadricEdgeCollapse
 	QuadricEdgeCollapse/QEC.cpp
 )
 
-target_link_libraries(QuadricEdgeCollapse PUBLIC igl::predicates app_shared)
+target_link_libraries(QuadricEdgeCollapse PUBLIC igl::predicates FastEnvelope app_shared)
 target_include_directories(QuadricEdgeCollapse PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 
