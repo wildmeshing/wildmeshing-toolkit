@@ -44,8 +44,41 @@ public:
 
         int m_timestamp = 0;
 
-    public:
-        Tuple() {}
+    private:
+        /**
+         * Update a Tuple from global tetra index and __local__ edge index (from 0-5).
+         *
+         * @param m TetMesh where the current Tuple belongs.
+         * @param tid Global tetra index
+         * @param local_eid local edge index
+         */
+        void init_from_edge(const TetMesh& m, int tid, int local_eid);
+
+        /**
+         * Update a Tuple from global tetra index and __local__ face index (from 0-3).
+         *
+         * @param m TetMesh where the current Tuple belongs.
+         * @param tid Global tetra index
+         * @param local_fid local face index
+         */
+        void init_from_face(const TetMesh& m, int tid, int local_fid);
+
+        /**
+         * Update a Tuple from global vertex index
+         *
+         * @param m TetMesh where the current Tuple belongs.
+         * @param vid Global vertex index
+         */
+        void init_from_vertex(const TetMesh& m, int vid);
+
+        /**
+         * Update a Tuple from global tetra index
+         *
+         * @param m TetMesh where the current Tuple belongs.
+         * @param tid Global tetra index
+         */
+        void init_from_tet(const TetMesh& m, int tid);
+
 
         /**
          * Construct a new Tuple object with global vertex/tetra index and local edge/face index
@@ -54,35 +87,26 @@ public:
          * @param eid edge id (local)
          * @param fid face id (local)
          * @param tid tetra id (local)
+         * @param tid tetra id (local)
          */
         Tuple(size_t vid, size_t eid, size_t fid, size_t tid, int ts = 0)
-            : m_vid(vid)
-            , m_eid(eid)
-            , m_fid(fid)
-            , m_tid(tid)
-            , m_timestamp(ts)
-        {}
+        {
+            init(vid, eid, fid, tid, ts);
+        }
 
-        /**
-         * Generate a Tuple from global tetra index and __local__ edge index (from 0-5).
-         *
-         * @param m TetMesh where the current Tuple belongs.
-         * @param tid Global tetra index
-         * @param local_eid local edge index
-         * @return Tuple
-         */
-        static Tuple init_from_edge(const TetMesh& m, int tid, int local_eid);
-        static Tuple init_from_face(const TetMesh& m, int tid, int local_fid);
+        void init(size_t vid, size_t eid, size_t fid, size_t tid, int ts = 0)
+        {
+            m_vid = vid;
+            m_eid = eid;
+            m_fid = fid;
+            m_tid = tid;
+            m_timestamp = ts;
+        }
 
-        /**
-         * TODO
-         *
-         * @param m
-         * @param vid
-         * @return Tuple
-         */
-        static Tuple init_from_vertex(const TetMesh& m, int vid);
-        static Tuple init_from_tet(const TetMesh& m, int tid);
+    public:
+        Tuple() {}
+
+        friend TetMesh;
 
         /**
          * Check if the current tuple is already invalid (removed during editing).
@@ -350,25 +374,29 @@ public:
      */
     Tuple tuple_from_edge(int tid, int local_eid) const
     {
-        auto loc = Tuple::init_from_edge(*this, tid, local_eid);
+        Tuple loc;
+        loc.init_from_edge(*this, tid, local_eid);
         check_tuple_validity(loc);
         return loc;
     }
     Tuple tuple_from_face(int tid, int local_fid) const
     {
-        auto loc = Tuple::init_from_edge(*this, tid, local_fid);
+        Tuple loc;
+        loc.init_from_face(*this, tid, local_fid);
         check_tuple_validity(loc);
         return loc;
     }
     Tuple tuple_from_vertex(int vid) const
     {
-        auto loc = Tuple::init_from_vertex(*this, vid);
+        Tuple loc;
+        loc.init_from_vertex(*this, vid);
         check_tuple_validity(loc);
         return loc;
     }
     Tuple tuple_from_tet(int tid) const
     {
-        auto loc = Tuple::init_from_tet(*this, tid);
+        Tuple loc;
+        loc.init_from_tet(*this, tid);
         check_tuple_validity(loc);
         return loc;
     }

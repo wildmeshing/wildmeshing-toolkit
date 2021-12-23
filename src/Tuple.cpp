@@ -6,17 +6,17 @@
 
 using namespace wmtk;
 
-TetMesh::Tuple TetMesh::Tuple::init_from_edge(const TetMesh& m, int tid, int local_eid)
+void TetMesh::Tuple::init_from_edge(const TetMesh& m, int tid, int local_eid)
 {
     assert(tid >= 0 && tid < m.m_tet_connectivity.size());
     assert(local_eid >= 0 && local_eid < m_local_edges.size());
 
     int vid = m.m_tet_connectivity[tid][m_local_edges[local_eid][0]];
     int fid = m_map_edge2face[local_eid];
-    return Tuple(vid, local_eid, fid, tid, m.m_tet_connectivity[tid].timestamp);
+    init(vid, local_eid, fid, tid, m.m_tet_connectivity[tid].timestamp);
 }
 
-TetMesh::Tuple TetMesh::Tuple::init_from_face(const TetMesh& m, int tid, int local_fid)
+void TetMesh::Tuple::init_from_face(const TetMesh& m, int tid, int local_fid)
 {
     assert(tid >= 0 && tid < m.m_tet_connectivity.size());
     assert(local_fid >= 0 && local_fid < m_local_faces.size());
@@ -33,10 +33,10 @@ TetMesh::Tuple TetMesh::Tuple::init_from_face(const TetMesh& m, int tid, int loc
         }
     }
     int fid = m_map_edge2face[local_fid];
-    return Tuple(vid, eid, local_fid, tid, m.m_tet_connectivity[tid].timestamp);
+    init(vid, eid, local_fid, tid, m.m_tet_connectivity[tid].timestamp);
 }
 
-TetMesh::Tuple TetMesh::Tuple::init_from_vertex(const TetMesh& m, int vid)
+void TetMesh::Tuple::init_from_vertex(const TetMesh& m, int vid)
 {
     assert(vid >= 0 && vid < m.m_vertex_connectivity.size());
 
@@ -44,17 +44,17 @@ TetMesh::Tuple TetMesh::Tuple::init_from_vertex(const TetMesh& m, int vid)
     int j = m.m_tet_connectivity[tid].find(vid);
     int eid = m_map_vertex2edge[j];
     int fid = m_map_edge2face[eid];
-    return Tuple(vid, eid, fid, tid, m.m_tet_connectivity[tid].timestamp);
+    init(vid, eid, fid, tid, m.m_tet_connectivity[tid].timestamp);
 }
 
-TetMesh::Tuple TetMesh::Tuple::init_from_tet(const TetMesh& m, int tid)
+void TetMesh::Tuple::init_from_tet(const TetMesh& m, int tid)
 {
     assert(tid >= 0 && tid < m.m_tet_connectivity.size());
 
     int vid = m.m_tet_connectivity[tid][0];
     int eid = m_map_vertex2edge[0];
     int fid = m_map_edge2face[eid];
-    return Tuple(vid, eid, fid, tid, m.m_tet_connectivity[tid].timestamp);
+    init(vid, eid, fid, tid, m.m_tet_connectivity[tid].timestamp);
 }
 
 bool TetMesh::Tuple::is_valid(const TetMesh& m) const
@@ -238,7 +238,8 @@ std::vector<TetMesh::Tuple> TetMesh::Tuple::get_conn_tets(const TetMesh& m) cons
 {
     std::vector<Tuple> tets;
     for (int t_id : m.m_vertex_connectivity[m_vid].m_conn_tets) {
-        tets.emplace_back(init_from_tet(m, t_id));
+        tets.emplace_back();
+        tets.back().init_from_tet(m, t_id);
     }
     return tets;
 }
@@ -257,6 +258,9 @@ std::array<TetMesh::Tuple, 4> TetMesh::Tuple::oriented_tet_vertices(const TetMes
 
 void TetMesh::Tuple::check_validity(const TetMesh& m) const
 {
+#ifdef NDEBUG
+    return;
+#endif
     // check indices
     assert(m_tid >= 0 && m_tid < m.m_tet_connectivity.size());
     assert(m_vid >= 0 && m_vid < m.m_vertex_connectivity.size());
