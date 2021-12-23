@@ -18,7 +18,7 @@ bool tetwild::TetWild::is_inverted(const Tuple& loc)
     std::array<Vector3f, 4> ps;
     auto its = loc.oriented_tet_vertices(*this);
     for (int j = 0; j < 4; j++) {
-        ps[j] = m_vertex_attribute[its[j].vid()].m_posf;
+        ps[j] = m_vertex_attribute[its[j].vid(*this)].m_posf;
     }
 
     //
@@ -41,7 +41,7 @@ double tetwild::TetWild::get_quality(const Tuple& loc)
     std::array<Vector3f, 4> ps;
     auto its = loc.oriented_tet_vertices(*this);
     for (int j = 0; j < 4; j++) {
-        ps[j] = m_vertex_attribute[its[j].vid()].m_posf;
+        ps[j] = m_vertex_attribute[its[j].vid(*this)].m_posf;
     }
 
     std::array<double, 12> T;
@@ -60,7 +60,7 @@ double tetwild::TetWild::get_quality(const Tuple& loc)
 
 bool tetwild::TetWild::vertex_invariant(const Tuple& t)
 {
-    int v_id = t.vid();
+    int v_id = t.vid(*this);
 
     // check rounded
 
@@ -100,7 +100,7 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
     // TODO: bbox/surface tags.
     // TODO: envelope check.
     apps::logger().trace("Newton iteration for vertex smoothing.");
-    auto vid = t.vid();
+    auto vid = t.vid(*this);
 
     auto locs = t.get_conn_tets(*this);
     assert(locs.size() > 0);
@@ -109,13 +109,13 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
 
     for (auto& loc : locs) {
         auto& T = assembles[loc_id];
-        auto t_id = loc.tid();
+        auto t_id = loc.tid(*this);
 
         assert(!is_inverted(loc));
         auto local_tuples = loc.oriented_tet_vertices(*this);
         std::array<size_t, 4> local_verts;
         for (auto i = 0; i < 4; i++) {
-            local_verts[i] = local_tuples[i].vid();
+            local_verts[i] = local_tuples[i].vid(*this);
         }
 
         local_verts = wmtk::orient_preserve_tet_reorder(local_verts, vid);
@@ -144,7 +144,7 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
     }
 
     for (auto& loc : locs) {
-        auto t_id = loc.tid();
+        auto t_id = loc.tid(*this);
         m_tet_attribute[t_id].m_qualities = get_quality(loc);
     }
     return true;
@@ -164,7 +164,7 @@ void tetwild::TetWild::output_mesh(std::string file)
         Tuple loc = tuple_from_tet(i);
         auto vs = oriented_tet_vertices(loc);
         for (int j = 0; j < 4; j++) {
-            T_flat(4 * i + j) = vs[j].vid();
+            T_flat(4 * i + j) = vs[j].vid(*this);
         }
     }
 

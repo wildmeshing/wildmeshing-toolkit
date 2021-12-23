@@ -147,7 +147,7 @@ std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_vertices() const
         edges.emplace_back(tuple_from_edge(tid, local_eid));
         if (local_vid == 3) edges.back() = switch_vertex(edges.back());
 
-        assert(edges.back().vid() == i);
+        assert(edges.back().vid(*this) == i);
         assert(edges.back().is_valid(*this));
     }
     return edges;
@@ -164,6 +164,7 @@ bool wmtk::TetMesh::smooth_vertex(const Tuple& loc0)
 
 void wmtk::TetMesh::compact()
 {
+    logger().debug("[Warning] all tuples are now invalid!");
     // TODO: implement me
     for (auto& t : m_tet_connectivity) t.timestamp = 0;
 }

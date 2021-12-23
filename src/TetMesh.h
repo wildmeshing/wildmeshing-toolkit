@@ -130,11 +130,17 @@ public:
         void print_info() const;
         void print_info(const TetMesh& m) const;
 
-        size_t vid() const;
+        /**
+         * returns global vertex id.
+         * @param m TetMesh where the tuple belongs.
+         * @return size_t
+         */
+        size_t vid(const TetMesh& m) const;
 
         /**
          * returns a global unique edge id
          *
+         * @param m TetMesh where the tuple belongs.
          * @return size_t
          * @note The global id may not be consecutive. The edges are undirected and different tetra
          * share the same edge.
@@ -144,6 +150,7 @@ public:
         /**
          * returns a global unique face id
          *
+         * @param m TetMesh where the tuple belongs.
          * @return size_t
          * @note The global id may not be consecutive. The face are undirected.
          */
@@ -151,10 +158,11 @@ public:
 
         /**
          * returns global tetra id.
-         *
+
+         * @param m TetMesh where the tuple belongs.
          * @return size_t
          */
-        size_t tid() const;
+        size_t tid(const TetMesh& m) const;
 
         /**
          * Switch operation. See (URL-TO-DOCUMENT) for explaination.

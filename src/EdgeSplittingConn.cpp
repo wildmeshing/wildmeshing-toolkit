@@ -12,9 +12,9 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
 
     // backup of everything
     auto loc1 = loc0;
-    int v1_id = loc1.vid();
+    int v1_id = loc1.vid(*this);
     auto loc2 = switch_vertex(loc1);
-    int v2_id = loc2.vid();
+    int v2_id = loc2.vid(*this);
     logger().trace("{} {}", v1_id, v2_id);
     //    loc1.print_info();
     //    loc2.print_info();

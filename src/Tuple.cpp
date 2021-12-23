@@ -99,7 +99,7 @@ void TetMesh::Tuple::print_info(const TetMesh& m) const
 }
 
 
-size_t TetMesh::Tuple::vid() const
+size_t TetMesh::Tuple::vid(const TetMesh&) const
 {
     return m_vid;
 } // update eid and fid
@@ -154,7 +154,7 @@ size_t TetMesh::Tuple::fid(const TetMesh& m) const
     throw std::runtime_error("Tuple::fid() error");
 }
 
-size_t TetMesh::Tuple::tid() const
+size_t TetMesh::Tuple::tid(const TetMesh&) const
 {
     return m_tid;
 }

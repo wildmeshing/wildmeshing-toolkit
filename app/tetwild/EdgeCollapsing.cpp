@@ -14,12 +14,13 @@ void tetwild::TetWild::collapse_all_edges()
     apps::logger().debug("edges.size() = {}", edges.size());
 
     int cnt_suc = 0;
-    std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_s> ec_queue;
+    std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_s> ec_queue(cmp_s(*this));
     for (auto& loc : edges) {
         Tuple& v1 = loc;
         Tuple v2 = loc.switch_vertex(*this);
-        double length = (m_vertex_attribute[v1.vid()].m_posf - m_vertex_attribute[v2.vid()].m_posf)
-                            .squaredNorm();
+        double length =
+            (m_vertex_attribute[v1.vid(*this)].m_posf - m_vertex_attribute[v2.vid(*this)].m_posf)
+                .squaredNorm();
         if (length > m_params.collapsing_l2) continue;
         ec_queue.push(ElementInQueue(loc, length));
     }
@@ -34,9 +35,9 @@ void tetwild::TetWild::collapse_all_edges()
         { // check weight
             Tuple& v1 = loc;
             Tuple v2 = loc.switch_vertex(*this);
-            double length =
-                (m_vertex_attribute[v1.vid()].m_posf - m_vertex_attribute[v2.vid()].m_posf)
-                    .squaredNorm();
+            double length = (m_vertex_attribute[v1.vid(*this)].m_posf -
+                             m_vertex_attribute[v2.vid(*this)].m_posf)
+                                .squaredNorm();
             if (length != weight) continue;
         }
 
@@ -46,9 +47,9 @@ void tetwild::TetWild::collapse_all_edges()
             for (auto& new_loc : new_edges) {
                 Tuple& v1 = new_loc;
                 Tuple v2 = new_loc.switch_vertex(*this);
-                double length =
-                    (m_vertex_attribute[v1.vid()].m_posf - m_vertex_attribute[v2.vid()].m_posf)
-                        .squaredNorm();
+                double length = (m_vertex_attribute[v1.vid(*this)].m_posf -
+                                 m_vertex_attribute[v2.vid(*this)].m_posf)
+                                    .squaredNorm();
                 if (length < m_params.collapsing_l2) continue;
                 ec_queue.push(ElementInQueue(new_loc, length));
             }
