@@ -86,15 +86,26 @@ public:
          * @param vid vertex id
          * @param eid edge id (local)
          * @param fid face id (local)
-         * @param tid tetra id (local)
-         * @param tid tetra id (local)
+         * @param tid face id (local)
+         * @param tid tetra id
+         * @param ts hash associated with tid
          */
-        Tuple(size_t vid, size_t eid, size_t fid, size_t tid, int ts = 0)
+        Tuple(size_t vid, size_t eid, size_t fid, size_t tid, int ts)
         {
             init(vid, eid, fid, tid, ts);
         }
 
-        void init(size_t vid, size_t eid, size_t fid, size_t tid, int ts = 0)
+        /**
+         * Update a Tuple object with global vertex/tetra index and local edge/face index
+         *
+         * @param vid vertex id
+         * @param eid edge id (local)
+         * @param fid face id (local)
+         * @param tid face id (local)
+         * @param tid tetra id
+         * @param ts hash associated with tid
+         */
+        void init(size_t vid, size_t eid, size_t fid, size_t tid, int ts)
         {
             m_vid = vid;
             m_eid = eid;
