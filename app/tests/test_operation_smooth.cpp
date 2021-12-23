@@ -13,7 +13,7 @@ TEST_CASE("smooth_in_single_tet", "[test_operation]")
     Parameters params;
     params.init(Vector3f(0, 0, 0), Vector3f(1, 1, 1));
 
-    Envelope envelope;
+    fastEnvelope::FastEnvelope envelope;
     TetWild tetwild(params, envelope);
     std::vector<VertexAttributes> vertices(4);
     vertices[0].m_posf = Vector3f(0.1, 0, 0);
@@ -38,7 +38,7 @@ TEST_CASE("smooth_double_tet", "[test_operation]")
     Parameters params;
     params.init(Vector3f(0, 0, 0), Vector3f(1, 1, 1));
 
-    Envelope envelope;
+    fastEnvelope::FastEnvelope envelope;
     TetWild tetwild(params, envelope);
     std::vector<VertexAttributes> vertices(5);
     vertices[0].m_posf = Vector3f(0.1, 0, 0);
