@@ -37,10 +37,10 @@ public:
     // Cell Tuple Navigator
     class Tuple
     {
-        size_t m_vid;
-        size_t m_eid;
-        size_t m_fid;
-        size_t m_tid;
+        size_t m_global_vid;
+        size_t m_local_eid;
+        size_t m_local_fid;
+        size_t m_global_tid;
 
         int m_timestamp = 0;
 
@@ -86,13 +86,12 @@ public:
          * @param vid vertex id
          * @param eid edge id (local)
          * @param fid face id (local)
-         * @param tid face id (local)
          * @param tid tetra id
          * @param ts hash associated with tid
          */
-        Tuple(size_t vid, size_t eid, size_t fid, size_t tid, int ts)
+        Tuple(size_t vid, size_t local_eid, size_t local_fid, size_t tid, int ts)
         {
-            init(vid, eid, fid, tid, ts);
+            init(vid, local_eid, local_fid, tid, ts);
         }
 
         /**
@@ -101,16 +100,15 @@ public:
          * @param vid vertex id
          * @param eid edge id (local)
          * @param fid face id (local)
-         * @param tid face id (local)
          * @param tid tetra id
          * @param ts hash associated with tid
          */
-        void init(size_t vid, size_t eid, size_t fid, size_t tid, int ts)
+        void init(size_t vid, size_t local_eid, size_t local_fid, size_t tid, int ts)
         {
-            m_vid = vid;
-            m_eid = eid;
-            m_fid = fid;
-            m_tid = tid;
+            m_global_vid = vid;
+            m_local_eid = local_eid;
+            m_local_fid = local_fid;
+            m_global_tid = tid;
             m_timestamp = ts;
         }
 

@@ -26,8 +26,8 @@ void TetMesh::Tuple::init_from_face(const TetMesh& m, int tid, int local_fid)
     int lvid2 = m_local_faces[local_fid][1];
     int eid = -1;
     for (int i = 0; i < 6; i++) {
-        if (m_local_edges[i][0] == lvid1 && m_local_edges[i][1] == lvid2 ||
-            m_local_edges[i][0] == lvid2 && m_local_edges[i][1] == lvid1) {
+        if ((m_local_edges[i][0] == lvid1 && m_local_edges[i][1] == lvid2) ||
+            (m_local_edges[i][0] == lvid2 && m_local_edges[i][1] == lvid1)) {
             eid = i;
             break;
         }
@@ -59,55 +59,61 @@ void TetMesh::Tuple::init_from_tet(const TetMesh& m, int tid)
 
 bool TetMesh::Tuple::is_valid(const TetMesh& m) const
 {
-    if (m.m_vertex_connectivity[m_vid].m_is_removed || m.m_tet_connectivity[m_tid].m_is_removed)
+    if (m.m_vertex_connectivity[m_global_vid].m_is_removed ||
+        m.m_tet_connectivity[m_global_tid].m_is_removed)
         return false;
 
-    if (m_timestamp != m.m_tet_connectivity[m_tid].timestamp) return false;
+    if (m_timestamp != m.m_tet_connectivity[m_global_tid].timestamp) return false;
     return true;
 }
 
 void TetMesh::Tuple::print_info() const
 {
-    logger().trace("tuple: {} {} {} {}", m_vid, m_eid, m_fid, m_tid);
+    logger().trace("tuple: {} {} {} {}", m_global_vid, m_local_eid, m_local_fid, m_global_tid);
 }
 
 void TetMesh::Tuple::print_info(const TetMesh& m) const
 {
-    //    logger().trace("tuple: {} {} {} {}", m_vid, m_eid, m_fid, m_tid);
-    //    logger().trace("tet {} {} {} {}", m.m_tet_connectivity[m_tid][0],
-    //    m.m_tet_connectivity[m_tid][1],
-    //                   m.m_tet_connectivity[m_tid][2], m.m_tet_connectivity[m_tid][3]);
-    //    logger().trace("edge {}: {} {}", m_eid, m_local_edges[m_eid][0], m_local_edges[m_eid][1]);
-    //    logger().trace("face {}: {} {} {}", m_eid, m_local_faces[m_fid][0],
-    //    m_local_faces[m_fid][1],
-    //                   m_local_faces[m_fid][2]);
+    //    logger().trace("tuple: {} {} {} {}", m_global_vid, m_local_eid, m_local_fid,
+    //    m_global_tid); logger().trace("tet {} {} {} {}", m.m_tet_connectivity[m_global_tid][0],
+    //    m.m_tet_connectivity[m_global_tid][1],
+    //                   m.m_tet_connectivity[m_global_tid][2],
+    //                   m.m_tet_connectivity[m_global_tid][3]);
+    //    logger().trace("edge {}: {} {}", m_local_eid, m_local_edges[m_local_eid][0],
+    //    m_local_edges[m_local_eid][1]); logger().trace("face {}: {} {} {}", m_local_eid,
+    //    m_local_faces[m_local_fid][0], m_local_faces[m_local_fid][1],
+    //                   m_local_faces[m_local_fid][2]);
 
-    logger().trace("tuple: {} {} {} {}", m_vid, m_eid, m_fid, m_tid);
+    logger().trace("tuple: {} {} {} {}", m_global_vid, m_local_eid, m_local_fid, m_global_tid);
     logger().trace(
         "tet {} {} {} {}",
-        m.m_tet_connectivity[m_tid][0],
-        m.m_tet_connectivity[m_tid][1],
-        m.m_tet_connectivity[m_tid][2],
-        m.m_tet_connectivity[m_tid][3]);
-    logger().trace("edge {}: {} {}", m_eid, m_local_edges[m_eid][0], m_local_edges[m_eid][1]);
+        m.m_tet_connectivity[m_global_tid][0],
+        m.m_tet_connectivity[m_global_tid][1],
+        m.m_tet_connectivity[m_global_tid][2],
+        m.m_tet_connectivity[m_global_tid][3]);
+    logger().trace(
+        "edge {}: {} {}",
+        m_local_eid,
+        m_local_edges[m_local_eid][0],
+        m_local_edges[m_local_eid][1]);
     logger().trace(
         "face {}: {} {} {}",
-        m_eid,
-        m_local_faces[m_fid][0],
-        m_local_faces[m_fid][1],
-        m_local_faces[m_fid][2]);
+        m_local_eid,
+        m_local_faces[m_local_fid][0],
+        m_local_faces[m_local_fid][1],
+        m_local_faces[m_local_fid][2]);
 }
 
 
 size_t TetMesh::Tuple::vid(const TetMesh&) const
 {
-    return m_vid;
+    return m_global_vid;
 } // update eid and fid
 
 size_t TetMesh::Tuple::eid(const TetMesh& m) const
 {
-    int v1_id = m.m_tet_connectivity[m_tid][m_local_edges[m_eid][0]];
-    int v2_id = m.m_tet_connectivity[m_tid][m_local_edges[m_eid][1]];
+    int v1_id = m.m_tet_connectivity[m_global_tid][m_local_edges[m_local_eid][0]];
+    int v2_id = m.m_tet_connectivity[m_global_tid][m_local_edges[m_local_eid][1]];
     auto n12_t_ids = set_intersection(
         m.m_vertex_connectivity[v1_id].m_conn_tets,
         m.m_vertex_connectivity[v2_id].m_conn_tets);
@@ -127,9 +133,9 @@ size_t TetMesh::Tuple::eid(const TetMesh& m) const
 size_t TetMesh::Tuple::fid(const TetMesh& m) const
 {
     std::array<size_t, 3> v_ids = {
-        {m.m_tet_connectivity[m_tid][m_local_faces[m_fid][0]],
-         m.m_tet_connectivity[m_tid][m_local_faces[m_fid][1]],
-         m.m_tet_connectivity[m_tid][m_local_faces[m_fid][2]]}};
+        {m.m_tet_connectivity[m_global_tid][m_local_faces[m_local_fid][0]],
+         m.m_tet_connectivity[m_global_tid][m_local_faces[m_local_fid][1]],
+         m.m_tet_connectivity[m_global_tid][m_local_faces[m_local_fid][2]]}};
     auto tmp = set_intersection(
         m.m_vertex_connectivity[v_ids[0]].m_conn_tets,
         m.m_vertex_connectivity[v_ids[1]].m_conn_tets);
@@ -137,7 +143,7 @@ size_t TetMesh::Tuple::fid(const TetMesh& m) const
     assert(n12_t_ids.size() == 1 || n12_t_ids.size() == 2);
 
     if (n12_t_ids.size() == 1) {
-        return m_tid * 4 + m_fid;
+        return m_global_tid * 4 + m_local_fid;
     }
 
     std::sort(v_ids.begin(), v_ids.end());
@@ -156,18 +162,19 @@ size_t TetMesh::Tuple::fid(const TetMesh& m) const
 
 size_t TetMesh::Tuple::tid(const TetMesh&) const
 {
-    return m_tid;
+    return m_global_tid;
 }
 
 TetMesh::Tuple TetMesh::Tuple::switch_vertex(const TetMesh& m) const
 {
     Tuple loc = *this;
 
-    int l_vid1 = m_local_edges[m_eid][0];
-    int l_vid2 = m_local_edges[m_eid][1];
-    loc.m_vid = m.m_tet_connectivity[m_tid][l_vid1] == m_vid ? m.m_tet_connectivity[m_tid][l_vid2]
-                                                             : m.m_tet_connectivity[m_tid][l_vid1];
-    assert(loc.m_vid >= 0 && loc.m_vid < m.m_vertex_connectivity.size());
+    int l_vid1 = m_local_edges[m_local_eid][0];
+    int l_vid2 = m_local_edges[m_local_eid][1];
+    loc.m_global_vid = m.m_tet_connectivity[m_global_tid][l_vid1] == m_global_vid
+                           ? m.m_tet_connectivity[m_global_tid][l_vid2]
+                           : m.m_tet_connectivity[m_global_tid][l_vid1];
+    assert(loc.m_global_vid >= 0 && loc.m_global_vid < m.m_vertex_connectivity.size());
 
     return loc;
 } // along edge
@@ -175,10 +182,11 @@ TetMesh::Tuple TetMesh::Tuple::switch_vertex(const TetMesh& m) const
 TetMesh::Tuple TetMesh::Tuple::switch_edge(const TetMesh& m) const
 {
     Tuple loc = *this;
-    for (int leid : m_local_edges_in_a_face[m_fid]) {
-        if (leid != m_eid && (m.m_tet_connectivity[m_tid][m_local_edges[leid][0]] == m_vid ||
-                              m.m_tet_connectivity[m_tid][m_local_edges[leid][1]] == m_vid)) {
-            loc.m_eid = leid;
+    for (int leid : m_local_edges_in_a_face[m_local_fid]) {
+        if (leid != m_local_eid &&
+            (m.m_tet_connectivity[m_global_tid][m_local_edges[leid][0]] == m_global_vid ||
+             m.m_tet_connectivity[m_global_tid][m_local_edges[leid][1]] == m_global_vid)) {
+            loc.m_local_eid = leid;
             return loc;
         }
     }
@@ -189,15 +197,15 @@ TetMesh::Tuple TetMesh::Tuple::switch_edge(const TetMesh& m) const
 TetMesh::Tuple TetMesh::Tuple::switch_face(const TetMesh& m) const
 {
     Tuple loc = *this;
-    int l_v1_id = m_local_edges[m_eid][0];
-    int l_v2_id = m_local_edges[m_eid][1];
+    int l_v1_id = m_local_edges[m_local_eid][0];
+    int l_v2_id = m_local_edges[m_local_eid][1];
     for (int j = 0; j < 4; j++) {
-        if (j == m_fid) continue;
+        if (j == m_local_fid) continue;
         int cnt = 0;
         for (int k = 0; k < 3; k++) {
             if (m_local_faces[j][k] == l_v1_id || m_local_faces[j][k] == l_v2_id) cnt++;
             if (cnt == 2) {
-                loc.m_fid = j;
+                loc.m_local_fid = j;
                 return loc;
             }
         }
@@ -209,9 +217,9 @@ TetMesh::Tuple TetMesh::Tuple::switch_face(const TetMesh& m) const
 std::optional<TetMesh::Tuple> TetMesh::Tuple::switch_tetrahedron(const TetMesh& m) const
 {
     // eid and fid are local, so they will be changed after switch tets
-    size_t v1_id = m.m_tet_connectivity[m_tid][m_local_faces[m_fid][0]];
-    size_t v2_id = m.m_tet_connectivity[m_tid][m_local_faces[m_fid][1]];
-    size_t v3_id = m.m_tet_connectivity[m_tid][m_local_faces[m_fid][2]];
+    size_t v1_id = m.m_tet_connectivity[m_global_tid][m_local_faces[m_local_fid][0]];
+    size_t v2_id = m.m_tet_connectivity[m_global_tid][m_local_faces[m_local_fid][1]];
+    size_t v3_id = m.m_tet_connectivity[m_global_tid][m_local_faces[m_local_fid][2]];
     auto tmp = set_intersection(
         m.m_vertex_connectivity[v1_id].m_conn_tets,
         m.m_vertex_connectivity[v2_id].m_conn_tets);
@@ -222,13 +230,14 @@ std::optional<TetMesh::Tuple> TetMesh::Tuple::switch_tetrahedron(const TetMesh& 
         return {};
     else {
         Tuple loc = *this;
-        loc.m_tid = n123_tids[0] == m_tid ? n123_tids[1] : n123_tids[0];
+        loc.m_global_tid = n123_tids[0] == m_global_tid ? n123_tids[1] : n123_tids[0];
 
-        loc.m_eid = m.m_tet_connectivity[loc.m_tid].find_local_edge(
-            m.m_tet_connectivity[m_tid][m_local_edges[m_eid][0]],
-            m.m_tet_connectivity[m_tid][m_local_edges[m_eid][1]]);
-        loc.m_fid = m.m_tet_connectivity[loc.m_tid].find_local_face(v1_id, v2_id, v3_id);
-        loc.m_timestamp = m.m_tet_connectivity[loc.m_tid].timestamp;
+        loc.m_local_eid = m.m_tet_connectivity[loc.m_global_tid].find_local_edge(
+            m.m_tet_connectivity[m_global_tid][m_local_edges[m_local_eid][0]],
+            m.m_tet_connectivity[m_global_tid][m_local_edges[m_local_eid][1]]);
+        loc.m_local_fid =
+            m.m_tet_connectivity[loc.m_global_tid].find_local_face(v1_id, v2_id, v3_id);
+        loc.m_timestamp = m.m_tet_connectivity[loc.m_global_tid].timestamp;
 
         return loc;
     }
@@ -237,7 +246,7 @@ std::optional<TetMesh::Tuple> TetMesh::Tuple::switch_tetrahedron(const TetMesh& 
 std::vector<TetMesh::Tuple> TetMesh::Tuple::get_conn_tets(const TetMesh& m) const
 {
     std::vector<Tuple> tets;
-    for (int t_id : m.m_vertex_connectivity[m_vid].m_conn_tets) {
+    for (int t_id : m.m_vertex_connectivity[m_global_vid].m_conn_tets) {
         tets.emplace_back();
         tets.back().init_from_tet(m, t_id);
     }
@@ -248,10 +257,10 @@ std::array<TetMesh::Tuple, 4> TetMesh::Tuple::oriented_tet_vertices(const TetMes
 {
     std::array<Tuple, 4> vs;
     for (int j = 0; j < 4; j++) {
-        vs[j].m_vid = m.m_tet_connectivity[m_tid][j];
-        vs[j].m_eid = m_map_vertex2edge[j];
-        vs[j].m_fid = m_map_edge2face[vs[j].m_eid];
-        vs[j].m_tid = m_tid;
+        vs[j].m_global_vid = m.m_tet_connectivity[m_global_tid][j];
+        vs[j].m_local_eid = m_map_vertex2edge[j];
+        vs[j].m_local_fid = m_map_edge2face[vs[j].m_local_eid];
+        vs[j].m_global_tid = m_global_tid;
     }
     return vs;
 }
@@ -262,29 +271,29 @@ void TetMesh::Tuple::check_validity(const TetMesh& m) const
     return;
 #endif
     // check indices
-    assert(m_tid >= 0 && m_tid < m.m_tet_connectivity.size());
-    assert(m_vid >= 0 && m_vid < m.m_vertex_connectivity.size());
-    assert(m_eid >= 0 && m_eid < 6);
-    assert(m_fid >= 0 && m_fid < 4);
+    assert(m_global_tid >= 0 && m_global_tid < m.m_tet_connectivity.size());
+    assert(m_global_vid >= 0 && m_global_vid < m.m_vertex_connectivity.size());
+    assert(m_local_eid >= 0 && m_local_eid < 6);
+    assert(m_local_fid >= 0 && m_local_fid < 4);
 
     // check existence
     assert(is_valid(m));
 
     // check connectivity
     auto it = std::find(
-        m.m_vertex_connectivity[m_vid].m_conn_tets.begin(),
-        m.m_vertex_connectivity[m_vid].m_conn_tets.end(),
-        m_tid);
-    assert(it != m.m_vertex_connectivity[m_vid].m_conn_tets.end());
+        m.m_vertex_connectivity[m_global_vid].m_conn_tets.begin(),
+        m.m_vertex_connectivity[m_global_vid].m_conn_tets.end(),
+        m_global_tid);
+    assert(it != m.m_vertex_connectivity[m_global_vid].m_conn_tets.end());
     //
     std::array<size_t, 3> f_vids = {
-        {m.m_tet_connectivity[m_tid][m_local_faces[m_fid][0]],
-         m.m_tet_connectivity[m_tid][m_local_faces[m_fid][1]],
-         m.m_tet_connectivity[m_tid][m_local_faces[m_fid][2]]}};
+        {m.m_tet_connectivity[m_global_tid][m_local_faces[m_local_fid][0]],
+         m.m_tet_connectivity[m_global_tid][m_local_faces[m_local_fid][1]],
+         m.m_tet_connectivity[m_global_tid][m_local_faces[m_local_fid][2]]}};
     std::array<size_t, 2> e_vids = {
-        {m.m_tet_connectivity[m_tid][m_local_edges[m_eid][0]],
-         m.m_tet_connectivity[m_tid][m_local_edges[m_eid][1]]}};
-    assert(std::find(e_vids.begin(), e_vids.end(), m_vid) != e_vids.end());
+        {m.m_tet_connectivity[m_global_tid][m_local_edges[m_local_eid][0]],
+         m.m_tet_connectivity[m_global_tid][m_local_edges[m_local_eid][1]]}};
+    assert(std::find(e_vids.begin(), e_vids.end(), m_global_vid) != e_vids.end());
     for (int e_vid : e_vids) assert(std::find(f_vids.begin(), f_vids.end(), e_vid) != f_vids.end());
-    for (int f_vid : f_vids) assert(m.m_tet_connectivity[m_tid].find(f_vid) >= 0);
+    for (int f_vid : f_vids) assert(m.m_tet_connectivity[m_global_tid].find(f_vid) >= 0);
 }
