@@ -13,7 +13,7 @@ TetMesh::Tuple TetMesh::Tuple::init_from_edge(const TetMesh& m, int tid, int loc
 
     int vid = m.m_tet_connectivity[tid][m_local_edges[local_eid][0]];
     int fid = m_map_edge2face[local_eid];
-    return Tuple(vid, local_eid, fid, tid);
+    return Tuple(vid, local_eid, fid, tid, m.m_tet_connectivity[tid].timestamp);
 }
 
 TetMesh::Tuple TetMesh::Tuple::init_from_face(const TetMesh& m, int tid, int local_fid)
@@ -33,7 +33,7 @@ TetMesh::Tuple TetMesh::Tuple::init_from_face(const TetMesh& m, int tid, int loc
         }
     }
     int fid = m_map_edge2face[local_fid];
-    return Tuple(vid, eid, local_fid, tid);
+    return Tuple(vid, eid, local_fid, tid, m.m_tet_connectivity[tid].timestamp);
 }
 
 TetMesh::Tuple TetMesh::Tuple::init_from_vertex(const TetMesh& m, int vid)
@@ -44,7 +44,7 @@ TetMesh::Tuple TetMesh::Tuple::init_from_vertex(const TetMesh& m, int vid)
     int j = m.m_tet_connectivity[tid].find(vid);
     int eid = m_map_vertex2edge[j];
     int fid = m_map_edge2face[eid];
-    return Tuple(vid, eid, fid, tid);
+    return Tuple(vid, eid, fid, tid, m.m_tet_connectivity[tid].timestamp);
 }
 
 TetMesh::Tuple TetMesh::Tuple::init_from_tet(const TetMesh& m, int tid)
@@ -54,29 +54,14 @@ TetMesh::Tuple TetMesh::Tuple::init_from_tet(const TetMesh& m, int tid)
     int vid = m.m_tet_connectivity[tid][0];
     int eid = m_map_vertex2edge[0];
     int fid = m_map_edge2face[eid];
-    return Tuple(vid, eid, fid, tid);
+    return Tuple(vid, eid, fid, tid, m.m_tet_connectivity[tid].timestamp);
 }
 
 bool TetMesh::Tuple::is_valid(const TetMesh& m) const
 {
     if (m.m_vertex_connectivity[m_vid].m_is_removed || m.m_tet_connectivity[m_tid].m_is_removed)
         return false;
-    return true;
-}
 
-void TetMesh::Tuple::update_version_number(const TetMesh& m)
-{
-    assert(m_timestamp < m.m_tet_connectivity[m_tid].timestamp);
-    m_timestamp = m.m_tet_connectivity[m_tid].timestamp;
-}
-
-int TetMesh::Tuple::get_version_number()
-{
-    return m_timestamp;
-}
-
-bool TetMesh::Tuple::is_version_number_valid(const TetMesh& m) const
-{
     if (m_timestamp != m.m_tet_connectivity[m_tid].timestamp) return false;
     return true;
 }
@@ -243,6 +228,7 @@ std::optional<TetMesh::Tuple> TetMesh::Tuple::switch_tetrahedron(const TetMesh& 
             m.m_tet_connectivity[m_tid][m_local_edges[m_eid][0]],
             m.m_tet_connectivity[m_tid][m_local_edges[m_eid][1]]);
         loc.m_fid = m.m_tet_connectivity[loc.m_tid].find_local_face(v1_id, v2_id, v3_id);
+        loc.m_timestamp = m.m_tet_connectivity[loc.m_tid].timestamp;
 
         return loc;
     }
@@ -252,8 +238,7 @@ std::vector<TetMesh::Tuple> TetMesh::Tuple::get_conn_tets(const TetMesh& m) cons
 {
     std::vector<Tuple> tets;
     for (int t_id : m.m_vertex_connectivity[m_vid].m_conn_tets) {
-        tets.emplace_back();
-        tets.back().init_from_tet(m, t_id);
+        tets.emplace_back(init_from_tet(m, t_id));
     }
     return tets;
 }

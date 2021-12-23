@@ -1,17 +1,17 @@
 set(SOURCES
-	AMIPS.cpp
-	AMIPS.h
-
 	TetMesh.h
 	TetMesh.cpp
+	
+	Tuple.cpp
 
+
+	TriMesh.h
+	TriMesh.cpp
 	Tuple.cpp
 
 	EdgeCollapsingConn.cpp
 	EdgeSplittingConn.cpp
 
-#	TriMesh.h
-#	TriMesh.cpp
 )
 
 if(WILDMESHING_TOOLKIT_WITH_TBB)
