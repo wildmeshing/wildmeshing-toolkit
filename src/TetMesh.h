@@ -183,6 +183,18 @@ public:
             assert(index >= 0 && index < m_conn_tets.size());
             return m_conn_tets[index];
         }
+
+        friend bool operator==(const VertexConnectivity& l, const VertexConnectivity& r)
+        {
+            return std::tie(l.m_conn_tets, l.m_is_removed)
+                   == std::tie(r.m_conn_tets, r.m_is_removed); // keep the same order
+        }
+
+        void print_info(){
+            std::cout<<"m_conn_tets: ";
+            vector_print(m_conn_tets);
+            std::cout<<"m_is_removed: "<<m_is_removed<<std::endl;
+        }
     };
 
     /**
@@ -253,6 +265,21 @@ public:
                 std::find(m_local_faces.begin(), m_local_faces.end(), f) - m_local_faces.begin();
             if (i >= m_local_edges.size()) return -1;
             return i;
+        }
+
+        friend bool operator==(const TetrahedronConnectivity& l, const TetrahedronConnectivity& r)
+        {
+            return std::tie(l.m_indices, l.m_is_removed, l.timestamp)
+                   == std::tie(r.m_indices, r.m_is_removed, r.timestamp); // keep the same order
+        }
+
+        void print_info(){
+            std::cout<<"m_indices: ";
+            for(int j=0;j<4;j++)
+                std::cout<<m_indices[j]<<" ";
+            std::cout<<std::endl;
+            std::cout<<"m_is_removed: "<<m_is_removed<<std::endl;
+            std::cout<<"timestamp: "<<timestamp<<std::endl;
         }
     };
 
@@ -419,14 +446,14 @@ public:
 
     std::vector<Tuple> get_incident_tets_for_edge(const Tuple& t) const
     {
-        auto locs = t.get_conn_tets(*this);
+        auto locs = t.get_incident_tets_for_edge(*this);
         for (const auto& loc : locs) check_tuple_validity(loc);
         return locs;
     }
 
     std::vector<Tuple> get_one_ring_tets_for_edge(const Tuple& t) const
     {
-        auto locs = t.get_conn_tets(*this);
+        auto locs = t.get_one_ring_tets_for_edge(*this);
         for (const auto& loc : locs) check_tuple_validity(loc);
         return locs;
     }

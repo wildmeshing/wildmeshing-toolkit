@@ -27,8 +27,8 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
         for (int j = 0; j < 4; j++) n12_v_ids.push_back(m_tet_connectivity[t_id][j]);
     }
     vector_unique(n12_v_ids);
-    std::vector<std::pair<size_t, TetrahedronConnectivity>> old_tets(n12_t_ids.size());
-    std::vector<std::pair<size_t, VertexConnectivity>> old_vertices(n12_v_ids.size());
+    std::vector<std::pair<size_t, TetrahedronConnectivity>> old_tets;
+    std::vector<std::pair<size_t, VertexConnectivity>> old_vertices;
     for (size_t t_id : n12_t_ids)
         old_tets.push_back(std::make_pair(t_id, m_tet_connectivity[t_id]));
     for (size_t v_id : n12_v_ids)

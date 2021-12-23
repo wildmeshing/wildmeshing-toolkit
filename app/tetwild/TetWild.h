@@ -122,6 +122,14 @@ public:
 
     bool vertex_invariant(const Tuple& t) override;
     bool tetrahedron_invariant(const Tuple& t) override;
+
+    void pausee(){
+        std::cout<<"pauseeing"<<std::endl;
+        char c;
+        std::cin>>c;
+        if(c == '0')
+            exit(0);
+    }
 };
 
 class ElementInQueue

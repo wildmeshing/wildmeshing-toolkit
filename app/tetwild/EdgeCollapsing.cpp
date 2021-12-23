@@ -5,6 +5,7 @@
 #include "TetWild.h"
 #include "Logger.hpp"
 
+
 void tetwild::TetWild::collapse_all_edges()
 {
     reset_timestamp();
@@ -53,6 +54,7 @@ void tetwild::TetWild::collapse_all_edges()
                 if (length < m_params.collapsing_l2) continue;
                 ec_queue.push(ElementInQueue(new_loc, length));
             }
+            std::cout<<"success"<<std::endl;
         }
     }
 }
@@ -70,7 +72,7 @@ bool tetwild::TetWild::collapse_before(const Tuple& loc)//input is an edge
             .norm(); // todo: duplicated computation
 
     auto n1_locs = get_conn_tets(loc);
-    auto n12_locs = get_one_ring_tets_for_edge(loc);//todo: duplicated computation
+    auto n12_locs = get_incident_tets_for_edge(loc);//todo: duplicated computation
 
     std::map<int, double> qs;
     for (auto& loc : n1_locs) {
@@ -95,15 +97,10 @@ bool tetwild::TetWild::collapse_after(const Tuple& loc)
 
     auto locs = get_conn_tets(loc);
 
-    int v_id = loc.vid();
-    auto old_pos = m_vertex_attribute[v_id].m_posf;
-    m_vertex_attribute[v_id].m_posf = split_cache.vertex_info.m_posf;
-
     ////check first
     // check inversion
     for (auto& loc : locs) {
         if (is_inverted(loc)) {
-            m_vertex_attribute[v_id].m_posf = old_pos;
             return false;
         }
     }
@@ -112,7 +109,9 @@ bool tetwild::TetWild::collapse_after(const Tuple& loc)
     std::vector<double> qs;
     for (auto& loc : locs) {
         double q = get_quality(loc);
-        if (q > collapse_cache.max_energy) return false;
+        if (q > collapse_cache.max_energy){
+            return false;
+        }
         qs.push_back(q);
     }
 

@@ -266,7 +266,7 @@ std::vector<TetMesh::Tuple> TetMesh::Tuple::get_incident_tets_for_edge(const Tet
                                  m.m_vertex_connectivity[v2_id].m_conn_tets);
     std::vector<Tuple> tets;
     for (int t_id : tids) {
-        tets.emplace_back(init_from_tet(m, t_id));
+        tets.push_back(init_from_tet(m, t_id));
     }
     return tets;
 }

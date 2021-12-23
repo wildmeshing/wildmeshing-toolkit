@@ -66,27 +66,36 @@ bool wmtk::TetMesh::check_mesh_connectivity_validity() const
         for (int j = 0; j < 4; j++) conn_tets[m_tet_connectivity[i][j]].push_back(i);
     }
 
+    for(auto& tets: conn_tets) {
+        auto tmp = tets;
+        vector_unique(tets);
+        assert(tmp == tets);
+    }
+
     //check conn_tets duplication, order, amount ...
     for (size_t i = 0; i < m_vertex_connectivity.size(); i++) {
         if (m_vertex_connectivity[i].m_is_removed) continue;
-        assert(
-            m_vertex_connectivity[i].m_conn_tets == conn_tets[i] &&
-            "m_vertex_connectivity[i].m_conn_tets!=conn_tets[i]");
+        assert(!m_vertex_connectivity[i].m_conn_tets.empty());
+        assert(m_vertex_connectivity[i].m_conn_tets == conn_tets[i]);
     }
 
     //check is_removed
     for (size_t i = 0; i < m_tet_connectivity.size(); i++) {
+        if (m_tet_connectivity[i].m_is_removed) continue;
         for(int j=0;j<4;j++)
             assert(!m_vertex_connectivity[m_tet_connectivity[i][j]].m_is_removed
                    &&"m_vertex_connectivity[m_tet_connectivity[i][j]].m_is_removed");
     }
     for (size_t i = 0; i < m_vertex_connectivity.size(); i++) {
+        if (m_vertex_connectivity[i].m_is_removed) continue;
         for (int tid : m_vertex_connectivity[i].m_conn_tets)
             assert(!m_tet_connectivity[tid].m_is_removed && "m_tet_connectivity[tid].m_is_removed");
     }
 
     //check tuple
     for (size_t i = 0; i < m_vertex_connectivity.size(); i++) {
+        if (m_vertex_connectivity[i].m_is_removed) continue;
+
         Tuple loc = tuple_from_vertex(i);
         check_tuple_validity(loc);
         //
@@ -102,6 +111,8 @@ bool wmtk::TetMesh::check_mesh_connectivity_validity() const
         }
     }
     for (size_t i = 0; i < m_tet_connectivity.size(); i++) {
+        if (m_tet_connectivity[i].m_is_removed) continue;
+
         Tuple loc = tuple_from_tet(i);
         check_tuple_validity(loc);
         //
@@ -116,13 +127,6 @@ bool wmtk::TetMesh::check_mesh_connectivity_validity() const
             check_tuple_validity(loct.value());
         }
     }
-
-    return true;
-}
-
-bool wmtk::TetMesh::collapse_edge(const Tuple& t, std::vector<Tuple>& new_edges)
-{
-    // todo
 
     return true;
 }
