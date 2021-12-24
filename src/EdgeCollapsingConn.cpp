@@ -14,11 +14,7 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
     int v1_id = loc1.vid();
     auto loc2 = switch_vertex(loc1);
     int v2_id = loc2.vid();
-    //    std::cout << v1_id << " " << v2_id << std::endl;
     logger().trace("{} {}", v1_id, v2_id);
-    //    loc1.print_info();
-    //    loc2.print_info();
-    //
 
     std::vector<size_t> n1_v_ids;
     for (size_t t_id : m_vertex_connectivity[v1_id].m_conn_tets) {
@@ -31,11 +27,6 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
         old_tets.push_back(std::make_pair(t_id, m_tet_connectivity[t_id]));
     for (size_t v_id : n1_v_ids)
         old_vertices.push_back(std::make_pair(v_id, m_vertex_connectivity[v_id]));
-
-    //    //fortest
-    //    auto old_m_tet_connectivity = m_tet_connectivity;
-    //    auto old_m_vertex_connectivity = m_vertex_connectivity;
-    //    //fortest
 
     /// update connectivity
     auto n1_t_ids =
@@ -71,52 +62,8 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
 
     Tuple new_loc = tuple_from_vertex(v2_id);
     // todo: update timestamp of tets and tuple, change locs to loc
-    if (!collapse_after(new_loc)) {
-        m_vertex_connectivity[v1_id].m_is_removed = false;
-        for (int t_id : n12_t_ids) m_tet_connectivity[t_id].m_is_removed = false;
-        //
-        for (int i = 0; i < old_tets.size(); i++) {
-            int t_id = old_tets[i].first;
-            m_tet_connectivity[t_id] = old_tets[i].second;
-        }
-        for (int i = 0; i < old_vertices.size(); i++) {
-            int v_id = old_vertices[i].first;
-            m_vertex_connectivity[v_id] = old_vertices[i].second;
-        }
-
-        //        //fortest
-        //        std::cout<<old_m_vertex_connectivity.size()<<"
-        //        "<<m_vertex_connectivity.size()<<std::endl; for(int
-        //        i=0;i<old_m_vertex_connectivity.size();i++){
-        //            if(!(old_m_vertex_connectivity[i] == m_vertex_connectivity[i])){
-        //                std::cout<<i<<std::endl;
-        //                old_m_vertex_connectivity[i].print_info();
-        //                std::cout<<"//"<<std::endl;
-        //                m_vertex_connectivity[i].print_info();
-        //            }
-        //        }
-        //
-        //        std::cout<<old_m_tet_connectivity.size()<<"
-        //        "<<m_tet_connectivity.size()<<std::endl; for(int
-        //        i=0;i<old_m_tet_connectivity.size();i++){
-        //            if(!(old_m_tet_connectivity[i] == m_tet_connectivity[i])){
-        //                std::cout<<i<<std::endl;
-        //                old_m_tet_connectivity[i].print_info();
-        //                std::cout<<"//"<<std::endl;
-        //                m_tet_connectivity[i].print_info();
-        //            }
-        //        }
-        //
-        //        assert(old_m_vertex_connectivity == m_vertex_connectivity);
-        //        assert(old_m_tet_connectivity == m_tet_connectivity);
-        //        //fortest
-
-        return false;
-    }
-
-    /// call invariants on all entities
-    if (false) // if any invariant fails
-    {
+    if (!vertex_invariant(new_loc) || !edge_invariant(new_loc) || !tetrahedron_invariant(new_loc) ||
+        !collapse_after(new_loc)) {
         m_vertex_connectivity[v1_id].m_is_removed = false;
         for (int t_id : n12_t_ids) m_tet_connectivity[t_id].m_is_removed = false;
         //
@@ -141,13 +88,6 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
         }
     }
     unique_edge_tuples(*this, new_edges);
-
-    /// update timestamps
-    //    m_timestamp++; // todo: thread
-    //    for (size_t t_id : n1_t_ids) m_tet_connectivity[t_id].set_version_number(m_timestamp);
-    //    for (auto& new_loc : new_edges) // update edge timestamp from tets
-    //        new_loc.update_version_number(*this);
-
 
     return true;
 }
