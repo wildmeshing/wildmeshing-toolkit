@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include <wmtk/VectorUtils.h>
-#include <wmtk/Logger.hpp>
+#include <wmtk/utils/VectorUtils.h>
+#include <wmtk/utils/Logger.hpp>
 
 #ifdef WILDMESHING_TOOLKIT_WITH_TBB
 #include <tbb/concurrent_vector.h>
@@ -170,9 +170,7 @@ public:
                    std::tie(r.m_conn_tets, r.m_is_removed); // keep the same order
         }
 
-        void print_info()
-        {
-        }
+        void print_info() {}
     };
 
     /**
@@ -251,9 +249,7 @@ public:
                    std::tie(r.m_indices, r.m_is_removed, r.timestamp); // keep the same order
         }
 
-        void print_info()
-        {
-        }
+        void print_info() {}
     };
 
     TetMesh() {}

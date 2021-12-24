@@ -1,27 +1,28 @@
 set(SOURCES
-	AMIPS.cpp
-	AMIPS.h
+	TetMesh.h
+	TetMesh.cpp
 
-	Logger.cpp
-	Logger.hpp
+	Tuple.cpp
 
-    Delaunay.cpp
-    Delaunay.hpp
 
-	DisableWarnings.hpp
-	EnableWarnings.hpp
+	TriMesh.h
+	TriMesh.cpp
+	Tuple.cpp
 
-	TupleUtils.cpp
-	TupleUtils.hpp
+	EdgeCollapsingConn.cpp
+	EdgeSplittingConn.cpp
 
-	VectorUtils.h
-
-	TetraQualityUtils.hpp
-	TetraQualityUtils.cpp
 )
 
+if(WILDMESHING_TOOLKIT_WITH_TBB)
+	list(APPEND SOURCES
+
+		ConcurrentTetMesh.h
+		ConcurrentTetMesh.cpp
+	)
+endif()
+
 prepend_current_path(SOURCES)
-wildmeshing_toolkit_copy_headers(${SOURCES})
 wildmeshing_toolkit_set_source_group(${SOURCES})
 target_sources(WildMeshingToolkit PRIVATE ${SOURCES})
 
@@ -29,3 +30,4 @@ target_sources(WildMeshingToolkit PRIVATE ${SOURCES})
 # Subfolders
 ################################################################################
 
+add_subdirectory(utils)

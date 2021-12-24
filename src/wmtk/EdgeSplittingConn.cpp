@@ -4,7 +4,7 @@
 
 #include <wmtk/TetMesh.h>
 
-#include <wmtk/TupleUtils.hpp>
+#include <wmtk/utils/TupleUtils.hpp>
 
 bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
 {
@@ -16,7 +16,7 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     auto loc2 = switch_vertex(loc1);
     int v2_id = loc2.vid(*this);
     logger().trace("{} {}", v1_id, v2_id);
-    
+
     auto n12_t_ids = set_intersection(
         m_vertex_connectivity[v1_id].m_conn_tets,
         m_vertex_connectivity[v2_id].m_conn_tets);
@@ -27,10 +27,8 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     vector_unique(n12_v_ids);
     std::vector<std::pair<size_t, TetrahedronConnectivity>> old_tets;
     std::vector<std::pair<size_t, VertexConnectivity>> old_vertices;
-    for (size_t t_id : n12_t_ids)
-        old_tets.emplace_back(t_id, m_tet_connectivity[t_id]);
-    for (size_t v_id : n12_v_ids)
-        old_vertices.emplace_back(v_id, m_vertex_connectivity[v_id]);
+    for (size_t t_id : n12_t_ids) old_tets.emplace_back(t_id, m_tet_connectivity[t_id]);
+    for (size_t v_id : n12_v_ids) old_vertices.emplace_back(v_id, m_vertex_connectivity[v_id]);
 
     /// update connectivity
     int v_id = find_next_empty_slot_v();

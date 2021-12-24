@@ -4,7 +4,7 @@
 
 #include <wmtk/TetMesh.h>
 
-#include <wmtk/TupleUtils.hpp>
+#include <wmtk/utils/TupleUtils.hpp>
 
 // DP: I do not understand the logic here
 int wmtk::TetMesh::find_next_empty_slot_t() // todo: always append in the end
