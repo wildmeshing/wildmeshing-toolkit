@@ -123,6 +123,9 @@ public:
     bool vertex_invariant(const Tuple& t) override;
     bool tetrahedron_invariant(const Tuple& t) override;
 
+    void consolidate_mesh();
+//    void consolidate_mesh_attributes();
+
     void pausee(){
         std::cout<<"pauseeing"<<std::endl;
         char c;

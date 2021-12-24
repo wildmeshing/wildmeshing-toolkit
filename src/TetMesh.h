@@ -309,6 +309,8 @@ public:
     void swap_edge(const Tuple& t, int type);
     bool smooth_vertex(const Tuple& t);
 
+    void consolidate_mesh_connectivity();
+
     void
     compact(); // cleans up the deleted vertices or tetrahedra, and fixes the corresponding indices
 

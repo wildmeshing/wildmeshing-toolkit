@@ -162,3 +162,51 @@ bool wmtk::TetMesh::smooth_vertex(const Tuple& loc0)
 
     return true;
 }
+
+void wmtk::TetMesh::consolidate_mesh_connectivity()
+{
+    int v_cnt = 0;
+    std::vector<size_t> map_v_ids(m_vertex_connectivity.size(), -1);
+    for (int i = 0; i < m_vertex_connectivity.size(); i++) {
+        if (m_vertex_connectivity[i].m_is_removed) continue;
+        map_v_ids[i] = v_cnt;
+        v_cnt++;
+    }
+    int t_cnt = 0;
+    std::vector<size_t> map_t_ids(m_tet_connectivity.size(), -1);
+    for (int i = 0; i < m_tet_connectivity.size(); i++) {
+        if (m_tet_connectivity[i].m_is_removed) continue;
+        map_t_ids[i] = t_cnt;
+        t_cnt++;
+    }
+
+#ifdef WILDMESHING_TOOLKIT_WITH_TBB
+    tbb::concurrent_vector<VertexConnectivity> new_m_vertex_connectivity(v_cnt);
+    tbb::concurrent_vector<TetrahedronConnectivity> new_m_tet_connectivity(t_cnt);
+#else
+    std::vector<VertexConnectivity> new_m_vertex_connectivity(v_cnt);
+    std::vector<TetrahedronConnectivity> new_m_tet_connectivity(t_cnt);
+#endif
+
+    v_cnt = 0;
+    for (int i = 0; i < m_vertex_connectivity.size(); i++) {
+        if (m_vertex_connectivity[i].m_is_removed) continue;
+
+        new_m_vertex_connectivity[v_cnt] = m_vertex_connectivity[i];
+        for (size_t& t_id : new_m_vertex_connectivity[v_cnt].m_conn_tets) t_id = map_t_ids[t_id];
+        v_cnt++;
+    }
+    t_cnt = 0;
+    for (int i = 0; i < m_tet_connectivity.size(); i++) {
+        if (m_tet_connectivity[i].m_is_removed) continue;
+
+        new_m_tet_connectivity[t_cnt] = m_tet_connectivity[i];
+        for (size_t& v_id : new_m_tet_connectivity[t_cnt].m_indices) v_id = map_v_ids[v_id];
+        t_cnt++;
+    }
+
+    m_vertex_connectivity = new_m_vertex_connectivity;
+    m_tet_connectivity = new_m_tet_connectivity;
+
+    check_mesh_connectivity_validity();
+}

@@ -54,7 +54,7 @@ void tetwild::TetWild::collapse_all_edges()
                 if (length < m_params.collapsing_l2) continue;
                 ec_queue.push(ElementInQueue(new_loc, length));
             }
-            std::cout<<"success"<<std::endl;
+//            std::cout<<"success"<<std::endl;
         }
     }
 }

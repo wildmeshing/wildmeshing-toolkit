@@ -150,8 +150,58 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
     return true;
 }
 
+//void tetwild::TetWild::consolidate_mesh_attributes(){
+//    int v_cnt = 0;
+//    std::vector<size_t> map_v_ids(m_vertex_attribute.size(), -1);
+//    for (size_t i = 0; i < m_vertex_attribute.size(); i++) {
+//        if (m_vertex_attribute[i].m_is_removed) continue;
+//        map_v_ids[i] = v_cnt;
+//        v_cnt++;
+//    }
+//    int t_cnt = 0;
+//    std::vector<size_t> map_t_ids(m_tet_attribute.size(), -1);
+//    for (size_t i = 0; i < m_tet_attribute.size(); i++) {
+//        if (m_tet_attribute[i].m_is_removed) continue;
+//        map_t_ids[i] = t_cnt;
+//        t_cnt++;
+//    }
+//
+//#ifdef WILDMESHING_TOOLKIT_WITH_TBB
+//    tbb::concurrent_vector<VertexAttributes> new_m_vertex_attribute(v_cnt);
+//    tbb::concurrent_vector<TetAttributes> new_m_tet_attribute(t_cnt);
+//#else
+//    std::vector<VertexAttributes> new_m_vertex_attribute(v_cnt);
+//    std::vector<TetAttributes> new_m_tet_attribute(t_cnt);
+//#endif
+//
+//    v_cnt = 0;
+//    for (size_t i = 0; i < m_vertex_attribute.size(); i++) {
+//        if (m_vertex_attribute[i].m_is_removed) continue;
+//        new_m_vertex_attribute[v_cnt] = m_vertex_attribute[i];
+//        v_cnt++;
+//    }
+//    t_cnt = 0;
+//    for (size_t i = 0; i < m_tet_attribute.size(); i++) {
+//        if (m_tet_attribute[i].m_is_removed) continue;
+//        new_m_tet_attribute[t_cnt] = m_tet_attribute[i];
+//        t_cnt++;
+//    }
+//
+//    m_vertex_attribute = new_m_vertex_attribute;
+//    m_tet_attribute = new_m_tet_attribute;
+//
+//}
+
+
+void tetwild::TetWild::consolidate_mesh(){
+//    consolidate_mesh_connectivity();
+//    consolidate_mesh_attributes();
+}
+
 void tetwild::TetWild::output_mesh(std::string file)
 {
+    consolidate_mesh();
+
     PyMesh::MshSaver mSaver(file, true);
 
     Eigen::VectorXd V_flat(3 * m_vertex_attribute.size());
@@ -167,6 +217,43 @@ void tetwild::TetWild::output_mesh(std::string file)
             T_flat(4 * i + j) = vs[j].vid();
         }
     }
+
+//    int cnt = 0;
+//    for (int i = 0; i < m_vertex_attribute.size(); i++) {
+//        if (!m_vertex_connectivity[i].m_is_removed)
+//            cnt++;
+//    }
+//
+//    Eigen::VectorXd V_flat(3 * cnt);
+//    std::vector<int> map_v_ids(m_vertex_attribute.size(), -1);
+//    cnt = 0;
+//    for (int i = 0; i < m_vertex_attribute.size(); i++) {//todo: is_removed???
+//        if(m_vertex_connectivity[i].m_is_removed)
+//            continue;
+//        map_v_ids[i] = cnt;
+//        for (int j = 0; j < 3; j++) V_flat(3 * cnt + j) = m_vertex_attribute[i].m_posf[j];
+//        cnt++;
+//    }
+//
+//    cnt = 0;
+//    for (int i = 0; i < m_tet_connectivity.size(); i++) {
+//        if (!m_tet_connectivity[i].m_is_removed) cnt++;
+//    }
+//    Eigen::VectorXi T_flat(4 * cnt);
+//    cnt = 0;
+//    for (int i = 0; i < m_tet_connectivity.size(); i++) {
+//        if(m_tet_connectivity[i].m_is_removed)
+//            continue;
+//        Tuple loc = tuple_from_tet(i);
+////        if(!loc.is_valid(*this))
+////            continue;
+//        auto vs = oriented_tet_vertices(loc);
+//        for (int j = 0; j < 4; j++) {
+////            T_flat(4 * i + j) = vs[j].vid();
+//            T_flat(4 * cnt + j) = map_v_ids[vs[j].vid()];
+//        }
+//        cnt++;
+//    }
 
     mSaver.save_mesh(V_flat, T_flat, 3, mSaver.TET);
 }
