@@ -8,6 +8,7 @@
 //#include <floattetwild/Envelope.h>
 
 #include <wmtk/TetMesh.h>
+#include <wmtk/TupleUtils.hpp>
 
 #include <memory>
 
@@ -128,7 +129,7 @@ public:
 
     void pausee()
     {
-        std::cout << "pauseeing" << std::endl;
+        logger().trace("pauseeing");
         char c;
         std::cin >> c;
         if (c == '0') exit(0);
