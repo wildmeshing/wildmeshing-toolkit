@@ -150,47 +150,6 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
     return true;
 }
 
-//void tetwild::TetWild::consolidate_mesh_attributes(){
-//    int v_cnt = 0;
-//    std::vector<size_t> map_v_ids(m_vertex_attribute.size(), -1);
-//    for (size_t i = 0; i < m_vertex_attribute.size(); i++) {
-//        if (m_vertex_attribute[i].m_is_removed) continue;
-//        map_v_ids[i] = v_cnt;
-//        v_cnt++;
-//    }
-//    int t_cnt = 0;
-//    std::vector<size_t> map_t_ids(m_tet_attribute.size(), -1);
-//    for (size_t i = 0; i < m_tet_attribute.size(); i++) {
-//        if (m_tet_attribute[i].m_is_removed) continue;
-//        map_t_ids[i] = t_cnt;
-//        t_cnt++;
-//    }
-//
-//#ifdef WILDMESHING_TOOLKIT_WITH_TBB
-//    tbb::concurrent_vector<VertexAttributes> new_m_vertex_attribute(v_cnt);
-//    tbb::concurrent_vector<TetAttributes> new_m_tet_attribute(t_cnt);
-//#else
-//    std::vector<VertexAttributes> new_m_vertex_attribute(v_cnt);
-//    std::vector<TetAttributes> new_m_tet_attribute(t_cnt);
-//#endif
-//
-//    v_cnt = 0;
-//    for (size_t i = 0; i < m_vertex_attribute.size(); i++) {
-//        if (m_vertex_attribute[i].m_is_removed) continue;
-//        new_m_vertex_attribute[v_cnt] = m_vertex_attribute[i];
-//        v_cnt++;
-//    }
-//    t_cnt = 0;
-//    for (size_t i = 0; i < m_tet_attribute.size(); i++) {
-//        if (m_tet_attribute[i].m_is_removed) continue;
-//        new_m_tet_attribute[t_cnt] = m_tet_attribute[i];
-//        t_cnt++;
-//    }
-//
-//    m_vertex_attribute = new_m_vertex_attribute;
-//    m_tet_attribute = new_m_tet_attribute;
-//
-//}
 
 
 void tetwild::TetWild::consolidate_mesh(){
