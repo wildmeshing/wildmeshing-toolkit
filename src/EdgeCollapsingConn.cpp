@@ -24,9 +24,9 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
     std::vector<std::pair<size_t, TetrahedronConnectivity>> old_tets;
     std::vector<std::pair<size_t, VertexConnectivity>> old_vertices;
     for (size_t t_id : m_vertex_connectivity[v1_id].m_conn_tets)
-        old_tets.push_back(std::make_pair(t_id, m_tet_connectivity[t_id]));
+        old_tets.emplace_back(t_id, m_tet_connectivity[t_id]);
     for (size_t v_id : n1_v_ids)
-        old_vertices.push_back(std::make_pair(v_id, m_vertex_connectivity[v_id]));
+        old_vertices.emplace_back(v_id, m_vertex_connectivity[v_id]);
 
     /// update connectivity
     auto n1_t_ids =
