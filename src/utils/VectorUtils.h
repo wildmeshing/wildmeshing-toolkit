@@ -55,4 +55,21 @@ namespace wmtk
 		v.erase(it);
 		return true;
 	}
+
+template <typename T>
+inline bool set_erase(std::vector<T>& v, const T& t)
+{
+    auto it = std::lower_bound(v.begin(), v.end(), t);
+    if (it == v.end() || *it != t) return false; // not found
+    v.erase(it);
+    return true;
+}
+
+template <typename T>
+inline bool set_insert(std::vector<T>& vec, const T& val)
+{
+    auto it = std::lower_bound(vec.begin(), vec.end(), val);
+    vec.insert(it, val);
+    return true;
+}
 } // namespace wmtk

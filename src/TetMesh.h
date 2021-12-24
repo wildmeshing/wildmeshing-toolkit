@@ -290,6 +290,7 @@ public:
      * @return std::vector<Tuple> each Tuple owns a distinct edge.
      */
     std::vector<Tuple> get_edges() const;
+    std::vector<Tuple> get_faces() const;
     std::vector<Tuple> get_vertices() const;
 
     /**
@@ -366,7 +367,7 @@ public:
     }
     Tuple tuple_from_face(int tid, int local_fid) const
     {
-        auto loc = Tuple::init_from_edge(*this, tid, local_fid);
+        auto loc = Tuple::init_from_face(*this, tid, local_fid);
         check_tuple_validity(loc);
         return loc;
     }

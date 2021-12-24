@@ -61,6 +61,28 @@ std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_edges() const
     return edges;
 }
 
+std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_faces() const
+{
+    auto faces = std::vector<TetMesh::Tuple>();
+    for (int i = 0; i < m_tet_connectivity.size(); i++) {
+        if (m_tet_connectivity[i].m_is_removed) continue;
+        for (int j = 0; j < 4; j++) {
+            auto face_t = tuple_from_face(i, j);
+            auto oppo_t = switch_tetrahedron(face_t);
+            if (oppo_t.has_value()) {
+                // use the half-face with the smaller tid
+                if (face_t.tid() > oppo_t->tid()) { //
+                    continue;
+                }
+            }
+            faces.emplace_back(face_t);
+        }
+    }
+
+    return faces;
+}
+
+
 bool wmtk::TetMesh::check_mesh_connectivity_validity() const
 {
     std::vector<std::vector<size_t>> conn_tets(m_vertex_connectivity.size());
