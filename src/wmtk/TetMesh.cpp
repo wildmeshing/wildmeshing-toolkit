@@ -270,6 +270,9 @@ void wmtk::TetMesh::consolidate_mesh_connectivity()
         if (m_vertex_connectivity[i].m_is_removed) continue;
 
         new_m_vertex_connectivity[v_cnt] = m_vertex_connectivity[i];
+
+        move_vertex_attribute(i, v_cnt);
+
         for (size_t& t_id : new_m_vertex_connectivity[v_cnt].m_conn_tets) t_id = map_t_ids[t_id];
         v_cnt++;
     }
@@ -278,12 +281,18 @@ void wmtk::TetMesh::consolidate_mesh_connectivity()
         if (m_tet_connectivity[i].m_is_removed) continue;
 
         new_m_tet_connectivity[t_cnt] = m_tet_connectivity[i];
+        new_m_tet_connectivity[t_cnt].timestamp = 0;
+
+        move_tet_attribute(i, t_cnt);
+
         for (size_t& v_id : new_m_tet_connectivity[t_cnt].m_indices) v_id = map_v_ids[v_id];
         t_cnt++;
     }
 
-    m_vertex_connectivity = new_m_vertex_connectivity;
-    m_tet_connectivity = new_m_tet_connectivity;
+    m_vertex_connectivity = std::move(new_m_vertex_connectivity);
+    m_tet_connectivity = std::move(new_m_tet_connectivity);
+
+    //TODO: add move_face_attribute and move_edge_attribute!
 
     check_mesh_connectivity_validity();
 }
