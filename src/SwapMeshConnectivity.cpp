@@ -228,7 +228,7 @@ bool wmtk::TetMesh::swap_face(const Tuple& t)
         std::set<size_t> tri{v0, v1, v2};
         auto u0 = find_other_v(m_tet_connectivity[t0].m_indices, tri);
         auto u1 = find_other_v(m_tet_connectivity[t1].m_indices, tri);
-        oppo_vid = {u0, u1};
+        oppo_vid = {{u0, u1}};
         //
         auto new_tets = std::vector<std::array<size_t, 4>>{
             m_tet_connectivity[t0].m_indices,
