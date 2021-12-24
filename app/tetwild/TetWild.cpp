@@ -102,7 +102,7 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
     apps::logger().trace("Newton iteration for vertex smoothing.");
     auto vid = t.vid();
 
-    auto locs = t.get_conn_tets(*this);
+    auto locs = t.get_one_ring_tets_for_vertex(*this);
     assert(locs.size() > 0);
     std::vector<std::array<double, 12>> assembles(locs.size());
     auto loc_id = 0;
@@ -150,8 +150,17 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
     return true;
 }
 
+
+void tetwild::TetWild::consolidate_mesh()
+{
+    //    consolidate_mesh_connectivity();
+    //    consolidate_mesh_attributes();
+}
+
 void tetwild::TetWild::output_mesh(std::string file)
 {
+    consolidate_mesh();
+
     PyMesh::MshSaver mSaver(file, true);
 
     Eigen::VectorXd V_flat(3 * m_vertex_attribute.size());

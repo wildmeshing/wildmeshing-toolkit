@@ -98,9 +98,15 @@ public:
         VertexAttributes vertex_info;
     } split_cache; // todo: change for parallel
 
+    struct CollapseInfoCache
+    {
+        double max_energy;
+        double edge_length;
+    } collapse_cache; // todo: change for parallel
+
     void split_all_edges();
     bool split_before(const Tuple& t) override;
-    bool split_after(const std::vector<Tuple>& locs) override;
+    bool split_after(const Tuple& loc) override;
 
     void smooth_all_vertices();
     bool smooth_before(const Tuple& t) override;
@@ -108,13 +114,16 @@ public:
 
     void collapse_all_edges();
     bool collapse_before(const Tuple& t) override;
-    bool collapse_after(const std::vector<Tuple>& locs) override;
+    bool collapse_after(const Tuple& t) override;
 
     bool is_inverted(const Tuple& loc);
     double get_quality(const Tuple& loc);
 
     bool vertex_invariant(const Tuple& t) override;
     bool tetrahedron_invariant(const Tuple& t) override;
+
+    void consolidate_mesh();
+    //    void consolidate_mesh_attributes();
 };
 
 class ElementInQueue
