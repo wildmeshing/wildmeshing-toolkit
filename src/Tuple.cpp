@@ -234,7 +234,7 @@ std::optional<TetMesh::Tuple> TetMesh::Tuple::switch_tetrahedron(const TetMesh& 
     }
 }
 
-std::vector<TetMesh::Tuple> TetMesh::Tuple::get_conn_tets(const TetMesh& m) const
+std::vector<TetMesh::Tuple> TetMesh::Tuple::get_one_ring_tets_for_vertex(const TetMesh& m) const
 {
     std::vector<Tuple> tets;
     for (int t_id : m.m_vertex_connectivity[m_vid].m_conn_tets) {

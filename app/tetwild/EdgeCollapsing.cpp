@@ -8,7 +8,7 @@
 
 void tetwild::TetWild::collapse_all_edges()
 {
-    compact();
+//    compact();
 
     std::vector<Tuple> edges = get_edges();
 
@@ -70,7 +70,7 @@ bool tetwild::TetWild::collapse_before(const Tuple& loc)//input is an edge
         (m_vertex_attribute[v1_id].m_posf - m_vertex_attribute[v2_id].m_posf)
             .norm(); // todo: duplicated computation
 
-    auto n1_locs = get_conn_tets(loc);
+    auto n1_locs = get_one_ring_tets_for_vertex(loc);
     auto n12_locs = get_incident_tets_for_edge(loc);//todo: duplicated computation
 
     std::map<int, double> qs;
@@ -94,7 +94,7 @@ bool tetwild::TetWild::collapse_after(const Tuple& loc)
 {
     if (!TetMesh::collapse_after(loc)) return false;
 
-    auto locs = get_conn_tets(loc);
+    auto locs = get_one_ring_tets_for_vertex(loc);
 
     ////check first
     // check inversion

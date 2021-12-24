@@ -102,7 +102,7 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
     apps::logger().trace("Newton iteration for vertex smoothing.");
     auto vid = t.vid();
 
-    auto locs = t.get_conn_tets(*this);
+    auto locs = t.get_one_ring_tets_for_vertex(*this);
     assert(locs.size() > 0);
     std::vector<std::array<double, 12>> assembles(locs.size());
     auto loc_id = 0;

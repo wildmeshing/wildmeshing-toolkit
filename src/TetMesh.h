@@ -140,7 +140,7 @@ public:
          */
         std::optional<Tuple> switch_tetrahedron(const TetMesh& m) const;
 
-        std::vector<Tuple> get_conn_tets(const TetMesh& m) const;
+        std::vector<Tuple> get_one_ring_tets_for_vertex(const TetMesh& m) const;
 
         std::vector<Tuple> get_one_ring_tets_for_edge(const TetMesh& m) const;
         std::vector<Tuple> get_incident_tets_for_edge(const TetMesh& m) const;
@@ -312,12 +312,11 @@ public:
      * reset the version number. WARNING: it invalidates all tuples!
      *
      */
-    void
-    compact(); // cleans up the deleted vertices or tetrahedra, and fixes the corresponding indices
+//    void
+//    compact(); // cleans up the deleted vertices or tetrahedra, and fixes the corresponding indices
 
     void reset_timestamp()
     {
-        m_timestamp = 0;
         for (auto& t : m_tet_connectivity) t.timestamp = 0;
     }
 
@@ -440,9 +439,9 @@ public:
         return loc;
     }
 
-    std::vector<Tuple> get_conn_tets(const Tuple& t) const
+    std::vector<Tuple> get_one_ring_tets_for_vertex(const Tuple& t) const
     {
-        auto locs = t.get_conn_tets(*this);
+        auto locs = t.get_one_ring_tets_for_vertex(*this);
         for (const auto& loc : locs) check_tuple_validity(loc);
         return locs;
     }

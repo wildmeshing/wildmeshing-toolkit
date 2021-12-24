@@ -138,10 +138,10 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
     unique_edge_tuples(*this, new_edges);
 
     /// update timestamps
-    m_timestamp++; // todo: thread
-    for (size_t t_id : n1_t_ids) m_tet_connectivity[t_id].set_version_number(m_timestamp);
-    for (auto& new_loc : new_edges) // update edge timestamp from tets
-        new_loc.update_version_number(*this);
+//    m_timestamp++; // todo: thread
+//    for (size_t t_id : n1_t_ids) m_tet_connectivity[t_id].set_version_number(m_timestamp);
+//    for (auto& new_loc : new_edges) // update edge timestamp from tets
+//        new_loc.update_version_number(*this);
 
 
     return true;

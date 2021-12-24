@@ -7,7 +7,7 @@
 
 void tetwild::TetWild::split_all_edges()
 {
-    compact();
+//    compact();
 
     std::vector<Tuple> edges = get_edges();
 
@@ -75,7 +75,7 @@ bool tetwild::TetWild::split_after(const Tuple& loc)
     if(!TetMesh::split_after(loc))//note: call from super class, cannot be done with pure virtual classes
         return false;
 
-    std::vector<Tuple> locs = get_conn_tets(loc);
+    std::vector<Tuple> locs = get_one_ring_tets_for_vertex(loc);
 
     int v_id = loc.vid();
     auto old_pos = m_vertex_attribute[v_id].m_posf;
