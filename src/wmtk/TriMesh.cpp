@@ -1,7 +1,7 @@
 #include <wmtk/TriMesh.h>
 
-#include <wmtk/VectorUtils.h>
-#include <wmtk/TupleUtils.hpp>
+#include <wmtk/utils/TupleUtils.hpp>
+
 using namespace wmtk;
 
 TriMesh::Tuple TriMesh::Tuple::switch_vertex(const TriMesh& m) const
@@ -145,8 +145,8 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
 
     assert(
         std::count(n12_intersect_fids.begin(), n12_intersect_fids.end(), test_fid1) > 0 &&
-          std::count(n12_intersect_fids.begin(), n12_intersect_fids.end(), test_fid2) > 0 && 
-         "faces at the edge is not correct");
+        std::count(n12_intersect_fids.begin(), n12_intersect_fids.end(), test_fid2) > 0 &&
+        "faces at the edge is not correct");
 
     std::vector<size_t> n12_union_fids;
     std::set_union(

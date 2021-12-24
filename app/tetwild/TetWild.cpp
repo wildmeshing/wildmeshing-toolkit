@@ -7,8 +7,8 @@
 #include <MshSaver.h>
 #include <Logger.hpp>
 
-#include <wmtk/AMIPS.h>
-#include <wmtk/TetraQualityUtils.hpp>
+#include <wmtk/utils/AMIPS.h>
+#include <wmtk/utils/TetraQualityUtils.hpp>
 
 #include <igl/predicates/predicates.h>
 #include <spdlog/fmt/ostr.h>
