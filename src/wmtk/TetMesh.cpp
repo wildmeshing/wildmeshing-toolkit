@@ -231,7 +231,7 @@ std::array<wmtk::TetMesh::Tuple, 4> wmtk::TetMesh::oriented_tet_vertices(const T
     return vs;
 }
 
-std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_conn_tets(const Tuple& t) const
+std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_one_ring_tets_for_vertex(const Tuple& t) const
 {
     std::vector<Tuple> tets;
     for (int t_id : m_vertex_connectivity[t.m_global_vid].m_conn_tets) {
@@ -239,6 +239,41 @@ std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_conn_tets(const Tuple& t) c
     }
     return tets;
 }
+
+std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_incident_tets_for_edge(const Tuple& t) const
+{
+    int v1_id = m_tet_connectivity[t.m_global_tid][m_local_edges[t.m_local_eid][0]];
+    int v2_id = m_tet_connectivity[t.m_global_tid][m_local_edges[t.m_local_eid][1]];
+
+    auto tids = set_intersection(
+        m_vertex_connectivity[v1_id].m_conn_tets,
+        m_vertex_connectivity[v2_id].m_conn_tets);
+    std::vector<Tuple> tets;
+    for (int t_id : tids) {
+        tets.push_back(tuple_from_tet(t_id));
+    }
+    return tets;
+}
+
+std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_one_ring_tets_for_edge(const Tuple& t) const
+{
+    int v1_id = m_tet_connectivity[t.m_global_tid][m_local_edges[t.m_local_eid][0]];
+    int v2_id = m_tet_connectivity[t.m_global_tid][m_local_edges[t.m_local_eid][1]];
+
+    auto tids = m_vertex_connectivity[v1_id].m_conn_tets;
+    tids.insert(
+        tids.end(),
+        m_vertex_connectivity[v2_id].m_conn_tets.begin(),
+        m_vertex_connectivity[v1_id].m_conn_tets.end());
+    vector_unique(tids);
+
+    std::vector<Tuple> tets;
+    for (int t_id : tids) {
+        tets.emplace_back(tuple_from_tet(t_id));
+    }
+    return tets;
+}
+
 
 void wmtk::TetMesh::consolidate_mesh_connectivity()
 {
