@@ -2,12 +2,12 @@
 // Created by Yixin Hu on 12/7/21.
 //
 
-#include "TetWild.h"
 #include "Logger.hpp"
+#include "TetWild.h"
 
 void tetwild::TetWild::split_all_edges()
 {
-    reset_timestamp();
+    compact();
 
     std::vector<Tuple> edges = get_edges();
 
@@ -32,7 +32,6 @@ void tetwild::TetWild::split_all_edges()
 
         // check timestamp
         if (!loc.is_valid(*this)) continue;
-        if (!loc.is_version_number_valid(*this)) continue;
 
         std::vector<Tuple> new_edges;
         if (split_edge(loc, new_edges)) {
