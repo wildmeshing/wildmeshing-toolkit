@@ -61,7 +61,6 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
     m_vertex_connectivity[v1_id].m_conn_tets.clear(); // release mem
 
     Tuple new_loc = tuple_from_vertex(v2_id);
-    // todo: update timestamp of tets and tuple, change locs to loc
     if (!vertex_invariant(new_loc) || !edge_invariant(new_loc) || !tetrahedron_invariant(new_loc) ||
         !collapse_after(new_loc)) {
         m_vertex_connectivity[v1_id].m_is_removed = false;

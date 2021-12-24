@@ -187,9 +187,6 @@ public:
 
         void print_info()
         {
-//            std::cout << "m_conn_tets: ";
-//            vector_print(m_conn_tets);
-//            std::cout << "m_is_removed: " << m_is_removed << std::endl;
         }
     };
 
@@ -271,11 +268,6 @@ public:
 
         void print_info()
         {
-//            std::cout << "m_indices: ";
-//            for (int j = 0; j < 4; j++) std::cout << m_indices[j] << " ";
-//            std::cout << std::endl;
-//            std::cout << "m_is_removed: " << m_is_removed << std::endl;
-//            std::cout << "timestamp: " << timestamp << std::endl;
         }
     };
 

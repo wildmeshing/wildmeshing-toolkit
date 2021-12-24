@@ -33,8 +33,6 @@ TEST_CASE("edge_splitting", "[test_operation]")
     tetwild.split_all_edges();
 
     REQUIRE(tetwild.check_mesh_connectivity_validity());
-
-    //    tetwild.output_mesh("test_split.msh");
 }
 
 
@@ -63,6 +61,4 @@ TEST_CASE("edge_collapsing", "[test_operation]")
 
     tetwild.collapse_all_edges();
     REQUIRE(tetwild.check_mesh_connectivity_validity());
-
-    //    tetwild.output_mesh("test_collapse.msh");
 }

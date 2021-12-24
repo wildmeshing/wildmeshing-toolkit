@@ -7,7 +7,7 @@ void unique_edge_tuples(const TetMesh& m, std::vector<TetMesh::Tuple>& edges)
 {
     std::sort(edges.begin(), edges.end(), [&](const TetMesh::Tuple& a, const TetMesh::Tuple& b) {
         return a.eid(m) < b.eid(m);
-    }); // todo: use unique glocal id here would be very slow!
+    }); // todo: use unique global id here would be very slow!
 
     edges.erase(
         std::unique(
