@@ -8,7 +8,6 @@
 //#include <floattetwild/Envelope.h>
 
 #include <wmtk/TetMesh.h>
-#include <wmtk/TupleUtils.hpp>
 
 #include <memory>
 
@@ -126,14 +125,6 @@ public:
 
     void consolidate_mesh();
     //    void consolidate_mesh_attributes();
-
-    void pausee()
-    {
-        logger().trace("pauseeing");
-        char c;
-        std::cin >> c;
-        if (c == '0') exit(0);
-    }
 };
 
 class ElementInQueue

@@ -471,6 +471,14 @@ public:
     void check_tuple_validity(const Tuple& t) const { t.check_validity(*this); }
 
     bool check_mesh_connectivity_validity() const;
+
+    void pausee() const
+    {
+        logger().trace("pauseeing");
+        char c;
+        std::cin >> c;
+        if (c == '0') exit(0);
+    }
 };
 
 } // namespace wmtk
