@@ -16,7 +16,7 @@
 bool tetwild::TetWild::is_inverted(const Tuple& loc)
 {
     std::array<Vector3f, 4> ps;
-    auto its = loc.oriented_tet_vertices(*this);
+    auto its = oriented_tet_vertices(loc);
     for (int j = 0; j < 4; j++) {
         ps[j] = m_vertex_attribute[its[j].vid(*this)].m_posf;
     }
@@ -39,7 +39,7 @@ bool tetwild::TetWild::is_inverted(const Tuple& loc)
 double tetwild::TetWild::get_quality(const Tuple& loc)
 {
     std::array<Vector3f, 4> ps;
-    auto its = loc.oriented_tet_vertices(*this);
+    auto its = oriented_tet_vertices(loc);
     for (int j = 0; j < 4; j++) {
         ps[j] = m_vertex_attribute[its[j].vid(*this)].m_posf;
     }
@@ -102,7 +102,7 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
     apps::logger().trace("Newton iteration for vertex smoothing.");
     auto vid = t.vid(*this);
 
-    auto locs = t.get_conn_tets(*this);
+    auto locs = get_conn_tets(t);
     assert(locs.size() > 0);
     std::vector<std::array<double, 12>> assembles(locs.size());
     auto loc_id = 0;
@@ -112,7 +112,7 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
         auto t_id = loc.tid(*this);
 
         assert(!is_inverted(loc));
-        auto local_tuples = loc.oriented_tet_vertices(*this);
+        auto local_tuples = oriented_tet_vertices(loc);
         std::array<size_t, 4> local_verts;
         for (auto i = 0; i < 4; i++) {
             local_verts[i] = local_tuples[i].vid(*this);
