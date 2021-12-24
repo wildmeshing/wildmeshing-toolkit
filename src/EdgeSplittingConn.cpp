@@ -74,6 +74,8 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
                 continue;
             vector_sort(m_vertex_connectivity[m_tet_connectivity[t_id][j]].m_conn_tets);
         }
+        // update timestamp of tets
+        m_tet_connectivity[t_id].timestamp++;
     }
     for (size_t t_id : new_t_ids) {
         for (int j = 0; j < 4; j++) {
@@ -83,6 +85,8 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
             vector_sort(m_vertex_connectivity[m_tet_connectivity[t_id][j]].m_conn_tets);
         }
     }
+
+
 
     /// checks (possibly call the resize_attributes
     resize_attributes(
@@ -99,7 +103,6 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     //        locs.push_back(Tuple(v_id, 0, 0, t_id));
     //    }
     Tuple new_loc = tuple_from_vertex(v_id);
-    // todo: update timestamp of tets and tuple, change locs to loc
     if (!split_after(new_loc)) {
         m_vertex_connectivity[v_id].m_is_removed = true;
         for (int t_id : new_t_ids) {

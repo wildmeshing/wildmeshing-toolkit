@@ -61,6 +61,9 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
         int j = m_tet_connectivity[t_id].find(v1_id);
         assert(j >= 0);
         m_tet_connectivity[t_id][j] = v2_id;
+
+        // update timestamp of tets
+        m_tet_connectivity[t_id].timestamp++;
     }
     vector_sort(m_vertex_connectivity[v2_id].m_conn_tets);
     //
