@@ -7,7 +7,7 @@
 
 void tetwild::TetWild::split_all_edges()
 {
-//    compact();
+    //    compact();
 
     std::vector<Tuple> edges = get_edges();
 
@@ -37,8 +37,8 @@ void tetwild::TetWild::split_all_edges()
         if (split_edge(loc, new_edges)) {
             cnt_suc++;
             if (!is_failed) {
-                for (auto &new_loc: new_edges) {
-                    Tuple &v1 = new_loc;
+                for (auto& new_loc : new_edges) {
+                    Tuple& v1 = new_loc;
                     Tuple v2 = new_loc.switch_vertex(*this);
                     double length =
                         (m_vertex_attribute[v1.vid()].m_posf - m_vertex_attribute[v2.vid()].m_posf)
@@ -72,7 +72,8 @@ bool tetwild::TetWild::split_before(const Tuple& loc0)
 
 bool tetwild::TetWild::split_after(const Tuple& loc)
 { // input: locs pointing to a list of tets and v_id
-    if(!TetMesh::split_after(loc))//note: call from super class, cannot be done with pure virtual classes
+    if (!TetMesh::split_after(
+            loc)) // note: call from super class, cannot be done with pure virtual classes
         return false;
 
     std::vector<Tuple> locs = get_one_ring_tets_for_vertex(loc);

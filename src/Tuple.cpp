@@ -243,12 +243,14 @@ std::vector<TetMesh::Tuple> TetMesh::Tuple::get_one_ring_tets_for_vertex(const T
     return tets;
 }
 
-std::vector<TetMesh::Tuple> TetMesh::Tuple::get_incident_tets_for_edge(const TetMesh& m) const {
+std::vector<TetMesh::Tuple> TetMesh::Tuple::get_incident_tets_for_edge(const TetMesh& m) const
+{
     int v1_id = m.m_tet_connectivity[m_tid][m_local_edges[m_eid][0]];
     int v2_id = m.m_tet_connectivity[m_tid][m_local_edges[m_eid][1]];
 
-    auto tids = set_intersection(m.m_vertex_connectivity[v1_id].m_conn_tets,
-                                 m.m_vertex_connectivity[v2_id].m_conn_tets);
+    auto tids = set_intersection(
+        m.m_vertex_connectivity[v1_id].m_conn_tets,
+        m.m_vertex_connectivity[v2_id].m_conn_tets);
     std::vector<Tuple> tets;
     for (int t_id : tids) {
         tets.push_back(init_from_tet(m, t_id));
@@ -256,13 +258,16 @@ std::vector<TetMesh::Tuple> TetMesh::Tuple::get_incident_tets_for_edge(const Tet
     return tets;
 }
 
-std::vector<TetMesh::Tuple> TetMesh::Tuple::get_one_ring_tets_for_edge(const TetMesh& m) const {
+std::vector<TetMesh::Tuple> TetMesh::Tuple::get_one_ring_tets_for_edge(const TetMesh& m) const
+{
     int v1_id = m.m_tet_connectivity[m_tid][m_local_edges[m_eid][0]];
     int v2_id = m.m_tet_connectivity[m_tid][m_local_edges[m_eid][1]];
 
     auto tids = m.m_vertex_connectivity[v1_id].m_conn_tets;
-    tids.insert(tids.end(), m.m_vertex_connectivity[v2_id].m_conn_tets.begin(),
-                m.m_vertex_connectivity[v1_id].m_conn_tets.end());
+    tids.insert(
+        tids.end(),
+        m.m_vertex_connectivity[v2_id].m_conn_tets.begin(),
+        m.m_vertex_connectivity[v1_id].m_conn_tets.end());
     vector_unique(tids);
 
     std::vector<Tuple> tets;

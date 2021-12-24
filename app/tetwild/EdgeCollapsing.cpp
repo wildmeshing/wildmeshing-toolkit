@@ -8,7 +8,7 @@
 
 void tetwild::TetWild::collapse_all_edges()
 {
-//    compact();
+    //    compact();
 
     std::vector<Tuple> edges = get_edges();
 
@@ -53,12 +53,12 @@ void tetwild::TetWild::collapse_all_edges()
                 if (length < m_params.collapsing_l2) continue;
                 ec_queue.push(ElementInQueue(new_loc, length));
             }
-//            std::cout<<"success"<<std::endl;
+            //            std::cout<<"success"<<std::endl;
         }
     }
 }
 
-bool tetwild::TetWild::collapse_before(const Tuple& loc)//input is an edge
+bool tetwild::TetWild::collapse_before(const Tuple& loc) // input is an edge
 {
     //check if on bbox/surface/boundary
     // todo: store surface info into cache
@@ -71,7 +71,7 @@ bool tetwild::TetWild::collapse_before(const Tuple& loc)//input is an edge
             .norm(); // todo: duplicated computation
 
     auto n1_locs = get_one_ring_tets_for_vertex(loc);
-    auto n12_locs = get_incident_tets_for_edge(loc);//todo: duplicated computation
+    auto n12_locs = get_incident_tets_for_edge(loc); // todo: duplicated computation
 
     std::map<int, double> qs;
     for (auto& loc : n1_locs) {
@@ -108,7 +108,7 @@ bool tetwild::TetWild::collapse_after(const Tuple& loc)
     std::vector<double> qs;
     for (auto& loc : locs) {
         double q = get_quality(loc);
-        if (q > collapse_cache.max_energy){
+        if (q > collapse_cache.max_energy) {
             return false;
         }
         qs.push_back(q);

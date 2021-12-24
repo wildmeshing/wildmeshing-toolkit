@@ -181,14 +181,15 @@ public:
 
         friend bool operator==(const VertexConnectivity& l, const VertexConnectivity& r)
         {
-            return std::tie(l.m_conn_tets, l.m_is_removed)
-                   == std::tie(r.m_conn_tets, r.m_is_removed); // keep the same order
+            return std::tie(l.m_conn_tets, l.m_is_removed) ==
+                   std::tie(r.m_conn_tets, r.m_is_removed); // keep the same order
         }
 
-        void print_info(){
-            std::cout<<"m_conn_tets: ";
+        void print_info()
+        {
+            std::cout << "m_conn_tets: ";
             vector_print(m_conn_tets);
-            std::cout<<"m_is_removed: "<<m_is_removed<<std::endl;
+            std::cout << "m_is_removed: " << m_is_removed << std::endl;
         }
     };
 
@@ -264,17 +265,17 @@ public:
 
         friend bool operator==(const TetrahedronConnectivity& l, const TetrahedronConnectivity& r)
         {
-            return std::tie(l.m_indices, l.m_is_removed, l.timestamp)
-                   == std::tie(r.m_indices, r.m_is_removed, r.timestamp); // keep the same order
+            return std::tie(l.m_indices, l.m_is_removed, l.timestamp) ==
+                   std::tie(r.m_indices, r.m_is_removed, r.timestamp); // keep the same order
         }
 
-        void print_info(){
-            std::cout<<"m_indices: ";
-            for(int j=0;j<4;j++)
-                std::cout<<m_indices[j]<<" ";
-            std::cout<<std::endl;
-            std::cout<<"m_is_removed: "<<m_is_removed<<std::endl;
-            std::cout<<"timestamp: "<<timestamp<<std::endl;
+        void print_info()
+        {
+            std::cout << "m_indices: ";
+            for (int j = 0; j < 4; j++) std::cout << m_indices[j] << " ";
+            std::cout << std::endl;
+            std::cout << "m_is_removed: " << m_is_removed << std::endl;
+            std::cout << "timestamp: " << timestamp << std::endl;
         }
     };
 
@@ -307,13 +308,13 @@ public:
 
     void consolidate_mesh_connectivity();
 
-     /**
+    /**
      * @brief cleans up the deleted vertices or tetrahedra, fixes the corresponding indices, and
      * reset the version number. WARNING: it invalidates all tuples!
      *
      */
-//    void
-//    compact(); // cleans up the deleted vertices or tetrahedra, and fixes the corresponding indices
+    //    void
+    //    compact(); // cleans up the deleted vertices or tetrahedra, and fixes the corresponding indices
 
     void reset_timestamp()
     {
@@ -363,8 +364,8 @@ protected:
     // survived)
 
     virtual bool collapse_after(const Tuple& t) { return true; }
-    virtual bool smooth_before(const Tuple &t) { return true; } 
-    virtual bool smooth_after(const Tuple &t) { return true; } 
+    virtual bool smooth_before(const Tuple& t) { return true; }
+    virtual bool smooth_after(const Tuple& t) { return true; }
 
     // todo: quality, inversion, envelope: change v1 pos before this, only need to change partial
     // attributes

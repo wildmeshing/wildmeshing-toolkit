@@ -124,14 +124,14 @@ public:
     bool tetrahedron_invariant(const Tuple& t) override;
 
     void consolidate_mesh();
-//    void consolidate_mesh_attributes();
+    //    void consolidate_mesh_attributes();
 
-    void pausee(){
-        std::cout<<"pauseeing"<<std::endl;
+    void pausee()
+    {
+        std::cout << "pauseeing" << std::endl;
         char c;
-        std::cin>>c;
-        if(c == '0')
-            exit(0);
+        std::cin >> c;
+        if (c == '0') exit(0);
     }
 };
 

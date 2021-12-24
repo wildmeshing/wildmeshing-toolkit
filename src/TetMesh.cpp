@@ -68,13 +68,13 @@ bool wmtk::TetMesh::check_mesh_connectivity_validity() const
     }
 
 
-    for(auto& tets: conn_tets) {
+    for (auto& tets : conn_tets) {
         auto tmp = tets;
         vector_unique(tets);
         assert(tmp == tets);
     }
 
-    //check conn_tets duplication, order, amount ...
+    // check conn_tets duplication, order, amount ...
     for (size_t i = 0; i < m_vertex_connectivity.size(); i++) {
         if (m_vertex_connectivity[i].m_is_removed) continue;
         assert(!m_vertex_connectivity[i].m_conn_tets.empty());
@@ -84,9 +84,10 @@ bool wmtk::TetMesh::check_mesh_connectivity_validity() const
     // check is_removed
     for (size_t i = 0; i < m_tet_connectivity.size(); i++) {
         if (m_tet_connectivity[i].m_is_removed) continue;
-        for(int j=0;j<4;j++)
-            assert(!m_vertex_connectivity[m_tet_connectivity[i][j]].m_is_removed
-                   &&"m_vertex_connectivity[m_tet_connectivity[i][j]].m_is_removed");
+        for (int j = 0; j < 4; j++)
+            assert(
+                !m_vertex_connectivity[m_tet_connectivity[i][j]].m_is_removed &&
+                "m_vertex_connectivity[m_tet_connectivity[i][j]].m_is_removed");
     }
     for (size_t i = 0; i < m_vertex_connectivity.size(); i++) {
         if (m_vertex_connectivity[i].m_is_removed) continue;
@@ -211,5 +212,4 @@ void wmtk::TetMesh::consolidate_mesh_connectivity()
     m_tet_connectivity = new_m_tet_connectivity;
 
     check_mesh_connectivity_validity();
-
 }
