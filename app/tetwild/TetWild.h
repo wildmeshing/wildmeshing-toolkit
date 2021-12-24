@@ -1,11 +1,10 @@
 #pragma once
 
-#include "Envelope.h"
 #include "Parameters.h"
 #include "common.h"
-//#include <floattetwild/common.h>
-//#include <floattetwild/Parameters.h>
-//#include <floattetwild/Envelope.h>
+
+#include <fastenvelope/FastEnvelope.h>
+
 
 #include <wmtk/TetMesh.h>
 
@@ -58,9 +57,9 @@ class TetWild : public wmtk::TetMesh
 {
 public:
     Parameters& m_params;
-    Envelope& m_envelope;
+    fastEnvelope::FastEnvelope& m_envelope;
 
-    TetWild(Parameters& _m_params, Envelope& _m_envelope)
+    TetWild(Parameters& _m_params, fastEnvelope::FastEnvelope& _m_envelope)
         : m_params(_m_params)
         , m_envelope(_m_envelope)
     {}

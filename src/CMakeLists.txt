@@ -1,16 +1,18 @@
 set(SOURCES
 	TetMesh.h
 	TetMesh.cpp
+	
+	Tuple.cpp
 
+
+	TriMesh.h
+	TriMesh.cpp
 	Tuple.cpp
 
 	EdgeCollapsingConn.cpp
 	EdgeSplittingConn.cpp
 
 	SwapMeshConnectivity.cpp
-
-#	TriMesh.h
-#	TriMesh.cpp
 )
 
 if(WILDMESHING_TOOLKIT_WITH_TBB)
