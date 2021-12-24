@@ -11,9 +11,9 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
 
     /// backup of everything
     auto loc1 = loc0;
-    int v1_id = loc1.vid();
+    int v1_id = loc1.vid(*this);
     auto loc2 = switch_vertex(loc1);
-    int v2_id = loc2.vid();
+    int v2_id = loc2.vid(*this);
     logger().trace("{} {}", v1_id, v2_id);
 
     std::vector<size_t> n1_v_ids;

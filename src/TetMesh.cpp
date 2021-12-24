@@ -152,7 +152,7 @@ std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_vertices() const
         edges.emplace_back(tuple_from_edge(tid, local_eid));
         if (local_vid == 3) edges.back() = switch_vertex(edges.back());
 
-        assert(edges.back().vid() == i);
+        assert(edges.back().vid(*this) == i);
         assert(edges.back().is_valid(*this));
     }
     return edges;
@@ -164,6 +164,80 @@ bool wmtk::TetMesh::smooth_vertex(const Tuple& loc0)
     if (!smooth_after(loc0)) return false;
 
     return true;
+}
+
+
+wmtk::TetMesh::Tuple wmtk::TetMesh::tuple_from_edge(int tid, int local_eid) const
+{
+    assert(tid >= 0 && tid < m_tet_connectivity.size());
+    assert(local_eid >= 0 && local_eid < m_local_edges.size());
+
+    int vid = m_tet_connectivity[tid][m_local_edges[local_eid][0]];
+    int fid = m_map_edge2face[local_eid];
+    return Tuple(*this, vid, local_eid, fid, tid);
+}
+
+wmtk::TetMesh::Tuple wmtk::TetMesh::tuple_from_face(int tid, int local_fid) const
+{
+    assert(tid >= 0 && tid < m_tet_connectivity.size());
+    assert(local_fid >= 0 && local_fid < m_local_faces.size());
+
+    int vid = m_tet_connectivity[tid][m_local_faces[local_fid][0]];
+    int lvid1 = m_local_faces[local_fid][0];
+    int lvid2 = m_local_faces[local_fid][1];
+    int eid = -1;
+    for (int i = 0; i < 6; i++) {
+        if ((m_local_edges[i][0] == lvid1 && m_local_edges[i][1] == lvid2) ||
+            (m_local_edges[i][0] == lvid2 && m_local_edges[i][1] == lvid1)) {
+            eid = i;
+            break;
+        }
+    }
+    int fid = m_map_edge2face[local_fid];
+    return Tuple(*this, vid, eid, local_fid, tid);
+}
+
+wmtk::TetMesh::Tuple wmtk::TetMesh::tuple_from_vertex(int vid) const
+{
+    assert(vid >= 0 && vid < m_vertex_connectivity.size());
+
+    int tid = m_vertex_connectivity[vid].m_conn_tets[0];
+    int j = m_tet_connectivity[tid].find(vid);
+    int eid = m_map_vertex2edge[j];
+    int fid = m_map_edge2face[eid];
+    return Tuple(*this, vid, eid, fid, tid);
+}
+
+wmtk::TetMesh::Tuple wmtk::TetMesh::tuple_from_tet(int tid) const
+{
+    assert(tid >= 0 && tid < m_tet_connectivity.size());
+
+    int vid = m_tet_connectivity[tid][0];
+    int eid = m_map_vertex2edge[0];
+    int fid = m_map_edge2face[eid];
+    return Tuple(*this, vid, eid, fid, tid);
+}
+
+
+std::array<wmtk::TetMesh::Tuple, 4> wmtk::TetMesh::oriented_tet_vertices(const Tuple& t) const
+{
+    std::array<Tuple, 4> vs;
+    for (int j = 0; j < 4; j++) {
+        vs[j].m_global_vid = m_tet_connectivity[t.m_global_tid][j];
+        vs[j].m_local_eid = m_map_vertex2edge[j];
+        vs[j].m_local_fid = m_map_edge2face[vs[j].m_local_eid];
+        vs[j].m_global_tid = t.m_global_tid;
+    }
+    return vs;
+}
+
+std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_conn_tets(const Tuple& t) const
+{
+    std::vector<Tuple> tets;
+    for (int t_id : m_vertex_connectivity[t.m_global_vid].m_conn_tets) {
+        tets.emplace_back(tuple_from_tet(t_id));
+    }
+    return tets;
 }
 
 void wmtk::TetMesh::consolidate_mesh_connectivity()

@@ -138,19 +138,34 @@ public:
         , weight(w)
     {}
 };
-struct cmp_l
+class cmp_l
 {
+private:
+    const TetWild& m_tw;
+
+public:
+    cmp_l(const TetWild& tw)
+        : m_tw(tw)
+    {}
+
     bool operator()(const ElementInQueue& e1, const ElementInQueue& e2)
     {
-        if (e1.weight == e2.weight) return e1.edge.vid() > e2.edge.vid();
+        if (e1.weight == e2.weight) return e1.edge.vid(m_tw) > e2.edge.vid(m_tw);
         return e1.weight < e2.weight;
     }
 };
-struct cmp_s
+class cmp_s
 {
+private:
+    const TetWild& m_tw;
+
+public:
+    cmp_s(const TetWild& tw)
+        : m_tw(tw)
+    {}
     bool operator()(const ElementInQueue& e1, const ElementInQueue& e2)
     {
-        if (e1.weight == e2.weight) return e1.edge.vid() < e2.edge.vid();
+        if (e1.weight == e2.weight) return e1.edge.vid(m_tw) < e2.edge.vid(m_tw);
         return e1.weight > e2.weight;
     }
 };

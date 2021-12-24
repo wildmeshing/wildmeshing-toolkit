@@ -22,7 +22,7 @@ void unique_directed_edge_tuples(const TetMesh& m, std::vector<TetMesh::Tuple>& 
     std::sort(edges.begin(), edges.end(), [&](const TetMesh::Tuple& a, const TetMesh::Tuple& b) {
         throw "check me!";
         const int aeid = a.eid(m), beid = b.eid(m);
-        if (aeid == beid) return a.vid() < b.vid();
+        if (aeid == beid) return a.vid(m) < b.vid(m);
         return aeid < beid;
     });
 
@@ -32,7 +32,7 @@ void unique_directed_edge_tuples(const TetMesh& m, std::vector<TetMesh::Tuple>& 
             edges.end(),
             [&](const TetMesh::Tuple& a, const TetMesh::Tuple& b) {
                 throw "check me!";
-                return a.eid(m) == b.eid(m) && a.vid() == b.vid();
+                return a.eid(m) == b.eid(m) && a.vid(m) == b.vid(m);
             }),
         edges.end());
 }

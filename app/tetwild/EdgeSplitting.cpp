@@ -14,12 +14,13 @@ void tetwild::TetWild::split_all_edges()
     apps::logger().debug("edges.size() = {}", edges.size());
 
     int cnt_suc = 0;
-    std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_l> es_queue;
+    std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_l> es_queue(cmp_l(*this));
     for (auto& loc : edges) {
         Tuple& v1 = loc;
         Tuple v2 = loc.switch_vertex(*this);
-        double length = (m_vertex_attribute[v1.vid()].m_posf - m_vertex_attribute[v2.vid()].m_posf)
-                            .squaredNorm();
+        double length =
+            (m_vertex_attribute[v1.vid(*this)].m_posf - m_vertex_attribute[v2.vid(*this)].m_posf)
+                .squaredNorm();
         if (length < m_params.splitting_l2) continue;
         es_queue.push(ElementInQueue(loc, length));
     }
@@ -40,9 +41,9 @@ void tetwild::TetWild::split_all_edges()
                 for (auto& new_loc : new_edges) {
                     Tuple& v1 = new_loc;
                     Tuple v2 = new_loc.switch_vertex(*this);
-                    double length =
-                        (m_vertex_attribute[v1.vid()].m_posf - m_vertex_attribute[v2.vid()].m_posf)
-                            .squaredNorm();
+                    double length = (m_vertex_attribute[v1.vid(*this)].m_posf -
+                                     m_vertex_attribute[v2.vid(*this)].m_posf)
+                                        .squaredNorm();
                     if (length < m_params.splitting_l2) continue;
                     es_queue.push(ElementInQueue(new_loc, length));
                 }
@@ -55,9 +56,9 @@ void tetwild::TetWild::split_all_edges()
 bool tetwild::TetWild::split_before(const Tuple& loc0)
 {
     auto loc1 = loc0;
-    int v1_id = loc1.vid();
+    int v1_id = loc1.vid(*this);
     auto loc2 = loc1.switch_vertex(*this);
-    int v2_id = loc2.vid();
+    int v2_id = loc2.vid(*this);
 
     //	double length = (m_vertex_attribute[v1_id].m_posf -
     // m_vertex_attribute[v2_id].m_posf).norm();
@@ -78,7 +79,7 @@ bool tetwild::TetWild::split_after(const Tuple& loc)
 
     std::vector<Tuple> locs = get_one_ring_tets_for_vertex(loc);
 
-    int v_id = loc.vid();
+    int v_id = loc.vid(*this);
     auto old_pos = m_vertex_attribute[v_id].m_posf;
     m_vertex_attribute[v_id].m_posf = split_cache.vertex_info.m_posf;
 
@@ -92,7 +93,7 @@ bool tetwild::TetWild::split_after(const Tuple& loc)
 
     // update quality
     for (auto& loc : locs) {
-        m_tet_attribute[loc.tid()].m_qualities = get_quality(loc);
+        m_tet_attribute[loc.tid(*this)].m_qualities = get_quality(loc);
     }
 
     return true;
