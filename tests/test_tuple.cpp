@@ -1,8 +1,6 @@
 #include <wmtk/TetMesh.h>
 
 #include <catch2/catch.hpp>
-#include <iostream>
-#include <spdlog/spdlog.h>
 
 using namespace wmtk;
 
@@ -86,12 +84,9 @@ TEST_CASE("switch_face_tet", "[test_tuple]")
     m.init(5, {{{0, 1, 2, 3}}, {{0, 1, 4, 2}}, {{0, 1, 3, 4}}});
     auto e = m.tuple_from_edge(0, 3);
 
-    spdlog::trace("edge {} {} {} {}", e.tid(), e.fid(m), e.eid(m), e.vid());
     e = e.switch_face(m);
-    spdlog::trace("edge {} ({}) {} {}", e.tid(), e.fid(m), e.eid(m), e.vid());
     auto edge0 = e.eid(m);
     e = e.switch_tetrahedron(m).value();
-    spdlog::trace("edge ({}) {} {} {}", e.tid(), e.fid(m), e.eid(m), e.vid());
     auto edge1 = e.eid(m);
     REQUIRE(edge0 == edge1);
 }
@@ -104,7 +99,6 @@ TEST_CASE("count_edge_on_boundary", "[test_tuple]")
     auto cnt = 0;
     for (auto& e : edges) {
         if (e.is_boundary_edge(mesh)) cnt++;
-        spdlog::trace("cnt {} edge ({}) {} {} {}", cnt, e.tid(), e.fid(mesh), e.eid(mesh), e.vid());
     }
     REQUIRE(edges.size() == 10);
     REQUIRE(cnt == 9);

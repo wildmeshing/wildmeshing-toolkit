@@ -1,8 +1,5 @@
 #include <wmtk/TetMesh.h>
 #include <catch2/catch.hpp>
-#include <iostream>
-#include "spdlog/common.h"
-#include "wmtk/Logger.hpp"
 
 using namespace wmtk;
 
