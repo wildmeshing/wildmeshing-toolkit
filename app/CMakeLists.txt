@@ -10,7 +10,8 @@ else()
 endif()
 
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/recipes/")
 
 # Color output
 include(UseColors)
@@ -51,6 +52,16 @@ option(LIBIGL_WITH_TRIANGLE          	"Use Triangle"                 OFF)
 option(LIBIGL_WITH_PREDICATES        	"Use exact predicates"         ON)
 option(LIBIGL_WITH_XML               	"Use XML"                      OFF)
 
+
+# Options for envelope module
+option(FAST_ENVELOPE_WITH_UNIT_TESTS 				"unit test project" 					OFF)
+option(FAST_ENVELOPE_ENABLE_TBB        				"Enable TBB"                			OFF)
+option(FAST_ENVELOPE_WITH_GEOGRAM_PREDICATES        "Use whole Geogram for predicates"      OFF)
+option(FAST_ENVELOPE_WITH_GEOGRAM_PSM_PREDICATES    "Use Geogram predicates only"           OFF)
+option(FAST_ENVELOPE_WITH_GMP						"Use gmp to have rational predicates"   OFF)
+option(FAST_ENVELOPE_WITH_TIMER  				 	"use timer in the library for debug" 	OFF)
+
+
 # Sanitizers
 if(TWTK_APPS_WITH_SANITIZERS)
 	list(APPEND CMAKE_MODULE_PATH ${TWTK_APPS_EXTERNAL}/sanitizers-cmake/cmake)
@@ -77,6 +88,8 @@ if(TWTK_APPS_WITH_SANITIZERS)
 	add_sanitizers(app_shared)
 endif()
 
+include(fenvelope)
+
 ################################################################################
 # FloatTetwild
 ################################################################################
@@ -87,13 +100,12 @@ add_library(TetWild
 
 	tetwild/common.h
 	tetwild/Parameters.h
-	tetwild/Envelope.h
 
 	tetwild/EdgeSplitting.cpp
 	tetwild/EdgeCollapsing.cpp
 )
 
-target_link_libraries(TetWild PUBLIC igl::predicates app_shared)
+target_link_libraries(TetWild PUBLIC igl::predicates FastEnvelope app_shared)
 target_include_directories(TetWild PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/tetwild)
 # 	target_link_libraries(TetWild PUBLIC FastEnvelope)
 target_compile_features(TetWild PUBLIC cxx_std_17)
@@ -115,7 +127,7 @@ add_library(QuadricEdgeCollapse
 	QuadricEdgeCollapse/QEC.cpp
 )
 
-target_link_libraries(QuadricEdgeCollapse PUBLIC igl::predicates app_shared)
+target_link_libraries(QuadricEdgeCollapse PUBLIC igl::predicates FastEnvelope app_shared)
 target_include_directories(QuadricEdgeCollapse PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 
