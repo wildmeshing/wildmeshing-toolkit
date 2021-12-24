@@ -61,9 +61,9 @@ bool tetwild::TetWild::collapse_before(const Tuple& loc) // input is an edge
     //check if on bbox/surface/boundary
     // todo: store surface info into cache
 
-    int v1_id = loc.vid();
+    int v1_id = loc.vid(*this);
     auto loc1 = switch_vertex(loc);
-    int v2_id = loc1.vid();
+    int v2_id = loc1.vid(*this);
     collapse_cache.edge_length =
         (m_vertex_attribute[v1_id].m_posf - m_vertex_attribute[v2_id].m_posf)
             .norm(); // todo: duplicated computation
@@ -73,10 +73,10 @@ bool tetwild::TetWild::collapse_before(const Tuple& loc) // input is an edge
 
     std::map<int, double> qs;
     for (auto& loc : n1_locs) {
-        qs[loc.tid()] = get_quality(loc);
+        qs[loc.tid(*this)] = get_quality(loc);
     }
     for (auto& loc : n12_locs) {
-        auto it = qs.find(loc.tid());
+        auto it = qs.find(loc.tid(*this));
         if (it != qs.end()) qs.erase(it);
     }
 
@@ -117,7 +117,7 @@ bool tetwild::TetWild::collapse_after(const Tuple& loc)
         // todo: surface check
     } else {
         for (int i = 0; i < locs.size(); i++) {
-            m_tet_attribute[locs[i].tid()].m_qualities = qs[i];
+            m_tet_attribute[locs[i].tid(*this)].m_qualities = qs[i];
         }
     }
 

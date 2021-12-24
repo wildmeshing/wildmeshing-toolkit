@@ -79,7 +79,7 @@ bool tetwild::TetWild::split_after(const Tuple& loc)
 
     std::vector<Tuple> locs = get_one_ring_tets_for_vertex(loc);
 
-    int v_id = loc.vid();
+    int v_id = loc.vid(*this);
     auto old_pos = m_vertex_attribute[v_id].m_posf;
     m_vertex_attribute[v_id].m_posf = split_cache.vertex_info.m_posf;
 
