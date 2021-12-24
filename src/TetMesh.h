@@ -45,6 +45,7 @@ public:
         int m_timestamp = 0;
 
     private:
+        // Kill these and move to tet mesh
         /**
          * Update a Tuple from global tetra index and __local__ edge index (from 0-5).
          *
@@ -94,6 +95,7 @@ public:
             init(vid, local_eid, local_fid, tid, ts);
         }
 
+        // maybe kill init too
         /**
          * Update a Tuple object with global vertex/tetra index and local edge/face index
          *
