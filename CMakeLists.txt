@@ -99,7 +99,7 @@ if(WILDMESHING_TOOLKIT_WITH_SANITIZERS)
 endif()
 
 target_link_libraries(${PROJECT_NAME} PUBLIC spdlog::spdlog igl::core geogram::delaunay_psm)
-target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_BINARY_DIR}/include)
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 if(WILDMESHING_TOOLKIT_WITH_TBB)
 	include(onetbb)
@@ -113,7 +113,7 @@ endif()
 ################################################################################
 
 # Other sources
-add_subdirectory(src)
+add_subdirectory(src/wmtk)
 
 # Compile extras only if this is a top-level project
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)

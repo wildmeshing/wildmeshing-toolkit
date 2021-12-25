@@ -6,33 +6,32 @@ using namespace wmtk;
 
 TEST_CASE("test_get_edges", "[test_tuple]")
 {
-	TetMesh mesh;
-	mesh.init(4, {{{0, 1, 2, 3}}});
-	const auto edges = mesh.get_edges();
+    TetMesh mesh;
+    mesh.init(4, {{{0, 1, 2, 3}}});
+    const auto edges = mesh.get_edges();
 
-	REQUIRE(edges.size() == 6);
+    REQUIRE(edges.size() == 6);
 }
 
 TEST_CASE("switch_vertex", "[test_tuple]")
 {
-	TetMesh mesh;
-	mesh.init(4, {{{0, 1, 2, 3}}});
-	const auto tuple = mesh.tuple_from_edge(0, 0);
-	REQUIRE(tuple.vid() == 0);
+    TetMesh mesh;
+    mesh.init(4, {{{0, 1, 2, 3}}});
+    const auto tuple = mesh.tuple_from_edge(0, 0);
+    REQUIRE(tuple.vid(mesh) == 0);
 
-	const auto t1 = mesh.switch_vertex(tuple);
-	REQUIRE(t1.vid() == 1);
+    const auto t1 = mesh.switch_vertex(tuple);
+    REQUIRE(t1.vid(mesh) == 1);
     int eid1 = tuple.eid(mesh);
     int eid2 = t1.eid(mesh);
     REQUIRE(eid1 == eid2);
 
-	const auto t2 = mesh.switch_vertex(t1);
-	REQUIRE(tuple.vid() == t2.vid());
+    const auto t2 = mesh.switch_vertex(t1);
+    REQUIRE(tuple.vid(mesh) == t2.vid(mesh));
 }
 
 TEST_CASE("switch_edge", "[test_tuple]")
 {
-
     TetMesh mesh;
     mesh.init(4, {{{0, 1, 2, 3}}});
     const auto tuple = mesh.tuple_from_vertex(0);
@@ -68,12 +67,12 @@ TEST_CASE("switch_tet", "[test_tuple]")
     mesh.init(5, {{{0, 1, 2, 3}}, {{0, 1, 2, 4}}});
     const auto tuple = mesh.tuple_from_face(0, 0);
 
-    int tid1 = tuple.tid();
+    int tid1 = tuple.tid(mesh);
     const auto t1 = mesh.switch_tetrahedron(tuple);
     REQUIRE(t1.has_value());
     const auto t2 = mesh.switch_tetrahedron(t1.value());
     REQUIRE(t2.has_value());
-    int tid2 = t2.value().tid();
+    int tid2 = t2.value().tid(mesh);
     REQUIRE(tid1 == tid2);
 }
 

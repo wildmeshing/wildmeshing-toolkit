@@ -60,7 +60,7 @@ TEST_CASE("rollback_split_operation", "[test_operation]")
     class NoSplitMesh : public TetMesh
     {
     public:
-        bool split_after(const std::vector<TetMesh::Tuple>& locs) override { return false; };
+        bool split_after(const TetMesh::Tuple& locs) override { return false; };
     };
     auto mesh = NoSplitMesh();
     mesh.init(5, {{{0, 1, 2, 3}}, {{0, 1, 2, 4}}});

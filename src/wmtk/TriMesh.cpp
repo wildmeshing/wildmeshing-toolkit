@@ -1,7 +1,7 @@
 #include <wmtk/TriMesh.h>
 
-#include <wmtk/VectorUtils.h>
-#include <wmtk/TupleUtils.hpp>
+#include <wmtk/utils/TupleUtils.hpp>
+
 using namespace wmtk;
 
 TriMesh::Tuple TriMesh::Tuple::switch_vertex(const TriMesh& m) const
@@ -144,9 +144,9 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
     size_t test_fid2 = loc1.get_fid();
 
     assert(
-        ((std::count(n12_intersect_fids.begin(), n12_intersect_fids.end(), test_fid1) &&
-          std::count(n12_intersect_fids.begin(), n12_intersect_fids.end(), test_fid2)),
-         "faces at the edge is not correct"));
+        std::count(n12_intersect_fids.begin(), n12_intersect_fids.end(), test_fid1) > 0 &&
+        std::count(n12_intersect_fids.begin(), n12_intersect_fids.end(), test_fid2) > 0 &&
+        "faces at the edge is not correct");
 
     std::vector<size_t> n12_union_fids;
     std::set_union(
@@ -168,7 +168,7 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
     // the m_conn_tris needs to be sorted
     size_t new_vid = get_next_empty_slot_v();
     for (size_t fid : n1_fids) {
-        if (std::count(n12_intersect_fids.begin(), n12_intersect_fids.end(), fid))
+        if (std::count(n12_intersect_fids.begin(), n12_intersect_fids.end(), fid) > 0)
             continue;
         else {
             int j = m_tri_connectivity[fid].find(vid1);
@@ -176,7 +176,7 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
         }
     }
     for (size_t fid : n2_fids) {
-        if (std::count(n12_intersect_fids.begin(), n12_intersect_fids.end(), fid))
+        if (std::count(n12_intersect_fids.begin(), n12_intersect_fids.end(), fid) > 0)
             continue;
         else {
             int j = m_tri_connectivity[fid].find(vid2);
@@ -195,7 +195,7 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
     }
 
     for (size_t fid : n12_union_fids) {
-        if (std::count(n12_intersect_fids.begin(), n12_intersect_fids.end(), fid))
+        if (std::count(n12_intersect_fids.begin(), n12_intersect_fids.end(), fid) > 0)
             continue;
         else
             m_vertex_connectivity[new_vid].m_conn_tris.push_back(fid);
@@ -207,9 +207,9 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
         auto f_vids = m_tri_connectivity[fid].m_indices;
         for (size_t f_vid : f_vids) {
             if (f_vid != vid1 && f_vid != vid2) {
-                same_edge_vid_fid.push_back(std::make_pair(f_vid, fid));
+                same_edge_vid_fid.emplace_back(f_vid, fid);
                 auto conn_tris = m_vertex_connectivity[f_vid].m_conn_tris;
-                assert(std::count(conn_tris.begin(), conn_tris.end(), fid));
+                assert(std::count(conn_tris.begin(), conn_tris.end(), fid) > 0);
                 vector_erase(conn_tris, fid);
             }
         }
