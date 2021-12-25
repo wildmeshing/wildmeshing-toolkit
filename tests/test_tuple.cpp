@@ -1,7 +1,6 @@
 #include <wmtk/TetMesh.h>
 
 #include <catch2/catch.hpp>
-#include <iostream>
 
 using namespace wmtk;
 
@@ -75,4 +74,31 @@ TEST_CASE("switch_tet", "[test_tuple]")
     REQUIRE(t2.has_value());
     int tid2 = t2.value().tid(mesh);
     REQUIRE(tid1 == tid2);
+}
+
+
+TEST_CASE("switch_face_tet", "[test_tuple]")
+{
+    TetMesh m;
+    m.init(5, {{{0, 1, 2, 3}}, {{0, 1, 4, 2}}, {{0, 1, 3, 4}}});
+    auto e = m.tuple_from_edge(0, 3);
+
+    e = e.switch_face(m);
+    auto edge0 = e.eid(m);
+    e = e.switch_tetrahedron(m).value();
+    auto edge1 = e.eid(m);
+    REQUIRE(edge0 == edge1);
+}
+
+TEST_CASE("count_edge_on_boundary", "[test_tuple]")
+{
+    TetMesh mesh;
+    mesh.init(5, {{{0, 1, 2, 3}}, {{0, 1, 4, 2}}, {{0, 1, 3, 4}}});
+    const auto edges = mesh.get_edges();
+    auto cnt = 0;
+    for (auto& e : edges) {
+        if (e.is_boundary_edge(mesh)) cnt++;
+    }
+    REQUIRE(edges.size() == 10);
+    REQUIRE(cnt == 9);
 }
