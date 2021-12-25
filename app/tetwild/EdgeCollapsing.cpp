@@ -72,11 +72,11 @@ bool tetwild::TetWild::collapse_before(const Tuple& loc) // input is an edge
     auto n12_locs = get_incident_tets_for_edge(loc); // todo: duplicated computation
 
     std::map<int, double> qs;
-    for (auto& loc : n1_locs) {
-        qs[loc.tid(*this)] = get_quality(loc);
+    for (auto& l : n1_locs) {
+        qs[l.tid(*this)] = get_quality(l);
     }
-    for (auto& loc : n12_locs) {
-        auto it = qs.find(loc.tid(*this));
+    for (auto& l : n12_locs) {
+        auto it = qs.find(l.tid(*this));
         if (it != qs.end()) qs.erase(it);
     }
 
@@ -96,16 +96,16 @@ bool tetwild::TetWild::collapse_after(const Tuple& loc)
 
     ////check first
     // check inversion
-    for (auto& loc : locs) {
-        if (is_inverted(loc)) {
+    for (auto& l : locs) {
+        if (is_inverted(l)) {
             return false;
         }
     }
 
     // check quality
     std::vector<double> qs;
-    for (auto& loc : locs) {
-        double q = get_quality(loc);
+    for (auto& l : locs) {
+        double q = get_quality(l);
         if (q > collapse_cache.max_energy) {
             return false;
         }

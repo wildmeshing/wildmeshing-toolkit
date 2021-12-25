@@ -3,8 +3,9 @@
 #include "Parameters.h"
 #include "common.h"
 
+#include <wmtk/utils/DisableWarnings.hpp>
 #include <fastenvelope/FastEnvelope.h>
-
+#include <wmtk/utils/EnableWarnings.hpp>
 
 #include <wmtk/TetMesh.h>
 
