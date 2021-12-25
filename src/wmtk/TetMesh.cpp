@@ -6,15 +6,8 @@
 
 #include <wmtk/utils/TupleUtils.hpp>
 
-// DP: I do not understand the logic here
-int wmtk::TetMesh::find_next_empty_slot_t() // todo: always append in the end
+int wmtk::TetMesh::find_next_empty_slot_t()
 {
-    for (int i = m_t_empty_slot; i < m_tet_connectivity.size(); i++) {
-        if (m_tet_connectivity[i].m_is_removed) {
-            m_t_empty_slot = i + 1;
-            return i;
-        }
-    }
     m_tet_connectivity.emplace_back();
     m_tet_connectivity.back().timestamp = -1;
     return m_tet_connectivity.size() - 1;
@@ -22,12 +15,6 @@ int wmtk::TetMesh::find_next_empty_slot_t() // todo: always append in the end
 
 int wmtk::TetMesh::find_next_empty_slot_v()
 {
-    for (int i = m_v_empty_slot; i < m_vertex_connectivity.size(); i++) {
-        if (m_vertex_connectivity[i].m_is_removed) {
-            m_v_empty_slot = i + 1;
-            return i;
-        }
-    }
     m_vertex_connectivity.emplace_back();
     return m_vertex_connectivity.size() - 1;
 }
