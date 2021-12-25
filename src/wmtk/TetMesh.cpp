@@ -71,7 +71,7 @@ std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_faces() const
             auto oppo_t = switch_tetrahedron(face_t);
             if (oppo_t.has_value()) {
                 // use the half-face with the smaller tid
-                if (face_t.tid() > oppo_t->tid()) { //
+                if (face_t.tid(*this) > oppo_t->tid(*this)) { //
                     continue;
                 }
             }

@@ -5,7 +5,7 @@
 #include <cstdio>
 #include <iterator>
 #include <vector>
-#include <wmtk/TupleUtils.hpp>
+#include <wmtk/utils/TupleUtils.hpp>
 
 auto replace = [](auto& arr, auto v0, auto v1) {
     for (auto j = 0; j < arr.size(); j++)
@@ -110,8 +110,8 @@ bool wmtk::TetMesh::swap_edge(const Tuple& t)
     // only swap internal edges, not on boundary.
     if (t.is_boundary_edge(*this)) return false;
     if (!swap_edge_before(t)) return false;
-    auto v1_id = t.vid();
-    auto v2_id = switch_vertex(t).vid();
+    auto v1_id = t.vid(*this);
+    auto v2_id = switch_vertex(t).vid(*this);
     auto& nb1 = m_vertex_connectivity[v1_id];
     auto& nb2 = m_vertex_connectivity[v2_id];
     auto affected = set_intersection(nb1.m_conn_tets, nb2.m_conn_tets);
@@ -187,10 +187,10 @@ bool wmtk::TetMesh::swap_face(const Tuple& t)
     if (!swap_face_before(t)) return false;
     //    if (t.is_boundary_face(*this)) return false;
 
-    auto v0 = t.vid();
+    auto v0 = t.vid(*this);
     auto oppo = switch_vertex(t);
-    auto v1 = oppo.vid();
-    auto v2 = oppo.switch_edge(*this).switch_vertex(*this).vid();
+    auto v1 = oppo.vid(*this);
+    auto v2 = oppo.switch_edge(*this).switch_vertex(*this).vid(*this);
     assert(v0 != v1 && v1 != v2 && v2 != v0);
     logger().trace(
         "Swap the face with vertices [{}]: {}, [{}]: {}, [{}]: {}",

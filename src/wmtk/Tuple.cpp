@@ -17,6 +17,47 @@ TetMesh::Tuple::Tuple(const TetMesh& m, size_t vid, size_t local_eid, size_t loc
     check_validity(m);
 }
 
+
+bool TetMesh::Tuple::is_boundary_face(const TetMesh& m) const
+{
+    auto v0 = this->vid(m);
+    auto oppo = this->switch_vertex(m);
+    auto v1 = oppo.vid(m);
+    auto v2 = oppo.switch_edge(m).switch_vertex(m).vid(m);
+    assert(v0 != v1 && v1 != v2 && v2 != v0);
+
+    auto inter01 = set_intersection(
+        m.m_vertex_connectivity[v0].m_conn_tets,
+        m.m_vertex_connectivity[v1].m_conn_tets);
+    auto inter012 = set_intersection(inter01, m.m_vertex_connectivity[v2].m_conn_tets);
+
+    assert(inter012.size() == 1 || inter012.size() == 2);
+    return inter012.size() == 1;
+}
+
+bool TetMesh::Tuple::is_boundary_edge(const TetMesh& m) const
+{
+    auto tet_id = this->tid(m);
+
+    Tuple e = *this;
+    auto cnt = 0;
+    do {
+        e = e.switch_face(m);
+        logger().trace("edge {} ({}) {} {}", e.tid(m), e.fid(m), e.eid(m), e.vid(m));
+        auto e_opt = e.switch_tetrahedron(m);
+        if (!e_opt) {
+            logger().trace(">> No adjacent tetra");
+            return true;
+        }
+        e = e_opt.value();
+        cnt++;
+        logger().trace("edge ({}) {} {} {}", e.tid(m), e.fid(m), e.eid(m), e.vid(m));
+        assert(cnt < m.n_tets() + 1 && "Avoid infinite loop.");
+    } while (e.tid(m) != tet_id);
+    logger().trace(">> Internal");
+    return false;
+}
+
 bool TetMesh::Tuple::is_valid(const TetMesh& m) const
 {
     if (m.m_vertex_connectivity[m_global_vid].m_is_removed ||
