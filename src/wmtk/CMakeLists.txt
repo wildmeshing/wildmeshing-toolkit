@@ -12,6 +12,7 @@ set(SOURCES
 	EdgeCollapsingConn.cpp
 	EdgeSplittingConn.cpp
 
+	SwapMeshConnectivity.cpp
 )
 
 if(WILDMESHING_TOOLKIT_WITH_TBB)

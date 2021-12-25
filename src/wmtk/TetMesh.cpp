@@ -45,10 +45,12 @@ void wmtk::TetMesh::init(size_t n_vertices, const std::vector<std::array<size_t,
     }
 }
 
+
 std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_edges() const
 {
     std::vector<TetMesh::Tuple> edges;
     for (int i = 0; i < m_tet_connectivity.size(); i++) {
+        if (m_tet_connectivity[i].m_is_removed) continue;
         for (int j = 0; j < 6; j++) {
             edges.push_back(tuple_from_edge(i, j));
         }
@@ -58,6 +60,28 @@ std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_edges() const
 
     return edges;
 }
+
+std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_faces() const
+{
+    auto faces = std::vector<TetMesh::Tuple>();
+    for (int i = 0; i < m_tet_connectivity.size(); i++) {
+        if (m_tet_connectivity[i].m_is_removed) continue;
+        for (int j = 0; j < 4; j++) {
+            auto face_t = tuple_from_face(i, j);
+            auto oppo_t = switch_tetrahedron(face_t);
+            if (oppo_t.has_value()) {
+                // use the half-face with the smaller tid
+                if (face_t.tid(*this) > oppo_t->tid(*this)) { //
+                    continue;
+                }
+            }
+            faces.emplace_back(face_t);
+        }
+    }
+
+    return faces;
+}
+
 
 bool wmtk::TetMesh::check_mesh_connectivity_validity() const
 {
@@ -98,7 +122,6 @@ bool wmtk::TetMesh::check_mesh_connectivity_validity() const
     // check tuple
     for (size_t i = 0; i < m_vertex_connectivity.size(); i++) {
         if (m_vertex_connectivity[i].m_is_removed) continue;
-
         Tuple loc = tuple_from_vertex(i);
         check_tuple_validity(loc);
         //
@@ -115,7 +138,6 @@ bool wmtk::TetMesh::check_mesh_connectivity_validity() const
     }
     for (size_t i = 0; i < m_tet_connectivity.size(); i++) {
         if (m_tet_connectivity[i].m_is_removed) continue;
-
         Tuple loc = tuple_from_tet(i);
         check_tuple_validity(loc);
         //

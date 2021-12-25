@@ -48,10 +48,10 @@ public:
         /**
          * Construct a new Tuple object with global vertex/tetra index and local edge/face index
          *
-         * @param vid vertex id
+         * @param vid vertex id (global)
          * @param eid edge id (local)
          * @param fid face id (local)
-         * @param tid tetra id
+         * @param tid tetra id (global)
          * @param ts hash associated with tid
          */
         Tuple(const TetMesh& m, size_t vid, size_t local_eid, size_t local_fid, size_t tid);
@@ -68,6 +68,8 @@ public:
          * @return if not removed and the tuple is up to date with respect to the connectivity.
          */
         bool is_valid(const TetMesh& m) const;
+        bool is_boundary_edge(const TetMesh& m) const;
+        bool is_boundary_face(const TetMesh& m) const;
 
         void print_info() const;
         void print_info(const TetMesh& m) const;
@@ -275,7 +277,8 @@ public:
      */
     bool split_edge(const Tuple& t, std::vector<Tuple>& new_edges);
     bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_edges);
-    void swap_edge(const Tuple& t, int type);
+    bool swap_edge(const Tuple& t);
+    bool swap_face(const Tuple& t);
     bool smooth_vertex(const Tuple& t);
 
 
@@ -300,6 +303,7 @@ public:
      * @return std::vector<Tuple> each Tuple owns a distinct edge.
      */
     std::vector<Tuple> get_edges() const;
+    std::vector<Tuple> get_faces() const;
     std::vector<Tuple> get_vertices() const;
 
     /**
@@ -307,16 +311,18 @@ public:
      */
     size_t n_tets() const { return m_tet_connectivity.size(); }
 
-private:
-    // Stores the connectivity of the mesh
+public:
+    template <typename T>
 #ifdef WILDMESHING_TOOLKIT_WITH_TBB
-    tbb::concurrent_vector<VertexConnectivity> m_vertex_connectivity;
-    tbb::concurrent_vector<TetrahedronConnectivity> m_tet_connectivity;
+    using vector = tbb::concurrent_vector<T>;
 #else
-    std::vector<VertexConnectivity> m_vertex_connectivity;
-    std::vector<TetrahedronConnectivity> m_tet_connectivity;
+    using vector = std::vector<T>;
 #endif
 
+private:
+    // Stores the connectivity of the mesh
+    vector<VertexConnectivity> m_vertex_connectivity;
+    vector<TetrahedronConnectivity> m_tet_connectivity;
     int m_t_empty_slot = 0;
     int m_v_empty_slot = 0;
     int find_next_empty_slot_t();
@@ -335,6 +341,11 @@ protected:
     virtual bool collapse_before(const Tuple& t) { return true; }
     // If it returns false then the operation is undone (the tuple indexes a vertex and tet that
     // survived)
+    
+    virtual bool swap_edge_before(const Tuple& t) { return true; }
+    virtual bool swap_edge_after(const Tuple& t) { return true; }
+    virtual bool swap_face_before(const Tuple& t) { return true; }
+    virtual bool swap_face_after(const Tuple& t) { return true; }
 
     virtual bool collapse_after(const Tuple& t) { return true; }
     virtual bool smooth_before(const Tuple& t) { return true; }
