@@ -71,7 +71,17 @@ public:
         bool is_boundary_edge(const TetMesh& m) const;
         bool is_boundary_face(const TetMesh& m) const;
 
+        /**
+         * @brief prints the tuple
+         *
+         */
         void print_info() const;
+
+        /**
+         * @brief prints additional information
+         *
+         * @param m mesh
+         */
         void print_info(const TetMesh& m) const;
 
         /**
@@ -126,17 +136,6 @@ public:
          * @return nullopt if the Tuple is the switch goes off the boundary.
          */
         std::optional<Tuple> switch_tetrahedron(const TetMesh& m) const;
-
-        std::vector<Tuple> get_one_ring_tets_for_vertex(const TetMesh& m) const;
-
-        std::vector<Tuple> get_one_ring_tets_for_edge(const TetMesh& m) const;
-        std::vector<Tuple> get_incident_tets_for_edge(const TetMesh& m) const;
-
-        /**
-         * Positively oriented 4 vertices (represented by Tuples) in a tetra.
-         * @return std::array<Tuple, 4> each tuple owns a different vertex.
-         */
-        std::array<Tuple, 4> oriented_tet_vertices(const TetMesh& m) const;
 
 
         ////testing code
@@ -434,34 +433,35 @@ public:
         return loc;
     }
 
-    std::vector<Tuple> get_one_ring_tets_for_vertex(const Tuple& t) const
-    {
-        auto locs = t.get_one_ring_tets_for_vertex(*this);
-        for (const auto& loc : locs) check_tuple_validity(loc);
-        return locs;
-    }
+    /**
+     * @brief Get the one ring tets for a vertex
+     *
+     * @param t tuple pointing to a vertex
+     * @return one-ring
+     */
+    std::vector<Tuple> get_one_ring_tets_for_vertex(const Tuple& t) const;
 
-    std::vector<Tuple> get_incident_tets_for_edge(const Tuple& t) const
-    {
-        auto locs = t.get_incident_tets_for_edge(*this);
-        for (const auto& loc : locs) check_tuple_validity(loc);
-        return locs;
-    }
+    /**
+     * @brief Get the incident tets for edge
+     *
+     * @param t tuple pointing to an edge
+     * @return incident tets
+     */
+    std::vector<Tuple> get_incident_tets_for_edge(const Tuple& t) const;
 
-    std::vector<Tuple> get_one_ring_tets_for_edge(const Tuple& t) const
-    {
-        auto locs = t.get_one_ring_tets_for_edge(*this);
-        for (const auto& loc : locs) check_tuple_validity(loc);
-        return locs;
-    }
+    /**
+     * @brief Get the one ring tets for edge
+     *
+     * @param t tuple pointing to an edge
+     * @return one ring
+     */
+    std::vector<Tuple> get_one_ring_tets_for_edge(const Tuple& t) const;
 
     /**
      * Positively oriented 4 vertices (represented by Tuples) in a tetra.
      * @return std::array<Tuple, 4> each tuple owns a different vertex.
      */
     std::array<Tuple, 4> oriented_tet_vertices(const Tuple& t) const;
-
-    std::vector<Tuple> get_conn_tets(const Tuple& t) const;
 
     void check_tuple_validity(const Tuple& t) const { t.check_validity(*this); }
     bool check_mesh_connectivity_validity() const;
