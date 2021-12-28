@@ -37,10 +37,10 @@ public:
     // Cell Tuple Navigator
     class Tuple
     {
-        size_t m_global_vid = -1;
-        size_t m_local_eid = -1;
-        size_t m_local_fid = -1;
-        size_t m_global_tid = -1;
+        size_t m_global_vid = std::numeric_limits<size_t>::max();
+        size_t m_local_eid = std::numeric_limits<size_t>::max();
+        size_t m_local_fid = std::numeric_limits<size_t>::max();
+        size_t m_global_tid = std::numeric_limits<size_t>::max();
 
         int m_timestamp = 0;
 
@@ -358,7 +358,7 @@ protected:
     virtual bool collapse_before(const Tuple& t) { return true; }
     // If it returns false then the operation is undone (the tuple indexes a vertex and tet that
     // survived)
-    
+
     virtual bool swap_edge_before(const Tuple& t) { return true; }
     virtual bool swap_edge_after(const Tuple& t) { return true; }
     virtual bool swap_face_before(const Tuple& t) { return true; }
