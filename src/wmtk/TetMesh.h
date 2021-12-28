@@ -37,10 +37,10 @@ public:
     // Cell Tuple Navigator
     class Tuple
     {
-        size_t m_global_vid;
-        size_t m_local_eid;
-        size_t m_local_fid;
-        size_t m_global_tid;
+        size_t m_global_vid = -1;
+        size_t m_local_eid = -1;
+        size_t m_local_fid = -1;
+        size_t m_global_tid = -1;
 
         int m_timestamp = 0;
 
@@ -140,6 +140,22 @@ public:
 
         ////testing code
         void check_validity(const TetMesh& m) const;
+        friend bool operator==(const Tuple& a, const Tuple& t)
+        {
+            return (
+                std::tie(
+                    a.m_global_vid,
+                    a.m_local_eid,
+                    a.m_local_fid,
+                    a.m_global_tid,
+                    a.m_timestamp) ==
+                std::tie(
+                    t.m_global_vid,
+                    t.m_local_eid,
+                    t.m_local_fid,
+                    t.m_global_tid,
+                    t.m_timestamp));
+        };
     };
 
     /**
@@ -256,6 +272,8 @@ public:
     TetMesh() {}
     virtual ~TetMesh() {}
 
+    size_t vert_capacity() const { return m_vertex_connectivity.size(); };
+    size_t tet_capacity() const { return m_tet_connectivity.size(); };
     /**
      * Initialize TetMesh data structure
      *
