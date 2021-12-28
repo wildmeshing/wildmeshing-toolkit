@@ -168,8 +168,8 @@ void tetwild::TetWild::output_mesh(std::string file)
         for (int j = 0; j < 3; j++) V_flat(3 * i + j) = m_vertex_attribute[i].m_posf[j];
     }
 
-    Eigen::VectorXi T_flat(4 * n_tets());
-    for (int i = 0; i < n_tets(); i++) {
+    Eigen::VectorXi T_flat(4 * m_tet_attribute.size());
+    for (int i = 0; i < m_tet_attribute.size(); i++) {
         Tuple loc = tuple_from_tet(i);
         auto vs = oriented_tet_vertices(loc);
         for (int j = 0; j < 4; j++) {
