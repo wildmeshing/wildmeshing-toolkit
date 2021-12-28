@@ -52,7 +52,7 @@ bool TetMesh::Tuple::is_boundary_edge(const TetMesh& m) const
         e = e_opt.value();
         cnt++;
         logger().trace("edge ({}) {} {} {}", e.tid(m), e.fid(m), e.eid(m), e.vid(m));
-        assert(cnt < m.n_tets() + 1 && "Avoid infinite loop.");
+        assert(cnt < m.m_tet_connectivity.size() + 1 && "Debug: Avoid infinite loop.");
     } while (e.tid(m) != tet_id);
     logger().trace(">> Internal");
     return false;

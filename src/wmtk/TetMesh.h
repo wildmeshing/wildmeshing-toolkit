@@ -305,11 +305,6 @@ public:
     std::vector<Tuple> get_faces() const;
     std::vector<Tuple> get_vertices() const;
 
-    /**
-     * Number of tetra in the mesh
-     */
-    size_t n_tets() const { return m_tet_connectivity.size(); }
-
 public:
     template <typename T>
 #ifdef WILDMESHING_TOOLKIT_WITH_TBB
