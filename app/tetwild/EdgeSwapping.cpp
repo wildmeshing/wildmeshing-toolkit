@@ -72,6 +72,8 @@ void tetwild::TetWild::swap_all_faces()
 
 bool tetwild::TetWild::swap_edge_before(const Tuple& t)
 {
+    if (!TetMesh::swap_edge_before(t)) return false;
+
     auto incident_tets = get_incident_tets_for_edge(t);
     auto max_energy = -1.0;
     for (auto& l : incident_tets) {
@@ -82,6 +84,8 @@ bool tetwild::TetWild::swap_edge_before(const Tuple& t)
 }
 bool tetwild::TetWild::swap_edge_after(const Tuple& t)
 {
+    if (!TetMesh::swap_edge_after(t)) return false;
+
     // after swap, t points to a face with 2 neighboring tets.
     auto oppo_tet = t.switch_tetrahedron(*this);
     assert(oppo_tet.has_value() && "Should not swap boundary.");
@@ -95,6 +99,8 @@ bool tetwild::TetWild::swap_edge_after(const Tuple& t)
 
 bool tetwild::TetWild::swap_face_before(const Tuple& t)
 {
+    if (!TetMesh::swap_face_before(t)) return false;
+
     auto oppo_tet = t.switch_tetrahedron(*this);
     assert(oppo_tet.has_value() && "Should not swap boundary.");
     faceswap_cache.max_energy = std::max(get_quality(t), get_quality(*oppo_tet));
@@ -103,6 +109,8 @@ bool tetwild::TetWild::swap_face_before(const Tuple& t)
 
 bool tetwild::TetWild::swap_face_after(const Tuple& t)
 {
+    if (!TetMesh::swap_face_after(t)) return false;
+    
     auto incident_tets = get_incident_tets_for_edge(t);
     for (auto& l : incident_tets) {
         if (is_inverted(l)) {
