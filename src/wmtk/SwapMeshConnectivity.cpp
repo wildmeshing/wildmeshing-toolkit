@@ -192,14 +192,7 @@ bool wmtk::TetMesh::swap_face(const Tuple& t)
     auto v1 = oppo.vid(*this);
     auto v2 = oppo.switch_edge(*this).switch_vertex(*this).vid(*this);
     assert(v0 != v1 && v1 != v2 && v2 != v0);
-    logger().trace(
-        "Swap the face with vertices [{}]: {}, [{}]: {}, [{}]: {}",
-        v0,
-        m_vertex_connectivity[v0].m_conn_tets,
-        v1,
-        m_vertex_connectivity[v1].m_conn_tets,
-        v2,
-        m_vertex_connectivity[v2].m_conn_tets);
+    logger().trace("Swap the face with vertices [{}] [{}] [{}]", v0, v1, v2);
     auto inter01 = set_intersection(
         m_vertex_connectivity[v0].m_conn_tets,
         m_vertex_connectivity[v1].m_conn_tets);
@@ -253,10 +246,11 @@ bool wmtk::TetMesh::swap_face(const Tuple& t)
     assert(affected.size() == old_tets.size());
     auto new_tid = new_tet_id.front();
     auto new_eid = m_tet_connectivity[new_tid].find_local_edge(oppo_vid[0], oppo_vid[1]);
+    logger().trace("oppo vid {}", oppo_vid);
     assert(new_eid != -1);
     auto newt = tuple_from_edge(new_tid, new_eid);
-
     if (!swap_face_after(newt)) { // rollback post-operation
+        logger().trace("rolling back");
         post_rollback(
             m_tet_connectivity,
             m_vertex_connectivity,
@@ -266,5 +260,7 @@ bool wmtk::TetMesh::swap_face(const Tuple& t)
             old_tets);
         return false;
     }
+    logger().trace("swapped");
+
     return true;
 }

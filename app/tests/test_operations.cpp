@@ -3,6 +3,8 @@
 #include <wmtk/TetMesh.h>
 
 #include <catch2/catch.hpp>
+#include "Logger.hpp"
+#include "spdlog/common.h"
 
 
 using namespace wmtk;
@@ -34,7 +36,7 @@ TEST_CASE("edge_splitting", "[test_operation]")
 
     tetwild.swap_all_edges();
     REQUIRE(tetwild.check_mesh_connectivity_validity());
-    // tetwild.swap_all_faces();
+    tetwild.swap_all_faces();
 
     REQUIRE(tetwild.check_mesh_connectivity_validity());
 }
