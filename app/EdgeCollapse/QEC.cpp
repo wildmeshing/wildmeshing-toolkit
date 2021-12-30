@@ -2,6 +2,7 @@
 #include <wmtk/VectorUtils.h>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+#include "EdgeCollapse.h"
 void add_Qs(std::array<double, 10> Q1, std::array<double, 10> Q2)
 {
     for (int j = 0; j < 10; j++) {
@@ -10,14 +11,14 @@ void add_Qs(std::array<double, 10> Q1, std::array<double, 10> Q2)
 }
 
 // get the quadrix in form of an array of 10 floating point numbers
-std::array<double, 10> compute_Q_f(wmtk::TriMesh& m, size_t fid)
+std::array<double, 10> EdgeCollapse::compute_Q_f(wmtk::TriMesh::Tuple& f_tuple)
 {
-    auto conn_indices = m.m_tri_connectivity[fid].m_indices;
-    Eigen::Vector3d A = m_vertices_position[conn_indices[0]];
-    Eigen::Vector3d B = m_vertices_position[conn_indices[1]];
-    Eigen::Vector3d C = m_vertices_position[conn_indices[2]];
+    auto conn_indices = get_incident_verts_for_tri(f_tuple);
+    Eigen::Vector3d A = m_vertex_positions[conn_indices[0].get_vid()];
+    Eigen::Vector3d B = m_vertex_positions[conn_indices[1].get_vid()];
+    Eigen::Vector3d C = m_vertex_positions[conn_indices[2].get_vid()];
 
-    Eigen::Vector3d n = ((A - B).cross(C - B)).normalize();
+    Eigen::Vector3d n = ((A - B).cross(C - B)).normalized();
     double a = n(0);
     double b = n(1);
     double c = n(2);
@@ -38,21 +39,22 @@ std::array<double, 10> compute_Q_f(wmtk::TriMesh& m, size_t fid)
     return Q;
 }
 
-std::array<double, 10> compute_Q_v(wmtk::TriMesh& m, size_t vid)
+std::array<double, 10> EdgeCollapse::compute_Q_v(wmtk::TriMesh::Tuple& v_tuple)
 {
-    auto conn_tris = m.m_vertex_connectivity[vid].m_conn_tris;
+    auto conn_tris = get_one_ring_tris_for_vertex(v_tuple);
     std::array<double, 10> Q{};
-    for (size_t tri : conn_tris) {
-        std::array<double, 10> Q_t = compute_Q_f(m, tri, m_vertices_position);
+    for (TriMesh::Tuple tri : conn_tris) {
+        std::array<double, 10> Q_t = compute_Q_f(tri);
         add_Qs(Q, Q_t);
     }
     return Q;
 }
 
-void collapse_queue(wmtk::TriMesh& m)
+bool EdgeCollapse::collapse_qec()
 {
     // find the valid pairs (for each vertex)
-    std::vector<Tuple> edges = m.get_edges();
+    std::vector<TriMesh::Tuple> edges = get_edges();
+
     // find the best pair by keeping the priority queue
     // always keep the high cost one on top of the queue
 
@@ -60,4 +62,5 @@ void collapse_queue(wmtk::TriMesh& m)
     // do the edge collapse of the top pair
 
     // update cost priority queue
+    return true;
 }

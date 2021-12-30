@@ -334,6 +334,23 @@ std::vector<wmtk::TriMesh::Tuple> TriMesh::get_one_ring_tris_for_vertex(
     return one_ring;
 };
 
+std::vector<wmtk::TriMesh::Tuple> TriMesh::get_one_ring_edges_for_vertex(
+    const wmtk::TriMesh::Tuple& t) const
+{
+    std::vector<Tuple> one_ring_edges;
+    wmtk::TriMesh::Tuple current_t = t;
+    int ring_size = m_vertex_connectivity[t.get_vid()].m_conn_tris.size();
+    for (int i = 0; i < ring_size; i++) {
+        wmtk::TriMesh::Tuple tmp_tuple = switch_face(t).value_or(current_t);
+        size_t fid = current_t.get_fid();
+        if (tmp_tuple.get_fid() < current_t.get_fid()) fid = tmp_tuple.get_fid();
+        int j = m_tri_connectivity[fid].find(current_t.get_vid());
+        one_ring_edges.emplace_back(current_t.get_vid(), (j + 2) % 3, fid, *this);
+        tmp_tuple = switch_edge(current_t);
+        current_t = tmp_tuple;
+    }
+    return one_ring_edges;
+};
 
 std::vector<wmtk::TriMesh::Tuple> TriMesh::get_incident_verts_for_tri(
     const wmtk::TriMesh::Tuple& t) const

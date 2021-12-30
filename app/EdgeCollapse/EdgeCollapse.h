@@ -9,15 +9,45 @@ private:
     std::vector<Eigen::Vector3d> m_vertex_positions;
 
     EdgeCollapse(std::vector<Eigen::Vector3d> _m_vertex_positions)
-        : m_vertex_position(_m_vertex_position)
+        : m_vertex_positions(_m_vertex_positions)
     {}
 
     ~EdgeCollapse() {}
 
+    bool collapse_shortest();
+
+    bool collapse_qec();
     // get the quadrix in form of an array of 10 floating point numbers
-    std::array<double, 10> compute_Q_f(wmtk::TriMesh& m, size_t fid);
+    std::array<double, 10> compute_Q_f(wmtk::TriMesh::Tuple& t);
 
-    std::array<double, 10> compute_Q_v(wmtk::TriMesh& m, size_t vid);
+    std::array<double, 10> compute_Q_v(wmtk::TriMesh::Tuple& t);
+};
 
-    void collapse_queue(wmtk::TriMesh& m);
-}
+class ElementInQueue
+{
+public:
+    wmtk::TriMesh::Tuple edge;
+    double weight;
+
+    ElementInQueue() {}
+    ElementInQueue(const wmtk::TriMesh::Tuple& e, double w)
+        : edge(e)
+        , weight(w)
+    {}
+};
+struct cmp_l
+{
+    bool operator()(const ElementInQueue& e1, const ElementInQueue& e2)
+    {
+        if (e1.weight == e2.weight) return e1.edge.get_vid() > e2.edge.get_vid();
+        return e1.weight < e2.weight;
+    }
+};
+struct cmp_s
+{
+    bool operator()(const ElementInQueue& e1, const ElementInQueue& e2)
+    {
+        if (e1.weight == e2.weight) return e1.edge.get_vid() < e2.edge.get_vid();
+        return e1.weight > e2.weight;
+    }
+};

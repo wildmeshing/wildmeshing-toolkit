@@ -345,6 +345,14 @@ public:
     std::vector<Tuple> get_one_ring_tris_for_vertex(const Tuple& t) const;
 
     /**
+     * @brief Get the one ring edges for a vertex, edges are the incident edges
+     *
+     * @param t tuple pointing to a vertex
+     * @return one-ring
+     */
+    std::vector<Tuple> get_one_ring_edges_for_vertex(const Tuple& t) const;
+
+    /**
      * @brief Get the incident vertices for a triangle
      *
      * @param t tuple pointing to an face
