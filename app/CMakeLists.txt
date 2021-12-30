@@ -33,12 +33,6 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # FloatTetwild options
 option(TWTK_APPS_WITH_SANITIZERS    "Use sanitizers"                OFF)
 
-# Sanitizer options
-option(SANITIZE_ADDRESS   "Sanitize Address"       OFF)
-option(SANITIZE_MEMORY    "Sanitize Memory"        OFF)
-option(SANITIZE_THREAD    "Sanitize Thread"        OFF)
-option(SANITIZE_UNDEFINED "Sanitize Undefined"     OFF)
-
 # Options for libigl modules
 option(LIBIGL_USE_STATIC_LIBRARY        "Use libigl as static library" OFF)
 option(LIBIGL_WITH_COMISO            	"Use CoMiso"                   OFF)
@@ -64,8 +58,9 @@ option(FAST_ENVELOPE_WITH_TIMER  				 	"use timer in the library for debug" 	OFF
 
 # Sanitizers
 if(TWTK_APPS_WITH_SANITIZERS)
-	list(APPEND CMAKE_MODULE_PATH ${TWTK_APPS_EXTERNAL}/sanitizers-cmake/cmake)
+	include(sanitizers)
 endif()
+include(data)
 
 
 ################################################################################
@@ -83,10 +78,8 @@ add_library(app_shared
 )
 target_include_directories(app_shared PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/shared ${CMAKE_CURRENT_SOURCE_DIR}/shared/external)
 target_link_libraries(app_shared PUBLIC WildMeshingToolkit warnings::all)
+target_compile_definitions(app_shared PUBLIC WMT_DATA_DIR=\"${WMT_DATA_DIR}\")
 target_compile_features(app_shared PUBLIC cxx_std_17)
-if(TWTK_APPS_WITH_SANITIZERS)
-	add_sanitizers(app_shared)
-endif()
 
 include(fenvelope)
 
@@ -110,9 +103,6 @@ target_include_directories(TetWild PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/tetwild)
 # 	target_link_libraries(TetWild PUBLIC FastEnvelope)
 target_compile_features(TetWild PUBLIC cxx_std_17)
 
-if(TWTK_APPS_WITH_SANITIZERS)
-	add_sanitizers(TetWild)
-endif()
 
 add_executable(TetWild_bin tetwild/main.cpp)
 target_link_libraries(TetWild_bin PUBLIC TetWild)
@@ -132,10 +122,6 @@ target_include_directories(QuadricEdgeCollapse PUBLIC ${CMAKE_CURRENT_SOURCE_DIR
 
 
 target_compile_features(QuadricEdgeCollapse PUBLIC cxx_std_17)
-
-if(TWTK_APPS_WITH_SANITIZERS)
-	add_sanitizers(QuadricEdgeCollapse)
-endif()
 
 add_executable(QuadricEdgeCollapse_bin QuadricEdgeCollapse/main.cpp)
 target_link_libraries(QuadricEdgeCollapse_bin PUBLIC QuadricEdgeCollapse)

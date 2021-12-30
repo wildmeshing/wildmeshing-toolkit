@@ -27,6 +27,15 @@ endif()
 project(WildMeshingToolkit DESCRIPTION "A mesh optimization toolkit")
 ################################################################################
 
+if(INPUT_WMT_DATA_ROOT)
+    set(WMT_DATA_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/${INPUT_WMT_DATA_ROOT}/")
+else()
+    set(WMT_DATA_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/data/")
+endif()
+if(NOT EXISTS ${WMT_DATA_ROOT})
+    file(MAKE_DIRECTORY ${WMT_DATA_ROOT})
+endif()
+
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/recipes/")
@@ -55,10 +64,6 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # Sanitizer options
 option(WILDMESHING_TOOLKIT_WITH_SANITIZERS	  "Enable sanitizers in compilation targets"   OFF)
 option(WILDMESHING_TOOLKIT_WITH_TBB			  "Enable TBB" 								   ON)
-option(WILDMESHING_TOOLKIT_SANITIZE_ADDRESS   "Sanitize Address"       OFF)
-option(WILDMESHING_TOOLKIT_SANITIZE_MEMORY    "Sanitize Memory"        OFF)
-option(WILDMESHING_TOOLKIT_SANITIZE_THREAD    "Sanitize Thread"        OFF)
-option(WILDMESHING_TOOLKIT_SANITIZE_UNDEFINED "Sanitize Undefined"     OFF)
 
 # Options for libigl modules
 option(LIBIGL_USE_STATIC_LIBRARY     "Use libigl as static library" OFF)
@@ -73,13 +78,14 @@ option(LIBIGL_WITH_TRIANGLE          "Use Triangle"                 OFF)
 option(LIBIGL_WITH_PREDICATES        "Use exact predicates"         ON) #remove me once tetwild is out of this repo
 option(LIBIGL_WITH_XML               "Use XML"                      OFF)
 
-# Sanitizers
-if(WILDMESHING_TOOLKIT_WITH_SANITIZERS)
-	list(APPEND CMAKE_MODULE_PATH ${WILDMESHING_TOOLKIT_EXTERNAL}/sanitizers-cmake/cmake)
-endif()
 
 # Setup dependencies
-include(WildmeshingToolkitDependencies)
+include(libigl)
+include(spdlog)
+include(delaunay_psm)
+if(WILDMESHING_TOOLKIT_WITH_SANITIZERS)
+	include(sanitizers)
+endif()
 
 
 # add_library() can only be called without any source since CMake 3.11 ...
@@ -93,10 +99,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE warnings::all)
 
 # Use C++17
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
-
-if(WILDMESHING_TOOLKIT_WITH_SANITIZERS)
-	add_sanitizers(${PROJECT_NAME})
-endif()
 
 target_link_libraries(${PROJECT_NAME} PUBLIC spdlog::spdlog igl::core geogram::delaunay_psm)
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
