@@ -14,6 +14,17 @@ TEST_CASE("edge_splitting", "[test_operation]")
     REQUIRE(mesh.check_mesh_connectivity_validity());
 }
 
+TEST_CASE("edge_collapsing", "[test_operation]")
+{
+    auto mesh = TetMesh();
+    mesh.init(5, {{{0, 1, 2, 3}}, {{0, 1, 2, 4}}});
+    const auto tuple = mesh.tuple_from_face(0, 0);
+    std::vector<TetMesh::Tuple> dummy;
+    REQUIRE(mesh.collapse_edge(tuple, dummy));
+    REQUIRE_FALSE(tuple.is_valid(mesh));
+    REQUIRE(mesh.check_mesh_connectivity_validity());
+}
+
 TEST_CASE("tet_mesh_swap", "[test_operation]")
 {
     TetMesh mesh;
@@ -55,17 +66,35 @@ TEST_CASE("tet_mesh_swap", "[test_operation]")
     }
 }
 
-TEST_CASE("rollback_split_operation", "[test_operation]")
+TEST_CASE("rollback_operation", "[test_operation]")
 {
-    class NoSplitMesh : public TetMesh
+    class NoOperationMesh : public TetMesh
     {
     public:
         bool split_after(const TetMesh::Tuple& locs) override { return false; };
+        bool collapse_after(const TetMesh::Tuple& locs) override { return false; };
+        bool swap_edge_after(const TetMesh::Tuple& locs) override { return false; };
+        bool swap_face_after(const TetMesh::Tuple& locs) override { return false; };
     };
-    auto mesh = NoSplitMesh();
+    auto mesh = NoOperationMesh();
     mesh.init(5, {{{0, 1, 2, 3}}, {{0, 1, 2, 4}}});
     const auto tuple = mesh.tuple_from_face(0, 0);
     std::vector<TetMesh::Tuple> dummy;
-    REQUIRE_FALSE(mesh.split_edge(tuple, dummy));
-    REQUIRE(tuple.is_valid(mesh));
+    SECTION("split")
+    {
+        REQUIRE_FALSE(mesh.split_edge(tuple, dummy));
+        REQUIRE(tuple.is_valid(mesh));
+    }
+    SECTION("swap")
+    {
+        REQUIRE_FALSE(mesh.swap_face(tuple));
+        REQUIRE(tuple.is_valid(mesh));
+        REQUIRE_FALSE(mesh.swap_edge(tuple));
+        REQUIRE(tuple.is_valid(mesh));
+    }
+    SECTION("collapse")
+    {
+        REQUIRE_FALSE(mesh.collapse_edge(tuple, dummy));
+        REQUIRE(tuple.is_valid(mesh));
+    }
 }
