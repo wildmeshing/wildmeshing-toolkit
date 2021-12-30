@@ -55,6 +55,8 @@ option(FAST_ENVELOPE_WITH_GEOGRAM_PSM_PREDICATES    "Use Geogram predicates only
 option(FAST_ENVELOPE_WITH_GMP						"Use gmp to have rational predicates"   OFF)
 option(FAST_ENVELOPE_WITH_TIMER  				 	"use timer in the library for debug" 	OFF)
 
+set(WMT_DATA_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/data/" CACHE PATH "Where should the toolkit download and look for test data?")
+message(STATUS "Using test data folder: ${WMT_DATA_ROOT}")
 
 # Sanitizers
 if(TWTK_APPS_WITH_SANITIZERS)

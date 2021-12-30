@@ -6,12 +6,6 @@ else()
 	set(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT ON)
 endif()
 
-if(INPUT_THIRD_PARTY_DIR)
-	set(WILDMESHING_TOOLKIT_EXTERNAL ${CMAKE_CURRENT_SOURCE_DIR}/${INPUT_THIRD_PARTY_DIR}/)
-else()
-	set(WILDMESHING_TOOLKIT_EXTERNAL ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/)
-endif()
-
 # Check required CMake version
 set(REQUIRED_CMAKE_VERSION "3.15.0")
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
@@ -26,15 +20,6 @@ endif()
 ################################################################################
 project(WildMeshingToolkit DESCRIPTION "A mesh optimization toolkit")
 ################################################################################
-
-if(INPUT_WMT_DATA_ROOT)
-    set(WMT_DATA_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/${INPUT_WMT_DATA_ROOT}/")
-else()
-    set(WMT_DATA_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/data/")
-endif()
-if(NOT EXISTS ${WMT_DATA_ROOT})
-    file(MAKE_DIRECTORY ${WMT_DATA_ROOT})
-endif()
 
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
