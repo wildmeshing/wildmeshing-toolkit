@@ -6,6 +6,7 @@ set(test_sources
 	main.cpp
 
 	test_operations.cpp
+	file_write.cpp
 	test_operation_smooth.cpp
 )
 
