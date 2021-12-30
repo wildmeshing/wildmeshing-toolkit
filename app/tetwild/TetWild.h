@@ -102,6 +102,7 @@ public:
     struct CollapseInfoCache
     {
         double max_energy;
+        double edge_length;
     } collapse_cache; // todo: change for parallel
 
 

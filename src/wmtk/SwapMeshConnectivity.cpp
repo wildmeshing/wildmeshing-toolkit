@@ -184,8 +184,8 @@ bool wmtk::TetMesh::swap_edge(const Tuple& t)
 
 bool wmtk::TetMesh::swap_face(const Tuple& t)
 {
+    if (t.is_boundary_face(*this)) return false;
     if (!swap_face_before(t)) return false;
-    //    if (t.is_boundary_face(*this)) return false;
 
     auto v0 = t.vid(*this);
     auto oppo = switch_vertex(t);
