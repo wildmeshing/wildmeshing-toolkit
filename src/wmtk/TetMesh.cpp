@@ -137,6 +137,21 @@ bool wmtk::TetMesh::check_mesh_connectivity_validity() const
 }
 
 
+std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_tets() const
+{
+    std::vector<TetMesh::Tuple> tets;
+    for (auto i = 0; i < m_tet_connectivity.size(); i++) {
+        auto& t = m_tet_connectivity[i];
+        if (t.m_is_removed) continue;
+        tets.emplace_back(tuple_from_tet(i));
+
+        assert(tets.back().tid(*this) == i);
+        assert(tets.back().is_valid(*this));
+    }
+    return tets;
+}
+
+
 std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_vertices() const
 {
     std::vector<TetMesh::Tuple> verts;

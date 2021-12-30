@@ -91,7 +91,7 @@ public:
 
     void smoothing(const Tuple& t);
 
-    void output_mesh(std::string file);
+    void output_mesh(std::string file) const;
 
     //	protected:
     struct SplitInfoCache
