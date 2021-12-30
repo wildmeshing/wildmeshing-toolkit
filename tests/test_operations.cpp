@@ -20,7 +20,7 @@ TEST_CASE("tet_mesh_swap", "[test_operation]")
     TetMesh mesh;
     mesh.init(5, {{{0, 1, 2, 3}}, {{0, 2, 1, 4}}, {{0, 1, 3, 4}}});
 
-    // ("3-2 swap")
+    // SECTION ("3-2 swap")
     {
         const auto edges = mesh.get_edges();
 
@@ -34,12 +34,12 @@ TEST_CASE("tet_mesh_swap", "[test_operation]")
             }
         }
         REQUIRE(mesh.check_mesh_connectivity_validity());
-        auto temp = mesh.get_edges();
         REQUIRE(cnt_swap == 1);
         REQUIRE(mesh.get_edges().size() == 9);
+        REQUIRE(mesh.get_tets().size() == 2);
     }
     //
-    // ("2-3 swap")
+    // SECTION ("2-3 swap")
     {
         const auto faces = mesh.get_faces();
         REQUIRE(faces.size() == 7);
@@ -53,6 +53,7 @@ TEST_CASE("tet_mesh_swap", "[test_operation]")
         }
         REQUIRE(cnt_swap == 1);
         REQUIRE(mesh.check_mesh_connectivity_validity());
+        REQUIRE(mesh.get_tets().size() == 3);
     }
 }
 
