@@ -55,9 +55,6 @@ option(FAST_ENVELOPE_WITH_GEOGRAM_PSM_PREDICATES    "Use Geogram predicates only
 option(FAST_ENVELOPE_WITH_GMP						"Use gmp to have rational predicates"   OFF)
 option(FAST_ENVELOPE_WITH_TIMER  				 	"use timer in the library for debug" 	OFF)
 
-set(WMT_DATA_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/data/" CACHE PATH "Where should the toolkit download and look for test data?")
-message(STATUS "Using test data folder: ${WMT_DATA_ROOT}")
-
 # Sanitizers
 if(TWTK_APPS_WITH_SANITIZERS)
 	include(sanitizers)
@@ -79,8 +76,7 @@ add_library(app_shared
 	shared/external/MshSaver.h
 )
 target_include_directories(app_shared PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/shared ${CMAKE_CURRENT_SOURCE_DIR}/shared/external)
-target_link_libraries(app_shared PUBLIC WildMeshingToolkit warnings::all)
-target_compile_definitions(app_shared PUBLIC WMT_DATA_DIR=\"${WMT_DATA_DIR}\")
+target_link_libraries(app_shared PUBLIC WildMeshingToolkit warnings::all wmtk_data)
 target_compile_features(app_shared PUBLIC cxx_std_17)
 
 include(fenvelope)

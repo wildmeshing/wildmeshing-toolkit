@@ -1,19 +1,27 @@
 # data
 # License: MIT
 
-message(STATUS "Third-party: fetching 'meshes'")
 
+include(ExternalProject)
 include(FetchContent)
-FetchContent_Declare(
+
+set(WMT_DATA_ROOT "${PROJECT_SOURCE_DIR}/data/" CACHE PATH "Where should the toolkit download and look for test data?")
+
+ExternalProject_Add(
     wmt_data
+    PREFIX "${FETCHCONTENT_BASE_DIR}/wmtk-test-data"
+    SOURCE_DIR ${WMT_DATA_ROOT}
+
     GIT_REPOSITORY https://github.com/wildmeshing/data.git
     GIT_TAG 1484054abbac36e9c8340c3b32d87ad6eee45016
     GIT_SHALLOW FALSE
-    SOURCE_DIR ${WMT_DATA_ROOT}/data
+
+    CONFIGURE_COMMAND ""
+    BUILD_COMMAND ""
+    INSTALL_COMMAND ""
+    LOG_DOWNLOAD ON
 )
 
-FetchContent_GetProperties(wmt_data)
-if(NOT wmt_data_POPULATED)
-  FetchContent_Populate(wmt_data)
-  SET(WMT_DATA_DIR ${wmt_data_SOURCE_DIR})
-endif()
+# Create a dummy target for convenience
+add_library(wmtk_data INTERFACE)
+target_compile_definitions(wmtk_data INTERFACE  WMT_DATA_DIR=\"${WMT_DATA_ROOT}\")
