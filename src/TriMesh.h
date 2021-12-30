@@ -207,7 +207,6 @@ public:
         }
     }
 
-
     /**
      * Generate a vector of Tuples from global vertex index and __local__ edge index
      * @note each vertex generate tuple that has the fid to be the smallest among connected
@@ -311,6 +310,7 @@ private:
 protected:
     virtual bool split_before(const Tuple& t) { return true; }
     virtual bool split_after(const Tuple& t) { return true; }
+    // check link, check if it's the last edge
     virtual bool collapse_before(const Tuple& t) { return true; }
     virtual bool collapse_after(const Tuple& t) { return true; }
 
@@ -322,6 +322,9 @@ public:
     Tuple switch_edge(const Tuple& t) const { return t.switch_edge(*this); }
     std::optional<Tuple> switch_face(const Tuple& t) const { return t.switch_face(*this); }
 
+    bool check_link(const Tuple& t) const;
+    bool check_mesh_connectivity_validity() const;
+
     /**
      * Split an edge
      *
@@ -332,6 +335,22 @@ public:
     bool split_edge(const Tuple& t, Tuple& new_t);
     bool collapse_edge(const Tuple& t, Tuple& new_t);
     void swap_edge(const Tuple& t, int type);
+
+    /**
+     * @brief Get the one ring tris for a vertex
+     *
+     * @param t tuple pointing to a vertex
+     * @return one-ring
+     */
+    std::vector<Tuple> get_one_ring_tris_for_vertex(const Tuple& t) const;
+
+    /**
+     * @brief Get the incident vertices for a triangle
+     *
+     * @param t tuple pointing to an face
+     * @return incident vertices
+     */
+    std::vector<Tuple> get_incident_verts_for_tri(const Tuple& t) const;
 };
 
 } // namespace wmtk
