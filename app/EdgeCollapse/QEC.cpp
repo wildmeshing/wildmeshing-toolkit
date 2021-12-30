@@ -11,7 +11,7 @@ void add_Qs(std::array<double, 10> Q1, std::array<double, 10> Q2)
 }
 
 // get the quadrix in form of an array of 10 floating point numbers
-std::array<double, 10> EdgeCollapse::compute_Q_f(wmtk::TriMesh::Tuple& f_tuple)
+std::array<double, 10> Edge2d::EdgeCollapse::compute_Q_f(wmtk::TriMesh::Tuple& f_tuple)
 {
     auto conn_indices = get_incident_verts_for_tri(f_tuple);
     Eigen::Vector3d A = m_vertex_positions[conn_indices[0].get_vid()];
@@ -39,7 +39,7 @@ std::array<double, 10> EdgeCollapse::compute_Q_f(wmtk::TriMesh::Tuple& f_tuple)
     return Q;
 }
 
-std::array<double, 10> EdgeCollapse::compute_Q_v(wmtk::TriMesh::Tuple& v_tuple)
+std::array<double, 10> Edge2d ::EdgeCollapse::compute_Q_v(wmtk::TriMesh::Tuple& v_tuple)
 {
     auto conn_tris = get_one_ring_tris_for_vertex(v_tuple);
     std::array<double, 10> Q{};
@@ -50,7 +50,7 @@ std::array<double, 10> EdgeCollapse::compute_Q_v(wmtk::TriMesh::Tuple& v_tuple)
     return Q;
 }
 
-bool EdgeCollapse::collapse_qec()
+bool Edge2d::EdgeCollapse::collapse_qec()
 {
     // find the valid pairs (for each vertex)
     std::vector<TriMesh::Tuple> edges = get_edges();

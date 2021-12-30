@@ -11,7 +11,7 @@ set(test_sources
 
 add_executable(app_unit_tests ${test_sources})
 
-target_link_libraries(app_unit_tests PUBLIC WildMeshingToolkit TetWild QuadricEdgeCollapse)
+target_link_libraries(app_unit_tests PUBLIC WildMeshingToolkit TetWild EdgeCollapse)
 target_link_libraries(app_unit_tests PUBLIC warnings::all)
 
 include(catch2)

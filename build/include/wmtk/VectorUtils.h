@@ -52,7 +52,6 @@ inline bool vector_erase(std::vector<T>& v, const T& t)
     v.erase(it);
     return true;
 }
-
 template <class T>
 inline bool vector_contains(std::vector<T>& v, const T& t)
 {

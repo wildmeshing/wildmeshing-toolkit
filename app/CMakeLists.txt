@@ -115,8 +115,9 @@ add_library(EdgeCollapse
 	#EdgeCollapse/QEC.cpp
 	EdgeCollapse/EdgeCollapse.h 
 	EdgeCollapse/main.cpp
-	EdgeCollapse/QEC.cpp
+	
 	EdgeCollapse/ShortestEdgeCollapse.cpp
+	EdgeCollapse/QEC.cpp
 )
 
 target_link_libraries(EdgeCollapse PUBLIC igl::predicates app_shared)
