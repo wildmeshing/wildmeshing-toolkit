@@ -1,5 +1,6 @@
 #include <wmtk/TetMesh.h>
 #include <catch2/catch.hpp>
+#include "wmtk/utils/Logger.hpp"
 
 using namespace wmtk;
 
@@ -68,4 +69,25 @@ TEST_CASE("rollback_split_operation", "[test_operation]")
     std::vector<TetMesh::Tuple> dummy;
     REQUIRE_FALSE(mesh.split_edge(tuple, dummy));
     REQUIRE(tuple.is_valid(mesh));
+}
+
+TEST_CASE("forbidden-face-swap", "[test_operation]")
+{
+    /// https://i.imgur.com/aVCsOvf.png and 0,2,3 should not be swapped.
+    /// Visualize V as 
+    //   [[ 0,  0, -1],
+    //    [ 0,  0,  1],
+    //    [ 1,  1,  0],
+    //    [ 1, -1,  0],
+    //    [ 2,  0,  0]]
+    auto mesh = TetMesh();
+    mesh.init(5, {{{0,3,2,4}}, {{1,2,3,4}}, {{0,1,2,3}}});
+    auto t = mesh.tuple_from_tet(0);
+    REQUIRE(t.vid(mesh)==0);
+    auto oppo = t.switch_vertex(mesh);
+    REQUIRE(oppo.vid(mesh)==3);
+    REQUIRE(oppo.switch_edge(mesh).switch_vertex(mesh).vid(mesh) == 2);
+    mesh.swap_face(t);
+    REQUIRE(t.is_valid(mesh)); // operation rejected.
+    REQUIRE(mesh.check_mesh_connectivity_validity());
 }

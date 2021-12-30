@@ -233,6 +233,11 @@ bool wmtk::TetMesh::swap_face(const Tuple& t)
         return new_tets;
     }();
 
+    // check if edge already exist: topological un-swappable
+    for (auto ti : m_vertex_connectivity[oppo_vid[0]].m_conn_tets) {
+        if (m_tet_connectivity[ti].find(oppo_vid[1])) return false; // edge already exists
+    }
+
     auto new_tet_id = affected;
     auto rollback_vert_conn =
         update_connectivity(m_tet_connectivity, m_vertex_connectivity, new_tet_id, new_tets);
