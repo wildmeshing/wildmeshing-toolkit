@@ -102,8 +102,13 @@ public:
     struct CollapseInfoCache
     {
         double max_energy;
-        double edge_length;
     } collapse_cache; // todo: change for parallel
+
+
+    struct SwapInfoCache
+    {
+        double max_energy;
+    } edgeswap_cache, faceswap_cache; // todo: change for parallel
 
     void split_all_edges();
     bool split_before(const Tuple& t) override;
