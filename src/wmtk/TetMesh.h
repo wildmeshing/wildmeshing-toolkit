@@ -322,6 +322,7 @@ public:
     std::vector<Tuple> get_edges() const;
     std::vector<Tuple> get_faces() const;
     std::vector<Tuple> get_vertices() const;
+    std::vector<Tuple> get_tets() const;
 
 public:
     template <typename T>

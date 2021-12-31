@@ -157,21 +157,20 @@ void tetwild::TetWild::consolidate_mesh()
     //    consolidate_mesh_attributes();
 }
 
-void tetwild::TetWild::output_mesh(std::string file)
+void tetwild::TetWild::output_mesh(std::string file) const
 {
-    consolidate_mesh();
-
     PyMesh::MshSaver mSaver(file, true);
 
-    Eigen::VectorXd V_flat(3 * m_vertex_attribute.size());
-    for (int i = 0; i < m_vertex_attribute.size(); i++) {
+    Eigen::VectorXd V_flat = Eigen::VectorXd::Zero(3 * m_vertex_attribute.size());
+    for (auto& t : get_vertices()) {
+        auto i = t.vid(*this);
         for (int j = 0; j < 3; j++) V_flat(3 * i + j) = m_vertex_attribute[i].m_posf[j];
     }
 
-    Eigen::VectorXi T_flat(4 * m_tet_attribute.size());
-    for (int i = 0; i < m_tet_attribute.size(); i++) {
-        Tuple loc = tuple_from_tet(i);
-        auto vs = oriented_tet_vertices(loc);
+    Eigen::VectorXi T_flat = Eigen::VectorXi::Constant(4 * m_tet_attribute.size(), -1);
+    for (auto&t: get_tets()) {
+        auto i = t.tid(*this);   
+        auto vs = oriented_tet_vertices(t);
         for (int j = 0; j < 4; j++) {
             T_flat(4 * i + j) = vs[j].vid(*this);
         }
