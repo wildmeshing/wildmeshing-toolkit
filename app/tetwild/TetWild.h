@@ -177,7 +177,17 @@ public:
     {}
     bool operator()(const ElementInQueue& e1, const ElementInQueue& e2)
     {
-        if (e1.weight == e2.weight) return e1.edge.vid(m_tw) < e2.edge.vid(m_tw);
+        if (e1.weight == e2.weight)
+            return std::make_tuple(
+                       e1.edge.vid(m_tw),
+                       e1.edge.eid(m_tw),
+                       e1.edge.fid(m_tw),
+                       e1.edge.tid(m_tw)) <
+                   std::make_tuple(
+                       e2.edge.vid(m_tw),
+                       e2.edge.eid(m_tw),
+                       e2.edge.fid(m_tw),
+                       e2.edge.tid(m_tw));
         return e1.weight > e2.weight;
     }
 };
