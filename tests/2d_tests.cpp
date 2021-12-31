@@ -306,6 +306,10 @@ TEST_CASE("vertex_edge switches equals indentity", "[test_operation]")
     }
 }
 
+// these roll back tests must have more than 2 triangles, since by design when there are only two
+// incident triangles the edge cannot be collapsed
+// this check should be doen in pre collapse check
+
 TEST_CASE("edge_collapse", "[test_operation]")
 {
     TriMesh m;
@@ -338,5 +342,3 @@ TEST_CASE("rollback_collapse_operation", "[test_operation]")
     REQUIRE_FALSE(m.collapse_edge(tuple, dummy));
     REQUIRE(tuple.is_valid(m));
 }
-
-//TODO add test for validity of tuple with and woithout success https://github.com/wildmeshing/wildmeshing-toolkit/blob/b169338fe3a7244f1a10eb6aad35093abd5a9287/tests/test_operations.cpp#L18

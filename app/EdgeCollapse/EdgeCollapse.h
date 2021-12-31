@@ -9,7 +9,7 @@ namespace Edge2d {
 
 class EdgeCollapse : public wmtk::TriMesh
 {
-private:
+public:
     std::vector<Eigen::Vector3d> m_vertex_positions;
 
     EdgeCollapse(std::vector<Eigen::Vector3d> _m_vertex_positions)

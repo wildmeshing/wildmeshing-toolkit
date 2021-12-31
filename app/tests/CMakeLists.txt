@@ -5,6 +5,7 @@
 set(test_sources
 	main.cpp
 
+	test_2d_operations.cpp
 	test_operations.cpp
 	test_operation_smooth.cpp
 )
