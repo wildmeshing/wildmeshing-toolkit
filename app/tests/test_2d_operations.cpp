@@ -18,10 +18,9 @@ TEST_CASE("edge_collapse", "[test_2d_operation]")
 
     TriMesh::Tuple tuple = TriMesh::Tuple(1, 0, 0, m);
     TriMesh::Tuple dummy;
-    assert(false);
+
     bool collapse = m.collapse_edge(tuple, dummy);
 
-    std::cout << collapse << std::endl;
     REQUIRE(collapse);
     REQUIRE_FALSE(tuple.is_valid(m));
     REQUIRE(m.check_mesh_connectivity_validity());

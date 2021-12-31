@@ -28,18 +28,18 @@ bool Edge2d::EdgeCollapse::collapse_shortest()
         if (length < shortest) shortest = length;
         ec_queue.push(ElementInQueue(loc, length));
     }
-    if (!ec_queue.empty()) {
+    while (!ec_queue.empty()) {
         auto loc = ec_queue.top().edge;
         double weight = ec_queue.top().weight;
         ec_queue.pop();
         // check if the edge tuple is valid
-        if (!loc.is_valid(*this)) return false;
+        if (!loc.is_valid(*this)) continue;
 
         TriMesh::Tuple new_vert;
         size_t v1 = loc.get_vid();
         TriMesh::Tuple v2_tuple = loc.switch_vertex(*this);
         size_t v2 = v2_tuple.get_vid();
-        TriMesh::collapse_edge(loc, new_vert);
+        if (!TriMesh::collapse_edge(loc, new_vert)) continue;
         update_position(v1, v2, new_vert);
         size_t new_vid = new_vert.get_vid();
         std::vector<TriMesh::Tuple> one_ring_edges = get_one_ring_edges_for_vertex(new_vert);

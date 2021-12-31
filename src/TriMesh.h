@@ -311,7 +311,21 @@ protected:
     virtual bool split_before(const Tuple& t) { return true; }
     virtual bool split_after(const Tuple& t) { return true; }
     // check link, check if it's the last edge
-    virtual bool collapse_before(const Tuple& t) { return true; }
+    virtual bool collapse_before(const Tuple& t)
+    {
+        auto v1_conn_tris = m_vertex_connectivity[t.get_vid()].m_conn_tris;
+        auto v2_conn_tris = m_vertex_connectivity[switch_vertex(t).get_vid()].m_conn_tris;
+        size_t fid1 = t.get_fid();
+        Tuple tmp_tuple = switch_face(t).value_or(t);
+        size_t fid2 = tmp_tuple.get_fid();
+        vector_erase(v1_conn_tris, fid1);
+        vector_erase(v1_conn_tris, fid2);
+        vector_erase(v2_conn_tris, fid1);
+        vector_erase(v2_conn_tris, fid2);
+
+        if (check_link(t) && (v1_conn_tris.size() + v2_conn_tris.size() > 0)) return true;
+        return false;
+    }
     virtual bool collapse_after(const Tuple& t) { return true; }
 
 public:
