@@ -3,7 +3,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include "EdgeCollapse.h"
-void add_Qs(std::array<double, 10> Q1, std::array<double, 10> Q2)
+void add_Qs(std::array<double, 10>& Q1, std::array<double, 10>& Q2)
 {
     for (int j = 0; j < 10; j++) {
         Q1[j] = Q1[j] + Q2[j];

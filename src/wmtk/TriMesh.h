@@ -315,15 +315,8 @@ protected:
     {
         auto v1_conn_tris = m_vertex_connectivity[t.get_vid()].m_conn_tris;
         auto v2_conn_tris = m_vertex_connectivity[switch_vertex(t).get_vid()].m_conn_tris;
-        size_t fid1 = t.get_fid();
-        Tuple tmp_tuple = switch_face(t).value_or(t);
-        size_t fid2 = tmp_tuple.get_fid();
-        vector_erase(v1_conn_tris, fid1);
-        vector_erase(v1_conn_tris, fid2);
-        vector_erase(v2_conn_tris, fid1);
-        vector_erase(v2_conn_tris, fid2);
 
-        if (check_link(t) && (v1_conn_tris.size() + v2_conn_tris.size() > 0)) return true;
+        if (check_link(t) && (v1_conn_tris.size() + v2_conn_tris.size() > 4)) return true;
         return false;
     }
     virtual bool collapse_after(const Tuple& t) { return true; }
@@ -372,7 +365,7 @@ public:
      * @param t tuple pointing to an face
      * @return incident vertices
      */
-    std::vector<Tuple> get_incident_verts_for_tri(const Tuple& t) const;
+    std::vector<Tuple> get_oriented_vertices_for_tri(const Tuple& t) const;
 };
 
 } // namespace wmtk

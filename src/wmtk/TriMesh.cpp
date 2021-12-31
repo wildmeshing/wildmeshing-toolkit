@@ -349,7 +349,7 @@ std::vector<wmtk::TriMesh::Tuple> TriMesh::get_one_ring_edges_for_vertex(
     return one_ring_edges;
 };
 
-std::vector<wmtk::TriMesh::Tuple> TriMesh::get_incident_verts_for_tri(
+std::vector<wmtk::TriMesh::Tuple> TriMesh::get_oriented_vertices_for_tri(
     const wmtk::TriMesh::Tuple& t) const
 {
     std::vector<TriMesh::Tuple> incident_verts;

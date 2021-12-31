@@ -1,4 +1,3 @@
-#include <float.h>
 #include <wmtk/TriMesh.h>
 #include <wmtk/utils/VectorUtils.h>
 #include <Eigen/Core>
@@ -20,7 +19,7 @@ bool Edge2d::EdgeCollapse::collapse_shortest()
 {
     std::vector<TriMesh::Tuple> edges = get_edges();
     std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_s> ec_queue;
-    double shortest = DBL_MAX;
+    double shortest = std::numerical_limits<double>::max();
     for (auto& loc : edges) {
         TriMesh::Tuple v2 = loc.switch_vertex(*this);
         double length =
