@@ -316,7 +316,7 @@ protected:
         auto v1_conn_tris = m_vertex_connectivity[t.get_vid()].m_conn_tris;
         auto v2_conn_tris = m_vertex_connectivity[switch_vertex(t).get_vid()].m_conn_tris;
 
-        if (check_link(t) && (v1_conn_tris.size() + v2_conn_tris.size() > 4)) return true;
+        if (check_link_condition(t) && (v1_conn_tris.size() + v2_conn_tris.size() > 3)) return true;
         return false;
     }
     virtual bool collapse_after(const Tuple& t) { return true; }
@@ -329,7 +329,7 @@ public:
     Tuple switch_edge(const Tuple& t) const { return t.switch_edge(*this); }
     std::optional<Tuple> switch_face(const Tuple& t) const { return t.switch_face(*this); }
 
-    bool check_link(const Tuple& t) const;
+    bool check_link_condition(const Tuple& t) const;
     bool check_mesh_connectivity_validity() const;
 
     /**

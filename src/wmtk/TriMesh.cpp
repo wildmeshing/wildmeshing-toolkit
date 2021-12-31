@@ -138,7 +138,7 @@ bool wmtk::TriMesh::check_mesh_connectivity_validity() const
 }
 
 // link check, prerequisite for edge collapse
-bool wmtk::TriMesh::check_link(const Tuple& edge) const
+bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
 {
     assert(edge.is_valid(*this));
     size_t vid1 = edge.get_vid();
@@ -177,7 +177,7 @@ bool wmtk::TriMesh::check_link(const Tuple& edge) const
 
 bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
 {
-    if (!collapse_before(loc0)) return false; // what is checked at pre and post screenings?
+    if (!collapse_before(loc0)) return false;
     // get the vids
     size_t vid1 = loc0.get_vid();
     size_t vid2 = switch_vertex(loc0).get_vid();
@@ -187,11 +187,11 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
     old_vertices[0] = std::make_pair(vid1, m_vertex_connectivity[vid1]);
     old_vertices[1] = std::make_pair(vid2, m_vertex_connectivity[vid2]);
 
-    // get the fids and mark the vertices as removed
+    // get the fids
     auto n1_fids = m_vertex_connectivity[vid1].m_conn_tris;
-    m_vertex_connectivity[vid1].m_is_removed = true;
+
     auto n2_fids = m_vertex_connectivity[vid2].m_conn_tris;
-    m_vertex_connectivity[vid2].m_is_removed = true;
+
     // get the fids that will be modified
     auto n12_intersect_fids = set_intersection(n1_fids, n2_fids);
     // check if the triangles intersection is the one adjcent to the edge
@@ -202,6 +202,10 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
         ("faces at the edge is not correct",
          (vector_contains(n12_intersect_fids, test_fid1) &&
           vector_contains(n12_intersect_fids, test_fid2))));
+    // now mark the vertices as removed so the assertion for tuple validity in switch operations
+    // won't fail
+    m_vertex_connectivity[vid1].m_is_removed = true;
+    m_vertex_connectivity[vid2].m_is_removed = true;
 
     std::vector<size_t> n12_union_fids;
     std::set_union(
@@ -244,7 +248,7 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
 
     // now work on vids
     // add in the new vertex
-    if (new_vid < m_vertex_connectivity.size()) {
+    if (new_vid < m_vertex_connectivity.size() - 1) {
         assert(m_vertex_connectivity[new_vid].m_is_removed);
         m_vertex_connectivity[new_vid].m_conn_tris.clear();
     }
