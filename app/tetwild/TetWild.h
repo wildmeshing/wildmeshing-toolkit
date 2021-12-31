@@ -1,13 +1,14 @@
 #pragma once
 
+#include <wmtk/TetMesh.h>
 #include "Parameters.h"
 #include "common.h"
 
-#include <fastenvelope/FastEnvelope.h>
 #include <wmtk/utils/DisableWarnings.hpp>
-#include <wmtk/utils/EnableWarnings.hpp>
 
-#include <wmtk/TetMesh.h>
+#include <fastenvelope/FastEnvelope.h>
+
+#include <wmtk/utils/EnableWarnings.hpp>
 
 #include <memory>
 
