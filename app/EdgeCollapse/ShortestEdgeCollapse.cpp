@@ -1,6 +1,6 @@
 #include <float.h>
 #include <wmtk/TriMesh.h>
-#include <wmtk/VectorUtils.h>
+#include <wmtk/utils/VectorUtils.h>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include "EdgeCollapse.h"
