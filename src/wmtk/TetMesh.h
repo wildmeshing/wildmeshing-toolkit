@@ -364,16 +364,6 @@ protected:
     virtual bool smooth_before(const Tuple& t) { return true; }
     virtual bool smooth_after(const Tuple& t) { return true; }
 
-    // todo: quality, inversion, envelope: change v1 pos before this, only need to change partial
-    // attributes
-
-    //        //// Swap the edge in the tuple
-    //        // Checks if the swapping should be performed or not (user controlled)
-    //        virtual bool swapping_before(const Tuple &t) { return true; }
-    //        // If it returns false then the operation is undone (the tuple indexes TODO)
-    //        virtual bool swapping_after(const Tuple &t) { return true; }
-    //        //quality, inversion
-    //
     // Invariants that are called on all the new or modified elements after an operation is
     // performed
     virtual bool vertex_invariant(const Tuple& t) { return true; }
