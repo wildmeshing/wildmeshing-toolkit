@@ -140,7 +140,7 @@ bool wmtk::TriMesh::check_mesh_connectivity_validity() const
 // link check, prerequisite for edge collapse
 bool wmtk::TriMesh::check_link(const Tuple& edge) const
 {
-    assert(edge.is_valid());
+    assert(edge.is_valid(*this));
     size_t vid1 = edge.get_vid();
     size_t vid2 = switch_vertex(edge).get_vid();
     const auto v1_conn_tris = m_vertex_connectivity[vid1].m_conn_tris;
@@ -274,12 +274,9 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
     // update the old tuple version number
     // create an edge tuple for each changed edge
     // call back check will be done on this vector of tuples
-    assert(false);
-    std::cout << m_vertex_connectivity[new_vid].m_conn_tris.size() << std::endl;
-    assert(false);
+
     assert(m_vertex_connectivity[new_vid].m_conn_tris.size() != 0);
     size_t fid = m_vertex_connectivity[new_vid].m_conn_tris[0];
-    std::cout << "where did I seg fault" << std::endl;
     int j = m_tri_connectivity[fid].find(new_vid);
     new_t = Tuple(new_vid, (j + 2) % 3, fid, *this);
 
