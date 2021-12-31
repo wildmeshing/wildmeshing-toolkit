@@ -13,7 +13,8 @@ struct Parameters
     double lr = 5e-2; // target edge length (relative)
     double l = -1.;
     double diag_l = -1.;
-    Vector3f min, max;
+    Vector3f min = Vector3f::Zero();
+    Vector3f max = Vector3f::Ones();
 
     double splitting_l2 = -1.; // the lower bound length (squared) for edge split
     double collapsing_l2 = std::numeric_limits<double>::max(); // the upper bound length (squared) for edge collapse
