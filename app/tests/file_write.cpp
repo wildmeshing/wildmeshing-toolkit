@@ -1,20 +1,21 @@
-//
-// Created by Yixin Hu on 10/17/21.
-//
+#include <catch2/catch.hpp>
 
-#include "TetWild.h"
+#include <TetWild.h>
 
-int main(int argc, char** argv)
+#include <wmtk/TetMesh.h>
+
+
+using namespace wmtk;
+using namespace tetwild;
+
+TEST_CASE("tetwild_file_write", "[test_operation]")
 {
-    using namespace tetwild;
-
     Parameters params;
-    params.lr = 1 / 20.;
+    params.lr = 1 / 5.;
     params.init(Vector3f(0, 0, 0), Vector3f(1, 1, 1));
 
     fastEnvelope::FastEnvelope envelope;
     TetWild tetwild(params, envelope);
-    //    tetwild.test();
 
     std::vector<VertexAttributes> vertices(4);
     vertices[0].m_posf = Vector3f(0, 0, 0);
@@ -26,10 +27,7 @@ int main(int argc, char** argv)
 
     tetwild.init(vertices.size(), tets);
     tetwild.create_mesh_attributes(vertices, tet_attrs);
-
     tetwild.split_all_edges();
-
-    tetwild.output_mesh(argv[1]);
-
-    return 0;
+    tetwild.collapse_all_edges();
+    tetwild.output_mesh("test_save.msh");
 }

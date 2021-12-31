@@ -1,7 +1,7 @@
 #include <wmtk/TriMesh.h>
 
-#include <wmtk/VectorUtils.h>
-#include <wmtk/TupleUtils.hpp>
+#include <wmtk/utils/TupleUtils.hpp>
+
 using namespace wmtk;
 
 TriMesh::Tuple TriMesh::Tuple::switch_vertex(const TriMesh& m) const
@@ -262,7 +262,7 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
         auto f_vids = m_tri_connectivity[fid].m_indices;
         for (size_t f_vid : f_vids) {
             if (f_vid != vid1 && f_vid != vid2) {
-                same_edge_vid_fid.push_back(std::make_pair(f_vid, fid));
+                same_edge_vid_fid.emplace_back(f_vid, fid);
                 auto conn_tris = m_vertex_connectivity[f_vid].m_conn_tris;
                 assert(vector_contains(conn_tris, fid));
                 vector_erase(conn_tris, fid);

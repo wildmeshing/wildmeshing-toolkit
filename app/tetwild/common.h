@@ -4,24 +4,22 @@
 
 #pragma once
 
-#include <iostream>
-#include <vector>
-#include <map>
-#include <set>
 #include <array>
+#include <iostream>
+#include <map>
 #include <queue>
+#include <set>
+#include <vector>
 
 #include <Eigen/Core>
-#include <wmtk/Logger.hpp>
 
-namespace tetwild
-{
+namespace tetwild {
 #define MAX_ENERGY 1e50
 
-	typedef Eigen::Vector3d Vector3f; // float?
-	typedef Eigen::Vector3d Vector3;
+typedef Eigen::Vector3d Vector3f; // float?
+typedef Eigen::Vector3d Vector3;
 
-	typedef double Scalar;
-	typedef Eigen::Matrix<Scalar, 3, 3> Matrix3;
+typedef double Scalar;
+typedef Eigen::Matrix<Scalar, 3, 3> Matrix3;
 
 } // namespace tetwild

@@ -1,11 +1,11 @@
 #pragma once
 
-#include "Envelope.h"
 #include "Parameters.h"
 #include "common.h"
-//#include <floattetwild/common.h>
-//#include <floattetwild/Parameters.h>
-//#include <floattetwild/Envelope.h>
+
+#include <wmtk/utils/DisableWarnings.hpp>
+#include <fastenvelope/FastEnvelope.h>
+#include <wmtk/utils/EnableWarnings.hpp>
 
 #include <wmtk/TetMesh.h>
 
@@ -58,9 +58,9 @@ class TetWild : public wmtk::TetMesh
 {
 public:
     Parameters& m_params;
-    Envelope& m_envelope;
+    fastEnvelope::FastEnvelope& m_envelope;
 
-    TetWild(Parameters& _m_params, Envelope& _m_envelope)
+    TetWild(Parameters& _m_params, fastEnvelope::FastEnvelope& _m_envelope)
         : m_params(_m_params)
         , m_envelope(_m_envelope)
     {}
@@ -91,7 +91,7 @@ public:
 
     void smoothing(const Tuple& t);
 
-    void output_mesh(std::string file);
+    void output_mesh(std::string file) const;
 
     //	protected:
     struct SplitInfoCache
@@ -99,9 +99,15 @@ public:
         VertexAttributes vertex_info;
     } split_cache; // todo: change for parallel
 
+    struct CollapseInfoCache
+    {
+        double max_energy;
+        double edge_length;
+    } collapse_cache; // todo: change for parallel
+
     void split_all_edges();
     bool split_before(const Tuple& t) override;
-    bool split_after(const std::vector<Tuple>& locs) override;
+    bool split_after(const Tuple& loc) override;
 
     void smooth_all_vertices();
     bool smooth_before(const Tuple& t) override;
@@ -109,13 +115,16 @@ public:
 
     void collapse_all_edges();
     bool collapse_before(const Tuple& t) override;
-    bool collapse_after(const std::vector<Tuple>& locs) override;
+    bool collapse_after(const Tuple& t) override;
 
     bool is_inverted(const Tuple& loc);
     double get_quality(const Tuple& loc);
 
     bool vertex_invariant(const Tuple& t) override;
     bool tetrahedron_invariant(const Tuple& t) override;
+
+    void consolidate_mesh();
+    //    void consolidate_mesh_attributes();
 };
 
 class ElementInQueue
@@ -130,19 +139,34 @@ public:
         , weight(w)
     {}
 };
-struct cmp_l
+class cmp_l
 {
+private:
+    const TetWild& m_tw;
+
+public:
+    cmp_l(const TetWild& tw)
+        : m_tw(tw)
+    {}
+
     bool operator()(const ElementInQueue& e1, const ElementInQueue& e2)
     {
-        if (e1.weight == e2.weight) return e1.edge.vid() > e2.edge.vid();
+        if (e1.weight == e2.weight) return e1.edge.vid(m_tw) > e2.edge.vid(m_tw);
         return e1.weight < e2.weight;
     }
 };
-struct cmp_s
+class cmp_s
 {
+private:
+    const TetWild& m_tw;
+
+public:
+    cmp_s(const TetWild& tw)
+        : m_tw(tw)
+    {}
     bool operator()(const ElementInQueue& e1, const ElementInQueue& e2)
     {
-        if (e1.weight == e2.weight) return e1.edge.vid() < e2.edge.vid();
+        if (e1.weight == e2.weight) return e1.edge.vid(m_tw) < e2.edge.vid(m_tw);
         return e1.weight > e2.weight;
     }
 };

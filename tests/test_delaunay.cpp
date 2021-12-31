@@ -1,4 +1,4 @@
-#include <wmtk/Delaunay.hpp>
+#include <wmtk/utils/Delaunay.hpp>
 
 #include <catch2/catch.hpp>
 

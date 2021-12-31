@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include <wmtk/VectorUtils.h>
-#include <wmtk/Logger.hpp>
+#include <wmtk/utils/VectorUtils.h>
+#include <wmtk/utils/Logger.hpp>
 
 #include <algorithm>
 #include <array>

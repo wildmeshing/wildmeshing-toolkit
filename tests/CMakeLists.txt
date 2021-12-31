@@ -35,14 +35,6 @@ target_link_libraries(unit_tests PUBLIC Catch2::Catch2)
 target_compile_definitions(unit_tests PUBLIC CATCH_CONFIG_ENABLE_BENCHMARKING)
 
 ################################################################################
-# Sanitizers
-################################################################################
-
-if(WILDMESHING_TOOLKIT_WITH_SANITIZERS)
-	add_sanitizers(unit_tests)
-endif()
-
-################################################################################
 # Register tests
 ################################################################################
 

@@ -1,10 +1,10 @@
 #pragma once
 
-#include <wmtk/DisableWarnings.hpp>
+#include <wmtk/utils/DisableWarnings.hpp>
 #include <spdlog/spdlog.h>
 #include <spdlog/async.h>
 #include <spdlog/fmt/bundled/ranges.h>
-#include <wmtk/EnableWarnings.hpp>
+#include <wmtk/utils/EnableWarnings.hpp>
 
 #include <ostream>
 

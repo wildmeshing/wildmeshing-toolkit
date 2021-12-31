@@ -1,12 +1,12 @@
-#include <wmtk/Logger.hpp>
+#include <wmtk/utils/Logger.hpp>
 
-#include <wmtk/DisableWarnings.hpp>
+#include <wmtk/utils/DisableWarnings.hpp>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/ostream_sink.h>
 #include <spdlog/details/registry.h>
 #include <spdlog/details/thread_pool.h>
-#include <wmtk/EnableWarnings.hpp>
+#include <wmtk/utils/EnableWarnings.hpp>
 
 #include <memory>
 #include <mutex>

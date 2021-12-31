@@ -10,7 +10,8 @@ else()
 endif()
 
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/recipes/")
 
 # Color output
 include(UseColors)
@@ -32,12 +33,6 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # FloatTetwild options
 option(TWTK_APPS_WITH_SANITIZERS    "Use sanitizers"                OFF)
 
-# Sanitizer options
-option(SANITIZE_ADDRESS   "Sanitize Address"       OFF)
-option(SANITIZE_MEMORY    "Sanitize Memory"        OFF)
-option(SANITIZE_THREAD    "Sanitize Thread"        OFF)
-option(SANITIZE_UNDEFINED "Sanitize Undefined"     OFF)
-
 # Options for libigl modules
 option(LIBIGL_USE_STATIC_LIBRARY        "Use libigl as static library" OFF)
 option(LIBIGL_WITH_COMISO            	"Use CoMiso"                   OFF)
@@ -51,10 +46,20 @@ option(LIBIGL_WITH_TRIANGLE          	"Use Triangle"                 OFF)
 option(LIBIGL_WITH_PREDICATES        	"Use exact predicates"         ON)
 option(LIBIGL_WITH_XML               	"Use XML"                      OFF)
 
+
+# Options for envelope module
+option(FAST_ENVELOPE_WITH_UNIT_TESTS 				"unit test project" 					OFF)
+option(FAST_ENVELOPE_ENABLE_TBB        				"Enable TBB"                			OFF)
+option(FAST_ENVELOPE_WITH_GEOGRAM_PREDICATES        "Use whole Geogram for predicates"      OFF)
+option(FAST_ENVELOPE_WITH_GEOGRAM_PSM_PREDICATES    "Use Geogram predicates only"           OFF)
+option(FAST_ENVELOPE_WITH_GMP						"Use gmp to have rational predicates"   OFF)
+option(FAST_ENVELOPE_WITH_TIMER  				 	"use timer in the library for debug" 	OFF)
+
 # Sanitizers
 if(TWTK_APPS_WITH_SANITIZERS)
-	list(APPEND CMAKE_MODULE_PATH ${TWTK_APPS_EXTERNAL}/sanitizers-cmake/cmake)
+	include(sanitizers)
 endif()
+include(data)
 
 
 ################################################################################
@@ -71,11 +76,10 @@ add_library(app_shared
 	shared/external/MshSaver.h
 )
 target_include_directories(app_shared PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/shared ${CMAKE_CURRENT_SOURCE_DIR}/shared/external)
-target_link_libraries(app_shared PUBLIC WildMeshingToolkit warnings::all)
+target_link_libraries(app_shared PUBLIC WildMeshingToolkit warnings::all wmtk_data)
 target_compile_features(app_shared PUBLIC cxx_std_17)
-if(TWTK_APPS_WITH_SANITIZERS)
-	add_sanitizers(app_shared)
-endif()
+
+include(fenvelope)
 
 ################################################################################
 # FloatTetwild
@@ -87,20 +91,16 @@ add_library(TetWild
 
 	tetwild/common.h
 	tetwild/Parameters.h
-	tetwild/Envelope.h
 
 	tetwild/EdgeSplitting.cpp
 	tetwild/EdgeCollapsing.cpp
 )
 
-target_link_libraries(TetWild PUBLIC igl::predicates app_shared)
+target_link_libraries(TetWild PUBLIC igl::predicates FastEnvelope app_shared)
 target_include_directories(TetWild PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/tetwild)
 # 	target_link_libraries(TetWild PUBLIC FastEnvelope)
 target_compile_features(TetWild PUBLIC cxx_std_17)
 
-if(TWTK_APPS_WITH_SANITIZERS)
-	add_sanitizers(TetWild)
-endif()
 
 add_executable(TetWild_bin tetwild/main.cpp)
 target_link_libraries(TetWild_bin PUBLIC TetWild)
@@ -120,18 +120,14 @@ add_library(EdgeCollapse
 	EdgeCollapse/QEC.cpp
 )
 
-target_link_libraries(EdgeCollapse PUBLIC igl::predicates app_shared)
+target_link_libraries(EdgeCollapse PUBLIC igl::predicates FastEnvelope app_shared)
 target_include_directories(EdgeCollapse PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 
 target_compile_features(EdgeCollapse PUBLIC cxx_std_17)
 
-if(TWTK_APPS_WITH_SANITIZERS)
-	add_sanitizers(EdgeCollapse)
-endif()
-
-add_executable(QuadricEdgeCollapse_bin EdgeCollapse/main.cpp)
-target_link_libraries(QuadricEdgeCollapse_bin PUBLIC EdgeCollapse)
+add_executable(EdgeCollapse_bin EdgeCollapse/main.cpp)
+target_link_libraries(EdgeCollapse_bin PUBLIC EdgeCollapse)
 
 
 ################################################################################
