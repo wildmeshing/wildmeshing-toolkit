@@ -94,6 +94,7 @@ add_library(TetWild
 
 	tetwild/EdgeSplitting.cpp
 	tetwild/EdgeCollapsing.cpp
+	tetwild/EdgeSwapping.cpp
 )
 
 target_link_libraries(TetWild PUBLIC igl::predicates FastEnvelope app_shared)
