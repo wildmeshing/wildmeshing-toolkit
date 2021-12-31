@@ -1,9 +1,10 @@
+#pragma once
 #include <wmtk/TriMesh.h>
 #include <wmtk/VectorUtils.h>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <queue>
-#pragma once
+
 
 namespace Edge2d {
 
