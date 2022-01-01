@@ -102,3 +102,68 @@ TEST_CASE("count_edge_on_boundary", "[test_tuple]")
     REQUIRE(edges.size() == 10);
     REQUIRE(cnt == 9);
 }
+
+TEST_CASE("tuple_iterator", "[test_tuple]")
+{
+    class IterableMesh : public TetMesh
+    {
+    public:
+        struct EdgeIterator
+        {
+            using iterator_category = std::forward_iterator_tag;
+            using difference_type = std::ptrdiff_t;
+            using value_type = TetMesh::Tuple;
+            using pointer = value_type*;
+            using reference = value_type&;
+
+            EdgeIterator(const TetMesh& m, value_type ptr)
+                : m_tuple(ptr)
+                , mesh(m){};
+
+            EdgeIterator operator++()
+            {
+                auto e = m_tuple.eid(mesh);
+                for (auto ei = e + 1; ei < mesh.tet_capacity() * 6; ei++) {
+                    auto t = ei / 6, j = ei % 6;
+                    auto tup = mesh.tuple_from_edge(t, j);
+                    if (tup.is_valid(mesh) && tup.eid(mesh) == ei) {
+                        m_tuple = tup;
+                        return *this;
+                    };
+                }
+                m_tuple = TetMesh::Tuple();
+                return *this;
+            };
+
+            bool operator==(const EdgeIterator& b) const { return m_tuple == b.m_tuple; }
+            bool operator!=(const EdgeIterator& b) const { return !(*this == b); }
+
+            value_type operator*() { return m_tuple; };
+            pointer operator->() { return &m_tuple; };
+
+        private:
+            value_type m_tuple;
+            const TetMesh& mesh;
+        };
+
+        EdgeIterator begin() const
+        {
+            for (auto i = 0; i < vert_capacity(); i++) {
+                auto tup = tuple_from_vertex(i);
+                if (tup.is_valid(*this)) return EdgeIterator(*this, tup);
+            }
+            return EdgeIterator(*this, Tuple());
+        };
+        EdgeIterator end() const { return EdgeIterator(*this, Tuple()); };
+    };
+
+    IterableMesh mesh;
+    mesh.init(5, {{{0, 1, 2, 3}}, {{0, 1, 4, 2}}, {{0, 1, 3, 4}}});
+    auto cnt = 0;
+    REQUIRE(mesh.begin() != mesh.end());
+
+    for (auto t : mesh) {
+        cnt++;
+    }
+    REQUIRE(cnt == 10);
+}

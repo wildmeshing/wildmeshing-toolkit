@@ -37,10 +37,10 @@ public:
     // Cell Tuple Navigator
     class Tuple
     {
-        size_t m_global_vid;
-        size_t m_local_eid;
-        size_t m_local_fid;
-        size_t m_global_tid;
+        size_t m_global_vid = std::numeric_limits<size_t>::max();
+        size_t m_local_eid = std::numeric_limits<size_t>::max();
+        size_t m_local_fid = std::numeric_limits<size_t>::max();
+        size_t m_global_tid = std::numeric_limits<size_t>::max();
 
         int m_timestamp = 0;
 
@@ -140,6 +140,22 @@ public:
 
         ////testing code
         void check_validity(const TetMesh& m) const;
+        friend bool operator==(const Tuple& a, const Tuple& t)
+        {
+            return (
+                std::tie(
+                    a.m_global_vid,
+                    a.m_local_eid,
+                    a.m_local_fid,
+                    a.m_global_tid,
+                    a.m_timestamp) ==
+                std::tie(
+                    t.m_global_vid,
+                    t.m_local_eid,
+                    t.m_local_fid,
+                    t.m_global_tid,
+                    t.m_timestamp));
+        };
     };
 
     /**
@@ -256,6 +272,8 @@ public:
     TetMesh() {}
     virtual ~TetMesh() {}
 
+    size_t vert_capacity() const { return m_vertex_connectivity.size(); };
+    size_t tet_capacity() const { return m_tet_connectivity.size(); };
     /**
      * Initialize TetMesh data structure
      *
@@ -304,6 +322,7 @@ public:
     std::vector<Tuple> get_edges() const;
     std::vector<Tuple> get_faces() const;
     std::vector<Tuple> get_vertices() const;
+    std::vector<Tuple> get_tets() const;
 
 public:
     template <typename T>
@@ -335,7 +354,7 @@ protected:
     virtual bool collapse_before(const Tuple& t) { return true; }
     // If it returns false then the operation is undone (the tuple indexes a vertex and tet that
     // survived)
-    
+
     virtual bool swap_edge_before(const Tuple& t) { return true; }
     virtual bool swap_edge_after(const Tuple& t) { return true; }
     virtual bool swap_face_before(const Tuple& t) { return true; }
@@ -345,16 +364,6 @@ protected:
     virtual bool smooth_before(const Tuple& t) { return true; }
     virtual bool smooth_after(const Tuple& t) { return true; }
 
-    // todo: quality, inversion, envelope: change v1 pos before this, only need to change partial
-    // attributes
-
-    //        //// Swap the edge in the tuple
-    //        // Checks if the swapping should be performed or not (user controlled)
-    //        virtual bool swapping_before(const Tuple &t) { return true; }
-    //        // If it returns false then the operation is undone (the tuple indexes TODO)
-    //        virtual bool swapping_after(const Tuple &t) { return true; }
-    //        //quality, inversion
-    //
     // Invariants that are called on all the new or modified elements after an operation is
     // performed
     virtual bool vertex_invariant(const Tuple& t) { return true; }

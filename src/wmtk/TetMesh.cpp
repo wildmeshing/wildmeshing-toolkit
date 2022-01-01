@@ -39,11 +39,11 @@ std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_edges() const
     for (int i = 0; i < m_tet_connectivity.size(); i++) {
         if (m_tet_connectivity[i].m_is_removed) continue;
         for (int j = 0; j < 6; j++) {
-            edges.push_back(tuple_from_edge(i, j));
+            auto tup = tuple_from_edge(i, j);
+            if (tup.eid(*this) == 6*i + j)
+                edges.emplace_back(tup);
         }
     }
-
-    unique_edge_tuples(*this, edges);
 
     return edges;
 }
@@ -55,14 +55,7 @@ std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_faces() const
         if (m_tet_connectivity[i].m_is_removed) continue;
         for (int j = 0; j < 4; j++) {
             auto face_t = tuple_from_face(i, j);
-            auto oppo_t = switch_tetrahedron(face_t);
-            if (oppo_t.has_value()) {
-                // use the half-face with the smaller tid
-                if (face_t.tid(*this) > oppo_t->tid(*this)) { //
-                    continue;
-                }
-            }
-            faces.emplace_back(face_t);
+            if (face_t.fid(*this) == 4 * i + j) faces.emplace_back(face_t);
         }
     }
 
@@ -144,27 +137,35 @@ bool wmtk::TetMesh::check_mesh_connectivity_validity() const
 }
 
 
+std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_tets() const
+{
+    std::vector<TetMesh::Tuple> tets;
+    for (auto i = 0; i < m_tet_connectivity.size(); i++) {
+        auto& t = m_tet_connectivity[i];
+        if (t.m_is_removed) continue;
+        tets.emplace_back(tuple_from_tet(i));
+
+        assert(tets.back().tid(*this) == i);
+        assert(tets.back().is_valid(*this));
+    }
+    return tets;
+}
+
+
 std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_vertices() const
 {
-    std::vector<TetMesh::Tuple> edges;
+    std::vector<TetMesh::Tuple> verts;
     for (auto i = 0; i < m_vertex_connectivity.size(); i++) {
         auto& vc = m_vertex_connectivity[i];
         if (vc.m_is_removed) continue;
         assert(!vc.m_conn_tets.empty());
-        auto tid = vc[0];
-        auto local_vid = m_tet_connectivity[tid].find(i);
 
-        // note: the following conversion of local_vid-eid is **heavily** dependent on the specifics
-        // of `m_local_edges`
-        auto local_eid = local_vid;
-        if (local_vid >= 2) local_eid = 5;
-        edges.emplace_back(tuple_from_edge(tid, local_eid));
-        if (local_vid == 3) edges.back() = switch_vertex(edges.back());
+        verts.emplace_back(tuple_from_vertex(i));
 
-        assert(edges.back().vid(*this) == i);
-        assert(edges.back().is_valid(*this));
+        assert(verts.back().vid(*this) == i);
+        assert(verts.back().is_valid(*this));
     }
-    return edges;
+    return verts;
 }
 
 bool wmtk::TetMesh::smooth_vertex(const Tuple& loc0)
