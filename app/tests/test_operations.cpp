@@ -3,6 +3,8 @@
 #include <wmtk/TetMesh.h>
 
 #include <catch2/catch.hpp>
+#include "Logger.hpp"
+#include "spdlog/common.h"
 
 
 using namespace wmtk;
@@ -11,7 +13,7 @@ using namespace tetwild;
 TEST_CASE("edge_splitting", "[test_operation]")
 {
     Parameters params;
-    params.lr = 1 / 20.;
+    params.lr = 1 / 10.;
     params.init(Vector3f(0, 0, 0), Vector3f(1, 1, 1));
 
     fastEnvelope::FastEnvelope envelope;
@@ -29,6 +31,11 @@ TEST_CASE("edge_splitting", "[test_operation]")
     tetwild.create_mesh_attributes(vertices, tet_attrs);
 
     tetwild.split_all_edges();
+    REQUIRE(tetwild.check_mesh_connectivity_validity());
+
+    tetwild.swap_all_edges();
+    REQUIRE(tetwild.check_mesh_connectivity_validity());
+    tetwild.swap_all_faces();
 
     REQUIRE(tetwild.check_mesh_connectivity_validity());
 }
@@ -58,5 +65,5 @@ TEST_CASE("edge_collapsing", "[test_operation]")
     REQUIRE(tetwild.check_mesh_connectivity_validity());
 
     tetwild.collapse_all_edges();
-    REQUIRE(tetwild.check_mesh_connectivity_validity());
+    CHECK(tetwild.check_mesh_connectivity_validity());
 }

@@ -3,8 +3,8 @@
 #include "Parameters.h"
 #include "common.h"
 
-#include <wmtk/utils/DisableWarnings.hpp>
 #include <fastenvelope/FastEnvelope.h>
+#include <wmtk/utils/DisableWarnings.hpp>
 #include <wmtk/utils/EnableWarnings.hpp>
 
 #include <wmtk/TetMesh.h>
@@ -105,6 +105,12 @@ public:
         double edge_length;
     } collapse_cache; // todo: change for parallel
 
+
+    struct SwapInfoCache
+    {
+        double max_energy;
+    } edgeswap_cache, faceswap_cache; // todo: change for parallel
+
     void split_all_edges();
     bool split_before(const Tuple& t) override;
     bool split_after(const Tuple& loc) override;
@@ -116,6 +122,14 @@ public:
     void collapse_all_edges();
     bool collapse_before(const Tuple& t) override;
     bool collapse_after(const Tuple& t) override;
+
+    void swap_all_edges();
+    bool swap_edge_before(const Tuple& t) override;
+    bool swap_edge_after(const Tuple& t) override;
+
+    void swap_all_faces();
+    bool swap_face_before(const Tuple& t) override;
+    bool swap_face_after(const Tuple& t) override;
 
     bool is_inverted(const Tuple& loc);
     double get_quality(const Tuple& loc);
