@@ -330,7 +330,7 @@ TEST_CASE("rollback_edge_collapse", "[test_2d_operation]")
     TriMesh::Tuple tuple = TriMesh::Tuple(1, 0, 0, m);
     TriMesh::Tuple dummy;
     REQUIRE(tuple.is_valid(m));
-    REQUIRE_FALSE(m.check_link_condition(tuple));
+    REQUIRE(m.check_link_condition(tuple));
     REQUIRE_FALSE(m.collapse_edge(tuple, dummy));
     REQUIRE(tuple.is_valid(m));
     REQUIRE(m.check_mesh_connectivity_validity());
