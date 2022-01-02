@@ -316,10 +316,22 @@ protected:
         auto v1_conn_tris = m_vertex_connectivity[t.get_vid()].m_conn_tris;
         auto v2_conn_tris = m_vertex_connectivity[switch_vertex(t).get_vid()].m_conn_tris;
 
-        if (check_link_condition(t) && (v1_conn_tris.size() + v2_conn_tris.size() > 3)) return true;
+        size_t fid1 = t.get_fid();
+        size_t fid2 = switch_face(t).value_or(t).get_fid();
+
+        vector_erase(v1_conn_tris, fid1);
+        vector_erase(v1_conn_tris, fid2);
+        vector_erase(v2_conn_tris, fid1);
+        vector_erase(v2_conn_tris, fid2);
+
+        if (check_link_condition(t) && (v1_conn_tris.size() + v2_conn_tris.size() > 0)) return true;
         return false;
     }
-    virtual bool collapse_after(const Tuple& t) { return true; }
+    virtual bool collapse_after(const Tuple& t)
+    {
+        if (check_mesh_connectivity_validity() && t.is_valid(*this)) return true;
+        return false;
+    }
 
 public:
     size_t n_triangles() const { return m_tri_connectivity.size(); }

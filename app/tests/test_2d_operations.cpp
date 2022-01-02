@@ -25,12 +25,8 @@ TEST_CASE("shortest_edge_collapse", "[test_2d_operations]")
     v_positions[4] = Eigen::Vector3d(0.5, 0, 0);
     v_positions[5] = Eigen::Vector3d(0, -3, 0);
     EdgeCollapse m(v_positions);
-    std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 2, 3}}, {{0, 1, 4}}, {{0, 2, 5}}};
+    std::vector<std::array<size_t, 3>> tris = {{{0, 1, 3}}, {{1, 2, 4}}, {{3, 1, 4}}, {{3, 4, 5}}};
     m.create_mesh(6, tris);
-    m.collapse_shortest();
-    REQUIRE(m.n_vertices() == 6);
-    REQUIRE(m.n_triangles() == 4);
-    // the collapsed edge tuple is not valid anymore
     std::vector<TriMesh::Tuple> edges = m.get_edges();
     // find the shortest edge
     double shortest = 100;
@@ -44,5 +40,6 @@ TEST_CASE("shortest_edge_collapse", "[test_2d_operations]")
         }
     }
     m.collapse_shortest();
+    // the collapsed edge tuple is not valid anymore
     REQUIRE_FALSE(shortest_edge.is_valid(m));
 }
