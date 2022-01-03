@@ -13,12 +13,12 @@ struct Parameters
     double lr = 1 / 20.;
     double l = -1;
     double diag_l;
-    Vector3f min, max;
+    Vector3d min, max;
 
     double splitting_l2;
     double collapsing_l2;
 
-    void init(const Vector3f& min_, const Vector3f& max_)
+    void init(const Vector3d& min_, const Vector3d& max_)
     {
         min = min_;
         max = max_;

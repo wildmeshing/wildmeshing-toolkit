@@ -10,17 +10,17 @@ int main(int argc, char** argv)
 
     Parameters params;
     params.lr = 1 / 20.;
-    params.init(Vector3f(0, 0, 0), Vector3f(1, 1, 1));
+    params.init(Vector3d(0, 0, 0), Vector3d(1, 1, 1));
 
     fastEnvelope::FastEnvelope envelope;
     TetWild tetwild(params, envelope);
     //    tetwild.test();
 
     std::vector<VertexAttributes> vertices(4);
-    vertices[0].m_posf = Vector3f(0, 0, 0);
-    vertices[1].m_posf = Vector3f(1, 0, 0);
-    vertices[2].m_posf = Vector3f(0, 1, 0);
-    vertices[3].m_posf = Vector3f(0, 0, 1);
+    vertices[0].m_posf = Vector3d(0, 0, 0);
+    vertices[1].m_posf = Vector3d(1, 0, 0);
+    vertices[2].m_posf = Vector3d(0, 1, 0);
+    vertices[3].m_posf = Vector3d(0, 0, 1);
     std::vector<std::array<size_t, 4>> tets = {{{0, 1, 3, 2}}};
     std::vector<TetAttributes> tet_attrs(1);
 

@@ -16,7 +16,7 @@
 namespace tetwild {
 #define MAX_ENERGY 1e50
 
-typedef Eigen::Vector3d Vector3f; // float?
+typedef Eigen::Vector3d Vector3d; // float?
 typedef Eigen::Vector3d Vector3;
 
 typedef double Scalar;

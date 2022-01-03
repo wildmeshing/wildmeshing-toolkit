@@ -15,7 +15,7 @@
 
 bool tetwild::TetWild::is_inverted(const Tuple& loc)
 {
-    std::array<Vector3f, 4> ps;
+    std::array<Vector3d, 4> ps;
     auto its = oriented_tet_vertices(loc);
     for (int j = 0; j < 4; j++) {
         ps[j] = m_vertex_attribute[its[j].vid(*this)].m_posf;
@@ -38,7 +38,7 @@ bool tetwild::TetWild::is_inverted(const Tuple& loc)
 
 double tetwild::TetWild::get_quality(const Tuple& loc)
 {
-    std::array<Vector3f, 4> ps;
+    std::array<Vector3d, 4> ps;
     auto its = oriented_tet_vertices(loc);
     for (int j = 0; j < 4; j++) {
         ps[j] = m_vertex_attribute[its[j].vid(*this)].m_posf;

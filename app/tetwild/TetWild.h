@@ -17,7 +17,7 @@ class VertexAttributes
 {
 public:
     Vector3 m_pos;
-    Vector3f m_posf;
+    Vector3d m_posf;
 
     bool m_is_on_surface;
     bool m_is_on_boundary;
@@ -110,6 +110,9 @@ public:
     {
         double max_energy;
     } edgeswap_cache, faceswap_cache; // todo: change for parallel
+
+    void triangle_insertion(std::vector<Vector3d>& vertices,
+                            std::vector<std::array<size_t, 3>>& faces);
 
     void split_all_edges();
     bool split_before(const Tuple& t) override;
