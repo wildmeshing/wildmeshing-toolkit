@@ -20,6 +20,8 @@ if(WILDMESHING_TOOLKIT_WITH_TBB)
 
 		ConcurrentTetMesh.h
 		ConcurrentTetMesh.cpp
+		ConcurrentTriMesh.h
+		ConcurrentTriMesh.cpp
 	)
 endif()
 

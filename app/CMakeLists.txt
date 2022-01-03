@@ -126,6 +126,24 @@ add_executable(QuadricEdgeCollapse_bin QuadricEdgeCollapse/main.cpp)
 target_link_libraries(QuadricEdgeCollapse_bin PUBLIC QuadricEdgeCollapse)
 
 
+
+################################################################################
+# Parallel Edge Collapse 2D
+################################################################################
+
+add_library(ParallelEdgeCollapse
+	ParallelEdgeCollapse/QEC.cpp
+)
+
+target_link_libraries(ParallelEdgeCollapse PUBLIC igl::predicates FastEnvelope app_shared)
+target_include_directories(ParallelEdgeCollapse PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+
+target_compile_features(ParallelEdgeCollapse PUBLIC cxx_std_17)
+
+add_executable(ParallelEdgeCollapse_bin ParallelEdgeCollapse/main.cpp)
+target_link_libraries(ParallelEdgeCollapse_bin PUBLIC ParallelEdgeCollapse)
+
 ################################################################################
 # Tests
 ################################################################################
