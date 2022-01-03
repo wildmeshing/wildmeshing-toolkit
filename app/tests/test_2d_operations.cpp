@@ -29,7 +29,7 @@ TEST_CASE("shortest_edge_collapse", "[test_2d_operations]")
     m.create_mesh(6, tris);
     std::vector<TriMesh::Tuple> edges = m.get_edges();
     // find the shortest edge
-    double shortest = std::numerical_limits<double>::max();
+    double shortest = std::numeric_limits<double>::max();
     TriMesh::Tuple shortest_edge;
     for (TriMesh::Tuple t : edges) {
         size_t v1 = t.get_vid();
