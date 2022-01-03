@@ -12,9 +12,7 @@ bool segment_triangle_intersection(const std::array<T3, 2>& seg, const std::arra
 }
 
 template<typename T2, typename T3>
-T2 squeeze_to_2d(const T3& p){//todo
-    T2 p2;
-    return p2;
+void squeeze_tri_to_2d(const std::array<T3, 3>& tri3, const std::array<T2, 3>& tri2){//todo
 }
 
 template<typename T2>

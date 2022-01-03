@@ -12,12 +12,14 @@
 #include <vector>
 
 #include <Eigen/Core>
+//#include <Rational.h>
 
 namespace tetwild {
 #define MAX_ENERGY 1e50
 
 typedef Eigen::Vector3d Vector3d; // float?
-typedef Eigen::Vector3d Vector3;
+typedef Eigen::Matrix<double, 3, 1> Vector3;
+//typedef Eigen::Matrix<Rational, 3, 1> Vector3;
 
 typedef double Scalar;
 typedef Eigen::Matrix<Scalar, 3, 3> Matrix3;
