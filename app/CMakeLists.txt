@@ -60,6 +60,7 @@ if(TWTK_APPS_WITH_SANITIZERS)
 	include(sanitizers)
 endif()
 include(data)
+include(gmp)
 
 
 ################################################################################
@@ -69,6 +70,7 @@ include(data)
 add_library(app_shared
 	shared/Logger.cpp
 	shared/Logger.hpp
+	shared/Rational.hpp
 
 
 	shared/external/Exception.h
@@ -76,7 +78,7 @@ add_library(app_shared
 	shared/external/MshSaver.h
 )
 target_include_directories(app_shared PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/shared ${CMAKE_CURRENT_SOURCE_DIR}/shared/external)
-target_link_libraries(app_shared PUBLIC WildMeshingToolkit warnings::all wmtk_data)
+target_link_libraries(app_shared PUBLIC WildMeshingToolkit warnings::all wmtk_data gmp)
 target_compile_features(app_shared PUBLIC cxx_std_17)
 
 include(fenvelope)
