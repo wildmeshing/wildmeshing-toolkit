@@ -11,14 +11,14 @@
 #include <set>
 #include <vector>
 
-#include <Rational.h>
 #include <Eigen/Core>
+#include <Rational.hpp>
 
 namespace tetwild {
 #define MAX_ENERGY 1e50
 
 typedef Eigen::Vector3d Vector3d;
-typedef Eigen::Matrix<Rational, 3, 1> Vector3;
+typedef Eigen::Matrix<apps::Rational, 3, 1> Vector3;
 
 typedef double Scalar;
 typedef Eigen::Matrix<Scalar, 3, 3> Matrix3;
