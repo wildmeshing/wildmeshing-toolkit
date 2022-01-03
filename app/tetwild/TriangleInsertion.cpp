@@ -6,8 +6,19 @@
 #include "TetWild.h"
 #include "wmtk/TetMesh.h"
 
-template<typename T>
-bool segment_triangle_intersection(std::array<T, 2>& seg, std::array<T, 3>& tri, T& p){//todo
+template<typename T3>
+bool segment_triangle_intersection(const std::array<T3, 2>& seg, const std::array<T3, 3>& tri, T3& p){//todo
+    return false;
+}
+
+template<typename T2, typename T3>
+T2 squeeze_to_2d(const T3& p){//todo
+    T2 p2;
+    return p2;
+}
+
+template<typename T2>
+bool is_point_inside_triangle(const T2& p, const std::array<T2, 3>& tri){//todo
     return false;
 }
 
@@ -30,7 +41,7 @@ void tetwild::TetWild::triangle_insertion(std::vector<Vector3d>& vertices,
              to_rational(vertices[faces[face_id][2]])}};
 
         std::vector<size_t> intersected_tids;
-        std::map<std::array<size_t, 2>, std::pair<bool, Vector3>> map_edge2point;
+        std::map<std::array<size_t, 2>, std::pair<int, Vector3>> map_edge2point;
 
 
         std::queue<Tuple> tet_queue;
@@ -59,11 +70,10 @@ void tetwild::TetWild::triangle_insertion(std::vector<Vector3d>& vertices,
                     {m_vertex_attribute[v1_id].m_pos, m_vertex_attribute[v2_id].m_pos}};
                 Vector3 p(0, 0, 0);
                 bool is_intersected = segment_triangle_intersection(seg, tri, p);
+                map_edge2point[e] = std::make_pair(is_intersected, p);
                 if (!is_intersected) {
-                    map_edge2point[e] = std::make_pair(false, p);
                     continue;
                 } else {
-                    map_edge2point[e] = std::make_pair(true, p);
                     need_subdivision = true;
                 }
 
@@ -75,12 +85,14 @@ void tetwild::TetWild::triangle_insertion(std::vector<Vector3d>& vertices,
             if (need_subdivision) intersected_tids.push_back(tet.tid(*this));
         }
         wmtk::vector_unique(intersected_tids);
-        for (auto it = map_edge2point.begin(), ite = map_edge2point.end(); it != ite;) {//erase edge without intersections
+        for (auto it = map_edge2point.begin(), ite = map_edge2point.end();
+             it != ite;) { // erase edge without intersections
             if (!(it->second).first)
                 it = map_edge2point.erase(it);
             else
                 ++it;
         }
+        for (auto& info : map_edge2point) (info.second).first = -1;
 
         // todo: subdivide tets --> should be move to conn??
         for (size_t tet_id : intersected_tids) {
@@ -98,16 +110,26 @@ void tetwild::TetWild::triangle_insertion(std::vector<Vector3d>& vertices,
 
                 if (!map_edge2point.count(e)) continue;
                 auto info = map_edge2point[e];
-                if (!info.first) //if false ==> already pushed back
+                if (info.first >= 0) // if already pushed back
                     continue;
 
-                // todo: add new vertex (conn & attr
-//                m_vertex_attribute.push_back()
+                // add new vertex attr
+                VertexAttributes v;
+                v.m_pos = info.second;
+                info.first = m_vertex_attribute.size() - 1;
 
                 config.set(i);
-
-                //todo: subdivide tet
             }
+
+            int config_id = (int)(config.to_ulong());
+
+            // todo: subdivide tet, conn_tets
+            // todo: track surface (m_surface_tag
+
         }
     }
+
+    //todo: update m_is_on_surface for vertices, remove leaked surface marks
+
+    // todo: skip preserve open boundaries
 }
