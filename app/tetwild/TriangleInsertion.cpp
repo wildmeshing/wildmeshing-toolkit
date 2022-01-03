@@ -32,6 +32,8 @@ void tetwild::TetWild::triangle_insertion(std::vector<Vector3d>& vertices,
 {
     std::vector<bool> is_visited;
 
+    std::vector<std::array<int, 4>> surface_f_ids(m_tet_attribute.size(), {{-1, -1, -1, -1}});
+
     for (size_t face_id = 0; face_id < faces.size(); face_id++) {
         is_visited.assign(m_tet_attribute.size(), false); // reset
 
@@ -123,8 +125,8 @@ void tetwild::TetWild::triangle_insertion(std::vector<Vector3d>& vertices,
 
             int config_id = (int)(config.to_ulong());
 
-            // todo: subdivide tet, conn_tets
-            // todo: track surface (m_surface_tag
+            // todo: subdivide tet, conn_tets (note: DO NOT updating conn_tets ==> DO NOT use eid(), fid()
+            // todo: track surface (m_surface_tag ( UPDATE surface_f_ids
 
         }
     }
