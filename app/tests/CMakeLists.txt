@@ -5,6 +5,7 @@
 set(test_sources
 	main.cpp
 
+	test_2d_operations.cpp
 	test_operations.cpp
 	file_write.cpp
 	test_operation_smooth.cpp
@@ -13,7 +14,7 @@ set(test_sources
 
 add_executable(app_unit_tests ${test_sources})
 
-target_link_libraries(app_unit_tests PUBLIC WildMeshingToolkit TetWild QuadricEdgeCollapse)
+target_link_libraries(app_unit_tests PUBLIC WildMeshingToolkit TetWild EdgeCollapse)
 target_link_libraries(app_unit_tests PUBLIC warnings::all)
 
 include(catch2)

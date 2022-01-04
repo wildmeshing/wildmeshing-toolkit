@@ -61,6 +61,14 @@ inline bool vector_erase(std::vector<T>& v, const T& t)
     return true;
 }
 
+template <class T>
+inline bool vector_contains(std::vector<T>& v, const T& t)
+{
+    auto it = std::find(v.begin(), v.end(), t);
+    if (it == v.end()) return false;
+    return true;
+}
+
 template <typename T>
 inline bool set_erase(std::vector<T>& v, const T& t)
 {

@@ -1,7 +1,3 @@
-
-// Created by Yixin Hu on 10/12/21.
-//
-
 #pragma once
 
 #include <wmtk/utils/VectorUtils.h>
@@ -207,7 +203,6 @@ public:
         }
     }
 
-
     /**
      * Generate a vector of Tuples from global vertex index and __local__ edge index
      * @note each vertex generate tuple that has the fid to be the smallest among connected
@@ -311,8 +306,28 @@ private:
 protected:
     virtual bool split_before(const Tuple& t) { return true; }
     virtual bool split_after(const Tuple& t) { return true; }
-    virtual bool collapse_before(const Tuple& t) { return true; }
-    virtual bool collapse_after(const Tuple& t) { return true; }
+    // check link, check if it's the last edge
+    virtual bool collapse_before(const Tuple& t)
+    {
+        auto v1_conn_tris = m_vertex_connectivity[t.get_vid()].m_conn_tris;
+        auto v2_conn_tris = m_vertex_connectivity[switch_vertex(t).get_vid()].m_conn_tris;
+
+        size_t fid1 = t.get_fid();
+        size_t fid2 = switch_face(t).value_or(t).get_fid();
+
+        vector_erase(v1_conn_tris, fid1);
+        vector_erase(v1_conn_tris, fid2);
+        vector_erase(v2_conn_tris, fid1);
+        vector_erase(v2_conn_tris, fid2);
+
+        if (check_link_condition(t) && (v1_conn_tris.size() + v2_conn_tris.size() > 0)) return true;
+        return false;
+    }
+    virtual bool collapse_after(const Tuple& t)
+    {
+        if (check_mesh_connectivity_validity() && t.is_valid(*this)) return true;
+        return false;
+    }
 
 public:
     size_t n_triangles() const { return m_tri_connectivity.size(); }
@@ -321,6 +336,9 @@ public:
     Tuple switch_vertex(const Tuple& t) const { return t.switch_vertex(*this); }
     Tuple switch_edge(const Tuple& t) const { return t.switch_edge(*this); }
     std::optional<Tuple> switch_face(const Tuple& t) const { return t.switch_face(*this); }
+
+    bool check_link_condition(const Tuple& t) const;
+    bool check_mesh_connectivity_validity() const;
 
     /**
      * Split an edge
@@ -332,6 +350,30 @@ public:
     bool split_edge(const Tuple& t, Tuple& new_t);
     bool collapse_edge(const Tuple& t, Tuple& new_t);
     void swap_edge(const Tuple& t, int type);
+
+    /**
+     * @brief Get the one ring tris for a vertex
+     *
+     * @param t tuple pointing to a vertex
+     * @return one-ring
+     */
+    std::vector<Tuple> get_one_ring_tris_for_vertex(const Tuple& t) const;
+
+    /**
+     * @brief Get the one ring edges for a vertex, edges are the incident edges
+     *
+     * @param t tuple pointing to a vertex
+     * @return one-ring
+     */
+    std::vector<Tuple> get_one_ring_edges_for_vertex(const Tuple& t) const;
+
+    /**
+     * @brief Get the incident vertices for a triangle
+     *
+     * @param t tuple pointing to an face
+     * @return incident vertices
+     */
+    std::vector<Tuple> get_oriented_vertices_for_tri(const Tuple& t) const;
 };
 
 } // namespace wmtk
