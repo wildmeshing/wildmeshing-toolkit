@@ -99,7 +99,7 @@ add_library(TetWild
 	tetwild/EdgeCollapsing.cpp
 	tetwild/EdgeSwapping.cpp
 
-		tetwild/TriangleInsertion.cpp
+	tetwild/TriangleInsertion.cpp
 )
 
 target_link_libraries(TetWild PUBLIC igl::predicates FastEnvelope app_shared)
