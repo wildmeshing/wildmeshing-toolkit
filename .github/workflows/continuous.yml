@@ -12,7 +12,7 @@ jobs:
   ####################
 
   Linux:
-    name: ${{ matrix.name }} (${{ matrix.config }}), TBB ${{ matrix.tbb }}
+    name: ${{ matrix.name }} (${{ matrix.config }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -69,7 +69,7 @@ jobs:
   ####################
 
   MacOS:
-    name: ${{ matrix.name }}-${{ matrix.arch }} (${{ matrix.config }}), TBB ${{ matrix.tbb }}
+    name: ${{ matrix.name }}-${{ matrix.arch }} (${{ matrix.config }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -127,7 +127,7 @@ jobs:
   ####################
 
   Windows:
-    name: Windows (${{ matrix.config }}), TBB ${{ matrix.tbb }}
+    name: Windows (${{ matrix.config }})
     runs-on: windows-2019
     env:
       CC: cl.exe
