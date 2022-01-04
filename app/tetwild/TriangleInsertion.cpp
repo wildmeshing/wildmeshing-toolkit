@@ -5,6 +5,7 @@
 #include "Logger.hpp"
 #include "TetWild.h"
 #include "wmtk/TetMesh.h"
+#include "wmtk/auto_table.hpp"
 
 template<typename T3>
 bool segment_triangle_intersection(const std::array<T3, 2>& seg, const std::array<T3, 3>& tri, T3& p){//todo
@@ -92,41 +93,61 @@ void tetwild::TetWild::triangle_insertion(std::vector<Vector3d>& vertices,
             else
                 ++it;
         }
-        for (auto& info : map_edge2point) (info.second).first = -1;
 
-        // todo: subdivide tets --> should be move to conn??
-        for (size_t tet_id : intersected_tids) {
-            // todo: get 6 edges of tet t_id
-            std::array<Tuple, 6> edges;
+        ///push back new vertices
+        std::map<std::array<size_t, 2>, size_t> map_edge2vid;
+        int v_cnt = 0;
+        for (auto& info : map_edge2point) {
+            VertexAttributes v;
+            v.m_pos = (info.second).second;
+            m_vertex_attribute.push_back(v);//todo: conn
+            (info.second).first = m_vertex_attribute.size() - 1;
+            v_cnt++;
 
-            std::bitset<6> config;
-            for (int i = 0; i < edges.size(); i++) {
-                auto& loc = edges[i];
-                size_t v1_id = loc.vid(*this);
-                auto tmp = switch_vertex(loc);
-                size_t v2_id = tmp.vid(*this);
-                std::array<size_t, 2> e = {v1_id, v2_id};
-                if (e[0] > e[1]) std::swap(e[0], e[1]);
-
-                if (!map_edge2point.count(e)) continue;
-                auto info = map_edge2point[e];
-                if (info.first >= 0) // if already pushed back
-                    continue;
-
-                // add new vertex attr
-                VertexAttributes v;
-                v.m_pos = info.second;
-                info.first = m_vertex_attribute.size() - 1;
-
-                config.set(i);
-            }
-
-            int config_id = (int)(config.to_ulong());
-
-            // todo: subdivide tet, conn_tets (note: DO NOT updating conn_tets ==> DO NOT use eid(), fid()
-            // todo: track surface (m_surface_tag ( UPDATE surface_f_ids
-
+            map_edge2vid[info.first] = (info.second).first;
         }
+
+        ///push back new tets
+        subdivide_tets(intersected_tids, map_edge2vid);//in TetMesh class
+
+        //todo: resize attri lists
+
+//        // todo: subdivide tets --> should be move to conn??
+//        for (size_t tet_id : intersected_tids) {
+//            // todo: get 6 edges of tet t_id
+//            std::array<Tuple, 6> edges;
+//
+//            std::bitset<6> config;
+//            std::array<int, 6> new_v_ids = {{-1,-1,-1,-1,-1,-1}};
+//            for (int i = 0; i < edges.size(); i++) {
+//                auto& loc = edges[i];
+//                size_t v1_id = loc.vid(*this);
+//                auto tmp = switch_vertex(loc);
+//                size_t v2_id = tmp.vid(*this);
+//                std::array<size_t, 2> e = {v1_id, v2_id};
+//                if (e[0] > e[1]) std::swap(e[0], e[1]);
+//
+//                if (!map_edge2point.count(e)) continue;
+//
+//                new_v_ids[i] = map_edge2point[e].first;
+//                config.set(i);
+//            }
+//
+//            int config_id = (int)(config.to_ulong());
+//            const auto tet_configs = floatTetWild::CutTable::get_tet_confs(config_id);
+//            assert(!tet_configs.empty());
+//
+//
+//
+//            //todo: DO NOT consider centroid cases for now
+//
+//            // todo: subdivide tet, conn_tets (note: DO NOT updating conn_tets ==> DO NOT use eid(), fid()
+//            // todo: track surface (m_surface_tag ( UPDATE surface_f_ids
+//
+//
+//        }
+
+        ///todo: update conn_tets here
     }
 
     //todo: update m_is_on_surface for vertices, remove leaked surface marks

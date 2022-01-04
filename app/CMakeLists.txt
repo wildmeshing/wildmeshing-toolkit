@@ -99,9 +99,6 @@ add_library(TetWild
 	tetwild/EdgeSwapping.cpp
 
 		tetwild/TriangleInsertion.cpp
-		tetwild/Rational.h
-		tetwild/auto_table.cpp
-		tetwild/auto_table.hpp
 )
 
 target_link_libraries(TetWild PUBLIC igl::predicates FastEnvelope app_shared)

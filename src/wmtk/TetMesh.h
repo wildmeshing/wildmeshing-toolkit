@@ -298,6 +298,8 @@ public:
     bool swap_face(const Tuple& t);
     bool smooth_vertex(const Tuple& t);
 
+    void subdivide_a_tet(size_t t_id, const std::array<int, 6>& new_v_ids);
+    void subdivide_tets(std::vector<size_t> t_ids, std::map<std::array<size_t, 2>, size_t>& map_edge2vid);
 
     void consolidate_mesh_connectivity();
 
