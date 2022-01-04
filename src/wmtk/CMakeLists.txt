@@ -13,10 +13,10 @@ set(SOURCES
 	EdgeSplittingConn.cpp
 
 	SwapMeshConnectivity.cpp
-		TriangleInsertionConn.cpp
+	TriangleInsertionConn.cpp
 
-		auto_table.hpp
-		auto_table.cpp
+	auto_table.hpp
+	auto_table.cpp
 )
 
 if(WILDMESHING_TOOLKIT_WITH_TBB)

@@ -9,6 +9,7 @@ set(test_sources
 	2d_tests.cpp
 	test_operations.cpp
 	test_delaunay.cpp
+	test_geom.cpp
 )
 
 add_executable(unit_tests ${test_sources})

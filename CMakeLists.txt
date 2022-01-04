@@ -60,7 +60,7 @@ option(LIBIGL_WITH_OPENGL_GLFW_IMGUI "Use ImGui"                    OFF)
 option(LIBIGL_WITH_PNG               "Use PNG"                      OFF)
 option(LIBIGL_WITH_TETGEN            "Use Tetgen"                   OFF)
 option(LIBIGL_WITH_TRIANGLE          "Use Triangle"                 OFF)
-option(LIBIGL_WITH_PREDICATES        "Use exact predicates"         ON) #remove me once tetwild is out of this repo
+option(LIBIGL_WITH_PREDICATES        "Use exact predicates"         ON)
 option(LIBIGL_WITH_XML               "Use XML"                      OFF)
 
 
@@ -85,7 +85,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE warnings::all)
 # Use C++17
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 
-target_link_libraries(${PROJECT_NAME} PUBLIC spdlog::spdlog igl::core geogram::delaunay_psm)
+target_link_libraries(${PROJECT_NAME} PUBLIC spdlog::spdlog igl::core igl::predicates geogram::delaunay_psm)
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 if(WILDMESHING_TOOLKIT_WITH_TBB)
