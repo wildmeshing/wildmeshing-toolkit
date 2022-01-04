@@ -78,7 +78,7 @@ add_library(app_shared
 	shared/external/MshSaver.h
 )
 target_include_directories(app_shared PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/shared ${CMAKE_CURRENT_SOURCE_DIR}/shared/external)
-target_link_libraries(app_shared PUBLIC WildMeshingToolkit warnings::all wmtk_data gmp)
+target_link_libraries(app_shared PUBLIC WildMeshingToolkit warnings::all wmtk_data gmp::gmp)
 target_compile_features(app_shared PUBLIC cxx_std_17)
 
 include(fenvelope)
