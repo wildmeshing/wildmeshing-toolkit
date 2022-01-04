@@ -241,6 +241,18 @@ std::array<wmtk::TetMesh::Tuple, 4> wmtk::TetMesh::oriented_tet_vertices(const T
     return vs;
 }
 
+std::array<wmtk::TetMesh::Tuple, 6> wmtk::TetMesh::tet_edges(const Tuple& t) const {
+    std::array<Tuple, 6> es;
+    for (int j = 0; j < 6; j++) {
+        es[j].m_local_eid = j;
+        es[j].m_local_fid = m_map_edge2face[j];
+
+        es[j].m_global_vid = m_tet_connectivity[t.m_global_tid][m_local_edges[j][0]];
+        es[j].m_global_tid = t.m_global_tid;
+    }
+    return es;
+}
+
 std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_one_ring_tets_for_vertex(const Tuple& t) const
 {
     std::vector<Tuple> tets;

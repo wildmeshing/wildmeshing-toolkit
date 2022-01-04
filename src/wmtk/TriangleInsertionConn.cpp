@@ -77,18 +77,18 @@ void wmtk::TetMesh::subdivide_a_tet(size_t t_id, const std::array<int, 6>& new_v
         get_local_e_id[{{m_local_edges[i][1], m_local_edges[i][0]}}] = i;
     }
 
-        std::vector<size_t> all_v_ids = {
-            m_tet_connectivity[t_id][0],
-            m_tet_connectivity[t_id][1],
-            m_tet_connectivity[t_id][2],
-            m_tet_connectivity[t_id][3]};
+    std::vector<size_t> all_v_ids = {
+        m_tet_connectivity[t_id][0],
+        m_tet_connectivity[t_id][1],
+        m_tet_connectivity[t_id][2],
+        m_tet_connectivity[t_id][3]};
     std::array<int, 6> local_new_v_ids = {{-1, -1, -1, -1, -1, -1}};
 
     std::bitset<6> config_bits;
     int cnt = 0;
     for (int i = 0; i < new_v_ids.size(); i++) {
         if (new_v_ids[i] >= 0) {
-                        all_v_ids.push_back(new_v_ids[i]);
+            all_v_ids.push_back(new_v_ids[i]);
             config_bits.set(i);
             local_new_v_ids[i] = 4 + cnt;
             cnt++;
@@ -145,8 +145,13 @@ void wmtk::TetMesh::subdivide_a_tet(size_t t_id, const std::array<int, 6>& new_v
         for (int j = 0; j < 4; j++) {
             tet[j] = all_v_ids[t[j]];
         }
-        m_tet_connectivity.push_back(tet);
+        size_t new_t_id = t_id;
+        if (i < config.size() - 1) {
+            m_tet_connectivity.emplace_back();
+            new_t_id = m_tet_connectivity.size() - 1;
+        }
+        m_tet_connectivity[new_t_id] = tet;
 
-        //todo: track surface
+        insertion_update_surface_tag(t_id, new_t_id, config_id, diag_config_id, i);
     }
 }

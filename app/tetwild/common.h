@@ -20,6 +20,9 @@ namespace tetwild {
 typedef Eigen::Vector3d Vector3d;
 typedef Eigen::Matrix<apps::Rational, 3, 1> Vector3;
 
+typedef Eigen::Vector2d Vector2d;
+typedef Eigen::Matrix<apps::Rational, 2, 1> Vector2;
+
 typedef double Scalar;
 typedef Eigen::Matrix<Scalar, 3, 3> Matrix3;
 

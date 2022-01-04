@@ -344,6 +344,11 @@ private:
     int find_next_empty_slot_v();
 
 protected:
+    virtual void insertion_update_surface_tag(size_t t_id, size_t new_t_id,
+                                              int config_id, int diag_config_id, int index){}
+    size_t vertices_size() { return m_vertex_connectivity.size(); }
+    size_t tets_size() { return m_tet_connectivity.size(); }
+
     //// Split the edge in the tuple
     // Checks if the split should be performed or not (user controlled)
     virtual bool split_before(const Tuple& t) { return true; } // check edge condition
@@ -468,6 +473,8 @@ public:
      * @return std::array<Tuple, 4> each tuple owns a different vertex.
      */
     std::array<Tuple, 4> oriented_tet_vertices(const Tuple& t) const;
+
+    std::array<Tuple, 6> tet_edges(const Tuple& t) const;
 
     void check_tuple_validity(const Tuple& t) const { t.check_validity(*this); }
     bool check_mesh_connectivity_validity() const;

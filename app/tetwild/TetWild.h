@@ -94,6 +94,12 @@ public:
     void output_mesh(std::string file) const;
 
     //	protected:
+    struct TriangleInsertionInfoCache
+    {
+        std::vector<std::array<int, 4>> surface_f_ids;
+        size_t face_id;
+    } triangle_insertion_cache; // todo: change for parallel
+
     struct SplitInfoCache
     {
         VertexAttributes vertex_info;
@@ -114,6 +120,9 @@ public:
     void triangle_insertion(
         std::vector<Vector3d>& vertices,
         std::vector<std::array<size_t, 3>>& faces);
+
+    void insertion_update_surface_tag(size_t t_id, size_t new_t_id,
+                                      int config_id, int diag_config_id, int index) override;
 
     void split_all_edges();
     bool split_before(const Tuple& t) override;
