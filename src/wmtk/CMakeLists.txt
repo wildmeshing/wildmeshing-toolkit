@@ -13,19 +13,15 @@ set(SOURCES
 	EdgeSplittingConn.cpp
 
 	SwapMeshConnectivity.cpp
+
 	TriangleInsertionConn.cpp
 
 	auto_table.hpp
 	auto_table.cpp
+
+	ConcurrentTetMesh.h
+	ConcurrentTetMesh.cpp
 )
-
-if(WILDMESHING_TOOLKIT_WITH_TBB)
-	list(APPEND SOURCES
-
-		ConcurrentTetMesh.h
-		ConcurrentTetMesh.cpp
-	)
-endif()
 
 prepend_current_path(SOURCES)
 wildmeshing_toolkit_set_source_group(${SOURCES})

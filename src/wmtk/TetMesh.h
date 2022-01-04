@@ -7,9 +7,7 @@
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/utils/Logger.hpp>
 
-#ifdef WILDMESHING_TOOLKIT_WITH_TBB
 #include <tbb/concurrent_vector.h>
-#endif
 
 #include <array>
 #include <cassert>
@@ -328,11 +326,7 @@ public:
 
 public:
     template <typename T>
-#ifdef WILDMESHING_TOOLKIT_WITH_TBB
     using vector = tbb::concurrent_vector<T>;
-#else
-    using vector = std::vector<T>;
-#endif
 
 private:
     // Stores the connectivity of the mesh

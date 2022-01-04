@@ -48,7 +48,6 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # Sanitizer options
 option(WILDMESHING_TOOLKIT_WITH_SANITIZERS	  "Enable sanitizers in compilation targets"   OFF)
-option(WILDMESHING_TOOLKIT_WITH_TBB			  "Enable TBB" 								   ON)
 
 # Options for libigl modules
 option(LIBIGL_USE_STATIC_LIBRARY     "Use libigl as static library" OFF)
@@ -88,11 +87,9 @@ target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 target_link_libraries(${PROJECT_NAME} PUBLIC spdlog::spdlog igl::core igl::predicates geogram::delaunay_psm)
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
-if(WILDMESHING_TOOLKIT_WITH_TBB)
-	include(onetbb)
-	target_link_libraries(${PROJECT_NAME} PUBLIC TBB::tbb)
-	target_compile_definitions(${PROJECT_NAME} PUBLIC WILDMESHING_TOOLKIT_WITH_TBB)
-endif()
+include(onetbb)
+target_link_libraries(${PROJECT_NAME} PUBLIC TBB::tbb)
+
 
 
 ################################################################################
@@ -110,6 +107,4 @@ if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
 endif()
 
 
-if(WILDMESHING_TOOLKIT_WITH_TBB)
-	add_subdirectory(app)
-endif()
+add_subdirectory(app)

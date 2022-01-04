@@ -40,8 +40,7 @@ std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_edges() const
         if (m_tet_connectivity[i].m_is_removed) continue;
         for (int j = 0; j < 6; j++) {
             auto tup = tuple_from_edge(i, j);
-            if (tup.eid(*this) == 6*i + j)
-                edges.emplace_back(tup);
+            if (tup.eid(*this) == 6 * i + j) edges.emplace_back(tup);
         }
     }
 
@@ -314,13 +313,8 @@ void wmtk::TetMesh::consolidate_mesh_connectivity()
         t_cnt++;
     }
 
-#ifdef WILDMESHING_TOOLKIT_WITH_TBB
     tbb::concurrent_vector<VertexConnectivity> new_m_vertex_connectivity(v_cnt);
     tbb::concurrent_vector<TetrahedronConnectivity> new_m_tet_connectivity(t_cnt);
-#else
-    std::vector<VertexConnectivity> new_m_vertex_connectivity(v_cnt);
-    std::vector<TetrahedronConnectivity> new_m_tet_connectivity(t_cnt);
-#endif
 
     v_cnt = 0;
     for (int i = 0; i < m_vertex_connectivity.size(); i++) {
