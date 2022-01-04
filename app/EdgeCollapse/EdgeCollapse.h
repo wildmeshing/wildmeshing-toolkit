@@ -55,7 +55,7 @@ public:
                 (int)new_m_tri_connectivity[i].m_indices[2]);
 
         bool ok = igl::write_triangle_mesh(path, V, F);
-        std::cout << ok << std::endl;
+        std::cout << "write output is ok ? " << ok << std::endl;
     }
 
 

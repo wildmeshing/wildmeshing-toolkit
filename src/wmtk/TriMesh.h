@@ -324,6 +324,7 @@ protected:
         vector_erase(v2_conn_tris, fid1);
         vector_erase(v2_conn_tris, fid2);
 
+
         if (check_link_condition(t) && (v1_conn_tris.size() + v2_conn_tris.size() > 0)) return true;
         return false;
     }

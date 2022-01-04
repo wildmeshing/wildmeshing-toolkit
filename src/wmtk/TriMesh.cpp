@@ -191,8 +191,12 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
 
     // get the fids
     auto n1_fids = m_vertex_connectivity[vid1].m_conn_tris;
+    std::cout << " the vertex of edge to be collapsed is " << vid1 << " and has connected tris num "
+              << n1_fids.size() << std::endl;
 
     auto n2_fids = m_vertex_connectivity[vid2].m_conn_tris;
+    std::cout << " the vertex of edge to be collapsed is " << vid2 << " and has connected tris num "
+              << n2_fids.size() << std::endl;
 
     // get the fids that will be modified
     auto n12_intersect_fids = set_intersection(n1_fids, n2_fids);
@@ -208,6 +212,9 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
     // won't fail
     m_vertex_connectivity[vid1].m_is_removed = true;
     m_vertex_connectivity[vid2].m_is_removed = true;
+    for (size_t fid : n12_intersect_fids) {
+        m_tri_connectivity[fid].m_is_removed = true;
+    }
 
     std::vector<size_t> n12_union_fids;
     std::set_union(
@@ -218,7 +225,7 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
         std::back_inserter(n12_union_fids));
 
     // record the fids that will be modified/erased for roll back on failure
-    vecotr_unique(n12_union_fids);
+    vector_unique(n12_union_fids);
     std::vector<std::pair<size_t, TriangleConnectivity>> old_tris(n12_union_fids.size());
 
     for (int i = 0; i < old_tris.size(); i++) {
@@ -230,11 +237,15 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
     // the m_conn_tris needs to be sorted
     size_t new_vid = get_next_empty_slot_v();
     for (size_t fid : n1_fids) {
-        if (vector_contains(n12_intersect_fids, fid))
+        if (m_tri_connectivity[fid].m_is_removed)
             continue;
         else {
             int j = m_tri_connectivity[fid].find(vid1);
             m_tri_connectivity[fid].m_indices[j] = new_vid;
+            // sort the connectivity
+            std::sort(
+                m_tri_connectivity[fid].m_indices.begin(),
+                m_tri_connectivity[fid].m_indices.end());
         }
     }
     for (size_t fid : n2_fids) {
@@ -243,10 +254,11 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
         else {
             int j = m_tri_connectivity[fid].find(vid2);
             m_tri_connectivity[fid].m_indices[j] = new_vid;
+            // sort the connectivity
+            std::sort(
+                m_tri_connectivity[fid].m_indices.begin(),
+                m_tri_connectivity[fid].m_indices.end());
         }
-    }
-    for (size_t fid : n12_intersect_fids) {
-        m_tri_connectivity[fid].m_is_removed = true;
     }
 
     // now work on vids
@@ -257,12 +269,15 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
     }
 
     for (size_t fid : n12_union_fids) {
-        if (vector_contains(n12_intersect_fids, fid))
+        if (m_tri_connectivity[fid].m_is_removed)
             continue;
         else
             m_vertex_connectivity[new_vid].m_conn_tris.push_back(fid);
     }
     vector_unique(m_vertex_connectivity[new_vid].m_conn_tris);
+    std::sort(
+        m_vertex_connectivity[new_vid].m_conn_tris.begin(),
+        m_vertex_connectivity[new_vid].m_conn_tris.end());
     // remove the erased fids from the vertices' (the one of the triangles that is not the end
     // points of the edge) connectivity list
     std::vector<std::pair<size_t, size_t>> same_edge_vid_fid;
@@ -276,6 +291,11 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
             }
         }
     }
+
+    for (auto pair : same_edge_vid_fid)
+        std::sort(
+            m_vertex_connectivity[pair.first].m_conn_tris.begin(),
+            m_vertex_connectivity[pair.first].m_conn_tris.end());
 
     // ? ? tuples changes. this needs to be done before post check since checked are done on tuples
     // update the old tuple version number
@@ -310,6 +330,10 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
                 m_vertex_connectivity[vid].m_conn_tris.begin(),
                 m_vertex_connectivity[vid].m_conn_tris.end());
         }
+        for (size_t fid : n12_intersect_fids) {
+            m_tri_connectivity[fid].m_is_removed = false;
+        }
+
         // by the end the new_t and old t both exist and both valid
         return false;
     }
@@ -343,8 +367,9 @@ std::vector<size_t> TriMesh::compact()
     cnt = 0;
     for (int i = 0; i < n_triangles(); i++) {
         if (m_tri_connectivity[i].m_is_removed) continue;
-        std::cout << m_tri_connectivity[i].m_indices[0] << m_tri_connectivity[i].m_indices[1]
-                  << m_tri_connectivity[i].m_indices[2] << std::endl;
+        std::cout << " the " << i << " th triangle has verts " << m_tri_connectivity[i].m_indices[0]
+                  << " " << m_tri_connectivity[i].m_indices[1] << " "
+                  << m_tri_connectivity[i].m_indices[2] << " " << std::endl;
         fid_newfid_map[i] = cnt;
         new_m_tri_connectivity[cnt].m_indices[0] =
             vid_newvid_map[m_tri_connectivity[i].m_indices[0]];
@@ -365,8 +390,8 @@ std::vector<size_t> TriMesh::compact()
 
     m_vertex_connectivity = new_m_vertex_connectivity;
     m_tri_connectivity = new_m_tri_connectivity;
-    std::cout << "fields sizes " << m_vertex_connectivity.size() << m_tri_connectivity.size()
-              << std::endl;
+    std::cout << " final verts number " << m_vertex_connectivity.size() << " final tris num "
+              << m_tri_connectivity.size() << std::endl;
     return vid_newvid_map;
 }
 
@@ -390,14 +415,31 @@ std::vector<wmtk::TriMesh::Tuple> TriMesh::get_one_ring_edges_for_vertex(
     std::vector<size_t> one_ring_vertices;
     size_t vid = t.get_vid();
     auto one_ring_tris = get_one_ring_tris_for_vertex(t);
-    for (auto t : one_ring_tris) {
-        size_t fid = t.get_fid();
-        auto incident_verts = get_oriented_vertices_for_tri(t);
+    for (auto tri : one_ring_tris) {
+        size_t fid = tri.get_fid();
+        std::cout << " the one ring tris for " << vid << " with fid " << t.get_fid() << " is "
+                  << fid << std::endl;
+        auto incident_verts = get_oriented_vertices_for_tri(tri);
         for (auto vert : incident_verts) {
-            if (vert.get_vid() != vid && !vector_contains(one_ring_vertices, vert.get_vid())) {
-                int j = m_tri_connectivity[fid].find(vid);
-                one_ring_edges.emplace_back(vid, (j + 2) % 3, fid, *this);
-                one_ring_vertices.push_back(vert.get_vid());
+            size_t vert_vid = vert.get_vid();
+            std::cout << "     the oriented verts for " << fid << " is " << vert_vid << std::endl;
+            if (vert_vid != vid && !vector_contains(one_ring_vertices, vert_vid)) {
+                int j = m_tri_connectivity[fid].find(vert_vid);
+                int k = m_tri_connectivity[fid].find(vid);
+                size_t vert_eid;
+                // Assign the edge id depending on the table
+                if (j == 0 && k == 1) {
+                    vert_eid = 2;
+                } else if (j == 1 && k == 2) {
+                    vert_eid = 0;
+                } else if (j == 0 && k == 2) {
+                    vert_eid = 1;
+                } else {
+                    assert(false);
+                }
+                one_ring_edges.emplace_back(vid, vert_eid, fid, *this);
+                one_ring_vertices.push_back(vert_vid);
+                std::cout << "          the one got added is " << vert.get_vid() << std::endl;
             }
         }
     }

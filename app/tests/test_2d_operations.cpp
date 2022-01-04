@@ -42,17 +42,52 @@ TEST_CASE("shortest_edge_collapse", "[test_2d_operations]")
     REQUIRE_FALSE(shortest_edge.is_valid(m));
 }
 
+TEST_CASE("shortest_edge_collapse_boundary_edge", "[test_2d_operations]")
+{
+    // 0___1___2    0 __1___2   0 __1
+    // \  /\  /      \  |  /     \  |
+    // 3\/__\/4  ==>  \ | / ==>   \ |
+    //                 \|/5        \|6
+    //
+
+    std::vector<Eigen::Vector3d> v_positions(6);
+    v_positions[0] = Eigen::Vector3d(-3, 3, 0);
+    v_positions[1] = Eigen::Vector3d(0, 3, 0);
+    v_positions[2] = Eigen::Vector3d(3, 3, 0);
+    v_positions[3] = Eigen::Vector3d(0, 0, 0);
+    v_positions[4] = Eigen::Vector3d(0.5, 0, 0);
+    EdgeCollapse m(v_positions);
+    std::vector<std::array<size_t, 3>> tris = {{{0, 1, 3}}, {{1, 2, 4}}, {{3, 1, 4}}};
+    m.create_mesh(5, tris);
+    std::vector<TriMesh::Tuple> edges = m.get_edges();
+    // find the shortest edge
+    double shortest = std::numeric_limits<double>::max();
+    TriMesh::Tuple shortest_edge;
+    for (TriMesh::Tuple t : edges) {
+        size_t v1 = t.get_vid();
+        size_t v2 = m.switch_vertex(t).get_vid();
+        if ((v_positions[v1] - v_positions[v2]).squaredNorm() < shortest) {
+            shortest = (v_positions[v1] - v_positions[v2]).squaredNorm();
+            shortest_edge = t;
+        }
+    }
+    m.collapse_shortest();
+    // the collapsed edge tuple is not valid anymore
+    REQUIRE_FALSE(shortest_edge.is_valid(m));
+    m.write_triangle_mesh("/Users/yunfanzhou/Downloads/tmp/collapsed.obj");
+}
+
 TEST_CASE("shortest_edge_collapse_on_mesh", "[test_2d_operations]")
 {
     // const std::string root(WMT_DATA_DIR);
     // const std::string path = root + "/Octocat.obj";
-    const std::string path = "/Users/yunfanzhou/Downloads/tmp/initial.obj";
+    const std::string path = "/Users/yunfanzhou/Downloads/tmp/piece_0.obj";
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     bool ok = igl::read_triangle_mesh(path, V, F);
     REQUIRE(ok);
-    REQUIRE(V.rows() == 24);
-    REQUIRE(F.rows() == 40);
+    REQUIRE(V.rows() == 8);
+    REQUIRE(F.rows() == 12);
 
     std::vector<Eigen::Vector3d> v(V.rows());
     std::vector<std::array<size_t, 3>> tri(F.rows());
