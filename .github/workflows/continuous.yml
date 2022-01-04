@@ -88,13 +88,13 @@ jobs:
           fetch-depth: 10
 
       - name: Dependencies x86
-        if: runner.arch == 'x86_64'
+        if: matrix.arch == 'x86_64'
         run: |
           brew install ccache
           echo 'CACHE_PATH=~/Library/Caches/ccache' >> "$GITHUB_ENV"
 
-      - name: Dependencies x86
-        if: runner.arch == 'x86_64'
+      - name: Dependencies arm64
+        if: matrix.arch == 'arm64'
         run: |
           /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
           ls /opt/homebrew/
