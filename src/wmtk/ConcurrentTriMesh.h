@@ -1,22 +1,11 @@
 #pragma once
 
-#include <wmtk/utils/VectorUtils.h>
-#include <wmtk/utils/Logger.hpp>
-
-#ifdef WILDMESHING_TOOLKIT_WITH_TBB
+#include <wmtk/TriMesh.h>
 #include <tbb/concurrent_vector.h>
-#endif
-
-#include <algorithm>
-#include <array>
-#include <cassert>
-#include <map>
-#include <optional>
-#include <vector>
+#include <tbb/spin_mutex.h>
 
 namespace wmtk {
-
-class TriMesh
+class ConcurrentTriMesh : public TriMesh
 {
 public:
     // Cell Tuple Navigator
@@ -28,7 +17,7 @@ public:
         size_t m_fid;
         size_t m_hash;
 
-        void update_hash(const TriMesh& m) { m_hash = m.m_tri_connectivity[m_fid].hash; }
+        void update_hash(const ConcurrentTriMesh& m) { m_hash = m.m_tri_connectivity[m_fid].hash; }
 
     public:
         void print_info() { logger().trace("tuple: {} {} {}", m_vid, m_eid, m_fid); }
@@ -46,7 +35,7 @@ public:
          * @param fid face id
          */
         Tuple() {}
-        Tuple(size_t vid, size_t eid, size_t fid, const TriMesh& m)
+        Tuple(size_t vid, size_t eid, size_t fid, const ConcurrentTriMesh& m)
             : m_vid(vid)
             , m_eid(eid)
             , m_fid(fid)
@@ -68,9 +57,9 @@ public:
          * @param m
          * @return Tuple another Tuple that share the same face, edge, but different vertex.
          */
-        Tuple switch_vertex(const TriMesh& m) const;
+        Tuple switch_vertex(const ConcurrentTriMesh& m) const;
 
-        Tuple switch_edge(const TriMesh& m) const;
+        Tuple switch_edge(const ConcurrentTriMesh& m) const;
 
         /**
          * Switch operation for the adjacent triangle
@@ -79,9 +68,9 @@ public:
          * @return Tuple for the edge-adjacent triangle, sharing same edge, and vertex.
          * @return nullopt if the Tuple of the switch goes off the boundary.
          */
-        std::optional<Tuple> switch_face(const TriMesh& m) const;
+        std::optional<Tuple> switch_face(const ConcurrentTriMesh& m) const;
 
-        bool is_valid(const TriMesh& m) const
+        bool is_valid(const ConcurrentTriMesh& m) const
         {
             if (m.m_vertex_connectivity[m_vid].m_is_removed ||
                 m.m_tri_connectivity[m_fid].m_is_removed)
@@ -119,7 +108,7 @@ public:
          * Positively oriented 3 vertices (represented by Tuples) in a tri.
          * @return std::array<Tuple, 3> each tuple owns a different vertex.
          */
-        std::array<Tuple, 3> oriented_tri_vertices(const TriMesh& m) const
+        std::array<Tuple, 3> oriented_tri_vertices(const ConcurrentTriMesh& m) const
         {
             std::array<Tuple, 3> vs;
             for (int j = 0; j < 3; j++) {
@@ -130,79 +119,18 @@ public:
             return vs;
         }
 
-        size_t get_vertex_attribute_id(const TriMesh& m);
-        size_t get_edge_attribute_id(const TriMesh& m);
-        size_t get_face_attribute_id(const TriMesh& m);
+        size_t get_vertex_attribute_id(const ConcurrentTriMesh& m);
+        size_t get_edge_attribute_id(const ConcurrentTriMesh& m);
+        size_t get_face_attribute_id(const ConcurrentTriMesh& m);
     };
 
-    /**
-     * (internal use) Maintains a list of triangles connected to the given vertex, and a flag to
-     * mark removal.
-     *
-     */
-    class VertexConnectivity
-    {
-    public:
-        std::vector<size_t> m_conn_tris;
-        bool m_is_removed = false;
-
-        inline size_t& operator[](const size_t index)
-        {
-            assert(index >= 0 && index < m_conn_tris.size());
-            return m_conn_tris[index];
-        }
-
-        inline size_t operator[](const size_t index) const
-        {
-            assert(index >= 0 && index < m_conn_tris.size());
-            return m_conn_tris[index];
-        }
-    };
-
-    /**
-     * (internal use) Maintains a list of vertices of the given tiangle
-     *
-     */
-    class TriangleConnectivity
-    {
-    public:
-        std::array<size_t, 3> m_indices;
-        bool m_is_removed = false;
-        size_t hash;
-
-        inline size_t& operator[](size_t index)
-        {
-            assert(index >= 0 && index < 3);
-            return m_indices[index];
-        }
-
-        inline size_t operator[](size_t index) const
-        {
-            assert(index >= 0 && index < 3);
-            return m_indices[index];
-        }
-
-        inline int find(int v_id) const
-        {
-            for (int j = 0; j < 3; j++) {
-                if (v_id == m_indices[j]) return j;
-            }
-            return -1;
-        }
-    };
-
-    TriMesh() {}
-    virtual ~TriMesh() {}
+    ConcurrentTriMesh() {}
+    virtual ~ConcurrentTriMesh() {}
 
     inline void create_mesh(size_t n_vertices, const std::vector<std::array<size_t, 3>>& tris)
     {
-#ifdef WILDMESHING_TOOLKIT_WITH_TBB
         m_vertex_connectivity.grow_to_at_least(n_vertices);
         m_tri_connectivity.grow_to_at_least(tris.size());
-#else
-        m_vertex_connectivity.resize(n_vertices);
-        m_tri_connectivity.resize(tris.size());
-#endif
         size_t hash_cnt = 0;
         for (int i = 0; i < tris.size(); i++) {
             m_tri_connectivity[i].m_indices = tris[i];
@@ -221,7 +149,7 @@ public:
      */
     std::vector<Tuple> get_vertices() const
     {
-        const TriMesh& m = *this;
+        const ConcurrentTriMesh& m = *this;
         const size_t n_vertices = m_vertex_connectivity.size();
         std::vector<Tuple> all_vertices_tuples;
         all_vertices_tuples.resize(n_vertices);
@@ -255,7 +183,7 @@ public:
      */
     std::vector<Tuple> get_faces() const
     {
-        const TriMesh& m = *this;
+        const ConcurrentTriMesh& m = *this;
         std::vector<Tuple> all_faces_tuples;
         all_faces_tuples.resize(m.m_tri_connectivity.size());
         for (size_t i = 0; i < m.m_tri_connectivity.size(); i++) {
@@ -276,7 +204,7 @@ public:
      */
     std::vector<Tuple> get_edges() const
     {
-        const TriMesh& m = *this;
+        const ConcurrentTriMesh& m = *this;
         std::vector<Tuple> all_edges_tuples;
         all_edges_tuples.reserve(m.m_tri_connectivity.size() * 3 / 2);
         for (size_t i = 0; i < m.m_tri_connectivity.size(); i++) {
@@ -297,34 +225,18 @@ public:
         return all_edges_tuples;
     }
 
-public:
-    template <typename T>
-#ifdef WILDMESHING_TOOLKIT_WITH_TBB
-    using vector = tbb::concurrent_vector<T>;
-#else
-    using vector = std::vector<T>;
-#endif
-
 private:
-    vector<VertexConnectivity> m_vertex_connectivity;
-    vector<TriangleConnectivity> m_tri_connectivity;
+    tbb::concurrent_vector<VertexConnectivity> m_vertex_connectivity;
+    tbb::concurrent_vector<TriangleConnectivity> m_tri_connectivity;
 
     size_t get_next_empty_slot_t()
     {
-#ifdef WILDMESHING_TOOLKIT_WITH_TBB
-        m_tri_connectivity.grow_by(1);
-#else
         m_tri_connectivity.emplace_back();
-#endif
         return m_tri_connectivity.size() - 1;
     }
     size_t get_next_empty_slot_v()
     {
-#ifdef WILDMESHING_TOOLKIT_WITH_TBB
-        m_vertex_connectivity.grow_by(1);
-#else
         m_vertex_connectivity.emplace_back();
-#endif
         return m_vertex_connectivity.size() - 1;
     }
 
@@ -399,78 +311,7 @@ public:
      * @return incident vertices
      */
     std::vector<Tuple> get_oriented_vertices_for_tri(const Tuple& t) const;
+
 };
-
 } // namespace wmtk
-
-// #pragma once
-
-// #include <wmtk/TriMesh.h>
-// #include <tbb/concurrent_vector.h>
-// #include <tbb/spin_mutex.h>
-
-// namespace wmtk {
-// class ConcurrentTriMesh : public TriMesh
-// {
-// private:
-//     class VertexConnectivity
-//     {
-//     public:
-//         std::vector<size_t> m_conn_tris;
-//         bool m_is_removed = false;
-//         tbb::spin_mutex mutex;
-
-//         inline size_t& operator[](const size_t index)
-//         {
-//             assert(index >= 0 && index < m_conn_tris.size());
-//             return m_conn_tris[index];
-//         }
-
-//         inline size_t operator[](const size_t index) const
-//         {
-//             assert(index >= 0 && index < m_conn_tris.size());
-//             return m_conn_tris[index];
-//         }
-//     };
-
-//     tbb::concurrent_vector<VertexConnectivity> m_vertex_connectivity;
-//     tbb::concurrent_vector<TriangleConnectivity> m_tri_connectivity;
-
-// public:
-
-//     size_t get_next_empty_slot_t()
-//     {
-//         m_tri_connectivity.grow_by(1);
-//         return m_tri_connectivity.size() - 1;
-//     }
-//     size_t get_next_empty_slot_v()
-//     {
-//         m_vertex_connectivity.grow_by(1);
-//         return m_vertex_connectivity.size() - 1;
-//     }
-
-//     ConcurrentTriMesh() {}
-//     virtual ~ConcurrentTriMesh() {}
-
-//     inline void create_mesh(size_t n_vertices, const std::vector<std::array<size_t, 3>>& tris)
-//     {
-//         m_vertex_connectivity.grow_to_at_least(n_vertices);
-//         m_tri_connectivity.grow_to_at_least(tris.size());
-//         size_t hash_cnt = 0;
-//         for (int i = 0; i < tris.size(); i++) {
-//             m_tri_connectivity[i].m_indices = tris[i];
-//             m_tri_connectivity[i].hash = hash_cnt;
-//             hash_cnt++;
-//             for (int j = 0; j < 3; j++) m_vertex_connectivity[tris[i][j]].m_conn_tris.push_back(i);
-//         }
-//     }
-
-//     void set_vertex_lock(VertexConnectivity &v){
-//         // TO DO
-//         // need to decide a strategy
-//         return;
-//     }
-
-// };
-// } // namespace wmtk
 

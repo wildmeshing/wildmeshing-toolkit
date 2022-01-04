@@ -12,7 +12,7 @@ void add_Qs(std::array<double, 10>& Q1, const std::array<double, 10>& Q2)
 }
 
 // get the quadrix in form of an array of 10 floating point numbers
-std::array<double, 10> Edge2d::EdgeCollapse::compute_Q_f(wmtk::TriMesh::Tuple& f_tuple)
+std::array<double, 10> Edge2d::ParallelEdgeCollapse::compute_Q_f(wmtk::ConcurrentTriMesh::Tuple& f_tuple)
 {
     auto conn_indices = get_oriented_vertices_for_tri(f_tuple);
     Eigen::Vector3d A = m_vertex_positions[conn_indices[0].get_vid()];
@@ -40,21 +40,21 @@ std::array<double, 10> Edge2d::EdgeCollapse::compute_Q_f(wmtk::TriMesh::Tuple& f
     return Q;
 }
 
-std::array<double, 10> Edge2d ::EdgeCollapse::compute_Q_v(wmtk::TriMesh::Tuple& v_tuple)
+std::array<double, 10> Edge2d ::ParallelEdgeCollapse::compute_Q_v(wmtk::ConcurrentTriMesh::Tuple& v_tuple)
 {
     auto conn_tris = get_one_ring_tris_for_vertex(v_tuple);
     std::array<double, 10> Q{};
-    for (TriMesh::Tuple tri : conn_tris) {
+    for (ConcurrentTriMesh::Tuple tri : conn_tris) {
         std::array<double, 10> Q_t = compute_Q_f(tri);
         add_Qs(Q, Q_t);
     }
     return Q;
 }
 
-bool Edge2d::EdgeCollapse::collapse_qec()
+bool Edge2d::ParallelEdgeCollapse::collapse_qec()
 {
     // find the valid pairs (for each vertex)
-    std::vector<TriMesh::Tuple> edges = get_edges();
+    std::vector<ConcurrentTriMesh::Tuple> edges = get_edges();
 
     // find the best pair by keeping the priority queue
     // always keep the high cost one on top of the queue

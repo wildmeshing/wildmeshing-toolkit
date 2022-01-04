@@ -4,7 +4,7 @@
 
 using namespace wmtk;
 
-TriMesh::Tuple TriMesh::Tuple::switch_vertex(const TriMesh& m) const
+ConcurrentTriMesh::Tuple ConcurrentTriMesh::Tuple::switch_vertex(const ConcurrentTriMesh& m) const
 {
     assert(is_valid(m));
 
@@ -32,7 +32,7 @@ TriMesh::Tuple TriMesh::Tuple::switch_vertex(const TriMesh& m) const
     return loc;
 }
 
-TriMesh::Tuple TriMesh::Tuple::switch_edge(const TriMesh& m) const
+ConcurrentTriMesh::Tuple ConcurrentTriMesh::Tuple::switch_edge(const ConcurrentTriMesh& m) const
 {
     assert(is_valid(m));
 
@@ -59,7 +59,7 @@ TriMesh::Tuple TriMesh::Tuple::switch_edge(const TriMesh& m) const
     return loc;
 }
 
-std::optional<TriMesh::Tuple> TriMesh::Tuple::switch_face(const TriMesh& m) const
+std::optional<ConcurrentTriMesh::Tuple> ConcurrentTriMesh::Tuple::switch_face(const ConcurrentTriMesh& m) const
 {
     assert(is_valid(m));
 
@@ -119,7 +119,7 @@ std::optional<TriMesh::Tuple> TriMesh::Tuple::switch_face(const TriMesh& m) cons
 
 // a valid mesh can have triangles that are is_removed == true
 // it can be easier for compact later on ?
-bool wmtk::TriMesh::check_mesh_connectivity_validity() const
+bool wmtk::ConcurrentTriMesh::check_mesh_connectivity_validity() const
 {
     std::vector<std::vector<size_t>> conn_tris(m_vertex_connectivity.size());
     for (size_t i = 0; i < m_tri_connectivity.size(); i++) {
@@ -138,7 +138,7 @@ bool wmtk::TriMesh::check_mesh_connectivity_validity() const
 }
 
 // link check, prerequisite for edge collapse
-bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
+bool wmtk::ConcurrentTriMesh::check_link_condition(const Tuple& edge) const
 {
     assert(edge.is_valid(*this));
     size_t vid1 = edge.get_vid();
@@ -165,7 +165,7 @@ bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
     v1_v2_link = set_intersection(v1_conn_tris_verts, v2_conn_tris_verts);
 
     std::vector<size_t> edge_link;
-    TriMesh::Tuple tmp_tuple = switch_face(edge).value_or(edge);
+    ConcurrentTriMesh::Tuple tmp_tuple = switch_face(edge).value_or(edge);
     tmp_tuple = switch_edge(tmp_tuple);
     edge_link.push_back(switch_vertex(tmp_tuple).get_vid());
     tmp_tuple = switch_edge(edge);
@@ -177,7 +177,7 @@ bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
         std::equal(v1_v2_link.begin(), v1_v2_link.end(), edge_link.begin()));
 }
 
-bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
+bool ConcurrentTriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
 {
     if (!collapse_before(loc0)) return false;
     // get the vids
@@ -198,7 +198,7 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
     auto n12_intersect_fids = set_intersection(n1_fids, n2_fids);
     // check if the triangles intersection is the one adjcent to the edge
     size_t test_fid1 = loc0.get_fid();
-    TriMesh::Tuple loc1 = switch_face(loc0).value_or(loc0);
+    ConcurrentTriMesh::Tuple loc1 = switch_face(loc0).value_or(loc0);
     size_t test_fid2 = loc1.get_fid();
     assert(
         ("faces at the edge is not correct",
@@ -315,20 +315,20 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
     return true;
 }
 
-bool TriMesh::split_edge(const Tuple& t, Tuple& new_t)
+bool ConcurrentTriMesh::split_edge(const Tuple& t, Tuple& new_t)
 {
     throw "Not implemented";
 }
 
-void TriMesh::swap_edge(const Tuple& t, int type)
+void ConcurrentTriMesh::swap_edge(const Tuple& t, int type)
 {
     throw "Not implemented";
 }
 
-std::vector<wmtk::TriMesh::Tuple> TriMesh::get_one_ring_tris_for_vertex(
-    const wmtk::TriMesh::Tuple& t) const
+std::vector<wmtk::ConcurrentTriMesh::Tuple> ConcurrentTriMesh::get_one_ring_tris_for_vertex(
+    const wmtk::ConcurrentTriMesh::Tuple& t) const
 {
-    std::vector<TriMesh::Tuple> one_ring;
+    std::vector<ConcurrentTriMesh::Tuple> one_ring;
     size_t vid = t.get_vid();
     auto conn_tri = m_vertex_connectivity[vid].m_conn_tris;
     for (size_t tri : conn_tri) {
@@ -338,8 +338,8 @@ std::vector<wmtk::TriMesh::Tuple> TriMesh::get_one_ring_tris_for_vertex(
     return one_ring;
 };
 
-std::vector<wmtk::TriMesh::Tuple> TriMesh::get_one_ring_edges_for_vertex(
-    const wmtk::TriMesh::Tuple& t) const
+std::vector<wmtk::ConcurrentTriMesh::Tuple> ConcurrentTriMesh::get_one_ring_edges_for_vertex(
+    const wmtk::ConcurrentTriMesh::Tuple& t) const
 {
     std::vector<Tuple> one_ring_edges;
     std::vector<size_t> one_ring_vertices;
@@ -361,10 +361,10 @@ std::vector<wmtk::TriMesh::Tuple> TriMesh::get_one_ring_edges_for_vertex(
     return one_ring_edges;
 };
 
-std::vector<wmtk::TriMesh::Tuple> TriMesh::get_oriented_vertices_for_tri(
-    const wmtk::TriMesh::Tuple& t) const
+std::vector<wmtk::ConcurrentTriMesh::Tuple> ConcurrentTriMesh::get_oriented_vertices_for_tri(
+    const wmtk::ConcurrentTriMesh::Tuple& t) const
 {
-    std::vector<TriMesh::Tuple> incident_verts;
+    std::vector<ConcurrentTriMesh::Tuple> incident_verts;
     size_t fid = t.get_fid();
     auto indices = m_tri_connectivity[fid].m_indices;
 

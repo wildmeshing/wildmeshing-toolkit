@@ -10,6 +10,7 @@ set(test_sources
 	file_write.cpp
 	test_operation_smooth.cpp
 	test_runner.cpp
+	test_2d_parallel_operations.cpp
 )
 
 add_executable(app_unit_tests ${test_sources})
