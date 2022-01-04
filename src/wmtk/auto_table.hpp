@@ -12,25 +12,28 @@
 #include <array>
 #include <vector>
 
-namespace floatTetWild {
-typedef Eigen::Matrix<double, 3, 3> Matrix3;
+namespace wmtk {
 
-typedef Eigen::Matrix<double, 3, 1> Vector3;
-typedef Eigen::Matrix<double, 2, 1> Vector2;
-
-
-typedef Eigen::Matrix<int, 4, 1> Vector4i;
-typedef Eigen::Matrix<int, 3, 1> Vector3i;
-typedef Eigen::Matrix<int, 2, 1> Vector2i;
-
-	class CutTable {
+class CutTable
+{
 public:
-		static const std::vector<std::vector<Vector4i>>& get_tet_confs(const int idx);
-		static const std::vector<std::vector<Vector2i>>& get_diag_confs(const int idx);
-		static const std::vector<std::vector<std::array<bool, 4>>>& get_surface_conf(const int idx);
-		static const std::vector<std::vector<Vector4i>>& get_face_id_conf(const int idx);
-		static inline const std::vector<Vector4i>& get_tet_conf(const int idx, const int cfg){ return get_tet_confs(idx)[cfg]; }
-		static inline const std::vector<std::array<bool, 4>>& get_surface_conf(const int idx, const int cfg){ return get_surface_conf(idx)[cfg]; }
-		static inline const std::vector<Vector4i>& get_face_id_conf(const int idx, const int cfg){ return get_face_id_conf(idx)[cfg]; }
-	};
-}
+    static const std::vector<std::vector<Eigen::Vector4i>>& get_tet_confs(const int idx);
+    static const std::vector<std::vector<Eigen::Vector2i>>& get_diag_confs(const int idx);
+    static const std::vector<std::vector<std::array<bool, 4>>>& get_surface_conf(const int idx);
+    static const std::vector<std::vector<Eigen::Vector4i>>& get_face_id_conf(const int idx);
+    static inline const std::vector<Eigen::Vector4i>& get_tet_conf(const int idx, const int cfg)
+    {
+        return get_tet_confs(idx)[cfg];
+    }
+    static inline const std::vector<std::array<bool, 4>>& get_surface_conf(
+        const int idx,
+        const int cfg)
+    {
+        return get_surface_conf(idx)[cfg];
+    }
+    static inline const std::vector<Eigen::Vector4i>& get_face_id_conf(const int idx, const int cfg)
+    {
+        return get_face_id_conf(idx)[cfg];
+    }
+};
+} // namespace wmtk

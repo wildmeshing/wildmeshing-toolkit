@@ -3,12 +3,17 @@
 //
 
 #include <wmtk/TetMesh.h>
-#include <wmtk/utils/TupleUtils.hpp>
 #include <wmtk/auto_table.hpp>
+#include <wmtk/utils/TupleUtils.hpp>
+
+#include <bitset>
 
 
-void wmtk::TetMesh::subdivide_tets(const std::vector<size_t> intersected_tids, std::map<std::array<size_t, 2>, size_t>& map_edge2vid)
+void wmtk::TetMesh::subdivide_tets(
+    const std::vector<size_t> intersected_tids,
+    std::map<std::array<size_t, 2>, size_t>& map_edge2vid)
 {
+    using namespace Eigen;
     /// insert new vertices
     size_t old_v_size = m_vertex_connectivity.size();
     m_vertex_connectivity.resize(m_vertex_connectivity.size() + map_edge2vid.size());
@@ -71,6 +76,8 @@ void wmtk::TetMesh::subdivide_tets(const std::vector<size_t> intersected_tids, s
 
 void wmtk::TetMesh::subdivide_a_tet(size_t t_id, const std::array<int, 6>& new_v_ids)
 {
+    using namespace Eigen;
+
     std::map<std::array<int, 2>, int> get_local_e_id;
     for (int i = 0; i < m_local_edges.size(); i++) {
         get_local_e_id[m_local_edges[i]] = i;
@@ -96,14 +103,14 @@ void wmtk::TetMesh::subdivide_a_tet(size_t t_id, const std::array<int, 6>& new_v
     }
 
     int config_id = (int)(config_bits.to_ulong());
-    const auto configs = floatTetWild::CutTable::get_tet_confs(config_id);
+    const auto configs = CutTable::get_tet_confs(config_id);
     assert(!configs.empty());
     // note: config with centroid only happens on open boundary preservation
 
-    std::vector<floatTetWild::Vector2i> my_diags;
+    std::vector<Vector2i> my_diags;
     for (int j = 0; j < 4; j++) { // 4 faces of the tet
         int cnt_diags = 0;
-        floatTetWild::Vector2i diag(-1, -1);
+        Vector2i diag(-1, -1);
         for (int k = 0; k < 3; k++) {
             int l_eid = get_local_e_id[{{m_local_faces[j][k], m_local_faces[j][(k + 1) % 3]}}];
             if (new_v_ids[l_eid] >= 0) {
@@ -117,16 +124,13 @@ void wmtk::TetMesh::subdivide_a_tet(size_t t_id, const std::array<int, 6>& new_v
         if (diag[0] > diag[1]) std::swap(diag[0], diag[1]);
         my_diags.push_back(diag);
     }
-    std::sort(
-        my_diags.begin(),
-        my_diags.end(),
-        [](const floatTetWild::Vector2i& a, const floatTetWild::Vector2i& b) {
-            return std::make_tuple(a[0], a[1]) < std::make_tuple(b[0], b[1]);
-        });
+    std::sort(my_diags.begin(), my_diags.end(), [](const Vector2i& a, const Vector2i& b) {
+        return std::make_tuple(a[0], a[1]) < std::make_tuple(b[0], b[1]);
+    });
 
     int diag_config_id = 0;
     if (!my_diags.empty()) {
-        const auto& all_diags = floatTetWild::CutTable::get_diag_confs(config_id);
+        const auto& all_diags = CutTable::get_diag_confs(config_id);
         for (int i = 0; i < all_diags.size(); i++) {
             if (my_diags != all_diags[i]) continue;
             diag_config_id = i;
@@ -134,11 +138,9 @@ void wmtk::TetMesh::subdivide_a_tet(size_t t_id, const std::array<int, 6>& new_v
         }
     }
 
-    const auto& config = floatTetWild::CutTable::get_tet_conf(config_id, diag_config_id);
-    const auto& new_is_surface_fs =
-        floatTetWild::CutTable::get_surface_conf(config_id, diag_config_id);
-    const auto& new_local_f_ids =
-        floatTetWild::CutTable::get_face_id_conf(config_id, diag_config_id);
+    const auto& config = CutTable::get_tet_conf(config_id, diag_config_id);
+    const auto& new_is_surface_fs = CutTable::get_surface_conf(config_id, diag_config_id);
+    const auto& new_local_f_ids = CutTable::get_face_id_conf(config_id, diag_config_id);
     for (int i = 0; i < config.size(); i++) {
         const auto& t = config[i];
         TetrahedronConnectivity tet;

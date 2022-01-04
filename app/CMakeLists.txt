@@ -30,7 +30,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 ################################################################################
 
-# FloatTetwild options
+# options
 option(TWTK_APPS_WITH_SANITIZERS    "Use sanitizers"                OFF)
 
 # Options for libigl modules

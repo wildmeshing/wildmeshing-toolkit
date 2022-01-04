@@ -8,8 +8,9 @@
 #include "wmtk/auto_table.hpp"
 #include "wmtk/utils/GeoUtils.h"
 
-void tetwild::TetWild::triangle_insertion(std::vector<Vector3d>& vertices,
-                                          std::vector<std::array<size_t, 3>>& faces)
+void tetwild::TetWild::triangle_insertion(
+    std::vector<Vector3d>& vertices,
+    std::vector<std::array<size_t, 3>>& faces)
 {
     std::vector<bool> is_visited;
 
@@ -132,16 +133,19 @@ void tetwild::TetWild::triangle_insertion(std::vector<Vector3d>& vertices,
     // note: skip preserve open boundaries
 }
 
-void tetwild::TetWild::insertion_update_surface_tag(size_t t_id, size_t new_t_id,
-                                  int config_id, int diag_config_id, int index)
+void tetwild::TetWild::insertion_update_surface_tag(
+    size_t t_id,
+    size_t new_t_id,
+    int config_id,
+    int diag_config_id,
+    int index)
 {
-    const auto& config = floatTetWild::CutTable::get_tet_conf(config_id, diag_config_id);
-    const auto& new_is_surface_fs =
-        floatTetWild::CutTable::get_surface_conf(config_id, diag_config_id);
-    const auto& old_local_f_ids =
-        floatTetWild::CutTable::get_face_id_conf(config_id, diag_config_id);
+    const auto& config = wmtk::CutTable::get_tet_conf(config_id, diag_config_id);
+    const auto& new_is_surface_fs = wmtk::CutTable::get_surface_conf(config_id, diag_config_id);
+    const auto& old_local_f_ids = wmtk::CutTable::get_face_id_conf(config_id, diag_config_id);
 
-    // track surface ==> t_id, new_t_id, is_surface_fs for new_t_id, local_f_ids of t_id mapped to new_t_id, face_id (cached)
+    // track surface ==> t_id, new_t_id, is_surface_fs for new_t_id, local_f_ids of t_id mapped to
+    // new_t_id, face_id (cached)
     triangle_insertion_cache.surface_f_ids.emplace_back();
     auto& new_surface_f_ids = triangle_insertion_cache.surface_f_ids.back();
     //

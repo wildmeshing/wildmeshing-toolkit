@@ -28,10 +28,8 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/recipes/")
 # Color output
 include(UseColors)
 
-# Prepend function
-include(PrependCurrentPath)
 
-# FloatTetwild utils
+include(PrependCurrentPath)
 include(WildmeshingToolkitUtils)
 
 # Extra warnings
@@ -75,7 +73,7 @@ endif()
 # add_library() can only be called without any source since CMake 3.11 ...
 add_library(${PROJECT_NAME})
 
-# Public include directory for FloatTetwild
+# Public include directory for toolkit
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_BINARY_DIR}/include)
 
 # Extra warnings
