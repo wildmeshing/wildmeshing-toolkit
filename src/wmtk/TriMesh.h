@@ -337,18 +337,29 @@ public:
     size_t n_triangles() const { return m_tri_connectivity.size(); }
     size_t n_vertices() const { return m_vertex_connectivity.size(); }
 
+    // just for testing
+    std::vector<TriangleConnectivity> get_m_tri_connectivity() const { return m_tri_connectivity; }
+    // just for testing
+    std::vector<VertexConnectivity> get_m_vertex_connectivity() const
+    {
+        return m_vertex_connectivity;
+    }
+
+
     Tuple switch_vertex(const Tuple& t) const { return t.switch_vertex(*this); }
     Tuple switch_edge(const Tuple& t) const { return t.switch_edge(*this); }
     std::optional<Tuple> switch_face(const Tuple& t) const { return t.switch_face(*this); }
 
     bool check_link_condition(const Tuple& t) const;
     bool check_mesh_connectivity_validity() const;
+    std::vector<size_t> compact();
 
     /**
      * Split an edge
      *
      * @param t Input Tuple for the edge to split.
-     * @param[out] new_edges a vector of Tuples for all the edges from the newly introduced triangle
+     * @param[out] new_edges a vector of Tuples for all the edges from the newly introduced
+     * triangle
      * @return if split succeed
      */
     bool split_edge(const Tuple& t, Tuple& new_t);

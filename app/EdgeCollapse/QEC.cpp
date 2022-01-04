@@ -3,7 +3,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include "EdgeCollapse.h"
-void add_Qs(std::array<double, 10>& Q1, std::array<double, 10>& Q2)
+void add_Qs(std::array<double, 10>& Q1, const std::array<double, 10>& Q2)
 {
     for (int j = 0; j < 10; j++) {
         Q1[j] = Q1[j] + Q2[j];
@@ -50,10 +50,20 @@ std::array<double, 10> Edge2d ::EdgeCollapse::compute_Q_v(wmtk::TriMesh::Tuple& 
     return Q;
 }
 
+double Edge2d::EdgeCollapse::compute_cost_for_v(wmtk::TriMesh::Tuple& v_tuple)
+{
+    Eigen::Vector3d v = m_vertex_positions[v_tuple.get_vid()];
+    std::array<double, 10> Q = compute_Q_v(v_tuple);
+
+    double cost;
+    return cost;
+}
+
 bool Edge2d::EdgeCollapse::collapse_qec()
 {
     // find the valid pairs (for each vertex)
     std::vector<TriMesh::Tuple> edges = get_edges();
+    double shortest = std::numeric_limits<double>::max();
 
     // find the best pair by keeping the priority queue
     // always keep the high cost one on top of the queue

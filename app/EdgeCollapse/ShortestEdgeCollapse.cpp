@@ -10,8 +10,10 @@ void Edge2d::EdgeCollapse::update_position(size_t v1, size_t v2, Tuple& new_vert
 {
     size_t new_vid = new_vert.get_vid();
     Eigen::Vector3d new_position = (m_vertex_positions[v1] + m_vertex_positions[v2]) / 2;
-    if (new_vid < m_vertex_positions.size()) m_vertex_positions[new_vid] = new_position;
-    m_vertex_positions.emplace_back(new_position);
+    if (new_vid < m_vertex_positions.size())
+        m_vertex_positions[new_vid] = new_position;
+    else
+        m_vertex_positions.emplace_back(new_position);
 }
 
 

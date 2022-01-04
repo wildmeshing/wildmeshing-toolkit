@@ -1,21 +1,19 @@
+#include <igl/read_triangle_mesh.h>
 #include <stdlib.h>
 #include <wmtk/TriMesh.h>
 #include <catch2/catch.hpp>
 #include <iostream>
 #include "EdgeCollapse/EdgeCollapse.h"
-
 using namespace wmtk;
 
-
+using namespace Edge2d;
 TEST_CASE("shortest_edge_collapse", "[test_2d_operations]")
 {
-    using namespace Edge2d;
     // 0___1___2    0 __1___2
     // \  /\  /      \  |  /
     // 3\/__\/4  ==>  \ | /
     //   \  /          \|/6
     //    \/5
-
 
     std::vector<Eigen::Vector3d> v_positions(6);
     v_positions[0] = Eigen::Vector3d(-3, 3, 0);
@@ -29,7 +27,7 @@ TEST_CASE("shortest_edge_collapse", "[test_2d_operations]")
     m.create_mesh(6, tris);
     std::vector<TriMesh::Tuple> edges = m.get_edges();
     // find the shortest edge
-    double shortest = 100;
+    double shortest = std::numeric_limits<double>::max();
     TriMesh::Tuple shortest_edge;
     for (TriMesh::Tuple t : edges) {
         size_t v1 = t.get_vid();
@@ -42,4 +40,33 @@ TEST_CASE("shortest_edge_collapse", "[test_2d_operations]")
     m.collapse_shortest();
     // the collapsed edge tuple is not valid anymore
     REQUIRE_FALSE(shortest_edge.is_valid(m));
+}
+
+TEST_CASE("shortest_edge_collapse_on_mesh", "[test_2d_operations]")
+{
+    // const std::string root(WMT_DATA_DIR);
+    // const std::string path = root + "/Octocat.obj";
+    const std::string path = "/Users/yunfanzhou/Downloads/tmp/initial.obj";
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    bool ok = igl::read_triangle_mesh(path, V, F);
+    REQUIRE(ok);
+    REQUIRE(V.rows() == 24);
+    REQUIRE(F.rows() == 40);
+
+    std::vector<Eigen::Vector3d> v(V.rows());
+    std::vector<std::array<size_t, 3>> tri(F.rows());
+    for (int i = 0; i < V.rows(); i++) {
+        v[i] = V.row(i);
+        std::cout << V.row(i) << std::endl;
+    }
+    for (int i = 0; i < F.rows(); i++) {
+        for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
+    }
+    EdgeCollapse m(v);
+    m.create_mesh(V.rows(), tri);
+    REQUIRE(m.check_mesh_connectivity_validity());
+
+    REQUIRE(m.collapse_shortest());
+    m.write_triangle_mesh("/Users/yunfanzhou/Downloads/tmp/collapsed.obj");
 }

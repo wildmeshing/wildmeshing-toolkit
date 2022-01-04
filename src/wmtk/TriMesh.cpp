@@ -218,6 +218,7 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
         std::back_inserter(n12_union_fids));
 
     // record the fids that will be modified/erased for roll back on failure
+    vecotr_unique(n12_union_fids);
     std::vector<std::pair<size_t, TriangleConnectivity>> old_tris(n12_union_fids.size());
 
     for (int i = 0; i < old_tris.size(); i++) {
@@ -233,7 +234,7 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
             continue;
         else {
             int j = m_tri_connectivity[fid].find(vid1);
-            m_tri_connectivity[fid][j] = new_vid;
+            m_tri_connectivity[fid].m_indices[j] = new_vid;
         }
     }
     for (size_t fid : n2_fids) {
@@ -241,7 +242,7 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
             continue;
         else {
             int j = m_tri_connectivity[fid].find(vid2);
-            m_tri_connectivity[fid][j] = new_vid;
+            m_tri_connectivity[fid].m_indices[j] = new_vid;
         }
     }
     for (size_t fid : n12_intersect_fids) {
@@ -323,6 +324,50 @@ bool TriMesh::split_edge(const Tuple& t, Tuple& new_t)
 void TriMesh::swap_edge(const Tuple& t, int type)
 {
     throw "Not implemented";
+}
+
+std::vector<size_t> TriMesh::compact()
+{
+    size_t cnt = 0;
+    std::vector<size_t> vid_newvid_map(n_vertices(), UINT64_MAX);
+    std::vector<size_t> fid_newfid_map(n_triangles(), UINT64_MAX);
+    std::vector<VertexConnectivity> new_m_vertex_connectivity(n_vertices());
+    std::vector<TriangleConnectivity> new_m_tri_connectivity(n_triangles());
+    for (int i = 0; i < n_vertices(); i++) {
+        if (m_vertex_connectivity[i].m_is_removed) continue;
+        new_m_vertex_connectivity[cnt] = m_vertex_connectivity[i];
+        vid_newvid_map[i] = cnt;
+        cnt++;
+    }
+    new_m_vertex_connectivity.resize(cnt);
+    cnt = 0;
+    for (int i = 0; i < n_triangles(); i++) {
+        if (m_tri_connectivity[i].m_is_removed) continue;
+        std::cout << m_tri_connectivity[i].m_indices[0] << m_tri_connectivity[i].m_indices[1]
+                  << m_tri_connectivity[i].m_indices[2] << std::endl;
+        fid_newfid_map[i] = cnt;
+        new_m_tri_connectivity[cnt].m_indices[0] =
+            vid_newvid_map[m_tri_connectivity[i].m_indices[0]];
+        new_m_tri_connectivity[cnt].m_indices[1] =
+            vid_newvid_map[m_tri_connectivity[i].m_indices[1]];
+        new_m_tri_connectivity[cnt].m_indices[2] =
+            vid_newvid_map[m_tri_connectivity[i].m_indices[2]];
+        cnt++;
+    }
+    new_m_tri_connectivity.resize(cnt);
+
+    for (int i = 0; i < new_m_vertex_connectivity.size(); i++) {
+        for (int j = 0; j < new_m_vertex_connectivity[i].m_conn_tris.size(); j++)
+            new_m_vertex_connectivity[i].m_conn_tris[j] =
+                fid_newfid_map[new_m_vertex_connectivity[i].m_conn_tris[j]];
+    }
+
+
+    m_vertex_connectivity = new_m_vertex_connectivity;
+    m_tri_connectivity = new_m_tri_connectivity;
+    std::cout << "fields sizes " << m_vertex_connectivity.size() << m_tri_connectivity.size()
+              << std::endl;
+    return vid_newvid_map;
 }
 
 std::vector<wmtk::TriMesh::Tuple> TriMesh::get_one_ring_tris_for_vertex(
