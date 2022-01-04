@@ -19,7 +19,6 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         config: [Debug, Release]
-        tbb: [ON, OFF]
         include:
           - os: ubuntu-latest
             name: Linux
@@ -57,7 +56,6 @@ jobs:
           cd build
           cmake .. \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-            -DWILDMESHING_TOOLKIT_WITH_TBB=${{ matrix.tbb }} \
             -DCMAKE_BUILD_TYPE=${{ matrix.config }}
 
       - name: Build
@@ -78,7 +76,6 @@ jobs:
       matrix:
         os: [macos-latest]
         arch: [x86_64, arm64]
-        tbb: [ON, OFF]
         config: [Debug, Release]
         include:
           - os: macos-latest
@@ -115,7 +112,6 @@ jobs:
           cd build
           cmake .. \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-            -DWILDMESHING_TOOLKIT_WITH_TBB=${{ matrix.tbb }} \
             -DCMAKE_OSX_ARCHITECTURES=${{ matrix.arch }} \
             -DCMAKE_BUILD_TYPE=${{ matrix.config }}
 
@@ -140,7 +136,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        tbb: [ON, OFF]
         config: [Debug, Release]
     steps:
       - name: Checkout repository
@@ -176,7 +171,6 @@ jobs:
           cmake --version
           cmake -G Ninja ^
             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache ^
-            -DWILDMESHING_TOOLKIT_WITH_TBB=${{ matrix.tbb }} ^
             -DCMAKE_BUILD_TYPE=${{ matrix.config }} ^
             -B build ^
             -S .
