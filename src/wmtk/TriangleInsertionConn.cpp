@@ -7,11 +7,15 @@
 #include <wmtk/auto_table.hpp>
 
 
-void wmtk::TetMesh::subdivide_tets(std::vector<size_t> t_ids, std::map<std::array<size_t, 2>, size_t>& map_edge2vid)
+void wmtk::TetMesh::subdivide_tets(const std::vector<size_t> intersected_tids, std::map<std::array<size_t, 2>, size_t>& map_edge2vid)
 {
+    /// insert new vertices
+    size_t old_v_size = m_vertex_connectivity.size();
     m_vertex_connectivity.resize(m_vertex_connectivity.size() + map_edge2vid.size());
 
-    for (size_t t_id : t_ids) {
+    /// insert new tets
+    size_t old_t_size = m_tet_connectivity.size();
+    for (size_t t_id : intersected_tids) {
         std::array<int, 6> new_v_ids = {{-1, -1, -1, -1, -1, -1}};
         for (int j = 0; j < 6; j++) {
             std::array<size_t, 2> e = {
@@ -23,7 +27,46 @@ void wmtk::TetMesh::subdivide_tets(std::vector<size_t> t_ids, std::map<std::arra
         subdivide_a_tet(t_id, new_v_ids);
     }
 
-    // todo: update conn_tets
+    /// update conn_tets
+    {
+        std::vector<size_t> vids;
+        for (size_t t_id : intersected_tids) {
+            for (int j = 0; j < 4; j++) vids.push_back(m_tet_connectivity[t_id][j]);
+        }
+        vector_unique(vids);
+        //
+        std::vector<size_t> tids;
+        for (size_t vid : vids) {
+            tids.insert(
+                tids.end(),
+                m_vertex_connectivity[vid].m_conn_tets.begin(),
+                m_vertex_connectivity[vid].m_conn_tets.end());
+        }
+        vector_unique(tids);
+        //
+        for (size_t i = old_t_size; i < m_tet_connectivity.size(); i++) tids.push_back(i);
+        //
+        for (size_t i = old_v_size; i < m_vertex_connectivity.size(); i++) vids.push_back(i);
+        //
+        std::map<size_t, std::vector<size_t>> new_conn_tets;
+        for (size_t tid : tids) {
+            for (int j = 0; j < 4; j++) {
+                size_t vid = m_tet_connectivity[tid][j];
+                if (new_conn_tets.count(vid)) {
+                    new_conn_tets[vid].push_back(tid);
+                } else {
+                    new_conn_tets[vid] = {tid};
+                }
+            }
+        }
+        //
+        for (int vid : vids) {
+            m_vertex_connectivity[vid].m_conn_tets = new_conn_tets[vid];
+            std::sort(
+                m_vertex_connectivity[vid].m_conn_tets.begin(),
+                m_vertex_connectivity[vid].m_conn_tets.end());
+        }
+    }
 }
 
 void wmtk::TetMesh::subdivide_a_tet(size_t t_id, const std::array<int, 6>& new_v_ids)
