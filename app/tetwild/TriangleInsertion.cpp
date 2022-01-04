@@ -41,7 +41,7 @@ void tetwild::TetWild::triangle_insertion(
                 size_t v1_id = loc.vid(*this);
                 auto tmp = switch_vertex(loc);
                 size_t v2_id = tmp.vid(*this);
-                std::array<size_t, 2> e = {v1_id, v2_id};
+                std::array<size_t, 2> e = {{v1_id, v2_id}};
                 if (e[0] > e[1]) std::swap(e[0], e[1]);
 
                 if (map_edge2point.count(e)) {
