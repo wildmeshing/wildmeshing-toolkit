@@ -1,7 +1,0 @@
-YunFan:
-
-1. Add a unit test that loads a mesh from file and creates a TriMesh
-2. Add generators for tuple (one for each vertex, one for each edge, one for each triangle)
-4. write a unit test checking that for every tuple t: (1) t.switch_vertex().switchvertex() == t (2) t.switch_edge().switch_edge() == t, t.switch_tri().switch_tri() == t.
-5. write a unit test checking that for every tuple t: (1) t.switch_vertex().switchedge().switchvertex().switchedge().switchvertex().switchedge() == t
-3. write a unit test which is randomly applying 10 switch operations to each one of the tuple above and checking for correctness (is_valid == true)
