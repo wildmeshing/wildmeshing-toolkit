@@ -87,10 +87,18 @@ jobs:
         with:
           fetch-depth: 10
 
-      - name: Dependencies
-        if: runner.os == 'macOS'
+      - name: Dependencies x86
+        if: runner.arch == 'x86_64'
         run: |
           brew install ccache
+          echo 'CACHE_PATH=~/Library/Caches/ccache' >> "$GITHUB_ENV"
+
+      - name: Dependencies x86
+        if: runner.arch == 'x86_64'
+        run: |
+          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+          ls /opt/homebrew/
+          /opt/homebrew/arm install ccache gmp
           echo 'CACHE_PATH=~/Library/Caches/ccache' >> "$GITHUB_ENV"
 
       - name: Cache Build
