@@ -18,6 +18,8 @@ set(SOURCES
 
 	TetraQualityUtils.hpp
 	TetraQualityUtils.cpp
+
+		GeoUtils.h
 )
 
 prepend_current_path(SOURCES)

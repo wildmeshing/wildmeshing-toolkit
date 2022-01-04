@@ -6,25 +6,7 @@
 #include "TetWild.h"
 #include "wmtk/TetMesh.h"
 #include "wmtk/auto_table.hpp"
-
-template<typename T3>
-bool segment_triangle_intersection(const std::array<T3, 2>& seg, const std::array<T3, 3>& tri, T3& p){//todo: open segment
-    return false;
-}
-
-template<typename T2, typename T3>
-void squeeze_points_to_2d(const std::vector<T3>& points3, const std::vector<T2>& points2){//todo
-}
-
-template<typename T2>
-bool is_point_inside_triangle(const T2& p, const std::array<T2, 3>& tri){//todo
-    return false;
-}
-
-tetwild::Vector3 to_rational(const tetwild::Vector3d& p0){//todo
-    tetwild::Vector3 p;
-    return p;
-}
+#include "wmtk/utils/GeoUtils.h"
 
 void tetwild::TetWild::triangle_insertion(std::vector<Vector3d>& vertices,
                                           std::vector<std::array<size_t, 3>>& faces)
@@ -69,7 +51,7 @@ void tetwild::TetWild::triangle_insertion(std::vector<Vector3d>& vertices,
                 std::array<Vector3, 2> seg = {
                     {m_vertex_attribute[v1_id].m_pos, m_vertex_attribute[v2_id].m_pos}};
                 Vector3 p(0, 0, 0);
-                bool is_intersected = segment_triangle_intersection(seg, tri, p);
+                bool is_intersected = wmtk::segment_triangle_intersection(seg, tri, p);
                 map_edge2point[e] = std::make_pair(is_intersected, p);
                 if (!is_intersected) {
                     continue;
@@ -135,9 +117,9 @@ void tetwild::TetWild::triangle_insertion(std::vector<Vector3d>& vertices,
                 to_rational(vertices[faces[face_id][1]]),
                 to_rational(vertices[faces[face_id][2]])};
             std::vector<Vector2> ps2;
-            squeeze_points_to_2d(ps3, ps2);
+            wmtk::squeeze_points_to_2d(ps3, ps2);
 
-            if (is_point_inside_triangle(ps2[0], {{ps2[1], ps2[2], ps2[3]}})) {
+            if (wmtk::is_point_inside_triangle(ps2[0], {{ps2[1], ps2[2], ps2[3]}})) {
                 Tuple face = tuple_from_face(i, j);
                 int global_fid = face.fid(*this);
                 m_face_attribute[global_fid].m_surface_tags = face_id;

@@ -92,6 +92,7 @@ add_library(TetWild
 	tetwild/TetWild.h
 
 	tetwild/common.h
+	tetwild/common.cpp
 	tetwild/Parameters.h
 
 	tetwild/EdgeSplitting.cpp
