@@ -104,8 +104,6 @@ public:
             const int v0 = m.m_tri_connectivity[m_fid][0];
             const int v1 = m.m_tri_connectivity[m_fid][1];
             const int v2 = m.m_tri_connectivity[m_fid][2];
-            std::cout << m_vid << " " << m_eid << " " << v0 << " " << v1 << " " << v2 << " "
-                      << std::endl;
             switch (m_eid) {
             case 0: assert(m_vid == v1 || m_vid == v2); break;
             case 1: assert(m_vid == v0 || m_vid == v2); break;

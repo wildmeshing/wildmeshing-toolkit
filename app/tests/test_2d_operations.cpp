@@ -102,15 +102,15 @@ TEST_CASE("shortest_edge_collapse_on_mesh", "[test_2d_operations]")
 {
     // const std::string root(WMT_DATA_DIR);
     // const std::string path = root + "/Octocat.obj";
-    const std::string path = "/Users/yunfanzhou/Downloads/Octocat.obj";
+    const std::string path = "/Users/yunfanzhou/Downloads/tmp/piece_0.obj";
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     bool ok = igl::read_triangle_mesh(path, V, F);
 
     REQUIRE(ok);
 
-    // REQUIRE(V.rows() == 8);
-    // REQUIRE(F.rows() == 12);
+    REQUIRE(V.rows() == 8);
+    REQUIRE(F.rows() == 12);
 
     std::vector<Eigen::Vector3d> v(V.rows());
     std::vector<std::array<size_t, 3>> tri(F.rows());
