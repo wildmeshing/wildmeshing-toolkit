@@ -31,7 +31,7 @@ public:
         }
         new_m_vertex_positions.resize(cnt);
         m_vertex_positions = new_m_vertex_positions;
-        std::cout << m_vertex_positions.size() << std::endl;
+        // std::cout << m_vertex_positions.size() << std::endl;
     };
 
     // write the collapsed mesh into a obj
@@ -55,11 +55,11 @@ public:
                 (int)new_m_tri_connectivity[i].m_indices[2]);
 
         bool ok = igl::write_triangle_mesh(path, V, F);
-        std::cout << "write output is ok ? " << ok << std::endl;
+        // std::cout << "write output is ok ? " << ok << std::endl;
     }
 
 
-    bool collapse_shortest();
+    bool collapse_shortest(int target_vertex_count);
 
     bool collapse_qec();
     // get the quadrix in form of an array of 10 floating point numbers

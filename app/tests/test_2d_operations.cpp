@@ -37,7 +37,7 @@ TEST_CASE("shortest_edge_collapse", "[test_2d_operations]")
             shortest_edge = t;
         }
     }
-    m.collapse_shortest();
+    m.collapse_shortest(100);
     // the collapsed edge tuple is not valid anymore
     REQUIRE_FALSE(shortest_edge.is_valid(m));
 }
@@ -71,7 +71,7 @@ TEST_CASE("shortest_edge_collapse_boundary_edge", "[test_2d_operations]")
             shortest_edge = t;
         }
     }
-    m.collapse_shortest();
+    m.collapse_shortest(100);
     // the collapsed edge tuple is not valid anymore
     REQUIRE_FALSE(shortest_edge.is_valid(m));
     m.write_triangle_mesh("/Users/yunfanzhou/Downloads/tmp/collapsed.obj");
@@ -90,7 +90,7 @@ TEST_CASE("shortest_edge_collapse_closed_mesh", "[test_2d_operations]")
     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 3}}, {{1, 2, 3}}, {{0, 3, 2}}, {{0, 1, 2}}};
     m.create_mesh(4, tris);
     std::vector<TriMesh::Tuple> edges = m.get_edges();
-    m.collapse_shortest();
+    m.collapse_shortest(100);
     m.compact();
     REQUIRE(m.n_vertices() == 3);
 
@@ -125,6 +125,35 @@ TEST_CASE("shortest_edge_collapse_on_mesh", "[test_2d_operations]")
     m.create_mesh(V.rows(), tri);
     REQUIRE(m.check_mesh_connectivity_validity());
     std::cout << " is it mesh passed " << std ::endl;
-    REQUIRE(m.collapse_shortest());
-    m.write_triangle_mesh("/Users/yunfanzhou/Downloads/tmp/collapsed.obj");
+    REQUIRE(m.collapse_shortest(5));
+    m.write_triangle_mesh("collapsed.obj");
+}
+
+
+TEST_CASE("shortest_edge_collapse_octocat", "[test_2d_operations]")
+{
+    const std::string root(WMT_DATA_DIR);
+    const std::string path = root + "/Octocat.obj";
+    
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    bool ok = igl::read_triangle_mesh(path, V, F);
+
+    REQUIRE(ok);
+
+    std::vector<Eigen::Vector3d> v(V.rows());
+    std::vector<std::array<size_t, 3>> tri(F.rows());
+    for (int i = 0; i < V.rows(); i++) {
+        v[i] = V.row(i);
+        // std::cout << V.row(i) << std::endl;
+    }
+    for (int i = 0; i < F.rows(); i++) {
+        for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
+    }
+    EdgeCollapse m(v);
+    m.create_mesh(V.rows(), tri);
+    REQUIRE(m.check_mesh_connectivity_validity());
+    std::cout << " is it mesh passed " << std ::endl;
+    REQUIRE(m.collapse_shortest(1000));
+    m.write_triangle_mesh("collapsed.obj");
 }
