@@ -327,7 +327,7 @@ void wmtk::TetMesh::consolidate_mesh_connectivity()
             move_face_attribute(i * 4 + j, t_cnt * 4 + j);
         }
         for (auto j = 0; j < 6; j++) {
-            move_face_attribute(i * 6 + j, t_cnt * 6 + j);
+            move_edge_attribute(i * 6 + j, t_cnt * 6 + j);
         }
 
         for (size_t& v_id : new_m_tet_connectivity[t_cnt].m_indices) v_id = map_v_ids[v_id];

@@ -3,9 +3,11 @@
 #include "Parameters.h"
 #include "common.h"
 
-#include <fastenvelope/FastEnvelope.h>
+// clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
+#include <fastenvelope/FastEnvelope.h>
 #include <wmtk/utils/EnableWarnings.hpp>
+// clang-format on
 
 #include <wmtk/TetMesh.h>
 
@@ -75,6 +77,7 @@ public:
         m_tet_attribute = _tet_attribute;
     }
 
+    ////// Attributes related
     // Stores the attributes attached to simplices
     std::vector<VertexAttributes> m_vertex_attribute;
     std::vector<EdgeAttributes> m_edge_attribute;
@@ -84,15 +87,31 @@ public:
     void resize_attributes(size_t v, size_t t) override
     {
         m_vertex_attribute.resize(v);
-        m_edge_attribute.resize(6*t);
-        m_face_attribute.resize(4*t);
+        m_edge_attribute.resize(6 * t);
+        m_face_attribute.resize(4 * t);
         m_tet_attribute.resize(t);
     }
 
-    void smoothing(const Tuple& t);
+    void move_face_attribute(size_t from, size_t to) override
+    {
+        m_face_attribute[to] = std::move(m_face_attribute[from]);
+    }
+    void move_edge_attribute(size_t from, size_t to) override
+    {
+        m_edge_attribute[to] = std::move(m_edge_attribute[from]);
+    }
+    void move_tet_attribute(size_t from, size_t to) override
+    {
+        m_tet_attribute[to] = std::move(m_tet_attribute[from]);
+    }
+    void move_vertex_attribute(size_t from, size_t to) override
+    {
+        m_vertex_attribute[to] = std::move(m_vertex_attribute[from]);
+    }
 
     void output_mesh(std::string file) const;
 
+    ////// Operations
     //	protected:
     struct SplitInfoCache
     {
@@ -136,7 +155,6 @@ public:
 
     bool vertex_invariant(const Tuple& t) override;
     bool tetrahedron_invariant(const Tuple& t) override;
-
 };
 
 class ElementInQueue
