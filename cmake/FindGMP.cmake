@@ -56,8 +56,6 @@ if(GMP_INCLUDES AND GMP_LIBRARIES AND NOT TARGET gmp::gmp)
         add_library(gmp::gmp UNKNOWN IMPORTED)
     endif()
 
-    MESSAGE(STATUS "ASDASDAd ${GMP_LIBRARIES} ${GMP_INCLUDES}")
-
     # Set public header location and link language
     set_target_properties(gmp::gmp PROPERTIES
         IMPORTED_LINK_INTERFACE_LANGUAGES "C"
