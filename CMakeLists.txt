@@ -1,9 +1,9 @@
 # Detects whether this is a top-level project
 get_directory_property(HAS_PARENT PARENT_DIRECTORY)
 if(HAS_PARENT)
-	set(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT OFF)
+    set(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT OFF)
 else()
-	set(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT ON)
+    set(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT ON)
 endif()
 
 # Check required CMake version
@@ -21,19 +21,13 @@ endif()
 project(WildMeshingToolkit DESCRIPTION "A mesh optimization toolkit")
 ################################################################################
 
-
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/recipes/")
 
-# Color output
-include(UseColors)
 
-
-include(PrependCurrentPath)
-include(WildmeshingToolkitUtils)
-
-# Extra warnings
-include(Warnings)
+include(sanitizers)
+include(wmtk_colors)
+include(wmtk_warnings)
 
 # Sort projects inside the solution
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -42,67 +36,58 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 ################################################################################
+# WildMeshingToolkit library
+################################################################################
+
+# Core library
+file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS
+    "src/*.cpp"
+    "src/*.h"
+    "src/*.hpp"
+)
+message("SRC_FILES: ${SRC_FILES}")
+
+add_library(wildmeshing_toolkit "${SRC_FILES}")
+add_library(wmtk::toolkit ALIAS wildmeshing_toolkit)
+
+# Include headers
+target_include_directories(wildmeshing_toolkit PUBLIC src)
 
 
-# Sanitizer options
-option(WILDMESHING_TOOLKIT_WITH_SANITIZERS	  "Enable sanitizers in compilation targets"   OFF)
+# Compile definitions
+target_compile_definitions(wildmeshing_toolkit PUBLIC _USE_MATH_DEFINES)
+target_compile_definitions(wildmeshing_toolkit PUBLIC NOMINMAX)
 
-# Options for libigl modules
-option(LIBIGL_USE_STATIC_LIBRARY     "Use libigl as static library" OFF)
-option(LIBIGL_WITH_COMISO            "Use CoMiso"                   OFF)
-option(LIBIGL_WITH_EMBREE            "Use Embree"                   OFF)
-option(LIBIGL_WITH_OPENGL            "Use OpenGL"                   OFF)
-option(LIBIGL_WITH_OPENGL_GLFW       "Use GLFW"                     OFF)
-option(LIBIGL_WITH_OPENGL_GLFW_IMGUI "Use ImGui"                    OFF)
-option(LIBIGL_WITH_PNG               "Use PNG"                      OFF)
-option(LIBIGL_WITH_TETGEN            "Use Tetgen"                   OFF)
-option(LIBIGL_WITH_TRIANGLE          "Use Triangle"                 OFF)
-option(LIBIGL_WITH_PREDICATES        "Use exact predicates"         ON)
-option(LIBIGL_WITH_XML               "Use XML"                      OFF)
+# C++ standard
+target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_17)
 
+# Set IDE folders
+source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src" PREFIX "Source Files" FILES ${SRC_FILES})
 
-# Setup dependencies
+# Dependencies
 include(libigl)
 include(spdlog)
 include(delaunay_psm)
-if(WILDMESHING_TOOLKIT_WITH_SANITIZERS)
-	include(sanitizers)
-endif()
-
-
-# add_library() can only be called without any source since CMake 3.11 ...
-add_library(${PROJECT_NAME})
-
-# Public include directory for toolkit
-target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_BINARY_DIR}/include)
-
-# Extra warnings
-target_link_libraries(${PROJECT_NAME} PRIVATE warnings::all)
-
-# Use C++17
-target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
-
-target_link_libraries(${PROJECT_NAME} PUBLIC spdlog::spdlog igl::core igl::predicates geogram::delaunay_psm)
-target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
-
 include(onetbb)
-target_link_libraries(${PROJECT_NAME} PUBLIC TBB::tbb)
-
-
+target_link_libraries(wildmeshing_toolkit PUBLIC
+    spdlog::spdlog
+    igl::core
+	igl::predicates
+    geogram::delaunay_psm
+    wmtk::warnings
+    TBB::tbb
+)
 
 ################################################################################
 # Subdirectories
 ################################################################################
 
-# Other sources
-add_subdirectory(src/wmtk)
-
 # Compile extras only if this is a top-level project
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
-	# Unit tests
-	enable_testing()
-	add_subdirectory(tests)
+    # Unit tests
+    enable_testing()
+    add_subdirectory(tests)
+
+    # Demo apps
+    add_subdirectory(app)
 endif()
-
-
-add_subdirectory(app)
