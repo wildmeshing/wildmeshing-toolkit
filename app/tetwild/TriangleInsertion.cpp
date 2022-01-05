@@ -9,9 +9,15 @@
 #include "wmtk/utils/GeoUtils.h"
 #include <wmtk/utils/Delaunay.hpp>
 
-void tetwild::TetWild::construct_background_mesh(std::vector<Vector3d>& vertices,
-                                                 std::vector<std::array<size_t, 3>>& faces)
+void tetwild::TetWild::InputSurface::remove_duplicates(){
+    //todo
+}
+
+void tetwild::TetWild::construct_background_mesh()
 {
+    const auto& vertices = input_surface.vertices;
+    const auto& faces = input_surface.faces;
+
     ///box
     std::vector<wmtk::Point3D> points(vertices.size());
     for (int i = 0; i < vertices.size(); i++) {
@@ -33,16 +39,19 @@ void tetwild::TetWild::construct_background_mesh(std::vector<Vector3d>& vertices
         m_vertex_attribute[i].m_posf =
             Vector3d(points[i][0], points[i][1], points[i][2]);
 
-        //todo: bbox
+        //todo: track bbox
     }
 }
 
-void tetwild::TetWild::triangle_insertion(
-    std::vector<Vector3d>& vertices,
-    std::vector<std::array<size_t, 3>>& faces)
+void tetwild::TetWild::triangle_insertion()
 {
-    std::vector<bool> is_visited;
+    input_surface.remove_duplicates();
+    construct_background_mesh();
 
+    const auto& vertices = input_surface.vertices;
+    const auto& faces = input_surface.faces;
+
+    std::vector<bool> is_visited;
     triangle_insertion_cache.surface_f_ids.resize(m_tet_attribute.size(), {{-1, -1, -1, -1}});
 
     for (size_t face_id = 0; face_id < faces.size(); face_id++) {

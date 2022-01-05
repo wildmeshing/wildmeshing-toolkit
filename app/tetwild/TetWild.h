@@ -93,7 +93,14 @@ public:
 
     void output_mesh(std::string file) const;
 
-    //	protected:
+    struct InputSurface
+    {
+        std::vector<Vector3d> vertices;
+        std::vector<std::array<size_t, 3>> faces;
+        //can add other input tags;
+        void remove_duplicates();
+    } input_surface;
+
     struct TriangleInsertionInfoCache
     {
         std::vector<std::array<int, 4>> surface_f_ids;
@@ -117,12 +124,8 @@ public:
         double max_energy;
     } edgeswap_cache, faceswap_cache; // todo: change for parallel
 
-    void construct_background_mesh(std::vector<Vector3d>& vertices,
-                                   std::vector<std::array<size_t, 3>>& faces);
-
-    void triangle_insertion(
-        std::vector<Vector3d>& vertices,
-        std::vector<std::array<size_t, 3>>& faces);
+    void construct_background_mesh();
+    void triangle_insertion();
 
     void insertion_update_surface_tag(size_t t_id, size_t new_t_id,
                                       int config_id, int diag_config_id, int index) override;
