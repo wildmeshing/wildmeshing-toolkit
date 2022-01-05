@@ -89,8 +89,6 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     /// checks (possibly call the resize_attributes
     resize_attributes(
         m_vertex_connectivity.size(),
-        m_tet_connectivity.size() * 6,
-        m_tet_connectivity.size() * 4,
         m_tet_connectivity.size());
 
     Tuple new_loc = tuple_from_vertex(v_id);

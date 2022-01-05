@@ -357,7 +357,7 @@ protected:
     virtual bool face_invariant(const Tuple& t) { return true; }
     virtual bool tetrahedron_invariant(const Tuple& t) { return true; }
 
-    virtual void resize_attributes(size_t v, size_t e, size_t f, size_t t) {}
+    virtual void resize_attributes(size_t v, size_t t) {}
     virtual void move_face_attribute(size_t from, size_t to) {}
     virtual void move_edge_attribute(size_t from, size_t to) {}
     virtual void move_tet_attribute(size_t from, size_t to) {}

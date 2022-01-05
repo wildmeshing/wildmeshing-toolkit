@@ -81,12 +81,12 @@ public:
     std::vector<FaceAttributes> m_face_attribute;
     std::vector<TetAttributes> m_tet_attribute;
 
-    void resize_attributes(size_t v, size_t e, size_t t, size_t tt) override
+    void resize_attributes(size_t v, size_t t) override
     {
         m_vertex_attribute.resize(v);
-        m_edge_attribute.resize(e);
-        m_face_attribute.resize(t);
-        m_tet_attribute.resize(tt);
+        m_edge_attribute.resize(6*t);
+        m_face_attribute.resize(4*t);
+        m_tet_attribute.resize(t);
     }
 
     void smoothing(const Tuple& t);
@@ -137,8 +137,6 @@ public:
     bool vertex_invariant(const Tuple& t) override;
     bool tetrahedron_invariant(const Tuple& t) override;
 
-    void consolidate_mesh();
-    //    void consolidate_mesh_attributes();
 };
 
 class ElementInQueue
