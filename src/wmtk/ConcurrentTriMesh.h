@@ -9,120 +9,120 @@ class ConcurrentTriMesh : public TriMesh
 {
 public:
     // Cell Tuple Navigator
-    class Tuple
-    {
-    private:
-        size_t m_vid;
-        size_t m_eid;
-        size_t m_fid;
-        size_t m_hash;
+//     class Tuple
+//     {
+//     private:
+//         size_t m_vid;
+//         size_t m_eid;
+//         size_t m_fid;
+//         size_t m_hash;
 
-        void update_hash(const ConcurrentTriMesh& m) { m_hash = m.m_tri_connectivity[m_fid].hash; }
+//         void update_hash(const ConcurrentTriMesh& m) { m_hash = m.m_tri_connectivity[m_fid].hash; }
 
-    public:
-        void print_info() { logger().trace("tuple: {} {} {}", m_vid, m_eid, m_fid); }
+//     public:
+//         void print_info() { logger().trace("tuple: {} {} {}", m_vid, m_eid, m_fid); }
 
-        //        v2
-        //      /    \
-		// e1  /      \  e0
-        //    v0 - - - v1
-        //        e2
-        /**
-         * Construct a new Tuple object with global vertex/triangle index and local edge index
-         *
-         * @param vid vertex id
-         * @param eid edge id (local)
-         * @param fid face id
-         */
-        Tuple() {}
-        Tuple(size_t vid, size_t eid, size_t fid, const ConcurrentTriMesh& m)
-            : m_vid(vid)
-            , m_eid(eid)
-            , m_fid(fid)
-        {
-            update_hash(m);
-        }
+//         //        v2
+//         //      /    \
+// 		// e1  /      \  e0
+//         //    v0 - - - v1
+//         //        e2
+//         /**
+//          * Construct a new Tuple object with global vertex/triangle index and local edge index
+//          *
+//          * @param vid vertex id
+//          * @param eid edge id (local)
+//          * @param fid face id
+//          */
+//         Tuple() {}
+//         Tuple(size_t vid, size_t eid, size_t fid, const ConcurrentTriMesh& m)
+//             : m_vid(vid)
+//             , m_eid(eid)
+//             , m_fid(fid)
+//         {
+//             update_hash(m);
+//         }
 
 
-        inline size_t get_vid() const { return m_vid; }
-        inline size_t get_eid() const
-        {
-            return m_fid * 3 + m_eid;
-        } // this is unique eid. each edge is repeated twice?
-        inline size_t get_fid() const { return m_fid; }
+//         inline size_t get_vid() const { return m_vid; }
+//         inline size_t get_eid() const
+//         {
+//             return m_fid * 3 + m_eid;
+//         } // this is unique eid. each edge is repeated twice?
+//         inline size_t get_fid() const { return m_fid; }
 
-        /**
-         * Switch operation. See (URL-TO-DOCUMENT) for explaination.
-         *
-         * @param m
-         * @return Tuple another Tuple that share the same face, edge, but different vertex.
-         */
-        Tuple switch_vertex(const ConcurrentTriMesh& m) const;
+//         /**
+//          * Switch operation. See (URL-TO-DOCUMENT) for explaination.
+//          *
+//          * @param m
+//          * @return Tuple another Tuple that share the same face, edge, but different vertex.
+//          */
+//         Tuple switch_vertex(const ConcurrentTriMesh& m) const;
 
-        Tuple switch_edge(const ConcurrentTriMesh& m) const;
+//         Tuple switch_edge(const ConcurrentTriMesh& m) const;
 
-        /**
-         * Switch operation for the adjacent triangle
-         *
-         * @param m Mesh
-         * @return Tuple for the edge-adjacent triangle, sharing same edge, and vertex.
-         * @return nullopt if the Tuple of the switch goes off the boundary.
-         */
-        std::optional<Tuple> switch_face(const ConcurrentTriMesh& m) const;
+//         /**
+//          * Switch operation for the adjacent triangle
+//          *
+//          * @param m Mesh
+//          * @return Tuple for the edge-adjacent triangle, sharing same edge, and vertex.
+//          * @return nullopt if the Tuple of the switch goes off the boundary.
+//          */
+//         std::optional<Tuple> switch_face(const ConcurrentTriMesh& m) const;
 
-        bool is_valid(const ConcurrentTriMesh& m) const
-        {
-            if (m.m_vertex_connectivity[m_vid].m_is_removed ||
-                m.m_tri_connectivity[m_fid].m_is_removed)
-                return false;
+//         bool is_valid(const ConcurrentTriMesh& m) const
+//         {
+//             if (m.m_vertex_connectivity[m_vid].m_is_removed ||
+//                 m.m_tri_connectivity[m_fid].m_is_removed)
+//                 return false;
 
-            // Condition 3: tuple m_hash check
-            if (m_hash != m.m_tri_connectivity[m_fid].hash) return false;
+//             // Condition 3: tuple m_hash check
+//             if (m_hash != m.m_tri_connectivity[m_fid].hash) return false;
 
-#ifndef NDEBUG
-            //  Condition 0: Elements exist
-            assert(m_vid < m.m_vertex_connectivity.size());
-            assert(m_eid <= 2);
-            assert(m_fid <= m.m_tri_connectivity.size());
+// #ifndef NDEBUG
+//             //  Condition 0: Elements exist
+//             assert(m_vid < m.m_vertex_connectivity.size());
+//             assert(m_eid <= 2);
+//             assert(m_fid <= m.m_tri_connectivity.size());
 
-            // Condition 1: tid and vid are consistent
-            const int lvid = m.m_tri_connectivity[m_fid].find(m_vid);
-            assert(lvid == 0 || lvid == 1 || lvid == 2);
+//             // Condition 1: tid and vid are consistent
+//             const int lvid = m.m_tri_connectivity[m_fid].find(m_vid);
+//             assert(lvid == 0 || lvid == 1 || lvid == 2);
 
-            // Condition 2: eid is valid
-            const int v0 = m.m_tri_connectivity[m_fid][0];
-            const int v1 = m.m_tri_connectivity[m_fid][1];
-            const int v2 = m.m_tri_connectivity[m_fid][2];
+//             // Condition 2: eid is valid
+//             const int v0 = m.m_tri_connectivity[m_fid][0];
+//             const int v1 = m.m_tri_connectivity[m_fid][1];
+//             const int v2 = m.m_tri_connectivity[m_fid][2];
 
-            switch (m_eid) {
-            case 0: assert(m_vid == v1 || m_vid == v2); break;
-            case 1: assert(m_vid == v0 || m_vid == v2); break;
-            case 2: assert(m_vid == v0 || m_vid == v1); break;
-            }
-#endif
+//             switch (m_eid) {
+//             case 0: assert(m_vid == v1 || m_vid == v2); break;
+//             case 1: assert(m_vid == v0 || m_vid == v2); break;
+//             case 2: assert(m_vid == v0 || m_vid == v1); break;
+//             }
+// #endif
 
-            return true;
-        }
+//             return true;
+//         }
 
-        /**
-         * Positively oriented 3 vertices (represented by Tuples) in a tri.
-         * @return std::array<Tuple, 3> each tuple owns a different vertex.
-         */
-        std::array<Tuple, 3> oriented_tri_vertices(const ConcurrentTriMesh& m) const
-        {
-            std::array<Tuple, 3> vs;
-            for (int j = 0; j < 3; j++) {
-                vs[j].m_vid = m.m_tri_connectivity[m_fid][j];
-                vs[j].m_eid = (j + 2) % 3;
-                vs[j].m_fid = m_fid;
-            }
-            return vs;
-        }
+//         /**
+//          * Positively oriented 3 vertices (represented by Tuples) in a tri.
+//          * @return std::array<Tuple, 3> each tuple owns a different vertex.
+//          */
+//         std::array<Tuple, 3> oriented_tri_vertices(const ConcurrentTriMesh& m) const
+//         {
+//             std::array<Tuple, 3> vs;
+//             for (int j = 0; j < 3; j++) {
+    //             vs[j].m_vid = m.m_tri_connectivity[m_fid][j];
+    //             vs[j].m_eid = (j + 2) % 3;
+    //             vs[j].m_fid = m_fid;
+    //         }
+    //         return vs;
+    //     }
 
-        size_t get_vertex_attribute_id(const ConcurrentTriMesh& m);
-        size_t get_edge_attribute_id(const ConcurrentTriMesh& m);
-        size_t get_face_attribute_id(const ConcurrentTriMesh& m);
-    };
+    //     size_t get_vertex_attribute_id(const ConcurrentTriMesh& m);
+    //     size_t get_edge_attribute_id(const ConcurrentTriMesh& m);
+    //     size_t get_face_attribute_id(const ConcurrentTriMesh& m);
+    // };
 
     ConcurrentTriMesh() {}
     virtual ~ConcurrentTriMesh() {}
