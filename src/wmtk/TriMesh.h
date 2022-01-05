@@ -299,13 +299,13 @@ private:
     size_t get_next_empty_slot_t()
     {
         m_tri_connectivity.emplace_back();
-        resize_attributes(m_vertex_connectivity.size(),m_tri_connectivity.size());
+        resize_attributes(m_vertex_connectivity.size(), m_tri_connectivity.size());
         return m_tri_connectivity.size() - 1;
     }
     size_t get_next_empty_slot_v()
     {
         m_vertex_connectivity.emplace_back();
-        resize_attributes(m_vertex_connectivity.size(),m_tri_connectivity.size());
+        resize_attributes(m_vertex_connectivity.size(), m_tri_connectivity.size());
         return m_vertex_connectivity.size() - 1;
     }
 
@@ -346,6 +346,11 @@ protected:
 
     virtual void resize_attributes(size_t v, size_t t) {}
 
+    void consolidate_mesh_connectivity();
+    virtual void move_vertex_attribute(size_t from, size_t to){};
+    virtual void move_face_attribute(size_t from, size_t to){};
+    virtual void move_edge_attribute(size_t from, size_t to){};
+
 public:
     size_t n_triangles() const { return m_tri_connectivity.size(); }
     size_t n_vertices() const { return m_vertex_connectivity.size(); }
@@ -365,7 +370,6 @@ public:
 
     bool check_link_condition(const Tuple& t) const; // DP: should be private
     bool check_mesh_connectivity_validity() const; // DP: should be private
-    std::vector<size_t> compact();
 
     /**
      * Split an edge

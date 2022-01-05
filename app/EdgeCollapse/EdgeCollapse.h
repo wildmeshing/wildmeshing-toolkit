@@ -37,8 +37,7 @@ public:
     // write the collapsed mesh into a obj
     void write_triangle_mesh(std::string path)
     {
-        std::vector<size_t> vid_newvid_map = compact();
-        compact_vertex_positions(vid_newvid_map);
+        consolidate_mesh_connectivity();
         std::vector<VertexConnectivity> new_m_vertex_connectivity = get_m_vertex_connectivity();
         std::vector<TriangleConnectivity> new_m_tri_connectivity = get_m_tri_connectivity();
 
@@ -71,10 +70,12 @@ public:
 
     void update_position(size_t v1, size_t v2, Tuple& new_vert);
 
-    void resize_attributes(size_t v, size_t t) 
+    void move_vertex_attribute(size_t from, size_t to) override
     {
-        m_vertex_positions.resize(v);
+        m_vertex_positions[to] = std::move(m_vertex_positions[from]);
     }
+
+    void resize_attributes(size_t v, size_t t) override { m_vertex_positions.resize(v); }
 };
 
 class ElementInQueue

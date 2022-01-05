@@ -189,18 +189,8 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
 
     // get the fids
     auto n1_fids = m_vertex_connectivity[vid1].m_conn_tris;
-    // std::cout << " the vertex of edge to be collapsed is " << vid1 << " and has connected tris num "
-    //           << n1_fids.size() << std::endl;
-    // std::cout << "       they are " << std::endl;
-    // for (auto x : n1_fids) std::cout << "       " << x << std::endl;
-
 
     auto n2_fids = m_vertex_connectivity[vid2].m_conn_tris;
-    // std::cout << " the vertex of edge to be collapsed is " << vid2 << " and has connected tris num "
-    //           << n2_fids.size() << std::endl;
-    // std::cout << "       they are " << std::endl;
-    // for (auto x : n2_fids) std::cout << "       " << x << std::endl;
-
 
     // get the fids that will be modified
     auto n12_intersect_fids = set_intersection(n1_fids, n2_fids);
@@ -340,51 +330,62 @@ void TriMesh::swap_edge(const Tuple& t, int type)
     throw "Not implemented";
 }
 
-std::vector<size_t> TriMesh::compact()
+void TriMesh::consolidate_mesh_connectivity()
+
 {
-    size_t cnt = 0;
-    std::vector<size_t> vid_newvid_map(n_vertices(), UINT64_MAX);
-    std::vector<size_t> fid_newfid_map(n_triangles(), UINT64_MAX);
-    std::vector<VertexConnectivity> new_m_vertex_connectivity(n_vertices());
-    std::vector<TriangleConnectivity> new_m_tri_connectivity(n_triangles());
-    for (int i = 0; i < n_vertices(); i++) {
+    auto v_cnt = 0;
+    std::vector<size_t> map_v_ids(m_vertex_connectivity.size(), -1);
+    for (auto i = 0; i < m_vertex_connectivity.size(); i++) {
         if (m_vertex_connectivity[i].m_is_removed) continue;
-        new_m_vertex_connectivity[cnt] = m_vertex_connectivity[i];
-        vid_newvid_map[i] = cnt;
-        cnt++;
+        map_v_ids[i] = v_cnt;
+        v_cnt++;
     }
-    new_m_vertex_connectivity.resize(cnt);
-    
-    cnt = 0;
-    for (int i = 0; i < n_triangles(); i++) {
+    auto t_cnt = 0;
+    std::vector<size_t> map_t_ids(m_tri_connectivity.size(), -1);
+    for (auto i = 0; i < m_tri_connectivity.size(); i++) {
         if (m_tri_connectivity[i].m_is_removed) continue;
-        // std::cout << " the " << i << " th triangle has verts " << m_tri_connectivity[i].m_indices[0]
-        //           << " " << m_tri_connectivity[i].m_indices[1] << " "
-        //           << m_tri_connectivity[i].m_indices[2] << " " << std::endl;
-        fid_newfid_map[i] = cnt;
-        new_m_tri_connectivity[cnt].m_indices[0] =
-            vid_newvid_map[m_tri_connectivity[i].m_indices[0]];
-        new_m_tri_connectivity[cnt].m_indices[1] =
-            vid_newvid_map[m_tri_connectivity[i].m_indices[1]];
-        new_m_tri_connectivity[cnt].m_indices[2] =
-            vid_newvid_map[m_tri_connectivity[i].m_indices[2]];
-        cnt++;
-    }
-    new_m_tri_connectivity.resize(cnt);
-
-    for (int i = 0; i < new_m_vertex_connectivity.size(); i++) {
-        for (int j = 0; j < new_m_vertex_connectivity[i].m_conn_tris.size(); j++)
-            new_m_vertex_connectivity[i].m_conn_tris[j] =
-                fid_newfid_map[new_m_vertex_connectivity[i].m_conn_tris[j]];
+        map_t_ids[i] = t_cnt;
+        t_cnt++;
     }
 
+    auto new_m_vertex_connectivity = decltype(m_vertex_connectivity)(v_cnt);
+    auto new_m_tri_connectivity = decltype(m_tri_connectivity)(t_cnt);
 
-    m_vertex_connectivity = new_m_vertex_connectivity;
-    m_tri_connectivity = new_m_tri_connectivity;
-    // std::cout << " final verts number " << m_vertex_connectivity.size() << " final tris num "
-    //           << m_tri_connectivity.size() << std::endl;
-    // DP: remember to call a compact for attributes of the user classes!
-    return vid_newvid_map;
+    v_cnt = 0;
+    for (auto i = 0; i < m_vertex_connectivity.size(); i++) {
+        if (m_vertex_connectivity[i].m_is_removed) continue;
+
+        new_m_vertex_connectivity[v_cnt] = m_vertex_connectivity[i];
+
+        move_vertex_attribute(i, v_cnt);
+
+        for (size_t& t_id : new_m_vertex_connectivity[v_cnt].m_conn_tris) t_id = map_t_ids[t_id];
+        v_cnt++;
+    }
+    t_cnt = 0;
+    for (int i = 0; i < m_tri_connectivity.size(); i++) {
+        if (m_tri_connectivity[i].m_is_removed) continue;
+
+        new_m_tri_connectivity[t_cnt] = m_tri_connectivity[i];
+        new_m_tri_connectivity[t_cnt].hash = 0;
+
+        move_face_attribute(i, t_cnt);
+
+        // needs to be checked
+        for (auto j = 0; j < 3; j++) {
+            move_edge_attribute(i * 3 + j, t_cnt * 3 + j);
+        }
+
+        for (size_t& v_id : new_m_tri_connectivity[t_cnt].m_indices) v_id = map_v_ids[v_id];
+        t_cnt++;
+    }
+
+    m_vertex_connectivity = std::move(new_m_vertex_connectivity);
+    m_tri_connectivity = std::move(new_m_tri_connectivity);
+
+    resize_attributes(v_cnt, t_cnt);
+
+    assert(check_mesh_connectivity_validity());
 }
 
 std::vector<wmtk::TriMesh::Tuple> TriMesh::get_one_ring_tris_for_vertex(
@@ -396,9 +397,9 @@ std::vector<wmtk::TriMesh::Tuple> TriMesh::get_one_ring_tris_for_vertex(
     for (size_t tri : conn_tri) {
         int j = m_tri_connectivity[tri].find(vid);
         one_ring.emplace_back(vid, (j + 2) % 3, tri, *this);
-        assert(one_ring[one_ring.size()-1].is_valid(*this));
+        assert(one_ring[one_ring.size() - 1].is_valid(*this));
     }
-    
+
     return one_ring;
 };
 
@@ -410,7 +411,6 @@ std::vector<wmtk::TriMesh::Tuple> TriMesh::get_one_ring_edges_for_vertex(
     size_t vid = t.get_vid();
     auto one_ring_tris = get_one_ring_tris_for_vertex(t);
     for (auto tri : one_ring_tris) {
-       
         // find the vertex
         while (tri.get_vid() != vid) {
             tri = tri.switch_vertex(*this).switch_edge(*this);
@@ -428,7 +428,6 @@ std::vector<wmtk::TriMesh::Tuple> TriMesh::get_one_ring_edges_for_vertex(
             one_ring_vertices.push_back(tri.switch_vertex(*this).get_vid());
             one_ring_edges.push_back(tri.switch_vertex(*this));
         }
-
     }
 
     assert(one_ring_vertices.size() == one_ring_edges.size());

@@ -35,7 +35,8 @@ bool Edge2d::EdgeCollapse::collapse_shortest(int target_vertex_count)
         double weight = ec_queue.top().weight;
         ec_queue.pop();
         // check if the edge tuple is valid
-        // std::cout << "the candidate " << loc.get_vid() << " fid is " << loc.get_fid() << std::endl;
+        // std::cout << "the candidate " << loc.get_vid() << " fid is " << loc.get_fid() <<
+        // std::endl;
         if (!loc.is_valid(*this)) continue;
 
         Eigen::Vector3d v1p = m_vertex_positions[loc.get_vid()];
@@ -52,15 +53,14 @@ bool Edge2d::EdgeCollapse::collapse_shortest(int target_vertex_count)
         if (cnt % 100 == 0) std::cout << " 100 more collpased" << std::endl;
 
         target_vertex_count--;
-        if (target_vertex_count < 0)
-            break;
+        if (target_vertex_count <= 0) break;
 
-        
+
         // std::cout << "collapsed and got " << new_vert.get_vid() << " " << new_vert.get_fid()
-                //   << std::endl;
+        //   << std::endl;
 
         // update_position(v1, v2, new_vert);
-        m_vertex_positions[new_vert.get_vid()] = (v1p + v2p)/2.0;
+        m_vertex_positions[new_vert.get_vid()] = (v1p + v2p) / 2.0;
 
         check_mesh_connectivity_validity();
         size_t new_vid = new_vert.get_vid();
