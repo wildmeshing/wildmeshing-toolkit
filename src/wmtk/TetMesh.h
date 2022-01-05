@@ -153,7 +153,23 @@ public:
                     t.m_local_fid,
                     t.m_global_tid,
                     t.m_timestamp));
-        };
+        }
+        friend bool operator<(const Tuple& a, const Tuple& t)
+        {
+            return (
+                std::tie(
+                    a.m_global_vid,
+                    a.m_local_eid,
+                    a.m_local_fid,
+                    a.m_global_tid,
+                    a.m_timestamp) <
+                std::tie(
+                    t.m_global_vid,
+                    t.m_local_eid,
+                    t.m_local_fid,
+                    t.m_global_tid,
+                    t.m_timestamp));
+        }
     };
 
     /**

@@ -33,7 +33,7 @@ TEST_CASE("edge_splitting", "[test_operation]")
     tetwild.split_all_edges();
     REQUIRE(tetwild.check_mesh_connectivity_validity());
 
-    REQUIRE(tetwild.m_vertex_attribute.size() == 215);
+    REQUIRE(tetwild.m_vertex_attribute.size() == 218);
     tetwild.swap_all_edges();
     REQUIRE(tetwild.check_mesh_connectivity_validity());
     tetwild.swap_all_faces();
@@ -64,9 +64,9 @@ TEST_CASE("edge_collapsing", "[test_operation]")
 
     tetwild.split_all_edges();
     REQUIRE(tetwild.check_mesh_connectivity_validity());
-    CHECK(tetwild.m_vertex_attribute.size() == 1350);
+    CHECK(tetwild.m_vertex_attribute.size() == 1376);
 
     tetwild.collapse_all_edges();
     REQUIRE(tetwild.check_mesh_connectivity_validity());
-    CHECK(tetwild.get_vertices().size() == 1244);
+    CHECK(tetwild.get_vertices().size() == 1140);
 }
