@@ -354,6 +354,7 @@ std::vector<size_t> TriMesh::compact()
         cnt++;
     }
     new_m_vertex_connectivity.resize(cnt);
+    
     cnt = 0;
     for (int i = 0; i < n_triangles(); i++) {
         if (m_tri_connectivity[i].m_is_removed) continue;
@@ -382,6 +383,7 @@ std::vector<size_t> TriMesh::compact()
     m_tri_connectivity = new_m_tri_connectivity;
     // std::cout << " final verts number " << m_vertex_connectivity.size() << " final tris num "
     //           << m_tri_connectivity.size() << std::endl;
+    // DP: remember to call a compact for attributes of the user classes!
     return vid_newvid_map;
 }
 

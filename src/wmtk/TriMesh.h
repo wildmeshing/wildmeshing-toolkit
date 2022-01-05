@@ -299,11 +299,13 @@ private:
     size_t get_next_empty_slot_t()
     {
         m_tri_connectivity.emplace_back();
+        resize_attributes(m_vertex_connectivity.size(),m_tri_connectivity.size());
         return m_tri_connectivity.size() - 1;
     }
     size_t get_next_empty_slot_v()
     {
         m_vertex_connectivity.emplace_back();
+        resize_attributes(m_vertex_connectivity.size(),m_tri_connectivity.size());
         return m_vertex_connectivity.size() - 1;
     }
 
@@ -341,6 +343,8 @@ protected:
         if (check_mesh_connectivity_validity() && t.is_valid(*this)) return true;
         return false;
     }
+
+    virtual void resize_attributes(size_t v, size_t t) {}
 
 public:
     size_t n_triangles() const { return m_tri_connectivity.size(); }

@@ -38,9 +38,8 @@ bool Edge2d::EdgeCollapse::collapse_shortest(int target_vertex_count)
         // std::cout << "the candidate " << loc.get_vid() << " fid is " << loc.get_fid() << std::endl;
         if (!loc.is_valid(*this)) continue;
 
-        size_t v1 = loc.get_vid();
-        TriMesh::Tuple v2_tuple = loc.switch_vertex(*this);
-        size_t v2 = v2_tuple.get_vid();
+        Eigen::Vector3d v1p = m_vertex_positions[loc.get_vid()];
+        Eigen::Vector3d v2p = m_vertex_positions[loc.switch_vertex(*this).get_vid()];
 
         // std::cout << "actually candidate is between  " << v1 << " " << v2 << std::endl;
 
@@ -60,7 +59,8 @@ bool Edge2d::EdgeCollapse::collapse_shortest(int target_vertex_count)
         // std::cout << "collapsed and got " << new_vert.get_vid() << " " << new_vert.get_fid()
                 //   << std::endl;
 
-        update_position(v1, v2, new_vert);
+        // update_position(v1, v2, new_vert);
+        m_vertex_positions[new_vert.get_vid()] = (v1p + v2p)/2.0;
 
         check_mesh_connectivity_validity();
         size_t new_vid = new_vert.get_vid();

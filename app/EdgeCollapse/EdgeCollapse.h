@@ -70,6 +70,11 @@ public:
     double compute_cost_for_v(wmtk::TriMesh::Tuple& v_tuple);
 
     void update_position(size_t v1, size_t v2, Tuple& new_vert);
+
+    void resize_attributes(size_t v, size_t t) 
+    {
+        m_vertex_positions.resize(v);
+    }
 };
 
 class ElementInQueue
