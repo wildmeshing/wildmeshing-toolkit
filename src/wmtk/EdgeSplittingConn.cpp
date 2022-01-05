@@ -37,11 +37,12 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
         const size_t new_t_id = find_next_empty_slot_t();
         new_t_ids.push_back(new_t_id);
         //
-        int j = m_tet_connectivity[t_id].find(v1_id);
-        m_tet_connectivity[new_t_id] = m_tet_connectivity[t_id];
-        m_tet_connectivity[new_t_id][j] = v_id;
-        m_tet_connectivity[new_t_id].timestamp = 0;
-
+        {
+            int j = m_tet_connectivity[t_id].find(v1_id);
+            m_tet_connectivity[new_t_id] = m_tet_connectivity[t_id];
+            m_tet_connectivity[new_t_id][j] = v_id;
+            m_tet_connectivity[new_t_id].timestamp = 0;
+        }
         //
         m_vertex_connectivity[v_id].m_conn_tets.push_back(t_id);
         m_vertex_connectivity[v_id].m_conn_tets.push_back(new_t_id);
@@ -53,8 +54,10 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
                 m_vertex_connectivity[m_tet_connectivity[t_id][j]].m_conn_tets.push_back(new_t_id);
         }
         //
-        j = m_tet_connectivity[t_id].find(v2_id);
-        m_tet_connectivity[t_id][j] = v_id;
+        {
+            int j = m_tet_connectivity[t_id].find(v2_id);
+            m_tet_connectivity[t_id][j] = v_id;
+        }
         //
         vector_erase(m_vertex_connectivity[v2_id].m_conn_tets, t_id);
         m_vertex_connectivity[v2_id].m_conn_tets.push_back(new_t_id);
@@ -103,9 +106,8 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
             int t_id = old_tets[i].first;
             m_tet_connectivity[t_id] = old_tets[i].second;
         }
-        for (int i = 0; i < old_vertices.size(); i++) {
-            int v_id = old_vertices[i].first;
-            m_vertex_connectivity[v_id] = old_vertices[i].second;
+        for (auto& [id, conn] : old_vertices) {
+            m_vertex_connectivity[id] = conn;
         }
 
         return false;
@@ -121,9 +123,8 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
             int t_id = old_tets[i].first;
             m_tet_connectivity[t_id] = old_tets[i].second;
         }
-        for (int i = 0; i < old_vertices.size(); i++) {
-            int v_id = old_vertices[i].first;
-            m_vertex_connectivity[v_id] = old_vertices[i].second;
+        for (auto& [id, conn] : old_vertices) {
+            m_vertex_connectivity[id] = conn;
         }
 
         return false;
