@@ -180,3 +180,7 @@ jobs:
         run: |
           cd build
           ctest --verbose --output-on-failure
+
+      - name: Setup tmate session
+        if: $
+        uses: mxschmitt/action-tmate@v3
