@@ -286,26 +286,26 @@ std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_one_ring_tets_for_edge(cons
 
 void wmtk::TetMesh::consolidate_mesh_connectivity()
 {
-    int v_cnt = 0;
+    auto v_cnt = 0;
     std::vector<size_t> map_v_ids(m_vertex_connectivity.size(), -1);
-    for (int i = 0; i < m_vertex_connectivity.size(); i++) {
+    for (auto i = 0; i < m_vertex_connectivity.size(); i++) {
         if (m_vertex_connectivity[i].m_is_removed) continue;
         map_v_ids[i] = v_cnt;
         v_cnt++;
     }
-    int t_cnt = 0;
+    auto t_cnt = 0;
     std::vector<size_t> map_t_ids(m_tet_connectivity.size(), -1);
-    for (int i = 0; i < m_tet_connectivity.size(); i++) {
+    for (auto i = 0; i < m_tet_connectivity.size(); i++) {
         if (m_tet_connectivity[i].m_is_removed) continue;
         map_t_ids[i] = t_cnt;
         t_cnt++;
     }
 
-    tbb::concurrent_vector<VertexConnectivity> new_m_vertex_connectivity(v_cnt);
-    tbb::concurrent_vector<TetrahedronConnectivity> new_m_tet_connectivity(t_cnt);
+    auto new_m_vertex_connectivity = decltype(m_vertex_connectivity)(v_cnt);
+    auto new_m_tet_connectivity = decltype(m_tet_connectivity)(t_cnt);
 
     v_cnt = 0;
-    for (int i = 0; i < m_vertex_connectivity.size(); i++) {
+    for (auto i = 0; i < m_vertex_connectivity.size(); i++) {
         if (m_vertex_connectivity[i].m_is_removed) continue;
 
         new_m_vertex_connectivity[v_cnt] = m_vertex_connectivity[i];

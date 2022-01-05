@@ -55,6 +55,11 @@ TEST_CASE("tet_mesh_swap", "[test_operation]")
         REQUIRE(mesh.check_mesh_connectivity_validity());
         REQUIRE(mesh.get_tets().size() == 3);
     }
+
+    REQUIRE(mesh.tet_capacity() == 4);
+    mesh.consolidate_mesh_connectivity();
+    REQUIRE(mesh.tet_capacity() == 3);
+
 }
 
 TEST_CASE("rollback_split_operation", "[test_operation]")
