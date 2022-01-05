@@ -17,6 +17,47 @@ TetMesh::Tuple::Tuple(const TetMesh& m, size_t vid, size_t local_eid, size_t loc
     check_validity(m);
 }
 
+
+bool TetMesh::Tuple::is_boundary_face(const TetMesh& m) const
+{
+    auto v0 = this->vid(m);
+    auto oppo = this->switch_vertex(m);
+    auto v1 = oppo.vid(m);
+    auto v2 = oppo.switch_edge(m).switch_vertex(m).vid(m);
+    assert(v0 != v1 && v1 != v2 && v2 != v0);
+
+    auto inter01 = set_intersection(
+        m.m_vertex_connectivity[v0].m_conn_tets,
+        m.m_vertex_connectivity[v1].m_conn_tets);
+    auto inter012 = set_intersection(inter01, m.m_vertex_connectivity[v2].m_conn_tets);
+
+    assert(inter012.size() == 1 || inter012.size() == 2);
+    return inter012.size() == 1;
+}
+
+bool TetMesh::Tuple::is_boundary_edge(const TetMesh& m) const
+{
+    auto tet_id = this->tid(m);
+
+    Tuple e = *this;
+    auto cnt = 0;
+    do {
+        e = e.switch_face(m);
+        logger().trace("edge {} ({}) {} {}", e.tid(m), e.fid(m), e.eid(m), e.vid(m));
+        auto e_opt = e.switch_tetrahedron(m);
+        if (!e_opt) {
+            logger().trace(">> No adjacent tetra");
+            return true;
+        }
+        e = e_opt.value();
+        cnt++;
+        logger().trace("edge ({}) {} {} {}", e.tid(m), e.fid(m), e.eid(m), e.vid(m));
+        assert(cnt < m.m_tet_connectivity.size() + 1 && "Debug: Avoid infinite loop.");
+    } while (e.tid(m) != tet_id);
+    logger().trace(">> Internal");
+    return false;
+}
+
 bool TetMesh::Tuple::is_valid(const TetMesh& m) const
 {
     if (m.m_vertex_connectivity[m_global_vid].m_is_removed ||
@@ -201,61 +242,6 @@ std::optional<TetMesh::Tuple> TetMesh::Tuple::switch_tetrahedron(const TetMesh& 
 
         return loc;
     }
-}
-
-std::vector<TetMesh::Tuple> TetMesh::Tuple::get_one_ring_tets_for_vertex(const TetMesh& m) const
-{
-    std::vector<Tuple> tets;
-    for (int t_id : m.m_vertex_connectivity[m_global_vid].m_conn_tets) {
-        tets.emplace_back(m.tuple_from_tet(t_id));
-    }
-    return tets;
-}
-
-std::vector<TetMesh::Tuple> TetMesh::Tuple::get_incident_tets_for_edge(const TetMesh& m) const
-{
-    int v1_id = m.m_tet_connectivity[m_global_tid][m_local_edges[m_local_eid][0]];
-    int v2_id = m.m_tet_connectivity[m_global_tid][m_local_edges[m_local_eid][1]];
-
-    auto tids = set_intersection(
-        m.m_vertex_connectivity[v1_id].m_conn_tets,
-        m.m_vertex_connectivity[v2_id].m_conn_tets);
-    std::vector<Tuple> tets;
-    for (int t_id : tids) {
-        tets.push_back(m.tuple_from_tet(t_id));
-    }
-    return tets;
-}
-
-std::vector<TetMesh::Tuple> TetMesh::Tuple::get_one_ring_tets_for_edge(const TetMesh& m) const
-{
-    int v1_id = m.m_tet_connectivity[m_global_tid][m_local_edges[m_local_eid][0]];
-    int v2_id = m.m_tet_connectivity[m_global_tid][m_local_edges[m_local_eid][1]];
-
-    auto tids = m.m_vertex_connectivity[v1_id].m_conn_tets;
-    tids.insert(
-        tids.end(),
-        m.m_vertex_connectivity[v2_id].m_conn_tets.begin(),
-        m.m_vertex_connectivity[v1_id].m_conn_tets.end());
-    vector_unique(tids);
-
-    std::vector<Tuple> tets;
-    for (int t_id : tids) {
-        tets.emplace_back(m.tuple_from_tet(t_id));
-    }
-    return tets;
-}
-
-std::array<TetMesh::Tuple, 4> TetMesh::Tuple::oriented_tet_vertices(const TetMesh& m) const
-{
-    std::array<Tuple, 4> vs;
-    for (int j = 0; j < 4; j++) {
-        vs[j].m_global_vid = m.m_tet_connectivity[m_global_tid][j];
-        vs[j].m_local_eid = m_map_vertex2edge[j];
-        vs[j].m_local_fid = m_map_edge2face[vs[j].m_local_eid];
-        vs[j].m_global_tid = m_global_tid;
-    }
-    return vs;
 }
 
 void TetMesh::Tuple::check_validity(const TetMesh& m) const

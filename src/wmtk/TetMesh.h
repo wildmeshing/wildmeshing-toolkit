@@ -7,9 +7,7 @@
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/utils/Logger.hpp>
 
-#ifdef WILDMESHING_TOOLKIT_WITH_TBB
 #include <tbb/concurrent_vector.h>
-#endif
 
 #include <array>
 #include <cassert>
@@ -37,10 +35,10 @@ public:
     // Cell Tuple Navigator
     class Tuple
     {
-        size_t m_global_vid;
-        size_t m_local_eid;
-        size_t m_local_fid;
-        size_t m_global_tid;
+        size_t m_global_vid = std::numeric_limits<size_t>::max();
+        size_t m_local_eid = std::numeric_limits<size_t>::max();
+        size_t m_local_fid = std::numeric_limits<size_t>::max();
+        size_t m_global_tid = std::numeric_limits<size_t>::max();
 
         int m_timestamp = 0;
 
@@ -48,10 +46,10 @@ public:
         /**
          * Construct a new Tuple object with global vertex/tetra index and local edge/face index
          *
-         * @param vid vertex id
+         * @param vid vertex id (global)
          * @param eid edge id (local)
          * @param fid face id (local)
-         * @param tid tetra id
+         * @param tid tetra id (global)
          * @param ts hash associated with tid
          */
         Tuple(const TetMesh& m, size_t vid, size_t local_eid, size_t local_fid, size_t tid);
@@ -68,8 +66,20 @@ public:
          * @return if not removed and the tuple is up to date with respect to the connectivity.
          */
         bool is_valid(const TetMesh& m) const;
+        bool is_boundary_edge(const TetMesh& m) const;
+        bool is_boundary_face(const TetMesh& m) const;
 
+        /**
+         * @brief prints the tuple
+         *
+         */
         void print_info() const;
+
+        /**
+         * @brief prints additional information
+         *
+         * @param m mesh
+         */
         void print_info(const TetMesh& m) const;
 
         /**
@@ -125,20 +135,25 @@ public:
          */
         std::optional<Tuple> switch_tetrahedron(const TetMesh& m) const;
 
-        std::vector<Tuple> get_one_ring_tets_for_vertex(const TetMesh& m) const;
-
-        std::vector<Tuple> get_one_ring_tets_for_edge(const TetMesh& m) const;
-        std::vector<Tuple> get_incident_tets_for_edge(const TetMesh& m) const;
-
-        /**
-         * Positively oriented 4 vertices (represented by Tuples) in a tetra.
-         * @return std::array<Tuple, 4> each tuple owns a different vertex.
-         */
-        std::array<Tuple, 4> oriented_tet_vertices(const TetMesh& m) const;
-
 
         ////testing code
         void check_validity(const TetMesh& m) const;
+        friend bool operator==(const Tuple& a, const Tuple& t)
+        {
+            return (
+                std::tie(
+                    a.m_global_vid,
+                    a.m_local_eid,
+                    a.m_local_fid,
+                    a.m_global_tid,
+                    a.m_timestamp) ==
+                std::tie(
+                    t.m_global_vid,
+                    t.m_local_eid,
+                    t.m_local_fid,
+                    t.m_global_tid,
+                    t.m_timestamp));
+        };
     };
 
     /**
@@ -255,6 +270,8 @@ public:
     TetMesh() {}
     virtual ~TetMesh() {}
 
+    size_t vert_capacity() const { return m_vertex_connectivity.size(); };
+    size_t tet_capacity() const { return m_tet_connectivity.size(); };
     /**
      * Initialize TetMesh data structure
      *
@@ -275,7 +292,8 @@ public:
      */
     bool split_edge(const Tuple& t, std::vector<Tuple>& new_edges);
     bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_edges);
-    void swap_edge(const Tuple& t, int type);
+    bool swap_edge(const Tuple& t);
+    bool swap_face(const Tuple& t);
     bool smooth_vertex(const Tuple& t);
 
 
@@ -292,23 +310,18 @@ public:
      * @return std::vector<Tuple> each Tuple owns a distinct edge.
      */
     std::vector<Tuple> get_edges() const;
+    std::vector<Tuple> get_faces() const;
     std::vector<Tuple> get_vertices() const;
+    std::vector<Tuple> get_tets() const;
 
-    /**
-     * Number of tetra in the mesh
-     */
-    size_t n_tets() const { return m_tet_connectivity.size(); }
+public:
+    template <typename T>
+    using vector = tbb::concurrent_vector<T>;
 
 private:
     // Stores the connectivity of the mesh
-#ifdef WILDMESHING_TOOLKIT_WITH_TBB
-    tbb::concurrent_vector<VertexConnectivity> m_vertex_connectivity;
-    tbb::concurrent_vector<TetrahedronConnectivity> m_tet_connectivity;
-#else
-    std::vector<VertexConnectivity> m_vertex_connectivity;
-    std::vector<TetrahedronConnectivity> m_tet_connectivity;
-#endif
-
+    vector<VertexConnectivity> m_vertex_connectivity;
+    vector<TetrahedronConnectivity> m_tet_connectivity;
     int m_t_empty_slot = 0;
     int m_v_empty_slot = 0;
     int find_next_empty_slot_t();
@@ -328,20 +341,15 @@ protected:
     // If it returns false then the operation is undone (the tuple indexes a vertex and tet that
     // survived)
 
+    virtual bool swap_edge_before(const Tuple& t) { return true; }
+    virtual bool swap_edge_after(const Tuple& t) { return true; }
+    virtual bool swap_face_before(const Tuple& t) { return true; }
+    virtual bool swap_face_after(const Tuple& t) { return true; }
+
     virtual bool collapse_after(const Tuple& t) { return true; }
     virtual bool smooth_before(const Tuple& t) { return true; }
     virtual bool smooth_after(const Tuple& t) { return true; }
 
-    // todo: quality, inversion, envelope: change v1 pos before this, only need to change partial
-    // attributes
-
-    //        //// Swap the edge in the tuple
-    //        // Checks if the swapping should be performed or not (user controlled)
-    //        virtual bool swapping_before(const Tuple &t) { return true; }
-    //        // If it returns false then the operation is undone (the tuple indexes TODO)
-    //        virtual bool swapping_after(const Tuple &t) { return true; }
-    //        //quality, inversion
-    //
     // Invariants that are called on all the new or modified elements after an operation is
     // performed
     virtual bool vertex_invariant(const Tuple& t) { return true; }
@@ -419,34 +427,35 @@ public:
         return loc;
     }
 
-    std::vector<Tuple> get_one_ring_tets_for_vertex(const Tuple& t) const
-    {
-        auto locs = t.get_one_ring_tets_for_vertex(*this);
-        for (const auto& loc : locs) check_tuple_validity(loc);
-        return locs;
-    }
+    /**
+     * @brief Get the one ring tets for a vertex
+     *
+     * @param t tuple pointing to a vertex
+     * @return one-ring
+     */
+    std::vector<Tuple> get_one_ring_tets_for_vertex(const Tuple& t) const;
 
-    std::vector<Tuple> get_incident_tets_for_edge(const Tuple& t) const
-    {
-        auto locs = t.get_incident_tets_for_edge(*this);
-        for (const auto& loc : locs) check_tuple_validity(loc);
-        return locs;
-    }
+    /**
+     * @brief Get the incident tets for edge
+     *
+     * @param t tuple pointing to an edge
+     * @return incident tets
+     */
+    std::vector<Tuple> get_incident_tets_for_edge(const Tuple& t) const;
 
-    std::vector<Tuple> get_one_ring_tets_for_edge(const Tuple& t) const
-    {
-        auto locs = t.get_one_ring_tets_for_edge(*this);
-        for (const auto& loc : locs) check_tuple_validity(loc);
-        return locs;
-    }
+    /**
+     * @brief Get the one ring tets for edge
+     *
+     * @param t tuple pointing to an edge
+     * @return one ring
+     */
+    std::vector<Tuple> get_one_ring_tets_for_edge(const Tuple& t) const;
 
     /**
      * Positively oriented 4 vertices (represented by Tuples) in a tetra.
      * @return std::array<Tuple, 4> each tuple owns a different vertex.
      */
     std::array<Tuple, 4> oriented_tet_vertices(const Tuple& t) const;
-
-    std::vector<Tuple> get_conn_tets(const Tuple& t) const;
 
     void check_tuple_validity(const Tuple& t) const { t.check_validity(*this); }
     bool check_mesh_connectivity_validity() const;

@@ -1,6 +1,6 @@
 #include <wmtk/TetMesh.h>
 #include <catch2/catch.hpp>
-#include <iostream>
+#include "wmtk/utils/Logger.hpp"
 
 using namespace wmtk;
 
@@ -13,6 +13,48 @@ TEST_CASE("edge_splitting", "[test_operation]")
     REQUIRE(mesh.split_edge(tuple, dummy));
     REQUIRE_FALSE(tuple.is_valid(mesh));
     REQUIRE(mesh.check_mesh_connectivity_validity());
+}
+
+TEST_CASE("tet_mesh_swap", "[test_operation]")
+{
+    TetMesh mesh;
+    mesh.init(5, {{{0, 1, 2, 3}}, {{0, 2, 1, 4}}, {{0, 1, 3, 4}}});
+
+    // SECTION ("3-2 swap")
+    {
+        const auto edges = mesh.get_edges();
+
+        REQUIRE(edges.size() == 10);
+        auto cnt_swap = 0;
+        for (auto e : edges) {
+            if (!e.is_valid(mesh)) continue;
+            if (mesh.swap_edge(e)) {
+                cnt_swap++;
+                REQUIRE_FALSE(e.is_valid(mesh));
+            }
+        }
+        REQUIRE(mesh.check_mesh_connectivity_validity());
+        REQUIRE(cnt_swap == 1);
+        REQUIRE(mesh.get_edges().size() == 9);
+        REQUIRE(mesh.get_tets().size() == 2);
+    }
+    //
+    // SECTION ("2-3 swap")
+    {
+        const auto faces = mesh.get_faces();
+        REQUIRE(faces.size() == 7);
+        auto cnt_swap = 0;
+        for (auto e : faces) {
+            if (!e.is_valid(mesh)) continue;
+            if (mesh.swap_face(e)) {
+                cnt_swap++;
+                REQUIRE_FALSE(e.is_valid(mesh));
+            }
+        }
+        REQUIRE(cnt_swap == 1);
+        REQUIRE(mesh.check_mesh_connectivity_validity());
+        REQUIRE(mesh.get_tets().size() == 3);
+    }
 }
 
 TEST_CASE("rollback_split_operation", "[test_operation]")
@@ -28,4 +70,25 @@ TEST_CASE("rollback_split_operation", "[test_operation]")
     std::vector<TetMesh::Tuple> dummy;
     REQUIRE_FALSE(mesh.split_edge(tuple, dummy));
     REQUIRE(tuple.is_valid(mesh));
+}
+
+TEST_CASE("forbidden-face-swap", "[test_operation]")
+{
+    /// https://i.imgur.com/aVCsOvf.png and 0,2,3 should not be swapped.
+    /// Visualize V as 
+    //   [[ 0,  0, -1],
+    //    [ 0,  0,  1],
+    //    [ 1,  1,  0],
+    //    [ 1, -1,  0],
+    //    [ 2,  0,  0]]
+    auto mesh = TetMesh();
+    mesh.init(5, {{{0,3,2,4}}, {{1,2,3,4}}, {{0,1,2,3}}});
+    auto t = mesh.tuple_from_tet(0);
+    REQUIRE(t.vid(mesh)==0);
+    auto oppo = t.switch_vertex(mesh);
+    REQUIRE(oppo.vid(mesh)==3);
+    REQUIRE(oppo.switch_edge(mesh).switch_vertex(mesh).vid(mesh) == 2);
+    mesh.swap_face(t);
+    REQUIRE(t.is_valid(mesh)); // operation rejected.
+    REQUIRE(mesh.check_mesh_connectivity_validity());
 }

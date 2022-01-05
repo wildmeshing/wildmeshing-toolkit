@@ -6,13 +6,14 @@ set(test_sources
 	main.cpp
 
 	test_operations.cpp
+	file_write.cpp
 	test_operation_smooth.cpp
+	test_runner.cpp
 )
 
 add_executable(app_unit_tests ${test_sources})
 
-target_link_libraries(app_unit_tests PUBLIC WildMeshingToolkit TetWild QuadricEdgeCollapse)
-target_link_libraries(app_unit_tests PUBLIC warnings::all)
+target_link_libraries(app_unit_tests PUBLIC wmtk::toolkit TetWild QuadricEdgeCollapse)
 
 include(catch2)
 target_link_libraries(app_unit_tests PUBLIC Catch2::Catch2)
@@ -22,14 +23,6 @@ target_link_libraries(app_unit_tests PUBLIC Catch2::Catch2)
 # set(DATA_DIR "${THIRD_PARTY_DIR}/data/")
 # target_compile_definitions(app_unit_tests PUBLIC -DWILDMESHING_TOOLKIT_DATA_DIR=\"${DATA_DIR}\")
 target_compile_definitions(app_unit_tests PUBLIC CATCH_CONFIG_ENABLE_BENCHMARKING)
-
-################################################################################
-# Sanitizers
-################################################################################
-
-if(WILDMESHING_TOOLKIT_WITH_SANITIZERS)
-	add_sanitizers(app_unit_tests)
-endif()
 
 ################################################################################
 # Register tests
