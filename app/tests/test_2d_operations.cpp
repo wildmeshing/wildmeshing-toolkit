@@ -102,6 +102,10 @@ TEST_CASE("shortest_edge_collapse_on_mesh", "[test_2d_operations]")
 {
     const std::string root(WMT_DATA_DIR);
     const std::string path = root + "/piece_0.obj";
+<<<<<<< HEAD
+=======
+    
+>>>>>>> b992faa876be8fceeeaa3730285d03e5a1d040d4
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     bool ok = igl::read_triangle_mesh(path, V, F);
