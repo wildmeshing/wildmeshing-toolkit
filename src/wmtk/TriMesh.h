@@ -104,7 +104,8 @@ public:
             const int v0 = m.m_tri_connectivity[m_fid][0];
             const int v1 = m.m_tri_connectivity[m_fid][1];
             const int v2 = m.m_tri_connectivity[m_fid][2];
-
+            std::cout << m_vid << " " << m_eid << " " << v0 << " " << v1 << " " << v2 << " "
+                      << std::endl;
             switch (m_eid) {
             case 0: assert(m_vid == v1 || m_vid == v2); break;
             case 1: assert(m_vid == v0 || m_vid == v2); break;
@@ -280,8 +281,9 @@ public:
                 size_t eid = (j + 2) % 3;
                 Tuple e_tuple = Tuple(vid, eid, i, m);
                 assert(e_tuple.is_valid(m));
-                Tuple e_tuple2 = e_tuple.switch_face(m).value_or(
-                    e_tuple); // return itself if it is a boundary triangle
+                Tuple e_tuple2 = e_tuple.switch_face(m).value_or(e_tuple);
+                assert(e_tuple2.is_valid(m));
+                // return itself if it is a boundary triangle
                 size_t fid2 = e_tuple2.get_fid();
                 if (fid2 < i)
                     continue;
@@ -323,7 +325,14 @@ protected:
         vector_erase(v1_conn_tris, fid2);
         vector_erase(v2_conn_tris, fid1);
         vector_erase(v2_conn_tris, fid2);
+        // check if this is a tet (the final state of collapsing for a closed mesh)
+        // if (v1_conn_tris.size() == 1 && v2_conn_tris.size() == 1) {
+        //     auto m1_indices = m_tri_connectivity[v1_conn_tris[0]].m_indices;
+        //     auto m2_indices = m_tri_connectivity[v2_conn_tris[0]].m_indices;
+        //     int cnt = 0;
 
+        //     if (intersection.size() == 2) return false;
+        // }
 
         if (check_link_condition(t) && (v1_conn_tris.size() + v2_conn_tris.size() > 0)) return true;
         return false;

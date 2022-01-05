@@ -77,23 +77,46 @@ TEST_CASE("shortest_edge_collapse_boundary_edge", "[test_2d_operations]")
     m.write_triangle_mesh("/Users/yunfanzhou/Downloads/tmp/collapsed.obj");
 }
 
+TEST_CASE("shortest_edge_collapse_closed_mesh", "[test_2d_operations]")
+{
+    // create a tet
+    std::vector<Eigen::Vector3d> v_positions(6);
+    v_positions[0] = Eigen::Vector3d(-3, 3, 0);
+    v_positions[1] = Eigen::Vector3d(0, 3, 0);
+    v_positions[2] = Eigen::Vector3d(0, 0, 2);
+    v_positions[3] = Eigen::Vector3d(0, 0, 0);
+
+    EdgeCollapse m(v_positions);
+    std::vector<std::array<size_t, 3>> tris = {{{0, 1, 3}}, {{1, 2, 3}}, {{0, 3, 2}}, {{0, 1, 2}}};
+    m.create_mesh(4, tris);
+    std::vector<TriMesh::Tuple> edges = m.get_edges();
+    m.collapse_shortest();
+    m.compact();
+    REQUIRE(m.n_vertices() == 3);
+
+    REQUIRE(m.n_triangles() == 2);
+}
+
+
 TEST_CASE("shortest_edge_collapse_on_mesh", "[test_2d_operations]")
 {
     // const std::string root(WMT_DATA_DIR);
     // const std::string path = root + "/Octocat.obj";
-    const std::string path = "/Users/yunfanzhou/Downloads/tmp/piece_0.obj";
+    const std::string path = "/Users/yunfanzhou/Downloads/Octocat.obj";
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     bool ok = igl::read_triangle_mesh(path, V, F);
+
     REQUIRE(ok);
-    REQUIRE(V.rows() == 8);
-    REQUIRE(F.rows() == 12);
+
+    // REQUIRE(V.rows() == 8);
+    // REQUIRE(F.rows() == 12);
 
     std::vector<Eigen::Vector3d> v(V.rows());
     std::vector<std::array<size_t, 3>> tri(F.rows());
     for (int i = 0; i < V.rows(); i++) {
         v[i] = V.row(i);
-        std::cout << V.row(i) << std::endl;
+        // std::cout << V.row(i) << std::endl;
     }
     for (int i = 0; i < F.rows(); i++) {
         for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
@@ -101,7 +124,7 @@ TEST_CASE("shortest_edge_collapse_on_mesh", "[test_2d_operations]")
     EdgeCollapse m(v);
     m.create_mesh(V.rows(), tri);
     REQUIRE(m.check_mesh_connectivity_validity());
-
+    std::cout << " is it mesh passed " << std ::endl;
     REQUIRE(m.collapse_shortest());
     m.write_triangle_mesh("/Users/yunfanzhou/Downloads/tmp/collapsed.obj");
 }

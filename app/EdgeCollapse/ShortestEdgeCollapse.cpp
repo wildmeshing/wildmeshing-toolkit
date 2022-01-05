@@ -29,26 +29,30 @@ bool Edge2d::EdgeCollapse::collapse_shortest()
         if (length < shortest) shortest = length;
         ec_queue.push(ElementInQueue(loc, length));
     }
+    int cnt = 0;
     while (!ec_queue.empty()) {
         auto loc = ec_queue.top().edge;
         double weight = ec_queue.top().weight;
         ec_queue.pop();
         // check if the edge tuple is valid
-        std::cout << "the candidate " << loc.get_vid() << " fid is " << loc.get_fid() << std::endl;
+        // std::cout << "the candidate " << loc.get_vid() << " fid is " << loc.get_fid() <<
+        // std::endl;
         if (!loc.is_valid(*this)) continue;
 
         size_t v1 = loc.get_vid();
         TriMesh::Tuple v2_tuple = loc.switch_vertex(*this);
         size_t v2 = v2_tuple.get_vid();
 
-        std::cout << "actually candidate is between  " << v1 << " " << v2 << std::endl;
+        // std::cout << "actually candidate is between  " << v1 << " " << v2 << std::endl;
 
         TriMesh::Tuple new_vert;
 
         if (!TriMesh::collapse_edge(loc, new_vert)) continue;
-
-        std::cout << "collapsed and got " << new_vert.get_vid() << " " << new_vert.get_fid()
-                  << std::endl;
+        cnt++;
+        if (cnt % 100 == 0) std::cout << " 100 more collpased" << std::endl;
+        if (cnt == 1000) break;
+        // std::cout << "collapsed and got " << new_vert.get_vid() << " " << new_vert.get_fid()
+        //<< std::endl;
 
         update_position(v1, v2, new_vert);
 
@@ -57,8 +61,8 @@ bool Edge2d::EdgeCollapse::collapse_shortest()
         for (TriMesh::Tuple edge : one_ring_edges) {
             TriMesh::Tuple tmp_tuple = switch_vertex(edge);
             size_t vid = tmp_tuple.get_vid();
-            std::cout << " the one ring edge for " << new_vert.get_vid() << " include " << vid
-                      << std::endl;
+            // std::cout << " the one ring edge for " << new_vert.get_vid() << " include " << vid
+            //<< std::endl;
             double length = (m_vertex_positions[new_vid] - m_vertex_positions[vid]).squaredNorm();
             ec_queue.push(ElementInQueue(edge, length));
         }
