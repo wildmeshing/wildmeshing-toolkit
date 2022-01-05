@@ -313,6 +313,7 @@ protected:
     // check link, check if it's the last edge
     virtual bool collapse_before(const Tuple& t)
     {
+        // DP: these should be empty
         auto v1_conn_tris = m_vertex_connectivity[t.get_vid()].m_conn_tris;
         auto v2_conn_tris = m_vertex_connectivity[switch_vertex(t).get_vid()].m_conn_tris;
 
@@ -358,8 +359,8 @@ public:
     Tuple switch_edge(const Tuple& t) const { return t.switch_edge(*this); }
     std::optional<Tuple> switch_face(const Tuple& t) const { return t.switch_face(*this); }
 
-    bool check_link_condition(const Tuple& t) const;
-    bool check_mesh_connectivity_validity() const;
+    bool check_link_condition(const Tuple& t) const; // DP: should be private
+    bool check_mesh_connectivity_validity() const; // DP: should be private
     std::vector<size_t> compact();
 
     /**
