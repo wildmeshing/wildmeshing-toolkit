@@ -1,15 +1,13 @@
-#pragma once
+#include <tbb/concurrent_priority_queue.h>
+#include <tbb/parallel_for.h>
+#include <tbb/parallel_reduce.h>
+#include <tbb/task_arena.h>
+#include <tbb/task_group.h>
 #include <wmtk/ConcurrentTriMesh.h>
 #include <wmtk/utils/VectorUtils.h>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include "ParallelEdgeCollapse.h"
-#include <tbb/task_group.h>
-#include <tbb/parallel_for.h>
-#include <tbb/concurrent_priority_queue.h>
-#include <tbb/task_group.h>
-#include <tbb/parallel_reduce.h>
-#include <tbb/task_arena.h>
 
 
 using namespace Edge2d;
@@ -24,12 +22,15 @@ void Edge2d::ParallelEdgeCollapse::update_position(size_t v1, size_t v2, Tuple& 
     m_vertex_positions.emplace_back(new_position);
 }
 
-void Edge2d::ParallelEdgeCollapse::collapse_shortest_stuff(ElementInQueue &eiq, tbb::concurrent_priority_queue<ElementInQueue, cmp_s> &ec_queue){
+void Edge2d::ParallelEdgeCollapse::collapse_shortest_stuff(
+    ElementInQueue& eiq,
+    tbb::concurrent_priority_queue<ElementInQueue, cmp_s>& ec_queue)
+{
     auto loc = eiq.edge;
     double weight = eiq.weight;
     // check if the edge tuple is valid
     if (!loc.is_valid(*this)) return;
-    //set lock here
+    // set lock here
     size_t v1 = loc.get_vid();
     ConcurrentTriMesh::Tuple v2_tuple = loc.switch_vertex(*this);
     size_t v2 = v2_tuple.get_vid();
@@ -42,7 +43,7 @@ void Edge2d::ParallelEdgeCollapse::collapse_shortest_stuff(ElementInQueue &eiq, 
         ConcurrentTriMesh::Tuple tmp_tuple = switch_vertex(new_vert);
         size_t vid = tmp_tuple.get_vid();
         double length = (m_vertex_positions[new_vid] - m_vertex_positions[vid]).squaredNorm();
-        ec_queue.push(ElementInQueue(edge, length));
+        // ec_queue.push(ElementInQueue(edge, length));
     }
 }
 
@@ -63,13 +64,35 @@ bool Edge2d::ParallelEdgeCollapse::collapse_shortest()
     tbb::task_arena arena(NUM_THREADS);
     tbb::task_group tg;
 
-    arena.execute([&ec_queue, &tg, this]{
+    arena.execute([&ec_queue, &tg, this] {
         ElementInQueue eiq;
         while (ec_queue.try_pop(eiq)) {
-            tg.run([&]{collapse_shortest_stuff(eiq, ec_queue);});
+            tg.run([&] { collapse_shortest_stuff(eiq, ec_queue); });
         }
     });
-    
+
+    // auto run_task = [&]() {
+    //     ElementInQueue eiq;
+    //     bool ok = ec_queue.try_pop(eiq);
+    //     assert(ok);
+    //     collapse_shortest_stuff(eiq, ec_queue, run_task);
+    // };
+
+    // for (int i = 0; i < ec_queue.size(); ++i) {
+    //     tg.run(run_task);
+    // }
+
+    // ElementInQueue eiq;
+    // while (ec_queue.try_pop(eiq)) {
+    //     tg.run([&] { collapse_shortest_stuff(eiq, ec_queue); });
+    // }
+
+
+    // ElementInQueue eiq;
+    // while (ec_queue.try_pop(eiq)) {
+    //     collapse_shortest_stuff(eiq, ec_queue);
+    // }
+
 
     // parallel_collapse_shortest pcs(ec_queue, this->m_vertex_positions);
     // tbb::parallel_reduce(tbb::blocked_range<size_t>(0,NUM_THREADS), pcs);

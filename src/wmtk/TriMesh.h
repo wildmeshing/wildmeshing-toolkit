@@ -3,12 +3,16 @@
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/utils/Logger.hpp>
 
+#include <tbb/concurrent_vector.h>
+
 #include <algorithm>
 #include <array>
 #include <cassert>
 #include <map>
 #include <optional>
 #include <vector>
+
+
 
 namespace wmtk {
 
@@ -192,8 +196,8 @@ public:
 
     inline void create_mesh(size_t n_vertices, const std::vector<std::array<size_t, 3>>& tris)
     {
-        m_vertex_connectivity.resize(n_vertices);
-        m_tri_connectivity.resize(tris.size());
+        m_vertex_connectivity.grow_to_at_least(n_vertices);
+        m_tri_connectivity.grow_to_at_least(tris.size());
         size_t hash_cnt = 0;
         for (int i = 0; i < tris.size(); i++) {
             m_tri_connectivity[i].m_indices = tris[i];
@@ -289,8 +293,8 @@ public:
     }
 
 private:
-    std::vector<VertexConnectivity> m_vertex_connectivity;
-    std::vector<TriangleConnectivity> m_tri_connectivity;
+    tbb::concurrent_vector<VertexConnectivity> m_vertex_connectivity;
+    tbb::concurrent_vector<TriangleConnectivity> m_tri_connectivity;
 
     size_t get_next_empty_slot_t()
     {
