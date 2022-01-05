@@ -413,23 +413,31 @@ std::vector<wmtk::TriMesh::Tuple> TriMesh::get_one_ring_edges_for_vertex(
         for (auto vert : incident_verts) {
             size_t vert_vid = vert.get_vid();
             std::cout << "     the oriented verts for " << fid << " is " << vert_vid << std::endl;
+            size_t vert_eid;
             if (vert_vid != vid && !vector_contains(one_ring_vertices, vert_vid)) {
-                int j = m_tri_connectivity[fid].find(vert_vid);
-                int k = m_tri_connectivity[fid].find(vid);
-                size_t vert_eid;
+                size_t j = std::min(
+                    m_tri_connectivity[fid].find(vert_vid),
+                    m_tri_connectivity[fid].find(vid));
+                size_t k = std::max(
+                    m_tri_connectivity[fid].find(vert_vid),
+                    m_tri_connectivity[fid].find(vid));
+                std::cout << " jesus the j k is messed up " << j << " " << k << std::endl;
                 // Assign the edge id depending on the table
-                int jk = j + k;
-                switch (jk) {
-                case 1: vert_eid = 2;
-                case 2: vert_eid = 1;
-                case 3: vert_eid = 0;
-                }
-                one_ring_edges.emplace_back(vid, vert_eid, fid, *this);
-                one_ring_vertices.push_back(vert_vid);
-                std::cout << "          the one got added is " << vert.get_vid() << std::endl;
+                if (j == (size_t)0 && k == (size_t)1) {
+                    vert_eid = 2;
+                } else if (j == (size_t)0 && k == (size_t)2) {
+                    vert_eid = 1;
+                } else if (j == 1 && k == 2) {
+                    vert_eid = 0;
+                } else
+                    assert(false);
             }
+            one_ring_edges.emplace_back(vid, vert_eid, fid, *this);
+            one_ring_vertices.push_back(vert_vid);
+            std::cout << "          the one got added is " << vert.get_vid() << std::endl;
         }
     }
+
     assert(one_ring_vertices.size() == one_ring_edges.size());
 
     return one_ring_edges;
