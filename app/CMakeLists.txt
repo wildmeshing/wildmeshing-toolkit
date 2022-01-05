@@ -3,6 +3,7 @@
 
 include(wmtk_data)
 include(gmp)
+include(mpfr)
 
 ################################################################################
 # Shared Lib
@@ -19,7 +20,7 @@ add_library(app_shared
 	shared/external/MshSaver.h
 )
 target_include_directories(app_shared PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/shared ${CMAKE_CURRENT_SOURCE_DIR}/shared/external)
-target_link_libraries(app_shared PUBLIC wmtk::toolkit wmtk::data gmp::gmp)
+target_link_libraries(app_shared PUBLIC wmtk::toolkit wmtk::data gmp::gmp mpfr::mpfr)
 
 include(fenvelope)
 
