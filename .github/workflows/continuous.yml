@@ -12,14 +12,13 @@ jobs:
   ####################
 
   Linux:
-    name: ${{ matrix.name }} (${{ matrix.config }}), TBB ${{ matrix.tbb }}
+    name: ${{ matrix.name }} (${{ matrix.config }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
         config: [Debug, Release]
-        tbb: [ON, OFF]
         include:
           - os: ubuntu-latest
             name: Linux
@@ -57,7 +56,6 @@ jobs:
           cd build
           cmake .. \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-            -DWILDMESHING_TOOLKIT_WITH_TBB=${{ matrix.tbb }} \
             -DCMAKE_BUILD_TYPE=${{ matrix.config }}
 
       - name: Build
@@ -71,14 +69,13 @@ jobs:
   ####################
 
   MacOS:
-    name: ${{ matrix.name }}-${{ matrix.arch }} (${{ matrix.config }}), TBB ${{ matrix.tbb }}
+    name: ${{ matrix.name }}-${{ matrix.arch }} (${{ matrix.config }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [macos-latest]
         arch: [x86_64, arm64]
-        tbb: [ON, OFF]
         config: [Debug, Release]
         include:
           - os: macos-latest
@@ -115,7 +112,6 @@ jobs:
           cd build
           cmake .. \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-            -DWILDMESHING_TOOLKIT_WITH_TBB=${{ matrix.tbb }} \
             -DCMAKE_OSX_ARCHITECTURES=${{ matrix.arch }} \
             -DCMAKE_BUILD_TYPE=${{ matrix.config }}
 
@@ -131,7 +127,7 @@ jobs:
   ####################
 
   Windows:
-    name: Windows (${{ matrix.config }}), TBB ${{ matrix.tbb }}
+    name: Windows (${{ matrix.config }})
     runs-on: windows-2019
     env:
       CC: cl.exe
@@ -140,7 +136,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        tbb: [ON, OFF]
         config: [Debug, Release]
     steps:
       - name: Checkout repository
@@ -176,7 +171,6 @@ jobs:
           cmake --version
           cmake -G Ninja ^
             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache ^
-            -DWILDMESHING_TOOLKIT_WITH_TBB=${{ matrix.tbb }} ^
             -DCMAKE_BUILD_TYPE=${{ matrix.config }} ^
             -B build ^
             -S .

@@ -17,6 +17,19 @@ endif()
 
 message(STATUS "Third-party: creating target 'igl::core'")
 
+# Options for libigl modules
+option(LIBIGL_USE_STATIC_LIBRARY     "Use libigl as static library" OFF)
+option(LIBIGL_WITH_COMISO            "Use CoMiso"                   OFF)
+option(LIBIGL_WITH_EMBREE            "Use Embree"                   OFF)
+option(LIBIGL_WITH_OPENGL            "Use OpenGL"                   OFF)
+option(LIBIGL_WITH_OPENGL_GLFW       "Use GLFW"                     OFF)
+option(LIBIGL_WITH_OPENGL_GLFW_IMGUI "Use ImGui"                    OFF)
+option(LIBIGL_WITH_PNG               "Use PNG"                      OFF)
+option(LIBIGL_WITH_TETGEN            "Use Tetgen"                   OFF)
+option(LIBIGL_WITH_TRIANGLE          "Use Triangle"                 OFF)
+option(LIBIGL_WITH_PREDICATES        "Use exact predicates"         ON) #remove me once tetwild is out of this repo
+option(LIBIGL_WITH_XML               "Use XML"                      OFF)
+
 include(FetchContent)
 FetchContent_Declare(
     libigl
