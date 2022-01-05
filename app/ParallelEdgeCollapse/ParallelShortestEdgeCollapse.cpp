@@ -7,6 +7,7 @@
 #include <wmtk/utils/VectorUtils.h>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+#include <wmtk/utils/Logger.hpp>
 #include "ParallelEdgeCollapse.h"
 
 
@@ -69,7 +70,10 @@ bool Edge2d::ParallelEdgeCollapse::collapse_shortest()
         while (ec_queue.try_pop(eiq)) {
             tg.run([&] { collapse_shortest_stuff(eiq, ec_queue); });
         }
+
+        tg.wait();
     });
+
 
     // auto run_task = [&]() {
     //     ElementInQueue eiq;
@@ -81,21 +85,6 @@ bool Edge2d::ParallelEdgeCollapse::collapse_shortest()
     // for (int i = 0; i < ec_queue.size(); ++i) {
     //     tg.run(run_task);
     // }
-
-    // ElementInQueue eiq;
-    // while (ec_queue.try_pop(eiq)) {
-    //     tg.run([&] { collapse_shortest_stuff(eiq, ec_queue); });
-    // }
-
-
-    // ElementInQueue eiq;
-    // while (ec_queue.try_pop(eiq)) {
-    //     collapse_shortest_stuff(eiq, ec_queue);
-    // }
-
-
-    // parallel_collapse_shortest pcs(ec_queue, this->m_vertex_positions);
-    // tbb::parallel_reduce(tbb::blocked_range<size_t>(0,NUM_THREADS), pcs);
 
     return true;
 }
