@@ -27,6 +27,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/recipes/")
 
 include(sanitizers)
 include(wmtk_colors)
+include(wmtk_copy_dll)
 include(wmtk_warnings)
 
 # Sort projects inside the solution

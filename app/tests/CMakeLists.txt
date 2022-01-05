@@ -37,3 +37,4 @@ FetchContent_GetProperties(catch2)
 include("${catch2_SOURCE_DIR}/contrib/Catch.cmake")
 
 catch_discover_tests(app_unit_tests)
+wmtk_copy_dll(app_unit_tests)

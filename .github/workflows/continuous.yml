@@ -143,17 +143,6 @@ jobs:
           fetch-depth: 10
       - uses: seanmiddleditch/gha-setup-ninja@master
 
-      - name: Stetup Conda
-        uses: s-weigand/setup-conda@v1
-        with:
-          conda-channels: anaconda, conda-forge
-          python-version: 3.6
-
-      - name: Install Dependencies
-        shell: powershell
-        run: |
-          conda install -c conda-forge mpir -y
-
       - name: Set env
         run: |
           echo "BOOST_ROOT=$env:BOOST_ROOT_1_72_0" >> ${env:GITHUB_ENV}

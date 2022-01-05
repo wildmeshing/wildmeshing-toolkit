@@ -51,7 +51,7 @@ target_compile_features(TetWild PUBLIC cxx_std_17)
 add_executable(TetWild_bin tetwild/main.cpp)
 target_link_libraries(TetWild_bin PUBLIC TetWild)
 
-
+wmtk_copy_dll(TetWild_bin)
 
 ################################################################################
 # Quadric Edge Collapse 2D
@@ -70,6 +70,7 @@ target_compile_features(QuadricEdgeCollapse PUBLIC cxx_std_17)
 add_executable(QuadricEdgeCollapse_bin QuadricEdgeCollapse/main.cpp)
 target_link_libraries(QuadricEdgeCollapse_bin PUBLIC QuadricEdgeCollapse)
 
+wmtk_copy_dll(QuadricEdgeCollapse_bin)
 
 ################################################################################
 # Tests
