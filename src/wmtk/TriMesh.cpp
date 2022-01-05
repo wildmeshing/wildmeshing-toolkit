@@ -428,6 +428,7 @@ std::vector<wmtk::TriMesh::Tuple> TriMesh::get_one_ring_edges_for_vertex(
         }
 
     }
+
     assert(one_ring_vertices.size() == one_ring_edges.size());
 
     return one_ring_edges;

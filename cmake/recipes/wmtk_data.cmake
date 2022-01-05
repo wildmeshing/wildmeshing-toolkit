@@ -1,6 +1,9 @@
 # data
 # License: MIT
 
+if(TARGET wmtk::data)
+    return()
+endif()
 
 include(ExternalProject)
 include(FetchContent)
@@ -24,4 +27,5 @@ ExternalProject_Add(
 
 # Create a dummy target for convenience
 add_library(wmtk_data INTERFACE)
+add_library(wmtk::data ALIAS wmtk_data)
 target_compile_definitions(wmtk_data INTERFACE  WMT_DATA_DIR=\"${WMT_DATA_ROOT}\")

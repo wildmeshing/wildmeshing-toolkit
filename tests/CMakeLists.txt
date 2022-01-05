@@ -1,49 +1,23 @@
-################################################################################
-# Tests
-################################################################################
+# Include Catch2 stuff
+include(catch2)
+FetchContent_GetProperties(catch2)
+list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/contrib)
+include(Catch)
 
-set(test_sources
-	main.cpp
+# Sources
+file(GLOB TEST_SOURCES CONFIGURE_DEPENDS "*.h" "*.cpp")
+add_executable(tests_wmtk ${TEST_SOURCES})
 
-	test_tuple.cpp
-	2d_tests.cpp
-	test_operations.cpp
-	test_delaunay.cpp
+# Macros
+target_compile_definitions(tests_wmtk PUBLIC CATCH_CONFIG_ENABLE_BENCHMARKING)
+
+# Dependencies
+include(wmtk_data)
+target_link_libraries(tests_wmtk PUBLIC
+    wmtk::toolkit
+    wmtk::data
+    Catch2::Catch2
 )
 
-add_executable(unit_tests ${test_sources})
-
-################################################################################
-# Required Libraries
-################################################################################
-
-target_link_libraries(unit_tests PUBLIC WildMeshingToolkit)
-
-target_link_libraries(unit_tests PUBLIC warnings::all)
-
-include(catch2)
-target_link_libraries(unit_tests PUBLIC Catch2::Catch2)
-
-################################################################################
-# Compiler options
-################################################################################
-
-# wildmeshing_toolkit_polyfem_data()
-# set(DATA_DIR "${THIRD_PARTY_DIR}/data/")
-# target_compile_definitions(unit_tests PUBLIC -DWILDMESHING_TOOLKIT_DATA_DIR=\"${DATA_DIR}\")
-
-target_compile_definitions(unit_tests PUBLIC CATCH_CONFIG_ENABLE_BENCHMARKING)
-
-################################################################################
-# Register tests
-################################################################################
-
-foreach(source IN ITEMS ${test_sources})
-    source_group("tests" FILES "${source}")
-endforeach()
-
-# Include Catch2 and provide function `catch_discover_tests` to register tests.
-FetchContent_GetProperties(catch2)
-include("${catch2_SOURCE_DIR}/contrib/Catch.cmake")
-
-catch_discover_tests(unit_tests)
+# Register unit tests
+catch_discover_tests(tests_wmtk)
