@@ -117,6 +117,9 @@ public:
         double max_energy;
     } edgeswap_cache, faceswap_cache; // todo: change for parallel
 
+    void construct_background_mesh(std::vector<Vector3d>& vertices,
+                                   std::vector<std::array<size_t, 3>>& faces);
+
     void triangle_insertion(
         std::vector<Vector3d>& vertices,
         std::vector<std::array<size_t, 3>>& faces);

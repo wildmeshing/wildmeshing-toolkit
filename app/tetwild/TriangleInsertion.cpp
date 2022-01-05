@@ -7,6 +7,35 @@
 #include "wmtk/TetMesh.h"
 #include "wmtk/auto_table.hpp"
 #include "wmtk/utils/GeoUtils.h"
+#include <wmtk/utils/Delaunay.hpp>
+
+void tetwild::TetWild::construct_background_mesh(std::vector<Vector3d>& vertices,
+                                                 std::vector<std::array<size_t, 3>>& faces)
+{
+    ///box
+    std::vector<wmtk::Point3D> points(vertices.size());
+    for (int i = 0; i < vertices.size(); i++) {
+        for (int j = 0; j < 3; j++) points[i][j] = vertices[i][j];
+    }
+    //todo
+
+    ///delaunay
+    auto tets = wmtk::delaunay3D_conn(points);
+
+    ///init the mesh
+    // conn
+    init(points.size(), tets);
+    // attr
+    resize_attributes(points.size(), tets.size() * 6, tets.size() * 4, tets.size());
+    for (int i = 0; i < m_vertex_attribute.size(); i++) {
+        m_vertex_attribute[i].m_pos =
+            Vector3(points[i][0], points[i][1], points[i][2]);
+        m_vertex_attribute[i].m_posf =
+            Vector3d(points[i][0], points[i][1], points[i][2]);
+
+        //todo: bbox
+    }
+}
 
 void tetwild::TetWild::triangle_insertion(
     std::vector<Vector3d>& vertices,
