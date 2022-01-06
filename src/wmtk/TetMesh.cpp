@@ -307,10 +307,8 @@ void wmtk::TetMesh::consolidate_mesh_connectivity()
         if (v_cnt != i) {
             assert(v_cnt < i);
             m_vertex_connectivity[v_cnt] = m_vertex_connectivity[i];
+            move_vertex_attribute(i, v_cnt);
         }
-
-        move_vertex_attribute(i, v_cnt);
-
         for (size_t& t_id : m_vertex_connectivity[v_cnt].m_conn_tets) t_id = map_t_ids[t_id];
         v_cnt++;
     }
@@ -318,22 +316,27 @@ void wmtk::TetMesh::consolidate_mesh_connectivity()
     for (int i = 0; i < m_tet_connectivity.size(); i++) {
         if (m_tet_connectivity[i].m_is_removed) continue;
 
-        m_tet_connectivity[t_cnt] = m_tet_connectivity[i];
-        m_tet_connectivity[t_cnt].timestamp = 0;
+        if (t_cnt != i) {
+            assert(t_cnt < i);
+            m_tet_connectivity[t_cnt] = m_tet_connectivity[i];
+            m_tet_connectivity[t_cnt].timestamp = 0;
+            move_tet_attribute(i, t_cnt);
 
-        move_tet_attribute(i, t_cnt);
-        for (auto j = 0; j < 4; j++) {
-            move_face_attribute(i * 4 + j, t_cnt * 4 + j);
+            for (auto j = 0; j < 4; j++) {
+                move_face_attribute(i * 4 + j, t_cnt * 4 + j);
+            }
+            for (auto j = 0; j < 6; j++) {
+                move_edge_attribute(i * 6 + j, t_cnt * 6 + j);
+            }
         }
-        for (auto j = 0; j < 6; j++) {
-            move_edge_attribute(i * 6 + j, t_cnt * 6 + j);
-        }
-
         for (size_t& v_id : m_tet_connectivity[t_cnt].m_indices) v_id = map_v_ids[v_id];
         t_cnt++;
     }
 
-    resize_attributes(v_cnt, t_cnt);
+    m_vertex_connectivity.resize(v_cnt);
+    m_tet_connectivity.resize(t_cnt);
+
+    resize_attributes(v_cnt, 6 * t_cnt, 4 * t_cnt, t_cnt);
 
     check_mesh_connectivity_validity();
 }

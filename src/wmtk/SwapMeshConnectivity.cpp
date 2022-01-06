@@ -158,6 +158,8 @@ bool wmtk::TetMesh::swap_edge(const Tuple& t)
 
     resize_attributes(
         m_vertex_connectivity.size(),
+        m_tet_connectivity.size() * 6,
+        m_tet_connectivity.size() * 4,
         m_tet_connectivity.size());
 
     auto u0id = m_tet_connectivity[new_tet_id.front()].find(v1_id);
@@ -244,6 +246,8 @@ bool wmtk::TetMesh::swap_face(const Tuple& t)
 
     resize_attributes(
         m_vertex_connectivity.size(),
+        m_tet_connectivity.size() * 6,
+        m_tet_connectivity.size() * 4,
         m_tet_connectivity.size());
 
     assert(affected.size() == old_tets.size());
