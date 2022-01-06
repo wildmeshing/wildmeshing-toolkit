@@ -313,8 +313,16 @@ protected:
     virtual bool split_before(const Tuple& t) { return true; }
     virtual bool split_after(const Tuple& t) { return true; }
     // check link, check if it's the last edge
-    virtual bool collapse_before(const Tuple& t) { return true; }
-    virtual bool collapse_after(const Tuple& t) { return true; }
+    virtual bool collapse_before(const Tuple& t)
+    {
+        if (check_link_condition(t) && check_manifold(t)) return true;
+        return false;
+    }
+    virtual bool collapse_after(const Tuple& t)
+    {
+        if (check_mesh_connectivity_validity() && t.is_valid(*this)) return true;
+        return false;
+    }
 
     virtual void resize_attributes(size_t v, size_t t) {}
 
