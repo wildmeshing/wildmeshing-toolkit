@@ -57,6 +57,34 @@ public:
         // std::cout << "write output is ok ? " << ok << std::endl;
     }
 
+    // write the collapsed mesh into a obj
+    void write_triangle_mesh_without_compact(std::string path)
+    {
+        std::vector<VertexConnectivity> m_vertex_connectivity = get_m_vertex_connectivity();
+        std::vector<TriangleConnectivity> m_tri_connectivity = get_m_tri_connectivity();
+
+        Eigen::MatrixXd V(n_vertices(), 3);
+
+        Eigen::MatrixXi F(n_triangles(), 3);
+
+        size_t v_cnt = 0;
+        for (int i = 0; i < n_vertices(); i++) {
+            if (m_vertex_connectivity[i].m_is_removed) continue;
+            V.row(i) = m_vertex_positions[i];
+        }
+
+
+        for (int i = 0; i < n_triangles(); i++) {
+            if (m_tri_connectivity[i].m_is_removed) continue;
+            F.row(i) = Eigen::Vector3i(
+                (int)m_tri_connectivity[i].m_indices[0],
+                (int)m_tri_connectivity[i].m_indices[1],
+                (int)m_tri_connectivity[i].m_indices[2]);
+        }
+        bool ok = igl::write_triangle_mesh(path, V, F);
+        // std::cout << "write output is ok ? " << ok << std::endl;
+    }
+
 
     bool collapse_shortest(int target_vertex_count);
 

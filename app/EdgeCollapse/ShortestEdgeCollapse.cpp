@@ -40,7 +40,8 @@ bool Edge2d::EdgeCollapse::collapse_shortest(int target_vertex_count)
         if (!loc.is_valid(*this)) continue;
 
         Eigen::Vector3d v1p = m_vertex_positions[loc.get_vid()];
-        Eigen::Vector3d v2p = m_vertex_positions[loc.switch_vertex(*this).get_vid()];
+        auto tmp_tuple = loc.switch_vertex(*this);
+        Eigen::Vector3d v2p = m_vertex_positions[tmp_tuple.get_vid()];
 
         // std::cout << "actually candidate is between  " << v1 << " " << v2 << std::endl;
 
@@ -52,19 +53,22 @@ bool Edge2d::EdgeCollapse::collapse_shortest(int target_vertex_count)
         cnt++;
         if (cnt % 100 == 0) std::cout << " 100 more collpased" << std::endl;
 
-        target_vertex_count--;
-        if (target_vertex_count <= 0) break;
-
 
         // std::cout << "collapsed and got " << new_vert.get_vid() << " " << new_vert.get_fid()
         //   << std::endl;
 
         // update_position(v1, v2, new_vert);
         m_vertex_positions[new_vert.get_vid()] = (v1p + v2p) / 2.0;
+        // wmtk::vector_print(m_vertex_positions);
 
-        check_mesh_connectivity_validity();
+        assert(check_mesh_connectivity_validity());
+
+        target_vertex_count--;
+        if (target_vertex_count <= 0) break;
+
         size_t new_vid = new_vert.get_vid();
         std::vector<TriMesh::Tuple> one_ring_edges = get_one_ring_edges_for_vertex(new_vert);
+
         for (TriMesh::Tuple edge : one_ring_edges) {
             TriMesh::Tuple tmp_tuple = switch_vertex(edge);
             size_t vid = tmp_tuple.get_vid();
