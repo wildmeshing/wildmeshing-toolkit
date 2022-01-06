@@ -461,8 +461,15 @@ void TriMesh::consolidate_mesh_connectivity()
     }
 
     // DP: remember to move edge attributes too!
-    m_vertex_connectivity.resize(m_vertex_connectivity.size()-v_free.size());
-    m_tri_connectivity.resize(m_tri_connectivity.size()-t_free.size());
+    f = 0;
+    while (m_vertex_connectivity[f].m_is_removed == false) ++f;
+    m_vertex_connectivity.resize(f);
+
+    f = 0;
+    while (m_tri_connectivity[f].m_is_removed == false) ++f;
+    m_tri_connectivity.resize(f);
+
+    // Resize user class attributes
     resize_attributes(m_vertex_connectivity.size(), m_tri_connectivity.size());
 
     // DP: remember to compact the tbb vectors!
