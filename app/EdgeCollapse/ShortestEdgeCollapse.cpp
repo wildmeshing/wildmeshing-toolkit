@@ -70,8 +70,7 @@ bool Edge2d::EdgeCollapse::collapse_shortest(int target_vertex_count)
         std::vector<TriMesh::Tuple> one_ring_edges = get_one_ring_edges_for_vertex(new_vert);
 
         for (TriMesh::Tuple edge : one_ring_edges) {
-            TriMesh::Tuple tmp_tuple = switch_vertex(edge);
-            size_t vid = tmp_tuple.get_vid();
+            size_t vid = edge.get_vid();
             // std::cout << " the one ring edge for " << new_vert.get_vid() << " include " << vid
             //           << std::endl;
             double length = (m_vertex_positions[new_vid] - m_vertex_positions[vid]).squaredNorm();

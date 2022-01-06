@@ -180,6 +180,6 @@ TEST_CASE("shortest_edge_collapse_circle", "[test_2d_operations]")
     m.create_mesh(V.rows(), tri);
     REQUIRE(m.check_mesh_connectivity_validity());
     std::cout << " is it mesh passed " << std ::endl;
-    REQUIRE(m.collapse_shortest(2));
+    REQUIRE(m.collapse_shortest(1000));
     m.write_triangle_mesh_without_compact("collapsed.obj");
 }
