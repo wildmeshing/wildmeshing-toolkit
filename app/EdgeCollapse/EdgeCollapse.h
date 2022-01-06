@@ -20,6 +20,16 @@ public:
 
     ~EdgeCollapse() {}
 
+    struct CollapseInfoCache
+    {
+        Eigen::Vector3d v1p;
+        Eigen::Vector3d v2p;
+    } collapse_cache;
+
+
+    bool collapse_before(const Tuple& t) override;
+    bool collapse_after(const Tuple& t) override;
+
     void compact_vertex_positions(std::vector<size_t> vid_newvid_map)
     {
         std::vector<Eigen::Vector3d> new_m_vertex_positions(m_vertex_positions.size());
@@ -84,7 +94,6 @@ public:
         bool ok = igl::write_triangle_mesh(path, V, F);
         // std::cout << "write output is ok ? " << ok << std::endl;
     }
-
 
     bool collapse_shortest(int target_vertex_count);
 

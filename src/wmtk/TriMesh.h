@@ -313,36 +313,8 @@ protected:
     virtual bool split_before(const Tuple& t) { return true; }
     virtual bool split_after(const Tuple& t) { return true; }
     // check link, check if it's the last edge
-    virtual bool collapse_before(const Tuple& t)
-    {
-        // DP: these should be empty
-        auto v1_conn_tris = m_vertex_connectivity[t.get_vid()].m_conn_tris;
-        auto v2_conn_tris = m_vertex_connectivity[switch_vertex(t).get_vid()].m_conn_tris;
-
-        size_t fid1 = t.get_fid();
-        size_t fid2 = switch_face(t).value_or(t).get_fid();
-
-        vector_erase(v1_conn_tris, fid1);
-        vector_erase(v1_conn_tris, fid2);
-        vector_erase(v2_conn_tris, fid1);
-        vector_erase(v2_conn_tris, fid2);
-        // check if this is a tet (the final state of collapsing for a closed mesh)
-        // if (v1_conn_tris.size() == 1 && v2_conn_tris.size() == 1) {
-        //     auto m1_indices = m_tri_connectivity[v1_conn_tris[0]].m_indices;
-        //     auto m2_indices = m_tri_connectivity[v2_conn_tris[0]].m_indices;
-        //     int cnt = 0;
-
-        //     if (intersection.size() == 2) return false;
-        // }
-
-        if (check_link_condition(t) && (v1_conn_tris.size() + v2_conn_tris.size() > 0)) return true;
-        return false;
-    }
-    virtual bool collapse_after(const Tuple& t)
-    {
-        if (check_mesh_connectivity_validity() && t.is_valid(*this)) return true;
-        return false;
-    }
+    virtual bool collapse_before(const Tuple& t) { return true; }
+    virtual bool collapse_after(const Tuple& t) { return true; }
 
     virtual void resize_attributes(size_t v, size_t t) {}
 
@@ -370,7 +342,20 @@ public:
 
     bool check_link_condition(const Tuple& t) const; // DP: should be private
     bool check_mesh_connectivity_validity() const; // DP: should be private
+    bool check_manifold(const Tuple& t) const
+    {
+        auto v1_conn_tris = m_vertex_connectivity[t.get_vid()].m_conn_tris;
+        auto v2_conn_tris = m_vertex_connectivity[t.switch_vertex(*this).get_vid()].m_conn_tris;
 
+        size_t fid1 = t.get_fid();
+        size_t fid2 = switch_face(t).value_or(t).get_fid();
+
+        vector_erase(v1_conn_tris, fid1);
+        vector_erase(v1_conn_tris, fid2);
+        vector_erase(v2_conn_tris, fid1);
+        vector_erase(v2_conn_tris, fid2);
+        return (v1_conn_tris.size() + v2_conn_tris.size() > 0);
+    }
     /**
      * Split an edge
      *

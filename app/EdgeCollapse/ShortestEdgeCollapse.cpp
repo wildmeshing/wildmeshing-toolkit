@@ -16,6 +16,24 @@ void Edge2d::EdgeCollapse::update_position(size_t v1, size_t v2, Tuple& new_vert
         m_vertex_positions.emplace_back(new_position);
 }
 
+bool Edge2d::EdgeCollapse::collapse_before(const Tuple& t)
+{
+    if (check_link_condition(t) && check_manifold(t)) {
+        collapse_cache.v1p = m_vertex_positions[t.get_vid()];
+        collapse_cache.v2p = m_vertex_positions[t.switch_vertex(*this).get_vid()];
+        return true;
+    }
+    return false;
+}
+
+bool Edge2d::EdgeCollapse::collapse_after(const Tuple& t)
+{
+    if (check_mesh_connectivity_validity() && t.is_valid(*this)) {
+        m_vertex_positions[t.get_vid()] = (collapse_cache.v1p + collapse_cache.v2p) / 2.0;
+        return true;
+    }
+    return false;
+}
 
 bool Edge2d::EdgeCollapse::collapse_shortest(int target_vertex_count)
 {
@@ -39,29 +57,13 @@ bool Edge2d::EdgeCollapse::collapse_shortest(int target_vertex_count)
         // std::endl;
         if (!loc.is_valid(*this)) continue;
 
-        Eigen::Vector3d v1p = m_vertex_positions[loc.get_vid()];
-        auto tmp_tuple = loc.switch_vertex(*this);
-        Eigen::Vector3d v2p = m_vertex_positions[tmp_tuple.get_vid()];
-
-        // std::cout << "actually candidate is between  " << v1 << " " << v2 << std::endl;
-
         TriMesh::Tuple new_vert;
 
-        check_mesh_connectivity_validity();
+        assert(check_mesh_connectivity_validity());
 
         if (!TriMesh::collapse_edge(loc, new_vert)) continue;
         cnt++;
         if (cnt % 100 == 0) std::cout << " 100 more collpased" << std::endl;
-
-
-        // std::cout << "collapsed and got " << new_vert.get_vid() << " " << new_vert.get_fid()
-        //   << std::endl;
-
-        // update_position(v1, v2, new_vert);
-        m_vertex_positions[new_vert.get_vid()] = (v1p + v2p) / 2.0;
-        // wmtk::vector_print(m_vertex_positions);
-
-        assert(check_mesh_connectivity_validity());
 
         target_vertex_count--;
         if (target_vertex_count <= 0) break;
