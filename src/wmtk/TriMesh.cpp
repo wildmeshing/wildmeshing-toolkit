@@ -466,7 +466,10 @@ void TriMesh::consolidate_mesh_connectivity()
     m_tri_connectivity.resize(f);
 
     // Resize user class attributes
-    resize_attributes(m_vertex_connectivity.size(), m_tri_connectivity.size());
+    resize_attributes(
+        m_vertex_connectivity.size(),
+        m_tri_connectivity.size() * 3,
+        m_tri_connectivity.size());
 
     // DP: remember to compact the tbb vectors!
     // m_vertex_connectivity.compact();
@@ -487,7 +490,7 @@ std::vector<wmtk::TriMesh::Tuple> TriMesh::get_one_ring_tris_for_vertex(
     }
 
     return one_ring;
-};
+}
 
 std::vector<wmtk::TriMesh::Tuple> TriMesh::get_one_ring_edges_for_vertex(
     const wmtk::TriMesh::Tuple& t) const
@@ -519,7 +522,7 @@ std::vector<wmtk::TriMesh::Tuple> TriMesh::get_one_ring_edges_for_vertex(
     assert(one_ring_vertices.size() == one_ring_edges.size());
 
     return one_ring_edges;
-};
+}
 
 std::vector<wmtk::TriMesh::Tuple> TriMesh::get_oriented_vertices_for_tri(
     const wmtk::TriMesh::Tuple& t) const
@@ -532,4 +535,4 @@ std::vector<wmtk::TriMesh::Tuple> TriMesh::get_oriented_vertices_for_tri(
     incident_verts.emplace_back(indices[1], 0, fid, *this);
     incident_verts.emplace_back(indices[2], 1, fid, *this);
     return incident_verts;
-};
+}

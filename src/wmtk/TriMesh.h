@@ -33,11 +33,11 @@ public:
     public:
         void print_info() { logger().trace("tuple: {} {} {}", m_vid, m_eid, m_fid); }
 
-        //        v2
-        //      /    \
-		// e1  /      \  e0
-        //    v0 - - - v1
-        //        e2
+        //        v2         *
+        //      /    \       *
+        // e1  /      \  e0  *
+        //    v0 - - - v1    *
+        //        e2         *
         /**
          * Construct a new Tuple object with global vertex/triangle index and local edge index
          *
@@ -108,6 +108,7 @@ public:
             case 0: assert(m_vid == v1 || m_vid == v2); break;
             case 1: assert(m_vid == v0 || m_vid == v2); break;
             case 2: assert(m_vid == v0 || m_vid == v1); break;
+            default: assert(false);
             }
 #endif
 
@@ -147,13 +148,13 @@ public:
 
         inline size_t& operator[](const size_t index)
         {
-            assert(index >= 0 && index < m_conn_tris.size());
+            assert(index < m_conn_tris.size());
             return m_conn_tris[index];
         }
 
         inline size_t operator[](const size_t index) const
         {
-            assert(index >= 0 && index < m_conn_tris.size());
+            assert(index < m_conn_tris.size());
             return m_conn_tris[index];
         }
     };
@@ -171,13 +172,13 @@ public:
 
         inline size_t& operator[](size_t index)
         {
-            assert(index >= 0 && index < 3);
+            assert(index < 3);
             return m_indices[index];
         }
 
         inline size_t operator[](size_t index) const
         {
-            assert(index >= 0 && index < 3);
+            assert(index < 3);
             return m_indices[index];
         }
 
@@ -299,13 +300,19 @@ private:
     size_t get_next_empty_slot_t()
     {
         m_tri_connectivity.emplace_back();
-        resize_attributes(m_vertex_connectivity.size(), m_tri_connectivity.size());
+        resize_attributes(
+            m_vertex_connectivity.size(),
+            m_tri_connectivity.size() * 3,
+            m_tri_connectivity.size());
         return m_tri_connectivity.size() - 1;
     }
     size_t get_next_empty_slot_v()
     {
         m_vertex_connectivity.emplace_back();
-        resize_attributes(m_vertex_connectivity.size(), m_tri_connectivity.size());
+        resize_attributes(
+            m_vertex_connectivity.size(),
+            m_tri_connectivity.size() * 3,
+            m_tri_connectivity.size());
         return m_vertex_connectivity.size() - 1;
     }
 
@@ -324,12 +331,13 @@ protected:
         return false;
     }
 
-    virtual void resize_attributes(size_t v, size_t t) {}
+    virtual void resize_attributes(size_t v, size_t e, size_t t) {}
 
     void consolidate_mesh_connectivity();
     virtual void move_vertex_attribute(size_t from, size_t to){};
-    virtual void move_face_attribute(size_t from, size_t to){};
     virtual void move_edge_attribute(size_t from, size_t to){};
+    virtual void move_face_attribute(size_t from, size_t to){};
+
 
 public:
     size_t n_triangles() const { return m_tri_connectivity.size(); }

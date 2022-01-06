@@ -52,11 +52,14 @@ std::array<double, 10> Edge2d ::EdgeCollapse::compute_Q_v(wmtk::TriMesh::Tuple& 
 
 double Edge2d::EdgeCollapse::compute_cost_for_v(wmtk::TriMesh::Tuple& v_tuple)
 {
-    Eigen::Vector3d v = m_vertex_positions[v_tuple.get_vid()];
-    std::array<double, 10> Q = compute_Q_v(v_tuple);
+    // DP: Commented out because this function returns an undefined number
+    // Eigen::Vector3d v = m_vertex_positions[v_tuple.get_vid()];
+    // std::array<double, 10> Q = compute_Q_v(v_tuple);
 
-    double cost;
-    return cost;
+    // double cost;
+    // return cost;
+    assert(false);
+    return 0;
 }
 
 bool Edge2d::EdgeCollapse::collapse_qec()

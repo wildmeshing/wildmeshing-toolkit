@@ -52,37 +52,6 @@ public:
         bool ok = igl::write_triangle_mesh(path, V, F);
     }
 
-    // write the collapsed mesh into a obj
-    void write_triangle_mesh_without_compact(std::string path)
-    {
-        std::vector<VertexConnectivity> m_vertex_connectivity = get_m_vertex_connectivity();
-        std::vector<TriangleConnectivity> m_tri_connectivity = get_m_tri_connectivity();
-
-        Eigen::MatrixXd V(n_vertices(), 3);
-
-        Eigen::MatrixXi F(n_triangles(), 3);
-
-        size_t v_cnt = 0;
-        for (int i = 0; i < n_vertices(); i++) {
-            if (m_vertex_connectivity[i].m_is_removed)
-                V.row(i) << -1, -1, -1;
-            else
-                V.row(i) = m_vertex_positions[i];
-        }
-
-
-        for (int i = 0; i < n_triangles(); i++) {
-            if (m_tri_connectivity[i].m_is_removed)
-                F.row(i) << 100, 100, 100;
-            else
-                F.row(i) = Eigen::Vector3i(
-                    (int)m_tri_connectivity[i].m_indices[0],
-                    (int)m_tri_connectivity[i].m_indices[1],
-                    (int)m_tri_connectivity[i].m_indices[2]);
-        }
-        bool ok = igl::write_triangle_mesh(path, V, F);
-    }
-
     bool collapse_shortest(int target_vertex_count);
 
     bool collapse_qec();
@@ -100,7 +69,7 @@ public:
         m_vertex_positions[to] = m_vertex_positions[from];
     }
 
-    void resize_attributes(size_t v, size_t t) override { m_vertex_positions.resize(v); }
+    void resize_attributes(size_t v, size_t e, size_t t) override { m_vertex_positions.resize(v); }
 };
 
 class ElementInQueue
