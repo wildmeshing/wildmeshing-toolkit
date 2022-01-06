@@ -72,7 +72,7 @@ public:
 
     void move_vertex_attribute(size_t from, size_t to) override
     {
-        m_vertex_positions[to] = std::move(m_vertex_positions[from]);
+        m_vertex_positions[to] = m_vertex_positions[from];
     }
 
     void resize_attributes(size_t v, size_t t) override { m_vertex_positions.resize(v); }
