@@ -98,13 +98,15 @@ public:
     public:
         std::vector<Vector3d> vertices;
         std::vector<std::array<size_t, 3>> faces;
-        //can add other input tags;
+        // can add other input tags;
 
         Parameters params;
 
-        InputSurface(const std::vector<Vector3d>& _vertices,
-                     const std::vector<std::array<size_t, 3>>& _faces):
-            vertices(_vertices),faces(_faces)
+        InputSurface(
+            const std::vector<Vector3d>& _vertices,
+            const std::vector<std::array<size_t, 3>>& _faces)
+            : vertices(_vertices)
+            , faces(_faces)
         {
             Vector3d min, max;
             for (size_t i = 0; i < vertices.size(); i++) {
@@ -122,8 +124,9 @@ public:
             params.init(min, max);
         }
 
-        bool remove_duplicates(std::vector<Vector3d>& out_vertices,
-                               std::vector<std::array<size_t, 3>>& out_faces) const;
+        bool remove_duplicates(
+            std::vector<Vector3d>& out_vertices,
+            std::vector<std::array<size_t, 3>>& out_faces) const;
     };
 
     struct TriangleInsertionInfoCache
@@ -152,8 +155,12 @@ public:
     void construct_background_mesh(const InputSurface& input_surface);
     void triangle_insertion(const InputSurface& input_surface);
 
-    void insertion_update_surface_tag(size_t t_id, size_t new_t_id,
-                                      int config_id, int diag_config_id, int index) override;
+    void insertion_update_surface_tag(
+        size_t t_id,
+        size_t new_t_id,
+        int config_id,
+        int diag_config_id,
+        int index) override;
 
     void split_all_edges();
     bool split_before(const Tuple& t) override;
