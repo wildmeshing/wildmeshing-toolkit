@@ -41,7 +41,6 @@ public:
         }
         new_m_vertex_positions.resize(cnt);
         m_vertex_positions = new_m_vertex_positions;
-        // std::cout << m_vertex_positions.size() << std::endl;
     };
 
     // write the collapsed mesh into a obj
@@ -64,7 +63,6 @@ public:
                 (int)new_m_tri_connectivity[i].m_indices[2]);
 
         bool ok = igl::write_triangle_mesh(path, V, F);
-        // std::cout << "write output is ok ? " << ok << std::endl;
     }
 
     // write the collapsed mesh into a obj
@@ -79,8 +77,8 @@ public:
 
         size_t v_cnt = 0;
         for (int i = 0; i < n_vertices(); i++) {
-            if (m_vertex_connectivity[i].m_is_removed) 
-                V.row(i) << -1,-1,-1;
+            if (m_vertex_connectivity[i].m_is_removed)
+                V.row(i) << -1, -1, -1;
             else
                 V.row(i) = m_vertex_positions[i];
         }
@@ -88,15 +86,14 @@ public:
 
         for (int i = 0; i < n_triangles(); i++) {
             if (m_tri_connectivity[i].m_is_removed)
-                F.row(i) << 100,100,100;
+                F.row(i) << 100, 100, 100;
             else
                 F.row(i) = Eigen::Vector3i(
-                (int)m_tri_connectivity[i].m_indices[0],
-                (int)m_tri_connectivity[i].m_indices[1],
-                (int)m_tri_connectivity[i].m_indices[2]);
+                    (int)m_tri_connectivity[i].m_indices[0],
+                    (int)m_tri_connectivity[i].m_indices[1],
+                    (int)m_tri_connectivity[i].m_indices[2]);
         }
         bool ok = igl::write_triangle_mesh(path, V, F);
-        // std::cout << "write output is ok ? " << ok << std::endl;
     }
 
     bool collapse_shortest(int target_vertex_count);

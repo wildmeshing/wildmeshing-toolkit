@@ -52,9 +52,6 @@ bool Edge2d::EdgeCollapse::collapse_shortest(int target_vertex_count)
         auto loc = ec_queue.top().edge;
         double weight = ec_queue.top().weight;
         ec_queue.pop();
-        // check if the edge tuple is valid
-        // std::cout << "the candidate " << loc.get_vid() << " fid is " << loc.get_fid() <<
-        // std::endl;
         if (!loc.is_valid(*this)) continue;
 
         TriMesh::Tuple new_vert;
@@ -73,8 +70,6 @@ bool Edge2d::EdgeCollapse::collapse_shortest(int target_vertex_count)
 
         for (TriMesh::Tuple edge : one_ring_edges) {
             size_t vid = edge.get_vid();
-            // std::cout << " the one ring edge for " << new_vert.get_vid() << " include " << vid
-            //           << std::endl;
             double length = (m_vertex_positions[new_vid] - m_vertex_positions[vid]).squaredNorm();
             ec_queue.push(ElementInQueue(edge, length));
         }

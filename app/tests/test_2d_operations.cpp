@@ -114,7 +114,6 @@ TEST_CASE("shortest_edge_collapse_on_mesh", "[test_2d_operations]")
     std::vector<std::array<size_t, 3>> tri(F.rows());
     for (int i = 0; i < V.rows(); i++) {
         v[i] = V.row(i);
-        // std::cout << V.row(i) << std::endl;
     }
     for (int i = 0; i < F.rows(); i++) {
         for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
@@ -143,7 +142,6 @@ TEST_CASE("shortest_edge_collapse_octocat", "[test_2d_operations]")
     std::vector<std::array<size_t, 3>> tri(F.rows());
     for (int i = 0; i < V.rows(); i++) {
         v[i] = V.row(i);
-        // std::cout << V.row(i) << std::endl;
     }
     for (int i = 0; i < F.rows(); i++) {
         for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
@@ -171,7 +169,6 @@ TEST_CASE("shortest_edge_collapse_circle", "[test_2d_operations]")
     std::vector<std::array<size_t, 3>> tri(F.rows());
     for (int i = 0; i < V.rows(); i++) {
         v[i] = V.row(i);
-        // std::cout << V.row(i) << std::endl;
     }
     for (int i = 0; i < F.rows(); i++) {
         for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
@@ -181,5 +178,5 @@ TEST_CASE("shortest_edge_collapse_circle", "[test_2d_operations]")
     REQUIRE(m.check_mesh_connectivity_validity());
     std::cout << " is it mesh passed " << std ::endl;
     REQUIRE(m.collapse_shortest(1000));
-    m.write_triangle_mesh_without_compact("collapsed.obj");
+    m.write_triangle_mesh("collapsed.obj");
 }

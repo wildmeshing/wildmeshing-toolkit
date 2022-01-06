@@ -346,7 +346,6 @@ TEST_CASE("collapse_operation", "[test_2d_operation]")
     auto m = NoSplitMesh();
     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 2, 3}}, {{0, 1, 4}}, {{0, 2, 5}}};
     m.create_mesh(6, tris);
-    std::cout << m.check_mesh_connectivity_validity() << std::endl;
     const auto tuple = NoSplitMesh::Tuple(1, 0, 0, m);
     REQUIRE(tuple.is_valid(m));
     TriMesh::Tuple dummy;
