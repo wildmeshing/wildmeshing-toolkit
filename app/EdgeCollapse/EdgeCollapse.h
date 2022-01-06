@@ -79,14 +79,18 @@ public:
 
         size_t v_cnt = 0;
         for (int i = 0; i < n_vertices(); i++) {
-            if (m_vertex_connectivity[i].m_is_removed) continue;
-            V.row(i) = m_vertex_positions[i];
+            if (m_vertex_connectivity[i].m_is_removed) 
+                V.row(i) << -1,-1,-1;
+            else
+                V.row(i) = m_vertex_positions[i];
         }
 
 
         for (int i = 0; i < n_triangles(); i++) {
-            if (m_tri_connectivity[i].m_is_removed) continue;
-            F.row(i) = Eigen::Vector3i(
+            if (m_tri_connectivity[i].m_is_removed)
+                F.row(i) << 100,100,100;
+            else
+                F.row(i) = Eigen::Vector3i(
                 (int)m_tri_connectivity[i].m_indices[0],
                 (int)m_tri_connectivity[i].m_indices[1],
                 (int)m_tri_connectivity[i].m_indices[2]);
