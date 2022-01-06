@@ -30,19 +30,6 @@ public:
     bool collapse_before(const Tuple& t) override;
     bool collapse_after(const Tuple& t) override;
 
-    void compact_vertex_positions(std::vector<size_t> vid_newvid_map)
-    {
-        std::vector<Eigen::Vector3d> new_m_vertex_positions(m_vertex_positions.size());
-        size_t cnt = 0;
-        for (int i = 0; i < m_vertex_positions.size(); i++) {
-            if (vid_newvid_map[i] == UINT64_MAX) continue;
-            new_m_vertex_positions[cnt] = m_vertex_positions[i];
-            cnt++;
-        }
-        new_m_vertex_positions.resize(cnt);
-        m_vertex_positions = new_m_vertex_positions;
-    };
-
     // write the collapsed mesh into a obj
     void write_triangle_mesh(std::string path)
     {
