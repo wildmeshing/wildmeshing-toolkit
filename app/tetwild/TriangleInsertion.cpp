@@ -9,26 +9,97 @@
 #include "wmtk/utils/GeoUtils.h"
 #include <wmtk/utils/Delaunay.hpp>
 
-void tetwild::TetWild::InputSurface::remove_duplicates(){
-    //todo
+#include <igl/remove_duplicate_vertices.h>
+
+bool tetwild::TetWild::InputSurface::remove_duplicates(std::vector<Vector3d>& out_vertices,
+                                                       std::vector<std::array<size_t, 3>>& out_faces) const
+{
+    Eigen::MatrixXd V_tmp(vertices.size(), 3), V_in;
+    Eigen::MatrixXi F_tmp(faces.size(), 3), F_in;
+    for (int i = 0; i < vertices.size(); i++) V_tmp.row(i) = vertices[i];
+    for (int i = 0; i < faces.size(); i++)
+        F_tmp.row(i) << faces[i][0], faces[i][1], faces[i][2]; // note: using int here
+
+    //
+    Eigen::VectorXi IV, _;
+    igl::remove_duplicate_vertices(V_tmp, F_tmp, SCALAR_ZERO * params.diag_l, V_in, IV, _, F_in);
+    //
+    for (int i = 0; i < F_in.rows(); i++) {
+        int j_min = 0;
+        for (int j = 1; j < 3; j++) {
+            if (F_in(i, j) < F_in(i, j_min)) j_min = j;
+        }
+        if (j_min == 0) continue;
+        int v0_id = F_in(i, j_min);
+        int v1_id = F_in(i, (j_min + 1) % 3);
+        int v2_id = F_in(i, (j_min + 2) % 3);
+        F_in.row(i) << v0_id, v1_id, v2_id;
+    }
+    F_tmp.resize(0, 0);
+    Eigen::VectorXi IF;
+    igl::unique_rows(F_in, F_tmp, IF, _);
+    F_in = F_tmp;
+    //    std::vector<int> old_input_tags = input_tags;
+    //    input_tags.resize(IF.rows());
+    //    for (int i = 0; i < IF.rows(); i++) {
+    //        input_tags[i] = old_input_tags[IF(i)];
+    //    }
+    //
+    if (V_in.rows() == 0 || F_in.rows() == 0) return false;
+
+    apps::logger().info("remove duplicates: ");
+    apps::logger().info("#v: {} -> {}", vertices.size(), V_in.rows());
+    apps::logger().info("#f: {} -> {}", faces.size(), F_in.rows());
+
+    out_vertices.resize(V_in.rows());
+    out_faces.reserve(F_in.rows());
+    //    old_input_tags = input_tags;
+    //    input_tags.clear();
+    for (int i = 0; i < V_in.rows(); i++) out_vertices[i] = V_in.row(i);
+    for (int i = 0; i < F_in.rows(); i++) {
+        if (F_in(i, 0) == F_in(i, 1) || F_in(i, 0) == F_in(i, 2) || F_in(i, 2) == F_in(i, 1))
+            continue;
+        if (i > 0 && (F_in(i, 0) == F_in(i - 1, 0) && F_in(i, 1) == F_in(i - 1, 2) &&
+                      F_in(i, 2) == F_in(i - 1, 1)))
+            continue;
+        // check area
+        Vector3 u = V_in.row(F_in(i, 1)) - V_in.row(F_in(i, 0));
+        Vector3 v = V_in.row(F_in(i, 2)) - V_in.row(F_in(i, 0));
+        Vector3 area = u.cross(v);
+        if (area.norm() / 2 <= SCALAR_ZERO * params.diag_l) continue;
+        out_faces.push_back({{(size_t)F_in(i, 0), (size_t)F_in(i, 1), (size_t)F_in(i, 2)}});
+        //        input_tags.push_back(old_input_tags[i]);
+    }
+
+    return true;
 }
 
-void tetwild::TetWild::construct_background_mesh()
+void tetwild::TetWild::construct_background_mesh(const InputSurface& input_surface)
 {
     const auto& vertices = input_surface.vertices;
     const auto& faces = input_surface.faces;
 
-    ///box
+    ///init the mesh
+    m_params = input_surface.params;
+
+    //todo: construct envelope before adding voxel points
+
+    ///points for delaunay
     std::vector<wmtk::Point3D> points(vertices.size());
     for (int i = 0; i < vertices.size(); i++) {
         for (int j = 0; j < 3; j++) points[i][j] = vertices[i][j];
     }
-    //todo
+    ///box
+    double delta = m_params.diag_l/10.0;
+    Vector3d box_min(m_params.min[0]-delta, m_params.min[1]-delta, m_params.min[2]-delta);
+    Vector3d box_max(m_params.max[0]-delta, m_params.max[1]-delta, m_params.max[2]-delta);
+    //todo: add voxel points
+    points.push_back({{box_min[0], box_min[1], box_min[2]}});
+    points.push_back({{box_max[0], box_max[1], box_max[2]}});
 
     ///delaunay
     auto tets = wmtk::delaunay3D_conn(points);
 
-    ///init the mesh
     // conn
     init(points.size(), tets);
     // attr
@@ -38,18 +109,17 @@ void tetwild::TetWild::construct_background_mesh()
             Vector3(points[i][0], points[i][1], points[i][2]);
         m_vertex_attribute[i].m_posf =
             Vector3d(points[i][0], points[i][1], points[i][2]);
-
-        //todo: track bbox
     }
+    //todo: track bbox
 }
 
-void tetwild::TetWild::triangle_insertion()
+void tetwild::TetWild::triangle_insertion(const InputSurface& input_surface)
 {
-    input_surface.remove_duplicates();
-    construct_background_mesh();
+    std::vector<Vector3d> vertices;
+    std::vector<std::array<size_t, 3>> faces;
+    input_surface.remove_duplicates(vertices, faces);
 
-    const auto& vertices = input_surface.vertices;
-    const auto& faces = input_surface.faces;
+    construct_background_mesh(input_surface);
 
     std::vector<bool> is_visited;
     triangle_insertion_cache.surface_f_ids.resize(m_tet_attribute.size(), {{-1, -1, -1, -1}});

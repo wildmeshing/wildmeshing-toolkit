@@ -93,13 +93,38 @@ public:
 
     void output_mesh(std::string file) const;
 
-    struct InputSurface
+    class InputSurface
     {
+    public:
         std::vector<Vector3d> vertices;
         std::vector<std::array<size_t, 3>> faces;
         //can add other input tags;
-        void remove_duplicates();
-    } input_surface;
+
+        Parameters params;
+
+        InputSurface(const std::vector<Vector3d>& _vertices,
+                     const std::vector<std::array<size_t, 3>>& _faces):
+            vertices(_vertices),faces(_faces)
+        {
+            Vector3d min, max;
+            for (size_t i = 0; i < vertices.size(); i++) {
+                if (i == 0) {
+                    min = vertices[i];
+                    max = vertices[i];
+                    continue;
+                }
+                for (int j = 0; j < 3; j++) {
+                    if (vertices[i][j] < min[j]) min[j] = vertices[i][j];
+                    if (vertices[i][j] > max[j]) max[j] = vertices[i][j];
+                }
+            }
+
+            params.init(min, max);
+        }
+
+        bool remove_duplicates(std::vector<Vector3d>& out_vertices,
+                               std::vector<std::array<size_t, 3>>& out_faces) const;
+    };
 
     struct TriangleInsertionInfoCache
     {
@@ -124,8 +149,8 @@ public:
         double max_energy;
     } edgeswap_cache, faceswap_cache; // todo: change for parallel
 
-    void construct_background_mesh();
-    void triangle_insertion();
+    void construct_background_mesh(const InputSurface& input_surface);
+    void triangle_insertion(const InputSurface& input_surface);
 
     void insertion_update_surface_tag(size_t t_id, size_t new_t_id,
                                       int config_id, int diag_config_id, int index) override;
