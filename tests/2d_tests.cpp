@@ -1,5 +1,6 @@
 #include <wmtk/TriMesh.h>
 
+#include <igl/read_triangle_mesh.h>
 #include <stdlib.h>
 #include <catch2/catch.hpp>
 #include <iostream>
@@ -351,4 +352,30 @@ TEST_CASE("collapse_operation", "[test_2d_operation]")
     TriMesh::Tuple dummy;
     REQUIRE(m.collapse_edge(tuple, dummy));
     REQUIRE_FALSE(tuple.is_valid(m));
+}
+
+TEST_CASE("swap_operation", "[test_2d_operation]")
+{
+    const std::string root(WMT_DATA_DIR);
+    const std::string path = root + "/fan.obj";
+
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    bool ok = igl::read_triangle_mesh(path, V, F);
+    REQUIRE(ok);
+    std::vector<std::array<size_t, 3>> tri(F.rows());
+
+    for (int i = 0; i < F.rows(); i++) {
+        for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
+    }
+    TriMesh m;
+    m.create_mesh(V.rows(), tri);
+    TriMesh::Tuple swap_e = TriMesh::Tuple(3, 1, 0, m);
+    REQUIRE(swap_e.is_valid(m));
+    TriMesh::Tuple new_e;
+    REQUIRE(m.swap_edge(swap_e, new_e));
+    REQUIRE_FALSE(swap_e.is_valid(m));
+    REQUIRE(new_e.is_valid(m));
+    REQUIRE(m.n_vertices() == 8);
+    REQUIRE(m.n_triangles() == 8);
 }

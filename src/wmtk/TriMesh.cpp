@@ -289,7 +289,6 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
         }
     }
 
-
     // ? ? tuples changes. this needs to be done before post check since checked are done on tuples
     // update the old tuple version number
     // create an edge tuple for each changed edge
@@ -338,9 +337,73 @@ bool TriMesh::split_edge(const Tuple& t, Tuple& new_t)
     throw "Not implemented";
 }
 
-void TriMesh::swap_edge(const Tuple& t, int type)
+bool TriMesh::swap_edge(const Tuple& t, Tuple& new_t)
 {
-    throw "Not implemented";
+    if (!swap_before(t)) return false;
+    if (!t.is_valid(*this)) return false;
+
+    // get the vids
+    size_t vid1 = t.get_vid();
+    size_t vid2 = t.switch_vertex(*this).get_vid();
+    Tuple tmp_tuple;
+    if (!t.switch_face(*this).has_value())
+        return false; // can't swap on boundary edge
+    else
+        tmp_tuple = switch_face(t).value();
+    assert(tmp_tuple.is_valid(*this));
+    tmp_tuple = tmp_tuple.switch_edge(*this);
+    size_t vid3 = tmp_tuple.switch_vertex(*this).get_vid();
+    auto tmp_tuple2 = t.switch_edge(*this);
+    assert(tmp_tuple2.is_valid(*this));
+    size_t vid4 = tmp_tuple2.switch_vertex(*this).get_vid();
+    // record the vids that will be changed for roll backs on failure
+    // namely the 4 vertices of the 2 triangles
+    std::vector<std::pair<size_t, VertexConnectivity>> old_vertices(4);
+    old_vertices[0] = std::make_pair(vid1, m_vertex_connectivity[vid1]);
+    old_vertices[1] = std::make_pair(vid2, m_vertex_connectivity[vid2]);
+    old_vertices[2] = std::make_pair(vid3, m_vertex_connectivity[vid3]);
+    old_vertices[3] = std::make_pair(vid4, m_vertex_connectivity[vid4]);
+
+    // check if the triangles intersection is the one adjcent to the edge
+    size_t test_fid1 = t.get_fid();
+    size_t test_fid2 = std::numeric_limits<unsigned>::max();
+    if (!switch_face(t).has_value())
+        return false; // can't sawp on boundary edge
+    else
+        test_fid2 = switch_face(t).value().get_fid();
+    assert(test_fid2 != std::numeric_limits<unsigned>::max());
+    // record the fids that will be changed for roll backs on failure
+    std::vector<std::pair<size_t, TriangleConnectivity>> old_tris(2);
+    old_tris[0] = std::make_pair(test_fid1, m_tri_connectivity[test_fid1]);
+    old_tris[1] = std::make_pair(test_fid2, m_tri_connectivity[test_fid2]);
+
+    // first work on triangles, there are only 2
+    int j = m_tri_connectivity[test_fid1].find(vid2);
+    m_tri_connectivity[test_fid1].m_indices[j] = vid3;
+    m_tri_connectivity[test_fid1].hash++;
+
+    j = m_tri_connectivity[test_fid2].find(vid1);
+    m_tri_connectivity[test_fid2].m_indices[j] = vid4;
+    m_tri_connectivity[test_fid2].hash++;
+
+    // then work on the vertices
+    vector_erase(m_vertex_connectivity[vid1].m_conn_tris, test_fid2);
+    vector_erase(m_vertex_connectivity[vid2].m_conn_tris, test_fid1);
+    m_vertex_connectivity[vid3].m_conn_tris.push_back(test_fid1);
+    vector_unique(m_vertex_connectivity[vid3].m_conn_tris);
+    m_vertex_connectivity[vid4].m_conn_tris.push_back(test_fid2);
+    vector_unique(m_vertex_connectivity[vid4].m_conn_tris);
+    // change the tuple to the new edge tuple
+    new_t = Tuple(vid4, (j + 2) % 3, test_fid2, *this);
+    assert(new_t.is_valid(*this));
+    assert(check_mesh_connectivity_validity());
+    if (!swap_after(new_t)) {
+        // restore the vertex and faces
+        for (auto old_v : old_vertices) m_vertex_connectivity[old_v.first] = old_v.second;
+        for (auto old_tri : old_tris) m_tri_connectivity[old_tri.first] = old_tri.second;
+        return false;
+    }
+    return true;
 }
 
 void TriMesh::consolidate_mesh_connectivity()

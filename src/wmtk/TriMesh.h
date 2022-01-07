@@ -323,6 +323,9 @@ protected:
         if (check_mesh_connectivity_validity() && t.is_valid(*this)) return true;
         return false;
     }
+    virtual bool swap_after(const Tuple& t) { return true; }
+    virtual bool swap_before(const Tuple& t) { return true; }
+
 
     virtual void resize_attributes(size_t v, size_t t) {}
 
@@ -374,7 +377,7 @@ public:
      */
     bool split_edge(const Tuple& t, Tuple& new_t);
     bool collapse_edge(const Tuple& t, Tuple& new_t);
-    void swap_edge(const Tuple& t, int type);
+    bool swap_edge(const Tuple& t, Tuple& new_t);
 
     /**
      * @brief Get the one ring tris for a vertex

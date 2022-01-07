@@ -3,7 +3,7 @@
 #include <wmtk/TriMesh.h>
 #include <catch2/catch.hpp>
 #include <iostream>
-#include "EdgeCollapse/EdgeCollapse.h"
+#include "EdgeOperations2d/EdgeOperations2d.h"
 using namespace wmtk;
 
 using namespace Edge2d;
@@ -22,7 +22,7 @@ TEST_CASE("shortest_edge_collapse", "[test_2d_operations]")
     v_positions[3] = Eigen::Vector3d(0, 0, 0);
     v_positions[4] = Eigen::Vector3d(0.5, 0, 0);
     v_positions[5] = Eigen::Vector3d(0, -3, 0);
-    EdgeCollapse m(v_positions);
+    EdgeOperations2d m(v_positions);
     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 3}}, {{1, 2, 4}}, {{3, 1, 4}}, {{3, 4, 5}}};
     m.create_mesh(6, tris);
     std::vector<TriMesh::Tuple> edges = m.get_edges();
@@ -56,7 +56,7 @@ TEST_CASE("shortest_edge_collapse_boundary_edge", "[test_2d_operations]")
     v_positions[2] = Eigen::Vector3d(3, 3, 0);
     v_positions[3] = Eigen::Vector3d(0, 0, 0);
     v_positions[4] = Eigen::Vector3d(0.5, 0, 0);
-    EdgeCollapse m(v_positions);
+    EdgeOperations2d m(v_positions);
     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 3}}, {{1, 2, 4}}, {{3, 1, 4}}};
     m.create_mesh(5, tris);
     std::vector<TriMesh::Tuple> edges = m.get_edges();
@@ -86,7 +86,7 @@ TEST_CASE("shortest_edge_collapse_boundary_edge", "[test_2d_operations]")
 //     v_positions[2] = Eigen::Vector3d(0, 0, 2);
 //     v_positions[3] = Eigen::Vector3d(0, 0, 0);
 
-//     EdgeCollapse m(v_positions);
+//     EdgeOperations2d m(v_positions);
 //     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 3}}, {{1, 2, 3}}, {{0, 3, 2}}, {{0, 1,
 //     2}}}; m.create_mesh(4, tris); std::vector<TriMesh::Tuple> edges = m.get_edges();
 //     m.collapse_shortest(100);
@@ -118,7 +118,7 @@ TEST_CASE("shortest_edge_collapse_on_mesh", "[test_2d_operations]")
     for (int i = 0; i < F.rows(); i++) {
         for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
     }
-    EdgeCollapse m(v);
+    EdgeOperations2d m(v);
     m.create_mesh(V.rows(), tri);
     REQUIRE(m.check_mesh_connectivity_validity());
     std::cout << " is it mesh passed " << std ::endl;
@@ -146,7 +146,7 @@ TEST_CASE("shortest_edge_collapse_octocat", "[test_2d_operations]")
     for (int i = 0; i < F.rows(); i++) {
         for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
     }
-    EdgeCollapse m(v);
+    EdgeOperations2d m(v);
     m.create_mesh(V.rows(), tri);
     REQUIRE(m.check_mesh_connectivity_validity());
     std::cout << " is it mesh passed " << std ::endl;
@@ -173,7 +173,7 @@ TEST_CASE("shortest_edge_collapse_circle", "[test_2d_operations]")
     for (int i = 0; i < F.rows(); i++) {
         for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
     }
-    EdgeCollapse m(v);
+    EdgeOperations2d m(v);
     m.create_mesh(V.rows(), tri);
     REQUIRE(m.check_mesh_connectivity_validity());
     std::cout << " is it mesh passed " << std ::endl;
