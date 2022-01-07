@@ -57,12 +57,32 @@ public:
         }
 
 
-        inline size_t get_vid() const { return m_vid; }
-        inline size_t get_eid() const
-        {
-            return m_fid * 3 + m_eid;
-        } // this is unique eid. each edge is repeated twice?
-        inline size_t get_fid() const { return m_fid; }
+        /**
+         * returns global vertex id.
+         * @param m TriMesh where the tuple belongs.
+         * @return size_t
+         */
+        inline size_t vid() const { return m_vid; }
+
+
+        /**
+         * returns a global unique edge id
+         *
+         * @param m TriMesh where the tuple belongs.
+         * @return size_t
+         * @note The global id may not be consecutive. The edges are undirected and different tetra
+         * share the same edge.
+         */
+        inline size_t eid() const { return m_fid * 3 + m_eid; }
+
+
+        /**
+         * returns a global unique face id
+         *
+         * @param m TriMesh where the tuple belongs.
+         * @return size_t
+         */
+        inline size_t fid() const { return m_fid; }
 
         /**
          * Switch operation. See (URL-TO-DOCUMENT) for explaination.
@@ -90,31 +110,6 @@ public:
          * @return std::array<Tuple, 3> each tuple owns a different vertex.
          */
         std::array<Tuple, 3> oriented_tri_vertices(const TriMesh& m) const;
-
-        /**
-         * returns global vertex id.
-         * @param m TriMesh where the tuple belongs.
-         * @return size_t
-         */
-        size_t vid(const TriMesh& m);
-
-        /**
-         * returns a global unique edge id
-         *
-         * @param m TriMesh where the tuple belongs.
-         * @return size_t
-         * @note The global id may not be consecutive. The edges are undirected and different tetra
-         * share the same edge.
-         */
-        size_t eid(const TriMesh& m);
-
-        /**
-         * returns a global unique face id
-         *
-         * @param m TriMesh where the tuple belongs.
-         * @return size_t
-         */
-        size_t fid(const TriMesh& m);
     };
 
     /**
@@ -288,7 +283,7 @@ public:
      * @param t tuple pointing to an face
      * @return incident vertices
      */
-    std::vector<Tuple> get_oriented_vertices_for_tri(const Tuple& t) const;
+    std::vector<Tuple> oriented_tri_vertices(const Tuple& t) const;
 };
 
 } // namespace wmtk

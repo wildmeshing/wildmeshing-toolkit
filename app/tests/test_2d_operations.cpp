@@ -30,8 +30,8 @@ TEST_CASE("shortest_edge_collapse", "[test_2d_operations]")
     double shortest = std::numeric_limits<double>::max();
     TriMesh::Tuple shortest_edge;
     for (TriMesh::Tuple t : edges) {
-        size_t v1 = t.get_vid();
-        size_t v2 = m.switch_vertex(t).get_vid();
+        size_t v1 = t.vid();
+        size_t v2 = m.switch_vertex(t).vid();
         if ((v_positions[v1] - v_positions[v2]).squaredNorm() < shortest) {
             shortest = (v_positions[v1] - v_positions[v2]).squaredNorm();
             shortest_edge = t;
@@ -69,8 +69,8 @@ TEST_CASE("shortest_edge_collapse_boundary_edge", "[test_2d_operations]")
     double shortest = std::numeric_limits<double>::max();
     TriMesh::Tuple shortest_edge;
     for (TriMesh::Tuple t : edges) {
-        size_t v1 = t.get_vid();
-        size_t v2 = m.switch_vertex(t).get_vid();
+        size_t v1 = t.vid();
+        size_t v2 = m.switch_vertex(t).vid();
         if ((v_positions[v1] - v_positions[v2]).squaredNorm() < shortest) {
             shortest = (v_positions[v1] - v_positions[v2]).squaredNorm();
             shortest_edge = t;

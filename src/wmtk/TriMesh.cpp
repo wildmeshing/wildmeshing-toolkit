@@ -4,6 +4,7 @@
 
 using namespace wmtk;
 
+
 TriMesh::Tuple TriMesh::Tuple::switch_vertex(const TriMesh& m) const
 {
     assert(is_valid(m));
@@ -194,8 +195,8 @@ bool wmtk::TriMesh::check_mesh_connectivity_validity() const
 bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
 {
     assert(edge.is_valid(*this));
-    size_t vid1 = edge.get_vid();
-    size_t vid2 = switch_vertex(edge).get_vid();
+    size_t vid1 = edge.vid();
+    size_t vid2 = switch_vertex(edge).vid();
     const auto v1_conn_tris = m_vertex_connectivity[vid1].m_conn_tris;
     const auto v2_conn_tris = m_vertex_connectivity[vid2].m_conn_tris;
     std::vector<size_t> v1_v2_link;
@@ -220,9 +221,9 @@ bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
     std::vector<size_t> edge_link;
     TriMesh::Tuple tmp_tuple = switch_face(edge).value_or(edge);
     tmp_tuple = switch_edge(tmp_tuple);
-    edge_link.push_back(switch_vertex(tmp_tuple).get_vid());
+    edge_link.push_back(switch_vertex(tmp_tuple).vid());
     tmp_tuple = switch_edge(edge);
-    edge_link.push_back(switch_vertex(tmp_tuple).get_vid());
+    edge_link.push_back(switch_vertex(tmp_tuple).vid());
     vector_unique(edge_link);
 
     return (
@@ -235,8 +236,8 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
     if (!collapse_before(loc0)) return false;
 
     // get the vids
-    size_t vid1 = loc0.get_vid();
-    size_t vid2 = switch_vertex(loc0).get_vid();
+    size_t vid1 = loc0.vid();
+    size_t vid2 = switch_vertex(loc0).vid();
 
     // record the vids that will be erased for roll backs on failure
     std::vector<std::pair<size_t, VertexConnectivity>> old_vertices(2);
@@ -251,9 +252,9 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
     // get the fids that will be modified
     auto n12_intersect_fids = set_intersection(n1_fids, n2_fids);
     // check if the triangles intersection is the one adjcent to the edge
-    size_t test_fid1 = loc0.get_fid();
+    size_t test_fid1 = loc0.fid();
     TriMesh::Tuple loc1 = switch_face(loc0).value_or(loc0);
-    size_t test_fid2 = loc1.get_fid();
+    size_t test_fid2 = loc1.fid();
     //"faces at the edge is not correct"
     assert(
         vector_contains(n12_intersect_fids, test_fid1) &&
@@ -525,7 +526,7 @@ std::vector<wmtk::TriMesh::Tuple> TriMesh::get_one_ring_tris_for_vertex(
     const wmtk::TriMesh::Tuple& t) const
 {
     std::vector<TriMesh::Tuple> one_ring;
-    size_t vid = t.get_vid();
+    size_t vid = t.vid();
     auto conn_tri = m_vertex_connectivity[vid].m_conn_tris;
     for (size_t tri : conn_tri) {
         int j = m_tri_connectivity[tri].find(vid);
@@ -541,24 +542,24 @@ std::vector<wmtk::TriMesh::Tuple> TriMesh::get_one_ring_edges_for_vertex(
 {
     std::vector<Tuple> one_ring_edges;
     std::vector<size_t> one_ring_vertices;
-    size_t vid = t.get_vid();
+    size_t vid = t.vid();
     auto one_ring_tris = get_one_ring_tris_for_vertex(t);
     for (auto tri : one_ring_tris) {
         // find the vertex
-        while (tri.get_vid() != vid) {
+        while (tri.vid() != vid) {
             tri = tri.switch_vertex(*this).switch_edge(*this);
         }
 
         // push first edge if not there
-        if (!vector_contains(one_ring_vertices, tri.switch_vertex(*this).get_vid())) {
-            one_ring_vertices.push_back(tri.switch_vertex(*this).get_vid());
+        if (!vector_contains(one_ring_vertices, tri.switch_vertex(*this).vid())) {
+            one_ring_vertices.push_back(tri.switch_vertex(*this).vid());
             one_ring_edges.push_back(tri.switch_vertex(*this));
         }
 
         // push second edge if not there
         tri = tri.switch_edge(*this);
-        if (!vector_contains(one_ring_vertices, tri.switch_vertex(*this).get_vid())) {
-            one_ring_vertices.push_back(tri.switch_vertex(*this).get_vid());
+        if (!vector_contains(one_ring_vertices, tri.switch_vertex(*this).vid())) {
+            one_ring_vertices.push_back(tri.switch_vertex(*this).vid());
             one_ring_edges.push_back(tri.switch_vertex(*this));
         }
     }
@@ -568,11 +569,11 @@ std::vector<wmtk::TriMesh::Tuple> TriMesh::get_one_ring_edges_for_vertex(
     return one_ring_edges;
 }
 
-std::vector<wmtk::TriMesh::Tuple> TriMesh::get_oriented_vertices_for_tri(
+std::vector<wmtk::TriMesh::Tuple> TriMesh::oriented_tri_vertices(
     const wmtk::TriMesh::Tuple& t) const
 {
     std::vector<TriMesh::Tuple> incident_verts;
-    size_t fid = t.get_fid();
+    size_t fid = t.fid();
     auto indices = m_tri_connectivity[fid].m_indices;
 
     incident_verts.emplace_back(indices[0], 2, fid, *this);
@@ -596,18 +597,22 @@ void TriMesh::create_mesh(size_t n_vertices, const std::vector<std::array<size_t
 
 std::vector<TriMesh::Tuple> TriMesh::get_vertices() const
 {
-    const TriMesh& m = *this;
     const size_t n_vertices = m_vertex_connectivity.size();
     std::vector<Tuple> all_vertices_tuples;
-    all_vertices_tuples.resize(n_vertices);
+    all_vertices_tuples.reserve(n_vertices);
+
     for (size_t i = 0; i < n_vertices; i++) {
+        if (m_vertex_connectivity[i].m_is_removed) continue;
+
         const std::vector<size_t>& v_conn_fids = m_vertex_connectivity[i].m_conn_tris;
         size_t fid = *min_element(v_conn_fids.begin(), v_conn_fids.end());
 
         // get the 3 vid
         const std::array<size_t, 3> f_conn_verts = m_tri_connectivity[fid].m_indices;
         assert(i == f_conn_verts[0] || i == f_conn_verts[1] || i == f_conn_verts[2]);
-        size_t eid;
+
+        size_t eid = -1;
+
         // eid is the same as the lvid
         if (i == f_conn_verts[0]) eid = 2;
         if (i == f_conn_verts[1])
@@ -615,31 +620,33 @@ std::vector<TriMesh::Tuple> TriMesh::get_vertices() const
         else
             eid = 1;
 
-        Tuple v_tuple = Tuple(i, eid, fid, m);
-        assert(v_tuple.is_valid(m));
-        all_vertices_tuples[i] = v_tuple;
+        Tuple v_tuple = Tuple(i, eid, fid, *this);
+        assert(v_tuple.is_valid(*this));
+        all_vertices_tuples.push_back(v_tuple);
     }
     return all_vertices_tuples;
 }
 
 std::vector<TriMesh::Tuple> TriMesh::get_faces() const
 {
-    const TriMesh& m = *this;
     std::vector<Tuple> all_faces_tuples;
-    all_faces_tuples.resize(m.m_tri_connectivity.size());
-    for (size_t i = 0; i < m.m_tri_connectivity.size(); i++) {
+    all_faces_tuples.reserve(m_tri_connectivity.size());
+    for (size_t i = 0; i < m_tri_connectivity.size(); i++) {
+        if (m_tri_connectivity[i].m_is_removed) continue;
         // get the 3 vid
-        const std::array<size_t, 3>& f_conn_verts = m.m_tri_connectivity[i].m_indices;
+        const std::array<size_t, 3>& f_conn_verts = m_tri_connectivity[i].m_indices;
         size_t vid = f_conn_verts[0];
-        Tuple f_tuple = Tuple(vid, 2, i, m);
-        assert(f_tuple.is_valid(m));
-        all_faces_tuples[i] = f_tuple;
+        Tuple f_tuple = Tuple(vid, 2, i, *this);
+        assert(f_tuple.is_valid(*this));
+        all_faces_tuples.push_back(f_tuple);
     }
     return all_faces_tuples;
 }
 
 std::vector<TriMesh::Tuple> TriMesh::get_edges() const
 {
+    // DP: This function is not using the correct prototype, check the 3D version, it
+    // should throw when goes outside the boundary
     const TriMesh& m = *this;
     std::vector<Tuple> all_edges_tuples;
     all_edges_tuples.reserve(m.m_tri_connectivity.size() * 3 / 2);
@@ -652,7 +659,7 @@ std::vector<TriMesh::Tuple> TriMesh::get_edges() const
             Tuple e_tuple2 = e_tuple.switch_face(m).value_or(e_tuple);
             assert(e_tuple2.is_valid(m));
             // return itself if it is a boundary triangle
-            size_t fid2 = e_tuple2.get_fid();
+            size_t fid2 = e_tuple2.fid();
             if (fid2 < i)
                 continue;
             else
@@ -684,11 +691,11 @@ size_t TriMesh::get_next_empty_slot_v()
 
 bool TriMesh::check_manifold(const Tuple& t) const
 {
-    auto v1_conn_tris = m_vertex_connectivity[t.get_vid()].m_conn_tris;
-    auto v2_conn_tris = m_vertex_connectivity[t.switch_vertex(*this).get_vid()].m_conn_tris;
+    auto v1_conn_tris = m_vertex_connectivity[t.vid()].m_conn_tris;
+    auto v2_conn_tris = m_vertex_connectivity[t.switch_vertex(*this).vid()].m_conn_tris;
 
-    size_t fid1 = t.get_fid();
-    size_t fid2 = switch_face(t).value_or(t).get_fid();
+    size_t fid1 = t.fid();
+    size_t fid2 = switch_face(t).value_or(t).fid();
 
     vector_erase(v1_conn_tris, fid1);
     vector_erase(v1_conn_tris, fid2);
