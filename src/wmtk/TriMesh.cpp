@@ -200,38 +200,32 @@ bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
     auto vid1_ring = get_one_ring_edges_for_vertex(edge);
     auto vid2_ring = get_one_ring_edges_for_vertex(switch_vertex(edge));
 
-    const auto v1_conn_tris = m_vertex_connectivity[vid1].m_conn_tris;
-    const auto v2_conn_tris = m_vertex_connectivity[vid2].m_conn_tris;
-    std::vector<size_t> v1_v2_link;
-    std::vector<size_t> v1_conn_tris_verts;
-    for (size_t tri : v1_conn_tris) {
-        for (int j = 0; j < 3; j++) {
-            v1_conn_tris_verts.push_back(m_tri_connectivity[tri][j]);
-        }
+    size_t dummy = std::numeric_limits<unsigned>::max();
+    std::vector<size_t> lk_vid1;
+    std::vector<size_t> lk_vid2;
+    for (auto e_vid : vid1_ring) {
+        if (!e_vid.switch_face(*this).has_value()) lk_vid1.push_back(dummy);
+        lk_vid1.push_back(e_vid.vid());
     }
-    vector_unique(v1_conn_tris_verts);
-    vector_erase(v1_conn_tris_verts, vid1);
-    std::vector<size_t> v2_conn_tris_verts;
-    for (size_t tri : v2_conn_tris) {
-        for (int j = 0; j < 3; j++) {
-            v2_conn_tris_verts.push_back(m_tri_connectivity[tri][j]);
-        }
+    vector_unique(lk_vid1);
+    for (auto e_vid : vid2_ring) {
+        if (!e_vid.switch_face(*this).has_value()) lk_vid2.push_back(dummy);
+        lk_vid2.push_back(e_vid.vid());
     }
-    vector_unique(v2_conn_tris_verts);
-    vector_erase(v2_conn_tris_verts, vid2);
-    v1_v2_link = set_intersection(v1_conn_tris_verts, v2_conn_tris_verts);
+    vector_unique(lk_vid2);
+    auto lk_vid12 = set_intersection(lk_vid1, lk_vid2);
+    std::vector<size_t> lk_edge;
+    lk_edge.push_back(edge.switch_edge(*this).vid());
+    if (!edge.switch_face(*this).has_value())
+        lk_edge.push_back(dummy);
+    else
+        lk_edge.push_back(edge.switch_face(*this).value().switch_edge(*this).vid());
 
-    std::vector<size_t> edge_link;
-    TriMesh::Tuple tmp_tuple = switch_face(edge).value_or(edge);
-    tmp_tuple = switch_edge(tmp_tuple);
-    edge_link.push_back(switch_vertex(tmp_tuple).vid());
-    tmp_tuple = switch_edge(edge);
-    edge_link.push_back(switch_vertex(tmp_tuple).vid());
-    vector_unique(edge_link);
+    vector_unique(lk_edge);
 
     return (
-        v1_v2_link.size() == edge_link.size() &&
-        std::equal(v1_v2_link.begin(), v1_v2_link.end(), edge_link.begin()));
+        lk_vid12.size() == lk_edge.size() &&
+        std::equal(lk_vid12.begin(), lk_vid12.end(), lk_edge.begin()));
 }
 
 bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)

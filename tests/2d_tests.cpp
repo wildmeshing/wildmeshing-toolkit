@@ -318,20 +318,20 @@ TEST_CASE("link_check", "[test_pre_check]")
 // incident triangles the edge cannot be collapsed
 // this check should be doen in pre collapse check
 
-TEST_CASE("rollback_edge_collapse", "[test_2d_operation]")
-{
-    TriMesh m;
-    std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 2, 3}}};
-    m.create_mesh(4, tris);
+// TEST_CASE("rollback_edge_collapse", "[test_2d_operation]")
+// {
+//     TriMesh m;
+//     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 2, 3}}};
+//     m.create_mesh(4, tris);
 
-    TriMesh::Tuple tuple = TriMesh::Tuple(1, 0, 0, m);
-    TriMesh::Tuple dummy;
-    REQUIRE(tuple.is_valid(m));
-    REQUIRE(m.check_link_condition(tuple));
-    REQUIRE_FALSE(m.collapse_edge(tuple, dummy));
-    REQUIRE(tuple.is_valid(m));
-    REQUIRE(m.check_mesh_connectivity_validity());
-}
+//     TriMesh::Tuple tuple = TriMesh::Tuple(1, 0, 0, m);
+//     TriMesh::Tuple dummy;
+//     REQUIRE(tuple.is_valid(m));
+//     REQUIRE(m.check_link_condition(tuple));
+//     REQUIRE_FALSE(m.collapse_edge(tuple, dummy));
+//     REQUIRE(tuple.is_valid(m));
+//     REQUIRE(m.check_mesh_connectivity_validity());
+// }
 
 TEST_CASE("collapse_operation", "[test_2d_operation]")
 {
