@@ -597,18 +597,22 @@ void TriMesh::create_mesh(size_t n_vertices, const std::vector<std::array<size_t
 
 std::vector<TriMesh::Tuple> TriMesh::get_vertices() const
 {
-    const TriMesh& m = *this;
     const size_t n_vertices = m_vertex_connectivity.size();
     std::vector<Tuple> all_vertices_tuples;
-    all_vertices_tuples.resize(n_vertices);
+    all_vertices_tuples.reserve(n_vertices);
+
     for (size_t i = 0; i < n_vertices; i++) {
+        if (m_vertex_connectivity[i].m_is_removed) continue;
+
         const std::vector<size_t>& v_conn_fids = m_vertex_connectivity[i].m_conn_tris;
         size_t fid = *min_element(v_conn_fids.begin(), v_conn_fids.end());
 
         // get the 3 vid
         const std::array<size_t, 3> f_conn_verts = m_tri_connectivity[fid].m_indices;
         assert(i == f_conn_verts[0] || i == f_conn_verts[1] || i == f_conn_verts[2]);
-        size_t eid;
+
+        size_t eid = -1;
+
         // eid is the same as the lvid
         if (i == f_conn_verts[0]) eid = 2;
         if (i == f_conn_verts[1])
@@ -616,31 +620,33 @@ std::vector<TriMesh::Tuple> TriMesh::get_vertices() const
         else
             eid = 1;
 
-        Tuple v_tuple = Tuple(i, eid, fid, m);
-        assert(v_tuple.is_valid(m));
-        all_vertices_tuples[i] = v_tuple;
+        Tuple v_tuple = Tuple(i, eid, fid, *this);
+        assert(v_tuple.is_valid(*this));
+        all_vertices_tuples.push_back(v_tuple);
     }
     return all_vertices_tuples;
 }
 
 std::vector<TriMesh::Tuple> TriMesh::get_faces() const
 {
-    const TriMesh& m = *this;
     std::vector<Tuple> all_faces_tuples;
-    all_faces_tuples.resize(m.m_tri_connectivity.size());
-    for (size_t i = 0; i < m.m_tri_connectivity.size(); i++) {
+    all_faces_tuples.reserve(m_tri_connectivity.size());
+    for (size_t i = 0; i < m_tri_connectivity.size(); i++) {
+        if (m_tri_connectivity[i].m_is_removed) continue;
         // get the 3 vid
-        const std::array<size_t, 3>& f_conn_verts = m.m_tri_connectivity[i].m_indices;
+        const std::array<size_t, 3>& f_conn_verts = m_tri_connectivity[i].m_indices;
         size_t vid = f_conn_verts[0];
-        Tuple f_tuple = Tuple(vid, 2, i, m);
-        assert(f_tuple.is_valid(m));
-        all_faces_tuples[i] = f_tuple;
+        Tuple f_tuple = Tuple(vid, 2, i, *this);
+        assert(f_tuple.is_valid(*this));
+        all_faces_tuples.push_back(f_tuple);
     }
     return all_faces_tuples;
 }
 
 std::vector<TriMesh::Tuple> TriMesh::get_edges() const
 {
+    // DP: This function is not using the correct prototype, check the 3D version, it
+    // should throw when goes outside the boundary
     const TriMesh& m = *this;
     std::vector<Tuple> all_edges_tuples;
     all_edges_tuples.reserve(m.m_tri_connectivity.size() * 3 / 2);
