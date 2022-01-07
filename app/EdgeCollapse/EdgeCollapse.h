@@ -35,16 +35,16 @@ public:
     {
         Eigen::MatrixXd V = Eigen::MatrixXd::Zero(m_vertex_positions.size(), 3);
         for (auto& t : get_vertices()) {
-            auto i = t.vid(*this);
+            auto i = t.vid();
             V.row(i) = m_vertex_positions[i];
         }
 
         Eigen::MatrixXi F = Eigen::MatrixXi::Constant(tri_capacity(), 3, -1);
         for (auto& t : get_faces()) {
-            auto i = t.fid(*this);
+            auto i = t.fid();
             auto vs = oriented_tri_vertices(t);
             for (int j = 0; j < 3; j++) {
-                F(i, j) = vs[j].vid(*this);
+                F(i, j) = vs[j].vid();
             }
         }
 
@@ -87,7 +87,7 @@ struct cmp_l
 {
     bool operator()(const ElementInQueue& e1, const ElementInQueue& e2)
     {
-        if (e1.weight == e2.weight) return e1.edge.get_vid() > e2.edge.get_vid();
+        if (e1.weight == e2.weight) return e1.edge.vid() > e2.edge.vid();
         return e1.weight < e2.weight;
     }
 };
@@ -95,7 +95,7 @@ struct cmp_s
 {
     bool operator()(const ElementInQueue& e1, const ElementInQueue& e2)
     {
-        if (e1.weight == e2.weight) return e1.edge.get_vid() < e2.edge.get_vid();
+        if (e1.weight == e2.weight) return e1.edge.vid() < e2.edge.vid();
         return e1.weight > e2.weight;
     }
 };
