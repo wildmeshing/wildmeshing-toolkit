@@ -40,6 +40,11 @@ TEST_CASE("shortest_edge_collapse", "[test_2d_operations]")
     m.collapse_shortest(100);
     // the collapsed edge tuple is not valid anymore
     REQUIRE_FALSE(shortest_edge.is_valid(m));
+
+    m.consolidate_mesh_connectivity();
+
+    REQUIRE(m.n_vertices() == 4);
+    REQUIRE(m.n_triangles() == 1);
 }
 
 TEST_CASE("shortest_edge_collapse_boundary_edge", "[test_2d_operations]")

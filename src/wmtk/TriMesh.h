@@ -7,6 +7,8 @@
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/utils/Logger.hpp>
 
+#include <tbb/concurrent_vector.h>
+
 #include <algorithm>
 #include <array>
 #include <cassert>
@@ -130,6 +132,8 @@ public:
             return vs;
         }
 
+
+        // TODO: name consistency with 3d
         size_t get_vertex_attribute_id(const TriMesh& m);
         size_t get_edge_attribute_id(const TriMesh& m);
         size_t get_face_attribute_id(const TriMesh& m);
@@ -216,6 +220,7 @@ public:
      */
     std::vector<Tuple> get_vertices() const
     {
+        // TODO: move to cpp
         const TriMesh& m = *this;
         const size_t n_vertices = m_vertex_connectivity.size();
         std::vector<Tuple> all_vertices_tuples;
@@ -250,6 +255,7 @@ public:
      */
     std::vector<Tuple> get_faces() const
     {
+        // TODO: move to cpp
         const TriMesh& m = *this;
         std::vector<Tuple> all_faces_tuples;
         all_faces_tuples.resize(m.m_tri_connectivity.size());
@@ -271,6 +277,7 @@ public:
      */
     std::vector<Tuple> get_edges() const
     {
+        // TODO: move to cpp
         const TriMesh& m = *this;
         std::vector<Tuple> all_edges_tuples;
         all_edges_tuples.reserve(m.m_tri_connectivity.size() * 3 / 2);
@@ -293,12 +300,16 @@ public:
         return all_edges_tuples;
     }
 
+    template <typename T>
+    using vector = tbb::concurrent_vector<T>;
+
 private:
-    std::vector<VertexConnectivity> m_vertex_connectivity;
-    std::vector<TriangleConnectivity> m_tri_connectivity;
+    vector<VertexConnectivity> m_vertex_connectivity;
+    vector<TriangleConnectivity> m_tri_connectivity;
 
     size_t get_next_empty_slot_t()
     {
+        // TODO: move to cpp
         m_tri_connectivity.emplace_back();
         resize_attributes(
             m_vertex_connectivity.size(),
@@ -306,8 +317,10 @@ private:
             m_tri_connectivity.size());
         return m_tri_connectivity.size() - 1;
     }
+
     size_t get_next_empty_slot_v()
     {
+        // TODO: move to cpp
         m_vertex_connectivity.emplace_back();
         resize_attributes(
             m_vertex_connectivity.size(),
@@ -319,38 +332,37 @@ private:
 protected:
     virtual bool split_before(const Tuple& t) { return true; }
     virtual bool split_after(const Tuple& t) { return true; }
-    // check link, check if it's the last edge
+
+
     virtual bool collapse_before(const Tuple& t)
     {
+        // TODO: make check_manifold correct
+        // TODO: check_link_condition checks for open boundaries
         if (check_link_condition(t) && check_manifold(t)) return true;
         return false;
     }
     virtual bool collapse_after(const Tuple& t)
     {
-        if (check_mesh_connectivity_validity() && t.is_valid(*this)) return true;
-        return false;
+        assert(check_mesh_connectivity_validity());
+        assert(t.is_valid(*this));
+
+        return true;
     }
 
     virtual void resize_attributes(size_t v, size_t e, size_t t) {}
 
-    void consolidate_mesh_connectivity();
+
     virtual void move_vertex_attribute(size_t from, size_t to){};
     virtual void move_edge_attribute(size_t from, size_t to){};
     virtual void move_face_attribute(size_t from, size_t to){};
 
 
 public:
+    // TODO name consistency
     size_t n_triangles() const { return m_tri_connectivity.size(); }
     size_t n_vertices() const { return m_vertex_connectivity.size(); }
 
-    // just for testing
-    std::vector<TriangleConnectivity> get_m_tri_connectivity() const { return m_tri_connectivity; }
-    // just for testing
-    std::vector<VertexConnectivity> get_m_vertex_connectivity() const
-    {
-        return m_vertex_connectivity;
-    }
-
+    void consolidate_mesh_connectivity();
 
     Tuple switch_vertex(const Tuple& t) const { return t.switch_vertex(*this); }
     Tuple switch_edge(const Tuple& t) const { return t.switch_edge(*this); }
@@ -360,6 +372,7 @@ public:
     bool check_mesh_connectivity_validity() const; // DP: should be private
     bool check_manifold(const Tuple& t) const
     {
+        // TODO: move to cpp
         auto v1_conn_tris = m_vertex_connectivity[t.get_vid()].m_conn_tris;
         auto v2_conn_tris = m_vertex_connectivity[t.switch_vertex(*this).get_vid()].m_conn_tris;
 

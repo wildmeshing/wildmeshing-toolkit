@@ -33,23 +33,24 @@ public:
     // write the collapsed mesh into a obj
     void write_triangle_mesh(std::string path)
     {
-        consolidate_mesh_connectivity();
-        std::vector<VertexConnectivity> new_m_vertex_connectivity = get_m_vertex_connectivity();
-        std::vector<TriangleConnectivity> new_m_tri_connectivity = get_m_tri_connectivity();
+        // TODO fix me
+        // consolidate_mesh_connectivity();
+        // std::vector<VertexConnectivity> new_m_vertex_connectivity = get_m_vertex_connectivity();
+        // std::vector<TriangleConnectivity> new_m_tri_connectivity = get_m_tri_connectivity();
 
-        Eigen::MatrixXd V(n_vertices(), 3);
-        Eigen::MatrixXi F(n_triangles(), 3);
+        // Eigen::MatrixXd V(n_vertices(), 3);
+        // Eigen::MatrixXi F(n_triangles(), 3);
 
-        for (int i = 0; i < n_vertices(); i++) V.row(i) = m_vertex_positions[i];
+        // for (int i = 0; i < n_vertices(); i++) V.row(i) = m_vertex_positions[i];
 
 
-        for (int i = 0; i < n_triangles(); i++)
-            F.row(i) = Eigen::Vector3i(
-                (int)new_m_tri_connectivity[i].m_indices[0],
-                (int)new_m_tri_connectivity[i].m_indices[1],
-                (int)new_m_tri_connectivity[i].m_indices[2]);
+        // for (int i = 0; i < n_triangles(); i++)
+        //     F.row(i) = Eigen::Vector3i(
+        //         (int)new_m_tri_connectivity[i].m_indices[0],
+        //         (int)new_m_tri_connectivity[i].m_indices[1],
+        //         (int)new_m_tri_connectivity[i].m_indices[2]);
 
-        bool ok = igl::write_triangle_mesh(path, V, F);
+        // bool ok = igl::write_triangle_mesh(path, V, F);
     }
 
     bool collapse_shortest(int target_vertex_count);
