@@ -313,6 +313,29 @@ TEST_CASE("link_check", "[test_pre_check]")
     REQUIRE_FALSE(m.check_link_condition(edge));
 }
 
+TEST_CASE("link_check_on_1_tri", "[test_pre_check]")
+{
+    TriMesh m;
+
+    std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}};
+    m.create_mesh(3, tris);
+
+    TriMesh::Tuple edge(0, 2, 0, m);
+    REQUIRE(m.check_link_condition(edge));
+}
+
+TEST_CASE("link_check_non_manifold", "[test_pre_check]")
+{
+    TriMesh m;
+
+    std::vector<std::array<size_t, 3>> tris = {{{0, 1, 5}}, {{1, 2, 5}}, {{2, 3, 5}}, {{5, 3, 4}}};
+    m.create_mesh(6, tris);
+
+    TriMesh::Tuple fail_edge(5, 0, 1, m);
+    REQUIRE_FALSE(m.check_link_condition(fail_edge));
+    TriMesh::Tuple pass_edge(0, 2, 0, m);
+    REQUIRE(m.check_link_condition(pass_edge));
+}
 
 // these roll back tests must have more than 2 triangles, since by design when there are only two
 // incident triangles the edge cannot be collapsed

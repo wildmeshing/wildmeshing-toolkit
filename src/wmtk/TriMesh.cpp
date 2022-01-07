@@ -1,7 +1,7 @@
 #include <wmtk/TriMesh.h>
 
+#include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
-
 using namespace wmtk;
 
 
@@ -215,13 +215,11 @@ bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
     vector_unique(lk_vid2);
     auto lk_vid12 = set_intersection(lk_vid1, lk_vid2);
     std::vector<size_t> lk_edge;
-    lk_edge.push_back(edge.switch_edge(*this).vid());
+    lk_edge.push_back((edge.switch_edge(*this)).switch_vertex(*this).vid());
     if (!edge.switch_face(*this).has_value())
         lk_edge.push_back(dummy);
     else
-        lk_edge.push_back(edge.switch_face(*this).value().switch_edge(*this).vid());
-
-    vector_unique(lk_edge);
+        lk_edge.push_back((edge.switch_face(*this).value()).switch_edge(*this).vid());
 
     return (
         lk_vid12.size() == lk_edge.size() &&
