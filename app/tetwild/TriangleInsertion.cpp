@@ -81,11 +81,6 @@ void tetwild::TetWild::construct_background_mesh(const InputSurface& input_surfa
     const auto& vertices = input_surface.vertices;
     const auto& faces = input_surface.faces;
 
-    ///init the mesh
-    m_params = input_surface.params;
-
-    // todo: construct envelope before adding voxel points
-
     ///points for delaunay
     std::vector<wmtk::Point3D> points(vertices.size());
     for (int i = 0; i < vertices.size(); i++) {
@@ -98,10 +93,10 @@ void tetwild::TetWild::construct_background_mesh(const InputSurface& input_surfa
     // todo: add voxel points
     points.push_back({{box_min[0], box_min[1], box_min[2]}});
     points.push_back({{box_max[0], box_max[1], box_max[2]}});
-    apps::logger().info("min: {}", m_params.min.transpose());
-    apps::logger().info("max: {}", m_params.max.transpose());
-    apps::logger().info("box_min: {}", box_min.transpose());
-    apps::logger().info("box_max: {}", box_max.transpose());
+//    apps::logger().info("min: {}", m_params.min);
+//    apps::logger().info("max: {}", m_params.max.transpose());
+//    apps::logger().info("box_min: {}", box_min.transpose());
+//    apps::logger().info("box_max: {}", box_max.transpose());
 
     ///delaunay
     auto tets = wmtk::delaunay3D_conn(points);

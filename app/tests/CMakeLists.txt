@@ -9,6 +9,7 @@ set(test_sources
 	file_write.cpp
 	test_operation_smooth.cpp
 	test_runner.cpp
+		test_intsertion.cpp
 )
 
 add_executable(app_unit_tests ${test_sources})

@@ -82,8 +82,7 @@ bool segment_triangle_intersection(
 template <typename T>
 void squeeze_points_to_2d(
     const std::vector<Eigen::Matrix<T, 3, 1>>& points3,
-    const std::vector<Eigen::Matrix<T, 2, 1>>&
-        points2) // note: use the first 3 points to construct the plane
+    std::vector<Eigen::Matrix<T, 2, 1>>& points2) // note: use the first 3 points to construct the plane
 {
     const auto& p1 = points3[0];
     const auto& p2 = points3[1];
