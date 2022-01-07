@@ -299,20 +299,12 @@ public:
     void subdivide_tets(const std::vector<size_t> t_ids, std::map<std::array<size_t, 2>, size_t>& map_edge2vid);
     void subdivide_a_tet(size_t t_id, const std::array<int, 6>& new_v_ids);//todo: should be private
 
-    void consolidate_mesh_connectivity();
-
     /**
      * @brief cleans up the deleted vertices or tetrahedra, fixes the corresponding indices, and
      * reset the version number. WARNING: it invalidates all tuples!
      *
      */
-    //    void
-    //    compact(); // cleans up the deleted vertices or tetrahedra, and fixes the corresponding indices
-
-    void reset_timestamp()
-    {
-        for (auto& t : m_tet_connectivity) t.timestamp = 0;
-    }
+    void consolidate_mesh_connectivity();
 
     /**
      * Get all unique undirected edges in the mesh.
@@ -373,6 +365,10 @@ protected:
     virtual bool tetrahedron_invariant(const Tuple& t) { return true; }
 
     virtual void resize_attributes(size_t v, size_t e, size_t f, size_t t) {}
+    virtual void move_face_attribute(size_t from, size_t to) {}
+    virtual void move_edge_attribute(size_t from, size_t to) {}
+    virtual void move_tet_attribute(size_t from, size_t to) {}
+    virtual void move_vertex_attribute(size_t from, size_t to) {}
 
 public:
     /**

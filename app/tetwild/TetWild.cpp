@@ -151,12 +151,6 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
 }
 
 
-void tetwild::TetWild::consolidate_mesh()
-{
-    //    consolidate_mesh_connectivity();
-    //    consolidate_mesh_attributes();
-}
-
 void tetwild::TetWild::output_mesh(std::string file) const
 {
     PyMesh::MshSaver mSaver(file, true);

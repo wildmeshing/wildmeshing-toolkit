@@ -3,9 +3,11 @@
 #include "Parameters.h"
 #include "common.h"
 
-#include <fastenvelope/FastEnvelope.h>
+// clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
+#include <fastenvelope/FastEnvelope.h>
 #include <wmtk/utils/EnableWarnings.hpp>
+// clang-format on
 
 #include <wmtk/TetMesh.h>
 
@@ -75,23 +77,40 @@ public:
         m_tet_attribute = _tet_attribute;
     }
 
+    ////// Attributes related
     // Stores the attributes attached to simplices
     std::vector<VertexAttributes> m_vertex_attribute;
     std::vector<EdgeAttributes> m_edge_attribute;
     std::vector<FaceAttributes> m_face_attribute;
     std::vector<TetAttributes> m_tet_attribute;
 
-    void resize_attributes(size_t v, size_t e, size_t t, size_t tt) override
+    void resize_attributes(size_t v, size_t e, size_t f, size_t t) override
     {
         m_vertex_attribute.resize(v);
         m_edge_attribute.resize(e);
-        m_face_attribute.resize(t);
-        m_tet_attribute.resize(tt);
+        m_face_attribute.resize(f);
+        m_tet_attribute.resize(t);
     }
 
-    void smoothing(const Tuple& t);
+    void move_face_attribute(size_t from, size_t to) override
+    {
+        m_face_attribute[to] = std::move(m_face_attribute[from]);
+    }
+    void move_edge_attribute(size_t from, size_t to) override
+    {
+        m_edge_attribute[to] = std::move(m_edge_attribute[from]);
+    }
+    void move_tet_attribute(size_t from, size_t to) override
+    {
+        m_tet_attribute[to] = std::move(m_tet_attribute[from]);
+    }
+    void move_vertex_attribute(size_t from, size_t to) override
+    {
+        m_vertex_attribute[to] = std::move(m_vertex_attribute[from]);
+    }
 
     void output_mesh(std::string file) const;
+
 
     class InputSurface
     {
@@ -134,6 +153,8 @@ public:
         std::vector<std::array<int, 4>> surface_f_ids;
         size_t face_id;
     } triangle_insertion_cache; // todo: change for parallel
+
+    ////// Operations
 
     struct SplitInfoCache
     {
@@ -187,9 +208,6 @@ public:
 
     bool vertex_invariant(const Tuple& t) override;
     bool tetrahedron_invariant(const Tuple& t) override;
-
-    void consolidate_mesh();
-    //    void consolidate_mesh_attributes();
 };
 
 class ElementInQueue
