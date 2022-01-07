@@ -338,5 +338,5 @@ void wmtk::TetMesh::consolidate_mesh_connectivity()
 
     resize_attributes(v_cnt, 6 * t_cnt, 4 * t_cnt, t_cnt);
 
-    check_mesh_connectivity_validity();
+    assert(check_mesh_connectivity_validity());
 }
