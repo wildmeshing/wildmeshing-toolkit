@@ -4,6 +4,22 @@
 
 using namespace wmtk;
 
+
+size_t TriMesh::Tuple::vid(const TriMesh& m)
+{
+    throw "Not Implemented";
+}
+
+size_t TriMesh::Tuple::eid(const TriMesh& m)
+{
+    throw "Not Implemented";
+}
+
+size_t TriMesh::Tuple::fid(const TriMesh& m)
+{
+    throw "Not Implemented";
+}
+
 TriMesh::Tuple TriMesh::Tuple::switch_vertex(const TriMesh& m) const
 {
     assert(is_valid(m));
@@ -568,7 +584,7 @@ std::vector<wmtk::TriMesh::Tuple> TriMesh::get_one_ring_edges_for_vertex(
     return one_ring_edges;
 }
 
-std::vector<wmtk::TriMesh::Tuple> TriMesh::get_oriented_vertices_for_tri(
+std::vector<wmtk::TriMesh::Tuple> TriMesh::oriented_tri_vertices(
     const wmtk::TriMesh::Tuple& t) const
 {
     std::vector<TriMesh::Tuple> incident_verts;

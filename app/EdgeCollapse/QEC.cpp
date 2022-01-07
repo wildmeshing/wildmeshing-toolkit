@@ -13,7 +13,7 @@ void add_Qs(std::array<double, 10>& Q1, const std::array<double, 10>& Q2)
 // get the quadrix in form of an array of 10 floating point numbers
 std::array<double, 10> Edge2d::EdgeCollapse::compute_Q_f(wmtk::TriMesh::Tuple& f_tuple)
 {
-    auto conn_indices = get_oriented_vertices_for_tri(f_tuple);
+    auto conn_indices = oriented_tri_vertices(f_tuple);
     Eigen::Vector3d A = m_vertex_positions[conn_indices[0].get_vid()];
     Eigen::Vector3d B = m_vertex_positions[conn_indices[1].get_vid()];
     Eigen::Vector3d C = m_vertex_positions[conn_indices[2].get_vid()];

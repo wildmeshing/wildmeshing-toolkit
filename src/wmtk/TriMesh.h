@@ -96,7 +96,7 @@ public:
          * @param m TriMesh where the tuple belongs.
          * @return size_t
          */
-        size_t vid(const TriMesh& m);
+        [[noreturn]] size_t vid(const TriMesh& m);
 
         /**
          * returns a global unique edge id
@@ -106,7 +106,7 @@ public:
          * @note The global id may not be consecutive. The edges are undirected and different tetra
          * share the same edge.
          */
-        size_t eid(const TriMesh& m);
+        [[noreturn]] size_t eid(const TriMesh& m);
 
         /**
          * returns a global unique face id
@@ -114,7 +114,7 @@ public:
          * @param m TriMesh where the tuple belongs.
          * @return size_t
          */
-        size_t fid(const TriMesh& m);
+        [[noreturn]] size_t fid(const TriMesh& m);
     };
 
     /**
@@ -288,7 +288,7 @@ public:
      * @param t tuple pointing to an face
      * @return incident vertices
      */
-    std::vector<Tuple> get_oriented_vertices_for_tri(const Tuple& t) const;
+    std::vector<Tuple> oriented_tri_vertices(const Tuple& t) const;
 };
 
 } // namespace wmtk
