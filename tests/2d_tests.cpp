@@ -11,8 +11,8 @@ TEST_CASE("load mesh and create TriMesh", "[test_mesh_creation]")
     TriMesh m;
     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}};
     m.create_mesh(3, tris);
-    REQUIRE(m.n_triangles() == tris.size());
-    REQUIRE(m.n_vertices() == 3);
+    REQUIRE(m.tri_capacity() == tris.size());
+    REQUIRE(m.vert_capacity() == 3);
 }
 
 TEST_CASE("test generate tuples with 1 triangle", "[test_tuple_generation]")

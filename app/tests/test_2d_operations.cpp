@@ -43,8 +43,8 @@ TEST_CASE("shortest_edge_collapse", "[test_2d_operations]")
 
     m.consolidate_mesh_connectivity();
 
-    REQUIRE(m.n_vertices() == 4);
-    REQUIRE(m.n_triangles() == 1);
+    REQUIRE(m.vert_capacity() == 4);
+    REQUIRE(m.tri_capacity() == 1);
 }
 
 TEST_CASE("shortest_edge_collapse_boundary_edge", "[test_2d_operations]")
@@ -95,9 +95,9 @@ TEST_CASE("shortest_edge_collapse_boundary_edge", "[test_2d_operations]")
 //     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 3}}, {{1, 2, 3}}, {{0, 3, 2}}, {{0, 1,
 //     2}}}; m.create_mesh(4, tris); std::vector<TriMesh::Tuple> edges = m.get_edges();
 //     m.collapse_shortest(100);
-//     REQUIRE(m.n_vertices() == 3);
+//     REQUIRE(m.vert_capacity() == 3);
 
-//     REQUIRE(m.n_triangles() == 2);
+//     REQUIRE(m.tri_capacity() == 2);
 // }
 
 

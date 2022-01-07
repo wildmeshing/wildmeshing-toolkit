@@ -91,11 +91,30 @@ public:
          */
         std::array<Tuple, 3> oriented_tri_vertices(const TriMesh& m) const;
 
+        /**
+         * returns global vertex id.
+         * @param m TriMesh where the tuple belongs.
+         * @return size_t
+         */
+        size_t vid(const TriMesh& m);
 
-        // TODO: name consistency with 3d
-        size_t get_vertex_attribute_id(const TriMesh& m);
-        size_t get_edge_attribute_id(const TriMesh& m);
-        size_t get_face_attribute_id(const TriMesh& m);
+        /**
+         * returns a global unique edge id
+         *
+         * @param m TriMesh where the tuple belongs.
+         * @return size_t
+         * @note The global id may not be consecutive. The edges are undirected and different tetra
+         * share the same edge.
+         */
+        size_t eid(const TriMesh& m);
+
+        /**
+         * returns a global unique face id
+         *
+         * @param m TriMesh where the tuple belongs.
+         * @return size_t
+         */
+        size_t fid(const TriMesh& m);
     };
 
     /**
@@ -222,9 +241,8 @@ protected:
 
 
 public:
-    // TODO name consistency
-    size_t n_triangles() const { return m_tri_connectivity.size(); }
-    size_t n_vertices() const { return m_vertex_connectivity.size(); }
+    size_t tri_capacity() const { return m_tri_connectivity.size(); }
+    size_t vert_capacity() const { return m_vertex_connectivity.size(); }
 
     void consolidate_mesh_connectivity();
 
