@@ -254,10 +254,10 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
     size_t test_fid1 = loc0.get_fid();
     TriMesh::Tuple loc1 = switch_face(loc0).value_or(loc0);
     size_t test_fid2 = loc1.get_fid();
+    //"faces at the edge is not correct"
     assert(
-        ("faces at the edge is not correct",
-         (vector_contains(n12_intersect_fids, test_fid1) &&
-          vector_contains(n12_intersect_fids, test_fid2))));
+        vector_contains(n12_intersect_fids, test_fid1) &&
+        vector_contains(n12_intersect_fids, test_fid2));
     // now mark the vertices as removed so the assertion for tuple validity in switch operations
     // won't fail
     m_vertex_connectivity[vid1].m_is_removed = true;
@@ -341,9 +341,9 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
 
     assert(m_vertex_connectivity[new_vid].m_conn_tris.size() != 0);
 
-    size_t fid = m_vertex_connectivity[new_vid].m_conn_tris[0];
-    int j = m_tri_connectivity[fid].find(new_vid);
-    new_t = Tuple(new_vid, (j + 2) % 3, fid, *this);
+    const size_t gfid = m_vertex_connectivity[new_vid].m_conn_tris[0];
+    int j = m_tri_connectivity[gfid].find(new_vid);
+    new_t = Tuple(new_vid, (j + 2) % 3, gfid, *this);
     if (!collapse_after(new_t)) {
         // if call back check failed roll back
         // restore the changes for connected triangles and vertices

@@ -264,7 +264,7 @@ public:
      */
     bool split_edge(const Tuple& t, Tuple& new_t);
     bool collapse_edge(const Tuple& t, Tuple& new_t);
-    void swap_edge(const Tuple& t, int type);
+    [[noreturn]] void swap_edge(const Tuple& t, int type);
 
     /**
      * @brief Get the one ring tris for a vertex

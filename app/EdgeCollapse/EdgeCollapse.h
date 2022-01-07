@@ -38,13 +38,13 @@ public:
         // std::vector<VertexConnectivity> new_m_vertex_connectivity = get_m_vertex_connectivity();
         // std::vector<TriangleConnectivity> new_m_tri_connectivity = get_m_tri_connectivity();
 
-        // Eigen::MatrixXd V(n_vertices(), 3);
-        // Eigen::MatrixXi F(n_triangles(), 3);
+        // Eigen::MatrixXd V(vert_capacity(), 3);
+        // Eigen::MatrixXi F(tri_capacity(), 3);
 
-        // for (int i = 0; i < n_vertices(); i++) V.row(i) = m_vertex_positions[i];
+        // for (int i = 0; i < vert_capacity(); i++) V.row(i) = m_vertex_positions[i];
 
 
-        // for (int i = 0; i < n_triangles(); i++)
+        // for (int i = 0; i < tri_capacity(); i++)
         //     F.row(i) = Eigen::Vector3i(
         //         (int)new_m_tri_connectivity[i].m_indices[0],
         //         (int)new_m_tri_connectivity[i].m_indices[1],
