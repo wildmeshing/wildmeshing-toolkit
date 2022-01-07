@@ -7,6 +7,8 @@
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/utils/Logger.hpp>
 
+#include <tbb/concurrent_vector.h>
+
 #include <algorithm>
 #include <array>
 #include <cassert>
@@ -33,11 +35,11 @@ public:
     public:
         void print_info() { logger().trace("tuple: {} {} {}", m_vid, m_eid, m_fid); }
 
-        //        v2
-        //      /    \
-		// e1  /      \  e0
-        //    v0 - - - v1
-        //        e2
+        //        v2         *
+        //      /    \       *
+        // e1  /      \  e0  *
+        //    v0 - - - v1    *
+        //        e2         *
         /**
          * Construct a new Tuple object with global vertex/triangle index and local edge index
          *
@@ -104,11 +106,11 @@ public:
             const int v0 = m.m_tri_connectivity[m_fid][0];
             const int v1 = m.m_tri_connectivity[m_fid][1];
             const int v2 = m.m_tri_connectivity[m_fid][2];
-
             switch (m_eid) {
             case 0: assert(m_vid == v1 || m_vid == v2); break;
             case 1: assert(m_vid == v0 || m_vid == v2); break;
             case 2: assert(m_vid == v0 || m_vid == v1); break;
+            default: assert(false);
             }
 #endif
 
@@ -130,6 +132,8 @@ public:
             return vs;
         }
 
+
+        // TODO: name consistency with 3d
         size_t get_vertex_attribute_id(const TriMesh& m);
         size_t get_edge_attribute_id(const TriMesh& m);
         size_t get_face_attribute_id(const TriMesh& m);
@@ -148,13 +152,13 @@ public:
 
         inline size_t& operator[](const size_t index)
         {
-            assert(index >= 0 && index < m_conn_tris.size());
+            assert(index < m_conn_tris.size());
             return m_conn_tris[index];
         }
 
         inline size_t operator[](const size_t index) const
         {
-            assert(index >= 0 && index < m_conn_tris.size());
+            assert(index < m_conn_tris.size());
             return m_conn_tris[index];
         }
     };
@@ -172,13 +176,13 @@ public:
 
         inline size_t& operator[](size_t index)
         {
-            assert(index >= 0 && index < 3);
+            assert(index < 3);
             return m_indices[index];
         }
 
         inline size_t operator[](size_t index) const
         {
-            assert(index >= 0 && index < 3);
+            assert(index < 3);
             return m_indices[index];
         }
 
@@ -207,7 +211,6 @@ public:
         }
     }
 
-
     /**
      * Generate a vector of Tuples from global vertex index and __local__ edge index
      * @note each vertex generate tuple that has the fid to be the smallest among connected
@@ -217,6 +220,7 @@ public:
      */
     std::vector<Tuple> get_vertices() const
     {
+        // TODO: move to cpp
         const TriMesh& m = *this;
         const size_t n_vertices = m_vertex_connectivity.size();
         std::vector<Tuple> all_vertices_tuples;
@@ -251,6 +255,7 @@ public:
      */
     std::vector<Tuple> get_faces() const
     {
+        // TODO: move to cpp
         const TriMesh& m = *this;
         std::vector<Tuple> all_faces_tuples;
         all_faces_tuples.resize(m.m_tri_connectivity.size());
@@ -272,6 +277,7 @@ public:
      */
     std::vector<Tuple> get_edges() const
     {
+        // TODO: move to cpp
         const TriMesh& m = *this;
         std::vector<Tuple> all_edges_tuples;
         all_edges_tuples.reserve(m.m_tri_connectivity.size() * 3 / 2);
@@ -281,8 +287,9 @@ public:
                 size_t eid = (j + 2) % 3;
                 Tuple e_tuple = Tuple(vid, eid, i, m);
                 assert(e_tuple.is_valid(m));
-                Tuple e_tuple2 = e_tuple.switch_face(m).value_or(
-                    e_tuple); // return itself if it is a boundary triangle
+                Tuple e_tuple2 = e_tuple.switch_face(m).value_or(e_tuple);
+                assert(e_tuple2.is_valid(m));
+                // return itself if it is a boundary triangle
                 size_t fid2 = e_tuple2.get_fid();
                 if (fid2 < i)
                     continue;
@@ -293,45 +300,126 @@ public:
         return all_edges_tuples;
     }
 
+    template <typename T>
+    using vector = tbb::concurrent_vector<T>;
+
 private:
-    std::vector<VertexConnectivity> m_vertex_connectivity;
-    std::vector<TriangleConnectivity> m_tri_connectivity;
+    vector<VertexConnectivity> m_vertex_connectivity;
+    vector<TriangleConnectivity> m_tri_connectivity;
 
     size_t get_next_empty_slot_t()
     {
+        // TODO: move to cpp
         m_tri_connectivity.emplace_back();
+        resize_attributes(
+            m_vertex_connectivity.size(),
+            m_tri_connectivity.size() * 3,
+            m_tri_connectivity.size());
         return m_tri_connectivity.size() - 1;
     }
+
     size_t get_next_empty_slot_v()
     {
+        // TODO: move to cpp
         m_vertex_connectivity.emplace_back();
+        resize_attributes(
+            m_vertex_connectivity.size(),
+            m_tri_connectivity.size() * 3,
+            m_tri_connectivity.size());
         return m_vertex_connectivity.size() - 1;
     }
 
 protected:
     virtual bool split_before(const Tuple& t) { return true; }
     virtual bool split_after(const Tuple& t) { return true; }
-    virtual bool collapse_before(const Tuple& t) { return true; }
-    virtual bool collapse_after(const Tuple& t) { return true; }
+
+
+    virtual bool collapse_before(const Tuple& t)
+    {
+        // TODO: make check_manifold correct
+        // TODO: check_link_condition checks for open boundaries
+        if (check_link_condition(t) && check_manifold(t)) return true;
+        return false;
+    }
+    virtual bool collapse_after(const Tuple& t)
+    {
+        assert(check_mesh_connectivity_validity());
+        assert(t.is_valid(*this));
+
+        return true;
+    }
+
+    virtual void resize_attributes(size_t v, size_t e, size_t t) {}
+
+
+    virtual void move_vertex_attribute(size_t from, size_t to){};
+    virtual void move_edge_attribute(size_t from, size_t to){};
+    virtual void move_face_attribute(size_t from, size_t to){};
+
 
 public:
+    // TODO name consistency
     size_t n_triangles() const { return m_tri_connectivity.size(); }
     size_t n_vertices() const { return m_vertex_connectivity.size(); }
+
+    void consolidate_mesh_connectivity();
 
     Tuple switch_vertex(const Tuple& t) const { return t.switch_vertex(*this); }
     Tuple switch_edge(const Tuple& t) const { return t.switch_edge(*this); }
     std::optional<Tuple> switch_face(const Tuple& t) const { return t.switch_face(*this); }
 
+    bool check_link_condition(const Tuple& t) const; // DP: should be private
+    bool check_mesh_connectivity_validity() const; // DP: should be private
+    bool check_manifold(const Tuple& t) const
+    {
+        // TODO: move to cpp
+        auto v1_conn_tris = m_vertex_connectivity[t.get_vid()].m_conn_tris;
+        auto v2_conn_tris = m_vertex_connectivity[t.switch_vertex(*this).get_vid()].m_conn_tris;
+
+        size_t fid1 = t.get_fid();
+        size_t fid2 = switch_face(t).value_or(t).get_fid();
+
+        vector_erase(v1_conn_tris, fid1);
+        vector_erase(v1_conn_tris, fid2);
+        vector_erase(v2_conn_tris, fid1);
+        vector_erase(v2_conn_tris, fid2);
+        return (v1_conn_tris.size() + v2_conn_tris.size() > 0);
+    }
     /**
      * Split an edge
      *
      * @param t Input Tuple for the edge to split.
-     * @param[out] new_edges a vector of Tuples for all the edges from the newly introduced triangle
+     * @param[out] new_edges a vector of Tuples for all the edges from the newly introduced
+     * triangle
      * @return if split succeed
      */
     bool split_edge(const Tuple& t, Tuple& new_t);
     bool collapse_edge(const Tuple& t, Tuple& new_t);
     void swap_edge(const Tuple& t, int type);
+
+    /**
+     * @brief Get the one ring tris for a vertex
+     *
+     * @param t tuple pointing to a vertex
+     * @return one-ring
+     */
+    std::vector<Tuple> get_one_ring_tris_for_vertex(const Tuple& t) const;
+
+    /**
+     * @brief Get the one ring edges for a vertex, edges are the incident edges
+     *
+     * @param t tuple pointing to a vertex
+     * @return one-ring
+     */
+    std::vector<Tuple> get_one_ring_edges_for_vertex(const Tuple& t) const;
+
+    /**
+     * @brief Get the incident vertices for a triangle
+     *
+     * @param t tuple pointing to an face
+     * @return incident vertices
+     */
+    std::vector<Tuple> get_oriented_vertices_for_tri(const Tuple& t) const;
 };
 
 } // namespace wmtk

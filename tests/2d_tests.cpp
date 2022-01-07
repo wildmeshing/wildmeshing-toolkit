@@ -306,5 +306,49 @@ TEST_CASE("vertex_edge switches equals indentity", "[test_operation]")
     }
 }
 
+TEST_CASE("link_check", "[test_pre_check]")
+{
+    TriMesh m;
+    std::vector<std::array<size_t, 3>> tris =
+        {{{1, 2, 3}}, {{0, 1, 4}}, {{0, 2, 5}}, {{0, 1, 6}}, {{0, 2, 6}}, {{1, 2, 6}}};
+    m.create_mesh(7, tris);
+    TriMesh::Tuple edge(1, 2, 0, m);
+    REQUIRE_FALSE(m.check_link_condition(edge));
+}
 
-//TODO add test for validity of tuple with and woithout success https://github.com/wildmeshing/wildmeshing-toolkit/blob/b169338fe3a7244f1a10eb6aad35093abd5a9287/tests/test_operations.cpp#L18
+
+// these roll back tests must have more than 2 triangles, since by design when there are only two
+// incident triangles the edge cannot be collapsed
+// this check should be doen in pre collapse check
+
+TEST_CASE("rollback_edge_collapse", "[test_2d_operation]")
+{
+    TriMesh m;
+    std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 2, 3}}};
+    m.create_mesh(4, tris);
+
+    TriMesh::Tuple tuple = TriMesh::Tuple(1, 0, 0, m);
+    TriMesh::Tuple dummy;
+    REQUIRE(tuple.is_valid(m));
+    REQUIRE(m.check_link_condition(tuple));
+    REQUIRE_FALSE(m.collapse_edge(tuple, dummy));
+    REQUIRE(tuple.is_valid(m));
+    REQUIRE(m.check_mesh_connectivity_validity());
+}
+
+TEST_CASE("collapse_operation", "[test_2d_operation]")
+{
+    class NoSplitMesh : public TriMesh
+    {
+        bool collapse_before(const TriMesh::Tuple& loc) override { return true; };
+        bool collapse_after(const TriMesh::Tuple& loc) override { return true; };
+    };
+    auto m = NoSplitMesh();
+    std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 2, 3}}, {{0, 1, 4}}, {{0, 2, 5}}};
+    m.create_mesh(6, tris);
+    const auto tuple = NoSplitMesh::Tuple(1, 0, 0, m);
+    REQUIRE(tuple.is_valid(m));
+    TriMesh::Tuple dummy;
+    REQUIRE(m.collapse_edge(tuple, dummy));
+    REQUIRE_FALSE(tuple.is_valid(m));
+}

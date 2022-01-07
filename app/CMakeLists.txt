@@ -52,18 +52,23 @@ target_link_libraries(TetWild_bin PUBLIC TetWild)
 # Quadric Edge Collapse 2D
 ################################################################################
 
-add_library(QuadricEdgeCollapse
-	QuadricEdgeCollapse/QEC.cpp
+add_library(EdgeCollapse
+	#EdgeCollapse/QEC.cpp
+	EdgeCollapse/EdgeCollapse.h 
+	EdgeCollapse/main.cpp
+	
+	EdgeCollapse/ShortestEdgeCollapse.cpp
+	EdgeCollapse/QEC.cpp
 )
 
-target_link_libraries(QuadricEdgeCollapse PUBLIC igl::predicates FastEnvelope app_shared)
-target_include_directories(QuadricEdgeCollapse PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(EdgeCollapse PUBLIC igl::predicates FastEnvelope app_shared)
+target_include_directories(EdgeCollapse PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 
-target_compile_features(QuadricEdgeCollapse PUBLIC cxx_std_17)
+target_compile_features(EdgeCollapse PUBLIC cxx_std_17)
 
-add_executable(QuadricEdgeCollapse_bin QuadricEdgeCollapse/main.cpp)
-target_link_libraries(QuadricEdgeCollapse_bin PUBLIC QuadricEdgeCollapse)
+add_executable(EdgeCollapse_bin EdgeCollapse/main.cpp)
+target_link_libraries(EdgeCollapse_bin PUBLIC EdgeCollapse)
 
 
 ################################################################################
