@@ -221,8 +221,6 @@ protected:
 
     virtual bool collapse_before(const Tuple& t)
     {
-        // TODO: make check_manifold correct
-        // TODO: check_link_condition checks for open boundaries
         if (check_link_condition(t) && check_manifold(t)) return true;
         return false;
     }

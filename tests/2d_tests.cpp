@@ -313,7 +313,7 @@ TEST_CASE("link_check", "[test_pre_check]")
     REQUIRE_FALSE(m.check_link_condition(edge));
 }
 
-TEST_CASE("link_check_on_1_tri", "[test_pre_check]")
+TEST_CASE("link_and_manifold_check_on_1_tri", "[test_pre_check]")
 {
     TriMesh m;
 
@@ -321,7 +321,9 @@ TEST_CASE("link_check_on_1_tri", "[test_pre_check]")
     m.create_mesh(3, tris);
 
     TriMesh::Tuple edge(0, 2, 0, m);
+    assert(edge.is_valid(m));
     REQUIRE(m.check_link_condition(edge));
+    REQUIRE_FALSE(m.check_manifold(edge));
 }
 
 TEST_CASE("link_check_non_manifold", "[test_pre_check]")
@@ -336,6 +338,33 @@ TEST_CASE("link_check_non_manifold", "[test_pre_check]")
     TriMesh::Tuple pass_edge(0, 2, 0, m);
     REQUIRE(m.check_link_condition(pass_edge));
 }
+
+TEST_CASE("manifold_check_on_2_tri", "[test_pre_check]")
+{
+    TriMesh m;
+
+    std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 3, 2}}};
+    m.create_mesh(4, tris);
+
+    TriMesh::Tuple edge(1, 0, 0, m);
+    assert(edge.is_valid(m));
+    REQUIRE_FALSE(m.check_link_condition(edge));
+    REQUIRE_FALSE(m.check_manifold(edge));
+}
+
+TEST_CASE("manifold_check_on_tet", "[test_pre_check]")
+{
+    TriMesh m;
+
+    std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 3, 2}}, {{0, 2, 3}}, {{3, 0, 1}}};
+    m.create_mesh(4, tris);
+
+    TriMesh::Tuple edge(1, 0, 0, m);
+    assert(edge.is_valid(m));
+    REQUIRE(m.check_link_condition(edge));
+    REQUIRE_FALSE(m.check_manifold(edge));
+}
+
 
 // these roll back tests must have more than 2 triangles, since by design when there are only two
 // incident triangles the edge cannot be collapsed
