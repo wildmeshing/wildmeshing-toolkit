@@ -68,18 +68,43 @@ public:
 
     void collapse_edge_task(ElementInQueue& eiq)
     {
+        // std::cout << "in task" << std::endl;
+        // std::cout << (m.n_vertices() == m.n_mutex()) << std::endl;
+
+
         auto loc = eiq.edge;
         double weight = eiq.weight;
+
+        auto eid = loc;
         // check if the edge tuple is valid
         if (!loc.is_valid(m)) return;
+        // std::cout << "collpase edge_v_id: " << eid.get_vid() << " "
+        //           << eid.switch_vertex(m).get_vid() << std::endl;
         // set lock here
+        std::vector<size_t> mutex_release_stack;
+        // std::cout << "before set lock" << std::endl;
+        if (!m.try_set_edge_mutex_two_ring(loc, mutex_release_stack)) {
+            this->add(eiq);
+            return;
+        }
+        std::cout << "locked: " << mutex_release_stack.size() << std::endl;
+        std::cout << "vids: ";
+        for (int i = 0; i < mutex_release_stack.size(); i++) {
+            std::cout << mutex_release_stack[i] << " ";
+        }
+        std::cout << std::endl;
         size_t v1 = loc.get_vid();
         wmtk::ConcurrentTriMesh::Tuple v2_tuple = loc.switch_vertex(m);
         size_t v2 = v2_tuple.get_vid();
         wmtk::ConcurrentTriMesh::Tuple new_vert;
-        if (!m.collapse_edge(loc, new_vert)) return;
+        if (!m.collapse_edge(loc, new_vert)) {
+            int num_released = m.release_vertex_mutex_in_stack(mutex_release_stack);
+            std::cout << "released: " << num_released << std::endl;
+            return;
+        }
         m.update_position(v1, v2, new_vert);
         size_t new_vid = new_vert.get_vid();
+        m.add_new_vertex_mutex();
         std::vector<wmtk::ConcurrentTriMesh::Tuple> one_ring_edges =
             m.get_one_ring_edges_for_vertex(new_vert);
         for (wmtk::ConcurrentTriMesh::Tuple edge : one_ring_edges) {
@@ -88,8 +113,10 @@ public:
             double length =
                 (m.m_vertex_positions[new_vid] - m.m_vertex_positions[vid]).squaredNorm();
             ElementInQueue new_eiq(edge, length);
-            this->add(eiq);
+            this->add(new_eiq);
         }
+        int num_released = m.release_vertex_mutex_in_stack(mutex_release_stack);
+        std::cout << "released: " << num_released << std::endl;
     }
 };
 
@@ -114,6 +141,12 @@ void Edge2d::ParallelEdgeCollapse::collapse_shortest_stuff(
     // check if the edge tuple is valid
     if (!loc.is_valid(*this)) return;
     // set lock here
+    std::vector<size_t> mutex_release_stack;
+    try_set_edge_mutex_two_ring(loc, mutex_release_stack);
+    if (!try_set_edge_mutex_two_ring(loc, mutex_release_stack)) {
+        ec_queue.push(eiq);
+        return;
+    }
     size_t v1 = loc.get_vid();
     ConcurrentTriMesh::Tuple v2_tuple = loc.switch_vertex(*this);
     size_t v2 = v2_tuple.get_vid();
@@ -128,6 +161,7 @@ void Edge2d::ParallelEdgeCollapse::collapse_shortest_stuff(
         double length = (m_vertex_positions[new_vid] - m_vertex_positions[vid]).squaredNorm();
         ec_queue.push(ElementInQueue(edge, length));
     }
+    release_vertex_mutex_in_stack(mutex_release_stack);
 }
 
 

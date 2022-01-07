@@ -13,7 +13,6 @@
 #include <vector>
 
 
-
 namespace wmtk {
 
 class TriMesh
@@ -301,6 +300,7 @@ private:
         m_tri_connectivity.emplace_back();
         return m_tri_connectivity.size() - 1;
     }
+
     size_t get_next_empty_slot_v()
     {
         m_vertex_connectivity.emplace_back();

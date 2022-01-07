@@ -208,6 +208,9 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
     // won't fail
     m_vertex_connectivity[vid1].m_is_removed = true;
     m_vertex_connectivity[vid2].m_is_removed = true;
+    for (size_t fid : n12_intersect_fids) {
+        m_tri_connectivity[fid].m_is_removed = true;
+    }
 
     std::vector<size_t> n12_union_fids;
     std::set_union(
@@ -218,6 +221,7 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
         std::back_inserter(n12_union_fids));
 
     // record the fids that will be modified/erased for roll back on failure
+    vector_unique(n12_union_fids);
     std::vector<std::pair<size_t, TriangleConnectivity>> old_tris(n12_union_fids.size());
 
     for (int i = 0; i < old_tris.size(); i++) {
@@ -229,11 +233,11 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
     // the m_conn_tris needs to be sorted
     size_t new_vid = get_next_empty_slot_v();
     for (size_t fid : n1_fids) {
-        if (vector_contains(n12_intersect_fids, fid))
+        if (m_tri_connectivity[fid].m_is_removed)
             continue;
         else {
             int j = m_tri_connectivity[fid].find(vid1);
-            m_tri_connectivity[fid][j] = new_vid;
+            m_tri_connectivity[fid].m_indices[j] = new_vid;
         }
     }
     for (size_t fid : n2_fids) {
@@ -241,11 +245,8 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
             continue;
         else {
             int j = m_tri_connectivity[fid].find(vid2);
-            m_tri_connectivity[fid][j] = new_vid;
+            m_tri_connectivity[fid].m_indices[j] = new_vid;
         }
-    }
-    for (size_t fid : n12_intersect_fids) {
-        m_tri_connectivity[fid].m_is_removed = true;
     }
 
     // now work on vids
@@ -256,12 +257,14 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
     }
 
     for (size_t fid : n12_union_fids) {
-        if (vector_contains(n12_intersect_fids, fid))
+        if (m_tri_connectivity[fid].m_is_removed)
             continue;
         else
             m_vertex_connectivity[new_vid].m_conn_tris.push_back(fid);
     }
+    // This is sorting too, and it is important to sort
     vector_unique(m_vertex_connectivity[new_vid].m_conn_tris);
+
     // remove the erased fids from the vertices' (the one of the triangles that is not the end
     // points of the edge) connectivity list
     std::vector<std::pair<size_t, size_t>> same_edge_vid_fid;
@@ -275,6 +278,7 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
             }
         }
     }
+
 
     // ? ? tuples changes. this needs to be done before post check since checked are done on tuples
     // update the old tuple version number
@@ -309,11 +313,16 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
                 m_vertex_connectivity[vid].m_conn_tris.begin(),
                 m_vertex_connectivity[vid].m_conn_tris.end());
         }
+        for (size_t fid : n12_intersect_fids) {
+            m_tri_connectivity[fid].m_is_removed = false;
+        }
+
         // by the end the new_t and old t both exist and both valid
         return false;
     }
     return true;
 }
+
 
 bool TriMesh::split_edge(const Tuple& t, Tuple& new_t)
 {
