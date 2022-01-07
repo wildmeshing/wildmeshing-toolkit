@@ -94,10 +94,14 @@ void tetwild::TetWild::construct_background_mesh(const InputSurface& input_surfa
     ///box
     double delta = m_params.diag_l / 10.0;
     Vector3d box_min(m_params.min[0] - delta, m_params.min[1] - delta, m_params.min[2] - delta);
-    Vector3d box_max(m_params.max[0] - delta, m_params.max[1] - delta, m_params.max[2] - delta);
+    Vector3d box_max(m_params.max[0] + delta, m_params.max[1] + delta, m_params.max[2] + delta);
     // todo: add voxel points
     points.push_back({{box_min[0], box_min[1], box_min[2]}});
     points.push_back({{box_max[0], box_max[1], box_max[2]}});
+    apps::logger().info("min: {}", m_params.min.transpose());
+    apps::logger().info("max: {}", m_params.max.transpose());
+    apps::logger().info("box_min: {}", box_min.transpose());
+    apps::logger().info("box_max: {}", box_max.transpose());
 
     ///delaunay
     auto tets = wmtk::delaunay3D_conn(points);
@@ -221,10 +225,10 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& input_surface)
             c = c / 3;
 
             std::vector<Vector3> ps3 = {
-                c,
                 to_rational(vertices[faces[face_id][0]]),
                 to_rational(vertices[faces[face_id][1]]),
-                to_rational(vertices[faces[face_id][2]])};
+                to_rational(vertices[faces[face_id][2]]),
+                c};
             std::vector<Vector2> ps2;
             wmtk::squeeze_points_to_2d(ps3, ps2);
 
