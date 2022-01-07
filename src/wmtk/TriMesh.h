@@ -64,6 +64,14 @@ public:
          */
         inline size_t vid() const { return m_vid; }
 
+        /**
+         * returns a global unique face id
+         *
+         * @param m TriMesh where the tuple belongs.
+         * @return size_t
+         */
+        inline size_t fid() const { return m_fid; }
+
 
         /**
          * returns a global unique edge id
@@ -73,16 +81,15 @@ public:
          * @note The global id may not be consecutive. The edges are undirected and different tetra
          * share the same edge.
          */
-        inline size_t eid() const { return m_fid * 3 + m_eid; }
+        inline size_t eid(const TriMesh& m) const
+        {
+            if (switch_face(m).has_value()) {
+                size_t fid2 = switch_face(m)->fid();
+                return std::min(m_fid, fid2) * 3 + m_eid;
+            }
+            return m_fid * 3 + m_eid;
+        }
 
-
-        /**
-         * returns a global unique face id
-         *
-         * @param m TriMesh where the tuple belongs.
-         * @return size_t
-         */
-        inline size_t fid() const { return m_fid; }
 
         /**
          * Switch operation. See (URL-TO-DOCUMENT) for explaination.

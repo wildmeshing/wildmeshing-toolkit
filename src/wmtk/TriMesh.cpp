@@ -197,6 +197,9 @@ bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
     assert(edge.is_valid(*this));
     size_t vid1 = edge.vid();
     size_t vid2 = switch_vertex(edge).vid();
+    auto vid1_ring = get_one_ring_edges_for_vertex(edge);
+    auto vid2_ring = get_one_ring_edges_for_vertex(switch_vertex(edge));
+
     const auto v1_conn_tris = m_vertex_connectivity[vid1].m_conn_tris;
     const auto v2_conn_tris = m_vertex_connectivity[vid2].m_conn_tris;
     std::vector<size_t> v1_v2_link;

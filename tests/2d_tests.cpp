@@ -181,13 +181,13 @@ TriMesh::Tuple double_switch_face(TriMesh::Tuple t, TriMesh& m)
     return t_after;
 }
 
-bool tuple_equal(TriMesh::Tuple t1, TriMesh::Tuple t2)
+bool tuple_equal(const TriMesh& m, TriMesh::Tuple t1, TriMesh::Tuple t2)
 {
-    if (t1.vid() != t2.vid()) std::cout << "vids : " << t1.vid() << " " << t2.vid() << std::endl;
-    if (t1.eid() != t2.eid()) std::cout << "eids : " << t1.eid() << " " << t2.eid() << std::endl;
-    if (t1.fid() != t2.fid()) std::cout << "fids : " << t1.fid() << " " << t2.fid() << std::endl;
+    if (t1.vid() != t2.vid()) throw "vids of two tuples not equal";
+    if (t1.eid(m) != t2.eid(m)) throw "eid of two tuples not equal";
+    if (t1.fid() != t2.fid()) throw "fid of two tuples not equal";
 
-    return (t1.fid() == t2.fid()) && (t1.eid() == t2.eid()) && (t1.vid() == t2.vid());
+    return (t1.fid() == t2.fid()) && (t1.eid(m) == t2.eid(m)) && (t1.vid() == t2.vid());
 }
 
 
@@ -208,11 +208,11 @@ TEST_CASE("double switches is identity", "[test_operation]")
         for (int i = 0; i < vertices_tuples.size(); i++) {
             TriMesh::Tuple v_tuple = vertices_tuples[i];
             v_tuple_after = double_switch_vertex(v_tuple, m);
-            REQUIRE(tuple_equal(v_tuple_after, v_tuple));
+            REQUIRE(tuple_equal(m, v_tuple_after, v_tuple));
             v_tuple_after = double_switch_edge(v_tuple, m);
-            REQUIRE(tuple_equal(v_tuple_after, v_tuple));
+            REQUIRE(tuple_equal(m, v_tuple_after, v_tuple));
             v_tuple_after = double_switch_face(v_tuple, m);
-            REQUIRE(tuple_equal(v_tuple_after, v_tuple));
+            REQUIRE(tuple_equal(m, v_tuple_after, v_tuple));
         }
     }
 
@@ -223,11 +223,11 @@ TEST_CASE("double switches is identity", "[test_operation]")
         for (int i = 0; i < edges_tuples.size(); i++) {
             TriMesh::Tuple e_tuple = edges_tuples[i];
             e_tuple_after = double_switch_vertex(e_tuple, m);
-            REQUIRE(tuple_equal(e_tuple_after, e_tuple));
+            REQUIRE(tuple_equal(m, e_tuple_after, e_tuple));
             e_tuple_after = double_switch_edge(e_tuple, m);
-            REQUIRE(tuple_equal(e_tuple_after, e_tuple));
+            REQUIRE(tuple_equal(m, e_tuple_after, e_tuple));
             e_tuple_after = double_switch_face(e_tuple, m);
-            REQUIRE(tuple_equal(e_tuple_after, e_tuple));
+            REQUIRE(tuple_equal(m, e_tuple_after, e_tuple));
         }
     }
 
@@ -238,11 +238,11 @@ TEST_CASE("double switches is identity", "[test_operation]")
         for (int i = 0; i < faces_tuples.size(); i++) {
             TriMesh::Tuple f_tuple = faces_tuples[i];
             f_tuple_after = double_switch_vertex(f_tuple, m);
-            REQUIRE(tuple_equal(f_tuple_after, f_tuple));
+            REQUIRE(tuple_equal(m, f_tuple_after, f_tuple));
             f_tuple_after = double_switch_edge(f_tuple, m);
-            REQUIRE(tuple_equal(f_tuple_after, f_tuple));
+            REQUIRE(tuple_equal(m, f_tuple_after, f_tuple));
             f_tuple_after = double_switch_face(f_tuple, m);
-            REQUIRE(tuple_equal(f_tuple_after, f_tuple));
+            REQUIRE(tuple_equal(m, f_tuple_after, f_tuple));
         }
     }
 }
@@ -266,7 +266,7 @@ TEST_CASE("vertex_edge switches equals indentity", "[test_operation]")
             v_tuple_after = v_tuple_after.switch_edge(m);
             v_tuple_after = v_tuple_after.switch_vertex(m);
             v_tuple_after = v_tuple_after.switch_edge(m);
-            REQUIRE(tuple_equal(v_tuple, v_tuple_after));
+            REQUIRE(tuple_equal(m, v_tuple, v_tuple_after));
         }
     }
 
@@ -282,7 +282,7 @@ TEST_CASE("vertex_edge switches equals indentity", "[test_operation]")
             e_tuple_after = e_tuple_after.switch_edge(m);
             e_tuple_after = e_tuple_after.switch_vertex(m);
             e_tuple_after = e_tuple_after.switch_edge(m);
-            REQUIRE(tuple_equal(e_tuple, e_tuple_after));
+            REQUIRE(tuple_equal(m, e_tuple, e_tuple_after));
         }
     }
 
@@ -298,7 +298,7 @@ TEST_CASE("vertex_edge switches equals indentity", "[test_operation]")
             f_tuple_after = f_tuple_after.switch_edge(m);
             f_tuple_after = f_tuple_after.switch_vertex(m);
             f_tuple_after = f_tuple_after.switch_edge(m);
-            REQUIRE(tuple_equal(f_tuple, f_tuple_after));
+            REQUIRE(tuple_equal(m, f_tuple, f_tuple_after));
         }
     }
 }
@@ -372,6 +372,6 @@ TEST_CASE("swap_operation", "[test_2d_operation]")
     REQUIRE(m.swap_edge(swap_e, new_e));
     REQUIRE_FALSE(swap_e.is_valid(m));
     REQUIRE(new_e.is_valid(m));
-    REQUIRE(m.n_vertices() == 8);
-    REQUIRE(m.n_triangles() == 8);
+    REQUIRE(m.vert_capacity() == 8);
+    REQUIRE(m.tri_capacity() == 8);
 }
