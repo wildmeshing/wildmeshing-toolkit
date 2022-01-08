@@ -13,10 +13,10 @@ void add_Qs(std::array<double, 10>& Q1, const std::array<double, 10>& Q2)
 // get the quadrix in form of an array of 10 floating point numbers
 std::array<double, 10> Edge2d::EdgeCollapse::compute_Q_f(wmtk::TriMesh::Tuple& f_tuple)
 {
-    auto conn_indices = get_oriented_vertices_for_tri(f_tuple);
-    Eigen::Vector3d A = m_vertex_positions[conn_indices[0].get_vid()];
-    Eigen::Vector3d B = m_vertex_positions[conn_indices[1].get_vid()];
-    Eigen::Vector3d C = m_vertex_positions[conn_indices[2].get_vid()];
+    auto conn_indices = oriented_tri_vertices(f_tuple);
+    Eigen::Vector3d A = m_vertex_positions[conn_indices[0].vid()];
+    Eigen::Vector3d B = m_vertex_positions[conn_indices[1].vid()];
+    Eigen::Vector3d C = m_vertex_positions[conn_indices[2].vid()];
 
     Eigen::Vector3d n = ((A - B).cross(C - B)).normalized();
     double a = n(0);
@@ -50,10 +50,23 @@ std::array<double, 10> Edge2d ::EdgeCollapse::compute_Q_v(wmtk::TriMesh::Tuple& 
     return Q;
 }
 
+double Edge2d::EdgeCollapse::compute_cost_for_v(wmtk::TriMesh::Tuple& v_tuple)
+{
+    // DP: Commented out because this function returns an undefined number
+    // Eigen::Vector3d v = m_vertex_positions[v_tuple.vid()];
+    // std::array<double, 10> Q = compute_Q_v(v_tuple);
+
+    // double cost;
+    // return cost;
+    assert(false);
+    return 0;
+}
+
 bool Edge2d::EdgeCollapse::collapse_qec()
 {
     // find the valid pairs (for each vertex)
     std::vector<TriMesh::Tuple> edges = get_edges();
+    double shortest = std::numeric_limits<double>::max();
 
     // find the best pair by keeping the priority queue
     // always keep the high cost one on top of the queue

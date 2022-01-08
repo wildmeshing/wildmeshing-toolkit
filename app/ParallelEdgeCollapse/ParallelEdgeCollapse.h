@@ -1,15 +1,15 @@
 #pragma once
 
+#include <igl/write_triangle_mesh.h>
+#include <tbb/concurrent_priority_queue.h>
+#include <tbb/concurrent_vector.h>
+#include <tbb/parallel_for.h>
+#include <tbb/task_group.h>
 #include <wmtk/ConcurrentTriMesh.h>
 #include <wmtk/utils/VectorUtils.h>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <queue>
-#include <tbb/concurrent_vector.h>
-#include <tbb/task_group.h>
-#include <tbb/parallel_for.h>
-#include <tbb/concurrent_priority_queue.h>
-#include <tbb/task_group.h>
 
 
 namespace Edge2d {
@@ -19,6 +19,7 @@ class ElementInQueue
 public:
     wmtk::ConcurrentTriMesh::Tuple edge;
     double weight;
+    int times_skipped = 0;
 
     ElementInQueue() {}
     ElementInQueue(const wmtk::ConcurrentTriMesh::Tuple& e, double w)
@@ -31,7 +32,7 @@ struct cmp_l
 {
     bool operator()(const ElementInQueue& e1, const ElementInQueue& e2)
     {
-        if (e1.weight == e2.weight) return e1.edge.get_vid() > e2.edge.get_vid();
+        if (e1.weight == e2.weight) return e1.edge.vid() > e2.edge.vid();
         return e1.weight < e2.weight;
     }
 };
@@ -40,7 +41,7 @@ struct cmp_s
 {
     bool operator()(const ElementInQueue& e1, const ElementInQueue& e2)
     {
-        if (e1.weight == e2.weight) return e1.edge.get_vid() < e2.edge.get_vid();
+        if (e1.weight == e2.weight) return e1.edge.vid() < e2.edge.vid();
         return e1.weight > e2.weight;
     }
 };
@@ -56,8 +57,44 @@ public:
 
     ~ParallelEdgeCollapse() {}
 
+    // TODO cannot be used for parallel
+    struct CollapseInfoCache
+    {
+        Eigen::Vector3d v1p;
+        Eigen::Vector3d v2p;
+    } collapse_cache;
+
+    bool collapse_before(const Tuple& t) override;
+    bool collapse_after(const Tuple& t) override;
+
+    // write the collapsed mesh into a obj
+    bool write_triangle_mesh(std::string path)
+    {
+        Eigen::MatrixXd V = Eigen::MatrixXd::Zero(m_vertex_positions.size(), 3);
+        for (auto& t : get_vertices()) {
+            auto i = t.vid();
+            V.row(i) = m_vertex_positions[i];
+        }
+
+        Eigen::MatrixXi F = Eigen::MatrixXi::Constant(tri_capacity(), 3, -1);
+        for (auto& t : get_faces()) {
+            auto i = t.fid();
+            auto vs = oriented_tri_vertices(t);
+            for (int j = 0; j < 3; j++) {
+                F(i, j) = vs[j].vid();
+            }
+        }
+
+        return igl::write_triangle_mesh(path, V, F);
+    }
+
+    // old implementation
     bool collapse_shortest();
-    void collapse_shortest_stuff(ElementInQueue &eiq, tbb::concurrent_priority_queue<ElementInQueue, cmp_s> &ec_queue);
+    void collapse_shortest_stuff(
+        ElementInQueue& eiq,
+        tbb::concurrent_priority_queue<ElementInQueue, cmp_s>& ec_queue);
+
+    bool collapse_shortest(int target_vertex_count);
 
     bool collapse_qec();
     // get the quadrix in form of an array of 10 floating point numbers
@@ -65,56 +102,17 @@ public:
 
     std::array<double, 10> compute_Q_v(wmtk::ConcurrentTriMesh::Tuple& t);
 
+    double compute_cost_for_v(wmtk::TriMesh::Tuple& v_tuple);
+
     void update_position(size_t v1, size_t v2, Tuple& new_vert);
 
+    void move_vertex_attribute(size_t from, size_t to) override
+    {
+        m_vertex_positions[to] = m_vertex_positions[from];
+    }
 
-
-    // class parallel_collapse_shortest: public wmtk::ConcurrentTriMesh{
-    // private:
-    //     tbb::concurrent_priority_queue<ElementInQueue, cmp_s> &ec_queue;
-    //     tbb::concurrent_vector<Eigen::Vector3d> &m_vertex_positions;
-    // public:
-    //     parallel_collapse_shortest(tbb::concurrent_priority_queue<ElementInQueue, cmp_s> &eq, \
-    //     tbb::concurrent_vector<Eigen::Vector3d> &_m_vertex_positions): ec_queue(eq), m_vertex_positions(_m_vertex_positions){}
-        
-    //     void update_position(size_t v1, size_t v2, Tuple& new_vert) {
-    //         size_t new_vid = new_vert.get_vid();
-    //         Eigen::Vector3d new_position = (m_vertex_positions[v1] + m_vertex_positions[v2]) / 2;
-    //         if (new_vid < m_vertex_positions.size()) m_vertex_positions[new_vid] = new_position;
-    //         m_vertex_positions.emplace_back(new_position);
-    //     }
-
-    //     void operator()(const tbb::blocked_range<size_t>& r) {
-    //         for (size_t i=r.begin(); i!=r.end(); ++i){
-    //             ElementInQueue eiq;
-    //             while (ec_queue.try_pop(eiq)) {
-    //                 auto loc = eiq.edge;
-    //                 double weight = eiq.weight;
-    //                 // check if the edge tuple is valid
-    //                 if (!loc.is_valid(*this)) continue;
-    //                 //set lock here
-    //                 size_t v1 = loc.get_vid();
-    //                 ConcurrentTriMesh::Tuple v2_tuple = loc.switch_vertex(*this);
-    //                 size_t v2 = v2_tuple.get_vid();
-    //                 ConcurrentTriMesh::Tuple new_vert;
-    //                 if (!ConcurrentTriMesh::collapse_edge(loc, new_vert)) continue;
-    //                 update_position(v1, v2, new_vert);
-    //                 size_t new_vid = new_vert.get_vid();
-    //                 std::vector<ConcurrentTriMesh::Tuple> one_ring_edges = get_one_ring_edges_for_vertex(new_vert);
-    //                 for (ConcurrentTriMesh::Tuple edge : one_ring_edges) {
-    //                     ConcurrentTriMesh::Tuple tmp_tuple = switch_vertex(new_vert);
-    //                     size_t vid = tmp_tuple.get_vid();
-    //                     double length = (m_vertex_positions[new_vid] - m_vertex_positions[vid]).squaredNorm();
-    //                     ec_queue.push(ElementInQueue(edge, length));
-    //                 }
-    //             }
-    //         }
-    //     }
-    // };
-
+    void resize_attributes(size_t v, size_t e, size_t t) override { m_vertex_positions.resize(v); }
 };
 
 
-
-
-}// namespace Edge2d
+} // namespace Edge2d

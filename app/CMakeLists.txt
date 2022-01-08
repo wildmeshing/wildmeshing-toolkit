@@ -56,6 +56,7 @@ add_library(EdgeCollapse
 	#EdgeCollapse/QEC.cpp
 	EdgeCollapse/EdgeCollapse.h 
 	EdgeCollapse/main.cpp
+	
 	EdgeCollapse/ShortestEdgeCollapse.cpp
 	EdgeCollapse/QEC.cpp
 )

@@ -12,12 +12,13 @@ void add_Qs(std::array<double, 10>& Q1, const std::array<double, 10>& Q2)
 }
 
 // get the quadrix in form of an array of 10 floating point numbers
-std::array<double, 10> Edge2d::ParallelEdgeCollapse::compute_Q_f(wmtk::ConcurrentTriMesh::Tuple& f_tuple)
+std::array<double, 10> Edge2d::ParallelEdgeCollapse::compute_Q_f(
+    wmtk::ConcurrentTriMesh::Tuple& f_tuple)
 {
-    auto conn_indices = get_oriented_vertices_for_tri(f_tuple);
-    Eigen::Vector3d A = m_vertex_positions[conn_indices[0].get_vid()];
-    Eigen::Vector3d B = m_vertex_positions[conn_indices[1].get_vid()];
-    Eigen::Vector3d C = m_vertex_positions[conn_indices[2].get_vid()];
+    auto conn_indices = oriented_tri_vertices(f_tuple);
+    Eigen::Vector3d A = m_vertex_positions[conn_indices[0].vid()];
+    Eigen::Vector3d B = m_vertex_positions[conn_indices[1].vid()];
+    Eigen::Vector3d C = m_vertex_positions[conn_indices[2].vid()];
 
     Eigen::Vector3d n = ((A - B).cross(C - B)).normalized();
     double a = n(0);
@@ -40,7 +41,8 @@ std::array<double, 10> Edge2d::ParallelEdgeCollapse::compute_Q_f(wmtk::Concurren
     return Q;
 }
 
-std::array<double, 10> Edge2d ::ParallelEdgeCollapse::compute_Q_v(wmtk::ConcurrentTriMesh::Tuple& v_tuple)
+std::array<double, 10> Edge2d ::ParallelEdgeCollapse::compute_Q_v(
+    wmtk::ConcurrentTriMesh::Tuple& v_tuple)
 {
     auto conn_tris = get_one_ring_tris_for_vertex(v_tuple);
     std::array<double, 10> Q{};

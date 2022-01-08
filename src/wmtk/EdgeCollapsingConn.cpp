@@ -30,10 +30,14 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
     /// update connectivity
     auto n1_t_ids =
         m_vertex_connectivity[v1_id].m_conn_tets; // note: conn_tets for v1 without removed tets
-    m_vertex_connectivity[v1_id].m_is_removed = true;
     auto n12_t_ids = set_intersection(
         m_vertex_connectivity[v1_id].m_conn_tets,
         m_vertex_connectivity[v2_id].m_conn_tets);
+    if(n1_t_ids == n12_t_ids){
+        return false; //note: this would not happen in tetwild but could happen in unit tests
+    }
+    //
+    m_vertex_connectivity[v1_id].m_is_removed = true;
     for (size_t t_id : n12_t_ids) {
         m_tet_connectivity[t_id].m_is_removed = true;
         vector_erase(m_vertex_connectivity[v2_id].m_conn_tets, t_id);
