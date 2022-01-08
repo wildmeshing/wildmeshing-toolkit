@@ -334,6 +334,7 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
         // by the end the new_t and old t both exist and both valid
         return false;
     }
+    assert(check_mesh_connectivity_validity());
     return true;
 }
 
@@ -745,18 +746,6 @@ bool TriMesh::check_manifold(const Tuple& t) const
         if (fid1 == e_fid && fid2 == e_fid) return false;
 
     return true;
-
-    // auto v1_conn_tris = m_vertex_connectivity[t.vid()].m_conn_tris;
-    // auto v2_conn_tris = m_vertex_connectivity[t.switch_vertex(*this).vid()].m_conn_tris;
-
-    // size_t fid1 = t.fid();
-    // size_t fid2 = switch_face(t).value_or(t).fid();
-
-    // vector_erase(v1_conn_tris, fid1);
-    // vector_erase(v1_conn_tris, fid2);
-    // vector_erase(v2_conn_tris, fid1);
-    // vector_erase(v2_conn_tris, fid2);
-    // return (v1_conn_tris.size() + v2_conn_tris.size() > 0);
 }
 // link check, prerequisite for edge collapse
 bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
@@ -788,7 +777,6 @@ bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
     else
         lk_edge.push_back(
             ((edge.switch_face(*this).value()).switch_edge(*this)).switch_vertex(*this).vid());
-
     return (
         lk_vid12.size() == lk_edge.size() &&
         std::equal(lk_vid12.begin(), lk_vid12.end(), lk_edge.begin()));
