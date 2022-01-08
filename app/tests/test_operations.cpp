@@ -64,9 +64,9 @@ TEST_CASE("edge_collapsing", "[test_operation]")
 
     tetwild.split_all_edges();
     REQUIRE(tetwild.check_mesh_connectivity_validity());
-    CHECK(tetwild.m_vertex_attribute.size() == 1376);
+    CHECK(tetwild.m_vertex_attribute.size() == 1375);
 
     tetwild.collapse_all_edges();
     REQUIRE(tetwild.check_mesh_connectivity_validity());
-    CHECK(tetwild.get_vertices().size() == 1140);
+    CHECK(tetwild.get_vertices().size() == 1142);
 }
