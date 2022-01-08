@@ -195,3 +195,42 @@ TEST_CASE("shortest_edge_collapse_circle", "[test_2d_operations]")
     REQUIRE(m.collapse_shortest(1000));
     m.write_triangle_mesh("collapsed.obj");
 }
+
+TEST_CASE("test_swap", "[test_2d_operations]")
+{
+    const std::string root(WMT_DATA_DIR);
+    const std::string path = root + "/circle.obj";
+
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    bool ok = igl::read_triangle_mesh(path, V, F);
+
+    REQUIRE(ok);
+
+    std::vector<Eigen::Vector3d> v(V.rows());
+    std::vector<std::array<size_t, 3>> tri(F.rows());
+    for (int i = 0; i < V.rows(); i++) {
+        v[i] = V.row(i);
+    }
+    for (int i = 0; i < F.rows(); i++) {
+        for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
+    }
+    EdgeOperations2d m(v);
+    m.create_mesh(V.rows(), tri);
+    REQUIRE(m.check_mesh_connectivity_validity());
+    std::cout << " is it mesh passed " << std ::endl;
+    auto edges = m.get_edges();
+    TriMesh::Tuple new_e;
+    int cnt = 0;
+    for (auto edge : edges) {
+        if (cnt > 200) break;
+        if (!edge.is_valid(m)) continue;
+        if (!(edge.switch_face(m)).has_value()) {
+            REQUIRE_FALSE(m.swap_edge(edge, new_e));
+            continue;
+        }
+        REQUIRE(m.swap_edge(edge, new_e));
+        cnt++;
+    }
+    m.write_triangle_mesh("sawped.obj");
+}

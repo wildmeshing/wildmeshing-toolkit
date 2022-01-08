@@ -372,35 +372,35 @@ bool TriMesh::swap_edge(const Tuple& t, Tuple& new_t)
 
     // check if the triangles intersection is the one adjcent to the edge
     size_t test_fid1 = t.fid();
-    size_t test_fid2 = std::numeric_limits<unsigned>::max();
+    std::optional<size_t> test_fid2;
     if (!switch_face(t).has_value())
         return false; // can't sawp on boundary edge
     else
         test_fid2 = switch_face(t).value().fid();
-    assert(test_fid2 != std::numeric_limits<unsigned>::max());
+    assert(test_fid2.has_value());
     // record the fids that will be changed for roll backs on failure
     std::vector<std::pair<size_t, TriangleConnectivity>> old_tris(2);
     old_tris[0] = std::make_pair(test_fid1, m_tri_connectivity[test_fid1]);
-    old_tris[1] = std::make_pair(test_fid2, m_tri_connectivity[test_fid2]);
+    old_tris[1] = std::make_pair(test_fid2.value(), m_tri_connectivity[test_fid2.value()]);
 
     // first work on triangles, there are only 2
     int j = m_tri_connectivity[test_fid1].find(vid2);
     m_tri_connectivity[test_fid1].m_indices[j] = vid3;
     m_tri_connectivity[test_fid1].hash++;
 
-    j = m_tri_connectivity[test_fid2].find(vid1);
-    m_tri_connectivity[test_fid2].m_indices[j] = vid4;
-    m_tri_connectivity[test_fid2].hash++;
+    j = m_tri_connectivity[test_fid2.value()].find(vid1);
+    m_tri_connectivity[test_fid2.value()].m_indices[j] = vid4;
+    m_tri_connectivity[test_fid2.value()].hash++;
 
     // then work on the vertices
-    vector_erase(m_vertex_connectivity[vid1].m_conn_tris, test_fid2);
+    vector_erase(m_vertex_connectivity[vid1].m_conn_tris, test_fid2.value());
     vector_erase(m_vertex_connectivity[vid2].m_conn_tris, test_fid1);
     m_vertex_connectivity[vid3].m_conn_tris.push_back(test_fid1);
     vector_unique(m_vertex_connectivity[vid3].m_conn_tris);
-    m_vertex_connectivity[vid4].m_conn_tris.push_back(test_fid2);
+    m_vertex_connectivity[vid4].m_conn_tris.push_back(test_fid2.value());
     vector_unique(m_vertex_connectivity[vid4].m_conn_tris);
     // change the tuple to the new edge tuple
-    new_t = Tuple(vid4, (j + 2) % 3, test_fid2, *this);
+    new_t = Tuple(vid4, (j + 2) % 3, test_fid2.value(), *this);
     assert(new_t.is_valid(*this));
     assert(check_mesh_connectivity_validity());
     if (!swap_after(new_t)) {
