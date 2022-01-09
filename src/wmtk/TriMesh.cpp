@@ -388,7 +388,7 @@ void TriMesh::swap_edge(const Tuple& t, int type)
     throw "Not implemented";
 }
 
-void TriMesh::consolidate_mesh_connectivity()
+void TriMesh::consolidate_mesh()
 
 {
     auto v_cnt = 0;
