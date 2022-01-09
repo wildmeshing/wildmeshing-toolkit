@@ -190,6 +190,8 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& input_surface)
             {to_rational(vertices[faces[face_id][0]]),
              to_rational(vertices[faces[face_id][1]]),
              to_rational(vertices[faces[face_id][2]])}};
+        std::array<Vector2, 3> tri2;
+        int squeeze_to_2d_dir = wmtk::squeeze_triangle_to_2d(tri, tri2);
 
         std::vector<size_t> intersected_tids;
         std::map<std::array<size_t, 2>, std::pair<int, Vector3>> map_edge2point;
@@ -233,7 +235,24 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& input_surface)
                 std::array<Vector3, 2> seg = {
                     {m_vertex_attribute[v1_id].m_pos, m_vertex_attribute[v2_id].m_pos}};
                 Vector3 p(0, 0, 0);
-                bool is_intersected = wmtk::open_segment_triangle_intersection_3d(seg, tri, p);
+                bool is_coplanar = wmtk::segment_triangle_coplanar_3d(seg, tri);
+                bool is_intersected = false;
+                if(is_coplanar) {
+                    std::array<Vector2, 2> seg2;
+                    seg2[0] = wmtk::squeeze_point_to_2d(seg[0], squeeze_to_2d_dir);
+                    seg2[1] = wmtk::squeeze_point_to_2d(seg[1], squeeze_to_2d_dir);
+                    for (int j = 0; j < 3; j++) {
+                        apps::Rational t1;
+                        std::array<Vector2, 2> tri_seg2 = {{tri2[j], tri2[(j + 1) % 3]}};
+                        is_intersected = wmtk::open_segment_open_segment_intersection_2d(seg2, tri_seg2, t1);
+                        if (is_intersected) {
+                            p = (1 - t1) * seg[0] + t1 * seg[1];
+                            break;
+                        }
+                    }
+                } else {
+                    is_intersected = wmtk::open_segment_triangle_intersection_3d(seg, tri, p);
+                }
 //                print(seg[0]);
 //                print(seg[1]);
                 cout<<tet.tid(*this)<<" is_intersected "<<is_intersected<<endl;
@@ -309,15 +328,15 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& input_surface)
                         m_vertex_attribute[tet_vertices[(j + 3) % 4].vid(*this)].m_pos;
             c = c / 3;
 
-            std::vector<Vector3> ps3 = {
+            std::array<Vector3, 3> tri = {{
                 to_rational(vertices[faces[face_id][0]]),
                 to_rational(vertices[faces[face_id][1]]),
-                to_rational(vertices[faces[face_id][2]]),
-                c};
-            std::vector<Vector2> ps2;
-            wmtk::squeeze_points_to_2d(ps3, ps2);
+                to_rational(vertices[faces[face_id][2]])}};
+            std::array<Vector2, 3> tri2;
+            int squeeze_to_2d_dir = wmtk::squeeze_triangle_to_2d(tri, tri2);
+            auto c2 = wmtk::squeeze_point_to_2d(c, squeeze_to_2d_dir);
 
-            if (wmtk::is_point_inside_triangle(ps2[0], {{ps2[1], ps2[2], ps2[3]}})) {
+            if (wmtk::is_point_inside_triangle(c2, tri2)) {
                 Tuple face = tuple_from_face(i, j);
                 int global_fid = face.fid(*this);
                 m_face_attribute[global_fid].m_surface_tags = face_id;

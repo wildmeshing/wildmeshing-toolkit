@@ -19,7 +19,7 @@ TEST_CASE("test_segment_triangle_intersection", "[test_geom]")
     }};
     Eigen::Vector3d p;
 
-    bool inter = segment_triangle_intersection(seg, tri, p);
+    bool inter = open_segment_triangle_intersection_3d(seg, tri, p);
     REQUIRE(inter);
 
     REQUIRE(p[0] == Approx(0));

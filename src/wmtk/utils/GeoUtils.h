@@ -82,8 +82,8 @@ bool open_segment_triangle_intersection_3d(
 template <typename T>
 bool segment_triangle_coplanar_3d(
     const std::array<Eigen::Matrix<T, 3, 1>, 2>& seg,
-    const std::array<Eigen::Matrix<T, 3, 1>, 3>& tri){
-
+    const std::array<Eigen::Matrix<T, 3, 1>, 3>& tri)
+{
     return false;
 }
 
@@ -91,15 +91,15 @@ template <typename T>
 bool open_segment_open_segment_intersection_2d(
     const std::array<Eigen::Matrix<T, 2, 1>, 2>& seg1,
     const std::array<Eigen::Matrix<T, 2, 1>, 2>& seg2,
-    T& t1){
-
+    T& t1)//note: t1 is for seg1, intersection point: (1 - t1) * seg1[0] + t1 * seg1[1]
+{
     return false;
 }
 
 template <typename T>
-void squeeze_points_to_2d(
-    const std::vector<Eigen::Matrix<T, 3, 1>>& points3,
-    std::vector<Eigen::Matrix<T, 2, 1>>& points2) // note: use the first 3 points to construct the plane
+int squeeze_triangle_to_2d(
+    const std::array<Eigen::Matrix<T, 3, 1>, 3>& points3,
+    std::array<Eigen::Matrix<T, 2, 1>, 3>& points2) // note: use the first 3 points to construct the plane
 {
     const auto& p1 = points3[0];
     const auto& p2 = points3[1];
@@ -113,7 +113,6 @@ void squeeze_points_to_2d(
         if (n[J] > max) max = n[J];
     }
 
-    points2.resize(points3.size());
     for (int i = 0; i < points3.size(); i++) {
         if (J == 0) {
             points2[i] = Eigen::Matrix<T, 2, 1>(points3[i][1], points3[i][2]);
@@ -123,6 +122,19 @@ void squeeze_points_to_2d(
             points2[i] = Eigen::Matrix<T, 2, 1>(points3[i][0], points3[i][1]);
         }
     }
+
+    return J;
+}
+
+template <typename T>
+Eigen::Matrix<T, 2, 1> squeeze_point_to_2d(const Eigen::Matrix<T, 3, 1>& p, int t)
+{
+    if (t == 0)
+        return Eigen::Matrix<T, 2, 1>(p[1], p[2]);
+    else if (t == 1)
+        return Eigen::Matrix<T, 2, 1>(p[0], p[2]);
+    else
+        return Eigen::Matrix<T, 2, 1>(p[0], p[1]);
 }
 
 template <typename T>
