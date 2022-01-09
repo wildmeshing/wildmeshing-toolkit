@@ -110,11 +110,8 @@ TEST_CASE("tuple_iterator", "[test_tuple]")
     public:
         struct EdgeIterator
         {
-            using iterator_category = std::forward_iterator_tag;
-            using difference_type = std::ptrdiff_t;
             using value_type = TetMesh::Tuple;
             using pointer = value_type*;
-            using reference = value_type&;
 
             EdgeIterator(const TetMesh& m, value_type ptr)
                 : m_tuple(ptr)

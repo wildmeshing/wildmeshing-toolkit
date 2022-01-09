@@ -33,7 +33,7 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
     auto n12_t_ids = set_intersection(
         m_vertex_connectivity[v1_id].m_conn_tets,
         m_vertex_connectivity[v2_id].m_conn_tets);
-    if(n1_t_ids == n12_t_ids){
+    if(n1_t_ids == n12_t_ids){ // NOTE: HACK. This only solves #27
         return false; //note: this would not happen in tetwild but could happen in unit tests
     }
     //
