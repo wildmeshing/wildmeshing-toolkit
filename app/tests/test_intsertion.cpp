@@ -14,7 +14,7 @@
 using namespace wmtk;
 using namespace tetwild;
 
-TEST_CASE("triangle-intersion", "[test_operation]")
+TEST_CASE("triangle-insertion", "[test_operation]")
 {
     using std::cout;
     using std::endl;

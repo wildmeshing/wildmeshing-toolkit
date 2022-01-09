@@ -11,8 +11,10 @@
 
 #include <igl/remove_duplicate_vertices.h>
 
+//fortest
 using std::cout;
 using std::endl;
+//fortest
 
 bool tetwild::TetWild::InputSurface::remove_duplicates()
 {
@@ -237,8 +239,7 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& input_surface)
                 Vector3 p(0, 0, 0);
                 bool is_coplanar = wmtk::segment_triangle_coplanar_3d(seg, tri);
                 bool is_intersected = false;
-//                if(is_coplanar) {
-                if(true) {
+                if(is_coplanar) {
                     std::array<Vector2, 2> seg2;
                     seg2[0] = wmtk::squeeze_point_to_2d(seg[0], squeeze_to_2d_dir);
                     seg2[1] = wmtk::squeeze_point_to_2d(seg[1], squeeze_to_2d_dir);
