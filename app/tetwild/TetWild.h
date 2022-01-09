@@ -1,5 +1,6 @@
 #pragma once
 
+#include <wmtk/TetMesh.h>
 #include "Parameters.h"
 #include "common.h"
 
@@ -8,8 +9,6 @@
 #include <fastenvelope/FastEnvelope.h>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
-
-#include <wmtk/TetMesh.h>
 
 #include <memory>
 
@@ -234,7 +233,7 @@ public:
 
     bool operator()(const ElementInQueue& e1, const ElementInQueue& e2)
     {
-        if (e1.weight == e2.weight) return e1.edge.vid(m_tw) > e2.edge.vid(m_tw);
+        if (e1.weight == e2.weight) return e1.edge < e2.edge;
         return e1.weight < e2.weight;
     }
 };
@@ -249,7 +248,7 @@ public:
     {}
     bool operator()(const ElementInQueue& e1, const ElementInQueue& e2)
     {
-        if (e1.weight == e2.weight) return e1.edge.vid(m_tw) < e2.edge.vid(m_tw);
+        if (e1.weight == e2.weight) return e1.edge < e2.edge;
         return e1.weight > e2.weight;
     }
 };

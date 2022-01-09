@@ -69,6 +69,7 @@ include(libigl)
 include(spdlog)
 include(delaunay_psm)
 include(onetbb)
+include(mshio)
 target_link_libraries(wildmeshing_toolkit PUBLIC
     spdlog::spdlog
     igl::core
@@ -76,6 +77,7 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     geogram::delaunay_psm
     wmtk::warnings
     TBB::tbb
+    mshio::mshio
 )
 
 ################################################################################
