@@ -142,9 +142,7 @@ public:
             params.init(min, max);
         }
 
-        bool remove_duplicates(
-            std::vector<Vector3d>& out_vertices,
-            std::vector<std::array<size_t, 3>>& out_faces) const;
+        bool remove_duplicates();//inplace func
     };
 
     struct TriangleInsertionInfoCache
@@ -173,6 +171,7 @@ public:
     } edgeswap_cache, faceswap_cache; // todo: change for parallel
 
     void construct_background_mesh(const InputSurface& input_surface);
+    void match_insertion_faces(const InputSurface& input_surface, std::vector<bool>& is_matched);
     void triangle_insertion(const InputSurface& input_surface);
 
     void insertion_update_surface_tag(

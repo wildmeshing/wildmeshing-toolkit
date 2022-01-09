@@ -37,7 +37,9 @@ TEST_CASE("triangle-intersion", "[test_operation]")
             env_faces[i][j] = F(i, j);
         }
     }
+
     tetwild::TetWild::InputSurface input_surface(vertices, faces);
+    input_surface.remove_duplicates();
     //
     fastEnvelope::FastEnvelope envelope;
     envelope.init(vertices, env_faces, input_surface.params.eps);

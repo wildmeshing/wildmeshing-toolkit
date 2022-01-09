@@ -10,7 +10,7 @@
 
 namespace wmtk {
 template <typename T>
-bool segment_triangle_intersection(
+bool open_segment_triangle_intersection_3d(
     const std::array<Eigen::Matrix<T, 3, 1>, 2>& seg,
     const std::array<Eigen::Matrix<T, 3, 1>, 3>& tri,
     Eigen::Matrix<T, 3, 1>& p)
@@ -77,6 +77,23 @@ bool segment_triangle_intersection(
     p = (1 - t) * e0 + t * e1;
 
     return true;
+}
+
+template <typename T>
+bool segment_triangle_coplanar_3d(
+    const std::array<Eigen::Matrix<T, 3, 1>, 2>& seg,
+    const std::array<Eigen::Matrix<T, 3, 1>, 3>& tri){
+
+    return false;
+}
+
+template <typename T>
+bool open_segment_open_segment_intersection_2d(
+    const std::array<Eigen::Matrix<T, 2, 1>, 2>& seg1,
+    const std::array<Eigen::Matrix<T, 2, 1>, 2>& seg2,
+    T& t1){
+
+    return false;
 }
 
 template <typename T>
