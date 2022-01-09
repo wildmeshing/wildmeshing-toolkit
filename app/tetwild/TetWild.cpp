@@ -168,6 +168,7 @@ void tetwild::TetWild::output_mesh(std::string file) const
         std::array<size_t, 4> data;
         for (int j = 0; j < 4; j++) {
             data[j] = vs[j].vid(*this);
+            assert(data[j] < vtx.size());
         }
         return data;
     });
