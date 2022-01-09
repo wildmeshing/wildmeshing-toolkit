@@ -152,7 +152,7 @@ public:
     public:
         std::array<size_t, 3> m_indices;
         bool m_is_removed = false;
-        size_t hash;
+        size_t hash = 0;
 
         inline size_t& operator[](size_t index)
         {
