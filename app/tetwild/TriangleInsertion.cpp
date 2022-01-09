@@ -237,7 +237,8 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& input_surface)
                 Vector3 p(0, 0, 0);
                 bool is_coplanar = wmtk::segment_triangle_coplanar_3d(seg, tri);
                 bool is_intersected = false;
-                if(is_coplanar) {
+//                if(is_coplanar) {
+                if(true) {
                     std::array<Vector2, 2> seg2;
                     seg2[0] = wmtk::squeeze_point_to_2d(seg[0], squeeze_to_2d_dir);
                     seg2[1] = wmtk::squeeze_point_to_2d(seg[1], squeeze_to_2d_dir);
@@ -310,8 +311,9 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& input_surface)
         m_tet_attribute.resize(tets_size()); // todo: ???
 
         check_mesh_connectivity_validity();
-        pausee();
+//        pausee();
     }
+    pausee();
 
     /// update m_is_on_surface for vertices, remove leaked surface marks
     m_edge_attribute.resize(m_tet_attribute.size() * 6);
@@ -320,7 +322,7 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& input_surface)
         Tuple tet = tuple_from_tet(i);
         auto tet_vertices = oriented_tet_vertices(tet);
         for (int j = 0; j < 4; j++) {
-            size_t face_id = triangle_insertion_cache.surface_f_ids[i][j];
+            int face_id = triangle_insertion_cache.surface_f_ids[i][j];
             if (face_id < 0) continue;
 
             Vector3 c = m_vertex_attribute[tet_vertices[(j + 1) % 4].vid(*this)].m_pos +
