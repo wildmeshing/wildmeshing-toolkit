@@ -151,7 +151,7 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
 }
 
 
-void tetwild::TetWild::output_mesh(std::string file) const
+void tetwild::TetWild::output_mesh(std::string file)
 {
     consolidate_mesh();
 
