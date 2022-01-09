@@ -23,11 +23,11 @@ private:
     static constexpr std::array<std::array<int, 2>, 6> m_local_edges = {
         {{{0, 1}}, {{1, 2}}, {{0, 2}}, {{0, 3}}, {{1, 3}}, {{2, 3}}}}; // local edges within a
     // tet
-    static constexpr std::array<int, 6> m_map_vertex2edge = {{0, 0, 1, 3}};
+    static constexpr std::array<int, 4> m_map_vertex2edge = {{0, 0, 1, 3}};
     static constexpr std::array<int, 6> m_map_edge2face = {{0, 0, 0, 1, 2, 1}};
-    static constexpr std::array<std::array<int, 3>, 6> m_local_faces = {
+    static constexpr std::array<std::array<int, 3>, 4> m_local_faces = {
         {{{0, 1, 2}}, {{0, 2, 3}}, {{0, 1, 3}}, {{1, 2, 3}}}}; // sorted local vids
-    static constexpr std::array<std::array<int, 3>, 6> m_local_edges_in_a_face = {
+    static constexpr std::array<std::array<int, 3>, 4> m_local_edges_in_a_face = {
         {{{0, 1, 2}}, {{2, 5, 3}}, {{3, 4, 0}}, {{5, 1, 4}}}};
 
 public:
@@ -317,7 +317,7 @@ public:
      * reset the version number. WARNING: it invalidates all tuples!
      *
      */
-    void consolidate_mesh_connectivity();
+    void consolidate_mesh();
 
     /**
      * Get all unique undirected edges in the mesh.

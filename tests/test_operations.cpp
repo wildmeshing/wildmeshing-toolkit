@@ -85,7 +85,7 @@ TEST_CASE("tet_mesh_swap", "[test_operation]")
     }
 
     REQUIRE(mesh.tet_capacity() == 4);
-    mesh.consolidate_mesh_connectivity();
+    mesh.consolidate_mesh();
     REQUIRE(mesh.tet_capacity() == 3);
 
 }
