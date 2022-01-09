@@ -18,11 +18,8 @@ bool Edge2d::EdgeOperations2d::collapse_before(const Tuple& t)
 
 bool Edge2d::EdgeOperations2d::collapse_after(const Tuple& t)
 {
-    if (check_mesh_connectivity_validity() && t.is_valid(*this)) {
-        m_vertex_positions[t.vid()] = (collapse_cache.v1p + collapse_cache.v2p) / 2.0;
-        return true;
-    }
-    return false;
+    m_vertex_positions[t.vid()] = (collapse_cache.v1p + collapse_cache.v2p) / 2.0;
+    return true;
 }
 
 bool Edge2d::EdgeOperations2d::collapse_shortest(int target_vertex_count)

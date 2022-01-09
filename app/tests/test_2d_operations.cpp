@@ -232,5 +232,5 @@ TEST_CASE("test_swap", "[test_2d_operations]")
         REQUIRE(m.swap_edge(edge, new_e));
         cnt++;
     }
-    m.write_triangle_mesh("sawped.obj");
+    // m.write_triangle_mesh("sawped.obj");
 }

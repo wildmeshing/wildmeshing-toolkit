@@ -304,6 +304,7 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
     const size_t gfid = m_vertex_connectivity[new_vid].m_conn_tris[0];
     int j = m_tri_connectivity[gfid].find(new_vid);
     new_t = Tuple(new_vid, (j + 2) % 3, gfid, *this);
+    assert(new_t.is_valid(*this));
     if (!collapse_after(new_t)) {
         // if call back check failed roll back
         // restore the changes for connected triangles and vertices
