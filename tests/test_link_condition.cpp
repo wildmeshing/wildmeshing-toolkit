@@ -8,7 +8,7 @@ using namespace wmtk;
 TEST_CASE("link_condition_tet", "[test_link]")
 {
     TetMesh mesh;
-    mesh.init(4, {{0, 1, 2, 3}});
+    mesh.init(4, {{{0, 1, 2, 3}}});
     for (auto &e : mesh.get_edges()) {
       std::vector<TetMesh::Tuple> dummy;
       REQUIRE_FALSE(mesh.collapse_edge(e, dummy));
