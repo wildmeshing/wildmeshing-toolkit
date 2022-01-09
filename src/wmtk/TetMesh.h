@@ -320,7 +320,7 @@ public:
      * reset the version number. WARNING: it invalidates all tuples!
      *
      */
-    void consolidate_mesh_connectivity();
+    void consolidate_mesh();
 
     /**
      * Get all unique undirected edges in the mesh.
