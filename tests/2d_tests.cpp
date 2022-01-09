@@ -440,7 +440,7 @@ TEST_CASE("swap_operation", "[test_2d_operation]")
             m_indices.push_back(edge.vid());
         }
         vector_unique(m_indices);
-        vector_print(m_indices);
+        // vector_print(m_indices);
         std::vector<size_t> tru_indices = {1, 3, 4, 5};
         REQUIRE(std::equal(m_indices.begin(), m_indices.end(), tru_indices.begin()));
     }
@@ -450,5 +450,30 @@ TEST_CASE("swap_operation", "[test_2d_operation]")
         REQUIRE(swap_e.is_valid(m));
         TriMesh::Tuple new_e;
         REQUIRE_FALSE(m.swap_edge(swap_e, new_e));
+    }
+}
+
+TEST_CASE("split_operation", "[test_2d_operation]")
+{
+    TriMesh m;
+    // SECTION("1_tri_split")
+    // {
+    //     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}};
+    //     m.create_mesh(3, tris);
+
+    //     TriMesh::Tuple edge(0, 1, 0, m);
+    //     TriMesh::Tuple new_e;
+    //     assert(edge.is_valid(m));
+    //     REQUIRE(m.split_edge(edge, new_e));
+    // }
+    SECTION("2_tris_split")
+    {
+        std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 3, 2}}};
+        m.create_mesh(4, tris);
+
+        TriMesh::Tuple edge(1, 0, 0, m);
+        TriMesh::Tuple new_e;
+        assert(edge.is_valid(m));
+        REQUIRE(m.split_edge(edge, new_e));
     }
 }

@@ -215,8 +215,7 @@ bool TriMesh::split_edge(const Tuple& t, Tuple& new_t)
                 break;
             }
         }
-    } else
-        fid2_vid3 = {};
+    }
     // record the vids that will be modified for roll backs on failure
     std::vector<std::pair<size_t, VertexConnectivity>> old_vertices(3);
     old_vertices[0] = std::make_pair(vid1, m_vertex_connectivity[vid1]);
@@ -248,10 +247,17 @@ bool TriMesh::split_edge(const Tuple& t, Tuple& new_t)
         vector_erase(m_vertex_connectivity[vid2].m_conn_tris, fid2.value());
         m_vertex_connectivity[vid2].m_conn_tris.push_back(new_fid2.value());
     }
+    std::sort(
+        m_vertex_connectivity[vid2].m_conn_tris.begin(),
+        m_vertex_connectivity[vid2].m_conn_tris.end());
     // fid2_vid3
     if (fid2_vid3.has_value()) {
         m_vertex_connectivity[fid2_vid3.value()].m_conn_tris.push_back(new_fid2.value());
+        std::sort(
+            m_vertex_connectivity[fid2_vid3.value()].m_conn_tris.begin(),
+            m_vertex_connectivity[fid2_vid3.value()].m_conn_tris.end());
     }
+
     // new_vid
     m_vertex_connectivity[new_vid].m_conn_tris.push_back(fid1);
     m_vertex_connectivity[new_vid].m_conn_tris.push_back(new_fid1);
@@ -259,6 +265,10 @@ bool TriMesh::split_edge(const Tuple& t, Tuple& new_t)
         m_vertex_connectivity[new_vid].m_conn_tris.push_back(fid2.value());
         m_vertex_connectivity[new_vid].m_conn_tris.push_back(new_fid2.value());
     }
+    std::sort(
+        m_vertex_connectivity[new_vid].m_conn_tris.begin(),
+        m_vertex_connectivity[new_vid].m_conn_tris.end());
+
 
     // now the triangles
     // need to update the hash
@@ -287,9 +297,13 @@ bool TriMesh::split_edge(const Tuple& t, Tuple& new_t)
         m_tri_connectivity[new_fid2.value()].hash++;
     }
     // make the new tuple
-    size_t new_fid = std::min(std::min(fid1, new_fid1), new_fid2.value());
-    new_t = Tuple(new_vid, (i + 2) % 3, new_fid, *this);
+    size_t new_fid = std::min(fid1, new_fid1);
+    if (new_fid2.has_value()) new_fid = std::min(new_fid, new_fid2.value());
+    new_t = Tuple(new_vid, (j + 2) % 3, new_fid, *this);
     assert(new_t.is_valid(*this));
+    std::cout << m_tri_connectivity[3].m_indices[0] << m_tri_connectivity[3].m_indices[1]
+              << m_tri_connectivity[3].m_indices[2] << std::endl;
+    vector_print(m_vertex_connectivity[4].m_conn_tris);
     assert(check_mesh_connectivity_validity());
 
     // roll back if not successful
