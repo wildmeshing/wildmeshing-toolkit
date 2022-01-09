@@ -153,8 +153,6 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
 
 void tetwild::TetWild::output_mesh(std::string file) const
 {
-    consolidate_mesh();
-
     PyMesh::MshSaver mSaver(file, true);
 
     Eigen::VectorXd V_flat = Eigen::VectorXd::Zero(3 * m_vertex_attribute.size());
