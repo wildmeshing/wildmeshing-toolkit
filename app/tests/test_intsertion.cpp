@@ -21,7 +21,7 @@ TEST_CASE("triangle-insertion", "[test_operation]")
 
     Eigen::MatrixXd V;
     Eigen::MatrixXd F;
-    std::string input_path = "../../../app/tests/37322.stl";
+    std::string input_path = "../../../data/37322.stl";
     igl::read_triangle_mesh(input_path, V, F);
     cout<<V.rows()<<" "<<F.rows()<<endl;
 
