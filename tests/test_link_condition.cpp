@@ -6,7 +6,7 @@
 using namespace wmtk;
 
 
-TEST_CASE("link_condition_tet", "[link]")
+TEST_CASE("link_condition_single_tet", "[link]")
 {
     TetMesh mesh;
     mesh.init(4, {{{0, 1, 2, 3}}});
@@ -17,8 +17,23 @@ TEST_CASE("link_condition_tet", "[link]")
     }
 }
 
-TEST_CASE("link_condition_2", "[link]")
+TEST_CASE("link_condition_double_tet", "[link]")
 {
+    // https://i.imgur.com/rfAAEJh.png
+    // with 3 in the center and 5 on the bottom.
+    // Visualize with
+    // ```python
+    // V = np.array(
+    //       [[ 0,  0, -1.],
+    //        [ 0,  0,  1],
+    //        [ 1,  1,  0],
+    //        [ 1, 0,  0],
+    //        [ 2,  0,  0],
+    //        [1,-1,0]])
+    //
+    // T = np.array([[0,3,2,4], [1,2,3,4], [0,1,2,3],
+    //              [0,1,3,5], [1,3,5,4], [0,3,4,5]])
+    // ```
     TetMesh mesh;
     mesh.init(
         6,
@@ -35,5 +50,4 @@ TEST_CASE("link_condition_2", "[link]")
     REQUIRE(oppo_t.vid(mesh) == 5);
     std::vector<TetMesh::Tuple> dummy;
     REQUIRE(mesh.collapse_edge(oppo_t, dummy));
-    
 }
