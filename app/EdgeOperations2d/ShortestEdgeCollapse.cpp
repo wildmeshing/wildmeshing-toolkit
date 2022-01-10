@@ -8,12 +8,10 @@ using namespace Edge2d;
 
 bool Edge2d::EdgeOperations2d::collapse_before(const Tuple& t)
 {
-    if (check_link_condition(t) && check_manifold(t)) {
-        collapse_cache.v1p = m_vertex_positions[t.vid()];
-        collapse_cache.v2p = m_vertex_positions[t.switch_vertex(*this).vid()];
-        return true;
-    }
-    return false;
+    if (!TriMesh::collapse_before(t)) return false;
+    collapse_cache.v1p = m_vertex_positions[t.vid()];
+    collapse_cache.v2p = m_vertex_positions[t.switch_vertex(*this).vid()];
+    return true;
 }
 
 bool Edge2d::EdgeOperations2d::collapse_after(const Tuple& t)

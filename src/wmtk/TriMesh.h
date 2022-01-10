@@ -220,9 +220,7 @@ protected:
 
     virtual bool collapse_before(const Tuple& t)
     {
-        // TODO: make check_manifold correct
-        // TODO: check_link_condition checks for open boundaries
-        if (check_link_condition(t) && check_manifold(t)) return true;
+        if (check_link_condition(t)) return true;
         return false;
     }
     virtual bool collapse_after(const Tuple& t)
@@ -247,7 +245,7 @@ public:
     size_t tri_capacity() const { return m_tri_connectivity.size(); }
     size_t vert_capacity() const { return m_vertex_connectivity.size(); }
 
-    void consolidate_mesh_connectivity();
+    void consolidate_mesh();
 
     Tuple switch_vertex(const Tuple& t) const { return t.switch_vertex(*this); }
     Tuple switch_edge(const Tuple& t) const { return t.switch_edge(*this); }
@@ -268,7 +266,6 @@ public:
     bool split_edge(const Tuple& t, Tuple& new_t);
     bool collapse_edge(const Tuple& t, Tuple& new_t);
     bool swap_edge(const Tuple& t, Tuple& new_t);
-
 
     /**
      * @brief Get the one ring tris for a vertex

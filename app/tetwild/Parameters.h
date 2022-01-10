@@ -8,15 +8,16 @@
 namespace tetwild {
 struct Parameters
 {
-    double epsr = 1 / 1000.;
-    double eps;
-    double lr = 1 / 20.;
-    double l = -1;
-    double diag_l;
-    Vector3f min, max;
+    double epsr = 1e-3; // relative error bound (wrt diagonal)
+    double eps = -1.; // absolute error bound
+    double lr = 5e-2; // target edge length (relative)
+    double l = -1.;
+    double diag_l = -1.;
+    Vector3f min = Vector3f::Zero();
+    Vector3f max = Vector3f::Ones();
 
-    double splitting_l2;
-    double collapsing_l2;
+    double splitting_l2 = -1.; // the lower bound length (squared) for edge split
+    double collapsing_l2 = std::numeric_limits<double>::max(); // the upper bound length (squared) for edge collapse
 
     void init(const Vector3f& min_, const Vector3f& max_)
     {

@@ -284,7 +284,7 @@ std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_one_ring_tets_for_edge(cons
 }
 
 
-void wmtk::TetMesh::consolidate_mesh_connectivity()
+void wmtk::TetMesh::consolidate_mesh()
 {
     auto v_cnt = 0;
     std::vector<size_t> map_v_ids(m_vertex_connectivity.size(), -1);
@@ -338,5 +338,5 @@ void wmtk::TetMesh::consolidate_mesh_connectivity()
 
     resize_attributes(v_cnt, 6 * t_cnt, 4 * t_cnt, t_cnt);
 
-    check_mesh_connectivity_validity();
+    assert(check_mesh_connectivity_validity());
 }
