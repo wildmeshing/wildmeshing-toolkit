@@ -2,25 +2,13 @@
 ################################################################################
 
 include(wmtk_data)
-
-################################################################################
-# Shared Lib
-################################################################################
-
-add_library(app_shared
-	shared/Logger.cpp
-	shared/Logger.hpp
-)
-target_include_directories(app_shared PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/shared ${CMAKE_CURRENT_SOURCE_DIR}/shared/external)
-target_link_libraries(app_shared PUBLIC wmtk::toolkit wmtk::data)
-
 include(fenvelope)
 
 ################################################################################
 # FloatTetwild
 ################################################################################
 
-add_library(TetWild
+add_library(wmtk_tetwild
 	tetwild/TetWild.cpp
 	tetwild/TetWild.h
 
@@ -31,23 +19,25 @@ add_library(TetWild
 	tetwild/EdgeCollapsing.cpp
 	tetwild/EdgeSwapping.cpp
 )
+add_library(wmtk::tetwild ALIAS wmtk_tetwild)
 
-target_link_libraries(TetWild PUBLIC igl::predicates FastEnvelope app_shared)
-target_include_directories(TetWild PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/tetwild)
-# 	target_link_libraries(TetWild PUBLIC FastEnvelope)
-target_compile_features(TetWild PUBLIC cxx_std_17)
+target_include_directories(wmtk_tetwild PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/tetwild)
 
+target_link_libraries(wmtk_tetwild PUBLIC
+	wmtk::toolkit
+	wmtk::data
+	igl::predicates
+	FastEnvelope
+)
 
-add_executable(TetWild_bin tetwild/main.cpp)
-target_link_libraries(TetWild_bin PUBLIC TetWild)
-
-
+add_executable(tetwild tetwild/main.cpp)
+target_link_libraries(tetwild PUBLIC wmtk::tetwild)
 
 ################################################################################
 # Quadric Edge Collapse 2D
 ################################################################################
 
-add_library(EdgeCollapse
+add_library(wmtk_edge_collapse
 	#EdgeCollapse/QEC.cpp
 	EdgeCollapse/EdgeCollapse.h
 	EdgeCollapse/main.cpp
@@ -55,16 +45,19 @@ add_library(EdgeCollapse
 	EdgeCollapse/ShortestEdgeCollapse.cpp
 	EdgeCollapse/QEC.cpp
 )
+add_library(wmtk::edge_collapse ALIAS wmtk_edge_collapse)
 
-target_link_libraries(EdgeCollapse PUBLIC igl::predicates FastEnvelope app_shared)
-target_include_directories(EdgeCollapse PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(wmtk_edge_collapse PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
+target_link_libraries(wmtk_edge_collapse PUBLIC
+	wmtk::toolkit
+	wmtk::data
+	igl::predicates
+	FastEnvelope
+)
 
-target_compile_features(EdgeCollapse PUBLIC cxx_std_17)
-
-add_executable(EdgeCollapse_bin EdgeCollapse/main.cpp)
-target_link_libraries(EdgeCollapse_bin PUBLIC EdgeCollapse)
-
+add_executable(edge_collapse EdgeCollapse/main.cpp)
+target_link_libraries(edge_collapse PUBLIC wmtk::edge_collapse)
 
 ################################################################################
 # Tests

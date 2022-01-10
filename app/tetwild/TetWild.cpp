@@ -4,8 +4,7 @@
 
 #include "TetWild.h"
 
-#include <Logger.hpp>
-
+#include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/AMIPS.h>
 #include <wmtk/utils/io.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
@@ -81,12 +80,12 @@ bool tetwild::TetWild::tetrahedron_invariant(const Tuple& t)
 void tetwild::TetWild::smooth_all_vertices()
 {
     auto tuples = get_vertices();
-    apps::logger().debug("tuples");
+    wmtk::logger().debug("tuples");
     auto cnt_suc = 0;
     for (auto& t : tuples) { // TODO: threads
         if (smooth_vertex(t)) cnt_suc++;
     }
-    apps::logger().debug("Smoothing Success Count {}", cnt_suc);
+    wmtk::logger().debug("Smoothing Success Count {}", cnt_suc);
 }
 
 bool tetwild::TetWild::smooth_before(const Tuple& t)
@@ -99,7 +98,7 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
     // Newton iterations are encapsulated here.
     // TODO: bbox/surface tags.
     // TODO: envelope check.
-    apps::logger().trace("Newton iteration for vertex smoothing.");
+    wmtk::logger().trace("Newton iteration for vertex smoothing.");
     auto vid = t.vid(*this);
 
     auto locs = get_one_ring_tets_for_vertex(t);
@@ -131,7 +130,7 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
 
     auto old_pos = m_vertex_attribute[vid].m_posf;
     m_vertex_attribute[vid].m_posf = wmtk::newton_direction_from_stack(assembles);
-    apps::logger().trace(
+    wmtk::logger().trace(
         "old pos {} -> new pos {}",
         old_pos.transpose(),
         m_vertex_attribute[vid].m_posf.transpose());

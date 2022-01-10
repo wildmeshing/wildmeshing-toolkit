@@ -1,67 +1,45 @@
 #include <wmtk/utils/Logger.hpp>
 
+// clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
 #include <spdlog/sinks/stdout_color_sinks.h>
-#include <spdlog/sinks/basic_file_sink.h>
-#include <spdlog/sinks/ostream_sink.h>
-#include <spdlog/details/registry.h>
-#include <spdlog/details/thread_pool.h>
 #include <wmtk/utils/EnableWarnings.hpp>
+// clang-format on
 
-#include <memory>
-#include <mutex>
-#include <iostream>
+#include <sstream>
 
-namespace wmtk
+namespace wmtk {
+
+namespace {
+
+// Custom logger instance defined by the user, if any
+std::shared_ptr<spdlog::logger>& get_shared_logger()
 {
-	std::shared_ptr<spdlog::async_logger> Logger::logger_;
+    static std::shared_ptr<spdlog::logger> logger;
+    return logger;
+}
 
-	// See https://github.com/gabime/spdlog#asynchronous-logger-with-multi-sinks
-	void Logger::init(std::vector<spdlog::sink_ptr> &sinks)
-	{
-		auto l = spdlog::get("wmtk");
-		bool had_wmtk = l != nullptr;
-		if (had_wmtk)
-		{
-			spdlog::drop("wmtk");
-		}
+} // namespace
 
-		if (spdlog::thread_pool() == nullptr)
-		{
-			spdlog::init_thread_pool(8192, 1);
-		}
-		Logger::logger_ =
-			std::make_shared<spdlog::async_logger>(
-				"wmtk",
-				sinks.begin(), sinks.end(),
-				spdlog::thread_pool(), spdlog::async_overflow_policy::block);
-		spdlog::register_logger(logger_);
+// Retrieve current logger
+spdlog::logger& logger()
+{
+    if (get_shared_logger()) {
+        return *get_shared_logger();
+    } else {
+        // When using factory methods provided by spdlog (_st and _mt functions),
+        // names must be unique, since the logger is registered globally.
+        // Otherwise, you will need to create the logger manually. See
+        // https://github.com/gabime/spdlog/wiki/2.-Creating-loggers
+        static auto default_logger = spdlog::stdout_color_mt("wmtk");
+        return *default_logger;
+    }
+}
 
-		if (had_wmtk)
-			logger().warn("Removed another wmtk logger");
-	}
-
-	void Logger::init(bool use_cout, const std::string &filename, bool truncate)
-	{
-		std::vector<spdlog::sink_ptr> sinks;
-		if (use_cout)
-		{
-			sinks.emplace_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
-		}
-		if (!filename.empty())
-		{
-			sinks.emplace_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(filename, truncate));
-		}
-
-		init(sinks);
-	}
-
-	void Logger::init(std::ostream &os)
-	{
-		std::vector<spdlog::sink_ptr> sinks;
-		sinks.emplace_back(std::make_shared<spdlog::sinks::ostream_sink_mt>(os, false));
-
-		init(sinks);
-	}
+// Use a custom logger
+void set_logger(std::shared_ptr<spdlog::logger> x)
+{
+    get_shared_logger() = std::move(x);
+}
 
 } // namespace wmtk
