@@ -363,7 +363,15 @@ TEST_CASE("test_manifold_check", "[test_pre_check]")
 
         TriMesh::Tuple edge(1, 0, 0, m);
         assert(edge.is_valid(m));
-        REQUIRE_FALSE(m.check_link_condition(edge));
+        REQUIRE(m.check_manifold(edge));
+    }
+    SECTION("manifold_check_on_non_manifold")
+    {
+        std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{2, 1, 3}}, {{4, 1, 2}}};
+        m.create_mesh(5, tris);
+
+        TriMesh::Tuple edge(1, 0, 0, m);
+        assert(edge.is_valid(m));
         REQUIRE_FALSE(m.check_manifold(edge));
     }
 }

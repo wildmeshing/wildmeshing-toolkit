@@ -769,37 +769,23 @@ size_t TriMesh::get_next_empty_slot_v()
 
 bool TriMesh::check_manifold(const Tuple& t) const
 {
-    // check collapse to one edge
-    if (!(t.switch_edge(*this)).switch_face(*this).has_value() &&
-        !((t.switch_vertex(*this)).switch_edge(*this)).switch_face(*this).has_value())
-        return false;
-    if (t.switch_face(*this).has_value()) {
-        auto tmp_tuple = t.switch_face(*this).value();
-        if (!(tmp_tuple.switch_edge(*this)).switch_face(*this).has_value() &&
-            !((tmp_tuple.switch_vertex(*this)).switch_edge(*this)).switch_face(*this).has_value())
-            return false;
-    }
+    auto one_ring_vid1 = get_one_ring_edges_for_vertex(t);
+    auto one_ring_vid2 = get_one_ring_edges_for_vertex(t.switch_vertex(*this));
 
-    // check closed mesh
-    std::optional<size_t> e_fid;
-    std::optional<size_t> fid1, fid2;
+    std::vector<size_t> one_ring_verts_vid1(one_ring_vid1.size());
+    std::vector<size_t> one_ring_verts_vid2(one_ring_vid2.size());
 
-    if (t.switch_face(*this).has_value()) e_fid = t.switch_face(*this).value().fid();
-    if ((t.switch_edge(*this)).switch_face(*this).has_value()) {
-        auto tmp_f_tuple = (t.switch_edge(*this)).switch_face(*this).value();
-        if ((tmp_f_tuple.switch_edge(*this)).switch_face(*this).has_value())
-            fid1 = (tmp_f_tuple.switch_edge(*this)).switch_face(*this).value().fid();
+    for (int i = 0; i < one_ring_vid1.size(); i++) {
+        one_ring_verts_vid1[i] = one_ring_vid1[i].vid();
     }
-    if ((((t.switch_vertex(*this)).switch_edge(*this)).switch_face(*this)).has_value()) {
-        auto tmp_f_tuple2 =
-            (((t.switch_vertex(*this)).switch_edge(*this)).switch_face(*this)).value();
-        if ((tmp_f_tuple2.switch_edge(*this)).switch_face(*this).has_value())
-            fid2 = (tmp_f_tuple2.switch_edge(*this)).switch_face(*this).value().fid();
+    for (int i = 0; i < one_ring_vid2.size(); i++) {
+        one_ring_verts_vid2[i] = one_ring_vid2[i].vid();
     }
-    if (e_fid.has_value() && (fid1.has_value() && fid2.has_value()))
-        if (fid1 == e_fid && fid2 == e_fid) return false;
+    std::sort(one_ring_verts_vid1.begin(), one_ring_verts_vid1.end());
+    std::sort(one_ring_verts_vid2.begin(), one_ring_verts_vid2.end());
 
-    return true;
+    auto verts_intersection = set_intersection(one_ring_verts_vid1, one_ring_verts_vid2);
+    return (verts_intersection.size() <= 2);
 }
 
 // link check, prerequisite for edge collapse
