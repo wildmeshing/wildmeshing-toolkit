@@ -3,13 +3,15 @@
 //
 #include <wmtk/TetMesh.h>
 
+#include <wmtk/utils/TupleUtils.hpp>
+#include <wmtk/utils/VectorUtils.h>
+
+#include <spdlog/spdlog.h>
+
 #include <algorithm>
 #include <cstddef>
 #include <limits>
 #include <type_traits>
-#include <wmtk/utils/TupleUtils.hpp>
-#include "spdlog/spdlog.h"
-#include "wmtk/utils/VectorUtils.h"
 
 bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
 {
