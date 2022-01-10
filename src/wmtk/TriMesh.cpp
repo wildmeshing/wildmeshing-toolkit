@@ -679,6 +679,7 @@ bool TriMesh::check_manifold(const Tuple& t) const
 // link check, prerequisite for edge collapse
 bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
 {
+    if (!check_manifold(edge)) return false;
     assert(edge.is_valid(*this));
     size_t vid1 = edge.vid();
     size_t vid2 = switch_vertex(edge).vid();
