@@ -12,11 +12,6 @@
 #include <Eigen/Core>
 
 namespace wmtk {
-    using std::cout;
-    using std::cin;
-    using std::endl;
-
-#define MAX_ENERGY 1e50
 
     typedef Eigen::Vector3d Vector3f; // float?
     typedef Eigen::Vector3d Vector3;

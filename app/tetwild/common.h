@@ -14,7 +14,6 @@
 #include <Eigen/Core>
 
 namespace tetwild {
-#define MAX_ENERGY 1e50
 
 typedef Eigen::Vector3d Vector3f; // float?
 typedef Eigen::Vector3d Vector3;

@@ -176,13 +176,6 @@ bool wmtk::TriMesh::check_mesh_connectivity_validity() const
     // check conn_tets duplication, order, amount ...
     for (size_t i = 0; i < m_vertex_connectivity.size(); i++) {
         if (m_vertex_connectivity[i].m_is_removed) continue;
-        // std::cerr << "----------------" << std::endl;
-
-        // std::vector<size_t> temp = m_vertex_connectivity[i].m_conn_tris;
-        // vector_print(temp);
-
-        // std::cerr << "---" << std::endl;
-        // vector_print(conn_tris[i]);
 
         assert(
             m_vertex_connectivity[i].m_conn_tris == conn_tris[i] &&
