@@ -13,6 +13,7 @@
 bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
 {
     if (!collapse_before(loc0)) return false;
+    auto boundary_flag = loc0.is_boundary_edge(*this);
     auto link_condition = [&VC = this->m_vertex_connectivity,
                            &TC = this->m_tet_connectivity](auto v0, auto v1) -> bool {
         auto intersects = [](const auto& vec, const auto& val) {
@@ -66,6 +67,7 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
             std::vector<std::array<size_t, 2>>,
             std::vector<std::array<size_t, 3>>>();
         auto check_inter = [](const auto& l0, const auto& l1, const auto& l01, auto& lk_i) {
+            // link(v0) intersect link(v1) == link(edge 01)
             std::set_intersection(
                 l0.begin(),
                 l0.end(),
