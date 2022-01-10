@@ -2,8 +2,9 @@
 // Created by Yixin Hu on 12/7/21.
 //
 
-#include "Logger.hpp"
 #include "TetWild.h"
+
+#include <wmtk/utils/Logger.hpp>
 
 void tetwild::TetWild::split_all_edges()
 {
@@ -11,7 +12,7 @@ void tetwild::TetWild::split_all_edges()
 
     std::vector<Tuple> edges = get_edges();
 
-    apps::logger().debug("edges.size() = {}", edges.size());
+    wmtk::logger().debug("edges.size() = {}", edges.size());
 
     int cnt_suc = 0;
     std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_l> es_queue;

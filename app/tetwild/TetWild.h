@@ -108,7 +108,7 @@ public:
         m_vertex_attribute[to] = std::move(m_vertex_attribute[from]);
     }
 
-    void output_mesh(std::string file) const;
+    void output_mesh(std::string file);
 
     ////// Operations
     //	protected:

@@ -3,7 +3,6 @@
 #include <wmtk/TetMesh.h>
 
 #include <catch2/catch.hpp>
-#include "Logger.hpp"
 #include "spdlog/common.h"
 
 
