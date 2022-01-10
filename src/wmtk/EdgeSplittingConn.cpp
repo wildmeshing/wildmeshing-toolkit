@@ -41,12 +41,12 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
             int j = m_tet_connectivity[t_id].find(v1_id);
             m_tet_connectivity[new_t_id] = m_tet_connectivity[t_id];
             m_tet_connectivity[new_t_id][j] = v_id;
-            m_tet_connectivity[new_t_id].timestamp = 0;
+            m_tet_connectivity[new_t_id].hash = 0;
         }
         //
         m_vertex_connectivity[v_id].m_conn_tets.push_back(t_id);
         m_vertex_connectivity[v_id].m_conn_tets.push_back(new_t_id);
-        m_tet_connectivity[t_id].timestamp++; // new timestamp is +1 old one
+        m_tet_connectivity[t_id].hash++; // new hash is +1 old one
 
         //
         for (int j = 0; j < 4; j++) {
@@ -73,8 +73,8 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
                 continue;
             vector_sort(m_vertex_connectivity[m_tet_connectivity[t_id][j]].m_conn_tets);
         }
-        // update timestamp of tets
-        m_tet_connectivity[t_id].timestamp++;
+        // update hash of tets
+        m_tet_connectivity[t_id].hash++;
     }
     for (size_t t_id : new_t_ids) {
         for (int j = 0; j < 4; j++) {
@@ -99,7 +99,7 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
         m_vertex_connectivity[v_id].m_is_removed = true;
         for (int t_id : new_t_ids) {
             m_tet_connectivity[t_id].m_is_removed = true;
-            m_tet_connectivity[t_id].timestamp--; // Decrease the vnumber, not necessary
+            m_tet_connectivity[t_id].hash--; // Decrease the vnumber, not necessary
         }
         //
         for (int i = 0; i < old_tets.size(); i++) {

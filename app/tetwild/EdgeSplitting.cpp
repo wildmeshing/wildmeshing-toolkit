@@ -32,7 +32,7 @@ void tetwild::TetWild::split_all_edges()
         //        double weight = es_queue.top().weight;
         es_queue.pop();
 
-        // check timestamp
+        // check hash
         if (!loc.is_valid(*this)) continue;
 
         std::vector<Tuple> new_edges;
