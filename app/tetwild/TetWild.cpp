@@ -5,6 +5,7 @@
 #include "TetWild.h"
 
 #include <wmtk/utils/AMIPS.h>
+#include <limits>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
 #include <wmtk/utils/io.hpp>
@@ -52,7 +53,7 @@ double tetwild::TetWild::get_quality(const Tuple& loc)
     }
 
     double energy = wmtk::AMIPS_energy(T);
-    if (std::isinf(energy) || std::isnan(energy) || energy < 3 - 1e-3) return MAX_ENERGY;
+    if (std::isinf(energy) || std::isnan(energy) || energy < 3 - 1e-3) return std::numeric_limits<double>::max();
     return energy;
 }
 
