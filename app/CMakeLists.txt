@@ -1,32 +1,13 @@
 
 ################################################################################
-
 include(wmtk_data)
-include(gmp)
-
-################################################################################
-# Shared Lib
-################################################################################
-
-#add_library(app_shared
-##	shared/Logger.cpp
-##	shared/Logger.hpp
-#	shared/Rational.hpp
-#
-#
-##	shared/external/Exception.h
-##	shared/external/MshSaver.cpp
-##	shared/external/MshSaver.h
-#)
-#target_include_directories(app_shared PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/shared ${CMAKE_CURRENT_SOURCE_DIR}/shared/external)
-#target_link_libraries(app_shared PUBLIC wmtk::toolkit wmtk::data gmp::gmp)
-
-
-include(fenvelope)
 
 ################################################################################
 # FloatTetwild
 ################################################################################
+
+include(gmp)
+include(fenvelope)
 
 add_library(wmtk_tetwild
 	tetwild/TetWild.cpp
@@ -45,18 +26,7 @@ add_library(wmtk_tetwild
 )
 add_library(wmtk::tetwild ALIAS wmtk_tetwild)
 
-#<<<<<<< HEAD
-#target_link_libraries(TetWild PUBLIC FastEnvelope app_shared)
-#target_include_directories(TetWild PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/tetwild)
-## 	target_link_libraries(TetWild PUBLIC FastEnvelope)
-#target_compile_features(TetWild PUBLIC cxx_std_17)
-#
-#
-#add_executable(TetWild_bin tetwild/main.cpp)
-#target_link_libraries(TetWild_bin PUBLIC TetWild)
-#=======
 target_include_directories(wmtk_tetwild PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/tetwild)
-#>>>>>>> origin/main
 
 target_link_libraries(wmtk_tetwild PUBLIC
 	wmtk::toolkit

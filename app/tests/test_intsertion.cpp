@@ -6,7 +6,6 @@
 #include <wmtk/TetMesh.h>
 
 #include <catch2/catch.hpp>
-#include "Logger.hpp"
 #include "spdlog/common.h"
 
 #include <igl/read_triangle_mesh.h>

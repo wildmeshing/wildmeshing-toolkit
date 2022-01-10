@@ -3,7 +3,7 @@
 //
 
 #include <wmtk/utils/Delaunay.hpp>
-#include "Logger.hpp"
+#include "wmtk/utils/Logger.hpp"
 #include "TetWild.h"
 #include "wmtk/TetMesh.h"
 #include "wmtk/auto_table.hpp"
@@ -51,9 +51,9 @@ bool tetwild::TetWild::InputSurface::remove_duplicates()
     //
     if (V_in.rows() == 0 || F_in.rows() == 0) return false;
 
-    apps::logger().info("remove duplicates: ");
-    apps::logger().info("#v: {} -> {}", vertices.size(), V_in.rows());
-    apps::logger().info("#f: {} -> {}", faces.size(), F_in.rows());
+    wmtk::logger().info("remove duplicates: ");
+    wmtk::logger().info("#v: {} -> {}", vertices.size(), V_in.rows());
+    wmtk::logger().info("#f: {} -> {}", faces.size(), F_in.rows());
 
     std::vector<Vector3d> out_vertices;
     std::vector<std::array<size_t, 3>> out_faces;
@@ -106,10 +106,10 @@ void tetwild::TetWild::construct_background_mesh(const InputSurface& input_surfa
     cout << m_params.max.transpose() << endl;
     cout << box_min.transpose() << endl;
     cout << box_max.transpose() << endl;
-    //    apps::logger().info("min: {}", m_params.min);
-    //    apps::logger().info("max: {}", m_params.max.transpose());
-    //    apps::logger().info("box_min: {}", box_min.transpose());
-    //    apps::logger().info("box_max: {}", box_max.transpose());
+    //    wmtk::logger().info("min: {}", m_params.min);
+    //    wmtk::logger().info("max: {}", m_params.max.transpose());
+    //    wmtk::logger().info("box_min: {}", box_min.transpose());
+    //    wmtk::logger().info("box_max: {}", box_max.transpose());
 
     ///delaunay
     auto tets = wmtk::delaunay3D_conn(points);
