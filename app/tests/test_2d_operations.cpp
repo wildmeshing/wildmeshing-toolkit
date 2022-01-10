@@ -218,7 +218,7 @@ TEST_CASE("test_swap", "[test_2d_operations]")
     EdgeOperations2d m(v);
     m.create_mesh(V.rows(), tri);
     REQUIRE(m.check_mesh_connectivity_validity());
-    std::cout << " is it mesh passed " << std ::endl;
+    // std::cout << " is it mesh passed " << std ::endl;
     auto edges = m.get_edges();
     TriMesh::Tuple new_e;
     int cnt = 0;
