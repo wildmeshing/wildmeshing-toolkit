@@ -30,7 +30,7 @@ void tetwild::TetWild::collapse_all_edges()
         double weight = ec_queue.top().weight;
         ec_queue.pop();
 
-        // check timestamp
+        // check hash
         if (!loc.is_valid(*this)) continue;
         { // check weight
             Tuple& v1 = loc;

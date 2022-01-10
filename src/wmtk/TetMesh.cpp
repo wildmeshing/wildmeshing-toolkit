@@ -9,7 +9,7 @@
 int wmtk::TetMesh::find_next_empty_slot_t()
 {
     m_tet_connectivity.emplace_back();
-    m_tet_connectivity.back().timestamp = -1;
+    m_tet_connectivity.back().hash = -1;
     return m_tet_connectivity.size() - 1;
 }
 
@@ -319,7 +319,7 @@ void wmtk::TetMesh::consolidate_mesh()
         if (t_cnt != i) {
             assert(t_cnt < i);
             m_tet_connectivity[t_cnt] = m_tet_connectivity[i];
-            m_tet_connectivity[t_cnt].timestamp = 0;
+            m_tet_connectivity[t_cnt].hash = 0;
             move_tet_attribute(i, t_cnt);
 
             for (auto j = 0; j < 4; j++) {

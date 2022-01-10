@@ -45,7 +45,7 @@ bool Edge2d::EdgeOperations2d::collapse_shortest(int target_vertex_count)
 
         if (!TriMesh::collapse_edge(loc, new_vert)) continue;
         cnt++;
-        if (cnt % 100 == 0) std::cout << " 100 more collpased" << std::endl;
+        if (cnt % 100 == 0) wmtk::logger().trace(" 100 more collpased");
 
         target_vertex_count--;
         if (target_vertex_count <= 0) break;

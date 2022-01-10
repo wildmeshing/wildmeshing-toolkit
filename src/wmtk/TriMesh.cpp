@@ -176,13 +176,6 @@ bool wmtk::TriMesh::check_mesh_connectivity_validity() const
     // check conn_tets duplication, order, amount ...
     for (size_t i = 0; i < m_vertex_connectivity.size(); i++) {
         if (m_vertex_connectivity[i].m_is_removed) continue;
-        // std::cerr << "----------------" << std::endl;
-
-        // std::vector<size_t> temp = m_vertex_connectivity[i].m_conn_tris;
-        // vector_print(temp);
-
-        // std::cerr << "---" << std::endl;
-        // vector_print(conn_tris[i]);
 
         assert(
             m_vertex_connectivity[i].m_conn_tris == conn_tris[i] &&
@@ -587,8 +580,6 @@ void TriMesh::consolidate_mesh()
     m_vertex_connectivity.resize(v_cnt);
     m_tri_connectivity.resize(t_cnt);
 
-    resize_attributes(v_cnt, 3 * t_cnt, t_cnt);
-
     // Resize user class attributes
     resize_attributes(
         m_vertex_connectivity.size(),
@@ -791,14 +782,16 @@ bool TriMesh::check_manifold(const Tuple& t) const
 // link check, prerequisite for edge collapse
 bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
 {
+    if (!check_manifold(edge)) return false;
     assert(edge.is_valid(*this));
     size_t vid1 = edge.vid();
     size_t vid2 = switch_vertex(edge).vid();
     auto vid1_ring = get_one_ring_edges_for_vertex(edge);
     auto vid2_ring = get_one_ring_edges_for_vertex(switch_vertex(edge));
 
-    // vertex link condition
-    size_t dummy = std::numeric_limits<unsigned>::max();
+
+    size_t dummy = std::numeric_limits<size_t>::max();
+
     std::vector<size_t> lk_vid1;
     std::vector<size_t> lk_vid2;
 

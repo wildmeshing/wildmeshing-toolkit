@@ -31,7 +31,7 @@ void post_rollback(
 {
     for (auto ti : new_tet_id) {
         m_tet_connectivity[ti].m_is_removed = true;
-        m_tet_connectivity[ti].timestamp--;
+        m_tet_connectivity[ti].hash--;
     }
     for (auto i = 0; i < affected.size(); i++) m_tet_connectivity[affected[i]] = old_tets[i];
     for (auto& [v, conn] : rollback_vert_conn) m_vertex_connectivity[v] = std::move(conn);
@@ -91,7 +91,7 @@ std::map<size_t, wmtk::TetMesh::VertexConnectivity> update_connectivity(
         auto id = remove_id[i]; // reuse.
         tet_conn[id].m_indices = new_tet_conn[i];
         tet_conn[id].m_is_removed = false;
-        tet_conn[id].timestamp++;
+        tet_conn[id].hash++;
         for (auto j = 0; j < 4; j++) {
             auto vid = new_tet_conn[i][j];
             assert(affected_vid.find(vid) != affected_vid.end() && "not introducing new verts");
