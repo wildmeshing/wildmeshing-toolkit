@@ -76,7 +76,7 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
                     if (!this->switch_tetrahedron(tup)) { // boundary
                         auto f = m_local_faces[j];
                         logger().trace(">>f {}", f);
-                        auto face = std::array<size_t, 3>{tet[f[0]], tet[f[1]], tet[f[2]]};
+                        auto face = std::array<size_t, 3>{{tet[f[0]], tet[f[1]], tet[f[2]]}};
                         std::sort(face.begin(), face.end());
                         logger().trace(">>face {}", face);
                         result_faces.emplace_back(face);
@@ -97,7 +97,7 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
 
         // link of edge
         auto common_tets = set_intersection(closure0, closure1);
-        auto lk_01 = link(std::array<size_t, 2>{v0, v1}, common_tets, bnd01);
+        auto lk_01 = link(std::array<size_t, 2>{{v0, v1}}, common_tets, bnd01);
         if (!std::get<2>(lk_01).empty()) return false;
 
         auto lk_i = std::tuple<
