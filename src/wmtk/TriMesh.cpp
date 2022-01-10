@@ -463,8 +463,6 @@ void TriMesh::consolidate_mesh()
     m_vertex_connectivity.resize(v_cnt);
     m_tri_connectivity.resize(t_cnt);
 
-    resize_attributes(v_cnt, 3 * t_cnt, t_cnt);
-
     // Resize user class attributes
     resize_attributes(
         m_vertex_connectivity.size(),
