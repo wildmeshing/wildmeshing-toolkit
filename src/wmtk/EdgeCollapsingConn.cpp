@@ -30,20 +30,21 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
             auto conn_verts = std::set<size_t>();
             auto conn_edges = std::set<std::array<size_t, 2>>();
             auto conn_faces = std::set<std::array<size_t, 3>>();
+            logger().trace("In Link {}", verts);
             auto collect = [&](auto& tet) {
                 for (auto j = 0; j < 4; j++) {
                     auto vj = tet[j];
-                    if (intersects(std::array<size_t, 1>{vj}, verts)) continue;
+                    if (intersects(std::array<size_t, 1>{{vj}}, verts)) continue;
                     conn_verts.insert(vj);
                 }
                 for (auto e : m_local_edges) {
                     auto e0 = tet[e[0]], e1 = tet[e[1]];
-                    auto edge = std::array<size_t, 2>({std::min(e0, e1), std::max(e0, e1)});
+                    auto edge = std::array<size_t, 2>{{std::min(e0, e1), std::max(e0, e1)}};
                     if (intersects(edge, verts)) continue;
                     conn_edges.emplace(edge);
                 }
                 for (auto f : m_local_faces) {
-                    auto face = std::array<size_t, 3>{tet[f[0]], tet[f[1]], tet[f[2]]};
+                    auto face = std::array<size_t, 3>{{tet[f[0]], tet[f[1]], tet[f[2]]}};
                     if (intersects(face, verts)) continue;
                     std::sort(face.begin(), face.end());
                     conn_faces.emplace(face);
@@ -52,29 +53,32 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
             for (auto& t : tets) {
                 collect(conn[t]);
             }
-            auto dummy = std::numeric_limits<size_t>::max();
+            const auto dummy = std::numeric_limits<size_t>::max();
+            logger().trace("in face {}", faces);
             for (auto& f : faces) {
-                auto tet = std::array<size_t, 4>{f[0], f[1], f[2], dummy};
+                auto tet = std::array<size_t, 4>{{f[0], f[1], f[2], dummy}};
                 collect(tet);
             }
+            logger().trace("out points {}", conn_verts);
             return std::tuple<
                 std::set<size_t>,
                 std::set<std::array<size_t, 2>>,
                 std::set<std::array<size_t, 3>>>{conn_verts, conn_edges, conn_faces};
         };
-        auto adjacent_boundary_faces = [&, this](auto v) {
+        auto adjacent_boundary_faces = [this, &VC, &TC](auto v) {
+            static constexpr std::array<int, 4> vertex2oppo_face = {{3,1,2,0}};
             auto result_faces = std::vector<std::array<size_t, 3>>();
-            auto nbtets = VC[v].m_conn_tets;
-            for (auto t : nbtets) {
+            for (auto t : VC[v].m_conn_tets) {
                 auto& tet = TC[t];
                 for (auto j = 0; j < 4; j++) {
-                    if (tet[j] == v) continue;
-
                     auto tup = this->tuple_from_face(t, j);
+                    if (tet[vertex2oppo_face[j]] == v) continue;
                     if (!this->switch_tetrahedron(tup)) { // boundary
                         auto f = m_local_faces[j];
+                        logger().trace(">>f {}", f);
                         auto face = std::array<size_t, 3>{tet[f[0]], tet[f[1]], tet[f[2]]};
                         std::sort(face.begin(), face.end());
+                        logger().trace(">>face {}", face);
                         result_faces.emplace_back(face);
                     }
                 }
@@ -90,6 +94,7 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
         auto lk1 = link(std::array<size_t, 1>{{v1}}, closure1, bnd1);
 
         auto bnd01 = set_intersection(bnd0, bnd1);
+
         // link of edge
         auto common_tets = set_intersection(closure0, closure1);
         auto lk_01 = link(std::array<size_t, 2>{v0, v1}, common_tets, bnd01);
@@ -99,17 +104,18 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
             std::vector<size_t>,
             std::vector<std::array<size_t, 2>>,
             std::vector<std::array<size_t, 3>>>();
-        auto check_inter = [](const auto& l0, const auto& l1, const auto& l01, auto& lk_i) {
+        auto check_inter = [](const auto& l0, const auto& l1, const auto& l01, auto& l_i) {
             // link(v0) intersect link(v1) == link(edge 01)
+            wmtk::logger().trace(">> Checking l0 {} l1 {}, l01 {}", l0, l1, l01);
             std::set_intersection(
                 l0.begin(),
                 l0.end(),
                 l1.begin(),
                 l1.end(),
-                std::back_inserter(lk_i));
+                std::back_inserter(l_i));
             return (
-                lk_i.size() == l01.size() &&
-                std::equal(lk_i.begin(), lk_i.end(), l01.begin(), l01.end()));
+                l_i.size() == l01.size() &&
+                std::equal(l_i.begin(), l_i.end(), l01.begin(), l01.end()));
         };
         if (!check_inter(std::get<0>(lk0), std::get<0>(lk1), std::get<0>(lk_01), std::get<0>(lk_i)))
             return false;
@@ -126,8 +132,10 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
     auto loc1 = switch_vertex(loc0);
     auto v2_id = loc1.vid(*this);
     logger().trace("{} {}", v1_id, v2_id);
-    if (!link_condition(v1_id, v2_id)) return false;
-
+    if (!link_condition(v1_id, v2_id)) {
+        wmtk::logger().trace("violate link condition");
+        return false;
+    }
     std::vector<size_t> n1_v_ids;
     for (size_t t_id : m_vertex_connectivity[v1_id].m_conn_tets) {
         for (int j = 0; j < 4; j++) n1_v_ids.push_back(m_tet_connectivity[t_id][j]);

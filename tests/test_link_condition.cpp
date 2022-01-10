@@ -1,5 +1,6 @@
 #include <wmtk/TetMesh.h>
 #include <catch2/catch.hpp>
+#include "spdlog/common.h"
 #include "wmtk/utils/Logger.hpp"
 
 using namespace wmtk;
@@ -32,7 +33,10 @@ TEST_CASE("link_condition_2", "[link]")
 
     auto oppo_t = tup.switch_vertex(mesh);
     REQUIRE(oppo_t.vid(mesh) == 5);
-
+    // wmtk::logger().set_level(spdlog::level::trace);
+    // wmtk::logger().flush_on(spdlog::level::trace);
     std::vector<TetMesh::Tuple> dummy;
     REQUIRE(mesh.collapse_edge(oppo_t, dummy));
+    // exit(1);
+    
 }
