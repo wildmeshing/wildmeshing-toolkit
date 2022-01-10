@@ -90,7 +90,6 @@ public:
             return m_fid * 3 + m_eid;
         }
 
-
         /**
          * Switch operation. See (URL-TO-DOCUMENT) for explaination.
          *
@@ -221,6 +220,8 @@ protected:
 
     virtual bool collapse_before(const Tuple& t)
     {
+        // TODO: make check_manifold correct
+        // TODO: check_link_condition checks for open boundaries
         if (check_link_condition(t) && check_manifold(t)) return true;
         return false;
     }
@@ -236,7 +237,6 @@ protected:
 
 
     virtual void resize_attributes(size_t v, size_t e, size_t t) {}
-
 
     virtual void move_vertex_attribute(size_t from, size_t to){};
     virtual void move_edge_attribute(size_t from, size_t to){};
@@ -268,6 +268,7 @@ public:
     bool split_edge(const Tuple& t, Tuple& new_t);
     bool collapse_edge(const Tuple& t, Tuple& new_t);
     bool swap_edge(const Tuple& t, Tuple& new_t);
+
 
     /**
      * @brief Get the one ring tris for a vertex
