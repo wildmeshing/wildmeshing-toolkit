@@ -4,10 +4,10 @@
 
 #include "TetWild.h"
 
-#include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/AMIPS.h>
-#include <wmtk/utils/io.hpp>
+#include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
+#include <wmtk/utils/io.hpp>
 
 #include <igl/predicates/predicates.h>
 #include <spdlog/fmt/ostr.h>
@@ -156,13 +156,13 @@ void tetwild::TetWild::output_mesh(std::string file)
 
     wmtk::MshData msh;
 
-    const auto &vtx = get_vertices();
+    const auto& vtx = get_vertices();
     msh.add_tet_vertices(vtx.size(), [&](size_t k) {
         auto i = vtx[k].vid(*this);
         return m_vertex_attribute[i].m_posf;
     });
 
-    const auto &tets = get_tets();
+    const auto& tets = get_tets();
     msh.add_tets(tets.size(), [&](size_t k) {
         auto i = tets[k].tid(*this);
         auto vs = oriented_tet_vertices(tets[k]);

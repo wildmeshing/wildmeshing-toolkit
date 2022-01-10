@@ -9,16 +9,16 @@
 
 namespace Edge2d {
 
-class EdgeCollapse : public wmtk::TriMesh
+class EdgeOperations2d : public wmtk::TriMesh
 {
 public:
     std::vector<Eigen::Vector3d> m_vertex_positions;
 
-    EdgeCollapse(std::vector<Eigen::Vector3d> _m_vertex_positions)
+    EdgeOperations2d(std::vector<Eigen::Vector3d> _m_vertex_positions)
         : m_vertex_positions(_m_vertex_positions)
     {}
 
-    ~EdgeCollapse() {}
+    ~EdgeOperations2d() {}
 
     struct CollapseInfoCache
     {

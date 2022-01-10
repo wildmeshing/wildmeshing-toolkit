@@ -2,40 +2,25 @@
 #include <wmtk/utils/VectorUtils.h>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include "EdgeCollapse.h"
+#include "EdgeOperations2d.h"
 
 using namespace Edge2d;
-// delete the old two vert position, add the new at the middle of the old two points
-void Edge2d::EdgeCollapse::update_position(size_t v1, size_t v2, Tuple& new_vert)
+
+bool Edge2d::EdgeOperations2d::collapse_before(const Tuple& t)
 {
-    size_t new_vid = new_vert.vid();
-    Eigen::Vector3d new_position = (m_vertex_positions[v1] + m_vertex_positions[v2]) / 2;
-    if (new_vid < m_vertex_positions.size())
-        m_vertex_positions[new_vid] = new_position;
-    else
-        m_vertex_positions.emplace_back(new_position);
+    if (!TriMesh::collapse_before(t)) return false;
+    collapse_cache.v1p = m_vertex_positions[t.vid()];
+    collapse_cache.v2p = m_vertex_positions[t.switch_vertex(*this).vid()];
+    return true;
 }
 
-bool Edge2d::EdgeCollapse::collapse_before(const Tuple& t)
+bool Edge2d::EdgeOperations2d::collapse_after(const Tuple& t)
 {
-    if (check_link_condition(t) && check_manifold(t)) {
-        collapse_cache.v1p = m_vertex_positions[t.vid()];
-        collapse_cache.v2p = m_vertex_positions[t.switch_vertex(*this).vid()];
-        return true;
-    }
-    return false;
+    m_vertex_positions[t.vid()] = (collapse_cache.v1p + collapse_cache.v2p) / 2.0;
+    return true;
 }
 
-bool Edge2d::EdgeCollapse::collapse_after(const Tuple& t)
-{
-    if (check_mesh_connectivity_validity() && t.is_valid(*this)) {
-        m_vertex_positions[t.vid()] = (collapse_cache.v1p + collapse_cache.v2p) / 2.0;
-        return true;
-    }
-    return false;
-}
-
-bool Edge2d::EdgeCollapse::collapse_shortest(int target_vertex_count)
+bool Edge2d::EdgeOperations2d::collapse_shortest(int target_vertex_count)
 {
     std::vector<TriMesh::Tuple> edges = get_edges();
     std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_s> ec_queue;

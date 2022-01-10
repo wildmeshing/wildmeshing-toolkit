@@ -34,30 +34,30 @@ add_executable(tetwild tetwild/main.cpp)
 target_link_libraries(tetwild PUBLIC wmtk::tetwild)
 
 ################################################################################
-# Quadric Edge Collapse 2D
+# Edge Operations 2D
 ################################################################################
 
-add_library(wmtk_edge_collapse
-	#EdgeCollapse/QEC.cpp
-	EdgeCollapse/EdgeCollapse.h
-	EdgeCollapse/main.cpp
-
-	EdgeCollapse/ShortestEdgeCollapse.cpp
-	EdgeCollapse/QEC.cpp
+add_library(wmtk_edge_operations
+	#EdgeOperations2d/QEC.cpp
+	EdgeOperations2d/EdgeOperations2d.h 
+	EdgeOperations2d/main.cpp
+	
+	EdgeOperations2d/ShortestEdgeCollapse.cpp
+	EdgeOperations2d/QEC.cpp
 )
-add_library(wmtk::edge_collapse ALIAS wmtk_edge_collapse)
+add_library(wmtk::edge_operations ALIAS wmtk_edge_operations)
 
-target_include_directories(wmtk_edge_collapse PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-
-target_link_libraries(wmtk_edge_collapse PUBLIC
+target_link_libraries(wmtk_edge_operations PUBLIC
 	wmtk::toolkit
 	wmtk::data
 	igl::predicates
 	FastEnvelope
 )
+target_include_directories(wmtk_edge_operations PUBLIC EdgeOperations2d)
 
-add_executable(edge_collapse EdgeCollapse/main.cpp)
-target_link_libraries(edge_collapse PUBLIC wmtk::edge_collapse)
+
+add_executable(edge_operations EdgeOperations2d/main.cpp)
+target_link_libraries(edge_operations PUBLIC wmtk::edge_operations)
 
 ################################################################################
 # Tests
