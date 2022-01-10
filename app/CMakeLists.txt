@@ -10,11 +10,6 @@ include(wmtk_data)
 add_library(app_shared
 	shared/Logger.cpp
 	shared/Logger.hpp
-
-
-	shared/external/Exception.h
-	shared/external/MshSaver.cpp
-	shared/external/MshSaver.h
 )
 target_include_directories(app_shared PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/shared ${CMAKE_CURRENT_SOURCE_DIR}/shared/external)
 target_link_libraries(app_shared PUBLIC wmtk::toolkit wmtk::data)
@@ -54,9 +49,9 @@ target_link_libraries(TetWild_bin PUBLIC TetWild)
 
 add_library(EdgeCollapse
 	#EdgeCollapse/QEC.cpp
-	EdgeCollapse/EdgeCollapse.h 
+	EdgeCollapse/EdgeCollapse.h
 	EdgeCollapse/main.cpp
-	
+
 	EdgeCollapse/ShortestEdgeCollapse.cpp
 	EdgeCollapse/QEC.cpp
 )

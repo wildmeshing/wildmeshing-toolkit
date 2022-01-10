@@ -4,10 +4,10 @@
 
 #include "TetWild.h"
 
-#include <MshSaver.h>
 #include <Logger.hpp>
 
 #include <wmtk/utils/AMIPS.h>
+#include <wmtk/utils/io.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
 
 #include <igl/predicates/predicates.h>
@@ -151,24 +151,32 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
 }
 
 
-void tetwild::TetWild::output_mesh(std::string file) const
+void tetwild::TetWild::output_mesh(std::string file)
 {
-    PyMesh::MshSaver mSaver(file, true);
+    consolidate_mesh();
 
-    Eigen::VectorXd V_flat = Eigen::VectorXd::Zero(3 * m_vertex_attribute.size());
-    for (auto& t : get_vertices()) {
-        auto i = t.vid(*this);
-        for (int j = 0; j < 3; j++) V_flat(3 * i + j) = m_vertex_attribute[i].m_posf[j];
-    }
+    wmtk::MshData msh;
 
-    Eigen::VectorXi T_flat = Eigen::VectorXi::Constant(4 * m_tet_attribute.size(), -1);
-    for (auto&t: get_tets()) {
-        auto i = t.tid(*this);   
-        auto vs = oriented_tet_vertices(t);
+    const auto &vtx = get_vertices();
+    msh.add_tet_vertices(vtx.size(), [&](size_t k) {
+        auto i = vtx[k].vid(*this);
+        return m_vertex_attribute[i].m_posf;
+    });
+
+    const auto &tets = get_tets();
+    msh.add_tets(tets.size(), [&](size_t k) {
+        auto i = tets[k].tid(*this);
+        auto vs = oriented_tet_vertices(tets[k]);
+        std::array<size_t, 4> data;
         for (int j = 0; j < 4; j++) {
-            T_flat(4 * i + j) = vs[j].vid(*this);
+            data[j] = vs[j].vid(*this);
+            assert(data[j] < vtx.size());
         }
-    }
+        return data;
+    });
 
-    mSaver.save_mesh(V_flat, T_flat, 3, mSaver.TET);
+    msh.add_tet_vertex_attribute<1>("tv index", [&](size_t i) { return i; });
+    msh.add_tet_attribute<1>("t index", [&](size_t i) { return i; });
+
+    msh.save(file, true);
 }
