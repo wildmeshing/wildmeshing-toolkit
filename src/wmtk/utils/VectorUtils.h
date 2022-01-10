@@ -12,17 +12,6 @@
 #include <vector>
 
 namespace wmtk {
-template <class T>
-inline std::vector<T> unsorted_set_intersection(const std::vector<T>& v1, const std::vector<T>& v2)
-{
-    auto s1 = v1;
-    auto s2 = v2;
-    std::sort(s1.begin(), s1.end());
-    std::sort(s2.begin(), s2.end());
-    std::vector<T> v;
-    std::set_intersection(s1.begin(), s1.end(), s2.begin(), s2.end(), std::back_inserter(v));
-    return v;
-}
 
 template <class T>
 inline std::vector<T> set_intersection(const std::vector<T>& v1, const std::vector<T>& v2)

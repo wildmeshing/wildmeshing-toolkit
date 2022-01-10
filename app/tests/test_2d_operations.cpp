@@ -1,9 +1,9 @@
+#include <EdgeOperations2d.h>
 #include <igl/read_triangle_mesh.h>
 #include <stdlib.h>
 #include <wmtk/TriMesh.h>
 #include <catch2/catch.hpp>
 #include <iostream>
-#include "EdgeOperations2d/EdgeOperations2d.h"
 using namespace wmtk;
 
 using namespace Edge2d;
@@ -165,7 +165,7 @@ TEST_CASE("shortest_edge_collapse_octocat", "[test_2d_operations]")
     m.create_mesh(V.rows(), tri);
     REQUIRE(m.check_mesh_connectivity_validity());
     std::cout << " is it mesh passed " << std ::endl;
-    REQUIRE(m.collapse_shortest(100));
+    REQUIRE(m.collapse_shortest(50));
     m.write_triangle_mesh("collapsed.obj");
 }
 
@@ -192,7 +192,7 @@ TEST_CASE("shortest_edge_collapse_circle", "[test_2d_operations]")
     m.create_mesh(V.rows(), tri);
     REQUIRE(m.check_mesh_connectivity_validity());
     std::cout << " is it mesh passed " << std ::endl;
-    REQUIRE(m.collapse_shortest(1000));
+    REQUIRE(m.collapse_shortest(100));
     m.write_triangle_mesh("collapsed.obj");
 }
 
