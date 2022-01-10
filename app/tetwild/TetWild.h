@@ -111,6 +111,7 @@ public:
     void output_mesh(std::string file);
 
 
+
     class InputSurface
     {
     public:
@@ -150,6 +151,7 @@ public:
         std::vector<std::array<int, 4>> surface_f_ids;
         size_t face_id;
     } triangle_insertion_cache; // todo: change for parallel
+
 
     ////// Operations
 
