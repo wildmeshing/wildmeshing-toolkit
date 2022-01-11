@@ -241,7 +241,7 @@ public:
     size_t tri_capacity() const { return m_tri_connectivity.size(); }
     size_t vert_capacity() const { return m_vertex_connectivity.size(); }
 
-    void consolidate_mesh_connectivity();
+    void consolidate_mesh();
 
     Tuple switch_vertex(const Tuple& t) const { return t.switch_vertex(*this); }
     Tuple switch_edge(const Tuple& t) const { return t.switch_edge(*this); }
