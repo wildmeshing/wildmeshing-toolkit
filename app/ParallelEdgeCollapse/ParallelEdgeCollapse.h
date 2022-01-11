@@ -50,6 +50,7 @@ class ParallelEdgeCollapse : public wmtk::ConcurrentTriMesh
 {
 public:
     tbb::concurrent_vector<Eigen::Vector3d> m_vertex_positions;
+    tbb::spin_mutex rw_lock;
 
     ParallelEdgeCollapse(tbb::concurrent_vector<Eigen::Vector3d> _m_vertex_positions)
         : m_vertex_positions(_m_vertex_positions)
@@ -91,8 +92,7 @@ public:
     // old implementation
     bool collapse_shortest();
     void collapse_shortest_stuff(
-        ElementInQueue& eiq,
-        tbb::concurrent_priority_queue<ElementInQueue, cmp_s>& ec_queue);
+        tbb::concurrent_priority_queue<ElementInQueue, cmp_s>& ec_queue, int &target_vertex_count, int task_id);
 
     bool collapse_shortest(int target_vertex_count);
 

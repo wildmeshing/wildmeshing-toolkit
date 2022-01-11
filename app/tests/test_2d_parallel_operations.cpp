@@ -5,6 +5,8 @@
 #include <catch2/catch.hpp>
 #include <iostream>
 #include "ParallelEdgeCollapse/ParallelEdgeCollapse.h"
+#include <igl/Timer.h>
+#include <igl/remove_duplicate_vertices.h>
 
 using namespace wmtk;
 
@@ -85,6 +87,45 @@ TEST_CASE("parallel_shortest_edge_collapse_boundary_edge", "[test_2d_parallel_op
     m.write_triangle_mesh("collapsed_boundry_edge.obj");
 }
 
+TEST_CASE("parallel_shortest_edge_collapse_bigmesh", "[test_2d_parallel_operations]")
+{
+    std::cout << "parallel_shortest_edge_collapse_bigmesh" << std::endl;
+    const std::string root(WMT_DATA_DIR);
+    const std::string path = root + "/armadillo_sub2.stl";
+
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    bool ok = igl::read_triangle_mesh(path, V, F);
+
+    REQUIRE(ok);
+
+    Eigen::VectorXi SVI, SVJ;
+    Eigen::MatrixXd temp_V = V;  // for STL file
+    igl::remove_duplicate_vertices(temp_V, 0, V, SVI, SVJ);
+    for (int i = 0; i < F.rows(); i++)
+        for (int j : {0, 1, 2}) F(i, j) = SVJ[F(i, j)];
+
+    tbb::concurrent_vector<Eigen::Vector3d> v(V.rows());
+    std::vector<std::array<size_t, 3>> tri(F.rows());
+    for (int i = 0; i < V.rows(); i++) {
+        v[i] = V.row(i);
+    }
+    for (int i = 0; i < F.rows(); i++) {
+        for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
+    }
+    Edge2d::ParallelEdgeCollapse m(v);
+    m.create_mesh(V.rows(), tri);
+    REQUIRE(m.check_mesh_connectivity_validity());
+    std::cout << " is it mesh passed " << std ::endl;
+    igl::Timer timer;
+    double time;
+    timer.start();
+    REQUIRE(m.collapse_shortest(1300000));
+    time = timer.getElapsedTimeInMilliSec();
+    std::cout << time << std::endl;
+    m.write_triangle_mesh("collapsed_armadillo_sub2.obj");
+}
+
 TEST_CASE("parallel_shortest_edge_collapse_octocat", "[test_2d_parallel_operations]")
 {
     std::cout << "parallel_shortest_edge_collapse_octocat" << std::endl;
@@ -109,7 +150,12 @@ TEST_CASE("parallel_shortest_edge_collapse_octocat", "[test_2d_parallel_operatio
     m.create_mesh(V.rows(), tri);
     REQUIRE(m.check_mesh_connectivity_validity());
     std::cout << " is it mesh passed " << std ::endl;
-    REQUIRE(m.collapse_shortest(100));
+    igl::Timer timer;
+    double time;
+    timer.start();
+    REQUIRE(m.collapse_shortest(10000));
+    time = timer.getElapsedTimeInMilliSec();
+    std::cout << time << std::endl;
     m.write_triangle_mesh("collapsed_octocat.obj");
 }
 
