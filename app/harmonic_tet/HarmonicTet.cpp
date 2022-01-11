@@ -1,8 +1,8 @@
 #include "HarmonicTet.hpp"
 
+#include <igl/predicates/predicates.h>
 #include <wmtk/utils/TetraQualityUtils.hpp>
 #include <wmtk/utils/io.hpp>
-#include <igl/predicates/predicates.h>
 
 #include <queue>
 
@@ -79,26 +79,67 @@ bool HarmonicTet::swap_edge_after(const Tuple& t)
     auto max_energy = std::max(get_quality(t), get_quality(*oppo_tet));
     wmtk::logger().debug("energy {} {}", edgeswap_cache.max_energy, max_energy);
     if (is_inverted(t) || is_inverted(*oppo_tet)) {
-    wmtk::logger().debug("invert w/ energy {} {}", edgeswap_cache.max_energy, max_energy);
+        wmtk::logger().debug("invert w/ energy {} {}", edgeswap_cache.max_energy, max_energy);
         return false;
     }
     if (max_energy > edgeswap_cache.max_energy) return false;
-    wmtk::logger().debug("Going thru");
     return true;
 }
 
-void HarmonicTet::swap_all_faces(){};
+void HarmonicTet::swap_all_faces()
+{
+    auto queue = std::queue<std::tuple<bool, wmtk::TetMesh::Tuple>>();
+
+    for (auto& loc : get_faces()) {
+        double length = -1.;
+        queue.emplace(length, loc);
+    }
+
+    auto cnt_suc = 0;
+    while (!queue.empty()) {
+        auto [weight, loc] = queue.front();
+        queue.pop();
+
+        if (!loc.is_valid(*this)) continue;
+        if (!swap_face(loc)) {
+            continue;
+        }
+        cnt_suc++;
+    }
+};
 bool HarmonicTet::swap_face_before(const Tuple& t)
 {
-    return true;
-}
-bool HarmonicTet::swap_face_after(const Tuple& t)
-{
+    if (!TetMesh::swap_face_before(t)) return false;
+
+    auto oppo_tet = t.switch_tetrahedron(*this);
+    assert(oppo_tet.has_value() && "Should not swap boundary.");
+    faceswap_cache.max_energy = std::max(get_quality(t), get_quality(*oppo_tet));
     return true;
 }
 
-void HarmonicTet::output_mesh(std::string file) const {
-// warning: duplicate code.
+bool HarmonicTet::swap_face_after(const Tuple& t)
+{
+    if (!TetMesh::swap_face_after(t)) return false;
+
+    auto incident_tets = get_incident_tets_for_edge(t);
+    for (auto& l : incident_tets) {
+        if (is_inverted(l)) {
+            return false;
+        }
+    }
+    auto max_energy = -1.0;
+    for (auto& l : incident_tets) {
+        max_energy = std::max(get_quality(l), max_energy);
+    }
+    wmtk::logger().trace("quality {} from {}", max_energy, edgeswap_cache.max_energy);
+
+    if (max_energy > edgeswap_cache.max_energy) return false;
+    return true;
+}
+
+void HarmonicTet::output_mesh(std::string file) const
+{
+    // warning: duplicate code.
     wmtk::MshData msh;
 
     const auto& vtx = get_vertices();
