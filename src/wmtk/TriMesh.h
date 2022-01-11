@@ -90,7 +90,6 @@ public:
             return m_fid * 3 + m_eid;
         }
 
-
         /**
          * Switch operation. See (URL-TO-DOCUMENT) for explaination.
          *
@@ -152,7 +151,7 @@ public:
     public:
         std::array<size_t, 3> m_indices;
         bool m_is_removed = false;
-        size_t hash;
+        size_t hash = 0;
 
         inline size_t& operator[](size_t index)
         {
@@ -236,7 +235,6 @@ protected:
 
 
     virtual void resize_attributes(size_t v, size_t e, size_t t) {}
-
 
     virtual void move_vertex_attribute(size_t from, size_t to){};
     virtual void move_edge_attribute(size_t from, size_t to){};
