@@ -70,7 +70,12 @@ add_library(ParallelEdgeCollapse
 	ParallelEdgeCollapse/ParallelShortestEdgeCollapse.cpp
 )
 
-target_link_libraries(ParallelEdgeCollapse PUBLIC igl::predicates FastEnvelope app_shared)
+target_link_libraries(ParallelEdgeCollapse PUBLIC 
+	igl::predicates 
+	FastEnvelope 
+	wmtk::toolkit
+	wmtk::data)
+# add_library(wmtk::parallel_edge_collapse ALIAS ParallelEdgeCollapse)
 target_include_directories(ParallelEdgeCollapse PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 

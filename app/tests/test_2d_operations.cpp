@@ -193,10 +193,7 @@ TEST_CASE("shortest_edge_collapse_circle", "[test_2d_operations]")
     m.create_mesh(V.rows(), tri);
     REQUIRE(m.check_mesh_connectivity_validity());
     REQUIRE(m.collapse_shortest(100));
-<<<<<<< HEAD
     m.write_triangle_mesh("serial_collapsed_octocat.obj");
-=======
->>>>>>> origin/main
 }
 
 TEST_CASE("test_swap", "[test_2d_operations]")
@@ -221,11 +218,6 @@ TEST_CASE("test_swap", "[test_2d_operations]")
     EdgeOperations2d m(v);
     m.create_mesh(V.rows(), tri);
     REQUIRE(m.check_mesh_connectivity_validity());
-<<<<<<< HEAD
-    std::cout << " is it mesh passed " << std ::endl;
-    REQUIRE(m.collapse_shortest(1000));
-    m.write_triangle_mesh("serial_collapsed_circle.obj");
-=======
     auto edges = m.get_edges();
     TriMesh::Tuple new_e;
     int cnt = 0;
@@ -240,5 +232,4 @@ TEST_CASE("test_swap", "[test_2d_operations]")
         cnt++;
     }
     // m.write_triangle_mesh("sawped.obj");
->>>>>>> origin/main
 }

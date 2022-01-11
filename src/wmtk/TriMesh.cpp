@@ -461,7 +461,7 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
         // by the end the new_t and old t both exist and both valid
         return false;
     }
-    assert(check_mesh_connectivity_validity());
+    // assert(check_mesh_connectivity_validity());
     return true;
 }
 
@@ -755,12 +755,17 @@ size_t TriMesh::get_next_empty_slot_t()
 size_t TriMesh::get_next_empty_slot_v()
 {
     vector_mutex.lock();
+    // TODO
+    // const auto it = m_vertex_connectivity.emplace_back();
+    // const size_t size = std::distance(m_vertex_connectivity.begin(), it);
+
     m_vertex_connectivity.emplace_back();
     resize_attributes(
         m_vertex_connectivity.size(),
         m_tri_connectivity.size() * 3,
         m_tri_connectivity.size());
     size_t tmp = m_vertex_connectivity.size() - 1;
+
     vector_mutex.unlock();
     return tmp;
 }

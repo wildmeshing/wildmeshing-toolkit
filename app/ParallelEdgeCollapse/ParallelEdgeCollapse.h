@@ -50,13 +50,26 @@ class ParallelEdgeCollapse : public wmtk::ConcurrentTriMesh
 {
 public:
     tbb::concurrent_vector<Eigen::Vector3d> m_vertex_positions;
+    tbb::concurrent_vector<int> m_vertex_partition_id;
     tbb::spin_mutex rw_lock;
+    int NUM_THREADS;
 
-    ParallelEdgeCollapse(tbb::concurrent_vector<Eigen::Vector3d> _m_vertex_positions)
+    ParallelEdgeCollapse(
+        tbb::concurrent_vector<Eigen::Vector3d> _m_vertex_positions,
+        tbb::concurrent_vector<int> _m_vertex_partition_id,
+        int num_t = 1)
         : m_vertex_positions(_m_vertex_positions)
+        , m_vertex_partition_id(_m_vertex_partition_id)
+        , NUM_THREADS(num_t)
     {}
 
     ~ParallelEdgeCollapse() {}
+
+    void print_num_attributes()
+    {
+        std::cout << m_vertex_positions.size() << std::endl;
+        std::cout << m_vertex_partition_id.size() << std::endl;
+    }
 
     // TODO cannot be used for parallel
     struct CollapseInfoCache
@@ -92,7 +105,9 @@ public:
     // old implementation
     bool collapse_shortest();
     void collapse_shortest_stuff(
-        tbb::concurrent_priority_queue<ElementInQueue, cmp_s>& ec_queue, int &target_vertex_count, int task_id);
+        tbb::concurrent_priority_queue<ElementInQueue, cmp_s>& ec_queue,
+        int& target_vertex_count,
+        int task_id);
 
     bool collapse_shortest(int target_vertex_count);
 
@@ -111,7 +126,11 @@ public:
         m_vertex_positions[to] = m_vertex_positions[from];
     }
 
-    void resize_attributes(size_t v, size_t e, size_t t) override { m_vertex_positions.resize(v); }
+    void resize_attributes(size_t v, size_t e, size_t t) override
+    {
+        m_vertex_positions.grow_to_at_least(v);
+        m_vertex_partition_id.grow_to_at_least(v);
+    }
 };
 
 

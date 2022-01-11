@@ -1,3 +1,4 @@
+#include <igl/Timer.h>
 #include <tbb/concurrent_priority_queue.h>
 #include <tbb/concurrent_queue.h>
 #include <tbb/parallel_for.h>
@@ -5,20 +6,19 @@
 #include <tbb/spin_mutex.h>
 #include <tbb/task_arena.h>
 #include <tbb/task_group.h>
+#include <unistd.h>
 #include <wmtk/ConcurrentTriMesh.h>
 #include <wmtk/utils/VectorUtils.h>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <wmtk/utils/Logger.hpp>
 #include "ParallelEdgeCollapse.h"
-#include <igl/Timer.h>
-#include <unistd.h>
 
 
 using namespace Edge2d;
 
-#define NUM_THREADS 1
-// #define STATISTICS 
+// #define NUM_THREADS 4
+// #define STATISTICS
 
 class Runner;
 
@@ -54,17 +54,19 @@ public:
         , target_vertex_count(tvc)
     {}
 
-    void print_status(){
-        std::cout<<"total_cnt: "<<total_cnt<<std::endl;
-        std::cout<<"conflict_cnt: "<<conflict_cnt<<std::endl;
-        std::cout<<"retry_cnt: "<<retry_cnt<<std::endl;
-        std::cout<<"skippped_cnt: "<<skipped_cnt<<std::endl;
-        std::cout<<"success_cnt: " <<cnt<<std::endl;
-        std::cout<<"invalid_cnt: " <<invalid_cnt<<std::endl;
-        std::cout<<"fail_collapse_cnt: "<<fail_collapse_cnt<<std::endl;
+    void print_status()
+    {
+        std::cout << "total_cnt: " << total_cnt << std::endl;
+        std::cout << "conflict_cnt: " << conflict_cnt << std::endl;
+        std::cout << "retry_cnt: " << retry_cnt << std::endl;
+        std::cout << "skippped_cnt: " << skipped_cnt << std::endl;
+        std::cout << "success_cnt: " << cnt << std::endl;
+        std::cout << "invalid_cnt: " << invalid_cnt << std::endl;
+        std::cout << "fail_collapse_cnt: " << fail_collapse_cnt << std::endl;
     }
 
-    void sleep_test(){
+    void sleep_test()
+    {
         usleep(10000);
         return;
     }
@@ -96,10 +98,9 @@ public:
         // std::cout<<ec_queue.size()<<std::endl;
 
         int num_tasks;
-        if (target_vertex_count>ec_queue.size()) {
+        if (target_vertex_count > ec_queue.size()) {
             num_tasks = ec_queue.size();
-        }
-        else {
+        } else {
             num_tasks = target_vertex_count;
         }
 
@@ -108,7 +109,7 @@ public:
         }
 #ifdef STATISTICS
         time = timer.getElapsedTimeInMilliSec();
-        std::cout<<time<<std::endl;
+        std::cout << time << std::endl;
 #endif
     }
 
@@ -130,7 +131,6 @@ public:
 
     void collapse_edge_task(ElementInQueue& eiq)
     {
-
         rw_lock.lock();
         // std::cout << target_vertex_count << std::endl;
         if (target_vertex_count <= 0) {
@@ -185,7 +185,7 @@ public:
 #endif
                 return;
             }
-            
+
 #ifdef STATISTICS
             retry_lock.lock();
             retry_cnt++;
@@ -313,23 +313,28 @@ bool Edge2d::ParallelEdgeCollapse::collapse_after(const Tuple& t)
 {
     // TODO: for parallel check?
     // if (check_mesh_connectivity_validity() && t.is_valid(*this)) {
-    if (t.is_valid(*this)) {
-        // m_vertex_positions[t.vid()] = (collapse_cache.v1p + collapse_cache.v2p) / 2.0;
-        return true;
-    }
-    return false;
+    // if (t.is_valid(*this)) {
+    //     // m_vertex_positions[t.vid()] = (collapse_cache.v1p + collapse_cache.v2p) / 2.0;
+    //     return true;
+    // }
+    // return false;
+    return true;
 }
 
-void Edge2d::ParallelEdgeCollapse::collapse_shortest_stuff(tbb::concurrent_priority_queue<ElementInQueue, cmp_s>& ec_queue, int & target_vertex_count, int task_id){
+void Edge2d::ParallelEdgeCollapse::collapse_shortest_stuff(
+    tbb::concurrent_priority_queue<ElementInQueue, cmp_s>& ec_queue,
+    int& target_vertex_count,
+    int task_id)
+{
     // std::cout<<task_id<<std::endl;
     int cnt = 0;
     int suc_cnt = 0;
     ElementInQueue eiq;
-    while(ec_queue.try_pop(eiq)){
+    while (ec_queue.try_pop(eiq)) {
         cnt++;
         // std::cout<<task_id<<std::endl;
         rw_lock.lock();
-        if(target_vertex_count<=0){
+        if (target_vertex_count <= 0) {
             rw_lock.unlock();
             break;
         }
@@ -337,6 +342,7 @@ void Edge2d::ParallelEdgeCollapse::collapse_shortest_stuff(tbb::concurrent_prior
 
         auto loc = eiq.edge;
         double weight = eiq.weight;
+        int loc_pid = m_vertex_partition_id[loc.vid()];
 
         if (!loc.is_valid(*this)) {
             continue;
@@ -377,63 +383,62 @@ void Edge2d::ParallelEdgeCollapse::collapse_shortest_stuff(tbb::concurrent_prior
         size_t new_vid = new_vert.vid();
         // update position
         m_vertex_positions[new_vid] = (m_vertex_positions[v1] + m_vertex_positions[v2]) / 2.0;
+        m_vertex_partition_id[new_vid] = loc_pid;
+
 
         std::vector<wmtk::ConcurrentTriMesh::Tuple> one_ring_edges =
             get_one_ring_edges_for_vertex(new_vert);
 
         for (wmtk::ConcurrentTriMesh::Tuple edge : one_ring_edges) {
             size_t vid = edge.vid();
-            double length =
-                (m_vertex_positions[new_vid] - m_vertex_positions[vid]).squaredNorm();
+            double length = (m_vertex_positions[new_vid] - m_vertex_positions[vid]).squaredNorm();
             ElementInQueue new_eiq(edge, length);
             ec_queue.push(new_eiq);
         }
         int num_released = release_vertex_mutex_in_stack(mutex_release_stack);
     }
-    std::cout<<task_id<<": "<<suc_cnt<<std::endl;
+    std::cout << task_id << ": " << suc_cnt << std::endl;
 }
 
 bool Edge2d::ParallelEdgeCollapse::collapse_shortest(int target_vertex_count)
 {
     // task-based version
-//     tbb::task_arena arena(NUM_THREADS);
-//     arena.execute([this, target_vertex_count]() {
-//         Runner r(*this, target_vertex_count);
-//         r.initialize();
-//         r.tgwait();
-// #ifdef STATISTICS
-//         r.print_status();
-// #endif
-//     });
+    //     tbb::task_arena arena(NUM_THREADS);
+    //     arena.execute([this, target_vertex_count]() {
+    //         Runner r(*this, target_vertex_count);
+    //         r.initialize();
+    //         r.tgwait();
+    // #ifdef STATISTICS
+    //         r.print_status();
+    // #endif
+    //     });
 
 
     // thread-based version
     std::vector<TriMesh::Tuple> edges = get_edges();
-    tbb::concurrent_priority_queue<ElementInQueue, cmp_s> ec_queue;
+    std::vector<tbb::concurrent_priority_queue<ElementInQueue, cmp_s>> ec_queues(NUM_THREADS);
     double shortest = std::numeric_limits<double>::max();
     for (auto& loc : edges) {
         TriMesh::Tuple v2 = loc.switch_vertex(*this);
         double length =
             (m_vertex_positions[loc.vid()] - m_vertex_positions[v2.vid()]).squaredNorm();
         if (length < shortest) shortest = length;
-        ec_queue.push(ElementInQueue(loc, length));
+        ec_queues[m_vertex_partition_id[loc.vid()]].push(ElementInQueue(loc, length));
     }
 
     int tvc = target_vertex_count;
 
     tbb::task_arena arena(NUM_THREADS);
     tbb::task_group tg;
-    arena.execute([this, &tvc, &ec_queue, &tg]() {
-        for(int i=0;i<NUM_THREADS;i++){
+    arena.execute([this, &tvc, &ec_queues, &tg]() {
+        for (int i = 0; i < this->NUM_THREADS; i++) {
             // std::cout<<i<<std::endl;
             int j = i;
-            tg.run([&ec_queue, &tvc, j, this] {
-                collapse_shortest_stuff(ec_queue, tvc, j);
-            });
+            tg.run([&ec_queues, &tvc, j, this] { collapse_shortest_stuff(ec_queues[j], tvc, j); });
         }
     });
 
-    arena.execute([&]{tg.wait();});
+    arena.execute([&] { tg.wait(); });
 
 
     // tbb::task_group tg;
@@ -449,11 +454,3 @@ bool Edge2d::ParallelEdgeCollapse::collapse_shortest(int target_vertex_count)
 
     return true;
 }
-
-
-
-
-
-
-
-
