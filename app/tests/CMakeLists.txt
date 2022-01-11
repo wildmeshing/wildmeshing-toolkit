@@ -7,6 +7,7 @@ file(GLOB test_sources CONFIGURE_DEPENDS "*.cpp")
 add_executable(app_unit_tests ${test_sources})
 
 target_link_libraries(app_unit_tests PUBLIC wmtk::toolkit wmtk::tetwild wmtk::edge_operations)
+target_link_libraries(app_unit_tests PUBLIC wmtk::harmonic_tet)
 
 include(catch2)
 target_link_libraries(app_unit_tests PUBLIC Catch2::Catch2)
