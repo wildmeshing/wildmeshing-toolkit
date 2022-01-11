@@ -34,6 +34,7 @@ void tetwild::TetWild::swap_all_edges()
 {
     auto cnt_suc = 0;
     auto queue = construct_queue(*this, m_vertex_attribute, get_edges());
+    wmtk::TetMesh::Tuple dummy;
     while (!queue.empty()) {
         auto& [loc, weight] = queue.top();
         queue.pop();
@@ -41,7 +42,7 @@ void tetwild::TetWild::swap_all_edges()
         if (!loc.is_valid(*this)) continue;
         auto length = measure_edge_length(*this, loc, m_vertex_attribute);
         if (length != weight) continue;
-        if (!swap_edge(loc)) {
+        if (!swap_edge(loc, dummy)) {
             continue;
         }
         cnt_suc++;
@@ -54,6 +55,7 @@ void tetwild::TetWild::swap_all_faces()
 {
     auto cnt_suc = 0;
     auto queue = construct_queue(*this, m_vertex_attribute, get_faces());
+    wmtk::TetMesh::Tuple dummy;
     while (!queue.empty()) {
         auto& [loc, weight] = queue.top();
         queue.pop();
@@ -61,7 +63,7 @@ void tetwild::TetWild::swap_all_faces()
         if (!loc.is_valid(*this)) continue;
         auto length = measure_edge_length(*this, loc, m_vertex_attribute);
         if (length != weight) continue;
-        if (!swap_face(loc)) {
+        if (!swap_face(loc, dummy)) {
             continue;
         }
         cnt_suc++;
