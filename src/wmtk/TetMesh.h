@@ -182,13 +182,13 @@ public:
 
         size_t& operator[](const size_t index)
         {
-            assert(index >= 0 && index < m_conn_tets.size());
+            assert(index < m_conn_tets.size());
             return m_conn_tets[index];
         }
 
         size_t operator[](const size_t index) const
         {
-            assert(index >= 0 && index < m_conn_tets.size());
+            assert(index < m_conn_tets.size());
             return m_conn_tets[index];
         }
 
@@ -219,13 +219,13 @@ public:
 
         size_t& operator[](size_t index)
         {
-            assert(index >= 0 && index < 4);
+            assert(index < 4);
             return m_indices[index];
         }
 
         size_t operator[](size_t index) const
         {
-            assert(index >= 0 && index < 4);
+            assert(index < 4);
             return m_indices[index];
         }
 

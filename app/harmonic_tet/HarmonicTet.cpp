@@ -45,7 +45,7 @@ void HarmonicTet::swap_all_edges()
 
     auto cnt_suc = 0;
     while (!queue.empty()) {
-        auto& [weight, loc] = queue.front();
+        auto [weight, loc] = queue.front();
         queue.pop();
 
         if (!loc.is_valid(*this)) continue;
@@ -68,7 +68,7 @@ bool HarmonicTet::swap_edge_before(const Tuple& t)
     }
     edgeswap_cache.max_energy = max_energy;
     return true;
-};
+}
 bool HarmonicTet::swap_edge_after(const Tuple& t)
 {
     if (!TetMesh::swap_edge_after(t)) return false;
@@ -85,17 +85,17 @@ bool HarmonicTet::swap_edge_after(const Tuple& t)
     if (max_energy > edgeswap_cache.max_energy) return false;
     wmtk::logger().debug("Going thru");
     return true;
-};
+}
 
 void HarmonicTet::swap_all_faces(){};
 bool HarmonicTet::swap_face_before(const Tuple& t)
 {
     return true;
-};
+}
 bool HarmonicTet::swap_face_after(const Tuple& t)
 {
     return true;
-};
+}
 
 void HarmonicTet::output_mesh(std::string file) const {
 // warning: duplicate code.

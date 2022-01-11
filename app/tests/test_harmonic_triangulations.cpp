@@ -51,5 +51,5 @@ TEST_CASE("harmonic-tet-swaps")
     wmtk::logger().set_level(spdlog::level::debug);
     har_tet.swap_all_edges();
     har_tet.consolidate_mesh();
-    REQUIRE(har_tet.tet_capacity() == 1085);
+    REQUIRE(har_tet.tet_capacity() == 1087);
 }
