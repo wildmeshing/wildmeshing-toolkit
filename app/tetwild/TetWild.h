@@ -150,6 +150,9 @@ public:
     {
         std::vector<std::array<int, 4>> surface_f_ids;
         size_t face_id;
+
+        std::vector<bool> is_matched;
+        std::vector<bool> is_visited;
     } triangle_insertion_cache; // todo: change for parallel
 
 
