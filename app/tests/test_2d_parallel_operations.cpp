@@ -45,7 +45,7 @@ TEST_CASE("parallel_shortest_edge_collapse", "[test_2d_parallel_operations]")
     // the collapsed edge tuple is not valid anymore
     REQUIRE_FALSE(shortest_edge.is_valid(m));
 
-    m.consolidate_mesh_connectivity();
+    m.consolidate_mesh();
 
     REQUIRE(m.vert_capacity() == 4);
     REQUIRE(m.tri_capacity() == 1);
