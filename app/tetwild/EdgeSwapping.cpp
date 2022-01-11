@@ -55,12 +55,12 @@ void tetwild::TetWild::swap_all_edges()
         }
         wmtk::unique_edge_tuples(m, new_edges);
         for (auto& e : new_edges) {
-            auto& v1 = loc;
-            auto v2 = loc.switch_vertex(m);
+            auto& v1 = e;
+            auto v2 = e.switch_vertex(m);
             double length =
                 (m_vertex_attribute[v1.vid(m)].m_posf - m_vertex_attribute[v2.vid(m)].m_posf)
                     .squaredNorm();
-            queue.emplace(loc, length);
+            queue.emplace(e, length);
         }
         cnt_suc++;
     }
@@ -86,7 +86,9 @@ void tetwild::TetWild::swap_all_faces()
         auto new_tets = std::vector<size_t>(1, newt.tid(m));
         for (auto k = 0; k < 2; k++) {
             newt = newt.switch_face(m);
-            newt = newt.switch_tetrahedron(m).value();
+            auto temp = newt.switch_tetrahedron(m);
+            assert (temp);
+            newt = temp.value();
             new_tets.push_back(newt.tid(m));
         }
 
@@ -95,13 +97,13 @@ void tetwild::TetWild::swap_all_faces()
             for (auto j = 0; j < 4; j++) new_faces.push_back(tuple_from_face(ti, j));
         }
         wmtk::unique_face_tuples(m, new_faces);
-        for (auto& e : new_faces) {
-            auto& v1 = loc;
-            auto v2 = loc.switch_vertex(m);
+        for (auto& f : new_faces) { // the ordering for faces is not defined in the paper.
+            auto& v1 = f;
+            auto v2 = f.switch_vertex(m);
             double length =
                 (m_vertex_attribute[v1.vid(m)].m_posf - m_vertex_attribute[v2.vid(m)].m_posf)
                     .squaredNorm();
-            queue.emplace(loc, length);
+            queue.emplace(f, length);
         }
         cnt_suc++;
     }
