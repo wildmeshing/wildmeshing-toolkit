@@ -20,6 +20,23 @@ void unique_edge_tuples(const TetMesh& m, std::vector<TetMesh::Tuple>& edges)
         edges.end());
 }
 
+void unique_face_tuples(const TetMesh& m, std::vector<TetMesh::Tuple>& faces)
+{
+    std::stable_sort(
+        faces.begin(),
+        faces.end(),
+        [&](const TetMesh::Tuple& a, const TetMesh::Tuple& b) {
+            return a.fid(m) < b.fid(m);
+        }); // todo: use unique global id here would be very slow!
+
+    faces.erase(
+        std::unique(
+            faces.begin(),
+            faces.end(),
+            [&](const TetMesh::Tuple& a, const TetMesh::Tuple& b) { return a.fid(m) == b.fid(m); }),
+        faces.end());
+}
+
 void unique_directed_edge_tuples(const TetMesh& m, std::vector<TetMesh::Tuple>& edges)
 {
     std::stable_sort(
