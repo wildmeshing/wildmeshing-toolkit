@@ -1,11 +1,17 @@
 #include <catch2/catch.hpp>
 
+#include <igl/read_triangle_mesh.h>
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 #include <wmtk/TetMesh.h>
 
 #include <igl/doublearea.h>
+#include <igl/read_triangle_mesh.h>
 #include <wmtk/utils/TetraQualityUtils.hpp>
+#include "HarmonicTet.hpp"
+#include "spdlog/common.h"
+#include "wmtk/utils/Delaunay.hpp"
+#include "wmtk/utils/Logger.hpp"
 
 using namespace wmtk;
 
@@ -18,6 +24,30 @@ TEST_CASE("harmonic-tet-energy")
     REQUIRE(ee == 1.5);
 }
 
-TEST_CASE("harmonic-tet-swaps") {
-
+TEST_CASE("harmonic-tet-swaps")
+{
+    auto vec_attrs = std::vector<Eigen::Vector3d>();
+    auto tets = std::vector<std::array<size_t, 4>>();
+    {
+        Eigen::MatrixXd V;
+        Eigen::MatrixXi F;
+        igl::read_triangle_mesh(WMT_DATA_DIR "/sphere.obj", V, F);
+        std::vector<wmtk::Point3D> points(V.rows());
+        for (auto i = 0; i < V.rows(); i++) {
+            for (auto j = 0; j < 3; j++) points[i][j] = V(i, j);
+        }
+        auto [tet_V, tetT] = wmtk::delaunay3D(points);
+        vec_attrs.resize(tet_V.size());
+        for (auto i = 0; i < tet_V.size(); i++) {
+            for (auto j = 0; j < 3; j++) vec_attrs[i][j] = tet_V[i][j];
+        }
+        tets = tetT;
+        spdlog::critical("size {} {}", tet_V.size(), tetT.size());
+    }
+    auto har_tet = harmonic_tet::HarmonicTet(vec_attrs, tets);
+    wmtk::logger().set_level(spdlog::level::debug);
+    har_tet.swap_all_edges();
+    har_tet.consolidate_mesh();
+    spdlog::critical("size {} {}", har_tet.tet_capacity(), har_tet.vert_capacity());
+    har_tet.output_mesh("temp1.msh");
 }

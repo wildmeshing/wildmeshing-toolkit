@@ -4,6 +4,8 @@
 
 #include <igl/predicates/predicates.h>
 
+#include <queue>
+
 namespace harmonic_tet {
 
 
@@ -28,12 +30,33 @@ bool HarmonicTet::is_inverted(const Tuple& loc)
 
     igl::predicates::exactinit();
     auto res = igl::predicates::orient3d(ps[0], ps[1], ps[2], ps[3]);
-    if (res == igl::predicates::Orientation::POSITIVE) return false; // extremely annoying.
+    if (res == igl::predicates::Orientation::NEGATIVE) return false; // extremely annoying.
     return true;
 }
 
-void HarmonicTet::swap_all_edges(){
-};
+void HarmonicTet::swap_all_edges()
+{
+    auto queue = std::queue<std::tuple<double, wmtk::TetMesh::Tuple>>();
+
+    for (auto& loc : get_edges()) {
+        double length = -1.;
+        queue.emplace(length, loc);
+    }
+
+    auto cnt_suc = 0;
+    while (!queue.empty()) {
+        auto& [weight, loc] = queue.front();
+        queue.pop();
+
+        if (!loc.is_valid(*this)) continue;
+        if (!swap_edge(loc)) {
+            continue;
+        }
+        cnt_suc++;
+        // not pushing back.
+    }
+}
+
 bool HarmonicTet::swap_edge_before(const Tuple& t)
 {
     if (!TetMesh::swap_edge_before(t)) return false;

@@ -164,7 +164,7 @@ bool wmtk::TetMesh::swap_edge(const Tuple& t)
 
     auto u0id = m_tet_connectivity[new_tet_id.front()].find(v1_id);
     assert(u0id != -1);
-    auto newt = tuple_from_face(new_tet_id.front(), u0id);
+    auto newt = tuple_from_face(new_tet_id.front(), m_map_vertex2oppo_face[u0id]);
 
     if (!swap_edge_after(newt)) { // rollback post-operation
         assert(affected.size() == old_tets.size());

@@ -7,22 +7,24 @@
 
 namespace harmonic_tet {
 
-using VertexAttributes = Eigen::Vector3d;
-struct TetAttributes
-{
-    double m_qualities = 0.;
-};
-
 class HarmonicTet : public wmtk::TetMesh
 {
 public:
+    using VertexAttributes = Eigen::Vector3d;
+    struct TetAttributes
+    {
+    };
+
     HarmonicTet(
         const std::vector<VertexAttributes>& _vertex_attribute,
-        const std::vector<TetAttributes>& _tet_attribute)
+        const std::vector<std::array<size_t, 4>>& tets)
     {
         m_vertex_attribute = _vertex_attribute;
-        m_tet_attribute = _tet_attribute;
+        m_tet_attribute = std::vector<TetAttributes>(tets.size());
+        init(m_vertex_attribute.size(), tets);
     }
+    HarmonicTet(){};
+    ~HarmonicTet(){};
 
     ////// Attributes related
     // Stores the attributes attached to simplices
@@ -44,7 +46,7 @@ public:
         m_vertex_attribute[to] = std::move(m_vertex_attribute[from]);
     }
 
-    void output_mesh(std::string file);
+    void output_mesh(std::string file) const;
 
     ////// Operations
 
@@ -53,9 +55,9 @@ public:
         double max_energy = 0.;
     } edgeswap_cache, faceswap_cache; // todo: change for parallel
 
-    void smooth_all_vertices();
-    bool smooth_before(const Tuple& t) override;
-    bool smooth_after(const Tuple& t) override;
+    // void smooth_all_vertices();
+    // bool smooth_before(const Tuple& t) override{};
+    // bool smooth_after(const Tuple& t) override{};
 
     void swap_all_edges();
     bool swap_edge_before(const Tuple& t) override;
@@ -67,19 +69,6 @@ public:
 
     bool is_inverted(const Tuple& loc);
     double get_quality(const Tuple& loc);
-};
-
-class ElementInQueue
-{
-public:
-    wmtk::TetMesh::Tuple edge;
-    double weight;
-
-    ElementInQueue() {}
-    ElementInQueue(const wmtk::TetMesh::Tuple& e, double w)
-        : edge(e)
-        , weight(w)
-    {}
 };
 
 } // namespace harmonic_tet
