@@ -7,11 +7,7 @@
 
 namespace harmonic_tet {
 
-struct VertexAttributes
-{
-    Eigen::Vector3d m_pos;
-};
-
+using VertexAttributes = Eigen::Vector3d;
 struct TetAttributes
 {
     double m_qualities = 0.;
