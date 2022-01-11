@@ -41,8 +41,6 @@ bool Edge2d::EdgeOperations2d::collapse_shortest(int target_vertex_count)
 
         TriMesh::Tuple new_vert;
 
-        assert(check_mesh_connectivity_validity());
-
         if (!TriMesh::collapse_edge(loc, new_vert)) continue;
         cnt++;
         if (cnt % 100 == 0) wmtk::logger().trace(" 100 more collpased");
