@@ -2,15 +2,7 @@
 # Tests
 ################################################################################
 
-set(test_sources
-	main.cpp
-
-	test_2d_operations.cpp
-	test_operations.cpp
-	file_write.cpp
-	test_operation_smooth.cpp
-	test_runner.cpp
-)
+file(GLOB test_sources CONFIGURE_DEPENDS "*.cpp")
 
 add_executable(app_unit_tests ${test_sources})
 
