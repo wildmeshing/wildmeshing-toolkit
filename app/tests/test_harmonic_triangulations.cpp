@@ -22,6 +22,9 @@ TEST_CASE("harmonic-tet-energy")
     unit.bottomRows(3) = Eigen::MatrixXd::Identity(3, 3);
     auto ee = wmtk::harmonic_energy(unit);
     REQUIRE(ee == 1.5);
+    unit(0, 0) = -10;
+    auto stretch = wmtk::harmonic_energy(unit);
+    REQUIRE(stretch > 10);
 }
 
 TEST_CASE("harmonic-tet-swaps")
@@ -42,12 +45,11 @@ TEST_CASE("harmonic-tet-swaps")
             for (auto j = 0; j < 3; j++) vec_attrs[i][j] = tet_V[i][j];
         }
         tets = tetT;
-        spdlog::critical("size {} {}", tet_V.size(), tetT.size());
+        REQUIRE(tetT.size() == 1262);
     }
     auto har_tet = harmonic_tet::HarmonicTet(vec_attrs, tets);
     wmtk::logger().set_level(spdlog::level::debug);
     har_tet.swap_all_edges();
     har_tet.consolidate_mesh();
-    spdlog::critical("size {} {}", har_tet.tet_capacity(), har_tet.vert_capacity());
-    har_tet.output_mesh("temp1.msh");
+    REQUIRE(har_tet.tet_capacity() == 1085);
 }

@@ -1,7 +1,7 @@
 #include "HarmonicTet.hpp"
 
 #include <wmtk/utils/TetraQualityUtils.hpp>
-
+#include <wmtk/utils/io.hpp>
 #include <igl/predicates/predicates.h>
 
 #include <queue>
@@ -77,10 +77,13 @@ bool HarmonicTet::swap_edge_after(const Tuple& t)
     auto oppo_tet = t.switch_tetrahedron(*this);
     assert(oppo_tet.has_value() && "Should not swap boundary.");
     auto max_energy = std::max(get_quality(t), get_quality(*oppo_tet));
+    wmtk::logger().debug("energy {} {}", edgeswap_cache.max_energy, max_energy);
     if (is_inverted(t) || is_inverted(*oppo_tet)) {
+    wmtk::logger().debug("invert w/ energy {} {}", edgeswap_cache.max_energy, max_energy);
         return false;
     }
     if (max_energy > edgeswap_cache.max_energy) return false;
+    wmtk::logger().debug("Going thru");
     return true;
 };
 
@@ -93,5 +96,33 @@ bool HarmonicTet::swap_face_after(const Tuple& t)
 {
     return true;
 };
+
+void HarmonicTet::output_mesh(std::string file) const {
+// warning: duplicate code.
+    wmtk::MshData msh;
+
+    const auto& vtx = get_vertices();
+    msh.add_tet_vertices(vtx.size(), [&](size_t k) {
+        auto i = vtx[k].vid(*this);
+        return m_vertex_attribute[i];
+    });
+
+    const auto& tets = get_tets();
+    msh.add_tets(tets.size(), [&](size_t k) {
+        auto i = tets[k].tid(*this);
+        auto vs = oriented_tet_vertices(tets[k]);
+        std::array<size_t, 4> data;
+        for (int j = 0; j < 4; j++) {
+            data[j] = vs[j].vid(*this);
+            assert(data[j] < vtx.size());
+        }
+        return data;
+    });
+
+    msh.add_tet_vertex_attribute<1>("tv index", [&](size_t i) { return i; });
+    msh.add_tet_attribute<1>("t index", [&](size_t i) { return i; });
+
+    msh.save(file, true);
+}
 
 } // namespace harmonic_tet

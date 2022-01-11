@@ -69,6 +69,7 @@ public:
 
     bool is_inverted(const Tuple& loc);
     double get_quality(const Tuple& loc);
+
 };
 
 } // namespace harmonic_tet
