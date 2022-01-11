@@ -168,6 +168,7 @@ TEST_CASE("shortest_edge_collapse_octocat", "[test_2d_operations]")
     m.create_mesh(V.rows(), tri);
     REQUIRE(m.check_mesh_connectivity_validity());
     REQUIRE(m.collapse_shortest(50));
+    m.write_triangle_mesh("sawped.obj");
 }
 
 TEST_CASE("shortest_edge_collapse_circle", "[test_2d_operations]")

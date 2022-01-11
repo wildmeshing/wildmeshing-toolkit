@@ -318,7 +318,6 @@ TEST_CASE("test_link_check", "[test_pre_check]")
         TriMesh::Tuple edge(0, 2, 0, m);
         assert(edge.is_valid(m));
         REQUIRE_FALSE(m.check_link_condition(edge));
-
     }
     SECTION("one_tet")
     {
@@ -346,34 +345,6 @@ TEST_CASE("test_link_check", "[test_pre_check]")
         REQUIRE_FALSE(m.check_link_condition(fail_edge));
         TriMesh::Tuple pass_edge(0, 2, 0, m);
         REQUIRE(m.check_link_condition(pass_edge));
-    }
-}
-
-TEST_CASE("test_manifold_check", "[test_pre_check]")
-{
-    TriMesh m;
-
-    SECTION("manifold_check_on_2_tri")
-    {
-        std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 3, 2}}};
-        m.create_mesh(4, tris);
-
-        TriMesh::Tuple edge(1, 0, 0, m);
-        assert(edge.is_valid(m));
-
-        REQUIRE(m.check_internal_link_condition(edge));
-
-    }
-    SECTION("manifold_check_on_non_manifold")
-    {
-        std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{2, 1, 3}}, {{4, 1, 2}}};
-        m.create_mesh(5, tris);
-
-        TriMesh::Tuple edge(1, 0, 0, m);
-        assert(edge.is_valid(m));
-
-        REQUIRE_FALSE(m.check_internal_link_condition(edge));
-
     }
 }
 
@@ -462,16 +433,16 @@ TEST_CASE("swap_operation", "[test_2d_operation]")
 TEST_CASE("split_operation", "[test_2d_operation]")
 {
     TriMesh m;
-    // SECTION("1_tri_split")
-    // {
-    //     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}};
-    //     m.create_mesh(3, tris);
+    SECTION("1_tri_split")
+    {
+        std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}};
+        m.create_mesh(3, tris);
 
-    //     TriMesh::Tuple edge(0, 1, 0, m);
-    //     TriMesh::Tuple new_e;
-    //     assert(edge.is_valid(m));
-    //     REQUIRE(m.split_edge(edge, new_e));
-    // }
+        TriMesh::Tuple edge(0, 1, 0, m);
+        TriMesh::Tuple new_e;
+        assert(edge.is_valid(m));
+        REQUIRE(m.split_edge(edge, new_e));
+    }
     SECTION("2_tris_split")
     {
         std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 3, 2}}};

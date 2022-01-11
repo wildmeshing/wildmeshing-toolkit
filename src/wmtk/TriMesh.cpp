@@ -294,7 +294,6 @@ bool TriMesh::split_edge(const Tuple& t, Tuple& new_t)
     if (new_fid2.has_value()) new_fid = std::min(new_fid, new_fid2.value());
     new_t = Tuple(new_vid, (j + 2) % 3, new_fid, *this);
     assert(new_t.is_valid(*this));
-    vector_print(m_vertex_connectivity[4].m_conn_tris);
     assert(check_mesh_connectivity_validity());
 
     // roll back if not successful
@@ -758,31 +757,9 @@ size_t TriMesh::get_next_empty_slot_v()
     return m_vertex_connectivity.size() - 1;
 }
 
-bool TriMesh::check_internal_link_condition(const Tuple& t) const
-{
-    auto one_ring_vid1 = get_one_ring_edges_for_vertex(t);
-    auto one_ring_vid2 = get_one_ring_edges_for_vertex(t.switch_vertex(*this));
-
-    std::vector<size_t> one_ring_verts_vid1(one_ring_vid1.size());
-    std::vector<size_t> one_ring_verts_vid2(one_ring_vid2.size());
-
-    for (int i = 0; i < one_ring_vid1.size(); i++) {
-        one_ring_verts_vid1[i] = one_ring_vid1[i].vid();
-    }
-    for (int i = 0; i < one_ring_vid2.size(); i++) {
-        one_ring_verts_vid2[i] = one_ring_vid2[i].vid();
-    }
-    std::sort(one_ring_verts_vid1.begin(), one_ring_verts_vid1.end());
-    std::sort(one_ring_verts_vid2.begin(), one_ring_verts_vid2.end());
-
-    auto verts_intersection = set_intersection(one_ring_verts_vid1, one_ring_verts_vid2);
-    return (verts_intersection.size() <= 2);
-}
-
 // link check, prerequisite for edge collapse
 bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
 {
-    if (!check_internal_link_condition(edge)) return false;
     assert(edge.is_valid(*this));
     size_t vid1 = edge.vid();
     size_t vid2 = switch_vertex(edge).vid();
@@ -809,23 +786,10 @@ bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
     std::vector<Tuple> vid1_tris = get_one_ring_tris_for_vertex(edge);
     for (auto v1_tri_t : vid1_tris) {
         auto indices = m_tri_connectivity[v1_tri_t.fid()].m_indices;
-        if (indices[0] == vid1) {
-            lk_e_vid1.emplace_back(
-                std::min(indices[1], indices[2]),
-                std::max(indices[1], indices[2]));
-            continue;
-        } else if (indices[1] == vid1) {
-            lk_e_vid1.emplace_back(
-                std::min(indices[0], indices[2]),
-                std::max(indices[0], indices[2]));
-            continue;
-        } else if (indices[2] == vid1) {
-            lk_e_vid1.emplace_back(
-                std::min(indices[0], indices[1]),
-                std::max(indices[0], indices[1]));
-            continue;
-        } else
-            throw "m_tri_connectivity wrong";
+        auto l = m_tri_connectivity[v1_tri_t.fid()].find(vid1);
+        assert(l != -1);
+        auto i0 = indices[(l + 1) % 3], i1 = indices[(l + 2) % 3];
+        lk_e_vid1.emplace_back(std::min(i0, i1), std::max(i0, i1));
     }
     vector_unique(lk_vid1);
 
