@@ -183,7 +183,6 @@ TriMesh::Tuple double_switch_face(TriMesh::Tuple t, TriMesh& m)
 
 bool tuple_equal(const TriMesh& m, TriMesh::Tuple t1, TriMesh::Tuple t2)
 {
-
     return (t1.fid() == t2.fid()) && (t1.eid(m) == t2.eid(m)) && (t1.vid() == t2.vid());
 }
 
@@ -448,7 +447,6 @@ TEST_CASE("swap_operation", "[test_2d_operation]")
             m_indices.push_back(edge.vid());
         }
         vector_unique(m_indices);
-
         std::vector<size_t> tru_indices = {1, 3, 4, 5};
         REQUIRE(std::equal(m_indices.begin(), m_indices.end(), tru_indices.begin()));
     }

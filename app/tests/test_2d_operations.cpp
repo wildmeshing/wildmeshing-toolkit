@@ -37,8 +37,12 @@ TEST_CASE("shortest_edge_collapse", "[test_2d_operations]")
             shortest_edge = t;
         }
     }
+
     REQUIRE_FALSE(m.check_link_condition(shortest_edge));
     REQUIRE(m.collapse_shortest(1));
+    REQUIRE_FALSE(shortest_edge.is_valid(m));
+
+    m.consolidate_mesh();
 
     REQUIRE(m.get_vertices().size() == 5);
     REQUIRE(m.get_faces().size() == 3);
@@ -213,7 +217,6 @@ TEST_CASE("test_swap", "[test_2d_operations]")
     EdgeOperations2d m(v);
     m.create_mesh(V.rows(), tri);
     REQUIRE(m.check_mesh_connectivity_validity());
-
     auto edges = m.get_edges();
     TriMesh::Tuple new_e;
     int cnt = 0;
