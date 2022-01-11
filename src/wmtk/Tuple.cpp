@@ -1,7 +1,3 @@
-//
-// Created by Yixin Hu on 12/7/21.
-//
-
 #include "TetMesh.h"
 
 using namespace wmtk;
