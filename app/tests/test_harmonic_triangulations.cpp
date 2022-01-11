@@ -48,8 +48,7 @@ TEST_CASE("harmonic-tet-swaps")
         REQUIRE(tetT.size() == 1262);
     }
     auto har_tet = harmonic_tet::HarmonicTet(vec_attrs, tets);
-    wmtk::logger().set_level(spdlog::level::debug);
     har_tet.swap_all_edges();
     har_tet.consolidate_mesh();
-    REQUIRE(har_tet.tet_capacity() == 1087);
+    REQUIRE(har_tet.tet_capacity() < 1200);
 }
