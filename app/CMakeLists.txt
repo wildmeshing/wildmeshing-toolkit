@@ -33,7 +33,7 @@ target_link_libraries(wmtk_tetwild PUBLIC
 	wmtk::data
 	igl::predicates
 	FastEnvelope
-		gmp::gmp
+	gmp::gmp
 )
 
 add_executable(tetwild tetwild/main.cpp)

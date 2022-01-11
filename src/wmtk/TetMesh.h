@@ -348,8 +348,6 @@ private:
 protected:
     virtual void insertion_update_surface_tag(size_t t_id, size_t new_t_id,
                                               int config_id, int diag_config_id, int index){}
-    size_t vertices_size() { return m_vertex_connectivity.size(); }
-    size_t tets_size() { return m_tet_connectivity.size(); }
 
     //// Split the edge in the tuple
     // Checks if the split should be performed or not (user controlled)
