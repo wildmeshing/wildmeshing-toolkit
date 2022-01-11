@@ -15,8 +15,12 @@ set(test_sources
 
 add_executable(app_unit_tests ${test_sources})
 
+<<<<<<< HEAD
 target_link_libraries(app_unit_tests PUBLIC wmtk::toolkit TetWild EdgeCollapse ParallelEdgeCollapse)
 
+=======
+target_link_libraries(app_unit_tests PUBLIC wmtk::toolkit wmtk::tetwild wmtk::edge_operations)
+>>>>>>> origin/main
 
 include(catch2)
 target_link_libraries(app_unit_tests PUBLIC Catch2::Catch2)

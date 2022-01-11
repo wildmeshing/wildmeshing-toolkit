@@ -63,6 +63,14 @@ public:
          */
         inline size_t vid() const { return m_vid; }
 
+        /**
+         * returns a global unique face id
+         *
+         * @param m TriMesh where the tuple belongs.
+         * @return size_t
+         */
+        inline size_t fid() const { return m_fid; }
+
 
         /**
          * returns a global unique edge id
@@ -72,16 +80,14 @@ public:
          * @note The global id may not be consecutive. The edges are undirected and different tetra
          * share the same edge.
          */
-        inline size_t eid() const { return m_fid * 3 + m_eid; }
-
-
-        /**
-         * returns a global unique face id
-         *
-         * @param m TriMesh where the tuple belongs.
-         * @return size_t
-         */
-        inline size_t fid() const { return m_fid; }
+        inline size_t eid(const TriMesh& m) const
+        {
+            if (switch_face(m).has_value()) {
+                size_t fid2 = switch_face(m)->fid();
+                return std::min(m_fid, fid2) * 3 + m_eid;
+            }
+            return m_fid * 3 + m_eid;
+        }
 
         /**
          * Switch operation. See (URL-TO-DOCUMENT) for explaination.
@@ -144,7 +150,7 @@ public:
     public:
         std::array<size_t, 3> m_indices;
         bool m_is_removed = false;
-        size_t hash;
+        size_t hash = 0;
 
         inline size_t& operator[](size_t index)
         {
@@ -216,9 +222,7 @@ protected:
 
     virtual bool collapse_before(const Tuple& t)
     {
-        // TODO: make check_manifold correct
-        // TODO: check_link_condition checks for open boundaries
-        if (check_link_condition(t) && check_manifold(t)) return true;
+        if (check_link_condition(t)) return true;
         return false;
     }
     virtual bool collapse_after(const Tuple& t)
@@ -228,9 +232,11 @@ protected:
 
         return true;
     }
+    virtual bool swap_after(const Tuple& t) { return true; }
+    virtual bool swap_before(const Tuple& t) { return true; }
+
 
     virtual void resize_attributes(size_t v, size_t e, size_t t) {}
-
 
     virtual void move_vertex_attribute(size_t from, size_t to){};
     virtual void move_edge_attribute(size_t from, size_t to){};
@@ -261,7 +267,7 @@ public:
      */
     bool split_edge(const Tuple& t, Tuple& new_t);
     bool collapse_edge(const Tuple& t, Tuple& new_t);
-    [[noreturn]] void swap_edge(const Tuple& t, int type);
+    bool swap_edge(const Tuple& t, Tuple& new_t);
 
     /**
      * @brief Get the one ring tris for a vertex

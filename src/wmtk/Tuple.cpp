@@ -1,7 +1,3 @@
-//
-// Created by Yixin Hu on 12/7/21.
-//
-
 #include "TetMesh.h"
 
 using namespace wmtk;
@@ -12,7 +8,7 @@ TetMesh::Tuple::Tuple(const TetMesh& m, size_t vid, size_t local_eid, size_t loc
     , m_local_eid(local_eid)
     , m_local_fid(local_fid)
     , m_global_tid(tid)
-    , m_timestamp(m.m_tet_connectivity[tid].timestamp)
+    , m_hash(m.m_tet_connectivity[tid].hash)
 {
     check_validity(m);
 }
@@ -64,7 +60,7 @@ bool TetMesh::Tuple::is_valid(const TetMesh& m) const
         m.m_tet_connectivity[m_global_tid].m_is_removed)
         return false;
 
-    if (m_timestamp != m.m_tet_connectivity[m_global_tid].timestamp) return false;
+    if (m_hash != m.m_tet_connectivity[m_global_tid].hash) return false;
     return true;
 }
 
@@ -238,7 +234,7 @@ std::optional<TetMesh::Tuple> TetMesh::Tuple::switch_tetrahedron(const TetMesh& 
             m.m_tet_connectivity[m_global_tid][m_local_edges[m_local_eid][1]]);
         loc.m_local_fid =
             m.m_tet_connectivity[loc.m_global_tid].find_local_face(v1_id, v2_id, v3_id);
-        loc.m_timestamp = m.m_tet_connectivity[loc.m_global_tid].timestamp;
+        loc.m_hash = m.m_tet_connectivity[loc.m_global_tid].hash;
 
         return loc;
     }

@@ -23,7 +23,7 @@ TEST_CASE("edge_collapsing_impossible", "[test_operation]")
     std::vector<TetMesh::Tuple> dummy;
 
     // Cannot collapse the edge
-    REQUIRE(!mesh.collapse_edge(tuple, dummy));
+    REQUIRE_FALSE(mesh.collapse_edge(tuple, dummy));
     REQUIRE(tuple.is_valid(mesh));
     REQUIRE(mesh.check_mesh_connectivity_validity());
 }
@@ -87,7 +87,6 @@ TEST_CASE("tet_mesh_swap", "[test_operation]")
     REQUIRE(mesh.tet_capacity() == 4);
     mesh.consolidate_mesh();
     REQUIRE(mesh.tet_capacity() == 3);
-
 }
 
 TEST_CASE("rollback_operation", "[test_operation]")

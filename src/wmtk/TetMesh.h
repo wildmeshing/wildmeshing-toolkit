@@ -1,7 +1,3 @@
-//
-// Created by Yixin Hu on 10/12/21.
-//
-
 #pragma once
 
 #include <wmtk/utils/VectorUtils.h>
@@ -20,7 +16,6 @@ namespace wmtk {
 class TetMesh
 {
 private:
-    // YH: should be visible for all connectivity classes!
     static constexpr std::array<std::array<int, 2>, 6> m_local_edges = {
         {{{0, 1}}, {{1, 2}}, {{0, 2}}, {{0, 3}}, {{1, 3}}, {{2, 3}}}}; // local edges within a
     // tet
@@ -40,7 +35,7 @@ public:
         size_t m_local_fid = std::numeric_limits<size_t>::max();
         size_t m_global_tid = std::numeric_limits<size_t>::max();
 
-        int m_timestamp = 0;
+        int m_hash = 0;
 
     private:
         /**
@@ -146,13 +141,13 @@ public:
                     a.m_local_eid,
                     a.m_local_fid,
                     a.m_global_tid,
-                    a.m_timestamp) ==
+                    a.m_hash) ==
                 std::tie(
                     t.m_global_vid,
                     t.m_local_eid,
                     t.m_local_fid,
                     t.m_global_tid,
-                    t.m_timestamp));
+                    t.m_hash));
         }
         friend bool operator<(const Tuple& a, const Tuple& t)
         {
@@ -162,13 +157,13 @@ public:
                     a.m_local_eid,
                     a.m_local_fid,
                     a.m_global_tid,
-                    a.m_timestamp) <
+                    a.m_hash) <
                 std::tie(
                     t.m_global_vid,
                     t.m_local_eid,
                     t.m_local_fid,
                     t.m_global_tid,
-                    t.m_timestamp));
+                    t.m_hash));
         }
     };
 
@@ -214,11 +209,11 @@ public:
         std::array<size_t, 4> m_indices;
         bool m_is_removed = false;
 
-        int timestamp = 0;
+        int hash = 0;
 
-        void set_version_number(int version) { timestamp = version; }
+        void set_version_number(int version) { hash = version; }
 
-        int get_version_number() { return timestamp; }
+        int get_version_number() { return hash; }
 
         size_t& operator[](size_t index)
         {
@@ -276,8 +271,8 @@ public:
 
         friend bool operator==(const TetrahedronConnectivity& l, const TetrahedronConnectivity& r)
         {
-            return std::tie(l.m_indices, l.m_is_removed, l.timestamp) ==
-                   std::tie(r.m_indices, r.m_is_removed, r.timestamp); // keep the same order
+            return std::tie(l.m_indices, l.m_is_removed, l.hash) ==
+                   std::tie(r.m_indices, r.m_is_removed, r.hash); // keep the same order
         }
 
         void print_info() {}

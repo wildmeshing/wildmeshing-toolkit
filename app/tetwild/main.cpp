@@ -1,7 +1,3 @@
-//
-// Created by Yixin Hu on 10/17/21.
-//
-
 #include "TetWild.h"
 
 int main(int argc, char** argv)

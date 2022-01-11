@@ -1,6 +1,7 @@
-#include "Logger.hpp"
 #include "TetWild.h"
-#include "wmtk/TetMesh.h"
+
+#include <wmtk/utils/Logger.hpp>
+#include <wmtk/TetMesh.h>
 
 auto measure_edge_length = [](auto& m, auto& l, auto& m_vertex_attribute) {
     auto& v1 = l;
@@ -15,8 +16,8 @@ auto construct_queue = [](const tetwild::TetWild& m,
                           const auto& edges) {
     using namespace tetwild;
 
-    apps::logger().debug("edges.size() = {}", edges.size());
-    std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_l> ec_queue((cmp_l(m)));
+    wmtk::logger().debug("edges.size() = {}", edges.size());
+    std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_l> ec_queue;
 
     for (auto& loc : edges) {
         auto& v1 = loc;
@@ -46,7 +47,7 @@ void tetwild::TetWild::swap_all_edges()
         cnt_suc++;
         // not pushing back.
     }
-    apps::logger().debug("Edge Swapping Success {}", cnt_suc);
+    wmtk::logger().debug("Edge Swapping Success {}", cnt_suc);
 }
 
 void tetwild::TetWild::swap_all_faces()
@@ -66,7 +67,7 @@ void tetwild::TetWild::swap_all_faces()
         cnt_suc++;
         // not pushing back.
     }
-    apps::logger().debug("Edge Swapping Success {}", cnt_suc);
+    wmtk::logger().debug("Edge Swapping Success {}", cnt_suc);
 }
 
 
@@ -110,7 +111,7 @@ bool tetwild::TetWild::swap_face_before(const Tuple& t)
 bool tetwild::TetWild::swap_face_after(const Tuple& t)
 {
     if (!TetMesh::swap_face_after(t)) return false;
-    
+
     auto incident_tets = get_incident_tets_for_edge(t);
     for (auto& l : incident_tets) {
         if (is_inverted(l)) {
@@ -121,7 +122,7 @@ bool tetwild::TetWild::swap_face_after(const Tuple& t)
     for (auto& l : incident_tets) {
         max_energy = std::max(get_quality(l), max_energy);
     }
-    apps::logger().trace("quality {} from {}", max_energy, edgeswap_cache.max_energy);
+    wmtk::logger().trace("quality {} from {}", max_energy, edgeswap_cache.max_energy);
 
     if (max_energy > edgeswap_cache.max_energy) return false;
     return true;
