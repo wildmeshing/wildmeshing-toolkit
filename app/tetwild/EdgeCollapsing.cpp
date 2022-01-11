@@ -1,7 +1,3 @@
-//
-// Created by Yixin Hu on 12/7/21.
-//
-
 #include "TetWild.h"
 
 #include <wmtk/utils/Logger.hpp>

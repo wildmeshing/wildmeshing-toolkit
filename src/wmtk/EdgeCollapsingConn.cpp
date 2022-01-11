@@ -1,6 +1,3 @@
-//
-// Created by Yixin Hu on 12/9/21.
-//
 #include <wmtk/TetMesh.h>
 
 #include <wmtk/utils/TupleUtils.hpp>
