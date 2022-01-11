@@ -3,6 +3,7 @@
 #include <igl/predicates/predicates.h>
 #include <wmtk/utils/TetraQualityUtils.hpp>
 #include <wmtk/utils/io.hpp>
+#include <wmtk/utils/TupleUtils.hpp>
 
 #include <queue>
 
@@ -44,13 +45,24 @@ void HarmonicTet::swap_all_edges()
     }
 
     auto cnt_suc = 0;
+    auto& m = *this;
     while (!queue.empty()) {
         auto [weight, loc] = queue.front();
         queue.pop();
 
         if (!loc.is_valid(*this)) continue;
-        if (!swap_edge(loc)) {
+        wmtk::TetMesh::Tuple newt;
+        if (!swap_edge(loc, newt)) {
             continue;
+        }
+        auto new_edges = std::vector<wmtk::TetMesh::Tuple>();
+        assert(newt.switch_tetrahedron(m));
+        for (auto ti : {newt.tid(m), newt.switch_tetrahedron(m)->tid(m)}) {
+            for (auto j = 0; j < 6; j++) new_edges.push_back(tuple_from_edge(ti, j));
+        }
+        wmtk::unique_edge_tuples(m, new_edges);
+        for (auto& e : new_edges) {
+            queue.emplace(-1., loc);
         }
         cnt_suc++;
         // not pushing back.
@@ -94,15 +106,31 @@ void HarmonicTet::swap_all_faces()
         double length = -1.;
         queue.emplace(length, loc);
     }
-
+    auto& m = *this;
     auto cnt_suc = 0;
     while (!queue.empty()) {
         auto [weight, loc] = queue.front();
         queue.pop();
 
-        if (!loc.is_valid(*this)) continue;
-        if (!swap_face(loc)) {
+        if (!loc.is_valid(m)) continue;
+        wmtk::TetMesh::Tuple newt;
+        if (!swap_face(loc, newt)) {
             continue;
+        }
+        auto new_tets = std::vector<size_t>(1, newt.tid(m));
+        for (auto k = 0; k < 2; k++) {
+            newt = newt.switch_face(m);
+            newt = newt.switch_tetrahedron(m).value();
+            new_tets.push_back(newt.tid(m));
+        }
+
+        auto new_faces = std::vector<wmtk::TetMesh::Tuple>();
+        for (auto ti : new_tets) {
+            for (auto j = 0; j < 4; j++) new_faces.push_back(tuple_from_face(ti, j));
+        }
+        wmtk::unique_face_tuples(m, new_faces);
+        for (auto& e : new_faces) {
+            queue.emplace(-1., loc);
         }
         cnt_suc++;
     }
