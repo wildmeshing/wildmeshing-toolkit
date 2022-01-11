@@ -62,10 +62,9 @@ void HarmonicTet::swap_all_edges()
         }
         wmtk::unique_edge_tuples(m, new_edges);
         for (auto& e : new_edges) {
-            queue.emplace(-1., loc);
+            queue.emplace(-1., e);
         }
         cnt_suc++;
-        // not pushing back.
     }
 }
 
@@ -130,7 +129,7 @@ void HarmonicTet::swap_all_faces()
         }
         wmtk::unique_face_tuples(m, new_faces);
         for (auto& e : new_faces) {
-            queue.emplace(-1., loc);
+            queue.emplace(-1., e);
         }
         cnt_suc++;
     }
