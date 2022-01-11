@@ -361,7 +361,7 @@ TEST_CASE("test_manifold_check", "[test_pre_check]")
         TriMesh::Tuple edge(1, 0, 0, m);
         assert(edge.is_valid(m));
 
-        REQUIRE(m.check_manifold(edge));
+        REQUIRE(m.check_internal_link_condition(edge));
 
     }
     SECTION("manifold_check_on_non_manifold")
@@ -372,7 +372,7 @@ TEST_CASE("test_manifold_check", "[test_pre_check]")
         TriMesh::Tuple edge(1, 0, 0, m);
         assert(edge.is_valid(m));
 
-        REQUIRE_FALSE(m.check_manifold(edge));
+        REQUIRE_FALSE(m.check_internal_link_condition(edge));
 
     }
 }

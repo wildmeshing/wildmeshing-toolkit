@@ -758,7 +758,7 @@ size_t TriMesh::get_next_empty_slot_v()
     return m_vertex_connectivity.size() - 1;
 }
 
-bool TriMesh::check_manifold(const Tuple& t) const
+bool TriMesh::check_internal_link_condition(const Tuple& t) const
 {
     auto one_ring_vid1 = get_one_ring_edges_for_vertex(t);
     auto one_ring_vid2 = get_one_ring_edges_for_vertex(t.switch_vertex(*this));
@@ -782,7 +782,7 @@ bool TriMesh::check_manifold(const Tuple& t) const
 // link check, prerequisite for edge collapse
 bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
 {
-    if (!check_manifold(edge)) return false;
+    if (!check_internal_link_condition(edge)) return false;
     assert(edge.is_valid(*this));
     size_t vid1 = edge.vid();
     size_t vid2 = switch_vertex(edge).vid();
@@ -839,25 +839,10 @@ bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
     std::vector<Tuple> vid2_tris = get_one_ring_tris_for_vertex(switch_vertex(edge));
     for (auto v2_tri_t : vid2_tris) {
         auto indices = m_tri_connectivity[v2_tri_t.fid()].m_indices;
-        if (indices[0] == vid2) {
-            lk_e_vid2.emplace_back(
-                std::min(indices[1], indices[2]),
-                std::max(indices[1], indices[2]));
-            continue;
-        }
-        if (indices[1] == vid2) {
-            lk_e_vid2.emplace_back(
-                std::min(indices[0], indices[2]),
-                std::max(indices[0], indices[2]));
-            continue;
-        }
-        if (indices[2] == vid2) {
-            lk_e_vid2.emplace_back(
-                std::min(indices[0], indices[1]),
-                std::max(indices[0], indices[1]));
-            continue;
-        } else
-            throw "m_tri_connectivity wrong";
+        auto l = m_tri_connectivity[v2_tri_t.fid()].find(vid2);
+        assert(l != -1);
+        auto i0 = indices[(l + 1) % 3], i1 = indices[(l + 2) % 3];
+        lk_e_vid2.emplace_back(std::min(i0, i1), std::max(i0, i1));
     }
     vector_unique(lk_vid2);
     auto lk_vid12 = set_intersection(lk_vid1, lk_vid2);
@@ -886,7 +871,7 @@ bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
         lk_e_vid2.end(),
         std::back_inserter(res));
 
-    if (res.size() > 0) e_link = false;
+    if (res.size() > 0) return false;
 
-    return (e_link && v_link);
+    return v_link;
 }
