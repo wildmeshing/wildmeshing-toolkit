@@ -1,13 +1,14 @@
 #include "TetraQualityUtils.hpp"
 
 #include "AMIPS.h"
+#include "EnergyHarmonicTet.hpp"
 #include "Logger.hpp"
 
+#include <igl/doublearea.h>
 #include <spdlog/fmt/ostr.h>
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <array>
-#include <igl/doublearea.h>
 
 std::array<size_t, 4> wmtk::orient_preserve_tet_reorder(
     const std::array<size_t, 4>& conn,
@@ -109,14 +110,11 @@ Eigen::Vector3d wmtk::newton_direction_from_stack(std::vector<std::array<double,
 
 double wmtk::harmonic_energy(const Eigen::MatrixXd& verts)
 {
-    Eigen::MatrixXi lF(4, 3);
-    lF << 0, 1, 2, 0, 2, 3, 0, 1, 3, 1, 2, 3; // sorted local vids
-    Eigen::Matrix3d v3 = verts.bottomRows(3).rowwise() - verts.row(0);
-    auto vol = v3.determinant();
-    if (vol < 0.) return std::numeric_limits<double>::max();
-    Eigen::VectorXd dblarea;
-    igl::doublearea(verts, lF, dblarea);
-    dblarea /= 2.;
-    auto sum_area2 = dblarea.squaredNorm();
-    return sum_area2 / vol; // to be divided by (3*3) in the formula.
+    assert(verts.rows() == 4 && verts.cols() == 3);
+    auto T = std::array<double, 12>();
+    for (auto i = 0; i < 4; i++)
+        for (auto j = 0; j < 3; j++) {
+            T[i * 3 + j] = verts(i, j);
+        }
+    return harmonic_tet_energy(T);
 }
