@@ -60,7 +60,7 @@ TEST_CASE("test generate tuples with 2 triangle", "[test_tuple_generation]")
     //     \ /
     // 	    v0
     TriMesh m;
-    std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 2, 3}}};
+    std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{2, 1, 3}}};
     m.create_mesh(4, tris);
 
     SECTION("test generation from vertics")

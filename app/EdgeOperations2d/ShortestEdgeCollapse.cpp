@@ -37,16 +37,39 @@ bool Edge2d::EdgeOperations2d::collapse_shortest(int target_vertex_count)
         target_vertex_count--;
         if (target_vertex_count <= 0) break;
 
-        size_t new_vid = new_vert.vid();
-        std::vector<TriMesh::Tuple> one_ring_edges = get_one_ring_edges_for_vertex(new_vert);
 
+        std::vector<TriMesh::Tuple> one_ring_edges = get_one_ring_edges_for_vertex(new_vert);
+        std::vector<size_t> one_ring_fid;
+        one_ring_fid.resize(one_ring_edges.size());
+        size_t new_vid = new_vert.vid();
         for (TriMesh::Tuple edge : one_ring_edges) {
-            size_t vid = edge.vid();
-            double length = (m_vertex_positions[new_vid] - m_vertex_positions[vid]).squaredNorm();
+            // radial edge
+            double length =
+                (m_vertex_positions[new_vid] - m_vertex_positions[edge.vid()]).squaredNorm();
             ec_queue.push(ElementInQueue(edge, length));
+            // petal edge
+            if (!wmtk::vector_contains(one_ring_fid, edge.fid())) {
+                one_ring_fid.emplace_back(edge.switch_edge(*this).fid());
+                length = (m_vertex_positions[(edge.switch_edge(*this)).switch_vertex(*this).vid()] -
+                          m_vertex_positions[edge.vid()])
+                             .squaredNorm();
+                ec_queue.push(ElementInQueue(edge.switch_edge(*this), length));
+            }
+            if (edge.switch_face(*this).has_value()) {
+                if (!wmtk::vector_contains(one_ring_fid, (edge.switch_face(*this).value()).fid())) {
+                    one_ring_fid.emplace_back((edge.switch_face(*this).value()).fid());
+                    length =
+                        (m_vertex_positions[((edge.switch_face(*this).value()).switch_edge(*this))
+                                                .switch_vertex(*this)
+                                                .vid()] -
+                         m_vertex_positions[edge.vid()])
+                            .squaredNorm();
+                    ec_queue.push(ElementInQueue(
+                        ((edge.switch_face(*this).value()).switch_edge(*this)),
+                        length));
+                }
+            }
         }
     }
-
-
     return true;
 }

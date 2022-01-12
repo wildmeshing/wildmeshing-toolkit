@@ -715,25 +715,16 @@ std::vector<TriMesh::Tuple> TriMesh::get_edges() const
 {
     // DP: This function is not using the correct prototype, check the 3D version, it
     // should throw when goes outside the boundary
-    const TriMesh& m = *this;
-    std::vector<Tuple> all_edges_tuples;
-    all_edges_tuples.reserve(m.m_tri_connectivity.size() * 3 / 2);
-    for (size_t i = 0; i < m.m_tri_connectivity.size(); i++) {
+    std::vector<TriMesh::Tuple> all_edges_tuples;
+    for (int i = 0; i < m_tri_connectivity.size(); i++) {
+        if (m_tri_connectivity[i].m_is_removed) continue;
         for (int j = 0; j < 3; j++) {
-            size_t vid = m.m_tri_connectivity[i].m_indices[j];
-            size_t eid = (j + 2) % 3;
-            Tuple e_tuple = Tuple(vid, eid, i, m);
-            assert(e_tuple.is_valid(m));
-            Tuple e_tuple2 = e_tuple.switch_face(m).value_or(e_tuple);
-            assert(e_tuple2.is_valid(m));
-            // return itself if it is a boundary triangle
-            size_t fid2 = e_tuple2.fid();
-            if (fid2 < i)
-                continue;
-            else
-                all_edges_tuples.push_back(e_tuple);
+            size_t l = (j + 2) % 3;
+            auto tup = Tuple(m_tri_connectivity[i].m_indices[j], l, i, *this);
+            if (tup.eid(*this) == 3 * i + l) all_edges_tuples.emplace_back(tup);
         }
     }
+
     return all_edges_tuples;
 }
 
