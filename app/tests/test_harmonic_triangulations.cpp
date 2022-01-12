@@ -51,4 +51,5 @@ TEST_CASE("harmonic-tet-swaps")
     har_tet.swap_all_edges();
     har_tet.consolidate_mesh();
     REQUIRE(har_tet.tet_capacity() < 1200);
+    har_tet.smooth_all_vertices();
 }

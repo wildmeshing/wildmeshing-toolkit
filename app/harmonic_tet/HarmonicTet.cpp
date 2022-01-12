@@ -2,13 +2,13 @@
 
 #include <igl/predicates/predicates.h>
 #include <wmtk/utils/TetraQualityUtils.hpp>
-#include <wmtk/utils/io.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
+#include <wmtk/utils/io.hpp>
 
 #include <queue>
+#include "wmtk/utils/EnergyHarmonicTet.hpp"
 
 namespace harmonic_tet {
-
 
 double HarmonicTet::get_quality(const Tuple& loc)
 {
@@ -191,6 +191,77 @@ void HarmonicTet::output_mesh(std::string file) const
     msh.add_tet_attribute<1>("t index", [&](size_t i) { return i; });
 
     msh.save(file, true);
+}
+
+
+void harmonic_tet::HarmonicTet::smooth_all_vertices()
+{
+    auto tuples = get_vertices();
+    wmtk::logger().debug("tuples");
+    auto cnt_suc = 0;
+    for (auto& t : tuples) { // TODO: threads
+        if (smooth_vertex(t)) cnt_suc++;
+    }
+    wmtk::logger().debug("Smoothing Success Count {}", cnt_suc);
+}
+
+bool harmonic_tet::HarmonicTet::smooth_before(const Tuple& t)
+{
+    return true;
+}
+
+bool harmonic_tet::HarmonicTet::smooth_after(const Tuple& t)
+{
+    wmtk::logger().trace("Gradient Descent iteration for vertex smoothing.");
+    auto vid = t.vid(*this);
+
+    auto locs = get_one_ring_tets_for_vertex(t);
+    assert(locs.size() > 0);
+    std::vector<std::array<double, 12>> assembles(locs.size());
+    auto loc_id = 0;
+
+    for (auto& loc : locs) {
+        auto& T = assembles[loc_id];
+        auto t_id = loc.tid(*this);
+
+        assert(!is_inverted(loc));
+        auto local_tuples = oriented_tet_vertices(loc);
+        std::array<size_t, 4> local_verts;
+        for (auto i = 0; i < 4; i++) {
+            local_verts[i] = local_tuples[i].vid(*this);
+        }
+
+        local_verts = wmtk::orient_preserve_tet_reorder(local_verts, vid);
+
+        for (auto i = 0; i < 4; i++) {
+            for (auto j = 0; j < 3; j++) {
+                T[i * 3 + j] = m_vertex_attribute[local_verts[i]][j];
+            }
+        }
+        loc_id++;
+    }
+
+    auto old_pos = m_vertex_attribute[vid];
+    m_vertex_attribute[vid] = wmtk::gradient_descent_from_stack(
+        assembles,
+        wmtk::harmonic_tet_energy,
+        wmtk::harmonic_tet_jacobian);
+    wmtk::logger().trace(
+        "old pos {} -> new pos {}",
+        old_pos.transpose(),
+        m_vertex_attribute[vid].transpose());
+    // note: duplicate code snippets.
+    for (auto& loc : locs) {
+        if (is_inverted(loc)) {
+            m_vertex_attribute[vid] = old_pos;
+            return false;
+        }
+    }
+
+    for (auto& loc : locs) {
+        auto t_id = loc.tid(*this);
+    }
+    return true;
 }
 
 } // namespace harmonic_tet
