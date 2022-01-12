@@ -136,34 +136,14 @@ public:
         friend bool operator==(const Tuple& a, const Tuple& t)
         {
             return (
-                std::tie(
-                    a.m_global_vid,
-                    a.m_local_eid,
-                    a.m_local_fid,
-                    a.m_global_tid,
-                    a.m_hash) ==
-                std::tie(
-                    t.m_global_vid,
-                    t.m_local_eid,
-                    t.m_local_fid,
-                    t.m_global_tid,
-                    t.m_hash));
+                std::tie(a.m_global_vid, a.m_local_eid, a.m_local_fid, a.m_global_tid, a.m_hash) ==
+                std::tie(t.m_global_vid, t.m_local_eid, t.m_local_fid, t.m_global_tid, t.m_hash));
         }
         friend bool operator<(const Tuple& a, const Tuple& t)
         {
             return (
-                std::tie(
-                    a.m_global_vid,
-                    a.m_local_eid,
-                    a.m_local_fid,
-                    a.m_global_tid,
-                    a.m_hash) <
-                std::tie(
-                    t.m_global_vid,
-                    t.m_local_eid,
-                    t.m_local_fid,
-                    t.m_global_tid,
-                    t.m_hash));
+                std::tie(a.m_global_vid, a.m_local_eid, a.m_local_fid, a.m_global_tid, a.m_hash) <
+                std::tie(t.m_global_vid, t.m_local_eid, t.m_local_fid, t.m_global_tid, t.m_hash));
         }
     };
 
@@ -303,8 +283,8 @@ public:
      */
     bool split_edge(const Tuple& t, std::vector<Tuple>& new_edges);
     bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_edges);
-    bool swap_edge(const Tuple& t);
-    bool swap_face(const Tuple& t);
+    bool swap_edge(const Tuple& t, Tuple& new_face);
+    bool swap_face(const Tuple& t, Tuple& new_edge);
     bool smooth_vertex(const Tuple& t);
 
 
