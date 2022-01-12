@@ -301,7 +301,7 @@ void Edge2d::ParallelEdgeCollapse::update_position(size_t v1, size_t v2, Tuple& 
 
 bool Edge2d::ParallelEdgeCollapse::collapse_before(const Tuple& t)
 {
-    if (check_link_condition(t) && check_manifold(t)) {
+    if (check_link_condition(t)) {
         collapse_cache.v1p = m_vertex_positions[t.vid()];
         collapse_cache.v2p = m_vertex_positions[t.switch_vertex(*this).vid()];
         return true;
@@ -311,13 +311,6 @@ bool Edge2d::ParallelEdgeCollapse::collapse_before(const Tuple& t)
 
 bool Edge2d::ParallelEdgeCollapse::collapse_after(const Tuple& t)
 {
-    // TODO: for parallel check?
-    // if (check_mesh_connectivity_validity() && t.is_valid(*this)) {
-    // if (t.is_valid(*this)) {
-    //     // m_vertex_positions[t.vid()] = (collapse_cache.v1p + collapse_cache.v2p) / 2.0;
-    //     return true;
-    // }
-    // return false;
     return true;
 }
 
