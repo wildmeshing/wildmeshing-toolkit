@@ -295,10 +295,6 @@ bool TriMesh::split_edge(const Tuple& t, Tuple& new_t)
     if (new_fid2.has_value()) new_fid = std::min(new_fid, new_fid2.value());
     new_t = Tuple(new_vid, (j + 2) % 3, new_fid, *this);
     assert(new_t.is_valid(*this));
-    std::cout << m_tri_connectivity[3].m_indices[0] << m_tri_connectivity[3].m_indices[1]
-              << m_tri_connectivity[3].m_indices[2] << std::endl;
-    vector_print(m_vertex_connectivity[4].m_conn_tris);
-    assert(check_mesh_connectivity_validity());
 
     // roll back if not successful
     if (!split_after(new_t)) {
@@ -310,7 +306,6 @@ bool TriMesh::split_edge(const Tuple& t, Tuple& new_t)
         m_vertex_connectivity[new_vid].m_is_removed = true;
         m_tri_connectivity[new_fid1].m_is_removed = true;
         if (new_fid2.has_value()) m_tri_connectivity[new_fid2.value()].m_is_removed = true;
-        assert(check_mesh_connectivity_validity());
         return false;
     }
     return true;
@@ -524,7 +519,6 @@ bool TriMesh::swap_edge(const Tuple& t, Tuple& new_t)
     // change the tuple to the new edge tuple
     new_t = Tuple(vid4, (j + 2) % 3, test_fid2.value(), *this);
     assert(new_t.is_valid(*this));
-    assert(check_mesh_connectivity_validity());
     if (!swap_after(new_t)) {
         // restore the vertex and faces
         for (auto old_v : old_vertices) m_vertex_connectivity[old_v.first] = old_v.second;
@@ -770,61 +764,56 @@ size_t TriMesh::get_next_empty_slot_v()
     return tmp;
 }
 
-bool TriMesh::check_manifold(const Tuple& t) const
-{
-    // check collapse to one edge
-    if (!(t.switch_edge(*this)).switch_face(*this).has_value() &&
-        !((t.switch_vertex(*this)).switch_edge(*this)).switch_face(*this).has_value())
-        return false;
-    if (t.switch_face(*this).has_value()) {
-        auto tmp_tuple = t.switch_face(*this).value();
-        if (!(tmp_tuple.switch_edge(*this)).switch_face(*this).has_value() &&
-            !((tmp_tuple.switch_vertex(*this)).switch_edge(*this)).switch_face(*this).has_value())
-            return false;
-    }
-
-    // check closed mesh
-    std::optional<size_t> e_fid;
-    std::optional<size_t> fid1, fid2;
-
-    if (t.switch_face(*this).has_value()) e_fid = t.switch_face(*this).value().fid();
-    if ((t.switch_edge(*this)).switch_face(*this).has_value()) {
-        auto tmp_f_tuple = (t.switch_edge(*this)).switch_face(*this).value();
-        if ((tmp_f_tuple.switch_edge(*this)).switch_face(*this).has_value())
-            fid1 = (tmp_f_tuple.switch_edge(*this)).switch_face(*this).value().fid();
-    }
-    if ((((t.switch_vertex(*this)).switch_edge(*this)).switch_face(*this)).has_value()) {
-        auto tmp_f_tuple2 =
-            (((t.switch_vertex(*this)).switch_edge(*this)).switch_face(*this)).value();
-        if ((tmp_f_tuple2.switch_edge(*this)).switch_face(*this).has_value())
-            fid2 = (tmp_f_tuple2.switch_edge(*this)).switch_face(*this).value().fid();
-    }
-    if (e_fid.has_value() && (fid1.has_value() && fid2.has_value()))
-        if (fid1 == e_fid && fid2 == e_fid) return false;
-
-    return true;
-}
 // link check, prerequisite for edge collapse
 bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
 {
-    if (!check_manifold(edge)) return false;
     assert(edge.is_valid(*this));
     size_t vid1 = edge.vid();
     size_t vid2 = switch_vertex(edge).vid();
     auto vid1_ring = get_one_ring_edges_for_vertex(edge);
     auto vid2_ring = get_one_ring_edges_for_vertex(switch_vertex(edge));
 
+
     size_t dummy = std::numeric_limits<size_t>::max();
+
     std::vector<size_t> lk_vid1;
     std::vector<size_t> lk_vid2;
+
+
+    std::vector<std::pair<size_t, size_t>> lk_e_vid1;
+    std::vector<std::pair<size_t, size_t>> lk_e_vid2;
+
     for (auto e_vid : vid1_ring) {
-        if (!e_vid.switch_face(*this).has_value()) lk_vid1.push_back(dummy);
+        if (!e_vid.switch_face(*this).has_value()) {
+            lk_vid1.push_back(dummy);
+            lk_e_vid1.emplace_back(e_vid.vid(), dummy);
+        }
         lk_vid1.push_back(e_vid.vid());
     }
+    std::vector<Tuple> vid1_tris = get_one_ring_tris_for_vertex(edge);
+    for (auto v1_tri_t : vid1_tris) {
+        auto indices = m_tri_connectivity[v1_tri_t.fid()].m_indices;
+        auto l = m_tri_connectivity[v1_tri_t.fid()].find(vid1);
+        assert(l != -1);
+        auto i0 = indices[(l + 1) % 3], i1 = indices[(l + 2) % 3];
+        lk_e_vid1.emplace_back(std::min(i0, i1), std::max(i0, i1));
+    }
     vector_unique(lk_vid1);
+
     for (auto e_vid : vid2_ring) {
-        if (!e_vid.switch_face(*this).has_value()) lk_vid2.push_back(dummy);
+        if (!e_vid.switch_face(*this).has_value()) {
+            lk_vid2.push_back(dummy);
+            lk_e_vid2.emplace_back(e_vid.vid(), dummy);
+        }
         lk_vid2.push_back(e_vid.vid());
+    }
+    std::vector<Tuple> vid2_tris = get_one_ring_tris_for_vertex(switch_vertex(edge));
+    for (auto v2_tri_t : vid2_tris) {
+        auto indices = m_tri_connectivity[v2_tri_t.fid()].m_indices;
+        auto l = m_tri_connectivity[v2_tri_t.fid()].find(vid2);
+        assert(l != -1);
+        auto i0 = indices[(l + 1) % 3], i1 = indices[(l + 2) % 3];
+        lk_e_vid2.emplace_back(std::min(i0, i1), std::max(i0, i1));
     }
     vector_unique(lk_vid2);
     auto lk_vid12 = set_intersection(lk_vid1, lk_vid2);
@@ -835,7 +824,25 @@ bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
     else
         lk_edge.push_back(
             ((edge.switch_face(*this).value()).switch_edge(*this)).switch_vertex(*this).vid());
-    return (
-        lk_vid12.size() == lk_edge.size() &&
-        std::equal(lk_vid12.begin(), lk_vid12.end(), lk_edge.begin()));
+    bool v_link =
+        (lk_vid12.size() == lk_edge.size() &&
+         std::equal(lk_vid12.begin(), lk_vid12.end(), lk_edge.begin()));
+
+    // check edge link condition
+    // in 2d edge link for an edge is always empty
+
+    bool e_link = true;
+    std::vector<std::pair<size_t, size_t>> res;
+    std::sort(lk_e_vid1.begin(), lk_e_vid1.end());
+    std::sort(lk_e_vid2.begin(), lk_e_vid2.end());
+    std::set_intersection(
+        lk_e_vid1.begin(),
+        lk_e_vid1.end(),
+        lk_e_vid2.begin(),
+        lk_e_vid2.end(),
+        std::back_inserter(res));
+
+    if (res.size() > 0) return false;
+
+    return v_link;
 }

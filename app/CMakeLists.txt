@@ -59,7 +59,6 @@ target_include_directories(wmtk_edge_operations PUBLIC EdgeOperations2d)
 add_executable(edge_operations EdgeOperations2d/main.cpp)
 target_link_libraries(edge_operations PUBLIC wmtk::edge_operations)
 
-
 ################################################################################
 # Parallel Edge Collapse 2D
 ################################################################################
@@ -83,6 +82,7 @@ target_compile_features(ParallelEdgeCollapse PUBLIC cxx_std_17)
 
 add_executable(ParallelEdgeCollapse_bin ParallelEdgeCollapse/main.cpp)
 target_link_libraries(ParallelEdgeCollapse_bin PUBLIC ParallelEdgeCollapse)
+
 
 ################################################################################
 # Tests

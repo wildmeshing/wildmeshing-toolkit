@@ -166,8 +166,8 @@ TEST_CASE("shortest_edge_collapse_octocat", "[test_2d_operations]")
     }
     EdgeOperations2d m(v);
     m.create_mesh(V.rows(), tri);
-    REQUIRE(m.check_mesh_connectivity_validity());
     REQUIRE(m.collapse_shortest(50));
+    REQUIRE(m.check_mesh_connectivity_validity());
 }
 
 TEST_CASE("shortest_edge_collapse_circle", "[test_2d_operations]")
@@ -193,7 +193,6 @@ TEST_CASE("shortest_edge_collapse_circle", "[test_2d_operations]")
     m.create_mesh(V.rows(), tri);
     REQUIRE(m.check_mesh_connectivity_validity());
     REQUIRE(m.collapse_shortest(100));
-    m.write_triangle_mesh("serial_collapsed_octocat.obj");
 }
 
 TEST_CASE("test_swap", "[test_2d_operations]")
