@@ -6,19 +6,6 @@
 
 using namespace Edge2d;
 
-bool Edge2d::EdgeOperations2d::collapse_before(const Tuple& t)
-{
-    if (!TriMesh::collapse_before(t)) return false;
-    collapse_cache.v1p = m_vertex_positions[t.vid()];
-    collapse_cache.v2p = m_vertex_positions[t.switch_vertex(*this).vid()];
-    return true;
-}
-
-bool Edge2d::EdgeOperations2d::collapse_after(const Tuple& t)
-{
-    m_vertex_positions[t.vid()] = (collapse_cache.v1p + collapse_cache.v2p) / 2.0;
-    return true;
-}
 
 bool Edge2d::EdgeOperations2d::collapse_shortest(int target_vertex_count)
 {

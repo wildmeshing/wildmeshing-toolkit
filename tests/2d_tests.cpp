@@ -437,20 +437,22 @@ TEST_CASE("split_operation", "[test_2d_operation]")
     {
         std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}};
         m.create_mesh(3, tris);
-
+        auto edges = m.get_edges();
         TriMesh::Tuple edge(0, 1, 0, m);
         TriMesh::Tuple new_e;
         assert(edge.is_valid(m));
         REQUIRE(m.split_edge(edge, new_e));
+        REQUIRE_FALSE(edges[0].is_valid(m));
     }
     SECTION("2_tris_split")
     {
         std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 3, 2}}};
         m.create_mesh(4, tris);
-
+        auto edges = m.get_edges();
         TriMesh::Tuple edge(1, 0, 0, m);
         TriMesh::Tuple new_e;
         assert(edge.is_valid(m));
         REQUIRE(m.split_edge(edge, new_e));
+        for (auto e : edges) REQUIRE_FALSE(e.is_valid(m));
     }
 }
