@@ -18,16 +18,15 @@ double Edge2d::EdgeOperations2d::compute_edge_cost_ar(const TriMesh::Tuple& t, d
 double Edge2d::EdgeOperations2d::compute_vertex_valence_ar(const TriMesh::Tuple& t)
 {
     std::vector<std::pair<TriMesh::Tuple, int>> valences(3);
-    valences[0] = std::make_pair(t, get_one_ring_edges_for_vertex(t).size());
+    valences[0] = std::make_pair(t, get_one_ring_tris_for_vertex(t).size());
     auto t2 = t.switch_vertex(*this);
-    valences[1] = std::make_pair(t2, get_one_ring_edges_for_vertex(t2).size());
+    valences[1] = std::make_pair(t2, get_one_ring_tris_for_vertex(t2).size());
     auto t3 = (t.switch_edge(*this)).switch_vertex(*this);
-    valences[2] = std::make_pair(t3, get_one_ring_edges_for_vertex(t3).size());
-
+    valences[2] = std::make_pair(t3, get_one_ring_tris_for_vertex(t3).size());
 
     if ((t.switch_face(*this)).has_value()) {
         auto t4 = (((t.switch_face(*this)).value()).switch_edge(*this)).switch_vertex(*this);
-        valences.emplace_back(t4, get_one_ring_edges_for_vertex(t4).size());
+        valences.emplace_back(t4, get_one_ring_tris_for_vertex(t4).size());
     }
     double cost_before_swap = 0.0;
     double cost_after_swap = 0.0;
@@ -37,20 +36,16 @@ double Edge2d::EdgeOperations2d::compute_vertex_valence_ar(const TriMesh::Tuple&
 
     for (int i = 0; i < valences.size(); i++) {
         TriMesh::Tuple vert = valences[i].first;
-        size_t start = vert.switch_vertex(*this).vid();
-        int cnt = valences[i].second;
         int val = -1;
-        while ((vert.switch_edge(*this)).switch_face(*this).has_value() && cnt > 0) {
-            vert = ((vert.switch_edge(*this)).switch_face(*this)).value();
-            if (vert.vid() == start) {
-                val = 6;
+        auto one_ring_edges = get_one_ring_edges_for_vertex(vert);
+        for (auto edge : one_ring_edges) {
+            if (!edge.switch_face(*this).has_value()) {
+                val = 4;
                 break;
             }
         }
-        if (!(vert.switch_edge(*this)).switch_face(*this).has_value())
-            val = 4;
-        else
-            throw "error in navigation";
+        if (val == -1) val = 6;
+
         cost_before_swap += (double)(valences[i].second - val) * (valences[i].second - val);
         cost_after_swap +=
             (i < 2) ? (double)(valences[i].second - 1 - val) * (valences[i].second - 1 - val)
@@ -69,9 +64,10 @@ bool Edge2d::EdgeOperations2d::adaptive_remeshing(double L)
         double weight = compute_edge_cost_ar(loc, L);
         e_length_queue.push(ElementInQueue(loc, weight));
     }
-    int cnt = 10;
+    int cnt = 5;
     while (cnt > 0) {
         cnt--;
+        std::cout << " on iteration " << cnt << std::endl;
         // collapse and split edge
         while (!e_length_queue.empty()) {
             auto loc = e_length_queue.top().edge;
@@ -93,6 +89,7 @@ bool Edge2d::EdgeOperations2d::adaptive_remeshing(double L)
             else
                 TriMesh::collapse_edge(loc, new_vert);
         }
+        assert(check_mesh_connectivity_validity());
         e_length_queue = std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_l>();
 
         // swap edges
@@ -119,6 +116,7 @@ bool Edge2d::EdgeOperations2d::adaptive_remeshing(double L)
             else
                 continue;
         }
+        assert(check_mesh_connectivity_validity());
         e_valence_queue = std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_l>();
 
         // smoothing
@@ -126,8 +124,7 @@ bool Edge2d::EdgeOperations2d::adaptive_remeshing(double L)
         for (auto& loc : vertices) smooth(loc);
 
         assert(check_mesh_connectivity_validity());
-        consolidate_mesh();
-        assert(check_mesh_connectivity_validity());
+        // consolidate_mesh();
 
         // update the pq for collpase and split
         edges = get_edges();

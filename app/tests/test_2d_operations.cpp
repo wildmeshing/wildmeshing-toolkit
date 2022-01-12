@@ -104,7 +104,6 @@ TEST_CASE("shortest_edge_collapse_closed_mesh", "[test_2d_operations]")
             {{0, 3, 2}},
             {{0, 1, 2}}};
         m.create_mesh(4, tris);
-        std::vector<TriMesh::Tuple> edges = m.get_edges();
         m.collapse_shortest(100);
         REQUIRE(m.vert_capacity() == 4);
 
@@ -138,6 +137,8 @@ TEST_CASE("shortest_edge_collapse_closed_mesh", "[test_2d_operations]")
         m.create_mesh(V.rows(), tri);
         REQUIRE(m.check_mesh_connectivity_validity());
         REQUIRE(m.collapse_shortest(100));
+
+        std::vector<TriMesh::Tuple> edges = m.get_edges();
         REQUIRE(m.get_vertices().size() == 4);
 
         REQUIRE(m.get_faces().size() == 4);
@@ -167,8 +168,8 @@ TEST_CASE("shortest_edge_collapse_octocat", "[test_2d_operations]")
     EdgeOperations2d m(v);
     m.create_mesh(V.rows(), tri);
     REQUIRE(m.check_mesh_connectivity_validity());
-    REQUIRE(m.collapse_shortest(50));
-    m.write_triangle_mesh("sawped.obj");
+    REQUIRE(m.collapse_shortest(1000));
+    m.write_triangle_mesh("collapsed.obj");
 }
 
 TEST_CASE("shortest_edge_collapse_circle", "[test_2d_operations]")
@@ -194,6 +195,7 @@ TEST_CASE("shortest_edge_collapse_circle", "[test_2d_operations]")
     m.create_mesh(V.rows(), tri);
     REQUIRE(m.check_mesh_connectivity_validity());
     REQUIRE(m.collapse_shortest(100));
+    m.write_triangle_mesh("collapsed.obj");
 }
 
 TEST_CASE("test_swap", "[test_2d_operations]")
@@ -217,6 +219,8 @@ TEST_CASE("test_swap", "[test_2d_operations]")
     }
     EdgeOperations2d m(v);
     m.create_mesh(V.rows(), tri);
+    int v_invariant = m.get_vertices().size();
+    int e_invariant = m.get_edges().size();
     REQUIRE(m.check_mesh_connectivity_validity());
     auto edges = m.get_edges();
     TriMesh::Tuple new_e;
@@ -231,10 +235,13 @@ TEST_CASE("test_swap", "[test_2d_operations]")
         REQUIRE(m.swap_edge(edge, new_e));
         cnt++;
     }
+    REQUIRE(m.check_mesh_connectivity_validity());
+    REQUIRE(m.get_vertices().size() == v_invariant);
+    REQUIRE(m.get_edges().size() == e_invariant);
     // m.write_triangle_mesh("sawped.obj");
 }
 
-TEST_CASE("adaptive_remeshing", "[test_2d_operations]")
+TEST_CASE("test_split", "[test_2d_operations]")
 {
     const std::string root(WMT_DATA_DIR);
     const std::string path = root + "/fan.obj";
@@ -254,7 +261,38 @@ TEST_CASE("adaptive_remeshing", "[test_2d_operations]")
     }
     EdgeOperations2d m(v);
     m.create_mesh(V.rows(), tri);
+
+    auto edges = m.get_edges();
+    for (auto edge : edges) {
+        if (!edge.is_valid(m)) continue;
+        TriMesh::Tuple dummy;
+        m.split_edge(edge, dummy);
+    }
+    // m.write_triangle_mesh("split.obj");
     REQUIRE(m.check_mesh_connectivity_validity());
-    REQUIRE(m.adaptive_remeshing(50.0));
+}
+
+TEST_CASE("adaptive_remeshing", "[test_2d_operations]")
+{
+    const std::string root(WMT_DATA_DIR);
+    const std::string path = root + "/swap_fan.obj";
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    bool ok = igl::read_triangle_mesh(path, V, F);
+
+    REQUIRE(ok);
+
+    std::vector<Eigen::Vector3d> v(V.rows());
+    std::vector<std::array<size_t, 3>> tri(F.rows());
+    for (int i = 0; i < V.rows(); i++) {
+        v[i] = V.row(i);
+    }
+    for (int i = 0; i < F.rows(); i++) {
+        for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
+    }
+    EdgeOperations2d m(v);
+    m.create_mesh(V.rows(), tri);
+    REQUIRE(m.check_mesh_connectivity_validity());
+    REQUIRE(m.adaptive_remeshing(0.05));
     m.write_triangle_mesh("remeshed.obj");
 }

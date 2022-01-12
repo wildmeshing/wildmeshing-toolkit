@@ -292,7 +292,8 @@ bool TriMesh::split_edge(const Tuple& t, Tuple& new_t)
     // make the new tuple
     size_t new_fid = std::min(fid1, new_fid1);
     if (new_fid2.has_value()) new_fid = std::min(new_fid, new_fid2.value());
-    new_t = Tuple(new_vid, (j + 2) % 3, new_fid, *this);
+    int l = m_tri_connectivity[new_fid].find(new_vid);
+    new_t = Tuple(new_vid, (l + 2) % 3, new_fid, *this);
     assert(new_t.is_valid(*this));
     assert(check_mesh_connectivity_validity());
 
