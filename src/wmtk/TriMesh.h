@@ -248,7 +248,7 @@ public:
 
     bool check_link_condition(const Tuple& t) const; // DP: should be private
     bool check_mesh_connectivity_validity() const; // DP: should be private
-    bool check_manifold(const Tuple& t) const;
+    bool check_internal_link_condition(const Tuple& t) const;
 
     /**
      * Split an edge
