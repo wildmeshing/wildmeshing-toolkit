@@ -10,6 +10,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <queue>
+#include <atomic>
 
 
 namespace Edge2d {
@@ -51,7 +52,6 @@ class ParallelEdgeCollapse : public wmtk::ConcurrentTriMesh
 public:
     tbb::concurrent_vector<Eigen::Vector3d> m_vertex_positions;
     tbb::concurrent_vector<int> m_vertex_partition_id;
-    tbb::spin_mutex rw_lock;
     int NUM_THREADS;
 
     ParallelEdgeCollapse(
@@ -106,7 +106,7 @@ public:
     bool collapse_shortest();
     void collapse_shortest_stuff(
         tbb::concurrent_priority_queue<ElementInQueue, cmp_s>& ec_queue,
-        int& target_vertex_count,
+        std::atomic_int& target_vertex_count,
         int task_id);
 
     bool collapse_shortest(int target_vertex_count);

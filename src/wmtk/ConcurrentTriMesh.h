@@ -11,24 +11,16 @@ public:
     class VertexMutex
     {
         tbb::spin_mutex mutex;
-        bool m_is_removed = false;
 
     public:
-        void lock()
-        {
-            assert(!m_is_removed);
-            mutex.lock();
-        }
 
         bool trylock()
         {
-            assert(!m_is_removed);
             return mutex.try_lock();
         }
 
         void unlock()
         {
-            assert(!m_is_removed);
             mutex.unlock();
         }
     };
@@ -36,23 +28,18 @@ public:
     ConcurrentTriMesh() = default;
     virtual ~ConcurrentTriMesh() = default;
 
+// TODO remove later
     void create_mesh(size_t n_vertices, const std::vector<std::array<size_t, 3>>& tris)
     {
         TriMesh::create_mesh(n_vertices, tris);
         m_vertex_mutex.grow_to_at_least(n_vertices);
     }
 
-    // bool check_vertex_mutex_validation() { return m_vertex_mutex.size() == n_vertices(); }
-
-
 private:
     tbb::concurrent_vector<VertexMutex> m_vertex_mutex;
 
     bool try_set_vertex_mutex(Tuple& v) { return m_vertex_mutex[v.vid()].trylock(); }
     bool try_set_vertex_mutex(size_t vid) { return m_vertex_mutex[vid].trylock(); }
-
-    void set_vertex_mutex(Tuple& v) { m_vertex_mutex[v.vid()].lock(); }
-    void set_vertex_mutex(size_t vid) { m_vertex_mutex[vid].lock(); }
 
     void unlock_vertex_mutex(Tuple& v) { m_vertex_mutex[v.vid()].unlock(); }
     void unlock_vertex_mutex(size_t vid) { m_vertex_mutex[vid].unlock(); }
@@ -64,16 +51,6 @@ protected:
 
 
 public:
-    // bool collapse_edge(const Tuple& t, Tuple& new_t);
-
-    size_t n_mutex() const { return m_vertex_mutex.size(); }
-
-    size_t add_new_vertex_mutex()
-    {
-        // std::cout << "mutex_added" << std::endl;
-        m_vertex_mutex.grow_by(1);
-        return m_vertex_mutex.size() - 1;
-    }
 
     int64_t release_vertex_mutex_in_stack(std::vector<size_t>& mutex_release_stack)
     {
@@ -89,8 +66,6 @@ public:
     bool try_set_vertex_mutex_two_ring(Tuple& v, std::vector<size_t>& mutex_release_stack)
     {
         auto one_ring = get_one_ring_edges_for_vertex(v);
-        // std::cout << "one_ring_size: " << one_ring.size() << std::endl;
-        // std::cout << "one_ring_vertices: " << one_ring.size() << std::endl;
         for (auto v_one_ring : get_one_ring_edges_for_vertex(v)) {
             if (vector_contains(mutex_release_stack, v_one_ring.vid())) continue;
             if (try_set_vertex_mutex(v_one_ring)) {

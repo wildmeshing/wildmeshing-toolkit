@@ -12,8 +12,6 @@
 #include <optional>
 #include <vector>
 
-#include <tbb/spin_mutex.h>
-
 
 namespace wmtk {
 
@@ -208,9 +206,6 @@ public:
 private:
     vector<VertexConnectivity> m_vertex_connectivity;
     vector<TriangleConnectivity> m_tri_connectivity;
-
-    // TODO modify this
-    tbb::spin_mutex vector_mutex;
 
     size_t get_next_empty_slot_t();
     size_t get_next_empty_slot_v();
