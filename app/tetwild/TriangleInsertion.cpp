@@ -83,9 +83,10 @@ bool tetwild::TetWild::InputSurface::remove_duplicates() {
     return true;
 }
 
-void tetwild::TetWild::construct_background_mesh(const InputSurface &input_surface) {
-    const auto &vertices = input_surface.vertices;
-    const auto &faces = input_surface.faces;
+void tetwild::TetWild::construct_background_mesh(const InputSurface &input_surface)
+{
+    const auto& vertices = input_surface.vertices;
+    const auto& faces = input_surface.faces;
 
     ///points for delaunay
     std::vector<wmtk::Point3D> points(vertices.size());
@@ -96,20 +97,35 @@ void tetwild::TetWild::construct_background_mesh(const InputSurface &input_surfa
     double delta = m_params.diag_l / 10.0;
     Vector3d box_min(m_params.min[0] - delta, m_params.min[1] - delta, m_params.min[2] - delta);
     Vector3d box_max(m_params.max[0] + delta, m_params.max[1] + delta, m_params.max[2] + delta);
-    // todo: add voxel points
-    points.push_back({{box_min[0], box_min[1], box_min[2]}});
-    points.push_back({{box_max[0], box_max[1], box_max[2]}});
-    points.push_back({{box_max[0], box_min[1], box_min[2]}});
-    points.push_back({{box_min[0], box_max[1], box_max[2]}});
-    points.push_back({{box_min[0], box_max[1], box_min[2]}});
-    points.push_back({{box_max[0], box_min[1], box_max[2]}});
-    points.push_back({{box_min[0], box_min[1], box_max[2]}});
-    points.push_back({{box_max[0], box_max[1], box_min[2]}});
+    double Nx = std::max(2, int((box_max[0] - box_min[0]) / delta));
+    double Ny = std::max(2, int((box_max[1] - box_min[1]) / delta));
+    double Nz = std::max(2, int((box_max[2] - box_min[2]) / delta));
+    for (int i = 0; i <= Nx; i++) {
+        for (int j = 0; j <= Ny; j++) {
+            for (int k = 0; k <= Nz; k++) {
+                Vector3d p(
+                    box_min[0] * (1 - i / Nx) + box_max[0] * i / Nx,
+                    box_min[1] * (1 - j / Ny) + box_max[1] * j / Ny,
+                    box_min[2] * (1 - k / Nz) + box_max[2] * k / Nz);
+                if (!m_envelope.is_outside(p)) continue;
+                points.push_back({{p[0], p[1], p[2]}});
+            }
+        }
+    }
+    //    points.push_back({{box_min[0], box_min[1], box_min[2]}});
+    //    points.push_back({{box_max[0], box_max[1], box_max[2]}});
+    //    points.push_back({{box_max[0], box_min[1], box_min[2]}});
+    //    points.push_back({{box_min[0], box_max[1], box_max[2]}});
+    //    points.push_back({{box_min[0], box_max[1], box_min[2]}});
+    //    points.push_back({{box_max[0], box_min[1], box_max[2]}});
+    //    points.push_back({{box_min[0], box_min[1], box_max[2]}});
+    //    points.push_back({{box_max[0], box_max[1], box_min[2]}});
 
     cout << m_params.min.transpose() << endl;
     cout << m_params.max.transpose() << endl;
     cout << box_min.transpose() << endl;
     cout << box_max.transpose() << endl;
+    cout<<"points.size() "<<points.size()<<endl;
     //    wmtk::logger().info("min: {}", m_params.min);
     //    wmtk::logger().info("max: {}", m_params.max.transpose());
     //    wmtk::logger().info("box_min: {}", box_min.transpose());
@@ -184,8 +200,7 @@ void tetwild::TetWild::triangle_insertion(const InputSurface &input_surface) {
     // match faces preserved in delaunay
     auto &is_matched = triangle_insertion_cache.is_matched;
     match_insertion_faces(input_surface, is_matched);
-    cout << "is_matched " << std::count(is_matched.begin(), is_matched.end(), true) << endl;
-    pausee();
+    wmtk::logger().info("is_matched: {}", std::count(is_matched.begin(), is_matched.end(), true));
 
     auto &is_visited = triangle_insertion_cache.is_visited;
     for (size_t face_id = 0; face_id < faces.size(); face_id++) {
@@ -204,10 +219,10 @@ void tetwild::TetWild::triangle_insertion(const InputSurface &input_surface) {
         std::map<std::array<size_t, 2>, std::pair<int, Vector3>> map_edge2point;
 
         cout << "face_id " << face_id << endl;
-        cout<<faces[face_id][0]<<" "<<faces[face_id][1]<<" "<<faces[face_id][2]<<endl;
-        print(tri[0]);
-        print(tri[1]);
-        print(tri[2]);
+//        cout<<faces[face_id][0]<<" "<<faces[face_id][1]<<" "<<faces[face_id][2]<<endl;
+//        print(tri[0]);
+//        print(tri[1]);
+//        print(tri[2]);
 
         std::queue<Tuple> tet_queue;
         //
@@ -226,12 +241,12 @@ void tetwild::TetWild::triangle_insertion(const InputSurface &input_surface) {
 
             std::array<Tuple, 6> edges = tet_edges(tet);
             //fortest
-            auto vs = oriented_tet_vertices(tet);
-            cout<<"tet"<<endl;
-            cout<<vs[0].vid(*this)<<" "<<vs[1].vid(*this)<<" "<<vs[2].vid(*this)<<" "<<vs[3].vid(*this)<<endl;
-            for(const auto& v: vs){
-                print(m_vertex_attribute[v.vid(*this)].m_pos);
-            }
+//            auto vs = oriented_tet_vertices(tet);
+//            cout<<"tet"<<endl;
+//            cout<<vs[0].vid(*this)<<" "<<vs[1].vid(*this)<<" "<<vs[2].vid(*this)<<" "<<vs[3].vid(*this)<<endl;
+//            for(const auto& v: vs){
+//                print(m_vertex_attribute[v.vid(*this)].m_pos);
+//            }
             //fortest
 
             // check if the edge intersects with the triangle
@@ -255,7 +270,7 @@ void tetwild::TetWild::triangle_insertion(const InputSurface &input_surface) {
                 bool is_intersected = false;
                 if (is_coplanar) {
                     cout<<"coplanar"<<endl;
-                    pausee();
+//                    pausee();
 
                     std::array<Vector2, 2> seg2;
                     seg2[0] = wmtk::project_point_to_2d(seg[0], squeeze_to_2d_dir);
@@ -336,9 +351,9 @@ void tetwild::TetWild::triangle_insertion(const InputSurface &input_surface) {
         m_tet_attribute.resize(tet_capacity()); // todo: ???
 
         check_mesh_connectivity_validity();
-        //        pausee();
+        cout<<"inserted #t "<<tet_capacity()<<endl;
+        pausee();
     }
-    pausee();
 
     /// update m_is_on_surface for vertices, remove leaked surface marks
     m_edge_attribute.resize(m_tet_attribute.size() * 6);
@@ -373,6 +388,7 @@ void tetwild::TetWild::triangle_insertion(const InputSurface &input_surface) {
 
     /// todo: track bbox
 
+    check_mesh_connectivity_validity();
     // note: skip preserve open boundaries
 }
 
