@@ -17,7 +17,7 @@ auto construct_queue = [](const tetwild::TetWild& m,
     using namespace tetwild;
 
     wmtk::logger().debug("edges.size() = {}", edges.size());
-    std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_l> ec_queue((cmp_l(m)));
+    std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_l> ec_queue;
 
     for (auto& loc : edges) {
         auto& v1 = loc;

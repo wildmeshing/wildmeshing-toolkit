@@ -1,7 +1,3 @@
-//
-// Created by Yixin Hu on 11/9/21.
-//
-
 #include "AMIPS.h"
 
 namespace wmtk

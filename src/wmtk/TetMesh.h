@@ -1,7 +1,3 @@
-//
-// Created by Yixin Hu on 10/12/21.
-//
-
 #pragma once
 
 #include <wmtk/utils/VectorUtils.h>
@@ -20,7 +16,6 @@ namespace wmtk {
 class TetMesh
 {
 private:
-    // YH: should be visible for all connectivity classes!
     static constexpr std::array<std::array<int, 2>, 6> m_local_edges = {
         {{{0, 1}}, {{1, 2}}, {{0, 2}}, {{0, 3}}, {{1, 3}}, {{2, 3}}}}; // local edges within a
     // tet

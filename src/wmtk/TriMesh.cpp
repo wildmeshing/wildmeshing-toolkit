@@ -294,7 +294,6 @@ bool TriMesh::split_edge(const Tuple& t, Tuple& new_t)
     if (new_fid2.has_value()) new_fid = std::min(new_fid, new_fid2.value());
     new_t = Tuple(new_vid, (j + 2) % 3, new_fid, *this);
     assert(new_t.is_valid(*this));
-    assert(check_mesh_connectivity_validity());
 
     // roll back if not successful
     if (!split_after(new_t)) {
@@ -306,7 +305,6 @@ bool TriMesh::split_edge(const Tuple& t, Tuple& new_t)
         m_vertex_connectivity[new_vid].m_is_removed = true;
         m_tri_connectivity[new_fid1].m_is_removed = true;
         if (new_fid2.has_value()) m_tri_connectivity[new_fid2.value()].m_is_removed = true;
-        assert(check_mesh_connectivity_validity());
         return false;
     }
     return true;
@@ -456,7 +454,6 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
         // by the end the new_t and old t both exist and both valid
         return false;
     }
-    assert(check_mesh_connectivity_validity());
     return true;
 }
 
@@ -519,7 +516,6 @@ bool TriMesh::swap_edge(const Tuple& t, Tuple& new_t)
     // change the tuple to the new edge tuple
     new_t = Tuple(vid4, (j + 2) % 3, test_fid2.value(), *this);
     assert(new_t.is_valid(*this));
-    assert(check_mesh_connectivity_validity());
     if (!swap_after(new_t)) {
         // restore the vertex and faces
         for (auto old_v : old_vertices) m_vertex_connectivity[old_v.first] = old_v.second;
