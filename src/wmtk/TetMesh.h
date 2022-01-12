@@ -20,6 +20,7 @@ private:
         {{{0, 1}}, {{1, 2}}, {{0, 2}}, {{0, 3}}, {{1, 3}}, {{2, 3}}}}; // local edges within a
     // tet
     static constexpr std::array<int, 4> m_map_vertex2edge = {{0, 0, 1, 3}};
+    static constexpr std::array<int, 4> m_map_vertex2oppo_face = {{3, 1, 2, 0}};
     static constexpr std::array<int, 6> m_map_edge2face = {{0, 0, 0, 1, 2, 1}};
     static constexpr std::array<std::array<int, 3>, 4> m_local_faces = {
         {{{0, 1, 2}}, {{0, 2, 3}}, {{0, 1, 3}}, {{1, 2, 3}}}}; // sorted local vids
@@ -160,13 +161,13 @@ public:
 
         size_t& operator[](const size_t index)
         {
-            assert(index >= 0 && index < m_conn_tets.size());
+            assert(index < m_conn_tets.size());
             return m_conn_tets[index];
         }
 
         size_t operator[](const size_t index) const
         {
-            assert(index >= 0 && index < m_conn_tets.size());
+            assert(index < m_conn_tets.size());
             return m_conn_tets[index];
         }
 
@@ -197,13 +198,13 @@ public:
 
         size_t& operator[](size_t index)
         {
-            assert(index >= 0 && index < 4);
+            assert(index < 4);
             return m_indices[index];
         }
 
         size_t operator[](size_t index) const
         {
-            assert(index >= 0 && index < 4);
+            assert(index < 4);
             return m_indices[index];
         }
 

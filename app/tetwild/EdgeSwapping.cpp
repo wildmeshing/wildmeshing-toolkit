@@ -15,13 +15,13 @@ auto measure_edge_length = [](auto& m, auto& l, auto& m_vertex_attribute) {
 
 auto construct_queue = [](const tetwild::TetWild& m,
                           const auto& m_vertex_attribute,
-                          const auto& edges) {
+                          const auto& tuples) {
     using namespace tetwild;
 
-    wmtk::logger().debug("edges.size() = {}", edges.size());
+    wmtk::logger().debug("tuples.size() = {}", tuples.size());
     std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_l> ec_queue;
 
-    for (auto& loc : edges) {
+    for (auto& loc : tuples) {
         auto& v1 = loc;
         auto v2 = loc.switch_vertex(m);
         double length =

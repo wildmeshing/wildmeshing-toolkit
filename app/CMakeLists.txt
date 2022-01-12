@@ -83,6 +83,20 @@ target_compile_features(ParallelEdgeCollapse PUBLIC cxx_std_17)
 add_executable(ParallelEdgeCollapse_bin ParallelEdgeCollapse/main.cpp)
 target_link_libraries(ParallelEdgeCollapse_bin PUBLIC ParallelEdgeCollapse)
 
+# Harmonic Triangulations for TetMesh [Alexa2019]
+################################################################################
+
+add_library(wmtk_app_harmonic_tet
+	harmonic_tet/HarmonicTet.hpp
+	harmonic_tet/HarmonicTet.cpp
+)
+add_library(wmtk::harmonic_tet ALIAS wmtk_app_harmonic_tet)
+target_link_libraries(wmtk_app_harmonic_tet PUBLIC
+	wmtk::toolkit
+	wmtk::data
+	igl::predicates
+)
+target_include_directories(wmtk_app_harmonic_tet PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/harmonic_tet)
 
 ################################################################################
 # Tests
