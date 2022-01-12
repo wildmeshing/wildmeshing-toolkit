@@ -53,43 +53,52 @@ TEST_CASE("metis_test_bigmesh", "[test_2d_parallel_operations]")
 {
     std::cout << "metis_test" << std::endl;
     const std::string root(WMT_DATA_DIR);
-    const std::string path = root + "/93743.obj";
+    const std::string path = root + "/circle.obj";
 
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     bool ok = igl::read_triangle_mesh(path, V, F);
     REQUIRE(ok);
-    int num_threads = 4;
-    auto partitioned_v = partition_mesh_vertices(F, num_threads);
 
-    std::cout << V.size() << std::endl;
-    std::cout << partitioned_v.rows() << std::endl;
+    //change this for max concurrency
+    int max_num_threads = 32;
 
-    tbb::concurrent_vector<int> partition_id(partitioned_v.rows());
-    for (int i = 0; i < partitioned_v.rows(); i++) {
-        partition_id[i] = partitioned_v(i, 0);
-    }
+    for(int i=1;i<=max_num_threads;i++){
+        std::cout << "-----test for "<<i<<" threads------" << std ::endl;
+        auto partitioned_v = partition_mesh_vertices(F, i);
 
-    tbb::concurrent_vector<Eigen::Vector3d> v(V.rows());
-    std::vector<std::array<size_t, 3>> tri(F.rows());
-    for (int i = 0; i < V.rows(); i++) {
-        v[i] = V.row(i);
+        // std::cout << V.size() << std::endl;
+        // std::cout << partitioned_v.rows() << std::endl;
+
+        tbb::concurrent_vector<int> partition_id(partitioned_v.rows());
+        for (int i = 0; i < partitioned_v.rows(); i++) {
+            partition_id[i] = partitioned_v(i, 0);
+        }
+
+        tbb::concurrent_vector<Eigen::Vector3d> v(V.rows());
+        std::vector<std::array<size_t, 3>> tri(F.rows());
+        for (int i = 0; i < V.rows(); i++) {
+            v[i] = V.row(i);
+        }
+        for (int i = 0; i < F.rows(); i++) {
+            for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
+        }
+
+        Edge2d::ParallelEdgeCollapse m(v, partition_id, i);
+        // m.print_num_attributes();
+        m.create_mesh(V.rows(), tri);
+        REQUIRE(m.check_mesh_connectivity_validity());
+        // std::cout << " is it mesh passed " << std ::endl;
+        igl::Timer timer;
+        double time;
+        timer.start();
+
+        // change this for num of operations
+        m.collapse_shortest(1000);
+        time = timer.getElapsedTimeInMilliSec();
+        std::cout << "time cost: "<<time << std::endl;
+        m.write_triangle_mesh("partitioned_93743_"+ std::to_string(i) +".obj");
     }
-    for (int i = 0; i < F.rows(); i++) {
-        for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
-    }
-    Edge2d::ParallelEdgeCollapse m(v, partition_id, num_threads);
-    m.print_num_attributes();
-    m.create_mesh(V.rows(), tri);
-    REQUIRE(m.check_mesh_connectivity_validity());
-    std::cout << " is it mesh passed " << std ::endl;
-    igl::Timer timer;
-    double time;
-    timer.start();
-    REQUIRE(m.collapse_shortest(100000));
-    time = timer.getElapsedTimeInMilliSec();
-    std::cout << time << std::endl;
-    m.write_triangle_mesh("partitioned_93743.obj");
 }
 
 

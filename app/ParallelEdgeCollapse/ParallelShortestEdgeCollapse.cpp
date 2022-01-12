@@ -397,7 +397,7 @@ void Edge2d::ParallelEdgeCollapse::collapse_shortest_stuff(
         }
         int num_released = release_vertex_mutex_in_stack(mutex_release_stack);
     }
-    std::cout << task_id << ": " << suc_cnt << std::endl;
+    // std::cout << task_id << ": " << suc_cnt << std::endl;
 }
 
 bool Edge2d::ParallelEdgeCollapse::collapse_shortest(int target_vertex_count)
@@ -415,6 +415,9 @@ bool Edge2d::ParallelEdgeCollapse::collapse_shortest(int target_vertex_count)
 
 
     // thread-based version
+    // igl::Timer timer;
+    // double time;
+    // timer.start();
     std::vector<TriMesh::Tuple> edges = get_edges();
     std::vector<tbb::concurrent_priority_queue<ElementInQueue, cmp_s>> ec_queues(NUM_THREADS);
     double shortest = std::numeric_limits<double>::max();
@@ -430,6 +433,10 @@ bool Edge2d::ParallelEdgeCollapse::collapse_shortest(int target_vertex_count)
 
     tbb::task_arena arena(NUM_THREADS);
     tbb::task_group tg;
+
+    // time = timer.getElapsedTimeInMilliSec();
+    // std::cout<<time<<std::endl;
+
     arena.execute([this, &tvc, &ec_queues, &tg]() {
         for (int i = 0; i < this->NUM_THREADS; i++) {
             // std::cout<<i<<std::endl;
