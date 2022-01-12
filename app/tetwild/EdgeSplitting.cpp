@@ -11,7 +11,7 @@ void tetwild::TetWild::split_all_edges()
     wmtk::logger().debug("edges.size() = {}", edges.size());
 
     int cnt_suc = 0;
-    std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_l> es_queue(cmp_l(*this));
+    std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_l> es_queue;
     for (auto& loc : edges) {
         Tuple& v1 = loc;
         Tuple v2 = loc.switch_vertex(*this);

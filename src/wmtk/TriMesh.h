@@ -221,7 +221,6 @@ protected:
     }
     virtual bool collapse_after(const Tuple& t)
     {
-        assert(check_mesh_connectivity_validity());
         assert(t.is_valid(*this));
 
         return true;
