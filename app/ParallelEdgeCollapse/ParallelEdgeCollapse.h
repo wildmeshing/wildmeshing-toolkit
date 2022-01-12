@@ -128,6 +128,7 @@ public:
 
     void resize_attributes(size_t v, size_t e, size_t t) override
     {
+        ConcurrentTriMesh::resize_attributes(v, e, t);
         m_vertex_positions.grow_to_at_least(v);
         m_vertex_partition_id.grow_to_at_least(v);
     }

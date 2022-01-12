@@ -57,6 +57,11 @@ private:
     void unlock_vertex_mutex(Tuple& v) { m_vertex_mutex[v.vid()].unlock(); }
     void unlock_vertex_mutex(size_t vid) { m_vertex_mutex[vid].unlock(); }
 
+protected:
+    void resize_attributes(size_t v, size_t e, size_t t) override{
+        m_vertex_mutex.grow_to_at_least(v);
+    }
+
 
 public:
     // bool collapse_edge(const Tuple& t, Tuple& new_t);

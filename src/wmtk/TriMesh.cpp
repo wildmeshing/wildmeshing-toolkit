@@ -754,20 +754,22 @@ size_t TriMesh::get_next_empty_slot_t()
 
 size_t TriMesh::get_next_empty_slot_v()
 {
-    vector_mutex.lock();
+    // vector_mutex.lock();
     // TODO
-    // const auto it = m_vertex_connectivity.emplace_back();
-    // const size_t size = std::distance(m_vertex_connectivity.begin(), it);
+    const auto it = m_vertex_connectivity.emplace_back();
+    const size_t size = std::distance(m_vertex_connectivity.begin(), it) + 1;
 
-    m_vertex_connectivity.emplace_back();
+    // m_vertex_connectivity.emplace_back();
     resize_attributes(
-        m_vertex_connectivity.size(),
+        size,
         m_tri_connectivity.size() * 3,
         m_tri_connectivity.size());
-    size_t tmp = m_vertex_connectivity.size() - 1;
 
-    vector_mutex.unlock();
-    return tmp;
+    return size - 1;
+    // size_t tmp = m_vertex_connectivity.size() - 1;
+
+    // vector_mutex.unlock();
+    // return tmp;
 }
 
 bool TriMesh::check_manifold(const Tuple& t) const

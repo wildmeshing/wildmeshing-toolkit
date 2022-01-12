@@ -367,7 +367,7 @@ void Edge2d::ParallelEdgeCollapse::collapse_shortest_stuff(
         auto v1 = loc_copy.vid();
         auto v2 = loc.switch_vertex(*this).vid();
 
-        add_new_vertex_mutex();
+        // add_new_vertex_mutex();
 
         if (!collapse_edge(loc, new_vert)) {
             int num_released = release_vertex_mutex_in_stack(mutex_release_stack);
