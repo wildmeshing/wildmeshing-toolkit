@@ -200,9 +200,12 @@ int project_triangle_to_2d(
     Eigen::Matrix<T, 3, 1> n = (p2 - p1).cross(p3 - p1);
 
     int J = 0;
-    T max = n[J]; // delete max
-    for (; J < 3; J++) {
-        if (n[J] > max) max = n[J];
+    T max = n[J].abs(); // delete max
+    for (int j = 0; j < 3; j++) {
+        if (n[j].abs() > max) {
+            max = n[j].abs();
+            J = j;
+        }
     }
 
     for (int i = 0; i < points3.size(); i++) {

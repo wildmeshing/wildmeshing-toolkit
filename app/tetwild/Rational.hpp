@@ -115,6 +115,11 @@ public:
 
     // to double
     double to_double() const { return mpq_get_d(value); }
+    Rational abs() const {
+        Rational r;
+        mpq_abs(r.value, value);
+        return r;
+    }
 
     //<<
     friend std::ostream& operator<<(std::ostream& os, const Rational& r)
