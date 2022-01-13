@@ -292,6 +292,6 @@ TEST_CASE("adaptive_remeshing", "[test_2d_operations]")
     EdgeOperations2d m(v);
     m.create_mesh(V.rows(), tri);
     REQUIRE(m.check_mesh_connectivity_validity());
-    REQUIRE(m.adaptive_remeshing(10));
-    m.write_triangle_mesh("circle.obj");
+    REQUIRE(m.adaptive_remeshing(0.1, 5));
+    m.write_triangle_mesh("circle_remeshed.obj");
 }

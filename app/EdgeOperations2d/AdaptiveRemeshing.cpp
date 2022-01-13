@@ -10,8 +10,8 @@ double Edge2d::EdgeOperations2d::compute_edge_cost_ar(const TriMesh::Tuple& t, d
 {
     double l =
         (m_vertex_positions[t.vid()] - m_vertex_positions[t.switch_vertex(*this).vid()]).norm();
-    if (l < (4 / 5) * L) return ((4 / 5) * L - l);
-    if (l > (4 / 3) * L) return (l - (4 / 3) * L);
+    if (l < (4. / 5.) * L) return ((4. / 5.) * L - l);
+    if (l > (4. / 3.) * L) return (l - (4. / 3.) * L);
     return 0.0;
 }
 
@@ -36,16 +36,14 @@ double Edge2d::EdgeOperations2d::compute_vertex_valence_ar(const TriMesh::Tuple&
 
     for (int i = 0; i < valences.size(); i++) {
         TriMesh::Tuple vert = valences[i].first;
-        int val = -1;
+        int val = 6;
         auto one_ring_edges = get_one_ring_edges_for_vertex(vert);
         for (auto edge : one_ring_edges) {
-            if (!edge.switch_face(*this).has_value()) {
+            if (is_boundary_edge(edge)) {
                 val = 4;
                 break;
             }
         }
-        if (val == -1) val = 6;
-
         cost_before_swap += (double)(valences[i].second - val) * (valences[i].second - val);
         cost_after_swap +=
             (i < 2) ? (double)(valences[i].second - 1 - val) * (valences[i].second - 1 - val)
@@ -53,15 +51,38 @@ double Edge2d::EdgeOperations2d::compute_vertex_valence_ar(const TriMesh::Tuple&
     }
     return (cost_before_swap - cost_after_swap);
 }
+std::pair<double, double> Edge2d::EdgeOperations2d::average_len_valen()
+{
+    double average_len = 0.0;
+    double average_valen = 0.0;
+    auto edges = get_edges();
+    auto verts = get_vertices();
+    for (auto& loc : edges) {
+        average_len +=
+            (m_vertex_positions[loc.vid()] - m_vertex_positions[loc.switch_vertex(*this).vid()])
+                .norm();
+    }
+    average_len /= edges.size();
+    for (auto& loc : verts) {
+        average_valen += get_one_ring_edges_for_vertex(loc).size();
+    }
+    average_valen /= verts.size();
+    int cnt = 0;
+    return std::make_pair(average_len, average_valen);
+}
 
-bool Edge2d::EdgeOperations2d::adaptive_remeshing(double L)
+bool Edge2d::EdgeOperations2d::adaptive_remeshing(double L, int iterations)
 {
     std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_l> e_length_queue;
     std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_l> e_valence_queue;
-
-    for (int cnt = 0; cnt < 5; cnt++) {
+    int cnt = 0;
+    auto average = average_len_valen();
+    while ((average.first - L) * (average.first - L) > 1e-4 || cnt > iterations) {
         wmtk::logger().set_level(spdlog::level::trace);
         wmtk::logger().debug(" on iteration {}", cnt);
+        cnt++;
+        wmtk::logger().debug(" average length is {} {}", average.first, average.second);
+
         // collapse and split edge
         assert(check_mesh_connectivity_validity());
         for (auto& loc : get_edges()) {
@@ -87,7 +108,7 @@ bool Edge2d::EdgeOperations2d::adaptive_remeshing(double L)
                 TriMesh::collapse_edge(loc, new_vert);
         }
         assert(check_mesh_connectivity_validity());
-
+        // write_triangle_mesh("split_collapsed_" + std::to_string(cnt) + ".obj");
         // swap edges
         for (auto& loc : get_edges()) {
             double valence = compute_vertex_valence_ar(loc);
@@ -111,13 +132,15 @@ bool Edge2d::EdgeOperations2d::adaptive_remeshing(double L)
                 continue;
         }
         assert(check_mesh_connectivity_validity());
-
+        // write_triangle_mesh("swaped_" + std::to_string(cnt) + ".obj");
         // smoothing
         auto vertices = get_vertices();
         for (auto& loc : vertices) smooth(loc);
 
         assert(check_mesh_connectivity_validity());
-        // consolidate_mesh();
+        consolidate_mesh();
+        average = average_len_valen();
+        // write_triangle_mesh("smoothed_" + std::to_string(cnt) + ".obj");
     }
     return true;
 }

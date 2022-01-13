@@ -263,6 +263,12 @@ public:
     bool check_mesh_connectivity_validity() const; // DP: should be private
     bool check_internal_link_condition(const Tuple& t) const;
 
+    bool is_boundary_edge(const TriMesh::Tuple& t) const
+    {
+        if (!t.switch_face(*this).has_value()) return true;
+        return false;
+    }
+
     /**
      * Split an edge
      *

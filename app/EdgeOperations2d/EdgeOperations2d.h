@@ -41,10 +41,19 @@ public:
     {
         auto one_ring_edges = get_one_ring_edges_for_vertex(t);
         Eigen::Vector3d after_smooth(0, 0, 0);
+        Eigen::Vector3d after_smooth_boundary(0, 0, 0);
+        bool boundary = false;
         for (auto e : one_ring_edges) {
+            if (is_boundary_edge(e)) {
+                after_smooth_boundary += m_vertex_positions[e.vid()];
+                boundary = true;
+            }
             after_smooth += m_vertex_positions[e.vid()];
         }
-        m_vertex_positions[t.vid()] = after_smooth / one_ring_edges.size();
+        if (boundary)
+            m_vertex_positions[t.vid()] = after_smooth_boundary / 2.0;
+        else
+            m_vertex_positions[t.vid()] = after_smooth / one_ring_edges.size();
         return true;
     }
 
@@ -112,7 +121,8 @@ public:
     // methods for adaptive remeshing
     double compute_edge_cost_ar(const TriMesh::Tuple& t, double L);
     double compute_vertex_valence_ar(const TriMesh::Tuple& t);
-    bool adaptive_remeshing(double L);
+    std::pair<double, double> average_len_valen();
+    bool adaptive_remeshing(double L, int interations);
 };
 
 class ElementInQueue
