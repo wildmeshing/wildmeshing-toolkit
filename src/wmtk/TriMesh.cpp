@@ -2,6 +2,7 @@
 
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
+#include "wmtk/utils/VectorUtils.h"
 using namespace wmtk;
 
 
@@ -469,6 +470,7 @@ bool TriMesh::swap_edge(const Tuple& t, Tuple& new_t)
     // get the vids
     size_t vid1 = t.vid();
     size_t vid2 = t.switch_vertex(*this).vid();
+    if (!set_intersection(m_vertex_connectivity[vid1].m_conn_tris, m_vertex_connectivity[vid2].m_conn_tris).empty()) return false;
     Tuple tmp_tuple;
     if (!t.switch_face(*this).has_value())
         return false; // can't swap on boundary edge
