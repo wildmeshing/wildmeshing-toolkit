@@ -325,6 +325,7 @@ void tetwild::TetWild::triangle_insertion(const InputSurface &input_surface) {
         for (auto &info: map_edge2point) {
             VertexAttributes v;
             v.m_pos = (info.second).second;
+            v.m_posf = to_double(v.m_pos);
             m_vertex_attribute.push_back(v);
             (info.second).first = m_vertex_attribute.size() - 1;
             v_cnt++;
