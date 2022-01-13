@@ -56,27 +56,23 @@ double Edge2d::EdgeOperations2d::compute_vertex_valence_ar(const TriMesh::Tuple&
 
 bool Edge2d::EdgeOperations2d::adaptive_remeshing(double L)
 {
-    std::vector<TriMesh::Tuple> edges = get_edges();
     std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_l> e_length_queue;
     std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_l> e_valence_queue;
 
-    for (auto& loc : edges) {
-        double weight = compute_edge_cost_ar(loc, L);
-        e_length_queue.push(ElementInQueue(loc, weight));
-    }
-    int cnt = 5;
-    while (cnt > 0) {
-        cnt--;
-        std::cout << " on iteration " << cnt << std::endl;
+    for (int cnt = 0; cnt < 5; cnt++) {
+        wmtk::logger().debug(" on iteration {}", cnt);
         // collapse and split edge
+        assert(check_mesh_connectivity_validity());
+        for (auto& loc : get_edges()) {
+            double weight = compute_edge_cost_ar(loc, L);
+            e_length_queue.push(ElementInQueue(loc, weight));
+        }
         while (!e_length_queue.empty()) {
-            auto loc = e_length_queue.top().edge;
+            auto [loc, weight] = e_length_queue.top();
+            e_length_queue.pop();
             if (!loc.is_valid(*this)) {
-                e_length_queue.pop();
                 continue;
             }
-            auto weight = e_length_queue.top().weight;
-            e_length_queue.pop();
 
             TriMesh::Tuple new_vert;
 
@@ -84,28 +80,25 @@ bool Edge2d::EdgeOperations2d::adaptive_remeshing(double L)
             double length =
                 (m_vertex_positions[loc.vid()] - m_vertex_positions[loc.switch_vertex(*this).vid()])
                     .norm();
-            if (length > (5 / 4) * L)
+            if (length > (5 / 4.) * L)
                 TriMesh::split_edge(loc, new_vert);
             else
                 TriMesh::collapse_edge(loc, new_vert);
         }
         assert(check_mesh_connectivity_validity());
-        e_length_queue = std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_l>();
 
         // swap edges
-        edges = get_edges();
-        for (auto& loc : edges) {
+        for (auto& loc : get_edges()) {
             double valence = compute_vertex_valence_ar(loc);
             e_valence_queue.push(ElementInQueue(loc, valence));
         }
         while (!e_valence_queue.empty()) {
-            auto loc = e_valence_queue.top().edge;
+            auto [loc, valence] = e_valence_queue.top();
+            e_valence_queue.pop();
+
             if (!loc.is_valid(*this)) {
-                e_valence_queue.pop();
                 continue;
             }
-            auto valence = e_valence_queue.top().weight;
-            e_valence_queue.pop();
 
             TriMesh::Tuple new_vert;
 
@@ -117,7 +110,6 @@ bool Edge2d::EdgeOperations2d::adaptive_remeshing(double L)
                 continue;
         }
         assert(check_mesh_connectivity_validity());
-        e_valence_queue = std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_l>();
 
         // smoothing
         auto vertices = get_vertices();
@@ -125,13 +117,6 @@ bool Edge2d::EdgeOperations2d::adaptive_remeshing(double L)
 
         assert(check_mesh_connectivity_validity());
         // consolidate_mesh();
-
-        // update the pq for collpase and split
-        edges = get_edges();
-        for (auto& loc : edges) {
-            double weight = compute_edge_cost_ar(loc, L);
-            e_length_queue.push(ElementInQueue(loc, weight));
-        }
     }
     return true;
 }
