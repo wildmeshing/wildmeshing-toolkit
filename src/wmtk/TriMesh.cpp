@@ -385,10 +385,6 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
 
     // now work on vids
     // add in the new vertex
-    if (new_vid < m_vertex_connectivity.size() - 1) {
-        assert(m_vertex_connectivity[new_vid].m_is_removed);
-        m_vertex_connectivity[new_vid].m_conn_tris.clear();
-    }
 
     for (size_t fid : n12_union_fids) {
         if (m_tri_connectivity[fid].m_is_removed)
@@ -647,6 +643,8 @@ std::vector<wmtk::TriMesh::Tuple> TriMesh::oriented_tri_vertices(
     return incident_verts;
 }
 
+
+// TODO should call resize attributes
 void TriMesh::create_mesh(size_t n_vertices, const std::vector<std::array<size_t, 3>>& tris)
 {
     m_vertex_connectivity.resize(n_vertices);
@@ -735,22 +733,19 @@ std::vector<TriMesh::Tuple> TriMesh::get_edges() const
 
 size_t TriMesh::get_next_empty_slot_t()
 {
-    m_tri_connectivity.emplace_back();
-    resize_attributes(
-        m_vertex_connectivity.size(),
-        m_tri_connectivity.size() * 3,
-        m_tri_connectivity.size());
-    return m_tri_connectivity.size() - 1;
+    const auto it = m_tri_connectivity.emplace_back();
+    const size_t size = std::distance(m_tri_connectivity.begin(), it) + 1;
+    resize_attributes(m_vertex_connectivity.size(), size * 3, size);
+    return size - 1;
 }
 
 size_t TriMesh::get_next_empty_slot_v()
 {
-    m_vertex_connectivity.emplace_back();
-    resize_attributes(
-        m_vertex_connectivity.size(),
-        m_tri_connectivity.size() * 3,
-        m_tri_connectivity.size());
-    return m_vertex_connectivity.size() - 1;
+    const auto it = m_vertex_connectivity.emplace_back();
+    const size_t size = std::distance(m_vertex_connectivity.begin(), it) + 1;
+    // TODO split this
+    resize_attributes(size, m_tri_connectivity.size() * 3, m_tri_connectivity.size());
+    return size - 1;
 }
 
 // link check, prerequisite for edge collapse

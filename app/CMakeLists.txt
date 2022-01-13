@@ -60,6 +60,30 @@ add_executable(edge_operations EdgeOperations2d/main.cpp)
 target_link_libraries(edge_operations PUBLIC wmtk::edge_operations)
 
 ################################################################################
+# Parallel Edge Collapse 2D
+################################################################################
+
+add_library(ParallelEdgeCollapse
+	ParallelEdgeCollapse/ParallelEdgeCollapse.h
+	ParallelEdgeCollapse/ParallelQEC.cpp
+	ParallelEdgeCollapse/ParallelShortestEdgeCollapse.cpp
+)
+add_library(wmtk::ParallelEdgeCollapse ALIAS ParallelEdgeCollapse)
+
+target_link_libraries(ParallelEdgeCollapse PUBLIC 
+	igl::predicates 
+	FastEnvelope 
+	wmtk::toolkit
+	wmtk::data)
+# add_library(wmtk::parallel_edge_collapse ALIAS ParallelEdgeCollapse)
+target_include_directories(ParallelEdgeCollapse PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+
+target_compile_features(ParallelEdgeCollapse PUBLIC cxx_std_17)
+
+add_executable(ParallelEdgeCollapse_bin ParallelEdgeCollapse/main.cpp)
+target_link_libraries(ParallelEdgeCollapse_bin PUBLIC ParallelEdgeCollapse)
+
 # Harmonic Triangulations for TetMesh [Alexa2019]
 ################################################################################
 
