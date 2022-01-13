@@ -3,14 +3,16 @@
 #include <igl/write_triangle_mesh.h>
 #include <tbb/concurrent_priority_queue.h>
 #include <tbb/concurrent_vector.h>
+#include <tbb/enumerable_thread_specific.h>
 #include <tbb/parallel_for.h>
 #include <tbb/task_group.h>
 #include <wmtk/ConcurrentTriMesh.h>
+#include <wmtk/utils/PartitionMesh.h>
 #include <wmtk/utils/VectorUtils.h>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include <queue>
 #include <atomic>
+#include <queue>
 
 
 namespace Edge2d {
@@ -18,12 +20,12 @@ namespace Edge2d {
 class ElementInQueue
 {
 public:
-    wmtk::ConcurrentTriMesh::Tuple edge;
+    wmtk::TriMesh::Tuple edge;
     double weight;
     int times_skipped = 0;
 
     ElementInQueue() {}
-    ElementInQueue(const wmtk::ConcurrentTriMesh::Tuple& e, double w)
+    ElementInQueue(const wmtk::TriMesh::Tuple& e, double w)
         : edge(e)
         , weight(w)
     {}
@@ -52,31 +54,44 @@ class ParallelEdgeCollapse : public wmtk::ConcurrentTriMesh
 public:
     tbb::concurrent_vector<Eigen::Vector3d> m_vertex_positions;
     tbb::concurrent_vector<int> m_vertex_partition_id;
-    int NUM_THREADS;
+    std::vector<tbb::concurrent_priority_queue<ElementInQueue, cmp_s>> ec_queues;
 
-    ParallelEdgeCollapse(
-        tbb::concurrent_vector<Eigen::Vector3d> _m_vertex_positions,
-        tbb::concurrent_vector<int> _m_vertex_partition_id,
-        int num_t = 1)
+    // caches
+    tbb::enumerable_thread_specific<std::vector<wmtk::TriMesh::Tuple>> one_ring_cache;
+    tbb::enumerable_thread_specific<std::vector<size_t>> mutex_release_stack_cache;
+    tbb::enumerable_thread_specific<int> task_id_cache;
+    tbb::enumerable_thread_specific<ElementInQueue> eiq_cache;
+
+    struct CollapseInfoCache
+    {
+        Eigen::Vector3d v1p;
+        Eigen::Vector3d v2p;
+        int v1pid;
+    };
+    tbb::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
+
+
+    int NUM_THREADS;
+    int retry_limit = 10;
+
+    ParallelEdgeCollapse(tbb::concurrent_vector<Eigen::Vector3d> _m_vertex_positions, int num_t = 1)
         : m_vertex_positions(_m_vertex_positions)
-        , m_vertex_partition_id(_m_vertex_partition_id)
         , NUM_THREADS(num_t)
-    {}
+    {
+        for (int i = 0; i < NUM_THREADS; i++) {
+            ec_queues.emplace_back();
+        }
+    }
 
     ~ParallelEdgeCollapse() {}
+
+    void partition_mesh() { m_vertex_partition_id = partition_TriMesh(*this, NUM_THREADS); }
 
     void print_num_attributes()
     {
         std::cout << m_vertex_positions.size() << std::endl;
         std::cout << m_vertex_partition_id.size() << std::endl;
     }
-
-    // TODO cannot be used for parallel
-    struct CollapseInfoCache
-    {
-        Eigen::Vector3d v1p;
-        Eigen::Vector3d v2p;
-    } collapse_cache;
 
     bool collapse_before(const Tuple& t) override;
     bool collapse_after(const Tuple& t) override;
@@ -102,8 +117,6 @@ public:
         return igl::write_triangle_mesh(path, V, F);
     }
 
-    // old implementation
-    bool collapse_shortest();
     void collapse_shortest_stuff(
         tbb::concurrent_priority_queue<ElementInQueue, cmp_s>& ec_queue,
         std::atomic_int& target_vertex_count,
@@ -113,9 +126,9 @@ public:
 
     bool collapse_qec();
     // get the quadrix in form of an array of 10 floating point numbers
-    std::array<double, 10> compute_Q_f(wmtk::ConcurrentTriMesh::Tuple& t);
+    std::array<double, 10> compute_Q_f(wmtk::TriMesh::Tuple& t);
 
-    std::array<double, 10> compute_Q_v(wmtk::ConcurrentTriMesh::Tuple& t);
+    std::array<double, 10> compute_Q_v(wmtk::TriMesh::Tuple& t);
 
     double compute_cost_for_v(wmtk::TriMesh::Tuple& v_tuple);
 

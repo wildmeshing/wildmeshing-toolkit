@@ -68,6 +68,7 @@ add_library(ParallelEdgeCollapse
 	ParallelEdgeCollapse/ParallelQEC.cpp
 	ParallelEdgeCollapse/ParallelShortestEdgeCollapse.cpp
 )
+add_library(wmtk::ParallelEdgeCollapse ALIAS ParallelEdgeCollapse)
 
 target_link_libraries(ParallelEdgeCollapse PUBLIC 
 	igl::predicates 
