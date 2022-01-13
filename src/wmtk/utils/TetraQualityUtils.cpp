@@ -176,6 +176,7 @@ Eigen::Vector3d wmtk::gradient_descent_from_stack(
         for (auto iter = 0; iter < newton_iters; iter++) {
             Eigen::Vector3d dir =
                 -gradient_direction(compute_energy, compute_jacobian, assembles, current_pos);
+            dir.normalize(); // HACK: TODO: should use flip_avoid_line_search.
             auto newpos = linesearch(energy_from_point, current_pos, dir, line_search_iters);
             if ((newpos - current_pos).norm() < 1e-9) // barely moves
             {
