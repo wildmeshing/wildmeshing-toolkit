@@ -6,7 +6,6 @@
 #include <tbb/spin_mutex.h>
 #include <tbb/task_arena.h>
 #include <tbb/task_group.h>
-#include <unistd.h>
 #include <wmtk/ConcurrentTriMesh.h>
 #include <wmtk/utils/VectorUtils.h>
 #include <Eigen/Core>
@@ -23,10 +22,10 @@ bool Edge2d::ParallelEdgeCollapse::collapse_before(const Tuple& t)
     // set locks and re-push
     auto loc = eiq_cache.local().edge;
     if (!try_set_edge_mutex_two_ring(loc, mutex_release_stack_cache.local())) {
-        eiq_cache.local().times_skipped++;
-        if (eiq_cache.local().times_skipped > retry_limit) {
-            return false;
-        }
+        // eiq_cache.local().times_skipped++;
+        // if (eiq_cache.local().times_skipped > retry_limit) {
+        //     return false;
+        // }
         ec_queues[task_id_cache.local()].push(eiq_cache.local());
         return false;
     }
@@ -56,7 +55,7 @@ void Edge2d::ParallelEdgeCollapse::collapse_shortest_stuff(
 {
     int cnt = 0;
     int suc_cnt = 0;
-    // ElementInQueue eiq;
+
     while (ec_queue.try_pop(eiq_cache.local())) {
         cnt++;
         if (target_vertex_count <= 0) {
