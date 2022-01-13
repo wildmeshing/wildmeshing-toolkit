@@ -27,7 +27,6 @@ Eigen::Vector3d gradient_descent_from_stack(
  * @param conn
  * @param v0
  * @return std::array<size_t, 4>
- * TODO: this can be easily templated.
  */
 std::array<size_t, 4> orient_preserve_tet_reorder(const std::array<size_t, 4>& tetra, size_t v0);
 

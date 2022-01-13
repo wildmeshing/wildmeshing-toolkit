@@ -199,7 +199,7 @@ void harmonic_tet::HarmonicTet::smooth_all_vertices()
     auto tuples = get_vertices();
     wmtk::logger().debug("tuples");
     auto cnt_suc = 0;
-    for (auto& t : tuples) { // TODO: threads
+    for (auto& t : tuples) {
         if (smooth_vertex(t)) cnt_suc++;
     }
     wmtk::logger().debug("Smoothing Success Count {}", cnt_suc);
