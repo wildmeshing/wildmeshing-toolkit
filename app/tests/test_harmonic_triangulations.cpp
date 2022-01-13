@@ -58,10 +58,11 @@ TEST_CASE("harmonic-tet-optim", "[harmtri]")
     vec_attrs[3] = Eigen::Vector3d(0, 0, 1);
     auto tets = std::vector<std::array<size_t, 4>>{{{0, 1, 2, 3}}};
     auto har_tet = harmonic_tet::HarmonicTet(vec_attrs, tets);
-    // wmtk::logger().set_level(spdlog::level::trace);
+
+    // original energy 1.5
     har_tet.smooth_all_vertices();
     auto [E, cnt] = stats(har_tet);
-    REQUIRE(E / cnt < 0.4);
+    REQUIRE(E < 0.8); // Note: this may depend on the internal implementation detail of gradient descent
 }
 
 TEST_CASE("harmonic-tet-swaps", "[harmtri]")
