@@ -177,7 +177,6 @@ bool wmtk::TriMesh::check_mesh_connectivity_validity() const
     for (size_t i = 0; i < m_vertex_connectivity.size(); i++) {
         if (m_vertex_connectivity[i].m_is_removed) continue;
 
-        // TODO: this may not be true for parallel
         assert(
             m_vertex_connectivity[i].m_conn_tris == conn_tris[i] &&
             "m_vertex_connectivity[i].m_conn_tris!=conn_tris[i]");
@@ -451,7 +450,6 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
         // by the end the new_t and old t both exist and both valid
         return false;
     }
-    // assert(check_mesh_connectivity_validity());
     return true;
 }
 
