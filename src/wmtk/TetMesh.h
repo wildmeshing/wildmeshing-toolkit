@@ -313,7 +313,6 @@ public:
     bool smooth_vertex(const Tuple& t);
 
     void subdivide_tets(const std::vector<size_t> t_ids, std::map<std::array<size_t, 2>, size_t>& map_edge2vid);
-    void subdivide_a_tet(size_t t_id, const std::array<int, 6>& new_v_ids, bool is_add_centroid);//todo: should be private
 
     /**
      * @brief cleans up the deleted vertices or tetrahedra, fixes the corresponding indices, and
@@ -344,6 +343,8 @@ private:
     int m_v_empty_slot = 0;
     int find_next_empty_slot_t();
     int find_next_empty_slot_v();
+
+    void subdivide_a_tet(size_t t_id, const std::array<int, 6>& new_v_ids, bool is_add_centroid);
 
 protected:
     virtual void insertion_update_surface_tag(size_t t_id, size_t new_t_id,

@@ -171,6 +171,9 @@ void wmtk::TetMesh::subdivide_a_tet(size_t t_id, const std::array<int, 6>& new_v
 //            cout<<endl;
 //        }
     is_add_centroid = false;
+//    cout<<"t_id "<<t_id<<endl;
+//    cout<<"config_id "<<config_id<<endl;
+//    cout<<"config.size() "<<config.size()<<endl;
     for (int i = 0; i < config.size(); i++) {
         const auto& t = config[i];
         TetrahedronConnectivity tet;

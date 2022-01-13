@@ -110,7 +110,6 @@ public:
 
     void output_mesh(std::string file);
 
-
     class InputSurface
     {
     public:
@@ -148,7 +147,7 @@ public:
     struct TriangleInsertionInfoCache
     {
         std::vector<std::array<int, 4>> surface_f_ids;
-        size_t face_id;
+        int face_id;
 
         std::vector<bool> is_matched;
         std::vector<bool> is_visited;
