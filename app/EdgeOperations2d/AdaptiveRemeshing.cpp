@@ -60,6 +60,7 @@ bool Edge2d::EdgeOperations2d::adaptive_remeshing(double L)
     std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_l> e_valence_queue;
 
     for (int cnt = 0; cnt < 5; cnt++) {
+        wmtk::logger().set_level(spdlog::level::trace);
         wmtk::logger().debug(" on iteration {}", cnt);
         // collapse and split edge
         assert(check_mesh_connectivity_validity());

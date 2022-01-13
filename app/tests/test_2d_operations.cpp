@@ -274,7 +274,7 @@ TEST_CASE("test_split", "[test_2d_operations]")
 TEST_CASE("adaptive_remeshing", "[test_2d_operations]")
 {
     const std::string root(WMT_DATA_DIR);
-    const std::string path = root + "/swap_fan.obj";
+    const std::string path = root + "/circle.obj";
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     bool ok = igl::read_triangle_mesh(path, V, F);
@@ -292,6 +292,6 @@ TEST_CASE("adaptive_remeshing", "[test_2d_operations]")
     EdgeOperations2d m(v);
     m.create_mesh(V.rows(), tri);
     REQUIRE(m.check_mesh_connectivity_validity());
-    REQUIRE(m.adaptive_remeshing(0.05));
-    m.write_triangle_mesh("remeshed.obj");
+    REQUIRE(m.adaptive_remeshing(10));
+    m.write_triangle_mesh("circle.obj");
 }

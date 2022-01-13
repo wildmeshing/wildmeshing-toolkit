@@ -226,7 +226,20 @@ protected:
         return true;
     }
     virtual bool swap_after(const Tuple& t) { return true; }
-    virtual bool swap_before(const Tuple& t) { return true; }
+    virtual bool swap_before(const Tuple& t)
+    {
+        if (!t.switch_face(*this).has_value())
+            return false; // can't swap on boundary edgereturn true;
+        // when swap edge between v1, v2, there can't exist edge between v3, v4 already
+        size_t v4 = ((t.switch_face(*this).value()).switch_edge(*this)).switch_vertex(*this).vid();
+        size_t v3 = ((t.switch_edge(*this)).switch_vertex(*this)).vid();
+        if (!set_intersection(
+                 m_vertex_connectivity[v4].m_conn_tris,
+                 m_vertex_connectivity[v3].m_conn_tris)
+                 .empty())
+            return false;
+        return true;
+    }
 
 
     virtual void resize_attributes(size_t v, size_t e, size_t t) {}

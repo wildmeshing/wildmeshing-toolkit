@@ -428,6 +428,16 @@ TEST_CASE("swap_operation", "[test_2d_operation]")
         TriMesh::Tuple new_e;
         REQUIRE_FALSE(m.swap_edge(swap_e, new_e));
     }
+    SECTION("swap_on_connected_vertices")
+    {
+        TriMesh m2;
+        std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 0, 3}}, {{1, 3, 2}}};
+        m2.create_mesh(4, tris);
+        TriMesh::Tuple edge(0, 2, 0, m);
+        TriMesh::Tuple new_e;
+        assert(edge.is_valid(m));
+        REQUIRE_FALSE(m.swap_edge(edge, new_e));
+    }
 }
 
 TEST_CASE("split_operation", "[test_2d_operation]")
