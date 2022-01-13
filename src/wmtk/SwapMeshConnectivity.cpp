@@ -104,7 +104,7 @@ std::map<size_t, wmtk::TetMesh::VertexConnectivity> update_connectivity(
 };
 
 
-bool wmtk::TetMesh::swap_edge(const Tuple& t)
+bool wmtk::TetMesh::swap_edge(const Tuple& t, Tuple& newt)
 {
     // 3-2 edge to face.
     // only swap internal edges, not on boundary.
@@ -164,7 +164,7 @@ bool wmtk::TetMesh::swap_edge(const Tuple& t)
 
     auto u0id = m_tet_connectivity[new_tet_id.front()].find(v1_id);
     assert(u0id != -1);
-    auto newt = tuple_from_face(new_tet_id.front(), u0id);
+    newt = tuple_from_face(new_tet_id.front(), m_map_vertex2oppo_face[u0id]);
 
     if (!swap_edge_after(newt)) { // rollback post-operation
         assert(affected.size() == old_tets.size());
@@ -182,7 +182,7 @@ bool wmtk::TetMesh::swap_edge(const Tuple& t)
 }
 
 
-bool wmtk::TetMesh::swap_face(const Tuple& t)
+bool wmtk::TetMesh::swap_face(const Tuple& t, Tuple& newt)
 {
     if (t.is_boundary_face(*this)) return false;
     if (!swap_face_before(t)) return false;
@@ -255,7 +255,7 @@ bool wmtk::TetMesh::swap_face(const Tuple& t)
     auto new_eid = m_tet_connectivity[new_tid].find_local_edge(oppo_vid[0], oppo_vid[1]);
     logger().trace("oppo vid {}", oppo_vid);
     assert(new_eid != -1);
-    auto newt = tuple_from_edge(new_tid, new_eid);
+    newt = tuple_from_edge(new_tid, new_eid);
     if (!swap_face_after(newt)) { // rollback post-operation
         logger().trace("rolling back");
         post_rollback(

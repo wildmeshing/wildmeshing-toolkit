@@ -22,4 +22,10 @@ Eigen::Vector3d newton_direction_from_stack(std::vector<std::array<double, 12>>&
  * TODO: this can be easily templated.
  */
 std::array<size_t, 4> orient_preserve_tet_reorder(const std::array<size_t, 4>& tetra, size_t v0);
+
+/**
+ * @brief Harmonic Triangulation energy: trace of Laplacian operator
+ * 
+ */
+double harmonic_energy(const Eigen::MatrixXd& verts);
 } // namespace wmtk
