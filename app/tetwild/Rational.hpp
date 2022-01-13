@@ -114,7 +114,7 @@ public:
     }
 
     // to double
-    double to_double() { return mpq_get_d(value); }
+    double to_double() const { return mpq_get_d(value); }
 
     //<<
     friend std::ostream& operator<<(std::ostream& os, const Rational& r)

@@ -111,7 +111,6 @@ public:
     void output_mesh(std::string file);
 
 
-
     class InputSurface
     {
     public:
@@ -143,7 +142,7 @@ public:
             params.init(min, max);
         }
 
-        bool remove_duplicates();//inplace func
+        bool remove_duplicates(); // inplace func
     };
 
     struct TriangleInsertionInfoCache
@@ -175,16 +174,19 @@ public:
         double max_energy;
     } edgeswap_cache, faceswap_cache; // todo: change for parallel
 
+
     void construct_background_mesh(const InputSurface& input_surface);
     void match_insertion_faces(const InputSurface& input_surface, std::vector<bool>& is_matched);
     void triangle_insertion(const InputSurface& input_surface);
-
+    //
+    void add_tet_centroid(const std::array<size_t, 4>& vids) override;
     void insertion_update_surface_tag(
         size_t t_id,
         size_t new_t_id,
         int config_id,
         int diag_config_id,
         int index) override;
+
 
     void split_all_edges();
     bool split_before(const Tuple& t) override;
