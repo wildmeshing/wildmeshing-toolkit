@@ -39,9 +39,9 @@ target_link_libraries(tetwild PUBLIC wmtk::tetwild)
 
 add_library(wmtk_edge_operations
 	#EdgeOperations2d/QEC.cpp
-	EdgeOperations2d/EdgeOperations2d.h 
+	EdgeOperations2d/EdgeOperations2d.h
 	EdgeOperations2d/main.cpp
-	
+
 	EdgeOperations2d/ShortestEdgeCollapse.cpp
 	EdgeOperations2d/QEC.cpp
 )
@@ -70,9 +70,9 @@ add_library(ParallelEdgeCollapse
 )
 add_library(wmtk::ParallelEdgeCollapse ALIAS ParallelEdgeCollapse)
 
-target_link_libraries(ParallelEdgeCollapse PUBLIC 
-	igl::predicates 
-	FastEnvelope 
+target_link_libraries(ParallelEdgeCollapse PUBLIC
+	igl::predicates
+	FastEnvelope
 	wmtk::toolkit
 	wmtk::data)
 # add_library(wmtk::parallel_edge_collapse ALIAS ParallelEdgeCollapse)
@@ -104,3 +104,6 @@ target_include_directories(wmtk_app_harmonic_tet PUBLIC ${CMAKE_CURRENT_SOURCE_D
 ################################################################################
 
 add_subdirectory(tests)
+
+
+add_subdirectory(Remeshing)
