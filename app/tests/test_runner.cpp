@@ -20,6 +20,4 @@ TEST_CASE("optimize_mesh", "[test_runner]")
     REQUIRE(ok);
     REQUIRE(V.rows() == 18944);
     REQUIRE(F.rows() == 37884);
-
-    //TODO
 }

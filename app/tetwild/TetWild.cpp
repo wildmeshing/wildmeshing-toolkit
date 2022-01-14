@@ -50,7 +50,8 @@ double tetwild::TetWild::get_quality(const Tuple& loc)
     }
 
     double energy = wmtk::AMIPS_energy(T);
-    if (std::isinf(energy) || std::isnan(energy) || energy < 3 - 1e-3) return std::numeric_limits<double>::max();
+    if (std::isinf(energy) || std::isnan(energy) || energy < 3 - 1e-3)
+        return std::numeric_limits<double>::max();
     return energy;
 }
 
@@ -127,7 +128,11 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
 
 
     auto old_pos = m_vertex_attribute[vid].m_posf;
-    m_vertex_attribute[vid].m_posf = wmtk::newton_direction_from_stack(assembles);
+    m_vertex_attribute[vid].m_posf = wmtk::newton_method_from_stack(
+        assembles,
+        wmtk::AMIPS_energy,
+        wmtk::AMIPS_jacobian,
+        wmtk::AMIPS_hessian);
     wmtk::logger().trace(
         "old pos {} -> new pos {}",
         old_pos.transpose(),

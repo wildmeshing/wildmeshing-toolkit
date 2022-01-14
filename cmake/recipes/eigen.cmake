@@ -24,9 +24,8 @@ else()
     include(FetchContent)
     FetchContent_Declare(
         eigen
-        GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
-        GIT_TAG tags/3.3.7
-        GIT_SHALLOW TRUE
+        URL https://gitlab.com/libeigen/eigen/-/archive/3.3.7/eigen-3.3.7.zip
+        URL_HASH MD5=888aab45512cc0c734b3e8f60280daba
     )
     FetchContent_GetProperties(eigen)
     if(NOT eigen_POPULATED)

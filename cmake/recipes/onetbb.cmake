@@ -18,9 +18,8 @@ message(STATUS "Third-party (external): creating targets 'TBB::tbb'")
 include(FetchContent)
 FetchContent_Declare(
     tbb
-    GIT_REPOSITORY https://github.com/oneapi-src/oneTBB.git
-    GIT_TAG v2021.5.0
-    GIT_SHALLOW TRUE
+    URL https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2021.5.0.zip
+    URL_HASH MD5=584a7faa7387badd0ec4aecaf21923f9
 )
 
 option(TBB_TEST "Enable testing" OFF)
