@@ -457,7 +457,7 @@ public:
     bool check_mesh_connectivity_validity() const;
 
 private:
-    std::map<size_t, wmtk::TetMesh::VertexConnectivity> update_connectivity_impl(
+    std::map<size_t, wmtk::TetMesh::VertexConnectivity> operation_update_connectivity_impl(
         std::vector<size_t>& affected_tid,
         std::vector<std::array<size_t, 4>>& new_tet_conn);
     void operation_failure_rollback_imp(

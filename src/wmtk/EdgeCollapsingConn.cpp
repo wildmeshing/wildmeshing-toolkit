@@ -153,7 +153,7 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
         new_tet_conn.back()[l1] = v2_id;
     }
     auto new_tet_id = n1_t_ids;
-    auto rollback_vert_conn = update_connectivity_impl(new_tet_id, new_tet_conn);
+    auto rollback_vert_conn = operation_update_connectivity_impl(new_tet_id, new_tet_conn);
     assert(rollback_vert_conn.find(v1_id) != rollback_vert_conn.end());
     //
     m_vertex_connectivity[v1_id].m_is_removed = true;

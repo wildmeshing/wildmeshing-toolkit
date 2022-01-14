@@ -33,7 +33,7 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     }
 
     auto new_tet_id = n12_t_ids;
-    auto rollback_vert_conn = update_connectivity_impl(new_tet_id, new_tet_conn);
+    auto rollback_vert_conn = operation_update_connectivity_impl(new_tet_id, new_tet_conn);
 
     Tuple new_loc = tuple_from_vertex(v_id);
     if (!vertex_invariant(new_loc) || !edge_invariant(new_loc) || !tetrahedron_invariant(new_loc) ||

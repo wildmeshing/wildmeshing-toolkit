@@ -44,7 +44,7 @@ void wmtk::TetMesh::operation_failure_rollback_imp(
  * @param new_tet_conn
  * @return std::map<size_t, wmtk::TetMesh::VertexConnectivity>
  */
-std::map<size_t, wmtk::TetMesh::VertexConnectivity> wmtk::TetMesh::update_connectivity_impl(
+std::map<size_t, wmtk::TetMesh::VertexConnectivity> wmtk::TetMesh::operation_update_connectivity_impl(
     std::vector<size_t>& remove_id,
     std::vector<std::array<size_t, 4>>& new_tet_conn)
 {
@@ -152,7 +152,7 @@ bool wmtk::TetMesh::swap_edge(const Tuple& t, Tuple& newt)
     }();
     auto new_tet_id = affected;
     auto rollback_vert_conn =
-        update_connectivity_impl(new_tet_id, new_tets);
+        operation_update_connectivity_impl(new_tet_id, new_tets);
     assert(new_tet_id.size() == 2);
 
     auto u0id = m_tet_connectivity[new_tet_id.front()].find(v1_id);
@@ -233,7 +233,7 @@ bool wmtk::TetMesh::swap_face(const Tuple& t, Tuple& newt)
 
     auto new_tet_id = affected;
     auto rollback_vert_conn =
-        update_connectivity_impl(new_tet_id, new_tets);
+        operation_update_connectivity_impl(new_tet_id, new_tets);
 
     assert(affected.size() == old_tets.size());
     auto new_tid = new_tet_id.front();
