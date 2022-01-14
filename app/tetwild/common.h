@@ -1,7 +1,3 @@
-//
-// Created by Yixin Hu on 10/12/21.
-//
-
 #pragma once
 
 #include <array>
@@ -15,7 +11,6 @@
 #include <Rational.hpp>
 
 namespace tetwild {
-#define MAX_ENERGY 1e50
 
 typedef Eigen::Vector3d Vector3d;
 typedef Eigen::Matrix<apps::Rational, 3, 1> Vector3;

@@ -1,7 +1,3 @@
-//
-// Created by Yixin Hu on 12/7/21.
-//
-
 #include "TetWild.h"
 
 #include <wmtk/utils/Logger.hpp>
@@ -15,7 +11,7 @@ void tetwild::TetWild::split_all_edges()
     wmtk::logger().debug("edges.size() = {}", edges.size());
 
     int cnt_suc = 0;
-    std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_l> es_queue(cmp_l(*this));
+    std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_l> es_queue;
     for (auto& loc : edges) {
         Tuple& v1 = loc;
         Tuple v2 = loc.switch_vertex(*this);
@@ -32,7 +28,7 @@ void tetwild::TetWild::split_all_edges()
         //        double weight = es_queue.top().weight;
         es_queue.pop();
 
-        // check timestamp
+        // check hash
         if (!loc.is_valid(*this)) continue;
 
         std::vector<Tuple> new_edges;

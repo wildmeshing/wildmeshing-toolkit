@@ -1,7 +1,3 @@
-//
-// Created by Yixin Hu on 10/12/21.
-//
-
 #pragma once
 
 #include <wmtk/utils/VectorUtils.h>
@@ -20,11 +16,11 @@ namespace wmtk {
 class TetMesh
 {
 private:
-    // YH: should be visible for all connectivity classes!
     static constexpr std::array<std::array<int, 2>, 6> m_local_edges = {
         {{{0, 1}}, {{1, 2}}, {{0, 2}}, {{0, 3}}, {{1, 3}}, {{2, 3}}}}; // local edges within a
     // tet
     static constexpr std::array<int, 4> m_map_vertex2edge = {{0, 0, 1, 3}};
+    static constexpr std::array<int, 4> m_map_vertex2oppo_face = {{3, 1, 2, 0}};
     static constexpr std::array<int, 6> m_map_edge2face = {{0, 0, 0, 1, 2, 1}};
     static constexpr std::array<std::array<int, 3>, 4> m_local_faces = {
         {{{0, 1, 2}}, {{0, 2, 3}}, {{0, 1, 3}}, {{1, 2, 3}}}}; // sorted local vids
@@ -40,7 +36,7 @@ public:
         size_t m_local_fid = std::numeric_limits<size_t>::max();
         size_t m_global_tid = std::numeric_limits<size_t>::max();
 
-        int m_timestamp = 0;
+        int m_hash = 0;
 
     private:
         /**
@@ -141,34 +137,14 @@ public:
         friend bool operator==(const Tuple& a, const Tuple& t)
         {
             return (
-                std::tie(
-                    a.m_global_vid,
-                    a.m_local_eid,
-                    a.m_local_fid,
-                    a.m_global_tid,
-                    a.m_timestamp) ==
-                std::tie(
-                    t.m_global_vid,
-                    t.m_local_eid,
-                    t.m_local_fid,
-                    t.m_global_tid,
-                    t.m_timestamp));
+                std::tie(a.m_global_vid, a.m_local_eid, a.m_local_fid, a.m_global_tid, a.m_hash) ==
+                std::tie(t.m_global_vid, t.m_local_eid, t.m_local_fid, t.m_global_tid, t.m_hash));
         }
         friend bool operator<(const Tuple& a, const Tuple& t)
         {
             return (
-                std::tie(
-                    a.m_global_vid,
-                    a.m_local_eid,
-                    a.m_local_fid,
-                    a.m_global_tid,
-                    a.m_timestamp) <
-                std::tie(
-                    t.m_global_vid,
-                    t.m_local_eid,
-                    t.m_local_fid,
-                    t.m_global_tid,
-                    t.m_timestamp));
+                std::tie(a.m_global_vid, a.m_local_eid, a.m_local_fid, a.m_global_tid, a.m_hash) <
+                std::tie(t.m_global_vid, t.m_local_eid, t.m_local_fid, t.m_global_tid, t.m_hash));
         }
     };
 
@@ -185,13 +161,13 @@ public:
 
         size_t& operator[](const size_t index)
         {
-            assert(index >= 0 && index < m_conn_tets.size());
+            assert(index < m_conn_tets.size());
             return m_conn_tets[index];
         }
 
         size_t operator[](const size_t index) const
         {
-            assert(index >= 0 && index < m_conn_tets.size());
+            assert(index < m_conn_tets.size());
             return m_conn_tets[index];
         }
 
@@ -214,21 +190,21 @@ public:
         std::array<size_t, 4> m_indices;
         bool m_is_removed = false;
 
-        int timestamp = 0;
+        int hash = 0;
 
-        void set_version_number(int version) { timestamp = version; }
+        void set_version_number(int version) { hash = version; }
 
-        int get_version_number() { return timestamp; }
+        int get_version_number() { return hash; }
 
         size_t& operator[](size_t index)
         {
-            assert(index >= 0 && index < 4);
+            assert(index < 4);
             return m_indices[index];
         }
 
         size_t operator[](size_t index) const
         {
-            assert(index >= 0 && index < 4);
+            assert(index < 4);
             return m_indices[index];
         }
 
@@ -276,8 +252,8 @@ public:
 
         friend bool operator==(const TetrahedronConnectivity& l, const TetrahedronConnectivity& r)
         {
-            return std::tie(l.m_indices, l.m_is_removed, l.timestamp) ==
-                   std::tie(r.m_indices, r.m_is_removed, r.timestamp); // keep the same order
+            return std::tie(l.m_indices, l.m_is_removed, l.hash) ==
+                   std::tie(r.m_indices, r.m_is_removed, r.hash); // keep the same order
         }
 
         void print_info() {}
@@ -308,8 +284,8 @@ public:
      */
     bool split_edge(const Tuple& t, std::vector<Tuple>& new_edges);
     bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_edges);
-    bool swap_edge(const Tuple& t);
-    bool swap_face(const Tuple& t);
+    bool swap_edge(const Tuple& t, Tuple& new_face);
+    bool swap_face(const Tuple& t, Tuple& new_edge);
     bool smooth_vertex(const Tuple& t);
 
     void subdivide_tets(const std::vector<size_t> t_ids, std::map<std::array<size_t, 2>, size_t>& map_edge2vid);

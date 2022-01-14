@@ -226,31 +226,16 @@ public:
         , weight(w)
     {}
 };
-class cmp_l
+struct cmp_l
 {
-private:
-    const TetWild& m_tw;
-
-public:
-    cmp_l(const TetWild& tw)
-        : m_tw(tw)
-    {}
-
     bool operator()(const ElementInQueue& e1, const ElementInQueue& e2)
     {
         if (e1.weight == e2.weight) return e1.edge < e2.edge;
         return e1.weight < e2.weight;
     }
 };
-class cmp_s
+struct cmp_s
 {
-private:
-    const TetWild& m_tw;
-
-public:
-    cmp_s(const TetWild& tw)
-        : m_tw(tw)
-    {}
     bool operator()(const ElementInQueue& e1, const ElementInQueue& e2)
     {
         if (e1.weight == e2.weight) return e1.edge < e2.edge;

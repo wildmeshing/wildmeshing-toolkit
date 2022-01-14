@@ -1,13 +1,11 @@
-//
-// Created by Yixin Hu on 11/3/21.
-//
 
 #include "TetWild.h"
 
-#include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/AMIPS.h>
-#include <wmtk/utils/io.hpp>
+#include <limits>
+#include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
+#include <wmtk/utils/io.hpp>
 
 #include <igl/predicates/predicates.h>
 #include <spdlog/fmt/ostr.h>
@@ -52,7 +50,8 @@ double tetwild::TetWild::get_quality(const Tuple& loc)
     }
 
     double energy = wmtk::AMIPS_energy(T);
-    if (std::isinf(energy) || std::isnan(energy) || energy < 3 - 1e-3) return MAX_ENERGY;
+    if (std::isinf(energy) || std::isnan(energy) || energy < 3 - 1e-3)
+        return std::numeric_limits<double>::max();
     return energy;
 }
 
@@ -129,7 +128,11 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
 
 
     auto old_pos = m_vertex_attribute[vid].m_posf;
-    m_vertex_attribute[vid].m_posf = wmtk::newton_direction_from_stack(assembles);
+    m_vertex_attribute[vid].m_posf = wmtk::newton_method_from_stack(
+        assembles,
+        wmtk::AMIPS_energy,
+        wmtk::AMIPS_jacobian,
+        wmtk::AMIPS_hessian);
     wmtk::logger().trace(
         "old pos {} -> new pos {}",
         old_pos.transpose(),
@@ -156,13 +159,13 @@ void tetwild::TetWild::output_mesh(std::string file)
 
     wmtk::MshData msh;
 
-    const auto &vtx = get_vertices();
+    const auto& vtx = get_vertices();
     msh.add_tet_vertices(vtx.size(), [&](size_t k) {
         auto i = vtx[k].vid(*this);
         return m_vertex_attribute[i].m_posf;
     });
 
-    const auto &tets = get_tets();
+    const auto& tets = get_tets();
     msh.add_tets(tets.size(), [&](size_t k) {
         auto i = tets[k].tid(*this);
         auto vs = oriented_tet_vertices(tets[k]);

@@ -1,7 +1,3 @@
-//
-// Created by Yixin Hu on 10/12/21.
-//
-
 #pragma once
 
 #include <iostream>
@@ -12,11 +8,6 @@
 #include <Eigen/Core>
 
 namespace wmtk {
-    using std::cout;
-    using std::cin;
-    using std::endl;
-
-#define MAX_ENERGY 1e50
 
     typedef Eigen::Vector3d Vector3d; // float?
     typedef Eigen::Vector3d Vector3;

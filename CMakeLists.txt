@@ -70,6 +70,7 @@ include(spdlog)
 include(delaunay_psm)
 include(onetbb)
 include(mshio)
+include(metis)
 target_link_libraries(wildmeshing_toolkit PUBLIC
     spdlog::spdlog
     igl::core
@@ -78,6 +79,7 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     wmtk::warnings
     TBB::tbb
     mshio::mshio
+    metis::metis
 )
 
 ################################################################################
