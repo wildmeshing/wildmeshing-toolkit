@@ -83,7 +83,7 @@ std::map<size_t, wmtk::TetMesh::VertexConnectivity> wmtk::TetMesh::update_connec
         auto new_indices = std::vector<size_t>(add_size);
         // auto old_tet_size = tet_conn.size();
         for (auto i = 0; i < add_size; i++) {
-            remove_id[i + hole_size] = this->find_next_empty_slot_t(); // old_tet_size + i;
+            remove_id[i + hole_size] = this->get_next_empty_slot_t(); // old_tet_size + i;
         }
     }
     assert(remove_id.size() == new_tet_conn.size());

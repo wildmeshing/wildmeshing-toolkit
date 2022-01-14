@@ -316,8 +316,8 @@ private:
     vector<TetrahedronConnectivity> m_tet_connectivity;
     int m_t_empty_slot = 0;
     int m_v_empty_slot = 0;
-    int find_next_empty_slot_t();
-    int find_next_empty_slot_v();
+    int get_next_empty_slot_t();
+    int get_next_empty_slot_v();
 
 protected:
     //// Split the edge in the tuple
