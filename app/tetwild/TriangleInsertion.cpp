@@ -205,6 +205,8 @@ void tetwild::TetWild::triangle_insertion(const InputSurface &input_surface) {
     wmtk::logger().info("is_matched: {}", std::count(is_matched.begin(), is_matched.end(), true));
 
     auto &is_visited = triangle_insertion_cache.is_visited;
+
+
     for (size_t face_id = 0; face_id < faces.size(); face_id++) {
         if (is_matched[face_id]) continue;
 
@@ -256,7 +258,7 @@ void tetwild::TetWild::triangle_insertion(const InputSurface &input_surface) {
 
             //todo: check if tet face is inside the surface_f, if so, update surface_f_ids
 
-            // check if the edge intersects with the triangle
+            /// check if the tet edges intersects with the triangle
             bool need_subdivision = false;
             for (auto &loc: edges) {
                 size_t v1_id = loc.vid(*this);
@@ -294,9 +296,6 @@ void tetwild::TetWild::triangle_insertion(const InputSurface &input_surface) {
                 } else {
                     is_intersected = wmtk::open_segment_triangle_intersection_3d(seg, tri, p);
                 }
-                //                print(seg[0]);
-                //                print(seg[1]);
-//                cout << tet.tid(*this) << " is_intersected " << is_intersected << endl;
 
                 map_edge2point[e] = std::make_pair(is_intersected, p);
                 if (!is_intersected) {
@@ -315,10 +314,60 @@ void tetwild::TetWild::triangle_insertion(const InputSurface &input_surface) {
                 }
             }
 
+            /// check if the tet (open) face intersects with the triangle
+            if(!need_subdivision) {
+                std::array<Tuple, 4> fs;
+                fs[0] = tet;
+                fs[1] = switch_face(tet);
+                auto tet1 = switch_edge(switch_vertex(tet));
+                fs[2] = switch_face(tet1);
+                auto tet2 = switch_edge(switch_vertex(tet1));
+                fs[3] = switch_face(tet2);
+
+                for (int j = 0; j < 4; j++) { // for each tet face
+                    auto vs = get_face_vertices(tet);
+                    std::array<Vector3, 3> tet_tri = {{
+                        m_vertex_attribute[vs[0].vid(*this)].m_pos,
+                        m_vertex_attribute[vs[1].vid(*this)].m_pos,
+                        m_vertex_attribute[vs[2].vid(*this)].m_pos,
+                    }};
+
+                    bool is_intersected = false;
+                    for (int k = 0; k < 3; k++) { // check intersection
+                        std::array<Vector3, 2> input_seg = {{tri[k], tri[(k + 1) % 3]}};
+                        Vector3 p;
+                        is_intersected =
+                            wmtk::open_segment_triangle_intersection_3d(input_seg, tet_tri, p);
+                        if (is_intersected) {
+                            need_subdivision = true;
+                            break;
+                        }
+                    }
+
+                    if (is_intersected) {
+                        auto res = switch_tetrahedron(tet);
+                        if (res.has_value()) {
+                            auto n_tet = res.value();
+                            int tid = n_tet.tid(*this);
+                            if (is_visited[tid]) continue;
+                            tet_queue.push(n_tet);
+                            is_visited[tid] = true;
+                        }
+                    }
+                }
+            }
+
+            /// record the tets
             if (need_subdivision) intersected_tids.push_back(tet.tid(*this));
         }
         wmtk::vector_unique(intersected_tids);
         cout << "intersected_tids.size " << intersected_tids.size() << endl;
+
+        ////use plane to cut intersected_tids and get surrounding_tids
+        //todo
+        std::vector<size_t> surrounding_tids;
+        std::vector<bool> mark_surface;
+
 
         for (auto it = map_edge2point.begin(), ite = map_edge2point.end();
              it != ite;) { // erase edge without intersections
@@ -345,7 +394,7 @@ void tetwild::TetWild::triangle_insertion(const InputSurface &input_surface) {
 
         ///push back new tets conn
         triangle_insertion_cache.face_id = face_id;
-        subdivide_tets(intersected_tids, map_edge2vid); // in TetMesh class
+        subdivide_tets(intersected_tids, mark_surface, map_edge2vid); // in TetMesh class
 
         ///resize attri lists
         m_tet_attribute.resize(tet_capacity()); // todo: do we need it?

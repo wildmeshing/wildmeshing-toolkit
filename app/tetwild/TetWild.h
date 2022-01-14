@@ -146,11 +146,13 @@ public:
 
     struct TriangleInsertionInfoCache
     {
+        //global info: throughout the whole insertion
         std::vector<std::array<int, 4>> surface_f_ids;
-        int face_id;
-
         std::vector<bool> is_matched;
+
+        //local info: for each face insertion
         std::vector<bool> is_visited;
+        int face_id;
     } triangle_insertion_cache; // todo: change for parallel
 
 

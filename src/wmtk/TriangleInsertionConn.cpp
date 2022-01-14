@@ -15,6 +15,7 @@ using std::endl;
 
 void wmtk::TetMesh::subdivide_tets(
     const std::vector<size_t> intersected_tids,
+    const std::vector<bool>& mark_surface,
     std::map<std::array<size_t, 2>, size_t>& map_edge2vid)
 {
     using namespace Eigen;

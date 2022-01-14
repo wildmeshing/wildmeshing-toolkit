@@ -288,7 +288,9 @@ public:
     bool swap_face(const Tuple& t, Tuple& new_edge);
     bool smooth_vertex(const Tuple& t);
 
-    void subdivide_tets(const std::vector<size_t> t_ids, std::map<std::array<size_t, 2>, size_t>& map_edge2vid);
+    void subdivide_tets(const std::vector<size_t> t_ids,
+                        const std::vector<bool>& mark_surface,
+                        std::map<std::array<size_t, 2>, size_t>& map_edge2vid);
 
     /**
      * @brief cleans up the deleted vertices or tetrahedra, fixes the corresponding indices, and
@@ -455,6 +457,7 @@ public:
      * @return std::array<Tuple, 4> each tuple owns a different vertex.
      */
     std::array<Tuple, 4> oriented_tet_vertices(const Tuple& t) const;
+    std::array<Tuple, 3> get_face_vertices(const Tuple& t) const;
 
     std::array<Tuple, 6> tet_edges(const Tuple& t) const;
 

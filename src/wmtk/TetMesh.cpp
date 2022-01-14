@@ -236,6 +236,15 @@ std::array<wmtk::TetMesh::Tuple, 4> wmtk::TetMesh::oriented_tet_vertices(const T
     return vs;
 }
 
+std::array<wmtk::TetMesh::Tuple, 3> wmtk::TetMesh::get_face_vertices(const Tuple& t) const
+{
+    std::array<Tuple, 3> vs;
+    vs[0] = t;
+    vs[1] = switch_vertex(t);
+    vs[2] = switch_vertex(switch_edge(t));
+    return vs;
+}
+
 std::array<wmtk::TetMesh::Tuple, 6> wmtk::TetMesh::tet_edges(const Tuple& t) const {
     std::array<Tuple, 6> es;
     for (int j = 0; j < 6; j++) {
