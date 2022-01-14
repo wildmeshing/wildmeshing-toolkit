@@ -572,10 +572,9 @@ void TriMesh::consolidate_mesh()
     m_tri_connectivity.resize(t_cnt);
 
     // Resize user class attributes
-    resize_attributes(
-        m_vertex_connectivity.size(),
-        m_tri_connectivity.size() * 3,
-        m_tri_connectivity.size());
+    resize_vertex_attributes(m_vertex_connectivity.size());
+    resize_edge_attributes(m_tri_connectivity.size() * 3);
+    resize_face_attributes(m_tri_connectivity.size());
 
     // DP: remember to compact the tbb vectors!
     // m_vertex_connectivity.compact();
@@ -735,7 +734,8 @@ size_t TriMesh::get_next_empty_slot_t()
 {
     const auto it = m_tri_connectivity.emplace_back();
     const size_t size = std::distance(m_tri_connectivity.begin(), it) + 1;
-    resize_attributes(m_vertex_connectivity.size(), size * 3, size);
+    resize_edge_attributes(size * 3);
+    resize_face_attributes(size);
     return size - 1;
 }
 
@@ -743,8 +743,7 @@ size_t TriMesh::get_next_empty_slot_v()
 {
     const auto it = m_vertex_connectivity.emplace_back();
     const size_t size = std::distance(m_vertex_connectivity.begin(), it) + 1;
-    // TODO split this
-    resize_attributes(size, m_tri_connectivity.size() * 3, m_tri_connectivity.size());
+    resize_vertex_attributes(size);
     return size - 1;
 }
 

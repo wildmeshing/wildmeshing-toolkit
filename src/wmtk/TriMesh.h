@@ -228,8 +228,9 @@ protected:
     virtual bool swap_after(const Tuple& t) { return true; }
     virtual bool swap_before(const Tuple& t) { return true; }
 
-
-    virtual void resize_attributes(size_t v, size_t e, size_t t) {}
+    virtual void resize_vertex_attributes(size_t v){};
+    virtual void resize_edge_attributes(size_t e){};
+    virtual void resize_face_attributes(size_t t){};
 
     virtual void move_vertex_attribute(size_t from, size_t to){};
     virtual void move_edge_attribute(size_t from, size_t to){};

@@ -68,7 +68,7 @@ public:
         m_vertex_positions[to] = m_vertex_positions[from];
     }
 
-    void resize_attributes(size_t v, size_t e, size_t t) override { m_vertex_positions.resize(v); }
+    void resize_vertex_attributes(size_t v) override { m_vertex_positions.resize(v); }
 };
 
 class ElementInQueue

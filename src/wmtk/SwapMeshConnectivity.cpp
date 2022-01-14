@@ -156,11 +156,10 @@ bool wmtk::TetMesh::swap_edge(const Tuple& t, Tuple& newt)
         update_connectivity(m_tet_connectivity, m_vertex_connectivity, new_tet_id, new_tets);
     assert(new_tet_id.size() == 2);
 
-    resize_attributes(
-        m_vertex_connectivity.size(),
-        m_tet_connectivity.size() * 6,
-        m_tet_connectivity.size() * 4,
-        m_tet_connectivity.size());
+    resize_vertex_attributes(m_vertex_connectivity.size());
+    resize_edge_attributes(m_tet_connectivity.size() * 6);
+    resize_face_attributes(m_tet_connectivity.size() * 4);
+    resize_tet_attributes(m_tet_connectivity.size());
 
     auto u0id = m_tet_connectivity[new_tet_id.front()].find(v1_id);
     assert(u0id != -1);
@@ -244,11 +243,10 @@ bool wmtk::TetMesh::swap_face(const Tuple& t, Tuple& newt)
     auto rollback_vert_conn =
         update_connectivity(m_tet_connectivity, m_vertex_connectivity, new_tet_id, new_tets);
 
-    resize_attributes(
-        m_vertex_connectivity.size(),
-        m_tet_connectivity.size() * 6,
-        m_tet_connectivity.size() * 4,
-        m_tet_connectivity.size());
+    resize_vertex_attributes(m_vertex_connectivity.size());
+    resize_edge_attributes(m_tet_connectivity.size() * 6);
+    resize_face_attributes(m_tet_connectivity.size() * 4);
+    resize_tet_attributes(m_tet_connectivity.size());
 
     assert(affected.size() == old_tets.size());
     auto new_tid = new_tet_id.front();
