@@ -55,9 +55,9 @@ public:
         double max_energy = 0.;
     } edgeswap_cache, faceswap_cache; // todo: change for parallel
 
-    // void smooth_all_vertices();
-    // bool smooth_before(const Tuple& t) override{};
-    // bool smooth_after(const Tuple& t) override{};
+    void smooth_all_vertices();
+    bool smooth_before(const Tuple& t) override;
+    bool smooth_after(const Tuple& t) override;
 
     void swap_all_edges();
     bool swap_edge_before(const Tuple& t) override;
