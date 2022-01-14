@@ -322,11 +322,12 @@ private:
     int find_next_empty_slot_t();
     int find_next_empty_slot_v();
 
-    void subdivide_a_tet(size_t t_id, const std::array<int, 6>& new_v_ids, bool is_add_centroid);
+    void subdivide_a_tet(size_t t_id, const std::array<int, 6>& new_v_ids, bool mark_surface, bool& is_add_centroid);
 
 protected:
     virtual void insertion_update_surface_tag(size_t t_id, size_t new_t_id,
-                                              int config_id, int diag_config_id, int index){}
+                                              int config_id, int diag_config_id, int index,
+                                              bool mark_surface){}
     virtual void add_tet_centroid(const std::array<size_t, 4>& vids){}
 
     //// Split the edge in the tuple

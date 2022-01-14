@@ -42,7 +42,8 @@ void wmtk::TetMesh::subdivide_tets(
 
     /// insert new tets
     size_t old_t_size = m_tet_connectivity.size();
-    for (size_t t_id : intersected_tids) {
+    for (int i=0;i<intersected_tids.size();i++) {
+        size_t t_id = intersected_tids[i];
         std::array<int, 6> new_v_ids = {{-1, -1, -1, -1, -1, -1}};
         for (int j = 0; j < 6; j++) {
             std::array<size_t, 2> e = {
@@ -52,7 +53,7 @@ void wmtk::TetMesh::subdivide_tets(
             if (map_edge2vid.count(e)) new_v_ids[j] = map_edge2vid[e];
         }
         bool is_add_centroid;//todo: maybe not necessary
-        subdivide_a_tet(t_id, new_v_ids, is_add_centroid);
+        subdivide_a_tet(t_id, new_v_ids, mark_surface[i], is_add_centroid);
 //        if(is_add_centroid)
 //            cout<<"is_add_centroid"<<endl;
     }
@@ -92,7 +93,7 @@ void wmtk::TetMesh::subdivide_tets(
     }
 }
 
-void wmtk::TetMesh::subdivide_a_tet(size_t t_id, const std::array<int, 6>& new_v_ids, bool is_add_centroid)
+void wmtk::TetMesh::subdivide_a_tet(size_t t_id, const std::array<int, 6>& new_v_ids, bool mark_surface, bool& is_add_centroid)
 {
     using namespace Eigen;
 
@@ -202,6 +203,6 @@ void wmtk::TetMesh::subdivide_a_tet(size_t t_id, const std::array<int, 6>& new_v
 //                cout<<"t"<<new_t_id<<": "<<tet[0]<<" "<<tet[1]<<" "<<tet[2]<<" "<<tet[3]<<endl;
 //                cout<<"t"<<new_t_id<<": "<<t[0]<<" "<<t[1]<<" "<<t[2]<<" "<<t[3]<<endl;
 
-        insertion_update_surface_tag(t_id, new_t_id, config_id, diag_config_id, i);
+        insertion_update_surface_tag(t_id, new_t_id, config_id, diag_config_id, i, mark_surface);
     }
 }

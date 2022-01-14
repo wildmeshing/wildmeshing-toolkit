@@ -186,7 +186,8 @@ public:
         size_t new_t_id,
         int config_id,
         int diag_config_id,
-        int index) override;
+        int index,
+        bool mark_surface) override;
 
 
     void split_all_edges();
