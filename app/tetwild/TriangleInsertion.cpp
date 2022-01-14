@@ -257,6 +257,7 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& input_surface)
     };
     // fortest
 
+
     triangle_insertion_cache.surface_f_ids.resize(m_tet_attribute.size(), {{-1, -1, -1, -1}});
     // match faces preserved in delaunay
     auto& is_matched = triangle_insertion_cache.is_matched;
@@ -322,7 +323,8 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& input_surface)
                 if (e[0] > e[1]) std::swap(e[0], e[1]);
 
                 if (map_edge2point.count(e)) {
-                    if (map_edge2point[e].first) need_subdivision = true;
+                    if (map_edge2point[e].first == TRI_INTERSECTION)
+                        need_subdivision = true;
                     continue;
                 }
 
@@ -332,22 +334,22 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& input_surface)
                 bool is_coplanar = wmtk::segment_triangle_coplanar_3d(seg, tri);
                 int intersection_status = EMPTY_INTERSECTION;
                 if (is_coplanar) {
-                    cout << "is_coplanar" << endl;
-                    // todo: different way of marking surface
-                    std::array<Vector2, 2> seg2;
-                    seg2[0] = wmtk::project_point_to_2d(seg[0], squeeze_to_2d_dir);
-                    seg2[1] = wmtk::project_point_to_2d(seg[1], squeeze_to_2d_dir);
-                    for (int j = 0; j < 3; j++) {
-                        apps::Rational t1;
-                        std::array<Vector2, 2> tri_seg2 = {{tri2[j], tri2[(j + 1) % 3]}};
-                        bool is_intersected =
-                            wmtk::open_segment_open_segment_intersection_2d(seg2, tri_seg2, t1);
-                        if (is_intersected) {
-                            intersection_status = TRI_INTERSECTION;
-                            p = (1 - t1) * seg[0] + t1 * seg[1];
-                            break;
-                        }
-                    }
+//                    cout << "is_coplanar" << endl;
+//                    // todo: different way of marking surface, move to above ^
+//                    std::array<Vector2, 2> seg2;
+//                    seg2[0] = wmtk::project_point_to_2d(seg[0], squeeze_to_2d_dir);
+//                    seg2[1] = wmtk::project_point_to_2d(seg[1], squeeze_to_2d_dir);
+//                    for (int j = 0; j < 3; j++) {
+//                        apps::Rational t1;
+//                        std::array<Vector2, 2> tri_seg2 = {{tri2[j], tri2[(j + 1) % 3]}};
+//                        bool is_intersected =
+//                            wmtk::open_segment_open_segment_intersection_2d(seg2, tri_seg2, t1);
+//                        if (is_intersected) {
+//                            intersection_status = TRI_INTERSECTION;
+//                            p = (1 - t1) * seg[0] + t1 * seg[1];
+//                            break;
+//                        }
+//                    }
                 } else {
                     //                    is_intersected =
                     //                    wmtk::open_segment_triangle_intersection_3d(seg, tri, p);
@@ -603,24 +605,6 @@ void tetwild::TetWild::insertion_update_surface_tag(
         // note: new face_id has higher priority than old ones
         // note: non-cut-through tet does not track surface!!!
     }
-
-
-    //    //fortest
-    //    for(int i=0;i<triangle_insertion_cache.surface_f_ids.size();i++){
-    //        for(int j=0;j<4;j++) {
-    //            if (triangle_insertion_cache.surface_f_ids[i][j] >
-    //            triangle_insertion_cache.face_id) {
-    //                cout <<
-    //                "triangle_insertion_cache.surface_f_ids[i][j]>triangle_insertion_cache.face_id"
-    //                     << endl;
-    //                cout<<i<<" "<<j<<endl;
-    //                cout<<triangle_insertion_cache.surface_f_ids[i][j]<<endl;
-    //                cout<<triangle_insertion_cache.face_id<<endl;
-    //                cout<<"t_id "<<t_id<<endl;
-    //            }
-    //        }
-    //    }
-    //    //fortest
 }
 
 void tetwild::TetWild::add_tet_centroid(const std::array<size_t, 4>& vids)
