@@ -185,6 +185,11 @@ void tetwild::TetWild::match_insertion_faces(
 
 void tetwild::TetWild::triangle_insertion(const InputSurface& input_surface)
 {
+    construct_background_mesh(input_surface);
+    const auto& vertices = input_surface.vertices;
+    const auto& faces = input_surface.faces;
+
+
     // fortest
     auto pausee = []() {
         std::cout << "pausing..." << std::endl;
@@ -194,12 +199,63 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& input_surface)
     };
     auto print = [](const Vector3& p) { cout << p[0] << " " << p[1] << " " << p[2] << endl; };
     auto print2 = [](const Vector2& p) { cout << p[0] << " " << p[1] << endl; };
+    auto output_surface = [&](std::string file) {
+        std::ofstream fout(file);
+        std::vector<std::array<int, 3>> fs;
+        int cnt = 0;
+        for (int i = 0; i < triangle_insertion_cache.surface_f_ids.size(); i++) {
+            auto t = tuple_from_tet(i);
+            auto vs = oriented_tet_vertices(t);
+            std::array<size_t, 4> vids = {
+                {vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this), vs[3].vid(*this)}};
+            for (int j = 0; j < 4; j++) {
+                if (triangle_insertion_cache.surface_f_ids[i][j] >= 0) {
+                    fout << "v " << m_vertex_attribute[vids[(j + 1) % 4]].m_posf.transpose()
+                         << endl;
+                    fout << "v " << m_vertex_attribute[vids[(j + 2) % 4]].m_posf.transpose()
+                         << endl;
+                    fout << "v " << m_vertex_attribute[vids[(j + 3) % 4]].m_posf.transpose()
+                         << endl;
+                    fs.push_back({{cnt * 3 + 1, cnt * 3 + 2, cnt * 3 + 3}});
+                    cnt++;
+                }
+            }
+        }
+        for (auto& f : fs) fout << "f " << f[0] << " " << f[1] << " " << f[2] << endl;
+        fout.close();
+    };
+    auto check_tracked_surface_coplanar = [&]() {
+        for (int i = 0; i < triangle_insertion_cache.surface_f_ids.size(); i++) {
+            Tuple tet = tuple_from_tet(i);
+            auto tet_vertices = oriented_tet_vertices(tet);
+            for (int j = 0; j < 4; j++) {
+                int face_id = triangle_insertion_cache.surface_f_ids[i][j];
+                if (face_id < 0) continue;
+
+                Vector3 c = m_vertex_attribute[tet_vertices[(j + 1) % 4].vid(*this)].m_pos +
+                            m_vertex_attribute[tet_vertices[(j + 2) % 4].vid(*this)].m_pos +
+                            m_vertex_attribute[tet_vertices[(j + 3) % 4].vid(*this)].m_pos;
+                c = c / 3;
+
+                std::array<Vector3, 3> tri = {
+                    {to_rational(vertices[faces[face_id][0]]),
+                     to_rational(vertices[faces[face_id][1]]),
+                     to_rational(vertices[faces[face_id][2]])}};
+
+                bool is_coplanar = wmtk::segment_triangle_coplanar_3d({{c, c}}, tri);
+                if (!is_coplanar) {
+                    cout << "!is_coplanar " << face_id << endl;
+                    cout << triangle_insertion_cache.face_id << endl;
+                    print(c);
+                    print(tri[0]);
+                    print(tri[1]);
+                    print(tri[2]);
+                    pausee();
+                }
+            }
+        }
+    };
     // fortest
-
-    construct_background_mesh(input_surface);
-
-    const auto& vertices = input_surface.vertices;
-    const auto& faces = input_surface.faces;
 
     triangle_insertion_cache.surface_f_ids.resize(m_tet_attribute.size(), {{-1, -1, -1, -1}});
     // match faces preserved in delaunay
@@ -449,67 +505,13 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& input_surface)
         cout << "#t " << tet_capacity() << endl;
         //        pausee();
 
-        //        //fortest
-        //        for (int i = 0; i < triangle_insertion_cache.surface_f_ids.size(); i++) {
-        //            Tuple tet = tuple_from_tet(i);
-        //            auto tet_vertices = oriented_tet_vertices(tet);
-        //            for (int j = 0; j < 4; j++) {
-        //                int face_id = triangle_insertion_cache.surface_f_ids[i][j];
-        //                if (face_id < 0) continue;
-        //
-        //                Vector3 c = m_vertex_attribute[tet_vertices[(j + 1) % 4].vid(*this)].m_pos
-        //                +
-        //                            m_vertex_attribute[tet_vertices[(j + 2) % 4].vid(*this)].m_pos
-        //                            + m_vertex_attribute[tet_vertices[(j + 3) %
-        //                            4].vid(*this)].m_pos;
-        //                c = c / 3;
-        //
-        //                std::array<Vector3, 3> tri = {
-        //                    {to_rational(vertices[faces[face_id][0]]),
-        //                     to_rational(vertices[faces[face_id][1]]),
-        //                     to_rational(vertices[faces[face_id][2]])}};
-        //
-        //                bool is_coplanar = wmtk::segment_triangle_coplanar_3d({{c, c}}, tri);
-        //                if (!is_coplanar) {
-        ////                    cout << "!is_coplanar "<<face_id << endl;
-        ////                    cout<<triangle_insertion_cache.face_id<<endl;
-        ////                    print(c);
-        ////                    print(tri[0]);
-        ////                    print(tri[1]);
-        ////                    print(tri[2]);
-        ////                    pausee();
-        //                }
-        //            }
-        //        }
-        //        //fortest
+//        //fortest
+//        check_tracked_surface_coplanar();
+//        //fortest
     }
 
     // fortest
-    {
-        std::ofstream fout("surface0.obj");
-        std::vector<std::array<int, 3>> fs;
-        int cnt = 0;
-        for (int i = 0; i < triangle_insertion_cache.surface_f_ids.size(); i++) {
-            auto t = tuple_from_tet(i);
-            auto vs = oriented_tet_vertices(t);
-            std::array<size_t, 4> vids = {
-                {vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this), vs[3].vid(*this)}};
-            for (int j = 0; j < 4; j++) {
-                if (triangle_insertion_cache.surface_f_ids[i][j] >= 0) {
-                    fout << "v " << m_vertex_attribute[vids[(j + 1) % 4]].m_posf.transpose()
-                         << endl;
-                    fout << "v " << m_vertex_attribute[vids[(j + 2) % 4]].m_posf.transpose()
-                         << endl;
-                    fout << "v " << m_vertex_attribute[vids[(j + 3) % 4]].m_posf.transpose()
-                         << endl;
-                    fs.push_back({{cnt * 3 + 1, cnt * 3 + 2, cnt * 3 + 3}});
-                    cnt++;
-                }
-            }
-        }
-        for (auto& f : fs) fout << "f " << f[0] << " " << f[1] << " " << f[2] << endl;
-        fout.close();
-    }
+    output_surface("surface0.obj");
     // fortest
 
     /// update m_is_on_surface for vertices, remove leaked surface marks
@@ -565,31 +567,7 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& input_surface)
     output_mesh("triangle_insertion.msh");
 
     // fortest
-    {
-        std::ofstream fout("surface.obj");
-        std::vector<std::array<int, 3>> fs;
-        int cnt = 0;
-        for (int i = 0; i < triangle_insertion_cache.surface_f_ids.size(); i++) {
-            auto t = tuple_from_tet(i);
-            auto vs = oriented_tet_vertices(t);
-            std::array<size_t, 4> vids = {
-                {vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this), vs[3].vid(*this)}};
-            for (int j = 0; j < 4; j++) {
-                if (triangle_insertion_cache.surface_f_ids[i][j] >= 0) {
-                    fout << "v " << m_vertex_attribute[vids[(j + 1) % 4]].m_posf.transpose()
-                         << endl;
-                    fout << "v " << m_vertex_attribute[vids[(j + 2) % 4]].m_posf.transpose()
-                         << endl;
-                    fout << "v " << m_vertex_attribute[vids[(j + 3) % 4]].m_posf.transpose()
-                         << endl;
-                    fs.push_back({{cnt * 3 + 1, cnt * 3 + 2, cnt * 3 + 3}});
-                    cnt++;
-                }
-            }
-        }
-        for (auto& f : fs) fout << "f " << f[0] << " " << f[1] << " " << f[2] << endl;
-        fout.close();
-    }
+    output_surface("surface.obj");
     // fortest
 
 } // note: skip preserve open boundaries
