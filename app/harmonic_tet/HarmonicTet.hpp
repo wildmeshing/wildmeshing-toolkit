@@ -31,11 +31,8 @@ public:
     std::vector<VertexAttributes> m_vertex_attribute;
     std::vector<TetAttributes> m_tet_attribute;
 
-    void resize_attributes(size_t v, size_t e, size_t f, size_t t) override
-    {
-        m_vertex_attribute.resize(v);
-        m_tet_attribute.resize(t);
-    }
+    void resize_vertex_attributes(size_t v) override { m_vertex_attribute.resize(v); }
+    void resize_tet_attributes(size_t t) override { m_tet_attribute.resize(t); }
 
     void move_tet_attribute(size_t from, size_t to) override
     {
@@ -69,7 +66,6 @@ public:
 
     bool is_inverted(const Tuple& loc);
     double get_quality(const Tuple& loc);
-
 };
 
 } // namespace harmonic_tet

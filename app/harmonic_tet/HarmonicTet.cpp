@@ -2,8 +2,8 @@
 
 #include <igl/predicates/predicates.h>
 #include <wmtk/utils/TetraQualityUtils.hpp>
-#include <wmtk/utils/io.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
+#include <wmtk/utils/io.hpp>
 
 #include <queue>
 
