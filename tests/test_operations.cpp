@@ -38,7 +38,7 @@ TEST_CASE("edge_collapsing", "[test_operation]")
     REQUIRE_FALSE(tuple.is_valid(mesh));
 
     // Cannot collapse the edge
-    REQUIRE(mesh.collapse_edge(new_edge[1], dummy));
+    REQUIRE(mesh.collapse_edge(new_edge[0], dummy));
     for (const auto& e : new_edge) REQUIRE_FALSE(e.is_valid(mesh));
     REQUIRE(mesh.check_mesh_connectivity_validity());
 }
