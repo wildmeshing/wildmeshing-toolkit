@@ -46,5 +46,5 @@ TEST_CASE("triangle-insertion", "[test_operation]")
     //
     tetwild::TetWild mesh(input_surface.params, envelope);
 
-    mesh.triangle_insertion(input_surface);
+//    mesh.triangle_insertion(input_surface);
 }
