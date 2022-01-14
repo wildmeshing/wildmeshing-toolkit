@@ -68,13 +68,13 @@ TEST_CASE("edge_collapsing", "[test_operation]")
 
     tetwild.collapse_all_edges();
     REQUIRE(tetwild.check_mesh_connectivity_validity());
-    CHECK(tetwild.get_vertices().size() == 1085);
+    CHECK(tetwild.get_vertices().size() == 1083);
     REQUIRE(tetwild.tet_capacity() == 5629);
 
     tetwild.consolidate_mesh();
     auto n_tet_after = tetwild.get_tets().size();
     auto n_verts_after = tetwild.get_vertices().size();
-    REQUIRE(n_tet_after == 4317);
+    REQUIRE(n_tet_after == 4301);
     REQUIRE(tetwild.tet_capacity() == n_tet_after);
     REQUIRE(tetwild.m_tet_attribute.size() == n_tet_after);
     REQUIRE(tetwild.check_mesh_connectivity_validity());

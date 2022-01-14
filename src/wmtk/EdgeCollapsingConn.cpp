@@ -172,11 +172,8 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
         return false;
     }
 
-    /// return new_edges
     for (size_t t_id : new_tet_id) {
         for (int j = 0; j < 6; j++) {
-            if (m_tet_connectivity[t_id][m_local_edges[j][0]] == v2_id ||
-                m_tet_connectivity[t_id][m_local_edges[j][1]] == v2_id)
                 new_edges.push_back(tuple_from_edge(t_id, j));
         }
     }
