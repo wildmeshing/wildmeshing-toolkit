@@ -460,6 +460,11 @@ private:
     std::map<size_t, wmtk::TetMesh::VertexConnectivity> update_connectivity_impl(
         std::vector<size_t>& affected_tid,
         std::vector<std::array<size_t, 4>>& new_tet_conn);
+    void operation_failure_rollback_imp(
+        std::map<size_t, wmtk::TetMesh::VertexConnectivity>& rollback_vert_conn,
+        const std::vector<size_t>& affected,
+        const std::vector<size_t>& new_tet_id,
+        const std::vector<wmtk::TetMesh::TetrahedronConnectivity>& old_tets);
 };
 
 } // namespace wmtk

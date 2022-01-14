@@ -21,9 +21,7 @@ std::vector<wmtk::TetMesh::TetrahedronConnectivity> record_old_tet_connectivity(
     return tet_conn;
 };
 
-void post_rollback(
-    wmtk::TetMesh::vector<wmtk::TetMesh::TetrahedronConnectivity>& m_tet_connectivity,
-    wmtk::TetMesh::vector<wmtk::TetMesh::VertexConnectivity>& m_vertex_connectivity,
+void wmtk::TetMesh::operation_failure_rollback_imp(
     std::map<size_t, wmtk::TetMesh::VertexConnectivity>& rollback_vert_conn,
     const std::vector<size_t>& affected,
     const std::vector<size_t>& new_tet_id,
@@ -163,9 +161,7 @@ bool wmtk::TetMesh::swap_edge(const Tuple& t, Tuple& newt)
 
     if (!swap_edge_after(newt)) { // rollback post-operation
         assert(affected.size() == old_tets.size());
-        post_rollback(
-            m_tet_connectivity,
-            m_vertex_connectivity,
+        operation_failure_rollback_imp(
             rollback_vert_conn,
             affected,
             new_tet_id,
@@ -247,9 +243,7 @@ bool wmtk::TetMesh::swap_face(const Tuple& t, Tuple& newt)
     newt = tuple_from_edge(new_tid, new_eid);
     if (!swap_face_after(newt)) { // rollback post-operation
         logger().trace("rolling back");
-        post_rollback(
-            m_tet_connectivity,
-            m_vertex_connectivity,
+        operation_failure_rollback_imp(
             rollback_vert_conn,
             affected,
             new_tet_id,
