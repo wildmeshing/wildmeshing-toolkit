@@ -316,8 +316,8 @@ private:
     vector<TetrahedronConnectivity> m_tet_connectivity;
     int m_t_empty_slot = 0;
     int m_v_empty_slot = 0;
-    int find_next_empty_slot_t();
-    int find_next_empty_slot_v();
+    int get_next_empty_slot_t();
+    int get_next_empty_slot_v();
 
 protected:
     //// Split the edge in the tuple
@@ -455,6 +455,11 @@ public:
 
     void check_tuple_validity(const Tuple& t) const { t.check_validity(*this); }
     bool check_mesh_connectivity_validity() const;
+
+private:
+    std::map<size_t, wmtk::TetMesh::VertexConnectivity> update_connectivity_impl(
+        std::vector<size_t>& affected_tid,
+        std::vector<std::array<size_t, 4>>& new_tet_conn);
 };
 
 } // namespace wmtk

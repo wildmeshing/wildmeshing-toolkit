@@ -2,7 +2,7 @@
 
 #include <wmtk/utils/TupleUtils.hpp>
 
-int wmtk::TetMesh::find_next_empty_slot_t()
+int wmtk::TetMesh::get_next_empty_slot_t()
 {
     const auto it = m_tet_connectivity.emplace_back();
     const size_t size = std::distance(m_tet_connectivity.begin(), it) + 1;
@@ -13,7 +13,7 @@ int wmtk::TetMesh::find_next_empty_slot_t()
     return size - 1;
 }
 
-int wmtk::TetMesh::find_next_empty_slot_v()
+int wmtk::TetMesh::get_next_empty_slot_v()
 {
     const auto it = m_vertex_connectivity.emplace_back();
     const size_t size = std::distance(m_vertex_connectivity.begin(), it) + 1;
