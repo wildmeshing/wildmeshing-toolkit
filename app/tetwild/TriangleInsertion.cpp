@@ -13,11 +13,6 @@
 
 #include <fstream>
 
-// fortest
-using std::cout;
-using std::endl;
-// fortest
-
 bool tetwild::TetWild::InputSurface::remove_duplicates()
 {
     Eigen::MatrixXd V_tmp(vertices.size(), 3), V_in;
@@ -115,28 +110,10 @@ void tetwild::TetWild::construct_background_mesh(const InputSurface& input_surfa
             }
         }
     }
-    //    points.push_back({{box_min[0], box_min[1], box_min[2]}});
-    //    points.push_back({{box_max[0], box_max[1], box_max[2]}});
-    //    points.push_back({{box_max[0], box_min[1], box_min[2]}});
-    //    points.push_back({{box_min[0], box_max[1], box_max[2]}});
-    //    points.push_back({{box_min[0], box_max[1], box_min[2]}});
-    //    points.push_back({{box_max[0], box_min[1], box_max[2]}});
-    //    points.push_back({{box_min[0], box_min[1], box_max[2]}});
-    //    points.push_back({{box_max[0], box_max[1], box_min[2]}});
-
-    cout << m_params.min.transpose() << endl;
-    cout << m_params.max.transpose() << endl;
-    cout << box_min.transpose() << endl;
-    cout << box_max.transpose() << endl;
-    cout << "points.size() " << points.size() << endl;
-    //    wmtk::logger().info("min: {}", m_params.min);
-    //    wmtk::logger().info("max: {}", m_params.max.transpose());
-    //    wmtk::logger().info("box_min: {}", box_min.transpose());
-    //    wmtk::logger().info("box_max: {}", box_max.transpose());
 
     ///delaunay
     auto tets = wmtk::delaunay3D_conn(points);
-    cout << "tets.size() " << tets.size() << endl;
+    wmtk::logger().info("tets.size() {}", tets.size());
 
     // conn
     init(points.size(), tets);
@@ -183,12 +160,263 @@ void tetwild::TetWild::match_insertion_faces(
     }
 }
 
-void tetwild::TetWild::triangle_insertion(const InputSurface& input_surface)
-{
-    construct_background_mesh(input_surface);
+void tetwild::TetWild::triangle_insertion_before(std::vector<std::pair<Tuple, bool>>& intersected_tet_infos,
+                                                 std::vector<std::pair<Tuple, size_t>>& intersected_edge_infos){
+    const int EMPTY_INTERSECTION = 0;
+    const int TRI_INTERSECTION = 1;
+    const int PLN_INTERSECTION = 2;
+
+    const InputSurface& input_surface = triangle_insertion_cache.input_surface;
+
     const auto& vertices = input_surface.vertices;
     const auto& faces = input_surface.faces;
 
+    auto& is_matched = triangle_insertion_cache.is_matched;
+    auto& is_visited = triangle_insertion_cache.is_visited;
+
+    is_visited.assign(m_tet_attribute.size(), false); // reset
+
+    int face_id = triangle_insertion_cache.face_id;
+
+    std::array<Vector3, 3> tri = {
+        {to_rational(vertices[faces[face_id][0]]),
+         to_rational(vertices[faces[face_id][1]]),
+         to_rational(vertices[faces[face_id][2]])}};
+    std::array<Vector2, 3> tri2;
+    int squeeze_to_2d_dir = wmtk::project_triangle_to_2d(tri, tri2);
+
+    wmtk::logger().info("face_id {}", face_id);
+    //        cout<<faces[face_id][0]<<" "<<faces[face_id][1]<<" "<<faces[face_id][2]<<endl;
+    //        print(tri[0]);
+    //        print(tri[1]);
+    //        print(tri[2]);
+    //        print2(tri2[0]);
+    //        print2(tri2[1]);
+    //        print2(tri2[2]);
+
+
+    std::vector<size_t> intersected_tids;
+    std::map<std::array<size_t, 2>, std::pair<int, Vector3>> map_edge2point;
+    //
+    std::queue<Tuple> tet_queue;
+    //
+    for (int j = 0; j < 3; j++) {
+        Tuple loc = tuple_from_vertex(faces[face_id][j]);
+        auto conn_tets = get_one_ring_tets_for_vertex(loc);
+        for (const auto& t : conn_tets) {
+            tet_queue.push(t);
+            is_visited[t.tid(*this)] = true;
+        }
+    }
+    //
+    while (!tet_queue.empty()) {
+        auto tet = tet_queue.front();
+        tet_queue.pop();
+
+        std::array<Tuple, 6> edges = tet_edges(tet);
+
+        // todo: check if tet face is inside the surface_f, if so, update surface_f_ids
+
+        /// check if the tet edges intersects with the triangle
+        bool need_subdivision = false;
+        for (auto& loc : edges) {
+            size_t v1_id = loc.vid(*this);
+            auto tmp = switch_vertex(loc);
+            size_t v2_id = tmp.vid(*this);
+            std::array<size_t, 2> e = {{v1_id, v2_id}};
+            if (e[0] > e[1]) std::swap(e[0], e[1]);
+
+            if (map_edge2point.count(e)) {
+                if (map_edge2point[e].first == TRI_INTERSECTION)
+                    need_subdivision = true;
+                continue;
+            }
+
+            std::array<Vector3, 2> seg = {
+                {m_vertex_attribute[v1_id].m_pos, m_vertex_attribute[v2_id].m_pos}};
+            Vector3 p(0, 0, 0);
+            bool is_coplanar = wmtk::segment_triangle_coplanar_3d(seg, tri);
+            int intersection_status = EMPTY_INTERSECTION;
+            if (is_coplanar) {
+//                    cout << "is_coplanar" << endl;
+//                    // todo: different way of marking surface, move to above ^
+//                    std::array<Vector2, 2> seg2;
+//                    seg2[0] = wmtk::project_point_to_2d(seg[0], squeeze_to_2d_dir);
+//                    seg2[1] = wmtk::project_point_to_2d(seg[1], squeeze_to_2d_dir);
+//                    for (int j = 0; j < 3; j++) {
+//                        apps::Rational t1;
+//                        std::array<Vector2, 2> tri_seg2 = {{tri2[j], tri2[(j + 1) % 3]}};
+//                        bool is_intersected =
+//                            wmtk::open_segment_open_segment_intersection_2d(seg2, tri_seg2, t1);
+//                        if (is_intersected) {
+//                            intersection_status = TRI_INTERSECTION;
+//                            p = (1 - t1) * seg[0] + t1 * seg[1];
+//                            break;
+//                        }
+//                    }
+            } else {
+                //                    is_intersected =
+                //                    wmtk::open_segment_triangle_intersection_3d(seg, tri, p);
+                bool is_inside_tri = false;
+                bool is_intersected_plane =
+                    wmtk::open_segment_plane_intersection_3d(seg, tri, p, is_inside_tri);
+                if (is_intersected_plane && is_inside_tri) {
+                    intersection_status = TRI_INTERSECTION;
+                }
+                if (is_intersected_plane) {
+                    intersection_status = PLN_INTERSECTION;
+                }
+            }
+
+            map_edge2point[e] = std::make_pair(intersection_status, p);
+            if (intersection_status == EMPTY_INTERSECTION) {
+                continue;
+            } else if (intersection_status == TRI_INTERSECTION) {
+                need_subdivision = true;
+            }
+
+            // add new tets
+            auto incident_tets = get_incident_tets_for_edge(loc);
+            for (auto& t : incident_tets) {
+                int tid = t.tid(*this);
+                if (is_visited[tid]) continue;
+                tet_queue.push(t);
+                is_visited[tid] = true;
+            }
+        }
+
+        /// check if the tet (open) face intersects with the triangle
+        if (!need_subdivision) {
+            std::array<Tuple, 4> fs;
+            fs[0] = tet;
+            fs[1] = switch_face(tet);
+            auto tet1 = switch_edge(switch_vertex(tet));
+            fs[2] = switch_face(tet1);
+            auto tet2 = switch_edge(switch_vertex(tet1));
+            fs[3] = switch_face(tet2);
+
+            for (int j = 0; j < 4; j++) { // for each tet face
+                auto vs = get_face_vertices(tet);
+                std::array<Vector3, 3> tet_tri = {{
+                                                      m_vertex_attribute[vs[0].vid(*this)].m_pos,
+                                                      m_vertex_attribute[vs[1].vid(*this)].m_pos,
+                                                      m_vertex_attribute[vs[2].vid(*this)].m_pos,
+                                                  }};
+
+                bool is_intersected = false;
+                for (int k = 0; k < 3; k++) { // check intersection
+                    std::array<Vector3, 2> input_seg = {{tri[k], tri[(k + 1) % 3]}};
+                    Vector3 p;
+                    is_intersected =
+                        wmtk::open_segment_triangle_intersection_3d(input_seg, tet_tri, p);
+                    if (is_intersected) {
+                        need_subdivision = true;
+                        break;
+                    }
+                }
+
+                if (is_intersected) {
+                    auto res = switch_tetrahedron(tet);
+                    if (res.has_value()) {
+                        auto n_tet = res.value();
+                        int tid = n_tet.tid(*this);
+                        if (is_visited[tid]) continue;
+                        tet_queue.push(n_tet);
+                        is_visited[tid] = true;
+                    }
+                }
+            }
+        }
+
+        /// record the tets
+        if (need_subdivision) {
+            intersected_tids.push_back(tet.tid(*this));
+        }
+    }
+    wmtk::vector_unique(intersected_tids);
+    wmtk::logger().info("intersected_tids.size {}", intersected_tids.size());
+
+    ///use plane to cut intersected_tids and get surrounding_tids
+    std::vector<size_t> surrounding_tids;
+    std::set<std::array<size_t, 2>> intersected_tet_edges;
+    for (size_t tid : intersected_tids) {
+        auto tet = tuple_from_tet(tid);
+        auto edges = tet_edges(tet);
+        for (auto& loc : edges) {
+            size_t v1_id = loc.vid(*this);
+            auto tmp = switch_vertex(loc);
+            size_t v2_id = tmp.vid(*this);
+            std::array<size_t, 2> e = {{v1_id, v2_id}};
+            if (e[0] > e[1]) std::swap(e[0], e[1]);
+
+            intersected_tet_edges.insert(e);
+
+            if (map_edge2point.count(e) && map_edge2point[e].first == PLN_INTERSECTION) {
+                auto incident_tets = get_incident_tets_for_edge(loc);
+                for (auto& t : incident_tets) {
+                    int tid = t.tid(*this);
+                    surrounding_tids.push_back(tid);
+                }
+            }
+        }
+    }
+    //
+    wmtk::vector_unique(surrounding_tids);
+    std::vector<size_t> diff_tids;
+    std::set_difference(
+        surrounding_tids.begin(),
+        surrounding_tids.end(),
+        intersected_tids.begin(),
+        intersected_tids.end(),
+        std::back_inserter(diff_tids));
+    //
+    std::vector<bool> mark_surface(intersected_tids.size(), true);
+    for (int i = 0; i < diff_tids.size(); i++) mark_surface.push_back(false);
+    //
+    intersected_tids.insert(intersected_tids.end(), diff_tids.begin(), diff_tids.end());
+
+    // erase edge without intersections OR edge with intersection but not belong to intersected
+    // tets
+    for (auto it = map_edge2point.begin(), ite = map_edge2point.end(); it != ite;) {
+        if ((it->second).first == EMPTY_INTERSECTION || !intersected_tet_edges.count(it->first))
+            it = map_edge2point.erase(it);
+        else
+            ++it;
+    }
+
+    ///push back new vertices
+    std::map<std::array<size_t, 2>, size_t> map_edge2vid;
+    int v_cnt = 0;
+    for (auto& info : map_edge2point) {
+        VertexAttributes v;
+        v.m_pos = (info.second).second;
+        v.m_posf = to_double(v.m_pos);
+        m_vertex_attribute.push_back(v);
+        (info.second).first = m_vertex_attribute.size() - 1;
+        v_cnt++;
+
+        map_edge2vid[info.first] = (info.second).first;
+    }
+    wmtk::logger().info("map_edge2vid.size {}", map_edge2vid.size());
+
+    ///construct output
+//    intersected_tet_infos
+//    intersected_edge_infos
+    //todo
+}
+
+void tetwild::TetWild::triangle_insertion_after(std::vector<Tuple>& locs){
+    //todo
+}
+
+void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
+{
+    triangle_insertion_cache.input_surface = _input_surface;//todo: avoid copy
+    const auto& input_surface = _input_surface;
+
+    construct_background_mesh(input_surface);
+    const auto& vertices = input_surface.vertices;
+    const auto& faces = input_surface.faces;
 
     // fortest
     auto pausee = []() {
@@ -197,8 +425,8 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& input_surface)
         std::cin >> c;
         if (c == '0') exit(0);
     };
-    auto print = [](const Vector3& p) { cout << p[0] << " " << p[1] << " " << p[2] << endl; };
-    auto print2 = [](const Vector2& p) { cout << p[0] << " " << p[1] << endl; };
+    auto print = [](const Vector3& p) { wmtk::logger().info("{} {} {}", p[0], p[1], p[2]); };
+    auto print2 = [](const Vector2& p) { wmtk::logger().info("{} {}", p[0], p[1]); };
     auto output_surface = [&](std::string file) {
         std::ofstream fout(file);
         std::vector<std::array<int, 3>> fs;
@@ -211,17 +439,17 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& input_surface)
             for (int j = 0; j < 4; j++) {
                 if (triangle_insertion_cache.surface_f_ids[i][j] >= 0) {
                     fout << "v " << m_vertex_attribute[vids[(j + 1) % 4]].m_posf.transpose()
-                         << endl;
+                         << std::endl;
                     fout << "v " << m_vertex_attribute[vids[(j + 2) % 4]].m_posf.transpose()
-                         << endl;
+                         << std::endl;
                     fout << "v " << m_vertex_attribute[vids[(j + 3) % 4]].m_posf.transpose()
-                         << endl;
+                         << std::endl;
                     fs.push_back({{cnt * 3 + 1, cnt * 3 + 2, cnt * 3 + 3}});
                     cnt++;
                 }
             }
         }
-        for (auto& f : fs) fout << "f " << f[0] << " " << f[1] << " " << f[2] << endl;
+        for (auto& f : fs) fout << "f " << f[0] << " " << f[1] << " " << f[2] << std::endl;
         fout.close();
     };
     auto check_tracked_surface_coplanar = [&]() {
@@ -244,8 +472,8 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& input_surface)
 
                 bool is_coplanar = wmtk::segment_triangle_coplanar_3d({{c, c}}, tri);
                 if (!is_coplanar) {
-                    cout << "!is_coplanar " << face_id << endl;
-                    cout << triangle_insertion_cache.face_id << endl;
+//                    cout << "!is_coplanar " << face_id << endl;
+//                    cout << triangle_insertion_cache.face_id << endl;
                     print(c);
                     print(tri[0]);
                     print(tri[1]);
@@ -266,245 +494,22 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& input_surface)
 
     auto& is_visited = triangle_insertion_cache.is_visited;
 
-    const int EMPTY_INTERSECTION = 0;
-    const int TRI_INTERSECTION = 1;
-    const int PLN_INTERSECTION = 2;
+
     for (size_t face_id = 0; face_id < faces.size(); face_id++) {
         if (is_matched[face_id]) continue;
 
-        is_visited.assign(m_tet_attribute.size(), false); // reset
+        triangle_insertion_cache.face_id = face_id;
 
-        std::array<Vector3, 3> tri = {
-            {to_rational(vertices[faces[face_id][0]]),
-             to_rational(vertices[faces[face_id][1]]),
-             to_rational(vertices[faces[face_id][2]])}};
-        std::array<Vector2, 3> tri2;
-        int squeeze_to_2d_dir = wmtk::project_triangle_to_2d(tri, tri2);
-
-        cout << "face_id " << face_id << endl;
-        //        cout<<faces[face_id][0]<<" "<<faces[face_id][1]<<" "<<faces[face_id][2]<<endl;
-        //        print(tri[0]);
-        //        print(tri[1]);
-        //        print(tri[2]);
-        //        print2(tri2[0]);
-        //        print2(tri2[1]);
-        //        print2(tri2[2]);
-
-
-        std::vector<size_t> intersected_tids;
-        std::map<std::array<size_t, 2>, std::pair<int, Vector3>> map_edge2point;
-        //
-        std::queue<Tuple> tet_queue;
-        //
-        for (int j = 0; j < 3; j++) {
-            Tuple loc = tuple_from_vertex(faces[face_id][j]);
-            auto conn_tets = get_one_ring_tets_for_vertex(loc);
-            for (const auto& t : conn_tets) {
-                tet_queue.push(t);
-                is_visited[t.tid(*this)] = true;
-            }
-        }
-        //
-        while (!tet_queue.empty()) {
-            auto tet = tet_queue.front();
-            tet_queue.pop();
-
-            std::array<Tuple, 6> edges = tet_edges(tet);
-
-            // todo: check if tet face is inside the surface_f, if so, update surface_f_ids
-
-            /// check if the tet edges intersects with the triangle
-            bool need_subdivision = false;
-            for (auto& loc : edges) {
-                size_t v1_id = loc.vid(*this);
-                auto tmp = switch_vertex(loc);
-                size_t v2_id = tmp.vid(*this);
-                std::array<size_t, 2> e = {{v1_id, v2_id}};
-                if (e[0] > e[1]) std::swap(e[0], e[1]);
-
-                if (map_edge2point.count(e)) {
-                    if (map_edge2point[e].first == TRI_INTERSECTION)
-                        need_subdivision = true;
-                    continue;
-                }
-
-                std::array<Vector3, 2> seg = {
-                    {m_vertex_attribute[v1_id].m_pos, m_vertex_attribute[v2_id].m_pos}};
-                Vector3 p(0, 0, 0);
-                bool is_coplanar = wmtk::segment_triangle_coplanar_3d(seg, tri);
-                int intersection_status = EMPTY_INTERSECTION;
-                if (is_coplanar) {
-//                    cout << "is_coplanar" << endl;
-//                    // todo: different way of marking surface, move to above ^
-//                    std::array<Vector2, 2> seg2;
-//                    seg2[0] = wmtk::project_point_to_2d(seg[0], squeeze_to_2d_dir);
-//                    seg2[1] = wmtk::project_point_to_2d(seg[1], squeeze_to_2d_dir);
-//                    for (int j = 0; j < 3; j++) {
-//                        apps::Rational t1;
-//                        std::array<Vector2, 2> tri_seg2 = {{tri2[j], tri2[(j + 1) % 3]}};
-//                        bool is_intersected =
-//                            wmtk::open_segment_open_segment_intersection_2d(seg2, tri_seg2, t1);
-//                        if (is_intersected) {
-//                            intersection_status = TRI_INTERSECTION;
-//                            p = (1 - t1) * seg[0] + t1 * seg[1];
-//                            break;
-//                        }
-//                    }
-                } else {
-                    //                    is_intersected =
-                    //                    wmtk::open_segment_triangle_intersection_3d(seg, tri, p);
-                    bool is_inside_tri = false;
-                    bool is_intersected_plane =
-                        wmtk::open_segment_plane_intersection_3d(seg, tri, p, is_inside_tri);
-                    if (is_intersected_plane && is_inside_tri) {
-                        intersection_status = TRI_INTERSECTION;
-                    }
-                    if (is_intersected_plane) {
-                        intersection_status = PLN_INTERSECTION;
-                    }
-                }
-
-                map_edge2point[e] = std::make_pair(intersection_status, p);
-                if (intersection_status == EMPTY_INTERSECTION) {
-                    continue;
-                } else if (intersection_status == TRI_INTERSECTION) {
-                    need_subdivision = true;
-                }
-
-                // add new tets
-                auto incident_tets = get_incident_tets_for_edge(loc);
-                for (auto& t : incident_tets) {
-                    int tid = t.tid(*this);
-                    if (is_visited[tid]) continue;
-                    tet_queue.push(t);
-                    is_visited[tid] = true;
-                }
-            }
-
-            /// check if the tet (open) face intersects with the triangle
-            if (!need_subdivision) {
-                std::array<Tuple, 4> fs;
-                fs[0] = tet;
-                fs[1] = switch_face(tet);
-                auto tet1 = switch_edge(switch_vertex(tet));
-                fs[2] = switch_face(tet1);
-                auto tet2 = switch_edge(switch_vertex(tet1));
-                fs[3] = switch_face(tet2);
-
-                for (int j = 0; j < 4; j++) { // for each tet face
-                    auto vs = get_face_vertices(tet);
-                    std::array<Vector3, 3> tet_tri = {{
-                        m_vertex_attribute[vs[0].vid(*this)].m_pos,
-                        m_vertex_attribute[vs[1].vid(*this)].m_pos,
-                        m_vertex_attribute[vs[2].vid(*this)].m_pos,
-                    }};
-
-                    bool is_intersected = false;
-                    for (int k = 0; k < 3; k++) { // check intersection
-                        std::array<Vector3, 2> input_seg = {{tri[k], tri[(k + 1) % 3]}};
-                        Vector3 p;
-                        is_intersected =
-                            wmtk::open_segment_triangle_intersection_3d(input_seg, tet_tri, p);
-                        if (is_intersected) {
-                            need_subdivision = true;
-                            break;
-                        }
-                    }
-
-                    if (is_intersected) {
-                        auto res = switch_tetrahedron(tet);
-                        if (res.has_value()) {
-                            auto n_tet = res.value();
-                            int tid = n_tet.tid(*this);
-                            if (is_visited[tid]) continue;
-                            tet_queue.push(n_tet);
-                            is_visited[tid] = true;
-                        }
-                    }
-                }
-            }
-
-            /// record the tets
-            if (need_subdivision) {
-                intersected_tids.push_back(tet.tid(*this));
-            }
-        }
-        wmtk::vector_unique(intersected_tids);
-        cout << "intersected_tids.size " << intersected_tids.size() << endl;
-
-        ///use plane to cut intersected_tids and get surrounding_tids
-        std::vector<size_t> surrounding_tids;
-        std::set<std::array<size_t, 2>> intersected_tet_edges;
-        for (size_t tid : intersected_tids) {
-            auto tet = tuple_from_tet(tid);
-            auto edges = tet_edges(tet);
-            for (auto& loc : edges) {
-                size_t v1_id = loc.vid(*this);
-                auto tmp = switch_vertex(loc);
-                size_t v2_id = tmp.vid(*this);
-                std::array<size_t, 2> e = {{v1_id, v2_id}};
-                if (e[0] > e[1]) std::swap(e[0], e[1]);
-
-                intersected_tet_edges.insert(e);
-
-                if (map_edge2point.count(e) && map_edge2point[e].first == PLN_INTERSECTION) {
-                    auto incident_tets = get_incident_tets_for_edge(loc);
-                    for (auto& t : incident_tets) {
-                        int tid = t.tid(*this);
-                        surrounding_tids.push_back(tid);
-                    }
-                }
-            }
-        }
-        //
-        wmtk::vector_unique(surrounding_tids);
-        std::vector<size_t> diff_tids;
-        std::set_difference(
-            surrounding_tids.begin(),
-            surrounding_tids.end(),
-            intersected_tids.begin(),
-            intersected_tids.end(),
-            std::back_inserter(diff_tids));
-        //
-        std::vector<bool> mark_surface(intersected_tids.size(), true);
-        for (int i = 0; i < diff_tids.size(); i++) mark_surface.push_back(false);
-        //
-        intersected_tids.insert(intersected_tids.end(), diff_tids.begin(), diff_tids.end());
-
-        // erase edge without intersections OR edge with intersection but not belong to intersected
-        // tets
-        for (auto it = map_edge2point.begin(), ite = map_edge2point.end(); it != ite;) {
-            if ((it->second).first == EMPTY_INTERSECTION || !intersected_tet_edges.count(it->first))
-                it = map_edge2point.erase(it);
-            else
-                ++it;
-        }
-
-        ///push back new vertices
-        std::map<std::array<size_t, 2>, size_t> map_edge2vid;
-        int v_cnt = 0;
-        for (auto& info : map_edge2point) {
-            VertexAttributes v;
-            v.m_pos = (info.second).second;
-            v.m_posf = to_double(v.m_pos);
-            m_vertex_attribute.push_back(v);
-            (info.second).first = m_vertex_attribute.size() - 1;
-            v_cnt++;
-
-            map_edge2vid[info.first] = (info.second).first;
-        }
-        cout << "map_edge2vid.size " << map_edge2vid.size() << endl;
+        single_triangle_insertion();//todo
 
         ///push back new tets conn
-        triangle_insertion_cache.face_id = face_id;
-        subdivide_tets(intersected_tids, mark_surface, map_edge2vid); // in TetMesh class
+//        subdivide_tets(intersected_tids, mark_surface, map_edge2vid); // in TetMesh class
 
         ///resize attri lists
         m_tet_attribute.resize(tet_capacity()); // todo: do we need it?
 
         check_mesh_connectivity_validity();
-        cout << "inserted" << endl;
-        cout << "#t " << tet_capacity() << endl;
+        wmtk::logger().info("inserted #t {}", tet_capacity());
         //        pausee();
 
 //        //fortest

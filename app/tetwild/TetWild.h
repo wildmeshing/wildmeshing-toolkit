@@ -119,12 +119,12 @@ public:
 
         Parameters params;
 
-        InputSurface(
-            const std::vector<Vector3d>& _vertices,
-            const std::vector<std::array<size_t, 3>>& _faces)
-            : vertices(_vertices)
-            , faces(_faces)
+        InputSurface(){}
+
+        void init(const std::vector<Vector3d>& _vertices, const std::vector<std::array<size_t, 3>>& _faces)
         {
+            vertices = _vertices;
+            faces = _faces;
             Vector3d min, max;
             for (size_t i = 0; i < vertices.size(); i++) {
                 if (i == 0) {
@@ -147,14 +147,15 @@ public:
     struct TriangleInsertionInfoCache
     {
         //global info: throughout the whole insertion
+        InputSurface input_surface;
         std::vector<std::array<int, 4>> surface_f_ids;
         std::vector<bool> is_matched;
 
         //local info: for each face insertion
         std::vector<bool> is_visited;
         int face_id;
-    } triangle_insertion_cache; // todo: change for parallel
-
+    };
+    TriangleInsertionInfoCache triangle_insertion_cache;
 
     ////// Operations
 
@@ -178,7 +179,6 @@ public:
 
     void construct_background_mesh(const InputSurface& input_surface);
     void match_insertion_faces(const InputSurface& input_surface, std::vector<bool>& is_matched);
-    void triangle_insertion(const InputSurface& input_surface);
     //
     void add_tet_centroid(const std::array<size_t, 4>& vids) override;
     void insertion_update_surface_tag(
@@ -188,6 +188,11 @@ public:
         int diag_config_id,
         int index,
         bool mark_surface) override;
+    //
+    void triangle_insertion(const InputSurface& input_surface);
+    void triangle_insertion_before(std::vector<std::pair<Tuple, bool>>& intersected_tet_infos,
+                                   std::vector<std::pair<Tuple, size_t>>& intersected_edge_infos) override;
+    void triangle_insertion_after(std::vector<Tuple>& locs) override;
 
 
     void split_all_edges();

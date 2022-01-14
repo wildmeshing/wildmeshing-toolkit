@@ -37,7 +37,8 @@ TEST_CASE("triangle-insertion", "[test_operation]")
         }
     }
 
-    tetwild::TetWild::InputSurface input_surface(vertices, faces);
+    tetwild::TetWild::InputSurface input_surface;
+    input_surface.init(vertices, faces);
     input_surface.remove_duplicates();
     //
     fastEnvelope::FastEnvelope envelope;

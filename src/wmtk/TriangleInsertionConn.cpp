@@ -8,17 +8,26 @@
 
 #include <bitset>
 
-//fortest
-using std::cout;
-using std::endl;
-//fortest
+void wmtk::TetMesh::single_triangle_insertion(){
+    std::vector<std::pair<Tuple, bool>> intersected_tet_infos;
+    std::vector<std::pair<Tuple, size_t>> intersected_edge_infos;
+    triangle_insertion_before(intersected_tet_infos, intersected_edge_infos);
 
-void wmtk::TetMesh::subdivide_tets(
-    const std::vector<size_t> intersected_tids,
-    const std::vector<bool>& mark_surface,
-    std::map<std::array<size_t, 2>, size_t>& map_edge2vid)
+    std::vector<size_t> intersected_tids;
+    std::vector<bool> mark_surface;
+    std::map<std::array<size_t, 2>, size_t> map_edge2vid;
+    subdivide_tets(intersected_tids, mark_surface, map_edge2vid);
+    //todo: API: tet tuples, edge tuples
+
+    std::vector<Tuple> locs;
+    triangle_insertion_after(locs);
+}
+
+void wmtk::TetMesh::subdivide_tets(const std::vector<size_t> intersected_tids,
+                                   const std::vector<bool>& mark_surface,
+                                   std::map<std::array<size_t, 2>, size_t>& map_edge2vid)
 {
-    using namespace Eigen;
+
     /// insert new vertices
     size_t old_v_size = m_vertex_connectivity.size();
     m_vertex_connectivity.resize(m_vertex_connectivity.size() + map_edge2vid.size());
@@ -54,13 +63,7 @@ void wmtk::TetMesh::subdivide_tets(
         }
         bool is_add_centroid;//todo: maybe not necessary
         subdivide_a_tet(t_id, new_v_ids, mark_surface[i], is_add_centroid);
-//        if(is_add_centroid)
-//            cout<<"is_add_centroid"<<endl;
     }
-
-//    for(auto& info: map_edge2vid){
-//        cout<<info.second<<endl;
-//    }
 
     /// update conn_tets
     {
@@ -72,7 +75,6 @@ void wmtk::TetMesh::subdivide_tets(
         std::map<size_t, std::vector<size_t>> new_conn_tets;
         for (int vid : vids) {
             new_conn_tets[vid] = {};
-//            cout<<"v"<<vid<<endl;
         }
         //
         for (size_t tid : tids) {

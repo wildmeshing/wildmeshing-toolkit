@@ -288,9 +288,8 @@ public:
     bool swap_face(const Tuple& t, Tuple& new_edge);
     bool smooth_vertex(const Tuple& t);
 
-    void subdivide_tets(const std::vector<size_t> t_ids,
-                        const std::vector<bool>& mark_surface,
-                        std::map<std::array<size_t, 2>, size_t>& map_edge2vid);
+    void single_triangle_insertion();
+
 
     /**
      * @brief cleans up the deleted vertices or tetrahedra, fixes the corresponding indices, and
@@ -322,6 +321,9 @@ private:
     int find_next_empty_slot_t();
     int find_next_empty_slot_v();
 
+    void subdivide_tets(const std::vector<size_t> t_ids,
+                        const std::vector<bool>& mark_surface,
+                        std::map<std::array<size_t, 2>, size_t>& map_edge2vid);
     void subdivide_a_tet(size_t t_id, const std::array<int, 6>& new_v_ids, bool mark_surface, bool& is_add_centroid);
 
 protected:
@@ -329,6 +331,10 @@ protected:
                                               int config_id, int diag_config_id, int index,
                                               bool mark_surface){}
     virtual void add_tet_centroid(const std::array<size_t, 4>& vids){}
+
+    virtual void triangle_insertion_before(std::vector<std::pair<Tuple, bool>>& intersected_tet_infos,
+                                           std::vector<std::pair<Tuple, size_t>>& intersected_edge_infos) {}
+    virtual void triangle_insertion_after(std::vector<Tuple>& locs) {}
 
     //// Split the edge in the tuple
     // Checks if the split should be performed or not (user controlled)
