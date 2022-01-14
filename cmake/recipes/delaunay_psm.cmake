@@ -12,7 +12,6 @@ FetchContent_Declare(
     delauanay_psm
     GIT_REPOSITORY https://github.com/wildmeshing/Delaunay_psm.git
     GIT_TAG 3ecb4d6a1ccdcf5f3325a67470f18ae5b4074343
-    GIT_SHALLOW TRUE
 )
 FetchContent_MakeAvailable(delauanay_psm)
 
