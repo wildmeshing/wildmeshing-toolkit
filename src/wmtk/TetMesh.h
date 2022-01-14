@@ -455,6 +455,11 @@ public:
 
     void check_tuple_validity(const Tuple& t) const { t.check_validity(*this); }
     bool check_mesh_connectivity_validity() const;
+
+private:
+    std::map<size_t, wmtk::TetMesh::VertexConnectivity> update_connectivity_impl(
+        std::vector<size_t>& affected_tid,
+        std::vector<std::array<size_t, 4>>& new_tet_conn);
 };
 
 } // namespace wmtk
