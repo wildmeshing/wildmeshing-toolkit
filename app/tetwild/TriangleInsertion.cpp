@@ -118,7 +118,10 @@ void tetwild::TetWild::construct_background_mesh(const InputSurface& input_surfa
     // conn
     init(points.size(), tets);
     // attr
-    resize_attributes(points.size(), tets.size() * 6, tets.size() * 4, tets.size());
+    m_vertex_attribute.resize(points.size());
+    m_tet_attribute.resize(tets.size());
+    m_face_attribute.resize(tets.size() * 4);
+    m_edge_attribute.resize(tets.size() * 6);
     for (int i = 0; i < m_vertex_attribute.size(); i++) {
         m_vertex_attribute[i].m_pos = Vector3(points[i][0], points[i][1], points[i][2]);
         m_vertex_attribute[i].m_posf = Vector3d(points[i][0], points[i][1], points[i][2]);
