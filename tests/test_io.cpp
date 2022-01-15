@@ -64,5 +64,38 @@ TEST_CASE("io", "[io][mshio]")
         REQUIRE(msh2.get_edge_attribute_names().size() == 1);
         REQUIRE(msh2.get_face_attribute_names().size() == 1);
         REQUIRE(msh2.get_tet_attribute_names().size() == 1);
+
+        std::vector<Point3D> out_vertices;
+        out_vertices.resize(msh.get_num_tet_vertices());
+        msh.extract_tet_vertices([&](size_t i, double x, double y, double z) {
+            out_vertices[i] = {{x, y, z}};
+        });
+        REQUIRE(out_vertices == vertices);
+
+        std::vector<std::array<size_t, 4>> out_tets;
+        out_tets.resize(msh.get_num_tets());
+        msh.extract_tets([&](size_t i, size_t v0, size_t v1, size_t v2, size_t v3) {
+            out_tets[i] = {{v0, v1, v2, v3}};
+        });
+        REQUIRE(out_tets == tets);
+
+        std::vector<size_t> vertex_indices;
+        vertex_indices.resize(msh.get_num_tet_vertices());
+        msh.extract_tet_vertex_attribute(
+            "tv index",
+            [&](size_t i, const std::vector<double>& data) {
+                REQUIRE(data.size() == 1);
+                vertex_indices[i] = static_cast<size_t>(data[0]);
+            });
+        REQUIRE(vertex_indices == std::vector<size_t>({0, 1, 2, 3}));
+
+        std::vector<size_t> tet_indices;
+        tet_indices.resize(msh.get_num_tets());
+        msh.extract_tet_attribute("t index", [&](size_t i, const std::vector<double>& data) {
+            REQUIRE(data.size() == 1);
+            tet_indices[i] = static_cast<size_t>(data[0]);
+        });
+        REQUIRE(tet_indices == std::vector<size_t>({0}));
+
     }
 }
