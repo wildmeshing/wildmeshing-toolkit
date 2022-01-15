@@ -22,7 +22,7 @@ add_library(wmtk_tetwild
 	tetwild/EdgeSwapping.cpp
 
 	tetwild/TriangleInsertion.cpp
-		tetwild/Rational.hpp
+	tetwild/Rational.hpp
 )
 add_library(wmtk::tetwild ALIAS wmtk_tetwild)
 
