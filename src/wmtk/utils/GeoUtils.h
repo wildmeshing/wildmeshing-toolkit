@@ -207,8 +207,7 @@ bool open_segment_plane_intersection_3d(
     if (t <= 0 || t >= 1) return false;
 
     is_inside = true;
-    if (u < 0 || u > 1 || v < 0 || v > 1 || u + v > 1)
-        is_inside = false;
+    if (u < 0 || u > 1 || v < 0 || v > 1 || u + v > 1) is_inside = false;
 
     p = (1 - t) * e0 + t * e1;
 

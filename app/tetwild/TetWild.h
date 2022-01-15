@@ -117,9 +117,11 @@ public:
 
         Parameters params;
 
-        InputSurface(){}
+        InputSurface() {}
 
-        void init(const std::vector<Vector3d>& _vertices, const std::vector<std::array<size_t, 3>>& _faces)
+        void init(
+            const std::vector<Vector3d>& _vertices,
+            const std::vector<std::array<size_t, 3>>& _faces)
         {
             vertices = _vertices;
             faces = _faces;
@@ -144,12 +146,12 @@ public:
 
     struct TriangleInsertionInfoCache
     {
-        //global info: throughout the whole insertion
+        // global info: throughout the whole insertion
         InputSurface input_surface;
         std::vector<std::array<int, 4>> surface_f_ids;
         std::vector<bool> is_matched;
 
-        //local info: for each face insertion
+        // local info: for each face insertion
         std::vector<bool> is_visited;
         int face_id;
     };
@@ -189,8 +191,9 @@ public:
     //
     void triangle_insertion(const InputSurface& input_surface);
     void triangle_insertion_before(const std::vector<Tuple>& faces) override;
-    void triangle_insertion_after(const std::vector<Tuple>& faces,
-                                  const std::vector<std::vector<Tuple>>& new_faces) override;
+    void triangle_insertion_after(
+        const std::vector<Tuple>& faces,
+        const std::vector<std::vector<Tuple>>& new_faces) override;
 
 
     void split_all_edges();

@@ -163,12 +163,16 @@ void tetwild::TetWild::match_insertion_faces(
     }
 }
 
-void tetwild::TetWild::triangle_insertion_before(const std::vector<Tuple>& faces){
-    //todo
+void tetwild::TetWild::triangle_insertion_before(const std::vector<Tuple>& faces)
+{
+    // todo
 }
 
-void tetwild::TetWild::triangle_insertion_after(const std::vector<Tuple>& faces, const std::vector<std::vector<Tuple>>& new_faces){
-    //todo
+void tetwild::TetWild::triangle_insertion_after(
+    const std::vector<Tuple>& faces,
+    const std::vector<std::vector<Tuple>>& new_faces)
+{
+    // todo
 }
 
 void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
@@ -177,7 +181,7 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
     const int TRI_INTERSECTION = 1;
     const int PLN_INTERSECTION = 2;
 
-    triangle_insertion_cache.input_surface = _input_surface;//todo: avoid copy
+    triangle_insertion_cache.input_surface = _input_surface; // todo: avoid copy
     const auto& input_surface = _input_surface;
 
     construct_background_mesh(input_surface);
@@ -238,8 +242,8 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
 
                 bool is_coplanar = wmtk::segment_triangle_coplanar_3d({{c, c}}, tri);
                 if (!is_coplanar) {
-//                    cout << "!is_coplanar " << face_id << endl;
-//                    cout << triangle_insertion_cache.face_id << endl;
+                    //                    cout << "!is_coplanar " << face_id << endl;
+                    //                    cout << triangle_insertion_cache.face_id << endl;
                     print(c);
                     print(tri[0]);
                     print(tri[1]);
@@ -316,8 +320,7 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
                 if (e[0] > e[1]) std::swap(e[0], e[1]);
 
                 if (map_edge2point.count(e)) {
-                    if (map_edge2point[e].first == TRI_INTERSECTION)
-                        need_subdivision = true;
+                    if (map_edge2point[e].first == TRI_INTERSECTION) need_subdivision = true;
                     continue;
                 }
 
@@ -330,13 +333,15 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
                     //                    cout << "is_coplanar" << endl;
                     //                    // todo: different way of marking surface, move to above ^
                     //                    std::array<Vector2, 2> seg2;
-                    //                    seg2[0] = wmtk::project_point_to_2d(seg[0], squeeze_to_2d_dir);
-                    //                    seg2[1] = wmtk::project_point_to_2d(seg[1], squeeze_to_2d_dir);
-                    //                    for (int j = 0; j < 3; j++) {
+                    //                    seg2[0] = wmtk::project_point_to_2d(seg[0],
+                    //                    squeeze_to_2d_dir); seg2[1] =
+                    //                    wmtk::project_point_to_2d(seg[1], squeeze_to_2d_dir); for
+                    //                    (int j = 0; j < 3; j++) {
                     //                        apps::Rational t1;
-                    //                        std::array<Vector2, 2> tri_seg2 = {{tri2[j], tri2[(j + 1) % 3]}};
-                    //                        bool is_intersected =
-                    //                            wmtk::open_segment_open_segment_intersection_2d(seg2, tri_seg2, t1);
+                    //                        std::array<Vector2, 2> tri_seg2 = {{tri2[j], tri2[(j +
+                    //                        1) % 3]}}; bool is_intersected =
+                    //                            wmtk::open_segment_open_segment_intersection_2d(seg2,
+                    //                            tri_seg2, t1);
                     //                        if (is_intersected) {
                     //                            intersection_status = TRI_INTERSECTION;
                     //                            p = (1 - t1) * seg[0] + t1 * seg[1];
@@ -440,7 +445,8 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
 
                 intersected_tet_edges.insert(e);
 
-                if (map_edge2point.count(e) && map_edge2point[e].first == PLN_INTERSECTION) {//todo: wrong
+                if (map_edge2point.count(e) &&
+                    map_edge2point[e].first == PLN_INTERSECTION) { // todo: wrong
                     auto incident_tets = get_incident_tets_for_edge(loc);
                     for (auto& t : incident_tets) {
                         int tid = t.tid(*this);
@@ -488,7 +494,7 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
         }
         wmtk::logger().info("map_edge2vid.size {}", map_edge2vid.size());
 
-        //todo: get tets and edges tuples
+        // todo: get tets and edges tuples
         std::vector<Tuple> intersected_tets;
         std::vector<Tuple> intersected_edges;
         single_triangle_insertion(intersected_tets, intersected_edges);
@@ -501,9 +507,9 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
         wmtk::logger().info("inserted #t {}", tet_capacity());
         //        pausee();
 
-//        //fortest
-//        check_tracked_surface_coplanar();
-//        //fortest
+        //        //fortest
+        //        check_tracked_surface_coplanar();
+        //        //fortest
     }
 
     // fortest

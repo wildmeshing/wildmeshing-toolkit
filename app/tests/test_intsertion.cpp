@@ -22,7 +22,7 @@ TEST_CASE("triangle-insertion", "[test_operation]")
     Eigen::MatrixXd F;
     std::string input_path = WMT_DATA_DIR "/37322.stl";
     igl::read_triangle_mesh(input_path, V, F);
-    cout<<V.rows()<<" "<<F.rows()<<endl;
+    cout << V.rows() << " " << F.rows() << endl;
 
     std::vector<Vector3d> vertices(V.rows());
     std::vector<std::array<size_t, 3>> faces(F.rows());
@@ -46,5 +46,5 @@ TEST_CASE("triangle-insertion", "[test_operation]")
     //
     tetwild::TetWild mesh(input_surface.params, envelope);
 
-//    mesh.triangle_insertion(input_surface);
+    //    mesh.triangle_insertion(input_surface);
 }
