@@ -33,9 +33,8 @@ option(LIBIGL_WITH_XML               "Use XML"                      OFF)
 include(FetchContent)
 FetchContent_Declare(
     libigl
-    GIT_REPOSITORY https://github.com/libigl/libigl.git
-    GIT_TAG v2.3.0
-    GIT_SHALLOW TRUE
+    URL https://github.com/libigl/libigl/archive/refs/tags/v2.3.0.zip
+    URL_HASH MD5=6f17257bf1c898872091e5095d477cbf
 )
 FetchContent_GetProperties(libigl)
 if(libigl_POPULATED)

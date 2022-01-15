@@ -83,13 +83,11 @@ public:
     std::vector<FaceAttributes> m_face_attribute;
     std::vector<TetAttributes> m_tet_attribute;
 
-    void resize_attributes(size_t v, size_t e, size_t f, size_t t) override
-    {
-        m_vertex_attribute.resize(v);
-        m_edge_attribute.resize(e);
-        m_face_attribute.resize(f);
-        m_tet_attribute.resize(t);
-    }
+    void resize_vertex_attributes(size_t v) override { m_vertex_attribute.resize(v); }
+    void resize_edge_attributes(size_t e) override { m_edge_attribute.resize(e); }
+    void resize_face_attributes(size_t f) override { m_face_attribute.resize(f); }
+    void resize_tet_attributes(size_t t) override { m_tet_attribute.resize(t); }
+
 
     void move_face_attribute(size_t from, size_t to) override
     {

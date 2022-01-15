@@ -318,8 +318,8 @@ private:
     vector<TetrahedronConnectivity> m_tet_connectivity;
     int m_t_empty_slot = 0;
     int m_v_empty_slot = 0;
-    int find_next_empty_slot_t();
-    int find_next_empty_slot_v();
+    int get_next_empty_slot_t();
+    int get_next_empty_slot_v();
 
     void subdivide_tets(const std::vector<size_t> t_ids,
                         const std::vector<bool>& mark_surface,
@@ -365,7 +365,11 @@ protected:
     virtual bool face_invariant(const Tuple& t) { return true; }
     virtual bool tetrahedron_invariant(const Tuple& t) { return true; }
 
-    virtual void resize_attributes(size_t v, size_t e, size_t f, size_t t) {}
+    virtual void resize_vertex_attributes(size_t v) {}
+    virtual void resize_edge_attributes(size_t e) {}
+    virtual void resize_face_attributes(size_t f) {}
+    virtual void resize_tet_attributes(size_t t) {}
+
     virtual void move_face_attribute(size_t from, size_t to) {}
     virtual void move_edge_attribute(size_t from, size_t to) {}
     virtual void move_tet_attribute(size_t from, size_t to) {}
@@ -470,6 +474,11 @@ public:
 
     void check_tuple_validity(const Tuple& t) const { t.check_validity(*this); }
     bool check_mesh_connectivity_validity() const;
+
+private:
+    std::map<size_t, wmtk::TetMesh::VertexConnectivity> update_connectivity_impl(
+        std::vector<size_t>& affected_tid,
+        std::vector<std::array<size_t, 4>>& new_tet_conn);
 };
 
 } // namespace wmtk
