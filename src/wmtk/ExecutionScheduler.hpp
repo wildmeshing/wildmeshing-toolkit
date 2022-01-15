@@ -17,13 +17,6 @@
 #include <queue>
 #include <stdexcept>
 #include <type_traits>
-// in utils
-namespace wmtk::utils {
-inline std::vector<TetMesh::Tuple> one_edge_ring_tuple(const TetMesh& m, const TetMesh::Tuple& t)
-{
-    return {};
-}
-} // namespace wmtk::utils
 
 namespace wmtk {
 enum class ExecutionPolicy { kSeq, kUnSeq, kPartition, kColor, kMax };
@@ -43,8 +36,7 @@ struct ExecutePass
     // Renew Neighboring Tuples
     // Right now, use pre-implemented functions to get one edge ring.
     // TODO: Ideally, this depend on both operation and priority criterion.
-    std::function<std::vector<Tuple>(const AppMesh&, const Tuple&)> renew_neighbor_tuples =
-        utils::one_edge_ring_tuple;
+    std::function<std::vector<Tuple>(const AppMesh&, const Tuple&)> renew_neighbor_tuples;
 
     // lock vertices: should depend on the operation
     // returns a range of vertices that we need to acquire and lock.
@@ -155,7 +147,7 @@ private:
     { //
         // release mutex, but this should be implemented in TetMesh class.
         if constexpr (policy == ExecutionPolicy::kSeq) return;
-        throw std::runtime_error("Implement Release Mutex here");
+        static_assert(policy == ExecutionPolicy::kSeq, "Implement Release Mutex here");
     }
     // class ResourceManger
     // what about RAII mesh edit locking?

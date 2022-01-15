@@ -91,7 +91,6 @@ bool harmonic_tet::HarmonicTet::smooth_after(const Tuple& t)
     return true;
 }
 
-
 bool HarmonicTet::swap_edge_before(const Tuple& t)
 {
     if (!TetMesh::swap_edge_before(t)) return false;
