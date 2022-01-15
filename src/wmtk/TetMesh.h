@@ -288,7 +288,8 @@ public:
     bool swap_face(const Tuple& t, Tuple& new_edge);
     bool smooth_vertex(const Tuple& t);
 
-    void single_triangle_insertion();
+    void single_triangle_insertion(const std::vector<Tuple>& intersected_tets,
+                                   const std::vector<Tuple>& intersected_edges);
 
 
     /**
@@ -332,9 +333,9 @@ protected:
                                               bool mark_surface){}
     virtual void add_tet_centroid(const std::array<size_t, 4>& vids){}
 
-    virtual void triangle_insertion_before(std::vector<std::pair<Tuple, bool>>& intersected_tet_infos,
-                                           std::vector<std::pair<Tuple, size_t>>& intersected_edge_infos) {}
-    virtual void triangle_insertion_after(std::vector<Tuple>& locs) {}
+    virtual void triangle_insertion_before(std::vector<Tuple>& faces) {}
+    virtual void triangle_insertion_after(std::vector<Tuple>& faces,
+                                          std::vector<std::vector<Tuple>>& new_faces) {}
 
     //// Split the edge in the tuple
     // Checks if the split should be performed or not (user controlled)

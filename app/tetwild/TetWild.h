@@ -188,9 +188,9 @@ public:
         bool mark_surface) override;
     //
     void triangle_insertion(const InputSurface& input_surface);
-    void triangle_insertion_before(std::vector<std::pair<Tuple, bool>>& intersected_tet_infos,
-                                   std::vector<std::pair<Tuple, size_t>>& intersected_edge_infos) override;
-    void triangle_insertion_after(std::vector<Tuple>& locs) override;
+    void triangle_insertion_before(std::vector<Tuple>& faces) override;
+    void triangle_insertion_after(std::vector<Tuple>& faces,
+                                  std::vector<std::vector<Tuple>>& new_faces) override;
 
 
     void split_all_edges();

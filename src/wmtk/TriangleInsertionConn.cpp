@@ -8,19 +8,19 @@
 
 #include <bitset>
 
-void wmtk::TetMesh::single_triangle_insertion(){
-    std::vector<std::pair<Tuple, bool>> intersected_tet_infos;
-    std::vector<std::pair<Tuple, size_t>> intersected_edge_infos;
-    triangle_insertion_before(intersected_tet_infos, intersected_edge_infos);
+void wmtk::TetMesh::single_triangle_insertion(const std::vector<Tuple>& intersected_tets,
+                                              const std::vector<Tuple>& intersected_edges){
+    std::vector<Tuple> old_faces;
+    triangle_insertion_before(old_faces);
 
+    //todo: init from tet tuples, edge tuples
     std::vector<size_t> intersected_tids;
     std::vector<bool> mark_surface;
     std::map<std::array<size_t, 2>, size_t> map_edge2vid;
     subdivide_tets(intersected_tids, mark_surface, map_edge2vid);
-    //todo: API: tet tuples, edge tuples
 
-    std::vector<Tuple> locs;
-    triangle_insertion_after(locs);
+    std::vector<std::vector<Tuple>> new_faces;
+    triangle_insertion_after(old_faces, new_faces);
 }
 
 void wmtk::TetMesh::subdivide_tets(const std::vector<size_t> intersected_tids,
