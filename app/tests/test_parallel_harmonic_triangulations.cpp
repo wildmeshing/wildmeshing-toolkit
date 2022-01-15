@@ -72,10 +72,10 @@ TEST_CASE("parallel_harmonic-tet-swaps", "[parallel_harmtri]")
         har_tet.swap_all_edges();
         time = timer.getElapsedTimeInMilliSec();
         std::cout << time << std::endl;
-        har_tet.swap_all_faces();
-        har_tet.consolidate_mesh();
-        har_tet.smooth_all_vertices();
-        auto [E1, cnt1] = stats(har_tet);
-        REQUIRE(E1 / cnt1 < E0 / cnt0);
+        // har_tet.swap_all_faces();
+        // har_tet.consolidate_mesh();
+        // har_tet.smooth_all_vertices();
+        // auto [E1, cnt1] = stats(har_tet);
+        // REQUIRE(E1 / cnt1 < E0 / cnt0);
     }
 }
