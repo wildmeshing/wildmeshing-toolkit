@@ -36,7 +36,7 @@ struct ExecutePass
     // Renew Neighboring Tuples
     // Right now, use pre-implemented functions to get one edge ring.
     // TODO: Ideally, this depend on both operation and priority criterion.
-    std::function<std::vector<Tuple>(const AppMesh&, const Tuple&)> renew_neighbor_tuples;
+    std::function<std::vector<Tuple>(const AppMesh&, const Tuple&)> renew_neighbor_tuples = [](auto&, auto&)->std::vector<Tuple>{return {};};
 
     // lock vertices: should depend on the operation
     // returns a range of vertices that we need to acquire and lock.
