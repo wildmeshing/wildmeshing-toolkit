@@ -153,7 +153,7 @@ private:
     // what about RAII mesh edit locking?
 
 public:
-    bool operator()(AppMesh& m, std::vector<std::pair<Op, Tuple>> operation_tuples)
+    bool operator()(AppMesh& m, const std::vector<std::pair<Op, Tuple>>& operation_tuples)
     {
         static_assert(policy == ExecutionPolicy::kSeq, "start with serial version");
         auto cnt_update = std::atomic<int>(0);

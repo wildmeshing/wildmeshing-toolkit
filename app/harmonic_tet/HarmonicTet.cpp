@@ -168,11 +168,27 @@ void harmonic_tet::HarmonicTet::smooth_all_vertices()
     executor(*this, collect_all_ops);
 }
 
+auto renewal_faces = [](const auto& m, const auto& t) {
+    auto newt = t;
+    auto new_tets = std::vector<size_t>(1, newt.tid(m));
+    for (auto k = 0; k < 2; k++) {
+        newt = newt.switch_face(m);
+        newt = newt.switch_tetrahedron(m).value();
+        new_tets.push_back(newt.tid(m));
+    }
+
+    auto new_faces = std::vector<wmtk::TetMesh::Tuple>();
+    for (auto ti : new_tets) {
+        for (auto j = 0; j < 4; j++) new_faces.push_back(m.tuple_from_face(ti, j));
+    }
+    wmtk::unique_face_tuples(m, new_faces);
+    return new_faces;
+};
 
 void HarmonicTet::swap_all_faces()
 {
     auto executor = wmtk::ExecutePass<HarmonicTet>();
-    executor.renew_neighbor_tuples = renewal;
+    executor.renew_neighbor_tuples = renewal_faces;
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_faces()) collect_all_ops.emplace_back("face_swap", loc);
     executor(*this, collect_all_ops);
