@@ -20,4 +20,6 @@ using Tetrahedron = std::array<size_t, 4>;
  */
 auto delaunay3D(const std::vector<Point3D>& points)
     -> std::pair<std::vector<Point3D>, std::vector<Tetrahedron>>;
+auto delaunay3D_conn(const std::vector<Point3D>& points)
+    -> std::vector<Tetrahedron>;
 } // namespace wmtk

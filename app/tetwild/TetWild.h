@@ -18,7 +18,7 @@ class VertexAttributes
 {
 public:
     Vector3 m_pos;
-    Vector3f m_posf;
+    Vector3d m_posf;
 
     bool m_is_on_surface;
     bool m_is_on_boundary;
@@ -108,8 +108,57 @@ public:
 
     void output_mesh(std::string file);
 
+    class InputSurface
+    {
+    public:
+        std::vector<Vector3d> vertices;
+        std::vector<std::array<size_t, 3>> faces;
+        // can add other input tags;
+
+        Parameters params;
+
+        InputSurface() {}
+
+        void init(
+            const std::vector<Vector3d>& _vertices,
+            const std::vector<std::array<size_t, 3>>& _faces)
+        {
+            vertices = _vertices;
+            faces = _faces;
+            Vector3d min, max;
+            for (size_t i = 0; i < vertices.size(); i++) {
+                if (i == 0) {
+                    min = vertices[i];
+                    max = vertices[i];
+                    continue;
+                }
+                for (int j = 0; j < 3; j++) {
+                    if (vertices[i][j] < min[j]) min[j] = vertices[i][j];
+                    if (vertices[i][j] > max[j]) max[j] = vertices[i][j];
+                }
+            }
+
+            params.init(min, max);
+        }
+
+        bool remove_duplicates(); // inplace func
+    };
+
+    struct TriangleInsertionInfoCache
+    {
+        // global info: throughout the whole insertion
+        InputSurface input_surface;
+        std::vector<std::array<int, 4>> surface_f_ids;
+        std::vector<bool> is_matched;
+
+        // local info: for each face insertion
+        std::vector<bool> is_visited;
+        int face_id;
+    };
+    TriangleInsertionInfoCache triangle_insertion_cache;
+
     ////// Operations
-    //	protected:
+
     struct SplitInfoCache
     {
         VertexAttributes vertex_info;
@@ -126,6 +175,26 @@ public:
     {
         double max_energy;
     } edgeswap_cache, faceswap_cache; // todo: change for parallel
+
+
+    void construct_background_mesh(const InputSurface& input_surface);
+    void match_insertion_faces(const InputSurface& input_surface, std::vector<bool>& is_matched);
+    //
+    void add_tet_centroid(const std::array<size_t, 4>& vids) override;
+    void insertion_update_surface_tag(
+        size_t t_id,
+        size_t new_t_id,
+        int config_id,
+        int diag_config_id,
+        int index,
+        bool mark_surface) override;
+    //
+    void triangle_insertion(const InputSurface& input_surface);
+    void triangle_insertion_before(const std::vector<Tuple>& faces) override;
+    void triangle_insertion_after(
+        const std::vector<Tuple>& faces,
+        const std::vector<std::vector<Tuple>>& new_faces) override;
+
 
     void split_all_edges();
     bool split_before(const Tuple& t) override;
