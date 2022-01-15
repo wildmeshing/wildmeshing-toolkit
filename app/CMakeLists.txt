@@ -1,23 +1,28 @@
 
 ################################################################################
-
 include(wmtk_data)
-include(fenvelope)
 
 ################################################################################
 # FloatTetwild
 ################################################################################
+
+include(gmp)
+include(fenvelope)
 
 add_library(wmtk_tetwild
 	tetwild/TetWild.cpp
 	tetwild/TetWild.h
 
 	tetwild/common.h
+	tetwild/common.cpp
 	tetwild/Parameters.h
 
 	tetwild/EdgeSplitting.cpp
 	tetwild/EdgeCollapsing.cpp
 	tetwild/EdgeSwapping.cpp
+
+	tetwild/TriangleInsertion.cpp
+	tetwild/Rational.hpp
 )
 add_library(wmtk::tetwild ALIAS wmtk_tetwild)
 
@@ -28,6 +33,7 @@ target_link_libraries(wmtk_tetwild PUBLIC
 	wmtk::data
 	igl::predicates
 	FastEnvelope
+	gmp::gmp
 )
 
 add_executable(tetwild tetwild/main.cpp)

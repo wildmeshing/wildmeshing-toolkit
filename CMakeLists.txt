@@ -24,6 +24,7 @@ project(WildMeshingToolkit DESCRIPTION "A mesh optimization toolkit")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/recipes/")
 
+
 include(sanitizers)
 include(wmtk_colors)
 include(wmtk_warnings)
@@ -52,6 +53,7 @@ add_library(wmtk::toolkit ALIAS wildmeshing_toolkit)
 # Include headers
 target_include_directories(wildmeshing_toolkit PUBLIC src)
 
+
 # Compile definitions
 target_compile_definitions(wildmeshing_toolkit PUBLIC _USE_MATH_DEFINES)
 target_compile_definitions(wildmeshing_toolkit PUBLIC NOMINMAX)
@@ -72,6 +74,7 @@ include(metis)
 target_link_libraries(wildmeshing_toolkit PUBLIC
     spdlog::spdlog
     igl::core
+	igl::predicates
     geogram::delaunay_psm
     wmtk::warnings
     TBB::tbb
