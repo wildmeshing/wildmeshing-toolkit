@@ -12,17 +12,50 @@ void wmtk::TetMesh::single_triangle_insertion(
     const std::vector<Tuple>& intersected_tets,
     const std::vector<Tuple>& intersected_edges)
 {
-    // todo: get all tets
+    /// get all tets
+    std::vector<size_t> intersected_tids;
+    for (auto& loc : intersected_tets) {
+        intersected_tids.push_back(loc.tid(*this));
+    }
+    std::vector<bool> mark_surface(intersected_tids.size(), true);
+    std::map<std::array<size_t, 2>, size_t> map_edge2vid;
+    int cnt = 0;
+    std::vector<size_t> surrounding_tids;
+    for (auto& loc : intersected_edges) {
+        size_t v1_id = loc.vid(*this);
+        auto tmp = switch_vertex(loc);
+        size_t v2_id = tmp.vid(*this);
+        std::array<size_t, 2> e = {{v1_id, v2_id}};
+        if (e[0] > e[1]) std::swap(e[0], e[1]);
 
-    std::vector<Tuple> old_faces;
+        std::vector<size_t> tids = set_intersection(
+            m_vertex_connectivity[e[0]].m_conn_tets,
+            m_vertex_connectivity[e[1]].m_conn_tets);
+        surrounding_tids.insert(surrounding_tids.end(), tids.begin(), tids.end());
+
+        map_edge2vid[e] = m_vertex_connectivity.size() + cnt;
+        cnt++;
+    }
+    vector_unique(surrounding_tids);
+    std::vector<size_t> diff_tids;
+    std::set_difference(
+        surrounding_tids.begin(),
+        surrounding_tids.end(),
+        intersected_tids.begin(),
+        intersected_tids.end(),
+        std::back_inserter(diff_tids));
+    for (int i = 0; i < diff_tids.size(); i++) mark_surface.push_back(false);
+    //
+    intersected_tids.insert(intersected_tids.end(), diff_tids.begin(), diff_tids.end());
+
+    /// track surface before
+    std::vector<Tuple> old_faces; // todo: get it here
     triangle_insertion_before(old_faces);
 
-    // todo: init from tet tuples, edge tuples
-    std::vector<size_t> intersected_tids;
-    std::vector<bool> mark_surface;
-    std::map<std::array<size_t, 2>, size_t> map_edge2vid;
+    ///subdivide
     subdivide_tets(intersected_tids, mark_surface, map_edge2vid);
 
+    /// track surface after
     std::vector<std::vector<Tuple>> new_faces;
     triangle_insertion_after(old_faces, new_faces);
 }

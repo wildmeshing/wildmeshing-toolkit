@@ -289,7 +289,10 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
 
 
         std::vector<size_t> intersected_tids;
-        std::map<std::array<size_t, 2>, std::pair<int, Vector3>> map_edge2point;
+        std::vector<Tuple> intersected_tets;
+        std::map<std::array<size_t, 2>, std::tuple<int, Vector3, size_t, int>> map_edge2point;
+        //e = (e0, e1) ==> (intersection_status, intersection_point, edge's_tid, local_eid_in_tet)
+        std::set<std::array<size_t, 2>> intersected_tet_edges;
         //
         std::queue<Tuple> tet_queue;
         //
@@ -312,7 +315,8 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
 
             /// check if the tet edges intersects with the triangle
             bool need_subdivision = false;
-            for (auto& loc : edges) {
+            for(int l_eid = 0;l_eid<edges.size();l_eid++){
+                auto& loc = edges[l_eid];
                 size_t v1_id = loc.vid(*this);
                 auto tmp = switch_vertex(loc);
                 size_t v2_id = tmp.vid(*this);
@@ -320,7 +324,8 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
                 if (e[0] > e[1]) std::swap(e[0], e[1]);
 
                 if (map_edge2point.count(e)) {
-                    if (map_edge2point[e].first == TRI_INTERSECTION) need_subdivision = true;
+                    if (std::get<0>(map_edge2point[e]) == TRI_INTERSECTION)
+                        need_subdivision = true;
                     continue;
                 }
 
@@ -362,7 +367,7 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
                     }
                 }
 
-                map_edge2point[e] = std::make_pair(intersection_status, p);
+                map_edge2point[e] = std::make_tuple(intersection_status, p, tet.tid(*this), l_eid);
                 if (intersection_status == EMPTY_INTERSECTION) {
                     continue;
                 } else if (intersection_status == TRI_INTERSECTION) {
@@ -424,79 +429,91 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
 
             /// record the tets
             if (need_subdivision) {
-                intersected_tids.push_back(tet.tid(*this));
-            }
-        }
-        wmtk::vector_unique(intersected_tids);
-        wmtk::logger().info("intersected_tids.size {}", intersected_tids.size());
-
-        ///use plane to cut intersected_tids and get surrounding_tids
-        std::vector<size_t> surrounding_tids;
-        std::set<std::array<size_t, 2>> intersected_tet_edges;
-        for (size_t tid : intersected_tids) {
-            auto tet = tuple_from_tet(tid);
-            auto edges = tet_edges(tet);
-            for (auto& loc : edges) {
-                size_t v1_id = loc.vid(*this);
-                auto tmp = switch_vertex(loc);
-                size_t v2_id = tmp.vid(*this);
-                std::array<size_t, 2> e = {{v1_id, v2_id}};
-                if (e[0] > e[1]) std::swap(e[0], e[1]);
-
-                intersected_tet_edges.insert(e);
-
-                if (map_edge2point.count(e) &&
-                    map_edge2point[e].first == PLN_INTERSECTION) { // todo: wrong
-                    auto incident_tets = get_incident_tets_for_edge(loc);
-                    for (auto& t : incident_tets) {
-                        int tid = t.tid(*this);
-                        surrounding_tids.push_back(tid);
-                    }
+//                intersected_tids.push_back(tet.tid(*this));
+                intersected_tets.push_back(tet);
+                //
+                for (auto& loc : edges) {
+                    size_t v1_id = loc.vid(*this);
+                    auto tmp = switch_vertex(loc);
+                    size_t v2_id = tmp.vid(*this);
+                    std::array<size_t, 2> e = {{v1_id, v2_id}};
+                    if (e[0] > e[1]) std::swap(e[0], e[1]);
+                    intersected_tet_edges.insert(e);
                 }
             }
         }
-        //
-        wmtk::vector_unique(surrounding_tids);
-        std::vector<size_t> diff_tids;
-        std::set_difference(
-            surrounding_tids.begin(),
-            surrounding_tids.end(),
-            intersected_tids.begin(),
-            intersected_tids.end(),
-            std::back_inserter(diff_tids));
-        //
-        std::vector<bool> mark_surface(intersected_tids.size(), true);
-        for (int i = 0; i < diff_tids.size(); i++) mark_surface.push_back(false);
-        //
-        intersected_tids.insert(intersected_tids.end(), diff_tids.begin(), diff_tids.end());
+//        wmtk::vector_unique(intersected_tids);//note: not needed
+        wmtk::logger().info("intersected_tids.size {}", intersected_tids.size());
+
+        ///use plane to cut intersected_tids and get surrounding_tids
+//        std::vector<size_t> surrounding_tids;
+//        for (size_t tid : intersected_tids) {
+//            auto tet = tuple_from_tet(tid);
+//            auto edges = tet_edges(tet);
+//            for (auto& loc : edges) {
+//                size_t v1_id = loc.vid(*this);
+//                auto tmp = switch_vertex(loc);
+//                size_t v2_id = tmp.vid(*this);
+//                std::array<size_t, 2> e = {{v1_id, v2_id}};
+//                if (e[0] > e[1]) std::swap(e[0], e[1]);
+//
+//                intersected_tet_edges.insert(e);
+//
+//                if (map_edge2point.count(e) &&
+//                    map_edge2point[e].first == PLN_INTERSECTION) { // todo: wrong
+//                    auto incident_tets = get_incident_tets_for_edge(loc);
+//                    for (auto& t : incident_tets) {
+//                        int tid = t.tid(*this);
+//                        surrounding_tids.push_back(tid);
+//                    }
+//                }
+//            }
+//        }
+//        //
+//        wmtk::vector_unique(surrounding_tids);
+//        std::vector<size_t> diff_tids;
+//        std::set_difference(
+//            surrounding_tids.begin(),
+//            surrounding_tids.end(),
+//            intersected_tids.begin(),
+//            intersected_tids.end(),
+//            std::back_inserter(diff_tids));
+//        //
+//        std::vector<bool> mark_surface(intersected_tids.size(), true);
+//        for (int i = 0; i < diff_tids.size(); i++) mark_surface.push_back(false);
+//        //
+//        intersected_tids.insert(intersected_tids.end(), diff_tids.begin(), diff_tids.end());
 
         // erase edge without intersections OR edge with intersection but not belong to intersected
         // tets
         for (auto it = map_edge2point.begin(), ite = map_edge2point.end(); it != ite;) {
-            if ((it->second).first == EMPTY_INTERSECTION || !intersected_tet_edges.count(it->first))
+            if (std::get<0>(it->second) == EMPTY_INTERSECTION || !intersected_tet_edges.count(it->first))
                 it = map_edge2point.erase(it);
             else
                 ++it;
         }
 
         ///push back new vertices
+        std::vector<Tuple> intersected_edges;
         std::map<std::array<size_t, 2>, size_t> map_edge2vid;
         int v_cnt = 0;
         for (auto& info : map_edge2point) {
+            auto& [_, p, tid, l_eid] = info.second;
             VertexAttributes v;
-            v.m_pos = (info.second).second;
+            v.m_pos = p;
             v.m_posf = to_double(v.m_pos);
             m_vertex_attribute.push_back(v);
-            (info.second).first = m_vertex_attribute.size() - 1;
+//            (info.second).first = m_vertex_attribute.size() - 1;//todo: check if needed
             v_cnt++;
 
-            map_edge2vid[info.first] = (info.second).first;
+            map_edge2vid[info.first] = m_vertex_attribute.size() - 1;
+
+            ///
+            intersected_edges.push_back(tuple_from_edge(tid, l_eid));
         }
         wmtk::logger().info("map_edge2vid.size {}", map_edge2vid.size());
 
-        // todo: get tets and edges tuples
-        std::vector<Tuple> intersected_tets;
-        std::vector<Tuple> intersected_edges;
+        ///inert a triangle
         single_triangle_insertion(intersected_tets, intersected_edges);
 
 
