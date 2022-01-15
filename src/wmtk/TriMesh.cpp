@@ -513,7 +513,10 @@ bool TriMesh::swap_edge(const Tuple& t, Tuple& new_t)
     m_vertex_connectivity[vid4].m_conn_tris.push_back(test_fid2.value());
     vector_unique(m_vertex_connectivity[vid4].m_conn_tris);
     // change the tuple to the new edge tuple
-    new_t = Tuple(vid4, (j + 2) % 3, test_fid2.value(), *this);
+    new_t = init_from_edge(vid4, vid3, test_fid2.value());
+
+    assert(new_t.switch_vertex(*this).vid() != vid1);
+    assert(new_t.switch_vertex(*this).vid() != vid2);
     assert(new_t.is_valid(*this));
     if (!swap_after(new_t)) {
         // restore the vertex and faces

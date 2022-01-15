@@ -3,9 +3,30 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include "EdgeOperations2d.h"
-
+using namespace wmtk;
 using namespace Edge2d;
+std::vector<TriMesh::Tuple> Edge2d::EdgeOperations2d::new_edges_after_collapse_split(
+    const TriMesh::Tuple& t) const
+{
+    std::vector<TriMesh::Tuple> new_edges;
+    std::vector<size_t> one_ring_fid;
 
+    for (auto e : get_one_ring_edges_for_vertex(t)) {
+        // centripedal edge
+        new_edges.push_back(e);
+        // petal edge
+        if (!wmtk::vector_contains(one_ring_fid, e.fid())) {
+            one_ring_fid.emplace_back(e.fid());
+            new_edges.push_back(e.switch_edge(*this));
+            if (!is_boundary_edge(e) &&
+                !wmtk::vector_contains(one_ring_fid, (e.switch_face(*this).value()).fid())) {
+                one_ring_fid.emplace_back((e.switch_face(*this).value()).fid());
+                new_edges.push_back((e.switch_face(*this).value()).switch_edge(*this));
+            }
+        }
+    }
+    return new_edges;
+}
 
 bool Edge2d::EdgeOperations2d::collapse_shortest(int target_vertex_count)
 {
@@ -34,40 +55,14 @@ bool Edge2d::EdgeOperations2d::collapse_shortest(int target_vertex_count)
 
         target_vertex_count--;
         if (target_vertex_count <= 0) break;
-
-
-        std::vector<TriMesh::Tuple> one_ring_edges = get_one_ring_edges_for_vertex(new_vert);
-        std::vector<size_t> one_ring_fid;
-        one_ring_fid.resize(one_ring_edges.size());
-        size_t new_vid = new_vert.vid();
-        for (TriMesh::Tuple edge : one_ring_edges) {
-            // radial edge
-            double length =
-                (m_vertex_positions[new_vid] - m_vertex_positions[edge.vid()]).squaredNorm();
-            ec_queue.push(ElementInQueue(edge, length));
-            // petal edge
-            if (!wmtk::vector_contains(one_ring_fid, edge.fid())) {
-                one_ring_fid.emplace_back(edge.switch_edge(*this).fid());
-                length = (m_vertex_positions[(edge.switch_edge(*this)).switch_vertex(*this).vid()] -
-                          m_vertex_positions[edge.vid()])
-                             .squaredNorm();
-                ec_queue.push(ElementInQueue(edge.switch_edge(*this), length));
-            }
-            if (edge.switch_face(*this).has_value()) {
-                if (!wmtk::vector_contains(one_ring_fid, (edge.switch_face(*this).value()).fid())) {
-                    one_ring_fid.emplace_back((edge.switch_face(*this).value()).fid());
-                    length =
-                        (m_vertex_positions[((edge.switch_face(*this).value()).switch_edge(*this))
-                                                .switch_vertex(*this)
-                                                .vid()] -
-                         m_vertex_positions[edge.vid()])
-                            .squaredNorm();
-                    ec_queue.push(ElementInQueue(
-                        ((edge.switch_face(*this).value()).switch_edge(*this)),
-                        length));
-                }
-            }
-        }
+        // push new edges to the queue
+        auto new_edges = new_edges_after_collapse_split(new_vert);
+        for (auto new_e : new_edges)
+            ec_queue.push(ElementInQueue(
+                new_e,
+                (m_vertex_positions[new_e.vid()] -
+                 m_vertex_positions[new_e.switch_vertex(*this).vid()])
+                    .squaredNorm()));
     }
     return true;
 }

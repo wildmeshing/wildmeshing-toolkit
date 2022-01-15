@@ -292,6 +292,20 @@ TEST_CASE("adaptive_remeshing", "[test_2d_operations]")
     EdgeOperations2d m(v);
     m.create_mesh(V.rows(), tri);
     REQUIRE(m.check_mesh_connectivity_validity());
-    REQUIRE(m.adaptive_remeshing(0.1, 5));
+    REQUIRE(m.adaptive_remeshing(0.01, 5));
     m.write_triangle_mesh("circle_remeshed.obj");
+}
+
+TEST_CASE("split_each_edge", "[test_2d_operations]")
+{
+    std::vector<Eigen::Vector3d> v_positions(3);
+    v_positions[0] = Eigen::Vector3d(-3, 3, 0);
+    v_positions[1] = Eigen::Vector3d(0, 3, 0);
+
+    v_positions[2] = Eigen::Vector3d(0, 0, 0);
+
+    EdgeOperations2d m(v_positions);
+    std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}};
+    m.create_mesh(3, tris);
+    m.adaptive_remeshing(0.1, 5);
 }

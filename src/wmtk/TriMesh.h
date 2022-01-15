@@ -199,6 +199,17 @@ public:
      */
     std::vector<Tuple> get_edges() const;
 
+    // uing the local vid to init an edge.
+    // tuple is refereing to vid1, with the other endpoint at vid2.
+    Tuple init_from_edge(size_t vid1, size_t vid2, size_t fid) const
+    {
+        auto a = m_tri_connectivity[fid].find(vid1);
+        auto b = m_tri_connectivity[fid].find(vid2);
+        assert(a != -1 && b != -1);
+        // 0,1 - >2, 1,2-> 0, 0,2->1
+        return Tuple(vid1, 3 - (a + b), fid, *this);
+    }
+
     template <typename T>
     using vector = tbb::concurrent_vector<T>;
 

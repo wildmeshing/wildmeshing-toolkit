@@ -40,6 +40,7 @@ public:
     bool smooth(const Tuple& t)
     {
         auto one_ring_edges = get_one_ring_edges_for_vertex(t);
+        if (one_ring_edges.size() < 3) return false;
         Eigen::Vector3d after_smooth(0, 0, 0);
         Eigen::Vector3d after_smooth_boundary(0, 0, 0);
         bool boundary = false;
@@ -95,6 +96,9 @@ public:
         update_position_to_edge_midpoint(t);
         return true;
     }
+
+    std::vector<TriMesh::Tuple> new_edges_after_collapse_split(const TriMesh::Tuple& t) const;
+    std::vector<TriMesh::Tuple> new_edges_after_swap(const TriMesh::Tuple& t) const;
 
     bool collapse_shortest(int target_vertex_count);
 
