@@ -149,11 +149,13 @@ public:
         // global info: throughout the whole insertion
         InputSurface input_surface;
         std::vector<std::array<int, 4>> surface_f_ids;
+        std::map<std::array<size_t, 3>, std::vector<int>> tet_face_tags;
         std::vector<bool> is_matched;
 
         // local info: for each face insertion
         std::vector<bool> is_visited;
         int face_id;
+        std::vector<std::array<size_t, 3>> old_face_vids;
     };
     TriangleInsertionInfoCache triangle_insertion_cache;
 
