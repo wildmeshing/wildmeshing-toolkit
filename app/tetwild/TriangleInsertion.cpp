@@ -163,11 +163,11 @@ void tetwild::TetWild::match_insertion_faces(
     }
 }
 
-void tetwild::TetWild::triangle_insertion_before(std::vector<Tuple>& faces){
+void tetwild::TetWild::triangle_insertion_before(const std::vector<Tuple>& faces){
     //todo
 }
 
-void tetwild::TetWild::triangle_insertion_after(std::vector<Tuple>& faces, std::vector<std::vector<Tuple>>& new_faces){
+void tetwild::TetWild::triangle_insertion_after(const std::vector<Tuple>& faces, const std::vector<std::vector<Tuple>>& new_faces){
     //todo
 }
 

@@ -10,6 +10,8 @@
 
 void wmtk::TetMesh::single_triangle_insertion(const std::vector<Tuple>& intersected_tets,
                                               const std::vector<Tuple>& intersected_edges){
+    //todo: get all tets
+
     std::vector<Tuple> old_faces;
     triangle_insertion_before(old_faces);
 
@@ -27,7 +29,6 @@ void wmtk::TetMesh::subdivide_tets(const std::vector<size_t> intersected_tids,
                                    const std::vector<bool>& mark_surface,
                                    std::map<std::array<size_t, 2>, size_t>& map_edge2vid)
 {
-
     /// insert new vertices
     size_t old_v_size = m_vertex_connectivity.size();
     m_vertex_connectivity.resize(m_vertex_connectivity.size() + map_edge2vid.size());

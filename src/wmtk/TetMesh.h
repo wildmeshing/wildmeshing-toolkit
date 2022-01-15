@@ -333,9 +333,9 @@ protected:
                                               bool mark_surface){}
     virtual void add_tet_centroid(const std::array<size_t, 4>& vids){}
 
-    virtual void triangle_insertion_before(std::vector<Tuple>& faces) {}
-    virtual void triangle_insertion_after(std::vector<Tuple>& faces,
-                                          std::vector<std::vector<Tuple>>& new_faces) {}
+    virtual void triangle_insertion_before(const std::vector<Tuple>& faces) {}
+    virtual void triangle_insertion_after(const std::vector<Tuple>& faces,
+                                          const std::vector<std::vector<Tuple>>& new_faces) {}
 
     //// Split the edge in the tuple
     // Checks if the split should be performed or not (user controlled)
