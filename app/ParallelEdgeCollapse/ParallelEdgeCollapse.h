@@ -53,7 +53,7 @@ class ParallelEdgeCollapse : public wmtk::ConcurrentTriMesh
 {
 public:
     tbb::concurrent_vector<Eigen::Vector3d> m_vertex_positions;
-    tbb::concurrent_vector<int> m_vertex_partition_id;
+    tbb::concurrent_vector<size_t> m_vertex_partition_id;
     std::vector<tbb::concurrent_priority_queue<ElementInQueue, cmp_s>> ec_queues;
 
     // caches
