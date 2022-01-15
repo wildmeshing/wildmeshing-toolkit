@@ -251,6 +251,24 @@ std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_one_ring_tets_for_vertex(co
     return tets;
 }
 
+std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_one_ring_vertices_for_vertex(
+    const Tuple& t) const
+{
+    std::vector<size_t> v_ids;
+    for (int t_id : m_vertex_connectivity[t.m_global_vid].m_conn_tets) {
+        for (int j = 0; j < 4; j++) {
+            v_ids.push_back(m_tet_connectivity[t_id][j]);
+        }
+    }
+    vector_unique(v_ids);
+    vector_erase(v_ids, t.m_global_vid);
+    std::vector<Tuple> vertices;
+    for (auto v_id : v_ids) {
+        vertices.push_back(tuple_from_vertex(v_id));
+    }
+    return vertices;
+}
+
 std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_incident_tets_for_edge(const Tuple& t) const
 {
     int v1_id = m_tet_connectivity[t.m_global_tid][m_local_edges[t.m_local_eid][0]];

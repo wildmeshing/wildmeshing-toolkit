@@ -432,6 +432,14 @@ public:
     std::vector<Tuple> get_one_ring_tets_for_vertex(const Tuple& t) const;
 
     /**
+     * @brief Get the one ring vertices for a vertex
+     *
+     * @param t tuple pointing to a vertex
+     * @return one-ring vertices
+     */
+    std::vector<Tuple> get_one_ring_vertices_for_vertex(const Tuple& t) const;
+
+    /**
      * @brief Get the incident tets for edge
      *
      * @param t tuple pointing to an edge
