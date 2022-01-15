@@ -451,13 +451,13 @@ private:
         for (size_t i = 0; i < num_elements; i++) {
             const size_t tag = element_block->data[i * (DIM + 2)] - elem_tag_offset;
             assert(tag < num_elements);
-            const double* element = element_block->data + i * (DIM + 2) + 1;
+            const size_t* element = &element_block->data[0] + i * (DIM + 2) + 1;
 
             if constexpr (DIM == 1) {
                 set_element_cb(tag, element[0], element[1]);
-            } else if (DIM == 2) {
+            } else if constexpr (DIM == 2) {
                 set_element_cb(tag, element[0], element[1], element[2]);
-            } else if (DIM == 3) {
+            } else if constexpr (DIM == 3) {
                 set_element_cb(tag, element[0], element[1], element[2], element[3]);
             }
         }

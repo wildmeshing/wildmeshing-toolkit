@@ -49,6 +49,18 @@ TEST_CASE("io", "[io][mshio]")
         MshData msh2;
         msh2.load(ss);
 
+        auto pos2 = std::vector<Point3D>(msh2.get_num_tet_vertices());
+        auto tets2 = std::vector<std::array<size_t, 4>>(msh2.get_num_tets());
+
+        auto vert_setter = [&](size_t k, double x, double y, double z) { pos2[k] = {{x, y, z}}; };
+        auto tet_setter = [&](size_t k, size_t v0, size_t v1, size_t v2, size_t v3) {
+            tets2[k] = {{size_t(v0) - 1, size_t(v1) - 1, size_t(v2) - 1, size_t(v3) - 1}};
+        };
+        msh2.extract_tet_vertices(vert_setter);
+        msh2.extract_tets(tet_setter);
+        REQUIRE(std::equal(pos2.begin(), pos2.end(), points.begin(), points.end()));
+        REQUIRE(std::equal(tets2.begin(), tets2.end(), tets.begin(), tets.end()));
+
         REQUIRE(msh2.get_num_edge_vertices() == 4);
         REQUIRE(msh2.get_num_face_vertices() == 4);
         REQUIRE(msh2.get_num_tet_vertices() == 4);
