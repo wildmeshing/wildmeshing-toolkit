@@ -123,9 +123,13 @@ public:
         return true;
     }
     // methods for adaptive remeshing
-    double compute_edge_cost_ar(const TriMesh::Tuple& t, double L);
+    double compute_edge_cost_collapse_ar(const TriMesh::Tuple& t, double L);
+    double compute_edge_cost_split_ar(const TriMesh::Tuple& t, double L);
     double compute_vertex_valence_ar(const TriMesh::Tuple& t);
     std::pair<double, double> average_len_valen();
+    bool split_remeshing(double L);
+    bool collapse_remeshing(double L);
+    bool swap_remeshing();
     bool adaptive_remeshing(double L, int interations);
 };
 

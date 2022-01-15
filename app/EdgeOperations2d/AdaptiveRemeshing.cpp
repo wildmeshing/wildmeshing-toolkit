@@ -6,11 +6,17 @@
 
 using namespace Edge2d;
 using namespace wmtk;
-double EdgeOperations2d::compute_edge_cost_ar(const TriMesh::Tuple& t, double L)
+double EdgeOperations2d::compute_edge_cost_collapse_ar(const TriMesh::Tuple& t, double L)
 {
     double l =
         (m_vertex_positions[t.vid()] - m_vertex_positions[t.switch_vertex(*this).vid()]).norm();
     if (l < (4. / 5.) * L) return ((4. / 5.) * L - l);
+    return -1;
+}
+double EdgeOperations2d::compute_edge_cost_split_ar(const TriMesh::Tuple& t, double L)
+{
+    double l =
+        (m_vertex_positions[t.vid()] - m_vertex_positions[t.switch_vertex(*this).vid()]).norm();
     if (l > (4. / 3.) * L) return (l - (4. / 3.) * L);
     return -1;
 }
@@ -85,6 +91,100 @@ std::vector<TriMesh::Tuple> Edge2d::EdgeOperations2d::new_edges_after_swap(
     return new_edges;
 }
 
+bool EdgeOperations2d::collapse_remeshing(double L)
+{
+    std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_l> e_collapse_queue;
+    for (auto& loc : get_edges()) {
+        double l_weight = compute_edge_cost_collapse_ar(loc, L);
+        e_collapse_queue.push(ElementInQueue(loc, l_weight));
+    }
+    int c = 0;
+    int s = 0;
+    while (!e_collapse_queue.empty()) {
+        auto loc = e_collapse_queue.top().edge;
+        auto l_weight = e_collapse_queue.top().weight;
+        e_collapse_queue.pop();
+        if (!loc.is_valid(*this) || l_weight < 0) {
+            continue;
+        }
+
+        TriMesh::Tuple new_vert;
+        // c++;
+        // spdlog::critical("collapse attempt {}", c);
+        if (!TriMesh::collapse_edge(loc, new_vert)) continue;
+        s++;
+        spdlog::critical("collapse success {}", s);
+
+        auto new_edges = new_edges_after_collapse_split(new_vert);
+        for (auto new_e : new_edges) {
+            spdlog::critical("adding {} in collapse ", new_e.eid(*this));
+            e_collapse_queue.push(ElementInQueue(new_e, compute_edge_cost_collapse_ar(new_e, L)));
+        }
+    }
+    spdlog::critical("collapse finish ");
+    return true;
+}
+bool EdgeOperations2d::split_remeshing(double L)
+{
+    std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_l> e_split_queue;
+    for (auto& loc : get_edges()) {
+        double l_weight = compute_edge_cost_split_ar(loc, L);
+        e_split_queue.push(ElementInQueue(loc, l_weight));
+    }
+    int s = 0;
+    while (!e_split_queue.empty()) {
+        auto loc = e_split_queue.top().edge;
+        auto l_weight = e_split_queue.top().weight;
+        e_split_queue.pop();
+        if (!loc.is_valid(*this) || l_weight < 0) {
+            continue;
+        }
+
+        TriMesh::Tuple new_vert;
+
+        if (!TriMesh::split_edge(loc, new_vert)) continue;
+        spdlog::critical("split {}", ++s);
+        auto new_edges = new_edges_after_collapse_split(new_vert);
+        for (auto new_e : new_edges)
+            e_split_queue.push(ElementInQueue(new_e, compute_edge_cost_split_ar(new_e, L)));
+    }
+    return true;
+}
+bool EdgeOperations2d::swap_remeshing()
+{
+    std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_l> e_swap_queue;
+    // swap edges
+    for (auto& loc : get_edges()) {
+        double valence = compute_vertex_valence_ar(loc);
+        e_swap_queue.push(ElementInQueue(loc, valence));
+    }
+    int c = 0;
+    int s = 0;
+    while (!e_swap_queue.empty()) {
+        auto [loc, valence] = e_swap_queue.top();
+        e_swap_queue.pop();
+
+        if (!loc.is_valid(*this)) {
+            continue;
+        }
+        valence = compute_vertex_valence_ar(loc);
+        if (valence < 1e-5) continue;
+        TriMesh::Tuple new_vert;
+
+        assert(check_mesh_connectivity_validity());
+
+        if (valence > 0) {
+            if (!swap_edge(loc, new_vert)) continue;
+            spdlog::critical("swap {}", ++s);
+            auto new_edges = new_edges_after_swap(new_vert);
+            for (auto new_e : new_edges)
+                e_swap_queue.push(ElementInQueue(new_e, compute_vertex_valence_ar(new_e)));
+        } else
+            continue;
+    }
+    return true;
+}
+
 bool EdgeOperations2d::adaptive_remeshing(double L, int iterations)
 {
     std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_l> e_length_queue;
@@ -100,85 +200,25 @@ bool EdgeOperations2d::adaptive_remeshing(double L, int iterations)
         wmtk::logger().debug(" average length is {} {}", average.first, average.second);
         avg_lens.push_back(average.first);
         avg_valens.push_back(average.second);
-        // collapse and split edge
-        assert(check_mesh_connectivity_validity());
-        for (auto& loc : get_edges()) {
-            double l_weight = compute_edge_cost_ar(loc, L);
-            e_length_queue.push(ElementInQueue(loc, l_weight));
-        }
-        // int cntin = 0;
-        while (!e_length_queue.empty()) {
-            auto loc = e_length_queue.top().edge;
-            auto l_weight = e_length_queue.top().weight;
-            e_length_queue.pop();
-            if (!loc.is_valid(*this) || l_weight < 0.01 * L) {
-                continue;
-            }
 
-            TriMesh::Tuple new_vert;
-
-            assert(check_mesh_connectivity_validity());
-            double length =
-                (m_vertex_positions[loc.vid()] - m_vertex_positions[loc.switch_vertex(*this).vid()])
-                    .norm();
-            if (length > ((4. / 3.) * L)) {
-                if (!TriMesh::split_edge(loc, new_vert)) continue;
-                auto new_edges = new_edges_after_collapse_split(new_vert);
-                for (auto new_e : new_edges)
-                    e_length_queue.push(ElementInQueue(new_e, compute_edge_cost_ar(new_e, L)));
-            } else if (length < ((4 / 5.) * L)) {
-                if (!TriMesh::collapse_edge(loc, new_vert)) continue;
-                auto new_edges = new_edges_after_collapse_split(new_vert);
-                for (auto new_e : new_edges)
-                    e_length_queue.push(ElementInQueue(new_e, compute_edge_cost_ar(new_e, L)));
-            } else
-                continue;
-            // cntin++;
-            // write_triangle_mesh(
-            //     "split_collapse_test" + std::to_string(cntin) + "_" + std::to_string(cnt) +
-            //     ".obj");
-        }
-        write_triangle_mesh("split_collapse_test" + std::to_string(cnt) + ".obj");
-
-        assert(check_mesh_connectivity_validity());
+        // split
+        split_remeshing(L);
+        write_triangle_mesh("splited_" + std::to_string(cnt) + ".obj");
+        // collpase
+        collapse_remeshing(L);
+        write_triangle_mesh("collapsed_" + std::to_string(cnt) + ".obj");
 
         // swap edges
-        for (auto& loc : get_edges()) {
-            double valence = compute_vertex_valence_ar(loc);
-            e_valence_queue.push(ElementInQueue(loc, valence));
-        }
-        while (!e_valence_queue.empty()) {
-            auto [loc, valence] = e_valence_queue.top();
-            e_valence_queue.pop();
-
-            if (!loc.is_valid(*this)) {
-                continue;
-            }
-            valence = compute_vertex_valence_ar(loc);
-            if (valence < 1e-5) continue;
-            TriMesh::Tuple new_vert;
-
-            assert(check_mesh_connectivity_validity());
-
-            if (valence > 0) {
-                if (!swap_edge(loc, new_vert)) continue;
-
-                auto new_edges = new_edges_after_swap(new_vert);
-                for (auto new_e : new_edges)
-                    e_valence_queue.push(ElementInQueue(new_e, compute_vertex_valence_ar(new_e)));
-            } else
-                continue;
-        }
-        assert(check_mesh_connectivity_validity());
+        swap_remeshing();
         write_triangle_mesh("swaped_" + std::to_string(cnt) + ".obj");
         // smoothing
-        // auto vertices = get_vertices();
-        // for (auto& loc : vertices) smooth(loc);
+        auto vertices = get_vertices();
+        for (auto& loc : vertices) smooth(loc);
+        write_triangle_mesh("smoothed_" + std::to_string(cnt) + ".obj");
 
         assert(check_mesh_connectivity_validity());
         consolidate_mesh();
         average = average_len_valen();
-        write_triangle_mesh("smoothed_" + std::to_string(cnt) + ".obj");
     }
     wmtk::vector_print(avg_lens);
 
