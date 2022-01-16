@@ -1,5 +1,6 @@
 #include <wmtk/TetMesh.h>
 
+#include <algorithm>
 #include <wmtk/utils/TupleUtils.hpp>
 
 bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
@@ -113,21 +114,17 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
         for (auto& [id, conn] : old_vertices) {
             m_vertex_connectivity[id] = conn;
         }
+        m_vertex_connectivity[v_id].m_conn_tets.clear();
 
         return false;
     }
-        // m_vertex_connectivity[v_id].m_conn_tets.clear();
         // operation_failure_rollback_imp(rollback_vert_conn, n12_t_ids, new_tet_id, old_tets_conn);
 
 
     // new_edges
-    // assert(std::is_sorted(new_tet_id.begin(), new_tet_id.end()));
+    for (auto &i:new_t_ids) n12_t_ids.push_back(i);
+    assert(std::is_sorted(n12_t_ids.begin(), n12_t_ids.end()));
     for (size_t t_id : n12_t_ids) {
-        for (int j = 0; j < 6; j++) {
-            new_edges.push_back(tuple_from_edge(t_id, j));
-        }
-    }
-    for (size_t t_id : new_t_ids) {
         for (int j = 0; j < 6; j++) {
             new_edges.push_back(tuple_from_edge(t_id, j));
         }
