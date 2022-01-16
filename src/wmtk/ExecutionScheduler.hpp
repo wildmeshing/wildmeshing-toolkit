@@ -31,13 +31,15 @@ struct ExecutePass
     std::map<Op, std::function<std::optional<Tuple>(AppMesh&, const Tuple&)>> edit_operation_maps;
 
     // Priority function (default to edge length)
-    std::function<double(const AppMesh&, const Tuple&)> priority = [](auto&, auto&) { return 0.; };
+    std::function<double(const AppMesh&, Op op, const Tuple&)> priority = [](auto&, auto, auto&) {
+        return 0.;
+    };
 
     // Renew Neighboring Tuples
     // Right now, use pre-implemented functions to get one edge ring.
     // TODO: Ideally, this depend on both operation and priority criterion.
-    std::function<std::vector<Tuple>(const AppMesh&, const Tuple&)> renew_neighbor_tuples =
-        [](auto&, auto&) -> std::vector<Tuple> { return {}; };
+    std::function<std::vector<std::pair<Op,Tuple>>(const AppMesh&, Op, const Tuple&)> renew_neighbor_tuples =
+        [](auto&, auto, auto&) -> std::vector<std::pair<Op,Tuple>> { return {}; };
 
     // lock vertices: should depend on the operation
     // returns a range of vertices that we need to acquire and lock.
@@ -168,17 +170,17 @@ public:
                 if (!tup.is_valid(m)) continue;
                 if (!should_process(m, ele_in_queue))
                     continue; // this can encode, in qslim, recompute(energy) == weight.
-                std::vector<Tuple> renewed_tuples;
+                std::vector<std::pair<Op, Tuple>> renewed_tuples;
                 {
                     auto locked_vid =
                         lock_vertices(m, tup); // Note that returning `Tuples` would be invalid.
                     if (!locked_vid) Q.emplace(ele_in_queue);
                     auto newtup = edit_operation_maps[op](m, tup);
-                    if (newtup) renewed_tuples = renew_neighbor_tuples(m, newtup.value());
+                    if (newtup) renewed_tuples = renew_neighbor_tuples(m, op, newtup.value());
                     operation_cleanup(m, locked_vid.value()); // Maybe use RAII
                 }
                 cnt_update++;
-                for (auto& e : renewed_tuples) Q.emplace(priority(m, e), op, e);
+                for (auto& [op, e] : renewed_tuples) Q.emplace(priority(m, op, e), op, e);
             }
 
             if (stop.load(std::memory_order_acquire)) return;
@@ -195,13 +197,13 @@ public:
             std::vector<tbb::concurrent_priority_queue<std::tuple<double, Op, Tuple>>>(num_threads);
         if constexpr (policy == ExecutionPolicy::kSeq) {
             for (auto& [op, e] : operation_tuples) {
-                queues[0].emplace(priority(m, e), op, e);
+                queues[0].emplace(priority(m, op, e), op, e);
             }
             run_single_queue(queues[0]);
         } else {
             for (auto& [op, e] : operation_tuples) {
                 // get_partition_id(e)
-                queues[m.m_vertex_partition_id[e.vid(m)]].emplace(priority(m,e), op, e);
+                queues[m.m_vertex_partition_id[e.vid(m)]].emplace(priority(m, op, e), op, e);
             }
             // Comment out parallel: work on serial first.
             tbb::task_arena arena(num_threads);

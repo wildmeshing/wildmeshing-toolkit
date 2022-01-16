@@ -78,6 +78,7 @@ public:
     bool swap_edge_before(const Tuple& t) override;
     bool swap_edge_after(const Tuple& t) override;
 
+    void swap_all();
     void swap_all_faces();
     bool swap_face_before(const Tuple& t) override;
     bool swap_face_after(const Tuple& t) override;

@@ -143,14 +143,16 @@ bool HarmonicTet::swap_face_after(const Tuple& t)
     return true;
 }
 
-auto renewal = [](const auto& m, const auto& newt) {
+auto renewal_edges = [](const auto& m, auto op, const auto& newt) {
     auto new_edges = std::vector<wmtk::TetMesh::Tuple>();
     assert(newt.switch_tetrahedron(m));
     for (auto ti : {newt.tid(m), newt.switch_tetrahedron(m)->tid(m)}) {
         for (auto j = 0; j < 6; j++) new_edges.push_back(m.tuple_from_edge(ti, j));
     };
     wmtk::unique_edge_tuples(m, new_edges);
-    return new_edges;
+    std::vector<std::pair<std::string, wmtk::TetMesh::Tuple>> op_tups;
+    for (auto f : new_edges) op_tups.emplace_back("edge_swap", f);
+    return op_tups;
 };
 
 void HarmonicTet::swap_all_edges(bool parallel)
@@ -159,7 +161,7 @@ void HarmonicTet::swap_all_edges(bool parallel)
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_swap", loc);
     if (parallel) {
         auto executor = wmtk::ExecutePass<HarmonicTet, wmtk::ExecutionPolicy::kPartition>();
-        executor.renew_neighbor_tuples = renewal;
+        executor.renew_neighbor_tuples = renewal_edges;
         executor.lock_vertices = [](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
             auto stack = std::vector<size_t>();
             m.try_set_edge_mutex_two_ring(e, stack);
@@ -167,10 +169,9 @@ void HarmonicTet::swap_all_edges(bool parallel)
         };
         executor.num_threads = NUM_THREADS;
         executor(*this, collect_all_ops);
-    }
-    else {
-         auto executor = wmtk::ExecutePass<HarmonicTet, wmtk::ExecutionPolicy::kSeq>();
-        executor.renew_neighbor_tuples = renewal;
+    } else {
+        auto executor = wmtk::ExecutePass<HarmonicTet, wmtk::ExecutionPolicy::kSeq>();
+        executor.renew_neighbor_tuples = renewal_edges;
         executor.num_threads = 1;
         executor(*this, collect_all_ops);
     }
@@ -184,7 +185,7 @@ void harmonic_tet::HarmonicTet::smooth_all_vertices()
     executor(*this, collect_all_ops);
 }
 
-auto renewal_faces = [](const auto& m, const auto& t) {
+auto renewal_faces = [](const auto& m, auto op, const auto& t) {
     auto newt = t;
     auto new_tets = std::vector<size_t>(1, newt.tid(m));
     for (auto k = 0; k < 2; k++) {
@@ -198,7 +199,9 @@ auto renewal_faces = [](const auto& m, const auto& t) {
         for (auto j = 0; j < 4; j++) new_faces.push_back(m.tuple_from_face(ti, j));
     }
     wmtk::unique_face_tuples(m, new_faces);
-    return new_faces;
+    std::vector<std::pair<std::string, wmtk::TetMesh::Tuple>> op_tups;
+    for (auto f : new_faces) op_tups.emplace_back("face_swap", f);
+    return op_tups;
 };
 
 void HarmonicTet::swap_all_faces()
@@ -248,6 +251,42 @@ void HarmonicTet::output_mesh(std::string file) const
 
     msh.save(file, true);
 }
+
+auto renewal_all = [](const auto& m, auto op, const auto& newt) {
+
+    auto new_edges = std::vector<wmtk::TetMesh::Tuple>();
+    for (auto ti : {newt.tid(m), newt.switch_tetrahedron(m)->tid(m)}) {
+        for (auto j = 0; j < 6; j++) new_edges.push_back(m.tuple_from_edge(ti, j));
+    };
+    wmtk::unique_edge_tuples(m, new_edges);
+    std::vector<std::pair<std::string, wmtk::TetMesh::Tuple>> op_tups;
+    for (auto f : new_edges) op_tups.emplace_back("edge_swap", f);
+    return op_tups;
+};
+
+void HarmonicTet::swap_all()
+{
+    auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
+    for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_swap", loc);
+
+    auto executor = wmtk::ExecutePass<HarmonicTet, wmtk::ExecutionPolicy::kPartition>();
+    executor.renew_neighbor_tuples = renewal_all;
+    executor.priority = [](auto& m, auto op, auto& t) { // using delta trace
+        if (op == "edge_swap") {
+        } else if (op == "face_swap") {
+        }
+        return 0.;
+
+
+    };
+    executor.lock_vertices = [](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
+        auto stack = std::vector<size_t>();
+        m.try_set_edge_mutex_two_ring(e, stack);
+        return stack;
+    };
+    executor.num_threads = NUM_THREADS;
+    executor(*this, collect_all_ops);
+};
 
 
 } // namespace harmonic_tet

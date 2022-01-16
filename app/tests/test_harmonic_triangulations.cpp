@@ -14,6 +14,7 @@
 #include "wmtk/utils/EnergyHarmonicTet.hpp"
 #include "wmtk/utils/Logger.hpp"
 
+#include <wmtk/utils/io.hpp>
 #include <igl/Timer.h>
 
 using namespace wmtk;
@@ -48,6 +49,7 @@ auto stats = [](auto& har_tet) {
         total_e += e;
         cnt++;
     }
+    spdlog::critical("Number {} Total {} Avg {}", cnt, total_e, total_e/cnt);
     return std::pair(total_e, cnt);
 };
 
@@ -86,7 +88,6 @@ TEST_CASE("harmonic-tet-swaps", "[harmtri]")
             for (auto j = 0; j < 3; j++) vec_attrs[i][j] = tet_V[i][j];
         }
         tets = tetT;
-        // REQUIRE(tetT.size() == 1262);
     }
     auto har_tet = harmonic_tet::HarmonicTet(vec_attrs, tets);
 
@@ -97,6 +98,30 @@ TEST_CASE("harmonic-tet-swaps", "[harmtri]")
     har_tet.smooth_all_vertices();
     auto [E1, cnt1] = stats(har_tet);
     REQUIRE(E1 < E0);
+}
+
+TEST_CASE("harmonic-tet-main", "[.]")
+{
+    MshData msh;
+    msh.load("bunny.off_.msh");
+    auto vec_attrs = std::vector<Eigen::Vector3d>(msh.get_num_tet_vertices());
+    auto tets = std::vector<std::array<size_t, 4>>(msh.get_num_tets());
+    msh.extract_tet_vertices(
+        [&](size_t i, double x, double y, double z) { vec_attrs[i] << x, y, z; });
+    msh.extract_tets([&](size_t i, size_t v0, size_t v1, size_t v2, size_t v3) {
+        tets[i] = {{v0, v1, v2, v3}};
+    });
+    auto har_tet = harmonic_tet::HarmonicTet(vec_attrs, tets, 4);
+    for (int i = 0; i <= 4; i ++) {
+        auto [E0, cnt0] = stats(har_tet);
+        har_tet.swap_all_edges(true);
+        har_tet.swap_all_faces();
+        stats(har_tet);
+        har_tet.consolidate_mesh();
+        har_tet.smooth_all_vertices();
+        auto [E1, cnt1] = stats(har_tet);
+    }
+    har_tet.output_mesh("bunny.out.msh");
 }
 
 
@@ -129,7 +154,7 @@ TEST_CASE("parallel_harmonic-tet-swaps", "[parallel_harmtri][.slow]")
         timer.start();
         har_tet.swap_all_edges(true);
         time = timer.getElapsedTimeInMilliSec();
-        spdlog::info("Time [{}]{}",i, time);
+        spdlog::info("Time [{}]{}", i, time);
         har_tet.swap_all_faces();
         har_tet.consolidate_mesh();
         har_tet.smooth_all_vertices();
