@@ -28,6 +28,18 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
 
     /// update connectivity
     int v_id = get_next_empty_slot_v();
+    std::vector<TetrahedronConnectivity> old_tets_conn;
+    std::vector<std::array<size_t, 4>> new_tet_conn;
+    for (size_t t_id : n12_t_ids) {
+        auto& tet = m_tet_connectivity[t_id];
+        old_tets_conn.push_back(tet);
+        for (auto vx : {v1_id, v2_id}) {
+            auto l = tet.find(vx);
+            new_tet_conn.push_back(tet.m_indices);
+            new_tet_conn.back()[l] = v_id;
+        }
+    }
+
     std::vector<size_t> new_t_ids;
     for (size_t t_id : n12_t_ids) {
         const size_t new_t_id = get_next_empty_slot_t();
@@ -82,6 +94,9 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     }
 
 
+    // auto new_tet_id = n12_t_ids;
+    // auto rollback_vert_conn = update_connectivity_impl(new_tet_id, new_tet_conn);
+
     Tuple new_loc = tuple_from_vertex(v_id);
     if (!vertex_invariant(new_loc) || !edge_invariant(new_loc) || !tetrahedron_invariant(new_loc) ||
         !split_after(new_loc)) {
@@ -101,25 +116,12 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
 
         return false;
     }
+        // m_vertex_connectivity[v_id].m_conn_tets.clear();
+        // operation_failure_rollback_imp(rollback_vert_conn, n12_t_ids, new_tet_id, old_tets_conn);
 
-    // call invariants on all entities
-    if (false) // if any invariant fails
-    {
-        m_vertex_connectivity[v_id].m_is_removed = true;
-        for (int t_id : new_t_ids) m_tet_connectivity[t_id].m_is_removed = true;
-        //
-        for (int i = 0; i < old_tets.size(); i++) {
-            int t_id = old_tets[i].first;
-            m_tet_connectivity[t_id] = old_tets[i].second;
-        }
-        for (auto& [id, conn] : old_vertices) {
-            m_vertex_connectivity[id] = conn;
-        }
-
-        return false;
-    }
 
     // new_edges
+    // assert(std::is_sorted(new_tet_id.begin(), new_tet_id.end()));
     for (size_t t_id : n12_t_ids) {
         for (int j = 0; j < 6; j++) {
             new_edges.push_back(tuple_from_edge(t_id, j));
