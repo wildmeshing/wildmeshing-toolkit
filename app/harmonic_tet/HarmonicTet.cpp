@@ -200,7 +200,7 @@ bool HarmonicTet::swap_face_before(const Tuple& t)
 
     auto oppo_tet = t.switch_tetrahedron(*this);
     assert(oppo_tet.has_value() && "Should not swap boundary.");
-    faceswap_cache.max_energy = std::max(get_quality(t), get_quality(*oppo_tet));
+    faceswap_cache.total_energy = (get_quality(t) + get_quality(*oppo_tet));
     return true;
 }
 
