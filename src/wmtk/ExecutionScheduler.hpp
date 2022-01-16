@@ -36,12 +36,13 @@ struct ExecutePass
     // Renew Neighboring Tuples
     // Right now, use pre-implemented functions to get one edge ring.
     // TODO: Ideally, this depend on both operation and priority criterion.
-    std::function<std::vector<Tuple>(const AppMesh&, const Tuple&)> renew_neighbor_tuples = [](auto&, auto&)->std::vector<Tuple>{return {};};
+    std::function<std::vector<Tuple>(const AppMesh&, const Tuple&)> renew_neighbor_tuples =
+        [](auto&, auto&) -> std::vector<Tuple> { return {}; };
 
     // lock vertices: should depend on the operation
     // returns a range of vertices that we need to acquire and lock.
     // trivial in serial version
-    std::function<std::vector<size_t>(const AppMesh&, const Tuple&)> lock_vertices =
+    std::function<std::optional<std::vector<size_t>>(AppMesh&, const Tuple&)> lock_vertices =
         [](const AppMesh&, const Tuple&) { return std::vector<size_t>(); };
 
     // Stopping Criterion based on the whole mesh
@@ -143,19 +144,21 @@ struct ExecutePass
     };
 
 private:
-    void operation_cleanup(AppMesh&, const std::vector<size_t>&)
+    void operation_cleanup(AppMesh& m, std::vector<size_t>& stack)
     { //
+        // class ResourceManger
+        // what about RAII mesh edit locking?
         // release mutex, but this should be implemented in TetMesh class.
-        if constexpr (policy == ExecutionPolicy::kSeq) return;
-        static_assert(policy == ExecutionPolicy::kSeq, "Implement Release Mutex here");
+        if constexpr (policy == ExecutionPolicy::kSeq)
+            return;
+        else {
+            m.release_vertex_mutex_in_stack(stack);
+        }
     }
-    // class ResourceManger
-    // what about RAII mesh edit locking?
 
 public:
     bool operator()(AppMesh& m, const std::vector<std::pair<Op, Tuple>>& operation_tuples)
     {
-        static_assert(policy == ExecutionPolicy::kSeq, "start with serial version");
         auto cnt_update = std::atomic<int>(0);
         auto stop = std::atomic<bool>(false);
         auto run_single_queue = [&](auto& Q) {
@@ -169,9 +172,10 @@ public:
                 {
                     auto locked_vid =
                         lock_vertices(m, tup); // Note that returning `Tuples` would be invalid.
+                    if (!locked_vid) Q.emplace(ele_in_queue);
                     auto newtup = edit_operation_maps[op](m, tup);
                     if (newtup) renewed_tuples = renew_neighbor_tuples(m, newtup.value());
-                    operation_cleanup(m, locked_vid); // Maybe use RAII
+                    operation_cleanup(m, locked_vid.value()); // Maybe use RAII
                 }
                 cnt_update++;
                 for (auto& e : renewed_tuples) Q.emplace(priority(m, e), op, e);
@@ -187,19 +191,23 @@ public:
             }
         };
 
-        auto queue =
+        auto queues =
             std::vector<tbb::concurrent_priority_queue<std::tuple<double, Op, Tuple>>>(num_threads);
         if constexpr (policy == ExecutionPolicy::kSeq) {
             for (auto& [op, e] : operation_tuples) {
-                queue[0].emplace(priority(m, e), op, e);
+                queues[0].emplace(priority(m, e), op, e);
             }
-            run_single_queue(queue[0]);
+            run_single_queue(queues[0]);
         } else {
+            for (auto& [op, e] : operation_tuples) {
+                // get_partition_id(e)
+                queues[m.m_vertex_partition_id[e.vid(m)]].emplace(priority(m,e), op, e);
+            }
             // Comment out parallel: work on serial first.
             tbb::task_arena arena(num_threads);
             tbb::task_group tg;
-            arena.execute([&queue, &run_single_queue, &tg]() {
-                for (auto& q : queue) {
+            arena.execute([&queues, &run_single_queue, &tg]() {
+                for (auto& q : queues) {
                     tg.run([&run_single_queue, &q] { run_single_queue(q); });
                 }
             });

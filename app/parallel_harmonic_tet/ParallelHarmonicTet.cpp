@@ -10,6 +10,7 @@
 #include <tbb/task_arena.h>
 #include <tbb/task_group.h>
 #include <queue>
+#include "wmtk/ExecutionScheduler.hpp"
 #include "wmtk/utils/EnergyHarmonicTet.hpp"
 
 namespace harmonic_tet {
@@ -77,30 +78,30 @@ void ParallelHarmonicTet::swap_all_edges_stuff(
     }
 }
 
+auto renewal = [](const auto& m, const auto& newt) {
+    auto new_edges = std::vector<wmtk::TetMesh::Tuple>();
+    assert(newt.switch_tetrahedron(m));
+    for (auto ti : {newt.tid(m), newt.switch_tetrahedron(m)->tid(m)}) {
+        for (auto j = 0; j < 6; j++) new_edges.push_back(m.tuple_from_edge(ti, j));
+    };
+    wmtk::unique_edge_tuples(m, new_edges);
+    return new_edges;
+};
+
 void ParallelHarmonicTet::swap_all_edges()
 {
-    std::vector<tbb::concurrent_queue<std::tuple<double, wmtk::TetMesh::Tuple>>> queues(
-        NUM_THREADS);
+    auto executor = wmtk::ExecutePass<ParallelHarmonicTet, wmtk::ExecutionPolicy::kPartition>();
+    executor.renew_neighbor_tuples = renewal;
+    auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
+    executor.lock_vertices = [](auto &m, const auto& e) -> std::optional<std::vector<size_t>>{
+        auto stack = std::vector<size_t>();
+        m.try_set_edge_mutex_two_ring(e, stack);
+        return stack;
+    };
+    executor.num_threads = NUM_THREADS;
 
-
-    for (auto& loc : get_edges()) {
-        double length = -1.;
-        queues[m_vertex_partition_id[loc.vid(*this)]].emplace(length, loc);
-    }
-
-    std::atomic_int cnt_suc = 0;
-
-    tbb::task_arena arena(NUM_THREADS);
-    tbb::task_group tg;
-
-    arena.execute([this, &queues, &tg, &cnt_suc]() {
-        for (int i = 0; i < this->NUM_THREADS; i++) {
-            int j = i;
-            tg.run([this, j, &queues, &cnt_suc] { swap_all_edges_stuff(queues, cnt_suc, j); });
-        }
-    });
-
-    arena.execute([&] { tg.wait(); });
+    for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_swap", loc);
+    executor(*this, collect_all_ops);
 }
 
 bool ParallelHarmonicTet::swap_edge_before(const Tuple& t)
@@ -115,6 +116,7 @@ bool ParallelHarmonicTet::swap_edge_before(const Tuple& t)
     edgeswap_cache.local().max_energy = max_energy;
     return true;
 }
+
 bool ParallelHarmonicTet::swap_edge_after(const Tuple& t)
 {
     if (!TetMesh::swap_edge_after(t)) return false;
