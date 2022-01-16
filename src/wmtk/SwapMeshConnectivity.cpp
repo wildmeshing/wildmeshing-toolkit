@@ -66,7 +66,6 @@ std::map<size_t, wmtk::TetMesh::VertexConnectivity> wmtk::TetMesh::update_connec
         auto& conn = tet_conn[i].m_indices;
         for (auto j = 0; j < 4; j++) {
             auto flag = wmtk::set_erase(vert_conn[conn[j]].m_conn_tets, i);
-            assert(flag);
         }
     }
 

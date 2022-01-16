@@ -18,7 +18,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        config: [Debug, Release]
+        config: [Release]
         include:
           - os: ubuntu-latest
             name: Linux
@@ -62,64 +62,6 @@ jobs:
         run: cd build; make -j2; ccache --show-stats
 
       - name: Tests
-        run: cd build; ctest --verbose --output-on-failure
-
-  ####################
-  # MacOS
-  ####################
-
-  MacOS:
-    name: ${{ matrix.name }}-${{ matrix.arch }} (${{ matrix.config }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [macos-latest]
-        arch: [x86_64, arm64]
-        config: [Debug, Release]
-        include:
-          - os: macos-latest
-            name: macOS
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v1
-        with:
-          fetch-depth: 10
-
-      - name: Dependencies
-        if: runner.os == 'macOS'
-        run: |
-          brew install ccache
-          echo 'CACHE_PATH=~/Library/Caches/ccache' >> "$GITHUB_ENV"
-
-      - name: Cache Build
-        id: cache-build
-        uses: actions/cache@v2
-        with:
-          path: ${{ env.CACHE_PATH }}
-          key: ${{ runner.os }}-${{ matrix.config }}-${{ matrix.arch }}-${{ matrix.tbb }}-cache-${{ github.sha }}
-          restore-keys: ${{ runner.os }}-${{ matrix.config }}-${{ matrix.arch }}-${{ matrix.tbb }}-cache
-
-      - name: Prepare ccache
-        run: |
-          ccache --max-size=1.0G
-          ccache -V && ccache --show-stats && ccache --zero-stats
-
-      - name: Configure
-        run: |
-          mkdir -p build
-          cd build
-          cmake .. \
-            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-            -DCMAKE_OSX_ARCHITECTURES=${{ matrix.arch }} \
-            -DCMAKE_BUILD_TYPE=${{ matrix.config }}
-
-      - name: Build
-        run: cd build; make -j2; ccache --show-stats
-
-      - name: Tests
-        if: matrix.arch == 'x86_64' # no ARM vm on actions yet
         run: cd build; ctest --verbose --output-on-failure
 
   ####################
