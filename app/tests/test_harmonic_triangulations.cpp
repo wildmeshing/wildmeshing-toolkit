@@ -73,7 +73,7 @@ TEST_CASE("harmonic-tet-swaps", "[harmtri]")
     {
         Eigen::MatrixXd V;
         Eigen::MatrixXi F;
-        igl::read_triangle_mesh(WMT_DATA_DIR "/sphere.obj", V, F);
+        igl::read_triangle_mesh(WMT_DATA_DIR "/Octocat.obj", V, F);
         std::vector<wmtk::Point3D> points(V.rows());
         for (auto i = 0; i < V.rows(); i++) {
             for (auto j = 0; j < 3; j++) points[i][j] = V(i, j);

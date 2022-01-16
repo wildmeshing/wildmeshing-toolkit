@@ -53,7 +53,6 @@ public:
     } edgeswap_cache, faceswap_cache; // todo: change for parallel
 
     void smooth_all_vertices();
-    bool smooth_before(const Tuple& t) override;
     bool smooth_after(const Tuple& t) override;
 
     void swap_all_edges();
