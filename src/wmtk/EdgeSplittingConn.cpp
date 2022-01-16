@@ -27,10 +27,10 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     for (size_t v_id : n12_v_ids) old_vertices.emplace_back(v_id, m_vertex_connectivity[v_id]);
 
     /// update connectivity
-    int v_id = find_next_empty_slot_v();
+    int v_id = get_next_empty_slot_v();
     std::vector<size_t> new_t_ids;
     for (size_t t_id : n12_t_ids) {
-        const size_t new_t_id = find_next_empty_slot_t();
+        const size_t new_t_id = get_next_empty_slot_t();
         new_t_ids.push_back(new_t_id);
         //
         {

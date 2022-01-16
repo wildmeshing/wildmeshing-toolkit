@@ -2,7 +2,7 @@
 
 #include <wmtk/utils/TupleUtils.hpp>
 
-int wmtk::TetMesh::find_next_empty_slot_t()
+int wmtk::TetMesh::get_next_empty_slot_t()
 {
     const auto it = m_tet_connectivity.emplace_back();
     const size_t size = std::distance(m_tet_connectivity.begin(), it) + 1;
@@ -13,7 +13,7 @@ int wmtk::TetMesh::find_next_empty_slot_t()
     return size - 1;
 }
 
-int wmtk::TetMesh::find_next_empty_slot_v()
+int wmtk::TetMesh::get_next_empty_slot_v()
 {
     const auto it = m_vertex_connectivity.emplace_back();
     const size_t size = std::distance(m_vertex_connectivity.begin(), it) + 1;
@@ -242,6 +242,27 @@ std::array<wmtk::TetMesh::Tuple, 4> wmtk::TetMesh::oriented_tet_vertices(const T
     return vs;
 }
 
+std::array<wmtk::TetMesh::Tuple, 3> wmtk::TetMesh::get_face_vertices(const Tuple& t) const
+{
+    std::array<Tuple, 3> vs;
+    vs[0] = t;
+    vs[1] = switch_vertex(t);
+    vs[2] = switch_vertex(switch_edge(t));
+    return vs;
+}
+
+std::array<wmtk::TetMesh::Tuple, 6> wmtk::TetMesh::tet_edges(const Tuple& t) const {
+    std::array<Tuple, 6> es;
+    for (int j = 0; j < 6; j++) {
+        es[j].m_local_eid = j;
+        es[j].m_local_fid = m_map_edge2face[j];
+
+        es[j].m_global_vid = m_tet_connectivity[t.m_global_tid][m_local_edges[j][0]];
+        es[j].m_global_tid = t.m_global_tid;
+    }
+    return es;
+}
+
 std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_one_ring_tets_for_vertex(const Tuple& t) const
 {
     std::vector<Tuple> tets;
@@ -249,6 +270,24 @@ std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_one_ring_tets_for_vertex(co
         tets.emplace_back(tuple_from_tet(t_id));
     }
     return tets;
+}
+
+std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_one_ring_vertices_for_vertex(
+    const Tuple& t) const
+{
+    std::vector<size_t> v_ids;
+    for (int t_id : m_vertex_connectivity[t.m_global_vid].m_conn_tets) {
+        for (int j = 0; j < 4; j++) {
+            v_ids.push_back(m_tet_connectivity[t_id][j]);
+        }
+    }
+    vector_unique(v_ids);
+    vector_erase(v_ids, t.m_global_vid);
+    std::vector<Tuple> vertices;
+    for (auto v_id : v_ids) {
+        vertices.push_back(tuple_from_vertex(v_id));
+    }
+    return vertices;
 }
 
 std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_incident_tets_for_edge(const Tuple& t) const

@@ -288,6 +288,10 @@ public:
     bool swap_face(const Tuple& t, Tuple& new_edge);
     bool smooth_vertex(const Tuple& t);
 
+    void single_triangle_insertion(
+        const std::vector<Tuple>& intersected_tets,
+        const std::vector<Tuple>& intersected_edges);
+
 
     /**
      * @brief cleans up the deleted vertices or tetrahedra, fixes the corresponding indices, and
@@ -316,10 +320,36 @@ private:
     vector<TetrahedronConnectivity> m_tet_connectivity;
     int m_t_empty_slot = 0;
     int m_v_empty_slot = 0;
-    int find_next_empty_slot_t();
-    int find_next_empty_slot_v();
+    int get_next_empty_slot_t();
+    int get_next_empty_slot_v();
+
+    void subdivide_tets(
+        const std::vector<size_t> t_ids,
+        const std::vector<bool>& mark_surface,
+        std::map<std::array<size_t, 2>, size_t>& map_edge2vid);
+    void subdivide_a_tet(
+        size_t t_id,
+        const std::array<int, 6>& new_v_ids,
+        bool mark_surface,
+        bool& is_add_centroid);
 
 protected:
+    virtual void insertion_update_surface_tag(
+        size_t t_id,
+        size_t new_t_id,
+        int config_id,
+        int diag_config_id,
+        int index,
+        bool mark_surface)
+    {}
+    virtual void add_tet_centroid(const std::array<size_t, 4>& vids) {}
+
+    virtual void triangle_insertion_before(const std::vector<Tuple>& faces) {}
+    virtual void triangle_insertion_after(
+        const std::vector<Tuple>& faces,
+        const std::vector<std::vector<Tuple>>& new_faces)
+    {}
+
     //// Split the edge in the tuple
     // Checks if the split should be performed or not (user controlled)
     virtual bool split_before(const Tuple& t) { return true; } // check edge condition
@@ -432,6 +462,14 @@ public:
     std::vector<Tuple> get_one_ring_tets_for_vertex(const Tuple& t) const;
 
     /**
+     * @brief Get the one ring vertices for a vertex
+     *
+     * @param t tuple pointing to a vertex
+     * @return one-ring vertices
+     */
+    std::vector<Tuple> get_one_ring_vertices_for_vertex(const Tuple& t) const;
+
+    /**
      * @brief Get the incident tets for edge
      *
      * @param t tuple pointing to an edge
@@ -452,9 +490,17 @@ public:
      * @return std::array<Tuple, 4> each tuple owns a different vertex.
      */
     std::array<Tuple, 4> oriented_tet_vertices(const Tuple& t) const;
+    std::array<Tuple, 3> get_face_vertices(const Tuple& t) const;
+
+    std::array<Tuple, 6> tet_edges(const Tuple& t) const;
 
     void check_tuple_validity(const Tuple& t) const { t.check_validity(*this); }
     bool check_mesh_connectivity_validity() const;
+
+private:
+    std::map<size_t, wmtk::TetMesh::VertexConnectivity> update_connectivity_impl(
+        std::vector<size_t>& affected_tid,
+        std::vector<std::array<size_t, 4>>& new_tet_conn);
 };
 
 } // namespace wmtk

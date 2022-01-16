@@ -27,7 +27,6 @@ bool ConcurrentTriMesh::try_set_vertex_mutex_two_ring(
     Tuple& v,
     std::vector<size_t>& mutex_release_stack)
 {
-    auto one_ring = get_one_ring_edges_for_vertex(v);
     for (auto v_one_ring : get_one_ring_edges_for_vertex(v)) {
         if (vector_contains(mutex_release_stack, v_one_ring.vid())) continue;
         if (try_set_vertex_mutex(v_one_ring)) {
