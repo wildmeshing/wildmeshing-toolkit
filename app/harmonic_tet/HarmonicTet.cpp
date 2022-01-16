@@ -73,11 +73,11 @@ bool HarmonicTet::swap_edge_before(const Tuple& t)
     if (!TetMesh::swap_edge_before(t)) return false;
 
     auto incident_tets = get_incident_tets_for_edge(t);
-    auto max_energy = -1.0;
+    auto total_energy = 0.;
     for (auto& l : incident_tets) {
-        max_energy = std::max(get_quality(l), max_energy);
+        total_energy += (get_quality(l));
     }
-    edgeswap_cache.max_energy = max_energy;
+    edgeswap_cache.total_energy = total_energy;
     return true;
 }
 bool HarmonicTet::swap_edge_after(const Tuple& t)
@@ -87,13 +87,13 @@ bool HarmonicTet::swap_edge_after(const Tuple& t)
     // after swap, t points to a face with 2 neighboring tets.
     auto oppo_tet = t.switch_tetrahedron(*this);
     assert(oppo_tet.has_value() && "Should not swap boundary.");
-    auto max_energy = std::max(get_quality(t), get_quality(*oppo_tet));
-    wmtk::logger().debug("energy {} {}", edgeswap_cache.max_energy, max_energy);
+    auto total_energy = get_quality(t) + get_quality(*oppo_tet);
+    wmtk::logger().debug("energy {} {}", edgeswap_cache.total_energy, total_energy);
     if (is_inverted(t) || is_inverted(*oppo_tet)) {
-        wmtk::logger().debug("invert w/ energy {} {}", edgeswap_cache.max_energy, max_energy);
+        wmtk::logger().debug("invert w/ energy {} {}", edgeswap_cache.total_energy, total_energy);
         return false;
     }
-    if (max_energy > edgeswap_cache.max_energy) return false;
+    if (total_energy > edgeswap_cache.total_energy) return false;
     return true;
 }
 
@@ -140,7 +140,7 @@ bool HarmonicTet::swap_face_before(const Tuple& t)
 
     auto oppo_tet = t.switch_tetrahedron(*this);
     assert(oppo_tet.has_value() && "Should not swap boundary.");
-    faceswap_cache.max_energy = std::max(get_quality(t), get_quality(*oppo_tet));
+    faceswap_cache.total_energy = (get_quality(t) + get_quality(*oppo_tet));
     return true;
 }
 
@@ -154,13 +154,13 @@ bool HarmonicTet::swap_face_after(const Tuple& t)
             return false;
         }
     }
-    auto max_energy = -1.0;
+    auto total_energy = 0.;
     for (auto& l : incident_tets) {
-        max_energy = std::max(get_quality(l), max_energy);
+        total_energy += get_quality(l);
     }
-    wmtk::logger().trace("quality {} from {}", max_energy, edgeswap_cache.max_energy);
+    wmtk::logger().trace("quality {} from {}", total_energy, faceswap_cache.total_energy);
 
-    if (max_energy > edgeswap_cache.max_energy) return false;
+    if (total_energy > faceswap_cache.total_energy) return false;
     return true;
 }
 

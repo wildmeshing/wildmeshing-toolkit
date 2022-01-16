@@ -49,7 +49,7 @@ public:
 
     struct SwapInfoCache
     {
-        double max_energy = 0.;
+        double total_energy = 0.;
     } edgeswap_cache, faceswap_cache; // todo: change for parallel
 
     void smooth_all_vertices();
