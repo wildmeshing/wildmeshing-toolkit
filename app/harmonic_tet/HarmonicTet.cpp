@@ -100,7 +100,7 @@ bool HarmonicTet::swap_edge_before(const Tuple& t)
     for (auto& l : incident_tets) {
         total_energy += (get_quality(l));
     }
-    edgeswap_cache.total_energy = total_energy;
+    edgeswap_cache.local().total_energy = total_energy;
     return true;
 }
 bool HarmonicTet::swap_edge_after(const Tuple& t)
@@ -111,12 +111,15 @@ bool HarmonicTet::swap_edge_after(const Tuple& t)
     auto oppo_tet = t.switch_tetrahedron(*this);
     assert(oppo_tet.has_value() && "Should not swap boundary.");
     auto total_energy = get_quality(t) + get_quality(*oppo_tet);
-    wmtk::logger().debug("energy {} {}", edgeswap_cache.total_energy, total_energy);
+    wmtk::logger().debug("energy {} {}", edgeswap_cache.local().total_energy, total_energy);
     if (is_inverted(t) || is_inverted(*oppo_tet)) {
-        wmtk::logger().debug("invert w/ energy {} {}", edgeswap_cache.total_energy, total_energy);
+        wmtk::logger().debug(
+            "invert w/ energy {} {}",
+            edgeswap_cache.local().total_energy,
+            total_energy);
         return false;
     }
-    if (total_energy > edgeswap_cache.total_energy) return false;
+    if (total_energy > edgeswap_cache.local().total_energy) return false;
     return true;
 }
 
@@ -134,9 +137,9 @@ bool HarmonicTet::swap_face_after(const Tuple& t)
     for (auto& l : incident_tets) {
         total_energy += get_quality(l);
     }
-    wmtk::logger().trace("quality {} from {}", total_energy, faceswap_cache.total_energy);
+    wmtk::logger().trace("quality {} from {}", total_energy, faceswap_cache.local().total_energy);
 
-    if (total_energy > faceswap_cache.total_energy) return false;
+    if (total_energy > faceswap_cache.local().total_energy) return false;
     return true;
 }
 
@@ -150,14 +153,27 @@ auto renewal = [](const auto& m, const auto& newt) {
     return new_edges;
 };
 
-void HarmonicTet::swap_all_edges()
+void HarmonicTet::swap_all_edges(bool parallel)
 {
-    auto executor = wmtk::ExecutePass<HarmonicTet>();
-    executor.renew_neighbor_tuples = renewal;
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
-
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_swap", loc);
-    executor(*this, collect_all_ops);
+    if (parallel) {
+        auto executor = wmtk::ExecutePass<HarmonicTet, wmtk::ExecutionPolicy::kPartition>();
+        executor.renew_neighbor_tuples = renewal;
+        executor.lock_vertices = [](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
+            auto stack = std::vector<size_t>();
+            m.try_set_edge_mutex_two_ring(e, stack);
+            return stack;
+        };
+        executor.num_threads = NUM_THREADS;
+        executor(*this, collect_all_ops);
+    }
+    else {
+         auto executor = wmtk::ExecutePass<HarmonicTet, wmtk::ExecutionPolicy::kSeq>();
+        executor.renew_neighbor_tuples = renewal;
+        executor.num_threads = 1;
+        executor(*this, collect_all_ops);
+    }
 }
 
 void harmonic_tet::HarmonicTet::smooth_all_vertices()
@@ -200,7 +216,7 @@ bool HarmonicTet::swap_face_before(const Tuple& t)
 
     auto oppo_tet = t.switch_tetrahedron(*this);
     assert(oppo_tet.has_value() && "Should not swap boundary.");
-    faceswap_cache.total_energy = (get_quality(t) + get_quality(*oppo_tet));
+    faceswap_cache.local().total_energy = (get_quality(t) + get_quality(*oppo_tet));
     return true;
 }
 

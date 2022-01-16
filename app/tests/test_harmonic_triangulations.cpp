@@ -14,6 +14,8 @@
 #include "wmtk/utils/EnergyHarmonicTet.hpp"
 #include "wmtk/utils/Logger.hpp"
 
+#include <igl/Timer.h>
+
 using namespace wmtk;
 
 
@@ -100,7 +102,7 @@ TEST_CASE("harmonic-tet-swaps", "[harmtri]")
 
 TEST_CASE("parallel_harmonic-tet-swaps", "[parallel_harmtri][.slow]")
 {
-    auto vec_attrs = tbb::concurrent_vector<Eigen::Vector3d>();
+    auto vec_attrs = std::vector<Eigen::Vector3d>();
     auto tets = std::vector<std::array<size_t, 4>>();
     {
         Eigen::MatrixXd V;
@@ -121,11 +123,11 @@ TEST_CASE("parallel_harmonic-tet-swaps", "[parallel_harmtri][.slow]")
     double time;
     igl::Timer timer;
     for (int i = 1; i <= 4; i *= 2) {
-        auto har_tet = harmonic_tet::ParallelHarmonicTet(vec_attrs, tets, i);
+        auto har_tet = harmonic_tet::HarmonicTet(vec_attrs, tets, i);
 
         auto [E0, cnt0] = stats(har_tet);
         timer.start();
-        har_tet.swap_all_edges();
+        har_tet.swap_all_edges(true);
         time = timer.getElapsedTimeInMilliSec();
         spdlog::info("Time [{}]{}",i, time);
         har_tet.swap_all_faces();
