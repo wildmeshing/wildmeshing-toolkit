@@ -25,7 +25,9 @@ public:
         const std::vector<std::array<size_t, 4>>& tets,
         int num_threads = 1)
     {
-        m_vertex_attribute = tbb::concurrent_vector<VertexAttributes>(_vertex_attribute);
+        m_vertex_attribute = tbb::concurrent_vector<VertexAttributes>(_vertex_attribute.size());
+        for (auto i = 0; i < _vertex_attribute.size(); i++)
+            m_vertex_attribute[i] = _vertex_attribute[i];
         m_tet_attribute = tbb::concurrent_vector<TetAttributes>(tets.size());
         NUM_THREADS = num_threads;
         init(m_vertex_attribute.size(), tets);
