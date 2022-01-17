@@ -43,16 +43,16 @@ public:
         if (one_ring_edges.size() < 3) return false;
         Eigen::Vector3d after_smooth(0, 0, 0);
         Eigen::Vector3d after_smooth_boundary(0, 0, 0);
-        bool boundary = false;
+        int boundary = 0;
         for (auto e : one_ring_edges) {
             if (is_boundary_edge(e)) {
                 after_smooth_boundary += m_vertex_positions[e.vid()];
-                boundary = true;
+                boundary++;
             }
             after_smooth += m_vertex_positions[e.vid()];
         }
         if (boundary)
-            m_vertex_positions[t.vid()] = after_smooth_boundary / 2.0;
+            m_vertex_positions[t.vid()] = after_smooth_boundary / boundary;
         else
             m_vertex_positions[t.vid()] = after_smooth / one_ring_edges.size();
         return true;

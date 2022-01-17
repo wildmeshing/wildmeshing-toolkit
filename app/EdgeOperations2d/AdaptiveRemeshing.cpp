@@ -109,19 +109,15 @@ bool EdgeOperations2d::collapse_remeshing(double L)
         }
 
         TriMesh::Tuple new_vert;
-        // c++;
-        // spdlog::trace("collapse attempt {}", c);
+
         if (!TriMesh::collapse_edge(loc, new_vert)) continue;
         s++;
-        spdlog::trace("collapse success {}", s);
 
         auto new_edges = new_edges_after_collapse_split(new_vert);
         for (auto new_e : new_edges) {
-            spdlog::trace("adding {} in collapse ", new_e.eid(*this));
             e_collapse_queue.push(ElementInQueue(new_e, compute_edge_cost_collapse_ar(new_e, L)));
         }
     }
-    spdlog::trace("collapse finish ");
     return true;
 }
 bool EdgeOperations2d::split_remeshing(double L)
@@ -143,7 +139,6 @@ bool EdgeOperations2d::split_remeshing(double L)
         TriMesh::Tuple new_vert;
 
         if (!TriMesh::split_edge(loc, new_vert)) continue;
-        spdlog::trace("split {}", ++s);
         auto new_edges = new_edges_after_collapse_split(new_vert);
         for (auto new_e : new_edges)
             e_split_queue.push(ElementInQueue(new_e, compute_edge_cost_split_ar(new_e, L)));
@@ -175,7 +170,6 @@ bool EdgeOperations2d::swap_remeshing()
 
         if (valence > 0) {
             if (!swap_edge(loc, new_vert)) continue;
-            spdlog::trace("swap {}", ++s);
             auto new_edges = new_edges_after_swap(new_vert);
             for (auto new_e : new_edges)
                 e_swap_queue.push(ElementInQueue(new_e, compute_vertex_valence_ar(new_e)));
@@ -203,18 +197,16 @@ bool EdgeOperations2d::adaptive_remeshing(double L, int iterations)
 
         // split
         split_remeshing(L);
-        write_triangle_mesh("splited_" + std::to_string(cnt) + ".obj");
+
         // collpase
         collapse_remeshing(L);
-        write_triangle_mesh("collapsed_" + std::to_string(cnt) + ".obj");
 
         // swap edges
         swap_remeshing();
-        write_triangle_mesh("swaped_" + std::to_string(cnt) + ".obj");
+
         // smoothing
         auto vertices = get_vertices();
         for (auto& loc : vertices) smooth(loc);
-        write_triangle_mesh("smoothed_" + std::to_string(cnt) + ".obj");
 
         assert(check_mesh_connectivity_validity());
         consolidate_mesh();
