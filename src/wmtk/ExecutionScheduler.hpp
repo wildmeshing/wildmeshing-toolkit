@@ -181,10 +181,12 @@ public:
                         lock_vertices(m, tup); // Note that returning `Tuples` would be invalid.
                     if (!locked_vid) Q.emplace(ele_in_queue);
                     auto newtup = edit_operation_maps[op](m, tup);
-                    if (newtup) renewed_tuples = renew_neighbor_tuples(m, op, newtup.value());
+                    if (newtup) {
+                        renewed_tuples = renew_neighbor_tuples(m, op, newtup.value());
+                        cnt_update++;
+                    }
                     operation_cleanup(m, locked_vid.value()); // Maybe use RAII
                 }
-                cnt_update++;
                 for (auto& [n_op, e] : renewed_tuples) Q.emplace(priority(m, n_op, e), n_op, e);
             }
 

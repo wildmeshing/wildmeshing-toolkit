@@ -84,6 +84,7 @@ bool harmonic_tet::HarmonicTet::smooth_after(const Tuple& t)
         assembles,
         wmtk::harmonic_tet_energy,
         wmtk::harmonic_tet_jacobian);
+    if (m_vertex_attribute[vid] == old_pos) return false;
     wmtk::logger().trace(
         "old pos {} -> new pos {}",
         old_pos.transpose(),
