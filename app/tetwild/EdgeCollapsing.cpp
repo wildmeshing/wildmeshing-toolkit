@@ -104,6 +104,7 @@ bool tetwild::TetWild::collapse_after(const Tuple& loc)
     for (auto& l : locs) {
         double q = get_quality(l);
         if (q > collapse_cache.max_energy) {
+            // spdlog::critical("After Collapse {} from ({})", q, collapse_cache.max_energy);
             return false;
         }
         qs.push_back(q);
@@ -117,6 +118,7 @@ bool tetwild::TetWild::collapse_after(const Tuple& loc)
             m_tet_attribute[locs[i].tid(*this)].m_qualities = qs[i];
         }
     }
+    cnt_collapse ++;
 
     return true;
 }

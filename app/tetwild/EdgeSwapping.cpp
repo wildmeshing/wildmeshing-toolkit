@@ -135,6 +135,7 @@ bool tetwild::TetWild::swap_edge_after(const Tuple& t)
         return false;
     }
     if (max_energy > edgeswap_cache.max_energy) return false;
+    cnt_swap ++;
     return true;
 }
 
@@ -165,5 +166,7 @@ bool tetwild::TetWild::swap_face_after(const Tuple& t)
     wmtk::logger().trace("quality {} from {}", max_energy, edgeswap_cache.max_energy);
 
     if (max_energy > edgeswap_cache.max_energy) return false;
+
+    cnt_swap ++;
     return true;
 }
