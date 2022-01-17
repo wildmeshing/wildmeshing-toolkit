@@ -358,16 +358,14 @@ void HarmonicTet::swap_all()
                     data[i][j] = vs[j].vid(m);
                 }
             }
-            auto before = 0.;
-            for (auto e : data) before += m.get_quality(e);
-            auto after = 0.;
             auto v0 = t.vid(m), v1 = t.switch_vertex(m).vid(m);
             auto v2 = t.switch_edge(m).switch_vertex(m).vid(m);
-            auto new_conn = swap_2_3(data, {v0, v1, v2});
-            for (auto tc : new_conn) {
-                after += m.get_quality(tc);
-            }
-            return before - after; // decrease amount.
+            auto new_conn = swap_2_3(data, {{v0, v1, v2}});
+
+            auto decrease = 0.;
+            for (auto e : data) decrease += m.get_quality(e);
+            for (auto tc : new_conn) decrease -= m.get_quality(tc);
+            return decrease; // decrease amount.
         }
         return -1.;
     };

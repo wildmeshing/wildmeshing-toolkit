@@ -1,7 +1,7 @@
 #include "HarmonicTet.hpp"
 
-#include <wmtk/utils/io.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/io.hpp>
 #include "wmtk/utils/EnergyHarmonicTet.hpp"
 
 // Third-party include
@@ -24,6 +24,7 @@ auto stats = [](auto& har_tet) {
         total_e += e;
         cnt++;
     }
+    wmtk::logger().info("Total E {}, Cnt {}", total_e, cnt);
     return std::pair(total_e, cnt);
 };
 
@@ -40,8 +41,7 @@ auto process_mesh = [](auto& input, auto& output, int thread) {
     auto har_tet = harmonic_tet::HarmonicTet(vec_attrs, tets, thread);
     for (int i = 0; i <= 4; i++) {
         auto [E0, cnt0] = stats(har_tet);
-        har_tet.swap_all_edges(true);
-        har_tet.swap_all_faces();
+        har_tet.swap_all();
         stats(har_tet);
         har_tet.consolidate_mesh();
         har_tet.smooth_all_vertices();
