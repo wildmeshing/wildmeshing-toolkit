@@ -99,7 +99,6 @@ TEST_CASE("harmonic-tet-swaps", "[harmtri][.slow]")
     wmtk::logger().info("Start Energy E0  {} ", E0);
     har_tet.swap_all_edges();
     wmtk::logger().info("tet cap {}", har_tet.tet_capacity());
-    // har_tet.smooth_all_vertices();
     har_tet.consolidate_mesh();
     wmtk::logger().info("tet cap {}", har_tet.tet_capacity());
     auto [E1, cnt1] = stats(har_tet);

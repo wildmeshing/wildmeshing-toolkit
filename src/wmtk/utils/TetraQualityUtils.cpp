@@ -87,7 +87,7 @@ auto linesearch = [](auto&& energy_from_point,
                      const Eigen::Vector3d& pos,
                      const Eigen::Vector3d& dir,
                      const int& max_iter) {
-    auto lr = 0.8;
+    auto lr = 0.5;
     auto old_energy = energy_from_point(pos);
     wmtk::logger().trace("old energy {} dir {}", old_energy, dir.transpose());
     for (auto iter = 1; iter <= max_iter; iter++) {
@@ -177,7 +177,6 @@ Eigen::Vector3d wmtk::gradient_descent_from_stack(
             Eigen::Vector3d dir =
                 -gradient_direction(compute_energy, compute_jacobian, assembles, current_pos);
             dir.normalize(); // HACK: TODO: should use flip_avoid_line_search.
-            dir *= 1e-3;
             auto newpos = linesearch(energy_from_point, current_pos, dir, line_search_iters);
             if ((newpos - current_pos).norm() < 1e-9) // barely moves
             {

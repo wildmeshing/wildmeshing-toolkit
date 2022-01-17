@@ -188,13 +188,13 @@ void HarmonicTet::swap_all_edges(bool parallel)
     }
 }
 
-void harmonic_tet::HarmonicTet::smooth_all_vertices()
+void harmonic_tet::HarmonicTet::smooth_all_vertices(bool interior_only)
 {
     auto executor = wmtk::ExecutePass<HarmonicTet>();
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_vertices()) {
-        if (vertex_adjacent_boundary_faces(loc).empty())
-            collect_all_ops.emplace_back("vertex_smooth", loc);
+        if (interior_only && !vertex_adjacent_boundary_faces(loc).empty()) continue;
+        collect_all_ops.emplace_back("vertex_smooth", loc);
     }
     wmtk::logger().info("Num verts {}", collect_all_ops.size());
     executor(*this, collect_all_ops);
