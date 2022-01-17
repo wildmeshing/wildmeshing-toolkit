@@ -28,7 +28,9 @@ struct ExecutePass
 {
     using Tuple = typename AppMesh::Tuple;
     // A dictionary that registers names with operations.
-    std::map<Op, std::function<std::optional<std::vector<Tuple>>(AppMesh&, const Tuple&)>>
+    std::map<
+        Op, // strings
+        std::function<std::optional<std::vector<Tuple>>(AppMesh&, const Tuple&)>>
         edit_operation_maps;
 
     // Priority function (default to edge length)

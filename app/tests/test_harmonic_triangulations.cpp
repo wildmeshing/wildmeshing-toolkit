@@ -69,7 +69,7 @@ TEST_CASE("harmonic-tet-optim", "[harmtri]")
         E < 0.8); // Note: this may depend on the internal implementation detail of gradient descent
 }
 
-TEST_CASE("harmonic-tet-swaps", "[harmtri]")
+TEST_CASE("harmonic-tet-swaps", "[harmtri][.slow]")
 {
     auto vec_attrs = std::vector<Eigen::Vector3d>();
     auto tets = std::vector<std::array<size_t, 4>>();

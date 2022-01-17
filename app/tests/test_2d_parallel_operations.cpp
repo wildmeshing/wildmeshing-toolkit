@@ -11,7 +11,7 @@
 
 using namespace wmtk;
 
-TEST_CASE("metis_test_bigmesh", "[test_2d_parallel_operations]")
+TEST_CASE("metis_test_bigmesh", "[test_2d_parallel_operations][.slow]")
 {
     const std::string root(WMT_DATA_DIR);
     const std::string path = root + "/circle.obj";
