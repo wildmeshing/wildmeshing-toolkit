@@ -364,7 +364,7 @@ void tetwild::TetWild::triangle_insertion(const InputSurface &_input_surface) {
                     seg2[1] = wmtk::project_point_to_2d(seg[1], squeeze_to_2d_dir);
                     //overlap == seg has one endpoint inside tri OR seg intersect with tri edges
                     bool is_inside = wmtk::is_point_inside_triangle(seg2[0], tri2)
-                                     || wmtk::is_point_inside_triangle(seg2[2], tri2);
+                                     || wmtk::is_point_inside_triangle(seg2[1], tri2);
                     if(is_inside){
                         cnt_intersected++;
                     } else {
@@ -603,7 +603,7 @@ void tetwild::TetWild::triangle_insertion(const InputSurface &_input_surface) {
     m_edge_attribute.resize(m_tet_attribute.size() * 6);
     m_face_attribute.resize(m_tet_attribute.size() * 4);
     //todo
-    
+
 //    for (int i = 0; i < triangle_insertion_cache.surface_f_ids.size(); i++) {
 //        Tuple tet = tuple_from_tet(i);
 //        auto tet_vertices = oriented_tet_vertices(tet);
