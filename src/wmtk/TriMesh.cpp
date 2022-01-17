@@ -27,6 +27,7 @@ TriMesh::Tuple TriMesh::Tuple::switch_vertex(const TriMesh& m) const
         assert(m_vid == v0 || m_vid == v1);
         loc.m_vid = m_vid == v0 ? v1 : v0;
         break;
+    default:;
     }
     assert(loc.is_valid(m));
 
@@ -54,6 +55,7 @@ TriMesh::Tuple TriMesh::Tuple::switch_edge(const TriMesh& m) const
         assert(m_eid == 0 || m_eid == 1);
         loc.m_eid = m_eid == 0 ? 1 : 0;
         break;
+    default:;
     }
     assert(loc.is_valid(m));
     return loc;
