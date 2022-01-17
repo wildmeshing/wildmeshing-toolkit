@@ -97,39 +97,39 @@ public:
     inline size_t get_num_tets() const { return get_num_simplex_elements<3>(); }
 
     template <typename Fn>
-    void extract_tet_vertices(Fn& set_vertex_cb) const
+    void extract_tet_vertices(Fn&& set_vertex_cb) const
     {
-        return extract_vertices<3>(set_vertex_cb);
+        return extract_vertices<3>(std::forward<Fn>(set_vertex_cb));
     }
 
     template <typename Fn>
-    void extract_face_vertices(Fn& set_vertex_cb) const
+    void extract_face_vertices(Fn&& set_vertex_cb) const
     {
-        return extract_vertices<2>(set_vertex_cb);
+        return extract_vertices<2>(std::forward<Fn>(set_vertex_cb));
     }
 
     template <typename Fn>
-    void extract_edge_vertices(Fn& set_vertex_cb) const
+    void extract_edge_vertices(Fn&& set_vertex_cb) const
     {
-        extract_vertices<1>(set_vertex_cb);
+        extract_vertices<1>(std::forward<Fn>(set_vertex_cb));
     }
 
     template <typename Fn>
-    void extract_edges(Fn& set_edge_cb) const
+    void extract_edges(Fn&& set_edge_cb) const
     {
-        extract_simplex_elements<1>(set_edge_cb);
+        extract_simplex_elements<1>(std::forward<Fn>(set_edge_cb));
     }
 
     template <typename Fn>
-    void extract_faces(Fn& set_face_cb) const
+    void extract_faces(Fn&& set_face_cb) const
     {
-        extract_simplex_elements<2>(set_face_cb);
+        extract_simplex_elements<2>(std::forward<Fn>(set_face_cb));
     }
 
     template <typename Fn>
-    void extract_tets(Fn& set_tet_cb) const
+    void extract_tets(Fn&& set_tet_cb) const
     {
-        extract_simplex_elements<3>(set_tet_cb);
+        extract_simplex_elements<3>(std::forward<Fn>(set_tet_cb));
     }
 
     std::vector<std::string> get_edge_vertex_attribute_names() const
@@ -163,39 +163,39 @@ public:
     }
 
     template <typename Fn>
-    void extract_edge_vertex_attribute(const std::string& attr_name, Fn& set_attr)
+    void extract_edge_vertex_attribute(const std::string& attr_name, Fn&& set_attr)
     {
-        extract_vertex_attribute<1>(attr_name, set_attr);
+        extract_vertex_attribute<1>(attr_name, std::forward<Fn>(set_attr));
     }
 
     template <typename Fn>
-    void extract_face_vertex_attribute(const std::string& attr_name, Fn& set_attr)
+    void extract_face_vertex_attribute(const std::string& attr_name, Fn&& set_attr)
     {
-        extract_vertex_attribute<2>(attr_name, set_attr);
+        extract_vertex_attribute<2>(attr_name, std::forward<Fn>(set_attr));
     }
 
     template <typename Fn>
-    void extract_tet_vertex_attribute(const std::string& attr_name, Fn& set_attr)
+    void extract_tet_vertex_attribute(const std::string& attr_name, Fn&& set_attr)
     {
-        extract_vertex_attribute<3>(attr_name, set_attr);
+        extract_vertex_attribute<3>(attr_name, std::forward<Fn>(set_attr));
     }
 
     template <typename Fn>
-    void extract_edge_attribute(const std::string& attr_name, Fn& set_attr)
+    void extract_edge_attribute(const std::string& attr_name, Fn&& set_attr)
     {
-        extract_element_attribute<1>(attr_name, set_attr);
+        extract_element_attribute<1>(attr_name, std::forward<Fn>(set_attr));
     }
 
     template <typename Fn>
-    void extract_face_attribute(const std::string& attr_name, Fn& set_attr)
+    void extract_face_attribute(const std::string& attr_name, Fn&& set_attr)
     {
-        extract_element_attribute<2>(attr_name, set_attr);
+        extract_element_attribute<2>(attr_name, std::forward<Fn>(set_attr));
     }
 
     template <typename Fn>
-    void extract_tet_attribute(const std::string& attr_name, Fn& set_attr)
+    void extract_tet_attribute(const std::string& attr_name, Fn&& set_attr)
     {
-        extract_element_attribute<3>(attr_name, set_attr);
+        extract_element_attribute<3>(attr_name, std::forward<Fn>(set_attr));
     }
 
     void save(const std::string& filename, bool binary = true)
@@ -268,7 +268,7 @@ private:
         block.entity_tag = vertex_block.entity_tag;
         if constexpr (DIM == 1) {
             block.element_type = 1; // 2-node line.
-        } else if (DIM == 2) {
+        } else if constexpr (DIM == 2) {
             block.element_type = 2; // 3-node triangle.
         } else {
             block.element_type = 4; // 4-node tet.
@@ -419,7 +419,7 @@ private:
     }
 
     template <int DIM, typename Fn>
-    void extract_vertices(Fn& set_vertex_cb) const
+    void extract_vertices(Fn&& set_vertex_cb) const
     {
         const auto* block = get_vertex_block<DIM>();
         if (block == nullptr) return;
@@ -435,7 +435,7 @@ private:
     }
 
     template <int DIM, typename Fn>
-    void extract_simplex_elements(Fn& set_element_cb) const
+    void extract_simplex_elements(Fn&& set_element_cb) const
     {
         const auto* vertex_block = get_vertex_block<DIM>();
         const auto* element_block = get_simplex_element_block<DIM>();
@@ -446,19 +446,28 @@ private:
         if (num_elements == 0) return;
         assert(vertex_block->num_nodes_in_block != 0);
 
-        const size_t vert_tag_offset = vertex_block->data.front();
+        const size_t vert_tag_offset = vertex_block->tags.front();
         const size_t elem_tag_offset = element_block->data.front();
         for (size_t i = 0; i < num_elements; i++) {
             const size_t tag = element_block->data[i * (DIM + 2)] - elem_tag_offset;
             assert(tag < num_elements);
-            const double* element = element_block->data + i * (DIM + 2) + 1;
+            const auto* element = element_block->data.data() + i * (DIM + 2) + 1;
 
             if constexpr (DIM == 1) {
-                set_element_cb(tag, element[0], element[1]);
-            } else if (DIM == 2) {
-                set_element_cb(tag, element[0], element[1], element[2]);
-            } else if (DIM == 3) {
-                set_element_cb(tag, element[0], element[1], element[2], element[3]);
+                set_element_cb(tag, element[0] - vert_tag_offset, element[1] - vert_tag_offset);
+            } else if constexpr (DIM == 2) {
+                set_element_cb(
+                    tag,
+                    element[0] - vert_tag_offset,
+                    element[1] - vert_tag_offset,
+                    element[2] - vert_tag_offset);
+            } else if constexpr (DIM == 3) {
+                set_element_cb(
+                    tag,
+                    element[0] - vert_tag_offset,
+                    element[1] - vert_tag_offset,
+                    element[2] - vert_tag_offset,
+                    element[3] - vert_tag_offset);
             }
         }
     }
@@ -492,7 +501,7 @@ private:
     }
 
     template <int DIM, typename Fn>
-    void extract_vertex_attribute(const std::string& attr_name, Fn& set_attr)
+    void extract_vertex_attribute(const std::string& attr_name, Fn&& set_attr)
     {
         const auto* vertex_block = get_vertex_block<DIM>();
         const size_t tag_offset = vertex_block->tags.front();
@@ -511,7 +520,7 @@ private:
     }
 
     template <int DIM, typename Fn>
-    void extract_element_attribute(const std::string& attr_name, Fn& set_attr)
+    void extract_element_attribute(const std::string& attr_name, Fn&& set_attr)
     {
         const auto* element_block = get_simplex_element_block<DIM>();
         const size_t tag_offset = element_block->data.front();
@@ -523,7 +532,7 @@ private:
 
             for (const auto& entry : data.entries) {
                 const size_t tag = entry.tag - tag_offset;
-                assert(tag < element_block->num_element_in_block);
+                assert(tag < element_block->num_elements_in_block);
                 set_attr(tag, entry.data);
             }
         }

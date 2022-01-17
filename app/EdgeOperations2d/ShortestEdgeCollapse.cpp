@@ -3,21 +3,29 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include "EdgeOperations2d.h"
-
+using namespace wmtk;
 using namespace Edge2d;
-
-bool Edge2d::EdgeOperations2d::collapse_before(const Tuple& t)
+std::vector<TriMesh::Tuple> Edge2d::EdgeOperations2d::new_edges_after_collapse_split(
+    const TriMesh::Tuple& t) const
 {
-    if (!TriMesh::collapse_before(t)) return false;
-    collapse_cache.v1p = m_vertex_positions[t.vid()];
-    collapse_cache.v2p = m_vertex_positions[t.switch_vertex(*this).vid()];
-    return true;
-}
+    std::vector<TriMesh::Tuple> new_edges;
+    std::vector<size_t> one_ring_fid;
 
-bool Edge2d::EdgeOperations2d::collapse_after(const Tuple& t)
-{
-    m_vertex_positions[t.vid()] = (collapse_cache.v1p + collapse_cache.v2p) / 2.0;
-    return true;
+    for (auto e : get_one_ring_edges_for_vertex(t)) {
+        // centripedal edge
+        new_edges.push_back(e);
+        // petal edge
+        if (!wmtk::vector_contains(one_ring_fid, e.fid())) {
+            one_ring_fid.emplace_back(e.fid());
+            new_edges.push_back(e.switch_edge(*this));
+            if (!is_boundary_edge(e) &&
+                !wmtk::vector_contains(one_ring_fid, (e.switch_face(*this).value()).fid())) {
+                one_ring_fid.emplace_back((e.switch_face(*this).value()).fid());
+                new_edges.push_back((e.switch_face(*this).value()).switch_edge(*this));
+            }
+        }
+    }
+    return new_edges;
 }
 
 bool Edge2d::EdgeOperations2d::collapse_shortest(int target_vertex_count)
@@ -47,17 +55,14 @@ bool Edge2d::EdgeOperations2d::collapse_shortest(int target_vertex_count)
 
         target_vertex_count--;
         if (target_vertex_count <= 0) break;
-
-        size_t new_vid = new_vert.vid();
-        std::vector<TriMesh::Tuple> one_ring_edges = get_one_ring_edges_for_vertex(new_vert);
-
-        for (TriMesh::Tuple edge : one_ring_edges) {
-            size_t vid = edge.vid();
-            double length = (m_vertex_positions[new_vid] - m_vertex_positions[vid]).squaredNorm();
-            ec_queue.push(ElementInQueue(edge, length));
-        }
+        // push new edges to the queue
+        auto new_edges = new_edges_after_collapse_split(new_vert);
+        for (auto new_e : new_edges)
+            ec_queue.push(ElementInQueue(
+                new_e,
+                (m_vertex_positions[new_e.vid()] -
+                 m_vertex_positions[new_e.switch_vertex(*this).vid()])
+                    .squaredNorm()));
     }
-
-
     return true;
 }

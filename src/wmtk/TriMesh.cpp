@@ -2,6 +2,7 @@
 
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
+#include "wmtk/utils/VectorUtils.h"
 using namespace wmtk;
 
 
@@ -292,7 +293,8 @@ bool TriMesh::split_edge(const Tuple& t, Tuple& new_t)
     // make the new tuple
     size_t new_fid = std::min(fid1, new_fid1);
     if (new_fid2.has_value()) new_fid = std::min(new_fid, new_fid2.value());
-    new_t = Tuple(new_vid, (j + 2) % 3, new_fid, *this);
+    int l = m_tri_connectivity[new_fid].find(new_vid);
+    new_t = Tuple(new_vid, (l + 2) % 3, new_fid, *this);
     assert(new_t.is_valid(*this));
 
     // roll back if not successful
@@ -461,11 +463,12 @@ bool TriMesh::swap_edge(const Tuple& t, Tuple& new_t)
     // get the vids
     size_t vid1 = t.vid();
     size_t vid2 = t.switch_vertex(*this).vid();
+    // if (!set_intersection(m_vertex_connectivity[vid1].m_conn_tris,
+    // m_vertex_connectivity[vid2].m_conn_tris).empty()) return false;
     Tuple tmp_tuple;
-    if (!t.switch_face(*this).has_value())
-        return false; // can't swap on boundary edge
-    else
-        tmp_tuple = switch_face(t).value();
+
+    assert(t.switch_face(*this).has_value());
+    tmp_tuple = switch_face(t).value();
     assert(tmp_tuple.is_valid(*this));
     tmp_tuple = tmp_tuple.switch_edge(*this);
     size_t vid3 = tmp_tuple.switch_vertex(*this).vid();
@@ -510,7 +513,10 @@ bool TriMesh::swap_edge(const Tuple& t, Tuple& new_t)
     m_vertex_connectivity[vid4].m_conn_tris.push_back(test_fid2.value());
     vector_unique(m_vertex_connectivity[vid4].m_conn_tris);
     // change the tuple to the new edge tuple
-    new_t = Tuple(vid4, (j + 2) % 3, test_fid2.value(), *this);
+    new_t = init_from_edge(vid4, vid3, test_fid2.value());
+
+    assert(new_t.switch_vertex(*this).vid() != vid1);
+    assert(new_t.switch_vertex(*this).vid() != vid2);
     assert(new_t.is_valid(*this));
     if (!swap_after(new_t)) {
         // restore the vertex and faces
@@ -708,25 +714,16 @@ std::vector<TriMesh::Tuple> TriMesh::get_edges() const
 {
     // DP: This function is not using the correct prototype, check the 3D version, it
     // should throw when goes outside the boundary
-    const TriMesh& m = *this;
-    std::vector<Tuple> all_edges_tuples;
-    all_edges_tuples.reserve(m.m_tri_connectivity.size() * 3 / 2);
-    for (size_t i = 0; i < m.m_tri_connectivity.size(); i++) {
+    std::vector<TriMesh::Tuple> all_edges_tuples;
+    for (int i = 0; i < m_tri_connectivity.size(); i++) {
+        if (m_tri_connectivity[i].m_is_removed) continue;
         for (int j = 0; j < 3; j++) {
-            size_t vid = m.m_tri_connectivity[i].m_indices[j];
-            size_t eid = (j + 2) % 3;
-            Tuple e_tuple = Tuple(vid, eid, i, m);
-            assert(e_tuple.is_valid(m));
-            Tuple e_tuple2 = e_tuple.switch_face(m).value_or(e_tuple);
-            assert(e_tuple2.is_valid(m));
-            // return itself if it is a boundary triangle
-            size_t fid2 = e_tuple2.fid();
-            if (fid2 < i)
-                continue;
-            else
-                all_edges_tuples.push_back(e_tuple);
+            size_t l = (j + 2) % 3;
+            auto tup = Tuple(m_tri_connectivity[i].m_indices[j], l, i, *this);
+            if (tup.eid(*this) == 3 * i + l) all_edges_tuples.emplace_back(tup);
         }
     }
+
     return all_edges_tuples;
 }
 

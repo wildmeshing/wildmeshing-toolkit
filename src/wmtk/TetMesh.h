@@ -464,6 +464,14 @@ public:
     std::vector<Tuple> get_one_ring_tets_for_vertex(const Tuple& t) const;
 
     /**
+     * @brief Get the one ring vertices for a vertex
+     *
+     * @param t tuple pointing to a vertex
+     * @return one-ring vertices
+     */
+    std::vector<Tuple> get_one_ring_vertices_for_vertex(const Tuple& t) const;
+
+    /**
      * @brief Get the incident tets for edge
      *
      * @param t tuple pointing to an edge
@@ -492,9 +500,14 @@ public:
     bool check_mesh_connectivity_validity() const;
 
 private:
-    std::map<size_t, wmtk::TetMesh::VertexConnectivity> update_connectivity_impl(
+    std::map<size_t, wmtk::TetMesh::VertexConnectivity> operation_update_connectivity_impl(
         std::vector<size_t>& affected_tid,
         std::vector<std::array<size_t, 4>>& new_tet_conn);
+    void operation_failure_rollback_imp(
+        std::map<size_t, wmtk::TetMesh::VertexConnectivity>& rollback_vert_conn,
+        const std::vector<size_t>& affected,
+        const std::vector<size_t>& new_tet_id,
+        const std::vector<wmtk::TetMesh::TetrahedronConnectivity>& old_tets);
 };
 
 } // namespace wmtk
