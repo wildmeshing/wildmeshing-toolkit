@@ -13,7 +13,7 @@
 
 namespace harmonic_tet {
 
-double HarmonicTet::get_quality(const Tuple& loc)
+double HarmonicTet::get_quality(const Tuple& loc) const
 {
     Eigen::MatrixXd ps(4, 3);
     auto tups = oriented_tet_vertices(loc);
@@ -23,7 +23,7 @@ double HarmonicTet::get_quality(const Tuple& loc)
     return wmtk::harmonic_energy(ps);
 }
 
-double HarmonicTet::get_quality(const std::array<size_t,4>& vids)
+double HarmonicTet::get_quality(const std::array<size_t, 4>& vids) const
 {
     Eigen::MatrixXd ps(4, 3);
     for (auto j = 0; j < 4; j++) {

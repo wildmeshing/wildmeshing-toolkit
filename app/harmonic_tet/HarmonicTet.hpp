@@ -84,8 +84,8 @@ public:
     bool swap_face_after(const Tuple& t) override;
 
     bool is_inverted(const Tuple& loc);
-    double get_quality(const Tuple& loc);
-    double get_quality(const std::array<size_t,4>& vids);
+    double get_quality(const Tuple& loc) const;
+    double get_quality(const std::array<size_t, 4>& vids) const;
 };
 
 } // namespace harmonic_tet
