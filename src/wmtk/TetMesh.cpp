@@ -251,7 +251,8 @@ std::array<wmtk::TetMesh::Tuple, 3> wmtk::TetMesh::get_face_vertices(const Tuple
     return vs;
 }
 
-std::array<wmtk::TetMesh::Tuple, 6> wmtk::TetMesh::tet_edges(const Tuple& t) const {
+std::array<wmtk::TetMesh::Tuple, 6> wmtk::TetMesh::tet_edges(const Tuple& t) const
+{
     std::array<Tuple, 6> es;
     for (int j = 0; j < 6; j++) {
         es[j].m_local_eid = j;
@@ -383,4 +384,27 @@ void wmtk::TetMesh::consolidate_mesh()
     resize_tet_attributes(t_cnt);
 
     assert(check_mesh_connectivity_validity());
+}
+
+std::vector<std::array<size_t, 3>> wmtk::TetMesh::vertex_adjacent_boundary_faces(const Tuple& tup) const
+{
+    auto v = tup.vid(*this);
+    auto result_faces = std::vector<std::array<size_t, 3>>();
+    for (auto t : m_vertex_connectivity[v].m_conn_tets) {
+        auto& tet = m_tet_connectivity[t];
+        for (auto j = 0; j < 4; j++) {
+            auto tup = this->tuple_from_face(t, j);
+            if (tet[m_map_vertex2oppo_face[j]] == v) continue;
+            if (!this->switch_tetrahedron(tup)) { // boundary
+                auto f = m_local_faces[j];
+                logger().trace(">>f {}", f);
+                auto face = std::array<size_t, 3>{{tet[f[0]], tet[f[1]], tet[f[2]]}};
+                std::sort(face.begin(), face.end());
+                logger().trace(">>face {}", face);
+                result_faces.emplace_back(face);
+            }
+        }
+    }
+    std::sort(result_faces.begin(), result_faces.end());
+    return std::move(result_faces);
 }

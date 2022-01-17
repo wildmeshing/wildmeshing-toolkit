@@ -191,7 +191,11 @@ void harmonic_tet::HarmonicTet::smooth_all_vertices()
 {
     auto executor = wmtk::ExecutePass<HarmonicTet>();
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
-    for (auto& loc : get_vertices()) collect_all_ops.emplace_back("vertex_smooth", loc);
+    for (auto& loc : get_vertices()) {
+        if (vertex_adjacent_boundary_faces(loc).empty())
+            collect_all_ops.emplace_back("vertex_smooth", loc);
+    }
+    wmtk::logger().info("Num verts {}", collect_all_ops.size());
     executor(*this, collect_all_ops);
 }
 
@@ -272,6 +276,52 @@ auto replace = [](auto& arr, auto i, auto j) {
     }
 };
 
+auto swap_3_2 = [](const std::vector<std::array<size_t, 4>>& tets, auto v0, auto v1) {
+    auto n0 = -1, n1 = -1, n2 = -1;
+    // T0 : n1, n2, v0, *v1*->n0
+    // T1: n0, n1, *v0*,v1 -> n2
+    for (auto j = 0; j < 4; j++) {
+        auto v = tets[0][j];
+        if (v != v0 && v != v1) {
+            if (n2 == -1)
+                n2 = v;
+            else if (n1 == -1)
+                n1 = v;
+        }
+    }
+    auto flag = false;
+    for (auto j = 0; j < 4; j++) {
+        auto v = tets[1][j];
+        if (v != v0 && v != v1 && v != n1 && v != n2) n0 = v;
+        if (v == n1) flag = true;
+    }
+    assert(n0 != n1 && n1 != n2);
+
+    auto newtet = std::vector<std::array<size_t, 4>>{tets[0], tets[flag ? 1 : 2]};
+    replace(newtet[0], v1, n0);
+    replace(newtet[1], v0, n2);
+    return newtet;
+};
+auto swap_2_3 = [](const std::vector<std::array<size_t, 4>>& tets, std::array<size_t, 3> n) {
+    auto u = std::array<int, 2>{{-1, -1}};
+    // T0 : *n0*,n1,n2 v1-> v2
+    // T0 : *n1*, v1-> v2
+    // T0 : *n2*, v1-> v2
+    for (auto i = 0; i < 2; i++) {
+        for (auto j = 0; j < 4; j++) {
+            auto v = tets[i][j];
+            for (auto k = 0; k < 3; k++)
+                if (v == n[k]) continue;
+            u[i] = v;
+            break;
+        }
+    }
+
+    auto newtet = std::vector<std::array<size_t, 4>>{tets[0], tets[0], tets[0]};
+    for (auto i = 0; i < 3; i++) replace(newtet[i], n[i], u[1]);
+    return newtet;
+};
+
 void HarmonicTet::swap_all()
 {
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
@@ -279,51 +329,7 @@ void HarmonicTet::swap_all()
 
     auto executor = wmtk::ExecutePass<HarmonicTet, wmtk::ExecutionPolicy::kSeq>();
     executor.renew_neighbor_tuples = renewal_all;
-    auto swap_3_2 = [](const std::vector<std::array<size_t, 4>>& tets, auto v0, auto v1) {
-        auto n0 = -1, n1 = -1, n2 = -1;
-        // T0 : n1, n2, v0, *v1*->n0
-        // T1: n0, n1, *v0*,v1 -> n2
-        for (auto j = 0; j < 4; j++) {
-            auto v = tets[0][j];
-            if (v != v0 && v != v1) {
-                if (n2 == -1)
-                    n2 = v;
-                else if (n1 == -1)
-                    n1 = v;
-            }
-        }
-        auto flag = false;
-        for (auto j = 0; j < 4; j++) {
-            auto v = tets[1][j];
-            if (v != v0 && v != v1 && v != n1 && v != n2) n0 = v;
-            if (v == n1) flag = true;
-        }
-        assert(n0 != n1 && n1 != n2);
 
-        auto newtet = std::vector<std::array<size_t, 4>>{tets[0], tets[flag ? 1 : 2]};
-        replace(newtet[0], v1, n0);
-        replace(newtet[1], v0, n2);
-        return newtet;
-    };
-    auto swap_2_3 = [](const std::vector<std::array<size_t, 4>>& tets, std::array<size_t, 3> n) {
-        auto u = std::array<int, 2>{{-1, -1}};
-        // T0 : *n0*,n1,n2 v1-> v2
-        // T0 : *n1*, v1-> v2
-        // T0 : *n2*, v1-> v2
-        for (auto i = 0; i < 2; i++) {
-            for (auto j = 0; j < 4; j++) {
-                auto v = tets[i][j];
-                for (auto k = 0; k < 3; k++)
-                    if (v == n[k]) continue;
-                u[i] = v;
-                break;
-            }
-        }
-
-        auto newtet = std::vector<std::array<size_t, 4>>{tets[0], tets[0], tets[0]};
-        for (auto i = 0; i < 3; i++) replace(newtet[i], n[i], u[1]);
-        return newtet;
-    };
     executor.priority = [&swap_3_2, &swap_2_3](auto& m, auto op, const wmtk::TetMesh::Tuple& t)
         -> double { // using delta trace
         if (op == "edge_swap") {

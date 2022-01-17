@@ -486,6 +486,13 @@ public:
     std::vector<Tuple> get_one_ring_tets_for_edge(const Tuple& t) const;
 
     /**
+    * @brief 
+    * 
+    * @param m 
+    * @return std::vector<std::array<size_t,3>> 
+    */
+    std::vector<std::array<size_t,3>> vertex_adjacent_boundary_faces(const Tuple&t) const;
+    /**
      * Positively oriented 4 vertices (represented by Tuples) in a tetra.
      * @return std::array<Tuple, 4> each tuple owns a different vertex.
      */
