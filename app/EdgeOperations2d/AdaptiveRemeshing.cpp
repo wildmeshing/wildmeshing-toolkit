@@ -110,18 +110,18 @@ bool EdgeOperations2d::collapse_remeshing(double L)
 
         TriMesh::Tuple new_vert;
         // c++;
-        // spdlog::critical("collapse attempt {}", c);
+        // spdlog::trace("collapse attempt {}", c);
         if (!TriMesh::collapse_edge(loc, new_vert)) continue;
         s++;
-        spdlog::critical("collapse success {}", s);
+        spdlog::trace("collapse success {}", s);
 
         auto new_edges = new_edges_after_collapse_split(new_vert);
         for (auto new_e : new_edges) {
-            spdlog::critical("adding {} in collapse ", new_e.eid(*this));
+            spdlog::trace("adding {} in collapse ", new_e.eid(*this));
             e_collapse_queue.push(ElementInQueue(new_e, compute_edge_cost_collapse_ar(new_e, L)));
         }
     }
-    spdlog::critical("collapse finish ");
+    spdlog::trace("collapse finish ");
     return true;
 }
 bool EdgeOperations2d::split_remeshing(double L)
@@ -143,7 +143,7 @@ bool EdgeOperations2d::split_remeshing(double L)
         TriMesh::Tuple new_vert;
 
         if (!TriMesh::split_edge(loc, new_vert)) continue;
-        spdlog::critical("split {}", ++s);
+        spdlog::trace("split {}", ++s);
         auto new_edges = new_edges_after_collapse_split(new_vert);
         for (auto new_e : new_edges)
             e_split_queue.push(ElementInQueue(new_e, compute_edge_cost_split_ar(new_e, L)));
@@ -175,7 +175,7 @@ bool EdgeOperations2d::swap_remeshing()
 
         if (valence > 0) {
             if (!swap_edge(loc, new_vert)) continue;
-            spdlog::critical("swap {}", ++s);
+            spdlog::trace("swap {}", ++s);
             auto new_edges = new_edges_after_swap(new_vert);
             for (auto new_e : new_edges)
                 e_swap_queue.push(ElementInQueue(new_e, compute_vertex_valence_ar(new_e)));
