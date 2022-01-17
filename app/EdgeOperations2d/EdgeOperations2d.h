@@ -110,13 +110,12 @@ public:
 
     double compute_cost_for_v(wmtk::TriMesh::Tuple& v_tuple);
 
-    void resize_attributes(size_t v, size_t e, size_t t) override { m_vertex_positions.resize(v); }
-
     bool split_before(const Tuple& t) override
     {
         cache_edge_positions(t);
         return true;
     }
+
     bool split_after(const Tuple& t) override
     {
         update_position_to_edge_midpoint(t);
@@ -131,6 +130,7 @@ public:
     bool collapse_remeshing(double L);
     bool swap_remeshing();
     bool adaptive_remeshing(double L, int interations);
+    void resize_vertex_attributes(size_t v) override { m_vertex_positions.resize(v); }
 };
 
 class ElementInQueue

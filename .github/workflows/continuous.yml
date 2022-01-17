@@ -75,7 +75,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [macos-latest]
-        arch: [x86_64, arm64]
+        arch: [x86_64] # arm64 no arm as GMP is binary
         config: [Debug, Release]
         include:
           - os: macos-latest
@@ -88,7 +88,6 @@ jobs:
           fetch-depth: 10
 
       - name: Dependencies
-        if: runner.os == 'macOS'
         run: |
           brew install ccache
           echo 'CACHE_PATH=~/Library/Caches/ccache' >> "$GITHUB_ENV"
@@ -128,7 +127,7 @@ jobs:
 
   Windows:
     name: Windows (${{ matrix.config }})
-    runs-on: windows-2019
+    runs-on: windows-2022
     env:
       CC: cl.exe
       CXX: cl.exe
@@ -143,6 +142,17 @@ jobs:
         with:
           fetch-depth: 10
       - uses: seanmiddleditch/gha-setup-ninja@master
+
+      - name: Stetup Conda
+        uses: s-weigand/setup-conda@v1
+        with:
+          conda-channels: anaconda, conda-forge
+          python-version: 3.6
+
+      - name: Install Dependencies
+        shell: powershell
+        run: |
+          conda install -c conda-forge mpir -y
 
       - name: Set env
         run: |
@@ -167,7 +177,7 @@ jobs:
       - name: Configure and build
         shell: cmd
         run: |
-          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=x64
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=x64
           cmake --version
           cmake -G Ninja ^
             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache ^
@@ -181,3 +191,7 @@ jobs:
         run: |
           cd build
           ctest --verbose --output-on-failure
+
+      - name: Setup tmate session
+        if: ${{ failure() }}
+        uses: mxschmitt/action-tmate@v3

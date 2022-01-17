@@ -1,17 +1,38 @@
 #pragma once
 
-#include <wmtk/TetMesh.h>
-#include <tbb/concurrent_vector.h>
+#include <wmtk/ConcurrentTetMesh.h>
 
-namespace wmtk {
-class ConcurrentTetMesh : public TetMesh
+
+void wmtk::ConcurrentTetMesh::init(
+    size_t n_vertices,
+    const std::vector<std::array<size_t, 4>>& tets)
 {
-private:
-    tbb::concurrent_vector<VertexConnectivity> m_vertex_connectivity;
-    tbb::concurrent_vector<TetrahedronConnectivity> m_tet_connectivity;
+    wmtk::TetMesh::init(n_vertices, tets);
+    m_vertex_mutex.grow_to_at_least(n_vertices);
+}
 
-    int find_next_empty_slot_t();
-    int find_next_empty_slot_v();
-    void init(size_t n_vertices, const std::vector<std::array<size_t, 4>>& tets);
-};
-} // namespace wmtk
+
+int wmtk::ConcurrentTetMesh::release_vertex_mutex_in_stack(std::vector<size_t>& mutex_release_stack)
+{
+    int num_released = 0;
+    for (int i = mutex_release_stack.size() - 1; i >= 0; i--) {
+        unlock_vertex_mutex(mutex_release_stack[i]);
+        mutex_release_stack.pop_back();
+        num_released++;
+    }
+    return num_released;
+}
+
+bool wmtk::ConcurrentTetMesh::try_set_vertex_mutex_two_ring(
+    Tuple& v,
+    std::vector<size_t>& mutex_release_stack)
+{
+    return false;
+}
+
+bool wmtk::ConcurrentTetMesh::try_set_edge_mutex_two_ring(
+    Tuple& e,
+    std::vector<size_t>& mutex_release_stack)
+{
+    return false;
+}

@@ -139,9 +139,9 @@ public:
         m_vertex_positions[to] = m_vertex_positions[from];
     }
 
-    void resize_attributes(size_t v, size_t e, size_t t) override
+    void resize_vertex_attributes(size_t v) override
     {
-        ConcurrentTriMesh::resize_attributes(v, e, t);
+        ConcurrentTriMesh::resize_vertex_attributes(v);
         m_vertex_positions.grow_to_at_least(v);
         m_vertex_partition_id.grow_to_at_least(v);
     }

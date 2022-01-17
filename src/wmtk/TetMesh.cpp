@@ -2,17 +2,23 @@
 
 #include <wmtk/utils/TupleUtils.hpp>
 
-int wmtk::TetMesh::find_next_empty_slot_t()
+int wmtk::TetMesh::get_next_empty_slot_t()
 {
-    m_tet_connectivity.emplace_back();
-    m_tet_connectivity.back().hash = -1;
-    return m_tet_connectivity.size() - 1;
+    const auto it = m_tet_connectivity.emplace_back();
+    const size_t size = std::distance(m_tet_connectivity.begin(), it) + 1;
+    m_tet_connectivity[size - 1].hash = -1;
+    resize_edge_attributes(size * 6);
+    resize_face_attributes(size * 4);
+    resize_tet_attributes(size);
+    return size - 1;
 }
 
-int wmtk::TetMesh::find_next_empty_slot_v()
+int wmtk::TetMesh::get_next_empty_slot_v()
 {
-    m_vertex_connectivity.emplace_back();
-    return m_vertex_connectivity.size() - 1;
+    const auto it = m_vertex_connectivity.emplace_back();
+    const size_t size = std::distance(m_vertex_connectivity.begin(), it) + 1;
+    resize_vertex_attributes(size);
+    return size - 1;
 }
 
 void wmtk::TetMesh::init(size_t n_vertices, const std::vector<std::array<size_t, 4>>& tets)
@@ -236,6 +242,27 @@ std::array<wmtk::TetMesh::Tuple, 4> wmtk::TetMesh::oriented_tet_vertices(const T
     return vs;
 }
 
+std::array<wmtk::TetMesh::Tuple, 3> wmtk::TetMesh::get_face_vertices(const Tuple& t) const
+{
+    std::array<Tuple, 3> vs;
+    vs[0] = t;
+    vs[1] = switch_vertex(t);
+    vs[2] = switch_vertex(switch_edge(t));
+    return vs;
+}
+
+std::array<wmtk::TetMesh::Tuple, 6> wmtk::TetMesh::tet_edges(const Tuple& t) const {
+    std::array<Tuple, 6> es;
+    for (int j = 0; j < 6; j++) {
+        es[j].m_local_eid = j;
+        es[j].m_local_fid = m_map_edge2face[j];
+
+        es[j].m_global_vid = m_tet_connectivity[t.m_global_tid][m_local_edges[j][0]];
+        es[j].m_global_tid = t.m_global_tid;
+    }
+    return es;
+}
+
 std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_one_ring_tets_for_vertex(const Tuple& t) const
 {
     std::vector<Tuple> tets;
@@ -332,7 +359,10 @@ void wmtk::TetMesh::consolidate_mesh()
     m_vertex_connectivity.resize(v_cnt);
     m_tet_connectivity.resize(t_cnt);
 
-    resize_attributes(v_cnt, 6 * t_cnt, 4 * t_cnt, t_cnt);
+    resize_vertex_attributes(v_cnt);
+    resize_edge_attributes(6 * t_cnt);
+    resize_face_attributes(4 * t_cnt);
+    resize_tet_attributes(t_cnt);
 
     assert(check_mesh_connectivity_validity());
 }

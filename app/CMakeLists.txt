@@ -1,23 +1,28 @@
 
 ################################################################################
-
 include(wmtk_data)
-include(fenvelope)
 
 ################################################################################
 # FloatTetwild
 ################################################################################
+
+include(gmp)
+include(fenvelope)
 
 add_library(wmtk_tetwild
 	tetwild/TetWild.cpp
 	tetwild/TetWild.h
 
 	tetwild/common.h
+	tetwild/common.cpp
 	tetwild/Parameters.h
 
 	tetwild/EdgeSplitting.cpp
 	tetwild/EdgeCollapsing.cpp
 	tetwild/EdgeSwapping.cpp
+
+	tetwild/TriangleInsertion.cpp
+	tetwild/Rational.hpp
 )
 add_library(wmtk::tetwild ALIAS wmtk_tetwild)
 
@@ -28,6 +33,7 @@ target_link_libraries(wmtk_tetwild PUBLIC
 	wmtk::data
 	igl::predicates
 	FastEnvelope
+	gmp::gmp
 )
 
 add_executable(tetwild tetwild/main.cpp)
@@ -39,9 +45,9 @@ target_link_libraries(tetwild PUBLIC wmtk::tetwild)
 
 add_library(wmtk_edge_operations
 	#EdgeOperations2d/QEC.cpp
-	EdgeOperations2d/EdgeOperations2d.h 
+	EdgeOperations2d/EdgeOperations2d.h
 	EdgeOperations2d/main.cpp
-	
+
 	EdgeOperations2d/ShortestEdgeCollapse.cpp
 	EdgeOperations2d/AdaptiveRemeshing.cpp
 	EdgeOperations2d/QEC.cpp
@@ -71,9 +77,9 @@ add_library(ParallelEdgeCollapse
 )
 add_library(wmtk::ParallelEdgeCollapse ALIAS ParallelEdgeCollapse)
 
-target_link_libraries(ParallelEdgeCollapse PUBLIC 
-	igl::predicates 
-	FastEnvelope 
+target_link_libraries(ParallelEdgeCollapse PUBLIC
+	igl::predicates
+	FastEnvelope
 	wmtk::toolkit
 	wmtk::data)
 # add_library(wmtk::parallel_edge_collapse ALIAS ParallelEdgeCollapse)
@@ -105,3 +111,6 @@ target_include_directories(wmtk_app_harmonic_tet PUBLIC ${CMAKE_CURRENT_SOURCE_D
 ################################################################################
 
 add_subdirectory(tests)
+
+
+add_subdirectory(Remeshing)
