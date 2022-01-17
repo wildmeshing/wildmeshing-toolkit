@@ -9,7 +9,7 @@
 using namespace wmtk;
 using namespace tetwild;
 
-TEST_CASE("edge_splitting", "[test_operation]")
+TEST_CASE("edge_splitting", "[tetwild_operation]")
 {
     Parameters params;
     params.lr = 1 / 10.;
@@ -41,7 +41,7 @@ TEST_CASE("edge_splitting", "[test_operation]")
 }
 
 
-TEST_CASE("edge_collapsing", "[test_operation]")
+TEST_CASE("edge_collapsing", "[tetwild_operation]")
 {
     Parameters params;
     params.lr = 1 / 20.;
