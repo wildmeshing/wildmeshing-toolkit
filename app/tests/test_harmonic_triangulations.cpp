@@ -113,8 +113,7 @@ TEST_CASE("harmonic-tet-main", "[.]")
     auto har_tet = harmonic_tet::HarmonicTet(vec_attrs, tets, 4);
     for (int i = 0; i <= 4; i ++) {
         auto [E0, cnt0] = stats(har_tet);
-        har_tet.swap_all_edges(true);
-        har_tet.swap_all_faces();
+        har_tet.swap_all();
         stats(har_tet);
         har_tet.consolidate_mesh();
         har_tet.smooth_all_vertices();

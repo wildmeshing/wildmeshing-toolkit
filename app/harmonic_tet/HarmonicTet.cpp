@@ -262,6 +262,16 @@ auto renewal_all = [](const auto& m, auto op, const auto& newt) {
     return optup1;
 };
 
+
+auto replace = [](auto& arr, auto i, auto j) {
+    for (auto k = 0; k < arr.size(); k++) {
+        if (arr[k] == i) {
+            arr[k] = j;
+            break;
+        }
+    }
+};
+
 void HarmonicTet::swap_all()
 {
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
@@ -269,8 +279,53 @@ void HarmonicTet::swap_all()
 
     auto executor = wmtk::ExecutePass<HarmonicTet, wmtk::ExecutionPolicy::kPartition>();
     executor.renew_neighbor_tuples = renewal_all;
-    executor.priority =
-        [](auto& m, auto op, const wmtk::TetMesh::Tuple& t) -> double { // using delta trace
+    auto swap_3_2 = [](const std::vector<std::array<size_t, 4>>& tets, auto v0, auto v1) {
+        auto n0 = -1, n1 = -1, n2 = -1;
+        // T0 : n1, n2, v0, *v1*->n0
+        // T1: n0, n1, *v0*,v1 -> n2
+        for (auto j = 0; j < 4; j++) {
+            auto v = tets[0][j];
+            if (v != v0 && v != v1) {
+                if (n2 == -1)
+                    n2 = v;
+                else if (n1 == -1)
+                    n1 = v;
+            }
+        }
+        auto flag = false;
+        for (auto j = 0; j < 4; j++) {
+            auto v = tets[1][j];
+            if (v != v0 && v != v1 && v != n1 && v != n2) n0 = v;
+            if (v == n1) flag = true;
+        }
+        assert(n0 != n1 && n1 != n2);
+
+        auto newtet = std::vector<std::array<size_t, 4>>{tets[0], tets[flag ? 1 : 2]};
+        replace(newtet[0], v1, n0);
+        replace(newtet[1], v0, n2);
+        return newtet;
+    };
+    auto swap_2_3 = [](const std::vector<std::array<size_t, 4>>& tets, std::array<size_t, 3> n) {
+        auto u = std::array<int, 2>{{-1, -1}};
+        // T0 : *n0*,n1,n2 v1-> v2
+        // T0 : *n1*, v1-> v2
+        // T0 : *n2*, v1-> v2
+        for (auto i = 0; i < 2; i++) {
+            for (auto j = 0; j < 4; j++) {
+                auto v = tets[i][j];
+                for (auto k = 0; k < 3; k++)
+                    if (v == n[k]) continue;
+                u[i] = v;
+                break;
+            }
+        }
+
+        auto newtet = std::vector<std::array<size_t, 4>>{tets[0], tets[0], tets[0]};
+        for (auto i = 0; i < 3; i++) replace(newtet[i], n[i], u[1]);
+        return newtet;
+    };
+    executor.priority = [&swap_3_2, &swap_2_3](auto& m, auto op, const wmtk::TetMesh::Tuple& t)
+        -> double { // using delta trace
         if (op == "edge_swap") {
             auto tets = m.get_incident_tets_for_edge(t);
             if (tets.size() != 3) return -1.;
@@ -285,14 +340,40 @@ void HarmonicTet::swap_all()
                     data[i][j] = vs[j].vid(m);
                 }
             }
+            auto v0 = t.vid(m), v1 = t.switch_vertex(m).vid(m);
+            auto new_conn = swap_3_2(data, v0, v1);
+            for (auto tc : new_conn) {
+                after += m.get_quality(tc);
+            }
+            return before - after; // decrease amount.
         } else if (op == "face_swap") {
             auto f1 = t.switch_tetrahedron(m);
-            if (!f1) return -1.;
-            auto before = m.get_quality(t) + m.get_quality(f1.value());
+            if (!f1) return -1.; // boundary
+            auto tets = std::vector<Tuple>{{t, f1.value()}};
+
+            std::vector<std::array<size_t, 4>> data(2);
+            for (auto i = 0; i < 3; i++) {
+                auto vs = m.oriented_tet_vertices(tets[i]);
+                for (int j = 0; j < 4; j++) {
+                    data[i][j] = vs[j].vid(m);
+                }
+            }
+            auto before = 0.;
+            for (auto e : data) before += m.get_quality(e);
+            auto after = 0.;
+            auto v0 = t.vid(m), v1 = t.switch_vertex(m).vid(m);
+            auto v2 = t.switch_edge(m).switch_vertex(m).vid(m);
+            auto new_conn = swap_2_3(data, {v0, v1, v2});
+            for (auto tc : new_conn) {
+                after += m.get_quality(tc);
+            }
+            return before - after; // decrease amount.
         }
-        return 0.;
-
-
+        return -1.;
+    };
+    executor.should_process = [](auto& m, auto ele) {
+        if (std::get<0>(ele) <= 0) return false;
+        return true;
     };
     executor.lock_vertices = [](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
         auto stack = std::vector<size_t>();
