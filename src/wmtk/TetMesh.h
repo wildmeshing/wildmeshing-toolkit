@@ -336,14 +336,14 @@ private:
         std::map<std::array<size_t, 3>, std::vector<std::array<size_t, 5>>>& new_face_vids);
 
 protected:
-    virtual void insertion_update_surface_tag(
-        size_t t_id,
-        size_t new_t_id,
-        int config_id,
-        int diag_config_id,
-        int index,
-        bool mark_surface)
-    {}
+    //    virtual void insertion_update_surface_tag(
+    //        size_t t_id,
+    //        size_t new_t_id,
+    //        int config_id,
+    //        int diag_config_id,
+    //        int index,
+    //        bool mark_surface)
+    //    {}
     virtual void add_tet_centroid(const std::array<size_t, 4>& vids) {}
 
     virtual void triangle_insertion_before(const std::vector<Tuple>& faces) {}
