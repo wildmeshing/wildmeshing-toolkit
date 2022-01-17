@@ -277,7 +277,7 @@ void HarmonicTet::swap_all()
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_swap", loc);
 
-    auto executor = wmtk::ExecutePass<HarmonicTet, wmtk::ExecutionPolicy::kPartition>();
+    auto executor = wmtk::ExecutePass<HarmonicTet, wmtk::ExecutionPolicy::kSeq>();
     executor.renew_neighbor_tuples = renewal_all;
     auto swap_3_2 = [](const std::vector<std::array<size_t, 4>>& tets, auto v0, auto v1) {
         auto n0 = -1, n1 = -1, n2 = -1;
@@ -352,7 +352,7 @@ void HarmonicTet::swap_all()
             auto tets = std::vector<Tuple>{{t, f1.value()}};
 
             std::vector<std::array<size_t, 4>> data(2);
-            for (auto i = 0; i < 3; i++) {
+            for (auto i = 0; i < 2; i++) {
                 auto vs = m.oriented_tet_vertices(tets[i]);
                 for (int j = 0; j < 4; j++) {
                     data[i][j] = vs[j].vid(m);
