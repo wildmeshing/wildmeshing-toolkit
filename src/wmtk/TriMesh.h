@@ -199,6 +199,17 @@ public:
      */
     std::vector<Tuple> get_edges() const;
 
+    // uing the local vid to init an edge.
+    // tuple is refereing to vid1, with the other endpoint at vid2.
+    Tuple init_from_edge(size_t vid1, size_t vid2, size_t fid) const
+    {
+        auto a = m_tri_connectivity[fid].find(vid1);
+        auto b = m_tri_connectivity[fid].find(vid2);
+        assert(a != -1 && b != -1);
+        // 0,1 - >2, 1,2-> 0, 0,2->1
+        return Tuple(vid1, 3 - (a + b), fid, *this);
+    }
+
     template <typename T>
     using vector = tbb::concurrent_vector<T>;
 
@@ -226,7 +237,20 @@ protected:
         return true;
     }
     virtual bool swap_after(const Tuple& t) { return true; }
-    virtual bool swap_before(const Tuple& t) { return true; }
+    virtual bool swap_before(const Tuple& t)
+    {
+        if (!t.switch_face(*this).has_value())
+            return false; // can't swap on boundary edgereturn true;
+        // when swap edge between v1, v2, there can't exist edge between v3, v4 already
+        size_t v4 = ((t.switch_face(*this).value()).switch_edge(*this)).switch_vertex(*this).vid();
+        size_t v3 = ((t.switch_edge(*this)).switch_vertex(*this)).vid();
+        if (!set_intersection(
+                 m_vertex_connectivity[v4].m_conn_tris,
+                 m_vertex_connectivity[v3].m_conn_tris)
+                 .empty())
+            return false;
+        return true;
+    }
 
     virtual void resize_vertex_attributes(size_t v){};
     virtual void resize_edge_attributes(size_t e){};
@@ -250,6 +274,12 @@ public:
     bool check_link_condition(const Tuple& t) const; // DP: should be private
     bool check_mesh_connectivity_validity() const; // DP: should be private
     bool check_internal_link_condition(const Tuple& t) const;
+
+    bool is_boundary_edge(const TriMesh::Tuple& t) const
+    {
+        if (!t.switch_face(*this).has_value()) return true;
+        return false;
+    }
 
     /**
      * Split an edge

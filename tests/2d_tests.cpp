@@ -60,7 +60,7 @@ TEST_CASE("test generate tuples with 2 triangle", "[test_tuple_generation]")
     //     \ /
     // 	    v0
     TriMesh m;
-    std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 2, 3}}};
+    std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{2, 1, 3}}};
     m.create_mesh(4, tris);
 
     SECTION("test generation from vertics")
@@ -428,6 +428,16 @@ TEST_CASE("swap_operation", "[test_2d_operation]")
         TriMesh::Tuple new_e;
         REQUIRE_FALSE(m.swap_edge(swap_e, new_e));
     }
+    SECTION("swap_on_connected_vertices")
+    {
+        TriMesh m2;
+        std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 0, 3}}, {{1, 3, 2}}};
+        m2.create_mesh(4, tris);
+        TriMesh::Tuple edge(0, 2, 0, m);
+        TriMesh::Tuple new_e;
+        assert(edge.is_valid(m));
+        REQUIRE_FALSE(m.swap_edge(edge, new_e));
+    }
 }
 
 TEST_CASE("split_operation", "[test_2d_operation]")
@@ -437,20 +447,22 @@ TEST_CASE("split_operation", "[test_2d_operation]")
     {
         std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}};
         m.create_mesh(3, tris);
-
+        auto edges = m.get_edges();
         TriMesh::Tuple edge(0, 1, 0, m);
         TriMesh::Tuple new_e;
         assert(edge.is_valid(m));
         REQUIRE(m.split_edge(edge, new_e));
+        REQUIRE_FALSE(edges[0].is_valid(m));
     }
     SECTION("2_tris_split")
     {
         std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 3, 2}}};
         m.create_mesh(4, tris);
-
+        auto edges = m.get_edges();
         TriMesh::Tuple edge(1, 0, 0, m);
         TriMesh::Tuple new_e;
         assert(edge.is_valid(m));
         REQUIRE(m.split_edge(edge, new_e));
+        for (auto e : edges) REQUIRE_FALSE(e.is_valid(m));
     }
 }

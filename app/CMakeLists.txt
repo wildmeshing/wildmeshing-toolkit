@@ -49,6 +49,7 @@ add_library(wmtk_edge_operations
 	EdgeOperations2d/main.cpp
 
 	EdgeOperations2d/ShortestEdgeCollapse.cpp
+	EdgeOperations2d/AdaptiveRemeshing.cpp
 	EdgeOperations2d/QEC.cpp
 )
 add_library(wmtk::edge_operations ALIAS wmtk_edge_operations)
