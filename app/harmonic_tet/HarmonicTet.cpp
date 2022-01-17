@@ -1,12 +1,14 @@
 #include "HarmonicTet.hpp"
 
 #include <igl/predicates/predicates.h>
+#include <limits>
 #include <wmtk/utils/TetraQualityUtils.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
 #include <wmtk/utils/io.hpp>
 
 #include <queue>
 #include <wmtk/ExecutionScheduler.hpp>
+#include "wmtk/TetMesh.h"
 #include "wmtk/utils/EnergyHarmonicTet.hpp"
 
 namespace harmonic_tet {
@@ -17,6 +19,15 @@ double HarmonicTet::get_quality(const Tuple& loc)
     auto tups = oriented_tet_vertices(loc);
     for (auto j = 0; j < 4; j++) {
         ps.row(j) = m_vertex_attribute[tups[j].vid(*this)];
+    }
+    return wmtk::harmonic_energy(ps);
+}
+
+double HarmonicTet::get_quality(const std::array<size_t,4>& vids)
+{
+    Eigen::MatrixXd ps(4, 3);
+    for (auto j = 0; j < 4; j++) {
+        ps.row(j) = m_vertex_attribute[vids[j]];
     }
     return wmtk::harmonic_energy(ps);
 }
@@ -253,7 +264,6 @@ void HarmonicTet::output_mesh(std::string file) const
 }
 
 auto renewal_all = [](const auto& m, auto op, const auto& newt) {
-
     auto new_edges = std::vector<wmtk::TetMesh::Tuple>();
     for (auto ti : {newt.tid(m), newt.switch_tetrahedron(m)->tid(m)}) {
         for (auto j = 0; j < 6; j++) new_edges.push_back(m.tuple_from_edge(ti, j));
@@ -271,9 +281,26 @@ void HarmonicTet::swap_all()
 
     auto executor = wmtk::ExecutePass<HarmonicTet, wmtk::ExecutionPolicy::kPartition>();
     executor.renew_neighbor_tuples = renewal_all;
-    executor.priority = [](auto& m, auto op, auto& t) { // using delta trace
+    executor.priority =
+        [](auto& m, auto op, const wmtk::TetMesh::Tuple& t) -> double { // using delta trace
         if (op == "edge_swap") {
+            auto tets = m.get_incident_tets_for_edge(t);
+            if (tets.size() != 3) return -1.;
+            auto before = 0.;
+            for (auto e : tets) before += m.get_quality(e);
+            auto after = 0.;
+
+            std::vector<std::array<size_t, 4>> data(3);
+            for (auto i = 0; i < 3; i++) {
+                auto vs = m.oriented_tet_vertices(tets[i]);
+                for (int j = 0; j < 4; j++) {
+                    data[i][j] = vs[j].vid(m);
+                }
+            }
         } else if (op == "face_swap") {
+            auto f1 = t.switch_tetrahedron(m);
+            if (!f1) return -1.;
+            auto before = m.get_quality(t) + m.get_quality(f1.value());
         }
         return 0.;
 

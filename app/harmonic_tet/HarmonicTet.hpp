@@ -85,6 +85,7 @@ public:
 
     bool is_inverted(const Tuple& loc);
     double get_quality(const Tuple& loc);
+    double get_quality(const std::array<size_t,4>& vids);
 };
 
 } // namespace harmonic_tet

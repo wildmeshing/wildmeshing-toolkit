@@ -49,7 +49,6 @@ auto stats = [](auto& har_tet) {
         total_e += e;
         cnt++;
     }
-    spdlog::critical("Number {} Total {} Avg {}", cnt, total_e, total_e/cnt);
     return std::pair(total_e, cnt);
 };
 

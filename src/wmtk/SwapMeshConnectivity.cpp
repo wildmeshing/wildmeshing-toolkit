@@ -140,8 +140,8 @@ bool wmtk::TetMesh::swap_edge(const Tuple& t, Tuple& newt)
                 n0_id = tet_attrs[t1_id].m_indices[j];
         }
         assert(n0_id != n1_id && n1_id != n2_id);
-        // T0 = (n1,n2,v1,v2) -> (n1,n2,v1,n0)
-        // T1 = (n0, n1, v1,v2) ->  (n0, n1, n2,v2)
+        // T0 = (n1,n2,v1,*v2*) -> (n1,n2,v1,*n0*)
+        // T1 = (n0, n1, *v1*,v2) ->  (n0, n1, *n2*,v2)
         // T2 = (n0,n2, v1,v2) -> (-1,-1,-1,-1)
         {
             auto inter = set_intersection(m_vertex_connectivity[n0_id].m_conn_tets, m_vertex_connectivity[n1_id].m_conn_tets);
@@ -149,10 +149,8 @@ bool wmtk::TetMesh::swap_edge(const Tuple& t, Tuple& newt)
             if (!inter.empty()) return false;
         }
 
-        auto new_tids = std::vector<size_t>({t0_id, t1_id});
-
-        new_tets[0] = tet_attrs[new_tids[0]].m_indices;
-        new_tets[1] = tet_attrs[new_tids[1]].m_indices;
+        new_tets[0] = tet_attrs[t0_id].m_indices;
+        new_tets[1] = tet_attrs[t1_id].m_indices;
 
         replace(new_tets[0], v2_id, n0_id);
         replace(new_tets[1], v1_id, n2_id);
