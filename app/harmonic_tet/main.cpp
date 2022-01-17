@@ -5,7 +5,12 @@
 #include "wmtk/utils/EnergyHarmonicTet.hpp"
 
 // Third-party include
+
+// clang-format off
+#include <wmtk/utils/DisableWarnings.hpp>
 #include <CLI/CLI.hpp>
+#include <wmtk/utils/EnableWarnings.hpp>
+// clang-format on
 
 auto stats = [](auto& har_tet) {
     auto total_e = 0.;

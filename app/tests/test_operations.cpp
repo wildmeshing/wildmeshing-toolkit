@@ -90,7 +90,7 @@ TEST_CASE("edge_collapsing", "[tetwild_operation]")
 TEST_CASE("optimize-bunny-tw", "[tetwild_operation][.slow]")
 {
     MshData msh;
-    msh.load(WMT_DATA_ROOT "bunny_tetwild_80.msh");
+    msh.load(WMT_DATA_DIR "bunny_tetwild_80.msh");
     auto vec_attrs = std::vector<VertexAttributes>(msh.get_num_tet_vertices());
     auto tets = std::vector<std::array<size_t, 4>>(msh.get_num_tets());
     msh.extract_tet_vertices(
