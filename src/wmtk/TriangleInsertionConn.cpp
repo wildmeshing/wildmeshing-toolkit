@@ -168,7 +168,8 @@ void wmtk::TetMesh::subdivide_a_tet(
     const std::array<int, 6> &new_v_ids,
     bool mark_surface,
     bool &is_add_centroid,
-    std::map<std::array<size_t, 3>, std::vector<std::array<size_t, 5>>> &new_face_vids) {
+    std::map<std::array<size_t, 3>, std::vector<std::array<size_t, 5>>> &new_face_vids)
+{
     using namespace Eigen;
 
     std::map<std::array<int, 2>, int> get_local_e_id;
@@ -195,7 +196,7 @@ void wmtk::TetMesh::subdivide_a_tet(
         }
     }
 
-    int config_id = (int) (config_bits.to_ulong());
+    int config_id = (int)(config_bits.to_ulong());
     const auto configs = CutTable::get_tet_confs(config_id);
     assert(!configs.empty());
     // note: config with centroid only happens on open boundary preservation
@@ -217,13 +218,13 @@ void wmtk::TetMesh::subdivide_a_tet(
         if (diag[0] > diag[1]) std::swap(diag[0], diag[1]);
         my_diags.push_back(diag);
     }
-    std::sort(my_diags.begin(), my_diags.end(), [](const Vector2i &a, const Vector2i &b) {
+    std::sort(my_diags.begin(), my_diags.end(), [](const Vector2i& a, const Vector2i& b) {
         return std::make_tuple(a[0], a[1]) < std::make_tuple(b[0], b[1]);
     });
 
     int diag_config_id = -1;
     if (!my_diags.empty()) {
-        const auto &all_diags = CutTable::get_diag_confs(config_id);
+        const auto& all_diags = CutTable::get_diag_confs(config_id);
         for (int i = 0; i < all_diags.size(); i++) {
             if (my_diags != all_diags[i]) continue;
             diag_config_id = i;
@@ -235,9 +236,9 @@ void wmtk::TetMesh::subdivide_a_tet(
 
     // note: in some cases, we have to add centroid since the current setting of diags enforces that
 
-    const auto &config = CutTable::get_tet_conf(config_id, diag_config_id);
-    const auto &new_is_surface_fs = CutTable::get_surface_conf(config_id, diag_config_id);
-    const auto &old_local_f_ids = CutTable::get_face_id_conf(config_id, diag_config_id);
+    const auto& config = CutTable::get_tet_conf(config_id, diag_config_id);
+    const auto& new_is_surface_fs = CutTable::get_surface_conf(config_id, diag_config_id);
+    const auto& old_local_f_ids = CutTable::get_face_id_conf(config_id, diag_config_id);
     //        if(config.size()==10){
     //            cout<<"config.size() "<<config.size()<<endl;
     //            cout<<config_id<<endl;
@@ -250,8 +251,9 @@ void wmtk::TetMesh::subdivide_a_tet(
     //    cout<<"t_id "<<t_id<<endl;
     //    cout<<"config_id "<<config_id<<endl;
     //    cout<<"config.size() "<<config.size()<<endl;
+    auto old_tet = m_tet_connectivity[t_id];
     for (int i = 0; i < config.size(); i++) {
-        const auto &t = config[i];
+        const auto& t = config[i];
         TetrahedronConnectivity tet;
         for (int j = 0; j < 4; j++) {
             if (!is_add_centroid && t[j] >= 4 + config_bits.count()) {
@@ -279,19 +281,39 @@ void wmtk::TetMesh::subdivide_a_tet(
         //                "<<tet[3]<<endl; cout<<"t"<<new_t_id<<": "<<t[0]<<" "<<t[1]<<" "<<t[2]<<"
         //                "<<t[3]<<endl;
 
-//        insertion_update_surface_tag(t_id, new_t_id, config_id, diag_config_id, i, mark_surface);
+        //        insertion_update_surface_tag(t_id, new_t_id, config_id, diag_config_id, i, mark_surface);
 
         /// track surface
         for (int j = 0; j < 4; j++) {
-            if (old_local_f_ids[i][j] >= 0) {
-                //todo
+            std::array<size_t, 5> new_f_vids = {
+                {tet[(j + 1) % 4], tet[(j + 2) % 4], tet[(j + 3) % 4], new_t_id, (size_t)j}};
+            std::sort(new_f_vids.begin(), new_f_vids.begin() + 3);
+            std::array<size_t, 3> old_f_vids;
+            if (old_local_f_ids[i][j] >= 0) { // old faces
+                int old_j = old_local_f_ids[i][j];
+                old_f_vids = {
+                    {old_tet[(old_j + 1) % 4], old_tet[(old_j + 2) % 4], old_tet[(old_j + 3) % 4]}};
+                std::sort(old_f_vids.begin(), old_f_vids.end());
+            }
+            //
+            if (mark_surface && new_is_surface_fs[i][j]) { // new faces
+                old_f_vids = {{0, 0, 0}}; // get empty old face map to new faces
             }
 
-            if (mark_surface && new_is_surface_fs[i][j]) {
-                //todo
-            }
+            new_face_vids[old_f_vids].push_back(new_f_vids);
+
             // note: new face_id has higher priority than old ones
             // note: non-cut-through tet does not track surface!!!
         }
+    }
+
+    for (auto& info : new_face_vids) { // erase duplicates <-- must have duplicates
+        auto it = std::unique(
+            info.second.begin(),
+            info.second.end(),
+            [](const std::array<size_t, 5>& v1, const std::array<size_t, 5>& v2) {
+                return std::make_tuple(v1[0], v1[1], v1[2]) == std::make_tuple(v2[0], v2[1], v2[2]);
+            });
+        info.second.erase(it, info.second.end());
     }
 }
