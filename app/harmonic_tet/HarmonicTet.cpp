@@ -172,7 +172,7 @@ void HarmonicTet::swap_all_edges(bool parallel)
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_swap", loc);
     if (parallel) {
         auto executor = wmtk::ExecutePass<HarmonicTet, wmtk::ExecutionPolicy::kPartition>();
-        executor.renew_neighbor_tuples = renewal_edges;
+        // executor.renew_neighbor_tuples = renewal_edges;
         executor.lock_vertices = [](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
             auto stack = std::vector<size_t>();
             m.try_set_edge_mutex_two_ring(e, stack);
@@ -182,7 +182,7 @@ void HarmonicTet::swap_all_edges(bool parallel)
         executor(*this, collect_all_ops);
     } else {
         auto executor = wmtk::ExecutePass<HarmonicTet, wmtk::ExecutionPolicy::kSeq>();
-        executor.renew_neighbor_tuples = renewal_edges;
+        // executor.renew_neighbor_tuples = renewal_edges;
         executor.num_threads = 1;
         executor(*this, collect_all_ops);
     }
@@ -218,7 +218,7 @@ auto renewal_faces = [](const auto& m, auto op, const auto& t) {
 void HarmonicTet::swap_all_faces()
 {
     auto executor = wmtk::ExecutePass<HarmonicTet>();
-    executor.renew_neighbor_tuples = renewal_faces;
+    // executor.renew_neighbor_tuples = renewal_faces;
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_faces()) collect_all_ops.emplace_back("face_swap", loc);
     executor(*this, collect_all_ops);
@@ -280,7 +280,7 @@ void HarmonicTet::swap_all()
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_swap", loc);
 
     auto executor = wmtk::ExecutePass<HarmonicTet, wmtk::ExecutionPolicy::kPartition>();
-    executor.renew_neighbor_tuples = renewal_all;
+    // executor.renew_neighbor_tuples = renewal_all;
     executor.priority =
         [](auto& m, auto op, const wmtk::TetMesh::Tuple& t) -> double { // using delta trace
         if (op == "edge_swap") {

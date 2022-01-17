@@ -279,13 +279,13 @@ public:
      * Split an edge
      *
      * @param t Input Tuple for the edge to split.
-     * @param[out] new_edges a vector of Tuples for all the edges from the newly introduced tetra.
+     * @param[out] new_tets a vector of Tuples for all the newly introduced tetra.
      * @return if split succeed
      */
-    bool split_edge(const Tuple& t, std::vector<Tuple>& new_edges);
-    bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_edges);
-    bool swap_edge(const Tuple& t, Tuple& new_face);
-    bool swap_face(const Tuple& t, Tuple& new_edge);
+    bool split_edge(const Tuple& t, std::vector<Tuple>& new_tets);
+    bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_tets);
+    bool swap_edge(const Tuple& t, std::vector<Tuple>& new_tets);
+    bool swap_face(const Tuple& t, std::vector<Tuple>& new_tets);
     bool smooth_vertex(const Tuple& t);
 
     void single_triangle_insertion(

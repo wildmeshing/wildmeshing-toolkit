@@ -56,11 +56,11 @@ TEST_CASE("tet_mesh_swap", "[test_operation]")
         auto cnt_swap = 0;
         for (auto e : edges) {
             if (!e.is_valid(mesh)) continue;
-            TetMesh::Tuple newt;
+            std::vector<TetMesh::Tuple> newt;
             if (mesh.swap_edge(e, newt)) {
                 cnt_swap++;
                 REQUIRE_FALSE(e.is_valid(mesh));
-                REQUIRE(newt.is_valid(mesh));
+                REQUIRE(newt.front().is_valid(mesh));
             }
         }
         REQUIRE(mesh.check_mesh_connectivity_validity());
@@ -76,11 +76,11 @@ TEST_CASE("tet_mesh_swap", "[test_operation]")
         auto cnt_swap = 0;
         for (auto e : faces) {
             if (!e.is_valid(mesh)) continue;
-            TetMesh::Tuple newt;
+            std::vector<TetMesh::Tuple> newt;
             if (mesh.swap_face(e, newt)) {
                 cnt_swap++;
                 REQUIRE_FALSE(e.is_valid(mesh));
-                REQUIRE(newt.is_valid(mesh));
+                REQUIRE(newt.front().is_valid(mesh));
             }
         }
         REQUIRE(cnt_swap == 1);
@@ -114,10 +114,9 @@ TEST_CASE("rollback_operation", "[test_operation]")
     }
     SECTION("swap")
     {
-        TetMesh::Tuple newt;
-        REQUIRE_FALSE(mesh.swap_face(tuple, newt));
+        REQUIRE_FALSE(mesh.swap_face(tuple, dummy));
         REQUIRE(tuple.is_valid(mesh));
-        REQUIRE_FALSE(mesh.swap_edge(tuple, newt));
+        REQUIRE_FALSE(mesh.swap_edge(tuple, dummy));
         REQUIRE(tuple.is_valid(mesh));
     }
     SECTION("collapse")
@@ -143,7 +142,7 @@ TEST_CASE("forbidden-face-swap", "[test_operation]")
     auto oppo = t.switch_vertex(mesh);
     REQUIRE(oppo.vid(mesh) == 3);
     REQUIRE(oppo.switch_edge(mesh).switch_vertex(mesh).vid(mesh) == 2);
-    TetMesh::Tuple new_t;
+    std::vector<TetMesh::Tuple> new_t;
     mesh.swap_face(t, new_t);
     REQUIRE(t.is_valid(mesh)); // operation rejected.
     REQUIRE(mesh.check_mesh_connectivity_validity());
