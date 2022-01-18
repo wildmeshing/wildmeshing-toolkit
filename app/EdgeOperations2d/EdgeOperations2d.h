@@ -127,7 +127,7 @@ public:
         return true;
     }
 
-    std::vector<TriMesh::Tuple> new_edges_after_collapse_split(const std::vector<TriMesh::Tuple>& t) const;
+    std::vector<TriMesh::Tuple> new_edges_after(const std::vector<TriMesh::Tuple>& t) const;
     std::vector<TriMesh::Tuple> new_edges_after_swap(const TriMesh::Tuple& t) const;
 
     bool collapse_shortest(int target_vertex_count);
@@ -152,9 +152,9 @@ public:
         return true;
     }
     // methods for adaptive remeshing
-    double compute_edge_cost_collapse_ar(const TriMesh::Tuple& t, double L);
-    double compute_edge_cost_split_ar(const TriMesh::Tuple& t, double L);
-    double compute_vertex_valence_ar(const TriMesh::Tuple& t);
+    double compute_edge_cost_collapse_ar(const TriMesh::Tuple& t, double L) const;
+    double compute_edge_cost_split_ar(const TriMesh::Tuple& t, double L) const;
+    double compute_vertex_valence_ar(const TriMesh::Tuple& t) const;
     std::pair<double, double> average_len_valen();
     bool split_remeshing(double L);
     bool collapse_remeshing(double L);

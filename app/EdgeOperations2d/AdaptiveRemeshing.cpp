@@ -2,18 +2,27 @@
 #include <wmtk/utils/VectorUtils.h>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+#include <wmtk/ExecutionScheduler.hpp>
 #include "EdgeOperations2d.h"
 
 using namespace Edge2d;
 using namespace wmtk;
-double EdgeOperations2d::compute_edge_cost_collapse_ar(const TriMesh::Tuple& t, double L)
+
+auto renew = [](auto& m, auto op, auto& tris) {
+    auto edges = m.new_edges_after(tris);
+    auto optup = std::vector<std::pair<std::string, TriMesh::Tuple>>();
+    for (auto& e : edges) optup.emplace_back("edge_collapse", e);
+    return optup;
+};
+
+double EdgeOperations2d::compute_edge_cost_collapse_ar(const TriMesh::Tuple& t, double L) const
 {
     double l =
         (m_vertex_positions[t.vid()] - m_vertex_positions[t.switch_vertex(*this).vid()]).norm();
     if (l < (4. / 5.) * L) return ((4. / 5.) * L - l);
     return -1;
 }
-double EdgeOperations2d::compute_edge_cost_split_ar(const TriMesh::Tuple& t, double L)
+double EdgeOperations2d::compute_edge_cost_split_ar(const TriMesh::Tuple& t, double L) const
 {
     double l =
         (m_vertex_positions[t.vid()] - m_vertex_positions[t.switch_vertex(*this).vid()]).norm();
@@ -21,7 +30,7 @@ double EdgeOperations2d::compute_edge_cost_split_ar(const TriMesh::Tuple& t, dou
     return -1;
 }
 
-double EdgeOperations2d::compute_vertex_valence_ar(const TriMesh::Tuple& t)
+double EdgeOperations2d::compute_vertex_valence_ar(const TriMesh::Tuple& t) const
 {
     std::vector<std::pair<TriMesh::Tuple, int>> valences(3);
     valences[0] = std::make_pair(t, get_one_ring_tris_for_vertex(t).size());
@@ -93,96 +102,67 @@ std::vector<TriMesh::Tuple> Edge2d::EdgeOperations2d::new_edges_after_swap(
 
 bool EdgeOperations2d::collapse_remeshing(double L)
 {
-    std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_l> e_collapse_queue;
-    for (auto& loc : get_edges()) {
-        double l_weight = compute_edge_cost_collapse_ar(loc, L);
-        e_collapse_queue.push(ElementInQueue(loc, l_weight));
-    }
-    int c = 0;
-    int s = 0;
-    while (!e_collapse_queue.empty()) {
-        auto loc = e_collapse_queue.top().edge;
-        auto l_weight = e_collapse_queue.top().weight;
-        e_collapse_queue.pop();
-        if (!loc.is_valid(*this) || l_weight < 0) {
-            continue;
-        }
+     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
+    for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_collapse", loc);
 
-        std::vector<TriMesh::Tuple> new_vert;
+    auto executor = wmtk::ExecutePass<EdgeOperations2d, ExecutionPolicy::kSeq>();
+    executor.renew_neighbor_tuples = renew;
+    executor.priority = [&](auto& m, auto _, auto& e) {
+        return -m.compute_edge_cost_collapse_ar(e, L);
+    };
+    executor.should_process =[](auto& m, auto&ele){
+        auto& [val, op, e] = ele;
+        if (val > 0) return false; // priority is negated.
+        return true;
+    };
 
-        if (!TriMesh::collapse_edge(loc, new_vert)) continue;
-        s++;
-
-        auto new_edges = new_edges_after_collapse_split(new_vert);
-        for (auto new_e : new_edges) {
-            e_collapse_queue.push(ElementInQueue(new_e, compute_edge_cost_collapse_ar(new_e, L)));
-        }
-    }
+    executor(*this, collect_all_ops);
     return true;
 }
 bool EdgeOperations2d::split_remeshing(double L)
 {
-    std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_l> e_split_queue;
-    for (auto& loc : get_edges()) {
-        double l_weight = compute_edge_cost_split_ar(loc, L);
-        e_split_queue.push(ElementInQueue(loc, l_weight));
-    }
-    int s = 0;
-    while (!e_split_queue.empty()) {
-        auto loc = e_split_queue.top().edge;
-        auto l_weight = e_split_queue.top().weight;
-        e_split_queue.pop();
-        if (!loc.is_valid(*this) || l_weight < 0) {
-            continue;
-        }
 
-        std::vector<TriMesh::Tuple> new_vert;
+    auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
+    for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_split", loc);
 
-        if (!TriMesh::split_edge(loc, new_vert)) continue;
-        auto new_edges = new_edges_after_collapse_split(new_vert);
-        for (auto new_e : new_edges)
-            e_split_queue.push(ElementInQueue(new_e, compute_edge_cost_split_ar(new_e, L)));
-    }
+    auto executor = wmtk::ExecutePass<EdgeOperations2d, ExecutionPolicy::kSeq>();
+    executor.renew_neighbor_tuples = renew;
+    executor.priority = [&](auto& m, auto _, auto& e) {
+        return m.compute_edge_cost_split_ar(e, L);
+    };
+     executor.should_process =[](auto& m, auto&ele){
+        auto& [val, op, e] = ele;
+        if (val < 0) return false;
+        return true;
+    };
+
+    executor(*this, collect_all_ops);
     return true;
 }
+
+
 bool EdgeOperations2d::swap_remeshing()
 {
-    std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_l> e_swap_queue;
-    // swap edges
-    for (auto& loc : get_edges()) {
-        double valence = compute_vertex_valence_ar(loc);
-        e_swap_queue.push(ElementInQueue(loc, valence));
-    }
-    int c = 0;
-    int s = 0;
-    while (!e_swap_queue.empty()) {
-        auto [loc, valence] = e_swap_queue.top();
-        e_swap_queue.pop();
+    auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
+    for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_swap", loc);
 
-        if (!loc.is_valid(*this)) {
-            continue;
-        }
-        valence = compute_vertex_valence_ar(loc);
-        if (valence < 1e-5) continue;
-        std::vector<TriMesh::Tuple> new_vert;
+    auto executor = wmtk::ExecutePass<EdgeOperations2d, ExecutionPolicy::kSeq>();
+    executor.renew_neighbor_tuples = renew;
+    executor.priority = [](auto& m, auto op, const Tuple& e) {
+        return m.compute_vertex_valence_ar(e);
+    };
+    executor.should_process = [](auto& m, auto& ele) {
+        auto& [val, _, e] = ele;
+        auto val_energy = (m.compute_vertex_valence_ar(e));
+        return (val_energy > 1e-5);
+    };
 
-        assert(check_mesh_connectivity_validity());
-
-        if (valence > 0) {
-            if (!swap_edge(loc, new_vert)) continue;
-            auto new_edges = new_edges_after_collapse_split(new_vert);
-            for (auto new_e : new_edges)
-                e_swap_queue.push(ElementInQueue(new_e, compute_vertex_valence_ar(new_e)));
-        } else
-            continue;
-    }
+    executor(*this, collect_all_ops);
     return true;
 }
 
 bool EdgeOperations2d::adaptive_remeshing(double L, int iterations)
 {
-    std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_l> e_length_queue;
-    std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_l> e_valence_queue;
     std::vector<double> avg_lens;
     std::vector<double> avg_valens;
     int cnt = 0;

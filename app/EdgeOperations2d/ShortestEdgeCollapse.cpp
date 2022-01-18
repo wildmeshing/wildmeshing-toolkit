@@ -24,7 +24,7 @@ auto unique_edge_tuples = [](const auto& m, auto& edges) {
         edges.end());
 };
 
-std::vector<TriMesh::Tuple> Edge2d::EdgeOperations2d::new_edges_after_collapse_split(
+std::vector<TriMesh::Tuple> Edge2d::EdgeOperations2d::new_edges_after(
     const std::vector<TriMesh::Tuple>& tris) const
 {
     std::vector<TriMesh::Tuple> new_edges;
@@ -45,7 +45,7 @@ bool Edge2d::EdgeOperations2d::collapse_shortest(int target_operation_count)
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_collapse", loc);
 
     auto renew = [](auto& m, auto op, auto& tris) {
-        auto edges = m.new_edges_after_collapse_split(tris);
+        auto edges = m.new_edges_after(tris);
         auto optup = std::vector<std::pair<std::string, Tuple>>();
         for (auto& e : edges) optup.emplace_back("edge_collapse", e);
         return optup;
