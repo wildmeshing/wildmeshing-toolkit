@@ -74,6 +74,9 @@ public:
     {
         m_vertex_attribute = _vertex_attribute;
         m_tet_attribute = _tet_attribute;
+        auto n_tet = m_tet_attribute.size();
+        resize_edge_attributes(6 * n_tet);
+        resize_face_attributes(4 * n_tet);
     }
 
     ////// Attributes related
@@ -221,6 +224,7 @@ public:
 
     bool vertex_invariant(const Tuple& t) override;
     bool tetrahedron_invariant(const Tuple& t) override;
+    std::atomic<int> cnt_split = 0, cnt_collapse = 0, cnt_swap = 0;
 };
 
 class ElementInQueue

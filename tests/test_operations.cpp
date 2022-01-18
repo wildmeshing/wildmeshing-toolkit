@@ -4,7 +4,7 @@
 
 using namespace wmtk;
 
-TEST_CASE("edge_splitting", "[test_operation]")
+TEST_CASE("edge_splitting", "[tuple_operation]")
 {
     auto mesh = TetMesh();
     mesh.init(5, {{{0, 1, 2, 3}}, {{0, 1, 2, 4}}});
@@ -15,7 +15,7 @@ TEST_CASE("edge_splitting", "[test_operation]")
     REQUIRE(mesh.check_mesh_connectivity_validity());
 }
 
-TEST_CASE("edge_collapsing_impossible", "[test_operation]")
+TEST_CASE("edge_collapsing_impossible", "[tuple_operation]")
 {
     auto mesh = TetMesh();
     mesh.init(5, {{{0, 1, 2, 3}}, {{0, 1, 2, 4}}});
@@ -28,7 +28,7 @@ TEST_CASE("edge_collapsing_impossible", "[test_operation]")
     REQUIRE(mesh.check_mesh_connectivity_validity());
 }
 
-TEST_CASE("edge_collapsing", "[test_operation]")
+TEST_CASE("edge_collapsing", "[tuple_operation]")
 {
     auto mesh = TetMesh();
     mesh.init(5, {{{0, 1, 2, 3}}, {{0, 2, 1, 4}}, {{0, 1, 3, 4}}});
@@ -43,7 +43,7 @@ TEST_CASE("edge_collapsing", "[test_operation]")
     REQUIRE(mesh.check_mesh_connectivity_validity());
 }
 
-TEST_CASE("tet_mesh_swap", "[test_operation]")
+TEST_CASE("tet_mesh_swap", "[tuple_operation]")
 {
     TetMesh mesh;
     mesh.init(5, {{{0, 1, 2, 3}}, {{0, 2, 1, 4}}, {{0, 1, 3, 4}}});
@@ -93,7 +93,7 @@ TEST_CASE("tet_mesh_swap", "[test_operation]")
     REQUIRE(mesh.tet_capacity() == 3);
 }
 
-TEST_CASE("rollback_operation", "[test_operation]")
+TEST_CASE("rollback_operation", "[tuple_operation]")
 {
     class NoOperationMesh : public TetMesh
     {
@@ -127,7 +127,7 @@ TEST_CASE("rollback_operation", "[test_operation]")
     }
 }
 
-TEST_CASE("forbidden-face-swap", "[test_operation]")
+TEST_CASE("forbidden-face-swap", "[tuple_operation]")
 {
     /// https://i.imgur.com/aVCsOvf.png and 0,2,3 should not be swapped.
     /// Visualize V as
