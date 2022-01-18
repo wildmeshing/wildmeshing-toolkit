@@ -1,18 +1,32 @@
 #pragma once
-#include <igl/write_triangle_mesh.h>
-#include <wmtk/TriMesh.h>
+#include <wmtk/ConcurrentTriMesh.h>
+#include <wmtk/utils/PartitionMesh.h>
 #include <wmtk/utils/VectorUtils.h>
+
+// clang-format off
+#include <wmtk/utils/DisableWarnings.hpp>
+#include <igl/write_triangle_mesh.h>
+#include <tbb/concurrent_priority_queue.h>
+#include <tbb/concurrent_vector.h>
+#include <tbb/enumerable_thread_specific.h>
+#include <tbb/parallel_for.h>
+#include <tbb/task_group.h>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include <queue>
+#include <wmtk/utils/EnableWarnings.hpp>
+// clang-format on
 
+
+#include <atomic>
+#include <queue>
 
 namespace Edge2d {
 
-class EdgeOperations2d : public wmtk::TriMesh
+class EdgeOperations2d : public wmtk::ConcurrentTriMesh
 {
 public:
-    std::vector<Eigen::Vector3d> m_vertex_positions;
+    tbb::concurrent_vector<Eigen::Vector3d> m_vertex_positions;
+    tbb::concurrent_vector<size_t> m_vertex_partition_id;
 
     EdgeOperations2d(std::vector<Eigen::Vector3d> _m_vertex_positions)
         : m_vertex_positions(_m_vertex_positions)
@@ -24,7 +38,8 @@ public:
     {
         Eigen::Vector3d v1p;
         Eigen::Vector3d v2p;
-    } position_cache;
+    };
+    tbb::enumerable_thread_specific<PositionInfoCache> position_cache;
 
     void cache_edge_positions(const Tuple& t)
     {
