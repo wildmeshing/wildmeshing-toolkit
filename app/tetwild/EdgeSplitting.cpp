@@ -93,5 +93,7 @@ bool tetwild::TetWild::split_after(const Tuple& loc)
         m_tet_attribute[loc.tid(*this)].m_qualities = get_quality(loc);
     }
 
+    cnt_split ++;
+
     return true;
 }

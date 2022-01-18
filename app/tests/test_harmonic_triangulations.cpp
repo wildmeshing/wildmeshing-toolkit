@@ -70,14 +70,17 @@ TEST_CASE("harmonic-tet-optim", "[harmtri]")
         E < 0.8); // Note: this may depend on the internal implementation detail of gradient descent
 }
 
-TEST_CASE("harmonic-tet-swaps", "[harmtri]")
+TEST_CASE("harmonic-tet-swaps", "[harmtri][.slow]")
 {
     auto vec_attrs = std::vector<Eigen::Vector3d>();
     auto tets = std::vector<std::array<size_t, 4>>();
+    std::string filename = "/home/zhongshi/Workspace/libigl/tutorial/data/bunny.off";
     {
         Eigen::MatrixXd V;
         Eigen::MatrixXi F;
-        igl::read_triangle_mesh(WMT_DATA_DIR "/Octocat.obj", V, F);
+        igl::read_triangle_mesh(filename, V, F);
+        igl::upsample(V, F);
+        wmtk::logger().info("Prepare to Delaunay: V {} F {}", V.rows(), F.rows());
         std::vector<wmtk::Point3D> points(V.rows());
         for (auto i = 0; i < V.rows(); i++) {
             for (auto j = 0; j < 3; j++) points[i][j] = V(i, j);
@@ -88,40 +91,24 @@ TEST_CASE("harmonic-tet-swaps", "[harmtri]")
             for (auto j = 0; j < 3; j++) vec_attrs[i][j] = tet_V[i][j];
         }
         tets = tetT;
+        wmtk::logger().info("Finishing Delaunay: V {} T {}", vec_attrs.size(), tets.size());
     }
     auto har_tet = harmonic_tet::HarmonicTet(vec_attrs, tets);
 
     auto [E0, cnt0] = stats(har_tet);
+    wmtk::logger().info("Start Energy E0  {} ", E0);
     har_tet.swap_all_edges();
-    har_tet.swap_all_faces();
+    wmtk::logger().info("tet cap {}", har_tet.tet_capacity());
     har_tet.consolidate_mesh();
-    har_tet.smooth_all_vertices();
+    wmtk::logger().info("tet cap {}", har_tet.tet_capacity());
     auto [E1, cnt1] = stats(har_tet);
+    wmtk::logger().info(
+        "Finishing Energy E1 {} E0 {} V {} T {}",
+        E1,
+        E0,
+        har_tet.m_vertex_attribute.size(),
+        har_tet.m_tet_attribute.size());
     REQUIRE(E1 < E0);
-}
-
-TEST_CASE("harmonic-tet-main", "[.]")
-{
-    MshData msh;
-    msh.load("bunny.off_.msh");
-    auto vec_attrs = std::vector<Eigen::Vector3d>(msh.get_num_tet_vertices());
-    auto tets = std::vector<std::array<size_t, 4>>(msh.get_num_tets());
-    msh.extract_tet_vertices(
-        [&](size_t i, double x, double y, double z) { vec_attrs[i] << x, y, z; });
-    msh.extract_tets([&](size_t i, size_t v0, size_t v1, size_t v2, size_t v3) {
-        tets[i] = {{v0, v1, v2, v3}};
-    });
-    auto har_tet = harmonic_tet::HarmonicTet(vec_attrs, tets, 4);
-    for (int i = 0; i <= 4; i++) {
-        auto [E0, cnt0] = stats(har_tet);
-        har_tet.swap_all_edges(true);
-        har_tet.swap_all_faces();
-        stats(har_tet);
-        har_tet.consolidate_mesh();
-        har_tet.smooth_all_vertices();
-        auto [E1, cnt1] = stats(har_tet);
-    }
-    har_tet.output_mesh("bunny.out.msh");
 }
 
 

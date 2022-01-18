@@ -102,7 +102,7 @@ TEST_CASE("test generate tuples with 2 triangle", "[test_tuple_generation]")
 }
 
 // for every quiry do a require
-TEST_CASE("random 10 switches on 2 traingles", "[test_operation]")
+TEST_CASE("random 10 switches on 2 traingles", "[tuple_operation]")
 {
     TriMesh m;
     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 2, 3}}};
@@ -119,6 +119,7 @@ TEST_CASE("random 10 switches on 2 traingles", "[test_operation]")
                 case 0: v_tuple = v_tuple.switch_vertex(m);
                 case 1: v_tuple = v_tuple.switch_edge(m);
                 case 2: v_tuple = v_tuple.switch_face(m).value_or(v_tuple);
+                default:;
                 }
             }
             REQUIRE(v_tuple.is_valid(m));
@@ -136,6 +137,7 @@ TEST_CASE("random 10 switches on 2 traingles", "[test_operation]")
                 case 0: e_tuple = e_tuple.switch_vertex(m);
                 case 1: e_tuple = e_tuple.switch_edge(m);
                 case 2: e_tuple = e_tuple.switch_face(m).value_or(e_tuple);
+                default:;
                 }
             }
             REQUIRE(e_tuple.is_valid(m));
@@ -153,6 +155,7 @@ TEST_CASE("random 10 switches on 2 traingles", "[test_operation]")
                 case 0: f_tuple = f_tuple.switch_vertex(m);
                 case 1: f_tuple = f_tuple.switch_edge(m);
                 case 2: f_tuple = f_tuple.switch_face(m).value_or(f_tuple);
+                default:;
                 }
             }
             REQUIRE(f_tuple.is_valid(m));
@@ -191,7 +194,7 @@ bool tuple_equal(const TriMesh& m, TriMesh::Tuple t1, TriMesh::Tuple t2)
 // (1) t.switch_vertex().switch_vertex() == t
 // (2) t.switch_edge().switch_edge() == t
 // (3) t.switch_tri().switch_tri() == t
-TEST_CASE("double switches is identity", "[test_operation]")
+TEST_CASE("double switches is identity", "[tuple_operation]")
 {
     TriMesh m;
     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 2, 3}}};
@@ -244,7 +247,7 @@ TEST_CASE("double switches is identity", "[test_operation]")
 }
 // check for every t
 // t.switch_vertex().switchedge().switchvertex().switchedge().switchvertex().switchedge() == t
-TEST_CASE("vertex_edge switches equals indentity", "[test_operation]")
+TEST_CASE("vertex_edge switches equals indentity", "[tuple_operation]")
 {
     TriMesh m;
     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 2, 3}}};

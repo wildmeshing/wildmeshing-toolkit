@@ -8,7 +8,7 @@
 using namespace wmtk;
 using namespace tetwild;
 
-TEST_CASE("tetwild_file_write", "[test_operation]")
+TEST_CASE("tetwild_file_write", "[tetwild_operation]")
 {
     Parameters params;
     params.lr = 1 / 5.;

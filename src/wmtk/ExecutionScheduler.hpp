@@ -32,7 +32,10 @@ struct ExecutePass
 {
     using Tuple = typename AppMesh::Tuple;
     // A dictionary that registers names with operations.
-    std::map<Op, std::function<std::optional<Tuple>(AppMesh&, const Tuple&)>> edit_operation_maps;
+    std::map<
+        Op, // strings
+        std::function<std::optional<std::vector<Tuple>>(AppMesh&, const Tuple&)>>
+        edit_operation_maps;
 
     // Priority function (default to edge length)
     std::function<double(const AppMesh&, Op op, const Tuple&)> priority = [](auto&, auto, auto&) {
@@ -42,7 +45,7 @@ struct ExecutePass
     // Renew Neighboring Tuples
     // Right now, use pre-implemented functions to get one edge ring.
     // TODO: Ideally, this depend on both operation and priority criterion.
-    std::function<std::vector<std::pair<Op, Tuple>>(const AppMesh&, Op, const Tuple&)>
+    std::function<std::vector<std::pair<Op, Tuple>>(const AppMesh&, Op, const std::vector<Tuple>&)>
         renew_neighbor_tuples =
             [](auto&, auto, auto&) -> std::vector<std::pair<Op, Tuple>> { return {}; };
 
@@ -79,40 +82,41 @@ struct ExecutePass
         if constexpr (std::is_base_of<wmtk::TetMesh, AppMesh>::value) {
             edit_operation_maps = {
                 {"edge_collapse",
-                 [](AppMesh& m, const Tuple& t) -> std::optional<Tuple> {
+                 [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
                      std::vector<Tuple> ret;
                      if (m.collapse_edge(t, ret))
-                         return ret.front();
+                         return ret;
                      else
                          return {};
                  }},
                 {"edge_swap",
-                 [](AppMesh& m, const Tuple& t) -> std::optional<Tuple> {
-                     Tuple ret;
+                 [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
+                     std::vector<Tuple> ret;
                      if (m.swap_edge(t, ret))
                          return ret;
                      else
                          return {};
                  }},
                 {"edge_split",
-                 [](AppMesh& m, const Tuple& t) -> std::optional<Tuple> {
+                 [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
                      std::vector<Tuple> ret;
                      if (m.collapse_edge(t, ret))
-                         return ret.front();
+                         return ret;
                      else
                          return {};
                  }},
                 {"face_swap",
-                 [](AppMesh& m, const Tuple& t) -> std::optional<Tuple> {
-                     Tuple ret;
+                 [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
+                     std::vector<Tuple> ret;
                      if (m.swap_face(t, ret))
                          return ret;
                      else
                          return {};
                  }},
-                {"vertex_smooth", [](AppMesh& m, const Tuple& t) -> std::optional<Tuple> {
+                {"vertex_smooth",
+                 [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
                      if (m.smooth_vertex(t))
-                         return t;
+                         return std::vector<Tuple>{};
                      else
                          return {};
                  }}};
