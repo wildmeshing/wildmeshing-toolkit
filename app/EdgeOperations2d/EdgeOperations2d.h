@@ -38,6 +38,12 @@ public:
             m_vertex_positions[i] = _m_vertex_positions[i];
     }
 
+    void create_mesh(size_t n_vertices, const std::vector<std::array<size_t, 3>>& tris) {
+        wmtk::ConcurrentTriMesh::create_mesh(n_vertices, tris);
+        partition_mesh();
+    }
+    
+
     ~EdgeOperations2d() {}
 
     struct PositionInfoCache

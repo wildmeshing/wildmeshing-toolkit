@@ -44,23 +44,33 @@ bool Edge2d::EdgeOperations2d::collapse_shortest(int target_operation_count)
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_collapse", loc);
 
-    auto executor = wmtk::ExecutePass<EdgeOperations2d, ExecutionPolicy::kSeq>();
-    executor.num_threads = NUM_THREADS;
-    executor.renew_neighbor_tuples = [](auto& m, auto op, auto& tris) {
+    auto renew = [](auto& m, auto op, auto& tris) {
         auto edges = m.new_edges_after_collapse_split(tris);
         auto optup = std::vector<std::pair<std::string, Tuple>>();
         for (auto& e : edges) optup.emplace_back("edge_collapse", e);
         return optup;
     };
-    executor.priority = [](auto& m, auto op, const Tuple& new_e) {
+    auto measure_len2 = [](auto& m, auto op, const Tuple& new_e) {
         auto len2 =
             (m.m_vertex_positions[new_e.vid()] - m.m_vertex_positions[new_e.switch_vertex(m).vid()])
                 .squaredNorm();
-        return - len2;
+        return -len2;
     };
-    executor.stopping_criterion_checking_frequency = target_operation_count;
-    executor.stopping_criterion = [](auto& m) { return true; };
+    auto setup_and_execute = [&](auto executor) {
+        executor.num_threads = NUM_THREADS;
+        executor.renew_neighbor_tuples = renew;
+        executor.priority = measure_len2;
+        executor.stopping_criterion_checking_frequency = target_operation_count;
+        executor.stopping_criterion = [](auto& m) { return true; };
+        executor(*this, collect_all_ops);
+    };
 
-    executor(*this, collect_all_ops);
+    if (NUM_THREADS > 1) {
+        auto executor = wmtk::ExecutePass<EdgeOperations2d, ExecutionPolicy::kSeq>();
+        setup_and_execute(executor);
+    } else {
+        auto executor = wmtk::ExecutePass<EdgeOperations2d, ExecutionPolicy::kPartition>();
+        setup_and_execute(executor);
+    }
     return true;
 }

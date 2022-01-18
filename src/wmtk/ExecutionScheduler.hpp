@@ -170,6 +170,16 @@ private:
         }
     }
 
+    size_t get_partition_id(const AppMesh& m, const Tuple&e)
+    {
+        if constexpr(policy == ExecutionPolicy::kSeq) return 0;
+        if constexpr(std::is_base_of<wmtk::TetMesh, AppMesh>::value)
+            return m.m_vertex_partition_id[e.vid(m)];
+        else if constexpr(std::is_base_of<wmtk::TriMesh, AppMesh>::value) // TODO: make same interface.
+            return m.m_vertex_partition_id[e.vid()];
+        return 0;
+    }
+
 public:
     bool operator()(AppMesh& m, const std::vector<std::pair<Op, Tuple>>& operation_tuples)
     {
@@ -224,8 +234,8 @@ public:
             run_single_queue(queues[0]);
         } else {
             for (auto& [op, e] : operation_tuples) {
-                // get_partition_id(e)
-                queues[m.m_vertex_partition_id[e.vid(m)]].emplace(priority(m, op, e), op, e);
+                // 
+                queues[get_partition_id(m,e)].emplace(priority(m, op, e), op, e);
             }
             // Comment out parallel: work on serial first.
             tbb::task_arena arena(num_threads);
