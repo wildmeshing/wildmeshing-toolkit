@@ -8,6 +8,9 @@
 
 #include <bitset>
 
+using std::cout;
+using std::endl;
+
 void wmtk::TetMesh::single_triangle_insertion(
     const std::vector<Tuple>& intersected_tets,
     const std::vector<Tuple>& intersected_edges)
@@ -47,6 +50,7 @@ void wmtk::TetMesh::single_triangle_insertion(
     for (int i = 0; i < diff_tids.size(); i++) mark_surface.push_back(false);
     //
     intersected_tids.insert(intersected_tids.end(), diff_tids.begin(), diff_tids.end());
+    cout<<"all intersected_tids.size "<<intersected_tids.size()<<endl;
 
     /// track surface before
     std::vector<Tuple> old_faces;
@@ -81,6 +85,27 @@ void wmtk::TetMesh::single_triangle_insertion(
         new_face_vids; // note: vids of the face, tid, l_fid
     subdivide_tets(intersected_tids, mark_surface, map_edge2vid, new_face_vids);
 
+//    cout<<"====="<<endl;
+//    for(auto& info: new_face_vids){
+//        auto& vids = info.first;
+//        auto& fs = info.second;
+//        cout<<"old_tet fs: "<<vids[0]<<" "<<vids[1]<<" "<<vids[2]<<endl;
+//        cout<<"tet fs: ";
+//        for(auto f: fs) {
+//            for(int j=0;j<5;j++)
+//                 cout << f[j] << " ";
+//            cout<<endl;
+//        }
+//        cout<<endl;
+//    }
+//    cout<<"====="<<new_face_vids.size()<<endl;
+//    for(auto& f: old_face_vids){
+//        for(int j=0;j<5;j++)
+//            cout << f[j] << " ";
+//        cout<<endl;
+//    }
+//    cout<<"====="<<old_face_vids.size()<<endl;
+
     /// track surface after
     std::vector<std::vector<Tuple>> new_faces(old_faces.size() + 1);
     for (auto& info : new_face_vids) {
@@ -90,7 +115,8 @@ void wmtk::TetMesh::single_triangle_insertion(
             [&info](const std::array<size_t, 5>& v1) {
                 return std::array<size_t, 3>({{v1[0], v1[1], v1[2]}}) == info.first;
             });
-        int i = it - old_face_vids.begin();
+        int i = it - old_face_vids.begin();//already handled special case here
+        assert(i < new_faces.size());
         //
         for (auto& f_info : info.second) {
             new_faces[i].push_back(tuple_from_face(f_info[3], f_info[4]));
@@ -138,6 +164,7 @@ void wmtk::TetMesh::subdivide_tets(
             if (e[0] > e[1]) std::swap(e[0], e[1]);
             if (map_edge2vid.count(e)) new_v_ids[j] = map_edge2vid[e];
         }
+
         bool is_add_centroid; // todo: maybe not necessary
         subdivide_a_tet(t_id, new_v_ids, mark_surface[i], is_add_centroid, new_face_vids);
     }
@@ -295,22 +322,24 @@ void wmtk::TetMesh::subdivide_a_tet(
 
         /// track surface
         for (int j = 0; j < 4; j++) {
-            std::array<size_t, 5> new_f_vids = {
-                {tet[(j + 1) % 4], tet[(j + 2) % 4], tet[(j + 3) % 4], new_t_id, (size_t)j}};
-            std::sort(new_f_vids.begin(), new_f_vids.begin() + 3);
-            std::array<size_t, 3> old_f_vids;
+            std::vector<size_t> old_f_vids;
             if (old_local_f_ids[i][j] >= 0) { // old faces
                 int old_j = old_local_f_ids[i][j];
                 old_f_vids = {
-                    {old_tet[(old_j + 1) % 4], old_tet[(old_j + 2) % 4], old_tet[(old_j + 3) % 4]}};
+                    old_tet[(old_j + 1) % 4], old_tet[(old_j + 2) % 4], old_tet[(old_j + 3) % 4]};
                 std::sort(old_f_vids.begin(), old_f_vids.end());
             }
             //
             if (mark_surface && new_is_surface_fs[i][j]) { // new faces
-                old_f_vids = {{0, 0, 0}}; // get empty old face map to new faces
+                old_f_vids = {0, 0, 0}; // get empty old face map to new faces
             }
 
-            new_face_vids[old_f_vids].push_back(new_f_vids);
+            if(!old_f_vids.empty()) {
+                std::array<size_t, 5> new_f_vids = {
+                    {tet[(j + 1) % 4], tet[(j + 2) % 4], tet[(j + 3) % 4], new_t_id, (size_t)j}};
+                std::sort(new_f_vids.begin(), new_f_vids.begin() + 3);
+                new_face_vids[{{old_f_vids[0], old_f_vids[1], old_f_vids[2]}}].push_back(new_f_vids);
+            }
 
             // note: new face_id has higher priority than old ones
             // note: non-cut-through tet does not track surface!!!
