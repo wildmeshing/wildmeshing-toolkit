@@ -107,7 +107,7 @@ bool wmtk::TetMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tet_tuples
 {
     // 3-2 edge to face.
     // only swap internal edges, not on boundary.
-    if (t.is_boundary_edge(*this)) return false;
+    // if (t.is_boundary_edge(*this)) return false;
     if (!swap_edge_before(t)) return false;
     auto v1_id = t.vid(*this);
     auto v2_id = switch_vertex(t).vid(*this);
@@ -119,6 +119,11 @@ bool wmtk::TetMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tet_tuples
         logger().trace("selected edges need 3 neighbors to swap.");
         return false;
     }
+    std::set<size_t> verts;
+    for (auto ti : affected)
+        for (auto j = 0; j < 4; j++) verts.insert(m_tet_connectivity[ti][j]);
+    if (verts.size() != affected.size() + 2) return false; // boundary
+
     auto old_tets = record_old_tet_connectivity(m_tet_connectivity, affected);
     auto new_tets = std::vector<std::array<size_t, 4>>(2);
     {

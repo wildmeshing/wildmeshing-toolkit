@@ -175,7 +175,7 @@ void HarmonicTet::swap_all_edges(bool parallel)
         executor.renew_neighbor_tuples = renewal_edges;
         executor.lock_vertices = [](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
             auto stack = std::vector<size_t>();
-            m.try_set_edge_mutex_two_ring(e, stack);
+            if (!m.try_set_edge_mutex_two_ring(e, stack)) return {};
             return stack;
         };
         executor.num_threads = NUM_THREADS;
@@ -219,7 +219,7 @@ void HarmonicTet::swap_all_faces()
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_faces()) collect_all_ops.emplace_back("face_swap", loc);
     executor(*this, collect_all_ops);
-};
+}
 
 bool HarmonicTet::swap_face_before(const Tuple& t)
 {
@@ -382,12 +382,12 @@ void HarmonicTet::swap_all()
     };
     executor.lock_vertices = [](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
         auto stack = std::vector<size_t>();
-        m.try_set_edge_mutex_two_ring(e, stack);
+        if (!m.try_set_edge_mutex_two_ring(e, stack)) return {};
         return stack;
     };
     executor.num_threads = NUM_THREADS;
     executor(*this, collect_all_ops);
-};
+}
 
 
 } // namespace harmonic_tet

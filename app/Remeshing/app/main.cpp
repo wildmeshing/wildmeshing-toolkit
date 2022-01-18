@@ -3,12 +3,10 @@
 
 #include <wmtk/utils/Logger.hpp>
 
-// clang-format off
+// Third-party include
 #include <wmtk/utils/DisableWarnings.hpp>
 #include <CLI/CLI.hpp>
 #include <wmtk/utils/EnableWarnings.hpp>
-// clang-format on
-
 // System include
 #include <iostream>
 

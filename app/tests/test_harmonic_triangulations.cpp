@@ -150,7 +150,7 @@ TEST_CASE("parallel_harmonic-tet-swaps", "[parallel_harmtri][.slow]")
     }
 }
 
-TEST_CASE("guassian-harmonic")
+TEST_CASE("gaussian-harmonic")
 {
     static std::mt19937 gen{std::random_device{}()};
     static std::normal_distribution<> dist;
@@ -158,7 +158,7 @@ TEST_CASE("guassian-harmonic")
     auto vec_attrs = std::vector<Eigen::Vector3d>();
     auto tets = std::vector<std::array<size_t, 4>>();
     {
-        std::vector<wmtk::Point3D> points(10000);
+        std::vector<wmtk::Point3D> points(100000);
         for (auto i = 0; i < points.size(); i++) {
             for (auto j = 0; j < 3; j++) points[i][j] = dist(gen);
         }
@@ -170,11 +170,58 @@ TEST_CASE("guassian-harmonic")
         tets = tetT;
         wmtk::logger().info("Finishing Delaunay: V {} T {}", vec_attrs.size(), tets.size());
     }
-    auto har_tet = harmonic_tet::HarmonicTet(vec_attrs, tets);
 
+    igl::Timer timer;
+    double time;
+
+    for (int i = 32; i <= 32; i *= 2) {
+        wmtk::logger().info("Number of Threads: {}", i);
+        auto har_tet = harmonic_tet::HarmonicTet(vec_attrs, tets, i);
+        auto [E0, cnt0] = stats(har_tet);
+        wmtk::logger().info("Start Energy E0  {} ", E0);
+        timer.start();
+        har_tet.swap_all_edges(true);
+        time = timer.getElapsedTimeInMilliSec();
+        wmtk::logger().info("Time cost: {}", time);
+        har_tet.consolidate_mesh();
+        wmtk::logger().info("tet cap {}", har_tet.tet_capacity());
+    }
+}
+
+
+TEST_CASE("gaussian-harmonic-single")
+{
+    static std::mt19937 gen{std::random_device{}()};
+    static std::normal_distribution<> dist;
+
+    auto vec_attrs = std::vector<Eigen::Vector3d>();
+    auto tets = std::vector<std::array<size_t, 4>>();
+    {
+        std::vector<wmtk::Point3D> points(50000);
+        for (auto i = 0; i < points.size(); i++) {
+            for (auto j = 0; j < 3; j++) points[i][j] = dist(gen);
+        }
+        auto [tet_V, tetT] = wmtk::delaunay3D(points);
+        vec_attrs.resize(tet_V.size());
+        for (auto i = 0; i < tet_V.size(); i++) {
+            for (auto j = 0; j < 3; j++) vec_attrs[i][j] = tet_V[i][j];
+        }
+        tets = tetT;
+        wmtk::logger().info("Finishing Delaunay: V {} T {}", vec_attrs.size(), tets.size());
+    }
+
+    igl::Timer timer;
+    double time;
+    auto i = 1;
+
+    wmtk::logger().info("Number of Threads: {}", i);
+    auto har_tet = harmonic_tet::HarmonicTet(vec_attrs, tets, i);
     auto [E0, cnt0] = stats(har_tet);
     wmtk::logger().info("Start Energy E0  {} ", E0);
-    har_tet.swap_all_edges();
+    timer.start();
+    har_tet.swap_all_edges(false);
+    time = timer.getElapsedTimeInMilliSec();
+    wmtk::logger().info("Time cost: {}", time);
     har_tet.consolidate_mesh();
     wmtk::logger().info("tet cap {}", har_tet.tet_capacity());
 }

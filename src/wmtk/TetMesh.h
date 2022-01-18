@@ -318,6 +318,7 @@ private:
     // Stores the connectivity of the mesh
     vector<VertexConnectivity> m_vertex_connectivity;
     vector<TetrahedronConnectivity> m_tet_connectivity;
+
     int m_t_empty_slot = 0;
     int m_v_empty_slot = 0;
     int get_next_empty_slot_t();
@@ -468,6 +469,7 @@ public:
      * @return one-ring vertices
      */
     std::vector<Tuple> get_one_ring_vertices_for_vertex(const Tuple& t) const;
+    std::vector<size_t> get_one_ring_vids_for_vertex(size_t vid) const;
 
     /**
      * @brief Get the incident tets for edge
