@@ -1,7 +1,7 @@
 #include <wmtk/TetMesh.h>
 
-#include <wmtk/utils/TupleUtils.hpp>
 #include <wmtk/utils/VectorUtils.h>
+#include <wmtk/utils/TupleUtils.hpp>
 
 #include <spdlog/spdlog.h>
 
@@ -65,25 +65,7 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
                 std::set<std::array<size_t, 3>>>{conn_verts, conn_edges, conn_faces};
         };
         auto adjacent_boundary_faces = [this, &VC, &TC](auto v) {
-            static constexpr std::array<int, 4> vertex2oppo_face = {{3,1,2,0}};
-            auto result_faces = std::vector<std::array<size_t, 3>>();
-            for (auto t : VC[v].m_conn_tets) {
-                auto& tet = TC[t];
-                for (auto j = 0; j < 4; j++) {
-                    auto tup = this->tuple_from_face(t, j);
-                    if (tet[vertex2oppo_face[j]] == v) continue;
-                    if (!this->switch_tetrahedron(tup)) { // boundary
-                        auto f = m_local_faces[j];
-                        logger().trace(">>f {}", f);
-                        auto face = std::array<size_t, 3>{{tet[f[0]], tet[f[1]], tet[f[2]]}};
-                        std::sort(face.begin(), face.end());
-                        logger().trace(">>face {}", face);
-                        result_faces.emplace_back(face);
-                    }
-                }
-            }
-            std::sort(result_faces.begin(), result_faces.end());
-            return std::move(result_faces);
+            return vertex_adjacent_boundary_faces(this->tuple_from_vertex(v));
         };
         auto& closure0 = VC[v0].m_conn_tets;
         auto& closure1 = VC[v1].m_conn_tets;

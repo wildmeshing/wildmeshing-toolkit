@@ -14,6 +14,8 @@
 #pragma clang diagnostic pop // -Woverloaded-virtual
 #pragma clang diagnostic pop // -Wformat-security
 #pragma clang diagnostic pop // -Wdeprecated-declarations
+#pragma clang diagnostic pop // -Wredundant-decls
+#pragma clang diagnostic pop // -Wunknown-pragma
 #elif (defined(__GNUC__) || defined(__GNUG__)) && !(defined(__clang__) || defined(__INTEL_COMPILER))
 #pragma GCC diagnostic pop // -Wshadow
 #pragma GCC diagnostic pop // -Wsign-compare
@@ -29,4 +31,6 @@
 #pragma GCC diagnostic pop // -Woverloaded-virtual
 #pragma GCC diagnostic pop // -Wformat-security
 #pragma GCC diagnostic pop // -Wdeprecated-declarations
+#pragma GCC diagnostic pop // -Wredundant-decls
+#pragma GCC diagnostic pop // -Wunknown-pragma
 #endif

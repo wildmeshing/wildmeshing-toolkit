@@ -1,16 +1,25 @@
 #pragma once
 
+
+#include <wmtk/ConcurrentTriMesh.h>
+#include <wmtk/utils/PartitionMesh.h>
+#include <wmtk/utils/VectorUtils.h>
+
+// clang-format off
+#include <wmtk/utils/DisableWarnings.hpp>
 #include <igl/write_triangle_mesh.h>
 #include <tbb/concurrent_priority_queue.h>
 #include <tbb/concurrent_vector.h>
 #include <tbb/enumerable_thread_specific.h>
 #include <tbb/parallel_for.h>
 #include <tbb/task_group.h>
-#include <wmtk/ConcurrentTriMesh.h>
-#include <wmtk/utils/PartitionMesh.h>
-#include <wmtk/utils/VectorUtils.h>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+#include <wmtk/utils/EnableWarnings.hpp>
+// clang-format on
+
+
+
 #include <atomic>
 #include <queue>
 

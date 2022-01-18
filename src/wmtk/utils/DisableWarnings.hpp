@@ -28,6 +28,10 @@
 	#pragma clang diagnostic ignored "-Wformat-security"
 	#pragma clang diagnostic push
 	#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+	#pragma clang diagnostic push
+	#pragma clang diagnostic ignored "-Wredundant-decls"
+	#pragma clang diagnostic push
+	#pragma clang diagnostic ignored "-Wunknown-pragmas"
 #elif (defined(__GNUC__) || defined(__GNUG__)) && !(defined(__clang__) || defined(__INTEL_COMPILER))
 	#pragma GCC diagnostic push
 	#pragma GCC diagnostic ignored "-Wshadow"
@@ -57,4 +61,8 @@
 	#pragma GCC diagnostic ignored "-Wformat-security"
 	#pragma GCC diagnostic push
 	#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+	#pragma GCC diagnostic push
+	#pragma GCC diagnostic ignored "-Wredundant-decls"
+	#pragma GCC diagnostic push
+	#pragma GCC diagnostic ignored "-Wunknown-pragmas"
 #endif

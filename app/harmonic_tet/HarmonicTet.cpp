@@ -84,6 +84,7 @@ bool harmonic_tet::HarmonicTet::smooth_after(const Tuple& t)
         assembles,
         wmtk::harmonic_tet_energy,
         wmtk::harmonic_tet_jacobian);
+    if (m_vertex_attribute[vid] == old_pos) return false;
     wmtk::logger().trace(
         "old pos {} -> new pos {}",
         old_pos.transpose(),
@@ -155,13 +156,12 @@ bool HarmonicTet::swap_face_after(const Tuple& t)
 }
 
 auto renewal_edges = [](const auto& m, auto op, const auto& newt) {
+    std::vector<std::pair<std::string, wmtk::TetMesh::Tuple>> op_tups;
     auto new_edges = std::vector<wmtk::TetMesh::Tuple>();
-    assert(newt.switch_tetrahedron(m));
-    for (auto ti : {newt.tid(m), newt.switch_tetrahedron(m)->tid(m)}) {
-        for (auto j = 0; j < 6; j++) new_edges.push_back(m.tuple_from_edge(ti, j));
+    for (auto ti : newt) {
+        for (auto j = 0; j < 6; j++) new_edges.push_back(m.tuple_from_edge(ti.tid(m), j));
     };
     wmtk::unique_edge_tuples(m, new_edges);
-    std::vector<std::pair<std::string, wmtk::TetMesh::Tuple>> op_tups;
     for (auto f : new_edges) op_tups.emplace_back("edge_swap", f);
     return op_tups;
 };
@@ -175,7 +175,7 @@ void HarmonicTet::swap_all_edges(bool parallel)
         executor.renew_neighbor_tuples = renewal_edges;
         executor.lock_vertices = [](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
             auto stack = std::vector<size_t>();
-            m.try_set_edge_mutex_two_ring(e, stack);
+            if (!m.try_set_edge_mutex_two_ring(e, stack)) return {};
             return stack;
         };
         executor.num_threads = NUM_THREADS;
@@ -188,29 +188,26 @@ void HarmonicTet::swap_all_edges(bool parallel)
     }
 }
 
-void harmonic_tet::HarmonicTet::smooth_all_vertices()
+void harmonic_tet::HarmonicTet::smooth_all_vertices(bool interior_only)
 {
     auto executor = wmtk::ExecutePass<HarmonicTet>();
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
-    for (auto& loc : get_vertices()) collect_all_ops.emplace_back("vertex_smooth", loc);
+    for (auto& loc : get_vertices()) {
+        if (interior_only && !vertex_adjacent_boundary_faces(loc).empty()) continue;
+        collect_all_ops.emplace_back("vertex_smooth", loc);
+    }
+    wmtk::logger().info("Num verts {}", collect_all_ops.size());
     executor(*this, collect_all_ops);
 }
 
-auto renewal_faces = [](const auto& m, auto op, const auto& t) {
-    auto newt = t;
-    auto new_tets = std::vector<size_t>(1, newt.tid(m));
-    for (auto k = 0; k < 2; k++) {
-        newt = newt.switch_face(m);
-        newt = newt.switch_tetrahedron(m).value();
-        new_tets.push_back(newt.tid(m));
-    }
+auto renewal_faces = [](const auto& m, auto op, const auto& newtets) {
+    std::vector<std::pair<std::string, wmtk::TetMesh::Tuple>> op_tups;
 
     auto new_faces = std::vector<wmtk::TetMesh::Tuple>();
-    for (auto ti : new_tets) {
-        for (auto j = 0; j < 4; j++) new_faces.push_back(m.tuple_from_face(ti, j));
+    for (auto ti : newtets) {
+        for (auto j = 0; j < 4; j++) new_faces.push_back(m.tuple_from_face(ti.tid(m), j));
     }
     wmtk::unique_face_tuples(m, new_faces);
-    std::vector<std::pair<std::string, wmtk::TetMesh::Tuple>> op_tups;
     for (auto f : new_faces) op_tups.emplace_back("face_swap", f);
     return op_tups;
 };
@@ -222,7 +219,7 @@ void HarmonicTet::swap_all_faces()
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_faces()) collect_all_ops.emplace_back("face_swap", loc);
     executor(*this, collect_all_ops);
-};
+}
 
 bool HarmonicTet::swap_face_before(const Tuple& t)
 {
@@ -264,14 +261,66 @@ void HarmonicTet::output_mesh(std::string file) const
 }
 
 auto renewal_all = [](const auto& m, auto op, const auto& newt) {
-    auto new_edges = std::vector<wmtk::TetMesh::Tuple>();
-    for (auto ti : {newt.tid(m), newt.switch_tetrahedron(m)->tid(m)}) {
-        for (auto j = 0; j < 6; j++) new_edges.push_back(m.tuple_from_edge(ti, j));
-    };
-    wmtk::unique_edge_tuples(m, new_edges);
-    std::vector<std::pair<std::string, wmtk::TetMesh::Tuple>> op_tups;
-    for (auto f : new_edges) op_tups.emplace_back("edge_swap", f);
-    return op_tups;
+    auto optup1 = renewal_edges(m, op, newt);
+    auto optup2 = renewal_faces(m, op, newt);
+    for (auto& o : optup2) optup1.emplace_back(o);
+    return optup1;
+};
+
+
+auto replace = [](auto& arr, auto i, auto j) {
+    for (auto k = 0; k < arr.size(); k++) {
+        if (arr[k] == i) {
+            arr[k] = j;
+            break;
+        }
+    }
+};
+
+auto swap_3_2 = [](const std::vector<std::array<size_t, 4>>& tets, auto v0, auto v1) {
+    auto n0 = -1, n1 = -1, n2 = -1;
+    // T0 : n1, n2, v0, *v1*->n0
+    // T1: n0, n1, *v0*,v1 -> n2
+    for (auto j = 0; j < 4; j++) {
+        auto v = tets[0][j];
+        if (v != v0 && v != v1) {
+            if (n2 == -1)
+                n2 = v;
+            else if (n1 == -1)
+                n1 = v;
+        }
+    }
+    auto flag = false;
+    for (auto j = 0; j < 4; j++) {
+        auto v = tets[1][j];
+        if (v != v0 && v != v1 && v != n1 && v != n2) n0 = v;
+        if (v == n1) flag = true;
+    }
+    assert(n0 != n1 && n1 != n2);
+
+    auto newtet = std::vector<std::array<size_t, 4>>{tets[0], tets[flag ? 1 : 2]};
+    replace(newtet[0], v1, n0);
+    replace(newtet[1], v0, n2);
+    return newtet;
+};
+auto swap_2_3 = [](const std::vector<std::array<size_t, 4>>& tets, std::array<size_t, 3> n) {
+    auto u = std::array<int, 2>{{-1, -1}};
+    // T0 : *n0*,n1,n2 v1-> v2
+    // T0 : *n1*, v1-> v2
+    // T0 : *n2*, v1-> v2
+    for (auto i = 0; i < 2; i++) {
+        for (auto j = 0; j < 4; j++) {
+            auto v = tets[i][j];
+            for (auto k = 0; k < 3; k++)
+                if (v == n[k]) continue;
+            u[i] = v;
+            break;
+        }
+    }
+
+    auto newtet = std::vector<std::array<size_t, 4>>{tets[0], tets[0], tets[0]};
+    for (auto i = 0; i < 3; i++) replace(newtet[i], n[i], u[1]);
+    return newtet;
 };
 
 void HarmonicTet::swap_all()
@@ -279,10 +328,11 @@ void HarmonicTet::swap_all()
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_swap", loc);
 
-    auto executor = wmtk::ExecutePass<HarmonicTet, wmtk::ExecutionPolicy::kPartition>();
+    auto executor = wmtk::ExecutePass<HarmonicTet, wmtk::ExecutionPolicy::kSeq>();
     executor.renew_neighbor_tuples = renewal_all;
-    executor.priority =
-        [](auto& m, auto op, const wmtk::TetMesh::Tuple& t) -> double { // using delta trace
+
+    executor.priority = [](auto& m, auto op, const wmtk::TetMesh::Tuple& t)
+        -> double { // using delta trace
         if (op == "edge_swap") {
             auto tets = m.get_incident_tets_for_edge(t);
             if (tets.size() != 3) return -1.;
@@ -297,23 +347,47 @@ void HarmonicTet::swap_all()
                     data[i][j] = vs[j].vid(m);
                 }
             }
+            auto v0 = t.vid(m), v1 = t.switch_vertex(m).vid(m);
+            auto new_conn = swap_3_2(data, v0, v1);
+            for (auto tc : new_conn) {
+                after += m.get_quality(tc);
+            }
+            return before - after; // decrease amount.
         } else if (op == "face_swap") {
             auto f1 = t.switch_tetrahedron(m);
-            if (!f1) return -1.;
-            auto before = m.get_quality(t) + m.get_quality(f1.value());
+            if (!f1) return -1.; // boundary
+            auto tets = std::vector<Tuple>{{t, f1.value()}};
+
+            std::vector<std::array<size_t, 4>> data(2);
+            for (auto i = 0; i < 2; i++) {
+                auto vs = m.oriented_tet_vertices(tets[i]);
+                for (int j = 0; j < 4; j++) {
+                    data[i][j] = vs[j].vid(m);
+                }
+            }
+            auto v0 = t.vid(m), v1 = t.switch_vertex(m).vid(m);
+            auto v2 = t.switch_edge(m).switch_vertex(m).vid(m);
+            auto new_conn = swap_2_3(data, {{v0, v1, v2}});
+
+            auto decrease = 0.;
+            for (auto e : data) decrease += m.get_quality(e);
+            for (auto tc : new_conn) decrease -= m.get_quality(tc);
+            return decrease; // decrease amount.
         }
-        return 0.;
-
-
+        return -1.;
+    };
+    executor.should_process = [](auto& m, auto ele) {
+        if (std::get<0>(ele) <= 0) return false;
+        return true;
     };
     executor.lock_vertices = [](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
         auto stack = std::vector<size_t>();
-        m.try_set_edge_mutex_two_ring(e, stack);
+        if (!m.try_set_edge_mutex_two_ring(e, stack)) return {};
         return stack;
     };
     executor.num_threads = NUM_THREADS;
     executor(*this, collect_all_ops);
-};
+}
 
 
 } // namespace harmonic_tet
