@@ -187,7 +187,8 @@ TEST_CASE("gaussian-harmonic")
     igl::Timer timer;
     double time;
 
-    for(int i=1;i<=32;i*=2){
+    for(int j=1;j<=1;j++){
+        int i = 32;
         wmtk::logger().info("Number of Threads: {}", i);
         auto har_tet = harmonic_tet::HarmonicTet(vec_attrs, tets, i);
         auto [E0, cnt0] = stats(har_tet);
