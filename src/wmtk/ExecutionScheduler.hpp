@@ -28,7 +28,10 @@ struct ExecutePass
 {
     using Tuple = typename AppMesh::Tuple;
     // A dictionary that registers names with operations.
-    std::map<Op, std::function<std::optional<Tuple>(AppMesh&, const Tuple&)>> edit_operation_maps;
+    std::map<
+        Op, // strings
+        std::function<std::optional<std::vector<Tuple>>(AppMesh&, const Tuple&)>>
+        edit_operation_maps;
 
     // Priority function (default to edge length)
     std::function<double(const AppMesh&, Op op, const Tuple&)> priority = [](auto&, auto, auto&) {
@@ -38,8 +41,9 @@ struct ExecutePass
     // Renew Neighboring Tuples
     // Right now, use pre-implemented functions to get one edge ring.
     // TODO: Ideally, this depend on both operation and priority criterion.
-    std::function<std::vector<std::pair<Op,Tuple>>(const AppMesh&, Op, const Tuple&)> renew_neighbor_tuples =
-        [](auto&, auto, auto&) -> std::vector<std::pair<Op,Tuple>> { return {}; };
+    std::function<std::vector<std::pair<Op, Tuple>>(const AppMesh&, Op, const std::vector<Tuple>&)>
+        renew_neighbor_tuples =
+            [](auto&, auto, auto&) -> std::vector<std::pair<Op, Tuple>> { return {}; };
 
     // lock vertices: should depend on the operation
     // returns a range of vertices that we need to acquire and lock.
@@ -74,40 +78,41 @@ struct ExecutePass
         if constexpr (std::is_base_of<wmtk::TetMesh, AppMesh>::value) {
             edit_operation_maps = {
                 {"edge_collapse",
-                 [](AppMesh& m, const Tuple& t) -> std::optional<Tuple> {
+                 [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
                      std::vector<Tuple> ret;
                      if (m.collapse_edge(t, ret))
-                         return ret.front();
+                         return ret;
                      else
                          return {};
                  }},
                 {"edge_swap",
-                 [](AppMesh& m, const Tuple& t) -> std::optional<Tuple> {
-                     Tuple ret;
+                 [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
+                     std::vector<Tuple> ret;
                      if (m.swap_edge(t, ret))
                          return ret;
                      else
                          return {};
                  }},
                 {"edge_split",
-                 [](AppMesh& m, const Tuple& t) -> std::optional<Tuple> {
+                 [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
                      std::vector<Tuple> ret;
                      if (m.collapse_edge(t, ret))
-                         return ret.front();
+                         return ret;
                      else
                          return {};
                  }},
                 {"face_swap",
-                 [](AppMesh& m, const Tuple& t) -> std::optional<Tuple> {
-                     Tuple ret;
+                 [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
+                     std::vector<Tuple> ret;
                      if (m.swap_face(t, ret))
                          return ret;
                      else
                          return {};
                  }},
-                {"vertex_smooth", [](AppMesh& m, const Tuple& t) -> std::optional<Tuple> {
+                {"vertex_smooth",
+                 [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
                      if (m.smooth_vertex(t))
-                         return t;
+                         return std::vector<Tuple>{};
                      else
                          return {};
                  }}};
@@ -176,11 +181,13 @@ public:
                         lock_vertices(m, tup); // Note that returning `Tuples` would be invalid.
                     if (!locked_vid) Q.emplace(ele_in_queue);
                     auto newtup = edit_operation_maps[op](m, tup);
-                    if (newtup) renewed_tuples = renew_neighbor_tuples(m, op, newtup.value());
+                    if (newtup) {
+                        renewed_tuples = renew_neighbor_tuples(m, op, newtup.value());
+                        cnt_update++;
+                    }
                     operation_cleanup(m, locked_vid.value()); // Maybe use RAII
                 }
-                cnt_update++;
-                for (auto& [op, e] : renewed_tuples) Q.emplace(priority(m, op, e), op, e);
+                for (auto& [n_op, e] : renewed_tuples) Q.emplace(priority(m, n_op, e), n_op, e);
             }
 
             if (stop.load(std::memory_order_acquire)) return;

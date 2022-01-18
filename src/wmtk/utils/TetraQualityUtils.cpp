@@ -87,14 +87,14 @@ auto linesearch = [](auto&& energy_from_point,
                      const Eigen::Vector3d& pos,
                      const Eigen::Vector3d& dir,
                      const int& max_iter) {
-    auto lr = 0.8;
+    auto lr = 0.5;
     auto old_energy = energy_from_point(pos);
-    wmtk::logger().trace("dir {}", dir);
+    wmtk::logger().trace("old energy {} dir {}", old_energy, dir.transpose());
     for (auto iter = 1; iter <= max_iter; iter++) {
         Eigen::Vector3d newpos = pos + std::pow(lr, iter) * dir;
-        wmtk::logger().trace("pos {}, dir {}, [{}]", pos, dir, std::pow(lr, iter));
+        wmtk::logger().trace("pos {}, dir {}, [{}]", pos.transpose(), dir.transpose(), std::pow(lr, iter));
         auto new_energy = energy_from_point(newpos);
-        wmtk::logger().trace("iter {}, {}, [{}]", iter, new_energy, newpos);
+        wmtk::logger().trace("iter {}, E= {}, [{}]", iter, new_energy, newpos.transpose());
         if (new_energy < old_energy) return newpos; // TODO: armijo conditions.
     }
     return pos;

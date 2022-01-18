@@ -40,44 +40,6 @@ bool ParallelHarmonicTet::is_inverted(const Tuple& loc)
     return true;
 }
 
-void ParallelHarmonicTet::swap_all_edges_stuff(
-    std::vector<tbb::concurrent_queue<std::tuple<double, wmtk::TetMesh::Tuple>>> queues,
-    std::atomic_int& cnt_suc,
-    int task_id)
-{
-    auto& m = *this;
-    std::tuple<double, wmtk::TetMesh::Tuple> weight_loc;
-    while (queues[task_id].try_pop(weight_loc)) {
-        auto [weight, loc] = weight_loc;
-
-        if (!loc.is_valid(*this)) continue;
-        wmtk::TetMesh::Tuple newt;
-
-        // set_locks
-        std::vector<size_t> mutex_release_stack;
-        if (!try_set_edge_mutex_two_ring(loc, mutex_release_stack)) {
-            queues[task_id].push(weight_loc);
-            continue;
-        }
-
-        if (!swap_edge(loc, newt)) {
-            int num_released = release_vertex_mutex_in_stack(mutex_release_stack);
-            continue;
-        }
-        auto new_edges = std::vector<wmtk::TetMesh::Tuple>();
-        assert(newt.switch_tetrahedron(m));
-        for (auto ti : {newt.tid(m), newt.switch_tetrahedron(m)->tid(m)}) {
-            for (auto j = 0; j < 6; j++) new_edges.push_back(tuple_from_edge(ti, j));
-        }
-        wmtk::unique_edge_tuples(m, new_edges);
-        for (auto& e : new_edges) {
-            queues[m_vertex_partition_id[e.vid(*this)]].emplace(-1., e);
-        }
-        cnt_suc++;
-        int num_released = release_vertex_mutex_in_stack(mutex_release_stack);
-    }
-}
-
 auto renewal = [](const auto& m, const auto& newt) {
     auto new_edges = std::vector<wmtk::TetMesh::Tuple>();
     assert(newt.switch_tetrahedron(m));
