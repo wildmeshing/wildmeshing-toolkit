@@ -40,8 +40,7 @@ public:
     bool smooth(const Tuple& t)
     {
         auto one_ring_edges = get_one_ring_edges_for_vertex(t);
-        if (one_ring_edges.size() == get_vertices().size() - 1) return false;
-        if (one_ring_edges.size() < 3) return false;
+        assert(one_ring_edges.size() = get_vertices().size() - 1);
         Eigen::Vector3d after_smooth(0, 0, 0);
         Eigen::Vector3d after_smooth_boundary(0, 0, 0);
         int boundary = 0;
@@ -105,9 +104,9 @@ public:
 
     bool collapse_qec();
     // get the quadrix in form of an array of 10 floating point numbers
-    std::array<double, 10> compute_Q_f(wmtk::TriMesh::Tuple& t);
+    Eigen::MatrixXd compute_Q_f(wmtk::TriMesh::Tuple& t);
 
-    std::array<double, 10> compute_Q_v(wmtk::TriMesh::Tuple& t);
+    Eigen::MatrixXd compute_Q_v(wmtk::TriMesh::Tuple& t);
 
     double compute_cost_for_v(wmtk::TriMesh::Tuple& v_tuple);
 
