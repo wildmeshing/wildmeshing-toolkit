@@ -222,7 +222,7 @@ void HarmonicTet::swap_all_faces()
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_faces()) collect_all_ops.emplace_back("face_swap", loc);
     executor(*this, collect_all_ops);
-};
+}
 
 bool HarmonicTet::swap_face_before(const Tuple& t)
 {
@@ -313,7 +313,7 @@ void HarmonicTet::swap_all()
     };
     executor.num_threads = NUM_THREADS;
     executor(*this, collect_all_ops);
-};
+}
 
 
 } // namespace harmonic_tet

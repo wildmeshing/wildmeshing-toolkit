@@ -5,7 +5,9 @@
 #include "wmtk/utils/EnergyHarmonicTet.hpp"
 
 // Third-party include
+#include <wmtk/utils/DisableWarnings.hpp>
 #include <CLI/CLI.hpp>
+#include <wmtk/utils/EnableWarnings.hpp>
 
 auto stats = [](auto& har_tet) {
     auto total_e = 0.;
