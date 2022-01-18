@@ -100,7 +100,7 @@ struct ExecutePass
                 {"edge_split",
                  [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
                      std::vector<Tuple> ret;
-                     if (m.collapse_edge(t, ret))
+                     if (m.split_edge(t, ret))
                          return ret;
                      else
                          return {};
@@ -124,32 +124,35 @@ struct ExecutePass
         if constexpr (std::is_base_of<wmtk::TriMesh, AppMesh>::value) {
             edit_operation_maps = {
                 {"edge_collapse",
-                 [](AppMesh& m, Tuple& t) {
+                 [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
                      std::vector<Tuple> ret;
-                     m.collapse_edge(t, ret);
-                     return ret.front();
+                     if (m.collapse_edge(t, ret))
+                         return ret;
+                     else
+                         return {};
                  }},
                 {"edge_swap",
-                 [](AppMesh& m, Tuple& t) {
-                     Tuple ret;
-                     m.swap_edge(t, ret);
-                     return ret;
+                 [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
+                     std::vector<Tuple> ret;
+                     if (m.swap_edge(t, ret))
+                         return ret;
+                     else
+                         return {};
                  }},
                 {"edge_split",
-                 [](AppMesh& m, Tuple& t) {
+                 [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
                      std::vector<Tuple> ret;
-                     m.collapse_edge(t, ret);
-                     return ret.front();
+                     if (m.split_edge(t, ret))
+                         return ret;
+                     else
+                         return {};
                  }},
-                {"edge_swap",
-                 [](AppMesh& m, Tuple& t) {
-                     Tuple ret;
-                     m.swap_edge(t, ret);
-                     return ret;
-                 }},
-                {"vertex_smooth", [](AppMesh& m, Tuple& t) {
-                     m.smooth_vertex(t);
-                     return t;
+                {"vertex_smooth",
+                 [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
+                     if (m.smooth_vertex(t))
+                         return std::vector<Tuple>{};
+                     else
+                         return {};
                  }}};
         }
     };
@@ -200,15 +203,15 @@ public:
                     operation_cleanup(m, locked_vid); // Maybe use RAII
                 }
                 for (auto& e : renewed_elements) Q.emplace(e);
-            }
 
-            if (stop.load(std::memory_order_acquire)) return;
-            if (cnt_update > stopping_criterion_checking_frequency) {
-                if (stopping_criterion(m)) {
-                    stop.store(true);
-                    return;
-                }
-                cnt_update.store(0, std::memory_order_release);
+                if (stop.load(std::memory_order_acquire)) return;
+                if (cnt_update > stopping_criterion_checking_frequency) {
+                    if (stopping_criterion(m)) {
+                        stop.store(true);
+                        return;
+                    }
+                    cnt_update.store(0, std::memory_order_release);
+            }
             }
         };
 

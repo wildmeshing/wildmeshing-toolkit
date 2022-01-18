@@ -112,6 +112,12 @@ public:
          * @return std::array<Tuple, 3> each tuple owns a different vertex.
          */
         std::array<Tuple, 3> oriented_tri_vertices(const TriMesh& m) const;
+        friend bool operator<(const Tuple& a, const Tuple& t)
+        {
+            return (
+                std::tie(a.m_vid, a.m_eid, a.m_fid, a.m_hash) <
+                std::tie(t.m_vid, t.m_eid, t.m_fid, t.m_hash));
+        }
     };
 
     /**
@@ -289,9 +295,10 @@ public:
      * triangle
      * @return if split succeed
      */
-    bool split_edge(const Tuple& t, Tuple& new_t);
-    bool collapse_edge(const Tuple& t, Tuple& new_t);
-    bool swap_edge(const Tuple& t, Tuple& new_t);
+    bool split_edge(const Tuple& t, std::vector<Tuple>& new_t);
+    bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_t);
+    bool swap_edge(const Tuple& t, std::vector<Tuple>& new_t);
+    bool smooth_vertex(const Tuple& t){return true;}
 
     /**
      * @brief Get the one ring tris for a vertex
@@ -316,6 +323,24 @@ public:
      * @return incident vertices
      */
     std::vector<Tuple> oriented_tri_vertices(const Tuple& t) const;
+
+
+    Tuple tuple_from_tri(size_t fid) const
+    {
+        auto vid = m_tri_connectivity[fid][0];
+        return Tuple(vid, 1, fid, *this);
+    }
+    Tuple tuple_from_vertex(size_t vid) const
+    {
+        auto fid = m_vertex_connectivity[vid][0];
+        auto eid = m_tri_connectivity[fid].find(vid);
+        return Tuple(vid, (eid + 1) % 3, fid, *this);
+    }
+    Tuple tuple_from_edge(size_t fid, size_t local_eid) const
+    {
+        auto vid = m_tri_connectivity[fid][(local_eid + 1) % 3];
+        return Tuple(vid, local_eid, fid, *this);
+    }
 };
 
 } // namespace wmtk

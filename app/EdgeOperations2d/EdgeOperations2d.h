@@ -28,9 +28,14 @@ public:
     tbb::concurrent_vector<Eigen::Vector3d> m_vertex_positions;
     tbb::concurrent_vector<size_t> m_vertex_partition_id;
 
+    int NUM_THREADS = 1;
+    int retry_limit = 10;
     EdgeOperations2d(std::vector<Eigen::Vector3d> _m_vertex_positions)
-        : m_vertex_positions(_m_vertex_positions)
-    {}
+    {
+        m_vertex_positions.resize(_m_vertex_positions.size());
+        for (auto i = 0; i < _m_vertex_positions.size(); i++)
+            m_vertex_positions[i] = _m_vertex_positions[i];
+    }
 
     ~EdgeOperations2d() {}
 
@@ -43,14 +48,17 @@ public:
 
     void cache_edge_positions(const Tuple& t)
     {
-        position_cache.v1p = m_vertex_positions[t.vid()];
-        position_cache.v2p = m_vertex_positions[t.switch_vertex(*this).vid()];
+        position_cache.local().v1p = m_vertex_positions[t.vid()];
+        position_cache.local().v2p = m_vertex_positions[t.switch_vertex(*this).vid()];
     }
 
     void update_position_to_edge_midpoint(const Tuple& t)
     {
-        m_vertex_positions[t.vid()] = (position_cache.v1p + position_cache.v2p) / 2.0;
+        m_vertex_positions[t.vid()] =
+            (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
     }
+
+    void partition_mesh() { m_vertex_partition_id = partition_TriMesh(*this, NUM_THREADS); }
 
     bool smooth(const Tuple& t)
     {
@@ -112,7 +120,7 @@ public:
         return true;
     }
 
-    std::vector<TriMesh::Tuple> new_edges_after_collapse_split(const TriMesh::Tuple& t) const;
+    std::vector<TriMesh::Tuple> new_edges_after_collapse_split(const std::vector<TriMesh::Tuple>& t) const;
     std::vector<TriMesh::Tuple> new_edges_after_swap(const TriMesh::Tuple& t) const;
 
     bool collapse_shortest(int target_vertex_count);
@@ -145,7 +153,12 @@ public:
     bool collapse_remeshing(double L);
     bool swap_remeshing();
     bool adaptive_remeshing(double L, int interations);
-    void resize_vertex_attributes(size_t v) override { m_vertex_positions.resize(v); }
+    void resize_vertex_attributes(size_t v) override
+    {
+        ConcurrentTriMesh::resize_vertex_attributes(v);
+        m_vertex_positions.grow_to_at_least(v);
+        m_vertex_partition_id.grow_to_at_least(v);
+    }
 };
 
 class ElementInQueue

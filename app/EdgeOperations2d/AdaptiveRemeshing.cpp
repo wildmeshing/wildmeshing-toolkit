@@ -108,7 +108,7 @@ bool EdgeOperations2d::collapse_remeshing(double L)
             continue;
         }
 
-        TriMesh::Tuple new_vert;
+        std::vector<TriMesh::Tuple> new_vert;
 
         if (!TriMesh::collapse_edge(loc, new_vert)) continue;
         s++;
@@ -136,7 +136,7 @@ bool EdgeOperations2d::split_remeshing(double L)
             continue;
         }
 
-        TriMesh::Tuple new_vert;
+        std::vector<TriMesh::Tuple> new_vert;
 
         if (!TriMesh::split_edge(loc, new_vert)) continue;
         auto new_edges = new_edges_after_collapse_split(new_vert);
@@ -164,13 +164,13 @@ bool EdgeOperations2d::swap_remeshing()
         }
         valence = compute_vertex_valence_ar(loc);
         if (valence < 1e-5) continue;
-        TriMesh::Tuple new_vert;
+        std::vector<TriMesh::Tuple> new_vert;
 
         assert(check_mesh_connectivity_validity());
 
         if (valence > 0) {
             if (!swap_edge(loc, new_vert)) continue;
-            auto new_edges = new_edges_after_swap(new_vert);
+            auto new_edges = new_edges_after_collapse_split(new_vert);
             for (auto new_e : new_edges)
                 e_swap_queue.push(ElementInQueue(new_e, compute_vertex_valence_ar(new_e)));
         } else
