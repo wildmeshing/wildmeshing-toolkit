@@ -3,6 +3,8 @@
 #include "wmtk/TetMesh.h"
 #include "wmtk/TriMesh.h"
 
+// clang-format off
+#include <wmtk/utils/DisableWarnings.hpp>
 #include <tbb/concurrent_priority_queue.h>
 #include <tbb/concurrent_queue.h>
 #include <tbb/parallel_for.h>
@@ -10,6 +12,8 @@
 #include <tbb/spin_mutex.h>
 #include <tbb/task_arena.h>
 #include <tbb/task_group.h>
+#include <wmtk/utils/EnableWarnings.hpp>
+// clang-format on
 
 #include <atomic>
 #include <cassert>

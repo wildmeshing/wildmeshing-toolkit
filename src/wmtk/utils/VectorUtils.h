@@ -13,6 +13,7 @@ template <class T>
 inline std::vector<T> set_intersection(const std::vector<T>& v1, const std::vector<T>& v2)
 {
     std::vector<T> v;
+    v.reserve(std::min(v1.size(), v2.size()));
     std::set_intersection(v1.begin(), v1.end(), v2.begin(), v2.end(), std::back_inserter(v));
     return v;
 }

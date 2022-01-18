@@ -1,4 +1,6 @@
 #include <igl/Timer.h>
+// clang-format off
+#include <wmtk/utils/DisableWarnings.hpp>
 #include <tbb/concurrent_priority_queue.h>
 #include <tbb/concurrent_queue.h>
 #include <tbb/parallel_for.h>
@@ -6,8 +8,10 @@
 #include <tbb/spin_mutex.h>
 #include <tbb/task_arena.h>
 #include <tbb/task_group.h>
-#include <wmtk/ConcurrentTriMesh.h>
-#include <wmtk/utils/VectorUtils.h>
+#include <wmtk/utils/EnableWarnings.hpp>
+// clang-format on
+
+
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <atomic>
