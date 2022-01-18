@@ -40,6 +40,7 @@ public:
     bool smooth(const Tuple& t)
     {
         auto one_ring_edges = get_one_ring_edges_for_vertex(t);
+        if (one_ring_edges.size() == get_vertices().size() - 1) return false;
         if (one_ring_edges.size() < 3) return false;
         Eigen::Vector3d after_smooth(0, 0, 0);
         Eigen::Vector3d after_smooth_boundary(0, 0, 0);
