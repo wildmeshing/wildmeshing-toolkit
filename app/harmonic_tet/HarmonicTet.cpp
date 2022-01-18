@@ -331,7 +331,7 @@ void HarmonicTet::swap_all()
     auto executor = wmtk::ExecutePass<HarmonicTet, wmtk::ExecutionPolicy::kSeq>();
     executor.renew_neighbor_tuples = renewal_all;
 
-    executor.priority = [&swap_3_2, &swap_2_3](auto& m, auto op, const wmtk::TetMesh::Tuple& t)
+    executor.priority = [](auto& m, auto op, const wmtk::TetMesh::Tuple& t)
         -> double { // using delta trace
         if (op == "edge_swap") {
             auto tets = m.get_incident_tets_for_edge(t);
