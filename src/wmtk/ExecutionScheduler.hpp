@@ -38,8 +38,9 @@ struct ExecutePass
     // Renew Neighboring Tuples
     // Right now, use pre-implemented functions to get one edge ring.
     // TODO: Ideally, this depend on both operation and priority criterion.
-    std::function<std::vector<std::pair<Op,Tuple>>(const AppMesh&, Op, const Tuple&)> renew_neighbor_tuples =
-        [](auto&, auto, auto&) -> std::vector<std::pair<Op,Tuple>> { return {}; };
+    std::function<std::vector<std::pair<Op, Tuple>>(const AppMesh&, Op, const Tuple&)>
+        renew_neighbor_tuples =
+            [](auto&, auto, auto&) -> std::vector<std::pair<Op, Tuple>> { return {}; };
 
     // lock vertices: should depend on the operation
     // returns a range of vertices that we need to acquire and lock.
@@ -174,9 +175,11 @@ public:
                 {
                     auto locked_vid =
                         lock_vertices(m, tup); // Note that returning `Tuples` would be invalid.
-                    if (!locked_vid) Q.emplace(ele_in_queue);
-                    auto newtup = edit_operation_maps[op](m, tup);
-                    if (newtup) renewed_tuples = renew_neighbor_tuples(m, op, newtup.value());
+                    if (tup.is_valid(m)) {
+                        if (!locked_vid) Q.emplace(ele_in_queue);
+                        auto newtup = edit_operation_maps[op](m, tup);
+                        if (newtup) renewed_tuples = renew_neighbor_tuples(m, op, newtup.value());
+                    }
                     operation_cleanup(m, locked_vid.value()); // Maybe use RAII
                 }
                 cnt_update++;
