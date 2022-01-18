@@ -147,7 +147,7 @@ struct ExecutePass
     };
 
 private:
-    void operation_cleanup(AppMesh& m, std::vector<size_t>& stack)
+    void operation_cleanup(AppMesh& m, std::optional<std::vector<size_t>>& stack)
     { //
         // class ResourceManger
         // what about RAII mesh edit locking?
@@ -155,7 +155,7 @@ private:
         if constexpr (policy == ExecutionPolicy::kSeq)
             return;
         else {
-            m.release_vertex_mutex_in_stack(stack);
+            if (stack) m.release_vertex_mutex_in_stack(stack.value());
         }
     }
 
@@ -176,8 +176,11 @@ public:
                 {
                     auto locked_vid =
                         lock_vertices(m, tup); // Note that returning `Tuples` would be invalid.
+                    if (!locked_vid) {
+                        Q.emplace(ele_in_queue);
+                        continue;
+                    }
                     if (tup.is_valid(m)) {
-                        if (!locked_vid) Q.emplace(ele_in_queue);
                         auto newtup = edit_operation_maps[op](m, tup);
                         std::vector<std::pair<Op, Tuple>> renewed_tuples;
                         if (newtup) renewed_tuples = renew_neighbor_tuples(m, op, newtup.value());
@@ -186,7 +189,7 @@ public:
                         }
                         cnt_update++;
                     }
-                    operation_cleanup(m, locked_vid.value()); // Maybe use RAII
+                    operation_cleanup(m, locked_vid); // Maybe use RAII
                 }
                 for (auto& e : renewed_elements) Q.emplace(e);
             }

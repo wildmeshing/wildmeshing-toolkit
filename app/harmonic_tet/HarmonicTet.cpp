@@ -175,7 +175,7 @@ void HarmonicTet::swap_all_edges(bool parallel)
         executor.renew_neighbor_tuples = renewal_edges;
         executor.lock_vertices = [](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
             auto stack = std::vector<size_t>();
-            m.try_set_edge_mutex_two_ring(e, stack);
+            if (!m.try_set_edge_mutex_two_ring(e, stack)) return {};
             return stack;
         };
         executor.num_threads = NUM_THREADS;
@@ -308,7 +308,7 @@ void HarmonicTet::swap_all()
     };
     executor.lock_vertices = [](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
         auto stack = std::vector<size_t>();
-        m.try_set_edge_mutex_two_ring(e, stack);
+        if (!m.try_set_edge_mutex_two_ring(e, stack)) return {};
         return stack;
     };
     executor.num_threads = NUM_THREADS;
