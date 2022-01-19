@@ -20,6 +20,7 @@ void wmtk::TetMesh::single_triangle_insertion(
     for (auto& loc : intersected_tets) {
         intersected_tids.push_back(loc.tid(*this));
     }
+
     std::vector<bool> mark_surface(intersected_tids.size(), true);
     std::map<std::array<size_t, 2>, size_t> map_edge2vid;
     int cnt = 0;
@@ -41,6 +42,7 @@ void wmtk::TetMesh::single_triangle_insertion(
     }
     vector_unique(surrounding_tids);
     std::vector<size_t> diff_tids;
+    std::sort(intersected_tids.begin(), intersected_tids.end());
     std::set_difference(
         surrounding_tids.begin(),
         surrounding_tids.end(),
@@ -57,16 +59,26 @@ void wmtk::TetMesh::single_triangle_insertion(
     std::vector<std::array<size_t, 5>> old_face_vids; // vids, tid, l_fid
     for (size_t tid : intersected_tids) {
         for (int j = 0; j < 4; j++) {
+            std::array<int, 3> l_f = {{(j + 1) % 4, (j + 2) % 4, (j + 3) % 4}};
+            std::sort(l_f.begin(), l_f.end());
+            size_t l_fid = std::find(m_local_faces.begin(), m_local_faces.end(), l_f) -
+                           m_local_faces.begin();
+            //
             old_face_vids.push_back(
                 {{m_tet_connectivity[tid][(j + 1) % 4],
                   m_tet_connectivity[tid][(j + 2) % 4],
                   m_tet_connectivity[tid][(j + 3) % 4],
                   tid,
-                  (size_t)j}});
+                  l_fid}});
             std::sort(old_face_vids.back().begin(), old_face_vids.back().begin() + 3);
         }
     }
     // unique old_face_vids
+    std::sort(old_face_vids.begin(),
+              old_face_vids.end(),
+              [](const std::array<size_t, 5>& v1, const std::array<size_t, 5>& v2) {
+                  return std::make_tuple(v1[0], v1[1], v1[2]) < std::make_tuple(v2[0], v2[1], v2[2]);
+              });
     auto it = std::unique(
         old_face_vids.begin(),
         old_face_vids.end(),
@@ -89,8 +101,10 @@ void wmtk::TetMesh::single_triangle_insertion(
 //    for(auto& info: new_face_vids){
 //        auto& vids = info.first;
 //        auto& fs = info.second;
+//        if(vids != std::array<size_t, 3>({{0,0,0}}))
+//            continue;
 //        cout<<"old_tet fs: "<<vids[0]<<" "<<vids[1]<<" "<<vids[2]<<endl;
-//        cout<<"tet fs: ";
+//        cout<<"tet fs: "<<endl;
 //        for(auto f: fs) {
 //            for(int j=0;j<5;j++)
 //                 cout << f[j] << " ";
@@ -118,6 +132,14 @@ void wmtk::TetMesh::single_triangle_insertion(
         int i = it - old_face_vids.begin();//already handled special case here
         assert(i < new_faces.size());
         //
+//        //fortest
+//        if(i==old_face_vids.size()){//todo: buggy
+//            cout<<info.first[0]<<" "<<info.first[1]<<" "<<info.first[2]<<endl;
+//            for (auto& f_info : info.second)
+//                cout<<"f_info "<<f_info[0]<<" "<<f_info[1]<<" "<<f_info[2]<<endl;
+//        }
+//        //fortest
+
         for (auto& f_info : info.second) {
             new_faces[i].push_back(tuple_from_face(f_info[3], f_info[4]));
         }
@@ -167,6 +189,8 @@ void wmtk::TetMesh::subdivide_tets(
 
         bool is_add_centroid; // todo: maybe not necessary
         subdivide_a_tet(t_id, new_v_ids, mark_surface[i], is_add_centroid, new_face_vids);
+        if(is_add_centroid)
+            cout<<"is_add_centroid"<<endl;
     }
 
     /// update conn_tets
@@ -287,7 +311,9 @@ void wmtk::TetMesh::subdivide_a_tet(
     //    cout<<"t_id "<<t_id<<endl;
     //    cout<<"config_id "<<config_id<<endl;
     //    cout<<"config.size() "<<config.size()<<endl;
-    auto old_tet = m_tet_connectivity[t_id];
+    auto old_tet = m_tet_connectivity[t_id].m_indices;
+//    cout<<t_id<<": "<<old_tet[0]<<" "<<old_tet[1]<<" "<<old_tet[2]<<" "<<old_tet[3]<<endl;
+
     for (int i = 0; i < config.size(); i++) {
         const auto& t = config[i];
         TetrahedronConnectivity tet;
@@ -328,6 +354,7 @@ void wmtk::TetMesh::subdivide_a_tet(
                 old_f_vids = {
                     old_tet[(old_j + 1) % 4], old_tet[(old_j + 2) % 4], old_tet[(old_j + 3) % 4]};
                 std::sort(old_f_vids.begin(), old_f_vids.end());
+//                cout<<"old_tet "<<old_tet[j]<<" "<<old_tet[(j + 1) % 4]<<" "<<old_tet[(j + 2) % 4]<<" "<<old_tet[(j + 3) % 4]<<endl;
             }
             //
             if (mark_surface && new_is_surface_fs[i][j]) { // new faces
@@ -356,6 +383,11 @@ void wmtk::TetMesh::subdivide_a_tet(
     }
 
     for (auto& info : new_face_vids) { // erase duplicates <-- must have duplicates
+        std::sort(info.second.begin(),
+                  info.second.end(),
+                  [](const std::array<size_t, 5>& v1, const std::array<size_t, 5>& v2) {
+                      return std::make_tuple(v1[0], v1[1], v1[2]) < std::make_tuple(v2[0], v2[1], v2[2]);
+                  });
         auto it = std::unique(
             info.second.begin(),
             info.second.end(),
