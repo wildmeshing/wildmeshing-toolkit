@@ -279,13 +279,13 @@ public:
      * Split an edge
      *
      * @param t Input Tuple for the edge to split.
-     * @param[out] new_edges a vector of Tuples for all the edges from the newly introduced tetra.
+     * @param[out] new_tets a vector of Tuples for all the newly introduced tetra.
      * @return if split succeed
      */
-    bool split_edge(const Tuple& t, std::vector<Tuple>& new_edges);
-    bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_edges);
-    bool swap_edge(const Tuple& t, Tuple& new_face);
-    bool swap_face(const Tuple& t, Tuple& new_edge);
+    bool split_edge(const Tuple& t, std::vector<Tuple>& new_tets);
+    bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_tets);
+    bool swap_edge(const Tuple& t, std::vector<Tuple>& new_tets);
+    bool swap_face(const Tuple& t, std::vector<Tuple>& new_tets);
     bool smooth_vertex(const Tuple& t);
 
     void single_triangle_insertion(
@@ -318,6 +318,7 @@ private:
     // Stores the connectivity of the mesh
     vector<VertexConnectivity> m_vertex_connectivity;
     vector<TetrahedronConnectivity> m_tet_connectivity;
+
     int m_t_empty_slot = 0;
     int m_v_empty_slot = 0;
     int get_next_empty_slot_t();
@@ -468,6 +469,7 @@ public:
      * @return one-ring vertices
      */
     std::vector<Tuple> get_one_ring_vertices_for_vertex(const Tuple& t) const;
+    std::vector<size_t> get_one_ring_vids_for_vertex(size_t vid) const;
 
     /**
      * @brief Get the incident tets for edge
@@ -485,6 +487,13 @@ public:
      */
     std::vector<Tuple> get_one_ring_tets_for_edge(const Tuple& t) const;
 
+    /**
+    * @brief 
+    * 
+    * @param m 
+    * @return std::vector<std::array<size_t,3>> 
+    */
+    std::vector<std::array<size_t,3>> vertex_adjacent_boundary_faces(const Tuple&t) const;
     /**
      * Positively oriented 4 vertices (represented by Tuples) in a tetra.
      * @return std::array<Tuple, 4> each tuple owns a different vertex.

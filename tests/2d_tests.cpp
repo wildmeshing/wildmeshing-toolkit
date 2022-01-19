@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <catch2/catch.hpp>
 #include <iostream>
+#include "wmtk/ConcurrentTriMesh.h"
 
 using namespace wmtk;
 
@@ -102,7 +103,7 @@ TEST_CASE("test generate tuples with 2 triangle", "[test_tuple_generation]")
 }
 
 // for every quiry do a require
-TEST_CASE("random 10 switches on 2 traingles", "[test_operation]")
+TEST_CASE("random 10 switches on 2 traingles", "[tuple_operation]")
 {
     TriMesh m;
     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 2, 3}}};
@@ -119,6 +120,7 @@ TEST_CASE("random 10 switches on 2 traingles", "[test_operation]")
                 case 0: v_tuple = v_tuple.switch_vertex(m);
                 case 1: v_tuple = v_tuple.switch_edge(m);
                 case 2: v_tuple = v_tuple.switch_face(m).value_or(v_tuple);
+                default:;
                 }
             }
             REQUIRE(v_tuple.is_valid(m));
@@ -136,6 +138,7 @@ TEST_CASE("random 10 switches on 2 traingles", "[test_operation]")
                 case 0: e_tuple = e_tuple.switch_vertex(m);
                 case 1: e_tuple = e_tuple.switch_edge(m);
                 case 2: e_tuple = e_tuple.switch_face(m).value_or(e_tuple);
+                default:;
                 }
             }
             REQUIRE(e_tuple.is_valid(m));
@@ -153,6 +156,7 @@ TEST_CASE("random 10 switches on 2 traingles", "[test_operation]")
                 case 0: f_tuple = f_tuple.switch_vertex(m);
                 case 1: f_tuple = f_tuple.switch_edge(m);
                 case 2: f_tuple = f_tuple.switch_face(m).value_or(f_tuple);
+                default:;
                 }
             }
             REQUIRE(f_tuple.is_valid(m));
@@ -191,7 +195,7 @@ bool tuple_equal(const TriMesh& m, TriMesh::Tuple t1, TriMesh::Tuple t2)
 // (1) t.switch_vertex().switch_vertex() == t
 // (2) t.switch_edge().switch_edge() == t
 // (3) t.switch_tri().switch_tri() == t
-TEST_CASE("double switches is identity", "[test_operation]")
+TEST_CASE("double switches is identity", "[tuple_operation]")
 {
     TriMesh m;
     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 2, 3}}};
@@ -244,7 +248,7 @@ TEST_CASE("double switches is identity", "[test_operation]")
 }
 // check for every t
 // t.switch_vertex().switchedge().switchvertex().switchedge().switchvertex().switchedge() == t
-TEST_CASE("vertex_edge switches equals indentity", "[test_operation]")
+TEST_CASE("vertex_edge switches equals indentity", "[tuple_operation]")
 {
     TriMesh m;
     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 2, 3}}};
@@ -363,7 +367,7 @@ TEST_CASE("edge_collapse", "[test_2d_operation]")
         m.create_mesh(6, tris);
         const auto tuple = NoCollapseMesh::Tuple(1, 0, 0, m);
         REQUIRE(tuple.is_valid(m));
-        TriMesh::Tuple dummy;
+        std::vector<TriMesh::Tuple> dummy;
         REQUIRE_FALSE(m.collapse_edge(tuple, dummy));
         REQUIRE(tuple.is_valid(m));
     }
@@ -379,7 +383,7 @@ TEST_CASE("edge_collapse", "[test_2d_operation]")
         m.create_mesh(6, tris);
         const auto tuple = Collapse::Tuple(1, 0, 0, m);
         REQUIRE(tuple.is_valid(m));
-        TriMesh::Tuple dummy;
+        std::vector<TriMesh::Tuple> dummy;
         REQUIRE(m.collapse_edge(tuple, dummy));
         REQUIRE_FALSE(tuple.is_valid(m));
     }
@@ -406,15 +410,15 @@ TEST_CASE("swap_operation", "[test_2d_operation]")
     {
         TriMesh::Tuple swap_e = TriMesh::Tuple(1, 0, 0, m);
         REQUIRE(swap_e.is_valid(m));
-        TriMesh::Tuple new_e;
+        std::vector<TriMesh::Tuple> new_e;
         REQUIRE(m.swap_edge(swap_e, new_e));
         REQUIRE_FALSE(swap_e.is_valid(m));
-        REQUIRE(new_e.is_valid(m));
+        REQUIRE(new_e.front().is_valid(m));
         REQUIRE(m.vert_capacity() == 8);
         REQUIRE(m.tri_capacity() == 8);
 
         std::vector<size_t> m_indices;
-        for (auto edge : m.get_one_ring_edges_for_vertex(new_e)) {
+        for (auto edge : m.get_one_ring_edges_for_vertex(new_e.front())) {
             m_indices.push_back(edge.vid());
         }
         vector_unique(m_indices);
@@ -425,8 +429,8 @@ TEST_CASE("swap_operation", "[test_2d_operation]")
     {
         TriMesh::Tuple swap_e = TriMesh::Tuple(0, 2, 0, m);
         REQUIRE(swap_e.is_valid(m));
-        TriMesh::Tuple new_e;
-        REQUIRE_FALSE(m.swap_edge(swap_e, new_e));
+        std::vector<TriMesh::Tuple> dummy;
+        REQUIRE_FALSE(m.swap_edge(swap_e, dummy));
     }
     SECTION("swap_on_connected_vertices")
     {
@@ -434,9 +438,9 @@ TEST_CASE("swap_operation", "[test_2d_operation]")
         std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 0, 3}}, {{1, 3, 2}}};
         m2.create_mesh(4, tris);
         TriMesh::Tuple edge(0, 2, 0, m);
-        TriMesh::Tuple new_e;
         assert(edge.is_valid(m));
-        REQUIRE_FALSE(m.swap_edge(edge, new_e));
+        std::vector<TriMesh::Tuple> dummy;
+        REQUIRE_FALSE(m.swap_edge(edge, dummy));
     }
 }
 
@@ -449,9 +453,9 @@ TEST_CASE("split_operation", "[test_2d_operation]")
         m.create_mesh(3, tris);
         auto edges = m.get_edges();
         TriMesh::Tuple edge(0, 1, 0, m);
-        TriMesh::Tuple new_e;
+        std::vector<TriMesh::Tuple> dummy;
         assert(edge.is_valid(m));
-        REQUIRE(m.split_edge(edge, new_e));
+        REQUIRE(m.split_edge(edge, dummy));
         REQUIRE_FALSE(edges[0].is_valid(m));
     }
     SECTION("2_tris_split")
@@ -460,9 +464,9 @@ TEST_CASE("split_operation", "[test_2d_operation]")
         m.create_mesh(4, tris);
         auto edges = m.get_edges();
         TriMesh::Tuple edge(1, 0, 0, m);
-        TriMesh::Tuple new_e;
+        std::vector<TriMesh::Tuple> dummy;
         assert(edge.is_valid(m));
-        REQUIRE(m.split_edge(edge, new_e));
+        REQUIRE(m.split_edge(edge, dummy));
         for (auto e : edges) REQUIRE_FALSE(e.is_valid(m));
     }
 }

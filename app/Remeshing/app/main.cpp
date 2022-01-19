@@ -4,8 +4,9 @@
 #include <wmtk/utils/Logger.hpp>
 
 // Third-party include
+#include <wmtk/utils/DisableWarnings.hpp>
 #include <CLI/CLI.hpp>
-
+#include <wmtk/utils/EnableWarnings.hpp>
 // System include
 #include <iostream>
 

@@ -3,13 +3,13 @@
 #include <wmtk/TetMesh.h>
 
 #include <catch2/catch.hpp>
+#include <wmtk/utils/io.hpp>
 #include "spdlog/common.h"
-
 
 using namespace wmtk;
 using namespace tetwild;
 
-TEST_CASE("edge_splitting", "[test_operation]")
+TEST_CASE("edge_splitting", "[tetwild_operation]")
 {
     Parameters params;
     params.lr = 1 / 10.;
@@ -41,7 +41,7 @@ TEST_CASE("edge_splitting", "[test_operation]")
 }
 
 
-TEST_CASE("edge_collapsing", "[test_operation]")
+TEST_CASE("edge_collapsing", "[tetwild_operation]")
 {
     Parameters params;
     params.lr = 1 / 20.;
@@ -85,4 +85,38 @@ TEST_CASE("edge_collapsing", "[test_operation]")
         }
         return true;
     }());
+}
+
+TEST_CASE("optimize-bunny-tw", "[tetwild_operation][.slow]")
+{
+    MshData msh;
+    msh.load(WMT_DATA_DIR "bunny_tetwild_80.msh");
+    auto vec_attrs = std::vector<VertexAttributes>(msh.get_num_tet_vertices());
+    auto tets = std::vector<std::array<size_t, 4>>(msh.get_num_tets());
+    msh.extract_tet_vertices(
+        [&](size_t i, double x, double y, double z) { vec_attrs[i].m_posf << x, y, z; });
+    msh.extract_tets([&](size_t i, size_t v0, size_t v1, size_t v2, size_t v3) {
+        tets[i] = {{v0, v1, v3, v2}};
+    });
+
+    Parameters params;
+    params.lr = 1 / 10.;
+    params.init(Vector3d(0, 0, 0), Vector3d(1, 1, 1));
+
+    fastEnvelope::FastEnvelope envelope;
+    TetWild tetwild(params, envelope);
+
+    tetwild.init(vec_attrs.size(), tets);
+    std::vector<TetAttributes> tet_attrs(tets.size());
+    tetwild.create_mesh_attributes(vec_attrs, tet_attrs);
+
+    // tetwild.split_all_edges();
+    // logger().info("Split {}"aa, tetwild.cnt_split);
+    tetwild.collapse_all_edges();
+    logger().info("Col {}", tetwild.cnt_collapse);
+    tetwild.swap_all_edges();
+    tetwild.swap_all_faces() ;
+    logger().info("Swp {}", tetwild.cnt_swap);
+
+    tetwild.output_mesh("bunny-tw.msh");
 }

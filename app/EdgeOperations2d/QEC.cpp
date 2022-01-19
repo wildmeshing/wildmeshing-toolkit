@@ -16,24 +16,13 @@ Eigen::MatrixXd compute_Q_f(const EdgeOperations2d& m, const wmtk::TriMesh::Tupl
     Eigen::Vector3d C = m.m_vertex_positions[conn_indices[2].vid()];
 
     Eigen::Vector3d n = ((A - B).cross(C - B)).normalized();
-    double a = n(0);
-    double b = n(1);
-    double c = n(2);
-    double d = -n.dot(B);
+    Eigen::Vector4d p;
+    p(0) = n(0);
+    p(1) = n(1);
+    p(2) = n(2);
+    p(3) = -n.dot(B);
 
-    std::array<double, 10> Q;
-    // a^2, ab, ac, ad, b^2, bc, bd, c^2, cd, d^2,
-    Q[0] = a * a;
-    Q[1] = a * b;
-    Q[2] = a * c;
-    Q[3] = a * d;
-    Q[4] = b * b;
-    Q[5] = b * c;
-    Q[6] = b * d;
-    Q[7] = c * c;
-    Q[8] = c * d;
-    Q[9] = d * d;
-    return Q;
+    return p * p.transpose();
 }
 
 

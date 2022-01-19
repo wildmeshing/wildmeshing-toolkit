@@ -6,7 +6,7 @@
 #include <spdlog/fmt/ostr.h>
 using namespace wmtk;
 
-TEST_CASE("smooth_in_single_tet", "[test_operation]")
+TEST_CASE("smooth_in_single_tet", "[tetwild_operation]")
 {
     using namespace tetwild;
 
@@ -31,7 +31,7 @@ TEST_CASE("smooth_in_single_tet", "[test_operation]")
     REQUIRE(quality == Approx(3.0));
 }
 
-TEST_CASE("smooth_double_tet", "[test_operation]")
+TEST_CASE("smooth_double_tet", "[tetwild_operation]")
 {
     using namespace tetwild;
 

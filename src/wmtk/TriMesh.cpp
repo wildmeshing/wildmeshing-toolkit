@@ -28,6 +28,7 @@ TriMesh::Tuple TriMesh::Tuple::switch_vertex(const TriMesh& m) const
         assert(m_vid == v0 || m_vid == v1);
         loc.m_vid = m_vid == v0 ? v1 : v0;
         break;
+    default:;
     }
     assert(loc.is_valid(m));
 
@@ -55,6 +56,7 @@ TriMesh::Tuple TriMesh::Tuple::switch_edge(const TriMesh& m) const
         assert(m_eid == 0 || m_eid == 1);
         loc.m_eid = m_eid == 0 ? 1 : 0;
         break;
+    default:;
     }
     assert(loc.is_valid(m));
     return loc;
@@ -185,7 +187,7 @@ bool wmtk::TriMesh::check_mesh_connectivity_validity() const
     return true;
 }
 
-bool TriMesh::split_edge(const Tuple& t, Tuple& new_t)
+bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
 {
     if (!split_before(t)) return false;
     // get the vids
@@ -294,7 +296,7 @@ bool TriMesh::split_edge(const Tuple& t, Tuple& new_t)
     size_t new_fid = std::min(fid1, new_fid1);
     if (new_fid2.has_value()) new_fid = std::min(new_fid, new_fid2.value());
     int l = m_tri_connectivity[new_fid].find(new_vid);
-    new_t = Tuple(new_vid, (l + 2) % 3, new_fid, *this);
+    auto new_t = Tuple(new_vid, (l + 2) % 3, new_fid, *this);
     assert(new_t.is_valid(*this));
 
     // roll back if not successful
@@ -309,10 +311,12 @@ bool TriMesh::split_edge(const Tuple& t, Tuple& new_t)
         if (new_fid2.has_value()) m_tri_connectivity[new_fid2.value()].m_is_removed = true;
         return false;
     }
+
+    new_tris = get_one_ring_tris_for_vertex(new_t);
     return true;
 }
 
-bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
+bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
 {
     if (!collapse_before(loc0)) return false;
 
@@ -420,7 +424,7 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
 
     const size_t gfid = m_vertex_connectivity[new_vid].m_conn_tris[0];
     int j = m_tri_connectivity[gfid].find(new_vid);
-    new_t = Tuple(new_vid, (j + 2) % 3, gfid, *this);
+    auto new_t = Tuple(new_vid, (j + 2) % 3, gfid, *this);
     assert(new_t.is_valid(*this));
     if (!collapse_after(new_t)) {
         // if call back check failed roll back
@@ -452,10 +456,12 @@ bool TriMesh::collapse_edge(const Tuple& loc0, Tuple& new_t)
         // by the end the new_t and old t both exist and both valid
         return false;
     }
+
+    new_tris = get_one_ring_tris_for_vertex(new_t);
     return true;
 }
 
-bool TriMesh::swap_edge(const Tuple& t, Tuple& new_t)
+bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
 {
     if (!swap_before(t)) return false;
     if (!t.is_valid(*this)) return false;
@@ -513,7 +519,7 @@ bool TriMesh::swap_edge(const Tuple& t, Tuple& new_t)
     m_vertex_connectivity[vid4].m_conn_tris.push_back(test_fid2.value());
     vector_unique(m_vertex_connectivity[vid4].m_conn_tris);
     // change the tuple to the new edge tuple
-    new_t = init_from_edge(vid4, vid3, test_fid2.value());
+    auto new_t = init_from_edge(vid4, vid3, test_fid2.value());
 
     assert(new_t.switch_vertex(*this).vid() != vid1);
     assert(new_t.switch_vertex(*this).vid() != vid2);
@@ -524,6 +530,8 @@ bool TriMesh::swap_edge(const Tuple& t, Tuple& new_t)
         for (auto old_tri : old_tris) m_tri_connectivity[old_tri.first] = old_tri.second;
         return false;
     }
+
+    new_tris = {new_t, new_t.switch_face(*this).value()};
     return true;
 }
 
@@ -637,16 +645,16 @@ std::vector<wmtk::TriMesh::Tuple> TriMesh::get_one_ring_edges_for_vertex(
     return one_ring_edges;
 }
 
-std::vector<wmtk::TriMesh::Tuple> TriMesh::oriented_tri_vertices(
+std::array<wmtk::TriMesh::Tuple, 3> TriMesh::oriented_tri_vertices(
     const wmtk::TriMesh::Tuple& t) const
 {
-    std::vector<TriMesh::Tuple> incident_verts;
+    std::array<TriMesh::Tuple, 3> incident_verts;
     size_t fid = t.fid();
     auto indices = m_tri_connectivity[fid].m_indices;
 
-    incident_verts.emplace_back(indices[0], 2, fid, *this);
-    incident_verts.emplace_back(indices[1], 0, fid, *this);
-    incident_verts.emplace_back(indices[2], 1, fid, *this);
+    incident_verts[0] = Tuple(indices[0], 2, fid, *this);
+    incident_verts[1] = Tuple(indices[1], 0, fid, *this);
+    incident_verts[2] = Tuple(indices[2], 1, fid, *this);
     return incident_verts;
 }
 

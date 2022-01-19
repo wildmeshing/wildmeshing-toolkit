@@ -44,6 +44,30 @@ bool wmtk::ConcurrentTetMesh::try_set_vertex_mutex_two_ring(
     return true;
 }
 
+bool wmtk::ConcurrentTetMesh::try_set_vertex_mutex_two_ring_vid(
+    const Tuple& v,
+    std::vector<size_t>& mutex_release_stack)
+{
+    for (auto v_one_ring : get_one_ring_vids_for_vertex(v.vid(*this))) {
+        if (vector_contains(mutex_release_stack, v_one_ring)) continue;
+        if (try_set_vertex_mutex(v_one_ring)) {
+            mutex_release_stack.push_back(v_one_ring);
+            for (auto v_two_ring : get_one_ring_vids_for_vertex(v_one_ring)) {
+                if (vector_contains(mutex_release_stack, v_two_ring)) continue;
+                if (try_set_vertex_mutex(v_two_ring)) {
+                    mutex_release_stack.push_back(v_two_ring);
+                } else {
+                    return false;
+                }
+            }
+        } else {
+            return false;
+        }
+    }
+    return true;
+}
+
+
 bool wmtk::ConcurrentTetMesh::try_set_edge_mutex_two_ring(
     const Tuple& e,
     std::vector<size_t>& mutex_release_stack)
@@ -83,7 +107,7 @@ bool wmtk::ConcurrentTetMesh::try_set_edge_mutex_two_ring(
     }
 
     // try v1 two ring
-    release_flag = !try_set_vertex_mutex_two_ring(v1, mutex_release_stack);
+    release_flag = !try_set_vertex_mutex_two_ring_vid(v1, mutex_release_stack);
 
     if (release_flag) {
         release_vertex_mutex_in_stack(mutex_release_stack);
@@ -91,7 +115,7 @@ bool wmtk::ConcurrentTetMesh::try_set_edge_mutex_two_ring(
     }
 
     // try v2 two ring
-    release_flag = !try_set_vertex_mutex_two_ring(v2, mutex_release_stack);
+    release_flag = !try_set_vertex_mutex_two_ring_vid(v2, mutex_release_stack);
 
     if (release_flag) {
         release_vertex_mutex_in_stack(mutex_release_stack);

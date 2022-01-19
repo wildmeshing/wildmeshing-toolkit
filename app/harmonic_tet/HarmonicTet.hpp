@@ -47,8 +47,13 @@ public:
         ConcurrentTetMesh::resize_vertex_attributes(v);
         m_vertex_attribute.grow_to_at_least(v);
         m_vertex_partition_id.grow_to_at_least(v);
+        m_vertex_attribute.resize(v);
     }
-    void resize_tet_attributes(size_t t) override { m_tet_attribute.grow_to_at_least(t); }
+    void resize_tet_attributes(size_t t) override
+    {
+        m_tet_attribute.grow_to_at_least(t);
+        m_tet_attribute.resize(t);
+    }
 
     void move_tet_attribute(size_t from, size_t to) override
     {
@@ -71,7 +76,7 @@ public:
     };
     tbb::enumerable_thread_specific<SwapInfoCache> edgeswap_cache, faceswap_cache;
 
-    void smooth_all_vertices();
+    void smooth_all_vertices(bool interior_only = false);
     bool smooth_after(const Tuple& t) override;
 
     void swap_all_edges(bool parallel = false);
