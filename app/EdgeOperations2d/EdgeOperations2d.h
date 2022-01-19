@@ -38,11 +38,12 @@ public:
             m_vertex_positions[i] = _m_vertex_positions[i];
     }
 
-    void create_mesh(size_t n_vertices, const std::vector<std::array<size_t, 3>>& tris) {
+    void create_mesh(size_t n_vertices, const std::vector<std::array<size_t, 3>>& tris)
+    {
         wmtk::ConcurrentTriMesh::create_mesh(n_vertices, tris);
         partition_mesh();
     }
-    
+
 
     ~EdgeOperations2d() {}
 
@@ -67,7 +68,7 @@ public:
 
     void partition_mesh() { m_vertex_partition_id = partition_TriMesh(*this, NUM_THREADS); }
 
-    bool smooth(const Tuple& t)
+    Eigen::Vector3d smooth(const Tuple& t)
     {
         auto one_ring_edges = get_one_ring_edges_for_vertex(t);
         Eigen::Vector3d after_smooth(0, 0, 0);
@@ -77,15 +78,20 @@ public:
             if (is_boundary_edge(e)) {
                 after_smooth_boundary += m_vertex_positions[e.vid()];
                 boundary++;
+                continue;
             }
             after_smooth += m_vertex_positions[e.vid()];
         }
+
         if (boundary)
-            m_vertex_positions[t.vid()] = after_smooth_boundary / boundary;
+            after_smooth = after_smooth_boundary / boundary;
         else
-            m_vertex_positions[t.vid()] = after_smooth / one_ring_edges.size();
-        return true;
+            after_smooth /= one_ring_edges.size();
+        return after_smooth;
     }
+
+
+    Eigen::Vector3d tangential_smooth(const Tuple& t);
 
     void move_vertex_attribute(size_t from, size_t to) override
     {
@@ -133,9 +139,9 @@ public:
 
     bool collapse_qec();
     // get the quadrix in form of an array of 10 floating point numbers
-    std::array<double, 10> compute_Q_f(wmtk::TriMesh::Tuple& t);
+    Eigen::MatrixXd compute_Q_f(wmtk::TriMesh::Tuple& t);
 
-    std::array<double, 10> compute_Q_v(wmtk::TriMesh::Tuple& t);
+    Eigen::MatrixXd compute_Q_v(wmtk::TriMesh::Tuple& t);
 
     double compute_cost_for_v(wmtk::TriMesh::Tuple& v_tuple);
 
@@ -158,7 +164,7 @@ public:
     bool split_remeshing(double L);
     bool collapse_remeshing(double L);
     bool swap_remeshing();
-    bool adaptive_remeshing(double L, int interations);
+    bool adaptive_remeshing(double L, int interations, int sm);
     void resize_vertex_attributes(size_t v) override
     {
         ConcurrentTriMesh::resize_vertex_attributes(v);

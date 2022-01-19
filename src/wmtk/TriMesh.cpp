@@ -645,16 +645,16 @@ std::vector<wmtk::TriMesh::Tuple> TriMesh::get_one_ring_edges_for_vertex(
     return one_ring_edges;
 }
 
-std::vector<wmtk::TriMesh::Tuple> TriMesh::oriented_tri_vertices(
+std::array<wmtk::TriMesh::Tuple, 3> TriMesh::oriented_tri_vertices(
     const wmtk::TriMesh::Tuple& t) const
 {
-    std::vector<TriMesh::Tuple> incident_verts;
+    std::array<TriMesh::Tuple, 3> incident_verts;
     size_t fid = t.fid();
     auto indices = m_tri_connectivity[fid].m_indices;
 
-    incident_verts.emplace_back(indices[0], 2, fid, *this);
-    incident_verts.emplace_back(indices[1], 0, fid, *this);
-    incident_verts.emplace_back(indices[2], 1, fid, *this);
+    incident_verts[0] = Tuple(indices[0], 2, fid, *this);
+    incident_verts[1] = Tuple(indices[1], 0, fid, *this);
+    incident_verts[2] = Tuple(indices[2], 1, fid, *this);
     return incident_verts;
 }
 

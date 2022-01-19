@@ -102,15 +102,15 @@ std::vector<TriMesh::Tuple> Edge2d::EdgeOperations2d::new_edges_after_swap(
 
 bool EdgeOperations2d::collapse_remeshing(double L)
 {
-     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
+    auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_collapse", loc);
 
     auto executor = wmtk::ExecutePass<EdgeOperations2d, ExecutionPolicy::kSeq>();
     executor.renew_neighbor_tuples = renew;
-    executor.priority = [&](auto& m, auto _, auto& e) {
+    executor.priority = [&L](auto& m, auto _, auto& e) {
         return -m.compute_edge_cost_collapse_ar(e, L);
     };
-    executor.should_process =[](auto& m, auto&ele){
+    executor.should_process = [](auto& m, auto& ele) {
         auto& [val, op, e] = ele;
         if (val > 0) return false; // priority is negated.
         return true;
@@ -121,7 +121,6 @@ bool EdgeOperations2d::collapse_remeshing(double L)
 }
 bool EdgeOperations2d::split_remeshing(double L)
 {
-
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_split", loc);
 
@@ -130,7 +129,7 @@ bool EdgeOperations2d::split_remeshing(double L)
     executor.priority = [&](auto& m, auto _, auto& e) {
         return m.compute_edge_cost_split_ar(e, L);
     };
-     executor.should_process =[](auto& m, auto&ele){
+    executor.should_process = [](auto& m, auto& ele) {
         auto& [val, op, e] = ele;
         if (val < 0) return false;
         return true;
@@ -160,8 +159,55 @@ bool EdgeOperations2d::swap_remeshing()
     executor(*this, collect_all_ops);
     return true;
 }
+double area(EdgeOperations2d& m, std::array<TriMesh::Tuple, 3>& verts)
+{
+    return ((m.m_vertex_positions[verts[0].vid()] - m.m_vertex_positions[verts[2].vid()])
+                .cross(m.m_vertex_positions[verts[1].vid()] - m.m_vertex_positions[verts[2].vid()]))
+               .norm() /
+           2.0;
+};
 
-bool EdgeOperations2d::adaptive_remeshing(double L, int iterations)
+Eigen::Vector3d normal(EdgeOperations2d& m, std::array<TriMesh::Tuple, 3>& verts)
+{
+    return ((m.m_vertex_positions[verts[0].vid()] - m.m_vertex_positions[verts[2].vid()])
+                .cross(m.m_vertex_positions[verts[1].vid()] - m.m_vertex_positions[verts[2].vid()]))
+        .normalized();
+}
+
+Eigen::Vector3d EdgeOperations2d::tangential_smooth(const Tuple& t)
+{
+    auto one_ring_tris = get_one_ring_tris_for_vertex(t);
+    Eigen::Vector3d after_smooth = smooth(t);
+    // get normal and area of each face
+    auto area = [](auto& m, auto& verts) {
+        return ((m.m_vertex_positions[verts[0].vid()] - m.m_vertex_positions[verts[2].vid()])
+                    .cross(
+                        m.m_vertex_positions[verts[1].vid()] -
+                        m.m_vertex_positions[verts[2].vid()]))
+                   .norm() /
+               2.0;
+    };
+    auto normal = [](auto& m, auto& verts) {
+        return ((m.m_vertex_positions[verts[0].vid()] - m.m_vertex_positions[verts[2].vid()])
+                    .cross(
+                        m.m_vertex_positions[verts[1].vid()] -
+                        m.m_vertex_positions[verts[2].vid()]))
+            .normalized();
+    };
+    auto w0 = 0.0;
+    Eigen::Vector3d n0(0.0, 0.0, 0.0);
+    for (auto& e : one_ring_tris) {
+        auto verts = oriented_tri_vertices(e);
+        w0 += area(*this, verts);
+        n0 += area(*this, verts) * normal(*this, verts);
+    }
+    n0 /= w0;
+    after_smooth += n0 * n0.transpose() * (m_vertex_positions[t.vid()] - after_smooth);
+    return after_smooth;
+}
+
+
+bool EdgeOperations2d::adaptive_remeshing(double L, int iterations, int sm)
 {
     std::vector<double> avg_lens;
     std::vector<double> avg_valens;
@@ -177,16 +223,16 @@ bool EdgeOperations2d::adaptive_remeshing(double L, int iterations)
 
         // split
         split_remeshing(L);
-
         // collpase
         collapse_remeshing(L);
-
         // swap edges
         swap_remeshing();
-
         // smoothing
         auto vertices = get_vertices();
-        for (auto& loc : vertices) smooth(loc);
+        if (sm == 0) {
+            for (auto& loc : vertices) m_vertex_positions[loc.vid()] = smooth(loc);
+        } else
+            for (auto& loc : vertices) m_vertex_positions[loc.vid()] = tangential_smooth(loc);
 
         assert(check_mesh_connectivity_validity());
         consolidate_mesh();
