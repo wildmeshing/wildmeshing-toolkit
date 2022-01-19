@@ -293,8 +293,7 @@ TEST_CASE("adaptive_remeshing", "[test_2d_operations][.]")
     EdgeOperations2d m(v);
     m.create_mesh(V.rows(), tri);
     REQUIRE(m.check_mesh_connectivity_validity());
-    REQUIRE(m.adaptive_remeshing(0.01, 5));
-    m.write_triangle_mesh("circle_remeshed.obj");
+    REQUIRE(m.adaptive_remeshing(0.01, 5, 1));
 }
 
 TEST_CASE("split_each_edge", "[test_2d_operations]")
@@ -308,5 +307,5 @@ TEST_CASE("split_each_edge", "[test_2d_operations]")
     EdgeOperations2d m(v_positions);
     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}};
     m.create_mesh(3, tris);
-    m.adaptive_remeshing(0.1, 5);
+    m.adaptive_remeshing(0.1, 5, 1);
 }
