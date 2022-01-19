@@ -102,7 +102,7 @@ void tetwild::TetWild::construct_background_mesh(const InputSurface& input_surfa
         for (int j = 0; j < 3; j++) points[i][j] = vertices[i][j];
     }
     ///box
-    double delta = m_params.diag_l / 5.0;
+    double delta = m_params.diag_l / 10.0;
     Vector3d box_min(m_params.min[0] - delta, m_params.min[1] - delta, m_params.min[2] - delta);
     Vector3d box_max(m_params.max[0] + delta, m_params.max[1] + delta, m_params.max[2] + delta);
     double Nx = std::max(2, int((box_max[0] - box_min[0]) / delta));
@@ -229,7 +229,7 @@ void tetwild::TetWild::triangle_insertion_after(
             tet_face_tags[f] = tags;
         }
 
-        if (i <= triangle_insertion_cache.old_face_vids.size())
+        if (i < triangle_insertion_cache.old_face_vids.size())
             tet_face_tags.erase(triangle_insertion_cache.old_face_vids[i]);
         // add new add erase old tag
     }
