@@ -138,12 +138,6 @@ public:
     bool collapse_shortest(int target_vertex_count);
 
     bool collapse_qec();
-    // get the quadrix in form of an array of 10 floating point numbers
-    Eigen::MatrixXd compute_Q_f(wmtk::TriMesh::Tuple& t);
-
-    Eigen::MatrixXd compute_Q_v(wmtk::TriMesh::Tuple& t);
-
-    double compute_cost_for_v(wmtk::TriMesh::Tuple& v_tuple);
 
     bool split_before(const Tuple& t) override
     {
@@ -160,7 +154,7 @@ public:
     double compute_edge_cost_collapse_ar(const TriMesh::Tuple& t, double L) const;
     double compute_edge_cost_split_ar(const TriMesh::Tuple& t, double L) const;
     double compute_vertex_valence_ar(const TriMesh::Tuple& t) const;
-    std::pair<double, double> average_len_valen();
+    auto average_len_valen();
     bool split_remeshing(double L);
     bool collapse_remeshing(double L);
     bool swap_remeshing();

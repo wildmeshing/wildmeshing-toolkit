@@ -67,24 +67,33 @@ double EdgeOperations2d::compute_vertex_valence_ar(const TriMesh::Tuple& t) cons
     return (cost_before_swap - cost_after_swap);
 }
 
-std::pair<double, double> EdgeOperations2d::average_len_valen()
+auto EdgeOperations2d::average_len_valen()
 {
     double average_len = 0.0;
     double average_valen = 0.0;
     auto edges = get_edges();
     auto verts = get_vertices();
+    double maxlen, maxval = std::numeric_limits<double>::min();
+    double minlen, minval = std::numeric_limits<double>::max();
     for (auto& loc : edges) {
-        average_len +=
+        double currentlen =
             (m_vertex_positions[loc.vid()] - m_vertex_positions[loc.switch_vertex(*this).vid()])
                 .norm();
+        average_len += currentlen;
+        if (maxlen < currentlen) maxlen = currentlen;
+        if (minlen > currentlen) minlen = currentlen;
     }
     average_len /= edges.size();
     for (auto& loc : verts) {
-        average_valen += get_one_ring_edges_for_vertex(loc).size();
+        double currentval = get_one_ring_edges_for_vertex(loc).size();
+        average_valen += currentval;
+        if (maxval < currentval) maxval = currentval;
+        if (minval > currentval) minval = currentval;
     }
     average_valen /= verts.size();
     int cnt = 0;
-    return std::make_pair(average_len, average_valen);
+    std::vector<double> rtn{average_len, maxlen, minlen, average_valen, maxval, minval};
+    return rtn;
 }
 
 std::vector<TriMesh::Tuple> Edge2d::EdgeOperations2d::new_edges_after_swap(
@@ -209,17 +218,21 @@ Eigen::Vector3d EdgeOperations2d::tangential_smooth(const Tuple& t)
 
 bool EdgeOperations2d::adaptive_remeshing(double L, int iterations, int sm)
 {
-    std::vector<double> avg_lens;
-    std::vector<double> avg_valens;
+    std::vector<double> avg_lens, max_lens, min_lens;
+    std::vector<double> avg_valens, max_vals, min_vals;
     int cnt = 0;
-    auto average = average_len_valen();
-    while ((average.first - L) * (average.first - L) > 1e-8 && cnt < iterations) {
-        wmtk::logger().set_level(spdlog::level::trace);
-        wmtk::logger().debug(" on iteration {}", cnt);
+    auto properties = average_len_valen();
+    while ((properties[0] - L) * (properties[0] - L) > 1e-8 && cnt < iterations) {
+        // wmtk::logger().set_level(spdlog::level::trace);
+        // wmtk::logger().debug(" on iteration {}", cnt);
         cnt++;
-        wmtk::logger().debug(" average length is {} {}", average.first, average.second);
-        avg_lens.push_back(average.first);
-        avg_valens.push_back(average.second);
+        // wmtk::logger().info(" average length is {} {}", properties[0], properties[3]);
+        avg_lens.push_back(properties[0]);
+        avg_valens.push_back(properties[3]);
+        max_lens.push_back(properties[1]);
+        max_vals.push_back(properties[4]);
+        min_lens.push_back(properties[2]);
+        min_vals.push_back(properties[5]);
 
         // split
         split_remeshing(L);
@@ -236,9 +249,21 @@ bool EdgeOperations2d::adaptive_remeshing(double L, int iterations, int sm)
 
         assert(check_mesh_connectivity_validity());
         consolidate_mesh();
-        average = average_len_valen();
+        properties = average_len_valen();
     }
+    wmtk::logger().info("avg edge len after each remesh is: ");
     wmtk::vector_print(avg_lens);
+    wmtk::logger().info("max edge len after each remesh is: ");
+    wmtk::vector_print(max_lens);
+    wmtk::logger().info("min edge len after each remesh is: ");
+    wmtk::vector_print(min_lens);
 
+
+    wmtk::logger().info("avg valence after each remesh is: ");
+    wmtk::vector_print(avg_valens);
+    wmtk::logger().info("max valence after each remesh is: ");
+    wmtk::vector_print(max_vals);
+    wmtk::logger().info("min valence after each remesh is: ");
+    wmtk::vector_print(min_vals);
     return true;
 }

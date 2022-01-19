@@ -8,6 +8,8 @@
 using namespace wmtk;
 
 using namespace Edge2d;
+#include <chrono>
+using namespace std::chrono;
 
 // extern "C" size_t getPeakRSS();
 int main(int argc, char** argv)
@@ -17,6 +19,7 @@ int main(int argc, char** argv)
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     bool ok = igl::read_triangle_mesh(path, V, F);
+    wmtk::logger().info("Before_vertices#: {} \n Before_tris#: {}", V.rows(), F.rows());
 
     std::vector<Eigen::Vector3d> v(V.rows());
     std::vector<std::array<size_t, 3>> tri(F.rows());
@@ -29,17 +32,19 @@ int main(int argc, char** argv)
     EdgeOperations2d m(v);
     m.create_mesh(V.rows(), tri);
     assert(m.check_mesh_connectivity_validity());
+
+    auto start = high_resolution_clock::now();
     m.adaptive_remeshing(std::stod(argv[2]), std::stod(argv[3]), std::stoi(argv[5]));
+    auto stop = high_resolution_clock::now();
+    auto duration = duration_cast<milliseconds>(stop - start);
+    wmtk::logger().info("runtime {}", duration.count());
     m.write_triangle_mesh(argv[4]);
-    wmtk::logger().info("peak_memory {}", getPeakRSS() / (1024 * 1024));
-    // std::string filename = std::filesystem::path(input_file).filename().string();
-    // if (log_dir != "") {
-    //     auto file_logger =
-    //         spdlog::basic_logger_mt("remesh", log_dir + "/" + filename + suffix + ".log");
-    //     logger().set_default_logger(file_logger);
-    // }
-    // logger().flush_on(spdlog::level::info);
-    // logger().info("{}", 1);
-    //j["peak_memory"] = getPeakRSS() / (1024 * 1024);
+    wmtk::logger().info("peak_memory {}", getCurrentRSS() / (1024 * 1024));
+    wmtk::logger().info(
+        "After_vertices#: {} \n After_tris#: {}",
+        m.vert_capacity(),
+        m.tri_capacity());
+
+
     return 0;
 }
