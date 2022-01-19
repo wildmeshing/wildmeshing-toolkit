@@ -189,8 +189,9 @@ void wmtk::TetMesh::subdivide_tets(
 
         bool is_add_centroid; // todo: maybe not necessary
         subdivide_a_tet(t_id, new_v_ids, mark_surface[i], is_add_centroid, new_face_vids);
-        if(is_add_centroid)
-            cout<<"is_add_centroid"<<endl;
+        if(is_add_centroid && mark_surface[i])
+            cout<<"is_add_centroid && mark_surface[i]!!!"<<endl;
+        assert(!(is_add_centroid && mark_surface[i]));
     }
 
     /// update conn_tets

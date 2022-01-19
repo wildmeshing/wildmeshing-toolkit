@@ -439,13 +439,25 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
             return false;
         };
         while (!tet_queue.empty()) {
+            auto add_onering_tets_of_tet = [&](std::array<Tuple, 4>& vs){
+                for(auto& v: vs){
+                    auto tets = get_one_ring_tets_for_vertex(v);
+                    for(auto& t: tets){
+                        if(is_visited[t.tid(*this)])
+                            continue;
+                        is_visited[t.tid(*this)] = true;
+                        tet_queue.push(t);
+                    }
+                }
+            };
+
             auto tet = tet_queue.front();
             tet_queue.pop();
 
             /// check vertices position
             int cnt_pos = 0;
             int cnt_neg = 0;
-//            std::vector<size_t> coplanar_f;
+            std::map<size_t, int> vertex_sides;
             std::vector<int> coplanar_f_lvids;
             auto vs = oriented_tet_vertices(tet);
             std::array<size_t, 4> vertex_vids;
@@ -455,11 +467,14 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
                 auto side = dir.dot(tri_normal);
                 if (side > 0) {
                     cnt_pos++;
+                    vertex_sides[vertex_vids[j]] = 1;
                 } else if (side < 0) {
                     cnt_neg++;
+                    vertex_sides[vertex_vids[j]] = -1;
                 } else {
 //                    coplanar_f.push_back(vertex_vids[j]);
                     coplanar_f_lvids.push_back(j);
+                    vertex_sides[vertex_vids[j]] = 0;
                 }
             }
             //
@@ -470,11 +485,13 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
                     wmtk::project_point_to_2d(m_vertex_attribute[vid].m_pos, squeeze_to_2d_dir);
                 bool is_inside = wmtk::is_point_inside_triangle(p, tri2);
                 //
-                auto conn_tets = get_one_ring_tets_for_vertex(vs[lvid]);
-                for (auto& t : conn_tets) {
-                    if (is_visited[t.tid(*this)]) continue;
-                    is_visited[t.tid(*this)] = true;
-                    tet_queue.push(t);
+                if(is_inside) {
+                    auto conn_tets = get_one_ring_tets_for_vertex(vs[lvid]);
+                    for (auto& t : conn_tets) {
+                        if (is_visited[t.tid(*this)]) continue;
+                        is_visited[t.tid(*this)] = true;
+                        tet_queue.push(t);
+                    }
                 }
             } else if (coplanar_f_lvids.size() == 2) {
                 std::array<Vector2, 2> seg2;
@@ -524,7 +541,6 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
             if(cnt_pos == 0 || cnt_neg == 0) {
                 continue;
             }
-
 
             /// check edges
             std::array<Tuple, 6> edges = tet_edges(tet);
@@ -593,6 +609,8 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
             bool need_subdivision = false;
             for (int l_eid = 0; l_eid < edges.size(); l_eid++) {
                 const std::array<size_t, 2>& e = edge_vids[l_eid];
+                if(vertex_sides[e[0]] * vertex_sides[e[1]] >= 0)
+                    continue;
 
                 if (map_edge2point.count(e)) {
                     if (std::get<0>(map_edge2point[e]) == TRI_INTERSECTION) need_subdivision = true;
@@ -632,8 +650,7 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
                     wmtk::open_segment_plane_intersection_3d(seg, tri, p, is_inside_tri);
                 if (is_intersected_plane && is_inside_tri) {
                     intersection_status = TRI_INTERSECTION;
-                }
-                if (is_intersected_plane) {
+                } else if (is_intersected_plane) {
                     intersection_status = PLN_INTERSECTION;
                 }
                 //                }
@@ -646,12 +663,14 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
                 }
 
                 // add new tets
-                auto incident_tets = get_incident_tets_for_edge(edges[l_eid]);
-                for (auto& t : incident_tets) {
-                    int tid = t.tid(*this);
-                    if (is_visited[tid]) continue;
-                    tet_queue.push(t);
-                    is_visited[tid] = true;
+                if(need_subdivision) {
+                    auto incident_tets = get_incident_tets_for_edge(edges[l_eid]);
+                    for (auto& t : incident_tets) {
+                        int tid = t.tid(*this);
+                        if (is_visited[tid]) continue;
+                        tet_queue.push(t);
+                        is_visited[tid] = true;
+                    }
                 }
             }
 
@@ -667,6 +686,19 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
 
                 for (int j = 0; j < 4; j++) { // for each tet face
                     auto vs = get_face_vertices(tet);
+
+                    {
+                        int cnt_pos1 = 0;
+                        int cnt_neg1 = 0;
+                        for (int k = 0; k < 3; k++) {
+                            if (vertex_sides[vs[k].vid(*this)] > 0)
+                                cnt_pos1++;
+                            else if (vertex_sides[vs[k].vid(*this)] < 0)
+                                cnt_neg1++;
+                        }
+                        if (cnt_pos1 == 0 || cnt_neg1 == 0) continue;
+                    }
+
                     std::array<Vector3, 3> tet_tri = {{
                         m_vertex_attribute[vs[0].vid(*this)].m_pos,
                         m_vertex_attribute[vs[1].vid(*this)].m_pos,
@@ -680,7 +712,7 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
                         is_intersected =
                             wmtk::open_segment_triangle_intersection_3d(input_seg, tet_tri, p);
                         if (is_intersected) {
-                            need_subdivision = true;//todo: can be recorded
+                            need_subdivision = true; // todo: can be recorded
                             break;
                         }
                     }
