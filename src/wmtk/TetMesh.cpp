@@ -405,9 +405,9 @@ std::vector<std::array<size_t, 3>> wmtk::TetMesh::vertex_adjacent_boundary_faces
     for (auto t : m_vertex_connectivity[v].m_conn_tets) {
         auto& tet = m_tet_connectivity[t];
         for (auto j = 0; j < 4; j++) {
-            auto tup = this->tuple_from_face(t, j);
+            auto ft = this->tuple_from_face(t, j);
             if (tet[m_map_vertex2oppo_face[j]] == v) continue;
-            if (!this->switch_tetrahedron(tup)) { // boundary
+            if (!this->switch_tetrahedron(ft)) { // boundary
                 auto f = m_local_faces[j];
                 logger().trace(">>f {}", f);
                 auto face = std::array<size_t, 3>{{tet[f[0]], tet[f[1]], tet[f[2]]}};
@@ -418,5 +418,5 @@ std::vector<std::array<size_t, 3>> wmtk::TetMesh::vertex_adjacent_boundary_faces
         }
     }
     std::sort(result_faces.begin(), result_faces.end());
-    return std::move(result_faces);
+    return result_faces;
 }
