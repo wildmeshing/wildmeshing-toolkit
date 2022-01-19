@@ -332,13 +332,22 @@ void wmtk::TetMesh::subdivide_a_tet(
             //
             if (mark_surface && new_is_surface_fs[i][j]) { // new faces
                 old_f_vids = {0, 0, 0}; // get empty old face map to new faces
+//                cout<<"config "<<config_bits.count()<<" "<<config_id<<endl;
+//                cout<<"t_id "<<t_id<<endl;
+//                cout<<tet[j]<<" "<<tet[(j + 1) % 4]<<" "<<tet[(j + 2) % 4]<<" "<<tet[(j + 3) % 4]<<endl;
             }
 
             if(!old_f_vids.empty()) {
+                std::array<int, 3> l_f = {{(j + 1) % 4, (j + 2) % 4, (j + 3) % 4}};
+                std::sort(l_f.begin(), l_f.end());
+                size_t l_fid = std::find(m_local_faces.begin(), m_local_faces.end(), l_f) -
+                               m_local_faces.begin();//note tuple_from_face use the l_fid corresponds to m_local_faces
+                //
                 std::array<size_t, 5> new_f_vids = {
-                    {tet[(j + 1) % 4], tet[(j + 2) % 4], tet[(j + 3) % 4], new_t_id, (size_t)j}};
+                    {tet[(j + 1) % 4], tet[(j + 2) % 4], tet[(j + 3) % 4], new_t_id, l_fid}};
                 std::sort(new_f_vids.begin(), new_f_vids.begin() + 3);
-                new_face_vids[{{old_f_vids[0], old_f_vids[1], old_f_vids[2]}}].push_back(new_f_vids);
+                new_face_vids[{{old_f_vids[0], old_f_vids[1], old_f_vids[2]}}].push_back(
+                    new_f_vids);
             }
 
             // note: new face_id has higher priority than old ones

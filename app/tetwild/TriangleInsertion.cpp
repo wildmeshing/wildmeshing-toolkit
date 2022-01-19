@@ -233,16 +233,39 @@ void tetwild::TetWild::triangle_insertion_after(
         // add new add erase old tag
     }
 
-//    for(auto& info: triangle_insertion_cache.tet_face_tags) {
-//        auto& vids = info.first;
-//        auto& fids = info.second;
-//        cout<<vids[0]<<" "<<vids[1]<<" "<<vids[2]<<": ";
-//        for(int fid: fids)
-//            cout<<fid<<" ";
-//        cout<<endl;
-//    }
-//    cout<<"after"<<endl;
-//    pausee();
+    //fortest
+    const auto& vertices = triangle_insertion_cache.input_surface.vertices;
+    const auto& faces = triangle_insertion_cache.input_surface.faces;
+    for(auto& info: triangle_insertion_cache.tet_face_tags) {
+        auto& vids = info.first;
+        auto& fids = info.second;
+        cout<<vids[0]<<" "<<vids[1]<<" "<<vids[2]<<": ";
+        for(int fid: fids)
+            cout<<fid<<" ";
+        cout<<endl;
+
+        for(int fid: fids){
+            std::array<Vector3, 3> tri = {
+                {to_rational(vertices[faces[fid][0]]),
+                 to_rational(vertices[faces[fid][1]]),
+                 to_rational(vertices[faces[fid][2]])}};
+            Vector3 tri_normal = (tri[1]-tri[0]).cross(tri[2]-tri[0]);
+            for(int j=0;j<3;j++){
+                Vector3 v = m_vertex_attribute[vids[j]].m_pos-tri[0];
+                if(v.dot(tri_normal)!=0){
+                    cout<<"not coplanar!!!"<<endl;
+                    cout<<"tet v "<<vids[j]<<", "<<"face "<<fid<<" ("
+                         <<faces[fid][0]<<" "
+                         <<faces[fid][1]<<" "
+                         <<faces[fid][2]<<endl;
+                    pausee();
+                }
+            }
+        }
+    }
+    cout<<"after"<<endl;
+    pausee();
+    //fortest
 }
 
 void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
@@ -656,7 +679,7 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
                         is_intersected =
                             wmtk::open_segment_triangle_intersection_3d(input_seg, tet_tri, p);
                         if (is_intersected) {
-                            need_subdivision = true;
+                            need_subdivision = true;//todo: can be recorded
                             break;
                         }
                     }
@@ -673,9 +696,6 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
                     }
                 }
             }
-
-            ///check if any tet vertex on input face
-            //todo
 
 
             /// record the tets
