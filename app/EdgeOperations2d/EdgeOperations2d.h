@@ -137,6 +137,12 @@ public:
 
     bool collapse_shortest(int target_vertex_count);
 
+// get the quadrix in form of an array of 10 floating point numbers
+    Eigen::MatrixXd compute_Q_f(wmtk::TriMesh::Tuple& t);
+
+    Eigen::MatrixXd compute_Q_v(wmtk::TriMesh::Tuple& t);
+
+    double compute_cost_for_v(wmtk::TriMesh::Tuple& v_tuple);
     bool collapse_qec();
 
     bool split_before(const Tuple& t) override
