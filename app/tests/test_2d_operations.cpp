@@ -274,7 +274,7 @@ TEST_CASE("test_split", "[test_2d_operations]")
 TEST_CASE("adaptive_remeshing", "[test_2d_operations]")
 {
     const std::string root(WMT_DATA_DIR);
-    const std::string path = root + "/circle.obj";
+    const std::string path = root + "/circle-planck.obj";
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     bool ok = igl::read_triangle_mesh(path, V, F);
@@ -292,8 +292,8 @@ TEST_CASE("adaptive_remeshing", "[test_2d_operations]")
     EdgeOperations2d m(v);
     m.create_mesh(V.rows(), tri);
     REQUIRE(m.check_mesh_connectivity_validity());
-    REQUIRE(m.adaptive_remeshing(0.01, 5));
-    m.write_triangle_mesh("circle_remeshed.obj");
+
+    REQUIRE(m.adaptive_remeshing(0.01, 5, 1));
 }
 
 TEST_CASE("split_each_edge", "[test_2d_operations]")
