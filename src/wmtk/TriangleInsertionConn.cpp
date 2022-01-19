@@ -20,6 +20,12 @@ void wmtk::TetMesh::single_triangle_insertion(
     for (auto& loc : intersected_tets) {
         intersected_tids.push_back(loc.tid(*this));
     }
+//    //fortest
+//    int old_size = intersected_tids.size();
+//    vector_unique(intersected_tids);
+//    int new_size = intersected_tids.size();
+//    assert(old_size == new_size);
+//    //fortest
 
     std::vector<bool> mark_surface(intersected_tids.size(), true);
     std::map<std::array<size_t, 2>, size_t> map_edge2vid;

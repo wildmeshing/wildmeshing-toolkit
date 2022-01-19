@@ -102,7 +102,7 @@ void tetwild::TetWild::construct_background_mesh(const InputSurface& input_surfa
         for (int j = 0; j < 3; j++) points[i][j] = vertices[i][j];
     }
     ///box
-    double delta = m_params.diag_l / 10.0;
+    double delta = m_params.diag_l / 5.0;
     Vector3d box_min(m_params.min[0] - delta, m_params.min[1] - delta, m_params.min[2] - delta);
     Vector3d box_max(m_params.max[0] + delta, m_params.max[1] + delta, m_params.max[2] + delta);
     double Nx = std::max(2, int((box_max[0] - box_min[0]) / delta));
@@ -240,25 +240,24 @@ void tetwild::TetWild::triangle_insertion_after(
 //    for(auto& info: triangle_insertion_cache.tet_face_tags) {
 //        auto& vids = info.first;
 //        auto& fids = info.second;
-////        cout<<vids[0]<<" "<<vids[1]<<" "<<vids[2]<<": ";
-////        for(int fid: fids)
-////            cout<<fid<<" ";
-////        cout<<endl;
+//        cout<<vids[0]<<" "<<vids[1]<<" "<<vids[2]<<": ";
+//        for(int fid: fids)
+//            cout<<fid<<" ";
+//        cout<<endl;
 //
-//        for(int fid: fids){
+//        for (int fid : fids) {
 //            std::array<Vector3, 3> tri = {
 //                {to_rational(vertices[faces[fid][0]]),
 //                 to_rational(vertices[faces[fid][1]]),
 //                 to_rational(vertices[faces[fid][2]])}};
-//            Vector3 tri_normal = (tri[1]-tri[0]).cross(tri[2]-tri[0]);
-//            for(int j=0;j<3;j++){
-//                Vector3 v = m_vertex_attribute[vids[j]].m_pos-tri[0];
-//                if(v.dot(tri_normal)!=0){
-//                    cout<<"not coplanar!!!"<<endl;
-//                    cout<<"tet v "<<vids[j]<<", "<<"face "<<fid<<" ("
-//                         <<faces[fid][0]<<" "
-//                         <<faces[fid][1]<<" "
-//                         <<faces[fid][2]<<endl;
+//            Vector3 tri_normal = (tri[1] - tri[0]).cross(tri[2] - tri[0]);
+//            for (int j = 0; j < 3; j++) {
+//                Vector3 v = m_vertex_attribute[vids[j]].m_pos - tri[0];
+//                if (v.dot(tri_normal) != 0) {
+//                    cout << "not coplanar!!!" << endl;
+//                    cout << "tet v " << vids[j] << ", "
+//                         << "face " << fid << " (" << faces[fid][0] << " " << faces[fid][1] << " "
+//                         << faces[fid][2] << endl;
 //                    pausee();
 //                }
 //            }
@@ -413,6 +412,8 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
             Tuple loc = tuple_from_vertex(faces[face_id][j]);
             auto conn_tets = get_one_ring_tets_for_vertex(loc);
             for (const auto& t : conn_tets) {
+                if(is_visited[t.tid(*this)])
+                    continue;
                 tet_queue.push(t);
                 is_visited[t.tid(*this)] = true;
             }
