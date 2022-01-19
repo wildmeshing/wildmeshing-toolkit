@@ -11,7 +11,7 @@ using namespace wmtk;
 auto renew = [](auto& m, auto op, auto& tris) {
     auto edges = m.new_edges_after(tris);
     auto optup = std::vector<std::pair<std::string, TriMesh::Tuple>>();
-    for (auto& e : edges) optup.emplace_back("edge_collapse", e);
+    for (auto& e : edges) optup.emplace_back(op, e);
     return optup;
 };
 
