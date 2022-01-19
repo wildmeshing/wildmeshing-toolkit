@@ -99,3 +99,9 @@ TEST_CASE("io", "[io][mshio]")
 
     }
 }
+
+TEST_CASE("io-hang", "[io][mshio]")
+{
+    wmtk::MshData msh;
+    REQUIRE_THROWS(msh.load(WMT_DATA_DIR "nofile.msh"));
+}
