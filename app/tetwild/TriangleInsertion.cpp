@@ -840,7 +840,6 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
     /// update m_is_on_surface for vertices, remove leaked surface marks
     m_edge_attribute.resize(m_tet_attribute.size() * 6);
     m_face_attribute.resize(m_tet_attribute.size() * 4);
-    // todo
     for(auto& info: triangle_insertion_cache.tet_face_tags) {
         auto& vids = info.first;
         auto& fids = info.second;
@@ -862,7 +861,7 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
             int squeeze_to_2d_dir = wmtk::project_triangle_to_2d(tri, tri2);
             auto c2 = wmtk::project_point_to_2d(c, squeeze_to_2d_dir);
             //
-            if (wmtk::is_point_inside_triangle(c2, tri2)) {
+            if (wmtk::is_point_inside_triangle(c2, tri2)) {//todo: should exclude the points on the edges of tri2 -- NO
                 // todo: update m_face_attribute
 
                 inside_fid = fid;

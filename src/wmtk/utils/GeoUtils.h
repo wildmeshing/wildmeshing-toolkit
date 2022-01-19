@@ -309,16 +309,21 @@ bool is_point_inside_triangle(
     const Eigen::Matrix<T, 2, 1>& p,
     const std::array<Eigen::Matrix<T, 2, 1>, 3>& tri)
 {
-    auto res = orient2d_t(p, tri[0], tri[1]);
-    if (res < 0) return false;
+    //    auto res = orient2d_t(p, tri[0], tri[1]);
+    //    if (res < 0) return false;
+    //
+    //    res = orient2d_t(p, tri[1], tri[2]);
+    //    if (res < 0) return false;
+    //
+    //    res = orient2d_t(p, tri[2], tri[0]);
+    //    if (res < 0) return false;
 
-    res = orient2d_t(p, tri[1], tri[2]);
-    if (res < 0) return false;
+    auto res1 = orient2d_t(p, tri[0], tri[1]);
+    auto res2 = orient2d_t(p, tri[1], tri[2]);
+    auto res3 = orient2d_t(p, tri[2], tri[0]);
 
-    res = orient2d_t(p, tri[2], tri[0]);
-    if (res < 0) return false;
-
-    return true;
+    if (res1 == res2 && res2 == res3) return true;
+    return false;
 }
 
 } // namespace wmtk
