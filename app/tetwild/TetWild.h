@@ -152,11 +152,13 @@ public:
         // global info: throughout the whole insertion
         InputSurface input_surface;
         std::vector<std::array<int, 4>> surface_f_ids;
+        std::map<std::array<size_t, 3>, std::vector<int>> tet_face_tags;
         std::vector<bool> is_matched;
 
         // local info: for each face insertion
         std::vector<bool> is_visited;
         int face_id;
+        std::vector<std::array<size_t, 3>> old_face_vids;
     };
     TriangleInsertionInfoCache triangle_insertion_cache;
 
@@ -183,14 +185,8 @@ public:
     void construct_background_mesh(const InputSurface& input_surface);
     void match_insertion_faces(const InputSurface& input_surface, std::vector<bool>& is_matched);
     //
-    void add_tet_centroid(const std::array<size_t, 4>& vids) override;
-    void insertion_update_surface_tag(
-        size_t t_id,
-        size_t new_t_id,
-        int config_id,
-        int diag_config_id,
-        int index,
-        bool mark_surface) override;
+//    void add_tet_centroid(const std::array<size_t, 4>& vids) override;
+    void add_tet_centroid(const Tuple& t) override;
     //
     void triangle_insertion(const InputSurface& input_surface);
     void triangle_insertion_before(const std::vector<Tuple>& faces) override;
