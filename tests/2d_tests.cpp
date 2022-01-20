@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <catch2/catch.hpp>
 #include <iostream>
+#include "wmtk/ConcurrentTriMesh.h"
 
 using namespace wmtk;
 
@@ -366,7 +367,7 @@ TEST_CASE("edge_collapse", "[test_2d_operation]")
         m.create_mesh(6, tris);
         const auto tuple = NoCollapseMesh::Tuple(1, 0, 0, m);
         REQUIRE(tuple.is_valid(m));
-        TriMesh::Tuple dummy;
+        std::vector<TriMesh::Tuple> dummy;
         REQUIRE_FALSE(m.collapse_edge(tuple, dummy));
         REQUIRE(tuple.is_valid(m));
     }
@@ -382,7 +383,7 @@ TEST_CASE("edge_collapse", "[test_2d_operation]")
         m.create_mesh(6, tris);
         const auto tuple = Collapse::Tuple(1, 0, 0, m);
         REQUIRE(tuple.is_valid(m));
-        TriMesh::Tuple dummy;
+        std::vector<TriMesh::Tuple> dummy;
         REQUIRE(m.collapse_edge(tuple, dummy));
         REQUIRE_FALSE(tuple.is_valid(m));
     }
@@ -409,15 +410,15 @@ TEST_CASE("swap_operation", "[test_2d_operation]")
     {
         TriMesh::Tuple swap_e = TriMesh::Tuple(1, 0, 0, m);
         REQUIRE(swap_e.is_valid(m));
-        TriMesh::Tuple new_e;
+        std::vector<TriMesh::Tuple> new_e;
         REQUIRE(m.swap_edge(swap_e, new_e));
         REQUIRE_FALSE(swap_e.is_valid(m));
-        REQUIRE(new_e.is_valid(m));
+        REQUIRE(new_e.front().is_valid(m));
         REQUIRE(m.vert_capacity() == 8);
         REQUIRE(m.tri_capacity() == 8);
 
         std::vector<size_t> m_indices;
-        for (auto edge : m.get_one_ring_edges_for_vertex(new_e)) {
+        for (auto edge : m.get_one_ring_edges_for_vertex(new_e.front())) {
             m_indices.push_back(edge.vid());
         }
         vector_unique(m_indices);
@@ -428,8 +429,8 @@ TEST_CASE("swap_operation", "[test_2d_operation]")
     {
         TriMesh::Tuple swap_e = TriMesh::Tuple(0, 2, 0, m);
         REQUIRE(swap_e.is_valid(m));
-        TriMesh::Tuple new_e;
-        REQUIRE_FALSE(m.swap_edge(swap_e, new_e));
+        std::vector<TriMesh::Tuple> dummy;
+        REQUIRE_FALSE(m.swap_edge(swap_e, dummy));
     }
     SECTION("swap_on_connected_vertices")
     {
@@ -437,9 +438,9 @@ TEST_CASE("swap_operation", "[test_2d_operation]")
         std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 0, 3}}, {{1, 3, 2}}};
         m2.create_mesh(4, tris);
         TriMesh::Tuple edge(0, 2, 0, m);
-        TriMesh::Tuple new_e;
         assert(edge.is_valid(m));
-        REQUIRE_FALSE(m.swap_edge(edge, new_e));
+        std::vector<TriMesh::Tuple> dummy;
+        REQUIRE_FALSE(m.swap_edge(edge, dummy));
     }
 }
 
@@ -452,9 +453,9 @@ TEST_CASE("split_operation", "[test_2d_operation]")
         m.create_mesh(3, tris);
         auto edges = m.get_edges();
         TriMesh::Tuple edge(0, 1, 0, m);
-        TriMesh::Tuple new_e;
+        std::vector<TriMesh::Tuple> dummy;
         assert(edge.is_valid(m));
-        REQUIRE(m.split_edge(edge, new_e));
+        REQUIRE(m.split_edge(edge, dummy));
         REQUIRE_FALSE(edges[0].is_valid(m));
     }
     SECTION("2_tris_split")
@@ -463,9 +464,9 @@ TEST_CASE("split_operation", "[test_2d_operation]")
         m.create_mesh(4, tris);
         auto edges = m.get_edges();
         TriMesh::Tuple edge(1, 0, 0, m);
-        TriMesh::Tuple new_e;
+        std::vector<TriMesh::Tuple> dummy;
         assert(edge.is_valid(m));
-        REQUIRE(m.split_edge(edge, new_e));
+        REQUIRE(m.split_edge(edge, dummy));
         for (auto e : edges) REQUIRE_FALSE(e.is_valid(m));
     }
 }

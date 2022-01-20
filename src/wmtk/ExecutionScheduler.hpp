@@ -100,7 +100,7 @@ struct ExecutePass
                 {"edge_split",
                  [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
                      std::vector<Tuple> ret;
-                     if (m.collapse_edge(t, ret))
+                     if (m.split_edge(t, ret))
                          return ret;
                      else
                          return {};
@@ -124,32 +124,35 @@ struct ExecutePass
         if constexpr (std::is_base_of<wmtk::TriMesh, AppMesh>::value) {
             edit_operation_maps = {
                 {"edge_collapse",
-                 [](AppMesh& m, Tuple& t) {
+                 [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
                      std::vector<Tuple> ret;
-                     m.collapse_edge(t, ret);
-                     return ret.front();
+                     if (m.collapse_edge(t, ret))
+                         return ret;
+                     else
+                         return {};
                  }},
                 {"edge_swap",
-                 [](AppMesh& m, Tuple& t) {
-                     Tuple ret;
-                     m.swap_edge(t, ret);
-                     return ret;
+                 [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
+                     std::vector<Tuple> ret;
+                     if (m.swap_edge(t, ret))
+                         return ret;
+                     else
+                         return {};
                  }},
                 {"edge_split",
-                 [](AppMesh& m, Tuple& t) {
+                 [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
                      std::vector<Tuple> ret;
-                     m.collapse_edge(t, ret);
-                     return ret.front();
+                     if (m.split_edge(t, ret))
+                         return ret;
+                     else
+                         return {};
                  }},
-                {"edge_swap",
-                 [](AppMesh& m, Tuple& t) {
-                     Tuple ret;
-                     m.swap_edge(t, ret);
-                     return ret;
-                 }},
-                {"vertex_smooth", [](AppMesh& m, Tuple& t) {
-                     m.smooth_vertex(t);
-                     return t;
+                {"vertex_smooth",
+                 [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
+                     if (m.smooth_vertex(t))
+                         return std::vector<Tuple>{};
+                     else
+                         return {};
                  }}};
         }
     };
@@ -165,6 +168,16 @@ private:
         else {
             if (stack) m.release_vertex_mutex_in_stack(stack.value());
         }
+    }
+
+    size_t get_partition_id(const AppMesh& m, const Tuple&e)
+    {
+        if constexpr(policy == ExecutionPolicy::kSeq) return 0;
+        if constexpr(std::is_base_of<wmtk::TetMesh, AppMesh>::value)
+            return m.m_vertex_partition_id[e.vid(m)];
+        else if constexpr(std::is_base_of<wmtk::TriMesh, AppMesh>::value) // TODO: make same interface.
+            return m.m_vertex_partition_id[e.vid()];
+        return 0;
     }
 
 public:
@@ -200,15 +213,15 @@ public:
                     operation_cleanup(m, locked_vid); // Maybe use RAII
                 }
                 for (auto& e : renewed_elements) Q.emplace(e);
-            }
 
-            if (stop.load(std::memory_order_acquire)) return;
-            if (cnt_update > stopping_criterion_checking_frequency) {
-                if (stopping_criterion(m)) {
-                    stop.store(true);
-                    return;
-                }
-                cnt_update.store(0, std::memory_order_release);
+                if (stop.load(std::memory_order_acquire)) return;
+                if (cnt_update > stopping_criterion_checking_frequency) {
+                    if (stopping_criterion(m)) {
+                        stop.store(true);
+                        return;
+                    }
+                    cnt_update.store(0, std::memory_order_release);
+            }
             }
         };
 
@@ -221,8 +234,8 @@ public:
             run_single_queue(queues[0]);
         } else {
             for (auto& [op, e] : operation_tuples) {
-                // get_partition_id(e)
-                queues[m.m_vertex_partition_id[e.vid(m)]].emplace(priority(m, op, e), op, e);
+                // 
+                queues[get_partition_id(m,e)].emplace(priority(m, op, e), op, e);
             }
             // Comment out parallel: work on serial first.
             tbb::task_arena arena(num_threads);

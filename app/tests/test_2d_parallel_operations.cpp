@@ -7,7 +7,7 @@
 #include <wmtk/utils/Partitioning.h>
 #include <catch2/catch.hpp>
 #include <iostream>
-#include "ParallelEdgeCollapse/ParallelEdgeCollapse.h"
+#include "EdgeOperations2d.h"
 
 using namespace wmtk;
 
@@ -26,8 +26,8 @@ TEST_CASE("metis_test_bigmesh", "[test_2d_parallel_operations][.slow]")
 
     std::vector<double> timecost;
 
-    for (int i = 1; i <= max_num_threads; i *= 2) {
-        tbb::concurrent_vector<Eigen::Vector3d> v(V.rows());
+    for (int thread = 1; thread <= max_num_threads; thread *= 2) {
+        std::vector<Eigen::Vector3d> v(V.rows());
         std::vector<std::array<size_t, 3>> tri(F.rows());
         for (int i = 0; i < V.rows(); i++) {
             v[i] = V.row(i);
@@ -36,7 +36,7 @@ TEST_CASE("metis_test_bigmesh", "[test_2d_parallel_operations][.slow]")
             for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
         }
 
-        Edge2d::ParallelEdgeCollapse m(v, i);
+        Edge2d::EdgeOperations2d m(v, thread);
         // m.print_num_attributes();
         m.create_mesh(V.rows(), tri);
         REQUIRE(m.check_mesh_connectivity_validity());

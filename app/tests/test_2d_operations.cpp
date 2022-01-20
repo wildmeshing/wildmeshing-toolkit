@@ -14,6 +14,7 @@ TEST_CASE("shortest_edge_collapse", "[test_2d_operations]")
     // 3\/__\/4  ==> 3\/__\6    *
     //   \  /          \  /     *
     //    \/5           \/5     *
+    // 3-4 is shortest
 
     std::vector<Eigen::Vector3d> v_positions(6);
     v_positions[0] = Eigen::Vector3d(-3, 3, 0);
@@ -222,7 +223,7 @@ TEST_CASE("test_swap", "[test_2d_operations]")
     int e_invariant = m.get_edges().size();
     REQUIRE(m.check_mesh_connectivity_validity());
     auto edges = m.get_edges();
-    TriMesh::Tuple new_e;
+    std::vector<TriMesh::Tuple> new_e;
     int cnt = 0;
     for (auto edge : edges) {
         if (cnt > 200) break;
@@ -264,14 +265,14 @@ TEST_CASE("test_split", "[test_2d_operations]")
     auto edges = m.get_edges();
     for (auto edge : edges) {
         if (!edge.is_valid(m)) continue;
-        TriMesh::Tuple dummy;
+        std::vector<TriMesh::Tuple> dummy;
         m.split_edge(edge, dummy);
     }
     // m.write_triangle_mesh("split.obj");
     REQUIRE(m.check_mesh_connectivity_validity());
 }
 
-TEST_CASE("adaptive_remeshing", "[test_2d_operations]")
+TEST_CASE("adaptive_remeshing", "[test_2d_operations][.]")
 {
     const std::string root(WMT_DATA_DIR);
     const std::string path = root + "/circle.obj";

@@ -19,7 +19,7 @@ Eigen::Matrix<metis_index_t, Eigen::Dynamic, 1> partition_mesh_vertices_raw(
     // Sanity check
     Eigen::Matrix<metis_index_t, Eigen::Dynamic, 1> partitions(num_nodes);
     if (num_partitions <= 1) {
-        logger().warn("<= 1 partition was requested, skipping partitioning.");
+        logger().debug("<= 1 partition was requested, skipping partitioning.");
         partitions.setZero();
         return partitions;
     }
