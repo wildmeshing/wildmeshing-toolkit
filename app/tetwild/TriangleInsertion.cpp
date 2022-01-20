@@ -211,25 +211,23 @@ void tetwild::TetWild::triangle_insertion_after(
     for (int i = 0; i < new_faces.size(); i++) {
         if (new_faces[i].empty()) continue;
 
+        // note: erase old tag and then add new -- old and new can be the same face
         std::vector<int> tags;
         if (i < triangle_insertion_cache.old_face_vids.size()) {
-            if(tet_face_tags.count(triangle_insertion_cache.old_face_vids[i]))
+            if(tet_face_tags.count(triangle_insertion_cache.old_face_vids[i])) {
                 tags = tet_face_tags[triangle_insertion_cache.old_face_vids[i]];
+                tet_face_tags.erase(triangle_insertion_cache.old_face_vids[i]);
+            }
         } else
             tags = {triangle_insertion_cache.face_id};
 
         if(tags.empty())
             continue;
 
-        // note: erase old tag and then add new -- old and new can be the same face
-        if (i < triangle_insertion_cache.old_face_vids.size())
-            tet_face_tags.erase(triangle_insertion_cache.old_face_vids[i]);
-
         for (auto& loc : new_faces[i]) {
             auto vs = get_face_vertices(loc);
             std::array<size_t, 3> f = {{vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
             std::sort(f.begin(), f.end());
-//            cout<<"f "<<f[0]<<" "<<f[1]<<" "<<f[2]<<" ("<<tags[0]<<endl;
             tet_face_tags[f] = tags;
         }
     }
@@ -401,7 +399,7 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
 
 
     for (size_t face_id = 0; face_id < faces.size(); face_id++) {
-//    for (size_t face_id = 0; face_id < 6; face_id++) {
+//    for (size_t face_id = 4; face_id < 5; face_id++) {
         if (is_matched[face_id]) continue;
 
         triangle_insertion_cache.face_id = face_id;
@@ -501,7 +499,6 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
                     cnt_neg++;
                     vertex_sides[vertex_vids[j]] = -1;
                 } else {
-//                    coplanar_f.push_back(vertex_vids[j]);
                     coplanar_f_lvids.push_back(j);
                     vertex_sides[vertex_vids[j]] = 0;
                 }
@@ -645,7 +642,7 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
                 fs[3] = switch_face(tet2);
 
                 for (int j = 0; j < 4; j++) { // for each tet face
-                    auto vs = get_face_vertices(tet);
+                    auto vs = get_face_vertices(fs[j]);
 
                     {
                         int cnt_pos1 = 0;
@@ -688,12 +685,13 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
                         }
                     }
                 }
+
+//                pausee();
             }
 
 
             /// record the tets
             if (need_subdivision) {
-                //                intersected_tids.push_back(tet.tid(*this));
                 intersected_tets.push_back(tet);
                 //
                 for (auto& e : edge_vids) {
