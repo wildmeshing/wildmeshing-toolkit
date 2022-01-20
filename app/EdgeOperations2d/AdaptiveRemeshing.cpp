@@ -67,7 +67,7 @@ double EdgeOperations2d::compute_vertex_valence_ar(const TriMesh::Tuple& t) cons
     return (cost_before_swap - cost_after_swap);
 }
 
-auto EdgeOperations2d::average_len_valen()
+std::vector<double> EdgeOperations2d::average_len_valen()
 {
     double average_len = 0.0;
     double average_valen = 0.0;

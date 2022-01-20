@@ -157,7 +157,7 @@ public:
     double compute_edge_cost_collapse_ar(const TriMesh::Tuple& t, double L) const;
     double compute_edge_cost_split_ar(const TriMesh::Tuple& t, double L) const;
     double compute_vertex_valence_ar(const TriMesh::Tuple& t) const;
-    auto average_len_valen();
+    std::vector<double> average_len_valen();
     bool split_remeshing(double L);
     bool collapse_remeshing(double L);
     bool swap_remeshing();
