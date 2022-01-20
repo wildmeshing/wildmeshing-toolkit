@@ -221,6 +221,10 @@ void tetwild::TetWild::triangle_insertion_after(
         if(tags.empty())
             continue;
 
+        // note: erase old tag and then add new -- old and new can be the same face
+        if (i < triangle_insertion_cache.old_face_vids.size())
+            tet_face_tags.erase(triangle_insertion_cache.old_face_vids[i]);
+
         for (auto& loc : new_faces[i]) {
             auto vs = get_face_vertices(loc);
             std::array<size_t, 3> f = {{vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
@@ -228,10 +232,6 @@ void tetwild::TetWild::triangle_insertion_after(
 //            cout<<"f "<<f[0]<<" "<<f[1]<<" "<<f[2]<<" ("<<tags[0]<<endl;
             tet_face_tags[f] = tags;
         }
-
-        if (i < triangle_insertion_cache.old_face_vids.size())
-            tet_face_tags.erase(triangle_insertion_cache.old_face_vids[i]);
-        // add new add erase old tag
     }
 
 //    //fortest
@@ -401,7 +401,7 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
 
 
     for (size_t face_id = 0; face_id < faces.size(); face_id++) {
-//    for (size_t face_id = 0; face_id < 3; face_id++) {
+//    for (size_t face_id = 0; face_id < 6; face_id++) {
         if (is_matched[face_id]) continue;
 
         triangle_insertion_cache.face_id = face_id;
