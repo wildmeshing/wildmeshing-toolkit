@@ -399,7 +399,7 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
 
 
     for (size_t face_id = 0; face_id < faces.size(); face_id++) {
-//    for (size_t face_id = 4; face_id < 5; face_id++) {
+//    for (size_t face_id = 3; face_id < 5; face_id++) {
         if (is_matched[face_id]) continue;
 
         triangle_insertion_cache.face_id = face_id;
@@ -464,19 +464,20 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
             }
             return false;
         };
-        while (!tet_queue.empty()) {
-            auto add_onering_tets_of_tet = [&](std::array<Tuple, 4>& vs){
-                for(auto& v: vs){
-                    auto tets = get_one_ring_tets_for_vertex(v);
-                    for(auto& t: tets){
-                        if(is_visited[t.tid(*this)])
-                            continue;
-                        is_visited[t.tid(*this)] = true;
-                        tet_queue.push(t);
-                    }
+        //
+        auto add_onering_tets_of_tet = [&](std::array<Tuple, 4>& vs){
+            for(auto& v: vs){
+                auto tets = get_one_ring_tets_for_vertex(v);
+                for(auto& t: tets){
+                    if(is_visited[t.tid(*this)])
+                        continue;
+                    is_visited[t.tid(*this)] = true;
+                    tet_queue.push(t);
                 }
-            };
-
+            }
+        };
+        //
+        while (!tet_queue.empty()) {
             auto tet = tet_queue.front();
             tet_queue.pop();
 
@@ -675,7 +676,7 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
                     }
 
                     if (is_intersected) {
-                        auto res = switch_tetrahedron(tet);
+                        auto res = switch_tetrahedron(fs[j]);
                         if (res.has_value()) {
                             auto n_tet = res.value();
                             int tid = n_tet.tid(*this);
@@ -685,8 +686,6 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
                         }
                     }
                 }
-
-//                pausee();
             }
 
 
@@ -764,6 +763,14 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
     for(auto& info: triangle_insertion_cache.tet_face_tags) {
         auto& vids = info.first;
         auto& fids = info.second;
+
+//        //fortest
+//        if(std::find(fids.begin(), fids.end(), 4)==fids.end()){
+//            fids = {};
+//        }
+//        continue;
+//        //fortest
+
 
         Vector3 c = m_vertex_attribute[vids[0]].m_pos + m_vertex_attribute[vids[1]].m_pos +
                     m_vertex_attribute[vids[2]].m_pos;
