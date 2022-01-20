@@ -29,7 +29,7 @@ Eigen::MatrixXd compute_Q_f(const EdgeOperations2d& m, const wmtk::TriMesh::Tupl
 Eigen::MatrixXd compute_Q_v(const EdgeOperations2d& m, const TriMesh::Tuple& v_tuple)
 {
     auto conn_tris = m.get_one_ring_tris_for_vertex(v_tuple);
-    Eigen::MatrixXd Q{};
+    Eigen::MatrixXd Q = Eigen::MatrixXd::Zero(4, 4);
     auto Q_t = [](auto& m, auto& f_tuple) {
         auto conn_indices = m.oriented_tri_vertices(f_tuple);
         Eigen::Vector3d A = m.m_vertex_positions[conn_indices[0].vid()];
@@ -62,10 +62,10 @@ double compute_cost_for_v(const EdgeOperations2d& m, const TriMesh::Tuple& v_tup
 }
 
 
-bool Edge2d::EdgeOperations2d::collapse_qec()
+bool Edge2d::EdgeOperations2d::collapse_qec(int target)
 {
     // find the valid pairs (for each vertex)
-    std::vector<TriMesh::Tuple> edges = get_edges();
+    size_t vertex_number = vert_capacity();
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_collapse", loc);
 
@@ -77,12 +77,20 @@ bool Edge2d::EdgeOperations2d::collapse_qec()
         return optup;
     };
 
-    executor.priority = [](auto& m, auto _, auto& e) { return -compute_cost_for_v(m, e); };
-    executor.should_process = [](auto& m, auto& ele) {
+    executor.priority = [](auto& m, auto _, auto& e) {
+        //     return -(m.m_vertex_positions[e.vid()] -
+        //     m.m_vertex_positions[e.switch_vertex(m).vid()])
+        //                 .norm();
+        // };
+        return -compute_cost_for_v(m, e);
+    };
+    executor.should_process = [&target, &collect_all_ops](auto& m, auto& ele) {
         auto& [val, op, e] = ele;
         if (val > 0) return false; // priority is negated.
         return true;
     };
+    executor.stopping_criterion_checking_frequency = vertex_number - target;
+    executor.stopping_criterion = [](auto& m) { return true; };
 
     executor(*this, collect_all_ops);
     return true;
