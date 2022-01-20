@@ -13,15 +13,15 @@
 
 #include <fstream>
 
-using std::cout;
-using std::endl;
-
-void pausee() {
-    std::cout << "pausing..." << std::endl;
-    char c;
-    std::cin >> c;
-    if (c == '0') exit(0);
-}
+//using std::cout;
+//using std::endl;
+//
+//void pausee() {
+//    std::cout << "pausing..." << std::endl;
+//    char c;
+//    std::cin >> c;
+//    if (c == '0') exit(0);
+//}
 
 bool tetwild::TetWild::InputSurface::remove_duplicates()
 {
@@ -323,37 +323,37 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
         for (auto& f : fs) fout << "f " << f[0] << " " << f[1] << " " << f[2] << std::endl;
         fout.close();
     };
-    auto check_tracked_surface_coplanar = [&]() {
-        for (int i = 0; i < triangle_insertion_cache.surface_f_ids.size(); i++) {
-            Tuple tet = tuple_from_tet(i);
-            auto tet_vertices = oriented_tet_vertices(tet);
-            for (int j = 0; j < 4; j++) {
-                int face_id = triangle_insertion_cache.surface_f_ids[i][j];
-                if (face_id < 0) continue;
-
-                Vector3 c = m_vertex_attribute[tet_vertices[(j + 1) % 4].vid(*this)].m_pos +
-                            m_vertex_attribute[tet_vertices[(j + 2) % 4].vid(*this)].m_pos +
-                            m_vertex_attribute[tet_vertices[(j + 3) % 4].vid(*this)].m_pos;
-                c = c / 3;
-
-                std::array<Vector3, 3> tri = {
-                    {to_rational(vertices[faces[face_id][0]]),
-                     to_rational(vertices[faces[face_id][1]]),
-                     to_rational(vertices[faces[face_id][2]])}};
-
-                bool is_coplanar = wmtk::segment_triangle_coplanar_3d({{c, c}}, tri);
-                if (!is_coplanar) {
-                    //                    cout << "!is_coplanar " << face_id << endl;
-                    //                    cout << triangle_insertion_cache.face_id << endl;
-                    print(c);
-                    print(tri[0]);
-                    print(tri[1]);
-                    print(tri[2]);
-                    pausee();
-                }
-            }
-        }
-    }; // todo
+//    auto check_tracked_surface_coplanar = [&]() {
+//        for (int i = 0; i < triangle_insertion_cache.surface_f_ids.size(); i++) {
+//            Tuple tet = tuple_from_tet(i);
+//            auto tet_vertices = oriented_tet_vertices(tet);
+//            for (int j = 0; j < 4; j++) {
+//                int face_id = triangle_insertion_cache.surface_f_ids[i][j];
+//                if (face_id < 0) continue;
+//
+//                Vector3 c = m_vertex_attribute[tet_vertices[(j + 1) % 4].vid(*this)].m_pos +
+//                            m_vertex_attribute[tet_vertices[(j + 2) % 4].vid(*this)].m_pos +
+//                            m_vertex_attribute[tet_vertices[(j + 3) % 4].vid(*this)].m_pos;
+//                c = c / 3;
+//
+//                std::array<Vector3, 3> tri = {
+//                    {to_rational(vertices[faces[face_id][0]]),
+//                     to_rational(vertices[faces[face_id][1]]),
+//                     to_rational(vertices[faces[face_id][2]])}};
+//
+//                bool is_coplanar = wmtk::segment_triangle_coplanar_3d({{c, c}}, tri);
+//                if (!is_coplanar) {
+//                    //                    cout << "!is_coplanar " << face_id << endl;
+//                    //                    cout << triangle_insertion_cache.face_id << endl;
+//                    print(c);
+//                    print(tri[0]);
+//                    print(tri[1]);
+//                    print(tri[2]);
+//                    pausee();
+//                }
+//            }
+//        }
+//    }; // todo
 //    auto output_bbox = [&](std::string file) {
 //        std::ofstream fout(file);
 //        std::vector<std::array<size_t, 3>> fs;

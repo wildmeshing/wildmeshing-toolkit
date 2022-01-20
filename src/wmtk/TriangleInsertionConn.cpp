@@ -8,8 +8,8 @@
 
 #include <bitset>
 
-using std::cout;
-using std::endl;
+//using std::cout;
+//using std::endl;
 
 void wmtk::TetMesh::single_triangle_insertion(
     const std::vector<Tuple>& intersected_tets,
@@ -58,7 +58,6 @@ void wmtk::TetMesh::single_triangle_insertion(
     for (int i = 0; i < diff_tids.size(); i++) mark_surface.push_back(false);
     //
     intersected_tids.insert(intersected_tids.end(), diff_tids.begin(), diff_tids.end());
-    cout<<"all intersected_tids.size "<<intersected_tids.size()<<endl;
 
     /// track surface before
     std::vector<Tuple> old_faces;
@@ -195,8 +194,6 @@ void wmtk::TetMesh::subdivide_tets(
 
         bool is_add_centroid; // todo: maybe not necessary
         subdivide_a_tet(t_id, new_v_ids, mark_surface[i], is_add_centroid, new_face_vids);
-        if(is_add_centroid && mark_surface[i])
-            cout<<"is_add_centroid && mark_surface[i]!!!"<<endl;
         assert(!(is_add_centroid && mark_surface[i]));
     }
 
