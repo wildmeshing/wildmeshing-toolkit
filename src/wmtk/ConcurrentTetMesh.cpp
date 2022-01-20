@@ -181,7 +181,7 @@ bool wmtk::ConcurrentTetMesh::try_set_face_mutex_two_ring(
     }
 
     // try v1 two ring
-    release_flag = !try_set_vertex_mutex_two_ring(v1, mutex_release_stack);
+    release_flag = !try_set_vertex_mutex_two_ring_vid(v1, mutex_release_stack);
 
     if (release_flag) {
         release_vertex_mutex_in_stack(mutex_release_stack);
@@ -189,7 +189,7 @@ bool wmtk::ConcurrentTetMesh::try_set_face_mutex_two_ring(
     }
 
     // try v2 two ring
-    release_flag = !try_set_vertex_mutex_two_ring(v2, mutex_release_stack);
+    release_flag = !try_set_vertex_mutex_two_ring_vid(v2, mutex_release_stack);
 
     if (release_flag) {
         release_vertex_mutex_in_stack(mutex_release_stack);
@@ -197,7 +197,7 @@ bool wmtk::ConcurrentTetMesh::try_set_face_mutex_two_ring(
     }
 
     // try v3 two ring
-    release_flag = !try_set_vertex_mutex_two_ring(v3, mutex_release_stack);
+    release_flag = !try_set_vertex_mutex_two_ring_vid(v3, mutex_release_stack);
 
     if (release_flag) {
         release_vertex_mutex_in_stack(mutex_release_stack);
