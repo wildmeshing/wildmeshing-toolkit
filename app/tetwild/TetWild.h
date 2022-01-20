@@ -19,10 +19,11 @@ class VertexAttributes
 public:
     Vector3 m_pos;
     Vector3d m_posf;
+    bool is_rounded = false;
 
-    bool m_is_on_surface;
-    bool m_is_on_boundary;
-    bool m_is_on_bbox;
+    bool m_is_on_surface = false;
+    bool m_is_on_boundary = false;
+    bool m_is_on_bbox = false;
     bool m_is_outside;
 
     Scalar m_sizing_scalars;
@@ -41,9 +42,9 @@ class FaceAttributes
 public:
     Scalar tag;
 
-    int m_is_surface_fs;
-    int m_is_bbox_fs;
-    int m_opp_t_ids;
+    int m_is_surface_fs = 0;
+    int m_is_bbox_fs = -1;
+
     int m_surface_tags;
 };
 
@@ -184,6 +185,7 @@ public:
 
     void construct_background_mesh(const InputSurface& input_surface);
     void match_insertion_faces(const InputSurface& input_surface, std::vector<bool>& is_matched);
+    void setup_attributes();
     //
 //    void add_tet_centroid(const std::array<size_t, 4>& vids) override;
     void add_tet_centroid(const Tuple& t) override;

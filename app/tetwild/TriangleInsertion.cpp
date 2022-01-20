@@ -273,7 +273,7 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
     const int PLN_INTERSECTION = 2;
 
     triangle_insertion_cache.input_surface = _input_surface; // todo: avoid copy
-    const auto& input_surface = _input_surface;
+    const auto& input_surface = triangle_insertion_cache.input_surface;
 
     construct_background_mesh(input_surface);
     const auto& vertices = input_surface.vertices;
@@ -757,20 +757,27 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
     output_surface("surface0.obj");
     // fortest
 
-    /// update m_is_on_surface for vertices, remove leaked surface marks
+    //// track surface, bbox, rounding
+    setup_attributes();
+
+    // fortest
+    output_surface("surface.obj");
+    // fortest
+} // note: skip preserve open boundaries
+
+void tetwild::TetWild::setup_attributes()
+{
+    const auto& vertices = triangle_insertion_cache.input_surface.vertices;
+    const auto& faces = triangle_insertion_cache.input_surface.faces;
+
     m_edge_attribute.resize(m_tet_attribute.size() * 6);
     m_face_attribute.resize(m_tet_attribute.size() * 4);
-    for(auto& info: triangle_insertion_cache.tet_face_tags) {
+
+    //// track surface
+    // update m_is_on_surface for vertices, remove leaked surface marks
+    for (auto& info : triangle_insertion_cache.tet_face_tags) {
         auto& vids = info.first;
         auto& fids = info.second;
-
-//        //fortest
-//        if(std::find(fids.begin(), fids.end(), 4)==fids.end()){
-//            fids = {};
-//        }
-//        continue;
-//        //fortest
-
 
         Vector3 c = m_vertex_attribute[vids[0]].m_pos + m_vertex_attribute[vids[1]].m_pos +
                     m_vertex_attribute[vids[2]].m_pos;
@@ -779,42 +786,63 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
         wmtk::vector_unique(fids);
 
         int inside_fid = -1;
-        for (int fid : fids) {
+        for (int input_fid : fids) {
             std::array<Vector3, 3> tri = {
-                {to_rational(vertices[faces[fid][0]]),
-                 to_rational(vertices[faces[fid][1]]),
-                 to_rational(vertices[faces[fid][2]])}};
+                {to_rational(vertices[faces[input_fid][0]]),
+                 to_rational(vertices[faces[input_fid][1]]),
+                 to_rational(vertices[faces[input_fid][2]])}};
             //
             std::array<Vector2, 3> tri2;
             int squeeze_to_2d_dir = wmtk::project_triangle_to_2d(tri, tri2);
             auto c2 = wmtk::project_point_to_2d(c, squeeze_to_2d_dir);
             //
-            if (wmtk::is_point_inside_triangle(c2, tri2)) {//todo: should exclude the points on the edges of tri2 -- NO
-                // todo: update m_face_attribute
-
-                inside_fid = fid;
+            if (wmtk::is_point_inside_triangle(
+                    c2,
+                    tri2)) { // should exclude the points on the edges of tri2 -- NO
+                auto [face, global_tet_fid] = tuple_from_face(vids);
+                m_face_attribute[global_tet_fid].m_is_surface_fs = 1;
+                //
+                for (size_t vid : vids) {
+                    m_vertex_attribute[vid].m_is_on_surface = true;
+                }
+                //
+                inside_fid = input_fid;
                 break;
             }
         }
 
-        //fortest
+        // fortest
         if (inside_fid >= 0) {
             fids = {inside_fid};
         } else {
             fids = {};
         }
-        //fortest
+        // fortest
     }
-    /// todo: track bbox
+
+
+    //// todo: track bbox
+
+
+    //// rounding
+    for (size_t i = 0; i < m_vertex_attribute.size(); i++) {
+        auto old_pos = m_vertex_attribute[i].m_pos;
+        m_vertex_attribute[i].m_pos << m_vertex_attribute[i].m_posf[0],
+            m_vertex_attribute[i].m_posf[1], m_vertex_attribute[i].m_posf[2];
+        auto conn_tets = get_one_ring_tets_for_vertex(tuple_from_vertex(i));
+        m_vertex_attribute[i].is_rounded = true;
+        for (auto& tet : conn_tets) {
+            if (is_inverted(tet)) {
+                m_vertex_attribute[i].is_rounded = false;
+                m_vertex_attribute[i].m_pos = old_pos;
+                break;
+            }
+        }
+    }
 
     check_mesh_connectivity_validity();
     output_mesh("triangle_insertion.msh");
-
-    // fortest
-    output_surface("surface.obj");
-    // fortest
-
-} // note: skip preserve open boundaries
+}
 
 void tetwild::TetWild::add_tet_centroid(const Tuple& t)
 {

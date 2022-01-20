@@ -11,7 +11,7 @@
 #include <spdlog/fmt/ostr.h>
 
 bool tetwild::TetWild::is_inverted(const Tuple& loc)
-{
+{//todo: update for rational vertices
     std::array<Vector3d, 4> ps;
     auto its = oriented_tet_vertices(loc);
     for (int j = 0; j < 4; j++) {
