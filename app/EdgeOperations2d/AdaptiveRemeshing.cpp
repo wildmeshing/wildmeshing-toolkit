@@ -73,8 +73,10 @@ auto EdgeOperations2d::average_len_valen()
     double average_valen = 0.0;
     auto edges = get_edges();
     auto verts = get_vertices();
-    double maxlen, maxval = std::numeric_limits<double>::min();
-    double minlen, minval = std::numeric_limits<double>::max();
+    double maxlen = std::numeric_limits<double>::min();
+    double maxval = std::numeric_limits<double>::min();
+    double minlen = std::numeric_limits<double>::max();
+    double minval = std::numeric_limits<double>::max();
     for (auto& loc : edges) {
         double currentlen =
             (m_vertex_positions[loc.vid()] - m_vertex_positions[loc.switch_vertex(*this).vid()])
@@ -186,6 +188,7 @@ Eigen::Vector3d normal(EdgeOperations2d& m, std::array<TriMesh::Tuple, 3>& verts
 Eigen::Vector3d EdgeOperations2d::tangential_smooth(const Tuple& t)
 {
     auto one_ring_tris = get_one_ring_tris_for_vertex(t);
+    if (one_ring_tris.size() < 2) return m_vertex_positions[t.vid()];
     Eigen::Vector3d after_smooth = smooth(t);
     // get normal and area of each face
     auto area = [](auto& m, auto& verts) {
@@ -238,6 +241,7 @@ bool EdgeOperations2d::adaptive_remeshing(double L, int iterations, int sm)
         split_remeshing(L);
         // collpase
         collapse_remeshing(L);
+
         // swap edges
         swap_remeshing();
         // smoothing

@@ -39,7 +39,8 @@ int main(int argc, char** argv)
     auto duration = duration_cast<milliseconds>(stop - start);
     wmtk::logger().info("runtime {}", duration.count());
     m.write_triangle_mesh(argv[4]);
-    wmtk::logger().info("peak_memory {}", getCurrentRSS() / (1024 * 1024));
+    wmtk::logger().info("current_memory {}", getCurrentRSS() / (1024 * 1024));
+    wmtk::logger().info("peak_memory {}", getPeakRSS() / (1024 * 1024));
     wmtk::logger().info(
         "After_vertices#: {} \n After_tris#: {}",
         m.vert_capacity(),
