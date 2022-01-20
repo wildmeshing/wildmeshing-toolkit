@@ -12,16 +12,15 @@
 using namespace wmtk;
 using namespace Edge2d;
 auto unique_edge_tuples = [](const auto& m, auto& edges) {
-    std::stable_sort(edges.begin(), edges.end(), [&](const auto& a, const auto& b) {
-        return a.eid(m) < b.eid(m);
-    }); // todo: use unique global id here would be very slow!
-
-    edges.erase(
-        std::unique(
-            edges.begin(),
-            edges.end(),
-            [&](const auto& a, const auto& b) { return a.eid(m) == b.eid(m); }),
-        edges.end());
+    std::vector<size_t> all_eids;
+    for (auto e : edges) {
+        all_eids.emplace_back(e.eid(m));
+    }
+    vector_unique(all_eids);
+    edges.clear();
+    for (auto eid : all_eids) {
+        edges.emplace_back(m.tuple_from_edge(eid / 3, eid % 3));
+    }
 };
 
 std::vector<TriMesh::Tuple> Edge2d::EdgeOperations2d::new_edges_after(
@@ -39,6 +38,28 @@ std::vector<TriMesh::Tuple> Edge2d::EdgeOperations2d::new_edges_after(
     return new_edges;
 }
 
+// std::vector<TriMesh::Tuple> Edge2d::EdgeOperations2d::new_edges_after_collapse_split(
+//     const TriMesh::Tuple& t) const
+// {
+//     std::vector<TriMesh::Tuple> new_edges;
+//     std::vector<size_t> one_ring_fid;
+
+//     for (auto e : get_one_ring_edges_for_vertex(t)) {
+//         // centripedal edge
+//         new_edges.push_back(e);
+//         // petal edge
+//         if (!wmtk::vector_contains(one_ring_fid, e.fid())) {
+//             one_ring_fid.emplace_back(e.fid());
+//             new_edges.push_back(e.switch_edge(*this));
+//             if (!is_boundary_edge(e) &&
+//                 !wmtk::vector_contains(one_ring_fid, (e.switch_face(*this).value()).fid())) {
+//                 one_ring_fid.emplace_back((e.switch_face(*this).value()).fid());
+//                 new_edges.push_back((e.switch_face(*this).value()).switch_edge(*this));
+//             }
+//         }
+//         return new_edges;
+//     }
+// }
 bool Edge2d::EdgeOperations2d::collapse_shortest(int target_operation_count)
 {
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
