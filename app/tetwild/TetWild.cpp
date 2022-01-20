@@ -10,27 +10,51 @@
 #include <igl/predicates/predicates.h>
 #include <spdlog/fmt/ostr.h>
 
+
 bool tetwild::TetWild::is_inverted(const Tuple& loc)
-{//todo: update for rational vertices
-    std::array<Vector3d, 4> ps;
-    auto its = oriented_tet_vertices(loc);
-    for (int j = 0; j < 4; j++) {
-        ps[j] = m_vertex_attribute[its[j].vid(*this)].m_posf;
-    }
+{
+    // Return a positive value if the point pd lies below the
+    // plane passing through pa, pb, and pc; "below" is defined so
+    // that pa, pb, and pc appear in counterclockwise order when
+    // viewed from above the plane.
+
+    auto vs = oriented_tet_vertices(loc);
 
     //
-    igl::predicates::exactinit();
-    auto res = igl::predicates::orient3d(ps[0], ps[1], ps[2], ps[3]);
-    Scalar result;
-    if (res == igl::predicates::Orientation::POSITIVE)
-        result = 1;
-    else if (res == igl::predicates::Orientation::NEGATIVE)
-        result = -1;
-    else
-        result = 0;
+    if (m_vertex_attribute[vs[0].vid(*this)].is_rounded &&
+        m_vertex_attribute[vs[1].vid(*this)].is_rounded &&
+        m_vertex_attribute[vs[2].vid(*this)].is_rounded &&
+        m_vertex_attribute[vs[3].vid(*this)].is_rounded) {
+        igl::predicates::exactinit();
+        auto res = igl::predicates::orient3d(
+            m_vertex_attribute[vs[0].vid(*this)].m_posf,
+            m_vertex_attribute[vs[1].vid(*this)].m_posf,
+            m_vertex_attribute[vs[2].vid(*this)].m_posf,
+            m_vertex_attribute[vs[3].vid(*this)].m_posf);
+        int result;
+        if (res == igl::predicates::Orientation::POSITIVE)
+            result = 1;
+        else if (res == igl::predicates::Orientation::NEGATIVE)
+            result = -1;
+        else
+            result = 0;
 
-    if (result <= 0) return true;
-    return false;
+        if (result <= 0) return true;
+        return false;
+    } else {
+        Vector3 n = ((m_vertex_attribute[vs[1].vid(*this)].m_pos) -
+                     m_vertex_attribute[vs[0].vid(*this)].m_pos)
+                        .cross(
+                            (m_vertex_attribute[vs[2].vid(*this)].m_pos) -
+                            m_vertex_attribute[vs[0].vid(*this)].m_pos);
+        Vector3 d = (m_vertex_attribute[vs[3].vid(*this)].m_pos) -
+                    m_vertex_attribute[vs[0].vid(*this)].m_pos;
+        auto res = n.dot(d);
+        if (res < 0) // predicates returns pos value: non-inverted
+            return false;
+        else
+            return true;
+    }
 }
 
 double tetwild::TetWild::get_quality(const Tuple& loc)
