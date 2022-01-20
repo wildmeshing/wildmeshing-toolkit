@@ -36,16 +36,16 @@ TEST_CASE("is_point_inside_triangle", "[test_geom]")
     }};
 
     bool inter = is_point_inside_triangle(Vector2d(0.5, 0.5), tri);
-    REQUIRE(!inter);
+    REQUIRE(inter);
 
     inter = is_point_inside_triangle(Vector2d(5, 5), tri);
     REQUIRE(!inter);
 
     inter = is_point_inside_triangle(Vector2d(-1, 0), tri);
-    REQUIRE(!inter);
+    REQUIRE(inter);
 
     inter = is_point_inside_triangle(Vector2d(0.5, 0), tri);
-    REQUIRE(!inter);
+    REQUIRE(inter);
 
     inter = is_point_inside_triangle(Vector2d(0, 0.2), tri);
     REQUIRE(inter);
