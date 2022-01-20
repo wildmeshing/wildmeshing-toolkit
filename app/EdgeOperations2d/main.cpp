@@ -31,11 +31,11 @@ void run(std::string input, double len, std::string output, EdgeOperations2d& m)
 
 int main(int argc, char** argv)
 {
-    const std::string root(WMT_DATA_DIR);
-    const std::string path = root + argv[1];
+    const std::string path = argv[1];
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     bool ok = igl::read_triangle_mesh(path, V, F);
+    wmtk::logger().info("readin mesh is {}", ok);
     wmtk::logger().info("Before_vertices#: {} \n\t Before_tris#: {}", V.rows(), F.rows());
 
     std::vector<Eigen::Vector3d> v(V.rows());

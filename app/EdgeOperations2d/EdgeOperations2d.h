@@ -140,6 +140,9 @@ public:
 
     bool collapse_shortest(int target_vertex_count);
 
+    Eigen::MatrixXd compute_Q_f(wmtk::TriMesh::Tuple& f_tuple);
+    Eigen::MatrixXd compute_Q_v(wmtk::TriMesh::Tuple& v_tuple);
+    double compute_cost_for_v(wmtk::TriMesh::Tuple& v_tuple);
     bool collapse_qec(int target_vertcies);
 
     bool split_before(const Tuple& t) override

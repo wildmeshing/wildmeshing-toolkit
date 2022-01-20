@@ -45,7 +45,7 @@ double Edge2d::EdgeOperations2d::compute_cost_for_v(wmtk::TriMesh::Tuple& v_tupl
     return 0;
 }
 
-bool Edge2d::EdgeOperations2d::collapse_qec()
+bool Edge2d::EdgeOperations2d::collapse_qec(int target)
 {
     // find the valid pairs (for each vertex)
     std::vector<TriMesh::Tuple> edges = get_edges();
