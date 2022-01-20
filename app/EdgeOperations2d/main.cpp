@@ -12,6 +12,23 @@ using namespace Edge2d;
 using namespace std::chrono;
 
 // extern "C" size_t getPeakRSS();
+void run(std::string input, double len, std::string output, EdgeOperations2d& m)
+{
+    auto start = high_resolution_clock::now();
+    wmtk::logger().info("target len: {}", len);
+    m.adaptive_remeshing(len, 5, 1);
+    auto stop = high_resolution_clock::now();
+    auto duration = duration_cast<milliseconds>(stop - start);
+    wmtk::logger().info("runtime {}", duration.count());
+    m.write_triangle_mesh(output + std::string("_") + std::to_string(len) + std::string(".obj"));
+    wmtk::logger().info("current_memory {}", getCurrentRSS() / (1024 * 1024));
+    wmtk::logger().info("peak_memory {}", getPeakRSS() / (1024 * 1024));
+    wmtk::logger().info(
+        "After_vertices#: {} \n\t After_tris#: {}",
+        m.vert_capacity(),
+        m.tri_capacity());
+}
+
 int main(int argc, char** argv)
 {
     const std::string root(WMT_DATA_DIR);
@@ -19,7 +36,7 @@ int main(int argc, char** argv)
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     bool ok = igl::read_triangle_mesh(path, V, F);
-    wmtk::logger().info("Before_vertices#: {} \n Before_tris#: {}", V.rows(), F.rows());
+    wmtk::logger().info("Before_vertices#: {} \n\t Before_tris#: {}", V.rows(), F.rows());
 
     std::vector<Eigen::Vector3d> v(V.rows());
     std::vector<std::array<size_t, 3>> tri(F.rows());
@@ -32,20 +49,14 @@ int main(int argc, char** argv)
     EdgeOperations2d m(v);
     m.create_mesh(V.rows(), tri);
     assert(m.check_mesh_connectivity_validity());
-
-    auto start = high_resolution_clock::now();
-    m.adaptive_remeshing(std::stod(argv[2]), std::stod(argv[3]), std::stoi(argv[5]));
-    auto stop = high_resolution_clock::now();
-    auto duration = duration_cast<milliseconds>(stop - start);
-    wmtk::logger().info("runtime {}", duration.count());
-    m.write_triangle_mesh(argv[4]);
-    wmtk::logger().info("current_memory {}", getCurrentRSS() / (1024 * 1024));
-    wmtk::logger().info("peak_memory {}", getPeakRSS() / (1024 * 1024));
+    std::vector<double> properties = m.average_len_valen();
     wmtk::logger().info(
-        "After_vertices#: {} \n After_tris#: {}",
-        m.vert_capacity(),
-        m.tri_capacity());
-
+        "edgelen: avg max min valence:avg max min before remesh is: {}",
+        properties);
+    double small = properties[0] * 0.1;
+    double big = properties[0] * 10;
+    run(path, small, argv[2], m);
+    run(path, big, argv[2], m);
 
     return 0;
 }
