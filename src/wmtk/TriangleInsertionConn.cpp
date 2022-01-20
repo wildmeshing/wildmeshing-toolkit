@@ -270,17 +270,27 @@ void wmtk::TetMesh::subdivide_a_tet(
 
     std::vector<Vector2i> my_diags;
     for (int j = 0; j < 4; j++) { // 4 faces of the tet
-        int cnt_diags = 0;
-        Vector2i diag(-1, -1);
+//        int cnt_diags = 0;
+        std::vector<std::array<size_t, 2>> tmp_diags;//global ids
+        std::vector<std::array<int, 2>> tmp_local_diags;//global ids
         for (int k = 0; k < 3; k++) {
             int l_eid = get_local_e_id[{{m_local_faces[j][k], m_local_faces[j][(k + 1) % 3]}}];
             if (new_v_ids[l_eid] >= 0) {
-                if (new_v_ids[l_eid] > diag[1])
-                    diag << m_local_faces[j][(k + 2) % 3], local_new_v_ids[l_eid];
-                cnt_diags++;
+                tmp_diags.push_back({{(size_t)new_v_ids[l_eid],
+                                      m_tet_connectivity[t_id][m_local_faces[j][(k + 2) % 3]]}});
+                tmp_local_diags.push_back({{local_new_v_ids[l_eid], m_local_faces[j][(k + 2) % 3]}});
+//                if (new_v_ids[l_eid] > diag[1])//todo: buggy
+//                    diag << m_local_faces[j][(k + 2) % 3], local_new_v_ids[l_eid];
+//                cnt_diags++;
             }
         }
-        if (cnt_diags < 2) continue;
+        if (tmp_diags.size() < 2) continue;
+
+        Vector2i diag;
+        if(tmp_diags[0][0]>tmp_diags[1][0])
+            diag << tmp_local_diags[0][0], tmp_local_diags[0][1];
+        else
+            diag << tmp_local_diags[1][0], tmp_local_diags[1][1];
 
         if (diag[0] > diag[1]) std::swap(diag[0], diag[1]);
         my_diags.push_back(diag);
