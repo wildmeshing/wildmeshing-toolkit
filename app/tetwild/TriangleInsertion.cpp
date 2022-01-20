@@ -816,49 +816,16 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
 
 } // note: skip preserve open boundaries
 
-// void tetwild::TetWild::insertion_update_surface_tag(
-//     size_t t_id,
-//     size_t new_t_id,
-//     int config_id,
-//     int diag_config_id,
-//     int index,
-//     bool mark_surface) {
-//    //    const auto &config = wmtk::CutTable::get_tet_conf(config_id, diag_config_id);
-//    const auto &new_is_surface_fs = wmtk::CutTable::get_surface_conf(config_id, diag_config_id);
-//    const auto &old_local_f_ids = wmtk::CutTable::get_face_id_conf(config_id, diag_config_id);
-//
-//    // track surface ==> t_id, new_t_id, is_surface_fs for new_t_id, local_f_ids of t_id mapped to
-//    // new_t_id, face_id (cached)
-//    if (t_id != new_t_id) {
-//        triangle_insertion_cache.surface_f_ids.push_back({{-1, -1, -1, -1}});
-//    }
-//    //
-//    auto old_surface_f_ids = triangle_insertion_cache.surface_f_ids[t_id];
-//    //
-//    for (int j = 0; j < 4; j++) {
-//        if (old_local_f_ids[index][j] >= 0 && old_surface_f_ids[old_local_f_ids[index][j]] >= 0) {
-//            triangle_insertion_cache.surface_f_ids[new_t_id][j] =
-//                old_surface_f_ids[old_local_f_ids[index][j]];
-//        }
-//
-//        if (mark_surface && new_is_surface_fs[index][j])
-//            triangle_insertion_cache.surface_f_ids[new_t_id][j] =
-//            triangle_insertion_cache.face_id;
-//        // note: new face_id has higher priority than old ones
-//        // note: non-cut-through tet does not track surface!!!
-//    }
-//}
-
-void tetwild::TetWild::add_tet_centroid(const std::array<size_t, 4>& vids)
+void tetwild::TetWild::add_tet_centroid(const Tuple& t)
 {
-    //    auto vs = oriented_tet_vertices(t);
+    auto vs = oriented_tet_vertices(t);
     VertexAttributes v;
-    v.m_pos = (m_vertex_attribute[vids[0]].m_pos + m_vertex_attribute[vids[1]].m_pos +
-               m_vertex_attribute[vids[2]].m_pos + m_vertex_attribute[vids[3]].m_pos) /
-              4;
-    //        (m_vertex_attribute[vs[0].vid(*this)].m_pos +
-    //        m_vertex_attribute[vs[1].vid(*this)].m_pos +
-    //         m_vertex_attribute[vs[2].vid(*this)].m_pos + m_vertex_attribute[vs[3].vid(*this)].m_pos) /
+    v.m_pos =
+        (m_vertex_attribute[vs[0].vid(*this)].m_pos + m_vertex_attribute[vs[1].vid(*this)].m_pos +
+         m_vertex_attribute[vs[2].vid(*this)].m_pos + m_vertex_attribute[vs[3].vid(*this)].m_pos) /
+        4;
+    //    (m_vertex_attribute[vids[0]].m_pos + m_vertex_attribute[vids[1]].m_pos +
+    //     m_vertex_attribute[vids[2]].m_pos + m_vertex_attribute[vids[3]].m_pos) /
     //        4;
     v.m_posf = to_double(v.m_pos);
     m_vertex_attribute.push_back(v);

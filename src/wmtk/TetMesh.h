@@ -336,7 +336,7 @@ private:
         std::map<std::array<size_t, 3>, std::vector<std::array<size_t, 5>>>& new_face_vids);
 
 protected:
-    virtual void add_tet_centroid(const std::array<size_t, 4>& vids) {}
+    virtual void add_tet_centroid(const Tuple& t) {}
 
     virtual void triangle_insertion_before(const std::vector<Tuple>& faces) {}
     virtual void triangle_insertion_after(

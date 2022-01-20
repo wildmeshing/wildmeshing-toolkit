@@ -20,12 +20,6 @@ void wmtk::TetMesh::single_triangle_insertion(
     for (auto& loc : intersected_tets) {
         intersected_tids.push_back(loc.tid(*this));
     }
-//    //fortest
-//    int old_size = intersected_tids.size();
-//    vector_unique(intersected_tids);
-//    int new_size = intersected_tids.size();
-//    assert(old_size == new_size);
-//    //fortest
 
     std::vector<bool> mark_surface(intersected_tids.size(), true);
     std::map<std::array<size_t, 2>, size_t> map_edge2vid;
@@ -102,29 +96,6 @@ void wmtk::TetMesh::single_triangle_insertion(
         new_face_vids; // note: vids of the face, tid, l_fid
     subdivide_tets(intersected_tids, mark_surface, map_edge2vid, new_face_vids);
 
-//    cout<<"====="<<endl;
-//    for(auto& info: new_face_vids){
-//        auto& vids = info.first;
-//        auto& fs = info.second;
-//        if(vids != std::array<size_t, 3>({{0,0,0}}))
-//            continue;
-//        cout<<"old_tet fs: "<<vids[0]<<" "<<vids[1]<<" "<<vids[2]<<endl;
-//        cout<<"tet fs: "<<endl;
-//        for(auto f: fs) {
-//            for(int j=0;j<5;j++)
-//                 cout << f[j] << " ";
-//            cout<<endl;
-//        }
-//        cout<<endl;
-//    }
-//    cout<<"====="<<new_face_vids.size()<<endl;
-//    for(auto& f: old_face_vids){
-//        for(int j=0;j<5;j++)
-//            cout << f[j] << " ";
-//        cout<<endl;
-//    }
-//    cout<<"====="<<old_face_vids.size()<<endl;
-
     /// track surface after
     std::vector<std::vector<Tuple>> new_faces(old_faces.size() + 1);
     for (auto& info : new_face_vids) {
@@ -137,13 +108,6 @@ void wmtk::TetMesh::single_triangle_insertion(
         int i = it - old_face_vids.begin();//already handled special case here
         assert(i < new_faces.size());
         //
-//        //fortest
-//        if(i==old_face_vids.size()){//todo: buggy
-//            cout<<info.first[0]<<" "<<info.first[1]<<" "<<info.first[2]<<endl;
-//            for (auto& f_info : info.second)
-//                cout<<"f_info "<<f_info[0]<<" "<<f_info[1]<<" "<<f_info[2]<<endl;
-//        }
-//        //fortest
 
         for (auto& f_info : info.second) {
             new_faces[i].push_back(tuple_from_face(f_info[3], f_info[4]));
@@ -313,14 +277,6 @@ void wmtk::TetMesh::subdivide_a_tet(
     const auto& config = CutTable::get_tet_conf(config_id, diag_config_id);
     const auto& new_is_surface_fs = CutTable::get_surface_conf(config_id, diag_config_id);
     const auto& old_local_f_ids = CutTable::get_face_id_conf(config_id, diag_config_id);
-    //        if(config.size()==10){
-    //            cout<<"config.size() "<<config.size()<<endl;
-    //            cout<<config_id<<endl;
-    //            cout<<diag_config_id<<endl;
-    //            for(int j=0;j<6;j++)
-    //                cout<<new_v_ids[j]<<" ";
-    //            cout<<endl;
-    //        }
     is_add_centroid = false;
     //    cout<<"t_id "<<t_id<<endl;
     //    cout<<"config_id "<<config_id<<endl;
@@ -333,15 +289,14 @@ void wmtk::TetMesh::subdivide_a_tet(
         TetrahedronConnectivity tet;
         for (int j = 0; j < 4; j++) {
             if (!is_add_centroid && t[j] >= 4 + config_bits.count()) {
-                add_tet_centroid(
-                    {{m_tet_connectivity[t_id][0],
-                      m_tet_connectivity[t_id][1],
-                      m_tet_connectivity[t_id][2],
-                      m_tet_connectivity[t_id][3]}});
+                add_tet_centroid(tuple_from_tet(t_id));
+//                {{m_tet_connectivity[t_id][0],
+//                            m_tet_connectivity[t_id][1],
+//                            m_tet_connectivity[t_id][2],
+//                            m_tet_connectivity[t_id][3]}}
+
                 m_vertex_connectivity.emplace_back();
                 all_v_ids.push_back(m_vertex_connectivity.size() - 1);
-                //                cout<<"m_vertex_connectivity.size()-1)
-                //                "<<m_vertex_connectivity.size()-1<<endl;
                 is_add_centroid = true;
             }
             tet[j] = all_v_ids[t[j]];
