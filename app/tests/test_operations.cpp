@@ -26,11 +26,11 @@ TEST_CASE("edge_splitting", "[tetwild_operation]")
     std::vector<std::array<size_t, 4>> tets = {{{0, 1, 3, 2}}};
     std::vector<TetAttributes> tet_attrs(1);
     for (auto& v:vertices) v.m_is_rounded = true;
-    REQUIRE_FALSE(tetwild.is_inverted(tetwild.tuple_from_tet(0)));
 
     tetwild.init(vertices.size(), tets);
     tetwild.create_mesh_attributes(vertices, tet_attrs);
 
+    REQUIRE_FALSE(tetwild.is_inverted(tetwild.tuple_from_tet(0)));
     tetwild.split_all_edges();
     REQUIRE(tetwild.check_mesh_connectivity_validity());
 
