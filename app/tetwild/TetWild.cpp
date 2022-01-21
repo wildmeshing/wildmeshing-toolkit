@@ -21,10 +21,10 @@ bool tetwild::TetWild::is_inverted(const Tuple& loc)
     auto vs = oriented_tet_vertices(loc);
 
     //
-    if (m_vertex_attribute[vs[0].vid(*this)].is_rounded &&
-        m_vertex_attribute[vs[1].vid(*this)].is_rounded &&
-        m_vertex_attribute[vs[2].vid(*this)].is_rounded &&
-        m_vertex_attribute[vs[3].vid(*this)].is_rounded) {
+    if (m_vertex_attribute[vs[0].vid(*this)].m_is_rounded &&
+        m_vertex_attribute[vs[1].vid(*this)].m_is_rounded &&
+        m_vertex_attribute[vs[2].vid(*this)].m_is_rounded &&
+        m_vertex_attribute[vs[3].vid(*this)].m_is_rounded) {
         igl::predicates::exactinit();
         auto res = igl::predicates::orient3d(
             m_vertex_attribute[vs[0].vid(*this)].m_posf,

@@ -825,20 +825,13 @@ void tetwild::TetWild::setup_attributes()
 
 
     //// rounding
+    int cnt_round = 0;
     for (size_t i = 0; i < m_vertex_attribute.size(); i++) {
-        auto old_pos = m_vertex_attribute[i].m_pos;
-        m_vertex_attribute[i].m_pos << m_vertex_attribute[i].m_posf[0],
-            m_vertex_attribute[i].m_posf[1], m_vertex_attribute[i].m_posf[2];
-        auto conn_tets = get_one_ring_tets_for_vertex(tuple_from_vertex(i));
-        m_vertex_attribute[i].is_rounded = true;
-        for (auto& tet : conn_tets) {
-            if (is_inverted(tet)) {
-                m_vertex_attribute[i].is_rounded = false;
-                m_vertex_attribute[i].m_pos = old_pos;
-                break;
-            }
-        }
+        auto v = tuple_from_vertex(i);
+        if(round(v))
+            cnt_round++;
     }
+    wmtk::logger().info("cnt_round {}", cnt_round);
 
     check_mesh_connectivity_validity();
     output_mesh("triangle_insertion.msh");
