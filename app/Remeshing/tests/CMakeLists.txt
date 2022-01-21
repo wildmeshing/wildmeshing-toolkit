@@ -9,6 +9,7 @@ target_link_libraries(remeshing_tests PUBLIC
     wmtk::remeshing_lib
     Catch2::Catch2
 )
+wmtk_copy_dll(remeshing_tests)
 
 set_target_properties(remeshing_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tests")
 

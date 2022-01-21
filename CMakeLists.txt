@@ -28,6 +28,8 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/recipes/")
 include(sanitizers)
 include(wmtk_colors)
 include(wmtk_warnings)
+include(wmtk_copy_dll)
+include(tracy)
 
 # Sort projects inside the solution
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -53,7 +55,6 @@ add_library(wmtk::toolkit ALIAS wildmeshing_toolkit)
 # Include headers
 target_include_directories(wildmeshing_toolkit PUBLIC src)
 
-
 # Compile definitions
 target_compile_definitions(wildmeshing_toolkit PUBLIC _USE_MATH_DEFINES)
 target_compile_definitions(wildmeshing_toolkit PUBLIC NOMINMAX)
@@ -74,12 +75,13 @@ include(metis)
 target_link_libraries(wildmeshing_toolkit PUBLIC
     spdlog::spdlog
     igl::core
-	igl::predicates
+    igl::predicates
     geogram::delaunay_psm
     wmtk::warnings
     TBB::tbb
     mshio::mshio
     metis::metis
+    Tracy::TracyClient
 )
 
 ################################################################################

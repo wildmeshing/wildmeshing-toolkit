@@ -38,6 +38,7 @@ target_link_libraries(wmtk_tetwild PUBLIC
 
 add_executable(tetwild tetwild/main.cpp)
 target_link_libraries(tetwild PUBLIC wmtk::tetwild)
+wmtk_copy_dll(tetwild)
 
 ################################################################################
 # Edge Operations 2D
@@ -65,6 +66,7 @@ target_include_directories(wmtk_edge_operations PUBLIC EdgeOperations2d)
 
 add_executable(edge_operations EdgeOperations2d/main.cpp)
 target_link_libraries(edge_operations PUBLIC wmtk::edge_operations)
+wmtk_copy_dll(edge_operations)
 
 # Harmonic Triangulations for TetMesh [Alexa2019]
 ################################################################################
@@ -88,6 +90,7 @@ target_link_libraries(wmtk_harmonic_tet_bin PUBLIC
 	wmtk::harmonic_tet
 	CLI11::CLI11
 )
+wmtk_copy_dll(wmtk_harmonic_tet_bin)
 
 # Parallel Harmonic Triangulations for TetMesh [Alexa2019]
 ################################################################################
