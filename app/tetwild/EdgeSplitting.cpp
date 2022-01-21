@@ -79,6 +79,7 @@ bool tetwild::TetWild::split_after(const Tuple& loc)
     int v_id = loc.vid(*this);
     auto old_pos = m_vertex_attribute[v_id].m_posf;
     m_vertex_attribute[v_id].m_posf = split_cache.vertex_info.m_posf;
+    m_vertex_attribute[v_id].m_is_rounded = true;
 
     // check inversion
     for (auto& loc : locs) {

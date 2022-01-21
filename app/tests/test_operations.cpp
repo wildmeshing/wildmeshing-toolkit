@@ -23,7 +23,7 @@ TEST_CASE("edge_splitting", "[tetwild_operation]")
     vertices[1].m_posf = Vector3d(1, 0, 0);
     vertices[2].m_posf = Vector3d(0, 1, 0);
     vertices[3].m_posf = Vector3d(0, 0, 1);
-    std::vector<std::array<size_t, 4>> tets = {{{0, 1, 3, 2}}};
+    std::vector<std::array<size_t, 4>> tets = {{{0, 1, 2, 3}}};
     std::vector<TetAttributes> tet_attrs(1);
     for (auto& v:vertices) v.m_is_rounded = true;
 
@@ -58,7 +58,7 @@ TEST_CASE("edge_collapsing", "[tetwild_operation]")
     vertices[1].m_posf = Vector3d(1, 0, 0);
     vertices[2].m_posf = Vector3d(0, 1, 0);
     vertices[3].m_posf = Vector3d(0, 0, 1);
-    std::vector<std::array<size_t, 4>> tets = {{{0, 1, 3, 2}}};
+    std::vector<std::array<size_t, 4>> tets = {{{0, 1, 2, 3}}};
     std::vector<TetAttributes> tet_attrs(1);
     for (auto& v:vertices) v.m_is_rounded = true;
 
@@ -105,7 +105,7 @@ TEST_CASE("inversion-check-rational-tetwild", "[tetwild_operation]")
     vertices[2].m_pos = Vector3(0, 1, 0);
     vertices[3].m_pos = Vector3(0, 0, 1);
     for (auto& v:vertices) v.m_is_rounded = false;
-    std::vector<std::array<size_t, 4>> tets = {{{0, 1, 3, 2}}};
+    std::vector<std::array<size_t, 4>> tets = {{{0, 1, 2, 3}}};
     std::vector<TetAttributes> tet_attrs(1);
 
     tetwild.init(vertices.size(), tets);
@@ -122,7 +122,7 @@ TEST_CASE("optimize-bunny-tw", "[tetwild_operation][.slow]")
     msh.extract_tet_vertices(
         [&](size_t i, double x, double y, double z) { vec_attrs[i].m_posf << x, y, z; });
     msh.extract_tets([&](size_t i, size_t v0, size_t v1, size_t v2, size_t v3) {
-        tets[i] = {{v0, v1, v3, v2}};
+        tets[i] = {{v0, v1, v2, v3}};
     });
 
     Parameters params;
