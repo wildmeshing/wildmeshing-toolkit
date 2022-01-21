@@ -13,6 +13,8 @@ target_link_libraries(app_unit_tests PUBLIC wmtk::parallel_harmonic_tet)
 include(catch2)
 target_link_libraries(app_unit_tests PUBLIC Catch2::Catch2)
 
+wmtk_copy_dll(app_unit_tests)
+
 
 # data()
 # set(DATA_DIR "${THIRD_PARTY_DIR}/data/")

@@ -1,16 +1,20 @@
 #pragma once
 
-#include <wmtk/TetMesh.h>
+#include <wmtk/ConcurrentTetMesh.h>
 #include "Parameters.h"
 #include "common.h"
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
 #include <fastenvelope/FastEnvelope.h>
+#include <tbb/concurrent_queue.h>
+#include <tbb/concurrent_vector.h>
+#include <tbb/enumerable_thread_specific.h>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
 #include <memory>
+#include <wmtk/utils/PartitionMesh.h>
 
 namespace tetwild {
 
@@ -19,6 +23,7 @@ class VertexAttributes
 public:
     Vector3 m_pos;
     Vector3d m_posf;
+    bool m_is_rounded = false;
 
     bool m_is_on_surface;
     bool m_is_on_boundary;
@@ -55,7 +60,7 @@ public:
     bool m_is_outside;
 };
 
-class TetWild : public wmtk::TetMesh
+class TetWild : public wmtk::ConcurrentTetMesh
 {
 public:
     Parameters& m_params;
@@ -72,8 +77,12 @@ public:
         const std::vector<VertexAttributes>& _vertex_attribute,
         const std::vector<TetAttributes>& _tet_attribute)
     {
-        m_vertex_attribute = _vertex_attribute;
-        m_tet_attribute = _tet_attribute;
+        m_vertex_attribute = tbb::concurrent_vector<VertexAttributes>(_vertex_attribute.size());
+        for (auto i = 0; i < _vertex_attribute.size(); i++)
+            m_vertex_attribute[i] = _vertex_attribute[i];
+        m_tet_attribute = tbb::concurrent_vector<TetAttributes>(_tet_attribute.size());
+        for (auto i = 0; i < _tet_attribute.size(); i++)
+            m_tet_attribute[i] = _tet_attribute[i];
         auto n_tet = m_tet_attribute.size();
         resize_edge_attributes(6 * n_tet);
         resize_face_attributes(4 * n_tet);
@@ -81,10 +90,11 @@ public:
 
     ////// Attributes related
     // Stores the attributes attached to simplices
-    std::vector<VertexAttributes> m_vertex_attribute;
-    std::vector<EdgeAttributes> m_edge_attribute;
-    std::vector<FaceAttributes> m_face_attribute;
-    std::vector<TetAttributes> m_tet_attribute;
+    tbb::concurrent_vector<VertexAttributes> m_vertex_attribute;
+    tbb::concurrent_vector<EdgeAttributes> m_edge_attribute;
+    tbb::concurrent_vector<FaceAttributes> m_face_attribute;
+    tbb::concurrent_vector<TetAttributes> m_tet_attribute;
+    int NUM_THREADS = 1;
 
     void resize_vertex_attributes(size_t v) override { m_vertex_attribute.resize(v); }
     void resize_edge_attributes(size_t e) override { m_edge_attribute.resize(e); }
@@ -152,11 +162,13 @@ public:
         // global info: throughout the whole insertion
         InputSurface input_surface;
         std::vector<std::array<int, 4>> surface_f_ids;
+        std::map<std::array<size_t, 3>, std::vector<int>> tet_face_tags;
         std::vector<bool> is_matched;
 
         // local info: for each face insertion
         std::vector<bool> is_visited;
         int face_id;
+        std::vector<std::array<size_t, 3>> old_face_vids;
     };
     TriangleInsertionInfoCache triangle_insertion_cache;
 
@@ -165,32 +177,29 @@ public:
     struct SplitInfoCache
     {
         VertexAttributes vertex_info;
-    } split_cache; // todo: change for parallel
+    };
+    tbb::enumerable_thread_specific<SplitInfoCache> split_cache;
 
     struct CollapseInfoCache
     {
         double max_energy;
         double edge_length;
-    } collapse_cache; // todo: change for parallel
+    };
+    tbb::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
 
 
     struct SwapInfoCache
     {
         double max_energy;
-    } edgeswap_cache, faceswap_cache; // todo: change for parallel
+    };
+    tbb::enumerable_thread_specific<SwapInfoCache> edgeswap_cache, faceswap_cache;
 
 
     void construct_background_mesh(const InputSurface& input_surface);
     void match_insertion_faces(const InputSurface& input_surface, std::vector<bool>& is_matched);
     //
-    void add_tet_centroid(const std::array<size_t, 4>& vids) override;
-    void insertion_update_surface_tag(
-        size_t t_id,
-        size_t new_t_id,
-        int config_id,
-        int diag_config_id,
-        int index,
-        bool mark_surface) override;
+//    void add_tet_centroid(const std::array<size_t, 4>& vids) override;
+    void add_tet_centroid(const Tuple& t) override;
     //
     void triangle_insertion(const InputSurface& input_surface);
     void triangle_insertion_before(const std::vector<Tuple>& faces) override;
@@ -221,6 +230,7 @@ public:
 
     bool is_inverted(const Tuple& loc);
     double get_quality(const Tuple& loc);
+    bool round(const Tuple& loc);
 
     bool vertex_invariant(const Tuple& t) override;
     bool tetrahedron_invariant(const Tuple& t) override;

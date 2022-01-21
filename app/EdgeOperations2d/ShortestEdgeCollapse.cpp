@@ -38,28 +38,6 @@ std::vector<TriMesh::Tuple> Edge2d::EdgeOperations2d::new_edges_after(
     return new_edges;
 }
 
-// std::vector<TriMesh::Tuple> Edge2d::EdgeOperations2d::new_edges_after_collapse_split(
-//     const TriMesh::Tuple& t) const
-// {
-//     std::vector<TriMesh::Tuple> new_edges;
-//     std::vector<size_t> one_ring_fid;
-
-//     for (auto e : get_one_ring_edges_for_vertex(t)) {
-//         // centripedal edge
-//         new_edges.push_back(e);
-//         // petal edge
-//         if (!wmtk::vector_contains(one_ring_fid, e.fid())) {
-//             one_ring_fid.emplace_back(e.fid());
-//             new_edges.push_back(e.switch_edge(*this));
-//             if (!is_boundary_edge(e) &&
-//                 !wmtk::vector_contains(one_ring_fid, (e.switch_face(*this).value()).fid())) {
-//                 one_ring_fid.emplace_back((e.switch_face(*this).value()).fid());
-//                 new_edges.push_back((e.switch_face(*this).value()).switch_edge(*this));
-//             }
-//         }
-//         return new_edges;
-//     }
-// }
 bool Edge2d::EdgeOperations2d::collapse_shortest(int target_operation_count)
 {
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
@@ -81,6 +59,11 @@ bool Edge2d::EdgeOperations2d::collapse_shortest(int target_operation_count)
         executor.num_threads = NUM_THREADS;
         executor.renew_neighbor_tuples = renew;
         executor.priority = measure_len2;
+        executor.lock_vertices = [](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
+            auto stack = std::vector<size_t>();
+            if (!m.try_set_edge_mutex_two_ring(e, stack)) return {};
+            return stack;
+        };
         executor.stopping_criterion_checking_frequency = target_operation_count;
         executor.stopping_criterion = [](auto& m) { return true; };
         executor(*this, collect_all_ops);

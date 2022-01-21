@@ -170,33 +170,4 @@ public:
     }
 };
 
-class ElementInQueue
-{
-public:
-    wmtk::TriMesh::Tuple edge;
-    double weight;
-
-    ElementInQueue() {}
-    ElementInQueue(const wmtk::TriMesh::Tuple& e, double w)
-        : edge(e)
-        , weight(w)
-    {}
-};
-struct cmp_l
-{
-    bool operator()(const ElementInQueue& e1, const ElementInQueue& e2)
-    {
-        if (e1.weight == e2.weight) return e1.edge.vid() > e2.edge.vid();
-        return e1.weight < e2.weight;
-    }
-};
-struct cmp_s
-{
-    bool operator()(const ElementInQueue& e1, const ElementInQueue& e2)
-    {
-        if (e1.weight == e2.weight) return e1.edge.vid() < e2.edge.vid();
-        return e1.weight > e2.weight;
-    }
-};
-
 } // namespace Edge2d
