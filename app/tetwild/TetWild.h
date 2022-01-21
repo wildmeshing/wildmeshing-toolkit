@@ -19,6 +19,7 @@ class VertexAttributes
 public:
     Vector3 m_pos;
     Vector3d m_posf;
+    bool m_is_rounded = false;
 
     bool m_is_on_surface;
     bool m_is_on_boundary;
@@ -217,6 +218,7 @@ public:
 
     bool is_inverted(const Tuple& loc);
     double get_quality(const Tuple& loc);
+    bool round(const Tuple& loc);
 
     bool vertex_invariant(const Tuple& t) override;
     bool tetrahedron_invariant(const Tuple& t) override;
