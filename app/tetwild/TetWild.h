@@ -176,7 +176,9 @@ public:
 
     struct SplitInfoCache
     {
-        VertexAttributes vertex_info;
+        //        VertexAttributes vertex_info;
+        size_t v1_id;
+        size_t v2_id;
     };
     tbb::enumerable_thread_specific<SplitInfoCache> split_cache;
 
