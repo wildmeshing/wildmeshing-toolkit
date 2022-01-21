@@ -52,10 +52,9 @@ void tetwild::TetWild::split_all_edges()
 
 bool tetwild::TetWild::split_before(const Tuple& loc0)
 {
-    auto loc1 = loc0;
-    split_cache.local().v1_id = loc1.vid(*this);
-    auto loc2 = loc1.switch_vertex(*this);
-    split_cache.local().v2_id = loc2.vid(*this);
+    split_cache.local().v1_id = loc0.vid(*this);
+    auto loc1 = loc0.switch_vertex(*this);
+    split_cache.local().v2_id = loc1.vid(*this);
 
     //	double length = (m_vertex_attribute[v1_id].m_posf -
     // m_vertex_attribute[v2_id].m_posf).norm();

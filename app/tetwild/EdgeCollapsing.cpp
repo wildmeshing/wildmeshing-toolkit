@@ -55,12 +55,27 @@ void tetwild::TetWild::collapse_all_edges()
 
 bool tetwild::TetWild::collapse_before(const Tuple& loc) // input is an edge
 {
-    //check if on bbox/surface/boundary
+    size_t v1_id = loc.vid(*this);
+    auto loc1 = switch_vertex(loc);
+    size_t v2_id = loc1.vid(*this);
+
+    ///check if on bbox/surface/boundary
+    //bbox
+    if(!m_vertex_attribute[v1_id].on_bbox_faces.empty()
+        && m_vertex_attribute[v1_id].on_bbox_faces != m_vertex_attribute[v2_id].on_bbox_faces){
+        return false;
+    }
+    //surface
+    if(m_vertex_attribute[v1_id].m_is_on_surface){
+        //todo: envelope check for v2
+    }
+    //todo: remove isolated vertex
+
     // todo: store surface info into cache
 
-    int v1_id = loc.vid(*this);
-    auto loc1 = switch_vertex(loc);
-    int v2_id = loc1.vid(*this);
+    collapse_cache.local().v1_id = v1_id;
+    collapse_cache.local().v2_id = v2_id;
+
     collapse_cache.local().edge_length =
         (m_vertex_attribute[v1_id].m_posf - m_vertex_attribute[v2_id].m_posf)
             .norm(); // todo: duplicated computation

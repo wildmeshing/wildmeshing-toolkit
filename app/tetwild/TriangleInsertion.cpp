@@ -855,9 +855,11 @@ void tetwild::TetWild::setup_attributes()
         m_face_attribute[fid].m_is_bbox_fs = on_bbox;
         //
         for (size_t vid : vids) {
-            m_vertex_attribute[vid].m_is_on_bbox = true;
+            m_vertex_attribute[vid].on_bbox_faces.push_back(on_bbox);
         }
     }
+    for (size_t i = 0; i < m_vertex_attribute.size(); i++)
+        wmtk::vector_unique(m_vertex_attribute[i].on_bbox_faces);
 
     //// rounding
     int cnt_round = 0;
