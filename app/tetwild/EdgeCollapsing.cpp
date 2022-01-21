@@ -61,7 +61,7 @@ bool tetwild::TetWild::collapse_before(const Tuple& loc) // input is an edge
     int v1_id = loc.vid(*this);
     auto loc1 = switch_vertex(loc);
     int v2_id = loc1.vid(*this);
-    collapse_cache.edge_length =
+    collapse_cache.local().edge_length =
         (m_vertex_attribute[v1_id].m_posf - m_vertex_attribute[v2_id].m_posf)
             .norm(); // todo: duplicated computation
 
@@ -77,9 +77,9 @@ bool tetwild::TetWild::collapse_before(const Tuple& loc) // input is an edge
         if (it != qs.end()) qs.erase(it);
     }
 
-    collapse_cache.max_energy = 0;
+    collapse_cache.local().max_energy = 0;
     for (auto& q : qs) {
-        if (q.second > collapse_cache.max_energy) collapse_cache.max_energy = q.second;
+        if (q.second > collapse_cache.local().max_energy) collapse_cache.local().max_energy = q.second;
     }
 
     return true;
@@ -103,15 +103,15 @@ bool tetwild::TetWild::collapse_after(const Tuple& loc)
     std::vector<double> qs;
     for (auto& l : locs) {
         double q = get_quality(l);
-        if (q > collapse_cache.max_energy) {
-            // spdlog::critical("After Collapse {} from ({})", q, collapse_cache.max_energy);
+        if (q > collapse_cache.local().max_energy) {
+            // spdlog::critical("After Collapse {} from ({})", q, collapse_cache.local().max_energy);
             return false;
         }
         qs.push_back(q);
     }
 
     ////then update
-    if (collapse_cache.edge_length > 0) {
+    if (collapse_cache.local().edge_length > 0) {
         // todo: surface check
     } else {
         for (int i = 0; i < locs.size(); i++) {

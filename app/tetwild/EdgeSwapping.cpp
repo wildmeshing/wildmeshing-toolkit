@@ -110,7 +110,7 @@ bool tetwild::TetWild::swap_edge_before(const Tuple& t)
     for (auto& l : incident_tets) {
         max_energy = std::max(get_quality(l), max_energy);
     }
-    edgeswap_cache.max_energy = max_energy;
+    edgeswap_cache.local().max_energy = max_energy;
     return true;
 }
 bool tetwild::TetWild::swap_edge_after(const Tuple& t)
@@ -124,7 +124,7 @@ bool tetwild::TetWild::swap_edge_after(const Tuple& t)
     if (is_inverted(t) || is_inverted(*oppo_tet)) {
         return false;
     }
-    if (max_energy > edgeswap_cache.max_energy) return false;
+    if (max_energy > edgeswap_cache.local().max_energy) return false;
     cnt_swap ++;
     return true;
 }
@@ -135,7 +135,7 @@ bool tetwild::TetWild::swap_face_before(const Tuple& t)
 
     auto oppo_tet = t.switch_tetrahedron(*this);
     assert(oppo_tet.has_value() && "Should not swap boundary.");
-    faceswap_cache.max_energy = std::max(get_quality(t), get_quality(*oppo_tet));
+    faceswap_cache.local().max_energy = std::max(get_quality(t), get_quality(*oppo_tet));
     return true;
 }
 
@@ -153,9 +153,9 @@ bool tetwild::TetWild::swap_face_after(const Tuple& t)
     for (auto& l : incident_tets) {
         max_energy = std::max(get_quality(l), max_energy);
     }
-    wmtk::logger().trace("quality {} from {}", max_energy, edgeswap_cache.max_energy);
+    wmtk::logger().trace("quality {} from {}", max_energy, edgeswap_cache.local().max_energy);
 
-    if (max_energy > edgeswap_cache.max_energy) return false;
+    if (max_energy > edgeswap_cache.local().max_energy) return false;
 
     cnt_swap ++;
     return true;
