@@ -4,14 +4,15 @@
 #include <wmtk/TriMesh.h>
 #include <cstdlib>
 #include <iostream>
-#include <wmtk/utils/getRSS.c>
 using namespace wmtk;
 
 using namespace Edge2d;
 #include <chrono>
 using namespace std::chrono;
 
-// extern "C" size_t getPeakRSS();
+extern "C" {
+#include <wmtk/utils/getRSS.c>
+};
 void run(std::string input, double len, std::string output, EdgeOperations2d& m)
 {
     auto start = high_resolution_clock::now();
