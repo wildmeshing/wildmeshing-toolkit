@@ -20,6 +20,7 @@ TEST_CASE("smooth_in_single_tet", "[tetwild_operation]")
     vertices[1].m_posf = Vector3d(1, 0, 0);
     vertices[2].m_posf = Vector3d(0, 1, 0);
     vertices[3].m_posf = Vector3d(0, 0, 1);
+    for (auto& v:vertices) v.m_is_rounded = true;
     std::vector<std::array<size_t, 4>> tets = {{{0, 1, 3, 2}}};
     std::vector<TetAttributes> tet_attrs(1);
 
@@ -46,6 +47,7 @@ TEST_CASE("smooth_double_tet", "[tetwild_operation]")
     vertices[2].m_posf = Vector3d(0, 1, 0);
     vertices[3].m_posf = Vector3d(0, 0, 1);
     vertices[4].m_posf = Vector3d(1, 1, 1);
+    for (auto& v:vertices) v.m_is_rounded = true;
     std::vector<std::array<size_t, 4>> tets;
     tets.emplace_back(std::array<size_t, 4>{{0, 1, 3, 2}});
     tets.emplace_back(std::array<size_t, 4>{{1, 3, 2, 4}});
