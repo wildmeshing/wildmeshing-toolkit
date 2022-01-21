@@ -61,7 +61,6 @@ double compute_cost_for_v(const EdgeOperations2d& m, const TriMesh::Tuple& v_tup
     return v.transpose() * Q * v;
 }
 
-
 bool Edge2d::EdgeOperations2d::collapse_qec(int target)
 {
     // find the valid pairs (for each vertex)
