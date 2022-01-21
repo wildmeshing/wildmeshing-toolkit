@@ -21,9 +21,9 @@ void run(std::string input, double len, std::string output, EdgeOperations2d& m)
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<milliseconds>(stop - start);
     wmtk::logger().info("runtime {}", duration.count());
-    m.write_triangle_mesh(output + std::string("_") + std::to_string(len) + std::string(".obj"));
-    wmtk::logger().info("current_memory {}", getCurrentRSS() / (1024 * 1024));
-    wmtk::logger().info("peak_memory {}", getPeakRSS() / (1024 * 1024));
+    m.write_triangle_mesh(fmt::format("{}_{}.obj", output, len));
+    wmtk::logger().info("current_memory {}", getCurrentRSS() / (1024. * 1024));
+    wmtk::logger().info("peak_memory {}", getPeakRSS() / (1024. * 1024));
     wmtk::logger().info(
         "After_vertices#: {} \n\t After_tris#: {}",
         m.vert_capacity(),
@@ -54,9 +54,9 @@ int main(int argc, char** argv)
     wmtk::logger().info(
         "edgelen: avg max min valence:avg max min before remesh is: {}",
         properties);
-    double small = properties[0] * 0.1;
+    // double small = properties[0] * 0.1;
     
-    run(path, small, std::string(argv[2]), m);
+    run(path, properties[0] * 0.1, std::string(argv[2]), m);
 
     return 0;
 }
