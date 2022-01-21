@@ -74,7 +74,7 @@ TEST_CASE("harmonic-tet-swaps", "[harmtri][.slow]")
 {
     auto vec_attrs = std::vector<Eigen::Vector3d>();
     auto tets = std::vector<std::array<size_t, 4>>();
-    std::string filename = "/home/zhongshi/Workspace/libigl/tutorial/data/bunny.off";
+    std::string filename = WMT_DATA_DIR "/bunny.off";
     {
         Eigen::MatrixXd V;
         Eigen::MatrixXi F;
