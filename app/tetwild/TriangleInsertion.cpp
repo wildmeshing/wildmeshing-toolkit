@@ -865,10 +865,12 @@ void tetwild::TetWild::setup_attributes()
         if(round(v))
             cnt_round++;
     }
-    wmtk::logger().info("cnt_round {}", cnt_round);
+    wmtk::logger().info("cnt_round {}/{}", cnt_round, m_vertex_attribute.size());
 
     check_mesh_connectivity_validity();
     output_mesh("triangle_insertion.msh");
+
+    //todo: output faces to check surface and bbox
 }
 
 void tetwild::TetWild::add_tet_centroid(const Tuple& t)

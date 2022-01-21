@@ -39,8 +39,9 @@ bool tetwild::TetWild::is_inverted(const Tuple& loc)
         else
             result = 0;
 
-        if (result <= 0) return true;
-        return false;
+        if (result < 0) //neg result == pos tet (tet origin from geogram delaunay)
+            return false;
+        return true;
     } else {
         Vector3 n = ((m_vertex_attribute[vs[1].vid(*this)].m_pos) -
                      m_vertex_attribute[vs[0].vid(*this)].m_pos)
@@ -50,7 +51,7 @@ bool tetwild::TetWild::is_inverted(const Tuple& loc)
         Vector3 d = (m_vertex_attribute[vs[3].vid(*this)].m_pos) -
                     m_vertex_attribute[vs[0].vid(*this)].m_pos;
         auto res = n.dot(d);
-        if (res < 0) // predicates returns pos value: non-inverted
+        if (res > 0) // predicates returns pos value: non-inverted
             return false;
         else
             return true;
