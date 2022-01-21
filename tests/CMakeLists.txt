@@ -18,6 +18,7 @@ target_link_libraries(tests_wmtk PUBLIC
     wmtk::data
     Catch2::Catch2
 )
+wmtk_copy_dll(tests_wmtk)
 
 # Register unit tests
 catch_discover_tests(tests_wmtk)

@@ -19,7 +19,7 @@ class VertexAttributes
 public:
     Vector3 m_pos;
     Vector3d m_posf;
-    bool is_rounded = false;
+    bool m_is_rounded = false;
 
     bool m_is_on_surface = false;
     bool m_is_on_boundary = false;
@@ -219,6 +219,7 @@ public:
 
     bool is_inverted(const Tuple& loc);
     double get_quality(const Tuple& loc);
+    bool round(const Tuple& loc);
 
     std::vector<std::array<size_t, 3>> get_faces_by_condition(
         std::function<bool(const FaceAttributes&)> cond);

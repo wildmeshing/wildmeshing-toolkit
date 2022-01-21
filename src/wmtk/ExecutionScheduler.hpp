@@ -15,6 +15,8 @@
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
+#include <Tracy.hpp>
+
 #include <atomic>
 #include <cassert>
 #include <cstddef>
@@ -221,7 +223,8 @@ public:
                         return;
                     }
                     cnt_update.store(0, std::memory_order_release);
-            }
+                }
+                FrameMark;
             }
         };
 
@@ -234,7 +237,7 @@ public:
             run_single_queue(queues[0]);
         } else {
             for (auto& [op, e] : operation_tuples) {
-                // 
+                //
                 queues[get_partition_id(m,e)].emplace(priority(m, op, e), op, e);
             }
             // Comment out parallel: work on serial first.
