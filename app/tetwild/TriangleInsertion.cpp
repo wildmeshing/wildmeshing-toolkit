@@ -120,6 +120,8 @@ void tetwild::TetWild::construct_background_mesh(const InputSurface& input_surfa
             }
         }
     }
+    m_params.box_min = box_min;
+    m_params.box_max = box_max;
 
     ///delaunay
     auto tets = wmtk::delaunay3D_conn(points);
@@ -821,8 +823,40 @@ void tetwild::TetWild::setup_attributes()
     }
 
 
-    //// todo: track bbox
+    //// track bbox
+    for(size_t i=0;i<m_tet_attribute.size();i++) {
+        auto vs = oriented_tet_vertices(tuple_from_tet(i));
+        for (int j = 0; j < 4; j++) {
+            std::array<size_t, 3> vids = {
+                {vs[(j + 1) % 4].vid(*this),
+                 vs[(j + 2) % 4].vid(*this),
+                 vs[(j + 3) % 4].vid(*this)}};
+            int on_bbox = -1;
+            for (int k = 0; k < 3; k++) {
+                if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_min[k] &&
+                    m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_min[k] &&
+                    m_vertex_attribute[vids[2]].m_pos[k] == m_params.box_min[k]) {
+                    on_bbox = k * 2;
+                    break;
+                }
+                if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_max[k] &&
+                    m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_max[k] &&
+                    m_vertex_attribute[vids[2]].m_pos[k] == m_params.box_max[k]) {
+                    on_bbox = k * 2 + 1;
+                    break;
+                }
+            }
+            if (on_bbox < 0) continue;
 
+            auto [face, global_tet_fid] = tuple_from_face(vids);
+            m_face_attribute[global_tet_fid].m_is_bbox_fs = on_bbox;
+            //
+            for (size_t vid : vids) {
+                m_vertex_attribute[vid].m_is_on_bbox = true;
+            }
+            break;
+        }
+    }
 
     //// rounding
     int cnt_round = 0;

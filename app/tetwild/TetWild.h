@@ -42,8 +42,8 @@ class FaceAttributes
 public:
     Scalar tag;
 
-    int m_is_surface_fs = 0;
-    int m_is_bbox_fs = -1;
+    int m_is_surface_fs = 0;//0; 1
+    int m_is_bbox_fs = -1;//-1; 0~5
 
     int m_surface_tags;
 };
