@@ -220,6 +220,9 @@ public:
     bool is_inverted(const Tuple& loc);
     double get_quality(const Tuple& loc);
 
+    std::vector<std::array<size_t, 3>> get_faces_by_condition(
+        std::function<bool(const FaceAttributes&)> cond);
+
     bool vertex_invariant(const Tuple& t) override;
     bool tetrahedron_invariant(const Tuple& t) override;
     std::atomic<int> cnt_split = 0, cnt_collapse = 0, cnt_swap = 0;

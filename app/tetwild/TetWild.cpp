@@ -206,3 +206,18 @@ void tetwild::TetWild::output_mesh(std::string file)
 
     msh.save(file, true);
 }
+
+std::vector<std::array<size_t, 3>> tetwild::TetWild::get_faces_by_condition(
+    std::function<bool(const FaceAttributes&)> cond)
+{
+    auto res = std::vector<std::array<size_t, 3>>();
+    for (auto f : get_faces()) {
+        auto fid = f.fid(*this);
+        if (cond(m_face_attribute[fid])) {
+            auto tid = fid / 4, lid = fid % 4;
+            auto verts = get_face_vertices(f);
+            res.emplace_back(verts[0].vid(*this), verts[1].vid(*this), verts[2].vid(*this));
+        }
+    }
+    return res;
+}
