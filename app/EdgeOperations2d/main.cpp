@@ -9,8 +9,8 @@ using namespace wmtk;
 using namespace Edge2d;
 int main(int argc, char** argv)
 {
-    const std::string root(WMT_DATA_DIR);
-    const std::string path = root + argv[1];
+    // const std::string root(WMT_DATA_DIR);
+    const std::string path = argv[1];
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     bool ok = igl::read_triangle_mesh(path, V, F);
@@ -24,7 +24,7 @@ int main(int argc, char** argv)
         for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
     }
     EdgeOperations2d m(v);
-    m.create_mesh(V.rows(), tri);
+    m.create_mesh(V.rows(), tri, atof(argv[5]));
     assert(m.check_mesh_connectivity_validity());
     m.adaptive_remeshing(std::stod(argv[2]), std::stod(argv[3]));
     m.write_triangle_mesh(argv[4]);
