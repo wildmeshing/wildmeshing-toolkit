@@ -1,55 +1,46 @@
 #include "TetWild.h"
 
+#include <wmtk/ExecutionScheduler.hpp>
+#include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 
+auto measure_edge_length = [](auto& m, auto& l) {
+    auto& v1 = l;
+    auto v2 = l.switch_vertex(m);
+    double length =
+        (m.m_vertex_attribute[v1.vid(m)].m_posf - m.m_vertex_attribute[v2.vid(m)].m_posf)
+            .squaredNorm();
+    return length;
+};
+
 void tetwild::TetWild::collapse_all_edges()
 {
-    std::vector<Tuple> edges = get_edges();
-
-    wmtk::logger().debug("edges.size() = {}", edges.size());
-
-    int cnt_suc = 0;
-    std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_s> ec_queue;
-    for (auto& loc : edges) {
-        Tuple& v1 = loc;
-        Tuple v2 = loc.switch_vertex(*this);
-        double length =
-            (m_vertex_attribute[v1.vid(*this)].m_posf - m_vertex_attribute[v2.vid(*this)].m_posf)
-                .squaredNorm();
-        if (length > m_params.collapsing_l2) continue;
-        ec_queue.push(ElementInQueue(loc, length));
-    }
-
-    while (!ec_queue.empty()) {
-        auto loc = ec_queue.top().edge;
-        double weight = ec_queue.top().weight;
-        ec_queue.pop();
-
-        // check hash
-        if (!loc.is_valid(*this)) continue;
-        { // check weight
-            Tuple& v1 = loc;
-            Tuple v2 = loc.switch_vertex(*this);
-            double length = (m_vertex_attribute[v1.vid(*this)].m_posf -
-                             m_vertex_attribute[v2.vid(*this)].m_posf)
-                                .squaredNorm();
-            if (length != weight) continue;
-        }
-
-        std::vector<Tuple> new_edges;
-        if (collapse_edge(loc, new_edges)) {
-            cnt_suc++;
-            for (auto& new_loc : new_edges) {
-                Tuple& v1 = new_loc;
-                Tuple v2 = new_loc.switch_vertex(*this);
-                double length = (m_vertex_attribute[v1.vid(*this)].m_posf -
-                                 m_vertex_attribute[v2.vid(*this)].m_posf)
-                                    .squaredNorm();
-                if (length < m_params.collapsing_l2) continue;
-                ec_queue.push(ElementInQueue(new_loc, length));
-            }
-        }
+    auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
+    for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_collapse", loc);
+    auto setup_and_execute = [&](auto& executor) {
+        executor.renew_neighbor_tuples = wmtk::renewal_simple;
+        executor.lock_vertices = [](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
+            auto stack = std::vector<size_t>();
+            if (!m.try_set_edge_mutex_two_ring(e, stack)) return {};
+            return stack;
+        };
+        executor.priority = [&](auto& m, auto op, auto& t) { return -measure_edge_length(m, t); };
+        executor.num_threads = NUM_THREADS;
+        executor.should_process = [&](const auto& m, const auto& ele) {
+            auto [weight, op, tup] = ele;
+            auto length = measure_edge_length(m, tup);
+            if (length != weight) return false;
+            if (length > m_params.collapsing_l2) return false;
+            return true;
+        };
+    };
+    if (NUM_THREADS > 1) {
+        auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kPartition>();
+        setup_and_execute(executor);
+    } else {
+        auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kSeq>();
+        setup_and_execute(executor);
     }
 }
 
