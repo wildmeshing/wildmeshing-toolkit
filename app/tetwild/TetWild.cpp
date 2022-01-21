@@ -33,6 +33,26 @@ bool tetwild::TetWild::is_inverted(const Tuple& loc)
     return false;
 }
 
+bool tetwild::TetWild::round(const Tuple& v)
+{
+    size_t i = v.vid(*this);
+
+    auto old_pos = m_vertex_attribute[i].m_pos;
+    m_vertex_attribute[i].m_pos << m_vertex_attribute[i].m_posf[0], m_vertex_attribute[i].m_posf[1],
+        m_vertex_attribute[i].m_posf[2];
+    auto conn_tets = get_one_ring_tets_for_vertex(v);
+    m_vertex_attribute[i].m_is_rounded = true;
+    for (auto& tet : conn_tets) {
+        if (is_inverted(tet)) {
+            m_vertex_attribute[i].m_is_rounded = false;
+            m_vertex_attribute[i].m_pos = old_pos;
+            return false;
+        }
+    }
+
+    return true;
+}
+
 double tetwild::TetWild::get_quality(const Tuple& loc)
 {
     std::array<Vector3d, 4> ps;
@@ -89,7 +109,9 @@ void tetwild::TetWild::smooth_all_vertices()
 
 bool tetwild::TetWild::smooth_before(const Tuple& t)
 {
-    return true;
+    if (m_vertex_attribute[t.vid(*this)].m_is_rounded) return true;
+    // try to round.
+    return round(t); // Note: no need to roll back.
 }
 
 bool tetwild::TetWild::smooth_after(const Tuple& t)

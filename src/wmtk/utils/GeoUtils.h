@@ -305,20 +305,31 @@ Eigen::Matrix<T, 2, 1> project_point_to_2d(const Eigen::Matrix<T, 3, 1>& p, int 
 }
 
 template <typename T>
-bool is_point_inside_triangle(
+bool is_point_inside_triangle( // closed triangle
     const Eigen::Matrix<T, 2, 1>& p,
     const std::array<Eigen::Matrix<T, 2, 1>, 3>& tri)
 {
-    auto res = orient2d_t(p, tri[0], tri[1]);
-    if (res < 0) return false;
+    //    auto res = orient2d_t(p, tri[0], tri[1]);
+    //    if (res < 0) return false;
+    //
+    //    res = orient2d_t(p, tri[1], tri[2]);
+    //    if (res < 0) return false;
+    //
+    //    res = orient2d_t(p, tri[2], tri[0]);
+    //    if (res < 0) return false;
 
-    res = orient2d_t(p, tri[1], tri[2]);
-    if (res < 0) return false;
+    auto res1 = orient2d_t(p, tri[0], tri[1]);
+    auto res2 = orient2d_t(p, tri[1], tri[2]);
+    auto res3 = orient2d_t(p, tri[2], tri[0]);
 
-    res = orient2d_t(p, tri[2], tri[0]);
-    if (res < 0) return false;
+    if (res1 == 0 && res2 == 0) return true;
+    if (res1 == 0 && res3 == 0) return true;
+    if (res2 == 0 && res3 == 0) return true;
 
-    return true;
+    if ((res1 == res2 && res2 == res3) || (res1 == 0 && res2 == res3) ||
+        (res2 == 0 && res3 == res1) || (res3 == 0 && res2 == res1))
+        return true;
+    return false;
 }
 
 } // namespace wmtk
