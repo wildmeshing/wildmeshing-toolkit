@@ -61,6 +61,7 @@ TEST_CASE("triangle-insertion", "[tetwild_operation]")
     for (auto i=0;i<outface.size(); i++) {
         matF.row(i) << outface[i][0], outface[i][1], outface[i][2];
     }
+    std::cout<<outface.size()<<std::endl;
     igl::write_triangle_mesh("wrong-bb.obj", matV, matF);
     // mesh.output_mesh("temp.msh");
 }
