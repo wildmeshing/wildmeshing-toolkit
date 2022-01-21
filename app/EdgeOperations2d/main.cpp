@@ -54,9 +54,8 @@ int main(int argc, char** argv)
         "edgelen: avg max min valence:avg max min before remesh is: {}",
         properties);
     double small = properties[0] * 0.1;
-    double big = properties[0] * 10;
-    run(path, small, argv[2], m);
-    run(path, big, argv[2], m);
+    
+    run(path, small, std::string(argv[2]), m);
 
     return 0;
 }
