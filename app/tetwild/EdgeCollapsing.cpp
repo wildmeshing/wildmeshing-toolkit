@@ -61,9 +61,16 @@ bool tetwild::TetWild::collapse_before(const Tuple& loc) // input is an edge
 
     ///check if on bbox/surface/boundary
     //bbox
-    if(!m_vertex_attribute[v1_id].on_bbox_faces.empty()
-        && m_vertex_attribute[v1_id].on_bbox_faces != m_vertex_attribute[v2_id].on_bbox_faces){
-        return false;
+    if(!m_vertex_attribute[v1_id].on_bbox_faces.empty()) {
+        if (m_vertex_attribute[v2_id].on_bbox_faces.size() <
+            m_vertex_attribute[v1_id].on_bbox_faces.size())
+            return false;
+        for (int on_bbox : m_vertex_attribute[v1_id].on_bbox_faces)
+            if (std::find(
+                    m_vertex_attribute[v2_id].on_bbox_faces.begin(),
+                    m_vertex_attribute[v2_id].on_bbox_faces.end(),
+                    on_bbox) == m_vertex_attribute[v2_id].on_bbox_faces.end())
+                return false;
     }
     //surface
     if(m_vertex_attribute[v1_id].m_is_on_surface){
