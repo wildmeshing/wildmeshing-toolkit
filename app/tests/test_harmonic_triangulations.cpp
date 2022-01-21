@@ -180,7 +180,8 @@ TEST_CASE("gaussian-harmonic")
         auto [E0, cnt0] = stats(har_tet);
         wmtk::logger().info("Start Energy E0  {} ", E0);
         timer.start();
-        har_tet.swap_all_edges(true);
+        // har_tet.swap_all_edges(true);
+        har_tet.swap_all_faces(true);
         time = timer.getElapsedTimeInMilliSec();
         wmtk::logger().info("Time cost: {}", time);
         har_tet.consolidate_mesh();
@@ -197,7 +198,7 @@ TEST_CASE("gaussian-harmonic-single")
     auto vec_attrs = std::vector<Eigen::Vector3d>();
     auto tets = std::vector<std::array<size_t, 4>>();
     {
-        std::vector<wmtk::Point3D> points(50000);
+        std::vector<wmtk::Point3D> points(100000);
         for (auto i = 0; i < points.size(); i++) {
             for (auto j = 0; j < 3; j++) points[i][j] = dist(gen);
         }
@@ -219,7 +220,8 @@ TEST_CASE("gaussian-harmonic-single")
     auto [E0, cnt0] = stats(har_tet);
     wmtk::logger().info("Start Energy E0  {} ", E0);
     timer.start();
-    har_tet.swap_all_edges(false);
+    // har_tet.swap_all_edges(false);
+    har_tet.swap_all_faces(false);
     time = timer.getElapsedTimeInMilliSec();
     wmtk::logger().info("Time cost: {}", time);
     har_tet.consolidate_mesh();

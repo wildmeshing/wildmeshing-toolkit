@@ -37,7 +37,10 @@ public:
     void init(size_t n_vertices, const std::vector<std::array<size_t, 4>>& tets);
     int release_vertex_mutex_in_stack(std::vector<size_t>& mutex_release_stack);
     bool try_set_vertex_mutex_two_ring(const Tuple& v, std::vector<size_t>& mutex_release_stack);
-    bool try_set_vertex_mutex_two_ring_vid(const Tuple& v, std::vector<size_t>& mutex_release_stack);
+    bool try_set_vertex_mutex_two_ring_vid(
+        const Tuple& v,
+        std::vector<size_t>& mutex_release_stack);
     bool try_set_edge_mutex_two_ring(const Tuple& e, std::vector<size_t>& mutex_release_stack);
+    bool try_set_face_mutex_two_ring(const Tuple& f, std::vector<size_t>& mutex_release_stack);
 };
 } // namespace wmtk
