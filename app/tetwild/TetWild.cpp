@@ -109,7 +109,9 @@ void tetwild::TetWild::smooth_all_vertices()
 
 bool tetwild::TetWild::smooth_before(const Tuple& t)
 {
-    return true;
+    if (m_vertex_attribute[t.vid(*this)].m_is_rounded) return true;
+    // try to round.
+    return round(t); // Note: no need to roll back.
 }
 
 bool tetwild::TetWild::smooth_after(const Tuple& t)
