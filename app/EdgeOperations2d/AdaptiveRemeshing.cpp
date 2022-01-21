@@ -1,9 +1,10 @@
+#include "EdgeOperations2d.h"
+
 #include <wmtk/TriMesh.h>
 #include <wmtk/utils/VectorUtils.h>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <wmtk/ExecutionScheduler.hpp>
-#include "EdgeOperations2d.h"
 
 using namespace Edge2d;
 using namespace wmtk;
@@ -13,6 +14,12 @@ auto renew = [](auto& m, auto op, auto& tris) {
     auto optup = std::vector<std::pair<std::string, TriMesh::Tuple>>();
     for (auto& e : edges) optup.emplace_back(op, e);
     return optup;
+};
+
+auto edge_locker = [](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
+    auto stack = std::vector<size_t>();
+    if (!m.try_set_edge_mutex_two_ring(e, stack)) return {};
+    return stack;
 };
 
 double EdgeOperations2d::compute_edge_cost_collapse_ar(const TriMesh::Tuple& t, double L) const
@@ -116,18 +123,28 @@ bool EdgeOperations2d::collapse_remeshing(double L)
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_collapse", loc);
 
-    auto executor = wmtk::ExecutePass<EdgeOperations2d, ExecutionPolicy::kSeq>();
-    executor.renew_neighbor_tuples = renew;
-    executor.priority = [&L](auto& m, auto _, auto& e) {
-        return -m.compute_edge_cost_collapse_ar(e, L);
-    };
-    executor.should_process = [](auto& m, auto& ele) {
-        auto& [val, op, e] = ele;
-        if (val > 0) return false; // priority is negated.
-        return true;
-    };
+    auto setup_and_execute = [&](auto executor) {
+        executor.renew_neighbor_tuples = renew;
+        executor.priority = [&](auto& m, auto _, auto& e) {
+            return -m.compute_edge_cost_collapse_ar(e, L);
+        };
+        executor.lock_vertices = edge_locker;
 
-    executor(*this, collect_all_ops);
+        executor.should_process = [](auto& m, auto& ele) {
+            auto& [val, op, e] = ele;
+            if (val > 0) return false; // priority is negated.
+            return true;
+        };
+        executor(*this, collect_all_ops);
+    };
+    if (NUM_THREADS > 1) {
+        auto executor = wmtk::ExecutePass<EdgeOperations2d, ExecutionPolicy::kSeq>();
+        setup_and_execute(executor);
+    } else {
+        auto executor = wmtk::ExecutePass<EdgeOperations2d, ExecutionPolicy::kPartition>();
+        setup_and_execute(executor);
+    }
+
     return true;
 }
 bool EdgeOperations2d::split_remeshing(double L)
@@ -135,18 +152,30 @@ bool EdgeOperations2d::split_remeshing(double L)
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_split", loc);
 
-    auto executor = wmtk::ExecutePass<EdgeOperations2d, ExecutionPolicy::kSeq>();
-    executor.renew_neighbor_tuples = renew;
-    executor.priority = [&](auto& m, auto _, auto& e) {
-        return m.compute_edge_cost_split_ar(e, L);
-    };
-    executor.should_process = [](auto& m, auto& ele) {
-        auto& [val, op, e] = ele;
-        if (val < 0) return false;
-        return true;
-    };
+    auto setup_and_execute = [&](auto executor) {
+        executor.num_threads = NUM_THREADS;
 
-    executor(*this, collect_all_ops);
+        executor.lock_vertices = edge_locker;
+
+        executor.renew_neighbor_tuples = renew;
+        executor.priority = [&](auto& m, auto _, auto& e) {
+            return m.compute_edge_cost_split_ar(e, L);
+        };
+        executor.should_process = [](auto& m, auto& ele) {
+            auto& [val, op, e] = ele;
+            if (val < 0) return false;
+            return true;
+        };
+        executor(*this, collect_all_ops);
+    };
+    if (NUM_THREADS > 1) {
+        auto executor = wmtk::ExecutePass<EdgeOperations2d, ExecutionPolicy::kSeq>();
+        setup_and_execute(executor);
+    } else {
+        auto executor = wmtk::ExecutePass<EdgeOperations2d, ExecutionPolicy::kPartition>();
+        setup_and_execute(executor);
+    }
+
     return true;
 }
 
@@ -156,18 +185,27 @@ bool EdgeOperations2d::swap_remeshing()
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_swap", loc);
 
-    auto executor = wmtk::ExecutePass<EdgeOperations2d, ExecutionPolicy::kSeq>();
-    executor.renew_neighbor_tuples = renew;
-    executor.priority = [](auto& m, auto op, const Tuple& e) {
-        return m.compute_vertex_valence_ar(e);
+    auto setup_and_execute = [&](auto executor) {
+        executor.renew_neighbor_tuples = renew;
+        executor.priority = [](auto& m, auto op, const Tuple& e) {
+            return m.compute_vertex_valence_ar(e);
+        };
+        executor.lock_vertices = edge_locker;
+        executor.should_process = [](auto& m, auto& ele) {
+            auto& [val, _, e] = ele;
+            auto val_energy = (m.compute_vertex_valence_ar(e));
+            return (val_energy > 1e-5);
+        };
+        executor(*this, collect_all_ops);
     };
-    executor.should_process = [](auto& m, auto& ele) {
-        auto& [val, _, e] = ele;
-        auto val_energy = (m.compute_vertex_valence_ar(e));
-        return (val_energy > 1e-5);
-    };
+    if (NUM_THREADS > 1) {
+        auto executor = wmtk::ExecutePass<EdgeOperations2d, ExecutionPolicy::kSeq>();
+        setup_and_execute(executor);
+    } else {
+        auto executor = wmtk::ExecutePass<EdgeOperations2d, ExecutionPolicy::kPartition>();
+        setup_and_execute(executor);
+    }
 
-    executor(*this, collect_all_ops);
     return true;
 }
 double area(EdgeOperations2d& m, std::array<TriMesh::Tuple, 3>& verts)

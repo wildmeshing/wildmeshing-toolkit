@@ -24,7 +24,7 @@ int ConcurrentTriMesh::release_vertex_mutex_in_stack(std::vector<size_t>& mutex_
 }
 
 bool ConcurrentTriMesh::try_set_vertex_mutex_two_ring(
-    Tuple& v,
+    const Tuple& v,
     std::vector<size_t>& mutex_release_stack)
 {
     for (auto v_one_ring : get_one_ring_edges_for_vertex(v)) {
@@ -47,7 +47,7 @@ bool ConcurrentTriMesh::try_set_vertex_mutex_two_ring(
 }
 
 bool ConcurrentTriMesh::try_set_edge_mutex_two_ring(
-    Tuple& e,
+    const Tuple& e,
     std::vector<size_t>& mutex_release_stack)
 {
     Tuple v1 = e;
