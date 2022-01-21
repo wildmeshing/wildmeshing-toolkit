@@ -25,6 +25,8 @@ TEST_CASE("edge_splitting", "[tetwild_operation]")
     vertices[3].m_posf = Vector3d(0, 0, 1);
     std::vector<std::array<size_t, 4>> tets = {{{0, 1, 3, 2}}};
     std::vector<TetAttributes> tet_attrs(1);
+    for (auto& v:vertices) v.is_rounded = true;
+    REQUIRE_FALSE(tetwild.is_inverted(tetwild.tuple_from_tet(0)));
 
     tetwild.init(vertices.size(), tets);
     tetwild.create_mesh_attributes(vertices, tet_attrs);
@@ -58,6 +60,7 @@ TEST_CASE("edge_collapsing", "[tetwild_operation]")
     vertices[3].m_posf = Vector3d(0, 0, 1);
     std::vector<std::array<size_t, 4>> tets = {{{0, 1, 3, 2}}};
     std::vector<TetAttributes> tet_attrs(1);
+    for (auto& v:vertices) v.is_rounded = true;
 
     tetwild.init(vertices.size(), tets);
     tetwild.create_mesh_attributes(vertices, tet_attrs);
@@ -85,6 +88,29 @@ TEST_CASE("edge_collapsing", "[tetwild_operation]")
         }
         return true;
     }());
+}
+
+TEST_CASE("inversion-check-rational-tetwild", "[tetwild_operation]")
+{
+    Parameters params;
+    params.lr = 1 / 10.;
+    params.init(Vector3d(0, 0, 0), Vector3d(1, 1, 1));
+
+    fastEnvelope::FastEnvelope envelope;
+    TetWild tetwild(params, envelope);
+
+    std::vector<VertexAttributes> vertices(4);
+    vertices[0].m_pos = Vector3(0, 0, 0);
+    vertices[1].m_pos = Vector3(1, 0, 0);
+    vertices[2].m_pos = Vector3(0, 1, 0);
+    vertices[3].m_pos = Vector3(0, 0, 1);
+    for (auto& v:vertices) v.is_rounded = false;
+    std::vector<std::array<size_t, 4>> tets = {{{0, 1, 3, 2}}};
+    std::vector<TetAttributes> tet_attrs(1);
+
+    tetwild.init(vertices.size(), tets);
+    tetwild.create_mesh_attributes(vertices, tet_attrs);
+    REQUIRE_FALSE(tetwild.is_inverted(tetwild.tuple_from_tet(0)));
 }
 
 TEST_CASE("optimize-bunny-tw", "[tetwild_operation][.slow]")
