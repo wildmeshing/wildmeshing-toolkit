@@ -228,12 +228,15 @@ public:
     bool swap_face_before(const Tuple& t) override;
     bool swap_face_after(const Tuple& t) override;
 
-    bool is_inverted(const Tuple& loc);
-    double get_quality(const Tuple& loc);
+    bool is_inverted(const Tuple& loc) const;
+    double get_quality(const Tuple& loc) const;
     bool round(const Tuple& loc);
 
     bool vertex_invariant(const Tuple& t) override;
     bool tetrahedron_invariant(const Tuple& t) override;
+
+    double get_length2(const Tuple&loc) const;
+    // debug use
     std::atomic<int> cnt_split = 0, cnt_collapse = 0, cnt_swap = 0;
 };
 

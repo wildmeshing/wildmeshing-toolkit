@@ -1,11 +1,13 @@
 #include "TetWild.h"
+#include "wmtk/TetMesh.h"
 
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 
-auto measure_edge_length = [](auto& m, auto& l) {
+double tetwild::TetWild::get_length2(const wmtk::TetMesh::Tuple& l) const {
+    auto &m = *this;
     auto& v1 = l;
     auto v2 = l.switch_vertex(m);
     double length =
@@ -25,12 +27,12 @@ void tetwild::TetWild::collapse_all_edges()
             if (!m.try_set_edge_mutex_two_ring(e, stack)) return {};
             return stack;
         };
-        executor.priority = [&](auto& m, auto op, auto& t) { return -measure_edge_length(m, t); };
+        executor.priority = [&](auto& m, auto op, auto& t) { return -m.get_length2(t); };
         executor.num_threads = NUM_THREADS;
         executor.should_process = [&](const auto& m, const auto& ele) {
             auto [weight, op, tup] = ele;
-            auto length = measure_edge_length(m, tup);
-            if (length != weight) return false;
+            auto length = m.get_length2(tup);
+            if (length != - weight) return false;
             if (length > m_params.collapsing_l2) return false;
             return true;
         };

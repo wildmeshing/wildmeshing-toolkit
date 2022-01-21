@@ -10,7 +10,7 @@
 #include <igl/predicates/predicates.h>
 #include <spdlog/fmt/ostr.h>
 
-bool tetwild::TetWild::is_inverted(const Tuple& loc)
+bool tetwild::TetWild::is_inverted(const Tuple& loc) const
 {
     std::array<Vector3d, 4> ps;
     auto its = oriented_tet_vertices(loc);
@@ -53,7 +53,7 @@ bool tetwild::TetWild::round(const Tuple& v)
     return true;
 }
 
-double tetwild::TetWild::get_quality(const Tuple& loc)
+double tetwild::TetWild::get_quality(const Tuple& loc) const
 {
     std::array<Vector3d, 4> ps;
     auto its = oriented_tet_vertices(loc);
