@@ -42,11 +42,11 @@ Eigen::MatrixXd compute_Q_v(const EdgeOperations2d& m, const TriMesh::Tuple& v_t
         p(1) = n(1);
         p(2) = n(2);
         p(3) = -n.dot(B);
-
-        return p * p.transpose();
+        return (p * p.transpose());
     };
     for (auto tri : conn_tris) {
-        Q += Q_t(m, tri);
+        auto Q_tmp = compute_Q_f(m, tri);
+        Q += Q_tmp;
     }
     return Q;
 }
@@ -56,9 +56,22 @@ double compute_cost_for_v(const EdgeOperations2d& m, const TriMesh::Tuple& v_tup
     Eigen::MatrixXd Q = compute_Q_v(m, v_tuple);
     Q += compute_Q_v(m, v_tuple.switch_vertex(m));
     Eigen::Vector4d t(0.0, 0.0, 0.0, 1.0);
-    auto v = Q.inverse() * t;
+    Eigen::MatrixXd vQ = Q;
+    vQ.row(3) = t;
 
-    return v.transpose() * Q * v;
+    Eigen::Vector4d v;
+    if (vQ.determinant() == 0) {
+        Eigen::Vector3d tmp = (m.m_vertex_positions[v_tuple.vid()] +
+                               m.m_vertex_positions[m.switch_vertex(v_tuple).vid()]) /
+                              2;
+        v << tmp, 1.0;
+    }
+
+    else
+        v = vQ.inverse() * t;
+    v(3) = 1.0;
+    // wmtk::logger().info("Q is \n {} \n v is \n {}", Q, v);
+    return (v.transpose() * Q * v);
 }
 
 bool Edge2d::EdgeOperations2d::collapse_qec(int target)
@@ -81,6 +94,7 @@ bool Edge2d::EdgeOperations2d::collapse_qec(int target)
         //     m.m_vertex_positions[e.switch_vertex(m).vid()])
         //                 .norm();
         // };
+        // wmtk::logger().info(-compute_cost_for_v(m, e));
         return -compute_cost_for_v(m, e);
     };
     executor.should_process = [&target, &collect_all_ops](auto& m, auto& ele) {

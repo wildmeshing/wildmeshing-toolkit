@@ -64,7 +64,6 @@ public:
     {
         m_vertex_positions[t.vid()] =
             (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
-        // wmtk::logger().info("upadte positiont to {}", m_vertex_positions[t.vid()]);
     }
 
     void partition_mesh() { m_vertex_partition_id = partition_TriMesh(*this, NUM_THREADS); }
