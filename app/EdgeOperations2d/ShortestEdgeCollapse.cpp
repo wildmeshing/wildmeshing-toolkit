@@ -21,7 +21,7 @@ auto unique_edge_tuples = [](const auto& m, auto& edges) {
     }
 };
 
-bool Edge2d::swap_after(const TriMesh::Tuple& t) override 
+bool Edge2d::EdgeOperations2d::swap_after(const TriMesh::Tuple& t)
 {
     std::vector<TriMesh::Tuple> tris;
     tris.push_back(t);
@@ -30,7 +30,7 @@ bool Edge2d::swap_after(const TriMesh::Tuple& t) override
     return false;
 }
 
-bool Edge2d::collapse_after(const TriMesh::Tuple& t) override
+bool Edge2d::EdgeOperations2d::collapse_after(const TriMesh::Tuple& t)
 {
     const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
     auto vid = t.vid();
@@ -42,7 +42,7 @@ bool Edge2d::collapse_after(const TriMesh::Tuple& t) override
     return false;
 }
 
-bool Edge2d::split_after(const TriMesh::Tuple& t) override
+bool Edge2d::EdgeOperations2d::split_after(const TriMesh::Tuple& t)
 {
     const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
     auto vid = t.vid();
@@ -51,6 +51,7 @@ bool Edge2d::split_after(const TriMesh::Tuple& t) override
 
     if (invariants(get_one_ring_tris_for_vertex(t))) return true;
     m_vertex_positions[vid] = old_p;
+    return false;
 }
 
 std::vector<TriMesh::Tuple> Edge2d::EdgeOperations2d::new_edges_after(

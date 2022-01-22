@@ -161,7 +161,7 @@ public:
     }
 
     bool collapse_after(const Tuple& t) override;
-    bool swap_after(const Tuple& t) override 
+    bool swap_after(const Tuple& t) override;
 
     std::vector<TriMesh::Tuple> new_edges_after(const std::vector<TriMesh::Tuple>& t) const;
     std::vector<TriMesh::Tuple> new_edges_after_swap(const TriMesh::Tuple& t) const;
