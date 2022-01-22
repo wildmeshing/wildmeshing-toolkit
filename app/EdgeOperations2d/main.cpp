@@ -48,7 +48,7 @@ int main(int argc, char** argv)
         for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
     }
     EdgeOperations2d m(v);
-    m.create_mesh(V.rows(), tri);
+    m.create_mesh(V.rows(), tri, atof(argv[5]));
     assert(m.check_mesh_connectivity_validity());
     std::vector<double> properties = m.average_len_valen();
     wmtk::logger().info(
