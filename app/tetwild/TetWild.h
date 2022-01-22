@@ -86,6 +86,7 @@ public:
         auto n_tet = m_tet_attribute.size();
         resize_edge_attributes(6 * n_tet);
         resize_face_attributes(4 * n_tet);
+        partition_TetMesh(*this, NUM_THREADS);
     }
 
     ////// Attributes related
@@ -95,6 +96,7 @@ public:
     tbb::concurrent_vector<FaceAttributes> m_face_attribute;
     tbb::concurrent_vector<TetAttributes> m_tet_attribute;
     int NUM_THREADS = 1;
+     tbb::concurrent_vector<size_t> m_vertex_partition_id;
 
     void resize_vertex_attributes(size_t v) override { m_vertex_attribute.resize(v); }
     void resize_edge_attributes(size_t e) override { m_edge_attribute.resize(e); }
@@ -229,8 +231,8 @@ public:
     bool swap_face_before(const Tuple& t) override;
     bool swap_face_after(const Tuple& t) override;
 
-    bool is_inverted(const Tuple& loc);
-    double get_quality(const Tuple& loc);
+    bool is_inverted(const Tuple& loc) const;
+    double get_quality(const Tuple& loc) const;
     bool round(const Tuple& loc);
 
     std::vector<std::array<size_t, 3>> get_faces_by_condition(
@@ -238,6 +240,9 @@ public:
 
     bool vertex_invariant(const Tuple& t) override;
     bool tetrahedron_invariant(const Tuple& t) override;
+
+    double get_length2(const Tuple&loc) const;
+    // debug use
     std::atomic<int> cnt_split = 0, cnt_collapse = 0, cnt_swap = 0;
 };
 
