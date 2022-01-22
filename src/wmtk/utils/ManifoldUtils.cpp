@@ -12,7 +12,7 @@ bool wmtk::separate_to_manifold(
 {
     Eigen::MatrixXi F(faces.size(), 3);
     for (auto i = 0; i < faces.size(); i++) F.row(i) << faces[i][0], faces[i][1], faces[i][2];
-    Eigen::MatrixXi V(vertices.size(), 3);
+    Eigen::MatrixXd V(vertices.size(), 3);
     for (auto i = 0; i < vertices.size(); i++) V.row(i) = vertices[i];
 
     Eigen::VectorXi indices;
