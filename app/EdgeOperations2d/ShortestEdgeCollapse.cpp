@@ -38,7 +38,7 @@ std::vector<TriMesh::Tuple> Edge2d::EdgeOperations2d::new_edges_after(
     return new_edges;
 }
 
-bool Edge2d::EdgeOperations2d::collapse_shortest(int target_operation_count)
+bool Edge2d::EdgeOperations2d::collapse_shortest(int target_vert_number)
 {
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_collapse", loc);
@@ -64,7 +64,7 @@ bool Edge2d::EdgeOperations2d::collapse_shortest(int target_operation_count)
             if (!m.try_set_edge_mutex_two_ring(e, stack)) return {};
             return stack;
         };
-        executor.stopping_criterion_checking_frequency = target_operation_count;
+        executor.stopping_criterion_checking_frequency = vert_capacity() - target_vert_number;
         executor.stopping_criterion = [](auto& m) { return true; };
         executor(*this, collect_all_ops);
     };
