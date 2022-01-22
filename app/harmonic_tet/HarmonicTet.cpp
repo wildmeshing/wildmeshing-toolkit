@@ -117,6 +117,7 @@ bool HarmonicTet::swap_edge_before(const Tuple& t)
     edgeswap_cache.local().total_energy = total_energy;
     return true;
 }
+
 bool HarmonicTet::swap_edge_after(const Tuple& t)
 {
     if (!TetMesh::swap_edge_after(t)) return false;
@@ -124,15 +125,14 @@ bool HarmonicTet::swap_edge_after(const Tuple& t)
     // after swap, t points to a face with 2 neighboring tets.
     auto oppo_tet = t.switch_tetrahedron(*this);
     assert(oppo_tet.has_value() && "Should not swap boundary.");
-    auto total_energy = get_quality(t) + get_quality(*oppo_tet);
-    wmtk::logger().debug("energy {} {}", edgeswap_cache.local().total_energy, total_energy);
-    if (is_inverted(t) || is_inverted(*oppo_tet)) {
-        wmtk::logger().debug(
-            "invert w/ energy {} {}",
-            edgeswap_cache.local().total_energy,
-            total_energy);
+
+    if (!invariants(std::vector<Tuple>{{t, *oppo_tet}})) {
         return false;
     }
+
+    auto total_energy = get_quality(t) + get_quality(*oppo_tet);
+    wmtk::logger().debug("energy {} {}", edgeswap_cache.local().total_energy, total_energy);
+
     if (total_energy > edgeswap_cache.local().total_energy) return false;
     return true;
 }
@@ -142,11 +142,10 @@ bool HarmonicTet::swap_face_after(const Tuple& t)
     if (!TetMesh::swap_face_after(t)) return false;
 
     auto incident_tets = get_incident_tets_for_edge(t);
-    for (auto& l : incident_tets) {
-        if (is_inverted(l)) {
-            return false;
-        }
+    if (!invariants(incident_tets)) {
+        return false;
     }
+
     auto total_energy = 0.;
     for (auto& l : incident_tets) {
         total_energy += get_quality(l);
@@ -192,6 +191,13 @@ void harmonic_tet::HarmonicTet::smooth_all_vertices(bool interior_only)
     executor(*this, collect_all_ops);
 }
 
+bool HarmonicTet::invariants(const std::vector<Tuple>& tets)
+{
+    for (auto& t : tets) {
+        if (is_inverted(t)) return false;
+    }
+    return true;
+}
 
 void HarmonicTet::swap_all_faces(bool parallel)
 {
