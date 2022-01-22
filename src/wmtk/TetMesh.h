@@ -367,13 +367,6 @@ protected:
     virtual bool smooth_before(const Tuple& t) { return true; }
     virtual bool smooth_after(const Tuple& t) { return true; }
 
-    // Invariants that are called on all the new or modified elements after an operation is
-    // performed
-    virtual bool vertex_invariant(const Tuple& t) { return true; }
-    virtual bool edge_invariant(const Tuple& t) { return true; }
-    virtual bool face_invariant(const Tuple& t) { return true; }
-    virtual bool tetrahedron_invariant(const Tuple& t) { return true; }
-
     virtual void resize_vertex_attributes(size_t v) {}
     virtual void resize_edge_attributes(size_t e) {}
     virtual void resize_face_attributes(size_t f) {}

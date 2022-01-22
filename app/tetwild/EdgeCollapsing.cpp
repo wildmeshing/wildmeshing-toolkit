@@ -87,11 +87,7 @@ bool tetwild::TetWild::collapse_after(const Tuple& loc)
 
     ////check first
     // check inversion
-    for (auto& l : locs) {
-        if (is_inverted(l)) {
-            return false;
-        }
-    }
+    if (!tetrahedron_invariant(locs)) return false;
 
     // check quality
     std::vector<double> qs;

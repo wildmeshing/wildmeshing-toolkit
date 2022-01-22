@@ -69,12 +69,7 @@ bool tetwild::TetWild::split_after(const Tuple& loc)
     m_vertex_attribute[v_id].m_is_rounded = true;
 
     // check inversion
-    for (auto& loc : locs) {
-        if (is_inverted(loc)) {
-            m_vertex_attribute[v_id].m_posf = old_pos;
-            return false;
-        }
-    }
+    if (!tetrahedron_invariant(locs)) return false;
 
     // update quality
     for (auto& loc : locs) {

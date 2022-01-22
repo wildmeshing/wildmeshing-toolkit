@@ -238,8 +238,8 @@ public:
     std::vector<std::array<size_t, 3>> get_faces_by_condition(
         std::function<bool(const FaceAttributes&)> cond);
 
-    bool vertex_invariant(const Tuple& t) override;
-    bool tetrahedron_invariant(const Tuple& t) override;
+    bool vertex_invariant(const Tuple& t);
+    bool tetrahedron_invariant(const std::vector<Tuple>& t);
 
     double get_length2(const Tuple&loc) const;
     // debug use

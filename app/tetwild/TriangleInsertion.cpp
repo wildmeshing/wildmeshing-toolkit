@@ -241,6 +241,7 @@ void tetwild::TetWild::triangle_insertion_after(
             tet_face_tags[f] = tags;
         }
     }
+    // TODO: invariants?
 
     //    //fortest
     //    const auto& vertices = triangle_insertion_cache.input_surface.vertices;

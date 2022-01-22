@@ -139,8 +139,7 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
     m_vertex_connectivity[v1_id].m_conn_tets.clear();
 
     Tuple new_loc = tuple_from_vertex(v2_id);
-    if (!vertex_invariant(new_loc) || !edge_invariant(new_loc) || !tetrahedron_invariant(new_loc) ||
-        !collapse_after(new_loc)) {
+    if (!collapse_after(new_loc)) {
         m_vertex_connectivity[v1_id].m_is_removed = false;
         operation_failure_rollback_imp(rollback_vert_conn, n1_t_ids, new_tet_id, old_tets);
 
