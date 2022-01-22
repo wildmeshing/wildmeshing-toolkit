@@ -1,5 +1,6 @@
 #include <wmtk/ConcurrentTetMesh.h>
 
+#include <Tracy.hpp>
 
 void wmtk::ConcurrentTetMesh::init(
     size_t n_vertices,
@@ -12,6 +13,7 @@ void wmtk::ConcurrentTetMesh::init(
 
 int wmtk::ConcurrentTetMesh::release_vertex_mutex_in_stack(std::vector<size_t>& mutex_release_stack)
 {
+    ZoneScoped;
     int num_released = 0;
     for (int i = mutex_release_stack.size() - 1; i >= 0; i--) {
         unlock_vertex_mutex(mutex_release_stack[i]);
@@ -25,6 +27,7 @@ bool wmtk::ConcurrentTetMesh::try_set_vertex_mutex_two_ring(
     const Tuple& v,
     std::vector<size_t>& mutex_release_stack)
 {
+    ZoneScoped;
     for (auto v_one_ring : get_one_ring_vertices_for_vertex(v)) {
         if (vector_contains(mutex_release_stack, v_one_ring.vid(*this))) continue;
         if (try_set_vertex_mutex(v_one_ring)) {
@@ -48,6 +51,7 @@ bool wmtk::ConcurrentTetMesh::try_set_vertex_mutex_two_ring_vid(
     const Tuple& v,
     std::vector<size_t>& mutex_release_stack)
 {
+    ZoneScoped;
     for (auto v_one_ring : get_one_ring_vids_for_vertex(v.vid(*this))) {
         if (vector_contains(mutex_release_stack, v_one_ring)) continue;
         if (try_set_vertex_mutex(v_one_ring)) {
@@ -72,6 +76,7 @@ bool wmtk::ConcurrentTetMesh::try_set_edge_mutex_two_ring(
     const Tuple& e,
     std::vector<size_t>& mutex_release_stack)
 {
+    ZoneScoped;
     Tuple v1 = e;
     bool release_flag = false;
 
@@ -129,6 +134,7 @@ bool wmtk::ConcurrentTetMesh::try_set_face_mutex_two_ring(
     const Tuple& f,
     std::vector<size_t>& mutex_release_stack)
 {
+    ZoneScoped;
     Tuple v1 = f;
     bool release_flag = false;
 

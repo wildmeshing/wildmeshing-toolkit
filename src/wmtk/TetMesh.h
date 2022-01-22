@@ -5,6 +5,8 @@
 
 #include <tbb/concurrent_vector.h>
 
+#include <Tracy.hpp>
+
 #include <array>
 #include <cassert>
 #include <map>
@@ -173,6 +175,7 @@ public:
 
         friend bool operator==(const VertexConnectivity& l, const VertexConnectivity& r)
         {
+            ZoneScoped;
             return std::tie(l.m_conn_tets, l.m_is_removed) ==
                    std::tie(r.m_conn_tets, r.m_is_removed); // keep the same order
         }
@@ -210,6 +213,7 @@ public:
 
         int find(size_t v_id) const
         {
+            ZoneScoped;
             for (int j = 0; j < 4; j++) {
                 if (v_id == m_indices[j]) return j;
             }
@@ -218,6 +222,7 @@ public:
 
         int find_local_edge(size_t v1_id, size_t v2_id) const
         {
+            ZoneScoped;
             std::array<int, 2> e;
             for (int j = 0; j < 4; j++) {
                 if (v1_id == m_indices[j])
@@ -234,6 +239,7 @@ public:
 
         int find_local_face(size_t v1_id, size_t v2_id, size_t v3_id) const
         {
+            ZoneScoped;
             std::array<int, 3> f;
             for (int j = 0; j < 4; j++) {
                 if (v1_id == m_indices[j])
@@ -252,6 +258,7 @@ public:
 
         friend bool operator==(const TetrahedronConnectivity& l, const TetrahedronConnectivity& r)
         {
+            ZoneScoped;
             return std::tie(l.m_indices, l.m_is_removed, l.hash) ==
                    std::tie(r.m_indices, r.m_is_removed, r.hash); // keep the same order
         }
@@ -490,10 +497,10 @@ public:
     std::vector<Tuple> get_one_ring_tets_for_edge(const Tuple& t) const;
 
     /**
-    * @brief 
-    * 
-    * @param m 
-    * @return std::vector<std::array<size_t,3>> 
+    * @brief
+    *
+    * @param m
+    * @return std::vector<std::array<size_t,3>>
     */
     std::vector<std::array<size_t,3>> vertex_adjacent_boundary_faces(const Tuple&t) const;
     /**

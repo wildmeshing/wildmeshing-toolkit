@@ -188,15 +188,18 @@ public:
         auto cnt_update = std::atomic<int>(0);
         auto stop = std::atomic<bool>(false);
         auto run_single_queue = [&](auto& Q) {
+            ZoneScoped;
             using Elem = std::tuple<double, Op, Tuple>;
             auto ele_in_queue = Elem();
-            while (Q.try_pop(ele_in_queue)) {
+            while ([&](){ ZoneScoped; return Q.try_pop(ele_in_queue); }()) {
+                ZoneScoped;
                 auto& [weight, op, tup] = ele_in_queue;
                 if (!tup.is_valid(m)) continue;
                 if (!should_process(m, ele_in_queue))
                     continue; // this can encode, in qslim, recompute(energy) == weight.
                 std::vector<Elem> renewed_elements;
                 {
+                    ZoneScoped;
                     auto locked_vid =
                         lock_vertices(m, tup); // Note that returning `Tuples` would be invalid.
                     if (!locked_vid) {
@@ -208,13 +211,17 @@ public:
                         std::vector<std::pair<Op, Tuple>> renewed_tuples;
                         if (newtup) renewed_tuples = renew_neighbor_tuples(m, op, newtup.value());
                         for (auto& [o, e] : renewed_tuples) {
+                            ZoneScoped;
                             renewed_elements.emplace_back(priority(m, o, e), o, e);
                         }
                         cnt_update++;
                     }
                     operation_cleanup(m, locked_vid); // Maybe use RAII
                 }
-                for (auto& e : renewed_elements) Q.emplace(e);
+                for (auto& e : renewed_elements) {
+                    ZoneScoped;
+                    Q.emplace(e);
+                }
 
                 if (stop.load(std::memory_order_acquire)) return;
                 if (cnt_update > stopping_criterion_checking_frequency) {
