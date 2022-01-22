@@ -25,9 +25,9 @@ public:
     Vector3d m_posf;
     bool m_is_rounded = false;
 
-    bool m_is_on_surface;
-    bool m_is_on_boundary;
-    bool m_is_on_bbox;
+    bool m_is_on_surface = false;
+    bool m_is_on_boundary = false;
+    bool m_is_on_bbox = false;
     bool m_is_outside;
 
     Scalar m_sizing_scalars;
@@ -46,9 +46,9 @@ class FaceAttributes
 public:
     Scalar tag;
 
-    int m_is_surface_fs;
-    int m_is_bbox_fs;
-    int m_opp_t_ids;
+    int m_is_surface_fs = 0;//0; 1
+    int m_is_bbox_fs = -1;//-1; 0~5
+
     int m_surface_tags;
 };
 
@@ -197,6 +197,7 @@ public:
 
     void construct_background_mesh(const InputSurface& input_surface);
     void match_insertion_faces(const InputSurface& input_surface, std::vector<bool>& is_matched);
+    void setup_attributes();
     //
 //    void add_tet_centroid(const std::array<size_t, 4>& vids) override;
     void add_tet_centroid(const Tuple& t) override;
@@ -231,6 +232,9 @@ public:
     bool is_inverted(const Tuple& loc);
     double get_quality(const Tuple& loc);
     bool round(const Tuple& loc);
+
+    std::vector<std::array<size_t, 3>> get_faces_by_condition(
+        std::function<bool(const FaceAttributes&)> cond);
 
     bool vertex_invariant(const Tuple& t) override;
     bool tetrahedron_invariant(const Tuple& t) override;
