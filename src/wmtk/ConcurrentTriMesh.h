@@ -21,10 +21,10 @@ public:
 private:
     tbb::concurrent_vector<VertexMutex> m_vertex_mutex;
 
-    bool try_set_vertex_mutex(Tuple& v) { return m_vertex_mutex[v.vid()].trylock(); }
+    bool try_set_vertex_mutex(const Tuple& v) { return m_vertex_mutex[v.vid()].trylock(); }
     bool try_set_vertex_mutex(size_t vid) { return m_vertex_mutex[vid].trylock(); }
 
-    void unlock_vertex_mutex(Tuple& v) { m_vertex_mutex[v.vid()].unlock(); }
+    void unlock_vertex_mutex(const Tuple& v) { m_vertex_mutex[v.vid()].unlock(); }
     void unlock_vertex_mutex(size_t vid) { m_vertex_mutex[vid].unlock(); }
 
 protected:
@@ -36,7 +36,7 @@ public:
     // TODO remove later
     void create_mesh(size_t n_vertices, const std::vector<std::array<size_t, 3>>& tris);
     int release_vertex_mutex_in_stack(std::vector<size_t>& mutex_release_stack);
-    bool try_set_vertex_mutex_two_ring(Tuple& v, std::vector<size_t>& mutex_release_stack);
-    bool try_set_edge_mutex_two_ring(Tuple& e, std::vector<size_t>& mutex_release_stack);
+    bool try_set_vertex_mutex_two_ring(const Tuple& v, std::vector<size_t>& mutex_release_stack);
+    bool try_set_edge_mutex_two_ring(const Tuple& e, std::vector<size_t>& mutex_release_stack);
 };
 } // namespace wmtk

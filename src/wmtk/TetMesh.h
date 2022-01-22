@@ -392,7 +392,7 @@ public:
      * @param tid Global tetra index
      * @param local_eid local edge index
      */
-    Tuple tuple_from_edge(int tid, int local_eid) const;
+    Tuple tuple_from_edge(size_t tid, int local_eid) const;
 
     /**
      * @brief get a Tuple from global tetra index and __local__ face index (from 0-3).
@@ -401,7 +401,15 @@ public:
      * @param tid Global tetra index
      * @param local_fid local face index
      */
-    Tuple tuple_from_face(int tid, int local_fid) const;
+    Tuple tuple_from_face(size_t tid, int local_fid) const;
+
+    /**
+     * @brief get a Tuple and the global face index from global vertex index of the face.
+     *
+     * @param m TetMesh where the current Tuple belongs.
+     * @param vids Global vertex index of the face
+     */
+    std::tuple<Tuple, size_t> tuple_from_face(const std::array<size_t, 3>& vids) const;
 
     /**
      * @brief get a Tuple from global vertex index
@@ -409,7 +417,7 @@ public:
      * @param m TetMesh where the current Tuple belongs.
      * @param vid Global vertex index
      */
-    Tuple tuple_from_vertex(int vid) const;
+    Tuple tuple_from_vertex(size_t vid) const;
 
     /**
      * @brief get a Tuple from global tetra index
@@ -417,7 +425,7 @@ public:
      * @param m TetMesh where the current Tuple belongs.
      * @param tid Global tetra index
      */
-    Tuple tuple_from_tet(int tid) const;
+    Tuple tuple_from_tet(size_t tid) const;
 
 
     /**
