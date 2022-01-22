@@ -4,36 +4,9 @@
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include "wmtk/utils/TupleUtils.hpp"
+#include <wmtk/utils/ExecutorUtils.hpp>
 
 #include <cassert>
-
-auto measure_edge_length = [](auto& m, auto& l) {
-    auto& v1 = l;
-    auto v2 = l.switch_vertex(m);
-    double length =
-        (m.m_vertex_attribute[v1.vid(m)].m_posf - m.m_vertex_attribute[v2.vid(m)].m_posf).squaredNorm();
-    return length;
-};
-
-auto construct_queue =
-    [](const tetwild::TetWild& m, const auto& m_vertex_attribute, const auto& tuples) {
-        using namespace tetwild;
-
-        wmtk::logger().debug("tuples.size() = {}", tuples.size());
-        std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_l> ec_queue;
-
-        for (auto& loc : tuples) {
-            auto& v1 = loc;
-            auto v2 = loc.switch_vertex(m);
-            double length =
-                (m_vertex_attribute[v1.vid(m)].m_posf - m_vertex_attribute[v2.vid(m)].m_posf)
-                    .squaredNorm();
-            ec_queue.emplace(loc, length);
-        }
-        return ec_queue;
-    };
-
-#include <wmtk/utils/ExecutorUtils.hpp>
 
 void tetwild::TetWild::swap_all_edges()
 {
@@ -42,7 +15,7 @@ void tetwild::TetWild::swap_all_edges()
     auto setup_and_execute = [&](auto& executor) {
         executor.renew_neighbor_tuples = wmtk::renewal_edges;
         executor.priority = [&](auto& m, auto op, auto& t) {
-            return measure_edge_length(m, t);
+            return m.get_length2(t);
         };
         executor.num_threads = NUM_THREADS;
         executor(*this, collect_all_ops);
@@ -72,8 +45,8 @@ void tetwild::TetWild::swap_all_faces()
             if (!m.try_set_face_mutex_two_ring(e, stack)) return {};
             return stack;
         };
-        executor.priority = [&](auto& m, auto op, auto& t) {
-            return measure_edge_length(m, t);
+        executor.priority = [](auto& m, auto op, auto& t) {
+            return m.get_length2(t);
         };
         executor.num_threads = NUM_THREADS;
     };
