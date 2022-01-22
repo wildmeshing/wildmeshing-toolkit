@@ -83,14 +83,15 @@ public:
         }
         m_vertex_positions[t.vid()] = p;
         return true;
+
     }
 
     void partition_mesh() { m_vertex_partition_id = partition_TriMesh(*this, NUM_THREADS); }
 
-    bool smooth(const Tuple& t)
+    Eigen::Vector3d smooth(const Tuple& t)
     {
         auto one_ring_edges = get_one_ring_edges_for_vertex(t);
-        if (one_ring_edges.size() < 3) return false;
+        if (one_ring_edges.size() < 3) return m_vertex_positions[t.vid()];
         Eigen::Vector3d after_smooth(0, 0, 0);
         Eigen::Vector3d after_smooth_boundary(0, 0, 0);
         int boundary = 0;
@@ -98,15 +99,20 @@ public:
             if (is_boundary_edge(e)) {
                 after_smooth_boundary += m_vertex_positions[e.vid()];
                 boundary++;
+                continue;
             }
             after_smooth += m_vertex_positions[e.vid()];
         }
+
         if (boundary)
-            m_vertex_positions[t.vid()] = after_smooth_boundary / boundary;
+            after_smooth = after_smooth_boundary / boundary;
         else
-            m_vertex_positions[t.vid()] = after_smooth / one_ring_edges.size();
-        return true;
+            after_smooth /= one_ring_edges.size();
+        return after_smooth;
     }
+
+
+    Eigen::Vector3d tangential_smooth(const Tuple& t);
 
     void move_vertex_attribute(size_t from, size_t to) override
     {
@@ -145,16 +151,14 @@ public:
 
     std::vector<TriMesh::Tuple> new_edges_after(const std::vector<TriMesh::Tuple>& t) const;
     std::vector<TriMesh::Tuple> new_edges_after_swap(const TriMesh::Tuple& t) const;
+    // std::vector<TriMesh::Tuple> new_edges_after_collapse_split(const TriMesh::Tuple& t) const;
 
     bool collapse_shortest(int target_vertex_count);
 
-    bool collapse_qec();
-    // get the quadrix in form of an array of 10 floating point numbers
-    std::array<double, 10> compute_Q_f(wmtk::TriMesh::Tuple& t);
-
-    std::array<double, 10> compute_Q_v(wmtk::TriMesh::Tuple& t);
-
+    Eigen::MatrixXd compute_Q_f(wmtk::TriMesh::Tuple& f_tuple);
+    Eigen::MatrixXd compute_Q_v(wmtk::TriMesh::Tuple& v_tuple);
     double compute_cost_for_v(wmtk::TriMesh::Tuple& v_tuple);
+    bool collapse_qec(int target_vertcies);
 
     bool split_before(const Tuple& t) override
     {
@@ -167,11 +171,11 @@ public:
     double compute_edge_cost_collapse_ar(const TriMesh::Tuple& t, double L) const;
     double compute_edge_cost_split_ar(const TriMesh::Tuple& t, double L) const;
     double compute_vertex_valence_ar(const TriMesh::Tuple& t) const;
-    std::pair<double, double> average_len_valen();
+    std::vector<double> average_len_valen();
     bool split_remeshing(double L);
     bool collapse_remeshing(double L);
     bool swap_remeshing();
-    bool adaptive_remeshing(double L, int interations);
+    bool adaptive_remeshing(double L, int interations, int sm);
     void resize_vertex_attributes(size_t v) override
     {
         ConcurrentTriMesh::resize_vertex_attributes(v);
