@@ -10,11 +10,7 @@ void tetwild::TetWild::split_all_edges()
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_split", loc);
     auto setup_and_execute = [&](auto& executor) {
         executor.renew_neighbor_tuples = wmtk::renewal_simple;
-        executor.lock_vertices = [](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
-            auto stack = std::vector<size_t>();
-            if (!m.try_set_edge_mutex_two_ring(e, stack)) return {};
-            return stack;
-        };
+        
         executor.priority = [&](auto& m, auto op, auto& t) { return m.get_length2(t); };
         executor.num_threads = NUM_THREADS;
         executor.should_process = [&](const auto& m, const auto& ele) {
@@ -24,9 +20,15 @@ void tetwild::TetWild::split_all_edges()
             if (length < m_params.splitting_l2) return false;
             return true;
         };
+        executor(*this, collect_all_ops);
     };
     if (NUM_THREADS > 1) {
         auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kPartition>();
+        executor.lock_vertices = [&](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
+            auto stack = std::vector<size_t>();
+            if (!m.try_set_edge_mutex_two_ring(e, stack)) return {};
+            return stack;
+        };
         setup_and_execute(executor);
     } else {
         auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kSeq>();
@@ -63,6 +65,7 @@ bool tetwild::TetWild::split_after(const Tuple& loc)
     int v_id = loc.vid(*this);
     auto old_pos = m_vertex_attribute[v_id].m_posf;
     m_vertex_attribute[v_id].m_posf = split_cache.local().vertex_info.m_posf;
+    m_vertex_attribute[v_id].m_is_rounded = true;
 
     // check inversion
     for (auto& loc : locs) {

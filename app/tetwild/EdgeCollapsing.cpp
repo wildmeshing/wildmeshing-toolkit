@@ -22,11 +22,6 @@ void tetwild::TetWild::collapse_all_edges()
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_collapse", loc);
     auto setup_and_execute = [&](auto& executor) {
         executor.renew_neighbor_tuples = wmtk::renewal_simple;
-        executor.lock_vertices = [](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
-            auto stack = std::vector<size_t>();
-            if (!m.try_set_edge_mutex_two_ring(e, stack)) return {};
-            return stack;
-        };
         executor.priority = [&](auto& m, auto op, auto& t) { return -m.get_length2(t); };
         executor.num_threads = NUM_THREADS;
         executor.should_process = [&](const auto& m, const auto& ele) {
@@ -36,9 +31,15 @@ void tetwild::TetWild::collapse_all_edges()
             if (length > m_params.collapsing_l2) return false;
             return true;
         };
+        executor(*this, collect_all_ops);
     };
     if (NUM_THREADS > 1) {
         auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kPartition>();
+        executor.lock_vertices = [](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
+            auto stack = std::vector<size_t>();
+            if (!m.try_set_edge_mutex_two_ring(e, stack)) return {};
+            return stack;
+        };
         setup_and_execute(executor);
     } else {
         auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kSeq>();
