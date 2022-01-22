@@ -20,6 +20,7 @@ add_library(wmtk_tetwild
 	tetwild/EdgeSplitting.cpp
 	tetwild/EdgeCollapsing.cpp
 	tetwild/EdgeSwapping.cpp
+	tetwild/TetWildSmooth.cpp
 
 	tetwild/TriangleInsertion.cpp
 	tetwild/Rational.hpp
