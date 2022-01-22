@@ -152,13 +152,13 @@ TEST_CASE("parallel_harmonic-tet-swaps", "[parallel_harmtri][.slow]")
 
 TEST_CASE("gaussian-harmonic")
 {
-    static std::mt19937 gen{std::random_device{}()};
-    static std::normal_distribution<> dist;
+    std::mt19937 gen;
+    std::normal_distribution<> dist;
 
     auto vec_attrs = std::vector<Eigen::Vector3d>();
     auto tets = std::vector<std::array<size_t, 4>>();
     {
-        std::vector<wmtk::Point3D> points(100000);
+        std::vector<wmtk::Point3D> points(1000);
         for (auto i = 0; i < points.size(); i++) {
             for (auto j = 0; j < 3; j++) points[i][j] = dist(gen);
         }
@@ -192,13 +192,13 @@ TEST_CASE("gaussian-harmonic")
 
 TEST_CASE("gaussian-harmonic-single")
 {
-    static std::mt19937 gen{std::random_device{}()};
-    static std::normal_distribution<> dist;
+    std::mt19937 gen;
+    std::normal_distribution<> dist;
 
     auto vec_attrs = std::vector<Eigen::Vector3d>();
     auto tets = std::vector<std::array<size_t, 4>>();
     {
-        std::vector<wmtk::Point3D> points(100000);
+        std::vector<wmtk::Point3D> points(1000);
         for (auto i = 0; i < points.size(); i++) {
             for (auto j = 0; j < 3; j++) points[i][j] = dist(gen);
         }

@@ -25,9 +25,9 @@ public:
     Vector3d m_posf;
     bool m_is_rounded = false;
 
-    bool m_is_on_surface;
-    bool m_is_on_boundary;
-    bool m_is_on_bbox;
+    bool m_is_on_surface = false;
+    bool m_is_on_boundary = false;
+    std::vector<int> on_bbox_faces;
     bool m_is_outside;
 
     Scalar m_sizing_scalars;
@@ -46,9 +46,9 @@ class FaceAttributes
 public:
     Scalar tag;
 
-    int m_is_surface_fs;
-    int m_is_bbox_fs;
-    int m_opp_t_ids;
+    int m_is_surface_fs = 0;//0; 1
+    int m_is_bbox_fs = -1;//-1; 0~5
+
     int m_surface_tags;
 };
 
@@ -86,6 +86,7 @@ public:
         auto n_tet = m_tet_attribute.size();
         resize_edge_attributes(6 * n_tet);
         resize_face_attributes(4 * n_tet);
+        partition_TetMesh(*this, NUM_THREADS);
     }
 
     ////// Attributes related
@@ -95,6 +96,7 @@ public:
     tbb::concurrent_vector<FaceAttributes> m_face_attribute;
     tbb::concurrent_vector<TetAttributes> m_tet_attribute;
     int NUM_THREADS = 1;
+     tbb::concurrent_vector<size_t> m_vertex_partition_id;
 
     void resize_vertex_attributes(size_t v) override { m_vertex_attribute.resize(v); }
     void resize_edge_attributes(size_t e) override { m_edge_attribute.resize(e); }
@@ -176,12 +178,17 @@ public:
 
     struct SplitInfoCache
     {
-        VertexAttributes vertex_info;
+        //        VertexAttributes vertex_info;
+        size_t v1_id;
+        size_t v2_id;
+        bool is_edge_on_surface = false;
     };
     tbb::enumerable_thread_specific<SplitInfoCache> split_cache;
 
     struct CollapseInfoCache
     {
+        size_t v1_id;
+        size_t v2_id;
         double max_energy;
         double edge_length;
     };
@@ -197,6 +204,7 @@ public:
 
     void construct_background_mesh(const InputSurface& input_surface);
     void match_insertion_faces(const InputSurface& input_surface, std::vector<bool>& is_matched);
+    void setup_attributes();
     //
 //    void add_tet_centroid(const std::array<size_t, 4>& vids) override;
     void add_tet_centroid(const Tuple& t) override;
@@ -228,12 +236,21 @@ public:
     bool swap_face_before(const Tuple& t) override;
     bool swap_face_after(const Tuple& t) override;
 
-    bool is_inverted(const Tuple& loc);
-    double get_quality(const Tuple& loc);
+    bool is_inverted(const Tuple& loc) const;
+    double get_quality(const Tuple& loc) const;
     bool round(const Tuple& loc);
+    //
+    bool is_edge_on_surface(const Tuple& loc);
+    bool is_edge_on_bbox(const Tuple& loc);
+
+    std::vector<std::array<size_t, 3>> get_faces_by_condition(
+        std::function<bool(const FaceAttributes&)> cond);
 
     bool vertex_invariant(const Tuple& t) override;
     bool tetrahedron_invariant(const Tuple& t) override;
+
+    double get_length2(const Tuple&loc) const;
+    // debug use
     std::atomic<int> cnt_split = 0, cnt_collapse = 0, cnt_swap = 0;
 };
 

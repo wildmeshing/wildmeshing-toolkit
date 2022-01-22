@@ -3,6 +3,7 @@
 //
 
 #include <TetWild.h>
+#include <igl/write_triangle_mesh.h>
 #include <wmtk/TetMesh.h>
 
 #include <catch2/catch.hpp>
@@ -47,4 +48,20 @@ TEST_CASE("triangle-insertion", "[tetwild_operation]")
     tetwild::TetWild mesh(input_surface.params, envelope);
 
     mesh.triangle_insertion(input_surface);
+
+    // output surface
+    auto outface =
+        mesh.get_faces_by_condition([](auto& attr) { return attr.m_is_bbox_fs >= 0; });
+    Eigen::MatrixXd matV = Eigen::MatrixXd::Zero(mesh.vert_capacity(), 3);
+    for (auto v : mesh.get_vertices()) {
+        auto vid = v.vid(mesh);
+        matV.row(vid) = mesh.m_vertex_attribute[vid].m_posf;
+    }
+    Eigen::MatrixXi matF(outface.size(),3);
+    for (auto i=0;i<outface.size(); i++) {
+        matF.row(i) << outface[i][0], outface[i][1], outface[i][2];
+    }
+    std::cout<<outface.size()<<std::endl;
+    igl::write_triangle_mesh("wrong-bb.obj", matV, matF);
+    // mesh.output_mesh("temp.msh");
 }

@@ -1,69 +1,48 @@
 #include "TetWild.h"
 
+#include <wmtk/ExecutionScheduler.hpp>
+#include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 void tetwild::TetWild::split_all_edges()
 {
-    //    compact();
-
-    std::vector<Tuple> edges = get_edges();
-
-    wmtk::logger().debug("edges.size() = {}", edges.size());
-
-    int cnt_suc = 0;
-    std::priority_queue<ElementInQueue, std::vector<ElementInQueue>, cmp_l> es_queue;
-    for (auto& loc : edges) {
-        Tuple& v1 = loc;
-        Tuple v2 = loc.switch_vertex(*this);
-        double length =
-            (m_vertex_attribute[v1.vid(*this)].m_posf - m_vertex_attribute[v2.vid(*this)].m_posf)
-                .squaredNorm();
-        if (length < m_params.splitting_l2) continue;
-        es_queue.push(ElementInQueue(loc, length));
-    }
-
-    bool is_failed = false;
-    while (!es_queue.empty()) {
-        auto loc = es_queue.top().edge;
-        //        double weight = es_queue.top().weight;
-        es_queue.pop();
-
-        // check hash
-        if (!loc.is_valid(*this)) continue;
-
-        std::vector<Tuple> new_edges;
-        if (split_edge(loc, new_edges)) {
-            cnt_suc++;
-            if (!is_failed) {
-                for (auto& new_loc : new_edges) {
-                    Tuple& v1 = new_loc;
-                    Tuple v2 = new_loc.switch_vertex(*this);
-                    double length = (m_vertex_attribute[v1.vid(*this)].m_posf -
-                                     m_vertex_attribute[v2.vid(*this)].m_posf)
-                                        .squaredNorm();
-                    if (length < m_params.splitting_l2) continue;
-                    es_queue.push(ElementInQueue(new_loc, length));
-                }
-            }
-        } else
-            is_failed = true;
+    auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
+    for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_split", loc);
+    auto setup_and_execute = [&](auto& executor) {
+        executor.renew_neighbor_tuples = wmtk::renewal_simple;
+        
+        executor.priority = [&](auto& m, auto op, auto& t) { return m.get_length2(t); };
+        executor.num_threads = NUM_THREADS;
+        executor.should_process = [&](const auto& m, const auto& ele) {
+            auto [weight, op, tup] = ele;
+            auto length = m.get_length2(tup);
+            if (length != weight) return false;
+            if (length < m_params.splitting_l2) return false;
+            return true;
+        };
+        executor(*this, collect_all_ops);
+    };
+    if (NUM_THREADS > 1) {
+        auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kPartition>();
+        executor.lock_vertices = [&](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
+            auto stack = std::vector<size_t>();
+            if (!m.try_set_edge_mutex_two_ring(e, stack)) return {};
+            return stack;
+        };
+        setup_and_execute(executor);
+    } else {
+        auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kSeq>();
+        setup_and_execute(executor);
     }
 }
 
 bool tetwild::TetWild::split_before(const Tuple& loc0)
 {
-    auto loc1 = loc0;
-    int v1_id = loc1.vid(*this);
-    auto loc2 = loc1.switch_vertex(*this);
-    int v2_id = loc2.vid(*this);
+    split_cache.local().v1_id = loc0.vid(*this);
+    auto loc1 = loc0.switch_vertex(*this);
+    split_cache.local().v2_id = loc1.vid(*this);
 
-    //	double length = (m_vertex_attribute[v1_id].m_posf -
-    // m_vertex_attribute[v2_id].m_posf).norm();
-    //	if (length < m_params.l * 4 / 3)
-    //		return false;
-
-    split_cache.local().vertex_info.m_posf =
-        (m_vertex_attribute[v1_id].m_posf + m_vertex_attribute[v2_id].m_posf) / 2;
+    split_cache.local().is_edge_on_surface = is_edge_on_surface(loc0);
 
     return true;
 }
@@ -75,25 +54,45 @@ bool tetwild::TetWild::split_after(const Tuple& loc)
         return false;
 
     std::vector<Tuple> locs = get_one_ring_tets_for_vertex(loc);
+    size_t v_id = loc.vid(*this);
 
-    int v_id = loc.vid(*this);
-    auto old_pos = m_vertex_attribute[v_id].m_posf;
-    m_vertex_attribute[v_id].m_posf = split_cache.local().vertex_info.m_posf;
+    size_t v1_id = split_cache.local().v1_id;
+    size_t v2_id = split_cache.local().v2_id;
 
-    // check inversion
+    /// check inversion & rounding
+    m_vertex_attribute[v_id].m_posf =
+        (m_vertex_attribute[v1_id].m_posf + m_vertex_attribute[v2_id].m_posf) / 2;
+    m_vertex_attribute[v_id].m_is_rounded = true;
     for (auto& loc : locs) {
         if (is_inverted(loc)) {
-            m_vertex_attribute[v_id].m_posf = old_pos;
-            return false;
+            m_vertex_attribute[v_id].m_is_rounded = false;
+            break;
         }
     }
+    if (!m_vertex_attribute[v_id].m_is_rounded) {
+        m_vertex_attribute[v_id].m_pos =
+            (m_vertex_attribute[v1_id].m_pos + m_vertex_attribute[v2_id].m_pos) / 2;
+        m_vertex_attribute[v_id].m_posf = to_double(m_vertex_attribute[v_id].m_pos);
+    } else
+        m_vertex_attribute[v_id].m_pos = to_rational(m_vertex_attribute[v_id].m_posf);
 
-    // update quality
+    /// update quality
     for (auto& loc : locs) {
         m_tet_attribute[loc.tid(*this)].m_qualities = get_quality(loc);
     }
 
-    cnt_split ++;
+    /// update vertex attribute
+    // bbox
+    m_vertex_attribute[v_id].on_bbox_faces = wmtk::set_intersection(
+        m_vertex_attribute[v1_id].on_bbox_faces,
+        m_vertex_attribute[v2_id].on_bbox_faces);
+    //surface
+    m_vertex_attribute[v_id].m_is_on_surface = split_cache.local().is_edge_on_surface;
+
+    /// update face attribute
+    // todo
+
+    cnt_split++;
 
     return true;
 }

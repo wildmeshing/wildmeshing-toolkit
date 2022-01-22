@@ -5,14 +5,19 @@
 namespace wmtk {
 void unique_edge_tuples(const TetMesh& m, std::vector<TetMesh::Tuple>& edges)
 {
-    auto edge_ids = std::vector<size_t>();
-    for (auto& e : edges) edge_ids.push_back(e.eid(m));
-    std::sort(edge_ids.begin(), edge_ids.end());
-    edge_ids.erase(std::unique(edge_ids.begin(), edge_ids.end()), edge_ids.end());
-    edges.clear();
-    for (auto i:edge_ids) {
-        edges.emplace_back(m.tuple_from_edge(i/6, i%6));
-    }
+    std::stable_sort(
+        edges.begin(),
+        edges.end(),
+        [&](const TetMesh::Tuple& a, const TetMesh::Tuple& b) {
+            return a.eid(m) < b.eid(m);
+        }); // todo: use unique global id here would be very slow!
+
+    edges.erase(
+        std::unique(
+            edges.begin(),
+            edges.end(),
+            [&](const TetMesh::Tuple& a, const TetMesh::Tuple& b) { return a.eid(m) == b.eid(m); }),
+        edges.end());
 }
 
 void unique_face_tuples(const TetMesh& m, std::vector<TetMesh::Tuple>& faces)
