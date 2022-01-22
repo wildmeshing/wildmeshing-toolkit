@@ -1,9 +1,7 @@
 #include "EdgeOperations2d.h"
-#include "spdlog/spdlog.h"
 
 #include <wmtk/TriMesh.h>
 #include <wmtk/utils/VectorUtils.h>
-
 #include <wmtk/ExecutionScheduler.hpp>
 
 #include <Eigen/Core>
@@ -22,6 +20,38 @@ auto unique_edge_tuples = [](const auto& m, auto& edges) {
         edges.emplace_back(m.tuple_from_edge(eid / 3, eid % 3));
     }
 };
+
+bool Edge2d::swap_after(const TriMesh::Tuple& t) override 
+{
+    std::vector<TriMesh::Tuple> tris;
+    tris.push_back(t);
+    tris.push_back(t.switch_edge(*this));
+    if (invariants(tris)) return true;
+    return false;
+}
+
+bool Edge2d::collapse_after(const TriMesh::Tuple& t) override
+{
+    const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
+    auto vid = t.vid();
+    auto old_p = m_vertex_positions[vid];
+    m_vertex_positions[vid] = p;
+
+    if (invariants(get_one_ring_tris_for_vertex(t))) return true;
+    m_vertex_positions[vid] = old_p;
+    return false;
+}
+
+bool Edge2d::split_after(const TriMesh::Tuple& t) override
+{
+    const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
+    auto vid = t.vid();
+    auto old_p = m_vertex_positions[vid];
+    m_vertex_positions[vid] = p;
+
+    if (invariants(get_one_ring_tris_for_vertex(t))) return true;
+    m_vertex_positions[vid] = old_p;
+}
 
 std::vector<TriMesh::Tuple> Edge2d::EdgeOperations2d::new_edges_after(
     const std::vector<TriMesh::Tuple>& tris) const

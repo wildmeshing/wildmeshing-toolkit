@@ -75,6 +75,19 @@ public:
         position_cache.local().v2p = m_vertex_positions[t.switch_vertex(*this).vid()];
     }
 
+    bool invariants(const std::vector<Tuple>& new_tris)
+    {
+        if (m_has_envelope) {
+            for (auto& t : new_tris) {
+                std::array<Eigen::Vector3d, 3> tris;
+                auto vs = t.oriented_tri_vertices(*this);
+                for (auto j = 0; j < 3; j++) tris[j] = m_vertex_positions[vs[j].vid()];
+                if (m_envelope.is_outside(tris)) return false;
+            }
+        }
+        return true;
+    }
+
     bool update_position_to_edge_midpoint(const Tuple& t)
     {
         const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
@@ -147,7 +160,8 @@ public:
         return true;
     }
 
-    bool collapse_after(const Tuple& t) override { return update_position_to_edge_midpoint(t); }
+    bool collapse_after(const Tuple& t) override;
+    bool swap_after(const Tuple& t) override 
 
     std::vector<TriMesh::Tuple> new_edges_after(const std::vector<TriMesh::Tuple>& t) const;
     std::vector<TriMesh::Tuple> new_edges_after_swap(const TriMesh::Tuple& t) const;
@@ -166,7 +180,7 @@ public:
         return true;
     }
 
-    bool split_after(const Tuple& t) override { return update_position_to_edge_midpoint(t); }
+    bool split_after(const Tuple& t) override;
     // methods for adaptive remeshing
     double compute_edge_cost_collapse_ar(const TriMesh::Tuple& t, double L) const;
     double compute_edge_cost_split_ar(const TriMesh::Tuple& t, double L) const;
