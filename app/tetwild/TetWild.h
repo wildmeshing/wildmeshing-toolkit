@@ -179,6 +179,7 @@ public:
         //        VertexAttributes vertex_info;
         size_t v1_id;
         size_t v2_id;
+        bool is_edge_on_surface = false;
     };
     tbb::enumerable_thread_specific<SplitInfoCache> split_cache;
 

@@ -56,13 +56,7 @@ bool tetwild::TetWild::split_before(const Tuple& loc0)
     auto loc1 = loc0.switch_vertex(*this);
     split_cache.local().v2_id = loc1.vid(*this);
 
-    //	double length = (m_vertex_attribute[v1_id].m_posf -
-    // m_vertex_attribute[v2_id].m_posf).norm();
-    //	if (length < m_params.l * 4 / 3)
-    //		return false;
-
-//    split_cache.local().vertex_info.m_posf =
-//        (m_vertex_attribute[v1_id].m_posf + m_vertex_attribute[v2_id].m_posf) / 2;
+    split_cache.local().is_edge_on_surface = is_edge_on_surface(loc0);
 
     return true;
 }
@@ -101,8 +95,16 @@ bool tetwild::TetWild::split_after(const Tuple& loc)
         m_tet_attribute[loc.tid(*this)].m_qualities = get_quality(loc);
     }
 
+    /// update vertex attribute
+    // bbox
+    m_vertex_attribute[v_id].on_bbox_faces = wmtk::set_intersection(
+        m_vertex_attribute[v1_id].on_bbox_faces,
+        m_vertex_attribute[v2_id].on_bbox_faces);
+    //surface
+    m_vertex_attribute[v_id].m_is_on_surface = split_cache.local().is_edge_on_surface;
+
     /// update face attribute
-    //todo
+    // todo
 
     cnt_split++;
 
