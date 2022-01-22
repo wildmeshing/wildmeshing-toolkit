@@ -27,7 +27,7 @@ public:
 
     bool m_is_on_surface = false;
     bool m_is_on_boundary = false;
-    bool m_is_on_bbox = false;
+    std::vector<int> on_bbox_faces;
     bool m_is_outside;
 
     Scalar m_sizing_scalars;
@@ -178,12 +178,17 @@ public:
 
     struct SplitInfoCache
     {
-        VertexAttributes vertex_info;
+        //        VertexAttributes vertex_info;
+        size_t v1_id;
+        size_t v2_id;
+        bool is_edge_on_surface = false;
     };
     tbb::enumerable_thread_specific<SplitInfoCache> split_cache;
 
     struct CollapseInfoCache
     {
+        size_t v1_id;
+        size_t v2_id;
         double max_energy;
         double edge_length;
     };
@@ -234,6 +239,9 @@ public:
     bool is_inverted(const Tuple& loc) const;
     double get_quality(const Tuple& loc) const;
     bool round(const Tuple& loc);
+    //
+    bool is_edge_on_surface(const Tuple& loc);
+    bool is_edge_on_bbox(const Tuple& loc);
 
     std::vector<std::array<size_t, 3>> get_faces_by_condition(
         std::function<bool(const FaceAttributes&)> cond);

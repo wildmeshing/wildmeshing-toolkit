@@ -830,40 +830,6 @@ void tetwild::TetWild::setup_attributes()
 
 
     //// track bbox
-    //    for (size_t i = 0; i < m_tet_attribute.size(); i++) {
-    //        auto vs = oriented_tet_vertices(tuple_from_tet(i));
-    //        for (int j = 0; j < 4; j++) {
-    //            std::array<size_t, 3> vids = {
-    //                {vs[(j + 1) % 4].vid(*this),
-    //                 vs[(j + 2) % 4].vid(*this),
-    //                 vs[(j + 3) % 4].vid(*this)}};
-    //            int on_bbox = -1;
-    //            for (int k = 0; k < 3; k++) {
-    //                if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_min[k] &&
-    //                    m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_min[k] &&
-    //                    m_vertex_attribute[vids[2]].m_pos[k] == m_params.box_min[k]) {
-    //                    on_bbox = k * 2;
-    //                    break;
-    //                }
-    //                if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_max[k] &&
-    //                    m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_max[k] &&
-    //                    m_vertex_attribute[vids[2]].m_pos[k] == m_params.box_max[k]) {
-    //                    on_bbox = k * 2 + 1;
-    //                    break;
-    //                }
-    //            }
-    //            if (on_bbox < 0) continue;
-    //
-    //            auto [face, global_tet_fid] = tuple_from_face(vids);
-    //            m_face_attribute[global_tet_fid].m_is_bbox_fs = on_bbox;
-    //            //
-    //            for (size_t vid : vids) {
-    //                m_vertex_attribute[vid].m_is_on_bbox = true;
-    //            }
-    //            break;
-    //        }
-    //    }
-
     for (auto& f : get_faces()) {
         auto vs = get_face_vertices(f);
         std::array<size_t, 3> vids = {{vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
@@ -889,9 +855,11 @@ void tetwild::TetWild::setup_attributes()
         m_face_attribute[fid].m_is_bbox_fs = on_bbox;
         //
         for (size_t vid : vids) {
-            m_vertex_attribute[vid].m_is_on_bbox = true;
+            m_vertex_attribute[vid].on_bbox_faces.push_back(on_bbox);
         }
     }
+    for (size_t i = 0; i < m_vertex_attribute.size(); i++)
+        wmtk::vector_unique(m_vertex_attribute[i].on_bbox_faces);
 
     //// rounding
     int cnt_round = 0;
