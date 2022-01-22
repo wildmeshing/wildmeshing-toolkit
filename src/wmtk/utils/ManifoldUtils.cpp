@@ -41,7 +41,7 @@ bool wmtk::separate_to_manifold(
             pF.row(j) = F.row(patch[j]);
         }
         Eigen::MatrixXd NV;
-        Eigen::ArrayXi NF;
+        Eigen::ArrayXXi NF;
         Eigen::VectorXi I;
         igl::remove_unreferenced(V, pF, NV, NF, I);
         NF += current_vnum;
