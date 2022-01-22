@@ -64,13 +64,10 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
                 std::set<std::array<size_t, 2>>,
                 std::set<std::array<size_t, 3>>>{conn_verts, conn_edges, conn_faces};
         };
-        auto adjacent_boundary_faces = [this, &VC, &TC](auto v) {
-            return vertex_adjacent_boundary_faces(this->tuple_from_vertex(v));
-        };
         auto& closure0 = VC[v0].m_conn_tets;
         auto& closure1 = VC[v1].m_conn_tets;
-        auto bnd0 = adjacent_boundary_faces(v0);
-        auto bnd1 = adjacent_boundary_faces(v1);
+        auto bnd0 = vertex_adjacent_boundary_faces(this->tuple_from_vertex(v0));
+        auto bnd1 = vertex_adjacent_boundary_faces(this->tuple_from_vertex(v1));
         auto lk0 = link(std::array<size_t, 1>{{v0}}, closure0, bnd0);
         auto lk1 = link(std::array<size_t, 1>{{v1}}, closure1, bnd1);
 

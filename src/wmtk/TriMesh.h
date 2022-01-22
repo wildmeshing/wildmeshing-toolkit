@@ -298,7 +298,7 @@ public:
     bool split_edge(const Tuple& t, std::vector<Tuple>& new_t);
     bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_t);
     bool swap_edge(const Tuple& t, std::vector<Tuple>& new_t);
-    bool smooth_vertex(const Tuple& t){return true;}
+    bool smooth_vertex(const Tuple& t) { return true; }
 
     /**
      * @brief Get the one ring tris for a vertex
@@ -322,7 +322,7 @@ public:
      * @param t tuple pointing to an face
      * @return incident vertices
      */
-    std::vector<Tuple> oriented_tri_vertices(const Tuple& t) const;
+    std::array<Tuple, 3> oriented_tri_vertices(const Tuple& t) const;
 
 
     Tuple tuple_from_tri(size_t fid) const
