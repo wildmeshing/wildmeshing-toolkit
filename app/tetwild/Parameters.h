@@ -11,6 +11,8 @@ struct Parameters
     double diag_l = -1.;
     Vector3d min = Vector3d::Zero();
     Vector3d max = Vector3d::Ones();
+    Vector3d box_min = Vector3d::Zero();
+    Vector3d box_max = Vector3d::Ones();
 
     double splitting_l2 = -1.; // the lower bound length (squared) for edge split
     double collapsing_l2 = std::numeric_limits<double>::max(); // the upper bound length (squared) for edge collapse
