@@ -41,8 +41,49 @@ bool tetwild::TetWild::split_before(const Tuple& loc0)
     split_cache.local().v1_id = loc0.vid(*this);
     auto loc1 = loc0.switch_vertex(*this);
     split_cache.local().v2_id = loc1.vid(*this);
+    //
+    size_t v1_id = split_cache.local().v1_id;
+    size_t v2_id = split_cache.local().v2_id;
 
     split_cache.local().is_edge_on_surface = is_edge_on_surface(loc0);
+
+    /// save face track info
+    auto comp = [](const std::pair<size_t, std::array<size_t, 3>>& v1,
+                   const std::pair<size_t, std::array<size_t, 3>>& v2) {
+        return v1.second < v2.second;
+    };
+    auto is_equal = [](const std::pair<size_t, std::array<size_t, 3>>& v1,
+                       const std::pair<size_t, std::array<size_t, 3>>& v2) {
+        return v1.second == v2.second;
+    };
+    //
+    auto tets = get_one_ring_tets_for_vertex(loc0);
+    for (auto& t : tets) {
+        auto vs = oriented_tet_vertices(t);
+        bool find_v1 = false;
+        bool find_v2 = false;
+        for (int j = 0; j < 4; j++) {
+            if (vs[j].vid(*this) == v1_id) find_v1 = true;
+            if (vs[j].vid(*this) == v2_id) find_v2 = true;
+            if (find_v1 && find_v2) break;
+        }
+        if (!find_v1 || !find_v2) continue;
+        //
+        for (int j = 0; j < 4; j++) {
+            if (vs[j].vid(*this) != v1_id && vs[j].vid(*this) != v2_id) {
+                std::array<size_t, 3> f_vids = {{v1_id, v2_id, vs[j].vid(*this)}};
+                auto [f, global_fid] = tuple_from_face(f_vids);
+                if (m_face_attribute[global_fid].m_is_surface_fs > 0) {
+                    split_cache.local().surface_faces.push_back(std::make_pair(global_fid, f_vids));
+                }
+                if (m_face_attribute[global_fid].m_is_bbox_fs >= 0) {
+                    split_cache.local().bbox_faces.push_back(std::make_pair(global_fid, f_vids));
+                }
+            }
+        }
+        wmtk::vector_unique(split_cache.local().surface_faces, comp, is_equal);
+        wmtk::vector_unique(split_cache.local().bbox_faces, comp, is_equal);
+    }
 
     return true;
 }
@@ -90,7 +131,8 @@ bool tetwild::TetWild::split_after(const Tuple& loc)
     m_vertex_attribute[v_id].m_is_on_surface = split_cache.local().is_edge_on_surface;
 
     /// update face attribute
-    // todo
+    //todo
+
 
     cnt_split++;
 

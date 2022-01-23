@@ -49,6 +49,11 @@ TEST_CASE("triangle-insertion", "[tetwild_operation]")
 
     mesh.triangle_insertion(input_surface);
 
+    mesh.split_all_edges();
+    mesh.collapse_all_edges();
+
+    //todo: refine adaptively the mesh
+
     // output surface
     auto outface =
         mesh.get_faces_by_condition([](auto& attr) { return attr.m_is_bbox_fs >= 0; });

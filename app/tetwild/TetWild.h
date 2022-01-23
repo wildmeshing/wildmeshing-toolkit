@@ -182,6 +182,9 @@ public:
         size_t v1_id;
         size_t v2_id;
         bool is_edge_on_surface = false;
+
+        std::vector<std::pair<size_t, std::array<size_t, 3>>> surface_faces;
+        std::vector<std::pair<size_t, std::array<size_t, 3>>> bbox_faces;
     };
     tbb::enumerable_thread_specific<SplitInfoCache> split_cache;
 
@@ -191,6 +194,9 @@ public:
         size_t v2_id;
         double max_energy;
         double edge_length;
+
+        std::vector<std::array<size_t, 3>> surface_faces;
+        std::vector<std::array<size_t, 3>> bbox_faces;
     };
     tbb::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
 

@@ -25,6 +25,14 @@ inline void vector_unique(std::vector<T>& v)
     v.erase(std::unique(v.begin(), v.end()), v.end());
 }
 
+template <class T, typename Comp, typename Equal>
+inline void vector_unique(std::vector<T>& v, Comp comp, Equal equal)
+{
+    std::sort(v.begin(), v.end(), comp);
+    v.erase(std::unique(v.begin(), v.end(), equal), v.end());
+}
+
+
 template <class T>
 inline void vector_print(std::vector<T>& v)
 {
