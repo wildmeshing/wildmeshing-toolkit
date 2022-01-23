@@ -46,10 +46,16 @@ class FaceAttributes
 public:
     Scalar tag;
 
-    int m_is_surface_fs = 0;//0; 1
+    bool m_is_surface_fs = 0;//0; 1
     int m_is_bbox_fs = -1;//-1; 0~5
 
-    int m_surface_tags;
+    int m_surface_tags = -1;
+
+    void reset(){
+        m_is_surface_fs = 0;
+        m_is_bbox_fs = -1;
+        m_surface_tags = -1;
+    }
 };
 
 class TetAttributes
@@ -183,8 +189,7 @@ public:
         size_t v2_id;
         bool is_edge_on_surface = false;
 
-        std::vector<std::pair<size_t, std::array<size_t, 3>>> surface_faces;
-        std::vector<std::pair<size_t, std::array<size_t, 3>>> bbox_faces;
+        std::vector<std::pair<size_t, std::array<size_t, 3>>> changed_faces;
     };
     tbb::enumerable_thread_specific<SplitInfoCache> split_cache;
 
