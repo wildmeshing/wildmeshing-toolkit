@@ -258,6 +258,8 @@ public:
     bool round(const Tuple& loc);
     //
     bool is_edge_on_surface(const Tuple& loc);
+    //
+    void adjust_sizing_field();
 
     std::vector<std::array<size_t, 3>> get_faces_by_condition(
         std::function<bool(const FaceAttributes&)> cond);

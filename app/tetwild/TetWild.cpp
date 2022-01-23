@@ -244,8 +244,33 @@ std::vector<std::array<size_t, 3>> tetwild::TetWild::get_faces_by_condition(
     return res;
 }
 
-bool tetwild::TetWild::is_edge_on_surface(const Tuple& loc){
-    //todo
+bool tetwild::TetWild::is_edge_on_surface(const Tuple& loc)
+{
+    size_t v1_id = loc.vid(*this);
+    auto loc1 = loc.switch_vertex(*this);
+    size_t v2_id = loc1.vid(*this);
+    if (!m_vertex_attribute[v1_id].m_is_on_surface || !m_vertex_attribute[v2_id].m_is_on_surface)
+        return false;
+
+    auto tets = get_incident_tets_for_edge(loc);
+    std::vector<size_t> n_vids;
+    for (auto& t : tets) {
+        auto vs = oriented_tet_vertices(t);
+        for (int j = 0; j < 4; j++) {
+            if (vs[j].vid(*this) != v1_id && vs[j].vid(*this) != v2_id)
+                n_vids.push_back(vs[j].vid(*this));
+        }
+    }
+    wmtk::vector_unique(n_vids);
+
+    for (size_t vid : n_vids) {
+        auto [f, fid] = tuple_from_face({{v1_id, v2_id, vid}});
+        if (m_face_attribute[vid].m_is_surface_fs) return true;
+    }
 
     return false;
+}
+
+void tetwild::TetWild::adjust_sizing_field(){
+    //todo
 }
