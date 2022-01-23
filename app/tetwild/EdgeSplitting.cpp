@@ -50,11 +50,11 @@ bool tetwild::TetWild::split_before(const Tuple& loc0)
     /// save face track info
     auto comp = [](const std::pair<size_t, std::array<size_t, 3>>& v1,
                    const std::pair<size_t, std::array<size_t, 3>>& v2) {
-        return v1.second < v2.second;
+        return v1.first < v2.first;
     };
     auto is_equal = [](const std::pair<size_t, std::array<size_t, 3>>& v1,
                        const std::pair<size_t, std::array<size_t, 3>>& v2) {
-        return v1.second == v2.second;
+        return v1.first == v2.first;
     };
     //
     auto tets = get_one_ring_tets_for_vertex(loc0);
@@ -72,10 +72,8 @@ bool tetwild::TetWild::split_before(const Tuple& loc0)
         for (int j = 0; j < 4; j++) {
             if (vs[j].vid(*this) != v1_id && vs[j].vid(*this) != v2_id) {
                 std::array<size_t, 3> f_vids = {{v1_id, v2_id, vs[j].vid(*this)}};
-                auto [f, global_fid] = tuple_from_face(f_vids);
-                if (m_face_attribute[global_fid].m_is_surface_fs > 0) {
-                    split_cache.local().changed_faces.push_back(std::make_pair(global_fid, f_vids));
-                }
+                auto [_, global_fid] = tuple_from_face(f_vids);
+                split_cache.local().changed_faces.push_back(std::make_pair(global_fid, f_vids));
             }
         }
         wmtk::vector_unique(split_cache.local().changed_faces, comp, is_equal);
@@ -132,9 +130,9 @@ bool tetwild::TetWild::split_after(const Tuple& loc)
         size_t old_fid = info.first;
         auto& old_vids = info.second;
         //
-        auto [f1, global_fid1] = tuple_from_face({{old_vids[0], old_vids[2], v_id}});
+        auto [_1, global_fid1] = tuple_from_face({{old_vids[0], old_vids[2], v_id}});
         m_face_attribute[global_fid1] = m_face_attribute[old_fid];
-        auto [f2, global_fid2] = tuple_from_face({{old_vids[1], old_vids[2], v_id}});
+        auto [_2, global_fid2] = tuple_from_face({{old_vids[1], old_vids[2], v_id}});
         m_face_attribute[global_fid2] = m_face_attribute[old_fid];
         //
         m_face_attribute[old_fid].reset();

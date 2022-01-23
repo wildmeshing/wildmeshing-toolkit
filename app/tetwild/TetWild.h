@@ -13,8 +13,8 @@
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
-#include <memory>
 #include <wmtk/utils/PartitionMesh.h>
+#include <memory>
 
 namespace tetwild {
 
@@ -46,15 +46,23 @@ class FaceAttributes
 public:
     Scalar tag;
 
-    bool m_is_surface_fs = 0;//0; 1
-    int m_is_bbox_fs = -1;//-1; 0~5
+    bool m_is_surface_fs = false; // 0; 1
+    int m_is_bbox_fs = -1; //-1; 0~5
 
     int m_surface_tags = -1;
 
-    void reset(){
-        m_is_surface_fs = 0;
+    void reset()
+    {
+        m_is_surface_fs = false;
         m_is_bbox_fs = -1;
         m_surface_tags = -1;
+    }
+
+    void merge(const FaceAttributes& attr)
+    {
+        m_is_surface_fs = m_is_surface_fs || attr.m_is_surface_fs;
+        if (attr.m_is_bbox_fs >= 0) m_is_bbox_fs = attr.m_is_bbox_fs;
+        m_surface_tags = std::max(m_surface_tags, attr.m_surface_tags);
     }
 };
 
@@ -87,8 +95,7 @@ public:
         for (auto i = 0; i < _vertex_attribute.size(); i++)
             m_vertex_attribute[i] = _vertex_attribute[i];
         m_tet_attribute = tbb::concurrent_vector<TetAttributes>(_tet_attribute.size());
-        for (auto i = 0; i < _tet_attribute.size(); i++)
-            m_tet_attribute[i] = _tet_attribute[i];
+        for (auto i = 0; i < _tet_attribute.size(); i++) m_tet_attribute[i] = _tet_attribute[i];
         auto n_tet = m_tet_attribute.size();
         resize_edge_attributes(6 * n_tet);
         resize_face_attributes(4 * n_tet);
@@ -102,7 +109,7 @@ public:
     tbb::concurrent_vector<FaceAttributes> m_face_attribute;
     tbb::concurrent_vector<TetAttributes> m_tet_attribute;
     int NUM_THREADS = 1;
-     tbb::concurrent_vector<size_t> m_vertex_partition_id;
+    tbb::concurrent_vector<size_t> m_vertex_partition_id;
 
     void resize_vertex_attributes(size_t v) override { m_vertex_attribute.resize(v); }
     void resize_edge_attributes(size_t e) override { m_edge_attribute.resize(e); }
@@ -200,8 +207,7 @@ public:
         double max_energy;
         double edge_length;
 
-        std::vector<std::array<size_t, 3>> surface_faces;
-        std::vector<std::array<size_t, 3>> bbox_faces;
+        std::vector<std::pair<size_t, std::array<size_t, 3>>> changed_faces;
     };
     tbb::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
 
@@ -217,7 +223,7 @@ public:
     void match_insertion_faces(const InputSurface& input_surface, std::vector<bool>& is_matched);
     void setup_attributes();
     //
-//    void add_tet_centroid(const std::array<size_t, 4>& vids) override;
+    //    void add_tet_centroid(const std::array<size_t, 4>& vids) override;
     void add_tet_centroid(const Tuple& t) override;
     //
     void triangle_insertion(const InputSurface& input_surface);
@@ -260,7 +266,7 @@ public:
     bool vertex_invariant(const Tuple& t) override;
     bool tetrahedron_invariant(const Tuple& t) override;
 
-    double get_length2(const Tuple&loc) const;
+    double get_length2(const Tuple& loc) const;
     // debug use
     std::atomic<int> cnt_split = 0, cnt_collapse = 0, cnt_swap = 0;
 };

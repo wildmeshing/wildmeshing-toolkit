@@ -6,8 +6,9 @@
 #include <wmtk/utils/Logger.hpp>
 
 
-double tetwild::TetWild::get_length2(const wmtk::TetMesh::Tuple& l) const {
-    auto &m = *this;
+double tetwild::TetWild::get_length2(const wmtk::TetMesh::Tuple& l) const
+{
+    auto& m = *this;
     auto& v1 = l;
     auto v2 = l.switch_vertex(m);
     double length =
@@ -27,7 +28,7 @@ void tetwild::TetWild::collapse_all_edges()
         executor.should_process = [&](const auto& m, const auto& ele) {
             auto [weight, op, tup] = ele;
             auto length = m.get_length2(tup);
-            if (length != - weight) return false;
+            if (length != -weight) return false;
             if (length > m_params.collapsing_l2) return false;
             return true;
         };
@@ -110,6 +111,31 @@ bool tetwild::TetWild::collapse_before(const Tuple& loc) // input is an edge
             collapse_cache.local().max_energy = q.second;
     }
 
+    /// record faces
+    auto comp = [](const std::pair<size_t, std::array<size_t, 3>>& v1,
+                   const std::pair<size_t, std::array<size_t, 3>>& v2) {
+        return v1.first < v2.first;
+    };
+    auto is_equal = [](const std::pair<size_t, std::array<size_t, 3>>& v1,
+                       const std::pair<size_t, std::array<size_t, 3>>& v2) {
+        return v1.first == v2.first;
+    };
+    //
+    for (auto& t : n12_locs) {
+        auto vs = oriented_tet_vertices(t);
+        std::array<size_t, 3> f_vids = {{v1_id, 0, 0}};
+        int cnt = 1;
+        for (int j = 0; j < 4; j++) {
+            if (vs[j].vid(*this) != v1_id && vs[j].vid(*this) != v2_id) {
+                f_vids[cnt] = vs[j].vid(*this);
+                cnt++;
+            }
+        }
+        auto [_, global_fid] = tuple_from_face(f_vids);
+        collapse_cache.local().changed_faces.push_back(std::make_pair(global_fid, f_vids));
+        wmtk::vector_unique(collapse_cache.local().changed_faces, comp, is_equal);
+    }
+
     return true;
 }
 
@@ -122,7 +148,7 @@ bool tetwild::TetWild::collapse_after(const Tuple& loc)
 
     auto locs = get_one_ring_tets_for_vertex(loc);
 
-    ////check first
+    //// checks
     // check inversion
     for (auto& l : locs) {
         if (is_inverted(l)) {
@@ -142,23 +168,37 @@ bool tetwild::TetWild::collapse_after(const Tuple& loc)
         qs.push_back(q);
     }
 
-    //// check surface
+    // surface
     if (collapse_cache.local().edge_length > 0) {
-        // todo: surface check
-    } else {
-        for (int i = 0; i < locs.size(); i++) {
-            m_tet_attribute[locs[i].tid(*this)].m_qualities = qs[i];
+        for (auto& info : collapse_cache.local().changed_faces) {
+            auto& vids = info.second;
+            bool is_out = m_envelope.is_outside(
+                {{m_vertex_attribute[vids[0]].m_posf,
+                  m_vertex_attribute[vids[1]].m_posf,
+                  m_vertex_attribute[vids[2]].m_posf}});
+            if (is_out) return false;
         }
     }
 
-
-    /// update attrs
+    //// update attrs
+    // tet attr
+    for (int i = 0; i < locs.size(); i++) {
+        m_tet_attribute[locs[i].tid(*this)].m_qualities = qs[i];
+    }
     // vertex attr
     m_vertex_attribute[v2_id].m_is_on_surface =
         m_vertex_attribute[v1_id].m_is_on_surface || m_vertex_attribute[v2_id].m_is_on_surface;
     // no need to update on_bbox_faces
-    //  todo: update faces attr
-
+    // face attr
+    for (auto& info : collapse_cache.local().changed_faces) {
+        size_t old_fid = info.first;
+        auto& old_vids = info.second;
+        //
+        auto [_, global_fid] = tuple_from_face({{v2_id, old_vids[1], old_vids[2]}});
+        m_face_attribute[global_fid].merge(m_face_attribute[old_fid]);
+        //
+        m_face_attribute[old_fid].reset();
+    }
 
     cnt_collapse++;
 
