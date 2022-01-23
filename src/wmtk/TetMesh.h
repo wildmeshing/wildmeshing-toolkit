@@ -314,10 +314,10 @@ public:
     template <typename T>
     using vector = tbb::concurrent_vector<T>;
 
-private:
     // Stores the connectivity of the mesh
     vector<VertexConnectivity> m_vertex_connectivity;
     vector<TetrahedronConnectivity> m_tet_connectivity;
+private:
 
     int m_t_empty_slot = 0;
     int m_v_empty_slot = 0;

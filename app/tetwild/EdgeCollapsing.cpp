@@ -50,6 +50,8 @@ void tetwild::TetWild::collapse_all_edges()
 
 bool tetwild::TetWild::collapse_before(const Tuple& loc) // input is an edge
 {
+    collapse_cache.local().changed_faces.clear();
+
     size_t v1_id = loc.vid(*this);
     auto loc1 = switch_vertex(loc);
     size_t v2_id = loc1.vid(*this);

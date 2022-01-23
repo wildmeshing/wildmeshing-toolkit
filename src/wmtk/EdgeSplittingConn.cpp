@@ -3,6 +3,9 @@
 #include <algorithm>
 #include <wmtk/utils/TupleUtils.hpp>
 
+using std::cout;
+using std::endl;
+
 bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
 {
     if (!split_before(loc0)) return false;
@@ -49,7 +52,6 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
         }
     }
 
-
     auto new_tet_id = n12_t_ids;
     auto rollback_vert_conn = operation_update_connectivity_impl(new_tet_id, new_tet_conn);
 
@@ -64,9 +66,7 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
         return false;
     }
 
-
     // new_edges
-
     assert(std::is_sorted(new_tet_id.begin(), new_tet_id.end()));
     for (size_t t_id : new_tet_id) {
         for (int j = 0; j < 6; j++) {

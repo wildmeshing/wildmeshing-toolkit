@@ -39,6 +39,7 @@ TEST_CASE("triangle-insertion", "[tetwild_operation]")
     }
 
     tetwild::TetWild::InputSurface input_surface;
+    input_surface.params.lr = 1/10.;
     input_surface.init(vertices, faces);
     input_surface.remove_duplicates();
     //
@@ -49,24 +50,42 @@ TEST_CASE("triangle-insertion", "[tetwild_operation]")
 
     mesh.triangle_insertion(input_surface);
 
-//    mesh.split_all_edges();
+    mesh.split_all_edges();
 //    mesh.collapse_all_edges();
 
     //todo: refine adaptively the mesh
 
     // output surface
-    auto outface =
-        mesh.get_faces_by_condition([](auto& attr) { return attr.m_is_bbox_fs >= 0; });
-    Eigen::MatrixXd matV = Eigen::MatrixXd::Zero(mesh.vert_capacity(), 3);
-    for (auto v : mesh.get_vertices()) {
-        auto vid = v.vid(mesh);
-        matV.row(vid) = mesh.m_vertex_attribute[vid].m_posf;
+    {
+        auto outface =
+                mesh.get_faces_by_condition([](auto& attr) { return attr.m_is_surface_fs == true; });
+        Eigen::MatrixXd matV = Eigen::MatrixXd::Zero(mesh.vert_capacity(), 3);
+        for (auto v : mesh.get_vertices()) {
+            auto vid = v.vid(mesh);
+            matV.row(vid) = mesh.m_vertex_attribute[vid].m_posf;
+        }
+        Eigen::MatrixXi matF(outface.size(), 3);
+        for (auto i = 0; i < outface.size(); i++) {
+            matF.row(i) << outface[i][0], outface[i][1], outface[i][2];
+        }
+        std::cout << outface.size() << std::endl;
+        igl::write_triangle_mesh("track_surface.obj", matV, matF);
     }
-    Eigen::MatrixXi matF(outface.size(),3);
-    for (auto i=0;i<outface.size(); i++) {
-        matF.row(i) << outface[i][0], outface[i][1], outface[i][2];
+    {
+        auto outface =
+            mesh.get_faces_by_condition([](auto& attr) { return attr.m_is_bbox_fs >= 0; });
+        Eigen::MatrixXd matV = Eigen::MatrixXd::Zero(mesh.vert_capacity(), 3);
+        for (auto v : mesh.get_vertices()) {
+            auto vid = v.vid(mesh);
+            matV.row(vid) = mesh.m_vertex_attribute[vid].m_posf;
+        }
+        Eigen::MatrixXi matF(outface.size(), 3);
+        for (auto i = 0; i < outface.size(); i++) {
+            matF.row(i) << outface[i][0], outface[i][1], outface[i][2];
+        }
+        std::cout << outface.size() << std::endl;
+        igl::write_triangle_mesh("track_bbox.obj", matV, matF);
     }
-    std::cout<<outface.size()<<std::endl;
-    igl::write_triangle_mesh("wrong-bb.obj", matV, matF);
-    // mesh.output_mesh("temp.msh");
+
+    mesh.output_mesh("improved.msh");
 }
