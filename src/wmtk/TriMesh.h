@@ -178,7 +178,11 @@ public:
         }
     };
 
-    TriMesh() {}
+    TriMesh() {
+        vertex_attrs.reset(new AbstractAttributeContainer());
+        edge_attrs.reset(new AbstractAttributeContainer());
+        face_attrs.reset(new AbstractAttributeContainer());
+    }
     virtual ~TriMesh() {}
 
     void create_mesh(size_t n_vertices, const std::vector<std::array<size_t, 3>>& tris);

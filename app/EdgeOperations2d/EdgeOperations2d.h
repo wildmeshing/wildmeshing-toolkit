@@ -27,16 +27,16 @@
 
 namespace Edge2d {
 
-struct VertexAttributes{
+struct VertexAttributes
+{
     Eigen::Vector3d pos;
-    size_t partition_id; // TODO: in fact, partition id should not be vertex attribute, it is a fixed marker to distinguish tuple/operations.
+    size_t
+        partition_id; // TODO: in fact, partition id should not be vertex attribute, it is a fixed marker to distinguish tuple/operations.
 };
 
 class EdgeOperations2d : public wmtk::ConcurrentTriMesh
 {
 public:
-    // tbb::concurrent_vector<Eigen::Vector3d> m_vertex_positions;
-    // tbb::concurrent_vector<size_t> m_vertex_partition_id;
     fastEnvelope::FastEnvelope m_envelope;
     bool m_has_envelope = false;
     using VertAttCol = wmtk::AttributeCollection<VertexAttributes>;
@@ -47,8 +47,8 @@ public:
     EdgeOperations2d(std::vector<Eigen::Vector3d> _m_vertex_positions, int num_threads = 1)
         : NUM_THREADS(num_threads)
     {
+        TriMesh::vertex_attrs.reset(new VertAttCol());
         vertex_attrs = std::static_pointer_cast<VertAttCol>(TriMesh::vertex_attrs);
-        vertex_attrs.reset(new VertAttCol());
         vertex_attrs->resize(_m_vertex_positions.size());
 
         for (auto i = 0; i < _m_vertex_positions.size(); i++)
@@ -63,7 +63,7 @@ public:
         if (eps > 0) {
             std::vector<Eigen::Vector3d> V(n_vertices);
             std::vector<Eigen::Vector3i> F(tris.size());
-            for (auto i=0; i<V.size(); i++) {
+            for (auto i = 0; i < V.size(); i++) {
                 V[i] = vertex_attrs->m_attributes[i].pos;
             }
             for (int i = 0; i < F.size(); ++i) F[i] << tris[i][0], tris[i][1], tris[i][2];
@@ -110,14 +110,14 @@ public:
         }
         vertex_attrs->m_attributes[t.vid()].pos = p;
         return true;
-
     }
 
-    void partition_mesh() { 
-        auto m_vertex_partition_id = partition_TriMesh(*this, NUM_THREADS); 
+    void partition_mesh()
+    {
+        auto m_vertex_partition_id = partition_TriMesh(*this, NUM_THREADS);
         for (auto i = 0; i < m_vertex_partition_id.size(); i++)
             vertex_attrs->m_attributes[i].partition_id = m_vertex_partition_id[i];
-        }
+    }
 
     Eigen::Vector3d smooth(const Tuple& t)
     {
@@ -203,7 +203,6 @@ public:
     bool collapse_remeshing(double L);
     bool swap_remeshing();
     bool adaptive_remeshing(double L, int interations, int sm);
-
 };
 
 } // namespace Edge2d

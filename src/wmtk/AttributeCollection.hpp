@@ -49,10 +49,8 @@ struct AttributeCollection : public AbstractAttributeContainer
         }
         m_rollback_list.clear();
     }
-    
-    size_t size() const {
-        return m_attributes.size();
-    }
+
+    size_t size() const { return m_attributes.size(); }
     std::map<size_t, T> m_rollback_list;
     // experimenting with tbb, could be templated as well.
     tbb::concurrent_vector<T> m_attributes;
