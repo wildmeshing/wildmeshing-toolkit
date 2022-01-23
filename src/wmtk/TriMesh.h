@@ -1,6 +1,7 @@
 #pragma once
 
 #include <wmtk/utils/VectorUtils.h>
+#include <memory>
 #include <wmtk/utils/Logger.hpp>
 
 #include <tbb/concurrent_vector.h>
@@ -11,6 +12,7 @@
 #include <map>
 #include <optional>
 #include <vector>
+#include "wmtk/AttributeCollection.hpp"
 
 namespace wmtk {
 
@@ -219,6 +221,9 @@ public:
     template <typename T>
     using vector = tbb::concurrent_vector<T>;
 
+public:
+    std::shared_ptr<AbstractAttributeContainer> vertex_attrs, edge_attrs, face_attrs;
+
 private:
     vector<VertexConnectivity> m_vertex_connectivity;
     vector<TriangleConnectivity> m_tri_connectivity;
@@ -257,14 +262,7 @@ protected:
             return false;
         return true;
     }
-
-    virtual void resize_vertex_attributes(size_t v){};
-    virtual void resize_edge_attributes(size_t e){};
-    virtual void resize_face_attributes(size_t t){};
-
-    virtual void move_vertex_attribute(size_t from, size_t to){};
-    virtual void move_edge_attribute(size_t from, size_t to){};
-    virtual void move_face_attribute(size_t from, size_t to){};
+     void resize_mutex(size_t v);
 
 
 public:

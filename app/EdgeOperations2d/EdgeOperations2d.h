@@ -22,14 +22,20 @@
 
 #include <atomic>
 #include <queue>
+#include "wmtk/AttributeCollection.hpp"
 
 namespace Edge2d {
+
+struct VertexAttributes{
+    Eigen::Vector3d pos;
+    size_t partition_id;
+};
 
 class EdgeOperations2d : public wmtk::ConcurrentTriMesh
 {
 public:
-    tbb::concurrent_vector<Eigen::Vector3d> m_vertex_positions;
-    tbb::concurrent_vector<size_t> m_vertex_partition_id;
+    // tbb::concurrent_vector<Eigen::Vector3d> m_vertex_positions;
+    // tbb::concurrent_vector<size_t> m_vertex_partition_id;
     fastEnvelope::FastEnvelope m_envelope;
     bool m_has_envelope = false;
 
@@ -38,9 +44,11 @@ public:
     EdgeOperations2d(std::vector<Eigen::Vector3d> _m_vertex_positions, int num_threads = 1)
         : NUM_THREADS(num_threads)
     {
-        m_vertex_positions.resize(_m_vertex_positions.size());
+        vertex_attrs.reset(new wmtk::AttributeCollection<VertexAttributes>());
+        vertex_attrs->resize(_m_vertex_positions.size());
+
         for (auto i = 0; i < _m_vertex_positions.size(); i++)
-            m_vertex_positions[i] = _m_vertex_positions[i];
+            vertex_attrs->m_attributes[i] = {_m_vertex_positions[i], 0};
     }
 
     void
