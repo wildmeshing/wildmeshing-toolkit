@@ -25,6 +25,7 @@ template <class T>
 inline void vector_unique(std::vector<T>& v)
 {
     ZoneScoped;
+    ZoneValue(v.size());
     std::sort(v.begin(), v.end());
     v.erase(std::unique(v.begin(), v.end()), v.end());
 }
@@ -57,6 +58,7 @@ template <class T>
 inline bool vector_contains(std::vector<T>& v, const T& t)
 {
     ZoneScoped;
+    ZoneValue(v.size());
     auto it = std::find(v.begin(), v.end(), t);
     if (it == v.end()) return false;
     return true;
