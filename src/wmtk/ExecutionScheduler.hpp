@@ -206,7 +206,7 @@ public:
                 if (!tup.is_valid(m)) continue;
                 if (!should_process(
                         m,
-                        std::make_tuple(
+                        std::tuple<double, Op, Tuple>(
                             std::get<0>(ele_in_queue),
                             std::get<1>(ele_in_queue),
                             std::get<2>(ele_in_queue))))
