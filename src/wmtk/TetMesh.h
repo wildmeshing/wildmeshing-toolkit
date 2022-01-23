@@ -317,8 +317,8 @@ public:
     // Stores the connectivity of the mesh
     vector<VertexConnectivity> m_vertex_connectivity;
     vector<TetrahedronConnectivity> m_tet_connectivity;
-private:
 
+private:
     int m_t_empty_slot = 0;
     int m_v_empty_slot = 0;
     int get_next_empty_slot_t();
@@ -490,12 +490,12 @@ public:
     std::vector<Tuple> get_one_ring_tets_for_edge(const Tuple& t) const;
 
     /**
-    * @brief 
-    * 
-    * @param m 
-    * @return std::vector<std::array<size_t,3>> 
-    */
-    std::vector<std::array<size_t,3>> vertex_adjacent_boundary_faces(const Tuple&t) const;
+     * @brief
+     *
+     * @param m
+     * @return std::vector<std::array<size_t,3>>
+     */
+    std::vector<std::array<size_t, 3>> vertex_adjacent_boundary_faces(const Tuple& t) const;
     /**
      * Positively oriented 4 vertices (represented by Tuples) in a tetra.
      * @return std::array<Tuple, 4> each tuple owns a different vertex.
@@ -517,6 +517,10 @@ private:
         const std::vector<size_t>& affected,
         const std::vector<size_t>& new_tet_id,
         const std::vector<wmtk::TetMesh::TetrahedronConnectivity>& old_tets);
+    std::map<size_t, wmtk::TetMesh::VertexConnectivity> operation_update_connectivity_impl(
+        std::vector<size_t>& remove_id,
+        std::vector<std::array<size_t, 4>>& new_tet_conn,
+        std::vector<size_t>& allocate_id);
 };
 
 } // namespace wmtk
