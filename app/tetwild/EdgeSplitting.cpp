@@ -38,18 +38,11 @@ void tetwild::TetWild::split_all_edges()
 
 bool tetwild::TetWild::split_before(const Tuple& loc0)
 {
-    auto loc1 = loc0;
-    int v1_id = loc1.vid(*this);
-    auto loc2 = loc1.switch_vertex(*this);
-    int v2_id = loc2.vid(*this);
+    split_cache.local().v1_id = loc0.vid(*this);
+    auto loc1 = loc0.switch_vertex(*this);
+    split_cache.local().v2_id = loc1.vid(*this);
 
-    //	double length = (m_vertex_attribute[v1_id].m_posf -
-    // m_vertex_attribute[v2_id].m_posf).norm();
-    //	if (length < m_params.l * 4 / 3)
-    //		return false;
-
-    split_cache.local().vertex_info.m_posf =
-        (m_vertex_attribute[v1_id].m_posf + m_vertex_attribute[v2_id].m_posf) / 2;
+    split_cache.local().is_edge_on_surface = is_edge_on_surface(loc0);
 
     return true;
 }
@@ -61,22 +54,48 @@ bool tetwild::TetWild::split_after(const Tuple& loc)
         return false;
 
     std::vector<Tuple> locs = get_one_ring_tets_for_vertex(loc);
+    size_t v_id = loc.vid(*this);
 
-    int v_id = loc.vid(*this);
-    auto old_pos = m_vertex_attribute[v_id].m_posf;
+    size_t v1_id = split_cache.local().v1_id;
+    size_t v2_id = split_cache.local().v2_id;
 
-    m_vertex_attribute[v_id].m_posf = split_cache.local().vertex_info.m_posf;
+    /// check inversion & rounding
+    m_vertex_attribute[v_id].m_posf =
+        (m_vertex_attribute[v1_id].m_posf + m_vertex_attribute[v2_id].m_posf) / 2;
     m_vertex_attribute[v_id].m_is_rounded = true;
 
-    // check inversion
-    if (!tetrahedron_invariant(locs)) return false;
+    for (auto& loc : locs) {
+        if (is_inverted(loc)) {
+            m_vertex_attribute[v_id].m_is_rounded = false;
+            break;
+        }
+    }
+    if (!m_vertex_attribute[v_id].m_is_rounded) {
+        m_vertex_attribute[v_id].m_pos =
+            (m_vertex_attribute[v1_id].m_pos + m_vertex_attribute[v2_id].m_pos) / 2;
+        m_vertex_attribute[v_id].m_posf = to_double(m_vertex_attribute[v_id].m_pos);
+    } else
+        m_vertex_attribute[v_id].m_pos = to_rational(m_vertex_attribute[v_id].m_posf);
 
-    // update quality
+    if (!tetrahedron_invariant(locs)) return false;
+  
+    /// update quality
     for (auto& loc : locs) {
         m_tet_attribute[loc.tid(*this)].m_qualities = get_quality(loc);
     }
 
-    cnt_split ++;
+    /// update vertex attribute
+    // bbox
+    m_vertex_attribute[v_id].on_bbox_faces = wmtk::set_intersection(
+        m_vertex_attribute[v1_id].on_bbox_faces,
+        m_vertex_attribute[v2_id].on_bbox_faces);
+    //surface
+    m_vertex_attribute[v_id].m_is_on_surface = split_cache.local().is_edge_on_surface;
+
+    /// update face attribute
+    // todo
+
+    cnt_split++;
 
     return true;
 }

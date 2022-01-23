@@ -22,8 +22,9 @@ TEST_CASE("tetwild_file_write", "[tetwild_operation]")
     vertices[1].m_posf = Vector3d(1, 0, 0);
     vertices[2].m_posf = Vector3d(0, 1, 0);
     vertices[3].m_posf = Vector3d(0, 0, 1);
-    std::vector<std::array<size_t, 4>> tets = {{{0, 1, 3, 2}}};
+    std::vector<std::array<size_t, 4>> tets = {{{0, 1, 2, 3}}};
     std::vector<TetAttributes> tet_attrs(1);
+    for (auto& v:vertices) v.m_is_rounded = true;
 
     tetwild.init(vertices.size(), tets);
     tetwild.create_mesh_attributes(vertices, tet_attrs);

@@ -165,3 +165,15 @@ std::vector<std::array<size_t, 3>> tetwild::TetWild::get_faces_by_condition(
     }
     return res;
 }
+
+bool tetwild::TetWild::is_edge_on_surface(const Tuple& loc){
+    //todo
+
+    return false;
+}
+
+bool tetwild::TetWild::is_edge_on_bbox(const Tuple& loc){
+    //todo
+
+    return false;
+}
