@@ -1,6 +1,7 @@
 #pragma once
 
 #include <wmtk/ConcurrentTetMesh.h>
+#include <wmtk/utils/PartitionMesh.h>
 #include "Parameters.h"
 #include "common.h"
 
@@ -13,7 +14,6 @@
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
-#include <wmtk/utils/PartitionMesh.h>
 #include <memory>
 
 namespace tetwild {
@@ -69,7 +69,16 @@ public:
     TetWild(Parameters& _m_params, fastEnvelope::FastEnvelope& _m_envelope)
         : m_params(_m_params)
         , m_envelope(_m_envelope)
-    {}
+    {
+        TetMesh::vertex_attrs.reset(new VertAttCol());
+        vertex_attrs = std::static_pointer_cast<VertAttCol>(TetMesh::vertex_attrs);
+        TetMesh::edge_attrs.reset(new EdgeAttCol());
+        edge_attrs = std::static_pointer_cast<EdgeAttCol>(TetMesh::edge_attrs);
+        TetMesh::face_attrs.reset(new FaceAttCol());
+        face_attrs = std::static_pointer_cast<FaceAttCol>(TetMesh::face_attrs);
+        TetMesh::tet_attrs.reset(new TetAttCol());
+        tet_attrs = std::static_pointer_cast<TetAttCol>(TetMesh::tet_attrs);
+    }
 
     ~TetWild() {}
     using VertAttCol = wmtk::AttributeCollection<VertexAttributes>;
@@ -85,16 +94,6 @@ public:
         const std::vector<VertexAttributes>& _vertex_attribute,
         const std::vector<TetAttributes>& _tet_attribute)
     {
-        TetMesh::vertex_attrs.reset(new VertAttCol());
-        vertex_attrs = std::static_pointer_cast<VertAttCol>(TetMesh::vertex_attrs);
-
-        TetMesh::edge_attrs.reset(new EdgeAttCol());
-        edge_attrs = std::static_pointer_cast<EdgeAttCol>(TetMesh::edge_attrs);
-        TetMesh::face_attrs.reset(new FaceAttCol());
-        face_attrs = std::static_pointer_cast<FaceAttCol>(TetMesh::face_attrs);
-        TetMesh::tet_attrs.reset(new TetAttCol());
-        tet_attrs = std::static_pointer_cast<TetAttCol>(TetMesh::tet_attrs);
-
         auto n_tet = _tet_attribute.size();
         vertex_attrs->resize(_vertex_attribute.size());
         edge_attrs->resize(6 * n_tet);
@@ -107,7 +106,7 @@ public:
         for (auto i = 0; i < _tet_attribute.size(); i++)
             tet_attrs->m_attributes[i] = _tet_attribute[i];
 
-        partition_TetMesh(*this, NUM_THREADS);
+        m_vertex_partition_id = partition_TetMesh(*this, NUM_THREADS);
     }
 
     ////// Attributes related
