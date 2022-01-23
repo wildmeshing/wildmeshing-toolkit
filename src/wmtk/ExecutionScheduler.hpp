@@ -2,6 +2,7 @@
 
 #include "wmtk/TetMesh.h"
 #include "wmtk/TriMesh.h"
+#include "wmtk/utils/Logger.hpp"
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
@@ -78,6 +79,12 @@ struct ExecutePass
 
 
     size_t num_threads = 1;
+
+    /**
+     * To Avoid mutual locking, retry limit is set, and then put in a serial queue in the end.
+     *
+     */
+    size_t max_retry_limit = 10;
 
     ExecutePass()
     {
@@ -172,12 +179,13 @@ private:
         }
     }
 
-    size_t get_partition_id(const AppMesh& m, const Tuple&e)
+    size_t get_partition_id(const AppMesh& m, const Tuple& e)
     {
-        if constexpr(policy == ExecutionPolicy::kSeq) return 0;
-        if constexpr(std::is_base_of<wmtk::TetMesh, AppMesh>::value)
+        if constexpr (policy == ExecutionPolicy::kSeq) return 0;
+        if constexpr (std::is_base_of<wmtk::TetMesh, AppMesh>::value)
             return m.m_vertex_partition_id[e.vid(m)];
-        else if constexpr(std::is_base_of<wmtk::TriMesh, AppMesh>::value) // TODO: make same interface.
+        else if constexpr (std::is_base_of<wmtk::TriMesh, AppMesh>::value) // TODO: make same
+                                                                           // interface.
             return m.m_vertex_partition_id[e.vid()];
         return 0;
     }
@@ -187,20 +195,34 @@ public:
     {
         auto cnt_update = std::atomic<int>(0);
         auto stop = std::atomic<bool>(false);
+        using Elem = std::tuple<double, Op, Tuple, size_t>;
+        auto queues = std::vector<tbb::concurrent_priority_queue<Elem>>(num_threads);
+        auto final_queue = tbb::concurrent_priority_queue<Elem>();
+
         auto run_single_queue = [&](auto& Q) {
-            using Elem = std::tuple<double, Op, Tuple>;
             auto ele_in_queue = Elem();
             while (Q.try_pop(ele_in_queue)) {
-                auto& [weight, op, tup] = ele_in_queue;
+                auto& [weight, op, tup, retry] = ele_in_queue;
                 if (!tup.is_valid(m)) continue;
-                if (!should_process(m, ele_in_queue))
+                if (!should_process(
+                        m,
+                        std::make_tuple(
+                            std::get<0>(ele_in_queue),
+                            std::get<1>(ele_in_queue),
+                            std::get<2>(ele_in_queue))))
                     continue; // this can encode, in qslim, recompute(energy) == weight.
                 std::vector<Elem> renewed_elements;
                 {
                     auto locked_vid =
                         lock_vertices(m, tup); // Note that returning `Tuples` would be invalid.
                     if (!locked_vid) {
-                        Q.emplace(ele_in_queue);
+                        retry++;
+                        if (retry < max_retry_limit) {
+                            Q.emplace(ele_in_queue);
+                        } else {
+                            retry = 0;
+                            final_queue.emplace(ele_in_queue);
+                        }
                         continue;
                     }
                     if (tup.is_valid(m)) {
@@ -208,7 +230,7 @@ public:
                         std::vector<std::pair<Op, Tuple>> renewed_tuples;
                         if (newtup) renewed_tuples = renew_neighbor_tuples(m, op, newtup.value());
                         for (auto& [o, e] : renewed_tuples) {
-                            renewed_elements.emplace_back(priority(m, o, e), o, e);
+                            renewed_elements.emplace_back(priority(m, o, e), o, e, 0);
                         }
                         cnt_update++;
                     }
@@ -228,17 +250,15 @@ public:
             }
         };
 
-        auto queues =
-            std::vector<tbb::concurrent_priority_queue<std::tuple<double, Op, Tuple>>>(num_threads);
         if constexpr (policy == ExecutionPolicy::kSeq) {
             for (auto& [op, e] : operation_tuples) {
-                queues[0].emplace(priority(m, op, e), op, e);
+                final_queue.emplace(priority(m, op, e), op, e);
             }
-            run_single_queue(queues[0]);
+            run_single_queue(final_queue);
         } else {
             for (auto& [op, e] : operation_tuples) {
                 //
-                queues[get_partition_id(m,e)].emplace(priority(m, op, e), op, e);
+                queues[get_partition_id(m, e)].emplace(priority(m, op, e), op, e);
             }
             // Comment out parallel: work on serial first.
             tbb::task_arena arena(num_threads);
@@ -249,6 +269,8 @@ public:
                 }
             });
             arena.execute([&] { tg.wait(); });
+            logger().debug("Parallel Complete, remains element {}", final_queue.size());
+            run_single_queue(final_queue);
         }
         return true;
     }
