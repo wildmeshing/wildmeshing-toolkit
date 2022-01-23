@@ -208,6 +208,7 @@ public:
         double edge_length;
 
         std::vector<std::pair<size_t, std::array<size_t, 3>>> changed_faces;
+        std::vector<size_t> changed_tids;
     };
     tbb::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
 

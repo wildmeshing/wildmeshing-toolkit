@@ -4,17 +4,6 @@
 #include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/Logger.hpp>
 
-using std::cout;
-using std::endl;
-
-void pausee()
-{
-    std::cout << "pausing..." << std::endl;
-    char c;
-    std::cin >> c;
-    if (c == '0') exit(0);
-}
-
 void tetwild::TetWild::split_all_edges()
 {
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
@@ -57,7 +46,6 @@ bool tetwild::TetWild::split_before(const Tuple& loc0)
     //
     size_t v1_id = split_cache.local().v1_id;
     size_t v2_id = split_cache.local().v2_id;
-    cout<<v1_id<<" "<<v2_id<<endl;
 
     split_cache.local().is_edge_on_surface = is_edge_on_surface(loc0);
 

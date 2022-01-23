@@ -4,7 +4,16 @@
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/Logger.hpp>
+using std::cout;
+using std::endl;
 
+void pausee()
+{
+    std::cout << "pausing..." << std::endl;
+    char c;
+    std::cin >> c;
+    if (c == '0') exit(0);
+}
 
 double tetwild::TetWild::get_length2(const wmtk::TetMesh::Tuple& l) const
 {
@@ -51,6 +60,7 @@ void tetwild::TetWild::collapse_all_edges()
 bool tetwild::TetWild::collapse_before(const Tuple& loc) // input is an edge
 {
     collapse_cache.local().changed_faces.clear();
+    collapse_cache.local().changed_tids.clear();
 
     size_t v1_id = loc.vid(*this);
     auto loc1 = switch_vertex(loc);
@@ -58,6 +68,7 @@ bool tetwild::TetWild::collapse_before(const Tuple& loc) // input is an edge
     //
     collapse_cache.local().v1_id = v1_id;
     collapse_cache.local().v2_id = v2_id;
+    cout<<v1_id<<" "<<v2_id<<endl;
 
     collapse_cache.local().edge_length =
         (m_vertex_attribute[v1_id].m_posf - m_vertex_attribute[v2_id].m_posf)
@@ -98,20 +109,36 @@ bool tetwild::TetWild::collapse_before(const Tuple& loc) // input is an edge
     auto n1_locs = get_one_ring_tets_for_vertex(loc);
     auto n12_locs = get_incident_tets_for_edge(loc); // todo: duplicated computation
 
-    std::map<int, double> qs;
+    std::map<size_t, double> qs;
     for (auto& l : n1_locs) {
         qs[l.tid(*this)] = get_quality(l);
+        cout<<l.tid(*this)<<" ";
+        collapse_cache.local().changed_tids.push_back(l.tid(*this));
     }
+    cout<<endl;
     for (auto& l : n12_locs) {
-        auto it = qs.find(l.tid(*this));
-        if (it != qs.end()) qs.erase(it);
+//        auto it = qs.find(l.tid(*this));
+//        if (it != qs.end()) qs.erase(it);
+        qs.erase(l.tid(*this));
+        cout<<l.tid(*this)<<" ";
     }
+    cout<<endl;
 
     collapse_cache.local().max_energy = 0;
     for (auto& q : qs) {
         if (q.second > collapse_cache.local().max_energy)
             collapse_cache.local().max_energy = q.second;
+        //
+
+        //fortest
+        cout<<q.first<<": ";
+        for(int j=0;j<4;j++)
+            cout<<m_tet_connectivity[q.first][j]<<" ";
+        cout<<endl;
     }
+    cout<<endl;
+    cout<<"tet_capacity() "<<tet_capacity()<<endl;
+    pausee();
 
     /// record faces
     auto comp = [](const std::pair<size_t, std::array<size_t, 3>>& v1,
@@ -148,20 +175,30 @@ bool tetwild::TetWild::collapse_after(const Tuple& loc)
     size_t v1_id = collapse_cache.local().v1_id;
     size_t v2_id = collapse_cache.local().v2_id;
 
-    auto locs = get_one_ring_tets_for_vertex(loc);
+    for(size_t tid: collapse_cache.local().changed_tids){
+        cout<<tid<<" "<<m_tet_connectivity[tid].m_is_removed<<endl;
+        for(int j=0;j<4;j++)
+            cout<<m_tet_connectivity[tid][j]<<" ";
+        cout<<endl;
+    }
+    cout<<"tet_capacity() "<<tet_capacity()<<endl;
+    pausee();
 
     //// checks
     // check inversion
-    for (auto& l : locs) {
-        if (is_inverted(l)) {
+//    auto locs = get_one_ring_tets_for_vertex(loc);
+//    for (auto& l : locs) {
+    for(size_t tid: collapse_cache.local().changed_tids){
+        if (is_inverted(tuple_from_tet(tid))) {
             return false;
         }
     }
 
     // check quality
     std::vector<double> qs;
-    for (auto& l : locs) {
-        double q = get_quality(l);
+//    for (auto& l : locs) {
+    for(size_t tid: collapse_cache.local().changed_tids){
+        double q = get_quality(tuple_from_tet(tid));
         if (q > collapse_cache.local().max_energy) {
             // spdlog::critical("After Collapse {} from ({})", q,
             // collapse_cache.local().max_energy);
@@ -184,22 +221,28 @@ bool tetwild::TetWild::collapse_after(const Tuple& loc)
 
     //// update attrs
     // tet attr
-    for (int i = 0; i < locs.size(); i++) {
-        m_tet_attribute[locs[i].tid(*this)].m_qualities = qs[i];
+//    for (int i = 0; i < locs.size(); i++) {
+    for(int i = 0; i < collapse_cache.local().changed_tids.size();i++){
+        m_tet_attribute[collapse_cache.local().changed_tids[i]].m_qualities = qs[i];
     }
     // vertex attr
     m_vertex_attribute[v2_id].m_is_on_surface =
         m_vertex_attribute[v1_id].m_is_on_surface || m_vertex_attribute[v2_id].m_is_on_surface;
     // no need to update on_bbox_faces
     // face attr
+    std::map<size_t, FaceAttributes> map_tet_attrs;
+    for(auto& info: split_cache.local().changed_faces) {
+        size_t old_fid = info.first;
+        map_tet_attrs[old_fid] = m_face_attribute[old_fid];//todo: avoid copy
+    }
     for (auto& info : collapse_cache.local().changed_faces) {
         size_t old_fid = info.first;
         auto& old_vids = info.second;
         //
         auto [_, global_fid] = tuple_from_face({{v2_id, old_vids[1], old_vids[2]}});
-        m_face_attribute[global_fid].merge(m_face_attribute[old_fid]);
+        m_face_attribute[global_fid].merge(map_tet_attrs[old_fid]);
         //
-        m_face_attribute[old_fid].reset();
+//        map_tet_attrs[old_fid].reset();
     }
 
     cnt_collapse++;
