@@ -39,6 +39,7 @@ struct AttributeCollection : public AbstractAttributeContainer
         m_attributes[to] = val;
         m_rollback_list[to] = val;
         // TODO: are locks necessary? not now.
+        return true;
     }
 
     void rollback() override
