@@ -249,9 +249,3 @@ bool tetwild::TetWild::is_edge_on_surface(const Tuple& loc){
 
     return false;
 }
-
-bool tetwild::TetWild::is_edge_on_bbox(const Tuple& loc){
-    //todo
-
-    return false;
-}
