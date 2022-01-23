@@ -216,6 +216,7 @@ public:
     struct SwapInfoCache
     {
         double max_energy;
+         std::map<std::array<size_t, 3>, size_t> changed_faces;
     };
     tbb::enumerable_thread_specific<SwapInfoCache> edgeswap_cache, faceswap_cache;
 

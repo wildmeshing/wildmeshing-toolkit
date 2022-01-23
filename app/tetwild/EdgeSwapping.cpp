@@ -8,6 +8,58 @@
 
 #include <cassert>
 
+auto face_attribute_tracker =
+    [](auto& changed_faces, const auto& incident_tets, auto& m, auto& m_face_attribute) {
+        changed_faces.clear();
+        auto middle_face = std::set<int>();
+        for (auto t : incident_tets) {
+            for (auto j = 0; j < 4; j++) {
+                auto f_t = m.tuple_from_face(t.tid(m), j);
+                auto global_fid = f_t.fid(m);
+                auto vs = m.get_face_vertices(f_t);
+                auto vids = std::array<size_t, 3>{{vs[0].vid(m), vs[1].vid(m), vs[2].vid(m)}};
+                std::sort(vids.begin(), vids.end());
+                auto [it, suc] = changed_faces.emplace(vids, global_fid);
+                if (!suc) {
+                    changed_faces.erase(it); // erase if already there.
+                    middle_face.insert(global_fid);
+                }
+            }
+        }
+
+        for (auto f : middle_face) {
+            if (m_face_attribute[f].m_is_surface_fs || m_face_attribute[f].m_is_bbox_fs >= 0) {
+                wmtk::logger().debug("Attempting to Swap a boundary/bbox face, reject.");
+                return false;
+            }
+        }
+        return true;
+    };
+
+auto tracker_assign_after =
+    [](const auto& changed_faces, const auto& incident_tets, auto& m, auto& m_face_attribute) {
+        auto middle_face = std::vector<size_t>();
+        auto new_faces = std::set<std::array<size_t, 3>>();
+        auto assign_attrs = [](auto& attr, auto from, auto to) { // TODO: support rollback later.
+            if (from == to) return;
+            attr[to] = attr[from];
+        };
+        for (auto t : incident_tets) {
+            for (auto j = 0; j < 4; j++) {
+                auto f_t = m.tuple_from_face(t.tid(m), j);
+                auto global_fid = f_t.fid(m);
+                auto vs = m.get_face_vertices(f_t);
+                auto vids = std::array<size_t, 3>{{vs[0].vid(m), vs[1].vid(m), vs[2].vid(m)}};
+                std::sort(vids.begin(), vids.end());
+                auto it = (changed_faces.find(vids));
+                if (it == changed_faces.end()) continue;
+
+                // if found, then assign
+                assign_attrs(m_face_attribute, it->second, global_fid);
+            }
+        }
+    };
+
 void tetwild::TetWild::swap_all_edges()
 {
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
@@ -70,6 +122,14 @@ bool tetwild::TetWild::swap_edge_before(const Tuple& t)
         max_energy = std::max(get_quality(l), max_energy);
     }
     edgeswap_cache.local().max_energy = max_energy;
+
+    if (!face_attribute_tracker(
+            edgeswap_cache.local().changed_faces,
+            incident_tets,
+            *this,
+            m_face_attribute))
+        return false;
+
     return true;
 }
 
@@ -85,6 +145,9 @@ bool tetwild::TetWild::swap_edge_after(const Tuple& t)
         return false;
     }
     if (max_energy > edgeswap_cache.local().max_energy) return false;
+
+    auto twotets = std::vector<Tuple>{{t, *oppo_tet}};
+    tracker_assign_after(faceswap_cache.local().changed_faces, twotets, *this, m_face_attribute);
     cnt_swap ++;
     return true;
 }
@@ -96,6 +159,15 @@ bool tetwild::TetWild::swap_face_before(const Tuple& t)
     auto oppo_tet = t.switch_tetrahedron(*this);
     assert(oppo_tet.has_value() && "Should not swap boundary.");
     faceswap_cache.local().max_energy = std::max(get_quality(t), get_quality(*oppo_tet));
+
+    auto twotets = std::vector<Tuple>{{t, *oppo_tet}};
+
+    if (!face_attribute_tracker(
+            faceswap_cache.local().changed_faces,
+            twotets,
+            *this,
+            m_face_attribute))
+        return false;
     return true;
 }
 
@@ -113,9 +185,15 @@ bool tetwild::TetWild::swap_face_after(const Tuple& t)
     for (auto& l : incident_tets) {
         max_energy = std::max(get_quality(l), max_energy);
     }
-    wmtk::logger().trace("quality {} from {}", max_energy, edgeswap_cache.local().max_energy);
+    wmtk::logger().trace("quality {} from {}", max_energy, faceswap_cache.local().max_energy);
 
-    if (max_energy > edgeswap_cache.local().max_energy) return false;
+    if (max_energy > faceswap_cache.local().max_energy) return false;
+
+    tracker_assign_after(
+        faceswap_cache.local().changed_faces,
+        incident_tets,
+        *this,
+        m_face_attribute);
 
     cnt_swap ++;
     return true;
