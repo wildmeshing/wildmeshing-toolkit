@@ -34,11 +34,11 @@ bool Edge2d::EdgeOperations2d::collapse_after(const TriMesh::Tuple& t)
 {
     const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
     auto vid = t.vid();
-    auto old_p = m_vertex_positions[vid];
-    m_vertex_positions[vid] = p;
+    auto old_p = vertex_attrs->m_attributes[vid].pos;
+    vertex_attrs->m_attributes[vid].pos = p;
 
     if (invariants(get_one_ring_tris_for_vertex(t))) return true;
-    m_vertex_positions[vid] = old_p;
+    vertex_attrs->m_attributes[vid].pos = old_p;
     return false;
 }
 
@@ -46,11 +46,11 @@ bool Edge2d::EdgeOperations2d::split_after(const TriMesh::Tuple& t)
 {
     const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
     auto vid = t.vid();
-    auto old_p = m_vertex_positions[vid];
-    m_vertex_positions[vid] = p;
+    auto old_p = vertex_attrs->m_attributes[vid].pos;
+    vertex_attrs->m_attributes[vid].pos = p;
 
     if (invariants(get_one_ring_tris_for_vertex(t))) return true;
-    m_vertex_positions[vid] = old_p;
+    vertex_attrs->m_attributes[vid].pos = old_p;
     return false;
 }
 
@@ -82,7 +82,7 @@ bool Edge2d::EdgeOperations2d::collapse_shortest(int target_operation_count)
     };
     auto measure_len2 = [](auto& m, auto op, const Tuple& new_e) {
         auto len2 =
-            (m.m_vertex_positions[new_e.vid()] - m.m_vertex_positions[new_e.switch_vertex(m).vid()])
+            (m.vertex_attrs->m_attributes[new_e.vid()].pos - m.vertex_attrs->m_attributes[new_e.switch_vertex(m).vid()].pos)
                 .squaredNorm();
         return -len2;
     };

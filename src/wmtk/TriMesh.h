@@ -262,7 +262,7 @@ protected:
             return false;
         return true;
     }
-     void resize_mutex(size_t v);
+    virtual void resize_mutex(size_t v) {}; // tempoarary hack
 
 
 public:

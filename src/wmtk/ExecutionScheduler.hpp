@@ -178,7 +178,7 @@ private:
         if constexpr(std::is_base_of<wmtk::TetMesh, AppMesh>::value)
             return m.m_vertex_partition_id[e.vid(m)];
         else if constexpr(std::is_base_of<wmtk::TriMesh, AppMesh>::value) // TODO: make same interface.
-            return m.m_vertex_partition_id[e.vid()];
+            return m.vertex_attrs->m_attributes[e.vid()].partition_id; // TODO: this is temporary.
         return 0;
     }
 
@@ -237,7 +237,6 @@ public:
             run_single_queue(queues[0]);
         } else {
             for (auto& [op, e] : operation_tuples) {
-                //
                 queues[get_partition_id(m,e)].emplace(priority(m, op, e), op, e);
             }
             // Comment out parallel: work on serial first.

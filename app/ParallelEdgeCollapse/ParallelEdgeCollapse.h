@@ -111,7 +111,7 @@ public:
         Eigen::MatrixXd V = Eigen::MatrixXd::Zero(m_vertex_positions.size(), 3);
         for (auto& t : get_vertices()) {
             auto i = t.vid();
-            V.row(i) = m_vertex_positions[i];
+            V.row(i) = vertex_attrs->m_attributes[i].pos;
         }
 
         Eigen::MatrixXi F = Eigen::MatrixXi::Constant(tri_capacity(), 3, -1);
@@ -145,7 +145,7 @@ public:
 
     void move_vertex_attribute(size_t from, size_t to) override
     {
-        m_vertex_positions[to] = m_vertex_positions[from];
+        vertex_attrs->m_attributes[to] = vertex_attrs->m_attributes[from].pos.pos;
     }
 
     void resize_vertex_attributes(size_t v) override
