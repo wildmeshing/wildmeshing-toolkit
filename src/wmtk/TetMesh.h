@@ -372,10 +372,7 @@ protected:
     virtual bool smooth_before(const Tuple& t) { return true; }
     virtual bool smooth_after(const Tuple& t) { return true; }
 
-    virtual void resize_vertex_attributes(size_t v) {}
-    virtual void resize_edge_attributes(size_t e) {}
-    virtual void resize_face_attributes(size_t f) {}
-    virtual void resize_tet_attributes(size_t t) {}
+    virtual void resize_vertex_mutex(size_t v) {}
 
 public:
     /**

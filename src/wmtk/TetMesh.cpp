@@ -19,6 +19,7 @@ int wmtk::TetMesh::get_next_empty_slot_v()
     const auto it = m_vertex_connectivity.emplace_back();
     const size_t size = std::distance(m_vertex_connectivity.begin(), it) + 1;
     vertex_attrs->resize(size);
+    resize_vertex_mutex(size); // TODO: temp hack for mutex
     return size - 1;
 }
 

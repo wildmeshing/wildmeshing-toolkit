@@ -9,42 +9,47 @@
 #include <tbb/enumerable_thread_specific.h>
 #include <Eigen/Core>
 
-#include <memory>
 #include <atomic>
+#include <memory>
 
 namespace harmonic_tet {
 
 class HarmonicTet : public wmtk::ConcurrentTetMesh
 {
 public:
-    using VertexAttributes = Eigen::Vector3d;
+    struct VertexAttributes
+    {
+        Eigen::Vector3d pos;
+        size_t partition_id = 0;
+    };
+    using VertAttCol = wmtk::AttributeCollection<VertexAttributes>;
+    std::shared_ptr<VertAttCol> vertex_attrs;
 
     HarmonicTet(
-        const std::vector<VertexAttributes>& _vertex_attribute,
+        const std::vector<Eigen::Vector3d>& _vertex_attribute,
         const std::vector<std::array<size_t, 4>>& tets,
         int num_threads = 1)
     {
-        m_vertex_attribute = tbb::concurrent_vector<VertexAttributes>(_vertex_attribute.size());
+        TetMesh::vertex_attrs.reset(new VertAttCol());
+        vertex_attrs = std::static_pointer_cast<VertAttCol>(TetMesh::vertex_attrs);
+        vertex_attrs->resize(_vertex_attribute.size());
+
         for (auto i = 0; i < _vertex_attribute.size(); i++)
-            m_vertex_attribute[i] = _vertex_attribute[i];
+            vertex_attrs->m_attributes[i].pos = _vertex_attribute[i];
+
         NUM_THREADS = num_threads;
-        init(m_vertex_attribute.size(), tets);
+        init(_vertex_attribute.size(), tets);
+
         m_vertex_partition_id = partition_TetMesh(*this, NUM_THREADS);
+        for (auto i = 0; i < _vertex_attribute.size(); i++)
+            vertex_attrs->m_attributes[i].partition_id = m_vertex_partition_id[i];
     }
     HarmonicTet(){};
     ~HarmonicTet(){};
 
     ////// Attributes related
     // Stores the attributes attached to simplices
-    tbb::concurrent_vector<VertexAttributes> m_vertex_attribute;
     tbb::concurrent_vector<size_t> m_vertex_partition_id;
-
-    void resize_vertex_attributes(size_t v) override
-    {
-        ConcurrentTetMesh::resize_vertex_attributes(v);
-        m_vertex_attribute.grow_to_at_least(v);
-        m_vertex_partition_id.grow_to_at_least(v);
-    }
 
     void output_mesh(std::string file) const;
 

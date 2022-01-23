@@ -13,8 +13,8 @@
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
-#include <memory>
 #include <wmtk/utils/PartitionMesh.h>
+#include <memory>
 
 namespace tetwild {
 
@@ -46,8 +46,8 @@ class FaceAttributes
 public:
     Scalar tag;
 
-    int m_is_surface_fs = 0;//0; 1
-    int m_is_bbox_fs = -1;//-1; 0~5
+    int m_is_surface_fs = 0; // 0; 1
+    int m_is_bbox_fs = -1; //-1; 0~5
 
     int m_surface_tags;
 };
@@ -72,36 +72,47 @@ public:
     {}
 
     ~TetWild() {}
+    using VertAttCol = wmtk::AttributeCollection<VertexAttributes>;
+    using EdgeAttCol = wmtk::AttributeCollection<EdgeAttributes>;
+    using FaceAttCol = wmtk::AttributeCollection<FaceAttributes>;
+    using TetAttCol = wmtk::AttributeCollection<TetAttributes>;
+    std::shared_ptr<VertAttCol> vertex_attrs;
+    std::shared_ptr<EdgeAttCol> edge_attrs;
+    std::shared_ptr<FaceAttCol> face_attrs;
+    std::shared_ptr<TetAttCol> tet_attrs;
 
     void create_mesh_attributes(
         const std::vector<VertexAttributes>& _vertex_attribute,
         const std::vector<TetAttributes>& _tet_attribute)
     {
-        m_vertex_attribute = tbb::concurrent_vector<VertexAttributes>(_vertex_attribute.size());
+        TetMesh::vertex_attrs.reset(new VertAttCol());
+        vertex_attrs = std::static_pointer_cast<VertAttCol>(TetMesh::vertex_attrs);
+
+        TetMesh::edge_attrs.reset(new EdgeAttCol());
+        edge_attrs = std::static_pointer_cast<EdgeAttCol>(TetMesh::edge_attrs);
+        TetMesh::face_attrs.reset(new FaceAttCol());
+        face_attrs = std::static_pointer_cast<FaceAttCol>(TetMesh::face_attrs);
+        TetMesh::tet_attrs.reset(new TetAttCol());
+        tet_attrs = std::static_pointer_cast<TetAttCol>(TetMesh::tet_attrs);
+
+        auto n_tet = _tet_attribute.size();
+        vertex_attrs->resize(_vertex_attribute.size());
+        edge_attrs->resize(6 * n_tet);
+        face_attrs->resize(4 * n_tet);
+        tet_attrs->resize(n_tet);
+
         for (auto i = 0; i < _vertex_attribute.size(); i++)
-            m_vertex_attribute[i] = _vertex_attribute[i];
-        m_tet_attribute = tbb::concurrent_vector<TetAttributes>(_tet_attribute.size());
+            vertex_attrs->m_attributes[i] = _vertex_attribute[i];
+        tet_attrs->m_attributes = tbb::concurrent_vector<TetAttributes>(_tet_attribute.size());
         for (auto i = 0; i < _tet_attribute.size(); i++)
-            m_tet_attribute[i] = _tet_attribute[i];
-        auto n_tet = m_tet_attribute.size();
-        resize_edge_attributes(6 * n_tet);
-        resize_face_attributes(4 * n_tet);
+            tet_attrs->m_attributes[i] = _tet_attribute[i];
+
         partition_TetMesh(*this, NUM_THREADS);
     }
 
     ////// Attributes related
-    // Stores the attributes attached to simplices
-    tbb::concurrent_vector<VertexAttributes> m_vertex_attribute;
-    tbb::concurrent_vector<EdgeAttributes> m_edge_attribute;
-    tbb::concurrent_vector<FaceAttributes> m_face_attribute;
-    tbb::concurrent_vector<TetAttributes> m_tet_attribute;
     int NUM_THREADS = 1;
-     tbb::concurrent_vector<size_t> m_vertex_partition_id;
-
-    void resize_vertex_attributes(size_t v) override { m_vertex_attribute.resize(v); }
-    void resize_edge_attributes(size_t e) override { m_edge_attribute.resize(e); }
-    void resize_face_attributes(size_t f) override { m_face_attribute.resize(f); }
-    void resize_tet_attributes(size_t t) override { m_tet_attribute.resize(t); }
+    tbb::concurrent_vector<size_t> m_vertex_partition_id;
 
 
     void output_mesh(std::string file);
@@ -189,7 +200,7 @@ public:
     void match_insertion_faces(const InputSurface& input_surface, std::vector<bool>& is_matched);
     void setup_attributes();
     //
-//    void add_tet_centroid(const std::array<size_t, 4>& vids) override;
+    //    void add_tet_centroid(const std::array<size_t, 4>& vids) override;
     void add_tet_centroid(const Tuple& t) override;
     //
     void triangle_insertion(const InputSurface& input_surface);
@@ -232,7 +243,7 @@ public:
     bool vertex_invariant(const Tuple& t);
     bool tetrahedron_invariant(const std::vector<Tuple>& t);
 
-    double get_length2(const Tuple&loc) const;
+    double get_length2(const Tuple& loc) const;
     // debug use
     std::atomic<int> cnt_split = 0, cnt_collapse = 0, cnt_swap = 0;
 };

@@ -20,7 +20,7 @@ double HarmonicTet::get_quality(const Tuple& loc) const
     Eigen::MatrixXd ps(4, 3);
     auto tups = oriented_tet_vertices(loc);
     for (auto j = 0; j < 4; j++) {
-        ps.row(j) = m_vertex_attribute[tups[j].vid(*this)];
+        ps.row(j) = vertex_attrs->m_attributes[tups[j].vid(*this)].pos;
     }
     return wmtk::harmonic_energy(ps);
 }
@@ -29,7 +29,7 @@ double HarmonicTet::get_quality(const std::array<size_t, 4>& vids) const
 {
     Eigen::MatrixXd ps(4, 3);
     for (auto j = 0; j < 4; j++) {
-        ps.row(j) = m_vertex_attribute[vids[j]];
+        ps.row(j) = vertex_attrs->m_attributes[vids[j]].pos;
     }
     return wmtk::harmonic_energy(ps);
 }
@@ -40,7 +40,7 @@ bool HarmonicTet::is_inverted(const Tuple& loc)
     std::array<Eigen::Vector3d, 4> ps;
     auto tups = oriented_tet_vertices(loc);
     for (auto j = 0; j < 4; j++) {
-        ps[j] = m_vertex_attribute[tups[j].vid(*this)];
+        ps[j] = vertex_attrs->m_attributes[tups[j].vid(*this)].pos;
     }
 
     igl::predicates::exactinit();
@@ -75,26 +75,26 @@ bool harmonic_tet::HarmonicTet::smooth_after(const Tuple& t)
 
         for (auto i = 0; i < 4; i++) {
             for (auto j = 0; j < 3; j++) {
-                T[i * 3 + j] = m_vertex_attribute[local_verts[i]][j];
+                T[i * 3 + j] = vertex_attrs->m_attributes[local_verts[i]].pos[j];
             }
         }
         loc_id++;
     }
 
-    auto old_pos = m_vertex_attribute[vid];
-    m_vertex_attribute[vid] = wmtk::gradient_descent_from_stack(
+    auto old_pos = vertex_attrs->m_attributes[vid].pos;
+    vertex_attrs->m_attributes[vid].pos = wmtk::gradient_descent_from_stack(
         assembles,
         wmtk::harmonic_tet_energy,
         wmtk::harmonic_tet_jacobian);
-    if (m_vertex_attribute[vid] == old_pos) return false;
+    if (vertex_attrs->m_attributes[vid].pos == old_pos) return false;
     wmtk::logger().trace(
         "old pos {} -> new pos {}",
         old_pos.transpose(),
-        m_vertex_attribute[vid].transpose());
+        vertex_attrs->m_attributes[vid].pos.transpose());
     // note: duplicate code snippets.
     for (auto& loc : locs) {
         if (is_inverted(loc)) {
-            m_vertex_attribute[vid] = old_pos;
+            vertex_attrs->m_attributes[vid].pos = old_pos;
             return false;
         }
     }
@@ -239,7 +239,7 @@ void HarmonicTet::output_mesh(std::string file) const
     const auto& vtx = get_vertices();
     msh.add_tet_vertices(vtx.size(), [&](size_t k) {
         auto i = vtx[k].vid(*this);
-        return m_vertex_attribute[i];
+        return vertex_attrs->m_attributes[i].pos;
     });
 
     const auto& tets = get_tets();

@@ -30,8 +30,8 @@ namespace Edge2d {
 struct VertexAttributes
 {
     Eigen::Vector3d pos;
-    size_t
-        partition_id; // TODO: in fact, partition id should not be vertex attribute, it is a fixed marker to distinguish tuple/operations.
+    // TODO: in fact, partition id should not be vertex attribute, it is a fixed marker to distinguish tuple/operations.
+    size_t partition_id;
 };
 
 class EdgeOperations2d : public wmtk::ConcurrentTriMesh

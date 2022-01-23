@@ -8,7 +8,7 @@
 
 bool tetwild::TetWild::smooth_before(const Tuple& t)
 {
-    if (m_vertex_attribute[t.vid(*this)].m_is_rounded) return true;
+    if (vertex_attrs->m_attributes[t.vid(*this)].m_is_rounded) return true;
     // try to round.
     return round(t); // Note: no need to roll back.
 }
@@ -41,15 +41,15 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
 
         for (auto i = 0; i < 4; i++) {
             for (auto j = 0; j < 3; j++) {
-                T[i * 3 + j] = m_vertex_attribute[local_verts[i]].m_posf[j];
+                T[i * 3 + j] = vertex_attrs->m_attributes[local_verts[i]].m_posf[j];
             }
         }
         loc_id++;
     }
 
 
-    auto old_pos = m_vertex_attribute[vid].m_posf;
-    m_vertex_attribute[vid].m_posf = wmtk::newton_method_from_stack(
+    auto old_pos = vertex_attrs->m_attributes[vid].m_posf;
+    vertex_attrs->m_attributes[vid].m_posf = wmtk::newton_method_from_stack(
         assembles,
         wmtk::AMIPS_energy,
         wmtk::AMIPS_jacobian,
@@ -57,14 +57,14 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
     wmtk::logger().trace(
         "old pos {} -> new pos {}",
         old_pos.transpose(),
-        m_vertex_attribute[vid].m_posf.transpose());
+        vertex_attrs->m_attributes[vid].m_posf.transpose());
     // note: duplicate code snippets.
 
     if (!tetrahedron_invariant(locs)) return false;
 
     for (auto& loc : locs) {
         auto t_id = loc.tid(*this);
-        m_tet_attribute[t_id].m_qualities = get_quality(loc);
+        tet_attrs->m_attributes[t_id].m_qualities = get_quality(loc);
     }
     return true;
 }
