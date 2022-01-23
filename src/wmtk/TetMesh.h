@@ -12,7 +12,9 @@
 #include <queue>
 #include <vector>
 
+
 namespace wmtk {
+class AbstractAttributeContainer;
 class TetMesh
 {
 private:
@@ -259,8 +261,8 @@ public:
         void print_info() {}
     };
 
-    TetMesh() {}
-    virtual ~TetMesh() {}
+    TetMesh();
+    virtual ~TetMesh() = default;
 
     size_t vert_capacity() const { return m_vertex_connectivity.size(); };
     size_t tet_capacity() const { return m_tet_connectivity.size(); };
@@ -313,6 +315,9 @@ public:
 public:
     template <typename T>
     using vector = tbb::concurrent_vector<T>;
+
+public:
+    std::shared_ptr<AbstractAttributeContainer> vertex_attrs, edge_attrs, face_attrs, tet_attrs;
 
 private:
     // Stores the connectivity of the mesh
@@ -371,11 +376,6 @@ protected:
     virtual void resize_edge_attributes(size_t e) {}
     virtual void resize_face_attributes(size_t f) {}
     virtual void resize_tet_attributes(size_t t) {}
-
-    virtual void move_face_attribute(size_t from, size_t to) {}
-    virtual void move_edge_attribute(size_t from, size_t to) {}
-    virtual void move_tet_attribute(size_t from, size_t to) {}
-    virtual void move_vertex_attribute(size_t from, size_t to) {}
 
 public:
     /**
@@ -483,12 +483,12 @@ public:
     std::vector<Tuple> get_one_ring_tets_for_edge(const Tuple& t) const;
 
     /**
-    * @brief 
-    * 
-    * @param m 
-    * @return std::vector<std::array<size_t,3>> 
-    */
-    std::vector<std::array<size_t,3>> vertex_adjacent_boundary_faces(const Tuple&t) const;
+     * @brief
+     *
+     * @param m
+     * @return std::vector<std::array<size_t,3>>
+     */
+    std::vector<std::array<size_t, 3>> vertex_adjacent_boundary_faces(const Tuple& t) const;
     /**
      * Positively oriented 4 vertices (represented by Tuples) in a tetra.
      * @return std::array<Tuple, 4> each tuple owns a different vertex.

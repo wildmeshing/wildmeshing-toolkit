@@ -104,23 +104,6 @@ public:
     void resize_tet_attributes(size_t t) override { m_tet_attribute.resize(t); }
 
 
-    void move_face_attribute(size_t from, size_t to) override
-    {
-        m_face_attribute[to] = std::move(m_face_attribute[from]);
-    }
-    void move_edge_attribute(size_t from, size_t to) override
-    {
-        m_edge_attribute[to] = std::move(m_edge_attribute[from]);
-    }
-    void move_tet_attribute(size_t from, size_t to) override
-    {
-        m_tet_attribute[to] = std::move(m_tet_attribute[from]);
-    }
-    void move_vertex_attribute(size_t from, size_t to) override
-    {
-        m_vertex_attribute[to] = std::move(m_vertex_attribute[from]);
-    }
-
     void output_mesh(std::string file);
 
     class InputSurface
