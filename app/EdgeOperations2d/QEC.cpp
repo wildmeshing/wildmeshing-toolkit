@@ -31,9 +31,9 @@ Eigen::MatrixXd compute_Q_v(const EdgeOperations2d& m, const TriMesh::Tuple& v_t
     Eigen::MatrixXd Q = Eigen::MatrixXd::Zero(4, 4);
     auto Q_t = [](auto& m, auto& f_tuple) {
         auto conn_indices = m.oriented_tri_vertices(f_tuple);
-        Eigen::Vector3d A = m.m_vertex_positions[conn_indices[0].vid()];
-        Eigen::Vector3d B = m.m_vertex_positions[conn_indices[1].vid()];
-        Eigen::Vector3d C = m.m_vertex_positions[conn_indices[2].vid()];
+        Eigen::Vector3d A = m.vertex_attrs->m_attributes[conn_indices[0].vid()].pos;
+        Eigen::Vector3d B = m.vertex_attrs->m_attributes[conn_indices[1].vid()].pos;
+        Eigen::Vector3d C = m.vertex_attrs->m_attributes[conn_indices[2].vid()].pos;
 
         Eigen::Vector3d n = ((A - B).cross(C - B)).normalized();
         Eigen::Vector4d p;
@@ -62,9 +62,9 @@ double Edge2d::EdgeOperations2d::compute_cost_for_e(const TriMesh::Tuple& v_tupl
 
     Eigen::Vector4d v;
     if (vQ.determinant() < 1e-6) {
-        Eigen::Vector3d tmp =
-            (m_vertex_positions[v_tuple.vid()] + m_vertex_positions[switch_vertex(v_tuple).vid()]) /
-            2;
+        Eigen::Vector3d tmp = (vertex_attrs->m_attributes[v_tuple.vid()].pos +
+                               vertex_attrs->m_attributes[switch_vertex(v_tuple).vid()].pos) /
+                              2;
         v << tmp, 1.0;
     }
 
@@ -94,21 +94,22 @@ bool Edge2d::EdgeOperations2d::collapse_qec(int target)
     };
 
     executor.priority = [this](auto& m, auto _, auto& e) {
-        //     return -(m.m_vertex_positions[e.vid()] -
-        //     m.m_vertex_positions[e.switch_vertex(m).vid()])
+        //     return -(m.vertex_attrs.pos[e.vid()] -
+        //     m.vertex_attrs.pos[e.switch_vertex(m).vid()])
         //                 .norm();
         // };
 
         // wmtk::logger().info(
         //     "{} \n{}\n {}",
-        //     m.m_vertex_positions[e.vid()],
-        //     m.m_vertex_positions[e.switch_vertex(m).vid()],
+        //     m.vertex_attrs.pos[e.vid()],
+        //     m.vertex_attrs.pos[e.switch_vertex(m).vid()],
         //     compute_cost_for_e(e));
         return -compute_cost_for_e(e);
     };
     executor.should_process = [&target, &collect_all_ops](auto& m, auto& ele) {
         auto& [val, op, e] = ele;
         if (val > 0) return false; // priority is negated.
+
         return true;
     };
     executor.stopping_criterion_checking_frequency = vertex_number - target;
