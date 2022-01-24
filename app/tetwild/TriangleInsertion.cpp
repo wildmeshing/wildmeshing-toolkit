@@ -102,7 +102,7 @@ void tetwild::TetWild::construct_background_mesh(const InputSurface& input_surfa
         for (int j = 0; j < 3; j++) points[i][j] = vertices[i][j];
     }
     ///box
-    double delta = m_params.diag_l / 10.0;
+    double delta = m_params.diag_l / 15.0;
     Vector3d box_min(m_params.min[0] - delta, m_params.min[1] - delta, m_params.min[2] - delta);
     Vector3d box_max(m_params.max[0] + delta, m_params.max[1] + delta, m_params.max[2] + delta);
     int Nx = std::max(2, int((box_max[0] - box_min[0]) / delta));

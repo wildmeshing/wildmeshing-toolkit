@@ -262,8 +262,22 @@ public:
     TetMesh() {}
     virtual ~TetMesh() {}
 
-    size_t vert_capacity() const { return m_vertex_connectivity.size(); };
-    size_t tet_capacity() const { return m_tet_connectivity.size(); };
+    size_t vert_capacity() const { return m_vertex_connectivity.size(); }
+    size_t tet_capacity() const { return m_tet_connectivity.size(); }
+    size_t vertex_size() const
+    {
+        return std::count_if(
+            m_vertex_connectivity.begin(),
+            m_vertex_connectivity.end(),
+            [](const VertexConnectivity& v) { return v.m_is_removed == false; });
+    }
+    size_t tet_size() const
+    {
+        return std::count_if(
+            m_tet_connectivity.begin(),
+            m_tet_connectivity.end(),
+            [](const TetrahedronConnectivity& t) { return t.m_is_removed == false; });
+    }
     /**
      * Initialize TetMesh data structure
      *
@@ -314,11 +328,12 @@ public:
     template <typename T>
     using vector = tbb::concurrent_vector<T>;
 
+private:
+
     // Stores the connectivity of the mesh
     vector<VertexConnectivity> m_vertex_connectivity;
     vector<TetrahedronConnectivity> m_tet_connectivity;
 
-private:
     int m_t_empty_slot = 0;
     int m_v_empty_slot = 0;
     int get_next_empty_slot_t();

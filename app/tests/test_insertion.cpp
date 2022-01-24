@@ -39,7 +39,7 @@ TEST_CASE("triangle-insertion", "[tetwild_operation]")
     }
 
     tetwild::TetWild::InputSurface input_surface;
-    input_surface.params.lr = 1/10.;
+    input_surface.params.lr = 1/15.0;
     input_surface.init(vertices, faces);
     input_surface.remove_duplicates();
     //
@@ -50,8 +50,17 @@ TEST_CASE("triangle-insertion", "[tetwild_operation]")
 
     mesh.triangle_insertion(input_surface);
 
+    mesh.collapse_all_edges();
+    wmtk::logger().info("#t {}", mesh.tet_size());
+    wmtk::logger().info("#v {}", mesh.vertex_size());
+
     mesh.split_all_edges();
-//    mesh.collapse_all_edges();
+    wmtk::logger().info("#t {}", mesh.tet_size());
+    wmtk::logger().info("#v {}", mesh.vertex_size());
+
+    mesh.collapse_all_edges();
+    wmtk::logger().info("#t {}", mesh.tet_size());
+    wmtk::logger().info("#v {}", mesh.vertex_size());
 
     //todo: refine adaptively the mesh
 

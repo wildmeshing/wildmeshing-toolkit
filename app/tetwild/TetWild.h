@@ -77,6 +77,8 @@ public:
 class TetWild : public wmtk::ConcurrentTetMesh
 {
 public:
+    const double MAX_ENERGY = 1e50;
+
     Parameters& m_params;
     fastEnvelope::FastEnvelope& m_envelope;
 
@@ -207,7 +209,8 @@ public:
         double max_energy;
         double edge_length;
 
-        std::vector<std::pair<size_t, std::array<size_t, 3>>> changed_faces;
+        std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
+//        std::vector<std::pair<size_t, std::array<size_t, 3>>> changed_faces;
         std::vector<size_t> changed_tids;
     };
     tbb::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
