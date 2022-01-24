@@ -2,6 +2,7 @@
 
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/AttributeCollection.hpp>
 
 #include <tbb/concurrent_vector.h>
 
@@ -14,7 +15,6 @@
 
 
 namespace wmtk {
-class AbstractAttributeContainer;
 class TetMesh
 {
 private:
@@ -342,6 +342,7 @@ private:
         std::map<std::array<size_t, 3>, std::vector<std::array<size_t, 5>>>& new_face_vids);
 
 protected:
+    virtual bool invariants(const std::vector<Tuple>&) {return true;}
     virtual void add_tet_centroid(const Tuple& t) {}
 
     virtual void triangle_insertion_before(const std::vector<Tuple>& faces) {}
@@ -507,6 +508,29 @@ private:
         const std::vector<size_t>& affected,
         const std::vector<size_t>& new_tet_id,
         const std::vector<wmtk::TetMesh::TetrahedronConnectivity>& old_tets);
+    void start_protect_attributes()
+    {
+        vertex_attrs->begin_protect();
+        edge_attrs->begin_protect();
+        face_attrs->begin_protect();
+        tet_attrs->begin_protect();
+    }
+
+    void release_protect_attributes()
+    {
+        vertex_attrs->end_protect();
+        edge_attrs->end_protect();
+        face_attrs->end_protect();
+        tet_attrs->end_protect();
+    }
+
+    void rollback_protected_attributes()
+    {
+        vertex_attrs->rollback();
+        edge_attrs->rollback();
+        face_attrs->rollback();
+        tet_attrs->rollback();
+    }
 };
 
 } // namespace wmtk

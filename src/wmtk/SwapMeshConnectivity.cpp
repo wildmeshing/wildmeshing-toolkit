@@ -34,6 +34,8 @@ void wmtk::TetMesh::operation_failure_rollback_imp(
     }
     for (auto i = 0; i < affected.size(); i++) m_tet_connectivity[affected[i]] = old_tets[i];
     for (auto& [v, conn] : rollback_vert_conn) m_vertex_connectivity[v] = std::move(conn);
+
+    rollback_protected_attributes();
 }
 
 /**
@@ -168,13 +170,15 @@ bool wmtk::TetMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tet_tuples
     assert(u0id != -1);
     auto newt = tuple_from_face(new_tet_id.front(), m_map_vertex2oppo_face[u0id]);
 
-    if (!swap_edge_after(newt)) { // rollback post-operation
+    for (auto ti : new_tet_id) new_tet_tuples.emplace_back(tuple_from_tet(ti));
+    start_protect_attributes();
+    if (!swap_edge_after(newt) || !invariants(new_tet_tuples)) { // rollback post-operation
         assert(affected.size() == old_tets.size());
         operation_failure_rollback_imp(rollback_vert_conn, affected, new_tet_id, old_tets);
         return false;
     }
+    release_protect_attributes();
 
-    for (auto ti : new_tet_id) new_tet_tuples.emplace_back(tuple_from_tet(ti));
 
     return true;
 }
@@ -247,13 +251,17 @@ bool wmtk::TetMesh::swap_face(const Tuple& t, std::vector<Tuple>& new_tet_tuples
     logger().trace("oppo vid {}", oppo_vid);
     assert(new_eid != -1);
     auto newt = tuple_from_edge(new_tid, new_eid);
-    if (!swap_face_after(newt)) { // rollback post-operation
+
+    for (auto ti : new_tet_id) new_tet_tuples.emplace_back(tuple_from_tet(ti));
+
+    start_protect_attributes();
+    if (!swap_face_after(newt) || !invariants(new_tet_tuples)) { // rollback post-operation
         logger().trace("rolling back");
         operation_failure_rollback_imp(rollback_vert_conn, affected, new_tet_id, old_tets);
         return false;
     }
-    logger().trace("swapped");
-    for (auto ti : new_tet_id) new_tet_tuples.emplace_back(tuple_from_tet(ti));
+    release_protect_attributes();
 
+    logger().trace("swapped");
     return true;
 }

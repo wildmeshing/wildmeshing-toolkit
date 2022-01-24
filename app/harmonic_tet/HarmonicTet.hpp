@@ -79,7 +79,7 @@ public:
     double get_quality(const Tuple& loc) const;
     double get_quality(const std::array<size_t, 4>& vids) const;
 
-    bool invariants(const std::vector<Tuple>&);
+    bool invariants(const std::vector<Tuple>&) override;
 };
 
 } // namespace harmonic_tet
