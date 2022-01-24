@@ -47,8 +47,9 @@ public:
     EdgeOperations2d(std::vector<Eigen::Vector3d> _m_vertex_positions, int num_threads = 1)
         : NUM_THREADS(num_threads)
     {
-        TriMesh::vertex_attrs.reset(new VertAttCol());
-        vertex_attrs = std::static_pointer_cast<VertAttCol>(TriMesh::vertex_attrs);
+        vertex_attrs = std::make_shared<VertAttCol>();
+        TriMesh::vertex_attrs = vertex_attrs;
+
         vertex_attrs->resize(_m_vertex_positions.size());
 
         for (auto i = 0; i < _m_vertex_positions.size(); i++)

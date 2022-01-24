@@ -70,14 +70,17 @@ public:
         : m_params(_m_params)
         , m_envelope(_m_envelope)
     {
-        TetMesh::vertex_attrs.reset(new VertAttCol());
-        vertex_attrs = std::static_pointer_cast<VertAttCol>(TetMesh::vertex_attrs);
-        TetMesh::edge_attrs.reset(new EdgeAttCol());
-        edge_attrs = std::static_pointer_cast<EdgeAttCol>(TetMesh::edge_attrs);
-        TetMesh::face_attrs.reset(new FaceAttCol());
-        face_attrs = std::static_pointer_cast<FaceAttCol>(TetMesh::face_attrs);
-        TetMesh::tet_attrs.reset(new TetAttCol());
-        tet_attrs = std::static_pointer_cast<TetAttCol>(TetMesh::tet_attrs);
+        vertex_attrs = std::make_shared<VertAttCol>();
+        TetMesh::vertex_attrs = vertex_attrs;
+
+        edge_attrs = std::make_shared<EdgeAttCol>();
+        TetMesh::edge_attrs = edge_attrs;
+
+        face_attrs = std::make_shared<FaceAttCol>();
+        TetMesh::face_attrs = face_attrs;
+
+        tet_attrs = std::make_shared<TetAttCol>();
+        TetMesh::tet_attrs = tet_attrs;
     }
 
     ~TetWild() {}
@@ -239,7 +242,8 @@ public:
     std::vector<std::array<size_t, 3>> get_faces_by_condition(
         std::function<bool(const FaceAttributes&)> cond);
 
-    bool invariants(const std::vector<Tuple>& t) override; // this is now automatically checked, TODO: clear trace from the program.
+    bool invariants(const std::vector<Tuple>& t)
+        override; // this is now automatically checked, TODO: clear trace from the program.
 
     double get_length2(const Tuple& loc) const;
     // debug use

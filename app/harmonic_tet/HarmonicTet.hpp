@@ -30,8 +30,9 @@ public:
         const std::vector<std::array<size_t, 4>>& tets,
         int num_threads = 1)
     {
-        TetMesh::vertex_attrs.reset(new VertAttCol());
-        vertex_attrs = std::static_pointer_cast<VertAttCol>(TetMesh::vertex_attrs);
+        vertex_attrs = std::make_shared<VertAttCol>();
+        TetMesh::vertex_attrs = vertex_attrs;
+
         vertex_attrs->resize(_vertex_attribute.size());
 
         for (auto i = 0; i < _vertex_attribute.size(); i++)

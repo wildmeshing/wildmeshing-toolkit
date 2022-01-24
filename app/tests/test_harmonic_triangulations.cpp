@@ -1,8 +1,6 @@
 #include <catch2/catch.hpp>
 
 #include <igl/read_triangle_mesh.h>
-#include <spdlog/fmt/ostr.h>
-#include <spdlog/spdlog.h>
 #include <wmtk/TetMesh.h>
 
 #include <igl/doublearea.h>

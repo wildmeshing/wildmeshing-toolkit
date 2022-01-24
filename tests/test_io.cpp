@@ -85,7 +85,7 @@ TEST_CASE("io", "[io][mshio]")
             "tv index",
             [&](size_t i, const std::vector<double>& data) {
                 REQUIRE(data.size() == 1);
-                vertex_indices[i] = static_cast<size_t>(data[0]);
+                vertex_indices[i] = size_t(data[0]);
             });
         REQUIRE(vertex_indices == std::vector<size_t>({0, 1, 2, 3}));
 
@@ -93,10 +93,9 @@ TEST_CASE("io", "[io][mshio]")
         tet_indices.resize(msh.get_num_tets());
         msh.extract_tet_attribute("t index", [&](size_t i, const std::vector<double>& data) {
             REQUIRE(data.size() == 1);
-            tet_indices[i] = static_cast<size_t>(data[0]);
+            tet_indices[i] = size_t(data[0]);
         });
         REQUIRE(tet_indices == std::vector<size_t>({0}));
-
     }
 }
 
