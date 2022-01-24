@@ -135,42 +135,42 @@ bool tetwild::TetWild::split_after(const Tuple& loc)
     size_t v2_id = split_cache.local().v2_id;
 
     /// check inversion & rounding
-    vertex_attrs[v_id].m_posf =
-        (vertex_attrs[v1_id].m_posf + vertex_attrs[v2_id].m_posf) / 2;
-    vertex_attrs[v_id].m_is_rounded = true;
+    m_vertex_attribute[v_id].m_posf =
+        (m_vertex_attribute[v1_id].m_posf + m_vertex_attribute[v2_id].m_posf) / 2;
+    m_vertex_attribute[v_id].m_is_rounded = true;
 
     for (auto& loc : locs) {
         if (is_inverted(loc)) {
-            vertex_attrs[v_id].m_is_rounded = false;
+            m_vertex_attribute[v_id].m_is_rounded = false;
             break;
         }
     }
-    if (!vertex_attrs[v_id].m_is_rounded) {
-        vertex_attrs[v_id].m_pos =
-            (vertex_attrs[v1_id].m_pos + vertex_attrs[v2_id].m_pos) / 2;
-        vertex_attrs[v_id].m_posf = to_double(vertex_attrs[v_id].m_pos);
+    if (!m_vertex_attribute[v_id].m_is_rounded) {
+        m_vertex_attribute[v_id].m_pos =
+            (m_vertex_attribute[v1_id].m_pos + m_vertex_attribute[v2_id].m_pos) / 2;
+        m_vertex_attribute[v_id].m_posf = to_double(m_vertex_attribute[v_id].m_pos);
     } else
-        vertex_attrs[v_id].m_pos = to_rational(vertex_attrs[v_id].m_posf);
+        m_vertex_attribute[v_id].m_pos = to_rational(m_vertex_attribute[v_id].m_posf);
 
     /// update quality
     for (auto& loc : locs) {
-        tet_attrs[loc.tid(*this)].m_qualities = get_quality(loc);
+        m_tet_attribute[loc.tid(*this)].m_qualities = get_quality(loc);
     }
 
     /// update vertex attribute
     // bbox
-    vertex_attrs[v_id].on_bbox_faces = wmtk::set_intersection(
-        vertex_attrs[v1_id].on_bbox_faces,
-        vertex_attrs[v2_id].on_bbox_faces);
+    m_vertex_attribute[v_id].on_bbox_faces = wmtk::set_intersection(
+        m_vertex_attribute[v1_id].on_bbox_faces,
+        m_vertex_attribute[v2_id].on_bbox_faces);
     //surface
-    vertex_attrs[v_id].m_is_on_surface = split_cache.local().is_edge_on_surface;
+    m_vertex_attribute[v_id].m_is_on_surface = split_cache.local().is_edge_on_surface;
 
     /// update face attribute
     // add new and erase old
-//    std::map<size_t, FaceAttributes> map_tet_attrs;
+//    std::map<size_t, FaceAttributes> map_m_tet_attribute;
 //    for(auto& info: split_cache.local().changed_faces) {
 //        size_t old_fid = info.first;
-//        map_tet_attrs[old_fid] = m_face_attribute[old_fid];//todo: avoid copy
+//        map_m_tet_attribute[old_fid] = m_face_attribute[old_fid];//todo: avoid copy
 //    }
     for(auto& info: split_cache.local().changed_faces) {
 //        size_t old_fid = info.first;
@@ -185,14 +185,14 @@ bool tetwild::TetWild::split_after(const Tuple& loc)
         if (j_vn.size() == 1) {
             auto [_1, global_fid1] = tuple_from_face({{v1_id, v_id, old_vids[j_vn[0]]}});
             m_face_attribute[global_fid1] = f_attr;
-//            m_face_attribute[global_fid1] = map_tet_attrs[old_fid];
+//            m_face_attribute[global_fid1] = map_m_tet_attribute[old_fid];
             auto [_2, global_fid2] = tuple_from_face({{v2_id, v_id, old_vids[j_vn[0]]}});
             m_face_attribute[global_fid2] = f_attr;
-//            m_face_attribute[global_fid2] = map_tet_attrs[old_fid];
+//            m_face_attribute[global_fid2] = map_m_tet_attribute[old_fid];
         } else { // j_vn.size() == 2
             auto [_, global_fid] = tuple_from_face(old_vids);
             m_face_attribute[global_fid] = f_attr;
-//            m_face_attribute[global_fid] = map_tet_attrs[old_fid];
+//            m_face_attribute[global_fid] = map_m_tet_attribute[old_fid];
             //
             auto [_2, global_fid2] =
                 tuple_from_face({{old_vids[j_vn[0]], old_vids[j_vn[1]], v_id}});//todo: avoid dup comp

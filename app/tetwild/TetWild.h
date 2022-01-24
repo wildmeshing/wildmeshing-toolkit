@@ -87,10 +87,10 @@ public:
         : m_params(_m_params)
         , m_envelope(_m_envelope)
     {
-        p_vertex_attrs = &vertex_attrs;
-        p_edge_attrs = &edge_attrs;
-        p_face_attrs = &face_attrs;
-        p_tet_attrs = &tet_attrs;
+        p_vertex_attrs = &m_vertex_attribute;
+        p_edge_attrs = &m_edge_attribute;
+        p_face_attrs = &m_face_attribute;
+        p_tet_attrs = &m_tet_attribute;
     }
 
     ~TetWild() {}
@@ -98,26 +98,26 @@ public:
     using EdgeAttCol = wmtk::AttributeCollection<EdgeAttributes>;
     using FaceAttCol = wmtk::AttributeCollection<FaceAttributes>;
     using TetAttCol = wmtk::AttributeCollection<TetAttributes>;
-    VertAttCol vertex_attrs;
-    EdgeAttCol edge_attrs;
-    FaceAttCol face_attrs;
-    TetAttCol tet_attrs;
+    VertAttCol m_vertex_attribute;
+    EdgeAttCol m_edge_attribute;
+    FaceAttCol m_face_attribute;
+    TetAttCol m_tet_attribute;
 
     void create_mesh_attributes(
         const std::vector<VertexAttributes>& _vertex_attribute,
         const std::vector<TetAttributes>& _tet_attribute)
     {
         auto n_tet = _tet_attribute.size();
-        vertex_attrs.resize(_vertex_attribute.size());
-        edge_attrs.resize(6 * n_tet);
-        face_attrs.resize(4 * n_tet);
-        tet_attrs.resize(n_tet);
+        m_vertex_attribute.resize(_vertex_attribute.size());
+        m_edge_attribute.resize(6 * n_tet);
+        m_face_attribute.resize(4 * n_tet);
+        m_tet_attribute.resize(n_tet);
 
         for (auto i = 0; i < _vertex_attribute.size(); i++)
-            vertex_attrs[i] = _vertex_attribute[i];
-        tet_attrs.m_attributes = tbb::concurrent_vector<TetAttributes>(_tet_attribute.size());
+            m_vertex_attribute[i] = _vertex_attribute[i];
+        m_tet_attribute.m_attributes = tbb::concurrent_vector<TetAttributes>(_tet_attribute.size());
         for (auto i = 0; i < _tet_attribute.size(); i++)
-            tet_attrs[i] = _tet_attribute[i];
+            m_tet_attribute[i] = _tet_attribute[i];
 
         m_vertex_partition_id = partition_TetMesh(*this, NUM_THREADS);
     }

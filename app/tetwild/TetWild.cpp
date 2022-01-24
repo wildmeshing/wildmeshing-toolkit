@@ -20,16 +20,16 @@ bool tetwild::TetWild::is_inverted(const Tuple& loc) const
     auto vs = oriented_tet_vertices(loc);
 
     //
-    if (vertex_attrs[vs[0].vid(*this)].m_is_rounded &&
-        vertex_attrs[vs[1].vid(*this)].m_is_rounded &&
-        vertex_attrs[vs[2].vid(*this)].m_is_rounded &&
-        vertex_attrs[vs[3].vid(*this)].m_is_rounded) {
+    if (m_vertex_attribute[vs[0].vid(*this)].m_is_rounded &&
+        m_vertex_attribute[vs[1].vid(*this)].m_is_rounded &&
+        m_vertex_attribute[vs[2].vid(*this)].m_is_rounded &&
+        m_vertex_attribute[vs[3].vid(*this)].m_is_rounded) {
         igl::predicates::exactinit();
         auto res = igl::predicates::orient3d(
-            vertex_attrs[vs[0].vid(*this)].m_posf,
-            vertex_attrs[vs[1].vid(*this)].m_posf,
-            vertex_attrs[vs[2].vid(*this)].m_posf,
-            vertex_attrs[vs[3].vid(*this)].m_posf);
+            m_vertex_attribute[vs[0].vid(*this)].m_posf,
+            m_vertex_attribute[vs[1].vid(*this)].m_posf,
+            m_vertex_attribute[vs[2].vid(*this)].m_posf,
+            m_vertex_attribute[vs[3].vid(*this)].m_posf);
         int result;
         if (res == igl::predicates::Orientation::POSITIVE)
             result = 1;
@@ -42,13 +42,13 @@ bool tetwild::TetWild::is_inverted(const Tuple& loc) const
             return false;
         return true;
     } else {
-        Vector3 n = ((vertex_attrs[vs[1].vid(*this)].m_pos) -
-                     vertex_attrs[vs[0].vid(*this)].m_pos)
+        Vector3 n = ((m_vertex_attribute[vs[1].vid(*this)].m_pos) -
+                     m_vertex_attribute[vs[0].vid(*this)].m_pos)
                         .cross(
-                            (vertex_attrs[vs[2].vid(*this)].m_pos) -
-                            vertex_attrs[vs[0].vid(*this)].m_pos);
-        Vector3 d = (vertex_attrs[vs[3].vid(*this)].m_pos) -
-                    vertex_attrs[vs[0].vid(*this)].m_pos;
+                            (m_vertex_attribute[vs[2].vid(*this)].m_pos) -
+                            m_vertex_attribute[vs[0].vid(*this)].m_pos);
+        Vector3 d = (m_vertex_attribute[vs[3].vid(*this)].m_pos) -
+                    m_vertex_attribute[vs[0].vid(*this)].m_pos;
         auto res = n.dot(d);
         if (res > 0) // predicates returns pos value: non-inverted
             return false;
@@ -61,15 +61,15 @@ bool tetwild::TetWild::round(const Tuple& v)
 {
     size_t i = v.vid(*this);
 
-    auto old_pos = vertex_attrs[i].m_pos;
-    vertex_attrs[i].m_pos << vertex_attrs[i].m_posf[0], vertex_attrs[i].m_posf[1],
-        vertex_attrs[i].m_posf[2];
+    auto old_pos = m_vertex_attribute[i].m_pos;
+    m_vertex_attribute[i].m_pos << m_vertex_attribute[i].m_posf[0], m_vertex_attribute[i].m_posf[1],
+        m_vertex_attribute[i].m_posf[2];
     auto conn_tets = get_one_ring_tets_for_vertex(v);
-    vertex_attrs[i].m_is_rounded = true;
+    m_vertex_attribute[i].m_is_rounded = true;
     for (auto& tet : conn_tets) {
         if (is_inverted(tet)) {
-            vertex_attrs[i].m_is_rounded = false;
-            vertex_attrs[i].m_pos = old_pos;
+            m_vertex_attribute[i].m_is_rounded = false;
+            m_vertex_attribute[i].m_pos = old_pos;
             return false;
         }
     }
@@ -82,7 +82,7 @@ double tetwild::TetWild::get_quality(const Tuple& loc) const
     std::array<Vector3d, 4> ps;
     auto its = oriented_tet_vertices(loc);
     for (int j = 0; j < 4; j++) {
-        ps[j] = vertex_attrs[its[j].vid(*this)].m_posf;
+        ps[j] = m_vertex_attribute[its[j].vid(*this)].m_posf;
     }
 
     std::array<double, 12> T;
@@ -117,7 +117,7 @@ void tetwild::TetWild::output_mesh(std::string file)
     const auto& vtx = get_vertices();
     msh.add_tet_vertices(vtx.size(), [&](size_t k) {
         auto i = vtx[k].vid(*this);
-        return vertex_attrs[i].m_posf;
+        return m_vertex_attribute[i].m_posf;
     });
 
     const auto& tets = get_tets();
@@ -144,7 +144,7 @@ std::vector<std::array<size_t, 3>> tetwild::TetWild::get_faces_by_condition(
     auto res = std::vector<std::array<size_t, 3>>();
     for (auto f : get_faces()) {
         auto fid = f.fid(*this);
-        if (cond(face_attrs[fid])) {
+        if (cond(m_face_attribute[fid])) {
             auto tid = fid / 4, lid = fid % 4;
             auto verts = get_face_vertices(f);
             res.emplace_back(std::array<size_t, 3>{{verts[0].vid(*this), verts[1].vid(*this), verts[2].vid(*this)}});
