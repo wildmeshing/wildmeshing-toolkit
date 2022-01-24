@@ -3,6 +3,10 @@
 #include <Eigen/src/Core/Array.h>
 #include <igl/extract_manifold_patches.h>
 #include <igl/remove_unreferenced.h>
+#include "spdlog/spdlog.h"
+#include <igl/is_edge_manifold.h>
+#include <spdlog/fmt/ostr.h>
+#include <spdlog/fmt/bundled/ranges.h>
 
 bool wmtk::separate_to_manifold(
     const std::vector<Eigen::Vector3d>& vertices,
@@ -36,6 +40,7 @@ bool wmtk::separate_to_manifold(
     auto current_vnum = 0;
     for (auto i = 0; i < patches.size(); i++) {
         auto& patch = patches[i];
+        spdlog::critical("patch {}", patch);
         Eigen::MatrixXi pF(patch.size(), 3);
         for (auto j = 0; j < pF.rows(); j++) {
             pF.row(j) = F.row(patch[j]);
@@ -51,6 +56,21 @@ bool wmtk::separate_to_manifold(
         for (auto j = 0; j < NF.rows(); j++)
             out_f.push_back(
                 std::array<size_t, 3>{{size_t(NF(j, 0)), size_t(NF(j, 1)), size_t(NF(j, 2))}});
+
+        {
+            Eigen::MatrixXd outV;
+            Eigen::MatrixXi outF;
+            outV.resize(out_v.size(), 3);
+            outF.resize(out_f.size(), 3);
+            for (auto i = 0; i < out_v.size(); i++) {
+                outV.row(i) = out_v[i];
+            }
+            for (auto i = 0; i < out_f.size(); i++) {
+                outF.row(i) << out_f[i][0], out_f[i][1], out_f[i][2];
+            }
+            if(!igl::is_edge_manifold(outF)) spdlog::critical("i {}", i);
+        }
+        exit(0);
     }
     return true;
 }
