@@ -81,7 +81,7 @@ int main(int argc, char** argv)
             outF.row(i) << out_f[i][0], out_f[i][1], out_f[i][2];
         }
 
-        assert(igl::is_edge_manifold(out_f));
+        assert(igl::is_edge_manifold(outF));
         EdgeOperations2d m(out_v);
         m.create_mesh(out_v.size(), out_f, atof(argv[3]));
         run_shortest_collapse(path, out_v.size() / 5, std::string(argv[2]), m);

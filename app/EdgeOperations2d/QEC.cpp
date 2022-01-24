@@ -21,7 +21,6 @@ Eigen::MatrixXd compute_Q_f(const EdgeOperations2d& m, const wmtk::TriMesh::Tupl
     p(1) = n(1);
     p(2) = n(2);
     p(3) = -n.dot(B);
-
     return p * p.transpose();
 }
 
@@ -42,6 +41,7 @@ Eigen::MatrixXd compute_Q_v(const EdgeOperations2d& m, const TriMesh::Tuple& v_t
         p(1) = n(1);
         p(2) = n(2);
         p(3) = -n.dot(B);
+
         return (p * p.transpose());
     };
     for (auto tri : conn_tris) {
@@ -51,26 +51,29 @@ Eigen::MatrixXd compute_Q_v(const EdgeOperations2d& m, const TriMesh::Tuple& v_t
     return Q;
 }
 
-double compute_cost_for_v(const EdgeOperations2d& m, const TriMesh::Tuple& v_tuple)
+double Edge2d::EdgeOperations2d::compute_cost_for_e(const TriMesh::Tuple& v_tuple)
 {
-    Eigen::MatrixXd Q = compute_Q_v(m, v_tuple);
-    Q += compute_Q_v(m, v_tuple.switch_vertex(m));
+    Eigen::MatrixXd Q = compute_Q_v(*this, v_tuple);
+    Q += compute_Q_v(*this, v_tuple.switch_vertex(*this));
     Eigen::Vector4d t(0.0, 0.0, 0.0, 1.0);
     Eigen::MatrixXd vQ = Q;
     vQ.row(3) = t;
 
     Eigen::Vector4d v;
-    if (vQ.determinant() == 0) {
-        Eigen::Vector3d tmp = (m.m_vertex_positions[v_tuple.vid()] +
-                               m.m_vertex_positions[m.switch_vertex(v_tuple).vid()]) /
-                              2;
+    if (vQ.determinant() < 1e-6) {
+        Eigen::Vector3d tmp =
+            (m_vertex_positions[v_tuple.vid()] + m_vertex_positions[switch_vertex(v_tuple).vid()]) /
+            2;
         v << tmp, 1.0;
     }
 
     else
         v = vQ.inverse() * t;
-    v(3) = 1.0;
+
     // wmtk::logger().info("Q is \n {} \n v is \n {}", Q, v);
+    Eigen::Vector3d newv = v.head(3);
+    modify_cache_qec(newv);
+
     return (v.transpose() * Q * v);
 }
 
@@ -85,17 +88,22 @@ bool Edge2d::EdgeOperations2d::collapse_qec(int target)
     executor.renew_neighbor_tuples = [](auto& m, auto op, auto& tris) {
         auto edges = m.new_edges_after(tris);
         auto optup = std::vector<std::pair<std::string, TriMesh::Tuple>>();
-        for (auto& e : edges) optup.emplace_back(op, e);
+        // for (auto& e : edges) optup.emplace_back(op, e);
         return optup;
     };
 
-    executor.priority = [](auto& m, auto _, auto& e) {
+    executor.priority = [this](auto& m, auto _, auto& e) {
         //     return -(m.m_vertex_positions[e.vid()] -
         //     m.m_vertex_positions[e.switch_vertex(m).vid()])
         //                 .norm();
         // };
-        // wmtk::logger().info(-compute_cost_for_v(m, e));
-        return -compute_cost_for_v(m, e);
+
+        // wmtk::logger().info(
+        //     "{} \n{}\n {}",
+        //     m.m_vertex_positions[e.vid()],
+        //     m.m_vertex_positions[e.switch_vertex(m).vid()],
+        //     compute_cost_for_e(e));
+        return -compute_cost_for_e(e);
     };
     executor.should_process = [&target, &collect_all_ops](auto& m, auto& ele) {
         auto& [val, op, e] = ele;

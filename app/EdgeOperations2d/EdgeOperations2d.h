@@ -75,6 +75,12 @@ public:
         position_cache.local().v2p = m_vertex_positions[t.switch_vertex(*this).vid()];
     }
 
+    void modify_cache_qec(const Eigen::Vector3d& v)
+    {
+        position_cache.local().v1p = v;
+        position_cache.local().v2p = v;
+    }
+
     bool update_position_to_edge_midpoint(const Tuple& t)
     {
         const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
@@ -154,6 +160,7 @@ public:
 
     bool collapse_shortest(int target_vertex_count);
 
+    double compute_cost_for_e(const TriMesh::Tuple& v_tuple);
     bool collapse_qec(int target_vertcies);
 
     bool split_before(const Tuple& t) override
