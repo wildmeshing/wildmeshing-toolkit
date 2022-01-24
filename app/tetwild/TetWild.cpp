@@ -244,7 +244,7 @@ std::vector<std::array<size_t, 3>> tetwild::TetWild::get_faces_by_condition(
     return res;
 }
 
-bool tetwild::TetWild::is_edge_on_surface(const Tuple& loc)
+bool tetwild::TetWild::(const Tuple& loc)
 {
     size_t v1_id = loc.vid(*this);
     auto loc1 = loc.switch_vertex(*this);
@@ -264,8 +264,8 @@ bool tetwild::TetWild::is_edge_on_surface(const Tuple& loc)
     wmtk::vector_unique(n_vids);
 
     for (size_t vid : n_vids) {
-        auto [f, fid] = tuple_from_face({{v1_id, v2_id, vid}});
-        if (m_face_attribute[vid].m_is_surface_fs) return true;
+        auto [_, fid] = tuple_from_face({{v1_id, v2_id, vid}});
+        if (m_face_attribute[fid].m_is_surface_fs) return true;
     }
 
     return false;

@@ -101,6 +101,7 @@ int main(int argc, char** argv)
         mesh.split_all_edges();
         wmtk::logger().info("#t {}", mesh.tet_size());
         wmtk::logger().info("#v {}", mesh.vertex_size());
+        mesh.check_attributes();
 //        output_faces();
 //        pausee();
 
