@@ -29,7 +29,10 @@ double tetwild::TetWild::get_length2(const wmtk::TetMesh::Tuple& l) const
 void tetwild::TetWild::collapse_all_edges()
 {
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
-    for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_collapse", loc);
+    for (auto& loc : get_edges()) {
+        collect_all_ops.emplace_back("edge_collapse", loc);
+        collect_all_ops.emplace_back("edge_collapse", loc.switch_vertex(*this));
+        }
     auto setup_and_execute = [&](auto& executor) {
         executor.renew_neighbor_tuples = wmtk::renewal_simple;
         executor.priority = [&](auto& m, auto op, auto& t) { return -m.get_length2(t); };
