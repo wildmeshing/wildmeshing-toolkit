@@ -33,6 +33,11 @@ struct AttributeCollection : public AbstractAttributeContainer
     void resize(size_t s) override
     {
         m_attributes.grow_to_at_least(s);
+        if (m_attributes.size() > s)
+         {
+             m_attributes.resize(s);
+             m_attributes.shrink_to_fit();
+         }
         // TODO: in Concurrent, vertex partition id, vertex mutex should be part of attribute
     }
 
