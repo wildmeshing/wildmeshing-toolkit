@@ -1,16 +1,48 @@
 
 #include "TetWild.h"
+#include "wmtk/ExecutionScheduler.hpp"
 
+#include <Eigen/src/Core/util/Constants.h>
 #include <wmtk/utils/AMIPS.h>
-#include <limits>
+#include <array>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
 
+#include <igl/point_simplex_squared_distance.h>
+
+#include <limits>
+#include <optional>
 bool tetwild::TetWild::smooth_before(const Tuple& t)
 {
     if (m_vertex_attribute[t.vid(*this)].m_is_rounded) return true;
     // try to round.
     return round(t); // Note: no need to roll back.
+}
+
+auto try_project(
+    const Eigen::Vector3d& point,
+    const std::vector<std::array<double, 12>>& assembled_neighbor) -> std::optional<Eigen::Vector3d>
+{
+    auto min_dist = std::numeric_limits<double>::infinity();
+    Eigen::Vector3d closest_point = Eigen::Vector3d::Zero();
+    for (const auto& tri : assembled_neighbor) {
+        auto V = Eigen::Map<const Eigen::Matrix<double, 3, 3, Eigen::RowMajor>>(tri.data());
+        Eigen::Vector3d project;
+        auto dist2 = -1;
+        igl::point_simplex_squared_distance<3>(
+            point,
+            V,
+            Eigen::RowVector3i(0, 1, 2),
+            0,
+            dist2,
+            project);
+        // TODO: libigl might not be robust how to verify this?
+        if (dist2 < min_dist) {
+            min_dist = dist2;
+            closest_point = project;
+        }
+    }
+    return closest_point;
 }
 
 bool tetwild::TetWild::smooth_after(const Tuple& t)
@@ -48,6 +80,7 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
     }
 
     auto old_pos = m_vertex_attribute[vid].m_posf;
+    auto old_asssembles = assembles;
     m_vertex_attribute[vid].m_posf = wmtk::newton_method_from_stack(
         assembles,
         wmtk::AMIPS_energy,
@@ -58,6 +91,12 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
         old_pos.transpose(),
         m_vertex_attribute[vid].m_posf.transpose());
     // note: duplicate code snippets.
+    if (m_vertex_attribute[vid].m_is_on_surface) {
+        auto project = try_project(m_vertex_attribute[vid].m_posf, old_asssembles);
+        if (project) {
+            m_vertex_attribute[vid].m_posf = project.value();
+        }
+    }
 
     for (auto& loc : locs) {
         auto t_id = loc.tid(*this);

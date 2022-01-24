@@ -109,7 +109,7 @@ bool tetwild::TetWild::invariants(const std::vector<Tuple>& tets)
             auto f_t = tuple_from_face(t.tid(*this), j);
             auto fid = f_t.fid(*this);
             if (m_face_attribute[fid].m_is_surface_fs) {
-                auto vs = m.get_face_vertices(f_t);
+                auto vs = get_face_vertices(f_t);
                 if (m_envelope.is_outside(
                         {{m_vertex_attribute[vs[0].vid(*this)].m_posf,
                           m_vertex_attribute[vs[1].vid(*this)].m_posf,
