@@ -95,7 +95,7 @@ double tetwild::TetWild::get_quality(const Tuple& loc) const
 
     double energy = wmtk::AMIPS_energy(T);
     if (std::isinf(energy) || std::isnan(energy) || energy < 3 - 1e-3)
-        return std::numeric_limits<double>::max();
+        return MAX_ENERGY;
     return energy;
 }
 
