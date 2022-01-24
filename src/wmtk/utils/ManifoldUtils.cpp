@@ -7,6 +7,7 @@
 #include <spdlog/fmt/ostr.h>
 #include <Eigen/Core>
 #include "spdlog/spdlog.h"
+#include "wmtk/utils/VectorUtils.h"
 
 #include <cstddef>
 #include <set>
@@ -16,7 +17,10 @@
  * Adobe Code, Apache License, from Lagrange.
  */
 
-void wmtk::resolve_nonmanifoldness(Eigen::MatrixXd& V, Eigen::MatrixXi& F)
+void wmtk::resolve_nonmanifoldness(
+    Eigen::MatrixXd& V,
+    Eigen::MatrixXi& F,
+    std::vector<size_t>& modified_vertices)
 {
     using Index = size_t;
 
@@ -301,6 +305,12 @@ void wmtk::resolve_nonmanifoldness(Eigen::MatrixXd& V, Eigen::MatrixXi& F)
 
     V = manifold_vertices;
     F = manifold_facets;
+    modified_vertices.clear();
+    for (auto& itr : vertex_map) {
+        modified_vertices.push_back(itr.first);
+        for (auto itr2 : itr.second) modified_vertices.push_back(itr2.second);
+    }
+    vector_unique(modified_vertices);
 }
 
 
@@ -308,18 +318,20 @@ bool wmtk::separate_to_manifold(
     const std::vector<Eigen::Vector3d>& vertices,
     const std::vector<std::array<size_t, 3>>& faces,
     std::vector<Eigen::Vector3d>& out_v,
-    std::vector<std::array<size_t, 3>>& out_f)
+    std::vector<std::array<size_t, 3>>& out_f,
+    std::vector<size_t>& mod_v)
 {
     Eigen::MatrixXi F(faces.size(), 3);
     for (auto i = 0; i < faces.size(); i++) F.row(i) << faces[i][0], faces[i][1], faces[i][2];
     Eigen::MatrixXd V(vertices.size(), 3);
     for (auto i = 0; i < vertices.size(); i++) V.row(i) = vertices[i];
 
-    resolve_nonmanifoldness(V, F);
+    resolve_nonmanifoldness(V, F, mod_v);
     Eigen::MatrixXd NV;
     Eigen::MatrixXi NF;
-    Eigen::VectorXi I;
-    igl::remove_unreferenced(V, F, NV, NF, I);
+    Eigen::VectorXi I, J;
+    igl::remove_unreferenced(V, F, NV, NF, I, J);
+    for (auto& v : mod_v) v = I[v];
     out_v.resize(V.rows());
     out_f.resize(F.rows());
     for (auto i = 0; i < V.rows(); i++) out_v[i] = V.row(i);
