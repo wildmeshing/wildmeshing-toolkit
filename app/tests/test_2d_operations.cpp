@@ -300,6 +300,7 @@ TEST_CASE("qec", "[test_2d_operations][.]")
 {
     const std::string root(WMT_DATA_DIR);
     const std::string path = root + "/piece_0.obj";
+
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     bool ok = igl::read_triangle_mesh(path, V, F);
@@ -317,9 +318,10 @@ TEST_CASE("qec", "[test_2d_operations][.]")
     EdgeOperations2d m(v);
     m.create_mesh(V.rows(), tri);
     REQUIRE(m.check_mesh_connectivity_validity());
-    REQUIRE(m.collapse_qec(5));
+    REQUIRE(m.collapse_qec(V.rows() - 2));
 
-    m.write_triangle_mesh("qec.obj");
+
+    m.write_triangle_mesh("no_qec.obj");
 }
 
 TEST_CASE("split_each_edge", "[test_2d_operations]")
