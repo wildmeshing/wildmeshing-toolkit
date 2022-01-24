@@ -213,20 +213,23 @@ void tetwild::TetWild::check_attributes()
             if (!(m_vertex_attribute[vs[0].vid(*this)].m_is_on_surface &&
                   m_vertex_attribute[vs[1].vid(*this)].m_is_on_surface &&
                   m_vertex_attribute[vs[2].vid(*this)].m_is_on_surface))
-                cout << "surface track wrong" << endl;
+                wmtk::logger().critical("surface track wrong");
             bool is_out = m_envelope.is_outside(
                 {{m_vertex_attribute[vs[0].vid(*this)].m_posf,
                   m_vertex_attribute[vs[1].vid(*this)].m_posf,
                   m_vertex_attribute[vs[2].vid(*this)].m_posf}});
             if (is_out)
-                cout << "is_out f " << vs[0].vid(*this) << " " << vs[1].vid(*this) << " "
-                     << vs[2].vid(*this) << " " << endl;
+                wmtk::logger().critical(
+                    "is_out f {} {} {}",
+                    vs[0].vid(*this),
+                    vs[1].vid(*this),
+                    vs[2].vid(*this));
         }
         if (m_face_attribute[fid].m_is_bbox_fs >= 0) {
             if (!(!m_vertex_attribute[vs[0].vid(*this)].on_bbox_faces.empty() &&
                   !m_vertex_attribute[vs[1].vid(*this)].on_bbox_faces.empty() &&
                   !m_vertex_attribute[vs[2].vid(*this)].on_bbox_faces.empty()))
-                cout << "bbox track wrong" << endl;
+                wmtk::logger().critical("bbox track wrong {}", fid);
         }
     }
 
@@ -234,14 +237,14 @@ void tetwild::TetWild::check_attributes()
         size_t i = v.vid(*this);
         if (m_vertex_attribute[i].m_is_on_surface) {
             bool is_out = m_envelope.is_outside(m_vertex_attribute[i].m_posf);
-            if (is_out) cout << "is_out v" << endl;
+            if (is_out) wmtk::logger().critical("is_out v");
         }
 
         if (m_vertex_attribute[i].m_is_rounded) {
             if (m_vertex_attribute[i].m_pos[0] != m_vertex_attribute[i].m_posf[0] ||
                 m_vertex_attribute[i].m_pos[1] != m_vertex_attribute[i].m_posf[1] ||
                 m_vertex_attribute[i].m_pos[2] != m_vertex_attribute[i].m_posf[2])
-                cout << "rounding error" << endl;
+                wmtk::logger().critical("rounding error {}", i);
         }
     }
 }

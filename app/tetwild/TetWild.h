@@ -215,7 +215,7 @@ public:
         double max_energy;
         std::map<std::array<size_t, 3>, size_t> changed_faces;
     };
-    tbb::enumerable_thread_specific<SwapInfoCache> edgeswap_cache, faceswap_cache;
+    tbb::enumerable_thread_specific<SwapInfoCache> swap_cache;
 
 
     void construct_background_mesh(const InputSurface& input_surface);

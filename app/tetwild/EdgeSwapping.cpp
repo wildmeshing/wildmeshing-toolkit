@@ -3,6 +3,7 @@
 #include <wmtk/TetMesh.h>
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include "spdlog/spdlog.h"
 #include "wmtk/utils/TupleUtils.hpp"
 #include <wmtk/utils/ExecutorUtils.hpp>
 
@@ -40,7 +41,7 @@ auto tracker_assign_after =
     [](const auto& changed_faces, const auto& incident_tets, auto& m, auto& m_face_attribute) {
         auto middle_face = std::vector<size_t>();
         auto new_faces = std::set<std::array<size_t, 3>>();
-        auto assign_attrs = [](auto& attr, auto from, auto to) { // TODO: support rollback later.
+        auto assign_attrs = [](auto& attr, auto from, auto to) {
             if (from == to) return;
             attr[to] = attr[from];
         };
@@ -55,7 +56,9 @@ auto tracker_assign_after =
                 if (it == changed_faces.end()) continue;
 
                 // if found, then assign
-                assign_attrs(m_face_attribute, it->second, global_fid);
+                if (it->second == global_fid) continue;
+                m_face_attribute[global_fid] = m_face_attribute[it->second];
+                m_face_attribute[it->second].reset();
             }
         }
     };
@@ -121,10 +124,10 @@ bool tetwild::TetWild::swap_edge_before(const Tuple& t)
     for (auto& l : incident_tets) {
         max_energy = std::max(get_quality(l), max_energy);
     }
-    edgeswap_cache.local().max_energy = max_energy;
+    swap_cache.local().max_energy = max_energy;
 
     if (!face_attribute_tracker(
-            edgeswap_cache.local().changed_faces,
+            swap_cache.local().changed_faces,
             incident_tets,
             *this,
             m_face_attribute))
@@ -143,10 +146,10 @@ bool tetwild::TetWild::swap_edge_after(const Tuple& t)
     auto max_energy = std::max(get_quality(t), get_quality(*oppo_tet));
     std::vector<Tuple> locs{{t, *oppo_tet}};
     
-    if (max_energy > edgeswap_cache.local().max_energy) return false;
+    if (max_energy > swap_cache.local().max_energy) return false;
 
     auto twotets = std::vector<Tuple>{{t, *oppo_tet}};
-    tracker_assign_after(faceswap_cache.local().changed_faces, twotets, *this, m_face_attribute);
+    tracker_assign_after(swap_cache.local().changed_faces, twotets, *this, m_face_attribute);
     cnt_swap ++;
     return true;
 }
@@ -157,12 +160,12 @@ bool tetwild::TetWild::swap_face_before(const Tuple& t)
 
     auto oppo_tet = t.switch_tetrahedron(*this);
     assert(oppo_tet.has_value() && "Should not swap boundary.");
-    faceswap_cache.local().max_energy = std::max(get_quality(t), get_quality(*oppo_tet));
+    swap_cache.local().max_energy = std::max(get_quality(t), get_quality(*oppo_tet));
 
     auto twotets = std::vector<Tuple>{{t, *oppo_tet}};
 
     if (!face_attribute_tracker(
-            faceswap_cache.local().changed_faces,
+            swap_cache.local().changed_faces,
             twotets,
             *this,
             m_face_attribute))
@@ -180,12 +183,12 @@ bool tetwild::TetWild::swap_face_after(const Tuple& t)
     for (auto& l : incident_tets) {
         max_energy = std::max(get_quality(l), max_energy);
     }
-    wmtk::logger().trace("quality {} from {}", max_energy, faceswap_cache.local().max_energy);
+    wmtk::logger().trace("quality {} from {}", max_energy, swap_cache.local().max_energy);
 
-    if (max_energy > faceswap_cache.local().max_energy) return false;
+    if (max_energy > swap_cache.local().max_energy) return false;
 
     tracker_assign_after(
-        faceswap_cache.local().changed_faces,
+        swap_cache.local().changed_faces,
         incident_tets,
         *this,
         m_face_attribute);
