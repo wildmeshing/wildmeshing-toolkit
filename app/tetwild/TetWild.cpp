@@ -244,7 +244,7 @@ std::vector<std::array<size_t, 3>> tetwild::TetWild::get_faces_by_condition(
     return res;
 }
 
-bool tetwild::TetWild::(const Tuple& loc)
+bool tetwild::TetWild::is_edge_on_surface(const Tuple& loc)
 {
     size_t v1_id = loc.vid(*this);
     auto loc1 = loc.switch_vertex(*this);

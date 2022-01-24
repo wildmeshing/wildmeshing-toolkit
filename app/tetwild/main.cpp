@@ -15,7 +15,7 @@ int main(int argc, char** argv)
     using std::cout;
     using std::endl;
 
-    auto pausee = [](){
+    auto pausee = []() {
         std::cout << "pausing..." << std::endl;
         char c;
         std::cin >> c;
@@ -42,21 +42,21 @@ int main(int argc, char** argv)
     }
 
     tetwild::TetWild::InputSurface input_surface;
-    input_surface.params.lr = 1/15.0;
+    input_surface.params.lr = 1 / 15.0;
     input_surface.init(vertices, faces);
     input_surface.remove_duplicates();
     //
     fastEnvelope::FastEnvelope envelope;
-    cout<<"input_surface.params.eps "<<input_surface.params.eps<<endl;
+    cout << "input_surface.params.eps " << input_surface.params.eps << endl;
     envelope.init(vertices, env_faces, input_surface.params.eps);
     //
     tetwild::TetWild mesh(input_surface.params, envelope);
 
-    auto output_faces = [&](){
+    auto output_faces = [&]() {
         // output surface
         {
-            auto outface =
-                mesh.get_faces_by_condition([](auto& attr) { return attr.m_is_surface_fs == true; });
+            auto outface = mesh.get_faces_by_condition(
+                [](auto& attr) { return attr.m_is_surface_fs == true; });
             Eigen::MatrixXd matV = Eigen::MatrixXd::Zero(mesh.vert_capacity(), 3);
             for (auto v : mesh.get_vertices()) {
                 auto vid = v.vid(mesh);
@@ -89,28 +89,30 @@ int main(int argc, char** argv)
     };
 
     mesh.triangle_insertion(input_surface);
-//    mesh.check_attributes();
-//    pausee();
+    //    mesh.check_attributes();
+    //    pausee();
 
-        mesh.collapse_all_edges();
-        wmtk::logger().info("#t {}", mesh.tet_size());
-        wmtk::logger().info("#v {}", mesh.vertex_size());
-//        output_faces();
-//        pausee();
+    mesh.collapse_all_edges();
+    wmtk::logger().info("#t {}", mesh.tet_size());
+    wmtk::logger().info("#v {}", mesh.vertex_size());
+    //        output_faces();
+    //        pausee();
 
-        mesh.split_all_edges();
-        wmtk::logger().info("#t {}", mesh.tet_size());
-        wmtk::logger().info("#v {}", mesh.vertex_size());
-        mesh.check_attributes();
-//        output_faces();
-//        pausee();
+    mesh.split_all_edges();
+    wmtk::logger().info("#t {}", mesh.tet_size());
+    wmtk::logger().info("#v {}", mesh.vertex_size());
+    mesh.check_attributes();
+    //        output_faces();
+    //        pausee();
 
+    mesh.collapse_all_edges(false);
+    mesh.collapse_all_edges(false);
     mesh.collapse_all_edges(false);
     wmtk::logger().info("#t {}", mesh.tet_size());
     wmtk::logger().info("#v {}", mesh.vertex_size());
     mesh.check_attributes();
     output_faces();
-//    pausee();
+    //    pausee();
 
-    //todo: refine adaptively the mesh
+    // todo: refine adaptively the mesh
 }
