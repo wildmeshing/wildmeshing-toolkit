@@ -28,7 +28,7 @@ private:
     void unlock_vertex_mutex(size_t vid) { m_vertex_mutex[vid].unlock(); }
 
 protected:
-    void resize_vertex_attributes(size_t v) override { m_vertex_mutex.grow_to_at_least(v); }
+    void resize_mutex(size_t v) override { m_vertex_mutex.grow_to_at_least(v); }
 
 public:
     ConcurrentTriMesh() = default;

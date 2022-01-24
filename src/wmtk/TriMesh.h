@@ -1,6 +1,7 @@
 #pragma once
 
 #include <wmtk/utils/VectorUtils.h>
+#include <memory>
 #include <wmtk/utils/Logger.hpp>
 
 #include <tbb/concurrent_vector.h>
@@ -11,6 +12,7 @@
 #include <map>
 #include <optional>
 #include <vector>
+#include "wmtk/AttributeCollection.hpp"
 
 namespace wmtk {
 
@@ -176,7 +178,12 @@ public:
         }
     };
 
-    TriMesh() {}
+    TriMesh()
+    {
+        vertex_attrs.reset(new AbstractAttributeContainer());
+        edge_attrs.reset(new AbstractAttributeContainer());
+        face_attrs.reset(new AbstractAttributeContainer());
+    }
     virtual ~TriMesh() {}
 
     void create_mesh(size_t n_vertices, const std::vector<std::array<size_t, 3>>& tris);
@@ -219,6 +226,9 @@ public:
     template <typename T>
     using vector = tbb::concurrent_vector<T>;
 
+public:
+    std::shared_ptr<AbstractAttributeContainer> vertex_attrs, edge_attrs, face_attrs;
+
 private:
     vector<VertexConnectivity> m_vertex_connectivity;
     vector<TriangleConnectivity> m_tri_connectivity;
@@ -227,6 +237,7 @@ private:
     size_t get_next_empty_slot_v();
 
 protected:
+    virtual bool invariants(const std::vector<Tuple>&) { return true; }
     virtual bool split_before(const Tuple& t) { return true; }
     virtual bool split_after(const Tuple& t) { return true; }
 
@@ -257,14 +268,7 @@ protected:
             return false;
         return true;
     }
-
-    virtual void resize_vertex_attributes(size_t v){};
-    virtual void resize_edge_attributes(size_t e){};
-    virtual void resize_face_attributes(size_t t){};
-
-    virtual void move_vertex_attribute(size_t from, size_t to){};
-    virtual void move_edge_attribute(size_t from, size_t to){};
-    virtual void move_face_attribute(size_t from, size_t to){};
+    virtual void resize_mutex(size_t v){}; // tempoarary hack
 
 
 public:
@@ -340,6 +344,28 @@ public:
     {
         auto vid = m_tri_connectivity[fid][(local_eid + 1) % 3];
         return Tuple(vid, local_eid, fid, *this);
+    }
+
+private:
+    void start_protect_attributes()
+    {
+        vertex_attrs->begin_protect();
+        edge_attrs->begin_protect();
+        face_attrs->begin_protect();
+    }
+
+    void release_protect_attributes()
+    {
+        vertex_attrs->end_protect();
+        edge_attrs->end_protect();
+        face_attrs->end_protect();
+    }
+
+    void rollback_protected_attributes()
+    {
+        vertex_attrs->rollback();
+        edge_attrs->rollback();
+        face_attrs->rollback();
     }
 };
 

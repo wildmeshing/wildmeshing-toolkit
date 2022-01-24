@@ -20,6 +20,7 @@ add_library(wmtk_tetwild
 	tetwild/EdgeSplitting.cpp
 	tetwild/EdgeCollapsing.cpp
 	tetwild/EdgeSwapping.cpp
+	tetwild/TetWildSmooth.cpp
 
 	tetwild/TriangleInsertion.cpp
 	tetwild/Rational.hpp
@@ -91,21 +92,6 @@ target_link_libraries(wmtk_harmonic_tet_bin PUBLIC
 	CLI11::CLI11
 )
 wmtk_copy_dll(wmtk_harmonic_tet_bin)
-
-# Parallel Harmonic Triangulations for TetMesh [Alexa2019]
-################################################################################
-
-add_library(wmtk_app_parallel_harmonic_tet
-	parallel_harmonic_tet/ParallelHarmonicTet.hpp
-	parallel_harmonic_tet/ParallelHarmonicTet.cpp
-)
-add_library(wmtk::parallel_harmonic_tet ALIAS wmtk_app_parallel_harmonic_tet)
-target_link_libraries(wmtk_app_parallel_harmonic_tet PUBLIC
-	wmtk::toolkit
-	wmtk::data
-	igl::predicates
-)
-target_include_directories(wmtk_app_parallel_harmonic_tet PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/parallel_harmonic_tet)
 
 ################################################################################
 # Tests
