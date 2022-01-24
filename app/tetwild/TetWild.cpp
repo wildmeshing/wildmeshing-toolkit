@@ -10,6 +10,7 @@
 #include <igl/predicates/predicates.h>
 #include <spdlog/fmt/ostr.h>
 
+#include <igl/winding_number.h>
 void tetwild::TetWild::mesh_improvement(int max_its)
 {
     ////preprocessing
@@ -37,7 +38,7 @@ void tetwild::TetWild::mesh_improvement(int max_its)
     local_operations({{0, 1, 0, 0}});
 
     ////winding number
-    // todo
+    filter_outside();
 }
 
 #include <igl/Timer.h>
@@ -86,6 +87,46 @@ std::tuple<double, double> tetwild::TetWild::local_operations(const std::array<i
     return std::make_tuple(max_energy, avg_energy);
 }
 
+
+
+void tetwild::TetWild::adjust_sizing_field()
+{
+    // todo
+}
+
+void tetwild::TetWild::filter_outside()
+{
+    Eigen::MatrixXd V(triangle_insertion_cache.input_surface.vertices.size(), 3);
+    Eigen::MatrixXi F(triangle_insertion_cache.input_surface.faces.size(), 3);
+
+    for (int i = 0; i < V.rows(); i++) {
+        V.row(i) = triangle_insertion_cache.input_surface.vertices[i];
+    }
+    for (int i = 0; i < F.rows(); i++) {
+        F.row(i) << triangle_insertion_cache.input_surface.faces[i][0],
+            triangle_insertion_cache.input_surface.faces[i][1],
+            triangle_insertion_cache.input_surface.faces[i][2];
+    }
+
+    const auto& tets = get_tets(); // todo: avoid copy!!!
+    Eigen::MatrixXd C(tets.size(), 3);
+    for (size_t i = 0; i < tets.size(); i++) {
+        C.row(i) << 0, 0, 0;
+        auto vs = oriented_tet_vertices(tets[i]);
+        for (auto& v : vs) C += m_vertex_attribute[v.vid(*this)].m_posf;
+        C.row(i) /= 4;
+    }
+
+    Eigen::VectorXd W;
+    igl::winding_number(V, F, C, W);
+
+    for (int i = 0; i < W.rows(); i++) {
+        if (W(i) <= 0.5) m_tet_attribute[tets[i].tid(*this)].m_is_outside = true;
+    }
+}
+
+/////////////////////////////////////////////////////////////////////
+
 std::tuple<double, double> tetwild::TetWild::get_max_avg_energy()
 {
     double max_energy;
@@ -108,10 +149,6 @@ std::tuple<double, double> tetwild::TetWild::get_max_avg_energy()
     return std::make_tuple(max_energy, avg_energy);
 }
 
-void tetwild::TetWild::adjust_sizing_field()
-{
-    // todo
-}
 
 bool tetwild::TetWild::is_inverted(const Tuple& loc) const
 {

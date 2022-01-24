@@ -262,6 +262,7 @@ public:
     void mesh_improvement(int max_its = 80);
     std::tuple<double, double> local_operations(const std::array<int, 4>& ops, bool collapse_limite_length = true);
     std::tuple<double, double> get_max_avg_energy();
+    void filter_outside();
 
     void check_attributes();
 
