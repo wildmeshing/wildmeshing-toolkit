@@ -47,7 +47,6 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
         loc_id++;
     }
 
-
     auto old_pos = m_vertex_attribute[vid].m_posf;
     m_vertex_attribute[vid].m_posf = wmtk::newton_method_from_stack(
         assembles,
@@ -69,11 +68,10 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
 
 void tetwild::TetWild::smooth_all_vertices()
 {
-    auto tuples = get_vertices();
-    wmtk::logger().debug("tuples");
-    auto cnt_suc = 0;
-    for (auto& t : tuples) { // TODO: threads
-        if (smooth_vertex(t)) cnt_suc++;
+    auto executor = wmtk::ExecutePass<tetwild::TetWild>();
+    auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
+    for (auto& loc : get_vertices()) {
+        collect_all_ops.emplace_back("vertex_smooth", loc);
     }
-    wmtk::logger().debug("Smoothing Success Count {}", cnt_suc);
+    wmtk::logger().info("Num verts {}", collect_all_ops.size());
 }

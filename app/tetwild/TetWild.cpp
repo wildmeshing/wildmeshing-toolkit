@@ -38,7 +38,7 @@ bool tetwild::TetWild::is_inverted(const Tuple& loc) const
         else
             result = 0;
 
-        if (result < 0) //neg result == pos tet (tet origin from geogram delaunay)
+        if (result < 0) // neg result == pos tet (tet origin from geogram delaunay)
             return false;
         return true;
     } else {
@@ -94,8 +94,7 @@ double tetwild::TetWild::get_quality(const Tuple& loc) const
     }
 
     double energy = wmtk::AMIPS_energy(T);
-    if (std::isinf(energy) || std::isnan(energy) || energy < 3 - 1e-3)
-        return MAX_ENERGY;
+    if (std::isinf(energy) || std::isnan(energy) || energy < 3 - 1e-3) return MAX_ENERGY;
     return energy;
 }
 
@@ -103,7 +102,22 @@ double tetwild::TetWild::get_quality(const Tuple& loc) const
 bool tetwild::TetWild::invariants(const std::vector<Tuple>& tets)
 {
     // check inversion
-    for (auto& t: tets) if (is_inverted(t)) return false;
+    for (auto& t : tets)
+        if (is_inverted(t)) return false;
+    for (auto& t : tets) {
+        for (auto j = 0; j < 4; j++) {
+            auto f_t = tuple_from_face(t.tid(*this), j);
+            auto fid = f_t.fid(*this);
+            if (m_face_attribute[fid].m_is_surface_fs) {
+                auto vs = m.get_face_vertices(f_t);
+                if (m_envelope.is_outside(
+                        {{m_vertex_attribute[vs[0].vid(*this)].m_posf,
+                          m_vertex_attribute[vs[1].vid(*this)].m_posf,
+                          m_vertex_attribute[vs[2].vid(*this)].m_posf}}))
+                    return false;
+            }
+        }
+    }
     return true;
 }
 
@@ -147,7 +161,8 @@ std::vector<std::array<size_t, 3>> tetwild::TetWild::get_faces_by_condition(
         if (cond(m_face_attribute[fid])) {
             auto tid = fid / 4, lid = fid % 4;
             auto verts = get_face_vertices(f);
-            res.emplace_back(std::array<size_t, 3>{{verts[0].vid(*this), verts[1].vid(*this), verts[2].vid(*this)}});
+            res.emplace_back(std::array<size_t, 3>{
+                {verts[0].vid(*this), verts[1].vid(*this), verts[2].vid(*this)}});
         }
     }
     return res;
@@ -180,8 +195,9 @@ bool tetwild::TetWild::is_edge_on_surface(const Tuple& loc)
     return false;
 }
 
-void tetwild::TetWild::adjust_sizing_field(){
-    //todo
+void tetwild::TetWild::adjust_sizing_field()
+{
+    // todo
 }
 
 void tetwild::TetWild::check_attributes()
@@ -193,43 +209,39 @@ void tetwild::TetWild::check_attributes()
         auto fid = f.fid(*this);
         auto vs = get_face_vertices(f);
 
-        if(m_face_attribute[fid].m_is_surface_fs) {
-            if(!(
-                m_vertex_attribute[vs[0].vid(*this)].m_is_on_surface &&
-                m_vertex_attribute[vs[1].vid(*this)].m_is_on_surface &&
-                m_vertex_attribute[vs[2].vid(*this)].m_is_on_surface))
-                cout<<"surface track wrong"<<endl;
+        if (m_face_attribute[fid].m_is_surface_fs) {
+            if (!(m_vertex_attribute[vs[0].vid(*this)].m_is_on_surface &&
+                  m_vertex_attribute[vs[1].vid(*this)].m_is_on_surface &&
+                  m_vertex_attribute[vs[2].vid(*this)].m_is_on_surface))
+                cout << "surface track wrong" << endl;
             bool is_out = m_envelope.is_outside(
                 {{m_vertex_attribute[vs[0].vid(*this)].m_posf,
                   m_vertex_attribute[vs[1].vid(*this)].m_posf,
                   m_vertex_attribute[vs[2].vid(*this)].m_posf}});
-            if(is_out)
-                cout<<"is_out f "<<vs[0].vid(*this)<<" "
-                     <<vs[1].vid(*this)<<" "
-                     <<vs[2].vid(*this)<<" "<<endl;
+            if (is_out)
+                cout << "is_out f " << vs[0].vid(*this) << " " << vs[1].vid(*this) << " "
+                     << vs[2].vid(*this) << " " << endl;
         }
-        if(m_face_attribute[fid].m_is_bbox_fs>=0){
-           if(!(
-                !m_vertex_attribute[vs[0].vid(*this)].on_bbox_faces.empty() &&
-                !m_vertex_attribute[vs[1].vid(*this)].on_bbox_faces.empty() &&
-                !m_vertex_attribute[vs[2].vid(*this)].on_bbox_faces.empty()))
-           cout<<"bbox track wrong"<<endl;
+        if (m_face_attribute[fid].m_is_bbox_fs >= 0) {
+            if (!(!m_vertex_attribute[vs[0].vid(*this)].on_bbox_faces.empty() &&
+                  !m_vertex_attribute[vs[1].vid(*this)].on_bbox_faces.empty() &&
+                  !m_vertex_attribute[vs[2].vid(*this)].on_bbox_faces.empty()))
+                cout << "bbox track wrong" << endl;
         }
     }
 
-    for(auto& v: get_vertices()){
+    for (auto& v : get_vertices()) {
         size_t i = v.vid(*this);
-        if(m_vertex_attribute[i].m_is_on_surface) {
+        if (m_vertex_attribute[i].m_is_on_surface) {
             bool is_out = m_envelope.is_outside(m_vertex_attribute[i].m_posf);
-            if(is_out)
-                cout<<"is_out v"<<endl;
+            if (is_out) cout << "is_out v" << endl;
         }
 
-        if(m_vertex_attribute[i].m_is_rounded){
-            if(m_vertex_attribute[i].m_pos[0]!=m_vertex_attribute[i].m_posf[0]
-                || m_vertex_attribute[i].m_pos[1]!=m_vertex_attribute[i].m_posf[1]
-                || m_vertex_attribute[i].m_pos[2]!=m_vertex_attribute[i].m_posf[2])
-                cout<<"rounding error"<<endl;
+        if (m_vertex_attribute[i].m_is_rounded) {
+            if (m_vertex_attribute[i].m_pos[0] != m_vertex_attribute[i].m_posf[0] ||
+                m_vertex_attribute[i].m_pos[1] != m_vertex_attribute[i].m_posf[1] ||
+                m_vertex_attribute[i].m_pos[2] != m_vertex_attribute[i].m_posf[2])
+                cout << "rounding error" << endl;
         }
     }
 }
