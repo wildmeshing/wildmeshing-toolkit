@@ -4,6 +4,7 @@
 #include <wmtk/utils/VectorUtils.h>
 
 // clang-format off
+#include <memory>
 #include <wmtk/utils/DisableWarnings.hpp>
 
 #include <igl/write_triangle_mesh.h>
@@ -22,25 +23,37 @@
 
 #include <atomic>
 #include <queue>
+#include "wmtk/AttributeCollection.hpp"
 
 namespace Edge2d {
+
+struct VertexAttributes
+{
+    Eigen::Vector3d pos;
+    // TODO: in fact, partition id should not be vertex attribute, it is a fixed marker to distinguish tuple/operations.
+    size_t partition_id;
+};
 
 class EdgeOperations2d : public wmtk::ConcurrentTriMesh
 {
 public:
-    tbb::concurrent_vector<Eigen::Vector3d> m_vertex_positions;
-    tbb::concurrent_vector<size_t> m_vertex_partition_id;
     fastEnvelope::FastEnvelope m_envelope;
     bool m_has_envelope = false;
+    using VertAttCol = wmtk::AttributeCollection<VertexAttributes>;
+    std::shared_ptr<VertAttCol> vertex_attrs;
 
     int NUM_THREADS = 1;
     int retry_limit = 10;
     EdgeOperations2d(std::vector<Eigen::Vector3d> _m_vertex_positions, int num_threads = 1)
         : NUM_THREADS(num_threads)
     {
-        m_vertex_positions.resize(_m_vertex_positions.size());
+        vertex_attrs = std::make_shared<VertAttCol>();
+        TriMesh::vertex_attrs = vertex_attrs;
+
+        vertex_attrs->resize(_m_vertex_positions.size());
+
         for (auto i = 0; i < _m_vertex_positions.size(); i++)
-            m_vertex_positions[i] = _m_vertex_positions[i];
+            vertex_attrs->m_attributes[i] = {_m_vertex_positions[i], 0};
     }
 
     void
@@ -49,9 +62,11 @@ public:
         wmtk::ConcurrentTriMesh::create_mesh(n_vertices, tris);
 
         if (eps > 0) {
-            std::vector<Eigen::Vector3d> V(m_vertex_positions.size());
+            std::vector<Eigen::Vector3d> V(n_vertices);
             std::vector<Eigen::Vector3i> F(tris.size());
-            std::copy(m_vertex_positions.begin(), m_vertex_positions.end(), std::back_inserter(V));
+            for (auto i = 0; i < V.size(); i++) {
+                V[i] = vertex_attrs->m_attributes[i].pos;
+            }
             for (int i = 0; i < F.size(); ++i) F[i] << tris[i][0], tris[i][1], tris[i][2];
             m_envelope.init(V, F, eps);
             m_has_envelope = true;
@@ -71,8 +86,21 @@ public:
 
     void cache_edge_positions(const Tuple& t)
     {
-        position_cache.local().v1p = m_vertex_positions[t.vid()];
-        position_cache.local().v2p = m_vertex_positions[t.switch_vertex(*this).vid()];
+        position_cache.local().v1p = vertex_attrs->m_attributes[t.vid()].pos;
+        position_cache.local().v2p = vertex_attrs->m_attributes[t.switch_vertex(*this).vid()].pos;
+    }
+
+    bool invariants(const std::vector<Tuple>& new_tris) override
+    {
+        if (m_has_envelope) {
+            for (auto& t : new_tris) {
+                std::array<Eigen::Vector3d, 3> tris;
+                auto vs = t.oriented_tri_vertices(*this);
+                for (auto j = 0; j < 3; j++) tris[j] = vertex_attrs->m_attributes[vs[j].vid()].pos;
+                if (m_envelope.is_outside(tris)) return false;
+            }
+        }
+        return true;
     }
 
     void modify_cache_qec(const Eigen::Vector3d& v)
@@ -87,26 +115,31 @@ public:
         if (m_has_envelope) {
             if (m_envelope.is_outside(p)) return false;
         }
-        m_vertex_positions[t.vid()] = p;
+        vertex_attrs->m_attributes[t.vid()].pos = p;
         return true;
     }
 
-    void partition_mesh() { m_vertex_partition_id = partition_TriMesh(*this, NUM_THREADS); }
+    void partition_mesh()
+    {
+        auto m_vertex_partition_id = partition_TriMesh(*this, NUM_THREADS);
+        for (auto i = 0; i < m_vertex_partition_id.size(); i++)
+            vertex_attrs->m_attributes[i].partition_id = m_vertex_partition_id[i];
+    }
 
     Eigen::Vector3d smooth(const Tuple& t)
     {
         auto one_ring_edges = get_one_ring_edges_for_vertex(t);
-        if (one_ring_edges.size() < 3) return m_vertex_positions[t.vid()];
+        if (one_ring_edges.size() < 3) return vertex_attrs->m_attributes[t.vid()].pos;
         Eigen::Vector3d after_smooth(0, 0, 0);
         Eigen::Vector3d after_smooth_boundary(0, 0, 0);
         int boundary = 0;
         for (auto e : one_ring_edges) {
             if (is_boundary_edge(e)) {
-                after_smooth_boundary += m_vertex_positions[e.vid()];
+                after_smooth_boundary += vertex_attrs->m_attributes[e.vid()].pos;
                 boundary++;
                 continue;
             }
-            after_smooth += m_vertex_positions[e.vid()];
+            after_smooth += vertex_attrs->m_attributes[e.vid()].pos;
         }
 
         if (boundary)
@@ -119,18 +152,13 @@ public:
 
     Eigen::Vector3d tangential_smooth(const Tuple& t);
 
-    void move_vertex_attribute(size_t from, size_t to) override
-    {
-        m_vertex_positions[to] = m_vertex_positions[from];
-    }
-
     // write the collapsed mesh into a obj
     bool write_triangle_mesh(std::string path)
     {
-        Eigen::MatrixXd V = Eigen::MatrixXd::Zero(m_vertex_positions.size(), 3);
+        Eigen::MatrixXd V = Eigen::MatrixXd::Zero(vertex_attrs->m_attributes.size(), 3);
         for (auto& t : get_vertices()) {
             auto i = t.vid();
-            V.row(i) = m_vertex_positions[i];
+            V.row(i) = vertex_attrs->m_attributes[i].pos;
         }
 
         Eigen::MatrixXi F = Eigen::MatrixXi::Constant(tri_capacity(), 3, -1);
@@ -152,7 +180,8 @@ public:
         return true;
     }
 
-    bool collapse_after(const Tuple& t) override { return update_position_to_edge_midpoint(t); }
+    bool collapse_after(const Tuple& t) override;
+    bool swap_after(const Tuple& t) override;
 
     std::vector<TriMesh::Tuple> new_edges_after(const std::vector<TriMesh::Tuple>& t) const;
     std::vector<TriMesh::Tuple> new_edges_after_swap(const TriMesh::Tuple& t) const;
@@ -169,7 +198,7 @@ public:
         return true;
     }
 
-    bool split_after(const Tuple& t) override { return update_position_to_edge_midpoint(t); }
+    bool split_after(const Tuple& t) override;
     // methods for adaptive remeshing
     double compute_edge_cost_collapse_ar(const TriMesh::Tuple& t, double L) const;
     double compute_edge_cost_split_ar(const TriMesh::Tuple& t, double L) const;
@@ -179,12 +208,6 @@ public:
     bool collapse_remeshing(double L);
     bool swap_remeshing();
     bool adaptive_remeshing(double L, int interations, int sm);
-    void resize_vertex_attributes(size_t v) override
-    {
-        ConcurrentTriMesh::resize_vertex_attributes(v);
-        m_vertex_positions.grow_to_at_least(v);
-        m_vertex_partition_id.grow_to_at_least(v);
-    }
 };
 
 } // namespace Edge2d

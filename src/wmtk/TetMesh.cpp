@@ -1,5 +1,6 @@
 #include <wmtk/TetMesh.h>
 
+#include <wmtk/AttributeCollection.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
 
 int wmtk::TetMesh::get_next_empty_slot_t()
@@ -7,9 +8,9 @@ int wmtk::TetMesh::get_next_empty_slot_t()
     const auto it = m_tet_connectivity.emplace_back();
     const size_t size = std::distance(m_tet_connectivity.begin(), it) + 1;
     m_tet_connectivity[size - 1].hash = -1;
-    resize_edge_attributes(size * 6);
-    resize_face_attributes(size * 4);
-    resize_tet_attributes(size);
+    edge_attrs->resize(size * 6);
+    face_attrs->resize(size * 4);
+    tet_attrs->resize(size);
     return size - 1;
 }
 
@@ -17,8 +18,17 @@ int wmtk::TetMesh::get_next_empty_slot_v()
 {
     const auto it = m_vertex_connectivity.emplace_back();
     const size_t size = std::distance(m_vertex_connectivity.begin(), it) + 1;
-    resize_vertex_attributes(size);
+    vertex_attrs->resize(size);
+    resize_vertex_mutex(size); // TODO: temp hack for mutex
     return size - 1;
+}
+
+wmtk::TetMesh::TetMesh()
+{
+    vertex_attrs.reset(new wmtk::AbstractAttributeContainer());
+    edge_attrs.reset(new wmtk::AbstractAttributeContainer());
+    face_attrs.reset(new wmtk::AbstractAttributeContainer());
+    tet_attrs.reset(new wmtk::AbstractAttributeContainer());
 }
 
 void wmtk::TetMesh::init(size_t n_vertices, const std::vector<std::array<size_t, 4>>& tets)
@@ -208,7 +218,8 @@ wmtk::TetMesh::Tuple wmtk::TetMesh::tuple_from_face(size_t tid, int local_fid) c
     return Tuple(*this, vid, eid, local_fid, tid);
 }
 
-std::tuple<wmtk::TetMesh::Tuple, size_t> wmtk::TetMesh::tuple_from_face(const std::array<size_t, 3>& vids) const
+std::tuple<wmtk::TetMesh::Tuple, size_t> wmtk::TetMesh::tuple_from_face(
+    const std::array<size_t, 3>& vids) const
 {
     auto tmp = set_intersection(
         m_vertex_connectivity[vids[0]].m_conn_tets,
@@ -321,10 +332,11 @@ std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_one_ring_vertices_for_verte
     return vertices;
 }
 
-std::vector<size_t> wmtk::TetMesh::get_one_ring_vids_for_vertex(size_t vid) const {
+std::vector<size_t> wmtk::TetMesh::get_one_ring_vids_for_vertex(size_t vid) const
+{
     std::vector<size_t> v_ids;
-    for (int t_id: m_vertex_connectivity[vid].m_conn_tets){
-        for (int j=0;j<4;j++){
+    for (int t_id : m_vertex_connectivity[vid].m_conn_tets) {
+        for (int j = 0; j < 4; j++) {
             v_ids.push_back(m_tet_connectivity[t_id][j]);
         }
     }
@@ -391,7 +403,7 @@ void wmtk::TetMesh::consolidate_mesh()
         if (v_cnt != i) {
             assert(v_cnt < i);
             m_vertex_connectivity[v_cnt] = m_vertex_connectivity[i];
-            move_vertex_attribute(i, v_cnt);
+            vertex_attrs->move(i, v_cnt);
         }
         for (size_t& t_id : m_vertex_connectivity[v_cnt].m_conn_tets) t_id = map_t_ids[t_id];
         v_cnt++;
@@ -404,13 +416,13 @@ void wmtk::TetMesh::consolidate_mesh()
             assert(t_cnt < i);
             m_tet_connectivity[t_cnt] = m_tet_connectivity[i];
             m_tet_connectivity[t_cnt].hash = 0;
-            move_tet_attribute(i, t_cnt);
+            tet_attrs->move(i, t_cnt);
 
             for (auto j = 0; j < 4; j++) {
-                move_face_attribute(i * 4 + j, t_cnt * 4 + j);
+                face_attrs->move(i * 4 + j, t_cnt * 4 + j);
             }
             for (auto j = 0; j < 6; j++) {
-                move_edge_attribute(i * 6 + j, t_cnt * 6 + j);
+                edge_attrs->move(i * 6 + j, t_cnt * 6 + j);
             }
         }
         for (size_t& v_id : m_tet_connectivity[t_cnt].m_indices) v_id = map_v_ids[v_id];
@@ -420,15 +432,16 @@ void wmtk::TetMesh::consolidate_mesh()
     m_vertex_connectivity.resize(v_cnt);
     m_tet_connectivity.resize(t_cnt);
 
-    resize_vertex_attributes(v_cnt);
-    resize_edge_attributes(6 * t_cnt);
-    resize_face_attributes(4 * t_cnt);
-    resize_tet_attributes(t_cnt);
+    vertex_attrs->resize(v_cnt);
+    edge_attrs->resize(6 * t_cnt);
+    face_attrs->resize(4 * t_cnt);
+    tet_attrs->resize(t_cnt);
 
     assert(check_mesh_connectivity_validity());
 }
 
-std::vector<std::array<size_t, 3>> wmtk::TetMesh::vertex_adjacent_boundary_faces(const Tuple& tup) const
+std::vector<std::array<size_t, 3>> wmtk::TetMesh::vertex_adjacent_boundary_faces(
+    const Tuple& tup) const
 {
     auto v = tup.vid(*this);
     auto result_faces = std::vector<std::array<size_t, 3>>();

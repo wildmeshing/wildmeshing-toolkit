@@ -2,6 +2,7 @@
 
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/AttributeCollection.hpp>
 
 #include <tbb/concurrent_vector.h>
 
@@ -11,6 +12,7 @@
 #include <optional>
 #include <queue>
 #include <vector>
+
 
 namespace wmtk {
 class TetMesh
@@ -259,8 +261,8 @@ public:
         void print_info() {}
     };
 
-    TetMesh() {}
-    virtual ~TetMesh() {}
+    TetMesh();
+    virtual ~TetMesh() = default;
 
     size_t vert_capacity() const { return m_vertex_connectivity.size(); };
     size_t tet_capacity() const { return m_tet_connectivity.size(); };
@@ -314,6 +316,9 @@ public:
     template <typename T>
     using vector = tbb::concurrent_vector<T>;
 
+public:
+    std::shared_ptr<AbstractAttributeContainer> vertex_attrs, edge_attrs, face_attrs, tet_attrs;
+
 private:
     // Stores the connectivity of the mesh
     vector<VertexConnectivity> m_vertex_connectivity;
@@ -337,6 +342,7 @@ private:
         std::map<std::array<size_t, 3>, std::vector<std::array<size_t, 5>>>& new_face_vids);
 
 protected:
+    virtual bool invariants(const std::vector<Tuple>&) {return true;}
     virtual void add_tet_centroid(const Tuple& t) {}
 
     virtual void triangle_insertion_before(const std::vector<Tuple>& faces) {}
@@ -367,22 +373,7 @@ protected:
     virtual bool smooth_before(const Tuple& t) { return true; }
     virtual bool smooth_after(const Tuple& t) { return true; }
 
-    // Invariants that are called on all the new or modified elements after an operation is
-    // performed
-    virtual bool vertex_invariant(const Tuple& t) { return true; }
-    virtual bool edge_invariant(const Tuple& t) { return true; }
-    virtual bool face_invariant(const Tuple& t) { return true; }
-    virtual bool tetrahedron_invariant(const Tuple& t) { return true; }
-
-    virtual void resize_vertex_attributes(size_t v) {}
-    virtual void resize_edge_attributes(size_t e) {}
-    virtual void resize_face_attributes(size_t f) {}
-    virtual void resize_tet_attributes(size_t t) {}
-
-    virtual void move_face_attribute(size_t from, size_t to) {}
-    virtual void move_edge_attribute(size_t from, size_t to) {}
-    virtual void move_tet_attribute(size_t from, size_t to) {}
-    virtual void move_vertex_attribute(size_t from, size_t to) {}
+    virtual void resize_vertex_mutex(size_t v) {}
 
 public:
     /**
@@ -490,12 +481,12 @@ public:
     std::vector<Tuple> get_one_ring_tets_for_edge(const Tuple& t) const;
 
     /**
-    * @brief 
-    * 
-    * @param m 
-    * @return std::vector<std::array<size_t,3>> 
-    */
-    std::vector<std::array<size_t,3>> vertex_adjacent_boundary_faces(const Tuple&t) const;
+     * @brief
+     *
+     * @param m
+     * @return std::vector<std::array<size_t,3>>
+     */
+    std::vector<std::array<size_t, 3>> vertex_adjacent_boundary_faces(const Tuple& t) const;
     /**
      * Positively oriented 4 vertices (represented by Tuples) in a tetra.
      * @return std::array<Tuple, 4> each tuple owns a different vertex.
@@ -517,6 +508,29 @@ private:
         const std::vector<size_t>& affected,
         const std::vector<size_t>& new_tet_id,
         const std::vector<wmtk::TetMesh::TetrahedronConnectivity>& old_tets);
+    void start_protect_attributes()
+    {
+        vertex_attrs->begin_protect();
+        edge_attrs->begin_protect();
+        face_attrs->begin_protect();
+        tet_attrs->begin_protect();
+    }
+
+    void release_protect_attributes()
+    {
+        vertex_attrs->end_protect();
+        edge_attrs->end_protect();
+        face_attrs->end_protect();
+        tet_attrs->end_protect();
+    }
+
+    void rollback_protected_attributes()
+    {
+        vertex_attrs->rollback();
+        edge_attrs->rollback();
+        face_attrs->rollback();
+        tet_attrs->rollback();
+    }
 };
 
 } // namespace wmtk
