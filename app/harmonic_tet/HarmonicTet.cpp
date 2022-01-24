@@ -126,10 +126,6 @@ bool HarmonicTet::swap_edge_after(const Tuple& t)
     auto oppo_tet = t.switch_tetrahedron(*this);
     assert(oppo_tet.has_value() && "Should not swap boundary.");
 
-    if (!invariants(std::vector<Tuple>{{t, *oppo_tet}})) {
-        return false;
-    }
-
     auto total_energy = get_quality(t) + get_quality(*oppo_tet);
     wmtk::logger().debug("energy {} {}", edgeswap_cache.local().total_energy, total_energy);
 
@@ -142,9 +138,6 @@ bool HarmonicTet::swap_face_after(const Tuple& t)
     if (!TetMesh::swap_face_after(t)) return false;
 
     auto incident_tets = get_incident_tets_for_edge(t);
-    if (!invariants(incident_tets)) {
-        return false;
-    }
 
     auto total_energy = 0.;
     for (auto& l : incident_tets) {
