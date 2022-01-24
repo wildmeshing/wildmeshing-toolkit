@@ -113,7 +113,7 @@ bool tetwild::TetWild::vertex_invariant(const Tuple& t)
     return true;
 }
 
-bool tetwild::TetWild::tetrahedron_invariant(const std::vector<Tuple>& tets)
+bool tetwild::TetWild::invariants(const std::vector<Tuple>& tets)
 {
     // check inversion
     for (auto& t: tets) if (is_inverted(t)) return false;

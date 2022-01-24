@@ -122,17 +122,11 @@ bool tetwild::TetWild::collapse_after(const Tuple& loc)
 
     auto locs = get_one_ring_tets_for_vertex(loc);
 
-    ////check first
-    // check inversion
-    if (!tetrahedron_invariant(locs)) return false;
-
     // check quality
     std::vector<double> qs;
     for (auto& l : locs) {
         double q = get_quality(l);
         if (q > collapse_cache.local().max_energy) {
-            // spdlog::critical("After Collapse {} from ({})", q,
-            // collapse_cache.local().max_energy);
             return false;
         }
         qs.push_back(q);

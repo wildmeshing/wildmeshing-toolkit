@@ -60,7 +60,7 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
         vertex_attrs->m_attributes[vid].m_posf.transpose());
     // note: duplicate code snippets.
 
-    if (!tetrahedron_invariant(locs)) return false;
+    if (!invariants(locs)) return false;
 
     for (auto& loc : locs) {
         auto t_id = loc.tid(*this);

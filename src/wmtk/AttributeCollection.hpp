@@ -33,18 +33,17 @@ struct AttributeCollection : public AbstractAttributeContainer
     void resize(size_t s) override
     {
         m_attributes.grow_to_at_least(s);
-        if (m_attributes.size() > s)
-         {
-             m_attributes.resize(s);
-             m_attributes.shrink_to_fit();
-         }
+        if (m_attributes.size() > s) {
+            m_attributes.resize(s);
+            m_attributes.shrink_to_fit();
+        }
         // TODO: in Concurrent, vertex partition id, vertex mutex should be part of attribute
     }
 
-    bool assign(size_t to, T&& val)
+    bool assign(size_t to, T&& val) // always use this in OP_after
     {
         m_attributes[to] = val;
-        m_rollback_list[to] = val;
+        if (recording) m_rollback_list[to] = val;
         // TODO: are locks necessary? not now.
         return true;
     }
@@ -57,13 +56,32 @@ struct AttributeCollection : public AbstractAttributeContainer
         m_rollback_list.clear();
     }
 
-    void end_protect() override {
+    void begin_protect() override
+    {
         m_rollback_list.clear();
+        recording = true;
+    };
+
+    void end_protect() override
+    {
+        m_rollback_list.clear();
+        recording = false;
     }
+
+    T& operator[](size_t i)
+    {
+        if (recording) {
+            m_rollback_list.emplace(i, m_attributes[i]);
+        }
+        return m_attributes[i];
+    }
+
+    const T& at(size_t i) const { return m_attributes[i]; }
 
     size_t size() const { return m_attributes.size(); }
     std::map<size_t, T> m_rollback_list;
     // experimenting with tbb, could be templated as well.
     tbb::concurrent_vector<T> m_attributes;
+    bool recording = false;
 };
 } // namespace wmtk

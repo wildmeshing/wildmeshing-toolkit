@@ -34,11 +34,9 @@ bool Edge2d::EdgeOperations2d::collapse_after(const TriMesh::Tuple& t)
 {
     const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
     auto vid = t.vid();
-    auto old_p = vertex_attrs->m_attributes[vid].pos;
     vertex_attrs->m_attributes[vid].pos = p;
-
+    
     if (invariants(get_one_ring_tris_for_vertex(t))) return true;
-    vertex_attrs->m_attributes[vid].pos = old_p;
     return false;
 }
 
@@ -46,11 +44,9 @@ bool Edge2d::EdgeOperations2d::split_after(const TriMesh::Tuple& t)
 {
     const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
     auto vid = t.vid();
-    auto old_p = vertex_attrs->m_attributes[vid].pos;
     vertex_attrs->m_attributes[vid].pos = p;
 
     if (invariants(get_one_ring_tris_for_vertex(t))) return true;
-    vertex_attrs->m_attributes[vid].pos = old_p;
     return false;
 }
 

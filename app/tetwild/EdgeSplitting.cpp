@@ -77,8 +77,6 @@ bool tetwild::TetWild::split_after(const Tuple& loc)
     } else
         vertex_attrs->m_attributes[v_id].m_pos = to_rational(vertex_attrs->m_attributes[v_id].m_posf);
 
-    if (!tetrahedron_invariant(locs)) return false;
-  
     /// update quality
     for (auto& loc : locs) {
         tet_attrs->m_attributes[loc.tid(*this)].m_qualities = get_quality(loc);
