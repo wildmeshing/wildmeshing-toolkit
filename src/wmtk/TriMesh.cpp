@@ -1,9 +1,9 @@
 #include <wmtk/TriMesh.h>
 
+#include <wmtk/AttributeCollection.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
 #include "wmtk/utils/VectorUtils.h"
-#include <wmtk/AttributeCollection.hpp>
 using namespace wmtk;
 
 
@@ -188,6 +188,26 @@ bool wmtk::TriMesh::check_mesh_connectivity_validity() const
     return true;
 }
 
+auto start_protect_attributes = [](auto& m) {
+    m.vertex_attrs->begin_protect();
+    m.edge_attrs->begin_protect();
+    m.face_attrs->begin_protect();
+};
+
+auto release_protect_attributes = [](auto& m) {
+    m.vertex_attrs->end_protect();
+    m.edge_attrs->end_protect();
+    m.face_attrs->end_protect();
+};
+
+auto rollback_protected_attributes = [](auto& m) {
+    m.vertex_attrs->rollback();
+    m.edge_attrs->rollback();
+    m.face_attrs->rollback();
+};
+
+
+
 bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
 {
     if (!split_before(t)) return false;
@@ -301,7 +321,10 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
     assert(new_t.is_valid(*this));
 
     // roll back if not successful
-    if (!split_after(new_t)) {
+    new_tris = get_one_ring_tris_for_vertex(new_t);
+    start_protect_attributes(*this);
+    if (!split_after(new_t) || !invariants(new_tris)) {
+        // rollback topo
         // restore old v, t
         for (auto old_v : old_vertices) m_vertex_connectivity[old_v.first] = old_v.second;
         for (auto old_t : old_tris) m_tri_connectivity[old_t.first] = old_t.second;
@@ -310,10 +333,13 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
         m_vertex_connectivity[new_vid].m_is_removed = true;
         m_tri_connectivity[new_fid1].m_is_removed = true;
         if (new_fid2.has_value()) m_tri_connectivity[new_fid2.value()].m_is_removed = true;
+
+        // rollback data
+        rollback_protected_attributes(*this);
         return false;
     }
+    release_protect_attributes(*this);
 
-    new_tris = get_one_ring_tris_for_vertex(new_t);
     return true;
 }
 
@@ -427,7 +453,10 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
     int j = m_tri_connectivity[gfid].find(new_vid);
     auto new_t = Tuple(new_vid, (j + 2) % 3, gfid, *this);
     assert(new_t.is_valid(*this));
-    if (!collapse_after(new_t)) {
+    new_tris = get_one_ring_tris_for_vertex(new_t);
+    
+    start_protect_attributes(*this);
+    if (!collapse_after(new_t) || !invariants(new_tris)) {
         // if call back check failed roll back
         // restore the changes for connected triangles and vertices
         // resotre the version-number
@@ -454,11 +483,12 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
             m_tri_connectivity[fid].m_is_removed = false;
         }
 
+        rollback_protected_attributes(*this);
         // by the end the new_t and old t both exist and both valid
         return false;
     }
+    release_protect_attributes(*this);
 
-    new_tris = get_one_ring_tris_for_vertex(new_t);
     return true;
 }
 
@@ -525,14 +555,17 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
     assert(new_t.switch_vertex(*this).vid() != vid1);
     assert(new_t.switch_vertex(*this).vid() != vid2);
     assert(new_t.is_valid(*this));
-    if (!swap_after(new_t)) {
+    new_tris = {new_t, new_t.switch_face(*this).value()};
+    start_protect_attributes(*this);
+    if (!swap_after(new_t) || !invariants(new_tris)) {
         // restore the vertex and faces
         for (auto old_v : old_vertices) m_vertex_connectivity[old_v.first] = old_v.second;
         for (auto old_tri : old_tris) m_tri_connectivity[old_tri.first] = old_tri.second;
+        rollback_protected_attributes(*this);
         return false;
     }
+    release_protect_attributes(*this);
 
-    new_tris = {new_t, new_t.switch_face(*this).value()};
     return true;
 }
 

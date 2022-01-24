@@ -236,6 +236,7 @@ private:
     size_t get_next_empty_slot_v();
 
 protected:
+    virtual bool invariants(const std::vector<Tuple>&) {return true;}
     virtual bool split_before(const Tuple& t) { return true; }
     virtual bool split_after(const Tuple& t) { return true; }
 

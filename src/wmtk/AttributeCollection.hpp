@@ -21,6 +21,8 @@ public:
     virtual void resize(size_t){};
     virtual void resize(){};
     virtual void rollback(){};
+    virtual void begin_protect(){};
+    virtual void end_protect(){};
 };
 
 
@@ -47,6 +49,10 @@ struct AttributeCollection : public AbstractAttributeContainer
         for (auto& [i, v] : m_rollback_list) {
             m_attributes[i] = std::move(v);
         }
+        m_rollback_list.clear();
+    }
+
+    void end_protect() override {
         m_rollback_list.clear();
     }
 

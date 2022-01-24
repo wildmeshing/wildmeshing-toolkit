@@ -89,7 +89,7 @@ public:
         position_cache.local().v2p = vertex_attrs->m_attributes[t.switch_vertex(*this).vid()].pos;
     }
 
-    bool invariants(const std::vector<Tuple>& new_tris)
+    bool invariants(const std::vector<Tuple>& new_tris) override
     {
         if (m_has_envelope) {
             for (auto& t : new_tris) {
