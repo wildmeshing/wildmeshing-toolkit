@@ -149,7 +149,7 @@ void tetwild::TetWild::construct_background_mesh(const InputSurface& input_surfa
     }
     // todo: track bbox
 
-    output_mesh("delaunay.msh");
+//    output_mesh("delaunay.msh");
 }
 
 void tetwild::TetWild::match_insertion_faces(
@@ -745,6 +745,15 @@ void tetwild::TetWild::setup_attributes()
                 }
                 //
                 inside_fid = input_fid;
+
+                //fortest
+                bool is_out = m_envelope.is_outside(
+                    {{m_vertex_attribute[vids[0]].m_posf,
+                      m_vertex_attribute[vids[1]].m_posf,
+                      m_vertex_attribute[vids[2]].m_posf}});
+                assert(!is_out);
+                //fortest
+
                 break;
             }
         }
@@ -798,6 +807,11 @@ void tetwild::TetWild::setup_attributes()
         if (round(v)) cnt_round++;
     }
     wmtk::logger().info("cnt_round {}/{}", cnt_round, m_vertex_attribute.size());
+
+    //// init qualities
+    for (size_t i = 0; i < m_tet_attribute.size(); i++) {
+        m_tet_attribute[i].m_qualities = get_quality(tuple_from_tet(i));
+    }
 
     check_mesh_connectivity_validity();
     output_mesh("triangle_insertion.msh");

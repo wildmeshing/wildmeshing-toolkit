@@ -274,3 +274,53 @@ bool tetwild::TetWild::is_edge_on_surface(const Tuple& loc)
 void tetwild::TetWild::adjust_sizing_field(){
     //todo
 }
+
+void tetwild::TetWild::check_attributes()
+{
+    using std::cout;
+    using std::endl;
+
+    for (auto& f : get_faces()) {
+        auto fid = f.fid(*this);
+        auto vs = get_face_vertices(f);
+
+        if(m_face_attribute[fid].m_is_surface_fs) {
+            if(!(
+                m_vertex_attribute[vs[0].vid(*this)].m_is_on_surface &&
+                m_vertex_attribute[vs[1].vid(*this)].m_is_on_surface &&
+                m_vertex_attribute[vs[2].vid(*this)].m_is_on_surface))
+                cout<<"surface track wrong"<<endl;
+            bool is_out = m_envelope.is_outside(
+                {{m_vertex_attribute[vs[0].vid(*this)].m_posf,
+                  m_vertex_attribute[vs[1].vid(*this)].m_posf,
+                  m_vertex_attribute[vs[2].vid(*this)].m_posf}});
+            if(is_out)
+                cout<<"is_out f "<<vs[0].vid(*this)<<" "
+                     <<vs[1].vid(*this)<<" "
+                     <<vs[2].vid(*this)<<" "<<endl;
+        }
+        if(m_face_attribute[fid].m_is_bbox_fs>=0){
+           if(!(
+                !m_vertex_attribute[vs[0].vid(*this)].on_bbox_faces.empty() &&
+                !m_vertex_attribute[vs[1].vid(*this)].on_bbox_faces.empty() &&
+                !m_vertex_attribute[vs[2].vid(*this)].on_bbox_faces.empty()))
+           cout<<"bbox track wrong"<<endl;
+        }
+    }
+
+    for(auto& v: get_vertices()){
+        size_t i = v.vid(*this);
+        if(m_vertex_attribute[i].m_is_on_surface) {
+            bool is_out = m_envelope.is_outside(m_vertex_attribute[i].m_posf);
+            if(is_out)
+                cout<<"is_out v"<<endl;
+        }
+
+        if(m_vertex_attribute[i].m_is_rounded){
+            if(m_vertex_attribute[i].m_pos[0]!=m_vertex_attribute[i].m_posf[0]
+                || m_vertex_attribute[i].m_pos[1]!=m_vertex_attribute[i].m_posf[1]
+                || m_vertex_attribute[i].m_pos[2]!=m_vertex_attribute[i].m_posf[2])
+                cout<<"rounding error"<<endl;
+        }
+    }
+}

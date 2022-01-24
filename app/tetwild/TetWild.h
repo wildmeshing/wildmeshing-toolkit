@@ -26,7 +26,7 @@ public:
     bool m_is_rounded = false;
 
     bool m_is_on_surface = false;
-    bool m_is_on_boundary = false;
+//    bool m_is_on_boundary = false;
     std::vector<int> on_bbox_faces;
     bool m_is_outside;
 
@@ -198,7 +198,8 @@ public:
         size_t v2_id;
         bool is_edge_on_surface = false;
 
-        std::vector<std::pair<size_t, std::array<size_t, 3>>> changed_faces;
+        std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
+//        std::vector<std::pair<size_t, std::array<size_t, 3>>> changed_faces;
     };
     tbb::enumerable_thread_specific<SplitInfoCache> split_cache;
 
@@ -208,8 +209,10 @@ public:
         size_t v2_id;
         double max_energy;
         double edge_length;
+        bool is_limit_length;
 
         std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
+        std::vector<std::array<size_t, 3>> surface_faces;
 //        std::vector<std::pair<size_t, std::array<size_t, 3>>> changed_faces;
         std::vector<size_t> changed_tids;
     };
@@ -219,7 +222,7 @@ public:
     struct SwapInfoCache
     {
         double max_energy;
-         std::map<std::array<size_t, 3>, size_t> changed_faces;
+        std::map<std::array<size_t, 3>, size_t> changed_faces;
     };
     tbb::enumerable_thread_specific<SwapInfoCache> edgeswap_cache, faceswap_cache;
 
@@ -246,7 +249,7 @@ public:
     bool smooth_before(const Tuple& t) override;
     bool smooth_after(const Tuple& t) override;
 
-    void collapse_all_edges();
+    void collapse_all_edges(bool is_limit_length = true);
     bool collapse_before(const Tuple& t) override;
     bool collapse_after(const Tuple& t) override;
 
@@ -265,6 +268,8 @@ public:
     bool is_edge_on_surface(const Tuple& loc);
     //
     void adjust_sizing_field();
+
+    void check_attributes();
 
     std::vector<std::array<size_t, 3>> get_faces_by_condition(
         std::function<bool(const FaceAttributes&)> cond);

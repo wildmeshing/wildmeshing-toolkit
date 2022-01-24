@@ -61,13 +61,15 @@ bool tetwild::TetWild::split_before(const Tuple& loc0)
     split_cache.local().is_edge_on_surface = is_edge_on_surface(loc0);
 
     /// save face track info
-    auto comp = [](const std::pair<size_t, std::array<size_t, 3>>& v1,
-                   const std::pair<size_t, std::array<size_t, 3>>& v2) {
-        return v1.first < v2.first;
+    auto comp = [](const std::pair<FaceAttributes, std::array<size_t, 3>>& v1,
+                   const std::pair<FaceAttributes, std::array<size_t, 3>>& v2) {
+//        return v1.first < v2.first;
+        return v1.second < v2.second;
     };
-    auto is_equal = [](const std::pair<size_t, std::array<size_t, 3>>& v1,
-                       const std::pair<size_t, std::array<size_t, 3>>& v2) {
-        return v1.first == v2.first;
+    auto is_equal = [](const std::pair<FaceAttributes, std::array<size_t, 3>>& v1,
+                       const std::pair<FaceAttributes, std::array<size_t, 3>>& v2) {
+//        return v1.first == v2.first;
+        return v1.second == v2.second;
     };
     //
 //    auto tets = get_one_ring_tets_for_vertex(loc0);
@@ -100,11 +102,14 @@ bool tetwild::TetWild::split_before(const Tuple& loc0)
                 vs[(j + 2) % 4].vid(*this),
                 vs[(j + 3) % 4].vid(*this),
             }};//todo: speedup
+            std::sort(f_vids.begin(), f_vids.end());
             auto [_, global_fid] = tuple_from_face(f_vids);
-            split_cache.local().changed_faces.push_back(std::make_pair(global_fid, f_vids));
+            split_cache.local().changed_faces.push_back(
+                std::make_pair(m_face_attribute[global_fid], f_vids));
+//            split_cache.local().changed_faces.push_back(std::make_pair(global_fid, f_vids));
         }
-        wmtk::vector_unique(split_cache.local().changed_faces, comp, is_equal);
     }
+    wmtk::vector_unique(split_cache.local().changed_faces, comp, is_equal);
 
     return true;
 }
@@ -161,13 +166,14 @@ bool tetwild::TetWild::split_after(const Tuple& loc)
 
     /// update face attribute
     // add new and erase old
-    std::map<size_t, FaceAttributes> map_tet_attrs;
+//    std::map<size_t, FaceAttributes> map_tet_attrs;
+//    for(auto& info: split_cache.local().changed_faces) {
+//        size_t old_fid = info.first;
+//        map_tet_attrs[old_fid] = m_face_attribute[old_fid];//todo: avoid copy
+//    }
     for(auto& info: split_cache.local().changed_faces) {
-        size_t old_fid = info.first;
-        map_tet_attrs[old_fid] = m_face_attribute[old_fid];//todo: avoid copy
-    }
-    for(auto& info: split_cache.local().changed_faces) {
-        size_t old_fid = info.first;
+//        size_t old_fid = info.first;
+        auto& f_attr = info.first;
         auto& old_vids = info.second;
         std::vector<int> j_vn;
         for (int j = 0; j < 3; j++) {
@@ -177,12 +183,15 @@ bool tetwild::TetWild::split_after(const Tuple& loc)
         }
         if (j_vn.size() == 1) {
             auto [_1, global_fid1] = tuple_from_face({{v1_id, v_id, old_vids[j_vn[0]]}});
-            m_face_attribute[global_fid1] = map_tet_attrs[old_fid];
+            m_face_attribute[global_fid1] = f_attr;
+//            m_face_attribute[global_fid1] = map_tet_attrs[old_fid];
             auto [_2, global_fid2] = tuple_from_face({{v2_id, v_id, old_vids[j_vn[0]]}});
-            m_face_attribute[global_fid2] = map_tet_attrs[old_fid];
+            m_face_attribute[global_fid2] = f_attr;
+//            m_face_attribute[global_fid2] = map_tet_attrs[old_fid];
         } else { // j_vn.size() == 2
             auto [_, global_fid] = tuple_from_face(old_vids);
-            m_face_attribute[global_fid] = map_tet_attrs[old_fid];
+            m_face_attribute[global_fid] = f_attr;
+//            m_face_attribute[global_fid] = map_tet_attrs[old_fid];
             //
             auto [_2, global_fid2] =
                 tuple_from_face({{old_vids[j_vn[0]], old_vids[j_vn[1]], v_id}});//todo: avoid dup comp
