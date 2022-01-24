@@ -1,8 +1,6 @@
 #include <catch2/catch.hpp>
 
 #include <igl/read_triangle_mesh.h>
-#include <spdlog/fmt/ostr.h>
-#include <spdlog/spdlog.h>
 #include <wmtk/TetMesh.h>
 
 #include <igl/doublearea.h>
@@ -43,7 +41,7 @@ auto stats = [](auto& har_tet) {
         for (auto i = 0; i < 4; i++) {
             auto v = local_tuples[i].vid(har_tet);
             for (auto j = 0; j < 3; j++) {
-                T[i * 3 + j] = har_tet.m_vertex_attribute[v][j];
+                T[i * 3 + j] = har_tet.vertex_attrs->m_attributes[v].pos[j];
             }
         }
         auto e = wmtk::harmonic_tet_energy(T);
@@ -106,8 +104,8 @@ TEST_CASE("harmonic-tet-swaps", "[harmtri][.slow]")
         "Finishing Energy E1 {} E0 {} V {} T {}",
         E1,
         E0,
-        har_tet.m_vertex_attribute.size(),
-        har_tet.m_tet_attribute.size());
+        har_tet.vertex_attrs->m_attributes.size(),
+        har_tet.tet_capacity());
     REQUIRE(E1 < E0);
 }
 

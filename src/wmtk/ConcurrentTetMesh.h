@@ -15,7 +15,7 @@ public:
         tbb::spin_mutex mutex;
 
     public:
-        bool trylock() {return mutex.try_lock(); }
+        bool trylock() { return mutex.try_lock(); }
 
         void unlock() { mutex.unlock(); }
     };
@@ -23,14 +23,34 @@ public:
 private:
     tbb::concurrent_vector<VertexMutex> m_vertex_mutex;
 
-    bool try_set_vertex_mutex(Tuple& v) { ZoneScoped; return m_vertex_mutex[v.vid(*this)].trylock(); }
-    bool try_set_vertex_mutex(size_t vid) { ZoneScoped; return m_vertex_mutex[vid].trylock(); }
+    bool try_set_vertex_mutex(Tuple& v)
+    {
+        ZoneScoped;
+        return m_vertex_mutex[v.vid(*this)].trylock();
+    }
+    bool try_set_vertex_mutex(size_t vid)
+    {
+        ZoneScoped;
+        return m_vertex_mutex[vid].trylock();
+    }
 
-    void unlock_vertex_mutex(Tuple& v) { ZoneScoped; m_vertex_mutex[v.vid(*this)].unlock(); }
-    void unlock_vertex_mutex(size_t vid) { ZoneScoped; m_vertex_mutex[vid].unlock(); }
+    void unlock_vertex_mutex(Tuple& v)
+    {
+        ZoneScoped;
+        m_vertex_mutex[v.vid(*this)].unlock();
+    }
+    void unlock_vertex_mutex(size_t vid)
+    {
+        ZoneScoped;
+        m_vertex_mutex[vid].unlock();
+    }
 
 protected:
-    void resize_vertex_attributes(size_t v) override { ZoneScoped; m_vertex_mutex.grow_to_at_least(v); }
+    void resize_vertex_mutex(size_t v) override
+    {
+        ZoneScoped;
+        m_vertex_mutex.grow_to_at_least(v);
+    }
 
 public:
     ConcurrentTetMesh() = default;
