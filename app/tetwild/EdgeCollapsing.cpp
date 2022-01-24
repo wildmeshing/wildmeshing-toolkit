@@ -117,7 +117,7 @@ bool tetwild::TetWild::collapse_before(const Tuple& loc) // input is an edge
 
     std::map<size_t, double> qs;
     for (auto& l : n1_locs) {
-        qs[l.tid(*this)] = m_tet_attribute[l.tid(*this)].m_qualities; // get_quality(l);
+        qs[l.tid(*this)] = m_tet_attribute[l.tid(*this)].m_quality; // get_quality(l);
     }
     for (auto& l : n12_locs) {
         qs.erase(l.tid(*this));
@@ -245,7 +245,7 @@ bool tetwild::TetWild::collapse_after(const Tuple& loc)
     //// update attrs
     // tet attr
     for(int i = 0; i < collapse_cache.local().changed_tids.size();i++){
-        m_tet_attribute[collapse_cache.local().changed_tids[i]].m_qualities = qs[i];
+        m_tet_attribute[collapse_cache.local().changed_tids[i]].m_quality = qs[i];
     }
     // vertex attr
     m_vertex_attribute[v2_id].m_is_on_surface =

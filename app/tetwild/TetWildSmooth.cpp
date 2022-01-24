@@ -100,7 +100,7 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
 
     for (auto& loc : locs) {
         auto t_id = loc.tid(*this);
-        m_tet_attribute[t_id].m_qualities = get_quality(loc);
+        m_tet_attribute[t_id].m_quality = get_quality(loc);
     }
     return true;
 }

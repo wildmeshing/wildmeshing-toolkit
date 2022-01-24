@@ -811,7 +811,7 @@ void tetwild::TetWild::setup_attributes()
 
     //// init qualities
     for (size_t i = 0; i < m_tet_attribute.size(); i++) {
-        m_tet_attribute[i].m_qualities = get_quality(tuple_from_tet(i));
+        m_tet_attribute[i].m_quality = get_quality(tuple_from_tet(i));
     }
 
     check_mesh_connectivity_validity();

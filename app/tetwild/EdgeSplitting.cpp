@@ -154,7 +154,7 @@ bool tetwild::TetWild::split_after(const Tuple& loc)
 
     /// update quality
     for (auto& loc : locs) {
-        m_tet_attribute[loc.tid(*this)].m_qualities = get_quality(loc);
+        m_tet_attribute[loc.tid(*this)].m_quality = get_quality(loc);
     }
 
     /// update vertex attribute

@@ -31,8 +31,8 @@ public:
     std::vector<int> on_bbox_faces;
     bool m_is_outside;
 
-    Scalar m_sizing_scalars;
-    Scalar m_scalars;
+    Scalar m_sizing_scalar;
+    Scalar m_scalar;
     bool m_is_freezed;
 };
 
@@ -70,8 +70,8 @@ public:
 class TetAttributes
 {
 public:
-    Scalar m_qualities;
-    Scalar m_scalars;
+    Scalar m_quality;
+    Scalar m_scalar;
     bool m_is_outside;
 };
 
@@ -259,6 +259,9 @@ public:
     bool is_edge_on_surface(const Tuple& loc);
     //
     void adjust_sizing_field();
+    void mesh_improvement(int max_its = 80);
+    std::tuple<double, double> local_operations(const std::array<int, 4>& ops, bool collapse_limite_length = true);
+    std::tuple<double, double> get_max_avg_energy();
 
     void check_attributes();
 

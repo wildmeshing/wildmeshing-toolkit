@@ -17,6 +17,8 @@ struct Parameters
     double splitting_l2 = -1.; // the lower bound length (squared) for edge split
     double collapsing_l2 = std::numeric_limits<double>::max(); // the upper bound length (squared) for edge collapse
 
+    double stop_energy = 10;
+
     void init(const Vector3d& min_, const Vector3d& max_)
     {
         min = min_;

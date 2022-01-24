@@ -10,6 +10,109 @@
 #include <igl/predicates/predicates.h>
 #include <spdlog/fmt/ostr.h>
 
+void tetwild::TetWild::mesh_improvement(int max_its)
+{
+    ////preprocessing
+    wmtk::logger().info("====it pre====");
+    local_operations({{0, 1, 0, 0}}, false);
+
+    ////operation loops
+    for (int it = 0; it < max_its; it++) {
+        ///ops
+        wmtk::logger().info("====it {}====", it);
+        auto [max_energy, avg_energy] = local_operations({{1, 2, 1, 1}});
+
+        ///energy check
+        if (max_energy < m_params.stop_energy) break;
+
+        ///sizing field
+        if (it > 0) { // todo
+        }
+    }
+
+    const auto& vs = get_vertices();
+    for(auto& v: vs)
+        m_vertex_attribute[v.vid(*this)].m_scalar = 1;
+    wmtk::logger().info("====it post====");
+    local_operations({{0, 1, 0, 0}});
+
+    ////winding number
+    // todo
+}
+
+#include <igl/Timer.h>
+std::tuple<double, double> tetwild::TetWild::local_operations(const std::array<int, 4>& ops, bool collapse_limite_length)
+{
+    igl::Timer timer;
+
+    double max_energy;
+    double avg_energy;
+
+    for (int i = 0; i < ops.size(); i++) {
+        timer.start();
+        if (i == 0) {
+            for (int n = 0; n < ops[i]; n++) {
+                wmtk::logger().info("==splitting {}==", n);
+                split_all_edges();
+            }
+        } else if (i == 1) {
+            for (int n = 0; n < ops[i]; n++) {
+                wmtk::logger().info("==collapsing {}==", n);
+                collapse_all_edges();
+            }
+        } else if (i == 2) {
+            for (int n = 0; n < ops[i]; n++) {
+                wmtk::logger().info("==swapping {}==", n);
+                swap_all_edges();
+                swap_all_faces();
+            }
+        } else if (i == 3) {
+            for (int n = 0; n < ops[i]; n++) {
+                wmtk::logger().info("==smoothing {}==", n);
+                // todo vertex smoothing
+            }
+        }
+
+        wmtk::logger().info("#t {}", tet_size());
+        wmtk::logger().info("#v {}", vertex_size());
+        auto [max_energy, avg_energy] = get_max_avg_energy();
+        wmtk::logger().info("max energy = ", max_energy);
+        wmtk::logger().info("avg energy = ", avg_energy);
+        wmtk::logger().info("time = ", timer.getElapsedTime());
+    }
+
+    check_attributes(); // fortest
+
+    return std::make_tuple(max_energy, avg_energy);
+}
+
+std::tuple<double, double> tetwild::TetWild::get_max_avg_energy()
+{
+    double max_energy;
+    double avg_energy = 0;
+
+    const auto& tets = get_tets(); // todo: avoid copy!!!
+    for (size_t i = 0; i < tets.size(); i++) {
+        if (i == 0)
+            max_energy = m_tet_attribute[tets[i].tid(*this)].m_quality;
+        else {
+            if (m_tet_attribute[tets[i].tid(*this)].m_quality > max_energy)
+                max_energy = m_tet_attribute[tets[i].tid(*this)].m_quality;
+        }
+
+        avg_energy += m_tet_attribute[tets[i].tid(*this)].m_quality;
+    }
+
+    avg_energy /= tets.size();
+
+    return std::make_tuple(max_energy, avg_energy);
+}
+
+void tetwild::TetWild::adjust_sizing_field()
+{
+    // todo
+}
+
 bool tetwild::TetWild::is_inverted(const Tuple& loc) const
 {
     // Return a positive value if the point pd lies below the
@@ -193,11 +296,6 @@ bool tetwild::TetWild::is_edge_on_surface(const Tuple& loc)
     }
 
     return false;
-}
-
-void tetwild::TetWild::adjust_sizing_field()
-{
-    // todo
 }
 
 void tetwild::TetWild::check_attributes()
