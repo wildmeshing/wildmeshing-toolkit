@@ -26,7 +26,6 @@ bool Edge2d::EdgeOperations2d::swap_after(const TriMesh::Tuple& t)
     std::vector<TriMesh::Tuple> tris;
     tris.push_back(t);
     tris.push_back(t.switch_edge(*this));
-    if (invariants(tris)) return true;
     return false;
 }
 
@@ -36,7 +35,6 @@ bool Edge2d::EdgeOperations2d::collapse_after(const TriMesh::Tuple& t)
     auto vid = t.vid();
     vertex_attrs->m_attributes[vid].pos = p;
     
-    if (invariants(get_one_ring_tris_for_vertex(t))) return true;
     return false;
 }
 
@@ -46,7 +44,6 @@ bool Edge2d::EdgeOperations2d::split_after(const TriMesh::Tuple& t)
     auto vid = t.vid();
     vertex_attrs->m_attributes[vid].pos = p;
 
-    if (invariants(get_one_ring_tris_for_vertex(t))) return true;
     return false;
 }
 
