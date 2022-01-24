@@ -23,27 +23,26 @@ public:
         size_t partition_id = 0;
     };
     using VertAttCol = wmtk::AttributeCollection<VertexAttributes>;
-    std::shared_ptr<VertAttCol> vertex_attrs;
+    VertAttCol vertex_attrs;
 
     HarmonicTet(
         const std::vector<Eigen::Vector3d>& _vertex_attribute,
         const std::vector<std::array<size_t, 4>>& tets,
         int num_threads = 1)
     {
-        vertex_attrs = std::make_shared<VertAttCol>();
-        TetMesh::vertex_attrs = vertex_attrs;
-
-        vertex_attrs->resize(_vertex_attribute.size());
+        p_vertex_attrs = &vertex_attrs;
+        
+        vertex_attrs.resize(_vertex_attribute.size());
 
         for (auto i = 0; i < _vertex_attribute.size(); i++)
-            vertex_attrs->m_attributes[i].pos = _vertex_attribute[i];
+            vertex_attrs[i].pos = _vertex_attribute[i];
 
         NUM_THREADS = num_threads;
         init(_vertex_attribute.size(), tets);
 
         m_vertex_partition_id = partition_TetMesh(*this, NUM_THREADS);
         for (auto i = 0; i < _vertex_attribute.size(); i++)
-            vertex_attrs->m_attributes[i].partition_id = m_vertex_partition_id[i];
+            vertex_attrs[i].partition_id = m_vertex_partition_id[i];
     }
     HarmonicTet(){};
     ~HarmonicTet(){};

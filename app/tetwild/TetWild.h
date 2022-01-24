@@ -70,17 +70,10 @@ public:
         : m_params(_m_params)
         , m_envelope(_m_envelope)
     {
-        vertex_attrs = std::make_shared<VertAttCol>();
-        TetMesh::vertex_attrs = vertex_attrs;
-
-        edge_attrs = std::make_shared<EdgeAttCol>();
-        TetMesh::edge_attrs = edge_attrs;
-
-        face_attrs = std::make_shared<FaceAttCol>();
-        TetMesh::face_attrs = face_attrs;
-
-        tet_attrs = std::make_shared<TetAttCol>();
-        TetMesh::tet_attrs = tet_attrs;
+        p_vertex_attrs = &vertex_attrs;
+        p_edge_attrs = &edge_attrs;
+        p_face_attrs = &face_attrs;
+        p_tet_attrs = &tet_attrs;
     }
 
     ~TetWild() {}
@@ -88,26 +81,26 @@ public:
     using EdgeAttCol = wmtk::AttributeCollection<EdgeAttributes>;
     using FaceAttCol = wmtk::AttributeCollection<FaceAttributes>;
     using TetAttCol = wmtk::AttributeCollection<TetAttributes>;
-    std::shared_ptr<VertAttCol> vertex_attrs;
-    std::shared_ptr<EdgeAttCol> edge_attrs;
-    std::shared_ptr<FaceAttCol> face_attrs;
-    std::shared_ptr<TetAttCol> tet_attrs;
+    VertAttCol vertex_attrs;
+    EdgeAttCol edge_attrs;
+    FaceAttCol face_attrs;
+    TetAttCol tet_attrs;
 
     void create_mesh_attributes(
         const std::vector<VertexAttributes>& _vertex_attribute,
         const std::vector<TetAttributes>& _tet_attribute)
     {
         auto n_tet = _tet_attribute.size();
-        vertex_attrs->resize(_vertex_attribute.size());
-        edge_attrs->resize(6 * n_tet);
-        face_attrs->resize(4 * n_tet);
-        tet_attrs->resize(n_tet);
+        vertex_attrs.resize(_vertex_attribute.size());
+        edge_attrs.resize(6 * n_tet);
+        face_attrs.resize(4 * n_tet);
+        tet_attrs.resize(n_tet);
 
         for (auto i = 0; i < _vertex_attribute.size(); i++)
-            vertex_attrs->m_attributes[i] = _vertex_attribute[i];
-        tet_attrs->m_attributes = tbb::concurrent_vector<TetAttributes>(_tet_attribute.size());
+            vertex_attrs[i] = _vertex_attribute[i];
+        tet_attrs.m_attributes = tbb::concurrent_vector<TetAttributes>(_tet_attribute.size());
         for (auto i = 0; i < _tet_attribute.size(); i++)
-            tet_attrs->m_attributes[i] = _tet_attribute[i];
+            tet_attrs[i] = _tet_attribute[i];
 
         m_vertex_partition_id = partition_TetMesh(*this, NUM_THREADS);
     }
