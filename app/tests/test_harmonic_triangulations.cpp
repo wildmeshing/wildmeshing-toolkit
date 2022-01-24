@@ -148,7 +148,7 @@ TEST_CASE("parallel_harmonic-tet-swaps", "[parallel_harmtri][.slow]")
     }
 }
 
-TEST_CASE("gaussian-harmonic")
+TEST_CASE("gaussian-harmonic", "[.slow]")
 {
     std::mt19937 gen;
     std::normal_distribution<> dist;
@@ -172,7 +172,8 @@ TEST_CASE("gaussian-harmonic")
     igl::Timer timer;
     double time;
 
-    for (int i = 1; i <= 1; i *= 2) {
+    // for (int i = 1; i <= 1; i *= 2) {
+    for (int i = 32; i <= 32; i *= 2) {
         wmtk::logger().info("Number of Threads: {}", i);
         auto har_tet = harmonic_tet::HarmonicTet(vec_attrs, tets, i);
         auto [E0, cnt0] = stats(har_tet);
@@ -196,7 +197,7 @@ TEST_CASE("gaussian-harmonic-single")
     auto vec_attrs = std::vector<Eigen::Vector3d>();
     auto tets = std::vector<std::array<size_t, 4>>();
     {
-        std::vector<wmtk::Point3D> points(100000);
+        std::vector<wmtk::Point3D> points(1000);
         for (auto i = 0; i < points.size(); i++) {
             for (auto j = 0; j < 3; j++) points[i][j] = dist(gen);
         }
