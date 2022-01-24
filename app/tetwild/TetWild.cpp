@@ -100,19 +100,6 @@ double tetwild::TetWild::get_quality(const Tuple& loc) const
 }
 
 
-bool tetwild::TetWild::vertex_invariant(const Tuple& t)
-{
-    int v_id = t.vid(*this);
-
-    // check rounded
-
-    // check surface
-    if (vertex_attrs->m_attributes[v_id].m_is_on_surface) {
-    }
-
-    return true;
-}
-
 bool tetwild::TetWild::invariants(const std::vector<Tuple>& tets)
 {
     // check inversion
