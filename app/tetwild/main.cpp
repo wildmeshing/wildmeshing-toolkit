@@ -92,17 +92,17 @@ int main(int argc, char** argv)
 //    mesh.check_attributes();
 //    pausee();
 
-    //    mesh.collapse_all_edges();
-    //    wmtk::logger().info("#t {}", mesh.tet_size());
-    //    wmtk::logger().info("#v {}", mesh.vertex_size());
-    //    output_faces();
-    //    pausee();
+        mesh.collapse_all_edges();
+        wmtk::logger().info("#t {}", mesh.tet_size());
+        wmtk::logger().info("#v {}", mesh.vertex_size());
+//        output_faces();
+//        pausee();
 
-    //    mesh.split_all_edges();
-    //    wmtk::logger().info("#t {}", mesh.tet_size());
-    //    wmtk::logger().info("#v {}", mesh.vertex_size());
-    //    output_faces();
-    //    pausee();
+        mesh.split_all_edges();
+        wmtk::logger().info("#t {}", mesh.tet_size());
+        wmtk::logger().info("#v {}", mesh.vertex_size());
+//        output_faces();
+//        pausee();
 
     mesh.collapse_all_edges(false);
     wmtk::logger().info("#t {}", mesh.tet_size());

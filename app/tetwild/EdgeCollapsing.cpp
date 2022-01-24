@@ -117,7 +117,7 @@ bool tetwild::TetWild::collapse_before(const Tuple& loc) // input is an edge
 
     std::map<size_t, double> qs;
     for (auto& l : n1_locs) {
-        qs[l.tid(*this)] = m_tet_attribute[l.tid(*this)].m_qualities;//get_quality(l);
+        qs[l.tid(*this)] = m_tet_attribute[l.tid(*this)].m_qualities; // get_quality(l);
     }
     for (auto& l : n12_locs) {
         qs.erase(l.tid(*this));
@@ -156,22 +156,56 @@ bool tetwild::TetWild::collapse_before(const Tuple& loc) // input is an edge
         FaceAttributes f_attr = m_face_attribute[global_fid1];
         f_attr.merge(m_face_attribute[global_fid2]);
         collapse_cache.local().changed_faces.push_back(std::make_pair(f_attr, f_vids));
-        if(m_face_attribute[global_fid1].m_is_surface_fs)
-            collapse_cache.local().surface_faces.push_back({{v2_id, f_vids[1], f_vids[2]}});
-//        wmtk::vector_unique(collapse_cache.local().changed_faces, comp, is_equal);
+
+        //        wmtk::vector_unique(collapse_cache.local().changed_faces, comp, is_equal);
     }
 
-    for(size_t tid: collapse_cache.local().changed_tids){//fortest
+    std::vector<std::array<size_t, 3>> fs;
+    for (auto& t : n1_locs) {
+        auto vs = oriented_tet_vertices(t);
+        bool find_v2 = false;
+        int j_v1 = -1;
+        for (int j = 0; j < 4; j++) {
+            if (vs[j].vid(*this) == v2_id) {
+                find_v2 = true;
+                break;
+            }
+            if (vs[j].vid(*this) == v1_id) j_v1 = j;
+        }
+        if (find_v2) continue;
+
+        for (int k = 0; k < 3; k++) {
+            std::array<size_t, 3> f = {
+                {v1_id,
+                 vs[(j_v1 + 1 + k) % 4].vid(*this),
+                 vs[(j_v1 + 1 + (k + 1) % 3) % 4].vid(*this)}};
+            std::sort(f.begin(), f.end());
+            fs.push_back(f);
+        }
+    }
+    wmtk::vector_unique(fs);
+
+    for (auto& f : fs) {
+        auto [_1, global_fid1] = tuple_from_face(f);
+        if (m_face_attribute[global_fid1].m_is_surface_fs) {
+            int j = std::find(f.begin(), f.end(), v1_id)-f.begin();
+            f[j] = v2_id;
+            collapse_cache.local().surface_faces.push_back(f);
+        }
+    }
+
+    for (size_t tid : collapse_cache.local().changed_tids) { // fortest
         assert(!is_inverted(tuple_from_tet(tid)));
     }
 
-//    if(!collapse_cache.local().surface_faces.empty()) {
-//        for (auto& vids : collapse_cache.local().surface_faces)
-//            cout<<vids[0]<<" "<<vids[1]<<" "<<vids[2]<<" "<<endl;
-//        cout << collapse_cache.local().surface_faces.size() << endl;
-//        cout << n12_locs.size() << endl;
-//        pausee();
-//    }
+    //    if(!collapse_cache.local().surface_faces.empty()) {
+    //        for (auto& vids : collapse_cache.local().surface_faces)
+    //            cout<<vids[0]<<" "<<vids[1]<<" "<<vids[2]<<" "<<endl;
+    //        cout << collapse_cache.local().surface_faces.size() << endl;
+    //        cout << n12_locs.size() << endl;
+    //        pausee();
+    //    }
+
 
     return true;
 }
@@ -184,15 +218,11 @@ bool tetwild::TetWild::collapse_after(const Tuple& loc)
     size_t v1_id = collapse_cache.local().v1_id;
     size_t v2_id = collapse_cache.local().v2_id;
 
-    //// checks
+        //// checks
     // check inversion
     for(size_t tid: collapse_cache.local().changed_tids){
         if (is_inverted(tuple_from_tet(tid))) {
 //            cout<<"I"<<endl;
-//            cout<<v1_id<<" "<<v2_id<<": "<<collapse_cache.local().edge_length<<endl;
-//            for(size_t tid: collapse_cache.local().changed_tids)
-//                cout<<is_inverted(tuple_from_tet(tid))<<endl;
-//            pausee();
             return false;
         }
     }
@@ -243,15 +273,6 @@ bool tetwild::TetWild::collapse_after(const Tuple& loc)
     }
 
     cnt_collapse++;
-
-//    if(!collapse_cache.local().surface_faces.empty()){
-//        cout<<v1_id<<" "<<v2_id<<endl;
-//        check_attributes();
-//        for (auto& vids : collapse_cache.local().surface_faces)
-//            cout<<vids[0]<<" "<<vids[0]<<" "<<vids[0]<<" "<<endl;
-//        cout<<"collapse_cache.local().surface_faces.size "<<collapse_cache.local().surface_faces.size()<<endl;
-//        pausee();
-//    }
 
     return true;
 }
