@@ -26,7 +26,7 @@ bool Edge2d::EdgeOperations2d::swap_after(const TriMesh::Tuple& t)
     std::vector<TriMesh::Tuple> tris;
     tris.push_back(t);
     tris.push_back(t.switch_edge(*this));
-    return false;
+    return true;
 }
 
 bool Edge2d::EdgeOperations2d::collapse_after(const TriMesh::Tuple& t)
@@ -35,7 +35,7 @@ bool Edge2d::EdgeOperations2d::collapse_after(const TriMesh::Tuple& t)
     auto vid = t.vid();
     vertex_attrs->m_attributes[vid].pos = p;
     
-    return false;
+    return true;
 }
 
 bool Edge2d::EdgeOperations2d::split_after(const TriMesh::Tuple& t)
@@ -44,7 +44,7 @@ bool Edge2d::EdgeOperations2d::split_after(const TriMesh::Tuple& t)
     auto vid = t.vid();
     vertex_attrs->m_attributes[vid].pos = p;
 
-    return false;
+    return true;
 }
 
 std::vector<TriMesh::Tuple> Edge2d::EdgeOperations2d::new_edges_after(
