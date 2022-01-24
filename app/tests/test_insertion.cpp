@@ -55,7 +55,7 @@ TEST_CASE("triangle-insertion", "[tetwild_operation]")
     Eigen::MatrixXd matV = Eigen::MatrixXd::Zero(mesh.vert_capacity(), 3);
     for (auto v : mesh.get_vertices()) {
         auto vid = v.vid(mesh);
-        matV.row(vid) = mesh.vertex_attrs->m_attributes[vid].m_posf;
+        matV.row(vid) = mesh.vertex_attrs[vid].m_posf;
     }
     Eigen::MatrixXi matF(outface.size(),3);
     for (auto i=0;i<outface.size(); i++) {

@@ -180,9 +180,9 @@ public:
 
     TriMesh()
     {
-        vertex_attrs.reset(new AbstractAttributeContainer());
-        edge_attrs.reset(new AbstractAttributeContainer());
-        face_attrs.reset(new AbstractAttributeContainer());
+        p_vertex_attrs = &vertex_attrs;
+        p_edge_attrs = &edge_attrs;
+        p_face_attrs = &face_attrs;
     }
     virtual ~TriMesh() {}
 
@@ -227,7 +227,8 @@ public:
     using vector = tbb::concurrent_vector<T>;
 
 public:
-    std::shared_ptr<AbstractAttributeContainer> vertex_attrs, edge_attrs, face_attrs;
+    AbstractAttributeContainer *p_vertex_attrs, *p_edge_attrs, *p_face_attrs;
+    AbstractAttributeContainer vertex_attrs, edge_attrs, face_attrs;
 
 private:
     vector<VertexConnectivity> m_vertex_connectivity;
@@ -349,23 +350,23 @@ public:
 private:
     void start_protect_attributes()
     {
-        vertex_attrs->begin_protect();
-        edge_attrs->begin_protect();
-        face_attrs->begin_protect();
+        p_vertex_attrs->begin_protect();
+        p_edge_attrs->begin_protect();
+        p_face_attrs->begin_protect();
     }
 
     void release_protect_attributes()
     {
-        vertex_attrs->end_protect();
-        edge_attrs->end_protect();
-        face_attrs->end_protect();
+        p_vertex_attrs->end_protect();
+        p_edge_attrs->end_protect();
+        p_face_attrs->end_protect();
     }
 
     void rollback_protected_attributes()
     {
-        vertex_attrs->rollback();
-        edge_attrs->rollback();
-        face_attrs->rollback();
+        p_vertex_attrs->rollback();
+        p_edge_attrs->rollback();
+        p_face_attrs->rollback();
     }
 };
 
