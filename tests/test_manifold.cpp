@@ -1,3 +1,4 @@
+#include <igl/read_triangle_mesh.h>
 #include <wmtk/TetMesh.h>
 #include <catch2/catch.hpp>
 
@@ -5,6 +6,7 @@
 #include "wmtk/utils/Logger.hpp"
 
 #include <Eigen/Core>
+#include <igl/is_edge_manifold.h>
 
 TEST_CASE("separate-manifold-patch", "[test_util]")
 {
@@ -25,4 +27,15 @@ TEST_CASE("separate-manifold-patch", "[test_util]")
     wmtk::separate_to_manifold(vertices, faces, out_v, out_f);
     REQUIRE(out_v.size() == 9);
     REQUIRE(out_f.size() == 3);
+}
+
+TEST_CASE("manifold-separate-test-37989", "[test_util]")
+{
+    std::string filename = WMT_DATA_DIR "/37989_sf.obj";
+    Eigen::MatrixXd V, outV;
+    Eigen::MatrixXi F, outF;
+    igl::read_triangle_mesh(filename, V,F);
+    REQUIRE_FALSE(igl::is_edge_manifold(F));
+    wmtk::resolve_nonmanifoldness(V,F);
+    REQUIRE(igl::is_edge_manifold(F));
 }
