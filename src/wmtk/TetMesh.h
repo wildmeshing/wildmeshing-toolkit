@@ -1,9 +1,12 @@
 #pragma once
 
 #include <wmtk/utils/VectorUtils.h>
+#include <wmtk/AttributeCollection.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 #include <tbb/concurrent_vector.h>
+
+#include <Tracy.hpp>
 
 #include <array>
 #include <cassert>
@@ -11,6 +14,7 @@
 #include <optional>
 #include <queue>
 #include <vector>
+
 
 namespace wmtk {
 class TetMesh
@@ -173,6 +177,7 @@ public:
 
         friend bool operator==(const VertexConnectivity& l, const VertexConnectivity& r)
         {
+            ZoneScoped;
             return std::tie(l.m_conn_tets, l.m_is_removed) ==
                    std::tie(r.m_conn_tets, r.m_is_removed); // keep the same order
         }
@@ -210,6 +215,7 @@ public:
 
         int find(size_t v_id) const
         {
+            ZoneScoped;
             for (int j = 0; j < 4; j++) {
                 if (v_id == m_indices[j]) return j;
             }
@@ -218,6 +224,7 @@ public:
 
         int find_local_edge(size_t v1_id, size_t v2_id) const
         {
+            ZoneScoped;
             std::array<int, 2> e;
             for (int j = 0; j < 4; j++) {
                 if (v1_id == m_indices[j])
@@ -234,6 +241,7 @@ public:
 
         int find_local_face(size_t v1_id, size_t v2_id, size_t v3_id) const
         {
+            ZoneScoped;
             std::array<int, 3> f;
             for (int j = 0; j < 4; j++) {
                 if (v1_id == m_indices[j])
@@ -252,6 +260,7 @@ public:
 
         friend bool operator==(const TetrahedronConnectivity& l, const TetrahedronConnectivity& r)
         {
+            ZoneScoped;
             return std::tie(l.m_indices, l.m_is_removed, l.hash) ==
                    std::tie(r.m_indices, r.m_is_removed, r.hash); // keep the same order
         }
@@ -259,8 +268,8 @@ public:
         void print_info() {}
     };
 
-    TetMesh() {}
-    virtual ~TetMesh() {}
+    TetMesh();
+    virtual ~TetMesh() = default;
 
     size_t vert_capacity() const { return m_vertex_connectivity.size(); }
     size_t tet_capacity() const { return m_tet_connectivity.size(); }
@@ -328,6 +337,10 @@ public:
     template <typename T>
     using vector = tbb::concurrent_vector<T>;
 
+public:
+    AbstractAttributeContainer* p_vertex_attrs, *p_edge_attrs, *p_face_attrs, *p_tet_attrs;
+    AbstractAttributeContainer vertex_attrs, edge_attrs, face_attrs, tet_attrs;
+
 private:
 
     // Stores the connectivity of the mesh
@@ -352,6 +365,7 @@ private:
         std::map<std::array<size_t, 3>, std::vector<std::array<size_t, 5>>>& new_face_vids);
 
 protected:
+    virtual bool invariants(const std::vector<Tuple>&) { return true; }
     virtual void add_tet_centroid(const Tuple& t) {}
 
     virtual void triangle_insertion_before(const std::vector<Tuple>& faces) {}
@@ -382,22 +396,7 @@ protected:
     virtual bool smooth_before(const Tuple& t) { return true; }
     virtual bool smooth_after(const Tuple& t) { return true; }
 
-    // Invariants that are called on all the new or modified elements after an operation is
-    // performed
-    virtual bool vertex_invariant(const Tuple& t) { return true; }
-    virtual bool edge_invariant(const Tuple& t) { return true; }
-    virtual bool face_invariant(const Tuple& t) { return true; }
-    virtual bool tetrahedron_invariant(const Tuple& t) { return true; }
-
-    virtual void resize_vertex_attributes(size_t v) {}
-    virtual void resize_edge_attributes(size_t e) {}
-    virtual void resize_face_attributes(size_t f) {}
-    virtual void resize_tet_attributes(size_t t) {}
-
-    virtual void move_face_attribute(size_t from, size_t to) {}
-    virtual void move_edge_attribute(size_t from, size_t to) {}
-    virtual void move_tet_attribute(size_t from, size_t to) {}
-    virtual void move_vertex_attribute(size_t from, size_t to) {}
+    virtual void resize_vertex_mutex(size_t v) {}
 
 public:
     /**
@@ -536,6 +535,29 @@ private:
         std::vector<size_t>& remove_id,
         std::vector<std::array<size_t, 4>>& new_tet_conn,
         std::vector<size_t>& allocate_id);
+    void start_protect_attributes()
+    {
+        p_vertex_attrs->begin_protect();
+        p_edge_attrs->begin_protect();
+        p_face_attrs->begin_protect();
+        p_tet_attrs->begin_protect();
+    }
+
+    void release_protect_attributes()
+    {
+        p_vertex_attrs->end_protect();
+        p_edge_attrs->end_protect();
+        p_face_attrs->end_protect();
+        p_tet_attrs->end_protect();
+    }
+
+    void rollback_protected_attributes()
+    {
+        p_vertex_attrs->rollback();
+        p_edge_attrs->rollback();
+        p_face_attrs->rollback();
+        p_tet_attrs->rollback();
+    }
 };
 
 } // namespace wmtk

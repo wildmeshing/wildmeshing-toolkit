@@ -34,7 +34,7 @@ TEST_CASE("edge_splitting", "[tetwild_operation]")
     tetwild.split_all_edges();
     REQUIRE(tetwild.check_mesh_connectivity_validity());
 
-    REQUIRE(tetwild.m_vertex_attribute.size() == 218);
+    REQUIRE(tetwild.vertex_attrs.m_attributes.size() == 218);
     tetwild.swap_all_edges();
     REQUIRE(tetwild.check_mesh_connectivity_validity());
     tetwild.swap_all_faces();
@@ -68,7 +68,7 @@ TEST_CASE("edge_collapsing", "[tetwild_operation]")
 
     tetwild.split_all_edges();
     REQUIRE(tetwild.check_mesh_connectivity_validity());
-    CHECK(tetwild.m_vertex_attribute.size() == 1375);
+    CHECK(tetwild.vertex_attrs.m_attributes.size() == 1375);
 
     tetwild.collapse_all_edges();
     REQUIRE(tetwild.check_mesh_connectivity_validity());
@@ -80,7 +80,7 @@ TEST_CASE("edge_collapsing", "[tetwild_operation]")
     auto n_verts_after = tetwild.get_vertices().size();
     REQUIRE(n_tet_after == 4141);
     REQUIRE(tetwild.tet_capacity() == n_tet_after);
-    REQUIRE(tetwild.m_tet_attribute.size() == n_tet_after);
+    REQUIRE(tetwild.tet_attrs.m_attributes.size() == n_tet_after);
     REQUIRE(tetwild.check_mesh_connectivity_validity());
     REQUIRE([&tetwild]() -> bool {
         for (auto& t : tetwild.get_tets()) {

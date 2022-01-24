@@ -135,34 +135,35 @@ bool tetwild::TetWild::split_after(const Tuple& loc)
     size_t v2_id = split_cache.local().v2_id;
 
     /// check inversion & rounding
-    m_vertex_attribute[v_id].m_posf =
-        (m_vertex_attribute[v1_id].m_posf + m_vertex_attribute[v2_id].m_posf) / 2;
-    m_vertex_attribute[v_id].m_is_rounded = true;
+    vertex_attrs[v_id].m_posf =
+        (vertex_attrs[v1_id].m_posf + vertex_attrs[v2_id].m_posf) / 2;
+    vertex_attrs[v_id].m_is_rounded = true;
+
     for (auto& loc : locs) {
         if (is_inverted(loc)) {
-            m_vertex_attribute[v_id].m_is_rounded = false;
+            vertex_attrs[v_id].m_is_rounded = false;
             break;
         }
     }
-    if (!m_vertex_attribute[v_id].m_is_rounded) {
-        m_vertex_attribute[v_id].m_pos =
-            (m_vertex_attribute[v1_id].m_pos + m_vertex_attribute[v2_id].m_pos) / 2;
-        m_vertex_attribute[v_id].m_posf = to_double(m_vertex_attribute[v_id].m_pos);
+    if (!vertex_attrs[v_id].m_is_rounded) {
+        vertex_attrs[v_id].m_pos =
+            (vertex_attrs[v1_id].m_pos + vertex_attrs[v2_id].m_pos) / 2;
+        vertex_attrs[v_id].m_posf = to_double(vertex_attrs[v_id].m_pos);
     } else
-        m_vertex_attribute[v_id].m_pos = to_rational(m_vertex_attribute[v_id].m_posf);
+        vertex_attrs[v_id].m_pos = to_rational(vertex_attrs[v_id].m_posf);
 
     /// update quality
     for (auto& loc : locs) {
-        m_tet_attribute[loc.tid(*this)].m_qualities = get_quality(loc);
+        tet_attrs[loc.tid(*this)].m_qualities = get_quality(loc);
     }
 
     /// update vertex attribute
     // bbox
-    m_vertex_attribute[v_id].on_bbox_faces = wmtk::set_intersection(
-        m_vertex_attribute[v1_id].on_bbox_faces,
-        m_vertex_attribute[v2_id].on_bbox_faces);
+    vertex_attrs[v_id].on_bbox_faces = wmtk::set_intersection(
+        vertex_attrs[v1_id].on_bbox_faces,
+        vertex_attrs[v2_id].on_bbox_faces);
     //surface
-    m_vertex_attribute[v_id].m_is_on_surface = split_cache.local().is_edge_on_surface;
+    vertex_attrs[v_id].m_is_on_surface = split_cache.local().is_edge_on_surface;
 
     /// update face attribute
     // add new and erase old

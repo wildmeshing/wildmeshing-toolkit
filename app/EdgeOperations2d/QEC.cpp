@@ -9,9 +9,9 @@
 Eigen::MatrixXd Edge2d::EdgeOperations2d::compute_Q_f(wmtk::TriMesh::Tuple& f_tuple)
 {
     auto conn_indices = oriented_tri_vertices(f_tuple);
-    Eigen::Vector3d A = m_vertex_positions[conn_indices[0].vid()];
-    Eigen::Vector3d B = m_vertex_positions[conn_indices[1].vid()];
-    Eigen::Vector3d C = m_vertex_positions[conn_indices[2].vid()];
+    Eigen::Vector3d A = vertex_attrs[conn_indices[0].vid()].pos;
+    Eigen::Vector3d B = vertex_attrs[conn_indices[1].vid()].pos;
+    Eigen::Vector3d C = vertex_attrs[conn_indices[2].vid()].pos;
 
     Eigen::Vector3d n = ((A - B).cross(C - B)).normalized();
     Eigen::Vector4d p;
@@ -36,7 +36,7 @@ Eigen::MatrixXd Edge2d::EdgeOperations2d::compute_Q_v(wmtk::TriMesh::Tuple& v_tu
 
 double Edge2d::EdgeOperations2d::compute_cost_for_v(wmtk::TriMesh::Tuple& v_tuple)
 {
-    Eigen::Vector3d v = m_vertex_positions[v_tuple.vid()];
+    Eigen::Vector3d v = vertex_attrs[v_tuple.vid()].pos;
     Eigen::MatrixXd Q = compute_Q_v(v_tuple);
     Eigen::Vector4d t(0.0, 0.0, 0.0, 1.0);
 

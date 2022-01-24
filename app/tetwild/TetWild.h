@@ -1,6 +1,7 @@
 #pragma once
 
 #include <wmtk/ConcurrentTetMesh.h>
+#include <wmtk/utils/PartitionMesh.h>
 #include "Parameters.h"
 #include "common.h"
 
@@ -85,56 +86,46 @@ public:
     TetWild(Parameters& _m_params, fastEnvelope::FastEnvelope& _m_envelope)
         : m_params(_m_params)
         , m_envelope(_m_envelope)
-    {}
+    {
+        p_vertex_attrs = &vertex_attrs;
+        p_edge_attrs = &edge_attrs;
+        p_face_attrs = &face_attrs;
+        p_tet_attrs = &tet_attrs;
+    }
 
     ~TetWild() {}
+    using VertAttCol = wmtk::AttributeCollection<VertexAttributes>;
+    using EdgeAttCol = wmtk::AttributeCollection<EdgeAttributes>;
+    using FaceAttCol = wmtk::AttributeCollection<FaceAttributes>;
+    using TetAttCol = wmtk::AttributeCollection<TetAttributes>;
+    VertAttCol vertex_attrs;
+    EdgeAttCol edge_attrs;
+    FaceAttCol face_attrs;
+    TetAttCol tet_attrs;
 
     void create_mesh_attributes(
         const std::vector<VertexAttributes>& _vertex_attribute,
         const std::vector<TetAttributes>& _tet_attribute)
     {
-        m_vertex_attribute = tbb::concurrent_vector<VertexAttributes>(_vertex_attribute.size());
+        auto n_tet = _tet_attribute.size();
+        vertex_attrs.resize(_vertex_attribute.size());
+        edge_attrs.resize(6 * n_tet);
+        face_attrs.resize(4 * n_tet);
+        tet_attrs.resize(n_tet);
+
         for (auto i = 0; i < _vertex_attribute.size(); i++)
-            m_vertex_attribute[i] = _vertex_attribute[i];
-        m_tet_attribute = tbb::concurrent_vector<TetAttributes>(_tet_attribute.size());
-        for (auto i = 0; i < _tet_attribute.size(); i++) m_tet_attribute[i] = _tet_attribute[i];
-        auto n_tet = m_tet_attribute.size();
-        resize_edge_attributes(6 * n_tet);
-        resize_face_attributes(4 * n_tet);
-        partition_TetMesh(*this, NUM_THREADS);
+            vertex_attrs[i] = _vertex_attribute[i];
+        tet_attrs.m_attributes = tbb::concurrent_vector<TetAttributes>(_tet_attribute.size());
+        for (auto i = 0; i < _tet_attribute.size(); i++)
+            tet_attrs[i] = _tet_attribute[i];
+
+        m_vertex_partition_id = partition_TetMesh(*this, NUM_THREADS);
     }
 
     ////// Attributes related
-    // Stores the attributes attached to simplices
-    tbb::concurrent_vector<VertexAttributes> m_vertex_attribute;
-    tbb::concurrent_vector<EdgeAttributes> m_edge_attribute;
-    tbb::concurrent_vector<FaceAttributes> m_face_attribute;
-    tbb::concurrent_vector<TetAttributes> m_tet_attribute;
     int NUM_THREADS = 1;
     tbb::concurrent_vector<size_t> m_vertex_partition_id;
 
-    void resize_vertex_attributes(size_t v) override { m_vertex_attribute.resize(v); }
-    void resize_edge_attributes(size_t e) override { m_edge_attribute.resize(e); }
-    void resize_face_attributes(size_t f) override { m_face_attribute.resize(f); }
-    void resize_tet_attributes(size_t t) override { m_tet_attribute.resize(t); }
-
-
-    void move_face_attribute(size_t from, size_t to) override
-    {
-        m_face_attribute[to] = std::move(m_face_attribute[from]);
-    }
-    void move_edge_attribute(size_t from, size_t to) override
-    {
-        m_edge_attribute[to] = std::move(m_edge_attribute[from]);
-    }
-    void move_tet_attribute(size_t from, size_t to) override
-    {
-        m_tet_attribute[to] = std::move(m_tet_attribute[from]);
-    }
-    void move_vertex_attribute(size_t from, size_t to) override
-    {
-        m_vertex_attribute[to] = std::move(m_vertex_attribute[from]);
-    }
 
     void output_mesh(std::string file);
 
@@ -274,8 +265,8 @@ public:
     std::vector<std::array<size_t, 3>> get_faces_by_condition(
         std::function<bool(const FaceAttributes&)> cond);
 
-    bool vertex_invariant(const Tuple& t) override;
-    bool tetrahedron_invariant(const Tuple& t) override;
+    bool invariants(const std::vector<Tuple>& t)
+        override; // this is now automatically checked, TODO: clear trace from the program.
 
     double get_length2(const Tuple& loc) const;
     // debug use
