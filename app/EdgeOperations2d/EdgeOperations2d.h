@@ -102,16 +102,6 @@ public:
         return true;
     }
 
-    bool update_position_to_edge_midpoint(const Tuple& t)
-    {
-        const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
-        if (m_has_envelope) {
-            if (m_envelope.is_outside(p)) return false;
-        }
-        vertex_attrs[t.vid()].pos = p;
-        return true;
-    }
-
     void partition_mesh()
     {
         auto m_vertex_partition_id = partition_TriMesh(*this, NUM_THREADS);
