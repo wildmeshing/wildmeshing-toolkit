@@ -51,13 +51,24 @@ void run_shortest_collapse(std::string input, int target, std::string output, Ed
 
 int main(int argc, char** argv)
 {
-    const std::string root(WMT_DATA_DIR);
-    const std::string path = root + argv[1];
+    // 1 path
+    // 2 output
+    // 3 n_edges
+    // 4 eps
+    const std::string path = argv[1];
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     bool ok = igl::read_triangle_mesh(path, V, F);
-    wmtk::logger().info("Before_vertices#: {} \n Before_tris#: {}", V.rows(), F.rows());
 
+    const Eigen::MatrixXd box_min = V.colwise().minCoeff();
+    const Eigen::MatrixXd box_max = V.colwise().maxCoeff();
+    const double diag = (box_max - box_min).norm();
+
+
+    const double envelope_size = atof(argv[4]) * diag;
+    wmtk::logger().info("readin mesh is {}", ok);
+    wmtk::logger().info("envelope_size {}", envelope_size);
+    wmtk::logger().info("Before_vertices#: {} \n\t Before_tris#: {}", V.rows(), F.rows());
 
     std::vector<Eigen::Vector3d> v(V.rows());
     std::vector<std::array<size_t, 3>> tri(F.rows());
@@ -67,73 +78,18 @@ int main(int argc, char** argv)
     for (int i = 0; i < F.rows(); i++) {
         for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
     }
-
-    Eigen::Vector3d min, max;
-    for (size_t i = 0; i < v.size(); i++) {
-        if (i == 0) {
-            min = v[i];
-            max = v[i];
-            continue;
-        }
-        for (int j = 0; j < 3; j++) {
-            if (v[i][j] < min[j]) min[j] = v[i][j];
-            if (v[i][j] > max[j]) max[j] = v[i][j];
-        }
-    }
-
-    double ep = (max - min).norm() * 1e-3;
-
-    if (!igl::is_edge_manifold(F)) {
-        std::vector<Eigen::Vector3d> out_v;
-        std::vector<std::array<size_t, 3>> out_f;
-        wmtk::separate_to_manifold(v, tri, out_v, out_f);
-
-        wmtk::logger().info(
-            "After_separation_vertices#: {} \n After_separation_tris#: {}",
-            out_v.size(),
-            out_f.size());
-        Eigen::MatrixXd outF = Eigen::MatrixXd::Zero(out_f.size(), 3);
-        for (int i = 0; i < out_f.size(); i++) {
-            outF.row(i) << out_f[i][0], out_f[i][1], out_f[i][2];
-        }
-
-        assert(igl::is_edge_manifold(outF));
-        EdgeOperations2d m(out_v);
-        m.create_mesh(out_v.size(), out_f, ep);
-        run_shortest_collapse(path, out_v.size() / 5, std::string(argv[2]), m);
-    }
-
-    else {
-        EdgeOperations2d m(v);
-        m.create_mesh(v.size(), tri, ep);
-        assert(m.check_mesh_connectivity_validity());
-        // wmtk::logger().info("collapse to {}", v.size() - std::stoi(argv[2]));
-        // m.collapse_qec(v.size() - std::stoi(argv[2]));
-        // m.consolidate_mesh();
-        wmtk::logger().info("collapsing mesh {}", argv[1]);
-        run_shortest_collapse(path, std::stoi(argv[2]), argv[3], m);
-        m.consolidate_mesh();
-        // auto edges = m.get_edges();
-        // Eigen::MatrixXd writem(edges.size(), 7);
-
-        // for (int i = 0; i < edges.size(); i++) {
-        //     Eigen::Vector3d v1 = m.vertex_attrs->m_attributes[edges[i].vid()].pos;
-        //     Eigen::Vector3d v2 =
-        //         m.vertex_attrs->m_attributes[(edges[i].switch_vertex(m).vid())].pos;
-        //     writem.row(i) << v1.transpose(), v2.transpose(), m.compute_cost_for_e(edges[i]);
-        // }
-        // // wmtk::logger().info("the result is {}", writem);
-        // igl::writeDMAT("qec_result_priority_after.txt", writem);
-    }
-
-    // std::vector<double> properties = m.average_len_valen();
-    // wmtk::logger().info(
-    //     "edgelen: avg max min valence:avg max min before remesh is: {}",
-    //     properties);
+    EdgeOperations2d m(v);
+    m.create_mesh(V.rows(), tri, envelope_size);
+    assert(m.check_mesh_connectivity_validity());
+    std::vector<double> properties = m.average_len_valen();
+    wmtk::logger().info(
+        "edgelen: avg max min valence:avg max min before remesh is: {}",
+        properties);
     // double small = properties[0] * 0.1;
 
-    // run(path, properties[0] * 5, std::string(argv[2]), m);
-    //run_shortest_collapse(path, out_v.size() / 5, std::string(argv[2]), m);
+    // run(path, properties[0] * 0.1, , m);
+    m.collapse_shortest(atoi(argv[3]));
+    m.write_triangle_mesh(std::string(argv[2]));
 
     return 0;
 }

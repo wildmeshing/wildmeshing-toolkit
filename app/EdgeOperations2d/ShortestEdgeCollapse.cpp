@@ -33,7 +33,7 @@ bool Edge2d::EdgeOperations2d::collapse_after(const TriMesh::Tuple& t)
 {
     const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
     auto vid = t.vid();
-    vertex_attrs->m_attributes[vid].pos = p;
+    vertex_attrs[vid].pos = p;
 
     return true;
 }
@@ -42,7 +42,7 @@ bool Edge2d::EdgeOperations2d::split_after(const TriMesh::Tuple& t)
 {
     const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
     auto vid = t.vid();
-    vertex_attrs->m_attributes[vid].pos = p;
+    vertex_attrs[vid].pos = p;
 
     return true;
 }
@@ -62,7 +62,7 @@ std::vector<TriMesh::Tuple> Edge2d::EdgeOperations2d::new_edges_after(
     return new_edges;
 }
 
-bool Edge2d::EdgeOperations2d::collapse_shortest(int target_vert_number)
+bool Edge2d::EdgeOperations2d::collapse_shortest(int target_operation_count)
 {
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_collapse", loc);
@@ -74,9 +74,9 @@ bool Edge2d::EdgeOperations2d::collapse_shortest(int target_vert_number)
         return optup;
     };
     auto measure_len2 = [](auto& m, auto op, const Tuple& new_e) {
-        auto len2 = (m.vertex_attrs->m_attributes[new_e.vid()].pos -
-                     m.vertex_attrs->m_attributes[new_e.switch_vertex(m).vid()].pos)
-                        .squaredNorm();
+        auto len2 =
+            (m.vertex_attrs[new_e.vid()].pos - m.vertex_attrs[new_e.switch_vertex(m).vid()].pos)
+                .squaredNorm();
         return -len2;
     };
     auto setup_and_execute = [&](auto executor) {
@@ -88,11 +88,9 @@ bool Edge2d::EdgeOperations2d::collapse_shortest(int target_vert_number)
             if (!m.try_set_edge_mutex_two_ring(e, stack)) return {};
             return stack;
         };
-        executor.stopping_criterion_checking_frequency = 100;
-        executor.stopping_criterion = [&target_vert_number](auto& m) {
-            if (m.get_vertices().size() < target_vert_number) return true;
-            return false;
-        };
+        executor.stopping_criterion_checking_frequency =
+            target_operation_count > 0 ? target_operation_count : std::numeric_limits<int>::max();
+        executor.stopping_criterion = [](auto& m) { return true; };
         executor(*this, collect_all_ops);
     };
 

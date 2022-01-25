@@ -10,10 +10,10 @@ using namespace wmtk;
 // get the quadrix in form of an array of 10 floating point numbers
 Eigen::MatrixXd compute_Q_f(const EdgeOperations2d& m, const wmtk::TriMesh::Tuple& f_tuple)
 {
-    auto conn_indices = m.oriented_tri_vertices(f_tuple);
-    Eigen::Vector3d A = m.vertex_attrs->m_attributes[conn_indices[0].vid()].pos;
-    Eigen::Vector3d B = m.vertex_attrs->m_attributes[conn_indices[1].vid()].pos;
-    Eigen::Vector3d C = m.vertex_attrs->m_attributes[conn_indices[2].vid()].pos;
+    auto conn_indices = oriented_tri_vertices(f_tuple);
+    Eigen::Vector3d A = vertex_attrs[conn_indices[0].vid()].pos;
+    Eigen::Vector3d B = vertex_attrs[conn_indices[1].vid()].pos;
+    Eigen::Vector3d C = vertex_attrs[conn_indices[2].vid()].pos;
 
     Eigen::Vector3d n = ((A - B).cross(C - B)).normalized();
     Eigen::Vector4d p;

@@ -10,6 +10,8 @@
 
 #include <igl/predicates/predicates.h>
 
+#include <Tracy.hpp>
+
 #include <queue>
 #include <limits>
 
@@ -17,19 +19,21 @@ namespace harmonic_tet {
 
 double HarmonicTet::get_quality(const Tuple& loc) const
 {
+    ZoneScoped;
     Eigen::MatrixXd ps(4, 3);
     auto tups = oriented_tet_vertices(loc);
     for (auto j = 0; j < 4; j++) {
-        ps.row(j) = vertex_attrs->m_attributes[tups[j].vid(*this)].pos;
+        ps.row(j) = vertex_attrs[tups[j].vid(*this)].pos;
     }
     return wmtk::harmonic_energy(ps);
 }
 
 double HarmonicTet::get_quality(const std::array<size_t, 4>& vids) const
 {
+    ZoneScoped;
     Eigen::MatrixXd ps(4, 3);
     for (auto j = 0; j < 4; j++) {
-        ps.row(j) = vertex_attrs->m_attributes[vids[j]].pos;
+        ps.row(j) = vertex_attrs[vids[j]].pos;
     }
     return wmtk::harmonic_energy(ps);
 }
@@ -37,10 +41,11 @@ double HarmonicTet::get_quality(const std::array<size_t, 4>& vids) const
 
 bool HarmonicTet::is_inverted(const Tuple& loc)
 {
+    ZoneScoped;
     std::array<Eigen::Vector3d, 4> ps;
     auto tups = oriented_tet_vertices(loc);
     for (auto j = 0; j < 4; j++) {
-        ps[j] = vertex_attrs->m_attributes[tups[j].vid(*this)].pos;
+        ps[j] = vertex_attrs[tups[j].vid(*this)].pos;
     }
 
     igl::predicates::exactinit();
@@ -52,6 +57,7 @@ bool HarmonicTet::is_inverted(const Tuple& loc)
 
 bool harmonic_tet::HarmonicTet::smooth_after(const Tuple& t)
 {
+    ZoneScoped;
     wmtk::logger().trace("Gradient Descent iteration for vertex smoothing.");
     auto vid = t.vid(*this);
 
@@ -75,26 +81,26 @@ bool harmonic_tet::HarmonicTet::smooth_after(const Tuple& t)
 
         for (auto i = 0; i < 4; i++) {
             for (auto j = 0; j < 3; j++) {
-                T[i * 3 + j] = vertex_attrs->m_attributes[local_verts[i]].pos[j];
+                T[i * 3 + j] = vertex_attrs[local_verts[i]].pos[j];
             }
         }
         loc_id++;
     }
 
-    auto old_pos = vertex_attrs->m_attributes[vid].pos;
-    vertex_attrs->m_attributes[vid].pos = wmtk::gradient_descent_from_stack(
+    auto old_pos = vertex_attrs[vid].pos;
+    vertex_attrs[vid].pos = wmtk::gradient_descent_from_stack(
         assembles,
         wmtk::harmonic_tet_energy,
         wmtk::harmonic_tet_jacobian);
-    if (vertex_attrs->m_attributes[vid].pos == old_pos) return false;
+    if (vertex_attrs[vid].pos == old_pos) return false;
     wmtk::logger().trace(
         "old pos {} -> new pos {}",
         old_pos.transpose(),
-        vertex_attrs->m_attributes[vid].pos.transpose());
+        vertex_attrs[vid].pos.transpose());
     // note: duplicate code snippets.
     for (auto& loc : locs) {
         if (is_inverted(loc)) {
-            vertex_attrs->m_attributes[vid].pos = old_pos;
+            vertex_attrs[vid].pos = old_pos;
             return false;
         }
     }
@@ -107,6 +113,7 @@ bool harmonic_tet::HarmonicTet::smooth_after(const Tuple& t)
 
 bool HarmonicTet::swap_edge_before(const Tuple& t)
 {
+    ZoneScoped;
     if (!TetMesh::swap_edge_before(t)) return false;
 
     auto incident_tets = get_incident_tets_for_edge(t);
@@ -120,6 +127,7 @@ bool HarmonicTet::swap_edge_before(const Tuple& t)
 
 bool HarmonicTet::swap_edge_after(const Tuple& t)
 {
+    ZoneScoped;
     if (!TetMesh::swap_edge_after(t)) return false;
 
     // after swap, t points to a face with 2 neighboring tets.
@@ -135,6 +143,7 @@ bool HarmonicTet::swap_edge_after(const Tuple& t)
 
 bool HarmonicTet::swap_face_after(const Tuple& t)
 {
+    ZoneScoped;
     if (!TetMesh::swap_face_after(t)) return false;
 
     auto incident_tets = get_incident_tets_for_edge(t);
@@ -152,6 +161,7 @@ bool HarmonicTet::swap_face_after(const Tuple& t)
 
 void HarmonicTet::swap_all_edges(bool parallel)
 {
+    ZoneScoped;
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_swap", loc);
     auto setup_and_execute = [&](auto& executor) {
@@ -174,6 +184,7 @@ void HarmonicTet::swap_all_edges(bool parallel)
 
 void harmonic_tet::HarmonicTet::smooth_all_vertices(bool interior_only)
 {
+    ZoneScoped;
     auto executor = wmtk::ExecutePass<HarmonicTet>();
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_vertices()) {
@@ -194,6 +205,7 @@ bool HarmonicTet::invariants(const std::vector<Tuple>& tets)
 
 void HarmonicTet::swap_all_faces(bool parallel)
 {
+    ZoneScoped;
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_faces()) collect_all_ops.emplace_back("face_swap", loc);
     if (parallel) {
@@ -216,6 +228,7 @@ void HarmonicTet::swap_all_faces(bool parallel)
 
 bool HarmonicTet::swap_face_before(const Tuple& t)
 {
+    ZoneScoped;
     if (!TetMesh::swap_face_before(t)) return false;
 
     auto oppo_tet = t.switch_tetrahedron(*this);
@@ -226,13 +239,14 @@ bool HarmonicTet::swap_face_before(const Tuple& t)
 
 void HarmonicTet::output_mesh(std::string file) const
 {
+    ZoneScoped;
     // warning: duplicate code.
     wmtk::MshData msh;
 
     const auto& vtx = get_vertices();
     msh.add_tet_vertices(vtx.size(), [&](size_t k) {
         auto i = vtx[k].vid(*this);
-        return vertex_attrs->m_attributes[i].pos;
+        return vertex_attrs[i].pos;
     });
 
     const auto& tets = get_tets();
@@ -254,6 +268,7 @@ void HarmonicTet::output_mesh(std::string file) const
 }
 
 auto renewal_all = [](const auto& m, auto op, const auto& newt) {
+    ZoneScoped;
     auto optup1 = wmtk::renewal_edges(m, op, newt);
     auto optup2 = wmtk::renewal_faces(m, op, newt);
     for (auto& o : optup2) optup1.emplace_back(o);
@@ -262,6 +277,7 @@ auto renewal_all = [](const auto& m, auto op, const auto& newt) {
 
 
 auto replace = [](auto& arr, auto i, auto j) {
+    ZoneScoped;
     for (auto k = 0; k < arr.size(); k++) {
         if (arr[k] == i) {
             arr[k] = j;
@@ -271,6 +287,7 @@ auto replace = [](auto& arr, auto i, auto j) {
 };
 
 constexpr auto swap_3_2 = [](const std::vector<std::array<size_t, 4>>& tets, auto v0, auto v1) {
+    ZoneScoped;
     auto n0 = -1, n1 = -1, n2 = -1;
     // T0 : n1, n2, v0, *v1*->n0
     // T1: n0, n1, *v0*,v1 -> n2
@@ -297,6 +314,7 @@ constexpr auto swap_3_2 = [](const std::vector<std::array<size_t, 4>>& tets, aut
     return newtet;
 };
 constexpr auto swap_2_3 = [](const std::vector<std::array<size_t, 4>>& tets, std::array<size_t, 3> n) {
+    ZoneScoped;
     auto u = std::array<int, 2>{{-1, -1}};
     // T0 : *n0*,n1,n2 v1-> v2
     // T0 : *n1*, v1-> v2
@@ -318,6 +336,7 @@ constexpr auto swap_2_3 = [](const std::vector<std::array<size_t, 4>>& tets, std
 
 void HarmonicTet::swap_all()
 {
+    ZoneScoped;
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_swap", loc);
 

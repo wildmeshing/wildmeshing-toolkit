@@ -184,8 +184,9 @@ private:
         if constexpr (policy == ExecutionPolicy::kSeq) return 0;
         if constexpr (std::is_base_of<wmtk::TetMesh, AppMesh>::value)
             return m.m_vertex_partition_id[e.vid(m)];
-        else if constexpr(std::is_base_of<wmtk::TriMesh, AppMesh>::value) // TODO: make same interface.
-            return m.vertex_attrs->m_attributes[e.vid()].partition_id; // TODO: this is temporary.
+        else if constexpr (std::is_base_of<wmtk::TriMesh, AppMesh>::value) // TODO: make same
+                                                                           // interface.
+            return m.vertex_attrs[e.vid()].partition_id; // TODO: this is temporary.
         return 0;
     }
 
@@ -199,8 +200,13 @@ public:
         auto final_queue = tbb::concurrent_priority_queue<Elem>();
 
         auto run_single_queue = [&](auto& Q) {
+            ZoneScoped;
             auto ele_in_queue = Elem();
-            while (Q.try_pop(ele_in_queue)) {
+            while ([&]() {
+                ZoneScoped;
+                return Q.try_pop(ele_in_queue);
+            }()) {
+                ZoneScoped;
                 auto& [weight, op, tup, retry] = ele_in_queue;
                 if (!tup.is_valid(m)) continue;
                 if (!should_process(
@@ -212,6 +218,7 @@ public:
                     continue; // this can encode, in qslim, recompute(energy) == weight.
                 std::vector<Elem> renewed_elements;
                 {
+                    ZoneScoped;
                     auto locked_vid =
                         lock_vertices(m, tup); // Note that returning `Tuples` would be invalid.
                     if (!locked_vid) {
@@ -229,13 +236,17 @@ public:
                         std::vector<std::pair<Op, Tuple>> renewed_tuples;
                         if (newtup) renewed_tuples = renew_neighbor_tuples(m, op, newtup.value());
                         for (auto& [o, e] : renewed_tuples) {
+                            ZoneScoped;
                             renewed_elements.emplace_back(priority(m, o, e), o, e, 0);
                         }
                         cnt_update++;
                     }
                     operation_cleanup(m, locked_vid); // Maybe use RAII
                 }
-                for (auto& e : renewed_elements) Q.emplace(e);
+                for (auto& e : renewed_elements) {
+                    ZoneScoped;
+                    Q.emplace(e);
+                }
 
                 if (stop.load(std::memory_order_acquire)) return;
                 if (cnt_update > stopping_criterion_checking_frequency) {

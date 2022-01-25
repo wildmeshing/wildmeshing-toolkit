@@ -11,7 +11,7 @@ double tetwild::TetWild::get_length2(const wmtk::TetMesh::Tuple& l) const {
     auto& v1 = l;
     auto v2 = l.switch_vertex(m);
     double length =
-        (m.vertex_attrs->m_attributes[v1.vid(m)].m_posf - m.vertex_attrs->m_attributes[v2.vid(m)].m_posf)
+        (m.vertex_attrs[v1.vid(m)].m_posf - m.vertex_attrs[v2.vid(m)].m_posf)
             .squaredNorm();
     return length;
 };
@@ -57,37 +57,37 @@ bool tetwild::TetWild::collapse_before(const Tuple& loc) // input is an edge
     collapse_cache.local().v2_id = v2_id;
 
     collapse_cache.local().edge_length =
-        (vertex_attrs->m_attributes[v1_id].m_posf - vertex_attrs->m_attributes[v2_id].m_posf)
+        (vertex_attrs[v1_id].m_posf - vertex_attrs[v2_id].m_posf)
             .norm(); // todo: duplicated computation
 
     ///check if on bbox/surface/boundary
     // bbox
-    if (!vertex_attrs->m_attributes[v1_id].on_bbox_faces.empty()) {
-        if (vertex_attrs->m_attributes[v2_id].on_bbox_faces.size() <
-            vertex_attrs->m_attributes[v1_id].on_bbox_faces.size())
+    if (!vertex_attrs[v1_id].on_bbox_faces.empty()) {
+        if (vertex_attrs[v2_id].on_bbox_faces.size() <
+            vertex_attrs[v1_id].on_bbox_faces.size())
             return false;
-        for (int on_bbox : vertex_attrs->m_attributes[v1_id].on_bbox_faces)
+        for (int on_bbox : vertex_attrs[v1_id].on_bbox_faces)
             if (std::find(
-                    vertex_attrs->m_attributes[v2_id].on_bbox_faces.begin(),
-                    vertex_attrs->m_attributes[v2_id].on_bbox_faces.end(),
-                    on_bbox) == vertex_attrs->m_attributes[v2_id].on_bbox_faces.end())
+                    vertex_attrs[v2_id].on_bbox_faces.begin(),
+                    vertex_attrs[v2_id].on_bbox_faces.end(),
+                    on_bbox) == vertex_attrs[v2_id].on_bbox_faces.end())
                 return false;
     }
     // surface
-    if (collapse_cache.local().edge_length > 0 && vertex_attrs->m_attributes[v1_id].m_is_on_surface) {
-        if (m_envelope.is_outside(vertex_attrs->m_attributes[v2_id].m_posf)) return false;
+    if (collapse_cache.local().edge_length > 0 && vertex_attrs[v1_id].m_is_on_surface) {
+        if (m_envelope.is_outside(vertex_attrs[v2_id].m_posf)) return false;
     }
     // remove isolated vertex
-    if (vertex_attrs->m_attributes[v1_id].m_is_on_surface) {
+    if (vertex_attrs[v1_id].m_is_on_surface) {
         auto vids = get_one_ring_vids_for_vertex(v1_id);
         bool is_isolated = true;
         for (size_t vid : vids) {
-            if (vertex_attrs->m_attributes[vid].m_is_on_surface) {
+            if (vertex_attrs[vid].m_is_on_surface) {
                 is_isolated = false;
                 break;
             }
         }
-        if (is_isolated) vertex_attrs->m_attributes[v1_id].m_is_on_surface = false;
+        if (is_isolated) vertex_attrs[v1_id].m_is_on_surface = false;
     }
 
     // todo: store surface info into cache
@@ -137,15 +137,15 @@ bool tetwild::TetWild::collapse_after(const Tuple& loc)
         // todo: surface check
     } else {
         for (int i = 0; i < locs.size(); i++) {
-            tet_attrs->m_attributes[locs[i].tid(*this)].m_qualities = qs[i];
+            tet_attrs[locs[i].tid(*this)].m_qualities = qs[i];
         }
     }
 
 
     /// update attrs
     // vertex attr
-    vertex_attrs->m_attributes[v2_id].m_is_on_surface =
-        vertex_attrs->m_attributes[v1_id].m_is_on_surface || vertex_attrs->m_attributes[v2_id].m_is_on_surface;
+    vertex_attrs[v2_id].m_is_on_surface =
+        vertex_attrs[v1_id].m_is_on_surface || vertex_attrs[v2_id].m_is_on_surface;
     // no need to update on_bbox_faces
     //  todo: update faces attr
 
