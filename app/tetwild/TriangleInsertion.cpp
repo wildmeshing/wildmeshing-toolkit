@@ -614,6 +614,7 @@ void tetwild::TetWild::triangle_insertion_stuff(
             new_tids,
             new_center_vids);
 
+
         assert(new_vids.size() == map_edge2point.size());
 
         int cnt = 0;
