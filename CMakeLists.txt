@@ -73,6 +73,7 @@ include(onetbb)
 include(mshio)
 include(metis)
 include(lagrange)
+include(BVH)
 target_link_libraries(wildmeshing_toolkit PUBLIC
     spdlog::spdlog
     igl::core
@@ -84,6 +85,7 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     metis::metis
     lagrange::core
     Tracy::TracyClient
+    BVH::BVH
 )
 
 ################################################################################
