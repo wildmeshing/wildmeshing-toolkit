@@ -107,36 +107,6 @@ TEST_CASE("triangle-insertion", "[tetwild_operation]")
 
     mesh.triangle_insertion(input_surface);
     mesh.check_attributes();
-<<<<<<< HEAD
-
-    mesh.collapse_all_edges(false);
-    wmtk::logger().info("#t {}", mesh.tet_size());
-    wmtk::logger().info("#v {}", mesh.vertex_size());
-    //        output_faces();
-    //        pausee();
-
-    mesh.split_all_edges();
-    wmtk::logger().info("#t {}", mesh.tet_size());
-    wmtk::logger().info("#v {}", mesh.vertex_size());
-    mesh.check_attributes();
-    //        output_faces();
-    //        pausee();
-
-    mesh.collapse_all_edges();
-    mesh.collapse_all_edges();
-    wmtk::logger().info("#t {}", mesh.tet_size());
-    wmtk::logger().info("#v {}", mesh.vertex_size());
-
-    mesh.swap_all_edges();
-    mesh.swap_all_faces();
-    wmtk::logger().info("#t {}", mesh.tet_size());
-    wmtk::logger().info("#v {}", mesh.vertex_size());
-    mesh.check_attributes();
-    output_faces();
-
-    // todo: refine adaptively the mesh
-=======
->>>>>>> 0b4d33c5bf51adce879f97ae3df7fa3c1fa933f5
 }
 
 
