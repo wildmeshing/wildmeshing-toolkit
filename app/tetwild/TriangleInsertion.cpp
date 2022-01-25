@@ -267,6 +267,7 @@ void tetwild::TetWild::triangle_insertion_stuff(
 
         std::vector<Tuple> intersected_tets;
         std::map<std::array<size_t, 2>, std::tuple<int, Vector3, size_t, int>> map_edge2point;
+        std::map<std::array<size_t, 3>, bool> map_face2intersected;
         // e = (e0, e1) ==> (intersection_status, intersection_point, edge's_tid, local_eid_in_tet)
         std::set<std::array<size_t, 2>> intersected_tet_edges;
         //
@@ -506,6 +507,15 @@ void tetwild::TetWild::triangle_insertion_stuff(
 
                 for (int j = 0; j < 4; j++) { // for each tet face
                     auto vs = get_face_vertices(fs[j]);
+                    std::array<size_t, 3> f = {{vs[0].vid(*this),
+                                                vs[1].vid(*this),
+                                                vs[2].vid(*this)}};
+                    std::sort(f.begin(), f.end());
+                    if(map_face2intersected.count(f)) {
+                        if(map_face2intersected[f])
+                            need_subdivision = true;
+                        continue;
+                    }
 
                     {
                         int cnt_pos1 = 0;
@@ -520,9 +530,9 @@ void tetwild::TetWild::triangle_insertion_stuff(
                     }
 
                     std::array<Vector3, 3> tet_tri = {{
-                        m_vertex_attribute[vs[0].vid(*this)].m_pos,
-                        m_vertex_attribute[vs[1].vid(*this)].m_pos,
-                        m_vertex_attribute[vs[2].vid(*this)].m_pos,
+                        m_vertex_attribute[f[0]].m_pos,
+                        m_vertex_attribute[f[1]].m_pos,
+                        m_vertex_attribute[f[2]].m_pos,
                     }};
 
                     bool is_intersected = false;
@@ -532,10 +542,11 @@ void tetwild::TetWild::triangle_insertion_stuff(
                         is_intersected =
                             wmtk::open_segment_triangle_intersection_3d(input_seg, tet_tri, p);
                         if (is_intersected) {
-                            need_subdivision = true; // todo: can be recorded
+                            need_subdivision = true; // is recorded
                             break;
                         }
                     }
+                    map_face2intersected[f] = is_intersected;
 
                     if (is_intersected) {
                         auto res = switch_tetrahedron(fs[j]);
