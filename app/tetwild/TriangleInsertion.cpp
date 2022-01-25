@@ -1080,9 +1080,9 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
     //     //        pausee();
     // }
 
-    // fortest
-    output_surface("surface0.obj");
-    // fortest
+//    // fortest
+//    output_surface("surface0.obj");
+//    // fortest
 
     //// track surface, bbox, rounding
     setup_attributes();
@@ -1139,13 +1139,13 @@ void tetwild::TetWild::setup_attributes()
                 //
                 inside_fid = input_fid;
 
-                //fortest
-                bool is_out = m_envelope.is_outside(
-                    {{m_vertex_attribute[vids[0]].m_posf,
-                      m_vertex_attribute[vids[1]].m_posf,
-                      m_vertex_attribute[vids[2]].m_posf}});
-                assert(!is_out);
-                //fortest
+//                //fortest
+//                bool is_out = m_envelope.is_outside(
+//                    {{m_vertex_attribute[vids[0]].m_posf,
+//                      m_vertex_attribute[vids[1]].m_posf,
+//                      m_vertex_attribute[vids[2]].m_posf}});
+//                assert(!is_out);
+//                //fortest
 
                 break;
             }
