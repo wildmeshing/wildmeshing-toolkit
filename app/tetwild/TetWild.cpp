@@ -30,7 +30,7 @@ void tetwild::TetWild::mesh_improvement(int max_its)
 
     ////operation loops
     bool is_hit_min_edge_length = false;
-    const int M = 3;
+    const int M = 2;
     int m = 0;
     double pre_max_energy = 0., pre_avg_energy = 0.;
     for (int it = 0; it < max_its; it++) {
@@ -39,11 +39,12 @@ void tetwild::TetWild::mesh_improvement(int max_its)
         auto [max_energy, avg_energy] = local_operations({{1, 2, 1, 1}});
 
         ///energy check
-        std::cout<<max_energy <<" "<< m_params.stop_energy<<std::endl;
+        std::cout << max_energy << " " << m_params.stop_energy << std::endl;
         if (max_energy < m_params.stop_energy) break;
 
         ///sizing field
-        if (it > 0 && (max_energy > 1e3 || pre_max_energy - max_energy < 1e-1 && pre_avg_energy - avg_energy < 1e-2)) {
+        if (it > 0 && ((pre_max_energy - max_energy) / max_energy < 1e-1 &&
+                       (pre_avg_energy - avg_energy) / avg_energy < 1e-1)) {
             m++;
             if (m == M) {
                 wmtk::logger().info("adjust_sizing_field...");
@@ -52,8 +53,8 @@ void tetwild::TetWild::mesh_improvement(int max_its)
             }
         } else
             m = 0;
-        if(is_hit_min_edge_length){
-            //todo: maybe to do sth
+        if (is_hit_min_edge_length) {
+            // todo: maybe to do sth
         }
         pre_max_energy = max_energy;
         pre_avg_energy = avg_energy;
