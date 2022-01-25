@@ -1,5 +1,7 @@
 #include "TetMesh.h"
 
+#include <Tracy.hpp>
+
 using namespace wmtk;
 
 
@@ -16,6 +18,7 @@ TetMesh::Tuple::Tuple(const TetMesh& m, size_t vid, size_t local_eid, size_t loc
 
 bool TetMesh::Tuple::is_boundary_face(const TetMesh& m) const
 {
+    ZoneScoped;
     auto v0 = this->vid(m);
     auto oppo = this->switch_vertex(m);
     auto v1 = oppo.vid(m);
@@ -33,6 +36,7 @@ bool TetMesh::Tuple::is_boundary_face(const TetMesh& m) const
 
 bool TetMesh::Tuple::is_boundary_edge(const TetMesh& m) const
 {
+    ZoneScoped;
     auto tet_id = this->tid(m);
 
     Tuple e = *this;
@@ -56,6 +60,7 @@ bool TetMesh::Tuple::is_boundary_edge(const TetMesh& m) const
 
 bool TetMesh::Tuple::is_valid(const TetMesh& m) const
 {
+    ZoneScoped;
     if (m.m_vertex_connectivity[m_global_vid].m_is_removed ||
         m.m_tet_connectivity[m_global_tid].m_is_removed)
         return false;
@@ -109,6 +114,7 @@ size_t TetMesh::Tuple::vid(const TetMesh&) const
 
 size_t TetMesh::Tuple::eid(const TetMesh& m) const
 {
+    ZoneScoped;
     int v1_id = m.m_tet_connectivity[m_global_tid][m_local_edges[m_local_eid][0]];
     int v2_id = m.m_tet_connectivity[m_global_tid][m_local_edges[m_local_eid][1]];
     auto n12_t_ids = set_intersection(
@@ -129,6 +135,7 @@ size_t TetMesh::Tuple::eid(const TetMesh& m) const
 
 size_t TetMesh::Tuple::fid(const TetMesh& m) const
 {
+    ZoneScoped;
     std::array<size_t, 3> v_ids = {
         {m.m_tet_connectivity[m_global_tid][m_local_faces[m_local_fid][0]],
          m.m_tet_connectivity[m_global_tid][m_local_faces[m_local_fid][1]],
@@ -164,6 +171,7 @@ size_t TetMesh::Tuple::tid(const TetMesh&) const
 
 TetMesh::Tuple TetMesh::Tuple::switch_vertex(const TetMesh& m) const
 {
+    ZoneScoped;
     Tuple loc = *this;
 
     int l_vid1 = m_local_edges[m_local_eid][0];
@@ -178,6 +186,7 @@ TetMesh::Tuple TetMesh::Tuple::switch_vertex(const TetMesh& m) const
 
 TetMesh::Tuple TetMesh::Tuple::switch_edge(const TetMesh& m) const
 {
+    ZoneScoped;
     Tuple loc = *this;
     for (int leid : m_local_edges_in_a_face[m_local_fid]) {
         if (leid != m_local_eid &&
@@ -193,6 +202,7 @@ TetMesh::Tuple TetMesh::Tuple::switch_edge(const TetMesh& m) const
 
 TetMesh::Tuple TetMesh::Tuple::switch_face(const TetMesh& m) const
 {
+    ZoneScoped;
     Tuple loc = *this;
     int l_v1_id = m_local_edges[m_local_eid][0];
     int l_v2_id = m_local_edges[m_local_eid][1];
@@ -213,6 +223,7 @@ TetMesh::Tuple TetMesh::Tuple::switch_face(const TetMesh& m) const
 
 std::optional<TetMesh::Tuple> TetMesh::Tuple::switch_tetrahedron(const TetMesh& m) const
 {
+    ZoneScoped;
     // eid and fid are local, so they will be changed after switch tets
     size_t v1_id = m.m_tet_connectivity[m_global_tid][m_local_faces[m_local_fid][0]];
     size_t v2_id = m.m_tet_connectivity[m_global_tid][m_local_faces[m_local_fid][1]];
@@ -242,6 +253,7 @@ std::optional<TetMesh::Tuple> TetMesh::Tuple::switch_tetrahedron(const TetMesh& 
 
 void TetMesh::Tuple::check_validity(const TetMesh& m) const
 {
+    ZoneScoped;
 #ifdef NDEBUG
     return;
 #endif

@@ -3,66 +3,49 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include "EdgeOperations2d.h"
-void add_Qs(std::array<double, 10>& Q1, const std::array<double, 10>& Q2)
-{
-    for (int j = 0; j < 10; j++) {
-        Q1[j] = Q1[j] + Q2[j];
-    }
-}
+
 
 // get the quadrix in form of an array of 10 floating point numbers
-std::array<double, 10> Edge2d::EdgeOperations2d::compute_Q_f(wmtk::TriMesh::Tuple& f_tuple)
+Eigen::MatrixXd Edge2d::EdgeOperations2d::compute_Q_f(wmtk::TriMesh::Tuple& f_tuple)
 {
     auto conn_indices = oriented_tri_vertices(f_tuple);
-    Eigen::Vector3d A = m_vertex_positions[conn_indices[0].vid()];
-    Eigen::Vector3d B = m_vertex_positions[conn_indices[1].vid()];
-    Eigen::Vector3d C = m_vertex_positions[conn_indices[2].vid()];
+    Eigen::Vector3d A = vertex_attrs[conn_indices[0].vid()].pos;
+    Eigen::Vector3d B = vertex_attrs[conn_indices[1].vid()].pos;
+    Eigen::Vector3d C = vertex_attrs[conn_indices[2].vid()].pos;
 
     Eigen::Vector3d n = ((A - B).cross(C - B)).normalized();
-    double a = n(0);
-    double b = n(1);
-    double c = n(2);
-    double d = -n.dot(B);
+    Eigen::Vector4d p;
+    p(0) = n(0);
+    p(1) = n(1);
+    p(2) = n(2);
+    p(3) = -n.dot(B);
 
-    std::array<double, 10> Q;
-    // a^2, ab, ac, ad, b^2, bc, bd, c^2, cd, d^2,
-    Q[0] = a * a;
-    Q[1] = a * b;
-    Q[2] = a * c;
-    Q[3] = a * d;
-    Q[4] = b * b;
-    Q[5] = b * c;
-    Q[6] = b * d;
-    Q[7] = c * c;
-    Q[8] = c * d;
-    Q[9] = d * d;
-    return Q;
+    return p * p.transpose();
 }
 
-std::array<double, 10> Edge2d ::EdgeOperations2d::compute_Q_v(wmtk::TriMesh::Tuple& v_tuple)
+Eigen::MatrixXd Edge2d::EdgeOperations2d::compute_Q_v(wmtk::TriMesh::Tuple& v_tuple)
 {
     auto conn_tris = get_one_ring_tris_for_vertex(v_tuple);
-    std::array<double, 10> Q{};
+    Eigen::MatrixXd Q{};
     for (TriMesh::Tuple tri : conn_tris) {
-        std::array<double, 10> Q_t = compute_Q_f(tri);
-        add_Qs(Q, Q_t);
+        Eigen::MatrixXd Q_t = compute_Q_f(tri);
+        Q += Q_t;
     }
     return Q;
 }
 
 double Edge2d::EdgeOperations2d::compute_cost_for_v(wmtk::TriMesh::Tuple& v_tuple)
 {
-    // DP: Commented out because this function returns an undefined number
-    // Eigen::Vector3d v = m_vertex_positions[v_tuple.vid()];
-    // std::array<double, 10> Q = compute_Q_v(v_tuple);
+    Eigen::Vector3d v = vertex_attrs[v_tuple.vid()].pos;
+    Eigen::MatrixXd Q = compute_Q_v(v_tuple);
+    Eigen::Vector4d t(0.0, 0.0, 0.0, 1.0);
 
-    // double cost;
-    // return cost;
+
     assert(false);
     return 0;
 }
 
-bool Edge2d::EdgeOperations2d::collapse_qec()
+bool Edge2d::EdgeOperations2d::collapse_qec(int target)
 {
     // find the valid pairs (for each vertex)
     std::vector<TriMesh::Tuple> edges = get_edges();

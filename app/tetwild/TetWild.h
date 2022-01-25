@@ -2,6 +2,7 @@
 
 #include <tbb/concurrent_map.h>
 #include <wmtk/ConcurrentTetMesh.h>
+#include <wmtk/utils/PartitionMesh.h>
 #include "Parameters.h"
 #include "common.h"
 
@@ -26,13 +27,13 @@ public:
     Vector3d m_posf;
     bool m_is_rounded = false;
 
-    bool m_is_on_surface;
-    bool m_is_on_boundary;
-    bool m_is_on_bbox;
-    bool m_is_outside;
+    bool m_is_on_surface = false;
+    //    bool m_is_on_boundary = false;
+    std::vector<int> on_bbox_faces;
+    bool m_is_outside = false;
 
-    Scalar m_sizing_scalars;
-    Scalar m_scalars;
+    Scalar m_sizing_scalar = 1;
+    Scalar m_scalar = 1;
     bool m_is_freezed;
 };
 
@@ -47,23 +48,39 @@ class FaceAttributes
 public:
     Scalar tag;
 
-    int m_is_surface_fs;
-    int m_is_bbox_fs;
-    int m_opp_t_ids;
-    int m_surface_tags;
+    bool m_is_surface_fs = false; // 0; 1
+    int m_is_bbox_fs = -1; //-1; 0~5
+
+    int m_surface_tags = -1;
+
+    void reset()
+    {
+        m_is_surface_fs = false;
+        m_is_bbox_fs = -1;
+        m_surface_tags = -1;
+    }
+
+    void merge(const FaceAttributes& attr)
+    {
+        m_is_surface_fs = m_is_surface_fs || attr.m_is_surface_fs;
+        if (attr.m_is_bbox_fs >= 0) m_is_bbox_fs = attr.m_is_bbox_fs;
+        m_surface_tags = std::max(m_surface_tags, attr.m_surface_tags);
+    }
 };
 
 class TetAttributes
 {
 public:
-    Scalar m_qualities;
-    Scalar m_scalars;
+    Scalar m_quality;
+    Scalar m_scalar;
     bool m_is_outside;
 };
 
 class TetWild : public wmtk::ConcurrentTetMesh
 {
 public:
+    const double MAX_ENERGY = 1e50;
+
     Parameters& m_params;
     fastEnvelope::FastEnvelope& m_envelope;
 
@@ -71,71 +88,45 @@ public:
         : m_params(_m_params)
         , m_envelope(_m_envelope)
         , NUM_THREADS(_num_threads)
-    {}
+    {
+        p_vertex_attrs = &m_vertex_attribute;
+        p_edge_attrs = &m_edge_attribute;
+        p_face_attrs = &m_face_attribute;
+        p_tet_attrs = &m_tet_attribute;
+    }
 
     ~TetWild() {}
+    using VertAttCol = wmtk::AttributeCollection<VertexAttributes>;
+    using EdgeAttCol = wmtk::AttributeCollection<EdgeAttributes>;
+    using FaceAttCol = wmtk::AttributeCollection<FaceAttributes>;
+    using TetAttCol = wmtk::AttributeCollection<TetAttributes>;
+    VertAttCol m_vertex_attribute;
+    EdgeAttCol m_edge_attribute;
+    FaceAttCol m_face_attribute;
+    TetAttCol m_tet_attribute;
 
     void create_mesh_attributes(
         const std::vector<VertexAttributes>& _vertex_attribute,
         const std::vector<TetAttributes>& _tet_attribute)
     {
-        m_vertex_attribute = tbb::concurrent_vector<VertexAttributes>(_vertex_attribute.size());
+        auto n_tet = _tet_attribute.size();
+        m_vertex_attribute.resize(_vertex_attribute.size());
+        m_edge_attribute.resize(6 * n_tet);
+        m_face_attribute.resize(4 * n_tet);
+        m_tet_attribute.resize(n_tet);
+
         for (auto i = 0; i < _vertex_attribute.size(); i++)
             m_vertex_attribute[i] = _vertex_attribute[i];
-        m_tet_attribute = tbb::concurrent_vector<TetAttributes>(_tet_attribute.size());
+        m_tet_attribute.m_attributes = tbb::concurrent_vector<TetAttributes>(_tet_attribute.size());
         for (auto i = 0; i < _tet_attribute.size(); i++) m_tet_attribute[i] = _tet_attribute[i];
-        auto n_tet = m_tet_attribute.size();
-        resize_edge_attributes(6 * n_tet);
-        resize_face_attributes(4 * n_tet);
+
+        m_vertex_partition_id = partition_TetMesh(*this, NUM_THREADS);
     }
 
     ////// Attributes related
-    // Stores the attributes attached to simplices
-    tbb::concurrent_vector<VertexAttributes> m_vertex_attribute;
-    tbb::concurrent_vector<EdgeAttributes> m_edge_attribute;
-    tbb::concurrent_vector<FaceAttributes> m_face_attribute;
-    tbb::concurrent_vector<TetAttributes> m_tet_attribute;
     int NUM_THREADS = 1;
+    tbb::concurrent_vector<size_t> m_vertex_partition_id;
 
-    void resize_vertex_attributes(size_t v) override
-    {
-        ConcurrentTetMesh::resize_vertex_attributes(v);
-        m_vertex_attribute.grow_to_at_least(v);
-        m_vertex_attribute.resize(v);
-    }
-    void resize_edge_attributes(size_t e) override
-    {
-        m_edge_attribute.grow_to_at_least(e);
-        m_edge_attribute.resize(e);
-    }
-    void resize_face_attributes(size_t f) override
-    {
-        m_face_attribute.grow_to_at_least(f);
-        m_face_attribute.resize(f);
-    }
-    void resize_tet_attributes(size_t t) override
-    {
-        m_tet_attribute.grow_to_at_least(t);
-        m_tet_attribute.resize(t);
-    }
-
-
-    void move_face_attribute(size_t from, size_t to) override
-    {
-        m_face_attribute[to] = std::move(m_face_attribute[from]);
-    }
-    void move_edge_attribute(size_t from, size_t to) override
-    {
-        m_edge_attribute[to] = std::move(m_edge_attribute[from]);
-    }
-    void move_tet_attribute(size_t from, size_t to) override
-    {
-        m_tet_attribute[to] = std::move(m_tet_attribute[from]);
-    }
-    void move_vertex_attribute(size_t from, size_t to) override
-    {
-        m_vertex_attribute[to] = std::move(m_vertex_attribute[from]);
-    }
 
     void output_mesh(std::string file);
 
@@ -213,14 +204,28 @@ public:
 
     struct SplitInfoCache
     {
-        VertexAttributes vertex_info;
+        //        VertexAttributes vertex_info;
+        size_t v1_id;
+        size_t v2_id;
+        bool is_edge_on_surface = false;
+
+        std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
+        //        std::vector<std::pair<size_t, std::array<size_t, 3>>> changed_faces;
     };
     tbb::enumerable_thread_specific<SplitInfoCache> split_cache;
 
     struct CollapseInfoCache
     {
+        size_t v1_id;
+        size_t v2_id;
         double max_energy;
         double edge_length;
+        bool is_limit_length;
+
+        std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
+        std::vector<std::array<size_t, 3>> surface_faces;
+        //        std::vector<std::pair<size_t, std::array<size_t, 3>>> changed_faces;
+        std::vector<size_t> changed_tids;
     };
     tbb::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
 
@@ -228,14 +233,16 @@ public:
     struct SwapInfoCache
     {
         double max_energy;
+        std::map<std::array<size_t, 3>, size_t> changed_faces;
     };
-    tbb::enumerable_thread_specific<SwapInfoCache> edgeswap_cache, faceswap_cache;
+    tbb::enumerable_thread_specific<SwapInfoCache> swap_cache;
 
 
     void construct_background_mesh(const InputSurface& input_surface);
     void match_insertion_faces(
         const InputSurface& input_surface,
         tbb::concurrent_vector<bool>& is_matched);
+    void setup_attributes();
     //
     //    void add_tet_centroid(const std::array<size_t, 4>& vids) override;
     void add_tet_centroid(const Tuple& t, size_t vid) override;
@@ -258,7 +265,7 @@ public:
     bool smooth_before(const Tuple& t) override;
     bool smooth_after(const Tuple& t) override;
 
-    void collapse_all_edges();
+    void collapse_all_edges(bool is_limit_length = true);
     bool collapse_before(const Tuple& t) override;
     bool collapse_after(const Tuple& t) override;
 
@@ -273,9 +280,24 @@ public:
     bool is_inverted(const Tuple& loc) const;
     double get_quality(const Tuple& loc) const;
     bool round(const Tuple& loc);
+    //
+    bool is_edge_on_surface(const Tuple& loc);
+    //
+    bool adjust_sizing_field(double max_energy);
+    void mesh_improvement(int max_its = 80);
+    std::tuple<double, double> local_operations(
+        const std::array<int, 4>& ops,
+        bool collapse_limite_length = true);
+    std::tuple<double, double> get_max_avg_energy();
+    void filter_outside(bool remove_ouside = true);
 
-    bool vertex_invariant(const Tuple& t) override;
-    bool tetrahedron_invariant(const Tuple& t) override;
+    void check_attributes();
+
+    std::vector<std::array<size_t, 3>> get_faces_by_condition(
+        std::function<bool(const FaceAttributes&)> cond);
+
+    bool invariants(const std::vector<Tuple>& t)
+        override; // this is now automatically checked, TODO: clear trace from the program.
 
     double get_length2(const Tuple& loc) const;
     // debug use

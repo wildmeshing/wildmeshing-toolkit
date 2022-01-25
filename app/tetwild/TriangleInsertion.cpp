@@ -106,24 +106,35 @@ void tetwild::TetWild::construct_background_mesh(const InputSurface& input_surfa
         for (int j = 0; j < 3; j++) points[i][j] = vertices[i][j];
     }
     ///box
-    double delta = m_params.diag_l / 10.0;
+    double delta = m_params.diag_l / 15.0;
     Vector3d box_min(m_params.min[0] - delta, m_params.min[1] - delta, m_params.min[2] - delta);
     Vector3d box_max(m_params.max[0] + delta, m_params.max[1] + delta, m_params.max[2] + delta);
-    double Nx = std::max(2, int((box_max[0] - box_min[0]) / delta));
-    double Ny = std::max(2, int((box_max[1] - box_min[1]) / delta));
-    double Nz = std::max(2, int((box_max[2] - box_min[2]) / delta));
-    for (int i = 0; i <= Nx; i++) {
-        for (int j = 0; j <= Ny; j++) {
-            for (int k = 0; k <= Nz; k++) {
+    int Nx = std::max(2, int((box_max[0] - box_min[0]) / delta));
+    int Ny = std::max(2, int((box_max[1] - box_min[1]) / delta));
+    int Nz = std::max(2, int((box_max[2] - box_min[2]) / delta));
+    for (double i = 0; i <= Nx; i++) {
+        for (double j = 0; j <= Ny; j++) {
+            for (double k = 0; k <= Nz; k++) {
                 Vector3d p(
                     box_min[0] * (1 - i / Nx) + box_max[0] * i / Nx,
                     box_min[1] * (1 - j / Ny) + box_max[1] * j / Ny,
                     box_min[2] * (1 - k / Nz) + box_max[2] * k / Nz);
+
+                if (i == 0) p[0] = box_min[0];
+                if (i == Nx) p[0] = box_max[0];
+                if (j == 0) p[1] = box_min[1];
+                if (j == Ny) p[1] = box_max[1];
+                if (k == 0) p[2] = box_min[2];
+                if (k == Nz) // note: have to do, otherwise the value would be slightly different
+                    p[2] = box_max[2];
+
                 if (!m_envelope.is_outside(p)) continue;
                 points.push_back({{p[0], p[1], p[2]}});
             }
         }
     }
+    m_params.box_min = box_min;
+    m_params.box_max = box_max;
 
     ///delaunay
     auto tets = wmtk::delaunay3D_conn(points);
@@ -132,17 +143,17 @@ void tetwild::TetWild::construct_background_mesh(const InputSurface& input_surfa
     // conn
     init(points.size(), tets);
     // attr
-    m_vertex_attribute.resize(points.size());
-    m_tet_attribute.resize(tets.size());
-    m_face_attribute.resize(tets.size() * 4);
-    m_edge_attribute.resize(tets.size() * 6);
-    for (int i = 0; i < m_vertex_attribute.size(); i++) {
+    m_vertex_attribute.m_attributes.resize(points.size());
+    m_tet_attribute.m_attributes.resize(tets.size());
+    m_face_attribute.m_attributes.resize(tets.size() * 4);
+    m_edge_attribute.m_attributes.resize(tets.size() * 6);
+    for (int i = 0; i < m_vertex_attribute.m_attributes.size(); i++) {
         m_vertex_attribute[i].m_pos = Vector3(points[i][0], points[i][1], points[i][2]);
         m_vertex_attribute[i].m_posf = Vector3d(points[i][0], points[i][1], points[i][2]);
     }
     // todo: track bbox
 
-    output_mesh("delaunay.msh");
+//    output_mesh("delaunay.msh");
 }
 
 void tetwild::TetWild::match_insertion_faces(
@@ -159,7 +170,7 @@ void tetwild::TetWild::match_insertion_faces(
         std::sort(f.begin(), f.end());
         map_surface[f] = i;
     }
-    for (size_t i = 0; i < m_tet_attribute.size(); i++) {
+    for (size_t i = 0; i < m_tet_attribute.m_attributes.size(); i++) {
         Tuple t = tuple_from_tet(i);
         auto vs = oriented_tet_vertices(t);
         for (int j = 0; j < 4; j++) {
@@ -252,7 +263,7 @@ void tetwild::TetWild::triangle_insertion_stuff(
         std::array<Vector2, 3> tri2;
         int squeeze_to_2d_dir = wmtk::project_triangle_to_2d(tri, tri2);
 
-        // wmtk::logger().info("face_id {}", face_id);
+        wmtk::logger().info("face_id {}", face_id);
 
         std::vector<Tuple> intersected_tets;
         std::map<std::array<size_t, 2>, std::tuple<int, Vector3, size_t, int>> map_edge2point;
@@ -578,10 +589,8 @@ void tetwild::TetWild::triangle_insertion_stuff(
             VertexAttributes v;
             v.m_pos = p;
             v.m_posf = to_double(v.m_pos);
-            m_vertex_attribute.push_back(v);
-            //            (info.second).first = m_vertex_attribute.size() - 1;//todo: check if needed
-
-            // map_edge2vid[info.first] = m_vertex_attribute.size() - 1;
+            m_vertex_attribute.m_attributes.push_back(v);
+            //            (info.second).first = m_vertex_attribute.m_attributes.size() - 1;//todo: check if needed
 
             ///
             intersected_edges.push_back(tuple_from_edge(tid, l_eid));
@@ -1075,20 +1084,31 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
     output_surface("surface0.obj");
     // fortest
 
-    /// update m_is_on_surface for vertices, remove leaked surface marks
-    m_edge_attribute.resize(m_tet_attribute.size() * 6);
-    m_face_attribute.resize(m_tet_attribute.size() * 4);
+    //// track surface, bbox, rounding
+    setup_attributes();
+
+    // fortest
+    output_surface("surface.obj");
+    // fortest
+
+    wmtk::logger().info("#t {}", tet_capacity());
+    wmtk::logger().info("#v {}", vert_capacity());
+
+} // note: skip preserve open boundaries
+
+void tetwild::TetWild::setup_attributes()
+{
+    const auto& vertices = triangle_insertion_global_cache.input_surface.vertices;
+    const auto& faces = triangle_insertion_global_cache.input_surface.faces;
+
+    // m_edge_attribute.m_attributes.resize(m_tet_attribute.m_attributes.size() * 6);
+    // m_face_attribute.m_attributes.resize(m_tet_attribute.m_attributes.size() * 4);
+
+    //// track surface
+    // update m_is_on_surface for vertices, remove leaked surface marks
     for (auto& info : triangle_insertion_global_cache.tet_face_tags) {
         auto& vids = info.first;
         auto& fids = info.second;
-
-        //        //fortest
-        //        if(std::find(fids.begin(), fids.end(), 4)==fids.end()){
-        //            fids = {};
-        //        }
-        //        continue;
-        //        //fortest
-
 
         Vector3 c = m_vertex_attribute[vids[0]].m_pos + m_vertex_attribute[vids[1]].m_pos +
                     m_vertex_attribute[vids[2]].m_pos;
@@ -1097,11 +1117,11 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
         wmtk::vector_unique(fids);
 
         int inside_fid = -1;
-        for (int fid : fids) {
+        for (int input_fid : fids) {
             std::array<Vector3, 3> tri = {
-                {to_rational(vertices[faces[fid][0]]),
-                 to_rational(vertices[faces[fid][1]]),
-                 to_rational(vertices[faces[fid][2]])}};
+                {to_rational(vertices[faces[input_fid][0]]),
+                 to_rational(vertices[faces[input_fid][1]]),
+                 to_rational(vertices[faces[input_fid][2]])}};
             //
             std::array<Vector2, 3> tri2;
             int squeeze_to_2d_dir = wmtk::project_triangle_to_2d(tri, tri2);
@@ -1109,10 +1129,24 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
             //
             if (wmtk::is_point_inside_triangle(
                     c2,
-                    tri2)) { // todo: should exclude the points on the edges of tri2 -- NO
-                // todo: update m_face_attribute
+                    tri2)) { // should exclude the points on the edges of tri2 -- NO
+                auto [face, global_tet_fid] = tuple_from_face(vids);
+                m_face_attribute[global_tet_fid].m_is_surface_fs = 1;
+                //
+                for (size_t vid : vids) {
+                    m_vertex_attribute[vid].m_is_on_surface = true;
+                }
+                //
+                inside_fid = input_fid;
 
-                inside_fid = fid;
+                //fortest
+                bool is_out = m_envelope.is_outside(
+                    {{m_vertex_attribute[vids[0]].m_posf,
+                      m_vertex_attribute[vids[1]].m_posf,
+                      m_vertex_attribute[vids[2]].m_posf}});
+                assert(!is_out);
+                //fortest
+
                 break;
             }
         }
@@ -1125,16 +1159,12 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
         }
         // fortest
     }
-    /// todo: track bbox
 
     check_mesh_connectivity_validity();
     output_mesh("triangle_insertion.msh");
 
-    // fortest
-    output_surface("surface.obj");
-    // fortest
-
-} // note: skip preserve open boundaries
+    // todo: output faces to check surface and bbox
+}
 
 void tetwild::TetWild::add_tet_centroid(const Tuple& t, size_t vid)
 {

@@ -1,9 +1,12 @@
 #pragma once
 
 #include <wmtk/utils/VectorUtils.h>
+#include <wmtk/AttributeCollection.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 #include <tbb/concurrent_vector.h>
+
+#include <Tracy.hpp>
 
 #include <array>
 #include <cassert>
@@ -11,6 +14,7 @@
 #include <optional>
 #include <queue>
 #include <vector>
+
 
 namespace wmtk {
 class TetMesh
@@ -173,6 +177,7 @@ public:
 
         friend bool operator==(const VertexConnectivity& l, const VertexConnectivity& r)
         {
+            ZoneScoped;
             return std::tie(l.m_conn_tets, l.m_is_removed) ==
                    std::tie(r.m_conn_tets, r.m_is_removed); // keep the same order
         }
@@ -210,6 +215,7 @@ public:
 
         int find(size_t v_id) const
         {
+            ZoneScoped;
             for (int j = 0; j < 4; j++) {
                 if (v_id == m_indices[j]) return j;
             }
@@ -218,6 +224,7 @@ public:
 
         int find_local_edge(size_t v1_id, size_t v2_id) const
         {
+            ZoneScoped;
             std::array<int, 2> e;
             for (int j = 0; j < 4; j++) {
                 if (v1_id == m_indices[j])
@@ -234,6 +241,7 @@ public:
 
         int find_local_face(size_t v1_id, size_t v2_id, size_t v3_id) const
         {
+            ZoneScoped;
             std::array<int, 3> f;
             for (int j = 0; j < 4; j++) {
                 if (v1_id == m_indices[j])
@@ -252,6 +260,7 @@ public:
 
         friend bool operator==(const TetrahedronConnectivity& l, const TetrahedronConnectivity& r)
         {
+            ZoneScoped;
             return std::tie(l.m_indices, l.m_is_removed, l.hash) ==
                    std::tie(r.m_indices, r.m_is_removed, r.hash); // keep the same order
         }
@@ -259,11 +268,25 @@ public:
         void print_info() {}
     };
 
-    TetMesh() {}
-    virtual ~TetMesh() {}
+    TetMesh();
+    virtual ~TetMesh() = default;
 
-    size_t vert_capacity() const { return m_vertex_connectivity.size(); };
-    size_t tet_capacity() const { return m_tet_connectivity.size(); };
+    size_t vert_capacity() const { return m_vertex_connectivity.size(); }
+    size_t tet_capacity() const { return m_tet_connectivity.size(); }
+    size_t vertex_size() const
+    {
+        return std::count_if(
+            m_vertex_connectivity.begin(),
+            m_vertex_connectivity.end(),
+            [](const VertexConnectivity& v) { return v.m_is_removed == false; });
+    }
+    size_t tet_size() const
+    {
+        return std::count_if(
+            m_tet_connectivity.begin(),
+            m_tet_connectivity.end(),
+            [](const TetrahedronConnectivity& t) { return t.m_is_removed == false; });
+    }
     /**
      * Initialize TetMesh data structure
      *
@@ -317,7 +340,12 @@ public:
     template <typename T>
     using vector = tbb::concurrent_vector<T>;
 
+public:
+    AbstractAttributeContainer* p_vertex_attrs, *p_edge_attrs, *p_face_attrs, *p_tet_attrs;
+    AbstractAttributeContainer vertex_attrs, edge_attrs, face_attrs, tet_attrs;
+
 private:
+
     // Stores the connectivity of the mesh
     vector<VertexConnectivity> m_vertex_connectivity;
     vector<TetrahedronConnectivity> m_tet_connectivity;
@@ -347,7 +375,7 @@ private:
 
 protected:
     virtual void add_tet_centroid(const Tuple& t, size_t vid) {}
-
+    virtual bool invariants(const std::vector<Tuple>&) { return true; }
     virtual void triangle_insertion_before(const std::vector<Tuple>& faces) {}
     virtual void triangle_insertion_after(
         const std::vector<Tuple>& faces,
@@ -376,22 +404,7 @@ protected:
     virtual bool smooth_before(const Tuple& t) { return true; }
     virtual bool smooth_after(const Tuple& t) { return true; }
 
-    // Invariants that are called on all the new or modified elements after an operation is
-    // performed
-    virtual bool vertex_invariant(const Tuple& t) { return true; }
-    virtual bool edge_invariant(const Tuple& t) { return true; }
-    virtual bool face_invariant(const Tuple& t) { return true; }
-    virtual bool tetrahedron_invariant(const Tuple& t) { return true; }
-
-    virtual void resize_vertex_attributes(size_t v) {}
-    virtual void resize_edge_attributes(size_t e) {}
-    virtual void resize_face_attributes(size_t f) {}
-    virtual void resize_tet_attributes(size_t t) {}
-
-    virtual void move_face_attribute(size_t from, size_t to) {}
-    virtual void move_edge_attribute(size_t from, size_t to) {}
-    virtual void move_tet_attribute(size_t from, size_t to) {}
-    virtual void move_vertex_attribute(size_t from, size_t to) {}
+    virtual void resize_vertex_mutex(size_t v) {}
 
 public:
     /**
@@ -401,7 +414,7 @@ public:
      * @param tid Global tetra index
      * @param local_eid local edge index
      */
-    Tuple tuple_from_edge(int tid, int local_eid) const;
+    Tuple tuple_from_edge(size_t tid, int local_eid) const;
 
     /**
      * @brief get a Tuple from global tetra index and __local__ face index (from 0-3).
@@ -410,7 +423,15 @@ public:
      * @param tid Global tetra index
      * @param local_fid local face index
      */
-    Tuple tuple_from_face(int tid, int local_fid) const;
+    Tuple tuple_from_face(size_t tid, int local_fid) const;
+
+    /**
+     * @brief get a Tuple and the global face index from global vertex index of the face.
+     *
+     * @param m TetMesh where the current Tuple belongs.
+     * @param vids Global vertex index of the face
+     */
+    std::tuple<Tuple, size_t> tuple_from_face(const std::array<size_t, 3>& vids) const;
 
     /**
      * @brief get a Tuple from global vertex index
@@ -418,7 +439,7 @@ public:
      * @param m TetMesh where the current Tuple belongs.
      * @param vid Global vertex index
      */
-    Tuple tuple_from_vertex(int vid) const;
+    Tuple tuple_from_vertex(size_t vid) const;
 
     /**
      * @brief get a Tuple from global tetra index
@@ -426,7 +447,7 @@ public:
      * @param m TetMesh where the current Tuple belongs.
      * @param tid Global tetra index
      */
-    Tuple tuple_from_tet(int tid) const;
+    Tuple tuple_from_tet(size_t tid) const;
 
 
     /**
@@ -509,6 +530,19 @@ public:
     void check_tuple_validity(const Tuple& t) const { t.check_validity(*this); }
     bool check_mesh_connectivity_validity() const;
 
+    void remove_tets_by_ids(const std::vector<size_t>& tids)
+    {
+        for (size_t tid : tids) {
+            m_tet_connectivity[tid].m_is_removed = true;
+            for (int j = 0; j < 4; j++)
+                vector_erase(m_vertex_connectivity[m_tet_connectivity[tid][j]].m_conn_tets, tid);
+        }
+        for (auto& v : m_vertex_connectivity) {
+            if (v.m_is_removed) continue;
+            if (v.m_conn_tets.empty()) v.m_is_removed = true;
+        }
+    }
+
 private:
     std::map<size_t, wmtk::TetMesh::VertexConnectivity> operation_update_connectivity_impl(
         std::vector<size_t>& affected_tid,
@@ -518,6 +552,33 @@ private:
         const std::vector<size_t>& affected,
         const std::vector<size_t>& new_tet_id,
         const std::vector<wmtk::TetMesh::TetrahedronConnectivity>& old_tets);
+    std::map<size_t, wmtk::TetMesh::VertexConnectivity> operation_update_connectivity_impl(
+        std::vector<size_t>& remove_id,
+        std::vector<std::array<size_t, 4>>& new_tet_conn,
+        std::vector<size_t>& allocate_id);
+    void start_protect_attributes()
+    {
+        p_vertex_attrs->begin_protect();
+        p_edge_attrs->begin_protect();
+        p_face_attrs->begin_protect();
+        p_tet_attrs->begin_protect();
+    }
+
+    void release_protect_attributes()
+    {
+        p_vertex_attrs->end_protect();
+        p_edge_attrs->end_protect();
+        p_face_attrs->end_protect();
+        p_tet_attrs->end_protect();
+    }
+
+    void rollback_protected_attributes()
+    {
+        p_vertex_attrs->rollback();
+        p_edge_attrs->rollback();
+        p_face_attrs->rollback();
+        p_tet_attrs->rollback();
+    }
 };
 
 } // namespace wmtk

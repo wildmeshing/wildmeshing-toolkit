@@ -1,6 +1,7 @@
 #pragma once
 
 #include <wmtk/utils/VectorUtils.h>
+#include <memory>
 #include <wmtk/utils/Logger.hpp>
 
 #include <tbb/concurrent_vector.h>
@@ -11,6 +12,7 @@
 #include <map>
 #include <optional>
 #include <vector>
+#include "wmtk/AttributeCollection.hpp"
 
 namespace wmtk {
 
@@ -176,7 +178,12 @@ public:
         }
     };
 
-    TriMesh() {}
+    TriMesh()
+    {
+        p_vertex_attrs = &vertex_attrs;
+        p_edge_attrs = &edge_attrs;
+        p_face_attrs = &face_attrs;
+    }
     virtual ~TriMesh() {}
 
     void create_mesh(size_t n_vertices, const std::vector<std::array<size_t, 3>>& tris);
@@ -219,6 +226,10 @@ public:
     template <typename T>
     using vector = tbb::concurrent_vector<T>;
 
+public:
+    AbstractAttributeContainer *p_vertex_attrs, *p_edge_attrs, *p_face_attrs;
+    AbstractAttributeContainer vertex_attrs, edge_attrs, face_attrs;
+
 private:
     vector<VertexConnectivity> m_vertex_connectivity;
     vector<TriangleConnectivity> m_tri_connectivity;
@@ -227,6 +238,7 @@ private:
     size_t get_next_empty_slot_v();
 
 protected:
+    virtual bool invariants(const std::vector<Tuple>&) { return true; }
     virtual bool split_before(const Tuple& t) { return true; }
     virtual bool split_after(const Tuple& t) { return true; }
 
@@ -257,14 +269,7 @@ protected:
             return false;
         return true;
     }
-
-    virtual void resize_vertex_attributes(size_t v){};
-    virtual void resize_edge_attributes(size_t e){};
-    virtual void resize_face_attributes(size_t t){};
-
-    virtual void move_vertex_attribute(size_t from, size_t to){};
-    virtual void move_edge_attribute(size_t from, size_t to){};
-    virtual void move_face_attribute(size_t from, size_t to){};
+    virtual void resize_mutex(size_t v){}; // tempoarary hack
 
 
 public:
@@ -298,7 +303,7 @@ public:
     bool split_edge(const Tuple& t, std::vector<Tuple>& new_t);
     bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_t);
     bool swap_edge(const Tuple& t, std::vector<Tuple>& new_t);
-    bool smooth_vertex(const Tuple& t){return true;}
+    bool smooth_vertex(const Tuple& t) { return true; }
 
     /**
      * @brief Get the one ring tris for a vertex
@@ -322,7 +327,7 @@ public:
      * @param t tuple pointing to an face
      * @return incident vertices
      */
-    std::vector<Tuple> oriented_tri_vertices(const Tuple& t) const;
+    std::array<Tuple, 3> oriented_tri_vertices(const Tuple& t) const;
 
 
     Tuple tuple_from_tri(size_t fid) const
@@ -340,6 +345,28 @@ public:
     {
         auto vid = m_tri_connectivity[fid][(local_eid + 1) % 3];
         return Tuple(vid, local_eid, fid, *this);
+    }
+
+private:
+    void start_protect_attributes()
+    {
+        p_vertex_attrs->begin_protect();
+        p_edge_attrs->begin_protect();
+        p_face_attrs->begin_protect();
+    }
+
+    void release_protect_attributes()
+    {
+        p_vertex_attrs->end_protect();
+        p_edge_attrs->end_protect();
+        p_face_attrs->end_protect();
+    }
+
+    void rollback_protected_attributes()
+    {
+        p_vertex_attrs->rollback();
+        p_edge_attrs->rollback();
+        p_face_attrs->rollback();
     }
 };
 

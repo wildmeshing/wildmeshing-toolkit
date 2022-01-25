@@ -1,10 +1,13 @@
 #include <wmtk/utils/TupleUtils.hpp>
 
+#include <Tracy.hpp>
+
 #include <algorithm>
 
 namespace wmtk {
 void unique_edge_tuples(const TetMesh& m, std::vector<TetMesh::Tuple>& edges)
 {
+    ZoneScoped;
     auto edge_ids = std::vector<size_t>();
     for (auto& e : edges) edge_ids.push_back(e.eid(m));
     std::sort(edge_ids.begin(), edge_ids.end());
@@ -17,6 +20,7 @@ void unique_edge_tuples(const TetMesh& m, std::vector<TetMesh::Tuple>& edges)
 
 void unique_face_tuples(const TetMesh& m, std::vector<TetMesh::Tuple>& faces)
 {
+    ZoneScoped;
     std::stable_sort(
         faces.begin(),
         faces.end(),
@@ -34,6 +38,7 @@ void unique_face_tuples(const TetMesh& m, std::vector<TetMesh::Tuple>& faces)
 
 void unique_directed_edge_tuples(const TetMesh& m, std::vector<TetMesh::Tuple>& edges)
 {
+    ZoneScoped;
     std::stable_sort(
         edges.begin(),
         edges.end(),

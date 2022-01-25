@@ -1,9 +1,10 @@
+#include "EdgeOperations2d.h"
+
 #include <wmtk/TriMesh.h>
 #include <wmtk/utils/VectorUtils.h>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <wmtk/ExecutionScheduler.hpp>
-#include "EdgeOperations2d.h"
 
 using namespace Edge2d;
 using namespace wmtk;
@@ -11,21 +12,27 @@ using namespace wmtk;
 auto renew = [](auto& m, auto op, auto& tris) {
     auto edges = m.new_edges_after(tris);
     auto optup = std::vector<std::pair<std::string, TriMesh::Tuple>>();
-    for (auto& e : edges) optup.emplace_back("edge_collapse", e);
+    for (auto& e : edges) optup.emplace_back(op, e);
     return optup;
+};
+
+auto edge_locker = [](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
+    auto stack = std::vector<size_t>();
+    if (!m.try_set_edge_mutex_two_ring(e, stack)) return {};
+    return stack;
 };
 
 double EdgeOperations2d::compute_edge_cost_collapse_ar(const TriMesh::Tuple& t, double L) const
 {
     double l =
-        (m_vertex_positions[t.vid()] - m_vertex_positions[t.switch_vertex(*this).vid()]).norm();
+        (vertex_attrs[t.vid()].pos - vertex_attrs[t.switch_vertex(*this).vid()].pos).norm();
     if (l < (4. / 5.) * L) return ((4. / 5.) * L - l);
     return -1;
 }
 double EdgeOperations2d::compute_edge_cost_split_ar(const TriMesh::Tuple& t, double L) const
 {
     double l =
-        (m_vertex_positions[t.vid()] - m_vertex_positions[t.switch_vertex(*this).vid()]).norm();
+        (vertex_attrs[t.vid()].pos - vertex_attrs[t.switch_vertex(*this).vid()].pos).norm();
     if (l > (4. / 3.) * L) return (l - (4. / 3.) * L);
     return -1;
 }
@@ -67,24 +74,35 @@ double EdgeOperations2d::compute_vertex_valence_ar(const TriMesh::Tuple& t) cons
     return (cost_before_swap - cost_after_swap);
 }
 
-std::pair<double, double> EdgeOperations2d::average_len_valen()
+std::vector<double> EdgeOperations2d::average_len_valen()
 {
     double average_len = 0.0;
     double average_valen = 0.0;
     auto edges = get_edges();
     auto verts = get_vertices();
+    double maxlen = std::numeric_limits<double>::min();
+    double maxval = std::numeric_limits<double>::min();
+    double minlen = std::numeric_limits<double>::max();
+    double minval = std::numeric_limits<double>::max();
     for (auto& loc : edges) {
-        average_len +=
-            (m_vertex_positions[loc.vid()] - m_vertex_positions[loc.switch_vertex(*this).vid()])
+        double currentlen =
+            (vertex_attrs[loc.vid()].pos - vertex_attrs[loc.switch_vertex(*this).vid()].pos)
                 .norm();
+        average_len += currentlen;
+        if (maxlen < currentlen) maxlen = currentlen;
+        if (minlen > currentlen) minlen = currentlen;
     }
     average_len /= edges.size();
     for (auto& loc : verts) {
-        average_valen += get_one_ring_edges_for_vertex(loc).size();
+        double currentval = get_one_ring_edges_for_vertex(loc).size();
+        average_valen += currentval;
+        if (maxval < currentval) maxval = currentval;
+        if (minval > currentval) minval = currentval;
     }
     average_valen /= verts.size();
     int cnt = 0;
-    return std::make_pair(average_len, average_valen);
+    std::vector<double> rtn{average_len, maxlen, minlen, average_valen, maxval, minval};
+    return rtn;
 }
 
 std::vector<TriMesh::Tuple> Edge2d::EdgeOperations2d::new_edges_after_swap(
@@ -102,41 +120,62 @@ std::vector<TriMesh::Tuple> Edge2d::EdgeOperations2d::new_edges_after_swap(
 
 bool EdgeOperations2d::collapse_remeshing(double L)
 {
-     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
+    auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_collapse", loc);
 
-    auto executor = wmtk::ExecutePass<EdgeOperations2d, ExecutionPolicy::kSeq>();
-    executor.renew_neighbor_tuples = renew;
-    executor.priority = [&](auto& m, auto _, auto& e) {
-        return -m.compute_edge_cost_collapse_ar(e, L);
-    };
-    executor.should_process =[](auto& m, auto&ele){
-        auto& [val, op, e] = ele;
-        if (val > 0) return false; // priority is negated.
-        return true;
-    };
+    auto setup_and_execute = [&](auto executor) {
+        executor.renew_neighbor_tuples = renew;
+        executor.priority = [&](auto& m, auto _, auto& e) {
+            return -m.compute_edge_cost_collapse_ar(e, L);
+        };
+        executor.lock_vertices = edge_locker;
 
-    executor(*this, collect_all_ops);
+        executor.should_process = [](auto& m, auto& ele) {
+            auto& [val, op, e] = ele;
+            if (val > 0) return false; // priority is negated.
+            return true;
+        };
+        executor(*this, collect_all_ops);
+    };
+    if (NUM_THREADS > 1) {
+        auto executor = wmtk::ExecutePass<EdgeOperations2d, ExecutionPolicy::kSeq>();
+        setup_and_execute(executor);
+    } else {
+        auto executor = wmtk::ExecutePass<EdgeOperations2d, ExecutionPolicy::kPartition>();
+        setup_and_execute(executor);
+    }
+
     return true;
 }
 bool EdgeOperations2d::split_remeshing(double L)
 {
-
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_split", loc);
 
-    auto executor = wmtk::ExecutePass<EdgeOperations2d, ExecutionPolicy::kSeq>();
-    executor.renew_neighbor_tuples = renew;
-    executor.priority = [&](auto& m, auto _, auto& e) {
-        return m.compute_edge_cost_split_ar(e, L);
-    };
-     executor.should_process =[](auto& m, auto&ele){
-        auto& [val, op, e] = ele;
-        if (val < 0) return false;
-        return true;
-    };
+    auto setup_and_execute = [&](auto executor) {
+        executor.num_threads = NUM_THREADS;
 
-    executor(*this, collect_all_ops);
+        executor.lock_vertices = edge_locker;
+
+        executor.renew_neighbor_tuples = renew;
+        executor.priority = [&](auto& m, auto _, auto& e) {
+            return m.compute_edge_cost_split_ar(e, L);
+        };
+        executor.should_process = [](auto& m, auto& ele) {
+            auto& [val, op, e] = ele;
+            if (val < 0) return false;
+            return true;
+        };
+        executor(*this, collect_all_ops);
+    };
+    if (NUM_THREADS > 1) {
+        auto executor = wmtk::ExecutePass<EdgeOperations2d, ExecutionPolicy::kSeq>();
+        setup_and_execute(executor);
+    } else {
+        auto executor = wmtk::ExecutePass<EdgeOperations2d, ExecutionPolicy::kPartition>();
+        setup_and_execute(executor);
+    }
+
     return true;
 }
 
@@ -146,53 +185,127 @@ bool EdgeOperations2d::swap_remeshing()
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_swap", loc);
 
-    auto executor = wmtk::ExecutePass<EdgeOperations2d, ExecutionPolicy::kSeq>();
-    executor.renew_neighbor_tuples = renew;
-    executor.priority = [](auto& m, auto op, const Tuple& e) {
-        return m.compute_vertex_valence_ar(e);
+    auto setup_and_execute = [&](auto executor) {
+        executor.renew_neighbor_tuples = renew;
+        executor.priority = [](auto& m, auto op, const Tuple& e) {
+            return m.compute_vertex_valence_ar(e);
+        };
+        executor.lock_vertices = edge_locker;
+        executor.should_process = [](auto& m, auto& ele) {
+            auto& [val, _, e] = ele;
+            auto val_energy = (m.compute_vertex_valence_ar(e));
+            return (val_energy > 1e-5);
+        };
+        executor(*this, collect_all_ops);
     };
-    executor.should_process = [](auto& m, auto& ele) {
-        auto& [val, _, e] = ele;
-        auto val_energy = (m.compute_vertex_valence_ar(e));
-        return (val_energy > 1e-5);
-    };
+    if (NUM_THREADS > 1) {
+        auto executor = wmtk::ExecutePass<EdgeOperations2d, ExecutionPolicy::kSeq>();
+        setup_and_execute(executor);
+    } else {
+        auto executor = wmtk::ExecutePass<EdgeOperations2d, ExecutionPolicy::kPartition>();
+        setup_and_execute(executor);
+    }
 
-    executor(*this, collect_all_ops);
     return true;
 }
-
-bool EdgeOperations2d::adaptive_remeshing(double L, int iterations)
+double area(EdgeOperations2d& m, std::array<TriMesh::Tuple, 3>& verts)
 {
-    std::vector<double> avg_lens;
-    std::vector<double> avg_valens;
+    return ((m.vertex_attrs[verts[0].vid()].pos - m.vertex_attrs[verts[2].vid()].pos)
+                .cross(m.vertex_attrs[verts[1].vid()].pos - m.vertex_attrs[verts[2].vid()].pos))
+               .norm() /
+           2.0;
+};
+
+Eigen::Vector3d normal(EdgeOperations2d& m, std::array<TriMesh::Tuple, 3>& verts)
+{
+    return ((m.vertex_attrs[verts[0].vid()].pos - m.vertex_attrs[verts[2].vid()].pos)
+                .cross(m.vertex_attrs[verts[1].vid()].pos - m.vertex_attrs[verts[2].vid()].pos))
+        .normalized();
+}
+
+Eigen::Vector3d EdgeOperations2d::tangential_smooth(const Tuple& t)
+{
+    auto one_ring_tris = get_one_ring_tris_for_vertex(t);
+    if (one_ring_tris.size() < 2) return vertex_attrs[t.vid()].pos;
+    Eigen::Vector3d after_smooth = smooth(t);
+    // get normal and area of each face
+    auto area = [](auto& m, auto& verts) {
+        return ((m.vertex_attrs[verts[0].vid()].pos - m.vertex_attrs[verts[2].vid()].pos)
+                    .cross(
+                        m.vertex_attrs[verts[1].vid()].pos -
+                        m.vertex_attrs[verts[2].vid()].pos))
+                   .norm() /
+               2.0;
+    };
+    auto normal = [](auto& m, auto& verts) {
+        return ((m.vertex_attrs[verts[0].vid()].pos - m.vertex_attrs[verts[2].vid()].pos)
+                    .cross(
+                        m.vertex_attrs[verts[1].vid()].pos -
+                        m.vertex_attrs[verts[2].vid()].pos))
+            .normalized();
+    };
+    auto w0 = 0.0;
+    Eigen::Vector3d n0(0.0, 0.0, 0.0);
+    for (auto& e : one_ring_tris) {
+        auto verts = oriented_tri_vertices(e);
+        w0 += area(*this, verts);
+        n0 += area(*this, verts) * normal(*this, verts);
+    }
+    n0 /= w0;
+    after_smooth += n0 * n0.transpose() * (vertex_attrs[t.vid()].pos - after_smooth);
+    return after_smooth;
+}
+
+
+bool EdgeOperations2d::adaptive_remeshing(double L, int iterations, int sm)
+{
+    std::vector<double> avg_lens, max_lens, min_lens;
+    std::vector<double> avg_valens, max_vals, min_vals;
     int cnt = 0;
-    auto average = average_len_valen();
-    while ((average.first - L) * (average.first - L) > 1e-8 && cnt < iterations) {
-        wmtk::logger().set_level(spdlog::level::trace);
-        wmtk::logger().debug(" on iteration {}", cnt);
+    auto properties = average_len_valen();
+    while ((properties[0] - L) * (properties[0] - L) > 1e-8 && cnt < iterations) {
+        // wmtk::logger().set_level(spdlog::level::trace);
+        // wmtk::logger().debug(" on iteration {}", cnt);
         cnt++;
-        wmtk::logger().debug(" average length is {} {}", average.first, average.second);
-        avg_lens.push_back(average.first);
-        avg_valens.push_back(average.second);
+        // wmtk::logger().info(" average length is {} {}", properties[0], properties[3]);
+        avg_lens.push_back(properties[0]);
+        avg_valens.push_back(properties[3]);
+        max_lens.push_back(properties[1]);
+        max_vals.push_back(properties[4]);
+        min_lens.push_back(properties[2]);
+        min_vals.push_back(properties[5]);
 
         // split
         split_remeshing(L);
-
         // collpase
         collapse_remeshing(L);
 
         // swap edges
         swap_remeshing();
-
         // smoothing
         auto vertices = get_vertices();
-        for (auto& loc : vertices) smooth(loc);
+        if (sm == 0) {
+            for (auto& loc : vertices) vertex_attrs[loc.vid()].pos = smooth(loc);
+        } else
+            for (auto& loc : vertices) vertex_attrs[loc.vid()].pos = tangential_smooth(loc);
 
         assert(check_mesh_connectivity_validity());
         consolidate_mesh();
-        average = average_len_valen();
+        properties = average_len_valen();
     }
+    wmtk::logger().info("avg edge len after each remesh is: ");
     wmtk::vector_print(avg_lens);
+    wmtk::logger().info("max edge len after each remesh is: ");
+    wmtk::vector_print(max_lens);
+    wmtk::logger().info("min edge len after each remesh is: ");
+    wmtk::vector_print(min_lens);
 
+
+    wmtk::logger().info("avg valence after each remesh is: ");
+    wmtk::vector_print(avg_valens);
+    wmtk::logger().info("max valence after each remesh is: ");
+    wmtk::vector_print(max_vals);
+    wmtk::logger().info("min valence after each remesh is: ");
+    wmtk::vector_print(min_vals);
     return true;
 }

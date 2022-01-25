@@ -64,13 +64,10 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
                 std::set<std::array<size_t, 2>>,
                 std::set<std::array<size_t, 3>>>{conn_verts, conn_edges, conn_faces};
         };
-        auto adjacent_boundary_faces = [this, &VC, &TC](auto v) {
-            return vertex_adjacent_boundary_faces(this->tuple_from_vertex(v));
-        };
         auto& closure0 = VC[v0].m_conn_tets;
         auto& closure1 = VC[v1].m_conn_tets;
-        auto bnd0 = adjacent_boundary_faces(v0);
-        auto bnd1 = adjacent_boundary_faces(v1);
+        auto bnd0 = vertex_adjacent_boundary_faces(this->tuple_from_vertex(v0));
+        auto bnd1 = vertex_adjacent_boundary_faces(this->tuple_from_vertex(v1));
         auto lk0 = link(std::array<size_t, 1>{{v0}}, closure0, bnd0);
         auto lk1 = link(std::array<size_t, 1>{{v1}}, closure1, bnd1);
 
@@ -125,6 +122,7 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
         m_vertex_connectivity[v2_id].m_conn_tets);
     auto new_tet_conn = std::vector<std::array<size_t, 4>>();
     std::vector<TetrahedronConnectivity> old_tets;
+    std::vector<size_t> preserved_tids;
     for (auto t_id : n1_t_ids) {
         old_tets.push_back(m_tet_connectivity[t_id]);
         auto l1 = m_tet_connectivity[t_id].find(v1_id);
@@ -133,27 +131,32 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
         assert(l1 != -1);
         new_tet_conn.push_back(m_tet_connectivity[t_id].m_indices);
         new_tet_conn.back()[l1] = v2_id;
+        preserved_tids.push_back(t_id);
     }
-    auto new_tet_id = n1_t_ids;
-    auto rollback_vert_conn = operation_update_connectivity_impl(new_tet_id, new_tet_conn);
+    auto rollback_vert_conn =
+        operation_update_connectivity_impl(n1_t_ids, new_tet_conn, preserved_tids);
+
+    auto& new_tet_id = preserved_tids;
     assert(rollback_vert_conn.find(v1_id) != rollback_vert_conn.end());
     //
     m_vertex_connectivity[v1_id].m_is_removed = true;
     m_vertex_connectivity[v1_id].m_conn_tets.clear();
 
     Tuple new_loc = tuple_from_vertex(v2_id);
-    if (!vertex_invariant(new_loc) || !edge_invariant(new_loc) || !tetrahedron_invariant(new_loc) ||
-        !collapse_after(new_loc)) {
+
+    start_protect_attributes();
+    if (!collapse_after(new_loc) || !invariants(get_one_ring_tets_for_vertex(new_loc))) {
         m_vertex_connectivity[v1_id].m_is_removed = false;
         operation_failure_rollback_imp(rollback_vert_conn, n1_t_ids, new_tet_id, old_tets);
 
         return false;
     }
+    release_protect_attributes();
 
     /// return new_edges
     for (size_t t_id : new_tet_id) {
         for (int j = 0; j < 6; j++) {
-                new_edges.push_back(tuple_from_edge(t_id, j));
+            new_edges.push_back(tuple_from_edge(t_id, j));
         }
     }
     unique_edge_tuples(*this, new_edges);

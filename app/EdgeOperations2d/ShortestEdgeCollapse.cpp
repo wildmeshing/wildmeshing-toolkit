@@ -1,9 +1,7 @@
 #include "EdgeOperations2d.h"
-#include "spdlog/spdlog.h"
 
 #include <wmtk/TriMesh.h>
 #include <wmtk/utils/VectorUtils.h>
-
 #include <wmtk/ExecutionScheduler.hpp>
 
 #include <Eigen/Core>
@@ -12,17 +10,42 @@
 using namespace wmtk;
 using namespace Edge2d;
 auto unique_edge_tuples = [](const auto& m, auto& edges) {
-    std::stable_sort(edges.begin(), edges.end(), [&](const auto& a, const auto& b) {
-        return a.eid(m) < b.eid(m);
-    }); // todo: use unique global id here would be very slow!
-
-    edges.erase(
-        std::unique(
-            edges.begin(),
-            edges.end(),
-            [&](const auto& a, const auto& b) { return a.eid(m) == b.eid(m); }),
-        edges.end());
+    std::vector<size_t> all_eids;
+    for (auto e : edges) {
+        all_eids.emplace_back(e.eid(m));
+    }
+    vector_unique(all_eids);
+    edges.clear();
+    for (auto eid : all_eids) {
+        edges.emplace_back(m.tuple_from_edge(eid / 3, eid % 3));
+    }
 };
+
+bool Edge2d::EdgeOperations2d::swap_after(const TriMesh::Tuple& t)
+{
+    std::vector<TriMesh::Tuple> tris;
+    tris.push_back(t);
+    tris.push_back(t.switch_edge(*this));
+    return true;
+}
+
+bool Edge2d::EdgeOperations2d::collapse_after(const TriMesh::Tuple& t)
+{
+    const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
+    auto vid = t.vid();
+    vertex_attrs[vid].pos = p;
+    
+    return true;
+}
+
+bool Edge2d::EdgeOperations2d::split_after(const TriMesh::Tuple& t)
+{
+    const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
+    auto vid = t.vid();
+    vertex_attrs[vid].pos = p;
+
+    return true;
+}
 
 std::vector<TriMesh::Tuple> Edge2d::EdgeOperations2d::new_edges_after(
     const std::vector<TriMesh::Tuple>& tris) const
@@ -52,7 +75,7 @@ bool Edge2d::EdgeOperations2d::collapse_shortest(int target_operation_count)
     };
     auto measure_len2 = [](auto& m, auto op, const Tuple& new_e) {
         auto len2 =
-            (m.m_vertex_positions[new_e.vid()] - m.m_vertex_positions[new_e.switch_vertex(m).vid()])
+            (m.vertex_attrs[new_e.vid()].pos - m.vertex_attrs[new_e.switch_vertex(m).vid()].pos)
                 .squaredNorm();
         return -len2;
     };
@@ -60,6 +83,11 @@ bool Edge2d::EdgeOperations2d::collapse_shortest(int target_operation_count)
         executor.num_threads = NUM_THREADS;
         executor.renew_neighbor_tuples = renew;
         executor.priority = measure_len2;
+        executor.lock_vertices = [](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
+            auto stack = std::vector<size_t>();
+            if (!m.try_set_edge_mutex_two_ring(e, stack)) return {};
+            return stack;
+        };
         executor.stopping_criterion_checking_frequency = target_operation_count;
         executor.stopping_criterion = [](auto& m) { return true; };
         executor(*this, collect_all_ops);

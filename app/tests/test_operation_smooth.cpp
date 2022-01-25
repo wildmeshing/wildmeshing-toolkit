@@ -20,14 +20,15 @@ TEST_CASE("smooth_in_single_tet", "[tetwild_operation]")
     vertices[1].m_posf = Vector3d(1, 0, 0);
     vertices[2].m_posf = Vector3d(0, 1, 0);
     vertices[3].m_posf = Vector3d(0, 0, 1);
-    std::vector<std::array<size_t, 4>> tets = {{{0, 1, 3, 2}}};
+    for (auto& v:vertices) v.m_is_rounded = true;
+    std::vector<std::array<size_t, 4>> tets = {{{0, 1, 2, 3}}};
     std::vector<TetAttributes> tet_attrs(1);
 
     tetwild.init(vertices.size(), tets);
     tetwild.create_mesh_attributes(vertices, tet_attrs);
 
     tetwild.smooth_all_vertices();
-    auto quality = tetwild.m_tet_attribute.front().m_qualities;
+    auto quality = tetwild.m_tet_attribute.m_attributes.front().m_quality;
     REQUIRE(quality == Approx(3.0));
 }
 
@@ -46,17 +47,18 @@ TEST_CASE("smooth_double_tet", "[tetwild_operation]")
     vertices[2].m_posf = Vector3d(0, 1, 0);
     vertices[3].m_posf = Vector3d(0, 0, 1);
     vertices[4].m_posf = Vector3d(1, 1, 1);
+    for (auto& v:vertices) v.m_is_rounded = true;
     std::vector<std::array<size_t, 4>> tets;
-    tets.emplace_back(std::array<size_t, 4>{{0, 1, 3, 2}});
-    tets.emplace_back(std::array<size_t, 4>{{1, 3, 2, 4}});
+    tets.emplace_back(std::array<size_t, 4>{{0, 1, 2, 3}});
+    tets.emplace_back(std::array<size_t, 4>{{1, 2, 3, 4}});
     std::vector<TetAttributes> tet_attrs(tets.size());
 
     tetwild.init(vertices.size(), tets);
     tetwild.create_mesh_attributes(vertices, tet_attrs);
 
     tetwild.smooth_all_vertices();
-    auto quality = tetwild.m_tet_attribute.front().m_qualities;
+    auto quality = tetwild.m_tet_attribute.m_attributes.front().m_quality;
     REQUIRE(quality == Approx(3.0));
-    auto quality2 = tetwild.m_tet_attribute.back().m_qualities;
+    auto quality2 = tetwild.m_tet_attribute.m_attributes.back().m_quality;
     REQUIRE(quality2 == Approx(3.0));
 }

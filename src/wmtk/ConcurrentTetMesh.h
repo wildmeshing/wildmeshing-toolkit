@@ -4,6 +4,8 @@
 #include <tbb/spin_mutex.h>
 #include <wmtk/TetMesh.h>
 
+#include <Tracy.hpp>
+
 namespace wmtk {
 class ConcurrentTetMesh : public TetMesh
 {
@@ -21,14 +23,34 @@ public:
 private:
     tbb::concurrent_vector<VertexMutex> m_vertex_mutex;
 
-    bool try_set_vertex_mutex(const Tuple& v) { return m_vertex_mutex[v.vid(*this)].trylock(); }
-    bool try_set_vertex_mutex(size_t vid) { return m_vertex_mutex[vid].trylock(); }
+    bool try_set_vertex_mutex(const Tuple& v)
+    {
+        ZoneScoped;
+        return m_vertex_mutex[v.vid(*this)].trylock();
+    }
+    bool try_set_vertex_mutex(size_t vid)
+    {
+        ZoneScoped;
+        return m_vertex_mutex[vid].trylock();
+    }
 
-    void unlock_vertex_mutex(const Tuple& v) { m_vertex_mutex[v.vid(*this)].unlock(); }
-    void unlock_vertex_mutex(size_t vid) { m_vertex_mutex[vid].unlock(); }
+    void unlock_vertex_mutex(const Tuple& v)
+    {
+        ZoneScoped;
+        m_vertex_mutex[v.vid(*this)].unlock();
+    }
+    void unlock_vertex_mutex(size_t vid)
+    {
+        ZoneScoped;
+        m_vertex_mutex[vid].unlock();
+    }
 
 protected:
-    void resize_vertex_attributes(size_t v) override { m_vertex_mutex.grow_to_at_least(v); }
+    void resize_vertex_mutex(size_t v) override
+    {
+        ZoneScoped;
+        m_vertex_mutex.grow_to_at_least(v);
+    }
 
 public:
     ConcurrentTetMesh() = default;
