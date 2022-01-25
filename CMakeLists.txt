@@ -72,6 +72,7 @@ include(delaunay_psm)
 include(onetbb)
 include(mshio)
 include(metis)
+include(lagrange)
 target_link_libraries(wildmeshing_toolkit PUBLIC
     spdlog::spdlog
     igl::core
@@ -81,6 +82,7 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     TBB::tbb
     mshio::mshio
     metis::metis
+    lagrange::core
     Tracy::TracyClient
 )
 

@@ -34,12 +34,12 @@ TEST_CASE("separate-manifold-patch", "[test_util]")
 TEST_CASE("manifold-separate-test-37989", "[test_util]")
 {
     std::string filename = WMT_DATA_DIR "/37989_sf.obj";
-    Eigen::MatrixXd V, outV;
-    Eigen::MatrixXi F, outF;
+    wmtk::manifold_internal::Vertices V;
+    wmtk::manifold_internal::Facets F;
     igl::read_triangle_mesh(filename, V, F);
     REQUIRE_FALSE(igl::is_edge_manifold(F));
     std::vector<size_t> dummy;
-    wmtk::resolve_nonmanifoldness(V, F, dummy);
+    wmtk::manifold_internal::resolve_nonmanifoldness(V, F, dummy);
     REQUIRE(igl::is_edge_manifold(F));
     Eigen::VectorXi VI;
     REQUIRE(igl::is_vertex_manifold(F, VI));
