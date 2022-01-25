@@ -240,7 +240,6 @@ void tetwild::TetWild::filter_outside(bool remove_ouside)
 void tetwild::TetWild::output_mesh(std::string file)
 {
     consolidate_mesh();
-    cout<<"ok"<<endl;
 
     wmtk::MshData msh;
 
@@ -262,8 +261,10 @@ void tetwild::TetWild::output_mesh(std::string file)
         return data;
     });
 
-    msh.add_tet_vertex_attribute<1>("tv index", [&](size_t i) { return i; });
-    msh.add_tet_attribute<1>("t index", [&](size_t i) { return i; });
+    msh.add_tet_vertex_attribute<1>("tv index", [&](size_t i) {
+        return m_vertex_attribute[i].m_sizing_scalar;
+    });
+    msh.add_tet_attribute<1>("t energy", [&](size_t i) { return m_tet_attribute[i].m_quality; });
 
     msh.save(file, true);
 }
