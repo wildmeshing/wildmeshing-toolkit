@@ -19,5 +19,3 @@ target_link_libraries(wmtk_sec_lib PUBLIC
 
 add_subdirectory(app)
 add_subdirectory(tests)
-
-wmtk_copy_dll(wmtk_sec_lib)
