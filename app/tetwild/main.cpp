@@ -22,9 +22,14 @@ int main(int argc, char** argv)
         if (c == '0') exit(0);
     };
 
+    std::string input_path;
+    if(argc>1){
+        input_path = argv[1];
+    } else
+        input_path = WMT_DATA_DIR "/37322.stl";
+
     Eigen::MatrixXd V;
     Eigen::MatrixXd F;
-    std::string input_path = WMT_DATA_DIR "/37322.stl";
     igl::read_triangle_mesh(input_path, V, F);
     cout << V.rows() << " " << F.rows() << endl;
 
@@ -92,7 +97,7 @@ int main(int argc, char** argv)
     //    mesh.check_attributes();
     //    pausee();
 
-    mesh.mesh_improvement(10);
+    mesh.mesh_improvement(20);
     
     output_faces();
     mesh.output_mesh("final.msh");
