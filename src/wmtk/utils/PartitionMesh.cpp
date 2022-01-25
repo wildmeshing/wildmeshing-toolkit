@@ -3,7 +3,7 @@
 #include <igl/remove_unreferenced.h>
 namespace wmtk {
 
-tbb::concurrent_vector<size_t> partition_TriMesh(wmtk::TriMesh& m, int num_partition)
+std::vector<size_t> partition_TriMesh(const wmtk::TriMesh& m, int num_partition)
 {
     auto f_tuples = m.get_faces();
     Eigen::MatrixXi F(f_tuples.size(), 3);
@@ -14,14 +14,14 @@ tbb::concurrent_vector<size_t> partition_TriMesh(wmtk::TriMesh& m, int num_parti
         F(i, 2) = f_vertice[2].vid();
     }
     auto partitioned_v = partition_mesh_vertices(F, num_partition);
-    tbb::concurrent_vector<size_t> v_pid(partitioned_v.rows());
+    std::vector<size_t> v_pid(partitioned_v.rows());
     for (int i = 0; i < partitioned_v.rows(); i++) {
         v_pid[i] = partitioned_v(i, 0);
     }
     return v_pid;
 }
 
-tbb::concurrent_vector<size_t> partition_TetMesh(wmtk::TetMesh& m, int num_partition)
+std::vector<size_t> partition_TetMesh(wmtk::TetMesh& m, int num_partition)
 {
     auto f_tuples = m.get_faces();
     Eigen::MatrixXi F(f_tuples.size(), 3);
@@ -43,7 +43,7 @@ tbb::concurrent_vector<size_t> partition_TetMesh(wmtk::TetMesh& m, int num_parti
 
     auto partitioned_v = partition_mesh_vertices(NF, num_partition);
     assert(partitioned_v.size() == J.rows());
-    tbb::concurrent_vector<size_t> v_pid(m.vert_capacity(), 0);
+    std::vector<size_t> v_pid(m.vert_capacity(), 0);
     for (int i = 0; i < partitioned_v.rows(); i++) {
         v_pid[J[i]] = partitioned_v(i, 0);
     }

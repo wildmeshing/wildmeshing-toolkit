@@ -203,6 +203,8 @@ bool tetwild::TetWild::split_after(const Tuple& loc)
             m_face_attribute[global_fid2].reset();
         }
     }
+    
+    m_vertex_attribute[v_id].partition_id = m_vertex_attribute[v1_id].partition_id;
 
     cnt_split++;
 

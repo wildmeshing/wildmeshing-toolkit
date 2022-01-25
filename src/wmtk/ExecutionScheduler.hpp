@@ -183,7 +183,7 @@ private:
     {
         if constexpr (policy == ExecutionPolicy::kSeq) return 0;
         if constexpr (std::is_base_of<wmtk::TetMesh, AppMesh>::value)
-            return m.m_vertex_partition_id[e.vid(m)];
+            return m.get_partition_id(e);
         else if constexpr (std::is_base_of<wmtk::TriMesh, AppMesh>::value) // TODO: make same
                                                                            // interface.
             return m.vertex_attrs[e.vid()].partition_id; // TODO: this is temporary.

@@ -40,18 +40,23 @@ public:
         NUM_THREADS = num_threads;
         init(_vertex_attribute.size(), tets);
 
-        m_vertex_partition_id = partition_TetMesh(*this, NUM_THREADS);
-        for (auto i = 0; i < _vertex_attribute.size(); i++)
-            vertex_attrs[i].partition_id = m_vertex_partition_id[i];
+        compute_vertex_partition();
+
     }
     HarmonicTet(){};
     ~HarmonicTet(){};
 
     ////// Attributes related
-    // Stores the attributes attached to simplices
-    tbb::concurrent_vector<size_t> m_vertex_partition_id;
 
     void output_mesh(std::string file) const;
+    void compute_vertex_partition() {
+        auto partition_id = partition_TetMesh(*this, NUM_THREADS);
+        for (auto i = 0; i < vertex_attrs.size(); i++)
+            vertex_attrs[i].partition_id = partition_id[i];
+    }
+    size_t get_partition_id(const Tuple& loc) const {
+        return vertex_attrs[loc.vid(*this)].partition_id;
+    }
 
     // parallel containers
     int NUM_THREADS = 1;

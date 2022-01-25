@@ -35,6 +35,8 @@ public:
     Scalar m_sizing_scalar = 1;
     Scalar m_scalar = 1;
     bool m_is_freezed;
+
+    size_t partition_id = 0;
 };
 
 class EdgeAttributes
@@ -120,12 +122,19 @@ public:
         m_tet_attribute.m_attributes = tbb::concurrent_vector<TetAttributes>(_tet_attribute.size());
         for (auto i = 0; i < _tet_attribute.size(); i++) m_tet_attribute[i] = _tet_attribute[i];
 
-        m_vertex_partition_id = partition_TetMesh(*this, NUM_THREADS);
+    }
+
+    void compute_vertex_partition() {
+        auto partition_id = partition_TetMesh(*this, NUM_THREADS);
+        for (auto i = 0; i < m_vertex_attribute.size(); i++)
+            m_vertex_attribute[i].partition_id = partition_id[i];
+    }
+    size_t get_partition_id(const Tuple& loc) const {
+        return m_vertex_attribute[loc.vid(*this)].partition_id;
     }
 
     ////// Attributes related
     int NUM_THREADS = 1;
-    tbb::concurrent_vector<size_t> m_vertex_partition_id;
 
 
     void output_mesh(std::string file);

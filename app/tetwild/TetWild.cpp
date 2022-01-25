@@ -26,7 +26,7 @@ void tetwild::TetWild::mesh_improvement(int max_its)
 {
     ////preprocessing
     // TODO: refactor to eliminate repeated partition.
-    m_vertex_partition_id = partition_TetMesh(*this, NUM_THREADS);
+    compute_vertex_partition();
     wmtk::logger().info("========it pre========");
     local_operations({{0, 1, 0, 0}}, false);
 
@@ -85,26 +85,22 @@ std::tuple<double, double> tetwild::TetWild::local_operations(
         if (i == 0) {
             for (int n = 0; n < ops[i]; n++) {
                 wmtk::logger().info("==splitting {}==", n);
-                m_vertex_partition_id = partition_TetMesh(*this, NUM_THREADS);
                 split_all_edges();
             }
         } else if (i == 1) {
             for (int n = 0; n < ops[i]; n++) {
                 wmtk::logger().info("==collapsing {}==", n);
-                m_vertex_partition_id = partition_TetMesh(*this, NUM_THREADS);
                 collapse_all_edges();
             }
         } else if (i == 2) {
             for (int n = 0; n < ops[i]; n++) {
                 wmtk::logger().info("==swapping {}==", n);
-                m_vertex_partition_id = partition_TetMesh(*this, NUM_THREADS);
                 swap_all_edges();
                 swap_all_faces();
             }
         } else if (i == 3) {
             for (int n = 0; n < ops[i]; n++) {
                 wmtk::logger().info("==smoothing {}==", n);
-                m_vertex_partition_id = partition_TetMesh(*this, NUM_THREADS);
                 smooth_all_vertices();
             }
         }
