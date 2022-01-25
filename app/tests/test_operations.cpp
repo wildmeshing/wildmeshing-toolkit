@@ -5,9 +5,49 @@
 #include <catch2/catch.hpp>
 #include <wmtk/utils/io.hpp>
 #include "spdlog/common.h"
+#include <igl/read_triangle_mesh.h>
+#include <igl/write_triangle_mesh.h>
 
 using namespace wmtk;
 using namespace tetwild;
+
+TEST_CASE("mesh_improvement", "[tetwild_operation]")
+{
+    std::string input_path = WMT_DATA_DIR "/37322.stl";
+
+    Eigen::MatrixXd V;
+    Eigen::MatrixXd F;
+    igl::read_triangle_mesh(input_path, V, F);
+
+    std::vector<Vector3d> vertices(V.rows());
+    std::vector<std::array<size_t, 3>> faces(F.rows());
+    for (int i = 0; i < V.rows(); i++) {
+        vertices[i] = V.row(i);
+    }
+    std::vector<fastEnvelope::Vector3i> env_faces(F.rows()); // todo: add new api for envelope
+    for (int i = 0; i < F.rows(); i++) {
+        for (int j = 0; j < 3; j++) {
+            faces[i][j] = F(i, j);
+            env_faces[i][j] = F(i, j);
+        }
+    }
+
+    tetwild::TetWild::InputSurface input_surface;
+    input_surface.params.lr = 1 / 15.0;
+    input_surface.init(vertices, faces);
+    input_surface.remove_duplicates();
+    //
+    fastEnvelope::FastEnvelope envelope;
+    envelope.init(vertices, env_faces, input_surface.params.eps);
+    //
+    tetwild::TetWild mesh(input_surface.params, envelope);
+
+    mesh.triangle_insertion(input_surface);
+    //    mesh.check_attributes();
+    //    pausee();
+
+    mesh.mesh_improvement(20);
+}
 
 TEST_CASE("edge_splitting", "[tetwild_operation]")
 {
