@@ -21,10 +21,10 @@ public:
 private:
     tbb::concurrent_vector<VertexMutex> m_vertex_mutex;
 
-    bool try_set_vertex_mutex(Tuple& v) { return m_vertex_mutex[v.vid(*this)].trylock(); }
+    bool try_set_vertex_mutex(const Tuple& v) { return m_vertex_mutex[v.vid(*this)].trylock(); }
     bool try_set_vertex_mutex(size_t vid) { return m_vertex_mutex[vid].trylock(); }
 
-    void unlock_vertex_mutex(Tuple& v) { m_vertex_mutex[v.vid(*this)].unlock(); }
+    void unlock_vertex_mutex(const Tuple& v) { m_vertex_mutex[v.vid(*this)].unlock(); }
     void unlock_vertex_mutex(size_t vid) { m_vertex_mutex[vid].unlock(); }
 
 protected:
@@ -42,5 +42,11 @@ public:
         std::vector<size_t>& mutex_release_stack);
     bool try_set_edge_mutex_two_ring(const Tuple& e, std::vector<size_t>& mutex_release_stack);
     bool try_set_face_mutex_two_ring(const Tuple& f, std::vector<size_t>& mutex_release_stack);
+    bool try_set_face_mutex_two_ring(
+        const Tuple& v1,
+        const Tuple& v2,
+        const Tuple& v3,
+        std::vector<size_t>& mutex_release_stack);
+    bool try_set_vertex_mutex_one_ring(const Tuple& v, std::vector<size_t>& mutex_release_stack);
 };
 } // namespace wmtk

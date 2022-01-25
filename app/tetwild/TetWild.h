@@ -1,5 +1,6 @@
 #pragma once
 
+#include <tbb/concurrent_map.h>
 #include <wmtk/ConcurrentTetMesh.h>
 #include "Parameters.h"
 #include "common.h"
@@ -13,8 +14,8 @@
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
-#include <memory>
 #include <wmtk/utils/PartitionMesh.h>
+#include <memory>
 
 namespace tetwild {
 
@@ -66,9 +67,10 @@ public:
     Parameters& m_params;
     fastEnvelope::FastEnvelope& m_envelope;
 
-    TetWild(Parameters& _m_params, fastEnvelope::FastEnvelope& _m_envelope)
+    TetWild(Parameters& _m_params, fastEnvelope::FastEnvelope& _m_envelope, int _num_threads = 1)
         : m_params(_m_params)
         , m_envelope(_m_envelope)
+        , NUM_THREADS(_num_threads)
     {}
 
     ~TetWild() {}
@@ -81,8 +83,7 @@ public:
         for (auto i = 0; i < _vertex_attribute.size(); i++)
             m_vertex_attribute[i] = _vertex_attribute[i];
         m_tet_attribute = tbb::concurrent_vector<TetAttributes>(_tet_attribute.size());
-        for (auto i = 0; i < _tet_attribute.size(); i++)
-            m_tet_attribute[i] = _tet_attribute[i];
+        for (auto i = 0; i < _tet_attribute.size(); i++) m_tet_attribute[i] = _tet_attribute[i];
         auto n_tet = m_tet_attribute.size();
         resize_edge_attributes(6 * n_tet);
         resize_face_attributes(4 * n_tet);
@@ -96,10 +97,27 @@ public:
     tbb::concurrent_vector<TetAttributes> m_tet_attribute;
     int NUM_THREADS = 1;
 
-    void resize_vertex_attributes(size_t v) override { m_vertex_attribute.resize(v); }
-    void resize_edge_attributes(size_t e) override { m_edge_attribute.resize(e); }
-    void resize_face_attributes(size_t f) override { m_face_attribute.resize(f); }
-    void resize_tet_attributes(size_t t) override { m_tet_attribute.resize(t); }
+    void resize_vertex_attributes(size_t v) override
+    {
+        ConcurrentTetMesh::resize_vertex_attributes(v);
+        m_vertex_attribute.grow_to_at_least(v);
+        m_vertex_attribute.resize(v);
+    }
+    void resize_edge_attributes(size_t e) override
+    {
+        m_edge_attribute.grow_to_at_least(e);
+        m_edge_attribute.resize(e);
+    }
+    void resize_face_attributes(size_t f) override
+    {
+        m_face_attribute.grow_to_at_least(f);
+        m_face_attribute.resize(f);
+    }
+    void resize_tet_attributes(size_t t) override
+    {
+        m_tet_attribute.grow_to_at_least(t);
+        m_tet_attribute.resize(t);
+    }
 
 
     void move_face_attribute(size_t from, size_t to) override
@@ -126,6 +144,7 @@ public:
     public:
         std::vector<Vector3d> vertices;
         std::vector<std::array<size_t, 3>> faces;
+        std::vector<int> partition_id;
         // can add other input tags;
 
         Parameters params;
@@ -157,20 +176,38 @@ public:
         bool remove_duplicates(); // inplace func
     };
 
-    struct TriangleInsertionInfoCache
+    // struct TriangleInsertionInfoCache
+    // {
+    //     // global info: throughout the whole insertion
+    //     InputSurface input_surface;
+    //     std::vector<std::array<int, 4>> surface_f_ids;
+    //     std::map<std::array<size_t, 3>, std::vector<int>> tet_face_tags;
+    //     std::vector<bool> is_matched;
+
+    //     // local info: for each face insertion
+    //     std::vector<bool> is_visited;
+    //     int face_id;
+    //     std::vector<std::array<size_t, 3>> old_face_vids;
+    // };
+    // tbb::enumerable_thread_specific<TriangleInsertionInfoCache> triangle_insertion_cache;
+    // // TriangleInsertionInfoCache triangle_insertion_cache;
+    struct TriangleInsertionInfoGlobalCache
     {
         // global info: throughout the whole insertion
         InputSurface input_surface;
-        std::vector<std::array<int, 4>> surface_f_ids;
-        std::map<std::array<size_t, 3>, std::vector<int>> tet_face_tags;
-        std::vector<bool> is_matched;
+        tbb::concurrent_map<std::array<size_t, 3>, std::vector<int>> tet_face_tags;
+        tbb::concurrent_vector<bool> is_matched;
+    };
+    TriangleInsertionInfoGlobalCache triangle_insertion_global_cache;
 
+    struct TriangleInsertionLocalInfoCache
+    {
         // local info: for each face insertion
         std::vector<bool> is_visited;
         int face_id;
         std::vector<std::array<size_t, 3>> old_face_vids;
     };
-    TriangleInsertionInfoCache triangle_insertion_cache;
+    tbb::enumerable_thread_specific<TriangleInsertionLocalInfoCache> triangle_insertion_local_cache;
 
     ////// Operations
 
@@ -196,11 +233,16 @@ public:
 
 
     void construct_background_mesh(const InputSurface& input_surface);
-    void match_insertion_faces(const InputSurface& input_surface, std::vector<bool>& is_matched);
+    void match_insertion_faces(
+        const InputSurface& input_surface,
+        tbb::concurrent_vector<bool>& is_matched);
     //
-//    void add_tet_centroid(const std::array<size_t, 4>& vids) override;
-    void add_tet_centroid(const Tuple& t) override;
+    //    void add_tet_centroid(const std::array<size_t, 4>& vids) override;
+    void add_tet_centroid(const Tuple& t, size_t vid) override;
     //
+    void triangle_insertion_stuff(
+        std::vector<tbb::concurrent_queue<size_t>>& insertion_queues,
+        int task_id);
     void triangle_insertion(const InputSurface& input_surface);
     void triangle_insertion_before(const std::vector<Tuple>& faces) override;
     void triangle_insertion_after(
@@ -235,7 +277,7 @@ public:
     bool vertex_invariant(const Tuple& t) override;
     bool tetrahedron_invariant(const Tuple& t) override;
 
-    double get_length2(const Tuple&loc) const;
+    double get_length2(const Tuple& loc) const;
     // debug use
     std::atomic<int> cnt_split = 0, cnt_collapse = 0, cnt_swap = 0;
 };
