@@ -6,6 +6,7 @@
 #include "wmtk/utils/Logger.hpp"
 
 #include <igl/is_edge_manifold.h>
+#include <igl/is_vertex_manifold.h>
 #include <Eigen/Core>
 
 TEST_CASE("separate-manifold-patch", "[test_util]")
@@ -40,4 +41,6 @@ TEST_CASE("manifold-separate-test-37989", "[test_util]")
     std::vector<size_t> dummy;
     wmtk::resolve_nonmanifoldness(V, F, dummy);
     REQUIRE(igl::is_edge_manifold(F));
+    Eigen::VectorXi VI;
+    REQUIRE(igl::is_vertex_manifold(F, VI));
 }
