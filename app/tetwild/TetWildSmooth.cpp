@@ -127,7 +127,7 @@ void tetwild::TetWild::smooth_all_vertices()
         auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kPartition>();
         executor.lock_vertices = [&](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
             auto stack = std::vector<size_t>();
-            if (!m.try_set_vertex_mutex_two_ring(e, stack)) return {};
+            if (!m.try_set_vertex_mutex_one_ring(e, stack)) return {};
             return stack;
         };
         executor.num_threads = NUM_THREADS;
