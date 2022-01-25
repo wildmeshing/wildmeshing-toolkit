@@ -75,7 +75,7 @@ bool sec::ShortestEdgeCollapse::collapse_shortest(int target_vert_number)
             return stack;
         };
         executor.stopping_criterion_checking_frequency = std::numeric_limits<int>::max();
-        executor.stopping_criterion = [&target_vert_number](auto& m) { return true; };
+        executor.stopping_criterion = [](auto& m) { return true; };
         executor(*this, collect_all_ops);
     };
 

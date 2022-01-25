@@ -30,13 +30,13 @@ namespace sec {
 struct VertexAttributes
 {
     Eigen::Vector3d pos;
-    // TODO: in fact, partition id should not be vertex attribute, it is a fixed marker to distinguish tuple/operations.
-    size_t partition_id;
-    bool freeze;
+    size_t partition_id = 0;
+    bool freeze = false;
 };
 
 class ShortestEdgeCollapse : public wmtk::ConcurrentTriMesh
 {
+public:
     fastEnvelope::FastEnvelope m_envelope;
     bool m_has_envelope = false;
     using VertAttCol = wmtk::AttributeCollection<VertexAttributes>;
@@ -52,7 +52,7 @@ class ShortestEdgeCollapse : public wmtk::ConcurrentTriMesh
         vertex_attrs.resize(_m_vertex_positions.size());
 
         for (auto i = 0; i < _m_vertex_positions.size(); i++)
-            vertex_attrs[i] = {_m_vertex_positions[i], 0};
+            vertex_attrs[i] = {_m_vertex_positions[i], 0, false};
     }
 
     void set_freeze(TriMesh::Tuple& v)
