@@ -475,22 +475,21 @@ std::vector<std::array<size_t, 3>> wmtk::TetMesh::vertex_adjacent_boundary_faces
 {
     ZoneScoped;
     auto v = tup.vid(*this);
-    auto result_faces = std::vector<std::array<size_t, 3>>();
+    auto result_faces = std::set<std::array<size_t, 3>>();
     for (auto t : m_vertex_connectivity[v].m_conn_tets) {
         auto& tet = m_tet_connectivity[t];
         for (auto j = 0; j < 4; j++) {
-            auto ft = this->tuple_from_face(t, j);
-            if (tet[m_map_vertex2oppo_face[j]] == v) continue;
-            if (!this->switch_tetrahedron(ft)) { // boundary
-                auto f = m_local_faces[j];
-                logger().trace(">>f {}", f);
-                auto face = std::array<size_t, 3>{{tet[f[0]], tet[f[1]], tet[f[2]]}};
-                std::sort(face.begin(), face.end());
-                logger().trace(">>face {}", face);
-                result_faces.emplace_back(face);
+            if (tet[m_map_vertex2oppo_face[j]] == v) continue; // only consider those not connecting to it.
+            auto& f = m_local_faces[j];
+            auto face = std::array<size_t, 3>{{tet[f[0]], tet[f[1]], tet[f[2]]}};
+            std::sort(face.begin(), face.end());
+            auto it = result_faces.find(face);
+            if (it == result_faces.end()) { // delete those appearing twice.
+                result_faces.insert(face);
+            } else {
+                result_faces.erase(it);
             }
         }
     }
-    std::sort(result_faces.begin(), result_faces.end());
-    return result_faces;
+    return std::vector<std::array<size_t,3>>(result_faces.begin(), result_faces.end());
 }
