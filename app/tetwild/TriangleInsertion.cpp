@@ -1139,6 +1139,7 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
     setup_attributes();
 
     // fortest
+    wmtk::logger().info("output surface...");
     output_surface("surface.obj");
     // fortest
 
@@ -1258,7 +1259,7 @@ void tetwild::TetWild::setup_attributes()
 
 
     //    check_mesh_connectivity_validity();
-    output_mesh("triangle_insertion.msh");
+//    output_mesh("triangle_insertion.msh");
 
     // todo: output faces to check surface and bbox
 }
