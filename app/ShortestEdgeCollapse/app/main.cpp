@@ -1,4 +1,5 @@
 #include <igl/is_edge_manifold.h>
+#include <igl/is_vertex_manifold.h>
 #include <igl/readOFF.h>
 #include <igl/read_triangle_mesh.h>
 #include <igl/writeDMAT.h>
@@ -8,15 +9,15 @@
 #include <cstdlib>
 #include <iostream>
 #include <wmtk/utils/ManifoldUtils.hpp>
-using namespace wmtk;
-
-using namespace sec;
 #include <chrono>
-using namespace std::chrono;
 
 extern "C" {
 #include <wmtk/utils/getRSS.c>
 };
+using namespace wmtk;
+using namespace sec;
+using namespace std::chrono;
+
 void run_shortest_collapse(
     std::string input,
     int target,
@@ -68,18 +69,18 @@ int main(int argc, char** argv)
     const double diag = (box_max - box_min).norm();
 
     const double envelope_size = atof(argv[4]) * diag;
-
-    if (!igl::is_edge_manifold(F)) {
-        return 1;
+    Eigen::VectorXi dummy;
+    std::vector<size_t> modified_v;
+    if (!igl::is_edge_manifold(F) || !igl::is_vertex_manifold(F, dummy)) {
+        auto v1 = v;
+        auto tri1 = tri;
+        wmtk::separate_to_manifold(v1, tri1, v, tri, modified_v);
     }
-
-    else {
-        ShortestEdgeCollapse m(v);
-        m.create_mesh(v.size(), tri, envelope_size);
-        assert(m.check_mesh_connectivity_validity());
-        wmtk::logger().info("collapsing mesh {}", argv[1]);
-        run_shortest_collapse(path, std::stoi(argv[2]), argv[3], m);
-        m.consolidate_mesh();
-    }
+    ShortestEdgeCollapse m(v);
+    m.create_mesh(v.size(), tri, modified_v, envelope_size);
+    assert(m.check_mesh_connectivity_validity());
+    wmtk::logger().info("collapsing mesh {}", argv[1]);
+    run_shortest_collapse(path, std::stoi(argv[2]), argv[3], m);
+    m.consolidate_mesh();
     return 0;
 }

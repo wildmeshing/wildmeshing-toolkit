@@ -3,23 +3,57 @@
 #include <wmtk/TriMesh.h>
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/ExecutionScheduler.hpp>
+#include <wmtk/utils/TupleUtils.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
 using namespace wmtk;
 using namespace sec;
-auto unique_edge_tuples = [](const auto& m, auto& edges) {
-    std::vector<size_t> all_eids;
-    for (auto e : edges) {
-        all_eids.emplace_back(e.eid(m));
+
+
+bool sec::ShortestEdgeCollapse::invariants(const std::vector<Tuple>& new_tris)
+{
+    if (m_has_envelope) {
+        for (auto& t : new_tris) {
+            std::array<Eigen::Vector3d, 3> tris;
+            auto vs = t.oriented_tri_vertices(*this);
+            for (auto j = 0; j < 3; j++) tris[j] = vertex_attrs[vs[j].vid()].pos;
+            if (m_envelope.is_outside(tris)) return false;
+        }
     }
-    vector_unique(all_eids);
-    edges.clear();
-    for (auto eid : all_eids) {
-        edges.emplace_back(m.tuple_from_edge(eid / 3, eid % 3));
+    return true;
+}
+
+bool sec::ShortestEdgeCollapse::write_triangle_mesh(std::string path)
+{
+    Eigen::MatrixXd V = Eigen::MatrixXd::Zero(vertex_attrs.size(), 3);
+    for (auto& t : get_vertices()) {
+        auto i = t.vid();
+        V.row(i) = vertex_attrs[i].pos;
     }
-};
+
+    Eigen::MatrixXi F = Eigen::MatrixXi::Constant(tri_capacity(), 3, -1);
+    for (auto& t : get_faces()) {
+        auto i = t.fid();
+        auto vs = oriented_tri_vertices(t);
+        for (int j = 0; j < 3; j++) {
+            F(i, j) = vs[j].vid();
+        }
+    }
+
+    return igl::write_triangle_mesh(path, V, F);
+}
+
+bool sec::ShortestEdgeCollapse::collapse_before(const Tuple& t)
+{
+    if (!TriMesh::collapse_before(t)) return false;
+    if (vertex_attrs[t.vid()].freeze || vertex_attrs[t.switch_vertex(*this).vid()].freeze)
+        return false;
+    position_cache.local().v1p = vertex_attrs[t.vid()].pos;
+    position_cache.local().v2p = vertex_attrs[t.switch_vertex(*this).vid()].pos;
+    return true;
+}
 
 
 bool sec::ShortestEdgeCollapse::collapse_after(const TriMesh::Tuple& t)
@@ -43,7 +77,7 @@ std::vector<TriMesh::Tuple> sec::ShortestEdgeCollapse::new_edges_after(
             new_edges.push_back(tuple_from_edge(t.fid(), j));
         }
     }
-    unique_edge_tuples(*this, new_edges);
+    wmtk::unique_edge_tuples(*this, new_edges);
     return new_edges;
 }
 
@@ -69,21 +103,20 @@ bool sec::ShortestEdgeCollapse::collapse_shortest(int target_vert_number)
         executor.num_threads = NUM_THREADS;
         executor.renew_neighbor_tuples = renew;
         executor.priority = measure_len2;
+        executor.stopping_criterion_checking_frequency = std::numeric_limits<int>::max();
+        executor(*this, collect_all_ops);
+    };
+
+    if (NUM_THREADS > 1) {
+        auto executor = wmtk::ExecutePass<ShortestEdgeCollapse, ExecutionPolicy::kPartition>();
         executor.lock_vertices = [](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
             auto stack = std::vector<size_t>();
             if (!m.try_set_edge_mutex_two_ring(e, stack)) return {};
             return stack;
         };
-        executor.stopping_criterion_checking_frequency = std::numeric_limits<int>::max();
-        executor.stopping_criterion = [](auto& m) { return true; };
-        executor(*this, collect_all_ops);
-    };
-
-    if (NUM_THREADS > 1) {
-        auto executor = wmtk::ExecutePass<ShortestEdgeCollapse, ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<ShortestEdgeCollapse, ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<ShortestEdgeCollapse, ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
     }
     return true;
