@@ -59,10 +59,9 @@ int main(int argc, char** argv)
     const double envelope_size = atof(argv[4]) * diag;
 
     if (!igl::is_edge_manifold(F)) {
+        wmtk::logger().info("Input is not edge manifold");
         return 1;
-    }
-
-    else {
+    } else {
         UniformRemeshing m(v);
         m.create_mesh(v.size(), tri, envelope_size);
         assert(m.check_mesh_connectivity_validity());
@@ -70,7 +69,6 @@ int main(int argc, char** argv)
         wmtk::logger().info(
             "edgelen: avg max min valence:avg max min before remesh is: {}",
             properties);
-        double small = properties[0] * 0.1;
 
         run_remeshing(path, properties[0] * 5, std::string(argv[2]), m);
         run_remeshing(path, properties[0] / 2, std::string(argv[2]), m);
