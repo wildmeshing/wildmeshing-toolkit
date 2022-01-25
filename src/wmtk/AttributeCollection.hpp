@@ -44,7 +44,7 @@ struct AttributeCollection : public AbstractAttributeContainer
     bool assign(size_t to, T&& val) // always use this in OP_after
     {
         m_attributes[to] = val;
-        if (recording) m_rollback_list.local()[to] = val;
+        if (recording.local()) m_rollback_list.local()[to] = val;
         // TODO: are locks necessary? not now.
         return true;
     }
@@ -60,13 +60,13 @@ struct AttributeCollection : public AbstractAttributeContainer
     void begin_protect() override
     {
         m_rollback_list.local().clear();
-        recording = true;
+        recording.local() = true;
     };
 
     void end_protect() override
     {
         m_rollback_list.local().clear();
-        recording = false;
+        recording.local() = false;
     }
 
    const T& operator[](size_t i) const
@@ -76,7 +76,7 @@ struct AttributeCollection : public AbstractAttributeContainer
 
     T& operator[](size_t i)
     {
-        if (recording) {
+        if (recording.local()) {
             m_rollback_list.local().emplace(i, m_attributes[i]);
         }
         return m_attributes[i];
@@ -88,6 +88,6 @@ struct AttributeCollection : public AbstractAttributeContainer
     tbb::enumerable_thread_specific<std::map<size_t, T>> m_rollback_list;
     // experimenting with tbb, could be templated as well.
     tbb::concurrent_vector<T> m_attributes;
-    bool recording = false;
+    tbb::enumerable_thread_specific<bool> recording{false};
 };
 } // namespace wmtk
