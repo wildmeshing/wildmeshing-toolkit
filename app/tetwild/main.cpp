@@ -92,8 +92,8 @@ int main(int argc, char** argv)
     //    mesh.check_attributes();
     //    pausee();
 
-    mesh.mesh_improvement(0);
-
+    mesh.mesh_improvement(10);
+    
     output_faces();
     mesh.output_mesh("final.msh");
 
