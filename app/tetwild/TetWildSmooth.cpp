@@ -122,7 +122,7 @@ void tetwild::TetWild::smooth_all_vertices()
     for (auto& loc : get_vertices()) {
         collect_all_ops.emplace_back("vertex_smooth", loc);
     }
-    wmtk::logger().info("Num verts {}", collect_all_ops.size());
+    wmtk::logger().debug("Num verts {}", collect_all_ops.size());
     if (NUM_THREADS > 1) {
         auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kPartition>();
         executor.lock_vertices = [&](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
