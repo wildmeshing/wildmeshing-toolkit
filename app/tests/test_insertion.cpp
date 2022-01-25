@@ -122,3 +122,56 @@ TEST_CASE("triangle-insertion", "[tetwild_operation]")
 
     //todo: refine adaptively the mesh
 }
+
+
+TEST_CASE("triangle-insertion-parallel", "[tetwild_operation]")
+{
+    using std::cout;
+    using std::endl;
+
+    Eigen::MatrixXd V;
+    Eigen::MatrixXd F;
+    std::string input_path = WMT_DATA_DIR "/37322.stl";
+    igl::read_triangle_mesh(input_path, V, F);
+    cout << V.rows() << " " << F.rows() << endl;
+
+    std::vector<Vector3d> vertices(V.rows());
+    std::vector<std::array<size_t, 3>> faces(F.rows());
+    for (int i = 0; i < V.rows(); i++) {
+        vertices[i] = V.row(i);
+    }
+    std::vector<fastEnvelope::Vector3i> env_faces(F.rows()); // todo: add new api for envelope
+    for (int i = 0; i < F.rows(); i++) {
+        for (int j = 0; j < 3; j++) {
+            faces[i][j] = F(i, j);
+            env_faces[i][j] = F(i, j);
+        }
+    }
+
+    int NUM_THREADS = 4;
+
+    tetwild::TetWild::InputSurface input_surface;
+    input_surface.init(vertices, faces);
+    input_surface.remove_duplicates();
+    Eigen::MatrixXd new_F(input_surface.faces.size(), 3);
+    for (int i = 0; i < input_surface.faces.size(); i++) {
+        new_F(i, 0) = input_surface.faces[i][0];
+        new_F(i, 1) = input_surface.faces[i][1];
+        new_F(i, 2) = input_surface.faces[i][2];
+    }
+    auto partitioned_v = partition_mesh_vertices(new_F, NUM_THREADS);
+    std::vector<int> partition_id(partitioned_v.rows());
+    for (int i = 0; i < partitioned_v.rows(); i++) {
+        partition_id[i] = partitioned_v(i, 0);
+    }
+    input_surface.partition_id = partition_id;
+
+
+    //
+    fastEnvelope::FastEnvelope envelope;
+    envelope.init(vertices, env_faces, input_surface.params.eps);
+    //
+    tetwild::TetWild mesh(input_surface.params, envelope, NUM_THREADS);
+
+    mesh.triangle_insertion(input_surface);
+}

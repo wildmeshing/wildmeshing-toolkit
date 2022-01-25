@@ -1,5 +1,6 @@
 #pragma once
 
+#include <tbb/concurrent_map.h>
 #include <wmtk/ConcurrentTetMesh.h>
 #include <wmtk/utils/PartitionMesh.h>
 #include "Parameters.h"
@@ -27,7 +28,7 @@ public:
     bool m_is_rounded = false;
 
     bool m_is_on_surface = false;
-//    bool m_is_on_boundary = false;
+    //    bool m_is_on_boundary = false;
     std::vector<int> on_bbox_faces;
     bool m_is_outside = false;
 
@@ -83,9 +84,10 @@ public:
     Parameters& m_params;
     fastEnvelope::FastEnvelope& m_envelope;
 
-    TetWild(Parameters& _m_params, fastEnvelope::FastEnvelope& _m_envelope)
+    TetWild(Parameters& _m_params, fastEnvelope::FastEnvelope& _m_envelope, int _num_threads = 1)
         : m_params(_m_params)
         , m_envelope(_m_envelope)
+        , NUM_THREADS(_num_threads)
     {
         p_vertex_attrs = &m_vertex_attribute;
         p_edge_attrs = &m_edge_attribute;
@@ -116,8 +118,7 @@ public:
         for (auto i = 0; i < _vertex_attribute.size(); i++)
             m_vertex_attribute[i] = _vertex_attribute[i];
         m_tet_attribute.m_attributes = tbb::concurrent_vector<TetAttributes>(_tet_attribute.size());
-        for (auto i = 0; i < _tet_attribute.size(); i++)
-            m_tet_attribute[i] = _tet_attribute[i];
+        for (auto i = 0; i < _tet_attribute.size(); i++) m_tet_attribute[i] = _tet_attribute[i];
 
         m_vertex_partition_id = partition_TetMesh(*this, NUM_THREADS);
     }
@@ -134,6 +135,7 @@ public:
     public:
         std::vector<Vector3d> vertices;
         std::vector<std::array<size_t, 3>> faces;
+        std::vector<int> partition_id;
         // can add other input tags;
 
         Parameters params;
@@ -165,20 +167,38 @@ public:
         bool remove_duplicates(); // inplace func
     };
 
-    struct TriangleInsertionInfoCache
+    // struct TriangleInsertionInfoCache
+    // {
+    //     // global info: throughout the whole insertion
+    //     InputSurface input_surface;
+    //     std::vector<std::array<int, 4>> surface_f_ids;
+    //     std::map<std::array<size_t, 3>, std::vector<int>> tet_face_tags;
+    //     std::vector<bool> is_matched;
+
+    //     // local info: for each face insertion
+    //     std::vector<bool> is_visited;
+    //     int face_id;
+    //     std::vector<std::array<size_t, 3>> old_face_vids;
+    // };
+    // tbb::enumerable_thread_specific<TriangleInsertionInfoCache> triangle_insertion_global_cache;
+    // // TriangleInsertionInfoCache triangle_insertion_global_cache;
+    struct TriangleInsertionInfoGlobalCache
     {
         // global info: throughout the whole insertion
         InputSurface input_surface;
-        std::vector<std::array<int, 4>> surface_f_ids;
-        std::map<std::array<size_t, 3>, std::vector<int>> tet_face_tags;
-        std::vector<bool> is_matched;
+        tbb::concurrent_map<std::array<size_t, 3>, std::vector<int>> tet_face_tags;
+        tbb::concurrent_vector<bool> is_matched;
+    };
+    TriangleInsertionInfoGlobalCache triangle_insertion_global_cache;
 
+    struct TriangleInsertionLocalInfoCache
+    {
         // local info: for each face insertion
         std::vector<bool> is_visited;
         int face_id;
         std::vector<std::array<size_t, 3>> old_face_vids;
     };
-    TriangleInsertionInfoCache triangle_insertion_cache;
+    tbb::enumerable_thread_specific<TriangleInsertionLocalInfoCache> triangle_insertion_local_cache;
 
     ////// Operations
 
@@ -190,7 +210,7 @@ public:
         bool is_edge_on_surface = false;
 
         std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
-//        std::vector<std::pair<size_t, std::array<size_t, 3>>> changed_faces;
+        //        std::vector<std::pair<size_t, std::array<size_t, 3>>> changed_faces;
     };
     tbb::enumerable_thread_specific<SplitInfoCache> split_cache;
 
@@ -204,7 +224,7 @@ public:
 
         std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
         std::vector<std::array<size_t, 3>> surface_faces;
-//        std::vector<std::pair<size_t, std::array<size_t, 3>>> changed_faces;
+        //        std::vector<std::pair<size_t, std::array<size_t, 3>>> changed_faces;
         std::vector<size_t> changed_tids;
     };
     tbb::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
@@ -219,12 +239,17 @@ public:
 
 
     void construct_background_mesh(const InputSurface& input_surface);
-    void match_insertion_faces(const InputSurface& input_surface, std::vector<bool>& is_matched);
+    void match_insertion_faces(
+        const InputSurface& input_surface,
+        tbb::concurrent_vector<bool>& is_matched);
     void setup_attributes();
     //
     //    void add_tet_centroid(const std::array<size_t, 4>& vids) override;
-    void add_tet_centroid(const Tuple& t) override;
+    void add_tet_centroid(const Tuple& t, size_t vid) override;
     //
+    void triangle_insertion_stuff(
+        std::vector<tbb::concurrent_queue<size_t>>& insertion_queues,
+        int task_id);
     void triangle_insertion(const InputSurface& input_surface);
     void triangle_insertion_before(const std::vector<Tuple>& faces) override;
     void triangle_insertion_after(
@@ -260,7 +285,9 @@ public:
     //
     bool adjust_sizing_field(double max_energy);
     void mesh_improvement(int max_its = 80);
-    std::tuple<double, double> local_operations(const std::array<int, 4>& ops, bool collapse_limite_length = true);
+    std::tuple<double, double> local_operations(
+        const std::array<int, 4>& ops,
+        bool collapse_limite_length = true);
     std::tuple<double, double> get_max_avg_energy();
     void filter_outside(bool remove_ouside = true);
 

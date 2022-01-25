@@ -313,7 +313,10 @@ public:
 
     void single_triangle_insertion(
         const std::vector<Tuple>& intersected_tets,
-        const std::vector<Tuple>& intersected_edges);
+        const std::vector<Tuple>& intersected_edges,
+        std::vector<size_t>& new_vids,
+        std::vector<size_t>& new_tids,
+        std::vector<size_t>& new_center_ids);
 
 
     /**
@@ -356,18 +359,23 @@ private:
         const std::vector<size_t> t_ids,
         const std::vector<bool>& mark_surface,
         std::map<std::array<size_t, 2>, size_t>& map_edge2vid,
-        std::map<std::array<size_t, 3>, std::vector<std::array<size_t, 5>>>& new_face_vids);
+        std::map<std::array<size_t, 3>, std::vector<std::array<size_t, 5>>>& new_face_vids,
+        std::vector<size_t>& new_vids,
+        std::vector<size_t>& new_tids,
+        std::vector<size_t>& new_center_ids);
     void subdivide_a_tet(
         size_t t_id,
         const std::array<int, 6>& new_v_ids,
         bool mark_surface,
         bool& is_add_centroid,
-        std::map<std::array<size_t, 3>, std::vector<std::array<size_t, 5>>>& new_face_vids);
+        std::map<std::array<size_t, 3>, std::vector<std::array<size_t, 5>>>& new_face_vids,
+        std::vector<size_t>& new_vids,
+        std::vector<size_t>& new_tids,
+        std::vector<size_t>& new_center_ids);
 
 protected:
+    virtual void add_tet_centroid(const Tuple& t, size_t vid) {}
     virtual bool invariants(const std::vector<Tuple>&) { return true; }
-    virtual void add_tet_centroid(const Tuple& t) {}
-
     virtual void triangle_insertion_before(const std::vector<Tuple>& faces) {}
     virtual void triangle_insertion_after(
         const std::vector<Tuple>& faces,
