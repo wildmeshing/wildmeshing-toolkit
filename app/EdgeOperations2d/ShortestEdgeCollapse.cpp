@@ -34,7 +34,7 @@ bool Edge2d::EdgeOperations2d::collapse_after(const TriMesh::Tuple& t)
     const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
     auto vid = t.vid();
     vertex_attrs->m_attributes[vid].pos = p;
-    
+
     return true;
 }
 
@@ -74,9 +74,9 @@ bool Edge2d::EdgeOperations2d::collapse_shortest(int target_operation_count)
         return optup;
     };
     auto measure_len2 = [](auto& m, auto op, const Tuple& new_e) {
-        auto len2 =
-            (m.vertex_attrs->m_attributes[new_e.vid()].pos - m.vertex_attrs->m_attributes[new_e.switch_vertex(m).vid()].pos)
-                .squaredNorm();
+        auto len2 = (m.vertex_attrs->m_attributes[new_e.vid()].pos -
+                     m.vertex_attrs->m_attributes[new_e.switch_vertex(m).vid()].pos)
+                        .squaredNorm();
         return -len2;
     };
     auto setup_and_execute = [&](auto executor) {
@@ -88,7 +88,8 @@ bool Edge2d::EdgeOperations2d::collapse_shortest(int target_operation_count)
             if (!m.try_set_edge_mutex_two_ring(e, stack)) return {};
             return stack;
         };
-        executor.stopping_criterion_checking_frequency = target_operation_count;
+        executor.stopping_criterion_checking_frequency =
+            target_operation_count > 0 ? target_operation_count : std::numeric_limits<int>::max();
         executor.stopping_criterion = [](auto& m) { return true; };
         executor(*this, collect_all_ops);
     };

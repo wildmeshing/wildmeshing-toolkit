@@ -32,11 +32,23 @@ void run(std::string input, double len, std::string output, EdgeOperations2d& m)
 
 int main(int argc, char** argv)
 {
+    // 1 path
+    // 2 output
+    // 3 n_edges
+    // 4 eps
     const std::string path = argv[1];
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     bool ok = igl::read_triangle_mesh(path, V, F);
+
+    const Eigen::MatrixXd box_min = V.colwise().minCoeff();
+    const Eigen::MatrixXd box_max = V.colwise().maxCoeff();
+    const double diag = (box_max - box_min).norm();
+
+
+    const double envelope_size = atof(argv[4]) * diag;
     wmtk::logger().info("readin mesh is {}", ok);
+    wmtk::logger().info("envelope_size {}", envelope_size);
     wmtk::logger().info("Before_vertices#: {} \n\t Before_tris#: {}", V.rows(), F.rows());
 
     std::vector<Eigen::Vector3d> v(V.rows());
@@ -48,15 +60,17 @@ int main(int argc, char** argv)
         for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
     }
     EdgeOperations2d m(v);
-    m.create_mesh(V.rows(), tri, atof(argv[5]));
+    m.create_mesh(V.rows(), tri, envelope_size);
     assert(m.check_mesh_connectivity_validity());
     std::vector<double> properties = m.average_len_valen();
     wmtk::logger().info(
         "edgelen: avg max min valence:avg max min before remesh is: {}",
         properties);
     // double small = properties[0] * 0.1;
-    
-    run(path, properties[0] * 0.1, std::string(argv[2]), m);
+
+    // run(path, properties[0] * 0.1, , m);
+    m.collapse_shortest(atoi(argv[3]));
+    m.write_triangle_mesh(std::string(argv[2]));
 
     return 0;
 }
