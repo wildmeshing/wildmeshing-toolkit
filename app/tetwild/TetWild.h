@@ -29,10 +29,10 @@ public:
     bool m_is_on_surface = false;
 //    bool m_is_on_boundary = false;
     std::vector<int> on_bbox_faces;
-    bool m_is_outside;
+    bool m_is_outside = false;
 
-    Scalar m_sizing_scalar;
-    Scalar m_scalar;
+    Scalar m_sizing_scalar = 1;
+    Scalar m_scalar = 1;
     bool m_is_freezed;
 };
 

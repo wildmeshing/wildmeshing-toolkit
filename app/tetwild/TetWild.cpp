@@ -14,7 +14,7 @@
 void tetwild::TetWild::mesh_improvement(int max_its)
 {
     ////preprocessing
-    wmtk::logger().info("====it pre====");
+    wmtk::logger().info("========it pre========");
     local_operations({{0, 1, 0, 0}}, false);
 
     ////operation loops
@@ -24,10 +24,11 @@ void tetwild::TetWild::mesh_improvement(int max_its)
     double pre_max_energy, pre_avg_energy;
     for (int it = 0; it < max_its; it++) {
         ///ops
-        wmtk::logger().info("====it {}====", it);
+        wmtk::logger().info("========it {}========", it);
         auto [max_energy, avg_energy] = local_operations({{1, 2, 1, 1}});
 
         ///energy check
+        std::cout<<max_energy <<" "<< m_params.stop_energy<<std::endl;
         if (max_energy < m_params.stop_energy) break;
 
         ///sizing field
@@ -39,11 +40,16 @@ void tetwild::TetWild::mesh_improvement(int max_its)
                 m = 0;
             }
         }
+        if(is_hit_min_edge_length){
+            //todo: maybe to do sth
+        }
+        pre_max_energy = max_energy;
+        pre_avg_energy = avg_energy;
     }
 
     const auto& vs = get_vertices();
     for (auto& v : vs) m_vertex_attribute[v.vid(*this)].m_scalar = 1;
-    wmtk::logger().info("====it post====");
+    wmtk::logger().info("========it post========");
     local_operations({{0, 1, 0, 0}});
 
     ////winding number
@@ -55,8 +61,7 @@ std::tuple<double, double> tetwild::TetWild::local_operations(const std::array<i
 {
     igl::Timer timer;
 
-    double max_energy;
-    double avg_energy;
+    std::tuple<double, double> energy;
 
     for (int i = 0; i < ops.size(); i++) {
         timer.start();
@@ -83,17 +88,19 @@ std::tuple<double, double> tetwild::TetWild::local_operations(const std::array<i
             }
         }
 
-        wmtk::logger().info("#t {}", tet_size());
-        wmtk::logger().info("#v {}", vertex_size());
-        auto [max_energy, avg_energy] = get_max_avg_energy();
-        wmtk::logger().info("max energy = ", max_energy);
-        wmtk::logger().info("avg energy = ", avg_energy);
-        wmtk::logger().info("time = ", timer.getElapsedTime());
+        if (ops[i] > 0) {
+            wmtk::logger().info("#t {}", tet_size());
+            wmtk::logger().info("#v {}", vertex_size());
+            energy = get_max_avg_energy();
+            wmtk::logger().info("max energy = {}", std::get<0>(energy));
+            wmtk::logger().info("avg energy = {}", std::get<1>(energy));
+            wmtk::logger().info("time = {}", timer.getElapsedTime());
+        }
     }
 
     check_attributes(); // fortest
 
-    return std::make_tuple(max_energy, avg_energy);
+    return energy;
 }
 
 bool tetwild::TetWild::adjust_sizing_field(double max_energy)
