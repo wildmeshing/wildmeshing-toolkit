@@ -11,8 +11,13 @@ target_include_directories(wmtk_remeshing_lib PUBLIC src)
 
 # Direct dependencies
 target_link_libraries(wmtk_remeshing_lib PUBLIC
-    wmtk::toolkit
+	wmtk::toolkit
+	wmtk::data
+	igl::predicates
+	FastEnvelope
 )
 
 add_subdirectory(app)
 add_subdirectory(tests)
+
+wmtk_copy_dll(wmtk_remeshing_lib)

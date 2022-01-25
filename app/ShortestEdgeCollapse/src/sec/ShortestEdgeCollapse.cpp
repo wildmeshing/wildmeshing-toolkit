@@ -1,4 +1,4 @@
-#include "EdgeOperations2d.h"
+#include "ShortestEdgeCollapse.h"
 
 #include <wmtk/TriMesh.h>
 #include <wmtk/utils/VectorUtils.h>
@@ -8,7 +8,7 @@
 #include <Eigen/Geometry>
 
 using namespace wmtk;
-using namespace Edge2d;
+using namespace sec;
 auto unique_edge_tuples = [](const auto& m, auto& edges) {
     std::vector<size_t> all_eids;
     for (auto e : edges) {
@@ -21,15 +21,8 @@ auto unique_edge_tuples = [](const auto& m, auto& edges) {
     }
 };
 
-bool Edge2d::EdgeOperations2d::swap_after(const TriMesh::Tuple& t)
-{
-    std::vector<TriMesh::Tuple> tris;
-    tris.push_back(t);
-    tris.push_back(t.switch_edge(*this));
-    return true;
-}
 
-bool Edge2d::EdgeOperations2d::collapse_after(const TriMesh::Tuple& t)
+bool sec::ShortestEdgeCollapse::collapse_after(const TriMesh::Tuple& t)
 {
     const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
     auto vid = t.vid();
@@ -38,16 +31,8 @@ bool Edge2d::EdgeOperations2d::collapse_after(const TriMesh::Tuple& t)
     return true;
 }
 
-bool Edge2d::EdgeOperations2d::split_after(const TriMesh::Tuple& t)
-{
-    const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
-    auto vid = t.vid();
-    vertex_attrs->m_attributes[vid].pos = p;
 
-    return true;
-}
-
-std::vector<TriMesh::Tuple> Edge2d::EdgeOperations2d::new_edges_after(
+std::vector<TriMesh::Tuple> sec::ShortestEdgeCollapse::new_edges_after(
     const std::vector<TriMesh::Tuple>& tris) const
 {
     std::vector<TriMesh::Tuple> new_edges;
@@ -62,9 +47,10 @@ std::vector<TriMesh::Tuple> Edge2d::EdgeOperations2d::new_edges_after(
     return new_edges;
 }
 
-bool Edge2d::EdgeOperations2d::collapse_shortest(int target_vert_number)
+bool sec::ShortestEdgeCollapse::collapse_shortest(int target_vert_number)
 {
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
+    int starting_num = get_vertices().size();
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_collapse", loc);
 
     auto renew = [](auto& m, auto op, auto& tris) {
@@ -88,19 +74,16 @@ bool Edge2d::EdgeOperations2d::collapse_shortest(int target_vert_number)
             if (!m.try_set_edge_mutex_two_ring(e, stack)) return {};
             return stack;
         };
-        executor.stopping_criterion_checking_frequency = 100;
-        executor.stopping_criterion = [&target_vert_number](auto& m) {
-            if (m.get_vertices().size() < target_vert_number) return true;
-            return false;
-        };
+        executor.stopping_criterion_checking_frequency = std::numeric_limits<int>::max();
+        executor.stopping_criterion = [&target_vert_number](auto& m) { return true; };
         executor(*this, collect_all_ops);
     };
 
     if (NUM_THREADS > 1) {
-        auto executor = wmtk::ExecutePass<EdgeOperations2d, ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<ShortestEdgeCollapse, ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<EdgeOperations2d, ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<ShortestEdgeCollapse, ExecutionPolicy::kPartition>();
         setup_and_execute(executor);
     }
     return true;

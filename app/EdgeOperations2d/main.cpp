@@ -1,6 +1,7 @@
 #include <EdgeOperations2d.h>
 #include <igl/is_edge_manifold.h>
 #include <igl/read_triangle_mesh.h>
+#include <igl/writeDMAT.h>
 #include <stdlib.h>
 #include <wmtk/TriMesh.h>
 #include <cstdlib>
@@ -67,6 +68,21 @@ int main(int argc, char** argv)
         for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
     }
 
+    Eigen::Vector3d min, max;
+    for (size_t i = 0; i < v.size(); i++) {
+        if (i == 0) {
+            min = v[i];
+            max = v[i];
+            continue;
+        }
+        for (int j = 0; j < 3; j++) {
+            if (v[i][j] < min[j]) min[j] = v[i][j];
+            if (v[i][j] > max[j]) max[j] = v[i][j];
+        }
+    }
+
+    double ep = (max - min).norm() * 1e-3;
+
     if (!igl::is_edge_manifold(F)) {
         std::vector<Eigen::Vector3d> out_v;
         std::vector<std::array<size_t, 3>> out_f;
@@ -83,17 +99,31 @@ int main(int argc, char** argv)
 
         assert(igl::is_edge_manifold(outF));
         EdgeOperations2d m(out_v);
-        m.create_mesh(out_v.size(), out_f, atof(argv[3]));
+        m.create_mesh(out_v.size(), out_f, ep);
         run_shortest_collapse(path, out_v.size() / 5, std::string(argv[2]), m);
     }
 
     else {
         EdgeOperations2d m(v);
-        m.create_mesh(v.size(), tri, atof(argv[3]));
+        m.create_mesh(v.size(), tri, ep);
         assert(m.check_mesh_connectivity_validity());
-        wmtk::logger().info("collapse to {}", v.size() - std::stoi(argv[2]));
-        m.collapse_qec(v.size() - std::stoi(argv[2]));
-        m.write_triangle_mesh("qec_result.obj");
+        // wmtk::logger().info("collapse to {}", v.size() - std::stoi(argv[2]));
+        // m.collapse_qec(v.size() - std::stoi(argv[2]));
+        // m.consolidate_mesh();
+        wmtk::logger().info("collapsing mesh {}", argv[1]);
+        run_shortest_collapse(path, std::stoi(argv[2]), argv[3], m);
+        m.consolidate_mesh();
+        // auto edges = m.get_edges();
+        // Eigen::MatrixXd writem(edges.size(), 7);
+
+        // for (int i = 0; i < edges.size(); i++) {
+        //     Eigen::Vector3d v1 = m.vertex_attrs->m_attributes[edges[i].vid()].pos;
+        //     Eigen::Vector3d v2 =
+        //         m.vertex_attrs->m_attributes[(edges[i].switch_vertex(m).vid())].pos;
+        //     writem.row(i) << v1.transpose(), v2.transpose(), m.compute_cost_for_e(edges[i]);
+        // }
+        // // wmtk::logger().info("the result is {}", writem);
+        // igl::writeDMAT("qec_result_priority_after.txt", writem);
     }
 
     // std::vector<double> properties = m.average_len_valen();

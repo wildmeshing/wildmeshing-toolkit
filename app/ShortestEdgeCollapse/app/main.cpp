@@ -1,7 +1,8 @@
 #include <igl/is_edge_manifold.h>
+#include <igl/readOFF.h>
 #include <igl/read_triangle_mesh.h>
 #include <igl/writeDMAT.h>
-#include <remeshing/UniformRemeshing.h>
+#include <sec/ShortestEdgeCollapse.h>
 #include <stdlib.h>
 #include <wmtk/TriMesh.h>
 #include <cstdlib>
@@ -9,34 +10,42 @@
 #include <wmtk/utils/ManifoldUtils.hpp>
 using namespace wmtk;
 
-using namespace remeshing;
+using namespace sec;
 #include <chrono>
 using namespace std::chrono;
 
 extern "C" {
 #include <wmtk/utils/getRSS.c>
 };
-void run_remeshing(std::string input, double len, std::string output, UniformRemeshing& m)
+void run_shortest_collapse(
+    std::string input,
+    int target,
+    std::string output,
+    ShortestEdgeCollapse& m)
 {
     auto start = high_resolution_clock::now();
-    wmtk::logger().info("target len: {}", len);
-    m.uniform_remeshing(len, 2);
+    wmtk::logger().info("target number of verts: {}", target);
+    assert(m.check_mesh_connectivity_validity());
+    wmtk::logger().info("mesh is valid");
+    m.collapse_shortest(target);
+    wmtk::logger().info("collapsed");
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<milliseconds>(stop - start);
-
-    m.consolidate_mesh();
-    m.write_triangle_mesh(fmt::format("{}_{}.obj", output, len));
     wmtk::logger().info("runtime {}", duration.count());
-    wmtk::logger().info("current_memory {}", getCurrentRSS() / (1024. * 1024));
-    wmtk::logger().info("peak_memory {}", getPeakRSS() / (1024. * 1024));
+    m.consolidate_mesh();
+    m.write_triangle_mesh(fmt::format("{}_{}.obj", output, target));
     wmtk::logger().info(
-        "After_vertices#: {} \n\t After_tris#: {}",
+        "After_vertices#: {} \n After_tris#: {}",
         m.vert_capacity(),
         m.tri_capacity());
 }
-
 int main(int argc, char** argv)
 {
+    // input
+    // target_verts
+    // output
+    // ep
+
     const std::string root(WMT_DATA_DIR);
     const std::string path = root + argv[1];
     Eigen::MatrixXd V;
@@ -53,9 +62,11 @@ int main(int argc, char** argv)
     for (int i = 0; i < F.rows(); i++) {
         for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
     }
+
     const Eigen::MatrixXd box_min = V.colwise().minCoeff();
     const Eigen::MatrixXd box_max = V.colwise().maxCoeff();
     const double diag = (box_max - box_min).norm();
+
     const double envelope_size = atof(argv[4]) * diag;
 
     if (!igl::is_edge_manifold(F)) {
@@ -63,19 +74,12 @@ int main(int argc, char** argv)
     }
 
     else {
-        UniformRemeshing m(v);
+        ShortestEdgeCollapse m(v);
         m.create_mesh(v.size(), tri, envelope_size);
         assert(m.check_mesh_connectivity_validity());
-        std::vector<double> properties = m.average_len_valen();
-        wmtk::logger().info(
-            "edgelen: avg max min valence:avg max min before remesh is: {}",
-            properties);
-        double small = properties[0] * 0.1;
-
-        run_remeshing(path, properties[0] * 5, std::string(argv[2]), m);
-        run_remeshing(path, properties[0] / 2, std::string(argv[2]), m);
+        wmtk::logger().info("collapsing mesh {}", argv[1]);
+        run_shortest_collapse(path, std::stoi(argv[2]), argv[3], m);
+        m.consolidate_mesh();
     }
-
-
     return 0;
 }

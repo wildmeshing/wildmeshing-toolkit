@@ -101,19 +101,34 @@ bool Edge2d::EdgeOperations2d::collapse_qec(int target)
 
         // wmtk::logger().info(
         //     "{} \n{}\n {}",
-        //     m.vertex_attrs.pos[e.vid()],
-        //     m.vertex_attrs.pos[e.switch_vertex(m).vid()],
+        //     vertex_attrs->m_attributes[e.vid()].pos,
+        //     vertex_attrs->m_attributes[e.switch_vertex(m).vid()].pos,
         //     compute_cost_for_e(e));
         return -compute_cost_for_e(e);
     };
-    executor.should_process = [&target, &collect_all_ops](auto& m, auto& ele) {
+    executor.should_process = [&collect_all_ops, this](auto& m, auto& ele) {
         auto& [val, op, e] = ele;
+
         if (val > 0) return false; // priority is negated.
+        double pri = -compute_cost_for_e(e);
+        if ((val - pri) < 1e-5) {
+            wmtk::logger().info("the priority is different");
+            return false;
+        }
+        for (auto edge : get_edges()) {
+            if (pri < -compute_cost_for_e(edge)) {
+                wmtk::logger().info("!!!! should not happen !!!!");
+                return false;
+            }
+        }
 
         return true;
     };
-    executor.stopping_criterion_checking_frequency = vertex_number - target;
-    executor.stopping_criterion = [](auto& m) { return true; };
+    executor.stopping_criterion_checking_frequency = 1000;
+    executor.stopping_criterion = [&target](auto& m) {
+        if (m.get_vertices().size() < target) return true;
+        return false;
+    };
 
     executor(*this, collect_all_ops);
     return true;
