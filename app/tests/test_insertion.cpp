@@ -30,7 +30,7 @@ TEST_CASE("triangle-insertion", "[tetwild_operation]")
     Eigen::MatrixXd F;
     std::string input_path = WMT_DATA_DIR "/37322.stl";
     igl::read_triangle_mesh(input_path, V, F);
-    cout << V.rows() << " " << F.rows() << endl;
+    wmtk::logger().info("Read Mesh V={}, F={}", V.rows(), F.rows());
 
     std::vector<Vector3d> vertices(V.rows());
     std::vector<std::array<size_t, 3>> faces(F.rows());
@@ -64,7 +64,7 @@ TEST_CASE("triangle-insertion", "[tetwild_operation]")
     input_surface.partition_id = partition_id;
     //
     fastEnvelope::FastEnvelope envelope;
-    cout << "input_surface.params.eps " << input_surface.params.eps << endl;
+    wmtk::logger().info("input_surface.params.eps {}", input_surface.params.eps);
     envelope.init(vertices, env_faces, input_surface.params.eps);
     //
     tetwild::TetWild mesh(input_surface.params, envelope);
@@ -83,7 +83,7 @@ TEST_CASE("triangle-insertion", "[tetwild_operation]")
             for (auto i = 0; i < outface.size(); i++) {
                 matF.row(i) << outface[i][0], outface[i][1], outface[i][2];
             }
-            std::cout << outface.size() << std::endl;
+            wmtk::logger().info("output face {}", outface.size());
             igl::write_triangle_mesh("track_surface.obj", matV, matF);
         }
         {
@@ -98,7 +98,7 @@ TEST_CASE("triangle-insertion", "[tetwild_operation]")
             for (auto i = 0; i < outface.size(); i++) {
                 matF.row(i) << outface[i][0], outface[i][1], outface[i][2];
             }
-            std::cout << outface.size() << std::endl;
+            wmtk::logger().info("output face {}", outface.size());
             igl::write_triangle_mesh("track_bbox.obj", matV, matF);
         }
 
@@ -119,7 +119,7 @@ TEST_CASE("triangle-insertion-parallel", "[tetwild_operation]")
     Eigen::MatrixXd F;
     std::string input_path = WMT_DATA_DIR "/37322.stl";
     igl::read_triangle_mesh(input_path, V, F);
-    cout << V.rows() << " " << F.rows() << endl;
+    wmtk::logger().info("Read Mesh V={}, F={}", V.rows(), F.rows());
 
     std::vector<Vector3d> vertices(V.rows());
     std::vector<std::array<size_t, 3>> faces(F.rows());

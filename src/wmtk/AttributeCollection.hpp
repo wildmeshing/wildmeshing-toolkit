@@ -20,7 +20,6 @@ public:
     virtual ~AbstractAttributeContainer() = default;
     virtual void move(size_t from, size_t to){};
     virtual void resize(size_t){};
-    virtual void resize(){};
     virtual void rollback(){};
     virtual void begin_protect(){};
     virtual void end_protect(){};

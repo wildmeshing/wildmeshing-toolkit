@@ -272,8 +272,6 @@ void tetwild::TetWild::triangle_insertion_stuff(
             wmtk::project_point_to_2d(tri[1], squeeze_to_2d_dir),
             wmtk::project_point_to_2d(tri[2], squeeze_to_2d_dir)}};
 
-        wmtk::logger().info("face_id {}", face_id);
-
         std::vector<Tuple> intersected_tets;
         std::map<std::array<size_t, 2>, std::tuple<int, Vector3, size_t, int>> map_edge2point;
         std::map<std::array<size_t, 3>, bool> map_face2intersected;
