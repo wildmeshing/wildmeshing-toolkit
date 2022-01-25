@@ -18,6 +18,7 @@ void tetwild::TetWild::mesh_improvement(int max_its)
     local_operations({{0, 1, 0, 0}}, false);
 
     ////operation loops
+    bool is_hit_min_edge_length = false;
     for (int it = 0; it < max_its; it++) {
         ///ops
         wmtk::logger().info("====it {}====", it);
@@ -28,6 +29,7 @@ void tetwild::TetWild::mesh_improvement(int max_its)
 
         ///sizing field
         if (it > 0) { // todo
+            is_hit_min_edge_length = adjust_sizing_field(max_energy);
         }
     }
 
@@ -87,11 +89,85 @@ std::tuple<double, double> tetwild::TetWild::local_operations(const std::array<i
     return std::make_tuple(max_energy, avg_energy);
 }
 
-
-
-void tetwild::TetWild::adjust_sizing_field()
+bool tetwild::TetWild::adjust_sizing_field(double max_energy)
 {
-    // todo
+    const auto& vertices = get_vertices();
+    const auto& tets = get_tets(); // todo: avoid copy!!!
+
+    static const Scalar stop_filter_energy = m_params.stop_energy * 0.8;
+    Scalar filter_energy =
+        max_energy / 100 > stop_filter_energy ? max_energy / 100 : stop_filter_energy;
+    if (filter_energy > 100) filter_energy = 100;
+
+    Scalar recover_scalar = 1.5;
+//    std::vector<Scalar> scale_multipliers(vertices.size(), recover_scalar);
+    std::vector<Scalar> scale_multipliers(m_vertex_attribute.size(), recover_scalar);
+    Scalar refine_scalar = 0.5;
+    Scalar min_refine_scalar = m_params.l_min / m_params.l;
+
+    const double R = m_params.l * 2;
+    for (size_t i = 0; i < tets.size(); i++) {
+        int tid = tets[i].tid(*this);
+        if (m_tet_attribute[tid].m_quality < filter_energy) continue;
+
+        std::map<size_t, double> new_scalars;
+        //
+        std::queue<size_t> v_queue;
+        auto vs = oriented_tet_vertices(tets[i]);
+        Vector3d c(0, 0, 0);
+        for (int j = 0; j < 4; j++) {
+            v_queue.push(vs[j].vid(*this));
+            c += m_vertex_attribute[vs[j].vid(*this)].m_posf;
+        }
+        c /= 4;
+        //
+        while (!v_queue.empty()) {
+            size_t vid = v_queue.front();
+            v_queue.pop();
+
+            bool is_close = false;
+            double dist = (m_vertex_attribute[vid].m_posf - c).norm();
+            if (dist > R) {
+                new_scalars[vid] = 0;
+            } else {
+                new_scalars[vid] = (1 + dist / R) * refine_scalar;//linear interpolate
+                is_close = true;
+            }
+
+            if (!is_close) continue;
+
+            auto vids = get_one_ring_vids_for_vertex(vid);
+            for (size_t n_vid : vids) {
+                if (new_scalars.count(n_vid)) continue;
+                v_queue.push(n_vid);
+            }
+        }
+
+        for (auto& info : new_scalars) {
+            if (info.second == 0) continue;
+
+            size_t vid = info.first;
+            double scalar = info.second;
+            if (scalar < scale_multipliers[vid]) scale_multipliers[vid] = scalar;
+        }
+    }
+
+    bool is_hit_min_edge_length = false;
+    for (size_t i = 0; i < vertices.size(); i++) {
+        size_t vid = vertices[i].vid(*this);
+        auto& v_attr = m_vertex_attribute[vid];
+
+        Scalar new_scale = v_attr.m_sizing_scalar * scale_multipliers[vid];
+        if (new_scale > 1)
+            v_attr.m_sizing_scalar = 1;
+        else if (new_scale < min_refine_scalar) {
+            is_hit_min_edge_length = true;
+            v_attr.m_sizing_scalar = min_refine_scalar;
+        } else
+            v_attr.m_sizing_scalar = new_scale;
+    }
+
+    return is_hit_min_edge_length;
 }
 
 void tetwild::TetWild::filter_outside()
@@ -126,6 +202,17 @@ void tetwild::TetWild::filter_outside()
 }
 
 /////////////////////////////////////////////////////////////////////
+
+double tetwild::TetWild::get_length2(const wmtk::TetMesh::Tuple& l) const
+{
+    auto& m = *this;
+    auto& v1 = l;
+    auto v2 = l.switch_vertex(m);
+    double length =
+        (m.m_vertex_attribute[v1.vid(m)].m_posf - m.m_vertex_attribute[v2.vid(m)].m_posf)
+            .squaredNorm();
+    return length;
+}
 
 std::tuple<double, double> tetwild::TetWild::get_max_avg_energy()
 {

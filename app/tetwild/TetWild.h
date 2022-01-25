@@ -258,7 +258,7 @@ public:
     //
     bool is_edge_on_surface(const Tuple& loc);
     //
-    void adjust_sizing_field();
+    bool adjust_sizing_field(double max_energy);
     void mesh_improvement(int max_its = 80);
     std::tuple<double, double> local_operations(const std::array<int, 4>& ops, bool collapse_limite_length = true);
     std::tuple<double, double> get_max_avg_energy();

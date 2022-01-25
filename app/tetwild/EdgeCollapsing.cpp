@@ -15,17 +15,6 @@ void pausee()
     if (c == '0') exit(0);
 }
 
-double tetwild::TetWild::get_length2(const wmtk::TetMesh::Tuple& l) const
-{
-    auto& m = *this;
-    auto& v1 = l;
-    auto v2 = l.switch_vertex(m);
-    double length =
-        (m.m_vertex_attribute[v1.vid(m)].m_posf - m.m_vertex_attribute[v2.vid(m)].m_posf)
-            .squaredNorm();
-    return length;
-}
-
 void tetwild::TetWild::collapse_all_edges(bool is_limit_length)
 {
     collapse_cache.local().is_limit_length = is_limit_length;
@@ -42,7 +31,14 @@ void tetwild::TetWild::collapse_all_edges(bool is_limit_length)
             auto [weight, op, tup] = ele;
             auto length = m.get_length2(tup);
             if (length != -weight) return false;
-            if (is_limit_length && length > m_params.collapsing_l2) return false;
+            //
+            size_t v1_id = tup.vid(*this);
+            size_t v2_id = tup.switch_vertex(*this).vid(*this);
+            if (is_limit_length && length > m_params.collapsing_l2 *
+                                                (m_vertex_attribute[v1_id].m_sizing_scalar +
+                                                 m_vertex_attribute[v2_id].m_sizing_scalar) /
+                                                2)
+                return false;
             return true;
         };
         executor(*this, collect_all_ops);

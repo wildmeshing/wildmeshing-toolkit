@@ -8,6 +8,7 @@ struct Parameters
     double eps = -1.; // absolute error bound
     double lr = 5e-2; // target edge length (relative)
     double l = -1.;
+    double l_min;
     double diag_l = -1.;
     Vector3d min = Vector3d::Zero();
     Vector3d max = Vector3d::Ones();
@@ -35,6 +36,8 @@ struct Parameters
             epsr = eps / diag_l;
         else
             eps = epsr * diag_l;
+
+        l_min = eps;
     }
 };
 } // namespace tetwild

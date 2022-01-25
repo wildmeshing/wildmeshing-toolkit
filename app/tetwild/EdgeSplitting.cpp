@@ -27,7 +27,14 @@ void tetwild::TetWild::split_all_edges()
             auto [weight, op, tup] = ele;
             auto length = m.get_length2(tup);
             if (length != weight) return false;
-            if (length < m_params.splitting_l2) return false;
+            //
+            size_t v1_id = tup.vid(*this);
+            size_t v2_id = tup.switch_vertex(*this).vid(*this);
+            if (length < m_params.splitting_l2 *
+                             (m_vertex_attribute[v1_id].m_sizing_scalar +
+                              m_vertex_attribute[v2_id].m_sizing_scalar) /
+                             2)
+                return false;
             return true;
         };
         executor(*this, collect_all_ops);
