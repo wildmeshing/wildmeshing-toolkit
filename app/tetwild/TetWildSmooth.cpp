@@ -54,6 +54,11 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
     auto vid = t.vid(*this);
 
     auto locs = get_one_ring_tets_for_vertex(t);
+    auto max_quality = 0.;
+    for (auto& tet : locs) {
+        max_quality = std::max(max_quality, get_quality(tet));
+    }
+
     assert(locs.size() > 0);
     std::vector<std::array<double, 12>> assembles(locs.size());
     auto loc_id = 0;
@@ -100,10 +105,13 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
 
     m_vertex_attribute[vid].m_pos = tetwild::to_rational(m_vertex_attribute[vid].m_posf);
 
+    auto max_after_quality = 0.;
     for (auto& loc : locs) {
         auto t_id = loc.tid(*this);
         m_tet_attribute[t_id].m_quality = get_quality(loc);
+        max_after_quality = std::max(max_after_quality, m_tet_attribute[t_id].m_quality);
     }
+    if (max_after_quality > max_quality) return false;
     return true;
 }
 
