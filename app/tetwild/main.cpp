@@ -3,6 +3,7 @@
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/Partitioning.h>
 
+#include <CLI/CLI.hpp>
 //#include <catch2/catch.hpp>
 #include "spdlog/common.h"
 
@@ -23,11 +24,12 @@ int main(int argc, char** argv)
         if (c == '0') exit(0);
     };
 
-    std::string input_path;
-    if (argc > 1) {
-        input_path = argv[1];
-    } else
-        input_path = WMT_DATA_DIR "/37322.stl";
+    CLI::App app{argv[0]};
+    std::string input_path = WMT_DATA_DIR "/37322.stl";
+    int NUM_THREADS = 1;
+    app.add_option("-i,--input", input_path, "Input mesh.");
+    app.add_option("-j,--jobs", NUM_THREADS, "thread.");
+    CLI11_PARSE(app, argc, argv);
 
     Eigen::MatrixXd V;
     Eigen::MatrixXd F;
@@ -46,7 +48,6 @@ int main(int argc, char** argv)
             env_faces[i][j] = F(i, j);
         }
     }
-    constexpr int NUM_THREADS = 1;
 
     tetwild::TetWild::InputSurface input_surface;
     input_surface.params.lr = 1 / 15.0;
@@ -68,7 +69,7 @@ int main(int argc, char** argv)
     input_surface.partition_id = partition_id;
     //
     fastEnvelope::FastEnvelope envelope;
-    cout << "input_surface.params.eps " << input_surface.params.eps << endl;
+    wmtk::logger().info("input_surface.params.eps {}", input_surface.params.eps);
     envelope.init(vertices, env_faces, input_surface.params.eps);
     //
     tetwild::TetWild mesh(input_surface.params, envelope, NUM_THREADS);
