@@ -38,8 +38,9 @@ TEST_CASE("manifold-separate-test-37989", "[test_util]")
     wmtk::manifold_internal::Facets F;
     igl::read_triangle_mesh(filename, V, F);
     REQUIRE_FALSE(igl::is_edge_manifold(F));
-    std::vector<size_t> dummy;
-    wmtk::manifold_internal::resolve_nonmanifoldness(V, F, dummy);
+    std::vector<size_t> modified_vertices;
+    wmtk::manifold_internal::resolve_nonmanifoldness(V, F, modified_vertices);
+    REQUIRE(modified_vertices.size() > 0);
     REQUIRE(igl::is_edge_manifold(F));
     Eigen::VectorXi VI;
     REQUIRE(igl::is_vertex_manifold(F, VI));
