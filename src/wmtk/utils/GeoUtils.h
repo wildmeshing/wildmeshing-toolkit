@@ -114,6 +114,8 @@ bool open_segment_triangle_intersection_3d(
                  t1[0] * t2[1] * t3[2] + t1[0] * t2[2] * t3[1] + t1[1] * t2[0] * t3[2] -
                  t1[1] * t2[2] * t3[0] - t1[2] * t2[0] * t3[1] + t1[2] * t2[1] * t3[0]) /
                 d;
+    if (t <= 0 || t >= 1) return false;
+
     const T u = (e0[0] * e1[1] * t3[2] + e0[0] * e1[2] * t1[1] - e0[0] * e1[1] * t1[2] -
                  e0[0] * e1[2] * t3[1] - e0[0] * t1[1] * t3[2] + e0[0] * t1[2] * t3[1] +
                  e0[1] * e1[0] * t1[2] - e0[1] * e1[0] * t3[2] - e0[1] * e1[2] * t1[0] +
@@ -123,6 +125,9 @@ bool open_segment_triangle_intersection_3d(
                  e1[0] * t1[1] * t3[2] - e1[0] * t1[2] * t3[1] - e1[1] * t1[0] * t3[2] +
                  e1[1] * t1[2] * t3[0] + e1[2] * t1[0] * t3[1] - e1[2] * t1[1] * t3[0]) /
                 d;
+    if (u < 0 || u > 1)
+        return false;
+
     const T v = (e0[0] * e1[1] * t1[2] - e0[0] * e1[1] * t2[2] - e0[0] * e1[2] * t1[1] +
                  e0[0] * e1[2] * t2[1] + e0[0] * t1[1] * t2[2] - e0[0] * t1[2] * t2[1] -
                  e0[1] * e1[0] * t1[2] + e0[1] * e1[0] * t2[2] + e0[1] * e1[2] * t1[0] -
@@ -133,9 +138,7 @@ bool open_segment_triangle_intersection_3d(
                  e1[1] * t1[2] * t2[0] - e1[2] * t1[0] * t2[1] + e1[2] * t1[1] * t2[0]) /
                 d;
 
-    if (t <= 0 || t >= 1) return false;
-
-    if (u < 0 || u > 1 || v < 0 || v > 1 || u + v > 1) return false;
+    if (v < 0 || v > 1 || u + v > 1) return false;
 
     p = (1 - t) * e0 + t * e1;
 
@@ -185,6 +188,8 @@ bool open_segment_plane_intersection_3d(
                  t1[0] * t2[1] * t3[2] + t1[0] * t2[2] * t3[1] + t1[1] * t2[0] * t3[2] -
                  t1[1] * t2[2] * t3[0] - t1[2] * t2[0] * t3[1] + t1[2] * t2[1] * t3[0]) /
                 d;
+    if (t <= 0 || t >= 1) return false;
+
     const T u = (e0[0] * e1[1] * t3[2] + e0[0] * e1[2] * t1[1] - e0[0] * e1[1] * t1[2] -
                  e0[0] * e1[2] * t3[1] - e0[0] * t1[1] * t3[2] + e0[0] * t1[2] * t3[1] +
                  e0[1] * e1[0] * t1[2] - e0[1] * e1[0] * t3[2] - e0[1] * e1[2] * t1[0] +
@@ -203,8 +208,6 @@ bool open_segment_plane_intersection_3d(
                  e1[0] * t1[1] * t2[2] + e1[0] * t1[2] * t2[1] + e1[1] * t1[0] * t2[2] -
                  e1[1] * t1[2] * t2[0] - e1[2] * t1[0] * t2[1] + e1[2] * t1[1] * t2[0]) /
                 d;
-
-    if (t <= 0 || t >= 1) return false;
 
     is_inside = true;
     if (u < 0 || u > 1 || v < 0 || v > 1 || u + v > 1) is_inside = false;
@@ -261,6 +264,20 @@ bool open_segment_open_segment_intersection_2d(
 
 // note: use the first 3 points to construct the plane
 template <typename T>
+int project_to_2d_by_normal(const Eigen::Matrix<T, 3, 1>& n){
+    int J = 0;
+    T max = abs(n[J]); // delete max
+    for (int j = 0; j < 3; j++) {
+        if (abs(n[j]) > max) {
+            max = abs(n[j]);
+            J = j;
+        }
+    }
+
+    return J;
+}
+
+template <typename T>
 int project_triangle_to_2d(
     const std::array<Eigen::Matrix<T, 3, 1>, 3>& points3,
     std::array<Eigen::Matrix<T, 2, 1>, 3>& points2)
@@ -271,14 +288,7 @@ int project_triangle_to_2d(
 
     Eigen::Matrix<T, 3, 1> n = (p2 - p1).cross(p3 - p1);
 
-    int J = 0;
-    T max = n[J].abs(); // delete max
-    for (int j = 0; j < 3; j++) {
-        if (n[j].abs() > max) {
-            max = n[j].abs();
-            J = j;
-        }
-    }
+    int J = project_to_2d_by_normal(n);
 
     for (int i = 0; i < points3.size(); i++) {
         if (J == 0) {
