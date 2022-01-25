@@ -3,23 +3,13 @@
 #include <wmtk/TriMesh.h>
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/ExecutionScheduler.hpp>
+#include <wmtk/utils/TupleUtils.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
 using namespace wmtk;
 using namespace sec;
-auto unique_edge_tuples = [](const auto& m, auto& edges) {
-    std::vector<size_t> all_eids;
-    for (auto e : edges) {
-        all_eids.emplace_back(e.eid(m));
-    }
-    vector_unique(all_eids);
-    edges.clear();
-    for (auto eid : all_eids) {
-        edges.emplace_back(m.tuple_from_edge(eid / 3, eid % 3));
-    }
-};
 
 
 bool sec::ShortestEdgeCollapse::collapse_after(const TriMesh::Tuple& t)
@@ -43,7 +33,7 @@ std::vector<TriMesh::Tuple> sec::ShortestEdgeCollapse::new_edges_after(
             new_edges.push_back(tuple_from_edge(t.fid(), j));
         }
     }
-    unique_edge_tuples(*this, new_edges);
+    wmtk::unique_edge_tuples(*this, new_edges);
     return new_edges;
 }
 
@@ -69,21 +59,20 @@ bool sec::ShortestEdgeCollapse::collapse_shortest(int target_vert_number)
         executor.num_threads = NUM_THREADS;
         executor.renew_neighbor_tuples = renew;
         executor.priority = measure_len2;
+        executor.stopping_criterion_checking_frequency = std::numeric_limits<int>::max();
+        executor(*this, collect_all_ops);
+    };
+
+    if (NUM_THREADS > 1) {
+        auto executor = wmtk::ExecutePass<ShortestEdgeCollapse, ExecutionPolicy::kPartition>();
         executor.lock_vertices = [](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
             auto stack = std::vector<size_t>();
             if (!m.try_set_edge_mutex_two_ring(e, stack)) return {};
             return stack;
         };
-        executor.stopping_criterion_checking_frequency = std::numeric_limits<int>::max();
-        executor.stopping_criterion = [](auto& m) { return true; };
-        executor(*this, collect_all_ops);
-    };
-
-    if (NUM_THREADS > 1) {
-        auto executor = wmtk::ExecutePass<ShortestEdgeCollapse, ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<ShortestEdgeCollapse, ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<ShortestEdgeCollapse, ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
     }
     return true;

@@ -5,6 +5,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <wmtk/ExecutionScheduler.hpp>
+#include <wmtk/utils/TupleUtils.hpp>
 
 using namespace remeshing;
 using namespace wmtk;
@@ -16,17 +17,6 @@ auto renew = [](auto& m, auto op, auto& tris) {
     return optup;
 };
 
-auto unique_edge_tuples = [](const auto& m, auto& edges) {
-    std::vector<size_t> all_eids;
-    for (auto e : edges) {
-        all_eids.emplace_back(e.eid(m));
-    }
-    vector_unique(all_eids);
-    edges.clear();
-    for (auto eid : all_eids) {
-        edges.emplace_back(m.tuple_from_edge(eid / 3, eid % 3));
-    }
-};
 
 auto edge_locker = [](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
     auto stack = std::vector<size_t>();
@@ -45,7 +35,7 @@ std::vector<TriMesh::Tuple> UniformRemeshing::new_edges_after(
             new_edges.push_back(tuple_from_edge(t.fid(), j));
         }
     }
-    unique_edge_tuples(*this, new_edges);
+    wmtk::unique_edge_tuples(*this, new_edges);
     return new_edges;
 }
 bool UniformRemeshing::swap_after(const TriMesh::Tuple& t)

@@ -3,6 +3,7 @@
 #include <Tracy.hpp>
 
 #include <algorithm>
+#include "wmtk/TriMesh.h"
 
 namespace wmtk {
 void unique_edge_tuples(const TetMesh& m, std::vector<TetMesh::Tuple>& edges)
@@ -21,6 +22,20 @@ void unique_edge_tuples(const TetMesh& m, std::vector<TetMesh::Tuple>& edges)
             edges.end(),
             [&](const TetMesh::Tuple& a, const TetMesh::Tuple& b) { return a.eid(m) == b.eid(m); }),
         edges.end());
+}
+
+void unique_edge_tuples(const TriMesh& m, std::vector<TriMesh::Tuple>& edges)
+{
+    ZoneScoped;
+    std::vector<size_t> all_eids;
+    for (auto e : edges) {
+        all_eids.emplace_back(e.eid(m));
+    }
+    vector_unique(all_eids);
+    edges.clear();
+    for (auto eid : all_eids) {
+        edges.emplace_back(m.tuple_from_edge(eid / 3, eid % 3));
+    }
 }
 
 void unique_face_tuples(const TetMesh& m, std::vector<TetMesh::Tuple>& faces)
