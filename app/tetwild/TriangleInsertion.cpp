@@ -259,13 +259,20 @@ void tetwild::TetWild::triangle_insertion_stuff(
             {to_rational(vertices[faces[face_id][0]]),
              to_rational(vertices[faces[face_id][1]]),
              to_rational(vertices[faces[face_id][2]])}};
+        std::array<Vector3d, 3> tri_d = {
+            {vertices[faces[face_id][0]],
+             vertices[faces[face_id][1]],
+             vertices[faces[face_id][2]]}};
         //
         Vector3 tri_normal = (tri[1] - tri[0]).cross(tri[2] - tri[0]);
         //
-        std::array<Vector2, 3> tri2;
-        int squeeze_to_2d_dir = wmtk::project_triangle_to_2d(tri, tri2);
+        Vector3d tri_normal_d = (tri_d[1] - tri_d[0]).cross(tri_d[2] - tri_d[0]);
+        int squeeze_to_2d_dir = wmtk::project_to_2d_by_normal(tri_normal_d);// = wmtk::project_triangle_to_2d(tri, tri2);
+        std::array<Vector2, 3> tri2 = {{wmtk::project_point_to_2d(tri[0], squeeze_to_2d_dir),
+            wmtk::project_point_to_2d(tri[1], squeeze_to_2d_dir),
+            wmtk::project_point_to_2d(tri[2], squeeze_to_2d_dir)}};
 
-        // wmtk::logger().info("face_id {}", face_id);
+        wmtk::logger().info("face_id {}", face_id);
 
         std::vector<Tuple> intersected_tets;
         std::map<std::array<size_t, 2>, std::tuple<int, Vector3, size_t, int>> map_edge2point;
@@ -1230,7 +1237,7 @@ void tetwild::TetWild::setup_attributes()
     }
 
 
-    check_mesh_connectivity_validity();
+//    check_mesh_connectivity_validity();
     output_mesh("triangle_insertion.msh");
 
     // todo: output faces to check surface and bbox
