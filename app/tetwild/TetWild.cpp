@@ -19,6 +19,9 @@ void tetwild::TetWild::mesh_improvement(int max_its)
 
     ////operation loops
     bool is_hit_min_edge_length = false;
+    const int M = 3;
+    int m = 0;
+    double pre_max_energy, pre_avg_energy;
     for (int it = 0; it < max_its; it++) {
         ///ops
         wmtk::logger().info("====it {}====", it);
@@ -28,14 +31,18 @@ void tetwild::TetWild::mesh_improvement(int max_its)
         if (max_energy < m_params.stop_energy) break;
 
         ///sizing field
-        if (it > 0) { // todo
-            is_hit_min_edge_length = adjust_sizing_field(max_energy);
+        if (it > 0 && abs(pre_max_energy - max_energy) < 1e-1 &&
+            abs(pre_avg_energy - avg_energy) < 1e-2) {
+            m++;
+            if (m == M) {
+                is_hit_min_edge_length = adjust_sizing_field(max_energy);
+                m = 0;
+            }
         }
     }
 
     const auto& vs = get_vertices();
-    for(auto& v: vs)
-        m_vertex_attribute[v.vid(*this)].m_scalar = 1;
+    for (auto& v : vs) m_vertex_attribute[v.vid(*this)].m_scalar = 1;
     wmtk::logger().info("====it post====");
     local_operations({{0, 1, 0, 0}});
 
@@ -72,7 +79,7 @@ std::tuple<double, double> tetwild::TetWild::local_operations(const std::array<i
         } else if (i == 3) {
             for (int n = 0; n < ops[i]; n++) {
                 wmtk::logger().info("==smoothing {}==", n);
-                // todo vertex smoothing
+                smooth_all_vertices();
             }
         }
 
