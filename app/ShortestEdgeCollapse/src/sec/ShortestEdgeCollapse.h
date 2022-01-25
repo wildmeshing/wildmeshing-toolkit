@@ -153,7 +153,9 @@ public:
 
     bool collapse_before(const Tuple& t) override
     {
-        if (!TriMesh::collapse_before(t) || vertex_attrs->m_attributes[t.vid()].freeze)
+        if (!TriMesh::collapse_before(t)) return false;
+        if (vertex_attrs->m_attributes[t.vid()].freeze ||
+            vertex_attrs->m_attributes[t.switch_vertex(*this).vid()].freeze)
             return false;
         cache_edge_positions(t);
         return true;
