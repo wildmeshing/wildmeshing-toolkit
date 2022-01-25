@@ -264,9 +264,12 @@ void tetwild::TetWild::triangle_insertion_stuff(
 
         // set_locks
         std::vector<size_t> mutex_release_stack;
-        auto v1 = tuple_from_vertex(faces[face_id][0]);
-        auto v2 = tuple_from_vertex(faces[face_id][1]);
-        auto v3 = tuple_from_vertex(faces[face_id][2]);
+        // auto v1 = tuple_from_vertex(faces[face_id][0]);
+        // auto v2 = tuple_from_vertex(faces[face_id][1]);
+        // auto v3 = tuple_from_vertex(faces[face_id][2]);
+        auto v1 = faces[face_id][0];
+        auto v2 = faces[face_id][1];
+        auto v3 = faces[face_id][2];
 
         if (!try_set_face_mutex_two_ring(v1, v2, v3, mutex_release_stack)) {
             // retry
@@ -305,17 +308,8 @@ void tetwild::TetWild::triangle_insertion_stuff(
             return false;
         };
         //
-        auto add_onering_tets_of_tet = [&](std::array<Tuple, 4>& vs) {
-            for (auto& v : vs) {
-                auto tets = get_one_ring_tets_for_vertex(v);
-                for (auto& t : tets) {
-                    if (is_visited[t.tid(*this)]) continue;
-                    is_visited[t.tid(*this)] = true;
-                    tet_queue.push(t);
-                }
-            }
-        };
-        //
+
+        bool retry_flag = false;
         while (!tet_queue.empty()) {
             auto tet = tet_queue.front();
             tet_queue.pop();
@@ -327,6 +321,18 @@ void tetwild::TetWild::triangle_insertion_stuff(
             std::vector<int> coplanar_f_lvids;
             //
             auto vs = oriented_tet_vertices(tet);
+
+
+            for (auto v_id : vs) {
+                if (!try_set_vertex_mutex_one_ring(v_id, mutex_release_stack)) {
+                    retry_flag = true;
+                    break;
+                }
+            }
+
+            if (retry_flag) break;
+            // add lock
+
             std::array<size_t, 4> vertex_vids;
             for (int j = 0; j < 4; j++) {
                 vertex_vids[j] = vs[j].vid(*this);
@@ -357,6 +363,7 @@ void tetwild::TetWild::triangle_insertion_stuff(
                         if (is_visited[t.tid(*this)]) continue;
                         is_visited[t.tid(*this)] = true;
                         tet_queue.push(t);
+                        // add lock
                     }
                 }
             } else if (coplanar_f_lvids.size() == 2) {
@@ -373,6 +380,7 @@ void tetwild::TetWild::triangle_insertion_stuff(
                         for (auto& t : conn_tets) {
                             if (is_visited[t.tid(*this)]) continue;
                             is_visited[t.tid(*this)] = true;
+                            // add lock
                             tet_queue.push(t);
                         }
                     }
@@ -405,6 +413,8 @@ void tetwild::TetWild::triangle_insertion_stuff(
                         for (auto& t : conn_tets) {
                             if (is_visited[t.tid(*this)]) continue;
                             is_visited[t.tid(*this)] = true;
+
+                            // add lock
                             tet_queue.push(t);
                         }
                     }
@@ -465,6 +475,8 @@ void tetwild::TetWild::triangle_insertion_stuff(
                     for (auto& t : incident_tets) {
                         int tid = t.tid(*this);
                         if (is_visited[tid]) continue;
+
+                        //\add lock
                         tet_queue.push(t);
                         is_visited[tid] = true;
                     }
@@ -520,6 +532,7 @@ void tetwild::TetWild::triangle_insertion_stuff(
                             auto n_tet = res.value();
                             int tid = n_tet.tid(*this);
                             if (is_visited[tid]) continue;
+                            // add lock
                             tet_queue.push(n_tet);
                             is_visited[tid] = true;
                         }
@@ -536,6 +549,11 @@ void tetwild::TetWild::triangle_insertion_stuff(
                     intersected_tet_edges.insert(e);
                 }
             }
+        }
+
+        if (retry_flag) {
+            insertion_queues[task_id].push(face_id);
+            continue;
         }
         //        wmtk::vector_unique(intersected_tids);//note: not needed
         wmtk::logger().info("intersected_tets.size {}", intersected_tets.size());
@@ -629,7 +647,7 @@ void tetwild::TetWild::triangle_insertion_stuff(
 
 
         ///resize attri lists
-        m_tet_attribute.resize(tet_capacity()); // todo: do we need it?
+        // m_tet_attribute.resize(tet_capacity()); // todo: do we need it?
 
         // check_mesh_connectivity_validity();
         wmtk::logger().info("inserted #t {}", tet_capacity());

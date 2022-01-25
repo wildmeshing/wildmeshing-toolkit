@@ -39,7 +39,7 @@ TEST_CASE("triangle-insertion", "[tetwild_operation]")
         }
     }
 
-    int NUM_THREADS = 1;
+    int NUM_THREADS = 4;
 
     tetwild::TetWild::InputSurface input_surface;
     input_surface.init(vertices, faces);

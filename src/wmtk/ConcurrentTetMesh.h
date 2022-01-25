@@ -40,12 +40,18 @@ public:
     bool try_set_vertex_mutex_two_ring_vid(
         const Tuple& v,
         std::vector<size_t>& mutex_release_stack);
+    bool try_set_vertex_mutex_two_ring_vid(size_t v, std::vector<size_t>& mutex_release_stack);
     bool try_set_edge_mutex_two_ring(const Tuple& e, std::vector<size_t>& mutex_release_stack);
     bool try_set_face_mutex_two_ring(const Tuple& f, std::vector<size_t>& mutex_release_stack);
     bool try_set_face_mutex_two_ring(
         const Tuple& v1,
         const Tuple& v2,
         const Tuple& v3,
+        std::vector<size_t>& mutex_release_stack);
+    bool try_set_face_mutex_two_ring(
+        size_t v1,
+        size_t v2,
+        size_t v3,
         std::vector<size_t>& mutex_release_stack);
     bool try_set_vertex_mutex_one_ring(const Tuple& v, std::vector<size_t>& mutex_release_stack);
 };
