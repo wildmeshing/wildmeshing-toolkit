@@ -118,19 +118,12 @@ bool tetwild::TetWild::split_before(const Tuple& loc0)
     return true;
 }
 
-#include <fstream>
 bool tetwild::TetWild::split_after(const Tuple& loc)
 { // input: locs pointing to a list of tets and v_id
 
     if (!TetMesh::split_after(
             loc)) // note: call from super class, cannot be done with pure virtual classes
         return false;
-
-    /// resize attr for check and update
-    m_vertex_attribute.resize(vert_capacity());
-    m_tet_attribute.resize(tet_capacity());
-    m_face_attribute.resize(tet_capacity()*4);
-    m_edge_attribute.resize(tet_capacity()*6);
 
     std::vector<Tuple> locs = get_one_ring_tets_for_vertex(loc);
     size_t v_id = loc.vid(*this);
@@ -203,8 +196,9 @@ bool tetwild::TetWild::split_after(const Tuple& loc)
             m_face_attribute[global_fid2].reset();
         }
     }
-    
+
     m_vertex_attribute[v_id].partition_id = m_vertex_attribute[v1_id].partition_id;
+    m_vertex_attribute[v_id].m_sizing_scalar = (m_vertex_attribute[v1_id].m_sizing_scalar + m_vertex_attribute[v2_id].m_sizing_scalar)/2;
 
     cnt_split++;
 
