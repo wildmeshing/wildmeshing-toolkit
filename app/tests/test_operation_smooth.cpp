@@ -28,6 +28,7 @@ TEST_CASE("smooth_in_single_tet", "[tetwild_operation]")
     tetwild.create_mesh_attributes(vertices, tet_attrs);
 
     tetwild.smooth_all_vertices();
+    tetwild.smooth_all_vertices();
     auto quality = tetwild.m_tet_attribute.m_attributes.front().m_quality;
     REQUIRE(quality == Approx(3.0));
 }
@@ -56,6 +57,8 @@ TEST_CASE("smooth_double_tet", "[tetwild_operation]")
     tetwild.init(vertices.size(), tets);
     tetwild.create_mesh_attributes(vertices, tet_attrs);
 
+    tetwild.smooth_all_vertices();
+    tetwild.smooth_all_vertices();
     tetwild.smooth_all_vertices();
     auto quality = tetwild.m_tet_attribute.m_attributes.front().m_quality;
     REQUIRE(quality == Approx(3.0));
