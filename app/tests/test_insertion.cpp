@@ -19,7 +19,7 @@ TEST_CASE("triangle-insertion", "[tetwild_operation]")
     using std::cout;
     using std::endl;
 
-    auto pausee = [](){
+    auto pausee = []() {
         std::cout << "pausing..." << std::endl;
         char c;
         std::cin >> c;
@@ -45,22 +45,35 @@ TEST_CASE("triangle-insertion", "[tetwild_operation]")
         }
     }
 
+    int NUM_THREADS = 1;
     tetwild::TetWild::InputSurface input_surface;
-    input_surface.params.lr = 1/15.0;
+    input_surface.params.lr = 1 / 15.0;
     input_surface.init(vertices, faces);
     input_surface.remove_duplicates();
+    Eigen::MatrixXd new_F(input_surface.faces.size(), 3);
+    for (int i = 0; i < input_surface.faces.size(); i++) {
+        new_F(i, 0) = input_surface.faces[i][0];
+        new_F(i, 1) = input_surface.faces[i][1];
+        new_F(i, 2) = input_surface.faces[i][2];
+    }
+    auto partitioned_v = partition_mesh_vertices(new_F, NUM_THREADS);
+    std::vector<int> partition_id(partitioned_v.rows());
+    for (int i = 0; i < partitioned_v.rows(); i++) {
+        partition_id[i] = partitioned_v(i, 0);
+    }
+    input_surface.partition_id = partition_id;
     //
     fastEnvelope::FastEnvelope envelope;
-    cout<<"input_surface.params.eps "<<input_surface.params.eps<<endl;
+    cout << "input_surface.params.eps " << input_surface.params.eps << endl;
     envelope.init(vertices, env_faces, input_surface.params.eps);
     //
     tetwild::TetWild mesh(input_surface.params, envelope);
 
-    auto output_faces = [&](){
+    auto output_faces = [&]() {
         // output surface
         {
-            auto outface =
-                mesh.get_faces_by_condition([](auto& attr) { return attr.m_is_surface_fs == true; });
+            auto outface = mesh.get_faces_by_condition(
+                [](auto& attr) { return attr.m_is_surface_fs == true; });
             Eigen::MatrixXd matV = Eigen::MatrixXd::Zero(mesh.vert_capacity(), 3);
             for (auto v : mesh.get_vertices()) {
                 auto vid = v.vid(mesh);
@@ -120,7 +133,7 @@ TEST_CASE("triangle-insertion", "[tetwild_operation]")
     mesh.check_attributes();
     output_faces();
 
-    //todo: refine adaptively the mesh
+    // todo: refine adaptively the mesh
 }
 
 
@@ -148,7 +161,7 @@ TEST_CASE("triangle-insertion-parallel", "[tetwild_operation]")
         }
     }
 
-    int NUM_THREADS = 4;
+    int NUM_THREADS = 1;
 
     tetwild::TetWild::InputSurface input_surface;
     input_surface.init(vertices, faces);
