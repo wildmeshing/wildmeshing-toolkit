@@ -186,7 +186,7 @@ private:
             return m.m_vertex_partition_id[e.vid(m)];
         else if constexpr (std::is_base_of<wmtk::TriMesh, AppMesh>::value) // TODO: make same
                                                                            // interface.
-            return m.vertex_attrs->m_attributes[e.vid()].partition_id; // TODO: this is temporary.
+            return m.vertex_attrs[e.vid()].partition_id; // TODO: this is temporary.
         return 0;
     }
 

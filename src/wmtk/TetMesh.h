@@ -324,7 +324,8 @@ public:
     using vector = tbb::concurrent_vector<T>;
 
 public:
-    std::shared_ptr<AbstractAttributeContainer> vertex_attrs, edge_attrs, face_attrs, tet_attrs;
+    AbstractAttributeContainer* p_vertex_attrs, *p_edge_attrs, *p_face_attrs, *p_tet_attrs;
+    AbstractAttributeContainer vertex_attrs, edge_attrs, face_attrs, tet_attrs;
 
 private:
     // Stores the connectivity of the mesh
@@ -517,26 +518,26 @@ private:
         const std::vector<wmtk::TetMesh::TetrahedronConnectivity>& old_tets);
     void start_protect_attributes()
     {
-        vertex_attrs->begin_protect();
-        edge_attrs->begin_protect();
-        face_attrs->begin_protect();
-        tet_attrs->begin_protect();
+        p_vertex_attrs->begin_protect();
+        p_edge_attrs->begin_protect();
+        p_face_attrs->begin_protect();
+        p_tet_attrs->begin_protect();
     }
 
     void release_protect_attributes()
     {
-        vertex_attrs->end_protect();
-        edge_attrs->end_protect();
-        face_attrs->end_protect();
-        tet_attrs->end_protect();
+        p_vertex_attrs->end_protect();
+        p_edge_attrs->end_protect();
+        p_face_attrs->end_protect();
+        p_tet_attrs->end_protect();
     }
 
     void rollback_protected_attributes()
     {
-        vertex_attrs->rollback();
-        edge_attrs->rollback();
-        face_attrs->rollback();
-        tet_attrs->rollback();
+        p_vertex_attrs->rollback();
+        p_edge_attrs->rollback();
+        p_face_attrs->rollback();
+        p_tet_attrs->rollback();
     }
 };
 

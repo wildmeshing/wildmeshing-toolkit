@@ -577,7 +577,7 @@ void TriMesh::consolidate_mesh()
         if (v_cnt != i) {
             assert(v_cnt < i);
             m_vertex_connectivity[v_cnt] = m_vertex_connectivity[i];
-            vertex_attrs->move(i, v_cnt);
+            p_vertex_attrs->move(i, v_cnt);
         }
         for (size_t& t_id : m_vertex_connectivity[v_cnt].m_conn_tris) t_id = map_t_ids[t_id];
         v_cnt++;
@@ -590,10 +590,10 @@ void TriMesh::consolidate_mesh()
             assert(t_cnt < i);
             m_tri_connectivity[t_cnt] = m_tri_connectivity[i];
             m_tri_connectivity[t_cnt].hash = 0;
-            face_attrs->move(i, t_cnt);
+            p_face_attrs->move(i, t_cnt);
 
             for (auto j = 0; j < 3; j++) {
-                edge_attrs->move(i * 3 + j, t_cnt * 3 + j);
+                p_edge_attrs->move(i * 3 + j, t_cnt * 3 + j);
             }
         }
         for (size_t& v_id : m_tri_connectivity[t_cnt].m_indices) v_id = map_v_ids[v_id];
@@ -606,10 +606,10 @@ void TriMesh::consolidate_mesh()
     m_tri_connectivity.shrink_to_fit();
 
     // Resize user class attributes
-    vertex_attrs->resize(m_vertex_connectivity.size());
+    p_vertex_attrs->resize(m_vertex_connectivity.size());
     resize_mutex(m_vertex_connectivity.size());
-    edge_attrs->resize(m_tri_connectivity.size() * 3);
-    face_attrs->resize(m_tri_connectivity.size());
+    p_edge_attrs->resize(m_tri_connectivity.size() * 3);
+    p_face_attrs->resize(m_tri_connectivity.size());
 
     // DP: remember to compact the tbb vectors!
     // m_vertex_connectivity.compact();
@@ -760,8 +760,8 @@ size_t TriMesh::get_next_empty_slot_t()
 {
     const auto it = m_tri_connectivity.emplace_back();
     const size_t size = std::distance(m_tri_connectivity.begin(), it) + 1;
-    edge_attrs->resize(size * 3);
-    face_attrs->resize(size);
+    p_edge_attrs->resize(size * 3);
+    p_face_attrs->resize(size);
     return size - 1;
 }
 
@@ -769,7 +769,7 @@ size_t TriMesh::get_next_empty_slot_v()
 {
     const auto it = m_vertex_connectivity.emplace_back();
     const size_t size = std::distance(m_vertex_connectivity.begin(), it) + 1;
-    vertex_attrs->resize(size);
+    p_vertex_attrs->resize(size);
     resize_mutex(size);
     return size - 1;
 }
