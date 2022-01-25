@@ -43,15 +43,15 @@ void tetwild::TetWild::mesh_improvement(int max_its)
         if (max_energy < m_params.stop_energy) break;
 
         ///sizing field
-        if (it > 0 && abs(pre_max_energy - max_energy) < 1e-1 &&
-            abs(pre_avg_energy - avg_energy) < 1e-2) {
+        if (it > 0 && (max_energy > 1e3 || pre_max_energy - max_energy < 1e-1 && pre_avg_energy - avg_energy < 1e-2)) {
             m++;
             if (m == M) {
                 wmtk::logger().info("adjust_sizing_field...");
                 is_hit_min_edge_length = adjust_sizing_field(max_energy);
                 m = 0;
             }
-        }
+        } else
+            m = 0;
         if(is_hit_min_edge_length){
             //todo: maybe to do sth
         }
