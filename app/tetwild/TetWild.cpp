@@ -25,6 +25,8 @@ void pausee()
 void tetwild::TetWild::mesh_improvement(int max_its)
 {
     ////preprocessing
+    // TODO: refactor to eliminate repeated partition.
+    m_vertex_partition_id = partition_TetMesh(*this, NUM_THREADS);
     wmtk::logger().info("========it pre========");
     local_operations({{0, 1, 0, 0}}, false);
 
@@ -70,7 +72,9 @@ void tetwild::TetWild::mesh_improvement(int max_its)
 }
 
 #include <igl/Timer.h>
-std::tuple<double, double> tetwild::TetWild::local_operations(const std::array<int, 4>& ops, bool collapse_limite_length)
+std::tuple<double, double> tetwild::TetWild::local_operations(
+    const std::array<int, 4>& ops,
+    bool collapse_limite_length)
 {
     igl::Timer timer;
 
@@ -81,22 +85,26 @@ std::tuple<double, double> tetwild::TetWild::local_operations(const std::array<i
         if (i == 0) {
             for (int n = 0; n < ops[i]; n++) {
                 wmtk::logger().info("==splitting {}==", n);
+                m_vertex_partition_id = partition_TetMesh(*this, NUM_THREADS);
                 split_all_edges();
             }
         } else if (i == 1) {
             for (int n = 0; n < ops[i]; n++) {
                 wmtk::logger().info("==collapsing {}==", n);
+                m_vertex_partition_id = partition_TetMesh(*this, NUM_THREADS);
                 collapse_all_edges();
             }
         } else if (i == 2) {
             for (int n = 0; n < ops[i]; n++) {
                 wmtk::logger().info("==swapping {}==", n);
+                m_vertex_partition_id = partition_TetMesh(*this, NUM_THREADS);
                 swap_all_edges();
                 swap_all_faces();
             }
         } else if (i == 3) {
             for (int n = 0; n < ops[i]; n++) {
                 wmtk::logger().info("==smoothing {}==", n);
+                m_vertex_partition_id = partition_TetMesh(*this, NUM_THREADS);
                 smooth_all_vertices();
             }
         }
@@ -127,7 +135,7 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
     if (filter_energy > 100) filter_energy = 100;
 
     Scalar recover_scalar = 1.5;
-//    std::vector<Scalar> scale_multipliers(vertices.size(), recover_scalar);
+    //    std::vector<Scalar> scale_multipliers(vertices.size(), recover_scalar);
     std::vector<Scalar> scale_multipliers(m_vertex_attribute.size(), recover_scalar);
     Scalar refine_scalar = 0.5;
     Scalar min_refine_scalar = m_params.l_min / m_params.l;
@@ -157,7 +165,7 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
             if (dist > R) {
                 new_scalars[vid] = 0;
             } else {
-                new_scalars[vid] = (1 + dist / R) * refine_scalar;//linear interpolate
+                new_scalars[vid] = (1 + dist / R) * refine_scalar; // linear interpolate
                 is_close = true;
             }
 
@@ -225,15 +233,13 @@ void tetwild::TetWild::filter_outside(bool remove_ouside)
 
     std::vector<size_t> rm_tids;
     for (int i = 0; i < W.rows(); i++) {
-        if (W(i) <= 0.5){
+        if (W(i) <= 0.5) {
             m_tet_attribute[tets[i].tid(*this)].m_is_outside = true;
-            if(remove_ouside)
-                rm_tids.push_back(tets[i].tid(*this));
+            if (remove_ouside) rm_tids.push_back(tets[i].tid(*this));
         }
     }
 
-    if(remove_ouside)
-        remove_tets_by_ids(rm_tids);
+    if (remove_ouside) remove_tets_by_ids(rm_tids);
 }
 
 /////////////////////////////////////////////////////////////////////
