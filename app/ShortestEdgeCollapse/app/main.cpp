@@ -71,9 +71,7 @@ int main(int argc, char** argv)
 
     if (!igl::is_edge_manifold(F)) {
         return 1;
-    }
-
-    else {
+    } else {
         ShortestEdgeCollapse m(v);
         m.create_mesh(v.size(), tri, envelope_size);
         assert(m.check_mesh_connectivity_validity());

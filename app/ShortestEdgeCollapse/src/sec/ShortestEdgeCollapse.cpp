@@ -12,6 +12,50 @@ using namespace wmtk;
 using namespace sec;
 
 
+bool sec::ShortestEdgeCollapse::invariants(const std::vector<Tuple>& new_tris)
+{
+    if (m_has_envelope) {
+        for (auto& t : new_tris) {
+            std::array<Eigen::Vector3d, 3> tris;
+            auto vs = t.oriented_tri_vertices(*this);
+            for (auto j = 0; j < 3; j++) tris[j] = vertex_attrs[vs[j].vid()].pos;
+            if (m_envelope.is_outside(tris)) return false;
+        }
+    }
+    return true;
+}
+
+bool sec::ShortestEdgeCollapse::write_triangle_mesh(std::string path)
+{
+    Eigen::MatrixXd V = Eigen::MatrixXd::Zero(vertex_attrs.size(), 3);
+    for (auto& t : get_vertices()) {
+        auto i = t.vid();
+        V.row(i) = vertex_attrs[i].pos;
+    }
+
+    Eigen::MatrixXi F = Eigen::MatrixXi::Constant(tri_capacity(), 3, -1);
+    for (auto& t : get_faces()) {
+        auto i = t.fid();
+        auto vs = oriented_tri_vertices(t);
+        for (int j = 0; j < 3; j++) {
+            F(i, j) = vs[j].vid();
+        }
+    }
+
+    return igl::write_triangle_mesh(path, V, F);
+}
+
+bool sec::ShortestEdgeCollapse::collapse_before(const Tuple& t)
+{
+    if (!TriMesh::collapse_before(t)) return false;
+    if (vertex_attrs[t.vid()].freeze || vertex_attrs[t.switch_vertex(*this).vid()].freeze)
+        return false;
+    position_cache.local().v1p = vertex_attrs[t.vid()].pos;
+    position_cache.local().v2p = vertex_attrs[t.switch_vertex(*this).vid()].pos;
+    return true;
+}
+
+
 bool sec::ShortestEdgeCollapse::collapse_after(const TriMesh::Tuple& t)
 {
     const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
