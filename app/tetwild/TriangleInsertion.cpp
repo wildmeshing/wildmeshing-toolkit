@@ -567,7 +567,7 @@ void tetwild::TetWild::triangle_insertion_stuff(
             continue;
         }
         //        wmtk::vector_unique(intersected_tids);//note: not needed
-        wmtk::logger().info("intersected_tets.size {}", intersected_tets.size());
+//        wmtk::logger().info("intersected_tets.size {}", intersected_tets.size());
 
         // erase edge without intersections OR edge with intersection but not belong to intersected
         // tets
@@ -659,10 +659,10 @@ void tetwild::TetWild::triangle_insertion_stuff(
         // m_tet_attribute.resize(tet_capacity()); // todo: do we need it?
 
         // check_mesh_connectivity_validity();
-        wmtk::logger().info("inserted #t {}", tet_capacity());
-        wmtk::logger().info(
-            "tet_face_tags.size {}",
-            triangle_insertion_global_cache.tet_face_tags.size());
+//        wmtk::logger().info("inserted #t {}", tet_capacity());
+//        wmtk::logger().info(
+//            "tet_face_tags.size {}",
+//            triangle_insertion_global_cache.tet_face_tags.size());
 
         int num_released = release_vertex_mutex_in_stack(mutex_release_stack);
     }
@@ -1159,6 +1159,52 @@ void tetwild::TetWild::setup_attributes()
         }
         // fortest
     }
+
+    //// track bbox
+    for (auto& f : get_faces()) {
+        auto vs = get_face_vertices(f);
+        std::array<size_t, 3> vids = {{vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
+
+        int on_bbox = -1;
+        for (int k = 0; k < 3; k++) {
+            if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_min[k] &&
+                m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_min[k] &&
+                m_vertex_attribute[vids[2]].m_pos[k] == m_params.box_min[k]) {
+                on_bbox = k * 2;
+                break;
+            }
+            if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_max[k] &&
+                m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_max[k] &&
+                m_vertex_attribute[vids[2]].m_pos[k] == m_params.box_max[k]) {
+                on_bbox = k * 2 + 1;
+                break;
+            }
+        }
+        if (on_bbox < 0) continue;
+
+        auto fid = f.fid(*this);
+        m_face_attribute[fid].m_is_bbox_fs = on_bbox;
+        //
+        for (size_t vid : vids) {
+            m_vertex_attribute[vid].on_bbox_faces.push_back(on_bbox);
+        }
+    }
+    for (size_t i = 0; i < m_vertex_attribute.m_attributes.size(); i++)
+        wmtk::vector_unique(m_vertex_attribute[i].on_bbox_faces);
+
+    //// rounding
+    int cnt_round = 0;
+    for (size_t i = 0; i < m_vertex_attribute.m_attributes.size(); i++) {
+        auto v = tuple_from_vertex(i);
+        if (round(v)) cnt_round++;
+    }
+    wmtk::logger().info("cnt_round {}/{}", cnt_round, m_vertex_attribute.m_attributes.size());
+
+    //// init qualities
+    for (size_t i = 0; i < m_tet_attribute.size(); i++) {
+        m_tet_attribute[i].m_quality = get_quality(tuple_from_tet(i));
+    }
+
 
     check_mesh_connectivity_validity();
     output_mesh("triangle_insertion.msh");
