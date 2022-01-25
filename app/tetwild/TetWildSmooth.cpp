@@ -90,13 +90,15 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
         "old pos {} -> new pos {}",
         old_pos.transpose(),
         m_vertex_attribute[vid].m_posf.transpose());
-    // note: duplicate code snippets.
+
     if (m_vertex_attribute[vid].m_is_on_surface) {
         auto project = try_project(m_vertex_attribute[vid].m_posf, old_asssembles);
         if (project) {
             m_vertex_attribute[vid].m_posf = project.value();
         }
     }
+
+    m_vertex_attribute[vid].m_pos = tetwild::to_rational(m_vertex_attribute[vid].m_posf);
 
     for (auto& loc : locs) {
         auto t_id = loc.tid(*this);
@@ -113,4 +115,17 @@ void tetwild::TetWild::smooth_all_vertices()
         collect_all_ops.emplace_back("vertex_smooth", loc);
     }
     wmtk::logger().info("Num verts {}", collect_all_ops.size());
+    if (NUM_THREADS > 1) {
+        auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kPartition>();
+        executor.lock_vertices = [&](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
+            auto stack = std::vector<size_t>();
+            if (!m.try_set_vertex_mutex_two_ring(e, stack)) return {};
+            return stack;
+        };
+        executor.num_threads = NUM_THREADS;
+        executor(*this, collect_all_ops);
+    } else {
+        auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kSeq>();
+        executor(*this, collect_all_ops);
+    }
 }

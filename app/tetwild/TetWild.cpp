@@ -32,7 +32,7 @@ void tetwild::TetWild::mesh_improvement(int max_its)
     bool is_hit_min_edge_length = false;
     const int M = 3;
     int m = 0;
-    double pre_max_energy, pre_avg_energy;
+    double pre_max_energy = 0., pre_avg_energy = 0.;
     for (int it = 0; it < max_its; it++) {
         ///ops
         wmtk::logger().info("========it {}========", it);
