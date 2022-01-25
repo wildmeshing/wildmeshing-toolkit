@@ -26,7 +26,7 @@ bool sec::ShortestEdgeCollapse::collapse_after(const TriMesh::Tuple& t)
 {
     const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
     auto vid = t.vid();
-    vertex_attrs->m_attributes[vid].pos = p;
+    vertex_attrs[vid].pos = p;
 
     return true;
 }
@@ -60,9 +60,9 @@ bool sec::ShortestEdgeCollapse::collapse_shortest(int target_vert_number)
         return optup;
     };
     auto measure_len2 = [](auto& m, auto op, const Tuple& new_e) {
-        auto len2 = (m.vertex_attrs->m_attributes[new_e.vid()].pos -
-                     m.vertex_attrs->m_attributes[new_e.switch_vertex(m).vid()].pos)
-                        .squaredNorm();
+        auto len2 =
+            (m.vertex_attrs[new_e.vid()].pos - m.vertex_attrs[new_e.switch_vertex(m).vid()].pos)
+                .squaredNorm();
         return -len2;
     };
     auto setup_and_execute = [&](auto executor) {

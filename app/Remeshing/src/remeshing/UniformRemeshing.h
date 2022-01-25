@@ -40,20 +40,19 @@ public:
     fastEnvelope::FastEnvelope m_envelope;
     bool m_has_envelope = false;
     using VertAttCol = wmtk::AttributeCollection<VertexAttributes>;
-    std::shared_ptr<VertAttCol> vertex_attrs;
+    VertAttCol vertex_attrs;
 
     int NUM_THREADS = 1;
     int retry_limit = 10;
     UniformRemeshing(std::vector<Eigen::Vector3d> _m_vertex_positions, int num_threads = 1)
         : NUM_THREADS(num_threads)
     {
-        vertex_attrs = std::make_shared<VertAttCol>();
-        TriMesh::vertex_attrs = vertex_attrs;
+        p_vertex_attrs = &vertex_attrs;
 
-        vertex_attrs->resize(_m_vertex_positions.size());
+        vertex_attrs.resize(_m_vertex_positions.size());
 
         for (auto i = 0; i < _m_vertex_positions.size(); i++)
-            vertex_attrs->m_attributes[i] = {_m_vertex_positions[i], 0};
+            vertex_attrs[i] = {_m_vertex_positions[i], 0};
     }
 
     void
@@ -65,7 +64,7 @@ public:
             std::vector<Eigen::Vector3d> V(n_vertices);
             std::vector<Eigen::Vector3i> F(tris.size());
             for (auto i = 0; i < V.size(); i++) {
-                V[i] = vertex_attrs->m_attributes[i].pos;
+                V[i] = vertex_attrs[i].pos;
             }
             for (int i = 0; i < F.size(); ++i) F[i] << tris[i][0], tris[i][1], tris[i][2];
             m_envelope.init(V, F, eps);
@@ -73,8 +72,6 @@ public:
         }
         partition_mesh();
     }
-
-
     ~UniformRemeshing() {}
 
     struct PositionInfoCache
@@ -86,8 +83,8 @@ public:
 
     void cache_edge_positions(const Tuple& t)
     {
-        position_cache.local().v1p = vertex_attrs->m_attributes[t.vid()].pos;
-        position_cache.local().v2p = vertex_attrs->m_attributes[t.switch_vertex(*this).vid()].pos;
+        position_cache.local().v1p = vertex_attrs[t.vid()].pos;
+        position_cache.local().v2p = vertex_attrs[t.switch_vertex(*this).vid()].pos;
     }
 
     bool invariants(const std::vector<Tuple>& new_tris) override
@@ -96,7 +93,7 @@ public:
             for (auto& t : new_tris) {
                 std::array<Eigen::Vector3d, 3> tris;
                 auto vs = t.oriented_tri_vertices(*this);
-                for (auto j = 0; j < 3; j++) tris[j] = vertex_attrs->m_attributes[vs[j].vid()].pos;
+                for (auto j = 0; j < 3; j++) tris[j] = vertex_attrs[vs[j].vid()].pos;
                 if (m_envelope.is_outside(tris)) return false;
             }
         }
@@ -108,7 +105,7 @@ public:
     {
         auto m_vertex_partition_id = partition_TriMesh(*this, NUM_THREADS);
         for (auto i = 0; i < m_vertex_partition_id.size(); i++)
-            vertex_attrs->m_attributes[i].partition_id = m_vertex_partition_id[i];
+            vertex_attrs[i].partition_id = m_vertex_partition_id[i];
     }
 
     Eigen::Vector3d smooth(const Tuple& t);
@@ -119,10 +116,10 @@ public:
     // write the collapsed mesh into a obj
     bool write_triangle_mesh(std::string path)
     {
-        Eigen::MatrixXd V = Eigen::MatrixXd::Zero(vertex_attrs->m_attributes.size(), 3);
+        Eigen::MatrixXd V = Eigen::MatrixXd::Zero(vertex_attrs.size(), 3);
         for (auto& t : get_vertices()) {
             auto i = t.vid();
-            V.row(i) = vertex_attrs->m_attributes[i].pos;
+            V.row(i) = vertex_attrs[i].pos;
         }
 
         Eigen::MatrixXi F = Eigen::MatrixXi::Constant(tri_capacity(), 3, -1);

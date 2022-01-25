@@ -60,7 +60,7 @@ bool UniformRemeshing::collapse_after(const TriMesh::Tuple& t)
 {
     const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
     auto vid = t.vid();
-    vertex_attrs->m_attributes[vid].pos = p;
+    vertex_attrs[vid].pos = p;
 
     return true;
 }
@@ -69,24 +69,20 @@ bool UniformRemeshing::split_after(const TriMesh::Tuple& t)
 {
     const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
     auto vid = t.vid();
-    vertex_attrs->m_attributes[vid].pos = p;
+    vertex_attrs[vid].pos = p;
 
     return true;
 }
 
 double UniformRemeshing::compute_edge_cost_collapse(const TriMesh::Tuple& t, double L) const
 {
-    double l = (vertex_attrs->m_attributes[t.vid()].pos -
-                vertex_attrs->m_attributes[t.switch_vertex(*this).vid()].pos)
-                   .norm();
+    double l = (vertex_attrs[t.vid()].pos - vertex_attrs[t.switch_vertex(*this).vid()].pos).norm();
     if (l < (4. / 5.) * L) return ((4. / 5.) * L - l);
     return -1;
 }
 double UniformRemeshing::compute_edge_cost_split(const TriMesh::Tuple& t, double L) const
 {
-    double l = (vertex_attrs->m_attributes[t.vid()].pos -
-                vertex_attrs->m_attributes[t.switch_vertex(*this).vid()].pos)
-                   .norm();
+    double l = (vertex_attrs[t.vid()].pos - vertex_attrs[t.switch_vertex(*this).vid()].pos).norm();
     if (l > (4. / 3.) * L) return (l - (4. / 3.) * L);
     return -1;
 }
@@ -139,9 +135,8 @@ std::vector<double> UniformRemeshing::average_len_valen()
     double minlen = std::numeric_limits<double>::max();
     double minval = std::numeric_limits<double>::max();
     for (auto& loc : edges) {
-        double currentlen = (vertex_attrs->m_attributes[loc.vid()].pos -
-                             vertex_attrs->m_attributes[loc.switch_vertex(*this).vid()].pos)
-                                .norm();
+        double currentlen =
+            (vertex_attrs[loc.vid()].pos - vertex_attrs[loc.switch_vertex(*this).vid()].pos).norm();
         average_len += currentlen;
         if (maxlen < currentlen) maxlen = currentlen;
         if (minlen > currentlen) minlen = currentlen;
@@ -263,38 +258,32 @@ bool UniformRemeshing::swap_remeshing()
 }
 double area(UniformRemeshing& m, std::array<TriMesh::Tuple, 3>& verts)
 {
-    return ((m.vertex_attrs->m_attributes[verts[0].vid()].pos -
-             m.vertex_attrs->m_attributes[verts[2].vid()].pos)
-                .cross(
-                    m.vertex_attrs->m_attributes[verts[1].vid()].pos -
-                    m.vertex_attrs->m_attributes[verts[2].vid()].pos))
+    return ((m.vertex_attrs[verts[0].vid()].pos - m.vertex_attrs[verts[2].vid()].pos)
+                .cross(m.vertex_attrs[verts[1].vid()].pos - m.vertex_attrs[verts[2].vid()].pos))
                .norm() /
            2.0;
 };
 
 Eigen::Vector3d normal(UniformRemeshing& m, std::array<TriMesh::Tuple, 3>& verts)
 {
-    return ((m.vertex_attrs->m_attributes[verts[0].vid()].pos -
-             m.vertex_attrs->m_attributes[verts[2].vid()].pos)
-                .cross(
-                    m.vertex_attrs->m_attributes[verts[1].vid()].pos -
-                    m.vertex_attrs->m_attributes[verts[2].vid()].pos))
+    return ((m.vertex_attrs[verts[0].vid()].pos - m.vertex_attrs[verts[2].vid()].pos)
+                .cross(m.vertex_attrs[verts[1].vid()].pos - m.vertex_attrs[verts[2].vid()].pos))
         .normalized();
 }
 Eigen::Vector3d UniformRemeshing::smooth(const TriMesh::Tuple& t)
 {
     auto one_ring_edges = get_one_ring_edges_for_vertex(t);
-    if (one_ring_edges.size() < 3) return vertex_attrs->m_attributes[t.vid()].pos;
+    if (one_ring_edges.size() < 3) return vertex_attrs[t.vid()].pos;
     Eigen::Vector3d after_smooth(0, 0, 0);
     Eigen::Vector3d after_smooth_boundary(0, 0, 0);
     int boundary = 0;
     for (auto e : one_ring_edges) {
         if (is_boundary_edge(e)) {
-            after_smooth_boundary += vertex_attrs->m_attributes[e.vid()].pos;
+            after_smooth_boundary += vertex_attrs[e.vid()].pos;
             boundary++;
             continue;
         }
-        after_smooth += vertex_attrs->m_attributes[e.vid()].pos;
+        after_smooth += vertex_attrs[e.vid()].pos;
     }
 
     if (boundary)
@@ -307,24 +296,18 @@ Eigen::Vector3d UniformRemeshing::smooth(const TriMesh::Tuple& t)
 Eigen::Vector3d UniformRemeshing::tangential_smooth(const Tuple& t)
 {
     auto one_ring_tris = get_one_ring_tris_for_vertex(t);
-    if (one_ring_tris.size() < 2) return vertex_attrs->m_attributes[t.vid()].pos;
+    if (one_ring_tris.size() < 2) return vertex_attrs[t.vid()].pos;
     Eigen::Vector3d after_smooth = smooth(t);
     // get normal and area of each face
     auto area = [](auto& m, auto& verts) {
-        return ((m.vertex_attrs->m_attributes[verts[0].vid()].pos -
-                 m.vertex_attrs->m_attributes[verts[2].vid()].pos)
-                    .cross(
-                        m.vertex_attrs->m_attributes[verts[1].vid()].pos -
-                        m.vertex_attrs->m_attributes[verts[2].vid()].pos))
+        return ((m.vertex_attrs[verts[0].vid()].pos - m.vertex_attrs[verts[2].vid()].pos)
+                    .cross(m.vertex_attrs[verts[1].vid()].pos - m.vertex_attrs[verts[2].vid()].pos))
                    .norm() /
                2.0;
     };
     auto normal = [](auto& m, auto& verts) {
-        return ((m.vertex_attrs->m_attributes[verts[0].vid()].pos -
-                 m.vertex_attrs->m_attributes[verts[2].vid()].pos)
-                    .cross(
-                        m.vertex_attrs->m_attributes[verts[1].vid()].pos -
-                        m.vertex_attrs->m_attributes[verts[2].vid()].pos))
+        return ((m.vertex_attrs[verts[0].vid()].pos - m.vertex_attrs[verts[2].vid()].pos)
+                    .cross(m.vertex_attrs[verts[1].vid()].pos - m.vertex_attrs[verts[2].vid()].pos))
             .normalized();
     };
     auto w0 = 0.0;
@@ -335,7 +318,7 @@ Eigen::Vector3d UniformRemeshing::tangential_smooth(const Tuple& t)
         n0 += area(*this, verts) * normal(*this, verts);
     }
     n0 /= w0;
-    after_smooth += n0 * n0.transpose() * (vertex_attrs->m_attributes[t.vid()].pos - after_smooth);
+    after_smooth += n0 * n0.transpose() * (vertex_attrs[t.vid()].pos - after_smooth);
     return after_smooth;
 }
 
@@ -368,8 +351,7 @@ bool UniformRemeshing::uniform_remeshing(double L, int iterations)
         // smoothing
         auto vertices = get_vertices();
 
-        for (auto& loc : vertices)
-            vertex_attrs->m_attributes[loc.vid()].pos = tangential_smooth(loc);
+        for (auto& loc : vertices) vertex_attrs[loc.vid()].pos = tangential_smooth(loc);
 
         assert(check_mesh_connectivity_validity());
         consolidate_mesh();

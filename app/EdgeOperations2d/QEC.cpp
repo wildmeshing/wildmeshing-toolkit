@@ -10,10 +10,10 @@ using namespace wmtk;
 // get the quadrix in form of an array of 10 floating point numbers
 Eigen::MatrixXd compute_Q_f(const EdgeOperations2d& m, const wmtk::TriMesh::Tuple& f_tuple)
 {
-    auto conn_indices = oriented_tri_vertices(f_tuple);
-    Eigen::Vector3d A = vertex_attrs[conn_indices[0].vid()].pos;
-    Eigen::Vector3d B = vertex_attrs[conn_indices[1].vid()].pos;
-    Eigen::Vector3d C = vertex_attrs[conn_indices[2].vid()].pos;
+    auto conn_indices = m.oriented_tri_vertices(f_tuple);
+    Eigen::Vector3d A = m.vertex_attrs[conn_indices[0].vid()].pos;
+    Eigen::Vector3d B = m.vertex_attrs[conn_indices[1].vid()].pos;
+    Eigen::Vector3d C = m.vertex_attrs[conn_indices[2].vid()].pos;
 
     Eigen::Vector3d n = ((A - B).cross(C - B)).normalized();
     Eigen::Vector4d p;
@@ -31,9 +31,9 @@ Eigen::MatrixXd compute_Q_v(const EdgeOperations2d& m, const TriMesh::Tuple& v_t
     Eigen::MatrixXd Q = Eigen::MatrixXd::Zero(4, 4);
     auto Q_t = [](auto& m, auto& f_tuple) {
         auto conn_indices = m.oriented_tri_vertices(f_tuple);
-        Eigen::Vector3d A = m.vertex_attrs->m_attributes[conn_indices[0].vid()].pos;
-        Eigen::Vector3d B = m.vertex_attrs->m_attributes[conn_indices[1].vid()].pos;
-        Eigen::Vector3d C = m.vertex_attrs->m_attributes[conn_indices[2].vid()].pos;
+        Eigen::Vector3d A = m.vertex_attrs[conn_indices[0].vid()].pos;
+        Eigen::Vector3d B = m.vertex_attrs[conn_indices[1].vid()].pos;
+        Eigen::Vector3d C = m.vertex_attrs[conn_indices[2].vid()].pos;
 
         Eigen::Vector3d n = ((A - B).cross(C - B)).normalized();
         Eigen::Vector4d p;
@@ -62,9 +62,8 @@ double Edge2d::EdgeOperations2d::compute_cost_for_e(const TriMesh::Tuple& v_tupl
 
     Eigen::Vector4d v;
     if (vQ.determinant() < 1e-6) {
-        Eigen::Vector3d tmp = (vertex_attrs->m_attributes[v_tuple.vid()].pos +
-                               vertex_attrs->m_attributes[switch_vertex(v_tuple).vid()].pos) /
-                              2;
+        Eigen::Vector3d tmp =
+            (vertex_attrs[v_tuple.vid()].pos + vertex_attrs[switch_vertex(v_tuple).vid()].pos) / 2;
         v << tmp, 1.0;
     }
 
@@ -73,7 +72,6 @@ double Edge2d::EdgeOperations2d::compute_cost_for_e(const TriMesh::Tuple& v_tupl
 
     // wmtk::logger().info("Q is \n {} \n v is \n {}", Q, v);
     Eigen::Vector3d newv = v.head(3);
-    modify_cache_qec(newv);
 
     return (v.transpose() * Q * v);
 }
