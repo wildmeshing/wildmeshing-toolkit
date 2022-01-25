@@ -13,9 +13,16 @@ void tetwild::TetWild::collapse_all_edges(bool is_limit_length)
     for (auto& loc : get_edges()) {
         collect_all_ops.emplace_back("edge_collapse", loc);
         collect_all_ops.emplace_back("edge_collapse", loc.switch_vertex(*this));
-        }
+    }
     auto setup_and_execute = [&](auto& executor) {
-        executor.renew_neighbor_tuples = wmtk::renewal_simple;
+        executor.renew_neighbor_tuples = [](const auto& m, auto op, const auto& newts) {
+            std::vector<std::pair<std::string, wmtk::TetMesh::Tuple>> op_tups;
+            for (auto t : newts) {
+                op_tups.emplace_back(op, t);
+                op_tups.emplace_back(op, t.switch_vertex(m));
+            }
+            return op_tups;
+        };
         executor.priority = [&](auto& m, auto op, auto& t) { return -m.get_length2(t); };
         executor.num_threads = NUM_THREADS;
         executor.should_process = [&](const auto& m, const auto& ele) {
@@ -175,7 +182,7 @@ bool tetwild::TetWild::collapse_before(const Tuple& loc) // input is an edge
     for (auto& f : fs) {
         auto [_1, global_fid1] = tuple_from_face(f);
         if (m_face_attribute[global_fid1].m_is_surface_fs) {
-            int j = std::find(f.begin(), f.end(), v1_id)-f.begin();
+            int j = std::find(f.begin(), f.end(), v1_id) - f.begin();
             f[j] = v2_id;
             collapse_cache.local().surface_faces.push_back(f);
         }
@@ -199,7 +206,6 @@ bool tetwild::TetWild::collapse_before(const Tuple& loc) // input is an edge
 
 bool tetwild::TetWild::collapse_after(const Tuple& loc)
 {
-
     if (!TetMesh::collapse_after(loc)) return false;
 
     size_t v1_id = collapse_cache.local().v1_id;
@@ -207,7 +213,7 @@ bool tetwild::TetWild::collapse_after(const Tuple& loc)
 
     // check quality
     std::vector<double> qs;
-    for(size_t tid: collapse_cache.local().changed_tids){
+    for (size_t tid : collapse_cache.local().changed_tids) {
         double q = get_quality(tuple_from_tet(tid));
         if (q > collapse_cache.local().max_energy) {
             return false;
@@ -216,22 +222,22 @@ bool tetwild::TetWild::collapse_after(const Tuple& loc)
     }
 
     // surface
-//    if (collapse_cache.local().edge_length > 0) {
-        for (auto& vids : collapse_cache.local().surface_faces) {
-            bool is_out = m_envelope.is_outside(
-                {{m_vertex_attribute[vids[0]].m_posf,
-                  m_vertex_attribute[vids[1]].m_posf,
-                  m_vertex_attribute[vids[2]].m_posf}});
-            if (is_out) {
-//                cout<<"Env"<<endl;
-                return false;
-            }
+    //    if (collapse_cache.local().edge_length > 0) {
+    for (auto& vids : collapse_cache.local().surface_faces) {
+        bool is_out = m_envelope.is_outside(
+            {{m_vertex_attribute[vids[0]].m_posf,
+              m_vertex_attribute[vids[1]].m_posf,
+              m_vertex_attribute[vids[2]].m_posf}});
+        if (is_out) {
+            //                cout<<"Env"<<endl;
+            return false;
         }
-//    }
+    }
+    //    }
 
     //// update attrs
     // tet attr
-    for(int i = 0; i < collapse_cache.local().changed_tids.size();i++){
+    for (int i = 0; i < collapse_cache.local().changed_tids.size(); i++) {
         m_tet_attribute[collapse_cache.local().changed_tids[i]].m_quality = qs[i];
     }
     // vertex attr
@@ -246,7 +252,7 @@ bool tetwild::TetWild::collapse_after(const Tuple& loc)
         auto [_, global_fid] = tuple_from_face({{v2_id, old_vids[1], old_vids[2]}});
         m_face_attribute[global_fid] = f_attr;
         //
-//        map_m_tet_attribute[old_fid].reset();
+        //        map_m_tet_attribute[old_fid].reset();
     }
 
     cnt_collapse++;
