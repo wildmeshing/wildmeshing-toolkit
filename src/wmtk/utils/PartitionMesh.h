@@ -6,9 +6,9 @@
 
 namespace wmtk {
 
-tbb::concurrent_vector<size_t> partition_TriMesh(wmtk::TriMesh m, int num_partition);
+tbb::concurrent_vector<size_t> partition_TriMesh(wmtk::TriMesh& m, int num_partition);
 
-tbb::concurrent_vector<size_t> partition_TetMesh(wmtk::TetMesh m, int num_partition);
+tbb::concurrent_vector<size_t> partition_TetMesh(wmtk::TetMesh& m, int num_partition);
 
 
 } // namespace wmtk
