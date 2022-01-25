@@ -1,6 +1,7 @@
 #include <TetWild.h>
 #include <igl/write_triangle_mesh.h>
 #include <wmtk/TetMesh.h>
+#include <wmtk/utils/Partitioning.h>
 
 //#include <catch2/catch.hpp>
 #include "spdlog/common.h"
@@ -23,7 +24,7 @@ int main(int argc, char** argv)
     };
 
     std::string input_path;
-    if(argc>1){
+    if (argc > 1) {
         input_path = argv[1];
     } else
         input_path = WMT_DATA_DIR "/37322.stl";
@@ -45,17 +46,24 @@ int main(int argc, char** argv)
             env_faces[i][j] = F(i, j);
         }
     }
+    constexpr int NUM_THREADS = 1;
 
     tetwild::TetWild::InputSurface input_surface;
     input_surface.params.lr = 1 / 15.0;
     input_surface.init(vertices, faces);
     input_surface.remove_duplicates();
+    auto partitioned_v = wmtk::partition_mesh_vertices(F, NUM_THREADS);
+    std::vector<int> partition_id(partitioned_v.rows());
+    for (int i = 0; i < partitioned_v.rows(); i++) {
+        partition_id[i] = partitioned_v(i, 0);
+    }
+    input_surface.partition_id = partition_id;
     //
     fastEnvelope::FastEnvelope envelope;
     cout << "input_surface.params.eps " << input_surface.params.eps << endl;
     envelope.init(vertices, env_faces, input_surface.params.eps);
     //
-    tetwild::TetWild mesh(input_surface.params, envelope);
+    tetwild::TetWild mesh(input_surface.params, envelope, NUM_THREADS);
 
     auto output_faces = [&]() {
         // output surface
@@ -90,7 +98,7 @@ int main(int argc, char** argv)
             igl::write_triangle_mesh("track_bbox.obj", matV, matF);
         }
 
-//        mesh.output_mesh("improved.msh");
+        //        mesh.output_mesh("improved.msh");
     };
 
     mesh.triangle_insertion(input_surface);
@@ -98,7 +106,7 @@ int main(int argc, char** argv)
     //    pausee();
 
     mesh.mesh_improvement(20);
-    
+
     output_faces();
     mesh.output_mesh("final.msh");
 
