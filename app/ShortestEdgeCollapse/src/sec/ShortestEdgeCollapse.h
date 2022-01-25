@@ -62,8 +62,11 @@ public:
         }
     }
 
-    void
-    create_mesh(size_t n_vertices, const std::vector<std::array<size_t, 3>>& tris, double eps = 0)
+    void create_mesh(
+        size_t n_vertices,
+        const std::vector<std::array<size_t, 3>>& tris,
+        const std::vector<size_t>& frozen_verts,
+        double eps = 0)
     {
         wmtk::ConcurrentTriMesh::create_mesh(n_vertices, tris);
 
@@ -78,6 +81,7 @@ public:
             m_has_envelope = true;
         }
         partition_mesh();
+        for (auto v : frozen_verts) vertex_attrs[v].freeze = true;
         for (auto v : get_vertices()) { // the better way is to iterate through edges.
             set_freeze(v);
         }
@@ -99,6 +103,7 @@ public:
     bool collapse_shortest(int target_vertex_count);
     bool write_triangle_mesh(std::string path);
     bool invariants(const std::vector<Tuple>& new_tris) override;
+
 private:
     struct PositionInfoCache
     {
