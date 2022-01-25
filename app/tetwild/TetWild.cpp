@@ -240,7 +240,6 @@ void tetwild::TetWild::filter_outside(bool remove_ouside)
 void tetwild::TetWild::output_mesh(std::string file)
 {
     consolidate_mesh();
-    cout<<"ok"<<endl;
 
     wmtk::MshData msh;
 

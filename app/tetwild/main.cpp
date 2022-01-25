@@ -93,13 +93,9 @@ int main(int argc, char** argv)
     //    pausee();
 
     mesh.mesh_improvement(0);
-    cout<<"ok1"<<endl;
 
     output_faces();
-    cout<<"ok2"<<endl;
-
     mesh.output_mesh("final.msh");
-    cout<<"ok3"<<endl;
 
     // todo: refine adaptively the mesh
 }
