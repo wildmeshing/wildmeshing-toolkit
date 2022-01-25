@@ -32,6 +32,7 @@ struct VertexAttributes
     Eigen::Vector3d pos;
     // TODO: in fact, partition id should not be vertex attribute, it is a fixed marker to distinguish tuple/operations.
     size_t partition_id;
+    bool freeze;
 };
 
 class ShortestEdgeCollapse : public wmtk::ConcurrentTriMesh
@@ -53,7 +54,7 @@ public:
         vertex_attrs->resize(_m_vertex_positions.size());
 
         for (auto i = 0; i < _m_vertex_positions.size(); i++)
-            vertex_attrs->m_attributes[i] = {_m_vertex_positions[i], 0};
+            vertex_attrs->m_attributes[i] = {_m_vertex_positions[i], 0, false};
     }
 
     void
@@ -72,6 +73,14 @@ public:
             m_has_envelope = true;
         }
         partition_mesh();
+        for (auto v : get_vertices()) {
+            for (auto e : get_one_ring_edges_for_vertex(v)) {
+                if (is_boundary_edge(e)) {
+                    vertex_attrs->m_attributes[v.vid()].freeze = true;
+                    continue;
+                }
+            }
+        }
     }
 
 
@@ -144,7 +153,8 @@ public:
 
     bool collapse_before(const Tuple& t) override
     {
-        if (!TriMesh::collapse_before(t)) return false;
+        if (!TriMesh::collapse_before(t) || vertex_attrs->m_attributes[t.vid()].freeze)
+            return false;
         cache_edge_positions(t);
         return true;
     }
