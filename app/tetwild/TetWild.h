@@ -180,8 +180,8 @@ public:
     //     int face_id;
     //     std::vector<std::array<size_t, 3>> old_face_vids;
     // };
-    // tbb::enumerable_thread_specific<TriangleInsertionInfoCache> triangle_insertion_cache;
-    // // TriangleInsertionInfoCache triangle_insertion_cache;
+    // tbb::enumerable_thread_specific<TriangleInsertionInfoCache> triangle_insertion_global_cache;
+    // // TriangleInsertionInfoCache triangle_insertion_global_cache;
     struct TriangleInsertionInfoGlobalCache
     {
         // global info: throughout the whole insertion

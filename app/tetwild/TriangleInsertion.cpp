@@ -737,7 +737,7 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
     //     //    for (size_t face_id = 3; face_id < 5; face_id++) {
     //     if (is_matched[face_id]) continue;
 
-    //     triangle_insertion_cache.local().face_id = face_id;
+    //     triangle_insertion_local_cache.local().face_id = face_id;
     //     is_visited.assign(m_tet_attribute.size(), false); // reset
 
     //     std::array<Vector3, 3> tri = {
@@ -884,7 +884,7 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
     //                      vertex_vids[coplanar_f_lvids[1]],
     //                      vertex_vids[coplanar_f_lvids[2]]}};
     //                 std::sort(f.begin(), f.end());
-    //                 triangle_insertion_cache.local().tet_face_tags[f].push_back(face_id);
+    //                 triangle_insertion_local_cache.local().tet_face_tags[f].push_back(face_id);
     //                 //
     //                 for (int j = 0; j < 3; j++) {
     //                     auto conn_tets = get_one_ring_tets_for_vertex(vs[coplanar_f_lvids[j]]);
@@ -1067,7 +1067,7 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
     //     wmtk::logger().info("inserted #t {}", tet_capacity());
     //     wmtk::logger().info(
     //         "tet_face_tags.size {}",
-    //         triangle_insertion_cache.local().tet_face_tags.size());
+    //         triangle_insertion_local_cache.local().tet_face_tags.size());
 
     //     //        pausee();
 

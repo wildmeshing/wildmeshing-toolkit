@@ -160,8 +160,8 @@ void tetwild::TetWild::match_insertion_faces(
             std::sort(f.begin(), f.end());
             if (map_surface.count(f)) {
                 int fid = map_surface[f];
-                //                triangle_insertion_cache.local().surface_f_ids[i][j] = fid;
-                triangle_insertion_cache.local().tet_face_tags[f].push_back(fid);
+                //                triangle_insertion_local_cache.local().surface_f_ids[i][j] = fid;
+                triangle_insertion_local_cache.local().tet_face_tags[f].push_back(fid);
                 is_matched[fid] = true;
             }
         }
@@ -170,14 +170,14 @@ void tetwild::TetWild::match_insertion_faces(
 
 void tetwild::TetWild::triangle_insertion_before(const std::vector<Tuple>& faces)
 {
-    triangle_insertion_cache.local().old_face_vids.clear(); // note: reset local vars
+    triangle_insertion_local_cache.local().old_face_vids.clear(); // note: reset local vars
 
     for (auto& loc : faces) {
         auto vs = get_face_vertices(loc);
         std::array<size_t, 3> f = {{vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
         std::sort(f.begin(), f.end());
 
-        triangle_insertion_cache.local().old_face_vids.push_back(f);
+        triangle_insertion_local_cache.local().old_face_vids.push_back(f);
     }
 }
 
@@ -185,23 +185,23 @@ void tetwild::TetWild::triangle_insertion_after(
     const std::vector<Tuple>& old_faces,
     const std::vector<std::vector<Tuple>>& new_faces)
 {
-    auto& tet_face_tags = triangle_insertion_cache.local().tet_face_tags;
+    auto& tet_face_tags = triangle_insertion_local_cache.local().tet_face_tags;
 
     /// remove old_face_vids from tet_face_tags, and map tags to new faces
-    assert(new_faces.size() == triangle_insertion_cache.local().old_face_vids.size() + 1);
+    assert(new_faces.size() == triangle_insertion_local_cache.local().old_face_vids.size() + 1);
 
     for (int i = 0; i < new_faces.size(); i++) {
         if (new_faces[i].empty()) continue;
 
         // note: erase old tag and then add new -- old and new can be the same face
         std::vector<int> tags;
-        if (i < triangle_insertion_cache.local().old_face_vids.size()) {
-            if (tet_face_tags.count(triangle_insertion_cache.local().old_face_vids[i])) {
-                tags = tet_face_tags[triangle_insertion_cache.local().old_face_vids[i]];
-                tet_face_tags.erase(triangle_insertion_cache.local().old_face_vids[i]);
+        if (i < triangle_insertion_local_cache.local().old_face_vids.size()) {
+            if (tet_face_tags.count(triangle_insertion_local_cache.local().old_face_vids[i])) {
+                tags = tet_face_tags[triangle_insertion_local_cache.local().old_face_vids[i]];
+                tet_face_tags.erase(triangle_insertion_local_cache.local().old_face_vids[i]);
             }
         } else
-            tags = {triangle_insertion_cache.local().face_id};
+            tags = {triangle_insertion_local_cache.local().face_id};
 
         if (tags.empty()) continue;
 
@@ -220,7 +220,7 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
     const int TRI_INTERSECTION = 1;
     const int PLN_INTERSECTION = 2;
 
-    triangle_insertion_cache.local().input_surface = _input_surface; // todo: avoid copy
+    triangle_insertion_local_cache.local().input_surface = _input_surface; // todo: avoid copy
     const auto& input_surface = _input_surface;
 
     construct_background_mesh(input_surface);
@@ -235,7 +235,7 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
         std::vector<std::array<int, 3>> fs;
         int cnt = 0;
 
-        for (auto& info : triangle_insertion_cache.local().tet_face_tags) {
+        for (auto& info : triangle_insertion_local_cache.local().tet_face_tags) {
             auto& vids = info.first;
             auto& fids = info.second;
 
@@ -253,11 +253,11 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
     };
 
     // match faces preserved in delaunay
-    auto& is_matched = triangle_insertion_cache.local().is_matched;
+    auto& is_matched = triangle_insertion_local_cache.local().is_matched;
     match_insertion_faces(input_surface, is_matched);
     wmtk::logger().info("is_matched: {}", std::count(is_matched.begin(), is_matched.end(), true));
 
-    auto& is_visited = triangle_insertion_cache.local().is_visited;
+    auto& is_visited = triangle_insertion_local_cache.local().is_visited;
 
 
     // parallel this loop? change this to a queue
@@ -266,7 +266,7 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
         //    for (size_t face_id = 3; face_id < 5; face_id++) {
         if (is_matched[face_id]) continue;
 
-        triangle_insertion_cache.local().face_id = face_id;
+        triangle_insertion_local_cache.local().face_id = face_id;
         is_visited.assign(m_tet_attribute.size(), false); // reset
 
         std::array<Vector3, 3> tri = {
@@ -413,7 +413,7 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
                          vertex_vids[coplanar_f_lvids[1]],
                          vertex_vids[coplanar_f_lvids[2]]}};
                     std::sort(f.begin(), f.end());
-                    triangle_insertion_cache.local().tet_face_tags[f].push_back(face_id);
+                    triangle_insertion_local_cache.local().tet_face_tags[f].push_back(face_id);
                     //
                     for (int j = 0; j < 3; j++) {
                         auto conn_tets = get_one_ring_tets_for_vertex(vs[coplanar_f_lvids[j]]);
@@ -596,7 +596,7 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
         wmtk::logger().info("inserted #t {}", tet_capacity());
         wmtk::logger().info(
             "tet_face_tags.size {}",
-            triangle_insertion_cache.local().tet_face_tags.size());
+            triangle_insertion_local_cache.local().tet_face_tags.size());
     }
 
     // fortest
@@ -606,7 +606,7 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
     /// update m_is_on_surface for vertices, remove leaked surface marks
     m_edge_attribute.resize(m_tet_attribute.size() * 6);
     m_face_attribute.resize(m_tet_attribute.size() * 4);
-    for (auto& info : triangle_insertion_cache.local().tet_face_tags) {
+    for (auto& info : triangle_insertion_local_cache.local().tet_face_tags) {
         auto& vids = info.first;
         auto& fids = info.second;
 
