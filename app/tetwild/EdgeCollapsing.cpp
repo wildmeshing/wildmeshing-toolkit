@@ -4,16 +4,7 @@
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/Logger.hpp>
-using std::cout;
-using std::endl;
 
-void pausee()
-{
-    std::cout << "pausing..." << std::endl;
-    char c;
-    std::cin >> c;
-    if (c == '0') exit(0);
-}
 
 void tetwild::TetWild::collapse_all_edges(bool is_limit_length)
 {

@@ -522,6 +522,24 @@ public:
     void check_tuple_validity(const Tuple& t) const { t.check_validity(*this); }
     bool check_mesh_connectivity_validity() const;
 
+    void remove_tets_by_ids(const std::vector<size_t>& tids){
+        for(size_t tid: tids)
+            m_tet_connectivity[tid].m_is_removed = true;
+        for(auto& v:m_vertex_connectivity){
+            if(v.m_is_removed)
+                continue;
+            bool remove = true;
+            for(size_t tid: v.m_conn_tets) {
+                if (!m_tet_connectivity[tid].m_is_removed) {
+                    remove = false;
+                    break;
+                }
+            }
+            if(remove)
+                v.m_is_removed = true;
+        }
+    }
+
 private:
     std::map<size_t, wmtk::TetMesh::VertexConnectivity> operation_update_connectivity_impl(
         std::vector<size_t>& affected_tid,

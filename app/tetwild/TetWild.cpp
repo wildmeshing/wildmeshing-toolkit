@@ -11,6 +11,17 @@
 #include <spdlog/fmt/ostr.h>
 
 #include <igl/winding_number.h>
+
+using std::cout;
+using std::endl;
+
+void pausee()
+{
+    std::cout << "pausing..." << std::endl;
+    char c;
+    std::cin >> c;
+    if (c == '0') exit(0);
+}
 void tetwild::TetWild::mesh_improvement(int max_its)
 {
     ////preprocessing
@@ -36,6 +47,7 @@ void tetwild::TetWild::mesh_improvement(int max_its)
             abs(pre_avg_energy - avg_energy) < 1e-2) {
             m++;
             if (m == M) {
+                wmtk::logger().info("adjust_sizing_field...");
                 is_hit_min_edge_length = adjust_sizing_field(max_energy);
                 m = 0;
             }
@@ -184,7 +196,7 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
     return is_hit_min_edge_length;
 }
 
-void tetwild::TetWild::filter_outside()
+void tetwild::TetWild::filter_outside(bool remove_ouside)
 {
     Eigen::MatrixXd V(triangle_insertion_cache.input_surface.vertices.size(), 3);
     Eigen::MatrixXi F(triangle_insertion_cache.input_surface.faces.size(), 3);
@@ -203,19 +215,59 @@ void tetwild::TetWild::filter_outside()
     for (size_t i = 0; i < tets.size(); i++) {
         C.row(i) << 0, 0, 0;
         auto vs = oriented_tet_vertices(tets[i]);
-        for (auto& v : vs) C += m_vertex_attribute[v.vid(*this)].m_posf;
+        for (auto& v : vs) C.row(i) += m_vertex_attribute[v.vid(*this)].m_posf;
         C.row(i) /= 4;
     }
 
     Eigen::VectorXd W;
     igl::winding_number(V, F, C, W);
 
+    std::vector<size_t> rm_tids;
     for (int i = 0; i < W.rows(); i++) {
-        if (W(i) <= 0.5) m_tet_attribute[tets[i].tid(*this)].m_is_outside = true;
+        if (W(i) <= 0.5){
+            m_tet_attribute[tets[i].tid(*this)].m_is_outside = true;
+            if(remove_ouside)
+                rm_tids.push_back(tets[i].tid(*this));
+        }
     }
+
+    if(remove_ouside)
+        remove_tets_by_ids(rm_tids);
 }
 
 /////////////////////////////////////////////////////////////////////
+
+void tetwild::TetWild::output_mesh(std::string file)
+{
+    consolidate_mesh();
+    cout<<"ok"<<endl;
+
+    wmtk::MshData msh;
+
+    const auto& vtx = get_vertices();
+    msh.add_tet_vertices(vtx.size(), [&](size_t k) {
+        auto i = vtx[k].vid(*this);
+        return m_vertex_attribute[i].m_posf;
+    });
+
+    const auto& tets = get_tets();
+    msh.add_tets(tets.size(), [&](size_t k) {
+        auto i = tets[k].tid(*this);
+        auto vs = oriented_tet_vertices(tets[k]);
+        std::array<size_t, 4> data;
+        for (int j = 0; j < 4; j++) {
+            data[j] = vs[j].vid(*this);
+            assert(data[j] < vtx.size());
+        }
+        return data;
+    });
+
+    msh.add_tet_vertex_attribute<1>("tv index", [&](size_t i) { return i; });
+    msh.add_tet_attribute<1>("t index", [&](size_t i) { return i; });
+
+    msh.save(file, true);
+}
+
 
 double tetwild::TetWild::get_length2(const wmtk::TetMesh::Tuple& l) const
 {
@@ -360,37 +412,6 @@ bool tetwild::TetWild::invariants(const std::vector<Tuple>& tets)
         }
     }
     return true;
-}
-
-
-void tetwild::TetWild::output_mesh(std::string file)
-{
-    consolidate_mesh();
-
-    wmtk::MshData msh;
-
-    const auto& vtx = get_vertices();
-    msh.add_tet_vertices(vtx.size(), [&](size_t k) {
-        auto i = vtx[k].vid(*this);
-        return m_vertex_attribute[i].m_posf;
-    });
-
-    const auto& tets = get_tets();
-    msh.add_tets(tets.size(), [&](size_t k) {
-        auto i = tets[k].tid(*this);
-        auto vs = oriented_tet_vertices(tets[k]);
-        std::array<size_t, 4> data;
-        for (int j = 0; j < 4; j++) {
-            data[j] = vs[j].vid(*this);
-            assert(data[j] < vtx.size());
-        }
-        return data;
-    });
-
-    msh.add_tet_vertex_attribute<1>("tv index", [&](size_t i) { return i; });
-    msh.add_tet_attribute<1>("t index", [&](size_t i) { return i; });
-
-    msh.save(file, true);
 }
 
 std::vector<std::array<size_t, 3>> tetwild::TetWild::get_faces_by_condition(

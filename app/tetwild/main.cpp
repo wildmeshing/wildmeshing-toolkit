@@ -85,16 +85,21 @@ int main(int argc, char** argv)
             igl::write_triangle_mesh("track_bbox.obj", matV, matF);
         }
 
-        mesh.output_mesh("improved.msh");
+//        mesh.output_mesh("improved.msh");
     };
 
     mesh.triangle_insertion(input_surface);
     //    mesh.check_attributes();
     //    pausee();
 
-    mesh.mesh_improvement(10);
+    mesh.mesh_improvement(0);
+    cout<<"ok1"<<endl;
 
     output_faces();
+    cout<<"ok2"<<endl;
+
+    mesh.output_mesh("final.msh");
+    cout<<"ok3"<<endl;
 
     // todo: refine adaptively the mesh
 }

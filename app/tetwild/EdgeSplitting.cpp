@@ -4,9 +4,6 @@
 #include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/Logger.hpp>
 
-using std::cout;
-using std::endl;
-
 //void pausee()
 //{
 //    std::cout << "pausing..." << std::endl;
