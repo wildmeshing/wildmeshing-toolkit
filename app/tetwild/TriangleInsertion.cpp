@@ -246,18 +246,18 @@ void tetwild::TetWild::triangle_insertion_stuff(
     // fortest
     while (insertion_queues[task_id].try_pop(eiq)) {
         auto [face_id, retry_time] = eiq;
-        // fortest
-        if ((face_id < 200 || face_id > 400))
-            continue;
-        else if (
-            vertices[faces[face_id][0]][1] < 0 && vertices[faces[face_id][1]][1] < 0 &&
-            vertices[faces[face_id][2]][1] < 0)
-            continue;
-        else {
-            output_fs.push_back(faces[face_id]);
-            //            std::cout<<face_id<<std::endl;
-        }
-        // fortest
+//        // fortest
+//        if ((face_id < 200 || face_id > 400))
+//            continue;
+//        else if (
+//            vertices[faces[face_id][0]][1] < 0 && vertices[faces[face_id][1]][1] < 0 &&
+//            vertices[faces[face_id][2]][1] < 0)
+//            continue;
+//        else {
+//            output_fs.push_back(faces[face_id]);
+//            //            std::cout<<face_id<<std::endl;
+//        }
+//        // fortest
 
         if (is_matched[face_id]) continue;
 
@@ -531,7 +531,8 @@ void tetwild::TetWild::triangle_insertion_stuff(
             }
 
             /// check if the tet (open) face intersects with the triangle
-            if (!need_subdivision) {
+//            if (!need_subdivision) {
+            if (true) {
                 std::array<Tuple, 4> fs;
                 fs[0] = tet;
                 fs[1] = switch_face(tet);
