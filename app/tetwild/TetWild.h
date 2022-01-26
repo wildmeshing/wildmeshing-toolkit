@@ -138,6 +138,7 @@ public:
 
 
     void output_mesh(std::string file);
+    void output_faces(std::string file, std::function<bool(const FaceAttributes&)> cond);
 
     class InputSurface
     {
