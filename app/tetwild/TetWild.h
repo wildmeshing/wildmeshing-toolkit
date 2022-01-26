@@ -235,6 +235,8 @@ public:
         std::vector<std::array<size_t, 3>> surface_faces;
         //        std::vector<std::pair<size_t, std::array<size_t, 3>>> changed_faces;
         std::vector<size_t> changed_tids;
+
+        std::vector<std::array<size_t, 2>> failed_edges;
     };
     tbb::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
 

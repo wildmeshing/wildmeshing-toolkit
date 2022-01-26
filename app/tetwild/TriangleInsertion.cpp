@@ -216,9 +216,12 @@ void tetwild::TetWild::triangle_insertion_after(
         // note: erase old tag and then add new -- old and new can be the same face
         std::vector<int> tags;
         if (i < triangle_insertion_local_cache.local().old_face_vids.size()) {
-            if (tet_face_tags.count(triangle_insertion_local_cache.local().old_face_vids[i])) {
-                tags = tet_face_tags[triangle_insertion_local_cache.local().old_face_vids[i]];
-                tet_face_tags.unsafe_erase(triangle_insertion_local_cache.local().old_face_vids[i]);
+            auto& old_f = triangle_insertion_local_cache.local().old_face_vids[i];
+            if (tet_face_tags.count(old_f) && !tet_face_tags[old_f].empty()) {
+                tags = tet_face_tags[old_f];
+//                tet_face_tags.unsafe_erase(triangle_insertion_local_cache.local().old_face_vids[i]);
+//                tet_face_tags.unsafe_erase(old_f);
+                tet_face_tags[old_f] = {};
             }
         } else
             tags = {triangle_insertion_local_cache.local().face_id};
@@ -1161,6 +1164,8 @@ void tetwild::TetWild::setup_attributes()
     for (auto& info : triangle_insertion_global_cache.tet_face_tags) {
         auto& vids = info.first;
         auto& fids = info.second;
+        if(fids.empty())
+            continue;
 
         Vector3 c = m_vertex_attribute[vids[0]].m_pos + m_vertex_attribute[vids[1]].m_pos +
                     m_vertex_attribute[vids[2]].m_pos;

@@ -282,6 +282,8 @@ public:
             logger().debug("Parallel Complete, remains element {}", final_queue.size());
             run_single_queue(final_queue);
         }
+
+        logger().info("cnt_update {}", cnt_update);
         return true;
     }
 };
