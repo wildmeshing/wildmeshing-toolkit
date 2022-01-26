@@ -2,6 +2,7 @@
 
 #include <wmtk/TriMesh.h>
 #include <wmtk/utils/VectorUtils.h>
+#include <wmtk/utils/TupleUtils.hpp>
 #include <wmtk/ExecutionScheduler.hpp>
 
 #include <Eigen/Core>
@@ -9,17 +10,6 @@
 
 using namespace wmtk;
 using namespace Edge2d;
-auto unique_edge_tuples = [](const auto& m, auto& edges) {
-    std::vector<size_t> all_eids;
-    for (auto e : edges) {
-        all_eids.emplace_back(e.eid(m));
-    }
-    vector_unique(all_eids);
-    edges.clear();
-    for (auto eid : all_eids) {
-        edges.emplace_back(m.tuple_from_edge(eid / 3, eid % 3));
-    }
-};
 
 bool Edge2d::EdgeOperations2d::swap_after(const TriMesh::Tuple& t)
 {
@@ -58,7 +48,7 @@ std::vector<TriMesh::Tuple> Edge2d::EdgeOperations2d::new_edges_after(
             new_edges.push_back(tuple_from_edge(t.fid(), j));
         }
     }
-    unique_edge_tuples(*this, new_edges);
+    wmtk::unique_edge_tuples(*this, new_edges);
     return new_edges;
 }
 

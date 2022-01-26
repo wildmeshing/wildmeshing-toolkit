@@ -8,7 +8,7 @@ struct Parameters
     double eps = -1.; // absolute error bound
     double lr = 5e-2; // target edge length (relative)
     double l = -1.;
-    double l_min;
+    double l_min = -1;
     double diag_l = -1.;
     Vector3d min = Vector3d::Zero();
     Vector3d max = Vector3d::Ones();

@@ -29,7 +29,11 @@ public:
 template <typename T>
 struct AttributeCollection : public AbstractAttributeContainer
 {
-    void move(size_t from, size_t to) override { m_attributes[to] = std::move(m_attributes[from]); }
+    void move(size_t from, size_t to) override
+    {
+        if (from == to) return;
+        m_attributes[to] = std::move(m_attributes[from]);
+    }
     void resize(size_t s) override
     {
         m_attributes.grow_to_at_least(s);
@@ -68,10 +72,7 @@ struct AttributeCollection : public AbstractAttributeContainer
         recording.local() = false;
     }
 
-   const T& operator[](size_t i) const
-    {
-        return m_attributes[i];
-    }
+    const T& operator[](size_t i) const { return m_attributes[i]; }
 
     T& operator[](size_t i)
     {

@@ -20,7 +20,8 @@
 
 namespace wmtk::manifold_internal {
 
-void resolve_nonmanifoldness(Vertices& V, Facets& F, std::vector<size_t>& modified_vertices) {
+void resolve_nonmanifoldness(Vertices& V, Facets& F, std::vector<size_t>& modified_vertices)
+{
     using Scalar = Vertices::Scalar;
     using Index = Facets::Scalar;
     using Mesh = lagrange::Mesh<Vertices, Facets>;
@@ -28,8 +29,11 @@ void resolve_nonmanifoldness(Vertices& V, Facets& F, std::vector<size_t>& modifi
 
     constexpr Index Invalid = std::numeric_limits<Index>::max();
 
-    // For this, we assume that sizeof(double) == sizeof(uint64_t), which should be the case on all platforms...
-    static_assert(sizeof(Scalar) == sizeof(Index), "Vertex scalar type and facet index type should have the same size");
+    // For this, we assume that sizeof(double) == sizeof(uint64_t), which should be the case on all
+    // platforms...
+    static_assert(
+        sizeof(Scalar) == sizeof(Index),
+        "Vertex scalar type and facet index type should have the same size");
     auto mesh = lagrange::create_mesh(std::move(V), std::move(F));
 
     // Create a vertex attribute to track vertex id
@@ -97,8 +101,7 @@ bool wmtk::separate_to_manifold(
     out_f.resize(F.rows());
     for (auto i = 0; i < V.rows(); i++) out_v[i] = V.row(i);
     for (auto i = 0; i < F.rows(); i++)
-        out_f[i] =
-            std::array<size_t, 3>{{(size_t)faces[i][0], (size_t)faces[i][1], (size_t)faces[i][2]}};
+        out_f[i] = std::array<size_t, 3>{{(size_t)F(i, 0), (size_t)F(i, 1), (size_t)F(i, 2)}};
 
     return true;
 }

@@ -190,15 +190,6 @@ bool tetwild::TetWild::collapse_before(const Tuple& loc) // input is an edge
         assert(!is_inverted(tuple_from_tet(tid)));
     }
 
-    //    if(!collapse_cache.local().surface_faces.empty()) {
-    //        for (auto& vids : collapse_cache.local().surface_faces)
-    //            cout<<vids[0]<<" "<<vids[1]<<" "<<vids[2]<<" "<<endl;
-    //        cout << collapse_cache.local().surface_faces.size() << endl;
-    //        cout << n12_locs.size() << endl;
-    //        pausee();
-    //    }
-
-
     return true;
 }
 
@@ -249,8 +240,6 @@ bool tetwild::TetWild::collapse_after(const Tuple& loc)
         //
         auto [_, global_fid] = tuple_from_face({{v2_id, old_vids[1], old_vids[2]}});
         m_face_attribute[global_fid] = f_attr;
-        //
-        //        map_m_tet_attribute[old_fid].reset();
     }
 
     cnt_collapse++;

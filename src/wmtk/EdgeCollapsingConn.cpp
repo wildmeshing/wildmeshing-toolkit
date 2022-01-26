@@ -110,10 +110,10 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
     auto loc1 = switch_vertex(loc0);
     auto v2_id = loc1.vid(*this);
     logger().trace("{} {}", v1_id, v2_id);
-//    if (!link_condition(v1_id, v2_id)) {
-//        wmtk::logger().trace("violate link condition");
-//        return false;
-//    }
+    if (m_collapse_check_link_condition && !link_condition(v1_id, v2_id)) {
+        wmtk::logger().trace("violate link condition");
+        return false;
+    }
 
     auto n1_t_ids =
         m_vertex_connectivity[v1_id].m_conn_tets; // note: conn_tets for v1 without removed tets
@@ -134,8 +134,6 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
                 break;
             }
         }
-        //        auto l1 = m_tet_connectivity[t_id].find(v1_id);
-        //        auto l2 = m_tet_connectivity[t_id].find(v2_id);
         if (l2 != -1) continue;
         assert(l1 != -1);
         new_tet_conn.push_back(m_tet_connectivity[t_id].m_indices);

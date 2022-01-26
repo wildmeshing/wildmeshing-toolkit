@@ -1,17 +1,17 @@
 #include <TetWild.h>
-
+#include <common.h>
 #include <wmtk/TetMesh.h>
 
+#include <igl/read_triangle_mesh.h>
+#include <igl/write_triangle_mesh.h>
 #include <catch2/catch.hpp>
 #include <wmtk/utils/io.hpp>
 #include "spdlog/common.h"
-#include <igl/read_triangle_mesh.h>
-#include <igl/write_triangle_mesh.h>
 
 using namespace wmtk;
 using namespace tetwild;
 
-TEST_CASE("mesh_improvement", "[tetwild_operation]")
+TEST_CASE("mesh_improvement", "[tetwild_operation][.slow]")
 {
     std::string input_path = WMT_DATA_DIR "/37322.stl";
 
@@ -57,9 +57,8 @@ TEST_CASE("mesh_improvement", "[tetwild_operation]")
 
     mesh.triangle_insertion(input_surface);
     //    mesh.check_attributes();
-    //    pausee();
 
-    mesh.mesh_improvement(20);
+    mesh.mesh_improvement(5);
 }
 
 TEST_CASE("edge_splitting", "[tetwild_operation]")
@@ -78,7 +77,7 @@ TEST_CASE("edge_splitting", "[tetwild_operation]")
     vertices[3].m_posf = Vector3d(0, 0, 1);
     std::vector<std::array<size_t, 4>> tets = {{{0, 1, 2, 3}}};
     std::vector<TetAttributes> tet_attrs(1);
-    for (auto& v:vertices) v.m_is_rounded = true;
+    for (auto& v : vertices) v.m_is_rounded = true;
 
     tetwild.init(vertices.size(), tets);
     tetwild.create_mesh_attributes(vertices, tet_attrs);
@@ -113,7 +112,12 @@ TEST_CASE("edge_collapsing", "[tetwild_operation]")
     vertices[3].m_posf = Vector3d(0, 0, 1);
     std::vector<std::array<size_t, 4>> tets = {{{0, 1, 2, 3}}};
     std::vector<TetAttributes> tet_attrs(1);
-    for (auto& v:vertices) v.m_is_rounded = true;
+    for (auto& v : vertices) {
+        v.m_is_rounded = true;
+        v.m_pos = to_rational(v.m_posf);
+        // v.m_is_on_surface = true;
+    }
+    tetwild.m_collapse_check_link_condition = true;
 
     tetwild.init(vertices.size(), tets);
     tetwild.create_mesh_attributes(vertices, tet_attrs);
@@ -156,7 +160,7 @@ TEST_CASE("inversion-check-rational-tetwild", "[tetwild_operation]")
     vertices[1].m_pos = Vector3(1, 0, 0);
     vertices[2].m_pos = Vector3(0, 1, 0);
     vertices[3].m_pos = Vector3(0, 0, 1);
-    for (auto& v:vertices) v.m_is_rounded = false;
+    for (auto& v : vertices) v.m_is_rounded = false;
     std::vector<std::array<size_t, 4>> tets = {{{0, 1, 2, 3}}};
     std::vector<TetAttributes> tet_attrs(1);
 
@@ -193,7 +197,7 @@ TEST_CASE("optimize-bunny-tw", "[tetwild_operation][.slow]")
     tetwild.collapse_all_edges();
     logger().info("Col {}", tetwild.cnt_collapse);
     tetwild.swap_all_edges();
-    tetwild.swap_all_faces() ;
+    tetwild.swap_all_faces();
     logger().info("Swp {}", tetwild.cnt_swap);
 
     tetwild.output_mesh("bunny-tw.msh");
