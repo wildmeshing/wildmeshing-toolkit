@@ -111,7 +111,7 @@ int main(int argc, char** argv)
     };
 
     mesh.triangle_insertion(input_surface);
-    //    mesh.check_attributes();
+    mesh.check_attributes();
     //    pausee();
 
     mesh.mesh_improvement(20);
