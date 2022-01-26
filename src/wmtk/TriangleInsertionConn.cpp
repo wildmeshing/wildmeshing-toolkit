@@ -111,13 +111,13 @@ void wmtk::TetMesh::single_triangle_insertion(
     /// track surface after
     std::vector<std::vector<Tuple>> new_faces(old_faces.size() + 1);
     for (auto& info : new_face_vids) {
-        auto it = std::find_if(
+        auto it1 = std::find_if(
             old_face_vids.begin(),
             old_face_vids.end(),
             [&info](const std::array<size_t, 5>& v1) {
                 return std::array<size_t, 3>({{v1[0], v1[1], v1[2]}}) == info.first;
             });
-        int i = it - old_face_vids.begin(); // already handled special case here
+        int i = it1 - old_face_vids.begin(); // already handled special case here
         assert(i < new_faces.size());
         //
 

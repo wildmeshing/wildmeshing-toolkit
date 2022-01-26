@@ -1152,7 +1152,6 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
 
     wmtk::logger().info("#t {}", tet_capacity());
     wmtk::logger().info("#v {}", vert_capacity());
-    pausee();
 
 } // note: skip preserve open boundaries
 

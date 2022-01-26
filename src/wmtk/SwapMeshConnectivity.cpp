@@ -25,7 +25,7 @@ std::vector<wmtk::TetMesh::TetrahedronConnectivity> record_old_tet_connectivity(
     auto tet_conn = std::vector<wmtk::TetMesh::TetrahedronConnectivity>();
     for (auto i : tets) tet_conn.push_back(conn[i]);
     return tet_conn;
-};
+}
 
 void wmtk::TetMesh::operation_failure_rollback_imp(
     std::map<size_t, wmtk::TetMesh::VertexConnectivity>& rollback_vert_conn,
@@ -62,7 +62,7 @@ wmtk::TetMesh::operation_update_connectivity_impl(
     auto rollback_vert_conn = operation_update_connectivity_impl(remove_id, new_tet_conn, allocate);
     remove_id = allocate;
     return rollback_vert_conn;
-};
+}
 
 std::map<size_t, wmtk::TetMesh::VertexConnectivity>
 wmtk::TetMesh::operation_update_connectivity_impl(
@@ -134,7 +134,7 @@ wmtk::TetMesh::operation_update_connectivity_impl(
     }
 
     return rollback_vert_conn;
-};
+}
 
 
 bool wmtk::TetMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
@@ -264,14 +264,14 @@ bool wmtk::TetMesh::swap_face(const Tuple& t, std::vector<Tuple>& new_tet_tuples
         auto u1 = find_other_v(m_tet_connectivity[t1].m_indices, tri);
         oppo_vid = {{u0, u1}};
         //
-        auto new_tets = std::vector<std::array<size_t, 4>>{
+        auto tets = std::vector<std::array<size_t, 4>>{
             m_tet_connectivity[t0].m_indices,
             m_tet_connectivity[t0].m_indices,
             m_tet_connectivity[t0].m_indices};
-        replace(new_tets[0], v0, u1);
-        replace(new_tets[1], v1, u1);
-        replace(new_tets[2], v2, u1);
-        return new_tets;
+        replace(tets[0], v0, u1);
+        replace(tets[1], v1, u1);
+        replace(tets[2], v2, u1);
+        return tets;
     }();
 
     // check if edge already exist: topological un-swappable

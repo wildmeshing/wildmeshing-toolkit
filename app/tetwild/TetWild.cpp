@@ -105,7 +105,6 @@ std::tuple<double, double> tetwild::TetWild::local_operations(
 
             output_faces("track_surface.obj", [](auto& attr) { return attr.m_is_surface_fs == true; });
             output_faces("track_bbox.obj", [](auto& attr) { return attr.m_is_bbox_fs >= 0; });
-            pausee();
         }
     }
 
