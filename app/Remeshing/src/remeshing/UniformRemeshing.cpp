@@ -320,10 +320,7 @@ bool UniformRemeshing::uniform_remeshing(double L, int iterations)
     int cnt = 0;
     auto properties = average_len_valen();
     while ((properties[0] - L) * (properties[0] - L) > 1e-8 && cnt < iterations) {
-        // wmtk::logger().set_level(spdlog::level::trace);
-        // wmtk::logger().debug(" on iteration {}", cnt);
         cnt++;
-        // wmtk::logger().info(" average length is {} {}", properties[0], properties[3]);
         avg_lens.push_back(properties[0]);
         avg_valens.push_back(properties[3]);
         max_lens.push_back(properties[1]);

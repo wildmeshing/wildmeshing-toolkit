@@ -139,7 +139,7 @@ TEST_CASE("parallel_harmonic-tet-swaps", "[parallel_harmtri][.slow]")
         timer.start();
         har_tet.swap_all_edges(true);
         time = timer.getElapsedTimeInMilliSec();
-        spdlog::info("Time [{}]{}", i, time);
+        wmtk::logger().info("Time [{}]{}", i, time);
         har_tet.swap_all_faces();
         har_tet.consolidate_mesh();
         har_tet.smooth_all_vertices();

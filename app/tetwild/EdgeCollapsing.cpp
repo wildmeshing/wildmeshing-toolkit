@@ -53,7 +53,10 @@ void tetwild::TetWild::collapse_all_edges(bool is_limit_length)
             count_success.store(0, std::memory_order_release);
             wmtk::logger().info("Prepare to collapse {}", collect_all_ops.size());
             executor(*this, collect_all_ops);
-            wmtk::logger().info("success {} ops, retrying with {}", count_success, collect_failure_ops.size());
+            wmtk::logger().info(
+                "Collapsed {}, retrying failed {}",
+                count_success,
+                collect_failure_ops.size());
             collect_all_ops.clear();
             for (auto& item : collect_failure_ops) collect_all_ops.emplace_back(item);
             collect_failure_ops.clear();
