@@ -31,7 +31,7 @@ void tetwild::TetWild::mesh_improvement(int max_its)
         auto [max_energy, avg_energy] = local_operations({{1, 2, 1, 1}});
 
         ///energy check
-        spdlog::info("max energy {} stop {}", max_energy, m_params.stop_energy);
+        wmtk::logger().info("max energy {} stop {}", max_energy, m_params.stop_energy);
         if (max_energy < m_params.stop_energy) break;
 
         ///sizing field
@@ -245,7 +245,7 @@ void tetwild::TetWild::output_faces(std::string file, std::function<bool(const F
     for (auto i = 0; i < outface.size(); i++) {
         matF.row(i) << outface[i][0], outface[i][1], outface[i][2];
     }
-    spdlog::info("Output face size {}", outface.size());
+    wmtk::logger().info("Output face size {}", outface.size());
     igl::write_triangle_mesh(file, matV, matF);
 }
 
