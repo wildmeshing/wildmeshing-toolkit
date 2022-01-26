@@ -7,7 +7,7 @@
 #include <spdlog/fmt/ostr.h>
 using namespace wmtk;
 
-TEST_CASE("smooth_in_single_tet", "[tetwild_operation]")
+TEST_CASE("smooth_in_single_tet", "[tetwild_operation][.slow]")
 {
     using namespace tetwild;
 
