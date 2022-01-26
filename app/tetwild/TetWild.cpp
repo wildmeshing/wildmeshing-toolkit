@@ -28,7 +28,7 @@ void tetwild::TetWild::mesh_improvement(int max_its)
     for (int it = 0; it < max_its; it++) {
         ///ops
         wmtk::logger().info("========it {}========", it);
-        auto [max_energy, avg_energy] = local_operations({{1, 2, 1, 1}});
+        auto [max_energy, avg_energy] = local_operations({{1, 1, 1, 1}});
 
         ///energy check
         wmtk::logger().info("max energy {} stop {}", max_energy, m_params.stop_energy);
