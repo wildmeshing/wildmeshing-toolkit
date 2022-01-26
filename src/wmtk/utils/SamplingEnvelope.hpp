@@ -15,8 +15,9 @@ private:
     Eigen::MatrixXi m_F;
 
 private:
-    void sample_tri(const std::array<Eigen::Vector3d, 3>& tri, std::vector<Eigen::Vector3d> samples)
-        const;
+    void sample_tri(
+        const std::array<Eigen::Vector3d, 3>& tri,
+        std::vector<Eigen::Vector3d>& samples) const;
     double point_tri_distance(const std::array<Eigen::Vector3d, 3>& tri, const Eigen::Vector3d& p)
         const;
 

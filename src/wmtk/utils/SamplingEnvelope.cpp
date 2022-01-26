@@ -1,4 +1,5 @@
 #include "SamplingEnvelope.hpp"
+#include <Eigen/Dense>
 
 namespace wmtk {
 SamplingEnvelope::SamplingEnvelope(double sampling_dist, double box_tolerance)
@@ -49,7 +50,7 @@ bool SamplingEnvelope::is_outside(const std::array<Eigen::Vector3d, 3>& tri) con
 
 void SamplingEnvelope::sample_tri(
     const std::array<Eigen::Vector3d, 3>& tri,
-    std::vector<Eigen::Vector3d> samples) const
+    std::vector<Eigen::Vector3d>& samples) const
 {
     double sq_dist = std::numeric_limits<double>::max();
     const double sqrt3_2 = std::sqrt(3) / 2;
