@@ -119,7 +119,7 @@ bool tetwild::TetWild::swap_edge_before(const Tuple& t)
     auto incident_tets = get_incident_tets_for_edge(t);
     auto max_energy = -1.0;
     for (auto& l : incident_tets) {
-        max_energy = std::max(get_quality(l), max_energy);
+        max_energy = std::max(m_tet_attribute[l.tid(*this)].m_quality, max_energy);
     }
     swap_cache.local().max_energy = max_energy;
 
@@ -140,12 +140,19 @@ bool tetwild::TetWild::swap_edge_after(const Tuple& t)
     // after swap, t points to a face with 2 neighboring tets.
     auto oppo_tet = t.switch_tetrahedron(*this);
     assert(oppo_tet.has_value() && "Should not swap boundary.");
-    auto max_energy = std::max(get_quality(t), get_quality(*oppo_tet));
-    std::vector<Tuple> locs{{t, *oppo_tet}};
-
-    if (max_energy > swap_cache.local().max_energy) return false;
 
     auto twotets = std::vector<Tuple>{{t, *oppo_tet}};
+    auto max_energy = -1.0;
+    for (auto& l : twotets) {
+        auto q = get_quality(l);
+        m_tet_attribute[l.tid(*this)].m_quality = q;
+        max_energy = std::max(q, max_energy);
+    }
+    if (max_energy > swap_cache.local().max_energy) {
+        global_danger_swap_fail_max_energy++;
+        return false;
+    }
+
     tracker_assign_after(swap_cache.local().changed_faces, twotets, *this, m_face_attribute);
     cnt_swap++;
     return true;
@@ -157,7 +164,9 @@ bool tetwild::TetWild::swap_face_before(const Tuple& t)
 
     auto oppo_tet = t.switch_tetrahedron(*this);
     assert(oppo_tet.has_value() && "Should not swap boundary.");
-    swap_cache.local().max_energy = std::max(get_quality(t), get_quality(*oppo_tet));
+    swap_cache.local().max_energy = std::max(
+        m_tet_attribute[t.tid(*this)].m_quality,
+        m_tet_attribute[oppo_tet->tid(*this)].m_quality);
 
     auto twotets = std::vector<Tuple>{{t, *oppo_tet}};
 
@@ -174,11 +183,15 @@ bool tetwild::TetWild::swap_face_after(const Tuple& t)
 
     auto max_energy = -1.0;
     for (auto& l : incident_tets) {
-        max_energy = std::max(get_quality(l), max_energy);
+        auto q = get_quality(l);
+        m_tet_attribute[l.tid(*this)].m_quality = q;
+        max_energy = std::max(q, max_energy);
     }
     wmtk::logger().trace("quality {} from {}", max_energy, swap_cache.local().max_energy);
 
-    if (max_energy > swap_cache.local().max_energy) return false;
+    if (max_energy > swap_cache.local().max_energy) {
+        return false;
+    }
 
     tracker_assign_after(swap_cache.local().changed_faces, incident_tets, *this, m_face_attribute);
 
