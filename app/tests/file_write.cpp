@@ -3,7 +3,7 @@
 #include <TetWild.h>
 
 #include <wmtk/TetMesh.h>
-
+#include <common.h>
 
 using namespace wmtk;
 using namespace tetwild;
@@ -24,11 +24,12 @@ TEST_CASE("tetwild_file_write", "[tetwild_operation]")
     vertices[3].m_posf = Vector3d(0, 0, 1);
     std::vector<std::array<size_t, 4>> tets = {{{0, 1, 2, 3}}};
     std::vector<TetAttributes> tet_attrs(1);
-    for (auto& v:vertices) v.m_is_rounded = true;
+    for (auto& v : vertices) {
+        v.m_is_rounded = true;
+        v.m_pos = tetwild::to_rational(v.m_posf);
+    }
 
     tetwild.init(vertices.size(), tets);
     tetwild.create_mesh_attributes(vertices, tet_attrs);
-    tetwild.split_all_edges();
-    tetwild.collapse_all_edges();
     tetwild.output_mesh("test_save.msh");
 }

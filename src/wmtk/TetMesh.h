@@ -345,6 +345,7 @@ public:
     AbstractAttributeContainer* p_vertex_attrs, *p_edge_attrs, *p_face_attrs, *p_tet_attrs;
     AbstractAttributeContainer vertex_attrs, edge_attrs, face_attrs, tet_attrs;
 
+
 private:
 
     // Stores the connectivity of the mesh
@@ -543,6 +544,7 @@ public:
             if (v.m_conn_tets.empty()) v.m_is_removed = true;
         }
     }
+    bool m_collapse_check_link_condition = true;
 
 private:
     std::map<size_t, wmtk::TetMesh::VertexConnectivity> operation_update_connectivity_impl(

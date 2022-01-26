@@ -34,7 +34,7 @@ public:
 
     Scalar m_sizing_scalar = 1;
     Scalar m_scalar = 1;
-    bool m_is_freezed;
+    bool m_is_freezed = false;
 
     size_t partition_id = 0;
 };
@@ -95,6 +95,7 @@ public:
         p_edge_attrs = &m_edge_attribute;
         p_face_attrs = &m_face_attribute;
         p_tet_attrs = &m_tet_attribute;
+        m_collapse_check_link_condition = false;
     }
 
     ~TetWild() {}
