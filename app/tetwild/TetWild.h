@@ -11,6 +11,8 @@
 #include <fastenvelope/FastEnvelope.h>
 #include <tbb/concurrent_queue.h>
 #include <tbb/concurrent_vector.h>
+#include <tbb/concurrent_map.h>
+#include <tbb/concurrent_unordered_map.h>
 #include <tbb/enumerable_thread_specific.h>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
