@@ -12,16 +12,16 @@
 
 #include <igl/winding_number.h>
 
-using std::cout;
-using std::endl;
-
-void pausee()
-{
-    std::cout << "pausing..." << std::endl;
-    char c;
-    std::cin >> c;
-    if (c == '0') exit(0);
-}
+//using std::cout;
+//using std::endl;
+//
+//void pausee()
+//{
+//    std::cout << "pausing..." << std::endl;
+//    char c;
+//    std::cin >> c;
+//    if (c == '0') exit(0);
+//}
 void tetwild::TetWild::mesh_improvement(int max_its)
 {
     ////preprocessing
@@ -112,6 +112,10 @@ std::tuple<double, double> tetwild::TetWild::local_operations(
             wmtk::logger().info("max energy = {}", std::get<0>(energy));
             wmtk::logger().info("avg energy = {}", std::get<1>(energy));
             wmtk::logger().info("time = {}", timer.getElapsedTime());
+
+            output_faces("track_surface.obj", [](auto& attr) { return attr.m_is_surface_fs == true; });
+            output_faces("track_bbox.obj", [](auto& attr) { return attr.m_is_bbox_fs >= 0; });
+            pausee();
         }
     }
 
@@ -239,6 +243,23 @@ void tetwild::TetWild::filter_outside(bool remove_ouside)
 }
 
 /////////////////////////////////////////////////////////////////////
+#include <igl/write_triangle_mesh.h>
+void tetwild::TetWild::output_faces(std::string file, std::function<bool(const FaceAttributes&)> cond)
+{
+    auto outface = get_faces_by_condition(cond);
+    Eigen::MatrixXd matV = Eigen::MatrixXd::Zero(vert_capacity(), 3);
+    for (auto v : get_vertices()) {
+        auto vid = v.vid(*this);
+        matV.row(vid) = m_vertex_attribute[vid].m_posf;
+    }
+    Eigen::MatrixXi matF(outface.size(), 3);
+    for (auto i = 0; i < outface.size(); i++) {
+        matF.row(i) << outface[i][0], outface[i][1], outface[i][2];
+    }
+    std::cout << outface.size() << std::endl;
+    igl::write_triangle_mesh(file, matV, matF);
+}
+
 
 void tetwild::TetWild::output_mesh(std::string file)
 {
@@ -401,20 +422,7 @@ bool tetwild::TetWild::invariants(const std::vector<Tuple>& tets)
     // check inversion
     for (auto& t : tets)
         if (is_inverted(t)) return false;
-    for (auto& t : tets) {
-        for (auto j = 0; j < 4; j++) {
-            auto f_t = tuple_from_face(t.tid(*this), j);
-            auto fid = f_t.fid(*this);
-            if (m_face_attribute[fid].m_is_surface_fs) {
-                auto vs = get_face_vertices(f_t);
-                if (m_envelope.is_outside(
-                        {{m_vertex_attribute[vs[0].vid(*this)].m_posf,
-                          m_vertex_attribute[vs[1].vid(*this)].m_posf,
-                          m_vertex_attribute[vs[2].vid(*this)].m_posf}}))
-                    return false;
-            }
-        }
-    }
+
     return true;
 }
 
@@ -456,6 +464,34 @@ bool tetwild::TetWild::is_edge_on_surface(const Tuple& loc)
     for (size_t vid : n_vids) {
         auto [_, fid] = tuple_from_face({{v1_id, v2_id, vid}});
         if (m_face_attribute[fid].m_is_surface_fs) return true;
+    }
+
+    return false;
+}
+
+
+bool tetwild::TetWild::is_edge_on_bbox(const Tuple& loc)
+{
+    size_t v1_id = loc.vid(*this);
+    auto loc1 = loc.switch_vertex(*this);
+    size_t v2_id = loc1.vid(*this);
+    if (m_vertex_attribute[v1_id].on_bbox_faces.empty() || m_vertex_attribute[v2_id].on_bbox_faces.empty())
+        return false;
+
+    auto tets = get_incident_tets_for_edge(loc);
+    std::vector<size_t> n_vids;
+    for (auto& t : tets) {
+        auto vs = oriented_tet_vertices(t);
+        for (int j = 0; j < 4; j++) {
+            if (vs[j].vid(*this) != v1_id && vs[j].vid(*this) != v2_id)
+                n_vids.push_back(vs[j].vid(*this));
+        }
+    }
+    wmtk::vector_unique(n_vids);
+
+    for (size_t vid : n_vids) {
+        auto [_, fid] = tuple_from_face({{v1_id, v2_id, vid}});
+        if (m_face_attribute[fid].m_is_bbox_fs >= 0) return true;
     }
 
     return false;

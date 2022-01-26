@@ -17,12 +17,12 @@ int main(int argc, char** argv)
     using std::cout;
     using std::endl;
 
-    auto pausee = []() {
-        std::cout << "pausing..." << std::endl;
-        char c;
-        std::cin >> c;
-        if (c == '0') exit(0);
-    };
+//    auto pausee = []() {
+//        std::cout << "pausing..." << std::endl;
+//        char c;
+//        std::cin >> c;
+//        if (c == '0') exit(0);
+//    };
 
     CLI::App app{argv[0]};
     std::string input_path = WMT_DATA_DIR "/37322.stl";
@@ -74,49 +74,15 @@ int main(int argc, char** argv)
     //
     tetwild::TetWild mesh(input_surface.params, envelope, NUM_THREADS);
 
-    auto output_faces = [&]() {
-        // output surface
-        {
-            auto outface = mesh.get_faces_by_condition(
-                [](auto& attr) { return attr.m_is_surface_fs == true; });
-            Eigen::MatrixXd matV = Eigen::MatrixXd::Zero(mesh.vert_capacity(), 3);
-            for (auto v : mesh.get_vertices()) {
-                auto vid = v.vid(mesh);
-                matV.row(vid) = mesh.m_vertex_attribute[vid].m_posf;
-            }
-            Eigen::MatrixXi matF(outface.size(), 3);
-            for (auto i = 0; i < outface.size(); i++) {
-                matF.row(i) << outface[i][0], outface[i][1], outface[i][2];
-            }
-            std::cout << outface.size() << std::endl;
-            igl::write_triangle_mesh("track_surface.obj", matV, matF);
-        }
-        {
-            auto outface =
-                mesh.get_faces_by_condition([](auto& attr) { return attr.m_is_bbox_fs >= 0; });
-            Eigen::MatrixXd matV = Eigen::MatrixXd::Zero(mesh.vert_capacity(), 3);
-            for (auto v : mesh.get_vertices()) {
-                auto vid = v.vid(mesh);
-                matV.row(vid) = mesh.m_vertex_attribute[vid].m_posf;
-            }
-            Eigen::MatrixXi matF(outface.size(), 3);
-            for (auto i = 0; i < outface.size(); i++) {
-                matF.row(i) << outface[i][0], outface[i][1], outface[i][2];
-            }
-            std::cout << outface.size() << std::endl;
-            igl::write_triangle_mesh("track_bbox.obj", matV, matF);
-        }
-
-        //        mesh.output_mesh("improved.msh");
-    };
 
     mesh.triangle_insertion(input_surface);
-    //    mesh.check_attributes();
+    mesh.check_attributes();
     //    pausee();
 
     mesh.mesh_improvement(20);
 
-    output_faces();
+    mesh.output_faces("surface.obj", [](auto& attr) { return attr.m_is_surface_fs == true; });
+    mesh.output_faces("bbox.obj", [](auto& attr) { return attr.m_is_bbox_fs >= 0; });
     mesh.output_mesh("final.msh");
 
     // todo: refine adaptively the mesh

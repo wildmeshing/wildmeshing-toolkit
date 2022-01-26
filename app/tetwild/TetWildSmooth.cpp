@@ -14,6 +14,7 @@
 #include <optional>
 bool tetwild::TetWild::smooth_before(const Tuple& t)
 {
+    if (!m_vertex_attribute[t.vid(*this)].on_bbox_faces.empty()) return false;
     if (m_vertex_attribute[t.vid(*this)].m_is_rounded) return true;
     // try to round.
     return round(t); // Note: no need to roll back.
@@ -100,18 +101,34 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
         auto project = try_project(m_vertex_attribute[vid].m_posf, old_asssembles);
         if (project) {
             m_vertex_attribute[vid].m_posf = project.value();
+
+            auto max_after_quality = 0.;
+            for (auto& loc : locs) {
+                auto t_id = loc.tid(*this);
+                m_tet_attribute[t_id].m_quality = get_quality(loc);
+                max_after_quality = std::max(max_after_quality, m_tet_attribute[t_id].m_quality);
+            }
+            if (max_after_quality > max_quality) return false;
+        }
+        for (auto& t : locs) {
+            for (auto j = 0; j < 4; j++) {
+                auto f_t = tuple_from_face(t.tid(*this), j);
+                auto fid = f_t.fid(*this);
+                if (m_face_attribute[fid].m_is_surface_fs) {
+                    auto vs = get_face_vertices(f_t);
+                    if (m_envelope.is_outside(
+                            {{m_vertex_attribute[vs[0].vid(*this)].m_posf,
+                              m_vertex_attribute[vs[1].vid(*this)].m_posf,
+                              m_vertex_attribute[vs[2].vid(*this)].m_posf}}))
+                        return false;
+                }
+            }
         }
     }
 
     m_vertex_attribute[vid].m_pos = tetwild::to_rational(m_vertex_attribute[vid].m_posf);
 
-    auto max_after_quality = 0.;
-    for (auto& loc : locs) {
-        auto t_id = loc.tid(*this);
-        m_tet_attribute[t_id].m_quality = get_quality(loc);
-        max_after_quality = std::max(max_after_quality, m_tet_attribute[t_id].m_quality);
-    }
-    if (max_after_quality > max_quality) return false;
+
     return true;
 }
 
