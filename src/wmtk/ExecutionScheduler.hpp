@@ -5,6 +5,7 @@
 #include "wmtk/utils/Logger.hpp"
 
 // clang-format off
+#include <limits>
 #include <wmtk/utils/DisableWarnings.hpp>
 #include <tbb/concurrent_priority_queue.h>
 #include <tbb/concurrent_queue.h>
@@ -65,7 +66,7 @@ struct ExecutePass
     std::function<bool(const AppMesh&)> stopping_criterion = [](const AppMesh&) {
         return false; // non-stop, process everything
     };
-    size_t stopping_criterion_checking_frequency = 100;
+    size_t stopping_criterion_checking_frequency = std::numeric_limits<size_t>::max();
 
     // Should Process drops some Tuple from being processed.
     // For example, if the energy is out-dated.
@@ -194,6 +195,8 @@ public:
     bool operator()(AppMesh& m, const std::vector<std::pair<Op, Tuple>>& operation_tuples)
     {
         auto cnt_update = std::atomic<int>(0);
+        auto cnt_success = std::atomic<int>(0);
+        auto cnt_fail = std::atomic<int>(0);
         auto stop = std::atomic<bool>(false);
         using Elem = std::tuple<double, Op, Tuple, size_t>;
         auto queues = std::vector<tbb::concurrent_priority_queue<Elem>>(num_threads);
@@ -234,7 +237,12 @@ public:
                     if (tup.is_valid(m)) {
                         auto newtup = edit_operation_maps[op](m, tup);
                         std::vector<std::pair<Op, Tuple>> renewed_tuples;
-                        if (newtup) renewed_tuples = renew_neighbor_tuples(m, op, newtup.value());
+                        if (newtup) {
+                            renewed_tuples = renew_neighbor_tuples(m, op, newtup.value());
+                            cnt_success++;
+                        } else {
+                            cnt_fail++;
+                        }
                         for (auto& [o, e] : renewed_tuples) {
                             ZoneScoped;
                             renewed_elements.emplace_back(priority(m, o, e), o, e, 0);
@@ -283,7 +291,7 @@ public:
             run_single_queue(final_queue);
         }
 
-        logger().info("cnt_update {}", cnt_update);
+        logger().info("cnt_success {} cnt_fail {}", cnt_success, cnt_fail);
         return true;
     }
 };
