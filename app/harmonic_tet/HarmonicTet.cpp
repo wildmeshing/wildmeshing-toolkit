@@ -369,7 +369,9 @@ void HarmonicTet::swap_all()
 {
     ZoneScoped;
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
+    collect_all_ops.reserve(tet_capacity()*4);
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_swap", loc);
+    for (auto& loc : get_faces()) collect_all_ops.emplace_back("face_swap", loc);
 
     auto executor = wmtk::ExecutePass<HarmonicTet, wmtk::ExecutionPolicy::kSeq>();
     executor.renew_neighbor_tuples = renewal_all;
@@ -428,6 +430,7 @@ void HarmonicTet::swap_all_edges(bool parallel)
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) {
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };
+        executor.priority = compute_operation_gain;
         setup_and_execute(executor);
     } else {
         auto executor = wmtk::ExecutePass<HarmonicTet, wmtk::ExecutionPolicy::kSeq>();
