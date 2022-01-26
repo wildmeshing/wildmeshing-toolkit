@@ -100,18 +100,20 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
         auto project = try_project(m_vertex_attribute[vid].m_posf, old_asssembles);
         if (project) {
             m_vertex_attribute[vid].m_posf = project.value();
+
+            auto max_after_quality = 0.;
+            for (auto& loc : locs) {
+                auto t_id = loc.tid(*this);
+                m_tet_attribute[t_id].m_quality = get_quality(loc);
+                max_after_quality = std::max(max_after_quality, m_tet_attribute[t_id].m_quality);
+            }
+            if (max_after_quality > max_quality) return false;
         }
     }
 
     m_vertex_attribute[vid].m_pos = tetwild::to_rational(m_vertex_attribute[vid].m_posf);
 
-    auto max_after_quality = 0.;
-    for (auto& loc : locs) {
-        auto t_id = loc.tid(*this);
-        m_tet_attribute[t_id].m_quality = get_quality(loc);
-        max_after_quality = std::max(max_after_quality, m_tet_attribute[t_id].m_quality);
-    }
-    if (max_after_quality > max_quality) return false;
+
     return true;
 }
 
