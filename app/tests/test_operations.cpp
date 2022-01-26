@@ -80,7 +80,6 @@ TEST_CASE("edge_collapsing", "[tetwild_operation]")
     auto n_verts_after = tetwild.get_vertices().size();
     REQUIRE(n_tet_after == 4141);
     REQUIRE(tetwild.tet_capacity() == n_tet_after);
-    REQUIRE(tetwild.tet_attrs.m_attributes.size() == n_tet_after);
     REQUIRE(tetwild.check_mesh_connectivity_validity());
     REQUIRE([&tetwild]() -> bool {
         for (auto& t : tetwild.get_tets()) {
