@@ -4,6 +4,7 @@
 #include <tbb/spin_mutex.h>
 #include <wmtk/TriMesh.h>
 
+
 namespace wmtk {
 class ConcurrentTriMesh : public TriMesh
 {
@@ -11,18 +12,39 @@ public:
     class VertexMutex
     {
         tbb::spin_mutex mutex;
+        int owner = INT_MAX;
 
     public:
         bool trylock() { return mutex.try_lock(); }
 
-        void unlock() { mutex.unlock(); }
+        void unlock()
+        {
+            mutex.unlock();
+            reset_owner();
+        }
+
+        int get_owner() { return owner; }
+
+        void set_owner(int n) { owner = n; }
+
+        void reset_owner() { owner = INT_MAX; }
     };
 
 private:
     tbb::concurrent_vector<VertexMutex> m_vertex_mutex;
 
-    bool try_set_vertex_mutex(const Tuple& v) { return m_vertex_mutex[v.vid()].trylock(); }
-    bool try_set_vertex_mutex(size_t vid) { return m_vertex_mutex[vid].trylock(); }
+    bool try_set_vertex_mutex(const Tuple& v, int threadid)
+    {
+        bool got = m_vertex_mutex[v.vid()].trylock();
+        if (got) m_vertex_mutex[v.vid()].set_owner(threadid);
+        return got;
+    }
+    bool try_set_vertex_mutex(size_t vid, int threadid)
+    {
+        bool got = m_vertex_mutex[vid].trylock();
+        if (got) m_vertex_mutex[vid].set_owner(threadid);
+        return got;
+    }
 
     void unlock_vertex_mutex(const Tuple& v) { m_vertex_mutex[v.vid()].unlock(); }
     void unlock_vertex_mutex(size_t vid) { m_vertex_mutex[vid].unlock(); }
@@ -31,12 +53,14 @@ protected:
     void resize_mutex(size_t v) override { m_vertex_mutex.grow_to_at_least(v); }
 
 public:
+    tbb::enumerable_thread_specific<std::vector<size_t>> mutex_release_stack;
+
     ConcurrentTriMesh() = default;
     virtual ~ConcurrentTriMesh() = default;
     // TODO remove later
     void create_mesh(size_t n_vertices, const std::vector<std::array<size_t, 3>>& tris);
-    int release_vertex_mutex_in_stack(std::vector<size_t>& mutex_release_stack);
-    bool try_set_vertex_mutex_two_ring(const Tuple& v, std::vector<size_t>& mutex_release_stack);
-    bool try_set_edge_mutex_two_ring(const Tuple& e, std::vector<size_t>& mutex_release_stack);
+    int release_vertex_mutex_in_stack();
+    bool try_set_vertex_mutex_two_ring(const Tuple& v, int threadid);
+    bool try_set_edge_mutex_two_ring(const Tuple& e, int threadid);
 };
 } // namespace wmtk

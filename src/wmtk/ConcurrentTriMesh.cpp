@@ -12,29 +12,30 @@ void ConcurrentTriMesh::create_mesh(
     m_vertex_mutex.grow_to_at_least(n_vertices);
 }
 
-int ConcurrentTriMesh::release_vertex_mutex_in_stack(std::vector<size_t>& mutex_release_stack)
+int ConcurrentTriMesh::release_vertex_mutex_in_stack()
 {
     int num_released = 0;
-    for (int i = mutex_release_stack.size() - 1; i >= 0; i--) {
-        unlock_vertex_mutex(mutex_release_stack[i]);
-        mutex_release_stack.pop_back();
+    for (int i = mutex_release_stack.local().size() - 1; i >= 0; i--) {
+        unlock_vertex_mutex(mutex_release_stack.local()[i]);
+        // mutex_release_stack.pop_back();
         num_released++;
     }
+    mutex_release_stack.local().clear();
     return num_released;
 }
 
-bool ConcurrentTriMesh::try_set_vertex_mutex_two_ring(
-    const Tuple& v,
-    std::vector<size_t>& mutex_release_stack)
+bool ConcurrentTriMesh::try_set_vertex_mutex_two_ring(const Tuple& v, int threadid)
 {
     for (auto v_one_ring : get_one_ring_edges_for_vertex(v)) {
-        if (vector_contains(mutex_release_stack, v_one_ring.vid())) continue;
-        if (try_set_vertex_mutex(v_one_ring)) {
-            mutex_release_stack.push_back(v_one_ring.vid());
+        // if (vector_contains(mutex_release_stack, v_one_ring.vid())) continue;
+        if (m_vertex_mutex[v_one_ring.vid()].get_owner() == threadid) continue;
+        if (try_set_vertex_mutex(v_one_ring, threadid)) {
+            mutex_release_stack.local().push_back(v_one_ring.vid());
             for (auto v_two_ring : get_one_ring_edges_for_vertex(v_one_ring)) {
-                if (vector_contains(mutex_release_stack, v_two_ring.vid())) continue;
-                if (try_set_vertex_mutex(v_two_ring)) {
-                    mutex_release_stack.push_back(v_two_ring.vid());
+                // if (vector_contains(mutex_release_stack, v_two_ring.vid())) continue;
+                if (m_vertex_mutex[v_two_ring.vid()].get_owner() == threadid) continue;
+                if (try_set_vertex_mutex(v_two_ring, threadid)) {
+                    mutex_release_stack.local().push_back(v_two_ring.vid());
                 } else {
                     return false;
                 }
@@ -46,32 +47,33 @@ bool ConcurrentTriMesh::try_set_vertex_mutex_two_ring(
     return true;
 }
 
-bool ConcurrentTriMesh::try_set_edge_mutex_two_ring(
-    const Tuple& e,
-    std::vector<size_t>& mutex_release_stack)
+bool ConcurrentTriMesh::try_set_edge_mutex_two_ring(const Tuple& e, int threadid)
 {
     Tuple v1 = e;
     bool release_flag = false;
 
     // try v1
-    if (try_set_vertex_mutex(v1)) {
-        mutex_release_stack.push_back(v1.vid());
-    } else {
-        release_flag = true;
+    if (m_vertex_mutex[v1.vid()].get_owner() != threadid) {
+        if (try_set_vertex_mutex(v1, threadid)) {
+            mutex_release_stack.local().push_back(v1.vid());
+        } else {
+            release_flag = true;
+        }
     }
+
     if (!v1.is_valid(*this)) {
         release_flag = true;
     }
     if (release_flag) {
-        release_vertex_mutex_in_stack(mutex_release_stack);
+        release_vertex_mutex_in_stack();
         return false;
     }
 
     // try v2
     Tuple v2 = switch_vertex(e);
-    if (!vector_contains(mutex_release_stack, v2.vid())) {
-        if (try_set_vertex_mutex(v2)) {
-            mutex_release_stack.push_back(v2.vid());
+    if (m_vertex_mutex[v2.vid()].get_owner() != threadid) {
+        if (try_set_vertex_mutex(v2, threadid)) {
+            mutex_release_stack.local().push_back(v2.vid());
         } else {
             release_flag = true;
         }
@@ -80,23 +82,23 @@ bool ConcurrentTriMesh::try_set_edge_mutex_two_ring(
         release_flag = true;
     }
     if (release_flag) {
-        release_vertex_mutex_in_stack(mutex_release_stack);
+        release_vertex_mutex_in_stack();
         return false;
     }
 
     // try v1 two ring
-    release_flag = !try_set_vertex_mutex_two_ring(v1, mutex_release_stack);
+    release_flag = !try_set_vertex_mutex_two_ring(v1, threadid);
 
     if (release_flag) {
-        release_vertex_mutex_in_stack(mutex_release_stack);
+        release_vertex_mutex_in_stack();
         return false;
     }
 
     // try v2 two ring
-    release_flag = !try_set_vertex_mutex_two_ring(v2, mutex_release_stack);
+    release_flag = !try_set_vertex_mutex_two_ring(v2, threadid);
 
     if (release_flag) {
-        release_vertex_mutex_in_stack(mutex_release_stack);
+        release_vertex_mutex_in_stack();
         return false;
     }
 

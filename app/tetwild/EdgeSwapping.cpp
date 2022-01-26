@@ -2,10 +2,10 @@
 
 #include <wmtk/TetMesh.h>
 #include <wmtk/ExecutionScheduler.hpp>
+#include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include "spdlog/spdlog.h"
 #include "wmtk/utils/TupleUtils.hpp"
-#include <wmtk/utils/ExecutorUtils.hpp>
 
 #include <cassert>
 
@@ -69,18 +69,14 @@ void tetwild::TetWild::swap_all_edges()
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_swap", loc);
     auto setup_and_execute = [&](auto& executor) {
         executor.renew_neighbor_tuples = wmtk::renewal_edges;
-        executor.priority = [&](auto& m, auto op, auto& t) {
-            return m.get_length2(t);
-        };
+        executor.priority = [&](auto& m, auto op, auto& t) { return m.get_length2(t); };
         executor.num_threads = NUM_THREADS;
         executor(*this, collect_all_ops);
     };
     if (NUM_THREADS > 1) {
         auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kPartition>();
-        executor.lock_vertices = [](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
-            auto stack = std::vector<size_t>();
-            if (!m.try_set_edge_mutex_two_ring(e, stack)) return {};
-            return stack;
+        executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
+            return m.try_set_edge_mutex_two_ring(e, task_id);
         };
         setup_and_execute(executor);
     } else {
@@ -95,14 +91,10 @@ void tetwild::TetWild::swap_all_faces()
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("face_swap", loc);
     auto setup_and_execute = [&](auto& executor) {
         executor.renew_neighbor_tuples = wmtk::renewal_faces;
-        executor.lock_vertices = [](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
-            auto stack = std::vector<size_t>();
-            if (!m.try_set_face_mutex_two_ring(e, stack)) return {};
-            return stack;
+        executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
+            return m.try_set_face_mutex_two_ring(e, task_id);
         };
-        executor.priority = [](auto& m, auto op, auto& t) {
-            return m.get_length2(t);
-        };
+        executor.priority = [](auto& m, auto op, auto& t) { return m.get_length2(t); };
         executor.num_threads = NUM_THREADS;
     };
     if (NUM_THREADS > 1) {
@@ -145,12 +137,12 @@ bool tetwild::TetWild::swap_edge_after(const Tuple& t)
     assert(oppo_tet.has_value() && "Should not swap boundary.");
     auto max_energy = std::max(get_quality(t), get_quality(*oppo_tet));
     std::vector<Tuple> locs{{t, *oppo_tet}};
-    
+
     if (max_energy > swap_cache.local().max_energy) return false;
 
     auto twotets = std::vector<Tuple>{{t, *oppo_tet}};
     tracker_assign_after(swap_cache.local().changed_faces, twotets, *this, m_face_attribute);
-    cnt_swap ++;
+    cnt_swap++;
     return true;
 }
 
@@ -164,11 +156,7 @@ bool tetwild::TetWild::swap_face_before(const Tuple& t)
 
     auto twotets = std::vector<Tuple>{{t, *oppo_tet}};
 
-    if (!face_attribute_tracker(
-            swap_cache.local().changed_faces,
-            twotets,
-            *this,
-            m_face_attribute))
+    if (!face_attribute_tracker(swap_cache.local().changed_faces, twotets, *this, m_face_attribute))
         return false;
     return true;
 }
@@ -178,7 +166,7 @@ bool tetwild::TetWild::swap_face_after(const Tuple& t)
     if (!TetMesh::swap_face_after(t)) return false;
 
     auto incident_tets = get_incident_tets_for_edge(t);
-    
+
     auto max_energy = -1.0;
     for (auto& l : incident_tets) {
         max_energy = std::max(get_quality(l), max_energy);
@@ -187,12 +175,8 @@ bool tetwild::TetWild::swap_face_after(const Tuple& t)
 
     if (max_energy > swap_cache.local().max_energy) return false;
 
-    tracker_assign_after(
-        swap_cache.local().changed_faces,
-        incident_tets,
-        *this,
-        m_face_attribute);
+    tracker_assign_after(swap_cache.local().changed_faces, incident_tets, *this, m_face_attribute);
 
-    cnt_swap ++;
+    cnt_swap++;
     return true;
 }

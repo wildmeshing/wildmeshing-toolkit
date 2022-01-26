@@ -173,7 +173,7 @@ TEST_CASE("gaussian-harmonic", "[.slow]")
     double time;
 
     // for (int i = 1; i <= 1; i *= 2) {
-    for (int i = 32; i <= 32; i *= 2) {
+    for (int i = 1; i <= 4; i *= 2) {
         wmtk::logger().info("Number of Threads: {}", i);
         auto har_tet = harmonic_tet::HarmonicTet(vec_attrs, tets, i);
         auto [E0, cnt0] = stats(har_tet);

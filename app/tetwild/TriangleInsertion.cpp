@@ -269,12 +269,12 @@ void tetwild::TetWild::triangle_insertion_stuff(
         Vector3d tri_normal_d = (tri_d[1] - tri_d[0]).cross(tri_d[2] - tri_d[0]);
         std::array<Vector2, 3> tri2;
         int squeeze_to_2d_dir = wmtk::project_triangle_to_2d(tri, tri2);
-//        int squeeze_to_2d_dir = wmtk::project_to_2d_by_normal(
-//            tri_normal_d);
-//        std::array<Vector2, 3> tri2 = {
-//            {wmtk::project_point_to_2d(tri[0], squeeze_to_2d_dir),
-//             wmtk::project_point_to_2d(tri[1], squeeze_to_2d_dir),
-//             wmtk::project_point_to_2d(tri[2], squeeze_to_2d_dir)}};
+        //        int squeeze_to_2d_dir = wmtk::project_to_2d_by_normal(
+        //            tri_normal_d);
+        //        std::array<Vector2, 3> tri2 = {
+        //            {wmtk::project_point_to_2d(tri[0], squeeze_to_2d_dir),
+        //             wmtk::project_point_to_2d(tri[1], squeeze_to_2d_dir),
+        //             wmtk::project_point_to_2d(tri[2], squeeze_to_2d_dir)}};
 
         std::vector<Tuple> intersected_tets;
         std::map<std::array<size_t, 2>, std::tuple<int, Vector3, size_t, int>> map_edge2point;
@@ -294,7 +294,7 @@ void tetwild::TetWild::triangle_insertion_stuff(
         auto v2 = faces[face_id][1];
         auto v3 = faces[face_id][2];
 
-        if (!try_set_face_mutex_two_ring(v1, v2, v3, mutex_release_stack)) {
+        if (!try_set_face_mutex_two_ring(v1, v2, v3, task_id)) {
             // retry
             insertion_queues[task_id].push(face_id);
             continue;
@@ -349,7 +349,7 @@ void tetwild::TetWild::triangle_insertion_stuff(
 
 
             for (auto v_id : vs) {
-                if (!try_set_vertex_mutex_one_ring(v_id, mutex_release_stack)) {
+                if (!try_set_vertex_mutex_one_ring(v_id, task_id)) {
                     retry_flag = true;
                     break;
                 }
@@ -654,11 +654,11 @@ void tetwild::TetWild::triangle_insertion_stuff(
         // std::vector<size_t> mutex_release_stack;
         bool continue_flag = false;
         for (auto e_int : intersected_edges) {
-            if (!try_set_vertex_mutex_one_ring(e_int, mutex_release_stack)) {
+            if (!try_set_vertex_mutex_one_ring(e_int, task_id)) {
                 continue_flag = true;
                 break;
             }
-            if (!try_set_vertex_mutex_one_ring(e_int.switch_vertex(*this), mutex_release_stack)) {
+            if (!try_set_vertex_mutex_one_ring(e_int.switch_vertex(*this), task_id)) {
                 continue_flag = true;
                 break;
             }
@@ -668,7 +668,7 @@ void tetwild::TetWild::triangle_insertion_stuff(
 
         for (auto t_int : intersected_tets) {
             for (auto v_int : oriented_tet_vertices(t_int)) {
-                if (!try_set_vertex_mutex_one_ring(v_int, mutex_release_stack)) {
+                if (!try_set_vertex_mutex_one_ring(v_int, task_id)) {
                     continue_flag = true;
                     break;
                 }
@@ -715,7 +715,7 @@ void tetwild::TetWild::triangle_insertion_stuff(
         //            "tet_face_tags.size {}",
         //            triangle_insertion_global_cache.tet_face_tags.size());
 
-        int num_released = release_vertex_mutex_in_stack(mutex_release_stack);
+        int num_released = release_vertex_mutex_in_stack();
     }
 }
 

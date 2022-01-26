@@ -83,10 +83,8 @@ bool Edge2d::EdgeOperations2d::collapse_shortest(int target_operation_count)
         executor.num_threads = NUM_THREADS;
         executor.renew_neighbor_tuples = renew;
         executor.priority = measure_len2;
-        executor.lock_vertices = [](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
-            auto stack = std::vector<size_t>();
-            if (!m.try_set_edge_mutex_two_ring(e, stack)) return {};
-            return stack;
+        executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
+            return m.try_set_edge_mutex_two_ring(e, task_id);
         };
         executor.stopping_criterion_checking_frequency =
             target_operation_count > 0 ? target_operation_count : std::numeric_limits<int>::max();
