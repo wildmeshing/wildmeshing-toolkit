@@ -1,7 +1,3 @@
-//
-// Created by Yixin Hu on 1/3/22.
-//
-
 #include <tbb/concurrent_queue.h>
 #include <tbb/concurrent_vector.h>
 #include <tbb/task_arena.h>
@@ -219,8 +215,8 @@ void tetwild::TetWild::triangle_insertion_after(
             auto& old_f = triangle_insertion_local_cache.local().old_face_vids[i];
             if (tet_face_tags.count(old_f) && !tet_face_tags[old_f].empty()) {
                 tags = tet_face_tags[old_f];
-//                tet_face_tags.unsafe_erase(triangle_insertion_local_cache.local().old_face_vids[i]);
-//                tet_face_tags.unsafe_erase(old_f);
+                //                tet_face_tags.unsafe_erase(triangle_insertion_local_cache.local().old_face_vids[i]);
+                //                tet_face_tags.unsafe_erase(old_f);
                 tet_face_tags[old_f] = {};
             }
         } else
@@ -272,12 +268,12 @@ void tetwild::TetWild::triangle_insertion_stuff(
         Vector3d tri_normal_d = (tri_d[1] - tri_d[0]).cross(tri_d[2] - tri_d[0]);
         std::array<Vector2, 3> tri2;
         int squeeze_to_2d_dir = wmtk::project_triangle_to_2d(tri, tri2);
-//        int squeeze_to_2d_dir = wmtk::project_to_2d_by_normal(
-//            tri_normal_d);
-//        std::array<Vector2, 3> tri2 = {
-//            {wmtk::project_point_to_2d(tri[0], squeeze_to_2d_dir),
-//             wmtk::project_point_to_2d(tri[1], squeeze_to_2d_dir),
-//             wmtk::project_point_to_2d(tri[2], squeeze_to_2d_dir)}};
+        //        int squeeze_to_2d_dir = wmtk::project_to_2d_by_normal(
+        //            tri_normal_d);
+        //        std::array<Vector2, 3> tri2 = {
+        //            {wmtk::project_point_to_2d(tri[0], squeeze_to_2d_dir),
+        //             wmtk::project_point_to_2d(tri[1], squeeze_to_2d_dir),
+        //             wmtk::project_point_to_2d(tri[2], squeeze_to_2d_dir)}};
 
         std::vector<Tuple> intersected_tets;
         std::map<std::array<size_t, 2>, std::tuple<int, Vector3, size_t, int>> map_edge2point;
@@ -681,7 +677,10 @@ void tetwild::TetWild::triangle_insertion_stuff(
             }
         }
 
-        if (continue_flag) continue;
+        if (continue_flag) {
+            insertion_queues[task_id].push(face_id);
+            continue;
+        }
 
         std::vector<size_t> new_vids;
         std::vector<size_t> new_tids;
@@ -1164,8 +1163,7 @@ void tetwild::TetWild::setup_attributes()
     for (auto& info : triangle_insertion_global_cache.tet_face_tags) {
         auto& vids = info.first;
         auto& fids = info.second;
-        if(fids.empty())
-            continue;
+        if (fids.empty()) continue;
 
         Vector3 c = m_vertex_attribute[vids[0]].m_pos + m_vertex_attribute[vids[1]].m_pos +
                     m_vertex_attribute[vids[2]].m_pos;
@@ -1264,7 +1262,7 @@ void tetwild::TetWild::setup_attributes()
 
 
     //    check_mesh_connectivity_validity();
-//    output_mesh("triangle_insertion.msh");
+    //    output_mesh("triangle_insertion.msh");
 
     // todo: output faces to check surface and bbox
 }
