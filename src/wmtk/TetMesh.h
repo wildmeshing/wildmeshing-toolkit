@@ -271,8 +271,22 @@ public:
     TetMesh();
     virtual ~TetMesh() = default;
 
-    size_t vert_capacity() const { return m_vertex_connectivity.size(); };
-    size_t tet_capacity() const { return m_tet_connectivity.size(); };
+    size_t vert_capacity() const { return m_vertex_connectivity.size(); }
+    size_t tet_capacity() const { return m_tet_connectivity.size(); }
+    size_t vertex_size() const
+    {
+        return std::count_if(
+            m_vertex_connectivity.begin(),
+            m_vertex_connectivity.end(),
+            [](const VertexConnectivity& v) { return v.m_is_removed == false; });
+    }
+    size_t tet_size() const
+    {
+        return std::count_if(
+            m_tet_connectivity.begin(),
+            m_tet_connectivity.end(),
+            [](const TetrahedronConnectivity& t) { return t.m_is_removed == false; });
+    }
     /**
      * Initialize TetMesh data structure
      *
@@ -299,8 +313,10 @@ public:
 
     void single_triangle_insertion(
         const std::vector<Tuple>& intersected_tets,
-        const std::vector<Tuple>& intersected_edges);
-
+        const std::vector<Tuple>& intersected_edges,
+        std::vector<size_t>& new_vids,
+        std::vector<size_t>& new_tids,
+        std::vector<size_t>& new_center_ids);
 
     /**
      * @brief cleans up the deleted vertices or tetrahedra, fixes the corresponding indices, and
@@ -324,8 +340,9 @@ public:
     using vector = tbb::concurrent_vector<T>;
 
 public:
-    AbstractAttributeContainer* p_vertex_attrs, *p_edge_attrs, *p_face_attrs, *p_tet_attrs;
+    AbstractAttributeContainer *p_vertex_attrs, *p_edge_attrs, *p_face_attrs, *p_tet_attrs;
     AbstractAttributeContainer vertex_attrs, edge_attrs, face_attrs, tet_attrs;
+
 
 private:
     // Stores the connectivity of the mesh
@@ -341,18 +358,23 @@ private:
         const std::vector<size_t> t_ids,
         const std::vector<bool>& mark_surface,
         std::map<std::array<size_t, 2>, size_t>& map_edge2vid,
-        std::map<std::array<size_t, 3>, std::vector<std::array<size_t, 5>>>& new_face_vids);
+        std::map<std::array<size_t, 3>, std::vector<std::array<size_t, 5>>>& new_face_vids,
+        std::vector<size_t>& new_vids,
+        std::vector<size_t>& new_tids,
+        std::vector<size_t>& new_center_ids);
     void subdivide_a_tet(
         size_t t_id,
         const std::array<int, 6>& new_v_ids,
         bool mark_surface,
         bool& is_add_centroid,
-        std::map<std::array<size_t, 3>, std::vector<std::array<size_t, 5>>>& new_face_vids);
+        std::map<std::array<size_t, 3>, std::vector<std::array<size_t, 5>>>& new_face_vids,
+        std::vector<size_t>& new_vids,
+        std::vector<size_t>& new_tids,
+        std::vector<size_t>& new_center_ids);
 
 protected:
+    virtual void add_tet_centroid(const Tuple& t, size_t vid) {}
     virtual bool invariants(const std::vector<Tuple>&) { return true; }
-    virtual void add_tet_centroid(const Tuple& t) {}
-
     virtual void triangle_insertion_before(const std::vector<Tuple>& faces) {}
     virtual void triangle_insertion_after(
         const std::vector<Tuple>& faces,
@@ -507,6 +529,20 @@ public:
     void check_tuple_validity(const Tuple& t) const { t.check_validity(*this); }
     bool check_mesh_connectivity_validity() const;
 
+    void remove_tets_by_ids(const std::vector<size_t>& tids)
+    {
+        for (size_t tid : tids) {
+            m_tet_connectivity[tid].m_is_removed = true;
+            for (int j = 0; j < 4; j++)
+                vector_erase(m_vertex_connectivity[m_tet_connectivity[tid][j]].m_conn_tets, tid);
+        }
+        for (auto& v : m_vertex_connectivity) {
+            if (v.m_is_removed) continue;
+            if (v.m_conn_tets.empty()) v.m_is_removed = true;
+        }
+    }
+    bool m_collapse_check_link_condition = true;
+
 private:
     std::map<size_t, wmtk::TetMesh::VertexConnectivity> operation_update_connectivity_impl(
         std::vector<size_t>& affected_tid,
@@ -516,6 +552,10 @@ private:
         const std::vector<size_t>& affected,
         const std::vector<size_t>& new_tet_id,
         const std::vector<wmtk::TetMesh::TetrahedronConnectivity>& old_tets);
+    std::map<size_t, wmtk::TetMesh::VertexConnectivity> operation_update_connectivity_impl(
+        std::vector<size_t>& remove_id,
+        std::vector<std::array<size_t, 4>>& new_tet_conn,
+        std::vector<size_t>& allocate_id);
     void start_protect_attributes()
     {
         p_vertex_attrs->begin_protect();

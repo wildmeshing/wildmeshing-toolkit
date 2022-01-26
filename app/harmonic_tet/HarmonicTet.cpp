@@ -191,7 +191,7 @@ void harmonic_tet::HarmonicTet::smooth_all_vertices(bool interior_only)
         if (interior_only && !vertex_adjacent_boundary_faces(loc).empty()) continue;
         collect_all_ops.emplace_back("vertex_smooth", loc);
     }
-    wmtk::logger().info("Num verts {}", collect_all_ops.size());
+    wmtk::logger().debug("Num verts {}", collect_all_ops.size());
     executor(*this, collect_all_ops);
 }
 

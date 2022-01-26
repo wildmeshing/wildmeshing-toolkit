@@ -258,20 +258,14 @@ void TetMesh::Tuple::check_validity(const TetMesh& m) const
     return;
 #endif
     // check indices
-    assert(m_global_tid >= 0 && m_global_tid < m.m_tet_connectivity.size());
-    assert(m_global_vid >= 0 && m_global_vid < m.m_vertex_connectivity.size());
-    assert(m_local_eid >= 0 && m_local_eid < 6);
-    assert(m_local_fid >= 0 && m_local_fid < 4);
+    assert(m_global_tid < m.m_tet_connectivity.size());
+    assert(m_global_vid < m.m_vertex_connectivity.size());
+    assert(m_local_eid < 6);
+    assert(m_local_fid < 4);
 
     // check existence
     assert(is_valid(m));
 
-    // check connectivity
-    auto it = std::find(
-        m.m_vertex_connectivity[m_global_vid].m_conn_tets.begin(),
-        m.m_vertex_connectivity[m_global_vid].m_conn_tets.end(),
-        m_global_tid);
-    assert(it != m.m_vertex_connectivity[m_global_vid].m_conn_tets.end());
     //
     std::array<size_t, 3> f_vids = {
         {m.m_tet_connectivity[m_global_tid][m_local_faces[m_local_fid][0]],

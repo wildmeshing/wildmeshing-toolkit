@@ -110,7 +110,7 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
     auto loc1 = switch_vertex(loc0);
     auto v2_id = loc1.vid(*this);
     logger().trace("{} {}", v1_id, v2_id);
-    if (!link_condition(v1_id, v2_id)) {
+    if (m_collapse_check_link_condition && !link_condition(v1_id, v2_id)) {
         wmtk::logger().trace("violate link condition");
         return false;
     }
@@ -122,17 +122,28 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
         m_vertex_connectivity[v2_id].m_conn_tets);
     auto new_tet_conn = std::vector<std::array<size_t, 4>>();
     std::vector<TetrahedronConnectivity> old_tets;
+    std::vector<size_t> preserved_tids;
     for (auto t_id : n1_t_ids) {
         old_tets.push_back(m_tet_connectivity[t_id]);
-        auto l1 = m_tet_connectivity[t_id].find(v1_id);
-        auto l2 = m_tet_connectivity[t_id].find(v2_id);
+        int l1 = -1, l2 = -1;
+        for (int j = 0; j < 4; j++) {
+            if (m_tet_connectivity[t_id][j] == v1_id)
+                l1 = j;
+            else if (m_tet_connectivity[t_id][j] == v2_id) {
+                l2 = j;
+                break;
+            }
+        }
         if (l2 != -1) continue;
         assert(l1 != -1);
         new_tet_conn.push_back(m_tet_connectivity[t_id].m_indices);
         new_tet_conn.back()[l1] = v2_id;
+        preserved_tids.push_back(t_id);
     }
-    auto new_tet_id = n1_t_ids;
-    auto rollback_vert_conn = operation_update_connectivity_impl(new_tet_id, new_tet_conn);
+    auto rollback_vert_conn =
+        operation_update_connectivity_impl(n1_t_ids, new_tet_conn, preserved_tids);
+
+    auto& new_tet_id = preserved_tids;
     assert(rollback_vert_conn.find(v1_id) != rollback_vert_conn.end());
     //
     m_vertex_connectivity[v1_id].m_is_removed = true;
@@ -152,7 +163,7 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
     /// return new_edges
     for (size_t t_id : new_tet_id) {
         for (int j = 0; j < 6; j++) {
-                new_edges.push_back(tuple_from_edge(t_id, j));
+            new_edges.push_back(tuple_from_edge(t_id, j));
         }
     }
     unique_edge_tuples(*this, new_edges);

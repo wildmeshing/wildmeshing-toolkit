@@ -17,7 +17,14 @@ void tetwild::TetWild::split_all_edges()
             auto [weight, op, tup] = ele;
             auto length = m.get_length2(tup);
             if (length != weight) return false;
-            if (length < m_params.splitting_l2) return false;
+            //
+            size_t v1_id = tup.vid(*this);
+            size_t v2_id = tup.switch_vertex(*this).vid(*this);
+            if (length < m_params.splitting_l2 *
+                             (m_vertex_attribute[v1_id].m_sizing_scalar +
+                              m_vertex_attribute[v2_id].m_sizing_scalar) /
+                             2)
+                return false;
             return true;
         };
         executor(*this, collect_all_ops);
@@ -38,11 +45,44 @@ void tetwild::TetWild::split_all_edges()
 
 bool tetwild::TetWild::split_before(const Tuple& loc0)
 {
+    split_cache.local().changed_faces.clear();
+
     split_cache.local().v1_id = loc0.vid(*this);
     auto loc1 = loc0.switch_vertex(*this);
     split_cache.local().v2_id = loc1.vid(*this);
+    //
+    size_t v1_id = split_cache.local().v1_id;
+    size_t v2_id = split_cache.local().v2_id;
 
     split_cache.local().is_edge_on_surface = is_edge_on_surface(loc0);
+
+    /// save face track info
+    auto comp = [](const std::pair<FaceAttributes, std::array<size_t, 3>>& v1,
+                   const std::pair<FaceAttributes, std::array<size_t, 3>>& v2) {
+        return v1.second < v2.second;
+    };
+    auto is_equal = [](const std::pair<FaceAttributes, std::array<size_t, 3>>& v1,
+                       const std::pair<FaceAttributes, std::array<size_t, 3>>& v2) {
+        return v1.second == v2.second;
+    };
+
+    auto tets = get_incident_tets_for_edge(loc0);
+    for (auto& t : tets) {
+        auto vs = oriented_tet_vertices(t);
+        for (int j = 0; j < 4; j++) {
+            std::array<size_t, 3> f_vids = {{
+                vs[(j + 1) % 4].vid(*this),
+                vs[(j + 2) % 4].vid(*this),
+                vs[(j + 3) % 4].vid(*this),
+            }};//todo: speedup
+            std::sort(f_vids.begin(), f_vids.end());
+            auto [_, global_fid] = tuple_from_face(f_vids);
+            split_cache.local().changed_faces.push_back(
+                std::make_pair(m_face_attribute[global_fid], f_vids));
+//            split_cache.local().changed_faces.push_back(std::make_pair(global_fid, f_vids));
+        }
+    }
+    wmtk::vector_unique(split_cache.local().changed_faces, comp, is_equal);
 
     return true;
 }
@@ -60,38 +100,65 @@ bool tetwild::TetWild::split_after(const Tuple& loc)
     size_t v2_id = split_cache.local().v2_id;
 
     /// check inversion & rounding
-    vertex_attrs[v_id].m_posf =
-        (vertex_attrs[v1_id].m_posf + vertex_attrs[v2_id].m_posf) / 2;
-    vertex_attrs[v_id].m_is_rounded = true;
+    m_vertex_attribute[v_id].m_posf =
+        (m_vertex_attribute[v1_id].m_posf + m_vertex_attribute[v2_id].m_posf) / 2;
+    m_vertex_attribute[v_id].m_is_rounded = true;
 
     for (auto& loc : locs) {
         if (is_inverted(loc)) {
-            vertex_attrs[v_id].m_is_rounded = false;
+            m_vertex_attribute[v_id].m_is_rounded = false;
             break;
         }
     }
-    if (!vertex_attrs[v_id].m_is_rounded) {
-        vertex_attrs[v_id].m_pos =
-            (vertex_attrs[v1_id].m_pos + vertex_attrs[v2_id].m_pos) / 2;
-        vertex_attrs[v_id].m_posf = to_double(vertex_attrs[v_id].m_pos);
+    if (!m_vertex_attribute[v_id].m_is_rounded) {
+        m_vertex_attribute[v_id].m_pos =
+            (m_vertex_attribute[v1_id].m_pos + m_vertex_attribute[v2_id].m_pos) / 2;
+        m_vertex_attribute[v_id].m_posf = to_double(m_vertex_attribute[v_id].m_pos);
     } else
-        vertex_attrs[v_id].m_pos = to_rational(vertex_attrs[v_id].m_posf);
+        m_vertex_attribute[v_id].m_pos = to_rational(m_vertex_attribute[v_id].m_posf);
 
     /// update quality
     for (auto& loc : locs) {
-        tet_attrs[loc.tid(*this)].m_qualities = get_quality(loc);
+        m_tet_attribute[loc.tid(*this)].m_quality = get_quality(loc);
     }
 
     /// update vertex attribute
     // bbox
-    vertex_attrs[v_id].on_bbox_faces = wmtk::set_intersection(
-        vertex_attrs[v1_id].on_bbox_faces,
-        vertex_attrs[v2_id].on_bbox_faces);
+    m_vertex_attribute[v_id].on_bbox_faces = wmtk::set_intersection(
+        m_vertex_attribute[v1_id].on_bbox_faces,
+        m_vertex_attribute[v2_id].on_bbox_faces);
     //surface
-    vertex_attrs[v_id].m_is_on_surface = split_cache.local().is_edge_on_surface;
+    m_vertex_attribute[v_id].m_is_on_surface = split_cache.local().is_edge_on_surface;
 
     /// update face attribute
-    // todo
+    // add new and erase old
+    for(auto& info: split_cache.local().changed_faces) {
+//        size_t old_fid = info.first;
+        auto& f_attr = info.first;
+        auto& old_vids = info.second;
+        std::vector<int> j_vn;
+        for (int j = 0; j < 3; j++) {
+            if (old_vids[j] != v1_id && old_vids[j] != v2_id) {
+                j_vn.push_back(j);
+            }
+        }
+        if (j_vn.size() == 1) {
+            auto [_1, global_fid1] = tuple_from_face({{v1_id, v_id, old_vids[j_vn[0]]}});
+            m_face_attribute[global_fid1] = f_attr;
+            auto [_2, global_fid2] = tuple_from_face({{v2_id, v_id, old_vids[j_vn[0]]}});
+            m_face_attribute[global_fid2] = f_attr;
+        } else { // j_vn.size() == 2
+            auto [_, global_fid] = tuple_from_face(old_vids);
+            m_face_attribute[global_fid] = f_attr;
+            //
+            auto [_2, global_fid2] =
+                tuple_from_face({{old_vids[j_vn[0]], old_vids[j_vn[1]], v_id}});//todo: avoid dup comp
+            m_face_attribute[global_fid2].reset();
+        }
+    }
+
+    m_vertex_attribute[v_id].partition_id = m_vertex_attribute[v1_id].partition_id;
+    m_vertex_attribute[v_id].m_sizing_scalar = (m_vertex_attribute[v1_id].m_sizing_scalar + m_vertex_attribute[v2_id].m_sizing_scalar)/2;
 
     cnt_split++;
 

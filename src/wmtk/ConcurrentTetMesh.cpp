@@ -55,11 +55,37 @@ bool wmtk::ConcurrentTetMesh::try_set_vertex_mutex_two_ring_vid(
     for (auto v_one_ring : get_one_ring_vids_for_vertex(v.vid(*this))) {
         if (vector_contains(mutex_release_stack, v_one_ring)) continue;
         if (try_set_vertex_mutex(v_one_ring)) {
-            { ZoneScoped; mutex_release_stack.push_back(v_one_ring); }
+            {
+                ZoneScoped;
+                mutex_release_stack.push_back(v_one_ring);
+            }
             for (auto v_two_ring : get_one_ring_vids_for_vertex(v_one_ring)) {
                 if (vector_contains(mutex_release_stack, v_two_ring)) continue;
                 if (try_set_vertex_mutex(v_two_ring)) {
                     ZoneScoped;
+                    mutex_release_stack.push_back(v_two_ring);
+                } else {
+                    return false;
+                }
+            }
+        } else {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool wmtk::ConcurrentTetMesh::try_set_vertex_mutex_two_ring_vid(
+    size_t v,
+    std::vector<size_t>& mutex_release_stack)
+{
+    for (auto v_one_ring : get_one_ring_vids_for_vertex(v)) {
+        if (vector_contains(mutex_release_stack, v_one_ring)) continue;
+        if (try_set_vertex_mutex(v_one_ring)) {
+            mutex_release_stack.push_back(v_one_ring);
+            for (auto v_two_ring : get_one_ring_vids_for_vertex(v_one_ring)) {
+                if (vector_contains(mutex_release_stack, v_two_ring)) continue;
+                if (try_set_vertex_mutex(v_two_ring)) {
                     mutex_release_stack.push_back(v_two_ring);
                 } else {
                     return false;
@@ -209,6 +235,183 @@ bool wmtk::ConcurrentTetMesh::try_set_face_mutex_two_ring(
     if (release_flag) {
         release_vertex_mutex_in_stack(mutex_release_stack);
         return false;
+    }
+    return true;
+}
+
+bool wmtk::ConcurrentTetMesh::try_set_face_mutex_two_ring(
+    const Tuple& v1,
+    const Tuple& v2,
+    const Tuple& v3,
+    std::vector<size_t>& mutex_release_stack)
+{
+    bool release_flag = false;
+
+    // try v1
+    if (try_set_vertex_mutex(v1)) {
+        mutex_release_stack.push_back(v1.vid(*this));
+    } else {
+        release_flag = true;
+    }
+    if (!v1.is_valid(*this)) {
+        release_flag = true;
+    }
+    if (release_flag) {
+        release_vertex_mutex_in_stack(mutex_release_stack);
+        return false;
+    }
+
+    // try v2
+    if (!vector_contains(mutex_release_stack, v2.vid(*this))) {
+        if (try_set_vertex_mutex(v2)) {
+            mutex_release_stack.push_back(v2.vid(*this));
+        } else {
+            release_flag = true;
+        }
+    }
+    if (!v2.is_valid(*this)) {
+        release_flag = true;
+    }
+    if (release_flag) {
+        release_vertex_mutex_in_stack(mutex_release_stack);
+        return false;
+    }
+
+    // try v3
+    if (!vector_contains(mutex_release_stack, v3.vid(*this))) {
+        if (try_set_vertex_mutex(v3)) {
+            mutex_release_stack.push_back(v3.vid(*this));
+        } else {
+            release_flag = true;
+        }
+    }
+    if (!v3.is_valid(*this)) {
+        release_flag = true;
+    }
+    if (release_flag) {
+        release_vertex_mutex_in_stack(mutex_release_stack);
+        return false;
+    }
+
+    // try v1 two ring
+    release_flag = !try_set_vertex_mutex_two_ring_vid(v1, mutex_release_stack);
+
+    if (release_flag) {
+        release_vertex_mutex_in_stack(mutex_release_stack);
+        return false;
+    }
+
+    // try v2 two ring
+    release_flag = !try_set_vertex_mutex_two_ring_vid(v2, mutex_release_stack);
+
+    if (release_flag) {
+        release_vertex_mutex_in_stack(mutex_release_stack);
+        return false;
+    }
+
+    // try v3 two ring
+    release_flag = !try_set_vertex_mutex_two_ring_vid(v3, mutex_release_stack);
+
+    if (release_flag) {
+        release_vertex_mutex_in_stack(mutex_release_stack);
+        return false;
+    }
+    return true;
+}
+
+bool wmtk::ConcurrentTetMesh::try_set_face_mutex_two_ring(
+    size_t v1,
+    size_t v2,
+    size_t v3,
+    std::vector<size_t>& mutex_release_stack)
+{
+    bool release_flag = false;
+
+    // try v1
+    if (try_set_vertex_mutex(v1)) {
+        mutex_release_stack.push_back(v1);
+    } else {
+        release_flag = true;
+    }
+    if (release_flag) {
+        release_vertex_mutex_in_stack(mutex_release_stack);
+        return false;
+    }
+
+    // try v2
+    if (!vector_contains(mutex_release_stack, v2)) {
+        if (try_set_vertex_mutex(v2)) {
+            mutex_release_stack.push_back(v2);
+        } else {
+            release_flag = true;
+        }
+    }
+
+    if (release_flag) {
+        release_vertex_mutex_in_stack(mutex_release_stack);
+        return false;
+    }
+
+    // try v3
+    if (!vector_contains(mutex_release_stack, v3)) {
+        if (try_set_vertex_mutex(v3)) {
+            mutex_release_stack.push_back(v3);
+        } else {
+            release_flag = true;
+        }
+    }
+    if (release_flag) {
+        release_vertex_mutex_in_stack(mutex_release_stack);
+        return false;
+    }
+
+    // try v1 two ring
+    release_flag = !try_set_vertex_mutex_two_ring_vid(v1, mutex_release_stack);
+
+    if (release_flag) {
+        release_vertex_mutex_in_stack(mutex_release_stack);
+        return false;
+    }
+
+    // try v2 two ring
+    release_flag = !try_set_vertex_mutex_two_ring_vid(v2, mutex_release_stack);
+
+    if (release_flag) {
+        release_vertex_mutex_in_stack(mutex_release_stack);
+        return false;
+    }
+
+    // try v3 two ring
+    release_flag = !try_set_vertex_mutex_two_ring_vid(v3, mutex_release_stack);
+
+    if (release_flag) {
+        release_vertex_mutex_in_stack(mutex_release_stack);
+        return false;
+    }
+    return true;
+}
+
+bool wmtk::ConcurrentTetMesh::try_set_vertex_mutex_one_ring(
+    const Tuple& v,
+    std::vector<size_t>& mutex_release_stack)
+{
+    if (!vector_contains(mutex_release_stack, v.vid(*this))) {
+        if (try_set_vertex_mutex(v)) {
+            mutex_release_stack.push_back(v.vid(*this));
+            for (auto v_one_ring : get_one_ring_vids_for_vertex(v.vid(*this))) {
+                if (!vector_contains(mutex_release_stack, v_one_ring)) {
+                    if (try_set_vertex_mutex(v_one_ring)) {
+                        mutex_release_stack.push_back(v_one_ring);
+                    } else {
+                        release_vertex_mutex_in_stack(mutex_release_stack);
+                        return false;
+                    }
+                }
+            }
+        } else {
+            release_vertex_mutex_in_stack(mutex_release_stack);
+            return false;
+        }
     }
     return true;
 }

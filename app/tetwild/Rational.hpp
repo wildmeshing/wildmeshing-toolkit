@@ -115,9 +115,11 @@ public:
 
     // to double
     double to_double() const { return mpq_get_d(value); }
-    Rational abs() const {
+
+    friend Rational abs(const Rational& r0)
+    {
         Rational r;
-        mpq_abs(r.value, value);
+        mpq_abs(r.value, r0.value);
         return r;
     }
 
