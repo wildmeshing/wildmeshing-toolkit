@@ -318,7 +318,12 @@ public:
         std::vector<size_t>& new_tids,
         std::vector<size_t>& new_center_ids);
 
-
+    void pausee() {
+        std::cout << "pausing..." << std::endl;
+        char c;
+        std::cin >> c;
+        if (c == '0') exit(0);
+    }
     /**
      * @brief cleans up the deleted vertices or tetrahedra, fixes the corresponding indices, and
      * reset the version number. WARNING: it invalidates all tuples!

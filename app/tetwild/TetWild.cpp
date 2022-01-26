@@ -12,16 +12,16 @@
 
 #include <igl/winding_number.h>
 
-using std::cout;
-using std::endl;
-
-void pausee()
-{
-    std::cout << "pausing..." << std::endl;
-    char c;
-    std::cin >> c;
-    if (c == '0') exit(0);
-}
+//using std::cout;
+//using std::endl;
+//
+//void pausee()
+//{
+//    std::cout << "pausing..." << std::endl;
+//    char c;
+//    std::cin >> c;
+//    if (c == '0') exit(0);
+//}
 void tetwild::TetWild::mesh_improvement(int max_its)
 {
     ////preprocessing
@@ -112,6 +112,10 @@ std::tuple<double, double> tetwild::TetWild::local_operations(
             wmtk::logger().info("max energy = {}", std::get<0>(energy));
             wmtk::logger().info("avg energy = {}", std::get<1>(energy));
             wmtk::logger().info("time = {}", timer.getElapsedTime());
+
+            output_faces("track_surface.obj", [](auto& attr) { return attr.m_is_surface_fs == true; });
+            output_faces("track_bbox.obj", [](auto& attr) { return attr.m_is_bbox_fs >= 0; });
+            pausee();
         }
     }
 
@@ -239,6 +243,23 @@ void tetwild::TetWild::filter_outside(bool remove_ouside)
 }
 
 /////////////////////////////////////////////////////////////////////
+#include <igl/write_triangle_mesh.h>
+void tetwild::TetWild::output_faces(std::string file, std::function<bool(const FaceAttributes&)> cond)
+{
+    auto outface = get_faces_by_condition(cond);
+    Eigen::MatrixXd matV = Eigen::MatrixXd::Zero(vert_capacity(), 3);
+    for (auto v : get_vertices()) {
+        auto vid = v.vid(*this);
+        matV.row(vid) = m_vertex_attribute[vid].m_posf;
+    }
+    Eigen::MatrixXi matF(outface.size(), 3);
+    for (auto i = 0; i < outface.size(); i++) {
+        matF.row(i) << outface[i][0], outface[i][1], outface[i][2];
+    }
+    std::cout << outface.size() << std::endl;
+    igl::write_triangle_mesh(file, matV, matF);
+}
+
 
 void tetwild::TetWild::output_mesh(std::string file)
 {
