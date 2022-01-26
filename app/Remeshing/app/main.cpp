@@ -37,6 +37,9 @@ void run_remeshing(std::string input, double len, std::string output, UniformRem
 
 int main(int argc, char** argv)
 {
+    // input
+    // output
+    // ep
     const std::string root(WMT_DATA_DIR);
     const std::string path = root + argv[1];
     Eigen::MatrixXd V;
@@ -56,7 +59,7 @@ int main(int argc, char** argv)
     const Eigen::MatrixXd box_min = V.colwise().minCoeff();
     const Eigen::MatrixXd box_max = V.colwise().maxCoeff();
     const double diag = (box_max - box_min).norm();
-    const double envelope_size = atof(argv[4]) * diag;
+    const double envelope_size = atof(argv[3]) * diag;
 
     if (!igl::is_edge_manifold(F)) {
         wmtk::logger().info("Input is not edge manifold");
@@ -71,7 +74,7 @@ int main(int argc, char** argv)
             properties);
 
         run_remeshing(path, properties[0] * 5, std::string(argv[2]), m);
-        run_remeshing(path, properties[0] / 2, std::string(argv[2]), m);
+        //run_remeshing(path, properties[0] / 2, std::string(argv[2]), m);
     }
 
 
