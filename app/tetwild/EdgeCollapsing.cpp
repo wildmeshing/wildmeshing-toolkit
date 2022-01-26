@@ -222,18 +222,18 @@ bool tetwild::TetWild::collapse_after(const Tuple& loc)
     }
 
     // surface
-    //    if (collapse_cache.local().edge_length > 0) {
-    for (auto& vids : collapse_cache.local().surface_faces) {
-        bool is_out = m_envelope.is_outside(
-            {{m_vertex_attribute[vids[0]].m_posf,
-              m_vertex_attribute[vids[1]].m_posf,
-              m_vertex_attribute[vids[2]].m_posf}});
-        if (is_out) {
-            //                cout<<"Env"<<endl;
-            return false;
+    if (collapse_cache.local().edge_length > 0) {
+        for (auto& vids : collapse_cache.local().surface_faces) {
+            bool is_out = m_envelope.is_outside(
+                {{m_vertex_attribute[vids[0]].m_posf,
+                  m_vertex_attribute[vids[1]].m_posf,
+                  m_vertex_attribute[vids[2]].m_posf}});
+            if (is_out) {
+                //                cout<<"Env"<<endl;
+                return false;
+            }
         }
     }
-    //    }
 
     //// update attrs
     // tet attr

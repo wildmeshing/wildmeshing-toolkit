@@ -114,6 +114,21 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
 
     m_vertex_attribute[vid].m_pos = tetwild::to_rational(m_vertex_attribute[vid].m_posf);
 
+    for (auto& t : locs) {
+        for (auto j = 0; j < 4; j++) {
+            auto f_t = tuple_from_face(t.tid(*this), j);
+            auto fid = f_t.fid(*this);
+            if (m_face_attribute[fid].m_is_surface_fs) {
+                auto vs = get_face_vertices(f_t);
+                if (m_envelope.is_outside(
+                        {{m_vertex_attribute[vs[0].vid(*this)].m_posf,
+                          m_vertex_attribute[vs[1].vid(*this)].m_posf,
+                          m_vertex_attribute[vs[2].vid(*this)].m_posf}}))
+                    return false;
+            }
+        }
+    }
+
 
     return true;
 }
