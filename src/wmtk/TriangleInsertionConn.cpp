@@ -8,8 +8,6 @@
 
 #include <bitset>
 
-// using std::cout;
-// using std::endl;
 
 void wmtk::TetMesh::single_triangle_insertion(
     const std::vector<Tuple>& intersected_tets,
@@ -18,8 +16,6 @@ void wmtk::TetMesh::single_triangle_insertion(
     std::vector<size_t>& new_tids,
     std::vector<size_t>& new_center_vids)
 {
-    // std::vector<size_t> new_vids;
-    // std::vector<size_t> new_tids;
     /// get all tets
     std::vector<size_t> intersected_tids;
     for (auto& loc : intersected_tets) {
@@ -115,13 +111,13 @@ void wmtk::TetMesh::single_triangle_insertion(
     /// track surface after
     std::vector<std::vector<Tuple>> new_faces(old_faces.size() + 1);
     for (auto& info : new_face_vids) {
-        auto it = std::find_if(
+        auto it1 = std::find_if(
             old_face_vids.begin(),
             old_face_vids.end(),
             [&info](const std::array<size_t, 5>& v1) {
                 return std::array<size_t, 3>({{v1[0], v1[1], v1[2]}}) == info.first;
             });
-        int i = it - old_face_vids.begin(); // already handled special case here
+        int i = it1 - old_face_vids.begin(); // already handled special case here
         assert(i < new_faces.size());
         //
 
@@ -142,8 +138,6 @@ void wmtk::TetMesh::subdivide_tets(
     std::vector<size_t>& new_center_vids)
 {
     /// insert new vertices
-    // size_t old_v_size = m_vertex_connectivity.size();
-    // m_vertex_connectivity.resize(m_vertex_connectivity.size() + map_edge2vid.size());
 
     /// record infos
     std::vector<size_t> vids;
@@ -189,11 +183,6 @@ void wmtk::TetMesh::subdivide_tets(
 
     /// update conn_tets
     {
-        // for (size_t i = old_t_size; i < m_tet_connectivity.size(); i++) tids.push_back(i);
-        //
-        // for (size_t i = old_v_size; i < m_vertex_connectivity.size(); i++) vids.push_back(i);
-
-
         for (auto new_vid : new_vids) {
             vids.push_back(new_vid);
         }
@@ -322,11 +311,7 @@ void wmtk::TetMesh::subdivide_a_tet(
     const auto& new_is_surface_fs = CutTable::get_surface_conf(config_id, diag_config_id);
     const auto& old_local_f_ids = CutTable::get_face_id_conf(config_id, diag_config_id);
     is_add_centroid = false;
-    //    cout<<"t_id "<<t_id<<endl;
-    //    cout<<"config_id "<<config_id<<endl;
-    //    cout<<"config.size() "<<config.size()<<endl;
     auto old_tet = m_tet_connectivity[t_id].m_indices;
-    //    cout<<t_id<<": "<<old_tet[0]<<" "<<old_tet[1]<<" "<<old_tet[2]<<" "<<old_tet[3]<<endl;
 
     for (int i = 0; i < config.size(); i++) {
         const auto& t = config[i];
@@ -337,12 +322,6 @@ void wmtk::TetMesh::subdivide_a_tet(
                 new_center_vids.push_back(vid);
                 all_v_ids.push_back(vid);
                 add_tet_centroid(tuple_from_tet(t_id), vid);
-                //                {{m_tet_connectivity[t_id][0],
-                //                            m_tet_connectivity[t_id][1],
-                //                            m_tet_connectivity[t_id][2],
-                //                            m_tet_connectivity[t_id][3]}}
-
-                // m_vertex_connectivity.emplace_back();
 
                 is_add_centroid = true;
             }
@@ -356,12 +335,6 @@ void wmtk::TetMesh::subdivide_a_tet(
         }
         m_tet_connectivity[new_t_id] = tet;
 
-        //                cout<<"t"<<new_t_id<<": "<<tet[0]<<" "<<tet[1]<<" "<<tet[2]<<"
-        //                "<<tet[3]<<endl; cout<<"t"<<new_t_id<<": "<<t[0]<<" "<<t[1]<<" "<<t[2]<<"
-        //                "<<t[3]<<endl;
-
-        //        insertion_update_surface_tag(t_id, new_t_id, config_id, diag_config_id, i,
-        //        mark_surface);
 
         /// track surface
         for (int j = 0; j < 4; j++) {
@@ -373,16 +346,10 @@ void wmtk::TetMesh::subdivide_a_tet(
                     old_tet[(old_j + 2) % 4],
                     old_tet[(old_j + 3) % 4]};
                 std::sort(old_f_vids.begin(), old_f_vids.end());
-                //                cout<<"old_tet "<<old_tet[j]<<" "<<old_tet[(j + 1) % 4]<<"
-                //                "<<old_tet[(j + 2) % 4]<<" "<<old_tet[(j + 3) % 4]<<endl;
             }
             //
             if (mark_surface && new_is_surface_fs[i][j]) { // new faces
                 old_f_vids = {0, 0, 0}; // get empty old face map to new faces
-                //                cout<<"config "<<config_bits.count()<<" "<<config_id<<endl;
-                //                cout<<"t_id "<<t_id<<endl;
-                //                cout<<tet[j]<<" "<<tet[(j + 1) % 4]<<" "<<tet[(j + 2) % 4]<<"
-                //                "<<tet[(j + 3) % 4]<<endl;
             }
 
             if (!old_f_vids.empty()) {

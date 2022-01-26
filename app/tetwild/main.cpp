@@ -17,13 +17,6 @@ int main(int argc, char** argv)
     using std::cout;
     using std::endl;
 
-//    auto pausee = []() {
-//        std::cout << "pausing..." << std::endl;
-//        char c;
-//        std::cin >> c;
-//        if (c == '0') exit(0);
-//    };
-
     CLI::App app{argv[0]};
     std::string input_path = WMT_DATA_DIR "/37322.stl";
     int NUM_THREADS = 1;
@@ -77,7 +70,6 @@ int main(int argc, char** argv)
 
     mesh.triangle_insertion(input_surface);
     mesh.check_attributes();
-    //    pausee();
 
     mesh.mesh_improvement(20);
 
@@ -86,4 +78,5 @@ int main(int argc, char** argv)
     mesh.output_mesh("final.msh");
 
     // todo: refine adaptively the mesh
+    return 0;
 }

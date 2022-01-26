@@ -207,7 +207,7 @@ bool wmtk::TetMesh::smooth_vertex(const Tuple& loc0)
 wmtk::TetMesh::Tuple wmtk::TetMesh::tuple_from_edge(size_t tid, int local_eid) const
 {
     ZoneScoped;
-    assert(tid >= 0 && tid < m_tet_connectivity.size());
+    assert(tid < m_tet_connectivity.size());
     assert(local_eid >= 0 && local_eid < m_local_edges.size());
 
     int vid = m_tet_connectivity[tid][m_local_edges[local_eid][0]];
@@ -218,7 +218,7 @@ wmtk::TetMesh::Tuple wmtk::TetMesh::tuple_from_edge(size_t tid, int local_eid) c
 wmtk::TetMesh::Tuple wmtk::TetMesh::tuple_from_face(size_t tid, int local_fid) const
 {
     ZoneScoped;
-    assert(tid >= 0 && tid < m_tet_connectivity.size());
+    assert(tid < m_tet_connectivity.size());
     assert(local_fid >= 0 && local_fid < m_local_faces.size());
 
     int vid = m_tet_connectivity[tid][m_local_faces[local_fid][0]];
@@ -271,7 +271,7 @@ std::tuple<wmtk::TetMesh::Tuple, size_t> wmtk::TetMesh::tuple_from_face(
 wmtk::TetMesh::Tuple wmtk::TetMesh::tuple_from_vertex(size_t vid) const
 {
     ZoneScoped;
-    assert(vid >= 0 && vid < m_vertex_connectivity.size());
+    assert(vid < m_vertex_connectivity.size());
 
     int tid = m_vertex_connectivity[vid].m_conn_tets[0];
     int j = m_tet_connectivity[tid].find(vid);
@@ -283,7 +283,7 @@ wmtk::TetMesh::Tuple wmtk::TetMesh::tuple_from_vertex(size_t vid) const
 wmtk::TetMesh::Tuple wmtk::TetMesh::tuple_from_tet(size_t tid) const
 {
     ZoneScoped;
-    assert(tid >= 0 && tid < m_tet_connectivity.size());
+    assert(tid < m_tet_connectivity.size());
 
     int vid = m_tet_connectivity[tid][0];
     int eid = m_map_vertex2edge[0];
@@ -479,7 +479,8 @@ std::vector<std::array<size_t, 3>> wmtk::TetMesh::vertex_adjacent_boundary_faces
     for (auto t : m_vertex_connectivity[v].m_conn_tets) {
         auto& tet = m_tet_connectivity[t];
         for (auto j = 0; j < 4; j++) {
-            if (tet[m_map_vertex2oppo_face[j]] == v) continue; // only consider those not connecting to it.
+            if (tet[m_map_vertex2oppo_face[j]] == v)
+                continue; // only consider those not connecting to it.
             auto& f = m_local_faces[j];
             auto face = std::array<size_t, 3>{{tet[f[0]], tet[f[1]], tet[f[2]]}};
             std::sort(face.begin(), face.end());
@@ -491,5 +492,5 @@ std::vector<std::array<size_t, 3>> wmtk::TetMesh::vertex_adjacent_boundary_faces
             }
         }
     }
-    return std::vector<std::array<size_t,3>>(result_faces.begin(), result_faces.end());
+    return std::vector<std::array<size_t, 3>>(result_faces.begin(), result_faces.end());
 }

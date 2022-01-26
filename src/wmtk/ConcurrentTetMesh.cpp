@@ -55,7 +55,10 @@ bool wmtk::ConcurrentTetMesh::try_set_vertex_mutex_two_ring_vid(
     for (auto v_one_ring : get_one_ring_vids_for_vertex(v.vid(*this))) {
         if (vector_contains(mutex_release_stack, v_one_ring)) continue;
         if (try_set_vertex_mutex(v_one_ring)) {
-            { ZoneScoped; mutex_release_stack.push_back(v_one_ring); }
+            {
+                ZoneScoped;
+                mutex_release_stack.push_back(v_one_ring);
+            }
             for (auto v_two_ring : get_one_ring_vids_for_vertex(v_one_ring)) {
                 if (vector_contains(mutex_release_stack, v_two_ring)) continue;
                 if (try_set_vertex_mutex(v_two_ring)) {

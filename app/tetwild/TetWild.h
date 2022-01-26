@@ -28,7 +28,6 @@ public:
     bool m_is_rounded = false;
 
     bool m_is_on_surface = false;
-    //    bool m_is_on_boundary = false;
     std::vector<int> on_bbox_faces;
     bool m_is_outside = false;
 
@@ -179,21 +178,6 @@ public:
         bool remove_duplicates(); // inplace func
     };
 
-    // struct TriangleInsertionInfoCache
-    // {
-    //     // global info: throughout the whole insertion
-    //     InputSurface input_surface;
-    //     std::vector<std::array<int, 4>> surface_f_ids;
-    //     std::map<std::array<size_t, 3>, std::vector<int>> tet_face_tags;
-    //     std::vector<bool> is_matched;
-
-    //     // local info: for each face insertion
-    //     std::vector<bool> is_visited;
-    //     int face_id;
-    //     std::vector<std::array<size_t, 3>> old_face_vids;
-    // };
-    // tbb::enumerable_thread_specific<TriangleInsertionInfoCache> triangle_insertion_global_cache;
-    // // TriangleInsertionInfoCache triangle_insertion_global_cache;
     struct TriangleInsertionInfoGlobalCache
     {
         // global info: throughout the whole insertion
@@ -222,7 +206,6 @@ public:
         bool is_edge_on_surface = false;
 
         std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
-        //        std::vector<std::pair<size_t, std::array<size_t, 3>>> changed_faces;
     };
     tbb::enumerable_thread_specific<SplitInfoCache> split_cache;
 
@@ -236,7 +219,6 @@ public:
 
         std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
         std::vector<std::array<size_t, 3>> surface_faces;
-        //        std::vector<std::pair<size_t, std::array<size_t, 3>>> changed_faces;
         std::vector<size_t> changed_tids;
 
         std::vector<std::array<size_t, 2>> failed_edges;
@@ -258,7 +240,6 @@ public:
         tbb::concurrent_vector<bool>& is_matched);
     void setup_attributes();
     //
-    //    void add_tet_centroid(const std::array<size_t, 4>& vids) override;
     void add_tet_centroid(const Tuple& t, size_t vid) override;
     //
     void triangle_insertion_stuff(
@@ -313,40 +294,11 @@ public:
         std::function<bool(const FaceAttributes&)> cond);
 
     bool invariants(const std::vector<Tuple>& t)
-        override; // this is now automatically checked, TODO: clear trace from the program.
+        override; // this is now automatically checked
 
     double get_length2(const Tuple& loc) const;
     // debug use
     std::atomic<int> cnt_split = 0, cnt_collapse = 0, cnt_swap = 0;
-};
-
-class ElementInQueue
-{
-public:
-    wmtk::TetMesh::Tuple edge;
-    double weight;
-
-    ElementInQueue() {}
-    ElementInQueue(const wmtk::TetMesh::Tuple& e, double w)
-        : edge(e)
-        , weight(w)
-    {}
-};
-struct cmp_l
-{
-    bool operator()(const ElementInQueue& e1, const ElementInQueue& e2)
-    {
-        if (e1.weight == e2.weight) return e1.edge < e2.edge;
-        return e1.weight < e2.weight;
-    }
-};
-struct cmp_s
-{
-    bool operator()(const ElementInQueue& e1, const ElementInQueue& e2)
-    {
-        if (e1.weight == e2.weight) return e1.edge < e2.edge;
-        return e1.weight > e2.weight;
-    }
 };
 
 } // namespace tetwild
