@@ -1,9 +1,12 @@
 #include <EdgeOperations2d.h>
+#include <igl/is_edge_manifold.h>
 #include <igl/read_triangle_mesh.h>
+#include <igl/writeDMAT.h>
 #include <stdlib.h>
 #include <wmtk/TriMesh.h>
 #include <cstdlib>
 #include <iostream>
+#include <wmtk/utils/ManifoldUtils.hpp>
 using namespace wmtk;
 
 using namespace Edge2d;
@@ -17,7 +20,7 @@ void run(std::string input, double len, std::string output, EdgeOperations2d& m)
 {
     auto start = high_resolution_clock::now();
     wmtk::logger().info("target len: {}", len);
-    m.adaptive_remeshing(len, 5, 1);
+    m.adaptive_remeshing(len, 2, 0);
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<milliseconds>(stop - start);
     wmtk::logger().info("runtime {}", duration.count());
@@ -26,6 +29,22 @@ void run(std::string input, double len, std::string output, EdgeOperations2d& m)
     wmtk::logger().info("peak_memory {}", getPeakRSS() / (1024. * 1024));
     wmtk::logger().info(
         "After_vertices#: {} \n\t After_tris#: {}",
+        m.vert_capacity(),
+        m.tri_capacity());
+}
+
+void run_shortest_collapse(std::string input, int target, std::string output, EdgeOperations2d& m)
+{
+    auto start = high_resolution_clock::now();
+    wmtk::logger().info("target number of verts: {}", target);
+    m.collapse_shortest(target);
+    auto stop = high_resolution_clock::now();
+    auto duration = duration_cast<milliseconds>(stop - start);
+    wmtk::logger().info("runtime {}", duration.count());
+    m.consolidate_mesh();
+    m.write_triangle_mesh(fmt::format("{}_{}.obj", output, target));
+    wmtk::logger().info(
+        "After_vertices#: {} \n After_tris#: {}",
         m.vert_capacity(),
         m.tri_capacity());
 }

@@ -1,5 +1,6 @@
 #include <EdgeOperations2d.h>
 #include <igl/read_triangle_mesh.h>
+#include <igl/writeDMAT.h>
 #include <stdlib.h>
 #include <wmtk/TriMesh.h>
 #include <catch2/catch.hpp>
@@ -299,13 +300,14 @@ TEST_CASE("adaptive_remeshing", "[test_2d_operations][.]")
 TEST_CASE("qec", "[test_2d_operations][.]")
 {
     const std::string root(WMT_DATA_DIR);
-    const std::string path = root + "/circle.obj";
+    const std::string path = root + "/piece_0.obj";
+
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     bool ok = igl::read_triangle_mesh(path, V, F);
-
+    wmtk::logger().info("readin mesh is {}", ok);
     REQUIRE(ok);
-
+    wmtk::logger().info("number of vertices {}", V.size());
     std::vector<Eigen::Vector3d> v(V.rows());
     std::vector<std::array<size_t, 3>> tri(F.rows());
     for (int i = 0; i < V.rows(); i++) {
@@ -317,8 +319,10 @@ TEST_CASE("qec", "[test_2d_operations][.]")
     EdgeOperations2d m(v);
     m.create_mesh(V.rows(), tri);
     REQUIRE(m.check_mesh_connectivity_validity());
-    // REQUIRE(m.collapse_qec(5190));
-    // m.write_triangle_mesh("qec.obj");
+    REQUIRE(m.collapse_qec(V.rows() - 2));
+
+
+    m.write_triangle_mesh("no_qec.obj");
 }
 
 TEST_CASE("split_each_edge", "[test_2d_operations]")
@@ -333,4 +337,37 @@ TEST_CASE("split_each_edge", "[test_2d_operations]")
     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}};
     m.create_mesh(3, tris);
     m.adaptive_remeshing(0.1, 5, 1);
+}
+
+TEST_CASE("qec_cost")
+{
+    const std::string root(WMT_DATA_DIR);
+    const std::string path = root + "/upsample_box.obj";
+
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    bool ok = igl::read_triangle_mesh(path, V, F);
+    wmtk::logger().info("readin mesh is {}", ok);
+    REQUIRE(ok);
+    wmtk::logger().info("number of vertices {}", V.size());
+    std::vector<Eigen::Vector3d> v(V.rows());
+    std::vector<std::array<size_t, 3>> tri(F.rows());
+    for (int i = 0; i < V.rows(); i++) {
+        v[i] = V.row(i);
+    }
+    for (int i = 0; i < F.rows(); i++) {
+        for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
+    }
+    EdgeOperations2d m(v);
+    m.create_mesh(V.rows(), tri);
+    auto edges = m.get_edges();
+    Eigen::MatrixXd writem(edges.size(), 7);
+
+    for (int i = 0; i < edges.size(); i++) {
+        Eigen::Vector3d v1 = V.row(edges[i].vid());
+        Eigen::Vector3d v2 = V.row(edges[i].switch_vertex(m).vid());
+        writem.row(i) << v1.transpose(), v2.transpose(), m.compute_cost_for_e(edges[i]);
+    }
+    wmtk::logger().info("the result is {}", writem);
+    igl::writeDMAT(path + "_priority.txt", writem);
 }

@@ -1,0 +1,123 @@
+#include "ShortestEdgeCollapse.h"
+
+#include <wmtk/TriMesh.h>
+#include <wmtk/utils/VectorUtils.h>
+#include <wmtk/ExecutionScheduler.hpp>
+#include <wmtk/utils/TupleUtils.hpp>
+
+#include <Eigen/Core>
+#include <Eigen/Geometry>
+
+using namespace wmtk;
+using namespace sec;
+
+
+bool sec::ShortestEdgeCollapse::invariants(const std::vector<Tuple>& new_tris)
+{
+    if (m_has_envelope) {
+        for (auto& t : new_tris) {
+            std::array<Eigen::Vector3d, 3> tris;
+            auto vs = t.oriented_tri_vertices(*this);
+            for (auto j = 0; j < 3; j++) tris[j] = vertex_attrs[vs[j].vid()].pos;
+            if (m_envelope.is_outside(tris)) return false;
+        }
+    }
+    return true;
+}
+
+bool sec::ShortestEdgeCollapse::write_triangle_mesh(std::string path)
+{
+    Eigen::MatrixXd V = Eigen::MatrixXd::Zero(vertex_attrs.size(), 3);
+    for (auto& t : get_vertices()) {
+        auto i = t.vid();
+        V.row(i) = vertex_attrs[i].pos;
+    }
+
+    Eigen::MatrixXi F = Eigen::MatrixXi::Constant(tri_capacity(), 3, -1);
+    for (auto& t : get_faces()) {
+        auto i = t.fid();
+        auto vs = oriented_tri_vertices(t);
+        for (int j = 0; j < 3; j++) {
+            F(i, j) = vs[j].vid();
+        }
+    }
+
+    return igl::write_triangle_mesh(path, V, F);
+}
+
+bool sec::ShortestEdgeCollapse::collapse_before(const Tuple& t)
+{
+    if (!TriMesh::collapse_before(t)) return false;
+    if (vertex_attrs[t.vid()].freeze || vertex_attrs[t.switch_vertex(*this).vid()].freeze)
+        return false;
+    position_cache.local().v1p = vertex_attrs[t.vid()].pos;
+    position_cache.local().v2p = vertex_attrs[t.switch_vertex(*this).vid()].pos;
+    return true;
+}
+
+
+bool sec::ShortestEdgeCollapse::collapse_after(const TriMesh::Tuple& t)
+{
+    const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
+    auto vid = t.vid();
+    vertex_attrs[vid].pos = p;
+
+    return true;
+}
+
+
+std::vector<TriMesh::Tuple> sec::ShortestEdgeCollapse::new_edges_after(
+    const std::vector<TriMesh::Tuple>& tris) const
+{
+    std::vector<TriMesh::Tuple> new_edges;
+    std::vector<size_t> one_ring_fid;
+
+    for (auto t : tris) {
+        for (auto j = 0; j < 3; j++) {
+            new_edges.push_back(tuple_from_edge(t.fid(), j));
+        }
+    }
+    wmtk::unique_edge_tuples(*this, new_edges);
+    return new_edges;
+}
+
+bool sec::ShortestEdgeCollapse::collapse_shortest(int target_vert_number)
+{
+    auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
+    int starting_num = get_vertices().size();
+    for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_collapse", loc);
+
+    auto renew = [](auto& m, auto op, auto& tris) {
+        auto edges = m.new_edges_after(tris);
+        auto optup = std::vector<std::pair<std::string, Tuple>>();
+        for (auto& e : edges) optup.emplace_back("edge_collapse", e);
+        return optup;
+    };
+    auto measure_len2 = [](auto& m, auto op, const Tuple& new_e) {
+        auto len2 =
+            (m.vertex_attrs[new_e.vid()].pos - m.vertex_attrs[new_e.switch_vertex(m).vid()].pos)
+                .squaredNorm();
+        return -len2;
+    };
+    auto setup_and_execute = [&](auto executor) {
+        executor.num_threads = NUM_THREADS;
+        executor.renew_neighbor_tuples = renew;
+        executor.priority = measure_len2;
+        executor.stopping_criterion_checking_frequency = std::numeric_limits<int>::max();
+        executor(*this, collect_all_ops);
+    };
+
+    if (NUM_THREADS > 1) {
+        auto executor = wmtk::ExecutePass<ShortestEdgeCollapse, ExecutionPolicy::kPartition>();
+        executor.lock_vertices = [](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
+            auto stack = std::vector<size_t>();
+            if (!m.try_set_edge_mutex_two_ring(e, stack)) return {};
+            return stack;
+        };
+        setup_and_execute(executor);
+    } else {
+        auto executor = wmtk::ExecutePass<ShortestEdgeCollapse, ExecutionPolicy::kSeq>();
+        setup_and_execute(executor);
+    }
+    return true;
+}
