@@ -17,7 +17,6 @@ int ConcurrentTriMesh::release_vertex_mutex_in_stack()
     int num_released = 0;
     for (int i = mutex_release_stack.local().size() - 1; i >= 0; i--) {
         unlock_vertex_mutex(mutex_release_stack.local()[i]);
-        // mutex_release_stack.pop_back();
         num_released++;
     }
     mutex_release_stack.local().clear();
@@ -27,12 +26,10 @@ int ConcurrentTriMesh::release_vertex_mutex_in_stack()
 bool ConcurrentTriMesh::try_set_vertex_mutex_two_ring(const Tuple& v, int threadid)
 {
     for (auto v_one_ring : get_one_ring_edges_for_vertex(v)) {
-        // if (vector_contains(mutex_release_stack, v_one_ring.vid())) continue;
         if (m_vertex_mutex[v_one_ring.vid()].get_owner() == threadid) continue;
         if (try_set_vertex_mutex(v_one_ring, threadid)) {
             mutex_release_stack.local().push_back(v_one_ring.vid());
             for (auto v_two_ring : get_one_ring_edges_for_vertex(v_one_ring)) {
-                // if (vector_contains(mutex_release_stack, v_two_ring.vid())) continue;
                 if (m_vertex_mutex[v_two_ring.vid()].get_owner() == threadid) continue;
                 if (try_set_vertex_mutex(v_two_ring, threadid)) {
                     mutex_release_stack.local().push_back(v_two_ring.vid());

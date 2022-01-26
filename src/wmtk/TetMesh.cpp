@@ -372,7 +372,9 @@ std::vector<size_t> wmtk::TetMesh::get_one_ring_vids_for_vertex(size_t vid) cons
     return v_ids;
 }
 
-std::vector<size_t> wmtk::TetMesh::get_one_ring_vids_for_vertex(size_t vid, std::vector<size_t> &cache)
+std::vector<size_t> wmtk::TetMesh::get_one_ring_vids_for_vertex(
+    size_t vid,
+    std::vector<size_t>& cache)
 {
     ZoneScoped;
     cache.clear();

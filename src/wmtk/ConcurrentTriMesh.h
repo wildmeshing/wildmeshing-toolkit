@@ -3,6 +3,7 @@
 #include <tbb/concurrent_vector.h>
 #include <tbb/spin_mutex.h>
 #include <wmtk/TriMesh.h>
+#include <limits>
 
 
 namespace wmtk {
@@ -12,7 +13,7 @@ public:
     class VertexMutex
     {
         tbb::spin_mutex mutex;
-        int owner = INT_MAX;
+        int owner = std::numeric_limits<int>::max();
 
     public:
         bool trylock() { return mutex.try_lock(); }

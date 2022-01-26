@@ -18,10 +18,8 @@ auto renew = [](auto& m, auto op, auto& tris) {
 };
 
 
-auto edge_locker = [](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
-    auto stack = std::vector<size_t>();
-    if (!m.try_set_edge_mutex_two_ring(e, stack)) return {};
-    return stack;
+auto edge_locker = [](auto& m, const auto& e, int task_id) {
+    return m.try_set_edge_mutex_two_ring(e, task_id);
 };
 
 std::vector<TriMesh::Tuple> UniformRemeshing::new_edges_after(

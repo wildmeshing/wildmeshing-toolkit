@@ -145,7 +145,7 @@ void tetwild::TetWild::smooth_all_vertices()
     wmtk::logger().debug("Num verts {}", collect_all_ops.size());
     if (NUM_THREADS > 1) {
         auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kPartition>();
-        executor.lock_vertices = [&](auto& m, const auto& e, int task_id) -> bool {
+        executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
             return m.try_set_vertex_mutex_one_ring(e, task_id);
         };
         executor.num_threads = NUM_THREADS;

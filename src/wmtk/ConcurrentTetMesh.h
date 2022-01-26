@@ -6,6 +6,7 @@
 #include <wmtk/TetMesh.h>
 
 #include <Tracy.hpp>
+#include <limits>
 
 namespace wmtk {
 class ConcurrentTetMesh : public TetMesh
@@ -14,7 +15,7 @@ public:
     class VertexMutex
     {
         tbb::spin_mutex mutex;
-        int owner = INT_MAX;
+        int owner = std::numeric_limits<int>::max();
 
     public:
         bool trylock() { return mutex.try_lock(); }
@@ -76,47 +77,22 @@ public:
     virtual ~ConcurrentTetMesh() = default;
 
     void init(size_t n_vertices, const std::vector<std::array<size_t, 4>>& tets);
-    // int release_vertex_mutex_in_stack(std::vector<size_t>& mutex_release_stack);
     int release_vertex_mutex_in_stack();
 
     // helpers
-    bool try_set_vertex_mutex_two_ring(
-        const Tuple& v,
-        // std::vector<size_t>& mutex_release_stack,
-        int threadid);
-    bool try_set_vertex_mutex_two_ring_vid(
-        const Tuple& v,
-        // std::vector<size_t>& mutex_release_stack,
-        int threadid);
-    bool try_set_vertex_mutex_two_ring_vid(
-        size_t v,
-        // std::vector<size_t>& mutex_release_stack,
-        int threadid);
+    bool try_set_vertex_mutex_two_ring(const Tuple& v, int threadid);
+    bool try_set_vertex_mutex_two_ring_vid(const Tuple& v, int threadid);
+    bool try_set_vertex_mutex_two_ring_vid(size_t v, int threadid);
 
     // can be called
-    bool try_set_edge_mutex_two_ring(
-        const Tuple& e,
-        // std::vector<size_t>& mutex_release_stack,
-        int threadid = 0);
-    bool try_set_face_mutex_two_ring(
-        const Tuple& f,
-        // std::vector<size_t>& mutex_release_stack,
-        int threadid = 0);
+    bool try_set_edge_mutex_two_ring(const Tuple& e, int threadid = 0);
+    bool try_set_face_mutex_two_ring(const Tuple& f, int threadid = 0);
     bool try_set_face_mutex_two_ring(
         const Tuple& v1,
         const Tuple& v2,
         const Tuple& v3,
-        // std::vector<size_t>& mutex_release_stack,
         int threadid = 0);
-    bool try_set_face_mutex_two_ring(
-        size_t v1,
-        size_t v2,
-        size_t v3,
-        // std::vector<size_t>& mutex_release_stack,
-        int threadid = 0);
-    bool try_set_vertex_mutex_one_ring(
-        const Tuple& v,
-        // std::vector<size_t>& mutex_release_stack,
-        int threadid = 0);
+    bool try_set_face_mutex_two_ring(size_t v1, size_t v2, size_t v3, int threadid = 0);
+    bool try_set_vertex_mutex_one_ring(const Tuple& v, int threadid = 0);
 };
 } // namespace wmtk

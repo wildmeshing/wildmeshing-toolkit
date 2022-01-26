@@ -77,8 +77,6 @@ bool tetwild::TetWild::split_before(const Tuple& loc0)
             auto [_, global_fid] = tuple_from_face(f_vids);
             split_cache.local().changed_faces.push_back(
                 std::make_pair(m_face_attribute[global_fid], f_vids));
-            //            split_cache.local().changed_faces.push_back(std::make_pair(global_fid,
-            //            f_vids));
         }
     }
     wmtk::vector_unique(split_cache.local().changed_faces, comp, is_equal);
@@ -132,7 +130,6 @@ bool tetwild::TetWild::split_after(const Tuple& loc)
     /// update face attribute
     // add new and erase old
     for (auto& info : split_cache.local().changed_faces) {
-//        size_t old_fid = info.first;
         auto& f_attr = info.first;
         auto& old_vids = info.second;
         std::vector<int> j_vn;
