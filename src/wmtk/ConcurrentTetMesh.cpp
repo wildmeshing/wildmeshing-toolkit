@@ -58,7 +58,7 @@ bool wmtk::ConcurrentTetMesh::try_set_vertex_mutex_two_ring_vid(
     int threadid)
 {
     ZoneScoped;
-    for (auto v_one_ring : get_one_ring_vids_for_vertex(v.vid(*this))) {
+    for (auto v_one_ring : get_one_ring_vids_for_vertex(v.vid(*this), get_one_ring_cache.local())) {
         // if (vector_contains(mutex_release_stack.local(), v_one_ring)) continue;
         if (m_vertex_mutex[v_one_ring].get_owner() == threadid) continue;
         if (try_set_vertex_mutex(v_one_ring, threadid)) {
@@ -66,7 +66,7 @@ bool wmtk::ConcurrentTetMesh::try_set_vertex_mutex_two_ring_vid(
                 ZoneScoped;
                 mutex_release_stack.local().push_back(v_one_ring);
             }
-            for (auto v_two_ring : get_one_ring_vids_for_vertex(v_one_ring)) {
+            for (auto v_two_ring : get_one_ring_vids_for_vertex(v_one_ring, get_one_ring_cache.local())) {
                 // if (vector_contains(mutex_release_stack.local(), v_two_ring)) continue;
                 if (m_vertex_mutex[v_two_ring].get_owner() == threadid) continue;
                 if (try_set_vertex_mutex(v_two_ring, threadid)) {
@@ -88,12 +88,12 @@ bool wmtk::ConcurrentTetMesh::try_set_vertex_mutex_two_ring_vid(
     // std::vector<size_t>& mutex_release_stack,
     int threadid)
 {
-    for (auto v_one_ring : get_one_ring_vids_for_vertex(v)) {
+    for (auto v_one_ring : get_one_ring_vids_for_vertex(v, get_one_ring_cache.local())) {
         // if (vector_contains(mutex_release_stack.local(), v_one_ring)) continue;
         if (m_vertex_mutex[v_one_ring].get_owner() == threadid) continue;
         if (try_set_vertex_mutex(v_one_ring, threadid)) {
             mutex_release_stack.local().push_back(v_one_ring);
-            for (auto v_two_ring : get_one_ring_vids_for_vertex(v_one_ring)) {
+            for (auto v_two_ring : get_one_ring_vids_for_vertex(v_one_ring, get_one_ring_cache.local())) {
                 // if (vector_contains(mutex_release_stack.local(), v_two_ring)) continue;
                 if (m_vertex_mutex[v_two_ring].get_owner() == threadid) continue;
                 if (try_set_vertex_mutex(v_two_ring, threadid)) {
@@ -431,7 +431,7 @@ bool wmtk::ConcurrentTetMesh::try_set_vertex_mutex_one_ring(
     if (m_vertex_mutex[v.vid(*this)].get_owner() != threadid) {
         if (try_set_vertex_mutex(v, threadid)) {
             mutex_release_stack.local().push_back(v.vid(*this));
-            for (auto v_one_ring : get_one_ring_vids_for_vertex(v.vid(*this))) {
+            for (auto v_one_ring : get_one_ring_vids_for_vertex(v.vid(*this), get_one_ring_cache.local())) {
                 // if (!vector_contains(mutex_release_stack.local(), v_one_ring)) {
                 if (m_vertex_mutex[v_one_ring].get_owner() != threadid) {
                     if (try_set_vertex_mutex(v_one_ring, threadid)) {

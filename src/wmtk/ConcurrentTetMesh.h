@@ -70,6 +70,7 @@ protected:
 
 public:
     tbb::enumerable_thread_specific<std::vector<size_t>> mutex_release_stack;
+    tbb::enumerable_thread_specific<std::vector<size_t>> get_one_ring_cache;
 
     ConcurrentTetMesh() = default;
     virtual ~ConcurrentTetMesh() = default;
