@@ -56,8 +56,8 @@ struct ExecutePass
     // lock vertices: should depend on the operation
     // returns a range of vertices that we need to acquire and lock.
     // trivial in serial version
-    std::function<std::optional<std::vector<size_t>>(AppMesh&, const Tuple&)> lock_vertices =
-        [](const AppMesh&, const Tuple&) { return std::vector<size_t>(); };
+    std::function<bool(AppMesh&, const Tuple&, int task_id)> lock_vertices =
+        [](const AppMesh&, const Tuple&, int task_id) { return true; };
 
     // Stopping Criterion based on the whole mesh
     // For efficiency, not every time is checked.
@@ -170,7 +170,7 @@ struct ExecutePass
     };
 
 private:
-    void operation_cleanup(AppMesh& m, std::optional<std::vector<size_t>>& stack)
+    void operation_cleanup(AppMesh& m)
     { //
         // class ResourceManger
         // what about RAII mesh edit locking?
@@ -178,7 +178,7 @@ private:
         if constexpr (policy == ExecutionPolicy::kSeq)
             return;
         else {
-            if (stack) m.release_vertex_mutex_in_stack(stack.value());
+            m.release_vertex_mutex_in_stack();
         }
     }
 
@@ -204,7 +204,7 @@ public:
         auto queues = std::vector<tbb::concurrent_priority_queue<Elem>>(num_threads);
         auto final_queue = tbb::concurrent_priority_queue<Elem>();
 
-        auto run_single_queue = [&](auto& Q) {
+        auto run_single_queue = [&](auto& Q, int task_id) {
             ZoneScoped;
             auto ele_in_queue = Elem();
             while ([&]() {
@@ -224,8 +224,10 @@ public:
                 std::vector<Elem> renewed_elements;
                 {
                     ZoneScoped;
-                    auto locked_vid =
-                        lock_vertices(m, tup); // Note that returning `Tuples` would be invalid.
+                    auto locked_vid = lock_vertices(
+                        m,
+                        tup,
+                        task_id); // Note that returning `Tuples` would be invalid.
                     if (!locked_vid) {
                         retry++;
                         if (retry < max_retry_limit) {
@@ -252,7 +254,7 @@ public:
                         }
                         cnt_update++;
                     }
-                    operation_cleanup(m, locked_vid); // Maybe use RAII
+                    operation_cleanup(m); // Maybe use RAII
                 }
                 for (auto& e : renewed_elements) {
                     ZoneScoped;
@@ -275,7 +277,7 @@ public:
             for (auto& [op, e] : operation_tuples) {
                 final_queue.emplace(priority(m, op, e), op, e, 0);
             }
-            run_single_queue(final_queue);
+            run_single_queue(final_queue, 0);
         } else {
             for (auto& [op, e] : operation_tuples) {
                 //
@@ -285,13 +287,15 @@ public:
             tbb::task_arena arena(num_threads);
             tbb::task_group tg;
             arena.execute([&queues, &run_single_queue, &tg]() {
-                for (auto& q : queues) {
-                    tg.run([&run_single_queue, &q] { run_single_queue(q); });
+                for (int task_id = 0; task_id < queues.size(); task_id++) {
+                    tg.run([&run_single_queue, &queues, task_id] {
+                        run_single_queue(queues[task_id], task_id);
+                    });
                 }
             });
             arena.execute([&] { tg.wait(); });
             logger().debug("Parallel Complete, remains element {}", final_queue.size());
-            run_single_queue(final_queue);
+            run_single_queue(final_queue, 0);
         }
 
         logger().info("cnt_success {} cnt_fail {}", cnt_success, cnt_fail);

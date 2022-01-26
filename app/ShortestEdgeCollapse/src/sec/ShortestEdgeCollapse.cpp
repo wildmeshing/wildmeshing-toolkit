@@ -109,10 +109,8 @@ bool sec::ShortestEdgeCollapse::collapse_shortest(int target_vert_number)
 
     if (NUM_THREADS > 1) {
         auto executor = wmtk::ExecutePass<ShortestEdgeCollapse, ExecutionPolicy::kPartition>();
-        executor.lock_vertices = [](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
-            auto stack = std::vector<size_t>();
-            if (!m.try_set_edge_mutex_two_ring(e, stack)) return {};
-            return stack;
+        executor.lock_vertices = [](auto& m, const auto& e, int task_id) {
+            return m.try_set_edge_mutex_two_ring(e, task_id);
         };
         setup_and_execute(executor);
     } else {

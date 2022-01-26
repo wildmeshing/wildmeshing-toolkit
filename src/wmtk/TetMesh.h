@@ -492,6 +492,7 @@ public:
      * @return one-ring vertices
      */
     std::vector<Tuple> get_one_ring_vertices_for_vertex(const Tuple& t) const;
+    std::vector<size_t> get_one_ring_vids_for_vertex(size_t vid, std::vector<size_t>& cache);
     std::vector<size_t> get_one_ring_vids_for_vertex(size_t vid) const;
 
     /**

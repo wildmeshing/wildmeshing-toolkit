@@ -16,23 +16,19 @@ auto renew = [](auto& m, auto op, auto& tris) {
     return optup;
 };
 
-auto edge_locker = [](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
-    auto stack = std::vector<size_t>();
-    if (!m.try_set_edge_mutex_two_ring(e, stack)) return {};
-    return stack;
+auto edge_locker = [](auto& m, const auto& e, int task_id) -> bool {
+    return m.try_set_edge_mutex_two_ring(e, task_id);
 };
 
 double EdgeOperations2d::compute_edge_cost_collapse_ar(const TriMesh::Tuple& t, double L) const
 {
-    double l =
-        (vertex_attrs[t.vid()].pos - vertex_attrs[t.switch_vertex(*this).vid()].pos).norm();
+    double l = (vertex_attrs[t.vid()].pos - vertex_attrs[t.switch_vertex(*this).vid()].pos).norm();
     if (l < (4. / 5.) * L) return ((4. / 5.) * L - l);
     return -1;
 }
 double EdgeOperations2d::compute_edge_cost_split_ar(const TriMesh::Tuple& t, double L) const
 {
-    double l =
-        (vertex_attrs[t.vid()].pos - vertex_attrs[t.switch_vertex(*this).vid()].pos).norm();
+    double l = (vertex_attrs[t.vid()].pos - vertex_attrs[t.switch_vertex(*this).vid()].pos).norm();
     if (l > (4. / 3.) * L) return (l - (4. / 3.) * L);
     return -1;
 }
@@ -86,8 +82,7 @@ std::vector<double> EdgeOperations2d::average_len_valen()
     double minval = std::numeric_limits<double>::max();
     for (auto& loc : edges) {
         double currentlen =
-            (vertex_attrs[loc.vid()].pos - vertex_attrs[loc.switch_vertex(*this).vid()].pos)
-                .norm();
+            (vertex_attrs[loc.vid()].pos - vertex_attrs[loc.switch_vertex(*this).vid()].pos).norm();
         average_len += currentlen;
         if (maxlen < currentlen) maxlen = currentlen;
         if (minlen > currentlen) minlen = currentlen;
@@ -231,17 +226,13 @@ Eigen::Vector3d EdgeOperations2d::tangential_smooth(const Tuple& t)
     // get normal and area of each face
     auto area = [](auto& m, auto& verts) {
         return ((m.vertex_attrs[verts[0].vid()].pos - m.vertex_attrs[verts[2].vid()].pos)
-                    .cross(
-                        m.vertex_attrs[verts[1].vid()].pos -
-                        m.vertex_attrs[verts[2].vid()].pos))
+                    .cross(m.vertex_attrs[verts[1].vid()].pos - m.vertex_attrs[verts[2].vid()].pos))
                    .norm() /
                2.0;
     };
     auto normal = [](auto& m, auto& verts) {
         return ((m.vertex_attrs[verts[0].vid()].pos - m.vertex_attrs[verts[2].vid()].pos)
-                    .cross(
-                        m.vertex_attrs[verts[1].vid()].pos -
-                        m.vertex_attrs[verts[2].vid()].pos))
+                    .cross(m.vertex_attrs[verts[1].vid()].pos - m.vertex_attrs[verts[2].vid()].pos))
             .normalized();
     };
     auto w0 = 0.0;

@@ -10,7 +10,7 @@ void tetwild::TetWild::split_all_edges()
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_split", loc);
     auto setup_and_execute = [&](auto& executor) {
         executor.renew_neighbor_tuples = wmtk::renewal_simple;
-        
+
         executor.priority = [&](auto& m, auto op, auto& t) { return m.get_length2(t); };
         executor.num_threads = NUM_THREADS;
         executor.should_process = [&](const auto& m, const auto& ele) {
@@ -31,10 +31,8 @@ void tetwild::TetWild::split_all_edges()
     };
     if (NUM_THREADS > 1) {
         auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kPartition>();
-        executor.lock_vertices = [&](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
-            auto stack = std::vector<size_t>();
-            if (!m.try_set_edge_mutex_two_ring(e, stack)) return {};
-            return stack;
+        executor.lock_vertices = [&](auto& m, const auto& e, int task_id) -> bool {
+            return m.try_set_edge_mutex_two_ring(e, task_id);
         };
         setup_and_execute(executor);
     } else {
@@ -74,12 +72,11 @@ bool tetwild::TetWild::split_before(const Tuple& loc0)
                 vs[(j + 1) % 4].vid(*this),
                 vs[(j + 2) % 4].vid(*this),
                 vs[(j + 3) % 4].vid(*this),
-            }};//todo: speedup
+            }}; // todo: speedup
             std::sort(f_vids.begin(), f_vids.end());
             auto [_, global_fid] = tuple_from_face(f_vids);
             split_cache.local().changed_faces.push_back(
                 std::make_pair(m_face_attribute[global_fid], f_vids));
-//            split_cache.local().changed_faces.push_back(std::make_pair(global_fid, f_vids));
         }
     }
     wmtk::vector_unique(split_cache.local().changed_faces, comp, is_equal);
@@ -127,13 +124,12 @@ bool tetwild::TetWild::split_after(const Tuple& loc)
     m_vertex_attribute[v_id].on_bbox_faces = wmtk::set_intersection(
         m_vertex_attribute[v1_id].on_bbox_faces,
         m_vertex_attribute[v2_id].on_bbox_faces);
-    //surface
+    // surface
     m_vertex_attribute[v_id].m_is_on_surface = split_cache.local().is_edge_on_surface;
 
     /// update face attribute
     // add new and erase old
-    for(auto& info: split_cache.local().changed_faces) {
-//        size_t old_fid = info.first;
+    for (auto& info : split_cache.local().changed_faces) {
         auto& f_attr = info.first;
         auto& old_vids = info.second;
         std::vector<int> j_vn;
@@ -151,14 +147,15 @@ bool tetwild::TetWild::split_after(const Tuple& loc)
             auto [_, global_fid] = tuple_from_face(old_vids);
             m_face_attribute[global_fid] = f_attr;
             //
-            auto [_2, global_fid2] =
-                tuple_from_face({{old_vids[j_vn[0]], old_vids[j_vn[1]], v_id}});//todo: avoid dup comp
+            auto [_2, global_fid2] = tuple_from_face(
+                {{old_vids[j_vn[0]], old_vids[j_vn[1]], v_id}}); // todo: avoid dup comp
             m_face_attribute[global_fid2].reset();
         }
     }
 
     m_vertex_attribute[v_id].partition_id = m_vertex_attribute[v1_id].partition_id;
-    m_vertex_attribute[v_id].m_sizing_scalar = (m_vertex_attribute[v1_id].m_sizing_scalar + m_vertex_attribute[v2_id].m_sizing_scalar)/2;
+    m_vertex_attribute[v_id].m_sizing_scalar =
+        (m_vertex_attribute[v1_id].m_sizing_scalar + m_vertex_attribute[v2_id].m_sizing_scalar) / 2;
 
     cnt_split++;
 

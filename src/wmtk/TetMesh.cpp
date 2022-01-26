@@ -372,6 +372,20 @@ std::vector<size_t> wmtk::TetMesh::get_one_ring_vids_for_vertex(size_t vid) cons
     return v_ids;
 }
 
+std::vector<size_t> wmtk::TetMesh::get_one_ring_vids_for_vertex(
+    size_t vid,
+    std::vector<size_t>& cache)
+{
+    ZoneScoped;
+    cache.clear();
+    for (int t_id : m_vertex_connectivity[vid].m_conn_tets) {
+        for (int j = 0; j < 4; j++) {
+            cache.push_back(m_tet_connectivity[t_id][j]);
+        }
+    }
+    return cache;
+}
+
 std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_incident_tets_for_edge(const Tuple& t) const
 {
     ZoneScoped;

@@ -1,19 +1,19 @@
 #include "HarmonicTet.hpp"
 
+#include <wmtk/TetMesh.h>
+#include <wmtk/ExecutionScheduler.hpp>
+#include <wmtk/utils/EnergyHarmonicTet.hpp>
+#include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
 #include <wmtk/utils/io.hpp>
-#include <wmtk/ExecutionScheduler.hpp>
-#include <wmtk/TetMesh.h>
-#include <wmtk/utils/ExecutorUtils.hpp>
-#include <wmtk/utils/EnergyHarmonicTet.hpp>
 
 #include <igl/predicates/predicates.h>
 
 #include <Tracy.hpp>
 
-#include <queue>
 #include <limits>
+#include <queue>
 
 namespace harmonic_tet {
 
@@ -166,10 +166,8 @@ void HarmonicTet::swap_all_edges(bool parallel)
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_swap", loc);
     auto setup_and_execute = [&](auto& executor) {
         executor.renew_neighbor_tuples = wmtk::renewal_edges;
-        executor.lock_vertices = [](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
-            auto stack = std::vector<size_t>();
-            if (!m.try_set_edge_mutex_two_ring(e, stack)) return {};
-            return stack;
+        executor.lock_vertices = [](auto& m, const auto& e, int task_id) {
+            return m.try_set_edge_mutex_two_ring(e, task_id);
         };
         executor.num_threads = NUM_THREADS;
     };
@@ -211,10 +209,8 @@ void HarmonicTet::swap_all_faces(bool parallel)
     if (parallel) {
         auto executor = wmtk::ExecutePass<HarmonicTet, wmtk::ExecutionPolicy::kPartition>();
         executor.renew_neighbor_tuples = wmtk::renewal_faces;
-        executor.lock_vertices = [](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
-            auto stack = std::vector<size_t>();
-            if (!m.try_set_face_mutex_two_ring(e, stack)) return {};
-            return stack;
+        executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
+            return m.try_set_face_mutex_two_ring(e, task_id);
         };
         executor.num_threads = NUM_THREADS;
         executor(*this, collect_all_ops);
@@ -313,7 +309,8 @@ constexpr auto swap_3_2 = [](const std::vector<std::array<size_t, 4>>& tets, aut
     replace(newtet[1], v0, n2);
     return newtet;
 };
-constexpr auto swap_2_3 = [](const std::vector<std::array<size_t, 4>>& tets, std::array<size_t, 3> n) {
+constexpr auto swap_2_3 = [](const std::vector<std::array<size_t, 4>>& tets,
+                             std::array<size_t, 3> n) {
     ZoneScoped;
     auto u = std::array<int, 2>{{-1, -1}};
     // T0 : *n0*,n1,n2 v1-> v2
@@ -392,10 +389,8 @@ void HarmonicTet::swap_all()
         if (std::get<0>(ele) <= 0) return false;
         return true;
     };
-    executor.lock_vertices = [](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
-        auto stack = std::vector<size_t>();
-        if (!m.try_set_edge_mutex_two_ring(e, stack)) return {};
-        return stack;
+    executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
+        return m.try_set_edge_mutex_two_ring(e, task_id);
     };
     executor.num_threads = NUM_THREADS;
     executor(*this, collect_all_ops);

@@ -282,7 +282,7 @@ void tetwild::TetWild::triangle_insertion_stuff(
         auto v2 = faces[face_id][1];
         auto v3 = faces[face_id][2];
 
-        if (!try_set_face_mutex_two_ring(v1, v2, v3, mutex_release_stack)) {
+        if (!try_set_face_mutex_two_ring(v1, v2, v3, task_id)) {
             // retry
             if (retry_time < 3) {
                 insertion_queues[task_id].push(std::make_tuple(face_id, retry_time + 1));
@@ -342,7 +342,7 @@ void tetwild::TetWild::triangle_insertion_stuff(
 
 
             for (auto v_id : vs) {
-                if (!try_set_vertex_mutex_one_ring(v_id, mutex_release_stack)) {
+                if (!try_set_vertex_mutex_one_ring(v_id, task_id)) {
                     retry_flag = true;
                     break;
                 }
@@ -641,11 +641,11 @@ void tetwild::TetWild::triangle_insertion_stuff(
         // std::vector<size_t> mutex_release_stack;
         bool continue_flag = false;
         for (auto e_int : intersected_edges) {
-            if (!try_set_vertex_mutex_one_ring(e_int, mutex_release_stack)) {
+            if (!try_set_vertex_mutex_one_ring(e_int, task_id)) {
                 continue_flag = true;
                 break;
             }
-            if (!try_set_vertex_mutex_one_ring(e_int.switch_vertex(*this), mutex_release_stack)) {
+            if (!try_set_vertex_mutex_one_ring(e_int.switch_vertex(*this), task_id)) {
                 continue_flag = true;
                 break;
             }
@@ -655,7 +655,7 @@ void tetwild::TetWild::triangle_insertion_stuff(
 
         for (auto t_int : intersected_tets) {
             for (auto v_int : oriented_tet_vertices(t_int)) {
-                if (!try_set_vertex_mutex_one_ring(v_int, mutex_release_stack)) {
+                if (!try_set_vertex_mutex_one_ring(v_int, task_id)) {
                     continue_flag = true;
                     break;
                 }
@@ -699,9 +699,7 @@ void tetwild::TetWild::triangle_insertion_stuff(
             cnt++;
         }
 
-        int num_released = release_vertex_mutex_in_stack(mutex_release_stack);
-
-        wmtk::logger().info("face {}", face_id);
+        int num_released = release_vertex_mutex_in_stack();
     }
 }
 
