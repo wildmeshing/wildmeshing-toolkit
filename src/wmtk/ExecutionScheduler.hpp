@@ -78,6 +78,8 @@ struct ExecutePass
             return true;
         };
 
+    std::function<void(const AppMesh&, Op, const Tuple& t)> on_fail = [](auto&, auto, auto&) {};
+
 
     size_t num_threads = 1;
 
@@ -241,6 +243,7 @@ public:
                             renewed_tuples = renew_neighbor_tuples(m, op, newtup.value());
                             cnt_success++;
                         } else {
+                            on_fail(m, op, tup);
                             cnt_fail++;
                         }
                         for (auto& [o, e] : renewed_tuples) {

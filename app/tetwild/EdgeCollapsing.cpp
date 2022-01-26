@@ -1,6 +1,8 @@
 #include "TetWild.h"
+#include "oneapi/tbb/concurrent_vector.h"
 #include "wmtk/TetMesh.h"
 
+#include <atomic>
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -14,8 +16,11 @@ void tetwild::TetWild::collapse_all_edges(bool is_limit_length)
         collect_all_ops.emplace_back("edge_collapse", loc);
         collect_all_ops.emplace_back("edge_collapse", loc.switch_vertex(*this));
     }
+    auto collect_failure_ops = tbb::concurrent_vector<std::pair<std::string, Tuple>>();
+    std::atomic_int count_success = 0;
     auto setup_and_execute = [&](auto& executor) {
-        executor.renew_neighbor_tuples = [](const auto& m, auto op, const auto& newts) {
+        executor.renew_neighbor_tuples = [&](const auto& m, auto op, const auto& newts) {
+            count_success++;
             std::vector<std::pair<std::string, wmtk::TetMesh::Tuple>> op_tups;
             for (auto t : newts) {
                 op_tups.emplace_back(op, t);
@@ -39,7 +44,20 @@ void tetwild::TetWild::collapse_all_edges(bool is_limit_length)
                 return false;
             return true;
         };
-        executor(*this, collect_all_ops);
+
+        executor.on_fail = [&](auto& m, auto op, auto& t) {
+            collect_failure_ops.emplace_back(op, t);
+        };
+        // Execute!!
+        do {
+            count_success.store(0, std::memory_order_release);
+            wmtk::logger().info("Prepare to collapse {}", collect_all_ops.size());
+            executor(*this, collect_all_ops);
+            wmtk::logger().info("success {} ops, retrying with {}", count_success, collect_failure_ops.size());
+            collect_all_ops.clear();
+            for (auto& item : collect_failure_ops) collect_all_ops.emplace_back(item);
+            collect_failure_ops.clear();
+        } while (count_success.load(std::memory_order_acquire) > 0);
     };
     if (NUM_THREADS > 1) {
         auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kPartition>();
