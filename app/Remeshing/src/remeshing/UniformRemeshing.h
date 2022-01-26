@@ -25,7 +25,7 @@
 #include <queue>
 #include "wmtk/AttributeCollection.hpp"
 
-namespace Edge2d {
+namespace remeshing {
 
 struct VertexAttributes
 {
@@ -34,7 +34,7 @@ struct VertexAttributes
     size_t partition_id;
 };
 
-class EdgeOperations2d : public wmtk::ConcurrentTriMesh
+class UniformRemeshing : public wmtk::ConcurrentTriMesh
 {
 public:
     fastEnvelope::FastEnvelope m_envelope;
@@ -44,7 +44,7 @@ public:
 
     int NUM_THREADS = 1;
     int retry_limit = 10;
-    EdgeOperations2d(std::vector<Eigen::Vector3d> _m_vertex_positions, int num_threads = 1)
+    UniformRemeshing(std::vector<Eigen::Vector3d> _m_vertex_positions, int num_threads = 1)
         : NUM_THREADS(num_threads)
     {
         p_vertex_attrs = &vertex_attrs;
@@ -72,9 +72,7 @@ public:
         }
         partition_mesh();
     }
-
-
-    ~EdgeOperations2d() {}
+    ~UniformRemeshing() {}
 
     struct PositionInfoCache
     {
@@ -102,6 +100,7 @@ public:
         return true;
     }
 
+
     void partition_mesh()
     {
         auto m_vertex_partition_id = partition_TriMesh(*this, NUM_THREADS);
@@ -109,28 +108,7 @@ public:
             vertex_attrs[i].partition_id = m_vertex_partition_id[i];
     }
 
-    Eigen::Vector3d smooth(const Tuple& t)
-    {
-        auto one_ring_edges = get_one_ring_edges_for_vertex(t);
-        if (one_ring_edges.size() < 3) return vertex_attrs[t.vid()].pos;
-        Eigen::Vector3d after_smooth(0, 0, 0);
-        Eigen::Vector3d after_smooth_boundary(0, 0, 0);
-        int boundary = 0;
-        for (auto e : one_ring_edges) {
-            if (is_boundary_edge(e)) {
-                after_smooth_boundary += vertex_attrs[e.vid()].pos;
-                boundary++;
-                continue;
-            }
-            after_smooth += vertex_attrs[e.vid()].pos;
-        }
-
-        if (boundary)
-            after_smooth = after_smooth_boundary / boundary;
-        else
-            after_smooth /= one_ring_edges.size();
-        return after_smooth;
-    }
+    Eigen::Vector3d smooth(const Tuple& t);
 
 
     Eigen::Vector3d tangential_smooth(const Tuple& t);
@@ -138,7 +116,7 @@ public:
     // write the collapsed mesh into a obj
     bool write_triangle_mesh(std::string path)
     {
-        Eigen::MatrixXd V = Eigen::MatrixXd::Zero(vertex_attrs.m_attributes.size(), 3);
+        Eigen::MatrixXd V = Eigen::MatrixXd::Zero(vertex_attrs.size(), 3);
         for (auto& t : get_vertices()) {
             auto i = t.vid();
             V.row(i) = vertex_attrs[i].pos;
@@ -168,12 +146,6 @@ public:
 
     std::vector<TriMesh::Tuple> new_edges_after(const std::vector<TriMesh::Tuple>& t) const;
     std::vector<TriMesh::Tuple> new_edges_after_swap(const TriMesh::Tuple& t) const;
-    // std::vector<TriMesh::Tuple> new_edges_after_collapse_split(const TriMesh::Tuple& t) const;
-
-    bool collapse_shortest(int target_vertex_count);
-
-    double compute_cost_for_e(const TriMesh::Tuple& v_tuple);
-    bool collapse_qec(int target_vertcies);
 
     bool split_before(const Tuple& t) override
     {
@@ -182,15 +154,15 @@ public:
     }
 
     bool split_after(const Tuple& t) override;
-    // methods for adaptive remeshing
-    double compute_edge_cost_collapse_ar(const TriMesh::Tuple& t, double L) const;
-    double compute_edge_cost_split_ar(const TriMesh::Tuple& t, double L) const;
-    double compute_vertex_valence_ar(const TriMesh::Tuple& t) const;
+
+    double compute_edge_cost_collapse(const TriMesh::Tuple& t, double L) const;
+    double compute_edge_cost_split(const TriMesh::Tuple& t, double L) const;
+    double compute_vertex_valence(const TriMesh::Tuple& t) const;
     std::vector<double> average_len_valen();
     bool split_remeshing(double L);
     bool collapse_remeshing(double L);
     bool swap_remeshing();
-    bool adaptive_remeshing(double L, int interations, int sm);
+    bool uniform_remeshing(double L, int interations);
 };
 
-} // namespace Edge2d
+} // namespace remeshing
