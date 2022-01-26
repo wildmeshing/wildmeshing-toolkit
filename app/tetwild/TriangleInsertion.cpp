@@ -13,15 +13,8 @@
 
 #include <fstream>
 
-// using std::cout;
-// using std::endl;
-//
-// void pausee() {
-//     std::cout << "pausing..." << std::endl;
-//     char c;
-//     std::cin >> c;
-//     if (c == '0') exit(0);
-// }
+using std::cout;
+using std::endl;
 
 bool tetwild::TetWild::InputSurface::remove_duplicates()
 {
@@ -247,7 +240,23 @@ void tetwild::TetWild::triangle_insertion_stuff(
     const auto& vertices = triangle_insertion_global_cache.input_surface.vertices;
     const auto& faces = triangle_insertion_global_cache.input_surface.faces;
 
+    //fortest
+    std::vector<std::array<size_t, 3>> output_fs;
+    //fortest
     while (insertion_queues[task_id].try_pop(face_id)) {
+        //fortest
+        if((face_id<200 || face_id > 400))
+            continue;
+        else if(vertices[faces[face_id][0]][1]<0 &&
+                 vertices[faces[face_id][1]][1]<0 &&
+                 vertices[faces[face_id][2]][1]<0)
+            continue;
+        else {
+            output_fs.push_back(faces[face_id]);
+//            std::cout<<face_id<<std::endl;
+        }
+        //fortest
+
         if (is_matched[face_id]) continue;
 
         triangle_insertion_local_cache.local().face_id = face_id;
@@ -639,7 +648,7 @@ void tetwild::TetWild::triangle_insertion_stuff(
             VertexAttributes v;
             v.m_pos = p;
             v.m_posf = to_double(v.m_pos);
-            m_vertex_attribute.m_attributes.push_back(v);
+//            m_vertex_attribute.m_attributes.push_back(v);
             //            (info.second).first = m_vertex_attribute.m_attributes.size() - 1;//todo: check if needed
 
             ///
@@ -718,7 +727,24 @@ void tetwild::TetWild::triangle_insertion_stuff(
         //            triangle_insertion_global_cache.tet_face_tags.size());
 
         int num_released = release_vertex_mutex_in_stack(mutex_release_stack);
+
+        wmtk::logger().info("face {}", face_id);
     }
+
+
+    //fortest
+    {
+        std::ofstream fout("input_faces.obj");
+        for (auto& f : output_fs) {
+            fout << "v " << vertices[f[0]].transpose() << std::endl;
+            fout << "v " << vertices[f[1]].transpose() << std::endl;
+            fout << "v " << vertices[f[2]].transpose() << std::endl;
+        }
+        for (int i = 0; i < output_fs.size(); i++)
+            fout << "f " << i * 3 + 1 << " " << i * 3 + 2 << " " << i * 3 + 3 << std::endl;
+        fout.close();
+    }
+    //fortest
 }
 
 void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
@@ -1134,7 +1160,7 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
     // }
 
     //    // fortest
-    //    output_surface("surface0.obj");
+        output_surface("surface0.obj");
     //    // fortest
 
     //// track surface, bbox, rounding
@@ -1147,6 +1173,7 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
 
     wmtk::logger().info("#t {}", tet_capacity());
     wmtk::logger().info("#v {}", vert_capacity());
+    pausee();
 
 } // note: skip preserve open boundaries
 
@@ -1194,13 +1221,23 @@ void tetwild::TetWild::setup_attributes()
                 //
                 inside_fid = input_fid;
 
-                //                //fortest
-                //                bool is_out = m_envelope.is_outside(
-                //                    {{m_vertex_attribute[vids[0]].m_posf,
-                //                      m_vertex_attribute[vids[1]].m_posf,
-                //                      m_vertex_attribute[vids[2]].m_posf}});
-                //                assert(!is_out);
-                //                //fortest
+//                // fortest
+//                bool is_out = m_envelope.is_outside(
+//                    {{m_vertex_attribute[vids[0]].m_posf,
+//                      m_vertex_attribute[vids[1]].m_posf,
+//                      m_vertex_attribute[vids[2]].m_posf}});
+//                if(is_out){
+//                    cout<<"vid: ";
+//                    for(int i: vids)
+//                        std::cout<<i<<" ";
+//                    std::cout<<std::endl;
+//                    cout<<"fid: ";
+//                    for(int i: fids)
+//                        std::cout<<i<<" ";
+//                    std::cout<<std::endl;
+//                    pausee();
+//                }
+//                // fortest
 
                 break;
             }
