@@ -149,7 +149,6 @@ bool tetwild::TetWild::swap_edge_after(const Tuple& t)
         max_energy = std::max(q, max_energy);
     }
     if (max_energy > swap_cache.local().max_energy) {
-        global_danger_swap_fail_max_energy++;
         return false;
     }
 
