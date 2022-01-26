@@ -11,7 +11,7 @@
 using namespace wmtk;
 using namespace tetwild;
 
-TEST_CASE("mesh_improvement", "[tetwild_operation]")
+TEST_CASE("mesh_improvement", "[tetwild_operation][.slow]")
 {
     std::string input_path = WMT_DATA_DIR "/37322.stl";
 
