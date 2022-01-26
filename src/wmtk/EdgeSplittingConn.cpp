@@ -3,9 +3,6 @@
 #include <algorithm>
 #include <wmtk/utils/TupleUtils.hpp>
 
-using std::cout;
-using std::endl;
-
 bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
 {
     if (!split_before(loc0)) return false;
@@ -58,7 +55,7 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     Tuple new_loc = tuple_from_vertex(v_id);
 
     start_protect_attributes();
-    if (!split_after(new_loc)|| !invariants(get_one_ring_tets_for_vertex(new_loc))) {
+    if (!split_after(new_loc) || !invariants(get_one_ring_tets_for_vertex(new_loc))) {
         m_vertex_connectivity[v_id].m_is_removed = true;
         m_vertex_connectivity[v_id].m_conn_tets.clear();
 

@@ -117,7 +117,6 @@ wmtk::TetMesh::operation_update_connectivity_impl(
                 allocate_id[i + hole_size] = this->get_next_empty_slot_t(); // old_tet_size + i;
             }
         }
-        
     }
     assert(allocate_id.size() == new_tet_conn.size());
 

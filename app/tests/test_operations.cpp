@@ -57,7 +57,6 @@ TEST_CASE("mesh_improvement", "[tetwild_operation]")
 
     mesh.triangle_insertion(input_surface);
     //    mesh.check_attributes();
-    //    pausee();
 
     mesh.mesh_improvement(5);
 }

@@ -479,7 +479,8 @@ std::vector<std::array<size_t, 3>> wmtk::TetMesh::vertex_adjacent_boundary_faces
     for (auto t : m_vertex_connectivity[v].m_conn_tets) {
         auto& tet = m_tet_connectivity[t];
         for (auto j = 0; j < 4; j++) {
-            if (tet[m_map_vertex2oppo_face[j]] == v) continue; // only consider those not connecting to it.
+            if (tet[m_map_vertex2oppo_face[j]] == v)
+                continue; // only consider those not connecting to it.
             auto& f = m_local_faces[j];
             auto face = std::array<size_t, 3>{{tet[f[0]], tet[f[1]], tet[f[2]]}};
             std::sort(face.begin(), face.end());
@@ -491,5 +492,5 @@ std::vector<std::array<size_t, 3>> wmtk::TetMesh::vertex_adjacent_boundary_faces
             }
         }
     }
-    return std::vector<std::array<size_t,3>>(result_faces.begin(), result_faces.end());
+    return std::vector<std::array<size_t, 3>>(result_faces.begin(), result_faces.end());
 }

@@ -49,8 +49,6 @@ auto try_project(
 bool tetwild::TetWild::smooth_after(const Tuple& t)
 {
     // Newton iterations are encapsulated here.
-    // TODO: bbox/surface tags.
-    // TODO: envelope check.
     wmtk::logger().trace("Newton iteration for vertex smoothing.");
     auto vid = t.vid(*this);
 

@@ -12,16 +12,6 @@
 
 #include <igl/winding_number.h>
 
-//using std::cout;
-//using std::endl;
-//
-//void pausee()
-//{
-//    std::cout << "pausing..." << std::endl;
-//    char c;
-//    std::cin >> c;
-//    if (c == '0') exit(0);
-//}
 void tetwild::TetWild::mesh_improvement(int max_its)
 {
     ////preprocessing
@@ -41,7 +31,7 @@ void tetwild::TetWild::mesh_improvement(int max_its)
         auto [max_energy, avg_energy] = local_operations({{1, 2, 1, 1}});
 
         ///energy check
-        std::cout << max_energy << " " << m_params.stop_energy << std::endl;
+        spdlog::info("max energy {} stop {}", max_energy, m_params.stop_energy);
         if (max_energy < m_params.stop_energy) break;
 
         ///sizing field
@@ -256,7 +246,7 @@ void tetwild::TetWild::output_faces(std::string file, std::function<bool(const F
     for (auto i = 0; i < outface.size(); i++) {
         matF.row(i) << outface[i][0], outface[i][1], outface[i][2];
     }
-    std::cout << outface.size() << std::endl;
+    spdlog::info("Output face size {}", outface.size());
     igl::write_triangle_mesh(file, matV, matF);
 }
 
@@ -499,9 +489,6 @@ bool tetwild::TetWild::is_edge_on_bbox(const Tuple& loc)
 
 void tetwild::TetWild::check_attributes()
 {
-    using std::cout;
-    using std::endl;
-
     for (auto& f : get_faces()) {
         auto fid = f.fid(*this);
         auto vs = get_face_vertices(f);

@@ -13,8 +13,6 @@
 
 #include <fstream>
 
-using std::cout;
-using std::endl;
 
 bool tetwild::TetWild::InputSurface::remove_duplicates()
 {
@@ -246,18 +244,6 @@ void tetwild::TetWild::triangle_insertion_stuff(
     // fortest
     while (insertion_queues[task_id].try_pop(eiq)) {
         auto [face_id, retry_time] = eiq;
-//        // fortest
-//        if ((face_id < 200 || face_id > 400))
-//            continue;
-//        else if (
-//            vertices[faces[face_id][0]][1] < 0 && vertices[faces[face_id][1]][1] < 0 &&
-//            vertices[faces[face_id][2]][1] < 0)
-//            continue;
-//        else {
-//            output_fs.push_back(faces[face_id]);
-//            //            std::cout<<face_id<<std::endl;
-//        }
-//        // fortest
 
         if (is_matched[face_id]) continue;
 
@@ -279,12 +265,6 @@ void tetwild::TetWild::triangle_insertion_stuff(
         Vector3d tri_normal_d = (tri_d[1] - tri_d[0]).cross(tri_d[2] - tri_d[0]);
         std::array<Vector2, 3> tri2;
         int squeeze_to_2d_dir = wmtk::project_triangle_to_2d(tri, tri2);
-        //        int squeeze_to_2d_dir = wmtk::project_to_2d_by_normal(
-        //            tri_normal_d);
-        //        std::array<Vector2, 3> tri2 = {
-        //            {wmtk::project_point_to_2d(tri[0], squeeze_to_2d_dir),
-        //             wmtk::project_point_to_2d(tri[1], squeeze_to_2d_dir),
-        //             wmtk::project_point_to_2d(tri[2], squeeze_to_2d_dir)}};
 
         std::vector<Tuple> intersected_tets;
         std::map<std::array<size_t, 2>, std::tuple<int, Vector3, size_t, int>> map_edge2point;
@@ -297,9 +277,7 @@ void tetwild::TetWild::triangle_insertion_stuff(
 
         // set_locks
         std::vector<size_t> mutex_release_stack;
-        // auto v1 = tuple_from_vertex(faces[face_id][0]);
-        // auto v2 = tuple_from_vertex(faces[face_id][1]);
-        // auto v3 = tuple_from_vertex(faces[face_id][2]);
+ 
         auto v1 = faces[face_id][0];
         auto v2 = faces[face_id][1];
         auto v3 = faces[face_id][2];
@@ -400,9 +378,6 @@ void tetwild::TetWild::triangle_insertion_stuff(
                 if (is_inside) {
                     auto conn_tets = get_one_ring_tets_for_vertex(vs[lvid]);
                     for (auto& t : conn_tets) {
-                        //                        if (is_visited[t.tid(*this)]) continue;
-                        //                        is_visited[t.tid(*this)] = true;
-                        if (visited.count(t.tid(*this))) continue;
                         visited.insert(t.tid(*this));
                         tet_queue.push(t);
                         // add lock
@@ -420,8 +395,6 @@ void tetwild::TetWild::triangle_insertion_stuff(
                     for (int j = 0; j < 2; j++) {
                         auto conn_tets = get_one_ring_tets_for_vertex(vs[coplanar_f_lvids[j]]);
                         for (auto& t : conn_tets) {
-                            //                            if (is_visited[t.tid(*this)]) continue;
-                            //                            is_visited[t.tid(*this)] = true;
                             if (visited.count(t.tid(*this))) continue;
                             visited.insert(t.tid(*this));
                             // add lock
@@ -588,8 +561,6 @@ void tetwild::TetWild::triangle_insertion_stuff(
                         if ((tet_tri_v_sides[k] >= 0 && tet_tri_v_sides[(k + 1) % 3] >= 0) ||
                             (tet_tri_v_sides[k] <= 0 && tet_tri_v_sides[(k + 1) % 3] <= 0))
                             continue;
-                        //                        std::array<Vector3, 2> input_seg = {{tri[k],
-                        //                        tri[(k + 1) % 3]}};
                         Vector3 p;
                         is_intersected = wmtk::open_segment_triangle_intersection_3d(
                             {{tri[k], tri[(k + 1) % 3]}},
@@ -637,8 +608,6 @@ void tetwild::TetWild::triangle_insertion_stuff(
             }
             continue;
         }
-        //        wmtk::vector_unique(intersected_tids);//note: not needed
-        //        wmtk::logger().info("intersected_tets.size {}", intersected_tets.size());
 
         // erase edge without intersections OR edge with intersection but not belong to intersected
         // tets
@@ -666,9 +635,6 @@ void tetwild::TetWild::triangle_insertion_stuff(
             ///
             intersected_edges.push_back(tuple_from_edge(tid, l_eid));
         }
-        // wmtk::logger().info("before v.size {}", vert_capacity());
-        // wmtk::logger().info("after v.size {}", m_vertex_attribute.size());
-        // wmtk::logger().info("map_edge2vid.size {}", map_edge2vid.size());
 
         // set locks for intersected edges and tets
         // std::vector<size_t> mutex_release_stack;
@@ -732,35 +698,10 @@ void tetwild::TetWild::triangle_insertion_stuff(
             cnt++;
         }
 
-
-        ///resize attri lists
-        // m_tet_attribute.resize(tet_capacity()); // todo: do we need it?
-
-        // check_mesh_connectivity_validity();
-        //        wmtk::logger().info("inserted #t {}", tet_capacity());
-        //        wmtk::logger().info(
-        //            "tet_face_tags.size {}",
-        //            triangle_insertion_global_cache.tet_face_tags.size());
-
         int num_released = release_vertex_mutex_in_stack(mutex_release_stack);
 
         wmtk::logger().info("face {}", face_id);
     }
-
-
-    // fortest
-    {
-        std::ofstream fout("input_faces.obj");
-        for (auto& f : output_fs) {
-            fout << "v " << vertices[f[0]].transpose() << std::endl;
-            fout << "v " << vertices[f[1]].transpose() << std::endl;
-            fout << "v " << vertices[f[2]].transpose() << std::endl;
-        }
-        for (int i = 0; i < output_fs.size(); i++)
-            fout << "f " << i * 3 + 1 << " " << i * 3 + 2 << " " << i * 3 + 3 << std::endl;
-        fout.close();
-    }
-    // fortest
 }
 
 void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
@@ -863,10 +804,8 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
             Tuple loc = tuple_from_vertex(faces[face_id][j]);
             auto conn_tets = get_one_ring_tets_for_vertex(loc);
             for (const auto& t : conn_tets) {
-                //                if (is_visited[t.tid(*this)]) continue;
                 if (visited.count(t.tid(*this))) continue;
                 tet_queue.push(t);
-                //                is_visited[t.tid(*this)] = true;
                 visited.insert(t.tid(*this));
             }
         }
@@ -933,8 +872,6 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
                 if (is_inside) {
                     auto conn_tets = get_one_ring_tets_for_vertex(vs[lvid]);
                     for (auto& t : conn_tets) {
-                        //                        if (is_visited[t.tid(*this)]) continue;
-                        //                        is_visited[t.tid(*this)] = true;
                         if (visited.count(t.tid(*this))) continue;
                         visited.insert(t.tid(*this));
                         tet_queue.push(t);
@@ -952,8 +889,6 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
                     for (int j = 0; j < 2; j++) {
                         auto conn_tets = get_one_ring_tets_for_vertex(vs[coplanar_f_lvids[j]]);
                         for (auto& t : conn_tets) {
-                            //                            if (is_visited[t.tid(*this)]) continue;
-                            //                            is_visited[t.tid(*this)] = true;
                             if (visited.count(t.tid(*this))) continue;
                             visited.insert(t.tid(*this));
                             tet_queue.push(t);
@@ -986,8 +921,6 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
                     for (int j = 0; j < 3; j++) {
                         auto conn_tets = get_one_ring_tets_for_vertex(vs[coplanar_f_lvids[j]]);
                         for (auto& t : conn_tets) {
-                            //                            if (is_visited[t.tid(*this)]) continue;
-                            //                            is_visited[t.tid(*this)] = true;
                             if (visited.count(t.tid(*this))) continue;
                             visited.insert(t.tid(*this));
                             // add lock
@@ -1050,12 +983,10 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
                     auto incident_tets = get_incident_tets_for_edge(edges[l_eid]);
                     for (auto& t : incident_tets) {
                         int tid = t.tid(*this);
-                        //                        if (is_visited[tid]) continue;
                         if (visited.count(tid)) continue;
 
-                        //\add lock
+                        //add lock
                         tet_queue.push(t);
-                        //                        is_visited[tid] = true;
                         visited.insert(tid);
                     }
                 }
@@ -1118,8 +1049,6 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
                         if ((tet_tri_v_sides[k] >= 0 && tet_tri_v_sides[(k + 1) % 3] >= 0) ||
                             (tet_tri_v_sides[k] <= 0 && tet_tri_v_sides[(k + 1) % 3] <= 0))
                             continue;
-                        //                        std::array<Vector3, 2> input_seg = {{tri[k],
-                        //                        tri[(k + 1) % 3]}};
                         Vector3 p;
                         is_intersected = wmtk::open_segment_triangle_intersection_3d(
                             {{tri[k], tri[(k + 1) % 3]}},
@@ -1158,8 +1087,6 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
                 }
             }
         }
-        //        wmtk::vector_unique(intersected_tids);//note: not needed
-        //        wmtk::logger().info("intersected_tets.size {}", intersected_tets.size());
 
         // erase edge without intersections OR edge with intersection but not belong to intersected
         // tets
@@ -1173,7 +1100,6 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
 
         ///push back new vertices
         std::vector<Tuple> intersected_edges;
-        // std::map<std::array<size_t, 2>, size_t> map_edge2vid;
 
 
         for (auto& info : map_edge2point) {
@@ -1181,14 +1107,10 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
             VertexAttributes v;
             v.m_pos = p;
             v.m_posf = to_double(v.m_pos);
-            //            (info.second).first = m_vertex_attribute.m_attributes.size() - 1;//todo: check if needed
 
             ///
             intersected_edges.push_back(tuple_from_edge(tid, l_eid));
         }
-        // wmtk::logger().info("before v.size {}", vert_capacity());
-        // wmtk::logger().info("after v.size {}", m_vertex_attribute.size());
-        // wmtk::logger().info("map_edge2vid.size {}", map_edge2vid.size());
 
         // set locks for intersected edges and tets
         // std::vector<size_t> mutex_release_stack;
@@ -1239,8 +1161,6 @@ void tetwild::TetWild::setup_attributes()
     const auto& vertices = triangle_insertion_global_cache.input_surface.vertices;
     const auto& faces = triangle_insertion_global_cache.input_surface.faces;
 
-    // m_edge_attribute.m_attributes.resize(m_tet_attribute.m_attributes.size() * 6);
-    // m_face_attribute.m_attributes.resize(m_tet_attribute.m_attributes.size() * 4);
 
     //// track surface
     // update m_is_on_surface for vertices, remove leaked surface marks
@@ -1277,25 +1197,6 @@ void tetwild::TetWild::setup_attributes()
                 }
                 //
                 inside_fid = input_fid;
-
-                //                // fortest
-                //                bool is_out = m_envelope.is_outside(
-                //                    {{m_vertex_attribute[vids[0]].m_posf,
-                //                      m_vertex_attribute[vids[1]].m_posf,
-                //                      m_vertex_attribute[vids[2]].m_posf}});
-                //                if(is_out){
-                //                    cout<<"vid: ";
-                //                    for(int i: vids)
-                //                        std::cout<<i<<" ";
-                //                    std::cout<<std::endl;
-                //                    cout<<"fid: ";
-                //                    for(int i: fids)
-                //                        std::cout<<i<<" ";
-                //                    std::cout<<std::endl;
-                //                    pausee();
-                //                }
-                //                // fortest
-
                 break;
             }
         }
@@ -1355,10 +1256,6 @@ void tetwild::TetWild::setup_attributes()
     }
 
 
-    //    check_mesh_connectivity_validity();
-    //    output_mesh("triangle_insertion.msh");
-
-    // todo: output faces to check surface and bbox
 }
 
 void tetwild::TetWild::add_tet_centroid(const Tuple& t, size_t vid)
@@ -1369,9 +1266,6 @@ void tetwild::TetWild::add_tet_centroid(const Tuple& t, size_t vid)
         (m_vertex_attribute[vs[0].vid(*this)].m_pos + m_vertex_attribute[vs[1].vid(*this)].m_pos +
          m_vertex_attribute[vs[2].vid(*this)].m_pos + m_vertex_attribute[vs[3].vid(*this)].m_pos) /
         4;
-    //    (m_vertex_attribute[vids[0]].m_pos + m_vertex_attribute[vids[1]].m_pos +
-    //     m_vertex_attribute[vids[2]].m_pos + m_vertex_attribute[vids[3]].m_pos) /
-    //        4;
     v.m_posf = to_double(v.m_pos);
     m_vertex_attribute[vid] = v;
 }

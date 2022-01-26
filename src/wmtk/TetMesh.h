@@ -318,8 +318,6 @@ public:
         std::vector<size_t>& new_tids,
         std::vector<size_t>& new_center_ids);
 
-    void pausee() {
-    }
     /**
      * @brief cleans up the deleted vertices or tetrahedra, fixes the corresponding indices, and
      * reset the version number. WARNING: it invalidates all tuples!
@@ -342,12 +340,11 @@ public:
     using vector = tbb::concurrent_vector<T>;
 
 public:
-    AbstractAttributeContainer* p_vertex_attrs, *p_edge_attrs, *p_face_attrs, *p_tet_attrs;
+    AbstractAttributeContainer *p_vertex_attrs, *p_edge_attrs, *p_face_attrs, *p_tet_attrs;
     AbstractAttributeContainer vertex_attrs, edge_attrs, face_attrs, tet_attrs;
 
 
 private:
-
     // Stores the connectivity of the mesh
     vector<VertexConnectivity> m_vertex_connectivity;
     vector<TetrahedronConnectivity> m_tet_connectivity;
