@@ -121,15 +121,16 @@ public:
             m_vertex_attribute[i] = _vertex_attribute[i];
         m_tet_attribute.m_attributes = tbb::concurrent_vector<TetAttributes>(_tet_attribute.size());
         for (auto i = 0; i < _tet_attribute.size(); i++) m_tet_attribute[i] = _tet_attribute[i];
-
     }
 
-    void compute_vertex_partition() {
+    void compute_vertex_partition()
+    {
         auto partition_id = partition_TetMesh(*this, NUM_THREADS);
         for (auto i = 0; i < m_vertex_attribute.size(); i++)
             m_vertex_attribute[i].partition_id = partition_id[i];
     }
-    size_t get_partition_id(const Tuple& loc) const {
+    size_t get_partition_id(const Tuple& loc) const
+    {
         return m_vertex_attribute[loc.vid(*this)].partition_id;
     }
 
@@ -260,7 +261,8 @@ public:
     void add_tet_centroid(const Tuple& t, size_t vid) override;
     //
     void triangle_insertion_stuff(
-        std::vector<tbb::concurrent_queue<size_t>>& insertion_queues,
+        std::vector<tbb::concurrent_queue<std::tuple<size_t, int>>>& insertion_queues,
+        tbb::concurrent_queue<size_t>& expired_queue,
         int task_id);
     void triangle_insertion(const InputSurface& input_surface);
     void triangle_insertion_before(const std::vector<Tuple>& faces) override;
