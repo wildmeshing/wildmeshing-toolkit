@@ -378,6 +378,7 @@ void tetwild::TetWild::triangle_insertion_stuff(
                 if (is_inside) {
                     auto conn_tets = get_one_ring_tets_for_vertex(vs[lvid]);
                     for (auto& t : conn_tets) {
+                        if (visited.count(t.tid(*this))) continue;
                         visited.insert(t.tid(*this));
                         tet_queue.push(t);
                         // add lock
