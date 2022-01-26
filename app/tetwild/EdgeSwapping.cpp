@@ -20,7 +20,7 @@ auto face_attribute_tracker =
                 auto vs = m.get_face_vertices(f_t);
                 auto vids = std::array<size_t, 3>{{vs[0].vid(m), vs[1].vid(m), vs[2].vid(m)}};
                 std::sort(vids.begin(), vids.end());
-                auto [it, suc] = changed_faces.emplace(vids, global_fid);
+                auto [it, suc] = changed_faces.emplace(vids, m_face_attribute[global_fid]);
                 if (!suc) {
                     changed_faces.erase(it); // erase if already there.
                     middle_face.insert(global_fid);
@@ -41,10 +41,7 @@ auto tracker_assign_after =
     [](const auto& changed_faces, const auto& incident_tets, auto& m, auto& m_face_attribute) {
         auto middle_face = std::vector<size_t>();
         auto new_faces = std::set<std::array<size_t, 3>>();
-        auto assign_attrs = [](auto& attr, auto from, auto to) {
-            if (from == to) return;
-            attr[to] = attr[from];
-        };
+
         for (auto t : incident_tets) {
             for (auto j = 0; j < 4; j++) {
                 auto f_t = m.tuple_from_face(t.tid(m), j);
@@ -53,13 +50,17 @@ auto tracker_assign_after =
                 auto vids = std::array<size_t, 3>{{vs[0].vid(m), vs[1].vid(m), vs[2].vid(m)}};
                 std::sort(vids.begin(), vids.end());
                 auto it = (changed_faces.find(vids));
-                if (it == changed_faces.end()) continue;
+                if (it == changed_faces.end()) {
+                    middle_face.push_back(global_fid);
+                    continue;
+                }
 
-                // if found, then assign
-                if (it->second == global_fid) continue;
-                m_face_attribute[global_fid] = m_face_attribute[it->second];
-                m_face_attribute[it->second].reset();
+
+                m_face_attribute[global_fid] = it->second; // m_face_attribute[it->second];
             }
+        }
+        for (auto f : middle_face) {
+            m_face_attribute[f].reset();
         }
     };
 
@@ -116,6 +117,7 @@ bool tetwild::TetWild::swap_edge_before(const Tuple& t)
 {
     if (!TetMesh::swap_edge_before(t)) return false;
 
+    if (is_edge_on_surface(t) || is_edge_on_bbox(t)) return false;
     auto incident_tets = get_incident_tets_for_edge(t);
     auto max_energy = -1.0;
     for (auto& l : incident_tets) {
@@ -154,6 +156,8 @@ bool tetwild::TetWild::swap_edge_after(const Tuple& t)
 
     tracker_assign_after(swap_cache.local().changed_faces, twotets, *this, m_face_attribute);
     cnt_swap++;
+
+
     return true;
 }
 
@@ -161,6 +165,10 @@ bool tetwild::TetWild::swap_face_before(const Tuple& t)
 {
     if (!TetMesh::swap_face_before(t)) return false;
 
+    auto fid = t.fid(*this);
+    if (m_face_attribute[fid].m_is_surface_fs || m_face_attribute[fid].m_is_bbox_fs >= 0) {
+        return false;
+    }
     auto oppo_tet = t.switch_tetrahedron(*this);
     assert(oppo_tet.has_value() && "Should not swap boundary.");
     swap_cache.local().max_energy = std::max(

@@ -246,7 +246,7 @@ public:
     struct SwapInfoCache
     {
         double max_energy;
-        std::map<std::array<size_t, 3>, size_t> changed_faces;
+        std::map<std::array<size_t, 3>, FaceAttributes> changed_faces;
     };
     tbb::enumerable_thread_specific<SwapInfoCache> swap_cache;
 
@@ -296,6 +296,7 @@ public:
     bool round(const Tuple& loc);
     //
     bool is_edge_on_surface(const Tuple& loc);
+    bool is_edge_on_bbox(const Tuple& loc);
     //
     bool adjust_sizing_field(double max_energy);
     void mesh_improvement(int max_its = 80);
