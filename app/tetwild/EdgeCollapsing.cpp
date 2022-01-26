@@ -31,16 +31,16 @@ void tetwild::TetWild::collapse_all_edges(bool is_limit_length)
         executor.priority = [&](auto& m, auto op, auto& t) { return -m.get_length2(t); };
         executor.num_threads = NUM_THREADS;
         executor.should_process = [&](const auto& m, const auto& ele) {
-            auto [weight, op, tup] = ele;
+            auto[weight, op, tup] = ele;
             auto length = m.get_length2(tup);
             if (length != -weight) return false;
             //
             size_t v1_id = tup.vid(*this);
             size_t v2_id = tup.switch_vertex(*this).vid(*this);
-            if (is_limit_length && length > m_params.collapsing_l2 *
-                                                (m_vertex_attribute[v1_id].m_sizing_scalar +
-                                                 m_vertex_attribute[v2_id].m_sizing_scalar) /
-                                                2)
+            double sizing_ratio = (m_vertex_attribute[v1_id].m_sizing_scalar +
+                                   m_vertex_attribute[v2_id].m_sizing_scalar) /
+                                  2;
+            if (is_limit_length && length > m_params.collapsing_l2 * sizing_ratio * sizing_ratio)
                 return false;
             return true;
         };
@@ -104,12 +104,6 @@ bool tetwild::TetWild::collapse_before(const Tuple& loc) // input is an edge
                     on_bbox) == m_vertex_attribute[v2_id].on_bbox_faces.end())
                 return false;
     }
-    // surface
-    if (collapse_cache.local().edge_length > 0 && m_vertex_attribute[v1_id].m_is_on_surface) {
-        if (!m_vertex_attribute[v2_id].m_is_on_surface &&
-            m_envelope.is_outside(m_vertex_attribute[v2_id].m_posf))
-            return false;
-    }
     // remove isolated vertex
     if (m_vertex_attribute[v1_id].m_is_on_surface) {
         auto vids = get_one_ring_vids_for_vertex(v1_id);
@@ -121,6 +115,12 @@ bool tetwild::TetWild::collapse_before(const Tuple& loc) // input is an edge
             }
         }
         if (is_isolated) m_vertex_attribute[v1_id].m_is_on_surface = false;
+    }
+    // surface
+    if (collapse_cache.local().edge_length > 0 && m_vertex_attribute[v1_id].m_is_on_surface) {
+        if (!m_vertex_attribute[v2_id].m_is_on_surface &&
+            m_envelope.is_outside(m_vertex_attribute[v2_id].m_posf))
+            return false;
     }
 
     // todo: store surface info into cache
