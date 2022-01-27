@@ -169,14 +169,23 @@ bool HarmonicTet::swap_face_after(const Tuple& t)
 void harmonic_tet::HarmonicTet::smooth_all_vertices(bool interior_only)
 {
     ZoneScoped;
-    auto executor = wmtk::ExecutePass<HarmonicTet>();
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_vertices()) {
         if (interior_only && !vertex_adjacent_boundary_faces(loc).empty()) continue;
         collect_all_ops.emplace_back("vertex_smooth", loc);
     }
     wmtk::logger().debug("Num verts {}", collect_all_ops.size());
-    executor(*this, collect_all_ops);
+    if (NUM_THREADS > 0) {
+        auto executor = wmtk::ExecutePass<HarmonicTet, wmtk::ExecutionPolicy::kPartition>();
+        executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
+            return m.try_set_vertex_mutex_one_ring(e, task_id);
+        };
+        executor.num_threads = NUM_THREADS;
+        executor(*this, collect_all_ops);
+    } else {
+        auto executor = wmtk::ExecutePass<HarmonicTet, wmtk::ExecutionPolicy::kSeq>();
+        executor(*this, collect_all_ops);
+    }
 }
 
 bool HarmonicTet::invariants(const std::vector<Tuple>& tets)
@@ -365,28 +374,37 @@ auto compute_operation_gain =
     return -1.;
 };
 
-void HarmonicTet::swap_all()
+int HarmonicTet::swap_all()
 {
     ZoneScoped;
+    auto suc = std::atomic<int>(0);
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
-    collect_all_ops.reserve(tet_capacity()*4);
+    collect_all_ops.reserve(tet_capacity() * 4);
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_swap", loc);
     for (auto& loc : get_faces()) collect_all_ops.emplace_back("face_swap", loc);
 
-    auto executor = wmtk::ExecutePass<HarmonicTet, wmtk::ExecutionPolicy::kSeq>();
-    executor.renew_neighbor_tuples = renewal_all;
 
-    executor.priority = compute_operation_gain;
-
-    executor.should_process = [](auto& m, auto ele) {
-        if (std::get<0>(ele) <= 0) return false;
-        return true;
+    auto setup_and_execute = [&](auto& executor) {
+        executor.renew_neighbor_tuples = [&](auto& m, auto op, auto& t) {
+            suc++;
+            return renewal_all(m, op, t);
+        };
+        executor.priority = compute_operation_gain;
+        executor.num_threads = NUM_THREADS;
+        executor(*this, collect_all_ops);
     };
-    executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
-        return m.try_set_edge_mutex_two_ring(e, task_id);
-    };
-    executor.num_threads = NUM_THREADS;
-    executor(*this, collect_all_ops);
+    if (NUM_THREADS > 0) {
+        auto executor = wmtk::ExecutePass<HarmonicTet, wmtk::ExecutionPolicy::kPartition>();
+        executor.lock_vertices = [](auto& m, const auto& e, int task_id) {
+            return m.try_set_edge_mutex_two_ring(e, task_id);
+        };
+        setup_and_execute(executor);
+    } else {
+        auto executor = wmtk::ExecutePass<HarmonicTet, wmtk::ExecutionPolicy::kSeq>();
+        executor.num_threads = 1;
+        setup_and_execute(executor);
+    }
+    return suc;
 }
 
 
