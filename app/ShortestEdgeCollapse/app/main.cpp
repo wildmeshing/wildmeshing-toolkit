@@ -1,3 +1,4 @@
+#include <igl/Timer.h>
 #include <igl/is_edge_manifold.h>
 #include <igl/is_vertex_manifold.h>
 #include <igl/readOFF.h>
@@ -6,10 +7,10 @@
 #include <sec/ShortestEdgeCollapse.h>
 #include <stdlib.h>
 #include <wmtk/TriMesh.h>
+#include <chrono>
 #include <cstdlib>
 #include <iostream>
 #include <wmtk/utils/ManifoldUtils.hpp>
-#include <chrono>
 
 extern "C" {
 #include <wmtk/utils/getRSS.c>
@@ -34,7 +35,7 @@ void run_shortest_collapse(
     auto duration = duration_cast<milliseconds>(stop - start);
     wmtk::logger().info("runtime {}", duration.count());
     m.consolidate_mesh();
-    m.write_triangle_mesh(fmt::format("{}_{}.obj", output, target));
+    m.write_triangle_mesh(output);
     wmtk::logger().info(
         "After_vertices#: {} \n After_tris#: {}",
         m.vert_capacity(),
@@ -48,7 +49,7 @@ int main(int argc, char** argv)
     // ep
 
     const std::string root(WMT_DATA_DIR);
-    const std::string path = root + argv[1];
+    const std::string path = argv[1];
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     bool ok = igl::read_triangle_mesh(path, V, F);
@@ -76,11 +77,16 @@ int main(int argc, char** argv)
         auto tri1 = tri;
         wmtk::separate_to_manifold(v1, tri1, v, tri, modified_v);
     }
-    ShortestEdgeCollapse m(v);
+
+    ShortestEdgeCollapse m(v, atoi(argv[5]));
     m.create_mesh(v.size(), tri, modified_v, envelope_size);
     assert(m.check_mesh_connectivity_validity());
     wmtk::logger().info("collapsing mesh {}", argv[1]);
+    igl::Timer timer;
+    timer.start();
     run_shortest_collapse(path, std::stoi(argv[2]), argv[3], m);
+    timer.stop();
+    logger().info("Took {}", timer.getElapsedTimeInSec());
     m.consolidate_mesh();
     return 0;
 }
