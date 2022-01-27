@@ -154,13 +154,14 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
         sizing_ratio/=4;
         double R = m_params.l * 2;// * sizing_ratio;
 
-        std::map<size_t, double> new_scalars;
+        std::unordered_map<size_t, double> new_scalars;
         //
         std::queue<size_t> v_queue;
         Vector3d c(0, 0, 0);
         for (int j = 0; j < 4; j++) {
             v_queue.push(vs[j].vid(*this));
             c += m_vertex_attribute[vs[j].vid(*this)].m_posf;
+            new_scalars[vs[j].vid(*this)] = 0;
         }
         c /= 4;
         //
