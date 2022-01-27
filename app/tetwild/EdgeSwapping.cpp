@@ -146,7 +146,7 @@ bool tetwild::TetWild::swap_edge_after(const Tuple& t)
         m_tet_attribute[l.tid(*this)].m_quality = q;
         max_energy = std::max(q, max_energy);
     }
-    if (max_energy > swap_cache.local().max_energy) {
+    if (max_energy >= swap_cache.local().max_energy) {
         return false;
     }
 
@@ -191,7 +191,75 @@ bool tetwild::TetWild::swap_face_after(const Tuple& t)
     }
     wmtk::logger().trace("quality {} from {}", max_energy, swap_cache.local().max_energy);
 
-    if (max_energy > swap_cache.local().max_energy) {
+    if (max_energy >= swap_cache.local().max_energy) {
+        return false;
+    }
+
+    tracker_assign_after(swap_cache.local().changed_faces, incident_tets, *this, m_face_attribute);
+
+    cnt_swap++;
+    return true;
+}
+
+
+void tetwild::TetWild::swap_all_edges_44()
+{
+    auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
+    for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_swap_44", loc);
+    auto setup_and_execute = [&](auto& executor) {
+        executor.renew_neighbor_tuples = wmtk::renewal_edges;
+        executor.priority = [&](auto& m, auto op, auto& t) { return m.get_length2(t); };
+        executor.num_threads = NUM_THREADS;
+        executor(*this, collect_all_ops);
+    };
+    if (NUM_THREADS > 1) {
+        auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kPartition>();
+        executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
+            return m.try_set_edge_mutex_two_ring(e, task_id);
+        };
+        setup_and_execute(executor);
+    } else {
+        auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kSeq>();
+        setup_and_execute(executor);
+    }
+}
+
+bool tetwild::TetWild::swap_edge_44_before(const Tuple& t)
+{
+    if (!TetMesh::swap_edge_44_before(t)) return false;
+
+    if (is_edge_on_surface(t) || is_edge_on_bbox(t)) return false;
+    auto incident_tets = get_incident_tets_for_edge(t);
+    auto max_energy = -1.0;
+    for (auto& l : incident_tets) {
+        max_energy = std::max(m_tet_attribute[l.tid(*this)].m_quality, max_energy);
+    }
+    swap_cache.local().max_energy = max_energy;
+
+    if (!face_attribute_tracker(
+            swap_cache.local().changed_faces,
+            incident_tets,
+            *this,
+            m_face_attribute))
+        return false;
+
+    return true;
+}
+
+bool tetwild::TetWild::swap_edge_44_after(const Tuple& t)
+{
+    if (!TetMesh::swap_edge_44_after(t)) return false;
+
+    auto incident_tets = get_incident_tets_for_edge(t);
+
+    auto max_energy = -1.0;
+    for (auto& l : incident_tets) {
+        auto q = get_quality(l);
+        m_tet_attribute[l.tid(*this)].m_quality = q;
+        max_energy = std::max(q, max_energy);
+    }
+
+    if (max_energy >= swap_cache.local().max_energy) {
         return false;
     }
 

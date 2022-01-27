@@ -11,6 +11,8 @@
 #include <fastenvelope/FastEnvelope.h>
 #include <tbb/concurrent_queue.h>
 #include <tbb/concurrent_vector.h>
+#include <tbb/concurrent_map.h>
+#include <tbb/concurrent_unordered_map.h>
 #include <tbb/enumerable_thread_specific.h>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
@@ -264,6 +266,11 @@ public:
     void collapse_all_edges(bool is_limit_length = true);
     bool collapse_before(const Tuple& t) override;
     bool collapse_after(const Tuple& t) override;
+
+
+    void swap_all_edges_44();
+    bool swap_edge_44_before(const Tuple& t) override;
+    bool swap_edge_44_after(const Tuple& t) override;
 
     void swap_all_edges();
     bool swap_edge_before(const Tuple& t) override;

@@ -109,6 +109,14 @@ struct ExecutePass
                      else
                          return {};
                  }},
+                  {"edge_swap_44",
+                 [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
+                     std::vector<Tuple> ret;
+                     if (m.swap_edge_44(t, ret))
+                         return ret;
+                     else
+                         return {};
+                 }},
                 {"edge_split",
                  [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
                      std::vector<Tuple> ret;

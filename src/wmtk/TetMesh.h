@@ -307,6 +307,7 @@ public:
      */
     bool split_edge(const Tuple& t, std::vector<Tuple>& new_tets);
     bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_tets);
+    bool swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tets);
     bool swap_edge(const Tuple& t, std::vector<Tuple>& new_tets);
     bool swap_face(const Tuple& t, std::vector<Tuple>& new_tets);
     bool smooth_vertex(const Tuple& t);
@@ -394,6 +395,8 @@ protected:
     // If it returns false then the operation is undone (the tuple indexes a vertex and tet that
     // survived)
 
+    virtual bool swap_edge_44_before(const Tuple& t) { return true; }
+    virtual bool swap_edge_44_after(const Tuple& t) { return true; }
     virtual bool swap_edge_before(const Tuple& t) { return true; }
     virtual bool swap_edge_after(const Tuple& t) { return true; }
     virtual bool swap_face_before(const Tuple& t) { return true; }
