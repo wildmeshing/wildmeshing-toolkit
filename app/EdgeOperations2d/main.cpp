@@ -20,7 +20,7 @@ void run(std::string input, double len, std::string output, EdgeOperations2d& m)
 {
     auto start = high_resolution_clock::now();
     wmtk::logger().info("target len: {}", len);
-    m.adaptive_remeshing(len, 2, 0);
+    m.adaptive_remeshing(len, 2, 1);
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<milliseconds>(stop - start);
     wmtk::logger().info("runtime {}", duration.count());
@@ -55,7 +55,8 @@ int main(int argc, char** argv)
     // 2 output
     // 3 n_edges
     // 4 eps
-    const std::string path = argv[1];
+    const std::string root(WMT_DATA_DIR);
+    const std::string path = root + argv[1];
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     bool ok = igl::read_triangle_mesh(path, V, F);
@@ -87,9 +88,10 @@ int main(int argc, char** argv)
         properties);
     // double small = properties[0] * 0.1;
 
-    // run(path, properties[0] * 0.1, , m);
-    m.collapse_shortest(atoi(argv[3]));
-    m.write_triangle_mesh(std::string(argv[2]));
+    // run(path, properties[0] * 0.5, argv[2], m);
+    run_shortest_collapse(path, std::stoi(argv[2]), argv[3], m);
+    // m.collapse_shortest(atoi(argv[3]));
+    // m.write_triangle_mesh(std::string(argv[2]));
 
     return 0;
 }

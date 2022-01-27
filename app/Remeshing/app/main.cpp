@@ -73,8 +73,8 @@ int main(int argc, char** argv)
             "edgelen: avg max min valence:avg max min before remesh is: {}",
             properties);
 
-        run_remeshing(path, properties[0] * 5, std::string(argv[2]), m);
-        //run_remeshing(path, properties[0] / 2, std::string(argv[2]), m);
+        // run_remeshing(path, properties[0] * 5, std::string(argv[2]), m);
+        run_remeshing(path, properties[0] / 2, std::string(argv[2]), m);
     }
 
 

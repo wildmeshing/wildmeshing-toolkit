@@ -6,10 +6,10 @@
 #include <sec/ShortestEdgeCollapse.h>
 #include <stdlib.h>
 #include <wmtk/TriMesh.h>
+#include <chrono>
 #include <cstdlib>
 #include <iostream>
 #include <wmtk/utils/ManifoldUtils.hpp>
-#include <chrono>
 
 extern "C" {
 #include <wmtk/utils/getRSS.c>
@@ -48,7 +48,7 @@ int main(int argc, char** argv)
     // ep
 
     const std::string root(WMT_DATA_DIR);
-    const std::string path = root + argv[1];
+    const std::string path = argv[1];
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     bool ok = igl::read_triangle_mesh(path, V, F);

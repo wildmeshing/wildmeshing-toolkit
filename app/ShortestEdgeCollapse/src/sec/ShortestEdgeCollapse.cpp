@@ -103,7 +103,8 @@ bool sec::ShortestEdgeCollapse::collapse_shortest(int target_vert_number)
         executor.num_threads = NUM_THREADS;
         executor.renew_neighbor_tuples = renew;
         executor.priority = measure_len2;
-        executor.stopping_criterion_checking_frequency = std::numeric_limits<int>::max();
+        executor.stopping_criterion_checking_frequency =
+            target_vert_number == 0 ? std::numeric_limits<size_t>::max() : target_vert_number;
         executor(*this, collect_all_ops);
     };
 
