@@ -102,6 +102,29 @@ int main(int argc, char** argv)
     //    mesh.output_faces(output_path+"surface.obj", [](auto& attr) { return attr.m_is_surface_fs == true; }); mesh.output_faces("bbox.obj", [](auto& attr) { return attr.m_is_bbox_fs >= 0; });
     mesh.output_mesh(output_path + "_final.msh");
 
+    {
+        auto outface = std::vector<std::array<size_t, 3>>();
+        for (auto f : mesh.get_faces()) {
+            auto res = mesh.switch_tetrahedron(f);
+            if (!res.has_value()) {
+                auto verts = mesh.get_face_vertices(f);
+                outface.emplace_back(std::array<size_t, 3>{
+                    {verts[0].vid(mesh), verts[1].vid(mesh), verts[2].vid(mesh)}});
+            }
+        }
+        Eigen::MatrixXd matV = Eigen::MatrixXd::Zero(mesh.vert_capacity(), 3);
+        for (auto v : mesh.get_vertices()) {
+            auto vid = v.vid(mesh);
+            matV.row(vid) = mesh.m_vertex_attribute[vid].m_posf;
+        }
+        Eigen::MatrixXi matF(outface.size(), 3);
+        for (auto i = 0; i < outface.size(); i++) {
+            matF.row(i) << outface[i][0], outface[i][1], outface[i][2];
+        }
+        wmtk::logger().info("Output face size {}", outface.size());
+        igl::write_triangle_mesh(output_path + "_surface.obj", matV, matF);
+    }
+
     // todo: refine adaptively the mesh
     return 0;
 }
