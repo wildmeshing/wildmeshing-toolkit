@@ -1,7 +1,7 @@
+#include <igl/Timer.h>
 #include <igl/is_edge_manifold.h>
 #include <igl/read_triangle_mesh.h>
 #include <igl/remove_duplicate_vertices.h>
-#include <igl/timer.h>
 #include <igl/writeDMAT.h>
 #include <remeshing/UniformRemeshing.h>
 #include <stdlib.h>
