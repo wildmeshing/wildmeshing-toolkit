@@ -252,6 +252,7 @@ public:
                         if (newtup) {
                             renewed_tuples = renew_neighbor_tuples(m, op, newtup.value());
                             cnt_success++;
+                            cnt_update++;
                         } else {
                             on_fail(m, op, tup);
                             cnt_fail++;
@@ -260,7 +261,6 @@ public:
                             ZoneScoped;
                             renewed_elements.emplace_back(priority(m, o, e), o, e, 0);
                         }
-                        cnt_update++;
                     }
                     operation_cleanup(m); // Maybe use RAII
                 }
