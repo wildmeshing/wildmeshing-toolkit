@@ -165,6 +165,7 @@ bool UniformRemeshing::collapse_remeshing(double L)
             return -m.compute_edge_cost_collapse(e, L);
         };
         executor.lock_vertices = edge_locker;
+        executor.num_threads = NUM_THREADS;
 
         executor.should_process = [](auto& m, auto& ele) {
             auto& [val, op, e] = ele;
