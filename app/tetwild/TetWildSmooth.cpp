@@ -119,7 +119,7 @@ void tetwild::TetWild::smooth_all_vertices()
         collect_all_ops.emplace_back("vertex_smooth", loc);
     }
     wmtk::logger().debug("Num verts {}", collect_all_ops.size());
-    if (NUM_THREADS > 1) {
+    if (NUM_THREADS > 0) {
         auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kPartition>();
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
             return m.try_set_vertex_mutex_one_ring(e, task_id);

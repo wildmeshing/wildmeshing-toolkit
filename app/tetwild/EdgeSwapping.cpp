@@ -74,7 +74,7 @@ void tetwild::TetWild::swap_all_edges()
         executor.num_threads = NUM_THREADS;
         executor(*this, collect_all_ops);
     };
-    if (NUM_THREADS > 1) {
+    if (NUM_THREADS > 0) {
         auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kPartition>();
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
             return m.try_set_edge_mutex_two_ring(e, task_id);
@@ -96,7 +96,7 @@ void tetwild::TetWild::swap_all_faces()
         executor.num_threads = NUM_THREADS;
         executor(*this, collect_all_ops);
     };
-    if (NUM_THREADS > 1) {
+    if (NUM_THREADS > 0) {
         auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kPartition>();
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
             return m.try_set_face_mutex_two_ring(e, task_id);
@@ -212,7 +212,7 @@ void tetwild::TetWild::swap_all_edges_44()
         executor.num_threads = NUM_THREADS;
         executor(*this, collect_all_ops);
     };
-    if (NUM_THREADS > 1) {
+    if (NUM_THREADS > 0) {
         auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kPartition>();
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
             return m.try_set_edge_mutex_two_ring(e, task_id);

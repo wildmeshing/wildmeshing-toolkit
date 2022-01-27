@@ -62,7 +62,7 @@ void tetwild::TetWild::collapse_all_edges(bool is_limit_length)
             collect_failure_ops.clear();
         } while (count_success.load(std::memory_order_acquire) > 0);
     };
-    if (NUM_THREADS > 1) {
+    if (NUM_THREADS > 0) {
         auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kPartition>();
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
             return m.try_set_edge_mutex_two_ring(e, task_id);
