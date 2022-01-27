@@ -11,6 +11,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <wmtk/utils/ManifoldUtils.hpp>
+#include <igl/remove_duplicate_vertices.h>
 
 extern "C" {
 #include <wmtk/utils/getRSS.c>
@@ -53,6 +54,13 @@ int main(int argc, char** argv)
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     bool ok = igl::read_triangle_mesh(path, V, F);
+
+    Eigen::VectorXi SVI, SVJ;
+    Eigen::MatrixXd temp_V = V;  // for STL file
+    igl::remove_duplicate_vertices(temp_V, 0, V, SVI, SVJ);
+    for (int i = 0; i < F.rows(); i++)
+      for (int j : {0, 1, 2}) F(i, j) = SVJ[F(i, j)];
+
     wmtk::logger().info("Before_vertices#: {} \n Before_tris#: {}", V.rows(), F.rows());
 
 
