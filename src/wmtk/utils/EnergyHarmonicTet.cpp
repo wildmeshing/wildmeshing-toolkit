@@ -6,13 +6,16 @@
 // from sympy.printing import ccode
 // from sympy import symbols, cse, numbered_symbols, Matrix, det,diff
 // a00,a01,a02,a10,a11,a12,a20,a21,a22, a30,a31,a32 = symbols(','.join([f'T[{i}]' for i in
-// range(12)])) pts = Matrix([[a00,a01,a02],[a10,a11,a12],[a20,a21,a22],[a30,a31,a32]]) vol =
-// det(Matrix([pts.row(1) - pts.row(0), pts.row(2) - pts.row(0),pts.row(3) - pts.row(0)])) def
-// area2(i,j,k):
+// range(12)])) 
+// pts = Matrix([[a00,a01,a02],[a10,a11,a12],[a20,a21,a22],[a30,a31,a32]]) 
+// vol =
+// det(Matrix([pts.row(1) - pts.row(0), pts.row(2) - pts.row(0),pts.row(3) - pts.row(0)])) 
+// def area2(i,j,k):
 //     cr = (pts.row(i) - pts.row(j)).cross(pts.row(i) - pts.row(k))
 //     squ_area = cr.dot(cr) / 4
 //     return squ_area
 // energy = (area2(0,1,2) + area2(0,1,3) + area2(0,2,3) + area2(1,2,3))/vol
+//
 // # Following from https://stackoverflow.com/a/43452434/5742040
 // CSE_results = cse(energy,numbered_symbols("helper_"))
 //
