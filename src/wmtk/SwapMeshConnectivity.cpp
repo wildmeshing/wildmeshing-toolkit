@@ -331,6 +331,15 @@ bool wmtk::TetMesh::swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tet_tup
     }
     release_protect_attributes();
 
+    //todo: return new_edges
+    std::vector<Tuple> new_edges;
+    for (size_t t_id : new_tet_id) {
+        for (int j = 0; j < 6; j++) {
+            new_edges.push_back(tuple_from_edge(t_id, j));
+        }
+    }
+    unique_edge_tuples(*this, new_edges);
+
     return true;
 }
 
