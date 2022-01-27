@@ -109,6 +109,14 @@ struct ExecutePass
                      else
                          return {};
                  }},
+                  {"edge_swap_44",
+                 [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
+                     std::vector<Tuple> ret;
+                     if (m.swap_edge_44(t, ret))
+                         return ret;
+                     else
+                         return {};
+                 }},
                 {"edge_split",
                  [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
                      std::vector<Tuple> ret;
@@ -244,6 +252,7 @@ public:
                         if (newtup) {
                             renewed_tuples = renew_neighbor_tuples(m, op, newtup.value());
                             cnt_success++;
+                            cnt_update++;
                         } else {
                             on_fail(m, op, tup);
                             cnt_fail++;
@@ -252,7 +261,6 @@ public:
                             ZoneScoped;
                             renewed_elements.emplace_back(priority(m, o, e), o, e, 0);
                         }
-                        cnt_update++;
                     }
                     operation_cleanup(m); // Maybe use RAII
                 }

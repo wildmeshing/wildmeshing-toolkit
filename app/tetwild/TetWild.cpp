@@ -27,19 +27,20 @@ void tetwild::TetWild::mesh_improvement(int max_its)
     double pre_max_energy = 0., pre_avg_energy = 0.;
     for (int it = 0; it < max_its; it++) {
         ///ops
-        wmtk::logger().info("========it {}========", it);
-        auto [max_energy, avg_energy] = local_operations({{1, 2, 1, 1}});
+        wmtk::logger().info("\n========it {}========", it);
+        auto [max_energy, avg_energy] = local_operations({{1, 1, 1, 1}});
 
         ///energy check
         wmtk::logger().info("max energy {} stop {}", max_energy, m_params.stop_energy);
         if (max_energy < m_params.stop_energy) break;
 
         ///sizing field
-        if (it > 0 && ((pre_max_energy - max_energy) / max_energy < 1e-1 &&
-                       (pre_avg_energy - avg_energy) / avg_energy < 1e-1)) {
+        if (it > 0
+            && ((pre_max_energy - max_energy) / max_energy < 1e-1 || pre_max_energy - max_energy<1e-2)
+            && ((pre_avg_energy - avg_energy) / avg_energy < 1e-1 || pre_avg_energy - avg_energy<1e-2)) {
             m++;
             if (m == M) {
-                wmtk::logger().info("adjust_sizing_field...");
+                wmtk::logger().info(">>>>adjust_sizing_field...");
                 is_hit_min_edge_length = adjust_sizing_field(max_energy);
                 m = 0;
             }
@@ -85,6 +86,7 @@ std::tuple<double, double> tetwild::TetWild::local_operations(
         } else if (i == 2) {
             for (int n = 0; n < ops[i]; n++) {
                 wmtk::logger().info("==swapping {}==", n);
+                swap_all_edges_44();
                 swap_all_edges();
                 swap_all_faces();
             }
@@ -95,20 +97,30 @@ std::tuple<double, double> tetwild::TetWild::local_operations(
             }
         }
 
-        if (ops[i] > 0) {
-            wmtk::logger().info("#t {}", tet_size());
-            wmtk::logger().info("#v {}", vertex_size());
-            energy = get_max_avg_energy();
-            wmtk::logger().info("max energy = {}", std::get<0>(energy));
-            wmtk::logger().info("avg energy = {}", std::get<1>(energy));
-            wmtk::logger().info("time = {}", timer.getElapsedTime());
-
-            output_faces("track_surface.obj", [](auto& attr) { return attr.m_is_surface_fs == true; });
-            output_faces("track_bbox.obj", [](auto& attr) { return attr.m_is_bbox_fs >= 0; });
-        }
+//        if (ops[i] > 0) {
+//            wmtk::logger().info("#t {}", tet_size());
+//            wmtk::logger().info("#v {}", vertex_size());
+//            energy = get_max_avg_energy();
+//            wmtk::logger().info("max energy = {}", std::get<0>(energy));
+//            wmtk::logger().info("avg energy = {}", std::get<1>(energy));
+//            wmtk::logger().info("time = {}", timer.getElapsedTime());
+//
+//            output_faces("track_surface.obj", [](auto& attr) { return attr.m_is_surface_fs == true; });
+//            output_faces("track_bbox.obj", [](auto& attr) { return attr.m_is_bbox_fs >= 0; });
+//        }
     }
 
-    check_attributes(); // fortest
+//    wmtk::logger().info("#t {}", tet_size());
+//    wmtk::logger().info("#v {}", vertex_size());
+    energy = get_max_avg_energy();
+    wmtk::logger().info("max energy = {}", std::get<0>(energy));
+    wmtk::logger().info("avg energy = {}", std::get<1>(energy));
+    wmtk::logger().info("time = {}", timer.getElapsedTime());
+
+//        output_faces("track_surface.obj", [](auto& attr) { return attr.m_is_surface_fs == true; });
+//        output_faces("track_bbox.obj", [](auto& attr) { return attr.m_is_bbox_fs >= 0; });
+
+//    check_attributes(); // fortest
 
     return energy;
 }
@@ -129,15 +141,22 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
     Scalar refine_scalar = 0.5;
     Scalar min_refine_scalar = m_params.l_min / m_params.l;
 
-    const double R = m_params.l * 2;
     for (size_t i = 0; i < tets.size(); i++) {
         int tid = tets[i].tid(*this);
         if (m_tet_attribute[tid].m_quality < filter_energy) continue;
 
+        auto vs = oriented_tet_vertices(tets[i]);
+
+        double sizing_ratio = 0;
+        for(int j=0;j<4;j++) {
+            sizing_ratio += m_vertex_attribute[vs[j].vid(*this)].m_sizing_scalar;
+        }
+        sizing_ratio/=4;
+        double R = m_params.l * 2;// * sizing_ratio;
+
         std::map<size_t, double> new_scalars;
         //
         std::queue<size_t> v_queue;
-        auto vs = oriented_tet_vertices(tets[i]);
         Vector3d c(0, 0, 0);
         for (int j = 0; j < 4; j++) {
             v_queue.push(vs[j].vid(*this));
@@ -367,6 +386,8 @@ bool tetwild::TetWild::is_inverted(const Tuple& loc) const
 bool tetwild::TetWild::round(const Tuple& v)
 {
     size_t i = v.vid(*this);
+    if(m_vertex_attribute[i].m_is_rounded)
+        return true;
 
     auto old_pos = m_vertex_attribute[i].m_pos;
     m_vertex_attribute[i].m_pos << m_vertex_attribute[i].m_posf[0], m_vertex_attribute[i].m_posf[1],
@@ -486,9 +507,8 @@ bool tetwild::TetWild::is_edge_on_bbox(const Tuple& loc)
     return false;
 }
 
-void tetwild::TetWild::check_attributes()
-{
-    for (auto& f : get_faces()) {
+void tetwild::TetWild::check_attributes() {
+    for (auto &f: get_faces()) {
         auto fid = f.fid(*this);
         auto vs = get_face_vertices(f);
 
@@ -516,18 +536,35 @@ void tetwild::TetWild::check_attributes()
         }
     }
 
-    for (auto& v : get_vertices()) {
+    const auto &vs = get_vertices();
+    for (const auto &v: vs) {
         size_t i = v.vid(*this);
         if (m_vertex_attribute[i].m_is_on_surface) {
             bool is_out = m_envelope.is_outside(m_vertex_attribute[i].m_posf);
             if (is_out) wmtk::logger().critical("is_out v");
         }
 
+        //check rounding
         if (m_vertex_attribute[i].m_is_rounded) {
             if (m_vertex_attribute[i].m_pos[0] != m_vertex_attribute[i].m_posf[0] ||
                 m_vertex_attribute[i].m_pos[1] != m_vertex_attribute[i].m_posf[1] ||
                 m_vertex_attribute[i].m_pos[2] != m_vertex_attribute[i].m_posf[2])
-                wmtk::logger().critical("rounding error {}", i);
+                wmtk::logger().critical("rounding error {} rounded", i);
+        } else {
+            Vector3d p = to_double(m_vertex_attribute[i].m_pos);
+            if(p!=m_vertex_attribute[i].m_posf)
+                wmtk::logger().critical("rounding error {} unrounded", i);
         }
     }
+
+    //check quality
+    const auto &tets = get_tets();
+    for (const auto &t: tets) {
+        size_t i = t.tid(*this);
+        double q = get_quality(t);
+        if (q != m_tet_attribute[i].m_quality) {
+            wmtk::logger().critical("q!=m_tet_attribute[i].m_quality {} {}", q, m_tet_attribute[i].m_quality);
+        }
+    }
+
 }

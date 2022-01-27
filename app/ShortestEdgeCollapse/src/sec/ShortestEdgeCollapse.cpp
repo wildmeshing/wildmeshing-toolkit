@@ -27,7 +27,7 @@ bool sec::ShortestEdgeCollapse::invariants(const std::vector<Tuple>& new_tris)
 
 bool sec::ShortestEdgeCollapse::write_triangle_mesh(std::string path)
 {
-    Eigen::MatrixXd V = Eigen::MatrixXd::Zero(vertex_attrs.size(), 3);
+    Eigen::MatrixXd V = Eigen::MatrixXd::Zero(vert_capacity(), 3);
     for (auto& t : get_vertices()) {
         auto i = t.vid();
         V.row(i) = vertex_attrs[i].pos;
@@ -47,7 +47,7 @@ bool sec::ShortestEdgeCollapse::write_triangle_mesh(std::string path)
 
 bool sec::ShortestEdgeCollapse::collapse_before(const Tuple& t)
 {
-    if (!TriMesh::collapse_before(t)) return false;
+    if (!ConcurrentTriMesh::collapse_before(t)) return false;
     if (vertex_attrs[t.vid()].freeze || vertex_attrs[t.switch_vertex(*this).vid()].freeze)
         return false;
     position_cache.local().v1p = vertex_attrs[t.vid()].pos;
@@ -104,10 +104,13 @@ bool sec::ShortestEdgeCollapse::collapse_shortest(int target_vert_number)
         executor.renew_neighbor_tuples = renew;
         executor.priority = measure_len2;
         executor.stopping_criterion_checking_frequency = std::numeric_limits<int>::max();
+        executor.stopping_criterion_checking_frequency =
+            target_vert_number > 0 ? target_vert_number - 1 : std::numeric_limits<int>::max();
+        executor.stopping_criterion = [](auto& m) { return true; };
         executor(*this, collect_all_ops);
     };
 
-    if (NUM_THREADS > 1) {
+    if (NUM_THREADS > 0) {
         auto executor = wmtk::ExecutePass<ShortestEdgeCollapse, ExecutionPolicy::kPartition>();
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) {
             return m.try_set_edge_mutex_two_ring(e, task_id);
