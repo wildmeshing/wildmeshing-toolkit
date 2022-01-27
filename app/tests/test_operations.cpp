@@ -87,7 +87,7 @@ TEST_CASE("edge_splitting", "[tetwild_operation]")
     REQUIRE(tetwild.check_mesh_connectivity_validity());
 
     REQUIRE(tetwild.m_vertex_attribute.size() == 218);
-    tetwild.swap_all_edges();
+    tetwild.swap_all_edges_44();
     REQUIRE(tetwild.check_mesh_connectivity_validity());
     tetwild.swap_all_faces();
 

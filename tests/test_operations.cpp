@@ -147,3 +147,31 @@ TEST_CASE("forbidden-face-swap", "[tuple_operation]")
     REQUIRE(t.is_valid(mesh)); // operation rejected.
     REQUIRE(mesh.check_mesh_connectivity_validity());
 }
+
+
+TEST_CASE("tet_mesh_swap44", "[tuple_operation]")
+{
+    TetMesh mesh;
+    // 01 is the common edge
+    mesh.init(6, {{{0, 1, 2, 3}}, {{0, 1, 3, 4}}, {{0, 1, 4, 5}}, {{0, 1, 5, 2}}});
+
+    {
+        const auto edges = mesh.get_edges();
+
+        REQUIRE(edges.size() == 13);
+        auto cnt_swap = 0;
+        for (auto e : edges) {
+            if (!e.is_valid(mesh)) continue;
+            std::vector<TetMesh::Tuple> newt;
+            if (mesh.swap_edge_44(e, newt)) {
+                cnt_swap++;
+                REQUIRE_FALSE(e.is_valid(mesh));
+                REQUIRE(newt.front().is_valid(mesh));
+            }
+        }
+        REQUIRE(mesh.check_mesh_connectivity_validity());
+        REQUIRE(cnt_swap == 1);
+        REQUIRE(mesh.get_edges().size() == 13);
+        REQUIRE(mesh.get_tets().size() == 4);
+    }
+}
