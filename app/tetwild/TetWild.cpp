@@ -12,6 +12,10 @@
 
 #include <igl/winding_number.h>
 
+#include <tbb/task_arena.h>
+#include <tbb/concurrent_vector.h>
+#include <tbb/parallel_for.h>
+
 void tetwild::TetWild::mesh_improvement(int max_its)
 {
     ////preprocessing
@@ -137,11 +141,18 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
 
     Scalar recover_scalar = 1.5;
     //    std::vector<Scalar> scale_multipliers(vertices.size(), recover_scalar);
-    std::vector<Scalar> scale_multipliers(m_vertex_attribute.size(), recover_scalar);
+    tbb::concurrent_vector<Scalar> scale_multipliers(m_vertex_attribute.size(), recover_scalar);
     Scalar refine_scalar = 0.5;
     Scalar min_refine_scalar = m_params.l_min / m_params.l;
 
-    for (size_t i = 0; i < tets.size(); i++) {
+
+    tbb::task_arena arena(NUM_THREADS);
+
+    arena.execute([&] {
+
+    tbb::parallel_for(tbb::blocked_range<int>(0, tets.size()), [&](tbb::blocked_range<int> r){
+    // for (size_t i = 0; i < tets.size(); i++) {
+    for (int i=r.begin(); i<r.end(); i++) {
         int tid = tets[i].tid(*this);
         if (m_tet_attribute[tid].m_quality < filter_energy) continue;
 
@@ -196,6 +207,10 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
         }
     }
 
+    });
+
+    });
+
     bool is_hit_min_edge_length = false;
     for (size_t i = 0; i < vertices.size(); i++) {
         size_t vid = vertices[i].vid(*this);
@@ -212,6 +227,8 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
     }
 
     return is_hit_min_edge_length;
+
+
 }
 
 void tetwild::TetWild::filter_outside(bool remove_ouside)
