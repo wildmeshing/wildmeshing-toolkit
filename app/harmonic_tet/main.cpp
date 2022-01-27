@@ -64,15 +64,25 @@ auto process_mesh = [](auto& args) {
     msh.extract_tets([&](size_t i, size_t v0, size_t v1, size_t v2, size_t v3) {
         tets[i] = {{v0, v1, v2, v3}};
     });
+    igl::Timer timer;
+    auto time = 0.;
+    timer.start();
     auto har_tet = harmonic_tet::HarmonicTet(vec_attrs, tets, thread);
-    for (int i = 0; i <= 4; i++) {
+    time += timer.getElapsedTimeInMilliSec();
+    for (int i = 0; i <= 10; i++) {
         auto [E0, cnt0] = stats(har_tet);
-        har_tet.swap_all();
+        timer.start();
+        auto swp = har_tet.swap_all();
+        time += timer.getElapsedTimeInMilliSec();
         stats(har_tet);
+        timer.start();
         har_tet.consolidate_mesh();
-        har_tet.smooth_all_vertices();
+        har_tet.smooth_all_vertices(true);
+        time += timer.getElapsedTimeInMilliSec();
         auto [E1, cnt1] = stats(har_tet);
+        if (swp == 0) break;
     }
+    wmtk::logger().info("Time cost {}s", time/1e3);
     har_tet.output_mesh(output);
 };
 
