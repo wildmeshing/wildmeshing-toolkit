@@ -1325,10 +1325,10 @@ void tetwild::TetWild::setup_attributes()
         m_tet_attribute[i].m_quality = get_quality(tuple_from_tet(i));
     }
 
-    // fortest
-    wmtk::logger().info("output surface...");
-    output_surface("surface.obj");
-    // fortest
+//    // fortest
+//    wmtk::logger().info("output surface...");
+//    output_surface("surface.obj");
+//    // fortest
 }
 
 void tetwild::TetWild::add_tet_centroid(const Tuple& t, size_t vid)

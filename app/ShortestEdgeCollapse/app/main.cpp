@@ -12,6 +12,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <wmtk/utils/ManifoldUtils.hpp>
+#include <igl/remove_duplicate_vertices.h>
 
 extern "C" {
 #include <wmtk/utils/getRSS.c>

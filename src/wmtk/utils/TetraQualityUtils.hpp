@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Eigen/Core>
+#include <optional>
 
 namespace wmtk {
 
@@ -35,4 +36,8 @@ std::array<size_t, 4> orient_preserve_tet_reorder(const std::array<size_t, 4>& t
  *
  */
 double harmonic_energy(const Eigen::MatrixXd& verts);
+
+std::optional<Eigen::Vector3d> try_project(
+    const Eigen::Vector3d& point,
+    const std::vector<std::array<double, 12>>& assembled_neighbor);
 } // namespace wmtk

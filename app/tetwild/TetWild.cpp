@@ -97,20 +97,30 @@ std::tuple<double, double> tetwild::TetWild::local_operations(
             }
         }
 
-        if (ops[i] > 0) {
-            wmtk::logger().info("#t {}", tet_size());
-            wmtk::logger().info("#v {}", vertex_size());
-            energy = get_max_avg_energy();
-            wmtk::logger().info("max energy = {}", std::get<0>(energy));
-            wmtk::logger().info("avg energy = {}", std::get<1>(energy));
-            wmtk::logger().info("time = {}", timer.getElapsedTime());
-
-            output_faces("track_surface.obj", [](auto& attr) { return attr.m_is_surface_fs == true; });
-            output_faces("track_bbox.obj", [](auto& attr) { return attr.m_is_bbox_fs >= 0; });
-        }
+//        if (ops[i] > 0) {
+//            wmtk::logger().info("#t {}", tet_size());
+//            wmtk::logger().info("#v {}", vertex_size());
+//            energy = get_max_avg_energy();
+//            wmtk::logger().info("max energy = {}", std::get<0>(energy));
+//            wmtk::logger().info("avg energy = {}", std::get<1>(energy));
+//            wmtk::logger().info("time = {}", timer.getElapsedTime());
+//
+//            output_faces("track_surface.obj", [](auto& attr) { return attr.m_is_surface_fs == true; });
+//            output_faces("track_bbox.obj", [](auto& attr) { return attr.m_is_bbox_fs >= 0; });
+//        }
     }
 
-    check_attributes(); // fortest
+//    wmtk::logger().info("#t {}", tet_size());
+//    wmtk::logger().info("#v {}", vertex_size());
+    energy = get_max_avg_energy();
+    wmtk::logger().info("max energy = {}", std::get<0>(energy));
+    wmtk::logger().info("avg energy = {}", std::get<1>(energy));
+    wmtk::logger().info("time = {}", timer.getElapsedTime());
+
+//        output_faces("track_surface.obj", [](auto& attr) { return attr.m_is_surface_fs == true; });
+//        output_faces("track_bbox.obj", [](auto& attr) { return attr.m_is_bbox_fs >= 0; });
+
+//    check_attributes(); // fortest
 
     return energy;
 }
