@@ -1,27 +1,63 @@
 
 #include "TetWild.h"
+#include "wmtk/ExecutionScheduler.hpp"
 
+#include <Eigen/src/Core/util/Constants.h>
 #include <wmtk/utils/AMIPS.h>
-#include <limits>
+#include <array>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
 
+#include <igl/point_simplex_squared_distance.h>
+
+#include <limits>
+#include <optional>
 bool tetwild::TetWild::smooth_before(const Tuple& t)
 {
-    if (vertex_attrs[t.vid(*this)].m_is_rounded) return true;
+    if (!m_vertex_attribute[t.vid(*this)].on_bbox_faces.empty()) return false;
+    if (m_vertex_attribute[t.vid(*this)].m_is_rounded) return true;
     // try to round.
     return round(t); // Note: no need to roll back.
+}
+
+auto try_project(
+    const Eigen::Vector3d& point,
+    const std::vector<std::array<double, 12>>& assembled_neighbor) -> std::optional<Eigen::Vector3d>
+{
+    auto min_dist = std::numeric_limits<double>::infinity();
+    Eigen::Vector3d closest_point = Eigen::Vector3d::Zero();
+    for (const auto& tri : assembled_neighbor) {
+        auto V = Eigen::Map<const Eigen::Matrix<double, 3, 3, Eigen::RowMajor>>(tri.data());
+        Eigen::Vector3d project;
+        auto dist2 = -1;
+        igl::point_simplex_squared_distance<3>(
+            point,
+            V,
+            Eigen::RowVector3i(0, 1, 2),
+            0,
+            dist2,
+            project);
+        // TODO: libigl might not be robust how to verify this?
+        if (dist2 < min_dist) {
+            min_dist = dist2;
+            closest_point = project;
+        }
+    }
+    return closest_point;
 }
 
 bool tetwild::TetWild::smooth_after(const Tuple& t)
 {
     // Newton iterations are encapsulated here.
-    // TODO: bbox/surface tags.
-    // TODO: envelope check.
     wmtk::logger().trace("Newton iteration for vertex smoothing.");
     auto vid = t.vid(*this);
 
     auto locs = get_one_ring_tets_for_vertex(t);
+    auto max_quality = 0.;
+    for (auto& tet : locs) {
+        max_quality = std::max(max_quality, m_tet_attribute[tet.tid(*this)].m_quality);
+    }
+
     assert(locs.size() > 0);
     std::vector<std::array<double, 12>> assembles(locs.size());
     auto loc_id = 0;
@@ -41,15 +77,15 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
 
         for (auto i = 0; i < 4; i++) {
             for (auto j = 0; j < 3; j++) {
-                T[i * 3 + j] = vertex_attrs[local_verts[i]].m_posf[j];
+                T[i * 3 + j] = m_vertex_attribute[local_verts[i]].m_posf[j];
             }
         }
         loc_id++;
     }
 
-
-    auto old_pos = vertex_attrs[vid].m_posf;
-    vertex_attrs[vid].m_posf = wmtk::newton_method_from_stack(
+    auto old_pos = m_vertex_attribute[vid].m_posf;
+    auto old_asssembles = assembles;
+    m_vertex_attribute[vid].m_posf = wmtk::newton_method_from_stack(
         assembles,
         wmtk::AMIPS_energy,
         wmtk::AMIPS_jacobian,
@@ -57,23 +93,65 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
     wmtk::logger().trace(
         "old pos {} -> new pos {}",
         old_pos.transpose(),
-        vertex_attrs[vid].m_posf.transpose());
-    // note: duplicate code snippets.
+        m_vertex_attribute[vid].m_posf.transpose());
+
+    if (m_vertex_attribute[vid].m_is_on_surface) {
+        auto project = try_project(m_vertex_attribute[vid].m_posf, old_asssembles);
+        if (project) {
+            m_vertex_attribute[vid].m_posf = project.value();
+
+            auto max_after_quality = 0.;
+            for (auto& loc : locs) {
+                auto t_id = loc.tid(*this);
+                m_tet_attribute[t_id].m_quality = get_quality(loc);
+                max_after_quality = std::max(max_after_quality, m_tet_attribute[t_id].m_quality);
+            }
+            if (max_after_quality > max_quality) return false;
+        }
+        for (auto& t : locs) {
+            for (auto j = 0; j < 4; j++) {
+                auto f_t = tuple_from_face(t.tid(*this), j);
+                auto fid = f_t.fid(*this);
+                if (m_face_attribute[fid].m_is_surface_fs) {
+                    auto vs = get_face_vertices(f_t);
+                    if (m_envelope.is_outside(
+                            {{m_vertex_attribute[vs[0].vid(*this)].m_posf,
+                              m_vertex_attribute[vs[1].vid(*this)].m_posf,
+                              m_vertex_attribute[vs[2].vid(*this)].m_posf}}))
+                        return false;
+                }
+            }
+        }
+    }
 
     for (auto& loc : locs) {
         auto t_id = loc.tid(*this);
-        tet_attrs[t_id].m_qualities = get_quality(loc);
+        m_tet_attribute[t_id].m_quality = get_quality(loc);
     }
+
+    m_vertex_attribute[vid].m_pos = tetwild::to_rational(m_vertex_attribute[vid].m_posf);
+
+
     return true;
 }
 
 void tetwild::TetWild::smooth_all_vertices()
 {
-    auto tuples = get_vertices();
-    wmtk::logger().debug("tuples");
-    auto cnt_suc = 0;
-    for (auto& t : tuples) { // TODO: threads
-        if (smooth_vertex(t)) cnt_suc++;
+    auto executor = wmtk::ExecutePass<tetwild::TetWild>();
+    auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
+    for (auto& loc : get_vertices()) {
+        collect_all_ops.emplace_back("vertex_smooth", loc);
     }
-    wmtk::logger().debug("Smoothing Success Count {}", cnt_suc);
+    wmtk::logger().debug("Num verts {}", collect_all_ops.size());
+    if (NUM_THREADS > 1) {
+        auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kPartition>();
+        executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
+            return m.try_set_vertex_mutex_one_ring(e, task_id);
+        };
+        executor.num_threads = NUM_THREADS;
+        executor(*this, collect_all_ops);
+    } else {
+        auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kSeq>();
+        executor(*this, collect_all_ops);
+    }
 }

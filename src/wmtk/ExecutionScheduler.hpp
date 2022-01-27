@@ -5,6 +5,7 @@
 #include "wmtk/utils/Logger.hpp"
 
 // clang-format off
+#include <limits>
 #include <wmtk/utils/DisableWarnings.hpp>
 #include <tbb/concurrent_priority_queue.h>
 #include <tbb/concurrent_queue.h>
@@ -55,8 +56,8 @@ struct ExecutePass
     // lock vertices: should depend on the operation
     // returns a range of vertices that we need to acquire and lock.
     // trivial in serial version
-    std::function<std::optional<std::vector<size_t>>(AppMesh&, const Tuple&)> lock_vertices =
-        [](const AppMesh&, const Tuple&) { return std::vector<size_t>(); };
+    std::function<bool(AppMesh&, const Tuple&, int task_id)> lock_vertices =
+        [](const AppMesh&, const Tuple&, int task_id) { return true; };
 
     // Stopping Criterion based on the whole mesh
     // For efficiency, not every time is checked.
@@ -65,7 +66,7 @@ struct ExecutePass
     std::function<bool(const AppMesh&)> stopping_criterion = [](const AppMesh&) {
         return false; // non-stop, process everything
     };
-    size_t stopping_criterion_checking_frequency = 100;
+    size_t stopping_criterion_checking_frequency = std::numeric_limits<size_t>::max();
 
     // Should Process drops some Tuple from being processed.
     // For example, if the energy is out-dated.
@@ -76,6 +77,8 @@ struct ExecutePass
             assert(std::get<2>(t).is_valid(m));
             return true;
         };
+
+    std::function<void(const AppMesh&, Op, const Tuple& t)> on_fail = [](auto&, auto, auto&) {};
 
 
     size_t num_threads = 1;
@@ -102,6 +105,14 @@ struct ExecutePass
                  [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
                      std::vector<Tuple> ret;
                      if (m.swap_edge(t, ret))
+                         return ret;
+                     else
+                         return {};
+                 }},
+                  {"edge_swap_44",
+                 [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
+                     std::vector<Tuple> ret;
+                     if (m.swap_edge_44(t, ret))
                          return ret;
                      else
                          return {};
@@ -167,7 +178,7 @@ struct ExecutePass
     };
 
 private:
-    void operation_cleanup(AppMesh& m, std::optional<std::vector<size_t>>& stack)
+    void operation_cleanup(AppMesh& m)
     { //
         // class ResourceManger
         // what about RAII mesh edit locking?
@@ -175,7 +186,7 @@ private:
         if constexpr (policy == ExecutionPolicy::kSeq)
             return;
         else {
-            if (stack) m.release_vertex_mutex_in_stack(stack.value());
+            m.release_vertex_mutex_in_stack();
         }
     }
 
@@ -183,7 +194,7 @@ private:
     {
         if constexpr (policy == ExecutionPolicy::kSeq) return 0;
         if constexpr (std::is_base_of<wmtk::TetMesh, AppMesh>::value)
-            return m.m_vertex_partition_id[e.vid(m)];
+            return m.get_partition_id(e);
         else if constexpr (std::is_base_of<wmtk::TriMesh, AppMesh>::value) // TODO: make same
                                                                            // interface.
             return m.vertex_attrs[e.vid()].partition_id; // TODO: this is temporary.
@@ -194,12 +205,14 @@ public:
     bool operator()(AppMesh& m, const std::vector<std::pair<Op, Tuple>>& operation_tuples)
     {
         auto cnt_update = std::atomic<int>(0);
+        auto cnt_success = std::atomic<int>(0);
+        auto cnt_fail = std::atomic<int>(0);
         auto stop = std::atomic<bool>(false);
         using Elem = std::tuple<double, Op, Tuple, size_t>;
         auto queues = std::vector<tbb::concurrent_priority_queue<Elem>>(num_threads);
         auto final_queue = tbb::concurrent_priority_queue<Elem>();
 
-        auto run_single_queue = [&](auto& Q) {
+        auto run_single_queue = [&](auto& Q, int task_id) {
             ZoneScoped;
             auto ele_in_queue = Elem();
             while ([&]() {
@@ -219,8 +232,10 @@ public:
                 std::vector<Elem> renewed_elements;
                 {
                     ZoneScoped;
-                    auto locked_vid =
-                        lock_vertices(m, tup); // Note that returning `Tuples` would be invalid.
+                    auto locked_vid = lock_vertices(
+                        m,
+                        tup,
+                        task_id); // Note that returning `Tuples` would be invalid.
                     if (!locked_vid) {
                         retry++;
                         if (retry < max_retry_limit) {
@@ -234,14 +249,20 @@ public:
                     if (tup.is_valid(m)) {
                         auto newtup = edit_operation_maps[op](m, tup);
                         std::vector<std::pair<Op, Tuple>> renewed_tuples;
-                        if (newtup) renewed_tuples = renew_neighbor_tuples(m, op, newtup.value());
+                        if (newtup) {
+                            renewed_tuples = renew_neighbor_tuples(m, op, newtup.value());
+                            cnt_success++;
+                            cnt_update++;
+                        } else {
+                            on_fail(m, op, tup);
+                            cnt_fail++;
+                        }
                         for (auto& [o, e] : renewed_tuples) {
                             ZoneScoped;
                             renewed_elements.emplace_back(priority(m, o, e), o, e, 0);
                         }
-                        cnt_update++;
                     }
-                    operation_cleanup(m, locked_vid); // Maybe use RAII
+                    operation_cleanup(m); // Maybe use RAII
                 }
                 for (auto& e : renewed_elements) {
                     ZoneScoped;
@@ -264,7 +285,7 @@ public:
             for (auto& [op, e] : operation_tuples) {
                 final_queue.emplace(priority(m, op, e), op, e, 0);
             }
-            run_single_queue(final_queue);
+            run_single_queue(final_queue, 0);
         } else {
             for (auto& [op, e] : operation_tuples) {
                 //
@@ -274,14 +295,18 @@ public:
             tbb::task_arena arena(num_threads);
             tbb::task_group tg;
             arena.execute([&queues, &run_single_queue, &tg]() {
-                for (auto& q : queues) {
-                    tg.run([&run_single_queue, &q] { run_single_queue(q); });
+                for (int task_id = 0; task_id < queues.size(); task_id++) {
+                    tg.run([&run_single_queue, &queues, task_id] {
+                        run_single_queue(queues[task_id], task_id);
+                    });
                 }
             });
             arena.execute([&] { tg.wait(); });
             logger().debug("Parallel Complete, remains element {}", final_queue.size());
-            run_single_queue(final_queue);
+            run_single_queue(final_queue, 0);
         }
+
+        logger().info("cnt_success {} cnt_fail {}", cnt_success, cnt_fail);
         return true;
     }
 };

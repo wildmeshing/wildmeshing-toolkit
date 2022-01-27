@@ -88,10 +88,9 @@ int main(int argc, char** argv)
         properties);
     // double small = properties[0] * 0.1;
 
-    // run(path, properties[0] * 0.5, argv[2], m);
+
     run_shortest_collapse(path, std::stoi(argv[2]), argv[3], m);
-    // m.collapse_shortest(atoi(argv[3]));
-    // m.write_triangle_mesh(std::string(argv[2]));
+
 
     return 0;
 }

@@ -2,8 +2,11 @@
 
 #include <wmtk/utils/Delaunay.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/TetraQualityUtils.hpp>
 #include <wmtk/utils/io.hpp>
+#include "wmtk/utils/Delaunay.hpp"
 #include "wmtk/utils/EnergyHarmonicTet.hpp"
+#include "wmtk/utils/Logger.hpp"
 
 // Third-party include
 
@@ -12,6 +15,10 @@
 #include <CLI/CLI.hpp>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
+
+#include <igl/Timer.h>
+#include <igl/doublearea.h>
+#include <igl/read_triangle_mesh.h>
 
 struct
 {
@@ -37,7 +44,8 @@ auto stats = [](auto& har_tet) {
         total_e += e;
         cnt++;
     }
-    wmtk::logger().info("Total E {}, Cnt {}", total_e, cnt);
+    total_e *= 6;
+    wmtk::logger().info("Total E {}, Cnt {}, Avg {}", total_e, cnt, total_e / cnt);
     return std::pair(total_e, cnt);
 };
 
@@ -68,14 +76,55 @@ auto process_mesh = [](auto& args) {
     har_tet.output_mesh(output);
 };
 
+auto process_points = [](auto& args) {
+    auto& input = args.input;
+    auto& output = args.output;
+    auto& thread = args.thread;
+    auto vec_attrs = std::vector<Eigen::Vector3d>();
+    auto tets = std::vector<std::array<size_t, 4>>();
+    {
+        Eigen::MatrixXd V;
+        Eigen::MatrixXi F;
+        igl::read_triangle_mesh(input, V, F);
+        std::vector<std::array<double, 3>> points(V.rows());
+        for (auto i = 0; i < V.rows(); i++) points[i] = {{V(i, 0), V(i, 1), V(i, 2)}};
+        auto [tet_V, tetT] = wmtk::delaunay3D(points);
+
+        vec_attrs.resize(tet_V.size());
+        for (auto i = 0; i < tet_V.size(); i++) {
+            for (auto j = 0; j < 3; j++) vec_attrs[i][j] = tet_V[i][j];
+        }
+        tets = tetT;
+    }
+
+    auto har_tet = harmonic_tet::HarmonicTet(vec_attrs, tets, thread);
+    igl::Timer timer;
+    auto time = 0.;
+    auto [E0, cnt0] = stats(har_tet);
+    timer.start();
+    har_tet.swap_all_edges(true);
+    time = timer.getElapsedTimeInMilliSec();
+    wmtk::logger().info("Time cost: {}", time / 1e3);
+    stats(har_tet);
+    har_tet.consolidate_mesh();
+    auto [E1, cnt1] = stats(har_tet);
+    wmtk::logger().info("E {} -> {} cnt {} -> {}", E0, E1, cnt0, cnt1);
+    // har_tet.output_mesh(output);
+};
+
 int main(int argc, char** argv)
 {
     CLI::App app{argv[0]};
+    auto harmonize = true;
     app.add_option("input", args.input, "Input mesh.");
     app.add_option("output", args.output, "output mesh.");
-    app.add_option("--thread", args.thread, "thread.");
+    app.add_option("-j, --thread", args.thread, "thread.");
+    app.add_flag("--harmonize", harmonize, "Delaunay harmonize.");
     CLI11_PARSE(app, argc, argv);
 
-    process_mesh(args);
+    if (harmonize)
+        process_points(args);
+    else
+        process_mesh(args);
     return 0;
 }

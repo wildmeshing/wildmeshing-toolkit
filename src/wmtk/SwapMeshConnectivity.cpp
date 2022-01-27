@@ -25,7 +25,7 @@ std::vector<wmtk::TetMesh::TetrahedronConnectivity> record_old_tet_connectivity(
     auto tet_conn = std::vector<wmtk::TetMesh::TetrahedronConnectivity>();
     for (auto i : tets) tet_conn.push_back(conn[i]);
     return tet_conn;
-};
+}
 
 void wmtk::TetMesh::operation_failure_rollback_imp(
     std::map<size_t, wmtk::TetMesh::VertexConnectivity>& rollback_vert_conn,
@@ -58,12 +58,27 @@ wmtk::TetMesh::operation_update_connectivity_impl(
     std::vector<size_t>& remove_id,
     std::vector<std::array<size_t, 4>>& new_tet_conn)
 {
+    std::vector<size_t> allocate;
+    auto rollback_vert_conn = operation_update_connectivity_impl(remove_id, new_tet_conn, allocate);
+    remove_id = allocate;
+    return rollback_vert_conn;
+}
+
+std::map<size_t, wmtk::TetMesh::VertexConnectivity>
+wmtk::TetMesh::operation_update_connectivity_impl(
+    std::vector<size_t>& remove_id,
+    std::vector<std::array<size_t, 4>>& new_tet_conn,
+    std::vector<size_t>& allocate_id)
+{
+    // TODO: special case with fixed id.
+    assert(allocate_id.empty() || allocate_id.size() == new_tet_conn.size());
+    assert(std::is_sorted(remove_id.begin(), remove_id.end()));
+
     ZoneScoped;
     auto& tet_conn = this->m_tet_connectivity;
     auto& vert_conn = this->m_vertex_connectivity;
     auto new_tid = std::vector<size_t>();
     auto affected_vid = std::set<size_t>();
-    assert(std::is_sorted(remove_id.begin(), remove_id.end()));
     for (auto i : remove_id) {
         ZoneScoped;
         tet_conn[i].m_is_removed = true;
@@ -85,24 +100,29 @@ wmtk::TetMesh::operation_update_connectivity_impl(
         }
     }
 
-    if (new_tet_conn.size() <= remove_id.size()) { // tet number decrease
-        remove_id.resize(new_tet_conn.size());
-    } else {
-        ZoneScoped auto hole_size = remove_id.size();
+    if (allocate_id.empty()) {
+        allocate_id = remove_id;
+        if (new_tet_conn.size() <= allocate_id.size()) { // tet number decrease
+            allocate_id.resize(new_tet_conn.size());
+        } else {
+            ZoneScoped;
+            auto hole_size = allocate_id.size();
 
-        auto add_size = new_tet_conn.size() - remove_id.size();
-        remove_id.resize(new_tet_conn.size(), -1);
+            auto add_size = new_tet_conn.size() - allocate_id.size();
+            allocate_id.resize(new_tet_conn.size(), -1);
 
-        auto new_indices = std::vector<size_t>(add_size);
-        // auto old_tet_size = tet_conn.size();
-        for (auto i = 0; i < add_size; i++) {
-            remove_id[i + hole_size] = this->get_next_empty_slot_t(); // old_tet_size + i;
+            auto new_indices = std::vector<size_t>(add_size);
+            // auto old_tet_size = tet_conn.size();
+            for (auto i = 0; i < add_size; i++) {
+                allocate_id[i + hole_size] = this->get_next_empty_slot_t(); // old_tet_size + i;
+            }
         }
     }
-    assert(remove_id.size() == new_tet_conn.size());
+    assert(allocate_id.size() == new_tet_conn.size());
 
     for (auto i = 0; i < new_tet_conn.size(); i++) {
-        ZoneScoped auto id = remove_id[i]; // reuse.
+        ZoneScoped;
+        auto id = allocate_id[i];
         tet_conn[id].m_indices = new_tet_conn[i];
         tet_conn[id].m_is_removed = false;
         tet_conn[id].hash++;
@@ -114,7 +134,7 @@ wmtk::TetMesh::operation_update_connectivity_impl(
     }
 
     return rollback_vert_conn;
-};
+}
 
 
 bool wmtk::TetMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
@@ -197,6 +217,145 @@ bool wmtk::TetMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tet_tuples
 }
 
 
+constexpr auto swap_4_4 = [](const std::vector<std::array<size_t, 4>>& tets, auto u0, auto u1, int it, auto& newedge) {
+    ZoneScoped;
+    auto n0 = -1, n1 = -1, n2 = -1, n3 = -1;
+
+    auto find = [](auto& tets, auto v) {
+        for (auto i = 0; i < tets.size(); i++) {
+            if (tets[i] == v) return i;
+        }
+        return -1;
+    };
+    std::set<size_t> verts;
+    for (auto j = 0; j < 4; j++) {
+        for (auto k = 0; k < 4; k++) {
+            verts.insert(tets[j][k]);
+        }
+    }
+    verts.erase(u0);
+    verts.erase(u1);
+    assert(verts.size() == 4);
+
+    auto v0 = (*verts.begin());
+    auto find_other_v_local = [&](const auto& tet, const auto& tri) {
+        for (auto i = 0; i < tet.size(); i++) {
+            if (tet[i] != tri[0] && tet[i] != tri[1] && tet[i] != tri[2]) return i;
+        }
+        return -1;
+    };
+    auto ss = std::vector<size_t>();
+    for (auto j = 0; j < 4; j++) {
+        auto verts = std::array<size_t, 3>{{v0, u0, u1}};
+        if (find(tets[j], v0) != -1) {
+            auto local_i = find_other_v_local(tets[j], verts);
+            assert(local_i != -1);
+            ss.push_back(tets[j][local_i]);
+        }
+    }
+    assert(ss.size() == 2);
+    auto s0 = ss.front(), s1 = ss.back();
+    verts.erase(v0);
+    verts.erase(s0);
+    verts.erase(s1);
+    assert(verts.size() == 1);
+    auto v1 = (*verts.begin());
+    if(it == 1){
+        std::swap(v0, s0);
+        std::swap(v1, s1);
+    }
+
+    auto new_tet_conn = std::vector<std::array<size_t, 4>>();
+    for (auto j = 0; j < 4; j++) {
+        if (find(tets[j], v1) != -1) {
+            new_tet_conn.push_back(tets[j]);
+            replace(new_tet_conn.back(), u0, v0);
+        } else {
+            new_tet_conn.push_back(tets[j]);
+            replace(new_tet_conn.back(), u1, v1);
+        }
+    }
+    assert(new_tet_conn.size() == 4);
+    newedge = {{v0,v1}};
+    return new_tet_conn;
+};
+
+bool wmtk::TetMesh::swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
+{
+    ZoneScoped;
+    // 4-4 edge to face.
+    // only swap internal edges, not on boundary.
+    // if (t.is_boundary_edge(*this)) return false;
+    if (!swap_edge_44_before(t)) return false;
+    auto v1_id = t.vid(*this);
+    auto v2_id = switch_vertex(t).vid(*this);
+    auto& nb1 = m_vertex_connectivity[v1_id];
+    auto& nb2 = m_vertex_connectivity[v2_id];
+    auto affected = set_intersection(nb1.m_conn_tets, nb2.m_conn_tets);
+    assert(!affected.empty());
+    if (affected.size() != 4) {
+        logger().trace("selected edges need 4 neighbors to swap.");
+        return false;
+    }
+    std::set<size_t> verts;
+    for (auto ti : affected)
+        for (auto j = 0; j < 4; j++) verts.insert(m_tet_connectivity[ti][j]);
+    if (verts.size() != affected.size() + 2) return false; // boundary
+
+    auto old_tets = record_old_tet_connectivity(m_tet_connectivity, affected);
+    auto old_tets_conn = std::vector<std::array<size_t, 4>>();
+    for (auto& t : old_tets) old_tets_conn.push_back(t.m_indices);
+
+    std::vector<size_t> new_tet_id;
+    bool is_succeed = false;
+    for (int it = 0; it < 2; it++) {
+        auto edge_vv = std::array<size_t, 2>();
+        auto new_tets = swap_4_4(old_tets_conn, v1_id, v2_id, it, edge_vv);
+
+        new_tet_id = affected;
+        auto rollback_vert_conn = operation_update_connectivity_impl(new_tet_id, new_tets);
+        assert(new_tet_id.size() == 4);
+
+        auto new_tuple_from_edge = [&]() -> Tuple {
+            auto tid = new_tet_id.front();
+            auto j0 = m_tet_connectivity[tid].find(edge_vv[0]);
+            auto j1 = m_tet_connectivity[tid].find(edge_vv[1]);
+            assert(j0 != -1 && j1 != -1);
+            if (j0 > j1) std::swap(j0, j1);
+            auto edge_v = std::array<int, 2>{{j0, j1}};
+            auto it = std::find(m_local_edges.begin(), m_local_edges.end(), edge_v);
+            auto eid = std::distance(m_local_edges.begin(), it);
+            return tuple_from_edge(tid, eid);
+        };
+        auto newt = new_tuple_from_edge();
+
+        for (auto ti : new_tet_id) new_tet_tuples.emplace_back(tuple_from_tet(ti));
+        start_protect_attributes();
+        if (!swap_edge_44_after(newt) || !invariants(new_tet_tuples)) { // rollback post-operation
+            assert(affected.size() == old_tets.size());
+            operation_failure_rollback_imp(rollback_vert_conn, affected, new_tet_id, old_tets);
+            //            return false;
+            continue;
+        }
+        release_protect_attributes();
+        is_succeed = true;
+        break;
+    }
+    if (!is_succeed) return false;
+
+    // todo: return new_edges
+    std::vector<Tuple> new_edges;
+    for (size_t t_id : new_tet_id) {
+        for (int j = 0; j < 6; j++) {
+            new_edges.push_back(tuple_from_edge(t_id, j));
+        }
+    }
+    unique_edge_tuples(*this, new_edges);
+
+    return true;
+}
+
+
 bool wmtk::TetMesh::swap_face(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
 {
     {
@@ -244,14 +403,14 @@ bool wmtk::TetMesh::swap_face(const Tuple& t, std::vector<Tuple>& new_tet_tuples
         auto u1 = find_other_v(m_tet_connectivity[t1].m_indices, tri);
         oppo_vid = {{u0, u1}};
         //
-        auto new_tets = std::vector<std::array<size_t, 4>>{
+        auto tets = std::vector<std::array<size_t, 4>>{
             m_tet_connectivity[t0].m_indices,
             m_tet_connectivity[t0].m_indices,
             m_tet_connectivity[t0].m_indices};
-        replace(new_tets[0], v0, u1);
-        replace(new_tets[1], v1, u1);
-        replace(new_tets[2], v2, u1);
-        return new_tets;
+        replace(tets[0], v0, u1);
+        replace(tets[1], v1, u1);
+        replace(tets[2], v2, u1);
+        return tets;
     }();
 
     // check if edge already exist: topological un-swappable

@@ -1,41 +1,48 @@
 #include "HarmonicTet.hpp"
 
+#include <wmtk/TetMesh.h>
+#include <wmtk/ExecutionScheduler.hpp>
+#include <wmtk/utils/EnergyHarmonicTet.hpp>
+#include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
 #include <wmtk/utils/io.hpp>
-#include <wmtk/ExecutionScheduler.hpp>
-#include <wmtk/TetMesh.h>
-#include <wmtk/utils/ExecutorUtils.hpp>
-#include <wmtk/utils/EnergyHarmonicTet.hpp>
 
 #include <igl/predicates/predicates.h>
 
 #include <Tracy.hpp>
 
-#include <queue>
 #include <limits>
+#include <queue>
 
 namespace harmonic_tet {
+
 
 double HarmonicTet::get_quality(const Tuple& loc) const
 {
     ZoneScoped;
-    Eigen::MatrixXd ps(4, 3);
+    std::array<double, 12> T;
     auto tups = oriented_tet_vertices(loc);
     for (auto j = 0; j < 4; j++) {
-        ps.row(j) = vertex_attrs[tups[j].vid(*this)].pos;
+        auto& p = vertex_attrs[tups[j].vid(*this)].pos;
+        for (auto k = 0; k < 3; k++) {
+            T[j * 3 + k] = p[k];
+        }
     }
-    return wmtk::harmonic_energy(ps);
+    return wmtk::harmonic_tet_energy(T);
 }
 
 double HarmonicTet::get_quality(const std::array<size_t, 4>& vids) const
 {
     ZoneScoped;
-    Eigen::MatrixXd ps(4, 3);
+    std::array<double, 12> T;
     for (auto j = 0; j < 4; j++) {
-        ps.row(j) = vertex_attrs[vids[j]].pos;
+        auto& p = vertex_attrs[vids[j]].pos;
+        for (auto k = 0; k < 3; k++) {
+            T[j * 3 + k] = p[k];
+        }
     }
-    return wmtk::harmonic_energy(ps);
+    return wmtk::harmonic_tet_energy(T);
 }
 
 
@@ -159,29 +166,6 @@ bool HarmonicTet::swap_face_after(const Tuple& t)
 }
 
 
-void HarmonicTet::swap_all_edges(bool parallel)
-{
-    ZoneScoped;
-    auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
-    for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_swap", loc);
-    auto setup_and_execute = [&](auto& executor) {
-        executor.renew_neighbor_tuples = wmtk::renewal_edges;
-        executor.lock_vertices = [](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
-            auto stack = std::vector<size_t>();
-            if (!m.try_set_edge_mutex_two_ring(e, stack)) return {};
-            return stack;
-        };
-        executor.num_threads = NUM_THREADS;
-    };
-    if (parallel) {
-        auto executor = wmtk::ExecutePass<HarmonicTet, wmtk::ExecutionPolicy::kPartition>();
-        setup_and_execute(executor);
-    } else {
-        auto executor = wmtk::ExecutePass<HarmonicTet, wmtk::ExecutionPolicy::kSeq>();
-        setup_and_execute(executor);
-    }
-}
-
 void harmonic_tet::HarmonicTet::smooth_all_vertices(bool interior_only)
 {
     ZoneScoped;
@@ -191,12 +175,13 @@ void harmonic_tet::HarmonicTet::smooth_all_vertices(bool interior_only)
         if (interior_only && !vertex_adjacent_boundary_faces(loc).empty()) continue;
         collect_all_ops.emplace_back("vertex_smooth", loc);
     }
-    wmtk::logger().info("Num verts {}", collect_all_ops.size());
+    wmtk::logger().debug("Num verts {}", collect_all_ops.size());
     executor(*this, collect_all_ops);
 }
 
 bool HarmonicTet::invariants(const std::vector<Tuple>& tets)
 {
+    return true;
     for (auto& t : tets) {
         if (is_inverted(t)) return false;
     }
@@ -211,10 +196,8 @@ void HarmonicTet::swap_all_faces(bool parallel)
     if (parallel) {
         auto executor = wmtk::ExecutePass<HarmonicTet, wmtk::ExecutionPolicy::kPartition>();
         executor.renew_neighbor_tuples = wmtk::renewal_faces;
-        executor.lock_vertices = [](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
-            auto stack = std::vector<size_t>();
-            if (!m.try_set_face_mutex_two_ring(e, stack)) return {};
-            return stack;
+        executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
+            return m.try_set_face_mutex_two_ring(e, task_id);
         };
         executor.num_threads = NUM_THREADS;
         executor(*this, collect_all_ops);
@@ -313,7 +296,8 @@ constexpr auto swap_3_2 = [](const std::vector<std::array<size_t, 4>>& tets, aut
     replace(newtet[1], v0, n2);
     return newtet;
 };
-constexpr auto swap_2_3 = [](const std::vector<std::array<size_t, 4>>& tets, std::array<size_t, 3> n) {
+constexpr auto swap_2_3 = [](const std::vector<std::array<size_t, 4>>& tets,
+                             std::array<size_t, 3> n) {
     ZoneScoped;
     auto u = std::array<int, 2>{{-1, -1}};
     // T0 : *n0*,n1,n2 v1-> v2
@@ -334,71 +318,125 @@ constexpr auto swap_2_3 = [](const std::vector<std::array<size_t, 4>>& tets, std
     return newtet;
 };
 
+
+auto compute_operation_gain =
+    [](auto& m, auto op, const wmtk::TetMesh::Tuple& t) -> double { // using delta trace
+    if (op == "edge_swap") {
+        auto tets = m.get_incident_tets_for_edge(t);
+        if (tets.size() != 3) return -1.;
+        auto before = 0.;
+        for (auto e : tets) before += m.get_quality(e);
+        auto after = 0.;
+
+        std::vector<std::array<size_t, 4>> data(3);
+        for (auto i = 0; i < 3; i++) {
+            auto vs = m.oriented_tet_vertices(tets[i]);
+            for (int j = 0; j < 4; j++) {
+                data[i][j] = vs[j].vid(m);
+            }
+        }
+        auto v0 = t.vid(m), v1 = t.switch_vertex(m).vid(m);
+        auto new_conn = swap_3_2(data, v0, v1);
+        for (auto tc : new_conn) {
+            after += m.get_quality(tc);
+        }
+        return before - after; // decrease amount.
+    } else if (op == "face_swap") {
+        auto f1 = t.switch_tetrahedron(m);
+        if (!f1) return -1.; // boundary
+        auto tets = std::vector<wmtk::TetMesh::Tuple>{{t, f1.value()}};
+
+        std::vector<std::array<size_t, 4>> data(2);
+        for (auto i = 0; i < 2; i++) {
+            auto vs = m.oriented_tet_vertices(tets[i]);
+            for (int j = 0; j < 4; j++) {
+                data[i][j] = vs[j].vid(m);
+            }
+        }
+        auto v0 = t.vid(m), v1 = t.switch_vertex(m).vid(m);
+        auto v2 = t.switch_edge(m).switch_vertex(m).vid(m);
+        auto new_conn = swap_2_3(data, {{v0, v1, v2}});
+
+        auto decrease = 0.;
+        for (auto e : data) decrease += m.get_quality(e);
+        for (auto tc : new_conn) decrease -= m.get_quality(tc);
+        return decrease; // decrease amount.
+    }
+    return -1.;
+};
+
 void HarmonicTet::swap_all()
 {
     ZoneScoped;
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
+    collect_all_ops.reserve(tet_capacity()*4);
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_swap", loc);
+    for (auto& loc : get_faces()) collect_all_ops.emplace_back("face_swap", loc);
 
     auto executor = wmtk::ExecutePass<HarmonicTet, wmtk::ExecutionPolicy::kSeq>();
     executor.renew_neighbor_tuples = renewal_all;
 
-    executor.priority =
-        [](auto& m, auto op, const wmtk::TetMesh::Tuple& t) -> double { // using delta trace
-        if (op == "edge_swap") {
-            auto tets = m.get_incident_tets_for_edge(t);
-            if (tets.size() != 3) return -1.;
-            auto before = 0.;
-            for (auto e : tets) before += m.get_quality(e);
-            auto after = 0.;
+    executor.priority = compute_operation_gain;
 
-            std::vector<std::array<size_t, 4>> data(3);
-            for (auto i = 0; i < 3; i++) {
-                auto vs = m.oriented_tet_vertices(tets[i]);
-                for (int j = 0; j < 4; j++) {
-                    data[i][j] = vs[j].vid(m);
-                }
-            }
-            auto v0 = t.vid(m), v1 = t.switch_vertex(m).vid(m);
-            auto new_conn = swap_3_2(data, v0, v1);
-            for (auto tc : new_conn) {
-                after += m.get_quality(tc);
-            }
-            return before - after; // decrease amount.
-        } else if (op == "face_swap") {
-            auto f1 = t.switch_tetrahedron(m);
-            if (!f1) return -1.; // boundary
-            auto tets = std::vector<Tuple>{{t, f1.value()}};
-
-            std::vector<std::array<size_t, 4>> data(2);
-            for (auto i = 0; i < 2; i++) {
-                auto vs = m.oriented_tet_vertices(tets[i]);
-                for (int j = 0; j < 4; j++) {
-                    data[i][j] = vs[j].vid(m);
-                }
-            }
-            auto v0 = t.vid(m), v1 = t.switch_vertex(m).vid(m);
-            auto v2 = t.switch_edge(m).switch_vertex(m).vid(m);
-            auto new_conn = swap_2_3(data, {{v0, v1, v2}});
-
-            auto decrease = 0.;
-            for (auto e : data) decrease += m.get_quality(e);
-            for (auto tc : new_conn) decrease -= m.get_quality(tc);
-            return decrease; // decrease amount.
-        }
-        return -1.;
-    };
     executor.should_process = [](auto& m, auto ele) {
         if (std::get<0>(ele) <= 0) return false;
         return true;
     };
-    executor.lock_vertices = [](auto& m, const auto& e) -> std::optional<std::vector<size_t>> {
-        auto stack = std::vector<size_t>();
-        if (!m.try_set_edge_mutex_two_ring(e, stack)) return {};
-        return stack;
+    executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
+        return m.try_set_edge_mutex_two_ring(e, task_id);
     };
     executor.num_threads = NUM_THREADS;
     executor(*this, collect_all_ops);
+}
+
+
+void HarmonicTet::swap_all_edges(bool parallel)
+{
+    ZoneScoped;
+    auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
+    collect_all_ops.reserve(tet_capacity() * 2);
+    for (auto& loc : get_faces()) {
+        auto gain = compute_operation_gain(*this, std::string("face_swap"), loc);
+        if (gain > 0) {
+            spdlog::critical("wrong {}", gain);
+            exit(1);
+        }
+    }
+    for (auto& loc : get_edges()) {
+        if (compute_operation_gain(*this, std::string("edge_swap"), loc) > 0)
+            collect_all_ops.emplace_back("edge_swap", loc);
+    }
+    auto setup_and_execute = [&](auto& executor) {
+        executor.renew_neighbor_tuples = [](const auto& m, auto op, const auto& newt) {
+            std::set<size_t> eids;
+            std::vector<size_t> twice;
+            for (auto ti : newt) {
+                for (auto j = 0; j < 6; j++) {
+                    auto e_tup = m.tuple_from_edge(ti.tid(m), j);
+                    auto eid = e_tup.eid(m);
+                    auto [it, suc] = eids.insert(eid);
+                    if (!suc) twice.push_back(eid);
+                }
+            }
+            std::vector<std::pair<std::string, wmtk::TetMesh::Tuple>> op_tups;
+            for (auto eid : twice) op_tups.emplace_back(op, m.tuple_from_edge(eid / 6, eid % 6));
+            return op_tups;
+        };
+        executor(*this, collect_all_ops);
+    };
+    if (parallel) {
+        auto executor = wmtk::ExecutePass<HarmonicTet, wmtk::ExecutionPolicy::kPartition>();
+        executor.num_threads = NUM_THREADS;
+        executor.lock_vertices = [](auto& m, const auto& e, int task_id) {
+            return m.try_set_edge_mutex_two_ring(e, task_id);
+        };
+        executor.priority = compute_operation_gain;
+        setup_and_execute(executor);
+    } else {
+        auto executor = wmtk::ExecutePass<HarmonicTet, wmtk::ExecutionPolicy::kSeq>();
+        executor.num_threads = 1;
+        setup_and_execute(executor);
+    }
 }
 
 
