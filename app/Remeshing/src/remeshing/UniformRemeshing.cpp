@@ -251,7 +251,7 @@ double area(UniformRemeshing& m, std::array<TriMesh::Tuple, 3>& verts)
                 .cross(m.vertex_attrs[verts[1].vid()].pos - m.vertex_attrs[verts[2].vid()].pos))
                .norm() /
            2.0;
-};
+}
 
 Eigen::Vector3d normal(UniformRemeshing& m, std::array<TriMesh::Tuple, 3>& verts)
 {
@@ -259,6 +259,7 @@ Eigen::Vector3d normal(UniformRemeshing& m, std::array<TriMesh::Tuple, 3>& verts
                 .cross(m.vertex_attrs[verts[1].vid()].pos - m.vertex_attrs[verts[2].vid()].pos))
         .normalized();
 }
+
 Eigen::Vector3d UniformRemeshing::smooth(const TriMesh::Tuple& t)
 {
     auto one_ring_edges = get_one_ring_edges_for_vertex(t);
