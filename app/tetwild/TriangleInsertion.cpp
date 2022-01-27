@@ -1,5 +1,7 @@
 #include <tbb/concurrent_queue.h>
 #include <tbb/concurrent_vector.h>
+#include <tbb/concurrent_priority_queue.h>
+#include <tbb/parallel_for.h>
 #include <tbb/task_arena.h>
 #include <tbb/task_group.h>
 #include <wmtk/utils/Delaunay.hpp>
@@ -8,6 +10,8 @@
 #include "wmtk/auto_table.hpp"
 #include "wmtk/utils/GeoUtils.h"
 #include "wmtk/utils/Logger.hpp"
+#include <atomic>
+#include <random>
 
 #include <igl/remove_duplicate_vertices.h>
 
@@ -225,15 +229,18 @@ void tetwild::TetWild::triangle_insertion_after(
 }
 
 void tetwild::TetWild::triangle_insertion_stuff(
-    std::vector<tbb::concurrent_queue<std::tuple<size_t, int>>>& insertion_queues,
+    std::vector<tbb::concurrent_priority_queue<std::tuple<double, int, size_t>>>& insertion_queues,
     tbb::concurrent_queue<size_t>& expired_queue,
     int task_id)
 {
+    std::default_random_engine generator;
+    std::uniform_real_distribution<double> distribution(0.0,100.0);
+
     const int EMPTY_INTERSECTION = 0;
     const int TRI_INTERSECTION = 1;
     const int PLN_INTERSECTION = 2;
 
-    std::tuple<size_t, int> eiq;
+    std::tuple<double, int, size_t> eiq;
     auto& is_matched = triangle_insertion_global_cache.is_matched;
     //    auto& is_visited = triangle_insertion_local_cache.local().is_visited;
     const auto& vertices = triangle_insertion_global_cache.input_surface.vertices;
@@ -243,7 +250,7 @@ void tetwild::TetWild::triangle_insertion_stuff(
     std::vector<std::array<size_t, 3>> output_fs;
     // fortest
     while (insertion_queues[task_id].try_pop(eiq)) {
-        auto [face_id, retry_time] = eiq;
+        auto [prio, retry_time, face_id] = eiq;
 
         if (is_matched[face_id]) continue;
 
@@ -284,8 +291,9 @@ void tetwild::TetWild::triangle_insertion_stuff(
 
         if (!try_set_face_mutex_two_ring(v1, v2, v3, task_id)) {
             // retry
-            if (retry_time < 3) {
-                insertion_queues[task_id].push(std::make_tuple(face_id, retry_time + 1));
+            if (retry_time < 5) {
+                double rand = distribution(generator);
+                insertion_queues[task_id].push(std::make_tuple(rand, retry_time + 1, face_id));
             } else {
                 expired_queue.push(face_id);
             }
@@ -602,8 +610,9 @@ void tetwild::TetWild::triangle_insertion_stuff(
         }
 
         if (retry_flag) {
-            if (retry_time < 3) {
-                insertion_queues[task_id].push(std::make_tuple(face_id, retry_time + 1));
+            if (retry_time < 5) {
+                double rand = distribution(generator);
+                insertion_queues[task_id].push(std::make_tuple(rand, retry_time + 1, face_id));
             } else {
                 expired_queue.push(face_id);
             }
@@ -666,8 +675,9 @@ void tetwild::TetWild::triangle_insertion_stuff(
         }
 
         if (continue_flag) {
-            if (retry_time < 3) {
-                insertion_queues[task_id].push(std::make_tuple(face_id, retry_time + 1));
+            if (retry_time < 5) {
+                double rand = distribution(generator);
+                insertion_queues[task_id].push(std::make_tuple(rand, retry_time + 1, face_id));
             } else {
                 expired_queue.push(face_id);
             }
@@ -705,6 +715,8 @@ void tetwild::TetWild::triangle_insertion_stuff(
 
 void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
 {
+    std::default_random_engine generator;
+    std::uniform_real_distribution<double> distribution(0.0,100.0);
     const int EMPTY_INTERSECTION = 0;
     const int TRI_INTERSECTION = 1;
     const int PLN_INTERSECTION = 2;
@@ -748,11 +760,16 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
 
     auto& is_visited = triangle_insertion_local_cache.local().is_visited;
 
-    std::vector<tbb::concurrent_queue<std::tuple<size_t, int>>> insertion_queues(NUM_THREADS);
+    std::vector<tbb::concurrent_priority_queue<std::tuple<double, int, size_t>>> insertion_queues(NUM_THREADS);
     tbb::concurrent_queue<size_t> expired_queue;
     for (size_t face_id = 0; face_id < faces.size(); face_id++) {
+        double rand = distribution(generator);
         insertion_queues[input_surface.partition_id[faces[face_id][0]]].push(
-            std::tuple<size_t, int>(face_id, 0));
+            std::make_tuple(rand, 0, face_id));
+    }
+
+    for(int i=0;i<NUM_THREADS;i++){
+        std::cout<<i<<": "<<insertion_queues[i].size()<<std::endl;
     }
 
     tbb::task_arena arena(NUM_THREADS);
@@ -770,6 +787,12 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
 
     // serial dealings
 
+    wmtk::logger().info("expired size: {}", expired_queue.unsafe_size());
+    // std::cout<<"expired size: "<<expired_queue.unsafe_size()<<std::endl;
+
+arena.execute([&expired_queue, &faces, &vertices, &is_matched, this, &tg] {
+
+tg.run([&expired_queue, &faces, &vertices, &is_matched, this]{
     size_t face_id;
     while (expired_queue.try_pop(face_id)) {
         if (is_matched[face_id]) continue;
@@ -1139,9 +1162,15 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
             cnt++;
         }
     }
+});
 
+});
+
+arena.execute([&] { tg.wait(); });
 
     //// track surface, bbox, rounding
+wmtk::logger().info("finished insertion");
+
     setup_attributes();
 
     // fortest
@@ -1158,99 +1187,124 @@ void tetwild::TetWild::setup_attributes()
     const auto& vertices = triangle_insertion_global_cache.input_surface.vertices;
     const auto& faces = triangle_insertion_global_cache.input_surface.faces;
 
+    tbb::task_arena arena(NUM_THREADS);
 
-    //// track surface
-    // update m_is_on_surface for vertices, remove leaked surface marks
-    for (auto& info : triangle_insertion_global_cache.tet_face_tags) {
-        auto& vids = info.first;
-        auto& fids = info.second;
-        if (fids.empty()) continue;
+    arena.execute([&vertices, &faces, this] { 
 
-        Vector3 c = m_vertex_attribute[vids[0]].m_pos + m_vertex_attribute[vids[1]].m_pos +
-                    m_vertex_attribute[vids[2]].m_pos;
-        c = c / 3;
+    tbb::parallel_for(triangle_insertion_global_cache.tet_face_tags.range(), [&vertices, &faces, this](tbb::concurrent_map<std::array<size_t, 3>, std::vector<int>>::const_range_type &r)
+    {
+        for (tbb::concurrent_map<std::array<size_t, 3>, std::vector<int>>::const_iterator i=r.begin();i!=r.end();i++){
+            auto& info = i;
+            auto& vids = info->first;
+            auto fids = info->second;
+            if (fids.empty()) continue;
 
-        wmtk::vector_unique(fids);
+            Vector3 c = m_vertex_attribute[vids[0]].m_pos + m_vertex_attribute[vids[1]].m_pos +
+                        m_vertex_attribute[vids[2]].m_pos;
+            c = c / 3;
 
-        int inside_fid = -1;
-        for (int input_fid : fids) {
-            std::array<Vector3, 3> tri = {
-                {to_rational(vertices[faces[input_fid][0]]),
-                 to_rational(vertices[faces[input_fid][1]]),
-                 to_rational(vertices[faces[input_fid][2]])}};
-            //
-            std::array<Vector2, 3> tri2;
-            int squeeze_to_2d_dir = wmtk::project_triangle_to_2d(tri, tri2);
-            auto c2 = wmtk::project_point_to_2d(c, squeeze_to_2d_dir);
-            //
-            if (wmtk::is_point_inside_triangle(
-                    c2,
-                    tri2)) { // should exclude the points on the edges of tri2 -- NO
-                auto [face, global_tet_fid] = tuple_from_face(vids);
-                m_face_attribute[global_tet_fid].m_is_surface_fs = 1;
+            wmtk::vector_unique(fids);
+
+            int inside_fid = -1;
+            for (int input_fid : fids) {
+                std::array<Vector3, 3> tri = {
+                    {to_rational(vertices[faces[input_fid][0]]),
+                    to_rational(vertices[faces[input_fid][1]]),
+                    to_rational(vertices[faces[input_fid][2]])}};
                 //
-                for (size_t vid : vids) {
-                    m_vertex_attribute[vid].m_is_on_surface = true;
+                std::array<Vector2, 3> tri2;
+                int squeeze_to_2d_dir = wmtk::project_triangle_to_2d(tri, tri2);
+                auto c2 = wmtk::project_point_to_2d(c, squeeze_to_2d_dir);
+                //
+                if (wmtk::is_point_inside_triangle(
+                        c2,
+                        tri2)) { // should exclude the points on the edges of tri2 -- NO
+                    auto [face, global_tet_fid] = tuple_from_face(vids);
+                    m_face_attribute[global_tet_fid].m_is_surface_fs = 1;
+                    //
+                    for (size_t vid : vids) {
+                        m_vertex_attribute[vid].m_is_on_surface = true;
+                    }
+                    //
+                    inside_fid = input_fid;
+                    break;
                 }
-                //
-                inside_fid = input_fid;
-                break;
             }
-        }
 
-        // fortest
-        if (inside_fid >= 0) {
-            fids = {inside_fid};
-        } else {
-            fids = {};
-        }
-        // fortest
-    }
+            // fortest
+            if (inside_fid >= 0) {
+                fids = {inside_fid};
+            } else {
+                fids = {};
+            }
+            // fortest
+            }
+        });
 
     //// track bbox
-    for (auto& f : get_faces()) {
-        auto vs = get_face_vertices(f);
-        std::array<size_t, 3> vids = {{vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
+        auto faces = get_faces();
 
-        int on_bbox = -1;
-        for (int k = 0; k < 3; k++) {
-            if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_min[k] &&
-                m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_min[k] &&
-                m_vertex_attribute[vids[2]].m_pos[k] == m_params.box_min[k]) {
-                on_bbox = k * 2;
-                break;
+        tbb::parallel_for(tbb::blocked_range<int>(0, faces.size()), [&](tbb::blocked_range<int> r){
+            for (int i=r.begin(); i<r.end(); i++) {
+                auto vs = get_face_vertices(faces[i]);
+                std::array<size_t, 3> vids = {{vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
+
+                int on_bbox = -1;
+                for (int k = 0; k < 3; k++) {
+                    if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_min[k] &&
+                        m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_min[k] &&
+                        m_vertex_attribute[vids[2]].m_pos[k] == m_params.box_min[k]) {
+                        on_bbox = k * 2;
+                        break;
+                    }
+                    if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_max[k] &&
+                        m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_max[k] &&
+                        m_vertex_attribute[vids[2]].m_pos[k] == m_params.box_max[k]) {
+                        on_bbox = k * 2 + 1;
+                        break;
+                    }
+                }
+                if (on_bbox < 0) continue;
+
+                auto fid = faces[i].fid(*this);
+                m_face_attribute[fid].m_is_bbox_fs = on_bbox;
+                //
+                for (size_t vid : vids) {
+                    m_vertex_attribute[vid].on_bbox_faces.push_back(on_bbox);
+                }
             }
-            if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_max[k] &&
-                m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_max[k] &&
-                m_vertex_attribute[vids[2]].m_pos[k] == m_params.box_max[k]) {
-                on_bbox = k * 2 + 1;
-                break;
+
+        });
+
+        tbb::parallel_for(tbb::blocked_range<int>(0, m_vertex_attribute.m_attributes.size()), [&](tbb::blocked_range<int> r){
+            for (int i=r.begin();i<r.end();i++)
+                wmtk::vector_unique(m_vertex_attribute[i].on_bbox_faces);
+
+        });
+
+        //// rounding
+        std::atomic_int cnt_round(0);
+
+        tbb::parallel_for(tbb::blocked_range<int>(0, m_vertex_attribute.m_attributes.size()), [&](tbb::blocked_range<int> r){
+            for (int i=r.begin();i<r.end();i++){
+                auto v = tuple_from_vertex(i);
+                if (round(v)) cnt_round++;
             }
-        }
-        if (on_bbox < 0) continue;
 
-        auto fid = f.fid(*this);
-        m_face_attribute[fid].m_is_bbox_fs = on_bbox;
-        //
-        for (size_t vid : vids) {
-            m_vertex_attribute[vid].on_bbox_faces.push_back(on_bbox);
-        }
-    }
-    for (size_t i = 0; i < m_vertex_attribute.m_attributes.size(); i++)
-        wmtk::vector_unique(m_vertex_attribute[i].on_bbox_faces);
+        });
+        
+        wmtk::logger().info("cnt_round {}/{}", cnt_round, m_vertex_attribute.m_attributes.size());
 
-    //// rounding
-    int cnt_round = 0;
-    for (size_t i = 0; i < m_vertex_attribute.m_attributes.size(); i++) {
-        auto v = tuple_from_vertex(i);
-        if (round(v)) cnt_round++;
-    }
-    wmtk::logger().info("cnt_round {}/{}", cnt_round, m_vertex_attribute.m_attributes.size());
+        //// init qualities
 
-    //// init qualities
-    for (size_t i = 0; i < m_tet_attribute.size(); i++) {
-        m_tet_attribute[i].m_quality = get_quality(tuple_from_tet(i));
-    }
+        tbb::parallel_for(tbb::blocked_range<int>(0, m_tet_attribute.size()), [&](tbb::blocked_range<int> r){
+            for (int i=r.begin();i<r.end();i++){
+                m_tet_attribute[i].m_quality = get_quality(tuple_from_tet(i));
+            }
+
+        });
+
+    });
 
 
 }

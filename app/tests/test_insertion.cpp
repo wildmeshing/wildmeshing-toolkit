@@ -69,7 +69,7 @@ TEST_CASE("triangle-insertion-parallel", "[tetwild_operation]")
 {
     Eigen::MatrixXd V;
     Eigen::MatrixXd F;
-    std::string input_path = WMT_DATA_DIR "/37322.stl";
+    std::string input_path = WMT_DATA_DIR "/bunny.obj";
     igl::read_triangle_mesh(input_path, V, F);
     wmtk::logger().info("Read Mesh V={}, F={}", V.rows(), F.rows());
 
@@ -86,9 +86,10 @@ TEST_CASE("triangle-insertion-parallel", "[tetwild_operation]")
         }
     }
 
-    int NUM_THREADS = 4;
+    int NUM_THREADS = 16;
 
     tetwild::TetWild::InputSurface input_surface;
+    input_surface.params.lr = 1 / 30.0;
     input_surface.init(vertices, faces);
     input_surface.remove_duplicates();
     Eigen::MatrixXd new_F(input_surface.faces.size(), 3);
@@ -99,17 +100,27 @@ TEST_CASE("triangle-insertion-parallel", "[tetwild_operation]")
     }
     auto partitioned_v = partition_mesh_vertices(new_F, NUM_THREADS);
     std::vector<int> partition_id(partitioned_v.rows());
+
+    std::vector<int> cnt_id(NUM_THREADS);
     for (int i = 0; i < partitioned_v.rows(); i++) {
         partition_id[i] = partitioned_v(i, 0);
+        // std::cout<<partition_id[i]<<" ";
+        cnt_id[partition_id[i]]++;
+    }
+    for(int i=0;i<NUM_THREADS;i++){
+        std::cout<<i<<": "<<cnt_id[i]<<std::endl;
     }
     input_surface.partition_id = partition_id;
 
 
+    // exit(0);
     //
     fastEnvelope::FastEnvelope envelope;
     envelope.init(vertices, env_faces, input_surface.params.eps);
     //
     tetwild::TetWild mesh(input_surface.params, envelope, NUM_THREADS);
 
+    wmtk::logger().info("start insertion");
     mesh.triangle_insertion(input_surface);
+    wmtk::logger().info("end insertion");
 }

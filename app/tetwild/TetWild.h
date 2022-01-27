@@ -10,6 +10,7 @@
 #include <wmtk/utils/DisableWarnings.hpp>
 #include <fastenvelope/FastEnvelope.h>
 #include <tbb/concurrent_queue.h>
+#include <tbb/concurrent_priority_queue.h>
 #include <tbb/concurrent_vector.h>
 #include <tbb/enumerable_thread_specific.h>
 #include <wmtk/utils/EnableWarnings.hpp>
@@ -243,7 +244,7 @@ public:
     void add_tet_centroid(const Tuple& t, size_t vid) override;
     //
     void triangle_insertion_stuff(
-        std::vector<tbb::concurrent_queue<std::tuple<size_t, int>>>& insertion_queues,
+        std::vector<tbb::concurrent_priority_queue<std::tuple<double, int, size_t>>>& insertion_queues,
         tbb::concurrent_queue<size_t>& expired_queue,
         int task_id);
     void triangle_insertion(const InputSurface& input_surface);
