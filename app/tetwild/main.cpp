@@ -9,6 +9,8 @@
 
 #include <igl/read_triangle_mesh.h>
 #include <igl/Timer.h>
+//#include <wmtk/utils/GeoUtils.h>
+#include <igl/predicates/predicates.h>
 
 using namespace wmtk;
 using namespace tetwild;
@@ -108,8 +110,22 @@ int main(int argc, char** argv)
             auto res = mesh.switch_tetrahedron(f);
             if (!res.has_value()) {
                 auto verts = mesh.get_face_vertices(f);
-                outface.emplace_back(std::array<size_t, 3>{
-                    {verts[0].vid(mesh), verts[1].vid(mesh), verts[2].vid(mesh)}});
+                std::array<size_t, 3> vids = {
+                    {verts[0].vid(mesh), verts[1].vid(mesh), verts[2].vid(mesh)}};
+                auto vs = mesh.oriented_tet_vertices(f);
+                for (int j = 0; j < 4; j++) {
+                    if (std::find(vids.begin(), vids.end(), vs[j].vid(mesh)) == vids.end()) {
+                        auto res = igl::predicates::orient3d(
+                            mesh.m_vertex_attribute[vids[0]].m_posf,
+                            mesh.m_vertex_attribute[vids[1]].m_posf,
+                            mesh.m_vertex_attribute[vids[2]].m_posf,
+                            mesh.m_vertex_attribute[vs[j].vid(mesh)].m_posf);
+                        if (res == igl::predicates::Orientation::NEGATIVE)
+                            std::swap(vids[1], vids[2]);
+                        break;
+                    }
+                }
+                outface.emplace_back(vids);
             }
         }
         Eigen::MatrixXd matV = Eigen::MatrixXd::Zero(mesh.vert_capacity(), 3);
