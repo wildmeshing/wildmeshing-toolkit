@@ -776,27 +776,6 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
     // fortest
     auto print = [](const Vector3& p) { wmtk::logger().info("{} {} {}", p[0], p[1], p[2]); };
     auto print2 = [](const Vector2& p) { wmtk::logger().info("{} {}", p[0], p[1]); };
-    auto output_surface = [&](std::string file) {
-        std::ofstream fout(file);
-        std::vector<std::array<int, 3>> fs;
-        int cnt = 0;
-
-        for (auto& info : triangle_insertion_global_cache.tet_face_tags) {
-            auto& vids = info.first;
-            auto& fids = info.second;
-
-            if (fids.empty()) continue;
-
-            fout << "v " << m_vertex_attribute[vids[0]].m_posf.transpose() << std::endl;
-            fout << "v " << m_vertex_attribute[vids[1]].m_posf.transpose() << std::endl;
-            fout << "v " << m_vertex_attribute[vids[2]].m_posf.transpose() << std::endl;
-            fs.push_back({{cnt * 3 + 1, cnt * 3 + 2, cnt * 3 + 3}});
-            cnt++;
-        }
-
-        for (auto& f : fs) fout << "f " << f[0] << " " << f[1] << " " << f[2] << std::endl;
-        fout.close();
-    };
 
     // match faces preserved in delaunay
     auto& is_matched = triangle_insertion_global_cache.is_matched;
@@ -928,8 +907,6 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
                 bool is_inside = wmtk::is_point_inside_triangle(p, tri2);
                 //
                 if (is_inside) {
-
-                    //
                     auto conn_tets = get_one_ring_tets_for_vertex(vs[lvid]);
                     for (auto& t : conn_tets) {
                         if (visited.count(t.tid(*this))) continue;
@@ -1220,14 +1197,8 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
         }
     }
 
-
     //// track surface, bbox, rounding
     setup_attributes();
-
-    // fortest
-    wmtk::logger().info("output surface...");
-    output_surface("surface.obj");
-    // fortest
 
     wmtk::logger().info("#t {}", tet_capacity());
     wmtk::logger().info("#v {}", vert_capacity());
@@ -1235,6 +1206,28 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
 
 void tetwild::TetWild::setup_attributes()
 {
+    auto output_surface = [&](std::string file) {
+        std::ofstream fout(file);
+        std::vector<std::array<int, 3>> fs;
+        int cnt = 0;
+
+        for (auto& info : triangle_insertion_global_cache.tet_face_tags) {
+            auto& vids = info.first;
+            auto& fids = info.second;
+
+            if (fids.empty()) continue;
+
+            fout << "v " << m_vertex_attribute[vids[0]].m_posf.transpose() << std::endl;
+            fout << "v " << m_vertex_attribute[vids[1]].m_posf.transpose() << std::endl;
+            fout << "v " << m_vertex_attribute[vids[2]].m_posf.transpose() << std::endl;
+            fs.push_back({{cnt * 3 + 1, cnt * 3 + 2, cnt * 3 + 3}});
+            cnt++;
+        }
+
+        for (auto& f : fs) fout << "f " << f[0] << " " << f[1] << " " << f[2] << std::endl;
+        fout.close();
+    };
+
     const auto& vertices = triangle_insertion_global_cache.input_surface.vertices;
     const auto& faces = triangle_insertion_global_cache.input_surface.faces;
 
@@ -1332,7 +1325,10 @@ void tetwild::TetWild::setup_attributes()
         m_tet_attribute[i].m_quality = get_quality(tuple_from_tet(i));
     }
 
-
+    // fortest
+    wmtk::logger().info("output surface...");
+    output_surface("surface.obj");
+    // fortest
 }
 
 void tetwild::TetWild::add_tet_centroid(const Tuple& t, size_t vid)
