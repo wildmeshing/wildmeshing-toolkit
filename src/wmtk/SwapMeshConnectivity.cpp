@@ -217,7 +217,7 @@ bool wmtk::TetMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tet_tuples
 }
 
 
-constexpr auto swap_4_4 = [](const std::vector<std::array<size_t, 4>>& tets, auto u0, auto u1, auto& newedge) {
+constexpr auto swap_4_4 = [](const std::vector<std::array<size_t, 4>>& tets, auto u0, auto u1, int it, auto& newedge) {
     ZoneScoped;
     auto n0 = -1, n1 = -1, n2 = -1, n3 = -1;
 
@@ -260,6 +260,10 @@ constexpr auto swap_4_4 = [](const std::vector<std::array<size_t, 4>>& tets, aut
     verts.erase(s1);
     assert(verts.size() == 1);
     auto v1 = (*verts.begin());
+    if(it == 1){
+        std::swap(v0, s0);
+        std::swap(v1, s1);
+    }
 
     auto new_tet_conn = std::vector<std::array<size_t, 4>>();
     for (auto j = 0; j < 4; j++) {
@@ -302,36 +306,44 @@ bool wmtk::TetMesh::swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tet_tup
     auto old_tets_conn = std::vector<std::array<size_t, 4>>();
     for (auto& t : old_tets) old_tets_conn.push_back(t.m_indices);
 
-    auto edge_vv = std::array<size_t,2>();
-    auto new_tets = swap_4_4(old_tets_conn, v1_id, v2_id, edge_vv);
+    std::vector<size_t> new_tet_id;
+    bool is_succeed = false;
+    for (int it = 0; it < 2; it++) {
+        auto edge_vv = std::array<size_t, 2>();
+        auto new_tets = swap_4_4(old_tets_conn, v1_id, v2_id, it, edge_vv);
 
-    auto new_tet_id = affected;
-    auto rollback_vert_conn = operation_update_connectivity_impl(new_tet_id, new_tets);
-    assert(new_tet_id.size() == 4);
+        new_tet_id = affected;
+        auto rollback_vert_conn = operation_update_connectivity_impl(new_tet_id, new_tets);
+        assert(new_tet_id.size() == 4);
 
-    auto new_tuple_from_edge = [&]() -> Tuple {
-        auto tid = new_tet_id.front();
-        auto j0 = m_tet_connectivity[tid].find(edge_vv[0]);
-        auto j1 = m_tet_connectivity[tid].find(edge_vv[1]);
-        assert(j0 != -1 && j1 != -1);
-        if (j0 > j1) std::swap(j0, j1);
-        auto edge_v = std::array<int, 2>{{j0, j1}};
-        auto it = std::find(m_local_edges.begin(), m_local_edges.end(), edge_v);
-        auto eid = std::distance(m_local_edges.begin(), it);
-        return tuple_from_edge(tid, eid);
-    };
-    auto newt = new_tuple_from_edge();
+        auto new_tuple_from_edge = [&]() -> Tuple {
+            auto tid = new_tet_id.front();
+            auto j0 = m_tet_connectivity[tid].find(edge_vv[0]);
+            auto j1 = m_tet_connectivity[tid].find(edge_vv[1]);
+            assert(j0 != -1 && j1 != -1);
+            if (j0 > j1) std::swap(j0, j1);
+            auto edge_v = std::array<int, 2>{{j0, j1}};
+            auto it = std::find(m_local_edges.begin(), m_local_edges.end(), edge_v);
+            auto eid = std::distance(m_local_edges.begin(), it);
+            return tuple_from_edge(tid, eid);
+        };
+        auto newt = new_tuple_from_edge();
 
-    for (auto ti : new_tet_id) new_tet_tuples.emplace_back(tuple_from_tet(ti));
-    start_protect_attributes();
-    if (!swap_edge_44_after(newt) || !invariants(new_tet_tuples)) { // rollback post-operation
-        assert(affected.size() == old_tets.size());
-        operation_failure_rollback_imp(rollback_vert_conn, affected, new_tet_id, old_tets);
-        return false;
+        for (auto ti : new_tet_id) new_tet_tuples.emplace_back(tuple_from_tet(ti));
+        start_protect_attributes();
+        if (!swap_edge_44_after(newt) || !invariants(new_tet_tuples)) { // rollback post-operation
+            assert(affected.size() == old_tets.size());
+            operation_failure_rollback_imp(rollback_vert_conn, affected, new_tet_id, old_tets);
+            //            return false;
+            continue;
+        }
+        release_protect_attributes();
+        is_succeed = true;
+        break;
     }
-    release_protect_attributes();
+    if (!is_succeed) return false;
 
-    //todo: return new_edges
+    // todo: return new_edges
     std::vector<Tuple> new_edges;
     for (size_t t_id : new_tet_id) {
         for (int j = 0; j < 6; j++) {
