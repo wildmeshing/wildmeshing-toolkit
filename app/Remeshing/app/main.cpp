@@ -1,5 +1,7 @@
 #include <igl/is_edge_manifold.h>
 #include <igl/read_triangle_mesh.h>
+#include <igl/remove_duplicate_vertices.h>
+#include <igl/timer.h>
 #include <igl/writeDMAT.h>
 #include <remeshing/UniformRemeshing.h>
 #include <stdlib.h>
@@ -70,8 +72,8 @@ int main(int argc, char** argv)
         wmtk::logger().info("Input is not edge manifold");
         return 1;
     } else {
-        UniformRemeshing m(v);
-        m.create_mesh(v.size(), tri, envelope_size, atoi(argv[4]));
+        UniformRemeshing m(v, atoi(argv[4]));
+        m.create_mesh(v.size(), tri, envelope_size);
         assert(m.check_mesh_connectivity_validity());
         std::vector<double> properties = m.average_len_valen();
         wmtk::logger().info(
