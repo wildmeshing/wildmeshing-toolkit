@@ -11,6 +11,8 @@
 #include <Eigen/Dense>
 #include <array>
 
+#include <igl/point_simplex_squared_distance.h>
+
 std::array<size_t, 4> wmtk::orient_preserve_tet_reorder(
     const std::array<size_t, 4>& conn,
     size_t v0)
@@ -198,4 +200,30 @@ double wmtk::harmonic_energy(const Eigen::MatrixXd& verts)
             T[i * 3 + j] = verts(i, j);
         }
     return harmonic_tet_energy(T);
+}
+
+std::optional<Eigen::Vector3d> wmtk::try_project(
+    const Eigen::Vector3d& point,
+    const std::vector<std::array<double, 12>>& assembled_neighbor)
+{
+    auto min_dist = std::numeric_limits<double>::infinity();
+    Eigen::Vector3d closest_point = Eigen::Vector3d::Zero();
+    for (const auto& tri : assembled_neighbor) {
+        auto V = Eigen::Map<const Eigen::Matrix<double, 3, 3, Eigen::RowMajor>>(tri.data());
+        Eigen::Vector3d project;
+        auto dist2 = -1;
+        igl::point_simplex_squared_distance<3>(
+            point,
+            V,
+            Eigen::RowVector3i(0, 1, 2),
+            0,
+            dist2,
+            project);
+        // TODO: libigl might not be robust how to verify this?
+        if (dist2 < min_dist) {
+            min_dist = dist2;
+            closest_point = project;
+        }
+    }
+    return closest_point;
 }

@@ -82,7 +82,7 @@ bool Edge2d::EdgeOperations2d::collapse_shortest(int target_operation_count)
         executor(*this, collect_all_ops);
     };
 
-    if (NUM_THREADS > 1) {
+    if (NUM_THREADS > 0) {
         auto executor = wmtk::ExecutePass<EdgeOperations2d, ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
     } else {

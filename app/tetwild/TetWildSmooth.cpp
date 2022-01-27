@@ -8,7 +8,7 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
 
-#include <igl/point_simplex_squared_distance.h>
+
 
 #include <limits>
 #include <optional>
@@ -20,31 +20,7 @@ bool tetwild::TetWild::smooth_before(const Tuple& t)
     return round(t); // Note: no need to roll back.
 }
 
-auto try_project(
-    const Eigen::Vector3d& point,
-    const std::vector<std::array<double, 12>>& assembled_neighbor) -> std::optional<Eigen::Vector3d>
-{
-    auto min_dist = std::numeric_limits<double>::infinity();
-    Eigen::Vector3d closest_point = Eigen::Vector3d::Zero();
-    for (const auto& tri : assembled_neighbor) {
-        auto V = Eigen::Map<const Eigen::Matrix<double, 3, 3, Eigen::RowMajor>>(tri.data());
-        Eigen::Vector3d project;
-        auto dist2 = -1;
-        igl::point_simplex_squared_distance<3>(
-            point,
-            V,
-            Eigen::RowVector3i(0, 1, 2),
-            0,
-            dist2,
-            project);
-        // TODO: libigl might not be robust how to verify this?
-        if (dist2 < min_dist) {
-            min_dist = dist2;
-            closest_point = project;
-        }
-    }
-    return closest_point;
-}
+
 
 bool tetwild::TetWild::smooth_after(const Tuple& t)
 {
@@ -96,7 +72,7 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
         m_vertex_attribute[vid].m_posf.transpose());
 
     if (m_vertex_attribute[vid].m_is_on_surface) {
-        auto project = try_project(m_vertex_attribute[vid].m_posf, old_asssembles);
+        auto project = wmtk::try_project(m_vertex_attribute[vid].m_posf, old_asssembles);
         if (project) {
             m_vertex_attribute[vid].m_posf = project.value();
 
@@ -143,7 +119,7 @@ void tetwild::TetWild::smooth_all_vertices()
         collect_all_ops.emplace_back("vertex_smooth", loc);
     }
     wmtk::logger().debug("Num verts {}", collect_all_ops.size());
-    if (NUM_THREADS > 1) {
+    if (NUM_THREADS > 0) {
         auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kPartition>();
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
             return m.try_set_vertex_mutex_one_ring(e, task_id);

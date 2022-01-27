@@ -132,7 +132,7 @@ bool EdgeOperations2d::collapse_remeshing(double L)
         };
         executor(*this, collect_all_ops);
     };
-    if (NUM_THREADS > 1) {
+    if (NUM_THREADS > 0) {
         auto executor = wmtk::ExecutePass<EdgeOperations2d, ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
     } else {
@@ -163,7 +163,7 @@ bool EdgeOperations2d::split_remeshing(double L)
         };
         executor(*this, collect_all_ops);
     };
-    if (NUM_THREADS > 1) {
+    if (NUM_THREADS > 0) {
         auto executor = wmtk::ExecutePass<EdgeOperations2d, ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
     } else {
@@ -193,7 +193,7 @@ bool EdgeOperations2d::swap_remeshing()
         };
         executor(*this, collect_all_ops);
     };
-    if (NUM_THREADS > 1) {
+    if (NUM_THREADS > 0) {
         auto executor = wmtk::ExecutePass<EdgeOperations2d, ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
     } else {
