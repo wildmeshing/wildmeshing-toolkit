@@ -83,6 +83,7 @@ std::vector<TriMesh::Tuple> sec::ShortestEdgeCollapse::new_edges_after(
 
 bool sec::ShortestEdgeCollapse::collapse_shortest(int target_vert_number)
 {
+    size_t initial_size = get_vertices().size();
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     int starting_num = get_vertices().size();
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_collapse", loc);
@@ -105,7 +106,7 @@ bool sec::ShortestEdgeCollapse::collapse_shortest(int target_vert_number)
         executor.priority = measure_len2;
         executor.stopping_criterion_checking_frequency = std::numeric_limits<int>::max();
         executor.stopping_criterion_checking_frequency =
-            target_vert_number > 0 ? target_vert_number - 1 : std::numeric_limits<int>::max();
+            target_vert_number > 0 ? (initial_size - target_vert_number)  : std::numeric_limits<int>::max();
         executor.stopping_criterion = [](auto& m) { return true; };
         executor(*this, collect_all_ops);
     };

@@ -44,6 +44,7 @@ int main(int argc, char** argv)
     // ep
     const std::string root(WMT_DATA_DIR);
     const std::string path = argv[1];
+    wmtk::logger().info("remeshing on {}", path);
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     bool ok = igl::read_triangle_mesh(path, V, F);
@@ -72,7 +73,7 @@ int main(int argc, char** argv)
         wmtk::logger().info("Input is not edge manifold");
         return 1;
     } else {
-        UniformRemeshing m(v, atoi(argv[4]));
+        UniformRemeshing m(v);
         m.create_mesh(v.size(), tri, envelope_size);
         assert(m.check_mesh_connectivity_validity());
         std::vector<double> properties = m.average_len_valen();
