@@ -1319,37 +1319,33 @@ void tetwild::TetWild::setup_attributes()
     //// track bbox
         auto faces = get_faces();
 
-        tbb::parallel_for(tbb::blocked_range<int>(0, faces.size()), [&](tbb::blocked_range<int> r){
-            for (int i=r.begin(); i<r.end(); i++) {
-                auto vs = get_face_vertices(faces[i]);
-                std::array<size_t, 3> vids = {{vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
-
-                int on_bbox = -1;
-                for (int k = 0; k < 3; k++) {
-                    if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_min[k] &&
-                        m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_min[k] &&
-                        m_vertex_attribute[vids[2]].m_pos[k] == m_params.box_min[k]) {
-                        on_bbox = k * 2;
-                        break;
-                    }
-                    if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_max[k] &&
-                        m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_max[k] &&
-                        m_vertex_attribute[vids[2]].m_pos[k] == m_params.box_max[k]) {
-                        on_bbox = k * 2 + 1;
-                        break;
-                    }
+        for (int i=0; i<faces.size(); i++) {
+            auto vs = get_face_vertices(faces[i]);
+            std::array<size_t, 3> vids = {{vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
+            int on_bbox = -1;
+            for (int k = 0; k < 3; k++) {
+                if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_min[k] &&
+                    m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_min[k] &&
+                    m_vertex_attribute[vids[2]].m_pos[k] == m_params.box_min[k]) {
+                    on_bbox = k * 2;
+                    break;
                 }
-                if (on_bbox < 0) continue;
-
-                auto fid = faces[i].fid(*this);
-                m_face_attribute[fid].m_is_bbox_fs = on_bbox;
-                //
-                for (size_t vid : vids) {
-                    m_vertex_attribute[vid].on_bbox_faces.push_back(on_bbox);
+                if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_max[k] &&
+                    m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_max[k] &&
+                    m_vertex_attribute[vids[2]].m_pos[k] == m_params.box_max[k]) {
+                    on_bbox = k * 2 + 1;
+                    break;
                 }
             }
+            if (on_bbox < 0) continue;
+            auto fid = faces[i].fid(*this);
+            m_face_attribute[fid].m_is_bbox_fs = on_bbox;
+            //
+            for (size_t vid : vids) {
+                m_vertex_attribute[vid].on_bbox_faces.push_back(on_bbox);
+            }
+        }
 
-        });
 
         tbb::parallel_for(tbb::blocked_range<int>(0, m_vertex_attribute.m_attributes.size()), [&](tbb::blocked_range<int> r){
             for (int i=r.begin();i<r.end();i++)
@@ -1359,14 +1355,12 @@ void tetwild::TetWild::setup_attributes()
 
         //// rounding
         std::atomic_int cnt_round(0);
-
-        tbb::parallel_for(tbb::blocked_range<int>(0, m_vertex_attribute.m_attributes.size()), [&](tbb::blocked_range<int> r){
-            for (int i=r.begin();i<r.end();i++){
-                auto v = tuple_from_vertex(i);
-                if (round(v)) cnt_round++;
-            }
-
-        });
+        
+        for (int i=0;i<m_vertex_attribute.m_attributes.size();i++){
+            auto v = tuple_from_vertex(i);
+            if (round(v)) cnt_round++;
+        }
+        
         
         wmtk::logger().info("cnt_round {}/{}", cnt_round, m_vertex_attribute.m_attributes.size());
 
