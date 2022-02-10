@@ -77,9 +77,9 @@ bool Edge2d::EdgeOperations2d::collapse_shortest(int target_operation_count)
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };
-        executor.stopping_criterion_checking_frequency =
-            target_operation_count > 0 ? initial_size - target_operation_count + 1
-                                       : std::numeric_limits<int>::max();
+        executor.stopping_criterion_checking_frequency = target_operation_count > 0
+                                                             ? target_operation_count + 1
+                                                             : std::numeric_limits<int>::max();
         executor.stopping_criterion = [](auto& m) { return true; };
         executor(*this, collect_all_ops);
     };

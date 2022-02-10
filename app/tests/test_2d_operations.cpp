@@ -46,8 +46,8 @@ TEST_CASE("shortest_edge_collapse", "[test_2d_operations]")
 
     m.consolidate_mesh();
 
-    REQUIRE(m.get_vertices().size() == 5);
-    REQUIRE(m.get_faces().size() == 3);
+    REQUIRE(m.get_vertices().size() == 3);
+    REQUIRE(m.get_faces().size() == 1);
 }
 
 TEST_CASE("shortest_edge_collapse_boundary_edge", "[test_2d_operations]")
