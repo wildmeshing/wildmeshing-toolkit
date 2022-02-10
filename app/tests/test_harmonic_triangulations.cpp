@@ -164,7 +164,10 @@ TEST_CASE("gaussian-harmonic", "[.slow]")
         }
         igl::writePLY(
             "gaussian_points_100k.ply",
-            Eigen::Map<Eigen::Matrix<double, -1, -1, Eigen::RowMajor>>(points[0].data(), points.size(), 3),
+            Eigen::Map<Eigen::Matrix<double, -1, -1, Eigen::RowMajor>>(
+                points[0].data(),
+                points.size(),
+                3),
             Eigen::MatrixXi::Zero(1, 3));
         auto [tet_V, tetT] = wmtk::delaunay3D(points);
         vec_attrs.resize(tet_V.size());
@@ -178,17 +181,16 @@ TEST_CASE("gaussian-harmonic", "[.slow]")
     igl::Timer timer;
     double time;
 
-    // for (int i = 1; i <= 1; i *= 2) {
     for (int i = 1; i <= 32; i *= 2) {
         wmtk::logger().info("Number of Threads: {}", i);
-        auto har_tet = harmonic_tet::HarmonicTet(vec_attrs, tets, i);
-        auto [E0, cnt0] = stats(har_tet);
-        wmtk::logger().info("Start Energy E0  {} ", E0);
         timer.start();
+        auto har_tet = harmonic_tet::HarmonicTet(vec_attrs, tets, i);
+        // auto [E0, cnt0] = stats(har_tet);
+        // wmtk::logger().info("Start Energy E0  {} ", E0);
         har_tet.swap_all_edges(true);
         // har_tet.swap_all_faces(true);
         time = timer.getElapsedTimeInMilliSec();
-        wmtk::logger().info("Time cost: {}", time/1e3);
+        wmtk::logger().info("Time cost: {}", time / 1e3);
         har_tet.consolidate_mesh();
         wmtk::logger().info("tet cap {}", har_tet.tet_capacity());
     }

@@ -412,19 +412,13 @@ void HarmonicTet::swap_all_edges(bool parallel)
     ZoneScoped;
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     collect_all_ops.reserve(tet_capacity() * 2);
-    // for (auto& loc : get_faces()) {
-    //     auto gain = compute_operation_gain(*this, std::string("face_swap"), loc);
-    //     if (gain > 0) {
-    //         spdlog::critical("wrong {}", gain);
-    //         exit(1);
-    //     }
-    // }
     for (auto& loc : get_edges()) {
         if (compute_operation_gain(*this, std::string("edge_swap"), loc) > 0)
             collect_all_ops.emplace_back("edge_swap", loc);
     }
     auto setup_and_execute = [&](auto& executor) {
-        executor.renew_neighbor_tuples = [](const auto& m, auto op, const auto& newt) {
+        executor.renew_neighbor_tuples = //wmtk::renewal_edges;
+        [](const auto& m, auto op, const auto& newt) {
             std::set<size_t> eids;
             std::vector<size_t> twice;
             for (auto ti : newt) {
