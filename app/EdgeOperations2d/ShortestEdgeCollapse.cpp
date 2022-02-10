@@ -2,8 +2,8 @@
 
 #include <wmtk/TriMesh.h>
 #include <wmtk/utils/VectorUtils.h>
-#include <wmtk/utils/TupleUtils.hpp>
 #include <wmtk/ExecutionScheduler.hpp>
+#include <wmtk/utils/TupleUtils.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -78,7 +78,8 @@ bool Edge2d::EdgeOperations2d::collapse_shortest(int target_operation_count)
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };
         executor.stopping_criterion_checking_frequency =
-            target_operation_count > 0 ? initial_size - target_operation_count : std::numeric_limits<int>::max();
+            target_operation_count > 0 ? initial_size - target_operation_count + 1
+                                       : std::numeric_limits<int>::max();
         executor.stopping_criterion = [](auto& m) { return true; };
         executor(*this, collect_all_ops);
     };

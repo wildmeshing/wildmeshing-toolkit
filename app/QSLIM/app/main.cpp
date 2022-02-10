@@ -86,35 +86,39 @@ int main(int argc, char** argv)
     m.create_mesh(v.size(), tri, modified_v, envelope_size);
     assert(m.check_mesh_connectivity_validity());
     wmtk::logger().info("collapsing mesh {}", argv[1]);
-    auto edges = m.get_edges();
-    Eigen::MatrixXd C(edges.size(), 7);
-    for (int i = 0; i < edges.size(); i++) {
-        auto e = edges[i];
-        Eigen::Vector3d pos1 = m.vertex_attrs[e.vid()].pos;
-        Eigen::Vector3d pos2 = m.vertex_attrs[e.switch_vertex(m).vid()].pos;
+    // auto edges = m.get_edges();
+    // Eigen::MatrixXd C(edges.size(), 7);
+    // for (int i = 0; i < edges.size(); i++) {
+    //     auto e = edges[i];
+    //     Eigen::Vector3d pos1 = m.vertex_attrs[e.vid()].pos;
+    //     Eigen::Vector3d pos2 = m.vertex_attrs[e.switch_vertex(m).vid()].pos;
 
-        C.row(i) << pos1[0], pos1[1], pos1[2], pos2[0], pos2[1], pos2[2], m.compute_cost_for_e(e);
-        // wmtk::logger().info("this row is {}", C.row(i));
-    }
-    igl::writeDMAT("qslim_color.dmat", C);
-    wmtk::logger().info("priority written finish");
+    //     C.row(i) << pos1[0], pos1[1], pos1[2], pos2[0], pos2[1], pos2[2],
+    //     m.compute_cost_for_e(e);
+    //     // wmtk::logger().info("this row is {}", C.row(i));
+    // }
+    // igl::writeDMAT("qslim_color.dmat", C);
+    // wmtk::logger().info("priority written finish");
+    int target_verts = v.size() * 0.1;
+
     igl::Timer timer;
     timer.start();
-    run_qslim_collapse(path, std::stoi(argv[2]), argv[3], m);
+    run_qslim_collapse(path, target_verts, argv[3], m);
     timer.stop();
     logger().info("Took {}", timer.getElapsedTimeInSec());
     m.consolidate_mesh();
-    edges = m.get_edges();
-    C = Eigen::MatrixXd::Zero(edges.size(), 7);
-    for (int i = 0; i < edges.size(); i++) {
-        auto e = edges[i];
-        Eigen::Vector3d pos1 = m.vertex_attrs[e.vid()].pos;
-        Eigen::Vector3d pos2 = m.vertex_attrs[e.switch_vertex(m).vid()].pos;
+    // edges = m.get_edges();
+    // C = Eigen::MatrixXd::Zero(edges.size(), 7);
+    // for (int i = 0; i < edges.size(); i++) {
+    //     auto e = edges[i];
+    //     Eigen::Vector3d pos1 = m.vertex_attrs[e.vid()].pos;
+    //     Eigen::Vector3d pos2 = m.vertex_attrs[e.switch_vertex(m).vid()].pos;
 
-        C.row(i) << pos1[0], pos1[1], pos1[2], pos2[0], pos2[1], pos2[2], m.compute_cost_for_e(e);
-        // x::logger().info("this row is {}", C.row(i));
-    }
-    igl::writeDMAT("qslim_post_color.dmat", C);
-    wmtk::logger().info("post priority written finish");
+    //     C.row(i) << pos1[0], pos1[1], pos1[2], pos2[0], pos2[1], pos2[2],
+    //     m.compute_cost_for_e(e);
+    //     // x::logger().info("this row is {}", C.row(i));
+    // }
+    // igl::writeDMAT("qslim_post_color.dmat", C);
+    // wmtk::logger().info("post priority written finish");
     return 0;
 }

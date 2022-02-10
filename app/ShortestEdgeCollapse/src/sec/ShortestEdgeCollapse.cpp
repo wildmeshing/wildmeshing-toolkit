@@ -106,7 +106,8 @@ bool sec::ShortestEdgeCollapse::collapse_shortest(int target_vert_number)
         executor.priority = measure_len2;
         executor.stopping_criterion_checking_frequency = std::numeric_limits<int>::max();
         executor.stopping_criterion_checking_frequency =
-            target_vert_number > 0 ? (initial_size - target_vert_number)  : std::numeric_limits<int>::max();
+            target_vert_number > 0 ? (initial_size - target_vert_number - 1)
+                                   : std::numeric_limits<int>::max();
         executor.stopping_criterion = [](auto& m) { return true; };
         executor(*this, collect_all_ops);
     };
