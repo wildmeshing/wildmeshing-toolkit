@@ -183,8 +183,8 @@ TEST_CASE("gaussian-harmonic", "[.slow]")
 
     for (int i = 1; i <= 32; i *= 2) {
         wmtk::logger().info("Number of Threads: {}", i);
-        timer.start();
         auto har_tet = harmonic_tet::HarmonicTet(vec_attrs, tets, i);
+        timer.start();
         // auto [E0, cnt0] = stats(har_tet);
         // wmtk::logger().info("Start Energy E0  {} ", E0);
         har_tet.swap_all_edges(true);
