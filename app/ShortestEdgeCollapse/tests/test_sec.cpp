@@ -42,9 +42,9 @@ TEST_CASE("separate-manifold-patch", "[test_util]")
     m.collapse_shortest(-1);
     Eigen::MatrixXi Fafter = Eigen::MatrixXi::Constant(m.tri_capacity(), 3, -1);
     for (auto& t : m.get_faces()) {
-        auto i = t.fid();
+        auto i = t.fid(m);
         auto vs = m.oriented_tri_vertices(t);
-        Fafter.row(i) << vs[0].vid(), vs[1].vid(), vs[2].vid();
+        Fafter.row(i) << vs[0].vid(m), vs[1].vid(m), vs[2].vid(m);
     }
     // after operations the mesh is manifold
     REQUIRE(igl::is_edge_manifold(Fafter));

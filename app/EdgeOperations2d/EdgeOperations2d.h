@@ -85,8 +85,8 @@ public:
 
     void cache_edge_positions(const Tuple& t)
     {
-        position_cache.local().v1p = vertex_attrs[t.vid()].pos;
-        position_cache.local().v2p = vertex_attrs[t.switch_vertex(*this).vid()].pos;
+        position_cache.local().v1p = vertex_attrs[t.vid(*this)].pos;
+        position_cache.local().v2p = vertex_attrs[t.switch_vertex(*this).vid(*this)].pos;
     }
 
     bool invariants(const std::vector<Tuple>& new_tris) override
@@ -95,7 +95,7 @@ public:
             for (auto& t : new_tris) {
                 std::array<Eigen::Vector3d, 3> tris;
                 auto vs = t.oriented_tri_vertices(*this);
-                for (auto j = 0; j < 3; j++) tris[j] = vertex_attrs[vs[j].vid()].pos;
+                for (auto j = 0; j < 3; j++) tris[j] = vertex_attrs[vs[j].vid(*this)].pos;
                 if (m_envelope.is_outside(tris)) return false;
             }
         }
@@ -112,17 +112,17 @@ public:
     Eigen::Vector3d smooth(const Tuple& t)
     {
         auto one_ring_edges = get_one_ring_edges_for_vertex(t);
-        if (one_ring_edges.size() < 3) return vertex_attrs[t.vid()].pos;
+        if (one_ring_edges.size() < 3) return vertex_attrs[t.vid(*this)].pos;
         Eigen::Vector3d after_smooth(0, 0, 0);
         Eigen::Vector3d after_smooth_boundary(0, 0, 0);
         int boundary = 0;
         for (auto e : one_ring_edges) {
             if (is_boundary_edge(e)) {
-                after_smooth_boundary += vertex_attrs[e.vid()].pos;
+                after_smooth_boundary += vertex_attrs[e.vid(*this)].pos;
                 boundary++;
                 continue;
             }
-            after_smooth += vertex_attrs[e.vid()].pos;
+            after_smooth += vertex_attrs[e.vid(*this)].pos;
         }
 
         if (boundary)
@@ -140,16 +140,16 @@ public:
     {
         Eigen::MatrixXd V = Eigen::MatrixXd::Zero(vertex_attrs.m_attributes.size(), 3);
         for (auto& t : get_vertices()) {
-            auto i = t.vid();
+            auto i = t.vid(*this);
             V.row(i) = vertex_attrs[i].pos;
         }
 
         Eigen::MatrixXi F = Eigen::MatrixXi::Constant(tri_capacity(), 3, -1);
         for (auto& t : get_faces()) {
-            auto i = t.fid();
+            auto i = t.fid(*this);
             auto vs = oriented_tri_vertices(t);
             for (int j = 0; j < 3; j++) {
-                F(i, j) = vs[j].vid();
+                F(i, j) = vs[j].vid(*this);
             }
         }
 
