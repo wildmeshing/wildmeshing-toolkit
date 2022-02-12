@@ -22,13 +22,13 @@ auto edge_locker = [](auto& m, const auto& e, int task_id) -> bool {
 
 double EdgeOperations2d::compute_edge_cost_collapse_ar(const TriMesh::Tuple& t, double L) const
 {
-    double l = (vertex_attrs[t.vid()].pos - vertex_attrs[t.switch_vertex(*this).vid()].pos).norm();
+    double l = (vertex_attrs[t.vid(*this)].pos - vertex_attrs[t.switch_vertex(*this).vid(*this)].pos).norm();
     if (l < (4. / 5.) * L) return ((4. / 5.) * L - l);
     return -1;
 }
 double EdgeOperations2d::compute_edge_cost_split_ar(const TriMesh::Tuple& t, double L) const
 {
-    double l = (vertex_attrs[t.vid()].pos - vertex_attrs[t.switch_vertex(*this).vid()].pos).norm();
+    double l = (vertex_attrs[t.vid(*this)].pos - vertex_attrs[t.switch_vertex(*this).vid(*this)].pos).norm();
     if (l > (4. / 3.) * L) return (l - (4. / 3.) * L);
     return -1;
 }
@@ -82,7 +82,7 @@ std::vector<double> EdgeOperations2d::average_len_valen()
     double minval = std::numeric_limits<double>::max();
     for (auto& loc : edges) {
         double currentlen =
-            (vertex_attrs[loc.vid()].pos - vertex_attrs[loc.switch_vertex(*this).vid()].pos).norm();
+            (vertex_attrs[loc.vid(*this)].pos - vertex_attrs[loc.switch_vertex(*this).vid(*this)].pos).norm();
         average_len += currentlen;
         if (maxlen < currentlen) maxlen = currentlen;
         if (minlen > currentlen) minlen = currentlen;
@@ -205,34 +205,34 @@ bool EdgeOperations2d::swap_remeshing()
 }
 double area(EdgeOperations2d& m, std::array<TriMesh::Tuple, 3>& verts)
 {
-    return ((m.vertex_attrs[verts[0].vid()].pos - m.vertex_attrs[verts[2].vid()].pos)
-                .cross(m.vertex_attrs[verts[1].vid()].pos - m.vertex_attrs[verts[2].vid()].pos))
+    return ((m.vertex_attrs[verts[0].vid(m)].pos - m.vertex_attrs[verts[2].vid(m)].pos)
+                .cross(m.vertex_attrs[verts[1].vid(m)].pos - m.vertex_attrs[verts[2].vid(m)].pos))
                .norm() /
            2.0;
 };
 
 Eigen::Vector3d normal(EdgeOperations2d& m, std::array<TriMesh::Tuple, 3>& verts)
 {
-    return ((m.vertex_attrs[verts[0].vid()].pos - m.vertex_attrs[verts[2].vid()].pos)
-                .cross(m.vertex_attrs[verts[1].vid()].pos - m.vertex_attrs[verts[2].vid()].pos))
+    return ((m.vertex_attrs[verts[0].vid(m)].pos - m.vertex_attrs[verts[2].vid(m)].pos)
+                .cross(m.vertex_attrs[verts[1].vid(m)].pos - m.vertex_attrs[verts[2].vid(m)].pos))
         .normalized();
 }
 
 Eigen::Vector3d EdgeOperations2d::tangential_smooth(const Tuple& t)
 {
     auto one_ring_tris = get_one_ring_tris_for_vertex(t);
-    if (one_ring_tris.size() < 2) return vertex_attrs[t.vid()].pos;
+    if (one_ring_tris.size() < 2) return vertex_attrs[t.vid(*this)].pos;
     Eigen::Vector3d after_smooth = smooth(t);
     // get normal and area of each face
     auto area = [](auto& m, auto& verts) {
-        return ((m.vertex_attrs[verts[0].vid()].pos - m.vertex_attrs[verts[2].vid()].pos)
-                    .cross(m.vertex_attrs[verts[1].vid()].pos - m.vertex_attrs[verts[2].vid()].pos))
+        return ((m.vertex_attrs[verts[0].vid(m)].pos - m.vertex_attrs[verts[2].vid(m)].pos)
+                    .cross(m.vertex_attrs[verts[1].vid(m)].pos - m.vertex_attrs[verts[2].vid(m)].pos))
                    .norm() /
                2.0;
     };
     auto normal = [](auto& m, auto& verts) {
-        return ((m.vertex_attrs[verts[0].vid()].pos - m.vertex_attrs[verts[2].vid()].pos)
-                    .cross(m.vertex_attrs[verts[1].vid()].pos - m.vertex_attrs[verts[2].vid()].pos))
+        return ((m.vertex_attrs[verts[0].vid(m)].pos - m.vertex_attrs[verts[2].vid(m)].pos)
+                    .cross(m.vertex_attrs[verts[1].vid(m)].pos - m.vertex_attrs[verts[2].vid(m)].pos))
             .normalized();
     };
     auto w0 = 0.0;
@@ -243,7 +243,7 @@ Eigen::Vector3d EdgeOperations2d::tangential_smooth(const Tuple& t)
         n0 += area(*this, verts) * normal(*this, verts);
     }
     n0 /= w0;
-    after_smooth += n0 * n0.transpose() * (vertex_attrs[t.vid()].pos - after_smooth);
+    after_smooth += n0 * n0.transpose() * (vertex_attrs[t.vid(*this)].pos - after_smooth);
     return after_smooth;
 }
 
@@ -273,9 +273,9 @@ bool EdgeOperations2d::adaptive_remeshing(double L, int iterations, int sm)
         // smoothing
         auto vertices = get_vertices();
         if (sm == 0) {
-            for (auto& loc : vertices) vertex_attrs[loc.vid()].pos = smooth(loc);
+            for (auto& loc : vertices) vertex_attrs[loc.vid(*this)].pos = smooth(loc);
         } else
-            for (auto& loc : vertices) vertex_attrs[loc.vid()].pos = tangential_smooth(loc);
+            for (auto& loc : vertices) vertex_attrs[loc.vid(*this)].pos = tangential_smooth(loc);
 
         assert(check_mesh_connectivity_validity());
         consolidate_mesh();

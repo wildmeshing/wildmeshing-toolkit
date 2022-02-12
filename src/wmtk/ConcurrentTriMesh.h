@@ -36,8 +36,8 @@ private:
 
     bool try_set_vertex_mutex(const Tuple& v, int threadid)
     {
-        bool got = m_vertex_mutex[v.vid()].trylock();
-        if (got) m_vertex_mutex[v.vid()].set_owner(threadid);
+        bool got = m_vertex_mutex[v.vid(*this)].trylock();
+        if (got) m_vertex_mutex[v.vid(*this)].set_owner(threadid);
         return got;
     }
     bool try_set_vertex_mutex(size_t vid, int threadid)
@@ -47,7 +47,7 @@ private:
         return got;
     }
 
-    void unlock_vertex_mutex(const Tuple& v) { m_vertex_mutex[v.vid()].unlock(); }
+    void unlock_vertex_mutex(const Tuple& v) { m_vertex_mutex[v.vid(*this)].unlock(); }
     void unlock_vertex_mutex(size_t vid) { m_vertex_mutex[vid].unlock(); }
 
 protected:

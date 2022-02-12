@@ -161,7 +161,7 @@ size_t TetMesh::Tuple::fid(const TetMesh& m) const
         if (tmp_v_ids == v_ids) return tid * 4 + j;
     }
 
-    throw std::runtime_error("Tuple::fid() error");
+    throw std::runtime_error("Tuple::fid(*this) error");
 }
 
 size_t TetMesh::Tuple::tid(const TetMesh&) const
