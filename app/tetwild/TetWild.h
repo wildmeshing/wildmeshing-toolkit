@@ -90,8 +90,8 @@ public:
     TetWild(Parameters& _m_params, fastEnvelope::FastEnvelope& _m_envelope, int _num_threads = 1)
         : m_params(_m_params)
         , m_envelope(_m_envelope)
-        , NUM_THREADS(_num_threads)
     {
+        NUM_THREADS = _num_threads;
         p_vertex_attrs = &m_vertex_attribute;
         p_edge_attrs = &m_edge_attribute;
         p_face_attrs = &m_face_attribute;
@@ -137,8 +137,6 @@ public:
     }
 
     ////// Attributes related
-    int NUM_THREADS = 1;
-
 
     void output_mesh(std::string file);
     void output_faces(std::string file, std::function<bool(const FaceAttributes&)> cond);

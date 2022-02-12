@@ -59,7 +59,6 @@ public:
     }
 
     // parallel containers
-    int NUM_THREADS = 1;
     ////// Operations
 
     struct SwapInfoCache
