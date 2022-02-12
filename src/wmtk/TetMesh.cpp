@@ -414,9 +414,9 @@ std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_incident_tets_for_edge(cons
     auto tids = set_intersection(
         m_vertex_connectivity[v1_id].m_conn_tets,
         m_vertex_connectivity[v2_id].m_conn_tets);
-    std::vector<Tuple> tets;
-    for (int t_id : tids) {
-        tets.push_back(tuple_from_tet(t_id));
+    std::vector<Tuple> tets(tids.size());
+    for (auto i = 0; i < tets.size(); i++) {
+        tets[i] = tuple_from_tet(tids[i]);
     }
     return tets;
 }

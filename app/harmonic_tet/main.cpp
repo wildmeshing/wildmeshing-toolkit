@@ -110,15 +110,15 @@ auto process_points = [](auto& args) {
     auto har_tet = harmonic_tet::HarmonicTet(vec_attrs, tets, thread);
     igl::Timer timer;
     auto time = 0.;
-    auto [E0, cnt0] = stats(har_tet);
+    // auto [E0, cnt0] = stats(har_tet);
     timer.start();
     har_tet.swap_all_edges(true);
     time = timer.getElapsedTimeInMilliSec();
     wmtk::logger().info("Time cost: {}", time / 1e3);
-    stats(har_tet);
+    // stats(har_tet);
     har_tet.consolidate_mesh();
-    auto [E1, cnt1] = stats(har_tet);
-    wmtk::logger().info("E {} -> {} cnt {} -> {}", E0, E1, cnt0, cnt1);
+    // auto [E1, cnt1] = stats(har_tet);
+    // wmtk::logger().info("E {} -> {} cnt {} -> {}", E0, E1, cnt0, cnt1);
     // har_tet.output_mesh(output);
 };
 
