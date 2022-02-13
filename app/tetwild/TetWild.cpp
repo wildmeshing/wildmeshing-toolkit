@@ -368,12 +368,12 @@ bool tetwild::TetWild::is_inverted(const Tuple& loc) const
             return false;
         return true;
     } else {
-        Vector3 n = ((m_vertex_attribute[vs[1].vid(*this)].m_pos) -
+        Vector3r n = ((m_vertex_attribute[vs[1].vid(*this)].m_pos) -
                      m_vertex_attribute[vs[0].vid(*this)].m_pos)
                         .cross(
                             (m_vertex_attribute[vs[2].vid(*this)].m_pos) -
                             m_vertex_attribute[vs[0].vid(*this)].m_pos);
-        Vector3 d = (m_vertex_attribute[vs[3].vid(*this)].m_pos) -
+        Vector3r d = (m_vertex_attribute[vs[3].vid(*this)].m_pos) -
                     m_vertex_attribute[vs[0].vid(*this)].m_pos;
         auto res = n.dot(d);
         if (res > 0) // predicates returns pos value: non-inverted
