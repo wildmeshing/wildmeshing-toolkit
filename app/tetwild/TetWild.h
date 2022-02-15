@@ -25,7 +25,7 @@ namespace tetwild {
 class VertexAttributes
 {
 public:
-    Vector3 m_pos;
+    Vector3r m_pos;
     Vector3d m_posf;
     bool m_is_rounded = false;
 
