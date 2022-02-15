@@ -26,13 +26,13 @@ int ConcurrentTriMesh::release_vertex_mutex_in_stack()
 bool ConcurrentTriMesh::try_set_vertex_mutex_two_ring(const Tuple& v, int threadid)
 {
     for (auto v_one_ring : get_one_ring_edges_for_vertex(v)) {
-        if (m_vertex_mutex[v_one_ring.vid()].get_owner() == threadid) continue;
+        if (m_vertex_mutex[v_one_ring.vid(*this)].get_owner() == threadid) continue;
         if (try_set_vertex_mutex(v_one_ring, threadid)) {
-            mutex_release_stack.local().push_back(v_one_ring.vid());
+            mutex_release_stack.local().push_back(v_one_ring.vid(*this));
             for (auto v_two_ring : get_one_ring_edges_for_vertex(v_one_ring)) {
-                if (m_vertex_mutex[v_two_ring.vid()].get_owner() == threadid) continue;
+                if (m_vertex_mutex[v_two_ring.vid(*this)].get_owner() == threadid) continue;
                 if (try_set_vertex_mutex(v_two_ring, threadid)) {
-                    mutex_release_stack.local().push_back(v_two_ring.vid());
+                    mutex_release_stack.local().push_back(v_two_ring.vid(*this));
                 } else {
                     return false;
                 }
@@ -50,9 +50,9 @@ bool ConcurrentTriMesh::try_set_edge_mutex_two_ring(const Tuple& e, int threadid
     bool release_flag = false;
 
     // try v1
-    if (m_vertex_mutex[v1.vid()].get_owner() != threadid) {
+    if (m_vertex_mutex[v1.vid(*this)].get_owner() != threadid) {
         if (try_set_vertex_mutex(v1, threadid)) {
-            mutex_release_stack.local().push_back(v1.vid());
+            mutex_release_stack.local().push_back(v1.vid(*this));
         } else {
             release_flag = true;
         }
@@ -68,9 +68,9 @@ bool ConcurrentTriMesh::try_set_edge_mutex_two_ring(const Tuple& e, int threadid
 
     // try v2
     Tuple v2 = switch_vertex(e);
-    if (m_vertex_mutex[v2.vid()].get_owner() != threadid) {
+    if (m_vertex_mutex[v2.vid(*this)].get_owner() != threadid) {
         if (try_set_vertex_mutex(v2, threadid)) {
-            mutex_release_stack.local().push_back(v2.vid());
+            mutex_release_stack.local().push_back(v2.vid(*this));
         } else {
             release_flag = true;
         }

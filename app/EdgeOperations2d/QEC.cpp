@@ -11,9 +11,9 @@ using namespace wmtk;
 Eigen::MatrixXd compute_Q_f(const EdgeOperations2d& m, const wmtk::TriMesh::Tuple& f_tuple)
 {
     auto conn_indices = m.oriented_tri_vertices(f_tuple);
-    Eigen::Vector3d A = m.vertex_attrs[conn_indices[0].vid()].pos;
-    Eigen::Vector3d B = m.vertex_attrs[conn_indices[1].vid()].pos;
-    Eigen::Vector3d C = m.vertex_attrs[conn_indices[2].vid()].pos;
+    Eigen::Vector3d A = m.vertex_attrs[conn_indices[0].vid(m)].pos;
+    Eigen::Vector3d B = m.vertex_attrs[conn_indices[1].vid(m)].pos;
+    Eigen::Vector3d C = m.vertex_attrs[conn_indices[2].vid(m)].pos;
 
     Eigen::Vector3d n = ((A - B).cross(C - B)).normalized();
     Eigen::Vector4d p;
@@ -31,9 +31,9 @@ Eigen::MatrixXd compute_Q_v(const EdgeOperations2d& m, const TriMesh::Tuple& v_t
     Eigen::MatrixXd Q = Eigen::MatrixXd::Zero(4, 4);
     auto Q_t = [](auto& m, auto& f_tuple) {
         auto conn_indices = m.oriented_tri_vertices(f_tuple);
-        Eigen::Vector3d A = m.vertex_attrs[conn_indices[0].vid()].pos;
-        Eigen::Vector3d B = m.vertex_attrs[conn_indices[1].vid()].pos;
-        Eigen::Vector3d C = m.vertex_attrs[conn_indices[2].vid()].pos;
+        Eigen::Vector3d A = m.vertex_attrs[conn_indices[0].vid(m)].pos;
+        Eigen::Vector3d B = m.vertex_attrs[conn_indices[1].vid(m)].pos;
+        Eigen::Vector3d C = m.vertex_attrs[conn_indices[2].vid(m)].pos;
 
         Eigen::Vector3d n = ((A - B).cross(C - B)).normalized();
         Eigen::Vector4d p;
@@ -63,7 +63,7 @@ double Edge2d::EdgeOperations2d::compute_cost_for_e(const TriMesh::Tuple& v_tupl
     Eigen::Vector4d v;
     if (vQ.determinant() < 1e-6) {
         Eigen::Vector3d tmp =
-            (vertex_attrs[v_tuple.vid()].pos + vertex_attrs[switch_vertex(v_tuple).vid()].pos) / 2;
+            (vertex_attrs[v_tuple.vid(*this)].pos + vertex_attrs[switch_vertex(v_tuple).vid(*this)].pos) / 2;
         v << tmp, 1.0;
     }
 
@@ -92,15 +92,15 @@ bool Edge2d::EdgeOperations2d::collapse_qec(int target)
     };
 
     executor.priority = [this](auto& m, auto _, auto& e) {
-        //     return -(m.vertex_attrs.pos[e.vid()] -
-        //     m.vertex_attrs.pos[e.switch_vertex(m).vid()])
+        //     return -(m.vertex_attrs.pos[e.vid(*this)] -
+        //     m.vertex_attrs.pos[e.switch_vertex(m).vid(*this)])
         //                 .norm();
         // };
 
         // wmtk::logger().info(
         //     "{} \n{}\n {}",
-        //     vertex_attrs->m_attributes[e.vid()].pos,
-        //     vertex_attrs->m_attributes[e.switch_vertex(m).vid()].pos,
+        //     vertex_attrs->m_attributes[e.vid(*this)].pos,
+        //     vertex_attrs->m_attributes[e.switch_vertex(m).vid(*this)].pos,
         //     compute_cost_for_e(e));
         return -compute_cost_for_e(e);
     };
