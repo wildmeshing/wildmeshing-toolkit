@@ -236,24 +236,24 @@ void tetwild::TetWild::triangle_insertion_stuff(
     std::default_random_engine generator;
     std::uniform_real_distribution<double> distribution(0.0,100.0);
 
-    const int EMPTY_INTERSECTION = 0;
-    const int TRI_INTERSECTION = 1;
-    const int PLN_INTERSECTION = 2;
+    constexpr int EMPTY_INTERSECTION = 0;
+    constexpr int TRI_INTERSECTION = 1;
+    constexpr int PLN_INTERSECTION = 2;
 
-    static const std::vector<std::array<int, 2>> map_leid2lfids = {
+    static constexpr std::array<std::array<int, 2>, 6> map_leid2lfids = {{
         {{0, 2}},
         {{0, 3}},
         {{0, 1}},
         {{1, 2}},
         {{2, 3}},
         {{1, 3}}
-    };
-    static const std::vector<std::array<int, 3>> map_lvid2lfids = {
+    }};
+    static constexpr std::array<std::array<int, 3>, 4> map_lvid2lfids = {{
         {{0, 1, 2}},
         {{0, 2, 3}},
         {{0, 1, 3}},
         {{1, 2, 3}}
-    };
+    }};
     static const std::array<std::array<int, 3>, 4> local_faces = {{{{0, 1, 2}}, {{0, 2, 3}}, {{0, 1, 3}}, {{1, 2, 3}}}};
     static const std::array<std::array<int, 2>, 6> local_edges = {
         {{{0, 1}}, {{1, 2}}, {{0, 2}}, {{0, 3}}, {{1, 3}}, {{2, 3}}}};
@@ -757,26 +757,26 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
 {
     std::default_random_engine generator;
     std::uniform_real_distribution<double> distribution(0.0,100.0);
-    const int EMPTY_INTERSECTION = 0;
-    const int TRI_INTERSECTION = 1;
-    const int PLN_INTERSECTION = 2;
+    constexpr int EMPTY_INTERSECTION = 0;
+    constexpr int TRI_INTERSECTION = 1;
+    constexpr int PLN_INTERSECTION = 2;
 
-    static const std::vector<std::array<int, 2>> map_leid2lfids = {
+    static constexpr std::array<std::array<int, 2>, 6> map_leid2lfids = {{
         {{0, 2}},
         {{0, 3}},
         {{0, 1}},
         {{1, 2}},
         {{2, 3}},
         {{1, 3}}
-    };
-    static const std::vector<std::array<int, 3>> map_lvid2lfids = {
+    }};
+    static constexpr std::array<std::array<int, 3>, 6> map_lvid2lfids = {{
         {{0, 1, 2}},
         {{0, 2, 3}},
         {{0, 1, 3}},
         {{1, 2, 3}}
-    };
-    static const std::array<std::array<int, 3>, 4> local_faces = {{{{0, 1, 2}}, {{0, 2, 3}}, {{0, 1, 3}}, {{1, 2, 3}}}};
-    static const std::array<std::array<int, 2>, 6> local_edges = {
+    }};
+    static constexpr std::array<std::array<int, 3>, 4> local_faces = {{{{0, 1, 2}}, {{0, 2, 3}}, {{0, 1, 3}}, {{1, 2, 3}}}};
+    static constexpr std::array<std::array<int, 2>, 6> local_edges = {
         {{{0, 1}}, {{1, 2}}, {{0, 2}}, {{0, 3}}, {{1, 3}}, {{2, 3}}}};
 
     triangle_insertion_global_cache.input_surface = _input_surface; // todo: avoid copy
