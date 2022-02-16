@@ -34,6 +34,7 @@ if(MSVC)
 endif()
 
 target_include_directories(parmetis PRIVATE "${parmetis_SOURCE_DIR}/libparmetis")
+target_include_directories(parmetis PRIVATE "${metis_SOURCE_DIR}/GKlib")
 
 include(GNUInstallDirs)
 target_include_directories(parmetis SYSTEM PUBLIC
@@ -66,3 +67,10 @@ set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME parmetis)
 install(DIRECTORY ${parmetis_SOURCE_DIR}/include DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 install(TARGETS parmetis EXPORT parmetis_Targets)
 install(EXPORT parmetis_Targets DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/parmetis NAMESPACE parmetis::)
+
+include(FindMPI)
+if(NOT MPI_FOUND)
+  message(FATAL_ERROR "mpi is not found")
+endif()
+
+target_link_libraries(parmetis PUBLIC metis::metis MPI::MPI_CXX)
