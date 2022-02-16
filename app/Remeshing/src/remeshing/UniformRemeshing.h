@@ -32,6 +32,7 @@ struct VertexAttributes
     Eigen::Vector3d pos;
     // TODO: in fact, partition id should not be vertex attribute, it is a fixed marker to distinguish tuple/operations.
     size_t partition_id;
+    bool freeze = false;
 };
 
 class UniformRemeshing : public wmtk::ConcurrentTriMesh
@@ -55,8 +56,30 @@ public:
             vertex_attrs[i] = {_m_vertex_positions[i], 0};
     }
 
-    void
-    create_mesh(size_t n_vertices, const std::vector<std::array<size_t, 3>>& tris, double eps = 0)
+    // void
+    // create_mesh(size_t n_vertices, const std::vector<std::array<size_t, 3>>& tris, double eps =
+    // 0)
+    // {
+    //     wmtk::ConcurrentTriMesh::create_mesh(n_vertices, tris);
+
+    //     if (eps > 0) {
+    //         std::vector<Eigen::Vector3d> V(n_vertices);
+    //         std::vector<Eigen::Vector3i> F(tris.size());
+    //         for (auto i = 0; i < V.size(); i++) {
+    //             V[i] = vertex_attrs[i].pos;
+    //         }
+    //         for (int i = 0; i < F.size(); ++i) F[i] << tris[i][0], tris[i][1], tris[i][2];
+    //         m_envelope.init(V, F, eps);
+    //         m_has_envelope = true;
+    //     }
+    //     partition_mesh();
+    // }
+
+    void create_mesh(
+        size_t n_vertices,
+        const std::vector<std::array<size_t, 3>>& tris,
+        const std::vector<size_t>& frozen_verts,
+        double eps = 0)
     {
         wmtk::ConcurrentTriMesh::create_mesh(n_vertices, tris);
 
@@ -71,7 +94,21 @@ public:
             m_has_envelope = true;
         }
         partition_mesh();
+        for (auto v : frozen_verts) vertex_attrs[v].freeze = true;
+        for (auto v : get_vertices()) { // the better way is to iterate through edges.
+            set_freeze(v);
+        }
     }
+    void set_freeze(TriMesh::Tuple& v)
+    {
+        for (auto e : get_one_ring_edges_for_vertex(v)) {
+            if (is_boundary_edge(e)) {
+                vertex_attrs[v.vid()].freeze = true;
+                continue;
+            }
+        }
+    }
+
     ~UniformRemeshing() {}
 
     struct PositionInfoCache
@@ -90,14 +127,19 @@ public:
     bool invariants(const std::vector<Tuple>& new_tris) override
     {
         if (m_has_envelope) {
+            // wmtk::logger().info("check env");
             for (auto& t : new_tris) {
+                // wmtk::logger()
+                //     .info("env check on vid {}, eid {}, fid {}", t.vid(), t.eid(*this), t.fid());
                 std::array<Eigen::Vector3d, 3> tris;
                 auto vs = t.oriented_tri_vertices(*this);
                 for (auto j = 0; j < 3; j++) tris[j] = vertex_attrs[vs[j].vid()].pos;
                 if (m_envelope.is_outside(tris)) return false;
             }
+            // wmtk::logger().info("env done");
         }
         return true;
+        // wmtk::logger().info("env done");
     }
 
 

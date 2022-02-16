@@ -122,12 +122,27 @@ std::optional<TriMesh::Tuple> TriMesh::Tuple::switch_face(const TriMesh& m) cons
 
 bool TriMesh::Tuple::is_valid(const TriMesh& m) const
 {
-    if (m.m_vertex_connectivity[m_vid].m_is_removed || m.m_tri_connectivity[m_fid].m_is_removed)
+    if (m.m_vertex_connectivity[m_vid].m_is_removed || m.m_tri_connectivity[m_fid].m_is_removed) {
+        wmtk::logger().info(
+            "m.m_vertex_connectivity[{}].m_is_removed {}",
+            m_vid,
+            m.m_vertex_connectivity[m_vid].m_is_removed);
+        wmtk::logger().info(
+            "m.m_tri_connectivity[{}].m_is_removed {}",
+            m_fid,
+            m.m_tri_connectivity[m_fid].m_is_removed);
         return false;
-
+    }
     // Condition 3: tuple m_hash check
-    if (m_hash != m.m_tri_connectivity[m_fid].hash) return false;
-
+    if (m_hash != m.m_tri_connectivity[m_fid].hash) {
+        wmtk::logger().info(
+            "m_hash {} != m.m_tri_connectivity[m_fid].hash {}",
+            m_hash,
+            m.m_tri_connectivity[m_fid].hash);
+        wmtk::logger()
+            .info("the tuple that's invalid is vid {}, eid {}, fid{}", m_vid, m_eid, m_fid);
+        return false;
+    }
 #ifndef NDEBUG
     //  Condition 0: Elements exist
     assert(m_vid < m.m_vertex_connectivity.size());
@@ -304,6 +319,8 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
     // roll back if not successful
     new_tris = get_one_ring_tris_for_vertex(new_t);
     start_protect_attributes();
+    wmtk::logger()
+        .info("the edge being split vid {} eid {} fid {}", t.vid(), t.eid(*this), t.fid());
     if (!split_after(new_t) || !invariants(new_tris)) {
         // rollback topo
         // restore old v, t
@@ -320,17 +337,22 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
         return false;
     }
     release_protect_attributes();
-
+    wmtk::logger().info("and succeed");
     return true;
 }
 
 bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
 {
     if (!collapse_before(loc0)) return false;
+    bool print = false;
     // get the vids
     size_t vid1 = loc0.vid();
     size_t vid2 = switch_vertex(loc0).vid();
-
+    if ((vid1 == 7593 || vid2 == 7593)) print = true;
+    if (print) {
+        wmtk::logger().info("now encountered the vids {} {}", vid1, vid2);
+        wmtk::logger().info("now encountered the fid {} ", loc0.fid());
+    }
     // record the vids that will be erased for roll backs on failure
     std::vector<std::pair<size_t, VertexConnectivity>> old_vertices(2);
     old_vertices[0] = std::make_pair(vid1, m_vertex_connectivity[vid1]);
@@ -436,14 +458,21 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
     new_tris = get_one_ring_tris_for_vertex(new_t);
 
     start_protect_attributes();
+
     if (!collapse_after(new_t) || !invariants(new_tris)) {
+        if (print) {
+            wmtk::logger().info("collapse attempt failed in restore");
+            wmtk::logger().info("newt has vid {}", new_t.vid());
+        }
         // if call back check failed roll back
         // restore the changes for connected triangles and vertices
         // resotre the version-number
         // removed restore to false
+        if (print) wmtk::logger().info("roll back tris");
         for (auto rollback : old_tris) {
             size_t fid = rollback.first;
             m_tri_connectivity[fid] = rollback.second;
+            if (print) wmtk::logger().info("fid {} hash {}", fid, rollback.second.hash);
         }
         for (auto rollback : old_vertices) {
             size_t vid = rollback.first;
@@ -680,8 +709,12 @@ void TriMesh::create_mesh(size_t n_vertices, const std::vector<std::array<size_t
     size_t hash_cnt = 0;
     for (int i = 0; i < tris.size(); i++) {
         m_tri_connectivity[i].m_indices = tris[i];
+
         m_tri_connectivity[i].hash = hash_cnt;
-        for (int j = 0; j < 3; j++) m_vertex_connectivity[tris[i][j]].m_conn_tris.push_back(i);
+        for (int j = 0; j < 3; j++) {
+            if (tris[i][j] == 935) wmtk::logger().info("0 has corerect connection");
+            m_vertex_connectivity[tris[i][j]].m_conn_tris.push_back(i);
+        }
     }
 }
 
@@ -695,7 +728,9 @@ std::vector<TriMesh::Tuple> TriMesh::get_vertices() const
         if (m_vertex_connectivity[i].m_is_removed) continue;
 
         const std::vector<size_t>& v_conn_fids = m_vertex_connectivity[i].m_conn_tris;
-
+        if (v_conn_fids.size() == 0) wmtk::logger().info("current i is {}", i);
+        // wmtk::logger().info("current i has conn fids {}", m_vertex_connectivity[i].m_conn_tris);
+        // wmtk::logger().info("next i has conn fids {}", m_vertex_connectivity[i + 1].m_conn_tris);
         size_t fid = *min_element(v_conn_fids.begin(), v_conn_fids.end());
 
         // get the 3 vid

@@ -239,24 +239,44 @@ private:
 
 protected:
     virtual bool invariants(const std::vector<Tuple>&) { return true; }
-    virtual bool split_before(const Tuple& t) { return true; }
-    virtual bool split_after(const Tuple& t) { return true; }
+    virtual bool split_before(const Tuple& t)
+    {
+        assert(check_mesh_connectivity_validity());
+        if (!t.is_valid(*this))
+            wmtk::logger().info(
+                "the connectivity of the faulting tuple is\n m_conn_fids {}, \n m_indices{}",
+                m_vertex_connectivity[t.vid()].m_conn_tris,
+                m_tri_connectivity[t.fid()].m_indices);
+        return true;
+    }
+    virtual bool split_after(const Tuple& t)
+    {
+        assert(check_mesh_connectivity_validity());
+        return true;
+    }
 
 
     virtual bool collapse_before(const Tuple& t)
     {
+        assert(check_mesh_connectivity_validity());
         if (check_link_condition(t)) return true;
         return false;
     }
     virtual bool collapse_after(const Tuple& t)
     {
+        assert(check_mesh_connectivity_validity());
         assert(t.is_valid(*this));
 
         return true;
     }
-    virtual bool swap_after(const Tuple& t) { return true; }
+    virtual bool swap_after(const Tuple& t)
+    {
+        assert(check_mesh_connectivity_validity());
+        return true;
+    }
     virtual bool swap_before(const Tuple& t)
     {
+        assert(check_mesh_connectivity_validity());
         if (!t.switch_face(*this).has_value())
             return false; // can't swap on boundary edgereturn true;
         // when swap edge between v1, v2, there can't exist edge between v3, v4 already

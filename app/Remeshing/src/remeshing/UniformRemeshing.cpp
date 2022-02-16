@@ -187,8 +187,9 @@ bool UniformRemeshing::collapse_remeshing(double L)
 bool UniformRemeshing::split_remeshing(double L)
 {
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
-    for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_split", loc);
 
+    for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_split", loc);
+    wmtk::logger().info("size for edges to be split is {}", collect_all_ops.size());
     auto setup_and_execute = [&](auto executor) {
         executor.num_threads = NUM_THREADS;
 
@@ -310,6 +311,7 @@ Eigen::Vector3d UniformRemeshing::tangential_smooth(const Tuple& t)
     }
     n0 /= w0;
     after_smooth += n0 * n0.transpose() * (vertex_attrs[t.vid()].pos - after_smooth);
+    assert(check_mesh_connectivity_validity());
     return after_smooth;
 }
 
@@ -329,35 +331,39 @@ bool UniformRemeshing::uniform_remeshing(double L, int iterations)
         min_lens.push_back(properties[2]);
         min_vals.push_back(properties[5]);
 
+        write_triangle_mesh("remesh_itr" + std::to_string(cnt) + ".obj");
         // split
+        wmtk::logger().info("starting split");
         split_remeshing(L);
+        wmtk::logger().info("finished split");
         // collpase
         collapse_remeshing(L);
-
+        wmtk::logger().info("finished collapse");
         // swap edges
         swap_remeshing();
+        wmtk::logger().info("finished swap");
         // smoothing
         auto vertices = get_vertices();
 
         for (auto& loc : vertices) vertex_attrs[loc.vid()].pos = tangential_smooth(loc);
-
+        wmtk::logger().info("finished smooth");
         assert(check_mesh_connectivity_validity());
-        consolidate_mesh();
+
         properties = average_len_valen();
     }
     wmtk::logger().info("avg edge len after each remesh is: ");
     wmtk::vector_print(avg_lens);
-    wmtk::logger().info("max edge len after each remesh is: ");
-    wmtk::vector_print(max_lens);
-    wmtk::logger().info("min edge len after each remesh is: ");
-    wmtk::vector_print(min_lens);
+    // wmtk::logger().info("max edge len after each remesh is: ");
+    // wmtk::vector_print(max_lens);
+    // wmtk::logger().info("min edge len after each remesh is: ");
+    // wmtk::vector_print(min_lens);
 
 
     wmtk::logger().info("avg valence after each remesh is: ");
     wmtk::vector_print(avg_valens);
-    wmtk::logger().info("max valence after each remesh is: ");
-    wmtk::vector_print(max_vals);
-    wmtk::logger().info("min valence after each remesh is: ");
-    wmtk::vector_print(min_vals);
+    // wmtk::logger().info("max valence after each remesh is: ");
+    // wmtk::vector_print(max_vals);
+    // wmtk::logger().info("min valence after each remesh is: ");
+    // wmtk::vector_print(min_vals);
     return true;
 }

@@ -1,6 +1,7 @@
 #include <wmtk/utils/PartitionMesh.h>
 
 #include <igl/remove_unreferenced.h>
+
 namespace wmtk {
 
 std::vector<size_t> partition_TriMesh(const wmtk::TriMesh& m, int num_partition)
@@ -31,13 +32,13 @@ std::vector<size_t> partition_TetMesh(wmtk::TetMesh& m, int num_partition)
         F(i, 1) = e1.vid(m);
         F(i, 2) = e1.switch_edge(m).switch_vertex(m).vid(m);
     }
-    
-    Eigen::VectorXi I,J;
+
+    Eigen::VectorXi I, J;
     igl::remove_unreferenced(m.vert_capacity(), F, I, J);
     Eigen::MatrixXi NF = F;
-    for (auto i=0; i<NF.rows(); i++) {
-        for (auto j=0;j<3; j++) {
-            NF(i,j) = I(NF(i,j));
+    for (auto i = 0; i < NF.rows(); i++) {
+        for (auto j = 0; j < 3; j++) {
+            NF(i, j) = I(NF(i, j));
         }
     }
 

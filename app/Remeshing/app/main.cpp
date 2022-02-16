@@ -1,5 +1,6 @@
 #include <igl/Timer.h>
 #include <igl/is_edge_manifold.h>
+#include <igl/is_vertex_manifold.h>
 #include <igl/read_triangle_mesh.h>
 #include <igl/remove_duplicate_vertices.h>
 #include <igl/writeDMAT.h>
@@ -68,26 +69,29 @@ int main(int argc, char** argv)
     const Eigen::MatrixXd box_max = V.colwise().maxCoeff();
     const double diag = (box_max - box_min).norm();
     const double envelope_size = atof(argv[3]) * diag;
-
-    if (!igl::is_edge_manifold(F)) {
-        wmtk::logger().info("Input is not edge manifold");
-        return 1;
-    } else {
-        UniformRemeshing m(v);
-        m.create_mesh(v.size(), tri, envelope_size);
-        assert(m.check_mesh_connectivity_validity());
-        std::vector<double> properties = m.average_len_valen();
-        wmtk::logger().info(
-            "edgelen: avg max min valence:avg max min before remesh is: {}",
-            properties);
-        igl::Timer timer;
-        timer.start();
-        run_remeshing(path, properties[0] * 5, std::string(argv[2]), m);
-        //run_remeshing(path, properties[0] / 2, std::string(argv[2]), m);
-        timer.stop();
-        logger().info("Took {}", timer.getElapsedTimeInSec());
+    Eigen::VectorXi dummy;
+    std::vector<size_t> modified_v;
+    if (!igl::is_edge_manifold(F) || !igl::is_vertex_manifold(F, dummy)) {
+        auto v1 = v;
+        auto tri1 = tri;
+        wmtk::separate_to_manifold(v1, tri1, v, tri, modified_v);
     }
 
+    UniformRemeshing m(v, atoi(argv[4]));
+    m.create_mesh(v.size(), tri, modified_v, envelope_size);
+    assert(m.check_mesh_connectivity_validity());
+    wmtk::logger().info("collapsing mesh {}", argv[1]);
+    m.get_vertices();
+    std::vector<double> properties = m.average_len_valen();
+    wmtk::logger().info(
+        "edgelen: avg max min valence:avg max min before remesh is: {}",
+        properties);
+    igl::Timer timer;
+    timer.start();
+    run_remeshing(path, properties[0] * 5, std::string(argv[2]), m);
+    //run_remeshing(path, properties[0] / 2, std::string(argv[2]), m);
+    timer.stop();
+    logger().info("Took {}", timer.getElapsedTimeInSec());
 
     return 0;
 }
