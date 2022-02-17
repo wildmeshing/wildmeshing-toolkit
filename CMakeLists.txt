@@ -21,6 +21,9 @@ endif()
 project(WildMeshingToolkit DESCRIPTION "A mesh optimization toolkit")
 ################################################################################
 
+option(WMTK_WITH_PARMETIS   "Use parallel version of Metis"    ON)
+
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/recipes/")
 
@@ -72,7 +75,9 @@ include(delaunay_psm)
 include(onetbb)
 include(mshio)
 include(metis)
-include(parmetis)
+if(WMTK_WITH_PARMETIS)
+    include(parmetis)
+endif()
 include(lagrange)
 target_link_libraries(wildmeshing_toolkit PUBLIC
     spdlog::spdlog
@@ -83,10 +88,15 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     TBB::tbb
     mshio::mshio
     metis::metis
-    parmetis::parmetis
     lagrange::core
     Tracy::TracyClient
 )
+
+if(WMTK_WITH_PARMETIS)
+    target_link_libraries(wildmeshing_toolkit PUBLIC parmetis::parmetis)
+    target_compile_definitions(wildmeshing_toolkit PUBLIC WMTK_WITH_PARMETIS)
+endif()
+
 
 ################################################################################
 # Subdirectories

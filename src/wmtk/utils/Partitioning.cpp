@@ -2,7 +2,9 @@
 #include <wmtk/utils/Logger.hpp>
 
 #include <metis.h>
+#ifdef WMTK_WITH_PARMETIS
 #include <parmetis.h>
+#endif
 
 #include <type_traits>
 
