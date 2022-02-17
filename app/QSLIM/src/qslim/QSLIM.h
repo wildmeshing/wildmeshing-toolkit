@@ -43,7 +43,7 @@ struct VertexAttributes
 struct FaceAttributes
 {
     Quadrics Q;
-    Eigen::Vector3d n; // for quadrics computation
+    Eigen::Vector3d n = Eigen::Vector3d::Zero(); // for quadrics computation
 };
 
 struct EdgeAttributes
@@ -139,7 +139,7 @@ public:
             // get A,b,c of one face
             Quadrics Qf = compute_quadric_for_face(faces[i]);
             // update the face_attr
-            face_attrs[i] = {.Q = Qf};
+            face_attrs[i].Q = Qf;
         }
     }
     void initiate_quadrics_for_vertices()
