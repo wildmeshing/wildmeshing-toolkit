@@ -23,7 +23,6 @@ file(GLOB INC_FILES
 file(GLOB SRC_FILES
     "${parmetis_SOURCE_DIR}/libparmetis/*.c"
 )
-list(REMOVE_ITEM SRC_FILES "${parmetis_SOURCE_DIR}/GKlib/gkregex.c")
 
 add_library(parmetis STATIC ${INC_FILES} ${SRC_FILES})
 add_library(parmetis::parmetis ALIAS parmetis)
@@ -34,7 +33,7 @@ if(MSVC)
 endif()
 
 target_include_directories(parmetis PRIVATE "${parmetis_SOURCE_DIR}/libparmetis")
-target_include_directories(parmetis PRIVATE "${metis_SOURCE_DIR}/GKlib")
+target_include_directories(parmetis PRIVATE "${parmetis_SOURCE_DIR}/metis/GKlib")
 
 include(GNUInstallDirs)
 target_include_directories(parmetis SYSTEM PUBLIC
