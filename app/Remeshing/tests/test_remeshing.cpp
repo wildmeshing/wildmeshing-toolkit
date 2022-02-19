@@ -85,7 +85,6 @@ TEST_CASE("test_swap", "[test_remeshing]")
     REQUIRE(m.check_mesh_connectivity_validity());
     REQUIRE(m.get_vertices().size() == v_invariant);
     REQUIRE(m.get_edges().size() == e_invariant);
-    // m.write_triangle_mesh("sawped.obj");
 }
 
 TEST_CASE("test_split", "[test_remeshing]")
