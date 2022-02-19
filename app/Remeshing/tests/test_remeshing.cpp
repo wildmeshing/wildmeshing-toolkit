@@ -114,6 +114,5 @@ TEST_CASE("test_split", "[test_remeshing]")
         std::vector<TriMesh::Tuple> dummy;
         m.split_edge(edge, dummy);
     }
-    // m.write_triangle_mesh("split.obj");
     REQUIRE(m.check_mesh_connectivity_validity());
 }
