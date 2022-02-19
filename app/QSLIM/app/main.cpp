@@ -43,7 +43,7 @@ int main(int argc, char** argv)
 {
     std::string path = "";
     std::string output = "out.obj";
-    double env_rel = 1e-3;
+    double env_rel = -1;
     int thread = 1;
 
     CLI::App app{argv[0]};
@@ -51,7 +51,7 @@ int main(int argc, char** argv)
     app.add_option("input", path, "Input mesh.")->check(CLI::ExistingFile);
     app.add_option("output", output, "output mesh.");
 
-    app.add_option("-e,--envelope", env_rel, "Relative envelope size");
+    app.add_option("-e,--envelope", env_rel, "Relative envelope size, negative to disable");
     app.add_option("-j, --thread", thread, "thread.");
     CLI11_PARSE(app, argc, argv);
 
