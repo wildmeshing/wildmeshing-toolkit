@@ -1,23 +1,28 @@
+#include <remeshing/UniformRemeshing.h>
+
+#include <wmtk/utils/ManifoldUtils.hpp>
+
+#include <CLI/CLI.hpp>
+
 #include <igl/Timer.h>
 #include <igl/is_edge_manifold.h>
 #include <igl/read_triangle_mesh.h>
 #include <igl/remove_duplicate_vertices.h>
 #include <igl/writeDMAT.h>
-#include <remeshing/UniformRemeshing.h>
+
 #include <stdlib.h>
-#include <wmtk/TriMesh.h>
+#include <chrono>
 #include <cstdlib>
 #include <iostream>
-#include <wmtk/utils/ManifoldUtils.hpp>
-using namespace wmtk;
 
+using namespace wmtk;
 using namespace remeshing;
-#include <chrono>
 using namespace std::chrono;
 
 extern "C" {
 #include <wmtk/utils/getRSS.c>
 };
+
 void run_remeshing(std::string input, double len, std::string output, UniformRemeshing& m)
 {
     auto start = high_resolution_clock::now();
@@ -39,11 +44,22 @@ void run_remeshing(std::string input, double len, std::string output, UniformRem
 
 int main(int argc, char** argv)
 {
-    // input
-    // output
-    // ep
-    const std::string root(WMT_DATA_DIR);
-    const std::string path = argv[1];
+    std::string path = "";
+    std::string output = "out.obj";
+    double env_rel = -1;
+    double len_rel = 5;
+    int thread = 1;
+
+    CLI::App app{argv[0]};
+    auto harmonize = true;
+    app.add_option("input", path, "Input mesh.")->check(CLI::ExistingFile);
+    app.add_option("output", output, "output mesh.");
+
+    app.add_option("-e,--envelope", env_rel, "Relative envelope size, negative to disable");
+    app.add_option("-j, --thread", thread, "thread.");
+    app.add_option("-l, --length", len_rel, "Relative edge length.");
+    CLI11_PARSE(app, argc, argv);
+
     wmtk::logger().info("remeshing on {}", path);
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
@@ -67,13 +83,13 @@ int main(int argc, char** argv)
     const Eigen::MatrixXd box_min = V.colwise().minCoeff();
     const Eigen::MatrixXd box_max = V.colwise().maxCoeff();
     const double diag = (box_max - box_min).norm();
-    const double envelope_size = atof(argv[3]) * diag;
+    const double envelope_size = env_rel * diag;
 
     if (!igl::is_edge_manifold(F)) {
         wmtk::logger().info("Input is not edge manifold");
         return 1;
     } else {
-        UniformRemeshing m(v);
+        UniformRemeshing m(v, thread);
         m.create_mesh(v.size(), tri, envelope_size);
         assert(m.check_mesh_connectivity_validity());
         std::vector<double> properties = m.average_len_valen();
@@ -82,8 +98,7 @@ int main(int argc, char** argv)
             properties);
         igl::Timer timer;
         timer.start();
-        run_remeshing(path, properties[0] * 5, std::string(argv[2]), m);
-        //run_remeshing(path, properties[0] / 2, std::string(argv[2]), m);
+        run_remeshing(path, properties[0] * len_rel, output, m);
         timer.stop();
         logger().info("Took {}", timer.getElapsedTimeInSec());
     }
