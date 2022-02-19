@@ -74,7 +74,7 @@ TEST_CASE("manifold-separate-test-37989", "[test_sec]")
 }
 
 
-TEST_CASE("shortest_edge_collapse", "[test_sec]s")
+TEST_CASE("shortest_edge_collapse", "[test_sec]")
 {
     // 0___1___2    0___1       *
     // \  /\  /      \  /\      *
@@ -116,7 +116,7 @@ TEST_CASE("shortest_edge_collapse", "[test_sec]s")
     REQUIRE(m.get_faces().size() == 1);
 }
 
-TEST_CASE("shortest_edge_collapse_boundary_edge", "[test_sec]s")
+TEST_CASE("shortest_edge_collapse_boundary_edge", "[test_sec]")
 {
     // 0___1___2    0 __1___2      0 __1
     // \  /\  /      \  |  /         \ |
@@ -154,7 +154,7 @@ TEST_CASE("shortest_edge_collapse_boundary_edge", "[test_sec]s")
     REQUIRE(m.get_faces().size() == 1);
 }
 
-TEST_CASE("shortest_edge_collapse_closed_mesh", "[test_sec]s")
+TEST_CASE("shortest_edge_collapse_closed_mesh", "[test_sec]")
 {
     SECTION("test on tet")
     {
@@ -239,7 +239,7 @@ TEST_CASE("shortest_edge_collapse_octocat", "[test_sec]")
     REQUIRE(m.check_mesh_connectivity_validity());
 }
 
-TEST_CASE("shortest_edge_collapse_circle", "[test_sec]s")
+TEST_CASE("shortest_edge_collapse_circle", "[test_sec]")
 {
     const std::string root(WMT_DATA_DIR);
     const std::string path = root + "/circle.obj";
