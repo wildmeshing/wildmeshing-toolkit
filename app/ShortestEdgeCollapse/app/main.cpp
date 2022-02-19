@@ -52,7 +52,6 @@ int main(int argc, char** argv)
     int thread = 1;
 
     CLI::App app{argv[0]};
-    auto harmonize = true;
     app.add_option("input", path, "Input mesh.")->check(CLI::ExistingFile);
     app.add_option("output", output, "output mesh.");
 
