@@ -189,9 +189,6 @@ bool wmtk::TriMesh::check_mesh_connectivity_validity() const
 }
 
 
-
-
-
 bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
 {
     if (!split_before(t)) return false;
@@ -330,7 +327,6 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
 bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
 {
     if (!collapse_before(loc0)) return false;
-
     // get the vids
     size_t vid1 = loc0.vid(*this);
     size_t vid2 = switch_vertex(loc0).vid(*this);
@@ -438,7 +434,7 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
     auto new_t = Tuple(new_vid, (j + 2) % 3, gfid, *this);
     assert(new_t.is_valid(*this));
     new_tris = get_one_ring_tris_for_vertex(new_t);
-    
+
     start_protect_attributes();
     if (!collapse_after(new_t) || !invariants(new_tris)) {
         // if call back check failed roll back
@@ -472,7 +468,6 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
         return false;
     }
     release_protect_attributes();
-
     return true;
 }
 
@@ -611,7 +606,6 @@ void TriMesh::consolidate_mesh()
     p_edge_attrs->resize(m_tri_connectivity.size() * 3);
     p_face_attrs->resize(m_tri_connectivity.size());
 
-    // DP: remember to compact the tbb vectors!
     // m_vertex_connectivity.compact();
 
     assert(check_mesh_connectivity_validity());
@@ -701,6 +695,7 @@ std::vector<TriMesh::Tuple> TriMesh::get_vertices() const
         if (m_vertex_connectivity[i].m_is_removed) continue;
 
         const std::vector<size_t>& v_conn_fids = m_vertex_connectivity[i].m_conn_tris;
+
         size_t fid = *min_element(v_conn_fids.begin(), v_conn_fids.end());
 
         // get the 3 vid
@@ -741,8 +736,6 @@ std::vector<TriMesh::Tuple> TriMesh::get_faces() const
 
 std::vector<TriMesh::Tuple> TriMesh::get_edges() const
 {
-    // DP: This function is not using the correct prototype, check the 3D version, it
-    // should throw when goes outside the boundary
     std::vector<TriMesh::Tuple> all_edges_tuples;
     for (int i = 0; i < m_tri_connectivity.size(); i++) {
         if (m_tri_connectivity[i].m_is_removed) continue;

@@ -109,7 +109,7 @@ struct ExecutePass
                      else
                          return {};
                  }},
-                  {"edge_swap_44",
+                {"edge_swap_44",
                  [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
                      std::vector<Tuple> ret;
                      if (m.swap_edge_44(t, ret))
@@ -227,8 +227,9 @@ public:
                         std::tuple<double, Op, Tuple>(
                             std::get<0>(ele_in_queue),
                             std::get<1>(ele_in_queue),
-                            std::get<2>(ele_in_queue))))
-                    continue; // this can encode, in qslim, recompute(energy) == weight.
+                            std::get<2>(ele_in_queue)))) {
+                    continue;
+                } // this can encode, in qslim, recompute(energy) == weight.
                 std::vector<Elem> renewed_elements;
                 {
                     ZoneScoped;

@@ -103,3 +103,5 @@ add_subdirectory(tests)
 add_subdirectory(Remeshing)
 
 add_subdirectory(ShortestEdgeCollapse)
+
+add_subdirectory(QSLIM)

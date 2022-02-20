@@ -46,8 +46,8 @@ TEST_CASE("shortest_edge_collapse", "[test_2d_operations]")
 
     m.consolidate_mesh();
 
-    REQUIRE(m.get_vertices().size() == 5);
-    REQUIRE(m.get_faces().size() == 3);
+    REQUIRE(m.get_vertices().size() == 3);
+    REQUIRE(m.get_faces().size() == 1);
 }
 
 TEST_CASE("shortest_edge_collapse_boundary_edge", "[test_2d_operations]")
@@ -368,6 +368,4 @@ TEST_CASE("qec_cost")
         Eigen::Vector3d v2 = V.row(edges[i].switch_vertex(m).vid(m));
         writem.row(i) << v1.transpose(), v2.transpose(), m.compute_cost_for_e(edges[i]);
     }
-    wmtk::logger().info("the result is {}", writem);
-    igl::writeDMAT(path + "_priority.txt", writem);
 }
