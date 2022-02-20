@@ -7,6 +7,7 @@
 #endif
 
 #include <type_traits>
+#include <array>
 
 namespace wmtk {
 
@@ -34,20 +35,56 @@ Eigen::Matrix<metis_index_t, Eigen::Dynamic, 1> partition_mesh_vertices_raw(
     logger().info("Num parts: {}", num_partitions);
 
     // Do the job. Lots of options, stuff is explained here:
-    // http://glaros.dtc.umn.edu/gkhome/fetch/sw/metis/manual.pdf
-    auto err = METIS_PartMeshNodal(
-        &num_elems,
-        &num_nodes,
-        e_ptr,
-        e_ind,
-        nullptr, // vwgt
-        nullptr, // vsize
-        &num_partitions,
-        nullptr, // tpwgts
-        nullptr, // options
-        &objval,
-        e_part.get(),
-        n_part.get());
+    int err = 0;
+    auto serial = true;
+    if (serial) {
+        // http://glaros.dtc.umn.edu/gkhome/fetch/sw/metis/manual.pdf
+        err = METIS_PartMeshNodal(
+            &num_elems,
+            &num_nodes,
+            e_ptr,
+            e_ind,
+            nullptr, // vwgt
+            nullptr, // vsize
+            &num_partitions,
+            nullptr, // tpwgts
+            nullptr, // options
+            &objval,
+            e_part.get(),
+            n_part.get());
+
+    } else {
+        auto elmdist = std::array<idx_t, 2>{{0, num_nodes}};
+        auto zero = idx_t(0);
+        auto one = idx_t(1);
+        auto comm = MPI_COMM_WORLD;
+        real_t ubvec = 1.05;
+        idx_t wgtflag = 0;
+        idx_t numflag = 0;
+        idx_t ncon = 1;
+        idx_t ncommonnodes = 2;
+        idx_t options[3] = {0, 0, 0};
+        std::vector<real_t> tpwgts(ncon * num_partitions, 1.0 / num_partitions);
+
+        MPI_Init(nullptr, nullptr);
+        err = ParMETIS_V3_PartMeshKway(
+            &elmdist[0], // distribution on processors
+            e_ptr,
+            e_ind,
+            nullptr, // elmwgt
+            &wgtflag, // wgtflag, 0
+            &numflag, // numflag, 0
+            &ncon, // ncon
+            &ncommonnodes, // ncomonnodes
+            &num_partitions, // nparts
+            &tpwgts[0], // tpwgts
+            &ubvec, // ubvec
+            options, // options
+            e_part.get(),
+            n_part.get(),
+            &comm);
+        MPI_Finalize();
+    }
 
     // Error handling
     std::string message;
