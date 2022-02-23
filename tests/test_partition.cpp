@@ -9,8 +9,6 @@
 #include <igl/read_triangle_mesh.h>
 
 #include <metis.h>
-#include <mpi.h>
-#include <parmetis.h>
 
 using namespace wmtk;
 
@@ -25,6 +23,11 @@ TEST_CASE("partition-mesh", "[test_partition]")
     REQUIRE(partitioned_v.size() == V.rows());
     REQUIRE(partitioned_v.maxCoeff() == 9);
 }
+
+
+#ifdef WMTK_WITH_PARMETIS
+#include <mpi.h>
+#include <parmetis.h>
 
 
 namespace wmtk {
@@ -111,6 +114,7 @@ Eigen::Matrix<metis_index_t, Eigen::Dynamic, 1> parallel_partition_mesh_vertices
 }
 } // namespace wmtk
 
+
 TEST_CASE("parallel-partition-mesh", "[test_partition]")
 {
     Eigen::MatrixXd V;
@@ -134,3 +138,5 @@ TEST_CASE("parallel-partition-mesh", "[test_partition]")
     CHECK((partitioned_v.array()==1).count() > 300);
     CHECK((partitioned_v.array()==0).count() > 300);
 }
+
+#endif

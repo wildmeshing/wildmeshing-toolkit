@@ -54,6 +54,7 @@ Eigen::Matrix<metis_index_t, Eigen::Dynamic, 1> partition_mesh_vertices_raw(
             n_part.get());
 
     } else {
+#ifdef WMTK_WITH_PARMETIS
         auto elmdist = std::array<idx_t, 2>{{0, num_nodes}};
         auto zero = idx_t(0);
         auto one = idx_t(1);
@@ -84,6 +85,9 @@ Eigen::Matrix<metis_index_t, Eigen::Dynamic, 1> partition_mesh_vertices_raw(
             n_part.get(),
             &comm);
         MPI_Finalize();
+#else
+    throw std::runtime_error("No ParMETIS");
+#endif
     }
 
     // Error handling
