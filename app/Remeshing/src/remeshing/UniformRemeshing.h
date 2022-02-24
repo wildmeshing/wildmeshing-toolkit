@@ -155,27 +155,6 @@ public:
 
     Eigen::Vector3d tangential_smooth(const Tuple& t);
 
-    // write the collapsed mesh into a obj
-    bool write_triangle_mesh(std::string path)
-    {
-        Eigen::MatrixXd V = Eigen::MatrixXd::Zero(vertex_attrs.size(), 3);
-        for (auto& t : get_vertices()) {
-            auto i = t.vid();
-            V.row(i) = vertex_attrs[i].pos;
-        }
-
-        Eigen::MatrixXi F = Eigen::MatrixXi::Constant(tri_capacity(), 3, -1);
-        for (auto& t : get_faces()) {
-            auto i = t.fid();
-            auto vs = oriented_tri_vertices(t);
-            for (int j = 0; j < 3; j++) {
-                F(i, j) = vs[j].vid();
-            }
-        }
-
-        return igl::write_triangle_mesh(path, V, F);
-    }
-
     bool collapse_before(const Tuple& t) override
     {
         if (!TriMesh::collapse_before(t)) return false;
@@ -205,6 +184,7 @@ public:
     bool collapse_remeshing(double L);
     bool swap_remeshing();
     bool uniform_remeshing(double L, int interations);
+    bool write_triangle_mesh(std::string path);
 };
 
 } // namespace remeshing

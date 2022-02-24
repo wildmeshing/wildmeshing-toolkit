@@ -339,16 +339,22 @@ bool UniformRemeshing::uniform_remeshing(double L, int iterations)
         // collpase
         collapse_remeshing(L);
         wmtk::logger().info("finished collapse");
+        write_triangle_mesh("itr" + std::to_string(cnt)+ "_collapse_0224.obj");
         // swap edges
         swap_remeshing();
         wmtk::logger().info("finished swap");
+        write_triangle_mesh("itr" + std::to_string(cnt)+ "_swap_0224.obj");
         // smoothing
         auto vertices = get_vertices();
+        for (auto& loc : vertices) vertex_attrs[loc.vid(*this)].pos = tangential_smooth(loc);
+        wmtk::logger().info("finished smooth");
+        write_triangle_mesh("itr" + std::to_string(cnt)+ "_smooth_0224.obj");
 
         for (auto& loc : vertices) vertex_attrs[loc.vid()].pos = tangential_smooth(loc);
         wmtk::logger().info("finished smooth");
         assert(check_mesh_connectivity_validity());
-
+        consolidate_mesh();
+        write_triangle_mesh("remesh_consolidate_itr" + std::to_string(cnt+1) + "_0224.obj");
         properties = average_len_valen();
     }
     wmtk::logger().info("avg edge len after each remesh is: ");
@@ -366,4 +372,25 @@ bool UniformRemeshing::uniform_remeshing(double L, int iterations)
     // wmtk::logger().info("min valence after each remesh is: ");
     // wmtk::vector_print(min_vals);
     return true;
+}
+// write the collapsed mesh into a obj
+bool UniformRemeshing::write_triangle_mesh(std::string path)
+{
+    Eigen::MatrixXd V = Eigen::MatrixXd::Zero(vertex_attrs.size(), 3);
+    for (auto& t : get_vertices()) {
+        auto i = t.vid(*this);
+        V.row(i) = vertex_attrs[i].pos;
+    }
+
+    Eigen::MatrixXi F = Eigen::MatrixXi::Constant(tri_capacity(), 3, -1);
+    for (auto& t : get_faces()) {
+        auto i = t.fid(*this);
+        auto vs = oriented_tri_vertices(t);
+        for (int j = 0; j < 3; j++) {
+            F(i, j) = vs[j].vid(*this);
+        }
+    }
+    igl::write_triangle_mesh(path, V, F);
+    assert(igl::is_edge_manifold(F));
+    return igl::is_edge_manifold(F);
 }
