@@ -103,7 +103,7 @@ public:
     {
         for (auto e : get_one_ring_edges_for_vertex(v)) {
             if (is_boundary_edge(e)) {
-                vertex_attrs[v.vid()].freeze = true;
+                vertex_attrs[v.vid(*this)].freeze = true;
                 continue;
             }
         }

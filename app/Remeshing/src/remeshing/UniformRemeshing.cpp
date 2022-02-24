@@ -1,5 +1,5 @@
 #include "UniformRemeshing.h"
-
+#include <igl/is_edge_manifold.h>
 #include <wmtk/TriMesh.h>
 #include <wmtk/utils/VectorUtils.h>
 #include <Eigen/Core>
@@ -333,9 +333,9 @@ bool UniformRemeshing::uniform_remeshing(double L, int iterations)
 
         write_triangle_mesh("remesh_itr" + std::to_string(cnt) + ".obj");
         // split
-        wmtk::logger().info("starting split");
-        split_remeshing(L);
-        wmtk::logger().info("finished split");
+        // wmtk::logger().info("starting split");
+        // split_remeshing(L);
+        // wmtk::logger().info("finished split");
         // collpase
         collapse_remeshing(L);
         wmtk::logger().info("finished collapse");
@@ -350,7 +350,7 @@ bool UniformRemeshing::uniform_remeshing(double L, int iterations)
         wmtk::logger().info("finished smooth");
         write_triangle_mesh("itr" + std::to_string(cnt)+ "_smooth_0224.obj");
 
-        for (auto& loc : vertices) vertex_attrs[loc.vid()].pos = tangential_smooth(loc);
+        for (auto& loc : vertices) vertex_attrs[loc.vid(*this)].pos = tangential_smooth(loc);
         wmtk::logger().info("finished smooth");
         assert(check_mesh_connectivity_validity());
         consolidate_mesh();
@@ -373,7 +373,7 @@ bool UniformRemeshing::uniform_remeshing(double L, int iterations)
     // wmtk::vector_print(min_vals);
     return true;
 }
-// write the collapsed mesh into a obj
+// write the collapsed mesh into a obj and assert the mesh is manifold 
 bool UniformRemeshing::write_triangle_mesh(std::string path)
 {
     Eigen::MatrixXd V = Eigen::MatrixXd::Zero(vertex_attrs.size(), 3);

@@ -43,11 +43,7 @@ struct VertexAttributes
 struct FaceAttributes
 {
     Quadrics Q;
-<<<<<<< HEAD
-    Eigen::Vector3d n; // for quadrics computation
-=======
     Eigen::Vector3d n = Eigen::Vector3d::Zero(); // for quadrics computation
->>>>>>> main
 };
 
 struct EdgeAttributes
@@ -84,11 +80,7 @@ public:
     {
         for (auto e : get_one_ring_edges_for_vertex(v)) {
             if (is_boundary_edge(e)) {
-<<<<<<< HEAD
-                vertex_attrs[v.vid()].freeze = true;
-=======
                 vertex_attrs[v.vid(*this)].freeze = true;
->>>>>>> main
                 continue;
             }
         }

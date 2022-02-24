@@ -245,8 +245,8 @@ protected:
         if (!t.is_valid(*this))
             wmtk::logger().info(
                 "the connectivity of the faulting tuple is\n m_conn_fids {}, \n m_indices{}",
-                m_vertex_connectivity[t.vid()].m_conn_tris,
-                m_tri_connectivity[t.fid()].m_indices);
+                m_vertex_connectivity[t.vid(*this)].m_conn_tris,
+                m_tri_connectivity[t.fid(*this)].m_indices);
         return true;
     }
     virtual bool split_after(const Tuple& t)
@@ -306,7 +306,7 @@ public:
     bool check_link_condition(const Tuple& t) const; // DP: should be private
     bool check_mesh_connectivity_validity() const; // DP: should be private
     bool check_internal_link_condition(const Tuple& t) const;
-
+    bool check_edge_manifold() const;
     bool is_boundary_edge(const TriMesh::Tuple& t) const
     {
         if (!t.switch_face(*this).has_value()) return true;
