@@ -156,10 +156,10 @@ TEST_CASE("inversion-check-rational-tetwild", "[tetwild_operation]")
     TetWild tetwild(params, envelope);
 
     std::vector<VertexAttributes> vertices(4);
-    vertices[0].m_pos = Vector3(0, 0, 0);
-    vertices[1].m_pos = Vector3(1, 0, 0);
-    vertices[2].m_pos = Vector3(0, 1, 0);
-    vertices[3].m_pos = Vector3(0, 0, 1);
+    vertices[0].m_pos = Vector3r(0, 0, 0);
+    vertices[1].m_pos = Vector3r(1, 0, 0);
+    vertices[2].m_pos = Vector3r(0, 1, 0);
+    vertices[3].m_pos = Vector3r(0, 0, 1);
     for (auto& v : vertices) v.m_is_rounded = false;
     std::vector<std::array<size_t, 4>> tets = {{{0, 1, 2, 3}}};
     std::vector<TetAttributes> tet_attrs(1);

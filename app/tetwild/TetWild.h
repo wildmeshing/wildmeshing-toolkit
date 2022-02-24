@@ -10,6 +10,7 @@
 #include <wmtk/utils/DisableWarnings.hpp>
 #include <fastenvelope/FastEnvelope.h>
 #include <tbb/concurrent_queue.h>
+#include <tbb/concurrent_priority_queue.h>
 #include <tbb/concurrent_vector.h>
 #include <tbb/concurrent_map.h>
 #include <tbb/concurrent_unordered_map.h>
@@ -25,7 +26,7 @@ namespace tetwild {
 class VertexAttributes
 {
 public:
-    Vector3 m_pos;
+    Vector3r m_pos;
     Vector3d m_posf;
     bool m_is_rounded = false;
 
@@ -90,8 +91,8 @@ public:
     TetWild(Parameters& _m_params, fastEnvelope::FastEnvelope& _m_envelope, int _num_threads = 1)
         : m_params(_m_params)
         , m_envelope(_m_envelope)
-        , NUM_THREADS(_num_threads)
     {
+        NUM_THREADS = _num_threads;
         p_vertex_attrs = &m_vertex_attribute;
         p_edge_attrs = &m_edge_attribute;
         p_face_attrs = &m_face_attribute;
@@ -137,8 +138,6 @@ public:
     }
 
     ////// Attributes related
-    int NUM_THREADS = 1;
-
 
     void output_mesh(std::string file);
     void output_faces(std::string file, std::function<bool(const FaceAttributes&)> cond);
@@ -245,7 +244,7 @@ public:
     void add_tet_centroid(const Tuple& t, size_t vid) override;
     //
     void triangle_insertion_stuff(
-        std::vector<tbb::concurrent_queue<std::tuple<size_t, int>>>& insertion_queues,
+        std::vector<tbb::concurrent_priority_queue<std::tuple<double, int, size_t>>>& insertion_queues,
         tbb::concurrent_queue<size_t>& expired_queue,
         int task_id);
     void triangle_insertion(const InputSurface& input_surface);

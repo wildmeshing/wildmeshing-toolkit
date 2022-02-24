@@ -15,7 +15,7 @@ using namespace qslim;
 // adding the A, b , c for two vertices of the old edge and store at the vert_attr of new vertex
 void QSLIM::update_quadrics(const Tuple& new_v)
 {
-    vertex_attrs[new_v.vid()].Q = {
+    vertex_attrs[new_v.vid(*this)].Q = {
         cache.local().Q1.A + cache.local().Q2.A,
         cache.local().Q1.b + cache.local().Q2.b,
         cache.local().Q1.c + cache.local().Q2.c};
@@ -25,9 +25,9 @@ void QSLIM::update_quadrics(const Tuple& new_v)
 Quadrics QSLIM::compute_quadric_for_face(const TriMesh::Tuple& f_tuple)
 {
     Quadrics Q;
-    Eigen::Vector3d n = face_attrs[f_tuple.fid()].n;
+    Eigen::Vector3d n = face_attrs[f_tuple.fid(*this)].n;
     Q.A = n * n.transpose();
-    double d = -n.dot(vertex_attrs[oriented_tri_vertices(f_tuple)[0].vid()].pos);
+    double d = -n.dot(vertex_attrs[oriented_tri_vertices(f_tuple)[0].vid(*this)].pos);
     Q.b = d * n;
     Q.c = d * d;
     return Q;
@@ -35,13 +35,13 @@ Quadrics QSLIM::compute_quadric_for_face(const TriMesh::Tuple& f_tuple)
 double QSLIM::compute_cost_for_e(const TriMesh::Tuple& v_tuple)
 {
     // first get Q
-    Quadrics Q1 = vertex_attrs[v_tuple.vid()].Q;
-    Quadrics Q2 = vertex_attrs[v_tuple.switch_vertex(*this).vid()].Q;
+    Quadrics Q1 = vertex_attrs[v_tuple.vid(*this)].Q;
+    Quadrics Q2 = vertex_attrs[v_tuple.switch_vertex(*this).vid(*this)].Q;
     Quadrics Q = {Q1.A + Q2.A, Q1.b + Q2.b, Q1.c + Q2.c};
     double cost = 0.0;
     Eigen::Vector3d vbar(0.0, 0.0, 0.0);
-    Eigen::Vector3d v1 = vertex_attrs[v_tuple.vid()].pos;
-    Eigen::Vector3d v2 = vertex_attrs[v_tuple.switch_vertex(*this).vid()].pos;
+    Eigen::Vector3d v1 = vertex_attrs[v_tuple.vid(*this)].pos;
+    Eigen::Vector3d v2 = vertex_attrs[v_tuple.switch_vertex(*this).vid(*this)].pos;
 
     // test if A is invertible
     // not invertible vbar is smallest of two vertices
@@ -81,7 +81,7 @@ bool QSLIM::invariants(const std::vector<Tuple>& new_tris)
         for (auto& t : new_tris) {
             std::array<Eigen::Vector3d, 3> tris;
             auto vs = t.oriented_tri_vertices(*this);
-            for (auto j = 0; j < 3; j++) tris[j] = vertex_attrs[vs[j].vid()].pos;
+            for (auto j = 0; j < 3; j++) tris[j] = vertex_attrs[vs[j].vid(*this)].pos;
             if (m_envelope.is_outside(tris)) return false;
         }
     }
@@ -92,16 +92,16 @@ bool QSLIM::write_triangle_mesh(std::string path)
 {
     Eigen::MatrixXd V = Eigen::MatrixXd::Zero(vert_capacity(), 3);
     for (auto& t : get_vertices()) {
-        auto i = t.vid();
+        auto i = t.vid(*this);
         V.row(i) = vertex_attrs[i].pos;
     }
 
     Eigen::MatrixXi F = Eigen::MatrixXi::Constant(tri_capacity(), 3, -1);
     for (auto& t : get_faces()) {
-        auto i = t.fid();
+        auto i = t.fid(*this);
         auto vs = oriented_tri_vertices(t);
         for (int j = 0; j < 3; j++) {
-            F(i, j) = vs[j].vid();
+            F(i, j) = vs[j].vid(*this);
         }
     }
 
@@ -111,12 +111,12 @@ bool QSLIM::write_triangle_mesh(std::string path)
 bool QSLIM::collapse_before(const Tuple& t)
 {
     if (!ConcurrentTriMesh::collapse_before(t)) return false;
-    if (vertex_attrs[t.vid()].freeze || vertex_attrs[t.switch_vertex(*this).vid()].freeze)
+    if (vertex_attrs[t.vid(*this)].freeze || vertex_attrs[t.switch_vertex(*this).vid(*this)].freeze)
         return false;
-    cache.local().v1p = vertex_attrs[t.vid()].pos;
-    cache.local().v2p = vertex_attrs[t.switch_vertex(*this).vid()].pos;
-    cache.local().Q1 = vertex_attrs[t.vid()].Q;
-    cache.local().Q2 = vertex_attrs[t.switch_vertex(*this).vid()].Q;
+    cache.local().v1p = vertex_attrs[t.vid(*this)].pos;
+    cache.local().v2p = vertex_attrs[t.switch_vertex(*this).vid(*this)].pos;
+    cache.local().Q1 = vertex_attrs[t.vid(*this)].Q;
+    cache.local().Q2 = vertex_attrs[t.switch_vertex(*this).vid(*this)].Q;
     cache.local().vbar = edge_attrs[t.eid(*this)].vbar;
     return true;
 }
@@ -124,7 +124,7 @@ bool QSLIM::collapse_before(const Tuple& t)
 
 bool QSLIM::collapse_after(const TriMesh::Tuple& t)
 {
-    auto vid = t.vid();
+    auto vid = t.vid(*this);
     vertex_attrs[vid].pos = cache.local().vbar;
     // update the quadrics
     update_quadrics(t);

@@ -43,7 +43,11 @@ struct VertexAttributes
 struct FaceAttributes
 {
     Quadrics Q;
+<<<<<<< HEAD
     Eigen::Vector3d n; // for quadrics computation
+=======
+    Eigen::Vector3d n = Eigen::Vector3d::Zero(); // for quadrics computation
+>>>>>>> main
 };
 
 struct EdgeAttributes
@@ -80,7 +84,11 @@ public:
     {
         for (auto e : get_one_ring_edges_for_vertex(v)) {
             if (is_boundary_edge(e)) {
+<<<<<<< HEAD
                 vertex_attrs[v.vid()].freeze = true;
+=======
+                vertex_attrs[v.vid(*this)].freeze = true;
+>>>>>>> main
                 continue;
             }
         }
@@ -139,7 +147,7 @@ public:
             // get A,b,c of one face
             Quadrics Qf = compute_quadric_for_face(faces[i]);
             // update the face_attr
-            face_attrs[i] = {.Q = Qf};
+            face_attrs[i].Q = Qf;
         }
     }
     void initiate_quadrics_for_vertices()
@@ -155,9 +163,9 @@ public:
             c = w * vertex_attrs[i].pos.dot(vertex_attrs[i].pos);
             auto one_ring_faces = get_one_ring_tris_for_vertex(verts[i]);
             for (auto tri : one_ring_faces) {
-                A += face_attrs[tri.fid()].Q.A;
-                b += face_attrs[tri.fid()].Q.b;
-                c += face_attrs[tri.fid()].Q.c;
+                A += face_attrs[tri.fid(*this)].Q.A;
+                b += face_attrs[tri.fid(*this)].Q.b;
+                c += face_attrs[tri.fid(*this)].Q.c;
             }
             vertex_attrs[i].Q = {A, b, c};
         }

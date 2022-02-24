@@ -10,7 +10,7 @@
 namespace wmtk {
 
     typedef Eigen::Vector3d Vector3d; // float?
-    typedef Eigen::Vector3d Vector3;
+    typedef Eigen::Vector3d Vector3r;
 
     typedef double Scalar;
     typedef Eigen::Matrix<Scalar, 3, 3> Matrix3;

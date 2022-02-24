@@ -53,16 +53,34 @@ void wmtk::TetMesh::init(size_t n_vertices, const std::vector<std::array<size_t,
 std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_edges() const
 {
     ZoneScoped;
-    std::vector<TetMesh::Tuple> edges;
+    std::vector<std::tuple<size_t, size_t, TetMesh::Tuple>> edges;
+    edges.reserve(m_tet_connectivity.size() * 6);
     for (int i = 0; i < m_tet_connectivity.size(); i++) {
         if (m_tet_connectivity[i].m_is_removed) continue;
         for (int j = 0; j < 6; j++) {
             auto tup = tuple_from_edge(i, j);
-            if (tup.eid(*this) == 6 * i + j) edges.emplace_back(tup);
+            auto v0 = tup.vid(*this);
+            auto v1 = tup.switch_vertex(*this).vid(*this);
+            if (v0 > v1) std::swap(v0, v1);
+            edges.emplace_back(v0, v1, tup);
         }
     }
-
-    return edges;
+    std::sort(edges.begin(), edges.end(), [](auto& a, auto& b) {
+        return std::tie(std::get<0>(a), std::get<1>(a)) < std::tie(std::get<0>(b), std::get<1>(b));
+    });
+    edges.erase(
+        std::unique(
+            edges.begin(),
+            edges.end(),
+            [](auto& a, auto& b) {
+                return std::tie(std::get<0>(a), std::get<1>(a)) ==
+                       std::tie(std::get<0>(b), std::get<1>(b));
+            }),
+        edges.end());
+    std::vector<TetMesh::Tuple> uniq_edges;
+    uniq_edges.reserve(edges.size());
+    for (auto& [v0, v1, e] : edges) uniq_edges.push_back(e);
+    return uniq_edges;
 }
 
 std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_faces() const
@@ -284,6 +302,7 @@ wmtk::TetMesh::Tuple wmtk::TetMesh::tuple_from_tet(size_t tid) const
 {
     ZoneScoped;
     assert(tid < m_tet_connectivity.size());
+    if (m_tet_connectivity[tid].m_is_removed) return Tuple();
 
     int vid = m_tet_connectivity[tid][0];
     int eid = m_map_vertex2edge[0];

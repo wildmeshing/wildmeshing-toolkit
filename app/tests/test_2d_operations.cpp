@@ -32,8 +32,8 @@ TEST_CASE("shortest_edge_collapse", "[test_2d_operations]")
     double shortest = std::numeric_limits<double>::max();
     TriMesh::Tuple shortest_edge;
     for (TriMesh::Tuple t : edges) {
-        size_t v1 = t.vid();
-        size_t v2 = m.switch_vertex(t).vid();
+        size_t v1 = t.vid(m);
+        size_t v2 = m.switch_vertex(t).vid(m);
         if ((v_positions[v1] - v_positions[v2]).squaredNorm() < shortest) {
             shortest = (v_positions[v1] - v_positions[v2]).squaredNorm();
             shortest_edge = t;
@@ -72,8 +72,8 @@ TEST_CASE("shortest_edge_collapse_boundary_edge", "[test_2d_operations]")
     double shortest = std::numeric_limits<double>::max();
     TriMesh::Tuple shortest_edge;
     for (TriMesh::Tuple t : edges) {
-        size_t v1 = t.vid();
-        size_t v2 = m.switch_vertex(t).vid();
+        size_t v1 = t.vid(m);
+        size_t v2 = m.switch_vertex(t).vid(m);
         if ((v_positions[v1] - v_positions[v2]).squaredNorm() < shortest) {
             shortest = (v_positions[v1] - v_positions[v2]).squaredNorm();
             shortest_edge = t;
@@ -364,10 +364,8 @@ TEST_CASE("qec_cost")
     Eigen::MatrixXd writem(edges.size(), 7);
 
     for (int i = 0; i < edges.size(); i++) {
-        Eigen::Vector3d v1 = V.row(edges[i].vid());
-        Eigen::Vector3d v2 = V.row(edges[i].switch_vertex(m).vid());
+        Eigen::Vector3d v1 = V.row(edges[i].vid(m));
+        Eigen::Vector3d v2 = V.row(edges[i].switch_vertex(m).vid(m));
         writem.row(i) << v1.transpose(), v2.transpose(), m.compute_cost_for_e(edges[i]);
     }
-    wmtk::logger().info("the result is {}", writem);
-    igl::writeDMAT(path + "_priority.txt", writem);
 }

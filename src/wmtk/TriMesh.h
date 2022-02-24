@@ -60,7 +60,7 @@ public:
          * @param m TriMesh where the tuple belongs.
          * @return size_t
          */
-        inline size_t vid() const { return m_vid; }
+        inline size_t vid(const TriMesh&) const { return m_vid; }
 
         /**
          * returns a global unique face id
@@ -68,7 +68,7 @@ public:
          * @param m TriMesh where the tuple belongs.
          * @return size_t
          */
-        inline size_t fid() const { return m_fid; }
+        inline size_t fid(const TriMesh&) const { return m_fid; }
 
 
         /**
@@ -82,7 +82,7 @@ public:
         inline size_t eid(const TriMesh& m) const
         {
             if (switch_face(m).has_value()) {
-                size_t fid2 = switch_face(m)->fid();
+                size_t fid2 = switch_face(m)->fid(m);
                 return std::min(m_fid, fid2) * 3 + m_eid;
             }
             return m_fid * 3 + m_eid;
@@ -280,8 +280,9 @@ protected:
         if (!t.switch_face(*this).has_value())
             return false; // can't swap on boundary edgereturn true;
         // when swap edge between v1, v2, there can't exist edge between v3, v4 already
-        size_t v4 = ((t.switch_face(*this).value()).switch_edge(*this)).switch_vertex(*this).vid();
-        size_t v3 = ((t.switch_edge(*this)).switch_vertex(*this)).vid();
+        size_t v4 =
+            ((t.switch_face(*this).value()).switch_edge(*this)).switch_vertex(*this).vid(*this);
+        size_t v3 = ((t.switch_edge(*this)).switch_vertex(*this)).vid(*this);
         if (!set_intersection(
                  m_vertex_connectivity[v4].m_conn_tris,
                  m_vertex_connectivity[v3].m_conn_tris)

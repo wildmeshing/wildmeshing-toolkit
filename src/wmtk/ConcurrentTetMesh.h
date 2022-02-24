@@ -94,5 +94,9 @@ public:
         int threadid = 0);
     bool try_set_face_mutex_two_ring(size_t v1, size_t v2, size_t v3, int threadid = 0);
     bool try_set_vertex_mutex_one_ring(const Tuple& v, int threadid = 0);
+
+public:
+    void for_each_edge(std::function<void(const TetMesh::Tuple&)>);
+    int NUM_THREADS = 1;
 };
 } // namespace wmtk

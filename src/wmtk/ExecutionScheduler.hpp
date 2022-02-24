@@ -197,7 +197,7 @@ private:
             return m.get_partition_id(e);
         else if constexpr (std::is_base_of<wmtk::TriMesh, AppMesh>::value) // TODO: make same
                                                                            // interface.
-            return m.vertex_attrs[e.vid()].partition_id; // TODO: this is temporary.
+            return m.vertex_attrs[e.vid(m)].partition_id; // TODO: this is temporary.
         return 0;
     }
 
@@ -230,7 +230,6 @@ public:
                             std::get<0>(ele_in_queue),
                             std::get<1>(ele_in_queue),
                             std::get<2>(ele_in_queue)))) {
-                    //wmtk::logger().info("the counter should not be increased {}", cnt_update);
                     continue;
                 } // this can encode, in qslim, recompute(energy) == weight.
                 std::vector<Elem> renewed_elements;

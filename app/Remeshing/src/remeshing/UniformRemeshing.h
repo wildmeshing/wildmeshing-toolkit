@@ -120,8 +120,8 @@ public:
 
     void cache_edge_positions(const Tuple& t)
     {
-        position_cache.local().v1p = vertex_attrs[t.vid()].pos;
-        position_cache.local().v2p = vertex_attrs[t.switch_vertex(*this).vid()].pos;
+        position_cache.local().v1p = vertex_attrs[t.vid(*this)].pos;
+        position_cache.local().v2p = vertex_attrs[t.switch_vertex(*this).vid(*this)].pos;
     }
 
     bool invariants(const std::vector<Tuple>& new_tris) override
@@ -133,7 +133,7 @@ public:
                 //     .info("env check on vid {}, eid {}, fid {}", t.vid(), t.eid(*this), t.fid());
                 std::array<Eigen::Vector3d, 3> tris;
                 auto vs = t.oriented_tri_vertices(*this);
-                for (auto j = 0; j < 3; j++) tris[j] = vertex_attrs[vs[j].vid()].pos;
+                for (auto j = 0; j < 3; j++) tris[j] = vertex_attrs[vs[j].vid(*this)].pos;
                 if (m_envelope.is_outside(tris)) return false;
             }
             // wmtk::logger().info("env done");

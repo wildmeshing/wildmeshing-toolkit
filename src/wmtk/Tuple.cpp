@@ -115,22 +115,23 @@ size_t TetMesh::Tuple::vid(const TetMesh&) const
 size_t TetMesh::Tuple::eid(const TetMesh& m) const
 {
     ZoneScoped;
-    int v1_id = m.m_tet_connectivity[m_global_tid][m_local_edges[m_local_eid][0]];
-    int v2_id = m.m_tet_connectivity[m_global_tid][m_local_edges[m_local_eid][1]];
+    auto v1_id = m.m_tet_connectivity[m_global_tid][m_local_edges[m_local_eid][0]];
+    auto v2_id = m.m_tet_connectivity[m_global_tid][m_local_edges[m_local_eid][1]];
+    if (v1_id > v2_id) std::swap(v1_id, v2_id);
     auto n12_t_ids = set_intersection(
         m.m_vertex_connectivity[v1_id].m_conn_tets,
         m.m_vertex_connectivity[v2_id].m_conn_tets);
     assert(!n12_t_ids.empty());
 
-    int tid = *std::min_element(n12_t_ids.begin(), n12_t_ids.end());
+    auto tid = *std::min_element(n12_t_ids.begin(), n12_t_ids.end());
     for (int j = 0; j < 6; j++) {
-        int tmp_v1_id = m.m_tet_connectivity[tid][m_local_edges[j][0]];
-        int tmp_v2_id = m.m_tet_connectivity[tid][m_local_edges[j][1]];
-        if ((tmp_v1_id == v1_id && tmp_v2_id == v2_id) ||
-            (tmp_v1_id == v2_id && tmp_v2_id == v1_id))
+        auto tmp_v1_id = m.m_tet_connectivity[tid][m_local_edges[j][0]];
+        auto tmp_v2_id = m.m_tet_connectivity[tid][m_local_edges[j][1]];
+        if (tmp_v1_id > tmp_v2_id) std::swap(tmp_v1_id, tmp_v2_id);
+        if (tmp_v1_id == v1_id && tmp_v2_id == v2_id)
             return tid * 6 + j;
     }
-    throw std::runtime_error("Tuple::eid() error");
+    return std::numeric_limits<size_t>::max();
 }
 
 size_t TetMesh::Tuple::fid(const TetMesh& m) const
@@ -161,7 +162,7 @@ size_t TetMesh::Tuple::fid(const TetMesh& m) const
         if (tmp_v_ids == v_ids) return tid * 4 + j;
     }
 
-    throw std::runtime_error("Tuple::fid() error");
+    throw std::runtime_error("Tuple::fid(*this) error");
 }
 
 size_t TetMesh::Tuple::tid(const TetMesh&) const
