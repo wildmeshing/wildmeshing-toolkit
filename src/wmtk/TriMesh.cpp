@@ -1,5 +1,5 @@
-#include <wmtk/TriMesh.h>
 #include <igl/is_edge_manifold.h>
+#include <wmtk/TriMesh.h>
 #include <wmtk/AttributeCollection.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
@@ -203,7 +203,8 @@ bool wmtk::TriMesh::check_mesh_connectivity_validity() const
     return true;
 }
 
-bool wmtk::TriMesh::check_edge_manifold() const{
+bool wmtk::TriMesh::check_edge_manifold() const
+{
     Eigen::MatrixXi F = Eigen::MatrixXi::Constant(tri_capacity(), 3, -1);
     for (auto& t : get_faces()) {
         auto i = t.fid(*this);
@@ -219,15 +220,18 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
 {
     if (!split_before(t)) return false;
     if (!t.is_valid(*this)) return false;
-    if (!check_edge_manifold()){
-        wmtk::logger().info("check manifold in split before is false " );
+    if (!check_edge_manifold()) {
+        wmtk::logger().info("check manifold in split before is false ");
         return false;
     }
+
     // get the vids
     size_t vid1 = t.vid(*this);
     size_t vid2 = switch_vertex(t).vid(*this);
     size_t fid1 = t.fid(*this);
     size_t fid1_vid3;
+
+    wmtk::logger().info("the edge being split vid {} eid {} fid {}", vid1, t.eid(*this), fid1);
     for (auto vid : m_tri_connectivity[fid1].m_indices) {
         if ((vid != vid1) && (vid != vid2)) {
             fid1_vid3 = vid;
@@ -335,8 +339,7 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
     // roll back if not successful
     new_tris = get_one_ring_tris_for_vertex(new_t);
     start_protect_attributes();
-    wmtk::logger()
-        .info("the edge being split vid {} eid {} fid {}", t.vid(*this), t.eid(*this), t.fid(*this));
+
     if (!split_after(new_t) || !invariants(new_tris)) {
         // rollback topo
         // restore old v, t
@@ -364,10 +367,11 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
 
 bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
 {
+    wmtk::logger().info("collapse_before is {}", collapse_before(loc0));
     if (!collapse_before(loc0)) return false;
     if (!loc0.is_valid(*this)) return false;
-    if (!check_edge_manifold()){
-        wmtk::logger().info("check manifold in collapse before is false " );
+    if (!check_edge_manifold()) {
+        wmtk::logger().info("check manifold in collapse before is false ");
         return false;
     }
     // get the vids
@@ -481,12 +485,11 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
     start_protect_attributes();
 
     if (!collapse_after(new_t) || !invariants(new_tris)) {
-        
         // if call back check failed roll back
         // restore the changes for connected triangles and vertices
         // resotre the version-number
         // removed restore to false
-        
+
         for (auto rollback : old_tris) {
             size_t fid = rollback.first;
             m_tri_connectivity[fid] = rollback.second;
@@ -517,7 +520,7 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
     }
     release_protect_attributes();
     wmtk::logger().info("in collapse succeed the edge manifold is {} ", check_edge_manifold());
-    assert(check_edge_manifold());
+    if (!check_edge_manifold()) return false;
     return true;
 }
 
@@ -525,8 +528,8 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
 {
     if (!swap_before(t)) return false;
     if (!t.is_valid(*this)) return false;
-    if (!check_edge_manifold()){
-        wmtk::logger().info("check manifold in swap before is false " );
+    if (!check_edge_manifold()) {
+        wmtk::logger().info("check manifold in swap before is false ");
         return false;
     }
 

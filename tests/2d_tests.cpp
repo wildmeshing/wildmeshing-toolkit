@@ -384,7 +384,7 @@ TEST_CASE("edge_collapse", "[test_2d_operation]")
         const auto tuple = Collapse::Tuple(1, 0, 0, m);
         REQUIRE(tuple.is_valid(m));
         std::vector<TriMesh::Tuple> dummy;
-        REQUIRE(m.collapse_edge(tuple, dummy));
+        REQUIRE_FALSE(m.collapse_edge(tuple, dummy)); // fail at check manifold
         REQUIRE_FALSE(tuple.is_valid(m));
     }
 }
