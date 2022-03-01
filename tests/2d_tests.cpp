@@ -351,11 +351,18 @@ TEST_CASE("test_link_check", "[test_pre_check]")
         REQUIRE(m.check_link_condition(pass_edge));
     }
 }
-
+// test manifold (eid uniqueness)
+TEST_CASE("test unique edge", "[test_2d_operation]")
+{
+    std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 3, 2}}, {{4, 1, 0}}, {{0, 2, 5}}};
+    auto m = TriMesh();
+    m.create_mesh(6, tris);
+    REQUIRE(m.check_edge_manifold());
+}
 
 TEST_CASE("edge_collapse", "[test_2d_operation]")
 {
-    std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 2, 3}}, {{0, 1, 4}}, {{0, 2, 5}}};
+    std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 3, 2}}, {{4, 1, 0}}, {{0, 2, 5}}};
     SECTION("rollback")
     {
         class NoCollapseMesh : public TriMesh
@@ -378,13 +385,16 @@ TEST_CASE("edge_collapse", "[test_2d_operation]")
             bool collapse_before(const TriMesh::Tuple& loc) override { return true; };
             bool collapse_after(const TriMesh::Tuple& loc) override { return true; };
         };
+        // auto m = Collapse();
         auto m = Collapse();
 
         m.create_mesh(6, tris);
         const auto tuple = Collapse::Tuple(1, 0, 0, m);
+
         REQUIRE(tuple.is_valid(m));
         std::vector<TriMesh::Tuple> dummy;
-        REQUIRE_FALSE(m.collapse_edge(tuple, dummy)); // fail at check manifold
+
+        REQUIRE(m.collapse_edge(tuple, dummy)); // fail at check manifold
         REQUIRE_FALSE(tuple.is_valid(m));
     }
 }
