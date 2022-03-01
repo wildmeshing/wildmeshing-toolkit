@@ -221,8 +221,6 @@ public:
             }()) {
                 ZoneScoped;
                 auto& [weight, op, tup, retry] = ele_in_queue;
-
-                //wmtk::logger().info("the edge is valid {}", tup.is_valid(m));
                 if (!tup.is_valid(m)) continue;
                 if (!should_process(
                         m,
@@ -252,15 +250,10 @@ public:
                     if (tup.is_valid(m)) {
                         auto newtup = edit_operation_maps[op](m, tup);
                         std::vector<std::pair<Op, Tuple>> renewed_tuples;
-                        //wmtk::logger().info("the edge is valid ");
                         if (newtup) {
                             renewed_tuples = renew_neighbor_tuples(m, op, newtup.value());
                             cnt_success++;
                             cnt_update++;
-                            // wmtk::logger().info(
-                            //     "did one collapse cnt is: {} freqency is :{}",
-                            //     cnt_success,
-                            //     stopping_criterion_checking_frequency);
                         } else {
                             on_fail(m, op, tup);
                             cnt_fail++;

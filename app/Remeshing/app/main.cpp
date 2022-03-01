@@ -1,24 +1,29 @@
+#include <remeshing/UniformRemeshing.h>
+
+#include <wmtk/utils/ManifoldUtils.hpp>
+
+#include <CLI/CLI.hpp>
+
 #include <igl/Timer.h>
 #include <igl/is_edge_manifold.h>
 #include <igl/is_vertex_manifold.h>
 #include <igl/read_triangle_mesh.h>
 #include <igl/remove_duplicate_vertices.h>
 #include <igl/writeDMAT.h>
-#include <remeshing/UniformRemeshing.h>
+
 #include <stdlib.h>
-#include <wmtk/TriMesh.h>
+#include <chrono>
 #include <cstdlib>
 #include <iostream>
-#include <wmtk/utils/ManifoldUtils.hpp>
-using namespace wmtk;
 
+using namespace wmtk;
 using namespace remeshing;
-#include <chrono>
 using namespace std::chrono;
 
 extern "C" {
 #include <wmtk/utils/getRSS.c>
 };
+
 void run_remeshing(std::string input, double len, std::string output, UniformRemeshing& m)
 {
     auto start = high_resolution_clock::now();
@@ -40,11 +45,21 @@ void run_remeshing(std::string input, double len, std::string output, UniformRem
 
 int main(int argc, char** argv)
 {
-    // input
-    // output
-    // ep
-    const std::string root(WMT_DATA_DIR);
-    const std::string path = argv[1];
+    std::string path = "";
+    std::string output = "out.obj";
+    double env_rel = -1;
+    double len_rel = 5;
+    int thread = 1;
+
+    CLI::App app{argv[0]};
+    app.add_option("input", path, "Input mesh.")->check(CLI::ExistingFile);
+    app.add_option("output", output, "output mesh.");
+
+    app.add_option("-e,--envelope", env_rel, "Relative envelope size, negative to disable");
+    app.add_option("-j, --thread", thread, "thread.");
+    app.add_option("-l, --length", len_rel, "Relative edge length.");
+    CLI11_PARSE(app, argc, argv);
+
     wmtk::logger().info("remeshing on {}", path);
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
