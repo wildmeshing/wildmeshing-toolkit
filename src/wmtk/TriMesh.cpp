@@ -206,19 +206,21 @@ bool wmtk::TriMesh::check_mesh_connectivity_validity() const
 bool wmtk::TriMesh::check_edge_manifold() const
 {
     wmtk::logger().info("===== test manifold =====");
-    std::vector<size_t> count(tri_capacity()*3, 0);
+    std::vector<size_t> count(tri_capacity() * 3, 0);
     auto faces = get_faces();
-    for(auto f : faces){
-        for (int i = 0; i < 3; i++){
+    for (auto f : faces) {
+        for (int i = 0; i < 3; i++) {
             count[f.eid(*this)]++;
-            wmtk::logger().info("the edge nonmani is at {} {} {}", f.vid(*this), f.eid(*this), f.fid(*this));
+            wmtk::logger()
+                .info("the edge nonmani is at {} {} {}", f.vid(*this), f.eid(*this), f.fid(*this));
             f = (f.switch_vertex(*this)).switch_edge(*this);
         }
     }
-    for (auto idx = 0; idx < tri_capacity()*3; idx++){
+    for (auto idx = 0; idx < tri_capacity() * 3; idx++) {
         if (count[idx] > 2) {
             // wmtk::logger().info("the edge is {} with count {}", idx,count[idx]);
-            return false;}
+            return false;
+        }
     }
     return true;
 }
@@ -361,14 +363,14 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
         // rollback data
         rollback_protected_attributes();
 
-        //wmtk::logger().info("in split rollback the edge manifold is {} ", check_edge_manifold());
-        //assert(check_edge_manifold());
+        // wmtk::logger().info("in split rollback the edge manifold is {} ", check_edge_manifold());
+        // assert(check_edge_manifold());
         return false;
     }
     release_protect_attributes();
     wmtk::logger().info("and succeed");
-    //wmtk::logger().info("in split succeed the edge manifold is {} ", check_edge_manifold());
-    //assert(check_edge_manifold());
+    // wmtk::logger().info("in split succeed the edge manifold is {} ", check_edge_manifold());
+    // assert(check_edge_manifold());
     return true;
 }
 
@@ -520,7 +522,7 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
         }
 
         rollback_protected_attributes();
-        
+
         wmtk::logger().info("in collapse rollback the edge manifold is {} ", check_edge_manifold());
         assert(check_edge_manifold());
         return false;
@@ -529,7 +531,7 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
     bool collapse_mani = check_edge_manifold();
     wmtk::logger().info("in collapse succeed the edge manifold is {} ", collapse_mani);
     assert(collapse_mani);
-    //return(check_edge_manifold());
+    // return(check_edge_manifold());
     return true;
 }
 
@@ -842,6 +844,7 @@ size_t TriMesh::get_next_empty_slot_v()
 // link check, prerequisite for edge collapse
 bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
 {
+    wmtk::logger().info("in link condion");
     assert(edge.is_valid(*this));
     size_t vid1 = edge.vid(*this);
     size_t vid2 = switch_vertex(edge).vid(*this);
@@ -916,8 +919,13 @@ bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
         lk_e_vid2.begin(),
         lk_e_vid2.end(),
         std::back_inserter(res));
-
+    wmtk::logger().info("the edge link condition {}", res.size());
     if (res.size() > 0) return false;
+    wmtk::logger().info(
+        "the v link condition {} {}",
+        lk_vid12.size() == lk_edge.size(),
+        std::equal(lk_vid12.begin(), lk_vid12.end(), lk_edge.begin()));
+    wmtk::logger().info("and v_link is  {}", v_link);
 
     return v_link;
 }

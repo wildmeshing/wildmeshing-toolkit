@@ -61,8 +61,8 @@ TEST_CASE("qec_cost", "[test_qslim]")
     Eigen::MatrixXd writem(edges.size(), 7);
 
     for (int i = 0; i < edges.size(); i++) {
-        Eigen::Vector3d v1 = V.row(edges[i].vid());
-        Eigen::Vector3d v2 = V.row(edges[i].switch_vertex(m).vid());
+        Eigen::Vector3d v1 = V.row(edges[i].vid(m));
+        Eigen::Vector3d v2 = V.row(edges[i].switch_vertex(m).vid(m));
         writem.row(i) << v1.transpose(), v2.transpose(), m.compute_cost_for_e(edges[i]);
     }
 }

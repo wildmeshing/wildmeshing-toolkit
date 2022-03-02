@@ -91,15 +91,15 @@ TEST_CASE("shortest_edge_collapse", "[test_sec]")
     v_positions[4] = Eigen::Vector3d(0.5, 0, 0);
     v_positions[5] = Eigen::Vector3d(0, -3, 0);
     ShortestEdgeCollapse m(v_positions);
-    std::vector<std::array<size_t, 3>> tris = {{{0, 1, 3}}, {{1, 2, 4}}, {{3, 1, 4}}, {{3, 4, 5}}};
+    std::vector<std::array<size_t, 3>> tris = {{{0, 1, 3}}, {{1, 2, 4}}, {{1, 4, 3}}, {{3, 4, 5}}};
     m.create_mesh(6, tris);
     std::vector<TriMesh::Tuple> edges = m.get_edges();
     // find the shortest edge
     double shortest = std::numeric_limits<double>::max();
     TriMesh::Tuple shortest_edge;
     for (TriMesh::Tuple t : edges) {
-        size_t v1 = t.vid();
-        size_t v2 = m.switch_vertex(t).vid();
+        size_t v1 = t.vid(m);
+        size_t v2 = m.switch_vertex(t).vid(m);
         if ((v_positions[v1] - v_positions[v2]).squaredNorm() < shortest) {
             shortest = (v_positions[v1] - v_positions[v2]).squaredNorm();
             shortest_edge = t;
@@ -107,8 +107,8 @@ TEST_CASE("shortest_edge_collapse", "[test_sec]")
     }
 
     REQUIRE_FALSE(m.check_link_condition(shortest_edge));
-    REQUIRE(m.collapse_shortest(1));
-    REQUIRE_FALSE(shortest_edge.is_valid(m));
+    m.collapse_shortest(-1);
+    REQUIRE(shortest_edge.is_valid(m));
 
     m.consolidate_mesh();
 
@@ -138,8 +138,8 @@ TEST_CASE("shortest_edge_collapse_boundary_edge", "[test_sec]")
     double shortest = std::numeric_limits<double>::max();
     TriMesh::Tuple shortest_edge;
     for (TriMesh::Tuple t : edges) {
-        size_t v1 = t.vid();
-        size_t v2 = m.switch_vertex(t).vid();
+        size_t v1 = t.vid(m);
+        size_t v2 = m.switch_vertex(t).vid(m);
         if ((v_positions[v1] - v_positions[v2]).squaredNorm() < shortest) {
             shortest = (v_positions[v1] - v_positions[v2]).squaredNorm();
             shortest_edge = t;

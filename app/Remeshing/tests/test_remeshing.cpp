@@ -26,7 +26,8 @@ TEST_CASE("adaptive_remeshing", "[test_remeshing][.]")
         for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
     }
     UniformRemeshing m(v);
-    m.create_mesh(V.rows(), tri);
+    std::vector<size_t> modified_v;
+    m.create_mesh(V.rows(), tri, modified_v, 0);
     REQUIRE(m.check_mesh_connectivity_validity());
     REQUIRE(m.uniform_remeshing(0.01, 5));
 }
@@ -41,7 +42,8 @@ TEST_CASE("split_each_edge", "[test_remeshing]")
 
     UniformRemeshing m(v_positions);
     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}};
-    m.create_mesh(3, tris);
+    std::vector<size_t> modified_v;
+    m.create_mesh(3, tris, modified_v, 0);
     m.uniform_remeshing(0.1, 5);
 }
 
@@ -65,7 +67,8 @@ TEST_CASE("test_swap", "[test_remeshing]")
         for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
     }
     UniformRemeshing m(v);
-    m.create_mesh(V.rows(), tri);
+    std::vector<size_t> modified_v;
+    m.create_mesh(V.rows(), tri, modified_v, 0);
     int v_invariant = m.get_vertices().size();
     int e_invariant = m.get_edges().size();
     REQUIRE(m.check_mesh_connectivity_validity());
@@ -106,7 +109,8 @@ TEST_CASE("test_split", "[test_remeshing]")
         for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
     }
     UniformRemeshing m(v);
-    m.create_mesh(V.rows(), tri);
+    std::vector<size_t> modified_v;
+    m.create_mesh(V.rows(), tri, modified_v, 0);
 
     auto edges = m.get_edges();
     for (auto edge : edges) {
