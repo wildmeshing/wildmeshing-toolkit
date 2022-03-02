@@ -76,9 +76,9 @@ TEST_CASE("manifold-separate-test-37989", "[test_sec]")
 
 TEST_CASE("shortest_edge_collapse", "[test_sec]")
 {
-    // 0___1___2    0___1       *
-    // \  /\  /      \  /\      *
-    // 3\/__\/4  ==> 3\/__\6    *
+    // 0___1___2         *
+    // \  /\  /            *
+    // 3\/__\/4  ==>    __    *
     //   \  /          \  /     *
     //    \/5           \/5     *
     // 3-4 is shortest
@@ -92,7 +92,7 @@ TEST_CASE("shortest_edge_collapse", "[test_sec]")
     v_positions[5] = Eigen::Vector3d(0, -3, 0);
     ShortestEdgeCollapse m(v_positions);
     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 3}}, {{1, 2, 4}}, {{1, 4, 3}}, {{3, 4, 5}}};
-    m.create_mesh(6, tris);
+    m.create_mesh_nofreeze(6, tris);
     std::vector<TriMesh::Tuple> edges = m.get_edges();
     // find the shortest edge
     double shortest = std::numeric_limits<double>::max();
@@ -108,9 +108,8 @@ TEST_CASE("shortest_edge_collapse", "[test_sec]")
 
     REQUIRE_FALSE(m.check_link_condition(shortest_edge));
     m.collapse_shortest(-1);
-    REQUIRE(shortest_edge.is_valid(m));
 
-    m.consolidate_mesh();
+    REQUIRE_FALSE(shortest_edge.is_valid(m));
 
     REQUIRE(m.get_vertices().size() == 3);
     REQUIRE(m.get_faces().size() == 1);
@@ -132,7 +131,7 @@ TEST_CASE("shortest_edge_collapse_boundary_edge", "[test_sec]")
     v_positions[4] = Eigen::Vector3d(0.5, 0, 0);
     ShortestEdgeCollapse m(v_positions);
     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 3}}, {{1, 2, 4}}, {{3, 1, 4}}};
-    m.create_mesh(5, tris);
+    m.create_mesh_nofreeze(5, tris);
     std::vector<TriMesh::Tuple> edges = m.get_edges();
     // find the shortest edge
     double shortest = std::numeric_limits<double>::max();
@@ -171,7 +170,7 @@ TEST_CASE("shortest_edge_collapse_closed_mesh", "[test_sec]")
             {{1, 2, 3}},
             {{0, 3, 2}},
             {{0, 1, 2}}};
-        m.create_mesh(4, tris);
+        m.create_mesh_nofreeze(4, tris);
         m.collapse_shortest(100);
         REQUIRE(m.vert_capacity() == 4);
 
@@ -235,8 +234,33 @@ TEST_CASE("shortest_edge_collapse_octocat", "[test_sec]")
     }
     ShortestEdgeCollapse m(v);
     m.create_mesh(V.rows(), tri);
-    REQUIRE(m.collapse_shortest(50));
+    REQUIRE(m.collapse_shortest(500));
     REQUIRE(m.check_mesh_connectivity_validity());
+}
+
+TEST_CASE("edge_manifold", "[test_sec]")
+{
+    const std::string root(WMT_DATA_DIR);
+    const std::string path = root + "/circle.obj";
+
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    bool ok = igl::read_triangle_mesh(path, V, F);
+
+    REQUIRE(ok);
+
+    std::vector<Eigen::Vector3d> v(V.rows());
+    std::vector<std::array<size_t, 3>> tri(F.rows());
+    for (int i = 0; i < V.rows(); i++) {
+        v[i] = V.row(i);
+    }
+    for (int i = 0; i < F.rows(); i++) {
+        for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
+    }
+    ShortestEdgeCollapse m(v);
+    m.create_mesh(V.rows(), tri);
+    REQUIRE(m.check_mesh_connectivity_validity());
+    REQUIRE(igl::is_edge_manifold(F) == m.check_edge_manifold());
 }
 
 TEST_CASE("shortest_edge_collapse_circle", "[test_sec]")
@@ -261,6 +285,8 @@ TEST_CASE("shortest_edge_collapse_circle", "[test_sec]")
     ShortestEdgeCollapse m(v);
     m.create_mesh(V.rows(), tri);
     REQUIRE(m.check_mesh_connectivity_validity());
+    REQUIRE(igl::is_edge_manifold(F));
+    REQUIRE(m.check_edge_manifold());
     REQUIRE(m.collapse_shortest(100));
     m.write_triangle_mesh("collapsed.obj");
 }
@@ -300,7 +326,7 @@ TEST_CASE("metis_test_bigmesh", "[test_sec][.slow]")
         timer.start();
 
         // change this for num of operations
-        m.collapse_shortest(2000);
+        m.collapse_shortest(20);
         time = timer.getElapsedTimeInMilliSec();
         timecost.push_back(time);
     }

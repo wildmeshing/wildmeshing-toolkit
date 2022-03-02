@@ -123,24 +123,10 @@ std::optional<TriMesh::Tuple> TriMesh::Tuple::switch_face(const TriMesh& m) cons
 bool TriMesh::Tuple::is_valid(const TriMesh& m) const
 {
     if (m.m_vertex_connectivity[m_vid].m_is_removed || m.m_tri_connectivity[m_fid].m_is_removed) {
-        wmtk::logger().info(
-            "m.m_vertex_connectivity[{}].m_is_removed {}",
-            m_vid,
-            m.m_vertex_connectivity[m_vid].m_is_removed);
-        wmtk::logger().info(
-            "m.m_tri_connectivity[{}].m_is_removed {}",
-            m_fid,
-            m.m_tri_connectivity[m_fid].m_is_removed);
         return false;
     }
     // Condition 3: tuple m_hash check
     if (m_hash != m.m_tri_connectivity[m_fid].hash) {
-        wmtk::logger().info(
-            "m_hash {} != m.m_tri_connectivity[m_fid].hash {}",
-            m_hash,
-            m.m_tri_connectivity[m_fid].hash);
-        wmtk::logger()
-            .info("the tuple that's invalid is vid {}, eid {}, fid{}", m_vid, m_eid, m_fid);
         return false;
     }
 #ifndef NDEBUG
@@ -205,20 +191,26 @@ bool wmtk::TriMesh::check_mesh_connectivity_validity() const
 
 bool wmtk::TriMesh::check_edge_manifold() const
 {
-    wmtk::logger().info("===== test manifold =====");
     std::vector<size_t> count(tri_capacity() * 3, 0);
     auto faces = get_faces();
     for (auto f : faces) {
         for (int i = 0; i < 3; i++) {
             count[f.eid(*this)]++;
-            wmtk::logger()
-                .info("the edge nonmani is at {} {} {}", f.vid(*this), f.eid(*this), f.fid(*this));
+            // wmtk::logger()
+            //     .info("++++++++ fid {}  +++++++++eid {} i {}", f.fid(*this), f.eid(*this), i);
+            if (count[f.eid(*this)] > 2) {
+                wmtk::logger().info(
+                    "the edge vids {} {} --eid {} ",
+                    f.vid(*this),
+                    f.switch_vertex(*this).vid(*this),
+                    f.eid(*this));
+                return false;
+            }
             f = (f.switch_vertex(*this)).switch_edge(*this);
         }
     }
     for (auto idx = 0; idx < tri_capacity() * 3; idx++) {
         if (count[idx] > 2) {
-            // wmtk::logger().info("the edge is {} with count {}", idx,count[idx]);
             return false;
         }
     }
@@ -376,13 +368,10 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
 
 bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
 {
-    wmtk::logger().info("collapse_before is {}", collapse_before(loc0));
     if (!collapse_before(loc0)) return false;
     if (!loc0.is_valid(*this)) return false;
-    if (!check_edge_manifold()) {
-        wmtk::logger().info("check manifold in collapse before is false ");
-        return false;
-    }
+    assert(check_edge_manifold());
+
     // get the vids
     size_t vid1 = loc0.vid(*this);
     size_t vid2 = switch_vertex(loc0).vid(*this);
@@ -522,16 +511,12 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
         }
 
         rollback_protected_attributes();
-
-        wmtk::logger().info("in collapse rollback the edge manifold is {} ", check_edge_manifold());
         assert(check_edge_manifold());
         return false;
     }
     release_protect_attributes();
     bool collapse_mani = check_edge_manifold();
-    wmtk::logger().info("in collapse succeed the edge manifold is {} ", collapse_mani);
     assert(collapse_mani);
-    // return(check_edge_manifold());
     return true;
 }
 
@@ -754,7 +739,6 @@ void TriMesh::create_mesh(size_t n_vertices, const std::vector<std::array<size_t
 
         m_tri_connectivity[i].hash = hash_cnt;
         for (int j = 0; j < 3; j++) {
-            if (tris[i][j] == 935) wmtk::logger().info("0 has corerect connection");
             m_vertex_connectivity[tris[i][j]].m_conn_tris.push_back(i);
         }
     }
@@ -844,7 +828,6 @@ size_t TriMesh::get_next_empty_slot_v()
 // link check, prerequisite for edge collapse
 bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
 {
-    wmtk::logger().info("in link condion");
     assert(edge.is_valid(*this));
     size_t vid1 = edge.vid(*this);
     size_t vid2 = switch_vertex(edge).vid(*this);
@@ -919,13 +902,7 @@ bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
         lk_e_vid2.begin(),
         lk_e_vid2.end(),
         std::back_inserter(res));
-    wmtk::logger().info("the edge link condition {}", res.size());
     if (res.size() > 0) return false;
-    wmtk::logger().info(
-        "the v link condition {} {}",
-        lk_vid12.size() == lk_edge.size(),
-        std::equal(lk_vid12.begin(), lk_vid12.end(), lk_edge.begin()));
-    wmtk::logger().info("and v_link is  {}", v_link);
 
     return v_link;
 }
