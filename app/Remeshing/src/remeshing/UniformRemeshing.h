@@ -78,7 +78,7 @@ public:
     void create_mesh(
         size_t n_vertices,
         const std::vector<std::array<size_t, 3>>& tris,
-        const std::vector<size_t>& frozen_verts,
+        const std::vector<size_t>& frozen_verts = std::vector<size_t>(),
         double eps = 0)
     {
         wmtk::ConcurrentTriMesh::create_mesh(n_vertices, tris);
@@ -122,7 +122,10 @@ public:
     {
         position_cache.local().v1p = vertex_attrs[t.vid(*this)].pos;
         position_cache.local().v2p = vertex_attrs[t.switch_vertex(*this).vid(*this)].pos;
-        wmtk::logger().info("the edge to be collapsed is\n {} \n {}", position_cache.local().v1p, position_cache.local().v2p);
+        // wmtk::logger().info(
+        //     "the edge to be collapsed is\n {} \n {}",
+        //     position_cache.local().v1p,
+        //     position_cache.local().v2p);
     }
 
     bool invariants(const std::vector<Tuple>& new_tris) override

@@ -213,10 +213,6 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
 {
     if (!split_before(t)) return false;
     if (!t.is_valid(*this)) return false;
-    // if (!check_edge_manifold()) {
-    //     wmtk::logger().info("check manifold in split before is false ");
-    //     return false;
-    // }
 
     // get the vids
     size_t vid1 = t.vid(*this);
@@ -224,7 +220,6 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
     size_t fid1 = t.fid(*this);
     size_t fid1_vid3;
 
-    wmtk::logger().info("the edge being split vid {} eid {} fid {}", vid1, t.eid(*this), fid1);
     for (auto vid : m_tri_connectivity[fid1].m_indices) {
         if ((vid != vid1) && (vid != vid2)) {
             fid1_vid3 = vid;
@@ -344,17 +339,11 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
         m_tri_connectivity[new_fid1].m_is_removed = true;
         if (new_fid2.has_value()) m_tri_connectivity[new_fid2.value()].m_is_removed = true;
 
-        // rollback data
         rollback_protected_attributes();
 
-        // wmtk::logger().info("in split rollback the edge manifold is {} ", check_edge_manifold());
-        // assert(check_edge_manifold());
         return false;
     }
     release_protect_attributes();
-    wmtk::logger().info("and succeed");
-    // wmtk::logger().info("in split succeed the edge manifold is {} ", check_edge_manifold());
-    // assert(check_edge_manifold());
     return true;
 }
 
@@ -542,16 +531,10 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
 {
     if (!swap_before(t)) return false;
     if (!t.is_valid(*this)) return false;
-    // if (!check_edge_manifold()) {
-    //     wmtk::logger().info("check manifold in swap before is false ");
-    //     return false;
-    // }
 
     // get the vids
     size_t vid1 = t.vid(*this);
     size_t vid2 = t.switch_vertex(*this).vid(*this);
-    // if (!set_intersection(m_vertex_connectivity[vid1].m_conn_tris,
-    // m_vertex_connectivity[vid2].m_conn_tris).empty()) return false;
     Tuple tmp_tuple;
 
     assert(t.switch_face(*this).has_value());
@@ -612,13 +595,11 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
         for (auto old_v : old_vertices) m_vertex_connectivity[old_v.first] = old_v.second;
         for (auto old_tri : old_tris) m_tri_connectivity[old_tri.first] = old_tri.second;
         rollback_protected_attributes();
-        // wmtk::logger().info("in swap rollback the edge manifold is {} ", check_edge_manifold());
-        // assert(check_edge_manifold());
+
         return false;
     }
     release_protect_attributes();
-    // wmtk::logger().info("in swap succeed the edge manifold is {} ", check_edge_manifold());
-    // assert(check_edge_manifold());
+
     return true;
 }
 
