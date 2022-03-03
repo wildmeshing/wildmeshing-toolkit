@@ -83,7 +83,16 @@ public:
         {
             if (switch_face(m).has_value()) {
                 size_t fid2 = switch_face(m)->fid(m);
-                return std::min(m_fid, fid2) * 3 + m_eid;
+                size_t min_fid = std::min(m_fid, fid2);
+                if (min_fid == fid2) {
+                    int i = m.m_tri_connectivity[fid2].find(m_vid);
+                    int j = m.m_tri_connectivity[fid2].find(switch_vertex(m).vid(m));
+                    switch (i + j) {
+                    case (1): return min_fid * 3 + 2;
+                    case (2): return min_fid * 3 + 1;
+                    case (3): return min_fid * 3;
+                    }
+                }
             }
             return m_fid * 3 + m_eid;
         }
@@ -190,9 +199,10 @@ public:
 
     /**
      * Generate a vector of Tuples from global vertex index and __local__ edge index
-     * @note each vertex generate tuple that has the fid to be the smallest among connected
-     * triangles' fid local vid to be in the same order as thier indices in the m_conn_tris local
-     * eid assigned counter clockwise as in the ilustrated example
+     * @note each vertex generate tuple that has the fid to be the smallest among
+     * connected triangles' fid local vid to be in the same order as thier indices
+     * in the m_conn_tris local eid assigned counter clockwise as in the ilustrated
+     * example
      * @return vector of Tuples
      */
     std::vector<Tuple> get_vertices() const;
@@ -207,7 +217,8 @@ public:
 
     /**
      * Generate a vector of Tuples for each edge
-     * @note ensures the fid assigned is the smallest between faces adjacent to the edge
+     * @note ensures the fid assigned is the smallest between faces adjacent to the
+     * edge
      * @return vector of Tuples
      */
     std::vector<Tuple> get_edges() const;
@@ -242,12 +253,7 @@ protected:
     virtual bool split_before(const Tuple& t)
     {
         assert(check_mesh_connectivity_validity());
-        if (!t.is_valid(*this))
-            wmtk::logger().info(
-                "the connectivity of the faulting tuple is\n m_conn_fids {}, \n m_indices{}",
-                m_vertex_connectivity[t.vid(*this)].m_conn_tris,
-                m_tri_connectivity[t.fid(*this)].m_indices);
-        return true;
+        if (!t.is_valid(*this)) return true;
     }
     virtual bool split_after(const Tuple& t)
     {
@@ -279,7 +285,8 @@ protected:
         assert(check_mesh_connectivity_validity());
         if (!t.switch_face(*this).has_value())
             return false; // can't swap on boundary edgereturn true;
-        // when swap edge between v1, v2, there can't exist edge between v3, v4 already
+        // when swap edge between v1, v2, there can't exist edge between v3, v4
+        // already
         size_t v4 =
             ((t.switch_face(*this).value()).switch_edge(*this)).switch_vertex(*this).vid(*this);
         size_t v3 = ((t.switch_edge(*this)).switch_vertex(*this)).vid(*this);
@@ -317,8 +324,8 @@ public:
      * Split an edge
      *
      * @param t Input Tuple for the edge to split.
-     * @param[out] new_edges a vector of Tuples for all the edges from the newly introduced
-     * triangle
+     * @param[out] new_edges a vector of Tuples for all the edges from the newly
+     * introduced triangle
      * @return if split succeed
      */
     bool split_edge(const Tuple& t, std::vector<Tuple>& new_t);
