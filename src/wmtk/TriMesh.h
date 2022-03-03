@@ -253,7 +253,8 @@ protected:
     virtual bool split_before(const Tuple& t)
     {
         assert(check_mesh_connectivity_validity());
-        if (!t.is_valid(*this)) return true;
+        if (!t.is_valid(*this)) return false;
+        return true;
     }
     virtual bool split_after(const Tuple& t)
     {

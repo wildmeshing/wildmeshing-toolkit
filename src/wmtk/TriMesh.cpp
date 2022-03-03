@@ -1,4 +1,5 @@
 #include <igl/is_edge_manifold.h>
+#include <igl/writeDMAT.h>
 #include <wmtk/TriMesh.h>
 #include <wmtk/AttributeCollection.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -196,16 +197,7 @@ bool wmtk::TriMesh::check_edge_manifold() const
     for (auto f : faces) {
         for (int i = 0; i < 3; i++) {
             count[f.eid(*this)]++;
-            // wmtk::logger()
-            //     .info("++++++++ fid {}  +++++++++eid {} i {}", f.fid(*this), f.eid(*this), i);
-            if (count[f.eid(*this)] > 2) {
-                wmtk::logger().info(
-                    "the edge vids {} {} --eid {} ",
-                    f.vid(*this),
-                    f.switch_vertex(*this).vid(*this),
-                    f.eid(*this));
-                return false;
-            }
+            if (count[f.eid(*this)] > 2) return false;
             f = (f.switch_vertex(*this)).switch_edge(*this);
         }
     }
@@ -516,6 +508,32 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
     }
     release_protect_attributes();
     bool collapse_mani = check_edge_manifold();
+    if (!collapse_mani) {
+        auto nonm_faces = get_faces();
+        std::vector<size_t> count(nonm_faces.size() * 3, 0);
+        Eigen::MatrixXi nonm_F = Eigen::MatrixXi::Zero(nonm_faces.size(), 3);
+        for (auto nf : nonm_faces) {
+            wmtk::logger().info("==== start ====");
+            auto indices = m_tri_connectivity[nf.fid(*this)].m_indices;
+            nonm_F.row(nf.fid(*this)) << indices[0], indices[1], indices[2];
+            for (int i = 0; i < 3; i++) {
+                count[nf.eid(*this)]++;
+                wmtk::logger().info("fid {} ++eid {}", nf.fid(*this), nf.eid(*this));
+                if (count[nf.eid(*this)] > 2) {
+                    wmtk::logger().info(
+                        "vids {} {} --eid {}",
+                        nf.vid(*this),
+                        nf.switch_vertex(*this).vid(*this),
+                        nf.eid(*this));
+                }
+                nf = (nf.switch_vertex(*this)).switch_edge(*this);
+            }
+        }
+        igl::writeDMAT("nonmani_connectivity.dmat", nonm_F);
+        exit(5);
+    }
+
+
     assert(collapse_mani);
     return true;
 }

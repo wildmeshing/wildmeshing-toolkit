@@ -288,6 +288,7 @@ TEST_CASE("shortest_edge_collapse_circle", "[test_sec]")
     REQUIRE(igl::is_edge_manifold(F));
     REQUIRE(m.check_edge_manifold());
     REQUIRE(m.collapse_shortest(100));
+    m.consolidate_mesh();
     m.write_triangle_mesh("collapsed.obj");
 }
 
