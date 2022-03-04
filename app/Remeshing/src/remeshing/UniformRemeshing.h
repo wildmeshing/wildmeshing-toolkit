@@ -56,25 +56,6 @@ public:
             vertex_attrs[i] = {_m_vertex_positions[i], 0};
     }
 
-    // void
-    // create_mesh(size_t n_vertices, const std::vector<std::array<size_t, 3>>& tris, double eps =
-    // 0)
-    // {
-    //     wmtk::ConcurrentTriMesh::create_mesh(n_vertices, tris);
-
-    //     if (eps > 0) {
-    //         std::vector<Eigen::Vector3d> V(n_vertices);
-    //         std::vector<Eigen::Vector3i> F(tris.size());
-    //         for (auto i = 0; i < V.size(); i++) {
-    //             V[i] = vertex_attrs[i].pos;
-    //         }
-    //         for (int i = 0; i < F.size(); ++i) F[i] << tris[i][0], tris[i][1], tris[i][2];
-    //         m_envelope.init(V, F, eps);
-    //         m_has_envelope = true;
-    //     }
-    //     partition_mesh();
-    // }
-
     void create_mesh(
         size_t n_vertices,
         const std::vector<std::array<size_t, 3>>& tris,
@@ -122,28 +103,19 @@ public:
     {
         position_cache.local().v1p = vertex_attrs[t.vid(*this)].pos;
         position_cache.local().v2p = vertex_attrs[t.switch_vertex(*this).vid(*this)].pos;
-        // wmtk::logger().info(
-        //     "the edge to be collapsed is\n {} \n {}",
-        //     position_cache.local().v1p,
-        //     position_cache.local().v2p);
     }
 
     bool invariants(const std::vector<Tuple>& new_tris) override
     {
         if (m_has_envelope) {
-            // wmtk::logger().info("check env");
             for (auto& t : new_tris) {
-                // wmtk::logger()
-                //     .info("env check on vid {}, eid {}, fid {}", t.vid(), t.eid(*this), t.fid());
                 std::array<Eigen::Vector3d, 3> tris;
                 auto vs = t.oriented_tri_vertices(*this);
                 for (auto j = 0; j < 3; j++) tris[j] = vertex_attrs[vs[j].vid(*this)].pos;
                 if (m_envelope.is_outside(tris)) return false;
             }
-            // wmtk::logger().info("env done");
         }
         return true;
-        // wmtk::logger().info("env done");
     }
 
 

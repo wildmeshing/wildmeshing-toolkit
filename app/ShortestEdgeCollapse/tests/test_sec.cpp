@@ -76,9 +76,9 @@ TEST_CASE("manifold-separate-test-37989", "[test_sec]")
 
 TEST_CASE("shortest_edge_collapse", "[test_sec]")
 {
-    // 0___1___2         *
-    // \  /\  /            *
-    // 3\/__\/4  ==>    __    *
+    // 0___1___2                *
+    // \  /\  /                 *
+    // 3\/__\/4  ==>    __      *
     //   \  /          \  /     *
     //    \/5           \/5     *
     // 3-4 is shortest
@@ -234,7 +234,7 @@ TEST_CASE("shortest_edge_collapse_octocat", "[test_sec]")
     }
     ShortestEdgeCollapse m(v);
     m.create_mesh(V.rows(), tri);
-    REQUIRE(m.collapse_shortest(500));
+    REQUIRE(m.collapse_shortest(2000));
     REQUIRE(m.check_mesh_connectivity_validity());
 }
 

@@ -104,7 +104,6 @@ int main(int argc, char** argv)
     igl::Timer timer;
     timer.start();
     run_remeshing(path, properties[0] * len_rel, output, m);
-    //run_remeshing(path, properties[0] / 2, std::string(argv[2]), m);
     timer.stop();
     logger().info("Took {}", timer.getElapsedTimeInSec());
 
