@@ -91,6 +91,7 @@ public:
                     case (1): return min_fid * 3 + 2;
                     case (2): return min_fid * 3 + 1;
                     case (3): return min_fid * 3;
+                    default: wmtk::logger().info("invlid mesh"); exit(0);
                     }
                 }
             }
@@ -250,11 +251,7 @@ private:
 
 protected:
     virtual bool invariants(const std::vector<Tuple>&) { return true; }
-    virtual bool split_before(const Tuple& t)
-    {
-        if (!t.is_valid(*this)) return false;
-        return true;
-    }
+    virtual bool split_before(const Tuple& t) { return true; }
     virtual bool split_after(const Tuple& t) { return true; }
 
 

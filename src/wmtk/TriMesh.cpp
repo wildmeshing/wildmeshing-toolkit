@@ -338,9 +338,7 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
         m_vertex_connectivity[new_vid].m_is_removed = true;
         m_tri_connectivity[new_fid1].m_is_removed = true;
         if (new_fid2.has_value()) m_tri_connectivity[new_fid2.value()].m_is_removed = true;
-
         rollback_protected_attributes();
-
         return false;
     }
     release_protect_attributes();
@@ -492,38 +490,9 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
         }
 
         rollback_protected_attributes();
-        assert(check_edge_manifold());
         return false;
     }
     release_protect_attributes();
-    bool collapse_mani = check_edge_manifold();
-    if (!collapse_mani) {
-        auto nonm_faces = get_faces();
-        std::vector<size_t> count(nonm_faces.size() * 3, 0);
-        Eigen::MatrixXi nonm_F = Eigen::MatrixXi::Zero(nonm_faces.size(), 3);
-        for (auto nf : nonm_faces) {
-            wmtk::logger().info("==== start ====");
-            auto indices = m_tri_connectivity[nf.fid(*this)].m_indices;
-            nonm_F.row(nf.fid(*this)) << indices[0], indices[1], indices[2];
-            for (int i = 0; i < 3; i++) {
-                count[nf.eid(*this)]++;
-                wmtk::logger().info("fid {} ++eid {}", nf.fid(*this), nf.eid(*this));
-                if (count[nf.eid(*this)] > 2) {
-                    wmtk::logger().info(
-                        "vids {} {} --eid {}",
-                        nf.vid(*this),
-                        nf.switch_vertex(*this).vid(*this),
-                        nf.eid(*this));
-                }
-                nf = (nf.switch_vertex(*this)).switch_edge(*this);
-            }
-        }
-        igl::writeDMAT("nonmani_connectivity.dmat", nonm_F);
-        exit(5);
-    }
-
-
-    assert(collapse_mani);
     return true;
 }
 
@@ -595,11 +564,9 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
         for (auto old_v : old_vertices) m_vertex_connectivity[old_v.first] = old_v.second;
         for (auto old_tri : old_tris) m_tri_connectivity[old_tri.first] = old_tri.second;
         rollback_protected_attributes();
-
         return false;
     }
     release_protect_attributes();
-
     return true;
 }
 
@@ -613,7 +580,6 @@ bool TriMesh::smooth_vertex(const Tuple& loc0)
         return false;
     }
     release_protect_attributes();
-
     return true;
 }
 

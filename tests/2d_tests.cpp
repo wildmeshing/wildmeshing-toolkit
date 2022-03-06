@@ -385,7 +385,6 @@ TEST_CASE("edge_collapse", "[test_2d_operation]")
             bool collapse_before(const TriMesh::Tuple& loc) override { return true; };
             bool collapse_after(const TriMesh::Tuple& loc) override { return true; };
         };
-        // auto m = Collapse();
         auto m = Collapse();
 
         m.create_mesh(6, tris);
