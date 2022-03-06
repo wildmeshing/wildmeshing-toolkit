@@ -63,17 +63,19 @@ public:
         double eps = 0)
     {
         wmtk::ConcurrentTriMesh::create_mesh(n_vertices, tris);
-
+        std::vector<Eigen::Vector3d> V(n_vertices);
+        std::vector<Eigen::Vector3i> F(tris.size());
+        for (auto i = 0; i < V.size(); i++) {
+            V[i] = vertex_attrs[i].pos;
+        }
+        for (int i = 0; i < F.size(); ++i) F[i] << tris[i][0], tris[i][1], tris[i][2];
         if (eps > 0) {
-            std::vector<Eigen::Vector3d> V(n_vertices);
-            std::vector<Eigen::Vector3i> F(tris.size());
-            for (auto i = 0; i < V.size(); i++) {
-                V[i] = vertex_attrs[i].pos;
-            }
-            for (int i = 0; i < F.size(); ++i) F[i] << tris[i][0], tris[i][1], tris[i][2];
             m_envelope.init(V, F, eps);
             m_has_envelope = true;
-        }
+        } else
+            m_envelope.init(V, F, 0.0);
+
+
         partition_mesh();
         for (auto v : frozen_verts) vertex_attrs[v].freeze = true;
         for (auto v : get_vertices()) { // the better way is to iterate through edges.
@@ -112,7 +114,9 @@ public:
                 std::array<Eigen::Vector3d, 3> tris;
                 auto vs = t.oriented_tri_vertices(*this);
                 for (auto j = 0; j < 3; j++) tris[j] = vertex_attrs[vs[j].vid(*this)].pos;
-                if (m_envelope.is_outside(tris)) return false;
+                if (m_envelope.is_outside(tris)) {
+                    return false;
+                }
             }
         }
         return true;
@@ -151,6 +155,7 @@ public:
     }
 
     bool split_after(const Tuple& t) override;
+    bool smooth_after(const Tuple& t) override;
 
     double compute_edge_cost_collapse(const TriMesh::Tuple& t, double L) const;
     double compute_edge_cost_split(const TriMesh::Tuple& t, double L) const;

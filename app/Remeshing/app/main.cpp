@@ -24,11 +24,11 @@ extern "C" {
 #include <wmtk/utils/getRSS.c>
 };
 
-void run_remeshing(std::string input, double len, std::string output, UniformRemeshing& m)
+void run_remeshing(std::string input, double len, std::string output, UniformRemeshing& m, int itrs)
 {
     auto start = high_resolution_clock::now();
     wmtk::logger().info("target len: {}", len);
-    m.uniform_remeshing(len, 2);
+    m.uniform_remeshing(len, itrs);
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<milliseconds>(stop - start);
 
@@ -50,6 +50,8 @@ int main(int argc, char** argv)
     double env_rel = -1;
     double len_rel = 5;
     int thread = 1;
+    double target_len = -1;
+    int itrs = 2;
 
     CLI::App app{argv[0]};
     app.add_option("input", path, "Input mesh.")->check(CLI::ExistingFile);
@@ -57,7 +59,9 @@ int main(int argc, char** argv)
 
     app.add_option("-e,--envelope", env_rel, "Relative envelope size, negative to disable");
     app.add_option("-j, --thread", thread, "thread.");
-    app.add_option("-l, --length", len_rel, "Relative edge length.");
+    app.add_option("-r, --relativelength", len_rel, "Relative edge length.");
+    app.add_option("-a, --absolutelength", target_len, "absolute edge length.");
+    app.add_option("-i, --iterations", itrs, "number of remeshing itrs.");
     CLI11_PARSE(app, argc, argv);
 
     wmtk::logger().info("remeshing on {}", path);
@@ -103,7 +107,10 @@ int main(int argc, char** argv)
         properties);
     igl::Timer timer;
     timer.start();
-    run_remeshing(path, properties[0] * len_rel, output, m);
+    if (target_len > 0)
+        run_remeshing(path, target_len, output, m, itrs);
+    else
+        run_remeshing(path, properties[0] * len_rel, output, m, itrs);
     timer.stop();
     logger().info("Took {}", timer.getElapsedTimeInSec());
 

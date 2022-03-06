@@ -62,6 +62,41 @@ bool UniformRemeshing::split_after(const TriMesh::Tuple& t)
     return true;
 }
 
+bool UniformRemeshing::smooth_after(const TriMesh::Tuple& t)
+{
+    auto one_ring_tris = get_one_ring_tris_for_vertex(t);
+    if (one_ring_tris.size() < 2) {
+        return false;
+    }
+    Eigen::Vector3d after_smooth = smooth(t);
+    // get normal and area of each face
+    auto area = [](auto& m, auto& verts) {
+        return ((m.vertex_attrs[verts[0].vid(m)].pos - m.vertex_attrs[verts[2].vid(m)].pos)
+                    .cross(
+                        m.vertex_attrs[verts[1].vid(m)].pos - m.vertex_attrs[verts[2].vid(m)].pos))
+                   .norm() /
+               2.0;
+    };
+    auto normal = [](auto& m, auto& verts) {
+        return ((m.vertex_attrs[verts[0].vid(m)].pos - m.vertex_attrs[verts[2].vid(m)].pos)
+                    .cross(
+                        m.vertex_attrs[verts[1].vid(m)].pos - m.vertex_attrs[verts[2].vid(m)].pos))
+            .normalized();
+    };
+    auto w0 = 0.0;
+    Eigen::Vector3d n0(0.0, 0.0, 0.0);
+    for (auto& e : one_ring_tris) {
+        auto verts = oriented_tri_vertices(e);
+        w0 += area(*this, verts);
+        n0 += area(*this, verts) * normal(*this, verts);
+    }
+    n0 /= w0;
+    after_smooth += n0 * n0.transpose() * (vertex_attrs[t.vid(*this)].pos - after_smooth);
+    assert(check_mesh_connectivity_validity());
+    vertex_attrs[t.vid(*this)].pos = after_smooth;
+    return true;
+}
+
 double UniformRemeshing::compute_edge_cost_collapse(const TriMesh::Tuple& t, double L) const
 {
     double l =
@@ -325,19 +360,10 @@ Eigen::Vector3d UniformRemeshing::tangential_smooth(const Tuple& t)
 
 bool UniformRemeshing::uniform_remeshing(double L, int iterations)
 {
-    std::vector<double> avg_lens, max_lens, min_lens;
-    std::vector<double> avg_valens, max_vals, min_vals;
     int cnt = 0;
-    auto properties = average_len_valen();
+    std::vector<double> properties = average_len_valen();
     while ((properties[0] - L) * (properties[0] - L) > 1e-8 && cnt < iterations) {
         cnt++;
-        avg_lens.push_back(properties[0]);
-        avg_valens.push_back(properties[3]);
-        max_lens.push_back(properties[1]);
-        max_vals.push_back(properties[4]);
-        min_lens.push_back(properties[2]);
-        min_vals.push_back(properties[5]);
-
         // split
         split_remeshing(L);
         // collpase
@@ -346,19 +372,16 @@ bool UniformRemeshing::uniform_remeshing(double L, int iterations)
         swap_remeshing();
         // smoothing
         auto vertices = get_vertices();
-        for (auto& loc : vertices) vertex_attrs[loc.vid(*this)].pos = tangential_smooth(loc);
-
-        for (auto& loc : vertices) vertex_attrs[loc.vid(*this)].pos = tangential_smooth(loc);
+        for (auto& loc : vertices) smooth_vertex(loc);
 
         assert(check_mesh_connectivity_validity());
         consolidate_mesh();
         properties = average_len_valen();
     }
-    wmtk::logger().info("avg edge len after each remesh is: ");
-    wmtk::vector_print(avg_lens);
+    wmtk::logger().info("finished {} remeshing iterations", iterations);
+    wmtk::logger().info("avg edge len after remesh is: {}", properties[0]);
 
-    wmtk::logger().info("avg valence after each remesh is: ");
-    wmtk::vector_print(avg_valens);
+    wmtk::logger().info("avg valence after remesh is: {}", properties[3]);
 
     return true;
 }

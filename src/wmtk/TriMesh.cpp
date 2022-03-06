@@ -603,6 +603,20 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
     return true;
 }
 
+bool TriMesh::smooth_vertex(const Tuple& loc0)
+{
+    ZoneScoped;
+    if (!smooth_before(loc0)) return false;
+    start_protect_attributes();
+    if (!smooth_after(loc0) || !invariants(get_one_ring_tris_for_vertex(loc0))) {
+        rollback_protected_attributes();
+        return false;
+    }
+    release_protect_attributes();
+
+    return true;
+}
+
 void TriMesh::consolidate_mesh()
 
 {

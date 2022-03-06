@@ -281,6 +281,8 @@ protected:
             return false;
         return true;
     }
+    virtual bool smooth_before(const Tuple& t) { return true; }
+    virtual bool smooth_after(const Tuple& t) { return true; }
     virtual void resize_mutex(size_t v){}; // tempoarary hack
 
 
@@ -315,7 +317,7 @@ public:
     bool split_edge(const Tuple& t, std::vector<Tuple>& new_t);
     bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_t);
     bool swap_edge(const Tuple& t, std::vector<Tuple>& new_t);
-    bool smooth_vertex(const Tuple& t) { return true; }
+    bool smooth_vertex(const Tuple& t);
 
     /**
      * @brief Get the one ring tris for a vertex
