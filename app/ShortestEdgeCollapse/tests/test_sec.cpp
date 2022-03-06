@@ -213,7 +213,7 @@ TEST_CASE("shortest_edge_collapse_closed_mesh", "[test_sec]")
 }
 
 
-TEST_CASE("shortest_edge_collapse_octocat", "[test_sec]")
+TEST_CASE("shortest_edge_collapse_octocat", "[test_sec][.slow]")
 {
     const std::string root(WMT_DATA_DIR);
     const std::string path = root + "/Octocat.obj";
