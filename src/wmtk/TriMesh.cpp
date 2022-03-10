@@ -347,9 +347,9 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
 
 bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
 {
-    if (!collapse_before(loc0)) return false;
-    if (!loc0.is_valid(*this)) return false;
-    assert(check_edge_manifold());
+    if (!collapse_before(loc0)) {
+        return false;
+    }
 
     // get the vids
     size_t vid1 = loc0.vid(*this);
@@ -498,8 +498,9 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
 
 bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
 {
-    if (!swap_before(t)) return false;
-    if (!t.is_valid(*this)) return false;
+    if (!swap_before(t)) {
+        return false;
+    }
 
     // get the vids
     size_t vid1 = t.vid(*this);
@@ -564,6 +565,7 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
         for (auto old_v : old_vertices) m_vertex_connectivity[old_v.first] = old_v.second;
         for (auto old_tri : old_tris) m_tri_connectivity[old_tri.first] = old_tri.second;
         rollback_protected_attributes();
+
         return false;
     }
     release_protect_attributes();

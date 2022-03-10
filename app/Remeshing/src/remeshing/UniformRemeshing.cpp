@@ -202,14 +202,14 @@ bool UniformRemeshing::collapse_remeshing(double L)
     auto setup_and_execute = [&](auto executor) {
         executor.renew_neighbor_tuples = renew;
         executor.priority = [&](auto& m, auto _, auto& e) {
-            return -m.compute_edge_cost_collapse(e, L);
+            return m.compute_edge_cost_collapse(e, L);
         };
         executor.lock_vertices = edge_locker;
         executor.num_threads = NUM_THREADS;
 
         executor.should_process = [](auto& m, auto& ele) {
             auto& [val, op, e] = ele;
-            if (val > 0) return false; // priority is negated.
+            if (val < 0) return false; // priority is negated.
             return true;
         };
         executor(*this, collect_all_ops);
@@ -366,14 +366,17 @@ bool UniformRemeshing::uniform_remeshing(double L, int iterations)
         cnt++;
         // split
         split_remeshing(L);
+
         // collpase
         collapse_remeshing(L);
+
         // swap edges
         swap_remeshing();
+
         // smoothing
         auto vertices = get_vertices();
         for (auto& loc : vertices) smooth_vertex(loc);
-
+        write_triangle_mesh("after_smooth_itr_" + std::to_string(cnt) + ".obj");
         assert(check_mesh_connectivity_validity());
         consolidate_mesh();
         properties = average_len_valen();

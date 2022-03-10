@@ -22,7 +22,7 @@ using namespace std::chrono;
 
 extern "C" {
 #include <wmtk/utils/getRSS.c>
-};
+}
 
 void run_remeshing(std::string input, double len, std::string output, UniformRemeshing& m, int itrs)
 {
@@ -110,7 +110,7 @@ int main(int argc, char** argv)
     if (target_len > 0)
         run_remeshing(path, target_len, output, m, itrs);
     else
-        run_remeshing(path, properties[0] * len_rel, output, m, itrs);
+        run_remeshing(path, diag * len_rel, output, m, itrs);
     timer.stop();
     logger().info("Took {}", timer.getElapsedTimeInSec());
 
