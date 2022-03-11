@@ -68,31 +68,8 @@ bool UniformRemeshing::smooth_after(const TriMesh::Tuple& t)
     if (one_ring_tris.size() < 2) {
         return false;
     }
-    Eigen::Vector3d after_smooth = smooth(t);
-    // get normal and area of each face
-    auto area = [](auto& m, auto& verts) {
-        return ((m.vertex_attrs[verts[0].vid(m)].pos - m.vertex_attrs[verts[2].vid(m)].pos)
-                    .cross(
-                        m.vertex_attrs[verts[1].vid(m)].pos - m.vertex_attrs[verts[2].vid(m)].pos))
-                   .norm() /
-               2.0;
-    };
-    auto normal = [](auto& m, auto& verts) {
-        return ((m.vertex_attrs[verts[0].vid(m)].pos - m.vertex_attrs[verts[2].vid(m)].pos)
-                    .cross(
-                        m.vertex_attrs[verts[1].vid(m)].pos - m.vertex_attrs[verts[2].vid(m)].pos))
-            .normalized();
-    };
-    auto w0 = 0.0;
-    Eigen::Vector3d n0(0.0, 0.0, 0.0);
-    for (auto& e : one_ring_tris) {
-        auto verts = oriented_tri_vertices(e);
-        w0 += area(*this, verts);
-        n0 += area(*this, verts) * normal(*this, verts);
-    }
-    n0 /= w0;
-    after_smooth += n0 * n0.transpose() * (vertex_attrs[t.vid(*this)].pos - after_smooth);
-    assert(check_mesh_connectivity_validity());
+    Eigen::Vector3d after_smooth = tangential_smooth(t);
+
     vertex_attrs[t.vid(*this)].pos = after_smooth;
     return true;
 }
@@ -362,6 +339,7 @@ bool UniformRemeshing::uniform_remeshing(double L, int iterations)
 {
     int cnt = 0;
     std::vector<double> properties = average_len_valen();
+    wmtk::logger().info("the starting avg len is {}", properties[0]);
     while ((properties[0] - L) * (properties[0] - L) > 1e-8 && cnt < iterations) {
         cnt++;
         // split
@@ -376,7 +354,6 @@ bool UniformRemeshing::uniform_remeshing(double L, int iterations)
         // smoothing
         auto vertices = get_vertices();
         for (auto& loc : vertices) smooth_vertex(loc);
-        write_triangle_mesh("after_smooth_itr_" + std::to_string(cnt) + ".obj");
         assert(check_mesh_connectivity_validity());
         consolidate_mesh();
         properties = average_len_valen();
@@ -391,7 +368,7 @@ bool UniformRemeshing::uniform_remeshing(double L, int iterations)
 // write the collapsed mesh into a obj and assert the mesh is manifold
 bool UniformRemeshing::write_triangle_mesh(std::string path)
 {
-    Eigen::MatrixXd V = Eigen::MatrixXd::Zero(vertex_attrs.size(), 3);
+    Eigen::MatrixXd V = Eigen::MatrixXd::Zero(vert_capacity(), 3);
     for (auto& t : get_vertices()) {
         auto i = t.vid(*this);
         V.row(i) = vertex_attrs[i].pos;

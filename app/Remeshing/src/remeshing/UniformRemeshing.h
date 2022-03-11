@@ -78,19 +78,14 @@ public:
 
         partition_mesh();
         for (auto v : frozen_verts) vertex_attrs[v].freeze = true;
-        for (auto v : get_vertices()) { // the better way is to iterate through edges.
-            set_freeze(v);
-        }
-    }
-    void set_freeze(TriMesh::Tuple& v)
-    {
-        for (auto e : get_one_ring_edges_for_vertex(v)) {
+        for (auto e : get_edges()) {
             if (is_boundary_edge(e)) {
-                vertex_attrs[v.vid(*this)].freeze = true;
-                continue;
+                vertex_attrs[e.vid(*this)].freeze = true;
+                vertex_attrs[e.switch_vertex(*this).vid(*this)].freeze = true;
             }
         }
     }
+
 
     ~UniformRemeshing() {}
 
