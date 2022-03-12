@@ -170,7 +170,7 @@ jobs:
       - name: Prepare sccache
         run: |
           iwr -useb 'https://raw.githubusercontent.com/scoopinstaller/install/master/install.ps1' -outfile 'install.ps1'
-.\install.ps1 -RunAsAdmin
+          .\install.ps1 -RunAsAdmin
           scoop install sccache --global
           # Scoop modifies the PATH so we make it available for the next steps of the job
           echo "${env:PATH}" >> ${env:GITHUB_PATH}
