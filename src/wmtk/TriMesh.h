@@ -87,12 +87,7 @@ public:
                 if (min_fid == fid2) {
                     int i = m.m_tri_connectivity[fid2].find(m_vid);
                     int j = m.m_tri_connectivity[fid2].find(switch_vertex(m).vid(m));
-                    switch (i + j) {
-                    case (1): return min_fid * 3 + 2;
-                    case (2): return min_fid * 3 + 1;
-                    case (3): return min_fid * 3;
-                    default: wmtk::logger().info("invlid mesh"); exit(0);
-                    }
+                    return min_fid * 3 + 3 - i - j;
                 }
             }
             return m_fid * 3 + m_eid;
