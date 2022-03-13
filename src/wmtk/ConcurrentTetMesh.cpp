@@ -1,5 +1,7 @@
 #include <wmtk/ConcurrentTetMesh.h>
 
+#include <tbb/parallel_for.h>
+#include <tbb/task_group.h>
 #include <Tracy.hpp>
 
 void wmtk::ConcurrentTetMesh::init(
@@ -415,4 +417,25 @@ bool wmtk::ConcurrentTetMesh::try_set_vertex_mutex_one_ring(const Tuple& v, int 
         }
     }
     return true;
+}
+
+void wmtk::ConcurrentTetMesh::for_each_edge(std::function<void(const TetMesh::Tuple&)> func)
+{
+    tbb::task_arena arena(NUM_THREADS);
+    arena.execute([&] {
+        tbb::parallel_for(
+            tbb::blocked_range<int>(0, tet_capacity()),
+            [&](tbb::blocked_range<int> r) {
+                for (int i = r.begin(); i < r.end(); i++) {
+                    if (tuple_from_tet(i).vid(*this) == std::numeric_limits<size_t>::max())
+                        continue;
+                    for (int j = 0; j < 6; j++) {
+                        auto tup = tuple_from_edge(i, j);
+                        if (tup.eid(*this) == 6 * i + j) {
+                            func(tup);
+                        }
+                    }
+                }
+            });
+    });
 }

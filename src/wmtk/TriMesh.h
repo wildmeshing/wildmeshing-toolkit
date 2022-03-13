@@ -60,7 +60,7 @@ public:
          * @param m TriMesh where the tuple belongs.
          * @return size_t
          */
-        inline size_t vid() const { return m_vid; }
+        inline size_t vid(const TriMesh&) const { return m_vid; }
 
         /**
          * returns a global unique face id
@@ -68,7 +68,7 @@ public:
          * @param m TriMesh where the tuple belongs.
          * @return size_t
          */
-        inline size_t fid() const { return m_fid; }
+        inline size_t fid(const TriMesh&) const { return m_fid; }
 
 
         /**
@@ -82,8 +82,13 @@ public:
         inline size_t eid(const TriMesh& m) const
         {
             if (switch_face(m).has_value()) {
-                size_t fid2 = switch_face(m)->fid();
-                return std::min(m_fid, fid2) * 3 + m_eid;
+                size_t fid2 = switch_face(m)->fid(m);
+                size_t min_fid = std::min(m_fid, fid2);
+                if (min_fid == fid2) {
+                    int i = m.m_tri_connectivity[fid2].find(m_vid);
+                    int j = m.m_tri_connectivity[fid2].find(switch_vertex(m).vid(m));
+                    return min_fid * 3 + 3 - i - j;
+                }
             }
             return m_fid * 3 + m_eid;
         }
@@ -190,9 +195,10 @@ public:
 
     /**
      * Generate a vector of Tuples from global vertex index and __local__ edge index
-     * @note each vertex generate tuple that has the fid to be the smallest among connected
-     * triangles' fid local vid to be in the same order as thier indices in the m_conn_tris local
-     * eid assigned counter clockwise as in the ilustrated example
+     * @note each vertex generate tuple that has the fid to be the smallest among
+     * connected triangles' fid local vid to be in the same order as thier indices
+     * in the m_conn_tris local eid assigned counter clockwise as in the ilustrated
+     * example
      * @return vector of Tuples
      */
     std::vector<Tuple> get_vertices() const;
@@ -207,7 +213,8 @@ public:
 
     /**
      * Generate a vector of Tuples for each edge
-     * @note ensures the fid assigned is the smallest between faces adjacent to the edge
+     * @note ensures the fid assigned is the smallest between faces adjacent to the
+     * edge
      * @return vector of Tuples
      */
     std::vector<Tuple> get_edges() const;
@@ -248,20 +255,17 @@ protected:
         if (check_link_condition(t)) return true;
         return false;
     }
-    virtual bool collapse_after(const Tuple& t)
-    {
-        assert(t.is_valid(*this));
-
-        return true;
-    }
+    virtual bool collapse_after(const Tuple& t) { return true; }
     virtual bool swap_after(const Tuple& t) { return true; }
     virtual bool swap_before(const Tuple& t)
     {
         if (!t.switch_face(*this).has_value())
             return false; // can't swap on boundary edgereturn true;
-        // when swap edge between v1, v2, there can't exist edge between v3, v4 already
-        size_t v4 = ((t.switch_face(*this).value()).switch_edge(*this)).switch_vertex(*this).vid();
-        size_t v3 = ((t.switch_edge(*this)).switch_vertex(*this)).vid();
+        // when swap edge between v1, v2, there can't exist edge between v3, v4
+        // already
+        size_t v4 =
+            ((t.switch_face(*this).value()).switch_edge(*this)).switch_vertex(*this).vid(*this);
+        size_t v3 = ((t.switch_edge(*this)).switch_vertex(*this)).vid(*this);
         if (!set_intersection(
                  m_vertex_connectivity[v4].m_conn_tris,
                  m_vertex_connectivity[v3].m_conn_tris)
@@ -269,6 +273,8 @@ protected:
             return false;
         return true;
     }
+    virtual bool smooth_before(const Tuple& t) { return true; }
+    virtual bool smooth_after(const Tuple& t) { return true; }
     virtual void resize_mutex(size_t v){}; // tempoarary hack
 
 
@@ -285,7 +291,7 @@ public:
     bool check_link_condition(const Tuple& t) const;
     bool check_mesh_connectivity_validity() const;
     bool check_internal_link_condition(const Tuple& t) const;
-
+    bool check_edge_manifold() const;
     bool is_boundary_edge(const TriMesh::Tuple& t) const
     {
         if (!t.switch_face(*this).has_value()) return true;
@@ -296,14 +302,14 @@ public:
      * Split an edge
      *
      * @param t Input Tuple for the edge to split.
-     * @param[out] new_edges a vector of Tuples for all the edges from the newly introduced
-     * triangle
+     * @param[out] new_edges a vector of Tuples for all the edges from the newly
+     * introduced triangle
      * @return if split succeed
      */
     bool split_edge(const Tuple& t, std::vector<Tuple>& new_t);
     bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_t);
     bool swap_edge(const Tuple& t, std::vector<Tuple>& new_t);
-    bool smooth_vertex(const Tuple& t) { return true; }
+    bool smooth_vertex(const Tuple& t);
 
     /**
      * @brief Get the one ring tris for a vertex

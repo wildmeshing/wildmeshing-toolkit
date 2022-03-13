@@ -67,7 +67,7 @@ TEST_CASE("triangle-insertion-parallel", "[tetwild_operation]")
 {
     Eigen::MatrixXd V;
     Eigen::MatrixXd F;
-    std::string input_path = WMT_DATA_DIR "/bunny.obj";
+    std::string input_path = WMT_DATA_DIR "/Octocat.obj";
     igl::read_triangle_mesh(input_path, V, F);
     wmtk::logger().info("Read Mesh V={}, F={}", V.rows(), F.rows());
 
@@ -107,9 +107,7 @@ TEST_CASE("triangle-insertion-parallel", "[tetwild_operation]")
     }
     for (int i = 0; i < NUM_THREADS; i++) {
         std::cout << i << ": " << cnt_id[i] << std::endl;
-    }
     input_surface.partition_id = partition_id;
-
 
     // exit(0);
     //

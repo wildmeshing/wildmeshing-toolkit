@@ -1,21 +1,22 @@
+#include <sec/ShortestEdgeCollapse.h>
+
+#include <wmtk/utils/ManifoldUtils.hpp>
+
+#include <CLI/CLI.hpp>
+
 #include <igl/Timer.h>
 #include <igl/is_edge_manifold.h>
 #include <igl/is_vertex_manifold.h>
 #include <igl/readOFF.h>
 #include <igl/read_triangle_mesh.h>
+#include <igl/remove_duplicate_vertices.h>
 #include <igl/writeDMAT.h>
-#include <sec/ShortestEdgeCollapse.h>
+
 #include <stdlib.h>
-#include <wmtk/TriMesh.h>
 #include <chrono>
 #include <cstdlib>
 #include <iostream>
-#include <wmtk/utils/ManifoldUtils.hpp>
-#include <igl/remove_duplicate_vertices.h>
 
-extern "C" {
-#include <wmtk/utils/getRSS.c>
-};
 using namespace wmtk;
 using namespace sec;
 using namespace std::chrono;
@@ -44,22 +45,30 @@ void run_shortest_collapse(
 }
 int main(int argc, char** argv)
 {
-    // input
-    // target_verts
-    // output
-    // ep
+    std::string path = "";
+    std::string output = "out.obj";
+    double env_rel = -1;
+    double target_pec = 0.1;
+    int thread = 1;
 
-    const std::string root(WMT_DATA_DIR);
-    const std::string path = argv[1];
+    CLI::App app{argv[0]};
+    app.add_option("input", path, "Input mesh.")->check(CLI::ExistingFile);
+    app.add_option("output", output, "output mesh.");
+
+    app.add_option("-e,--envelope", env_rel, "Relative envelope size, negative to disable");
+    app.add_option("-j, --thread", thread, "thread.");
+    app.add_option("-t, --target", target_pec, "Percentage of input vertices in output.");
+    CLI11_PARSE(app, argc, argv);
+
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     bool ok = igl::read_triangle_mesh(path, V, F);
 
     Eigen::VectorXi SVI, SVJ;
-    Eigen::MatrixXd temp_V = V;  // for STL file
+    Eigen::MatrixXd temp_V = V; // for STL file
     igl::remove_duplicate_vertices(temp_V, 0, V, SVI, SVJ);
     for (int i = 0; i < F.rows(); i++)
-      for (int j : {0, 1, 2}) F(i, j) = SVJ[F(i, j)];
+        for (int j : {0, 1, 2}) F(i, j) = SVJ[F(i, j)];
 
     wmtk::logger().info("Before_vertices#: {} \n Before_tris#: {}", V.rows(), F.rows());
 
@@ -77,7 +86,7 @@ int main(int argc, char** argv)
     const Eigen::MatrixXd box_max = V.colwise().maxCoeff();
     const double diag = (box_max - box_min).norm();
 
-    const double envelope_size = atof(argv[4]) * diag;
+    const double envelope_size = env_rel * diag;
     Eigen::VectorXi dummy;
     std::vector<size_t> modified_v;
     if (!igl::is_edge_manifold(F) || !igl::is_vertex_manifold(F, dummy)) {
@@ -86,13 +95,14 @@ int main(int argc, char** argv)
         wmtk::separate_to_manifold(v1, tri1, v, tri, modified_v);
     }
 
-    ShortestEdgeCollapse m(v, atoi(argv[5]));
+    ShortestEdgeCollapse m(v, thread);
     m.create_mesh(v.size(), tri, modified_v, envelope_size);
     assert(m.check_mesh_connectivity_validity());
-    wmtk::logger().info("collapsing mesh {}", argv[1]);
+    wmtk::logger().info("collapsing mesh {}", path);
+    int target_verts = v.size() * target_pec;
     igl::Timer timer;
     timer.start();
-    run_shortest_collapse(path, std::stoi(argv[2]), argv[3], m);
+    run_shortest_collapse(path, target_verts, output, m);
     timer.stop();
     logger().info("Took {}", timer.getElapsedTimeInSec());
     m.consolidate_mesh();

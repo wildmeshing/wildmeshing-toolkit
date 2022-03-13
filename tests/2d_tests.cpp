@@ -27,9 +27,9 @@ TEST_CASE("test generate tuples with 1 triangle", "[test_tuple_generation]")
     {
         auto vertices_tuples = m.get_vertices();
         REQUIRE(vertices_tuples.size() == 3);
-        REQUIRE(vertices_tuples[0].vid() == 0);
-        REQUIRE(vertices_tuples[1].vid() == 1);
-        REQUIRE(vertices_tuples[2].vid() == 2);
+        REQUIRE(vertices_tuples[0].vid(m) == 0);
+        REQUIRE(vertices_tuples[1].vid(m) == 1);
+        REQUIRE(vertices_tuples[2].vid(m) == 2);
     }
     SECTION("test generation from faces")
     {
@@ -37,11 +37,11 @@ TEST_CASE("test generate tuples with 1 triangle", "[test_tuple_generation]")
         REQUIRE(faces_tuples.size() == 1);
 
         // to test vid initialized correctly
-        REQUIRE(faces_tuples[0].vid() == tris[0][0]);
+        REQUIRE(faces_tuples[0].vid(m) == tris[0][0]);
 
         // // to test the fid is a triangle touching this vertex
-        // std::vector<size_t> tris = m_vertex_connectivity[faces_tuples[0].vid()].m_conn_tris;
-        // REQUIRE(std::find(tris.begin(), tris.end(), faces_tuples[0].fid()) != tris.end());
+        // std::vector<size_t> tris = m_vertex_connectivity[faces_tuples[0].vid(*this)].m_conn_tris;
+        // REQUIRE(std::find(tris.begin(), tris.end(), faces_tuples[0].fid(*this)) != tris.end());
     }
 
     SECTION("test generation from edges")
@@ -68,14 +68,14 @@ TEST_CASE("test generate tuples with 2 triangle", "[test_tuple_generation]")
     {
         auto vertices_tuples = m.get_vertices();
         REQUIRE(vertices_tuples.size() == 4);
-        REQUIRE(vertices_tuples[0].vid() == 0);
-        REQUIRE(vertices_tuples[1].vid() == 1);
-        REQUIRE(vertices_tuples[2].vid() == 2);
-        REQUIRE(vertices_tuples[3].vid() == 3);
+        REQUIRE(vertices_tuples[0].vid(m) == 0);
+        REQUIRE(vertices_tuples[1].vid(m) == 1);
+        REQUIRE(vertices_tuples[2].vid(m) == 2);
+        REQUIRE(vertices_tuples[3].vid(m) == 3);
 
         // test the faces are assigned correctly
-        REQUIRE(vertices_tuples[1].fid() == 0);
-        REQUIRE(vertices_tuples[2].fid() == 0);
+        REQUIRE(vertices_tuples[1].fid(m) == 0);
+        REQUIRE(vertices_tuples[2].fid(m) == 0);
     }
 
     SECTION("test generation from faces")
@@ -84,9 +84,9 @@ TEST_CASE("test generate tuples with 2 triangle", "[test_tuple_generation]")
         REQUIRE(faces_tuples.size() == 2);
 
         // std::vector<size_t> conn_tris =
-        //     m_vertex_connectivity[faces_tuples[0].vid()].m_conn_tris;
+        //     m_vertex_connectivity[faces_tuples[0].vid(*this)].m_conn_tris;
         // REQUIRE(
-        //     std::find(conn_tris.begin(), conn_tris.end(), faces_tuples[0].fid()) !=
+        //     std::find(conn_tris.begin(), conn_tris.end(), faces_tuples[0].fid(*this)) !=
         //     conn_tris.end());
     }
 
@@ -94,11 +94,11 @@ TEST_CASE("test generate tuples with 2 triangle", "[test_tuple_generation]")
     {
         auto edges_tuples = m.get_edges();
         REQUIRE(edges_tuples.size() == 5);
-        REQUIRE(edges_tuples[0].fid() == 0);
-        REQUIRE(edges_tuples[1].fid() == 0);
-        REQUIRE(edges_tuples[2].fid() == 0);
-        REQUIRE(edges_tuples[3].fid() == 1);
-        REQUIRE(edges_tuples[4].fid() == 1);
+        REQUIRE(edges_tuples[0].fid(m) == 0);
+        REQUIRE(edges_tuples[1].fid(m) == 0);
+        REQUIRE(edges_tuples[2].fid(m) == 0);
+        REQUIRE(edges_tuples[3].fid(m) == 1);
+        REQUIRE(edges_tuples[4].fid(m) == 1);
     }
 }
 
@@ -187,7 +187,7 @@ TriMesh::Tuple double_switch_face(TriMesh::Tuple t, TriMesh& m)
 
 bool tuple_equal(const TriMesh& m, TriMesh::Tuple t1, TriMesh::Tuple t2)
 {
-    return (t1.fid() == t2.fid()) && (t1.eid(m) == t2.eid(m)) && (t1.vid() == t2.vid());
+    return (t1.fid(m) == t2.fid(m)) && (t1.eid(m) == t2.eid(m)) && (t1.vid(m) == t2.vid(m));
 }
 
 
@@ -351,11 +351,18 @@ TEST_CASE("test_link_check", "[test_pre_check]")
         REQUIRE(m.check_link_condition(pass_edge));
     }
 }
-
+// test manifold (eid uniqueness)
+TEST_CASE("test unique edge", "[test_2d_operation]")
+{
+    std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 3, 2}}, {{4, 1, 0}}, {{0, 2, 5}}};
+    auto m = TriMesh();
+    m.create_mesh(6, tris);
+    REQUIRE(m.check_edge_manifold());
+}
 
 TEST_CASE("edge_collapse", "[test_2d_operation]")
 {
-    std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 2, 3}}, {{0, 1, 4}}, {{0, 2, 5}}};
+    std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 3, 2}}, {{4, 1, 0}}, {{0, 2, 5}}};
     SECTION("rollback")
     {
         class NoCollapseMesh : public TriMesh
@@ -382,9 +389,11 @@ TEST_CASE("edge_collapse", "[test_2d_operation]")
 
         m.create_mesh(6, tris);
         const auto tuple = Collapse::Tuple(1, 0, 0, m);
+
         REQUIRE(tuple.is_valid(m));
         std::vector<TriMesh::Tuple> dummy;
-        REQUIRE(m.collapse_edge(tuple, dummy));
+
+        REQUIRE(m.collapse_edge(tuple, dummy)); // fail at check manifold
         REQUIRE_FALSE(tuple.is_valid(m));
     }
 }
@@ -419,7 +428,7 @@ TEST_CASE("swap_operation", "[test_2d_operation]")
 
         std::vector<size_t> m_indices;
         for (auto edge : m.get_one_ring_edges_for_vertex(new_e.front())) {
-            m_indices.push_back(edge.vid());
+            m_indices.push_back(edge.vid(m));
         }
         vector_unique(m_indices);
         std::vector<size_t> tru_indices = {1, 3, 4, 5};

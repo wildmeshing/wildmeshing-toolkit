@@ -1,5 +1,5 @@
 #include "UniformRemeshing.h"
-
+#include <igl/is_edge_manifold.h>
 #include <wmtk/TriMesh.h>
 #include <wmtk/utils/VectorUtils.h>
 #include <Eigen/Core>
@@ -30,7 +30,7 @@ std::vector<TriMesh::Tuple> UniformRemeshing::new_edges_after(
 
     for (auto t : tris) {
         for (auto j = 0; j < 3; j++) {
-            new_edges.push_back(tuple_from_edge(t.fid(), j));
+            new_edges.push_back(tuple_from_edge(t.fid(*this), j));
         }
     }
     wmtk::unique_edge_tuples(*this, new_edges);
@@ -47,7 +47,7 @@ bool UniformRemeshing::swap_after(const TriMesh::Tuple& t)
 bool UniformRemeshing::collapse_after(const TriMesh::Tuple& t)
 {
     const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
-    auto vid = t.vid();
+    auto vid = t.vid(*this);
     vertex_attrs[vid].pos = p;
 
     return true;
@@ -56,21 +56,37 @@ bool UniformRemeshing::collapse_after(const TriMesh::Tuple& t)
 bool UniformRemeshing::split_after(const TriMesh::Tuple& t)
 {
     const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
-    auto vid = t.vid();
+    auto vid = t.vid(*this);
     vertex_attrs[vid].pos = p;
 
     return true;
 }
 
+bool UniformRemeshing::smooth_after(const TriMesh::Tuple& t)
+{
+    auto one_ring_tris = get_one_ring_tris_for_vertex(t);
+    if (one_ring_tris.size() < 2) {
+        return false;
+    }
+    Eigen::Vector3d after_smooth = tangential_smooth(t);
+
+    vertex_attrs[t.vid(*this)].pos = after_smooth;
+    return true;
+}
+
 double UniformRemeshing::compute_edge_cost_collapse(const TriMesh::Tuple& t, double L) const
 {
-    double l = (vertex_attrs[t.vid()].pos - vertex_attrs[t.switch_vertex(*this).vid()].pos).norm();
+    double l =
+        (vertex_attrs[t.vid(*this)].pos - vertex_attrs[t.switch_vertex(*this).vid(*this)].pos)
+            .norm();
     if (l < (4. / 5.) * L) return ((4. / 5.) * L - l);
     return -1;
 }
 double UniformRemeshing::compute_edge_cost_split(const TriMesh::Tuple& t, double L) const
 {
-    double l = (vertex_attrs[t.vid()].pos - vertex_attrs[t.switch_vertex(*this).vid()].pos).norm();
+    double l =
+        (vertex_attrs[t.vid(*this)].pos - vertex_attrs[t.switch_vertex(*this).vid(*this)].pos)
+            .norm();
     if (l > (4. / 3.) * L) return (l - (4. / 3.) * L);
     return -1;
 }
@@ -123,8 +139,9 @@ std::vector<double> UniformRemeshing::average_len_valen()
     double minlen = std::numeric_limits<double>::max();
     double minval = std::numeric_limits<double>::max();
     for (auto& loc : edges) {
-        double currentlen =
-            (vertex_attrs[loc.vid()].pos - vertex_attrs[loc.switch_vertex(*this).vid()].pos).norm();
+        double currentlen = (vertex_attrs[loc.vid(*this)].pos -
+                             vertex_attrs[loc.switch_vertex(*this).vid(*this)].pos)
+                                .norm();
         average_len += currentlen;
         if (maxlen < currentlen) maxlen = currentlen;
         if (minlen > currentlen) minlen = currentlen;
@@ -162,22 +179,23 @@ bool UniformRemeshing::collapse_remeshing(double L)
     auto setup_and_execute = [&](auto executor) {
         executor.renew_neighbor_tuples = renew;
         executor.priority = [&](auto& m, auto _, auto& e) {
-            return -m.compute_edge_cost_collapse(e, L);
+            return m.compute_edge_cost_collapse(e, L);
         };
         executor.lock_vertices = edge_locker;
+        executor.num_threads = NUM_THREADS;
 
         executor.should_process = [](auto& m, auto& ele) {
             auto& [val, op, e] = ele;
-            if (val > 0) return false; // priority is negated.
+            if (val < 0) return false; // priority is negated.
             return true;
         };
         executor(*this, collect_all_ops);
     };
     if (NUM_THREADS > 0) {
-        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kPartition>();
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
     }
 
@@ -186,8 +204,9 @@ bool UniformRemeshing::collapse_remeshing(double L)
 bool UniformRemeshing::split_remeshing(double L)
 {
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
-    for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_split", loc);
 
+    for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_split", loc);
+    wmtk::logger().info("size for edges to be split is {}", collect_all_ops.size());
     auto setup_and_execute = [&](auto executor) {
         executor.num_threads = NUM_THREADS;
 
@@ -205,10 +224,10 @@ bool UniformRemeshing::split_remeshing(double L)
         executor(*this, collect_all_ops);
     };
     if (NUM_THREADS > 0) {
-        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kPartition>();
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
     }
 
@@ -223,6 +242,7 @@ bool UniformRemeshing::swap_remeshing()
 
     auto setup_and_execute = [&](auto executor) {
         executor.renew_neighbor_tuples = renew;
+        executor.num_threads = NUM_THREADS;
         executor.priority = [](auto& m, auto op, const Tuple& e) {
             return m.compute_vertex_valence(e);
         };
@@ -235,10 +255,10 @@ bool UniformRemeshing::swap_remeshing()
         executor(*this, collect_all_ops);
     };
     if (NUM_THREADS > 0) {
-        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kPartition>();
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
     }
 
@@ -246,32 +266,33 @@ bool UniformRemeshing::swap_remeshing()
 }
 double area(UniformRemeshing& m, std::array<TriMesh::Tuple, 3>& verts)
 {
-    return ((m.vertex_attrs[verts[0].vid()].pos - m.vertex_attrs[verts[2].vid()].pos)
-                .cross(m.vertex_attrs[verts[1].vid()].pos - m.vertex_attrs[verts[2].vid()].pos))
+    return ((m.vertex_attrs[verts[0].vid(m)].pos - m.vertex_attrs[verts[2].vid(m)].pos)
+                .cross(m.vertex_attrs[verts[1].vid(m)].pos - m.vertex_attrs[verts[2].vid(m)].pos))
                .norm() /
            2.0;
-};
+}
 
 Eigen::Vector3d normal(UniformRemeshing& m, std::array<TriMesh::Tuple, 3>& verts)
 {
-    return ((m.vertex_attrs[verts[0].vid()].pos - m.vertex_attrs[verts[2].vid()].pos)
-                .cross(m.vertex_attrs[verts[1].vid()].pos - m.vertex_attrs[verts[2].vid()].pos))
+    return ((m.vertex_attrs[verts[0].vid(m)].pos - m.vertex_attrs[verts[2].vid(m)].pos)
+                .cross(m.vertex_attrs[verts[1].vid(m)].pos - m.vertex_attrs[verts[2].vid(m)].pos))
         .normalized();
 }
+
 Eigen::Vector3d UniformRemeshing::smooth(const TriMesh::Tuple& t)
 {
     auto one_ring_edges = get_one_ring_edges_for_vertex(t);
-    if (one_ring_edges.size() < 3) return vertex_attrs[t.vid()].pos;
+    if (one_ring_edges.size() < 3) return vertex_attrs[t.vid(*this)].pos;
     Eigen::Vector3d after_smooth(0, 0, 0);
     Eigen::Vector3d after_smooth_boundary(0, 0, 0);
     int boundary = 0;
     for (auto e : one_ring_edges) {
         if (is_boundary_edge(e)) {
-            after_smooth_boundary += vertex_attrs[e.vid()].pos;
+            after_smooth_boundary += vertex_attrs[e.vid(*this)].pos;
             boundary++;
             continue;
         }
-        after_smooth += vertex_attrs[e.vid()].pos;
+        after_smooth += vertex_attrs[e.vid(*this)].pos;
     }
 
     if (boundary)
@@ -284,18 +305,20 @@ Eigen::Vector3d UniformRemeshing::smooth(const TriMesh::Tuple& t)
 Eigen::Vector3d UniformRemeshing::tangential_smooth(const Tuple& t)
 {
     auto one_ring_tris = get_one_ring_tris_for_vertex(t);
-    if (one_ring_tris.size() < 2) return vertex_attrs[t.vid()].pos;
+    if (one_ring_tris.size() < 2) return vertex_attrs[t.vid(*this)].pos;
     Eigen::Vector3d after_smooth = smooth(t);
     // get normal and area of each face
     auto area = [](auto& m, auto& verts) {
-        return ((m.vertex_attrs[verts[0].vid()].pos - m.vertex_attrs[verts[2].vid()].pos)
-                    .cross(m.vertex_attrs[verts[1].vid()].pos - m.vertex_attrs[verts[2].vid()].pos))
+        return ((m.vertex_attrs[verts[0].vid(m)].pos - m.vertex_attrs[verts[2].vid(m)].pos)
+                    .cross(
+                        m.vertex_attrs[verts[1].vid(m)].pos - m.vertex_attrs[verts[2].vid(m)].pos))
                    .norm() /
                2.0;
     };
     auto normal = [](auto& m, auto& verts) {
-        return ((m.vertex_attrs[verts[0].vid()].pos - m.vertex_attrs[verts[2].vid()].pos)
-                    .cross(m.vertex_attrs[verts[1].vid()].pos - m.vertex_attrs[verts[2].vid()].pos))
+        return ((m.vertex_attrs[verts[0].vid(m)].pos - m.vertex_attrs[verts[2].vid(m)].pos)
+                    .cross(
+                        m.vertex_attrs[verts[1].vid(m)].pos - m.vertex_attrs[verts[2].vid(m)].pos))
             .normalized();
     };
     auto w0 = 0.0;
@@ -306,55 +329,60 @@ Eigen::Vector3d UniformRemeshing::tangential_smooth(const Tuple& t)
         n0 += area(*this, verts) * normal(*this, verts);
     }
     n0 /= w0;
-    after_smooth += n0 * n0.transpose() * (vertex_attrs[t.vid()].pos - after_smooth);
+    after_smooth += n0 * n0.transpose() * (vertex_attrs[t.vid(*this)].pos - after_smooth);
+    assert(check_mesh_connectivity_validity());
     return after_smooth;
 }
 
 
 bool UniformRemeshing::uniform_remeshing(double L, int iterations)
 {
-    std::vector<double> avg_lens, max_lens, min_lens;
-    std::vector<double> avg_valens, max_vals, min_vals;
     int cnt = 0;
-    auto properties = average_len_valen();
+    std::vector<double> properties = average_len_valen();
+    wmtk::logger().info("the starting avg len is {}", properties[0]);
     while ((properties[0] - L) * (properties[0] - L) > 1e-8 && cnt < iterations) {
         cnt++;
-        avg_lens.push_back(properties[0]);
-        avg_valens.push_back(properties[3]);
-        max_lens.push_back(properties[1]);
-        max_vals.push_back(properties[4]);
-        min_lens.push_back(properties[2]);
-        min_vals.push_back(properties[5]);
-
         // split
         split_remeshing(L);
+
         // collpase
         collapse_remeshing(L);
 
         // swap edges
         swap_remeshing();
+
         // smoothing
         auto vertices = get_vertices();
-
-        for (auto& loc : vertices) vertex_attrs[loc.vid()].pos = tangential_smooth(loc);
-
+        for (auto& loc : vertices) smooth_vertex(loc);
         assert(check_mesh_connectivity_validity());
         consolidate_mesh();
         properties = average_len_valen();
     }
-    wmtk::logger().info("avg edge len after each remesh is: ");
-    wmtk::vector_print(avg_lens);
-    wmtk::logger().info("max edge len after each remesh is: ");
-    wmtk::vector_print(max_lens);
-    wmtk::logger().info("min edge len after each remesh is: ");
-    wmtk::vector_print(min_lens);
+    wmtk::logger().info("finished {} remeshing iterations", iterations);
+    wmtk::logger().info("avg edge len after remesh is: {}", properties[0]);
 
+    wmtk::logger().info("avg valence after remesh is: {}", properties[3]);
 
-    wmtk::logger().info("avg valence after each remesh is: ");
-    wmtk::vector_print(avg_valens);
-    wmtk::logger().info("max valence after each remesh is: ");
-    wmtk::vector_print(max_vals);
-    wmtk::logger().info("min valence after each remesh is: ");
-    wmtk::vector_print(min_vals);
     return true;
+}
+// write the collapsed mesh into a obj and assert the mesh is manifold
+bool UniformRemeshing::write_triangle_mesh(std::string path)
+{
+    Eigen::MatrixXd V = Eigen::MatrixXd::Zero(vert_capacity(), 3);
+    for (auto& t : get_vertices()) {
+        auto i = t.vid(*this);
+        V.row(i) = vertex_attrs[i].pos;
+    }
+
+    Eigen::MatrixXi F = Eigen::MatrixXi::Constant(tri_capacity(), 3, -1);
+    for (auto& t : get_faces()) {
+        auto i = t.fid(*this);
+        auto vs = oriented_tri_vertices(t);
+        for (int j = 0; j < 3; j++) {
+            F(i, j) = vs[j].vid(*this);
+        }
+    }
+    igl::write_triangle_mesh(path, V, F);
+    assert(igl::is_edge_manifold(F));
+    return igl::is_edge_manifold(F);
 }
