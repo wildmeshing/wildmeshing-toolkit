@@ -320,6 +320,18 @@ public:
         std::vector<size_t>& new_center_ids);
 
     /**
+     * @brief Insert a point into a tetmesh inside a tet.
+     * In general position, this split a tet into 4.
+     * In face position, split two tets.
+     * In edge position, 
+     * In point position, do nothing.
+     * @return true 
+     * @return false 
+     */
+    bool single_point_insertion(const Tuple& t, std::vector<Tuple>& new_tets);
+    virtual bool single_point_insertion_before(const Tuple& t);
+    virtual bool single_point_insertion_after(std::vector<Tuple>& new_tets);
+    /**
      * @brief cleans up the deleted vertices or tetrahedra, fixes the corresponding indices, and
      * reset the version number. WARNING: it invalidates all tuples!
      *

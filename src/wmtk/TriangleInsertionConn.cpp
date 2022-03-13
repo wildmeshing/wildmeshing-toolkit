@@ -388,3 +388,15 @@ void wmtk::TetMesh::subdivide_a_tet(
         info.second.erase(it, info.second.end());
     }
 }
+
+bool wmtk::TetMesh::single_point_insertion(const Tuple& t, std::vector<Tuple>& new_tets) {
+    ZoneScoped;
+    if (!single_point_insertion_before(t)) return false;
+    start_protect_attributes();
+    if (!single_point_insertion_after(new_tets) || !invariants(new_tets)) {
+        rollback_protected_attributes();
+        return false;
+    }
+    release_protect_attributes();
+    return true;
+}

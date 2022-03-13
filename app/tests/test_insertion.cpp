@@ -8,6 +8,7 @@
 
 #include <catch2/catch.hpp>
 #include "spdlog/common.h"
+#include "wmtk/ConcurrentTetMesh.h"
 
 #include <igl/read_triangle_mesh.h>
 
@@ -107,8 +108,8 @@ TEST_CASE("triangle-insertion-parallel", "[tetwild_operation]")
         // std::cout<<partition_id[i]<<" ";
         cnt_id[partition_id[i]]++;
     }
-    for(int i=0;i<NUM_THREADS;i++){
-        std::cout<<i<<": "<<cnt_id[i]<<std::endl;
+    for (int i = 0; i < NUM_THREADS; i++) {
+        std::cout << i << ": " << cnt_id[i] << std::endl;
     }
     input_surface.partition_id = partition_id;
 
@@ -123,4 +124,70 @@ TEST_CASE("triangle-insertion-parallel", "[tetwild_operation]")
     wmtk::logger().info("start insertion");
     mesh.triangle_insertion(input_surface);
     wmtk::logger().info("end insertion");
+}
+
+
+TEST_CASE("point-insertion")
+{
+    class PointInserter : public wmtk::ConcurrentTetMesh
+    {
+    public:
+        struct VertexAttributes
+        {
+            Eigen::Vector3d pos;
+            size_t partition_id = 0;
+        };
+        using VertAttCol = wmtk::AttributeCollection<VertexAttributes>;
+        VertAttCol vertex_attrs;
+        PointInserter(
+            const std::vector<Eigen::Vector3d>& _vertex_attribute,
+            const std::vector<std::array<size_t, 4>>& tets,
+            int num_threads = 1)
+        {
+            p_vertex_attrs = &vertex_attrs;
+
+            vertex_attrs.resize(_vertex_attribute.size());
+
+            for (auto i = 0; i < _vertex_attribute.size(); i++)
+                vertex_attrs[i].pos = _vertex_attribute[i];
+
+            init(_vertex_attribute.size(), tets);
+        }
+
+        struct PointInsertCache
+        {
+            Eigen::Vector3d pos;
+            int flag;
+        };
+        tbb::enumerable_thread_specific<PointInsertCache> point_cache;
+
+        // input Tet where the point is.
+        virtual bool single_point_insertion_before(const Tuple& t) override { return true; }
+        virtual bool single_point_insertion_after(std::vector<Tuple>& t) override
+        {
+            if (flag == 0) return
+                {}
+            return true;
+        }
+        std::tuple<Tuple, int> containing_tet(Eigen::Vector3d);
+
+        void insert_point_list(const std::vector<Eigen::Vector3d>& points)
+        {
+            for (auto& p : points) {
+                // 1. find containing tets, use AABB or TetHash
+                auto [t, flag] = containing_tet(p);
+                // 2. change topology.
+                point_cache.local().pos = p;
+                point_cache.local().flag = flag;
+                if (flag == 0) continue; // vert
+                std::vector<Tuple> new_tets;
+                if (flag == 1) split_edge(t, new_tets);
+                if (flag == 2) split_face(t, new_tets);
+                if (flag == 3)
+                    split_tet(t, new_tets);
+                else
+                    assert(false);
+            }
+        }
+    };
 }
