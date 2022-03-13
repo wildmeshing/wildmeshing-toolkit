@@ -12,8 +12,6 @@
 #include "wmtk/auto_table.hpp"
 #include "wmtk/utils/GeoUtils.h"
 #include "wmtk/utils/Logger.hpp"
-#include <atomic>
-#include <random>
 
 #include <igl/remove_duplicate_vertices.h>
 
@@ -1350,6 +1348,7 @@ void tetwild::TetWild::setup_attributes()
             for (size_t vid : vids) {
                 m_vertex_attribute[vid].on_bbox_faces.push_back(on_bbox);
             }
+        }
 
 
         tbb::parallel_for(

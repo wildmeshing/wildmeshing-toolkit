@@ -105,9 +105,11 @@ TEST_CASE("triangle-insertion-parallel", "[tetwild_operation]")
         // std::cout<<partition_id[i]<<" ";
         cnt_id[partition_id[i]]++;
     }
-    for (int i = 0; i < NUM_THREADS; i++) {
-        std::cout << i << ": " << cnt_id[i] << std::endl;
+    for(int i=0;i<NUM_THREADS;i++){
+        std::cout<<i<<": "<<cnt_id[i]<<std::endl;
+    }
     input_surface.partition_id = partition_id;
+
 
     // exit(0);
     //
