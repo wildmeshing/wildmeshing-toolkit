@@ -271,7 +271,7 @@ public:
                 }
 
                 if (stop.load(std::memory_order_acquire)) return;
-                if (cnt_update > stopping_criterion_checking_frequency) {
+                if (cnt_success > stopping_criterion_checking_frequency) {
                     if (stopping_criterion(m)) {
                         stop.store(true);
                         return;

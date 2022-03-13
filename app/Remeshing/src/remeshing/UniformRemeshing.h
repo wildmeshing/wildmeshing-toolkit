@@ -32,6 +32,7 @@ struct VertexAttributes
     Eigen::Vector3d pos;
     // TODO: in fact, partition id should not be vertex attribute, it is a fixed marker to distinguish tuple/operations.
     size_t partition_id;
+    bool freeze = false;
 };
 
 class UniformRemeshing : public wmtk::ConcurrentTriMesh
@@ -55,23 +56,37 @@ public:
             vertex_attrs[i] = {_m_vertex_positions[i], 0};
     }
 
-    void
-    create_mesh(size_t n_vertices, const std::vector<std::array<size_t, 3>>& tris, double eps = 0)
+    void create_mesh(
+        size_t n_vertices,
+        const std::vector<std::array<size_t, 3>>& tris,
+        const std::vector<size_t>& frozen_verts = std::vector<size_t>(),
+        double eps = 0)
     {
         wmtk::ConcurrentTriMesh::create_mesh(n_vertices, tris);
-
+        std::vector<Eigen::Vector3d> V(n_vertices);
+        std::vector<Eigen::Vector3i> F(tris.size());
+        for (auto i = 0; i < V.size(); i++) {
+            V[i] = vertex_attrs[i].pos;
+        }
+        for (int i = 0; i < F.size(); ++i) F[i] << tris[i][0], tris[i][1], tris[i][2];
         if (eps > 0) {
-            std::vector<Eigen::Vector3d> V(n_vertices);
-            std::vector<Eigen::Vector3i> F(tris.size());
-            for (auto i = 0; i < V.size(); i++) {
-                V[i] = vertex_attrs[i].pos;
-            }
-            for (int i = 0; i < F.size(); ++i) F[i] << tris[i][0], tris[i][1], tris[i][2];
             m_envelope.init(V, F, eps);
             m_has_envelope = true;
-        }
+        } else
+            m_envelope.init(V, F, 0.0);
+
+
         partition_mesh();
+        for (auto v : frozen_verts) vertex_attrs[v].freeze = true;
+        for (auto e : get_edges()) {
+            if (is_boundary_edge(e)) {
+                vertex_attrs[e.vid(*this)].freeze = true;
+                vertex_attrs[e.switch_vertex(*this).vid(*this)].freeze = true;
+            }
+        }
     }
+
+
     ~UniformRemeshing() {}
 
     struct PositionInfoCache
@@ -94,7 +109,9 @@ public:
                 std::array<Eigen::Vector3d, 3> tris;
                 auto vs = t.oriented_tri_vertices(*this);
                 for (auto j = 0; j < 3; j++) tris[j] = vertex_attrs[vs[j].vid(*this)].pos;
-                if (m_envelope.is_outside(tris)) return false;
+                if (m_envelope.is_outside(tris)) {
+                    return false;
+                }
             }
         }
         return true;
@@ -112,27 +129,6 @@ public:
 
 
     Eigen::Vector3d tangential_smooth(const Tuple& t);
-
-    // write the collapsed mesh into a obj
-    bool write_triangle_mesh(std::string path)
-    {
-        Eigen::MatrixXd V = Eigen::MatrixXd::Zero(vertex_attrs.size(), 3);
-        for (auto& t : get_vertices()) {
-            auto i = t.vid(*this);
-            V.row(i) = vertex_attrs[i].pos;
-        }
-
-        Eigen::MatrixXi F = Eigen::MatrixXi::Constant(tri_capacity(), 3, -1);
-        for (auto& t : get_faces()) {
-            auto i = t.fid(*this);
-            auto vs = oriented_tri_vertices(t);
-            for (int j = 0; j < 3; j++) {
-                F(i, j) = vs[j].vid(*this);
-            }
-        }
-
-        return igl::write_triangle_mesh(path, V, F);
-    }
 
     bool collapse_before(const Tuple& t) override
     {
@@ -154,6 +150,7 @@ public:
     }
 
     bool split_after(const Tuple& t) override;
+    bool smooth_after(const Tuple& t) override;
 
     double compute_edge_cost_collapse(const TriMesh::Tuple& t, double L) const;
     double compute_edge_cost_split(const TriMesh::Tuple& t, double L) const;
@@ -163,6 +160,7 @@ public:
     bool collapse_remeshing(double L);
     bool swap_remeshing();
     bool uniform_remeshing(double L, int interations);
+    bool write_triangle_mesh(std::string path);
 };
 
 } // namespace remeshing

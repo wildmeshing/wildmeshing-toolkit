@@ -1,6 +1,7 @@
 #include <wmtk/utils/PartitionMesh.h>
 
 #include <igl/remove_unreferenced.h>
+
 namespace wmtk {
 
 constexpr auto _partition_faces = [](auto& m, auto num_partition) {

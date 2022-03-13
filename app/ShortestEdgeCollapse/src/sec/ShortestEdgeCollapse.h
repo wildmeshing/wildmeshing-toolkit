@@ -62,10 +62,15 @@ public:
         }
     }
 
+    void create_mesh_nofreeze(size_t n_vertices, const std::vector<std::array<size_t, 3>>& tris)
+    {
+        wmtk::ConcurrentTriMesh::create_mesh(n_vertices, tris);
+    }
+
     void create_mesh(
         size_t n_vertices,
         const std::vector<std::array<size_t, 3>>& tris,
-        const std::vector<size_t>& frozen_verts,
+        const std::vector<size_t>& frozen_verts = std::vector<size_t>(),
         double eps = 0)
     {
         wmtk::ConcurrentTriMesh::create_mesh(n_vertices, tris);
