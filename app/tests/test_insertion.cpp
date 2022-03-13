@@ -1,6 +1,4 @@
-//
-// Created by Yixin Hu on 1/6/22.
-//
+
 
 #include <TetWild.h>
 #include <igl/write_triangle_mesh.h>
