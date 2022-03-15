@@ -213,13 +213,13 @@ public:
         auto final_queue = tbb::concurrent_priority_queue<Elem>();
 
         auto run_single_queue = [&](auto& Q, int task_id) {
-            ZoneScoped;
+            
             auto ele_in_queue = Elem();
             while ([&]() {
-                ZoneScoped;
+                
                 return Q.try_pop(ele_in_queue);
             }()) {
-                ZoneScoped;
+                
                 auto& [weight, op, tup, retry] = ele_in_queue;
                 if (!tup.is_valid(m)) continue;
                 if (!should_process(
@@ -231,7 +231,7 @@ public:
                     continue; // this can encode, in qslim, recompute(energy) == weight.
                 std::vector<Elem> renewed_elements;
                 {
-                    ZoneScoped;
+                    
                     auto locked_vid = lock_vertices(
                         m,
                         tup,
@@ -258,14 +258,14 @@ public:
                             cnt_fail++;
                         }
                         for (auto& [o, e] : renewed_tuples) {
-                            ZoneScoped;
+                            
                             renewed_elements.emplace_back(priority(m, o, e), o, e, 0);
                         }
                     }
                     operation_cleanup(m); // Maybe use RAII
                 }
                 for (auto& e : renewed_elements) {
-                    ZoneScoped;
+                    
                     Q.emplace(e);
                 }
 

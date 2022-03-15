@@ -14,6 +14,7 @@
 #include <random>
 
 #include <igl/remove_duplicate_vertices.h>
+#include <igl/Timer.h>
 
 #include <fstream>
 #include <unordered_set>
@@ -755,6 +756,9 @@ void tetwild::TetWild::triangle_insertion_stuff(
 
 void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
 {
+    igl::Timer timer;
+    double time;
+    timer.start();
     std::default_random_engine generator;
     std::uniform_real_distribution<double> distribution(0.0,100.0);
     const int EMPTY_INTERSECTION = 0;
@@ -805,9 +809,13 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
             std::make_tuple(rand, 0, face_id));
     }
 
-    for(int i=0;i<NUM_THREADS;i++){
-        std::cout<<i<<": "<<insertion_queues[i].size()<<std::endl;
-    }
+    time = timer.getElapsedTime();
+    wmtk::logger().info("triangle insertion prepare time: {}s", time);
+    // for(int i=0;i<NUM_THREADS;i++){
+    //     std::cout<<i<<": "<<insertion_queues[i].size()<<std::endl;
+    // }
+
+    timer.start();
 
     tbb::task_arena arena(NUM_THREADS);
     tbb::task_group tg;
@@ -824,8 +832,12 @@ void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
 
     // serial dealings
 
+    time = timer.getElapsedTime();
+    wmtk::logger().info("triangle insertion operation time parallel: {}s", time); 
     wmtk::logger().info("expired size: {}", expired_queue.unsafe_size());
     // std::cout<<"expired size: "<<expired_queue.unsafe_size()<<std::endl;
+
+    timer.start();
 
 arena.execute([&expired_queue, &faces, &vertices, &is_matched, this, &tg] {
 
@@ -1227,9 +1239,16 @@ tg.run([&expired_queue, &faces, &vertices, &is_matched, this]{
 arena.execute([&] { tg.wait(); });
 
     //// track surface, bbox, rounding
+    time = timer.getElapsedTime();
+    wmtk::logger().info("triangle insertion operation time parallel cleanup: {}s", time);
 wmtk::logger().info("finished insertion");
 
+    timer.start();
+
     setup_attributes();
+    
+    time = timer.getElapsedTime();
+    wmtk::logger().info("setup attributes time parallel: {}s", time);
 
     wmtk::logger().info("#t {}", tet_capacity());
     wmtk::logger().info("#v {}", vert_capacity());
@@ -1355,7 +1374,7 @@ void tetwild::TetWild::setup_attributes()
 
         //// rounding
         std::atomic_int cnt_round(0);
-        
+
         for (int i=0;i<m_vertex_attribute.m_attributes.size();i++){
             auto v = tuple_from_vertex(i);
             if (round(v)) cnt_round++;

@@ -15,11 +15,15 @@
 #include <tbb/task_arena.h>
 #include <tbb/concurrent_vector.h>
 #include <tbb/parallel_for.h>
+#include <Tracy.hpp>
+
 
 void tetwild::TetWild::mesh_improvement(int max_its)
 {
     ////preprocessing
     // TODO: refactor to eliminate repeated partition.
+    // 
+    ZoneScopedN("meshimprovementmain");
     compute_vertex_partition();
     wmtk::logger().info("========it pre========");
     local_operations({{0, 1, 0, 0}}, false);
@@ -46,6 +50,7 @@ void tetwild::TetWild::mesh_improvement(int max_its)
             if (m == M) {
                 wmtk::logger().info(">>>>adjust_sizing_field...");
                 is_hit_min_edge_length = adjust_sizing_field(max_energy);
+                wmtk::logger().info(">>>>adjust_sizing_field finished...");
                 m = 0;
             }
         } else
@@ -131,12 +136,19 @@ std::tuple<double, double> tetwild::TetWild::local_operations(
 
 bool tetwild::TetWild::adjust_sizing_field(double max_energy)
 {
+    ZoneScoped;
+
+    
+        // ZoneScopedN("adjust_prepare");
     const auto& vertices = get_vertices();
     const auto& tets = get_tets(); // todo: avoid copy!!!
+    std::cout<<"#vertices: "<<vertices.size()<<std::endl;
+    std::cout<<"#tets: "<<tets.size()<<std::endl;
+        
 
     static const Scalar stop_filter_energy = m_params.stop_energy * 0.8;
     Scalar filter_energy =
-        max_energy / 100 > stop_filter_energy ? max_energy / 100 : stop_filter_energy;
+            max_energy / 100 > stop_filter_energy ? max_energy / 100 : stop_filter_energy;
     if (filter_energy > 100) filter_energy = 100;
 
     Scalar recover_scalar = 1.5;
@@ -144,7 +156,7 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
     tbb::concurrent_vector<Scalar> scale_multipliers(m_vertex_attribute.size(), recover_scalar);
     Scalar refine_scalar = 0.5;
     Scalar min_refine_scalar = m_params.l_min / m_params.l;
-
+    
 
     tbb::task_arena arena(NUM_THREADS);
 
@@ -166,19 +178,34 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
         double R = m_params.l * 2;// * sizing_ratio;
 
         std::unordered_map<size_t, double> new_scalars;
+        std::vector<bool> visited(m_vertex_attribute.size(), false);
         //
+    
+        // ZoneScopedN("adj_pushqueue");
         std::queue<size_t> v_queue;
         Vector3d c(0, 0, 0);
         for (int j = 0; j < 4; j++) {
+            // visited[vs[j].vid(*this)] = true;
             v_queue.push(vs[j].vid(*this));
             c += m_vertex_attribute[vs[j].vid(*this)].m_posf;
             new_scalars[vs[j].vid(*this)] = 0;
         }
         c /= 4;
+        // std::cout<<m_vertex_attribute.size()<<std::endl;
+        // std::cout<<vertices.size()<<std::endl;
         //
+        
+            // ZoneScopedN("adj_whileloop");
+        int sum = 0;
+        int adjcnt = 0;
         while (!v_queue.empty()) {
+            sum++;
             size_t vid = v_queue.front();
             v_queue.pop();
+            if(visited[vid]) continue;
+            visited[vid] = true;
+            // if (new_scalars.count(vid)) continue;
+            adjcnt++;
 
             bool is_close = false;
             double dist = (m_vertex_attribute[vid].m_posf - c).norm();
@@ -191,12 +218,17 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
 
             if (!is_close) continue;
 
-            auto vids = get_one_ring_vids_for_vertex(vid);
+            auto vids = get_one_ring_vids_for_vertex_adj(vid,get_one_ring_cache.local());
+            // auto vids = get_one_ring_vids_for_vertex_adj(vid);
             for (size_t n_vid : vids) {
-                if (new_scalars.count(n_vid)) continue;
+                // if (new_scalars.count(n_vid)) continue;
+                if (visited[n_vid]) continue;
                 v_queue.push(n_vid);
             }
         }
+        std::cout<<adjcnt<<std::endl;
+            // ZoneValue(sum);
+        
 
         for (auto& info : new_scalars) {
             if (info.second == 0) continue;

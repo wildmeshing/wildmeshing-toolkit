@@ -13,7 +13,7 @@ void wmtk::ConcurrentTetMesh::init(
 
 int wmtk::ConcurrentTetMesh::release_vertex_mutex_in_stack()
 {
-    ZoneScoped;
+    
     int num_released = 0;
     for (int i = mutex_release_stack.local().size() - 1; i >= 0; i--) {
         unlock_vertex_mutex(mutex_release_stack.local()[i]);
@@ -25,7 +25,7 @@ int wmtk::ConcurrentTetMesh::release_vertex_mutex_in_stack()
 
 bool wmtk::ConcurrentTetMesh::try_set_vertex_mutex_two_ring(const Tuple& v, int threadid)
 {
-    ZoneScoped;
+    
     for (auto v_one_ring : get_one_ring_vertices_for_vertex(v)) {
         if (m_vertex_mutex[v_one_ring.vid(*this)].get_owner() == threadid) continue;
         if (try_set_vertex_mutex(v_one_ring, threadid)) {
@@ -47,19 +47,19 @@ bool wmtk::ConcurrentTetMesh::try_set_vertex_mutex_two_ring(const Tuple& v, int 
 
 bool wmtk::ConcurrentTetMesh::try_set_vertex_mutex_two_ring_vid(const Tuple& v, int threadid)
 {
-    ZoneScoped;
+    
     for (auto v_one_ring : get_one_ring_vids_for_vertex(v.vid(*this), get_one_ring_cache.local())) {
         if (m_vertex_mutex[v_one_ring].get_owner() == threadid) continue;
         if (try_set_vertex_mutex(v_one_ring, threadid)) {
             {
-                ZoneScoped;
+                
                 mutex_release_stack.local().push_back(v_one_ring);
             }
             for (auto v_two_ring :
                  get_one_ring_vids_for_vertex(v_one_ring, get_one_ring_cache.local())) {
                 if (m_vertex_mutex[v_two_ring].get_owner() == threadid) continue;
                 if (try_set_vertex_mutex(v_two_ring, threadid)) {
-                    ZoneScoped;
+                    
                     mutex_release_stack.local().push_back(v_two_ring);
                 } else {
                     return false;
@@ -97,7 +97,7 @@ bool wmtk::ConcurrentTetMesh::try_set_vertex_mutex_two_ring_vid(size_t v, int th
 
 bool wmtk::ConcurrentTetMesh::try_set_edge_mutex_two_ring(const Tuple& e, int threadid)
 {
-    ZoneScoped;
+    
     Tuple v1 = e;
     bool release_flag = false;
 
@@ -155,7 +155,7 @@ bool wmtk::ConcurrentTetMesh::try_set_edge_mutex_two_ring(const Tuple& e, int th
 
 bool wmtk::ConcurrentTetMesh::try_set_face_mutex_two_ring(const Tuple& f, int threadid)
 {
-    ZoneScoped;
+    
     Tuple v1 = f;
     bool release_flag = false;
 

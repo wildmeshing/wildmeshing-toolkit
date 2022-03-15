@@ -38,14 +38,14 @@ private:
 
     bool try_set_vertex_mutex(const Tuple& v, int threadid)
     {
-        ZoneScoped;
+        
         bool got = m_vertex_mutex[v.vid(*this)].trylock();
         if (got) m_vertex_mutex[v.vid(*this)].set_owner(threadid);
         return got;
     }
     bool try_set_vertex_mutex(size_t vid, int threadid)
     {
-        ZoneScoped;
+        
         bool got = m_vertex_mutex[vid].trylock();
         if (got) m_vertex_mutex[vid].set_owner(threadid);
         return got;
@@ -53,19 +53,19 @@ private:
 
     void unlock_vertex_mutex(const Tuple& v)
     {
-        ZoneScoped;
+        
         m_vertex_mutex[v.vid(*this)].unlock();
     }
     void unlock_vertex_mutex(size_t vid)
     {
-        ZoneScoped;
+        
         m_vertex_mutex[vid].unlock();
     }
 
 protected:
     void resize_vertex_mutex(size_t v) override
     {
-        ZoneScoped;
+        
         m_vertex_mutex.grow_to_at_least(v);
     }
 

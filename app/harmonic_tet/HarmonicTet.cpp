@@ -20,7 +20,7 @@ namespace harmonic_tet {
 
 double HarmonicTet::get_quality(const Tuple& loc) const
 {
-    ZoneScoped;
+    
     std::array<double, 12> T;
     auto tups = oriented_tet_vertices(loc);
     for (auto j = 0; j < 4; j++) {
@@ -34,7 +34,7 @@ double HarmonicTet::get_quality(const Tuple& loc) const
 
 double HarmonicTet::get_quality(const std::array<size_t, 4>& vids) const
 {
-    ZoneScoped;
+    
     std::array<double, 12> T;
     for (auto j = 0; j < 4; j++) {
         auto& p = vertex_attrs[vids[j]].pos;
@@ -48,7 +48,7 @@ double HarmonicTet::get_quality(const std::array<size_t, 4>& vids) const
 
 bool HarmonicTet::is_inverted(const Tuple& loc)
 {
-    ZoneScoped;
+    
     std::array<Eigen::Vector3d, 4> ps;
     auto tups = oriented_tet_vertices(loc);
     for (auto j = 0; j < 4; j++) {
@@ -64,7 +64,7 @@ bool HarmonicTet::is_inverted(const Tuple& loc)
 
 bool harmonic_tet::HarmonicTet::smooth_after(const Tuple& t)
 {
-    ZoneScoped;
+    
     wmtk::logger().trace("Gradient Descent iteration for vertex smoothing.");
     auto vid = t.vid(*this);
 
@@ -120,7 +120,7 @@ bool harmonic_tet::HarmonicTet::smooth_after(const Tuple& t)
 
 bool HarmonicTet::swap_edge_before(const Tuple& t)
 {
-    ZoneScoped;
+    
     if (!TetMesh::swap_edge_before(t)) return false;
 
     auto incident_tets = get_incident_tets_for_edge(t);
@@ -134,7 +134,7 @@ bool HarmonicTet::swap_edge_before(const Tuple& t)
 
 bool HarmonicTet::swap_edge_after(const Tuple& t)
 {
-    ZoneScoped;
+    
     if (!TetMesh::swap_edge_after(t)) return false;
 
     // after swap, t points to a face with 2 neighboring tets.
@@ -150,7 +150,7 @@ bool HarmonicTet::swap_edge_after(const Tuple& t)
 
 bool HarmonicTet::swap_face_after(const Tuple& t)
 {
-    ZoneScoped;
+    
     if (!TetMesh::swap_face_after(t)) return false;
 
     auto incident_tets = get_incident_tets_for_edge(t);
@@ -168,7 +168,7 @@ bool HarmonicTet::swap_face_after(const Tuple& t)
 
 void harmonic_tet::HarmonicTet::smooth_all_vertices(bool interior_only)
 {
-    ZoneScoped;
+    
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_vertices()) {
         if (interior_only && !vertex_adjacent_boundary_faces(loc).empty()) continue;
@@ -199,7 +199,7 @@ bool HarmonicTet::invariants(const std::vector<Tuple>& tets)
 
 void HarmonicTet::swap_all_faces(bool parallel)
 {
-    ZoneScoped;
+    
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_faces()) collect_all_ops.emplace_back("face_swap", loc);
     if (parallel) {
@@ -220,7 +220,7 @@ void HarmonicTet::swap_all_faces(bool parallel)
 
 bool HarmonicTet::swap_face_before(const Tuple& t)
 {
-    ZoneScoped;
+    
     if (!TetMesh::swap_face_before(t)) return false;
 
     auto oppo_tet = t.switch_tetrahedron(*this);
@@ -231,7 +231,7 @@ bool HarmonicTet::swap_face_before(const Tuple& t)
 
 void HarmonicTet::output_mesh(std::string file) const
 {
-    ZoneScoped;
+    
     // warning: duplicate code.
     wmtk::MshData msh;
 
@@ -260,7 +260,7 @@ void HarmonicTet::output_mesh(std::string file) const
 }
 
 auto renewal_all = [](const auto& m, auto op, const auto& newt) {
-    ZoneScoped;
+    
     auto optup1 = wmtk::renewal_edges(m, op, newt);
     auto optup2 = wmtk::renewal_faces(m, op, newt);
     for (auto& o : optup2) optup1.emplace_back(o);
@@ -269,7 +269,7 @@ auto renewal_all = [](const auto& m, auto op, const auto& newt) {
 
 
 auto replace = [](auto& arr, auto i, auto j) {
-    ZoneScoped;
+    
     for (auto k = 0; k < arr.size(); k++) {
         if (arr[k] == i) {
             arr[k] = j;
@@ -279,7 +279,7 @@ auto replace = [](auto& arr, auto i, auto j) {
 };
 
 constexpr auto swap_3_2 = [](const std::vector<std::array<size_t, 4>>& tets, auto v0, auto v1) {
-    ZoneScoped;
+    
     auto n0 = -1, n1 = -1, n2 = -1;
     // T0 : n1, n2, v0, *v1*->n0
     // T1: n0, n1, *v0*,v1 -> n2
@@ -307,7 +307,7 @@ constexpr auto swap_3_2 = [](const std::vector<std::array<size_t, 4>>& tets, aut
 };
 constexpr auto swap_2_3 = [](const std::vector<std::array<size_t, 4>>& tets,
                              std::array<size_t, 3> n) {
-    ZoneScoped;
+    
     auto u = std::array<int, 2>{{-1, -1}};
     // T0 : *n0*,n1,n2 v1-> v2
     // T0 : *n1*, v1-> v2
@@ -376,7 +376,7 @@ auto compute_operation_gain =
 
 int HarmonicTet::swap_all()
 {
-    ZoneScoped;
+    
     auto suc = std::atomic<int>(0);
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     collect_all_ops.reserve(tet_capacity() * 4);
@@ -410,7 +410,7 @@ int HarmonicTet::swap_all()
 
 void HarmonicTet::swap_all_edges(bool parallel)
 {
-    ZoneScoped;
+    
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     collect_all_ops.reserve(tet_capacity() * 2);
     for (auto& loc : get_faces()) {

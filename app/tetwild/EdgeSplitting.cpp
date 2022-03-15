@@ -3,11 +3,17 @@
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <igl/Timer.h>
 
 void tetwild::TetWild::split_all_edges()
 {
+    igl::Timer timer;
+    double time;
+    timer.start();
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_split", loc);
+    time = timer.getElapsedTime();
+    wmtk::logger().info("edge split prepare time: {}s", time);
     auto setup_and_execute = [&](auto& executor) {
         executor.renew_neighbor_tuples = wmtk::renewal_simple;
 
@@ -30,14 +36,20 @@ void tetwild::TetWild::split_all_edges()
         executor(*this, collect_all_ops);
     };
     if (NUM_THREADS > 0) {
+        timer.start();
         auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kPartition>();
         executor.lock_vertices = [&](auto& m, const auto& e, int task_id) -> bool {
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };
         setup_and_execute(executor);
+        time = timer.getElapsedTime();
+        wmtk::logger().info("edge split operation time parallel: {}s", time);
     } else {
+        timer.start();
         auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
+        time = timer.getElapsedTime();
+        wmtk::logger().info("edge split operation time serial: {}s", time);
     }
 }
 

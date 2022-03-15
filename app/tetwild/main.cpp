@@ -11,12 +11,15 @@
 #include <igl/Timer.h>
 //#include <wmtk/utils/GeoUtils.h>
 #include <igl/predicates/predicates.h>
+#include <Tracy.hpp>
 
 using namespace wmtk;
 using namespace tetwild;
 
 int main(int argc, char** argv)
 {
+    // 
+    ZoneScopedN("tetwildmain");
     using std::cout;
     using std::endl;
 
