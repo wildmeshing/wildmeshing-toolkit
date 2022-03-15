@@ -32,6 +32,7 @@ target_include_directories(wmtk_tetwild PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/tetwi
 target_link_libraries(wmtk_tetwild PUBLIC
 	wmtk::toolkit
 	wmtk::data
+	wmtk::sec_lib
 	igl::predicates
 	FastEnvelope
 	gmp::gmp
