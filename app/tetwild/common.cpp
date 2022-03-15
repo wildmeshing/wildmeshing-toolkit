@@ -1,6 +1,4 @@
-//
-// Created by Yixin Hu on 1/4/22.
-//
+
 
 #include "common.h"
 
