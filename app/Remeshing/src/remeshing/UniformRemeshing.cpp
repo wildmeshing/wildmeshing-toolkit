@@ -165,6 +165,7 @@ bool UniformRemeshing::collapse_remeshing(double L)
             return -m.compute_edge_cost_collapse(e, L);
         };
         executor.lock_vertices = edge_locker;
+        executor.num_threads = NUM_THREADS;
 
         executor.should_process = [](auto& m, auto& ele) {
             auto& [val, op, e] = ele;
@@ -174,10 +175,10 @@ bool UniformRemeshing::collapse_remeshing(double L)
         executor(*this, collect_all_ops);
     };
     if (NUM_THREADS > 0) {
-        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kPartition>();
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
     }
 
@@ -205,10 +206,10 @@ bool UniformRemeshing::split_remeshing(double L)
         executor(*this, collect_all_ops);
     };
     if (NUM_THREADS > 0) {
-        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kPartition>();
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
     }
 
@@ -223,6 +224,7 @@ bool UniformRemeshing::swap_remeshing()
 
     auto setup_and_execute = [&](auto executor) {
         executor.renew_neighbor_tuples = renew;
+        executor.num_threads = NUM_THREADS;
         executor.priority = [](auto& m, auto op, const Tuple& e) {
             return m.compute_vertex_valence(e);
         };
@@ -235,10 +237,10 @@ bool UniformRemeshing::swap_remeshing()
         executor(*this, collect_all_ops);
     };
     if (NUM_THREADS > 0) {
-        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kPartition>();
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
     }
 
@@ -250,7 +252,7 @@ double area(UniformRemeshing& m, std::array<TriMesh::Tuple, 3>& verts)
                 .cross(m.vertex_attrs[verts[1].vid()].pos - m.vertex_attrs[verts[2].vid()].pos))
                .norm() /
            2.0;
-};
+}
 
 Eigen::Vector3d normal(UniformRemeshing& m, std::array<TriMesh::Tuple, 3>& verts)
 {
@@ -258,6 +260,7 @@ Eigen::Vector3d normal(UniformRemeshing& m, std::array<TriMesh::Tuple, 3>& verts
                 .cross(m.vertex_attrs[verts[1].vid()].pos - m.vertex_attrs[verts[2].vid()].pos))
         .normalized();
 }
+
 Eigen::Vector3d UniformRemeshing::smooth(const TriMesh::Tuple& t)
 {
     auto one_ring_edges = get_one_ring_edges_for_vertex(t);
