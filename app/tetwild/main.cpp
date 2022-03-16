@@ -32,7 +32,7 @@ int main(int argc, char** argv)
     app.add_option("-i,--input", input_path, "Input mesh.");
     app.add_option("-o,--output", output_path, "Output mesh.");
     app.add_option("-j,--jobs", NUM_THREADS, "thread.");
-    int max_its = 80;
+    int max_its = 10;
     app.add_option("--max-its", max_its, "max # its");
     app.add_option("--epsr", input_surface.params.epsr, "relative eps wrt diag of bbox");
     app.add_option("--lr", input_surface.params.lr, "relative ideal edge length wrt diag of bbox");
