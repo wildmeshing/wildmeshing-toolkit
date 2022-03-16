@@ -1,6 +1,3 @@
-//
-// Created by Yixin Hu on 1/4/22.
-//
 
 #include <wmtk/TetMesh.h>
 #include <wmtk/auto_table.hpp>

@@ -18,7 +18,7 @@ bool sec::ShortestEdgeCollapse::invariants(const std::vector<Tuple>& new_tris)
         for (auto& t : new_tris) {
             std::array<Eigen::Vector3d, 3> tris;
             auto vs = t.oriented_tri_vertices(*this);
-            for (auto j = 0; j < 3; j++) tris[j] = vertex_attrs[vs[j].vid()].pos;
+            for (auto j = 0; j < 3; j++) tris[j] = vertex_attrs[vs[j].vid(*this)].pos;
             if (m_envelope.is_outside(tris)) return false;
         }
     }
@@ -29,16 +29,16 @@ bool sec::ShortestEdgeCollapse::write_triangle_mesh(std::string path)
 {
     Eigen::MatrixXd V = Eigen::MatrixXd::Zero(vert_capacity(), 3);
     for (auto& t : get_vertices()) {
-        auto i = t.vid();
+        auto i = t.vid(*this);
         V.row(i) = vertex_attrs[i].pos;
     }
 
     Eigen::MatrixXi F = Eigen::MatrixXi::Constant(tri_capacity(), 3, -1);
     for (auto& t : get_faces()) {
-        auto i = t.fid();
+        auto i = t.fid(*this);
         auto vs = oriented_tri_vertices(t);
         for (int j = 0; j < 3; j++) {
-            F(i, j) = vs[j].vid();
+            F(i, j) = vs[j].vid(*this);
         }
     }
 
@@ -48,10 +48,10 @@ bool sec::ShortestEdgeCollapse::write_triangle_mesh(std::string path)
 bool sec::ShortestEdgeCollapse::collapse_before(const Tuple& t)
 {
     if (!ConcurrentTriMesh::collapse_before(t)) return false;
-    if (vertex_attrs[t.vid()].freeze || vertex_attrs[t.switch_vertex(*this).vid()].freeze)
+    if (vertex_attrs[t.vid(*this)].freeze || vertex_attrs[t.switch_vertex(*this).vid(*this)].freeze)
         return false;
-    position_cache.local().v1p = vertex_attrs[t.vid()].pos;
-    position_cache.local().v2p = vertex_attrs[t.switch_vertex(*this).vid()].pos;
+    position_cache.local().v1p = vertex_attrs[t.vid(*this)].pos;
+    position_cache.local().v2p = vertex_attrs[t.switch_vertex(*this).vid(*this)].pos;
     return true;
 }
 
@@ -59,7 +59,7 @@ bool sec::ShortestEdgeCollapse::collapse_before(const Tuple& t)
 bool sec::ShortestEdgeCollapse::collapse_after(const TriMesh::Tuple& t)
 {
     const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
-    auto vid = t.vid();
+    auto vid = t.vid(*this);
     vertex_attrs[vid].pos = p;
 
     return true;
@@ -74,7 +74,7 @@ std::vector<TriMesh::Tuple> sec::ShortestEdgeCollapse::new_edges_after(
 
     for (auto t : tris) {
         for (auto j = 0; j < 3; j++) {
-            new_edges.push_back(tuple_from_edge(t.fid(), j));
+            new_edges.push_back(tuple_from_edge(t.fid(*this), j));
         }
     }
     wmtk::unique_edge_tuples(*this, new_edges);
@@ -83,6 +83,7 @@ std::vector<TriMesh::Tuple> sec::ShortestEdgeCollapse::new_edges_after(
 
 bool sec::ShortestEdgeCollapse::collapse_shortest(int target_vert_number)
 {
+    size_t initial_size = get_vertices().size();
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     int starting_num = get_vertices().size();
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_collapse", loc);
@@ -95,7 +96,7 @@ bool sec::ShortestEdgeCollapse::collapse_shortest(int target_vert_number)
     };
     auto measure_len2 = [](auto& m, auto op, const Tuple& new_e) {
         auto len2 =
-            (m.vertex_attrs[new_e.vid()].pos - m.vertex_attrs[new_e.switch_vertex(m).vid()].pos)
+            (m.vertex_attrs[new_e.vid(m)].pos - m.vertex_attrs[new_e.switch_vertex(m).vid(m)].pos)
                 .squaredNorm();
         return -len2;
     };
@@ -103,9 +104,9 @@ bool sec::ShortestEdgeCollapse::collapse_shortest(int target_vert_number)
         executor.num_threads = NUM_THREADS;
         executor.renew_neighbor_tuples = renew;
         executor.priority = measure_len2;
-        executor.stopping_criterion_checking_frequency = std::numeric_limits<int>::max();
         executor.stopping_criterion_checking_frequency =
-            target_vert_number > 0 ? target_vert_number - 1 : std::numeric_limits<int>::max();
+            target_vert_number > 0 ? (initial_size - target_vert_number - 1)
+                                   : std::numeric_limits<int>::max();
         executor.stopping_criterion = [](auto& m) { return true; };
         executor(*this, collect_all_ops);
     };

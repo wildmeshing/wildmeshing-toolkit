@@ -43,34 +43,6 @@ target_compile_options(tetwild PRIVATE "-rdynamic")
 target_link_libraries(tetwild PUBLIC wmtk::tetwild)
 wmtk_copy_dll(tetwild)
 
-################################################################################
-# Edge Operations 2D
-################################################################################
-
-add_library(wmtk_edge_operations
-	#EdgeOperations2d/QEC.cpp
-	EdgeOperations2d/EdgeOperations2d.h
-	EdgeOperations2d/main.cpp
-
-	EdgeOperations2d/ShortestEdgeCollapse.cpp
-	EdgeOperations2d/AdaptiveRemeshing.cpp
-	EdgeOperations2d/QEC.cpp
-)
-add_library(wmtk::edge_operations ALIAS wmtk_edge_operations)
-
-target_link_libraries(wmtk_edge_operations PUBLIC
-	wmtk::toolkit
-	wmtk::data
-	igl::predicates
-	FastEnvelope
-)
-target_include_directories(wmtk_edge_operations PUBLIC EdgeOperations2d)
-
-
-add_executable(edge_operations EdgeOperations2d/main.cpp)
-target_link_libraries(edge_operations PUBLIC wmtk::edge_operations)
-wmtk_copy_dll(edge_operations)
-
 # Harmonic Triangulations for TetMesh [Alexa2019]
 ################################################################################
 
@@ -105,3 +77,5 @@ add_subdirectory(tests)
 add_subdirectory(Remeshing)
 
 add_subdirectory(ShortestEdgeCollapse)
+
+add_subdirectory(QSLIM)

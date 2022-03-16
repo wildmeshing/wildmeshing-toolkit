@@ -17,7 +17,6 @@
 
 namespace harmonic_tet {
 
-
 double HarmonicTet::get_quality(const Tuple& loc) const
 {
     
@@ -142,7 +141,7 @@ bool HarmonicTet::swap_edge_after(const Tuple& t)
     assert(oppo_tet.has_value() && "Should not swap boundary.");
 
     auto total_energy = get_quality(t) + get_quality(*oppo_tet);
-    wmtk::logger().debug("energy {} {}", edgeswap_cache.local().total_energy, total_energy);
+    wmtk::logger().trace("energy {} {}", edgeswap_cache.local().total_energy, total_energy);
 
     if (total_energy > edgeswap_cache.local().total_energy) return false;
     return true;
@@ -190,7 +189,6 @@ void harmonic_tet::HarmonicTet::smooth_all_vertices(bool interior_only)
 
 bool HarmonicTet::invariants(const std::vector<Tuple>& tets)
 {
-    return true;
     for (auto& t : tets) {
         if (is_inverted(t)) return false;
     }
@@ -412,18 +410,15 @@ void HarmonicTet::swap_all_edges(bool parallel)
 {
     
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
-    collect_all_ops.reserve(tet_capacity() * 2);
-    for (auto& loc : get_faces()) {
-        auto gain = compute_operation_gain(*this, std::string("face_swap"), loc);
-        if (gain > 0) {
-            spdlog::critical("wrong {}", gain);
-            exit(1);
-        }
-    }
-    for (auto& loc : get_edges()) {
-        if (compute_operation_gain(*this, std::string("edge_swap"), loc) > 0)
-            collect_all_ops.emplace_back("edge_swap", loc);
-    }
+
+    auto collect_tuples = tbb::concurrent_vector<Tuple>();
+    for_each_edge([&](auto& tup) {
+        if (compute_operation_gain(*this, std::string("edge_swap"), tup) > 0)
+            collect_tuples.emplace_back(tup);
+    });
+    collect_all_ops.reserve(collect_tuples.size());
+    for (auto& t : collect_tuples) collect_all_ops.emplace_back("edge_swap", t);
+
     auto setup_and_execute = [&](auto& executor) {
         executor.renew_neighbor_tuples = [](const auto& m, auto op, const auto& newt) {
             std::set<size_t> eids;
@@ -442,6 +437,7 @@ void HarmonicTet::swap_all_edges(bool parallel)
         };
         executor(*this, collect_all_ops);
     };
+
     if (parallel) {
         auto executor = wmtk::ExecutePass<HarmonicTet, wmtk::ExecutionPolicy::kPartition>();
         executor.num_threads = NUM_THREADS;

@@ -1,6 +1,4 @@
-//
-// Created by Yixin Hu on 1/6/22.
-//
+
 
 #include <TetWild.h>
 #include <igl/write_triangle_mesh.h>
@@ -69,7 +67,7 @@ TEST_CASE("triangle-insertion-parallel", "[tetwild_operation]")
 {
     Eigen::MatrixXd V;
     Eigen::MatrixXd F;
-    std::string input_path = WMT_DATA_DIR "/1181082.stl";
+    std::string input_path = WMT_DATA_DIR "/Octocat.obj";
     igl::read_triangle_mesh(input_path, V, F);
     wmtk::logger().info("Read Mesh V={}, F={}", V.rows(), F.rows());
 
@@ -86,7 +84,7 @@ TEST_CASE("triangle-insertion-parallel", "[tetwild_operation]")
         }
     }
 
-    int NUM_THREADS = 32;
+    int NUM_THREADS = 16;
 
     tetwild::TetWild::InputSurface input_surface;
     input_surface.params.lr = 1 / 30.0;

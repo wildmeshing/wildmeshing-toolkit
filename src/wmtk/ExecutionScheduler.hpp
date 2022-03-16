@@ -109,7 +109,7 @@ struct ExecutePass
                      else
                          return {};
                  }},
-                  {"edge_swap_44",
+                {"edge_swap_44",
                  [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
                      std::vector<Tuple> ret;
                      if (m.swap_edge_44(t, ret))
@@ -197,7 +197,7 @@ private:
             return m.get_partition_id(e);
         else if constexpr (std::is_base_of<wmtk::TriMesh, AppMesh>::value) // TODO: make same
                                                                            // interface.
-            return m.vertex_attrs[e.vid()].partition_id; // TODO: this is temporary.
+            return m.vertex_attrs[e.vid(m)].partition_id; // TODO: this is temporary.
         return 0;
     }
 
@@ -227,8 +227,9 @@ public:
                         std::tuple<double, Op, Tuple>(
                             std::get<0>(ele_in_queue),
                             std::get<1>(ele_in_queue),
-                            std::get<2>(ele_in_queue))))
-                    continue; // this can encode, in qslim, recompute(energy) == weight.
+                            std::get<2>(ele_in_queue)))) {
+                    continue;
+                } // this can encode, in qslim, recompute(energy) == weight.
                 std::vector<Elem> renewed_elements;
                 {
                     
@@ -270,7 +271,7 @@ public:
                 }
 
                 if (stop.load(std::memory_order_acquire)) return;
-                if (cnt_update > stopping_criterion_checking_frequency) {
+                if (cnt_success > stopping_criterion_checking_frequency) {
                     if (stopping_criterion(m)) {
                         stop.store(true);
                         return;
