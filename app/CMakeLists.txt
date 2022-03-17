@@ -33,6 +33,7 @@ target_link_libraries(wmtk_tetwild PUBLIC
 	Tracy::TracyClient
 	wmtk::toolkit
 	wmtk::data
+	wmtk::sec_lib
 	igl::predicates
 	FastEnvelope
 	gmp::gmp
