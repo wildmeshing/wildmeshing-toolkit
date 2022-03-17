@@ -8,7 +8,7 @@
 namespace wmtk {
 void unique_edge_tuples(const TetMesh& m, std::vector<TetMesh::Tuple>& edges)
 {
-    ZoneScoped;
+    
     auto edge_ids = std::vector<size_t>();
     for (auto& e : edges) edge_ids.push_back(e.eid(m));
     std::sort(edge_ids.begin(), edge_ids.end());
@@ -21,7 +21,7 @@ void unique_edge_tuples(const TetMesh& m, std::vector<TetMesh::Tuple>& edges)
 
 void unique_edge_tuples(const TriMesh& m, std::vector<TriMesh::Tuple>& edges)
 {
-    ZoneScoped;
+    
     std::vector<size_t> all_eids;
     for (auto e : edges) {
         all_eids.emplace_back(e.eid(m));
@@ -35,7 +35,7 @@ void unique_edge_tuples(const TriMesh& m, std::vector<TriMesh::Tuple>& edges)
 
 void unique_face_tuples(const TetMesh& m, std::vector<TetMesh::Tuple>& faces)
 {
-    ZoneScoped;
+    
     std::stable_sort(
         faces.begin(),
         faces.end(),
@@ -53,7 +53,7 @@ void unique_face_tuples(const TetMesh& m, std::vector<TetMesh::Tuple>& faces)
 
 void unique_directed_edge_tuples(const TetMesh& m, std::vector<TetMesh::Tuple>& edges)
 {
-    ZoneScoped;
+    
     std::stable_sort(
         edges.begin(),
         edges.end(),

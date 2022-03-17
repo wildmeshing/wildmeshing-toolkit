@@ -6,10 +6,14 @@
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <igl/Timer.h>
 
 
 void tetwild::TetWild::collapse_all_edges(bool is_limit_length)
 {
+    igl::Timer timer;
+    double time;
+    timer.start();
     collapse_cache.local().is_limit_length = is_limit_length;
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_edges()) {
@@ -18,6 +22,8 @@ void tetwild::TetWild::collapse_all_edges(bool is_limit_length)
     }
     auto collect_failure_ops = tbb::concurrent_vector<std::pair<std::string, Tuple>>();
     std::atomic_int count_success = 0;
+    time = timer.getElapsedTime();
+    wmtk::logger().info("edge collapse prepare time: {}s", time);
     auto setup_and_execute = [&](auto& executor) {
         executor.renew_neighbor_tuples = [&](const auto& m, auto op, const auto& newts) {
             count_success++;
@@ -63,14 +69,20 @@ void tetwild::TetWild::collapse_all_edges(bool is_limit_length)
         } while (count_success.load(std::memory_order_acquire) > 0);
     };
     if (NUM_THREADS > 0) {
+        timer.start();
         auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kPartition>();
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };
         setup_and_execute(executor);
+        time = timer.getElapsedTime();
+        wmtk::logger().info("edge collapse operation time parallel: {}s", time);
     } else {
+        timer.start();
         auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
+        time = timer.getElapsedTime();
+        wmtk::logger().info("edge collapse operation time serial: {}s", time);
     }
 }
 

@@ -6,6 +6,7 @@
 #include <wmtk/utils/Logger.hpp>
 #include "spdlog/spdlog.h"
 #include "wmtk/utils/TupleUtils.hpp"
+#include <igl/Timer.h>
 
 #include <cassert>
 
@@ -66,8 +67,13 @@ auto tracker_assign_after =
 
 void tetwild::TetWild::swap_all_edges()
 {
+    igl::Timer timer;
+    double time;
+    timer.start();
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_swap", loc);
+    time = timer.getElapsedTime();
+    wmtk::logger().info("edge swap prepare time: {}s", time);
     auto setup_and_execute = [&](auto& executor) {
         executor.renew_neighbor_tuples = wmtk::renewal_edges;
         executor.priority = [&](auto& m, auto op, auto& t) { return m.get_length2(t); };
@@ -75,21 +81,32 @@ void tetwild::TetWild::swap_all_edges()
         executor(*this, collect_all_ops);
     };
     if (NUM_THREADS > 0) {
+        timer.start();
         auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kPartition>();
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };
         setup_and_execute(executor);
+        time = timer.getElapsedTime();
+        wmtk::logger().info("edge swap operation time parallel: {}s", time);
     } else {
+        timer.start();
         auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
+        time = timer.getElapsedTime();
+        wmtk::logger().info("edge swap operation time serial: {}s", time);
     }
 }
 
 void tetwild::TetWild::swap_all_faces()
 {
+    igl::Timer timer;
+    double time;
+    timer.start();
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("face_swap", loc);
+    time = timer.getElapsedTime();
+    wmtk::logger().info("face swap prepare time: {}s", time);
     auto setup_and_execute = [&](auto& executor) {
         executor.renew_neighbor_tuples = wmtk::renewal_faces;
         executor.priority = [](auto& m, auto op, auto& t) { return m.get_length2(t); };
@@ -97,14 +114,20 @@ void tetwild::TetWild::swap_all_faces()
         executor(*this, collect_all_ops);
     };
     if (NUM_THREADS > 0) {
+        timer.start();
         auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kPartition>();
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
             return m.try_set_face_mutex_two_ring(e, task_id);
         };
         setup_and_execute(executor);
+        time = timer.getElapsedTime();
+        wmtk::logger().info("face swap operation time parallel: {}s", time);
     } else {
+        timer.start();
         auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
+        time = timer.getElapsedTime();
+        wmtk::logger().info("face swap operation time serial: {}s", time);
     }
 }
 
@@ -204,8 +227,13 @@ bool tetwild::TetWild::swap_face_after(const Tuple& t)
 
 void tetwild::TetWild::swap_all_edges_44()
 {
+    igl::Timer timer;
+    double time;
+    timer.start();
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_swap_44", loc);
+    time = timer.getElapsedTime();
+    wmtk::logger().info("edge swap 44 prepare time: {}s", time);
     auto setup_and_execute = [&](auto& executor) {
         executor.renew_neighbor_tuples = wmtk::renewal_edges;
         executor.priority = [&](auto& m, auto op, auto& t) { return m.get_length2(t); };
@@ -213,14 +241,20 @@ void tetwild::TetWild::swap_all_edges_44()
         executor(*this, collect_all_ops);
     };
     if (NUM_THREADS > 0) {
+        timer.start();
         auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kPartition>();
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };
         setup_and_execute(executor);
+        time = timer.getElapsedTime();
+        wmtk::logger().info("edge swap 44 operation time parallel: {}s", time);
     } else {
+        timer.start();
         auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
+        time = timer.getElapsedTime();
+        wmtk::logger().info("edge swap 44 operation time serial: {}s", time);
     }
 }
 

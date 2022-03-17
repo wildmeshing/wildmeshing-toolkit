@@ -32,7 +32,7 @@ FetchContent_MakeAvailable(tracy)
 
 find_package(Threads REQUIRED)
 
-add_library(TracyClient
+add_library(TracyClient SHARED
     ${tracy_SOURCE_DIR}/TracyClient.cpp
     ${tracy_SOURCE_DIR}/Tracy.hpp
 )
@@ -74,10 +74,10 @@ set_option(TRACY_NO_SAMPLING "Disable call stack sampling" OFF)
 set_option(TRACY_NO_VERIFY "Disable zone validation for C API" OFF)
 set_option(TRACY_NO_VSYNC_CAPTURE "Disable capture of hardware Vsync events" OFF)
 
-if(BUILD_SHARED_LIBS)
+# if(BUILD_SHARED_LIBS)
     target_compile_definitions(TracyClient PRIVATE TRACY_EXPORTS)
     target_compile_definitions(TracyClient PUBLIC TRACY_IMPORTS)
-endif()
+# endif()
 
 ################################################################################
 # Global flags
@@ -104,5 +104,6 @@ if(TRACED_ENABLE)
     )
     tracy_filter_flags(TRACY_GLOBAL_FLAGS)
     message(STATUS "Adding global flags: ${TRACY_GLOBAL_FLAGS}")
-    add_compile_options(${TRACY_GLOBAL_FLAGS})
+    # add_compile_options(${TRACY_GLOBAL_FLAGS})
+    target_compile_options(TracyClient PUBLIC ${TRACY_GLOBAL_FLAGS})
 endif()
