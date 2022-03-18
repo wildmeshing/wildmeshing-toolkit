@@ -58,7 +58,7 @@ int main(int argc, char** argv)
     }
     //    input_surface.params.lr = 1 / 15.0;
     input_surface.init(vertices, faces);
-    input_surface.remove_duplicates();
+    input_surface.remove_duplicates(input_surface.params.diag_l);
 
     Eigen::MatrixXd new_F(input_surface.faces.size(), 3);
     for (int i = 0; i < input_surface.faces.size(); i++) {

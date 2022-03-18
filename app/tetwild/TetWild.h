@@ -176,13 +176,14 @@ public:
             params.init(min, max);
         }
 
-        bool remove_duplicates(); // inplace func
+        bool remove_duplicates(double); // inplace func
     };
 
     struct TriangleInsertionInfoGlobalCache
     {
         // global info: throughout the whole insertion
-        InputSurface input_surface;
+        std::vector<Vector3d> input_vertices;
+        std::vector<std::array<size_t, 3>> input_faces;
         tbb::concurrent_map<std::array<size_t, 3>, std::vector<int>> tet_face_tags;
         tbb::concurrent_vector<bool> is_matched;
     };
@@ -235,16 +236,18 @@ public:
     tbb::enumerable_thread_specific<SwapInfoCache> swap_cache;
 
 
-    void construct_background_mesh(const InputSurface& input_surface);
+    void construct_background_mesh(const std::vector<Eigen::Vector3d>& vertices);
     void match_insertion_faces(
-        const InputSurface& input_surface,
+        const std::vector<Vector3d>& vertices,
+        const std::vector<std::array<size_t, 3>>& faces,
         tbb::concurrent_vector<bool>& is_matched);
     void setup_attributes();
     //
     void add_tet_centroid(const Tuple& t, size_t vid) override;
     //
     void triangle_insertion_stuff(
-        std::vector<tbb::concurrent_priority_queue<std::tuple<double, int, size_t>>>& insertion_queues,
+        std::vector<tbb::concurrent_priority_queue<std::tuple<double, int, size_t>>>&
+            insertion_queues,
         tbb::concurrent_queue<size_t>& expired_queue,
         int task_id);
     void triangle_insertion(const InputSurface& input_surface);
@@ -299,8 +302,7 @@ public:
     std::vector<std::array<size_t, 3>> get_faces_by_condition(
         std::function<bool(const FaceAttributes&)> cond);
 
-    bool invariants(const std::vector<Tuple>& t)
-        override; // this is now automatically checked
+    bool invariants(const std::vector<Tuple>& t) override; // this is now automatically checked
 
     double get_length2(const Tuple& loc) const;
     // debug use

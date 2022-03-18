@@ -233,16 +233,16 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
 
 void tetwild::TetWild::filter_outside(bool remove_ouside)
 {
-    Eigen::MatrixXd V(triangle_insertion_global_cache.input_surface.vertices.size(), 3);
-    Eigen::MatrixXi F(triangle_insertion_global_cache.input_surface.faces.size(), 3);
+    Eigen::MatrixXd V(triangle_insertion_global_cache.input_vertices.size(), 3);
+    Eigen::MatrixXi F(triangle_insertion_global_cache.input_faces.size(), 3);
 
     for (int i = 0; i < V.rows(); i++) {
-        V.row(i) = triangle_insertion_global_cache.input_surface.vertices[i];
+        V.row(i) = triangle_insertion_global_cache.input_vertices[i];
     }
     for (int i = 0; i < F.rows(); i++) {
-        F.row(i) << triangle_insertion_global_cache.input_surface.faces[i][0],
-            triangle_insertion_global_cache.input_surface.faces[i][1],
-            triangle_insertion_global_cache.input_surface.faces[i][2];
+        F.row(i) << triangle_insertion_global_cache.input_faces[i][0],
+            triangle_insertion_global_cache.input_faces[i][1],
+            triangle_insertion_global_cache.input_faces[i][2];
     }
 
     const auto& tets = get_tets(); // todo: avoid copy!!!
