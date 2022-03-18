@@ -177,7 +177,7 @@ public:
 
         friend bool operator==(const VertexConnectivity& l, const VertexConnectivity& r)
         {
-            ZoneScoped;
+            
             return std::tie(l.m_conn_tets, l.m_is_removed) ==
                    std::tie(r.m_conn_tets, r.m_is_removed); // keep the same order
         }
@@ -215,7 +215,7 @@ public:
 
         int find(size_t v_id) const
         {
-            ZoneScoped;
+            
             for (int j = 0; j < 4; j++) {
                 if (v_id == m_indices[j]) return j;
             }
@@ -224,7 +224,7 @@ public:
 
         int find_local_edge(size_t v1_id, size_t v2_id) const
         {
-            ZoneScoped;
+            
             std::array<int, 2> e;
             for (int j = 0; j < 4; j++) {
                 if (v1_id == m_indices[j])
@@ -241,7 +241,7 @@ public:
 
         int find_local_face(size_t v1_id, size_t v2_id, size_t v3_id) const
         {
-            ZoneScoped;
+            
             std::array<int, 3> f;
             for (int j = 0; j < 4; j++) {
                 if (v1_id == m_indices[j])
@@ -260,7 +260,7 @@ public:
 
         friend bool operator==(const TetrahedronConnectivity& l, const TetrahedronConnectivity& r)
         {
-            ZoneScoped;
+            
             return std::tie(l.m_indices, l.m_is_removed, l.hash) ==
                    std::tie(r.m_indices, r.m_is_removed, r.hash); // keep the same order
         }
@@ -509,6 +509,8 @@ public:
     std::vector<Tuple> get_one_ring_vertices_for_vertex(const Tuple& t) const;
     std::vector<size_t> get_one_ring_vids_for_vertex(size_t vid, std::vector<size_t>& cache);
     std::vector<size_t> get_one_ring_vids_for_vertex(size_t vid) const;
+    std::vector<size_t> get_one_ring_vids_for_vertex_adj(size_t vid) const;
+    std::vector<size_t> get_one_ring_vids_for_vertex_adj(size_t vid, std::vector<size_t>& cache);
 
     /**
      * @brief Get the incident tets for edge

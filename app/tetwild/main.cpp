@@ -2,21 +2,29 @@
 #include <igl/write_triangle_mesh.h>
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/Partitioning.h>
-
 #include <CLI/CLI.hpp>
+#include <wmtk/utils/ManifoldUtils.hpp>
+
 //#include <catch2/catch.hpp>
 #include "spdlog/common.h"
 
-#include <igl/read_triangle_mesh.h>
 #include <igl/Timer.h>
+#include <igl/is_edge_manifold.h>
+#include <igl/is_vertex_manifold.h>
+#include <igl/read_triangle_mesh.h>
+#include <igl/remove_duplicate_vertices.h>
 //#include <wmtk/utils/GeoUtils.h>
 #include <igl/predicates/predicates.h>
+#include <Tracy.hpp>
+#include <sec/ShortestEdgeCollapse.h>
 
 using namespace wmtk;
 using namespace tetwild;
 
 int main(int argc, char** argv)
 {
+    // 
+    ZoneScopedN("tetwildmain");
     using std::cout;
     using std::endl;
 
@@ -29,7 +37,7 @@ int main(int argc, char** argv)
     app.add_option("-i,--input", input_path, "Input mesh.");
     app.add_option("-o,--output", output_path, "Output mesh.");
     app.add_option("-j,--jobs", NUM_THREADS, "thread.");
-    int max_its = 80;
+    int max_its = 10;
     app.add_option("--max-its", max_its, "max # its");
     app.add_option("--epsr", input_surface.params.epsr, "relative eps wrt diag of bbox");
     app.add_option("--lr", input_surface.params.lr, "relative ideal edge length wrt diag of bbox");
@@ -38,52 +46,82 @@ int main(int argc, char** argv)
     Eigen::MatrixXd V;
     Eigen::MatrixXd F;
     igl::read_triangle_mesh(input_path, V, F);
-    cout << V.rows() << " " << F.rows() << endl;
 
-    igl::Timer timer;
-    timer.start();
+    Eigen::VectorXi SVI, SVJ;
+    Eigen::MatrixXd temp_V = V; // for STL file
+    igl::remove_duplicate_vertices(temp_V, 0, V, SVI, SVJ);
+    for (int i = 0; i < F.rows(); i++)
+        for (int j : {0, 1, 2}) F(i, j) = SVJ[F(i, j)];
 
-    /////////input
-    std::vector<Vector3d> vertices(V.rows());
-    std::vector<std::array<size_t, 3>> faces(F.rows());
+    std::vector<Eigen::Vector3d> v(V.rows());
+    std::vector<std::array<size_t, 3>> tri(F.rows());
     for (int i = 0; i < V.rows(); i++) {
-        vertices[i] = V.row(i);
+        v[i] = V.row(i);
     }
-    std::vector<fastEnvelope::Vector3i> env_faces(F.rows()); // todo: add new api for envelope
     for (int i = 0; i < F.rows(); i++) {
+        for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
+    }
+
+    const Eigen::MatrixXd box_min = V.colwise().minCoeff();
+    const Eigen::MatrixXd box_max = V.colwise().maxCoeff();
+    const double diag = (box_max - box_min).norm();
+
+    const double envelope_size = input_surface.params.epsr * diag;
+    Eigen::VectorXi dummy;
+    std::vector<size_t> modified_v;
+    if (!igl::is_edge_manifold(F) || !igl::is_vertex_manifold(F, dummy)) {
+        auto v1 = v;
+        auto tri1 = tri;
+        wmtk::separate_to_manifold(v1, tri1, v, tri, modified_v);
+    }
+
+    sec::ShortestEdgeCollapse m(v, NUM_THREADS);
+    m.create_mesh(v.size(), tri, modified_v, envelope_size);
+    assert(m.check_mesh_connectivity_validity());
+    wmtk::logger().info("input {} simplification", input_path);
+    int target_verts = 0;
+
+    m.collapse_shortest(target_verts);
+    m.consolidate_mesh();
+    m.write_triangle_mesh("tetwild_input_simp.obj");
+
+    // initiate the tetwild mesh using the original envelop
+    tetwild::TetWild mesh(input_surface.params, m.m_envelope, NUM_THREADS);
+
+    //// get the simplified input
+    Eigen::MatrixXd Vsimp = Eigen::MatrixXd::Zero(m.vert_capacity(), 3);
+    Eigen::MatrixXi Fsimp = Eigen::MatrixXi::Constant(m.tri_capacity(), 3, -1);
+    std::vector<Vector3d> vsimp(Vsimp.rows());
+    std::vector<std::array<size_t, 3>> fsimp(Fsimp.rows());
+    for (auto& t : m.get_vertices()) {
+        auto i = t.vid(m);
+        Vsimp.row(i) = m.vertex_attrs[i].pos;
+        vsimp[i] = Vsimp.row(i);
+    }
+
+    for (auto& t : m.get_faces()) {
+        auto i = t.fid(m);
+        auto vs = m.oriented_tri_vertices(t);
         for (int j = 0; j < 3; j++) {
-            faces[i][j] = F(i, j);
-            env_faces[i][j] = F(i, j);
+            Fsimp(i, j) = vs[j].vid(m);
+            fsimp[i][j] = Fsimp(i, j);
         }
     }
-    //    input_surface.params.lr = 1 / 15.0;
-    input_surface.init(vertices, faces);
-    input_surface.remove_duplicates(input_surface.params.diag_l);
+    input_surface.init(vsimp, fsimp);
 
-    Eigen::MatrixXd new_F(input_surface.faces.size(), 3);
-    for (int i = 0; i < input_surface.faces.size(); i++) {
-        new_F(i, 0) = input_surface.faces[i][0];
-        new_F(i, 1) = input_surface.faces[i][1];
-        new_F(i, 2) = input_surface.faces[i][2];
-    }
-    auto partitioned_v = partition_mesh_vertices(new_F, NUM_THREADS);
+    auto partitioned_v = partition_mesh_vertices(Fsimp, NUM_THREADS);
 
     std::vector<int> partition_id(partitioned_v.rows());
     for (int i = 0; i < partitioned_v.rows(); i++) {
         partition_id[i] = partitioned_v(i, 0);
     }
     input_surface.partition_id = partition_id;
-    //
-    fastEnvelope::FastEnvelope envelope;
-    wmtk::logger().info("input_surface.params.eps {}", input_surface.params.eps);
-    envelope.init(vertices, env_faces, input_surface.params.eps);
-    //
-    tetwild::TetWild mesh(input_surface.params, envelope, NUM_THREADS);
+    /////////////////////////////////////////////////////
 
-    /////////triangle insertion
+    igl::Timer timer;
+    timer.start();
+    /////////triangle insertion with the simplified mesh
     mesh.triangle_insertion(input_surface);
-    //    mesh.check_attributes();
-
     /////////mesh improvement
     mesh.mesh_improvement(max_its);
     double time = timer.getElapsedTime();
@@ -101,7 +139,6 @@ int main(int argc, char** argv)
     fout << "time: " << time << endl;
     fout.close();
 
-    //    mesh.output_faces(output_path+"surface.obj", [](auto& attr) { return attr.m_is_surface_fs == true; }); mesh.output_faces("bbox.obj", [](auto& attr) { return attr.m_is_bbox_fs >= 0; });
     mesh.output_mesh(output_path + "_final.msh");
 
     {

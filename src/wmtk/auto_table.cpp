@@ -1,10 +1,3 @@
-// This file is part of fTetWild, a software for generating tetrahedral meshes.
-//
-// Copyright (C) 2019 Teseo Schneider <teseo.schneider@nyu.edu>
-// This Source Code Form is subject to the terms of the Mozilla Public License
-// v. 2.0. If a copy of the MPL was not distributed with this file, You can
-// obtain one at http://mozilla.org/MPL/2.0/.
-//
 
 #include "auto_table.hpp"
 
@@ -1639,7 +1632,7 @@ const std::vector<std::vector<Eigen::Vector4i>>& CutTable::get_tet_confs(const i
 
 const std::vector<std::vector<Eigen::Vector2i>>& CutTable::get_diag_confs(const int idx)
 {
-	using namespace Eigen;
+    using namespace Eigen;
 
     static const std::array<std::vector<std::vector<Vector2i>>, 64> table = {{
 
@@ -3656,7 +3649,7 @@ const std::vector<std::vector<std::array<bool, 4>>>& CutTable::get_surface_conf(
 
 const std::vector<std::vector<Eigen::Vector4i>>& CutTable::get_face_id_conf(const int idx)
 {
-	using namespace Eigen;
+    using namespace Eigen;
 
     static const std::array<std::vector<std::vector<Vector4i>>, 64> table = {{
 
