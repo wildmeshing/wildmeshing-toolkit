@@ -177,7 +177,6 @@ public:
 
         friend bool operator==(const VertexConnectivity& l, const VertexConnectivity& r)
         {
-            
             return std::tie(l.m_conn_tets, l.m_is_removed) ==
                    std::tie(r.m_conn_tets, r.m_is_removed); // keep the same order
         }
@@ -215,7 +214,6 @@ public:
 
         int find(size_t v_id) const
         {
-            
             for (int j = 0; j < 4; j++) {
                 if (v_id == m_indices[j]) return j;
             }
@@ -224,7 +222,6 @@ public:
 
         int find_local_edge(size_t v1_id, size_t v2_id) const
         {
-            
             std::array<int, 2> e;
             for (int j = 0; j < 4; j++) {
                 if (v1_id == m_indices[j])
@@ -241,7 +238,6 @@ public:
 
         int find_local_face(size_t v1_id, size_t v2_id, size_t v3_id) const
         {
-            
             std::array<int, 3> f;
             for (int j = 0; j < 4; j++) {
                 if (v1_id == m_indices[j])
@@ -260,7 +256,6 @@ public:
 
         friend bool operator==(const TetrahedronConnectivity& l, const TetrahedronConnectivity& r)
         {
-            
             return std::tie(l.m_indices, l.m_is_removed, l.hash) ==
                    std::tie(r.m_indices, r.m_is_removed, r.hash); // keep the same order
         }
@@ -323,14 +318,14 @@ public:
      * @brief Insert a point into a tetmesh inside a tet.
      * In general position, this split a tet into 4.
      * In face position, split two tets.
-     * In edge position, 
+     * In edge position,
      * In point position, do nothing.
-     * @return true 
-     * @return false 
+     * @return true
+     * @return false
      */
     bool single_point_insertion(const Tuple& t, std::vector<Tuple>& new_tets);
-    virtual bool single_point_insertion_before(const Tuple& t);
-    virtual bool single_point_insertion_after(std::vector<Tuple>& new_tets);
+    virtual bool single_point_insertion_before(const Tuple& t) { return true; };
+    virtual bool single_point_insertion_after(std::vector<Tuple>& new_tets) { return true; };
     /**
      * @brief cleans up the deleted vertices or tetrahedra, fixes the corresponding indices, and
      * reset the version number. WARNING: it invalidates all tuples!
