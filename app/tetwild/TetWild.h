@@ -195,7 +195,6 @@ public:
     struct TriangleInsertionLocalInfoCache
     {
         // local info: for each face insertion
-        std::vector<bool> is_visited;
         int face_id;
         std::vector<std::array<size_t, 3>> old_face_vids;
     };
@@ -255,11 +254,6 @@ public:
     //
     void add_tet_centroid(const Tuple& t, size_t vid) override;
     //
-    void internal_triangle_insertion_with_queue(
-        std::vector<tbb::concurrent_priority_queue<std::tuple<double, int, size_t>>>&
-            insertion_queues,
-        tbb::concurrent_queue<size_t>& expired_queue,
-        int task_id);
     void triangle_insertion(const InputSurface& input_surface);
     void triangle_insertion_before(const std::vector<Tuple>& faces) override;
     void triangle_insertion_after(
