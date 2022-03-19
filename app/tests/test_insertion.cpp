@@ -60,11 +60,11 @@ TEST_CASE("triangle-insertion", "[tetwild_operation]")
 
 
     mesh.triangle_insertion(input_surface);
-    mesh.check_attributes();
+    REQUIRE(mesh.check_attributes());
 }
 
 
-TEST_CASE("triangle-insertion-parallel", "[tetwild_operation]")
+TEST_CASE("triangle-insertion-parallel", "[tetwild_operation][.]")
 {
     Eigen::MatrixXd V;
     Eigen::MatrixXd F;

@@ -39,6 +39,9 @@ public:
     bool m_is_freezed = false;
 
     size_t partition_id = 0;
+
+    VertexAttributes() {};
+    VertexAttributes(const Vector3r& p);
 };
 
 class EdgeAttributes
@@ -237,6 +240,13 @@ public:
 
 
     void construct_background_mesh(const std::vector<Eigen::Vector3d>& vertices);
+    /**
+     * @brief Before triangle insertion, find which ones are already present in the mesh.
+     * Note that the vertices are already the same, so just do a dictionary-find for the face indices.
+     * @param vertices 
+     * @param faces 
+     * @param output is_matched 
+     */
     void match_insertion_faces(
         const std::vector<Vector3d>& vertices,
         const std::vector<std::array<size_t, 3>>& faces,
@@ -245,7 +255,7 @@ public:
     //
     void add_tet_centroid(const Tuple& t, size_t vid) override;
     //
-    void triangle_insertion_stuff(
+    void internal_triangle_insertion_with_queue(
         std::vector<tbb::concurrent_priority_queue<std::tuple<double, int, size_t>>>&
             insertion_queues,
         tbb::concurrent_queue<size_t>& expired_queue,
@@ -297,7 +307,7 @@ public:
     std::tuple<double, double> get_max_avg_energy();
     void filter_outside(bool remove_ouside = true);
 
-    void check_attributes();
+    bool check_attributes();
 
     std::vector<std::array<size_t, 3>> get_faces_by_condition(
         std::function<bool(const FaceAttributes&)> cond);
