@@ -121,7 +121,7 @@ int main(int argc, char** argv)
     igl::Timer timer;
     timer.start();
     /////////triangle insertion with the simplified mesh
-    mesh.triangle_insertion(input_surface);
+    mesh.insert_input_surface(input_surface);
     /////////mesh improvement
     mesh.mesh_improvement(max_its);
     double time = timer.getElapsedTime();

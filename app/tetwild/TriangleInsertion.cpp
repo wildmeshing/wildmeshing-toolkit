@@ -639,7 +639,7 @@ auto internal_triangle_insertion_of_a_queue = [](auto& m,
     }
 };
 
-void tetwild::TetWild::triangle_insertion(const InputSurface& _input_surface)
+void tetwild::TetWild::insert_input_surface(const InputSurface& _input_surface)
 {
     std::default_random_engine generator;
     std::uniform_real_distribution<double> distribution(0.0, 100.0);

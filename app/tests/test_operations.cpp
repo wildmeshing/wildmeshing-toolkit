@@ -55,7 +55,7 @@ TEST_CASE("mesh_improvement", "[tetwild_operation][.slow]")
     //
     tetwild::TetWild mesh(input_surface.params, envelope, NUM_THREADS);
 
-    mesh.triangle_insertion(input_surface);
+    mesh.insert_input_surface(input_surface);
     //    mesh.check_attributes();
 
     mesh.mesh_improvement(5);

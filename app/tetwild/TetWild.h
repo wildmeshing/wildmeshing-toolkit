@@ -254,7 +254,7 @@ public:
     //
     void add_tet_centroid(const Tuple& t, size_t vid) override;
     //
-    void triangle_insertion(const InputSurface& input_surface);
+    void insert_input_surface(const InputSurface& input_surface);
     void triangle_insertion_before(const std::vector<Tuple>& faces) override;
     void triangle_insertion_after(
         const std::vector<Tuple>& faces,
