@@ -307,12 +307,10 @@ public:
     bool swap_face(const Tuple& t, std::vector<Tuple>& new_tets);
     bool smooth_vertex(const Tuple& t);
 
-    void single_triangle_insertion(
+    void triangle_insertion(
         const std::vector<Tuple>& intersected_tets,
         const std::vector<Tuple>& intersected_edges,
-        std::vector<size_t>& new_vids,
-        std::vector<size_t>& new_tids,
-        std::vector<size_t>& new_center_ids);
+        std::vector<size_t>& new_vids);
 
     /**
      * @brief Insert a point into a tetmesh inside a tet.
@@ -362,6 +360,7 @@ private:
     int get_next_empty_slot_t();
     int get_next_empty_slot_v();
 
+    // TODO: subdivide_tets function should not be in the TetMesh API.
     void subdivide_tets(
         const std::vector<size_t> t_ids,
         const std::vector<bool>& mark_surface,
@@ -381,13 +380,16 @@ private:
         std::vector<size_t>& new_center_ids);
 
 protected:
+    // TODO: this function should not be in the TetMesh API.
     virtual void add_tet_centroid(const Tuple& t, size_t vid) {}
     virtual bool invariants(const std::vector<Tuple>&) { return true; }
-    virtual void triangle_insertion_before(const std::vector<Tuple>& faces) {}
-    virtual void triangle_insertion_after(
+    virtual bool triangle_insertion_before(const std::vector<Tuple>& faces) { return true; }
+    virtual bool triangle_insertion_after(
         const std::vector<Tuple>& faces,
         const std::vector<std::vector<Tuple>>& new_faces)
-    {}
+    {
+        return true;
+    }
 
     //// Split the edge in the tuple
     // Checks if the split should be performed or not (user controlled)

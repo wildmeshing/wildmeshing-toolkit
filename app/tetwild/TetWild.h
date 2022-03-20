@@ -238,7 +238,7 @@ public:
     tbb::enumerable_thread_specific<SwapInfoCache> swap_cache;
 
 
-    void construct_background_mesh(const std::vector<Eigen::Vector3d>& vertices);
+    void init_from_delaunay_box_mesh(const std::vector<Eigen::Vector3d>& vertices);
     /**
      * @brief Before triangle insertion, find which ones are already present in the mesh.
      * Note that the vertices are already the same, so just do a dictionary-find for the face indices.
@@ -255,8 +255,8 @@ public:
     void add_tet_centroid(const Tuple& t, size_t vid) override;
     //
     void insert_input_surface(const InputSurface& input_surface);
-    void triangle_insertion_before(const std::vector<Tuple>& faces) override;
-    void triangle_insertion_after(
+    bool triangle_insertion_before(const std::vector<Tuple>& faces) override;
+    bool triangle_insertion_after(
         const std::vector<Tuple>& faces,
         const std::vector<std::vector<Tuple>>& new_faces) override;
 

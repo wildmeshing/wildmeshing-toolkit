@@ -6,15 +6,16 @@
 #include <bitset>
 
 
-void wmtk::TetMesh::single_triangle_insertion(
+void wmtk::TetMesh::triangle_insertion(
     const std::vector<Tuple>& intersected_tets,
     const std::vector<Tuple>& intersected_edges,
-    std::vector<size_t>& new_vids,
-    std::vector<size_t>& new_tids,
-    std::vector<size_t>& new_center_vids)
+    std::vector<size_t>& new_vids)
 {
+    std::vector<size_t> new_tids;
+    std::vector<size_t> new_center_vids;
     /// get all tets
     std::vector<size_t> intersected_tids;
+    intersected_tids.reserve(intersected_tets.size());
     for (auto& loc : intersected_tets) {
         intersected_tids.push_back(loc.tid(*this));
     }
@@ -78,20 +79,20 @@ void wmtk::TetMesh::single_triangle_insertion(
         old_face_vids.begin(),
         old_face_vids.end(),
         [](const std::array<size_t, 5>& v1, const std::array<size_t, 5>& v2) {
-            return std::make_tuple(v1[0], v1[1], v1[2]) < std::make_tuple(v2[0], v2[1], v2[2]);
+            return std::tie(v1[0], v1[1], v1[2]) < std::tie(v2[0], v2[1], v2[2]);
         });
     auto it = std::unique(
         old_face_vids.begin(),
         old_face_vids.end(),
         [](const std::array<size_t, 5>& v1, const std::array<size_t, 5>& v2) {
-            return std::make_tuple(v1[0], v1[1], v1[2]) == std::make_tuple(v2[0], v2[1], v2[2]);
+            return std::tie(v1[0], v1[1], v1[2]) == std::tie(v2[0], v2[1], v2[2]);
         });
     old_face_vids.erase(it, old_face_vids.end());
     //
     for (auto& info : old_face_vids) {
         old_faces.push_back(tuple_from_face(info[3], info[4]));
     }
-    triangle_insertion_before(old_faces); // remember old_faces vids in cache
+    if (!triangle_insertion_before(old_faces)) return; // remember old_faces vids in cache
 
     ///subdivide
     std::map<std::array<size_t, 3>, std::vector<std::array<size_t, 5>>>
@@ -122,7 +123,7 @@ void wmtk::TetMesh::single_triangle_insertion(
             new_faces[i].push_back(tuple_from_face(f_info[3], f_info[4]));
         }
     }
-    triangle_insertion_after(old_faces, new_faces);
+    if (!triangle_insertion_after(old_faces, new_faces)) return;
 }
 
 void wmtk::TetMesh::subdivide_tets(
@@ -386,7 +387,8 @@ void wmtk::TetMesh::subdivide_a_tet(
     }
 }
 
-bool wmtk::TetMesh::single_point_insertion(const Tuple& t, std::vector<Tuple>& new_tets) {
+bool wmtk::TetMesh::single_point_insertion(const Tuple& t, std::vector<Tuple>& new_tets)
+{
     ZoneScoped;
     if (!single_point_insertion_before(t)) return false;
     start_protect_attributes();
