@@ -384,12 +384,7 @@ protected:
     virtual void add_tet_centroid(const Tuple& t, size_t vid) {}
     virtual bool invariants(const std::vector<Tuple>&) { return true; }
     virtual bool triangle_insertion_before(const std::vector<Tuple>& faces) { return true; }
-    virtual bool triangle_insertion_after(
-        const std::vector<Tuple>& faces,
-        const std::vector<std::vector<Tuple>>& new_faces)
-    {
-        return true;
-    }
+    virtual bool triangle_insertion_after(const std::vector<std::vector<Tuple>>&) { return true; }
 
     //// Split the edge in the tuple
     // Checks if the split should be performed or not (user controlled)

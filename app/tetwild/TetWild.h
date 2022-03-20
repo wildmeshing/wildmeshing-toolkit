@@ -185,12 +185,16 @@ public:
     struct TriangleInsertionInfoGlobalCache
     {
         // global info: throughout the whole insertion
+        // v and f used for triangle insertion and filtering (could be modified)
+        // constant throughout the operations
         std::vector<Vector3d> input_vertices;
         std::vector<std::array<size_t, 3>> input_faces;
+
+        // tags: correspondence map from new tet-face node indices to in-triangle ids.
+        // built up while triangles are inserted.
         tbb::concurrent_map<std::array<size_t, 3>, std::vector<int>> tet_face_tags;
-        tbb::concurrent_vector<bool> is_matched;
     };
-    TriangleInsertionInfoGlobalCache triangle_insertion_global_cache;
+    TriangleInsertionInfoGlobalCache triangle_insertion_helper;
 
     struct TriangleInsertionLocalInfoCache
     {
@@ -256,9 +260,7 @@ public:
     //
     void insert_input_surface(const InputSurface& input_surface);
     bool triangle_insertion_before(const std::vector<Tuple>& faces) override;
-    bool triangle_insertion_after(
-        const std::vector<Tuple>& faces,
-        const std::vector<std::vector<Tuple>>& new_faces) override;
+    bool triangle_insertion_after(const std::vector<std::vector<Tuple>>& new_faces) override;
 
 
     void split_all_edges();

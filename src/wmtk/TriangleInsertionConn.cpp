@@ -24,6 +24,8 @@ void wmtk::TetMesh::triangle_insertion(
     std::map<std::array<size_t, 2>, size_t> map_edge2vid;
     int cnt = 0;
     std::vector<size_t> surrounding_tids;
+
+    // gather tets adjacent to the edges
     for (auto& loc : intersected_edges) {
         size_t v1_id = loc.vid(*this);
         auto tmp = switch_vertex(loc);
@@ -51,9 +53,11 @@ void wmtk::TetMesh::triangle_insertion(
         intersected_tids.begin(),
         intersected_tids.end(),
         std::back_inserter(diff_tids));
-    for (int i = 0; i < diff_tids.size(); i++) mark_surface.push_back(false);
+    
     //
+    mark_surface.resize(diff_tids.size() + intersected_tids.size(), false);
     intersected_tids.insert(intersected_tids.end(), diff_tids.begin(), diff_tids.end());
+    assert(mark_surface.size() == intersected_tids.size());
 
     /// track surface before
     std::vector<Tuple> old_faces;
@@ -123,7 +127,8 @@ void wmtk::TetMesh::triangle_insertion(
             new_faces[i].push_back(tuple_from_face(f_info[3], f_info[4]));
         }
     }
-    if (!triangle_insertion_after(old_faces, new_faces)) return;
+    // TODO: no invariants
+    if (!triangle_insertion_after(new_faces)) return;
 }
 
 void wmtk::TetMesh::subdivide_tets(
@@ -166,7 +171,7 @@ void wmtk::TetMesh::subdivide_tets(
             if (map_edge2vid.count(e)) new_v_ids[j] = map_edge2vid[e];
         }
 
-        bool is_add_centroid; // todo: maybe not necessary
+        bool is_add_centroid = false; // todo: maybe not necessary
         subdivide_a_tet(
             t_id,
             new_v_ids,

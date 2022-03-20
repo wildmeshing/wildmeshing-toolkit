@@ -169,7 +169,7 @@ void tetwild::TetWild::match_insertion_faces(
             auto it = map_surface.find(f);
             if (it != map_surface.end()) {
                 auto fid = it->second;
-                triangle_insertion_global_cache.tet_face_tags[f].push_back(fid);
+                triangle_insertion_helper.tet_face_tags[f].push_back(fid);
                 is_matched[fid] = true;
             }
         }
@@ -192,10 +192,9 @@ bool tetwild::TetWild::triangle_insertion_before(const std::vector<Tuple>& faces
 }
 
 bool tetwild::TetWild::triangle_insertion_after(
-    const std::vector<Tuple>& old_faces,
     const std::vector<std::vector<Tuple>>& new_faces)
 {
-    auto& tet_face_tags = triangle_insertion_global_cache.tet_face_tags;
+    auto& tet_face_tags = triangle_insertion_helper.tet_face_tags;
 
     /// remove old_face_vids from tet_face_tags, and map tags to new faces
     // assert(new_faces.size() == triangle_insertion_local_cache.local().old_face_vids.size() + 1);
@@ -207,10 +206,8 @@ bool tetwild::TetWild::triangle_insertion_after(
         std::vector<int> tags;
         if (i < triangle_insertion_local_cache.local().old_face_vids.size()) {
             auto& old_f = triangle_insertion_local_cache.local().old_face_vids[i];
-            if (tet_face_tags.count(old_f) && !tet_face_tags[old_f].empty()) {
+            if (tet_face_tags.find(old_f) != tet_face_tags.end() && !tet_face_tags[old_f].empty()) {
                 tags = tet_face_tags[old_f];
-                //                tet_face_tags.unsafe_erase(triangle_insertion_local_cache.local().old_face_vids[i]);
-                //                tet_face_tags.unsafe_erase(old_f);
                 tet_face_tags[old_f] = {};
             }
         } else
@@ -231,7 +228,7 @@ bool tetwild::TetWild::triangle_insertion_after(
 auto prepare_intersect_info = [](wmtk::TetMesh& m,
                                  const std::vector<Eigen::Vector3d>& vertices,
                                  const std::array<size_t, 3>& face_v,
-                                 auto face_id,
+                                 size_t face_id,
                                  auto& tet_face_tags,
                                  const auto& check_triangle_acquire,
                                  const auto& check_tet_acquire,
@@ -586,6 +583,7 @@ auto prepare_intersect_info = [](wmtk::TetMesh& m,
     success_flag = true;
     return std::tuple(success_flag, intersected_tets, map_edge2point);
 };
+
 auto internal_triangle_insertion_of_a_queue = [](wmtk::TetMesh& m,
                                                  auto& m_vertex_attribute,
                                                  auto& face_id_cache,
@@ -662,13 +660,13 @@ void tetwild::TetWild::insert_input_surface(const InputSurface& _input_surface)
     const auto& vertices = _input_surface.vertices;
     const auto& faces = _input_surface.faces;
     const auto& partition_id = _input_surface.partition_id;
-    triangle_insertion_global_cache.input_vertices = vertices;
-    triangle_insertion_global_cache.input_faces = faces;
+    triangle_insertion_helper.input_vertices = vertices;
+    triangle_insertion_helper.input_faces = faces;
 
     init_from_delaunay_box_mesh(vertices);
 
     // match faces preserved in delaunay
-    auto& is_matched = triangle_insertion_global_cache.is_matched;
+    tbb::concurrent_vector<bool> is_matched;
     match_insertion_faces(vertices, faces, is_matched);
     wmtk::logger().info("is_matched: {}", std::count(is_matched.begin(), is_matched.end(), true));
 
@@ -725,7 +723,7 @@ void tetwild::TetWild::insert_input_surface(const InputSurface& _input_surface)
                     if (retry_time < 5) {
                         Q.push(std::make_tuple(rand, retry_time + 1, id));
                     } else {
-                        expired_queue.push(std::make_tuple(rand, retry_time + 1, id));
+                        expired_queue.push(std::make_tuple(rand, 0, id));
                     }
                 };
                 auto check_triangle_acquire = [&m, task_id](const auto& f) {
@@ -736,7 +734,7 @@ void tetwild::TetWild::insert_input_surface(const InputSurface& _input_surface)
                     m,
                     m.m_vertex_attribute,
                     m.triangle_insertion_local_cache.local().face_id,
-                    m.triangle_insertion_global_cache.tet_face_tags,
+                    m.triangle_insertion_helper.tet_face_tags,
                     vertices,
                     faces,
                     insertion_queues[task_id],
@@ -759,7 +757,7 @@ void tetwild::TetWild::insert_input_surface(const InputSurface& _input_surface)
         *this,
         m_vertex_attribute,
         triangle_insertion_local_cache.local().face_id,
-        triangle_insertion_global_cache.tet_face_tags,
+        triangle_insertion_helper.tet_face_tags,
         vertices,
         faces,
         expired_queue,
@@ -786,7 +784,7 @@ void tetwild::TetWild::setup_attributes()
         std::vector<std::array<int, 3>> fs;
         int cnt = 0;
 
-        for (auto& info : triangle_insertion_global_cache.tet_face_tags) {
+        for (auto& info : triangle_insertion_helper.tet_face_tags) {
             auto& vids = info.first;
             auto& fids = info.second;
 
@@ -803,14 +801,14 @@ void tetwild::TetWild::setup_attributes()
         fout.close();
     };
 
-    const auto& vertices = triangle_insertion_global_cache.input_vertices;
-    const auto& faces = triangle_insertion_global_cache.input_faces;
+    const auto& vertices = triangle_insertion_helper.input_vertices;
+    const auto& faces = triangle_insertion_helper.input_faces;
 
     tbb::task_arena arena(NUM_THREADS);
 
     arena.execute([&vertices, &faces, this] {
         tbb::parallel_for(
-            triangle_insertion_global_cache.tet_face_tags.range(),
+            triangle_insertion_helper.tet_face_tags.range(),
             [&vertices, &faces, this](
                 tbb::concurrent_map<std::array<size_t, 3>, std::vector<int>>::const_range_type& r) {
                 for (tbb::concurrent_map<std::array<size_t, 3>, std::vector<int>>::const_iterator
