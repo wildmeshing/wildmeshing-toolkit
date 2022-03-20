@@ -223,7 +223,7 @@ void tetwild::TetWild::triangle_insertion_after(
     }
 }
 
-auto internal_triangle_insertion_of_a_queue = [](auto& m,
+auto internal_triangle_insertion_of_a_queue = [](tetwild::TetWild& m,
                                                  const auto& vertices,
                                                  const auto& faces,
                                                  auto& Q,
@@ -686,10 +686,9 @@ void tetwild::TetWild::insert_input_surface(const InputSurface& _input_surface)
     tbb::task_arena arena(NUM_THREADS);
     tbb::task_group tg;
 
-    arena.execute([&insertion_queues, &tg, &expired_queue, this, &vertices, &faces]() {
-        for (int i = 0; i < this->NUM_THREADS; i++) {
-            int j = i;
-            tg.run([&insertion_queues, &expired_queue, &m = *this, &vertices, &faces, task_id = j] {
+    arena.execute([&insertion_queues, &tg, &expired_queue, &m = *this, &vertices, &faces]() {
+        for (int task_id = 0; task_id < m.NUM_THREADS; task_id++) {
+            tg.run([&insertion_queues, &expired_queue, &m, &vertices, &faces, task_id] {
                 auto check_tet_acquire = [&m, task_id](const auto& intersected_tets) {
                     for (auto t_int : intersected_tets) {
                         for (auto v_int : m.oriented_tet_vertices(t_int)) {
