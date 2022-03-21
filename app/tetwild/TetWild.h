@@ -40,7 +40,7 @@ public:
 
     size_t partition_id = 0;
 
-    VertexAttributes() {};
+    VertexAttributes(){};
     VertexAttributes(const Vector3r& p);
 };
 
@@ -182,20 +182,11 @@ public:
         bool remove_duplicates(double); // inplace func
     };
 
-    struct TriangleInsertionInfoGlobalCache
-    {
-        // global info: throughout the whole insertion
-        // v and f used for triangle insertion and filtering (could be modified)
-        // constant throughout the operations
-        std::vector<Vector3d> input_vertices;
-        std::vector<std::array<size_t, 3>> input_faces;
 
-        // tags: correspondence map from new tet-face node indices to in-triangle ids.
-        // built up while triangles are inserted.
-        tbb::concurrent_map<std::array<size_t, 3>, std::vector<int>> tet_face_tags;
-    };
-    TriangleInsertionInfoGlobalCache triangle_insertion_helper;
-
+    // tags: correspondence map from new tet-face node indices to in-triangle ids.
+    // built up while triangles are inserted.
+    tbb::concurrent_map<std::array<size_t, 3>, std::vector<int>> tet_face_tags;
+    
     struct TriangleInsertionLocalInfoCache
     {
         // local info: for each face insertion
@@ -245,16 +236,21 @@ public:
     void init_from_delaunay_box_mesh(const std::vector<Eigen::Vector3d>& vertices);
     /**
      * @brief Before triangle insertion, find which ones are already present in the mesh.
-     * Note that the vertices are already the same, so just do a dictionary-find for the face indices.
-     * @param vertices 
-     * @param faces 
-     * @param output is_matched 
+     * Note that the vertices are already the same, so just do a dictionary-find for the face
+     * indices.
+     * @param vertices
+     * @param faces
+     * @param output is_matched
      */
     void match_insertion_faces(
         const std::vector<Vector3d>& vertices,
         const std::vector<std::array<size_t, 3>>& faces,
-        tbb::concurrent_vector<bool>& is_matched);
-    void setup_attributes();
+        tbb::concurrent_vector<bool>& is_matched,
+        tbb::concurrent_map<std::array<size_t, 3>, std::vector<int>>&);
+    void setup_attributes(
+        const std::vector<Vector3d>& vertices,
+        const std::vector<std::array<size_t, 3>>& faces,
+        const tbb::concurrent_map<std::array<size_t, 3>, std::vector<int>>&);
     //
     void add_tet_centroid(const Tuple& t, size_t vid) override;
     //
@@ -301,7 +297,10 @@ public:
         const std::array<int, 4>& ops,
         bool collapse_limite_length = true);
     std::tuple<double, double> get_max_avg_energy();
-    void filter_outside(bool remove_ouside = true);
+    void filter_outside(
+        const std::vector<Vector3d>& vertices,
+        const std::vector<std::array<size_t, 3>>& faces,
+        bool remove_ouside = true);
 
     bool check_attributes();
 

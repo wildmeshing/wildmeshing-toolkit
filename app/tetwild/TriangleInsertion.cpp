@@ -1,6 +1,5 @@
 #include "TetWild.h"
 
-#include <cstddef>
 #include <wmtk/utils/Delaunay.hpp>
 #include "wmtk/TetMesh.h"
 #include "wmtk/auto_table.hpp"
@@ -15,10 +14,7 @@
 #include <tbb/task_arena.h>
 #include <tbb/task_group.h>
 
-#include <atomic>
-#include <fstream>
 #include <random>
-#include <stdexcept>
 #include <unordered_set>
 
 bool tetwild::TetWild::InputSurface::remove_duplicates(double diag_l)
@@ -48,12 +44,7 @@ bool tetwild::TetWild::InputSurface::remove_duplicates(double diag_l)
     Eigen::VectorXi IF;
     igl::unique_rows(F_in, F_tmp, IF, _);
     F_in = F_tmp;
-    //    std::vector<int> old_input_tags = input_tags;
-    //    input_tags.resize(IF.rows());
-    //    for (int i = 0; i < IF.rows(); i++) {
-    //        input_tags[i] = old_input_tags[IF(i)];
-    //    }
-    //
+
     if (V_in.rows() == 0 || F_in.rows() == 0) return false;
 
     wmtk::logger().info("remove duplicates: ");
@@ -147,7 +138,8 @@ void tetwild::TetWild::init_from_delaunay_box_mesh(const std::vector<Eigen::Vect
 void tetwild::TetWild::match_insertion_faces(
     const std::vector<Vector3d>& vertices,
     const std::vector<std::array<size_t, 3>>& faces,
-    tbb::concurrent_vector<bool>& is_matched)
+    tbb::concurrent_vector<bool>& is_matched,
+    tbb::concurrent_map<std::array<size_t, 3>, std::vector<int>>& tet_face_tags)
 {
     is_matched.resize(faces.size(), false);
 
@@ -169,7 +161,7 @@ void tetwild::TetWild::match_insertion_faces(
             auto it = map_surface.find(f);
             if (it != map_surface.end()) {
                 auto fid = it->second;
-                triangle_insertion_helper.tet_face_tags[f].push_back(fid);
+                tet_face_tags[f].push_back(fid);
                 is_matched[fid] = true;
             }
         }
@@ -191,11 +183,8 @@ bool tetwild::TetWild::triangle_insertion_before(const std::vector<Tuple>& faces
     return true;
 }
 
-bool tetwild::TetWild::triangle_insertion_after(
-    const std::vector<std::vector<Tuple>>& new_faces)
+bool tetwild::TetWild::triangle_insertion_after(const std::vector<std::vector<Tuple>>& new_faces)
 {
-    auto& tet_face_tags = triangle_insertion_helper.tet_face_tags;
-
     /// remove old_face_vids from tet_face_tags, and map tags to new faces
     // assert(new_faces.size() == triangle_insertion_local_cache.local().old_face_vids.size() + 1);
 
@@ -260,7 +249,6 @@ auto prepare_intersect_info = [](wmtk::TetMesh& m,
     //
     Vector3r tri_normal = (tri[1] - tri[0]).cross(tri[2] - tri[0]);
     //
-    Vector3d tri_normal_d = (tri_d[1] - tri_d[0]).cross(tri_d[2] - tri_d[0]);
     std::array<Vector2r, 3> tri2;
     int squeeze_to_2d_dir = wmtk::project_triangle_to_2d(tri, tri2);
 
@@ -660,14 +648,12 @@ void tetwild::TetWild::insert_input_surface(const InputSurface& _input_surface)
     const auto& vertices = _input_surface.vertices;
     const auto& faces = _input_surface.faces;
     const auto& partition_id = _input_surface.partition_id;
-    triangle_insertion_helper.input_vertices = vertices;
-    triangle_insertion_helper.input_faces = faces;
 
     init_from_delaunay_box_mesh(vertices);
 
     // match faces preserved in delaunay
     tbb::concurrent_vector<bool> is_matched;
-    match_insertion_faces(vertices, faces, is_matched);
+    match_insertion_faces(vertices, faces, is_matched, tet_face_tags);
     wmtk::logger().info("is_matched: {}", std::count(is_matched.begin(), is_matched.end(), true));
 
     std::vector<tbb::concurrent_priority_queue<std::tuple<double, int, size_t>>> insertion_queues(
@@ -688,64 +674,71 @@ void tetwild::TetWild::insert_input_surface(const InputSurface& _input_surface)
     tbb::task_arena arena(NUM_THREADS);
     tbb::task_group tg;
 
-    arena.execute([&insertion_queues, &tg, &expired_queue, &m = *this, &vertices, &faces]() {
-        for (int task_id = 0; task_id < m.NUM_THREADS; task_id++) {
-            tg.run([&insertion_queues, &expired_queue, &m, &vertices, &faces, task_id] {
-                auto check_tet_acquire = [&m, task_id](const auto& intersected_tets) {
-                    for (auto t_int : intersected_tets) {
-                        for (auto v_int : m.oriented_tet_vertices(t_int)) {
-                            if (!m.try_set_vertex_mutex_one_ring(v_int, task_id)) {
+    arena.execute(
+        [&insertion_queues, &tg, &expired_queue, &m = *this, &tet_face_tags = this->tet_face_tags, &vertices, &faces]() {
+            for (int task_id = 0; task_id < m.NUM_THREADS; task_id++) {
+                tg.run([&insertion_queues,
+                        &expired_queue,
+                        &tet_face_tags,
+                        &m,
+                        &vertices,
+                        &faces,
+                        task_id] {
+                    auto check_tet_acquire = [&m, task_id](const auto& intersected_tets) {
+                        for (auto t_int : intersected_tets) {
+                            for (auto v_int : m.oriented_tet_vertices(t_int)) {
+                                if (!m.try_set_vertex_mutex_one_ring(v_int, task_id)) {
+                                    return false;
+                                }
+                            }
+                        }
+                        return true;
+                    };
+
+                    auto check_edge_acquire = [&m, task_id](const auto& intersected_edges) {
+                        for (auto e_int : intersected_edges) {
+                            if (!m.try_set_vertex_mutex_one_ring(e_int, task_id)) {
+                                return false;
+                            }
+                            if (!m.try_set_vertex_mutex_one_ring(e_int.switch_vertex(m), task_id)) {
                                 return false;
                             }
                         }
-                    }
-                    return true;
-                };
+                        return true;
+                    };
+                    auto release_locks = [&m]() { m.release_vertex_mutex_in_stack(); };
 
-                auto check_edge_acquire = [&m, task_id](const auto& intersected_edges) {
-                    for (auto e_int : intersected_edges) {
-                        if (!m.try_set_vertex_mutex_one_ring(e_int, task_id)) {
-                            return false;
-                        }
-                        if (!m.try_set_vertex_mutex_one_ring(e_int.switch_vertex(m), task_id)) {
-                            return false;
-                        }
-                    }
-                    return true;
-                };
-                auto release_locks = [&m]() { m.release_vertex_mutex_in_stack(); };
+                    std::default_random_engine generator;
+                    std::uniform_real_distribution<double> distribution(0.0, 100.0);
+                    auto retry_processing =
+                        [&, &Q = insertion_queues[task_id]](auto id, auto retry_time) {
+                            double rand = distribution(generator);
+                            if (retry_time < 5) {
+                                Q.push(std::make_tuple(rand, retry_time + 1, id));
+                            } else {
+                                expired_queue.push(std::make_tuple(rand, 0, id));
+                            }
+                        };
+                    auto check_triangle_acquire = [&m, task_id](const auto& f) {
+                        return m.try_set_face_mutex_two_ring(f[0], f[1], f[2], task_id);
+                    };
 
-                std::default_random_engine generator;
-                std::uniform_real_distribution<double> distribution(0.0, 100.0);
-                auto retry_processing = [&,
-                                         &Q = insertion_queues[task_id]](auto id, auto retry_time) {
-                    double rand = distribution(generator);
-                    if (retry_time < 5) {
-                        Q.push(std::make_tuple(rand, retry_time + 1, id));
-                    } else {
-                        expired_queue.push(std::make_tuple(rand, 0, id));
-                    }
-                };
-                auto check_triangle_acquire = [&m, task_id](const auto& f) {
-                    return m.try_set_face_mutex_two_ring(f[0], f[1], f[2], task_id);
-                };
-
-                internal_triangle_insertion_of_a_queue(
-                    m,
-                    m.m_vertex_attribute,
-                    m.triangle_insertion_local_cache.local().face_id,
-                    m.triangle_insertion_helper.tet_face_tags,
-                    vertices,
-                    faces,
-                    insertion_queues[task_id],
-                    check_triangle_acquire,
-                    retry_processing,
-                    check_edge_acquire,
-                    check_tet_acquire,
-                    release_locks);
-            });
-        }
-    });
+                    internal_triangle_insertion_of_a_queue(
+                        m,
+                        m.m_vertex_attribute,
+                        m.triangle_insertion_local_cache.local().face_id,
+                        tet_face_tags,
+                        vertices,
+                        faces,
+                        insertion_queues[task_id],
+                        check_triangle_acquire,
+                        retry_processing,
+                        check_edge_acquire,
+                        check_tet_acquire,
+                        release_locks);
+                });
+            }
+        });
     arena.execute([&] { tg.wait(); });
 
     wmtk::logger().info("expired size: {}", expired_queue.size());
@@ -757,7 +750,7 @@ void tetwild::TetWild::insert_input_surface(const InputSurface& _input_surface)
         *this,
         m_vertex_attribute,
         triangle_insertion_local_cache.local().face_id,
-        triangle_insertion_helper.tet_face_tags,
+        tet_face_tags,
         vertices,
         faces,
         expired_queue,
@@ -771,44 +764,22 @@ void tetwild::TetWild::insert_input_surface(const InputSurface& _input_surface)
     //// track surface, bbox, rounding
     wmtk::logger().info("finished insertion");
 
-    setup_attributes();
+    setup_attributes(vertices, faces, tet_face_tags);
 
     wmtk::logger().info("#t {}", tet_capacity());
     wmtk::logger().info("#v {}", vert_capacity());
 } // note: skip preserve open boundaries
 
-void tetwild::TetWild::setup_attributes()
+void tetwild::TetWild::setup_attributes(
+    const std::vector<Vector3d>& vertices,
+    const std::vector<std::array<size_t, 3>>& faces,
+    const tbb::concurrent_map<std::array<size_t, 3>, std::vector<int>>& tet_face_tags)
 {
-    auto output_surface = [&](std::string file) {
-        std::ofstream fout(file);
-        std::vector<std::array<int, 3>> fs;
-        int cnt = 0;
-
-        for (auto& info : triangle_insertion_helper.tet_face_tags) {
-            auto& vids = info.first;
-            auto& fids = info.second;
-
-            if (fids.empty()) continue;
-
-            fout << "v " << m_vertex_attribute[vids[0]].m_posf.transpose() << std::endl;
-            fout << "v " << m_vertex_attribute[vids[1]].m_posf.transpose() << std::endl;
-            fout << "v " << m_vertex_attribute[vids[2]].m_posf.transpose() << std::endl;
-            fs.push_back({{cnt * 3 + 1, cnt * 3 + 2, cnt * 3 + 3}});
-            cnt++;
-        }
-
-        for (auto& f : fs) fout << "f " << f[0] << " " << f[1] << " " << f[2] << std::endl;
-        fout.close();
-    };
-
-    const auto& vertices = triangle_insertion_helper.input_vertices;
-    const auto& faces = triangle_insertion_helper.input_faces;
-
     tbb::task_arena arena(NUM_THREADS);
 
-    arena.execute([&vertices, &faces, this] {
+    arena.execute([&vertices, &faces, &tet_face_tags, this] {
         tbb::parallel_for(
-            triangle_insertion_helper.tet_face_tags.range(),
+            tet_face_tags.range(),
             [&vertices, &faces, this](
                 tbb::concurrent_map<std::array<size_t, 3>, std::vector<int>>::const_range_type& r) {
                 for (tbb::concurrent_map<std::array<size_t, 3>, std::vector<int>>::const_iterator
@@ -920,8 +891,9 @@ void tetwild::TetWild::add_tet_centroid(const Tuple& t, size_t vid)
 {
     auto vs = oriented_tet_vertices(t);
 
+    auto& m = *this;
     m_vertex_attribute[vid] = VertexAttributes(
-        (m_vertex_attribute[vs[0].vid(*this)].m_pos + m_vertex_attribute[vs[1].vid(*this)].m_pos +
-         m_vertex_attribute[vs[2].vid(*this)].m_pos + m_vertex_attribute[vs[3].vid(*this)].m_pos) /
+        (m_vertex_attribute[vs[0].vid(m)].m_pos + m_vertex_attribute[vs[1].vid(m)].m_pos +
+         m_vertex_attribute[vs[2].vid(m)].m_pos + m_vertex_attribute[vs[3].vid(m)].m_pos) /
         4);
 }

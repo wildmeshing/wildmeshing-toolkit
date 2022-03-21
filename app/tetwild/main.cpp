@@ -124,6 +124,8 @@ int main(int argc, char** argv)
     mesh.insert_input_surface(input_surface);
     /////////mesh improvement
     mesh.mesh_improvement(max_its);
+    ////winding number
+    mesh.filter_outside(input_surface.vertices, input_surface.faces);
     double time = timer.getElapsedTime();
     wmtk::logger().info("total time {}s", time);
 

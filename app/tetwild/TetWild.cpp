@@ -74,9 +74,6 @@ void tetwild::TetWild::mesh_improvement(int max_its)
     for (auto& v : vs) m_vertex_attribute[v.vid(*this)].m_scalar = 1;
     wmtk::logger().info("========it post========");
     local_operations({{0, 1, 0, 0}});
-
-    ////winding number
-    filter_outside();
 }
 
 #include <igl/Timer.h>
@@ -268,24 +265,24 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
     return is_hit_min_edge_length;
 }
 
-void tetwild::TetWild::filter_outside(bool remove_ouside)
+void tetwild::TetWild::filter_outside(
+    const std::vector<Vector3d>& vertices,
+    const std::vector<std::array<size_t, 3>>& faces,
+    bool remove_ouside)
 {
-    Eigen::MatrixXd V(triangle_insertion_helper.input_vertices.size(), 3);
-    Eigen::MatrixXi F(triangle_insertion_helper.input_faces.size(), 3);
+    Eigen::MatrixXd V(vertices.size(), 3);
+    Eigen::MatrixXi F(faces.size(), 3);
 
     for (int i = 0; i < V.rows(); i++) {
-        V.row(i) = triangle_insertion_helper.input_vertices[i];
+        V.row(i) = vertices[i];
     }
     for (int i = 0; i < F.rows(); i++) {
-        F.row(i) << triangle_insertion_helper.input_faces[i][0],
-            triangle_insertion_helper.input_faces[i][1],
-            triangle_insertion_helper.input_faces[i][2];
+        for (auto j = 0; j < 3; j++) F(i, j) = faces[i][j];
     }
 
-    const auto& tets = get_tets(); // todo: avoid copy!!!
-    Eigen::MatrixXd C(tets.size(), 3);
+    const auto& tets = get_tets();
+    Eigen::MatrixXd C = Eigen::MatrixXd::Zero(tets.size(), 3);
     for (size_t i = 0; i < tets.size(); i++) {
-        C.row(i) << 0, 0, 0;
         auto vs = oriented_tet_vertices(tets[i]);
         for (auto& v : vs) C.row(i) += m_vertex_attribute[v.vid(*this)].m_posf;
         C.row(i) /= 4;
