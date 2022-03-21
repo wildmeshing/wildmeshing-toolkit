@@ -39,6 +39,9 @@ public:
     bool m_is_freezed = false;
 
     size_t partition_id = 0;
+
+    VertexAttributes(){};
+    VertexAttributes(const Vector3r& p);
 };
 
 class EdgeAttributes
@@ -176,22 +179,17 @@ public:
             params.init(min, max);
         }
 
-        bool remove_duplicates(); // inplace func
+        bool remove_duplicates(double); // inplace func
     };
 
-    struct TriangleInsertionInfoGlobalCache
-    {
-        // global info: throughout the whole insertion
-        InputSurface input_surface;
-        tbb::concurrent_map<std::array<size_t, 3>, std::vector<int>> tet_face_tags;
-        tbb::concurrent_vector<bool> is_matched;
-    };
-    TriangleInsertionInfoGlobalCache triangle_insertion_global_cache;
 
+    // tags: correspondence map from new tet-face node indices to in-triangle ids.
+    // built up while triangles are inserted.
+    tbb::concurrent_map<std::array<size_t, 3>, std::vector<int>> tet_face_tags;
+    
     struct TriangleInsertionLocalInfoCache
     {
         // local info: for each face insertion
-        std::vector<bool> is_visited;
         int face_id;
         std::vector<std::array<size_t, 3>> old_face_vids;
     };
@@ -235,23 +233,30 @@ public:
     tbb::enumerable_thread_specific<SwapInfoCache> swap_cache;
 
 
-    void construct_background_mesh(const InputSurface& input_surface);
+    void init_from_delaunay_box_mesh(const std::vector<Eigen::Vector3d>& vertices);
+    /**
+     * @brief Before triangle insertion, find which ones are already present in the mesh.
+     * Note that the vertices are already the same, so just do a dictionary-find for the face
+     * indices.
+     * @param vertices
+     * @param faces
+     * @param output is_matched
+     */
     void match_insertion_faces(
-        const InputSurface& input_surface,
-        tbb::concurrent_vector<bool>& is_matched);
-    void setup_attributes();
+        const std::vector<Vector3d>& vertices,
+        const std::vector<std::array<size_t, 3>>& faces,
+        tbb::concurrent_vector<bool>& is_matched,
+        tbb::concurrent_map<std::array<size_t, 3>, std::vector<int>>&);
+    void setup_attributes(
+        const std::vector<Vector3d>& vertices,
+        const std::vector<std::array<size_t, 3>>& faces,
+        const tbb::concurrent_map<std::array<size_t, 3>, std::vector<int>>&);
     //
     void add_tet_centroid(const Tuple& t, size_t vid) override;
     //
-    void triangle_insertion_stuff(
-        std::vector<tbb::concurrent_priority_queue<std::tuple<double, int, size_t>>>& insertion_queues,
-        tbb::concurrent_queue<size_t>& expired_queue,
-        int task_id);
-    void triangle_insertion(const InputSurface& input_surface);
-    void triangle_insertion_before(const std::vector<Tuple>& faces) override;
-    void triangle_insertion_after(
-        const std::vector<Tuple>& faces,
-        const std::vector<std::vector<Tuple>>& new_faces) override;
+    void insert_input_surface(const InputSurface& input_surface);
+    bool triangle_insertion_before(const std::vector<Tuple>& faces) override;
+    bool triangle_insertion_after(const std::vector<std::vector<Tuple>>& new_faces) override;
 
 
     void split_all_edges();
@@ -292,15 +297,17 @@ public:
         const std::array<int, 4>& ops,
         bool collapse_limite_length = true);
     std::tuple<double, double> get_max_avg_energy();
-    void filter_outside(bool remove_ouside = true);
+    void filter_outside(
+        const std::vector<Vector3d>& vertices,
+        const std::vector<std::array<size_t, 3>>& faces,
+        bool remove_ouside = true);
 
-    void check_attributes();
+    bool check_attributes();
 
     std::vector<std::array<size_t, 3>> get_faces_by_condition(
         std::function<bool(const FaceAttributes&)> cond);
 
-    bool invariants(const std::vector<Tuple>& t)
-        override; // this is now automatically checked
+    bool invariants(const std::vector<Tuple>& t) override; // this is now automatically checked
 
     double get_length2(const Tuple& loc) const;
     // debug use

@@ -6,6 +6,7 @@
 
 #include <catch2/catch.hpp>
 #include "spdlog/common.h"
+#include "wmtk/ConcurrentTetMesh.h"
 
 #include <igl/read_triangle_mesh.h>
 
@@ -37,7 +38,7 @@ TEST_CASE("triangle-insertion", "[tetwild_operation]")
     tetwild::TetWild::InputSurface input_surface;
     input_surface.params.lr = 1 / 15.0;
     input_surface.init(vertices, faces);
-    input_surface.remove_duplicates();
+    input_surface.remove_duplicates(input_surface.params.diag_l);
     Eigen::MatrixXd new_F(input_surface.faces.size(), 3);
     for (int i = 0; i < input_surface.faces.size(); i++) {
         new_F(i, 0) = input_surface.faces[i][0];
@@ -58,12 +59,12 @@ TEST_CASE("triangle-insertion", "[tetwild_operation]")
     tetwild::TetWild mesh(input_surface.params, envelope);
 
 
-    mesh.triangle_insertion(input_surface);
-    mesh.check_attributes();
+    mesh.insert_input_surface(input_surface);
+    REQUIRE(mesh.check_attributes());
 }
 
 
-TEST_CASE("triangle-insertion-parallel", "[tetwild_operation]")
+TEST_CASE("triangle-insertion-parallel", "[tetwild_operation][.]")
 {
     Eigen::MatrixXd V;
     Eigen::MatrixXd F;
@@ -89,7 +90,7 @@ TEST_CASE("triangle-insertion-parallel", "[tetwild_operation]")
     tetwild::TetWild::InputSurface input_surface;
     input_surface.params.lr = 1 / 30.0;
     input_surface.init(vertices, faces);
-    input_surface.remove_duplicates();
+    input_surface.remove_duplicates(input_surface.params.diag_l);
     Eigen::MatrixXd new_F(input_surface.faces.size(), 3);
     for (int i = 0; i < input_surface.faces.size(); i++) {
         new_F(i, 0) = input_surface.faces[i][0];
@@ -105,8 +106,8 @@ TEST_CASE("triangle-insertion-parallel", "[tetwild_operation]")
         // std::cout<<partition_id[i]<<" ";
         cnt_id[partition_id[i]]++;
     }
-    for(int i=0;i<NUM_THREADS;i++){
-        std::cout<<i<<": "<<cnt_id[i]<<std::endl;
+    for (int i = 0; i < NUM_THREADS; i++) {
+        std::cout << i << ": " << cnt_id[i] << std::endl;
     }
     input_surface.partition_id = partition_id;
 
@@ -119,6 +120,72 @@ TEST_CASE("triangle-insertion-parallel", "[tetwild_operation]")
     tetwild::TetWild mesh(input_surface.params, envelope, NUM_THREADS);
 
     wmtk::logger().info("start insertion");
-    mesh.triangle_insertion(input_surface);
+    mesh.insert_input_surface(input_surface);
     wmtk::logger().info("end insertion");
+}
+
+
+TEST_CASE("point-insertion")
+{
+    // class PointInserter : public wmtk::ConcurrentTetMesh
+    // {
+    // public:
+    //     struct VertexAttributes
+    //     {
+    //         Eigen::Vector3d pos;
+    //         size_t partition_id = 0;
+    //     };
+    //     using VertAttCol = wmtk::AttributeCollection<VertexAttributes>;
+    //     VertAttCol vertex_attrs;
+    //     PointInserter(
+    //         const std::vector<Eigen::Vector3d>& _vertex_attribute,
+    //         const std::vector<std::array<size_t, 4>>& tets,
+    //         int num_threads = 1)
+    //     {
+    //         p_vertex_attrs = &vertex_attrs;
+
+    //         vertex_attrs.resize(_vertex_attribute.size());
+
+    //         for (auto i = 0; i < _vertex_attribute.size(); i++)
+    //             vertex_attrs[i].pos = _vertex_attribute[i];
+
+    //         init(_vertex_attribute.size(), tets);
+    //     }
+
+    //     struct PointInsertCache
+    //     {
+    //         Eigen::Vector3d pos;
+    //         int flag;
+    //     };
+    //     tbb::enumerable_thread_specific<PointInsertCache> point_cache;
+
+    //     // input Tet where the point is.
+    //     virtual bool single_point_insertion_before(const Tuple& t) override { return true; }
+    //     virtual bool single_point_insertion_after(std::vector<Tuple>& t) override
+    //     {
+    //         if (flag == 0) return
+    //             {}
+    //         return true;
+    //     }
+    //     std::tuple<Tuple, int> containing_tet(Eigen::Vector3d);
+
+    //     void insert_point_list(const std::vector<Eigen::Vector3d>& points)
+    //     {
+    //         for (auto& p : points) {
+    //             // 1. find containing tets, use AABB or TetHash
+    //             auto [t, flag] = containing_tet(p);
+    //             // 2. change topology.
+    //             point_cache.local().pos = p;
+    //             point_cache.local().flag = flag;
+    //             if (flag == 0) continue; // vert
+    //             std::vector<Tuple> new_tets;
+    //             if (flag == 1) split_edge(t, new_tets);
+    //             if (flag == 2) split_face(t, new_tets);
+    //             if (flag == 3)
+    //                 split_tet(t, new_tets);
+    //             else
+    //                 assert(false);
+    //         }
+    //     }
+    // };
 }

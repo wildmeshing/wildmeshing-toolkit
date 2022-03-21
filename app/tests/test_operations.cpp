@@ -36,7 +36,7 @@ TEST_CASE("mesh_improvement", "[tetwild_operation][.slow]")
     tetwild::TetWild::InputSurface input_surface;
     input_surface.params.lr = 1 / 15.0;
     input_surface.init(vertices, faces);
-    input_surface.remove_duplicates();
+    input_surface.remove_duplicates(input_surface.params.diag_l);
     Eigen::MatrixXd new_F(input_surface.faces.size(), 3);
     for (int i = 0; i < input_surface.faces.size(); i++) {
         new_F(i, 0) = input_surface.faces[i][0];
@@ -55,7 +55,7 @@ TEST_CASE("mesh_improvement", "[tetwild_operation][.slow]")
     //
     tetwild::TetWild mesh(input_surface.params, envelope, NUM_THREADS);
 
-    mesh.triangle_insertion(input_surface);
+    mesh.insert_input_surface(input_surface);
     //    mesh.check_attributes();
 
     mesh.mesh_improvement(5);
