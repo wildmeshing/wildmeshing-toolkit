@@ -145,48 +145,10 @@ public:
     void output_mesh(std::string file);
     void output_faces(std::string file, std::function<bool(const FaceAttributes&)> cond);
 
-    class InputSurface
-    {
-    public:
-        std::vector<Vector3d> vertices;
-        std::vector<std::array<size_t, 3>> faces;
-        std::vector<int> partition_id;
-        // can add other input tags;
-
-        Parameters params;
-
-        InputSurface() {}
-
-        void init(
-            const std::vector<Vector3d>& _vertices,
-            const std::vector<std::array<size_t, 3>>& _faces)
-        {
-            vertices = _vertices;
-            faces = _faces;
-            Vector3d min, max;
-            for (size_t i = 0; i < vertices.size(); i++) {
-                if (i == 0) {
-                    min = vertices[i];
-                    max = vertices[i];
-                    continue;
-                }
-                for (int j = 0; j < 3; j++) {
-                    if (vertices[i][j] < min[j]) min[j] = vertices[i][j];
-                    if (vertices[i][j] > max[j]) max[j] = vertices[i][j];
-                }
-            }
-
-            params.init(min, max);
-        }
-
-        bool remove_duplicates(double); // inplace func
-    };
-
-
     // tags: correspondence map from new tet-face node indices to in-triangle ids.
     // built up while triangles are inserted.
     tbb::concurrent_map<std::array<size_t, 3>, std::vector<int>> tet_face_tags;
-    
+
     struct TriangleInsertionLocalInfoCache
     {
         // local info: for each face insertion
@@ -234,19 +196,7 @@ public:
 
 
     void init_from_delaunay_box_mesh(const std::vector<Eigen::Vector3d>& vertices);
-    /**
-     * @brief Before triangle insertion, find which ones are already present in the mesh.
-     * Note that the vertices are already the same, so just do a dictionary-find for the face
-     * indices.
-     * @param vertices
-     * @param faces
-     * @param output is_matched
-     */
-    void match_insertion_faces(
-        const std::vector<Vector3d>& vertices,
-        const std::vector<std::array<size_t, 3>>& faces,
-        tbb::concurrent_vector<bool>& is_matched,
-        tbb::concurrent_map<std::array<size_t, 3>, std::vector<int>>&);
+
     void setup_attributes(
         const std::vector<Vector3d>& vertices,
         const std::vector<std::array<size_t, 3>>& faces,
@@ -254,7 +204,9 @@ public:
     //
     void add_tet_centroid(const Tuple& t, size_t vid) override;
     //
-    void insert_input_surface(const InputSurface& input_surface);
+    void insert_input_surface(const std::vector<Vector3d>& vertices,
+        const std::vector<std::array<size_t, 3>>& faces,
+        const std::vector<size_t>& partition_id);
     bool triangle_insertion_before(const std::vector<Tuple>& faces) override;
     bool triangle_insertion_after(const std::vector<std::vector<Tuple>>& new_faces) override;
 
