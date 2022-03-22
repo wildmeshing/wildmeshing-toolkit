@@ -30,7 +30,18 @@ void tetwild::TetWild::mesh_improvement(int max_its)
     // TODO: refactor to eliminate repeated partition.
     //
     ZoneScopedN("meshimprovementmain");
-    compute_vertex_partition();
+    // compute_vertex_partition();
+
+    compute_vertex_partition_morton();
+    std::vector<int> partition_size(NUM_THREADS, 0);
+    for (int i = 0; i < m_vertex_attribute.size(); i++) {
+        partition_size[m_vertex_attribute[i].partition_id]++;
+    }
+    std::cout << "-----print partition size-----" << std::endl;
+    for (int i = 0; i < NUM_THREADS; i++) {
+        std::cout << partition_size[i] << std::endl;
+    }
+
     wmtk::logger().info("========it pre========");
     local_operations({{0, 1, 0, 0}}, false);
 
