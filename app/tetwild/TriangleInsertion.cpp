@@ -181,7 +181,7 @@ auto prepare_intersect_info = [](const wmtk::TetMesh& m,
     }
     //
     constexpr auto is_seg_cut_tri_2 = [](const std::array<Vector2r, 2>& seg2,
-                               const std::array<Vector2r, 3>& tri2) {
+                                         const std::array<Vector2r, 3>& tri2) {
         // overlap == seg has one endpoint inside tri OR seg intersect with tri edges
         bool is_inside = wmtk::is_point_inside_triangle(seg2[0], tri2) ||
                          wmtk::is_point_inside_triangle(seg2[1], tri2);

@@ -4,6 +4,7 @@
 #include <wmtk/utils/Partitioning.h>
 #include <CLI/CLI.hpp>
 #include <wmtk/utils/ManifoldUtils.hpp>
+#include "wmtk/utils/InsertTriangleUtils.hpp"
 
 //#include <catch2/catch.hpp>
 #include "Parameters.h"
@@ -107,10 +108,20 @@ int main(int argc, char** argv)
     }
     Parameters param;
     param.init(vsimp, fsimp);
+    wmtk::remove_duplicates(vsimp, fsimp, params.diag_l);
 
-    auto partitioned_v = partition_mesh_vertices(Fsimp, NUM_THREADS);
-    std::vector<size_t> partition_id(partitioned_v.size());
-    for (auto i=0; i<partition_id.size(); i++) partition_id[i] = partitioned_v[i];
+    std::vector<size_t> partition_id(vsimp.size());
+    {
+        Eigen::MatrixXd new_F(fsimp.size(), 3);
+        for (int i = 0; i < fsimp.size(); i++) {
+            new_F(i, 0) = fsimp[i][0];
+            new_F(i, 1) = fsimp[i][1];
+            new_F(i, 2) = fsimp[i][2];
+        }
+
+        auto partitioned_v = partition_mesh_vertices(new_F, NUM_THREADS);
+        for (auto i = 0; i < partition_id.size(); i++) partition_id[i] = partitioned_v[i];
+    }
     /////////////////////////////////////////////////////
 
     igl::Timer timer;
