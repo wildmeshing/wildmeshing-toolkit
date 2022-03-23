@@ -16,7 +16,8 @@ struct Parameters
     Vector3d box_max = Vector3d::Ones();
 
     double splitting_l2 = -1.; // the lower bound length (squared) for edge split
-    double collapsing_l2 = std::numeric_limits<double>::max(); // the upper bound length (squared) for edge collapse
+    double collapsing_l2 =
+        std::numeric_limits<double>::max(); // the upper bound length (squared) for edge collapse
 
     double stop_energy = 10;
 
@@ -38,6 +39,25 @@ struct Parameters
             eps = epsr * diag_l;
 
         l_min = eps;
+    }
+    void init(
+        const std::vector<Vector3d>& vertices,
+        const std::vector<std::array<size_t, 3>>& faces)
+    {
+        Vector3d min_, max_;
+        for (size_t i = 0; i < vertices.size(); i++) {
+            if (i == 0) {
+                min_ = vertices[i];
+                max_ = vertices[i];
+                continue;
+            }
+            for (int j = 0; j < 3; j++) {
+                if (vertices[i][j] < min_[j]) min_[j] = vertices[i][j];
+                if (vertices[i][j] > max_[j]) max_[j] = vertices[i][j];
+            }
+        }
+
+        init(min_, max_);
     }
 };
 } // namespace tetwild
