@@ -106,8 +106,7 @@ int main(int argc, char** argv)
             fsimp[i][j] = vs[j].vid(m);
         }
     }
-    Parameters param;
-    param.init(vsimp, fsimp);
+    params.init(vsimp, fsimp);
     wmtk::remove_duplicates(vsimp, fsimp, params.diag_l);
 
     std::vector<size_t> partition_id(vsimp.size());
@@ -128,6 +127,7 @@ int main(int argc, char** argv)
     timer.start();
     /////////triangle insertion with the simplified mesh
     mesh.insert_input_surface(vsimp, fsimp, partition_id);
+
     /////////mesh improvement
     mesh.mesh_improvement(max_its);
     ////winding number
