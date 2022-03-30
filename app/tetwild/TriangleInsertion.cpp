@@ -466,7 +466,7 @@ auto prepare_intersect_info = [](const wmtk::TetMesh& m,
     // intersected tets
     for (auto it = map_edge2point.begin(), ite = map_edge2point.end(); it != ite;) {
         if (std::get<0>(it->second) == EMPTY_INTERSECTION ||
-            !intersected_tet_edges.count(it->first))
+            intersected_tet_edges.find(it->first) == intersected_tet_edges.end())
             it = map_edge2point.erase(it);
         else
             ++it;
@@ -521,7 +521,9 @@ auto internal_triangle_insertion_of_a_queue = [](wmtk::TetMesh& m,
             return false;
         }
 
-        for (auto& f : marking_tet_faces) tet_face_tags[f].push_back(face_id);
+        for (auto& f : marking_tet_faces) {
+            tet_face_tags[f].push_back(face_id);
+        }
 
         ///push back new vertices
         std::vector<Tuple> intersected_edges;
@@ -696,53 +698,45 @@ void tetwild::TetWild::setup_attributes(
     tbb::task_arena arena(NUM_THREADS);
 
     arena.execute([&vertices, &faces, &tet_face_tags, this] {
-        tbb::parallel_for(
-            tet_face_tags.range(),
-            [&vertices, &faces, this](
-                tbb::concurrent_map<std::array<size_t, 3>, std::vector<int>>::const_range_type& r) {
-                for (tbb::concurrent_map<std::array<size_t, 3>, std::vector<int>>::const_iterator
-                         i = r.begin();
-                     i != r.end();
-                     i++) {
-                    auto& info = i;
-                    auto& vids = info->first;
-                    auto fids = info->second;
-                    if (fids.empty()) continue;
+        tbb::parallel_for(tet_face_tags.range(), [&vertices, &faces, this](auto& range) {
+            for (auto [vids, fids] : range) {
+                // tet_face_tags stores a superset of the tracking surface, co-planar wrt input
+                // triangle. here we trim the split triangles outside of the input, based on
+                // barycenter 2d projection.
+                if (fids.empty()) continue;
 
-                    Vector3r c = m_vertex_attribute[vids[0]].m_pos +
-                                 m_vertex_attribute[vids[1]].m_pos +
-                                 m_vertex_attribute[vids[2]].m_pos;
-                    c = c / 3;
 
-                    wmtk::vector_unique(fids);
+                // triangle barycenter
+                Vector3r c =
+                    (m_vertex_attribute[vids[0]].m_pos + m_vertex_attribute[vids[1]].m_pos +
+                     m_vertex_attribute[vids[2]].m_pos) /
+                    3;
 
-                    int inside_fid = -1;
-                    for (int input_fid : fids) {
-                        std::array<Vector3r, 3> tri = {
-                            {to_rational(vertices[faces[input_fid][0]]),
-                             to_rational(vertices[faces[input_fid][1]]),
-                             to_rational(vertices[faces[input_fid][2]])}};
-                        //
-                        std::array<Vector2r, 3> tri2;
-                        int squeeze_to_2d_dir = wmtk::project_triangle_to_2d(tri, tri2);
-                        auto c2 = wmtk::project_point_to_2d(c, squeeze_to_2d_dir);
-                        //
-                        if (wmtk::is_point_inside_triangle(
-                                c2,
-                                tri2)) { // should exclude the points on the edges of tri2 -- NO
-                            auto [face, global_tet_fid] = tuple_from_face(vids);
-                            m_face_attribute[global_tet_fid].m_is_surface_fs = 1;
-                            //
-                            for (size_t vid : vids) {
-                                m_vertex_attribute[vid].m_is_on_surface = true;
-                            }
-                            //
-                            inside_fid = input_fid;
-                            break;
+                wmtk::vector_unique(fids);
+
+                for (int input_fid : fids) {
+                    std::array<Vector3r, 3> tri = {
+                        {to_rational(vertices[faces[input_fid][0]]),
+                         to_rational(vertices[faces[input_fid][1]]),
+                         to_rational(vertices[faces[input_fid][2]])}};
+
+                    std::array<Vector2r, 3> tri2;
+                    int squeeze_to_2d_dir = wmtk::project_triangle_to_2d(tri, tri2);
+                    auto c2 = wmtk::project_point_to_2d(c, squeeze_to_2d_dir);
+
+                    if (wmtk::is_point_inside_triangle(c2, tri2)) {
+                        // should exclude the points on the edges of tri2 -- NO
+                        auto [face, global_tet_fid] = tuple_from_face(vids);
+                        m_face_attribute[global_tet_fid].m_is_surface_fs = 1;
+
+                        for (size_t vid : vids) {
+                            m_vertex_attribute[vid].m_is_on_surface = true;
                         }
+                        break;
                     }
                 }
-            });
+            }
+        });
 
         //// track bbox
         auto faces = get_faces();
