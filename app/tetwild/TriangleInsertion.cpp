@@ -169,10 +169,26 @@ auto internal_insert_single_triangle(
 
     // these are only those on edges.
     std::vector<size_t> new_vids;
+    std::vector<size_t> new_center_vids;
+    std::vector<std::array<size_t, 4>> center_split_tets;
 
     ///inert a triangle
-    m.triangle_insertion(intersected_tets, intersected_edges, new_vids);
+    m.triangle_insertion(
+        intersected_tets,
+        intersected_edges,
+        new_vids,
+        new_center_vids,
+        center_split_tets);
 
+    assert(new_center_vids.size() == center_split_tets.size());
+    for (auto i = 0; i < new_center_vids.size(); i++) {
+        auto vid = new_center_vids[i];
+        auto& vs = center_split_tets[i];
+        m_vertex_attribute[vid] = tetwild::VertexAttributes(
+            (m_vertex_attribute[vs[0]].m_pos + m_vertex_attribute[vs[1]].m_pos +
+             m_vertex_attribute[vs[2]].m_pos + m_vertex_attribute[vs[3]].m_pos) /
+            4);
+    }
     assert(new_vids.size() == map_edge2point.size());
 
     int cnt = 0;
@@ -461,15 +477,4 @@ void tetwild::TetWild::setup_attributes(
                 }
             });
     });
-}
-
-void tetwild::TetWild::add_tet_centroid(const Tuple& t, size_t vid)
-{
-    auto vs = oriented_tet_vertices(t);
-
-    auto& m = *this;
-    m_vertex_attribute[vid] = VertexAttributes(
-        (m_vertex_attribute[vs[0].vid(m)].m_pos + m_vertex_attribute[vs[1].vid(m)].m_pos +
-         m_vertex_attribute[vs[2].vid(m)].m_pos + m_vertex_attribute[vs[3].vid(m)].m_pos) /
-        4);
 }

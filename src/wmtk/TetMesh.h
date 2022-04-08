@@ -317,7 +317,9 @@ public:
     void triangle_insertion(
         const std::vector<Tuple>& intersected_tets,
         const std::vector<Tuple>& intersected_edges,
-        std::vector<size_t>& new_edge_vids);
+        std::vector<size_t>& new_edge_vids,
+        std::vector<size_t>& new_center_vids,
+        std::vector<std::array<size_t, 4>>& center_split_tets);
 
     /**
      * @brief Insert a point into a tetmesh inside a tet.
@@ -375,18 +377,18 @@ private:
         std::map<std::array<size_t, 3>, std::vector<std::array<size_t, 5>>>& new_face_vids,
         const std::vector<size_t>& new_vids,
         std::vector<size_t>& new_tids,
-        std::vector<size_t>& new_center_ids);
+        std::vector<size_t>& new_center_vids,
+        std::vector<std::array<size_t, 4>>& recorded_tet_coners);
     void subdivide_a_tet(
         size_t t_id,
         const std::array<int, 6>& new_v_ids,
         bool mark_surface,
         std::map<std::array<size_t, 3>, std::vector<std::array<size_t, 5>>>& new_face_vids,
         std::vector<size_t>& new_tids,
-        std::vector<size_t>& new_center_ids);
+        std::vector<size_t>& new_center_vids,
+        std::vector<std::array<size_t, 4>>& recorded_tet_coners);
 
 protected:
-    // TODO: this function should not be in the TetMesh API.
-    virtual void add_tet_centroid(const Tuple& t, size_t vid) {}
     virtual bool invariants(const std::vector<Tuple>&) { return true; }
     virtual bool triangle_insertion_before(const std::vector<Tuple>& faces) { return true; }
     virtual bool triangle_insertion_after(const std::vector<std::vector<Tuple>>&) { return true; }

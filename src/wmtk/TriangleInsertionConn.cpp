@@ -9,10 +9,12 @@
 void wmtk::TetMesh::triangle_insertion(
     const std::vector<Tuple>& intersected_tets,
     const std::vector<Tuple>& intersected_edges,
-    std::vector<size_t>& new_vids)
+    std::vector<size_t>& new_vids,
+    std::vector<size_t>& new_center_vids,
+    std::vector<std::array<size_t, 4>>& center_split_tets)
 {
     std::vector<size_t> new_tids;
-    std::vector<size_t> new_center_vids;
+
     /// get all tets
     std::vector<size_t> intersected_tids;
     intersected_tids.reserve(intersected_tets.size());
@@ -53,7 +55,7 @@ void wmtk::TetMesh::triangle_insertion(
         intersected_tids.begin(),
         intersected_tids.end(),
         std::back_inserter(diff_tids));
-    
+
     //
     mark_surface.resize(diff_tids.size() + intersected_tids.size(), false);
     intersected_tids.insert(intersected_tids.end(), diff_tids.begin(), diff_tids.end());
@@ -108,7 +110,8 @@ void wmtk::TetMesh::triangle_insertion(
         new_face_vids,
         new_vids,
         new_tids,
-        new_center_vids);
+        new_center_vids,
+        center_split_tets);
 
     /// track surface after
     std::vector<std::vector<Tuple>> new_faces(old_faces.size() + 1);
@@ -138,7 +141,8 @@ void wmtk::TetMesh::subdivide_tets(
     std::map<std::array<size_t, 3>, std::vector<std::array<size_t, 5>>>& new_face_vids,
     const std::vector<size_t>& new_vids,
     std::vector<size_t>& new_tids,
-    std::vector<size_t>& new_center_vids)
+    std::vector<size_t>& new_center_vids,
+    std::vector<std::array<size_t, 4>>& center_split_tets)
 {
     /// insert new vertices
 
@@ -178,7 +182,8 @@ void wmtk::TetMesh::subdivide_tets(
             mark_surface[i],
             new_face_vids,
             new_tids,
-            new_center_vids);
+            new_center_vids,
+            center_split_tets);
     }
 
     /// update conn_tets
@@ -225,7 +230,8 @@ void wmtk::TetMesh::subdivide_a_tet(
     bool mark_surface,
     std::map<std::array<size_t, 3>, std::vector<std::array<size_t, 5>>>& new_face_vids,
     std::vector<size_t>& new_tids,
-    std::vector<size_t>& new_center_vids)
+    std::vector<size_t>& new_center_vids,
+    std::vector<std::array<size_t, 4>>& center_split_tets)
 {
     using namespace Eigen;
 
@@ -319,7 +325,9 @@ void wmtk::TetMesh::subdivide_a_tet(
                 auto vid = get_next_empty_slot_v();
                 new_center_vids.push_back(vid);
                 all_v_ids.push_back(vid);
-                add_tet_centroid(tuple_from_tet(t_id), vid);
+                for (auto k = 0; k < 4; k++) {
+                    center_split_tets.push_back(m_tet_connectivity[t_id].m_indices);
+                }
 
                 is_add_centroid = true;
             }

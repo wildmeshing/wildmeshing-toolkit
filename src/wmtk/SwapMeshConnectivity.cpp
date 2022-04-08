@@ -221,9 +221,9 @@ constexpr auto swap_4_4 = [](const std::vector<std::array<size_t, 4>>& tets, aut
     
     auto n0 = -1, n1 = -1, n2 = -1, n3 = -1;
 
-    auto find = [](auto& tets, auto v) {
-        for (auto i = 0; i < tets.size(); i++) {
-            if (tets[i] == v) return i;
+    auto find = [](auto& arr, auto v) {
+        for (auto i = 0; i < arr.size(); i++) {
+            if (arr[i] == v) return i;
         }
         return -1;
     };
@@ -246,9 +246,9 @@ constexpr auto swap_4_4 = [](const std::vector<std::array<size_t, 4>>& tets, aut
     };
     auto ss = std::vector<size_t>();
     for (auto j = 0; j < 4; j++) {
-        auto verts = std::array<size_t, 3>{{v0, u0, u1}};
+        auto tri = std::array<size_t, 3>{{v0, u0, u1}};
         if (find(tets[j], v0) != -1) {
-            auto local_i = find_other_v_local(tets[j], verts);
+            auto local_i = find_other_v_local(tets[j], tri);
             assert(local_i != -1);
             ss.push_back(tets[j][local_i]);
         }
@@ -304,13 +304,13 @@ bool wmtk::TetMesh::swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tet_tup
 
     auto old_tets = record_old_tet_connectivity(m_tet_connectivity, affected);
     auto old_tets_conn = std::vector<std::array<size_t, 4>>();
-    for (auto& t : old_tets) old_tets_conn.push_back(t.m_indices);
+    for (auto& ti : old_tets) old_tets_conn.push_back(ti.m_indices);
 
     std::vector<size_t> new_tet_id;
     bool is_succeed = false;
-    for (int it = 0; it < 2; it++) {
+    for (int type = 0; type < 2; type++) {
         auto edge_vv = std::array<size_t, 2>();
-        auto new_tets = swap_4_4(old_tets_conn, v1_id, v2_id, it, edge_vv);
+        auto new_tets = swap_4_4(old_tets_conn, v1_id, v2_id, type, edge_vv);
 
         new_tet_id = affected;
         auto rollback_vert_conn = operation_update_connectivity_impl(new_tet_id, new_tets);
