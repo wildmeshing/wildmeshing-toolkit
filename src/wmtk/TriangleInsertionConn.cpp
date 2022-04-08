@@ -134,9 +134,9 @@ void wmtk::TetMesh::triangle_insertion(
 void wmtk::TetMesh::subdivide_tets(
     const std::vector<size_t> intersected_tids,
     const std::vector<bool>& mark_surface,
-    std::map<std::array<size_t, 2>, size_t>& map_edge2vid,
+    const std::map<std::array<size_t, 2>, size_t>& map_edge2vid,
     std::map<std::array<size_t, 3>, std::vector<std::array<size_t, 5>>>& new_face_vids,
-    std::vector<size_t>& new_vids,
+    const std::vector<size_t>& new_vids,
     std::vector<size_t>& new_tids,
     std::vector<size_t>& new_center_vids)
 {
@@ -168,20 +168,16 @@ void wmtk::TetMesh::subdivide_tets(
                 {m_tet_connectivity[t_id][m_local_edges[j][0]],
                  m_tet_connectivity[t_id][m_local_edges[j][1]]}};
             if (e[0] > e[1]) std::swap(e[0], e[1]);
-            if (map_edge2vid.count(e)) new_v_ids[j] = map_edge2vid[e];
+            if (map_edge2vid.find(e) != map_edge2vid.end()) new_v_ids[j] = map_edge2vid[e];
         }
 
-        bool is_add_centroid = false; // todo: maybe not necessary
         subdivide_a_tet(
             t_id,
             new_v_ids,
             mark_surface[i],
-            is_add_centroid,
             new_face_vids,
-            new_vids,
             new_tids,
             new_center_vids);
-        assert(!(is_add_centroid && mark_surface[i]));
     }
 
     /// update conn_tets
@@ -226,9 +222,7 @@ void wmtk::TetMesh::subdivide_a_tet(
     size_t t_id,
     const std::array<int, 6>& new_v_ids,
     bool mark_surface,
-    bool& is_add_centroid,
     std::map<std::array<size_t, 3>, std::vector<std::array<size_t, 5>>>& new_face_vids,
-    std::vector<size_t>& new_vids,
     std::vector<size_t>& new_tids,
     std::vector<size_t>& new_center_vids)
 {
@@ -313,7 +307,7 @@ void wmtk::TetMesh::subdivide_a_tet(
     const auto& config = CutTable::get_tet_conf(config_id, diag_config_id);
     const auto& new_is_surface_fs = CutTable::get_surface_conf(config_id, diag_config_id);
     const auto& old_local_f_ids = CutTable::get_face_id_conf(config_id, diag_config_id);
-    is_add_centroid = false;
+    auto is_add_centroid = false;
     auto old_tet = m_tet_connectivity[t_id].m_indices;
 
     for (int i = 0; i < config.size(); i++) {
@@ -332,7 +326,6 @@ void wmtk::TetMesh::subdivide_a_tet(
         }
         size_t new_t_id = t_id;
         if (i < config.size() - 1) {
-            // m_tet_connectivity.emplace_back();
             new_t_id = get_next_empty_slot_t();
             new_tids.push_back(new_t_id);
         }
@@ -392,12 +385,12 @@ void wmtk::TetMesh::subdivide_a_tet(
     }
 }
 
-bool wmtk::TetMesh::single_point_insertion(const Tuple& t, std::vector<Tuple>& new_tets)
+bool wmtk::TetMesh::insert_point(const Tuple& t, std::vector<Tuple>& new_tets)
 {
     ZoneScoped;
-    if (!single_point_insertion_before(t)) return false;
+    if (!insert_point_before(t)) return false;
     start_protect_attributes();
-    if (!single_point_insertion_after(new_tets) || !invariants(new_tets)) {
+    if (!insert_point_after(new_tets) || !invariants(new_tets)) {
         rollback_protected_attributes();
         return false;
     }

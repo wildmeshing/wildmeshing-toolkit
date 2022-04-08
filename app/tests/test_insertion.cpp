@@ -149,8 +149,8 @@ TEST_CASE("point-insertion")
     //     tbb::enumerable_thread_specific<PointInsertCache> point_cache;
 
     //     // input Tet where the point is.
-    //     virtual bool single_point_insertion_before(const Tuple& t) override { return true; }
-    //     virtual bool single_point_insertion_after(std::vector<Tuple>& t) override
+    //     virtual bool insert_point_before(const Tuple& t) override { return true; }
+    //     virtual bool insert_point_after(std::vector<Tuple>& t) override
     //     {
     //         if (flag == 0) return
     //             {}

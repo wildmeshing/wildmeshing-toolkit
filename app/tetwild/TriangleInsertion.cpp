@@ -1,6 +1,7 @@
 #include "TetWild.h"
 
 #include <wmtk/utils/Delaunay.hpp>
+#include "common.h"
 #include "wmtk/TetMesh.h"
 #include "wmtk/auto_table.hpp"
 #include "wmtk/utils/GeoUtils.h"
@@ -117,16 +118,23 @@ bool tetwild::TetWild::triangle_insertion_after(const std::vector<std::vector<Tu
             tet_face_tags[f] = tags;
         }
     }
+
     return true;
 }
 
-auto prepare_intersect_info = [](const wmtk::TetMesh& m,
-                                 const std::vector<Eigen::Vector3d>& vertices,
-                                 const std::array<size_t, 3>& face_v,
-                                 std::vector<std::array<size_t, 3>>& marking_tet_faces,
-                                 const auto& check_triangle_acquire,
-                                 const auto& check_tet_acquire,
-                                 const auto& vertex_pos_r) {
+std::tuple<
+    bool,
+    std::vector<wmtk::TetMesh::Tuple>,
+    std::map<std::array<ulong, 2>, std::tuple<int, tetwild::Vector3r, ulong, int>>>
+prepare_intersect_info(
+    const wmtk::TetMesh& m,
+    const std::vector<Eigen::Vector3d>& vertices,
+    const std::array<size_t, 3>& face_v,
+    std::vector<std::array<size_t, 3>>& marking_tet_faces,
+    const std::function<bool(const std::array<size_t, 3>&)>& try_acquire_triangle,
+    const std::function<bool(const std::vector<wmtk::TetMesh::Tuple>&)>& try_acquire_tetra,
+    const std::function<tetwild::Vector3r(size_t)>& vertex_pos_r)
+{
     using namespace tetwild;
     using Tuple = wmtk::TetMesh::Tuple;
     constexpr int EMPTY_INTERSECTION = 0;
@@ -166,7 +174,7 @@ auto prepare_intersect_info = [](const wmtk::TetMesh& m,
     //
     std::queue<Tuple> tet_queue;
 
-    if (!check_triangle_acquire(face_v)) {
+    if (!try_acquire_triangle(face_v)) {
         return std::tuple(success_flag, intersected_tets, map_edge2point);
     }
 
@@ -216,7 +224,7 @@ auto prepare_intersect_info = [](const wmtk::TetMesh& m,
         //
         auto vs = m.oriented_tet_vertices(tet);
 
-        auto retry_flag = !check_tet_acquire(std::vector<Tuple>{{tet}});
+        auto retry_flag = !try_acquire_tetra(std::vector<Tuple>{{tet}});
         if (retry_flag) {
             return std::tuple(success_flag, intersected_tets, map_edge2point);
         }
@@ -466,7 +474,7 @@ auto prepare_intersect_info = [](const wmtk::TetMesh& m,
     // intersected tets
     for (auto it = map_edge2point.begin(), ite = map_edge2point.end(); it != ite;) {
         if (std::get<0>(it->second) == EMPTY_INTERSECTION ||
-            intersected_tet_edges.find(it->first) == intersected_tet_edges.end())
+            !intersected_tet_edges.count(it->first))
             it = map_edge2point.erase(it);
         else
             ++it;
@@ -475,88 +483,62 @@ auto prepare_intersect_info = [](const wmtk::TetMesh& m,
     return std::tuple(success_flag, intersected_tets, map_edge2point);
 };
 
-auto internal_triangle_insertion_of_a_queue = [](wmtk::TetMesh& m,
-                                                 auto& m_vertex_attribute,
-                                                 auto& face_id_cache,
-                                                 auto& tet_face_tags,
-                                                 const std::vector<Eigen::Vector3d>& vertices,
-                                                 const std::vector<std::array<size_t, 3>>& faces,
-                                                 auto& Q,
-                                                 const auto& check_triangle_acquire,
-                                                 const auto& retry_processing,
-                                                 const auto& check_edge_acquire,
-                                                 const auto& check_tet_acquire,
-                                                 const auto& release_locks) {
-    using namespace tetwild;
+auto internal_insert_single_triangle(
+    wmtk::TetMesh& m,
+    tetwild::TetWild::VertAttCol& m_vertex_attribute,
+    const std::vector<Eigen::Vector3d>& vertices,
+    const std::array<size_t, 3>& face,
+    std::vector<std::array<size_t, 3>>& marked_tet_faces,
+    const std::function<bool(const std::array<size_t, 3>&)>& try_acquire_triangle,
+    const std::function<bool(const std::vector<wmtk::TetMesh::Tuple>&)>& try_acquire_edge,
+    const std::function<bool(const std::vector<wmtk::TetMesh::Tuple>&)>& try_acquire_tetra)
+{
     using Tuple = wmtk::TetMesh::Tuple;
 
     auto vertex_pos_r = [&m_vertex_attribute](auto i) { return m_vertex_attribute[i].m_pos; };
 
-    auto supply_element = [&Q, &face_id_cache, &retry_processing](const auto& func) {
-        std::tuple<double, int, size_t> eiq;
-        while (Q.try_pop(eiq)) {
-            const auto& [_, retry_time, face_id] = eiq;
+    const auto& [flag, intersected_tets, map_edge2point] = prepare_intersect_info(
+        m,
+        vertices,
+        face,
+        marked_tet_faces, // output
+        try_acquire_triangle,
+        try_acquire_tetra,
+        vertex_pos_r);
 
-            face_id_cache = face_id;
+    if (!flag) {
+        return false;
+    }
 
-            if (func(face_id) == false) {
-                retry_processing(face_id, retry_time);
-                continue;
-            };
-        }
-    };
+    ///push back new vertices
+    std::vector<Tuple> intersected_edges;
 
-    supply_element([&](auto face_id) {
-        std::vector<std::array<size_t, 3>> marking_tet_faces;
-        const auto& [flag, intersected_tets, map_edge2point] = prepare_intersect_info(
-            m,
-            vertices,
-            faces[face_id],
-            marking_tet_faces, // output
-            check_triangle_acquire,
-            check_tet_acquire,
-            vertex_pos_r);
+    for (auto& info : map_edge2point) {
+        auto& [_, p, tid, l_eid] = info.second;
+        intersected_edges.push_back(m.tuple_from_edge(tid, l_eid));
+    }
 
-        if (!flag) {
-            return false;
-        }
+    if (try_acquire_edge(intersected_edges) == false ||
+        try_acquire_tetra(intersected_tets) == false) {
+        return false;
+    }
 
-        for (auto& f : marking_tet_faces) {
-            tet_face_tags[f].push_back(face_id);
-        }
+    // these are only those on edges.
+    std::vector<size_t> new_vids;
 
-        ///push back new vertices
-        std::vector<Tuple> intersected_edges;
+    ///inert a triangle
+    m.triangle_insertion(intersected_tets, intersected_edges, new_vids);
 
-        for (auto& info : map_edge2point) {
-            auto& [_, p, tid, l_eid] = info.second;
-            intersected_edges.push_back(m.tuple_from_edge(tid, l_eid));
-        }
+    assert(new_vids.size() == map_edge2point.size());
 
-        if (check_edge_acquire(intersected_edges) == false ||
-            check_tet_acquire(intersected_tets) == false) {
-            return false;
-        }
+    int cnt = 0;
+    for (auto& info : map_edge2point) {
+        auto& [_, p, tid, l_eid] = info.second;
+        m_vertex_attribute[new_vids[cnt]] = tetwild::VertexAttributes(p);
+        cnt++;
+    }
 
-        // these are only those on edges.
-        std::vector<size_t> new_vids;
-
-        ///inert a triangle
-        m.triangle_insertion(intersected_tets, intersected_edges, new_vids);
-
-        assert(new_vids.size() == map_edge2point.size());
-
-        int cnt = 0;
-        for (auto& info : map_edge2point) {
-            auto& [_, p, tid, l_eid] = info.second;
-            m_vertex_attribute[new_vids[cnt]] = VertexAttributes(p);
-            cnt++;
-        }
-
-        /// Lock specific
-        release_locks();
-        return true;
-    });
+    return true;
 };
 
 void tetwild::TetWild::insert_input_surface(
@@ -604,7 +586,7 @@ void tetwild::TetWild::insert_input_surface(
                     &vertices,
                     &faces,
                     task_id] {
-                auto check_tet_acquire = [&m, task_id](const auto& intersected_tets) {
+                auto try_acquire_tetra = [&m, task_id](const auto& intersected_tets) {
                     for (auto t_int : intersected_tets) {
                         for (auto v_int : m.oriented_tet_vertices(t_int)) {
                             if (!m.try_set_vertex_mutex_one_ring(v_int, task_id)) {
@@ -615,7 +597,7 @@ void tetwild::TetWild::insert_input_surface(
                     return true;
                 };
 
-                auto check_edge_acquire = [&m, task_id](const auto& intersected_edges) {
+                auto try_acquire_edge = [&m, task_id](const auto& intersected_edges) {
                     for (auto e_int : intersected_edges) {
                         if (!m.try_set_vertex_mutex_one_ring(e_int, task_id)) {
                             return false;
@@ -626,7 +608,6 @@ void tetwild::TetWild::insert_input_surface(
                     }
                     return true;
                 };
-                auto release_locks = [&m]() { m.release_vertex_mutex_in_stack(); };
 
                 std::default_random_engine generator;
                 std::uniform_real_distribution<double> distribution(0.0, 100.0);
@@ -639,55 +620,86 @@ void tetwild::TetWild::insert_input_surface(
                         expired_queue.push(std::make_tuple(rand, 0, id));
                     }
                 };
-                auto check_triangle_acquire = [&m, task_id](const auto& f) {
+                auto try_acquire_triangle = [&m, task_id](const auto& f) {
                     return m.try_set_face_mutex_two_ring(f[0], f[1], f[2], task_id);
                 };
 
-                internal_triangle_insertion_of_a_queue(
-                    m,
-                    m.m_vertex_attribute,
-                    m.triangle_insertion_local_cache.local().face_id,
-                    tet_face_tags,
-                    vertices,
-                    faces,
-                    insertion_queues[task_id],
-                    check_triangle_acquire,
-                    retry_processing,
-                    check_edge_acquire,
-                    check_tet_acquire,
-                    release_locks);
-            });
-        }
+                auto supply_element = [&m,
+                                       &Q = insertion_queues[task_id],
+                                       &face_id_cache =
+                                           m.triangle_insertion_local_cache.local().face_id,
+                                       &retry_processing](const auto& func) {
+                    std::tuple<double, int, size_t> eiq;
+                    while (Q.try_pop(eiq)) {
+                        const auto& [_, retry_time, face_id] = eiq;
+
+                        face_id_cache = face_id;
+                        if (func(face_id) == false) {
+                            retry_processing(face_id, retry_time);
+                            continue;
+                        };
+                        m.release_vertex_mutex_in_stack();
+                    }
+                };
+
+                supply_element([&](auto face_id) {
+                    std::vector<std::array<size_t, 3>> marked_tet_faces;
+                    auto success = internal_insert_single_triangle(
+                        m,
+                        m.m_vertex_attribute,
+                        vertices,
+                        faces[face_id],
+                        marked_tet_faces,
+                        try_acquire_triangle,
+                        try_acquire_edge,
+                        try_acquire_tetra);
+                    if (!success) return false;
+                    for (auto& f : marked_tet_faces) tet_face_tags[f].push_back(face_id);
+                });
+            }); // tg.run
+        } // parallel for loop
     });
     arena.execute([&] { tg.wait(); });
 
     wmtk::logger().info("expired size: {}", expired_queue.size());
 
     auto check_acquire = [](const auto&) { return true; };
-    auto retry_processing = [](auto, auto) {};
 
-    internal_triangle_insertion_of_a_queue(
-        *this,
-        m_vertex_attribute,
-        triangle_insertion_local_cache.local().face_id,
-        tet_face_tags,
-        vertices,
-        faces,
-        expired_queue,
-        check_acquire,
-        retry_processing,
-        check_acquire,
-        check_acquire,
-        []() {});
+    auto supply_element = [&Q = expired_queue,
+                           &face_id_cache =
+                               triangle_insertion_local_cache.local().face_id](const auto& func) {
+        std::tuple<double, int, size_t> eiq;
+        while (Q.try_pop(eiq)) {
+            const auto& [_, retry_time, face_id] = eiq;
 
+            face_id_cache = face_id;
+            if (func(face_id) == false) {
+                continue;
+            };
+        }
+    };
+
+    supply_element([&](auto face_id) {
+        std::vector<std::array<size_t, 3>> marked_tet_faces;
+        auto success = internal_insert_single_triangle(
+            *this,
+            m_vertex_attribute,
+            vertices,
+            faces[face_id],
+            marked_tet_faces,
+            check_acquire,
+            check_acquire,
+            check_acquire);
+        if (!success) return false;
+        for (auto& f : marked_tet_faces) tet_face_tags[f].push_back(face_id);
+    });
 
     //// track surface, bbox, rounding
     wmtk::logger().info("finished insertion");
 
     setup_attributes(vertices, faces, tet_face_tags);
 
-    wmtk::logger().info("#t {}", tet_capacity());
-    wmtk::logger().info("#v {}", vert_capacity());
+    wmtk::logger().info("setup attributes #t {} #v {}", tet_capacity(), vert_capacity());
 } // note: skip preserve open boundaries
 
 void tetwild::TetWild::setup_attributes(
@@ -698,45 +710,53 @@ void tetwild::TetWild::setup_attributes(
     tbb::task_arena arena(NUM_THREADS);
 
     arena.execute([&vertices, &faces, &tet_face_tags, this] {
-        tbb::parallel_for(tet_face_tags.range(), [&vertices, &faces, this](auto& range) {
-            for (auto [vids, fids] : range) {
-                // tet_face_tags stores a superset of the tracking surface, co-planar wrt input
-                // triangle. here we trim the split triangles outside of the input, based on
-                // barycenter 2d projection.
-                if (fids.empty()) continue;
+        tbb::parallel_for(
+            tet_face_tags.range(),
+            [&vertices, &faces, this](
+                tbb::concurrent_map<std::array<size_t, 3>, std::vector<int>>::const_range_type& r) {
+                for (tbb::concurrent_map<std::array<size_t, 3>, std::vector<int>>::const_iterator
+                         i = r.begin();
+                     i != r.end();
+                     i++) {
+                    auto& info = i;
+                    auto& vids = info->first;
+                    auto fids = info->second;
+                    if (fids.empty()) continue;
 
+                    Vector3r c = m_vertex_attribute[vids[0]].m_pos +
+                                 m_vertex_attribute[vids[1]].m_pos +
+                                 m_vertex_attribute[vids[2]].m_pos;
+                    c = c / 3;
 
-                // triangle barycenter
-                Vector3r c =
-                    (m_vertex_attribute[vids[0]].m_pos + m_vertex_attribute[vids[1]].m_pos +
-                     m_vertex_attribute[vids[2]].m_pos) /
-                    3;
+                    wmtk::vector_unique(fids);
 
-                wmtk::vector_unique(fids);
-
-                for (int input_fid : fids) {
-                    std::array<Vector3r, 3> tri = {
-                        {to_rational(vertices[faces[input_fid][0]]),
-                         to_rational(vertices[faces[input_fid][1]]),
-                         to_rational(vertices[faces[input_fid][2]])}};
-
-                    std::array<Vector2r, 3> tri2;
-                    int squeeze_to_2d_dir = wmtk::project_triangle_to_2d(tri, tri2);
-                    auto c2 = wmtk::project_point_to_2d(c, squeeze_to_2d_dir);
-
-                    if (wmtk::is_point_inside_triangle(c2, tri2)) {
-                        // should exclude the points on the edges of tri2 -- NO
-                        auto [face, global_tet_fid] = tuple_from_face(vids);
-                        m_face_attribute[global_tet_fid].m_is_surface_fs = 1;
-
-                        for (size_t vid : vids) {
-                            m_vertex_attribute[vid].m_is_on_surface = true;
+                    int inside_fid = -1;
+                    for (int input_fid : fids) {
+                        std::array<Vector3r, 3> tri = {
+                            {to_rational(vertices[faces[input_fid][0]]),
+                             to_rational(vertices[faces[input_fid][1]]),
+                             to_rational(vertices[faces[input_fid][2]])}};
+                        //
+                        std::array<Vector2r, 3> tri2;
+                        int squeeze_to_2d_dir = wmtk::project_triangle_to_2d(tri, tri2);
+                        auto c2 = wmtk::project_point_to_2d(c, squeeze_to_2d_dir);
+                        //
+                        if (wmtk::is_point_inside_triangle(
+                                c2,
+                                tri2)) { // should exclude the points on the edges of tri2 -- NO
+                            auto [face, global_tet_fid] = tuple_from_face(vids);
+                            m_face_attribute[global_tet_fid].m_is_surface_fs = 1;
+                            //
+                            for (size_t vid : vids) {
+                                m_vertex_attribute[vid].m_is_on_surface = true;
+                            }
+                            //
+                            inside_fid = input_fid;
+                            break;
                         }
-                        break;
                     }
                 }
-            }
-        });
+            });
 
         //// track bbox
         auto faces = get_faces();
