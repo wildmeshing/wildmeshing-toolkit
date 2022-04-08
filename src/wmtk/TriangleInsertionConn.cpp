@@ -168,7 +168,8 @@ void wmtk::TetMesh::subdivide_tets(
                 {m_tet_connectivity[t_id][m_local_edges[j][0]],
                  m_tet_connectivity[t_id][m_local_edges[j][1]]}};
             if (e[0] > e[1]) std::swap(e[0], e[1]);
-            if (map_edge2vid.find(e) != map_edge2vid.end()) new_v_ids[j] = map_edge2vid[e];
+            auto it = map_edge2vid.find(e);
+            if (it != map_edge2vid.end()) new_v_ids[j] = it->second;
         }
 
         subdivide_a_tet(
