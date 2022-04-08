@@ -50,7 +50,7 @@ TEST_CASE("triangle-insertion", "[tetwild_operation]")
     //
     tetwild::TetWild mesh(params, envelope);
 
-    mesh.insert_input_surface(vertices, faces, partition_id);
+    mesh.init_from_input_surface(vertices, faces, partition_id);
     REQUIRE(mesh.check_attributes());
 }
 
@@ -109,7 +109,7 @@ TEST_CASE("triangle-insertion-parallel", "[tetwild_operation][.]")
     tetwild::TetWild mesh(params, envelope, NUM_THREADS);
 
     wmtk::logger().info("start insertion");
-    mesh.insert_input_surface(vertices, faces, partition_id);
+    mesh.init_from_input_surface(vertices, faces, partition_id);
     wmtk::logger().info("end insertion");
 }
 
