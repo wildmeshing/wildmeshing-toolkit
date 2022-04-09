@@ -174,7 +174,7 @@ auto triangle_insert_prepare_info(
             if (is_inside) {
                 auto conn_tets = m.get_one_ring_tets_for_vertex(vs[lvid]);
                 for (auto& t : conn_tets) {
-                    if (visited.count(t.tid(m))) continue;
+                    if (visited.find(t.tid(m))!=visited.end()) continue;
                     visited.insert(t.tid(m));
                     tet_queue.push(t);
                 }
@@ -264,7 +264,7 @@ auto triangle_insert_prepare_info(
             const std::array<size_t, 2>& e = edge_vids[l_eid];
             if (vertex_sides[e[0]] * vertex_sides[e[1]] >= 0) continue;
 
-            if (map_edge2point.count(e)) {
+            if (map_edge2point.find(e) != map_edge2point.end()) {
                 if (std::get<0>(map_edge2point[e]) == TRI_INTERSECTION) {
                     for (int k = 0; k < 2; k++)
                         is_tet_face_intersected[map_leid2lfids[l_eid][k]] = true;
@@ -299,7 +299,7 @@ auto triangle_insert_prepare_info(
                 auto incident_tets = m.get_incident_tets_for_edge(edges[l_eid]);
                 for (auto& t : incident_tets) {
                     int tid = t.tid(m);
-                    if (visited.count(tid)) continue;
+                    if (visited.find(tid)!=visited.end()) continue;
 
                     tet_queue.push(t);
                     visited.insert(tid);
@@ -315,8 +315,9 @@ auto triangle_insert_prepare_info(
                  vs[local_faces[j][1]].vid(m),
                  vs[local_faces[j][2]].vid(m)}};
             std::sort(f.begin(), f.end());
-            if (map_face2intersected.count(f)) {
-                if (map_face2intersected[f]) need_subdivision = true;
+            auto it = map_face2intersected.find(f);
+            if (it!=map_face2intersected.end()) {
+                if (it->second) need_subdivision = true;
                 continue;
             }
 
@@ -393,7 +394,7 @@ auto triangle_insert_prepare_info(
     // intersected tets
     for (auto it = map_edge2point.begin(), ite = map_edge2point.end(); it != ite;) {
         if (std::get<0>(it->second) == EMPTY_INTERSECTION ||
-            !intersected_tet_edges.count(it->first))
+            intersected_tet_edges.find(it->first) == intersected_tet_edges.end())
             it = map_edge2point.erase(it);
         else
             ++it;

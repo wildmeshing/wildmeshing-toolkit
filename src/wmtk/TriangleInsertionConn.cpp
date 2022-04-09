@@ -209,8 +209,9 @@ void wmtk::TetMesh::subdivide_tets(
         for (size_t tid : tids) {
             for (int j = 0; j < 4; j++) {
                 size_t vid = m_tet_connectivity[tid][j];
-                if (new_conn_tets.count(vid)) {
-                    new_conn_tets[vid].push_back(tid);
+                auto it = new_conn_tets.find(vid);
+                if (it!=new_conn_tets.end()) {
+                    it->second.push_back(tid);
                 }
             }
         }
