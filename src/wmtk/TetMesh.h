@@ -307,13 +307,13 @@ public:
     bool swap_face(const Tuple& t, std::vector<Tuple>& new_tets);
     bool smooth_vertex(const Tuple& t);
 
-	/**
-	 * @brief Insert a triangle into a tetmesh, with known intersection information
-	 * 
-	 * @param intersected_tets the tet to split
-	 * @param intersected_edges the edges where new points are assigned to
-	 * @param new_edge_vids new vertices correspond to each cut-edge
-	 */
+    /**
+     * @brief Insert a triangle into a tetmesh, with known intersection information
+     *
+     * @param intersected_tets the tet to split
+     * @param intersected_edges the edges where new points are assigned to
+     * @param new_edge_vids new vertices correspond to each cut-edge
+     */
     void triangle_insertion(
         const std::vector<Tuple>& intersected_tets,
         const std::vector<Tuple>& intersected_edges,
@@ -378,7 +378,7 @@ private:
         const std::vector<size_t>& new_vids,
         std::vector<size_t>& new_tids,
         std::vector<size_t>& new_center_vids,
-        std::vector<std::array<size_t, 4>>& recorded_tet_coners);
+        std::vector<std::array<size_t, 4>>& center_split_tets);
     void subdivide_a_tet(
         size_t t_id,
         const std::array<int, 6>& new_v_ids,
@@ -386,7 +386,7 @@ private:
         std::map<std::array<size_t, 3>, std::vector<std::array<size_t, 5>>>& new_face_vids,
         std::vector<size_t>& new_tids,
         std::vector<size_t>& new_center_vids,
-        std::vector<std::array<size_t, 4>>& recorded_tet_coners);
+        std::vector<std::array<size_t, 4>>& center_split_tets);
 
 protected:
     virtual bool invariants(const std::vector<Tuple>&) { return true; }
