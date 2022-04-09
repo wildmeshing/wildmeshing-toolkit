@@ -110,7 +110,7 @@ void wmtk::TetMesh::triangle_insertion(
         new_face_vids,
         new_vids,
         new_tids,
-        new_center_vids,
+        new_center_vids, 
         center_split_tets);
 
     /// track surface after
@@ -210,7 +210,7 @@ void wmtk::TetMesh::subdivide_tets(
             for (int j = 0; j < 4; j++) {
                 size_t vid = m_tet_connectivity[tid][j];
                 auto it = new_conn_tets.find(vid);
-                if (it!=new_conn_tets.end()) {
+                if (it != new_conn_tets.end()) {
                     it->second.push_back(tid);
                 }
             }
@@ -326,9 +326,7 @@ void wmtk::TetMesh::subdivide_a_tet(
                 auto vid = get_next_empty_slot_v();
                 new_center_vids.push_back(vid);
                 all_v_ids.push_back(vid);
-                for (auto k = 0; k < 4; k++) {
-                    center_split_tets.push_back(m_tet_connectivity[t_id].m_indices);
-                }
+                center_split_tets.push_back(m_tet_connectivity[t_id].m_indices);
 
                 is_add_centroid = true;
             }
