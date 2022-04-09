@@ -34,11 +34,7 @@ bool remove_duplicates(
 namespace wmtk {
 
 template <typename rational>
-std::tuple<
-    bool,
-    std::vector<wmtk::TetMesh::Tuple>,
-    std::map<std::array<ulong, 2>, std::tuple<int, Eigen::Matrix<rational, 3, 1>, ulong, int>>>
-triangle_insert_prepare_info(
+auto triangle_insert_prepare_info(
     const wmtk::TetMesh& m,
     const std::vector<Eigen::Vector3d>& vertices,
     const std::array<size_t, 3>& face_v,
@@ -90,7 +86,11 @@ triangle_insert_prepare_info(
     std::queue<Tuple> tet_queue;
 
     if (!try_acquire_triangle(face_v)) {
-        return std::tuple(success_flag, intersected_tets, map_edge2point);
+        return std::tuple(
+            success_flag,
+            std::vector<Tuple>(),
+            std::vector<Tuple>(),
+            std::vector<Vector3r>());
     }
 
     for (int j = 0; j < 3; j++) {
@@ -141,7 +141,11 @@ triangle_insert_prepare_info(
 
         auto retry_flag = !try_acquire_tetra(std::vector<Tuple>{{tet}});
         if (retry_flag) {
-            return std::tuple(success_flag, intersected_tets, map_edge2point);
+            return std::tuple(
+                success_flag,
+                std::vector<Tuple>(),
+                std::vector<Tuple>(),
+                std::vector<Vector3r>());
         }
 
         std::array<size_t, 4> vertex_vids;
@@ -395,6 +399,13 @@ triangle_insert_prepare_info(
             ++it;
     }
     success_flag = true;
-    return std::tuple(success_flag, intersected_tets, map_edge2point);
+    std::vector<TetMesh::Tuple> intersected_edges;
+    std::vector<Vector3r> intersected_pos;
+    for (auto& info : map_edge2point) {
+        auto& [_, p, tid, l_eid] = info.second;
+        intersected_edges.push_back(m.tuple_from_edge(tid, l_eid));
+        intersected_pos.push_back(p);
+    }
+    return std::tuple(success_flag, intersected_tets, intersected_edges, intersected_pos);
 }
 } // namespace wmtk

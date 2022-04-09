@@ -140,7 +140,7 @@ auto internal_insert_single_triangle(
         return m_vertex_attribute[i].m_pos;
     };
 
-    const auto& [flag, intersected_tets, map_edge2point] =
+    const auto& [flag, intersected_tets, intersected_edges, intersected_pos] =
         wmtk::triangle_insert_prepare_info<apps::Rational>(
             m,
             vertices,
@@ -154,21 +154,13 @@ auto internal_insert_single_triangle(
         return false;
     }
 
-    ///push back new vertices
-    std::vector<Tuple> intersected_edges;
-
-    for (auto& info : map_edge2point) {
-        auto& [_, p, tid, l_eid] = info.second;
-        intersected_edges.push_back(m.tuple_from_edge(tid, l_eid));
-    }
-
     if (try_acquire_edge(intersected_edges) == false ||
         try_acquire_tetra(intersected_tets) == false) {
         return false;
     }
 
     // these are only those on edges.
-    std::vector<size_t> new_vids;
+    std::vector<size_t> new_edge_vids;
     std::vector<size_t> new_center_vids;
     std::vector<std::array<size_t, 4>> center_split_tets;
 
@@ -176,7 +168,7 @@ auto internal_insert_single_triangle(
     m.triangle_insertion(
         intersected_tets,
         intersected_edges,
-        new_vids,
+        new_edge_vids,
         new_center_vids,
         center_split_tets);
 
@@ -189,13 +181,10 @@ auto internal_insert_single_triangle(
              m_vertex_attribute[vs[2]].m_pos + m_vertex_attribute[vs[3]].m_pos) /
             4);
     }
-    assert(new_vids.size() == map_edge2point.size());
+    assert(new_edge_vids.size() == intersected_pos.size());
 
-    int cnt = 0;
-    for (auto& info : map_edge2point) {
-        auto& [_, p, tid, l_eid] = info.second;
-        m_vertex_attribute[new_vids[cnt]] = tetwild::VertexAttributes(p);
-        cnt++;
+    for (auto i=0; i<intersected_pos.size(); i++) {
+        m_vertex_attribute[new_edge_vids[i]] = tetwild::VertexAttributes(intersected_pos[i]);
     }
 
     return true;
