@@ -201,10 +201,8 @@ public:
         const std::vector<Vector3d>& vertices,
         const std::vector<std::array<size_t, 3>>& faces,
         const tbb::concurrent_map<std::array<size_t, 3>, std::vector<int>>&);
-    //
-    void add_tet_centroid(const Tuple& t, size_t vid) override;
-    //
-    void insert_input_surface(const std::vector<Vector3d>& vertices,
+
+    void init_from_input_surface(const std::vector<Vector3d>& vertices,
         const std::vector<std::array<size_t, 3>>& faces,
         const std::vector<size_t>& partition_id);
     bool triangle_insertion_before(const std::vector<Tuple>& faces) override;

@@ -126,7 +126,7 @@ int main(int argc, char** argv)
     igl::Timer timer;
     timer.start();
     /////////triangle insertion with the simplified mesh
-    mesh.insert_input_surface(vsimp, fsimp, partition_id);
+    mesh.init_from_input_surface(vsimp, fsimp, partition_id);
 
     /////////mesh improvement
     mesh.mesh_improvement(max_its);

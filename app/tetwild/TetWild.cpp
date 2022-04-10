@@ -210,7 +210,6 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
                     v_queue.pop();
                     if (visited[vid]) continue;
                     visited[vid] = true;
-                    // if (new_scalars.count(vid)) continue;
                     adjcnt++;
 
                     bool is_close = false;
@@ -227,7 +226,6 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
                     auto vids = get_one_ring_vids_for_vertex_adj(vid, get_one_ring_cache.local());
                     // auto vids = get_one_ring_vids_for_vertex_adj(vid);
                     for (size_t n_vid : vids) {
-                        // if (new_scalars.count(n_vid)) continue;
                         if (visited[n_vid]) continue;
                         v_queue.push(n_vid);
                     }
