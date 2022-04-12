@@ -156,15 +156,6 @@ bool tetwild::TetWild::collapse_before(const Tuple& loc) // input is an edge
         collapse_cache.local().changed_tids.push_back(q.first);
     }
 
-    /// record faces
-    auto comp = [](const std::pair<size_t, std::array<size_t, 3>>& v1,
-                   const std::pair<size_t, std::array<size_t, 3>>& v2) {
-        return v1.first < v2.first;
-    };
-    auto is_equal = [](const std::pair<size_t, std::array<size_t, 3>>& v1,
-                       const std::pair<size_t, std::array<size_t, 3>>& v2) {
-        return v1.first == v2.first;
-    };
     //
     for (auto& t : n12_locs) {
         auto vs = oriented_tet_vertices(t);
