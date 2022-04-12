@@ -16,6 +16,7 @@
 #include <tbb/parallel_for.h>
 #include <tbb/task_arena.h>
 #include <Tracy.hpp>
+#include "Rational.hpp"
 #include "common.h"
 
 tetwild::VertexAttributes::VertexAttributes(const Vector3r& p)
@@ -472,8 +473,8 @@ double tetwild::TetWild::get_quality(const Tuple& loc) const
         T[3 * 3 + j] = ps[3][j];
     }
 
-    double energy = wmtk::AMIPS_energy(T);
-    if (std::isinf(energy) || std::isnan(energy) || energy < 3 - 1e-3) return MAX_ENERGY;
+    double energy = wmtk::AMIPS_energy_stable_p3<apps::Rational>(T);
+    if (std::isinf(energy) || std::isnan(energy) || energy < 27 - 1e-3) return MAX_ENERGY;
     return energy;
 }
 
