@@ -199,7 +199,7 @@ void tetwild::TetWild::init_from_input_surface(
 
     // match faces preserved in delaunay
     tbb::concurrent_vector<bool> is_matched;
-    wmtk::match_tet_faces_to_triangles(*this, vertices, faces, is_matched, tet_face_tags);
+    wmtk::match_tet_faces_to_triangles(*this, faces, is_matched, tet_face_tags);
     wmtk::logger().info("is_matched: {}", std::count(is_matched.begin(), is_matched.end(), true));
 
     std::vector<tbb::concurrent_priority_queue<std::tuple<double, int, size_t>>> insertion_queues(
