@@ -188,7 +188,7 @@ auto internal_insert_single_triangle(
     }
 
     return true;
-};
+}
 
 void tetwild::TetWild::init_from_input_surface(
     const std::vector<Vector3d>& vertices,
