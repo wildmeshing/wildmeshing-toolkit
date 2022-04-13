@@ -34,7 +34,6 @@ namespace wmtk {
 template <typename rational>
 auto triangle_insert_prepare_info(
     const wmtk::TetMesh& m,
-    const std::vector<Eigen::Vector3d>& vertices,
     const std::array<size_t, 3>& face_v,
     std::vector<std::array<size_t, 3>>& marking_tet_faces,
     const std::function<bool(const std::array<size_t, 3>&)>& try_acquire_triangle,
@@ -60,14 +59,10 @@ auto triangle_insert_prepare_info(
     bool success_flag = false;
     std::set<size_t> visited;
 
-    std::array<Vector3r, 3> tri = {};
-    for (auto j = 0; j < 3; j++) {
-        for (auto k = 0; k < 3; k++) {
-            tri[j][k] = rational(vertices[face_v[j]][k]);
-        }
-    }
-    std::array<Eigen::Vector3d, 3> tri_d = {
-        {vertices[face_v[0]], vertices[face_v[1]], vertices[face_v[2]]}};
+    std::array<Vector3r, 3> tri = {
+        vertex_pos_r(face_v[0]),
+        vertex_pos_r(face_v[1]),
+        vertex_pos_r(face_v[2])};
     //
     Vector3r tri_normal = (tri[1] - tri[0]).cross(tri[2] - tri[0]);
     //
@@ -172,7 +167,7 @@ auto triangle_insert_prepare_info(
             if (is_inside) {
                 auto conn_tets = m.get_one_ring_tets_for_vertex(vs[lvid]);
                 for (auto& t : conn_tets) {
-                    if (visited.find(t.tid(m))!=visited.end()) continue;
+                    if (visited.find(t.tid(m)) != visited.end()) continue;
                     visited.insert(t.tid(m));
                     tet_queue.push(t);
                 }
@@ -297,7 +292,7 @@ auto triangle_insert_prepare_info(
                 auto incident_tets = m.get_incident_tets_for_edge(edges[l_eid]);
                 for (auto& t : incident_tets) {
                     int tid = t.tid(m);
-                    if (visited.find(tid)!=visited.end()) continue;
+                    if (visited.find(tid) != visited.end()) continue;
 
                     tet_queue.push(t);
                     visited.insert(tid);
@@ -314,7 +309,7 @@ auto triangle_insert_prepare_info(
                  vs[local_faces[j][2]].vid(m)}};
             std::sort(f.begin(), f.end());
             auto it = map_face2intersected.find(f);
-            if (it!=map_face2intersected.end()) {
+            if (it != map_face2intersected.end()) {
                 if (it->second) need_subdivision = true;
                 continue;
             }
