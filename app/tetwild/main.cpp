@@ -84,6 +84,7 @@ int main(int argc, char** argv)
     m.create_mesh(v.size(), tri, modified_v, envelope_size);
     assert(m.check_mesh_connectivity_validity());
     wmtk::logger().info("input {} simplification", input_path);
+    wmtk::logger().info("input verts {} faces {}", m.vert_capacity(), m.tri_capacity());
     int target_verts = 0;
 
     igl::Timer timer_simp;
@@ -92,7 +93,10 @@ int main(int argc, char** argv)
     double time_simp = timer_simp.getElapsedTime();
 
     m.consolidate_mesh();
-
+    m.write_triangle_mesh(output_path + "after_simp.obj");
+    wmtk::logger().info("aftersimp verts {} faces {}", m.vert_capacity(), m.tri_capacity());
+    wmtk::logger().info("--------- env time : {}", m.env_time);
+    wmtk::logger().info("========= simp time: {}", time_simp);
     // initiate the tetwild mesh using the original envelop
     tetwild::TetWild mesh(params, m.m_envelope, NUM_THREADS);
 
@@ -140,10 +144,14 @@ int main(int argc, char** argv)
     ////winding number
     mesh.filter_outside(vsimp, fsimp);
     double time = timer.getElapsedTime();
+
     wmtk::logger().info("==========time=======");
-    wmtk::logger().info("simp time: {}", time_simp);
+
     wmtk::logger().info("tetwild time: {}", time);
     wmtk::logger().info("total time: {}", time + time_simp);
+    wmtk::logger().info("env time: {}", mesh.time_env);
+
+    m.m_envelope.printnumber();
 
     /////////output
     auto [max_energy, avg_energy] = mesh.get_max_avg_energy();

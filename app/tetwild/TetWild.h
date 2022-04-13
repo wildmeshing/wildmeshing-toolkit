@@ -1,11 +1,11 @@
 #pragma once
 
+#include <igl/Timer.h>
 #include <tbb/concurrent_map.h>
 #include <wmtk/ConcurrentTetMesh.h>
 #include <wmtk/utils/PartitionMesh.h>
 #include "Parameters.h"
 #include "common.h"
-
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
 #include <fastenvelope/FastEnvelope.h>
@@ -86,6 +86,8 @@ public:
 class TetWild : public wmtk::ConcurrentTetMesh
 {
 public:
+    double time_env = 0.0;
+    igl::Timer isout_timer;
     const double MAX_ENERGY = 1e50;
 
     Parameters& m_params;
@@ -204,7 +206,8 @@ public:
     //
     void add_tet_centroid(const Tuple& t, size_t vid) override;
     //
-    void insert_input_surface(const std::vector<Vector3d>& vertices,
+    void insert_input_surface(
+        const std::vector<Vector3d>& vertices,
         const std::vector<std::array<size_t, 3>>& faces,
         const std::vector<size_t>& partition_id);
     bool triangle_insertion_before(const std::vector<Tuple>& faces) override;

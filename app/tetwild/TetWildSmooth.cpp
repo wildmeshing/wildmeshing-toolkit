@@ -3,12 +3,11 @@
 #include "wmtk/ExecutionScheduler.hpp"
 
 #include <Eigen/src/Core/util/Constants.h>
+#include <igl/Timer.h>
 #include <wmtk/utils/AMIPS.h>
 #include <array>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
-#include <igl/Timer.h>
-
 
 
 #include <limits>
@@ -20,7 +19,6 @@ bool tetwild::TetWild::smooth_before(const Tuple& t)
     // try to round.
     return round(t); // Note: no need to roll back.
 }
-
 
 
 bool tetwild::TetWild::smooth_after(const Tuple& t)
@@ -91,11 +89,13 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
                 auto fid = f_t.fid(*this);
                 if (m_face_attribute[fid].m_is_surface_fs) {
                     auto vs = get_face_vertices(f_t);
-                    if (m_envelope.is_outside(
-                            {{m_vertex_attribute[vs[0].vid(*this)].m_posf,
-                              m_vertex_attribute[vs[1].vid(*this)].m_posf,
-                              m_vertex_attribute[vs[2].vid(*this)].m_posf}}))
-                        return false;
+                    this->isout_timer.start();
+                    bool is_out = m_envelope.is_outside(
+                        {{m_vertex_attribute[vs[0].vid(*this)].m_posf,
+                          m_vertex_attribute[vs[1].vid(*this)].m_posf,
+                          m_vertex_attribute[vs[2].vid(*this)].m_posf}});
+                    time_env += this->isout_timer.getElapsedTimeInSec();
+                    if (is_out) return false;
                 }
             }
         }

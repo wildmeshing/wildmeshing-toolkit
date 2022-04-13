@@ -35,6 +35,8 @@ struct VertexAttributes
 class ShortestEdgeCollapse : public wmtk::ConcurrentTriMesh
 {
 public:
+    double env_time = 0.0;
+
     fastEnvelope::FastEnvelope m_envelope;
     bool m_has_envelope = false;
     wmtk::AttributeCollection<VertexAttributes> vertex_attrs;

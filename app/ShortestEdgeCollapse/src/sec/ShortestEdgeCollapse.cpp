@@ -1,5 +1,5 @@
 #include "ShortestEdgeCollapse.h"
-
+#include <igl/Timer.h>
 #include <wmtk/TriMesh.h>
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/ExecutionScheduler.hpp>
@@ -19,7 +19,11 @@ bool sec::ShortestEdgeCollapse::invariants(const std::vector<Tuple>& new_tris)
             std::array<Eigen::Vector3d, 3> tris;
             auto vs = t.oriented_tri_vertices(*this);
             for (auto j = 0; j < 3; j++) tris[j] = vertex_attrs[vs[j].vid(*this)].pos;
-            if (m_envelope.is_outside(tris)) return false;
+            igl::Timer isout_timer;
+            isout_timer.start();
+            bool outside = m_envelope.is_outside(tris);
+            this->env_time += isout_timer.getElapsedTimeInSec();
+            if (outside) return false;
         }
     }
     return true;
