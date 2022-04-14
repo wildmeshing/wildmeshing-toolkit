@@ -53,7 +53,7 @@ void tetwild::TetWild::split_all_edges()
     }
 }
 
-bool tetwild::TetWild::split_before(const Tuple& loc0)
+bool tetwild::TetWild::split_edge_before(const Tuple& loc0)
 {
     split_cache.local().changed_faces.clear();
 
@@ -96,9 +96,9 @@ bool tetwild::TetWild::split_before(const Tuple& loc0)
     return true;
 }
 
-bool tetwild::TetWild::split_after(const Tuple& loc)
+bool tetwild::TetWild::split_edge_after(const Tuple& loc)
 { // input: locs pointing to a list of tets and v_id
-    if (!TetMesh::split_after(
+    if (!TetMesh::split_edge_after(
             loc)) // note: call from super class, cannot be done with pure virtual classes
         return false;
 
