@@ -355,9 +355,10 @@ bool UniformRemeshing::uniform_remeshing(double L, int iterations)
         auto vertices = get_vertices();
         for (auto& loc : vertices) smooth_vertex(loc);
         assert(check_mesh_connectivity_validity());
-        consolidate_mesh();
+
         properties = average_len_valen();
     }
+    consolidate_mesh();
     wmtk::logger().info("finished {} remeshing iterations", iterations);
     wmtk::logger().info("avg edge len after remesh is: {}", properties[0]);
 

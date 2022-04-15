@@ -32,7 +32,6 @@ void run_remeshing(std::string input, double len, std::string output, UniformRem
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<milliseconds>(stop - start);
 
-    m.consolidate_mesh();
     m.write_triangle_mesh(output);
     wmtk::logger().info("runtime {}", duration.count());
     wmtk::logger().info("current_memory {}", getCurrentRSS() / (1024. * 1024));
@@ -100,6 +99,10 @@ int main(int argc, char** argv)
     UniformRemeshing m(v, thread);
     m.create_mesh(v.size(), tri, modified_v, envelope_size);
 
+#define BOUNDARY_FREEZE
+#ifdef BOUNDARY_FREEZE
+    m.get_boundary_map();
+#endif
     m.get_vertices();
     std::vector<double> properties = m.average_len_valen();
     wmtk::logger().info(

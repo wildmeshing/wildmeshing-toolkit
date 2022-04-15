@@ -1,10 +1,10 @@
 #pragma once
 
+#include <tbb/concurrent_vector.h>
 #include <wmtk/utils/VectorUtils.h>
+#include <Eigen/Core>
 #include <memory>
 #include <wmtk/utils/Logger.hpp>
-
-#include <tbb/concurrent_vector.h>
 
 #include <algorithm>
 #include <array>
@@ -236,6 +236,12 @@ public:
 public:
     AbstractAttributeContainer *p_vertex_attrs, *p_edge_attrs, *p_face_attrs;
     AbstractAttributeContainer vertex_attrs, edge_attrs, face_attrs;
+#define BOUNDARY_FREEZE
+#ifdef BOUNDARY_FREEZE
+    // write a file has boundary vertices correspondences
+    Eigen::MatrixXi bnd_table;
+    void get_boundary_map();
+#endif
 
 private:
     vector<VertexConnectivity> m_vertex_connectivity;

@@ -7,7 +7,7 @@
 #include "wmtk/utils/VectorUtils.h"
 using namespace wmtk;
 
-
+#define BOUNDARY_FREEZE
 TriMesh::Tuple TriMesh::Tuple::switch_vertex(const TriMesh& m) const
 {
     assert(is_valid(m));
@@ -603,6 +603,20 @@ void TriMesh::consolidate_mesh()
         t_cnt++;
     }
 
+#ifdef BOUNDARY_FREEZE
+    auto edges = get_edges();
+    for (auto e : edges) {
+        if (is_boundary_edge(e)) {
+            bnd_table(e.vid(*this), 1) = map_v_ids[e.vid(*this)];
+            bnd_table(e.switch_vertex(*this).vid(*this), 1) =
+                map_v_ids[e.switch_vertex(*this).vid(*this)];
+        } else {
+            continue;
+        }
+    }
+    igl::writeDMAT("bdn_table.dmat", bnd_table);
+#endif
+
     v_cnt = 0;
     for (auto i = 0; i < m_vertex_connectivity.size(); i++) {
         if (m_vertex_connectivity[i].m_is_removed) continue;
@@ -887,3 +901,31 @@ bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
 
     return v_link;
 }
+
+#ifdef BOUNDARY_FREEZE
+// getting the initial boundary vertices before any edge operations as the first colum of the matrix
+void wmtk::TriMesh::get_boundary_map()
+{
+    bnd_table = Eigen::MatrixXi::Zero(vert_capacity(), 2);
+
+    // initiate all to -1
+    for (int i = 0; i < vert_capacity(); i++) {
+        bnd_table.row(i) << -1, -1;
+    }
+    auto edges = get_edges();
+    int cnt = 0;
+    for (auto e : edges) {
+        if (is_boundary_edge(e)) {
+            std::cout << e.vid(*this) << std::endl;
+            std::cout << (e.switch_vertex(*this)).vid(*this) << std::endl;
+            cnt++;
+            bnd_table(e.vid(*this), 0) = e.vid(*this);
+            bnd_table((e.switch_vertex(*this)).vid(*this), 0) = (e.switch_vertex(*this)).vid(*this);
+        } else
+            continue;
+    }
+    wmtk::logger().info("cnt number is {}", cnt);
+    igl::writeDMAT("new_dmt.dmat", bnd_table);
+    // igl::writeDMAT("bnd_f.dmat", bnd_f);
+}
+#endif
