@@ -23,14 +23,6 @@ constexpr auto find_other_v = [](auto& tet, auto& verts) {
     return *result.begin();
 };
 
-std::vector<wmtk::TetMesh::TetrahedronConnectivity> record_old_tet_connectivity(
-    const wmtk::TetMesh::vector<wmtk::TetMesh::TetrahedronConnectivity>& conn,
-    const std::vector<size_t>& tets)
-{
-    auto tet_conn = std::vector<wmtk::TetMesh::TetrahedronConnectivity>();
-    for (auto i : tets) tet_conn.push_back(conn[i]);
-    return tet_conn;
-}
 
 void wmtk::TetMesh::operation_failure_rollback_imp(
     std::map<size_t, wmtk::TetMesh::VertexConnectivity>& rollback_vert_conn,
@@ -60,7 +52,7 @@ void wmtk::TetMesh::operation_failure_rollback_imp(
 std::map<size_t, wmtk::TetMesh::VertexConnectivity>
 wmtk::TetMesh::operation_update_connectivity_impl(
     std::vector<size_t>& remove_id,
-    std::vector<std::array<size_t, 4>>& new_tet_conn)
+    const std::vector<std::array<size_t, 4>>& new_tet_conn)
 {
     std::vector<size_t> allocate;
     auto rollback_vert_conn = operation_update_connectivity_impl(remove_id, new_tet_conn, allocate);
@@ -70,8 +62,8 @@ wmtk::TetMesh::operation_update_connectivity_impl(
 
 std::map<size_t, wmtk::TetMesh::VertexConnectivity>
 wmtk::TetMesh::operation_update_connectivity_impl(
-    std::vector<size_t>& remove_id,
-    std::vector<std::array<size_t, 4>>& new_tet_conn,
+    const std::vector<size_t>& remove_id,
+    const std::vector<std::array<size_t, 4>>& new_tet_conn,
     std::vector<size_t>& allocate_id)
 {
     // TODO: special case with fixed id.

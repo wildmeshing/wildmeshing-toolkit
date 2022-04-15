@@ -567,16 +567,24 @@ public:
 private:
     std::map<size_t, wmtk::TetMesh::VertexConnectivity> operation_update_connectivity_impl(
         std::vector<size_t>& affected_tid,
-        std::vector<std::array<size_t, 4>>& new_tet_conn);
+        const std::vector<std::array<size_t, 4>>& new_tet_conn);
     void operation_failure_rollback_imp(
         std::map<size_t, wmtk::TetMesh::VertexConnectivity>& rollback_vert_conn,
         const std::vector<size_t>& affected,
         const std::vector<size_t>& new_tet_id,
         const std::vector<wmtk::TetMesh::TetrahedronConnectivity>& old_tets);
     std::map<size_t, wmtk::TetMesh::VertexConnectivity> operation_update_connectivity_impl(
-        std::vector<size_t>& remove_id,
-        std::vector<std::array<size_t, 4>>& new_tet_conn,
+        const std::vector<size_t>& remove_id,
+        const std::vector<std::array<size_t, 4>>& new_tet_conn,
         std::vector<size_t>& allocate_id);
+    static std::vector<wmtk::TetMesh::TetrahedronConnectivity> record_old_tet_connectivity(
+        const wmtk::TetMesh::vector<wmtk::TetMesh::TetrahedronConnectivity>& conn,
+        const std::vector<size_t>& tets)
+    {
+        auto tet_conn = std::vector<wmtk::TetMesh::TetrahedronConnectivity>();
+        for (auto i : tets) tet_conn.push_back(conn[i]);
+        return tet_conn;
+    }
     void start_protect_attributes()
     {
         p_vertex_attrs->begin_protect();
@@ -605,24 +613,30 @@ public:
     class OperationBuilder
     {
     public:
-        OperationBuilder();
-        virtual ~OperationBuilder();
-        virtual bool before(const Tuple&);
-        virtual bool after();
-        virtual std::vector<size_t> removed_tids(const Tuple&);
-        virtual std::tuple<std::vector<size_t>, std::vector<std::array<size_t, 4>>>
-        replacing_tets();
+        OperationBuilder() = default;
+        ~OperationBuilder() = default;
+        bool before(const Tuple&) { return true; }
+        bool after() { return true; }
+        std::vector<size_t> removed_tids(const Tuple&);
+        int request_vert_slots() {return 0;};
+        std::vector<std::array<size_t, 4>> replacing_tets(const std::vector<size_t>&);
     };
 
-    template <typename T>
-    std::enable_if_t<std::is_base_of_v<OperationBuilder, T>, bool>
-    customized_operation(T& op, const Tuple& tup, std::vector<Tuple>& new_tet_tuples)
+    template <typename T, typename = std::enable_if_t<std::is_base_of_v<OperationBuilder, T>>>
+    bool customized_operation(T& op, const Tuple& tup, std::vector<Tuple>& new_tet_tuples)
     {
-        if (op.before() == false) return false;
-        auto affected = op.removed_tids();
+        if (op.before(tup) == false) return false;
+        const auto& affected = op.removed_tids(tup);
         auto old_tets = record_old_tet_connectivity(m_tet_connectivity, affected);
 
-        auto& [new_tet_id, new_tets] = op.replacing_tets();
+		auto new_vnum = op.request_vert_slots();
+        std::vector<size_t> new_vids(new_vnum);
+        for (auto i =0; i < new_vnum; i++) {
+            new_vids[i] = get_next_empty_slot_v();
+        }
+        const auto& new_tets = op.replacing_tets(new_vids);
+
+        auto new_tet_id = affected;
         auto rollback_vert_conn = operation_update_connectivity_impl(new_tet_id, new_tets);
 
         for (auto ti : new_tet_id) new_tet_tuples.emplace_back(tuple_from_tet(ti));
@@ -635,6 +649,7 @@ public:
             return false;
         }
         release_protect_attributes();
+        return true;
     }
 };
 
