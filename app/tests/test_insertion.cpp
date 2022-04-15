@@ -50,7 +50,7 @@ TEST_CASE("triangle-insertion", "[tetwild_operation]")
     //
     tetwild::TetWild mesh(params, envelope);
 
-    mesh.insert_input_surface(vertices, faces, partition_id);
+    mesh.init_from_input_surface(vertices, faces, partition_id);
     REQUIRE(mesh.check_attributes());
 }
 
@@ -109,7 +109,7 @@ TEST_CASE("triangle-insertion-parallel", "[tetwild_operation][.]")
     tetwild::TetWild mesh(params, envelope, NUM_THREADS);
 
     wmtk::logger().info("start insertion");
-    mesh.insert_input_surface(vertices, faces, partition_id);
+    mesh.init_from_input_surface(vertices, faces, partition_id);
     wmtk::logger().info("end insertion");
 }
 
@@ -149,8 +149,8 @@ TEST_CASE("point-insertion")
     //     tbb::enumerable_thread_specific<PointInsertCache> point_cache;
 
     //     // input Tet where the point is.
-    //     virtual bool single_point_insertion_before(const Tuple& t) override { return true; }
-    //     virtual bool single_point_insertion_after(std::vector<Tuple>& t) override
+    //     virtual bool insert_point_before(const Tuple& t) override { return true; }
+    //     virtual bool insert_point_after(std::vector<Tuple>& t) override
     //     {
     //         if (flag == 0) return
     //             {}

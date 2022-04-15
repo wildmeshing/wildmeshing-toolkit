@@ -4,16 +4,23 @@
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/utils/TupleUtils.hpp>
 
-#include <Tracy.hpp>
-
 #include <algorithm>
 #include <cstdio>
 #include <iterator>
 #include <vector>
 
-auto replace = [](auto& arr, auto v0, auto v1) {
+auto replace(std::array<size_t, 4>& arr, size_t v0, size_t v1)
+{
     for (auto j = 0; j < arr.size(); j++)
         if (arr[j] == v0) arr[j] = v1;
+}
+
+constexpr auto find_other_v = [](auto& tet, auto& verts) {
+    std::set<size_t> result(tet.begin(), tet.end());
+    for (auto vi : verts) result.erase(vi);
+
+    assert(result.size() == 1);
+    return *result.begin();
 };
 
 std::vector<wmtk::TetMesh::TetrahedronConnectivity> record_old_tet_connectivity(
@@ -208,74 +215,80 @@ bool wmtk::TetMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tet_tuples
 }
 
 
-constexpr auto swap_4_4 =
-    [](const std::vector<std::array<size_t, 4>>& tets, auto u0, auto u1, int it, auto& newedge) {
-        auto n0 = -1, n1 = -1, n2 = -1, n3 = -1;
+auto swap_4_4(
+    const std::vector<std::array<size_t, 4>>& tets,
+    size_t u0,
+    size_t u1,
+    int type,
+    std::array<size_t, 2>& newedge)
+{
+    auto n0 = -1, n1 = -1, n2 = -1, n3 = -1;
 
-        auto find = [](auto& tets, auto v) {
-            for (auto i = 0; i < tets.size(); i++) {
-                if (tets[i] == v) return i;
-            }
-            return -1;
-        };
-        std::set<size_t> verts;
-        for (auto j = 0; j < 4; j++) {
-            for (auto k = 0; k < 4; k++) {
-                verts.insert(tets[j][k]);
-            }
+    auto find = [](auto& arr, auto v) {
+        for (auto i = 0; i < arr.size(); i++) {
+            if (arr[i] == v) return i;
         }
-        verts.erase(u0);
-        verts.erase(u1);
-        assert(verts.size() == 4);
-
-        auto v0 = (*verts.begin());
-        auto find_other_v_local = [&](const auto& tet, const auto& tri) {
-            for (auto i = 0; i < tet.size(); i++) {
-                if (tet[i] != tri[0] && tet[i] != tri[1] && tet[i] != tri[2]) return i;
-            }
-            return -1;
-        };
-        auto ss = std::vector<size_t>();
-        for (auto j = 0; j < 4; j++) {
-            auto verts = std::array<size_t, 3>{{v0, u0, u1}};
-            if (find(tets[j], v0) != -1) {
-                auto local_i = find_other_v_local(tets[j], verts);
-                assert(local_i != -1);
-                ss.push_back(tets[j][local_i]);
-            }
-        }
-        assert(ss.size() == 2);
-        auto s0 = ss.front(), s1 = ss.back();
-        verts.erase(v0);
-        verts.erase(s0);
-        verts.erase(s1);
-        assert(verts.size() == 1);
-        auto v1 = (*verts.begin());
-        if (it == 1) {
-            std::swap(v0, s0);
-            std::swap(v1, s1);
-        }
-
-        auto new_tet_conn = std::vector<std::array<size_t, 4>>();
-        for (auto j = 0; j < 4; j++) {
-            if (find(tets[j], v1) != -1) {
-                new_tet_conn.push_back(tets[j]);
-                replace(new_tet_conn.back(), u0, v0);
-            } else {
-                new_tet_conn.push_back(tets[j]);
-                replace(new_tet_conn.back(), u1, v1);
-            }
-        }
-        assert(new_tet_conn.size() == 4);
-        newedge = {{v0, v1}};
-        return new_tet_conn;
+        return -1;
     };
+    std::set<size_t> verts;
+    for (auto j = 0; j < 4; j++) {
+        for (auto k = 0; k < 4; k++) {
+            verts.insert(tets[j][k]);
+        }
+    }
+    verts.erase(u0);
+    verts.erase(u1);
+    assert(verts.size() == 4);
+
+    auto v0 = (*verts.begin());
+    auto find_other_v_local = [&](const auto& tet, const auto& tri) {
+        for (auto i = 0; i < tet.size(); i++) {
+            if (tet[i] != tri[0] && tet[i] != tri[1] && tet[i] != tri[2]) return i;
+        }
+        return -1;
+    };
+    auto ss = std::vector<size_t>();
+    for (auto j = 0; j < 4; j++) {
+        auto tri = std::array<size_t, 3>{{v0, u0, u1}};
+        if (find(tets[j], v0) != -1) {
+            auto local_i = find_other_v_local(tets[j], tri);
+            assert(local_i != -1);
+            ss.push_back(tets[j][local_i]);
+        }
+    }
+    assert(ss.size() == 2);
+    auto s0 = ss.front(), s1 = ss.back();
+    verts.erase(v0);
+    verts.erase(s0);
+    verts.erase(s1);
+    assert(verts.size() == 1);
+    auto v1 = (*verts.begin());
+    if (type == 1) {
+        std::swap(v0, s0);
+        std::swap(v1, s1);
+    }
+
+    auto new_tet_conn = std::vector<std::array<size_t, 4>>();
+    for (auto j = 0; j < 4; j++) {
+        if (find(tets[j], v1) != -1) {
+            new_tet_conn.push_back(tets[j]);
+            replace(new_tet_conn.back(), u0, v0);
+        } else {
+            new_tet_conn.push_back(tets[j]);
+            replace(new_tet_conn.back(), u1, v1);
+        }
+    }
+    assert(new_tet_conn.size() == 4);
+    newedge = {{v0, v1}};
+    return new_tet_conn;
+}
 
 bool wmtk::TetMesh::swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
 {
     // 4-4 edge to face.
     // only swap internal edges, not on boundary.
     // if (t.is_boundary_edge(*this)) return false;
+    if (!swap_edge_44_before(t)) return false;
     auto v1_id = t.vid(*this);
     auto v2_id = switch_vertex(t).vid(*this);
     auto& nb1 = m_vertex_connectivity[v1_id];
@@ -286,7 +299,6 @@ bool wmtk::TetMesh::swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tet_tup
         logger().trace("selected edges need 4 neighbors to swap.");
         return false;
     }
-    if (!swap_edge_44_before(t)) return false;
     std::set<size_t> verts;
     for (auto ti : affected)
         for (auto j = 0; j < 4; j++) verts.insert(m_tet_connectivity[ti][j]);
@@ -294,24 +306,15 @@ bool wmtk::TetMesh::swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tet_tup
 
     auto old_tets = record_old_tet_connectivity(m_tet_connectivity, affected);
     auto old_tets_conn = std::vector<std::array<size_t, 4>>();
-    for (auto& t : old_tets) old_tets_conn.push_back(t.m_indices);
+    for (auto& ti : old_tets) old_tets_conn.push_back(ti.m_indices);
 
-
-    for (int it = 0; it < 2; it++) {
-        new_tet_tuples.clear();
+    std::vector<size_t> new_tet_id;
+    bool is_succeed = false;
+    for (int type = 0; type < 2; type++) {
         auto edge_vv = std::array<size_t, 2>();
-        auto new_tets = swap_4_4(old_tets_conn, v1_id, v2_id, it, edge_vv);
+        auto new_tets = swap_4_4(old_tets_conn, v1_id, v2_id, type, edge_vv);
 
-        // check if edge already exist: topological un-swappable
-        {
-            for (auto ti : m_vertex_connectivity[edge_vv[0]].m_conn_tets) {
-                if (m_tet_connectivity[ti].find(edge_vv[1]) != -1) {
-                    return false; // edge already exists
-                }
-            }
-        }
-
-        auto new_tet_id = affected;
+        new_tet_id = affected;
         auto rollback_vert_conn = operation_update_connectivity_impl(new_tet_id, new_tets);
         assert(new_tet_id.size() == 4);
 
@@ -328,18 +331,20 @@ bool wmtk::TetMesh::swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tet_tup
         };
         auto newt = new_tuple_from_edge();
 
-        for (auto ti : affected) new_tet_tuples.emplace_back(tuple_from_tet(ti));
-
+        for (auto ti : new_tet_id) new_tet_tuples.emplace_back(tuple_from_tet(ti));
         start_protect_attributes();
         if (!swap_edge_44_after(newt) || !invariants(new_tet_tuples)) { // rollback post-operation
             assert(affected.size() == old_tets.size());
             operation_failure_rollback_imp(rollback_vert_conn, affected, new_tet_id, old_tets);
-        } else {
-            release_protect_attributes();
-            return true;
+            continue;
         }
+        release_protect_attributes();
+        is_succeed = true;
+        break;
     }
-    return false;
+    if (!is_succeed) return false;
+
+    return true;
 }
 
 
@@ -349,7 +354,6 @@ bool wmtk::TetMesh::swap_face(const Tuple& t, std::vector<Tuple>& new_tet_tuples
         if (t.is_boundary_face(*this)) return false;
         if (!swap_face_before(t)) return false;
     }
-
 
     auto v0 = t.vid(*this);
     auto oppo = switch_vertex(t);
@@ -367,38 +371,23 @@ bool wmtk::TetMesh::swap_face(const Tuple& t, std::vector<Tuple>& new_tet_tuples
     assert(affected.size() == 2);
     auto oppo_vid = std::array<size_t, 2>();
     auto old_tets = record_old_tet_connectivity(m_tet_connectivity, affected);
-    auto new_tets = [&affected, v0, v1, v2, &m_tet_connectivity = m_tet_connectivity, &oppo_vid]() {
+    std::vector<std::array<size_t, 4>> new_tets;
+    {
         auto t0 = affected.front(), t1 = affected.back();
 
-        auto find_other_v = [](auto& tet, auto& tri_set) {
-            std::set<size_t> tet_set(tet.begin(), tet.end());
-            std::vector<size_t> result(1);
-            std::set_difference(
-                tet_set.begin(),
-                tet_set.end(),
-                tri_set.begin(),
-                tri_set.end(),
-                result.begin());
-            assert(result.size() == 1);
-            return result.front();
-        };
-        std::set<size_t> tri{v0, v1, v2};
+        std::vector<size_t> tri{v0, v1, v2};
         auto u0 = find_other_v(m_tet_connectivity[t0].m_indices, tri);
         auto u1 = find_other_v(m_tet_connectivity[t1].m_indices, tri);
         oppo_vid = {{u0, u1}};
         //
-        auto tets = std::vector<std::array<size_t, 4>>{
-            m_tet_connectivity[t0].m_indices,
-            m_tet_connectivity[t0].m_indices,
-            m_tet_connectivity[t0].m_indices};
-        replace(tets[0], v0, u1);
-        replace(tets[1], v1, u1);
-        replace(tets[2], v2, u1);
-        return tets;
-    }();
+        new_tets.resize(3, m_tet_connectivity[t0].m_indices);
+        for (auto i = 0; i < 3; i++) {
+            replace(new_tets[i], tri[i], u1);
+        }
+    }
 
-    // check if edge already exist: topological un-swappable
-    {
+
+    { // check if edge already exist: topological un-swappable
         for (auto ti : m_vertex_connectivity[oppo_vid[0]].m_conn_tets) {
             if (m_tet_connectivity[ti].find(oppo_vid[1]) != -1) {
                 return false; // edge already exists
