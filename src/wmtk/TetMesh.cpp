@@ -324,6 +324,15 @@ std::array<wmtk::TetMesh::Tuple, 4> wmtk::TetMesh::oriented_tet_vertices(const T
     return vs;
 }
 
+std::array<size_t, 4> wmtk::TetMesh::oriented_tet_vids(const Tuple& t) const 
+{
+    std::array<size_t, 4> vs;
+     for (int j = 0; j < 4; j++) {
+        vs[j] = m_tet_connectivity[t.m_global_tid][j];
+     }
+    return vs;
+}
+
 std::array<wmtk::TetMesh::Tuple, 3> wmtk::TetMesh::get_face_vertices(const Tuple& t) const
 {
     

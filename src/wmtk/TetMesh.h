@@ -543,6 +543,7 @@ public:
      * @return std::array<Tuple, 4> each tuple owns a different vertex.
      */
     std::array<Tuple, 4> oriented_tet_vertices(const Tuple& t) const;
+    std::array<size_t, 4> oriented_tet_vids(const Tuple& t) const;
     std::array<Tuple, 3> get_face_vertices(const Tuple& t) const;
 
     std::array<Tuple, 6> tet_edges(const Tuple& t) const;
