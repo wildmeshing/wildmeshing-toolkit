@@ -98,8 +98,8 @@ TEST_CASE("rollback_operation", "[tuple_operation]")
     class NoOperationMesh : public TetMesh
     {
     public:
-        bool split_after(const TetMesh::Tuple& locs) override { return false; };
-        bool collapse_after(const TetMesh::Tuple& locs) override { return false; };
+        bool split_edge_after(const TetMesh::Tuple& locs) override { return false; };
+        bool collapse_edge_after(const TetMesh::Tuple& locs) override { return false; };
         bool swap_edge_after(const TetMesh::Tuple& locs) override { return false; };
         bool swap_face_after(const TetMesh::Tuple& locs) override { return false; };
     };

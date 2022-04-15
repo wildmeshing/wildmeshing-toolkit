@@ -156,15 +156,15 @@ public:
         return igl::write_triangle_mesh(path, V, F);
     }
 
-    bool collapse_before(const Tuple& t) override
+    bool collapse_edge_before(const Tuple& t) override
     {
-        if (!TriMesh::collapse_before(t)) return false;
+        if (!TriMesh::collapse_edge_before(t)) return false;
         cache_edge_positions(t);
         return true;
     }
 
-    bool collapse_after(const Tuple& t) override;
-    bool swap_after(const Tuple& t) override;
+    bool collapse_edge_after(const Tuple& t) override;
+    bool swap_edge_after(const Tuple& t) override;
 
     std::vector<TriMesh::Tuple> new_edges_after(const std::vector<TriMesh::Tuple>& t) const;
     std::vector<TriMesh::Tuple> new_edges_after_swap(const TriMesh::Tuple& t) const;
@@ -175,13 +175,13 @@ public:
     double compute_cost_for_e(const TriMesh::Tuple& v_tuple);
     bool collapse_qec(int target_vertcies);
 
-    bool split_before(const Tuple& t) override
+    bool split_edge_before(const Tuple& t) override
     {
         cache_edge_positions(t);
         return true;
     }
 
-    bool split_after(const Tuple& t) override;
+    bool split_edge_after(const Tuple& t) override;
     // methods for adaptive remeshing
     double compute_edge_cost_collapse_ar(const TriMesh::Tuple& t, double L) const;
     double compute_edge_cost_split_ar(const TriMesh::Tuple& t, double L) const;
