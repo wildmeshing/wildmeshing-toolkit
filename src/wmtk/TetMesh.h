@@ -307,10 +307,19 @@ public:
     bool swap_face(const Tuple& t, std::vector<Tuple>& new_tets);
     bool smooth_vertex(const Tuple& t);
 
+    /**
+     * @brief Insert a triangle into a tetmesh, with known intersection information
+     *
+     * @param intersected_tets the tet to split
+     * @param intersected_edges the edges where new points are assigned to
+     * @param new_edge_vids new vertices correspond to each cut-edge
+     */
     void triangle_insertion(
         const std::vector<Tuple>& intersected_tets,
         const std::vector<Tuple>& intersected_edges,
-        std::vector<size_t>& new_vids);
+        std::vector<size_t>& new_edge_vids,
+        std::vector<size_t>& new_center_vids,
+        std::vector<std::array<size_t, 4>>& center_split_tets);
 
     /**
      * @brief Insert a point into a tetmesh inside a tet.
@@ -321,9 +330,9 @@ public:
      * @return true
      * @return false
      */
-    bool single_point_insertion(const Tuple& t, std::vector<Tuple>& new_tets);
-    virtual bool single_point_insertion_before(const Tuple& t) { return true; };
-    virtual bool single_point_insertion_after(std::vector<Tuple>& new_tets) { return true; };
+    bool insert_point(const Tuple& t, std::vector<Tuple>& new_tets);
+    virtual bool insert_point_before(const Tuple& t) { return true; };
+    virtual bool insert_point_after(std::vector<Tuple>& new_tets) { return true; };
     /**
      * @brief cleans up the deleted vertices or tetrahedra, fixes the corresponding indices, and
      * reset the version number. WARNING: it invalidates all tuples!
@@ -364,24 +373,22 @@ private:
     void subdivide_tets(
         const std::vector<size_t> t_ids,
         const std::vector<bool>& mark_surface,
-        std::map<std::array<size_t, 2>, size_t>& map_edge2vid,
+        const std::map<std::array<size_t, 2>, size_t>& map_edge2vid,
         std::map<std::array<size_t, 3>, std::vector<std::array<size_t, 5>>>& new_face_vids,
-        std::vector<size_t>& new_vids,
+        const std::vector<size_t>& new_vids,
         std::vector<size_t>& new_tids,
-        std::vector<size_t>& new_center_ids);
+        std::vector<size_t>& new_center_vids,
+        std::vector<std::array<size_t, 4>>& center_split_tets);
     void subdivide_a_tet(
         size_t t_id,
         const std::array<int, 6>& new_v_ids,
         bool mark_surface,
-        bool& is_add_centroid,
         std::map<std::array<size_t, 3>, std::vector<std::array<size_t, 5>>>& new_face_vids,
-        std::vector<size_t>& new_vids,
         std::vector<size_t>& new_tids,
-        std::vector<size_t>& new_center_ids);
+        std::vector<size_t>& new_center_vids,
+        std::vector<std::array<size_t, 4>>& center_split_tets);
 
 protected:
-    // TODO: this function should not be in the TetMesh API.
-    virtual void add_tet_centroid(const Tuple& t, size_t vid) {}
     virtual bool invariants(const std::vector<Tuple>&) { return true; }
     virtual bool triangle_insertion_before(const std::vector<Tuple>& faces) { return true; }
     virtual bool triangle_insertion_after(const std::vector<std::vector<Tuple>>&) { return true; }

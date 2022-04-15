@@ -23,7 +23,7 @@ int orient3d_t(
 }
 
 template <>
-int orient3d_t(
+inline int orient3d_t(
     const Eigen::Matrix<double, 3, 1>& p1,
     const Eigen::Matrix<double, 3, 1>& p2,
     const Eigen::Matrix<double, 3, 1>& p3,
@@ -59,7 +59,7 @@ int orient2d_t(
 }
 
 template <>
-int orient2d_t(
+inline int orient2d_t(
     const Eigen::Matrix<double, 2, 1>& p1,
     const Eigen::Matrix<double, 2, 1>& p2,
     const Eigen::Matrix<double, 2, 1>& p3)
