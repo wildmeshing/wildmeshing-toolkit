@@ -1,6 +1,7 @@
 #pragma once
 
 #include <wmtk/utils/VectorUtils.h>
+#include <type_traits>
 #include <wmtk/AttributeCollection.hpp>
 #include <wmtk/utils/Logger.hpp>
 
@@ -299,7 +300,7 @@ public:
      * @param[out] new_tets a vector of Tuples for all the newly introduced tetra.
      * @return if split succeed
      */
-    
+
     bool split_edge(const Tuple& t, std::vector<Tuple>& new_tets);
     bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_tets);
     bool swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tets);
@@ -598,6 +599,42 @@ private:
         p_edge_attrs->rollback();
         p_face_attrs->rollback();
         p_tet_attrs->rollback();
+    }
+
+public:
+    class OperationBuilder
+    {
+    public:
+        OperationBuilder();
+        virtual ~OperationBuilder();
+        virtual bool before(const Tuple&);
+        virtual bool after();
+        virtual std::vector<size_t> removed_tids(const Tuple&);
+        virtual std::tuple<std::vector<size_t>, std::vector<std::array<size_t, 4>>>
+        replacing_tets();
+    };
+
+    template <typename T>
+    std::enable_if_t<std::is_base_of_v<OperationBuilder, T>, bool>
+    customized_operation(T& op, const Tuple& tup, std::vector<Tuple>& new_tet_tuples)
+    {
+        if (op.before() == false) return false;
+        auto affected = op.removed_tids();
+        auto old_tets = record_old_tet_connectivity(m_tet_connectivity, affected);
+
+        auto& [new_tet_id, new_tets] = op.replacing_tets();
+        auto rollback_vert_conn = operation_update_connectivity_impl(new_tet_id, new_tets);
+
+        for (auto ti : new_tet_id) new_tet_tuples.emplace_back(tuple_from_tet(ti));
+
+        start_protect_attributes();
+        if (!op.after() || !invariants(new_tet_tuples)) { // rollback post-operation
+
+            logger().trace("rolling back");
+            operation_failure_rollback_imp(rollback_vert_conn, affected, new_tet_id, old_tets);
+            return false;
+        }
+        release_protect_attributes();
     }
 };
 
