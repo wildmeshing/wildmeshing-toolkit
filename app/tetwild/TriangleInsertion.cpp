@@ -47,8 +47,10 @@ void tetwild::TetWild::init_from_delaunay_box_mesh(const std::vector<Eigen::Vect
                 if (k == 0) p[2] = box_min[2];
                 if (k == Nz) // note: have to do, otherwise the value would be slightly different
                     p[2] = box_max[2];
-
-                if (!m_envelope.is_outside(p)) continue;
+                this->isout_timer.start();
+                bool is_out = m_envelope.is_outside(p);
+                this->time_env += isout_timer.getElapsedTimeInSec();
+                if (!is_out) continue;
                 points.push_back({{p[0], p[1], p[2]}});
             }
         }

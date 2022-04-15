@@ -132,7 +132,8 @@ bool tetwild::TetWild::collapse_before(const Tuple& loc) // input is an edge
     if (collapse_cache.local().edge_length > 0 && m_vertex_attribute[v1_id].m_is_on_surface) {
         this->isout_timer.start();
         bool env_out = m_envelope.is_outside(m_vertex_attribute[v2_id].m_posf);
-        this->time_env += this->isout_timer.getElapsedTimeInSec();
+        double time_tmp = this->isout_timer.getElapsedTimeInSec();
+        this->time_env += time_tmp;
         if (!m_vertex_attribute[v2_id].m_is_on_surface && env_out) return false;
     }
 
@@ -249,6 +250,7 @@ bool tetwild::TetWild::collapse_after(const Tuple& loc)
     }
 
     // surface
+
     if (collapse_cache.local().edge_length > 0) {
         for (auto& vids : collapse_cache.local().surface_faces) {
             this->isout_timer.start();

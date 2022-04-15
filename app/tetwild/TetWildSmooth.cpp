@@ -94,7 +94,8 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
                         {{m_vertex_attribute[vs[0].vid(*this)].m_posf,
                           m_vertex_attribute[vs[1].vid(*this)].m_posf,
                           m_vertex_attribute[vs[2].vid(*this)].m_posf}});
-                    time_env += this->isout_timer.getElapsedTimeInSec();
+                    double time_tmp = this->isout_timer.getElapsedTimeInSec();
+                    time_env += time_tmp;
                     if (is_out) return false;
                 }
             }

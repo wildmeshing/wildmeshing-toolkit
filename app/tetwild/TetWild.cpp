@@ -32,7 +32,7 @@ void tetwild::TetWild::mesh_improvement(int max_its)
     ZoneScopedN("meshimprovementmain");
     igl::Timer timer_improv;
     double time_improv = 0.0;
-    double time_imp_env = 0.0;
+    double time_env = 0.0;
     compute_vertex_partition();
     wmtk::logger().info("========it pre========");
     timer_improv.start();
@@ -41,7 +41,7 @@ void tetwild::TetWild::mesh_improvement(int max_its)
     wmtk::logger().info("-----------env pre {}", this->time_env);
     wmtk::logger().info("===========time pre {}", time_pre);
     time_improv += time_pre;
-    time_imp_env += this->time_env;
+    time_env += this->time_env;
     ////operation loops
     bool is_hit_min_edge_length = false;
     const int M = 2;
@@ -50,13 +50,14 @@ void tetwild::TetWild::mesh_improvement(int max_its)
     for (int it = 0; it < max_its; it++) {
         ///ops
         timer_improv.start();
+        this->time_env = 0.0;
         wmtk::logger().info("\n========it {}========", it);
         auto [max_energy, avg_energy] = local_operations({{1, 1, 1, 1}});
         double time_itr = timer_improv.getElapsedTimeInSec();
         wmtk::logger().info("-----------env it{} {}", it, this->time_env);
         wmtk::logger().info("===========time it{} {}", it, time_itr);
         time_improv += time_itr;
-        time_imp_env += this->time_env;
+        time_env += this->time_env;
         ///energy check
         wmtk::logger().info("max energy {} stop {}", max_energy, m_params.stop_energy);
         if (max_energy < m_params.stop_energy) break;
@@ -90,14 +91,16 @@ void tetwild::TetWild::mesh_improvement(int max_its)
     const auto& vs = get_vertices();
     for (auto& v : vs) m_vertex_attribute[v.vid(*this)].m_scalar = 1;
     wmtk::logger().info("========it post========");
+    this->time_env = 0.0;
     timer_improv.start();
     local_operations({{0, 1, 0, 0}});
     double time_post = timer_improv.getElapsedTimeInSec();
-    wmtk::logger().info("===========time post {}", time_post);
+    wmtk::logger().info("time post {}", time_post);
     time_improv += time_post;
-    time_imp_env += this->time_env;
-    wmtk::logger().info("++++++time improve envelope {}", time_imp_env);
+    time_env += this->time_env;
+    wmtk::logger().info("++++++time improve envelope {}", time_env);
     wmtk::logger().info("++++++time improve total {}", time_improv);
+    this->time_env = time_env;
 }
 
 #include <igl/Timer.h>

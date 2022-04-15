@@ -146,10 +146,10 @@ int main(int argc, char** argv)
     double time = timer.getElapsedTime();
 
     wmtk::logger().info("==========time=======");
-
+    wmtk::logger().info("========= simp time: {}", time_simp);
     wmtk::logger().info("tetwild time: {}", time);
     wmtk::logger().info("total time: {}", time + time_simp);
-    wmtk::logger().info("env time: {}", mesh.time_env);
+    wmtk::logger().info("env time: {}", mesh.time_env + m.env_time);
 
     m.m_envelope.printnumber();
 
@@ -200,8 +200,9 @@ int main(int argc, char** argv)
         for (auto i = 0; i < outface.size(); i++) {
             matF.row(i) << outface[i][0], outface[i][1], outface[i][2];
         }
-        wmtk::logger().info("Output face size {}", outface.size());
         igl::write_triangle_mesh(output_path + "_surface.obj", matV, matF);
+        wmtk::logger().info("Output face size {}", outface.size());
+        wmtk::logger().info("======= finish =========");
     }
 
     // todo: refine adaptively the mesh
