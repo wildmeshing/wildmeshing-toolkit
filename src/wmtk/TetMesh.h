@@ -432,6 +432,7 @@ public:
      * @param local_eid local edge index
      */
     Tuple tuple_from_edge(size_t tid, int local_eid) const;
+    Tuple tuple_from_edge(const std::array<size_t,2>& vids) const;
 
     /**
      * @brief get a Tuple from global tetra index and __local__ face index (from 0-3).

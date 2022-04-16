@@ -283,8 +283,32 @@ std::tuple<wmtk::TetMesh::Tuple, size_t> wmtk::TetMesh::tuple_from_face(
 
     size_t global_fid = face.m_global_tid * 4 + face.m_local_fid;
 
+    assert(face.is_valid(*this));
+
     return std::make_tuple(face, global_fid);
 }
+
+wmtk::TetMesh::Tuple wmtk::TetMesh::tuple_from_edge(const std::array<size_t, 2>& vids) const
+{
+    auto tets = set_intersection(
+        m_vertex_connectivity[vids[0]].m_conn_tets,
+        m_vertex_connectivity[vids[1]].m_conn_tets);
+    if (tets.empty()) return Tuple();
+
+    auto tid = tets.front();
+    auto tup = tuple_from_tet(tid);
+    auto local_ind = m_tet_connectivity[tid].m_indices;
+
+    for (auto local_eid = 0; local_eid < 6; local_eid++) {
+        auto [l0, l1] = m_local_edges[local_eid];
+        auto v0 = local_ind[l0], v1 = local_ind[l1];
+        if (v0 != vids[0] && v1 != vids[0]) continue;
+        if (v0 != vids[1] && v1 != vids[1]) continue;
+        return tuple_from_edge(tid, local_eid);
+    }
+    return Tuple();
+}
+
 
 wmtk::TetMesh::Tuple wmtk::TetMesh::tuple_from_vertex(size_t vid) const
 {
