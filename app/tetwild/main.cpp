@@ -146,10 +146,10 @@ int main(int argc, char** argv)
     double time = timer.getElapsedTime();
 
     wmtk::logger().info("==========time=======");
-    wmtk::logger().info("========= simp time: {}", time_simp);
+    wmtk::logger().info("simp time: {}", time_simp);
     wmtk::logger().info("tetwild time: {}", time);
     wmtk::logger().info("total time: {}", time + time_simp);
-    wmtk::logger().info("env time: {}", mesh.time_env + m.env_time);
+    wmtk::logger().info("env time: {}", mesh.time_env);
 
     m.m_envelope.printnumber();
 
