@@ -68,7 +68,6 @@ void tetwild::TetWild::init_from_delaunay_box_mesh(const std::vector<Eigen::Vect
     m_vertex_attribute.m_attributes.resize(points.size());
     m_tet_attribute.m_attributes.resize(tets.size());
     m_face_attribute.m_attributes.resize(tets.size() * 4);
-    m_edge_attribute.m_attributes.resize(tets.size() * 6);
     for (int i = 0; i < m_vertex_attribute.m_attributes.size(); i++) {
         m_vertex_attribute[i].m_pos = Vector3r(points[i][0], points[i][1], points[i][2]);
         m_vertex_attribute[i].m_posf = Vector3d(points[i][0], points[i][1], points[i][2]);
