@@ -353,6 +353,10 @@ public:
     std::vector<Tuple> get_faces() const;
     std::vector<Tuple> get_vertices() const;
     std::vector<Tuple> get_tets() const;
+    virtual void for_each_edge(const std::function<void(const TetMesh::Tuple&)>&);
+    virtual void for_each_face(const std::function<void(const TetMesh::Tuple&)>&);
+    virtual void for_each_vertex(const std::function<void(const TetMesh::Tuple&)>&);
+    virtual void for_each_tetra(const std::function<void(const TetMesh::Tuple&)>&);
 
 public:
     template <typename T>

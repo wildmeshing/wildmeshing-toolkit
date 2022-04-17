@@ -134,8 +134,6 @@ auto internal_insert_single_triangle(
     const std::function<bool(const std::vector<wmtk::TetMesh::Tuple>&)>& try_acquire_edge,
     const std::function<bool(const std::vector<wmtk::TetMesh::Tuple>&)>& try_acquire_tetra)
 {
-    using Tuple = wmtk::TetMesh::Tuple;
-
     auto vertex_pos_r = [&m_vertex_attribute](size_t i) -> tetwild::Vector3r {
         return m_vertex_attribute[i].m_pos;
     };
@@ -219,21 +217,9 @@ void tetwild::TetWild::init_from_input_surface(
     tbb::task_arena arena(NUM_THREADS);
     tbb::task_group tg;
 
-    arena.execute([&insertion_queues,
-                   &tg,
-                   &expired_queue,
-                   &m = *this,
-                   &tet_face_tags = this->tet_face_tags,
-                   &vertices,
-                   &faces]() {
+    arena.execute([&, &m = *this, &tet_face_tags = this->tet_face_tags]() {
         for (int task_id = 0; task_id < m.NUM_THREADS; task_id++) {
-            tg.run([&insertion_queues,
-                    &expired_queue,
-                    &tet_face_tags,
-                    &m,
-                    &vertices,
-                    &faces,
-                    task_id] {
+            tg.run([&] {
                 auto try_acquire_tetra = [&m, task_id](const auto& intersected_tets) {
                     for (auto t_int : intersected_tets) {
                         for (auto v_int : m.oriented_tet_vertices(t_int)) {
@@ -347,19 +333,18 @@ void tetwild::TetWild::init_from_input_surface(
     //// track surface, bbox, rounding
     wmtk::logger().info("finished insertion");
 
-    finalize_triangle_insertion(faces, tet_face_tags);
+    finalize_triangle_insertion(faces);
 
     wmtk::logger().info("setup attributes #t {} #v {}", tet_capacity(), vert_capacity());
 } // note: skip preserve open boundaries
 
 void tetwild::TetWild::finalize_triangle_insertion(
-    const std::vector<std::array<size_t, 3>>& faces,
-    const tbb::concurrent_map<std::array<size_t, 3>, std::vector<int>>& tet_face_tags)
+    const std::vector<std::array<size_t, 3>>& faces)
 {
     tbb::task_arena arena(NUM_THREADS);
 
-    arena.execute([&faces, &tet_face_tags, this] {
-        tbb::parallel_for(tet_face_tags.range(), [&faces, this](auto& r) {
+    arena.execute([&faces, this] {
+        tbb::parallel_for(this->tet_face_tags.range(), [&faces, this](auto& r) {
             auto projected_point_in_triangle = [](auto& c, auto& tri) {
                 std::array<Vector2r, 3> tri2d;
                 int squeeze_to_2d_dir = wmtk::project_triangle_to_2d(tri, tri2d);
@@ -367,10 +352,7 @@ void tetwild::TetWild::finalize_triangle_insertion(
                 //// should exclude the points on the edges of tri2d -- NO
                 return wmtk::is_point_inside_triangle(c2d, tri2d);
             };
-            for (tbb::concurrent_map<std::array<size_t, 3>, std::vector<int>>::const_iterator i =
-                     r.begin();
-                 i != r.end();
-                 i++) {
+            for (auto i = r.begin(); i != r.end(); i++) {
                 auto& vids = i->first;
                 auto fids = i->second;
                 if (fids.empty()) continue;
