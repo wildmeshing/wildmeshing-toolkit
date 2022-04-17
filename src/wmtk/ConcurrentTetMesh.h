@@ -97,6 +97,8 @@ public:
 
 public:
     void for_each_edge(std::function<void(const TetMesh::Tuple&)>);
+    void for_each_vertex(std::function<void(const TetMesh::Tuple&)>);
+    void for_each_tetra(std::function<void(const TetMesh::Tuple&)>);
     int NUM_THREADS = 1;
 };
 } // namespace wmtk

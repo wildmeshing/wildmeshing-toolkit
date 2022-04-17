@@ -138,8 +138,7 @@ public:
 
     void init_from_delaunay_box_mesh(const std::vector<Eigen::Vector3d>& vertices);
 
-    void setup_attributes(
-        const std::vector<Vector3d>& vertices,
+    void finalize_triangle_insertion(
         const std::vector<std::array<size_t, 3>>& faces,
         const tbb::concurrent_map<std::array<size_t, 3>, std::vector<int>>&);
 
