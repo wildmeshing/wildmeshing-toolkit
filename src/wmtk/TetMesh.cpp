@@ -283,7 +283,10 @@ std::tuple<wmtk::TetMesh::Tuple, size_t> wmtk::TetMesh::tuple_from_face(
 
     size_t global_fid = face.m_global_tid * 4 + face.m_local_fid;
 
+    face.m_hash = m_tet_connectivity[face.m_global_tid].hash;
+    
     assert(face.is_valid(*this));
+    assert(face.fid(*this) == global_fid);
 
     return std::make_tuple(face, global_fid);
 }
