@@ -373,7 +373,7 @@ bool wmtk::ConcurrentTetMesh::try_set_vertex_mutex_one_ring(const Tuple& v, int 
     return true;
 }
 
-void wmtk::ConcurrentTetMesh::for_each_edge(std::function<void(const TetMesh::Tuple&)> func)
+void wmtk::ConcurrentTetMesh::for_each_edge(const std::function<void(const TetMesh::Tuple&)>& func)
 {
     tbb::task_arena arena(NUM_THREADS);
     arena.execute([&] {
@@ -394,7 +394,7 @@ void wmtk::ConcurrentTetMesh::for_each_edge(std::function<void(const TetMesh::Tu
 }
 
 
-void wmtk::ConcurrentTetMesh::for_each_tetra(std::function<void(const TetMesh::Tuple&)> func)
+void wmtk::ConcurrentTetMesh::for_each_tetra(const std::function<void(const TetMesh::Tuple&)>& func)
 {
     tbb::task_arena arena(NUM_THREADS);
     arena.execute([&] {
@@ -411,7 +411,7 @@ void wmtk::ConcurrentTetMesh::for_each_tetra(std::function<void(const TetMesh::T
 }
 
 
-void wmtk::ConcurrentTetMesh::for_each_vertex(std::function<void(const TetMesh::Tuple&)> func)
+void wmtk::ConcurrentTetMesh::for_each_vertex(const std::function<void(const TetMesh::Tuple&)>& func)
 {
     tbb::task_arena arena(NUM_THREADS);
     arena.execute([&] {
