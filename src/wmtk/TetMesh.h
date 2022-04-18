@@ -618,11 +618,15 @@ public:
         OperationBuilder() = default;
         ~OperationBuilder() = default;
         bool before(const Tuple&) { return true; }
-        bool after() { return true; }
+        bool after(const std::vector<Tuple>&) { return true; }
         std::vector<size_t> removed_tids(const Tuple&);
         int request_vert_slots() {return 0;};
         std::vector<std::array<size_t, 4>> replacing_tets(const std::vector<size_t>&);
     };
+
+    // dangerous usage, backdoor for private access.
+    template <int id>
+    class InternalOperationBuilder : public OperationBuilder{};
 
     template <typename T, typename = std::enable_if_t<std::is_base_of_v<OperationBuilder, T>>>
     bool customized_operation(T& op, const Tuple& tup, std::vector<Tuple>& new_tet_tuples)
@@ -644,7 +648,7 @@ public:
         for (auto ti : new_tet_id) new_tet_tuples.emplace_back(tuple_from_tet(ti));
 
         start_protect_attributes();
-        if (!op.after() || !invariants(new_tet_tuples)) { // rollback post-operation
+        if (!op.after(new_tet_tuples) || !invariants(new_tet_tuples)) { // rollback post-operation
 
             logger().trace("rolling back");
             operation_failure_rollback_imp(rollback_vert_conn, affected, new_tet_id, old_tets);
