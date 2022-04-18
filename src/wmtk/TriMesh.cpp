@@ -904,7 +904,7 @@ bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
 
 #ifdef BOUNDARY_FREEZE
 // getting the initial boundary vertices before any edge operations as the first colum of the matrix
-void wmtk::TriMesh::get_boundary_map()
+void wmtk::TriMesh::get_boundary_map(Eigen::VectorXi SVI)
 {
     bnd_table = Eigen::MatrixXi::Zero(vert_capacity(), 2);
 
@@ -916,15 +916,14 @@ void wmtk::TriMesh::get_boundary_map()
     int cnt = 0;
     for (auto e : edges) {
         if (is_boundary_edge(e)) {
-            std::cout << e.vid(*this) << std::endl;
-            std::cout << (e.switch_vertex(*this)).vid(*this) << std::endl;
-            cnt++;
-            bnd_table(e.vid(*this), 0) = e.vid(*this);
-            bnd_table((e.switch_vertex(*this)).vid(*this), 0) = (e.switch_vertex(*this)).vid(*this);
+            size_t vid1, vid2;
+            vid1 = SVI(e.vid(*this));
+            vid2 = SVI((e.switch_vertex(*this)).vid(*this));
+            bnd_table(vid1, 0) = vid1;
+            bnd_table(vid2, 0) = vid2;
         } else
             continue;
     }
-    wmtk::logger().info("cnt number is {}", cnt);
     igl::writeDMAT("new_dmt.dmat", bnd_table);
     // igl::writeDMAT("bnd_f.dmat", bnd_f);
 }

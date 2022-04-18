@@ -101,7 +101,7 @@ int main(int argc, char** argv)
 
 #define BOUNDARY_FREEZE
 #ifdef BOUNDARY_FREEZE
-    m.get_boundary_map();
+    m.get_boundary_map(SVI);
 #endif
     m.get_vertices();
     std::vector<double> properties = m.average_len_valen();

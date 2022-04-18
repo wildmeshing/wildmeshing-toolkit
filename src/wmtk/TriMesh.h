@@ -240,7 +240,8 @@ public:
 #ifdef BOUNDARY_FREEZE
     // write a file has boundary vertices correspondences
     Eigen::MatrixXi bnd_table;
-    void get_boundary_map();
+    void get_boundary_map(Eigen::VectorXi SVI); // takes the mapping form the after remove_duplicate
+                                                // to the original input
 #endif
 
 private:
