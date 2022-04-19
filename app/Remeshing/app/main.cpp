@@ -51,6 +51,7 @@ int main(int argc, char** argv)
     int thread = 1;
     double target_len = -1;
     int itrs = 2;
+    bool freeze = false;
 
     CLI::App app{argv[0]};
     app.add_option("input", path, "Input mesh.")->check(CLI::ExistingFile);
@@ -61,6 +62,7 @@ int main(int argc, char** argv)
     app.add_option("-r, --relativelength", len_rel, "Relative edge length.");
     app.add_option("-a, --absolutelength", target_len, "absolute edge length.");
     app.add_option("-i, --iterations", itrs, "number of remeshing itrs.");
+    app.add_option("-f, --freeze", freeze, "to freze the boundary, default to false");
     CLI11_PARSE(app, argc, argv);
 
     wmtk::logger().info("remeshing on {}", path);
@@ -69,7 +71,7 @@ int main(int argc, char** argv)
     bool ok = igl::read_triangle_mesh(path, V, F);
     Eigen::VectorXi SVI, SVJ;
     Eigen::MatrixXd temp_V = V; // for STL file
-    igl::remove_duplicate_vertices(temp_V, 0, V, SVI, SVJ);
+    igl::remove_duplicate_vertices(temp_V, 1e-5, V, SVI, SVJ);
     for (int i = 0; i < F.rows(); i++)
         for (int j : {0, 1, 2}) F(i, j) = SVJ[F(i, j)];
     wmtk::logger().info("Before_vertices#: {} \n Before_tris#: {}", V.rows(), F.rows());
@@ -99,10 +101,8 @@ int main(int argc, char** argv)
     UniformRemeshing m(v, thread);
     m.create_mesh(v.size(), tri, modified_v, envelope_size);
 
-#define BOUNDARY_FREEZE
-#ifdef BOUNDARY_FREEZE
-    m.get_boundary_map(SVI);
-#endif
+    if (freeze) m.get_boundary_map(SVI);
+
     m.get_vertices();
     std::vector<double> properties = m.average_len_valen();
     wmtk::logger().info(
