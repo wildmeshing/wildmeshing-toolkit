@@ -194,6 +194,15 @@ bool wmtk::TriMesh::check_edge_manifold() const
 {
     std::vector<size_t> count(tri_capacity() * 3, 0);
     auto faces = get_faces();
+    Eigen::MatrixXi F = Eigen::MatrixXi::Constant(tri_capacity(), 3, -1);
+    for (auto& t : get_faces()) {
+        auto i = t.fid(*this);
+        auto vs = oriented_tri_vertices(t);
+        for (int j = 0; j < 3; j++) {
+            F(i, j) = vs[j].vid(*this);
+        }
+    }
+    return igl::is_edge_manifold(F);
     for (auto f : faces) {
         for (int i = 0; i < 3; i++) {
             count[f.eid(*this)]++;
@@ -211,6 +220,7 @@ bool wmtk::TriMesh::check_edge_manifold() const
 
 bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
 {
+    assert(check_edge_manifold());
     if (!split_before(t)) return false;
     if (!t.is_valid(*this)) return false;
 
@@ -341,12 +351,14 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
         rollback_protected_attributes();
         return false;
     }
+    assert(check_edge_manifold());
     release_protect_attributes();
     return true;
 }
 
 bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
 {
+    assert(check_edge_manifold());
     if (!collapse_before(loc0)) {
         return false;
     }
@@ -492,12 +504,15 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
         rollback_protected_attributes();
         return false;
     }
+    assert(check_edge_manifold());
     release_protect_attributes();
+
     return true;
 }
 
 bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
 {
+    assert(check_edge_manifold());
     if (!swap_before(t)) {
         return false;
     }
@@ -568,6 +583,7 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
 
         return false;
     }
+    assert(check_edge_manifold());
     release_protect_attributes();
     return true;
 }
@@ -575,12 +591,15 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
 bool TriMesh::smooth_vertex(const Tuple& loc0)
 {
     ZoneScoped;
+    assert(check_edge_manifold());
     if (!smooth_before(loc0)) return false;
     start_protect_attributes();
     if (!smooth_after(loc0) || !invariants(get_one_ring_tris_for_vertex(loc0))) {
         rollback_protected_attributes();
         return false;
     }
+    assert(check_edge_manifold());
+
     release_protect_attributes();
     return true;
 }
