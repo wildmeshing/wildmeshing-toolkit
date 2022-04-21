@@ -345,24 +345,19 @@ bool UniformRemeshing::uniform_remeshing(double L, int iterations)
         cnt++;
         // split
         split_remeshing(L);
-        write_triangle_mesh("split_" + std::to_string(cnt) + ".obj");
         // collpase
         collapse_remeshing(L);
-        write_triangle_mesh("collapse_" + std::to_string(cnt) + ".obj");
 
         // swap edges
         swap_remeshing();
-        write_triangle_mesh("swap_" + std::to_string(cnt) + ".obj");
 
         // smoothing
         auto vertices = get_vertices();
         for (auto& loc : vertices) smooth_vertex(loc);
         // assert(check_mesh_connectivity_validity());
-        write_triangle_mesh("smooth_" + std::to_string(cnt) + ".obj");
 
         properties = average_len_valen();
     }
-    write_triangle_mesh("debug.obj");
     consolidate_mesh();
     wmtk::logger().info("finished {} remeshing iterations", iterations);
     wmtk::logger().info("avg edge len after remesh is: {}", properties[0]);

@@ -116,6 +116,6 @@ int main(int argc, char** argv)
         run_remeshing(path, diag * len_rel, output, m, itrs);
     timer.stop();
     logger().info("Took {}", timer.getElapsedTimeInSec());
-
+    logger().info("========finished========");
     return 0;
 }
