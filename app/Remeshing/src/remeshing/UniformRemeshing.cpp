@@ -340,11 +340,11 @@ bool UniformRemeshing::uniform_remeshing(double L, int iterations)
     int cnt = 0;
     std::vector<double> properties = average_len_valen();
     wmtk::logger().info("the starting avg len is {}", properties[0]);
+    wmtk::logger().info("input mesh mani {}", check_edge_manifold());
     while ((properties[0] - L) * (properties[0] - L) > 1e-8 && cnt < iterations) {
         cnt++;
         // split
         split_remeshing(L);
-
         // collpase
         collapse_remeshing(L);
 
@@ -354,10 +354,11 @@ bool UniformRemeshing::uniform_remeshing(double L, int iterations)
         // smoothing
         auto vertices = get_vertices();
         for (auto& loc : vertices) smooth_vertex(loc);
-        assert(check_mesh_connectivity_validity());
-        consolidate_mesh();
+        // assert(check_mesh_connectivity_validity());
+
         properties = average_len_valen();
     }
+    consolidate_mesh();
     wmtk::logger().info("finished {} remeshing iterations", iterations);
     wmtk::logger().info("avg edge len after remesh is: {}", properties[0]);
 
@@ -383,6 +384,9 @@ bool UniformRemeshing::write_triangle_mesh(std::string path)
         }
     }
     igl::write_triangle_mesh(path, V, F);
-    assert(igl::is_edge_manifold(F));
-    return igl::is_edge_manifold(F);
+    // assert(igl::is_edge_manifold(F));
+    bool manifold = check_edge_manifold();
+    assert(manifold);
+
+    return manifold;
 }

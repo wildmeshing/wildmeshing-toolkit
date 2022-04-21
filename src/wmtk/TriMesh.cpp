@@ -7,7 +7,7 @@
 #include "wmtk/utils/VectorUtils.h"
 using namespace wmtk;
 
-
+// #define BOUNDARY_FREEZE
 TriMesh::Tuple TriMesh::Tuple::switch_vertex(const TriMesh& m) const
 {
     assert(is_valid(m));
@@ -194,6 +194,7 @@ bool wmtk::TriMesh::check_edge_manifold() const
 {
     std::vector<size_t> count(tri_capacity() * 3, 0);
     auto faces = get_faces();
+    Eigen::MatrixXi F = Eigen::MatrixXi::Constant(tri_capacity(), 3, -1);
     for (auto f : faces) {
         for (int i = 0; i < 3; i++) {
             count[f.eid(*this)]++;
@@ -211,6 +212,7 @@ bool wmtk::TriMesh::check_edge_manifold() const
 
 bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
 {
+    assert(check_edge_manifold());
     if (!split_before(t)) return false;
     if (!t.is_valid(*this)) return false;
 
@@ -341,12 +343,14 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
         rollback_protected_attributes();
         return false;
     }
+    assert(check_edge_manifold());
     release_protect_attributes();
     return true;
 }
 
 bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
 {
+    assert(check_edge_manifold());
     if (!collapse_before(loc0)) {
         return false;
     }
@@ -492,12 +496,15 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
         rollback_protected_attributes();
         return false;
     }
+    assert(check_edge_manifold());
     release_protect_attributes();
+
     return true;
 }
 
 bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
 {
+    assert(check_edge_manifold());
     if (!swap_before(t)) {
         return false;
     }
@@ -568,6 +575,7 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
 
         return false;
     }
+    assert(check_edge_manifold());
     release_protect_attributes();
     return true;
 }
@@ -575,12 +583,15 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
 bool TriMesh::smooth_vertex(const Tuple& loc0)
 {
     ZoneScoped;
+    assert(check_edge_manifold());
     if (!smooth_before(loc0)) return false;
     start_protect_attributes();
     if (!smooth_after(loc0) || !invariants(get_one_ring_tris_for_vertex(loc0))) {
         rollback_protected_attributes();
         return false;
     }
+    assert(check_edge_manifold());
+
     release_protect_attributes();
     return true;
 }
@@ -602,6 +613,20 @@ void TriMesh::consolidate_mesh()
         map_t_ids[i] = t_cnt;
         t_cnt++;
     }
+
+    // #ifdef BOUNDARY_FREEZE
+    //     auto edges = get_edges();
+    //     for (auto e : edges) {
+    //         if (is_boundary_edge(e)) {
+    //             bnd_table(e.vid(*this), 1) = map_v_ids[e.vid(*this)];
+    //             bnd_table(e.switch_vertex(*this).vid(*this), 1) =
+    //                 map_v_ids[e.switch_vertex(*this).vid(*this)];
+    //         } else {
+    //             continue;
+    //         }
+    //     }
+    //     igl::writeDMAT("bdn_table.dmat", bnd_table);
+    // #endif
 
     v_cnt = 0;
     for (auto i = 0; i < m_vertex_connectivity.size(); i++) {
@@ -887,3 +912,30 @@ bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
 
     return v_link;
 }
+
+#ifdef BOUNDARY_FREEZE
+// getting the initial boundary vertices before any edge operations as the first colum of the matrix
+void wmtk::TriMesh::get_boundary_map(Eigen::VectorXi SVI)
+{
+    bnd_table = Eigen::MatrixXi::Zero(vert_capacity(), 2);
+
+    // initiate all to -1
+    for (int i = 0; i < vert_capacity(); i++) {
+        bnd_table.row(i) << -1, -1;
+    }
+    auto edges = get_edges();
+    int cnt = 0;
+    for (auto e : edges) {
+        if (is_boundary_edge(e)) {
+            size_t vid1, vid2;
+            vid1 = SVI(e.vid(*this));
+            vid2 = SVI((e.switch_vertex(*this)).vid(*this));
+            bnd_table(vid1, 0) = vid1;
+            bnd_table(vid2, 0) = vid2;
+        } else
+            continue;
+    }
+    igl::writeDMAT("new_dmt.dmat", bnd_table);
+    // igl::writeDMAT("bnd_f.dmat", bnd_f);
+}
+#endif
