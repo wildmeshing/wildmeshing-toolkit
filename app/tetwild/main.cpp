@@ -17,6 +17,7 @@
 #include <igl/remove_duplicate_vertices.h>
 //#include <wmtk/utils/GeoUtils.h>
 #include <igl/predicates/predicates.h>
+#include <remeshing/UniformRemeshing.h>
 #include <sec/ShortestEdgeCollapse.h>
 #include <Tracy.hpp>
 
@@ -80,7 +81,7 @@ int main(int argc, char** argv)
         wmtk::separate_to_manifold(v1, tri1, v, tri, modified_v);
     }
 
-    sec::ShortestEdgeCollapse m(v, NUM_THREADS);
+    remeshing::UniformRemeshing m(v, 16);
     m.create_mesh(v.size(), tri, modified_v, envelope_size);
     assert(m.check_mesh_connectivity_validity());
     wmtk::logger().info("input {} simplification", input_path);
@@ -89,13 +90,13 @@ int main(int argc, char** argv)
 
     igl::Timer timer_simp;
     timer_simp.start();
-    m.collapse_shortest(target_verts);
+    m.uniform_remeshing(0.01 * diag, 2);
     double time_simp = timer_simp.getElapsedTime();
 
     m.consolidate_mesh();
     m.write_triangle_mesh(output_path + "after_simp.obj");
     wmtk::logger().info("aftersimp verts {} faces {}", m.vert_capacity(), m.tri_capacity());
-    wmtk::logger().info("--------- env time : {}", m.env_time);
+    // wmtk::logger().info("--------- env time : {}", m.env_time);
     wmtk::logger().info("========= simp time: {}", time_simp);
     // initiate the tetwild mesh using the original envelop
     tetwild::TetWild mesh(params, m.m_envelope, NUM_THREADS);
