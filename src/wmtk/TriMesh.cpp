@@ -7,7 +7,7 @@
 #include "wmtk/utils/VectorUtils.h"
 using namespace wmtk;
 
-#define BOUNDARY_FREEZE
+// #define BOUNDARY_FREEZE
 TriMesh::Tuple TriMesh::Tuple::switch_vertex(const TriMesh& m) const
 {
     assert(is_valid(m));
@@ -195,14 +195,6 @@ bool wmtk::TriMesh::check_edge_manifold() const
     std::vector<size_t> count(tri_capacity() * 3, 0);
     auto faces = get_faces();
     Eigen::MatrixXi F = Eigen::MatrixXi::Constant(tri_capacity(), 3, -1);
-    for (auto& t : get_faces()) {
-        auto i = t.fid(*this);
-        auto vs = oriented_tri_vertices(t);
-        for (int j = 0; j < 3; j++) {
-            F(i, j) = vs[j].vid(*this);
-        }
-    }
-    return igl::is_edge_manifold(F);
     for (auto f : faces) {
         for (int i = 0; i < 3; i++) {
             count[f.eid(*this)]++;
@@ -622,19 +614,19 @@ void TriMesh::consolidate_mesh()
         t_cnt++;
     }
 
-#ifdef BOUNDARY_FREEZE
-    auto edges = get_edges();
-    for (auto e : edges) {
-        if (is_boundary_edge(e)) {
-            bnd_table(e.vid(*this), 1) = map_v_ids[e.vid(*this)];
-            bnd_table(e.switch_vertex(*this).vid(*this), 1) =
-                map_v_ids[e.switch_vertex(*this).vid(*this)];
-        } else {
-            continue;
-        }
-    }
-    igl::writeDMAT("bdn_table.dmat", bnd_table);
-#endif
+    // #ifdef BOUNDARY_FREEZE
+    //     auto edges = get_edges();
+    //     for (auto e : edges) {
+    //         if (is_boundary_edge(e)) {
+    //             bnd_table(e.vid(*this), 1) = map_v_ids[e.vid(*this)];
+    //             bnd_table(e.switch_vertex(*this).vid(*this), 1) =
+    //                 map_v_ids[e.switch_vertex(*this).vid(*this)];
+    //         } else {
+    //             continue;
+    //         }
+    //     }
+    //     igl::writeDMAT("bdn_table.dmat", bnd_table);
+    // #endif
 
     v_cnt = 0;
     for (auto i = 0; i < m_vertex_connectivity.size(); i++) {

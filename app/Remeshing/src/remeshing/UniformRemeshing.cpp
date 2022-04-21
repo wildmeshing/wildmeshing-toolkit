@@ -389,6 +389,9 @@ bool UniformRemeshing::write_triangle_mesh(std::string path)
         }
     }
     igl::write_triangle_mesh(path, V, F);
-    assert(igl::is_edge_manifold(F));
-    return igl::is_edge_manifold(F);
+    // assert(igl::is_edge_manifold(F));
+    bool manifold = check_edge_manifold();
+    assert(manifold);
+
+    return manifold;
 }
