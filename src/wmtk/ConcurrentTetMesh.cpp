@@ -373,7 +373,7 @@ bool wmtk::ConcurrentTetMesh::try_set_vertex_mutex_one_ring(const Tuple& v, int 
     return true;
 }
 
-void wmtk::ConcurrentTetMesh::for_each_edge(std::function<void(const TetMesh::Tuple&)> func)
+void wmtk::ConcurrentTetMesh::for_each_edge(const std::function<void(const TetMesh::Tuple&)>& func)
 {
     tbb::task_arena arena(NUM_THREADS);
     arena.execute([&] {
@@ -381,14 +381,47 @@ void wmtk::ConcurrentTetMesh::for_each_edge(std::function<void(const TetMesh::Tu
             tbb::blocked_range<int>(0, tet_capacity()),
             [&](tbb::blocked_range<int> r) {
                 for (int i = r.begin(); i < r.end(); i++) {
-                    if (tuple_from_tet(i).vid(*this) == std::numeric_limits<size_t>::max())
-                        continue;
+                    if (!tuple_from_tet(i).is_valid(*this)) continue;
                     for (int j = 0; j < 6; j++) {
                         auto tup = tuple_from_edge(i, j);
                         if (tup.eid(*this) == 6 * i + j) {
                             func(tup);
                         }
                     }
+                }
+            });
+    });
+}
+
+
+void wmtk::ConcurrentTetMesh::for_each_tetra(const std::function<void(const TetMesh::Tuple&)>& func)
+{
+    tbb::task_arena arena(NUM_THREADS);
+    arena.execute([&] {
+        tbb::parallel_for(
+            tbb::blocked_range<int>(0, tet_capacity()),
+            [&](tbb::blocked_range<int> r) {
+                for (int i = r.begin(); i < r.end(); i++) {
+                    auto tup = tuple_from_tet(i);
+                    if (!tup.is_valid(*this)) continue;
+                    func(tup);
+                }
+            });
+    });
+}
+
+
+void wmtk::ConcurrentTetMesh::for_each_vertex(const std::function<void(const TetMesh::Tuple&)>& func)
+{
+    tbb::task_arena arena(NUM_THREADS);
+    arena.execute([&] {
+        tbb::parallel_for(
+            tbb::blocked_range<int>(0, vert_capacity()),
+            [&](tbb::blocked_range<int> r) {
+                for (int i = r.begin(); i < r.end(); i++) {
+                    auto tup = tuple_from_vertex(i);
+                    if (!tup.is_valid(*this)) continue;
+                    func(tup);
                 }
             });
     });

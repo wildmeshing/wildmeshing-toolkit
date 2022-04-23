@@ -96,7 +96,9 @@ public:
     bool try_set_vertex_mutex_one_ring(const Tuple& v, int threadid = 0);
 
 public:
-    void for_each_edge(std::function<void(const TetMesh::Tuple&)>);
+    void for_each_edge(const std::function<void(const TetMesh::Tuple&)>&) override;
+    void for_each_vertex(const std::function<void(const TetMesh::Tuple&)>&) override;
+    void for_each_tetra(const std::function<void(const TetMesh::Tuple&)>&) override;
     int NUM_THREADS = 1;
 };
 } // namespace wmtk
