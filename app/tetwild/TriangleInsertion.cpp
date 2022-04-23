@@ -143,7 +143,6 @@ auto internal_insert_single_triangle(
     const auto& [flag, intersected_tets, intersected_edges, intersected_pos] =
         wmtk::triangle_insert_prepare_info<apps::Rational>(
             m,
-            vertices,
             face,
             marked_tet_faces, // output
             try_acquire_triangle,
@@ -188,7 +187,7 @@ auto internal_insert_single_triangle(
     }
 
     return true;
-};
+}
 
 void tetwild::TetWild::init_from_input_surface(
     const std::vector<Vector3d>& vertices,

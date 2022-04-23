@@ -15,7 +15,6 @@
 #include <queue>
 #include <vector>
 
-
 namespace wmtk {
 class TetMesh
 {
@@ -300,12 +299,16 @@ public:
      * @param[out] new_tets a vector of Tuples for all the newly introduced tetra.
      * @return if split succeed
      */
+    
     bool split_edge(const Tuple& t, std::vector<Tuple>& new_tets);
     bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_tets);
     bool swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tets);
     bool swap_edge(const Tuple& t, std::vector<Tuple>& new_tets);
     bool swap_face(const Tuple& t, std::vector<Tuple>& new_tets);
     bool smooth_vertex(const Tuple& t);
+
+    bool split_tet(const Tuple& t, std::vector<Tuple>& new_tets);
+    bool split_face(const Tuple& t, std::vector<Tuple>& new_tets);
 
     /**
      * @brief Insert a triangle into a tetmesh, with known intersection information
@@ -395,14 +398,14 @@ protected:
 
     //// Split the edge in the tuple
     // Checks if the split should be performed or not (user controlled)
-    virtual bool split_before(const Tuple& t) { return true; } // check edge condition
+    virtual bool split_edge_before(const Tuple& t) { return true; } // check edge condition
     // This function computes the attributes for the added simplices
     // if it returns false then the operation is undone
-    virtual bool split_after(const Tuple& t) { return true; } // check tet condition
+    virtual bool split_edge_after(const Tuple& t) { return true; } // check tet condition
 
     //// Collapse the edge in the tuple
     // Checks if the collapse should be performed or not (user controlled)
-    virtual bool collapse_before(const Tuple& t) { return true; }
+    virtual bool collapse_edge_before(const Tuple& t) { return true; }
     // If it returns false then the operation is undone (the tuple indexes a vertex and tet that
     // survived)
 
@@ -413,7 +416,7 @@ protected:
     virtual bool swap_face_before(const Tuple& t) { return true; }
     virtual bool swap_face_after(const Tuple& t) { return true; }
 
-    virtual bool collapse_after(const Tuple& t) { return true; }
+    virtual bool collapse_edge_after(const Tuple& t) { return true; }
     virtual bool smooth_before(const Tuple& t) { return true; }
     virtual bool smooth_after(const Tuple& t) { return true; }
 

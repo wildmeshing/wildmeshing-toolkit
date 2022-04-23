@@ -36,7 +36,7 @@ std::vector<TriMesh::Tuple> UniformRemeshing::new_edges_after(
     wmtk::unique_edge_tuples(*this, new_edges);
     return new_edges;
 }
-bool UniformRemeshing::swap_after(const TriMesh::Tuple& t)
+bool UniformRemeshing::swap_edge_after(const TriMesh::Tuple& t)
 {
     std::vector<TriMesh::Tuple> tris;
     tris.push_back(t);
@@ -44,7 +44,7 @@ bool UniformRemeshing::swap_after(const TriMesh::Tuple& t)
     return true;
 }
 
-bool UniformRemeshing::collapse_after(const TriMesh::Tuple& t)
+bool UniformRemeshing::collapse_edge_after(const TriMesh::Tuple& t)
 {
     const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
     auto vid = t.vid(*this);
@@ -53,7 +53,7 @@ bool UniformRemeshing::collapse_after(const TriMesh::Tuple& t)
     return true;
 }
 
-bool UniformRemeshing::split_after(const TriMesh::Tuple& t)
+bool UniformRemeshing::split_edge_after(const TriMesh::Tuple& t)
 {
     const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
     auto vid = t.vid(*this);

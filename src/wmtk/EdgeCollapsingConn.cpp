@@ -12,7 +12,7 @@
 
 bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
 {
-    if (!collapse_before(loc0)) return false;
+    if (!collapse_edge_before(loc0)) return false;
 
     auto link_condition = [&VC = this->m_vertex_connectivity,
                            &TC = this->m_tet_connectivity,
@@ -152,7 +152,7 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
     Tuple new_loc = tuple_from_vertex(v2_id);
 
     start_protect_attributes();
-    if (!collapse_after(new_loc) || !invariants(get_one_ring_tets_for_vertex(new_loc))) {
+    if (!collapse_edge_after(new_loc) || !invariants(get_one_ring_tets_for_vertex(new_loc))) {
         m_vertex_connectivity[v1_id].m_is_removed = false;
         operation_failure_rollback_imp(rollback_vert_conn, n1_t_ids, new_tet_id, old_tets);
 

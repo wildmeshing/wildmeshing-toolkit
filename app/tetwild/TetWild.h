@@ -210,16 +210,16 @@ public:
 
 
     void split_all_edges();
-    bool split_before(const Tuple& t) override;
-    bool split_after(const Tuple& loc) override;
+    bool split_edge_before(const Tuple& t) override;
+    bool split_edge_after(const Tuple& loc) override;
 
     void smooth_all_vertices();
     bool smooth_before(const Tuple& t) override;
     bool smooth_after(const Tuple& t) override;
 
     void collapse_all_edges(bool is_limit_length = true);
-    bool collapse_before(const Tuple& t) override;
-    bool collapse_after(const Tuple& t) override;
+    bool collapse_edge_before(const Tuple& t) override;
+    bool collapse_edge_after(const Tuple& t) override;
 
 
     void swap_all_edges_44();
