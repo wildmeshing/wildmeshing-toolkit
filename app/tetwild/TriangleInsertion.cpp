@@ -434,7 +434,7 @@ void tetwild::TetWild::finalize_triangle_insertion(
         wmtk::logger().info("cnt_round {}/{}", cnt_round, m_vertex_attribute.m_attributes.size());
 
         //// init qualities
-        for_each_tetra(
-            [&m = *this](auto& t) { m.m_tet_attribute[t.tid(m)].m_quality = m.get_quality(t); });
+        auto& m = *this;
+        for_each_tetra([&m](auto& t) { m.m_tet_attribute[t.tid(m)].m_quality = m.get_quality(t); });
     });
 }
