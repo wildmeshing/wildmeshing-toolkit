@@ -7,24 +7,24 @@ include(gmp)
 include(fenvelope)
 
 add_library(wmtk_tetwild
-	tetwild/TetWild.cpp
-	tetwild/TetWild.h
+	TetWild.cpp
+	TetWild.h
 
-	tetwild/common.h
-	tetwild/common.cpp
-	tetwild/Parameters.h
+	common.h
+	common.cpp
+	Parameters.h
 
-	tetwild/EdgeSplitting.cpp
-	tetwild/EdgeCollapsing.cpp
-	tetwild/EdgeSwapping.cpp
-	tetwild/TetWildSmooth.cpp
+	EdgeSplitting.cpp
+	EdgeCollapsing.cpp
+	EdgeSwapping.cpp
+	TetWildSmooth.cpp
 
-	tetwild/TriangleInsertion.cpp
-	tetwild/Rational.hpp
+	TriangleInsertion.cpp
+	Rational.hpp
 )
 add_library(wmtk::tetwild ALIAS wmtk_tetwild)
 
-target_include_directories(wmtk_tetwild PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/tetwild)
+target_include_directories(wmtk_tetwild PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/)
 
 target_link_libraries(wmtk_tetwild PUBLIC
 	Tracy::TracyClient
@@ -36,7 +36,7 @@ target_link_libraries(wmtk_tetwild PUBLIC
 	gmp::gmp
 )
 
-add_executable(tetwild tetwild/main.cpp)
+add_executable(tetwild main.cpp)
 target_compile_options(tetwild PRIVATE "-rdynamic")
 target_link_libraries(tetwild PUBLIC wmtk::tetwild)
 wmtk_copy_dll(tetwild)

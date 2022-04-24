@@ -3,8 +3,8 @@
 ################################################################################
 
 add_library(wmtk_app_harmonic_tet
-	harmonic_tet/HarmonicTet.hpp
-	harmonic_tet/HarmonicTet.cpp
+	HarmonicTet.hpp
+	HarmonicTet.cpp
 )
 add_library(wmtk::harmonic_tet ALIAS wmtk_app_harmonic_tet)
 target_link_libraries(wmtk_app_harmonic_tet PUBLIC
@@ -12,9 +12,9 @@ target_link_libraries(wmtk_app_harmonic_tet PUBLIC
 	wmtk::data
 	igl::predicates
 )
-target_include_directories(wmtk_app_harmonic_tet PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/harmonic_tet)
+target_include_directories(wmtk_app_harmonic_tet PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-add_executable(wmtk_harmonic_tet_bin harmonic_tet/main.cpp)
+add_executable(wmtk_harmonic_tet_bin main.cpp)
 
 # Direct dependencies
 target_link_libraries(wmtk_harmonic_tet_bin PUBLIC
