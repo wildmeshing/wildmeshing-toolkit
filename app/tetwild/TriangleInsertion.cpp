@@ -219,7 +219,13 @@ void tetwild::TetWild::init_from_input_surface(
 
     arena.execute([&, &m = *this, &tet_face_tags = this->tet_face_tags]() {
         for (int task_id = 0; task_id < m.NUM_THREADS; task_id++) {
-            tg.run([&] {
+            tg.run([&insertion_queues,
+                    &expired_queue,
+                    &tet_face_tags,
+                    &m,
+                    &vertices,
+                    &faces,
+                    task_id] {
                 auto try_acquire_tetra = [&m, task_id](const auto& intersected_tets) {
                     for (auto t_int : intersected_tets) {
                         for (auto v_int : m.oriented_tet_vertices(t_int)) {
