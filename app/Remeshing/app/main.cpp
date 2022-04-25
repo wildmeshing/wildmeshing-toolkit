@@ -24,11 +24,18 @@ extern "C" {
 #include <wmtk/utils/getRSS.c>
 }
 
-void run_remeshing(std::string input, double len, std::string output, UniformRemeshing& m, int itrs)
+void run_remeshing(
+    std::string input,
+    double len,
+    std::string output,
+    UniformRemeshing& m,
+    int itrs,
+    bool bnd_output)
 {
     auto start = high_resolution_clock::now();
     wmtk::logger().info("target len: {}", len);
     m.uniform_remeshing(len, itrs);
+    m.consolidate_mesh(bnd_output);
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<milliseconds>(stop - start);
 
@@ -51,7 +58,8 @@ int main(int argc, char** argv)
     int thread = 1;
     double target_len = -1;
     int itrs = 2;
-    bool freeze = false;
+    bool freeze = true;
+    bool bnd_output = false;
 
     CLI::App app{argv[0]};
     app.add_option("input", path, "Input mesh.")->check(CLI::ExistingFile);
@@ -62,7 +70,11 @@ int main(int argc, char** argv)
     app.add_option("-r, --relativelength", len_rel, "Relative edge length.");
     app.add_option("-a, --absolutelength", target_len, "absolute edge length.");
     app.add_option("-i, --iterations", itrs, "number of remeshing itrs.");
-    app.add_option("-f, --freeze", freeze, "to freze the boundary, default to false");
+    app.add_option("-f, --freeze", freeze, "to freeze the boundary, default to true");
+    app.add_option(
+        "-b, --bnd_output",
+        bnd_output,
+        "write out a table tha maps bnd vertices between original input and output");
     CLI11_PARSE(app, argc, argv);
 
     wmtk::logger().info("remeshing on {}", path);
@@ -99,9 +111,9 @@ int main(int argc, char** argv)
     }
 
     UniformRemeshing m(v, thread);
-    m.create_mesh(v.size(), tri, modified_v, envelope_size);
+    m.create_mesh(v.size(), tri, modified_v, freeze, envelope_size);
 
-    if (freeze) m.get_boundary_map(SVI);
+    if (bnd_output) m.get_boundary_map(SVI);
 
     m.get_vertices();
     std::vector<double> properties = m.average_len_valen();
@@ -111,9 +123,9 @@ int main(int argc, char** argv)
     igl::Timer timer;
     timer.start();
     if (target_len > 0)
-        run_remeshing(path, target_len, output, m, itrs);
+        run_remeshing(path, target_len, output, m, itrs, bnd_output);
     else
-        run_remeshing(path, diag * len_rel, output, m, itrs);
+        run_remeshing(path, diag * len_rel, output, m, itrs, bnd_output);
     timer.stop();
     logger().info("Took {}", timer.getElapsedTimeInSec());
     logger().info("========finished========");

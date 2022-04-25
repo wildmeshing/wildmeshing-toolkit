@@ -24,7 +24,6 @@
 #include <atomic>
 #include <queue>
 #include "wmtk/AttributeCollection.hpp"
-#define BOUNDARY_FREEZE
 namespace remeshing {
 
 struct VertexAttributes
@@ -60,6 +59,7 @@ public:
         size_t n_vertices,
         const std::vector<std::array<size_t, 3>>& tris,
         const std::vector<size_t>& frozen_verts = std::vector<size_t>(),
+        bool m_freeze = true,
         double eps = 0)
     {
         wmtk::ConcurrentTriMesh::create_mesh(n_vertices, tris);
@@ -78,10 +78,12 @@ public:
 
         partition_mesh();
         for (auto v : frozen_verts) vertex_attrs[v].freeze = true;
-        for (auto e : get_edges()) {
-            if (is_boundary_edge(e)) {
-                vertex_attrs[e.vid(*this)].freeze = true;
-                vertex_attrs[e.switch_vertex(*this).vid(*this)].freeze = true;
+        if (m_freeze) {
+            for (auto e : get_edges()) {
+                if (is_boundary_edge(e)) {
+                    vertex_attrs[e.vid(*this)].freeze = true;
+                    vertex_attrs[e.switch_vertex(*this).vid(*this)].freeze = true;
+                }
             }
         }
     }
@@ -130,7 +132,7 @@ public:
 
     Eigen::Vector3d tangential_smooth(const Tuple& t);
 
-#ifdef BOUNDARY_FREEZE
+
     bool is_edge_freeze(const Tuple& t)
     {
         if (vertex_attrs[t.vid(*this)].freeze ||
@@ -138,14 +140,13 @@ public:
             return true;
         return false;
     }
-#endif
+
 
     bool collapse_before(const Tuple& t) override
     {
         if (!TriMesh::collapse_before(t)) return false;
-#ifdef BOUNDARY_FREEZE
         if (is_edge_freeze(t)) return false;
-#endif
+
         cache_edge_positions(t);
         return true;
     }
@@ -154,9 +155,8 @@ public:
 
     bool swap_before(const Tuple& t) override
     {
-#ifdef BOUNDARY_FREEZE
         if (is_edge_freeze(t)) return false;
-#endif
+
         return true;
     }
     bool swap_after(const Tuple& t) override;
@@ -166,9 +166,7 @@ public:
 
     bool split_before(const Tuple& t) override
     {
-#ifdef BOUNDARY_FREEZE
         if (is_edge_freeze(t)) return false;
-#endif
         cache_edge_positions(t);
         return true;
     }
@@ -177,9 +175,7 @@ public:
 
     bool smooth_before(const Tuple& t) override
     {
-#ifdef BOUNDARY_FREEZE
         if (is_edge_freeze(t)) return false;
-#endif
         return true;
     }
     bool smooth_after(const Tuple& t) override;

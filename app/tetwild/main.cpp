@@ -42,8 +42,8 @@ int main(int argc, char** argv)
     app.add_option("-j,--jobs", NUM_THREADS, "thread.");
     int max_its = 10;
     app.add_option("--max-its", max_its, "max # its");
-    app.add_option("--epsr", params.epsr, "relative eps wrt diag of bbox");
-    app.add_option("--lr", params.lr, "relative ideal edge length wrt diag of bbox");
+    app.add_option("-e", params.epsr, "relative eps wrt diag of bbox");
+    app.add_option("-r", params.lr, "relative ideal edge length wrt diag of bbox");
     CLI11_PARSE(app, argc, argv);
 
     Eigen::MatrixXd V;
@@ -58,7 +58,7 @@ int main(int argc, char** argv)
     double diag = (box_max - box_min).norm();
 
     // using the same error tolerance as in tetwild
-    igl::remove_duplicate_vertices(temp_V, 1e-10 * diag, V, SVI, SVJ);
+    igl::remove_duplicate_vertices(temp_V, 1e-5 * diag, V, SVI, SVJ);
     for (int i = 0; i < F.rows(); i++)
         for (int j : {0, 1, 2}) F(i, j) = SVJ[F(i, j)];
 
@@ -72,6 +72,7 @@ int main(int argc, char** argv)
     }
 
     diag = (V.colwise().maxCoeff() - V.colwise().minCoeff()).norm();
+    wmtk::logger().info("diag of the mesh: {} ", diag);
     const double envelope_size = params.epsr * diag;
     Eigen::VectorXi dummy;
     std::vector<size_t> modified_v;
@@ -82,7 +83,7 @@ int main(int argc, char** argv)
     }
 
     remeshing::UniformRemeshing m(v, 16);
-    m.create_mesh(v.size(), tri, modified_v, envelope_size);
+    m.create_mesh(v.size(), tri, modified_v, true, envelope_size);
     assert(m.check_mesh_connectivity_validity());
     wmtk::logger().info("input {} simplification", input_path);
     wmtk::logger().info("input verts {} faces {}", m.vert_capacity(), m.tri_capacity());

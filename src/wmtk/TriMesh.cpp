@@ -66,7 +66,8 @@ TriMesh::Tuple TriMesh::Tuple::switch_edge(const TriMesh& m) const
 
 std::optional<TriMesh::Tuple> TriMesh::Tuple::switch_face(const TriMesh& m) const
 {
-    assert(is_valid(m));
+    bool not_valid = is_valid(m);
+    assert(not_valid);
 
     const size_t v0 = m_vid;
     const size_t v1 = this->switch_vertex(m).m_vid;
@@ -124,10 +125,12 @@ std::optional<TriMesh::Tuple> TriMesh::Tuple::switch_face(const TriMesh& m) cons
 bool TriMesh::Tuple::is_valid(const TriMesh& m) const
 {
     if (m.m_vertex_connectivity[m_vid].m_is_removed || m.m_tri_connectivity[m_fid].m_is_removed) {
+        // assert(false);
         return false;
     }
     // Condition 3: tuple m_hash check
     if (m_hash != m.m_tri_connectivity[m_fid].hash) {
+        // assert(false);
         return false;
     }
 #ifndef NDEBUG
@@ -596,7 +599,7 @@ bool TriMesh::smooth_vertex(const Tuple& loc0)
     return true;
 }
 
-void TriMesh::consolidate_mesh()
+void TriMesh::consolidate_mesh(bool bnd_output)
 
 {
     auto v_cnt = 0;
@@ -614,19 +617,20 @@ void TriMesh::consolidate_mesh()
         t_cnt++;
     }
 
-    // #ifdef BOUNDARY_FREEZE
-    //     auto edges = get_edges();
-    //     for (auto e : edges) {
-    //         if (is_boundary_edge(e)) {
-    //             bnd_table(e.vid(*this), 1) = map_v_ids[e.vid(*this)];
-    //             bnd_table(e.switch_vertex(*this).vid(*this), 1) =
-    //                 map_v_ids[e.switch_vertex(*this).vid(*this)];
-    //         } else {
-    //             continue;
-    //         }
-    //     }
-    //     igl::writeDMAT("bdn_table.dmat", bnd_table);
-    // #endif
+    if (bnd_output) {
+        auto edges = get_edges();
+        for (auto e : edges) {
+            if (is_boundary_edge(e)) {
+                bnd_table(e.vid(*this), 1) = map_v_ids[e.vid(*this)];
+                bnd_table(e.switch_vertex(*this).vid(*this), 1) =
+                    map_v_ids[e.switch_vertex(*this).vid(*this)];
+            } else {
+                continue;
+            }
+        }
+        igl::writeDMAT("bdn_table.dmat", bnd_table);
+    }
+
 
     v_cnt = 0;
     for (auto i = 0; i < m_vertex_connectivity.size(); i++) {
@@ -912,8 +916,6 @@ bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
 
     return v_link;
 }
-
-#ifdef BOUNDARY_FREEZE
 // getting the initial boundary vertices before any edge operations as the first colum of the matrix
 void wmtk::TriMesh::get_boundary_map(Eigen::VectorXi SVI)
 {
@@ -938,4 +940,3 @@ void wmtk::TriMesh::get_boundary_map(Eigen::VectorXi SVI)
     igl::writeDMAT("new_dmt.dmat", bnd_table);
     // igl::writeDMAT("bnd_f.dmat", bnd_f);
 }
-#endif

@@ -236,14 +236,11 @@ public:
 public:
     AbstractAttributeContainer *p_vertex_attrs, *p_edge_attrs, *p_face_attrs;
     AbstractAttributeContainer vertex_attrs, edge_attrs, face_attrs;
-#define BOUNDARY_FREEZE
-#ifdef BOUNDARY_FREEZE
+
     // write a file has boundary vertices correspondences
     Eigen::MatrixXi bnd_table;
     void get_boundary_map(Eigen::VectorXi SVI); // takes the mapping form the after remove_duplicate
                                                 // to the original input
-#endif
-
 private:
     vector<VertexConnectivity> m_vertex_connectivity;
     vector<TriangleConnectivity> m_tri_connectivity;
@@ -289,7 +286,7 @@ public:
     size_t tri_capacity() const { return m_tri_connectivity.size(); }
     size_t vert_capacity() const { return m_vertex_connectivity.size(); }
 
-    void consolidate_mesh();
+    void consolidate_mesh(bool bnd_output = false);
 
     Tuple switch_vertex(const Tuple& t) const { return t.switch_vertex(*this); }
     Tuple switch_edge(const Tuple& t) const { return t.switch_edge(*this); }
