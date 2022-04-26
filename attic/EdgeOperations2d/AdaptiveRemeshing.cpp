@@ -125,7 +125,7 @@ bool EdgeOperations2d::collapse_remeshing(double L)
         };
         executor.lock_vertices = edge_locker;
 
-        executor.should_process = [](auto& m, auto& ele) {
+        executor.is_weight_up_to_date = [](auto& m, auto& ele) {
             auto& [val, op, e] = ele;
             if (val > 0) return false; // priority is negated.
             return true;
@@ -156,7 +156,7 @@ bool EdgeOperations2d::split_remeshing(double L)
         executor.priority = [&](auto& m, auto _, auto& e) {
             return m.compute_edge_cost_split_ar(e, L);
         };
-        executor.should_process = [](auto& m, auto& ele) {
+        executor.is_weight_up_to_date = [](auto& m, auto& ele) {
             auto& [val, op, e] = ele;
             if (val < 0) return false;
             return true;
@@ -186,7 +186,7 @@ bool EdgeOperations2d::swap_remeshing()
             return m.compute_vertex_valence_ar(e);
         };
         executor.lock_vertices = edge_locker;
-        executor.should_process = [](auto& m, auto& ele) {
+        executor.is_weight_up_to_date = [](auto& m, auto& ele) {
             auto& [val, _, e] = ele;
             auto val_energy = (m.compute_vertex_valence_ar(e));
             return (val_energy > 1e-5);

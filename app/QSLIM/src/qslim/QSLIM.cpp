@@ -172,7 +172,7 @@ bool QSLIM::collapse_qslim(int target_vert_number)
                                                              ? starting_num - target_vert_number - 1
                                                              : std::numeric_limits<int>::max();
         executor.stopping_criterion = [](auto& m) { return true; };
-        executor.should_process = [&collect_all_ops, this](auto& m, auto& ele) {
+        executor.is_weight_up_to_date = [&collect_all_ops, this](auto& m, auto& ele) {
             auto& [val, op, e] = ele;
             //if (val > 0) return false; // priority is negated.
             double pri = -compute_cost_for_e(e);
