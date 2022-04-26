@@ -5,6 +5,7 @@
 #include "wmtk/utils/Logger.hpp"
 
 // clang-format off
+#include <functional>
 #include <limits>
 #include <wmtk/utils/DisableWarnings.hpp>
 #include <tbb/concurrent_priority_queue.h>
@@ -46,6 +47,7 @@ struct ExecutePass
         return 0.;
     };
 
+    std::function<bool(double)> should_renew = [](auto&) { return true; };
     // Renew Neighboring Tuples
     // Right now, use pre-implemented functions to get one edge ring.
     // TODO: Ideally, this depend on both operation and priority criterion.
@@ -71,8 +73,8 @@ struct ExecutePass
     // Should Process drops some Tuple from being processed.
     // For example, if the energy is out-dated.
     // This is in addition to calling tuple valid.
-    std::function<bool(const AppMesh&, const std::tuple<double, Op, Tuple>& t)> should_process =
-        [](const AppMesh& m, const std::tuple<double, Op, Tuple>& t) {
+    std::function<bool(const AppMesh&, const std::tuple<double, Op, Tuple>& t)>
+        is_weight_up_to_date = [](const AppMesh& m, const std::tuple<double, Op, Tuple>& t) {
             // always do.
             assert(std::get<2>(t).is_valid(m));
             return true;
@@ -213,26 +215,13 @@ public:
         auto final_queue = tbb::concurrent_priority_queue<Elem>();
 
         auto run_single_queue = [&](auto& Q, int task_id) {
-            
             auto ele_in_queue = Elem();
-            while ([&]() {
-                
-                return Q.try_pop(ele_in_queue);
-            }()) {
-                
+            while ([&]() { return Q.try_pop(ele_in_queue); }()) {
                 auto& [weight, op, tup, retry] = ele_in_queue;
                 if (!tup.is_valid(m)) continue;
-                if (!should_process(
-                        m,
-                        std::tuple<double, Op, Tuple>(
-                            std::get<0>(ele_in_queue),
-                            std::get<1>(ele_in_queue),
-                            std::get<2>(ele_in_queue)))) {
-                    continue;
-                } // this can encode, in qslim, recompute(energy) == weight.
+
                 std::vector<Elem> renewed_elements;
                 {
-                    
                     auto locked_vid = lock_vertices(
                         m,
                         tup,
@@ -248,6 +237,14 @@ public:
                         continue;
                     }
                     if (tup.is_valid(m)) {
+                        if (!is_weight_up_to_date(
+                                m,
+                                std::tuple<double, Op, Tuple>(
+                                    std::get<0>(ele_in_queue),
+                                    std::get<1>(ele_in_queue),
+                                    std::get<2>(ele_in_queue)))) {
+                            continue;
+                        } // this can encode, in qslim, recompute(energy) == weight.
                         auto newtup = edit_operation_maps[op](m, tup);
                         std::vector<std::pair<Op, Tuple>> renewed_tuples;
                         if (newtup) {
@@ -259,14 +256,13 @@ public:
                             cnt_fail++;
                         }
                         for (auto& [o, e] : renewed_tuples) {
-                            
-                            renewed_elements.emplace_back(priority(m, o, e), o, e, 0);
+                            auto val = priority(m, o, e);
+                            if (should_renew(val)) renewed_elements.emplace_back(val, o, e, 0);
                         }
                     }
                     operation_cleanup(m); // Maybe use RAII
                 }
                 for (auto& e : renewed_elements) {
-                    
                     Q.emplace(e);
                 }
 

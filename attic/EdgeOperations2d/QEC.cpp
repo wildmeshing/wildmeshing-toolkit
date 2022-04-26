@@ -104,7 +104,7 @@ bool Edge2d::EdgeOperations2d::collapse_qec(int target)
         //     compute_cost_for_e(e));
         return -compute_cost_for_e(e);
     };
-    executor.should_process = [&collect_all_ops, this](auto& m, auto& ele) {
+    executor.is_weight_up_to_date = [&collect_all_ops, this](auto& m, auto& ele) {
         auto& [val, op, e] = ele;
 
         if (val > 0) return false; // priority is negated.

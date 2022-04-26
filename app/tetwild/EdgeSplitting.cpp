@@ -19,7 +19,7 @@ void tetwild::TetWild::split_all_edges()
 
         executor.priority = [&](auto &m, auto op, auto &t) { return m.get_length2(t); };
         executor.num_threads = NUM_THREADS;
-        executor.should_process = [&](const auto &m, const auto &ele) {
+        executor.is_weight_up_to_date = [&](const auto &m, const auto &ele) {
             auto[weight, op, tup] = ele;
             auto length = m.get_length2(tup);
             if (length != weight) return false;
