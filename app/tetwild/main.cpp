@@ -4,8 +4,10 @@
 #include <wmtk/utils/Partitioning.h>
 #include <CLI/CLI.hpp>
 #include <wmtk/utils/ManifoldUtils.hpp>
+#include "wmtk/utils/InsertTriangleUtils.hpp"
 
 //#include <catch2/catch.hpp>
+#include "Parameters.h"
 #include "spdlog/common.h"
 
 #include <igl/Timer.h>
@@ -15,20 +17,20 @@
 #include <igl/remove_duplicate_vertices.h>
 //#include <wmtk/utils/GeoUtils.h>
 #include <igl/predicates/predicates.h>
-#include <Tracy.hpp>
 #include <sec/ShortestEdgeCollapse.h>
+#include <Tracy.hpp>
 
 using namespace wmtk;
 using namespace tetwild;
 
 int main(int argc, char** argv)
 {
-    // 
+    //
     ZoneScopedN("tetwildmain");
     using std::cout;
     using std::endl;
 
-    tetwild::TetWild::InputSurface input_surface;
+    Parameters params;
 
     CLI::App app{argv[0]};
     std::string input_path = WMT_DATA_DIR "/37322.stl";
@@ -39,8 +41,8 @@ int main(int argc, char** argv)
     app.add_option("-j,--jobs", NUM_THREADS, "thread.");
     int max_its = 10;
     app.add_option("--max-its", max_its, "max # its");
-    app.add_option("--epsr", input_surface.params.epsr, "relative eps wrt diag of bbox");
-    app.add_option("--lr", input_surface.params.lr, "relative ideal edge length wrt diag of bbox");
+    app.add_option("--epsr", params.epsr, "relative eps wrt diag of bbox");
+    app.add_option("--lr", params.lr, "relative ideal edge length wrt diag of bbox");
     CLI11_PARSE(app, argc, argv);
 
     Eigen::MatrixXd V;
@@ -66,7 +68,7 @@ int main(int argc, char** argv)
     const Eigen::MatrixXd box_max = V.colwise().maxCoeff();
     const double diag = (box_max - box_min).norm();
 
-    const double envelope_size = input_surface.params.epsr * diag;
+    const double envelope_size = params.epsr * diag;
     Eigen::VectorXi dummy;
     std::vector<size_t> modified_v;
     if (!igl::is_edge_manifold(F) || !igl::is_vertex_manifold(F, dummy)) {
@@ -83,20 +85,17 @@ int main(int argc, char** argv)
 
     m.collapse_shortest(target_verts);
     m.consolidate_mesh();
-    m.write_triangle_mesh("tetwild_input_simp.obj");
 
     // initiate the tetwild mesh using the original envelop
-    tetwild::TetWild mesh(input_surface.params, m.m_envelope, NUM_THREADS);
+    tetwild::TetWild mesh(params, m.m_envelope, NUM_THREADS);
 
     //// get the simplified input
-    Eigen::MatrixXd Vsimp = Eigen::MatrixXd::Zero(m.vert_capacity(), 3);
     Eigen::MatrixXi Fsimp = Eigen::MatrixXi::Constant(m.tri_capacity(), 3, -1);
-    std::vector<Vector3d> vsimp(Vsimp.rows());
-    std::vector<std::array<size_t, 3>> fsimp(Fsimp.rows());
+    std::vector<Vector3d> vsimp(m.vert_capacity());
+    std::vector<std::array<size_t, 3>> fsimp(m.tri_capacity());
     for (auto& t : m.get_vertices()) {
         auto i = t.vid(m);
-        Vsimp.row(i) = m.vertex_attrs[i].pos;
-        vsimp[i] = Vsimp.row(i);
+        vsimp[i] = m.vertex_attrs[i].pos;
     }
 
     for (auto& t : m.get_faces()) {
@@ -104,28 +103,35 @@ int main(int argc, char** argv)
         auto vs = m.oriented_tri_vertices(t);
         for (int j = 0; j < 3; j++) {
             Fsimp(i, j) = vs[j].vid(m);
-            fsimp[i][j] = Fsimp(i, j);
+            fsimp[i][j] = vs[j].vid(m);
         }
     }
-    input_surface.init(vsimp, fsimp);
+    params.init(vsimp, fsimp);
+    wmtk::remove_duplicates(vsimp, fsimp, params.diag_l);
 
-    auto partitioned_v = partition_mesh_vertices(Fsimp, NUM_THREADS);
+    std::vector<size_t> partition_id(vsimp.size());
+    {
+        Eigen::MatrixXd new_F(fsimp.size(), 3);
+        for (int i = 0; i < fsimp.size(); i++) {
+            new_F(i, 0) = fsimp[i][0];
+            new_F(i, 1) = fsimp[i][1];
+            new_F(i, 2) = fsimp[i][2];
+        }
 
-    std::vector<int> partition_id(partitioned_v.rows());
-    for (int i = 0; i < partitioned_v.rows(); i++) {
-        partition_id[i] = partitioned_v(i, 0);
+        auto partitioned_v = partition_mesh_vertices(new_F, NUM_THREADS);
+        for (auto i = 0; i < partition_id.size(); i++) partition_id[i] = partitioned_v[i];
     }
-    input_surface.partition_id = partition_id;
     /////////////////////////////////////////////////////
 
     igl::Timer timer;
     timer.start();
     /////////triangle insertion with the simplified mesh
-    mesh.insert_input_surface(input_surface);
+    mesh.init_from_input_surface(vsimp, fsimp, partition_id);
+
     /////////mesh improvement
     mesh.mesh_improvement(max_its);
     ////winding number
-    mesh.filter_outside(input_surface.vertices, input_surface.faces);
+    mesh.filter_outside(vsimp, fsimp);
     double time = timer.getElapsedTime();
     wmtk::logger().info("total time {}s", time);
 
@@ -136,7 +142,7 @@ int main(int argc, char** argv)
     fout << "#v: " << mesh.vertex_size() << endl;
     fout << "max_energy: " << max_energy << endl;
     fout << "avg_energy: " << avg_energy << endl;
-    fout << "eps: " << input_surface.params.eps << endl;
+    fout << "eps: " << params.eps << endl;
     fout << "threads: " << NUM_THREADS << endl;
     fout << "time: " << time << endl;
     fout.close();

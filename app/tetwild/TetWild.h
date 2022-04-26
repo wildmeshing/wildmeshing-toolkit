@@ -49,11 +49,6 @@ public:
     VertexAttributes(const Vector3r& p);
 };
 
-class EdgeAttributes
-{
-public:
-    // Scalar length;
-};
 
 class FaceAttributes
 {
@@ -102,7 +97,6 @@ public:
     {
         NUM_THREADS = _num_threads;
         p_vertex_attrs = &m_vertex_attribute;
-        p_edge_attrs = &m_edge_attribute;
         p_face_attrs = &m_face_attribute;
         p_tet_attrs = &m_tet_attribute;
         m_collapse_check_link_condition = false;
@@ -110,11 +104,9 @@ public:
 
     ~TetWild() {}
     using VertAttCol = wmtk::AttributeCollection<VertexAttributes>;
-    using EdgeAttCol = wmtk::AttributeCollection<EdgeAttributes>;
     using FaceAttCol = wmtk::AttributeCollection<FaceAttributes>;
     using TetAttCol = wmtk::AttributeCollection<TetAttributes>;
     VertAttCol m_vertex_attribute;
-    EdgeAttCol m_edge_attribute;
     FaceAttCol m_face_attribute;
     TetAttCol m_tet_attribute;
 
@@ -124,7 +116,6 @@ public:
     {
         auto n_tet = _tet_attribute.size();
         m_vertex_attribute.resize(_vertex_attribute.size());
-        m_edge_attribute.resize(6 * n_tet);
         m_face_attribute.resize(4 * n_tet);
         m_tet_attribute.resize(n_tet);
 
@@ -325,44 +316,73 @@ public:
     void output_mesh(std::string file);
     void output_faces(std::string file, std::function<bool(const FaceAttributes&)> cond);
 
-    class InputSurface
-    {
-    public:
-        std::vector<Vector3d> vertices;
-        std::vector<std::array<size_t, 3>> faces;
-        std::vector<int> partition_id;
-        // can add other input tags;
+    void init_from_delaunay_box_mesh(const std::vector<Eigen::Vector3d>& vertices);
 
-        Parameters params;
+    void finalize_triangle_insertion(
+        const std::vector<std::array<size_t, 3>>& faces);
 
-        InputSurface() {}
+    void init_from_input_surface(
+        const std::vector<Vector3d>& vertices,
+        const std::vector<std::array<size_t, 3>>& faces,
+        const std::vector<size_t>& partition_id);
+    bool triangle_insertion_before(const std::vector<Tuple>& faces) override;
+    bool triangle_insertion_after(const std::vector<std::vector<Tuple>>& new_faces) override;
 
-        void init(
-            const std::vector<Vector3d>& _vertices,
-            const std::vector<std::array<size_t, 3>>& _faces)
-        {
-            vertices = _vertices;
-            faces = _faces;
-            Vector3d min, max;
-            for (size_t i = 0; i < vertices.size(); i++) {
-                if (i == 0) {
-                    min = vertices[i];
-                    max = vertices[i];
-                    continue;
-                }
-                for (int j = 0; j < 3; j++) {
-                    if (vertices[i][j] < min[j]) min[j] = vertices[i][j];
-                    if (vertices[i][j] > max[j]) max[j] = vertices[i][j];
-                }
-            }
+public:
+    void split_all_edges();
+    bool split_edge_before(const Tuple& t) override;
+    bool split_edge_after(const Tuple& loc) override;
 
-            params.init(min, max);
-        }
+    void smooth_all_vertices();
+    bool smooth_before(const Tuple& t) override;
+    bool smooth_after(const Tuple& t) override;
 
-        bool remove_duplicates(double); // inplace func
-    };
+    void collapse_all_edges(bool is_limit_length = true);
+    bool collapse_edge_before(const Tuple& t) override;
+    bool collapse_edge_after(const Tuple& t) override;
 
+    void swap_all_edges_44();
+    bool swap_edge_44_before(const Tuple& t) override;
+    bool swap_edge_44_after(const Tuple& t) override;
 
+    void swap_all_edges();
+    bool swap_edge_before(const Tuple& t) override;
+    bool swap_edge_after(const Tuple& t) override;
+
+    void swap_all_faces();
+    bool swap_face_before(const Tuple& t) override;
+    bool swap_face_after(const Tuple& t) override;
+
+    bool is_inverted(const Tuple& loc) const;
+    double get_quality(const Tuple& loc) const;
+    bool round(const Tuple& loc);
+    //
+    bool is_edge_on_surface(const Tuple& loc);
+    bool is_edge_on_bbox(const Tuple& loc);
+    //
+    bool adjust_sizing_field(double max_energy);
+    void mesh_improvement(int max_its = 80);
+    std::tuple<double, double> local_operations(
+        const std::array<int, 4>& ops,
+        bool collapse_limite_length = true);
+    std::tuple<double, double> get_max_avg_energy();
+    void filter_outside(
+        const std::vector<Vector3d>& vertices,
+        const std::vector<std::array<size_t, 3>>& faces,
+        bool remove_ouside = true);
+
+    bool check_attributes();
+
+    std::vector<std::array<size_t, 3>> get_faces_by_condition(
+        std::function<bool(const FaceAttributes&)> cond);
+
+    bool invariants(const std::vector<Tuple>& t) override; // this is now automatically checked
+
+    double get_length2(const Tuple& loc) const;
+    // debug use
+    std::atomic<int> cnt_split = 0, cnt_collapse = 0, cnt_swap = 0;
+
+private:
     // tags: correspondence map from new tet-face node indices to in-triangle ids.
     // built up while triangles are inserted.
     tbb::concurrent_map<std::array<size_t, 3>, std::vector<int>> tet_face_tags;
@@ -411,87 +431,6 @@ public:
         std::map<std::array<size_t, 3>, FaceAttributes> changed_faces;
     };
     tbb::enumerable_thread_specific<SwapInfoCache> swap_cache;
-
-
-    void init_from_delaunay_box_mesh(const std::vector<Eigen::Vector3d>& vertices);
-    /**
-     * @brief Before triangle insertion, find which ones are already present in the mesh.
-     * Note that the vertices are already the same, so just do a dictionary-find for the face
-     * indices.
-     * @param vertices
-     * @param faces
-     * @param output is_matched
-     */
-    void match_insertion_faces(
-        const std::vector<Vector3d>& vertices,
-        const std::vector<std::array<size_t, 3>>& faces,
-        tbb::concurrent_vector<bool>& is_matched,
-        tbb::concurrent_map<std::array<size_t, 3>, std::vector<int>>&);
-    void setup_attributes(
-        const std::vector<Vector3d>& vertices,
-        const std::vector<std::array<size_t, 3>>& faces,
-        const tbb::concurrent_map<std::array<size_t, 3>, std::vector<int>>&);
-    //
-    void add_tet_centroid(const Tuple& t, size_t vid) override;
-    //
-    void insert_input_surface(const InputSurface& input_surface);
-    bool triangle_insertion_before(const std::vector<Tuple>& faces) override;
-    bool triangle_insertion_after(const std::vector<std::vector<Tuple>>& new_faces) override;
-
-
-    void split_all_edges();
-    bool split_before(const Tuple& t) override;
-    bool split_after(const Tuple& loc) override;
-
-    void smooth_all_vertices();
-    bool smooth_before(const Tuple& t) override;
-    bool smooth_after(const Tuple& t) override;
-
-    void collapse_all_edges(bool is_limit_length = true);
-    bool collapse_before(const Tuple& t) override;
-    bool collapse_after(const Tuple& t) override;
-
-
-    void swap_all_edges_44();
-    bool swap_edge_44_before(const Tuple& t) override;
-    bool swap_edge_44_after(const Tuple& t) override;
-
-    void swap_all_edges();
-    bool swap_edge_before(const Tuple& t) override;
-    bool swap_edge_after(const Tuple& t) override;
-
-    void swap_all_faces();
-    bool swap_face_before(const Tuple& t) override;
-    bool swap_face_after(const Tuple& t) override;
-
-    bool is_inverted(const Tuple& loc) const;
-    double get_quality(const Tuple& loc) const;
-    bool round(const Tuple& loc);
-    //
-    bool is_edge_on_surface(const Tuple& loc);
-    bool is_edge_on_bbox(const Tuple& loc);
-    //
-    bool adjust_sizing_field(double max_energy);
-    void mesh_improvement(int max_its = 80);
-    std::tuple<double, double> local_operations(
-        const std::array<int, 4>& ops,
-        bool collapse_limite_length = true);
-    std::tuple<double, double> get_max_avg_energy();
-    void filter_outside(
-        const std::vector<Vector3d>& vertices,
-        const std::vector<std::array<size_t, 3>>& faces,
-        bool remove_ouside = true);
-
-    bool check_attributes();
-
-    std::vector<std::array<size_t, 3>> get_faces_by_condition(
-        std::function<bool(const FaceAttributes&)> cond);
-
-    bool invariants(const std::vector<Tuple>& t) override; // this is now automatically checked
-
-    double get_length2(const Tuple& loc) const;
-    // debug use
-    std::atomic<int> cnt_split = 0, cnt_collapse = 0, cnt_swap = 0;
 };
 
 } // namespace tetwild

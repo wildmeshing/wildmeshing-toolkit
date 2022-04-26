@@ -5,8 +5,10 @@
 #include <wmtk/TetMesh.h>
 
 #include <catch2/catch.hpp>
+#include "Parameters.h"
 #include "spdlog/common.h"
 #include "wmtk/ConcurrentTetMesh.h"
+#include "wmtk/utils/InsertTriangleUtils.hpp"
 
 #include <igl/read_triangle_mesh.h>
 
@@ -35,31 +37,20 @@ TEST_CASE("triangle-insertion", "[tetwild_operation]")
     }
 
     int NUM_THREADS = 1;
-    tetwild::TetWild::InputSurface input_surface;
-    input_surface.params.lr = 1 / 15.0;
-    input_surface.init(vertices, faces);
-    input_surface.remove_duplicates(input_surface.params.diag_l);
-    Eigen::MatrixXd new_F(input_surface.faces.size(), 3);
-    for (int i = 0; i < input_surface.faces.size(); i++) {
-        new_F(i, 0) = input_surface.faces[i][0];
-        new_F(i, 1) = input_surface.faces[i][1];
-        new_F(i, 2) = input_surface.faces[i][2];
-    }
-    auto partitioned_v = partition_mesh_vertices(new_F, NUM_THREADS);
-    std::vector<int> partition_id(partitioned_v.rows());
-    for (int i = 0; i < partitioned_v.rows(); i++) {
-        partition_id[i] = partitioned_v(i, 0);
-    }
-    input_surface.partition_id = partition_id;
-    //
+    Parameters params;
+    params.lr = 1 / 15.0;
+    params.init(vertices, faces);
     fastEnvelope::FastEnvelope envelope;
-    wmtk::logger().info("input_surface.params.eps {}", input_surface.params.eps);
-    envelope.init(vertices, env_faces, input_surface.params.eps);
+    wmtk::logger().info("input_surface.params.eps {}", params.eps);
+    envelope.init(vertices, env_faces, params.eps);
+    
+    wmtk::remove_duplicates(vertices, faces, params.diag_l);
+    std::vector<size_t> partition_id(vertices.size(), 0);
     //
-    tetwild::TetWild mesh(input_surface.params, envelope);
+    //
+    tetwild::TetWild mesh(params, envelope);
 
-
-    mesh.insert_input_surface(input_surface);
+    mesh.init_from_input_surface(vertices, faces, partition_id);
     REQUIRE(mesh.check_attributes());
 }
 
@@ -87,40 +78,38 @@ TEST_CASE("triangle-insertion-parallel", "[tetwild_operation][.]")
 
     int NUM_THREADS = 16;
 
-    tetwild::TetWild::InputSurface input_surface;
-    input_surface.params.lr = 1 / 30.0;
-    input_surface.init(vertices, faces);
-    input_surface.remove_duplicates(input_surface.params.diag_l);
-    Eigen::MatrixXd new_F(input_surface.faces.size(), 3);
-    for (int i = 0; i < input_surface.faces.size(); i++) {
-        new_F(i, 0) = input_surface.faces[i][0];
-        new_F(i, 1) = input_surface.faces[i][1];
-        new_F(i, 2) = input_surface.faces[i][2];
+    Parameters params;
+    params.lr = 1 / 30.0;
+    params.init(vertices, faces);
+    
+    fastEnvelope::FastEnvelope envelope;
+    envelope.init(vertices, env_faces, params.eps);
+    
+    wmtk::remove_duplicates(vertices, faces, params.diag_l);
+    Eigen::MatrixXd new_F(faces.size(), 3);
+    for (int i = 0; i < faces.size(); i++) {
+        new_F(i, 0) = faces[i][0];
+        new_F(i, 1) = faces[i][1];
+        new_F(i, 2) = faces[i][2];
     }
     auto partitioned_v = partition_mesh_vertices(new_F, NUM_THREADS);
-    std::vector<int> partition_id(partitioned_v.rows());
+    std::vector<size_t> partition_id(partitioned_v.rows());
 
     std::vector<int> cnt_id(NUM_THREADS);
     for (int i = 0; i < partitioned_v.rows(); i++) {
         partition_id[i] = partitioned_v(i, 0);
-        // std::cout<<partition_id[i]<<" ";
         cnt_id[partition_id[i]]++;
     }
     for (int i = 0; i < NUM_THREADS; i++) {
         std::cout << i << ": " << cnt_id[i] << std::endl;
     }
-    input_surface.partition_id = partition_id;
 
-
-    // exit(0);
     //
-    fastEnvelope::FastEnvelope envelope;
-    envelope.init(vertices, env_faces, input_surface.params.eps);
     //
-    tetwild::TetWild mesh(input_surface.params, envelope, NUM_THREADS);
+    tetwild::TetWild mesh(params, envelope, NUM_THREADS);
 
     wmtk::logger().info("start insertion");
-    mesh.insert_input_surface(input_surface);
+    mesh.init_from_input_surface(vertices, faces, partition_id);
     wmtk::logger().info("end insertion");
 }
 
@@ -160,8 +149,8 @@ TEST_CASE("point-insertion")
     //     tbb::enumerable_thread_specific<PointInsertCache> point_cache;
 
     //     // input Tet where the point is.
-    //     virtual bool single_point_insertion_before(const Tuple& t) override { return true; }
-    //     virtual bool single_point_insertion_after(std::vector<Tuple>& t) override
+    //     virtual bool insert_point_before(const Tuple& t) override { return true; }
+    //     virtual bool insert_point_after(std::vector<Tuple>& t) override
     //     {
     //         if (flag == 0) return
     //             {}
