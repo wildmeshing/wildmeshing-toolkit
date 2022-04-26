@@ -47,7 +47,7 @@ struct ExecutePass
         return 0.;
     };
 
-    std::function<bool(double)> should_renew = [](auto&) { return true; };
+    std::function<bool(double)> should_renew = [](auto) { return true; };
     // Renew Neighboring Tuples
     // Right now, use pre-implemented functions to get one edge ring.
     // TODO: Ideally, this depend on both operation and priority criterion.
