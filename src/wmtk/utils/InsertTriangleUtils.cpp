@@ -5,7 +5,6 @@
 
 void wmtk::match_tet_faces_to_triangles(
     const wmtk::TetMesh& m,
-    const std::vector<Eigen::Vector3d>& vertices,
     const std::vector<std::array<size_t, 3>>& faces,
     tbb::concurrent_vector<bool>& is_matched,
     tbb::concurrent_map<std::array<size_t, 3>, std::vector<int>>& tet_face_tags)
@@ -102,3 +101,4 @@ bool wmtk::remove_duplicates(
 
     return true;
 }
+

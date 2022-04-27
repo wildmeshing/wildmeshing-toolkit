@@ -1,6 +1,7 @@
 #pragma once
 
 #include <wmtk/utils/VectorUtils.h>
+#include <type_traits>
 #include <wmtk/AttributeCollection.hpp>
 #include <wmtk/utils/Logger.hpp>
 
@@ -14,7 +15,6 @@
 #include <optional>
 #include <queue>
 #include <vector>
-
 
 namespace wmtk {
 class TetMesh
@@ -300,6 +300,7 @@ public:
      * @param[out] new_tets a vector of Tuples for all the newly introduced tetra.
      * @return if split succeed
      */
+
     bool split_edge(const Tuple& t, std::vector<Tuple>& new_tets);
     bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_tets);
     bool swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tets);
@@ -307,10 +308,22 @@ public:
     bool swap_face(const Tuple& t, std::vector<Tuple>& new_tets);
     bool smooth_vertex(const Tuple& t);
 
+    bool split_tet(const Tuple& t, std::vector<Tuple>& new_tets);
+    bool split_face(const Tuple& t, std::vector<Tuple>& new_tets);
+
+    /**
+     * @brief Insert a triangle into a tetmesh, with known intersection information
+     *
+     * @param intersected_tets the tet to split
+     * @param intersected_edges the edges where new points are assigned to
+     * @param new_edge_vids new vertices correspond to each cut-edge
+     */
     void triangle_insertion(
         const std::vector<Tuple>& intersected_tets,
         const std::vector<Tuple>& intersected_edges,
-        std::vector<size_t>& new_vids);
+        std::vector<size_t>& new_edge_vids,
+        std::vector<size_t>& new_center_vids,
+        std::vector<std::array<size_t, 4>>& center_split_tets);
 
     /**
      * @brief Insert a point into a tetmesh inside a tet.
@@ -321,9 +334,9 @@ public:
      * @return true
      * @return false
      */
-    bool single_point_insertion(const Tuple& t, std::vector<Tuple>& new_tets);
-    virtual bool single_point_insertion_before(const Tuple& t) { return true; };
-    virtual bool single_point_insertion_after(std::vector<Tuple>& new_tets) { return true; };
+    bool insert_point(const Tuple& t, std::vector<Tuple>& new_tets);
+    virtual bool insert_point_before(const Tuple& t) { return true; };
+    virtual bool insert_point_after(std::vector<Tuple>& new_tets) { return true; };
     /**
      * @brief cleans up the deleted vertices or tetrahedra, fixes the corresponding indices, and
      * reset the version number. WARNING: it invalidates all tuples!
@@ -340,6 +353,10 @@ public:
     std::vector<Tuple> get_faces() const;
     std::vector<Tuple> get_vertices() const;
     std::vector<Tuple> get_tets() const;
+    virtual void for_each_edge(const std::function<void(const TetMesh::Tuple&)>&);
+    virtual void for_each_face(const std::function<void(const TetMesh::Tuple&)>&);
+    virtual void for_each_vertex(const std::function<void(const TetMesh::Tuple&)>&);
+    virtual void for_each_tetra(const std::function<void(const TetMesh::Tuple&)>&);
 
 public:
     template <typename T>
@@ -364,38 +381,36 @@ private:
     void subdivide_tets(
         const std::vector<size_t> t_ids,
         const std::vector<bool>& mark_surface,
-        std::map<std::array<size_t, 2>, size_t>& map_edge2vid,
+        const std::map<std::array<size_t, 2>, size_t>& map_edge2vid,
         std::map<std::array<size_t, 3>, std::vector<std::array<size_t, 5>>>& new_face_vids,
-        std::vector<size_t>& new_vids,
+        const std::vector<size_t>& new_vids,
         std::vector<size_t>& new_tids,
-        std::vector<size_t>& new_center_ids);
+        std::vector<size_t>& new_center_vids,
+        std::vector<std::array<size_t, 4>>& center_split_tets);
     void subdivide_a_tet(
         size_t t_id,
         const std::array<int, 6>& new_v_ids,
         bool mark_surface,
-        bool& is_add_centroid,
         std::map<std::array<size_t, 3>, std::vector<std::array<size_t, 5>>>& new_face_vids,
-        std::vector<size_t>& new_vids,
         std::vector<size_t>& new_tids,
-        std::vector<size_t>& new_center_ids);
+        std::vector<size_t>& new_center_vids,
+        std::vector<std::array<size_t, 4>>& center_split_tets);
 
 protected:
-    // TODO: this function should not be in the TetMesh API.
-    virtual void add_tet_centroid(const Tuple& t, size_t vid) {}
     virtual bool invariants(const std::vector<Tuple>&) { return true; }
     virtual bool triangle_insertion_before(const std::vector<Tuple>& faces) { return true; }
     virtual bool triangle_insertion_after(const std::vector<std::vector<Tuple>>&) { return true; }
 
     //// Split the edge in the tuple
     // Checks if the split should be performed or not (user controlled)
-    virtual bool split_before(const Tuple& t) { return true; } // check edge condition
+    virtual bool split_edge_before(const Tuple& t) { return true; } // check edge condition
     // This function computes the attributes for the added simplices
     // if it returns false then the operation is undone
-    virtual bool split_after(const Tuple& t) { return true; } // check tet condition
+    virtual bool split_edge_after(const Tuple& t) { return true; } // check tet condition
 
     //// Collapse the edge in the tuple
     // Checks if the collapse should be performed or not (user controlled)
-    virtual bool collapse_before(const Tuple& t) { return true; }
+    virtual bool collapse_edge_before(const Tuple& t) { return true; }
     // If it returns false then the operation is undone (the tuple indexes a vertex and tet that
     // survived)
 
@@ -406,7 +421,7 @@ protected:
     virtual bool swap_face_before(const Tuple& t) { return true; }
     virtual bool swap_face_after(const Tuple& t) { return true; }
 
-    virtual bool collapse_after(const Tuple& t) { return true; }
+    virtual bool collapse_edge_after(const Tuple& t) { return true; }
     virtual bool smooth_before(const Tuple& t) { return true; }
     virtual bool smooth_after(const Tuple& t) { return true; }
 
@@ -421,6 +436,7 @@ public:
      * @param local_eid local edge index
      */
     Tuple tuple_from_edge(size_t tid, int local_eid) const;
+    Tuple tuple_from_edge(const std::array<size_t,2>& vids) const;
 
     /**
      * @brief get a Tuple from global tetra index and __local__ face index (from 0-3).
@@ -532,6 +548,7 @@ public:
      * @return std::array<Tuple, 4> each tuple owns a different vertex.
      */
     std::array<Tuple, 4> oriented_tet_vertices(const Tuple& t) const;
+    std::array<size_t, 4> oriented_tet_vids(const Tuple& t) const;
     std::array<Tuple, 3> get_face_vertices(const Tuple& t) const;
 
     std::array<Tuple, 6> tet_edges(const Tuple& t) const;
@@ -556,16 +573,24 @@ public:
 private:
     std::map<size_t, wmtk::TetMesh::VertexConnectivity> operation_update_connectivity_impl(
         std::vector<size_t>& affected_tid,
-        std::vector<std::array<size_t, 4>>& new_tet_conn);
+        const std::vector<std::array<size_t, 4>>& new_tet_conn);
     void operation_failure_rollback_imp(
         std::map<size_t, wmtk::TetMesh::VertexConnectivity>& rollback_vert_conn,
         const std::vector<size_t>& affected,
         const std::vector<size_t>& new_tet_id,
         const std::vector<wmtk::TetMesh::TetrahedronConnectivity>& old_tets);
     std::map<size_t, wmtk::TetMesh::VertexConnectivity> operation_update_connectivity_impl(
-        std::vector<size_t>& remove_id,
-        std::vector<std::array<size_t, 4>>& new_tet_conn,
+        const std::vector<size_t>& remove_id,
+        const std::vector<std::array<size_t, 4>>& new_tet_conn,
         std::vector<size_t>& allocate_id);
+    static std::vector<wmtk::TetMesh::TetrahedronConnectivity> record_old_tet_connectivity(
+        const wmtk::TetMesh::vector<wmtk::TetMesh::TetrahedronConnectivity>& conn,
+        const std::vector<size_t>& tets)
+    {
+        auto tet_conn = std::vector<wmtk::TetMesh::TetrahedronConnectivity>();
+        for (auto i : tets) tet_conn.push_back(conn[i]);
+        return tet_conn;
+    }
     void start_protect_attributes()
     {
         p_vertex_attrs->begin_protect();
@@ -588,6 +613,53 @@ private:
         p_edge_attrs->rollback();
         p_face_attrs->rollback();
         p_tet_attrs->rollback();
+    }
+
+public:
+    class OperationBuilder
+    {
+    public:
+        OperationBuilder() = default;
+        ~OperationBuilder() = default;
+        bool before(const Tuple&) { return true; }
+        bool after(const std::vector<Tuple>&) { return true; }
+        std::vector<size_t> removed_tids(const Tuple&);
+        int request_vert_slots() {return 0;};
+        std::vector<std::array<size_t, 4>> replacing_tets(const std::vector<size_t>&);
+    };
+
+    // dangerous usage, backdoor for private access.
+    template <int id>
+    class InternalOperationBuilder : public OperationBuilder{};
+
+    template <typename T, typename = std::enable_if_t<std::is_base_of_v<OperationBuilder, T>>>
+    bool customized_operation(T& op, const Tuple& tup, std::vector<Tuple>& new_tet_tuples)
+    {
+        if (op.before(tup) == false) return false;
+        const auto& affected = op.removed_tids(tup);
+        auto old_tets = record_old_tet_connectivity(m_tet_connectivity, affected);
+
+		auto new_vnum = op.request_vert_slots();
+        std::vector<size_t> new_vids(new_vnum);
+        for (auto i =0; i < new_vnum; i++) {
+            new_vids[i] = get_next_empty_slot_v();
+        }
+        const auto& new_tets = op.replacing_tets(new_vids);
+
+        auto new_tet_id = affected;
+        auto rollback_vert_conn = operation_update_connectivity_impl(new_tet_id, new_tets);
+
+        for (auto ti : new_tet_id) new_tet_tuples.emplace_back(tuple_from_tet(ti));
+
+        start_protect_attributes();
+        if (!op.after(new_tet_tuples) || !invariants(new_tet_tuples)) { // rollback post-operation
+
+            logger().trace("rolling back");
+            operation_failure_rollback_imp(rollback_vert_conn, affected, new_tet_id, old_tets);
+            return false;
+        }
+        release_protect_attributes();
+        return true;
     }
 };
 

@@ -367,8 +367,8 @@ TEST_CASE("edge_collapse", "[test_2d_operation]")
     {
         class NoCollapseMesh : public TriMesh
         {
-            bool collapse_before(const TriMesh::Tuple& loc) override { return true; };
-            bool collapse_after(const TriMesh::Tuple& loc) override { return false; };
+            bool collapse_edge_before(const TriMesh::Tuple& loc) override { return true; };
+            bool collapse_edge_after(const TriMesh::Tuple& loc) override { return false; };
         };
         auto m = NoCollapseMesh();
         m.create_mesh(6, tris);
@@ -382,8 +382,8 @@ TEST_CASE("edge_collapse", "[test_2d_operation]")
     {
         class Collapse : public TriMesh
         {
-            bool collapse_before(const TriMesh::Tuple& loc) override { return true; };
-            bool collapse_after(const TriMesh::Tuple& loc) override { return true; };
+            bool collapse_edge_before(const TriMesh::Tuple& loc) override { return true; };
+            bool collapse_edge_after(const TriMesh::Tuple& loc) override { return true; };
         };
         auto m = Collapse();
 

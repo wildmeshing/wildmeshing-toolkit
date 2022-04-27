@@ -36,7 +36,7 @@ std::vector<TriMesh::Tuple> UniformRemeshing::new_edges_after(
     wmtk::unique_edge_tuples(*this, new_edges);
     return new_edges;
 }
-bool UniformRemeshing::swap_after(const TriMesh::Tuple& t)
+bool UniformRemeshing::swap_edge_after(const TriMesh::Tuple& t)
 {
     std::vector<TriMesh::Tuple> tris;
     tris.push_back(t);
@@ -44,7 +44,7 @@ bool UniformRemeshing::swap_after(const TriMesh::Tuple& t)
     return true;
 }
 
-bool UniformRemeshing::collapse_after(const TriMesh::Tuple& t)
+bool UniformRemeshing::collapse_edge_after(const TriMesh::Tuple& t)
 {
     const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
     auto vid = t.vid(*this);
@@ -53,7 +53,7 @@ bool UniformRemeshing::collapse_after(const TriMesh::Tuple& t)
     return true;
 }
 
-bool UniformRemeshing::split_after(const TriMesh::Tuple& t)
+bool UniformRemeshing::split_edge_after(const TriMesh::Tuple& t)
 {
     const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
     auto vid = t.vid(*this);
@@ -184,7 +184,7 @@ bool UniformRemeshing::collapse_remeshing(double L)
         executor.lock_vertices = edge_locker;
         executor.num_threads = NUM_THREADS;
 
-        executor.should_process = [](auto& m, auto& ele) {
+        executor.is_weight_up_to_date = [](auto& m, auto& ele) {
             auto& [val, op, e] = ele;
             if (val < 0) return false; // priority is negated.
             return true;
@@ -216,7 +216,7 @@ bool UniformRemeshing::split_remeshing(double L)
         executor.priority = [&](auto& m, auto _, auto& e) {
             return m.compute_edge_cost_split(e, L);
         };
-        executor.should_process = [](auto& m, auto& ele) {
+        executor.is_weight_up_to_date = [](auto& m, auto& ele) {
             auto& [val, op, e] = ele;
             if (val < 0) return false;
             return true;
@@ -247,7 +247,7 @@ bool UniformRemeshing::swap_remeshing()
             return m.compute_vertex_valence(e);
         };
         executor.lock_vertices = edge_locker;
-        executor.should_process = [](auto& m, auto& ele) {
+        executor.is_weight_up_to_date = [](auto& m, auto& ele) {
             auto& [val, _, e] = ele;
             auto val_energy = (m.compute_vertex_valence(e));
             return (val_energy > 1e-5);

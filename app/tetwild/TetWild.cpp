@@ -16,6 +16,7 @@
 #include <tbb/parallel_for.h>
 #include <tbb/task_arena.h>
 #include <Tracy.hpp>
+#include "Rational.hpp"
 #include "common.h"
 
 tetwild::VertexAttributes::VertexAttributes(const Vector3r& p)
@@ -30,7 +31,18 @@ void tetwild::TetWild::mesh_improvement(int max_its)
     // TODO: refactor to eliminate repeated partition.
     //
     ZoneScopedN("meshimprovementmain");
-    compute_vertex_partition();
+    // compute_vertex_partition();
+
+    compute_vertex_partition_morton();
+    std::vector<int> partition_size(NUM_THREADS, 0);
+    for (int i = 0; i < m_vertex_attribute.size(); i++) {
+        partition_size[m_vertex_attribute[i].partition_id]++;
+    }
+    std::cout << "-----print partition size-----" << std::endl;
+    for (int i = 0; i < NUM_THREADS; i++) {
+        std::cout << partition_size[i] << std::endl;
+    }
+
     wmtk::logger().info("========it pre========");
     local_operations({{0, 1, 0, 0}}, false);
 
@@ -210,7 +222,6 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
                     v_queue.pop();
                     if (visited[vid]) continue;
                     visited[vid] = true;
-                    // if (new_scalars.count(vid)) continue;
                     adjcnt++;
 
                     bool is_close = false;
@@ -227,7 +238,6 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
                     auto vids = get_one_ring_vids_for_vertex_adj(vid, get_one_ring_cache.local());
                     // auto vids = get_one_ring_vids_for_vertex_adj(vid);
                     for (size_t n_vid : vids) {
-                        // if (new_scalars.count(n_vid)) continue;
                         if (visited[n_vid]) continue;
                         v_queue.push(n_vid);
                     }
@@ -474,8 +484,8 @@ double tetwild::TetWild::get_quality(const Tuple& loc) const
         T[3 * 3 + j] = ps[3][j];
     }
 
-    double energy = wmtk::AMIPS_energy(T);
-    if (std::isinf(energy) || std::isnan(energy) || energy < 3 - 1e-3) return MAX_ENERGY;
+    double energy = wmtk::AMIPS_energy_stable_p3<apps::Rational>(T);
+    if (std::isinf(energy) || std::isnan(energy) || energy < 27 - 1e-3) return MAX_ENERGY;
     return energy;
 }
 

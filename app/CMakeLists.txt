@@ -1,82 +1,37 @@
 
-################################################################################
 include(wmtk_data)
 
-################################################################################
-# FloatTetwild
-################################################################################
+option(WMTK_APP_TETWILD "tetwild application" ON)
+option(WMTK_APP_HARMTET "Harmonic Triangulation app" ON)
+option(WMTK_APP_UNIFORM_REMESH "uniform remesh for surfaces" ON)
+option(WMTK_APP_SEC "surface shortest edge collapse" ON)
+option(WMTK_APP_QSLIM "surface qslim simplification" ON)
+option(WMTK_APP_UNIT_TESTS "unit tests for applications" ON)
 
-include(gmp)
-include(fenvelope)
+if (WMTK_APP_TETWILD)
+add_subdirectory(tetwild)
+endif()
 
-add_library(wmtk_tetwild
-	tetwild/TetWild.cpp
-	tetwild/TetWild.h
+if (WMTK_APP_HARMTET)
+add_subdirectory(harmonic_tet)
+endif()
 
-	tetwild/common.h
-	tetwild/common.cpp
-	tetwild/Parameters.h
+if (WMTK_APP_UNIFORM_REMESH)
+add_subdirectory(Remeshing)
+endif()
 
-	tetwild/EdgeSplitting.cpp
-	tetwild/EdgeCollapsing.cpp
-	tetwild/EdgeSwapping.cpp
-	tetwild/TetWildSmooth.cpp
+if (WMTK_APP_SEC)
+add_subdirectory(ShortestEdgeCollapse)
+endif()
 
-	tetwild/TriangleInsertion.cpp
-	tetwild/Rational.hpp
-)
-add_library(wmtk::tetwild ALIAS wmtk_tetwild)
-
-target_include_directories(wmtk_tetwild PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/tetwild)
-
-target_link_libraries(wmtk_tetwild PUBLIC
-	Tracy::TracyClient
-	wmtk::toolkit
-	wmtk::data
-	wmtk::sec_lib
-	igl::predicates
-	FastEnvelope
-	gmp::gmp
-)
-
-add_executable(tetwild tetwild/main.cpp)
-target_compile_options(tetwild PRIVATE "-rdynamic")
-target_link_libraries(tetwild PUBLIC wmtk::tetwild)
-wmtk_copy_dll(tetwild)
-
-# Harmonic Triangulations for TetMesh [Alexa2019]
-################################################################################
-
-add_library(wmtk_app_harmonic_tet
-	harmonic_tet/HarmonicTet.hpp
-	harmonic_tet/HarmonicTet.cpp
-)
-add_library(wmtk::harmonic_tet ALIAS wmtk_app_harmonic_tet)
-target_link_libraries(wmtk_app_harmonic_tet PUBLIC
-	wmtk::toolkit
-	wmtk::data
-	igl::predicates
-)
-target_include_directories(wmtk_app_harmonic_tet PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/harmonic_tet)
-
-add_executable(wmtk_harmonic_tet_bin harmonic_tet/main.cpp)
-
-# Direct dependencies
-target_link_libraries(wmtk_harmonic_tet_bin PUBLIC
-	wmtk::harmonic_tet
-	CLI11::CLI11
-)
-wmtk_copy_dll(wmtk_harmonic_tet_bin)
+if(WMTK_APP_QSLIM)
+add_subdirectory(QSLIM)
+endif()
 
 ################################################################################
 # Tests
 ################################################################################
 
+if (WMTK_APP_UNIT_TESTS)
 add_subdirectory(tests)
-
-
-add_subdirectory(Remeshing)
-
-add_subdirectory(ShortestEdgeCollapse)
-
-add_subdirectory(QSLIM)
+endif()

@@ -11,7 +11,7 @@
 using namespace wmtk;
 using namespace Edge2d;
 
-bool Edge2d::EdgeOperations2d::swap_after(const TriMesh::Tuple& t)
+bool Edge2d::EdgeOperations2d::swap_edge_after(const TriMesh::Tuple& t)
 {
     std::vector<TriMesh::Tuple> tris;
     tris.push_back(t);
@@ -19,7 +19,7 @@ bool Edge2d::EdgeOperations2d::swap_after(const TriMesh::Tuple& t)
     return true;
 }
 
-bool Edge2d::EdgeOperations2d::collapse_after(const TriMesh::Tuple& t)
+bool Edge2d::EdgeOperations2d::collapse_edge_after(const TriMesh::Tuple& t)
 {
     const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
     auto vid = t.vid(*this);
@@ -28,7 +28,7 @@ bool Edge2d::EdgeOperations2d::collapse_after(const TriMesh::Tuple& t)
     return true;
 }
 
-bool Edge2d::EdgeOperations2d::split_after(const TriMesh::Tuple& t)
+bool Edge2d::EdgeOperations2d::split_edge_after(const TriMesh::Tuple& t)
 {
     const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
     auto vid = t.vid(*this);
