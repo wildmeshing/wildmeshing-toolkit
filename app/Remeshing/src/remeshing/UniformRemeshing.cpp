@@ -250,7 +250,8 @@ bool UniformRemeshing::swap_remeshing()
         executor.is_weight_up_to_date = [](auto& m, auto& ele) {
             auto& [val, _, e] = ele;
             auto val_energy = (m.compute_vertex_valence(e));
-            return (val_energy > 1e-5);
+            // return (val_energy > 1e-5);
+            return (val_energy > 1e-5) && ((val_energy - val) * (val_energy - val) < 1e-8);
         };
         executor(*this, collect_all_ops);
     };
