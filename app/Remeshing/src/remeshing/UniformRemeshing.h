@@ -24,7 +24,7 @@
 #include <atomic>
 #include <queue>
 #include "wmtk/AttributeCollection.hpp"
-
+#define BOUNDARY_FREEZE
 namespace remeshing {
 
 struct VertexAttributes

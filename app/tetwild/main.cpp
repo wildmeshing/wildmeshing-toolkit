@@ -51,7 +51,13 @@ int main(int argc, char** argv)
 
     Eigen::VectorXi SVI, SVJ;
     Eigen::MatrixXd temp_V = V; // for STL file
-    igl::remove_duplicate_vertices(temp_V, 0, V, SVI, SVJ);
+
+    const Eigen::MatrixXd box_min = V.colwise().minCoeff();
+    const Eigen::MatrixXd box_max = V.colwise().maxCoeff();
+    double diag = (box_max - box_min).norm();
+
+    // using the same error tolerance as in tetwild
+    igl::remove_duplicate_vertices(temp_V, 1e-10 * diag, V, SVI, SVJ);
     for (int i = 0; i < F.rows(); i++)
         for (int j : {0, 1, 2}) F(i, j) = SVJ[F(i, j)];
 
@@ -64,10 +70,7 @@ int main(int argc, char** argv)
         for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
     }
 
-    const Eigen::MatrixXd box_min = V.colwise().minCoeff();
-    const Eigen::MatrixXd box_max = V.colwise().maxCoeff();
-    const double diag = (box_max - box_min).norm();
-
+    diag = (V.colwise().maxCoeff() - V.colwise().minCoeff()).norm();
     const double envelope_size = params.epsr * diag;
     Eigen::VectorXi dummy;
     std::vector<size_t> modified_v;
@@ -83,7 +86,11 @@ int main(int argc, char** argv)
     wmtk::logger().info("input {} simplification", input_path);
     int target_verts = 0;
 
+    igl::Timer timer_simp;
+    timer_simp.start();
     m.collapse_shortest(target_verts);
+    double time_simp = timer_simp.getElapsedTime();
+
     m.consolidate_mesh();
 
     // initiate the tetwild mesh using the original envelop
@@ -133,7 +140,10 @@ int main(int argc, char** argv)
     ////winding number
     mesh.filter_outside(vsimp, fsimp);
     double time = timer.getElapsedTime();
-    wmtk::logger().info("total time {}s", time);
+    wmtk::logger().info("==========time=======");
+    wmtk::logger().info("simp time: {}", time_simp);
+    wmtk::logger().info("tetwild time: {}", time);
+    wmtk::logger().info("total time: {}", time + time_simp);
 
     /////////output
     auto [max_energy, avg_energy] = mesh.get_max_avg_energy();
