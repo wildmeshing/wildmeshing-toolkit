@@ -509,16 +509,18 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
     // get the vids
     size_t vid1 = t.vid(*this);
     size_t vid2 = t.switch_vertex(*this).vid(*this);
-    Tuple tmp_tuple;
+    Tuple v3_t;
 
     assert(t.switch_face(*this).has_value());
-    tmp_tuple = switch_face(t).value();
-    assert(tmp_tuple.is_valid(*this));
-    tmp_tuple = tmp_tuple.switch_edge(*this);
-    size_t vid3 = tmp_tuple.switch_vertex(*this).vid(*this);
-    auto tmp_tuple2 = t.switch_edge(*this);
-    assert(tmp_tuple2.is_valid(*this));
-    size_t vid4 = tmp_tuple2.switch_vertex(*this).vid(*this);
+    v3_t = switch_face(t).value();
+    assert(v3_t.is_valid(*this));
+    v3_t = (v3_t.switch_edge(*this)).switch_vertex(*this); // tuple of vid3 test_fid2
+    size_t vid3 = v3_t.vid(*this);
+    auto v4_t = t.switch_edge(*this);
+    v4_t = v4_t.switch_vertex(*this); // tuple of vid4 test_fid1
+    assert(v4_t.is_valid(*this));
+    size_t vid4 = v4_t.vid(*this);
+
     // record the vids that will be changed for roll backs on failure
     // namely the 4 vertices of the 2 triangles
     std::vector<std::pair<size_t, VertexConnectivity>> old_vertices(4);
@@ -540,6 +542,37 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
     old_tris[0] = std::make_pair(test_fid1, m_tri_connectivity[test_fid1]);
     old_tris[1] = std::make_pair(test_fid2.value(), m_tri_connectivity[test_fid2.value()]);
 
+    // ***************** work round of weight_up_to_date: change the hash of every triangle around
+
+    // get all the triangles that will  be influenced
+    // that is the one-ring tris of vid1,2,3,4
+    auto v1_ftuples = get_one_ring_tris_for_vertex(t);
+    auto v2_ftuples = get_one_ring_tris_for_vertex(t.switch_vertex(*this));
+    auto v3_ftuples = get_one_ring_tris_for_vertex(v3_t);
+    auto v4_ftuples = get_one_ring_tris_for_vertex(v4_t);
+
+    std::vector<size_t> unique_one_ring_fids;
+    for (auto f : v1_ftuples) {
+        unique_one_ring_fids.push_back(f.fid(*this));
+    }
+
+    for (auto f : v2_ftuples) {
+        unique_one_ring_fids.push_back(f.fid(*this));
+    }
+
+    for (auto f : v3_ftuples) {
+        unique_one_ring_fids.push_back(f.fid(*this));
+    }
+
+    for (auto f : v4_ftuples) {
+        unique_one_ring_fids.push_back(f.fid(*this));
+    }
+    vector_unique(unique_one_ring_fids);
+    for (auto fid : unique_one_ring_fids) {
+        if (fid == test_fid1 || fid == test_fid2) continue;
+        m_tri_connectivity[fid].hash++;
+    }
+    // *****************
     // first work on triangles, there are only 2
     int j = m_tri_connectivity[test_fid1].find(vid2);
     m_tri_connectivity[test_fid1].m_indices[j] = vid3;
@@ -566,6 +599,11 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
     start_protect_attributes();
     if (!swap_edge_after(new_t) || !invariants(new_tris)) {
         // restore the vertex and faces
+        for (auto fid : unique_one_ring_fids) {
+            if (fid == test_fid1 || fid == test_fid2) continue;
+            m_tri_connectivity[fid].hash--;
+        }
+
         for (auto old_v : old_vertices) m_vertex_connectivity[old_v.first] = old_v.second;
         for (auto old_tri : old_tris) m_tri_connectivity[old_tri.first] = old_tri.second;
         rollback_protected_attributes();
@@ -665,7 +703,6 @@ void TriMesh::consolidate_mesh()
     p_edge_attrs->resize(m_tri_connectivity.size() * 3);
     p_face_attrs->resize(m_tri_connectivity.size());
 
-    // m_vertex_connectivity.compact();
     assert(check_edge_manifold());
     assert(check_mesh_connectivity_validity());
 }
