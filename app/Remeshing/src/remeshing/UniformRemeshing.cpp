@@ -183,7 +183,7 @@ bool UniformRemeshing::collapse_remeshing(double L)
         };
         executor.lock_vertices = edge_locker;
         executor.num_threads = NUM_THREADS;
-
+        executor.should_renew = [](auto val) { return (val > 0); };
         executor.is_weight_up_to_date = [](auto& m, auto& ele) {
             auto& [val, op, e] = ele;
             if (val < 0) return false; // priority is negated.
@@ -216,6 +216,7 @@ bool UniformRemeshing::split_remeshing(double L)
         executor.priority = [&](auto& m, auto _, auto& e) {
             return m.compute_edge_cost_split(e, L);
         };
+        executor.should_renew = [](auto val) { return (val > 0); };
         executor.is_weight_up_to_date = [](auto& m, auto& ele) {
             auto& [val, op, e] = ele;
             if (val < 0) return false;
@@ -247,10 +248,11 @@ bool UniformRemeshing::swap_remeshing()
             return m.compute_vertex_valence(e);
         };
         executor.lock_vertices = edge_locker;
+        executor.should_renew = [](auto val) { return (val > 0); };
         executor.is_weight_up_to_date = [](auto& m, auto& ele) {
             auto& [val, _, e] = ele;
-            auto val_energy = (m.compute_vertex_valence(e));
-            return (val_energy > 1e-5);
+            // auto val_energy = (m.compute_vertex_valence(e));
+            return (val > 1e-5);
         };
         executor(*this, collect_all_ops);
     };
