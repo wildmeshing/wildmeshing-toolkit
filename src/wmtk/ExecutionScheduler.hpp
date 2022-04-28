@@ -219,7 +219,14 @@ public:
             while ([&]() { return Q.try_pop(ele_in_queue); }()) {
                 auto& [weight, op, tup, retry] = ele_in_queue;
                 if (!tup.is_valid(m)) continue;
-
+                if (!is_weight_up_to_date(
+                        m,
+                        std::tuple<double, Op, Tuple>(
+                            std::get<0>(ele_in_queue),
+                            std::get<1>(ele_in_queue),
+                            std::get<2>(ele_in_queue)))) {
+                    continue;
+                } // this can encode, in qslim, recompute(energy) == weight.
                 std::vector<Elem> renewed_elements;
                 {
                     auto locked_vid = lock_vertices(
@@ -237,14 +244,6 @@ public:
                         continue;
                     }
                     if (tup.is_valid(m)) {
-                        if (!is_weight_up_to_date(
-                                m,
-                                std::tuple<double, Op, Tuple>(
-                                    std::get<0>(ele_in_queue),
-                                    std::get<1>(ele_in_queue),
-                                    std::get<2>(ele_in_queue)))) {
-                            continue;
-                        } // this can encode, in qslim, recompute(energy) == weight.
                         auto newtup = edit_operation_maps[op](m, tup);
                         std::vector<std::pair<Op, Tuple>> renewed_tuples;
                         if (newtup) {
