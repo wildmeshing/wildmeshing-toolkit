@@ -213,9 +213,11 @@ public:
         using Elem = std::tuple<double, Op, Tuple, size_t>;
         auto queues = std::vector<tbb::concurrent_priority_queue<Elem>>(num_threads);
         auto final_queue = tbb::concurrent_priority_queue<Elem>();
+        
 
         auto run_single_queue = [&](auto& Q, int task_id) {
             auto ele_in_queue = Elem();
+            // int cnt_test = 0;
             while ([&]() { return Q.try_pop(ele_in_queue); }()) {
                 auto& [weight, op, tup, retry] = ele_in_queue;
                 if (!tup.is_valid(m)) continue;
@@ -243,6 +245,9 @@ public:
                                     std::get<0>(ele_in_queue),
                                     std::get<1>(ele_in_queue),
                                     std::get<2>(ele_in_queue)))) {
+                            // cnt_test++;
+                            operation_cleanup(m);
+                            // std::cout<<task_id<<": "<<cnt_test<<std::endl;
                             continue;
                         } // this can encode, in qslim, recompute(energy) == weight.
                         auto newtup = edit_operation_maps[op](m, tup);
@@ -265,6 +270,8 @@ public:
                 for (auto& e : renewed_elements) {
                     Q.emplace(e);
                 }
+
+                // std::cout<<Q.size()<<std::endl;
 
                 if (stop.load(std::memory_order_acquire)) return;
                 if (cnt_success > stopping_criterion_checking_frequency) {
