@@ -215,8 +215,7 @@ bool wmtk::TriMesh::check_edge_manifold() const
 
 bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
 {
-    assert(check_edge_manifold());
-    if (!split_before(t)) return false;
+    if (!split_edge_before(t)) return false;
     if (!t.is_valid(*this)) return false;
 
     // get the vids
@@ -333,7 +332,7 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
     new_tris = get_one_ring_tris_for_vertex(new_t);
     start_protect_attributes();
 
-    if (!split_after(new_t) || !invariants(new_tris)) {
+    if (!split_edge_after(new_t) || !invariants(new_tris)) {
         // rollback topo
         // restore old v, t
         for (auto old_v : old_vertices) m_vertex_connectivity[old_v.first] = old_v.second;
@@ -346,15 +345,13 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
         rollback_protected_attributes();
         return false;
     }
-    assert(check_edge_manifold());
     release_protect_attributes();
     return true;
 }
 
 bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
 {
-    assert(check_edge_manifold());
-    if (!collapse_before(loc0)) {
+    if (!collapse_edge_before(loc0)) {
         return false;
     }
 
@@ -468,7 +465,7 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
 
     start_protect_attributes();
 
-    if (!collapse_after(new_t) || !invariants(new_tris)) {
+    if (!collapse_edge_after(new_t) || !invariants(new_tris)) {
         // if call back check failed roll back
         // restore the changes for connected triangles and vertices
         // resotre the version-number
@@ -499,7 +496,6 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
         rollback_protected_attributes();
         return false;
     }
-    assert(check_edge_manifold());
     release_protect_attributes();
 
     return true;
@@ -507,8 +503,7 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
 
 bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
 {
-    assert(check_edge_manifold());
-    if (!swap_before(t)) {
+    if (!swap_edge_before(t)) {
         return false;
     }
 
@@ -570,7 +565,7 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
     assert(new_t.is_valid(*this));
     new_tris = {new_t, new_t.switch_face(*this).value()};
     start_protect_attributes();
-    if (!swap_after(new_t) || !invariants(new_tris)) {
+    if (!swap_edge_after(new_t) || !invariants(new_tris)) {
         // restore the vertex and faces
         for (auto old_v : old_vertices) m_vertex_connectivity[old_v.first] = old_v.second;
         for (auto old_tri : old_tris) m_tri_connectivity[old_tri.first] = old_tri.second;

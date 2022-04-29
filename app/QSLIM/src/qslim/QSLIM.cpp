@@ -11,7 +11,7 @@
 using namespace wmtk;
 using namespace qslim;
 
-// called in collapse_after. update the quadric for v
+// called in collapse_edge_after. update the quadric for v
 // adding the A, b , c for two vertices of the old edge and store at the vert_attr of new vertex
 void QSLIM::update_quadrics(const Tuple& new_v)
 {
@@ -108,9 +108,9 @@ bool QSLIM::write_triangle_mesh(std::string path)
     return igl::write_triangle_mesh(path, V, F);
 }
 
-bool QSLIM::collapse_before(const Tuple& t)
+bool QSLIM::collapse_edge_before(const Tuple& t)
 {
-    if (!ConcurrentTriMesh::collapse_before(t)) return false;
+    if (!ConcurrentTriMesh::collapse_edge_before(t)) return false;
     if (vertex_attrs[t.vid(*this)].freeze || vertex_attrs[t.switch_vertex(*this).vid(*this)].freeze)
         return false;
     cache.local().v1p = vertex_attrs[t.vid(*this)].pos;
@@ -122,7 +122,7 @@ bool QSLIM::collapse_before(const Tuple& t)
 }
 
 
-bool QSLIM::collapse_after(const TriMesh::Tuple& t)
+bool QSLIM::collapse_edge_after(const TriMesh::Tuple& t)
 {
     auto vid = t.vid(*this);
     vertex_attrs[vid].pos = cache.local().vbar;
@@ -172,7 +172,7 @@ bool QSLIM::collapse_qslim(int target_vert_number)
                                                              ? starting_num - target_vert_number - 1
                                                              : std::numeric_limits<int>::max();
         executor.stopping_criterion = [](auto& m) { return true; };
-        executor.should_process = [&collect_all_ops, this](auto& m, auto& ele) {
+        executor.is_weight_up_to_date = [&collect_all_ops, this](auto& m, auto& ele) {
             auto& [val, op, e] = ele;
             //if (val > 0) return false; // priority is negated.
             double pri = -compute_cost_for_e(e);

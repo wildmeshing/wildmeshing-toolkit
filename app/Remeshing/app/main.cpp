@@ -78,6 +78,8 @@ int main(int argc, char** argv)
     CLI11_PARSE(app, argc, argv);
 
     wmtk::logger().info("remeshing on {}", path);
+    wmtk::logger().info("freeze bnd {}", freeze);
+
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     bool ok = igl::read_triangle_mesh(path, V, F);

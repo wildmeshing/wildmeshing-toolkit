@@ -250,18 +250,18 @@ private:
 
 protected:
     virtual bool invariants(const std::vector<Tuple>&) { return true; }
-    virtual bool split_before(const Tuple& t) { return true; }
-    virtual bool split_after(const Tuple& t) { return true; }
+    virtual bool split_edge_before(const Tuple& t) { return true; }
+    virtual bool split_edge_after(const Tuple& t) { return true; }
 
 
-    virtual bool collapse_before(const Tuple& t)
+    virtual bool collapse_edge_before(const Tuple& t)
     {
         if (check_link_condition(t)) return true;
         return false;
     }
-    virtual bool collapse_after(const Tuple& t) { return true; }
-    virtual bool swap_after(const Tuple& t) { return true; }
-    virtual bool swap_before(const Tuple& t)
+    virtual bool collapse_edge_after(const Tuple& t) { return true; }
+    virtual bool swap_edge_after(const Tuple& t) { return true; }
+    virtual bool swap_edge_before(const Tuple& t)
     {
         if (!t.switch_face(*this).has_value())
             return false; // can't swap on boundary edgereturn true;

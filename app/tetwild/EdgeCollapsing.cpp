@@ -36,7 +36,7 @@ void tetwild::TetWild::collapse_all_edges(bool is_limit_length)
         };
         executor.priority = [&](auto& m, auto op, auto& t) { return -m.get_length2(t); };
         executor.num_threads = NUM_THREADS;
-        executor.should_process = [&](const auto& m, const auto& ele) {
+        executor.is_weight_up_to_date = [&](const auto& m, const auto& ele) {
             auto [weight, op, tup] = ele;
             auto length = m.get_length2(tup);
             if (length != -weight) return false;
@@ -86,7 +86,7 @@ void tetwild::TetWild::collapse_all_edges(bool is_limit_length)
     }
 }
 
-bool tetwild::TetWild::collapse_before(const Tuple& loc) // input is an edge
+bool tetwild::TetWild::collapse_edge_before(const Tuple& loc) // input is an edge
 {
     collapse_cache.local().changed_faces.clear();
     collapse_cache.local().changed_tids.clear();
@@ -221,9 +221,9 @@ bool tetwild::TetWild::collapse_before(const Tuple& loc) // input is an edge
     return true;
 }
 
-bool tetwild::TetWild::collapse_after(const Tuple& loc)
+bool tetwild::TetWild::collapse_edge_after(const Tuple& loc)
 {
-    if (!TetMesh::collapse_after(loc)) return false;
+    if (!TetMesh::collapse_edge_after(loc)) return false;
 
     size_t v1_id = collapse_cache.local().v1_id;
     size_t v2_id = collapse_cache.local().v2_id;

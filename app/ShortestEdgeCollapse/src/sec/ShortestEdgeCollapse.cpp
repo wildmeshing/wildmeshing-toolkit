@@ -49,9 +49,9 @@ bool sec::ShortestEdgeCollapse::write_triangle_mesh(std::string path)
     return igl::write_triangle_mesh(path, V, F);
 }
 
-bool sec::ShortestEdgeCollapse::collapse_before(const Tuple& t)
+bool sec::ShortestEdgeCollapse::collapse_edge_before(const Tuple& t)
 {
-    if (!ConcurrentTriMesh::collapse_before(t)) return false;
+    if (!ConcurrentTriMesh::collapse_edge_before(t)) return false;
     if (vertex_attrs[t.vid(*this)].freeze || vertex_attrs[t.switch_vertex(*this).vid(*this)].freeze)
         return false;
     position_cache.local().v1p = vertex_attrs[t.vid(*this)].pos;
@@ -60,7 +60,7 @@ bool sec::ShortestEdgeCollapse::collapse_before(const Tuple& t)
 }
 
 
-bool sec::ShortestEdgeCollapse::collapse_after(const TriMesh::Tuple& t)
+bool sec::ShortestEdgeCollapse::collapse_edge_after(const TriMesh::Tuple& t)
 {
     const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
     auto vid = t.vid(*this);

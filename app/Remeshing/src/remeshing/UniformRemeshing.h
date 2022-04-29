@@ -141,37 +141,34 @@ public:
         return false;
     }
 
-
-    bool collapse_before(const Tuple& t) override
+    bool collapse_edge_before(const Tuple& t) override
     {
-        if (!TriMesh::collapse_before(t)) return false;
+        if (!TriMesh::collapse_edge_before(t)) return false;
         if (is_edge_freeze(t)) return false;
-
         cache_edge_positions(t);
         return true;
     }
+    bool collapse_edge_after(const Tuple& t) override;
 
-    bool collapse_after(const Tuple& t) override;
-
-    bool swap_before(const Tuple& t) override
+    bool swap_edge_before(const Tuple& t) override
     {
         if (is_edge_freeze(t)) return false;
-
         return true;
     }
-    bool swap_after(const Tuple& t) override;
+    bool swap_edge_after(const Tuple& t) override;
 
     std::vector<TriMesh::Tuple> new_edges_after(const std::vector<TriMesh::Tuple>& t) const;
     std::vector<TriMesh::Tuple> new_edges_after_swap(const TriMesh::Tuple& t) const;
 
-    bool split_before(const Tuple& t) override
+    bool split_edge_before(const Tuple& t) override
     {
+        if (!TriMesh::split_edge_before(t)) return false;
         if (is_edge_freeze(t)) return false;
         cache_edge_positions(t);
         return true;
     }
+    bool split_edge_after(const Tuple& t) override;
 
-    bool split_after(const Tuple& t) override;
 
     bool smooth_before(const Tuple& t) override
     {
