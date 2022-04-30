@@ -39,6 +39,7 @@ void run_remeshing(
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<milliseconds>(stop - start);
 
+    m.consolidate_mesh();
     m.write_triangle_mesh(output);
     wmtk::logger().info("runtime {}", duration.count());
     wmtk::logger().info("current_memory {}", getCurrentRSS() / (1024. * 1024));
@@ -85,7 +86,7 @@ int main(int argc, char** argv)
     bool ok = igl::read_triangle_mesh(path, V, F);
     Eigen::VectorXi SVI, SVJ;
     Eigen::MatrixXd temp_V = V; // for STL file
-    igl::remove_duplicate_vertices(temp_V, 1e-5, V, SVI, SVJ);
+    igl::remove_duplicate_vertices(temp_V, 1e-3, V, SVI, SVJ);
     for (int i = 0; i < F.rows(); i++)
         for (int j : {0, 1, 2}) F(i, j) = SVJ[F(i, j)];
     wmtk::logger().info("Before_vertices#: {} \n Before_tris#: {}", V.rows(), F.rows());
@@ -130,6 +131,6 @@ int main(int argc, char** argv)
         run_remeshing(path, diag * len_rel, output, m, itrs, bnd_output);
     timer.stop();
     logger().info("Took {}", timer.getElapsedTimeInSec());
-    logger().info("========finished========");
+
     return 0;
 }

@@ -1,10 +1,10 @@
 #pragma once
 
-#include <tbb/concurrent_vector.h>
 #include <wmtk/utils/VectorUtils.h>
-#include <Eigen/Core>
 #include <memory>
 #include <wmtk/utils/Logger.hpp>
+
+#include <tbb/concurrent_vector.h>
 
 #include <algorithm>
 #include <array>

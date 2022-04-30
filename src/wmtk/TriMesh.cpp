@@ -7,7 +7,7 @@
 #include "wmtk/utils/VectorUtils.h"
 using namespace wmtk;
 
-// #define BOUNDARY_FREEZE
+
 TriMesh::Tuple TriMesh::Tuple::switch_vertex(const TriMesh& m) const
 {
     assert(is_valid(m));
@@ -197,7 +197,6 @@ bool wmtk::TriMesh::check_edge_manifold() const
 {
     std::vector<size_t> count(tri_capacity() * 3, 0);
     auto faces = get_faces();
-    Eigen::MatrixXi F = Eigen::MatrixXi::Constant(tri_capacity(), 3, -1);
     for (auto f : faces) {
         for (int i = 0; i < 3; i++) {
             count[f.eid(*this)]++;
@@ -497,7 +496,6 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
         return false;
     }
     release_protect_attributes();
-
     return true;
 }
 
@@ -573,7 +571,6 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
 
         return false;
     }
-    assert(check_edge_manifold());
     release_protect_attributes();
     return true;
 }
@@ -581,15 +578,12 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
 bool TriMesh::smooth_vertex(const Tuple& loc0)
 {
     ZoneScoped;
-    assert(check_edge_manifold());
     if (!smooth_before(loc0)) return false;
     start_protect_attributes();
     if (!smooth_after(loc0) || !invariants(get_one_ring_tris_for_vertex(loc0))) {
         rollback_protected_attributes();
         return false;
     }
-    assert(check_edge_manifold());
-
     release_protect_attributes();
     return true;
 }

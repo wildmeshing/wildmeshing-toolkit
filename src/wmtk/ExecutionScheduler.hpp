@@ -47,7 +47,7 @@ struct ExecutePass
         return 0.;
     };
 
-    std::function<bool(double)> should_renew = [](auto) { return true; };
+    std::function<bool(double)> should_renew = [](auto val) { return true; };
     // Renew Neighboring Tuples
     // Right now, use pre-implemented functions to get one edge ring.
     // TODO: Ideally, this depend on both operation and priority criterion.
@@ -213,6 +213,7 @@ public:
         using Elem = std::tuple<double, Op, Tuple, size_t>;
         auto queues = std::vector<tbb::concurrent_priority_queue<Elem>>(num_threads);
         auto final_queue = tbb::concurrent_priority_queue<Elem>();
+        
 
         auto run_single_queue = [&](auto& Q, int task_id) {
             auto ele_in_queue = Elem();
@@ -243,6 +244,7 @@ public:
                                     std::get<0>(ele_in_queue),
                                     std::get<1>(ele_in_queue),
                                     std::get<2>(ele_in_queue)))) {
+                            operation_cleanup(m);
                             continue;
                         } // this can encode, in qslim, recompute(energy) == weight.
                         auto newtup = edit_operation_maps[op](m, tup);

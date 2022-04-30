@@ -184,36 +184,3 @@ TEST_CASE("remeshing_hanging", "[test_remeshing]")
         m.tri_capacity());
     REQUIRE(m.check_edge_manifold());
 }
-
-
-TEST_CASE("break_link", "[test_remeshing]")
-{
-    const std::string path = "break_mesh.obj";
-    std::string output = "break_link_out.obj";
-
-    Eigen::MatrixXd V;
-    Eigen::MatrixXi F;
-    bool ok = igl::read_triangle_mesh(path, V, F);
-
-    std::vector<Eigen::Vector3d> v(V.rows());
-    std::vector<std::array<size_t, 3>> tri(F.rows());
-    for (int i = 0; i < V.rows(); i++) {
-        v[i] = V.row(i);
-    }
-    for (int i = 0; i < F.rows(); i++) {
-        for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
-    }
-
-    UniformRemeshing m(v, 1);
-    m.create_mesh(v.size(), tri);
-    REQUIRE(m.check_edge_manifold());
-    auto edges = m.get_edges();
-    auto mf = m.tuple_from_vertex(0);
-    std::vector<UniformRemeshing::Tuple> newtris;
-    for (auto e : edges) {
-        if (e.vid(m) == 10 && e.switch_vertex(m).vid(m) == 1) {
-            m.collapse_edge(e, newtris);
-            break;
-        }
-    }
-}
