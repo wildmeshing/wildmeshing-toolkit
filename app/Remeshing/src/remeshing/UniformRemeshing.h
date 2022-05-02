@@ -152,6 +152,7 @@ public:
 
     bool swap_edge_before(const Tuple& t) override
     {
+        if (!TriMesh::swap_edge_before(t)) return false;
         if (is_edge_freeze(t)) return false;
         return true;
     }
@@ -175,6 +176,9 @@ public:
         return true;
     }
     bool smooth_after(const Tuple& t) override;
+
+    double compute_edge_cost_collapse(const TriMesh::Tuple& t, double L) const;
+    double compute_edge_cost_split(const TriMesh::Tuple& t, double L) const;
     double compute_vertex_valence(const TriMesh::Tuple& t) const;
     std::vector<double> average_len_valen();
     bool split_remeshing(double L);

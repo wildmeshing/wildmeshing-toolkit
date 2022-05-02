@@ -5,7 +5,7 @@
 #include <wmtk/utils/Logger.hpp>
 
 #include <tbb/concurrent_vector.h>
-
+#include <Eigen/Core>
 #include <algorithm>
 #include <array>
 #include <cassert>
