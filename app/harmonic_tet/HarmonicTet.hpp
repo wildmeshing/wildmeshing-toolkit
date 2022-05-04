@@ -57,50 +57,13 @@ public:
 
     void compute_vertex_partition_morton()
     {
-        // auto f_tuples = get_faces();
-        // Eigen::MatrixXi F(f_tuples.size(), 3);
+        if (NUM_THREADS==0) return;
+       
         wmtk::logger().info("Number of parts: {} by morton", NUM_THREADS);
 
         tbb::task_arena arena(NUM_THREADS);
 
         arena.execute([&] {
-            // tbb::parallel_for(
-            //     tbb::blocked_range<int>(0, f_tuples.size()),
-            //     [&](tbb::blocked_range<int> r) {
-            //         for (int i = r.begin(); i < r.end(); i++) {
-            //             F(i, 0) = f_tuples[i].vid(*this);
-            //             auto e1 = f_tuples[i].switch_vertex(*this);
-            //             F(i, 1) = e1.vid(*this);
-            //             F(i, 2) = e1.switch_edge(*this).switch_vertex(*this).vid(*this);
-            //         }
-            //     });
-
-            // for (int i = 0; i < f_tuples.size(); i++) {
-            //     F(i, 0) = f_tuples[i].vid(*this);
-            //     auto e1 = f_tuples[i].switch_vertex(*this);
-            //     F(i, 1) = e1.vid(*this);
-            //     F(i, 2) = e1.switch_edge(*this).switch_vertex(*this).vid(*this);
-            // }
-
-            // Eigen::VectorXi I, J;
-            // igl::remove_unreferenced(vert_capacity(), F, I, J);
-
-            // std::vector<Eigen::Vector3i> F_v(F.rows());
-
-            // tbb::parallel_for(tbb::blocked_range<int>(0, F.rows()), [&](tbb::blocked_range<int>
-            // r) {
-            //     for (int i = r.begin(); i < r.end(); i++) {
-            //         for (auto j = 0; j < 3; j++) {
-            //             F_v[i][j] = I(F(i, j));
-            //         }
-            //     }
-            // });
-
-            // for (auto i = 0; i < F.rows(); i++) {
-            //     for (auto j = 0; j < 3; j++) {
-            //         F_v[i][j] = I(F(i, j));
-            //     }
-            // }
 
             std::vector<Eigen::Vector3d> V_v(vertex_attrs.size());
 
@@ -112,12 +75,7 @@ public:
                     }
                 });
 
-            // for (int i = 0; i < V_v.size(); i++) {
-            //     V_v[i] = m_vertex_attribute[i].m_posf;
-            // }
-
-            // std::vector<Eigen::Vector3i> fnew;
-            // std::vector<std::array<int, 3>> ct;
+           
             struct sortstruct
             {
                 int order;
@@ -128,9 +86,6 @@ public:
             list_v.resize(V_v.size());
             // std::vector<sortstruct> list;
             const int multi = 1000;
-            // ct.resize(F_v.size());
-            // list.resize(F_v.size());
-
             // since the morton code requires a correct scale of input vertices,
             //  we need to scale the vertices if their coordinates are out of range
             std::vector<Eigen::Vector3d> V = V_v; // this is for rescaling vertices
@@ -154,10 +109,6 @@ public:
                 }
             });
 
-            // for (int i = 0; i < V.size(); i++) {
-            //     V[i] = V[i] - center; // make box centered at origin
-            // }
-
             Eigen::Vector3d scale_point =
                 vmax - center; // after placing box at origin, vmax and vmin are symetric.
 
@@ -174,23 +125,7 @@ public:
                             V[i] = V[i] / scale;
                         }
                     });
-
-                // for (int i = 0; i < V.size(); i++) {
-                //     V[i] = V[i] / scale; // if the box is too big, resize it
-                // }
             }
-
-            // tbb::parallel_for(
-            //     tbb::blocked_range<int>(0, F_v.size()),
-            //     [&](tbb::blocked_range<int> r) {
-            //         for (int i = r.begin(); i < r.end(); i++) {
-            //             ct[i][0] = int(((V[F_v[i][0]] + V[F_v[i][1]] + V[F_v[i][2]]) *
-            //             multi)[0]); ct[i][1] = int(((V[F_v[i][0]] + V[F_v[i][1]] + V[F_v[i][2]])
-            //             * multi)[1]); ct[i][2] = int(((V[F_v[i][0]] + V[F_v[i][1]] +
-            //             V[F_v[i][2]]) * multi)[2]); list[i].morton =
-            //             Resorting::MortonCode64(ct[i][0], ct[i][1], ct[i][2]); list[i].order = i;
-            //         }
-            //     });
 
             tbb::parallel_for(tbb::blocked_range<int>(0, V.size()), [&](tbb::blocked_range<int> r) {
                 for (int i = r.begin(); i < r.end(); i++) {
@@ -202,13 +137,6 @@ public:
                 }
             });
 
-            // for (int i = 0; i < F_v.size(); i++) {
-            //     ct[i][0] = int(((V[F_v[i][0]] + V[F_v[i][1]] + V[F_v[i][2]]) * multi)[0]);
-            //     ct[i][1] = int(((V[F_v[i][0]] + V[F_v[i][1]] + V[F_v[i][2]]) * multi)[1]);
-            //     ct[i][2] = int(((V[F_v[i][0]] + V[F_v[i][1]] + V[F_v[i][2]]) * multi)[2]);
-            //     list[i].morton = Resorting::MortonCode64(ct[i][0], ct[i][1], ct[i][2]);
-            //     list[i].order = i;
-            // }
             const auto morton_compare = [](const sortstruct& a, const sortstruct& b) {
                 return (a.morton < b.morton);
             };
@@ -224,35 +152,7 @@ public:
                         vertex_attrs[list_v[i].order].partition_id = i / interval;
                     }
                 });
-            // tbb::parallel_sort(list.begin(), list.end(), morton_compare);
-            // std::sort(list.begin(), list.end(), morton_compare);
-
-            // fnew.resize(F_v.size());
-
-            // tbb::parallel_for(
-            //     tbb::blocked_range<int>(0, F_v.size()),
-            //     [&](tbb::blocked_range<int> r) {
-            //         for (int i = r.begin(); i < r.end(); i++) {
-            //             fnew[i] = F_v[list[i].order];
-            //         }
-            //     });
-
-            // for (int i = 0; i < F_v.size(); i++) {
-            //     fnew[i] = F_v[list[i].order];
-
-            // int interval = fnew.size() / NUM_THREADS + 1;
-
-            // tbb::parallel_for(
-            //     tbb::blocked_range<int>(0, fnew.size()),
-            //     [&](tbb::blocked_range<int> r) {
-            //         for (int i = r.begin(); i < r.end(); i++) {
-            //             m_vertex_attribute[fnew[i][0]].partition_id = i / interval;
-            //         }
-            //     });
-
-            // for (int i = 0; i < fnew.size(); i++) {
-            //     m_vertex_attribute[fnew[i][0]].partition_id = i / interval;
-            // }
+            
         });
     }
 

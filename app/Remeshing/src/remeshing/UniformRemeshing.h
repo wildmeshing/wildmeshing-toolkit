@@ -130,6 +130,7 @@ public:
     }
 
     void partition_mesh_morton(){
+        if (NUM_THREADS==0) return;
         wmtk::logger().info("Number of parts: {} by morton", NUM_THREADS);
 
         tbb::task_arena arena(NUM_THREADS);
