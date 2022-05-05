@@ -35,10 +35,12 @@ int main(int argc, char** argv)
     CLI::App app{argv[0]};
     std::string input_path = WMT_DATA_DIR "/37322.stl";
     std::string output_path = "./";
+    bool skip_simplify = false;
     int NUM_THREADS = 1;
     app.add_option("-i,--input", input_path, "Input mesh.");
     app.add_option("-o,--output", output_path, "Output mesh.");
     app.add_option("-j,--jobs", NUM_THREADS, "thread.");
+    app.add_flag("--skip-simplify", skip_simplify, "simplify_input.");
     int max_its = 10;
     app.add_option("--max-its", max_its, "max # its");
     app.add_option("--epsr", params.epsr, "relative eps wrt diag of bbox");
@@ -72,6 +74,7 @@ int main(int argc, char** argv)
     Eigen::VectorXi dummy;
     std::vector<size_t> modified_v;
     if (!igl::is_edge_manifold(F) || !igl::is_vertex_manifold(F, dummy)) {
+        wmtk::logger().info("manifold separation...");
         auto v1 = v;
         auto tri1 = tri;
         wmtk::separate_to_manifold(v1, tri1, v, tri, modified_v);
@@ -80,11 +83,13 @@ int main(int argc, char** argv)
     sec::ShortestEdgeCollapse m(v, NUM_THREADS);
     m.create_mesh(v.size(), tri, modified_v, envelope_size);
     assert(m.check_mesh_connectivity_validity());
-    wmtk::logger().info("input {} simplification", input_path);
-    int target_verts = 0;
 
-    m.collapse_shortest(target_verts);
-    m.consolidate_mesh();
+	
+    if (skip_simplify == false) {
+        wmtk::logger().info("input {} simplification", input_path);
+        m.collapse_shortest(0);
+        m.consolidate_mesh();
+    }
 
     // initiate the tetwild mesh using the original envelop
     tetwild::TetWild mesh(params, m.m_envelope, NUM_THREADS);
