@@ -252,7 +252,6 @@ bool UniformRemeshing::swap_remeshing()
         executor.is_weight_up_to_date = [](auto& m, auto& ele) {
             auto& [val, _, e] = ele;
             auto val_energy = (m.compute_vertex_valence(e));
-            // return (val_energy > 1e-5);
             return (val_energy > 1e-5) && ((val_energy - val) * (val_energy - val) < 1e-8);
         };
         executor(*this, collect_all_ops);
@@ -359,7 +358,6 @@ bool UniformRemeshing::uniform_remeshing(double L, int iterations)
         // smoothing
         auto vertices = get_vertices();
         for (auto& loc : vertices) smooth_vertex(loc);
-        // assert(check_mesh_connectivity_validity());
 
         properties = average_len_valen();
         wmtk::logger().info("avg edge len: {}", properties[0]);
@@ -391,7 +389,6 @@ bool UniformRemeshing::write_triangle_mesh(std::string path)
         }
     }
     igl::write_triangle_mesh(path, V, F);
-    // assert(igl::is_edge_manifold(F));
     bool manifold = check_edge_manifold();
     assert(manifold);
 

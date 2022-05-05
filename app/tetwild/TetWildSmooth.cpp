@@ -89,13 +89,10 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
                 auto fid = f_t.fid(*this);
                 if (m_face_attribute[fid].m_is_surface_fs) {
                     auto vs = get_face_vertices(f_t);
-                    this->isout_timer.start();
                     bool is_out = m_envelope.is_outside(
                         {{m_vertex_attribute[vs[0].vid(*this)].m_posf,
                           m_vertex_attribute[vs[1].vid(*this)].m_posf,
                           m_vertex_attribute[vs[2].vid(*this)].m_posf}});
-                    double time_tmp = this->isout_timer.getElapsedTimeInSec();
-                    time_env += time_tmp;
                     if (is_out) return false;
                 }
             }

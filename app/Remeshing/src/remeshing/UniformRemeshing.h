@@ -77,7 +77,6 @@ public:
             m_envelope.init(V, F, 0.0);
 
 
-        // partition_mesh();
         partition_mesh_morton();
         for (auto v : frozen_verts) vertex_attrs[v].freeze = true;
         if (m_freeze) {
@@ -129,14 +128,14 @@ public:
             vertex_attrs[i].partition_id = m_vertex_partition_id[i];
     }
 
-    void partition_mesh_morton(){
-        if (NUM_THREADS==0) return;
+    void partition_mesh_morton()
+    {
+        if (NUM_THREADS == 0) return;
         wmtk::logger().info("Number of parts: {} by morton", NUM_THREADS);
 
         tbb::task_arena arena(NUM_THREADS);
 
         arena.execute([&] {
-
             std::vector<Eigen::Vector3d> V_v(vertex_attrs.size());
 
             tbb::parallel_for(
@@ -221,7 +220,6 @@ public:
                         vertex_attrs[list_v[i].order].partition_id = i / interval;
                     }
                 });
-            
         });
     }
 
@@ -271,7 +269,7 @@ public:
 
     bool smooth_before(const Tuple& t) override
     {
-        if (is_edge_freeze(t)) return false;
+        if (vertex_attrs[t.vid(*this)].freeze) return false;
         return true;
     }
     bool smooth_after(const Tuple& t) override;
