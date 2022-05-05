@@ -518,7 +518,7 @@ std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_one_ring_tets_for_edge(cons
     tids.insert(
         tids.end(),
         m_vertex_connectivity[v2_id].m_conn_tets.begin(),
-        m_vertex_connectivity[v1_id].m_conn_tets.end());
+        m_vertex_connectivity[v2_id].m_conn_tets.end());
     vector_unique(tids);
 
     std::vector<Tuple> tets;
