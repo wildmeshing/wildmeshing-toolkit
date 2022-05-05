@@ -16,7 +16,7 @@ target_include_directories(wmtk_app_interior_tetopt PUBLIC ${CMAKE_CURRENT_SOURC
 
 add_executable(wmtk_interior_tetopt_bin main.cpp)
 target_link_libraries(wmtk_interior_tetopt_bin PUBLIC
-	wmtk::interior_tetopt
+	wmtk_app_interior_tetopt
 	CLI11::CLI11
 )
 wmtk_copy_dll(wmtk_interior_tetopt_bin)
