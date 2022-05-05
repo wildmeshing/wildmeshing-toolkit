@@ -17,6 +17,7 @@
 #include <igl/remove_duplicate_vertices.h>
 //#include <wmtk/utils/GeoUtils.h>
 #include <igl/predicates/predicates.h>
+#include <remeshing/UniformRemeshing.h>
 #include <sec/ShortestEdgeCollapse.h>
 #include <Tracy.hpp>
 
@@ -43,8 +44,8 @@ int main(int argc, char** argv)
     app.add_flag("--skip-simplify", skip_simplify, "simplify_input.");
     int max_its = 10;
     app.add_option("--max-its", max_its, "max # its");
-    app.add_option("--epsr", params.epsr, "relative eps wrt diag of bbox");
-    app.add_option("--lr", params.lr, "relative ideal edge length wrt diag of bbox");
+    app.add_option("-e", params.epsr, "relative eps wrt diag of bbox");
+    app.add_option("-r", params.lr, "relative ideal edge length wrt diag of bbox");
     CLI11_PARSE(app, argc, argv);
 
     Eigen::MatrixXd V;
@@ -53,7 +54,13 @@ int main(int argc, char** argv)
 
     Eigen::VectorXi SVI, SVJ;
     Eigen::MatrixXd temp_V = V; // for STL file
-    igl::remove_duplicate_vertices(temp_V, 0, V, SVI, SVJ);
+
+    const Eigen::MatrixXd box_min = V.colwise().minCoeff();
+    const Eigen::MatrixXd box_max = V.colwise().maxCoeff();
+    double diag = (box_max - box_min).norm();
+
+    // using the same error tolerance as in tetwild
+    igl::remove_duplicate_vertices(temp_V, 1e-5 * diag, V, SVI, SVJ);
     for (int i = 0; i < F.rows(); i++)
         for (int j : {0, 1, 2}) F(i, j) = SVJ[F(i, j)];
 
@@ -66,10 +73,8 @@ int main(int argc, char** argv)
         for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
     }
 
-    const Eigen::MatrixXd box_min = V.colwise().minCoeff();
-    const Eigen::MatrixXd box_max = V.colwise().maxCoeff();
-    const double diag = (box_max - box_min).norm();
-
+    diag = (V.colwise().maxCoeff() - V.colwise().minCoeff()).norm();
+    wmtk::logger().info("diag of the mesh: {} ", diag);
     const double envelope_size = params.epsr * diag;
     Eigen::VectorXi dummy;
     std::vector<size_t> modified_v;
@@ -187,8 +192,9 @@ int main(int argc, char** argv)
         for (auto i = 0; i < outface.size(); i++) {
             matF.row(i) << outface[i][0], outface[i][1], outface[i][2];
         }
-        wmtk::logger().info("Output face size {}", outface.size());
         igl::write_triangle_mesh(output_path + "_surface.obj", matV, matF);
+        wmtk::logger().info("Output face size {}", outface.size());
+        wmtk::logger().info("======= finish =========");
     }
 
     // todo: refine adaptively the mesh

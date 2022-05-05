@@ -2,11 +2,11 @@
 #include "oneapi/tbb/concurrent_vector.h"
 #include "wmtk/TetMesh.h"
 
+#include <igl/Timer.h>
 #include <atomic>
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/Logger.hpp>
-#include <igl/Timer.h>
 
 
 void tetwild::TetWild::collapse_all_edges(bool is_limit_length)
@@ -37,7 +37,7 @@ void tetwild::TetWild::collapse_all_edges(bool is_limit_length)
         executor.priority = [&](auto& m, auto op, auto& t) { return -m.get_length2(t); };
         executor.num_threads = NUM_THREADS;
         executor.is_weight_up_to_date = [&](const auto& m, const auto& ele) {
-            auto[weight, op, tup] = ele;
+            auto& [weight, op, tup] = ele;
             auto length = m.get_length2(tup);
             if (length != -weight) return false;
             //
@@ -176,9 +176,9 @@ bool tetwild::TetWild::collapse_edge_before(const Tuple& loc) // input is an edg
         //        wmtk::vector_unique(collapse_cache.local().changed_faces, comp, is_equal);
     }
 
-    if(m_vertex_attribute[v1_id].m_is_on_surface) {
+    if (m_vertex_attribute[v1_id].m_is_on_surface) {
         std::vector<std::array<size_t, 3>> fs;
-        for (auto &t: n1_locs) {
+        for (auto& t : n1_locs) {
             auto vs = oriented_tet_vertices(t);
             bool find_v2 = false;
             int j_v1 = -1;
@@ -202,8 +202,8 @@ bool tetwild::TetWild::collapse_edge_before(const Tuple& loc) // input is an edg
         }
         wmtk::vector_unique(fs);
 
-        for (auto &f: fs) {
-            auto[_1, global_fid1] = tuple_from_face(f);
+        for (auto& f : fs) {
+            auto [_1, global_fid1] = tuple_from_face(f);
             if (m_face_attribute[global_fid1].m_is_surface_fs) {
                 int j = std::find(f.begin(), f.end(), v1_id) - f.begin();
                 f[j] = v2_id;
@@ -230,8 +230,7 @@ bool tetwild::TetWild::collapse_edge_after(const Tuple& loc)
     std::vector<double> qs;
     for (size_t tid : collapse_cache.local().changed_tids) {
         auto tet = tuple_from_tet(tid);
-        if(is_inverted(tet))
-            return false;
+        if (is_inverted(tet)) return false;
         double q = get_quality(tet);
         if (q > collapse_cache.local().max_energy) {
             return false;
@@ -240,6 +239,7 @@ bool tetwild::TetWild::collapse_edge_after(const Tuple& loc)
     }
 
     // surface
+
     if (collapse_cache.local().edge_length > 0) {
         for (auto& vids : collapse_cache.local().surface_faces) {
             bool is_out = m_envelope.is_outside(
@@ -252,8 +252,6 @@ bool tetwild::TetWild::collapse_edge_after(const Tuple& loc)
             }
         }
     }
-//    if(m_vertex_attribute[v1_id].m_is_on_surface)
-//        std::cout<<"suc"<<std::endl;
 
     //// update attrs
     // tet attr

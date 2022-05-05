@@ -243,6 +243,7 @@ public:
                                     std::get<0>(ele_in_queue),
                                     std::get<1>(ele_in_queue),
                                     std::get<2>(ele_in_queue)))) {
+                            operation_cleanup(m);
                             continue;
                         } // this can encode, in qslim, recompute(energy) == weight.
                         auto newtup = edit_operation_maps[op](m, tup);

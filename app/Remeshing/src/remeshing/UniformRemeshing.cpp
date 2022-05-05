@@ -183,7 +183,7 @@ bool UniformRemeshing::collapse_remeshing(double L)
         };
         executor.lock_vertices = edge_locker;
         executor.num_threads = NUM_THREADS;
-
+        executor.should_renew = [](auto val) { return (val > 0); };
         executor.is_weight_up_to_date = [](auto& m, auto& ele) {
             auto& [val, op, e] = ele;
             if (val < 0) return false; // priority is negated.
@@ -216,6 +216,7 @@ bool UniformRemeshing::split_remeshing(double L)
         executor.priority = [&](auto& m, auto _, auto& e) {
             return m.compute_edge_cost_split(e, L);
         };
+        executor.should_renew = [](auto val) { return (val > 0); };
         executor.is_weight_up_to_date = [](auto& m, auto& ele) {
             auto& [val, op, e] = ele;
             if (val < 0) return false;
@@ -247,10 +248,11 @@ bool UniformRemeshing::swap_remeshing()
             return m.compute_vertex_valence(e);
         };
         executor.lock_vertices = edge_locker;
+        executor.should_renew = [](auto val) { return (val > 0); };
         executor.is_weight_up_to_date = [](auto& m, auto& ele) {
             auto& [val, _, e] = ele;
             auto val_energy = (m.compute_vertex_valence(e));
-            return (val_energy > 1e-5);
+            return (val_energy > 1e-5) && ((val_energy - val) * (val_energy - val) < 1e-8);
         };
         executor(*this, collect_all_ops);
     };
@@ -339,12 +341,14 @@ bool UniformRemeshing::uniform_remeshing(double L, int iterations)
 {
     int cnt = 0;
     std::vector<double> properties = average_len_valen();
-    wmtk::logger().info("the starting avg len is {}", properties[0]);
+    wmtk::logger().info("avg len is: {}", properties[0]);
+    wmtk::logger().info("target len is: {}", L);
+
+    wmtk::logger().info("input mesh is mani {}", check_edge_manifold());
     while ((properties[0] - L) * (properties[0] - L) > 1e-8 && cnt < iterations) {
         cnt++;
         // split
         split_remeshing(L);
-
         // collpase
         collapse_remeshing(L);
 
@@ -354,15 +358,17 @@ bool UniformRemeshing::uniform_remeshing(double L, int iterations)
         // smoothing
         auto vertices = get_vertices();
         for (auto& loc : vertices) smooth_vertex(loc);
-        assert(check_mesh_connectivity_validity());
-        consolidate_mesh();
+
         properties = average_len_valen();
+        wmtk::logger().info("avg edge len: {}", properties[0]);
+
+        wmtk::logger().info("avg valence: {}", properties[3]);
     }
     wmtk::logger().info("finished {} remeshing iterations", iterations);
-    wmtk::logger().info("avg edge len after remesh is: {}", properties[0]);
+    wmtk::logger().info("avg edge len: {}", properties[0]);
 
-    wmtk::logger().info("avg valence after remesh is: {}", properties[3]);
-
+    wmtk::logger().info("avg valence: {}", properties[3]);
+    wmtk::logger().info("+++++++++finished+++++++++");
     return true;
 }
 // write the collapsed mesh into a obj and assert the mesh is manifold
@@ -383,6 +389,8 @@ bool UniformRemeshing::write_triangle_mesh(std::string path)
         }
     }
     igl::write_triangle_mesh(path, V, F);
-    assert(igl::is_edge_manifold(F));
-    return igl::is_edge_manifold(F);
+    bool manifold = check_edge_manifold();
+    assert(manifold);
+
+    return manifold;
 }

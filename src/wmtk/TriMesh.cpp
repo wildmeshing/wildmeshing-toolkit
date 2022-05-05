@@ -124,10 +124,12 @@ std::optional<TriMesh::Tuple> TriMesh::Tuple::switch_face(const TriMesh& m) cons
 bool TriMesh::Tuple::is_valid(const TriMesh& m) const
 {
     if (m.m_vertex_connectivity[m_vid].m_is_removed || m.m_tri_connectivity[m_fid].m_is_removed) {
+        // assert(false);
         return false;
     }
     // Condition 3: tuple m_hash check
     if (m_hash != m.m_tri_connectivity[m_fid].hash) {
+        // assert(false);
         return false;
     }
 #ifndef NDEBUG
@@ -585,7 +587,7 @@ bool TriMesh::smooth_vertex(const Tuple& loc0)
     return true;
 }
 
-void TriMesh::consolidate_mesh()
+void TriMesh::consolidate_mesh(bool bnd_output)
 
 {
     auto v_cnt = 0;
@@ -602,6 +604,21 @@ void TriMesh::consolidate_mesh()
         map_t_ids[i] = t_cnt;
         t_cnt++;
     }
+
+    if (bnd_output) {
+        auto edges = get_edges();
+        for (auto e : edges) {
+            if (is_boundary_edge(e)) {
+                bnd_table(e.vid(*this), 1) = map_v_ids[e.vid(*this)];
+                bnd_table(e.switch_vertex(*this).vid(*this), 1) =
+                    map_v_ids[e.switch_vertex(*this).vid(*this)];
+            } else {
+                continue;
+            }
+        }
+        igl::writeDMAT("bdn_table.dmat", bnd_table);
+    }
+
 
     v_cnt = 0;
     for (auto i = 0; i < m_vertex_connectivity.size(); i++) {
@@ -886,4 +903,27 @@ bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
     if (res.size() > 0) return false;
 
     return v_link;
+}
+// getting the initial boundary vertices before any edge operations as the first colum of the matrix
+void wmtk::TriMesh::get_boundary_map(Eigen::VectorXi SVI)
+{
+    bnd_table = Eigen::MatrixXi::Zero(vert_capacity(), 2);
+
+    // initiate all to -1
+    for (int i = 0; i < vert_capacity(); i++) {
+        bnd_table.row(i) << -1, -1;
+    }
+    auto edges = get_edges();
+    int cnt = 0;
+    for (auto e : edges) {
+        if (is_boundary_edge(e)) {
+            size_t vid1, vid2;
+            vid1 = SVI(e.vid(*this));
+            vid2 = SVI((e.switch_vertex(*this)).vid(*this));
+            bnd_table(vid1, 0) = vid1;
+            bnd_table(vid2, 0) = vid2;
+        } else
+            continue;
+    }
+    igl::writeDMAT("new_dmt.dmat", bnd_table);
 }
