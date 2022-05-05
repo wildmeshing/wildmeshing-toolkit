@@ -91,7 +91,7 @@ void tetwild::TetWild::mesh_improvement(int max_its)
 #include <igl/Timer.h>
 std::tuple<double, double> tetwild::TetWild::local_operations(
     const std::array<int, 4>& ops,
-    bool collapse_limite_length)
+    bool collapse_limit_length)
 {
     igl::Timer timer;
 
