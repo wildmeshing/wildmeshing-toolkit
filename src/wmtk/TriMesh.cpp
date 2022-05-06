@@ -137,7 +137,7 @@ bool TriMesh::Tuple::is_valid(const TriMesh& m) const
     //  Condition 0: Elements exist
     assert(m_vid < m.vert_capacity());
     assert(m_eid <= 2);
-    assert(m_fid <= tri_capacity());
+    assert(m_fid <= m.tri_capacity());
 
     // Condition 1: tid and vid are consistent
     const int lvid = m.m_tri_connectivity[m_fid].find(m_vid);
