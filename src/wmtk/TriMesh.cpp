@@ -135,9 +135,9 @@ bool TriMesh::Tuple::is_valid(const TriMesh& m) const
     }
 #ifndef NDEBUG
     //  Condition 0: Elements exist
-    assert(m_vid < m.m_vertex_connectivity.size());
+    assert(m_vid < m.vert_capacity());
     assert(m_eid <= 2);
-    assert(m_fid <= m.m_tri_connectivity.size());
+    assert(m_fid <= tri_capacity());
 
     // Condition 1: tid and vid are consistent
     const int lvid = m.m_tri_connectivity[m_fid].find(m_vid);
@@ -173,17 +173,17 @@ std::array<TriMesh::Tuple, 3> TriMesh::Tuple::oriented_tri_vertices(const TriMes
 // it can be easier for compact later on ?
 bool wmtk::TriMesh::check_mesh_connectivity_validity() const
 {
-    std::vector<std::vector<size_t>> conn_tris(m_vertex_connectivity.size());
-    for (size_t i = 0; i < m_tri_connectivity.size(); i++) {
+    std::vector<std::vector<size_t>> conn_tris(vert_capacity());
+    for (size_t i = 0; i < tri_capacity(); i++) {
         if (m_tri_connectivity[i].m_is_removed) continue;
         for (int j = 0; j < 3; j++) conn_tris[m_tri_connectivity[i][j]].push_back(i);
     }
 
-    for (unsigned i = 0; i < m_vertex_connectivity.size(); ++i)
+    for (unsigned i = 0; i < vert_capacity(); ++i)
         std::sort(conn_tris[i].begin(), conn_tris[i].end());
 
     // check conn_tets duplication, order, amount ...
-    for (size_t i = 0; i < m_vertex_connectivity.size(); i++) {
+    for (size_t i = 0; i < vert_capacity(); i++) {
         if (m_vertex_connectivity[i].m_is_removed) continue;
 
         assert(
@@ -592,15 +592,15 @@ void TriMesh::consolidate_mesh(bool bnd_output)
 
 {
     auto v_cnt = 0;
-    std::vector<size_t> map_v_ids(m_vertex_connectivity.size(), -1);
-    for (auto i = 0; i < m_vertex_connectivity.size(); i++) {
+    std::vector<size_t> map_v_ids(vert_capacity(), -1);
+    for (auto i = 0; i < vert_capacity(); i++) {
         if (m_vertex_connectivity[i].m_is_removed) continue;
         map_v_ids[i] = v_cnt;
         v_cnt++;
     }
     auto t_cnt = 0;
-    std::vector<size_t> map_t_ids(m_tri_connectivity.size(), -1);
-    for (auto i = 0; i < m_tri_connectivity.size(); i++) {
+    std::vector<size_t> map_t_ids(tri_capacity(), -1);
+    for (auto i = 0; i < tri_capacity(); i++) {
         if (m_tri_connectivity[i].m_is_removed) continue;
         map_t_ids[i] = t_cnt;
         t_cnt++;
@@ -622,7 +622,7 @@ void TriMesh::consolidate_mesh(bool bnd_output)
 
 
     v_cnt = 0;
-    for (auto i = 0; i < m_vertex_connectivity.size(); i++) {
+    for (auto i = 0; i < vert_capacity(); i++) {
         if (m_vertex_connectivity[i].m_is_removed) continue;
         if (v_cnt != i) {
             assert(v_cnt < i);
@@ -633,7 +633,7 @@ void TriMesh::consolidate_mesh(bool bnd_output)
         v_cnt++;
     }
     t_cnt = 0;
-    for (int i = 0; i < m_tri_connectivity.size(); i++) {
+    for (int i = 0; i < tri_capacity(); i++) {
         if (m_tri_connectivity[i].m_is_removed) continue;
 
         if (t_cnt != i) {
@@ -655,11 +655,12 @@ void TriMesh::consolidate_mesh(bool bnd_output)
     m_tri_connectivity.resize(t_cnt);
     m_tri_connectivity.shrink_to_fit();
 
+    // TODO attr capacity change here
     // Resize user class attributes
-    p_vertex_attrs->resize(m_vertex_connectivity.size());
-    resize_mutex(m_vertex_connectivity.size());
-    p_edge_attrs->resize(m_tri_connectivity.size() * 3);
-    p_face_attrs->resize(m_tri_connectivity.size());
+    p_vertex_attrs->resize(vert_capacity());
+    resize_mutex(vert_capacity());
+    p_edge_attrs->resize(tri_capacity() * 3);
+    p_face_attrs->resize(tri_capacity());
 
     // m_vertex_connectivity.compact();
     assert(check_edge_manifold());
@@ -745,7 +746,7 @@ void TriMesh::create_mesh(size_t n_vertices, const std::vector<std::array<size_t
 
 std::vector<TriMesh::Tuple> TriMesh::get_vertices() const
 {
-    const size_t n_vertices = m_vertex_connectivity.size();
+    const size_t n_vertices = vert_capacity();
     std::vector<Tuple> all_vertices_tuples;
     all_vertices_tuples.reserve(n_vertices);
 
@@ -778,8 +779,8 @@ std::vector<TriMesh::Tuple> TriMesh::get_vertices() const
 std::vector<TriMesh::Tuple> TriMesh::get_faces() const
 {
     std::vector<Tuple> all_faces_tuples;
-    all_faces_tuples.reserve(m_tri_connectivity.size());
-    for (size_t i = 0; i < m_tri_connectivity.size(); i++) {
+    all_faces_tuples.reserve(tri_capacity());
+    for (size_t i = 0; i < tri_capacity(); i++) {
         if (m_tri_connectivity[i].m_is_removed) continue;
         // get the 3 vid
         const std::array<size_t, 3>& f_conn_verts = m_tri_connectivity[i].m_indices;
@@ -794,7 +795,7 @@ std::vector<TriMesh::Tuple> TriMesh::get_faces() const
 std::vector<TriMesh::Tuple> TriMesh::get_edges() const
 {
     std::vector<TriMesh::Tuple> all_edges_tuples;
-    for (int i = 0; i < m_tri_connectivity.size(); i++) {
+    for (int i = 0; i < tri_capacity(); i++) {
         if (m_tri_connectivity[i].m_is_removed) continue;
         for (int j = 0; j < 3; j++) {
             size_t l = (j + 2) % 3;

@@ -288,3 +288,11 @@ public:
 };
 
 } // namespace remeshing
+
+// {
+// while (needidx> current_size && !try_lock(m)){
+//     grow to at least
+// }
+
+// value assignment
+// }
