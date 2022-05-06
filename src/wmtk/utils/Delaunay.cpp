@@ -1,10 +1,12 @@
 #include "Delaunay.hpp"
 
 #include <wmtk/utils/DisableWarnings.hpp>
-#include <Delaunay_psm.h>
 #include <wmtk/utils/EnableWarnings.hpp>
 
+#include <geogram/delaunay/delaunay.h>
+
 #include <mutex>
+#include <cassert>
 
 namespace wmtk {
 

@@ -61,6 +61,7 @@ int main(int argc, char** argv)
     int itrs = 2;
     bool freeze = true;
     bool bnd_output = false;
+    bool sample_envelope = false;
 
     CLI::App app{argv[0]};
     app.add_option("input", path, "Input mesh.")->check(CLI::ExistingFile);
@@ -72,6 +73,7 @@ int main(int argc, char** argv)
     app.add_option("-a, --absolutelength", target_len, "absolute edge length.");
     app.add_option("-i, --iterations", itrs, "number of remeshing itrs.");
     app.add_option("-f, --freeze", freeze, "to freeze the boundary, default to true");
+    app.add_flag("--sample-envelope", sample_envelope, "to freeze the boundary, default to true");
     app.add_option(
         "-b, --bnd_output",
         bnd_output,
@@ -113,7 +115,7 @@ int main(int argc, char** argv)
         wmtk::separate_to_manifold(v1, tri1, v, tri, modified_v);
     }
 
-    UniformRemeshing m(v, thread);
+    UniformRemeshing m(v, thread, !sample_envelope);
     m.create_mesh(v.size(), tri, modified_v, freeze, envelope_size);
 
     if (bnd_output) m.get_boundary_map(SVI);

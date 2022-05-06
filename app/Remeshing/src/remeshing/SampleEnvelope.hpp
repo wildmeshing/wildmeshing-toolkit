@@ -2,6 +2,7 @@
 
 #include <Eigen/Core>
 #include <memory>
+#include "fastenvelope/FastEnvelope.h"
 
 namespace GEO {
 class MeshFacetsAABBWithEps;
@@ -12,8 +13,11 @@ namespace sample_envelope {
 class SampleEnvelope
 {
 public:
-    SampleEnvelope() {};
-	double eps2 = 1e-3;
+    SampleEnvelope(bool exact = false)
+        : use_exact(exact){};
+    double eps2 = 1e-6;
+    double sampling_dist = 1e-3;
+    bool use_exact = false;
     void init(
         const std::vector<Eigen::Vector3d>& m_ver,
         const std::vector<Eigen::Vector3i>& m_faces,
@@ -26,5 +30,7 @@ private:
     std::shared_ptr<GEO::Mesh> geo_polyhedron_ptr_;
     std::vector<int> geo_vertex_ind;
     std::vector<int> geo_face_ind;
+private:
+    fastEnvelope::FastEnvelope exact_envelope;
 };
 } // namespace sample_envelope
