@@ -24,6 +24,7 @@
 
 #include <atomic>
 #include <queue>
+#include "remeshing/SampleEnvelope.hpp"
 #include "wmtk/AttributeCollection.hpp"
 namespace remeshing {
 
@@ -38,7 +39,8 @@ struct VertexAttributes
 class UniformRemeshing : public wmtk::ConcurrentTriMesh
 {
 public:
-    fastEnvelope::FastEnvelope m_envelope;
+    sample_envelope::SampleEnvelope m_envelope;
+    // fastEnvelope::FastEnvelope m_envelope;
     bool m_has_envelope = false;
     using VertAttCol = wmtk::AttributeCollection<VertexAttributes>;
     VertAttCol vertex_attrs;
