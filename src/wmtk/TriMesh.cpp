@@ -746,13 +746,6 @@ void TriMesh::create_mesh(size_t n_vertices, const std::vector<std::array<size_t
     }
     current_vert_size = n_vertices;
     current_tri_size = tris.size();
-    // m_vertex_connectivity.grow_to_at_least(current_vert_size * 2);
-    // m_tri_connectivity.grow_to_at_least(current_tri_size * 2);
-    // p_vertex_attrs->resize(current_tri_size * 2);
-
-    // debug info
-    std::cout<<"size: "<<m_vertex_connectivity.size()<<" capacity: "<<m_vertex_connectivity.capacity()<<std::endl;
-    std::cout<<"real size: "<<current_vert_size<<std::endl;
 }
 
 std::vector<TriMesh::Tuple> TriMesh::get_vertices() const
@@ -820,22 +813,14 @@ std::vector<TriMesh::Tuple> TriMesh::get_edges() const
 
 size_t TriMesh::get_next_empty_slot_t()
 {
-    // const auto it = m_tri_connectivity.emplace_back();
-    // const size_t size = std::distance(m_tri_connectivity.begin(), it) + 1;
-    // p_edge_attrs->resize(size * 3);
-    // p_face_attrs->resize(size);
-    // return size - 1;
-    // std::cout<<"t"<<current_tri_size<<std::endl;
-    while (current_tri_size>=m_tri_connectivity.size()||tri_connectivity_synchronizing_flag){
-        // std::cout<<"t"<<current_tri_size<<std::endl;
-        if(tri_connectivity_lock.try_lock()){
-            // std::cout<<"t in growth"<<std::endl;
-            if(current_tri_size<m_tri_connectivity.size()){
+    while (current_tri_size >= m_tri_connectivity.size() || tri_connectivity_synchronizing_flag) {
+        if (tri_connectivity_lock.try_lock()) {
+            if (current_tri_size < m_tri_connectivity.size()) {
                 tri_connectivity_lock.unlock();
                 break;
             }
             tri_connectivity_synchronizing_flag = true;
-            long current_capacity = m_tri_connectivity.size();
+            auto current_capacity = m_tri_connectivity.size();
             p_edge_attrs->resize(2 * current_capacity * 3);
             p_face_attrs->resize(2 * current_capacity);
             m_tri_connectivity.grow_to_at_least(2 * current_capacity);
@@ -850,18 +835,10 @@ size_t TriMesh::get_next_empty_slot_t()
 
 size_t TriMesh::get_next_empty_slot_v()
 {
-    // const auto it = m_vertex_connectivity.emplace_back();
-    // const size_t size = std::distance(m_vertex_connectivity.begin(), it) + 1;
-    // p_vertex_attrs->resize(size);
-    // resize_mutex(size);
-    // return size - 1;
-    // std::cout<<"v"<<current_vert_size<<std::endl;
-    while(current_vert_size>=m_vertex_connectivity.size()||vertex_connectivity_synchronizing_flag){
-        // std::cout<<"v"<<current_vert_size<<std::endl;
-        if(vertex_connectivity_lock.try_lock()){
-            // std::cout<<"v in growth"<<std::endl;
-            if (current_vert_size<m_vertex_connectivity.size()){
-                // vertex_connectivity_synchronizing_flag = false;
+    while (current_vert_size >= m_vertex_connectivity.size() ||
+           vertex_connectivity_synchronizing_flag) {
+        if (vertex_connectivity_lock.try_lock()) {
+            if (current_vert_size < m_vertex_connectivity.size()) {
                 vertex_connectivity_lock.unlock();
                 break;
             }

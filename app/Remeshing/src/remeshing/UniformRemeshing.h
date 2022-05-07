@@ -137,7 +137,8 @@ public:
         tbb::task_arena arena(NUM_THREADS);
 
         arena.execute([&] {
-            std::vector<Eigen::Vector3d> V_v(vertex_attrs.size());
+            // std::vector<Eigen::Vector3d> V_v(vertex_attrs.size());
+            std::vector<Eigen::Vector3d> V_v(vert_capacity());
 
             tbb::parallel_for(
                 tbb::blocked_range<int>(0, V_v.size()),
