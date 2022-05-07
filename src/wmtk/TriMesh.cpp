@@ -657,7 +657,6 @@ void TriMesh::consolidate_mesh(bool bnd_output)
     m_tri_connectivity.resize(t_cnt);
     m_tri_connectivity.shrink_to_fit();
 
-    // TODO attr capacity change here
     // Resize user class attributes
     p_vertex_attrs->resize(vert_capacity());
     resize_mutex(vert_capacity());
@@ -843,7 +842,7 @@ size_t TriMesh::get_next_empty_slot_v()
                 break;
             }
             vertex_connectivity_synchronizing_flag = true;
-            long current_capacity = m_vertex_connectivity.size();
+            auto current_capacity = m_vertex_connectivity.size();
             p_vertex_attrs->resize(2 * current_capacity);
             resize_mutex(2 * current_capacity);
             m_vertex_connectivity.grow_to_at_least(2 * current_capacity);

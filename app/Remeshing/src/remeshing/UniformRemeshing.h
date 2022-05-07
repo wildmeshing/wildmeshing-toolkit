@@ -64,7 +64,6 @@ public:
         double eps = 0)
     {
         wmtk::ConcurrentTriMesh::create_mesh(n_vertices, tris);
-        
         std::vector<Eigen::Vector3d> V(n_vertices);
         std::vector<Eigen::Vector3i> F(tris.size());
         for (auto i = 0; i < V.size(); i++) {
@@ -137,7 +136,6 @@ public:
         tbb::task_arena arena(NUM_THREADS);
 
         arena.execute([&] {
-            // std::vector<Eigen::Vector3d> V_v(vertex_attrs.size());
             std::vector<Eigen::Vector3d> V_v(vert_capacity());
 
             tbb::parallel_for(
@@ -288,11 +286,3 @@ public:
 };
 
 } // namespace remeshing
-
-// {
-// while (needidx> current_size && !try_lock(m)){
-//     grow to at least
-// }
-
-// value assignment
-// }
