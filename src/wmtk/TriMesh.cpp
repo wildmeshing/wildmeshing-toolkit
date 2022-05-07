@@ -650,6 +650,9 @@ void TriMesh::consolidate_mesh(bool bnd_output)
         t_cnt++;
     }
 
+    current_vert_size = v_cnt;
+    current_tri_size = t_cnt;
+
     m_vertex_connectivity.resize(v_cnt);
     m_vertex_connectivity.shrink_to_fit();
     m_tri_connectivity.resize(t_cnt);
@@ -742,6 +745,8 @@ void TriMesh::create_mesh(size_t n_vertices, const std::vector<std::array<size_t
             m_vertex_connectivity[tris[i][j]].m_conn_tris.push_back(i);
         }
     }
+    current_vert_size = n_vertices;
+    current_tri_size = tris.size();
 }
 
 std::vector<TriMesh::Tuple> TriMesh::get_vertices() const
@@ -809,20 +814,56 @@ std::vector<TriMesh::Tuple> TriMesh::get_edges() const
 
 size_t TriMesh::get_next_empty_slot_t()
 {
-    const auto it = m_tri_connectivity.emplace_back();
-    const size_t size = std::distance(m_tri_connectivity.begin(), it) + 1;
-    p_edge_attrs->resize(size * 3);
-    p_face_attrs->resize(size);
-    return size - 1;
+    // const auto it = m_tri_connectivity.emplace_back();
+    // const size_t size = std::distance(m_tri_connectivity.begin(), it) + 1;
+    // p_edge_attrs->resize(size * 3);
+    // p_face_attrs->resize(size);
+    // return size - 1;
+    while (current_tri_size>=m_tri_connectivity.capacity()){
+        std::cout<<"t"<<current_tri_size<<std::endl;
+        if(tri_connectivity_lock.try_lock()){
+            if(current_tri_size<m_tri_connectivity.capacity()){
+                tri_connectivity_lock.unlock();
+                break;
+            }
+            long current_capacity = m_tri_connectivity.capacity();
+            m_tri_connectivity.grow_to_at_least(2 * current_capacity);
+            p_edge_attrs->resize(2 * current_capacity * 3);
+            p_face_attrs->resize(2 * current_capacity);
+            tri_connectivity_lock.unlock();
+            break;
+        }
+    }
+
+    return current_tri_size++;
 }
 
 size_t TriMesh::get_next_empty_slot_v()
 {
-    const auto it = m_vertex_connectivity.emplace_back();
-    const size_t size = std::distance(m_vertex_connectivity.begin(), it) + 1;
-    p_vertex_attrs->resize(size);
-    resize_mutex(size);
-    return size - 1;
+    // const auto it = m_vertex_connectivity.emplace_back();
+    // const size_t size = std::distance(m_vertex_connectivity.begin(), it) + 1;
+    // p_vertex_attrs->resize(size);
+    // resize_mutex(size);
+    // return size - 1;
+
+    while(current_vert_size>=m_vertex_connectivity.capacity()){
+        std::cout<<"v"<<current_vert_size<<std::endl;
+        if(vertex_connectivity_lock.try_lock()){
+
+            if (current_vert_size<m_vertex_connectivity.capacity()){
+                vertex_connectivity_lock.unlock();
+                break;
+            }
+            long current_capacity = m_vertex_connectivity.capacity();
+            m_vertex_connectivity.grow_to_at_least(2 * current_capacity);
+            p_vertex_attrs->resize(2 * current_capacity);
+            resize_mutex(2 * current_capacity);
+            vertex_connectivity_lock.unlock();
+            break;
+        }
+    }
+
+    return current_vert_size++;
 }
 
 // link check, prerequisite for edge collapse
