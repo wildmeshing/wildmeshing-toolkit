@@ -66,8 +66,7 @@ TriMesh::Tuple TriMesh::Tuple::switch_edge(const TriMesh& m) const
 
 std::optional<TriMesh::Tuple> TriMesh::Tuple::switch_face(const TriMesh& m) const
 {
-    bool not_valid = is_valid(m);
-    assert(not_valid);
+    assert(is_valid(m));
 
     const size_t v0 = m_vid;
     const size_t v1 = this->switch_vertex(m).m_vid;
@@ -928,5 +927,4 @@ void wmtk::TriMesh::get_boundary_map(Eigen::VectorXi SVI)
             continue;
     }
     igl::writeDMAT("new_dmt.dmat", bnd_table);
-    // igl::writeDMAT("bnd_f.dmat", bnd_f);
 }
