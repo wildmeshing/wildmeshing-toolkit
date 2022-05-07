@@ -52,7 +52,7 @@ bool TetMesh::Tuple::is_boundary_edge(const TetMesh& m) const
         e = e_opt.value();
         cnt++;
         logger().trace("edge ({}) {} {} {}", e.tid(m), e.fid(m), e.eid(m), e.vid(m));
-        assert(cnt < m.m_tet_connectivity.size() + 1 && "Debug: Avoid infinite loop.");
+        assert(cnt < m.tet_capacity() + 1 && "Debug: Avoid infinite loop.");
     } while (e.tid(m) != tet_id);
     logger().trace(">> Internal");
     return false;
@@ -180,7 +180,7 @@ TetMesh::Tuple TetMesh::Tuple::switch_vertex(const TetMesh& m) const
     loc.m_global_vid = m.m_tet_connectivity[m_global_tid][l_vid1] == m_global_vid
                            ? m.m_tet_connectivity[m_global_tid][l_vid2]
                            : m.m_tet_connectivity[m_global_tid][l_vid1];
-    assert(loc.m_global_vid >= 0 && loc.m_global_vid < m.m_vertex_connectivity.size());
+    assert(loc.m_global_vid >= 0 && loc.m_global_vid < m.vert_capacity());
 
     return loc;
 } // along edge
@@ -259,8 +259,8 @@ void TetMesh::Tuple::check_validity(const TetMesh& m) const
     return;
 #endif
     // check indices
-    assert(m_global_tid < m.m_tet_connectivity.size());
-    assert(m_global_vid < m.m_vertex_connectivity.size());
+    assert(m_global_tid < m.tet_capacity());
+    assert(m_global_vid < m.vert_capacity());
     assert(m_local_eid < 6);
     assert(m_local_fid < 4);
 

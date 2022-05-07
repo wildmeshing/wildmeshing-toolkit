@@ -5,6 +5,7 @@
 #include <wmtk/utils/Logger.hpp>
 
 #include <tbb/concurrent_vector.h>
+#include <tbb/spin_mutex.h>
 #include <Eigen/Core>
 #include <algorithm>
 #include <array>
@@ -244,6 +245,12 @@ public:
 private:
     vector<VertexConnectivity> m_vertex_connectivity;
     vector<TriangleConnectivity> m_tri_connectivity;
+    std::atomic_long current_vert_size;
+    std::atomic_long current_tri_size;
+    tbb::spin_mutex vertex_connectivity_lock;
+    tbb::spin_mutex tri_connectivity_lock;
+    bool vertex_connectivity_synchronizing_flag = false;
+    bool tri_connectivity_synchronizing_flag = false;
 
     size_t get_next_empty_slot_t();
     size_t get_next_empty_slot_v();
@@ -283,8 +290,8 @@ protected:
 
 
 public:
-    size_t tri_capacity() const { return m_tri_connectivity.size(); }
-    size_t vert_capacity() const { return m_vertex_connectivity.size(); }
+    size_t tri_capacity() const { return current_tri_size; }
+    size_t vert_capacity() const { return current_vert_size; }
 
     void consolidate_mesh(bool bnd_output = false);
 
