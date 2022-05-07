@@ -99,7 +99,7 @@ void wmtk::TetMesh::for_each_face(const std::function<void(const TetMesh::Tuple&
         if (!tuple_from_tet(i).is_valid(*this)) continue;
         for (int j = 0; j < 4; j++) {
             auto tup = tuple_from_face(i, j);
-            if (tup.eid(*this) == 4 * i + j) {
+            if (tup.fid(*this) == 4 * i + j) {
                 func(tup);
             }
         }
@@ -518,7 +518,7 @@ std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_one_ring_tets_for_edge(cons
     tids.insert(
         tids.end(),
         m_vertex_connectivity[v2_id].m_conn_tets.begin(),
-        m_vertex_connectivity[v1_id].m_conn_tets.end());
+        m_vertex_connectivity[v2_id].m_conn_tets.end());
     vector_unique(tids);
 
     std::vector<Tuple> tets;

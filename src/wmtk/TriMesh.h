@@ -290,8 +290,6 @@ protected:
 
 
 public:
-    // size_t tri_capacity() const { return m_tri_connectivity.size(); }
-    // size_t vert_capacity() const { return m_vertex_connectivity.size(); }
     size_t tri_capacity() const { return current_tri_size; }
     size_t vert_capacity() const { return current_vert_size; }
 
