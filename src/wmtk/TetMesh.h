@@ -276,17 +276,29 @@ public:
 
     size_t vertex_size() const
     {
-        return std::count_if(
-            m_vertex_connectivity.begin(),
-            m_vertex_connectivity.end(),
-            [](const VertexConnectivity& v) { return v.m_is_removed == false; });
+        // return std::count_if(
+        //     m_vertex_connectivity.begin(),
+        //     m_vertex_connectivity.end(),
+        //     [](const VertexConnectivity& v) { return v.m_is_removed == false; });
+
+        int cnt = 0;
+        for (auto i = 0; i < vert_capacity(); i++ ){
+            if (!m_vertex_connectivity[i].m_is_removed) cnt++;
+        }
+        return cnt;
     }
     size_t tet_size() const
     {
-        return std::count_if(
-            m_tet_connectivity.begin(),
-            m_tet_connectivity.end(),
-            [](const TetrahedronConnectivity& t) { return t.m_is_removed == false; });
+        // return std::count_if(
+        //     m_tet_connectivity.begin(),
+        //     m_tet_connectivity.end(),
+        //     [](const TetrahedronConnectivity& t) { return t.m_is_removed == false; });
+
+        int cnt = 0;
+        for (auto i = 0; i < tet_capacity(); i++ ){
+            if (!m_tet_connectivity[i].m_is_removed) cnt++;
+        }
+        return cnt;
     }
     /**
      * Initialize TetMesh data structure
