@@ -79,6 +79,8 @@ void wmtk::TetMesh::init(size_t n_vertices, const std::vector<std::array<size_t,
 {
     m_vertex_connectivity.resize(n_vertices);
     m_tet_connectivity.resize(tets.size());
+    current_vert_size = n_vertices;
+    current_tet_size = tets.size();
     for (int i = 0; i < tets.size(); i++) {
         m_tet_connectivity[i].m_indices = tets[i];
         for (int j = 0; j < 4; j++) {
@@ -86,8 +88,6 @@ void wmtk::TetMesh::init(size_t n_vertices, const std::vector<std::array<size_t,
             m_vertex_connectivity[tets[i][j]].m_conn_tets.push_back(i);
         }
     }
-    current_vert_size = n_vertices;
-    current_tet_size = tets.size();
 }
 
 
