@@ -104,7 +104,7 @@ TEST_CASE("harmonic-tet-swaps", "[harmtri][.slow]")
         "Finishing Energy E1 {} E0 {} V {} T {}",
         E1,
         E0,
-        har_tet.vertex_attrs.m_attributes.size(),
+        har_tet.vert_capacity(),
         har_tet.tet_capacity());
     REQUIRE(E1 < E0);
 }

@@ -65,7 +65,7 @@ public:
 
         arena.execute([&] {
 
-            std::vector<Eigen::Vector3d> V_v(vertex_attrs.size());
+            std::vector<Eigen::Vector3d> V_v(vert_capacity());
 
             tbb::parallel_for(
                 tbb::blocked_range<int>(0, V_v.size()),
@@ -160,7 +160,7 @@ public:
     void compute_vertex_partition()
     {
         auto partition_id = partition_TetMesh(*this, NUM_THREADS);
-        for (auto i = 0; i < vertex_attrs.size(); i++)
+        for (auto i = 0; i < vert_capacity(); i++)
             vertex_attrs[i].partition_id = partition_id[i];
     }
     size_t get_partition_id(const Tuple& loc) const

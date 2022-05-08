@@ -71,7 +71,7 @@ void tetwild::TetWild::init_from_delaunay_box_mesh(const std::vector<Eigen::Vect
     m_vertex_attribute.m_attributes.resize(points.size());
     m_tet_attribute.m_attributes.resize(tets.size());
     m_face_attribute.m_attributes.resize(tets.size() * 4);
-    for (int i = 0; i < m_vertex_attribute.m_attributes.size(); i++) {
+    for (int i = 0; i < vert_capacity(); i++) {
         m_vertex_attribute[i].m_pos = Vector3r(points[i][0], points[i][1], points[i][2]);
         m_vertex_attribute[i].m_posf = Vector3d(points[i][0], points[i][1], points[i][2]);
     }
@@ -428,13 +428,13 @@ void tetwild::TetWild::finalize_triangle_insertion(
         //// rounding
         std::atomic_int cnt_round(0);
 
-        for (int i = 0; i < m_vertex_attribute.m_attributes.size(); i++) {
+        for (int i = 0; i < vert_capacity(); i++) {
             auto v = tuple_from_vertex(i);
             if (round(v)) cnt_round++;
         }
 
 
-        wmtk::logger().info("cnt_round {}/{}", cnt_round, m_vertex_attribute.m_attributes.size());
+        wmtk::logger().info("cnt_round {}/{}", cnt_round, vert_capacity());
 
         //// init qualities
         auto& m = *this;

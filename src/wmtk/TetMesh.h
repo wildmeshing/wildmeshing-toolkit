@@ -6,6 +6,7 @@
 #include <wmtk/utils/Logger.hpp>
 
 #include <tbb/concurrent_vector.h>
+#include <tbb/spin_mutex.h>
 
 #include <Tracy.hpp>
 
@@ -266,8 +267,13 @@ public:
     TetMesh();
     virtual ~TetMesh() = default;
 
-    size_t vert_capacity() const { return m_vertex_connectivity.size(); }
-    size_t tet_capacity() const { return m_tet_connectivity.size(); }
+    // size_t vert_capacity() const { return m_vertex_connectivity.size(); }
+    // size_t tet_capacity() const { return m_tet_connectivity.size(); }
+    size_t vert_capacity() const { return current_vert_size; }
+    size_t tet_capacity() const { return current_tet_size; }
+
+
+
     size_t vertex_size() const
     {
         return std::count_if(
@@ -365,12 +371,18 @@ public:
 public:
     AbstractAttributeContainer *p_vertex_attrs, *p_edge_attrs, *p_face_attrs, *p_tet_attrs;
     AbstractAttributeContainer vertex_attrs, edge_attrs, face_attrs, tet_attrs;
-
+    
 
 private:
     // Stores the connectivity of the mesh
     vector<VertexConnectivity> m_vertex_connectivity;
     vector<TetrahedronConnectivity> m_tet_connectivity;
+    std::atomic_long current_vert_size;
+    std::atomic_long current_tet_size;
+    tbb::spin_mutex vertex_connectivity_lock;
+    tbb::spin_mutex tet_connectivity_lock;
+    bool vertex_connectivity_synchronizing_flag = false;
+    bool tet_connectivity_synchronizing_flag = false;
 
     int m_t_empty_slot = 0;
     int m_v_empty_slot = 0;

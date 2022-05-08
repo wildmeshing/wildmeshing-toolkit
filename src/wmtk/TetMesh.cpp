@@ -7,22 +7,64 @@
 
 int wmtk::TetMesh::get_next_empty_slot_t()
 {
-    const auto it = m_tet_connectivity.emplace_back();
-    const size_t size = std::distance(m_tet_connectivity.begin(), it) + 1;
-    m_tet_connectivity[size - 1].hash = -1;
-    p_edge_attrs->resize(size * 6);
-    p_face_attrs->resize(size * 4);
-    p_tet_attrs->resize(size);
-    return size - 1;
+    // const auto it = m_tet_connectivity.emplace_back();
+    // const size_t size = std::distance(m_tet_connectivity.begin(), it) + 1;
+    // m_tet_connectivity[size - 1].hash = -1;
+    // p_edge_attrs->resize(size * 6);
+    // p_face_attrs->resize(size * 4);
+    // p_tet_attrs->resize(size);
+    // return size - 1;
+    while (current_tet_size >= m_tet_connectivity.size() || tet_connectivity_synchronizing_flag) {
+        if (tet_connectivity_lock.try_lock()) {
+            if (current_tet_size < m_tet_connectivity.size()) {
+                tet_connectivity_lock.unlock();
+                break;
+            }
+            tet_connectivity_synchronizing_flag = true;
+            auto current_capacity = m_tet_connectivity.size();
+            p_edge_attrs->resize(2 * current_capacity * 6);
+            p_face_attrs->resize(2 * current_capacity * 4);
+            p_tet_attrs->resize(2 * current_capacity);
+            m_tet_connectivity.grow_to_at_least(2 * current_capacity);
+            tet_connectivity_synchronizing_flag = false;
+            tet_connectivity_lock.unlock();
+            break;
+        }
+    }
+
+    auto new_idx = current_tet_size++;
+    m_tet_connectivity[new_idx].hash = -1;
+    
+    return new_idx;
 }
 
 int wmtk::TetMesh::get_next_empty_slot_v()
 {
-    const auto it = m_vertex_connectivity.emplace_back();
-    const size_t size = std::distance(m_vertex_connectivity.begin(), it) + 1;
-    p_vertex_attrs->resize(size);
-    resize_vertex_mutex(size); // TODO: temp hack for mutex
-    return size - 1;
+    // const auto it = m_vertex_connectivity.emplace_back();
+    // const size_t size = std::distance(m_vertex_connectivity.begin(), it) + 1;
+    // p_vertex_attrs->resize(size);
+    // resize_vertex_mutex(size); // TODO: temp hack for mutex
+    // return size - 1;
+    while (current_vert_size >= m_vertex_connectivity.size() ||
+           vertex_connectivity_synchronizing_flag) {
+        if (vertex_connectivity_lock.try_lock()) {
+            if (current_vert_size < m_vertex_connectivity.size()) {
+                vertex_connectivity_lock.unlock();
+                break;
+            }
+            vertex_connectivity_synchronizing_flag = true;
+            auto current_capacity = m_vertex_connectivity.size();
+            p_vertex_attrs->resize(2 * current_capacity);
+            resize_vertex_mutex(2 * current_capacity);
+            m_vertex_connectivity.grow_to_at_least(2 * current_capacity);
+            vertex_connectivity_synchronizing_flag = false;
+            vertex_connectivity_lock.unlock();
+            break;
+        }
+    }
+
+    return current_vert_size++;
+
 }
 
 wmtk::TetMesh::TetMesh()
@@ -44,6 +86,8 @@ void wmtk::TetMesh::init(size_t n_vertices, const std::vector<std::array<size_t,
             m_vertex_connectivity[tets[i][j]].m_conn_tets.push_back(i);
         }
     }
+    current_vert_size = n_vertices;
+    current_tet_size = tets.size();
 }
 
 
@@ -577,6 +621,9 @@ void wmtk::TetMesh::consolidate_mesh()
         for (size_t& v_id : m_tet_connectivity[t_cnt].m_indices) v_id = map_v_ids[v_id];
         t_cnt++;
     }
+
+    current_vert_size = v_cnt;
+    current_tet_size = t_cnt;
 
     m_vertex_connectivity.resize(v_cnt);
     m_tet_connectivity.resize(t_cnt);

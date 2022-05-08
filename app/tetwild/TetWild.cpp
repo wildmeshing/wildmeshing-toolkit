@@ -35,7 +35,7 @@ void tetwild::TetWild::mesh_improvement(int max_its)
 
     compute_vertex_partition_morton();
     std::vector<int> partition_size(NUM_THREADS, 0);
-    for (int i = 0; i < m_vertex_attribute.size(); i++) {
+    for (int i = 0; i < vert_capacity(); i++) {
         partition_size[m_vertex_attribute[i].partition_id]++;
     }
     std::cout << "-----print partition size-----" << std::endl;
@@ -172,7 +172,7 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
 
     Scalar recover_scalar = 1.5;
     //    std::vector<Scalar> scale_multipliers(vertices.size(), recover_scalar);
-    tbb::concurrent_vector<Scalar> scale_multipliers(m_vertex_attribute.size(), recover_scalar);
+    tbb::concurrent_vector<Scalar> scale_multipliers(vert_capacity(), recover_scalar);
     Scalar refine_scalar = 0.5;
     Scalar min_refine_scalar = m_params.l_min / m_params.l;
 
@@ -196,7 +196,7 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
                 double R = m_params.l * 2; // * sizing_ratio;
 
                 std::unordered_map<size_t, double> new_scalars;
-                std::vector<bool> visited(m_vertex_attribute.size(), false);
+                std::vector<bool> visited(vert_capacity(), false);
                 //
 
                 // ZoneScopedN("adj_pushqueue");
