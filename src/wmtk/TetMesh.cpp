@@ -7,13 +7,6 @@
 
 int wmtk::TetMesh::get_next_empty_slot_t()
 {
-    // const auto it = m_tet_connectivity.emplace_back();
-    // const size_t size = std::distance(m_tet_connectivity.begin(), it) + 1;
-    // m_tet_connectivity[size - 1].hash = -1;
-    // p_edge_attrs->resize(size * 6);
-    // p_face_attrs->resize(size * 4);
-    // p_tet_attrs->resize(size);
-    // return size - 1;
     while (current_tet_size >= m_tet_connectivity.size() || tet_connectivity_synchronizing_flag) {
         if (tet_connectivity_lock.try_lock()) {
             if (current_tet_size < m_tet_connectivity.size()) {
@@ -40,11 +33,6 @@ int wmtk::TetMesh::get_next_empty_slot_t()
 
 int wmtk::TetMesh::get_next_empty_slot_v()
 {
-    // const auto it = m_vertex_connectivity.emplace_back();
-    // const size_t size = std::distance(m_vertex_connectivity.begin(), it) + 1;
-    // p_vertex_attrs->resize(size);
-    // resize_vertex_mutex(size); // TODO: temp hack for mutex
-    // return size - 1;
     while (current_vert_size >= m_vertex_connectivity.size() ||
            vertex_connectivity_synchronizing_flag) {
         if (vertex_connectivity_lock.try_lock()) {

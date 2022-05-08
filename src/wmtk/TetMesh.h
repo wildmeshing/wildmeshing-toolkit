@@ -267,8 +267,6 @@ public:
     TetMesh();
     virtual ~TetMesh() = default;
 
-    // size_t vert_capacity() const { return m_vertex_connectivity.size(); }
-    // size_t tet_capacity() const { return m_tet_connectivity.size(); }
     size_t vert_capacity() const { return current_vert_size; }
     size_t tet_capacity() const { return current_tet_size; }
 
@@ -276,11 +274,6 @@ public:
 
     size_t vertex_size() const
     {
-        // return std::count_if(
-        //     m_vertex_connectivity.begin(),
-        //     m_vertex_connectivity.end(),
-        //     [](const VertexConnectivity& v) { return v.m_is_removed == false; });
-
         int cnt = 0;
         for (auto i = 0; i < vert_capacity(); i++ ){
             if (!m_vertex_connectivity[i].m_is_removed) cnt++;
@@ -289,10 +282,6 @@ public:
     }
     size_t tet_size() const
     {
-        // return std::count_if(
-        //     m_tet_connectivity.begin(),
-        //     m_tet_connectivity.end(),
-        //     [](const TetrahedronConnectivity& t) { return t.m_is_removed == false; });
 
         int cnt = 0;
         for (auto i = 0; i < tet_capacity(); i++ ){
