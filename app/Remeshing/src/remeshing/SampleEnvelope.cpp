@@ -17,15 +17,16 @@ void init_geogram()
         return;
     }
 
-    // Do not install custom signal handlers
-    setenv("GEO_NO_SIGNAL_HANDLER", "1", 1);
+#ifndef WIN32
+		setenv("GEO_NO_SIGNAL_HANDLER", "1", 1);
+#endif
 
     // Init logger first so we can hide geogram output from init
-    GEO::Logger::initialize();
+    // GEO::initialize();
 
-    // Do not show geogram output
-    GEO::Logger::instance()->unregister_all_clients();
-    GEO::Logger::instance()->set_quiet(true);
+    // // Do not show geogram output
+    // GEO::Logger::instance()->unregister_all_clients();
+    // GEO::Logger::instance()->set_quiet(true);
 
 #if 0
     // Use the following code to disable multi-threading in geogram (for debugging purposes).
@@ -41,7 +42,7 @@ void init_geogram()
     // GEO::CmdLine::import_arg_group("pre");
     // GEO::CmdLine::import_arg_group("algo");
     // GEO::CmdLine::import_arg_group("sys");
-    GEO::CmdLine::set_arg("sys:assert", "throw");
+    // GEO::CmdLine::set_arg("sys:assert", "throw");
 }
 
 void to_geogram_mesh(
