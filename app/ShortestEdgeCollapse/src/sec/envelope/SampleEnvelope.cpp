@@ -7,50 +7,14 @@
 #include <geogram/mesh/mesh_geometry.h>
 #include <wmtk/utils/Logger.hpp>
 
-void init_geogram()
-{
-    static bool first_time = true;
-
-    if (first_time) {
-        first_time = false;
-    } else {
-        return;
-    }
-
-#ifndef WIN32
-		setenv("GEO_NO_SIGNAL_HANDLER", "1", 1);
-#endif
-
-    // Init logger first so we can hide geogram output from init
-    // GEO::initialize();
-
-    // // Do not show geogram output
-    // GEO::Logger::instance()->unregister_all_clients();
-    // GEO::Logger::instance()->set_quiet(true);
-
-#if 0
-    // Use the following code to disable multi-threading in geogram (for debugging purposes).
-    GEO::Process::enable_multithreading(false);
-    GEO::Process::set_max_threads(1);
-#endif
-
-    // Initialize global instances (e.g., logger), register MeshIOHandler, etc.
-    GEO::initialize(GEO::GEOGRAM_NO_HANDLER);
-
-    // Import standard command line arguments, and custom ones
-    // GEO::CmdLine::import_arg_group("standard");
-    // GEO::CmdLine::import_arg_group("pre");
-    // GEO::CmdLine::import_arg_group("algo");
-    // GEO::CmdLine::import_arg_group("sys");
-    // GEO::CmdLine::set_arg("sys:assert", "throw");
-}
-
 void to_geogram_mesh(
     const std::vector<Eigen::Vector3d>& V,
     const std::vector<Eigen::Vector3i>& F,
     GEO::Mesh& M)
 {
-    init_geogram();
+    static std::once_flag once_flag;
+    std::call_once(once_flag, []() { GEO::initialize(); });
+    
     M.clear();
     // Setup vertices
     M.vertices.create_vertices((int)V.size());

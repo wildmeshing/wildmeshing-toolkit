@@ -7,7 +7,6 @@ file(GLOB_RECURSE LIB_SOURCES CONFIGURE_DEPENDS
 add_library(wmtk_remeshing_lib "${LIB_SOURCES}")
 add_library(wmtk::remeshing_lib ALIAS wmtk_remeshing_lib)
 
-include(geogram)
 # Include headers
 target_include_directories(wmtk_remeshing_lib PUBLIC src)
 
@@ -16,8 +15,7 @@ target_link_libraries(wmtk_remeshing_lib PUBLIC
 	wmtk::toolkit
 	wmtk::data
 	igl::predicates
-	FastEnvelope
-	geogram
+	wmtk::sec_lib
 )
 
 add_subdirectory(app)
