@@ -72,7 +72,7 @@ endif()
 if (NOT TARGET spdlog)
     include(spdlog)
 endif()
-include(delaunay_psm)
+include(geogram)
 include(onetbb)
 include(mshio)
 include(metis)
@@ -81,7 +81,7 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     spdlog::spdlog
     igl::core
     igl::predicates
-    geogram::delaunay_psm
+    geogram
     wmtk::warnings
     TBB::tbb
     mshio::mshio
