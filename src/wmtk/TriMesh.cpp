@@ -732,8 +732,6 @@ std::array<wmtk::TriMesh::Tuple, 3> TriMesh::oriented_tri_vertices(
 // TODO should call resize attributes
 void TriMesh::create_mesh(size_t n_vertices, const std::vector<std::array<size_t, 3>>& tris)
 {
-    // m_vertex_connectivity.resize(n_vertices + MAX_THREADS);
-    // m_tri_connectivity.resize(tris.size() + MAX_THREADS);
     m_vertex_connectivity.resize(n_vertices);
     m_tri_connectivity.resize(tris.size());
     size_t hash_cnt = 0;
