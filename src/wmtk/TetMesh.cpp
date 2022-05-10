@@ -7,9 +7,9 @@
 
 int wmtk::TetMesh::get_next_empty_slot_t()
 {
-    while (current_tet_size >= m_tet_connectivity.size() || tet_connectivity_synchronizing_flag) {
+    while (current_tet_size >= m_tet_connectivity.size() - MAX_THREADS || tet_connectivity_synchronizing_flag) {
         if (tet_connectivity_lock.try_lock()) {
-            if (current_tet_size < m_tet_connectivity.size()) {
+            if (current_tet_size < m_tet_connectivity.size() - MAX_THREADS) {
                 tet_connectivity_lock.unlock();
                 break;
             }
@@ -33,10 +33,10 @@ int wmtk::TetMesh::get_next_empty_slot_t()
 
 int wmtk::TetMesh::get_next_empty_slot_v()
 {
-    while (current_vert_size >= m_vertex_connectivity.size() ||
+    while (current_vert_size >= m_vertex_connectivity.size() - MAX_THREADS ||
            vertex_connectivity_synchronizing_flag) {
         if (vertex_connectivity_lock.try_lock()) {
-            if (current_vert_size < m_vertex_connectivity.size()) {
+            if (current_vert_size < m_vertex_connectivity.size() - MAX_THREADS) {
                 vertex_connectivity_lock.unlock();
                 break;
             }
