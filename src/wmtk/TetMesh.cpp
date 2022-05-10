@@ -7,9 +7,9 @@
 
 int wmtk::TetMesh::get_next_empty_slot_t()
 {
-    while (current_tet_size >= m_tet_connectivity.size() - MAX_THREADS || tet_connectivity_synchronizing_flag) {
+    while (current_tet_size  + MAX_THREADS >= m_tet_connectivity.size()|| tet_connectivity_synchronizing_flag) {
         if (tet_connectivity_lock.try_lock()) {
-            if (current_tet_size < m_tet_connectivity.size() - MAX_THREADS) {
+            if (current_tet_size + MAX_THREADS< m_tet_connectivity.size()) {
                 tet_connectivity_lock.unlock();
                 break;
             }
@@ -33,10 +33,10 @@ int wmtk::TetMesh::get_next_empty_slot_t()
 
 int wmtk::TetMesh::get_next_empty_slot_v()
 {
-    while (current_vert_size >= m_vertex_connectivity.size() - MAX_THREADS ||
+    while (current_vert_size  + MAX_THREADS  >= m_vertex_connectivity.size()||
            vertex_connectivity_synchronizing_flag) {
         if (vertex_connectivity_lock.try_lock()) {
-            if (current_vert_size < m_vertex_connectivity.size() - MAX_THREADS) {
+            if (current_vert_size + MAX_THREADS < m_vertex_connectivity.size()) {
                 vertex_connectivity_lock.unlock();
                 break;
             }
@@ -65,8 +65,10 @@ wmtk::TetMesh::TetMesh()
 
 void wmtk::TetMesh::init(size_t n_vertices, const std::vector<std::array<size_t, 4>>& tets)
 {
-    m_vertex_connectivity.resize(n_vertices + MAX_THREADS);
-    m_tet_connectivity.resize(tets.size() + MAX_THREADS);
+    // m_vertex_connectivity.resize(n_vertices + MAX_THREADS);
+    // m_tet_connectivity.resize(tets.size() + MAX_THREADS);
+    m_vertex_connectivity.resize(n_vertices);
+    m_tet_connectivity.resize(tets.size());
     current_vert_size = n_vertices;
     current_tet_size = tets.size();
     for (int i = 0; i < tets.size(); i++) {

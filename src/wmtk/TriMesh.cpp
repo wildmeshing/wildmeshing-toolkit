@@ -732,8 +732,10 @@ std::array<wmtk::TriMesh::Tuple, 3> TriMesh::oriented_tri_vertices(
 // TODO should call resize attributes
 void TriMesh::create_mesh(size_t n_vertices, const std::vector<std::array<size_t, 3>>& tris)
 {
-    m_vertex_connectivity.resize(n_vertices + MAX_THREADS);
-    m_tri_connectivity.resize(tris.size() + MAX_THREADS);
+    // m_vertex_connectivity.resize(n_vertices + MAX_THREADS);
+    // m_tri_connectivity.resize(tris.size() + MAX_THREADS);
+    m_vertex_connectivity.resize(n_vertices);
+    m_tri_connectivity.resize(tris.size());
     size_t hash_cnt = 0;
     for (int i = 0; i < tris.size(); i++) {
         m_tri_connectivity[i].m_indices = tris[i];
@@ -812,9 +814,9 @@ std::vector<TriMesh::Tuple> TriMesh::get_edges() const
 
 size_t TriMesh::get_next_empty_slot_t()
 {
-    while (current_tri_size >= m_tri_connectivity.size() - MAX_THREADS || tri_connectivity_synchronizing_flag) {
+    while (current_tri_size + MAX_THREADS >= m_tri_connectivity.size() || tri_connectivity_synchronizing_flag) {
         if (tri_connectivity_lock.try_lock()) {
-            if (current_tri_size < m_tri_connectivity.size() - MAX_THREADS) {
+            if (current_tri_size + MAX_THREADS < m_tri_connectivity.size()) {
                 tri_connectivity_lock.unlock();
                 break;
             }
@@ -834,10 +836,10 @@ size_t TriMesh::get_next_empty_slot_t()
 
 size_t TriMesh::get_next_empty_slot_v()
 {
-    while (current_vert_size >= m_vertex_connectivity.size() - MAX_THREADS ||
+    while (current_vert_size + MAX_THREADS >= m_vertex_connectivity.size()  ||
            vertex_connectivity_synchronizing_flag) {
         if (vertex_connectivity_lock.try_lock()) {
-            if (current_vert_size < m_vertex_connectivity.size() - MAX_THREADS) {
+            if (current_vert_size + MAX_THREADS < m_vertex_connectivity.size() ) {
                 vertex_connectivity_lock.unlock();
                 break;
             }
