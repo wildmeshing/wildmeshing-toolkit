@@ -8,7 +8,6 @@
 #include "fastenvelope/FastEnvelope.h"
 #include "wmtk/utils/InsertTriangleUtils.hpp"
 
-//#include <catch2/catch.hpp>
 #include "Parameters.h"
 #include "spdlog/common.h"
 
@@ -17,11 +16,9 @@
 #include <igl/is_vertex_manifold.h>
 #include <igl/read_triangle_mesh.h>
 #include <igl/remove_duplicate_vertices.h>
-//#include <wmtk/utils/GeoUtils.h>
 #include <igl/predicates/predicates.h>
 #include <remeshing/UniformRemeshing.h>
 #include <sec/ShortestEdgeCollapse.h>
-#include <Tracy.hpp>
 
 using namespace wmtk;
 using namespace tetwild;
@@ -97,7 +94,7 @@ int main(int argc, char** argv)
 
     const double envelope_size = params.epsr * diag;
     sec::ShortestEdgeCollapse surf_mesh(verts, NUM_THREADS, false);
-    surf_mesh.create_mesh(verts.size(), tris, frozen_verts, envelope_size);
+    surf_mesh.create_mesh(verts.size(), tris, frozen_verts, envelope_size/2);
     assert(surf_mesh.check_mesh_connectivity_validity());
 
 
@@ -127,15 +124,17 @@ int main(int argc, char** argv)
     /////////
     // Prepare Envelope and parameter for TetWild
     /////////
-    fastEnvelope::FastEnvelope exact_envelope;
-    {
-        std::vector<Eigen::Vector3i> tempF(tris.size());
-        for (auto i = 0; i < tempF.size(); i++) tempF[i] << tris[i][0], tris[i][1], tris[i][2];
-        exact_envelope.init(verts, tempF, envelope_size);
-    }
+
 
     params.init(box_min, box_max);
     wmtk::remove_duplicates(vsimp, fsimp, params.diag_l);
+
+    fastEnvelope::FastEnvelope exact_envelope;
+    {
+        std::vector<Eigen::Vector3i> tempF(fsimp.size());
+        for (auto i = 0; i < tempF.size(); i++) tempF[i] << fsimp[i][0], fsimp[i][1], fsimp[i][2];
+        exact_envelope.init(vsimp, tempF, envelope_size/2);
+    }
 
     // initiate the tetwild mesh using the original envelop
     tetwild::TetWild mesh(params, exact_envelope, NUM_THREADS);
