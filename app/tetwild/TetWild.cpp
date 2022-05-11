@@ -21,8 +21,8 @@
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
-#include <limits>
 #include <geogram/points/kd_tree.h>
+#include <limits>
 
 tetwild::VertexAttributes::VertexAttributes(const Vector3r& p)
 {
@@ -60,6 +60,7 @@ void tetwild::TetWild::mesh_improvement(int max_its)
         ///energy check
         wmtk::logger().info("max energy {} stop {}", max_energy, m_params.stop_energy);
         if (max_energy < m_params.stop_energy) break;
+        consolidate_mesh();
 
         ///sizing field
         if (it > 0 &&
@@ -122,20 +123,18 @@ std::tuple<double, double> tetwild::TetWild::local_operations(
                 smooth_all_vertices();
             }
         }
+        energy = get_max_avg_energy();
+        wmtk::logger().info("max energy = {}", std::get<0>(energy));
+        wmtk::logger().info("avg energy = {}", std::get<1>(energy));
+        wmtk::logger().info("time = {}", timer.getElapsedTime());
     }
-    energy = get_max_avg_energy();
-    wmtk::logger().info("max energy = {}", std::get<0>(energy));
-    wmtk::logger().info("avg energy = {}", std::get<1>(energy));
-    wmtk::logger().info("time = {}", timer.getElapsedTime());
 
     return energy;
 }
 
 bool tetwild::TetWild::adjust_sizing_field(double max_energy)
 {
-    const auto& vertices = get_vertices();
-    const auto& tets = get_tets(); // todo: avoid copy!!!
-    wmtk::logger().info("#vertices {}, #tets {}", vertices.size(), tets.size());
+    wmtk::logger().info("#vertices {}, #tets {}", vert_capacity(), tet_capacity());
 
     const double stop_filter_energy = m_params.stop_energy * 0.8;
     double filter_energy = std::max(max_energy / 100, stop_filter_energy);
@@ -154,11 +153,15 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
         auto tid = t.tid(*this);
         if (m_tet_attribute[tid].m_quality < filter_energy) return;
         auto vs = oriented_tet_vids(t);
+        Vector3d c(0, 0, 0);
         for (int j = 0; j < 4; j++) {
-            pts.emplace_back(m_vertex_attribute[vs[j]].m_posf);
+            c += (m_vertex_attribute[vs[j]].m_posf);
             v_queue.emplace(vs[j]);
         }
+        pts.emplace_back(c / 4);
     });
+
+    wmtk::logger().info("filter energy {} Low Quality Tets {}", filter_energy, pts.size());
 
     const double R = m_params.l * 2;
 
@@ -168,7 +171,7 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
     std::vector<bool> visited(vert_capacity(), false);
 
     GEO::NearestNeighborSearch_var nnsearch = GEO::NearestNeighborSearch::create(3, "BNN");
-    nnsearch->set_points(int(pts.size()), pts[0].data());
+    nnsearch->set_points(pts.size(), pts[0].data());
 
     std::vector<size_t> cache_one_ring;
     while (!v_queue.empty()) {
