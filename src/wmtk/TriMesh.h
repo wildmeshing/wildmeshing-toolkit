@@ -251,6 +251,7 @@ private:
     tbb::spin_mutex tri_connectivity_lock;
     bool vertex_connectivity_synchronizing_flag = false;
     bool tri_connectivity_synchronizing_flag = false;
+    int MAX_THREADS = 128;
 
     size_t get_next_empty_slot_t();
     size_t get_next_empty_slot_v();

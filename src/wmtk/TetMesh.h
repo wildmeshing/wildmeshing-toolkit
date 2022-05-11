@@ -384,6 +384,7 @@ private:
     tbb::spin_mutex tet_connectivity_lock;
     bool vertex_connectivity_synchronizing_flag = false;
     bool tet_connectivity_synchronizing_flag = false;
+    int MAX_THREADS = 128;
 
     int m_t_empty_slot = 0;
     int m_v_empty_slot = 0;
