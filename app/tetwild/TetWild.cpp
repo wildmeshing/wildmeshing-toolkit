@@ -12,12 +12,14 @@
 
 #include <igl/winding_number.h>
 
+#include <igl/Timer.h>
 #include <tbb/concurrent_vector.h>
 #include <tbb/parallel_for.h>
 #include <tbb/task_arena.h>
 #include <Tracy.hpp>
 #include "Rational.hpp"
 #include "common.h"
+#include "spdlog/fmt/bundled/format.h"
 
 tetwild::VertexAttributes::VertexAttributes(const Vector3r& p)
 {
@@ -31,17 +33,13 @@ void tetwild::TetWild::mesh_improvement(int max_its)
     // TODO: refactor to eliminate repeated partition.
     //
     ZoneScopedN("meshimprovementmain");
-    // compute_vertex_partition();
 
     compute_vertex_partition_morton();
     std::vector<int> partition_size(NUM_THREADS, 0);
     for (int i = 0; i < vert_capacity(); i++) {
         partition_size[m_vertex_attribute[i].partition_id]++;
     }
-    std::cout << "-----print partition size-----" << std::endl;
-    for (int i = 0; i < NUM_THREADS; i++) {
-        std::cout << partition_size[i] << std::endl;
-    }
+    wmtk::logger().info("partition sizes: {}", partition_size);
 
     wmtk::logger().info("========it pre========");
     local_operations({{0, 1, 0, 0}}, false);
@@ -88,7 +86,6 @@ void tetwild::TetWild::mesh_improvement(int max_its)
     local_operations({{0, 1, 0, 0}});
 }
 
-#include <igl/Timer.h>
 std::tuple<double, double> tetwild::TetWild::local_operations(
     const std::array<int, 4>& ops,
     bool collapse_limit_length)
@@ -122,56 +119,27 @@ std::tuple<double, double> tetwild::TetWild::local_operations(
                 smooth_all_vertices();
             }
         }
-
-        //        if (ops[i] > 0) {
-        //            wmtk::logger().info("#t {}", tet_size());
-        //            wmtk::logger().info("#v {}", vertex_size());
-        //            energy = get_max_avg_energy();
-        //            wmtk::logger().info("max energy = {}", std::get<0>(energy));
-        //            wmtk::logger().info("avg energy = {}", std::get<1>(energy));
-        //            wmtk::logger().info("time = {}", timer.getElapsedTime());
-        //
-        //            output_faces("track_surface.obj", [](auto& attr) { return attr.m_is_surface_fs
-        //            == true; }); output_faces("track_bbox.obj", [](auto& attr) { return
-        //            attr.m_is_bbox_fs >= 0; });
-        //        }
     }
-
-    //    wmtk::logger().info("#t {}", tet_size());
-    //    wmtk::logger().info("#v {}", vertex_size());
     energy = get_max_avg_energy();
     wmtk::logger().info("max energy = {}", std::get<0>(energy));
     wmtk::logger().info("avg energy = {}", std::get<1>(energy));
     wmtk::logger().info("time = {}", timer.getElapsedTime());
-
-    //        output_faces("track_surface.obj", [](auto& attr) { return attr.m_is_surface_fs ==
-    //        true; }); output_faces("track_bbox.obj", [](auto& attr) { return attr.m_is_bbox_fs >=
-    //        0; });
-
-    //    check_attributes(); // fortest
 
     return energy;
 }
 
 bool tetwild::TetWild::adjust_sizing_field(double max_energy)
 {
-    ZoneScoped;
-
-
-    // ZoneScopedN("adjust_prepare");
     const auto& vertices = get_vertices();
     const auto& tets = get_tets(); // todo: avoid copy!!!
-    std::cout << "#vertices: " << vertices.size() << std::endl;
-    std::cout << "#tets: " << tets.size() << std::endl;
+    wmtk::logger().info("#vertices {}, #tets {}", vertices.size(), tets.size());
 
 
-    static const Scalar stop_filter_energy = m_params.stop_energy * 0.8;
-    Scalar filter_energy =
-        max_energy / 100 > stop_filter_energy ? max_energy / 100 : stop_filter_energy;
-    if (filter_energy > 100) filter_energy = 100;
+    const double stop_filter_energy = m_params.stop_energy * 0.8;
+    double filter_energy = std::max(max_energy / 100, stop_filter_energy);
+    filter_energy = std::min(filter_energy, 100.);
 
     Scalar recover_scalar = 1.5;
-    //    std::vector<Scalar> scale_multipliers(vertices.size(), recover_scalar);
     tbb::concurrent_vector<Scalar> scale_multipliers(vert_capacity(), recover_scalar);
     Scalar refine_scalar = 0.5;
     Scalar min_refine_scalar = m_params.l_min / m_params.l;
@@ -181,7 +149,6 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
 
     arena.execute([&] {
         tbb::parallel_for(tbb::blocked_range<int>(0, tets.size()), [&](tbb::blocked_range<int> r) {
-            // for (size_t i = 0; i < tets.size(); i++) {
             for (int i = r.begin(); i < r.end(); i++) {
                 int tid = tets[i].tid(*this);
                 if (m_tet_attribute[tid].m_quality < filter_energy) continue;
@@ -199,21 +166,14 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
                 std::vector<bool> visited(vert_capacity(), false);
                 //
 
-                // ZoneScopedN("adj_pushqueue");
                 std::queue<size_t> v_queue;
                 Vector3d c(0, 0, 0);
                 for (int j = 0; j < 4; j++) {
-                    // visited[vs[j].vid(*this)] = true;
                     v_queue.push(vs[j].vid(*this));
                     c += m_vertex_attribute[vs[j].vid(*this)].m_posf;
                     new_scalars[vs[j].vid(*this)] = 0;
                 }
                 c /= 4;
-                // std::cout<<m_vertex_attribute.size()<<std::endl;
-                // std::cout<<vertices.size()<<std::endl;
-                //
-
-                // ZoneScopedN("adj_whileloop");
                 int sum = 0;
                 int adjcnt = 0;
                 while (!v_queue.empty()) {
@@ -236,14 +196,11 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
                     if (!is_close) continue;
 
                     auto vids = get_one_ring_vids_for_vertex_adj(vid, get_one_ring_cache.local());
-                    // auto vids = get_one_ring_vids_for_vertex_adj(vid);
                     for (size_t n_vid : vids) {
                         if (visited[n_vid]) continue;
                         v_queue.push(n_vid);
                     }
                 }
-                // std::cout<<adjcnt<<std::endl;
-                // ZoneValue(sum);
 
 
                 for (auto& info : new_scalars) {
@@ -379,24 +336,19 @@ double tetwild::TetWild::get_length2(const wmtk::TetMesh::Tuple& l) const
 
 std::tuple<double, double> tetwild::TetWild::get_max_avg_energy()
 {
-    double max_energy;
-    double avg_energy = 0;
+    double max_energy = -1.;
+    double avg_energy = 0.;
+    auto cnt = 0;
+    for_each_tetra([&](auto& t) {
+        auto q = m_tet_attribute[t.tid(*this)].m_quality;
+        max_energy = std::max(max_energy, q);
+        avg_energy += std::cbrt(q);
+        cnt++;
+    });
 
-    const auto& tets = get_tets(); // todo: avoid copy!!!
-    for (size_t i = 0; i < tets.size(); i++) {
-        if (i == 0)
-            max_energy = m_tet_attribute[tets[i].tid(*this)].m_quality;
-        else {
-            if (m_tet_attribute[tets[i].tid(*this)].m_quality > max_energy)
-                max_energy = m_tet_attribute[tets[i].tid(*this)].m_quality;
-        }
+    avg_energy /= cnt;
 
-        avg_energy += m_tet_attribute[tets[i].tid(*this)].m_quality;
-    }
-
-    avg_energy /= tets.size();
-
-    return std::make_tuple(max_energy, avg_energy);
+    return std::make_tuple(std::cbrt(max_energy), avg_energy);
 }
 
 

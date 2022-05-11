@@ -162,7 +162,6 @@ public:
 
             std::vector<sortstruct> list_v;
             list_v.resize(V_v.size());
-            const int multi = 1000;
             // since the morton code requires a correct scale of input vertices,
             //  we need to scale the vertices if their coordinates are out of range
             std::vector<Eigen::Vector3d> V = V_v; // this is for rescaling vertices
@@ -204,6 +203,7 @@ public:
                     });
             }
 
+            constexpr int multi = 1000;
             tbb::parallel_for(tbb::blocked_range<int>(0, V.size()), [&](tbb::blocked_range<int> r) {
                 for (int i = r.begin(); i < r.end(); i++) {
                     list_v[i].morton = Resorting::MortonCode64(

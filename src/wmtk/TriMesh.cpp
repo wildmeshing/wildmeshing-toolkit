@@ -123,6 +123,7 @@ std::optional<TriMesh::Tuple> TriMesh::Tuple::switch_face(const TriMesh& m) cons
 
 bool TriMesh::Tuple::is_valid(const TriMesh& m) const
 {
+    if (m_fid + 1 == 0) return false;
     if (m.m_vertex_connectivity[m_vid].m_is_removed || m.m_tri_connectivity[m_fid].m_is_removed) {
         // assert(false);
         return false;
