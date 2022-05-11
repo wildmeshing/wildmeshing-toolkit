@@ -1,6 +1,5 @@
 #include "QSLIM.h"
 
-
 #include <wmtk/TriMesh.h>
 #include <wmtk/utils/VectorUtils.h>
 #include <Eigen/Core>

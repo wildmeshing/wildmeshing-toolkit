@@ -4,6 +4,7 @@
 #include <wmtk/utils/PartitionMesh.h>
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/AttributeCollection.hpp>
+
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
 #include <igl/write_triangle_mesh.h>
@@ -72,7 +73,7 @@ public:
         vertex_attrs.resize(_m_vertex_positions.size());
 
         for (auto i = 0; i < _m_vertex_positions.size(); i++) {
-            vertex_attrs[i] = {_m_vertex_positions[i], 0, false};
+            vertex_attrs[i] = {_m_vertex_positions[i], 0, false, {}};
         }
     }
 

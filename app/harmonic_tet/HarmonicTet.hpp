@@ -4,18 +4,21 @@
 #include <wmtk/utils/PartitionMesh.h>
 #include <wmtk/AttributeCollection.hpp>
 
+// clang-format off
+#include <wmtk/utils/DisableWarnings.hpp>
 #include <tbb/concurrent_queue.h>
 #include <tbb/concurrent_vector.h>
 #include <tbb/enumerable_thread_specific.h>
-#include <Eigen/Core>
-
-// for morton partition
 #include <tbb/parallel_for.h>
 #include <tbb/parallel_sort.h>
 #include <tbb/task_arena.h>
+#include <wmtk/utils/EnableWarnings.hpp>
+// clang-format on
+
 #include <wmtk/utils/Morton.h>
 #include "wmtk/utils/Logger.hpp"
 
+#include <Eigen/Core>
 #include <atomic>
 #include <memory>
 

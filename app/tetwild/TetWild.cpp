@@ -1,25 +1,29 @@
 
 #include "TetWild.h"
 
+#include "Rational.hpp"
+#include "common.h"
+
 #include <wmtk/utils/AMIPS.h>
-#include <limits>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
 #include <wmtk/utils/io.hpp>
 
-#include <igl/predicates/predicates.h>
-#include <spdlog/fmt/ostr.h>
-
-#include <igl/winding_number.h>
-
-#include <igl/Timer.h>
+// clang-format off
+#include <wmtk/utils/DisableWarnings.hpp>
 #include <tbb/concurrent_vector.h>
 #include <tbb/parallel_for.h>
 #include <tbb/task_arena.h>
+#include <spdlog/fmt/ostr.h>
+#include <spdlog/fmt/bundled/format.h>
 #include <Tracy.hpp>
-#include "Rational.hpp"
-#include "common.h"
-#include "spdlog/fmt/bundled/format.h"
+#include <igl/predicates/predicates.h>
+#include <igl/winding_number.h>
+#include <igl/Timer.h>
+#include <wmtk/utils/EnableWarnings.hpp>
+// clang-format on
+
+#include <limits>
 
 tetwild::VertexAttributes::VertexAttributes(const Vector3r& p)
 {

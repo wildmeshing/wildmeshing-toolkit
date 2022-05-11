@@ -49,8 +49,6 @@ auto triangle_insert_prepare_info(
 
     static constexpr std::array<std::array<int, 2>, 6> map_leid2lfids = {
         {{{0, 2}}, {{0, 3}}, {{0, 1}}, {{1, 2}}, {{2, 3}}, {{1, 3}}}};
-    static constexpr std::array<std::array<int, 3>, 4> map_lvid2lfids = {
-        {{{0, 1, 2}}, {{0, 2, 3}}, {{0, 1, 3}}, {{1, 2, 3}}}};
     static constexpr std::array<std::array<int, 3>, 4> local_faces = {
         {{{0, 1, 2}}, {{0, 2, 3}}, {{0, 1, 3}}, {{1, 2, 3}}}};
     static constexpr std::array<std::array<int, 2>, 6> local_edges = {
