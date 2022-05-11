@@ -60,7 +60,7 @@ bool TetMesh::Tuple::is_boundary_edge(const TetMesh& m) const
 
 bool TetMesh::Tuple::is_valid(const TetMesh& m) const
 {
-    
+    if (m_global_tid + 1 == 0) return false;
     if (m.m_vertex_connectivity[m_global_vid].m_is_removed ||
         m.m_tet_connectivity[m_global_tid].m_is_removed)
         return false;

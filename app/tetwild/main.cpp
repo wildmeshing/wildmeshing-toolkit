@@ -4,6 +4,7 @@
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/Partitioning.h>
 #include <CLI/CLI.hpp>
+#include <type_traits>
 #include <wmtk/utils/ManifoldUtils.hpp>
 #include "fastenvelope/FastEnvelope.h"
 #include "wmtk/utils/InsertTriangleUtils.hpp"
@@ -14,9 +15,9 @@
 #include <igl/Timer.h>
 #include <igl/is_edge_manifold.h>
 #include <igl/is_vertex_manifold.h>
+#include <igl/predicates/predicates.h>
 #include <igl/read_triangle_mesh.h>
 #include <igl/remove_duplicate_vertices.h>
-#include <igl/predicates/predicates.h>
 #include <remeshing/UniformRemeshing.h>
 #include <sec/ShortestEdgeCollapse.h>
 
@@ -83,6 +84,23 @@ int main(int argc, char** argv)
 
     wmtk::logger().info("diag of the mesh: {} ", diag);
 
+    { // open boundary (1-manifold) detection
+        std::map<std::pair<size_t, size_t>, bool> open_bnd;
+        for (auto i = 0; i < tris.size(); i++) {
+            for (auto j = 0; j < 3; j++) {
+                auto a = tris[i][j], b = tris[i][(j + 1) % 3];
+                if (a > b) std::swap(a, b);
+                auto [it, new_ele] = open_bnd.emplace(std::pair(a, b), true);
+                if (!new_ele) {
+                    it->second = false;
+                }
+            }
+        }
+        std::vector<std::pair<size_t, size_t>> open_bnd_vec;
+        for (auto& [k, v] : open_bnd)
+            if (v) open_bnd_vec.push_back(k);
+        if (open_bnd_vec.size() > 0) wmtk::logger().warn("Open Boundary {} ", open_bnd_vec.size());
+    }
     Eigen::VectorXi dummy;
     std::vector<size_t> frozen_verts;
     if (!igl::is_edge_manifold(F) || !igl::is_vertex_manifold(F, dummy)) {
@@ -94,7 +112,7 @@ int main(int argc, char** argv)
 
     const double envelope_size = params.epsr * diag;
     sec::ShortestEdgeCollapse surf_mesh(verts, NUM_THREADS, false);
-    surf_mesh.create_mesh(verts.size(), tris, frozen_verts, envelope_size/2);
+    surf_mesh.create_mesh(verts.size(), tris, frozen_verts, envelope_size / 2);
     assert(surf_mesh.check_mesh_connectivity_validity());
 
 
@@ -133,7 +151,7 @@ int main(int argc, char** argv)
     {
         std::vector<Eigen::Vector3i> tempF(fsimp.size());
         for (auto i = 0; i < tempF.size(); i++) tempF[i] << fsimp[i][0], fsimp[i][1], fsimp[i][2];
-        exact_envelope.init(vsimp, tempF, envelope_size/2);
+        exact_envelope.init(vsimp, tempF, envelope_size / 2);
     }
 
     // initiate the tetwild mesh using the original envelop
