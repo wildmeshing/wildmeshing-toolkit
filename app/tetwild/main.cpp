@@ -195,6 +195,7 @@ int main(int argc, char** argv)
     fout << "time: " << time << endl;
     fout.close();
 
+    wmtk::logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
     mesh.output_mesh(output_path + "_final.msh");
 
     {
