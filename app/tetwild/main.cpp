@@ -17,6 +17,8 @@
 #include <igl/predicates/predicates.h>
 #include <igl/read_triangle_mesh.h>
 #include <igl/remove_duplicate_vertices.h>
+#include <wmtk/utils/partition_utils.hpp>
+
 #include <remeshing/UniformRemeshing.h>
 #include <sec/ShortestEdgeCollapse.h>
 
@@ -161,7 +163,7 @@ int main(int argc, char** argv)
     igl::Timer timer;
     timer.start();
     std::vector<size_t> partition_id(vsimp.size());
-    wmtk::partition_vertex_morton(vsimp.size(), [&vsimp](auto i){return vsimp[i];}, partition_id);
+    wmtk::partition_vertex_morton(vsimp.size(), [&vsimp](auto i){return vsimp[i];}, NUM_THREADS, partition_id);
     /////////triangle insertion with the simplified mesh
     mesh.init_from_input_surface(vsimp, fsimp, partition_id);
 

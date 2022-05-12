@@ -13,9 +13,8 @@
 
 #include <wmtk/utils/Morton.h>
 
-namespace wmtk {
-void partition_morton(
-	int vert_size,
+void wmtk::partition_vertex_morton(
+    int vert_size,
     const std::function<Eigen::Vector3d(size_t)>& pos,
     int num_partition,
     std::vector<size_t>& result)
@@ -98,8 +97,8 @@ void partition_morton(
 
         int interval = list_v.size() / num_partition + 1;
 
-		result.clear();
-		result.resize(vert_size);
+        result.clear();
+        result.resize(vert_size);
         tbb::parallel_for(
             tbb::blocked_range<int>(0, list_v.size()),
             [&](tbb::blocked_range<int> r) {
@@ -109,4 +108,3 @@ void partition_morton(
             });
     });
 }
-} // namespace wmtk

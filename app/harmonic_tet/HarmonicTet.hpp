@@ -44,7 +44,6 @@ public:
         NUM_THREADS = num_threads;
         init(_vertex_attribute.size(), tets);
 
-        // compute_vertex_partition();
         compute_vertex_partition_morton();
     }
     HarmonicTet(){};
@@ -52,14 +51,14 @@ public:
 
     ////// Attributes related
 
-    void compute_vertex_partition_morton() const
+    void compute_vertex_partition_morton()
     {
         if (NUM_THREADS==0) return;
         wmtk::logger().info("Number of parts: {} by morton", NUM_THREADS);
         std::vector<size_t> par;
-        wmtk::partition_vertex_morton(*this, [&](auto vid){
-            return vertex_attrs[i].pos;
-        }, NUM_THREDS, par
+        wmtk::partition_vertex_morton(vert_capacity(), [&](auto vid){
+            return vertex_attrs[vid].pos;
+        }, NUM_THREADS, par
         );
         for_each_vertex([&](auto& v){
             auto vid = v.vid(*this);
@@ -68,12 +67,7 @@ public:
     }
 
     void output_mesh(std::string file) const;
-    void compute_vertex_partition()
-    {
-        auto partition_id = partition_TetMesh(*this, NUM_THREADS);
-        for (auto i = 0; i < vert_capacity(); i++)
-            vertex_attrs[i].partition_id = partition_id[i];
-    }
+    
     size_t get_partition_id(const Tuple& loc) const
     {
         return vertex_attrs[loc.vid(*this)].partition_id;
