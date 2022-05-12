@@ -10,7 +10,7 @@
 // clang-format on
 
 #include "wmtk/utils/Logger.hpp"
-#include <wmtk/utils/partition_utils.h>
+#include <wmtk/utils/partition_utils.hpp>
 
 #include <Eigen/Core>
 #include <atomic>

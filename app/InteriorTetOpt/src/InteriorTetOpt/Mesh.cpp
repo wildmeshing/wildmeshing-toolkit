@@ -60,7 +60,7 @@ bool InteriorTetOpt::split_edge_before(const Tuple& loc0)
     auto loc1 = loc0.switch_vertex(*this);
     cache.v2_id = loc1.vid(*this);
     //
-
+    cache.max_quality = 0.;
     for (auto& loc : get_one_ring_tets_for_edge(loc0)) {
         cache.max_quality = std::max(cache.max_quality, m_tet_attribute[loc.tid(*this)].quality);
     }
