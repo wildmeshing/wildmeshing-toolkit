@@ -1,11 +1,11 @@
 #pragma once
 
 #include <igl/Timer.h>
-#include <tbb/concurrent_map.h>
 #include <wmtk/ConcurrentTetMesh.h>
 #include <wmtk/utils/PartitionMesh.h>
 #include "Parameters.h"
 #include "common.h"
+
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
 #include <fastenvelope/FastEnvelope.h>

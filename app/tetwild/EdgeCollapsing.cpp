@@ -150,8 +150,7 @@ bool tetwild::TetWild::collapse_edge_before(const Tuple& loc) // input is an edg
 
     collapse_cache.local().max_energy = 0;
     for (auto& q : qs) {
-        if (q.second > collapse_cache.local().max_energy)
-            collapse_cache.local().max_energy = q.second;
+        collapse_cache.local().max_energy = std::max(collapse_cache.local().max_energy, q.second);
         //
         collapse_cache.local().changed_tids.push_back(q.first);
     }
@@ -271,9 +270,6 @@ bool tetwild::TetWild::collapse_edge_after(const Tuple& loc)
         auto [_, global_fid] = tuple_from_face({{v2_id, old_vids[1], old_vids[2]}});
         m_face_attribute[global_fid] = f_attr;
     }
-
-    cnt_collapse++;
-
 
     return true;
 }

@@ -4,9 +4,7 @@
 #include <wmtk/utils/VectorUtils.h>
 
 // clang-format off
-#include <memory>
 #include <wmtk/utils/DisableWarnings.hpp>
-
 #include <igl/write_triangle_mesh.h>
 #include <tbb/concurrent_priority_queue.h>
 #include <tbb/concurrent_vector.h>
@@ -18,6 +16,7 @@
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
+#include <memory>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 

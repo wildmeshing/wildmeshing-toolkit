@@ -169,7 +169,6 @@ bool tetwild::TetWild::split_edge_after(const Tuple& loc)
     m_vertex_attribute[v_id].m_sizing_scalar =
         (m_vertex_attribute[v1_id].m_sizing_scalar + m_vertex_attribute[v2_id].m_sizing_scalar) / 2;
 
-    cnt_split++;
 
     return true;
 }
