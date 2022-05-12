@@ -30,6 +30,8 @@ struct
     std::string input;
     std::string output;
     int thread = 1;
+    int max_iters = 10;
+    double stop_energy = 10.;
 } args;
 
 
@@ -46,7 +48,7 @@ bool adjust_sizing_field(
 
     const auto recover_scalar = 1.5;
     const auto refine_scalar = 0.5;
-    const auto min_refine_scalar = 5e-2;
+    const auto min_refine_scalar = 0.25;
 
     // outputs scale_multipliers
     tbb::concurrent_vector<double> scale_multipliers(mesh.vert_capacity(), recover_scalar);
@@ -192,9 +194,11 @@ void mesh_improvement(interior_tetopt::InteriorTetOpt& mesh, int max_its, double
         ///ops
         wmtk::logger().info("\n========it {}========", it);
         auto [max_energy, avg_energy] = local_operations(mesh, {{1, 1, 1, 1}});
+        mesh.consolidate_mesh();
 
         ///energy check
         wmtk::logger().info("max energy {} stop {}", max_energy, stop_energy);
+        wmtk::logger().info("vert {} tet {}", mesh.vert_capacity(), mesh.tet_capacity());
         if (max_energy < stop_energy) break;
 
         ///sizing field
@@ -224,6 +228,8 @@ int main(int argc, char** argv)
     app.add_option("input", args.input, "Input mesh.");
     app.add_option("output", args.output, "output mesh.");
     app.add_option("-j, --thread", args.thread, "thread.");
+    app.add_option("-i, --max-iters", args.max_iters, "maximum number of iterations.");
+    app.add_option("-e, --stop-energy", args.stop_energy, "maximum number of iterations.");
     CLI11_PARSE(app, argc, argv);
 
     //
@@ -253,9 +259,8 @@ int main(int argc, char** argv)
     }
 
     interior_tetopt::InteriorTetOpt mesh;
-    mesh.target_l = 5e-1;
     mesh.initialize(vec_attrs, tets);
-    mesh_improvement(mesh, 20, 10);
+    mesh_improvement(mesh, args.max_iters, args.stop_energy);
     mesh.final_output_mesh(args.output);
     return 0;
 }

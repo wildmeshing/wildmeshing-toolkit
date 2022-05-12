@@ -9,6 +9,7 @@
 #include "wmtk/utils/Logger.hpp"
 #include "wmtk/utils/TetraQualityUtils.hpp"
 #include "wmtk/utils/io.hpp"
+#include <wmtk/utils/Morton.h>
 
 namespace interior_tetopt {
 
