@@ -1,7 +1,5 @@
 #include <InteriorTetOpt/Mesh.hpp>
 
-#include <tbb/parallel_for.h>
-#include <tbb/task_arena.h>
 #include <wmtk/utils/Delaunay.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
@@ -14,6 +12,8 @@
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
+#include <tbb/parallel_for.h>
+#include <tbb/task_arena.h>
 #include <CLI/CLI.hpp>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
@@ -22,6 +22,8 @@
 #include <igl/doublearea.h>
 #include <igl/readMESH.h>
 #include <igl/read_triangle_mesh.h>
+
+#include <geogram/points/kd_tree.h>
 
 struct
 {
@@ -36,106 +38,80 @@ bool adjust_sizing_field(
     double max_energy,
     double stop_energy)
 {
-    using Scalar = double;
+    using Eigen::Vector3d;
+    
+    const double stop_filter_energy = stop_energy * 0.8;
+    double filter_energy = std::max(max_energy / 100, stop_filter_energy);
+    filter_energy = std::min(filter_energy, 100.);
 
-    const auto& vertices = mesh.get_vertices();
-    const auto& tets = mesh.get_tets(); // todo: avoid copy!!!
+    const auto recover_scalar = 1.5;
+    const auto refine_scalar = 0.5;
+    const auto min_refine_scalar = 5e-2;
 
-    static const Scalar stop_filter_energy = stop_energy * 0.8;
-    Scalar filter_energy =
-        max_energy / 100 > stop_filter_energy ? max_energy / 100 : stop_filter_energy;
-    if (filter_energy > 100) filter_energy = 100;
+    // outputs scale_multipliers
+    tbb::concurrent_vector<double> scale_multipliers(mesh.vert_capacity(), recover_scalar);
 
-    Scalar recover_scalar = 1.5;
-    //    std::vector<Scalar> scale_multipliers(vertices.size(), recover_scalar);
-    tbb::concurrent_vector<Scalar> scale_multipliers(
-        mesh.m_vertex_attribute.size(),
-        recover_scalar);
-    Scalar refine_scalar = 0.5;
-    Scalar min_refine_scalar = 5e-2;
-
-
-    tbb::task_arena arena(mesh.NUM_THREADS);
-
-    arena.execute([&] {
-        tbb::parallel_for(tbb::blocked_range<int>(0, tets.size()), [&](tbb::blocked_range<int> r) {
-            // for (size_t i = 0; i < tets.size(); i++) {
-            for (int i = r.begin(); i < r.end(); i++) {
-                int tid = tets[i].tid(mesh);
-                if (mesh.m_tet_attribute[tid].quality < filter_energy) continue;
-
-                auto vs = mesh.oriented_tet_vertices(tets[i]);
-
-                double sizing_ratio = 0;
-                for (int j = 0; j < 4; j++) {
-                    sizing_ratio += mesh.m_vertex_attribute[vs[j].vid(mesh)].m_sizing_scalar;
-                }
-                sizing_ratio /= 4;
-                double R = mesh.target_l * 2; // * sizing_ratio;
-
-                std::unordered_map<size_t, double> new_scalars;
-                std::vector<bool> visited(mesh.m_vertex_attribute.size(), false);
-                //
-
-                // ZoneScopedN("adj_pushqueue");
-                std::queue<size_t> v_queue;
-                Eigen::Vector3d c(0, 0, 0);
-                for (int j = 0; j < 4; j++) {
-                    v_queue.push(vs[j].vid(mesh));
-                    c += mesh.m_vertex_attribute[vs[j].vid(mesh)].pos;
-                    new_scalars[vs[j].vid(mesh)] = 0;
-                }
-                c /= 4;
-                //
-
-                // ZoneScopedN("adj_whileloop");
-                int sum = 0;
-                int adjcnt = 0;
-                while (!v_queue.empty()) {
-                    sum++;
-                    size_t vid = v_queue.front();
-                    v_queue.pop();
-                    if (visited[vid]) continue;
-                    visited[vid] = true;
-                    adjcnt++;
-
-                    bool is_close = false;
-                    double dist = (mesh.m_vertex_attribute[vid].pos - c).norm();
-                    if (dist > R) {
-                        new_scalars[vid] = 0;
-                    } else {
-                        new_scalars[vid] = (1 + dist / R) * refine_scalar; // linear interpolate
-                        is_close = true;
-                    }
-
-                    if (!is_close) continue;
-
-                    auto vids =
-                        mesh.get_one_ring_vids_for_vertex_adj(vid, mesh.get_one_ring_cache.local());
-                    for (size_t n_vid : vids) {
-                        if (visited[n_vid]) continue;
-                        v_queue.push(n_vid);
-                    }
-                }
-
-
-                for (auto& info : new_scalars) {
-                    if (info.second == 0) continue;
-
-                    size_t vid = info.first;
-                    double scalar = info.second;
-                    if (scalar < scale_multipliers[vid]) scale_multipliers[vid] = scalar;
-                }
-            }
-        });
+    std::vector<Vector3d> pts;
+    std::queue<size_t> v_queue;
+    mesh.TetMesh::for_each_tetra([&](auto& t) {
+        auto tid = t.tid(mesh);
+        if (mesh.m_tet_attribute[tid].quality < filter_energy) return;
+        auto vs = mesh.oriented_tet_vids(t);
+        Vector3d c(0, 0, 0);
+        for (int j = 0; j < 4; j++) {
+            c += (mesh.m_vertex_attribute[vs[j]].pos);
+            v_queue.emplace(vs[j]);
+        }
+        pts.emplace_back(c / 4);
     });
 
-    bool is_hit_min_edge_length = false;
-    for (size_t i = 0; i < vertices.size(); i++) {
-        size_t vid = vertices[i].vid(mesh);
+    wmtk::logger().info("filter energy {} Low Quality Tets {}", filter_energy, pts.size());
+
+    const double R =mesh.target_l * 2;
+
+    int sum = 0;
+    int adjcnt = 0;
+
+    std::vector<bool> visited(mesh.vert_capacity(), false);
+
+    GEO::NearestNeighborSearch_var nnsearch = GEO::NearestNeighborSearch::create(3, "BNN");
+    nnsearch->set_points(pts.size(), pts[0].data());
+
+    std::vector<size_t> cache_one_ring;
+    while (!v_queue.empty()) {
+        sum++;
+        size_t vid = v_queue.front();
+        v_queue.pop();
+        if (visited[vid]) continue;
+        visited[vid] = true;
+        adjcnt++;
+
+        auto& pos_v = mesh.m_vertex_attribute[vid].pos;
+        auto sq_dist = 0.;
+        GEO::index_t _1;
+        nnsearch->get_nearest_neighbors(1, pos_v.data(), &_1, &sq_dist);
+        auto dist = std::sqrt(std::max(sq_dist, 0.)); // compute dist(pts, pos_v);
+
+        if (dist > R) { // outside R-ball, unmark.
+            continue;
+        }
+
+        scale_multipliers[vid] =
+            std::min(scale_multipliers[vid], (1 + dist / R) * refine_scalar); // linear interpolate
+
+        auto vids = mesh.get_one_ring_vids_for_vertex_adj(vid, cache_one_ring);
+        for (size_t n_vid : vids) {
+            if (visited[n_vid]) continue;
+            v_queue.push(n_vid);
+        }
+    }
+
+    std::atomic_bool is_hit_min_edge_length = false;
+    mesh.for_each_vertex([&](auto& v) {
+        auto vid = v.vid(mesh);
         auto& v_attr = mesh.m_vertex_attribute[vid];
 
-        Scalar new_scale = v_attr.m_sizing_scalar * scale_multipliers[vid];
+        auto new_scale = v_attr.m_sizing_scalar * scale_multipliers[vid];
         if (new_scale > 1)
             v_attr.m_sizing_scalar = 1;
         else if (new_scale < min_refine_scalar) {
@@ -143,9 +119,9 @@ bool adjust_sizing_field(
             v_attr.m_sizing_scalar = min_refine_scalar;
         } else
             v_attr.m_sizing_scalar = new_scale;
-    }
+    });
 
-    return is_hit_min_edge_length;
+    return is_hit_min_edge_length.load();
 }
 
 #include <igl/Timer.h>
@@ -206,8 +182,6 @@ std::tuple<double, double> local_operations(
 void mesh_improvement(interior_tetopt::InteriorTetOpt& mesh, int max_its, double stop_energy)
 {
     ////preprocessing
-    // TODO: refactor to eliminate repeated partition.
-    std::cout << "-----print partition size-----" << std::endl;
 
     ////operation loops
     local_operations(mesh, {{0, 0, 0, 1}});
@@ -281,7 +255,7 @@ int main(int argc, char** argv)
     interior_tetopt::InteriorTetOpt mesh;
     mesh.target_l = 5e-1;
     mesh.initialize(vec_attrs, tets);
-    mesh_improvement(mesh, 20, 1e3);
+    mesh_improvement(mesh, 20, 20);
     mesh.final_output_mesh(args.output);
     return 0;
 }

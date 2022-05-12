@@ -156,13 +156,13 @@ struct InteriorTetOpt : wmtk::ConcurrentTetMesh
 
             if (q > max_energy) max_energy = q;
 
-            avg_energy += q;
+            avg_energy += std::cbrt(q);
             cnt ++;
         });
 
         avg_energy /= cnt;
 
-        return std::make_tuple(max_energy, avg_energy);
+        return std::make_tuple(std::cbrt(max_energy), avg_energy);
     }
 };
 } // namespace interior_tetopt
