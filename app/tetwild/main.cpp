@@ -2,7 +2,6 @@
 #include <igl/remove_unreferenced.h>
 #include <igl/write_triangle_mesh.h>
 #include <wmtk/TetMesh.h>
-#include <wmtk/utils/Partitioning.h>
 #include <CLI/CLI.hpp>
 #include <type_traits>
 #include <wmtk/utils/ManifoldUtils.hpp>
@@ -157,22 +156,12 @@ int main(int argc, char** argv)
     // initiate the tetwild mesh using the original envelop
     tetwild::TetWild mesh(params, exact_envelope, NUM_THREADS);
 
-    std::vector<size_t> partition_id(vsimp.size());
-    {
-        Eigen::MatrixXd new_F(fsimp.size(), 3);
-        for (int i = 0; i < fsimp.size(); i++) {
-            new_F(i, 0) = fsimp[i][0];
-            new_F(i, 1) = fsimp[i][1];
-            new_F(i, 2) = fsimp[i][2];
-        }
-
-        auto partitioned_v = partition_mesh_vertices(new_F, NUM_THREADS);
-        for (auto i = 0; i < partition_id.size(); i++) partition_id[i] = partitioned_v[i];
-    }
     /////////////////////////////////////////////////////
 
     igl::Timer timer;
     timer.start();
+    std::vector<size_t> partition_id(vsimp.size());
+    wmtk::partition_vertex_morton(vsimp.size(), [&vsimp](auto i){return vsimp[i];}, partition_id);
     /////////triangle insertion with the simplified mesh
     mesh.init_from_input_surface(vsimp, fsimp, partition_id);
 
