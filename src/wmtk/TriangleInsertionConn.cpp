@@ -40,7 +40,6 @@ void wmtk::TetMesh::triangle_insertion(
             m_vertex_connectivity[e[1]].m_conn_tets);
         surrounding_tids.insert(surrounding_tids.end(), tids.begin(), tids.end());
 
-        // map_edge2vid[e] = m_vertex_connectivity.size() + cnt;
         auto new_vid = get_next_empty_slot_v();
         map_edge2vid[e] = new_vid;
         new_vids.push_back(new_vid);
@@ -163,7 +162,7 @@ void wmtk::TetMesh::subdivide_tets(
     vector_unique(tids);
 
     /// insert new tets
-    size_t old_t_size = m_tet_connectivity.size();
+    size_t old_t_size = tet_capacity();
     for (int i = 0; i < intersected_tids.size(); i++) {
         size_t t_id = intersected_tids[i];
         std::array<int, 6> new_v_ids = {{-1, -1, -1, -1, -1, -1}};

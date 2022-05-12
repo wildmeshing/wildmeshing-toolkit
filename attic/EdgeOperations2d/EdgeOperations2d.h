@@ -138,7 +138,7 @@ public:
     // write the collapsed mesh into a obj
     bool write_triangle_mesh(std::string path)
     {
-        Eigen::MatrixXd V = Eigen::MatrixXd::Zero(vertex_attrs.m_attributes.size(), 3);
+        Eigen::MatrixXd V = Eigen::MatrixXd::Zero(vert_capacity(), 3);
         for (auto& t : get_vertices()) {
             auto i = t.vid(*this);
             V.row(i) = vertex_attrs[i].pos;

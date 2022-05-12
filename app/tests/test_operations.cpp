@@ -87,7 +87,7 @@ TEST_CASE("edge_splitting", "[tetwild_operation]")
     tetwild.split_all_edges();
     REQUIRE(tetwild.check_mesh_connectivity_validity());
 
-    REQUIRE(tetwild.m_vertex_attribute.size() == 218);
+    REQUIRE(tetwild.vert_capacity() == 218);
     tetwild.swap_all_edges_44();
     REQUIRE(tetwild.check_mesh_connectivity_validity());
     tetwild.swap_all_faces();
@@ -126,7 +126,7 @@ TEST_CASE("edge_collapsing", "[tetwild_operation]")
 
     tetwild.split_all_edges();
     REQUIRE(tetwild.check_mesh_connectivity_validity());
-    CHECK(tetwild.m_vertex_attribute.size() == 1377);
+    CHECK(tetwild.vert_capacity() == 1377);
 
     tetwild.collapse_all_edges();
     REQUIRE(tetwild.check_mesh_connectivity_validity());
@@ -194,12 +194,9 @@ TEST_CASE("optimize-bunny-tw", "[tetwild_operation][.slow]")
     tetwild.create_mesh_attributes(vec_attrs, tet_attrs);
 
     // tetwild.split_all_edges();
-    // logger().info("Split {}"aa, tetwild.cnt_split);
     tetwild.collapse_all_edges();
-    logger().info("Col {}", tetwild.cnt_collapse);
     tetwild.swap_all_edges();
     tetwild.swap_all_faces();
-    logger().info("Swp {}", tetwild.cnt_swap);
 
     tetwild.output_mesh("bunny-tw.msh");
 }

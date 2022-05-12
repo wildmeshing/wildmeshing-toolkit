@@ -60,7 +60,10 @@ void tetwild::TetWild::init_from_delaunay_box_mesh(const std::vector<Eigen::Vect
 
     ///delaunay
     auto tets = wmtk::delaunay3D_conn(points);
-    wmtk::logger().info("tets.size() {}", tets.size());
+    wmtk::logger().info(
+        "after delauney tets.size() {}  points.size() {}",
+        tets.size(),
+        points.size());
 
     // conn
     init(points.size(), tets);
@@ -68,7 +71,7 @@ void tetwild::TetWild::init_from_delaunay_box_mesh(const std::vector<Eigen::Vect
     m_vertex_attribute.m_attributes.resize(points.size());
     m_tet_attribute.m_attributes.resize(tets.size());
     m_face_attribute.m_attributes.resize(tets.size() * 4);
-    for (int i = 0; i < m_vertex_attribute.m_attributes.size(); i++) {
+    for (int i = 0; i < vert_capacity(); i++) {
         m_vertex_attribute[i].m_pos = Vector3r(points[i][0], points[i][1], points[i][2]);
         m_vertex_attribute[i].m_posf = Vector3d(points[i][0], points[i][1], points[i][2]);
     }
@@ -211,7 +214,7 @@ void tetwild::TetWild::init_from_input_surface(
     }
 
     for (int i = 0; i < NUM_THREADS; i++) {
-        wmtk::logger().debug("{}: {}", i, insertion_queues[i].size());
+        wmtk::logger().info("insertion queue {}: {}", i, insertion_queues[i].size());
     }
 
     tbb::task_arena arena(NUM_THREADS);
@@ -302,7 +305,7 @@ void tetwild::TetWild::init_from_input_surface(
     });
     arena.execute([&] { tg.wait(); });
 
-    wmtk::logger().info("expired size: {}", expired_queue.size());
+    wmtk::logger().info("retry insert 5 times expired size: {}", expired_queue.size());
 
     auto check_acquire = [](const auto&) { return true; };
 
@@ -425,13 +428,13 @@ void tetwild::TetWild::finalize_triangle_insertion(
         //// rounding
         std::atomic_int cnt_round(0);
 
-        for (int i = 0; i < m_vertex_attribute.m_attributes.size(); i++) {
+        for (int i = 0; i < vert_capacity(); i++) {
             auto v = tuple_from_vertex(i);
             if (round(v)) cnt_round++;
         }
 
 
-        wmtk::logger().info("cnt_round {}/{}", cnt_round, m_vertex_attribute.m_attributes.size());
+        wmtk::logger().info("cnt_round {}/{}", cnt_round, vert_capacity());
 
         //// init qualities
         auto& m = *this;

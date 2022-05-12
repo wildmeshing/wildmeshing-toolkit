@@ -2,6 +2,7 @@
 file(GLOB_RECURSE LIB_SOURCES CONFIGURE_DEPENDS
     "src/*.cpp"
     "src/*.h"
+    "src/*.hpp"
 )
 add_library(wmtk_remeshing_lib "${LIB_SOURCES}")
 add_library(wmtk::remeshing_lib ALIAS wmtk_remeshing_lib)
@@ -14,7 +15,7 @@ target_link_libraries(wmtk_remeshing_lib PUBLIC
 	wmtk::toolkit
 	wmtk::data
 	igl::predicates
-	FastEnvelope
+	wmtk::sec_lib
 )
 
 add_subdirectory(app)

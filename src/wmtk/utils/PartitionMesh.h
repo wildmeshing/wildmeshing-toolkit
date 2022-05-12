@@ -3,8 +3,13 @@
 #include <wmtk/TriMesh.h>
 #include <wmtk/utils/Morton.h>
 #include <wmtk/utils/Partitioning.h>
+
+// clang-format off
+#include <wmtk/utils/DisableWarnings.hpp>
 #include <tbb/parallel_for.h>
 #include <tbb/task_arena.h>
+#include <wmtk/utils/EnableWarnings.hpp>
+// clang-format on
 
 namespace wmtk {
 

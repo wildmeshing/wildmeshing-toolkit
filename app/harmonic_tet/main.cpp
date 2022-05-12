@@ -49,7 +49,7 @@ auto stats = [](auto& har_tet) {
     return std::pair(total_e, cnt);
 };
 
-auto process_mesh = [](auto& args) {
+auto process_mesh = [&args = args]() {
     auto& input = args.input;
     auto& output = args.output;
     auto& thread = args.thread;
@@ -82,11 +82,11 @@ auto process_mesh = [](auto& args) {
         auto [E1, cnt1] = stats(har_tet);
         if (swp == 0) break;
     }
-    wmtk::logger().info("Time cost {}s", time/1e3);
+    wmtk::logger().info("Time cost {}s", time / 1e3);
     har_tet.output_mesh(output);
 };
 
-auto process_points = [](auto& args) {
+auto process_points = [&args = args]() {
     auto& input = args.input;
     auto& output = args.output;
     auto& thread = args.thread;
@@ -133,8 +133,8 @@ int main(int argc, char** argv)
     CLI11_PARSE(app, argc, argv);
 
     if (harmonize)
-        process_points(args);
+        process_points();
     else
-        process_mesh(args);
+        process_mesh();
     return 0;
 }

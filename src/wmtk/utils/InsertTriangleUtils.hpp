@@ -1,13 +1,17 @@
 #pragma once
 
 #include "wmtk/TetMesh.h"
+#include "wmtk/utils/GeoUtils.h"
+
+// clang-format off
+#include <wmtk/utils/DisableWarnings.hpp>
+#include <tbb/concurrent_map.h>
+#include <wmtk/utils/EnableWarnings.hpp>
+// clang-format on
 
 #include <Eigen/Core>
 #include <array>
 #include <vector>
-#include "tbb/concurrent_map.h"
-#include "wmtk/utils/GeoUtils.h"
-
 
 namespace wmtk {
 /**
@@ -49,8 +53,6 @@ auto triangle_insert_prepare_info(
 
     static constexpr std::array<std::array<int, 2>, 6> map_leid2lfids = {
         {{{0, 2}}, {{0, 3}}, {{0, 1}}, {{1, 2}}, {{2, 3}}, {{1, 3}}}};
-    static constexpr std::array<std::array<int, 3>, 4> map_lvid2lfids = {
-        {{{0, 1, 2}}, {{0, 2, 3}}, {{0, 1, 3}}, {{1, 2, 3}}}};
     static constexpr std::array<std::array<int, 3>, 4> local_faces = {
         {{{0, 1, 2}}, {{0, 2, 3}}, {{0, 1, 3}}, {{1, 2, 3}}}};
     static constexpr std::array<std::array<int, 2>, 6> local_edges = {
@@ -96,19 +98,19 @@ auto triangle_insert_prepare_info(
         }
     }
     //
-    constexpr auto is_seg_cut_tri_2 = [](const std::array<Vector2r, 2>& seg2,
-                                         const std::array<Vector2r, 3>& tri2) {
+    constexpr auto is_seg_cut_tri_2 = [](const std::array<Vector2r, 2>& seg2d,
+                                         const std::array<Vector2r, 3>& tri2d) {
         // overlap == seg has one endpoint inside tri OR seg intersect with tri edges
-        bool is_inside = wmtk::is_point_inside_triangle(seg2[0], tri2) ||
-                         wmtk::is_point_inside_triangle(seg2[1], tri2);
+        bool is_inside = wmtk::is_point_inside_triangle(seg2d[0], tri2d) ||
+                         wmtk::is_point_inside_triangle(seg2d[1], tri2d);
         if (is_inside) {
             return true;
         } else {
             for (int j = 0; j < 3; j++) {
-                std::array<Vector2r, 2> tri_seg2 = {{tri2[j], tri2[(j + 1) % 3]}};
+                std::array<Vector2r, 2> tri_seg2 = {{tri2d[j], tri2d[(j + 1) % 3]}};
                 rational _;
                 bool is_intersected =
-                    wmtk::open_segment_open_segment_intersection_2d(seg2, tri_seg2, _);
+                    wmtk::open_segment_open_segment_intersection_2d(seg2d, tri_seg2, _);
                 if (is_intersected) {
                     return true;
                 }
