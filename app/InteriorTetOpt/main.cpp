@@ -210,7 +210,7 @@ void mesh_improvement(interior_tetopt::InteriorTetOpt& mesh, int max_its, double
             m++;
             if (m == M) {
                 wmtk::logger().info(">>>>adjust_sizing_field...");
-                auto is_hit_min_edge_length = adjust_sizing_field(mesh, max_energy, stop_energy);
+                // auto is_hit_min_edge_length = adjust_sizing_field(mesh, max_energy, stop_energy);
                 wmtk::logger().info(">>>>adjust_sizing_field finished...");
                 m = 0;
             }
