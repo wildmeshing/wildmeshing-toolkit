@@ -255,7 +255,7 @@ int main(int argc, char** argv)
     interior_tetopt::InteriorTetOpt mesh;
     mesh.target_l = 5e-1;
     mesh.initialize(vec_attrs, tets);
-    mesh_improvement(mesh, 20, 20);
+    mesh_improvement(mesh, 20, 10);
     mesh.final_output_mesh(args.output);
     return 0;
 }

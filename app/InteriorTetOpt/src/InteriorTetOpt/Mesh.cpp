@@ -54,13 +54,13 @@ bool InteriorTetOpt::split_edge_before(const Tuple& loc0)
 {
     if (loc0.is_boundary_edge(*this)) split_cache.local().bnd = true;
 
-	auto& cache = split_cache.local();
+    auto& cache = split_cache.local();
     cache.v1_id = loc0.vid(*this);
     auto loc1 = loc0.switch_vertex(*this);
     cache.v2_id = loc1.vid(*this);
     //
 
-     for (auto& loc : get_one_ring_tets_for_edge(loc0)) {
+    for (auto& loc : get_one_ring_tets_for_edge(loc0)) {
         cache.max_quality = std::max(cache.max_quality, m_tet_attribute[loc.tid(*this)].quality);
     }
     return true;
@@ -89,12 +89,12 @@ bool InteriorTetOpt::split_edge_after(const Tuple& loc)
 
     /// update quality
     for (auto& loc : locs) {
-        m_tet_attribute[loc.tid(*this)].quality = get_quality(loc);
-        if (m_tet_attribute[loc.tid(*this)].quality > cache.max_quality) return false;
+        auto& q = m_tet_attribute[loc.tid(*this)].quality;
+        q = get_quality(loc);
+        if (q > cache.max_quality) return false;
     }
 
-    if (split_cache.local().bnd)
-        m_vertex_attribute[v_id].freeze = true;
+    if (split_cache.local().bnd) m_vertex_attribute[v_id].freeze = true;
 
     // surface
     // m_vertex_attribute[v_id].m_is_on_surface = split_cache.local().is_edge_on_surface;
@@ -115,6 +115,9 @@ bool InteriorTetOpt::swap_edge_before(const wmtk::TetMesh::Tuple& t)
     auto incident_tets = get_incident_tets_for_edge(t);
     auto max_energy = -1.0;
     for (auto& l : incident_tets) {
+        if (is_inverted(l)) {
+            return false;
+        }
         max_energy = std::max(m_tet_attribute[l.tid(*this)].quality, max_energy);
     }
     swap_cache.local().max_energy = max_energy;
@@ -131,6 +134,9 @@ bool InteriorTetOpt::swap_edge_after(const Tuple& t)
     auto twotets = std::vector<Tuple>{{t, *oppo_tet}};
     auto max_energy = -1.0;
     for (auto& l : twotets) {
+        if (is_inverted(l)) {
+            return false;
+        }
         auto q = get_quality(l);
         m_tet_attribute[l.tid(*this)].quality = q;
         max_energy = std::max(q, max_energy);
@@ -165,6 +171,9 @@ bool InteriorTetOpt::swap_face_after(const Tuple& t)
 
     auto max_energy = -1.0;
     for (auto& l : incident_tets) {
+        if (is_inverted(l)) {
+            return false;
+        }
         auto q = get_quality(l);
         m_tet_attribute[l.tid(*this)].quality = q;
         max_energy = std::max(q, max_energy);
@@ -198,6 +207,9 @@ bool InteriorTetOpt::swap_edge_44_after(const Tuple& t)
 
     auto max_energy = -1.0;
     for (auto& l : incident_tets) {
+        if (is_inverted(l)) {
+            return false;
+        }
         auto q = get_quality(l);
         m_tet_attribute[l.tid(*this)].quality = q;
         max_energy = std::max(q, max_energy);
@@ -235,7 +247,7 @@ bool InteriorTetOpt::smooth_after(const Tuple& t)
     for (auto& loc : locs) {
         auto& T = assembles[loc_id];
         auto t_id = loc.tid(*this);
-        assert (!is_inverted(loc));
+        assert(!is_inverted(loc));
 
         auto local_tuples = oriented_tet_vertices(loc);
         std::array<size_t, 4> local_verts;
@@ -268,11 +280,9 @@ bool InteriorTetOpt::smooth_after(const Tuple& t)
 
     for (auto& loc : locs) {
         auto t_id = loc.tid(*this);
-        m_tet_attribute[t_id].quality = get_quality(loc);
         if (is_inverted(loc)) return false;
+        m_tet_attribute[t_id].quality = get_quality(loc);
     }
-    
-
 
 
     return true;
