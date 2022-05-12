@@ -124,6 +124,10 @@ std::tuple<double, double> tetwild::TetWild::local_operations(
             }
         }
     }
+    energy = get_max_avg_energy();
+    wmtk::logger().info("max energy = {}", std::get<0>(energy));
+    wmtk::logger().info("avg energy = {}", std::get<1>(energy));
+    wmtk::logger().info("time = {}", timer.getElapsedTime());
 
     return energy;
 }
