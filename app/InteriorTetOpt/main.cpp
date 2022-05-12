@@ -282,5 +282,6 @@ int main(int argc, char** argv)
     mesh.target_l = 5e-1;
     mesh.initialize(vec_attrs, tets);
     mesh_improvement(mesh, 20, 1e3);
+    mesh.output_mesh(args.output);
     return 0;
 }
