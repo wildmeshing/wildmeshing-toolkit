@@ -55,8 +55,8 @@ int main(int argc, char** argv)
     Eigen::VectorXi _I;
     igl::remove_unreferenced(V, F, V, F, _I);
 
-    const Eigen::MatrixXd box_min = V.colwise().minCoeff();
-    const Eigen::MatrixXd box_max = V.colwise().maxCoeff();
+    const Eigen::Vector3d box_min = V.colwise().minCoeff();
+    const Eigen::Vector3d box_max = V.colwise().maxCoeff();
     double diag = (box_max - box_min).norm();
 
     {
