@@ -148,7 +148,7 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
     std::queue<size_t> v_queue;
     TetMesh::for_each_tetra([&](auto& t) {
         auto tid = t.tid(*this);
-        if (m_tet_attribute[tid].m_quality < filter_energy) return;
+        if (std::cbrt(m_tet_attribute[tid].m_quality) < filter_energy) return;
         auto vs = oriented_tet_vids(t);
         Vector3d c(0, 0, 0);
         for (int j = 0; j < 4; j++) {
@@ -303,7 +303,7 @@ void tetwild::TetWild::output_mesh(std::string file)
     msh.add_tet_vertex_attribute<1>("tv index", [&](size_t i) {
         return m_vertex_attribute[i].m_sizing_scalar;
     });
-    msh.add_tet_attribute<1>("t energy", [&](size_t i) { return m_tet_attribute[i].m_quality; });
+    msh.add_tet_attribute<1>("t energy", [&](size_t i) { return std::cbrt(m_tet_attribute[i].m_quality); });
 
     msh.save(file, true);
 }
