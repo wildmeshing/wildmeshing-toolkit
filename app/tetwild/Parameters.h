@@ -4,7 +4,7 @@
 namespace tetwild {
 struct Parameters
 {
-    double epsr = 1e-3; // relative error bound (wrt diagonal)
+    double epsr = 2e-3; // relative error bound (wrt diagonal)
     double eps = -1.; // absolute error bound
     double lr = 5e-2; // target edge length (relative)
     double l = -1.;
