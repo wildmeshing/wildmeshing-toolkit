@@ -63,11 +63,8 @@ void tetwild::TetWild::mesh_improvement(int max_its)
         consolidate_mesh();
 
         ///sizing field
-        if (it > 0 &&
-            ((pre_max_energy - max_energy) / max_energy < 1e-1 ||
-             pre_max_energy - max_energy < 1e-2) &&
-            ((pre_avg_energy - avg_energy) / avg_energy < 1e-1 ||
-             pre_avg_energy - avg_energy < 1e-2)) {
+        if (it > 0 && pre_max_energy - max_energy < 5e-1 &&
+            (pre_avg_energy - avg_energy) / avg_energy < 0.1) {
             m++;
             if (m == M) {
                 wmtk::logger().info(">>>>adjust_sizing_field...");
@@ -84,8 +81,6 @@ void tetwild::TetWild::mesh_improvement(int max_its)
         pre_avg_energy = avg_energy;
     }
 
-    const auto& vs = get_vertices();
-    for (auto& v : vs) m_vertex_attribute[v.vid(*this)].m_scalar = 1;
     wmtk::logger().info("========it post========");
     local_operations({{0, 1, 0, 0}});
 }
@@ -123,11 +118,13 @@ std::tuple<double, double> tetwild::TetWild::local_operations(
                 smooth_all_vertices();
             }
         }
+        // output_faces(fmt::format("out-op{}.obj", i), [](auto& f) { return f.m_is_surface_fs; });
     }
     energy = get_max_avg_energy();
     wmtk::logger().info("max energy = {}", std::get<0>(energy));
     wmtk::logger().info("avg energy = {}", std::get<1>(energy));
     wmtk::logger().info("time = {}", timer.getElapsedTime());
+    // exit(1);
 
     return energy;
 }
@@ -163,7 +160,7 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
 
     wmtk::logger().info("filter energy {} Low Quality Tets {}", filter_energy, pts.size());
 
-    const double R = m_params.l * 2;
+    const double R = m_params.l * 1.8;
 
     int sum = 0;
     int adjcnt = 0;
@@ -192,8 +189,9 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
             continue;
         }
 
-        scale_multipliers[vid] =
-            std::min(scale_multipliers[vid], (1 + dist / R) * refine_scalar); // linear interpolate
+        scale_multipliers[vid] = std::min(
+            scale_multipliers[vid],
+            dist / R * (1 - refine_scalar) + refine_scalar); // linear interpolate
 
         auto vids = get_one_ring_vids_for_vertex_adj(vid, cache_one_ring);
         for (size_t n_vid : vids) {
