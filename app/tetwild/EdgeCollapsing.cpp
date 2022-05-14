@@ -3,6 +3,7 @@
 #include "wmtk/TetMesh.h"
 
 #include <igl/Timer.h>
+#include <algorithm>
 #include <atomic>
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>
@@ -14,7 +15,7 @@ void tetwild::TetWild::collapse_all_edges(bool is_limit_length)
     igl::Timer timer;
     double time;
     timer.start();
-    
+
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_edges()) {
         collect_all_ops.emplace_back("edge_collapse", loc);
@@ -147,13 +148,14 @@ bool tetwild::TetWild::collapse_edge_before(const Tuple& loc) // input is an edg
         qs.erase(l.tid(*this));
     }
 
-    
+
     for (auto& q : qs) {
         //
         cache.changed_tids.push_back(q.first);
     }
 
     //
+    std::set<int> unique_fid;
     for (auto& t : n12_locs) {
         auto vs = oriented_tet_vertices(t);
         std::array<size_t, 3> f_vids = {{v1_id, 0, 0}};
@@ -165,6 +167,9 @@ bool tetwild::TetWild::collapse_edge_before(const Tuple& loc) // input is an edg
             }
         }
         auto [_1, global_fid1] = tuple_from_face(f_vids);
+        auto [it, suc] = unique_fid.insert(global_fid1);
+        if (!suc) continue;
+
         auto [_2, global_fid2] = tuple_from_face({{v2_id, f_vids[1], f_vids[2]}});
         auto f_attr = m_face_attribute[global_fid1];
         f_attr.merge(m_face_attribute[global_fid2]);
@@ -174,17 +179,12 @@ bool tetwild::TetWild::collapse_edge_before(const Tuple& loc) // input is an edg
     if (VA[v1_id].m_is_on_surface) {
         std::vector<std::array<size_t, 3>> fs;
         for (auto& t : n1_locs) {
-            auto vs = oriented_tet_vertices(t);
+            auto vs = oriented_tet_vids(t);
 
             int j_v1 = -1;
             auto skip = [&]() {
                 for (auto j = 0; j < 4; j++) {
-                    auto vid = vs[j].vid(*this);
-            for (int j = 0; j < 4; j++) {
-                if (vs[j].vid(*this) == v2_id) {
-                    find_v2 = true;
-                    break;
-                }
+                    auto vid = vs[j];
                     if (vid == v2_id) {
                         return true; // v1-v2 definitely not on surface.
                     }
@@ -195,12 +195,13 @@ bool tetwild::TetWild::collapse_edge_before(const Tuple& loc) // input is an edg
             if (skip()) continue;
 
             for (int k = 0; k < 3; k++) {
-                std::array<size_t, 3> f = {
-                    {v1_id,
-                     vs[(j_v1 + 1 + k) % 4].vid(*this),
-                     vs[(j_v1 + 1 + (k + 1) % 3) % 4].vid(*this)}};
-                std::sort(f.begin(), f.end());
-                fs.push_back(f);
+                auto va = vs[(j_v1 + 1 + k) % 4];
+                auto vb = vs[(j_v1 + 1 + (k + 1) % 3) % 4];
+                if ((VA[va].m_is_on_surface && VA[vb].m_is_on_surface)) {
+                    std::array<size_t, 3> f = {{v1_id, va, vb}};
+                    std::sort(f.begin(), f.end());
+                    fs.push_back(f);
+                }
             }
         }
         wmtk::vector_unique(fs);
@@ -208,8 +209,7 @@ bool tetwild::TetWild::collapse_edge_before(const Tuple& loc) // input is an edg
         for (auto& f : fs) {
             auto [_1, global_fid1] = tuple_from_face(f);
             if (m_face_attribute[global_fid1].m_is_surface_fs) {
-                int j = std::find(f.begin(), f.end(), v1_id) - f.begin();
-                f[j] = v2_id;
+                std::replace(f.begin(), f.end(), v1_id, v2_id);
                 cache.surface_faces.push_back(f);
             }
         }
