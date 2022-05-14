@@ -114,7 +114,11 @@ public:
         std::optional<Tuple> switch_face(const TriMesh& m) const;
 
         bool is_valid(const TriMesh& m) const;
-
+        bool is_hash_valid(const TriMesh& m) const
+        {
+            if (m_hash != m.m_tri_connectivity[m_fid].hash) return false;
+            return true;
+        };
         /**
          * Positively oriented 3 vertices (represented by Tuples) in a tri.
          * @return std::array<Tuple, 3> each tuple owns a different vertex.
@@ -256,6 +260,9 @@ private:
     size_t get_next_empty_slot_t();
     size_t get_next_empty_slot_v();
 
+    vector<Tuple> split_edge_lookup; // a lookup table mapping edges to their up-to-date tuples
+                                     // so that every edge can be split once.
+
 protected:
     virtual bool invariants(const std::vector<Tuple>&) { return true; }
     virtual bool split_edge_before(const Tuple& t) { return true; }
@@ -289,6 +296,10 @@ protected:
     virtual bool smooth_after(const Tuple& t) { return true; }
     virtual void resize_mutex(size_t v){}; // tempoarary hack
 
+    void create_split_edge_lookup();
+    size_t split_edge_number() { return split_edge_lookup.size(); };
+    Tuple get_split_edge_uptodate(size_t eid) { return split_edge_lookup[eid]; };
+    void set_split_edge_uptodate(const Tuple& e) { split_edge_lookup[e.eid(*this)] = e; };
 
 public:
     size_t tri_capacity() const { return current_tri_size; }

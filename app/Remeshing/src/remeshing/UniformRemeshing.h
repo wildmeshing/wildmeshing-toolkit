@@ -16,9 +16,9 @@
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
-#include <memory>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+#include <memory>
 
 
 #include <atomic>
@@ -46,7 +46,10 @@ public:
 
     int NUM_THREADS = 1;
     int retry_limit = 10;
-    UniformRemeshing(std::vector<Eigen::Vector3d> _m_vertex_positions, int num_threads = 1, bool use_exact = true)
+    UniformRemeshing(
+        std::vector<Eigen::Vector3d> _m_vertex_positions,
+        int num_threads = 1,
+        bool use_exact = true)
         : NUM_THREADS(num_threads)
     {
         m_envelope.use_exact = use_exact;
@@ -233,18 +236,21 @@ public:
     Eigen::Vector3d tangential_smooth(const Tuple& t);
 
 
-    bool is_edge_freeze(const Tuple& t)
-    {
-        if (vertex_attrs[t.vid(*this)].freeze ||
-            vertex_attrs[t.switch_vertex(*this).vid(*this)].freeze)
-            return true;
-        return false;
-    }
+    // bool is_edge_freeze(const Tuple& t)
+    // {
+    //     if (vertex_attrs[t.vid(*this)].freeze ||
+    //         vertex_attrs[t.switch_vertex(*this).vid(*this)].freeze)
+    //         return true;
+    //     return false;
+    // }
+
 
     bool collapse_edge_before(const Tuple& t) override
     {
         if (!TriMesh::collapse_edge_before(t)) return false;
-        if (is_edge_freeze(t)) return false;
+        if (vertex_attrs[t.vid(*this)].freeze ||
+            vertex_attrs[t.switch_vertex(*this).vid(*this)].freeze)
+            return false;
         cache_edge_positions(t);
         return true;
     }
@@ -253,18 +259,25 @@ public:
     bool swap_edge_before(const Tuple& t) override
     {
         if (!TriMesh::swap_edge_before(t)) return false;
-        if (is_edge_freeze(t)) return false;
+        if (vertex_attrs[t.vid(*this)].freeze &&
+            vertex_attrs[t.switch_vertex(*this).vid(*this)].freeze)
+            return false;
         return true;
     }
     bool swap_edge_after(const Tuple& t) override;
 
     std::vector<TriMesh::Tuple> new_edges_after(const std::vector<TriMesh::Tuple>& t) const;
     std::vector<TriMesh::Tuple> new_edges_after_swap(const TriMesh::Tuple& t) const;
+    std::vector<TriMesh::Tuple> new_edges_after_split(const std::vector<TriMesh::Tuple>& t) const;
+
 
     bool split_edge_before(const Tuple& t) override
     {
         if (!TriMesh::split_edge_before(t)) return false;
-        if (is_edge_freeze(t)) return false;
+        if (vertex_attrs[t.vid(*this)].freeze &&
+            vertex_attrs[t.switch_vertex(*this).vid(*this)].freeze) {
+            if (!t.switch_face(*this).has_value()) return false; // check if it's bondary
+        }
         cache_edge_positions(t);
         return true;
     }

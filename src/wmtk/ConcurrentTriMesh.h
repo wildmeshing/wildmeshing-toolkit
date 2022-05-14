@@ -20,15 +20,15 @@ public:
 
         void unlock()
         {
-            mutex.unlock();
             reset_owner();
+            mutex.unlock();
         }
 
         int get_owner() { return owner; }
 
         void set_owner(int n) { owner = n; }
 
-        void reset_owner() { owner = INT_MAX; }
+        void reset_owner() { owner = std::numeric_limits<int>::max(); }
     };
 
 private:

@@ -344,6 +344,14 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
         rollback_protected_attributes();
         return false;
     }
+
+    // update the edge_split_table
+    for (auto nt : new_tris) {
+        auto tmptup = (nt.switch_vertex(*this)).switch_edge(*this);
+        if (tmptup.eid(*this) < split_edge_number() &&
+            get_split_edge_uptodate(tmptup.eid(*this)).vid(*this) != -1)
+            set_split_edge_uptodate(tmptup);
+    }
     release_protect_attributes();
     return true;
 }
@@ -813,7 +821,8 @@ std::vector<TriMesh::Tuple> TriMesh::get_edges() const
 
 size_t TriMesh::get_next_empty_slot_t()
 {
-    while (current_tri_size + MAX_THREADS >= m_tri_connectivity.size() || tri_connectivity_synchronizing_flag) {
+    while (current_tri_size + MAX_THREADS >= m_tri_connectivity.size() ||
+           tri_connectivity_synchronizing_flag) {
         if (tri_connectivity_lock.try_lock()) {
             if (current_tri_size + MAX_THREADS < m_tri_connectivity.size()) {
                 tri_connectivity_lock.unlock();
@@ -835,10 +844,10 @@ size_t TriMesh::get_next_empty_slot_t()
 
 size_t TriMesh::get_next_empty_slot_v()
 {
-    while (current_vert_size + MAX_THREADS >= m_vertex_connectivity.size()  ||
+    while (current_vert_size + MAX_THREADS >= m_vertex_connectivity.size() ||
            vertex_connectivity_synchronizing_flag) {
         if (vertex_connectivity_lock.try_lock()) {
-            if (current_vert_size + MAX_THREADS < m_vertex_connectivity.size() ) {
+            if (current_vert_size + MAX_THREADS < m_vertex_connectivity.size()) {
                 vertex_connectivity_lock.unlock();
                 break;
             }
@@ -959,4 +968,12 @@ void wmtk::TriMesh::get_boundary_map(Eigen::VectorXi SVI)
             continue;
     }
     igl::writeDMAT("new_dmt.dmat", bnd_table);
+}
+
+void wmtk::TriMesh::create_split_edge_lookup()
+{
+    split_edge_lookup.resize(tri_capacity() * 3);
+    for (auto e = 0; e < tri_capacity() * 3; e++) {
+        split_edge_lookup[e] = Tuple(-1, 10, -1, *this);
+    }
 }
