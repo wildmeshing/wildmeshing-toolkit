@@ -116,18 +116,7 @@ bool tetwild::TetWild::collapse_edge_before(const Tuple& loc) // input is an edg
                     on_bbox) == VA[v2_id].on_bbox_faces.end())
                 return false;
     }
-    // remove isolated vertex
-    if (m_vertex_attribute[v1_id].m_is_on_surface) {
-        auto vids = get_one_ring_vids_for_vertex(v1_id);
-        bool is_isolated = true;
-        for (size_t vid : vids) {
-            if (m_vertex_attribute[vid].m_is_on_surface) {
-                is_isolated = false;
-                break;
-            }
-        }
-        if (is_isolated) m_vertex_attribute[v1_id].m_is_on_surface = false;
-    }
+
     // surface
     if (cache.edge_length > 0 && VA[v1_id].m_is_on_surface) {
         if (!VA[v2_id].m_is_on_surface && m_envelope.is_outside(VA[v2_id].m_posf)) return false;
