@@ -1,29 +1,30 @@
-#include "TetWild.h"
-#include "Parameters.h"
-#include "common.h"
-#include "sec/envelope/SampleEnvelope.hpp"
 #include <remeshing/UniformRemeshing.h>
 #include <sec/ShortestEdgeCollapse.h>
+#include "Parameters.h"
+#include "TetWild.h"
+#include "common.h"
+#include "sec/envelope/SampleEnvelope.hpp"
 
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/Partitioning.h>
-#include <wmtk/utils/partition_utils.hpp>
+#include <fstream>
 #include <wmtk/utils/ManifoldUtils.hpp>
-#include "wmtk/utils/Logger.hpp"
+#include <wmtk/utils/partition_utils.hpp>
 #include "wmtk/utils/InsertTriangleUtils.hpp"
+#include "wmtk/utils/Logger.hpp"
 
 #include <geogram/mesh/mesh_io.h>
-#include <igl/boundary_facets.h>
-#include <igl/read_triangle_mesh.h>
-#include <igl/remove_unreferenced.h>
-#include <igl/write_triangle_mesh.h>
-#include <CLI/CLI.hpp>
-#include <spdlog/common.h>
 #include <igl/Timer.h>
+#include <igl/boundary_facets.h>
 #include <igl/is_edge_manifold.h>
 #include <igl/is_vertex_manifold.h>
 #include <igl/predicates/predicates.h>
+#include <igl/read_triangle_mesh.h>
 #include <igl/remove_duplicate_vertices.h>
+#include <igl/remove_unreferenced.h>
+#include <igl/write_triangle_mesh.h>
+#include <spdlog/common.h>
+#include <CLI/CLI.hpp>
 
 void reader(std::string input_surface, Eigen::MatrixXd& VI, Eigen::MatrixXi& FI)
 {
@@ -173,7 +174,7 @@ int main(int argc, char** argv)
     params.init(box_min, box_max);
     wmtk::remove_duplicates(vsimp, fsimp, params.diag_l);
 
-	wmtk::ExactEnvelope exact_envelope;
+    wmtk::ExactEnvelope exact_envelope;
     {
         std::vector<Eigen::Vector3i> tempF(fsimp.size());
         for (auto i = 0; i < tempF.size(); i++) tempF[i] << fsimp[i][0], fsimp[i][1], fsimp[i][2];
@@ -188,7 +189,11 @@ int main(int argc, char** argv)
     igl::Timer timer;
     timer.start();
     std::vector<size_t> partition_id(vsimp.size());
-    wmtk::partition_vertex_morton(vsimp.size(), [&vsimp](auto i){return vsimp[i];}, std::max(NUM_THREADS, 1), partition_id);
+    wmtk::partition_vertex_morton(
+        vsimp.size(),
+        [&vsimp](auto i) { return vsimp[i]; },
+        std::max(NUM_THREADS, 1),
+        partition_id);
     /////////triangle insertion with the simplified mesh
     mesh.init_from_input_surface(vsimp, fsimp, partition_id);
 
