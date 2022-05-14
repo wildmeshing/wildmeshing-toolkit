@@ -203,7 +203,7 @@ void tetwild::TetWild::init_from_input_surface(
     wmtk::logger().info("is_matched: {}", std::count(is_matched.begin(), is_matched.end(), true));
 
     std::vector<tbb::concurrent_priority_queue<std::tuple<double, int, size_t>>> insertion_queues(
-        NUM_THREADS);
+        std::max(NUM_THREADS, 1));
     tbb::concurrent_priority_queue<std::tuple<double, int, size_t>> expired_queue;
     std::default_random_engine generator;
     std::uniform_real_distribution<double> distribution(0.0, 100.0);

@@ -39,10 +39,6 @@ void tetwild::TetWild::mesh_improvement(int max_its)
 
     compute_vertex_partition_morton();
     std::vector<int> partition_size(NUM_THREADS, 0);
-    for (int i = 0; i < vert_capacity(); i++) {
-        partition_size[m_vertex_attribute[i].partition_id]++;
-    }
-    wmtk::logger().info("partition sizes: {}", partition_size);
 
     wmtk::logger().info("========it pre========");
     local_operations({{0, 1, 0, 0}}, false);
