@@ -220,11 +220,11 @@ void tetwild::TetWild::init_from_input_surface(
         wmtk::logger().info("insertion queue {}: {}", i, insertion_queues[i].size());
     }
 
-    tbb::task_arena arena(NUM_THREADS);
+    tbb::task_arena arena(insertion_queues.size());
     tbb::task_group tg;
 
     arena.execute([&, &m = *this, &tet_face_tags = this->tet_face_tags]() {
-        for (int task_id = 0; task_id < m.NUM_THREADS; task_id++) {
+        for (int task_id = 0; task_id < insertion_queues.size(); task_id++) {
             tg.run([&insertion_queues,
                     &expired_queue,
                     &tet_face_tags,
@@ -353,7 +353,7 @@ void tetwild::TetWild::init_from_input_surface(
 void tetwild::TetWild::finalize_triangle_insertion(
     const std::vector<std::array<size_t, 3>>& faces)
 {
-    tbb::task_arena arena(NUM_THREADS);
+    tbb::task_arena arena(std::max(NUM_THREADS,1));
 
     arena.execute([&faces, this] {
         tbb::parallel_for(this->tet_face_tags.range(), [&faces, this](auto& r) {
