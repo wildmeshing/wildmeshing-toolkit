@@ -302,8 +302,8 @@ void tetwild::TetWild::init_from_input_surface(
                 });
             }); // tg.run
         } // parallel for loop
+        tg.wait();
     });
-    arena.execute([&] { tg.wait(); });
 
     wmtk::logger().info("retry insert 5 times expired size: {}", expired_queue.size());
 

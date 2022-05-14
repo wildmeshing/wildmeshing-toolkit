@@ -426,9 +426,6 @@ double tetwild::TetWild::get_quality(const Tuple& loc) const
 
 bool tetwild::TetWild::invariants(const std::vector<Tuple>& tets)
 {
-    // check inversion
-    for (auto& t : tets)
-        if (is_inverted(t)) return false;
 
     return true;
 }
