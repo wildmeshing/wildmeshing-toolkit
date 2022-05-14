@@ -5,6 +5,7 @@
 #include <wmtk/utils/ManifoldUtils.hpp>
 #include "Parameters.h"
 #include "common.h"
+#include "sec/envelope/SampleEnvelope.hpp"
 #include "wmtk/utils/Logger.hpp"
 #include "wmtk/utils/InsertTriangleUtils.hpp"
 
@@ -176,7 +177,7 @@ int main(int argc, char** argv)
     params.init(box_min, box_max);
     wmtk::remove_duplicates(vsimp, fsimp, params.diag_l);
 
-    fastEnvelope::FastEnvelope exact_envelope;
+	wmtk::ExactEnvelope exact_envelope;
     {
         std::vector<Eigen::Vector3i> tempF(fsimp.size());
         for (auto i = 0; i < tempF.size(); i++) tempF[i] << fsimp[i][0], fsimp[i][1], fsimp[i][2];
