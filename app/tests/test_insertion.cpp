@@ -102,9 +102,6 @@ TEST_CASE("triangle-insertion-parallel", "[tetwild_operation][.]")
         partition_id[i] = partitioned_v(i, 0);
         cnt_id[partition_id[i]]++;
     }
-    for (int i = 0; i < NUM_THREADS; i++) {
-        std::cout << i << ": " << cnt_id[i] << std::endl;
-    }
 
     //
     //

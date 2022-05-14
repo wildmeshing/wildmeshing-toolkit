@@ -239,7 +239,6 @@ bool tetwild::TetWild::collapse_edge_after(const Tuple& loc)
             bool is_out = m_envelope.is_outside(
                 {{VA[vids[0]].m_posf, VA[vids[1]].m_posf, VA[vids[2]].m_posf}});
             if (is_out) {
-                //                cout<<"Env"<<endl;
                 return false;
             }
         }

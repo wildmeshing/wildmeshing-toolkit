@@ -1,17 +1,16 @@
-#include <TetWild.h>
+#include "TetWild.h"
+#include "Parameters.h"
+#include "common.h"
+#include "sec/envelope/SampleEnvelope.hpp"
+#include <remeshing/UniformRemeshing.h>
+#include <sec/ShortestEdgeCollapse.h>
+
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/Partitioning.h>
 #include <wmtk/utils/partition_utils.hpp>
 #include <wmtk/utils/ManifoldUtils.hpp>
-#include "Parameters.h"
-#include "common.h"
-#include "sec/envelope/SampleEnvelope.hpp"
 #include "wmtk/utils/Logger.hpp"
 #include "wmtk/utils/InsertTriangleUtils.hpp"
-
-
-#include <remeshing/UniformRemeshing.h>
-#include <sec/ShortestEdgeCollapse.h>
 
 #include <geogram/mesh/mesh_io.h>
 #include <igl/boundary_facets.h>
@@ -19,8 +18,6 @@
 #include <igl/remove_unreferenced.h>
 #include <igl/write_triangle_mesh.h>
 #include <CLI/CLI.hpp>
-#include <type_traits>
-#include "fastenvelope/FastEnvelope.h"
 #include <spdlog/common.h>
 #include <igl/Timer.h>
 #include <igl/is_edge_manifold.h>
@@ -71,8 +68,6 @@ int main(int argc, char** argv)
 {
     //
     ZoneScopedN("tetwildmain");
-    using std::cout;
-    using std::endl;
 
     tetwild::Parameters params;
 
@@ -81,11 +76,12 @@ int main(int argc, char** argv)
     std::string output_path = "./";
     bool skip_simplify = false;
     int NUM_THREADS = 1;
+    int max_its = 10;
+
     app.add_option("-i,--input", input_path, "Input mesh.");
     app.add_option("-o,--output", output_path, "Output mesh.");
     app.add_option("-j,--jobs", NUM_THREADS, "thread.");
     app.add_flag("--skip-simplify", skip_simplify, "simplify_input.");
-    int max_its = 10;
     app.add_option("--max-its", max_its, "max # its");
     app.add_option("-e, --epsr", params.epsr, "relative eps wrt diag of bbox");
     app.add_option("-r, --rlen", params.lr, "relative ideal edge length wrt diag of bbox");
@@ -206,13 +202,13 @@ int main(int argc, char** argv)
     /////////output
     auto [max_energy, avg_energy] = mesh.get_max_avg_energy();
     std::ofstream fout(output_path + ".log");
-    fout << "#t: " << mesh.tet_size() << endl;
-    fout << "#v: " << mesh.vertex_size() << endl;
-    fout << "max_energy: " << max_energy << endl;
-    fout << "avg_energy: " << avg_energy << endl;
-    fout << "eps: " << params.eps << endl;
-    fout << "threads: " << NUM_THREADS << endl;
-    fout << "time: " << time << endl;
+    fout << "#t: " << mesh.tet_size() << std::endl;
+    fout << "#v: " << mesh.vertex_size() << std::endl;
+    fout << "max_energy: " << max_energy << std::endl;
+    fout << "avg_energy: " << avg_energy << std::endl;
+    fout << "eps: " << params.eps << std::endl;
+    fout << "threads: " << NUM_THREADS << std::endl;
+    fout << "time: " << time << std::endl;
     fout.close();
 
     wmtk::logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
