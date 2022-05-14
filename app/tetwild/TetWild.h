@@ -112,6 +112,7 @@ public:
     FaceAttCol m_face_attribute;
     TetAttCol m_tet_attribute;
 
+    // only used with unit tests
     void create_mesh_attributes(
         const std::vector<VertexAttributes>& _vertex_attribute,
         const std::vector<TetAttributes>& _tet_attribute)
@@ -125,6 +126,8 @@ public:
             m_vertex_attribute[i] = _vertex_attribute[i];
         m_tet_attribute.m_attributes = tbb::concurrent_vector<TetAttributes>(_tet_attribute.size());
         for (auto i = 0; i < _tet_attribute.size(); i++) m_tet_attribute[i] = _tet_attribute[i];
+        for (auto i = 0; i < _tet_attribute.size(); i++) m_tet_attribute[i].m_quality = get_quality(tuple_from_tet(i));
+
     }
 
     void compute_vertex_partition()

@@ -173,6 +173,7 @@ bool tetwild::TetWild::swap_edge_after(const Tuple& t)
     auto twotets = std::vector<Tuple>{{t, *oppo_tet}};
     auto max_energy = -1.0;
     for (auto& l : twotets) {
+        if (is_inverted(l)) return false;
         auto q = get_quality(l);
         m_tet_attribute[l.tid(*this)].m_quality = q;
         max_energy = std::max(q, max_energy);
@@ -216,6 +217,7 @@ bool tetwild::TetWild::swap_face_after(const Tuple& t)
 
     auto max_energy = -1.0;
     for (auto& l : incident_tets) {
+        if (is_inverted(l)) return false;
         auto q = get_quality(l);
         m_tet_attribute[l.tid(*this)].m_quality = q;
         max_energy = std::max(q, max_energy);
@@ -296,6 +298,7 @@ bool tetwild::TetWild::swap_edge_44_after(const Tuple& t)
 
     auto max_energy = -1.0;
     for (auto& l : incident_tets) {
+        if (is_inverted(l)) return false;
         auto q = get_quality(l);
         m_tet_attribute[l.tid(*this)].m_quality = q;
         max_energy = std::max(q, max_energy);

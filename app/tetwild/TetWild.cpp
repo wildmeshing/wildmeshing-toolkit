@@ -57,6 +57,7 @@ void tetwild::TetWild::mesh_improvement(int max_its)
         wmtk::logger().info("max energy {} stop {}", max_energy, m_params.stop_energy);
         if (max_energy < m_params.stop_energy) break;
         consolidate_mesh();
+        wmtk::logger().info("v {} t {}", vert_capacity(), tet_capacity());
 
         ///sizing field
         if (it > 0 && pre_max_energy - max_energy < 5e-1 &&
@@ -120,7 +121,6 @@ std::tuple<double, double> tetwild::TetWild::local_operations(
     wmtk::logger().info("max energy = {}", std::get<0>(energy));
     wmtk::logger().info("avg energy = {}", std::get<1>(energy));
     wmtk::logger().info("time = {}", timer.getElapsedTime());
-    // exit(1);
 
     return energy;
 }
@@ -426,9 +426,6 @@ double tetwild::TetWild::get_quality(const Tuple& loc) const
 
 bool tetwild::TetWild::invariants(const std::vector<Tuple>& tets)
 {
-    // check inversion
-    for (auto& t : tets)
-        if (is_inverted(t)) return false;
 
     return true;
 }

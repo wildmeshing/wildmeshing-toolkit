@@ -298,8 +298,8 @@ public:
                         run_single_queue(queues[task_id], task_id);
                     });
                 }
+                tg.wait();
             });
-            arena.execute([&] { tg.wait(); });
             logger().debug("Parallel Complete, remains element {}", final_queue.size());
             run_single_queue(final_queue, 0);
         }
