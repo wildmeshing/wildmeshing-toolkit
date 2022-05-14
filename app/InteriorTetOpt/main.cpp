@@ -179,7 +179,7 @@ std::tuple<double, double> local_operations(
     wmtk::logger().info("time = {}", timer.getElapsedTime());
 
     return energy;
-};
+}
 
 void mesh_improvement(interior_tetopt::InteriorTetOpt& mesh, int max_its, double stop_energy)
 {

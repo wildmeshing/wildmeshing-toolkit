@@ -18,6 +18,7 @@
 #pragma clang diagnostic ignored "-Wredundant-decls"
 #pragma clang diagnostic ignored "-Wunknown-pragmas"
 #pragma clang diagnostic ignored "-Wunknown-pragmas"
+#pragma clang diagnostic ignored "-Wtype-limits"
 #pragma clang diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
 #elif (defined(__GNUC__) || defined(__GNUG__)) && !(defined(__clang__) || defined(__INTEL_COMPILER))
 #pragma GCC diagnostic push
@@ -36,5 +37,6 @@
 #pragma GCC diagnostic ignored "-Wformat-security"
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #pragma GCC diagnostic ignored "-Wredundant-decls"
+#pragma GCC diagnostic ignored "-Wtype-limits"
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
 #endif

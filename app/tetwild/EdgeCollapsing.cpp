@@ -146,12 +146,12 @@ bool tetwild::TetWild::collapse_edge_before(const Tuple& loc) // input is an edg
     //
     std::set<int> unique_fid;
     for (auto& t : n12_locs) {
-        auto vs = oriented_tet_vertices(t);
+        auto vs = oriented_tet_vids(t);
         std::array<size_t, 3> f_vids = {{v1_id, 0, 0}};
         int cnt = 1;
         for (int j = 0; j < 4; j++) {
-            if (vs[j].vid(*this) != v1_id && vs[j].vid(*this) != v2_id) {
-                f_vids[cnt] = vs[j].vid(*this);
+            if (vs[j] != v1_id && vs[j] != v2_id) {
+                f_vids[cnt] = vs[j];
                 cnt++;
             }
         }
@@ -239,7 +239,6 @@ bool tetwild::TetWild::collapse_edge_after(const Tuple& loc)
             bool is_out = m_envelope.is_outside(
                 {{VA[vids[0]].m_posf, VA[vids[1]].m_posf, VA[vids[2]].m_posf}});
             if (is_out) {
-                //                cout<<"Env"<<endl;
                 return false;
             }
         }

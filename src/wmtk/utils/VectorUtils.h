@@ -8,6 +8,7 @@
 #include <map>
 #include <set>
 #include <vector>
+#include "wmtk/utils/Logger.hpp"
 
 namespace wmtk {
 
@@ -40,8 +41,7 @@ inline void vector_unique(std::vector<T>& v, Comp comp, Equal equal)
 template <class T>
 inline void vector_print(std::vector<T>& v)
 {
-    for (auto& e : v) std::cout << e << " ";
-    std::cout << std::endl;
+    wmtk::logger().info("vector {}", v);
 }
 
 template <class T>
