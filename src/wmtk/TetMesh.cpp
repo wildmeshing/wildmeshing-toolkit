@@ -78,8 +78,8 @@ void wmtk::TetMesh::init(size_t n_vertices, const std::vector<std::array<size_t,
     }
     p_vertex_attrs->resize(n_vertices);
     p_tet_attrs->resize(tets.size());
-    p_face_attrs->resize(4*tets.size());
-    p_edge_attrs->resize(6*tets.size());
+    p_face_attrs->resize(4 * tets.size());
+    p_edge_attrs->resize(6 * tets.size());
 }
 
 
@@ -392,7 +392,7 @@ wmtk::TetMesh::Tuple wmtk::TetMesh::tuple_from_vertex(size_t vid) const
     int j = m_tet_connectivity[tid].find(vid);
     int eid = m_map_vertex2edge[j];
     int fid = m_map_edge2face[eid];
-    
+
     return Tuple(*this, vid, eid, fid, tid);
 }
 
@@ -482,6 +482,7 @@ std::vector<size_t> wmtk::TetMesh::get_one_ring_vids_for_vertex(size_t vid) cons
 {
     ZoneScoped;
     std::vector<size_t> v_ids;
+    v_ids.reserve(m_vertex_connectivity[vid].m_conn_tets.size() * 4);
     for (int t_id : m_vertex_connectivity[vid].m_conn_tets) {
         for (int j = 0; j < 4; j++) {
             v_ids.push_back(m_tet_connectivity[t_id][j]);
@@ -496,6 +497,7 @@ std::vector<size_t> wmtk::TetMesh::get_one_ring_vids_for_vertex_adj(size_t vid) 
 {
     ZoneScoped;
     std::vector<size_t> v_ids;
+    v_ids.reserve(m_vertex_connectivity[vid].m_conn_tets.size() * 4);
     for (int t_id : m_vertex_connectivity[vid].m_conn_tets) {
         for (int j = 0; j < 4; j++) {
             v_ids.push_back(m_tet_connectivity[t_id][j]);

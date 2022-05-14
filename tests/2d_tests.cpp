@@ -117,9 +117,9 @@ TEST_CASE("random 10 switches on 2 traingles", "[tuple_operation]")
             for (int j = 0; j < 10; j++) {
                 size_t test = rand() % 3;
                 switch (test) {
-                case 0: v_tuple = v_tuple.switch_vertex(m);
-                case 1: v_tuple = v_tuple.switch_edge(m);
-                case 2: v_tuple = v_tuple.switch_face(m).value_or(v_tuple);
+                case 0: v_tuple = v_tuple.switch_vertex(m); break;
+                case 1: v_tuple = v_tuple.switch_edge(m); break;
+                case 2: v_tuple = v_tuple.switch_face(m).value_or(v_tuple); break;
                 default:;
                 }
             }

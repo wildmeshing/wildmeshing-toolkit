@@ -58,7 +58,7 @@ void resolve_nonmanifoldness(Vertices& V, Facets& F, std::vector<size_t>& modifi
     std::vector<bool> is_vertex_modified(new_num_vertices, false);
     for (Index new_idx = 0; new_idx < new_num_vertices; ++new_idx) {
         Index old_idx = static_cast<double>(old_vids(new_idx, 0));
-        assert(old_idx >= 0 && old_idx < old_num_vertices);
+        assert(old_idx < old_num_vertices);
         if (old_to_new[old_idx] != Invalid) {
             is_vertex_modified[old_to_new[old_idx]] = true;
             is_vertex_modified[new_idx] = true;

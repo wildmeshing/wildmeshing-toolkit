@@ -19,24 +19,26 @@ void wmtk::ConcurrentTetMesh::init(
 int wmtk::ConcurrentTetMesh::release_vertex_mutex_in_stack()
 {
     int num_released = 0;
-    for (int i = mutex_release_stack.local().size() - 1; i >= 0; i--) {
-        unlock_vertex_mutex(mutex_release_stack.local()[i]);
+    auto& stack = mutex_release_stack.local();
+    for (int i = stack.size() - 1; i >= 0; i--) {
+        unlock_vertex_mutex(stack[i]);
         num_released++;
     }
-    mutex_release_stack.local().clear();
+    stack.clear();
     return num_released;
 }
 
 bool wmtk::ConcurrentTetMesh::try_set_vertex_mutex_two_ring(const Tuple& v, int threadid)
 {
+    auto& stack = mutex_release_stack.local();
     for (auto v_one_ring : get_one_ring_vertices_for_vertex(v)) {
         if (m_vertex_mutex[v_one_ring.vid(*this)].get_owner() == threadid) continue;
         if (try_set_vertex_mutex(v_one_ring, threadid)) {
-            mutex_release_stack.local().push_back(v_one_ring.vid(*this));
+            stack.push_back(v_one_ring.vid(*this));
             for (auto v_two_ring : get_one_ring_vertices_for_vertex(v_one_ring)) {
                 if (m_vertex_mutex[v_two_ring.vid(*this)].get_owner() == threadid) continue;
                 if (try_set_vertex_mutex(v_two_ring, threadid)) {
-                    mutex_release_stack.local().push_back(v_two_ring.vid(*this));
+                    stack.push_back(v_two_ring.vid(*this));
                 } else {
                     return false;
                 }
@@ -50,17 +52,19 @@ bool wmtk::ConcurrentTetMesh::try_set_vertex_mutex_two_ring(const Tuple& v, int 
 
 bool wmtk::ConcurrentTetMesh::try_set_vertex_mutex_two_ring_vid(const Tuple& v, int threadid)
 {
-    for (auto v_one_ring : get_one_ring_vids_for_vertex(v.vid(*this), get_one_ring_cache.local())) {
+    auto& cache = get_one_ring_cache.local();
+    auto& stack = mutex_release_stack.local();
+    for (auto v_one_ring : get_one_ring_vids_for_vertex(v.vid(*this), cache)) {
         if (m_vertex_mutex[v_one_ring].get_owner() == threadid) continue;
         if (try_set_vertex_mutex(v_one_ring, threadid)) {
             {
-                mutex_release_stack.local().push_back(v_one_ring);
+                stack.push_back(v_one_ring);
             }
             for (auto v_two_ring :
-                 get_one_ring_vids_for_vertex(v_one_ring, get_one_ring_cache.local())) {
+                 get_one_ring_vids_for_vertex(v_one_ring, cache)) {
                 if (m_vertex_mutex[v_two_ring].get_owner() == threadid) continue;
                 if (try_set_vertex_mutex(v_two_ring, threadid)) {
-                    mutex_release_stack.local().push_back(v_two_ring);
+                    stack.push_back(v_two_ring);
                 } else {
                     return false;
                 }
@@ -74,15 +78,17 @@ bool wmtk::ConcurrentTetMesh::try_set_vertex_mutex_two_ring_vid(const Tuple& v, 
 
 bool wmtk::ConcurrentTetMesh::try_set_vertex_mutex_two_ring_vid(size_t v, int threadid)
 {
-    for (auto v_one_ring : get_one_ring_vids_for_vertex(v, get_one_ring_cache.local())) {
+    auto& cache = get_one_ring_cache.local();
+    auto& stack =  mutex_release_stack.local();
+    for (auto v_one_ring : get_one_ring_vids_for_vertex(v, cache)) {
         if (m_vertex_mutex[v_one_ring].get_owner() == threadid) continue;
         if (try_set_vertex_mutex(v_one_ring, threadid)) {
-            mutex_release_stack.local().push_back(v_one_ring);
+            stack.push_back(v_one_ring);
             for (auto v_two_ring :
-                 get_one_ring_vids_for_vertex(v_one_ring, get_one_ring_cache.local())) {
+                 get_one_ring_vids_for_vertex(v_one_ring, cache)) {
                 if (m_vertex_mutex[v_two_ring].get_owner() == threadid) continue;
                 if (try_set_vertex_mutex(v_two_ring, threadid)) {
-                    mutex_release_stack.local().push_back(v_two_ring);
+                    stack.push_back(v_two_ring);
                 } else {
                     return false;
                 }
@@ -98,14 +104,15 @@ bool wmtk::ConcurrentTetMesh::try_set_vertex_mutex_two_ring_vid(size_t v, int th
 bool wmtk::ConcurrentTetMesh::try_set_edge_mutex_two_ring(const Tuple& e, int threadid)
 {
     const Tuple& v1 = e;
+    auto& stack = mutex_release_stack.local();
 
-    mutex_release_stack.local().reserve(128);
+    stack.reserve(128);
 
     // try v1
     auto acquire_lock = [&]() {
         if (m_vertex_mutex[v1.vid(*this)].get_owner() != threadid) {
             if (try_set_vertex_mutex(v1, threadid)) {
-                mutex_release_stack.local().push_back(v1.vid(*this));
+                stack.push_back(v1.vid(*this));
             } else {
                 return false;
             }
@@ -118,7 +125,7 @@ bool wmtk::ConcurrentTetMesh::try_set_edge_mutex_two_ring(const Tuple& e, int th
         Tuple v2 = switch_vertex(v1);
         if (m_vertex_mutex[v2.vid(*this)].get_owner() != threadid) {
             if (try_set_vertex_mutex(v2, threadid)) {
-                mutex_release_stack.local().push_back(v2.vid(*this));
+                stack.push_back(v2.vid(*this));
             } else {
                 return false;
             }
@@ -144,11 +151,13 @@ bool wmtk::ConcurrentTetMesh::try_set_face_mutex_two_ring(const Tuple& f, int th
 {
     Tuple v1 = f;
     bool release_flag = false;
+    auto& stack = mutex_release_stack.local();
+
 
     // try v1
     if (m_vertex_mutex[v1.vid(*this)].get_owner() != threadid) {
         if (try_set_vertex_mutex(v1, threadid)) {
-            mutex_release_stack.local().push_back(v1.vid(*this));
+            stack.push_back(v1.vid(*this));
         } else {
             release_flag = true;
         }
@@ -165,7 +174,7 @@ bool wmtk::ConcurrentTetMesh::try_set_face_mutex_two_ring(const Tuple& f, int th
     Tuple v2 = switch_vertex(f);
     if (m_vertex_mutex[v2.vid(*this)].get_owner() != threadid) {
         if (try_set_vertex_mutex(v2, threadid)) {
-            mutex_release_stack.local().push_back(v2.vid(*this));
+            stack.push_back(v2.vid(*this));
         } else {
             release_flag = true;
         }
@@ -182,7 +191,7 @@ bool wmtk::ConcurrentTetMesh::try_set_face_mutex_two_ring(const Tuple& f, int th
     Tuple v3 = switch_edge(v2).switch_vertex(*this);
     if (m_vertex_mutex[v3.vid(*this)].get_owner() != threadid) {
         if (try_set_vertex_mutex(v3, threadid)) {
-            mutex_release_stack.local().push_back(v3.vid(*this));
+            stack.push_back(v3.vid(*this));
         } else {
             release_flag = true;
         }
@@ -228,11 +237,12 @@ bool wmtk::ConcurrentTetMesh::try_set_face_mutex_two_ring(
     int threadid)
 {
     bool release_flag = false;
+    auto& stack = mutex_release_stack.local();
 
     // try v1
     if (m_vertex_mutex[v1.vid(*this)].get_owner() != threadid) {
         if (try_set_vertex_mutex(v1, threadid)) {
-            mutex_release_stack.local().push_back(v1.vid(*this));
+            stack.push_back(v1.vid(*this));
         } else {
             release_flag = true;
         }
@@ -246,10 +256,10 @@ bool wmtk::ConcurrentTetMesh::try_set_face_mutex_two_ring(
     }
 
     // try v2
-    // if (!vector_contains(mutex_release_stack.local(), v2.vid(*this))) {
+    // if (!vector_contains(stack, v2.vid(*this))) {
     if (m_vertex_mutex[v2.vid(*this)].get_owner() != threadid) {
         if (try_set_vertex_mutex(v2, threadid)) {
-            mutex_release_stack.local().push_back(v2.vid(*this));
+            stack.push_back(v2.vid(*this));
         } else {
             release_flag = true;
         }
@@ -265,7 +275,7 @@ bool wmtk::ConcurrentTetMesh::try_set_face_mutex_two_ring(
     // try v3
     if (m_vertex_mutex[v3.vid(*this)].get_owner() != threadid) {
         if (try_set_vertex_mutex(v3, threadid)) {
-            mutex_release_stack.local().push_back(v3.vid(*this));
+            stack.push_back(v3.vid(*this));
         } else {
             release_flag = true;
         }
@@ -311,12 +321,13 @@ bool wmtk::ConcurrentTetMesh::try_set_face_mutex_two_ring(
     int threadid)
 {
     bool release_flag = false;
+    auto& stack = mutex_release_stack.local();
 
     auto try_all = [&]() {
         for (auto vv : {v1, v2, v3}) {
             if (m_vertex_mutex[vv].get_owner() != threadid) {
                 if (try_set_vertex_mutex(vv, threadid)) {
-                    mutex_release_stack.local().push_back(vv);
+                    stack.push_back(vv);
                 } else {
                     return false;
                 }
@@ -342,14 +353,16 @@ bool wmtk::ConcurrentTetMesh::try_set_face_mutex_two_ring(
 
 bool wmtk::ConcurrentTetMesh::try_set_vertex_mutex_one_ring(const Tuple& v, int threadid)
 {
+    auto& stack = mutex_release_stack.local();
+    auto& cache = get_one_ring_cache.local();
     if (m_vertex_mutex[v.vid(*this)].get_owner() != threadid) {
         if (try_set_vertex_mutex(v, threadid)) {
-            mutex_release_stack.local().push_back(v.vid(*this));
+            stack.push_back(v.vid(*this));
             for (auto v_one_ring :
-                 get_one_ring_vids_for_vertex(v.vid(*this), get_one_ring_cache.local())) {
+                 get_one_ring_vids_for_vertex(v.vid(*this), cache)) {
                 if (m_vertex_mutex[v_one_ring].get_owner() != threadid) {
                     if (try_set_vertex_mutex(v_one_ring, threadid)) {
-                        mutex_release_stack.local().push_back(v_one_ring);
+                        stack.push_back(v_one_ring);
                     } else {
                         release_vertex_mutex_in_stack();
                         return false;
