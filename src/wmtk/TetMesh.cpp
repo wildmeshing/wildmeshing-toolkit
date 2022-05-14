@@ -385,12 +385,14 @@ wmtk::TetMesh::Tuple wmtk::TetMesh::tuple_from_edge(const std::array<size_t, 2>&
 wmtk::TetMesh::Tuple wmtk::TetMesh::tuple_from_vertex(size_t vid) const
 {
     assert(vid < vert_capacity());
+    if (m_vertex_connectivity[vid].m_is_removed) return Tuple();
 
     if (m_vertex_connectivity[vid].m_is_removed) return Tuple();
     int tid = m_vertex_connectivity[vid].m_conn_tets[0];
     int j = m_tet_connectivity[tid].find(vid);
     int eid = m_map_vertex2edge[j];
     int fid = m_map_edge2face[eid];
+    
     return Tuple(*this, vid, eid, fid, tid);
 }
 

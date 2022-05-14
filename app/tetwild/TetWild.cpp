@@ -39,10 +39,6 @@ void tetwild::TetWild::mesh_improvement(int max_its)
 
     compute_vertex_partition_morton();
     std::vector<int> partition_size(NUM_THREADS, 0);
-    for (int i = 0; i < vert_capacity(); i++) {
-        partition_size[m_vertex_attribute[i].partition_id]++;
-    }
-    wmtk::logger().info("partition sizes: {}", partition_size);
 
     wmtk::logger().info("========it pre========");
     local_operations({{0, 1, 0, 0}}, false);
@@ -61,13 +57,11 @@ void tetwild::TetWild::mesh_improvement(int max_its)
         wmtk::logger().info("max energy {} stop {}", max_energy, m_params.stop_energy);
         if (max_energy < m_params.stop_energy) break;
         consolidate_mesh();
+        wmtk::logger().info("v {} t {}", vert_capacity(), tet_capacity());
 
         ///sizing field
-        if (it > 0 &&
-            ((pre_max_energy - max_energy) / max_energy < 1e-1 ||
-             pre_max_energy - max_energy < 1e-2) &&
-            ((pre_avg_energy - avg_energy) / avg_energy < 1e-1 ||
-             pre_avg_energy - avg_energy < 1e-2)) {
+        if (it > 0 && pre_max_energy - max_energy < 5e-1 &&
+            (pre_avg_energy - avg_energy) / avg_energy < 0.1) {
             m++;
             if (m == M) {
                 wmtk::logger().info(">>>>adjust_sizing_field...");
@@ -84,8 +78,6 @@ void tetwild::TetWild::mesh_improvement(int max_its)
         pre_avg_energy = avg_energy;
     }
 
-    const auto& vs = get_vertices();
-    for (auto& v : vs) m_vertex_attribute[v.vid(*this)].m_scalar = 1;
     wmtk::logger().info("========it post========");
     local_operations({{0, 1, 0, 0}});
 }
@@ -123,7 +115,12 @@ std::tuple<double, double> tetwild::TetWild::local_operations(
                 smooth_all_vertices();
             }
         }
+        // output_faces(fmt::format("out-op{}.obj", i), [](auto& f) { return f.m_is_surface_fs; });
     }
+    energy = get_max_avg_energy();
+    wmtk::logger().info("max energy = {}", std::get<0>(energy));
+    wmtk::logger().info("avg energy = {}", std::get<1>(energy));
+    wmtk::logger().info("time = {}", timer.getElapsedTime());
 
     return energy;
 }
@@ -147,7 +144,7 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
     std::queue<size_t> v_queue;
     TetMesh::for_each_tetra([&](auto& t) {
         auto tid = t.tid(*this);
-        if (m_tet_attribute[tid].m_quality < filter_energy) return;
+        if (std::cbrt(m_tet_attribute[tid].m_quality) < filter_energy) return;
         auto vs = oriented_tet_vids(t);
         Vector3d c(0, 0, 0);
         for (int j = 0; j < 4; j++) {
@@ -159,7 +156,7 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
 
     wmtk::logger().info("filter energy {} Low Quality Tets {}", filter_energy, pts.size());
 
-    const double R = m_params.l * 2;
+    const double R = m_params.l * 1.8;
 
     int sum = 0;
     int adjcnt = 0;
@@ -188,8 +185,9 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
             continue;
         }
 
-        scale_multipliers[vid] =
-            std::min(scale_multipliers[vid], (1 + dist / R) * refine_scalar); // linear interpolate
+        scale_multipliers[vid] = std::min(
+            scale_multipliers[vid],
+            dist / R * (1 - refine_scalar) + refine_scalar); // linear interpolate
 
         auto vids = get_one_ring_vids_for_vertex_adj(vid, cache_one_ring);
         for (size_t n_vid : vids) {
@@ -301,7 +299,7 @@ void tetwild::TetWild::output_mesh(std::string file)
     msh.add_tet_vertex_attribute<1>("tv index", [&](size_t i) {
         return m_vertex_attribute[i].m_sizing_scalar;
     });
-    msh.add_tet_attribute<1>("t energy", [&](size_t i) { return m_tet_attribute[i].m_quality; });
+    msh.add_tet_attribute<1>("t energy", [&](size_t i) { return std::cbrt(m_tet_attribute[i].m_quality); });
 
     msh.save(file, true);
 }
@@ -428,9 +426,6 @@ double tetwild::TetWild::get_quality(const Tuple& loc) const
 
 bool tetwild::TetWild::invariants(const std::vector<Tuple>& tets)
 {
-    // check inversion
-    for (auto& t : tets)
-        if (is_inverted(t)) return false;
 
     return true;
 }
