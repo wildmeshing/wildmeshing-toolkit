@@ -80,14 +80,16 @@ void tetwild::TetWild::init_from_delaunay_box_mesh(const std::vector<Eigen::Vect
 
 bool tetwild::TetWild::triangle_insertion_before(const std::vector<Tuple>& faces)
 {
-    triangle_insertion_local_cache.local().old_face_vids.clear(); // note: reset local vars
+    auto& cache = triangle_insertion_local_cache.local();
+    cache.old_face_vids.clear(); // note: reset local vars
+    cache.old_face_vids.reserve(faces.size());
 
     for (auto& loc : faces) {
         auto vs = get_face_vertices(loc);
         std::array<size_t, 3> f = {{vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
         std::sort(f.begin(), f.end());
 
-        triangle_insertion_local_cache.local().old_face_vids.push_back(f);
+        cache.old_face_vids.push_back(f);
     }
 
     return true;
@@ -97,14 +99,15 @@ bool tetwild::TetWild::triangle_insertion_after(const std::vector<std::vector<Tu
 {
     /// remove old_face_vids from tet_face_tags, and map tags to new faces
     // assert(new_faces.size() == triangle_insertion_local_cache.local().old_face_vids.size() + 1);
+    auto& cache = triangle_insertion_local_cache.local();
 
     for (int i = 0; i < new_faces.size(); i++) {
         if (new_faces[i].empty()) continue;
 
         // note: erase old tag and then add new -- old and new can be the same face
         std::vector<int> tags;
-        if (i < triangle_insertion_local_cache.local().old_face_vids.size()) {
-            auto& old_f = triangle_insertion_local_cache.local().old_face_vids[i];
+        if (i < cache.old_face_vids.size()) {
+            auto& old_f = cache.old_face_vids[i];
             auto iter = tet_face_tags.find(old_f);
             if (iter != tet_face_tags.end() && !iter->second.empty()) {
                 tags = iter->second;
@@ -112,7 +115,7 @@ bool tetwild::TetWild::triangle_insertion_after(const std::vector<std::vector<Tu
             }
             if (tags.empty()) continue; // nothing to inherit to new
         } else
-            tags.push_back(triangle_insertion_local_cache.local().face_id);
+            tags.push_back(cache.face_id);
 
 
         for (auto& loc : new_faces[i]) {

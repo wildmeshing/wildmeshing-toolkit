@@ -114,7 +114,6 @@ void tetwild::TetWild::smooth_all_vertices()
     igl::Timer timer;
     double time;
     timer.start();
-    auto executor = wmtk::ExecutePass<tetwild::TetWild>();
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_vertices()) {
         collect_all_ops.emplace_back("vertex_smooth", loc);

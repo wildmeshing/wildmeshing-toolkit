@@ -1,16 +1,16 @@
-#include <TetWild.h>
+#include "TetWild.h"
+#include "Parameters.h"
+#include "common.h"
+#include "sec/envelope/SampleEnvelope.hpp"
+#include <remeshing/UniformRemeshing.h>
+#include <sec/ShortestEdgeCollapse.h>
+
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/Partitioning.h>
 #include <wmtk/utils/partition_utils.hpp>
 #include <wmtk/utils/ManifoldUtils.hpp>
-#include "Parameters.h"
-#include "common.h"
 #include "wmtk/utils/Logger.hpp"
 #include "wmtk/utils/InsertTriangleUtils.hpp"
-
-
-#include <remeshing/UniformRemeshing.h>
-#include <sec/ShortestEdgeCollapse.h>
 
 #include <geogram/mesh/mesh_io.h>
 #include <igl/boundary_facets.h>
@@ -18,8 +18,6 @@
 #include <igl/remove_unreferenced.h>
 #include <igl/write_triangle_mesh.h>
 #include <CLI/CLI.hpp>
-#include <type_traits>
-#include "fastenvelope/FastEnvelope.h"
 #include <spdlog/common.h>
 #include <igl/Timer.h>
 #include <igl/is_edge_manifold.h>
@@ -70,8 +68,6 @@ int main(int argc, char** argv)
 {
     //
     ZoneScopedN("tetwildmain");
-    using std::cout;
-    using std::endl;
 
     tetwild::Parameters params;
 
@@ -80,11 +76,12 @@ int main(int argc, char** argv)
     std::string output_path = "./";
     bool skip_simplify = false;
     int NUM_THREADS = 1;
+    int max_its = 10;
+
     app.add_option("-i,--input", input_path, "Input mesh.");
     app.add_option("-o,--output", output_path, "Output mesh.");
     app.add_option("-j,--jobs", NUM_THREADS, "thread.");
     app.add_flag("--skip-simplify", skip_simplify, "simplify_input.");
-    int max_its = 10;
     app.add_option("--max-its", max_its, "max # its");
     app.add_option("-e, --epsr", params.epsr, "relative eps wrt diag of bbox");
     app.add_option("-r, --rlen", params.lr, "relative ideal edge length wrt diag of bbox");
@@ -176,7 +173,7 @@ int main(int argc, char** argv)
     params.init(box_min, box_max);
     wmtk::remove_duplicates(vsimp, fsimp, params.diag_l);
 
-    fastEnvelope::FastEnvelope exact_envelope;
+	wmtk::ExactEnvelope exact_envelope;
     {
         std::vector<Eigen::Vector3i> tempF(fsimp.size());
         for (auto i = 0; i < tempF.size(); i++) tempF[i] << fsimp[i][0], fsimp[i][1], fsimp[i][2];
@@ -191,7 +188,7 @@ int main(int argc, char** argv)
     igl::Timer timer;
     timer.start();
     std::vector<size_t> partition_id(vsimp.size());
-    wmtk::partition_vertex_morton(vsimp.size(), [&vsimp](auto i){return vsimp[i];}, NUM_THREADS, partition_id);
+    wmtk::partition_vertex_morton(vsimp.size(), [&vsimp](auto i){return vsimp[i];}, std::max(NUM_THREADS, 1), partition_id);
     /////////triangle insertion with the simplified mesh
     mesh.init_from_input_surface(vsimp, fsimp, partition_id);
 
@@ -205,13 +202,13 @@ int main(int argc, char** argv)
     /////////output
     auto [max_energy, avg_energy] = mesh.get_max_avg_energy();
     std::ofstream fout(output_path + ".log");
-    fout << "#t: " << mesh.tet_size() << endl;
-    fout << "#v: " << mesh.vertex_size() << endl;
-    fout << "max_energy: " << max_energy << endl;
-    fout << "avg_energy: " << avg_energy << endl;
-    fout << "eps: " << params.eps << endl;
-    fout << "threads: " << NUM_THREADS << endl;
-    fout << "time: " << time << endl;
+    fout << "#t: " << mesh.tet_size() << std::endl;
+    fout << "#v: " << mesh.vertex_size() << std::endl;
+    fout << "max_energy: " << max_energy << std::endl;
+    fout << "avg_energy: " << avg_energy << std::endl;
+    fout << "eps: " << params.eps << std::endl;
+    fout << "threads: " << NUM_THREADS << std::endl;
+    fout << "time: " << time << std::endl;
     fout.close();
 
     wmtk::logger().info("final max energy = {} avg = {}", max_energy, avg_energy);

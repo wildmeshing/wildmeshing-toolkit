@@ -1,13 +1,9 @@
 #include "ManifoldUtils.hpp"
-
 #include <wmtk/utils/VectorUtils.h>
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
 #include <lagrange/mesh_cleanup/resolve_nonmanifoldness.h>
-#include <wmtk/utils/EnableWarnings.hpp>
-// clang-format on
-
 #include <igl/extract_manifold_patches.h>
 #include <igl/is_edge_manifold.h>
 #include <igl/remove_unreferenced.h>
@@ -15,6 +11,8 @@
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 #include <Eigen/Core>
+#include <wmtk/utils/EnableWarnings.hpp>
+// clang-format on
 
 #include <vector>
 
@@ -60,7 +58,7 @@ void resolve_nonmanifoldness(Vertices& V, Facets& F, std::vector<size_t>& modifi
     std::vector<bool> is_vertex_modified(new_num_vertices, false);
     for (Index new_idx = 0; new_idx < new_num_vertices; ++new_idx) {
         Index old_idx = static_cast<double>(old_vids(new_idx, 0));
-        assert(old_idx >= 0 && old_idx < old_num_vertices);
+        assert(old_idx < old_num_vertices);
         if (old_to_new[old_idx] != Invalid) {
             is_vertex_modified[old_to_new[old_idx]] = true;
             is_vertex_modified[new_idx] = true;

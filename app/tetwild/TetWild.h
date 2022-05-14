@@ -2,9 +2,11 @@
 
 #include <igl/Timer.h>
 #include <wmtk/ConcurrentTetMesh.h>
+#include <wmtk/utils/Morton.h>
 #include <wmtk/utils/PartitionMesh.h>
 #include "Parameters.h"
 #include "common.h"
+#include "sec/envelope/SampleEnvelope.hpp"
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
@@ -22,8 +24,6 @@
 // clang-format on
 
 #include <igl/remove_unreferenced.h>
-#include <wmtk/utils/Morton.h>
-#include <wmtk/utils/PartitionMesh.h>
 #include <memory>
 
 namespace tetwild {
@@ -91,9 +91,9 @@ public:
     const double MAX_ENERGY = 1e50;
 
     Parameters& m_params;
-    fastEnvelope::FastEnvelope& m_envelope;
+    wmtk::Envelope& m_envelope;
 
-    TetWild(Parameters& _m_params, fastEnvelope::FastEnvelope& _m_envelope, int _num_threads = 1)
+    TetWild(Parameters& _m_params, wmtk::Envelope& _m_envelope, int _num_threads = 1)
         : m_params(_m_params)
         , m_envelope(_m_envelope)
     {
@@ -126,8 +126,8 @@ public:
             m_vertex_attribute[i] = _vertex_attribute[i];
         m_tet_attribute.m_attributes = tbb::concurrent_vector<TetAttributes>(_tet_attribute.size());
         for (auto i = 0; i < _tet_attribute.size(); i++) m_tet_attribute[i] = _tet_attribute[i];
-        for (auto i = 0; i < _tet_attribute.size(); i++) m_tet_attribute[i].m_quality = get_quality(tuple_from_tet(i));
-
+        for (auto i = 0; i < _tet_attribute.size(); i++)
+            m_tet_attribute[i].m_quality = get_quality(tuple_from_tet(i));
     }
 
     void compute_vertex_partition()
