@@ -11,6 +11,7 @@
 #include "wmtk/utils/InsertTriangleUtils.hpp"
 
 #include <igl/read_triangle_mesh.h>
+#include <wmtk/utils/Partitioning.h>
 
 using namespace wmtk;
 using namespace tetwild;

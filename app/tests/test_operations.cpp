@@ -7,6 +7,9 @@
 #include <catch2/catch.hpp>
 #include <wmtk/utils/io.hpp>
 #include "spdlog/common.h"
+#include <wmtk/utils/partition_utils.hpp>
+#include <wmtk/utils/Partitioning.h>
+
 #include "wmtk/utils/InsertTriangleUtils.hpp"
 
 using namespace wmtk;

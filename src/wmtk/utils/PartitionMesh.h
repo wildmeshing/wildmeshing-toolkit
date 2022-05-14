@@ -2,7 +2,6 @@
 #include <wmtk/TetMesh.h>
 #include <wmtk/TriMesh.h>
 #include <wmtk/utils/Morton.h>
-#include <wmtk/utils/Partitioning.h>
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>

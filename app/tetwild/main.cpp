@@ -1,10 +1,13 @@
 #include <TetWild.h>
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/Partitioning.h>
+#include <wmtk/utils/partition_utils.hpp>
 #include <wmtk/utils/ManifoldUtils.hpp>
 #include "Parameters.h"
 #include "common.h"
 #include "wmtk/utils/Logger.hpp"
+#include "wmtk/utils/InsertTriangleUtils.hpp"
+
 
 #include <remeshing/UniformRemeshing.h>
 #include <sec/ShortestEdgeCollapse.h>
@@ -17,16 +20,12 @@
 #include <CLI/CLI.hpp>
 #include <type_traits>
 #include "fastenvelope/FastEnvelope.h"
-#include "wmtk/utils/InsertTriangleUtils.hpp"
-
-#include "spdlog/common.h"
-
+#include <spdlog/common.h>
 #include <igl/Timer.h>
 #include <igl/is_edge_manifold.h>
 #include <igl/is_vertex_manifold.h>
 #include <igl/predicates/predicates.h>
 #include <igl/remove_duplicate_vertices.h>
-
 
 void reader(std::string input_surface, Eigen::MatrixXd& VI, Eigen::MatrixXi& FI)
 {
@@ -187,22 +186,12 @@ int main(int argc, char** argv)
     // initiate the tetwild mesh using the original envelop
     tetwild::TetWild mesh(params, exact_envelope, NUM_THREADS);
 
-    std::vector<size_t> partition_id(vsimp.size());
-    {
-        Eigen::MatrixXd new_F(fsimp.size(), 3);
-        for (int i = 0; i < fsimp.size(); i++) {
-            new_F(i, 0) = fsimp[i][0];
-            new_F(i, 1) = fsimp[i][1];
-            new_F(i, 2) = fsimp[i][2];
-        }
-
-        auto partitioned_v = wmtk::partition_mesh_vertices(new_F, NUM_THREADS);
-        for (auto i = 0; i < partition_id.size(); i++) partition_id[i] = partitioned_v[i];
-    }
     /////////////////////////////////////////////////////
 
     igl::Timer timer;
     timer.start();
+    std::vector<size_t> partition_id(vsimp.size());
+    wmtk::partition_vertex_morton(vsimp.size(), [&vsimp](auto i){return vsimp[i];}, NUM_THREADS, partition_id);
     /////////triangle insertion with the simplified mesh
     mesh.init_from_input_surface(vsimp, fsimp, partition_id);
 

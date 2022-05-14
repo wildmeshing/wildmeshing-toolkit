@@ -76,6 +76,10 @@ void wmtk::TetMesh::init(size_t n_vertices, const std::vector<std::array<size_t,
             m_vertex_connectivity[tets[i][j]].m_conn_tets.push_back(i);
         }
     }
+    p_vertex_attrs->resize(n_vertices);
+    p_tet_attrs->resize(tets.size());
+    p_face_attrs->resize(4*tets.size());
+    p_edge_attrs->resize(6*tets.size());
 }
 
 
@@ -383,6 +387,7 @@ wmtk::TetMesh::Tuple wmtk::TetMesh::tuple_from_vertex(size_t vid) const
     assert(vid < vert_capacity());
     if (m_vertex_connectivity[vid].m_is_removed) return Tuple();
 
+    if (m_vertex_connectivity[vid].m_is_removed) return Tuple();
     int tid = m_vertex_connectivity[vid].m_conn_tets[0];
     int j = m_tet_connectivity[tid].find(vid);
     int eid = m_map_vertex2edge[j];

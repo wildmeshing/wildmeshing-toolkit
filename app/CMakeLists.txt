@@ -8,6 +8,8 @@ option(WMTK_APP_SEC "surface shortest edge collapse" ON)
 option(WMTK_APP_QSLIM "surface qslim simplification" ON)
 option(WMTK_APP_UNIT_TESTS "unit tests for applications" ON)
 
+add_subdirectory(InteriorTetOpt)
+
 if (WMTK_APP_TETWILD)
 add_subdirectory(tetwild)
 endif()
