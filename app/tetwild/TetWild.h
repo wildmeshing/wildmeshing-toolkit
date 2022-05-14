@@ -295,8 +295,8 @@ public:
         bool collapse_limit_length = true);
     std::tuple<double, double> get_max_avg_energy();
     void filter_outside(
-        const std::vector<Vector3d>& vertices,
-        const std::vector<std::array<size_t, 3>>& faces,
+        const std::vector<Vector3d>& vertices = {},
+        const std::vector<std::array<size_t, 3>>& faces = {},
         bool remove_ouside = true);
 
     bool check_attributes();
