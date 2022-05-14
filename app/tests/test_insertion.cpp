@@ -6,6 +6,7 @@
 
 #include <catch2/catch.hpp>
 #include "Parameters.h"
+#include "sec/envelope/SampleEnvelope.hpp"
 #include "spdlog/common.h"
 #include "wmtk/ConcurrentTetMesh.h"
 #include "wmtk/utils/InsertTriangleUtils.hpp"
@@ -29,7 +30,7 @@ TEST_CASE("triangle-insertion", "[tetwild_operation]")
     for (int i = 0; i < V.rows(); i++) {
         vertices[i] = V.row(i);
     }
-    std::vector<fastEnvelope::Vector3i> env_faces(F.rows()); // todo: add new api for envelope
+    std::vector<Eigen::Vector3i> env_faces(F.rows()); // todo: add new api for envelope
     for (int i = 0; i < F.rows(); i++) {
         for (int j = 0; j < 3; j++) {
             faces[i][j] = F(i, j);
@@ -41,7 +42,7 @@ TEST_CASE("triangle-insertion", "[tetwild_operation]")
     Parameters params;
     params.lr = 1 / 15.0;
     params.init(vertices, faces);
-    fastEnvelope::FastEnvelope envelope;
+    wmtk::ExactEnvelope envelope;
     wmtk::logger().info("input_surface.params.eps {}", params.eps);
     envelope.init(vertices, env_faces, params.eps);
     
@@ -69,7 +70,7 @@ TEST_CASE("triangle-insertion-parallel", "[tetwild_operation][.]")
     for (int i = 0; i < V.rows(); i++) {
         vertices[i] = V.row(i);
     }
-    std::vector<fastEnvelope::Vector3i> env_faces(F.rows()); // todo: add new api for envelope
+    std::vector<Eigen::Vector3i> env_faces(F.rows()); // todo: add new api for envelope
     for (int i = 0; i < F.rows(); i++) {
         for (int j = 0; j < 3; j++) {
             faces[i][j] = F(i, j);
@@ -83,7 +84,7 @@ TEST_CASE("triangle-insertion-parallel", "[tetwild_operation][.]")
     params.lr = 1 / 30.0;
     params.init(vertices, faces);
     
-    fastEnvelope::FastEnvelope envelope;
+    wmtk::ExactEnvelope envelope;
     envelope.init(vertices, env_faces, params.eps);
     
     wmtk::remove_duplicates(vertices, faces, params.diag_l);

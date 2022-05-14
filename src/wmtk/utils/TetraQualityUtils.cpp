@@ -154,8 +154,8 @@ Eigen::Vector3d wmtk::gradient_descent_from_stack(
     std::function<void(const std::array<double, 12>&, Eigen::Vector3d&)> compute_jacobian)
 {
     assert(!assembles.empty());
-    auto& T = assembles.front();
-    Eigen::Vector3d old_pos(T[0], T[1], T[2]);
+    auto& T0 = assembles.front();
+    Eigen::Vector3d old_pos(T0[0], T0[1], T0[2]);
 
     auto energy_from_point = [&assembles, &compute_energy](const Eigen::Vector3d& pos) -> double {
         auto total_energy = 0.;

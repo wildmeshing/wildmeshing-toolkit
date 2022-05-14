@@ -194,7 +194,6 @@ bool SampleEnvelope::is_outside(const std::array<Eigen::Vector3d, 3>& tri)
     size_t num_queries = 0;
     size_t num_samples = ps.size();
 
-    GEO::vec3 current_point = ps[0];
     GEO::vec3 nearest_point;
     double sq_dist = std::numeric_limits<double>::max();
     GEO::index_t prev_facet = GEO::NO_FACET;

@@ -28,7 +28,7 @@ TEST_CASE("mesh_improvement", "[tetwild_operation][.slow]")
     for (int i = 0; i < V.rows(); i++) {
         vertices[i] = V.row(i);
     }
-    std::vector<fastEnvelope::Vector3i> env_faces(F.rows()); // todo: add new api for envelope
+    std::vector<Eigen::Vector3i> env_faces(F.rows()); // todo: add new api for envelope
     for (int i = 0; i < F.rows(); i++) {
         for (int j = 0; j < 3; j++) {
             faces[i][j] = F(i, j);
@@ -40,7 +40,7 @@ TEST_CASE("mesh_improvement", "[tetwild_operation][.slow]")
     Parameters params;
     params.lr = 1 / 15.0;
     params.init(vertices, faces);
-    fastEnvelope::FastEnvelope envelope;
+    wmtk::Envelope envelope;
     envelope.init(vertices, env_faces, params.eps);
 
     wmtk::remove_duplicates(vertices, faces, params.diag_l);
@@ -71,7 +71,7 @@ TEST_CASE("edge_splitting", "[tetwild_operation]")
     params.lr = 1 / 10.;
     params.init(Vector3d(0, 0, 0), Vector3d(1, 1, 1));
 
-    fastEnvelope::FastEnvelope envelope;
+    wmtk::Envelope envelope;
     TetWild tetwild(params, envelope);
 
     std::vector<VertexAttributes> vertices(4);
@@ -105,7 +105,7 @@ TEST_CASE("edge_collapsing", "[tetwild_operation]")
     params.lr = 1 / 20.;
     params.init(Vector3d(0, 0, 0), Vector3d(1, 1, 1));
 
-    fastEnvelope::FastEnvelope envelope;
+    wmtk::Envelope envelope;
     TetWild tetwild(params, envelope);
 
 
@@ -156,7 +156,7 @@ TEST_CASE("inversion-check-rational-tetwild", "[tetwild_operation]")
     params.lr = 1 / 10.;
     params.init(Vector3d(0, 0, 0), Vector3d(1, 1, 1));
 
-    fastEnvelope::FastEnvelope envelope;
+    wmtk::Envelope envelope;
     TetWild tetwild(params, envelope);
 
     std::vector<VertexAttributes> vertices(4);
@@ -189,7 +189,7 @@ TEST_CASE("optimize-bunny-tw", "[tetwild_operation][.slow]")
     params.lr = 1 / 10.;
     params.init(Vector3d(0, 0, 0), Vector3d(1, 1, 1));
 
-    fastEnvelope::FastEnvelope envelope;
+    wmtk::Envelope envelope;
     TetWild tetwild(params, envelope);
 
     tetwild.init(vec_attrs.size(), tets);

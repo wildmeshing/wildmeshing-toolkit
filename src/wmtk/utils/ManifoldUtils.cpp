@@ -1,13 +1,9 @@
 #include "ManifoldUtils.hpp"
-
 #include <wmtk/utils/VectorUtils.h>
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
 #include <lagrange/mesh_cleanup/resolve_nonmanifoldness.h>
-#include <wmtk/utils/EnableWarnings.hpp>
-// clang-format on
-
 #include <igl/extract_manifold_patches.h>
 #include <igl/is_edge_manifold.h>
 #include <igl/remove_unreferenced.h>
@@ -15,6 +11,8 @@
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 #include <Eigen/Core>
+#include <wmtk/utils/EnableWarnings.hpp>
+// clang-format on
 
 #include <vector>
 

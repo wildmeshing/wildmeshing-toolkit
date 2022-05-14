@@ -14,7 +14,7 @@ TEST_CASE("smooth_in_single_tet", "[tetwild_operation]")
     Parameters params;
     params.init(Vector3d(0, 0, 0), Vector3d(1, 1, 1));
 
-    fastEnvelope::FastEnvelope envelope;
+    wmtk::Envelope envelope;
     TetWild tetwild(params, envelope);
     std::vector<VertexAttributes> vertices(4);
     vertices[0].m_posf = Vector3d(0.1, 0, 0);
@@ -44,7 +44,7 @@ TEST_CASE("smooth_double_tet", "[tetwild_operation]")
     Parameters params;
     params.init(Vector3d(0, 0, 0), Vector3d(1, 1, 1));
 
-    fastEnvelope::FastEnvelope envelope;
+    wmtk::Envelope envelope;
     TetWild tetwild(params, envelope);
     std::vector<VertexAttributes> vertices(5);
     vertices[0].m_posf = Vector3d(0.1, 0, 0);

@@ -1,4 +1,5 @@
 #include <catch2/catch.hpp>
+#include "sec/envelope/SampleEnvelope.hpp"
 
 #include <TetWild.h>
 
@@ -14,7 +15,7 @@ TEST_CASE("tetwild_file_write", "[tetwild_operation]")
     params.lr = 1 / 5.;
     params.init(Vector3d(0, 0, 0), Vector3d(1, 1, 1));
 
-    fastEnvelope::FastEnvelope envelope;
+    wmtk::Envelope envelope;
     TetWild tetwild(params, envelope);
 
     std::vector<VertexAttributes> vertices(4);
