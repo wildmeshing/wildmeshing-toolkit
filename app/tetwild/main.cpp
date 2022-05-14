@@ -195,7 +195,7 @@ int main(int argc, char** argv)
     /////////mesh improvement
     mesh.mesh_improvement(max_its);
     ////winding number
-    mesh.filter_outside(vsimp, fsimp);
+    mesh.filter_outside({}, {}, true);
     double time = timer.getElapsedTime();
     wmtk::logger().info("total time {}s", time);
 
