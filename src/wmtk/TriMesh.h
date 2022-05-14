@@ -54,6 +54,14 @@ public:
         {
             update_hash(m);
         }
+        Tuple(size_t vid, size_t eid, size_t fid)
+            : m_vid(vid)
+            , m_eid(eid)
+            , m_fid(fid)
+
+        {
+            m_hash = -1;
+        }
 
 
         /**

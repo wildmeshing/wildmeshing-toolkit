@@ -260,6 +260,7 @@ bool UniformRemeshing::split_remeshing(double L)
         };
 
         do {
+            count_success.store(0, std::memory_order_release);
             wmtk::logger().info("Prepare to split {}", collect_all_ops.size());
             executor(*this, collect_all_ops);
             wmtk::logger().info(
