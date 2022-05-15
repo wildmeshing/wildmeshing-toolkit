@@ -521,6 +521,7 @@ public:
      * @return one-ring
      */
     std::vector<Tuple> get_one_ring_tets_for_vertex(const Tuple& t) const;
+    std::vector<size_t> get_one_ring_tids_for_vertex(const Tuple& t) const;
 
     /**
      * @brief Get the one ring vertices for a vertex
