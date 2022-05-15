@@ -344,14 +344,6 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
         rollback_protected_attributes();
         return false;
     }
-
-    // update the edge_split_table
-    for (auto nt : new_tris) {
-        auto tmptup = (nt.switch_vertex(*this)).switch_edge(*this);
-        if (tmptup.eid(*this) < split_edge_number() &&
-            get_split_edge_uptodate(tmptup.eid(*this)).vid(*this) != -1)
-            set_split_edge_uptodate(tmptup);
-    }
     release_protect_attributes();
     return true;
 }

@@ -268,7 +268,9 @@ public:
 
     std::vector<TriMesh::Tuple> new_edges_after(const std::vector<TriMesh::Tuple>& t) const;
     std::vector<TriMesh::Tuple> new_edges_after_swap(const TriMesh::Tuple& t) const;
-    std::vector<TriMesh::Tuple> new_edges_after_split(const std::vector<TriMesh::Tuple>& t) const;
+    std::vector<TriMesh::Tuple> new_edges_after_split(
+        const std::vector<TriMesh::Tuple>& t,
+        const size_t vid_threshold) const;
 
 
     bool split_edge_before(const Tuple& t) override

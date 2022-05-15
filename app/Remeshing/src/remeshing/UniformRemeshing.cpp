@@ -43,13 +43,17 @@ std::vector<TriMesh::Tuple> UniformRemeshing::new_edges_after(
 }
 
 std::vector<TriMesh::Tuple> UniformRemeshing::new_edges_after_split(
-    const std::vector<TriMesh::Tuple>& tris) const
+    const std::vector<TriMesh::Tuple>& tris,
+    const size_t vid_threshold) const
 {
     // only push back the renewed original edges
     std::vector<TriMesh::Tuple> new_edges;
     auto vid = tris[0].vid(*this);
     for (auto t : tris) {
-        new_edges.push_back((t.switch_vertex(*this)).switch_edge(*this));
+        auto tmptup = (t.switch_vertex(*this)).switch_edge(*this);
+        if (tmptup.vid(*this) < vid_threshold &&
+            (tmptup.switch_vertex(*this)).vid(*this) < vid_threshold)
+            new_edges.push_back(tmptup);
     }
     wmtk::unique_edge_tuples(*this, new_edges);
     return new_edges;
@@ -222,12 +226,9 @@ bool UniformRemeshing::collapse_remeshing(double L)
 bool UniformRemeshing::split_remeshing(double L)
 {
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
-    create_split_edge_lookup();
-    for (auto& loc : get_edges()) {
-        collect_all_ops.emplace_back("edge_split", loc);
-        set_split_edge_uptodate(loc);
-    }
-    // wmtk::logger().info("size for edges to be split is {}", collect_all_ops.size());
+    for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_splite", loc);
+    size_t vid_threshold = vert_capacity();
+    wmtk::logger().info("size for edges to be split is {}", collect_all_ops.size());
     std::atomic_int count_success = 0;
     auto collect_failure_ops = std::vector<std::pair<std::string, Tuple>>();
     auto setup_and_execute = [&](auto executor) {
@@ -236,8 +237,7 @@ bool UniformRemeshing::split_remeshing(double L)
         executor.lock_vertices = edge_locker;
 
         executor.renew_neighbor_tuples = [&](auto& m, auto op, auto& tris) {
-            count_success++;
-            auto edges = m.new_edges_after_split(tris);
+            auto edges = m.new_edges_after_split(tris, vid_threshold);
             auto optup = std::vector<std::pair<std::string, TriMesh::Tuple>>();
             for (auto& e : edges) optup.emplace_back(op, e);
             return optup;
@@ -251,26 +251,7 @@ bool UniformRemeshing::split_remeshing(double L)
             if (val < 0) return false;
             return true;
         };
-        executor.on_fail = [&](auto& m, auto op, auto& t) {
-            if (!t.is_hash_valid(m)) {
-                if (t.eid(m) < split_edge_number() &&
-                    get_split_edge_uptodate(t.eid(m)).vid(m) != -1)
-                    collect_failure_ops.emplace_back(op, get_split_edge_uptodate(t.eid(m)));
-            }
-        };
-
-        do {
-            count_success.store(0, std::memory_order_release);
-            wmtk::logger().info("Prepare to split {}", collect_all_ops.size());
-            executor(*this, collect_all_ops);
-            wmtk::logger().info(
-                "split {}, retrying failed {}",
-                count_success,
-                collect_failure_ops.size());
-            collect_all_ops.clear();
-            for (auto& item : collect_failure_ops) collect_all_ops.emplace_back(item);
-            collect_failure_ops.clear();
-        } while (count_success.load(std::memory_order_acquire) > 0);
+        executor(*this, collect_all_ops);
     };
     if (NUM_THREADS > 0) {
         auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kPartition>();
