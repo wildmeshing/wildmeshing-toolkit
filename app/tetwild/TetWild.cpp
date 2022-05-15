@@ -40,7 +40,6 @@ void tetwild::TetWild::mesh_improvement(int max_its)
     ZoneScopedN("meshimprovementmain");
 
     compute_vertex_partition_morton();
-    std::vector<int> partition_size(NUM_THREADS, 0);
 
     wmtk::logger().info("========it pre========");
     local_operations({{0, 1, 0, 0}}, false);
