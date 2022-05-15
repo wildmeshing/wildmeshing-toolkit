@@ -235,16 +235,6 @@ public:
 
     Eigen::Vector3d tangential_smooth(const Tuple& t);
 
-
-    // bool is_edge_freeze(const Tuple& t)
-    // {
-    //     if (vertex_attrs[t.vid(*this)].freeze ||
-    //         vertex_attrs[t.switch_vertex(*this).vid(*this)].freeze)
-    //         return true;
-    //     return false;
-    // }
-
-
     bool collapse_edge_before(const Tuple& t) override
     {
         if (!TriMesh::collapse_edge_before(t)) return false;

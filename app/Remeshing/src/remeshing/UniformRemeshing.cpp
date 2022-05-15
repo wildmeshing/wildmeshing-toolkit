@@ -226,11 +226,9 @@ bool UniformRemeshing::collapse_remeshing(double L)
 bool UniformRemeshing::split_remeshing(double L)
 {
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
-    for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_splite", loc);
+    for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_split", loc);
     size_t vid_threshold = vert_capacity();
     wmtk::logger().info("size for edges to be split is {}", collect_all_ops.size());
-    std::atomic_int count_success = 0;
-    auto collect_failure_ops = std::vector<std::pair<std::string, Tuple>>();
     auto setup_and_execute = [&](auto executor) {
         executor.num_threads = NUM_THREADS;
 

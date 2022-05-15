@@ -47,7 +47,8 @@ TEST_CASE("split_each_edge", "[test_remeshing]")
     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}};
     std::vector<size_t> modified_v;
     m.create_mesh(3, tris, modified_v, 0);
-    m.uniform_remeshing(0.1, 5);
+    m.split_remeshing(0.1);
+    REQUIRE(m.vert_capacity() == 6);
 }
 
 TEST_CASE("test_swap", "[test_remeshing]")
@@ -114,14 +115,10 @@ TEST_CASE("test_split", "[test_remeshing]")
     UniformRemeshing m(v);
     std::vector<size_t> modified_v;
     m.create_mesh(V.rows(), tri, modified_v, 0);
-
-    auto edges = m.get_edges();
-    for (auto edge : edges) {
-        if (!edge.is_valid(m)) continue;
-        std::vector<TriMesh::Tuple> dummy;
-        m.split_edge(edge, dummy);
-    }
+    int target_vertnum = m.vert_capacity() + m.get_edges().size();
+    m.split_remeshing(m.average_len_valen()[0] * 0.1);
     REQUIRE(m.check_mesh_connectivity_validity());
+    REQUIRE(m.vert_capacity() == target_vertnum);
 }
 
 TEST_CASE("remeshing_hanging", "[test_remeshing]")
