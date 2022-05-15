@@ -7,7 +7,7 @@
 
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/Partitioning.h>
-#include <fstream>
+#include <memory>
 #include <wmtk/utils/ManifoldUtils.hpp>
 #include <wmtk/utils/partition_utils.hpp>
 #include "wmtk/utils/InsertTriangleUtils.hpp"
@@ -76,6 +76,7 @@ int main(int argc, char** argv)
     std::string input_path = WMT_DATA_DIR "/37322.stl";
     std::string output_path = "./";
     bool skip_simplify = false;
+    bool use_sample_envelope = false;
     int NUM_THREADS = 1;
     int max_its = 10;
 
@@ -86,6 +87,8 @@ int main(int argc, char** argv)
     app.add_option("--max-its", max_its, "max # its");
     app.add_option("-e, --epsr", params.epsr, "relative eps wrt diag of bbox");
     app.add_option("-r, --rlen", params.lr, "relative ideal edge length wrt diag of bbox");
+
+    app.add_flag("--sample-envelope", use_sample_envelope, "use_sample_envelope for both simp and optim");
     CLI11_PARSE(app, argc, argv);
 
     Eigen::MatrixXd inV, V;
@@ -182,7 +185,13 @@ int main(int argc, char** argv)
     }
 
     // initiate the tetwild mesh using the original envelop
-    tetwild::TetWild mesh(params, exact_envelope, NUM_THREADS);
+    wmtk::Envelope* ptr_env;
+    if (use_sample_envelope) {
+        ptr_env = &(surf_mesh.m_envelope);
+    } else {
+        ptr_env = &(exact_envelope);
+    }
+    tetwild::TetWild mesh(params, *ptr_env, NUM_THREADS);
 
     /////////////////////////////////////////////////////
 
