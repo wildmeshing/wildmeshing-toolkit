@@ -119,7 +119,7 @@ auto process_points = [&args = args]() {
     har_tet.consolidate_mesh();
     // auto [E1, cnt1] = stats(har_tet);
     // wmtk::logger().info("E {} -> {} cnt {} -> {}", E0, E1, cnt0, cnt1);
-    // har_tet.output_mesh(output);
+    har_tet.output_mesh(output);
 };
 
 int main(int argc, char** argv)

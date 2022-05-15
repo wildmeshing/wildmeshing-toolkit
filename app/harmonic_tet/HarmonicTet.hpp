@@ -43,8 +43,6 @@ public:
 
         vertex_attrs.resize(_vertex_attribute.size());
 
-            
-
         NUM_THREADS = num_threads;
         init(_vertex_attribute.size(), tets);
 

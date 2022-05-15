@@ -391,6 +391,7 @@ int HarmonicTet::swap_all()
 
 void HarmonicTet::swap_all_edges(bool parallel)
 {
+    if (NUM_THREADS == 0) parallel = false;
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
 
     auto collect_tuples = tbb::concurrent_vector<Tuple>();
