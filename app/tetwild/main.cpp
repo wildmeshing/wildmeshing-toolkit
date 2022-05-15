@@ -1,29 +1,30 @@
-#include "TetWild.h"
-#include "Parameters.h"
-#include "common.h"
-#include "sec/envelope/SampleEnvelope.hpp"
 #include <remeshing/UniformRemeshing.h>
 #include <sec/ShortestEdgeCollapse.h>
+#include "Parameters.h"
+#include "TetWild.h"
+#include "common.h"
+#include "sec/envelope/SampleEnvelope.hpp"
 
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/Partitioning.h>
-#include <wmtk/utils/partition_utils.hpp>
+#include <memory>
 #include <wmtk/utils/ManifoldUtils.hpp>
-#include "wmtk/utils/Logger.hpp"
+#include <wmtk/utils/partition_utils.hpp>
 #include "wmtk/utils/InsertTriangleUtils.hpp"
+#include "wmtk/utils/Logger.hpp"
 
 #include <geogram/mesh/mesh_io.h>
-#include <igl/boundary_facets.h>
-#include <igl/read_triangle_mesh.h>
-#include <igl/remove_unreferenced.h>
-#include <igl/write_triangle_mesh.h>
-#include <CLI/CLI.hpp>
-#include <spdlog/common.h>
 #include <igl/Timer.h>
+#include <igl/boundary_facets.h>
 #include <igl/is_edge_manifold.h>
 #include <igl/is_vertex_manifold.h>
 #include <igl/predicates/predicates.h>
+#include <igl/read_triangle_mesh.h>
 #include <igl/remove_duplicate_vertices.h>
+#include <igl/remove_unreferenced.h>
+#include <igl/write_triangle_mesh.h>
+#include <spdlog/common.h>
+#include <CLI/CLI.hpp>
 
 void reader(std::string input_surface, Eigen::MatrixXd& VI, Eigen::MatrixXi& FI)
 {
@@ -75,6 +76,7 @@ int main(int argc, char** argv)
     std::string input_path = WMT_DATA_DIR "/37322.stl";
     std::string output_path = "./";
     bool skip_simplify = false;
+    bool use_sample_envelope = false;
     int NUM_THREADS = 1;
     int max_its = 10;
 
@@ -85,6 +87,8 @@ int main(int argc, char** argv)
     app.add_option("--max-its", max_its, "max # its");
     app.add_option("-e, --epsr", params.epsr, "relative eps wrt diag of bbox");
     app.add_option("-r, --rlen", params.lr, "relative ideal edge length wrt diag of bbox");
+
+    app.add_flag("--sample-envelope", use_sample_envelope, "use_sample_envelope for both simp and optim");
     CLI11_PARSE(app, argc, argv);
 
     Eigen::MatrixXd inV, V;
@@ -173,7 +177,7 @@ int main(int argc, char** argv)
     params.init(box_min, box_max);
     wmtk::remove_duplicates(vsimp, fsimp, params.diag_l);
 
-	wmtk::ExactEnvelope exact_envelope;
+    wmtk::ExactEnvelope exact_envelope;
     {
         std::vector<Eigen::Vector3i> tempF(fsimp.size());
         for (auto i = 0; i < tempF.size(); i++) tempF[i] << fsimp[i][0], fsimp[i][1], fsimp[i][2];
@@ -181,14 +185,24 @@ int main(int argc, char** argv)
     }
 
     // initiate the tetwild mesh using the original envelop
-    tetwild::TetWild mesh(params, exact_envelope, NUM_THREADS);
+    wmtk::Envelope* ptr_env;
+    if (use_sample_envelope) {
+        ptr_env = &(surf_mesh.m_envelope);
+    } else {
+        ptr_env = &(exact_envelope);
+    }
+    tetwild::TetWild mesh(params, *ptr_env, NUM_THREADS);
 
     /////////////////////////////////////////////////////
 
     igl::Timer timer;
     timer.start();
     std::vector<size_t> partition_id(vsimp.size());
-    wmtk::partition_vertex_morton(vsimp.size(), [&vsimp](auto i){return vsimp[i];}, std::max(NUM_THREADS, 1), partition_id);
+    wmtk::partition_vertex_morton(
+        vsimp.size(),
+        [&vsimp](auto i) { return vsimp[i]; },
+        std::max(NUM_THREADS, 1),
+        partition_id);
     /////////triangle insertion with the simplified mesh
     mesh.init_from_input_surface(vsimp, fsimp, partition_id);
 
@@ -196,8 +210,13 @@ int main(int argc, char** argv)
     mesh.mesh_improvement(max_its);
     ////winding number
     mesh.filter_outside({}, {}, true);
+    mesh.consolidate_mesh();
     double time = timer.getElapsedTime();
     wmtk::logger().info("total time {}s", time);
+    if (mesh.tet_size() == 0) {
+        wmtk::logger().critical("Empty Output after Filter!");
+        return 1;
+    }
 
     /////////output
     auto [max_energy, avg_energy] = mesh.get_max_avg_energy();
