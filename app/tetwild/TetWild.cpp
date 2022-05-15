@@ -328,6 +328,15 @@ void tetwild::TetWild::filter_outside(
         auto F0 = F;
         Eigen::VectorXi C;
         bfs_orient(F0, F, C);
+        auto wn = igl::winding_number(V, F,  m_params.box_max);
+        if (wn < 0.5) { // inside out correction
+            for (auto i=0; i<F.rows(); i++){
+                auto temp = F(i,0);
+                F(i,0) = F(i,1);
+                F(i,1) = temp;
+            }
+        }
+        
     }
 
     const auto& tets = get_tets();

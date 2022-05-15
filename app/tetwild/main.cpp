@@ -201,8 +201,13 @@ int main(int argc, char** argv)
     mesh.mesh_improvement(max_its);
     ////winding number
     mesh.filter_outside({}, {}, true);
+    mesh.consolidate_mesh();
     double time = timer.getElapsedTime();
     wmtk::logger().info("total time {}s", time);
+    if (mesh.tet_size() == 0) {
+        wmtk::logger().critical("Empty Output after Filter!");
+        return 1;
+    }
 
     /////////output
     auto [max_energy, avg_energy] = mesh.get_max_avg_energy();
