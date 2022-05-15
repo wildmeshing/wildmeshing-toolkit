@@ -48,15 +48,27 @@ std::vector<TriMesh::Tuple> UniformRemeshing::new_edges_after_split(
 {
     // only push back the renewed original edges
     std::vector<TriMesh::Tuple> new_edges;
-    auto vid = tris[0].vid(*this);
     for (auto t : tris) {
         auto tmptup = (t.switch_vertex(*this)).switch_edge(*this);
         if (tmptup.vid(*this) < vid_threshold &&
             (tmptup.switch_vertex(*this)).vid(*this) < vid_threshold)
             new_edges.push_back(tmptup);
     }
-    wmtk::unique_edge_tuples(*this, new_edges);
     return new_edges;
+}
+
+std::vector<TriMesh::Tuple> UniformRemeshing::new_edges2_after_split(
+    const std::vector<TriMesh::Tuple>& tris) const
+{
+    // only push back the renewed original edges
+    std::vector<TriMesh::Tuple> new_edges2;
+    for (auto t : tris) {
+        new_edges2.push_back(t);
+        new_edges2.push_back(t.switch_edge(*this));
+    }
+
+    wmtk::unique_edge_tuples(*this, new_edges2);
+    return new_edges2;
 }
 
 bool UniformRemeshing::collapse_edge_after(const TriMesh::Tuple& t)
@@ -229,7 +241,33 @@ bool UniformRemeshing::split_remeshing(double L)
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_split", loc);
     size_t vid_threshold = vert_capacity();
     wmtk::logger().info("size for edges to be split is {}", collect_all_ops.size());
+    auto edges2 = std::vector<std::pair<std::string, TriMesh::Tuple>>();
     auto setup_and_execute = [&](auto executor) {
+        executor.num_threads = NUM_THREADS;
+
+        executor.lock_vertices = edge_locker;
+
+        executor.renew_neighbor_tuples = [&](auto& m, auto op, auto& tris) {
+            auto edges = m.new_edges_after_split(tris, vid_threshold);
+            for (auto e2 : m.new_edges2_after_split(tris)) edges2.emplace_back(op, e2);
+            auto optup = std::vector<std::pair<std::string, TriMesh::Tuple>>();
+            for (auto& e : edges) optup.emplace_back(op, e);
+            return optup;
+        };
+        executor.priority = [&](auto& m, auto _, auto& e) {
+            return m.compute_edge_cost_split(e, L);
+        };
+        executor.should_renew = [](auto val) { return (val > 0); };
+        executor.is_weight_up_to_date = [](auto& m, auto& ele) {
+            auto& [val, op, e] = ele;
+            if (val < 0) return false;
+            return true;
+        };
+        executor(*this, collect_all_ops);
+    };
+
+
+    auto setup_and_execute2 = [&](auto executor) {
         executor.num_threads = NUM_THREADS;
 
         executor.lock_vertices = edge_locker;
@@ -249,14 +287,19 @@ bool UniformRemeshing::split_remeshing(double L)
             if (val < 0) return false;
             return true;
         };
-        executor(*this, collect_all_ops);
+        executor(*this, edges2);
     };
+
     if (NUM_THREADS > 0) {
         auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kPartition>();
         setup_and_execute(executor);
+        vid_threshold = vert_capacity();
+        setup_and_execute2(executor);
     } else {
         auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
+        vid_threshold = vert_capacity();
+        setup_and_execute2(executor);
     }
 
     return true;

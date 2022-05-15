@@ -256,11 +256,13 @@ public:
     }
     bool swap_edge_after(const Tuple& t) override;
 
-    std::vector<TriMesh::Tuple> new_edges_after(const std::vector<TriMesh::Tuple>& t) const;
+    std::vector<TriMesh::Tuple> new_edges_after(const std::vector<TriMesh::Tuple>& tris) const;
     std::vector<TriMesh::Tuple> new_edges_after_swap(const TriMesh::Tuple& t) const;
     std::vector<TriMesh::Tuple> new_edges_after_split(
-        const std::vector<TriMesh::Tuple>& t,
+        const std::vector<TriMesh::Tuple>& tris,
         const size_t vid_threshold) const;
+    std::vector<TriMesh::Tuple> new_edges2_after_split(
+        const std::vector<TriMesh::Tuple>& tris) const;
 
 
     bool split_edge_before(const Tuple& t) override
