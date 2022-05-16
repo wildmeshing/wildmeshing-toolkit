@@ -4,6 +4,7 @@
 #include <wmtk/utils/VectorUtils.h>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+#include <atomic>
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
 #include <igl/Timer.h>
@@ -96,15 +97,15 @@ double UniformRemeshing::compute_edge_cost_split(const TriMesh::Tuple& t, double
 double UniformRemeshing::compute_vertex_valence(const TriMesh::Tuple& t) const
 {
     std::vector<std::pair<TriMesh::Tuple, int>> valences(3);
-    valences[0] = std::make_pair(t, get_one_ring_tris_for_vertex(t).size());
+    valences[0] = std::make_pair(t, get_valence_for_vertex(t));
     auto t2 = t.switch_vertex(*this);
-    valences[1] = std::make_pair(t2, get_one_ring_tris_for_vertex(t2).size());
+    valences[1] = std::make_pair(t2, get_valence_for_vertex(t2));
     auto t3 = (t.switch_edge(*this)).switch_vertex(*this);
-    valences[2] = std::make_pair(t3, get_one_ring_tris_for_vertex(t3).size());
+    valences[2] = std::make_pair(t3, get_valence_for_vertex(t3));
 
     if ((t.switch_face(*this)).has_value()) {
         auto t4 = (((t.switch_face(*this)).value()).switch_edge(*this)).switch_vertex(*this);
-        valences.emplace_back(t4, get_one_ring_tris_for_vertex(t4).size());
+        valences.emplace_back(t4, get_valence_for_vertex(t4));
     }
     double cost_before_swap = 0.0;
     double cost_after_swap = 0.0;
@@ -164,7 +165,6 @@ std::vector<double> UniformRemeshing::average_len_valen()
 std::vector<TriMesh::Tuple> UniformRemeshing::new_edges_after_swap(const TriMesh::Tuple& t) const
 {
     std::vector<TriMesh::Tuple> new_edges;
-    std::vector<size_t> one_ring_fid;
 
     new_edges.push_back(t.switch_edge(*this));
     new_edges.push_back((t.switch_face(*this).value()).switch_edge(*this));
@@ -272,6 +272,28 @@ bool UniformRemeshing::split_remeshing(double L)
     return true;
 }
 
+bool UniformRemeshing::smooth_all_vertices()
+{
+    auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
+    for (auto& loc : get_edges()) collect_all_ops.emplace_back("vertex_smooth", loc);
+
+    auto setup_and_execute = [&](auto executor) {
+        executor.num_threads = NUM_THREADS;
+        executor.lock_vertices = [](auto& m, const auto& e, int task_id) {
+            return m.try_set_vertex_mutex_one_ring(e, task_id);
+        };
+        executor(*this, collect_all_ops);
+    };
+    if (NUM_THREADS > 0) {
+        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kPartition>();
+        setup_and_execute(executor);
+    } else {
+        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kSeq>();
+        setup_and_execute(executor);
+    }
+
+    return true;
+}
 
 bool UniformRemeshing::swap_remeshing()
 {
@@ -397,7 +419,6 @@ bool UniformRemeshing::uniform_remeshing(double L, int iterations)
     // wmtk::logger().info("avg len is: {}", properties[0]);
     wmtk::logger().info("target len is: {}", L);
 
-    wmtk::logger().info("input mesh is mani {}", check_edge_manifold());
 
     igl::Timer timer;
     // while ((properties[0] - L) * (properties[0] - L) > 1e-8 && cnt < iterations) {
@@ -418,11 +439,11 @@ bool UniformRemeshing::uniform_remeshing(double L, int iterations)
         wmtk::logger().info("--------swap time-------: {} ms", timer.getElapsedTimeInMilliSec());
         // smoothing
         timer.start();
-        auto vertices = get_vertices();
-        wmtk::logger().info("--------smooth get vertices time-------: {} ms", timer.getElapsedTimeInMilliSec());
-        timer.start();
-        for (auto& loc : vertices) smooth_vertex(loc);
-        // smooth_all_vertices();
+        // auto vertices = get_vertices();
+        // wmtk::logger().info("--------smooth get vertices time-------: {} ms", timer.getElapsedTimeInMilliSec());
+        // timer.start();
+        smooth_all_vertices();
+        // for (auto& loc : vertices) smooth_vertex(loc);
         wmtk::logger().info("--------smooth time-------: {} ms", timer.getElapsedTimeInMilliSec());
 
         // properties = average_len_valen();
