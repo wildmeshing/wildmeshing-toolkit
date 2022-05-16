@@ -122,7 +122,6 @@ bool tetwild::TetWild::collapse_edge_before(const Tuple& loc) // input is an edg
         if (!VA[v2_id].m_is_on_surface && m_envelope.is_outside(VA[v2_id].m_posf)) return false;
     }
 
-    // todo: store surface info into cache
 
     auto n1_locs = get_one_ring_tets_for_vertex(loc);
     auto n12_locs = get_incident_tets_for_edge(loc); // todo: duplicated computation

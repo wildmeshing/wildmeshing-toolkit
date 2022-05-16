@@ -215,7 +215,8 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
     return is_hit_min_edge_length.load();
 }
 
-void bfs_orient(const Eigen::MatrixXi &F, Eigen::MatrixXi &FF, Eigen::VectorXi &C) {
+void bfs_orient(const Eigen::MatrixXi& F, Eigen::MatrixXi& FF, Eigen::VectorXi& C)
+{
     Eigen::SparseMatrix<int> A;
     igl::orientable_patches(F, C, A);
 
@@ -226,12 +227,9 @@ void bfs_orient(const Eigen::MatrixXi &F, Eigen::MatrixXi &FF, Eigen::VectorXi &
     Eigen::VectorXi seen = Eigen::VectorXi::Zero(m);
 
     // Edge sets
-    const int ES[3][2] = {{1, 2},
-                          {2, 0},
-                          {0, 1}};
+    const int ES[3][2] = {{1, 2}, {2, 0}, {0, 1}};
 
-    if (((void *) &FF) != ((void *) &F))
-        FF = F;
+    if (((void*)&FF) != ((void*)&F)) FF = F;
 
     // loop over patches
     for (int c = 0; c < num_cc; c++) {
@@ -240,22 +238,19 @@ void bfs_orient(const Eigen::MatrixXi &F, Eigen::MatrixXi &FF, Eigen::VectorXi &
         int cnt = 0;
         for (int f = 0; f < FF.rows(); f++) {
             if (C(f) == c) {
-                if (cnt == 0)
-                    Q.push(f);
+                if (cnt == 0) Q.push(f);
                 cnt++;
-//                break;
+                //                break;
             }
         }
-        if (cnt < 5)
-            continue;
+        if (cnt < 5) continue;
 
         int cnt_inverted = 0;
         assert(!Q.empty());
         while (!Q.empty()) {
             const int f = Q.front();
             Q.pop();
-            if (seen(f) > 0)
-                continue;
+            if (seen(f) > 0) continue;
 
             seen(f)++;
             // loop over neighbors of f
@@ -285,12 +280,10 @@ void bfs_orient(const Eigen::MatrixXi &F, Eigen::MatrixXi &FF, Eigen::VectorXi &
                 }
             }
         }
-        if (cnt_inverted < cnt / 2)
-            continue;
+        if (cnt_inverted < cnt / 2) continue;
 
         for (int f = 0; f < FF.rows(); f++) {
-            if (C(f) == c)
-                FF.row(f) = FF.row(f).reverse().eval();
+            if (C(f) == c) FF.row(f) = FF.row(f).reverse().eval();
         }
     }
 }
@@ -314,7 +307,7 @@ void tetwild::TetWild::filter_outside(
         }
     } else { // use track to filter
         auto outface = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
-        V.resize(vert_capacity(), 3);
+        V = Eigen::MatrixXd::Zero(vert_capacity(), 3);
         for (auto v : get_vertices()) {
             auto vid = v.vid(*this);
             V.row(vid) = m_vertex_attribute[vid].m_posf;
@@ -327,15 +320,6 @@ void tetwild::TetWild::filter_outside(
         auto F0 = F;
         Eigen::VectorXi C;
         bfs_orient(F0, F, C);
-        auto wn = igl::winding_number(V, F,  m_params.box_max);
-        if (wn < 0.5) { // inside out correction
-            for (auto i=0; i<F.rows(); i++){
-                auto temp = F(i,0);
-                F(i,0) = F(i,1);
-                F(i,1) = temp;
-            }
-        }
-        
     }
 
     const auto& tets = get_tets();
@@ -348,6 +332,22 @@ void tetwild::TetWild::filter_outside(
 
     Eigen::VectorXd W;
     igl::winding_number(V, F, C, W);
+
+    if (W.maxCoeff() <= 0.5) {
+        // all removed, let's invert.
+        wmtk::logger().info("Correcting");
+        for (auto i = 0; i < F.rows(); i++) {
+            auto temp = F(i, 0);
+            F(i, 0) = F(i, 1);
+            F(i, 1) = temp;
+        }
+        igl::winding_number(V, F, C, W);
+    }
+
+    if (W.maxCoeff() <= 0.5) {
+        wmtk::logger().critical("Still Inverting..., Empty Output");
+        return;
+    }
 
     std::vector<size_t> rm_tids;
     for (int i = 0; i < W.rows(); i++) {
