@@ -88,17 +88,23 @@ int main(int argc, char** argv)
     app.add_option("-e, --epsr", params.epsr, "relative eps wrt diag of bbox");
     app.add_option("-r, --rlen", params.lr, "relative ideal edge length wrt diag of bbox");
 
-    app.add_flag("--sample-envelope", use_sample_envelope, "use_sample_envelope for both simp and optim");
+    app.add_flag(
+        "--sample-envelope",
+        use_sample_envelope,
+        "use_sample_envelope for both simp and optim");
     CLI11_PARSE(app, argc, argv);
 
     Eigen::MatrixXd inV, V;
     Eigen::MatrixXi inF, F;
     reader(input_path, inV, inF);
 
-    boundary_detect(inF);
     Eigen::VectorXi _I;
     igl::remove_unreferenced(inV, inF, V, F, _I);
 
+    if (V.rows() == 0 || F.rows() == 0) {
+        wmtk::logger().info("== finish with Empty Input, stop.");
+        return 1;
+    }
     const Eigen::Vector3d box_min = V.colwise().minCoeff();
     const Eigen::Vector3d box_max = V.colwise().maxCoeff();
     double diag = (box_max - box_min).norm();
