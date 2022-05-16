@@ -79,6 +79,7 @@ public:
             m_envelope.init(V, F, 0.0);
 
 
+        // partition_mesh_morton();
         partition_mesh_morton();
         for (auto v : frozen_verts) vertex_attrs[v].freeze = true;
         if (m_freeze) {
