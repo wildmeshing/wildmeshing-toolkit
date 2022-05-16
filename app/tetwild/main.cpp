@@ -103,7 +103,6 @@ int main(int argc, char** argv)
     const Eigen::Vector3d box_max = V.colwise().maxCoeff();
     double diag = (box_max - box_min).norm();
 
-    boundary_detect(F);
     {
         // using the same error tolerance as in tetwild
         Eigen::VectorXi SVI, SVJ;
