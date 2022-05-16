@@ -43,11 +43,10 @@ public:
     using VertAttCol = wmtk::AttributeCollection<VertexAttributes>;
     VertAttCol vertex_attrs;
 
-    int NUM_THREADS = 1;
     int retry_limit = 10;
     UniformRemeshing(std::vector<Eigen::Vector3d> _m_vertex_positions, int num_threads = 1, bool use_exact = true)
-        : NUM_THREADS(num_threads)
     {
+        NUM_THREADS = num_threads;
         m_envelope.use_exact = use_exact;
 
         p_vertex_attrs = &vertex_attrs;
@@ -225,6 +224,7 @@ public:
         });
     }
 
+    bool smooth_all_vertices();
 
     Eigen::Vector3d smooth(const Tuple& t);
 

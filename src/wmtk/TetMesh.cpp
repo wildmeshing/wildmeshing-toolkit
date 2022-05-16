@@ -368,7 +368,6 @@ wmtk::TetMesh::Tuple wmtk::TetMesh::tuple_from_edge(const std::array<size_t, 2>&
     if (tets.empty()) return Tuple();
 
     auto tid = tets.front();
-    auto tup = tuple_from_tet(tid);
     auto local_ind = m_tet_connectivity[tid].m_indices;
 
     for (auto local_eid = 0; local_eid < 6; local_eid++) {

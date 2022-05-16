@@ -669,12 +669,31 @@ void TriMesh::consolidate_mesh(bool bnd_output)
     assert(check_mesh_connectivity_validity());
 }
 
+
+
+std::vector<size_t> TriMesh::get_one_ring_vids_for_vertex_duplicate(
+    const size_t& vid) const
+{
+    std::vector<size_t> one_ring;
+    auto& conn_tri  = m_vertex_connectivity[vid].m_conn_tris;
+
+    one_ring.reserve(conn_tri.size()*4);
+    for (size_t tri : conn_tri) {
+        for (auto j: m_tri_connectivity[tri].m_indices) {
+            one_ring.push_back(j);
+        }
+    }
+
+    return one_ring;
+}
+
 std::vector<wmtk::TriMesh::Tuple> TriMesh::get_one_ring_tris_for_vertex(
     const wmtk::TriMesh::Tuple& t) const
 {
     std::vector<TriMesh::Tuple> one_ring;
     size_t vid = t.vid(*this);
-    auto conn_tri = m_vertex_connectivity[vid].m_conn_tris;
+    auto& conn_tri = m_vertex_connectivity[vid].m_conn_tris;
+    one_ring.reserve(conn_tri.size());
     for (size_t tri : conn_tri) {
         int j = m_tri_connectivity[tri].find(vid);
         one_ring.emplace_back(vid, (j + 2) % 3, tri, *this);
