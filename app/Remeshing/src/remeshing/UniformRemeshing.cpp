@@ -6,6 +6,7 @@
 #include <Eigen/Geometry>
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
+#include <igl/Timer.h>
 
 using namespace remeshing;
 using namespace wmtk;
@@ -49,6 +50,7 @@ bool UniformRemeshing::collapse_edge_after(const TriMesh::Tuple& t)
     const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
     auto vid = t.vid(*this);
     vertex_attrs[vid].pos = p;
+    vertex_attrs[vid].partition_id = position_cache.local().partition_id;
 
     return true;
 }
@@ -58,7 +60,7 @@ bool UniformRemeshing::split_edge_after(const TriMesh::Tuple& t)
     const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
     auto vid = t.vid(*this);
     vertex_attrs[vid].pos = p;
-
+    vertex_attrs[vid].partition_id = position_cache.local().partition_id;
     return true;
 }
 
@@ -173,8 +175,16 @@ std::vector<TriMesh::Tuple> UniformRemeshing::new_edges_after_swap(const TriMesh
 
 bool UniformRemeshing::collapse_remeshing(double L)
 {
+    igl::Timer timer;
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
-    for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_collapse", loc);
+    timer.start();
+    auto edges_ss = get_edges();
+    wmtk::logger().info("***** collapse get edges time *****: {} ms", timer.getElapsedTimeInMilliSec());
+    timer.start();
+    for (auto& loc : edges_ss) collect_all_ops.emplace_back("edge_collapse", loc);
+
+    // for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_collapse", loc);
+    wmtk::logger().info("***** collapse push queue time *****: {} ms", timer.getElapsedTimeInMilliSec());
 
     auto setup_and_execute = [&](auto executor) {
         executor.renew_neighbor_tuples = renew;
@@ -203,9 +213,11 @@ bool UniformRemeshing::collapse_remeshing(double L)
 }
 bool UniformRemeshing::split_remeshing(double L)
 {
+    igl::Timer timer;
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
-
+    timer.start();
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_split", loc);
+    wmtk::logger().info("***** split get edges time *****: {} ms", timer.getElapsedTimeInMilliSec());
     wmtk::logger().info("size for edges to be split is {}", collect_all_ops.size());
     auto setup_and_execute = [&](auto executor) {
         executor.num_threads = NUM_THREADS;
@@ -238,8 +250,12 @@ bool UniformRemeshing::split_remeshing(double L)
 
 bool UniformRemeshing::swap_remeshing()
 {
+    igl::Timer timer;
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
+    timer.start();
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_swap", loc);
+    wmtk::logger().info("***** swap get edges time *****: {} ms", timer.getElapsedTimeInMilliSec());
+
 
     auto setup_and_execute = [&](auto executor) {
         executor.renew_neighbor_tuples = renew;
@@ -345,24 +361,36 @@ bool UniformRemeshing::uniform_remeshing(double L, int iterations)
     wmtk::logger().info("target len is: {}", L);
 
     wmtk::logger().info("input mesh is mani {}", check_edge_manifold());
+
+    igl::Timer timer;
     while ((properties[0] - L) * (properties[0] - L) > 1e-8 && cnt < iterations) {
         cnt++;
+        wmtk::logger().info("??? Pass ??? {}", cnt);
         // split
+        timer.start();
         split_remeshing(L);
+        wmtk::logger().info("--------split time-------: {} ms", timer.getElapsedTimeInMilliSec());
         // collpase
+        timer.start();
         collapse_remeshing(L);
-
+        wmtk::logger().info("--------collapse time-------: {} ms", timer.getElapsedTimeInMilliSec());
         // swap edges
+        timer.start();
         swap_remeshing();
-
+        wmtk::logger().info("--------swap time-------: {} ms", timer.getElapsedTimeInMilliSec());
         // smoothing
+        timer.start();
         auto vertices = get_vertices();
+        wmtk::logger().info("--------smooth get vertices time-------: {} ms", timer.getElapsedTimeInMilliSec());
+        timer.start();
         for (auto& loc : vertices) smooth_vertex(loc);
+        wmtk::logger().info("--------smooth time-------: {} ms", timer.getElapsedTimeInMilliSec());
 
         properties = average_len_valen();
         wmtk::logger().info("avg edge len: {}", properties[0]);
 
         wmtk::logger().info("avg valence: {}", properties[3]);
+        partition_mesh_morton();
     }
     wmtk::logger().info("finished {} remeshing iterations", iterations);
     wmtk::logger().info("avg edge len: {}", properties[0]);

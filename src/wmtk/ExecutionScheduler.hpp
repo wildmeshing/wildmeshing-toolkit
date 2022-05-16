@@ -280,14 +280,19 @@ public:
         };
 
         if constexpr (policy == ExecutionPolicy::kSeq) {
+            wmtk::logger().info("in seq mode");
             for (auto& [op, e] : operation_tuples) {
                 final_queue.emplace(priority(m, op, e), op, e, 0);
             }
             run_single_queue(final_queue, 0);
         } else {
+            wmtk::logger().info("in parallel mode");
             for (auto& [op, e] : operation_tuples) {
                 //
                 queues[get_partition_id(m, e)].emplace(priority(m, op, e), op, e, 0);
+            }
+            for (int i=0;i<queues.size();i++){
+                wmtk::logger().info("queue {} size: {}", i, queues[i].size());
             }
             // Comment out parallel: work on serial first.
             tbb::task_arena arena(num_threads);
@@ -300,6 +305,7 @@ public:
                 }
                 tg.wait();
             });
+            logger().info("Parallel Complete, remains element {}", final_queue.size());
             logger().debug("Parallel Complete, remains element {}", final_queue.size());
             run_single_queue(final_queue, 0);
         }

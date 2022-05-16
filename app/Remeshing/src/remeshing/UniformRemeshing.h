@@ -97,6 +97,7 @@ public:
     {
         Eigen::Vector3d v1p;
         Eigen::Vector3d v2p;
+        int partition_id;
     };
     tbb::enumerable_thread_specific<PositionInfoCache> position_cache;
 
@@ -104,6 +105,7 @@ public:
     {
         position_cache.local().v1p = vertex_attrs[t.vid(*this)].pos;
         position_cache.local().v2p = vertex_attrs[t.switch_vertex(*this).vid(*this)].pos;
+        position_cache.local().partition_id = vertex_attrs[t.vid(*this)].partition_id;
     }
 
     bool invariants(const std::vector<Tuple>& new_tris) override
