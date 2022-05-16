@@ -818,6 +818,7 @@ std::vector<TriMesh::Tuple> TriMesh::get_faces() const
 std::vector<TriMesh::Tuple> TriMesh::get_edges() const
 {
     std::vector<TriMesh::Tuple> all_edges_tuples;
+    all_edges_tuples.reserve(tri_capacity() * 3);
     for (int i = 0; i < tri_capacity(); i++) {
         if (m_tri_connectivity[i].m_is_removed) continue;
         for (int j = 0; j < 3; j++) {
