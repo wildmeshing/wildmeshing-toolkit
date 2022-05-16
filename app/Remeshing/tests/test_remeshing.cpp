@@ -38,18 +38,20 @@ TEST_CASE("uniform_remeshing", "[test_remeshing][.]")
 TEST_CASE("split_each_edge", "[test_remeshing]")
 {
     std::vector<Eigen::Vector3d> v_positions(3);
-    v_positions[0] = Eigen::Vector3d(-3, 3, 0);
-    v_positions[1] = Eigen::Vector3d(0, 3, 0);
+    v_positions[0] = Eigen::Vector3d(2, 3.5, 0);
+    v_positions[1] = Eigen::Vector3d(4, 0, 0);
 
     v_positions[2] = Eigen::Vector3d(0, 0, 0);
 
-    UniformRemeshing m(v_positions);
+    UniformRemeshing m(v_positions, 0);
     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}};
     std::vector<size_t> modified_v;
     m.create_mesh(3, tris, modified_v, 0);
     int target_vertnum = m.vert_capacity() + 3 * m.get_edges().size() + 3 * m.tri_capacity();
-    m.split_remeshing(0.1);
+    m.split_remeshing(2.7 / 2);
+    m.consolidate_mesh();
     REQUIRE(target_vertnum == 15);
+
     REQUIRE(m.vert_capacity() == target_vertnum);
 }
 
@@ -118,7 +120,7 @@ TEST_CASE("test_split", "[test_remeshing]")
     std::vector<size_t> modified_v;
     m.create_mesh(V.rows(), tri, modified_v, 0);
     int target_vertnum = m.vert_capacity() + 3 * m.get_edges().size() + 3 * m.tri_capacity();
-    m.split_remeshing(m.average_len_valen()[0] * 0.01);
+    m.split_remeshing(m.average_len_valen()[0]);
     REQUIRE(m.check_mesh_connectivity_validity());
     REQUIRE(m.vert_capacity() == target_vertnum);
 }

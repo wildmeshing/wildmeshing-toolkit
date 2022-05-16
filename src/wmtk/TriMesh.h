@@ -122,11 +122,7 @@ public:
         std::optional<Tuple> switch_face(const TriMesh& m) const;
 
         bool is_valid(const TriMesh& m) const;
-        bool is_hash_valid(const TriMesh& m) const
-        {
-            if (m_hash != m.m_tri_connectivity[m_fid].hash) return false;
-            return true;
-        };
+
         /**
          * Positively oriented 3 vertices (represented by Tuples) in a tri.
          * @return std::array<Tuple, 3> each tuple owns a different vertex.
