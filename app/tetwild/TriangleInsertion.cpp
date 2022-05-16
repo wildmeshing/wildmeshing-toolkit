@@ -233,6 +233,7 @@ void tetwild::TetWild::init_from_input_surface(
                     &faces,
                     task_id] {
                 auto try_acquire_tetra = [&m, task_id](const auto& intersected_tets) {
+                    if (m.NUM_THREADS == 0) return true;
                     for (auto t_int : intersected_tets) {
                         for (auto v_int : m.oriented_tet_vertices(t_int)) {
                             if (!m.try_set_vertex_mutex_one_ring(v_int, task_id)) {
@@ -244,6 +245,7 @@ void tetwild::TetWild::init_from_input_surface(
                 };
 
                 auto try_acquire_edge = [&m, task_id](const auto& intersected_edges) {
+                    if (m.NUM_THREADS == 0) return true;
                     for (auto e_int : intersected_edges) {
                         if (!m.try_set_vertex_mutex_one_ring(e_int, task_id)) {
                             return false;
@@ -267,6 +269,7 @@ void tetwild::TetWild::init_from_input_surface(
                     }
                 };
                 auto try_acquire_triangle = [&m, task_id](const auto& f) {
+                    if (m.NUM_THREADS == 0) return true;
                     return m.try_set_face_mutex_two_ring(f[0], f[1], f[2], task_id);
                 };
 
