@@ -77,8 +77,9 @@ int main(int argc, char** argv)
     std::string output_path = "./";
     bool skip_simplify = false;
     bool use_sample_envelope = false;
-    int NUM_THREADS = 1;
+    int NUM_THREADS = 0;
     int max_its = 10;
+    bool filter_with_input = false;
 
     app.add_option("-i,--input", input_path, "Input mesh.");
     app.add_option("-o,--output", output_path, "Output mesh.");
@@ -88,6 +89,10 @@ int main(int argc, char** argv)
     app.add_option("-e, --epsr", params.epsr, "relative eps wrt diag of bbox");
     app.add_option("-r, --rlen", params.lr, "relative ideal edge length wrt diag of bbox");
 
+    app.add_flag(
+        "--filter-with-input",
+        filter_with_input,
+        "filter with input mesh, default is tracked surface.");
     app.add_flag(
         "--sample-envelope",
         use_sample_envelope,
@@ -214,7 +219,10 @@ int main(int argc, char** argv)
     /////////mesh improvement
     mesh.mesh_improvement(max_its);
     ////winding number
-    mesh.filter_outside({}, {}, true);
+    if (filter_with_input)
+        mesh.filter_outside(verts, tris, true);
+    else
+        mesh.filter_outside({}, {}, true);
     mesh.consolidate_mesh();
     double time = timer.getElapsedTime();
     wmtk::logger().info("total time {}s", time);
