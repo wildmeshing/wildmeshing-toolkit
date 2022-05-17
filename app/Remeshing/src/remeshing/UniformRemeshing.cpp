@@ -244,7 +244,7 @@ bool UniformRemeshing::split_remeshing(double L)
     size_t vid_threshold;
     std::atomic_int count_success = 0;
     wmtk::logger().info("size for edges to be split is {}", collect_all_ops.size());
-    auto edges2 = std::vector<std::pair<std::string, TriMesh::Tuple>>();
+    auto edges2 = tbb::concurrent_vector<std::pair<std::string, TriMesh::Tuple>>();
     auto setup_and_execute = [&](auto executor) {
         vid_threshold = vert_capacity();
         executor.num_threads = NUM_THREADS;
