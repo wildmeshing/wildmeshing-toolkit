@@ -28,7 +28,6 @@ std::vector<TriMesh::Tuple> UniformRemeshing::new_edges_after(
     const std::vector<TriMesh::Tuple>& tris) const
 {
     std::vector<TriMesh::Tuple> new_edges;
-    std::vector<size_t> one_ring_fid;
 
     for (auto t : tris) {
         for (auto j = 0; j < 3; j++) {
@@ -38,12 +37,46 @@ std::vector<TriMesh::Tuple> UniformRemeshing::new_edges_after(
     wmtk::unique_edge_tuples(*this, new_edges);
     return new_edges;
 }
+
 bool UniformRemeshing::swap_edge_after(const TriMesh::Tuple& t)
 {
     std::vector<TriMesh::Tuple> tris;
     tris.push_back(t);
     tris.push_back(t.switch_edge(*this));
     return true;
+}
+
+std::vector<TriMesh::Tuple> UniformRemeshing::replace_edges_after_split(
+    const std::vector<TriMesh::Tuple>& tris,
+    const size_t vid_threshold) const
+{
+    // For edge split, we do not immediately push back split sub-edges
+    // only push back those edges which are already present, but invalidated by hash mechanism.
+    std::vector<TriMesh::Tuple> new_edges;
+    new_edges.reserve(tris.size());
+    for (auto t : tris) {
+        auto tmptup = (t.switch_vertex(*this)).switch_edge(*this);
+        if (tmptup.vid(*this) < vid_threshold &&
+            (tmptup.switch_vertex(*this)).vid(*this) < vid_threshold)
+            new_edges.push_back(tmptup);
+    }
+    return new_edges;
+}
+
+std::vector<TriMesh::Tuple> UniformRemeshing::new_sub_edges_after_split(
+    const std::vector<TriMesh::Tuple>& tris) const
+{
+    // only push back the renewed original edges
+    std::vector<TriMesh::Tuple> new_edges2;
+    new_edges2.reserve(tris.size() * 3);
+    for (auto t : tris) {
+        new_edges2.push_back(t);
+        new_edges2.push_back(t.switch_edge(*this));
+        new_edges2.push_back((t.switch_vertex(*this)).switch_edge(*this));
+    }
+
+    wmtk::unique_edge_tuples(*this, new_edges2);
+    return new_edges2;
 }
 
 bool UniformRemeshing::collapse_edge_after(const TriMesh::Tuple& t)
@@ -65,6 +98,7 @@ bool UniformRemeshing::split_edge_after(const TriMesh::Tuple& t)
     return true;
 }
 
+
 bool UniformRemeshing::smooth_after(const TriMesh::Tuple& t)
 {
     auto one_ring_tris = get_one_ring_tris_for_vertex(t);
@@ -72,7 +106,7 @@ bool UniformRemeshing::smooth_after(const TriMesh::Tuple& t)
         return false;
     }
     Eigen::Vector3d after_smooth = tangential_smooth(t);
-
+    if (after_smooth.hasNaN()) return false;
     vertex_attrs[t.vid(*this)].pos = after_smooth;
     return true;
 }
@@ -187,6 +221,7 @@ bool UniformRemeshing::collapse_remeshing(double L)
         "***** collapse get edges time *****: {} ms",
         timer.getElapsedTimeInMilliSec());
 
+    wmtk::logger().info("size for edges to be collapse is {}", collect_all_ops.size());
     auto setup_and_execute = [&](auto executor) {
         executor.renew_neighbor_tuples = renew;
         executor.priority = [&](auto& m, auto _, auto& e) {
@@ -217,6 +252,8 @@ bool UniformRemeshing::split_remeshing(double L)
     igl::Timer timer;
     timer.start();
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
+    size_t vid_threshold = 0;
+    std::atomic_int count_success = 0;
     auto collect_tuples = tbb::concurrent_vector<Tuple>();
 
     for_each_edge([&](auto& tup) { collect_tuples.emplace_back(tup); });
@@ -227,12 +264,21 @@ bool UniformRemeshing::split_remeshing(double L)
         timer.getElapsedTimeInMilliSec());
 
     wmtk::logger().info("size for edges to be split is {}", collect_all_ops.size());
-    auto setup_and_execute = [&](auto executor) {
+    auto edges2 = tbb::concurrent_vector<std::pair<std::string, TriMesh::Tuple>>();
+    auto setup_and_execute = [&](auto& executor) {
+        vid_threshold = vert_capacity();
         executor.num_threads = NUM_THREADS;
 
         executor.lock_vertices = edge_locker;
 
-        executor.renew_neighbor_tuples = renew;
+        executor.renew_neighbor_tuples = [&](auto& m, auto op, auto& tris) {
+            count_success++;
+            auto edges = m.replace_edges_after_split(tris, vid_threshold);
+            for (auto e2 : m.new_sub_edges_after_split(tris)) edges2.emplace_back(op, e2);
+            auto optup = std::vector<std::pair<std::string, TriMesh::Tuple>>();
+            for (auto& e : edges) optup.emplace_back(op, e);
+            return optup;
+        };
         executor.priority = [&](auto& m, auto _, auto& e) {
             return m.compute_edge_cost_split(e, L);
         };
@@ -241,9 +287,17 @@ bool UniformRemeshing::split_remeshing(double L)
             auto& [val, op, e] = ele;
             if (val < 0) return false;
             return true;
-        };
-        executor(*this, collect_all_ops);
+        }; 
+        // Execute!!
+        do {
+            count_success.store(0, std::memory_order_release);
+            executor(*this, collect_all_ops);
+            collect_all_ops.clear();
+            for (auto& item : edges2) collect_all_ops.emplace_back(item);
+            edges2.clear();
+        } while (count_success.load(std::memory_order_acquire) > 0);
     };
+
     if (NUM_THREADS > 0) {
         auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kPartition>();
         setup_and_execute(executor);
@@ -283,6 +337,7 @@ bool UniformRemeshing::swap_remeshing()
     igl::Timer timer;
     timer.start();
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
+    wmtk::logger().info("size for edges to swap is {}", collect_all_ops.size());
     auto collect_tuples = tbb::concurrent_vector<Tuple>();
 
     for_each_edge([&](auto& tup) { collect_tuples.emplace_back(tup); });

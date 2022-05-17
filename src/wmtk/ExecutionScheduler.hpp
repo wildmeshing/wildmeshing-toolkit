@@ -281,12 +281,13 @@ public:
 
         if constexpr (policy == ExecutionPolicy::kSeq) {
             for (auto& [op, e] : operation_tuples) {
+                if (!e.is_valid(m)) continue;
                 final_queue.emplace(priority(m, op, e), op, e, 0);
             }
             run_single_queue(final_queue, 0);
         } else {
             for (auto& [op, e] : operation_tuples) {
-                //
+                if (!e.is_valid(m)) continue;
                 queues[get_partition_id(m, e)].emplace(priority(m, op, e), op, e, 0);
             }
             // Comment out parallel: work on serial first.
