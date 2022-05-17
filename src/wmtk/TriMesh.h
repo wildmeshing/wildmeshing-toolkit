@@ -60,6 +60,7 @@ public:
             update_hash(m);
         }
 
+
         /**
          * returns global vertex id.
          * @param m TriMesh where the tuple belongs.
@@ -292,6 +293,7 @@ protected:
     virtual bool smooth_before(const Tuple& t) { return true; }
     virtual bool smooth_after(const Tuple& t) { return true; }
     virtual void resize_mutex(size_t v){}; // tempoarary hack
+
 
 public:
     size_t tri_capacity() const { return current_tri_size; }
