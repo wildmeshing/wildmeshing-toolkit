@@ -257,10 +257,10 @@ public:
 
     std::vector<TriMesh::Tuple> new_edges_after(const std::vector<TriMesh::Tuple>& tris) const;
     std::vector<TriMesh::Tuple> new_edges_after_swap(const TriMesh::Tuple& t) const;
-    std::vector<TriMesh::Tuple> new_edges_after_split(
+    std::vector<TriMesh::Tuple> replace_edges_after_split(
         const std::vector<TriMesh::Tuple>& tris,
         const size_t vid_threshold) const;
-    std::vector<TriMesh::Tuple> new_edges2_after_split(
+    std::vector<TriMesh::Tuple> new_sub_edges_after_split(
         const std::vector<TriMesh::Tuple>& tris) const;
 
 
