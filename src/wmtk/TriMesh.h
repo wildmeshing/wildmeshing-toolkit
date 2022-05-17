@@ -29,10 +29,10 @@ public:
     class Tuple
     {
     private:
-        size_t m_vid;
-        size_t m_eid;
-        size_t m_fid;
-        size_t m_hash;
+        size_t m_vid = -1;
+        size_t m_eid = -1;
+        size_t m_fid = -1;
+        size_t m_hash = -1;
 
         void update_hash(const TriMesh& m) { m_hash = m.m_tri_connectivity[m_fid].hash; }
 
@@ -334,7 +334,11 @@ public:
      * @param t tuple pointing to a vertex
      * @return one-ring
      */
+    size_t get_valence_for_vertex(const Tuple& t) const {
+        return m_vertex_connectivity[t.vid(*this)].m_conn_tris.size();
+    }
     std::vector<Tuple> get_one_ring_tris_for_vertex(const Tuple& t) const;
+    std::vector<size_t> get_one_ring_vids_for_vertex_duplicate(const size_t& t) const;
 
     /**
      * @brief Get the one ring edges for a vertex, edges are the incident edges
@@ -355,6 +359,7 @@ public:
 
     Tuple tuple_from_tri(size_t fid) const
     {
+        if (fid >= m_tri_connectivity.size() || m_tri_connectivity[fid].m_is_removed) return Tuple();
         auto vid = m_tri_connectivity[fid][0];
         return Tuple(vid, 1, fid, *this);
     }

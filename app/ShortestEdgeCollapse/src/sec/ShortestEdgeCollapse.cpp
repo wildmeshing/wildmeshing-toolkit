@@ -85,7 +85,6 @@ bool sec::ShortestEdgeCollapse::collapse_shortest(int target_vert_number)
 {
     size_t initial_size = get_vertices().size();
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
-    int starting_num = get_vertices().size();
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_collapse", loc);
 
     auto renew = [](auto& m, auto op, auto& tris) {

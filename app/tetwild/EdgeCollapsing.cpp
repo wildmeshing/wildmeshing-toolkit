@@ -258,6 +258,7 @@ bool tetwild::TetWild::collapse_edge_after(const Tuple& loc)
         auto& old_vids = info.second;
         //
         auto [_, global_fid] = tuple_from_face({{v2_id, old_vids[1], old_vids[2]}});
+        if (global_fid == -1) return false;
         m_face_attribute[global_fid] = f_attr;
     }
 
