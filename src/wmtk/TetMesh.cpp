@@ -332,6 +332,9 @@ std::tuple<wmtk::TetMesh::Tuple, size_t> wmtk::TetMesh::tuple_from_face(
         m_vertex_connectivity[vids[1]].m_conn_tets);
     auto n12_t_ids = set_intersection(tmp, m_vertex_connectivity[vids[2]].m_conn_tets);
     assert(n12_t_ids.size() == 1 || n12_t_ids.size() == 2);
+    if (n12_t_ids.size() == 0 || n12_t_ids.size() > 2) {
+        return {Tuple(), -1};
+    }
 
     // tid
     Tuple face;

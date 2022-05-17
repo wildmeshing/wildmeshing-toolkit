@@ -122,7 +122,7 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
 
     std::set<std::array<size_t, 4>> verify_conns; // simplified manifold topology check.
     for (auto _t : n2_t_ids) {
-        auto tet= m_tet_connectivity[_t].m_indices;
+        auto tet = m_tet_connectivity[_t].m_indices;
         std::sort(tet.begin(), tet.end());
         verify_conns.emplace(tet);
     }
@@ -169,16 +169,32 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
 
     Tuple new_loc = tuple_from_vertex(v2_id);
 
+
+    auto check_topology = [&]() {
+        for (size_t t_id : new_tet_id)
+            for (auto k = 0; k < 4; k++) {
+                std::array<size_t, 3> vids;
+                for (auto j = 0; j < 3; j++)
+                    vids[j] = m_tet_connectivity[t_id].m_indices[(k + 1 + j) % 4];
+                auto [_, fid] = tuple_from_face(vids);
+                if (fid == -1) {
+                    return false;
+                }
+            }
+        return true;
+    };
+
     start_protect_attributes();
-    if (!collapse_edge_after(new_loc) || !invariants(get_one_ring_tets_for_vertex(new_loc))) {
+    if (!check_topology() || !collapse_edge_after(new_loc) ||
+        !invariants(get_one_ring_tets_for_vertex(new_loc))) {
         m_vertex_connectivity[v1_id].m_is_removed = false;
         operation_failure_rollback_imp(rollback_vert_conn, n1_t_ids, new_tet_id, old_tets);
 
         return false;
     }
+
     release_protect_attributes();
 
-    /// return new_edges
     for (size_t t_id : new_tet_id) {
         for (int j = 0; j < 6; j++) {
             new_edges.push_back(tuple_from_edge(t_id, j));
