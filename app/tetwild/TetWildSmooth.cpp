@@ -71,11 +71,49 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
         m_vertex_attribute[vid].m_posf.transpose());
 
     if (m_vertex_attribute[vid].m_is_on_surface) {
-        auto project = wmtk::try_project(m_vertex_attribute[vid].m_posf, old_asssembles);
+        std::vector<std::array<double, 12>> neighbor_assemble;
+        std::set<size_t> unique_fid;
+        for (auto& t : locs) {
+            for (auto j = 0; j < 4; j++) {
+                auto f_t = tuple_from_face(t.tid(*this), j);
+                auto fid = f_t.fid(*this);
+                auto [it, suc] = unique_fid.emplace(fid);
+                if (!suc) continue;
+                if (m_face_attribute[fid].m_is_surface_fs) {
+                    auto vs = get_face_vertices(f_t);
+                    auto vs_id = std::array<size_t, 3>();
+                    for (auto k = 0; k < 3; k++) vs_id[k] = vs[k].vid(*this);
+                    for (auto k : {1, 2})
+                        if (vs_id[k] == vid) {
+                            std::swap(vs_id[k], vs_id[0]);
+                        };
+                    if (vs_id[0] != vid) continue; // does not contain point of interest
+                    std::array<double, 12> coords;
+                    for (auto k = 0; k < 3; k++)
+                        for (auto kk = 0; kk < 3; kk++)
+                            coords[k * 3 + kk] = m_vertex_attribute[vs_id[k]].m_posf[kk];
+                    neighbor_assemble.emplace_back(coords);
+                }
+            }
+        }
+        auto project = wmtk::try_project(m_vertex_attribute[vid].m_posf, neighbor_assemble);
         if (project) {
             m_vertex_attribute[vid].m_posf = project.value();
+            for (auto& n : neighbor_assemble) {
+                for (auto kk = 0; kk < 3; kk++) n[kk] = m_vertex_attribute[vid].m_posf[kk];
+            }
+        }
+        for (auto& n : neighbor_assemble) {
+            auto tris = std::array<Eigen::Vector3d, 3>();
+            for (auto k = 0; k < 3; k++) {
+                for (auto kk = 0; kk < 3; kk++) tris[k][kk] = n[k * 3 + kk];
+            }
+            bool is_out = m_envelope.is_outside(tris);
+            if (is_out) return false;
         }
     }
+
+    // quality
     auto max_after_quality = 0.;
     for (auto& loc : locs) {
         if (is_inverted(loc)) return false;
@@ -84,23 +122,6 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
         max_after_quality = std::max(max_after_quality, m_tet_attribute[t_id].m_quality);
     }
     if (max_after_quality > max_quality) return false;
-
-    if (m_vertex_attribute[vid].m_is_on_surface) {
-        for (auto& t : locs) {
-            for (auto j = 0; j < 4; j++) {
-                auto f_t = tuple_from_face(t.tid(*this), j);
-                auto fid = f_t.fid(*this);
-                if (m_face_attribute[fid].m_is_surface_fs) {
-                    auto vs = get_face_vertices(f_t);
-                    bool is_out = m_envelope.is_outside(
-                        {{m_vertex_attribute[vs[0].vid(*this)].m_posf,
-                          m_vertex_attribute[vs[1].vid(*this)].m_posf,
-                          m_vertex_attribute[vs[2].vid(*this)].m_posf}});
-                    if (is_out) return false;
-                }
-            }
-        }
-    }
 
 
     m_vertex_attribute[vid].m_pos = tetwild::to_rational(m_vertex_attribute[vid].m_posf);

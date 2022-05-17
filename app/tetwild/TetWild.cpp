@@ -123,6 +123,13 @@ std::tuple<double, double> tetwild::TetWild::local_operations(
     wmtk::logger().info("avg energy = {}", std::get<1>(energy));
     wmtk::logger().info("time = {}", timer.getElapsedTime());
 
+    auto cnt_round = 0, cnt_verts = 0;
+    TetMesh::for_each_vertex([&](auto& v) {
+        if (m_vertex_attribute[v.vid(*this)].m_is_rounded) cnt_round++;
+        cnt_verts++;
+    });
+    wmtk::logger().info("rounded {}/{}", cnt_round, cnt_verts);
+
     return energy;
 }
 
@@ -320,6 +327,7 @@ void tetwild::TetWild::filter_outside(
         auto F0 = F;
         Eigen::VectorXi C;
         bfs_orient(F0, F, C);
+        wmtk::logger().info("BFS orient {}", F.rows());
     }
 
     const auto& tets = get_tets();
@@ -348,6 +356,7 @@ void tetwild::TetWild::filter_outside(
         wmtk::logger().critical("Still Inverting..., Empty Output");
         return;
     }
+    wmtk::logger().info("Removing...");
 
     std::vector<size_t> rm_tids;
     for (int i = 0; i < W.rows(); i++) {
@@ -431,7 +440,7 @@ std::tuple<double, double> tetwild::TetWild::get_max_avg_energy()
     double max_energy = -1.;
     double avg_energy = 0.;
     auto cnt = 0;
-    for_each_tetra([&](auto& t) {
+    TetMesh::for_each_tetra([&](auto& t) {
         auto q = m_tet_attribute[t.tid(*this)].m_quality;
         max_energy = std::max(max_energy, q);
         avg_energy += std::cbrt(q);
