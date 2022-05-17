@@ -39,14 +39,13 @@ public:
     bool m_has_envelope = false;
     wmtk::AttributeCollection<VertexAttributes> vertex_attrs;
 
-    int NUM_THREADS = 1;
     int retry_limit = 10;
     ShortestEdgeCollapse(
         std::vector<Eigen::Vector3d> _m_vertex_positions,
         int num_threads = 1,
         bool use_exact_envelope = true)
-        : NUM_THREADS(num_threads)
     {
+        NUM_THREADS = (num_threads);
         m_envelope.use_exact = use_exact_envelope;
         p_vertex_attrs = &vertex_attrs;
 

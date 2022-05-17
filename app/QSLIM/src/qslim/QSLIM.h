@@ -57,14 +57,13 @@ public:
     wmtk::AttributeCollection<FaceAttributes> face_attrs;
     wmtk::AttributeCollection<EdgeAttributes> edge_attrs;
 
-    int NUM_THREADS = 1;
     int retry_limit = 10;
     QSLIM(std::vector<Eigen::Vector3d> _m_vertex_positions, int num_threads = 1)
-        : NUM_THREADS(num_threads)
     {
         p_vertex_attrs = &vertex_attrs;
         p_face_attrs = &face_attrs;
         p_edge_attrs = &edge_attrs;
+        NUM_THREADS = (num_threads);
 
         vertex_attrs.resize(_m_vertex_positions.size());
 

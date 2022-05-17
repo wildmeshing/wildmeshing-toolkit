@@ -26,8 +26,12 @@ public:
         Eigen::Vector3d pos;
         size_t partition_id = 0;
     };
-    using VertAttCol = wmtk::AttributeCollection<VertexAttributes>;
-    VertAttCol vertex_attrs;
+    struct TetAttribute
+    {
+        double quality = -1.;
+    };
+    wmtk::AttributeCollection<VertexAttributes> vertex_attrs;
+    wmtk::AttributeCollection<TetAttribute> tet_attrs;
 
     HarmonicTet(
         const std::vector<Eigen::Vector3d>& _vertex_attribute,
@@ -35,15 +39,22 @@ public:
         int num_threads = 1)
     {
         p_vertex_attrs = &vertex_attrs;
+        p_tet_attrs = &tet_attrs;
 
         vertex_attrs.resize(_vertex_attribute.size());
-
-        for (auto i = 0; i < _vertex_attribute.size(); i++)
-            vertex_attrs[i].pos = _vertex_attribute[i];
 
         NUM_THREADS = num_threads;
         init(_vertex_attribute.size(), tets);
 
+        for_each_vertex([&](auto& v){
+            auto i = v.vid(*this);
+            vertex_attrs[i].pos = _vertex_attribute[i];
+        });
+        for_each_tetra([&](auto& t){
+            auto i = t.tid(*this);
+            tet_attrs[i].quality = get_quality(t);
+        });
+        
         compute_vertex_partition_morton();
     }
     HarmonicTet(){};

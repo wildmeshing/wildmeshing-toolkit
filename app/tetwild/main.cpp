@@ -77,8 +77,9 @@ int main(int argc, char** argv)
     std::string output_path = "./";
     bool skip_simplify = false;
     bool use_sample_envelope = false;
-    int NUM_THREADS = 1;
+    int NUM_THREADS = 0;
     int max_its = 10;
+    bool filter_with_input = false;
 
     app.add_option("-i,--input", input_path, "Input mesh.");
     app.add_option("-o,--output", output_path, "Output mesh.");
@@ -88,22 +89,31 @@ int main(int argc, char** argv)
     app.add_option("-e, --epsr", params.epsr, "relative eps wrt diag of bbox");
     app.add_option("-r, --rlen", params.lr, "relative ideal edge length wrt diag of bbox");
 
-    app.add_flag("--sample-envelope", use_sample_envelope, "use_sample_envelope for both simp and optim");
+    app.add_flag(
+        "--filter-with-input",
+        filter_with_input,
+        "filter with input mesh, default is tracked surface.");
+    app.add_flag(
+        "--sample-envelope",
+        use_sample_envelope,
+        "use_sample_envelope for both simp and optim");
     CLI11_PARSE(app, argc, argv);
 
     Eigen::MatrixXd inV, V;
     Eigen::MatrixXi inF, F;
     reader(input_path, inV, inF);
 
-    boundary_detect(inF);
     Eigen::VectorXi _I;
     igl::remove_unreferenced(inV, inF, V, F, _I);
 
+    if (V.rows() == 0 || F.rows() == 0) {
+        wmtk::logger().info("== finish with Empty Input, stop.");
+        return 1;
+    }
     const Eigen::Vector3d box_min = V.colwise().minCoeff();
     const Eigen::Vector3d box_max = V.colwise().maxCoeff();
     double diag = (box_max - box_min).norm();
 
-    boundary_detect(F);
     {
         // using the same error tolerance as in tetwild
         Eigen::VectorXi SVI, SVJ;
@@ -209,7 +219,10 @@ int main(int argc, char** argv)
     /////////mesh improvement
     mesh.mesh_improvement(max_its);
     ////winding number
-    mesh.filter_outside({}, {}, true);
+    if (filter_with_input)
+        mesh.filter_outside(verts, tris, true);
+    else
+        mesh.filter_outside({}, {}, true);
     mesh.consolidate_mesh();
     double time = timer.getElapsedTime();
     wmtk::logger().info("total time {}s", time);
