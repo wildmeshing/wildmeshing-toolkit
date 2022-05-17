@@ -54,15 +54,6 @@ public:
         {
             update_hash(m);
         }
-        Tuple(size_t vid, size_t eid, size_t fid)
-            : m_vid(vid)
-            , m_eid(eid)
-            , m_fid(fid)
-
-        {
-            m_hash = -1;
-        }
-
 
         /**
          * returns global vertex id.
@@ -264,9 +255,6 @@ private:
     size_t get_next_empty_slot_t();
     size_t get_next_empty_slot_v();
 
-    vector<Tuple> split_edge_lookup; // a lookup table mapping edges to their up-to-date tuples
-                                     // so that every edge can be split once.
-
 protected:
     virtual bool invariants(const std::vector<Tuple>&) { return true; }
     virtual bool split_edge_before(const Tuple& t) { return true; }
@@ -299,11 +287,6 @@ protected:
     virtual bool smooth_before(const Tuple& t) { return true; }
     virtual bool smooth_after(const Tuple& t) { return true; }
     virtual void resize_mutex(size_t v){}; // tempoarary hack
-
-    void create_split_edge_lookup();
-    size_t split_edge_number() { return split_edge_lookup.size(); };
-    Tuple get_split_edge_uptodate(size_t eid) { return split_edge_lookup[eid]; };
-    void set_split_edge_uptodate(const Tuple& e) { split_edge_lookup[e.eid(*this)] = e; };
 
 public:
     size_t tri_capacity() const { return current_tri_size; }

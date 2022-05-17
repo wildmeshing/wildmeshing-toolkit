@@ -211,6 +211,7 @@ bool UniformRemeshing::collapse_remeshing(double L)
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_collapse", loc);
 
+    wmtk::logger().info("size for edges to be collapse is {}", collect_all_ops.size());
     auto setup_and_execute = [&](auto executor) {
         executor.renew_neighbor_tuples = renew;
         executor.priority = [&](auto& m, auto _, auto& e) {
@@ -292,6 +293,7 @@ bool UniformRemeshing::swap_remeshing()
 {
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_swap", loc);
+    wmtk::logger().info("size for edges to swap is {}", collect_all_ops.size());
 
     auto setup_and_execute = [&](auto executor) {
         executor.renew_neighbor_tuples = renew;
@@ -401,11 +403,6 @@ bool UniformRemeshing::uniform_remeshing(double L, int iterations)
         cnt++;
         // split
         split_remeshing(L);
-        properties = average_len_valen();
-        wmtk::logger().info("avg edge len: {}", properties[0]);
-
-        wmtk::logger().info("avg valence: {}", properties[3]);
-        return true;
         // collpase
         collapse_remeshing(L);
         // swap edges

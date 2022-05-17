@@ -119,10 +119,8 @@ TEST_CASE("test_split", "[test_remeshing]")
     UniformRemeshing m(v);
     std::vector<size_t> modified_v;
     m.create_mesh(V.rows(), tri, modified_v, 0);
-    int target_vertnum = m.vert_capacity() + 3 * m.get_edges().size() + 3 * m.tri_capacity();
-    m.split_remeshing(m.average_len_valen()[0]);
+    m.split_remeshing(m.average_len_valen()[0] * 0.5);
     REQUIRE(m.check_mesh_connectivity_validity());
-    REQUIRE(m.vert_capacity() == target_vertnum);
 }
 
 TEST_CASE("remeshing_hanging", "[test_remeshing]")

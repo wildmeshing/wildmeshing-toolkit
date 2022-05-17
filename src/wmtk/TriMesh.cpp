@@ -961,11 +961,3 @@ void wmtk::TriMesh::get_boundary_map(Eigen::VectorXi SVI)
     }
     igl::writeDMAT("new_dmt.dmat", bnd_table);
 }
-
-void wmtk::TriMesh::create_split_edge_lookup()
-{
-    split_edge_lookup.resize(tri_capacity() * 3);
-    for (auto e = 0; e < tri_capacity() * 3; e++) {
-        split_edge_lookup[e] = Tuple(-1, 10, -1);
-    }
-}
