@@ -57,7 +57,7 @@ struct AttributeCollection : public AbstractAttributeContainer
         for (auto& [i, v] : m_rollback_list.local()) {
             m_attributes[i] = std::move(v);
         }
-        m_rollback_list.local().clear();
+	end_protect();
     }
 
     void begin_protect() override

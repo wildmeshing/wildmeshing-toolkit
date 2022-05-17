@@ -74,15 +74,18 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
         auto project = wmtk::try_project(m_vertex_attribute[vid].m_posf, old_asssembles);
         if (project) {
             m_vertex_attribute[vid].m_posf = project.value();
-
-            auto max_after_quality = 0.;
-            for (auto& loc : locs) {
-                auto t_id = loc.tid(*this);
-                m_tet_attribute[t_id].m_quality = get_quality(loc);
-                max_after_quality = std::max(max_after_quality, m_tet_attribute[t_id].m_quality);
-            }
-            if (max_after_quality > max_quality) return false;
         }
+    }
+    auto max_after_quality = 0.;
+    for (auto& loc : locs) {
+        if (is_inverted(loc)) return false;
+        auto t_id = loc.tid(*this);
+        m_tet_attribute[t_id].m_quality = get_quality(loc);
+        max_after_quality = std::max(max_after_quality, m_tet_attribute[t_id].m_quality);
+    }
+    if (max_after_quality > max_quality) return false;
+
+    if (m_vertex_attribute[vid].m_is_on_surface) {
         for (auto& t : locs) {
             for (auto j = 0; j < 4; j++) {
                 auto f_t = tuple_from_face(t.tid(*this), j);
@@ -99,10 +102,6 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
         }
     }
 
-    for (auto& loc : locs) {
-        auto t_id = loc.tid(*this);
-        m_tet_attribute[t_id].m_quality = get_quality(loc);
-    }
 
     m_vertex_attribute[vid].m_pos = tetwild::to_rational(m_vertex_attribute[vid].m_posf);
 
@@ -115,7 +114,6 @@ void tetwild::TetWild::smooth_all_vertices()
     igl::Timer timer;
     double time;
     timer.start();
-    auto executor = wmtk::ExecutePass<tetwild::TetWild>();
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_vertices()) {
         collect_all_ops.emplace_back("vertex_smooth", loc);

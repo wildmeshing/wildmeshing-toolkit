@@ -80,14 +80,16 @@ void tetwild::TetWild::init_from_delaunay_box_mesh(const std::vector<Eigen::Vect
 
 bool tetwild::TetWild::triangle_insertion_before(const std::vector<Tuple>& faces)
 {
-    triangle_insertion_local_cache.local().old_face_vids.clear(); // note: reset local vars
+    auto& cache = triangle_insertion_local_cache.local();
+    cache.old_face_vids.clear(); // note: reset local vars
+    cache.old_face_vids.reserve(faces.size());
 
     for (auto& loc : faces) {
         auto vs = get_face_vertices(loc);
         std::array<size_t, 3> f = {{vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
         std::sort(f.begin(), f.end());
 
-        triangle_insertion_local_cache.local().old_face_vids.push_back(f);
+        cache.old_face_vids.push_back(f);
     }
 
     return true;
@@ -97,14 +99,15 @@ bool tetwild::TetWild::triangle_insertion_after(const std::vector<std::vector<Tu
 {
     /// remove old_face_vids from tet_face_tags, and map tags to new faces
     // assert(new_faces.size() == triangle_insertion_local_cache.local().old_face_vids.size() + 1);
+    auto& cache = triangle_insertion_local_cache.local();
 
     for (int i = 0; i < new_faces.size(); i++) {
         if (new_faces[i].empty()) continue;
 
         // note: erase old tag and then add new -- old and new can be the same face
         std::vector<int> tags;
-        if (i < triangle_insertion_local_cache.local().old_face_vids.size()) {
-            auto& old_f = triangle_insertion_local_cache.local().old_face_vids[i];
+        if (i < cache.old_face_vids.size()) {
+            auto& old_f = cache.old_face_vids[i];
             auto iter = tet_face_tags.find(old_f);
             if (iter != tet_face_tags.end() && !iter->second.empty()) {
                 tags = iter->second;
@@ -112,7 +115,7 @@ bool tetwild::TetWild::triangle_insertion_after(const std::vector<std::vector<Tu
             }
             if (tags.empty()) continue; // nothing to inherit to new
         } else
-            tags.push_back(triangle_insertion_local_cache.local().face_id);
+            tags.push_back(cache.face_id);
 
 
         for (auto& loc : new_faces[i]) {
@@ -203,7 +206,7 @@ void tetwild::TetWild::init_from_input_surface(
     wmtk::logger().info("is_matched: {}", std::count(is_matched.begin(), is_matched.end(), true));
 
     std::vector<tbb::concurrent_priority_queue<std::tuple<double, int, size_t>>> insertion_queues(
-        NUM_THREADS);
+        std::max(NUM_THREADS, 1));
     tbb::concurrent_priority_queue<std::tuple<double, int, size_t>> expired_queue;
     std::default_random_engine generator;
     std::uniform_real_distribution<double> distribution(0.0, 100.0);
@@ -217,11 +220,11 @@ void tetwild::TetWild::init_from_input_surface(
         wmtk::logger().info("insertion queue {}: {}", i, insertion_queues[i].size());
     }
 
-    tbb::task_arena arena(NUM_THREADS);
+    tbb::task_arena arena(insertion_queues.size());
     tbb::task_group tg;
 
     arena.execute([&, &m = *this, &tet_face_tags = this->tet_face_tags]() {
-        for (int task_id = 0; task_id < m.NUM_THREADS; task_id++) {
+        for (int task_id = 0; task_id < insertion_queues.size(); task_id++) {
             tg.run([&insertion_queues,
                     &expired_queue,
                     &tet_face_tags,
@@ -230,6 +233,7 @@ void tetwild::TetWild::init_from_input_surface(
                     &faces,
                     task_id] {
                 auto try_acquire_tetra = [&m, task_id](const auto& intersected_tets) {
+                    if (m.NUM_THREADS == 0) return true;
                     for (auto t_int : intersected_tets) {
                         for (auto v_int : m.oriented_tet_vertices(t_int)) {
                             if (!m.try_set_vertex_mutex_one_ring(v_int, task_id)) {
@@ -241,6 +245,7 @@ void tetwild::TetWild::init_from_input_surface(
                 };
 
                 auto try_acquire_edge = [&m, task_id](const auto& intersected_edges) {
+                    if (m.NUM_THREADS == 0) return true;
                     for (auto e_int : intersected_edges) {
                         if (!m.try_set_vertex_mutex_one_ring(e_int, task_id)) {
                             return false;
@@ -264,6 +269,7 @@ void tetwild::TetWild::init_from_input_surface(
                     }
                 };
                 auto try_acquire_triangle = [&m, task_id](const auto& f) {
+                    if (m.NUM_THREADS == 0) return true;
                     return m.try_set_face_mutex_two_ring(f[0], f[1], f[2], task_id);
                 };
 
@@ -302,8 +308,8 @@ void tetwild::TetWild::init_from_input_surface(
                 });
             }); // tg.run
         } // parallel for loop
+        tg.wait();
     });
-    arena.execute([&] { tg.wait(); });
 
     wmtk::logger().info("retry insert 5 times expired size: {}", expired_queue.size());
 
@@ -350,7 +356,7 @@ void tetwild::TetWild::init_from_input_surface(
 void tetwild::TetWild::finalize_triangle_insertion(
     const std::vector<std::array<size_t, 3>>& faces)
 {
-    tbb::task_arena arena(NUM_THREADS);
+    tbb::task_arena arena(std::max(NUM_THREADS,1));
 
     arena.execute([&faces, this] {
         tbb::parallel_for(this->tet_face_tags.range(), [&faces, this](auto& r) {

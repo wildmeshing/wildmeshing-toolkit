@@ -1,19 +1,24 @@
 #pragma once
 
 #include <wmtk/utils/VectorUtils.h>
-#include <memory>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/AttributeCollection.hpp>
 
+// clang-format off
+#include <wmtk/utils/DisableWarnings.hpp>
 #include <tbb/concurrent_vector.h>
 #include <tbb/spin_mutex.h>
+#include <wmtk/utils/EnableWarnings.hpp>
+// clang-format on
+
 #include <Eigen/Core>
 #include <algorithm>
 #include <array>
 #include <cassert>
 #include <map>
 #include <optional>
+#include <memory>
 #include <vector>
-#include "wmtk/AttributeCollection.hpp"
 
 namespace wmtk {
 

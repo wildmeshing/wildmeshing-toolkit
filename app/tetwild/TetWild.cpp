@@ -17,7 +17,9 @@
 #include <Tracy.hpp>
 #include <igl/predicates/predicates.h>
 #include <igl/winding_number.h>
+#include <igl/write_triangle_mesh.h>
 #include <igl/Timer.h>
+#include <igl/orientable_patches.h>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
@@ -38,11 +40,6 @@ void tetwild::TetWild::mesh_improvement(int max_its)
     ZoneScopedN("meshimprovementmain");
 
     compute_vertex_partition_morton();
-    std::vector<int> partition_size(NUM_THREADS, 0);
-    for (int i = 0; i < vert_capacity(); i++) {
-        partition_size[m_vertex_attribute[i].partition_id]++;
-    }
-    wmtk::logger().info("partition sizes: {}", partition_size);
 
     wmtk::logger().info("========it pre========");
     local_operations({{0, 1, 0, 0}}, false);
@@ -61,13 +58,11 @@ void tetwild::TetWild::mesh_improvement(int max_its)
         wmtk::logger().info("max energy {} stop {}", max_energy, m_params.stop_energy);
         if (max_energy < m_params.stop_energy) break;
         consolidate_mesh();
+        wmtk::logger().info("v {} t {}", vert_capacity(), tet_capacity());
 
         ///sizing field
-        if (it > 0 &&
-            ((pre_max_energy - max_energy) / max_energy < 1e-1 ||
-             pre_max_energy - max_energy < 1e-2) &&
-            ((pre_avg_energy - avg_energy) / avg_energy < 1e-1 ||
-             pre_avg_energy - avg_energy < 1e-2)) {
+        if (it > 0 && pre_max_energy - max_energy < 5e-1 &&
+            (pre_avg_energy - avg_energy) / avg_energy < 0.1) {
             m++;
             if (m == M) {
                 wmtk::logger().info(">>>>adjust_sizing_field...");
@@ -84,8 +79,6 @@ void tetwild::TetWild::mesh_improvement(int max_its)
         pre_avg_energy = avg_energy;
     }
 
-    const auto& vs = get_vertices();
-    for (auto& v : vs) m_vertex_attribute[v.vid(*this)].m_scalar = 1;
     wmtk::logger().info("========it post========");
     local_operations({{0, 1, 0, 0}});
 }
@@ -123,7 +116,12 @@ std::tuple<double, double> tetwild::TetWild::local_operations(
                 smooth_all_vertices();
             }
         }
+        // output_faces(fmt::format("out-op{}.obj", i), [](auto& f) { return f.m_is_surface_fs; });
     }
+    energy = get_max_avg_energy();
+    wmtk::logger().info("max energy = {}", std::get<0>(energy));
+    wmtk::logger().info("avg energy = {}", std::get<1>(energy));
+    wmtk::logger().info("time = {}", timer.getElapsedTime());
 
     return energy;
 }
@@ -147,7 +145,7 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
     std::queue<size_t> v_queue;
     TetMesh::for_each_tetra([&](auto& t) {
         auto tid = t.tid(*this);
-        if (m_tet_attribute[tid].m_quality < filter_energy) return;
+        if (std::cbrt(m_tet_attribute[tid].m_quality) < filter_energy) return;
         auto vs = oriented_tet_vids(t);
         Vector3d c(0, 0, 0);
         for (int j = 0; j < 4; j++) {
@@ -159,7 +157,7 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
 
     wmtk::logger().info("filter energy {} Low Quality Tets {}", filter_energy, pts.size());
 
-    const double R = m_params.l * 2;
+    const double R = m_params.l * 1.8;
 
     int sum = 0;
     int adjcnt = 0;
@@ -188,8 +186,9 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
             continue;
         }
 
-        scale_multipliers[vid] =
-            std::min(scale_multipliers[vid], (1 + dist / R) * refine_scalar); // linear interpolate
+        scale_multipliers[vid] = std::min(
+            scale_multipliers[vid],
+            dist / R * (1 - refine_scalar) + refine_scalar); // linear interpolate
 
         auto vids = get_one_ring_vids_for_vertex_adj(vid, cache_one_ring);
         for (size_t n_vid : vids) {
@@ -216,19 +215,111 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
     return is_hit_min_edge_length.load();
 }
 
+void bfs_orient(const Eigen::MatrixXi& F, Eigen::MatrixXi& FF, Eigen::VectorXi& C)
+{
+    Eigen::SparseMatrix<int> A;
+    igl::orientable_patches(F, C, A);
+
+    // number of faces
+    const int m = F.rows();
+    // number of patches
+    const int num_cc = C.maxCoeff() + 1;
+    Eigen::VectorXi seen = Eigen::VectorXi::Zero(m);
+
+    // Edge sets
+    const int ES[3][2] = {{1, 2}, {2, 0}, {0, 1}};
+
+    if (((void*)&FF) != ((void*)&F)) FF = F;
+
+    // loop over patches
+    for (int c = 0; c < num_cc; c++) {
+        std::queue<int> Q;
+        // find first member of patch c
+        int cnt = 0;
+        for (int f = 0; f < FF.rows(); f++) {
+            if (C(f) == c) {
+                if (cnt == 0) Q.push(f);
+                cnt++;
+                //                break;
+            }
+        }
+        if (cnt < 5) continue;
+
+        int cnt_inverted = 0;
+        assert(!Q.empty());
+        while (!Q.empty()) {
+            const int f = Q.front();
+            Q.pop();
+            if (seen(f) > 0) continue;
+
+            seen(f)++;
+            // loop over neighbors of f
+            for (Eigen::SparseMatrix<int>::InnerIterator it(A, f); it; ++it) {
+                // might be some lingering zeros, and skip self-adjacency
+                if (it.value() != 0 && it.row() != f) {
+                    const int n = it.row();
+                    assert(n != f);
+                    // loop over edges of f
+                    for (int efi = 0; efi < 3; efi++) {
+                        // efi'th edge of face f
+                        Eigen::Vector2i ef(FF(f, ES[efi][0]), FF(f, ES[efi][1]));
+                        // loop over edges of n
+                        for (int eni = 0; eni < 3; eni++) {
+                            // eni'th edge of face n
+                            Eigen::Vector2i en(FF(n, ES[eni][0]), FF(n, ES[eni][1]));
+                            // Match (half-edges go same direction)
+                            if (ef(0) == en(0) && ef(1) == en(1)) {
+                                // flip face n
+                                FF.row(n) = FF.row(n).reverse().eval();
+                                cnt_inverted++;
+                            }
+                        }
+                    }
+                    // add neighbor to queue
+                    Q.push(n);
+                }
+            }
+        }
+        if (cnt_inverted < cnt / 2) continue;
+
+        for (int f = 0; f < FF.rows(); f++) {
+            if (C(f) == c) FF.row(f) = FF.row(f).reverse().eval();
+        }
+    }
+}
+
 void tetwild::TetWild::filter_outside(
     const std::vector<Vector3d>& vertices,
     const std::vector<std::array<size_t, 3>>& faces,
     bool remove_ouside)
 {
-    Eigen::MatrixXd V(vertices.size(), 3);
-    Eigen::MatrixXi F(faces.size(), 3);
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    if (!vertices.empty()) {
+        V.resize(vertices.size(), 3);
+        F.resize(faces.size(), 3);
 
-    for (int i = 0; i < V.rows(); i++) {
-        V.row(i) = vertices[i];
-    }
-    for (int i = 0; i < F.rows(); i++) {
-        for (auto j = 0; j < 3; j++) F(i, j) = faces[i][j];
+        for (int i = 0; i < V.rows(); i++) {
+            V.row(i) = vertices[i];
+        }
+        for (int i = 0; i < F.rows(); i++) {
+            for (auto j = 0; j < 3; j++) F(i, j) = faces[i][j];
+        }
+    } else { // use track to filter
+        auto outface = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
+        V = Eigen::MatrixXd::Zero(vert_capacity(), 3);
+        for (auto v : get_vertices()) {
+            auto vid = v.vid(*this);
+            V.row(vid) = m_vertex_attribute[vid].m_posf;
+        }
+        F.resize(outface.size(), 3);
+        for (auto i = 0; i < outface.size(); i++) {
+            F.row(i) << outface[i][0], outface[i][1], outface[i][2];
+        }
+        wmtk::logger().info("Output face size {}", outface.size());
+        auto F0 = F;
+        Eigen::VectorXi C;
+        bfs_orient(F0, F, C);
     }
 
     const auto& tets = get_tets();
@@ -242,6 +333,22 @@ void tetwild::TetWild::filter_outside(
     Eigen::VectorXd W;
     igl::winding_number(V, F, C, W);
 
+    if (W.maxCoeff() <= 0.5) {
+        // all removed, let's invert.
+        wmtk::logger().info("Correcting");
+        for (auto i = 0; i < F.rows(); i++) {
+            auto temp = F(i, 0);
+            F(i, 0) = F(i, 1);
+            F(i, 1) = temp;
+        }
+        igl::winding_number(V, F, C, W);
+    }
+
+    if (W.maxCoeff() <= 0.5) {
+        wmtk::logger().critical("Still Inverting..., Empty Output");
+        return;
+    }
+
     std::vector<size_t> rm_tids;
     for (int i = 0; i < W.rows(); i++) {
         if (W(i) <= 0.5) {
@@ -254,7 +361,6 @@ void tetwild::TetWild::filter_outside(
 }
 
 /////////////////////////////////////////////////////////////////////
-#include <igl/write_triangle_mesh.h>
 void tetwild::TetWild::output_faces(
     std::string file,
     std::function<bool(const FaceAttributes&)> cond)
@@ -301,7 +407,9 @@ void tetwild::TetWild::output_mesh(std::string file)
     msh.add_tet_vertex_attribute<1>("tv index", [&](size_t i) {
         return m_vertex_attribute[i].m_sizing_scalar;
     });
-    msh.add_tet_attribute<1>("t energy", [&](size_t i) { return m_tet_attribute[i].m_quality; });
+    msh.add_tet_attribute<1>("t energy", [&](size_t i) {
+        return std::cbrt(m_tet_attribute[i].m_quality);
+    });
 
     msh.save(file, true);
 }
@@ -428,10 +536,6 @@ double tetwild::TetWild::get_quality(const Tuple& loc) const
 
 bool tetwild::TetWild::invariants(const std::vector<Tuple>& tets)
 {
-    // check inversion
-    for (auto& t : tets)
-        if (is_inverted(t)) return false;
-
     return true;
 }
 

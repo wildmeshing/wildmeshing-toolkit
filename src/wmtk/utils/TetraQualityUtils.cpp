@@ -109,8 +109,8 @@ Eigen::Vector3d wmtk::newton_method_from_stack(
     std::function<void(const std::array<double, 12>&, Eigen::Matrix3d&)> compute_hessian)
 {
     assert(!assembles.empty());
-    auto& T = assembles.front();
-    Eigen::Vector3d old_pos(T[0], T[1], T[2]);
+    auto& T0 = assembles.front();
+    Eigen::Vector3d old_pos(T0[0], T0[1], T0[2]);
 
     auto energy_from_point = [&assembles, &compute_energy](const Eigen::Vector3d& pos) -> double {
         auto total_energy = 0.;
@@ -125,8 +125,8 @@ Eigen::Vector3d wmtk::newton_method_from_stack(
 
     auto compute_new_valid_pos =
         [&energy_from_point, &assembles, &compute_energy, &compute_jacobian, &compute_hessian](
-            const Eigen::Vector3d& old_pos) {
-            auto current_pos = old_pos;
+            const Eigen::Vector3d& pos) {
+            auto current_pos = pos;
             auto line_search_iters = 12;
             auto newton_iters = 10;
             for (auto iter = 0; iter < newton_iters; iter++) {
@@ -154,8 +154,8 @@ Eigen::Vector3d wmtk::gradient_descent_from_stack(
     std::function<void(const std::array<double, 12>&, Eigen::Vector3d&)> compute_jacobian)
 {
     assert(!assembles.empty());
-    auto& T = assembles.front();
-    Eigen::Vector3d old_pos(T[0], T[1], T[2]);
+    auto& T0 = assembles.front();
+    Eigen::Vector3d old_pos(T0[0], T0[1], T0[2]);
 
     auto energy_from_point = [&assembles, &compute_energy](const Eigen::Vector3d& pos) -> double {
         auto total_energy = 0.;
@@ -171,8 +171,8 @@ Eigen::Vector3d wmtk::gradient_descent_from_stack(
     auto compute_new_valid_pos = [&energy_from_point,
                                   &assembles,
                                   &compute_energy,
-                                  &compute_jacobian](const Eigen::Vector3d& old_pos) {
-        auto current_pos = old_pos;
+                                  &compute_jacobian](const Eigen::Vector3d& pos) {
+        auto current_pos = pos;
         auto line_search_iters = 12;
         auto newton_iters = 10;
         for (auto iter = 0; iter < newton_iters; iter++) {
