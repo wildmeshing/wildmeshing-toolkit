@@ -97,11 +97,9 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
             }
         }
         auto project = wmtk::try_project(m_vertex_attribute[vid].m_posf, neighbor_assemble);
-        if (project) {
-            m_vertex_attribute[vid].m_posf = project.value();
-            for (auto& n : neighbor_assemble) {
-                for (auto kk = 0; kk < 3; kk++) n[kk] = m_vertex_attribute[vid].m_posf[kk];
-            }
+        m_vertex_attribute[vid].m_posf = project;
+        for (auto& n : neighbor_assemble) {
+            for (auto kk = 0; kk < 3; kk++) n[kk] = m_vertex_attribute[vid].m_posf[kk];
         }
         for (auto& n : neighbor_assemble) {
             auto tris = std::array<Eigen::Vector3d, 3>();

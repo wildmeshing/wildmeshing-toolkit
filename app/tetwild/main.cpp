@@ -23,6 +23,7 @@
 #include <igl/remove_duplicate_vertices.h>
 #include <igl/remove_unreferenced.h>
 #include <igl/write_triangle_mesh.h>
+#include <igl/resolve_duplicated_faces.h>
 #include <spdlog/common.h>
 #include <CLI/CLI.hpp>
 
@@ -116,7 +117,7 @@ int main(int argc, char** argv)
 
     {
         // using the same error tolerance as in tetwild
-        Eigen::VectorXi SVI, SVJ;
+        Eigen::VectorXi SVI, SVJ, SVK;
         Eigen::MatrixXd temp_V = V; // for STL file
         igl::remove_duplicate_vertices(
             temp_V,
@@ -126,6 +127,9 @@ int main(int argc, char** argv)
             SVJ);
         for (int i = 0; i < F.rows(); i++)
             for (int j : {0, 1, 2}) F(i, j) = SVJ[F(i, j)];
+        auto F1 = F;
+
+        igl::resolve_duplicated_faces(F1, F, SVK);
     }
 
     std::vector<Eigen::Vector3d> verts(V.rows());
