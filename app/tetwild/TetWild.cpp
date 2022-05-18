@@ -524,20 +524,28 @@ bool tetwild::TetWild::round(const Tuple& v)
 double tetwild::TetWild::get_quality(const Tuple& loc) const
 {
     std::array<Vector3d, 4> ps;
-    auto its = oriented_tet_vertices(loc);
-    for (int j = 0; j < 4; j++) {
-        ps[j] = m_vertex_attribute[its[j].vid(*this)].m_posf;
+    auto its = oriented_tet_vids(loc);
+    auto use_rational = false;
+    for (auto k = 0; k < 4; k++) {
+        ps[k] = m_vertex_attribute[its[k]].m_posf;
+        if (!m_vertex_attribute[its[k]].m_is_rounded) {
+            use_rational = true;
+            break;
+        }
     }
+    auto energy = -1.;
+    if (!use_rational) {
+        std::array<double, 12> T;
+        for (auto k = 0; k < 4; k++)
+            for (auto j = 0; j < 3; j++) T[k * 3 + j] = ps[k][j];
 
-    std::array<double, 12> T;
-    for (int j = 0; j < 3; j++) {
-        T[0 * 3 + j] = ps[0][j];
-        T[1 * 3 + j] = ps[1][j];
-        T[2 * 3 + j] = ps[2][j];
-        T[3 * 3 + j] = ps[3][j];
+        energy = wmtk::AMIPS_energy_stable_p3<apps::Rational>(T);
+    } else {
+        std::array<apps::Rational, 12> T;
+        for (auto k = 0; k < 4; k++)
+            for (auto j = 0; j < 3; j++) T[k * 3 + j] = m_vertex_attribute[its[k]].m_pos[j];
+        energy = wmtk::AMIPS_energy_rational_p3<apps::Rational>(T);
     }
-
-    double energy = wmtk::AMIPS_energy_stable_p3<apps::Rational>(T);
     if (std::isinf(energy) || std::isnan(energy) || energy < 27 - 1e-3) return MAX_ENERGY;
     return energy;
 }
