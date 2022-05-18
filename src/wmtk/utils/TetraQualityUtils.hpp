@@ -39,5 +39,5 @@ double harmonic_energy(const Eigen::MatrixXd& verts);
 
 Eigen::Vector3d try_project(
     const Eigen::Vector3d& point,
-    const std::vector<std::array<double, 12>>& assembled_neighbor);
+    const std::vector<std::array<double, 9>>& assembled_neighbor);
 } // namespace wmtk
