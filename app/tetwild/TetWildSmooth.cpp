@@ -17,7 +17,8 @@ bool tetwild::TetWild::smooth_before(const Tuple& t)
     if (!m_vertex_attribute[t.vid(*this)].on_bbox_faces.empty()) return false;
     if (m_vertex_attribute[t.vid(*this)].m_is_rounded) return true;
     // try to round.
-    return round(t); // Note: no need to roll back.
+    // Note: no need to roll back.
+    return  round(t);
 }
 
 
