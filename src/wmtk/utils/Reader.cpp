@@ -33,7 +33,7 @@ void eigen_to_wmtk_input(
 void stl_to_manifold_wmtk_input(
     std::string input_path,
     double remove_duplicate_esp,
-    std::pair<Eigen::Vector3d, Eigen::Vector3d> box_minmax,
+    std::pair<Eigen::Vector3d, Eigen::Vector3d>& box_minmax,
     std::vector<Eigen::Vector3d>& verts,
     std::vector<std::array<size_t, 3>>& tris,
     std::vector<size_t>& modified_nonmanifold_v)
