@@ -60,7 +60,7 @@ int main(int argc, char** argv)
 
     Eigen::VectorXi SVI, SVJ;
     Eigen::MatrixXd temp_V = V; // for STL file
-    igl::remove_duplicate_vertices(temp_V, 0, V, SVI, SVJ);
+    igl::remove_duplicate_vertices(temp_V, 1e-3, V, SVI, SVJ);
     for (int i = 0; i < F.rows(); i++)
         for (int j : {0, 1, 2}) F(i, j) = SVJ[F(i, j)];
 
