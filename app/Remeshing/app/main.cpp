@@ -144,8 +144,13 @@ int main(int argc, char** argv)
     //     properties);
     if (target_len > 0)
         run_remeshing(input_path, target_len, output, m, itrs, bnd_output);
-    else
-        run_remeshing(input_path, diag * len_rel, output, m, itrs, bnd_output);
+
+    else {
+        double avg_len = m.average_len_valen()[0];
+        double len = diag * len_rel;
+        len = (len < avg_len * 5) ? len : avg_len * 5;
+        run_remeshing(input_path, len, output, m, itrs, bnd_output);
+    }
     timer.stop();
     logger().info("Took {}", timer.getElapsedTimeInSec());
 
