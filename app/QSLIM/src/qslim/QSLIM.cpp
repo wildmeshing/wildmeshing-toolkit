@@ -60,19 +60,7 @@ double QSLIM::compute_cost_for_e(const TriMesh::Tuple& v_tuple)
     }
     cost = (vbar.dot(Q.A * vbar) + 2 * Q.b.dot(vbar) + Q.c);
     // the cost has to greater than 0
-    if (cost < 0 && cost > -2e-9)
-        cost = 0; // floating point error
-    else if (cost < 0) {
-        wmtk::logger().info(
-            "cost is {} smaller than zero \n Q.A is \n{} \nQ.b \n{}\n Q.c \n {} \nvbar is\n{} "
-            " ",
-            cost,
-            Q.A,
-            Q.b,
-            Q.c,
-            vbar);
-        exit(0);
-    }
+    if (cost < 0) cost = 0; // floating point error
     // wmtk::logger().info("cost is smaller than zero");
     edge_attrs[v_tuple.eid(*this)].vbar = vbar;
     return cost;
