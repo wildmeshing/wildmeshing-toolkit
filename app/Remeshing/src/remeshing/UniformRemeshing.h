@@ -2,8 +2,8 @@
 #include <wmtk/ConcurrentTriMesh.h>
 #include <wmtk/utils/PartitionMesh.h>
 #include <wmtk/utils/VectorUtils.h>
-#include "wmtk/AttributeCollection.hpp"
 #include <sec/envelope/SampleEnvelope.hpp>
+#include "wmtk/AttributeCollection.hpp"
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
@@ -19,8 +19,8 @@
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include <memory>
 #include <atomic>
+#include <memory>
 #include <queue>
 namespace remeshing {
 
@@ -80,8 +80,11 @@ public:
 
 
         partition_mesh_morton();
-        for (auto v : frozen_verts) vertex_attrs[v].freeze = true;
+
         if (m_freeze) {
+            for (auto v : frozen_verts) {
+                vertex_attrs[v].freeze = true;
+            }
             for (auto e : get_edges()) {
                 if (is_boundary_edge(e)) {
                     vertex_attrs[e.vid(*this)].freeze = true;
