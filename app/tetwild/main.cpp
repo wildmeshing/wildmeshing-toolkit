@@ -7,6 +7,8 @@
 
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/Partitioning.h>
+#include <wmtk/utils/Reader.hpp>
+
 #include <memory>
 #include <wmtk/utils/ManifoldUtils.hpp>
 #include <wmtk/utils/partition_utils.hpp>
@@ -22,27 +24,10 @@
 #include <igl/read_triangle_mesh.h>
 #include <igl/remove_duplicate_vertices.h>
 #include <igl/remove_unreferenced.h>
-#include <igl/write_triangle_mesh.h>
 #include <igl/resolve_duplicated_faces.h>
+#include <igl/write_triangle_mesh.h>
 #include <spdlog/common.h>
 #include <CLI/CLI.hpp>
-
-void reader(std::string input_surface, Eigen::MatrixXd& VI, Eigen::MatrixXi& FI)
-{
-    GEO::initialize();
-    GEO::Mesh input;
-    GEO::mesh_load(input_surface, input);
-    VI.resize(input.vertices.nb(), 3);
-    for (int i = 0; i < VI.rows(); i++)
-        VI.row(i) << (input.vertices.point(i))[0], (input.vertices.point(i))[1],
-            (input.vertices.point(i))[2];
-    input.facets.triangulate();
-    wmtk::logger().info("V {} F {}", input.vertices.nb(), input.facets.nb());
-    FI.resize(input.facets.nb(), 3);
-    for (int i = 0; i < FI.rows(); i++)
-        FI.row(i) << input.facets.vertex(i, 0), input.facets.vertex(i, 1),
-            input.facets.vertex(i, 2);
-}
 
 void boundary_detect(const Eigen::MatrixXi& tris)
 { // open boundary (1-manifold) detection. hand written for non-manifold meshes.
@@ -102,7 +87,7 @@ int main(int argc, char** argv)
 
     Eigen::MatrixXd inV, V;
     Eigen::MatrixXi inF, F;
-    reader(input_path, inV, inF);
+    wmtk::reader(input_path, inV, inF);
 
     Eigen::VectorXi _I;
     igl::remove_unreferenced(inV, inF, V, F, _I);
@@ -134,12 +119,7 @@ int main(int argc, char** argv)
 
     std::vector<Eigen::Vector3d> verts(V.rows());
     std::vector<std::array<size_t, 3>> tris(F.rows());
-    for (int i = 0; i < V.rows(); i++) {
-        verts[i] = V.row(i);
-    }
-    for (int i = 0; i < F.rows(); i++) {
-        for (int j = 0; j < 3; j++) tris[i][j] = (size_t)F(i, j);
-    }
+    wmtk::input_formatter(verts, tris, V, F);
 
     wmtk::logger().info("diag of the mesh: {} ", diag);
     boundary_detect(F);

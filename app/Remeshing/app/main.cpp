@@ -1,15 +1,19 @@
 #include <remeshing/UniformRemeshing.h>
 
-#include <wmtk/utils/ManifoldUtils.hpp>
-
 #include <CLI/CLI.hpp>
+
+#include <wmtk/utils/ManifoldUtils.hpp>
+#include <wmtk/utils/Reader.hpp>
 
 #include <igl/Timer.h>
 #include <igl/is_edge_manifold.h>
 #include <igl/is_vertex_manifold.h>
 #include <igl/read_triangle_mesh.h>
 #include <igl/remove_duplicate_vertices.h>
+#include <igl/remove_unreferenced.h>
+#include <igl/resolve_duplicated_faces.h>
 #include <igl/writeDMAT.h>
+
 
 #include <stdlib.h>
 #include <chrono>
@@ -52,7 +56,7 @@ void run_remeshing(
 
 int main(int argc, char** argv)
 {
-    std::string path = "";
+    std::string input_path = "";
     std::string output = "out.obj";
     double env_rel = -1;
     double len_rel = 5;
@@ -64,7 +68,7 @@ int main(int argc, char** argv)
     bool sample_envelope = false;
 
     CLI::App app{argv[0]};
-    app.add_option("input", path, "Input mesh.")->check(CLI::ExistingFile);
+    app.add_option("input", input_path, "Input mesh.")->check(CLI::ExistingFile);
     app.add_option("output", output, "output mesh.");
 
     app.add_option("-e,--envelope", env_rel, "Relative envelope size, negative to disable");
@@ -81,45 +85,56 @@ int main(int argc, char** argv)
         "(Debug use) write out a table tha maps bnd vertices between original input and output");
     CLI11_PARSE(app, argc, argv);
 
-    wmtk::logger().info("remeshing on {}", path);
+    wmtk::logger().info("remeshing on {}", input_path);
     wmtk::logger().info("freeze bnd {}", freeze);
 
-    Eigen::MatrixXd V;
-    Eigen::MatrixXi F;
-    bool ok = igl::read_triangle_mesh(path, V, F);
-    Eigen::VectorXi SVI, SVJ;
-    Eigen::MatrixXd temp_V = V; // for STL file
-    igl::remove_duplicate_vertices(temp_V, 1e-3, V, SVI, SVJ);
-    for (int i = 0; i < F.rows(); i++)
-        for (int j = 0; j < 3; j++) F(i, j) = SVJ[F(i, j)];
-    wmtk::logger().info("Before_vertices#: {} \n Before_tris#: {}", V.rows(), F.rows());
+    Eigen::MatrixXd inV, V;
+    Eigen::MatrixXi inF, F;
+    wmtk::reader(input_path, inV, inF);
+    Eigen::VectorXi _I;
 
+    igl::remove_unreferenced(inV, inF, V, F, _I);
 
-    std::vector<Eigen::Vector3d> v(V.rows());
-    std::vector<std::array<size_t, 3>> tri(F.rows());
-    for (int i = 0; i < V.rows(); i++) {
-        v[i] = V.row(i);
-    }
-    for (int i = 0; i < F.rows(); i++) {
-        for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
+    if (V.rows() == 0 || F.rows() == 0) {
+        wmtk::logger().info("== finish with Empty Input, stop.");
+        return 1;
     }
 
     const Eigen::MatrixXd box_min = V.colwise().minCoeff();
     const Eigen::MatrixXd box_max = V.colwise().maxCoeff();
     const double diag = (box_max - box_min).norm();
+
+
+    // using the same error tolerance as in tetwild
+    Eigen::VectorXi SVI, SVJ, SVK;
+    Eigen::MatrixXd temp_V = V; // for STL file
+    igl::remove_duplicate_vertices(temp_V, 1e-5 * diag, V, SVI, SVJ);
+    for (int i = 0; i < F.rows(); i++)
+        for (int j : {0, 1, 2}) F(i, j) = SVJ[F(i, j)];
+    auto F1 = F;
+
+    igl::resolve_duplicated_faces(F1, F, SVK);
+
+
+    std::vector<Eigen::Vector3d> verts(V.rows());
+    std::vector<std::array<size_t, 3>> tris(F.rows());
+    wmtk::input_formatter(verts, tris, V, F);
+
+    wmtk::logger().info("Before_vertices#: {} \n Before_tris#: {}", V.rows(), F.rows());
+
     const double envelope_size = env_rel * diag;
     Eigen::VectorXi dummy;
     std::vector<size_t> modified_v;
     if (!igl::is_edge_manifold(F) || !igl::is_vertex_manifold(F, dummy)) {
-        auto v1 = v;
-        auto tri1 = tri;
-        wmtk::separate_to_manifold(v1, tri1, v, tri, modified_v);
+        auto v1 = verts;
+        auto tri1 = tris;
+        wmtk::separate_to_manifold(v1, tri1, verts, tris, modified_v);
     }
 
     igl::Timer timer;
     timer.start();
-    UniformRemeshing m(v, thread, !sample_envelope);
-    m.create_mesh(v.size(), tri, modified_v, freeze, envelope_size);
+    UniformRemeshing m(verts, thread, !sample_envelope);
+    m.create_mesh(verts.size(), tris, modified_v, freeze, envelope_size);
 
     if (bnd_output) m.get_boundary_map(SVI);
 
@@ -128,9 +143,9 @@ int main(int argc, char** argv)
     //     "edgelen: avg max min valence:avg max min before remesh is: {}",
     //     properties);
     if (target_len > 0)
-        run_remeshing(path, target_len, output, m, itrs, bnd_output);
+        run_remeshing(input_path, target_len, output, m, itrs, bnd_output);
     else
-        run_remeshing(path, diag * len_rel, output, m, itrs, bnd_output);
+        run_remeshing(input_path, diag * len_rel, output, m, itrs, bnd_output);
     timer.stop();
     logger().info("Took {}", timer.getElapsedTimeInSec());
 
