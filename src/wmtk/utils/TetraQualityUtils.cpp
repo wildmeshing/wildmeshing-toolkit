@@ -202,9 +202,9 @@ double wmtk::harmonic_energy(const Eigen::MatrixXd& verts)
     return harmonic_tet_energy(T);
 }
 
-std::optional<Eigen::Vector3d> wmtk::try_project(
+Eigen::Vector3d wmtk::try_project(
     const Eigen::Vector3d& point,
-    const std::vector<std::array<double, 12>>& assembled_neighbor)
+    const std::vector<std::array<double, 9>>& assembled_neighbor)
 {
     auto min_dist = std::numeric_limits<double>::infinity();
     Eigen::Vector3d closest_point = Eigen::Vector3d::Zero();

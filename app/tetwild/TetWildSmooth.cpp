@@ -72,7 +72,7 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
         m_vertex_attribute[vid].m_posf.transpose());
 
     if (m_vertex_attribute[vid].m_is_on_surface) {
-        std::vector<std::array<double, 12>> neighbor_assemble;
+        std::vector<std::array<double, 9>> neighbor_assemble;
         std::set<size_t> unique_fid;
         for (auto& t : locs) {
             for (auto j = 0; j < 4; j++) {
@@ -89,7 +89,7 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
                             std::swap(vs_id[k], vs_id[0]);
                         };
                     if (vs_id[0] != vid) continue; // does not contain point of interest
-                    std::array<double, 12> coords;
+                    std::array<double, 9> coords;
                     for (auto k = 0; k < 3; k++)
                         for (auto kk = 0; kk < 3; kk++)
                             coords[k * 3 + kk] = m_vertex_attribute[vs_id[k]].m_posf[kk];
@@ -98,11 +98,9 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
             }
         }
         auto project = wmtk::try_project(m_vertex_attribute[vid].m_posf, neighbor_assemble);
-        if (project) {
-            m_vertex_attribute[vid].m_posf = project.value();
-            for (auto& n : neighbor_assemble) {
-                for (auto kk = 0; kk < 3; kk++) n[kk] = m_vertex_attribute[vid].m_posf[kk];
-            }
+        m_vertex_attribute[vid].m_posf = project;
+        for (auto& n : neighbor_assemble) {
+            for (auto kk = 0; kk < 3; kk++) n[kk] = m_vertex_attribute[vid].m_posf[kk];
         }
         for (auto& n : neighbor_assemble) {
             auto tris = std::array<Eigen::Vector3d, 3>();
