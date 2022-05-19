@@ -60,6 +60,17 @@ void tetwild::TetWild::mesh_improvement(int max_its)
         consolidate_mesh();
         wmtk::logger().info("v {} t {}", vert_capacity(), tet_capacity());
 
+        auto cnt_round = 0, cnt_verts = 0;
+        TetMesh::for_each_vertex([&](auto& v) {
+            if (m_vertex_attribute[v.vid(*this)].m_is_rounded) cnt_round++;
+            cnt_verts++;
+        });
+        if (cnt_round < cnt_verts) {
+            wmtk::logger().info("rounded {}/{}", cnt_round, cnt_verts);
+        } else {
+            wmtk::logger().info("All rounded!", cnt_round, cnt_verts);
+        }
+
         ///sizing field
         if (it > 0 && pre_max_energy - max_energy < 5e-1 &&
             (pre_avg_energy - avg_energy) / avg_energy < 0.1) {
@@ -123,12 +134,6 @@ std::tuple<double, double> tetwild::TetWild::local_operations(
     wmtk::logger().info("avg energy = {}", std::get<1>(energy));
     wmtk::logger().info("time = {}", timer.getElapsedTime());
 
-    auto cnt_round = 0, cnt_verts = 0;
-    TetMesh::for_each_vertex([&](auto& v) {
-        if (m_vertex_attribute[v.vid(*this)].m_is_rounded) cnt_round++;
-        cnt_verts++;
-    });
-    wmtk::logger().info("rounded {}/{}", cnt_round, cnt_verts);
 
     return energy;
 }
