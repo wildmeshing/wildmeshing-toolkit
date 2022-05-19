@@ -436,6 +436,8 @@ Eigen::Vector3d UniformRemeshing::tangential_smooth(const Tuple& t)
         n0 += area(*this, verts) * normal(*this, verts);
     }
     n0 /= w0;
+    if (n0.norm() < 1e-10) return vertex_attrs[t.vid(*this)].pos;
+    n0 = n0.normalized();
     after_smooth += n0 * n0.transpose() * (vertex_attrs[t.vid(*this)].pos - after_smooth);
     assert(check_mesh_connectivity_validity());
     return after_smooth;
