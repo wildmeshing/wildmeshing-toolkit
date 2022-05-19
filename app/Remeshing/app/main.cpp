@@ -2,16 +2,10 @@
 
 #include <CLI/CLI.hpp>
 
-#include <wmtk/utils/ManifoldUtils.hpp>
 #include <wmtk/utils/Reader.hpp>
 
 #include <igl/Timer.h>
-#include <igl/is_edge_manifold.h>
-#include <igl/is_vertex_manifold.h>
 #include <igl/read_triangle_mesh.h>
-#include <igl/remove_duplicate_vertices.h>
-#include <igl/remove_unreferenced.h>
-#include <igl/resolve_duplicated_faces.h>
 #include <igl/writeDMAT.h>
 
 
@@ -45,7 +39,7 @@ void run_remeshing(
 
     m.consolidate_mesh();
     m.write_triangle_mesh(output);
-    wmtk::logger().info("runtime {}", duration.count());
+    wmtk::logger().info("runtime in ms {}", duration.count());
     wmtk::logger().info("current_memory {}", getCurrentRSS() / (1024. * 1024));
     wmtk::logger().info("peak_memory {}", getPeakRSS() / (1024. * 1024));
     wmtk::logger().info(
@@ -79,64 +73,29 @@ int main(int argc, char** argv)
     app.add_option("-f, --freeze", freeze, "to freeze the boundary, default to true");
     app.add_flag("--sample-envelope", sample_envelope, "use sample envelope, default to false.");
 
-    app.add_option(
-        "--bnd_output",
-        bnd_output,
-        "(Debug use) write out a table tha maps bnd vertices between original input and output");
     CLI11_PARSE(app, argc, argv);
 
     wmtk::logger().info("remeshing on {}", input_path);
     wmtk::logger().info("freeze bnd {}", freeze);
+    std::vector<Eigen::Vector3d> verts;
+    std::vector<std::array<size_t, 3>> tris;
+    std::pair<Eigen::Vector3d, Eigen::Vector3d> box_minmax;
+    double remove_duplicate_esp = 1e-5;
+    std::vector<size_t> modified_nonmanifold_v;
+    wmtk::stl_to_manifold_wmtk_input(
+        input_path,
+        remove_duplicate_esp,
+        box_minmax,
+        verts,
+        tris,
+        modified_nonmanifold_v);
 
-    Eigen::MatrixXd inV, V;
-    Eigen::MatrixXi inF, F;
-    wmtk::reader(input_path, inV, inF);
-    Eigen::VectorXi _I;
-
-    igl::remove_unreferenced(inV, inF, V, F, _I);
-
-    if (V.rows() == 0 || F.rows() == 0) {
-        wmtk::logger().info("== finish with Empty Input, stop.");
-        return 1;
-    }
-
-    const Eigen::MatrixXd box_min = V.colwise().minCoeff();
-    const Eigen::MatrixXd box_max = V.colwise().maxCoeff();
-    const double diag = (box_max - box_min).norm();
-
-
-    // using the same error tolerance as in tetwild
-    Eigen::VectorXi SVI, SVJ, SVK;
-    Eigen::MatrixXd temp_V = V; // for STL file
-    igl::remove_duplicate_vertices(temp_V, 1e-5 * diag, V, SVI, SVJ);
-    for (int i = 0; i < F.rows(); i++)
-        for (int j : {0, 1, 2}) F(i, j) = SVJ[F(i, j)];
-    auto F1 = F;
-
-    igl::resolve_duplicated_faces(F1, F, SVK);
-
-
-    std::vector<Eigen::Vector3d> verts(V.rows());
-    std::vector<std::array<size_t, 3>> tris(F.rows());
-    wmtk::input_formatter(verts, tris, V, F);
-
-    wmtk::logger().info("Before_vertices#: {} \n Before_tris#: {}", V.rows(), F.rows());
-
+    double diag = (box_minmax.first - box_minmax.second).norm();
     const double envelope_size = env_rel * diag;
-    Eigen::VectorXi dummy;
-    std::vector<size_t> modified_v;
-    if (!igl::is_edge_manifold(F) || !igl::is_vertex_manifold(F, dummy)) {
-        auto v1 = verts;
-        auto tri1 = tris;
-        wmtk::separate_to_manifold(v1, tri1, verts, tris, modified_v);
-    }
-
     igl::Timer timer;
     timer.start();
     UniformRemeshing m(verts, thread, !sample_envelope);
-    m.create_mesh(verts.size(), tris, modified_v, freeze, envelope_size);
-
-    if (bnd_output) m.get_boundary_map(SVI);
+    m.create_mesh(verts.size(), tris, modified_nonmanifold_v, freeze, envelope_size);
 
     // std::vector<double> properties = m.average_len_valen();
     // wmtk::logger().info(

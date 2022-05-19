@@ -1,6 +1,6 @@
 #include "Reader.hpp"
 namespace wmtk {
-void reader(std::string input_surface, Eigen::MatrixXd& VI, Eigen::MatrixXi& FI)
+void stl_to_eigen(std::string input_surface, Eigen::MatrixXd& VI, Eigen::MatrixXi& FI)
 {
     GEO::initialize();
     GEO::Mesh input;
@@ -16,7 +16,7 @@ void reader(std::string input_surface, Eigen::MatrixXd& VI, Eigen::MatrixXi& FI)
         FI.row(i) << input.facets.vertex(i, 0), input.facets.vertex(i, 1),
             input.facets.vertex(i, 2);
 }
-void input_formatter(
+void eigen_to_wmtk_input(
     std::vector<Eigen::Vector3d>& verts,
     std::vector<std::array<size_t, 3>>& tris,
     const Eigen::MatrixXd& V,
@@ -27,6 +27,61 @@ void input_formatter(
     }
     for (int i = 0; i < F.rows(); i++) {
         for (int j = 0; j < 3; j++) tris[i][j] = (size_t)F(i, j);
+    }
+}
+
+void stl_to_manifold_wmtk_input(
+    std::string input_path,
+    double remove_duplicate_esp,
+    std::pair<Eigen::Vector3d, Eigen::Vector3d> box_minmax,
+    std::vector<Eigen::Vector3d>& verts,
+    std::vector<std::array<size_t, 3>>& tris,
+    std::vector<size_t>& modified_nonmanifold_v)
+{
+    Eigen::MatrixXd inV, V;
+    Eigen::MatrixXi inF, F;
+    wmtk::stl_to_eigen(input_path, inV, inF);
+    Eigen::VectorXi _I;
+
+    igl::remove_unreferenced(inV, inF, V, F, _I);
+
+    if (V.rows() == 0 || F.rows() == 0) {
+        wmtk::logger().info("== finish with Empty Input, stop.");
+        exit(0);
+    }
+
+    box_minmax = std::pair(V.colwise().minCoeff(), V.colwise().maxCoeff());
+    double diag = (box_minmax.first - box_minmax.second).norm();
+
+    // using the same error tolerance as in tetwild
+    Eigen::VectorXi SVI, SVJ, SVK;
+    Eigen::MatrixXd temp_V = V; // for STL file
+    igl::remove_duplicate_vertices(
+        temp_V,
+        std::min(1e-5, remove_duplicate_esp / 10 * diag),
+        V,
+        SVI,
+        SVJ);
+    for (int i = 0; i < F.rows(); i++)
+        for (int j : {0, 1, 2}) F(i, j) = SVJ[F(i, j)];
+    auto F1 = F;
+
+    igl::resolve_duplicated_faces(F1, F, SVK);
+
+
+    verts.resize(V.rows());
+    tris.resize(F.rows());
+    wmtk::eigen_to_wmtk_input(verts, tris, V, F);
+
+    wmtk::logger().info("after remove duplicate v#: {} f#: {}", V.rows(), F.rows());
+
+
+    Eigen::VectorXi dummy;
+
+    if (!igl::is_edge_manifold(F) || !igl::is_vertex_manifold(F, dummy)) {
+        auto v1 = verts;
+        auto tri1 = tris;
+        wmtk::separate_to_manifold(v1, tri1, verts, tris, modified_nonmanifold_v);
     }
 }
 } // namespace wmtk
