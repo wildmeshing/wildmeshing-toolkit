@@ -1,12 +1,14 @@
 #include "Delaunay.hpp"
 
+// clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
-#include <wmtk/utils/EnableWarnings.hpp>
-
 #include <geogram/delaunay/delaunay.h>
+#include <wmtk/utils/EnableWarnings.hpp>
+// clang-format on
 
-#include <mutex>
+
 #include <cassert>
+#include <mutex>
 
 namespace wmtk {
 
@@ -20,7 +22,7 @@ auto delaunay3D_conn(const std::vector<Point3D>& points)
     assert(engine);
 
     // Some settings
-    engine->set_reorder(false);//note
+    engine->set_reorder(false); // note
     engine->set_stores_cicl(false); // Incident tetrahedral list.
     engine->set_stores_neighbors(false); // Vertex neighbors.
     engine->set_refine(false);
@@ -31,22 +33,11 @@ auto delaunay3D_conn(const std::vector<Point3D>& points)
     engine->set_vertices(points.size(), points.front().data());
 
     // Extract output.
-    const size_t num_vertices = engine->nb_vertices();
     const size_t num_tets = engine->nb_cells();
-//    std::vector<Point3D> vertices(num_vertices);
-    std::vector<Tetrahedron> tets(num_tets);
-
-//    for (size_t i = 0; i < num_vertices; i++) {
-//        vertices[i][0] = engine->vertex_ptr(i)[0];
-//        vertices[i][1] = engine->vertex_ptr(i)[1];
-//        vertices[i][2] = engine->vertex_ptr(i)[2];
-//    }
+    std::vector<std::array<size_t, 4>> tets(num_tets);
 
     for (size_t i = 0; i < num_tets; i++) {
-        tets[i][0] = engine->cell_vertex(i, 0);
-        tets[i][1] = engine->cell_vertex(i, 1);
-        tets[i][2] = engine->cell_vertex(i, 2);
-        tets[i][3] = engine->cell_vertex(i, 3);
+        for (auto j = 0; j < 4; j++) tets[i][j] = engine->cell_vertex(i, j);
     }
 
     return tets;
@@ -79,16 +70,11 @@ auto delaunay3D(const std::vector<Point3D>& points)
     std::vector<Tetrahedron> tets(num_tets);
 
     for (size_t i = 0; i < num_vertices; i++) {
-        vertices[i][0] = engine->vertex_ptr(i)[0];
-        vertices[i][1] = engine->vertex_ptr(i)[1];
-        vertices[i][2] = engine->vertex_ptr(i)[2];
+        for (auto j = 0; j < 3; j++) vertices[i][j] = engine->vertex_ptr(i)[j];
     }
 
     for (size_t i = 0; i < num_tets; i++) {
-        tets[i][0] = engine->cell_vertex(i, 0);
-        tets[i][1] = engine->cell_vertex(i, 1);
-        tets[i][2] = engine->cell_vertex(i, 2);
-        tets[i][3] = engine->cell_vertex(i, 3);
+        for (auto j = 0; j < 4; j++) tets[i][j] = engine->cell_vertex(i, j);
     }
 
     return {vertices, tets};

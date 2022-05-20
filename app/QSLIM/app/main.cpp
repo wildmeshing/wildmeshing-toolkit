@@ -44,12 +44,14 @@ int main(int argc, char** argv)
     std::string path = "";
     std::string output = "out.obj";
     double env_rel = -1;
+    double target_pec = 0.1;
     int thread = 1;
 
     CLI::App app{argv[0]};
     app.add_option("input", path, "Input mesh.")->check(CLI::ExistingFile);
     app.add_option("output", output, "output mesh.");
-
+    
+    app.add_option("-t, --target", target_pec, "Percentage of input vertices in output.");
     app.add_option("-e,--envelope", env_rel, "Relative envelope size, negative to disable");
     app.add_option("-j, --thread", thread, "thread.");
     CLI11_PARSE(app, argc, argv);
@@ -60,7 +62,7 @@ int main(int argc, char** argv)
 
     Eigen::VectorXi SVI, SVJ;
     Eigen::MatrixXd temp_V = V; // for STL file
-    igl::remove_duplicate_vertices(temp_V, 0, V, SVI, SVJ);
+    igl::remove_duplicate_vertices(temp_V, 1e-3, V, SVI, SVJ);
     for (int i = 0; i < F.rows(); i++)
         for (int j : {0, 1, 2}) F(i, j) = SVJ[F(i, j)];
 
@@ -93,7 +95,7 @@ int main(int argc, char** argv)
     m.create_mesh(v.size(), tri, modified_v, envelope_size);
     assert(m.check_mesh_connectivity_validity());
     wmtk::logger().info("collapsing mesh {}", path);
-    int target_verts = v.size() * 0.1;
+    int target_verts = v.size() * target_pec;
 
     igl::Timer timer;
     timer.start();

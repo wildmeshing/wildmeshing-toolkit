@@ -60,6 +60,17 @@ void tetwild::TetWild::mesh_improvement(int max_its)
         consolidate_mesh();
         wmtk::logger().info("v {} t {}", vert_capacity(), tet_capacity());
 
+        auto cnt_round = 0, cnt_verts = 0;
+        TetMesh::for_each_vertex([&](auto& v) {
+            if (m_vertex_attribute[v.vid(*this)].m_is_rounded) cnt_round++;
+            cnt_verts++;
+        });
+        if (cnt_round < cnt_verts) {
+            wmtk::logger().info("rounded {}/{}", cnt_round, cnt_verts);
+        } else {
+            wmtk::logger().info("All rounded!", cnt_round, cnt_verts);
+        }
+
         ///sizing field
         if (it > 0 && pre_max_energy - max_energy < 5e-1 &&
             (pre_avg_energy - avg_energy) / avg_energy < 0.1) {
@@ -122,6 +133,7 @@ std::tuple<double, double> tetwild::TetWild::local_operations(
     wmtk::logger().info("max energy = {}", std::get<0>(energy));
     wmtk::logger().info("avg energy = {}", std::get<1>(energy));
     wmtk::logger().info("time = {}", timer.getElapsedTime());
+
 
     return energy;
 }
@@ -320,6 +332,7 @@ void tetwild::TetWild::filter_outside(
         auto F0 = F;
         Eigen::VectorXi C;
         bfs_orient(F0, F, C);
+        wmtk::logger().info("BFS orient {}", F.rows());
     }
 
     const auto& tets = get_tets();
@@ -348,6 +361,7 @@ void tetwild::TetWild::filter_outside(
         wmtk::logger().critical("Still Inverting..., Empty Output");
         return;
     }
+    wmtk::logger().info("Removing...");
 
     std::vector<size_t> rm_tids;
     for (int i = 0; i < W.rows(); i++) {
@@ -431,7 +445,7 @@ std::tuple<double, double> tetwild::TetWild::get_max_avg_energy()
     double max_energy = -1.;
     double avg_energy = 0.;
     auto cnt = 0;
-    for_each_tetra([&](auto& t) {
+    TetMesh::for_each_tetra([&](auto& t) {
         auto q = m_tet_attribute[t.tid(*this)].m_quality;
         max_energy = std::max(max_energy, q);
         avg_energy += std::cbrt(q);
@@ -515,20 +529,28 @@ bool tetwild::TetWild::round(const Tuple& v)
 double tetwild::TetWild::get_quality(const Tuple& loc) const
 {
     std::array<Vector3d, 4> ps;
-    auto its = oriented_tet_vertices(loc);
-    for (int j = 0; j < 4; j++) {
-        ps[j] = m_vertex_attribute[its[j].vid(*this)].m_posf;
+    auto its = oriented_tet_vids(loc);
+    auto use_rational = false;
+    for (auto k = 0; k < 4; k++) {
+        ps[k] = m_vertex_attribute[its[k]].m_posf;
+        if (!m_vertex_attribute[its[k]].m_is_rounded) {
+            use_rational = true;
+            break;
+        }
     }
+    auto energy = -1.;
+    if (!use_rational) {
+        std::array<double, 12> T;
+        for (auto k = 0; k < 4; k++)
+            for (auto j = 0; j < 3; j++) T[k * 3 + j] = ps[k][j];
 
-    std::array<double, 12> T;
-    for (int j = 0; j < 3; j++) {
-        T[0 * 3 + j] = ps[0][j];
-        T[1 * 3 + j] = ps[1][j];
-        T[2 * 3 + j] = ps[2][j];
-        T[3 * 3 + j] = ps[3][j];
+        energy = wmtk::AMIPS_energy_stable_p3<apps::Rational>(T);
+    } else {
+        std::array<apps::Rational, 12> T;
+        for (auto k = 0; k < 4; k++)
+            for (auto j = 0; j < 3; j++) T[k * 3 + j] = m_vertex_attribute[its[k]].m_pos[j];
+        energy = wmtk::AMIPS_energy_rational_p3<apps::Rational>(T);
     }
-
-    double energy = wmtk::AMIPS_energy_stable_p3<apps::Rational>(T);
     if (std::isinf(energy) || std::isnan(energy) || energy < 27 - 1e-3) return MAX_ENERGY;
     return energy;
 }

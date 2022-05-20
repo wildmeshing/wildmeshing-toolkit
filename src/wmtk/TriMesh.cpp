@@ -669,12 +669,31 @@ void TriMesh::consolidate_mesh(bool bnd_output)
     assert(check_mesh_connectivity_validity());
 }
 
+
+
+std::vector<size_t> TriMesh::get_one_ring_vids_for_vertex_duplicate(
+    const size_t& vid) const
+{
+    std::vector<size_t> one_ring;
+    auto& conn_tri  = m_vertex_connectivity[vid].m_conn_tris;
+
+    one_ring.reserve(conn_tri.size()*4);
+    for (size_t tri : conn_tri) {
+        for (auto j: m_tri_connectivity[tri].m_indices) {
+            one_ring.push_back(j);
+        }
+    }
+
+    return one_ring;
+}
+
 std::vector<wmtk::TriMesh::Tuple> TriMesh::get_one_ring_tris_for_vertex(
     const wmtk::TriMesh::Tuple& t) const
 {
     std::vector<TriMesh::Tuple> one_ring;
     size_t vid = t.vid(*this);
-    auto conn_tri = m_vertex_connectivity[vid].m_conn_tris;
+    auto& conn_tri = m_vertex_connectivity[vid].m_conn_tris;
+    one_ring.reserve(conn_tri.size());
     for (size_t tri : conn_tri) {
         int j = m_tri_connectivity[tri].find(vid);
         one_ring.emplace_back(vid, (j + 2) % 3, tri, *this);
@@ -799,6 +818,7 @@ std::vector<TriMesh::Tuple> TriMesh::get_faces() const
 std::vector<TriMesh::Tuple> TriMesh::get_edges() const
 {
     std::vector<TriMesh::Tuple> all_edges_tuples;
+    all_edges_tuples.reserve(tri_capacity() * 3);
     for (int i = 0; i < tri_capacity(); i++) {
         if (m_tri_connectivity[i].m_is_removed) continue;
         for (int j = 0; j < 3; j++) {
@@ -813,7 +833,8 @@ std::vector<TriMesh::Tuple> TriMesh::get_edges() const
 
 size_t TriMesh::get_next_empty_slot_t()
 {
-    while (current_tri_size + MAX_THREADS >= m_tri_connectivity.size() || tri_connectivity_synchronizing_flag) {
+    while (current_tri_size + MAX_THREADS >= m_tri_connectivity.size() ||
+           tri_connectivity_synchronizing_flag) {
         if (tri_connectivity_lock.try_lock()) {
             if (current_tri_size + MAX_THREADS < m_tri_connectivity.size()) {
                 tri_connectivity_lock.unlock();
@@ -835,10 +856,10 @@ size_t TriMesh::get_next_empty_slot_t()
 
 size_t TriMesh::get_next_empty_slot_v()
 {
-    while (current_vert_size + MAX_THREADS >= m_vertex_connectivity.size()  ||
+    while (current_vert_size + MAX_THREADS >= m_vertex_connectivity.size() ||
            vertex_connectivity_synchronizing_flag) {
         if (vertex_connectivity_lock.try_lock()) {
-            if (current_vert_size + MAX_THREADS < m_vertex_connectivity.size() ) {
+            if (current_vert_size + MAX_THREADS < m_vertex_connectivity.size()) {
                 vertex_connectivity_lock.unlock();
                 break;
             }

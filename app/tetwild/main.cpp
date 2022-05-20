@@ -8,6 +8,7 @@
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/Partitioning.h>
 #include <memory>
+#include <vector>
 #include <wmtk/utils/ManifoldUtils.hpp>
 #include <wmtk/utils/partition_utils.hpp>
 #include "wmtk/utils/InsertTriangleUtils.hpp"
@@ -26,6 +27,28 @@
 #include <spdlog/common.h>
 #include <CLI/CLI.hpp>
 
+void resolve_duplicated_faces(const Eigen::MatrixXi& inF, Eigen::MatrixXi& outF)
+{
+    std::map<std::array<int, 3>, int> unique;
+    std::vector<Eigen::Vector3i> newF;
+    newF.reserve(inF.rows());
+    for (auto i = 0; i < inF.rows(); i++) {
+        std::array<int, 3> tri;
+        for (auto j = 0; j < 3; j++) tri[j] = inF(i, j);
+
+        std::sort(tri.begin(), tri.end());
+        auto [it, suc] = unique.emplace(tri, i);
+        if (suc) {
+            newF.emplace_back(inF.row(i));
+        }
+    }
+    outF.resize(newF.size(), 3);
+    for (auto i=0; i<newF.size(); i++) {
+        outF.row(i) = newF[i];
+    }
+
+
+}
 void reader(std::string input_surface, Eigen::MatrixXd& VI, Eigen::MatrixXi& FI)
 {
     GEO::initialize();
@@ -77,8 +100,9 @@ int main(int argc, char** argv)
     std::string output_path = "./";
     bool skip_simplify = false;
     bool use_sample_envelope = false;
-    int NUM_THREADS = 1;
+    int NUM_THREADS = 0;
     int max_its = 10;
+    bool filter_with_input = false;
 
     app.add_option("-i,--input", input_path, "Input mesh.");
     app.add_option("-o,--output", output_path, "Output mesh.");
@@ -88,25 +112,34 @@ int main(int argc, char** argv)
     app.add_option("-e, --epsr", params.epsr, "relative eps wrt diag of bbox");
     app.add_option("-r, --rlen", params.lr, "relative ideal edge length wrt diag of bbox");
 
-    app.add_flag("--sample-envelope", use_sample_envelope, "use_sample_envelope for both simp and optim");
+    app.add_flag(
+        "--filter-with-input",
+        filter_with_input,
+        "filter with input mesh, default is tracked surface.");
+    app.add_flag(
+        "--sample-envelope",
+        use_sample_envelope,
+        "use_sample_envelope for both simp and optim");
     CLI11_PARSE(app, argc, argv);
 
     Eigen::MatrixXd inV, V;
     Eigen::MatrixXi inF, F;
     reader(input_path, inV, inF);
 
-    boundary_detect(inF);
     Eigen::VectorXi _I;
     igl::remove_unreferenced(inV, inF, V, F, _I);
 
+    if (V.rows() == 0 || F.rows() == 0) {
+        wmtk::logger().info("== finish with Empty Input, stop.");
+        return 1;
+    }
     const Eigen::Vector3d box_min = V.colwise().minCoeff();
     const Eigen::Vector3d box_max = V.colwise().maxCoeff();
     double diag = (box_max - box_min).norm();
 
-    boundary_detect(F);
     {
         // using the same error tolerance as in tetwild
-        Eigen::VectorXi SVI, SVJ;
+        Eigen::VectorXi SVI, SVJ, SVK;
         Eigen::MatrixXd temp_V = V; // for STL file
         igl::remove_duplicate_vertices(
             temp_V,
@@ -116,6 +149,9 @@ int main(int argc, char** argv)
             SVJ);
         for (int i = 0; i < F.rows(); i++)
             for (int j : {0, 1, 2}) F(i, j) = SVJ[F(i, j)];
+        auto F1 = F;
+
+        resolve_duplicated_faces(F1, F);
     }
 
     std::vector<Eigen::Vector3d> verts(V.rows());
@@ -209,7 +245,10 @@ int main(int argc, char** argv)
     /////////mesh improvement
     mesh.mesh_improvement(max_its);
     ////winding number
-    mesh.filter_outside({}, {}, true);
+    if (filter_with_input)
+        mesh.filter_outside(verts, tris, true);
+    else
+        mesh.filter_outside({}, {}, true);
     mesh.consolidate_mesh();
     double time = timer.getElapsedTime();
     wmtk::logger().info("total time {}s", time);

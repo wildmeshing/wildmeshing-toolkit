@@ -122,7 +122,6 @@ bool tetwild::TetWild::collapse_edge_before(const Tuple& loc) // input is an edg
         if (!VA[v2_id].m_is_on_surface && m_envelope.is_outside(VA[v2_id].m_posf)) return false;
     }
 
-    // todo: store surface info into cache
 
     auto n1_locs = get_one_ring_tets_for_vertex(loc);
     auto n12_locs = get_incident_tets_for_edge(loc); // todo: duplicated computation
@@ -259,6 +258,7 @@ bool tetwild::TetWild::collapse_edge_after(const Tuple& loc)
         auto& old_vids = info.second;
         //
         auto [_, global_fid] = tuple_from_face({{v2_id, old_vids[1], old_vids[2]}});
+        if (global_fid == -1) return false;
         m_face_attribute[global_fid] = f_attr;
     }
 

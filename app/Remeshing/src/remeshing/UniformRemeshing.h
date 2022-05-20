@@ -2,6 +2,8 @@
 #include <wmtk/ConcurrentTriMesh.h>
 #include <wmtk/utils/PartitionMesh.h>
 #include <wmtk/utils/VectorUtils.h>
+#include <sec/envelope/SampleEnvelope.hpp>
+#include "wmtk/AttributeCollection.hpp"
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
@@ -15,15 +17,11 @@
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
-#include <memory>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-
-
 #include <atomic>
+#include <memory>
 #include <queue>
-#include <sec/envelope/SampleEnvelope.hpp>
-#include "wmtk/AttributeCollection.hpp"
 namespace remeshing {
 
 struct VertexAttributes
@@ -43,11 +41,13 @@ public:
     using VertAttCol = wmtk::AttributeCollection<VertexAttributes>;
     VertAttCol vertex_attrs;
 
-    int NUM_THREADS = 1;
     int retry_limit = 10;
-    UniformRemeshing(std::vector<Eigen::Vector3d> _m_vertex_positions, int num_threads = 1, bool use_exact = true)
-        : NUM_THREADS(num_threads)
+    UniformRemeshing(
+        std::vector<Eigen::Vector3d> _m_vertex_positions,
+        int num_threads = 1,
+        bool use_exact = true)
     {
+        NUM_THREADS = num_threads;
         m_envelope.use_exact = use_exact;
 
         p_vertex_attrs = &vertex_attrs;
@@ -81,8 +81,11 @@ public:
 
         // partition_mesh_morton();
         partition_mesh_morton();
-        for (auto v : frozen_verts) vertex_attrs[v].freeze = true;
+
         if (m_freeze) {
+            for (auto v : frozen_verts) {
+                vertex_attrs[v].freeze = true;
+            }
             for (auto e : get_edges()) {
                 if (is_boundary_edge(e)) {
                     vertex_attrs[e.vid(*this)].freeze = true;
@@ -99,6 +102,7 @@ public:
     {
         Eigen::Vector3d v1p;
         Eigen::Vector3d v2p;
+        int partition_id;
     };
     tbb::enumerable_thread_specific<PositionInfoCache> position_cache;
 
@@ -106,6 +110,7 @@ public:
     {
         position_cache.local().v1p = vertex_attrs[t.vid(*this)].pos;
         position_cache.local().v2p = vertex_attrs[t.switch_vertex(*this).vid(*this)].pos;
+        position_cache.local().partition_id = vertex_attrs[t.vid(*this)].partition_id;
     }
 
     bool invariants(const std::vector<Tuple>& new_tris) override
@@ -226,25 +231,19 @@ public:
         });
     }
 
+    bool smooth_all_vertices();
 
     Eigen::Vector3d smooth(const Tuple& t);
 
 
     Eigen::Vector3d tangential_smooth(const Tuple& t);
 
-
-    bool is_edge_freeze(const Tuple& t)
-    {
-        if (vertex_attrs[t.vid(*this)].freeze ||
-            vertex_attrs[t.switch_vertex(*this).vid(*this)].freeze)
-            return true;
-        return false;
-    }
-
     bool collapse_edge_before(const Tuple& t) override
     {
         if (!TriMesh::collapse_edge_before(t)) return false;
-        if (is_edge_freeze(t)) return false;
+        if (vertex_attrs[t.vid(*this)].freeze ||
+            vertex_attrs[t.switch_vertex(*this).vid(*this)].freeze)
+            return false;
         cache_edge_positions(t);
         return true;
     }
@@ -253,18 +252,29 @@ public:
     bool swap_edge_before(const Tuple& t) override
     {
         if (!TriMesh::swap_edge_before(t)) return false;
-        if (is_edge_freeze(t)) return false;
+        if (vertex_attrs[t.vid(*this)].freeze &&
+            vertex_attrs[t.switch_vertex(*this).vid(*this)].freeze)
+            return false;
         return true;
     }
     bool swap_edge_after(const Tuple& t) override;
 
-    std::vector<TriMesh::Tuple> new_edges_after(const std::vector<TriMesh::Tuple>& t) const;
+    std::vector<TriMesh::Tuple> new_edges_after(const std::vector<TriMesh::Tuple>& tris) const;
     std::vector<TriMesh::Tuple> new_edges_after_swap(const TriMesh::Tuple& t) const;
+    std::vector<TriMesh::Tuple> replace_edges_after_split(
+        const std::vector<TriMesh::Tuple>& tris,
+        const size_t vid_threshold) const;
+    std::vector<TriMesh::Tuple> new_sub_edges_after_split(
+        const std::vector<TriMesh::Tuple>& tris) const;
+
 
     bool split_edge_before(const Tuple& t) override
     {
         if (!TriMesh::split_edge_before(t)) return false;
-        if (is_edge_freeze(t)) return false;
+        if (vertex_attrs[t.vid(*this)].freeze &&
+            vertex_attrs[t.switch_vertex(*this).vid(*this)].freeze) {
+            if (!t.switch_face(*this).has_value()) return false; // check if it's bondary
+        }
         cache_edge_positions(t);
         return true;
     }

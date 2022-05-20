@@ -19,6 +19,7 @@
 #include <igl/Timer.h>
 #include <igl/doublearea.h>
 #include <igl/read_triangle_mesh.h>
+#include <igl/remove_duplicate_vertices.h>
 
 struct
 {
@@ -96,6 +97,10 @@ auto process_points = [&args = args]() {
         Eigen::MatrixXd V;
         Eigen::MatrixXi F;
         igl::read_triangle_mesh(input, V, F);
+        auto SV = V;
+        Eigen::VectorXi SVI, SVJ;
+        igl::remove_duplicate_vertices(SV, 1e-3, V, SVI, SVJ);
+        
         std::vector<std::array<double, 3>> points(V.rows());
         for (auto i = 0; i < V.rows(); i++) points[i] = {{V(i, 0), V(i, 1), V(i, 2)}};
         auto [tet_V, tetT] = wmtk::delaunay3D(points);
@@ -107,19 +112,19 @@ auto process_points = [&args = args]() {
         tets = tetT;
     }
 
-    auto har_tet = harmonic_tet::HarmonicTet(vec_attrs, tets, thread);
     igl::Timer timer;
     auto time = 0.;
-    auto [E0, cnt0] = stats(har_tet);
     timer.start();
+    auto har_tet = harmonic_tet::HarmonicTet(vec_attrs, tets, thread);
+    // auto [E0, cnt0] = stats(har_tet);
     har_tet.swap_all_edges(true);
     time = timer.getElapsedTimeInMilliSec();
     wmtk::logger().info("Time cost: {}", time / 1e3);
     stats(har_tet);
     har_tet.consolidate_mesh();
-    auto [E1, cnt1] = stats(har_tet);
-    wmtk::logger().info("E {} -> {} cnt {} -> {}", E0, E1, cnt0, cnt1);
-    // har_tet.output_mesh(output);
+    // auto [E1, cnt1] = stats(har_tet);
+    // wmtk::logger().info("E {} -> {} cnt {} -> {}", E0, E1, cnt0, cnt1);
+    har_tet.output_mesh(output);
 };
 
 int main(int argc, char** argv)

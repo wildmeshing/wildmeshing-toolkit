@@ -115,12 +115,20 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
         return false;
     }
 
+    // should be a copy, for the purpose of rollback
     auto n1_t_ids =
         m_vertex_connectivity[v1_id].m_conn_tets; // note: conn_tets for v1 without removed tets
-    auto n12_t_ids = set_intersection(
-        m_vertex_connectivity[v1_id].m_conn_tets,
-        m_vertex_connectivity[v2_id].m_conn_tets);
+    const auto& n2_t_ids = m_vertex_connectivity[v2_id].m_conn_tets;
+
+    std::set<std::array<size_t, 4>> verify_conns; // simplified manifold topology check.
+    for (auto _t : n2_t_ids) {
+        auto tet = m_tet_connectivity[_t].m_indices;
+        std::sort(tet.begin(), tet.end());
+        verify_conns.emplace(tet);
+    }
+
     auto new_tet_conn = std::vector<std::array<size_t, 4>>();
+    new_tet_conn.reserve(n1_t_ids.size());
     std::vector<TetrahedronConnectivity> old_tets;
     std::vector<size_t> preserved_tids;
     for (auto t_id : n1_t_ids) {
@@ -140,6 +148,16 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
         new_tet_conn.back()[l1] = v2_id;
         preserved_tids.push_back(t_id);
     }
+    {
+        for (std::array<size_t, 4> tet : new_tet_conn) {
+            std::sort(tet.begin(), tet.end());
+            auto [it, suc] = verify_conns.emplace(tet);
+            if (!suc) { // duplicate
+                return false;
+            }
+        }
+    }
+
     auto rollback_vert_conn =
         operation_update_connectivity_impl(n1_t_ids, new_tet_conn, preserved_tids);
 
@@ -151,16 +169,32 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
 
     Tuple new_loc = tuple_from_vertex(v2_id);
 
+
+    auto check_topology = [&]() {
+        for (size_t t_id : new_tet_id)
+            for (auto k = 0; k < 4; k++) {
+                std::array<size_t, 3> vids;
+                for (auto j = 0; j < 3; j++)
+                    vids[j] = m_tet_connectivity[t_id].m_indices[(k + 1 + j) % 4];
+                auto [_, fid] = tuple_from_face(vids);
+                if (fid == -1) {
+                    return false;
+                }
+            }
+        return true;
+    };
+
     start_protect_attributes();
-    if (!collapse_edge_after(new_loc) || !invariants(get_one_ring_tets_for_vertex(new_loc))) {
+    if (!check_topology() || !collapse_edge_after(new_loc) ||
+        !invariants(get_one_ring_tets_for_vertex(new_loc))) {
         m_vertex_connectivity[v1_id].m_is_removed = false;
         operation_failure_rollback_imp(rollback_vert_conn, n1_t_ids, new_tet_id, old_tets);
 
         return false;
     }
+
     release_protect_attributes();
 
-    /// return new_edges
     for (size_t t_id : new_tet_id) {
         for (int j = 0; j < 6; j++) {
             new_edges.push_back(tuple_from_edge(t_id, j));

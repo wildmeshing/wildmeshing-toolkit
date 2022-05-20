@@ -73,11 +73,12 @@ int main(int argc, char** argv)
     app.add_option("-a, --absolutelength", target_len, "absolute edge length.");
     app.add_option("-i, --iterations", itrs, "number of remeshing itrs.");
     app.add_option("-f, --freeze", freeze, "to freeze the boundary, default to true");
-    app.add_flag("--sample-envelope", sample_envelope, "to freeze the boundary, default to true");
+    app.add_flag("--sample-envelope", sample_envelope, "use sample envelope, default to false.");
+
     app.add_option(
-        "-b, --bnd_output",
+        "--bnd_output",
         bnd_output,
-        "write out a table tha maps bnd vertices between original input and output");
+        "(Debug use) write out a table tha maps bnd vertices between original input and output");
     CLI11_PARSE(app, argc, argv);
 
     wmtk::logger().info("remeshing on {}", path);
@@ -90,7 +91,7 @@ int main(int argc, char** argv)
     Eigen::MatrixXd temp_V = V; // for STL file
     igl::remove_duplicate_vertices(temp_V, 1e-3, V, SVI, SVJ);
     for (int i = 0; i < F.rows(); i++)
-        for (int j : {0, 1, 2}) F(i, j) = SVJ[F(i, j)];
+        for (int j = 0; j < 3; j++) F(i, j) = SVJ[F(i, j)];
     wmtk::logger().info("Before_vertices#: {} \n Before_tris#: {}", V.rows(), F.rows());
 
 
@@ -115,22 +116,26 @@ int main(int argc, char** argv)
         wmtk::separate_to_manifold(v1, tri1, v, tri, modified_v);
     }
 
+    igl::Timer timer;
+    timer.start();
     UniformRemeshing m(v, thread, !sample_envelope);
     m.create_mesh(v.size(), tri, modified_v, freeze, envelope_size);
 
     if (bnd_output) m.get_boundary_map(SVI);
 
-    m.get_vertices();
-    std::vector<double> properties = m.average_len_valen();
-    wmtk::logger().info(
-        "edgelen: avg max min valence:avg max min before remesh is: {}",
-        properties);
-    igl::Timer timer;
-    timer.start();
+    // std::vector<double> properties = m.average_len_valen();
+    // wmtk::logger().info(
+    //     "edgelen: avg max min valence:avg max min before remesh is: {}",
+    //     properties);
     if (target_len > 0)
         run_remeshing(path, target_len, output, m, itrs, bnd_output);
-    else
-        run_remeshing(path, diag * len_rel, output, m, itrs, bnd_output);
+    
+    else {
+        double avg_len = m.average_len_valen()[0];
+        double len = diag * len_rel;
+        len = (len < avg_len * 5) ? len : avg_len * 5;
+        run_remeshing(path, len, output, m, itrs, bnd_output);
+    }
     timer.stop();
     logger().info("Took {}", timer.getElapsedTimeInSec());
 

@@ -1,10 +1,14 @@
 #pragma once
 
-#include <tbb/concurrent_vector.h>
-#include <tbb/spin_mutex.h>
 #include <wmtk/TriMesh.h>
 #include <limits>
 
+// clang-format off
+#include <wmtk/utils/DisableWarnings.hpp>
+#include <tbb/concurrent_vector.h>
+#include <tbb/spin_mutex.h>
+#include <wmtk/utils/EnableWarnings.hpp>
+// clang-format on
 
 namespace wmtk {
 class ConcurrentTriMesh : public TriMesh
@@ -20,15 +24,15 @@ public:
 
         void unlock()
         {
-            mutex.unlock();
             reset_owner();
+            mutex.unlock();
         }
 
         int get_owner() { return owner; }
 
         void set_owner(int n) { owner = n; }
 
-        void reset_owner() { owner = INT_MAX; }
+        void reset_owner() { owner = std::numeric_limits<int>::max(); }
     };
 
 private:
@@ -63,5 +67,12 @@ public:
     int release_vertex_mutex_in_stack();
     bool try_set_vertex_mutex_two_ring(const Tuple& v, int threadid);
     bool try_set_edge_mutex_two_ring(const Tuple& e, int threadid);
+    bool try_set_vertex_mutex_one_ring(const Tuple& v, int threadid);
+
+    //
+    void for_each_face(const std::function<void(const Tuple&)>&);
+    void for_each_edge(const std::function<void(const Tuple&)>&);
+    void for_each_vertex(const std::function<void(const Tuple&)>&);
+    int NUM_THREADS = 1;
 };
 } // namespace wmtk

@@ -202,16 +202,16 @@ double wmtk::harmonic_energy(const Eigen::MatrixXd& verts)
     return harmonic_tet_energy(T);
 }
 
-std::optional<Eigen::Vector3d> wmtk::try_project(
+Eigen::Vector3d wmtk::try_project(
     const Eigen::Vector3d& point,
-    const std::vector<std::array<double, 12>>& assembled_neighbor)
+    const std::vector<std::array<double, 9>>& assembled_neighbor)
 {
     auto min_dist = std::numeric_limits<double>::infinity();
     Eigen::Vector3d closest_point = Eigen::Vector3d::Zero();
     for (const auto& tri : assembled_neighbor) {
         auto V = Eigen::Map<const Eigen::Matrix<double, 3, 3, Eigen::RowMajor>>(tri.data());
         Eigen::Vector3d project;
-        auto dist2 = -1;
+        auto dist2 = -1.;
         igl::point_simplex_squared_distance<3>(
             point,
             V,
@@ -219,7 +219,7 @@ std::optional<Eigen::Vector3d> wmtk::try_project(
             0,
             dist2,
             project);
-        // TODO: libigl might not be robust how to verify this?
+        // Note: libigl might not be robust, but this can be rejected with envelope.
         if (dist2 < min_dist) {
             min_dist = dist2;
             closest_point = project;
