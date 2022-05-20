@@ -34,8 +34,8 @@ Quadrics QSLIM::compute_quadric_for_face(const TriMesh::Tuple& f_tuple)
 double QSLIM::compute_cost_for_e(const TriMesh::Tuple& v_tuple)
 {
     // first get Q
-    Quadrics Q1 = vertex_attrs[v_tuple.vid(*this)].Q;
-    Quadrics Q2 = vertex_attrs[v_tuple.switch_vertex(*this).vid(*this)].Q;
+    Quadrics& Q1 = vertex_attrs[v_tuple.vid(*this)].Q;
+    Quadrics& Q2 = vertex_attrs[v_tuple.switch_vertex(*this).vid(*this)].Q;
     Quadrics Q = {Q1.A + Q2.A, Q1.b + Q2.b, Q1.c + Q2.c};
     double cost = 0.0;
     Eigen::Vector3d vbar(0.0, 0.0, 0.0);
@@ -45,7 +45,8 @@ double QSLIM::compute_cost_for_e(const TriMesh::Tuple& v_tuple)
     // test if A is invertible
     // not invertible vbar is smallest of two vertices
     // if A is invertible, compute vbar using A.inv@b
-    if (Q.A.determinant() < 1e-10 && Q.A.determinant() > -1e-10) {
+    auto determinant = Q.A.determinant();
+    if (determinant < 1e-10 && determinant > -1e-10) {
         // not invertible
         if ((v1.transpose() * Q1.A * v1 + 2 * Q1.b.dot(v1) + Q1.c) <
             (v2.transpose() * Q2.A * v2 + 2 * Q2.b.dot(v2) + Q2.c))
@@ -109,6 +110,7 @@ bool QSLIM::collapse_edge_before(const Tuple& t)
     cache.local().Q1 = vertex_attrs[t.vid(*this)].Q;
     cache.local().Q2 = vertex_attrs[t.switch_vertex(*this).vid(*this)].Q;
     cache.local().vbar = edge_attrs[t.eid(*this)].vbar;
+    cache.local().partition_id = vertex_attrs[t.vid(*this)].partition_id;
     return true;
 }
 
@@ -117,6 +119,7 @@ bool QSLIM::collapse_edge_after(const TriMesh::Tuple& t)
 {
     auto vid = t.vid(*this);
     vertex_attrs[vid].pos = cache.local().vbar;
+    vertex_attrs[vid].partition_id = cache.local().partition_id;
     // update the quadrics
     update_quadrics(t);
     return true;
@@ -142,8 +145,13 @@ std::vector<TriMesh::Tuple> QSLIM::new_edges_after(const std::vector<TriMesh::Tu
 bool QSLIM::collapse_qslim(int target_vert_number)
 {
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
-    int starting_num = get_vertices().size();
-    for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_collapse", loc);
+    int starting_num = vert_capacity();
+
+    auto collect_tuples = tbb::concurrent_vector<Tuple>();
+
+    for_each_edge([&](auto& tup) { collect_tuples.emplace_back(tup); });
+    collect_all_ops.reserve(collect_tuples.size());
+    for (auto& t : collect_tuples) collect_all_ops.emplace_back("edge_collapse", t);
 
     auto renew = [](auto& m, auto op, auto& tris) {
         auto edges = m.new_edges_after(tris);
