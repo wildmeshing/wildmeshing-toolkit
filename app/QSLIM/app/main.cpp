@@ -72,7 +72,7 @@ int main(int argc, char** argv)
     const double envelope_size = env_rel * diag;
     QSLIM m(verts, thread);
     m.create_mesh(verts.size(), tris, modified_nonmanifold_v, envelope_size);
-    m.write_triangle_mesh("/home/yunfan/wmtk_paper_result/qslim_manifold_input.obj");
+
     assert(m.check_mesh_connectivity_validity());
     wmtk::logger().info("collapsing mesh {}", input_path);
     int target_verts = verts.size() * target_pec;
