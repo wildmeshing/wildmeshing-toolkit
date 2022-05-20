@@ -53,7 +53,6 @@ int main(int argc, char** argv)
     app.add_option("-t, --target", target_pec, "Percentage of input vertices in output.");
     app.add_option("-e,--envelope", env_rel, "Relative envelope size, negative to disable");
     app.add_option("-j, --thread", thread, "thread.");
-    app.add_option("-t, --target_verts_percent", target_verts_percent, "thread.");
     CLI11_PARSE(app, argc, argv);
 
     std::vector<Eigen::Vector3d> verts;
@@ -73,9 +72,10 @@ int main(int argc, char** argv)
     const double envelope_size = env_rel * diag;
     QSLIM m(verts, thread);
     m.create_mesh(verts.size(), tris, modified_nonmanifold_v, envelope_size);
+    m.write_triangle_mesh("/home/yunfan/wmtk_paper_result/qslim_manifold_input.obj");
     assert(m.check_mesh_connectivity_validity());
     wmtk::logger().info("collapsing mesh {}", input_path);
-    int target_verts = verts.size() * target_verts_percent;
+    int target_verts = verts.size() * target_pec;
 
     igl::Timer timer;
     timer.start();
