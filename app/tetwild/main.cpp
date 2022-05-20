@@ -8,6 +8,7 @@
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/Partitioning.h>
 #include <memory>
+#include <vector>
 #include <wmtk/utils/ManifoldUtils.hpp>
 #include <wmtk/utils/partition_utils.hpp>
 #include "wmtk/utils/InsertTriangleUtils.hpp"
@@ -23,10 +24,31 @@
 #include <igl/remove_duplicate_vertices.h>
 #include <igl/remove_unreferenced.h>
 #include <igl/write_triangle_mesh.h>
-#include <igl/resolve_duplicated_faces.h>
 #include <spdlog/common.h>
 #include <CLI/CLI.hpp>
 
+void resolve_duplicated_faces(const Eigen::MatrixXi& inF, Eigen::MatrixXi& outF)
+{
+    std::map<std::array<int, 3>, int> unique;
+    std::vector<Eigen::Vector3i> newF;
+    newF.reserve(inF.rows());
+    for (auto i = 0; i < inF.rows(); i++) {
+        std::array<int, 3> tri;
+        for (auto j = 0; j < 3; j++) tri[j] = inF(i, j);
+
+        std::sort(tri.begin(), tri.end());
+        auto [it, suc] = unique.emplace(tri, i);
+        if (suc) {
+            newF.emplace_back(inF.row(i));
+        }
+    }
+    outF.resize(newF.size(), 3);
+    for (auto i=0; i<newF.size(); i++) {
+        outF.row(i) = newF[i];
+    }
+
+
+}
 void reader(std::string input_surface, Eigen::MatrixXd& VI, Eigen::MatrixXi& FI)
 {
     GEO::initialize();
@@ -129,7 +151,7 @@ int main(int argc, char** argv)
             for (int j : {0, 1, 2}) F(i, j) = SVJ[F(i, j)];
         auto F1 = F;
 
-        igl::resolve_duplicated_faces(F1, F, SVK);
+        resolve_duplicated_faces(F1, F);
     }
 
     std::vector<Eigen::Vector3d> verts(V.rows());
