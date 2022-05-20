@@ -203,7 +203,6 @@ int main(int argc, char** argv)
             fsimp[i][j] = vs[j].vid(surf_mesh);
         }
     }
-    surf_mesh.write_triangle_mesh("simp.obj");
 
 
     /////////
