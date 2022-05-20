@@ -79,7 +79,6 @@ public:
             m_envelope.init(V, F, 0.0);
 
 
-        // partition_mesh_morton();
         partition_mesh_morton();
 
         if (m_freeze) {
