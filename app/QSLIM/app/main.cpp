@@ -42,6 +42,7 @@ int main(int argc, char** argv)
     std::string input_path = "";
     std::string output = "out.obj";
     double env_rel = -1;
+    double target_pec = 0.1;
     int thread = 1;
     double target_verts_percent = 0.1;
 
@@ -49,6 +50,7 @@ int main(int argc, char** argv)
     app.add_option("input", input_path, "Input mesh.")->check(CLI::ExistingFile);
     app.add_option("output", output, "output mesh.");
 
+    app.add_option("-t, --target", target_pec, "Percentage of input vertices in output.");
     app.add_option("-e,--envelope", env_rel, "Relative envelope size, negative to disable");
     app.add_option("-j, --thread", thread, "thread.");
     app.add_option("-t, --target_verts_percent", target_verts_percent, "thread.");

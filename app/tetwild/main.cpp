@@ -10,6 +10,7 @@
 #include <wmtk/utils/Reader.hpp>
 
 #include <memory>
+#include <vector>
 #include <wmtk/utils/ManifoldUtils.hpp>
 #include <wmtk/utils/partition_utils.hpp>
 #include "wmtk/utils/InsertTriangleUtils.hpp"
@@ -23,7 +24,43 @@
 #include <igl/write_triangle_mesh.h>
 #include <spdlog/common.h>
 #include <CLI/CLI.hpp>
-#include <wmtk/utils/Reader.hpp>
+
+void resolve_duplicated_faces(const Eigen::MatrixXi& inF, Eigen::MatrixXi& outF)
+{
+    std::map<std::array<int, 3>, int> unique;
+    std::vector<Eigen::Vector3i> newF;
+    newF.reserve(inF.rows());
+    for (auto i = 0; i < inF.rows(); i++) {
+        std::array<int, 3> tri;
+        for (auto j = 0; j < 3; j++) tri[j] = inF(i, j);
+
+        std::sort(tri.begin(), tri.end());
+        auto [it, suc] = unique.emplace(tri, i);
+        if (suc) {
+            newF.emplace_back(inF.row(i));
+        }
+    }
+    outF.resize(newF.size(), 3);
+    for (auto i = 0; i < newF.size(); i++) {
+        outF.row(i) = newF[i];
+    }
+}
+void reader(std::string input_surface, Eigen::MatrixXd& VI, Eigen::MatrixXi& FI)
+{
+    GEO::initialize();
+    GEO::Mesh input;
+    GEO::mesh_load(input_surface, input);
+    VI.resize(input.vertices.nb(), 3);
+    for (int i = 0; i < VI.rows(); i++)
+        VI.row(i) << (input.vertices.point(i))[0], (input.vertices.point(i))[1],
+            (input.vertices.point(i))[2];
+    input.facets.triangulate();
+    wmtk::logger().info("V {} F {}", input.vertices.nb(), input.facets.nb());
+    FI.resize(input.facets.nb(), 3);
+    for (int i = 0; i < FI.rows(); i++)
+        FI.row(i) << input.facets.vertex(i, 0), input.facets.vertex(i, 1),
+            input.facets.vertex(i, 2);
+}
 
 void boundary_detect(const Eigen::MatrixXi& tris)
 { // open boundary (1-manifold) detection. hand written for non-manifold meshes.
