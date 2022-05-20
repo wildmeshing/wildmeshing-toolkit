@@ -32,8 +32,6 @@ void run_qslim_collapse(std::string input, int target, std::string output, QSLIM
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<milliseconds>(stop - start);
     wmtk::logger().info("runtime {}", duration.count());
-    m.consolidate_mesh();
-    m.write_triangle_mesh(output);
     wmtk::logger().info(
         "After_vertices#: {} \n After_tris#: {}",
         m.vert_capacity(),
@@ -91,17 +89,20 @@ int main(int argc, char** argv)
         wmtk::separate_to_manifold(v1, tri1, v, tri, modified_v);
     }
 
+    igl::Timer timer;
+    timer.start();
     QSLIM m(v, thread);
     m.create_mesh(v.size(), tri, modified_v, envelope_size);
     assert(m.check_mesh_connectivity_validity());
     wmtk::logger().info("collapsing mesh {}", path);
     int target_verts = v.size() * target_pec;
 
-    igl::Timer timer;
-    timer.start();
+    
+    // timer.start();
     run_qslim_collapse(path, target_verts, output, m);
     timer.stop();
     logger().info("Took {}", timer.getElapsedTimeInSec());
     m.consolidate_mesh();
+    m.write_triangle_mesh(output);
     return 0;
 }

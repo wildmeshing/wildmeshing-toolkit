@@ -171,3 +171,20 @@ void wmtk::ConcurrentTriMesh::for_each_vertex(
             });
     });
 }
+
+void wmtk::ConcurrentTriMesh::for_each_face(
+    const std::function<void(const TriMesh::Tuple&)>& func)
+{
+    tbb::task_arena arena(NUM_THREADS);
+    arena.execute([&] {
+        tbb::parallel_for(
+            tbb::blocked_range<int>(0, tri_capacity()),
+            [&](tbb::blocked_range<int> r) {
+                for (int i = r.begin(); i < r.end(); i++) {
+                    auto tup = tuple_from_tri(i);
+                    if (!tup.is_valid(*this)) continue;
+                    func(tup);
+                }
+            });
+    });
+}
