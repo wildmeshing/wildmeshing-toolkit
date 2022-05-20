@@ -144,9 +144,6 @@ public:
     }
     void initiate_quadrics_for_vertices()
     { // get one circle of faces and linearly add A,b, c
-        // auto verts = get_vertices();
-        // auto verts = tbb::concurrent_vector<Tuple>();
-        // for_each_vertex([&](auto& tup) { verts.emplace_back(tup); });      
 
         for_each_vertex([&](auto& tup) { 
             Eigen::MatrixXd A;
@@ -170,18 +167,6 @@ public:
 
         
 
-        // for (int i = 0; i < verts.size(); i++) {
-        //     A = w * Eigen::MatrixXd::Identity(3, 3);
-        //     b = -w * vertex_attrs[i].pos;
-        //     c = w * vertex_attrs[i].pos.dot(vertex_attrs[i].pos);
-        //     auto one_ring_faces = get_one_ring_tris_for_vertex(verts[i]);
-        //     for (auto tri : one_ring_faces) {
-        //         A += face_attrs[tri.fid(*this)].Q.A;
-        //         b += face_attrs[tri.fid(*this)].Q.b;
-        //         c += face_attrs[tri.fid(*this)].Q.c;
-        //     }
-        //     vertex_attrs[i].Q = {A, b, c};
-        // }
     }
 
     ~QSLIM() {}
