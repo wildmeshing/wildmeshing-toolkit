@@ -39,9 +39,11 @@ void run_remeshing(
 
     m.consolidate_mesh();
     m.write_triangle_mesh(output);
+    auto properties = m.average_len_valen();
     wmtk::logger().info("runtime in ms {}", duration.count());
     wmtk::logger().info("current_memory {}", getCurrentRSS() / (1024. * 1024));
     wmtk::logger().info("peak_memory {}", getPeakRSS() / (1024. * 1024));
+    wmtk::logger().info("after remesh properties: {}", properties);
     wmtk::logger().info(
         "After_vertices#: {} \n\t After_tris#: {}",
         m.vert_capacity(),
@@ -93,14 +95,12 @@ int main(int argc, char** argv)
     double diag = (box_minmax.first - box_minmax.second).norm();
     const double envelope_size = env_rel * diag;
     igl::Timer timer;
-    timer.start();
+
     UniformRemeshing m(verts, thread, !sample_envelope);
     m.create_mesh(verts.size(), tris, modified_nonmanifold_v, freeze, envelope_size);
 
-    // std::vector<double> properties = m.average_len_valen();
-    // wmtk::logger().info(
-    //     "edgelen: avg max min valence:avg max min before remesh is: {}",
-    //     properties);
+    std::vector<double> properties = m.average_len_valen();
+    wmtk::logger().info("before remesh properties: {}", properties);
     if (target_len > 0)
         run_remeshing(input_path, target_len, output, m, itrs, bnd_output);
 
@@ -110,8 +110,6 @@ int main(int argc, char** argv)
         len = (len < avg_len * 5) ? len : avg_len * 5;
         run_remeshing(input_path, len, output, m, itrs, bnd_output);
     }
-    timer.stop();
-    logger().info("Took {}", timer.getElapsedTimeInSec());
 
     return 0;
 }

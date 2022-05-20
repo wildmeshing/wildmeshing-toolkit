@@ -29,7 +29,7 @@ void run_qslim_collapse(std::string input, int target, std::string output, QSLIM
     wmtk::logger().info("collapsed");
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<milliseconds>(stop - start);
-    wmtk::logger().info("runtime {}", duration.count());
+    wmtk::logger().info("runtime in ms{}", duration.count());
     m.consolidate_mesh();
     m.write_triangle_mesh(output);
     wmtk::logger().info(

@@ -30,6 +30,27 @@ void eigen_to_wmtk_input(
     }
 }
 
+void resolve_duplicated_faces(const Eigen::MatrixXi& inF, Eigen::MatrixXi& outF)
+{
+    std::map<std::array<int, 3>, int> unique;
+    std::vector<Eigen::Vector3i> newF;
+    newF.reserve(inF.rows());
+    for (auto i = 0; i < inF.rows(); i++) {
+        std::array<int, 3> tri;
+        for (auto j = 0; j < 3; j++) tri[j] = inF(i, j);
+
+        std::sort(tri.begin(), tri.end());
+        auto [it, suc] = unique.emplace(tri, i);
+        if (suc) {
+            newF.emplace_back(inF.row(i));
+        }
+    }
+    outF.resize(newF.size(), 3);
+    for (auto i = 0; i < newF.size(); i++) {
+        outF.row(i) = newF[i];
+    }
+}
+
 void stl_to_manifold_wmtk_input(
     std::string input_path,
     double remove_duplicate_esp,
@@ -66,7 +87,7 @@ void stl_to_manifold_wmtk_input(
         for (int j : {0, 1, 2}) F(i, j) = SVJ[F(i, j)];
     auto F1 = F;
 
-    igl::resolve_duplicated_faces(F1, F, SVK);
+    resolve_duplicated_faces(F1, F);
 
 
     verts.resize(V.rows());
