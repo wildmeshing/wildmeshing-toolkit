@@ -101,15 +101,43 @@ bool sec::ShortestEdgeCollapse::collapse_edge_after(const TriMesh::Tuple& t)
 ```
 ## Parallel Scheduling
 The type and scheduling of local operations is crucial in mesh editing algorithms. This involves maintaining a priority queue of operations, which is updated after every local operation.
-operation.
-- **Queue maintenance**
-- **Operation selection**
-- **Operation initiation (see Abstract Mesh Navigation)**
 
-## Abstract Mesh Navigation
+We provide a direct way of controlling the operations performed
+and how the queue is updated through our scheduler. The main purpose of the scheduler is to
+abstract the operation order and hide parallelization details from
+the user. Our scheduler provides customizable callbacks, including, *Priority*, *Renew neighbor*, *Lock vertices*, *Stopping criterion*.  
 
+For shortest edge collapse, we want to attempt to collapse all edges, prioritizing the shortest ones, until we reach a fixed number of vertices.
 
+```
+for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_collapse", loc);
+```
 
+  We put here the example of our shortest edge collapse implementation of the *Priority* and *Renew neighbor*, and how they are used in scheduler. 
+```
+  auto renew = [](auto& m, auto op, auto& tris) {
+      auto edges = m.new_edges_after(tris);
+      auto optup = std::vector<std::pair<std::string, Tuple>>();
+      for (auto& e : edges) optup.emplace_back("edge_collapse", e);
+      return optup;
+  };
+  auto measure_len2 = [](auto& m, auto op, const Tuple& new_e) {
+      auto len2 =
+          (m.vertex_attrs[new_e.vid(m)].pos - m.vertex_attrs[new_e.switch_vertex(m).vid(m)].pos)
+              .squaredNorm();
+      return -len2;
+  };
+  auto setup_and_execute = [&](auto executor) {
+      executor.num_threads = NUM_THREADS;
+  >> executor.renew_neighbor_tuples = renew;
+  >> executor.priority = measure_len2;
+      executor.stopping_criterion_checking_frequency =
+          target_vert_number > 0 ? (initial_size - target_vert_number - 1)
+                                  : std::numeric_limits<int>::max();
+      executor.stopping_criterion = [](auto& m) { return true; };
+      executor(*this, collect_all_ops);
+  };
+```
 
 ## Command Line Executions for Example Applications
 To showcase the generality and effectiveness of our approach, we
