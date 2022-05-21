@@ -4,30 +4,29 @@
 
 #### via CMake
 
-Our code was originally developed on MacOS and has been tested on Linux and Windows. We provide the commands for installing in MacOS:
-
 - Clone the repository into your local machine:
 
 ```bash
 git clone https://github.com/wildmeshing/wildmeshing-toolkit.git
 ```
 
-- Compile the code using cmake (default in Release mode):
+- Compile the code using cmake>3.20.0
 
 ```bash
 cd wildmeshing-toolkit
 mkdir build
 cd build
-cmake ..
+cmake -DCMAKE_BUILD_TYPE=Release ..
 make
 ```
 
-You may need to install `gmp` and `continuous.yml` before compiling the code. You can install `gmp` via [homebrew](https://brew.sh/).
+You may need to install `gmp` before compiling the code. You can install `gmp` via [homebrew](https://brew.sh/).
 
-```
-brew install gmp
-```
 ## Usage
+To reproduce figures from the paper, please use the commands from [reproduce_scripts](reproduce_scripts.sh). Note that the input data are from `wmtk-data-package.zip`
+
+
+## About Us
 This toolkit is a novel approach to describe mesh generation, mesh adaptation, and geometric modeling algorithms relying on changing mesh connectivity using a high-level abstraction. The main motivation is to enable easy customization and development of these algorithms via a declarative specification consisting of a set of per-element invariants, operation scheduling,and attribute transfer for each editing operation.
 
 Many widely used algorithms editing surfaces and volumes
@@ -170,7 +169,7 @@ Usage:
 
 Required:
   input                       Input surface mesh INPUT in .off/.obj/.stl/.ply format. 
-  output                      Output tetmesh OUTPUT in .obj format. 
+  output                      Output tetmesh OUTPUT in .msh format. 
 
 Options:
   -j, --thread thread         Thread number.
@@ -196,13 +195,6 @@ Options:
   --sample-envelope           Use sample envelope for both simp and optim.
 ```
 
-<!--### Tips
-TODO :)-->
-
-### Function Wrapper
-
-We use [libigl](https://github.com/libigl/libigl) to read the input triangle mesh, we implemented a loading function wrapper `/src/wmtk/utils/Reader.hpp` to pass the raw data directly to applications. 
-
 ## License
-We are using MIT License.
+MIT License.
 
