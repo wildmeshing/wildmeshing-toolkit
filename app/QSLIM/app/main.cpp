@@ -30,12 +30,6 @@ void run_qslim_collapse(std::string input, int target, std::string output, QSLIM
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<milliseconds>(stop - start);
     wmtk::logger().info("runtime in ms{}", duration.count());
-    m.consolidate_mesh();
-    m.write_triangle_mesh(output);
-    wmtk::logger().info(
-        "After_vertices#: {} \n After_tris#: {}",
-        m.vert_capacity(),
-        m.tri_capacity());
 }
 int main(int argc, char** argv)
 {
@@ -70,18 +64,23 @@ int main(int argc, char** argv)
 
     double diag = (box_minmax.first - box_minmax.second).norm();
     const double envelope_size = env_rel * diag;
+
+    igl::Timer timer;
+    timer.start();
     QSLIM m(verts, thread);
     m.create_mesh(verts.size(), tris, modified_nonmanifold_v, envelope_size);
-
     assert(m.check_mesh_connectivity_validity());
     wmtk::logger().info("collapsing mesh {}", input_path);
     int target_verts = verts.size() * target_pec;
 
-    igl::Timer timer;
-    timer.start();
     run_qslim_collapse(input_path, target_verts, output, m);
     timer.stop();
     logger().info("Took {}", timer.getElapsedTimeInSec());
     m.consolidate_mesh();
+    m.write_triangle_mesh(output);
+    wmtk::logger().info(
+        "After_vertices#: {} \n After_tris#: {}",
+        m.vert_capacity(),
+        m.tri_capacity());
     return 0;
 }
