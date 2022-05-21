@@ -83,5 +83,10 @@ int main(int argc, char** argv)
     timer.stop();
     logger().info("Took {}", timer.getElapsedTimeInSec());
     m.consolidate_mesh();
+    m.write_triangle_mesh(output);
+    wmtk::logger().info(
+        "After_vertices#: {} \n After_tris#: {}",
+        m.vert_capacity(),
+        m.tri_capacity());
     return 0;
 }
