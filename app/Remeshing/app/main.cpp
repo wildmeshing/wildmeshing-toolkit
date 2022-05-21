@@ -1,15 +1,13 @@
 #include <remeshing/UniformRemeshing.h>
 
-#include <wmtk/utils/ManifoldUtils.hpp>
-
 #include <CLI/CLI.hpp>
 
+#include <wmtk/utils/Reader.hpp>
+
 #include <igl/Timer.h>
-#include <igl/is_edge_manifold.h>
-#include <igl/is_vertex_manifold.h>
 #include <igl/read_triangle_mesh.h>
-#include <igl/remove_duplicate_vertices.h>
 #include <igl/writeDMAT.h>
+
 
 #include <stdlib.h>
 #include <chrono>
@@ -41,9 +39,11 @@ void run_remeshing(
 
     m.consolidate_mesh();
     m.write_triangle_mesh(output);
-    wmtk::logger().info("runtime {}", duration.count());
+    auto properties = m.average_len_valen();
+    wmtk::logger().info("runtime in ms {}", duration.count());
     wmtk::logger().info("current_memory {}", getCurrentRSS() / (1024. * 1024));
     wmtk::logger().info("peak_memory {}", getPeakRSS() / (1024. * 1024));
+    wmtk::logger().info("after remesh properties: {}", properties);
     wmtk::logger().info(
         "After_vertices#: {} \n\t After_tris#: {}",
         m.vert_capacity(),
@@ -52,7 +52,7 @@ void run_remeshing(
 
 int main(int argc, char** argv)
 {
-    std::string path = "";
+    std::string input_path = "";
     std::string output = "out.obj";
     double env_rel = -1;
     double len_rel = 5;
@@ -64,7 +64,7 @@ int main(int argc, char** argv)
     bool sample_envelope = false;
 
     CLI::App app{argv[0]};
-    app.add_option("input", path, "Input mesh.")->check(CLI::ExistingFile);
+    app.add_option("input", input_path, "Input mesh.")->check(CLI::ExistingFile);
     app.add_option("output", output, "output mesh.");
 
     app.add_option("-e,--envelope", env_rel, "Relative envelope size, negative to disable");
@@ -75,69 +75,41 @@ int main(int argc, char** argv)
     app.add_option("-f, --freeze", freeze, "to freeze the boundary, default to true");
     app.add_flag("--sample-envelope", sample_envelope, "use sample envelope, default to false.");
 
-    app.add_option(
-        "--bnd_output",
-        bnd_output,
-        "(Debug use) write out a table tha maps bnd vertices between original input and output");
     CLI11_PARSE(app, argc, argv);
 
-    wmtk::logger().info("remeshing on {}", path);
+    wmtk::logger().info("remeshing on {}", input_path);
     wmtk::logger().info("freeze bnd {}", freeze);
+    std::vector<Eigen::Vector3d> verts;
+    std::vector<std::array<size_t, 3>> tris;
+    std::pair<Eigen::Vector3d, Eigen::Vector3d> box_minmax;
+    double remove_duplicate_esp = 1e-5;
+    std::vector<size_t> modified_nonmanifold_v;
+    wmtk::stl_to_manifold_wmtk_input(
+        input_path,
+        remove_duplicate_esp,
+        box_minmax,
+        verts,
+        tris,
+        modified_nonmanifold_v);
 
-    Eigen::MatrixXd V;
-    Eigen::MatrixXi F;
-    bool ok = igl::read_triangle_mesh(path, V, F);
-    Eigen::VectorXi SVI, SVJ;
-    Eigen::MatrixXd temp_V = V; // for STL file
-    igl::remove_duplicate_vertices(temp_V, 1e-3, V, SVI, SVJ);
-    for (int i = 0; i < F.rows(); i++)
-        for (int j = 0; j < 3; j++) F(i, j) = SVJ[F(i, j)];
-    wmtk::logger().info("Before_vertices#: {} \n Before_tris#: {}", V.rows(), F.rows());
-
-
-    std::vector<Eigen::Vector3d> v(V.rows());
-    std::vector<std::array<size_t, 3>> tri(F.rows());
-    for (int i = 0; i < V.rows(); i++) {
-        v[i] = V.row(i);
-    }
-    for (int i = 0; i < F.rows(); i++) {
-        for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
-    }
-
-    const Eigen::MatrixXd box_min = V.colwise().minCoeff();
-    const Eigen::MatrixXd box_max = V.colwise().maxCoeff();
-    const double diag = (box_max - box_min).norm();
+    double diag = (box_minmax.first - box_minmax.second).norm();
     const double envelope_size = env_rel * diag;
-    Eigen::VectorXi dummy;
-    std::vector<size_t> modified_v;
-    if (!igl::is_edge_manifold(F) || !igl::is_vertex_manifold(F, dummy)) {
-        auto v1 = v;
-        auto tri1 = tri;
-        wmtk::separate_to_manifold(v1, tri1, v, tri, modified_v);
-    }
-
     igl::Timer timer;
-    timer.start();
-    UniformRemeshing m(v, thread, !sample_envelope);
-    m.create_mesh(v.size(), tri, modified_v, freeze, envelope_size);
 
-    if (bnd_output) m.get_boundary_map(SVI);
+    UniformRemeshing m(verts, thread, !sample_envelope);
+    m.create_mesh(verts.size(), tris, modified_nonmanifold_v, freeze, envelope_size);
 
-    // std::vector<double> properties = m.average_len_valen();
-    // wmtk::logger().info(
-    //     "edgelen: avg max min valence:avg max min before remesh is: {}",
-    //     properties);
+    std::vector<double> properties = m.average_len_valen();
+    wmtk::logger().info("before remesh properties: {}", properties);
     if (target_len > 0)
-        run_remeshing(path, target_len, output, m, itrs, bnd_output);
-    
+        run_remeshing(input_path, target_len, output, m, itrs, bnd_output);
+
     else {
         double avg_len = m.average_len_valen()[0];
         double len = diag * len_rel;
         len = (len < avg_len * 5) ? len : avg_len * 5;
-        run_remeshing(path, len, output, m, itrs, bnd_output);
+        run_remeshing(input_path, len, output, m, itrs, bnd_output);
     }
-    timer.stop();
-    logger().info("Took {}", timer.getElapsedTimeInSec());
 
     return 0;
 }

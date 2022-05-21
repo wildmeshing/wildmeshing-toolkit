@@ -7,6 +7,8 @@
 
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/Partitioning.h>
+#include <wmtk/utils/Reader.hpp>
+
 #include <memory>
 #include <vector>
 #include <wmtk/utils/ManifoldUtils.hpp>
@@ -17,12 +19,8 @@
 #include <geogram/mesh/mesh_io.h>
 #include <igl/Timer.h>
 #include <igl/boundary_facets.h>
-#include <igl/is_edge_manifold.h>
-#include <igl/is_vertex_manifold.h>
 #include <igl/predicates/predicates.h>
 #include <igl/read_triangle_mesh.h>
-#include <igl/remove_duplicate_vertices.h>
-#include <igl/remove_unreferenced.h>
 #include <igl/write_triangle_mesh.h>
 #include <spdlog/common.h>
 #include <CLI/CLI.hpp>
@@ -43,11 +41,9 @@ void resolve_duplicated_faces(const Eigen::MatrixXi& inF, Eigen::MatrixXi& outF)
         }
     }
     outF.resize(newF.size(), 3);
-    for (auto i=0; i<newF.size(); i++) {
+    for (auto i = 0; i < newF.size(); i++) {
         outF.row(i) = newF[i];
     }
-
-
 }
 void reader(std::string input_surface, Eigen::MatrixXd& VI, Eigen::MatrixXi& FI)
 {
@@ -122,63 +118,23 @@ int main(int argc, char** argv)
         "use_sample_envelope for both simp and optim");
     CLI11_PARSE(app, argc, argv);
 
-    Eigen::MatrixXd inV, V;
-    Eigen::MatrixXi inF, F;
-    reader(input_path, inV, inF);
+    std::vector<Eigen::Vector3d> verts;
+    std::vector<std::array<size_t, 3>> tris;
+    std::pair<Eigen::Vector3d, Eigen::Vector3d> box_minmax;
+    double remove_duplicate_esp = params.epsr;
+    std::vector<size_t> modified_nonmanifold_v;
+    wmtk::stl_to_manifold_wmtk_input(
+        input_path,
+        remove_duplicate_esp,
+        box_minmax,
+        verts,
+        tris,
+        modified_nonmanifold_v);
 
-    Eigen::VectorXi _I;
-    igl::remove_unreferenced(inV, inF, V, F, _I);
-
-    if (V.rows() == 0 || F.rows() == 0) {
-        wmtk::logger().info("== finish with Empty Input, stop.");
-        return 1;
-    }
-    const Eigen::Vector3d box_min = V.colwise().minCoeff();
-    const Eigen::Vector3d box_max = V.colwise().maxCoeff();
-    double diag = (box_max - box_min).norm();
-
-    {
-        // using the same error tolerance as in tetwild
-        Eigen::VectorXi SVI, SVJ, SVK;
-        Eigen::MatrixXd temp_V = V; // for STL file
-        igl::remove_duplicate_vertices(
-            temp_V,
-            std::min(1e-5, params.epsr / 10) * diag,
-            V,
-            SVI,
-            SVJ);
-        for (int i = 0; i < F.rows(); i++)
-            for (int j : {0, 1, 2}) F(i, j) = SVJ[F(i, j)];
-        auto F1 = F;
-
-        resolve_duplicated_faces(F1, F);
-    }
-
-    std::vector<Eigen::Vector3d> verts(V.rows());
-    std::vector<std::array<size_t, 3>> tris(F.rows());
-    for (int i = 0; i < V.rows(); i++) {
-        verts[i] = V.row(i);
-    }
-    for (int i = 0; i < F.rows(); i++) {
-        for (int j = 0; j < 3; j++) tris[i][j] = (size_t)F(i, j);
-    }
-
-    wmtk::logger().info("diag of the mesh: {} ", diag);
-    boundary_detect(F);
-
-
-    Eigen::VectorXi dummy;
-    std::vector<size_t> frozen_verts;
-    if (!igl::is_edge_manifold(F) || !igl::is_vertex_manifold(F, dummy)) {
-        wmtk::logger().info("manifold separation...");
-        auto v1 = verts;
-        auto tri1 = tris;
-        wmtk::separate_to_manifold(v1, tri1, verts, tris, frozen_verts);
-    }
-
+    double diag = (box_minmax.first - box_minmax.second).norm();
     const double envelope_size = params.epsr * diag;
     sec::ShortestEdgeCollapse surf_mesh(verts, NUM_THREADS, false);
-    surf_mesh.create_mesh(verts.size(), tris, frozen_verts, envelope_size / 2);
+    surf_mesh.create_mesh(verts.size(), tris, modified_nonmanifold_v, envelope_size / 2);
     assert(surf_mesh.check_mesh_connectivity_validity());
 
 
@@ -210,7 +166,7 @@ int main(int argc, char** argv)
     /////////
 
 
-    params.init(box_min, box_max);
+    params.init(box_minmax.first, box_minmax.second);
     wmtk::remove_duplicates(vsimp, fsimp, params.diag_l);
 
     wmtk::ExactEnvelope exact_envelope;
