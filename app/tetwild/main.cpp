@@ -133,7 +133,7 @@ int main(int argc, char** argv)
 
     double diag = (box_minmax.first - box_minmax.second).norm();
     const double envelope_size = params.epsr * diag;
-    sec::ShortestEdgeCollapse surf_mesh(verts, NUM_THREADS, false);
+    app::sec::ShortestEdgeCollapse surf_mesh(verts, NUM_THREADS, false);
     surf_mesh.create_mesh(verts.size(), tris, modified_nonmanifold_v, envelope_size / 2);
     assert(surf_mesh.check_mesh_connectivity_validity());
 
