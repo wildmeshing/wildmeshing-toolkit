@@ -14,6 +14,10 @@
 #include <vector>
 
 namespace wmtk {
+/**
+ * @brief serving as buffers for attributes data that can be modified by operations
+ *
+ */
 class AbstractAttributeContainer
 {
 public:
@@ -51,21 +55,30 @@ struct AttributeCollection : public AbstractAttributeContainer
         // TODO: are locks necessary? not now.
         return true;
     }
-
+    /**
+     * @brief retrieve the protected attribute data on operation-fail
+     *
+     */
     void rollback() override
     {
         for (auto& [i, v] : m_rollback_list.local()) {
             m_attributes[i] = std::move(v);
         }
-	end_protect();
+        end_protect();
     }
-
+    /**
+     * @brief clean local buffers for attribute, and start recording
+     *
+     */
     void begin_protect() override
     {
         m_rollback_list.local().clear();
         recording.local() = true;
     };
-
+    /**
+     * @brief clear local buffers and finish recording
+     *
+     */
     void end_protect() override
     {
         m_rollback_list.local().clear();
