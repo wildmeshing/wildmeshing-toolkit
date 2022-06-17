@@ -12,7 +12,7 @@
 
 namespace wmtk {
 /**
- * @brief child of TriMesh for running with multithread
+ * @brief child of TriMesh for concurrent implementation
  *
  */
 class ConcurrentTriMesh : public TriMesh
