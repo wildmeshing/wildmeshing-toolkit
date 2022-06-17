@@ -21,9 +21,13 @@ namespace wmtk {
 class TetMesh
 {
 private:
+    /**
+     * @brief local edges within a tet
+     *
+     */
     static constexpr std::array<std::array<int, 2>, 6> m_local_edges = {
-        {{{0, 1}}, {{1, 2}}, {{0, 2}}, {{0, 3}}, {{1, 3}}, {{2, 3}}}}; // local edges within a
-    // tet
+        {{{0, 1}}, {{1, 2}}, {{0, 2}}, {{0, 3}}, {{1, 3}}, {{2, 3}}}};
+
     static constexpr std::array<int, 4> m_map_vertex2edge = {{0, 0, 1, 3}};
     static constexpr std::array<int, 4> m_map_vertex2oppo_face = {{3, 1, 2, 0}};
     static constexpr std::array<int, 6> m_map_edge2face = {{0, 0, 0, 1, 2, 1}};
@@ -34,6 +38,11 @@ private:
 
 public:
     // Cell Tuple Navigator
+    /**
+     * @brief a Tuple refers to a global vid and a global tet id, and a local edge id and local face
+     * id
+     *
+     */
     class Tuple
     {
         size_t m_global_vid = std::numeric_limits<size_t>::max();
@@ -64,10 +73,23 @@ public:
          * Check if the current tuple is already invalid (removed during editing).
          *
          * @param m TetMesh where the tuple belongs.
-         * @return if not removed and the tuple is up to date with respect to the connectivity.
+         * @return if not removed and the tuple is up to date with respect to the connectivity. And
+         * the tet id can't be -1
          */
         bool is_valid(const TetMesh& m) const;
+        /**
+         * Check if the current tuple the refers to an edge is on the boundary
+         *
+         * @param m TetMesh where the tuple belongs.
+         * @return if the edge is at the mesh boundary
+         */
         bool is_boundary_edge(const TetMesh& m) const;
+        /**
+         * Check if the current tuple the refers to a face is on the boundary
+         *
+         * @param m TetMesh where the tuple belongs.
+         * @return if the edge is at the mesh boundary
+         */
         bool is_boundary_face(const TetMesh& m) const;
 
         /**
@@ -118,13 +140,25 @@ public:
         size_t tid(const TetMesh& m) const;
 
         /**
-         * Switch operation. See (URL-TO-DOCUMENT) for explaination.
+         * Switch operation.
          *
-         * @param m
-         * @return Tuple another Tuple that share the same tetra, face, edge, but different vertex.
+         * @param m the mesh the Tuple is in
+         * @return another Tuple that share the same tetra, face, edge, but different vertex.
          */
         Tuple switch_vertex(const TetMesh& m) const;
+        /**
+         * Switch operation.
+         *
+         * @param m the mesh the Tuple is in
+         * @return another Tuple that share the same tetra, face, vertex, but different edge.
+         */
         Tuple switch_edge(const TetMesh& m) const;
+        /**
+         * Switch operation.
+         *
+         * @param m the mesh the Tuple is in
+         * @return another Tuple that share the same tetra, edge, vertex, but different edge.
+         */
         Tuple switch_face(const TetMesh& m) const;
 
         /**
@@ -138,6 +172,9 @@ public:
 
 
         ////testing code
+        /**
+         * @brief check Tuple validity and connectivity validity
+         */
         void check_validity(const TetMesh& m) const;
         friend bool operator==(const Tuple& a, const Tuple& t)
         {
@@ -266,25 +303,39 @@ public:
 
     TetMesh();
     virtual ~TetMesh() = default;
-
+    /**
+     * @brief get the current largest global vid
+     *
+     * @return size_t
+     */
     size_t vert_capacity() const { return current_vert_size; }
+    /**
+     * @brief get the current largest global tid
+     *
+     * @return size_t
+     */
     size_t tet_capacity() const { return current_tet_size; }
 
-
-
+    /**
+     * @brief get the number of unremoved verticies
+     *
+     */
     size_t vertex_size() const
     {
         int cnt = 0;
-        for (auto i = 0; i < vert_capacity(); i++ ){
+        for (auto i = 0; i < vert_capacity(); i++) {
             if (!m_vertex_connectivity[i].m_is_removed) cnt++;
         }
         return cnt;
     }
+    /**
+     * @brief get the number of unremoved tets
+     *
+     */
     size_t tet_size() const
     {
-
         int cnt = 0;
-        for (auto i = 0; i < tet_capacity(); i++ ){
+        for (auto i = 0; i < tet_capacity(); i++) {
             if (!m_tet_connectivity[i].m_is_removed) cnt++;
         }
         return cnt;
@@ -307,14 +358,48 @@ public:
      * @param[out] new_tets a vector of Tuples for all the newly introduced tetra.
      * @return if split succeed
      */
-
     bool split_edge(const Tuple& t, std::vector<Tuple>& new_tets);
+    /**
+     * Collapse an edge
+     *
+     * @param t Input Tuple for the edge to collapse.
+     * @param[out] new_tets a vector of Tuples for all the newly introduced tetra.
+     * @return if collapse succeed
+     */
     bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_tets);
+    /**
+     *Perform 4-4 swap between 2 tets
+     *
+     * @param t Input Tuple for the edge to swap.
+     * @param[out] new_tets a vector of Tuples for all the newly introduced tetra.
+     * @return if swap succeed
+     * @note only happens on internal edges
+     */
     bool swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tets);
+    /**
+     * @brief  3-2 edge swap
+     * @note only swap internal edges, not on boundary.
+     *
+     * @param t Input Tuple for the edge to swap.
+     * @param new_tets a vector of Tuples for all the newly introduced tetra.
+     * @return true if swap succeed
+     */
     bool swap_edge(const Tuple& t, std::vector<Tuple>& new_tets);
+    /**
+     * @brief  2-3 face swap
+     * @param t Input Tuple for the edge to swap.
+     * @param new_tets a vector of Tuples for all the newly introduced tetra.
+     * @return true if swap succeed
+     */
     bool swap_face(const Tuple& t, std::vector<Tuple>& new_tets);
+    /**
+     * Smooth a vertex
+     *
+     * @param t Input Tuple for the vertex
+     * @note no geometry changed here
+     * @return if smooth succeed
+     */
     bool smooth_vertex(const Tuple& t);
-
     bool split_tet(const Tuple& t, std::vector<Tuple>& new_tets);
     bool split_face(const Tuple& t, std::vector<Tuple>& new_tets);
 
@@ -357,12 +442,43 @@ public:
      * @return std::vector<Tuple> each Tuple owns a distinct edge.
      */
     std::vector<Tuple> get_edges() const;
+    /**
+     * Get all unique faces in the mesh.
+     *
+     * @return std::vector<Tuple> each Tuple owns a distinct face.
+     */
     std::vector<Tuple> get_faces() const;
+    /**
+     * Get all unique vertices in the mesh.
+     *
+     * @return std::vector<Tuple> each Tuple owns a distinct vertex
+     */
     std::vector<Tuple> get_vertices() const;
+    /**
+     * Get all unique tet in the mesh.
+     *
+     * @return std::vector<Tuple> each Tuple owns a distinct tet
+     */
     std::vector<Tuple> get_tets() const;
+    /**
+     * @brief looping through all the unique edges and perform the given function
+     *
+     */
     virtual void for_each_edge(const std::function<void(const TetMesh::Tuple&)>&);
+    /**
+     * @brief looping through all the unique faces and perform the given function
+     *
+     */
     virtual void for_each_face(const std::function<void(const TetMesh::Tuple&)>&);
+    /**
+     * @brief looping through all the unique vertices and perform the given function
+     *
+     */
     virtual void for_each_vertex(const std::function<void(const TetMesh::Tuple&)>&);
+    /**
+     * @brief looping through all the unique tet and perform the given function
+     *
+     */
     virtual void for_each_tetra(const std::function<void(const TetMesh::Tuple&)>&);
 
 public:
@@ -372,7 +488,7 @@ public:
 public:
     AbstractAttributeContainer *p_vertex_attrs, *p_edge_attrs, *p_face_attrs, *p_tet_attrs;
     AbstractAttributeContainer vertex_attrs, edge_attrs, face_attrs, tet_attrs;
-    
+
 
 private:
     // Stores the connectivity of the mesh
@@ -417,26 +533,100 @@ protected:
 
     //// Split the edge in the tuple
     // Checks if the split should be performed or not (user controlled)
+    /**
+     * @brief User specified preparations and desideratas for an edge split before changing the
+     * connectivity
+     * @param the edge Tuple to be split
+     * @return true if the preparation succeed
+     */
     virtual bool split_edge_before(const Tuple& t) { return true; } // check edge condition
     // This function computes the attributes for the added simplices
     // if it returns false then the operation is undone
+    /**
+     * @brief  This function computes the attributes for the added simplices. User specified
+     * modifications and desideratas for after an edge split
+     * @param the edge Tuple to be split
+     * @return true if the modification succeed
+     */
     virtual bool split_edge_after(const Tuple& t) { return true; } // check tet condition
 
     //// Collapse the edge in the tuple
     // Checks if the collapse should be performed or not (user controlled)
+    /**
+     * @brief User specified preparations and desideratas for an edge collapse before changing the
+     * connectivity
+     *
+     * @param t edge Tuple to be collapsed
+     * @return true is the preparation succeed
+     */
     virtual bool collapse_edge_before(const Tuple& t) { return true; }
     // If it returns false then the operation is undone (the tuple indexes a vertex and tet that
     // survived)
-
-    virtual bool swap_edge_44_before(const Tuple& t) { return true; }
-    virtual bool swap_edge_44_after(const Tuple& t) { return true; }
-    virtual bool swap_edge_before(const Tuple& t) { return true; }
-    virtual bool swap_edge_after(const Tuple& t) { return true; }
-    virtual bool swap_face_before(const Tuple& t) { return true; }
-    virtual bool swap_face_after(const Tuple& t) { return true; }
-
+    /**
+     * @brief  User specified modifications and desideratas for after an edge collapse
+     *
+     * @param t edge Tuple that's collapsed
+     * @return true if the modification succeed
+     */
     virtual bool collapse_edge_after(const Tuple& t) { return true; }
+    /**
+     * @brief User specified preparations and desideratas for an 4-4 edge swap before changing the
+     * connectivity
+     *
+     * @param t edge Tuple to be swaped
+     * @return true if the preparation succeed
+     */
+    virtual bool swap_edge_44_before(const Tuple& t) { return true; }
+    /**
+     * @brief User specified modifications and desideratas for after a 4-4 edge swap
+     *
+     * @param t edge Tuple that's swaped
+     * @return true if the modification succeed
+     */
+    virtual bool swap_edge_44_after(const Tuple& t) { return true; }
+    /**
+     * @brief User specified preparations and desideratas for an 3-2 edge swap before changing the
+     * conenctivity
+     *
+     * @param t edge Tuple to be swaped
+     * @return true if the preparation succeed
+     */
+    virtual bool swap_edge_before(const Tuple& t) { return true; }
+    /**
+     * @brief User specified modifications and desideratas for after a 3-2 edge swap
+     *
+     * @param t edge Tuple that's swaped
+     * @return true if the modification succeed
+     */
+    virtual bool swap_edge_after(const Tuple& t) { return true; }
+    /**
+     * @brief User specified preparations and desideratas for an 2-3 face swap befroe changing the
+     * geometry
+     *
+     * @param t edge Tuple to be swaped
+     * @return true if the preparation succeed
+     */
+    virtual bool swap_face_before(const Tuple& t) { return true; }
+    /**
+     * @brief User specified modifications and desideratas for after a 2-3 face swap
+     *
+     * @param t edge Tuple that's swaped
+     * @return true if the modification succeed
+     */
+    virtual bool swap_face_after(const Tuple& t) { return true; }
+    /**
+     * @brief  User specified preparations and desideratas for smoothing a vertex
+     *
+     * @param t Tuple refering to a vertex Tuple
+     * @return true if the preparation succeed
+     */
     virtual bool smooth_before(const Tuple& t) { return true; }
+    /**
+     * @brief  User specified modifications and desideratas for after smoothing a vertex
+     *
+     * @param t Tuple refering to a vertex
+     * @return true if the preparation succeed
+     */
     virtual bool smooth_after(const Tuple& t) { return true; }
 
     virtual void resize_vertex_mutex(size_t v) {}
@@ -445,17 +635,20 @@ public:
     /**
      * @brief get a Tuple from global tetra index and __local__ edge index (from 0-5).
      *
-     * @param m TetMesh where the current Tuple belongs.
      * @param tid Global tetra index
      * @param local_eid local edge index
      */
     Tuple tuple_from_edge(size_t tid, int local_eid) const;
-    Tuple tuple_from_edge(const std::array<size_t,2>& vids) const;
+    /**
+     * @brief get a Tuple from global vids of the 2 end of an edge
+     *
+     * @param vids an array of the 2 vertex id of the edge
+     */
+    Tuple tuple_from_edge(const std::array<size_t, 2>& vids) const;
 
     /**
      * @brief get a Tuple from global tetra index and __local__ face index (from 0-3).
      *
-     * @param m TetMesh where the current Tuple belongs.
      * @param tid Global tetra index
      * @param local_fid local face index
      */
@@ -464,7 +657,6 @@ public:
     /**
      * @brief get a Tuple and the global face index from global vertex index of the face.
      *
-     * @param m TetMesh where the current Tuple belongs.
      * @param vids Global vertex index of the face
      */
     std::tuple<Tuple, size_t> tuple_from_face(const std::array<size_t, 3>& vids) const;
@@ -472,7 +664,6 @@ public:
     /**
      * @brief get a Tuple from global vertex index
      *
-     * @param m TetMesh where the current Tuple belongs.
      * @param vid Global vertex index
      */
     Tuple tuple_from_vertex(size_t vid) const;
@@ -480,14 +671,13 @@ public:
     /**
      * @brief get a Tuple from global tetra index
      *
-     * @param m TetMesh where the current Tuple belongs.
      * @param tid Global tetra index
      */
     Tuple tuple_from_tet(size_t tid) const;
 
 
     /**
-     * @brief wrapper function from tuple
+     * @brief wrapper function from Tuple::switch_vertex
      */
     Tuple switch_vertex(const Tuple& t) const
     {
@@ -495,18 +685,27 @@ public:
         check_tuple_validity(loc);
         return loc;
     }
+    /**
+     * @brief wrapper function from Tuple::switch_edge
+     */
     Tuple switch_edge(const Tuple& t) const
     {
         auto loc = t.switch_edge(*this);
         check_tuple_validity(loc);
         return loc;
     }
+    /**
+     * @brief wrapper function from Tuple::switch_face
+     */
     Tuple switch_face(const Tuple& t) const
     {
         auto loc = t.switch_face(*this);
         check_tuple_validity(loc);
         return loc;
     }
+    /**
+     * @brief wrapper function from Tuple::switch_tetrahedron
+     */
     std::optional<Tuple> switch_tetrahedron(const Tuple& t) const
     {
         auto loc = t.switch_tetrahedron(*this);
@@ -521,18 +720,45 @@ public:
      * @return one-ring
      */
     std::vector<Tuple> get_one_ring_tets_for_vertex(const Tuple& t) const;
+    /**
+     * @brief Get the one ring tids for vertex
+     *
+     * @param t a Tuple that refers to a vertex
+     * @return std::vector<size_t> a vector of vids
+     */
     std::vector<size_t> get_one_ring_tids_for_vertex(const Tuple& t) const;
 
     /**
      * @brief Get the one ring vertices for a vertex
      *
      * @param t tuple pointing to a vertex
-     * @return one-ring vertices
+     * @return a vector of Tupels that refers to the one-ring vertices
      */
     std::vector<Tuple> get_one_ring_vertices_for_vertex(const Tuple& t) const;
+    /**
+     * @brief Get the one ring vids for vertex
+     *
+     * @param vid size_t type vertex id
+     * @param[output] cache stores a verctor of vids with duplicate
+     * @return std::vector<size_t> vectotr of one-ring vids
+     */
     std::vector<size_t> get_one_ring_vids_for_vertex(size_t vid, std::vector<size_t>& cache);
+    /**
+     * @brief Get the one ring vids for vertex
+     *
+     * @param vid size_t type vertex id
+     * @return std::vector<size_t> a vecotr of unique one-ring vids
+     */
     std::vector<size_t> get_one_ring_vids_for_vertex(size_t vid) const;
+    /**
+     * @brief Duplicate of the function TetMesh::get_one_ring_vids_for_vertex
+     *
+     */
     std::vector<size_t> get_one_ring_vids_for_vertex_adj(size_t vid) const;
+    /**
+     * @brief Duplicate of the function TetMesh::get_one_ring_vids_for_vertex
+     *
+     */
     std::vector<size_t> get_one_ring_vids_for_vertex_adj(size_t vid, std::vector<size_t>& cache);
 
     /**
@@ -563,14 +789,42 @@ public:
      * @return std::array<Tuple, 4> each tuple owns a different vertex.
      */
     std::array<Tuple, 4> oriented_tet_vertices(const Tuple& t) const;
+    /**
+     * Positively oriented 4 vertices ids in a tetra.
+     * @return std::array<size_t, 4> of the vertex ids.
+     */
     std::array<size_t, 4> oriented_tet_vids(const Tuple& t) const;
+    /**
+     * @brief Get the 3 vertices of a face represented by Tuple
+     *
+     * @param t
+     * @return std::array<Tuple, 3> an array of 3 Tuple poitns to the 3 vertices of a face
+     */
     std::array<Tuple, 3> get_face_vertices(const Tuple& t) const;
-
+    /**
+     * @brief get the 6 edges of a tet represented by Tuples
+     *
+     * @param t
+     * @return std::array<Tuple, 6> an array of 6 Tuples pointing to the 6 edges of a tet that share
+     * the same tid
+     */
     std::array<Tuple, 6> tet_edges(const Tuple& t) const;
-
+    /**
+     * wrapper function for Tuple::check_validity
+     */
     void check_tuple_validity(const Tuple& t) const { t.check_validity(*this); }
+    /**
+     * @brief checks the validity of the connectivity of the mesh. Including the validity of each
+     * Tuple
+     *
+     * @return true if the mesh is valid
+     */
     bool check_mesh_connectivity_validity() const;
-
+    /**
+     * @brief remove the tetrahedrons in the mesh that have given tet ids
+     *
+     * @param tids
+     */
     void remove_tets_by_ids(const std::vector<size_t>& tids)
     {
         for (size_t tid : tids) {
@@ -639,14 +893,27 @@ public:
         bool before(const Tuple&) { return true; }
         bool after(const std::vector<Tuple>&) { return true; }
         std::vector<size_t> removed_tids(const Tuple&);
-        int request_vert_slots() {return 0;};
+        int request_vert_slots() { return 0; };
         std::vector<std::array<size_t, 4>> replacing_tets(const std::vector<size_t>&);
     };
 
     // dangerous usage, backdoor for private access.
     template <int id>
-    class InternalOperationBuilder : public OperationBuilder{};
-
+    class InternalOperationBuilder : public OperationBuilder
+    {
+    };
+    /**
+     * @brief a wrapper for all the protected type operations. It can serve as a prototype for how
+     * to use the operation functions and the correpsonding before/after functions
+     *
+     * @tparam T
+     * @tparam typename
+     * @tparam T>>
+     * @param op operation name
+     * @param tup the tupe to be acted on
+     * @param new_tet_tuples the return Tuples generated by the operations
+     * @return true if the operation happened successfully
+     */
     template <typename T, typename = std::enable_if_t<std::is_base_of_v<OperationBuilder, T>>>
     bool customized_operation(T& op, const Tuple& tup, std::vector<Tuple>& new_tet_tuples)
     {
@@ -654,9 +921,9 @@ public:
         const auto& affected = op.removed_tids(tup);
         auto old_tets = record_old_tet_connectivity(m_tet_connectivity, affected);
 
-		auto new_vnum = op.request_vert_slots();
+        auto new_vnum = op.request_vert_slots();
         std::vector<size_t> new_vids(new_vnum);
-        for (auto i =0; i < new_vnum; i++) {
+        for (auto i = 0; i < new_vnum; i++) {
             new_vids[i] = get_next_empty_slot_v();
         }
         const auto& new_tets = op.replacing_tets(new_vids);

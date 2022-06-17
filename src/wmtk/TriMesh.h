@@ -501,9 +501,9 @@ public:
     bool swap_edge(const Tuple& t, std::vector<Tuple>& new_t);
 
     /**
-     * Smooth an edge
+     * Smooth a vertex
      *
-     * @param t Input Tuple for the edge to be swaped.
+     * @param t Input Tuple for the vertex
      * @note no geometry changed here
      * @return if smooth succeed
      */
