@@ -35,10 +35,10 @@ struct SplitEdge : public TetMesh::OperationBuilder
             auto t_conn = m.oriented_tet_vids(m.tuple_from_tet(affected[i]));
             for (auto j = 0; j < 2; j++) {
                 new_tets.push_back(t_conn);
-                std::replace(new_tets.back().begin(), new_tets.back().end(),  edge_verts[j], ux);
+                std::replace(new_tets.back().begin(), new_tets.back().end(), edge_verts[j], ux);
             }
         }
         return new_tets;
     }
 };
-}
+} // namespace wmtk
