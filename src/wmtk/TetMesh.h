@@ -234,10 +234,6 @@ public:
 
         int hash = 0;
 
-        void set_version_number(int version) { hash = version; }
-
-        int get_version_number() { return hash; }
-
         size_t& operator[](size_t index)
         {
             assert(index < 4);
