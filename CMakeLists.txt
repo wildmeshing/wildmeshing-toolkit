@@ -1,5 +1,6 @@
 # Detects whether this is a top-level project
 get_directory_property(HAS_PARENT PARENT_DIRECTORY)
+
 if(HAS_PARENT)
     set(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT OFF)
 else()
@@ -8,6 +9,7 @@ endif()
 
 # Check required CMake version
 set(REQUIRED_CMAKE_VERSION "3.15.0")
+
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
     cmake_minimum_required(VERSION ${REQUIRED_CMAKE_VERSION})
 else()
@@ -17,15 +19,14 @@ else()
     endif()
 endif()
 
-################################################################################
+# ###############################################################################
 project(WildMeshingToolkit DESCRIPTION "A mesh optimization toolkit")
-################################################################################
 
-option(WMTK_BUILD_DOCS       "Build doxygen"               OFF)
+# ###############################################################################
+option(WMTK_BUILD_DOCS "Build doxygen" ON)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/recipes/")
-
 
 include(sanitizers)
 include(wmtk_colors)
@@ -39,9 +40,9 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 # Generate position independent code by default
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-################################################################################
+# ###############################################################################
 # WildMeshingToolkit library
-################################################################################
+# ###############################################################################
 
 # Core library
 file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS
@@ -68,12 +69,14 @@ target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_17)
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src" PREFIX "Source Files" FILES ${SRC_FILES})
 
 # Dependencies
-if (NOT TARGET igl::core)
+if(NOT TARGET igl::core)
     include(libigl)
 endif()
-if (NOT TARGET spdlog)
+
+if(NOT TARGET spdlog)
     include(spdlog)
 endif()
+
 include(geogram)
 include(onetbb)
 include(mshio)
@@ -92,9 +95,9 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     Tracy::TracyClient
 )
 
-################################################################################
+# ###############################################################################
 # Subdirectories
-################################################################################
+# ###############################################################################
 
 # Compile extras only if this is a top-level project
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
@@ -106,11 +109,11 @@ if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
     add_subdirectory(app)
 endif()
 
-
 if(WMTK_BUILD_DOCS)
     # check if Doxygen is installed
     find_package(Doxygen)
-    if (DOXYGEN_FOUND)
+
+    if(DOXYGEN_FOUND)
         # set input and output files
         set(DOXYGEN_IN ${CMAKE_CURRENT_SOURCE_DIR}/docs/Doxyfile.in)
         set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
@@ -124,8 +127,8 @@ if(WMTK_BUILD_DOCS)
             COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
             COMMENT "Generating API documentation with Doxygen"
-            VERBATIM )
-    else (DOXYGEN_FOUND)
+            VERBATIM)
+    else(DOXYGEN_FOUND)
         message("Doxygen need to be installed to generate the doxygen documentation")
-    endif (DOXYGEN_FOUND)
+    endif(DOXYGEN_FOUND)
 endif()
