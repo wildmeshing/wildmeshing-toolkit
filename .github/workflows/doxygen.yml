@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - teseo/doxygen
 
 jobs:
   deploy:
@@ -16,7 +15,8 @@ jobs:
           sudo apt-get install doxygen -y
           mkdir -p build
           cd build
-          cmake ..
+          cmake -DWMTK_BUILD_DOCS=ON ..
+          make wmtk_doc_doxygen
           touch docs_doxygen/html/.nojekyll
 
       - name: Deploy 🚀
