@@ -170,7 +170,6 @@ std::array<TriMesh::Tuple, 3> TriMesh::Tuple::oriented_tri_vertices(const TriMes
 }
 
 // a valid mesh can have triangles that are is_removed == true
-// it can be easier for compact later on ?
 bool wmtk::TriMesh::check_mesh_connectivity_validity() const
 {
     std::vector<std::vector<size_t>> conn_tris(vert_capacity());
@@ -327,10 +326,10 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
     auto new_t = Tuple(new_vid, (l + 2) % 3, new_fid, *this);
     assert(new_t.is_valid(*this));
 
-    // roll back if not successful
     new_tris = get_one_ring_tris_for_vertex(new_t);
     start_protect_attributes();
 
+    // roll back if not successful
     if (!split_edge_after(new_t) || !invariants(new_tris)) {
         // rollback topo
         // restore old v, t
@@ -670,16 +669,14 @@ void TriMesh::consolidate_mesh(bool bnd_output)
 }
 
 
-
-std::vector<size_t> TriMesh::get_one_ring_vids_for_vertex_duplicate(
-    const size_t& vid) const
+std::vector<size_t> TriMesh::get_one_ring_vids_for_vertex_duplicate(const size_t& vid) const
 {
     std::vector<size_t> one_ring;
-    auto& conn_tri  = m_vertex_connectivity[vid].m_conn_tris;
+    auto& conn_tri = m_vertex_connectivity[vid].m_conn_tris;
 
-    one_ring.reserve(conn_tri.size()*4);
+    one_ring.reserve(conn_tri.size() * 4);
     for (size_t tri : conn_tri) {
-        for (auto j: m_tri_connectivity[tri].m_indices) {
+        for (auto j : m_tri_connectivity[tri].m_indices) {
             one_ring.push_back(j);
         }
     }

@@ -11,6 +11,10 @@
 // clang-format on
 
 namespace wmtk {
+/**
+ * @brief child of TriMesh for concurrent implementation
+ *
+ */
 class ConcurrentTriMesh : public TriMesh
 {
 public:
@@ -65,13 +69,46 @@ public:
     // TODO remove later
     void create_mesh(size_t n_vertices, const std::vector<std::array<size_t, 3>>& tris);
     int release_vertex_mutex_in_stack();
+    /**
+     * @brief try lock the two-ring neighboring traingles' incident vertices
+     *
+     * @param v Tuple refers to the vertex
+     * @param threadid
+     * @return true if all locked successfully
+     */
     bool try_set_vertex_mutex_two_ring(const Tuple& v, int threadid);
+    /**
+     * @brief try lock the two-ring neighboring triangles' incident vertices for the two ends of an
+     * edge
+     *
+     * @param e Tuple refers to the edge
+     * @param threadid
+     * @return true if all locked successfully
+     */
     bool try_set_edge_mutex_two_ring(const Tuple& e, int threadid);
+    /**
+     * @brief get the lock for one ring neighboring triangles' incident vertices
+     *
+     * @param v
+     * @param threadid
+     * @return true if all succeed
+     */
     bool try_set_vertex_mutex_one_ring(const Tuple& v, int threadid);
 
-    //
+    /**
+     * @brief perform the given function for each face
+     *
+     */
     void for_each_face(const std::function<void(const Tuple&)>&);
+    /**
+     * @brief perform the given function for each edge
+     *
+     */
     void for_each_edge(const std::function<void(const Tuple&)>&);
+    /**
+     * @brief perform the given function for each vertex
+     *
+     */
     void for_each_vertex(const std::function<void(const Tuple&)>&);
     int NUM_THREADS = 1;
 };

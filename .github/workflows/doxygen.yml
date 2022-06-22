@@ -1,0 +1,26 @@
+name: Doxygen Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Config
+        run: |
+          sudo apt-get install doxygen -y
+          mkdir -p build
+          cd build
+          cmake -DWMTK_BUILD_DOCS=ON ..
+          make wmtk_doc_doxygen
+          touch docs_doxygen/html/.nojekyll
+
+      - name: Deploy 🚀
+        uses: JamesIves/github-pages-deploy-action@v4.3.3
+        with:
+          branch: gh-pages # The branch the action should deploy to.
+          folder: build/docs_doxygen/html/ # The folder the action should deploy.

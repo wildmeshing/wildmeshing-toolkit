@@ -36,50 +36,70 @@ template <class AppMesh, ExecutionPolicy policy = ExecutionPolicy::kSeq>
 struct ExecutePass
 {
     using Tuple = typename AppMesh::Tuple;
-    // A dictionary that registers names with operations.
+    /**
+     * @brief A dictionary that registers names with operations.
+     *
+     */
     std::map<
         Op, // strings
         std::function<std::optional<std::vector<Tuple>>(AppMesh&, const Tuple&)>>
         edit_operation_maps;
-
-    // Priority function (default to edge length)
+    /**
+     * @brief Priority function (default to edge length)
+     *
+     */
     std::function<double(const AppMesh&, Op op, const Tuple&)> priority = [](auto&, auto, auto&) {
         return 0.;
     };
-
+    /**
+     * @brief check on wheather new operations should be added to the prioirity queue
+     *
+     */
     std::function<bool(double)> should_renew = [](auto) { return true; };
-    // Renew Neighboring Tuples
-    // Right now, use pre-implemented functions to get one edge ring.
-    // TODO: Ideally, this depend on both operation and priority criterion.
+    /**
+     * @brief renew neighboring Tuples after each operation depends on the operation
+     *
+     */
     std::function<std::vector<std::pair<Op, Tuple>>(const AppMesh&, Op, const std::vector<Tuple>&)>
         renew_neighbor_tuples =
             [](auto&, auto, auto&) -> std::vector<std::pair<Op, Tuple>> { return {}; };
-
-    // lock vertices: should depend on the operation
-    // returns a range of vertices that we need to acquire and lock.
-    // trivial in serial version
+    /**
+     * @brief lock the vertices concerned depends on the operation
+     *
+     */
     std::function<bool(AppMesh&, const Tuple&, int task_id)> lock_vertices =
         [](const AppMesh&, const Tuple&, int task_id) { return true; };
-
-    // Stopping Criterion based on the whole mesh
-    // For efficiency, not every time is checked.
-    // In serial, this may go over all the elements. For parallel, this involves synchronization.
-    // So there is a checking frequency.
+    /**
+     * @brief Stopping Criterion based on the whole mesh
+        For efficiency, not every time is checked.
+        In serial, this may go over all the elements. For parallel, this involves synchronization.
+        So there is a checking frequency.
+     *
+     */
     std::function<bool(const AppMesh&)> stopping_criterion = [](const AppMesh&) {
         return false; // non-stop, process everything
     };
+    /**
+     * @brief checking frequency to decide whether to stop execution given the stopping criterion
+     *
+     */
     size_t stopping_criterion_checking_frequency = std::numeric_limits<size_t>::max();
-
-    // Should Process drops some Tuple from being processed.
-    // For example, if the energy is out-dated.
-    // This is in addition to calling tuple valid.
+    /**
+     * @brief Should Process drops some Tuple from being processed.
+         For example, if the energy is out-dated.
+         This is in addition to calling tuple valid.
+     *
+     */
     std::function<bool(const AppMesh&, const std::tuple<double, Op, Tuple>& t)>
         is_weight_up_to_date = [](const AppMesh& m, const std::tuple<double, Op, Tuple>& t) {
             // always do.
             assert(std::get<2>(t).is_valid(m));
             return true;
         };
-
+    /**
+     * @brief
+     *used to collect operations that are not finished and used for later re-execution
+     */
     std::function<void(const AppMesh&, Op, const Tuple& t)> on_fail = [](auto&, auto, auto&) {};
 
 
@@ -90,7 +110,12 @@ struct ExecutePass
      *
      */
     size_t max_retry_limit = 10;
-
+    /**
+     * @brief Construct a new Execute Pass object. It contains the name-to-operation map and the
+     *functions that define the rules for operations
+     *@note the constructor is differentiated by the type of mesh, namingly wmtk::TetMesh or
+     *wmtk::TriMesh
+     */
     ExecutePass()
     {
         if constexpr (std::is_base_of<wmtk::TetMesh, AppMesh>::value) {
@@ -204,6 +229,14 @@ private:
     }
 
 public:
+    /**
+     * @brief Executes the operations for an application when the lambda function is invoked. The
+     * rules that are customizly defined for applications are applied.
+     *
+     * @param m
+     * @param operation_tuples a vector of pairs of operation's name and the Tuple to be operated on
+     * @returns true if finished successfully
+     */
     bool operator()(AppMesh& m, const std::vector<std::pair<Op, Tuple>>& operation_tuples)
     {
         auto cnt_update = std::atomic<int>(0);
