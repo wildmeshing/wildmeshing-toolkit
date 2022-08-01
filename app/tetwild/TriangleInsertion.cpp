@@ -59,7 +59,7 @@ void tetwild::TetWild::init_from_delaunay_box_mesh(const std::vector<Eigen::Vect
     m_params.box_max = box_max;
 
     ///delaunay
-    auto tets = wmtk::delaunay3D_conn(points);
+    auto [unused_points,tets] = wmtk::delaunay3D(points);
     wmtk::logger().info(
         "after delauney tets.size() {}  points.size() {}",
         tets.size(),
