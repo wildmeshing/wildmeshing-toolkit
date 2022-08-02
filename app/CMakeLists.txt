@@ -2,6 +2,7 @@
 include(wmtk_data)
 
 option(WMTK_APP_TETWILD "tetwild application" ON)
+option(WMTK_APP_TRIWILD "triwild application" ON)
 option(WMTK_APP_HARMTET "Harmonic Triangulation app" ON)
 option(WMTK_APP_UNIFORM_REMESH "uniform remesh for surfaces" ON)
 option(WMTK_APP_SEC "surface shortest edge collapse" ON)
@@ -12,6 +13,10 @@ add_subdirectory(interior_tet_opt)
 
 if(WMTK_APP_TETWILD)
     add_subdirectory(tetwild)
+endif()
+
+if(WMTK_APP_TRIWILD)
+    add_subdirectory(triwild)
 endif()
 
 if(WMTK_APP_HARMTET)
