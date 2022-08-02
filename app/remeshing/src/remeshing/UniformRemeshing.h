@@ -32,8 +32,6 @@ struct VertexAttributes
     bool freeze = false;
 };
 
-// TODO: source code should not stay in the header file
-
 class UniformRemeshing : public wmtk::ConcurrentTriMesh
 {
 public:
