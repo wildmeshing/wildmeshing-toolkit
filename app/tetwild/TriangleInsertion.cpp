@@ -4,7 +4,7 @@
 #include <wmtk/utils/Delaunay.hpp>
 #include "common.h"
 #include "wmtk/TetMesh.h"
-#include "wmtk/auto_table.hpp"
+#include "wmtk/TetMeshCutTable.hpp"
 #include "wmtk/utils/GeoUtils.h"
 #include "wmtk/utils/InsertTriangleUtils.hpp"
 #include "wmtk/utils/Logger.hpp"

@@ -1,6 +1,6 @@
 
 #include <wmtk/TetMesh.h>
-#include <wmtk/auto_table.hpp>
+#include <wmtk/TetMeshCutTable.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
 
 #include <bitset>

@@ -21,6 +21,7 @@ auto renew = [](auto& m, auto op, auto& tris) {
 
 
 auto edge_locker = [](auto& m, const auto& e, int task_id) {
+    // TODO: this should not be here
     return m.try_set_edge_mutex_two_ring(e, task_id);
 };
 
