@@ -34,7 +34,8 @@ struct
     double stop_energy = 10.;
 } args;
 
-
+// TODO: this should not be in the main
+// this also seems unused, can we remove?
 bool adjust_sizing_field(
     app::interior_tet_opt::InteriorTetOpt& mesh,
     double max_energy,

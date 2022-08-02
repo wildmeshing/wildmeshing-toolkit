@@ -61,7 +61,7 @@ public:
     ~HarmonicTet(){};
 
     ////// Attributes related
-
+    // TODO: this should not be exposed in the application
     void compute_vertex_partition_morton()
     {
         if (NUM_THREADS==0) return;

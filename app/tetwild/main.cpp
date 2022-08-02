@@ -25,68 +25,8 @@
 #include <spdlog/common.h>
 #include <CLI/CLI.hpp>
 
-void resolve_duplicated_faces(const Eigen::MatrixXi& inF, Eigen::MatrixXi& outF)
-{
-    std::map<std::array<int, 3>, int> unique;
-    std::vector<Eigen::Vector3i> newF;
-    newF.reserve(inF.rows());
-    for (auto i = 0; i < inF.rows(); i++) {
-        std::array<int, 3> tri;
-        for (auto j = 0; j < 3; j++) tri[j] = inF(i, j);
-
-        std::sort(tri.begin(), tri.end());
-        auto [it, suc] = unique.emplace(tri, i);
-        if (suc) {
-            newF.emplace_back(inF.row(i));
-        }
-    }
-    outF.resize(newF.size(), 3);
-    for (auto i = 0; i < newF.size(); i++) {
-        outF.row(i) = newF[i];
-    }
-}
-void reader(std::string input_surface, Eigen::MatrixXd& VI, Eigen::MatrixXi& FI)
-{
-    GEO::initialize();
-    GEO::Mesh input;
-    GEO::mesh_load(input_surface, input);
-    VI.resize(input.vertices.nb(), 3);
-    for (int i = 0; i < VI.rows(); i++)
-        VI.row(i) << (input.vertices.point(i))[0], (input.vertices.point(i))[1],
-            (input.vertices.point(i))[2];
-    input.facets.triangulate();
-    wmtk::logger().info("V {} F {}", input.vertices.nb(), input.facets.nb());
-    FI.resize(input.facets.nb(), 3);
-    for (int i = 0; i < FI.rows(); i++)
-        FI.row(i) << input.facets.vertex(i, 0), input.facets.vertex(i, 1),
-            input.facets.vertex(i, 2);
-}
-
-void boundary_detect(const Eigen::MatrixXi& tris)
-{ // open boundary (1-manifold) detection. hand written for non-manifold meshes.
-    std::map<std::pair<size_t, size_t>, int> open_bnd;
-    for (auto i = 0; i < tris.rows(); i++) {
-        for (auto j = 0; j < 3; j++) {
-            size_t a = tris(i, j), b = tris(i, (j + 1) % 3);
-            if (a > b) std::swap(a, b);
-            auto key = std::pair(a, b);
-            auto it = open_bnd.lower_bound(key);
-            if (it == open_bnd.end() || it->first != key)
-                open_bnd.emplace_hint(it, key, 1);
-            else {
-                it->second++;
-            }
-        }
-    }
-    auto cnt = 0;
-    for (auto& [k, v] : open_bnd)
-        if (v == 1) cnt++;
-    if (cnt > 0) wmtk::logger().warn("Open Boundary {} ", cnt);
-}
-
 int main(int argc, char** argv)
 {
-    //
     ZoneScopedN("tetwildmain");
 
     tetwild::Parameters params;

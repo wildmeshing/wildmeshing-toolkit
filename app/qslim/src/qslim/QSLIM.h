@@ -23,6 +23,8 @@
 #include <memory>
 #include <queue>
 
+// TODO: source code should not stay in the header file
+
 namespace app::qslim {
 
 struct Quadrics
@@ -174,6 +176,7 @@ public:
             vertex_attrs[i].partition_id = m_vertex_partition_id[i];
     }
 
+    // TODO: This should not be exposed to the application, but hidden in wmtk
     void partition_mesh_morton()
     {
         if (NUM_THREADS == 0) return;

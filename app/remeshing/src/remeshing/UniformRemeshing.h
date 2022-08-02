@@ -32,6 +32,8 @@ struct VertexAttributes
     bool freeze = false;
 };
 
+// TODO: source code should not stay in the header file
+
 class UniformRemeshing : public wmtk::ConcurrentTriMesh
 {
 public:
@@ -78,7 +80,7 @@ public:
         } else
             m_envelope.init(V, F, 0.0);
 
-
+        // TODO: this should not be here
         partition_mesh_morton();
 
         if (m_freeze) {
@@ -127,7 +129,7 @@ public:
         return true;
     }
 
-
+    // TODO: this should not be here
     void partition_mesh()
     {
         auto m_vertex_partition_id = partition_TriMesh(*this, NUM_THREADS);
@@ -135,6 +137,7 @@ public:
             vertex_attrs[i].partition_id = m_vertex_partition_id[i];
     }
 
+    // TODO: morton should not be here, but inside wmtk
     void partition_mesh_morton()
     {
         if (NUM_THREADS == 0) return;
