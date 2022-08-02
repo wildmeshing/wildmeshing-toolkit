@@ -1,4 +1,4 @@
-#include "Rational.hpp"
+#include <wmtk/utils/Rational.hpp>
 #include "TetWild.h"
 
 #include <wmtk/utils/Delaunay.hpp>
@@ -145,7 +145,7 @@ auto internal_insert_single_triangle(
     };
 
     const auto& [flag, intersected_tets, intersected_edges, intersected_pos] =
-        wmtk::triangle_insert_prepare_info<apps::Rational>(
+        wmtk::triangle_insert_prepare_info<wmtk::Rational>(
             m,
             face,
             marked_tet_faces, // output

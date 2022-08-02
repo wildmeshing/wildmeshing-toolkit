@@ -1,7 +1,7 @@
 
 #include "TetWild.h"
 
-#include "Rational.hpp"
+#include "wmtk/utils/Rational.hpp"
 #include "common.h"
 
 #include <wmtk/utils/AMIPS.h>
@@ -544,12 +544,12 @@ double tetwild::TetWild::get_quality(const Tuple& loc) const
         for (auto k = 0; k < 4; k++)
             for (auto j = 0; j < 3; j++) T[k * 3 + j] = ps[k][j];
 
-        energy = wmtk::AMIPS_energy_stable_p3<apps::Rational>(T);
+        energy = wmtk::AMIPS_energy_stable_p3<wmtk::Rational>(T);
     } else {
-        std::array<apps::Rational, 12> T;
+        std::array<wmtk::Rational, 12> T;
         for (auto k = 0; k < 4; k++)
             for (auto j = 0; j < 3; j++) T[k * 3 + j] = m_vertex_attribute[its[k]].m_pos[j];
-        energy = wmtk::AMIPS_energy_rational_p3<apps::Rational>(T);
+        energy = wmtk::AMIPS_energy_rational_p3<wmtk::Rational>(T);
     }
     if (std::isinf(energy) || std::isnan(energy) || energy < 27 - 1e-3) return MAX_ENERGY;
     return energy;

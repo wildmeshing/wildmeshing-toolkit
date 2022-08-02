@@ -17,10 +17,9 @@ add_library(wmtk_tetwild
 	EdgeSplitting.cpp
 	EdgeCollapsing.cpp
 	EdgeSwapping.cpp
-	TetWildSmooth.cpp
+	Smooth.cpp
 
 	TriangleInsertion.cpp
-	Rational.hpp
 )
 add_library(wmtk::tetwild ALIAS wmtk_tetwild)
 
