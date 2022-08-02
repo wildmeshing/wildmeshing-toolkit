@@ -78,12 +78,17 @@ $(function() {
 <div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="keyword">namespace </span>wmtk {</div>
 <div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="keyword">using</span> Point3D = std::array&lt;double, 3&gt;;</div>
 <div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="keyword">using</span> Tetrahedron = std::array&lt;size_t, 4&gt;;</div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160; </div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="keyword">auto</span> delaunay3D(<span class="keyword">const</span> std::vector&lt;Point3D&gt;&amp; points)</div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;    -&gt; std::pair&lt;std::vector&lt;Point3D&gt;, std::vector&lt;Tetrahedron&gt;&gt;;</div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="keyword">auto</span> delaunay3D_conn(<span class="keyword">const</span> std::vector&lt;Point3D&gt;&amp; points)</div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    -&gt; std::vector&lt;Tetrahedron&gt;;</div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;} <span class="comment">// namespace wmtk</span></div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="keyword">using</span> Point2D = std::array&lt;double, 2&gt;;</div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="keyword">using</span> Triangle = std::array&lt;size_t, 3&gt;;</div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160; </div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="keyword">auto</span> delaunay3D(<span class="keyword">const</span> std::vector&lt;Point3D&gt;&amp; points)</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    -&gt; std::pair&lt;std::vector&lt;Point3D&gt;, std::vector&lt;Tetrahedron&gt;&gt;;</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;<span class="keyword">auto</span> delaunay2D(<span class="keyword">const</span> std::vector&lt;Point2D&gt;&amp; points)</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    -&gt; std::pair&lt;std::vector&lt;Point2D&gt;, std::vector&lt;Triangle&gt;&gt;;</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160; </div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;} <span class="comment">// namespace wmtk</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
