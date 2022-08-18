@@ -132,257 +132,70 @@ $(function() {
 <div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <a class="code" href="structwmtk_1_1_attribute_collection.html">wmtk::AttributeCollection&lt;EdgeAttributes&gt;</a> edge_attrs;</div>
 <div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160; </div>
 <div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <span class="keywordtype">int</span> retry_limit = 10;</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <a class="code" href="classapp_1_1qslim_1_1_q_s_l_i_m.html">QSLIM</a>(std::vector&lt;Eigen::Vector3d&gt; _m_vertex_positions, <span class="keywordtype">int</span> num_threads = 1)</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    {</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        p_vertex_attrs = &amp;vertex_attrs;</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        p_face_attrs = &amp;face_attrs;</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        p_edge_attrs = &amp;edge_attrs;</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;        NUM_THREADS = (num_threads);</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160; </div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        vertex_attrs.resize(_m_vertex_positions.size());</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160; </div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> i = 0; i &lt; _m_vertex_positions.size(); i++) {</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;            vertex_attrs[i] = {_m_vertex_positions[i], 0, <span class="keyword">false</span>, {}};</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        }</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    }</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160; </div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    <span class="keywordtype">void</span> set_freeze(TriMesh::Tuple&amp; v)</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    {</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> e : <a class="code" href="classwmtk_1_1_tri_mesh.html#a9208cec662f3d90924bafdf9153530e0">get_one_ring_edges_for_vertex</a>(v)) {</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;            <span class="keywordflow">if</span> (<a class="code" href="classwmtk_1_1_tri_mesh.html#adcc31a34edcc7605d3bbfa25bae84ece">is_boundary_edge</a>(e)) {</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;                vertex_attrs[v.vid(*<span class="keyword">this</span>)].freeze = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;                <span class="keywordflow">continue</span>;</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;            }</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;        }</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    }</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160; </div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    <span class="keywordtype">void</span> create_mesh(</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;        <span class="keywordtype">size_t</span> n_vertices,</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;        <span class="keyword">const</span> std::vector&lt;std::array&lt;size_t, 3&gt;&gt;&amp; tris,</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;        <span class="keyword">const</span> std::vector&lt;size_t&gt;&amp; frozen_verts = std::vector&lt;size_t&gt;(),</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;        <span class="keywordtype">double</span> eps = 0)</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    {</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;        wmtk::logger().info(<span class="stringliteral">&quot;----start create mesh-------&quot;</span>);</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;        wmtk::ConcurrentTriMesh::create_mesh(n_vertices, tris);</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;        std::vector&lt;Eigen::Vector3d&gt; V(n_vertices);</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;        Eigen::MatrixXd Vm(n_vertices, 3);</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;        std::vector&lt;Eigen::Vector3i&gt; F(tris.size());</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;        Eigen::MatrixXi Fm(tris.size(), 3);</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> i = 0; i &lt; V.size(); i++) {</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;            V[i] = vertex_attrs[i].pos;</div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;            Vm.row(i) = V[i];</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;        }</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; F.size(); ++i) {</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;            F[i] &lt;&lt; tris[i][0], tris[i][1], tris[i][2];</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;            Fm.row(i) = F[i];</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;        }</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;        <span class="keywordflow">if</span> (eps &gt; 0) {</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;            m_envelope.init(V, F, eps);</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;            m_has_envelope = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;        }</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;        face_attrs.resize(<a class="code" href="classwmtk_1_1_tri_mesh.html#ab64cc4ece77d894286c2e433e039dae2">tri_capacity</a>());</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;        edge_attrs.resize(<a class="code" href="classwmtk_1_1_tri_mesh.html#ab64cc4ece77d894286c2e433e039dae2">tri_capacity</a>() * 3);</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160; </div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;        Eigen::MatrixXd N = Eigen::MatrixXd::Zero(F.size(), 3);</div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;        wmtk::logger().info(<span class="stringliteral">&quot;----normal-------&quot;</span>);</div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;        igl::per_face_normals(Vm, Fm, N);</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; N.rows(); i++) face_attrs[i].n = N.row(i);</div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160; </div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;        wmtk::logger().info(<span class="stringliteral">&quot;----start init qua for face-------&quot;</span>);</div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;        initiate_quadrics_for_face();</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;        wmtk::logger().info(<span class="stringliteral">&quot;----start init qua for vertices-------&quot;</span>);</div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;        initiate_quadrics_for_vertices();</div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160; </div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160; </div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;        partition_mesh_morton();</div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;        <span class="comment">// for (auto v : frozen_verts) vertex_attrs[v].freeze = true;</span></div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;        <span class="comment">// for (auto v : get_vertices()) { // the better way is to iterate through edges.</span></div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;        <span class="comment">//     set_freeze(v);</span></div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;        <span class="comment">// }</span></div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;    }</div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160; </div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;    <span class="keywordtype">void</span> initiate_quadrics_for_face()</div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;    {</div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;        <span class="comment">// initaite A, b, c for each traingle</span></div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;        <span class="comment">// auto faces = get_faces();</span></div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;        <a class="code" href="classwmtk_1_1_concurrent_tri_mesh.html#ae60c47bf05b0c688f78b395748c68b65">for_each_face</a>([&amp;](<span class="keyword">auto</span>&amp; tup) {</div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;            <span class="comment">// get A,b,c of one face</span></div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;            <span class="keywordtype">int</span> i = tup.fid(*<span class="keyword">this</span>);</div>
-<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;            <a class="code" href="structapp_1_1qslim_1_1_quadrics.html">Quadrics</a> Qf = compute_quadric_for_face(tup);</div>
-<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;            <span class="comment">// update the face_attr</span></div>
-<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;            face_attrs[i].Q = Qf;</div>
-<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;        });</div>
-<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;    }</div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;    <span class="keywordtype">void</span> initiate_quadrics_for_vertices()</div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;    { <span class="comment">// get one circle of faces and linearly add A,b, c</span></div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160; </div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;        <a class="code" href="classwmtk_1_1_concurrent_tri_mesh.html#ae4a7f9ec82d5ec432273362c239edef4">for_each_vertex</a>([&amp;](<span class="keyword">auto</span>&amp; tup) {</div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;            Eigen::MatrixXd A;</div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;            Eigen::Vector3d b(0.0, 0.0, 0.0);</div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;            <span class="keywordtype">double</span> c = 0.0;</div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;            <span class="keywordtype">double</span> w = 1e-10;</div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160; </div>
-<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;            <span class="keywordtype">int</span> i = tup.vid(*<span class="keyword">this</span>);</div>
-<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;            A = w * Eigen::MatrixXd::Identity(3, 3);</div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;            b = -w * vertex_attrs[i].pos;</div>
-<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;            c = w * vertex_attrs[i].pos.dot(vertex_attrs[i].pos);</div>
-<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;            <span class="keyword">auto</span> one_ring_faces = <a class="code" href="classwmtk_1_1_tri_mesh.html#afb11cab951b3e96d3a1ebe8ee14a7565">get_one_ring_tris_for_vertex</a>(tup);</div>
-<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> tri : one_ring_faces) {</div>
-<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;                A += face_attrs[tri.fid(*<span class="keyword">this</span>)].Q.A;</div>
-<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;                b += face_attrs[tri.fid(*<span class="keyword">this</span>)].Q.b;</div>
-<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;                c += face_attrs[tri.fid(*<span class="keyword">this</span>)].Q.c;</div>
-<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;            }</div>
-<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;            vertex_attrs[i].Q = {A, b, c};</div>
-<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;        });</div>
-<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;    }</div>
-<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160; </div>
-<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;    ~<a class="code" href="classapp_1_1qslim_1_1_q_s_l_i_m.html">QSLIM</a>() {}</div>
-<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160; </div>
-<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;    <span class="keywordtype">void</span> partition_mesh()</div>
-<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;    {</div>
-<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;        <span class="keyword">auto</span> m_vertex_partition_id = partition_TriMesh(*<span class="keyword">this</span>, NUM_THREADS);</div>
-<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> i = 0; i &lt; m_vertex_partition_id.size(); i++)</div>
-<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;            vertex_attrs[i].partition_id = m_vertex_partition_id[i];</div>
-<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;    }</div>
-<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160; </div>
-<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;    <span class="keywordtype">void</span> partition_mesh_morton()</div>
-<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;    {</div>
-<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;        <span class="keywordflow">if</span> (NUM_THREADS == 0) <span class="keywordflow">return</span>;</div>
-<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;        wmtk::logger().info(<span class="stringliteral">&quot;Number of parts: {} by morton&quot;</span>, NUM_THREADS);</div>
-<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160; </div>
-<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;        tbb::task_arena arena(NUM_THREADS);</div>
-<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160; </div>
-<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;        arena.execute([&amp;] {</div>
-<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;            std::vector&lt;Eigen::Vector3d&gt; V_v(<a class="code" href="classwmtk_1_1_tri_mesh.html#a8f4722aa023014096691a82acb1fa1e8">vert_capacity</a>());</div>
-<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160; </div>
-<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;            tbb::parallel_for(</div>
-<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;                tbb::blocked_range&lt;int&gt;(0, V_v.size()),</div>
-<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;                [&amp;](tbb::blocked_range&lt;int&gt; r) {</div>
-<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;                    for (int i = r.begin(); i &lt; r.end(); i++) {</div>
-<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;                        V_v[i] = vertex_attrs[i].pos;</div>
-<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;                    }</div>
-<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;                });</div>
-<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160; </div>
-<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;            <span class="keyword">struct </span>sortstruct</div>
-<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;            {</div>
-<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;                <span class="keywordtype">int</span> order;</div>
-<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;                <a class="code" href="class_resorting_1_1_morton_code64.html">Resorting::MortonCode64</a> morton;</div>
-<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;            };</div>
-<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160; </div>
-<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;            std::vector&lt;sortstruct&gt; list_v;</div>
-<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;            list_v.resize(V_v.size());</div>
-<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;            <span class="keyword">const</span> <span class="keywordtype">int</span> multi = 1000;</div>
-<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;            <span class="comment">// since the morton code requires a correct scale of input vertices,</span></div>
-<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;            <span class="comment">//  we need to scale the vertices if their coordinates are out of range</span></div>
-<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;            std::vector&lt;Eigen::Vector3d&gt; V = V_v; <span class="comment">// this is for rescaling vertices</span></div>
-<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;            Eigen::Vector3d vmin, vmax;</div>
-<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;            vmin = V.front();</div>
-<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;            vmax = V.front();</div>
-<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160; </div>
-<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;            <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> j = 0; j &lt; V.size(); j++) {</div>
-<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;                <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; 3; i++) {</div>
-<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;                    vmin(i) = std::min(vmin(i), V[j](i));</div>
-<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;                    vmax(i) = std::max(vmax(i), V[j](i));</div>
-<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;                }</div>
-<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;            }</div>
-<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160; </div>
-<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;            Eigen::Vector3d center = (vmin + vmax) / 2;</div>
-<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160; </div>
-<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;            tbb::parallel_for(tbb::blocked_range&lt;int&gt;(0, V.size()), [&amp;](tbb::blocked_range&lt;int&gt; r) {</div>
-<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;                for (int i = r.begin(); i &lt; r.end(); i++) {</div>
-<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;                    V[i] = V[i] - center;</div>
-<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;                }</div>
-<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;            });</div>
-<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160; </div>
-<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;            Eigen::Vector3d scale_point =</div>
-<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;                vmax - center; <span class="comment">// after placing box at origin, vmax and vmin are symetric.</span></div>
-<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160; </div>
-<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;            <span class="keywordtype">double</span> xscale, yscale, zscale;</div>
-<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;            xscale = fabs(scale_point[0]);</div>
-<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;            yscale = fabs(scale_point[1]);</div>
-<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;            zscale = fabs(scale_point[2]);</div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;            <span class="keywordtype">double</span> scale = std::max(std::max(xscale, yscale), zscale);</div>
-<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;            <span class="keywordflow">if</span> (scale &gt; 300) {</div>
-<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;                tbb::parallel_for(</div>
-<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;                    tbb::blocked_range&lt;int&gt;(0, V.size()),</div>
-<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;                    [&amp;](tbb::blocked_range&lt;int&gt; r) {</div>
-<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;                        for (int i = r.begin(); i &lt; r.end(); i++) {</div>
-<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;                            V[i] = V[i] / scale;</div>
-<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;                        }</div>
-<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;                    });</div>
-<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;            }</div>
-<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160; </div>
-<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;            tbb::parallel_for(tbb::blocked_range&lt;int&gt;(0, V.size()), [&amp;](tbb::blocked_range&lt;int&gt; r) {</div>
-<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;                for (int i = r.begin(); i &lt; r.end(); i++) {</div>
-<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;                    list_v[i].morton = Resorting::MortonCode64(</div>
-<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;                        int(V[i][0] * multi),</div>
-<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;                        int(V[i][1] * multi),</div>
-<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;                        int(V[i][2] * multi));</div>
-<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;                    list_v[i].order = i;</div>
-<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;                }</div>
-<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;            });</div>
-<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160; </div>
-<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;            <span class="keyword">const</span> <span class="keyword">auto</span> morton_compare = [](<span class="keyword">const</span> sortstruct&amp; a, <span class="keyword">const</span> sortstruct&amp; b) {</div>
-<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;                <span class="keywordflow">return</span> (a.morton &lt; b.morton);</div>
-<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;            };</div>
-<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160; </div>
-<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;            tbb::parallel_sort(list_v.begin(), list_v.end(), morton_compare);</div>
-<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160; </div>
-<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;            <span class="keywordtype">int</span> interval = list_v.size() / NUM_THREADS + 1;</div>
-<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160; </div>
-<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;            tbb::parallel_for(</div>
-<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;                tbb::blocked_range&lt;int&gt;(0, list_v.size()),</div>
-<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;                [&amp;](tbb::blocked_range&lt;int&gt; r) {</div>
-<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;                    for (int i = r.begin(); i &lt; r.end(); i++) {</div>
-<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;                        vertex_attrs[list_v[i].order].partition_id = i / interval;</div>
-<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;                    }</div>
-<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;                });</div>
-<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;        });</div>
-<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;    }</div>
-<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160; </div>
-<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;    <span class="keywordtype">bool</span> collapse_edge_before(<span class="keyword">const</span> Tuple&amp; t) <span class="keyword">override</span>;</div>
-<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;    <span class="keywordtype">bool</span> collapse_edge_after(<span class="keyword">const</span> Tuple&amp; t) <span class="keyword">override</span>;</div>
-<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;    <span class="keywordtype">bool</span> collapse_qslim(<span class="keywordtype">int</span> target_vertex_count);</div>
-<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;    <span class="keywordtype">bool</span> write_triangle_mesh(std::string path);</div>
-<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;    <span class="keywordtype">bool</span> invariants(<span class="keyword">const</span> std::vector&lt;Tuple&gt;&amp; new_tris) <span class="keyword">override</span>;</div>
-<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;    <span class="keywordtype">double</span> compute_cost_for_e(<span class="keyword">const</span> TriMesh::Tuple&amp; v_tuple);</div>
-<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;    Quadrics compute_quadric_for_face(<span class="keyword">const</span> TriMesh::Tuple&amp; f_tuple);</div>
-<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;    <span class="keywordtype">void</span> update_quadrics(<span class="keyword">const</span> TriMesh::Tuple&amp; v_tuple);</div>
-<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160; </div>
-<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00283"></a><span class="lineno"><a class="line" href="structapp_1_1qslim_1_1_q_s_l_i_m_1_1_info_cache.html">  283</a></span>&#160;    <span class="keyword">struct </span><a class="code" href="structapp_1_1qslim_1_1_q_s_l_i_m_1_1_info_cache.html">InfoCache</a></div>
-<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;    {</div>
-<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;        Eigen::Vector3d v1p;</div>
-<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;        Eigen::Vector3d v2p;</div>
-<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;        Eigen::Vector3d vbar;</div>
-<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;        <a class="code" href="structapp_1_1qslim_1_1_quadrics.html">Quadrics</a> Q1;</div>
-<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;        <a class="code" href="structapp_1_1qslim_1_1_quadrics.html">Quadrics</a> Q2;</div>
-<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;        <span class="keywordtype">int</span> partition_id;</div>
-<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;    };</div>
-<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;    tbb::enumerable_thread_specific&lt;InfoCache&gt; cache;</div>
-<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160; </div>
-<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;    std::vector&lt;TriMesh::Tuple&gt; new_edges_after(<span class="keyword">const</span> std::vector&lt;TriMesh::Tuple&gt;&amp; t) <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;};</div>
-<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160; </div>
-<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;} <span class="comment">// namespace app::qslim</span></div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <a class="code" href="classapp_1_1qslim_1_1_q_s_l_i_m.html">QSLIM</a>(std::vector&lt;Eigen::Vector3d&gt; _m_vertex_positions, <span class="keywordtype">int</span> num_threads = 1);</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <span class="keywordtype">void</span> set_freeze(TriMesh::Tuple&amp; v);</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160; </div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    ~<a class="code" href="classapp_1_1qslim_1_1_q_s_l_i_m.html">QSLIM</a>() {}</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160; </div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <span class="keywordtype">void</span> create_mesh(</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        <span class="keywordtype">size_t</span> n_vertices,</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        <span class="keyword">const</span> std::vector&lt;std::array&lt;size_t, 3&gt;&gt;&amp; tris,</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;        <span class="keyword">const</span> std::vector&lt;size_t&gt;&amp; frozen_verts = std::vector&lt;size_t&gt;(),</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;        <span class="keywordtype">double</span> eps = 0);</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    <span class="keywordtype">void</span> initiate_quadrics_for_face();</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160; </div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    <span class="keywordtype">void</span> initiate_quadrics_for_vertices();</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160; </div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    <span class="keywordtype">void</span> partition_mesh()</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    {</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;        <span class="keyword">auto</span> m_vertex_partition_id = partition_TriMesh(*<span class="keyword">this</span>, NUM_THREADS);</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> i = 0; i &lt; m_vertex_partition_id.size(); i++)</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;            vertex_attrs[i].partition_id = m_vertex_partition_id[i];</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    }</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160; </div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    <span class="comment">// TODO: This should not be exposed to the application, but hidden in wmtk</span></div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    <span class="keywordtype">void</span> partition_mesh_morton();</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    </div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="classapp_1_1qslim_1_1_q_s_l_i_m.html#ab60f7e0476322cb161d6bb006d998975">collapse_edge_before</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&amp; t) <span class="keyword">override</span>;</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="classapp_1_1qslim_1_1_q_s_l_i_m.html#af1a46be16cd39bf3e4d8fc09240a34b9">collapse_edge_after</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&amp; t) <span class="keyword">override</span>;</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    <span class="keywordtype">bool</span> collapse_qslim(<span class="keywordtype">int</span> target_vertex_count);</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    <span class="keywordtype">bool</span> write_triangle_mesh(std::string path);</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="classapp_1_1qslim_1_1_q_s_l_i_m.html#ac05ae72742c7759db49e54deafc96dbc">invariants</a>(<span class="keyword">const</span> std::vector&lt;Tuple&gt;&amp; new_tris) <span class="keyword">override</span>;</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    <span class="keywordtype">double</span> compute_cost_for_e(<span class="keyword">const</span> TriMesh::Tuple&amp; v_tuple);</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    <a class="code" href="structapp_1_1qslim_1_1_quadrics.html">Quadrics</a> compute_quadric_for_face(<span class="keyword">const</span> TriMesh::Tuple&amp; f_tuple);</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;    <span class="keywordtype">void</span> update_quadrics(<span class="keyword">const</span> TriMesh::Tuple&amp; v_tuple);</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160; </div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00100"></a><span class="lineno"><a class="line" href="structapp_1_1qslim_1_1_q_s_l_i_m_1_1_info_cache.html">  100</a></span>&#160;    <span class="keyword">struct </span><a class="code" href="structapp_1_1qslim_1_1_q_s_l_i_m_1_1_info_cache.html">InfoCache</a></div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;    {</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;        Eigen::Vector3d v1p;</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;        Eigen::Vector3d v2p;</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;        Eigen::Vector3d vbar;</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;        <a class="code" href="structapp_1_1qslim_1_1_quadrics.html">Quadrics</a> Q1;</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;        <a class="code" href="structapp_1_1qslim_1_1_quadrics.html">Quadrics</a> Q2;</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;        <span class="keywordtype">int</span> partition_id;</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;    };</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;    tbb::enumerable_thread_specific&lt;InfoCache&gt; cache;</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160; </div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;    std::vector&lt;TriMesh::Tuple&gt; new_edges_after(<span class="keyword">const</span> std::vector&lt;TriMesh::Tuple&gt;&amp; t) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;};</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160; </div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;} <span class="comment">// namespace app::qslim</span></div>
 </div><!-- fragment --></div><!-- contents -->
-<div class="ttc" id="aclasswmtk_1_1_tri_mesh_html_ab64cc4ece77d894286c2e433e039dae2"><div class="ttname"><a href="classwmtk_1_1_tri_mesh.html#ab64cc4ece77d894286c2e433e039dae2">wmtk::TriMesh::tri_capacity</a></div><div class="ttdeci">size_t tri_capacity() const</div><div class="ttdoc">get the current largest global fid</div><div class="ttdef"><b>Definition:</b> TriMesh.h:418</div></div>
 <div class="ttc" id="astructapp_1_1qslim_1_1_quadrics_html"><div class="ttname"><a href="structapp_1_1qslim_1_1_quadrics.html">app::qslim::Quadrics</a></div><div class="ttdef"><b>Definition:</b> QSLIM.h:28</div></div>
-<div class="ttc" id="aclasswmtk_1_1_concurrent_tri_mesh_html_ae4a7f9ec82d5ec432273362c239edef4"><div class="ttname"><a href="classwmtk_1_1_concurrent_tri_mesh.html#ae4a7f9ec82d5ec432273362c239edef4">wmtk::ConcurrentTriMesh::for_each_vertex</a></div><div class="ttdeci">void for_each_vertex(const std::function&lt; void(const Tuple &amp;)&gt; &amp;)</div><div class="ttdoc">perform the given function for each vertex</div><div class="ttdef"><b>Definition:</b> ConcurrentTriMesh.cpp:158</div></div>
-<div class="ttc" id="aclasswmtk_1_1_tri_mesh_html_adcc31a34edcc7605d3bbfa25bae84ece"><div class="ttname"><a href="classwmtk_1_1_tri_mesh.html#adcc31a34edcc7605d3bbfa25bae84ece">wmtk::TriMesh::is_boundary_edge</a></div><div class="ttdeci">bool is_boundary_edge(const TriMesh::Tuple &amp;t) const</div><div class="ttdoc">check if edge that's represented by a Tuple is at the boundary of the mesh</div><div class="ttdef"><b>Definition:</b> TriMesh.h:465</div></div>
+<div class="ttc" id="aclasswmtk_1_1_tri_mesh_1_1_tuple_html"><div class="ttname"><a href="classwmtk_1_1_tri_mesh_1_1_tuple.html">wmtk::TriMesh::Tuple</a></div><div class="ttdef"><b>Definition:</b> TriMesh.h:29</div></div>
 <div class="ttc" id="aclassapp_1_1qslim_1_1_q_s_l_i_m_html"><div class="ttname"><a href="classapp_1_1qslim_1_1_q_s_l_i_m.html">app::qslim::QSLIM</a></div><div class="ttdef"><b>Definition:</b> QSLIM.h:54</div></div>
 <div class="ttc" id="astructapp_1_1qslim_1_1_edge_attributes_html"><div class="ttname"><a href="structapp_1_1qslim_1_1_edge_attributes.html">app::qslim::EdgeAttributes</a></div><div class="ttdef"><b>Definition:</b> QSLIM.h:49</div></div>
-<div class="ttc" id="aclasswmtk_1_1_tri_mesh_html_a9208cec662f3d90924bafdf9153530e0"><div class="ttname"><a href="classwmtk_1_1_tri_mesh.html#a9208cec662f3d90924bafdf9153530e0">wmtk::TriMesh::get_one_ring_edges_for_vertex</a></div><div class="ttdeci">std::vector&lt; Tuple &gt; get_one_ring_edges_for_vertex(const Tuple &amp;t) const</div><div class="ttdoc">Get the one ring edges for a vertex, edges are the incident edges.</div><div class="ttdef"><b>Definition:</b> TriMesh.cpp:703</div></div>
 <div class="ttc" id="astructwmtk_1_1_attribute_collection_html"><div class="ttname"><a href="structwmtk_1_1_attribute_collection.html">wmtk::AttributeCollection&lt; VertexAttributes &gt;</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_concurrent_tri_mesh_html"><div class="ttname"><a href="classwmtk_1_1_concurrent_tri_mesh.html">wmtk::ConcurrentTriMesh</a></div><div class="ttdoc">child of TriMesh for concurrent implementation</div><div class="ttdef"><b>Definition:</b> ConcurrentTriMesh.h:18</div></div>
-<div class="ttc" id="aclass_resorting_1_1_morton_code64_html"><div class="ttname"><a href="class_resorting_1_1_morton_code64.html">Resorting::MortonCode64</a></div><div class="ttdef"><b>Definition:</b> Morton.h:34</div></div>
-<div class="ttc" id="aclasswmtk_1_1_tri_mesh_html_a8f4722aa023014096691a82acb1fa1e8"><div class="ttname"><a href="classwmtk_1_1_tri_mesh.html#a8f4722aa023014096691a82acb1fa1e8">wmtk::TriMesh::vert_capacity</a></div><div class="ttdeci">size_t vert_capacity() const</div><div class="ttdoc">get the current largest global vid</div><div class="ttdef"><b>Definition:</b> TriMesh.h:424</div></div>
-<div class="ttc" id="astructapp_1_1qslim_1_1_q_s_l_i_m_1_1_info_cache_html"><div class="ttname"><a href="structapp_1_1qslim_1_1_q_s_l_i_m_1_1_info_cache.html">app::qslim::QSLIM::InfoCache</a></div><div class="ttdef"><b>Definition:</b> QSLIM.h:283</div></div>
-<div class="ttc" id="aclasswmtk_1_1_concurrent_tri_mesh_html_ae60c47bf05b0c688f78b395748c68b65"><div class="ttname"><a href="classwmtk_1_1_concurrent_tri_mesh.html#ae60c47bf05b0c688f78b395748c68b65">wmtk::ConcurrentTriMesh::for_each_face</a></div><div class="ttdeci">void for_each_face(const std::function&lt; void(const Tuple &amp;)&gt; &amp;)</div><div class="ttdoc">perform the given function for each face</div><div class="ttdef"><b>Definition:</b> ConcurrentTriMesh.cpp:175</div></div>
+<div class="ttc" id="aclassapp_1_1qslim_1_1_q_s_l_i_m_html_ab60f7e0476322cb161d6bb006d998975"><div class="ttname"><a href="classapp_1_1qslim_1_1_q_s_l_i_m.html#ab60f7e0476322cb161d6bb006d998975">app::qslim::QSLIM::collapse_edge_before</a></div><div class="ttdeci">bool collapse_edge_before(const Tuple &amp;t) override</div><div class="ttdoc">User specified preparations and desideratas for an edge collapse including the link check as collapse...</div><div class="ttdef"><b>Definition:</b> QSLIM.cpp:301</div></div>
+<div class="ttc" id="astructapp_1_1qslim_1_1_q_s_l_i_m_1_1_info_cache_html"><div class="ttname"><a href="structapp_1_1qslim_1_1_q_s_l_i_m_1_1_info_cache.html">app::qslim::QSLIM::InfoCache</a></div><div class="ttdef"><b>Definition:</b> QSLIM.h:100</div></div>
 <div class="ttc" id="astructapp_1_1qslim_1_1_vertex_attributes_html"><div class="ttname"><a href="structapp_1_1qslim_1_1_vertex_attributes.html">app::qslim::VertexAttributes</a></div><div class="ttdef"><b>Definition:</b> QSLIM.h:35</div></div>
-<div class="ttc" id="aclasswmtk_1_1_tri_mesh_html_afb11cab951b3e96d3a1ebe8ee14a7565"><div class="ttname"><a href="classwmtk_1_1_tri_mesh.html#afb11cab951b3e96d3a1ebe8ee14a7565">wmtk::TriMesh::get_one_ring_tris_for_vertex</a></div><div class="ttdeci">std::vector&lt; Tuple &gt; get_one_ring_tris_for_vertex(const Tuple &amp;t) const</div><div class="ttdoc">Get the one ring tris for a vertex.</div><div class="ttdef"><b>Definition:</b> TriMesh.cpp:687</div></div>
+<div class="ttc" id="aclassapp_1_1qslim_1_1_q_s_l_i_m_html_ac05ae72742c7759db49e54deafc96dbc"><div class="ttname"><a href="classapp_1_1qslim_1_1_q_s_l_i_m.html#ac05ae72742c7759db49e54deafc96dbc">app::qslim::QSLIM::invariants</a></div><div class="ttdeci">bool invariants(const std::vector&lt; Tuple &gt; &amp;new_tris) override</div><div class="ttdoc">User specified invariants that can't be violated.</div><div class="ttdef"><b>Definition:</b> QSLIM.cpp:268</div></div>
 <div class="ttc" id="astructapp_1_1qslim_1_1_face_attributes_html"><div class="ttname"><a href="structapp_1_1qslim_1_1_face_attributes.html">app::qslim::FaceAttributes</a></div><div class="ttdef"><b>Definition:</b> QSLIM.h:43</div></div>
+<div class="ttc" id="aclassapp_1_1qslim_1_1_q_s_l_i_m_html_af1a46be16cd39bf3e4d8fc09240a34b9"><div class="ttname"><a href="classapp_1_1qslim_1_1_q_s_l_i_m.html#af1a46be16cd39bf3e4d8fc09240a34b9">app::qslim::QSLIM::collapse_edge_after</a></div><div class="ttdeci">bool collapse_edge_after(const Tuple &amp;t) override</div><div class="ttdoc">User specified modifications and desideratas after an edge collapse.</div><div class="ttdef"><b>Definition:</b> QSLIM.cpp:316</div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">
