@@ -1,5 +1,5 @@
 
-#include "auto_table.hpp"
+#include "TetMeshCutTable.hpp"
 
 #include <cassert>
 

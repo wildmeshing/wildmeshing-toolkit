@@ -9,12 +9,14 @@
 #include <iterator>
 #include <vector>
 
+// TODO: this is a generic function, move to utils?
 auto replace(std::array<size_t, 4>& arr, size_t v0, size_t v1)
 {
     for (auto j = 0; j < arr.size(); j++)
         if (arr[j] == v0) arr[j] = v1;
 }
 
+// TODO: this is a generic function, move to utils?
 constexpr auto find_other_v = [](auto& tet, auto& verts) {
     std::set<size_t> result(tet.begin(), tet.end());
     for (auto vi : verts) result.erase(vi);
@@ -22,7 +24,6 @@ constexpr auto find_other_v = [](auto& tet, auto& verts) {
     assert(result.size() == 1);
     return *result.begin();
 };
-
 
 void wmtk::TetMesh::operation_failure_rollback_imp(
     std::map<size_t, wmtk::TetMesh::VertexConnectivity>& rollback_vert_conn,
