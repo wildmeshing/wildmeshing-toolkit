@@ -1,8 +1,10 @@
 #include "Parameters.h"
 #include "TriWild.h"
+
 #include <spdlog/common.h>
 #include <CLI/CLI.hpp>
 
+#include <igl/read_triangle_mesh.h>
 
 int main(int argc, char** argv)
 {
@@ -12,19 +14,37 @@ int main(int argc, char** argv)
     triwild::Parameters params;
 
     CLI::App app{argv[0]};
-    std::string input_path = WMT_DATA_DIR "/37322.stl";
-    std::string output_path = "./";
+    std::string input_file = "./";
+    std::string output_file = "./";
 
-    app.add_option("-i,--input", input_path, "Input mesh.");
-    app.add_option("-o,--output", output_path, "Output mesh.");
+    app.add_option("-i,--input", input_file, "Input mesh.");
+    app.add_option("-o,--output", output_file, "Output mesh.");
     // app.add_option("-j,--jobs", NUM_THREADS, "thread.");
 
     CLI11_PARSE(app, argc, argv);
 
+    // Loading the input mesh
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    bool ok = igl::read_triangle_mesh(input_file, V, F);
+
+    assert(ok);
+
+    // Load the mesh in the trimesh class
+    triwild::TriWild triwild;
+    triwild.create_mesh(V,F);
+    assert(triwild.check_mesh_connectivity_validity());
+
+    // Do the mesh optimization
+    // triwild.optimize();
+    triwild.consolidate_mesh();
+
+    // Save the optimized mesh
+    triwild.write_triangle_mesh(output_file);
 
     // Output
     // auto [max_energy, avg_energy] = mesh.get_max_avg_energy();
-    // std::ofstream fout(output_path + ".log");
+    // std::ofstream fout(output_file + ".log");
     // fout << "#t: " << mesh.tet_size() << std::endl;
     // fout << "#v: " << mesh.vertex_size() << std::endl;
     // fout << "max_energy: " << max_energy << std::endl;
