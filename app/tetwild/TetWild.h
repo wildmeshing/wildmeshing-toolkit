@@ -28,6 +28,7 @@
 
 namespace tetwild {
 
+// TODO: missing comments on what these attributes are
 class VertexAttributes
 {
 public:
@@ -49,7 +50,7 @@ public:
     VertexAttributes(const Vector3r& p);
 };
 
-
+// TODO: missing comments on what these attributes are
 class FaceAttributes
 {
 public:
@@ -75,6 +76,7 @@ public:
     }
 };
 
+// TODO: missing comments on what these attributes are
 class TetAttributes
 {
 public:
@@ -130,6 +132,7 @@ public:
             m_tet_attribute[i].m_quality = get_quality(tuple_from_tet(i));
     }
 
+    // TODO This should not be here but inside wmtk
     void compute_vertex_partition()
     {
         auto partition_id = partition_TetMesh(*this, NUM_THREADS);
@@ -137,6 +140,7 @@ public:
             m_vertex_attribute[i].partition_id = partition_id[i];
     }
 
+    // TODO This should not be here but inside wmtk
     void compute_vertex_partition_morton()
     {
         if (NUM_THREADS == 0) return;

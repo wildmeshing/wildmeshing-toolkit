@@ -82,6 +82,7 @@ include(onetbb)
 include(mshio)
 include(metis)
 include(lagrange)
+include(gmp)
 target_link_libraries(wildmeshing_toolkit PUBLIC
     spdlog::spdlog
     igl::core

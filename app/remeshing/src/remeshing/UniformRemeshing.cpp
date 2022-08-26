@@ -21,8 +21,183 @@ auto renew = [](auto& m, auto op, auto& tris) {
 
 
 auto edge_locker = [](auto& m, const auto& e, int task_id) {
+    // TODO: this should not be here
     return m.try_set_edge_mutex_two_ring(e, task_id);
 };
+
+UniformRemeshing::UniformRemeshing(
+    std::vector<Eigen::Vector3d> _m_vertex_positions,
+    int num_threads,
+    bool use_exact)
+{
+    NUM_THREADS = num_threads;
+    m_envelope.use_exact = use_exact;
+
+    p_vertex_attrs = &vertex_attrs;
+
+    vertex_attrs.resize(_m_vertex_positions.size());
+
+    for (auto i = 0; i < _m_vertex_positions.size(); i++)
+        vertex_attrs[i] = {_m_vertex_positions[i], 0};
+}
+
+void UniformRemeshing::create_mesh(
+    size_t n_vertices,
+    const std::vector<std::array<size_t, 3>>& tris,
+    const std::vector<size_t>& frozen_verts,
+    bool m_freeze,
+    double eps)
+{
+    wmtk::ConcurrentTriMesh::create_mesh(n_vertices, tris);
+    std::vector<Eigen::Vector3d> V(n_vertices);
+    std::vector<Eigen::Vector3i> F(tris.size());
+    for (auto i = 0; i < V.size(); i++) {
+        V[i] = vertex_attrs[i].pos;
+    }
+    for (int i = 0; i < F.size(); ++i) F[i] << tris[i][0], tris[i][1], tris[i][2];
+    if (eps > 0) {
+        m_envelope.init(V, F, eps);
+        m_has_envelope = true;
+    } else
+        m_envelope.init(V, F, 0.0);
+
+    // TODO: this should not be here
+    partition_mesh_morton();
+
+    if (m_freeze) {
+        for (auto v : frozen_verts) {
+            vertex_attrs[v].freeze = true;
+        }
+        for (auto e : get_edges()) {
+            if (is_boundary_edge(e)) {
+                vertex_attrs[e.vid(*this)].freeze = true;
+                vertex_attrs[e.switch_vertex(*this).vid(*this)].freeze = true;
+            }
+        }
+    }
+}
+
+void UniformRemeshing::cache_edge_positions(const Tuple& t)
+{
+    position_cache.local().v1p = vertex_attrs[t.vid(*this)].pos;
+    position_cache.local().v2p = vertex_attrs[t.switch_vertex(*this).vid(*this)].pos;
+    position_cache.local().partition_id = vertex_attrs[t.vid(*this)].partition_id;
+}
+
+bool UniformRemeshing::invariants(const std::vector<Tuple>& new_tris)
+{
+    if (m_has_envelope) {
+        for (auto& t : new_tris) {
+            std::array<Eigen::Vector3d, 3> tris;
+            auto vs = t.oriented_tri_vertices(*this);
+            for (auto j = 0; j < 3; j++) tris[j] = vertex_attrs[vs[j].vid(*this)].pos;
+            if (m_envelope.is_outside(tris)) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+// TODO: this should not be here
+void UniformRemeshing::partition_mesh()
+{
+    auto m_vertex_partition_id = partition_TriMesh(*this, NUM_THREADS);
+    for (auto i = 0; i < m_vertex_partition_id.size(); i++)
+        vertex_attrs[i].partition_id = m_vertex_partition_id[i];
+}
+
+// TODO: morton should not be here, but inside wmtk
+void UniformRemeshing::partition_mesh_morton()
+{
+    if (NUM_THREADS == 0) return;
+    wmtk::logger().info("Number of parts: {} by morton", NUM_THREADS);
+
+    tbb::task_arena arena(NUM_THREADS);
+
+    arena.execute([&] {
+        std::vector<Eigen::Vector3d> V_v(vert_capacity());
+
+        tbb::parallel_for(tbb::blocked_range<int>(0, V_v.size()), [&](tbb::blocked_range<int> r) {
+            for (int i = r.begin(); i < r.end(); i++) {
+                V_v[i] = vertex_attrs[i].pos;
+            }
+        });
+
+        struct sortstruct
+        {
+            int order;
+            Resorting::MortonCode64 morton;
+        };
+
+        std::vector<sortstruct> list_v;
+        list_v.resize(V_v.size());
+        const int multi = 1000;
+        // since the morton code requires a correct scale of input vertices,
+        //  we need to scale the vertices if their coordinates are out of range
+        std::vector<Eigen::Vector3d> V = V_v; // this is for rescaling vertices
+        Eigen::Vector3d vmin, vmax;
+        vmin = V.front();
+        vmax = V.front();
+
+        for (size_t j = 0; j < V.size(); j++) {
+            for (int i = 0; i < 3; i++) {
+                vmin(i) = std::min(vmin(i), V[j](i));
+                vmax(i) = std::max(vmax(i), V[j](i));
+            }
+        }
+
+        Eigen::Vector3d center = (vmin + vmax) / 2;
+
+        tbb::parallel_for(tbb::blocked_range<int>(0, V.size()), [&](tbb::blocked_range<int> r) {
+            for (int i = r.begin(); i < r.end(); i++) {
+                V[i] = V[i] - center;
+            }
+        });
+
+        Eigen::Vector3d scale_point =
+            vmax - center; // after placing box at origin, vmax and vmin are symetric.
+
+        double xscale, yscale, zscale;
+        xscale = fabs(scale_point[0]);
+        yscale = fabs(scale_point[1]);
+        zscale = fabs(scale_point[2]);
+        double scale = std::max(std::max(xscale, yscale), zscale);
+        if (scale > 300) {
+            tbb::parallel_for(tbb::blocked_range<int>(0, V.size()), [&](tbb::blocked_range<int> r) {
+                for (int i = r.begin(); i < r.end(); i++) {
+                    V[i] = V[i] / scale;
+                }
+            });
+        }
+
+        tbb::parallel_for(tbb::blocked_range<int>(0, V.size()), [&](tbb::blocked_range<int> r) {
+            for (int i = r.begin(); i < r.end(); i++) {
+                list_v[i].morton = Resorting::MortonCode64(
+                    int(V[i][0] * multi),
+                    int(V[i][1] * multi),
+                    int(V[i][2] * multi));
+                list_v[i].order = i;
+            }
+        });
+
+        const auto morton_compare = [](const sortstruct& a, const sortstruct& b) {
+            return (a.morton < b.morton);
+        };
+
+        tbb::parallel_sort(list_v.begin(), list_v.end(), morton_compare);
+
+        int interval = list_v.size() / NUM_THREADS + 1;
+
+        tbb::parallel_for(
+            tbb::blocked_range<int>(0, list_v.size()),
+            [&](tbb::blocked_range<int> r) {
+                for (int i = r.begin(); i < r.end(); i++) {
+                    vertex_attrs[list_v[i].order].partition_id = i / interval;
+                }
+            });
+    });
+}
 
 std::vector<TriMesh::Tuple> UniformRemeshing::new_edges_after(
     const std::vector<TriMesh::Tuple>& tris) const
@@ -37,6 +212,15 @@ std::vector<TriMesh::Tuple> UniformRemeshing::new_edges_after(
     wmtk::unique_edge_tuples(*this, new_edges);
     return new_edges;
 }
+
+bool UniformRemeshing::swap_edge_before(const Tuple& t)
+{
+    if (!TriMesh::swap_edge_before(t)) return false;
+    if (vertex_attrs[t.vid(*this)].freeze && vertex_attrs[t.switch_vertex(*this).vid(*this)].freeze)
+        return false;
+    return true;
+}
+
 
 bool UniformRemeshing::swap_edge_after(const TriMesh::Tuple& t)
 {
@@ -79,6 +263,17 @@ std::vector<TriMesh::Tuple> UniformRemeshing::new_sub_edges_after_split(
     return new_edges2;
 }
 
+
+bool UniformRemeshing::collapse_edge_before(const Tuple& t)
+{
+    if (!TriMesh::collapse_edge_before(t)) return false;
+    if (vertex_attrs[t.vid(*this)].freeze || vertex_attrs[t.switch_vertex(*this).vid(*this)].freeze)
+        return false;
+    cache_edge_positions(t);
+    return true;
+}
+
+
 bool UniformRemeshing::collapse_edge_after(const TriMesh::Tuple& t)
 {
     const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
@@ -89,6 +284,18 @@ bool UniformRemeshing::collapse_edge_after(const TriMesh::Tuple& t)
     return true;
 }
 
+bool UniformRemeshing::split_edge_before(const Tuple& t)
+{
+    if (!TriMesh::split_edge_before(t)) return false;
+    if (vertex_attrs[t.vid(*this)].freeze &&
+        vertex_attrs[t.switch_vertex(*this).vid(*this)].freeze) {
+        if (!t.switch_face(*this).has_value()) return false; // check if it's bondary
+    }
+    cache_edge_positions(t);
+    return true;
+}
+
+
 bool UniformRemeshing::split_edge_after(const TriMesh::Tuple& t)
 {
     const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
@@ -98,6 +305,11 @@ bool UniformRemeshing::split_edge_after(const TriMesh::Tuple& t)
     return true;
 }
 
+bool UniformRemeshing::smooth_before(const Tuple& t)
+{
+    if (vertex_attrs[t.vid(*this)].freeze) return false;
+    return true;
+}
 
 bool UniformRemeshing::smooth_after(const TriMesh::Tuple& t)
 {

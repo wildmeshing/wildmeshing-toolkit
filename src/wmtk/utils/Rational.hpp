@@ -3,7 +3,7 @@
 #include <gmp.h>
 #include <iostream>
 
-namespace apps {
+namespace wmtk {
 
 class Rational
 {

@@ -10,6 +10,70 @@
 using namespace wmtk;
 using namespace app::sec;
 
+ShortestEdgeCollapse::ShortestEdgeCollapse(
+    std::vector<Eigen::Vector3d> _m_vertex_positions,
+    int num_threads,
+    bool use_exact_envelope)
+{
+    NUM_THREADS = (num_threads);
+    m_envelope.use_exact = use_exact_envelope;
+    p_vertex_attrs = &vertex_attrs;
+
+    vertex_attrs.resize(_m_vertex_positions.size());
+
+    for (auto i = 0; i < _m_vertex_positions.size(); i++)
+        vertex_attrs[i] = {_m_vertex_positions[i], 0, false};
+}
+
+void ShortestEdgeCollapse::set_freeze(TriMesh::Tuple& v)
+{
+    for (auto e : get_one_ring_edges_for_vertex(v)) {
+        if (is_boundary_edge(e)) {
+            vertex_attrs[v.vid(*this)].freeze = true;
+            continue;
+        }
+    }
+}
+
+void ShortestEdgeCollapse::create_mesh_nofreeze(
+    size_t n_vertices,
+    const std::vector<std::array<size_t, 3>>& tris)
+{
+    wmtk::ConcurrentTriMesh::create_mesh(n_vertices, tris);
+}
+
+void ShortestEdgeCollapse::create_mesh(
+    size_t n_vertices,
+    const std::vector<std::array<size_t, 3>>& tris,
+    const std::vector<size_t>& frozen_verts,
+    double eps)
+{
+    wmtk::ConcurrentTriMesh::create_mesh(n_vertices, tris);
+
+    if (eps > 0) {
+        std::vector<Eigen::Vector3d> V(n_vertices);
+        std::vector<Eigen::Vector3i> F(tris.size());
+        for (auto i = 0; i < V.size(); i++) {
+            V[i] = vertex_attrs[i].pos;
+        }
+        for (int i = 0; i < F.size(); ++i) F[i] << tris[i][0], tris[i][1], tris[i][2];
+        m_envelope.init(V, F, eps);
+        m_has_envelope = true;
+    }
+    partition_mesh();
+    for (auto v : frozen_verts) vertex_attrs[v].freeze = true;
+    for (auto v : get_vertices()) { // the better way is to iterate through edges.
+        set_freeze(v);
+    }
+}
+
+void ShortestEdgeCollapse::partition_mesh()
+{
+    auto m_vertex_partition_id = partition_TriMesh(*this, NUM_THREADS);
+    for (auto i = 0; i < m_vertex_partition_id.size(); i++)
+        vertex_attrs[i].partition_id = m_vertex_partition_id[i];
+}
+
 
 bool ShortestEdgeCollapse::invariants(const std::vector<Tuple>& new_tris)
 {

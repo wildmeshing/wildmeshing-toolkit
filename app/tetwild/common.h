@@ -8,15 +8,15 @@
 #include <vector>
 
 #include <Eigen/Core>
-#include <Rational.hpp>
+#include <wmtk/utils/Rational.hpp>
 
 namespace tetwild {
 
 typedef Eigen::Vector3d Vector3d;
-typedef Eigen::Matrix<apps::Rational, 3, 1> Vector3r;
+typedef Eigen::Matrix<wmtk::Rational, 3, 1> Vector3r;
 
 typedef Eigen::Vector2d Vector2d;
-typedef Eigen::Matrix<apps::Rational, 2, 1> Vector2r;
+typedef Eigen::Matrix<wmtk::Rational, 2, 1> Vector2r;
 
 typedef double Scalar;
 typedef Eigen::Matrix<Scalar, 3, 3> Matrix3;
