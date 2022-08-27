@@ -228,9 +228,6 @@ public:
 
     TriMesh()
     {
-        p_vertex_attrs = &vertex_attrs;
-        p_edge_attrs = &edge_attrs;
-        p_face_attrs = &face_attrs;
     }
     virtual ~TriMesh() {}
 
@@ -289,8 +286,9 @@ public:
     using vector = tbb::concurrent_vector<T>;
 
 public:
-    AbstractAttributeContainer *p_vertex_attrs, *p_edge_attrs, *p_face_attrs;
-    AbstractAttributeContainer vertex_attrs, edge_attrs, face_attrs;
+    AbstractAttributeContainer *p_vertex_attrs = nullptr;
+    AbstractAttributeContainer *p_edge_attrs = nullptr;
+    AbstractAttributeContainer *p_face_attrs = nullptr;
 
     // write a file has boundary vertices correspondences
     Eigen::MatrixXi bnd_table;
@@ -592,9 +590,9 @@ private:
      */
     void start_protect_attributes()
     {
-        p_vertex_attrs->begin_protect();
-        p_edge_attrs->begin_protect();
-        p_face_attrs->begin_protect();
+        if (p_vertex_attrs) p_vertex_attrs->begin_protect();
+        if (p_edge_attrs) p_edge_attrs->begin_protect();
+        if (p_face_attrs) p_face_attrs->begin_protect();
     }
     /**
      * @brief End the modification phase
@@ -602,9 +600,9 @@ private:
      */
     void release_protect_attributes()
     {
-        p_vertex_attrs->end_protect();
-        p_edge_attrs->end_protect();
-        p_face_attrs->end_protect();
+        if (p_vertex_attrs) p_vertex_attrs->end_protect();
+        if (p_edge_attrs) p_edge_attrs->end_protect();
+        if (p_face_attrs) p_face_attrs->end_protect();
     }
     /**
      * @brief rollback the attributes that are modified if any condition failed
@@ -612,9 +610,9 @@ private:
      */
     void rollback_protected_attributes()
     {
-        p_vertex_attrs->rollback();
-        p_edge_attrs->rollback();
-        p_face_attrs->rollback();
+        if (p_vertex_attrs) p_vertex_attrs->rollback();
+        if (p_edge_attrs) p_edge_attrs->rollback();
+        if (p_face_attrs) p_face_attrs->rollback();
     }
 
     // Moved code from concurrent TriMesh
