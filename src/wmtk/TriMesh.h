@@ -34,10 +34,10 @@ public:
         size_t m_fid = -1;
         size_t m_hash = -1;
 
-        void update_hash(const TriMesh& m) { m_hash = m.m_tri_connectivity[m_fid].hash; }
+        void update_hash(const TriMesh& m);
 
     public:
-        void print_info() { logger().trace("tuple: {} {} {}", m_vid, m_eid, m_fid); }
+        void print_info();
 
         //         v2
         //       /    \      
@@ -86,19 +86,7 @@ public:
          * @note The global id may not be consecutive. The edges are undirected and different tetra
          * share the same edge.
          */
-        inline size_t eid(const TriMesh& m) const
-        {
-            if (switch_face(m).has_value()) {
-                size_t fid2 = switch_face(m)->fid(m);
-                size_t min_fid = std::min(m_fid, fid2);
-                if (min_fid == fid2) {
-                    int i = m.m_tri_connectivity[fid2].find(m_vid);
-                    int j = m.m_tri_connectivity[fid2].find(switch_vertex(m).vid(m));
-                    return min_fid * 3 + 3 - i - j;
-                }
-            }
-            return m_fid * 3 + m_eid;
-        }
+        inline size_t eid(const TriMesh& m) const;
 
         /**
          * Switch operation.
@@ -273,14 +261,7 @@ public:
      * @note tuple refers to vid1
      * @return vector of Tuples
      */
-    Tuple init_from_edge(size_t vid1, size_t vid2, size_t fid) const
-    {
-        auto a = m_tri_connectivity[fid].find(vid1);
-        auto b = m_tri_connectivity[fid].find(vid2);
-        assert(a != -1 && b != -1);
-        // 0,1 - >2, 1,2-> 0, 0,2->1
-        return Tuple(vid1, 3 - (a + b), fid, *this);
-    }
+    Tuple init_from_edge(size_t vid1, size_t vid2, size_t fid) const;
 
     template <typename T>
     using vector = tbb::concurrent_vector<T>;
@@ -377,19 +358,7 @@ protected:
      * @param the edge Tuple to be swaped
      * @return true if the preparation succeed
      */
-    virtual bool swap_edge_before(const Tuple& t)
-    {
-        if (!t.switch_face(*this).has_value()) return false;
-        size_t v4 =
-            ((t.switch_face(*this).value()).switch_edge(*this)).switch_vertex(*this).vid(*this);
-        size_t v3 = ((t.switch_edge(*this)).switch_vertex(*this)).vid(*this);
-        if (!set_intersection(
-                 m_vertex_connectivity[v4].m_conn_tris,
-                 m_vertex_connectivity[v3].m_conn_tris)
-                 .empty())
-            return false;
-        return true;
-    }
+    virtual bool swap_edge_before(const Tuple& t);
     /**
      * @brief User specified preparations and desideratas for an edge smooth
      *

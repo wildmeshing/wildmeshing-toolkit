@@ -14,6 +14,24 @@
 
 using namespace wmtk;
 
+void TriMesh::Tuple::update_hash(const TriMesh& m) { m_hash = m.m_tri_connectivity[m_fid].hash; }
+
+void TriMesh::Tuple::print_info() { logger().trace("tuple: {} {} {}", m_vid, m_eid, m_fid); }
+
+inline size_t TriMesh::Tuple::eid(const TriMesh& m) const
+{
+    if (switch_face(m).has_value()) {
+        size_t fid2 = switch_face(m)->fid(m);
+        size_t min_fid = std::min(m_fid, fid2);
+        if (min_fid == fid2) {
+            int i = m.m_tri_connectivity[fid2].find(m_vid);
+            int j = m.m_tri_connectivity[fid2].find(switch_vertex(m).vid(m));
+            return min_fid * 3 + 3 - i - j;
+        }
+    }
+    return m_fid * 3 + m_eid;
+}
+
 
 TriMesh::Tuple TriMesh::Tuple::switch_vertex(const TriMesh& m) const
 {
@@ -175,6 +193,8 @@ std::array<TriMesh::Tuple, 3> TriMesh::Tuple::oriented_tri_vertices(const TriMes
     }
     return vs;
 }
+
+
 
 // a valid mesh can have triangles that are is_removed == true
 bool wmtk::TriMesh::check_mesh_connectivity_validity() const
@@ -841,6 +861,16 @@ std::vector<TriMesh::Tuple> TriMesh::get_edges() const
     return all_edges_tuples;
 }
 
+TriMesh::Tuple TriMesh::init_from_edge(size_t vid1, size_t vid2, size_t fid) const
+{
+    auto a = m_tri_connectivity[fid].find(vid1);
+    auto b = m_tri_connectivity[fid].find(vid2);
+    assert(a != -1 && b != -1);
+    // 0,1 - >2, 1,2-> 0, 0,2->1
+    return Tuple(vid1, 3 - (a + b), fid, *this);
+}
+
+
 size_t TriMesh::get_next_empty_slot_t()
 {
     while (current_tri_size + MAX_THREADS >= m_tri_connectivity.size() ||
@@ -886,6 +916,22 @@ size_t TriMesh::get_next_empty_slot_v()
 
     return current_vert_size++;
 }
+
+bool TriMesh::swap_edge_before(const Tuple& t)
+{
+    if (!t.switch_face(*this).has_value()) return false;
+    size_t v4 =
+        ((t.switch_face(*this).value()).switch_edge(*this)).switch_vertex(*this).vid(*this);
+    size_t v3 = ((t.switch_edge(*this)).switch_vertex(*this)).vid(*this);
+    if (!set_intersection(
+                m_vertex_connectivity[v4].m_conn_tris,
+                m_vertex_connectivity[v3].m_conn_tris)
+                .empty())
+        return false;
+    return true;
+}
+
+
 
 // link check, prerequisite for edge collapse
 bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
