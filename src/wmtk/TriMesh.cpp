@@ -595,7 +595,6 @@ bool TriMesh::smooth_vertex(const Tuple& loc0)
 }
 
 void TriMesh::consolidate_mesh(bool bnd_output)
-
 {
     auto v_cnt = 0;
     std::vector<size_t> map_v_ids(vert_capacity(), -1);
@@ -664,13 +663,13 @@ void TriMesh::consolidate_mesh(bool bnd_output)
     m_tri_connectivity.resize(t_cnt);
     m_tri_connectivity.shrink_to_fit();
 
+    resize_mutex(vert_capacity());
+
     // Resize user class attributes
     if (p_vertex_attrs) p_vertex_attrs->resize(vert_capacity());
-    resize_mutex(vert_capacity());
     if (p_edge_attrs) p_edge_attrs->resize(tri_capacity() * 3);
     if (p_face_attrs) p_face_attrs->resize(tri_capacity());
 
-    // m_vertex_connectivity.compact();
     assert(check_edge_manifold());
     assert(check_mesh_connectivity_validity());
 }
@@ -771,6 +770,11 @@ void TriMesh::create_mesh(size_t n_vertices, const std::vector<std::array<size_t
     current_tri_size = tris.size();
 
     m_vertex_mutex.grow_to_at_least(n_vertices);
+
+    // Resize user class attributes
+    if (p_vertex_attrs) p_vertex_attrs->resize(vert_capacity());
+    if (p_edge_attrs) p_edge_attrs->resize(tri_capacity() * 3);
+    if (p_face_attrs) p_face_attrs->resize(tri_capacity());
 }
 
 std::vector<TriMesh::Tuple> TriMesh::get_vertices() const
