@@ -1,5 +1,5 @@
 #pragma once
-#include <wmtk/ConcurrentTriMesh.h>
+#include <wmtk/TriMesh.h>
 #include <wmtk/utils/PartitionMesh.h>
 #include <wmtk/utils/VectorUtils.h>
 
@@ -34,7 +34,7 @@ struct VertexAttributes
     size_t partition_id;
 };
 
-class EdgeOperations2d : public wmtk::ConcurrentTriMesh
+class EdgeOperations2d : public wmtk::TriMesh
 {
 public:
     fastEnvelope::FastEnvelope m_envelope;
@@ -58,7 +58,7 @@ public:
     void
     create_mesh(size_t n_vertices, const std::vector<std::array<size_t, 3>>& tris, double eps = 0)
     {
-        wmtk::ConcurrentTriMesh::create_mesh(n_vertices, tris);
+        wmtk::TriMesh::create_mesh(n_vertices, tris);
 
         if (eps > 0) {
             std::vector<Eigen::Vector3d> V(n_vertices);
