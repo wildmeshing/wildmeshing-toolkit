@@ -9,8 +9,6 @@ include(fenvelope)
 add_library(wmtk_triwild
 	TriWild.cpp
 	TriWild.h
-
-	Rational.hpp
 )
 add_library(wmtk::triwild ALIAS wmtk_triwild)
 

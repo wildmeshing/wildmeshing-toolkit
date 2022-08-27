@@ -7,6 +7,9 @@ namespace triwild {
 
 void TriWild::create_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F)
 {
+    // Register attributes
+    p_vertex_attrs = &vertex_attrs;
+
     // Convert from eigen to internal representation (TODO: move to utils and remove it from all app)
     std::vector<Eigen::Vector3d> v(V.rows());
     std::vector<std::array<size_t, 3>> tri(F.rows());
@@ -25,7 +28,7 @@ void TriWild::create_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F)
         vertex_attrs[i].pos = V.row(i); 
 }
 
-bool TriWild::write_triangle_mesh(std::string path)
+bool TriWild::write_mesh(std::string path)
 {
     Eigen::MatrixXd V = Eigen::MatrixXd::Zero(vert_capacity(), 3);
     for (auto& t : get_vertices()) {
