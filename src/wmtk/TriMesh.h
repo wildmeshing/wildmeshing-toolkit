@@ -86,7 +86,7 @@ public:
          * @note The global id may not be consecutive. The edges are undirected and different tetra
          * share the same edge.
          */
-        inline size_t eid(const TriMesh& m) const;
+        size_t eid(const TriMesh& m) const;
 
         /**
          * Switch operation.

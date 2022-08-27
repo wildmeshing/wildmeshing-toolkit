@@ -18,7 +18,7 @@ void TriMesh::Tuple::update_hash(const TriMesh& m) { m_hash = m.m_tri_connectivi
 
 void TriMesh::Tuple::print_info() { logger().trace("tuple: {} {} {}", m_vid, m_eid, m_fid); }
 
-inline size_t TriMesh::Tuple::eid(const TriMesh& m) const
+size_t TriMesh::Tuple::eid(const TriMesh& m) const
 {
     if (switch_face(m).has_value()) {
         size_t fid2 = switch_face(m)->fid(m);
