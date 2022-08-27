@@ -5,7 +5,32 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
 #include "wmtk/utils/VectorUtils.h"
+
+// clang-format off
+#include <wmtk/utils/DisableWarnings.hpp>
+#include <tbb/parallel_for.h>
+#include <wmtk/utils/EnableWarnings.hpp>
+// clang-format on
+
 using namespace wmtk;
+
+void TriMesh::Tuple::update_hash(const TriMesh& m) { m_hash = m.m_tri_connectivity[m_fid].hash; }
+
+void TriMesh::Tuple::print_info() { logger().trace("tuple: {} {} {}", m_vid, m_eid, m_fid); }
+
+size_t TriMesh::Tuple::eid(const TriMesh& m) const
+{
+    if (switch_face(m).has_value()) {
+        size_t fid2 = switch_face(m)->fid(m);
+        size_t min_fid = std::min(m_fid, fid2);
+        if (min_fid == fid2) {
+            int i = m.m_tri_connectivity[fid2].find(m_vid);
+            int j = m.m_tri_connectivity[fid2].find(switch_vertex(m).vid(m));
+            return min_fid * 3 + 3 - i - j;
+        }
+    }
+    return m_fid * 3 + m_eid;
+}
 
 
 TriMesh::Tuple TriMesh::Tuple::switch_vertex(const TriMesh& m) const
@@ -168,6 +193,8 @@ std::array<TriMesh::Tuple, 3> TriMesh::Tuple::oriented_tri_vertices(const TriMes
     }
     return vs;
 }
+
+
 
 // a valid mesh can have triangles that are is_removed == true
 bool wmtk::TriMesh::check_mesh_connectivity_validity() const
@@ -588,7 +615,6 @@ bool TriMesh::smooth_vertex(const Tuple& loc0)
 }
 
 void TriMesh::consolidate_mesh(bool bnd_output)
-
 {
     auto v_cnt = 0;
     std::vector<size_t> map_v_ids(vert_capacity(), -1);
@@ -626,7 +652,7 @@ void TriMesh::consolidate_mesh(bool bnd_output)
         if (v_cnt != i) {
             assert(v_cnt < i);
             m_vertex_connectivity[v_cnt] = m_vertex_connectivity[i];
-            p_vertex_attrs->move(i, v_cnt);
+            if (p_vertex_attrs) p_vertex_attrs->move(i, v_cnt);
         }
         for (size_t& t_id : m_vertex_connectivity[v_cnt].m_conn_tris) t_id = map_t_ids[t_id];
         v_cnt++;
@@ -639,10 +665,10 @@ void TriMesh::consolidate_mesh(bool bnd_output)
             assert(t_cnt < i);
             m_tri_connectivity[t_cnt] = m_tri_connectivity[i];
             m_tri_connectivity[t_cnt].hash = 0;
-            p_face_attrs->move(i, t_cnt);
+            if (p_face_attrs) p_face_attrs->move(i, t_cnt);
 
             for (auto j = 0; j < 3; j++) {
-                p_edge_attrs->move(i * 3 + j, t_cnt * 3 + j);
+                if (p_edge_attrs) p_edge_attrs->move(i * 3 + j, t_cnt * 3 + j);
             }
         }
         for (size_t& v_id : m_tri_connectivity[t_cnt].m_indices) v_id = map_v_ids[v_id];
@@ -657,13 +683,13 @@ void TriMesh::consolidate_mesh(bool bnd_output)
     m_tri_connectivity.resize(t_cnt);
     m_tri_connectivity.shrink_to_fit();
 
-    // Resize user class attributes
-    p_vertex_attrs->resize(vert_capacity());
     resize_mutex(vert_capacity());
-    p_edge_attrs->resize(tri_capacity() * 3);
-    p_face_attrs->resize(tri_capacity());
 
-    // m_vertex_connectivity.compact();
+    // Resize user class attributes
+    if (p_vertex_attrs) p_vertex_attrs->resize(vert_capacity());
+    if (p_edge_attrs) p_edge_attrs->resize(tri_capacity() * 3);
+    if (p_face_attrs) p_face_attrs->resize(tri_capacity());
+
     assert(check_edge_manifold());
     assert(check_mesh_connectivity_validity());
 }
@@ -762,6 +788,13 @@ void TriMesh::create_mesh(size_t n_vertices, const std::vector<std::array<size_t
     }
     current_vert_size = n_vertices;
     current_tri_size = tris.size();
+
+    m_vertex_mutex.grow_to_at_least(n_vertices);
+
+    // Resize user class attributes
+    if (p_vertex_attrs) p_vertex_attrs->resize(vert_capacity());
+    if (p_edge_attrs) p_edge_attrs->resize(tri_capacity() * 3);
+    if (p_face_attrs) p_face_attrs->resize(tri_capacity());
 }
 
 std::vector<TriMesh::Tuple> TriMesh::get_vertices() const
@@ -828,6 +861,16 @@ std::vector<TriMesh::Tuple> TriMesh::get_edges() const
     return all_edges_tuples;
 }
 
+TriMesh::Tuple TriMesh::init_from_edge(size_t vid1, size_t vid2, size_t fid) const
+{
+    auto a = m_tri_connectivity[fid].find(vid1);
+    auto b = m_tri_connectivity[fid].find(vid2);
+    assert(a != -1 && b != -1);
+    // 0,1 - >2, 1,2-> 0, 0,2->1
+    return Tuple(vid1, 3 - (a + b), fid, *this);
+}
+
+
 size_t TriMesh::get_next_empty_slot_t()
 {
     while (current_tri_size + MAX_THREADS >= m_tri_connectivity.size() ||
@@ -839,8 +882,8 @@ size_t TriMesh::get_next_empty_slot_t()
             }
             tri_connectivity_synchronizing_flag = true;
             auto current_capacity = m_tri_connectivity.size();
-            p_edge_attrs->resize(2 * current_capacity * 3);
-            p_face_attrs->resize(2 * current_capacity);
+            if (p_edge_attrs) p_edge_attrs->resize(2 * current_capacity * 3);
+            if (p_face_attrs) p_face_attrs->resize(2 * current_capacity);
             m_tri_connectivity.grow_to_at_least(2 * current_capacity);
             tri_connectivity_synchronizing_flag = false;
             tri_connectivity_lock.unlock();
@@ -862,7 +905,7 @@ size_t TriMesh::get_next_empty_slot_v()
             }
             vertex_connectivity_synchronizing_flag = true;
             auto current_capacity = m_vertex_connectivity.size();
-            p_vertex_attrs->resize(2 * current_capacity);
+            if (p_vertex_attrs) p_vertex_attrs->resize(2 * current_capacity);
             resize_mutex(2 * current_capacity);
             m_vertex_connectivity.grow_to_at_least(2 * current_capacity);
             vertex_connectivity_synchronizing_flag = false;
@@ -873,6 +916,22 @@ size_t TriMesh::get_next_empty_slot_v()
 
     return current_vert_size++;
 }
+
+bool TriMesh::swap_edge_before(const Tuple& t)
+{
+    if (!t.switch_face(*this).has_value()) return false;
+    size_t v4 =
+        ((t.switch_face(*this).value()).switch_edge(*this)).switch_vertex(*this).vid(*this);
+    size_t v3 = ((t.switch_edge(*this)).switch_vertex(*this)).vid(*this);
+    if (!set_intersection(
+                m_vertex_connectivity[v4].m_conn_tris,
+                m_vertex_connectivity[v3].m_conn_tris)
+                .empty())
+        return false;
+    return true;
+}
+
+
 
 // link check, prerequisite for edge collapse
 bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
@@ -977,4 +1036,174 @@ void wmtk::TriMesh::get_boundary_map(Eigen::VectorXi SVI)
             continue;
     }
     igl::writeDMAT("new_dmt.dmat", bnd_table);
+}
+
+int TriMesh::release_vertex_mutex_in_stack()
+{
+    int num_released = 0;
+    for (int i = mutex_release_stack.local().size() - 1; i >= 0; i--) {
+        unlock_vertex_mutex(mutex_release_stack.local()[i]);
+        num_released++;
+    }
+    mutex_release_stack.local().clear();
+    return num_released;
+}
+
+bool TriMesh::try_set_vertex_mutex_two_ring(const Tuple& v, int threadid)
+{
+    for (auto v_one_ring : get_one_ring_edges_for_vertex(v)) {
+        if (m_vertex_mutex[v_one_ring.vid(*this)].get_owner() == threadid) continue;
+        if (try_set_vertex_mutex(v_one_ring, threadid)) {
+            mutex_release_stack.local().push_back(v_one_ring.vid(*this));
+            for (auto v_two_ring : get_one_ring_edges_for_vertex(v_one_ring)) {
+                if (m_vertex_mutex[v_two_ring.vid(*this)].get_owner() == threadid) continue;
+                if (try_set_vertex_mutex(v_two_ring, threadid)) {
+                    mutex_release_stack.local().push_back(v_two_ring.vid(*this));
+                } else {
+                    return false;
+                }
+            }
+        } else {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool TriMesh::try_set_edge_mutex_two_ring(const Tuple& e, int threadid)
+{
+    Tuple v1 = e;
+    bool release_flag = false;
+
+    // try v1
+    if (m_vertex_mutex[v1.vid(*this)].get_owner() != threadid) {
+        if (try_set_vertex_mutex(v1, threadid)) {
+            mutex_release_stack.local().push_back(v1.vid(*this));
+        } else {
+            release_flag = true;
+        }
+    }
+
+    if (!v1.is_valid(*this)) {
+        release_flag = true;
+    }
+    if (release_flag) {
+        release_vertex_mutex_in_stack();
+        return false;
+    }
+
+    // try v2
+    Tuple v2 = switch_vertex(e);
+    if (m_vertex_mutex[v2.vid(*this)].get_owner() != threadid) {
+        if (try_set_vertex_mutex(v2, threadid)) {
+            mutex_release_stack.local().push_back(v2.vid(*this));
+        } else {
+            release_flag = true;
+        }
+    }
+    if (!v2.is_valid(*this)) {
+        release_flag = true;
+    }
+    if (release_flag) {
+        release_vertex_mutex_in_stack();
+        return false;
+    }
+
+    // try v1 two ring
+    release_flag = !try_set_vertex_mutex_two_ring(v1, threadid);
+
+    if (release_flag) {
+        release_vertex_mutex_in_stack();
+        return false;
+    }
+
+    // try v2 two ring
+    release_flag = !try_set_vertex_mutex_two_ring(v2, threadid);
+
+    if (release_flag) {
+        release_vertex_mutex_in_stack();
+        return false;
+    }
+
+    return true;
+}
+
+bool wmtk::TriMesh::try_set_vertex_mutex_one_ring(const Tuple& v, int threadid)
+{
+    auto& stack = mutex_release_stack.local();
+    auto vid = v.vid(*this);
+    if (m_vertex_mutex[vid].get_owner() != threadid) {
+        if (try_set_vertex_mutex(v, threadid)) {
+            stack.push_back(vid);
+            for (auto v_one_ring :
+                 get_one_ring_vids_for_vertex_duplicate(vid)) {
+                if (m_vertex_mutex[v_one_ring].get_owner() != threadid) {
+                    if (try_set_vertex_mutex(v_one_ring, threadid)) {
+                        stack.push_back(v_one_ring);
+                    } else {
+                        release_vertex_mutex_in_stack();
+                        return false;
+                    }
+                }
+            }
+        } else {
+            release_vertex_mutex_in_stack();
+            return false;
+        }
+    }
+    return true;
+}
+
+void wmtk::TriMesh::for_each_edge(const std::function<void(const TriMesh::Tuple&)>& func)
+{
+    tbb::task_arena arena(NUM_THREADS);
+    arena.execute([&] {
+        tbb::parallel_for(
+            tbb::blocked_range<int>(0, tri_capacity()),
+            [&](const tbb::blocked_range<int>& r) {
+                for (int i = r.begin(); i < r.end(); i++) {
+                    if (!tuple_from_tri(i).is_valid(*this)) continue;
+                    for (int j = 0; j < 3; j++) {
+                        auto tup = tuple_from_edge(i, j);
+                        if (tup.eid(*this) == 3 * i + j) {
+                            func(tup);
+                        }
+                    }
+                }
+            });
+    });
+}
+
+void wmtk::TriMesh::for_each_vertex(
+    const std::function<void(const TriMesh::Tuple&)>& func)
+{
+    tbb::task_arena arena(NUM_THREADS);
+    arena.execute([&] {
+        tbb::parallel_for(
+            tbb::blocked_range<int>(0, vert_capacity()),
+            [&](tbb::blocked_range<int> r) {
+                for (int i = r.begin(); i < r.end(); i++) {
+                    auto tup = tuple_from_vertex(i);
+                    if (!tup.is_valid(*this)) continue;
+                    func(tup);
+                }
+            });
+    });
+}
+
+void wmtk::TriMesh::for_each_face(
+    const std::function<void(const TriMesh::Tuple&)>& func)
+{
+    tbb::task_arena arena(NUM_THREADS);
+    arena.execute([&] {
+        tbb::parallel_for(
+            tbb::blocked_range<int>(0, tri_capacity()),
+            [&](tbb::blocked_range<int> r) {
+                for (int i = r.begin(); i < r.end(); i++) {
+                    auto tup = tuple_from_tri(i);
+                    if (!tup.is_valid(*this)) continue;
+                    func(tup);
+                }
+            });
+    });
 }

@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <catch2/catch.hpp>
 #include <iostream>
-#include "wmtk/ConcurrentTriMesh.h"
 
 using namespace wmtk;
 

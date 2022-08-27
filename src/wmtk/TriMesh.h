@@ -34,10 +34,10 @@ public:
         size_t m_fid = -1;
         size_t m_hash = -1;
 
-        void update_hash(const TriMesh& m) { m_hash = m.m_tri_connectivity[m_fid].hash; }
+        void update_hash(const TriMesh& m);
 
     public:
-        void print_info() { logger().trace("tuple: {} {} {}", m_vid, m_eid, m_fid); }
+        void print_info();
 
         //         v2
         //       /    \      
@@ -86,19 +86,7 @@ public:
          * @note The global id may not be consecutive. The edges are undirected and different tetra
          * share the same edge.
          */
-        inline size_t eid(const TriMesh& m) const
-        {
-            if (switch_face(m).has_value()) {
-                size_t fid2 = switch_face(m)->fid(m);
-                size_t min_fid = std::min(m_fid, fid2);
-                if (min_fid == fid2) {
-                    int i = m.m_tri_connectivity[fid2].find(m_vid);
-                    int j = m.m_tri_connectivity[fid2].find(switch_vertex(m).vid(m));
-                    return min_fid * 3 + 3 - i - j;
-                }
-            }
-            return m_fid * 3 + m_eid;
-        }
+        size_t eid(const TriMesh& m) const;
 
         /**
          * Switch operation.
@@ -228,9 +216,6 @@ public:
 
     TriMesh()
     {
-        p_vertex_attrs = &vertex_attrs;
-        p_edge_attrs = &edge_attrs;
-        p_face_attrs = &face_attrs;
     }
     virtual ~TriMesh() {}
 
@@ -276,21 +261,15 @@ public:
      * @note tuple refers to vid1
      * @return vector of Tuples
      */
-    Tuple init_from_edge(size_t vid1, size_t vid2, size_t fid) const
-    {
-        auto a = m_tri_connectivity[fid].find(vid1);
-        auto b = m_tri_connectivity[fid].find(vid2);
-        assert(a != -1 && b != -1);
-        // 0,1 - >2, 1,2-> 0, 0,2->1
-        return Tuple(vid1, 3 - (a + b), fid, *this);
-    }
+    Tuple init_from_edge(size_t vid1, size_t vid2, size_t fid) const;
 
     template <typename T>
     using vector = tbb::concurrent_vector<T>;
 
 public:
-    AbstractAttributeContainer *p_vertex_attrs, *p_edge_attrs, *p_face_attrs;
-    AbstractAttributeContainer vertex_attrs, edge_attrs, face_attrs;
+    AbstractAttributeContainer *p_vertex_attrs = nullptr;
+    AbstractAttributeContainer *p_edge_attrs = nullptr;
+    AbstractAttributeContainer *p_face_attrs = nullptr;
 
     // write a file has boundary vertices correspondences
     Eigen::MatrixXi bnd_table;
@@ -379,19 +358,7 @@ protected:
      * @param the edge Tuple to be swaped
      * @return true if the preparation succeed
      */
-    virtual bool swap_edge_before(const Tuple& t)
-    {
-        if (!t.switch_face(*this).has_value()) return false;
-        size_t v4 =
-            ((t.switch_face(*this).value()).switch_edge(*this)).switch_vertex(*this).vid(*this);
-        size_t v3 = ((t.switch_edge(*this)).switch_vertex(*this)).vid(*this);
-        if (!set_intersection(
-                 m_vertex_connectivity[v4].m_conn_tris,
-                 m_vertex_connectivity[v3].m_conn_tris)
-                 .empty())
-            return false;
-        return true;
-    }
+    virtual bool swap_edge_before(const Tuple& t);
     /**
      * @brief User specified preparations and desideratas for an edge smooth
      *
@@ -405,9 +372,6 @@ protected:
      * @return true if the modifications succeed
      */
     virtual bool smooth_after(const Tuple& t) { return true; }
-
-    virtual void resize_mutex(size_t v){}; // tempoarary hack
-
 
 public:
     /**
@@ -595,9 +559,9 @@ private:
      */
     void start_protect_attributes()
     {
-        p_vertex_attrs->begin_protect();
-        p_edge_attrs->begin_protect();
-        p_face_attrs->begin_protect();
+        if (p_vertex_attrs) p_vertex_attrs->begin_protect();
+        if (p_edge_attrs) p_edge_attrs->begin_protect();
+        if (p_face_attrs) p_face_attrs->begin_protect();
     }
     /**
      * @brief End the modification phase
@@ -605,9 +569,9 @@ private:
      */
     void release_protect_attributes()
     {
-        p_vertex_attrs->end_protect();
-        p_edge_attrs->end_protect();
-        p_face_attrs->end_protect();
+        if (p_vertex_attrs) p_vertex_attrs->end_protect();
+        if (p_edge_attrs) p_edge_attrs->end_protect();
+        if (p_face_attrs) p_face_attrs->end_protect();
     }
     /**
      * @brief rollback the attributes that are modified if any condition failed
@@ -615,10 +579,104 @@ private:
      */
     void rollback_protected_attributes()
     {
-        p_vertex_attrs->rollback();
-        p_edge_attrs->rollback();
-        p_face_attrs->rollback();
+        if (p_vertex_attrs) p_vertex_attrs->rollback();
+        if (p_edge_attrs) p_edge_attrs->rollback();
+        if (p_face_attrs) p_face_attrs->rollback();
     }
+
+    // Moved code from concurrent TriMesh
+
+public:
+    class VertexMutex
+    {
+        tbb::spin_mutex mutex;
+        int owner = std::numeric_limits<int>::max();
+
+    public:
+        bool trylock() { return mutex.try_lock(); }
+
+        void unlock()
+        {
+            reset_owner();
+            mutex.unlock();
+        }
+
+        int get_owner() { return owner; }
+
+        void set_owner(int n) { owner = n; }
+
+        void reset_owner() { owner = std::numeric_limits<int>::max(); }
+    };
+
+private:
+    tbb::concurrent_vector<VertexMutex> m_vertex_mutex;
+
+    bool try_set_vertex_mutex(const Tuple& v, int threadid)
+    {
+        bool got = m_vertex_mutex[v.vid(*this)].trylock();
+        if (got) m_vertex_mutex[v.vid(*this)].set_owner(threadid);
+        return got;
+    }
+    bool try_set_vertex_mutex(size_t vid, int threadid)
+    {
+        bool got = m_vertex_mutex[vid].trylock();
+        if (got) m_vertex_mutex[vid].set_owner(threadid);
+        return got;
+    }
+
+    void unlock_vertex_mutex(const Tuple& v) { m_vertex_mutex[v.vid(*this)].unlock(); }
+    void unlock_vertex_mutex(size_t vid) { m_vertex_mutex[vid].unlock(); }
+
+protected:
+    void resize_mutex(size_t v) { m_vertex_mutex.grow_to_at_least(v); }
+
+public:
+    tbb::enumerable_thread_specific<std::vector<size_t>> mutex_release_stack;
+
+    int release_vertex_mutex_in_stack();
+    /**
+     * @brief try lock the two-ring neighboring traingles' incident vertices
+     *
+     * @param v Tuple refers to the vertex
+     * @param threadid
+     * @return true if all locked successfully
+     */
+    bool try_set_vertex_mutex_two_ring(const Tuple& v, int threadid);
+    /**
+     * @brief try lock the two-ring neighboring triangles' incident vertices for the two ends of an
+     * edge
+     *
+     * @param e Tuple refers to the edge
+     * @param threadid
+     * @return true if all locked successfully
+     */
+    bool try_set_edge_mutex_two_ring(const Tuple& e, int threadid);
+    /**
+     * @brief get the lock for one ring neighboring triangles' incident vertices
+     *
+     * @param v
+     * @param threadid
+     * @return true if all succeed
+     */
+    bool try_set_vertex_mutex_one_ring(const Tuple& v, int threadid);
+
+    /**
+     * @brief perform the given function for each face
+     *
+     */
+    void for_each_face(const std::function<void(const Tuple&)>&);
+    /**
+     * @brief perform the given function for each edge
+     *
+     */
+    void for_each_edge(const std::function<void(const Tuple&)>&);
+    /**
+     * @brief perform the given function for each vertex
+     *
+     */
+    void for_each_vertex(const std::function<void(const Tuple&)>&);
+    int NUM_THREADS = 1;    
+
 };
 
 } // namespace wmtk
