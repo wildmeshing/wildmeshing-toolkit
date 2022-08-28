@@ -7,6 +7,7 @@ include(gmp)
 include(fenvelope)
 
 add_library(wmtk_triwild
+	Smooth.cpp
 	TriWild.cpp
 	TriWild.h
 )
