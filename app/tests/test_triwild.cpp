@@ -1,3 +1,4 @@
+
 #include <TriWild.h>
 #include <common.h>
 
@@ -26,8 +27,8 @@ TEST_CASE("triwild1", "[triwild_int]")
     REQUIRE(triwild.vertex_attrs.size() == 5);
 }
 
-TEST_CASE("triwild2", "[triwild_int]")
-{
+// TEST_CASE("triwild2", "[triwild_int]")
+// {
     // // Test smoothing
     // std::string input_path = WMT_DATA_DIR "/2d/4triangles.obj";
 
@@ -42,4 +43,4 @@ TEST_CASE("triwild2", "[triwild_int]")
 
     // REQUIRE(triwild.check_mesh_connectivity_validity());
     // REQUIRE(triwild.vertex_attrs[4].pos == {0,0,0});
-}
+// }

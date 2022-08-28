@@ -31,12 +31,7 @@ Eigen::Vector3d gradient_descent_from_stack(
  */
 std::array<size_t, 4> orient_preserve_tet_reorder(const std::array<size_t, 4>& tetra, size_t v0);
 
-/**
- * @brief Harmonic Triangulation energy: trace of Laplacian operator
- *
- */
-double harmonic_energy(const Eigen::MatrixXd& verts);
-
+// TODO: Add documentation
 Eigen::Vector3d try_project(
     const Eigen::Vector3d& point,
     const std::vector<std::array<double, 9>>& assembled_neighbor);
