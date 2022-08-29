@@ -194,8 +194,6 @@ std::array<TriMesh::Tuple, 3> TriMesh::Tuple::oriented_tri_vertices(const TriMes
     return vs;
 }
 
-
-
 // a valid mesh can have triangles that are is_removed == true
 bool wmtk::TriMesh::check_mesh_connectivity_validity() const
 {
@@ -771,8 +769,19 @@ std::array<wmtk::TriMesh::Tuple, 3> TriMesh::oriented_tri_vertices(
     return incident_verts;
 }
 
+std::array<size_t, 3> TriMesh::oriented_tri_vids(const Tuple& t) const
+{
+    std::array<size_t, 3> incident_verts;
+    size_t fid = t.fid(*this);
+    auto indices = m_tri_connectivity[fid].m_indices;
 
-// TODO should call resize attributes
+    incident_verts[0] = indices[0];
+    incident_verts[1] = indices[1];
+    incident_verts[2] = indices[2];
+
+    return incident_verts;
+}
+
 void TriMesh::create_mesh(size_t n_vertices, const std::vector<std::array<size_t, 3>>& tris)
 {
     m_vertex_connectivity.resize(n_vertices);

@@ -26,6 +26,10 @@ class TriWild : public wmtk::TriMesh
 {
 public:
 
+// Energy Assigned to undefined energy
+// TODO: why not the max double?
+const double MAX_ENERGY = 1e50;
+
 TriWild() {};
 
 virtual ~TriWild() {};
@@ -39,6 +43,9 @@ void create_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F);
 
 // Writes a triangle mesh in OBJ format
 bool write_mesh(std::string path);
+
+// Computes the quality of a triangle
+double get_quality(const Tuple& loc) const;
 
 // Smoothing
 void smooth_all_vertices();

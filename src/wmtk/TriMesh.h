@@ -511,9 +511,17 @@ public:
      * @brief Get the incident vertices for a triangle
      *
      * @param t tuple pointing to an face
-     * @return incident vertices
+     * @return tuples of incident vertices
      */
     std::array<Tuple, 3> oriented_tri_vertices(const Tuple& t) const;
+
+    /**
+     * @brief Get the incident vertices for a triangle
+     *
+     * @param t tuple pointing to an face
+     * @return global vids of incident vertices
+     */
+    std::array<size_t, 3> oriented_tri_vids(const Tuple& t) const;
 
     /**
      * Generate a face Tuple using global fid

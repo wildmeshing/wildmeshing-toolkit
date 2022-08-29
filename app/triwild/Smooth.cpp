@@ -20,17 +20,21 @@ bool triwild::TriWild::smooth_before(const Tuple& t)
 
 bool triwild::TriWild::smooth_after(const Tuple& t)
 {
-    // // Newton iterations are encapsulated here.
-    // wmtk::logger().trace("Newton iteration for vertex smoothing.");
-    // auto vid = t.vid(*this);
+    // Newton iterations are encapsulated here.
+    wmtk::logger().trace("Newton iteration for vertex smoothing.");
+    auto vid = t.vid(*this);
 
-    // auto locs = get_one_ring_tets_for_vertex(t);
-    // auto max_quality = 0.;
-    // for (auto& tet : locs) {
-    //     max_quality = std::max(max_quality, m_tet_attribute[tet.tid(*this)].m_quality);
-    // }
+    auto locs = get_one_ring_tris_for_vertex(t);
+    assert(locs.size() > 0);
 
-    // assert(locs.size() > 0);
+    // Computes the maximal error around the one ring
+    // that is needed to ensure the operation will decrease the error measure
+    auto max_quality = 0.;
+    for (auto& tri : locs) {
+        max_quality = std::max(max_quality, get_quality(tri));
+    }
+
+    
     // std::vector<std::array<double, 12>> assembles(locs.size());
     // auto loc_id = 0;
 
@@ -120,7 +124,6 @@ bool triwild::TriWild::smooth_after(const Tuple& t)
 
 
     // m_vertex_attribute[vid].m_pos = tetwild::to_rational(m_vertex_attribute[vid].m_posf);
-
 
     return true;
 }

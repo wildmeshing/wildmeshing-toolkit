@@ -2,6 +2,7 @@
 #include "TriWild.h"
 #include <Eigen/Core>
 #include <igl/write_triangle_mesh.h>
+#include <wmtk/utils/AMIPS2D.h>
 
 namespace triwild {
 
@@ -44,5 +45,28 @@ bool TriWild::write_mesh(std::string path)
 
     return igl::write_triangle_mesh(path, V, F);
 }
+
+double TriWild::get_quality(const Tuple& loc) const
+{
+    // Global ids of the vertices of the triangle
+    auto its = oriented_tri_vids(loc);
+
+    // Temporary variable to store the stacked coordinates of the triangle
+    std::array<double, 6> T;
+    auto energy = -1.;
+    for (auto k = 0; k < 3; k++)
+        for (auto j = 0; j < 2; j++) 
+            T[k * 2 + j] = vertex_attrs[its[k]].pos[j];
+
+    // Energy evaluation
+    energy = wmtk::AMIPS2D_energy(T);
+
+    // Filter for numerical issues
+    if (std::isinf(energy) || std::isnan(energy)) 
+        return MAX_ENERGY;
+
+    return energy;
+}
+
 
 }
