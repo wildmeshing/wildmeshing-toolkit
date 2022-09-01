@@ -47,6 +47,9 @@ bool write_mesh(std::string path);
 // Computes the quality of a triangle
 double get_quality(const Tuple& loc) const;
 
+// Check if a triangle is inverted
+bool is_inverted(const Tuple& loc) const;
+
 // Smoothing
 void smooth_all_vertices();
 bool smooth_before(const Tuple& t) override;

@@ -1,8 +1,8 @@
-
 #include "TriWild.h"
 #include <Eigen/Core>
 #include <igl/write_triangle_mesh.h>
 #include <wmtk/utils/AMIPS2D.h>
+#include <igl/predicates/predicates.h>
 
 namespace triwild {
 
@@ -68,5 +68,18 @@ double TriWild::get_quality(const Tuple& loc) const
     return energy;
 }
 
+bool TriWild::is_inverted(const Tuple& loc) const
+{
+    auto vs = oriented_tri_vertices(loc);
+
+    igl::predicates::exactinit();
+
+    auto res = igl::predicates::orient2d(
+        vertex_attrs[vs[0].vid(*this)].pos,
+        vertex_attrs[vs[1].vid(*this)].pos,
+        vertex_attrs[vs[2].vid(*this)].pos);
+
+    return (res != igl::predicates::Orientation::POSITIVE);
+}
 
 }

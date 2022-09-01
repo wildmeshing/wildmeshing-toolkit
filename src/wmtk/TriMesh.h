@@ -39,11 +39,11 @@ public:
     public:
         void print_info();
 
-        //         v2
-        //       /    \      
-        //  e1  /      \  e0
-        //     v0 - - - v1
-        //         e2
+        //         v2        /
+        //       /    \      /
+        //  e1  /      \  e0 /
+        //     v0 - - - v1   /
+        //         e2        /
         /**
          * Construct a new Tuple object with global vertex/triangle index and local edge index
          *
