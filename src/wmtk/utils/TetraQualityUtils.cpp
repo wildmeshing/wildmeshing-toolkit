@@ -25,6 +25,7 @@ std::array<size_t, 4> wmtk::orient_preserve_tet_reorder(
     return newconn;
 }
 
+// TODO: These three functions should not be in global namespace
 auto newton_direction = [](auto& compute_energy,
                            auto& compute_jacobian,
                            auto& compute_hessian,

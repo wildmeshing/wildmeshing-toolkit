@@ -40,7 +40,7 @@ int main(int argc, char** argv)
     triwild.consolidate_mesh();
 
     // Save the optimized mesh
-    triwild.write_mesh(output_file);
+    // triwild.write_mesh(output_file);
 
     // Output
     // auto [max_energy, avg_energy] = mesh.get_max_avg_energy();

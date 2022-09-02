@@ -21,7 +21,8 @@ std::array<size_t, 3> wmtk::orient_preserve_tri_reorder(
     return newconn;
 }
 
-auto newton_direction = [](auto& compute_energy,
+// TODO: These three functions should not be in global namespace
+auto newton_direction_2d = [](auto& compute_energy,
                            auto& compute_jacobian,
                            auto& compute_hessian,
                            auto& assembles,
@@ -58,7 +59,7 @@ auto newton_direction = [](auto& compute_energy,
 };
 
 
-auto gradient_direction = [](auto& compute_energy,
+auto gradient_direction_2d = [](auto& compute_energy,
                              auto& compute_jacobian,
                              auto& assembles,
                              const Eigen::Vector2d& pos) -> Eigen::Vector2d {
@@ -75,7 +76,7 @@ auto gradient_direction = [](auto& compute_energy,
     return total_jac;
 };
 
-auto linesearch = [](auto&& energy_from_point,
+auto linesearch_2d = [](auto&& energy_from_point,
                      const Eigen::Vector2d& pos,
                      const Eigen::Vector2d& dir,
                      const int& max_iter) {
@@ -120,13 +121,13 @@ Eigen::Vector2d wmtk::newton_method_from_stack_2d(
             auto line_search_iters = 12;
             auto newton_iters = 10;
             for (auto iter = 0; iter < newton_iters; iter++) {
-                auto dir = newton_direction(
+                auto dir = newton_direction_2d(
                     compute_energy,
                     compute_jacobian,
                     compute_hessian,
                     assembles,
                     current_pos);
-                auto newpos = linesearch(energy_from_point, current_pos, dir, line_search_iters);
+                auto newpos = linesearch_2d(energy_from_point, current_pos, dir, line_search_iters);
                 if ((newpos - current_pos).norm() < 1e-9) // barely moves
                 {
                     break;
@@ -167,9 +168,9 @@ Eigen::Vector2d wmtk::gradient_descent_from_stack_2d(
         auto newton_iters = 10;
         for (auto iter = 0; iter < newton_iters; iter++) {
             Eigen::Vector2d dir =
-                -gradient_direction(compute_energy, compute_jacobian, assembles, current_pos);
+                -gradient_direction_2d(compute_energy, compute_jacobian, assembles, current_pos);
             dir.normalize(); // HACK: TODO: should use flip_avoid_line_search.
-            auto newpos = linesearch(energy_from_point, current_pos, dir, line_search_iters);
+            auto newpos = linesearch_2d(energy_from_point, current_pos, dir, line_search_iters);
             if ((newpos - current_pos).norm() < 1e-9) // barely moves
             {
                 break;

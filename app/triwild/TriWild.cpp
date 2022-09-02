@@ -26,15 +26,15 @@ void TriWild::create_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F)
         vertex_attrs[i].pos << V.row(i)[0], V.row(i)[1];
 }
 
-bool TriWild::write_mesh(std::string path)
+void TriWild::export_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F)
 {
-    Eigen::MatrixXd V = Eigen::MatrixXd::Zero(vert_capacity(), 3);
+    V = Eigen::MatrixXd::Zero(vert_capacity(), 3);
     for (auto& t : get_vertices()) {
         auto i = t.vid(*this);
         V.row(i) = vertex_attrs[i].pos;
     }
 
-    Eigen::MatrixXi F = Eigen::MatrixXi::Constant(tri_capacity(), 3, -1);
+    F = Eigen::MatrixXi::Constant(tri_capacity(), 3, -1);
     for (auto& t : get_faces()) {
         auto i = t.fid(*this);
         auto vs = oriented_tri_vertices(t);
@@ -42,8 +42,6 @@ bool TriWild::write_mesh(std::string path)
             F(i, j) = vs[j].vid(*this);
         }
     }
-
-    return igl::write_triangle_mesh(path, V, F);
 }
 
 double TriWild::get_quality(const Tuple& loc) const
