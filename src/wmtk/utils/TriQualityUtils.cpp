@@ -49,11 +49,11 @@ auto newton_direction_2d = [](auto& compute_energy,
         assert(!std::isnan(total_energy));
     }
     Eigen::Vector2d x = total_hess.ldlt().solve(total_jac);
-    wmtk::logger().trace("energy {}", total_energy);
+    wmtk::logger().info("energy {}", total_energy);
     if (total_jac.isApprox(total_hess * x)) // a hacky PSD trick. TODO: change this.
         return -x;
     else {
-        wmtk::logger().trace("gradient descent instead.");
+        wmtk::logger().info("gradient descent instead.");
         return -total_jac;
     }
 };
@@ -82,12 +82,12 @@ auto linesearch_2d = [](auto&& energy_from_point,
                      const int& max_iter) {
     auto lr = 0.5;
     auto old_energy = energy_from_point(pos);
-    wmtk::logger().trace("old energy {} dir {}", old_energy, dir.transpose());
+    wmtk::logger().info("old energy {} dir {}", old_energy, dir.transpose());
     for (auto iter = 1; iter <= max_iter; iter++) {
         Eigen::Vector2d newpos = pos + std::pow(lr, iter) * dir;
-        wmtk::logger().trace("pos {}, dir {}, [{}]", pos.transpose(), dir.transpose(), std::pow(lr, iter));
+        wmtk::logger().info("pos {}, dir {}, [{}]", pos.transpose(), dir.transpose(), std::pow(lr, iter));
         auto new_energy = energy_from_point(newpos);
-        wmtk::logger().trace("iter {}, E= {}, [{}]", iter, new_energy, newpos.transpose());
+        wmtk::logger().info("iter {}, E= {}, [{}]", iter, new_energy, newpos.transpose());
         if (new_energy < old_energy) return newpos; // TODO: armijo conditions.
     }
     return pos;
