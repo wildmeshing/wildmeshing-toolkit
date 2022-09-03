@@ -13,33 +13,61 @@ using namespace triwild;
 
 TEST_CASE("triwild1", "[triwild_int]")
 {
-    // Test loading
-    std::string input_path = WMT_DATA_DIR "/2d/4triangles.obj";
+    // Eigen::MatrixXd V;
+    // Eigen::MatrixXi F;
+    // igl::read_triangle_mesh(input_path, V, F);
 
-    Eigen::MatrixXd V;
-    Eigen::MatrixXi F;
-    igl::read_triangle_mesh(input_path, V, F);
+    Eigen::MatrixXd V(5,2);
+    V <<-1,1,
+        1,1,
+        -1,-1,
+        1,-1,
+        0,0;
+
+    Eigen::MatrixXi F(4,3);
+    F <<
+    2,0,4,
+    1,3,4,
+    2,4,3,
+    0,1,4;
 
     triwild::TriWild triwild;
     triwild.create_mesh(V,F);
 
+    triwild.write_obj("4triangles.obj");
+
     REQUIRE(triwild.check_mesh_connectivity_validity());
     REQUIRE(triwild.vertex_attrs.size() == 5);
+
 }
 
 TEST_CASE("triwild2", "[triwild_int]")
 {
-    // Test smoothing
-    std::string input_path = WMT_DATA_DIR "/2d/4triangles.obj";
+    // tests smoothing
 
-    Eigen::MatrixXd V,V2;
-    Eigen::MatrixXi F,F2;
-    igl::read_triangle_mesh(input_path, V, F);
+    Eigen::MatrixXd V(5,2),V2;
+    V <<-1,1,
+        1,1,
+        -1,-1,
+        1,-1,
+        0,0;
+    
+    V.col(1) = - V.col(1);
+
+    Eigen::MatrixXi F(4,3),F2;
+    F <<
+    2,0,4,
+    1,3,4,
+    2,4,3,
+    0,1,4;
 
     triwild::TriWild triwild;
     triwild.create_mesh(V,F);
 
+
+    triwild.write_obj("01-before.obj");
     triwild.smooth_all_vertices();
+    triwild.write_obj("02-after.obj");
 
     triwild.export_mesh(V2,F2);
 

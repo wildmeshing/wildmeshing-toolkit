@@ -41,8 +41,11 @@ wmtk::AttributeCollection<VertexAttributes> vertex_attrs;
 // Initializes the mesh
 void create_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F);
 
-// Writes a triangle mesh in OBJ format
+// Exports V and F of the stored mesh
 void export_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F);
+
+// Writes a triangle mesh in OBJ format
+void write_obj(const std::string& path);
 
 // Computes the quality of a triangle
 double get_quality(const Tuple& loc) const;

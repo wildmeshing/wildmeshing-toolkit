@@ -683,7 +683,7 @@ public:
      *
      */
     void for_each_vertex(const std::function<void(const Tuple&)>&);
-    int NUM_THREADS = 1;    
+    int NUM_THREADS = 0;    
 
 };
 

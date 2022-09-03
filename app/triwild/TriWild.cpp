@@ -28,7 +28,7 @@ void TriWild::create_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F)
 
 void TriWild::export_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F)
 {
-    V = Eigen::MatrixXd::Zero(vert_capacity(), 3);
+    V = Eigen::MatrixXd::Zero(vert_capacity(), 2);
     for (auto& t : get_vertices()) {
         auto i = t.vid(*this);
         V.row(i) = vertex_attrs[i].pos;
@@ -43,6 +43,20 @@ void TriWild::export_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F)
         }
     }
 }
+
+void TriWild::write_obj(const std::string& path)
+{
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+
+    export_mesh(V,F);
+
+    Eigen::MatrixXd V3 = Eigen::MatrixXd::Zero(V.rows(),3);
+    V3.leftCols(2) = V;
+
+    igl::writeOBJ(path,V3,F);
+}
+
 
 double TriWild::get_quality(const Tuple& loc) const
 {

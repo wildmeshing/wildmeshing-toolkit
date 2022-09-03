@@ -27,12 +27,16 @@ bool triwild::TriWild::smooth_after(const Tuple& t)
     auto locs = get_one_ring_tris_for_vertex(t);
     assert(locs.size() > 0);
 
+    write_obj("smooth_after_1.obj");
+
     // Computes the maximal error around the one ring
     // that is needed to ensure the operation will decrease the error measure
     auto max_quality = 0.;
     for (auto& tri : locs) {
         max_quality = std::max(max_quality, get_quality(tri));
     }
+
+    assert(max_quality > 0); // If max quality is zero it is likely that the triangles are flipped
 
     // Collects the coordinate of all vertices in the 1-ring
     std::vector<std::array<double, 6>> assembles(locs.size());
@@ -55,7 +59,7 @@ bool triwild::TriWild::smooth_after(const Tuple& t)
 
         for (auto i = 0; i < 3; i++) {
             for (auto j = 0; j < 2; j++) {
-                T[i * 3 + j] = vertex_attrs[local_verts[i]].pos[j];
+                T[i * 2 + j] = vertex_attrs[local_verts[i]].pos[j];
             }
         }
         loc_id++;
@@ -73,7 +77,7 @@ bool triwild::TriWild::smooth_after(const Tuple& t)
         wmtk::AMIPS2D_hessian);
 
     // Logging
-    wmtk::logger().trace(
+    wmtk::logger().info(
         "old pos {} -> new pos {}",
         old_pos.transpose(),
         vertex_attrs[vid].pos.transpose());
