@@ -2,6 +2,7 @@
 #include "Logger.hpp"
 #include <Eigen/Core>
 #include <Eigen/Dense>
+#include <array>
 
 std::array<size_t, 3> wmtk::orient_preserve_tri_reorder(
     const std::array<size_t, 3>& conn,

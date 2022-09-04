@@ -7,6 +7,8 @@
 
 #include <igl/point_simplex_squared_distance.h>
 
+#include <array>
+
 std::array<size_t, 4> wmtk::orient_preserve_tet_reorder(
     const std::array<size_t, 4>& conn,
     size_t v0)
