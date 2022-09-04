@@ -3,6 +3,7 @@
 #include <igl/write_triangle_mesh.h>
 #include <wmtk/utils/AMIPS2D.h>
 #include <igl/predicates/predicates.h>
+#include <tbb/concurrent_vector.h>
 
 namespace triwild {
 
@@ -78,6 +79,23 @@ double TriWild::get_quality(const Tuple& loc) const
         return MAX_ENERGY;
 
     return energy;
+}
+
+Eigen::VectorXd TriWild::get_quality_all_triangles()
+{
+    tbb::concurrent_vector<double> quality;
+    quality.reserve(vertex_attrs.size());
+
+    for_each_face(
+        [&](auto& f) {
+            quality.push_back(get_quality(f));
+        }
+    );
+
+    Eigen::VectorXd ret(quality.size());
+    for (unsigned i=0; i<quality.size();++i)
+        ret[i] = quality[i];
+    return ret;
 }
 
 bool TriWild::is_inverted(const Tuple& loc) const

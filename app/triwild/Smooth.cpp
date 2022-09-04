@@ -14,6 +14,8 @@
 #include <optional>
 bool triwild::TriWild::smooth_before(const Tuple& t)
 {
+    if (vertex_attrs[t.vid(*this)].fixed)
+        return false;
     return true;
 }
 

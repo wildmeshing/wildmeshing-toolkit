@@ -13,6 +13,9 @@ public:
     Eigen::Vector2d pos; 
 
     size_t partition_id = 0; // TODO this should not be here
+    
+    // Vertices marked as fixed cannot be modified by any local operation
+    bool fixed = false;
 
 };
 
@@ -49,6 +52,9 @@ void write_obj(const std::string& path);
 
 // Computes the quality of a triangle
 double get_quality(const Tuple& loc) const;
+
+// Computes the average quality of a mesh
+Eigen::VectorXd get_quality_all_triangles();
 
 // Check if a triangle is inverted
 bool is_inverted(const Tuple& loc) const;
