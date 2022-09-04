@@ -83,15 +83,18 @@ double TriWild::get_quality(const Tuple& loc) const
 
 Eigen::VectorXd TriWild::get_quality_all_triangles()
 {
+    // Use a concurrent vector as for_each_face is parallel
     tbb::concurrent_vector<double> quality;
     quality.reserve(vertex_attrs.size());
 
+    // Evaluate quality in parallel
     for_each_face(
         [&](auto& f) {
             quality.push_back(get_quality(f));
         }
     );
 
+    // Copy back in a VectorXd
     Eigen::VectorXd ret(quality.size());
     for (unsigned i=0; i<quality.size();++i)
         ret[i] = quality[i];
@@ -100,15 +103,18 @@ Eigen::VectorXd TriWild::get_quality_all_triangles()
 
 bool TriWild::is_inverted(const Tuple& loc) const
 {
+    // Get the vertices ids
     auto vs = oriented_tri_vertices(loc);
 
     igl::predicates::exactinit();
 
+    // Use igl for checking orientation
     auto res = igl::predicates::orient2d(
         vertex_attrs[vs[0].vid(*this)].pos,
         vertex_attrs[vs[1].vid(*this)].pos,
         vertex_attrs[vs[2].vid(*this)].pos);
 
+    // The element is inverted if it not positive (i.e. it is negative or it is degenerate)
     return (res != igl::predicates::Orientation::POSITIVE);
 }
 
