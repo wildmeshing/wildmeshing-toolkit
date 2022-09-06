@@ -94,7 +94,7 @@ About Us</h1>
 <h1><a class="anchor" id="autotoc_md5"></a>
 Basic Algorithm</h1>
 <p>The algorithm is after [Hoppe 1996] Progressive Meshes which performs a series of collapse operations prioritizing the shorter edges. The algorithm requires only one local operation, edge collapse. We use the common criteria for termination which is for the mesh to reach a desired number of mesh elements. For every collapsed edge, we generate a new vertex at the midpoint of the edge.</p>
-<p>We implemented <code>class ShortestEdgeCollapse</code> as a child class of <code><a class="el" href="classwmtk_1_1_concurrent_tri_mesh.html" title="child of TriMesh for concurrent implementation">wmtk::ConcurrentTriMesh</a></code>. The 3d vertex positions are stored as a field of the <code>VertexAttributes</code>. </p><div class="fragment"><div class="line">struct VertexAttributes</div>
+<p>We implemented <code>class ShortestEdgeCollapse</code> as a child class of <code><a class="el" href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></code>. The 3d vertex positions are stored as a field of the <code>VertexAttributes</code>. </p><div class="fragment"><div class="line">struct VertexAttributes</div>
 <div class="line">{</div>
 <div class="line"> &gt;&gt; Eigen::Vector3d pos;</div>
 <div class="line">    size_t partition_id = 0;</div>

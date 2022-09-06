@@ -70,133 +70,132 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="preprocessor">#pragma once</span></div>
-<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="preprocessor">#include &lt;wmtk/ConcurrentTriMesh.h&gt;</span></div>
-<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &lt;wmtk/utils/PartitionMesh.h&gt;</span></div>
-<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &lt;wmtk/utils/VectorUtils.h&gt;</span></div>
-<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &lt;sec/envelope/SampleEnvelope.hpp&gt;</span></div>
-<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="preprocessor">#include &quot;wmtk/AttributeCollection.hpp&quot;</span></div>
-<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160; </div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="comment">// clang-format off</span></div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="preprocessor">#include &lt;wmtk/utils/DisableWarnings.hpp&gt;</span></div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="preprocessor">#include &lt;igl/write_triangle_mesh.h&gt;</span></div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="preprocessor">#include &lt;tbb/concurrent_priority_queue.h&gt;</span></div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="preprocessor">#include &lt;tbb/concurrent_vector.h&gt;</span></div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="preprocessor">#include &lt;tbb/enumerable_thread_specific.h&gt;</span></div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="preprocessor">#include &lt;tbb/parallel_for.h&gt;</span></div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="preprocessor">#include &lt;tbb/parallel_sort.h&gt;</span></div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="preprocessor">#include &lt;fastenvelope/FastEnvelope.h&gt;</span></div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="preprocessor">#include &lt;wmtk/utils/EnableWarnings.hpp&gt;</span></div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="comment">// clang-format on</span></div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160; </div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;Eigen/Core&gt;</span></div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;Eigen/Geometry&gt;</span></div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;atomic&gt;</span></div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;memory&gt;</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;queue&gt;</span></div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="keyword">namespace </span>app::remeshing {</div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
-<div class="line"><a name="l00027"></a><span class="lineno"><a class="line" href="structapp_1_1remeshing_1_1_vertex_attributes.html">   27</a></span>&#160;<span class="keyword">struct </span><a class="code" href="structapp_1_1remeshing_1_1_vertex_attributes.html">VertexAttributes</a></div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;{</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    Eigen::Vector3d pos;</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <span class="comment">// TODO: in fact, partition id should not be vertex attribute, it is a fixed marker to distinguish tuple/operations.</span></div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <span class="keywordtype">size_t</span> partition_id;</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    <span class="keywordtype">bool</span> freeze = <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;};</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160; </div>
-<div class="line"><a name="l00035"></a><span class="lineno"><a class="line" href="classapp_1_1remeshing_1_1_uniform_remeshing.html">   35</a></span>&#160;<span class="keyword">class </span><a class="code" href="classapp_1_1remeshing_1_1_uniform_remeshing.html">UniformRemeshing</a> : <span class="keyword">public</span> <a class="code" href="classwmtk_1_1_concurrent_tri_mesh.html">wmtk::ConcurrentTriMesh</a></div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;{</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <a class="code" href="classsample__envelope_1_1_sample_envelope.html">sample_envelope::SampleEnvelope</a> m_envelope;</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <span class="keywordtype">bool</span> m_has_envelope = <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160; </div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <span class="keyword">using</span> <a class="code" href="structwmtk_1_1_attribute_collection.html">VertAttCol</a> = <a class="code" href="structwmtk_1_1_attribute_collection.html">wmtk::AttributeCollection&lt;VertexAttributes&gt;</a>;</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <a class="code" href="structwmtk_1_1_attribute_collection.html">VertAttCol</a> vertex_attrs;</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <span class="keywordtype">int</span> retry_limit = 10;</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    <a class="code" href="classapp_1_1remeshing_1_1_uniform_remeshing.html">UniformRemeshing</a>(</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        std::vector&lt;Eigen::Vector3d&gt; _m_vertex_positions,</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        <span class="keywordtype">int</span> num_threads = 1,</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        <span class="keywordtype">bool</span> use_exact = <span class="keyword">true</span>);</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    ~<a class="code" href="classapp_1_1remeshing_1_1_uniform_remeshing.html">UniformRemeshing</a>() {}</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <span class="keywordtype">void</span> create_mesh(</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;        <span class="keywordtype">size_t</span> n_vertices,</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        <span class="keyword">const</span> std::vector&lt;std::array&lt;size_t, 3&gt;&gt;&amp; tris,</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;        <span class="keyword">const</span> std::vector&lt;size_t&gt;&amp; frozen_verts = std::vector&lt;size_t&gt;(),</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        <span class="keywordtype">bool</span> m_freeze = <span class="keyword">true</span>,</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;        <span class="keywordtype">double</span> eps = 0);</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160; </div>
-<div class="line"><a name="l00059"></a><span class="lineno"><a class="line" href="structapp_1_1remeshing_1_1_uniform_remeshing_1_1_position_info_cache.html">   59</a></span>&#160;    <span class="keyword">struct </span><a class="code" href="structapp_1_1remeshing_1_1_uniform_remeshing_1_1_position_info_cache.html">PositionInfoCache</a></div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    {</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;        Eigen::Vector3d v1p;</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;        Eigen::Vector3d v2p;</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        <span class="keywordtype">int</span> partition_id;</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    };</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    tbb::enumerable_thread_specific&lt;PositionInfoCache&gt; position_cache;</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160; </div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    <span class="keywordtype">void</span> cache_edge_positions(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&amp; t);</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160; </div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="classapp_1_1remeshing_1_1_uniform_remeshing.html#aa8537b74d1589fbd12e1039bcfa216bd">invariants</a>(<span class="keyword">const</span> std::vector&lt;Tuple&gt;&amp; new_tris) <span class="keyword">override</span>;</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160; </div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    <span class="comment">// TODO: this should not be here</span></div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <span class="keywordtype">void</span> partition_mesh();</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160; </div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    <span class="comment">// TODO: morton should not be here, but inside wmtk</span></div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    <span class="keywordtype">void</span> partition_mesh_morton();</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160; </div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    <span class="keywordtype">bool</span> smooth_all_vertices();</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160; </div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    Eigen::Vector3d smooth(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&amp; t);</div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="preprocessor">#include &lt;wmtk/utils/PartitionMesh.h&gt;</span></div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &lt;wmtk/utils/VectorUtils.h&gt;</span></div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &lt;sec/envelope/SampleEnvelope.hpp&gt;</span></div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &quot;wmtk/AttributeCollection.hpp&quot;</span></div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160; </div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="comment">// clang-format off</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="preprocessor">#include &lt;wmtk/utils/DisableWarnings.hpp&gt;</span></div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="preprocessor">#include &lt;igl/write_triangle_mesh.h&gt;</span></div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="preprocessor">#include &lt;tbb/concurrent_priority_queue.h&gt;</span></div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="preprocessor">#include &lt;tbb/concurrent_vector.h&gt;</span></div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="preprocessor">#include &lt;tbb/enumerable_thread_specific.h&gt;</span></div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="preprocessor">#include &lt;tbb/parallel_for.h&gt;</span></div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="preprocessor">#include &lt;tbb/parallel_sort.h&gt;</span></div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="preprocessor">#include &lt;fastenvelope/FastEnvelope.h&gt;</span></div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="preprocessor">#include &lt;wmtk/utils/EnableWarnings.hpp&gt;</span></div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="comment">// clang-format on</span></div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160; </div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="preprocessor">#include &lt;Eigen/Core&gt;</span></div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;Eigen/Geometry&gt;</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;atomic&gt;</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;memory&gt;</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;queue&gt;</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="keyword">namespace </span>app::remeshing {</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160; </div>
+<div class="line"><a name="l00026"></a><span class="lineno"><a class="line" href="structapp_1_1remeshing_1_1_vertex_attributes.html">   26</a></span>&#160;<span class="keyword">struct </span><a class="code" href="structapp_1_1remeshing_1_1_vertex_attributes.html">VertexAttributes</a></div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;{</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    Eigen::Vector3d pos;</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    <span class="comment">// TODO: in fact, partition id should not be vertex attribute, it is a fixed marker to distinguish tuple/operations.</span></div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <span class="keywordtype">size_t</span> partition_id;</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <span class="keywordtype">bool</span> freeze = <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;};</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160; </div>
+<div class="line"><a name="l00034"></a><span class="lineno"><a class="line" href="classapp_1_1remeshing_1_1_uniform_remeshing.html">   34</a></span>&#160;<span class="keyword">class </span><a class="code" href="classapp_1_1remeshing_1_1_uniform_remeshing.html">UniformRemeshing</a> : <span class="keyword">public</span> <a class="code" href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;{</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <a class="code" href="classsample__envelope_1_1_sample_envelope.html">sample_envelope::SampleEnvelope</a> m_envelope;</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <span class="keywordtype">bool</span> m_has_envelope = <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    <span class="keyword">using</span> <a class="code" href="structwmtk_1_1_attribute_collection.html">VertAttCol</a> = <a class="code" href="structwmtk_1_1_attribute_collection.html">wmtk::AttributeCollection&lt;VertexAttributes&gt;</a>;</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <a class="code" href="structwmtk_1_1_attribute_collection.html">VertAttCol</a> vertex_attrs;</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <span class="keywordtype">int</span> retry_limit = 10;</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <a class="code" href="classapp_1_1remeshing_1_1_uniform_remeshing.html">UniformRemeshing</a>(</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        std::vector&lt;Eigen::Vector3d&gt; _m_vertex_positions,</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        <span class="keywordtype">int</span> num_threads = 1,</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        <span class="keywordtype">bool</span> use_exact = <span class="keyword">true</span>);</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    ~<a class="code" href="classapp_1_1remeshing_1_1_uniform_remeshing.html">UniformRemeshing</a>() {}</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160; </div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="keywordtype">void</span> create_mesh(</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        <span class="keywordtype">size_t</span> n_vertices,</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;        <span class="keyword">const</span> std::vector&lt;std::array&lt;size_t, 3&gt;&gt;&amp; tris,</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        <span class="keyword">const</span> std::vector&lt;size_t&gt;&amp; frozen_verts = std::vector&lt;size_t&gt;(),</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;        <span class="keywordtype">bool</span> m_freeze = <span class="keyword">true</span>,</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        <span class="keywordtype">double</span> eps = 0);</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160; </div>
+<div class="line"><a name="l00058"></a><span class="lineno"><a class="line" href="structapp_1_1remeshing_1_1_uniform_remeshing_1_1_position_info_cache.html">   58</a></span>&#160;    <span class="keyword">struct </span><a class="code" href="structapp_1_1remeshing_1_1_uniform_remeshing_1_1_position_info_cache.html">PositionInfoCache</a></div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    {</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        Eigen::Vector3d v1p;</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;        Eigen::Vector3d v2p;</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;        <span class="keywordtype">int</span> partition_id;</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    };</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    tbb::enumerable_thread_specific&lt;PositionInfoCache&gt; position_cache;</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160; </div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <span class="keywordtype">void</span> cache_edge_positions(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&amp; t);</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160; </div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="classapp_1_1remeshing_1_1_uniform_remeshing.html#aa8537b74d1589fbd12e1039bcfa216bd">invariants</a>(<span class="keyword">const</span> std::vector&lt;Tuple&gt;&amp; new_tris) <span class="keyword">override</span>;</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160; </div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    <span class="comment">// TODO: this should not be here</span></div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    <span class="keywordtype">void</span> partition_mesh();</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160; </div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <span class="comment">// TODO: morton should not be here, but inside wmtk</span></div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    <span class="keywordtype">void</span> partition_mesh_morton();</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160; </div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <span class="keywordtype">bool</span> smooth_all_vertices();</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160; </div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    Eigen::Vector3d smooth(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&amp; t);</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160; </div>
 <div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160; </div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160; </div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    Eigen::Vector3d tangential_smooth(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&amp; t);</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160; </div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="classapp_1_1remeshing_1_1_uniform_remeshing.html#a0cc86cfef531d59a0a7350cc4e452f8d">collapse_edge_before</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&amp; t) <span class="keyword">override</span>;</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="classapp_1_1remeshing_1_1_uniform_remeshing.html#a077aec267851e547037822ed8e3750b5">collapse_edge_after</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&amp; t) <span class="keyword">override</span>;</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160; </div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="classapp_1_1remeshing_1_1_uniform_remeshing.html#a2dede6cda68ec70038c97335301da258">swap_edge_before</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&amp; t) <span class="keyword">override</span>;</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="classapp_1_1remeshing_1_1_uniform_remeshing.html#a66f7e95b373b33289eb6029522960c9c">swap_edge_after</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&amp; t) <span class="keyword">override</span>;</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160; </div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    std::vector&lt;TriMesh::Tuple&gt; new_edges_after(<span class="keyword">const</span> std::vector&lt;TriMesh::Tuple&gt;&amp; tris) <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    std::vector&lt;TriMesh::Tuple&gt; new_edges_after_swap(<span class="keyword">const</span> TriMesh::Tuple&amp; t) <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    std::vector&lt;TriMesh::Tuple&gt; replace_edges_after_split(</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;        <span class="keyword">const</span> std::vector&lt;TriMesh::Tuple&gt;&amp; tris,</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;        <span class="keyword">const</span> <span class="keywordtype">size_t</span> vid_threshold) <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    std::vector&lt;TriMesh::Tuple&gt; new_sub_edges_after_split(</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;        <span class="keyword">const</span> std::vector&lt;TriMesh::Tuple&gt;&amp; tris) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    Eigen::Vector3d tangential_smooth(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&amp; t);</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160; </div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="classapp_1_1remeshing_1_1_uniform_remeshing.html#a0cc86cfef531d59a0a7350cc4e452f8d">collapse_edge_before</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&amp; t) <span class="keyword">override</span>;</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="classapp_1_1remeshing_1_1_uniform_remeshing.html#a077aec267851e547037822ed8e3750b5">collapse_edge_after</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&amp; t) <span class="keyword">override</span>;</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160; </div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="classapp_1_1remeshing_1_1_uniform_remeshing.html#a2dede6cda68ec70038c97335301da258">swap_edge_before</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&amp; t) <span class="keyword">override</span>;</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="classapp_1_1remeshing_1_1_uniform_remeshing.html#a66f7e95b373b33289eb6029522960c9c">swap_edge_after</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&amp; t) <span class="keyword">override</span>;</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160; </div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    std::vector&lt;TriMesh::Tuple&gt; new_edges_after(<span class="keyword">const</span> std::vector&lt;TriMesh::Tuple&gt;&amp; tris) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    std::vector&lt;TriMesh::Tuple&gt; new_edges_after_swap(<span class="keyword">const</span> TriMesh::Tuple&amp; t) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    std::vector&lt;TriMesh::Tuple&gt; replace_edges_after_split(</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;        <span class="keyword">const</span> std::vector&lt;TriMesh::Tuple&gt;&amp; tris,</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;        <span class="keyword">const</span> <span class="keywordtype">size_t</span> vid_threshold) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    std::vector&lt;TriMesh::Tuple&gt; new_sub_edges_after_split(</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;        <span class="keyword">const</span> std::vector&lt;TriMesh::Tuple&gt;&amp; tris) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160; </div>
 <div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160; </div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160; </div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="classapp_1_1remeshing_1_1_uniform_remeshing.html#af7a706a80546b2c9719ee89e117c6ad4">split_edge_before</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&amp; t) <span class="keyword">override</span>;</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="classapp_1_1remeshing_1_1_uniform_remeshing.html#a827b925f6be97a1d6ac70778b99f8d63">split_edge_after</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&amp; t) <span class="keyword">override</span>;</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160; </div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="classapp_1_1remeshing_1_1_uniform_remeshing.html#a455bf079b7e4101338885b220fc7c690">smooth_before</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&amp; t) <span class="keyword">override</span>;</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="classapp_1_1remeshing_1_1_uniform_remeshing.html#ada235cbaa27769883828d627a15e7b6f">smooth_after</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&amp; t) <span class="keyword">override</span>;</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160; </div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    <span class="keywordtype">double</span> compute_edge_cost_collapse(<span class="keyword">const</span> TriMesh::Tuple&amp; t, <span class="keywordtype">double</span> L) <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    <span class="keywordtype">double</span> compute_edge_cost_split(<span class="keyword">const</span> TriMesh::Tuple&amp; t, <span class="keywordtype">double</span> L) <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    <span class="keywordtype">double</span> compute_vertex_valence(<span class="keyword">const</span> TriMesh::Tuple&amp; t) <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;    std::vector&lt;double&gt; average_len_valen();</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;    <span class="keywordtype">bool</span> split_remeshing(<span class="keywordtype">double</span> L);</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;    <span class="keywordtype">bool</span> collapse_remeshing(<span class="keywordtype">double</span> L);</div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;    <span class="keywordtype">bool</span> swap_remeshing();</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;    <span class="keywordtype">bool</span> uniform_remeshing(<span class="keywordtype">double</span> L, <span class="keywordtype">int</span> interations);</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;    <span class="keywordtype">bool</span> write_triangle_mesh(std::string path);</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;};</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160; </div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;} <span class="comment">// namespace app::remeshing</span></div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="classapp_1_1remeshing_1_1_uniform_remeshing.html#af7a706a80546b2c9719ee89e117c6ad4">split_edge_before</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&amp; t) <span class="keyword">override</span>;</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="classapp_1_1remeshing_1_1_uniform_remeshing.html#a827b925f6be97a1d6ac70778b99f8d63">split_edge_after</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&amp; t) <span class="keyword">override</span>;</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160; </div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="classapp_1_1remeshing_1_1_uniform_remeshing.html#a455bf079b7e4101338885b220fc7c690">smooth_before</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&amp; t) <span class="keyword">override</span>;</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="classapp_1_1remeshing_1_1_uniform_remeshing.html#ada235cbaa27769883828d627a15e7b6f">smooth_after</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&amp; t) <span class="keyword">override</span>;</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160; </div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;    <span class="keywordtype">double</span> compute_edge_cost_collapse(<span class="keyword">const</span> TriMesh::Tuple&amp; t, <span class="keywordtype">double</span> L) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    <span class="keywordtype">double</span> compute_edge_cost_split(<span class="keyword">const</span> TriMesh::Tuple&amp; t, <span class="keywordtype">double</span> L) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    <span class="keywordtype">double</span> compute_vertex_valence(<span class="keyword">const</span> TriMesh::Tuple&amp; t) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    std::vector&lt;double&gt; average_len_valen();</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;    <span class="keywordtype">bool</span> split_remeshing(<span class="keywordtype">double</span> L);</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;    <span class="keywordtype">bool</span> collapse_remeshing(<span class="keywordtype">double</span> L);</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;    <span class="keywordtype">bool</span> swap_remeshing();</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;    <span class="keywordtype">bool</span> uniform_remeshing(<span class="keywordtype">double</span> L, <span class="keywordtype">int</span> interations);</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;    <span class="keywordtype">bool</span> write_triangle_mesh(std::string path);</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;};</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160; </div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;} <span class="comment">// namespace app::remeshing</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassapp_1_1remeshing_1_1_uniform_remeshing_html_aa8537b74d1589fbd12e1039bcfa216bd"><div class="ttname"><a href="classapp_1_1remeshing_1_1_uniform_remeshing.html#aa8537b74d1589fbd12e1039bcfa216bd">app::remeshing::UniformRemeshing::invariants</a></div><div class="ttdeci">bool invariants(const std::vector&lt; Tuple &gt; &amp;new_tris) override</div><div class="ttdoc">User specified invariants that can't be violated.</div><div class="ttdef"><b>Definition:</b> UniformRemeshing.cpp:87</div></div>
-<div class="ttc" id="aclassapp_1_1remeshing_1_1_uniform_remeshing_html"><div class="ttname"><a href="classapp_1_1remeshing_1_1_uniform_remeshing.html">app::remeshing::UniformRemeshing</a></div><div class="ttdef"><b>Definition:</b> UniformRemeshing.h:35</div></div>
+<div class="ttc" id="aclassapp_1_1remeshing_1_1_uniform_remeshing_html"><div class="ttname"><a href="classapp_1_1remeshing_1_1_uniform_remeshing.html">app::remeshing::UniformRemeshing</a></div><div class="ttdef"><b>Definition:</b> UniformRemeshing.h:34</div></div>
 <div class="ttc" id="aclasswmtk_1_1_tri_mesh_1_1_tuple_html"><div class="ttname"><a href="classwmtk_1_1_tri_mesh_1_1_tuple.html">wmtk::TriMesh::Tuple</a></div><div class="ttdef"><b>Definition:</b> TriMesh.h:29</div></div>
 <div class="ttc" id="aclassapp_1_1remeshing_1_1_uniform_remeshing_html_a66f7e95b373b33289eb6029522960c9c"><div class="ttname"><a href="classapp_1_1remeshing_1_1_uniform_remeshing.html#a66f7e95b373b33289eb6029522960c9c">app::remeshing::UniformRemeshing::swap_edge_after</a></div><div class="ttdeci">bool swap_edge_after(const Tuple &amp;t) override</div><div class="ttdoc">User specified modifications and desideras after an edge swap.</div><div class="ttdef"><b>Definition:</b> UniformRemeshing.cpp:225</div></div>
 <div class="ttc" id="aclassapp_1_1remeshing_1_1_uniform_remeshing_html_af7a706a80546b2c9719ee89e117c6ad4"><div class="ttname"><a href="classapp_1_1remeshing_1_1_uniform_remeshing.html#af7a706a80546b2c9719ee89e117c6ad4">app::remeshing::UniformRemeshing::split_edge_before</a></div><div class="ttdeci">bool split_edge_before(const Tuple &amp;t) override</div><div class="ttdoc">User specified preparations and desideratas for an edge split.</div><div class="ttdef"><b>Definition:</b> UniformRemeshing.cpp:287</div></div>
 <div class="ttc" id="aclassapp_1_1remeshing_1_1_uniform_remeshing_html_a455bf079b7e4101338885b220fc7c690"><div class="ttname"><a href="classapp_1_1remeshing_1_1_uniform_remeshing.html#a455bf079b7e4101338885b220fc7c690">app::remeshing::UniformRemeshing::smooth_before</a></div><div class="ttdeci">bool smooth_before(const Tuple &amp;t) override</div><div class="ttdoc">User specified preparations and desideratas for an edge smooth.</div><div class="ttdef"><b>Definition:</b> UniformRemeshing.cpp:308</div></div>
-<div class="ttc" id="astructapp_1_1remeshing_1_1_uniform_remeshing_1_1_position_info_cache_html"><div class="ttname"><a href="structapp_1_1remeshing_1_1_uniform_remeshing_1_1_position_info_cache.html">app::remeshing::UniformRemeshing::PositionInfoCache</a></div><div class="ttdef"><b>Definition:</b> UniformRemeshing.h:59</div></div>
-<div class="ttc" id="astructapp_1_1remeshing_1_1_vertex_attributes_html"><div class="ttname"><a href="structapp_1_1remeshing_1_1_vertex_attributes.html">app::remeshing::VertexAttributes</a></div><div class="ttdef"><b>Definition:</b> UniformRemeshing.h:27</div></div>
+<div class="ttc" id="astructapp_1_1remeshing_1_1_uniform_remeshing_1_1_position_info_cache_html"><div class="ttname"><a href="structapp_1_1remeshing_1_1_uniform_remeshing_1_1_position_info_cache.html">app::remeshing::UniformRemeshing::PositionInfoCache</a></div><div class="ttdef"><b>Definition:</b> UniformRemeshing.h:58</div></div>
+<div class="ttc" id="astructapp_1_1remeshing_1_1_vertex_attributes_html"><div class="ttname"><a href="structapp_1_1remeshing_1_1_vertex_attributes.html">app::remeshing::VertexAttributes</a></div><div class="ttdef"><b>Definition:</b> UniformRemeshing.h:26</div></div>
 <div class="ttc" id="aclassapp_1_1remeshing_1_1_uniform_remeshing_html_a827b925f6be97a1d6ac70778b99f8d63"><div class="ttname"><a href="classapp_1_1remeshing_1_1_uniform_remeshing.html#a827b925f6be97a1d6ac70778b99f8d63">app::remeshing::UniformRemeshing::split_edge_after</a></div><div class="ttdeci">bool split_edge_after(const Tuple &amp;t) override</div><div class="ttdoc">User specified modifications and desideratas after an edge split.</div><div class="ttdef"><b>Definition:</b> UniformRemeshing.cpp:299</div></div>
 <div class="ttc" id="astructwmtk_1_1_attribute_collection_html"><div class="ttname"><a href="structwmtk_1_1_attribute_collection.html">wmtk::AttributeCollection&lt; VertexAttributes &gt;</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_concurrent_tri_mesh_html"><div class="ttname"><a href="classwmtk_1_1_concurrent_tri_mesh.html">wmtk::ConcurrentTriMesh</a></div><div class="ttdoc">child of TriMesh for concurrent implementation</div><div class="ttdef"><b>Definition:</b> ConcurrentTriMesh.h:18</div></div>
+<div class="ttc" id="aclasswmtk_1_1_tri_mesh_html"><div class="ttname"><a href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></div><div class="ttdef"><b>Definition:</b> TriMesh.h:25</div></div>
 <div class="ttc" id="aclassapp_1_1remeshing_1_1_uniform_remeshing_html_a0cc86cfef531d59a0a7350cc4e452f8d"><div class="ttname"><a href="classapp_1_1remeshing_1_1_uniform_remeshing.html#a0cc86cfef531d59a0a7350cc4e452f8d">app::remeshing::UniformRemeshing::collapse_edge_before</a></div><div class="ttdeci">bool collapse_edge_before(const Tuple &amp;t) override</div><div class="ttdoc">User specified preparations and desideratas for an edge collapse including the link check as collapse...</div><div class="ttdef"><b>Definition:</b> UniformRemeshing.cpp:267</div></div>
 <div class="ttc" id="aclassapp_1_1remeshing_1_1_uniform_remeshing_html_ada235cbaa27769883828d627a15e7b6f"><div class="ttname"><a href="classapp_1_1remeshing_1_1_uniform_remeshing.html#ada235cbaa27769883828d627a15e7b6f">app::remeshing::UniformRemeshing::smooth_after</a></div><div class="ttdeci">bool smooth_after(const Tuple &amp;t) override</div><div class="ttdoc">User specified modifications and desideras after an edge smooth.</div><div class="ttdef"><b>Definition:</b> UniformRemeshing.cpp:314</div></div>
 <div class="ttc" id="aclassapp_1_1remeshing_1_1_uniform_remeshing_html_a077aec267851e547037822ed8e3750b5"><div class="ttname"><a href="classapp_1_1remeshing_1_1_uniform_remeshing.html#a077aec267851e547037822ed8e3750b5">app::remeshing::UniformRemeshing::collapse_edge_after</a></div><div class="ttdeci">bool collapse_edge_after(const Tuple &amp;t) override</div><div class="ttdoc">User specified modifications and desideratas after an edge collapse.</div><div class="ttdef"><b>Definition:</b> UniformRemeshing.cpp:277</div></div>
