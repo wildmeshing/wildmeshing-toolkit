@@ -1002,6 +1002,7 @@ bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
     else
         lk_edge.push_back(
             ((edge.switch_face(*this).value()).switch_edge(*this)).switch_vertex(*this).vid(*this));
+    vector_sort(lk_edge);
     bool v_link =
         (lk_vid12.size() == lk_edge.size() &&
          std::equal(lk_vid12.begin(), lk_vid12.end(), lk_edge.begin()));
