@@ -94,7 +94,7 @@ public:
         if (m_has_envelope) {
             for (auto& t : new_tris) {
                 std::array<Eigen::Vector3d, 3> tris;
-                auto vs = t.oriented_tri_vertices(*this);
+                auto vs = oriented_tri_vertices(t);
                 for (auto j = 0; j < 3; j++) tris[j] = vertex_attrs[vs[j].vid(*this)].pos;
                 if (m_envelope.is_outside(tris)) return false;
             }

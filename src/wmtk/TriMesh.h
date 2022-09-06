@@ -120,18 +120,6 @@ public:
          *
          */
         bool is_valid(const TriMesh& m) const;
-
-        /**
-         * Positively oriented 3 vertices (represented by Tuples) in a tri.
-         * @return std::array<Tuple, 3> each tuple owns a different vertex.
-         */
-        std::array<Tuple, 3> oriented_tri_vertices(const TriMesh& m) const;
-        friend bool operator<(const Tuple& a, const Tuple& t)
-        {
-            return (
-                std::tie(a.m_vid, a.m_eid, a.m_fid, a.m_hash) <
-                std::tie(t.m_vid, t.m_eid, t.m_fid, t.m_hash));
-        }
     };
 
     /**
