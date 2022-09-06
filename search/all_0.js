@@ -12,5 +12,6 @@ var searchData=
   ['attributecollection_3c_20harmonic_5ftet_3a_3aharmonictet_3a_3atetattribute_20_3e_9',['AttributeCollection&lt; harmonic_tet::HarmonicTet::TetAttribute &gt;',['../structwmtk_1_1_attribute_collection.html',1,'wmtk']]],
   ['attributecollection_3c_20harmonic_5ftet_3a_3aharmonictet_3a_3avertexattributes_20_3e_10',['AttributeCollection&lt; harmonic_tet::HarmonicTet::VertexAttributes &gt;',['../structwmtk_1_1_attribute_collection.html',1,'wmtk']]],
   ['attributecollection_3c_20tetattributes_20_3e_11',['AttributeCollection&lt; TetAttributes &gt;',['../structwmtk_1_1_attribute_collection.html',1,'wmtk']]],
-  ['attributecollection_3c_20vertexattributes_20_3e_12',['AttributeCollection&lt; VertexAttributes &gt;',['../structwmtk_1_1_attribute_collection.html',1,'wmtk']]]
+  ['attributecollection_3c_20triwild_3a_3avertexattributes_20_3e_12',['AttributeCollection&lt; triwild::VertexAttributes &gt;',['../structwmtk_1_1_attribute_collection.html',1,'wmtk']]],
+  ['attributecollection_3c_20vertexattributes_20_3e_13',['AttributeCollection&lt; VertexAttributes &gt;',['../structwmtk_1_1_attribute_collection.html',1,'wmtk']]]
 ];

@@ -87,6 +87,7 @@ Inheritance diagram for wmtk::TriMesh:</div>
 <area href="classapp_1_1qslim_1_1_q_s_l_i_m.html" alt="app::qslim::QSLIM" shape="rect" coords="0,56,207,80"/>
 <area href="classapp_1_1remeshing_1_1_uniform_remeshing.html" alt="app::remeshing::UniformRemeshing" shape="rect" coords="217,56,424,80"/>
 <area href="classapp_1_1sec_1_1_shortest_edge_collapse.html" alt="app::sec::ShortestEdgeCollapse" shape="rect" coords="434,56,641,80"/>
+<area href="classtriwild_1_1_tri_wild.html" alt="triwild::TriWild" shape="rect" coords="651,56,858,80"/>
   </map>
 </div></div>
 <table class="memberdecls">
@@ -156,6 +157,9 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 <tr class="memitem:adcc31a34edcc7605d3bbfa25bae84ece"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#adcc31a34edcc7605d3bbfa25bae84ece">is_boundary_edge</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">TriMesh::Tuple</a> &amp;t) const</td></tr>
 <tr class="memdesc:adcc31a34edcc7605d3bbfa25bae84ece"><td class="mdescLeft">&#160;</td><td class="mdescRight">check if edge that's represented by a <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> is at the boundary of the mesh  <a href="classwmtk_1_1_tri_mesh.html#adcc31a34edcc7605d3bbfa25bae84ece">More...</a><br /></td></tr>
 <tr class="separator:adcc31a34edcc7605d3bbfa25bae84ece"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af69f2ad9b7b8b70c297337e0f26e75e4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#af69f2ad9b7b8b70c297337e0f26e75e4">is_boundary_vertex</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">TriMesh::Tuple</a> &amp;t) const</td></tr>
+<tr class="memdesc:af69f2ad9b7b8b70c297337e0f26e75e4"><td class="mdescLeft">&#160;</td><td class="mdescRight">check if the vertex that's represented by a <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> is at the boundary of the mesh  <a href="classwmtk_1_1_tri_mesh.html#af69f2ad9b7b8b70c297337e0f26e75e4">More...</a><br /></td></tr>
+<tr class="separator:af69f2ad9b7b8b70c297337e0f26e75e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a65804964b0866957f1f8b4b8519965a8"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a65804964b0866957f1f8b4b8519965a8">split_edge</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t, std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;new_t)</td></tr>
 <tr class="separator:a65804964b0866957f1f8b4b8519965a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af2eaee316c260a2c1996c9db2d124798"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#af2eaee316c260a2c1996c9db2d124798">collapse_edge</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t, std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;new_t)</td></tr>
@@ -179,6 +183,9 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 <tr class="memitem:aaab31eef8e025f6185a4760ed80be722"><td class="memItemLeft" align="right" valign="top">std::array&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>, 3 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#aaab31eef8e025f6185a4760ed80be722">oriented_tri_vertices</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) const</td></tr>
 <tr class="memdesc:aaab31eef8e025f6185a4760ed80be722"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the incident vertices for a triangle.  <a href="classwmtk_1_1_tri_mesh.html#aaab31eef8e025f6185a4760ed80be722">More...</a><br /></td></tr>
 <tr class="separator:aaab31eef8e025f6185a4760ed80be722"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a07f1bdac973f713076d7ea8073082ef5"><td class="memItemLeft" align="right" valign="top">std::array&lt; size_t, 3 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a07f1bdac973f713076d7ea8073082ef5">oriented_tri_vids</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) const</td></tr>
+<tr class="memdesc:a07f1bdac973f713076d7ea8073082ef5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the incident vertices for a triangle.  <a href="classwmtk_1_1_tri_mesh.html#a07f1bdac973f713076d7ea8073082ef5">More...</a><br /></td></tr>
+<tr class="separator:a07f1bdac973f713076d7ea8073082ef5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a77fbfdff7715fb793ed9df3a8250ae9d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a77fbfdff7715fb793ed9df3a8250ae9d">tuple_from_tri</a> (size_t fid) const</td></tr>
 <tr class="separator:a77fbfdff7715fb793ed9df3a8250ae9d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae13c4b65caf906f9c2840dcf0fa7a321"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#ae13c4b65caf906f9c2840dcf0fa7a321">tuple_from_vertex</a> (size_t vid) const</td></tr>
@@ -225,7 +232,7 @@ Eigen::MatrixXi&#160;</td><td class="memItemRight" valign="bottom"><b>bnd_table<
 tbb::enumerable_thread_specific&lt; std::vector&lt; size_t &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>mutex_release_stack</b></td></tr>
 <tr class="separator:aca451bcd61095fe567b3305a6fc469ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a84fa74eb2b0a35d205729459b55e70f0"><td class="memItemLeft" align="right" valign="top"><a id="a84fa74eb2b0a35d205729459b55e70f0"></a>
-int&#160;</td><td class="memItemRight" valign="bottom"><b>NUM_THREADS</b> = 1</td></tr>
+int&#160;</td><td class="memItemRight" valign="bottom"><b>NUM_THREADS</b> = 0</td></tr>
 <tr class="separator:a84fa74eb2b0a35d205729459b55e70f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
@@ -974,6 +981,40 @@ tbb::concurrent_vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex
 
 </div>
 </div>
+<a id="af69f2ad9b7b8b70c297337e0f26e75e4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af69f2ad9b7b8b70c297337e0f26e75e4">&#9670;&nbsp;</a></span>is_boundary_vertex()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::TriMesh::is_boundary_vertex </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">TriMesh::Tuple</a> &amp;&#160;</td>
+          <td class="paramname"><em>t</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>check if the vertex that's represented by a <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> is at the boundary of the mesh </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">t</td><td><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> refering to an edge </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <a id="aaab31eef8e025f6185a4760ed80be722"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aaab31eef8e025f6185a4760ed80be722">&#9670;&nbsp;</a></span>oriented_tri_vertices()</h2>
 
@@ -997,7 +1038,34 @@ tbb::concurrent_vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>incident vertices </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>tuples of incident vertices </dd></dl>
+
+</div>
+</div>
+<a id="a07f1bdac973f713076d7ea8073082ef5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a07f1bdac973f713076d7ea8073082ef5">&#9670;&nbsp;</a></span>oriented_tri_vids()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::array&lt; size_t, 3 &gt; TriMesh::oriented_tri_vids </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
+          <td class="paramname"><em>t</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Get the incident vertices for a triangle. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">t</td><td>tuple pointing to an face </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>global vids of incident vertices </dd></dl>
 
 </div>
 </div>
@@ -1088,7 +1156,7 @@ tbb::concurrent_vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if the modifications succeed </dd></dl>
 
-<p>Reimplemented in <a class="el" href="classapp_1_1remeshing_1_1_uniform_remeshing.html#ada235cbaa27769883828d627a15e7b6f">app::remeshing::UniformRemeshing</a>.</p>
+<p>Reimplemented in <a class="el" href="classapp_1_1remeshing_1_1_uniform_remeshing.html#ada235cbaa27769883828d627a15e7b6f">app::remeshing::UniformRemeshing</a>, and <a class="el" href="classtriwild_1_1_tri_wild.html#a7128bbc8a5164a64b776fd5d6d1ef89b">triwild::TriWild</a>.</p>
 
 </div>
 </div>
@@ -1125,7 +1193,7 @@ tbb::concurrent_vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if the preparation succeed </dd></dl>
 
-<p>Reimplemented in <a class="el" href="classapp_1_1remeshing_1_1_uniform_remeshing.html#a455bf079b7e4101338885b220fc7c690">app::remeshing::UniformRemeshing</a>.</p>
+<p>Reimplemented in <a class="el" href="classapp_1_1remeshing_1_1_uniform_remeshing.html#a455bf079b7e4101338885b220fc7c690">app::remeshing::UniformRemeshing</a>, and <a class="el" href="classtriwild_1_1_tri_wild.html#aed002e04576dee794884c4b7bd2a5d0d">triwild::TriWild</a>.</p>
 
 </div>
 </div>
