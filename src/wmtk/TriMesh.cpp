@@ -14,9 +14,15 @@
 
 using namespace wmtk;
 
-void TriMesh::Tuple::update_hash(const TriMesh& m) { m_hash = m.m_tri_connectivity[m_fid].hash; }
+void TriMesh::Tuple::update_hash(const TriMesh& m)
+{
+    m_hash = m.m_tri_connectivity[m_fid].hash;
+}
 
-void TriMesh::Tuple::print_info() { logger().trace("tuple: {} {} {}", m_vid, m_eid, m_fid); }
+void TriMesh::Tuple::print_info()
+{
+    logger().trace("tuple: {} {} {}", m_vid, m_eid, m_fid);
+}
 
 size_t TriMesh::Tuple::eid(const TriMesh& m) const
 {
@@ -929,17 +935,15 @@ size_t TriMesh::get_next_empty_slot_v()
 bool TriMesh::swap_edge_before(const Tuple& t)
 {
     if (!t.switch_face(*this).has_value()) return false;
-    size_t v4 =
-        ((t.switch_face(*this).value()).switch_edge(*this)).switch_vertex(*this).vid(*this);
+    size_t v4 = ((t.switch_face(*this).value()).switch_edge(*this)).switch_vertex(*this).vid(*this);
     size_t v3 = ((t.switch_edge(*this)).switch_vertex(*this)).vid(*this);
     if (!set_intersection(
-                m_vertex_connectivity[v4].m_conn_tris,
-                m_vertex_connectivity[v3].m_conn_tris)
-                .empty())
+             m_vertex_connectivity[v4].m_conn_tris,
+             m_vertex_connectivity[v3].m_conn_tris)
+             .empty())
         return false;
     return true;
 }
-
 
 
 // link check, prerequisite for edge collapse
@@ -1023,29 +1027,6 @@ bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
     if (res.size() > 0) return false;
 
     return v_link;
-}
-// getting the initial boundary vertices before any edge operations as the first colum of the matrix
-void wmtk::TriMesh::get_boundary_map(Eigen::VectorXi SVI)
-{
-    bnd_table = Eigen::MatrixXi::Zero(vert_capacity(), 2);
-
-    // initiate all to -1
-    for (int i = 0; i < vert_capacity(); i++) {
-        bnd_table.row(i) << -1, -1;
-    }
-    auto edges = get_edges();
-    int cnt = 0;
-    for (auto e : edges) {
-        if (is_boundary_edge(e)) {
-            size_t vid1, vid2;
-            vid1 = SVI(e.vid(*this));
-            vid2 = SVI((e.switch_vertex(*this)).vid(*this));
-            bnd_table(vid1, 0) = vid1;
-            bnd_table(vid2, 0) = vid2;
-        } else
-            continue;
-    }
-    igl::writeDMAT("new_dmt.dmat", bnd_table);
 }
 
 int TriMesh::release_vertex_mutex_in_stack()
@@ -1145,8 +1126,7 @@ bool wmtk::TriMesh::try_set_vertex_mutex_one_ring(const Tuple& v, int threadid)
     if (m_vertex_mutex[vid].get_owner() != threadid) {
         if (try_set_vertex_mutex(v, threadid)) {
             stack.push_back(vid);
-            for (auto v_one_ring :
-                 get_one_ring_vids_for_vertex_duplicate(vid)) {
+            for (auto v_one_ring : get_one_ring_vids_for_vertex_duplicate(vid)) {
                 if (m_vertex_mutex[v_one_ring].get_owner() != threadid) {
                     if (try_set_vertex_mutex(v_one_ring, threadid)) {
                         stack.push_back(v_one_ring);
@@ -1184,8 +1164,7 @@ void wmtk::TriMesh::for_each_edge(const std::function<void(const TriMesh::Tuple&
     });
 }
 
-void wmtk::TriMesh::for_each_vertex(
-    const std::function<void(const TriMesh::Tuple&)>& func)
+void wmtk::TriMesh::for_each_vertex(const std::function<void(const TriMesh::Tuple&)>& func)
 {
     tbb::task_arena arena(NUM_THREADS);
     arena.execute([&] {
@@ -1201,8 +1180,7 @@ void wmtk::TriMesh::for_each_vertex(
     });
 }
 
-void wmtk::TriMesh::for_each_face(
-    const std::function<void(const TriMesh::Tuple&)>& func)
+void wmtk::TriMesh::for_each_face(const std::function<void(const TriMesh::Tuple&)>& func)
 {
     tbb::task_arena arena(NUM_THREADS);
     arena.execute([&] {
