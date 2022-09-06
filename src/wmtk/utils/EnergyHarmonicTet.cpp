@@ -202,3 +202,14 @@ void wmtk::harmonic_tet_jacobian(const std::array<double, 12>& T, Eigen::Vector3
 
     result = Eigen::Vector3d(result_0, result_1, result_2);
 }
+
+double wmtk::harmonic_energy(const Eigen::MatrixXd& verts)
+{
+    assert(verts.rows() == 4 && verts.cols() == 3);
+    auto T = std::array<double, 12>();
+    for (auto i = 0; i < 4; i++)
+        for (auto j = 0; j < 3; j++) {
+            T[i * 3 + j] = verts(i, j);
+        }
+    return harmonic_tet_energy(T);
+}

@@ -39,11 +39,11 @@ public:
     public:
         void print_info();
 
-        //         v2
-        //       /    \      
-        //  e1  /      \  e0
-        //     v0 - - - v1
-        //         e2
+        //         v2        /
+        //       /    \      /
+        //  e1  /      \  e0 /
+        //     v0 - - - v1   /
+        //         e2        /
         /**
          * Construct a new Tuple object with global vertex/triangle index and local edge index
          *
@@ -109,6 +109,7 @@ public:
          * @note nullopt if the Tuple of the switch goes off the boundary.
          */
         std::optional<Tuple> switch_face(const TriMesh& m) const;
+        
         /**
          * @brief check if a Tuple is valid
          *
@@ -271,7 +272,7 @@ public:
     AbstractAttributeContainer *p_edge_attrs = nullptr;
     AbstractAttributeContainer *p_face_attrs = nullptr;
 
-    // write a file has boundary vertices correspondences
+    // write a file has boundary vertices correspondences // TODO: this should not be here, what is it used for?
     Eigen::MatrixXi bnd_table;
     /**
      * @brief maps the input boundary vertices to current boundary vertices. The mapping is write to
@@ -421,6 +422,7 @@ public:
      * @brief verify the edge manifoldness of the mesh
      */
     bool check_edge_manifold() const;
+
     /**
      * @brief check if edge that's represented by a Tuple is at the boundary of the mesh
      *
@@ -429,6 +431,20 @@ public:
     bool is_boundary_edge(const TriMesh::Tuple& t) const
     {
         if (!t.switch_face(*this).has_value()) return true;
+        return false;
+    }
+
+    /**
+     * @brief check if the vertex that's represented by a Tuple is at the boundary of the mesh
+     *
+     * @param t Tuple refering to an edge
+     */
+    bool is_boundary_vertex(const TriMesh::Tuple& t) const
+    {
+        auto ve = get_one_ring_edges_for_vertex(t);
+        for (auto e : ve)
+            if (is_boundary_edge(e))
+                return true;
         return false;
     }
 
@@ -511,9 +527,17 @@ public:
      * @brief Get the incident vertices for a triangle
      *
      * @param t tuple pointing to an face
-     * @return incident vertices
+     * @return tuples of incident vertices
      */
     std::array<Tuple, 3> oriented_tri_vertices(const Tuple& t) const;
+
+    /**
+     * @brief Get the incident vertices for a triangle
+     *
+     * @param t tuple pointing to an face
+     * @return global vids of incident vertices
+     */
+    std::array<size_t, 3> oriented_tri_vids(const Tuple& t) const;
 
     /**
      * Generate a face Tuple using global fid
@@ -675,7 +699,7 @@ public:
      *
      */
     void for_each_vertex(const std::function<void(const Tuple&)>&);
-    int NUM_THREADS = 1;    
+    int NUM_THREADS = 0;    
 
 };
 

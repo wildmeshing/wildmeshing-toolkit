@@ -52,13 +52,13 @@ TEST_CASE("test generate tuples with 1 triangle", "[test_tuple_generation]")
 
 TEST_CASE("test generate tuples with 2 triangle", "[test_tuple_generation]")
 {
-    // 	   v3
-    //     / \
-    // 	  /f1 \
-    // v2 -----v1
-    // 	  \f0 /
-    //     \ /
-    // 	    v0
+    // 	   v3     /
+    //     / \    /
+    // 	  /f1 \   /
+    // v2 -----v1 /
+    // 	  \f0 /   /
+    //     \ /    /
+    // 	    v0    /
     TriMesh m;
     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{2, 1, 3}}};
     m.create_mesh(4, tris);
