@@ -1,6 +1,6 @@
 #pragma once
 #include <igl/per_face_normals.h>
-#include <wmtk/ConcurrentTriMesh.h>
+#include <wmtk/TriMesh.h>
 #include <wmtk/utils/PartitionMesh.h>
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/AttributeCollection.hpp>
@@ -51,7 +51,7 @@ struct EdgeAttributes
     Eigen::Vector3d vbar; // for quadrics computation
 };
 
-class QSLIM : public wmtk::ConcurrentTriMesh
+class QSLIM : public wmtk::TriMesh
 {
 public:
     fastEnvelope::FastEnvelope m_envelope;

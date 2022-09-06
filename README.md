@@ -42,7 +42,7 @@ We will introduce the framework and run through the basic software structures an
 ## Basic Algorithm
 The algorithm is after [Hoppe 1996] Progressive Meshes which performs a series of collapse operations prioritizing the shorter edges. The algorithm requires only one local operation, edge collapse. We use the common criteria for termination which is for the mesh to reach a desired number of mesh elements. For every collapsed edge, we generate a new vertex at the midpoint of the edge.
 
-We implemented `class ShortestEdgeCollapse` as a child class of `wmtk::ConcurrentTriMesh`. The 3d vertex positions are stored as a field of the `VertexAttributes`.
+We implemented `class ShortestEdgeCollapse` as a child class of `wmtk::TriMesh`. The 3d vertex positions are stored as a field of the `VertexAttributes`.
 ```
 struct VertexAttributes
 {

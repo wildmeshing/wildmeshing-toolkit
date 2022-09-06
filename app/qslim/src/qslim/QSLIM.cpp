@@ -42,7 +42,7 @@ void QSLIM::create_mesh(
     double eps)
 {
     wmtk::logger().info("----start create mesh-------");
-    wmtk::ConcurrentTriMesh::create_mesh(n_vertices, tris);
+    wmtk::TriMesh::create_mesh(n_vertices, tris);
     std::vector<Eigen::Vector3d> V(n_vertices);
     Eigen::MatrixXd Vm(n_vertices, 3);
     std::vector<Eigen::Vector3i> F(tris.size());
@@ -300,7 +300,7 @@ bool QSLIM::write_triangle_mesh(std::string path)
 
 bool QSLIM::collapse_edge_before(const Tuple& t)
 {
-    if (!ConcurrentTriMesh::collapse_edge_before(t)) return false;
+    if (!TriMesh::collapse_edge_before(t)) return false;
     if (vertex_attrs[t.vid(*this)].freeze || vertex_attrs[t.switch_vertex(*this).vid(*this)].freeze)
         return false;
     cache.local().v1p = vertex_attrs[t.vid(*this)].pos;

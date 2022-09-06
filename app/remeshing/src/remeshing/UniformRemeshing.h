@@ -1,5 +1,4 @@
 #pragma once
-#include <wmtk/ConcurrentTriMesh.h>
 #include <wmtk/utils/PartitionMesh.h>
 #include <wmtk/utils/VectorUtils.h>
 #include <sec/envelope/SampleEnvelope.hpp>
@@ -32,7 +31,7 @@ struct VertexAttributes
     bool freeze = false;
 };
 
-class UniformRemeshing : public wmtk::ConcurrentTriMesh
+class UniformRemeshing : public wmtk::TriMesh
 {
 public:
     sample_envelope::SampleEnvelope m_envelope;
