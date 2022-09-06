@@ -634,22 +634,6 @@ void TriMesh::consolidate_mesh(bool bnd_output)
         map_t_ids[i] = t_cnt;
         t_cnt++;
     }
-
-    if (bnd_output) {
-        auto edges = get_edges();
-        for (auto e : edges) {
-            if (is_boundary_edge(e)) {
-                bnd_table(e.vid(*this), 1) = map_v_ids[e.vid(*this)];
-                bnd_table(e.switch_vertex(*this).vid(*this), 1) =
-                    map_v_ids[e.switch_vertex(*this).vid(*this)];
-            } else {
-                continue;
-            }
-        }
-        igl::writeDMAT("bdn_table.dmat", bnd_table);
-    }
-
-
     v_cnt = 0;
     for (auto i = 0; i < vert_capacity(); i++) {
         if (m_vertex_connectivity[i].m_is_removed) continue;
