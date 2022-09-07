@@ -189,17 +189,6 @@ bool TriMesh::Tuple::is_valid(const TriMesh& m) const
     return true;
 }
 
-std::array<TriMesh::Tuple, 3> TriMesh::Tuple::oriented_tri_vertices(const TriMesh& m) const
-{
-    std::array<TriMesh::Tuple, 3> vs;
-    for (int j = 0; j < 3; j++) {
-        vs[j].m_vid = m.m_tri_connectivity[m_fid][j];
-        vs[j].m_eid = (j + 2) % 3;
-        vs[j].m_fid = m_fid;
-    }
-    return vs;
-}
-
 // a valid mesh can have triangles that are is_removed == true
 bool wmtk::TriMesh::check_mesh_connectivity_validity() const
 {
@@ -618,7 +607,7 @@ bool TriMesh::smooth_vertex(const Tuple& loc0)
     return true;
 }
 
-void TriMesh::consolidate_mesh(bool bnd_output)
+void TriMesh::consolidate_mesh()
 {
     auto v_cnt = 0;
     std::vector<size_t> map_v_ids(vert_capacity(), -1);
