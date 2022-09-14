@@ -50,7 +50,7 @@ file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS
     "src/*.h"
     "src/*.hpp"
 )
-message("SRC_FILES: ${SRC_FILES}")
+message(DEBUG "SRC_FILES: ${SRC_FILES}")
 
 add_library(wildmeshing_toolkit "${SRC_FILES}")
 add_library(wmtk::toolkit ALIAS wildmeshing_toolkit)
