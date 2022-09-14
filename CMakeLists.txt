@@ -83,6 +83,7 @@ include(mshio)
 include(metis)
 include(lagrange)
 include(gmp)
+target_link_libraries(wildmeshing_toolkit PRIVATE wmtk::warnings)
 target_link_libraries(wildmeshing_toolkit PUBLIC
     spdlog::spdlog
     igl::core
@@ -94,7 +95,6 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     lagrange::core
     Tracy::TracyClient
 )
-target_link_libraries(wildmeshing_toolkit PRIVATE wmtk::warnings)
 
 # ###############################################################################
 # Subdirectories
