@@ -88,13 +88,13 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     igl::core
     igl::predicates
     geogram
-    wmtk::warnings
     TBB::tbb
     mshio::mshio
     metis::metis
     lagrange::core
     Tracy::TracyClient
 )
+target_link_libraries(wildmeshing_toolkit PRIVATE wmtk::warnings)
 
 # ###############################################################################
 # Subdirectories
