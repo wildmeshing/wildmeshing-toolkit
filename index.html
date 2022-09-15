@@ -109,7 +109,7 @@ Explicit Invariant Design</h1>
 <div class="line">    if (m_has_envelope) {</div>
 <div class="line">        for (auto&amp; t : new_tris) {</div>
 <div class="line">            std::array&lt;Eigen::Vector3d, 3&gt; tris;</div>
-<div class="line">            auto vs = t.oriented_tri_vertices(*this);</div>
+<div class="line">            auto vs = oriented_tri_vertices(t);</div>
 <div class="line">            for (auto j = 0; j &lt; 3; j++) tris[j] = vertex_attrs[vs[j].vid(*this)].pos;</div>
 <div class="line">            bool outside = m_envelope.is_outside(tris);</div>
 <div class="line">            if (outside) return false;</div>
