@@ -50,7 +50,7 @@ file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS
     "src/*.h"
     "src/*.hpp"
 )
-message("SRC_FILES: ${SRC_FILES}")
+message(DEBUG "SRC_FILES: ${SRC_FILES}")
 
 add_library(wildmeshing_toolkit "${SRC_FILES}")
 add_library(wmtk::toolkit ALIAS wildmeshing_toolkit)
@@ -83,12 +83,12 @@ include(mshio)
 include(metis)
 include(lagrange)
 include(gmp)
+target_link_libraries(wildmeshing_toolkit PRIVATE wmtk::warnings)
 target_link_libraries(wildmeshing_toolkit PUBLIC
     spdlog::spdlog
     igl::core
     igl::predicates
     geogram
-    wmtk::warnings
     TBB::tbb
     mshio::mshio
     metis::metis
