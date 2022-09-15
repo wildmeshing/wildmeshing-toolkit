@@ -109,7 +109,7 @@ public:
          * @note nullopt if the Tuple of the switch goes off the boundary.
          */
         std::optional<Tuple> switch_face(const TriMesh& m) const;
-        
+
         /**
          * @brief check if a Tuple is valid
          *
@@ -215,9 +215,7 @@ public:
         }
     };
 
-    TriMesh()
-    {
-    }
+    TriMesh() {}
     virtual ~TriMesh() {}
 
     /**
@@ -268,21 +266,9 @@ public:
     using vector = tbb::concurrent_vector<T>;
 
 public:
-    AbstractAttributeContainer *p_vertex_attrs = nullptr;
-    AbstractAttributeContainer *p_edge_attrs = nullptr;
-    AbstractAttributeContainer *p_face_attrs = nullptr;
-
-    // write a file has boundary vertices correspondences // TODO: this should not be here, what is it used for?
-    Eigen::MatrixXi bnd_table;
-    /**
-     * @brief maps the input boundary vertices to current boundary vertices. The mapping is write to
-     * new_dmt.dmat where the first column has initial vertices and second column has corresponding
-     * new vertices
-     *
-     * @param SVI Eigen::VectorXi the input vertex i has the new index of the current mesh stored at
-     * index i
-     */
-    void get_boundary_map(Eigen::VectorXi SVI);
+    AbstractAttributeContainer* p_vertex_attrs = nullptr;
+    AbstractAttributeContainer* p_edge_attrs = nullptr;
+    AbstractAttributeContainer* p_face_attrs = nullptr;
 
 private:
     vector<VertexConnectivity> m_vertex_connectivity;
@@ -392,7 +378,7 @@ public:
      *
      * @param bnd_output when turn on will write the boundary vertices to "bdn_table.dmat"
      */
-    void consolidate_mesh(bool bnd_output = false);
+    void consolidate_mesh();
     /**
      * @brief a duplicate of Tuple::switch_vertex funciton
      */
@@ -443,8 +429,7 @@ public:
     {
         auto ve = get_one_ring_edges_for_vertex(t);
         for (auto e : ve)
-            if (is_boundary_edge(e))
-                return true;
+            if (is_boundary_edge(e)) return true;
         return false;
     }
 
@@ -699,8 +684,7 @@ public:
      *
      */
     void for_each_vertex(const std::function<void(const Tuple&)>&);
-    int NUM_THREADS = 0;    
-
+    int NUM_THREADS = 0;
 };
 
 } // namespace wmtk

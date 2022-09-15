@@ -22,18 +22,12 @@ extern "C" {
 #include <wmtk/utils/getRSS.c>
 }
 
-void run_remeshing(
-    std::string input,
-    double len,
-    std::string output,
-    UniformRemeshing& m,
-    int itrs,
-    bool bnd_output)
+void run_remeshing(std::string input, double len, std::string output, UniformRemeshing& m, int itrs)
 {
     auto start = high_resolution_clock::now();
     wmtk::logger().info("target len: {}", len);
     m.uniform_remeshing(len, itrs);
-    m.consolidate_mesh(bnd_output);
+    m.consolidate_mesh();
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<milliseconds>(stop - start);
 
@@ -102,13 +96,13 @@ int main(int argc, char** argv)
     std::vector<double> properties = m.average_len_valen();
     wmtk::logger().info("before remesh properties: {}", properties);
     if (target_len > 0)
-        run_remeshing(input_path, target_len, output, m, itrs, bnd_output);
+        run_remeshing(input_path, target_len, output, m, itrs);
 
     else {
         double avg_len = m.average_len_valen()[0];
         double len = diag * len_rel;
         len = (len < avg_len * 5) ? len : avg_len * 5;
-        run_remeshing(input_path, len, output, m, itrs, bnd_output);
+        run_remeshing(input_path, len, output, m, itrs);
     }
 
     return 0;

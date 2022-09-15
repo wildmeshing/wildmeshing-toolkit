@@ -207,7 +207,7 @@ void QSLIM::partition_mesh_morton()
     });
 }
 
- 
+
 // called in collapse_edge_after. update the quadric for v
 // adding the A, b , c for two vertices of the old edge and store at the vert_attr of new vertex
 void QSLIM::update_quadrics(const Tuple& new_v)
@@ -270,7 +270,7 @@ bool QSLIM::invariants(const std::vector<Tuple>& new_tris)
     if (m_has_envelope) {
         for (auto& t : new_tris) {
             std::array<Eigen::Vector3d, 3> tris;
-            auto vs = t.oriented_tri_vertices(*this);
+            auto vs = oriented_tri_vertices(t);
             for (auto j = 0; j < 3; j++) tris[j] = vertex_attrs[vs[j].vid(*this)].pos;
             if (m_envelope.is_outside(tris)) return false;
         }
@@ -329,7 +329,7 @@ std::vector<TriMesh::Tuple> QSLIM::new_edges_after(const std::vector<TriMesh::Tu
     std::vector<TriMesh::Tuple> new_edges;
     std::vector<TriMesh::Tuple> one_ring_verts;
     for (auto t : tris) {
-        auto incident_verts = t.oriented_tri_vertices(*this);
+        auto incident_verts = oriented_tri_vertices(t);
         for (auto j = 0; j < 3; j++) one_ring_verts.push_back(incident_verts[j]);
     }
     for (auto v : one_ring_verts) {
