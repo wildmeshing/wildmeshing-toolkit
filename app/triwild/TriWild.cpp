@@ -1,30 +1,37 @@
 #include "TriWild.h"
-#include <Eigen/Core>
-#include <igl/write_triangle_mesh.h>
-#include <wmtk/utils/AMIPS2D.h>
 #include <igl/predicates/predicates.h>
+#include <igl/write_triangle_mesh.h>
 #include <tbb/concurrent_vector.h>
+#include <wmtk/utils/AMIPS2D.h>
+#include <Eigen/Core>
 
 namespace triwild {
+double TriWild::get_length2(const Tuple& t) const
+{
+    auto& m = *this;
+    auto& v1 = t;
+    auto v2 = t.switch_vertex(m);
+    double length = (m.vertex_attrs[v1.vid(m)].pos - m.vertex_attrs[v2.vid(m)].pos).squaredNorm();
+    return length;
+}
 
 void TriWild::create_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F)
 {
     // Register attributes
     p_vertex_attrs = &vertex_attrs;
 
-    // Convert from eigen to internal representation (TODO: move to utils and remove it from all app)
+    // Convert from eigen to internal representation (TODO: move to utils and remove it from all
+    // app)
     std::vector<std::array<size_t, 3>> tri(F.rows());
-    
-    for (int i = 0; i < F.rows(); i++) 
-        for (int j = 0; j < 3; j++) 
-            tri[i][j] = (size_t)F(i, j);
-    
+
+    for (int i = 0; i < F.rows(); i++)
+        for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
+
     // Initialize the trimesh class which handles connectivity
     wmtk::TriMesh::create_mesh(V.rows(), tri);
 
     // Save the vertex position in the vertex attributes
-    for (unsigned i = 0; i<V.rows();++i)
-        vertex_attrs[i].pos << V.row(i)[0], V.row(i)[1];
+    for (unsigned i = 0; i < V.rows(); ++i) vertex_attrs[i].pos << V.row(i)[0], V.row(i)[1];
 }
 
 void TriWild::export_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F)
@@ -50,12 +57,12 @@ void TriWild::write_obj(const std::string& path)
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
 
-    export_mesh(V,F);
+    export_mesh(V, F);
 
-    Eigen::MatrixXd V3 = Eigen::MatrixXd::Zero(V.rows(),3);
+    Eigen::MatrixXd V3 = Eigen::MatrixXd::Zero(V.rows(), 3);
     V3.leftCols(2) = V;
 
-    igl::writeOBJ(path,V3,F);
+    igl::writeOBJ(path, V3, F);
 }
 
 
@@ -68,15 +75,13 @@ double TriWild::get_quality(const Tuple& loc) const
     std::array<double, 6> T;
     auto energy = -1.;
     for (auto k = 0; k < 3; k++)
-        for (auto j = 0; j < 2; j++) 
-            T[k * 2 + j] = vertex_attrs[its[k]].pos[j];
+        for (auto j = 0; j < 2; j++) T[k * 2 + j] = vertex_attrs[its[k]].pos[j];
 
     // Energy evaluation
     energy = wmtk::AMIPS2D_energy(T);
 
     // Filter for numerical issues
-    if (std::isinf(energy) || std::isnan(energy)) 
-        return MAX_ENERGY;
+    if (std::isinf(energy) || std::isnan(energy)) return MAX_ENERGY;
 
     return energy;
 }
@@ -88,16 +93,11 @@ Eigen::VectorXd TriWild::get_quality_all_triangles()
     quality.reserve(vertex_attrs.size());
 
     // Evaluate quality in parallel
-    for_each_face(
-        [&](auto& f) {
-            quality.push_back(get_quality(f));
-        }
-    );
+    for_each_face([&](auto& f) { quality.push_back(get_quality(f)); });
 
     // Copy back in a VectorXd
     Eigen::VectorXd ret(quality.size());
-    for (unsigned i=0; i<quality.size();++i)
-        ret[i] = quality[i];
+    for (unsigned i = 0; i < quality.size(); ++i) ret[i] = quality[i];
     return ret;
 }
 
@@ -118,4 +118,6 @@ bool TriWild::is_inverted(const Tuple& loc) const
     return (res != igl::predicates::Orientation::POSITIVE);
 }
 
-}
+void TriWild::mesh_improvement(int max_its) {}
+
+} // namespace triwild

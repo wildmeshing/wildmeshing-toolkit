@@ -32,7 +32,7 @@ int main(int argc, char** argv)
 
     // Load the mesh in the trimesh class
     triwild::TriWild triwild;
-    triwild.create_mesh(V,F);
+    triwild.create_mesh(V, F);
     assert(triwild.check_mesh_connectivity_validity());
 
     // Do the mesh optimization
@@ -40,7 +40,7 @@ int main(int argc, char** argv)
     triwild.consolidate_mesh();
 
     // Save the optimized mesh
-    // triwild.write_mesh(output_file);
+    triwild.write_obj(output_file);
 
     // Output
     // auto [max_energy, avg_energy] = mesh.get_max_avg_energy();

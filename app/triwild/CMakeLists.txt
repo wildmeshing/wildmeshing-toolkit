@@ -1,12 +1,12 @@
-
-################################################################################
+# ###############################################################################
 # Triwild
-################################################################################
+# ###############################################################################
 
 include(gmp)
 include(fenvelope)
 
 add_library(wmtk_triwild
+	Collapse.cpp
 	Smooth.cpp
 	TriWild.cpp
 	TriWild.h
@@ -29,3 +29,4 @@ add_executable(triwild main.cpp)
 target_compile_options(triwild PRIVATE "-rdynamic")
 target_link_libraries(triwild PUBLIC wmtk::triwild)
 wmtk_copy_dll(triwild)
+add_subdirectory(tests)
