@@ -16,9 +16,12 @@ int main(int argc, char** argv)
     CLI::App app{argv[0]};
     std::string input_file = "./";
     std::string output_file = "./";
-
+    double target_l = -1;
+    double target_lr = 5e-2;
     app.add_option("-i,--input", input_file, "Input mesh.");
     app.add_option("-o,--output", output_file, "Output mesh.");
+    app.add_option("--target_l", target_l, "target edge length");
+    app.add_option("--target_lr", target_lr, "target edge length");
     // app.add_option("-j,--jobs", NUM_THREADS, "thread.");
 
     CLI11_PARSE(app, argc, argv);
@@ -30,11 +33,14 @@ int main(int argc, char** argv)
 
     assert(ok);
 
-    // Load the mesh in the trimesh class
-    triwild::TriWild triwild;
+    std::pair<Eigen::VectorXd, Eigen::VectorXd> box_minmax;
+    box_minmax = std::pair(V.colwise().minCoeff(), V.colwise().maxCoeff());
+    double diag = (box_minmax.first - box_minmax.second).norm();
+    if (target_l < 0) target_l = target_lr * diag;
+
+    triwild::TriWild triwild(target_l);
     triwild.create_mesh(V, F);
     assert(triwild.check_mesh_connectivity_validity());
-
     // Do the mesh optimization
     // triwild.optimize();
     triwild.consolidate_mesh();
