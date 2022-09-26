@@ -21,33 +21,26 @@ auto renew = [](auto& m, auto op, auto& tris) {
     return optup;
 };
 
-void TriWild::collapse_all_edges()
+void TriWild::split_all_edges()
 {
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     auto collect_tuples = tbb::concurrent_vector<Tuple>();
 
     for_each_edge([&](auto& tup) { collect_tuples.emplace_back(tup); });
     collect_all_ops.reserve(collect_tuples.size());
-    for (auto& t : collect_tuples) collect_all_ops.emplace_back("edge_collapse", t);
-    wmtk::logger().info("=======collapse==========");
+    for (auto& t : collect_tuples) collect_all_ops.emplace_back("edge_split", t);
+    wmtk::logger().info("=======split==========");
 
-    wmtk::logger().info("size for edges to be collapse is {}", collect_all_ops.size());
+    wmtk::logger().info("size for edges to be split is {}", collect_all_ops.size());
     auto setup_and_execute = [&](auto executor) {
         executor.renew_neighbor_tuples = renew;
-        executor.priority = [&](auto& m, auto _, auto& e) { return -m.get_length2(e); };
+        executor.priority = [&](auto& m, auto _, auto& e) { return m.get_length2(e); };
         executor.num_threads = NUM_THREADS;
         executor.is_weight_up_to_date = [](auto& m, auto& ele) {
             auto& [weight, op, tup] = ele;
             auto length = m.get_length2(tup);
-            if (length != -weight) return false;
-
-            if (length > 4. / 5. * m.target_l) {
-                wmtk::logger().info(
-                    "length {} target len {}",
-                    length,
-                    4. / 5. * 4. / 5. * m.target_l * m.target_l);
-                return false;
-            }
+            if (length != weight) return false;
+            if (length < 4. / 3. * m.target_l * 4. / 3. * m.target_l) return false;
             return true;
         };
         executor(*this, collect_all_ops);
@@ -63,11 +56,9 @@ void TriWild::collapse_all_edges()
         setup_and_execute(executor);
     }
 }
-bool TriWild::collapse_edge_before(const Tuple& t)
+bool TriWild::split_edge_before(const Tuple& t)
 {
-    if (!TriMesh::collapse_edge_before(t)) return false;
-    if (vertex_attrs[t.vid(*this)].fixed || vertex_attrs[t.switch_vertex(*this).vid(*this)].fixed)
-        return false;
+    if (!TriMesh::split_edge_before(t)) return false;
     cache.local().v1 = t.vid(*this);
     cache.local().v2 = t.switch_vertex(*this).vid(*this);
     cache.local().partition_id = vertex_attrs[t.vid(*this)].partition_id;
@@ -80,7 +71,7 @@ bool TriWild::collapse_edge_before(const Tuple& t)
     }
     return true;
 }
-bool TriWild::collapse_edge_after(const Tuple& t)
+bool TriWild::split_edge_after(const Tuple& t)
 {
     const Eigen::Vector2d p =
         (vertex_attrs[cache.local().v1].pos + vertex_attrs[cache.local().v2].pos) / 2.0;

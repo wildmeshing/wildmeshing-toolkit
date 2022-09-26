@@ -21,33 +21,26 @@ auto renew = [](auto& m, auto op, auto& tris) {
     return optup;
 };
 
-void TriWild::collapse_all_edges()
+
+void TriWild::swap_all_edges()
 {
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     auto collect_tuples = tbb::concurrent_vector<Tuple>();
 
     for_each_edge([&](auto& tup) { collect_tuples.emplace_back(tup); });
     collect_all_ops.reserve(collect_tuples.size());
-    for (auto& t : collect_tuples) collect_all_ops.emplace_back("edge_collapse", t);
-    wmtk::logger().info("=======collapse==========");
+    for (auto& t : collect_tuples) collect_all_ops.emplace_back("edge_swap", t);
+    wmtk::logger().info("=======swap==========");
 
-    wmtk::logger().info("size for edges to be collapse is {}", collect_all_ops.size());
+    wmtk::logger().info("size for edges to be swap is {}", collect_all_ops.size());
     auto setup_and_execute = [&](auto executor) {
         executor.renew_neighbor_tuples = renew;
-        executor.priority = [&](auto& m, auto _, auto& e) { return -m.get_length2(e); };
+        executor.priority = [&](auto& m, auto _, auto& e) { return m.get_length2(e); };
         executor.num_threads = NUM_THREADS;
         executor.is_weight_up_to_date = [](auto& m, auto& ele) {
             auto& [weight, op, tup] = ele;
             auto length = m.get_length2(tup);
-            if (length != -weight) return false;
-
-            if (length > 4. / 5. * m.target_l) {
-                wmtk::logger().info(
-                    "length {} target len {}",
-                    length,
-                    4. / 5. * 4. / 5. * m.target_l * m.target_l);
-                return false;
-            }
+            if (length != weight) return false;
             return true;
         };
         executor(*this, collect_all_ops);
@@ -63,34 +56,28 @@ void TriWild::collapse_all_edges()
         setup_and_execute(executor);
     }
 }
-bool TriWild::collapse_edge_before(const Tuple& t)
+bool TriWild::swap_edge_before(const Tuple& t)
 {
-    if (!TriMesh::collapse_edge_before(t)) return false;
+    if (!TriMesh::swap_edge_before(t)) return false;
     if (vertex_attrs[t.vid(*this)].fixed || vertex_attrs[t.switch_vertex(*this).vid(*this)].fixed)
         return false;
-    cache.local().v1 = t.vid(*this);
-    cache.local().v2 = t.switch_vertex(*this).vid(*this);
-    cache.local().partition_id = vertex_attrs[t.vid(*this)].partition_id;
 
     // get max_energy
-    cache.local().max_energy = get_quality(t);
+    cache.local().max_energy = -1;
     auto tris = get_one_ring_tris_for_vertex(t);
     for (auto tri : tris) {
+        assert(get_quality(tri) > 0);
         cache.local().max_energy = std::max(cache.local().max_energy, get_quality(tri));
     }
     return true;
 }
-bool TriWild::collapse_edge_after(const Tuple& t)
+bool TriWild::swap_edge_after(const Tuple& t)
 {
-    const Eigen::Vector2d p =
-        (vertex_attrs[cache.local().v1].pos + vertex_attrs[cache.local().v2].pos) / 2.0;
-    auto vid = t.vid(*this);
-    vertex_attrs[vid].pos = p;
-    vertex_attrs[vid].partition_id = cache.local().partition_id;
     // check quality
     auto tris = get_one_ring_tris_for_vertex(t);
+
     for (auto tri : tris) {
-        if (get_quality(tri) > cache.local().max_energy) return false;
+        if (get_quality(tri) >= cache.local().max_energy) return false;
     }
     return true;
 }
