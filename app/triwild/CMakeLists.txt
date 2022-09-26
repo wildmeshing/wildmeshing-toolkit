@@ -7,6 +7,8 @@ include(fenvelope)
 
 add_library(wmtk_triwild
 	Collapse.cpp
+	Swap.cpp
+	Split.cpp
 	Smooth.cpp
 	TriWild.cpp
 	TriWild.h
