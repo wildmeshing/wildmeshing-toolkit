@@ -4,15 +4,21 @@
 #include <tbb/concurrent_vector.h>
 #include <wmtk/utils/AMIPS2D.h>
 #include <Eigen/Core>
-
+#include <wmtk/utils/TupleUtils.hpp>
+using namespace wmtk;
 namespace triwild {
-double TriWild::get_length2(const Tuple& t) const
+
+std::vector<TriMesh::Tuple> TriWild::new_edges_after(const std::vector<TriMesh::Tuple>& tris) const
 {
-    auto& m = *this;
-    auto& v1 = t;
-    auto v2 = t.switch_vertex(m);
-    double length = (m.vertex_attrs[v1.vid(m)].pos - m.vertex_attrs[v2.vid(m)].pos).squaredNorm();
-    return length;
+    std::vector<TriMesh::Tuple> new_edges;
+
+    for (auto t : tris) {
+        for (auto j = 0; j < 3; j++) {
+            new_edges.push_back(tuple_from_edge(t.fid(*this), j));
+        }
+    }
+    wmtk::unique_edge_tuples(*this, new_edges);
+    return new_edges;
 }
 
 void TriWild::create_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F)
@@ -32,6 +38,9 @@ void TriWild::create_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F)
 
     // Save the vertex position in the vertex attributes
     for (unsigned i = 0; i < V.rows(); ++i) vertex_attrs[i].pos << V.row(i)[0], V.row(i)[1];
+    for (auto tri : this->get_faces()) {
+        assert(!is_inverted(tri));
+    }
 }
 
 void TriWild::export_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F)
@@ -65,6 +74,14 @@ void TriWild::write_obj(const std::string& path)
     igl::writeOBJ(path, V3, F);
 }
 
+double TriWild::get_length2(const Tuple& t) const
+{
+    auto& m = *this;
+    auto& v1 = t;
+    auto v2 = t.switch_vertex(m);
+    double length = (m.vertex_attrs[v1.vid(m)].pos - m.vertex_attrs[v2.vid(m)].pos).squaredNorm();
+    return length;
+}
 
 double TriWild::get_quality(const Tuple& loc) const
 {

@@ -30,22 +30,23 @@ public:
     // Energy Assigned to undefined energy
     // TODO: why not the max double?
     const double MAX_ENERGY = 1e50;
+    double target_l = -1.; // targeted edge length
+    double target_lr = 5e-2; // targeted relative edge length
 
-    TriWild(){};
+    TriWild(double _target_l = -1.) { target_l = _target_l; };
 
     virtual ~TriWild(){};
 
-
     // Store the per-vertex attributes
     wmtk::AttributeCollection<VertexAttributes> vertex_attrs;
-    struct CollapseInfoCache
+    struct InfoCache
     {
         size_t v1;
         size_t v2;
         double max_energy;
         int partition_id;
     };
-    tbb::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
+    tbb::enumerable_thread_specific<InfoCache> cache;
 
     // Initializes the mesh
     void create_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F);
@@ -78,12 +79,12 @@ public:
     bool collapse_edge_after(const Tuple& t) override;
     // Split
     void split_all_edges();
-    bool split_edge_before(const Tuple& t) override{};
-    bool split_edge_after(const Tuple& t) override{};
+    bool split_edge_before(const Tuple& t) override;
+    bool split_edge_after(const Tuple& t) override;
     // Swap
     void swap_all_edges();
-    bool swap_edge_before(const Tuple& t) override{};
-    bool swap_edge_after(const Tuple& t) override{};
+    bool swap_edge_before(const Tuple& t) override;
+    bool swap_edge_after(const Tuple& t) override;
 
     void mesh_improvement(int max_its);
     double get_length2(const Tuple& t) const;
