@@ -113,12 +113,30 @@ TEST_CASE("triwild_swap", "[triwild_swap][.]")
     bool ok = igl::read_triangle_mesh(path, V, F);
 
     REQUIRE(ok);
+
+    // without envelop. boundary is locked, nothing changes
+    // center vertex have 7 tris
     TriWild m;
     m.target_l = 5e-2;
-    m.create_mesh(V, F, 0.01);
+    m.create_mesh(V, F);
     for (auto& t : m.get_faces()) {
         REQUIRE(m.get_quality(t) > 0);
     }
     m.swap_all_edges();
-    m.write_obj("triwild_swap.obj");
+    for (auto v : m.get_vertices()) {
+        if (v.vid(m) == 2) REQUIRE(m.get_valence_for_vertex(v) == 7);
+    }
+
+    // with envelop. can be swapped
+    // center vertex have 6 tris after swap
+    TriWild m2;
+    m2.target_l = 5e-2;
+    m2.create_mesh(V, F, 0.01);
+    for (auto& t : m2.get_faces()) {
+        REQUIRE(m2.get_quality(t) > 0);
+    }
+    m2.swap_all_edges();
+    for (auto v : m2.get_vertices()) {
+        if (v.vid(m2) == 2) REQUIRE(m2.get_valence_for_vertex(v) == 6);
+    }
 }
