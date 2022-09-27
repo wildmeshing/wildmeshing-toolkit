@@ -18,10 +18,12 @@ int main(int argc, char** argv)
     std::string output_file = "./";
     double target_l = -1;
     double target_lr = 5e-2;
+    double epsr = -1.;
     app.add_option("-i,--input", input_file, "Input mesh.");
     app.add_option("-o,--output", output_file, "Output mesh.");
     app.add_option("--target_l", target_l, "target edge length");
     app.add_option("--target_lr", target_lr, "target edge length");
+    app.add_option("--epsr", epsr, "relative envelop size wrt bbox diag");
     // app.add_option("-j,--jobs", NUM_THREADS, "thread.");
 
     CLI11_PARSE(app, argc, argv);
@@ -38,8 +40,12 @@ int main(int argc, char** argv)
     double diag = (box_minmax.first - box_minmax.second).norm();
     if (target_l < 0) target_l = target_lr * diag;
 
-    triwild::TriWild triwild(target_l);
-    triwild.create_mesh(V, F);
+    triwild::TriWild triwild;
+    triwild.target_l = target_l;
+    if (epsr > 0)
+        triwild.create_mesh(V, F, epsr * diag);
+    else
+        triwild.create_mesh(V, F);
     assert(triwild.check_mesh_connectivity_validity());
     // Do the mesh optimization
     // triwild.optimize();

@@ -39,7 +39,7 @@ public:
     double target_lr = 5e-2; // targeted relative edge length
     double eps = 0.0; // envelope size default to 0.0
 
-    TriWild(double _target_l = -1.) { target_l = _target_l; };
+    TriWild(){};
 
     virtual ~TriWild(){};
 
