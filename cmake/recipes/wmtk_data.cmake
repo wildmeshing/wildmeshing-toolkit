@@ -16,7 +16,7 @@ ExternalProject_Add(
     SOURCE_DIR ${WMT_DATA_ROOT}
 
     GIT_REPOSITORY https://github.com/wildmeshing/data.git
-    GIT_TAG 66761e459068e2d3ca325acce5ef34a18cecd419
+    GIT_TAG 84ad2c9eb4dc54989a672a28d9118b974a0ec5ae
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
@@ -30,4 +30,4 @@ add_library(wmtk::data ALIAS wmtk_data)
 
 add_dependencies(wmtk_data wmtk_data_download)
 
-target_compile_definitions(wmtk_data INTERFACE  WMT_DATA_DIR=\"${WMT_DATA_ROOT}\")
+target_compile_definitions(wmtk_data INTERFACE WMT_DATA_DIR=\"${WMT_DATA_ROOT}\")

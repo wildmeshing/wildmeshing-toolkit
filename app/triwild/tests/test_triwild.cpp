@@ -40,7 +40,7 @@ TEST_CASE("triwild_collapse", "[triwild_collapse][.]")
 {
     // dummy case. Collapse 5 times. 1 tri
     const std::string root(WMT_DATA_DIR);
-    const std::string path = "test_triwild_collapse_onboundary.obj";
+    const std::string path = root + "/test_triwild_collapse_onboundary.obj";
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     bool ok = igl::read_triangle_mesh(path, V, F);
@@ -91,7 +91,7 @@ TEST_CASE("triwild_split", "[triwild_split][.]")
 {
     // dummy case. swap 5 times. 1 tri
     const std::string root(WMT_DATA_DIR);
-    const std::string path = "test_triwild.obj";
+    const std::string path = root + "/test_triwild.obj";
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     bool ok = igl::read_triangle_mesh(path, V, F);
@@ -119,7 +119,7 @@ TEST_CASE("triwild_split", "[triwild_split][.]")
 TEST_CASE("triwild_swap", "[triwild_swap][.]")
 {
     const std::string root(WMT_DATA_DIR);
-    const std::string path = "test_triwild_swap.obj";
+    const std::string path = root + "/test_triwild_swap.obj";
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     bool ok = igl::read_triangle_mesh(path, V, F);
