@@ -55,18 +55,36 @@ TEST_CASE("triwild_collapse", "[triwild_collapse][.]")
     for (int i = 0; i < F.rows(); i++) {
         for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
     }
+
+    // without envelop. boundary is locked, nothing changes
+    // center vertex have 7 tris
     triwild::TriWild m;
     m.target_l = 1.;
-    m.create_mesh(V, F, 0.01);
+    m.create_mesh(V, F);
     for (auto& t : m.get_faces()) {
         assert(m.get_quality(t) > 0);
     }
     m.collapse_all_edges();
     m.consolidate_mesh();
-    // REQUIRE(m.vertex_attrs[0].pos == Eigen::Vector2d(0., 5.));
-    // REQUIRE(m.vertex_attrs[1].pos == Eigen::Vector2d(-5., 2.5));
-    // REQUIRE(m.vertex_attrs[2].pos == Eigen::Vector2d(2.5, 1.875));
-    m.write_obj("triwild_collapse.obj");
+    for (auto v : m.get_vertices()) {
+        if (v.vid(m) == 2) REQUIRE(m.get_valence_for_vertex(v) == 7);
+    }
+    m.write_obj("triwild_collapse_freeze.obj");
+
+    // with envelop. boundary allowed to move in envelop
+    // center vertex have 7 tris
+    triwild::TriWild m2;
+    m2.target_l = 1.;
+    m2.create_mesh(V, F, 0.01);
+    for (auto& t : m2.get_faces()) {
+        assert(m2.get_quality(t) > 0);
+    }
+    m2.collapse_all_edges();
+    m2.consolidate_mesh();
+    for (auto v : m2.get_vertices()) {
+        if (v.vid(m2) == 2) REQUIRE(m2.get_valence_for_vertex(v) == 6);
+    }
+    m2.write_obj("triwild_collapse_envelop.obj");
 }
 
 TEST_CASE("triwild_split", "[triwild_split][.]")
@@ -88,20 +106,14 @@ TEST_CASE("triwild_split", "[triwild_split][.]")
     for (int i = 0; i < F.rows(); i++) {
         for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
     }
-    // std::pair<Eigen::VectorXd, Eigen::VectorXd> box_minmax;
-    // box_minmax = std::pair(V.colwise().minCoeff(), V.colwise().maxCoeff());
-    // double diag = (box_minmax.first - box_minmax.second).norm();
-    // double target_l = 0.5 * diag;
-    // Load the mesh in the trimesh class
+
+    // edges are split regardless of envelope or not
     triwild::TriWild m;
     m.target_l = 1.;
     m.create_mesh(V, F);
     m.split_all_edges();
-    // m.consolidate_mesh();
+    REQUIRE(m.vert_capacity() == 12);
     m.write_obj("triwild_split.obj");
-    // REQUIRE(m.vertex_attrs[0].pos == Eigen::Vector2d(0., 5.));
-    // REQUIRE(m.vertex_attrs[1].pos == Eigen::Vector2d(-5., 2.5));
-    // REQUIRE(m.vertex_attrs[2].pos == Eigen::Vector2d(2.5, 1.875));
 }
 
 TEST_CASE("triwild_swap", "[triwild_swap][.]")
@@ -126,7 +138,7 @@ TEST_CASE("triwild_swap", "[triwild_swap][.]")
     for (auto v : m.get_vertices()) {
         if (v.vid(m) == 2) REQUIRE(m.get_valence_for_vertex(v) == 7);
     }
-
+    m.write_obj("triwild_swap_freeze.obj");
     // with envelop. can be swapped
     // center vertex have 6 tris after swap
     TriWild m2;
@@ -139,4 +151,5 @@ TEST_CASE("triwild_swap", "[triwild_swap][.]")
     for (auto v : m2.get_vertices()) {
         if (v.vid(m2) == 2) REQUIRE(m2.get_valence_for_vertex(v) == 6);
     }
+    m.write_obj("triwild_swap_envelop.obj");
 }
