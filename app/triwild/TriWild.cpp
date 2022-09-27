@@ -169,6 +169,29 @@ bool TriWild::is_inverted(const Tuple& loc) const
     return (res != igl::predicates::Orientation::POSITIVE);
 }
 
-void TriWild::mesh_improvement(int max_its) {}
+void TriWild::mesh_improvement(int max_its)
+{
+    double pre_max_energy = -1.0;
+    for (int it = 0; it < max_its; it++) {
+        ///ops
+        wmtk::logger().info("\n========it {}========", it);
+
+        ///energy check
+        wmtk::logger().info("max energy {} stop {}", max_energy, stop_energy);
+        collapse_all_edges();
+        split_all_edges();
+        swap_all_edges();
+        smooth_all_vertices();
+        if (max_energy < stop_energy) break;
+        consolidate_mesh();
+        wmtk::logger().info("v {} t {}", vert_capacity(), tri_capacity());
+
+        if (it > 0 && pre_max_energy - max_energy < 5e-1) {
+            wmtk::logger().info("doesn't improve anymore. Stopping improvement. {} itr finished");
+            break;
+        }
+    }
+    pre_max_energy = max_energy;
+}
 
 } // namespace triwild

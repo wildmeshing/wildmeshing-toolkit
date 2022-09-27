@@ -38,6 +38,8 @@ public:
     double target_l = -1.; // targeted edge length
     double target_lr = 5e-2; // targeted relative edge length
     double eps = 0.0; // envelope size default to 0.0
+    double max_energy = -1;
+    double stop_energy = 5;
 
     TriWild(){};
 

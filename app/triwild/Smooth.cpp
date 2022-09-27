@@ -36,8 +36,9 @@ bool triwild::TriWild::smooth_after(const Tuple& t)
     for (auto& tri : locs) {
         max_quality = std::max(max_quality, get_quality(tri));
     }
-
     assert(max_quality > 0); // If max quality is zero it is likely that the triangles are flipped
+
+    max_energy = max_quality;
 
     // Collects the coordinate of all vertices in the 1-ring
     std::vector<std::array<double, 6>> assembles(locs.size());

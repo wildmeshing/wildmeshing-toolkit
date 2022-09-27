@@ -73,6 +73,7 @@ bool TriWild::collapse_edge_before(const Tuple& t)
     for (auto tri : tris) {
         cache.local().max_energy = std::max(cache.local().max_energy, get_quality(tri));
     }
+    max_energy = cache.local().max_energy;
     return true;
 }
 bool TriWild::collapse_edge_after(const Tuple& t)
