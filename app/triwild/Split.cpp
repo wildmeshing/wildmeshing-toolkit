@@ -40,7 +40,7 @@ void TriWild::split_all_edges()
             auto& [weight, op, tup] = ele;
             auto length = m.get_length2(tup);
             if (length != weight) return false;
-            if (length < 4. / 3. * m.target_l * 4. / 3. * m.target_l) return false;
+            if (length < 4. / 3. * m.m_target_l * 4. / 3. * m.m_target_l) return false;
             return true;
         };
         executor(*this, collect_all_ops);
@@ -69,7 +69,7 @@ bool TriWild::split_edge_before(const Tuple& t)
     for (auto tri : tris) {
         cache.local().max_energy = std::max(cache.local().max_energy, get_quality(tri));
     }
-    max_energy = cache.local().max_energy;
+    m_max_energy = cache.local().max_energy;
     return true;
 }
 bool TriWild::split_edge_after(const Tuple& t)
@@ -83,6 +83,14 @@ bool TriWild::split_edge_after(const Tuple& t)
     auto tris = get_one_ring_tris_for_vertex(t);
     for (auto tri : tris) {
         if (get_quality(tri) > cache.local().max_energy) return false;
+    }
+
+    // only split can have operations on boundary edges
+    if (m_bnd_freeze) {
+        for (auto e : get_one_ring_edges_for_vertex(t)) {
+            vertex_attrs[e.switch_vertex(*this).vid(*this)].fixed =
+                is_boundary_vertex(e.switch_vertex(*this));
+        }
     }
     return true;
 }

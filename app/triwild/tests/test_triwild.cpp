@@ -21,7 +21,7 @@ TEST_CASE("tri_energy")
     double target_l = 0.5;
     triwild::TriWild m;
     m.create_mesh(V, F1);
-    m.target_l = target_l;
+    m.m_target_l = target_l;
     for (auto& t : m.get_faces()) {
         wmtk::logger().info(m.get_quality(t));
         wmtk::logger().info(m.get_quality(t) > 0);
@@ -59,8 +59,8 @@ TEST_CASE("triwild_collapse", "[triwild_collapse][.]")
     // without envelop. boundary is locked, nothing changes
     // center vertex have 7 tris
     triwild::TriWild m;
-    m.target_l = 1.;
-    m.create_mesh(V, F);
+    m.m_target_l = 1.;
+    m.create_mesh(V, F, -1, true);
     for (auto& t : m.get_faces()) {
         assert(m.get_quality(t) > 0);
     }
@@ -74,7 +74,7 @@ TEST_CASE("triwild_collapse", "[triwild_collapse][.]")
     // with envelop. boundary allowed to move in envelop
     // center vertex have 7 tris
     triwild::TriWild m2;
-    m2.target_l = 1.;
+    m2.m_target_l = 1.;
     m2.create_mesh(V, F, 0.01);
     for (auto& t : m2.get_faces()) {
         assert(m2.get_quality(t) > 0);
@@ -109,7 +109,7 @@ TEST_CASE("triwild_split", "[triwild_split][.]")
 
     // edges are split regardless of envelope or not
     triwild::TriWild m;
-    m.target_l = 1.;
+    m.m_target_l = 1.;
     m.create_mesh(V, F);
     m.split_all_edges();
     REQUIRE(m.vert_capacity() == 12);
@@ -129,8 +129,8 @@ TEST_CASE("triwild_swap", "[triwild_swap][.]")
     // without envelop. boundary is locked, nothing changes
     // center vertex have 7 tris
     TriWild m;
-    m.target_l = 5e-2;
-    m.create_mesh(V, F);
+    m.m_target_l = 5e-2;
+    m.create_mesh(V, F, -1, true);
     for (auto& t : m.get_faces()) {
         REQUIRE(m.get_quality(t) > 0);
     }
@@ -142,7 +142,7 @@ TEST_CASE("triwild_swap", "[triwild_swap][.]")
     // with envelop. can be swapped
     // center vertex have 6 tris after swap
     TriWild m2;
-    m2.target_l = 5e-2;
+    m2.m_target_l = 5e-2;
     m2.create_mesh(V, F, 0.01);
     for (auto& t : m2.get_faces()) {
         REQUIRE(m2.get_quality(t) > 0);
@@ -152,4 +152,20 @@ TEST_CASE("triwild_swap", "[triwild_swap][.]")
         if (v.vid(m2) == 2) REQUIRE(m2.get_valence_for_vertex(v) == 6);
     }
     m.write_obj("triwild_swap_envelop.obj");
+}
+
+TEST_CASE("triwild_improve")
+{
+    const std::string root(WMT_DATA_DIR);
+    const std::string path = root + "/test_triwild.obj";
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    bool ok = igl::read_triangle_mesh(path, V, F);
+    REQUIRE(ok);
+    TriWild m;
+    m.m_target_l = 0.5;
+    m.m_stop_energy = 2.0;
+    m.create_mesh(V, F, -1, true);
+    m.mesh_improvement(10);
+    m.write_obj("triwild_improve_freezebnd.obj");
 }

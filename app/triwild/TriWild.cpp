@@ -36,7 +36,11 @@ std::vector<TriMesh::Tuple> TriWild::new_edges_after(const std::vector<TriMesh::
     return new_edges;
 }
 
-void TriWild::create_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, double eps)
+void TriWild::create_mesh(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    double eps,
+    bool bnd_freeze)
 {
     std::vector<Eigen::Vector3d> V_env;
     V_env.resize(V.rows());
@@ -70,7 +74,8 @@ void TriWild::create_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, do
         m_envelope.use_exact = true;
         m_envelope.init(V_env, F_env, eps);
         m_has_envelope = true;
-    } else {
+    } else if (bnd_freeze) {
+        m_bnd_freeze = bnd_freeze;
         for (auto v : this->get_vertices()) {
             vertex_attrs[v.vid(*this)].fixed = is_boundary_vertex(v);
         }
@@ -177,21 +182,32 @@ void TriWild::mesh_improvement(int max_its)
         wmtk::logger().info("\n========it {}========", it);
 
         ///energy check
-        wmtk::logger().info("max energy {} stop {}", max_energy, stop_energy);
+        wmtk::logger().info("max energy {} stop energy {}", m_max_energy, m_stop_energy);
         collapse_all_edges();
+        write_obj("after_collapse_" + std::to_string(it) + ".obj");
+
         split_all_edges();
+        write_obj("after_split_" + std::to_string(it) + ".obj");
+
         swap_all_edges();
+        write_obj("after_swap_" + std::to_string(it) + ".obj");
+
+
         smooth_all_vertices();
-        if (max_energy < stop_energy) break;
+        write_obj("after_smooth_" + std::to_string(it) + ".obj");
+
+        if (m_max_energy < m_stop_energy) break;
         consolidate_mesh();
         wmtk::logger().info("v {} t {}", vert_capacity(), tri_capacity());
 
-        if (it > 0 && pre_max_energy - max_energy < 5e-1) {
-            wmtk::logger().info("doesn't improve anymore. Stopping improvement. {} itr finished");
+        if (it > 0 && pre_max_energy - m_max_energy < 5e-1) {
+            wmtk::logger().info(
+                "doesn't improve anymore. Stopping improvement. {} itr finished",
+                it);
             break;
         }
     }
-    pre_max_energy = max_energy;
+    pre_max_energy = m_max_energy;
 }
 
 } // namespace triwild

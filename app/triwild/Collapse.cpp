@@ -41,7 +41,7 @@ void TriWild::collapse_all_edges()
             auto length = m.get_length2(tup);
             if (length != -weight) return false;
 
-            if (length > 4. / 5. * 4. / 5. * m.target_l * m.target_l) return false;
+            if (length > 4. / 5. * 4. / 5. * m.m_target_l * m.m_target_l) return false;
 
             return true;
         };
@@ -73,7 +73,7 @@ bool TriWild::collapse_edge_before(const Tuple& t)
     for (auto tri : tris) {
         cache.local().max_energy = std::max(cache.local().max_energy, get_quality(tri));
     }
-    max_energy = cache.local().max_energy;
+    m_max_energy = cache.local().max_energy;
     return true;
 }
 bool TriWild::collapse_edge_after(const Tuple& t)

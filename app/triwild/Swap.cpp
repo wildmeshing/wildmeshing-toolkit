@@ -69,7 +69,7 @@ bool TriWild::swap_edge_before(const Tuple& t)
         assert(get_quality(tri) > 0);
         cache.local().max_energy = std::max(cache.local().max_energy, get_quality(tri));
     }
-    max_energy = cache.local().max_energy;
+    m_max_energy = cache.local().max_energy;
     return true;
 }
 bool TriWild::swap_edge_after(const Tuple& t)

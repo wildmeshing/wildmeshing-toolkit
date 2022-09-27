@@ -38,7 +38,7 @@ bool triwild::TriWild::smooth_after(const Tuple& t)
     }
     assert(max_quality > 0); // If max quality is zero it is likely that the triangles are flipped
 
-    max_energy = max_quality;
+    m_max_energy = max_quality;
 
     // Collects the coordinate of all vertices in the 1-ring
     std::vector<std::array<double, 6>> assembles(locs.size());
@@ -78,11 +78,11 @@ bool triwild::TriWild::smooth_after(const Tuple& t)
         wmtk::AMIPS2D_jacobian,
         wmtk::AMIPS2D_hessian);
 
-    // Logging
-    wmtk::logger().info(
-        "old pos {} -> new pos {}",
-        old_pos.transpose(),
-        vertex_attrs[vid].pos.transpose());
+    // // Logging
+    // wmtk::logger().info(
+    //     "old pos {} -> new pos {}",
+    //     old_pos.transpose(),
+    //     vertex_attrs[vid].pos.transpose());
 
     return true;
 }

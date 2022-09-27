@@ -35,11 +35,12 @@ public:
     // Energy Assigned to undefined energy
     // TODO: why not the max double?
     const double MAX_ENERGY = 1e50;
-    double target_l = -1.; // targeted edge length
-    double target_lr = 5e-2; // targeted relative edge length
-    double eps = 0.0; // envelope size default to 0.0
-    double max_energy = -1;
-    double stop_energy = 5;
+    double m_target_l = -1.; // targeted edge length
+    double m_target_lr = 5e-2; // targeted relative edge length
+    double m_eps = 0.0; // envelope size default to 0.0
+    bool m_bnd_freeze = false; // freeze boundary default to false
+    double m_max_energy = -1;
+    double m_stop_energy = 5;
 
     TriWild(){};
 
@@ -60,7 +61,11 @@ public:
 
     // Initializes the mesh
     // default with strict boundary freeze
-    void create_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, double eps = 0.0);
+    void create_mesh(
+        const Eigen::MatrixXd& V,
+        const Eigen::MatrixXi& F,
+        double eps = 0.0,
+        bool bnd_freeze = false);
 
     // Exports V and F of the stored mesh
     void export_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F);

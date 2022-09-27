@@ -1,8 +1,8 @@
 #include "TriQualityUtils.hpp"
-#include "Logger.hpp"
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <array>
+#include "Logger.hpp"
 
 std::array<size_t, 3> wmtk::orient_preserve_tri_reorder(
     const std::array<size_t, 3>& conn,
@@ -15,8 +15,7 @@ std::array<size_t, 3> wmtk::orient_preserve_tri_reorder(
     };
     auto vl_id = id_in_array(conn, v0);
     assert(vl_id != -1);
-    auto reorder = std::array<std::array<size_t, 3>, 3>{
-        {{{0, 1, 2}}, {{1, 2, 0}}, {{2, 0, 1}}}};
+    auto reorder = std::array<std::array<size_t, 3>, 3>{{{{0, 1, 2}}, {{1, 2, 0}}, {{2, 0, 1}}}};
     auto newconn = conn;
     for (auto j = 0; j < 3; j++) newconn[j] = conn[reorder[vl_id][j]];
     return newconn;
@@ -24,10 +23,10 @@ std::array<size_t, 3> wmtk::orient_preserve_tri_reorder(
 
 // TODO: These three functions should not be in global namespace
 auto newton_direction_2d = [](auto& compute_energy,
-                           auto& compute_jacobian,
-                           auto& compute_hessian,
-                           auto& assembles,
-                           const Eigen::Vector2d& pos) -> Eigen::Vector2d {
+                              auto& compute_jacobian,
+                              auto& compute_hessian,
+                              auto& assembles,
+                              const Eigen::Vector2d& pos) -> Eigen::Vector2d {
     auto total_energy = 0.;
     Eigen::Vector2d total_jac = Eigen::Vector2d::Zero();
     Eigen::Matrix2d total_hess = Eigen::Matrix2d::Zero();
@@ -50,7 +49,7 @@ auto newton_direction_2d = [](auto& compute_energy,
         assert(!std::isnan(total_energy));
     }
     Eigen::Vector2d x = total_hess.ldlt().solve(total_jac);
-    wmtk::logger().info("energy {}", total_energy);
+
     if (total_jac.isApprox(total_hess * x)) // a hacky PSD trick. TODO: change this.
         return -x;
     else {
@@ -61,9 +60,9 @@ auto newton_direction_2d = [](auto& compute_energy,
 
 
 auto gradient_direction_2d = [](auto& compute_energy,
-                             auto& compute_jacobian,
-                             auto& assembles,
-                             const Eigen::Vector2d& pos) -> Eigen::Vector2d {
+                                auto& compute_jacobian,
+                                auto& assembles,
+                                const Eigen::Vector2d& pos) -> Eigen::Vector2d {
     Eigen::Vector2d total_jac = Eigen::Vector2d::Zero();
 
     for (auto& T : assembles) {
@@ -78,17 +77,18 @@ auto gradient_direction_2d = [](auto& compute_energy,
 };
 
 auto linesearch_2d = [](auto&& energy_from_point,
-                     const Eigen::Vector2d& pos,
-                     const Eigen::Vector2d& dir,
-                     const int& max_iter) {
+                        const Eigen::Vector2d& pos,
+                        const Eigen::Vector2d& dir,
+                        const int& max_iter) {
     auto lr = 0.5;
     auto old_energy = energy_from_point(pos);
-    wmtk::logger().info("old energy {} dir {}", old_energy, dir.transpose());
+    // wmtk::logger().info("old energy {} dir {}", old_energy, dir.transpose());
     for (auto iter = 1; iter <= max_iter; iter++) {
         Eigen::Vector2d newpos = pos + std::pow(lr, iter) * dir;
-        wmtk::logger().info("pos {}, dir {}, [{}]", pos.transpose(), dir.transpose(), std::pow(lr, iter));
+        // // wmtk::logger()
+        // .info("pos {}, dir {}, [{}]", pos.transpose(), dir.transpose(), std::pow(lr, iter));
         auto new_energy = energy_from_point(newpos);
-        wmtk::logger().info("iter {}, E= {}, [{}]", iter, new_energy, newpos.transpose());
+        // wmtk::logger().info("iter {}, E= {}, [{}]", iter, new_energy, newpos.transpose());
         if (new_energy < old_energy) return newpos; // TODO: armijo conditions.
     }
     return pos;

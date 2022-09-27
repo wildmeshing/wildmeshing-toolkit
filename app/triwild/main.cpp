@@ -19,11 +19,13 @@ int main(int argc, char** argv)
     double target_l = -1;
     double target_lr = 5e-2;
     double epsr = -1.;
+    bool bnd_freeze = false;
     app.add_option("-i,--input", input_file, "Input mesh.");
     app.add_option("-o,--output", output_file, "Output mesh.");
     app.add_option("--target_l", target_l, "target edge length");
     app.add_option("--target_lr", target_lr, "target edge length");
     app.add_option("--epsr", epsr, "relative envelop size wrt bbox diag");
+    app.add_option("--bnd_freeze", bnd_freeze, "freeze boundary");
     // app.add_option("-j,--jobs", NUM_THREADS, "thread.");
 
     CLI11_PARSE(app, argc, argv);
@@ -41,11 +43,11 @@ int main(int argc, char** argv)
     if (target_l < 0) target_l = target_lr * diag;
 
     triwild::TriWild triwild;
-    triwild.target_l = target_l;
-    if (epsr > 0)
-        triwild.create_mesh(V, F, epsr * diag);
-    else
-        triwild.create_mesh(V, F);
+    triwild.m_target_l = target_l;
+    triwild.m_bnd_freeze = bnd_freeze;
+    triwild.m_eps = epsr * diag;
+    triwild.create_mesh(V, F, epsr * diag, bnd_freeze);
+
     assert(triwild.check_mesh_connectivity_validity());
     // Do the mesh optimization
     // triwild.optimize();
