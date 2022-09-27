@@ -1,4 +1,5 @@
 #include "TriWild.h"
+#include <fastenvelope/FastEnvelope.h>
 #include <igl/predicates/predicates.h>
 #include <igl/write_triangle_mesh.h>
 #include <tbb/concurrent_vector.h>
@@ -7,7 +8,21 @@
 #include <wmtk/utils/TupleUtils.hpp>
 using namespace wmtk;
 namespace triwild {
-
+bool TriWild::invariants(const std::vector<Tuple>& new_tris)
+{
+    if (m_has_envelope) {
+        for (auto& t : new_tris) {
+            std::array<Eigen::Vector3d, 3> tris;
+            auto vs = oriented_tri_vertices(t);
+            for (auto j = 0; j < 3; j++) {
+                tris[j] << vertex_attrs[vs[j].vid(*this)].pos(0),
+                    vertex_attrs[vs[j].vid(*this)].pos(1), 0.0;
+            }
+            if (m_envelope.is_outside(tris)) return false;
+        }
+    }
+    return true;
+}
 std::vector<TriMesh::Tuple> TriWild::new_edges_after(const std::vector<TriMesh::Tuple>& tris) const
 {
     std::vector<TriMesh::Tuple> new_edges;
@@ -21,8 +36,12 @@ std::vector<TriMesh::Tuple> TriWild::new_edges_after(const std::vector<TriMesh::
     return new_edges;
 }
 
-void TriWild::create_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F)
+void TriWild::create_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, double eps)
 {
+    std::vector<Eigen::Vector3d> V_env;
+    V_env.resize(V.rows());
+    std::vector<Eigen::Vector3i> F_env;
+    F_env.resize(F.rows());
     // Register attributes
     p_vertex_attrs = &vertex_attrs;
 
@@ -30,16 +49,31 @@ void TriWild::create_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F)
     // app)
     std::vector<std::array<size_t, 3>> tri(F.rows());
 
-    for (int i = 0; i < F.rows(); i++)
-        for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
-
+    for (int i = 0; i < F.rows(); i++) {
+        F_env[i] << (size_t)F(i, 0), (size_t)F(i, 1), (size_t)F(i, 2);
+        for (int j = 0; j < 3; j++) {
+            tri[i][j] = (size_t)F(i, j);
+        }
+    }
     // Initialize the trimesh class which handles connectivity
     wmtk::TriMesh::create_mesh(V.rows(), tri);
-
     // Save the vertex position in the vertex attributes
-    for (unsigned i = 0; i < V.rows(); ++i) vertex_attrs[i].pos << V.row(i)[0], V.row(i)[1];
+    for (unsigned i = 0; i < V.rows(); ++i) {
+        vertex_attrs[i].pos << V.row(i)[0], V.row(i)[1];
+        V_env[i] << V.row(i)[0], V.row(i)[1], 0.0;
+    }
     for (auto tri : this->get_faces()) {
         assert(!is_inverted(tri));
+    }
+
+    if (eps > 0) {
+        m_envelope.use_exact = true;
+        m_envelope.init(V_env, F_env, eps);
+        m_has_envelope = true;
+    } else {
+        for (auto v : this->get_vertices()) {
+            vertex_attrs[v.vid(*this)].fixed = is_boundary_vertex(v);
+        }
     }
 }
 

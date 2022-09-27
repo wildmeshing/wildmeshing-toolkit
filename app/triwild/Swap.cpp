@@ -78,6 +78,7 @@ bool TriWild::swap_edge_after(const Tuple& t)
 
     for (auto tri : tris) {
         if (get_quality(tri) >= cache.local().max_energy) return false;
+        if (get_quality(tri) < 0) return false; // reject operations that cause triangle inversion
     }
     return true;
 }

@@ -109,7 +109,6 @@ TEST_CASE("triwild_split", "[triwild_split][.]")
 
 TEST_CASE("triwild_swap", "[triwild_swap][.]")
 {
-    // dummy case. swap 5 times. 1 tri
     const std::string root(WMT_DATA_DIR);
     const std::string path = "test_triwild_swap.obj";
     Eigen::MatrixXd V;
@@ -118,7 +117,7 @@ TEST_CASE("triwild_swap", "[triwild_swap][.]")
 
     REQUIRE(ok);
     TriWild m(5e-2);
-    m.create_mesh(V, F);
+    m.create_mesh(V, F, 0.01);
     for (auto& t : m.get_faces()) {
         REQUIRE(m.get_quality(t) > 0);
     }

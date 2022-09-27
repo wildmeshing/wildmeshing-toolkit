@@ -4,6 +4,7 @@
 #include <wmtk/TriMesh.h>
 #include "Parameters.h"
 
+#include <sec/envelope/SampleEnvelope.hpp>
 
 namespace triwild {
 
@@ -27,11 +28,16 @@ public:
 class TriWild : public wmtk::TriMesh
 {
 public:
+    // default envelop use_exact = true
+    sample_envelope::SampleEnvelope m_envelope;
+
+    bool m_has_envelope = false;
     // Energy Assigned to undefined energy
     // TODO: why not the max double?
     const double MAX_ENERGY = 1e50;
     double target_l = -1.; // targeted edge length
     double target_lr = 5e-2; // targeted relative edge length
+    double eps = 0.0; // envelope size default to 0.0
 
     TriWild(double _target_l = -1.) { target_l = _target_l; };
 
@@ -48,8 +54,11 @@ public:
     };
     tbb::enumerable_thread_specific<InfoCache> cache;
 
+    bool invariants(const std::vector<Tuple>& new_tris);
+
     // Initializes the mesh
-    void create_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F);
+    // default with strict boundary freeze
+    void create_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, double eps = 0.0);
 
     // Exports V and F of the stored mesh
     void export_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F);

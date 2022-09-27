@@ -41,13 +41,8 @@ void TriWild::collapse_all_edges()
             auto length = m.get_length2(tup);
             if (length != -weight) return false;
 
-            if (length > 4. / 5. * m.target_l) {
-                wmtk::logger().info(
-                    "length {} target len {}",
-                    length,
-                    4. / 5. * 4. / 5. * m.target_l * m.target_l);
-                return false;
-            }
+            if (length > 4. / 5. * 4. / 5. * m.target_l * m.target_l) return false;
+
             return true;
         };
         executor(*this, collect_all_ops);
