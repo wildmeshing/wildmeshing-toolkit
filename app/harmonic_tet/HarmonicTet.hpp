@@ -1,6 +1,6 @@
 #pragma once
 
-#include <wmtk/ConcurrentTetMesh.h>
+#include <wmtk/TetMesh.h>
 #include <wmtk/AttributeCollection.hpp>
 
 // clang-format off
@@ -18,7 +18,7 @@
 
 namespace harmonic_tet {
 
-class HarmonicTet : public wmtk::ConcurrentTetMesh
+class HarmonicTet : public wmtk::TetMesh
 {
 public:
     struct VertexAttributes
