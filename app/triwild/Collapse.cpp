@@ -61,7 +61,8 @@ void TriWild::collapse_all_edges()
 bool TriWild::collapse_edge_before(const Tuple& t)
 {
     if (!TriMesh::collapse_edge_before(t)) return false;
-    if (vertex_attrs[t.vid(*this)].fixed || vertex_attrs[t.switch_vertex(*this).vid(*this)].fixed)
+    if (m_bnd_freeze &&
+        (vertex_attrs[t.vid(*this)].fixed || vertex_attrs[t.switch_vertex(*this).vid(*this)].fixed))
         return false;
     cache.local().v1 = t.vid(*this);
     cache.local().v2 = t.switch_vertex(*this).vid(*this);

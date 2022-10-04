@@ -8,6 +8,13 @@
 #include <wmtk/utils/TupleUtils.hpp>
 using namespace wmtk;
 namespace triwild {
+auto avg_edge_len = [](auto& m) {
+    double avg_len = 0.0;
+    auto edges = m.get_edges();
+    for (auto& e : edges) avg_len += std::sqrt(m.get_length2(e));
+    return avg_len / edges.size();
+};
+
 bool TriWild::invariants(const std::vector<Tuple>& new_tris)
 {
     if (m_has_envelope) {
@@ -70,15 +77,20 @@ void TriWild::create_mesh(
         assert(!is_inverted(tri));
     }
 
+    // mark boundary vertices as fixed
+    // but this is not indiscriminatively fixed for all operations
+    // only swap will always be reject for boundary edges
+    // other operations are conditioned on whether m_bnd_freeze is turned on
+    for (auto v : this->get_vertices()) {
+        vertex_attrs[v.vid(*this)].fixed = is_boundary_vertex(v);
+    }
+
     if (eps > 0) {
         m_envelope.use_exact = true;
         m_envelope.init(V_env, F_env, eps);
         m_has_envelope = true;
     } else if (bnd_freeze) {
         m_bnd_freeze = bnd_freeze;
-        for (auto v : this->get_vertices()) {
-            vertex_attrs[v.vid(*this)].fixed = is_boundary_vertex(v);
-        }
     }
 }
 
@@ -176,7 +188,10 @@ bool TriWild::is_inverted(const Tuple& loc) const
 
 void TriWild::mesh_improvement(int max_its)
 {
+    double avg_len = 0.0;
+    double pre_avg_len = 0.0;
     double pre_max_energy = -1.0;
+    wmtk::logger().info("target len {}", m_target_l);
     for (int it = 0; it < max_its; it++) {
         ///ops
         wmtk::logger().info("\n========it {}========", it);
@@ -184,30 +199,52 @@ void TriWild::mesh_improvement(int max_its)
         ///energy check
         wmtk::logger().info("max energy {} stop energy {}", m_max_energy, m_stop_energy);
         collapse_all_edges();
-        write_obj("after_collapse_" + std::to_string(it) + ".obj");
+        // write_obj("after_collapse_" + std::to_string(it) + ".obj");
 
         split_all_edges();
-        write_obj("after_split_" + std::to_string(it) + ".obj");
+        // write_obj("after_split_" + std::to_string(it) + ".obj");
 
         swap_all_edges();
-        write_obj("after_swap_" + std::to_string(it) + ".obj");
+        // write_obj("after_swap_" + std::to_string(it) + ".obj");
 
 
         smooth_all_vertices();
-        write_obj("after_smooth_" + std::to_string(it) + ".obj");
+        // write_obj("after_smooth_" + std::to_string(it) + ".obj");
 
-        if (m_max_energy < m_stop_energy) break;
-        consolidate_mesh();
-        wmtk::logger().info("v {} t {}", vert_capacity(), tri_capacity());
+        wmtk::logger().info(
+            "++++++++v {} t {} max energy {}++++++++",
+            vert_capacity(),
+            tri_capacity(),
+            m_max_energy);
 
-        if (it > 0 && pre_max_energy - m_max_energy < 5e-1) {
-            wmtk::logger().info(
-                "doesn't improve anymore. Stopping improvement. {} itr finished",
-                it);
+        avg_len = avg_edge_len(*this);
+        if (m_target_l <= 0 && m_max_energy < m_stop_energy) {
             break;
         }
+
+        if (m_target_l > 0 && (avg_len - m_target_l) * (avg_len - m_target_l) < 1e-4) {
+            wmtk::logger().info(
+                "doesn't improve anymore. Stopping improvement.\n {} itr finished, max energy {}",
+                it,
+                m_max_energy);
+            break;
+        }
+        if (it > 0 &&
+            (m_target_l <= 0 &&
+             (pre_max_energy - m_stop_energy) * (pre_max_energy - m_stop_energy) < 1e-2)) {
+            wmtk::logger().info(
+                "doesn't improve anymore. Stopping improvement.\n {} itr finished, max energy {}",
+                it,
+                m_max_energy);
+            break;
+        }
+        wmtk::logger().info("current length {}", avg_len);
+        pre_avg_len = avg_len;
+        pre_max_energy = m_max_energy;
     }
-    pre_max_energy = m_max_energy;
+
+    wmtk::logger().info("/////final: max energy {} , avg len {} ", m_max_energy, avg_len);
+    consolidate_mesh();
 }
 
 } // namespace triwild

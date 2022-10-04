@@ -182,3 +182,29 @@ Eigen::Vector2d wmtk::gradient_descent_from_stack_2d(
     };
     return compute_new_valid_pos(old_pos);
 }
+Eigen::Vector2d wmtk::try_project(
+    const Eigen::Vector2d& point,
+    const std::vector<std::array<double, 4>>& assembled_neighbor)
+{
+    auto min_dist = std::numeric_limits<double>::infinity();
+    Eigen::Vector2d closest_point = Eigen::Vector2d::Zero();
+    // just 2 edges touching the point
+    for (const auto& edge : assembled_neighbor) {
+        auto V = Eigen::Map<const Eigen::Matrix<double, 2, 2, Eigen::RowMajor>>(edge.data());
+        Eigen::Vector2d project;
+        auto dist2 = -1.;
+        igl::point_simplex_squared_distance<2>(
+            point,
+            V,
+            Eigen::RowVector2i(0, 1),
+            0,
+            dist2,
+            project);
+        // Note: libigl might not be robust, but this can be rejected with envelope.
+        if (dist2 < min_dist) {
+            min_dist = dist2;
+            closest_point = project;
+        }
+    }
+    return closest_point;
+}

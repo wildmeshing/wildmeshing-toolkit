@@ -3,6 +3,8 @@
 #include <Eigen/Core>
 #include <optional>
 
+#include <igl/point_simplex_squared_distance.h>
+
 namespace wmtk {
 
 /**
@@ -31,4 +33,7 @@ Eigen::Vector2d gradient_descent_from_stack_2d(
  */
 std::array<size_t, 3> orient_preserve_tri_reorder(const std::array<size_t, 3>& tri, size_t v0);
 
-}
+Eigen::Vector2d try_project(
+    const Eigen::Vector2d& point,
+    const std::vector<std::array<double, 4>>& assembled_neighbor);
+} // namespace wmtk
