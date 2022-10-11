@@ -124,18 +124,6 @@ std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_edges() const
     return uniq_edges;
 }
 
-// void wmtk::TetMesh::for_each_edge(const std::function<void(const TetMesh::Tuple&)>& func)
-// {
-//     for (int i = 0; i < tet_capacity(); i++) {
-//         if (!tuple_from_tet(i).is_valid(*this)) continue;
-//         for (int j = 0; j < 6; j++) {
-//             auto tup = tuple_from_edge(i, j);
-//             if (tup.eid(*this) == 6 * i + j) {
-//                 func(tup);
-//             }
-//         }
-//     }
-// }
 
 void wmtk::TetMesh::for_each_face(const std::function<void(const TetMesh::Tuple&)>& func)
 {
@@ -150,23 +138,7 @@ void wmtk::TetMesh::for_each_face(const std::function<void(const TetMesh::Tuple&
     }
 }
 
-// void wmtk::TetMesh::for_each_tetra(const std::function<void(const TetMesh::Tuple&)>& func)
-// {
-//     for (int i = 0; i < tet_capacity(); i++) {
-//         auto tup = tuple_from_tet(i);
-//         if (!tup.is_valid(*this)) continue;
-//         func(tup);
-//     }
-// }
 
-// void wmtk::TetMesh::for_each_vertex(const std::function<void(const TetMesh::Tuple&)>& func)
-// {
-//     for (int i = 0; i < vert_capacity(); i++) {
-//         auto tup = tuple_from_vertex(i);
-//         if (!tup.is_valid(*this)) continue;
-//         func(tup);
-//     }
-// }
 
 std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_faces() const
 {
