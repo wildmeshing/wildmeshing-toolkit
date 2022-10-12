@@ -32,7 +32,7 @@ DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d> AMIPS_autodiff(const std::arr
     // typedef Eigen::Vector2d Gradient; // wrt one vert
     // typedef Eigen::Matrix2d Hessian; // wrt one vert
     typedef DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d> DScalar;
-
+    DiffScalarBase::setVariableCount(2);
     DScalar x0(0, T[0]), y0(1, T[1]);
 
     // (x0 - x1, y0 - y1, x0 - x2, y0 - y2).transpose
