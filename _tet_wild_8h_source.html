@@ -72,7 +72,7 @@ $(function() {
 <div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="preprocessor">#pragma once</span></div>
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160; </div>
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &lt;igl/Timer.h&gt;</span></div>
-<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &lt;wmtk/ConcurrentTetMesh.h&gt;</span></div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &lt;wmtk/TetMesh.h&gt;</span></div>
 <div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &lt;wmtk/utils/Morton.h&gt;</span></div>
 <div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="preprocessor">#include &lt;wmtk/utils/PartitionMesh.h&gt;</span></div>
 <div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="preprocessor">#include &quot;Parameters.h&quot;</span></div>
@@ -156,7 +156,7 @@ $(function() {
 <div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    <span class="keywordtype">bool</span> m_is_outside;</div>
 <div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;};</div>
 <div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160; </div>
-<div class="line"><a name="l00088"></a><span class="lineno"><a class="line" href="classtetwild_1_1_tet_wild.html">   88</a></span>&#160;<span class="keyword">class </span><a class="code" href="classtetwild_1_1_tet_wild.html">TetWild</a> : <span class="keyword">public</span> <a class="code" href="classwmtk_1_1_concurrent_tet_mesh.html">wmtk::ConcurrentTetMesh</a></div>
+<div class="line"><a name="l00088"></a><span class="lineno"><a class="line" href="classtetwild_1_1_tet_wild.html">   88</a></span>&#160;<span class="keyword">class </span><a class="code" href="classtetwild_1_1_tet_wild.html">TetWild</a> : <span class="keyword">public</span> <a class="code" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a></div>
 <div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;{</div>
 <div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;<span class="keyword">public</span>:</div>
 <div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    <span class="keywordtype">double</span> time_env = 0.0;</div>
@@ -439,18 +439,18 @@ $(function() {
 <div class="ttc" id="aclasstetwild_1_1_tet_wild_html"><div class="ttname"><a href="classtetwild_1_1_tet_wild.html">tetwild::TetWild</a></div><div class="ttdef"><b>Definition:</b> TetWild.h:88</div></div>
 <div class="ttc" id="astructtetwild_1_1_tet_wild_1_1_triangle_insertion_local_info_cache_html"><div class="ttname"><a href="structtetwild_1_1_tet_wild_1_1_triangle_insertion_local_info_cache.html">tetwild::TetWild::TriangleInsertionLocalInfoCache</a></div><div class="ttdef"><b>Definition:</b> TetWild.h:322</div></div>
 <div class="ttc" id="astructtetwild_1_1_parameters_html"><div class="ttname"><a href="structtetwild_1_1_parameters.html">tetwild::Parameters</a></div><div class="ttdef"><b>Definition:</b> Parameters.h:5</div></div>
-<div class="ttc" id="aclasswmtk_1_1_concurrent_tet_mesh_html"><div class="ttname"><a href="classwmtk_1_1_concurrent_tet_mesh.html">wmtk::ConcurrentTetMesh</a></div><div class="ttdoc">child of TetMesh for concurrent implementation</div><div class="ttdef"><b>Definition:</b> ConcurrentTetMesh.h:16</div></div>
 <div class="ttc" id="astructtetwild_1_1_tet_wild_1_1_collapse_info_cache_html"><div class="ttname"><a href="structtetwild_1_1_tet_wild_1_1_collapse_info_cache.html">tetwild::TetWild::CollapseInfoCache</a></div><div class="ttdef"><b>Definition:</b> TetWild.h:343</div></div>
 <div class="ttc" id="aclasswmtk_1_1_envelope_html"><div class="ttname"><a href="classwmtk_1_1_envelope.html">wmtk::Envelope</a></div><div class="ttdef"><b>Definition:</b> SampleEnvelope.hpp:18</div></div>
 <div class="ttc" id="aclasstetwild_1_1_tet_attributes_html"><div class="ttname"><a href="classtetwild_1_1_tet_attributes.html">tetwild::TetAttributes</a></div><div class="ttdef"><b>Definition:</b> TetWild.h:80</div></div>
 <div class="ttc" id="aclasstetwild_1_1_vertex_attributes_html"><div class="ttname"><a href="classtetwild_1_1_vertex_attributes.html">tetwild::VertexAttributes</a></div><div class="ttdef"><b>Definition:</b> TetWild.h:32</div></div>
 <div class="ttc" id="astructtetwild_1_1_tet_wild_1_1_split_info_cache_html"><div class="ttname"><a href="structtetwild_1_1_tet_wild_1_1_split_info_cache.html">tetwild::TetWild::SplitInfoCache</a></div><div class="ttdef"><b>Definition:</b> TetWild.h:332</div></div>
 <div class="ttc" id="astructwmtk_1_1_attribute_collection_html"><div class="ttname"><a href="structwmtk_1_1_attribute_collection.html">wmtk::AttributeCollection&lt; VertexAttributes &gt;</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_tet_mesh_html_ad37dd5a5a436472b182afdf20932605c"><div class="ttname"><a href="classwmtk_1_1_tet_mesh.html#ad37dd5a5a436472b182afdf20932605c">wmtk::TetMesh::tuple_from_tet</a></div><div class="ttdeci">Tuple tuple_from_tet(size_t tid) const</div><div class="ttdoc">get a Tuple from global tetra index</div><div class="ttdef"><b>Definition:</b> TetMesh.cpp:400</div></div>
+<div class="ttc" id="aclasswmtk_1_1_tet_mesh_html"><div class="ttname"><a href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a></div><div class="ttdef"><b>Definition:</b> TetMesh.h:23</div></div>
+<div class="ttc" id="aclasswmtk_1_1_tet_mesh_html_ad37dd5a5a436472b182afdf20932605c"><div class="ttname"><a href="classwmtk_1_1_tet_mesh.html#ad37dd5a5a436472b182afdf20932605c">wmtk::TetMesh::tuple_from_tet</a></div><div class="ttdeci">Tuple tuple_from_tet(size_t tid) const</div><div class="ttdoc">get a Tuple from global tetra index</div><div class="ttdef"><b>Definition:</b> TetMesh.cpp:380</div></div>
 <div class="ttc" id="aclass_resorting_1_1_morton_code64_html"><div class="ttname"><a href="class_resorting_1_1_morton_code64.html">Resorting::MortonCode64</a></div><div class="ttdef"><b>Definition:</b> Morton.h:34</div></div>
 <div class="ttc" id="astructtetwild_1_1_tet_wild_1_1_swap_info_cache_html"><div class="ttname"><a href="structtetwild_1_1_tet_wild_1_1_swap_info_cache.html">tetwild::TetWild::SwapInfoCache</a></div><div class="ttdef"><b>Definition:</b> TetWild.h:360</div></div>
 <div class="ttc" id="aclasstetwild_1_1_face_attributes_html"><div class="ttname"><a href="classtetwild_1_1_face_attributes.html">tetwild::FaceAttributes</a></div><div class="ttdef"><b>Definition:</b> TetWild.h:54</div></div>
-<div class="ttc" id="aclasswmtk_1_1_tet_mesh_html_a204a973795d87f3b69a06cf699b400f2"><div class="ttname"><a href="classwmtk_1_1_tet_mesh.html#a204a973795d87f3b69a06cf699b400f2">wmtk::TetMesh::vert_capacity</a></div><div class="ttdeci">size_t vert_capacity() const</div><div class="ttdoc">get the current largest global vid</div><div class="ttdef"><b>Definition:</b> TetMesh.h:307</div></div>
+<div class="ttc" id="aclasswmtk_1_1_tet_mesh_html_a204a973795d87f3b69a06cf699b400f2"><div class="ttname"><a href="classwmtk_1_1_tet_mesh.html#a204a973795d87f3b69a06cf699b400f2">wmtk::TetMesh::vert_capacity</a></div><div class="ttdeci">size_t vert_capacity() const</div><div class="ttdoc">get the current largest global vid</div><div class="ttdef"><b>Definition:</b> TetMesh.h:309</div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">
