@@ -5,6 +5,7 @@
 #include <Eigen/src/Core/util/Constants.h>
 #include <igl/Timer.h>
 #include <wmtk/utils/AMIPS2D.h>
+#include <wmtk/utils/AMIPS2D_autodiff.h>
 #include <array>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TriQualityUtils.hpp>
@@ -12,6 +13,15 @@
 
 #include <limits>
 #include <optional>
+std::function<double(const std::array<double, 6>&)> AMIPS_auto_value = [](auto& T) {
+    return wmtk::AMIPS_autodiff(T).getValue();
+};
+std::function<void(const std::array<double, 6>&, Eigen::Vector2d&)> AMIPS_auto_grad =
+    [](auto& T, auto& G) { G = wmtk::AMIPS_autodiff(T).getGradient(); };
+std::function<void(const std::array<double, 6>&, Eigen::Matrix2d&)> AMIPS_auto_hessian =
+    [](auto& T, auto& H) { H = wmtk::AMIPS_autodiff(T).getHessian(); };
+
+
 bool triwild::TriWild::smooth_before(const Tuple& t)
 {
     if (m_bnd_freeze && vertex_attrs[t.vid(*this)].fixed) return false;
@@ -74,9 +84,9 @@ bool triwild::TriWild::smooth_after(const Tuple& t)
     // Minimize distortion using newton's method
     vertex_attrs[vid].pos = wmtk::newton_method_from_stack_2d(
         assembles,
-        wmtk::AMIPS2D_energy,
-        wmtk::AMIPS2D_jacobian,
-        wmtk::AMIPS2D_hessian);
+        AMIPS_auto_value,
+        AMIPS_auto_grad,
+        AMIPS_auto_hessian);
 
     // if it is a boundary vertex, project the vertex to the closest point on the boundary
     if (is_boundary_vertex(t)) {
