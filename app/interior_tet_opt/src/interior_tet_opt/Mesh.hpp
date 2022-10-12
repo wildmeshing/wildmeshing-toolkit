@@ -1,6 +1,6 @@
 #pragma once
 
-#include <wmtk/ConcurrentTetMesh.h>
+#include <wmtk/TetMesh.h>
 #include <Eigen/Core>
 #include <string>
 
@@ -19,7 +19,7 @@ struct TetraAttribute
 };
 
 
-struct InteriorTetOpt : wmtk::ConcurrentTetMesh
+struct InteriorTetOpt : wmtk::TetMesh
 {
     InteriorTetOpt() {}
     ~InteriorTetOpt() {}
