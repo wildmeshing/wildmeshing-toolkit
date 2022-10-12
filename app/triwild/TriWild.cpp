@@ -94,6 +94,23 @@ void TriWild::create_mesh(
     }
 }
 
+Eigen::Matrix<uint64_t, Eigen::Dynamic, 2, Eigen::RowMajor> TriWild::get_bnd_edge_matrix()
+{
+    int num_bnd_edge = 0;
+    for (auto e : get_edges()) {
+        if (is_boundary_edge(e)) num_bnd_edge++;
+    }
+    Eigen::Matrix<uint64_t, Eigen::Dynamic, 2, Eigen::RowMajor> E(num_bnd_edge, 2);
+    int i = 0;
+    for (auto e : get_edges()) {
+        if (is_boundary_edge(e)) {
+            E.row(i) << (uint64_t)e.vid(*this), (uint64_t)e.switch_vertex(*this).vid(*this);
+            i++;
+        }
+    }
+    return E;
+}
+
 void TriWild::export_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F)
 {
     V = Eigen::MatrixXd::Zero(vert_capacity(), 2);

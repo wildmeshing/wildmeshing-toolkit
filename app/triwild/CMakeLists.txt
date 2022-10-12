@@ -24,6 +24,7 @@ target_link_libraries(wmtk_triwild PUBLIC
 	wmtk::sec_lib
 	wmtk::remeshing_lib
 	igl::predicates
+	lagrange::bvh
 	gmp::gmp
 )
 

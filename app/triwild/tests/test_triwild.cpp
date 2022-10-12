@@ -11,6 +11,7 @@
 #include <wmtk/utils/AMIPS2D.h>
 #include <wmtk/utils/AMIPS2D_autodiff.h>
 
+
 using namespace wmtk;
 using namespace triwild;
 
@@ -22,15 +23,6 @@ TEST_CASE("tri_energy")
     V << -1, 1, 1, 1, -1, -1;
     F1 << 0, 1, 2;
     F2 << 0, 2, 1;
-    double target_l = 0.5;
-    triwild::TriWild m;
-    m.create_mesh(V, F1);
-    m.m_target_l = target_l;
-    for (auto& t : m.get_faces()) {
-        wmtk::logger().info(m.get_quality(t));
-        wmtk::logger().info(m.get_quality(t) > 0);
-        REQUIRE(m.get_quality(t) < 0);
-    }
     triwild::TriWild m2;
     m2.create_mesh(V, F2);
     for (auto& t : m2.get_faces()) {
@@ -189,4 +181,84 @@ TEST_CASE("autodiff")
         AMIPS2D_hessian(rand_tri, Hes);
         REQUIRE((Hes - AMIPS_autodiff(rand_tri).getHessian()).norm() < 1e-4);
     }
+}
+TEST_CASE("AABB")
+{
+    const std::string root(WMT_DATA_DIR);
+    const std::string path = root + "/test_triwild.obj";
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+
+    bool ok = igl::read_triangle_mesh(path, V, F);
+
+    REQUIRE(ok);
+    TriWild m;
+    m.create_mesh(V, F, 0.2, false);
+    Eigen::Matrix<uint64_t, Eigen::Dynamic, 2, Eigen::RowMajor> E = m.get_bnd_edge_matrix();
+    REQUIRE(E.rows() == 6);
+    Eigen::Matrix<double, Eigen::Dynamic, 2, Eigen::RowMajor> V_aabb = V.block(0, 0, V.rows(), 2);
+    lagrange::bvh::EdgeAABBTree<
+        Eigen::Matrix<double, Eigen::Dynamic, 2, Eigen::RowMajor>,
+        Eigen::Matrix<unsigned long, Eigen::Dynamic, 2, Eigen::RowMajor>,
+        2>
+        aabb(V_aabb, E);
+    REQUIRE(!aabb.empty());
+    m.m_get_closest_point = [&aabb](const Eigen::RowVector2d& p) -> Eigen::RowVector2d {
+        unsigned long ind = 0;
+        double distance = 0.0;
+        static Eigen::RowVector2d p_ret;
+        aabb.get_closest_point(p, ind, p_ret, distance);
+        return p_ret;
+    };
+    auto result = m.m_get_closest_point(Eigen::RowVector2d(-0.7, 0.6));
+    REQUIRE(result == Eigen::RowVector2d(-1, 0.6));
+}
+
+TEST_CASE("improve with AABB")
+{
+    const std::string root(WMT_DATA_DIR);
+    const std::string path = root + "/test_triwild.obj";
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+
+    bool ok = igl::read_triangle_mesh(path, V, F);
+
+    REQUIRE(ok);
+
+    // without envelop. boundary is locked, nothing changes
+    // center vertex have 7 tris
+    TriWild m;
+    m.m_target_l = 5e-2;
+    m.create_mesh(V, F, 0.2, false);
+    for (auto& t : m.get_faces()) {
+        REQUIRE(m.get_quality(t) > 0);
+    }
+    // get the aabb tree for closest point detect in smooth projection
+    Eigen::Matrix<uint64_t, Eigen::Dynamic, 2, Eigen::RowMajor> E = m.get_bnd_edge_matrix();
+
+    Eigen::Matrix<double, Eigen::Dynamic, 2, Eigen::RowMajor> V_aabb = V.block(0, 0, V.rows(), 2);
+    lagrange::bvh::EdgeAABBTree<
+        Eigen::Matrix<double, Eigen::Dynamic, 2, Eigen::RowMajor>,
+        Eigen::Matrix<unsigned long, Eigen::Dynamic, 2, Eigen::RowMajor>,
+        2>
+        aabb(V_aabb, E);
+    m.m_get_closest_point = [&aabb](const Eigen::RowVector2d& p) -> Eigen::RowVector2d {
+        unsigned long ind = 0;
+        double distance = 0.0;
+        static Eigen::RowVector2d p_ret;
+        aabb.get_closest_point(p, ind, p_ret, distance);
+        return p_ret;
+    };
+    m.mesh_improvement(10);
+    m.write_obj("triwild_improve_project.obj");
+
+    m.m_get_closest_point = [&aabb](const Eigen::RowVector2d& p) -> Eigen::RowVector2d {
+        unsigned long ind = 0;
+        double distance = 0.0;
+        static Eigen::RowVector2d p_ret;
+        aabb.get_closest_point(p, ind, p_ret, distance);
+        return p;
+    };
+    m.mesh_improvement(10);
+    m.write_obj("triwild_improve_wo_project.obj");
 }

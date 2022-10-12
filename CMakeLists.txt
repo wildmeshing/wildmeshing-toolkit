@@ -72,6 +72,7 @@ source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src" PREFIX "Source Files" FILES 
 if(NOT TARGET igl::core)
     include(libigl)
 endif()
+
 igl_include(predicates)
 
 if(NOT TARGET spdlog)
@@ -82,8 +83,11 @@ include(geogram)
 include(onetbb)
 include(mshio)
 include(metis)
-include(lagrange)
 include(gmp)
+
+include(lagrange)
+lagrange_include_modules(bvh)
+
 target_link_libraries(wildmeshing_toolkit PRIVATE wmtk::warnings)
 target_link_libraries(wildmeshing_toolkit PUBLIC
     spdlog::spdlog
@@ -95,6 +99,7 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     metis::metis
     lagrange::core
     Tracy::TracyClient
+    lagrange::bvh
 )
 
 # ###############################################################################

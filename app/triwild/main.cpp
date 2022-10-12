@@ -59,19 +59,38 @@ int main(int argc, char** argv)
     triwild.m_bnd_freeze = bnd_freeze;
     triwild.m_eps = epsr * diag;
     triwild.create_mesh(V, F, epsr * diag, bnd_freeze);
-
     assert(triwild.check_mesh_connectivity_validity());
+
+    // get the aabb tree for closest point detect in smooth projection
+    // !!!! notice!!!!!
+    // arguments and parameters relating to the ABBB has to match the type exactly
+    // !!!!!!!!!!!!!!!!
+    Eigen::Matrix<uint64_t, Eigen::Dynamic, 2, Eigen::RowMajor> E = triwild.get_bnd_edge_matrix();
+    Eigen::Matrix<double, Eigen::Dynamic, 2, Eigen::RowMajor> V_aabb = V.block(0, 0, V.rows(), 2);
+    lagrange::bvh::EdgeAABBTree<
+        Eigen::Matrix<double, Eigen::Dynamic, 2, Eigen::RowMajor>,
+        Eigen::Matrix<uint64_t, Eigen::Dynamic, 2, Eigen::RowMajor>,
+        2>
+        aabb(V_aabb, E);
+    triwild.m_get_closest_point = [&aabb](const Eigen::RowVector2d& p) -> Eigen::RowVector2d {
+        unsigned long ind = 0;
+        double distance = 0.0;
+        static Eigen::RowVector2d p_ret;
+        aabb.get_closest_point(p, ind, p_ret, distance);
+        return p_ret;
+    };
+
     double start_energy = triwild.get_quality_all_triangles().mean();
     assert(start_energy > 0);
     wmtk::logger().info("/////starting avg enegry: {}", start_energy);
     // Do the mesh optimization
     // triwild.optimize();
-    triwild.mesh_improvement(10);
-    triwild.consolidate_mesh();
+    // triwild.mesh_improvement(10);
+    // triwild.consolidate_mesh();
 
-    // Save the optimized mesh
-    wmtk::logger().info("/////output : {}", output_file1);
-    triwild.write_obj(output_file1);
+    // // Save the optimized mesh
+    // wmtk::logger().info("/////output : {}", output_file1);
+    // triwild.write_obj(output_file1);
 
     Eigen::MatrixXd V2;
     Eigen::MatrixXi F2;
@@ -84,6 +103,14 @@ int main(int argc, char** argv)
     triwild2.m_bnd_freeze = bnd_freeze;
     triwild2.m_eps = epsr * diag;
     triwild2.create_mesh(V2, F2, epsr * diag, bnd_freeze);
+
+    triwild2.m_get_closest_point = [&aabb](const Eigen::RowVector2d& p) -> Eigen::RowVector2d {
+        unsigned long ind = 0;
+        double distance = 0.0;
+        static Eigen::RowVector2d p_ret;
+        aabb.get_closest_point(p, ind, p_ret, distance);
+        return p_ret;
+    };
 
     assert(triwild2.check_mesh_connectivity_validity());
     start_energy = triwild2.get_quality_all_triangles().mean();

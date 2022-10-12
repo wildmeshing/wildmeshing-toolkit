@@ -78,21 +78,9 @@ bool triwild::TriWild::smooth_after(const Tuple& t)
         wmtk::AMIPS2D_jacobian,
         wmtk::AMIPS2D_hessian);
 
-    // if vert is boundary project to the closest bounary edge
-    std::vector<std::array<double, 4>> neighbor_assemble;
-    // getting the boundary edges that point can be projected to, there are only 2 edges
-    for (auto e : get_one_ring_edges_for_vertex(t)) {
-        if (is_boundary_edge(e))
-            neighbor_assemble.emplace_back(std::array<double, 4>{
-                vertex_attrs[e.vid(*this)].pos(0),
-                vertex_attrs[e.vid(*this)].pos(1),
-                vertex_attrs[e.switch_vertex(*this).vid(*this)].pos(0),
-                vertex_attrs[e.switch_vertex(*this).vid(*this)].pos(1)});
-    }
-    assert(neighbor_assemble.size() == 2);
-
+    // if it is a boundary vertex, project the vertex to the closest point on the boundary
     if (is_boundary_vertex(t)) {
-        auto project = wmtk::try_project(vertex_attrs[t.vid(*this)].pos, neighbor_assemble);
+        vertex_attrs[vid].pos = this->m_get_closest_point(vertex_attrs[vid].pos);
     }
     // get all the one-ring tris and if they are out of envelop reject the operation
     auto new_tris = get_one_ring_tris_for_vertex(t);
@@ -102,7 +90,6 @@ bool triwild::TriWild::smooth_after(const Tuple& t)
     //     "old pos {} -> new pos {}",
     //     old_pos.transpose(),
     //     vertex_attrs[vid].pos.transpose());
-
     return true;
 }
 

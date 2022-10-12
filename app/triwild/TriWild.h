@@ -1,13 +1,13 @@
 #pragma once
 
 #include <igl/Timer.h>
+#include <lagrange/SurfaceMesh.h>
+
+#include <lagrange/bvh/EdgeAABBTree.h>
 #include <wmtk/TriMesh.h>
-#include "Parameters.h"
-
 #include <sec/envelope/SampleEnvelope.hpp>
-
+#include "Parameters.h"
 namespace triwild {
-
 class VertexAttributes
 {
 public:
@@ -41,6 +41,7 @@ public:
     bool m_bnd_freeze = false; // freeze boundary default to false
     double m_max_energy = -1;
     double m_stop_energy = 5;
+    std::function<Eigen::RowVector2d(const Eigen::RowVector2d&)> m_get_closest_point;
 
     TriWild(){};
 
@@ -61,11 +62,21 @@ public:
 
     // Initializes the mesh
     // default with strict boundary freeze
+    /**
+     * @brief Create a mesh object
+     *
+     * @param V igl format vertices
+     * @param F igl format faces
+     * @param eps absolute envelop size
+     * @param bnd_freeze boundary not moving
+     */
     void create_mesh(
         const Eigen::MatrixXd& V,
         const Eigen::MatrixXi& F,
         double eps = 0.0,
-        bool bnd_freeze = false);
+        bool bnd_freeze = true);
+
+    Eigen::Matrix<uint64_t, Eigen::Dynamic, 2, Eigen::RowMajor> get_bnd_edge_matrix();
 
     // Exports V and F of the stored mesh
     void export_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F);
