@@ -21,6 +21,14 @@ std::function<void(const std::array<double, 6>&, Eigen::Vector2d&)> AMIPS_auto_g
 std::function<void(const std::array<double, 6>&, Eigen::Matrix2d&)> AMIPS_auto_hessian =
     [](auto& T, auto& H) { H = wmtk::AMIPS_autodiff(T).getHessian(); };
 
+std::function<double(const std::array<double, 6>&)> SymDI_auto_value = [](auto& T) {
+    return wmtk::SymDi_autodiff(T).getValue();
+};
+std::function<void(const std::array<double, 6>&, Eigen::Vector2d&)> SymDI_auto_grad =
+    [](auto& T, auto& G) { G = wmtk::SymDi_autodiff(T).getGradient(); };
+std::function<void(const std::array<double, 6>&, Eigen::Matrix2d&)> SymDi_auto_hessian =
+    [](auto& T, auto& H) { H = wmtk::SymDi_autodiff(T).getHessian(); };
+
 
 bool triwild::TriWild::smooth_before(const Tuple& t)
 {

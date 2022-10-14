@@ -28,6 +28,14 @@ bool TriWild::invariants(const std::vector<Tuple>& new_tris)
             if (m_envelope.is_outside(tris)) return false;
         }
     }
+
+    for (auto& t : new_tris) {
+        if (get_quality(t) < 0) {
+            assert(is_inverted(t));
+            return false;
+        }
+    }
+
     return true;
 }
 std::vector<TriMesh::Tuple> TriWild::new_edges_after(const std::vector<TriMesh::Tuple>& tris) const
@@ -91,6 +99,9 @@ void TriWild::create_mesh(
         m_has_envelope = true;
     } else if (bnd_freeze) {
         m_bnd_freeze = bnd_freeze;
+    }
+    for (auto t : get_faces()) {
+        if (is_inverted(t)) exit(1001);
     }
 }
 
@@ -209,12 +220,14 @@ void TriWild::mesh_improvement(int max_its)
     double pre_avg_len = 0.0;
     double pre_max_energy = -1.0;
     wmtk::logger().info("target len {}", m_target_l);
+    wmtk::logger().info("current length {}", avg_edge_len(*this));
     for (int it = 0; it < max_its; it++) {
         ///ops
         wmtk::logger().info("\n========it {}========", it);
 
         ///energy check
-        wmtk::logger().info("max energy {} stop energy {}", m_max_energy, m_stop_energy);
+        wmtk::logger().info("current max energy {} stop energy {}", m_max_energy, m_stop_energy);
+        wmtk::logger().info("current length {}", avg_edge_len(*this));
         collapse_all_edges();
         // write_obj("after_collapse_" + std::to_string(it) + ".obj");
 
@@ -255,7 +268,6 @@ void TriWild::mesh_improvement(int max_its)
                 m_max_energy);
             break;
         }
-        wmtk::logger().info("current length {}", avg_len);
         pre_avg_len = avg_len;
         pre_max_energy = m_max_energy;
     }
