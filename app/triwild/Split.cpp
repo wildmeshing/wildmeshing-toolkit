@@ -14,7 +14,7 @@
 using namespace triwild;
 using namespace wmtk;
 
-auto renew = [](auto& m, auto op, auto& tris) {
+auto split_renew = [](auto& m, auto op, auto& tris) {
     auto edges = m.new_edges_after(tris);
     auto optup = std::vector<std::pair<std::string, wmtk::TriMesh::Tuple>>();
     for (auto& e : edges) optup.emplace_back(op, e);
@@ -33,7 +33,7 @@ void TriWild::split_all_edges()
 
     wmtk::logger().info("size for edges to be split is {}", collect_all_ops.size());
     auto setup_and_execute = [&](auto executor) {
-        executor.renew_neighbor_tuples = renew;
+        executor.renew_neighbor_tuples = split_renew;
         executor.priority = [&](auto& m, auto _, auto& e) { return m.get_length2(e); };
         executor.num_threads = NUM_THREADS;
         executor.is_weight_up_to_date = [](auto& m, auto& ele) {
