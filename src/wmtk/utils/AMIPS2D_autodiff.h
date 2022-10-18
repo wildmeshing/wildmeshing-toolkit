@@ -21,6 +21,8 @@
 #pragma once
 #include <Eigen/Cholesky>
 #include <Eigen/Core>
+#include <Eigen/Dense>
+
 #include <Eigen/LU>
 #include <iostream>
 #include "Logger.hpp"

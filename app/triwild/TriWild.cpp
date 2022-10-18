@@ -4,6 +4,7 @@
 #include <igl/write_triangle_mesh.h>
 #include <tbb/concurrent_vector.h>
 #include <wmtk/utils/AMIPS2D.h>
+#include <wmtk/utils/AMIPS2D_autodiff.h>
 #include <Eigen/Core>
 #include <wmtk/utils/TupleUtils.hpp>
 using namespace wmtk;
@@ -30,10 +31,11 @@ bool TriWild::invariants(const std::vector<Tuple>& new_tris)
     }
 
     for (auto& t : new_tris) {
-        if (get_quality(t) < 0) {
-            assert(is_inverted(t));
-            return false;
-        }
+        // if (get_quality(t) < 0) {
+        //     assert(is_inverted(t));
+        //     return false;
+        // }
+        if (is_inverted(t)) return false;
     }
 
     return true;
@@ -174,7 +176,8 @@ double TriWild::get_quality(const Tuple& loc) const
         for (auto j = 0; j < 2; j++) T[k * 2 + j] = vertex_attrs[its[k]].pos[j];
 
     // Energy evaluation
-    energy = wmtk::AMIPS2D_energy(T);
+    // energy = wmtk::AMIPS2D_energy(T);
+    energy = wmtk::AMIPS_autodiff(T).getValue();
 
     // Filter for numerical issues
     if (std::isinf(energy) || std::isnan(energy)) return MAX_ENERGY;

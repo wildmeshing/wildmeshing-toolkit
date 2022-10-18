@@ -21,7 +21,7 @@ int main(int argc, char** argv)
     std::string output_file = "./";
     double target_l = -1;
 
-    double target_lr = 0.001;
+    double target_lr = 0.01;
 
     double epsr = -1.;
     bool bnd_freeze = false;
@@ -45,7 +45,7 @@ int main(int argc, char** argv)
     wmtk::logger().info("/////input: {}", input_file);
     std::string output =
         std::regex_replace(input_file, std::regex("[^0-9]*([0-9]+).*"), std::string("$1"));
-    std::string output_file1 = "/home/yunfan/data/triwild_output_lin/output1/" + output + ".obj";
+    std::string output_file1 = "../output1/" + output + ".obj";
 
     std::pair<Eigen::VectorXd, Eigen::VectorXd> box_minmax;
     box_minmax = std::pair(V.colwise().minCoeff(), V.colwise().maxCoeff());
@@ -83,7 +83,7 @@ int main(int argc, char** argv)
     wmtk::logger().info("/////starting avg enegry: {}", start_energy);
     // Do the mesh optimization
 
-    triwild.mesh_improvement(10);
+    triwild.mesh_improvement(2);
     triwild.consolidate_mesh();
 
     // Save the optimized mesh
