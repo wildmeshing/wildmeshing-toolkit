@@ -1,5 +1,5 @@
-#include <regex>
 #include <igl/Timer.h>
+#include <regex>
 #include "Parameters.h"
 #include "TriWild.h"
 
@@ -8,6 +8,7 @@
 
 #include <igl/readMSH.h>
 #include <igl/read_triangle_mesh.h>
+
 
 int main(int argc, char** argv)
 {
@@ -45,7 +46,7 @@ int main(int argc, char** argv)
     wmtk::logger().info("/////input: {}", input_file);
     std::string output =
         std::regex_replace(input_file, std::regex("[^0-9]*([0-9]+).*"), std::string("$1"));
-    std::string output_file1 = "/output1/" + output + ".obj";
+    std::string output_file1 = output_file + output + ".obj";
 
     std::pair<Eigen::VectorXd, Eigen::VectorXd> box_minmax;
     box_minmax = std::pair(V.colwise().minCoeff(), V.colwise().maxCoeff());
@@ -86,7 +87,7 @@ int main(int argc, char** argv)
 
     triwild.mesh_improvement(2);
     triwild.consolidate_mesh();
-    wmtk::logger().info("!!!!finished {}!!!!",timer.getElapsedTimeInMilliSec()); 
+    wmtk::logger().info("!!!!finished {}!!!!", timer.getElapsedTimeInMilliSec());
     // Save the optimized mesh
     wmtk::logger().info("/////output : {}", output_file1);
     triwild.write_obj(output_file1);
