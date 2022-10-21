@@ -297,27 +297,12 @@ TEST_CASE("symdiff energy")
         rand_tri1[j] = 10 * rand_tri[j];
     }
     wmtk::logger().info("input {}", rand_tri1);
-
-    std::vector<std::array<double, 6>> assembly;
-    assembly.emplace_back(rand_tri1);
-    int i = 0;
-    while (i < 6) {
-        std::array<double, 6> rand_tri_tmp;
-        for (int j = 0; j < 6; j++) rand_tri_tmp[j] = rand_tri1[(j + i) % 6];
-        wmtk::logger().info("rand_tri_tmp {}", rand_tri_tmp);
-        assembly[0] = rand_tri_tmp;
-
-        auto new_position = wmtk::newton_method_from_stack_2d(
-            assembly,
-            SymDi_auto_value,
-            SymDi_auto_grad,
-            SymDi_auto_hessian);
-        rand_tri1[i] = new_position[0];
-        rand_tri1[i + 1] = new_position[1];
-        wmtk::logger().info("rand_tri {}", rand_tri1);
-        i = i + 2;
-    }
+    auto tri_output = wmtk::smooth_over_one_triangle(
+        rand_tri1,
+        SymDi_auto_value,
+        SymDi_auto_grad,
+        SymDi_auto_hessian);
 
     // wmtk::logger().info("small triangle: {} ", wmtk::SymDi_autodiff(rand_tri).getValue());
-    wmtk::logger().info("output {} ", rand_tri1);
+    wmtk::logger().info("output {} ", tri_output);
 }

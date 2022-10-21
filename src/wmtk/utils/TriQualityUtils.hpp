@@ -20,6 +20,17 @@ Eigen::Vector2d newton_method_from_stack_2d(
     std::function<void(const std::array<double, 6>&, Eigen::Vector2d&)> jacobian,
     std::function<void(const std::array<double, 6>&, Eigen::Matrix2d&)> hessian);
 
+Eigen::Vector2d newton_method_from_stack_2d_once(
+    std::vector<std::array<double, 6>>& stack,
+    std::function<double(const std::array<double, 6>&)> energy,
+    std::function<void(const std::array<double, 6>&, Eigen::Vector2d&)> jacobian,
+    std::function<void(const std::array<double, 6>&, Eigen::Matrix2d&)> hessian);
+std::array<double, 6> smooth_over_one_triangle(
+    std::array<double, 6>& triangle,
+    std::function<double(const std::array<double, 6>&)> energy,
+    std::function<void(const std::array<double, 6>&, Eigen::Vector2d&)> jacobian,
+    std::function<void(const std::array<double, 6>&, Eigen::Matrix2d&)> hessian);
+
 Eigen::Vector2d gradient_descent_from_stack_2d(
     std::vector<std::array<double, 6>>& stack,
     std::function<double(const std::array<double, 6>&)> energy,

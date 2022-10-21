@@ -94,6 +94,82 @@ auto linesearch_2d = [](auto&& energy_from_point,
     return pos;
 };
 
+Eigen::Vector2d wmtk::newton_method_from_stack_2d_once(
+    std::vector<std::array<double, 6>>& assembles,
+    std::function<double(const std::array<double, 6>&)> compute_energy,
+    std::function<void(const std::array<double, 6>&, Eigen::Vector2d&)> compute_jacobian,
+    std::function<void(const std::array<double, 6>&, Eigen::Matrix2d&)> compute_hessian)
+{
+    assert(!assembles.empty());
+    auto& T0 = assembles.front();
+    Eigen::Vector2d old_pos(T0[0], T0[1]);
+
+    auto energy_from_point = [&assembles, &compute_energy](const Eigen::Vector2d& pos) -> double {
+        auto total_energy = 0.;
+        for (auto& T : assembles) {
+            for (auto j = 0; j < 2; j++) {
+                T[j] = pos[j]; // only filling the front point x,y,z.
+            }
+            total_energy += compute_energy(T);
+        }
+        return total_energy;
+    };
+
+    auto compute_new_valid_pos =
+        [&energy_from_point, &assembles, &compute_energy, &compute_jacobian, &compute_hessian](
+            const Eigen::Vector2d& pos) {
+            auto current_pos = pos;
+            auto line_search_iters = 12;
+            // one newton's iteration over 3 points of the triangle
+
+            auto dir = newton_direction_2d(
+                compute_energy,
+                compute_jacobian,
+                compute_hessian,
+                assembles,
+                current_pos);
+            auto newpos = linesearch_2d(energy_from_point, current_pos, dir, line_search_iters);
+            current_pos = newpos;
+
+            return current_pos;
+        };
+    return compute_new_valid_pos(old_pos);
+}
+
+std::array<double, 6> wmtk::smooth_over_one_triangle(
+    std::array<double, 6>& triangle,
+    std::function<double(const std::array<double, 6>&)> compute_energy,
+    std::function<void(const std::array<double, 6>&, Eigen::Vector2d&)> compute_jacobian,
+    std::function<void(const std::array<double, 6>&, Eigen::Matrix2d&)> compute_hessian)
+{ // run until no changes in the triangle position
+    std::array<double, 6> old_triangle;
+    auto norm = [](const std::array<double, 6>& a, const std::array<double, 6>& b) {
+        double ret;
+        for (int i = 0; i < 6; i++) {
+            ret += std::pow(a[i] - b[i], 2);
+        }
+        return std::sqrt(ret);
+    };
+    do {
+        old_triangle = triangle;
+        // smooth 3 vertices in 1 iter
+        for (int i = 0; i < 3; i++) {
+            std::array<double, 6> triangle_tmp;
+            for (int j = 0; j < 6; j++) triangle_tmp[j] = triangle[(j + i * 2) % 6];
+            std::vector<std::array<double, 6>> assembles;
+            assembles.emplace_back(triangle_tmp);
+            auto new_pos = wmtk::newton_method_from_stack_2d_once(
+                assembles,
+                compute_energy,
+                compute_jacobian,
+                compute_hessian);
+            triangle[i * 2] = new_pos[0];
+            triangle[i * 2 + 1] = new_pos[1];
+        }
+    } while (norm(old_triangle, triangle) < 1e-5);
+    return triangle;
+}
+
 Eigen::Vector2d wmtk::newton_method_from_stack_2d(
     std::vector<std::array<double, 6>>& assembles,
     std::function<double(const std::array<double, 6>&)> compute_energy,
