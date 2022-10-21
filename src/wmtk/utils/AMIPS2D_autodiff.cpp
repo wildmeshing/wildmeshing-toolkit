@@ -18,7 +18,6 @@ DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d> wmtk::AMIPS_autodiff(
     // reference equilateral triangle: 0,0, 0,2, 1,sqr(3)
     Eigen::Matrix2d Ds;
     Ds << 2., 1., 0., sqrt(3);
-
     // define of transform matrix F = Ds@Dm.inv
     Eigen::Matrix<DScalar, 2, 2> F, Dminv;
     Dminv = Dm.inverse();
@@ -43,25 +42,33 @@ DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d> wmtk::SymDi_autodiff(
     Dm << T[2] - x0, T[4] - x0, T[3] - y0, T[5] - y0;
 
     // reference equilateral triangle scaling over reference: 0,0, 0,2, 1,sqr(3) -> S = sqr(3)
-    auto scale = [](const auto& T) {
-        Eigen::Vector3d ac;
-        ac << T[4] - T[0], T[5] - T[1], 0.0;
-        Eigen::Vector3d ab;
-        ab << T[2] - T[0], T[3] - T[1], 0.0;
-        double S = ((ac.cross(ab)).norm()) / 2.;
-        double r = sqrt(S);
-        assert(r > 0);
-        wmtk::logger().info("r {}", r);
-        Eigen::Matrix2d Ds;
-        Ds << 2 * r * sqrt(1 / sqrt(3)), r * sqrt(1 / sqrt(3)), 0, r * sqrt(sqrt(3));
-        return Ds;
-    };
+    // auto scale = [](const auto& T) {
+    //     Eigen::Vector3d ac;
+    //     ac << T[4] - T[0], T[5] - T[1], 0.0;
+    //     Eigen::Vector3d ab;
+    //     ab << T[2] - T[0], T[3] - T[1], 0.0;
+    //     double S = ((ac.cross(ab)).norm()) / 2.;
+    //     double r = sqrt(S);
+    //     assert(r > 0);
+    //     wmtk::logger().info("r {}", r);
+    //     Eigen::Matrix2d Ds;
+    //     Ds << 2 * r * sqrt(1 / sqrt(3)), r * sqrt(1 / sqrt(3)), 0, r * sqrt(sqrt(3));
+
+    //     Eigen::Vector3d edge1;
+    //     edge1 << Ds.col(0)(0), Ds.col(0)(1), 0.0;
+
+    //     Eigen::Vector3d edge2;
+    //     edge2 << Ds.col(1)(0), Ds.col(1)(1), 0.0;
+    //     wmtk::logger().info("new {} , S {}", (edge1.cross(edge2).norm()) / 2., S);
+
+    //     return Ds;
+    // };
 
     // define of transform matrix F = Ds@Dm.inv
     Eigen::Matrix<DScalar, 2, 2> F, Dminv;
     Dminv = Dm.inverse();
-    Eigen::Matrix2d Ds = scale(T);
-    wmtk::logger().info("Ds {}", Ds);
+    Eigen::Matrix2d Ds; // = scale(T);
+    Ds << 2., 1., 0., sqrt(3);
 
     F << (Ds(0, 0) * Dminv(0, 0) + Ds(0, 1) * Dminv(1, 0)),
         (Ds(0, 0) * Dminv(0, 1) + Ds(0, 1) * Dminv(1, 1)),
@@ -71,6 +78,6 @@ DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d> wmtk::SymDi_autodiff(
     // define of energy = F.frobeniusnormsquare + F.inverse().frobeniusnormsquare
     auto F_inv = F.inverse();
 
-    DScalar SymDi = (F * F.transpose()).trace() + (F_inv * F_inv.transpose()).trace();
+    DScalar SymDi = (F.transpose() * F).trace() + (F_inv.transpose() * F_inv).trace();
     return SymDi;
 }
