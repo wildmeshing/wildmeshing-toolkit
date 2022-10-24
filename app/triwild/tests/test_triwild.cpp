@@ -368,3 +368,18 @@ TEST_CASE("symdiff multiple newton")
     // wmtk::logger().info("small triangle: {} ", wmtk::SymDi_autodiff(rand_tri).getValue());
     wmtk::logger().info("output {} ", rand_tri1);
 }
+
+TEST_CASE("rotation energy")
+{
+    // given 2 triangles only differ by rotation
+    std::array<double, 6> rand_tri = {
+        6.4147474557698905,
+        2.455426225469569,
+        9.13725629201283,
+        2.350681400804883,
+        7.079105726296092,
+        3.993126227226271};
+    std::array<double, 6> rand_tri1 =
+        {-2.45542623, 6.41474746, -2.3506814, 9.13725629, -3.99312623, 7.07910573};
+    REQUIRE(SymDi_autodiff_customize_target(rand_tri, rand_tri1).getValue() == 4);
+}
