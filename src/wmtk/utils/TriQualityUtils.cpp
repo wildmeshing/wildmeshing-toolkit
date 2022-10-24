@@ -166,7 +166,7 @@ std::array<double, 6> wmtk::smooth_over_one_triangle(
             triangle[i * 2] = new_pos[0];
             triangle[i * 2 + 1] = new_pos[1];
         }
-    } while (norm(old_triangle, triangle) < 1e-5);
+    } while (norm(old_triangle, triangle) > 1e-5);
     return triangle;
 }
 

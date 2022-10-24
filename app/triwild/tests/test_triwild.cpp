@@ -263,7 +263,7 @@ TEST_CASE("improve with AABB")
     m.write_obj("triwild_improve_wo_project.obj");
 }
 
-TEST_CASE("symdiff energy")
+TEST_CASE("symdiff single newton")
 {
     std::function<double(const std::array<double, 6>&)> SymDi_auto_value = [](auto& T) {
         return wmtk::SymDi_autodiff(T).getValue();
@@ -302,7 +302,69 @@ TEST_CASE("symdiff energy")
         SymDi_auto_value,
         SymDi_auto_grad,
         SymDi_auto_hessian);
+    wmtk::logger().info("output energy {}", SymDi_auto_value(tri_output));
 
     // wmtk::logger().info("small triangle: {} ", wmtk::SymDi_autodiff(rand_tri).getValue());
     wmtk::logger().info("output {} ", tri_output);
+}
+
+
+TEST_CASE("symdiff multiple newton")
+{
+    std::function<double(const std::array<double, 6>&)> SymDi_auto_value = [](auto& T) {
+        return wmtk::SymDi_autodiff(T).getValue();
+    };
+    std::function<void(const std::array<double, 6>&, Eigen::Vector2d&)> SymDi_auto_grad =
+        [](auto& T, auto& G) { G = wmtk::SymDi_autodiff(T).getGradient(); };
+    std::function<void(const std::array<double, 6>&, Eigen::Matrix2d&)> SymDi_auto_hessian =
+        [](auto& T, auto& H) { H = wmtk::SymDi_autodiff(T).getHessian(); };
+    std::function<double(const std::array<double, 6>&)> AMIPS_auto_value = [](auto& T) {
+        return wmtk::AMIPS_autodiff(T).getValue();
+    };
+    std::function<void(const std::array<double, 6>&, Eigen::Vector2d&)> AMIPS_auto_grad =
+        [](auto& T, auto& G) { G = wmtk::AMIPS_autodiff(T).getGradient(); };
+    std::function<void(const std::array<double, 6>&, Eigen::Matrix2d&)> AMIPS_auto_hessian =
+        [](auto& T, auto& H) { H = wmtk::AMIPS_autodiff(T).getHessian(); };
+
+
+    std::array<double, 6> rand_tri;
+    rand_tri[0] = 0.;
+    rand_tri[1] = 0.;
+    rand_tri[2] = 1.;
+    rand_tri[3] = 0.;
+    rand_tri[4] = 0.;
+    rand_tri[5] = 1.;
+
+    // for (int j = 0; j < 6; j++) {
+    //     rand_tri[j] = rand() % 100 - 50;
+    // }
+    std::array<double, 6> rand_tri1;
+    for (int j = 0; j < 6; j++) {
+        rand_tri1[j] = 10 * rand_tri[j];
+    }
+    wmtk::logger().info("input {}", rand_tri1);
+    for (int itr = 0; itr < 10; itr++) {
+        std::vector<std::array<double, 6>> assembly;
+        assembly.emplace_back(rand_tri1);
+        int i = 0;
+        while (i < 6) {
+            std::array<double, 6> rand_tri_tmp;
+            for (int j = 0; j < 6; j++) rand_tri_tmp[j] = rand_tri1[(j + i) % 6];
+            wmtk::logger().info("rand_tri_tmp {}", rand_tri_tmp);
+            assembly[0] = rand_tri_tmp;
+
+            auto new_position = wmtk::newton_method_from_stack_2d(
+                assembly,
+                SymDi_auto_value,
+                SymDi_auto_grad,
+                SymDi_auto_hessian);
+            rand_tri1[i] = new_position[0];
+            rand_tri1[i + 1] = new_position[1];
+            wmtk::logger().info("rand_tri {}", rand_tri1);
+            i = i + 2;
+        }
+    }
+    wmtk::logger().info("output energy {}", SymDi_auto_value(rand_tri1));
+    // wmtk::logger().info("small triangle: {} ", wmtk::SymDi_autodiff(rand_tri).getValue());
+    wmtk::logger().info("output {} ", rand_tri1);
 }
