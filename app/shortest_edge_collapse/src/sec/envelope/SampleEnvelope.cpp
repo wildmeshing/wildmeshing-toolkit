@@ -153,7 +153,7 @@ void SampleEnvelope::init(
     const std::vector<Eigen::Vector3i>& F,
     const double _eps)
 {
-    if (use_exact) return exact_envelope.init(V, F, _eps);
+    // if (use_exact) return exact_envelope.init(V, F, _eps);
 
     eps2 = _eps * _eps;
     sampling_dist = std::sqrt(eps2);
@@ -173,14 +173,14 @@ void SampleEnvelope::init(
 
 bool SampleEnvelope::is_outside(const Eigen::Vector3d& pts)
 {
-    if (use_exact) return exact_envelope.is_outside(pts);
+    // if (use_exact) return exact_envelope.is_outside(pts);
     auto dist2 = geo_tree_ptr_->squared_distance(GEO::vec3(pts[0], pts[1], pts[2]));
     return (dist2 > eps2);
 }
 
 bool SampleEnvelope::is_outside(const std::array<Eigen::Vector3d, 3>& tri)
 {
-    if (use_exact) return exact_envelope.is_outside(tri);
+    // if (use_exact) return exact_envelope.is_outside(tri);
     std::array<GEO::vec3, 3> vs = {
         {GEO::vec3(tri[0][0], tri[0][1], tri[0][2]),
          GEO::vec3(tri[1][0], tri[1][1], tri[1][2]),

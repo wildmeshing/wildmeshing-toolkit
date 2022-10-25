@@ -1,4 +1,4 @@
-#include "TetWild.h"
+#include "IncrementalTetWild.h"
 
 #include <igl/Timer.h>
 #include <wmtk/TetMesh.h>

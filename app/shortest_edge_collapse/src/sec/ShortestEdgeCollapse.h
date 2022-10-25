@@ -10,7 +10,7 @@
 #include <tbb/concurrent_vector.h>
 #include <tbb/enumerable_thread_specific.h>
 #include <tbb/parallel_for.h>
-#include <fastenvelope/FastEnvelope.h>
+// #include <fastenvelope/FastEnvelope.h>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 

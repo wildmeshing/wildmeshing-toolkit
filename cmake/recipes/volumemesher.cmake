@@ -1,4 +1,4 @@
-if(TARGET VolumeMesher)
+if(TARGET mesh_generator_lib)
     return()
 endif()
 

@@ -1,4 +1,4 @@
-#include "TetWild.h"
+#include "IncrementalTetWild.h"
 #include "oneapi/tbb/concurrent_vector.h"
 #include "wmtk/TetMesh.h"
 

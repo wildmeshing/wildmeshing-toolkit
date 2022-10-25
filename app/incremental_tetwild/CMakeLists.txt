@@ -18,6 +18,7 @@ add_library(wmtk_incremental_tetwild
 	Smooth.cpp
 
 	TriangleInsertion.cpp
+	VolumemesherInsertion.cpp
 )
 add_library(wmtk::incremental_tetwild ALIAS wmtk_incremental_tetwild)
 
@@ -28,9 +29,10 @@ target_link_libraries(wmtk_incremental_tetwild PUBLIC
 	wmtk::toolkit
 	wmtk::data
 	wmtk::sec_lib
-	wmtk::remeshing_lib
+	# wmtk::remeshing_lib
 	igl::predicates
 	gmp::gmp
+	mesh_generator_lib
 )
 
 add_executable(incremental_tetwild main.cpp)

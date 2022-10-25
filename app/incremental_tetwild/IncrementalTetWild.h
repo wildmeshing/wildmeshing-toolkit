@@ -10,7 +10,7 @@
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
-#include <fastenvelope/FastEnvelope.h>
+// #include <fastenvelope/FastEnvelope.h>
 #include <tbb/concurrent_queue.h>
 #include <tbb/concurrent_priority_queue.h>
 #include <tbb/concurrent_vector.h>

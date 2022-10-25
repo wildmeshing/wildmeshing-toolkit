@@ -1,4 +1,4 @@
-#include "TetWild.h"
+#include "IncrementalTetWild.h"
 
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>

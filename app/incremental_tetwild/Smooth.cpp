@@ -1,5 +1,5 @@
 
-#include "TetWild.h"
+#include "IncrementalTetWild.h"
 #include "wmtk/ExecutionScheduler.hpp"
 
 #include <Eigen/src/Core/util/Constants.h>

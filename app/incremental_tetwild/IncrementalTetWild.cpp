@@ -1,5 +1,5 @@
 
-#include "TetWild.h"
+#include "IncrementalTetWild.h"
 
 #include "wmtk/utils/Rational.hpp"
 #include "common.h"

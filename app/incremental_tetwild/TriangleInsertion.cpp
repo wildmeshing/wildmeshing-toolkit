@@ -1,5 +1,5 @@
 #include <wmtk/utils/Rational.hpp>
-#include "TetWild.h"
+#include "IncrementalTetWild.h"
 
 #include <wmtk/utils/Delaunay.hpp>
 #include "common.h"

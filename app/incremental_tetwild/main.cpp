@@ -1,7 +1,7 @@
 #include <remeshing/UniformRemeshing.h>
 #include <sec/ShortestEdgeCollapse.h>
 #include "Parameters.h"
-#include "TetWild.h"
+#include "IncrementalTetWild.h"
 #include "common.h"
 #include "sec/envelope/SampleEnvelope.hpp"
 
