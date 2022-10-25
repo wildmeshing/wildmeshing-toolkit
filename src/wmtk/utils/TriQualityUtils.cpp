@@ -2,6 +2,7 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <array>
+#include "AMIPS2D_autodiff.h"
 #include "Logger.hpp"
 
 std::array<size_t, 3> wmtk::orient_preserve_tri_reorder(
@@ -150,10 +151,18 @@ std::array<double, 6> wmtk::smooth_over_one_triangle(
         }
         return std::sqrt(ret);
     };
+    int itr = 0;
+    std::vector<int> skip;
     do {
         old_triangle = triangle;
         // smooth 3 vertices in 1 iter
         for (int i = 0; i < 3; i++) {
+            if (skip.size() > 0) {
+                if (std::find(skip.begin(), skip.end(), i) != skip.end()) {
+                    wmtk::logger().info("skip {}", i);
+                    continue;
+                }
+            }
             std::array<double, 6> triangle_tmp;
             for (int j = 0; j < 6; j++) triangle_tmp[j] = triangle[(j + i * 2) % 6];
             std::vector<std::array<double, 6>> assembles;
@@ -166,7 +175,18 @@ std::array<double, 6> wmtk::smooth_over_one_triangle(
             triangle[i * 2] = new_pos[0];
             triangle[i * 2 + 1] = new_pos[1];
         }
+        itr++;
+        // wmtk::logger().info("itr {}", itr);
+        if (itr % 1000 == 0) {
+            wmtk::logger().info("current {}", triangle);
+            wmtk::logger().info("curent energy {}", wmtk::SymDi_autodiff(triangle).getValue());
+        }
+        if (std::pow((old_triangle[0] - triangle[0]), 2) < 1e-5) skip.emplace_back(0);
+        if (std::pow((old_triangle[1] - triangle[1]), 2) < 1e-5) skip.emplace_back(1);
+        if (std::pow((old_triangle[2] - triangle[2]), 2) < 1e-5) skip.emplace_back(2);
+
     } while (norm(old_triangle, triangle) > 1e-5);
+    wmtk::logger().info("total itr {}", itr);
     return triangle;
 }
 
