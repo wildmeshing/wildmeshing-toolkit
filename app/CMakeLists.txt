@@ -10,6 +10,7 @@ option(WMTK_APP_QSLIM "surface qslim simplification" ON)
 option(WMTK_APP_UNIT_TESTS "unit tests for applications" ON)
 
 add_subdirectory(interior_tet_opt)
+add_subdirectory(incremental_tetwild)
 
 if(WMTK_APP_TETWILD)
     add_subdirectory(tetwild)
