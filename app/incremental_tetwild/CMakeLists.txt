@@ -19,6 +19,7 @@ add_library(wmtk_incremental_tetwild
 
 	TriangleInsertion.cpp
 	VolumemesherInsertion.cpp
+	VolumemesherInsertion.hpp
 )
 add_library(wmtk::incremental_tetwild ALIAS wmtk_incremental_tetwild)
 
