@@ -9,6 +9,9 @@
 #include <igl/readMSH.h>
 #include <igl/read_triangle_mesh.h>
 
+#include <fstream>
+#include <nlohmann/json.hpp>
+using json = nlohmann::json;
 
 int main(int argc, char** argv)
 {
