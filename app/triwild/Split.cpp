@@ -74,6 +74,19 @@ bool TriWild::split_edge_before(const Tuple& t)
 }
 bool TriWild::split_edge_after(const Tuple& t)
 {
+    // adding heuristic decision. If length2 > 4. / 3. * 4. / 3. * m.m_target_l * m.m_target_l always collapse
+    double length2 =
+        (vertex_attrs[cache.local().v1].pos + vertex_attrs[cache.local().v2].pos).squaredNorm();
+    if (length2 > 4. / 3. * 4. / 3. * m_target_l * m_target_l) {
+        if (m_bnd_freeze) {
+            for (auto e : get_one_ring_edges_for_vertex(t)) {
+                vertex_attrs[e.switch_vertex(*this).vid(*this)].fixed =
+                    is_boundary_vertex(e.switch_vertex(*this));
+            }
+        }
+        return true;
+    }
+
     const Eigen::Vector2d p =
         (vertex_attrs[cache.local().v1].pos + vertex_attrs[cache.local().v2].pos) / 2.0;
     auto vid = t.vid(*this);
