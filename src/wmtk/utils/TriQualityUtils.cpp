@@ -59,6 +59,42 @@ auto newton_direction_2d = [](auto& compute_energy,
     }
 };
 
+auto newton_direction_2d_per_vert = [](auto& i,
+                                       auto& compute_energy,
+                                       auto& compute_jacobian,
+                                       auto& compute_hessian,
+                                       auto& assembles,
+                                       const Eigen::Vector2d& pos) -> Eigen::Vector2d {
+    auto total_energy = 0.;
+    Eigen::Vector2d total_jac = Eigen::Vector2d::Zero();
+    Eigen::Matrix2d total_hess = Eigen::Matrix2d::Zero();
+
+    // E = \sum_i E_i(x)
+    // J = \sum_i J_i(x)
+    // H = \sum_i H_i(x)
+    auto local_id = 0;
+    for (auto& T : assembles) {
+        T[i * 2] = pos[0];
+        T[i * 2 + 1] = pos[1];
+        auto jac = decltype(total_jac)();
+        auto hess = decltype(total_hess)();
+        total_energy += compute_energy(T);
+        compute_jacobian(T, jac);
+        compute_hessian(T, hess);
+        total_jac += jac;
+        total_hess += hess;
+        assert(!std::isnan(total_energy));
+    }
+    Eigen::Vector2d x = total_hess.ldlt().solve(total_jac);
+
+    if (total_jac.isApprox(total_hess * x, 1e-6)) // a hacky PSD trick. TODO: change this.
+        return -x;
+    else {
+        wmtk::logger().info("gradient descent instead.");
+        return -total_jac;
+    }
+};
+
 
 auto gradient_direction_2d = [](auto& compute_energy,
                                 auto& compute_jacobian,
@@ -82,48 +118,67 @@ auto linesearch_2d = [](auto&& energy_from_point,
                         const Eigen::Vector2d& dir,
                         const int& max_iter) {
     auto lr = 0.5;
+    // wmtk::logger().info("pos at linesearch {}", pos);
     auto old_energy = energy_from_point(pos);
     // wmtk::logger().info("old energy {} dir {}", old_energy, dir.transpose());
     for (auto iter = 1; iter <= max_iter; iter++) {
         Eigen::Vector2d newpos = pos + std::pow(lr, iter) * dir;
-        // // wmtk::logger()
-        // .info("pos {}, dir {}, [{}]", pos.transpose(), dir.transpose(), std::pow(lr, iter));
+        // wmtk::logger()
+        //     .info("pos {}, dir {}, [{}]", pos.transpose(), dir.transpose(), std::pow(lr, iter));
         auto new_energy = energy_from_point(newpos);
+        if (new_energy < 0) {
+            wmtk::logger().info("triangle is flipped try gradient");
+            return pos;
+        }
         // wmtk::logger().info("iter {}, E= {}, [{}]", iter, new_energy, newpos.transpose());
         if (new_energy < old_energy) return newpos; // TODO: armijo conditions.
     }
     return pos;
 };
 
-Eigen::Vector2d wmtk::newton_method_from_stack_2d_once(
+/**
+ * @brief this is method written for debugging energy computation purpose
+ *
+ * @param assembles
+ * @param i the vertex index in a triangle, corresponding positions V_i(x,y) in the stack is T[i*2],
+ * T[i*2 +1]
+ * @param compute_energy
+ * @param compute_jacobian
+ * @param compute_hessian
+ * @return Eigen::Vector2d
+ */
+Eigen::Vector2d wmtk::newton_method_from_stack_2d_per_vert(
     std::vector<std::array<double, 6>>& assembles,
+    int i,
     std::function<double(const std::array<double, 6>&)> compute_energy,
     std::function<void(const std::array<double, 6>&, Eigen::Vector2d&)> compute_jacobian,
     std::function<void(const std::array<double, 6>&, Eigen::Matrix2d&)> compute_hessian)
 {
     assert(!assembles.empty());
     auto& T0 = assembles.front();
-    Eigen::Vector2d old_pos(T0[0], T0[1]);
+    Eigen::Vector2d old_pos(T0[i * 2], T0[i * 2 + 1]);
 
-    auto energy_from_point = [&assembles, &compute_energy](const Eigen::Vector2d& pos) -> double {
+    auto energy_from_point =
+        [&assembles, &i, &compute_energy](const Eigen::Vector2d& pos) -> double {
         auto total_energy = 0.;
         for (auto& T : assembles) {
-            for (auto j = 0; j < 2; j++) {
-                T[j] = pos[j]; // only filling the front point x,y,z.
-            }
+            T[i * 2] = pos[0]; // only filling the current vert x,y.
+            T[i * 2 + 1] = pos[1];
+            // wmtk::logger().info("T in energy computation {} ", T);
+            // wmtk::logger().info("T energy {} ", compute_energy(T));
             total_energy += compute_energy(T);
         }
         return total_energy;
     };
 
     auto compute_new_valid_pos =
-        [&energy_from_point, &assembles, &compute_energy, &compute_jacobian, &compute_hessian](
+        [&i, &energy_from_point, &assembles, &compute_energy, &compute_jacobian, &compute_hessian](
             const Eigen::Vector2d& pos) {
             auto current_pos = pos;
             auto line_search_iters = 12;
             // one newton's iteration over 3 points of the triangle
-
-            auto dir = newton_direction_2d(
+            auto dir = newton_direction_2d_per_vert(
+                i,
                 compute_energy,
                 compute_jacobian,
                 compute_hessian,
@@ -152,23 +207,16 @@ std::array<double, 6> wmtk::smooth_over_one_triangle(
         return std::sqrt(ret);
     };
     int itr = 0;
-    std::vector<int> skip;
     do {
         old_triangle = triangle;
+        std::vector<std::array<double, 6>> assembles;
+        assembles.emplace_back(triangle);
         // smooth 3 vertices in 1 iter
         for (int i = 0; i < 3; i++) {
-            if (skip.size() > 0) {
-                if (std::find(skip.begin(), skip.end(), i) != skip.end()) {
-                    wmtk::logger().info("skip {}", i);
-                    continue;
-                }
-            }
-            std::array<double, 6> triangle_tmp;
-            for (int j = 0; j < 6; j++) triangle_tmp[j] = triangle[(j + i * 2) % 6];
-            std::vector<std::array<double, 6>> assembles;
-            assembles.emplace_back(triangle_tmp);
-            auto new_pos = wmtk::newton_method_from_stack_2d_once(
+            assembles[0] = triangle;
+            auto new_pos = wmtk::newton_method_from_stack_2d_per_vert(
                 assembles,
+                i,
                 compute_energy,
                 compute_jacobian,
                 compute_hessian);
@@ -176,17 +224,13 @@ std::array<double, 6> wmtk::smooth_over_one_triangle(
             triangle[i * 2 + 1] = new_pos[1];
         }
         itr++;
-        // wmtk::logger().info("itr {}", itr);
-        if (itr % 1000 == 0) {
-            wmtk::logger().info("current {}", triangle);
-            wmtk::logger().info("curent energy {}", wmtk::SymDi_autodiff(triangle).getValue());
-        }
-        if (std::pow((old_triangle[0] - triangle[0]), 2) < 1e-5) skip.emplace_back(0);
-        if (std::pow((old_triangle[1] - triangle[1]), 2) < 1e-5) skip.emplace_back(1);
-        if (std::pow((old_triangle[2] - triangle[2]), 2) < 1e-5) skip.emplace_back(2);
-
     } while (norm(old_triangle, triangle) > 1e-5);
     wmtk::logger().info("total itr {}", itr);
+    wmtk::logger().info("current {}", triangle);
+    wmtk::logger().info("curent energy {}", compute_energy(triangle));
+    Eigen::Vector2d grad;
+    compute_jacobian(triangle, grad);
+    wmtk::logger().info("curent energy gradient {}", grad);
     return triangle;
 }
 
