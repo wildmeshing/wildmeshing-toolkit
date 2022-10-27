@@ -357,7 +357,7 @@ TEST_CASE("amips 2 rand tris")
         for (int j = 0; j < 6; j++) {
             rand_tri[j] = rand() % 100 - 50;
         }
-        rand_tri = {0, 0, 2, 0, 1, 1.73};
+        // rand_tri = {0, 0, 2, 0, 1, 1.73};
 
         // rand_tri = {-36, 17, 32, -5, -16, 14};
         if (is_inverted(rand_tri)) {

@@ -1,4 +1,5 @@
 #include "TriQualityUtils.hpp"
+#include <igl/predicates/predicates.h>
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <array>
@@ -113,7 +114,8 @@ auto gradient_direction_2d = [](auto& compute_energy,
     return total_jac;
 };
 
-auto linesearch_2d = [](auto&& energy_from_point,
+auto linesearch_2d = [](auto& is_inverted,
+                        auto&& energy_from_point,
                         const Eigen::Vector2d& pos,
                         const Eigen::Vector2d& dir,
                         const int& max_iter) {
@@ -127,8 +129,15 @@ auto linesearch_2d = [](auto&& energy_from_point,
         //     .info("pos {}, dir {}, [{}]", pos.transpose(), dir.transpose(), std::pow(lr, iter));
         auto new_energy = energy_from_point(newpos);
         if (new_energy < 0) {
-            wmtk::logger().info("triangle is flipped try gradient");
-            return pos;
+            wmtk::logger().info("step too big. triangle is flipped try smaller step");
+            auto half_lr = lr;
+            do {
+                half_lr /= 2;
+                newpos = pos + std::pow(half_lr, iter) * dir;
+                new_energy = energy_from_point(newpos);
+                wmtk::logger().info("new energy after new step {}", new_energy);
+            } while (is_inverted(newpos));
+            return newpos;
         }
         // wmtk::logger().info("iter {}, E= {}, [{}]", iter, new_energy, newpos.transpose());
         if (new_energy < old_energy) return newpos; // TODO: armijo conditions.
@@ -171,24 +180,38 @@ Eigen::Vector2d wmtk::newton_method_from_stack_2d_per_vert(
         return total_energy;
     };
 
-    auto compute_new_valid_pos =
-        [&i, &energy_from_point, &assembles, &compute_energy, &compute_jacobian, &compute_hessian](
-            const Eigen::Vector2d& pos) {
-            auto current_pos = pos;
-            auto line_search_iters = 12;
-            // one newton's iteration over 3 points of the triangle
-            auto dir = newton_direction_2d_per_vert(
-                i,
-                compute_energy,
-                compute_jacobian,
-                compute_hessian,
-                assembles,
-                current_pos);
-            auto newpos = linesearch_2d(energy_from_point, current_pos, dir, line_search_iters);
-            current_pos = newpos;
+    auto is_inverted = [&T0, &i](const Eigen::Vector2d& newpos) {
+        Eigen::Vector2d a, b, c;
+        a << newpos(0), newpos(1);
+        b << T0[((i + 1) % 3) * 2], T0[((i + 1) % 3) * 2 + 1];
+        c << T0[((i + 2) % 3) * 2], T0[((i + 2) % 3) * 2 + 1];
+        auto res = igl::predicates::orient2d(a, b, c);
+        return (res != igl::predicates::Orientation::POSITIVE);
+    };
 
-            return current_pos;
-        };
+    auto compute_new_valid_pos = [&i,
+                                  &energy_from_point,
+                                  &is_inverted,
+                                  &assembles,
+                                  &compute_energy,
+                                  &compute_jacobian,
+                                  &compute_hessian](const Eigen::Vector2d& pos) {
+        auto current_pos = pos;
+        auto line_search_iters = 12;
+        // one newton's iteration over 3 points of the triangle
+        auto dir = newton_direction_2d_per_vert(
+            i,
+            compute_energy,
+            compute_jacobian,
+            compute_hessian,
+            assembles,
+            current_pos);
+        auto newpos =
+            linesearch_2d(is_inverted, energy_from_point, current_pos, dir, line_search_iters);
+        current_pos = newpos;
+
+        return current_pos;
+    };
     return compute_new_valid_pos(old_pos);
 }
 
@@ -254,29 +277,38 @@ Eigen::Vector2d wmtk::newton_method_from_stack_2d(
         }
         return total_energy;
     };
+    auto is_inverted = [&T0](const Eigen::Vector2d& newpos) {
+        Eigen::Vector2d a, b, c;
+        a << newpos(0), newpos(1);
+        b << T0[2], T0[3];
+        c << T0[4], T0[5];
+        auto res = igl::predicates::orient2d(a, b, c);
+        return (res != igl::predicates::Orientation::POSITIVE);
+    };
 
-    auto compute_new_valid_pos =
-        [&energy_from_point, &assembles, &compute_energy, &compute_jacobian, &compute_hessian](
-            const Eigen::Vector2d& pos) {
-            auto current_pos = pos;
-            auto line_search_iters = 12;
-            auto newton_iters = 10;
-            for (auto iter = 0; iter < newton_iters; iter++) {
-                auto dir = newton_direction_2d(
-                    compute_energy,
-                    compute_jacobian,
-                    compute_hessian,
-                    assembles,
-                    current_pos);
-                auto newpos = linesearch_2d(energy_from_point, current_pos, dir, line_search_iters);
-                if ((newpos - current_pos).norm() < 1e-9) // barely moves
-                {
-                    break;
-                }
-                current_pos = newpos;
-            }
-            return current_pos;
-        };
+    auto compute_new_valid_pos = [&is_inverted,
+                                  &energy_from_point,
+                                  &assembles,
+                                  &compute_energy,
+                                  &compute_jacobian,
+                                  &compute_hessian](const Eigen::Vector2d& pos) {
+        auto current_pos = pos;
+        auto line_search_iters = 12;
+        auto newton_iters = 10;
+
+        auto dir = newton_direction_2d(
+            compute_energy,
+            compute_jacobian,
+            compute_hessian,
+            assembles,
+            current_pos);
+        auto newpos =
+            linesearch_2d(is_inverted, energy_from_point, current_pos, dir, line_search_iters);
+
+        current_pos = newpos;
+
+        return current_pos;
+    };
     return compute_new_valid_pos(old_pos);
 }
 
@@ -289,6 +321,15 @@ Eigen::Vector2d wmtk::gradient_descent_from_stack_2d(
     auto& T0 = assembles.front();
     Eigen::Vector2d old_pos(T0[0], T0[1]);
 
+    auto is_inverted = [&T0](const Eigen::Vector2d& newpos) {
+        Eigen::Vector2d a, b, c;
+        a << newpos(0), newpos(1);
+        b << T0[2], T0[3];
+        c << T0[4], T0[5];
+        auto res = igl::predicates::orient2d(a, b, c);
+        return (res != igl::predicates::Orientation::POSITIVE);
+    };
+
     auto energy_from_point = [&assembles, &compute_energy](const Eigen::Vector2d& pos) -> double {
         auto total_energy = 0.;
         for (auto& T : assembles) {
@@ -300,7 +341,8 @@ Eigen::Vector2d wmtk::gradient_descent_from_stack_2d(
         return total_energy;
     };
 
-    auto compute_new_valid_pos = [&energy_from_point,
+    auto compute_new_valid_pos = [&is_inverted,
+                                  &energy_from_point,
                                   &assembles,
                                   &compute_energy,
                                   &compute_jacobian](const Eigen::Vector2d& pos) {
@@ -311,7 +353,8 @@ Eigen::Vector2d wmtk::gradient_descent_from_stack_2d(
             Eigen::Vector2d dir =
                 -gradient_direction_2d(compute_energy, compute_jacobian, assembles, current_pos);
             dir.normalize(); // HACK: TODO: should use flip_avoid_line_search.
-            auto newpos = linesearch_2d(energy_from_point, current_pos, dir, line_search_iters);
+            auto newpos =
+                linesearch_2d(is_inverted, energy_from_point, current_pos, dir, line_search_iters);
             if ((newpos - current_pos).norm() < 1e-9) // barely moves
             {
                 break;
