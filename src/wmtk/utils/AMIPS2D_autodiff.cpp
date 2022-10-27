@@ -30,6 +30,38 @@ DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d> wmtk::AMIPS_autodiff(
     return AMIPS;
 }
 
+DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d> wmtk::AMIPS_autodiff_customize_target(
+    const std::array<double, 6>& T1,
+    const std::array<double, 6>& T2)
+{
+    typedef DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d> DScalar;
+    DiffScalarBase::setVariableCount(2);
+    DScalar x0(0, T2[0]), y0(1, T2[1]);
+
+    // (x0 - x1, y0 - y1, x0 - x2, y0 - y2).transpose
+    Eigen::Matrix<DScalar, 2, 2> Dm;
+    Dm << T2[2] - x0, T2[4] - x0, T2[3] - y0, T2[5] - y0;
+
+    // define of transform matrix F = Ds@Dm.inv
+    Eigen::Matrix<DScalar, 2, 2> F, Dminv;
+    Dminv = Dm.inverse();
+    Eigen::Matrix2d Ds; // = scale(T);
+    // Ds << 2., 1., 0., sqrt(3);
+    //  (-1,0), (2,0.5), (0,8)
+    Ds << T1[2] - T1[0], T1[4] - T1[0], T1[3] - T1[1], T1[5] - T1[1];
+
+    F << (Ds(0, 0) * Dminv(0, 0) + Ds(0, 1) * Dminv(1, 0)),
+        (Ds(0, 0) * Dminv(0, 1) + Ds(0, 1) * Dminv(1, 1)),
+        (Ds(1, 0) * Dminv(0, 0) + Ds(1, 1) * Dminv(1, 0)),
+        (Ds(1, 0) * Dminv(0, 1) + Ds(1, 1) * Dminv(1, 1));
+
+    // define of energy = F.frobeniusnormsquare + F.inverse().frobeniusnormsquare
+    auto F_inv = F.inverse();
+
+    DScalar AMIPS = (F.transpose() * F).trace() / F.determinant();
+    return AMIPS;
+}
+
 DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d> wmtk::SymDi_autodiff(
     const std::array<double, 6>& T)
 {
@@ -68,9 +100,7 @@ DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d> wmtk::SymDi_autodiff(
     Eigen::Matrix<DScalar, 2, 2> F, Dminv;
     Dminv = Dm.inverse();
     Eigen::Matrix2d Ds; // = scale(T);
-    // Ds << 2., 1., 0., sqrt(3);
-    //  (-1,0), (2,0.5), (0,8)
-    Ds << 3., 1., 0.5, 8;
+    Ds << 2., 1., 0., sqrt(3);
 
     F << (Ds(0, 0) * Dminv(0, 0) + Ds(0, 1) * Dminv(1, 0)),
         (Ds(0, 0) * Dminv(0, 1) + Ds(0, 1) * Dminv(1, 1)),
