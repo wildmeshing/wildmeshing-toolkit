@@ -7,6 +7,10 @@
 #include <wmtk/TriMesh.h>
 #include <sec/envelope/SampleEnvelope.hpp>
 #include "Parameters.h"
+
+#include <nlohmann/json.hpp>
+using json = nlohmann::json;
+
 namespace triwild {
 class VertexAttributes
 {
@@ -28,6 +32,7 @@ public:
 class TriWild : public wmtk::TriMesh
 {
 public:
+    json js_log;
     // default envelop use_exact = true
     sample_envelope::SampleEnvelope m_envelope;
 

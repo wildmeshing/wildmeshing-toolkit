@@ -17,9 +17,6 @@ int main(int argc, char** argv)
 {
     ZoneScopedN("triwildmain");
 
-    // Parsing of parameters
-    triwild::Parameters params;
-
     CLI::App app{argv[0]};
     std::string input_file = "./";
     std::string output_file = "./";
@@ -29,11 +26,15 @@ int main(int argc, char** argv)
 
     double epsr = -1.;
     bool bnd_freeze = false;
+    int max_itr = 2;
+    double target_e = 4.;
     app.add_option("-i,--input", input_file, "Input mesh.");
     app.add_option("-o,--output", output_file, "Output mesh.");
     app.add_option("--target_l", target_l, "target edge length");
-    // app.add_option("--target_lr", target_lr, "target edge length");
+    app.add_option("--target_lr", target_lr, "target edge length");
+    app.add_option("--target_e", target_e, "target avg energy");
     app.add_option("--epsr", epsr, "relative envelop size wrt bbox diag");
+    app.add_option("--max_itr", max_itr, "number of iterations for improvement");
     app.add_option("--bnd_freeze", bnd_freeze, "freeze boundary");
     // app.add_option("-j,--jobs", NUM_THREADS, "thread."
 
@@ -51,18 +52,36 @@ int main(int argc, char** argv)
         std::regex_replace(input_file, std::regex("[^0-9]*([0-9]+).*"), std::string("$1"));
     std::string output_file1 = output_file + output + ".obj";
 
+    // create the json file to record logs
+    std::ofstream js_o(output + ".json");
+
     std::pair<Eigen::VectorXd, Eigen::VectorXd> box_minmax;
     box_minmax = std::pair(V.colwise().minCoeff(), V.colwise().maxCoeff());
     double diag = (box_minmax.first - box_minmax.second).norm();
+
     // if (target_l < 0) target_l = target_lr * diag;
     igl::Timer timer;
-    auto time = 0.;
+    double time = 0.;
     triwild::TriWild triwild;
+
+    triwild.js_log["input"] = input_file;
+    triwild.js_log["output"] = output_file1;
+
     triwild.m_target_l = target_lr * diag;
     triwild.m_bnd_freeze = bnd_freeze;
     triwild.m_eps = epsr * diag;
+    triwild.m_stop_energy = target_e;
     triwild.create_mesh(V, F, epsr * diag, bnd_freeze);
     assert(triwild.check_mesh_connectivity_validity());
+    triwild.js_log["#V"] = V.rows();
+    triwild.js_log["#F"] = F.rows();
+
+    triwild.js_log["bbox_diag"] = diag;
+    triwild.js_log["target_length"] = triwild.m_target_l;
+    triwild.js_log["stop_energy"] = triwild.m_stop_energy;
+    triwild.js_log["bnd_freeze"] = triwild.m_bnd_freeze;
+    triwild.js_log["envelop_size"] = triwild.m_eps;
+    triwild.js_log["improvement_itrs"] = max_itr;
 
     // get the aabb tree for closest point detect in smooth projection
     // !!!! notice!!!!!
@@ -82,18 +101,30 @@ int main(int argc, char** argv)
         aabb.get_closest_point(p, ind, p_ret, distance);
         return p_ret;
     };
-
-    double start_energy = triwild.get_quality_all_triangles().mean();
+    auto energies = triwild.get_quality_all_triangles();
+    double start_energy = energies.mean();
+    triwild.js_log["start_energy"] = start_energy;
     assert(start_energy > 0);
+    int max_idx = energies.maxCoeff();
+    triwild.m_max_energy = energies(max_idx);
+
     wmtk::logger().info("/////starting avg enegry: {}", start_energy);
     // Do the mesh optimization
 
-    triwild.mesh_improvement(2);
+    triwild.mesh_improvement(max_itr);
     triwild.consolidate_mesh();
-    wmtk::logger().info("!!!!finished {}!!!!", timer.getElapsedTimeInMilliSec());
+
+    time = timer.getElapsedTime();
+    wmtk::logger().info("!!!!finished {}!!!!", time);
+    triwild.js_log["total_time"] = time;
+    triwild.js_log["final_max_energy"] = triwild.m_max_energy;
+    energies = triwild.get_quality_all_triangles();
+    triwild.js_log["final_avg_energy"] = energies.mean();
+
     // Save the optimized mesh
     wmtk::logger().info("/////output : {}", output_file1);
     triwild.write_obj(output_file1);
-
+    js_o << std::setw(4) << triwild.js_log << std::endl;
+    js_o.close();
     return 0;
 }

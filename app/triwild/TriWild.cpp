@@ -1,5 +1,6 @@
 #include "TriWild.h"
 #include <fastenvelope/FastEnvelope.h>
+#include <igl/Timer.h>
 #include <igl/predicates/predicates.h>
 #include <igl/write_triangle_mesh.h>
 #include <tbb/concurrent_vector.h>
@@ -219,11 +220,13 @@ bool TriWild::is_inverted(const Tuple& loc) const
 
 void TriWild::mesh_improvement(int max_its)
 {
+    igl::Timer timer;
     double avg_len = 0.0;
     double pre_avg_len = 0.0;
     double pre_max_energy = -1.0;
     wmtk::logger().info("target len {}", m_target_l);
     wmtk::logger().info("current length {}", avg_edge_len(*this));
+    js_log["start_length"] = avg_edge_len(*this);
     for (int it = 0; it < max_its; it++) {
         ///ops
         wmtk::logger().info("\n========it {}========", it);
@@ -231,6 +234,12 @@ void TriWild::mesh_improvement(int max_its)
         ///energy check
         wmtk::logger().info("current max energy {} stop energy {}", m_max_energy, m_stop_energy);
         wmtk::logger().info("current length {}", avg_edge_len(*this));
+
+        js_log["iteration_" + std::to_string(it)]["#v"] = vert_capacity();
+        js_log["iteration_" + std::to_string(it)]["#f"] = tri_capacity();
+        js_log["iteration_" + std::to_string(it)]["max_energy"] = m_max_energy;
+        js_log["iteration_" + std::to_string(it)]["avg_length"] = avg_edge_len(*this);
+
         collapse_all_edges();
         // write_obj("after_collapse_" + std::to_string(it) + ".obj");
 
