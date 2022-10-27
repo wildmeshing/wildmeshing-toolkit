@@ -263,123 +263,290 @@ TEST_CASE("improve with AABB")
     m.write_obj("triwild_improve_wo_project.obj");
 }
 
-TEST_CASE("symdiff single newton")
+TEST_CASE("symdi 2 rand tris")
 {
-    std::function<double(const std::array<double, 6>&)> SymDi_auto_value = [](auto& T) {
-        return wmtk::SymDi_autodiff(T).getValue();
+    std::function<bool(std::array<double, 6>&)> is_inverted = [](auto& tri) {
+        Eigen::Vector2d a, b, c;
+        a << tri[0], tri[1];
+        b << tri[2], tri[3];
+        c << tri[4], tri[5];
+        auto res = igl::predicates::orient2d(a, b, c);
+        return (res != igl::predicates::Orientation::POSITIVE);
     };
-    std::function<void(const std::array<double, 6>&, Eigen::Vector2d&)> SymDi_auto_grad =
-        [](auto& T, auto& G) { G = wmtk::SymDi_autodiff(T).getGradient(); };
-    std::function<void(const std::array<double, 6>&, Eigen::Matrix2d&)> SymDi_auto_hessian =
-        [](auto& T, auto& H) { H = wmtk::SymDi_autodiff(T).getHessian(); };
-    std::function<double(const std::array<double, 6>&)> AMIPS_auto_value = [](auto& T) {
-        return wmtk::AMIPS_autodiff(T).getValue();
-    };
-    std::function<void(const std::array<double, 6>&, Eigen::Vector2d&)> AMIPS_auto_grad =
-        [](auto& T, auto& G) { G = wmtk::AMIPS_autodiff(T).getGradient(); };
-    std::function<void(const std::array<double, 6>&, Eigen::Matrix2d&)> AMIPS_auto_hessian =
-        [](auto& T, auto& H) { H = wmtk::AMIPS_autodiff(T).getHessian(); };
+    int pass = 0;
+    for (int i = 0; i < 50; i++) {
+        std::array<double, 6> rand_tri;
+        for (int j = 0; j < 6; j++) {
+            rand_tri[j] = rand() % 100 - 50;
+        }
 
+        // rand_tri = {0, 0, 2, 0, 1, 1.73};
+        //  rand_tri = {-36, 17, 32, -5, -16, 14};
+        if (is_inverted(rand_tri)) {
+            wmtk::logger().info("is_inverted");
 
-    std::array<double, 6> rand_tri;
-    rand_tri[0] = 0.;
-    rand_tri[1] = 0.;
-    rand_tri[2] = 1.;
-    rand_tri[3] = 0.;
-    rand_tri[4] = 0.;
-    rand_tri[5] = 1.;
+            Eigen::Vector2d tmp;
+            tmp << rand_tri[0], rand_tri[1];
+            rand_tri[0] = rand_tri[2];
+            rand_tri[1] = rand_tri[3];
+            rand_tri[2] = tmp(0);
+            rand_tri[3] = tmp(1);
+        }
+        wmtk::logger().info("target {}", rand_tri);
+        std::function<double(const std::array<double, 6>&)> SymDi_auto_value =
+            [&rand_tri](auto& T) {
+                return wmtk::SymDi_autodiff_customize_target(rand_tri, T).getValue();
+            };
+        std::function<void(const std::array<double, 6>&, Eigen::Vector2d&)> SymDi_auto_grad =
+            [&rand_tri](auto& T, auto& G) {
+                G = wmtk::SymDi_autodiff_customize_target(rand_tri, T).getGradient();
+            };
+        std::function<void(const std::array<double, 6>&, Eigen::Matrix2d&)> SymDi_auto_hessian =
+            [&rand_tri](auto& T, auto& H) {
+                H = wmtk::SymDi_autodiff_customize_target(rand_tri, T).getHessian();
+            };
 
-    // for (int j = 0; j < 6; j++) {
-    //     rand_tri[j] = rand() % 100 - 50;
-    // }
-    std::array<double, 6> rand_tri1;
-    for (int j = 0; j < 6; j++) {
-        rand_tri1[j] = 10 * rand_tri[j];
-    }
-    wmtk::logger().info("input {}", rand_tri1);
-    auto tri_output = wmtk::smooth_over_one_triangle(
-        rand_tri1,
-        SymDi_auto_value,
-        SymDi_auto_grad,
-        SymDi_auto_hessian);
-    wmtk::logger().info("output energy {}", SymDi_auto_value(tri_output));
-
-    // wmtk::logger().info("small triangle: {} ", wmtk::SymDi_autodiff(rand_tri).getValue());
-    wmtk::logger().info("output {} ", tri_output);
-}
-
-
-TEST_CASE("symdiff multiple newton")
-{
-    std::function<double(const std::array<double, 6>&)> SymDi_auto_value = [](auto& T) {
-        return wmtk::SymDi_autodiff(T).getValue();
-    };
-    std::function<void(const std::array<double, 6>&, Eigen::Vector2d&)> SymDi_auto_grad =
-        [](auto& T, auto& G) { G = wmtk::SymDi_autodiff(T).getGradient(); };
-    std::function<void(const std::array<double, 6>&, Eigen::Matrix2d&)> SymDi_auto_hessian =
-        [](auto& T, auto& H) { H = wmtk::SymDi_autodiff(T).getHessian(); };
-    std::function<double(const std::array<double, 6>&)> AMIPS_auto_value = [](auto& T) {
-        return wmtk::AMIPS_autodiff(T).getValue();
-    };
-    std::function<void(const std::array<double, 6>&, Eigen::Vector2d&)> AMIPS_auto_grad =
-        [](auto& T, auto& G) { G = wmtk::AMIPS_autodiff(T).getGradient(); };
-    std::function<void(const std::array<double, 6>&, Eigen::Matrix2d&)> AMIPS_auto_hessian =
-        [](auto& T, auto& H) { H = wmtk::AMIPS_autodiff(T).getHessian(); };
-
-
-    std::array<double, 6> rand_tri;
-    rand_tri[0] = 0.;
-    rand_tri[1] = 0.;
-    rand_tri[2] = 1.;
-    rand_tri[3] = 0.;
-    rand_tri[4] = 0.;
-    rand_tri[5] = 1.;
-
-    // for (int j = 0; j < 6; j++) {
-    //     rand_tri[j] = rand() % 100 - 50;
-    // }
-    std::array<double, 6> rand_tri1;
-    for (int j = 0; j < 6; j++) {
-        rand_tri1[j] = 10 * rand_tri[j];
-    }
-    wmtk::logger().info("input {}", rand_tri1);
-    for (int itr = 0; itr < 10; itr++) {
-        std::vector<std::array<double, 6>> assembly;
-        assembly.emplace_back(rand_tri1);
-        int i = 0;
-        while (i < 6) {
-            std::array<double, 6> rand_tri_tmp;
-            for (int j = 0; j < 6; j++) rand_tri_tmp[j] = rand_tri1[(j + i) % 6];
-            wmtk::logger().info("rand_tri_tmp {}", rand_tri_tmp);
-            assembly[0] = rand_tri_tmp;
-
-            auto new_position = wmtk::newton_method_from_stack_2d(
-                assembly,
-                SymDi_auto_value,
-                SymDi_auto_grad,
-                SymDi_auto_hessian);
-            rand_tri1[i] = new_position[0];
-            rand_tri1[i + 1] = new_position[1];
-            wmtk::logger().info("rand_tri {}", rand_tri1);
-            i = i + 2;
+        std::array<double, 6> rand_tri1 = rand_tri;
+        for (int j = 0; j < 6; j++) {
+            rand_tri1[j] = rand() % 100 - 50;
+        }
+        if (is_inverted(rand_tri1)) {
+            wmtk::logger().info("is_inverted");
+            Eigen::Vector2d tmp;
+            tmp << rand_tri1[0], rand_tri1[1];
+            rand_tri1[0] = rand_tri1[2];
+            rand_tri1[1] = rand_tri1[3];
+            rand_tri1[2] = tmp(0);
+            rand_tri1[3] = tmp(1);
+        }
+        wmtk::logger().info("input {}", rand_tri1);
+        auto tri_output = wmtk::smooth_over_one_triangle(
+            rand_tri1,
+            SymDi_auto_value,
+            SymDi_auto_grad,
+            SymDi_auto_hessian);
+        wmtk::logger().info("output {}", tri_output);
+        if (std::pow(SymDi_auto_value(tri_output) - 4, 2) < 1e-3)
+            pass += 1;
+        else {
+            auto grad_norm =
+                (wmtk::SymDi_autodiff_customize_target(rand_tri, tri_output).getGradient()).norm();
+            wmtk::logger().info("====fail with energy {}", SymDi_auto_value(tri_output));
+            if (grad_norm < 1e-5)
+                pass += 1;
+            else
+                wmtk::logger().info("+++++ grad norm{}", grad_norm);
         }
     }
-    wmtk::logger().info("output energy {}", SymDi_auto_value(rand_tri1));
-    // wmtk::logger().info("small triangle: {} ", wmtk::SymDi_autodiff(rand_tri).getValue());
-    wmtk::logger().info("output {} ", rand_tri1);
+    wmtk::logger().info("number of successs {}", pass);
 }
 
-TEST_CASE("rotation energy")
+TEST_CASE("amips 2 rand tris")
+{
+    std::function<bool(std::array<double, 6>&)> is_inverted = [](auto& tri) {
+        Eigen::Vector2d a, b, c;
+        a << tri[0], tri[1];
+        b << tri[2], tri[3];
+        c << tri[4], tri[5];
+        auto res = igl::predicates::orient2d(a, b, c);
+        return (res != igl::predicates::Orientation::POSITIVE);
+    };
+    int pass = 0;
+    for (int i = 0; i < 50; i++) {
+        std::array<double, 6> rand_tri;
+        for (int j = 0; j < 6; j++) {
+            rand_tri[j] = rand() % 100 - 50;
+        }
+        rand_tri = {0, 0, 2, 0, 1, 1.73};
+
+        // rand_tri = {-36, 17, 32, -5, -16, 14};
+        if (is_inverted(rand_tri)) {
+            wmtk::logger().info("is_inverted");
+
+            Eigen::Vector2d tmp;
+            tmp << rand_tri[0], rand_tri[1];
+            rand_tri[0] = rand_tri[2];
+            rand_tri[1] = rand_tri[3];
+            rand_tri[2] = tmp(0);
+            rand_tri[3] = tmp(1);
+        }
+
+        wmtk::logger().info("target {}", rand_tri);
+        std::function<double(const std::array<double, 6>&)> AMIPS_auto_value =
+            [&rand_tri](auto& T) {
+                return wmtk::AMIPS_autodiff_customize_target(rand_tri, T).getValue();
+            };
+        std::function<void(const std::array<double, 6>&, Eigen::Vector2d&)> AMIPS_auto_grad =
+            [&rand_tri](auto& T, auto& G) {
+                G = wmtk::AMIPS_autodiff_customize_target(rand_tri, T).getGradient();
+            };
+        std::function<void(const std::array<double, 6>&, Eigen::Matrix2d&)> AMIPS_auto_hessian =
+            [&rand_tri](auto& T, auto& H) {
+                H = wmtk::AMIPS_autodiff_customize_target(rand_tri, T).getHessian();
+            };
+
+        std::array<double, 6> rand_tri1 = rand_tri;
+        for (int j = 0; j < 6; j++) {
+            rand_tri1[j] = rand() % 100 - 50;
+        }
+        // rand_tri1 = {37, -42, -7, 0, 26, 28};
+        if (is_inverted(rand_tri1)) {
+            wmtk::logger().info("is_inverted");
+            Eigen::Vector2d tmp;
+            tmp << rand_tri1[0], rand_tri1[1];
+            rand_tri1[0] = rand_tri1[2];
+            rand_tri1[1] = rand_tri1[3];
+            rand_tri1[2] = tmp(0);
+            rand_tri1[3] = tmp(1);
+        }
+
+        wmtk::logger().info("input {}", rand_tri1);
+        auto tri_output = wmtk::smooth_over_one_triangle(
+            rand_tri1,
+            AMIPS_auto_value,
+            AMIPS_auto_grad,
+            AMIPS_auto_hessian);
+        wmtk::logger().info("output {}", tri_output);
+        if (std::pow(AMIPS_auto_value(tri_output) - 2, 2) < 1e-3)
+            pass += 1;
+        else {
+            auto grad_norm =
+                (wmtk::AMIPS_autodiff_customize_target(rand_tri, tri_output).getGradient()).norm();
+            wmtk::logger().info("====fail with energy {}", AMIPS_auto_value(tri_output));
+            if (grad_norm < 1e-5)
+                pass += 1;
+            else
+                wmtk::logger().info("+++++ grad norm{}", grad_norm);
+        }
+    }
+    wmtk::logger().info("number of successs {}", pass);
+}
+
+TEST_CASE("symdi perturb one vert")
+{
+    for (int i = 0; i < 50; i++) {
+        std::array<double, 6> rand_tri;
+        for (int j = 0; j < 6; j++) {
+            rand_tri[j] = rand() % 100 - 50;
+        }
+        wmtk::logger().info("target {}", rand_tri);
+
+        std::function<double(const std::array<double, 6>&)> SymDi_auto_value =
+            [&rand_tri](auto& T) {
+                return wmtk::SymDi_autodiff_customize_target(rand_tri, T).getValue();
+            };
+        std::function<void(const std::array<double, 6>&, Eigen::Vector2d&)> SymDi_auto_grad =
+            [&rand_tri](auto& T, auto& G) {
+                G = wmtk::SymDi_autodiff_customize_target(rand_tri, T).getGradient();
+            };
+        std::function<void(const std::array<double, 6>&, Eigen::Matrix2d&)> SymDi_auto_hessian =
+            [&rand_tri](auto& T, auto& H) {
+                H = wmtk::SymDi_autodiff_customize_target(rand_tri, T).getHessian();
+            };
+
+        std::array<double, 6> rand_tri1 = rand_tri;
+        rand_tri1[0] += rand() % 20;
+        rand_tri1[1] += rand() % 20;
+        wmtk::logger().info("input {}", rand_tri1);
+
+        auto tri_output = wmtk::smooth_over_one_triangle(
+            rand_tri1,
+            SymDi_auto_value,
+            SymDi_auto_grad,
+            SymDi_auto_hessian);
+        wmtk::logger().info("output {}", tri_output);
+    }
+}
+
+
+TEST_CASE("symdi same tri")
+{
+    for (int i = 0; i < 100; i++) {
+        std::array<double, 6> rand_tri;
+        for (int j = 0; j < 6; j++) {
+            rand_tri[j] = rand() % 100 - 50;
+        }
+        std::function<double(const std::array<double, 6>&)> SymDi_auto_value =
+            [&rand_tri](auto& T) {
+                return wmtk::SymDi_autodiff_customize_target(rand_tri, T).getValue();
+            };
+        std::function<void(const std::array<double, 6>&, Eigen::Vector2d&)> SymDi_auto_grad =
+            [&rand_tri](auto& T, auto& G) {
+                G = wmtk::SymDi_autodiff_customize_target(rand_tri, T).getGradient();
+            };
+        std::function<void(const std::array<double, 6>&, Eigen::Matrix2d&)> SymDi_auto_hessian =
+            [&rand_tri](auto& T, auto& H) {
+                H = wmtk::SymDi_autodiff_customize_target(rand_tri, T).getHessian();
+            };
+
+        std::array<double, 6> rand_tri1 = rand_tri;
+        auto tri_output = wmtk::smooth_over_one_triangle(
+            rand_tri1,
+            SymDi_auto_value,
+            SymDi_auto_grad,
+            SymDi_auto_hessian);
+
+        Eigen::VectorXd in(6), out(6);
+        for (int t = 0; t < 6; t++) {
+            in(t) = rand_tri[t];
+            out(t) = tri_output[t];
+        }
+        REQUIRE((in - out).norm() < 1e-5);
+    }
+}
+
+TEST_CASE("amips same tri")
+{
+    for (int i = 0; i < 100; i++) {
+        std::array<double, 6> rand_tri;
+        for (int j = 0; j < 6; j++) {
+            rand_tri[j] = rand() % 100 - 50;
+        }
+        std::function<double(const std::array<double, 6>&)> AMIPS_auto_value =
+            [&rand_tri](auto& T) {
+                return wmtk::AMIPS_autodiff_customize_target(rand_tri, T).getValue();
+            };
+        std::function<void(const std::array<double, 6>&, Eigen::Vector2d&)> AMIPS_auto_grad =
+            [&rand_tri](auto& T, auto& G) {
+                G = wmtk::AMIPS_autodiff_customize_target(rand_tri, T).getGradient();
+            };
+        std::function<void(const std::array<double, 6>&, Eigen::Matrix2d&)> AMIPS_auto_hessian =
+            [&rand_tri](auto& T, auto& H) {
+                H = wmtk::AMIPS_autodiff_customize_target(rand_tri, T).getHessian();
+            };
+
+        std::array<double, 6> rand_tri1 = rand_tri;
+        auto tri_output = wmtk::smooth_over_one_triangle(
+            rand_tri1,
+            AMIPS_auto_value,
+            AMIPS_auto_grad,
+            AMIPS_auto_hessian);
+
+        Eigen::VectorXd in(6), out(6);
+        for (int t = 0; t < 6; t++) {
+            in(t) = rand_tri[t];
+            out(t) = tri_output[t];
+        }
+        REQUIRE((in - out).norm() < 1e-5);
+    }
+}
+
+TEST_CASE("symdi rototranslation energy")
 {
     // given 2 triangles only differ by rotation
-    std::array<double, 6> rand_tri = {
-        6.4147474557698905,
-        2.455426225469569,
-        9.13725629201283,
-        2.350681400804883,
-        7.079105726296092,
-        3.993126227226271};
-    std::array<double, 6> rand_tri1 =
-        {-2.45542623, 6.41474746, -2.3506814, 9.13725629, -3.99312623, 7.07910573};
-    REQUIRE(SymDi_autodiff_customize_target(rand_tri, rand_tri1).getValue() == 4);
+    std::array<double, 6> rand_tri = {-1, 0, 2, 0.5, 0, 8};
+    std::array<double, 6> rand_tri1 = {4., 4., 3.5, 7., -4., 5.};
+    REQUIRE(
+        std::pow((SymDi_autodiff_customize_target(rand_tri, rand_tri1).getValue() - 4.0), 2) <
+        1e-5);
+}
+
+TEST_CASE("amips rototranslation energy")
+{
+    // given 2 triangles only differ by rotation
+    std::array<double, 6> rand_tri = {-1, 0, 2, 0.5, 0, 8};
+    std::array<double, 6> rand_tri1 = {4., 4., 3.5, 7., -4., 5.};
+    REQUIRE(
+        std::pow((AMIPS_autodiff_customize_target(rand_tri, rand_tri1).getValue() - 2.0), 2) <
+        1e-5);
 }
