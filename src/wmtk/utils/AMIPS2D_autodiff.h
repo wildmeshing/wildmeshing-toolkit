@@ -36,9 +36,11 @@ energy is wrt triangle, G and H wrt first vert of the triagle
 DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d> AMIPS_autodiff(const std::array<double, 6>& T);
 DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d> AMIPS_autodiff_customize_target(
     const std::array<double, 6>& T1,
-    const std::array<double, 6>& T2);
+    const std::array<double, 6>& T2,
+    int i = 0);
 DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d> SymDi_autodiff(const std::array<double, 6>& T);
 DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d> SymDi_autodiff_customize_target(
     const std::array<double, 6>& T1,
-    const std::array<double, 6>& T2);
+    const std::array<double, 6>& T2,
+    int i = 0);
 } // namespace wmtk
