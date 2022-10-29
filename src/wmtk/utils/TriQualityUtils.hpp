@@ -23,19 +23,25 @@ Eigen::Vector2d newton_method_from_stack_2d(
 Eigen::Vector2d newton_method_from_stack_2d_per_vert(
     std::vector<std::array<double, 6>>& stack,
     int i,
-    std::function<double(const std::array<double, 6>&)> energy,
-    std::function<void(const std::array<double, 6>&, Eigen::Vector2d&)> jacobian,
-    std::function<void(const std::array<double, 6>&, Eigen::Matrix2d&)> hessian);
+    std::function<double(const std::array<double, 6>&, int&)> energy,
+    std::function<void(const std::array<double, 6>&, Eigen::Vector2d&, int&)> jacobian,
+    std::function<void(const std::array<double, 6>&, Eigen::Matrix2d&, int&)> hessian);
 std::array<double, 6> smooth_over_one_triangle(
     std::array<double, 6>& triangle,
-    std::function<double(const std::array<double, 6>&)> energy,
-    std::function<void(const std::array<double, 6>&, Eigen::Vector2d&)> jacobian,
-    std::function<void(const std::array<double, 6>&, Eigen::Matrix2d&)> hessian);
+    std::function<double(const std::array<double, 6>&, int&)> energy,
+    std::function<void(const std::array<double, 6>&, Eigen::Vector2d&, int&)> jacobian,
+    std::function<void(const std::array<double, 6>&, Eigen::Matrix2d&, int&)> hessian);
 
 Eigen::Vector2d gradient_descent_from_stack_2d(
     std::vector<std::array<double, 6>>& stack,
     std::function<double(const std::array<double, 6>&)> energy,
     std::function<void(const std::array<double, 6>&, Eigen::Vector2d&)> jacobian);
+
+Eigen::Vector2d gradient_descent_from_stack_2d_per_vert(
+    std::vector<std::array<double, 6>>& assembles,
+    int i,
+    std::function<double(const std::array<double, 6>&, int&)> compute_energy,
+    std::function<void(const std::array<double, 6>&, Eigen::Vector2d&, int&)> compute_jacobian);
 /**
  * Reorders indices in a triangle such that v0 is on the front. Using the triangle symmetry to
  * preserve orientation. Assumes v0 is in the triangle.
