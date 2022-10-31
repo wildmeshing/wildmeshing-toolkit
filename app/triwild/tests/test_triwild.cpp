@@ -636,3 +636,54 @@ TEST_CASE("amips rototranslation energy")
         std::pow((AMIPS_autodiff_customize_target(rand_tri, rand_tri1).getValue() - 2.0), 2) <
         1e-5);
 }
+
+TEST_CASE("symdi with energy scaling")
+{
+    // input
+    std::array<double, 6> rand_tri = {0., 0., 10, 0., 0., 10.};
+    std::array<double, 6> rand_tri1 = rand_tri;
+    // using input to masage a target
+    Eigen::Vector3d ac;
+    ac << rand_tri[4] - rand_tri[0], rand_tri[5] - rand_tri[1], 0.0;
+    Eigen::Vector3d ab;
+    ab << rand_tri[2] - rand_tri[0], rand_tri[3] - rand_tri[1], 0.0;
+    double S = ((ac.cross(ab)).norm()) / 2.;
+    double r = sqrt(S);
+    assert(r > 0);
+    // 0, 0, 2* 1/sqrt(sqrt(3)),0, 1/sqrt(sqrt(3)), sqrt(sqrt(3))
+    rand_tri = {0, 0, r * 2 * 1 / sqrt(sqrt(3)), 0, r * 1 / sqrt(sqrt(3)), r * sqrt(sqrt(3))};
+    std::function<double(const std::array<double, 6>&, int&)> SymDi_auto_value =
+        [&rand_tri](auto& T, auto& i) {
+            return wmtk::SymDi_autodiff_customize_target(rand_tri, T, i).getValue();
+        };
+    std::function<void(const std::array<double, 6>&, Eigen::Vector2d&, int&)> SymDi_auto_grad =
+        [&rand_tri](auto& T, auto& G, auto& i) {
+            G = wmtk::SymDi_autodiff_customize_target(rand_tri, T, i).getGradient();
+        };
+    std::function<void(const std::array<double, 6>&, Eigen::Matrix2d&, int&)> SymDi_auto_hessian =
+        [&rand_tri](auto& T, auto& H, auto& i) {
+            H = wmtk::SymDi_autodiff_customize_target(rand_tri, T, i).getHessian();
+        };
+
+    auto tri_output = wmtk::smooth_over_one_triangle(
+        rand_tri1,
+        SymDi_auto_value,
+        SymDi_auto_grad,
+        SymDi_auto_hessian);
+    wmtk::logger().info("output is {}", tri_output);
+
+    Eigen::Vector2d a, b, c;
+    a << tri_output[0], tri_output[1];
+    b << tri_output[2], tri_output[3];
+    c << tri_output[4], tri_output[5];
+    // check it is equilateral
+    REQUIRE(std::pow((b - a).norm() - (c - a).norm(), 2) < 1e-5);
+    REQUIRE(std::pow((b - c).norm() - (a - c).norm(), 2) < 1e-5);
+    // check the area is same
+    ac << tri_output[4] - tri_output[0], tri_output[5] - tri_output[1], 0.0;
+
+    ab << tri_output[2] - tri_output[0], tri_output[3] - tri_output[1], 0.0;
+    auto area = ((ac.cross(ab)).norm()) / 2.;
+
+    REQUIRE(std::pow(area - 50, 2) < 1e-5);
+}
