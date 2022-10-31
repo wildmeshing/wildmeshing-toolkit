@@ -80,7 +80,7 @@ int main(int argc, char** argv)
     triwild.js_log["target_length"] = triwild.m_target_l;
     triwild.js_log["stop_energy"] = triwild.m_stop_energy;
     triwild.js_log["bnd_freeze"] = triwild.m_bnd_freeze;
-    triwild.js_log["envelop_size"] = triwild.m_eps;
+    triwild.js_log["envelop_on"] = triwild.m_has_envelope;
     triwild.js_log["improvement_itrs"] = max_itr;
 
     // get the aabb tree for closest point detect in smooth projection

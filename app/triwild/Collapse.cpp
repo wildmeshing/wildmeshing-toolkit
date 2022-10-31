@@ -14,6 +14,8 @@
 using namespace triwild;
 using namespace wmtk;
 
+// every edge is collapsed, if it is shorter than 3/4 L
+
 auto renew = [](auto& m, auto op, auto& tris) {
     auto edges = m.new_edges_after(tris);
     auto optup = std::vector<std::pair<std::string, wmtk::TriMesh::Tuple>>();
@@ -41,7 +43,7 @@ void TriWild::collapse_all_edges()
             auto length = m.get_length2(tup);
             if (length != -weight) return false;
 
-            if (length > 4. / 5. * 4. / 5. * m.m_target_l * m.m_target_l) return false;
+            if (length > 4. / 3. * 4. / 3. * m.m_target_l * m.m_target_l) return false;
 
             return true;
         };
@@ -67,7 +69,6 @@ bool TriWild::collapse_edge_before(const Tuple& t)
     cache.local().v1 = t.vid(*this);
     cache.local().v2 = t.switch_vertex(*this).vid(*this);
     cache.local().partition_id = vertex_attrs[t.vid(*this)].partition_id;
-
     // get max_energy
     cache.local().max_energy = get_quality(t);
     auto tris = get_one_ring_tris_for_vertex(t);
@@ -81,9 +82,10 @@ bool TriWild::collapse_edge_after(const Tuple& t)
 {
     // adding heuristic decision. If length2 < 4. / 5. * 4. / 5. * m.m_target_l * m.m_target_l always collapse
     double length2 =
-        (vertex_attrs[cache.local().v1].pos + vertex_attrs[cache.local().v2].pos).squaredNorm();
-    if (length2 < 4. / 5. * 4. / 5. * m_target_l * m_target_l) return true;
-
+        (vertex_attrs[cache.local().v1].pos - vertex_attrs[cache.local().v2].pos).squaredNorm();
+    if (length2 < 4. / 3. * 4. / 3. * m_target_l * m_target_l) {
+        return true;
+    }
     const Eigen::Vector2d p =
         (vertex_attrs[cache.local().v1].pos + vertex_attrs[cache.local().v2].pos) / 2.0;
     auto vid = t.vid(*this);

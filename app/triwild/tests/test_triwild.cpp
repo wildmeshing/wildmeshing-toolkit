@@ -637,7 +637,7 @@ TEST_CASE("amips rototranslation energy")
 TEST_CASE("symdi with energy scaling")
 {
     // input
-    std::array<double, 6> rand_tri = {0., 0., 10, 0., 0., 10.};
+    std::array<double, 6> rand_tri = {0., 0., 5, -1., -3., 10.};
     std::array<double, 6> rand_tri1 = rand_tri;
     // using input to masage a target
     Eigen::Vector3d ac;
@@ -682,5 +682,40 @@ TEST_CASE("symdi with energy scaling")
     ab << tri_output[2] - tri_output[0], tri_output[3] - tri_output[1], 0.0;
     auto area = ((ac.cross(ab)).norm()) / 2.;
 
-    REQUIRE(std::pow(area - 50, 2) < 1e-5);
+    REQUIRE(std::pow(area - S, 2) < 1e-5);
+}
+
+TEST_CASE("heuristic amips")
+{
+    const std::string root(WMT_DATA_DIR);
+    const std::string path = root + "/test_triwild.obj";
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+
+    bool ok = igl::read_triangle_mesh(path, V, F);
+
+    REQUIRE(ok);
+
+    // without envelop. boundary is locked, nothing changes
+    // center vertex have 7 tris
+    TriWild m;
+    m.m_target_l = 5e-1;
+    m.create_mesh(V, F, -1, false);
+    for (auto& t : m.get_faces()) {
+        REQUIRE(m.get_quality(t) > 0);
+    }
+    // get the aabb tree for closest point detect in smooth projection
+    RowMatrix2<Index> E = m.get_bnd_edge_matrix();
+
+    RowMatrix2<Scalar> V_aabb = V.block(0, 0, V.rows(), 2);
+    lagrange::bvh::EdgeAABBTree<RowMatrix2<Scalar>, RowMatrix2<Index>, 2> aabb(V_aabb, E);
+    m.m_get_closest_point = [&aabb](const Eigen::RowVector2d& p) -> Eigen::RowVector2d {
+        uint64_t ind = 0;
+        double distance = 0.0;
+        static Eigen::RowVector2d p_ret;
+        aabb.get_closest_point(p, ind, p_ret, distance);
+        return p_ret;
+    };
+    m.mesh_improvement(10);
+    m.write_obj("triwild_improve_project.obj");
 }

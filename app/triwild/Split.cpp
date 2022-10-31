@@ -14,6 +14,8 @@
 using namespace triwild;
 using namespace wmtk;
 
+// every edge is split if it is longer than 4/5 L
+
 auto split_renew = [](auto& m, auto op, auto& tris) {
     auto edges = m.new_edges_after(tris);
     auto optup = std::vector<std::pair<std::string, wmtk::TriMesh::Tuple>>();
@@ -40,7 +42,7 @@ void TriWild::split_all_edges()
             auto& [weight, op, tup] = ele;
             auto length = m.get_length2(tup);
             if (length != weight) return false;
-            if (length < 4. / 3. * m.m_target_l * 4. / 3. * m.m_target_l) return false;
+            if (length < 4. / 5. * m.m_target_l * 4. / 5. * m.m_target_l) return false;
             return true;
         };
         executor(*this, collect_all_ops);
@@ -74,10 +76,10 @@ bool TriWild::split_edge_before(const Tuple& t)
 }
 bool TriWild::split_edge_after(const Tuple& t)
 {
-    // adding heuristic decision. If length2 > 4. / 3. * 4. / 3. * m.m_target_l * m.m_target_l always collapse
+    // adding heuristic decision. If length2 > 4. / 5. * 4. / 5. * m.m_target_l * m.m_target_l always collapse
     double length2 =
-        (vertex_attrs[cache.local().v1].pos + vertex_attrs[cache.local().v2].pos).squaredNorm();
-    if (length2 > 4. / 3. * 4. / 3. * m_target_l * m_target_l) {
+        (vertex_attrs[cache.local().v1].pos - vertex_attrs[cache.local().v2].pos).squaredNorm();
+    if (length2 > 4. / 5. * 4. / 5. * m_target_l * m_target_l) {
         if (m_bnd_freeze) {
             for (auto e : get_one_ring_edges_for_vertex(t)) {
                 vertex_attrs[e.switch_vertex(*this).vid(*this)].fixed =
