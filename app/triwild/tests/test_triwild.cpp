@@ -15,6 +15,11 @@
 using namespace wmtk;
 using namespace triwild;
 
+template <class T>
+using RowMatrix2 = Eigen::Matrix<T, Eigen::Dynamic, 2, Eigen::RowMajor>;
+using Index = uint64_t;
+using Scalar = double;
+
 std::function<bool(std::array<double, 6>&)> is_inverted = [](auto& tri) {
     Eigen::Vector2d a, b, c;
     a << tri[0], tri[1];
@@ -211,14 +216,10 @@ TEST_CASE("AABB")
     REQUIRE(ok);
     TriWild m;
     m.create_mesh(V, F, 0.2, false);
-    Eigen::Matrix<uint64_t, Eigen::Dynamic, 2, Eigen::RowMajor> E = m.get_bnd_edge_matrix();
+    RowMatrix2<Index> E = m.get_bnd_edge_matrix();
     REQUIRE(E.rows() == 6);
-    Eigen::Matrix<double, Eigen::Dynamic, 2, Eigen::RowMajor> V_aabb = V.block(0, 0, V.rows(), 2);
-    lagrange::bvh::EdgeAABBTree<
-        Eigen::Matrix<double, Eigen::Dynamic, 2, Eigen::RowMajor>,
-        Eigen::Matrix<unsigned long, Eigen::Dynamic, 2, Eigen::RowMajor>,
-        2>
-        aabb(V_aabb, E);
+    RowMatrix2<Scalar> V_aabb = V.block(0, 0, V.rows(), 2);
+    lagrange::bvh::EdgeAABBTree<RowMatrix2<Scalar>, RowMatrix2<Index>, 2> aabb(V_aabb, E);
     REQUIRE(!aabb.empty());
     m.m_get_closest_point = [&aabb](const Eigen::RowVector2d& p) -> Eigen::RowVector2d {
         unsigned long ind = 0;
@@ -251,14 +252,10 @@ TEST_CASE("improve with AABB")
         REQUIRE(m.get_quality(t) > 0);
     }
     // get the aabb tree for closest point detect in smooth projection
-    Eigen::Matrix<uint64_t, Eigen::Dynamic, 2, Eigen::RowMajor> E = m.get_bnd_edge_matrix();
+    RowMatrix2<Index> E = m.get_bnd_edge_matrix();
 
-    Eigen::Matrix<double, Eigen::Dynamic, 2, Eigen::RowMajor> V_aabb = V.block(0, 0, V.rows(), 2);
-    lagrange::bvh::EdgeAABBTree<
-        Eigen::Matrix<double, Eigen::Dynamic, 2, Eigen::RowMajor>,
-        Eigen::Matrix<unsigned long, Eigen::Dynamic, 2, Eigen::RowMajor>,
-        2>
-        aabb(V_aabb, E);
+    RowMatrix2<Scalar> V_aabb = V.block(0, 0, V.rows(), 2);
+    lagrange::bvh::EdgeAABBTree<RowMatrix2<Scalar>, RowMatrix2<Index>, 2> aabb(V_aabb, E);
     m.m_get_closest_point = [&aabb](const Eigen::RowVector2d& p) -> Eigen::RowVector2d {
         unsigned long ind = 0;
         double distance = 0.0;
