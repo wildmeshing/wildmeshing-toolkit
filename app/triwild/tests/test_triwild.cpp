@@ -222,7 +222,7 @@ TEST_CASE("AABB")
     lagrange::bvh::EdgeAABBTree<RowMatrix2<Scalar>, RowMatrix2<Index>, 2> aabb(V_aabb, E);
     REQUIRE(!aabb.empty());
     m.m_get_closest_point = [&aabb](const Eigen::RowVector2d& p) -> Eigen::RowVector2d {
-        unsigned long ind = 0;
+        uint64_t ind = 0;
         double distance = 0.0;
         static Eigen::RowVector2d p_ret;
         aabb.get_closest_point(p, ind, p_ret, distance);
@@ -257,7 +257,7 @@ TEST_CASE("improve with AABB")
     RowMatrix2<Scalar> V_aabb = V.block(0, 0, V.rows(), 2);
     lagrange::bvh::EdgeAABBTree<RowMatrix2<Scalar>, RowMatrix2<Index>, 2> aabb(V_aabb, E);
     m.m_get_closest_point = [&aabb](const Eigen::RowVector2d& p) -> Eigen::RowVector2d {
-        unsigned long ind = 0;
+        uint64_t ind = 0;
         double distance = 0.0;
         static Eigen::RowVector2d p_ret;
         aabb.get_closest_point(p, ind, p_ret, distance);
@@ -267,7 +267,7 @@ TEST_CASE("improve with AABB")
     m.write_obj("triwild_improve_project.obj");
 
     m.m_get_closest_point = [&aabb](const Eigen::RowVector2d& p) -> Eigen::RowVector2d {
-        unsigned long ind = 0;
+        uint64_t ind = 0;
         double distance = 0.0;
         static Eigen::RowVector2d p_ret;
         aabb.get_closest_point(p, ind, p_ret, distance);

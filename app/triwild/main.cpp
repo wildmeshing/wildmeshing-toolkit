@@ -95,7 +95,7 @@ int main(int argc, char** argv)
         2>
         aabb(V_aabb, E);
     triwild.m_get_closest_point = [&aabb](const Eigen::RowVector2d& p) -> Eigen::RowVector2d {
-        unsigned long ind = 0;
+        uint64_t ind = 0;
         double distance = 0.0;
         static Eigen::RowVector2d p_ret;
         aabb.get_closest_point(p, ind, p_ret, distance);
