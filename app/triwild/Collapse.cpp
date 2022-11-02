@@ -43,7 +43,7 @@ void TriWild::collapse_all_edges()
             auto length = m.get_length2(tup);
             if (length != -weight) return false;
 
-            if (length > 4. / 3. * 4. / 3. * m.m_target_l * m.m_target_l) return false;
+            if (length > 4. / 5. * 4. / 5. * m.m_target_l * m.m_target_l) return false;
 
             return true;
         };
@@ -83,14 +83,16 @@ bool TriWild::collapse_edge_after(const Tuple& t)
     // adding heuristic decision. If length2 < 4. / 5. * 4. / 5. * m.m_target_l * m.m_target_l always collapse
     double length2 =
         (vertex_attrs[cache.local().v1].pos - vertex_attrs[cache.local().v2].pos).squaredNorm();
-    if (length2 < 4. / 3. * 4. / 3. * m_target_l * m_target_l) {
-        return true;
-    }
     const Eigen::Vector2d p =
         (vertex_attrs[cache.local().v1].pos + vertex_attrs[cache.local().v2].pos) / 2.0;
     auto vid = t.vid(*this);
     vertex_attrs[vid].pos = p;
     vertex_attrs[vid].partition_id = cache.local().partition_id;
+
+    // enforce heuristic
+    if (length2 < 4. / 5. * 4. / 5. * m_target_l * m_target_l) {
+        return true;
+    }
     // check quality
     auto tris = get_one_ring_tris_for_vertex(t);
     for (auto tri : tris) {

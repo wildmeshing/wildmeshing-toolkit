@@ -131,6 +131,9 @@ TEST_CASE("triwild_split", "[triwild_split][.]")
     m.create_mesh(V, F);
     m.split_all_edges();
     REQUIRE(m.vert_capacity() == 12);
+    for (auto f : m.get_faces()) {
+        REQUIRE(!m.is_inverted(f));
+    }
     m.write_obj("triwild_split.obj");
 }
 
@@ -280,7 +283,7 @@ TEST_CASE("improve with AABB")
 TEST_CASE("test_degenrate")
 {
     std::array<double, 6> rand_tri = {27, 35, -14, -46, 26, 33};
-    wmtk::logger().info(is_dgenerate(rand_tri));
+    REQUIRE(is_dgenerate(rand_tri));
 }
 TEST_CASE("symdi 2 rand tris")
 {
