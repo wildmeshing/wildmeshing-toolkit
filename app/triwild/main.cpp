@@ -73,14 +73,14 @@ int main(int argc, char** argv)
     triwild.m_stop_energy = target_e;
     triwild.create_mesh(V, F, epsr * diag, bnd_freeze);
     assert(triwild.check_mesh_connectivity_validity());
-    triwild.js_log["#V"] = V.rows();
-    triwild.js_log["#F"] = F.rows();
+    triwild.js_log["num_vert"] = V.rows();
+    triwild.js_log["num_faces"] = F.rows();
 
     triwild.js_log["bbox_diag"] = diag;
-    triwild.js_log["target_length"] = triwild.m_target_l;
-    triwild.js_log["stop_energy"] = triwild.m_stop_energy;
-    triwild.js_log["bnd_freeze"] = triwild.m_bnd_freeze;
-    triwild.js_log["envelop_on"] = triwild.m_has_envelope;
+    triwild.js_log["edge_length_target"] = triwild.m_target_l;
+    triwild.js_log["energy_stop_criteria"] = triwild.m_stop_energy;
+    triwild.js_log["freeze_boundary"] = triwild.m_bnd_freeze;
+    triwild.js_log["envelop_enabled"] = triwild.m_has_envelope;
     triwild.js_log["improvement_itrs"] = max_itr;
 
     // get the aabb tree for closest point detect in smooth projection
@@ -103,7 +103,7 @@ int main(int argc, char** argv)
     };
     auto energies = triwild.get_quality_all_triangles();
     double start_energy = energies.mean();
-    triwild.js_log["start_energy"] = start_energy;
+    triwild.js_log["energy_start_avg"] = start_energy;
     assert(start_energy > 0);
     int max_idx = energies.maxCoeff();
     triwild.m_max_energy = energies(max_idx);
@@ -117,9 +117,9 @@ int main(int argc, char** argv)
     time = timer.getElapsedTime();
     wmtk::logger().info("!!!!finished {}!!!!", time);
     triwild.js_log["total_time"] = time;
-    triwild.js_log["final_max_energy"] = triwild.m_max_energy;
+    triwild.js_log["energy_final_max"] = triwild.m_max_energy;
     energies = triwild.get_quality_all_triangles();
-    triwild.js_log["final_avg_energy"] = energies.mean();
+    triwild.js_log["energy_final_avg"] = energies.mean();
 
     // Save the optimized mesh
     wmtk::logger().info("/////output : {}", output_file1);

@@ -226,7 +226,7 @@ void TriWild::mesh_improvement(int max_its)
     double pre_max_energy = -1.0;
     wmtk::logger().info("target len {}", m_target_l);
     wmtk::logger().info("current length {}", avg_edge_len(*this));
-    js_log["start_length"] = avg_edge_len(*this);
+    js_log["edge_length_avg_start"] = avg_edge_len(*this);
     for (int it = 0; it < max_its; it++) {
         ///ops
         wmtk::logger().info("\n========it {}========", it);
@@ -235,19 +235,19 @@ void TriWild::mesh_improvement(int max_its)
         wmtk::logger().info("current max energy {} stop energy {}", m_max_energy, m_stop_energy);
         wmtk::logger().info("current length {}", avg_edge_len(*this));
 
-        js_log["iteration_" + std::to_string(it)]["#v"] = vert_capacity();
-        js_log["iteration_" + std::to_string(it)]["#f"] = tri_capacity();
-        js_log["iteration_" + std::to_string(it)]["max_energy"] = m_max_energy;
-        js_log["iteration_" + std::to_string(it)]["avg_length"] = avg_edge_len(*this);
+        js_log["iteration_" + std::to_string(it)]["num_v"] = vert_capacity();
+        js_log["iteration_" + std::to_string(it)]["num_f"] = tri_capacity();
+        js_log["iteration_" + std::to_string(it)]["energy_max"] = m_max_energy;
+        js_log["iteration_" + std::to_string(it)]["edge_len_avg"] = avg_edge_len(*this);
 
         collapse_all_edges();
-        // write_obj("after_collapse_" + std::to_string(it) + ".obj");
+        write_obj("after_collapse_" + std::to_string(it) + ".obj");
 
         split_all_edges();
-        // write_obj("after_split_" + std::to_string(it) + ".obj");
+        write_obj("after_split_" + std::to_string(it) + ".obj");
 
         swap_all_edges();
-        // write_obj("after_swap_" + std::to_string(it) + ".obj");
+        write_obj("after_swap_" + std::to_string(it) + ".obj");
 
 
         smooth_all_vertices();
@@ -260,6 +260,7 @@ void TriWild::mesh_improvement(int max_its)
             m_max_energy);
 
         avg_len = avg_edge_len(*this);
+        js_log["edge_len_avg_final"] = avg_len;
         if (m_target_l <= 0 && m_max_energy < m_stop_energy) {
             break;
         }
