@@ -192,6 +192,14 @@ std::function<bool(std::array<double, 6>&)> is_inverted = [](auto& tri) {
     auto res = igl::predicates::orient2d(a, b, c);
     return (res != igl::predicates::Orientation::POSITIVE);
 };
+std::function<bool(std::array<double, 6>&)> is_dgenerate = [](auto& tri) {
+    Eigen::Vector3d a, b;
+    a << tri[2] - tri[0], tri[3] - tri[1], 0.;
+    b << tri[4] - tri[0], tri[5] - tri[1], 0.;
+    auto area = (a.cross(b)).norm();
+    auto long_e = std::max(a.norm(), b.norm());
+    return (std::pow(area, 2) < 1e-5 || std::pow((area / long_e - 0.01), 2) < 1e-5);
+};
 
 TEST_CASE("operation orient", "[test_remeshing]")
 {
@@ -225,15 +233,8 @@ TEST_CASE("operation orient", "[test_remeshing]")
             m.vertex_attrs[(f.switch_edge(m)).switch_vertex(m).vid(m)].pos(1)};
         REQUIRE(!is_inverted(tri));
     }
-    auto es = m.get_edges();
-    for (auto e : es) {
-        if (m.is_boundary_edge(e)) continue;
-        std::vector<TriMesh::Tuple> dummy;
-        m.swap_edge(e, dummy);
-        break;
-    }
 
-    REQUIRE(m.check_mesh_connectivity_validity());
+    m.split_remeshing(0.8);
     fs = m.get_faces();
     for (auto f : fs) {
         std::array<double, 6> tri = {
@@ -245,5 +246,4 @@ TEST_CASE("operation orient", "[test_remeshing]")
             m.vertex_attrs[(f.switch_edge(m)).switch_vertex(m).vid(m)].pos(1)};
         REQUIRE(!is_inverted(tri));
     }
-    m.write_triangle_mesh("test_swap.obj");
 }
