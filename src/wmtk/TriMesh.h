@@ -89,6 +89,14 @@ public:
         size_t eid(const TriMesh& m) const;
 
         /**
+         * returns the local eid of the tuple
+         *
+         * @param m TriMesh where the tuple belongs.
+         * @return size_t
+         * @note use mostly for constructing consistent tuples in operations
+         */
+        size_t local_eid(const TriMesh& m) const { return m_eid; };
+        /**
          * Switch operation.
          *
          * @param m Mesh

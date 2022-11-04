@@ -295,7 +295,7 @@ bool UniformRemeshing::split_edge_before(const Tuple& t)
 bool UniformRemeshing::split_edge_after(const TriMesh::Tuple& t)
 {
     const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
-    auto vid = t.vid(*this);
+    auto vid = t.switch_vertex(*this).vid(*this);
     vertex_attrs[vid].pos = p;
     vertex_attrs[vid].partition_id = position_cache.local().partition_id;
     return true;

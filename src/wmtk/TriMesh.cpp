@@ -235,16 +235,18 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
 {
     if (!split_edge_before(t)) return false;
     if (!t.is_valid(*this)) return false;
-
+    // get local eid for return tuple construction
+    auto eid = t.local_eid(*this);
     // get the vids
     size_t vid1 = t.vid(*this);
     size_t vid2 = switch_vertex(t).vid(*this);
     size_t fid1 = t.fid(*this);
-    size_t fid1_vid3;
+    size_t fid1_vid3 =
+        ((t.switch_vertex(*this)).switch_edge(*this)).switch_vertex(*this).vid(*this);
 
     for (auto vid : m_tri_connectivity[fid1].m_indices) {
         if ((vid != vid1) && (vid != vid2)) {
-            fid1_vid3 = vid;
+            assert(fid1_vid3 == vid);
             break;
         }
     }
@@ -343,14 +345,16 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
     size_t new_fid = std::min(fid1, new_fid1);
     if (new_fid2.has_value()) new_fid = std::min(new_fid, new_fid2.value());
     int l = m_tri_connectivity[new_fid].find(new_vid);
-    auto new_t = Tuple(new_vid, (l + 2) % 3, new_fid, *this);
-    assert(new_t.is_valid(*this));
+    auto new_vertex = Tuple(new_vid, (l + 2) % 3, new_fid, *this);
+    auto return_tuple = Tuple(vid1, eid, fid1, *this);
+    assert(new_vertex.is_valid(*this));
+    assert(return_tuple.is_valid(*this));
 
-    new_tris = get_one_ring_tris_for_vertex(new_t);
+    new_tris = get_one_ring_tris_for_vertex(new_vertex);
     start_protect_attributes();
 
     // roll back if not successful
-    if (!split_edge_after(new_t) || !invariants(new_tris)) {
+    if (!split_edge_after(return_tuple) || !invariants(new_tris)) {
         // rollback topo
         // restore old v, t
         for (auto old_v : old_vertices) m_vertex_connectivity[old_v.first] = old_v.second;
