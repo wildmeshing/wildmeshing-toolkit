@@ -260,5 +260,60 @@ TEST_CASE("operation orient", "[test_remeshing]")
         REQUIRE(!is_inverted(tri));
     }
 
+    m.write_triangle_mesh("orient.obj");
+}
+
+TEST_CASE("swap orient", "[test_remeshing]")
+{
+    const std::string root(WMT_DATA_DIR);
+    const std::string path = root + "/fan.obj";
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    bool ok = igl::read_triangle_mesh(path, V, F);
+
+    REQUIRE(ok);
+
+    std::vector<Eigen::Vector3d> v(V.rows());
+    std::vector<std::array<size_t, 3>> tri(F.rows());
+    for (int i = 0; i < V.rows(); i++) {
+        v[i] = V.row(i);
+    }
+    for (int i = 0; i < F.rows(); i++) {
+        for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
+    }
+    UniformRemeshing m(v);
+    std::vector<size_t> modified_v;
+    m.create_mesh(V.rows(), tri, modified_v, 1);
+    auto fs = m.get_faces();
+    for (auto f : fs) {
+        std::array<double, 6> tri = {
+            m.vertex_attrs[f.vid(m)].pos(0),
+            m.vertex_attrs[f.vid(m)].pos(1),
+            m.vertex_attrs[f.switch_vertex(m).vid(m)].pos(0),
+            m.vertex_attrs[f.switch_vertex(m).vid(m)].pos(1),
+            m.vertex_attrs[(f.switch_edge(m)).switch_vertex(m).vid(m)].pos(0),
+            m.vertex_attrs[(f.switch_edge(m)).switch_vertex(m).vid(m)].pos(1)};
+        REQUIRE(!is_inverted(tri));
+    }
+
+    auto edges = m.get_edges();
+    for (auto e : edges) {
+        if (!m.is_boundary_edge(e)) {
+            std::vector<wmtk::TriMesh::Tuple> dummy;
+            m.swap_edge(e, dummy);
+            break;
+        }
+    }
+    fs = m.get_faces();
+    for (auto f : fs) {
+        std::array<double, 6> tri = {
+            m.vertex_attrs[f.vid(m)].pos(0),
+            m.vertex_attrs[f.vid(m)].pos(1),
+            m.vertex_attrs[f.switch_vertex(m).vid(m)].pos(0),
+            m.vertex_attrs[f.switch_vertex(m).vid(m)].pos(1),
+            m.vertex_attrs[(f.switch_edge(m)).switch_vertex(m).vid(m)].pos(0),
+            m.vertex_attrs[(f.switch_edge(m)).switch_vertex(m).vid(m)].pos(1)};
+        REQUIRE(!is_inverted(tri));
+    }
     m.write_triangle_mesh("old_orient.obj");
 }
