@@ -9,6 +9,7 @@
 #include <Eigen/Core>
 #include <wmtk/utils/TupleUtils.hpp>
 using namespace wmtk;
+
 namespace triwild {
 auto avg_edge_len = [](auto& m) {
     double avg_len = 0.0;
@@ -66,7 +67,7 @@ void TriWild::create_mesh(
     F_env.resize(F.rows());
     // Register attributes
     p_vertex_attrs = &vertex_attrs;
-
+    p_face_attrs = &face_attrs;
     // Convert from eigen to internal representation (TODO: move to utils and remove it from all
     // app)
     std::vector<std::array<size_t, 3>> tri(F.rows());
@@ -96,6 +97,7 @@ void TriWild::create_mesh(
         vertex_attrs[v.vid(*this)].fixed = is_boundary_vertex(v);
     }
 
+
     if (eps > 0) {
         m_envelope.use_exact = true;
         m_envelope.init(V_env, F_env, eps);
@@ -103,8 +105,11 @@ void TriWild::create_mesh(
     } else if (bnd_freeze) {
         m_bnd_freeze = bnd_freeze;
     }
+    Eigen::MatrixXd A(F.rows(), 1);
+    igl::doublearea(V, F, A);
     for (auto t : get_faces()) {
-        if (is_inverted(t)) exit(1001);
+        face_attrs[t.fid(*this)].area = A(t.fid(*this), 0);
+        if (face_attrs[t.fid(*this)].area < 0) exit(1001);
     }
 }
 
@@ -249,9 +254,8 @@ void TriWild::mesh_improvement(int max_its)
         swap_all_edges();
         write_obj("after_swap_" + std::to_string(it) + ".obj");
 
-
         smooth_all_vertices();
-        // write_obj("after_smooth_" + std::to_string(it) + ".obj");
+        write_obj("after_smooth_" + std::to_string(it) + ".obj");
 
         wmtk::logger().info(
             "++++++++v {} t {} max energy {}++++++++",

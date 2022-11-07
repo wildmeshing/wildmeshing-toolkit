@@ -1,6 +1,7 @@
 #pragma once
 
 #include <igl/Timer.h>
+#include <igl/doublearea.h>
 #include <lagrange/SurfaceMesh.h>
 
 #include <lagrange/bvh/EdgeAABBTree.h>
@@ -27,6 +28,7 @@ public:
 class FaceAttributes
 {
 public:
+    double area = 0;
 };
 
 class TriWild : public wmtk::TriMesh
@@ -62,6 +64,8 @@ public:
         int partition_id;
     };
     tbb::enumerable_thread_specific<InfoCache> cache;
+    // Store the per-face attribute
+    wmtk::AttributeCollection<FaceAttributes> face_attrs;
 
     bool invariants(const std::vector<Tuple>& new_tris);
 

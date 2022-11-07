@@ -707,18 +707,7 @@ TEST_CASE("heuristic amips")
     for (auto& t : m.get_faces()) {
         REQUIRE(m.get_quality(t) > 0);
     }
-    // get the aabb tree for closest point detect in smooth projection
-    RowMatrix2<Index> E = m.get_bnd_edge_matrix();
 
-    RowMatrix2<Scalar> V_aabb = V.block(0, 0, V.rows(), 2);
-    lagrange::bvh::EdgeAABBTree<RowMatrix2<Scalar>, RowMatrix2<Index>, 2> aabb(V_aabb, E);
-    m.m_get_closest_point = [&aabb](const Eigen::RowVector2d& p) -> Eigen::RowVector2d {
-        uint64_t ind = 0;
-        double distance = 0.0;
-        static Eigen::RowVector2d p_ret;
-        aabb.get_closest_point(p, ind, p_ret, distance);
-        return p_ret;
-    };
-    m.mesh_improvement(10);
+    m.mesh_improvement(1);
     m.write_obj("triwild_improve_project.obj");
 }
