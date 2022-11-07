@@ -376,7 +376,14 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
     if (!collapse_edge_before(loc0)) {
         return false;
     }
-
+    // get fid for the return tuple
+    // take the face that shares the same vertex the loc0 tuple is pointing to
+    // or if that face doesn't exit
+    // take the face that shares the same vertex of loc0
+    auto new_fid =
+        loc0.switch_vertex(*this).switch_edge(*this).switch_face(*this).has_value()
+            ? (loc0.switch_vertex(*this).switch_edge(*this).switch_face(*this).value()).fid(*this)
+            : (loc0.switch_edge(*this).switch_face(*this).value()).fid(*this);
     // get the vids
     size_t vid1 = loc0.vid(*this);
     size_t vid2 = switch_vertex(loc0).vid(*this);
@@ -482,12 +489,14 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
     const size_t gfid = m_vertex_connectivity[new_vid].m_conn_tris[0];
     int j = m_tri_connectivity[gfid].find(new_vid);
     auto new_t = Tuple(new_vid, (j + 2) % 3, gfid, *this);
+    int j_ret = m_tri_connectivity[new_fid].find(new_vid);
+    auto return_t = Tuple(new_vid, (j_ret + 2) % 3, new_fid, *this);
     assert(new_t.is_valid(*this));
     new_tris = get_one_ring_tris_for_vertex(new_t);
 
     start_protect_attributes();
 
-    if (!collapse_edge_after(new_t) || !invariants(new_tris)) {
+    if (!collapse_edge_after(return_t) || !invariants(new_tris)) {
         // if call back check failed roll back
         // restore the changes for connected triangles and vertices
         // resotre the version-number

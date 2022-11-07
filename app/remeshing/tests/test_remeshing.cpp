@@ -246,4 +246,19 @@ TEST_CASE("operation orient", "[test_remeshing]")
             m.vertex_attrs[(f.switch_edge(m)).switch_vertex(m).vid(m)].pos(1)};
         REQUIRE(!is_inverted(tri));
     }
+
+    m.collapse_remeshing(1.5);
+    fs = m.get_faces();
+    for (auto f : fs) {
+        std::array<double, 6> tri = {
+            m.vertex_attrs[f.vid(m)].pos(0),
+            m.vertex_attrs[f.vid(m)].pos(1),
+            m.vertex_attrs[f.switch_vertex(m).vid(m)].pos(0),
+            m.vertex_attrs[f.switch_vertex(m).vid(m)].pos(1),
+            m.vertex_attrs[(f.switch_edge(m)).switch_vertex(m).vid(m)].pos(0),
+            m.vertex_attrs[(f.switch_edge(m)).switch_vertex(m).vid(m)].pos(1)};
+        REQUIRE(!is_inverted(tri));
+    }
+
+    m.write_triangle_mesh("old_orient.obj");
 }
