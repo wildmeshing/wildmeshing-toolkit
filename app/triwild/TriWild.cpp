@@ -108,7 +108,7 @@ void TriWild::create_mesh(
     Eigen::MatrixXd A(F.rows(), 1);
     igl::doublearea(V, F, A);
     for (auto t : get_faces()) {
-        face_attrs[t.fid(*this)].area = A(t.fid(*this), 0);
+        face_attrs[t.fid(*this)].area = A(t.fid(*this), 0) / 2;
         if (face_attrs[t.fid(*this)].area < 0) exit(1001);
     }
 }

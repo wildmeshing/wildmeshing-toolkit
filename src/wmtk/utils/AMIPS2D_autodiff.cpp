@@ -117,6 +117,14 @@ DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d> wmtk::SymDi_autodiff(
     return SymDi;
 }
 
+/**
+ * @brief
+ *
+ * @param T1 target traingle stacked in std::array<double,6>
+ * @param T2 input traingle stacked in std::array<double,6>
+ * @param i the index of vertex that will be smoothed
+ * @return DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d>
+ */
 DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d> wmtk::SymDi_autodiff_customize_target(
     const std::array<double, 6>& T1,
     const std::array<double, 6>& T2,

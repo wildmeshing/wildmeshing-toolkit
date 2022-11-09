@@ -54,4 +54,10 @@ std::array<size_t, 3> orient_preserve_tri_reorder(const std::array<size_t, 3>& t
 Eigen::Vector2d try_project(
     const Eigen::Vector2d& point,
     const std::vector<std::array<double, 4>>& assembled_neighbor);
+
+Eigen::Vector2d newton_method(
+    std::vector<std::array<double, 7>>& assembles,
+    std::function<double(const std::array<double, 6>&, int&)> energy,
+    std::function<void(const std::array<double, 6>&, Eigen::Vector2d&, int&)> jacobian,
+    std::function<void(const std::array<double, 6>&, Eigen::Matrix2d&, int&)> hessian);
 } // namespace wmtk

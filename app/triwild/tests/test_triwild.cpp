@@ -711,3 +711,77 @@ TEST_CASE("heuristic amips")
     m.mesh_improvement(1);
     m.write_obj("triwild_improve_project.obj");
 }
+
+TEST_CASE("smoothing_symdi_scaling")
+{
+    Eigen::MatrixXd V(3, 2);
+    V.row(0) << 0, 0;
+    V.row(1) << 10, 0;
+    V.row(2) << 0, 10;
+    Eigen::MatrixXi F(1, 3);
+    F.row(0) << 0, 1, 2;
+
+    TriWild m;
+    m.create_mesh(V, F, -1, false);
+    m.smooth_all_vertices();
+    std::array<double, 6> T;
+    double r = sqrt(50);
+    std::array<double, 6> target_tri =
+        {0, 0, r * 2 * 1 / sqrt(sqrt(3)), 0, r * 1 / sqrt(sqrt(3)), r * sqrt(sqrt(3))};
+
+    for (auto i = 0; i < 3; ++i) {
+        T[i * 2] = m.vertex_attrs[i].pos[0];
+        T[i * 2 + 1] = m.vertex_attrs[i].pos[1];
+    }
+    wmtk::logger().info("energy:");
+    wmtk::logger().info(wmtk::SymDi_autodiff_customize_target(target_tri, T, 0).getValue());
+    wmtk::logger().info(wmtk::SymDi_autodiff_customize_target(target_tri, T, 1).getValue());
+    wmtk::logger().info(wmtk::SymDi_autodiff_customize_target(target_tri, T, 2).getValue());
+    wmtk::logger().info("grad:");
+    wmtk::logger().info(wmtk::SymDi_autodiff_customize_target(target_tri, T, 0).getGradient());
+    wmtk::logger().info(wmtk::SymDi_autodiff_customize_target(target_tri, T, 1).getGradient());
+    wmtk::logger().info(wmtk::SymDi_autodiff_customize_target(target_tri, T, 2).getGradient());
+    m.write_obj("smoothing_symdi_test.obj");
+}
+
+TEST_CASE("smothing comparison")
+{
+    std::array<double, 6> rand_tri1 = {0, 0, 10, 0, 0, 10};
+
+    // using input to masage a target
+    Eigen::Vector3d ac;
+    ac << rand_tri1[4] - rand_tri1[0], rand_tri1[5] - rand_tri1[1], 0.0;
+    Eigen::Vector3d ab;
+    ab << rand_tri1[2] - rand_tri1[0], rand_tri1[3] - rand_tri1[1], 0.0;
+    double S = ((ac.cross(ab)).norm()) / 2.;
+    double r = sqrt(S);
+    assert(r > 0);
+    // 0, 0, 2* 1/sqrt(sqrt(3)),0, 1/sqrt(sqrt(3)), sqrt(sqrt(3))
+    std::array<double, 6> rand_tri =
+        {0, 0, r * 2 * 1 / sqrt(sqrt(3)), 0, r * 1 / sqrt(sqrt(3)), r * sqrt(sqrt(3))};
+    wmtk::logger().info("taret {}", rand_tri);
+    std::function<double(const std::array<double, 6>&, int&)> SymDi_auto_value =
+        [&rand_tri](auto& T, auto& i) {
+            return wmtk::SymDi_autodiff_customize_target(rand_tri, T, i).getValue();
+        };
+    std::function<void(const std::array<double, 6>&, Eigen::Vector2d&, int&)> SymDi_auto_grad =
+        [&rand_tri](auto& T, auto& G, auto& i) {
+            G = wmtk::SymDi_autodiff_customize_target(rand_tri, T, i).getGradient();
+        };
+    std::function<void(const std::array<double, 6>&, Eigen::Matrix2d&, int&)> SymDi_auto_hessian =
+        [&rand_tri](auto& T, auto& H, auto& i) {
+            H = wmtk::SymDi_autodiff_customize_target(rand_tri, T, i).getHessian();
+        };
+
+
+    auto tri_output = wmtk::smooth_over_one_triangle(
+        rand_tri1,
+        SymDi_auto_value,
+        SymDi_auto_grad,
+        SymDi_auto_hessian);
+
+    wmtk::logger().info("output {}", tri_output);
+    wmtk::logger().info(
+        "grad 1 {}",
+        wmtk::SymDi_autodiff_customize_target(rand_tri, tri_output).getGradient());
+}
