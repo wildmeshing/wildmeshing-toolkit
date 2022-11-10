@@ -507,6 +507,7 @@ auto newton_direction_2d_with_index = [](auto& compute_energy,
     for (auto& tmp : assembles) {
         // find local vertex index
         int idx = (int)tmp[6];
+        assert(idx != -1);
         std::array<double, 6> T;
         for (auto i = 0; i < 6; i++) T[i] = tmp[i];
         T[idx * 2] = pos[0];
