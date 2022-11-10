@@ -33,10 +33,14 @@ bool TriWild::invariants(const std::vector<Tuple>& new_tris)
     }
 
     for (auto& t : new_tris) {
-        // if (get_quality(t) < 0) {
-        //     assert(is_inverted(t));
-        //     return false;
-        // }
+        Eigen::Vector2d a, b, c;
+        auto verts = oriented_tri_vertices(t);
+        assert(verts.size() == 3);
+        a << vertex_attrs[verts[0].vid(*this)].pos(0), vertex_attrs[verts[0].vid(*this)].pos(1);
+        b << vertex_attrs[verts[1].vid(*this)].pos(0), vertex_attrs[verts[1].vid(*this)].pos(1);
+        c << vertex_attrs[verts[2].vid(*this)].pos(0), vertex_attrs[verts[2].vid(*this)].pos(1);
+
+        if (wmtk::orient2d_t(a, b, c) != 1) return false;
         if (is_inverted(t)) return false;
     }
 
@@ -67,7 +71,6 @@ void TriWild::create_mesh(
     F_env.resize(F.rows());
     // Register attributes
     p_vertex_attrs = &vertex_attrs;
-    p_face_attrs = &face_attrs;
     // Convert from eigen to internal representation (TODO: move to utils and remove it from all
     // app)
     std::vector<std::array<size_t, 3>> tri(F.rows());
@@ -104,12 +107,6 @@ void TriWild::create_mesh(
         m_has_envelope = true;
     } else if (bnd_freeze) {
         m_bnd_freeze = bnd_freeze;
-    }
-    Eigen::MatrixXd A(F.rows(), 1);
-    igl::doublearea(V, F, A);
-    for (auto t : get_faces()) {
-        face_attrs[t.fid(*this)].area = A(t.fid(*this), 0) / 2;
-        if (face_attrs[t.fid(*this)].area < 0) exit(1001);
     }
 }
 
@@ -252,6 +249,7 @@ void TriWild::mesh_improvement(int max_its)
         write_obj("after_split_" + std::to_string(it) + ".obj");
 
         swap_all_edges();
+        consolidate_mesh();
         write_obj("after_swap_" + std::to_string(it) + ".obj");
 
         smooth_all_vertices();

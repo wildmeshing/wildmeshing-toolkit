@@ -6,6 +6,7 @@
 
 #include <lagrange/bvh/EdgeAABBTree.h>
 #include <wmtk/TriMesh.h>
+#include <wmtk/utils/GeoUtils.h>
 #include <sec/envelope/SampleEnvelope.hpp>
 #include "Parameters.h"
 
@@ -22,13 +23,6 @@ public:
 
     // Vertices marked as fixed cannot be modified by any local operation
     bool fixed = false;
-};
-
-
-class FaceAttributes
-{
-public:
-    double area = 0;
 };
 
 class TriWild : public wmtk::TriMesh
@@ -64,8 +58,6 @@ public:
         int partition_id;
     };
     tbb::enumerable_thread_specific<InfoCache> cache;
-    // Store the per-face attribute
-    wmtk::AttributeCollection<FaceAttributes> face_attrs;
 
     bool invariants(const std::vector<Tuple>& new_tris);
 
