@@ -28,7 +28,7 @@ std::function<bool(std::array<double, 6>&)> is_inverted = [](auto& tri) {
     auto res = igl::predicates::orient2d(a, b, c);
     return (res != igl::predicates::Orientation::POSITIVE);
 };
-std::function<bool(std::array<double, 6>&)> is_dgenerate = [](auto& tri) {
+std::function<bool(std::array<double, 6>&)> is_degenerate = [](auto& tri) {
     Eigen::Vector3d a, b;
     a << tri[2] - tri[0], tri[3] - tri[1], 0.;
     b << tri[4] - tri[0], tri[5] - tri[1], 0.;
@@ -283,7 +283,7 @@ TEST_CASE("improve with AABB")
 TEST_CASE("test_degenrate")
 {
     std::array<double, 6> rand_tri = {27, 35, -14, -46, 26, 33};
-    REQUIRE(is_dgenerate(rand_tri));
+    REQUIRE(is_degenerate(rand_tri));
 }
 TEST_CASE("symdi 2 rand tris")
 {
@@ -295,7 +295,7 @@ TEST_CASE("symdi 2 rand tris")
         }
         // // rand_tri = {0, 0, 2, 0, 1, 1.73};
         // rand_tri = {27, 35, -14, -46, 26, 33};
-        if (is_dgenerate(rand_tri)) {
+        if (is_degenerate(rand_tri)) {
             pass++;
             continue;
         }
@@ -327,7 +327,7 @@ TEST_CASE("symdi 2 rand tris")
         for (int j = 0; j < 6; j++) {
             rand_tri1[j] = rand() % 100 - 50;
         }
-        if (is_dgenerate(rand_tri1)) {
+        if (is_degenerate(rand_tri1)) {
             pass++;
             continue;
         }
@@ -374,7 +374,7 @@ TEST_CASE("amips 2 rand tris")
         for (int j = 0; j < 6; j++) {
             rand_tri[j] = rand() % 100 - 50;
         }
-        if (is_dgenerate(rand_tri)) {
+        if (is_degenerate(rand_tri)) {
             pass++;
             continue;
         }
@@ -407,7 +407,7 @@ TEST_CASE("amips 2 rand tris")
         for (int j = 0; j < 6; j++) {
             rand_tri1[j] = rand() % 100 - 50;
         }
-        if (is_dgenerate(rand_tri1)) {
+        if (is_degenerate(rand_tri1)) {
             pass++;
             continue;
         }
@@ -465,7 +465,7 @@ TEST_CASE("symdi perturb one vert")
             rand_tri[2] = tmp(0);
             rand_tri[3] = tmp(1);
         }
-        if (is_dgenerate(rand_tri)) {
+        if (is_degenerate(rand_tri)) {
             pass++;
             continue;
         }
@@ -487,7 +487,7 @@ TEST_CASE("symdi perturb one vert")
         std::array<double, 6> rand_tri1 = rand_tri;
         rand_tri1[0] += rand() % 20;
         rand_tri1[1] += rand() % 20;
-        if (is_dgenerate(rand_tri1)) {
+        if (is_degenerate(rand_tri1)) {
             pass++;
             continue;
         }
@@ -533,7 +533,7 @@ TEST_CASE("symdi same tri")
             rand_tri[2] = tmp(0);
             rand_tri[3] = tmp(1);
         }
-        if (is_dgenerate(rand_tri)) {
+        if (is_degenerate(rand_tri)) {
             pass++;
             continue;
         }
@@ -586,7 +586,7 @@ TEST_CASE("amips same tri")
             rand_tri[2] = tmp(0);
             rand_tri[3] = tmp(1);
         }
-        if (is_dgenerate(rand_tri)) {
+        if (is_degenerate(rand_tri)) {
             pass++;
             continue;
         }

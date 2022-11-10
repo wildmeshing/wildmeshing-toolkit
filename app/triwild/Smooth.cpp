@@ -130,18 +130,10 @@ bool triwild::TriWild::smooth_after_without_index(const Tuple& t)
 
 bool triwild::TriWild::smooth_after(const Tuple& t)
 {
-    auto scale = [](const auto& T) {
-        Eigen::Vector3d ac;
-        ac << T[4] - T[0], T[5] - T[1], 0.0;
-        Eigen::Vector3d ab;
-        ab << T[2] - T[0], T[3] - T[1], 0.0;
-        double S = ((ac.cross(ab)).norm()) / 2.;
-        return S;
-    };
     // Newton iterations are encapsulated here.
     wmtk::logger().trace("Newton iteration for vertex smoothing with index.");
     auto vid = t.vid(*this);
-    r = sqrt(face_attrs[t.fid(*this)].area);
+    r = m_target_l * sqrt(3) / 4;
     auto locs = get_one_ring_tris_for_vertex(t);
     assert(locs.size() > 0);
 

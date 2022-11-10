@@ -9,6 +9,7 @@
 #include <igl/readMSH.h>
 #include <igl/read_triangle_mesh.h>
 
+#include <lagrange/utils/fpe.h>
 #include <fstream>
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
@@ -17,6 +18,7 @@ int main(int argc, char** argv)
 {
     ZoneScopedN("triwildmain");
 
+    lagrange::enable_fpe();
     CLI::App app{argv[0]};
     std::string input_file = "./";
     std::string output_file = "./";
