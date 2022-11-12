@@ -180,7 +180,7 @@ double TriWild::get_quality(const Tuple& loc) const
 
     // Energy evaluation
     // energy = wmtk::AMIPS2D_energy(T);
-    energy = wmtk::AMIPS_autodiff(T).getValue();
+    energy = m_energy->Value(T, 0);
 
     // Filter for numerical issues
     if (std::isinf(energy) || std::isnan(energy)) return MAX_ENERGY;

@@ -3,14 +3,13 @@
 #include <igl/Timer.h>
 #include <igl/doublearea.h>
 #include <lagrange/SurfaceMesh.h>
-
 #include <lagrange/bvh/EdgeAABBTree.h>
 #include <wmtk/TriMesh.h>
+#include <wmtk/utils/Energy2d.h>
 #include <wmtk/utils/GeoUtils.h>
+#include <nlohmann/json.hpp>
 #include <sec/envelope/SampleEnvelope.hpp>
 #include "Parameters.h"
-
-#include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
 namespace triwild {
@@ -43,6 +42,7 @@ public:
     double m_max_energy = -1;
     double m_stop_energy = 5;
     std::function<Eigen::RowVector2d(const Eigen::RowVector2d&)> m_get_closest_point;
+    std::unique_ptr<wmtk::Energy> m_energy;
 
     TriWild(){};
 

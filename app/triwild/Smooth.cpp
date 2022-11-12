@@ -174,8 +174,7 @@ bool triwild::TriWild::smooth_after(const Tuple& t)
     // energy/grad/hess functions
     // (symdi_scaling: area_scaling_rate(r), index_of_vertex_in_triangle(i),
     // target_triangle, input_triangle)
-    vertex_attrs[vid].pos =
-        wmtk::newton_method(assembles, SymDi_auto_value, SymDi_auto_grad, SymDi_auto_hessian);
+    vertex_attrs[vid].pos = wmtk::newton_method(assembles, m_energy);
 
     // check boundary and project
 

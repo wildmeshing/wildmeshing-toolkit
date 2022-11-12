@@ -1,10 +1,10 @@
 #include <igl/Timer.h>
+#include <spdlog/common.h>
+#include <wmtk/utils/Energy2d.h>
+#include <CLI/CLI.hpp>
 #include <regex>
 #include "Parameters.h"
 #include "TriWild.h"
-
-#include <spdlog/common.h>
-#include <CLI/CLI.hpp>
 
 #include <igl/readMSH.h>
 #include <igl/read_triangle_mesh.h>
@@ -30,6 +30,7 @@ int main(int argc, char** argv)
     bool bnd_freeze = false;
     int max_itr = 2;
     double target_e = 4.;
+    std::string energy_type = "AMIPS"; // "AMIPS" or "SymDi"
     app.add_option("-i,--input", input_file, "Input mesh.");
     app.add_option("-o,--output", output_file, "Output mesh.");
     app.add_option("--target_l", target_l, "target edge length");
@@ -38,6 +39,7 @@ int main(int argc, char** argv)
     app.add_option("--epsr", epsr, "relative envelop size wrt bbox diag");
     app.add_option("--max_itr", max_itr, "number of iterations for improvement");
     app.add_option("--bnd_freeze", bnd_freeze, "freeze boundary");
+    app.add_option("--energy_type", energy_type, "freeze boundary");
     // app.add_option("-j,--jobs", NUM_THREADS, "thread."
 
     CLI11_PARSE(app, argc, argv);
@@ -74,6 +76,14 @@ int main(int argc, char** argv)
     triwild.m_eps = epsr * diag;
     triwild.m_stop_energy = target_e;
     triwild.create_mesh(V, F, epsr * diag, bnd_freeze);
+
+
+    if (energy_type == "SymDi") {
+        triwild.m_energy = std::unique_ptr<wmtk::SymDi>();
+    } else
+        triwild.m_energy = std::unique_ptr<wmtk::AMIPS>();
+    triwild.m_energy->scaling = triwild.m_target_l;
+
     assert(triwild.check_mesh_connectivity_validity());
     triwild.js_log["num_vert"] = V.rows();
     triwild.js_log["num_faces"] = F.rows();

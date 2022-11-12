@@ -492,11 +492,8 @@ std::array<double, 6> wmtk::smooth_over_one_triangle(
  * where x*, y* are double, and idx should be cast to size_t to be used.
  * @note The specific assembles design is to bypass passing in mesh m and avoid doing navigations/vid-quiries in this function
  */
-auto newton_direction_2d_with_index = [](auto& compute_energy,
-                                         auto& compute_jacobian,
-                                         auto& compute_hessian,
-                                         auto& assembles,
-                                         const Eigen::Vector2d& pos) -> Eigen::Vector2d {
+auto newton_direction_2d_with_index =
+    [](auto& energy_def, auto& assembles, const Eigen::Vector2d& pos) -> Eigen::Vector2d {
     auto total_energy = 0.;
     Eigen::Vector2d total_jac = Eigen::Vector2d::Zero();
     Eigen::Matrix2d total_hess = Eigen::Matrix2d::Zero();
@@ -514,12 +511,10 @@ auto newton_direction_2d_with_index = [](auto& compute_energy,
         T[idx * 2 + 1] = pos[1];
         auto jac = decltype(total_jac)();
         auto hess = decltype(total_hess)();
-        total_energy += compute_energy(T, idx);
+        total_energy += energy_def->Value(T, idx);
 
-        compute_jacobian(T, jac, idx);
-        compute_hessian(T, hess, idx);
-        total_jac += jac;
-        total_hess += hess;
+        total_jac += energy_def->Gradient(T, idx);
+        total_hess += energy_def->Hessian(T, idx);
         assert(!std::isnan(total_energy));
     }
     Eigen::Vector2d x = total_hess.ldlt().solve(total_jac);
@@ -534,15 +529,14 @@ auto newton_direction_2d_with_index = [](auto& compute_energy,
 
 Eigen::Vector2d wmtk::newton_method(
     std::vector<std::array<double, 7>>& assembles,
-    std::function<double(const std::array<double, 6>&, int&)> compute_energy,
-    std::function<void(const std::array<double, 6>&, Eigen::Vector2d&, int&)> compute_jacobian,
-    std::function<void(const std::array<double, 6>&, Eigen::Matrix2d&, int&)> compute_hessian)
+    std::unique_ptr<wmtk::Energy>& energy_def)
 {
     assert(!assembles.empty());
     auto& T0 = assembles.front();
     Eigen::Vector2d old_pos(T0[(int)T0[6] * 2], T0[(int)T0[6] * 2 + 1]);
 
-    auto energy_from_point = [&assembles, &compute_energy](const Eigen::Vector2d& pos) -> double {
+
+    auto energy_from_point = [&assembles, &energy_def](const Eigen::Vector2d& pos) -> double {
         auto total_energy = 0.;
         for (auto& tmp : assembles) {
             int idx = (int)tmp[6];
@@ -554,7 +548,7 @@ Eigen::Vector2d wmtk::newton_method(
             T[idx * 2] = pos[0];
             T[idx * 2 + 1] = pos[1];
 
-            total_energy += compute_energy(T, idx);
+            total_energy += energy_def->Value(T, idx);
         }
         return total_energy;
     };
@@ -577,27 +571,18 @@ Eigen::Vector2d wmtk::newton_method(
         return false;
     };
 
-    auto compute_new_valid_pos = [&is_inverted,
-                                  &energy_from_point,
-                                  &assembles,
-                                  &compute_energy,
-                                  &compute_jacobian,
-                                  &compute_hessian](const Eigen::Vector2d& pos) {
-        auto current_pos = pos;
-        auto line_search_iters = 12;
+    auto compute_new_valid_pos =
+        [&is_inverted, &energy_from_point, &assembles, &energy_def](const Eigen::Vector2d& pos) {
+            auto current_pos = pos;
+            auto line_search_iters = 12;
 
-        auto dir = newton_direction_2d_with_index(
-            compute_energy,
-            compute_jacobian,
-            compute_hessian,
-            assembles,
-            current_pos);
-        auto newpos =
-            linesearch_2d(is_inverted, energy_from_point, current_pos, dir, line_search_iters);
+            auto dir = newton_direction_2d_with_index(energy_def, assembles, current_pos);
+            auto newpos =
+                linesearch_2d(is_inverted, energy_from_point, current_pos, dir, line_search_iters);
 
-        current_pos = newpos;
+            current_pos = newpos;
 
-        return current_pos;
-    };
+            return current_pos;
+        };
     return compute_new_valid_pos(old_pos);
 }

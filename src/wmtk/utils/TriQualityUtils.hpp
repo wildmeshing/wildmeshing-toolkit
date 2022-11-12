@@ -1,9 +1,9 @@
 #pragma once
 
+#include <igl/point_simplex_squared_distance.h>
 #include <Eigen/Core>
 #include <optional>
-
-#include <igl/point_simplex_squared_distance.h>
+#include "Energy2d.h"
 
 namespace wmtk {
 
@@ -57,7 +57,5 @@ Eigen::Vector2d try_project(
 
 Eigen::Vector2d newton_method(
     std::vector<std::array<double, 7>>& assembles,
-    std::function<double(const std::array<double, 6>&, int&)> energy,
-    std::function<void(const std::array<double, 6>&, Eigen::Vector2d&, int&)> jacobian,
-    std::function<void(const std::array<double, 6>&, Eigen::Matrix2d&, int&)> hessian);
+    std::unique_ptr<wmtk::Energy>& energy_def);
 } // namespace wmtk
