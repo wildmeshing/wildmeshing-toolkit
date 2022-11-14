@@ -59,6 +59,8 @@ public:
     };
     tbb::enumerable_thread_specific<InfoCache> cache;
 
+    void set_energy(std::unique_ptr<wmtk::Energy> f);
+
     bool invariants(const std::vector<Tuple>& new_tris);
 
     // Initializes the mesh

@@ -76,13 +76,11 @@ int main(int argc, char** argv)
     triwild.m_eps = epsr * diag;
     triwild.m_stop_energy = target_e;
     triwild.create_mesh(V, F, epsr * diag, bnd_freeze);
-
+    triwild.set_energy(std::make_unique<wmtk::AMIPS>());
 
     if (energy_type == "SymDi") {
-        triwild.m_energy = std::unique_ptr<wmtk::SymDi>();
-    } else
-        triwild.m_energy = std::unique_ptr<wmtk::AMIPS>();
-    triwild.m_energy->scaling = triwild.m_target_l;
+        triwild.set_energy(std::make_unique<wmtk::SymDi>());
+    }
 
     assert(triwild.check_mesh_connectivity_validity());
     triwild.js_log["num_vert"] = V.rows();

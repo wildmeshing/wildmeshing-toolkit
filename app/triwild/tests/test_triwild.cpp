@@ -723,65 +723,60 @@ TEST_CASE("smoothing_symdi_scaling")
 
     TriWild m;
     m.create_mesh(V, F, -1, false);
+    m.set_energy(std::make_unique<wmtk::SymDi>());
+    m.m_target_l = 2;
     m.smooth_all_vertices();
     std::array<double, 6> T;
-    double r = sqrt(50);
-    std::array<double, 6> target_tri =
-        {0, 0, r * 2 * 1 / sqrt(sqrt(3)), 0, r * 1 / sqrt(sqrt(3)), r * sqrt(sqrt(3))};
+    double r = 2;
+    std::array<double, 6> target_tri = {0, 0, r * 1, 0, r * 1 / 2, r * sqrt(3) / 2};
 
     for (auto i = 0; i < 3; ++i) {
         T[i * 2] = m.vertex_attrs[i].pos[0];
         T[i * 2 + 1] = m.vertex_attrs[i].pos[1];
     }
-    wmtk::logger().info("energy:");
-    wmtk::logger().info(wmtk::SymDi_autodiff_customize_target(target_tri, T, 0).getValue());
-    wmtk::logger().info(wmtk::SymDi_autodiff_customize_target(target_tri, T, 1).getValue());
-    wmtk::logger().info(wmtk::SymDi_autodiff_customize_target(target_tri, T, 2).getValue());
-    wmtk::logger().info("grad:");
-    wmtk::logger().info(wmtk::SymDi_autodiff_customize_target(target_tri, T, 0).getGradient());
-    wmtk::logger().info(wmtk::SymDi_autodiff_customize_target(target_tri, T, 1).getGradient());
-    wmtk::logger().info(wmtk::SymDi_autodiff_customize_target(target_tri, T, 2).getGradient());
+    // energy is 4.0 after smooth
+    REQUIRE(abs(wmtk::SymDi_autodiff_customize_target(target_tri, T, 0).getValue() - 4) < 1e-5);
+    REQUIRE(abs(wmtk::SymDi_autodiff_customize_target(target_tri, T, 1).getValue() - 4) < 1e-5);
+    REQUIRE(abs(wmtk::SymDi_autodiff_customize_target(target_tri, T, 2).getValue() - 4) < 1e-5);
+
+    // grad is (0,0) after smooth
+    REQUIRE((wmtk::SymDi_autodiff_customize_target(target_tri, T, 0).getGradient()).norm() < 1e-4);
+    REQUIRE((wmtk::SymDi_autodiff_customize_target(target_tri, T, 1).getGradient()).norm() < 1e-4);
+    REQUIRE((wmtk::SymDi_autodiff_customize_target(target_tri, T, 2).getGradient()).norm() < 1e-4);
     m.write_obj("smoothing_symdi_test.obj");
 }
 
-TEST_CASE("smothing comparison")
+TEST_CASE("smoothing_amips_scaling")
 {
-    std::array<double, 6> rand_tri1 = {0, 0, 10, 0, 0, 10};
+    Eigen::MatrixXd V(3, 2);
+    V.row(0) << 0, 0;
+    V.row(1) << 10, 0;
+    V.row(2) << 0, 10;
+    Eigen::MatrixXi F(1, 3);
+    F.row(0) << 0, 1, 2;
 
-    // using input to masage a target
-    Eigen::Vector3d ac;
-    ac << rand_tri1[4] - rand_tri1[0], rand_tri1[5] - rand_tri1[1], 0.0;
-    Eigen::Vector3d ab;
-    ab << rand_tri1[2] - rand_tri1[0], rand_tri1[3] - rand_tri1[1], 0.0;
-    double S = ((ac.cross(ab)).norm()) / 2.;
-    double r = sqrt(S);
-    assert(r > 0);
-    // 0, 0, 2* 1/sqrt(sqrt(3)),0, 1/sqrt(sqrt(3)), sqrt(sqrt(3))
-    std::array<double, 6> rand_tri =
-        {0, 0, r * 2 * 1 / sqrt(sqrt(3)), 0, r * 1 / sqrt(sqrt(3)), r * sqrt(sqrt(3))};
-    wmtk::logger().info("taret {}", rand_tri);
-    std::function<double(const std::array<double, 6>&, int&)> SymDi_auto_value =
-        [&rand_tri](auto& T, auto& i) {
-            return wmtk::SymDi_autodiff_customize_target(rand_tri, T, i).getValue();
-        };
-    std::function<void(const std::array<double, 6>&, Eigen::Vector2d&, int&)> SymDi_auto_grad =
-        [&rand_tri](auto& T, auto& G, auto& i) {
-            G = wmtk::SymDi_autodiff_customize_target(rand_tri, T, i).getGradient();
-        };
-    std::function<void(const std::array<double, 6>&, Eigen::Matrix2d&, int&)> SymDi_auto_hessian =
-        [&rand_tri](auto& T, auto& H, auto& i) {
-            H = wmtk::SymDi_autodiff_customize_target(rand_tri, T, i).getHessian();
-        };
+    TriWild m;
+    m.create_mesh(V, F, -1, false);
+    m.set_energy(std::make_unique<wmtk::AMIPS>());
+    m.m_target_l = 2;
+    m.smooth_all_vertices();
+    std::array<double, 6> T;
+    double r = 2;
+    std::array<double, 6> target_tri = {0, 0, r * 1, 0, r * 1 / 2, r * sqrt(3) / 2};
 
+    for (auto i = 0; i < 3; ++i) {
+        T[i * 2] = m.vertex_attrs[i].pos[0];
+        T[i * 2 + 1] = m.vertex_attrs[i].pos[1];
+    }
 
-    auto tri_output = wmtk::smooth_over_one_triangle(
-        rand_tri1,
-        SymDi_auto_value,
-        SymDi_auto_grad,
-        SymDi_auto_hessian);
+    // energy is 2.0 after smooth
+    REQUIRE(abs(wmtk::AMIPS_autodiff_customize_target(target_tri, T, 0).getValue() - 2) < 1e-5);
+    REQUIRE(abs(wmtk::AMIPS_autodiff_customize_target(target_tri, T, 1).getValue() - 2) < 1e-5);
+    REQUIRE(abs(wmtk::AMIPS_autodiff_customize_target(target_tri, T, 2).getValue() - 2) < 1e-5);
 
-    wmtk::logger().info("output {}", tri_output);
-    wmtk::logger().info(
-        "grad 1 {}",
-        wmtk::SymDi_autodiff_customize_target(rand_tri, tri_output).getGradient());
+    // grad is (0,0) after smooth
+    REQUIRE((wmtk::AMIPS_autodiff_customize_target(target_tri, T, 0).getGradient()).norm() < 1e-5);
+    REQUIRE((wmtk::AMIPS_autodiff_customize_target(target_tri, T, 1).getGradient()).norm() < 1e-5);
+    REQUIRE((wmtk::AMIPS_autodiff_customize_target(target_tri, T, 2).getGradient()).norm() < 1e-5);
+    m.write_obj("smoothing_amips_test.obj");
 }

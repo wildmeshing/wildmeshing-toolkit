@@ -449,7 +449,6 @@ std::array<double, 6> wmtk::smooth_over_one_triangle(
         // smooth 3 vertices in 1 iter
         for (int i = 0; i < 3; i++) {
             assembles[0] = triangle;
-            i = (i + 2) % 3;
             auto new_pos = wmtk::newton_method_from_stack_2d_per_vert(
                 assembles,
                 i,
@@ -492,8 +491,10 @@ std::array<double, 6> wmtk::smooth_over_one_triangle(
  * where x*, y* are double, and idx should be cast to size_t to be used.
  * @note The specific assembles design is to bypass passing in mesh m and avoid doing navigations/vid-quiries in this function
  */
-auto newton_direction_2d_with_index =
-    [](auto& energy_def, auto& assembles, const Eigen::Vector2d& pos) -> Eigen::Vector2d {
+auto newton_direction_2d_with_index = [](auto& target_scaling,
+                                         auto& energy_def,
+                                         auto& assembles,
+                                         const Eigen::Vector2d& pos) -> Eigen::Vector2d {
     auto total_energy = 0.;
     Eigen::Vector2d total_jac = Eigen::Vector2d::Zero();
     Eigen::Matrix2d total_hess = Eigen::Matrix2d::Zero();
@@ -502,19 +503,24 @@ auto newton_direction_2d_with_index =
     // H = \sum_i H_i(x)
 
     for (auto& tmp : assembles) {
+        wmtk::State state = {};
+        state.idx = (int)tmp[6];
+        assert(state.idx != -1);
         // find local vertex index
-        int idx = (int)tmp[6];
-        assert(idx != -1);
         std::array<double, 6> T;
         for (auto i = 0; i < 6; i++) T[i] = tmp[i];
-        T[idx * 2] = pos[0];
-        T[idx * 2 + 1] = pos[1];
+        T[state.idx * 2] = pos[0];
+        T[state.idx * 2 + 1] = pos[1];
         auto jac = decltype(total_jac)();
         auto hess = decltype(total_hess)();
-        total_energy += energy_def->Value(T, idx);
 
-        total_jac += energy_def->Gradient(T, idx);
-        total_hess += energy_def->Hessian(T, idx);
+        state.input_triangle = T;
+        state.scaling = target_scaling;
+
+        energy_def.eval(state);
+        total_energy += state.value;
+        total_jac += state.gradient;
+        total_hess += state.hessian;
         assert(!std::isnan(total_energy));
     }
     Eigen::Vector2d x = total_hess.ldlt().solve(total_jac);
@@ -528,15 +534,17 @@ auto newton_direction_2d_with_index =
 };
 
 Eigen::Vector2d wmtk::newton_method(
+    double target_scaling,
     std::vector<std::array<double, 7>>& assembles,
-    std::unique_ptr<wmtk::Energy>& energy_def)
+    wmtk::Energy& energy_def)
 {
     assert(!assembles.empty());
     auto& T0 = assembles.front();
     Eigen::Vector2d old_pos(T0[(int)T0[6] * 2], T0[(int)T0[6] * 2 + 1]);
 
 
-    auto energy_from_point = [&assembles, &energy_def](const Eigen::Vector2d& pos) -> double {
+    auto energy_from_point =
+        [&target_scaling, &assembles, &energy_def](const Eigen::Vector2d& pos) -> double {
         auto total_energy = 0.;
         for (auto& tmp : assembles) {
             int idx = (int)tmp[6];
@@ -547,8 +555,14 @@ Eigen::Vector2d wmtk::newton_method(
 
             T[idx * 2] = pos[0];
             T[idx * 2 + 1] = pos[1];
+            // set State
+            // pass the state energy
+            State state = {};
 
-            total_energy += energy_def->Value(T, idx);
+            state.input_triangle = T;
+            state.scaling = target_scaling;
+            energy_def.eval(state);
+            total_energy += state.value;
         }
         return total_energy;
     };
@@ -558,13 +572,13 @@ Eigen::Vector2d wmtk::newton_method(
         for (auto tmp : assembles) {
             Eigen::Vector2d a, b, c;
             int idx = (int)tmp[6];
-            std::array<double, 6> T0;
-            for (auto i = 0; i < 6; i++) T0[i] = tmp[i];
-            T0[idx * 2] = newpos(0);
-            T0[idx * 2 + 1] = newpos(1);
-            a << T0[0], T0[1];
-            b << T0[2], T0[3];
-            c << T0[4], T0[5];
+            std::array<double, 6> tmp_t;
+            for (auto i = 0; i < 6; i++) tmp_t[i] = tmp[i];
+            tmp_t[idx * 2] = newpos(0);
+            tmp_t[idx * 2 + 1] = newpos(1);
+            a << tmp_t[0], tmp_t[1];
+            b << tmp_t[2], tmp_t[3];
+            c << tmp_t[4], tmp_t[5];
             auto res = igl::predicates::orient2d(a, b, c);
             if (res != igl::predicates::Orientation::POSITIVE) return true;
         }
@@ -572,11 +586,13 @@ Eigen::Vector2d wmtk::newton_method(
     };
 
     auto compute_new_valid_pos =
-        [&is_inverted, &energy_from_point, &assembles, &energy_def](const Eigen::Vector2d& pos) {
+        [&is_inverted, &energy_from_point, &target_scaling, &assembles, &energy_def](
+            const Eigen::Vector2d& pos) {
             auto current_pos = pos;
             auto line_search_iters = 12;
 
-            auto dir = newton_direction_2d_with_index(energy_def, assembles, current_pos);
+            auto dir =
+                newton_direction_2d_with_index(target_scaling, energy_def, assembles, current_pos);
             auto newpos =
                 linesearch_2d(is_inverted, energy_from_point, current_pos, dir, line_search_iters);
 

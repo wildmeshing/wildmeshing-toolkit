@@ -18,6 +18,11 @@ auto avg_edge_len = [](auto& m) {
     return avg_len / edges.size();
 };
 
+void TriWild::set_energy(std::unique_ptr<Energy> f)
+{
+    this->m_energy = std::move(f);
+}
+
 bool TriWild::invariants(const std::vector<Tuple>& new_tris)
 {
     if (m_has_envelope) {
@@ -180,7 +185,12 @@ double TriWild::get_quality(const Tuple& loc) const
 
     // Energy evaluation
     // energy = wmtk::AMIPS2D_energy(T);
-    energy = m_energy->Value(T, 0);
+    wmtk::State state = {};
+    state.input_triangle = T;
+    state.scaling = m_target_l;
+
+    m_energy->eval(state);
+    energy = state.value;
 
     // Filter for numerical issues
     if (std::isinf(energy) || std::isnan(energy)) return MAX_ENERGY;
