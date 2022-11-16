@@ -28,7 +28,7 @@ void AMIPS::eval(State& state) const
 
     auto Dsdet = Ds.determinant();
     if (std::abs(Dsdet) < std::numeric_limits<AMIPS::Scalar>::denorm_min()) {
-        state.value = std::numeric_limits<double>::max();
+        state.value = std::numeric_limits<double>::infinity();
         return;
     }
     Dsinv = Ds.inverse();
@@ -40,7 +40,7 @@ void AMIPS::eval(State& state) const
 
     auto Fdet = F.determinant();
     if (std::abs(Fdet.getValue()) < std::numeric_limits<AMIPS::Scalar>::denorm_min()) {
-        state.value = std::numeric_limits<double>::max();
+        state.value = std::numeric_limits<double>::infinity();
         return;
     }
     AMIPS::DScalar AMIPS_function = (F.transpose() * F).trace() / Fdet;
@@ -76,7 +76,7 @@ void SymDi::eval(State& state) const
 
     auto Dsdet = Ds.determinant();
     if (std::abs(Dsdet) < std::numeric_limits<SymDi::Scalar>::denorm_min()) {
-        state.value = std::numeric_limits<double>::max();
+        state.value = std::numeric_limits<double>::infinity();
         return;
     }
     Dsinv = Ds.inverse();
@@ -87,7 +87,7 @@ void SymDi::eval(State& state) const
         (Dm(1, 0) * Dsinv(0, 1) + Dm(1, 1) * Dsinv(1, 1));
     auto Fdet = F.determinant();
     if (std::abs(Fdet.getValue()) < std::numeric_limits<SymDi::Scalar>::denorm_min()) {
-        state.value = std::numeric_limits<double>::max();
+        state.value = std::numeric_limits<double>::infinity();
         return;
     }
 

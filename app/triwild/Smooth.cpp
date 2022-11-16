@@ -14,11 +14,6 @@
 #include <limits>
 #include <optional>
 
-template <class T>
-using RowMatrix2 = Eigen::Matrix<T, Eigen::Dynamic, 2, Eigen::RowMajor>;
-using Index = uint64_t;
-using Scalar = double;
-
 std::function<double(const std::array<double, 6>&)> AMIPS_auto_value = [](auto& T) {
     return wmtk::AMIPS_autodiff(T).getValue();
 };
@@ -177,7 +172,9 @@ bool triwild::TriWild::smooth_after(const Tuple& t)
     vertex_attrs[vid].pos = wmtk::newton_method(this->m_target_l, assembles, *m_energy);
 
     // check boundary and project
-
+    if (is_boundary_vertex(t)) {
+        vertex_attrs[vid].pos = this->m_get_closest_point(vertex_attrs[vid].pos);
+    }
     // get one-ring trinagles for new_tris
     auto new_tris = get_one_ring_tris_for_vertex(t);
 
@@ -188,21 +185,6 @@ bool triwild::TriWild::smooth_after(const Tuple& t)
 
 void triwild::TriWild::smooth_all_vertices()
 {
-    // get the aabb tree for closest point detect in smooth projection
-    RowMatrix2<Index> E = get_bnd_edge_matrix();
-    RowMatrix2<Scalar> V_aabb = Eigen::MatrixXd::Zero(vert_capacity(), 2);
-    for (int i = 0; i < vert_capacity(); ++i) {
-        V_aabb.row(i) << vertex_attrs[i].pos[0], vertex_attrs[i].pos[1];
-    }
-
-    lagrange::bvh::EdgeAABBTree<RowMatrix2<Scalar>, RowMatrix2<Index>, 2> aabb(V_aabb, E);
-    m_get_closest_point = [&aabb](const Eigen::RowVector2d& p) -> Eigen::RowVector2d {
-        uint64_t ind = 0;
-        double distance = 0.0;
-        static Eigen::RowVector2d p_ret;
-        aabb.get_closest_point(p, ind, p_ret, distance);
-        return p_ret;
-    };
     igl::Timer timer;
     double time;
     timer.start();
@@ -239,7 +221,7 @@ void triwild::TriWild::smooth_all_vertices()
             std::vector<Tuple> verts = get_vertices();
             for (int i = 0; i < vert_capacity() && nochange; i++) {
                 auto vid = verts[i].vid(*this);
-                nochange &= ((old_pos[vid] - vertex_attrs[vid].pos).norm() < 1e-5);
+                nochange &= ((old_pos[vid] - vertex_attrs[vid].pos).norm() < 1e-2);
             }
             itr++;
         } while (!nochange && itr < 100);

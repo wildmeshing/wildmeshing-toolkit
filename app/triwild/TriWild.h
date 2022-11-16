@@ -27,6 +27,12 @@ public:
 class TriWild : public wmtk::TriMesh
 {
 public:
+    template <class T>
+    using RowMatrix2 = Eigen::Matrix<T, Eigen::Dynamic, 2, Eigen::RowMajor>;
+    using Index = uint64_t;
+    using Scalar = double;
+
+public:
     json js_log;
     // default envelop use_exact = true
     sample_envelope::SampleEnvelope m_envelope;

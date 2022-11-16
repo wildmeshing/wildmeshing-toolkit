@@ -113,6 +113,21 @@ void TriWild::create_mesh(
     } else if (bnd_freeze) {
         m_bnd_freeze = bnd_freeze;
     }
+    // get the aabb tree for closest point detect in smooth projection
+    RowMatrix2<Index> E = get_bnd_edge_matrix();
+    RowMatrix2<Scalar> V_aabb = Eigen::MatrixXd::Zero(vert_capacity(), 2);
+    for (int i = 0; i < vert_capacity(); ++i) {
+        V_aabb.row(i) << vertex_attrs[i].pos[0], vertex_attrs[i].pos[1];
+    }
+
+    lagrange::bvh::EdgeAABBTree<RowMatrix2<Scalar>, RowMatrix2<Index>, 2> aabb(V_aabb, E);
+    m_get_closest_point = [&aabb](const Eigen::RowVector2d& p) -> Eigen::RowVector2d {
+        uint64_t ind = 0;
+        double distance = 0.0;
+        static Eigen::RowVector2d p_ret;
+        aabb.get_closest_point(p, ind, p_ret, distance);
+        return p_ret;
+    };
 }
 
 Eigen::Matrix<uint64_t, Eigen::Dynamic, 2, Eigen::RowMajor> TriWild::get_bnd_edge_matrix()
@@ -240,6 +255,8 @@ void TriWild::mesh_improvement(int max_its)
     wmtk::logger().info("current length {}", avg_edge_len(*this));
     js_log["edge_length_avg_start"] = avg_edge_len(*this);
     for (int it = 0; it < max_its; it++) {
+        if (it == 3) m_target_l *= 2;
+        if (it == 8) m_target_l /= 2;
         ///ops
         wmtk::logger().info("\n========it {}========", it);
 
@@ -251,6 +268,7 @@ void TriWild::mesh_improvement(int max_its)
         js_log["iteration_" + std::to_string(it)]["num_f"] = tri_capacity();
         js_log["iteration_" + std::to_string(it)]["energy_max"] = m_max_energy;
         js_log["iteration_" + std::to_string(it)]["edge_len_avg"] = avg_edge_len(*this);
+        js_log["iteration_" + std::to_string(it)]["edge_len_target"] = m_target_l;
 
         collapse_all_edges();
         write_obj("after_collapse_" + std::to_string(it) + ".obj");
@@ -295,6 +313,7 @@ void TriWild::mesh_improvement(int max_its)
         }
         pre_avg_len = avg_len;
         pre_max_energy = m_max_energy;
+        consolidate_mesh();
     }
 
     wmtk::logger().info("/////final: max energy {} , avg len {} ", m_max_energy, avg_len);

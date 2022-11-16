@@ -83,8 +83,13 @@ bool TriWild::collapse_edge_after(const Tuple& t)
     // adding heuristic decision. If length2 < 4. / 5. * 4. / 5. * m.m_target_l * m.m_target_l always collapse
     double length2 =
         (vertex_attrs[cache.local().v1].pos - vertex_attrs[cache.local().v2].pos).squaredNorm();
-    const Eigen::Vector2d p =
-        (vertex_attrs[cache.local().v1].pos + vertex_attrs[cache.local().v2].pos) / 2.0;
+    Eigen::Vector2d p;
+    if (vertex_attrs[cache.local().v1].fixed)
+        p = vertex_attrs[cache.local().v1].pos;
+    else if (vertex_attrs[cache.local().v2].fixed) {
+        p = vertex_attrs[cache.local().v1].pos;
+    } else
+        p = (vertex_attrs[cache.local().v1].pos + vertex_attrs[cache.local().v2].pos) / 2.0;
     auto vid = t.vid(*this);
     vertex_attrs[vid].pos = p;
     vertex_attrs[vid].partition_id = cache.local().partition_id;
