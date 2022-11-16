@@ -46,7 +46,7 @@ TEST_CASE("triwild_smooth_1triangle", "[triwild_int]")
 
     triwild::TriWild triwild;
     triwild.create_mesh(V, F);
-
+    triwild.set_energy(std::make_unique<wmtk::AMIPS>());
     double quality = triwild.get_quality_all_triangles().mean();
     REQUIRE(quality > 5);
 
@@ -77,6 +77,7 @@ TEST_CASE("triwild_smooth_4triangles", "[triwild_int]")
 
     triwild::TriWild triwild;
     triwild.create_mesh(V, F);
+    triwild.set_energy(std::make_unique<wmtk::AMIPS>());
 
     double quality = triwild.get_quality_all_triangles().mean();
     REQUIRE(quality > 2.5);
@@ -109,6 +110,7 @@ TEST_CASE("triwild_boundary", "[triwild_int]")
 
     triwild::TriWild triwild;
     triwild.create_mesh(V, F);
+    triwild.set_energy(std::make_unique<wmtk::AMIPS>());
 
     double quality = triwild.get_quality_all_triangles().mean();
     REQUIRE(quality > 2.5);

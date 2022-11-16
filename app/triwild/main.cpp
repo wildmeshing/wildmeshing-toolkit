@@ -97,20 +97,7 @@ int main(int argc, char** argv)
     // !!!! notice!!!!!
     // arguments and parameters relating to the ABBB has to match the type exactly
     // !!!!!!!!!!!!!!!!
-    Eigen::Matrix<uint64_t, Eigen::Dynamic, 2, Eigen::RowMajor> E = triwild.get_bnd_edge_matrix();
-    Eigen::Matrix<double, Eigen::Dynamic, 2, Eigen::RowMajor> V_aabb = V.block(0, 0, V.rows(), 2);
-    lagrange::bvh::EdgeAABBTree<
-        Eigen::Matrix<double, Eigen::Dynamic, 2, Eigen::RowMajor>,
-        Eigen::Matrix<uint64_t, Eigen::Dynamic, 2, Eigen::RowMajor>,
-        2>
-        aabb(V_aabb, E);
-    triwild.m_get_closest_point = [&aabb](const Eigen::RowVector2d& p) -> Eigen::RowVector2d {
-        uint64_t ind = 0;
-        double distance = 0.0;
-        static Eigen::RowVector2d p_ret;
-        aabb.get_closest_point(p, ind, p_ret, distance);
-        return p_ret;
-    };
+
     auto energies = triwild.get_quality_all_triangles();
     double start_energy = energies.mean();
     triwild.js_log["energy_start_avg"] = start_energy;
