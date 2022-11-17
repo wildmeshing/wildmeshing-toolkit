@@ -14,6 +14,11 @@
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
+template <class T>
+using RowMatrix2 = Eigen::Matrix<T, Eigen::Dynamic, 2, Eigen::RowMajor>;
+using Index = uint64_t;
+using Scalar = double;
+
 int main(int argc, char** argv)
 {
     ZoneScopedN("triwildmain");
@@ -76,6 +81,15 @@ int main(int argc, char** argv)
     triwild.m_eps = epsr * diag;
     triwild.m_stop_energy = target_e;
     triwild.create_mesh(V, F, epsr * diag, bnd_freeze);
+    // get the aabb tree for closest point detect in smooth projection
+    RowMatrix2<Index> E = triwild.get_bnd_edge_matrix();
+    RowMatrix2<Scalar> V_aabb = Eigen::MatrixXd::Zero(triwild.vert_capacity(), 2);
+    for (int i = 0; i < triwild.vert_capacity(); ++i) {
+        V_aabb.row(i) << triwild.vertex_attrs[i].pos[0], triwild.vertex_attrs[i].pos[1];
+    }
+
+    lagrange::bvh::EdgeAABBTree<RowMatrix2<Scalar>, RowMatrix2<Index>, 2> aabb(V_aabb, E);
+    triwild.set_projection(aabb);
     triwild.set_energy(std::make_unique<wmtk::AMIPS>());
 
     if (energy_type == "SymDi") {

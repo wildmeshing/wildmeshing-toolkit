@@ -23,6 +23,18 @@ void TriWild::set_energy(std::unique_ptr<Energy> f)
     this->m_energy = std::move(f);
 }
 
+void TriWild::set_projection(
+    lagrange::bvh::EdgeAABBTree<RowMatrix2<Scalar>, RowMatrix2<Index>, 2>& aabb)
+{
+    this->m_get_closest_point = [&aabb](const Eigen::RowVector2d& p) -> Eigen::RowVector2d {
+        uint64_t ind = 0;
+        double distance = 0.0;
+        static Eigen::RowVector2d p_ret;
+        aabb.get_closest_point(p, ind, p_ret, distance);
+        return p_ret;
+    };
+}
+
 bool TriWild::invariants(const std::vector<Tuple>& new_tris)
 {
     if (m_has_envelope) {
@@ -113,21 +125,6 @@ void TriWild::create_mesh(
     } else if (bnd_freeze) {
         m_bnd_freeze = bnd_freeze;
     }
-    // get the aabb tree for closest point detect in smooth projection
-    RowMatrix2<Index> E = get_bnd_edge_matrix();
-    RowMatrix2<Scalar> V_aabb = Eigen::MatrixXd::Zero(vert_capacity(), 2);
-    for (int i = 0; i < vert_capacity(); ++i) {
-        V_aabb.row(i) << vertex_attrs[i].pos[0], vertex_attrs[i].pos[1];
-    }
-
-    lagrange::bvh::EdgeAABBTree<RowMatrix2<Scalar>, RowMatrix2<Index>, 2> aabb(V_aabb, E);
-    m_get_closest_point = [&aabb](const Eigen::RowVector2d& p) -> Eigen::RowVector2d {
-        uint64_t ind = 0;
-        double distance = 0.0;
-        static Eigen::RowVector2d p_ret;
-        aabb.get_closest_point(p, ind, p_ret, distance);
-        return p_ret;
-    };
 }
 
 Eigen::Matrix<uint64_t, Eigen::Dynamic, 2, Eigen::RowMajor> TriWild::get_bnd_edge_matrix()
