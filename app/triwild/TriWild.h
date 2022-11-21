@@ -95,6 +95,10 @@ public:
     // Writes a triangle mesh in OBJ format
     void write_obj(const std::string& path);
 
+    void write_displaced_obj(
+        const std::string& path,
+        const std::function<double(double, double)>& displacement);
+
     // Computes the quality of a triangle
     double get_quality(const Tuple& loc) const;
 

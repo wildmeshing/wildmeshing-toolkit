@@ -777,3 +777,29 @@ TEST_CASE("smoothing_amips_scaling")
     REQUIRE((wmtk::AMIPS_autodiff_customize_target(target_tri, T, 2).getGradient()).norm() < 1e-3);
     m.write_obj("smoothing_amips_test.obj");
 }
+
+TEST_CASE("smoothing_2.5")
+{
+    using DScalar = wmtk::TwoAndAHalf::DScalar;
+    Eigen::MatrixXd V(3, 2);
+    V.row(0) << 0, 0;
+    V.row(1) << 10, 0;
+    V.row(2) << 0, 10;
+    Eigen::MatrixXi F(1, 3);
+    F.row(0) << 0, 1, 2;
+
+    auto displacement = [](const DScalar& u, const DScalar& v) -> DScalar { return DScalar(1.0); };
+
+    TriWild m;
+    m.create_mesh(V, F, -1, false);
+    m.set_energy(std::make_unique<wmtk::TwoAndAHalf>(displacement));
+    m.m_target_l = 2;
+    m.m_get_closest_point = [](const Eigen::RowVector2d& p) -> Eigen::RowVector2d { return p; };
+    assert(m.check_mesh_connectivity_validity());
+    m.smooth_all_vertices();
+    m.write_displaced_obj(
+        "smoothing_twoandahalf.obj",
+        [&displacement](double u, double v) -> double {
+            return displacement(DScalar(u), DScalar(v)).getValue();
+        });
+}

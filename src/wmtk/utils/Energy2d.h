@@ -11,6 +11,7 @@
 namespace wmtk {
 struct State
 {
+    using DScalar = DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d>;
     int idx = 0;
     double scaling = 1.;
     double value;
@@ -23,7 +24,7 @@ struct State
 class Energy
 {
 public:
-    typedef DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d> DScalar;
+    using DScalar = DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d>;
     using Scalar = typename DScalar::Scalar;
 
 public:
@@ -42,5 +43,19 @@ class SymDi : public wmtk::Energy
 {
 public:
     void eval(State& state) const override;
+};
+class TwoAndAHalf : public wmtk::Energy
+{
+public:
+    TwoAndAHalf(std::function<DScalar(const DScalar&, const DScalar&)> displacement_func)
+        : m_displacement(std::move(displacement_func))
+    {}
+
+public:
+    std::function<DScalar(const DScalar&, const DScalar&)> m_displacement;
+
+public:
+    void eval(State& state) const override;
+    DScalar displacement(const DScalar& x, const DScalar& y) const { return m_displacement(x, y); };
 };
 } // namespace wmtk

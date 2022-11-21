@@ -175,6 +175,23 @@ void TriWild::write_obj(const std::string& path)
     igl::writeOBJ(path, V3, F);
 }
 
+void TriWild::write_displaced_obj(
+    const std::string& path,
+    const std::function<double(double, double)>& displacement)
+{
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+
+    export_mesh(V, F);
+
+    Eigen::MatrixXd V3 = Eigen::MatrixXd::Zero(V.rows(), 3);
+    for (int i = 0; i < V.rows(); i++) {
+        V3.row(i) << V(i, 0), V(i, 1), displacement(V(i, 0), V(i, 1));
+    }
+
+    igl::writeOBJ(path, V3, F);
+}
+
 double TriWild::get_length2(const Tuple& t) const
 {
     auto& m = *this;
