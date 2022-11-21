@@ -58,5 +58,5 @@ Eigen::Vector2d try_project(
 Eigen::Vector2d newton_method(
     double target_scaling,
     std::vector<std::array<double, 7>>& assembles,
-    wmtk::Energy& energy_def);
+    const wmtk::Energy& energy_def);
 } // namespace wmtk

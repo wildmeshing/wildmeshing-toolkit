@@ -536,7 +536,7 @@ auto newton_direction_2d_with_index = [](auto& target_scaling,
 Eigen::Vector2d wmtk::newton_method(
     double target_scaling,
     std::vector<std::array<double, 7>>& assembles,
-    wmtk::Energy& energy_def)
+    const wmtk::Energy& energy_def)
 {
     assert(!assembles.empty());
     auto& T0 = assembles.front();
