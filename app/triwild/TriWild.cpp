@@ -57,9 +57,21 @@ bool TriWild::invariants(const std::vector<Tuple>& new_tris)
         b << vertex_attrs[verts[1].vid(*this)].pos(0), vertex_attrs[verts[1].vid(*this)].pos(1);
         c << vertex_attrs[verts[2].vid(*this)].pos(0), vertex_attrs[verts[2].vid(*this)].pos(1);
 
+        // check both inverted and exact colinear
         if (wmtk::orient2d_t(a, b, c) != 1) return false;
-        if (is_inverted(t)) return false;
+
+        // add area check (degenerate tirangle)
+        Eigen::Vector3d A, B, C;
+        A.topRows(2) = a;
+        B.topRows(2) = b;
+        C.topRows(2) = c;
+
+        double area = ((B - A).cross(C - A)).squaredNorm();
+        if (area < std::numeric_limits<double>::denorm_min()) return false;
+
+        // if (is_inverted(t)) return false;
     }
+
 
     return true;
 }
@@ -197,7 +209,15 @@ double TriWild::get_length2(const Tuple& t) const
     auto& m = *this;
     auto& v1 = t;
     auto v2 = t.switch_vertex(m);
+    auto v12d = m.vertex_attrs[v1.vid(m)].pos;
+    auto v22d = m.vertex_attrs[v2.vid(m)].pos;
+
     double length = (m.vertex_attrs[v1.vid(m)].pos - m.vertex_attrs[v2.vid(m)].pos).squaredNorm();
+
+    // add 3d displacement
+    auto v13d = m_triwild_displacement(v12d(0), v12d(1));
+    auto v23d = m_triwild_displacement(v22d(0), v22d(1));
+    length = (v13d - v23d).squaredNorm();
     return length;
 }
 

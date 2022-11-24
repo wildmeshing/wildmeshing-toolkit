@@ -49,6 +49,11 @@ public:
     double m_stop_energy = 5;
     std::function<Eigen::RowVector2d(const Eigen::RowVector2d&)> m_get_closest_point;
     std::unique_ptr<wmtk::Energy> m_energy;
+    std::function<Eigen::Vector3d(double&, double&)> m_triwild_displacement =
+        [](double& u, double& v) -> Eigen::Vector3d {
+        Eigen::Vector3d p(u, v, 0.);
+        return p;
+    }; // used for heuristic split, collapse. Default to return (u,v,0)
 
     TriWild(){};
 
