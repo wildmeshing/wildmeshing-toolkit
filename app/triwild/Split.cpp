@@ -77,8 +77,19 @@ bool TriWild::split_edge_before(const Tuple& t)
 bool TriWild::split_edge_after(const Tuple& t)
 {
     // adding heuristic decision. If length2 > 4. / 3. * 4. / 3. * m.m_target_l * m.m_target_l always collapse
+    // transform edge length with displacement
+
     double length2 =
         (vertex_attrs[cache.local().v1].pos - vertex_attrs[cache.local().v2].pos).squaredNorm();
+
+    auto v13d = m_triwild_displacement(
+        vertex_attrs[cache.local().v1].pos(0),
+        vertex_attrs[cache.local().v1].pos(1));
+    auto v23d = m_triwild_displacement(
+        vertex_attrs[cache.local().v2].pos(0),
+        vertex_attrs[cache.local().v2].pos(1));
+    length2 = (v23d - v13d).squaredNorm();
+
     const Eigen::Vector2d p =
         (vertex_attrs[cache.local().v1].pos + vertex_attrs[cache.local().v2].pos) / 2.0;
     auto vid = t.vid(*this);
