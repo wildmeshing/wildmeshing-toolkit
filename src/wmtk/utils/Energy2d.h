@@ -58,4 +58,18 @@ public:
     void eval(State& state) const override;
     DScalar displacement(const DScalar& x, const DScalar& y) const { return m_displacement(x, y); };
 };
+class EdgeLengthEnergy : public wmtk::Energy
+{
+public:
+    EdgeLengthEnergy(std::function<Eigen::Vector3d(const double&, const double&)> displacement_func)
+        : m_displacement(std::move(displacement_func))
+    {}
+
+public:
+    std::function<Eigen::Vector3d(const double&, const double&)> m_displacement;
+
+public:
+    void eval(State& state) const override;
+    Eigen::Vector3d displacement(const double& x, const double& y) const { return m_displacement(x, y); };
+};
 } // namespace wmtk

@@ -114,38 +114,35 @@ void TwoAndAHalf::eval(State& state) const
     for (auto i = 0; i < 6; i++) target_triangle[i] = state.scaling * target_triangle[i];
     int i = state.idx;
 
-    DScalar x0(0, input_triangle[i * 2]), y0(1, input_triangle[i * 2 + 1]);
-
-    // 2.5D to 3D (for now just lifting the plane to z=1.0)
+    DScalar x1(0, input_triangle[i * 2]), y1(1, input_triangle[i * 2 + 1]);
     // For simplicity always have V1 be the vertex that's the variable and origin
     // Also need to preserve the orientation
-    Eigen::Matrix<DScalar, 3, 1> V1(x0, y0, displacement(x0, y0));
-    Eigen::Matrix<double, 3, 1> V2(
-        input_triangle[(i * 2 + 2) % 6],
-        input_triangle[(i * 2 + 3) % 6],
-        double_displacement(input_triangle[(i * 2 + 2) % 6], input_triangle[(i * 2 + 3) % 6]));
-    Eigen::Matrix<double, 3, 1> V3(
-        input_triangle[(i * 2 + 4) % 6],
-        input_triangle[(i * 2 + 5) % 6],
-        double_displacement(input_triangle[(i * 2 + 4) % 6], input_triangle[(i * 2 + 5) % 6]));
+    DScalar z1 = displacement(x1, y1);
+    double z2 =
+        double_displacement(input_triangle[(i * 2 + 2) % 6], input_triangle[(i * 2 + 3) % 6]);
+    double z3 =
+        double_displacement(input_triangle[(i * 2 + 4) % 6], input_triangle[(i * 2 + 5) % 6]);
 
     // calculate the tangent basis
     Eigen::Matrix<DScalar, 3, 1> V2_V1(
-        input_triangle[(i * 2 + 2) % 6] - x0,
-        input_triangle[(i * 2 + 3) % 6] - y0,
-        DScalar(0.0));
+        input_triangle[(i * 2 + 2) % 6] - x1,
+        input_triangle[(i * 2 + 3) % 6] - y1,
+        z2 - z1);
     Eigen::Matrix<DScalar, 3, 1> V3_V1(
-        input_triangle[(i * 2 + 4) % 6] - x0,
-        input_triangle[(i * 2 + 5) % 6] - y0,
-        DScalar(0.0));
+        input_triangle[(i * 2 + 4) % 6] - x1,
+        input_triangle[(i * 2 + 5) % 6] - y1,
+        z3 - z1);
 
     Eigen::Matrix<DScalar, 3, 1> e1; // e1 = (V2 - V1).normalize()
-    e1 = V2_V1 / V2_V1.norm(); // check norm is not 0
+    assert(V2_V1.norm() != 0); // check norm is not 0
+    e1 = V2_V1 / V2_V1.norm();
     Eigen::Matrix<DScalar, 3, 1> n;
-    n = e1.cross(V3_V1);
+    n = V2_V1.cross(V3_V1);
+    assert(n.norm() != 0); // check norm is not 0
     n = n / n.norm();
     Eigen::Matrix<DScalar, 3, 1> e2;
     e2 = n.cross(e1);
+    assert(e2.norm() != 0); // check norm is not 0
     e2 = e2 / e2.norm();
 
     // project V1, V2, V3 to tangent plane to VT1, VT2, VT3
@@ -156,7 +153,7 @@ void TwoAndAHalf::eval(State& state) const
     VT3 << V3_V1.dot(e1), V3_V1.dot(e2);
 
     // now construct Dm as before in tangent plane
-    // (x0 - x1, y0 - y1, x0 - x2, y0 - y2).transpose
+    // (x2 - x1, y2 - y1, x3 - x1, y2 - y1).transpose
     Eigen::Matrix<DScalar, 2, 2> Dm;
     Dm << VT2(0, 0) - VT1(0, 0), VT3(0, 0) - VT1(0, 0), VT2(1, 0) - VT1(1, 0),
         VT3(1, 0) - VT1(1, 0);
@@ -190,9 +187,56 @@ void TwoAndAHalf::eval(State& state) const
     // define of energy = F.frobeniusnormsquare + F.inverse().frobeniusnormsquare
     auto F_inv = F.inverse();
 
-    DScalar SymDi_function = (F.transpose() * F).trace() + (F_inv.transpose() * F_inv).trace();
-    state.value = SymDi_function.getValue();
-    state.gradient = SymDi_function.getGradient();
-    state.hessian = SymDi_function.getHessian();
+    DScalar TwoAndAHalf_function =
+        (F.transpose() * F).trace() + (F_inv.transpose() * F_inv).trace();
+    state.value = TwoAndAHalf_function.getValue();
+    state.gradient = TwoAndAHalf_function.getGradient();
+    state.hessian = TwoAndAHalf_function.getHessian();
+
+    wmtk::logger().info("/// idx {} value {} grad {}", state.idx, state.value, state.gradient);
+}
+
+void EdgeLengthEnergy::eval(State& state) const
+{
+    DiffScalarBase::setVariableCount(2);
+    auto input_triangle = state.input_triangle;
+    auto target_triangle = state.target_triangle;
+    for (auto i = 0; i < 6; i++) target_triangle[i] = state.scaling * target_triangle[i];
+    int i = state.idx;
+
+    Eigen::Vector3d v1 = this->displacement(input_triangle[i * 2], input_triangle[i * 2 + 1]);
+    Eigen::Vector3d v2 =
+        this->displacement(input_triangle[(i * 2 + 2) % 6], input_triangle[(i * 2 + 3) % 6]);
+    Eigen::Vector3d v3 =
+        this->displacement(input_triangle[(i * 2 + 4) % 6], input_triangle[(i * 2 + 5) % 6]);
+
+    DScalar x1(0, v1(0)), y1(1, v1(1));
+
+    Eigen::Matrix<DScalar, 3, 1> V2_V1(v2(0) - x1, v2(1) - y1, DScalar(v2(2) - v1(2)));
+    Eigen::Matrix<DScalar, 3, 1> V3_V1(v3(0) - x1, v3(1) - y1, DScalar(v3(2) - v1(2)));
+    Eigen::Matrix<DScalar, 3, 1> V3_V2(
+        DScalar(v3(0) - v2(0)),
+        DScalar(v3(1) - v2(1)),
+        DScalar(v3(2) - v2(2)));
+
+    // check if area is either inverted or smaller than certain A_hat
+    DScalar area;
+    area = (V2_V1.cross(V3_V1)).squaredNorm();
+    if (std::abs(area.getValue()) < std::numeric_limits<Scalar>::denorm_min()) {
+        state.value = std::numeric_limits<double>::infinity();
+        return;
+    }
+
+    DScalar total_energy = DScalar(0);
+    double l_squared = std::pow(state.scaling, 2);
+    // energies for edge length
+    total_energy += (V2_V1.squaredNorm() - l_squared) * (V2_V1.squaredNorm() - l_squared);
+    total_energy += (V3_V1.squaredNorm() - l_squared) * (V3_V1.squaredNorm() - l_squared);
+    total_energy += (V3_V2.squaredNorm() - l_squared) * (V3_V2.squaredNorm() - l_squared);
+
+    // energy barrier for small triangle
+    // check if area is either inverted or smaller than certain A_hat
+    double A_hat = 1e-5; // this is arbitrary now
+    total_energy += -(area - A_hat) * (area - A_hat) * std::log(area.getValue() / A_hat);
 }
 } // namespace wmtk
