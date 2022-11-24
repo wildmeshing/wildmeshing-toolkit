@@ -109,11 +109,11 @@ bool TriWild::swap_edge_before(const Tuple& t)
 bool TriWild::swap_edge_after(const Tuple& t)
 {
     // check quality and degenerate
-    auto tris = get_one_ring_tris_for_vertex(t);
+    // auto tris = get_one_ring_tris_for_vertex(t);
 
-    for (auto tri : tris) {
-        // if (get_quality(tri) >= cache.local().max_energy) return false; // this is commented out for energy check. Only check valence for now
-        if (get_quality(tri) < 0) return false; // reject operations that cause triangle inversion
-    }
+    // for (auto tri : tris) {
+    //     // if (get_quality(tri) >= cache.local().max_energy) return false; // this is commented out for energy check. Only check valence for now
+    //     if (get_quality(tri) < 0) return false; // reject operations that cause triangle inversion
+    // }
     return true;
 }
