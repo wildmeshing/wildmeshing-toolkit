@@ -236,6 +236,7 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
     if (!split_edge_before(t)) return false;
     if (!t.is_valid(*this)) return false;
 
+    start_protect_connectivity();
     // get the vids
     size_t vid1 = t.vid(*this);
     size_t vid2 = switch_vertex(t).vid(*this);
@@ -353,26 +354,30 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
     if (!split_edge_after(new_t) || !invariants(new_tris)) {
         // rollback topo
         // restore old v, t
-        for (auto old_v : old_vertices) m_vertex_connectivity[old_v.first] = old_v.second;
-        for (auto old_t : old_tris) m_tri_connectivity[old_t.first] = old_t.second;
-        // erase new_vid new_fids
-        m_vertex_connectivity[new_vid].m_conn_tris.clear();
-        m_vertex_connectivity[new_vid].m_is_removed = true;
-        m_tri_connectivity[new_fid1].m_is_removed = true;
-        if (new_fid2.has_value()) m_tri_connectivity[new_fid2.value()].m_is_removed = true;
+        // for (auto old_v : old_vertices) m_vertex_connectivity[old_v.first] = old_v.second;
+        // for (auto old_t : old_tris) m_tri_connectivity[old_t.first] = old_t.second;
+        // // erase new_vid new_fids
+        // m_vertex_connectivity[new_vid].m_conn_tris.clear();
+        // m_vertex_connectivity[new_vid].m_is_removed = true;
+        // m_tri_connectivity[new_fid1].m_is_removed = true;
+        // if (new_fid2.has_value()) m_tri_connectivity[new_fid2.value()].m_is_removed = true;
+        rollback_protected_connectivity();
         rollback_protected_attributes();
         return false;
     }
+    release_protect_connectivity();
     release_protect_attributes();
     return true;
 }
 
 bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
 {
+
     if (!collapse_edge_before(loc0)) {
         return false;
     }
 
+    start_protect_connectivity();
     // get the vids
     size_t vid1 = loc0.vid(*this);
     size_t vid2 = switch_vertex(loc0).vid(*this);
@@ -489,31 +494,32 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
         // resotre the version-number
         // removed restore to false
 
-        for (auto rollback : old_tris) {
-            size_t fid = rollback.first;
-            m_tri_connectivity[fid] = rollback.second;
-        }
-        for (auto rollback : old_vertices) {
-            size_t vid = rollback.first;
-            m_vertex_connectivity[vid] = rollback.second;
-        }
-        m_vertex_connectivity[new_vid].m_conn_tris.clear();
-        m_vertex_connectivity[new_vid].m_is_removed = true;
-        for (auto vid_fid : same_edge_vid_fid) {
-            size_t vid = vid_fid.first;
-            size_t fid = vid_fid.second;
-            m_vertex_connectivity[vid].m_conn_tris.push_back(fid);
-            std::sort(
-                m_vertex_connectivity[vid].m_conn_tris.begin(),
-                m_vertex_connectivity[vid].m_conn_tris.end());
-        }
-        for (size_t fid : n12_intersect_fids) {
-            m_tri_connectivity[fid].m_is_removed = false;
-        }
-
+        // for (auto rollback : old_tris) {
+        //     size_t fid = rollback.first;
+        //     m_tri_connectivity[fid] = rollback.second;
+        // }
+        // for (auto rollback : old_vertices) {
+        //     size_t vid = rollback.first;
+        //     m_vertex_connectivity[vid] = rollback.second;
+        // }
+        // m_vertex_connectivity[new_vid].m_conn_tris.clear();
+        // m_vertex_connectivity[new_vid].m_is_removed = true;
+        // for (auto vid_fid : same_edge_vid_fid) {
+        //     size_t vid = vid_fid.first;
+        //     size_t fid = vid_fid.second;
+        //     m_vertex_connectivity[vid].m_conn_tris.push_back(fid);
+        //     std::sort(
+        //         m_vertex_connectivity[vid].m_conn_tris.begin(),
+        //         m_vertex_connectivity[vid].m_conn_tris.end());
+        // }
+        // for (size_t fid : n12_intersect_fids) {
+        //     m_tri_connectivity[fid].m_is_removed = false;
+        // }
+        rollback_protected_connectivity();
         rollback_protected_attributes();
         return false;
     }
+    release_protect_connectivity();
     release_protect_attributes();
     return true;
 }
@@ -523,7 +529,7 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
     if (!swap_edge_before(t)) {
         return false;
     }
-
+    start_protect_connectivity();
     // get the vids
     size_t vid1 = t.vid(*this);
     size_t vid2 = t.switch_vertex(*this).vid(*this);
@@ -584,12 +590,14 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
     start_protect_attributes();
     if (!swap_edge_after(new_t) || !invariants(new_tris)) {
         // restore the vertex and faces
-        for (auto old_v : old_vertices) m_vertex_connectivity[old_v.first] = old_v.second;
-        for (auto old_tri : old_tris) m_tri_connectivity[old_tri.first] = old_tri.second;
+        // for (auto old_v : old_vertices) m_vertex_connectivity[old_v.first] = old_v.second;
+        // for (auto old_tri : old_tris) m_tri_connectivity[old_tri.first] = old_tri.second;
+        rollback_protected_connectivity();
         rollback_protected_attributes();
 
         return false;
     }
+    release_protect_connectivity();
     release_protect_attributes();
     return true;
 }

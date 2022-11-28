@@ -48,6 +48,16 @@ struct AttributeCollection : public AbstractAttributeContainer
         // TODO: in Concurrent, vertex partition id, vertex mutex should be part of attribute
     }
 
+    void shrink_to_fit()
+    {
+        m_attributes.shrink_to_fit();
+    }
+
+    void grow_to_at_least(size_t s)
+    {
+        m_attributes.grow_to_at_least(s);
+    }
+
     bool assign(size_t to, T&& val) // always use this in OP_after
     {
         m_attributes[to] = val;
