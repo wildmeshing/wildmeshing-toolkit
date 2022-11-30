@@ -93,8 +93,8 @@ void TriWild::swap_all_edges()
 bool TriWild::swap_edge_before(const Tuple& t)
 {
     if (!TriMesh::swap_edge_before(t)) return false;
-    if (vertex_attrs[t.vid(*this)].fixed || vertex_attrs[t.switch_vertex(*this).vid(*this)].fixed)
-        return false;
+
+    if (is_boundary_edge(t)) return false;
 
     // // get max_energy
     // cache.local().max_energy = -1;
