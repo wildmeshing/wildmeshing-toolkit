@@ -134,16 +134,32 @@ void TwoAndAHalf::eval(State& state) const
         z3 - z1);
 
     Eigen::Matrix<DScalar, 3, 1> e1; // e1 = (V2 - V1).normalize()
-    assert(V2_V1.norm() != 0); // check norm is not 0
-    e1 = V2_V1 / V2_V1.norm();
+    e1 = V2_V1.stableNormalized();
+    //assert(V2_V1.norm() != 0); // check norm is not 0
+    // e1 = V2_V1 / V2_V1.norm();
     Eigen::Matrix<DScalar, 3, 1> n;
     n = V2_V1.cross(V3_V1);
-    assert(n.norm() != 0); // check norm is not 0
-    n = n / n.norm();
+    n.stableNormalized();
+    if (n.lpNorm<Eigen::Infinity>() < std::numeric_limits<double>::denorm_min()) {
+        std::cout << "V1 " << std::endl;
+        std::cout << std::hexfloat << input_triangle[i * 2] << " " << input_triangle[i * 2 + 1]
+                  << z1 << std::endl;
+        std::cout << "V2 " << std::endl;
+        std::cout << std::hexfloat << input_triangle[i * 2 + 2] << " " << input_triangle[i * 2 + 3]
+                  << z2 << std::endl;
+        std::cout << "V3 " << std::endl;
+        std::cout << std::hexfloat << input_triangle[i * 2 + 4] << " " << input_triangle[i * 2 + 5]
+                  << z3 << std::endl;
+        assert(false);
+    }
+
+    // assert(n.norm() != 0); // check norm is not 0
+    // n = n / n.norm();
     Eigen::Matrix<DScalar, 3, 1> e2;
     e2 = n.cross(e1);
-    assert(e2.norm() != 0); // check norm is not 0
-    e2 = e2 / e2.norm();
+    e2.stableNormalized();
+    //assert(e2.norm() != 0); // check norm is not 0
+    // e2 = e2 / e2.norm();
 
     // project V1, V2, V3 to tangent plane to VT1, VT2, VT3
     Eigen::Matrix<double, 2, 1> VT1;
@@ -234,9 +250,16 @@ void EdgeLengthEnergy::eval(State& state) const
     total_energy += (V3_V1.squaredNorm() - l_squared) * (V3_V1.squaredNorm() - l_squared);
     total_energy += (V3_V2.squaredNorm() - l_squared) * (V3_V2.squaredNorm() - l_squared);
 
-    // energy barrier for small triangle
+    // energy barrier for small triangle only when A < A_hat
     // check if area is either inverted or smaller than certain A_hat
-    double A_hat = 1e-5; // this is arbitrary now
-    total_energy += -(area - A_hat) * (area - A_hat) * std::log(area.getValue() / A_hat);
+
+    double A_hat =
+        1 / 2 * sqrt(3) / 2 * 1 / 2 * pow(state.scaling, 2) * 0.01; // this is arbitrary now
+    if (area < A_hat) total_energy += -(area - A_hat) * (area - A_hat) * log(area / A_hat);
+    state.value = total_energy.getValue();
+    state.gradient = total_energy.getGradient();
+    state.hessian = total_energy.getHessian();
+
+    wmtk::logger().info("/// idx {} value {} grad {}", state.idx, state.value, state.gradient);
 }
 } // namespace wmtk

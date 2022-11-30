@@ -70,6 +70,9 @@ public:
 
 public:
     void eval(State& state) const override;
-    Eigen::Vector3d displacement(const double& x, const double& y) const { return m_displacement(x, y); };
+    Eigen::Vector3d displacement(const double& x, const double& y) const
+    {
+        return m_displacement(x, y);
+    };
 };
 } // namespace wmtk
