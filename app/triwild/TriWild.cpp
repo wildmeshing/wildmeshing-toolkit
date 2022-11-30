@@ -50,6 +50,7 @@ bool TriWild::invariants(const std::vector<Tuple>& new_tris)
     }
 
     for (auto& t : new_tris) {
+        if (is_inverted(t)) return false;
         Eigen::Vector2d a, b, c;
         auto verts = oriented_tri_vertices(t);
         assert(verts.size() == 3);
@@ -58,7 +59,10 @@ bool TriWild::invariants(const std::vector<Tuple>& new_tris)
         c << vertex_attrs[verts[2].vid(*this)].pos(0), vertex_attrs[verts[2].vid(*this)].pos(1);
 
         // check both inverted and exact colinear
-        if (wmtk::orient2d_t(a, b, c) != 1) return false;
+        if (wmtk::orient2d_t(a, b, c) != 1) {
+            wmtk::logger().info("false in orientation and collinear {}", wmtk::orient2d_t(a, b, c));
+            return false;
+        }
 
         // add area check (degenerate tirangle)
         Eigen::Vector3d A, B, C;
@@ -67,12 +71,13 @@ bool TriWild::invariants(const std::vector<Tuple>& new_tris)
         C.topRows(2) = c;
 
         double area = ((B - A).cross(C - A)).squaredNorm();
-        if (area < std::numeric_limits<double>::denorm_min()) return false;
-
-        // if (is_inverted(t)) return false;
+        if (area < 1e-6) {
+            wmtk::logger().info("false in area ");
+            wmtk::logger().info("failing ABC are {} {} {}", A, B, C);
+            return false; // arbitrary chosen previous std::numeric_limits<double>::denorm_min() is
+                          // too small}
+        }
     }
-
-
     return true;
 }
 std::vector<TriMesh::Tuple> TriWild::new_edges_after(const std::vector<TriMesh::Tuple>& tris) const
@@ -215,8 +220,8 @@ double TriWild::get_length2(const Tuple& t) const
     double length = (m.vertex_attrs[v1.vid(m)].pos - m.vertex_attrs[v2.vid(m)].pos).squaredNorm();
 
     // add 3d displacement
-    auto v13d = m_triwild_displacement(v12d(0), v12d(1));
-    auto v23d = m_triwild_displacement(v22d(0), v22d(1));
+    auto v13d = m.m_triwild_displacement(v12d(0), v12d(1));
+    auto v23d = m.m_triwild_displacement(v22d(0), v22d(1));
     length = (v13d - v23d).squaredNorm();
     return length;
 }
@@ -304,9 +309,6 @@ void TriWild::mesh_improvement(int max_its)
         js_log["iteration_" + std::to_string(it)]["edge_len_avg"] = avg_edge_len(*this);
         js_log["iteration_" + std::to_string(it)]["edge_len_target"] = m_target_l;
 
-        collapse_all_edges();
-        write_obj("after_collapse_" + std::to_string(it) + ".obj");
-
         split_all_edges();
         write_obj("after_split_" + std::to_string(it) + ".obj");
 
@@ -316,6 +318,9 @@ void TriWild::mesh_improvement(int max_its)
 
         smooth_all_vertices();
         write_obj("after_smooth_" + std::to_string(it) + ".obj");
+
+        collapse_all_edges();
+        write_obj("after_collapse_" + std::to_string(it) + ".obj");
 
         wmtk::logger().info(
             "++++++++v {} t {} max energy {}++++++++",
