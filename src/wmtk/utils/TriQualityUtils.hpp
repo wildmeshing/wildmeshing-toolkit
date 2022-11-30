@@ -55,7 +55,7 @@ Eigen::Vector2d try_project(
     const Eigen::Vector2d& point,
     const std::vector<std::array<double, 4>>& assembled_neighbor);
 
-Eigen::Vector2d newton_method(
+Eigen::Vector2d newton_method_with_fallback(
     double target_scaling,
     std::vector<std::array<double, 7>>& assembles,
     const wmtk::Energy& energy_def);

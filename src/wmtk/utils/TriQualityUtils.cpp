@@ -532,8 +532,37 @@ auto newton_direction_2d_with_index = [](auto& target_scaling,
         return -total_jac;
     }
 };
+auto gradient_descent_direction_2d_with_index = [](auto& target_scaling,
+                                                   auto& energy_def,
+                                                   auto& assembles,
+                                                   const Eigen::Vector2d& pos) -> Eigen::Vector2d {
+    auto total_energy = 0.;
+    Eigen::Vector2d total_jac = Eigen::Vector2d::Zero();
 
-Eigen::Vector2d wmtk::newton_method(
+    for (auto& tmp : assembles) {
+        wmtk::State state = {};
+        state.idx = (int)tmp[6];
+        assert(state.idx != -1);
+        // find local vertex index
+        std::array<double, 6> T;
+        for (auto i = 0; i < 6; i++) T[i] = tmp[i];
+        T[state.idx * 2] = pos[0];
+        T[state.idx * 2 + 1] = pos[1];
+        auto jac = decltype(total_jac)();
+
+        state.input_triangle = T;
+        state.scaling = target_scaling;
+
+        energy_def.eval(state);
+        total_energy += state.value;
+        total_jac += state.gradient;
+        assert(!std::isnan(total_energy));
+    }
+    wmtk::logger().info("********* gradient descent instead.");
+    return -total_jac;
+};
+
+Eigen::Vector2d wmtk::newton_method_with_fallback(
     double target_scaling,
     std::vector<std::array<double, 7>>& assembles,
     const wmtk::Energy& energy_def)
@@ -585,20 +614,34 @@ Eigen::Vector2d wmtk::newton_method(
         return false;
     };
 
-    auto compute_new_valid_pos =
-        [&is_inverted, &energy_from_point, &target_scaling, &assembles, &energy_def](
-            const Eigen::Vector2d& pos) {
-            auto current_pos = pos;
-            auto line_search_iters = 12;
-
-            auto dir =
+    auto compute_new_valid_pos = [&is_inverted,
+                                  &energy_from_point,
+                                  &target_scaling,
+                                  &assembles,
+                                  &energy_def](const Eigen::Vector2d& pos, bool NEWTON) {
+        auto current_pos = pos;
+        auto line_search_iters = 12;
+        Eigen::Vector2d dir;
+        if (NEWTON) {
+            dir =
                 newton_direction_2d_with_index(target_scaling, energy_def, assembles, current_pos);
-            auto newpos =
-                linesearch_2d(is_inverted, energy_from_point, current_pos, dir, line_search_iters);
+        } else
+            dir = gradient_descent_direction_2d_with_index(
+                target_scaling,
+                energy_def,
+                assembles,
+                current_pos);
 
-            current_pos = newpos;
+        auto newpos =
+            linesearch_2d(is_inverted, energy_from_point, current_pos, dir, line_search_iters);
 
-            return current_pos;
-        };
-    return compute_new_valid_pos(old_pos);
+        current_pos = newpos;
+
+        return current_pos;
+    };
+    auto new_pos = compute_new_valid_pos(old_pos, 1);
+    // check is the new position is same as the old. If yes switch to gradient descent
+    if ((new_pos - old_pos).squaredNorm() < std::numeric_limits<double>::denorm_min())
+        new_pos = compute_new_valid_pos(old_pos, 0);
+    return new_pos;
 }
