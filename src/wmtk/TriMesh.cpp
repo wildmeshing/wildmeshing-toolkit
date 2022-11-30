@@ -483,7 +483,7 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
 
     start_protect_attributes();
 
-    if (!collapse_edge_after(new_t) || !invariants(new_tris)) {
+    if (!invariants(new_tris) || !collapse_edge_after(new_t)) {
         // if call back check failed roll back
         // restore the changes for connected triangles and vertices
         // resotre the version-number
@@ -582,7 +582,7 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
     assert(new_t.is_valid(*this));
     new_tris = {new_t, new_t.switch_face(*this).value()};
     start_protect_attributes();
-    if (!swap_edge_after(new_t) || !invariants(new_tris)) {
+    if (!invariants(new_tris) || !swap_edge_after(new_t)) {
         // restore the vertex and faces
         for (auto old_v : old_vertices) m_vertex_connectivity[old_v.first] = old_v.second;
         for (auto old_tri : old_tris) m_tri_connectivity[old_tri.first] = old_tri.second;
@@ -599,7 +599,7 @@ bool TriMesh::smooth_vertex(const Tuple& loc0)
     ZoneScoped;
     if (!smooth_before(loc0)) return false;
     start_protect_attributes();
-    if (!smooth_after(loc0) || !invariants(get_one_ring_tris_for_vertex(loc0))) {
+    if (!invariants(get_one_ring_tris_for_vertex(loc0)) || !smooth_after(loc0)) {
         rollback_protected_attributes();
         return false;
     }
