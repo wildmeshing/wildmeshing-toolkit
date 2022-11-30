@@ -63,6 +63,11 @@ void TriWild::collapse_all_edges()
 bool TriWild::collapse_edge_before(const Tuple& t)
 {
     if (!TriMesh::collapse_edge_before(t)) return false;
+    // record boundary vertex as fixed in vertex attribute for accurate collapse after boundary
+    // operations
+    if (is_boundary_vertex(t)) vertex_attrs[t.vid(*this)].fixed = 1;
+    if (is_boundary_vertex(t.switch_vertex(*this)))
+        vertex_attrs[t.switch_vertex(*this).vid(*this)].fixed = 1;
     if (m_bnd_freeze &&
         (vertex_attrs[t.vid(*this)].fixed || vertex_attrs[t.switch_vertex(*this).vid(*this)].fixed))
         return false;
