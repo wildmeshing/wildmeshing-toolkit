@@ -119,7 +119,6 @@ public:
     void smooth_all_vertices();
     bool smooth_before(const Tuple& t) override;
     bool smooth_after(const Tuple& t) override;
-    bool smooth_after_without_index(const Tuple& t);
 
     // Collapse
     void collapse_all_edges();
