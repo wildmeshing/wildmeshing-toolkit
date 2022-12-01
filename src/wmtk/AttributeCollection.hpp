@@ -40,7 +40,9 @@ struct AttributeCollection : public AbstractAttributeContainer
     }
     void resize(size_t s) override
     {
-        m_attributes.grow_to_at_least(s);
+        // TODO: figure out why use this
+        // m_attributes.grow_to_at_least(s);
+        m_attributes.resize(s);
         // if (m_attributes.size() > s) {
         //     m_attributes.resize(s);
         //     m_attributes.shrink_to_fit();
