@@ -374,7 +374,6 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
 
 bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
 {   
-    // int n_vert_old = m_vertex_connectivity.size();
 
     if (!collapse_edge_before(loc0)) {
         return false;
@@ -668,9 +667,9 @@ void TriMesh::consolidate_mesh()
     current_vert_size = v_cnt;
     current_tri_size = t_cnt;
 
-    m_vertex_connectivity.resize(v_cnt);
+    m_vertex_connectivity.m_attributes.resize(v_cnt);
     m_vertex_connectivity.shrink_to_fit();
-    m_tri_connectivity.resize(t_cnt);
+    m_tri_connectivity.m_attributes.resize(t_cnt);
     m_tri_connectivity.shrink_to_fit();
 
     resize_mutex(vert_capacity());
@@ -792,15 +791,16 @@ std::array<size_t, 3> TriMesh::oriented_tri_vids(const Tuple& t) const
 
 void TriMesh::create_mesh(size_t n_vertices, const std::vector<std::array<size_t, 3>>& tris)
 {
-    m_vertex_connectivity.resize(n_vertices);
+    m_vertex_connectivity.m_attributes.resize(n_vertices);
     for (int i = 0; i < n_vertices; i++)
     {
         m_vertex_connectivity[i].m_is_removed = false;
     }
-    m_tri_connectivity.resize(tris.size());
+    m_tri_connectivity.m_attributes.resize(tris.size());
     size_t hash_cnt = 0;
     for (int i = 0; i < tris.size(); i++) {
         m_tri_connectivity[i].m_is_removed = false;
+
         m_tri_connectivity[i].m_indices = tris[i];
 
         m_tri_connectivity[i].hash = hash_cnt;
