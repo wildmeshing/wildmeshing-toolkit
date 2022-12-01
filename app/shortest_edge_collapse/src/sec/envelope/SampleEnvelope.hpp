@@ -5,7 +5,7 @@
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
-// #include "fastenvelope/FastEnvelope.h"
+#include "fastenvelope/FastEnvelope.h"
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
@@ -27,28 +27,28 @@ public:
     virtual bool is_outside(const Eigen::Vector3d& pts) { return false; };
 };
 
-// class ExactEnvelope : public Envelope, public fastEnvelope::FastEnvelope
-// {
-// public:
-//     ExactEnvelope()
-//         : fastEnvelope::FastEnvelope::FastEnvelope(){};
-//     ~ExactEnvelope(){};
-//     void init(
-//         const std::vector<Eigen::Vector3d>& m_ver,
-//         const std::vector<Eigen::Vector3i>& m_faces,
-//         const double eps)
-//     {
-//         fastEnvelope::FastEnvelope::init(m_ver, m_faces, eps);
-//     }
-//     bool is_outside(const std::array<Eigen::Vector3d, 3>& tris)
-//     {
-//         return fastEnvelope::FastEnvelope::is_outside(tris);
-//     }
-//     bool is_outside(const Eigen::Vector3d& pts)
-//     {
-//         return fastEnvelope::FastEnvelope::is_outside(pts);
-//     }
-// };
+class ExactEnvelope : public Envelope, public fastEnvelope::FastEnvelope
+{
+public:
+    ExactEnvelope()
+        : fastEnvelope::FastEnvelope::FastEnvelope(){};
+    ~ExactEnvelope(){};
+    void init(
+        const std::vector<Eigen::Vector3d>& m_ver,
+        const std::vector<Eigen::Vector3i>& m_faces,
+        const double eps)
+    {
+        fastEnvelope::FastEnvelope::init(m_ver, m_faces, eps);
+    }
+    bool is_outside(const std::array<Eigen::Vector3d, 3>& tris)
+    {
+        return fastEnvelope::FastEnvelope::is_outside(tris);
+    }
+    bool is_outside(const Eigen::Vector3d& pts)
+    {
+        return fastEnvelope::FastEnvelope::is_outside(pts);
+    }
+};
 } // namespace wmtk
 namespace sample_envelope {
 class SampleEnvelope : public wmtk::Envelope
@@ -72,7 +72,7 @@ private:
     std::vector<int> geo_vertex_ind;
     std::vector<int> geo_face_ind;
 
-// private:
-    // fastEnvelope::FastEnvelope exact_envelope;
+private:
+    fastEnvelope::FastEnvelope exact_envelope;
 };
 } // namespace sample_envelope

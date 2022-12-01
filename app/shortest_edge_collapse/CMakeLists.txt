@@ -16,7 +16,7 @@ target_link_libraries(wmtk_sec_lib PUBLIC
 	wmtk::toolkit
 	wmtk::data
 	igl::predicates
-	# FastEnvelope
+	FastEnvelope
 	geogram
 )
 
