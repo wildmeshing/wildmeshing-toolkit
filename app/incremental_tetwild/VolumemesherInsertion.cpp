@@ -11,13 +11,13 @@ std::vector<std::array<size_t, 3>> tetwild::TetWild::triangulate_polygon_face(st
         for (int k=0;k<3;k++){
             colinear = true;
             for (int i=0;i<points.size();i++){
-                points2d[i][k % 3] = points[i][k % 3];
-                points2d[i][(k + 1) % 3] = points[i][(k + 1) % 3];
+                points2d[i][k % 3] = points[i][k % 3]*1000;
+                points2d[i][(k + 1) % 3] = points[i][(k + 1) % 3]*1000;
             }
             for (int i=0;i<points.size()-2;i++){
                 auto a = points2d[i]-points2d[i+1];
                 auto b = points2d[i+1]-points2d[i+2];
-                if ((a[0]*b[1]-a[1]*b[0])>1e-6 || (a[0]*b[1]-a[1]*b[0])<-1e-6){
+                if (abs(a[0]*b[1]-a[1]*b[0])>1e-8){
                     colinear = false;
                     break;
                 }
@@ -38,15 +38,18 @@ std::vector<std::array<size_t, 3>> tetwild::TetWild::triangulate_polygon_face(st
             rt(i, 0) = 0;
         }
 
+
         Eigen::VectorXi I;
-        Eigen::VectorXi eF;
+        Eigen::MatrixXi eF;
         Eigen::MatrixXd nP;
 
         igl::predicates::ear_clipping(p2d, rt, I, eF, nP);
 
         std::vector<std::array<size_t, 3>> triangulated_faces;
+        std::cout<<"triangulated_local_index"<<std::endl;
         for (int i=0; i<eF.rows(); i++){
             triangulated_faces.push_back({eF(i,0), eF(i,1), eF(i,2)});
+            std::cout<<eF(i,0)<<" "<<eF(i,1)<<" "<<eF(i,2)<<std::endl;
         }
 
         return triangulated_faces;
@@ -160,7 +163,7 @@ void tetwild::TetWild::insertion_by_volumeremesher(
     }
 
     std::cout<<"polycnt: "<<polycnt<<std::endl;
-    std::cout<<"polyface.size: "<<polygon_faces.size()<<std::endl;
+    std::cout<<"polyfaces.size: "<<polygon_faces.size()<<std::endl;
 
     std::vector<bool> polygon_faces_on_input_surface(polygon_faces.size());
     for(int i=0;i<polygon_faces.size();i++){
@@ -175,13 +178,26 @@ void tetwild::TetWild::insertion_by_volumeremesher(
         std::vector<std::array<size_t, 3>> clipped_indices;
         std::vector<Vector3r> poly_coordinates;
         std::vector<size_t> polygon_face = polygon_faces[i];
+        assert(polygon_face.size()>=3);
+        if (polygon_face.size() == 3) continue;
+        std::cout<<std::endl<<"polyface: ";
+        for (int j=0; j<polygon_face.size(); j++){
+            std::cout<<polygon_face[j]<<" ";
+        }
+        std::cout<<std::endl<<"coords: "<<std::endl;
         for (int j=0; j<polygon_faces[i].size(); j++){
             poly_coordinates.push_back(v_rational[polygon_face[j]]);
+            std::cout<<v_rational[polygon_face[j]][0]<<" "<<v_rational[polygon_face[j]][1]<<" "<<v_rational[polygon_face[j]][2]<<std::endl;
         }
+        std::cout<<std::endl;
+        
         clipped_indices = triangulate_polygon_face(poly_coordinates);
-        for (int j=0;j<clipped_indices.size(); i++){
+        std::cout<<"clipped indices size: "<<clipped_indices.size()<<std::endl;
+        for (int j=0;j<clipped_indices.size(); j++){
             // need to map oldface index to new face indices
             std::array<size_t, 3> triangle_face = {polygon_face[clipped_indices[j][0]], polygon_face[clipped_indices[j][1]], polygon_face[clipped_indices[j][2]]};
+
+            std::cout<<triangle_face[0]<<" "<<triangle_face[1]<<" "<<triangle_face[2]<<std::endl;
         }
     }
 
