@@ -478,3 +478,22 @@ TEST_CASE("split_operation", "[test_2d_operation]")
         for (auto e : edges) REQUIRE_FALSE(e.is_valid(m));
     }
 }
+
+TEST_CASE("split_rollback")
+{
+    class split_roolback : public TriMesh
+    {
+    public:
+        bool split_edge_after(const Tuple& t) override { return false; }
+    };
+    auto m = split_roolback();
+    std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 3, 2}}};
+    m.create_mesh(4, tris);
+    auto edges = m.get_edges();
+    TriMesh::Tuple edge(1, 0, 0, m);
+    std::vector<TriMesh::Tuple> dummy;
+    assert(edge.is_valid(m));
+
+    REQUIRE_FALSE(m.split_edge(edge, dummy));
+    REQUIRE(edge.switch_vertex(m).vid(m) == 2);
+}
