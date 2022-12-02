@@ -4,7 +4,8 @@
 
 std::vector<std::array<size_t, 3>> tetwild::TetWild::triangulate_polygon_face(std::vector<Vector3r> points){
         
-        std::vector<Vector2r> points2d(points.size());
+        std::vector<Vector2r> points2d;
+        std::cout<<points.size()<<std::endl;
         for (int i=0;i<points.size();i++) points2d.push_back(Vector2r(0,0));
         bool colinear = true;
         // project to z,x,y plane in order
@@ -32,12 +33,13 @@ std::vector<std::array<size_t, 3>> tetwild::TetWild::triangulate_polygon_face(st
         Eigen::MatrixXd p2d(points2d.size(), 2);
         Eigen::VectorXi rt(points2d.size(), 1);
 
+        std::cout<<points2d.size()<<std::endl;
+
         for (int i=0;i<points2d.size();i++){
             p2d(i, 0) = points2d[i][0].to_double();
             p2d(i, 1) = points2d[i][1].to_double();
             rt(i, 0) = 0;
         }
-
 
         Eigen::VectorXi I;
         Eigen::MatrixXi eF;
