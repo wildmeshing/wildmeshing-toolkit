@@ -55,6 +55,28 @@ std::vector<std::array<size_t, 3>> tetwild::TetWild::triangulate_polygon_face(st
 
         std::vector<std::array<size_t, 3>> triangulated_faces;
         std::cout<<"triangulated_local_index"<<std::endl;
+
+        if (eF.rows() != p2d.rows()-2){
+            // deal with inversed orientation
+            Eigen::MatrixXd p2d_inv(points2d.size(), 2);
+            Eigen::VectorXi I_inv;
+            Eigen::MatrixXi eF_inv;
+            Eigen::MatrixXd nP_inv;
+            for (int i=0;i<p2d.rows();i++){
+                p2d_inv(i,0) = p2d(p2d.rows()-i-1,0);
+                p2d_inv(i,1) = p2d(p2d.rows()-i-1,1);
+            }
+            igl::predicates::ear_clipping(p2d_inv, rt, I_inv, eF_inv, nP_inv);
+
+            for (int i=0; i<eF_inv.rows(); i++){
+                triangulated_faces.push_back({p2d.rows()-1-eF_inv(i,0), p2d.rows()-1-eF_inv(i,1), p2d.rows()-1-eF_inv(i,2)});
+                std::cout<<p2d.rows()-1-eF_inv(i,0)<<" "<<p2d.rows()-1-eF_inv(i,1)<<" "<<p2d.rows()-1-eF_inv(i,2)<<std::endl;
+            }
+
+            return triangulated_faces;
+        }
+
+        
         for (int i=0; i<eF.rows(); i++){
             triangulated_faces.push_back({eF(i,0), eF(i,1), eF(i,2)});
             std::cout<<eF(i,0)<<" "<<eF(i,1)<<" "<<eF(i,2)<<std::endl;
@@ -76,6 +98,41 @@ void tetwild::TetWild::insertion_by_volumeremesher(
         std::vector<std::array<size_t, 3>> &facets_after,
         std::vector<bool> &is_v_on_input,
         std::vector<std::array<size_t, 4>> &tets_after){
+
+//     Eigen::MatrixXd p2d(7, 2);
+// //     p2d<<15.0485, 36.0371,
+// // 15.1971, 36.0141,
+// // 9.05103, 33.9813,
+// // 9.17559, 34.6561,
+// // 9.24641, 35.0398,
+// // 11.6235, 35.4484,
+// // 12.9259, 35.6722;
+
+//     p2d<<12.9259, 35.6722,
+//             11.6235, 35.4484,
+//             9.24641, 35.0398,
+//             9.17559, 34.6561,
+//             9.05103, 33.9813,
+//             15.1971, 36.0141,
+//             15.0485, 36.0371;
+
+//     Eigen::VectorXi rt(7, 1);
+//     rt<<0,0,0,0,0,0,0;
+
+//     Eigen::VectorXi I;
+//     Eigen::MatrixXi eF;
+//     Eigen::MatrixXd nP;
+
+//     igl::predicates::ear_clipping(p2d, rt, I, eF, nP);
+
+//     std::vector<std::array<size_t, 3>> triangulated_faces;
+//     std::cout<<"triangulated_local_index_test: -------------"<<std::endl;
+//     for (int i=0; i<eF.rows(); i++){
+//         triangulated_faces.push_back({eF(i,0), eF(i,1), eF(i,2)});
+//         std::cout<<eF(i,0)<<" "<<eF(i,1)<<" "<<eF(i,2)<<std::endl;
+//     }
+
+//     return ;
 
     std::cout<<"vertices size: "<<vertices.size()<<std::endl;
     std::cout<<"faces size: "<<faces.size()<<std::endl;
