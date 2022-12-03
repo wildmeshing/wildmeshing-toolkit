@@ -12,8 +12,8 @@ std::vector<std::array<size_t, 3>> tetwild::TetWild::triangulate_polygon_face(st
         for (int k=0;k<3;k++){
             colinear = true;
             for (int i=0;i<points.size();i++){
-                points2d[i][k % 3] = points[i][k % 3]*1000;
-                points2d[i][(k + 1) % 3] = points[i][(k + 1) % 3]*1000;
+                points2d[i][0] = points[i][k % 3]*1000;
+                points2d[i][1] = points[i][(k + 1) % 3]*1000;
             }
             for (int i=0;i<points.size()-2;i++){
                 auto a = points2d[i]-points2d[i+1];
@@ -24,6 +24,7 @@ std::vector<std::array<size_t, 3>> tetwild::TetWild::triangulate_polygon_face(st
                 }
             }
             if(!colinear){
+                std::cout<<"zxy?: "<<k<<std::endl;  
                 break;
             }
         }
@@ -40,6 +41,11 @@ std::vector<std::array<size_t, 3>> tetwild::TetWild::triangulate_polygon_face(st
             p2d(i, 1) = points2d[i][1].to_double();
             rt(i, 0) = 0;
         }
+        std::cout<<"2d coords: "<<std::endl;
+        for (int i=0;i<p2d.rows();i++){
+            std::cout<<p2d(i, 0)<<" "<<p2d(i, 1)<<std::endl;
+        }
+
 
         Eigen::VectorXi I;
         Eigen::MatrixXi eF;
