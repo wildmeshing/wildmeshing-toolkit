@@ -25,6 +25,7 @@ auto renew = [](auto& m, auto op, auto& tris) {
 
 void TriWild::collapse_all_edges()
 {
+    for (auto f : get_faces()) assert(!is_inverted(f));
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     auto collect_tuples = tbb::concurrent_vector<Tuple>();
 
@@ -32,7 +33,6 @@ void TriWild::collapse_all_edges()
     collect_all_ops.reserve(collect_tuples.size());
     for (auto& t : collect_tuples) collect_all_ops.emplace_back("edge_collapse", t);
     wmtk::logger().info("=======collapse==========");
-
     wmtk::logger().info("size for edges to be collapse is {}", collect_all_ops.size());
     auto setup_and_execute = [&](auto executor) {
         executor.renew_neighbor_tuples = renew;
@@ -63,11 +63,18 @@ void TriWild::collapse_all_edges()
 bool TriWild::collapse_edge_before(const Tuple& t)
 {
     if (!TriMesh::collapse_edge_before(t)) return false;
+
     // record boundary vertex as fixed in vertex attribute for accurate collapse after boundary
     // operations
-    if (is_boundary_vertex(t)) vertex_attrs[t.vid(*this)].fixed = 1;
+
+    if (is_boundary_vertex(t))
+        vertex_attrs[t.vid(*this)].fixed = true;
+    else
+        vertex_attrs[t.vid(*this)].fixed = false;
     if (is_boundary_vertex(t.switch_vertex(*this)))
-        vertex_attrs[t.switch_vertex(*this).vid(*this)].fixed = 1;
+        vertex_attrs[t.switch_vertex(*this).vid(*this)].fixed = true;
+    else
+        vertex_attrs[t.switch_vertex(*this).vid(*this)].fixed = false;
     if (m_bnd_freeze &&
         (vertex_attrs[t.vid(*this)].fixed || vertex_attrs[t.switch_vertex(*this).vid(*this)].fixed))
         return false;
@@ -81,6 +88,18 @@ bool TriWild::collapse_edge_before(const Tuple& t)
         cache.local().max_energy = std::max(cache.local().max_energy, get_quality(tri));
     }
     m_max_energy = cache.local().max_energy;
+
+    auto v13d = m_triwild_displacement(
+        vertex_attrs[cache.local().v1].pos(0),
+        vertex_attrs[cache.local().v1].pos(1));
+    auto v23d = m_triwild_displacement(
+        vertex_attrs[cache.local().v2].pos(0),
+        vertex_attrs[cache.local().v2].pos(1));
+    double length2 = (v23d - v13d).squaredNorm();
+    // enforce heuristic
+
+    assert(length2 < 4. / 5. * 4. / 5. * m_target_l * m_target_l);
+
     return true;
 }
 bool TriWild::collapse_edge_after(const Tuple& t)
@@ -98,12 +117,15 @@ bool TriWild::collapse_edge_after(const Tuple& t)
     length2 = (v23d - v13d).squaredNorm();
 
     Eigen::Vector2d p;
-    if (vertex_attrs[cache.local().v1].fixed)
+    if (vertex_attrs[cache.local().v1].fixed) {
         p = vertex_attrs[cache.local().v1].pos;
-    else if (vertex_attrs[cache.local().v2].fixed) {
-        p = vertex_attrs[cache.local().v1].pos;
-    } else
+    } else if (vertex_attrs[cache.local().v2].fixed) {
+        p = vertex_attrs[cache.local().v2].pos;
+    } else {
+        assert(!vertex_attrs[cache.local().v1].fixed);
+        assert(!vertex_attrs[cache.local().v2].fixed);
         p = (vertex_attrs[cache.local().v1].pos + vertex_attrs[cache.local().v2].pos) / 2.0;
+    }
     auto vid = t.vid(*this);
     vertex_attrs[vid].pos = p;
     vertex_attrs[vid].partition_id = cache.local().partition_id;
@@ -112,10 +134,10 @@ bool TriWild::collapse_edge_after(const Tuple& t)
     if (length2 < 4. / 5. * 4. / 5. * m_target_l * m_target_l) {
         return true;
     }
-    // check quality
-    auto tris = get_one_ring_tris_for_vertex(t);
-    for (auto tri : tris) {
-        if (get_quality(tri) > cache.local().max_energy) return false;
-    }
-    return true;
+    // // check quality
+    // auto tris = get_one_ring_tris_for_vertex(t);
+    // for (auto tri : tris) {
+    //     if (get_quality(tri) > cache.local().max_energy) return false;
+    // }
+    return false;
 }

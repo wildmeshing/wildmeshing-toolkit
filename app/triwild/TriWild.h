@@ -105,7 +105,7 @@ public:
         const std::function<double(double, double)>& displacement);
 
     // Computes the quality of a triangle
-    double get_quality(const Tuple& loc) const;
+    double get_quality(const Tuple& loc, int idx = 0) const;
 
     // Computes the average quality of a mesh
     Eigen::VectorXd get_quality_all_triangles();
