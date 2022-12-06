@@ -348,6 +348,7 @@ public:
      * not exceed `n_vertices`
      */
     void init(size_t n_vertices, const std::vector<std::array<size_t, 4>>& tets);
+    void init_with_isolated_vertices(size_t n_vertices, const std::vector<std::array<size_t, 4>>& tets);
 
     /**
      * Split an edge

@@ -90,6 +90,36 @@ void wmtk::TetMesh::init(size_t n_vertices, const std::vector<std::array<size_t,
     p_edge_attrs->resize(6 * tets.size());
 }
 
+void wmtk::TetMesh::init_with_isolated_vertices(size_t n_vertices, const std::vector<std::array<size_t, 4>>& tets)
+{
+    m_vertex_connectivity.resize(n_vertices);
+    m_tet_connectivity.resize(tets.size());
+    current_vert_size = n_vertices;
+    current_tet_size = tets.size();
+    for (int i = 0; i < tets.size(); i++) {
+        m_tet_connectivity[i].m_indices = tets[i];
+        for (int j = 0; j < 4; j++) {
+            assert(tets[i][j] < vert_capacity());
+            m_vertex_connectivity[tets[i][j]].m_conn_tets.push_back(i);
+        }
+    }
+
+    for (int i=0; i<vert_capacity();i++){
+        if(m_vertex_connectivity[i].m_conn_tets.empty()){
+            m_vertex_connectivity[i].m_is_removed=true;
+        }
+    }
+
+    // concurrent
+    m_vertex_mutex.grow_to_at_least(n_vertices);
+
+    // resize attributes
+    p_vertex_attrs->resize(n_vertices);
+    p_tet_attrs->resize(tets.size());
+    p_face_attrs->resize(4 * tets.size());
+    p_edge_attrs->resize(6 * tets.size());
+}
+
 
 std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_edges() const
 {

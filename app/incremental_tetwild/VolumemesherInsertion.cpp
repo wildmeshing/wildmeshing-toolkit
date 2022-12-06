@@ -5,7 +5,7 @@
 std::vector<std::array<size_t, 3>> tetwild::TetWild::triangulate_polygon_face(std::vector<Vector3r> points){
         
         std::vector<Vector2r> points2d;
-        std::cout<<points.size()<<std::endl;
+        // std::cout<<points.size()<<std::endl;
         for (int i=0;i<points.size();i++) points2d.push_back(Vector2r(0,0));
         bool colinear = true;
         // project to z,x,y plane in order
@@ -24,7 +24,7 @@ std::vector<std::array<size_t, 3>> tetwild::TetWild::triangulate_polygon_face(st
                 }
             }
             if(!colinear){
-                std::cout<<"zxy?: "<<k<<std::endl;  
+                // std::cout<<"zxy?: "<<k<<std::endl;  
                 break;
             }
         }
@@ -34,17 +34,17 @@ std::vector<std::array<size_t, 3>> tetwild::TetWild::triangulate_polygon_face(st
         Eigen::MatrixXd p2d(points2d.size(), 2);
         Eigen::VectorXi rt(points2d.size(), 1);
 
-        std::cout<<points2d.size()<<std::endl;
+        // std::cout<<points2d.size()<<std::endl;
 
         for (int i=0;i<points2d.size();i++){
             p2d(i, 0) = points2d[i][0].to_double();
             p2d(i, 1) = points2d[i][1].to_double();
             rt(i, 0) = 0;
         }
-        std::cout<<"2d coords: "<<std::endl;
-        for (int i=0;i<p2d.rows();i++){
-            std::cout<<p2d(i, 0)<<" "<<p2d(i, 1)<<std::endl;
-        }
+        // std::cout<<"2d coords: "<<std::endl;
+        // for (int i=0;i<p2d.rows();i++){
+        //     std::cout<<p2d(i, 0)<<" "<<p2d(i, 1)<<std::endl;
+        // }
 
 
         Eigen::VectorXi I;
@@ -54,7 +54,7 @@ std::vector<std::array<size_t, 3>> tetwild::TetWild::triangulate_polygon_face(st
         igl::predicates::ear_clipping(p2d, rt, I, eF, nP);
 
         std::vector<std::array<size_t, 3>> triangulated_faces;
-        std::cout<<"triangulated_local_index"<<std::endl;
+        // std::cout<<"triangulated_local_index"<<std::endl;
 
         if (eF.rows() != p2d.rows()-2){
             // deal with inversed orientation
@@ -70,7 +70,7 @@ std::vector<std::array<size_t, 3>> tetwild::TetWild::triangulate_polygon_face(st
 
             for (int i=0; i<eF_inv.rows(); i++){
                 triangulated_faces.push_back({p2d.rows()-1-eF_inv(i,0), p2d.rows()-1-eF_inv(i,1), p2d.rows()-1-eF_inv(i,2)});
-                std::cout<<p2d.rows()-1-eF_inv(i,0)<<" "<<p2d.rows()-1-eF_inv(i,1)<<" "<<p2d.rows()-1-eF_inv(i,2)<<std::endl;
+                // std::cout<<p2d.rows()-1-eF_inv(i,0)<<" "<<p2d.rows()-1-eF_inv(i,1)<<" "<<p2d.rows()-1-eF_inv(i,2)<<std::endl;
             }
 
             return triangulated_faces;
@@ -79,7 +79,7 @@ std::vector<std::array<size_t, 3>> tetwild::TetWild::triangulate_polygon_face(st
         
         for (int i=0; i<eF.rows(); i++){
             triangulated_faces.push_back({eF(i,0), eF(i,1), eF(i,2)});
-            std::cout<<eF(i,0)<<" "<<eF(i,1)<<" "<<eF(i,2)<<std::endl;
+            // std::cout<<eF(i,0)<<" "<<eF(i,1)<<" "<<eF(i,2)<<std::endl;
         }
 
         return triangulated_faces;
@@ -204,7 +204,7 @@ void tetwild::TetWild::insertion_by_volumeremesher(
         embedded_facets_on_input,
         true);
 
-    v_rational.reserve(embedded_vertices.size()/3);
+    // v_rational.reserve(embedded_vertices.size()/3);
 
     for (int i=0; i<embedded_vertices.size()/3; i++){
         v_rational.push_back(Vector3r(
@@ -238,189 +238,204 @@ void tetwild::TetWild::insertion_by_volumeremesher(
         polygon_faces_on_input_surface[embedded_facets_on_input[i]] = true;
     }
 
+    std::vector<std::array<size_t,3>> triangulated_faces;
+    std::vector<bool> triangulated_faces_on_input;
+    std::vector<std::vector<size_t>> map_poly_to_tri_face(polygon_faces.size());
+
     // triangulate polygon faces
     for (int i=0;i<polygon_faces.size();i++){
+        // already clipped in other polygon
+        if (map_poly_to_tri_face[i].size()!=0) continue;
+
+        // new polygon face to clip
         std::vector<std::array<size_t, 3>> clipped_indices;
         std::vector<Vector3r> poly_coordinates;
         std::vector<size_t> polygon_face = polygon_faces[i];
         assert(polygon_face.size()>=3);
-        if (polygon_face.size() == 3) continue;
-        std::cout<<std::endl<<"polyface: ";
-        for (int j=0; j<polygon_face.size(); j++){
-            std::cout<<polygon_face[j]<<" ";
-        }
-        std::cout<<std::endl<<"coords: "<<std::endl;
-        for (int j=0; j<polygon_faces[i].size(); j++){
-            poly_coordinates.push_back(v_rational[polygon_face[j]]);
-            std::cout<<v_rational[polygon_face[j]][0]<<" "<<v_rational[polygon_face[j]][1]<<" "<<v_rational[polygon_face[j]][2]<<std::endl;
-        }
-        std::cout<<std::endl;
-        
-        clipped_indices = triangulate_polygon_face(poly_coordinates);
-        std::cout<<"clipped indices size: "<<clipped_indices.size()<<std::endl;
-        for (int j=0;j<clipped_indices.size(); j++){
-            // need to map oldface index to new face indices
-            std::array<size_t, 3> triangle_face = {polygon_face[clipped_indices[j][0]], polygon_face[clipped_indices[j][1]], polygon_face[clipped_indices[j][2]]};
 
-            std::cout<<triangle_face[0]<<" "<<triangle_face[1]<<" "<<triangle_face[2]<<std::endl;
+        if (polygon_face.size() == 3) {
+            // already a triangle
+            std::array<size_t, 3> triangle_face = {polygon_face[0], polygon_face[1], polygon_face[2]};
+            int idx = triangulated_faces.size();
+            triangulated_faces.push_back(triangle_face);
+            if(polygon_faces_on_input_surface[i]){
+                triangulated_faces_on_input.push_back(true);
+            }
+            else{
+                triangulated_faces_on_input.push_back(false);
+            }
+            map_poly_to_tri_face[i].push_back(idx);
+        }
+        else{
+            // std::cout<<std::endl<<"polyface: ";
+            // for (int j=0; j<polygon_face.size(); j++){
+                // std::cout<<polygon_face[j]<<" ";
+            // }
+            // std::cout<<std::endl<<"coords: "<<std::endl;
+            for (int j=0; j<polygon_faces[i].size(); j++){
+                poly_coordinates.push_back(v_rational[polygon_face[j]]);
+                // std::cout<<v_rational[polygon_face[j]][0]<<" "<<v_rational[polygon_face[j]][1]<<" "<<v_rational[polygon_face[j]][2]<<std::endl;
+            }
+            // std::cout<<std::endl;
+            
+            clipped_indices = triangulate_polygon_face(poly_coordinates);
+            // std::cout<<"clipped indices size: "<<clipped_indices.size()<<std::endl;
+            for (int j=0;j<clipped_indices.size(); j++){
+                // need to map oldface index to new face indices
+                std::array<size_t, 3> triangle_face = {polygon_face[clipped_indices[j][0]], polygon_face[clipped_indices[j][1]], polygon_face[clipped_indices[j][2]]};
+                // std::cout<<triangle_face[0]<<" "<<triangle_face[1]<<" "<<triangle_face[2]<<std::endl;
+                int idx = triangulated_faces.size();
+                triangulated_faces.push_back(triangle_face);
+
+                // track input faces
+                if(polygon_faces_on_input_surface[i]){
+                    triangulated_faces_on_input.push_back(true);
+                }
+                else{
+                    triangulated_faces_on_input.push_back(false);
+                }
+                map_poly_to_tri_face[i].push_back(idx);
+            }
+        }
+        
+    }
+
+    std::cout<<triangulated_faces.size()<<std::endl;
+    int sum = 0;
+    for (int i=0;i<map_poly_to_tri_face.size();i++){
+        sum += map_poly_to_tri_face[i].size();
+    }
+    std::cout<<sum<<std::endl;
+    std::cout<<"finish triangulation"<<std::endl;
+
+    std::cout<<"vertice before tetra num: "<<v_rational.size()<<std::endl;
+
+    // tetrahedralize cells
+    std::vector<std::vector<size_t>> polygon_cells;
+    std::vector<std::array<size_t, 4>> tets_final;
+    for (int i=0;i<embedded_cells.size();i++){
+        std::vector<size_t> polygon_cell;
+        int cellsize = embedded_cells[i];
+        for (int j=1; j<=cellsize; j++){
+            polygon_cell.push_back(embedded_cells[i+j]);
+        }
+        polygon_cells.push_back(polygon_cell);
+        i+=cellsize;
+    }
+
+    std::cout<<"polygon cells num: "<<polygon_cells.size()<<std::endl;
+
+    int was_tet_cnt = 0;
+    for (int i=0;i<polygon_cells.size();i++){
+        
+        auto polygon_cell = polygon_cells[i];
+
+        // get polygon vertices
+        std::vector<size_t> polygon_vertices;
+        for (auto f: polygon_cell){
+            for (auto v: polygon_faces[f]){
+                polygon_vertices.push_back(v);
+            }
+        }
+        wmtk::vector_unique(polygon_vertices);
+        
+        // compute number of triangle faces
+        int num_faces = 0;
+        for (auto f: polygon_cell){
+            num_faces += map_poly_to_tri_face[f].size();
+        }
+
+        // polygon already a tet
+        if (num_faces == 4){
+            was_tet_cnt++;
+            assert(polygon_vertices.size()==4);
+            std::array<size_t, 4> tetra = {polygon_vertices[0], polygon_vertices[1],polygon_vertices[2],polygon_vertices[3]};
+            tets_final.push_back(tetra);
+            continue;
+        }
+
+        // compute centroid
+        Vector3r centroid(0,0,0);
+        for (auto v: polygon_vertices){
+            centroid = centroid + v_rational[v];
+        }
+        centroid = centroid/polygon_vertices.size();
+
+        // trahedralize
+        size_t centroid_idx = v_rational.size();
+        v_rational.push_back(centroid);
+
+        for (auto f: polygon_cell){
+            for( auto t: map_poly_to_tri_face[f]){
+                std::array<size_t, 4> tetra = {centroid_idx, triangulated_faces[t][0], triangulated_faces[t][1], triangulated_faces[t][2]};
+                tets_final.push_back(tetra);
+
+                //debug code
+                if(tets_final.size()==91){
+                    std::cout<<"debug tet 91: ----------------"<<std::endl;
+                    std::cout<<"polygon index: "<<i<<std::endl;
+                    std::cout<<"polygon faces: "<<std::endl;
+                    for (auto ff: polygon_cell){
+                        std::cout<<ff<<" ";
+                    }
+                    std::cout<<std::endl;
+                    std::cout<<std::endl;
+                    
+                    for (auto ff: polygon_cell){
+                        for (int k=0; k<polygon_faces[ff].size();k++){
+                            std::cout<<polygon_faces[ff][k]<<" ";
+                        }
+                        std::cout<<std::endl;
+                        std::cout<<std::endl;
+                    }
+                    std::cout<<"triangulated_faces: "<<std::endl;
+                    for (auto ff: polygon_cell){
+                        for (auto tt:map_poly_to_tri_face[ff]){
+                            std::cout<<triangulated_faces[tt][0]<<" "<<triangulated_faces[tt][1]<<" "<<triangulated_faces[tt][2]<<std::endl;
+                        }
+                        std::cout<<std::endl;
+                    } 
+
+                    std::cout<<"end debug ---------------------"<<std::endl;
+                }
+            }
         }
     }
 
-    
+    std::cout<<"polygon was tet num: "<<was_tet_cnt<<std::endl;
+    std::cout<<"vertices final num: "<<v_rational.size()<<std::endl;
+    std::cout<<"tets final num: "<<tets_final.size()<<std::endl;
 
+    facets_after = triangulated_faces;
+    tets_after = tets_final;
 
+    // track vertices on input
+    is_v_on_input.reserve(v_rational.size());
+    for (int i=0;i<v_rational.size();i++) is_v_on_input[i] = false;
+    for(int i=0;i<triangulated_faces.size();i++){
+        if(triangulated_faces_on_input[i]){
+            is_v_on_input[triangulated_faces[i][0]] = true;
+            is_v_on_input[triangulated_faces[i][1]] = true;
+            is_v_on_input[triangulated_faces[i][2]] = true;
+        }
+    }
 
+    //check 4277
 
-    // tetrahedralize cells
+    for (int i=0;i<embedded_facets.size();i++){
+        if(embedded_facets[i]==4277) std::cout<<"found 4277"<<std::endl;
+    }
 
-    // v_rational.reserve(embedded_vertices.size()/3);
-    // facets_after.reserve(embedded_facets.size()/4);
+    for (int i=4277;i<4279;i++){
+        std::cout<<v_rational[i][0]<<" "<<v_rational[i][1]<<" "<<v_rational[i][2]<<std::endl;
+    }
 
-    // std::cout<<"embedded vertices num: "<<embedded_vertices.size()/3<<std::endl;
-    // std::cout<<"embedded facets num: "<<embedded_facets.size()/4<<std::endl;
-
-
-    // for (int i=0;i<embedded_vertices.size()/3;i++){
-    //     v_rational.push_back(Vector3r(
-    //         embedded_vertices[3 * i].get_d(),
-    //         embedded_vertices[3 * i + 1].get_d(), 
-    //         embedded_vertices[3 * i + 2].get_d()
-    //         ));
-
-    //     // v_rational[i][1] = embedded_vertices[3 * i + 1].get_d();
-    //     // v_rational[i][2] = embedded_vertices[3 * i + 2].get_d();
-    // }
-
-    // // check if all generated facets are triangles
-
-    // for (int i=0;i<embedded_facets.size(); i++){
-    //     if (embedded_facets[i]!=3){
-    //         std::cout<< "is not triangle"<<std::endl;
-    //     }
-    //     i+=embedded_facets[i];
-    // }
-
-    // for (int i=0;i<embedded_facets.size()/4;i++){
-    //     std::array<size_t, 3> f = {embedded_facets[i+1], embedded_facets[i+2], embedded_facets[i+3]};
-    //     facets_after.push_back(f);
-    //     i+=3;
-    // }
-
-    // int cnt = 0;
-
-    // for (int i=0;i<embedded_cells.size();i++){
-    //     int cellsize = embedded_cells[i];
-
-    //     if (cellsize == 4){
-    //         // already a tet
-
-    //         // get all vertices
-    //         std::vector<size_t> vs;
-    //         for (int j=1;j<=4;j++){
-    //             vs.push_back(facets_after[embedded_cells[i+j]][0]);
-    //             vs.push_back(facets_after[embedded_cells[i+j]][1]);
-    //             vs.push_back(facets_after[embedded_cells[i+j]][2]);
-    //         }
-    //         wmtk::vector_unique(vs);
-
-    //         // debug code 
-    //         if(vs.size() !=4){
-    //             for (int k=0;k<vs.size();k++){
-    //                 std::cout<<vs[k]<<" ";
-    //             }
-    //             std::cout<<std::endl;
-
-    //             std::cout<<"xxxx"<<std::endl;
-
-    //             for (int k=i+1;k<=i+4;k++){
-    //                 std::cout<<embedded_cells[k] << ": " <<facets_after[embedded_cells[k]][0]<< " "<<facets_after[embedded_cells[k]][1]<< " "<<facets_after[embedded_cells[k]][2]<< std::endl;
-    //             }
-
-    //             std::cout<<"yyyy"<<std::endl;
-    //             cnt++;
-    //         }
-
-    //         if (cnt == 3){
-    //             assert(vs.size() == 4);
-    //         }
-            
-
-    //         // add tet
-    //         std::array<size_t, 4> t = {vs[0], vs[1], vs[2], vs[3]};
-    //         tets_after.emplace_back(t);
-    //         i+=4;
-    //     }
-    //     else{
-    //         //compute the barycenter and split the cell
-    //         Vector3r centriod(0,0,0);
-
-    //         std::vector<size_t> vs;
-    //         for (int j = 1; j <= cellsize; j++){
-    //             vs.push_back(facets_after[embedded_cells[i+j]][0]);
-    //             vs.push_back(facets_after[embedded_cells[i+j]][1]);
-    //             vs.push_back(facets_after[embedded_cells[i+j]][2]);
-    //         }
-    //         wmtk::vector_unique(vs);
-
-    //         // debug code 
-    //         if(true){
-    //             for (int k=0;k<vs.size();k++){
-    //                 std::cout<<vs[k]<<" ";
-    //             }
-    //             std::cout<<std::endl;
-
-    //             std::cout<<"xxxx"<<std::endl;
-
-    //             for (int k=i+1;k<=i+cellsize;k++){
-    //                 std::cout<<embedded_cells[k] << ": " <<facets_after[embedded_cells[k]][0]<< " "<<facets_after[embedded_cells[k]][1]<< " "<<facets_after[embedded_cells[k]][2]<< std::endl;
-    //             }
-
-    //             std::cout<<"yyyy"<<std::endl;
-    //             cnt++;
-    //         }
-
-    //         if (cnt >=10){
-    //             break;
-    //         }
-
-    //         for (int j=0;j<vs.size();j++){
-    //             centriod = centriod + v_rational[vs[j]];
-    //         }
-    //         centriod = centriod/cellsize;
-
-    //         //tetrahedralize the cell
-    //         int new_v_index = v_rational.size();
-    //         v_rational.emplace_back(centriod);
-    //         for (int j = 1; j <= cellsize; j++){
-    //             std::array<size_t, 4> t = {
-    //                 new_v_index,
-    //                 facets_after[embedded_cells[i+j]][0], 
-    //                 facets_after[embedded_cells[i+j]][1], 
-    //                 facets_after[embedded_cells[i+j]][2]
-    //                 };
-    //             tets_after.emplace_back(t);
-    //         }
-    //         i += cellsize;
-    //     }
-        
-    // }
-
-    // is_v_on_input.reserve(v_rational.size());
-    // for (int i=0;i<v_rational.size();i++){
-    //     is_v_on_input.push_back(false);
-    // }
-
-    // for (int i=0;i<embedded_facets_on_input.size();i++){
-    //     is_v_on_input[facets_after[embedded_facets_on_input[i]][0]] = true;
-    //     is_v_on_input[facets_after[embedded_facets_on_input[i]][1]] = true;
-    //     is_v_on_input[facets_after[embedded_facets_on_input[i]][2]] = true;
-    // }
-
-    // std::cout<<"vertices num after tetrahedralize: "<<v_rational.size()<<std::endl;
-    // std::cout<<"tets num after tetrahedralize: "<<tets_after.size()<<std::endl;
-
-    // wmtk::vector_unique(tets_after);
-    // std::cout<<"unique tets num after tetrahedralize: "<<tets_after.size()<<std::endl;
+    //check tet 90 91 93 94
+    std::cout<<"tet 90: "<<tets_final[90][0]<<" "<<tets_final[90][1]<<" "<<tets_final[90][2]<<" "<<tets_final[90][3]<<std::endl;
+    std::cout<<"tet 91: "<<tets_final[91][0]<<" "<<tets_final[91][1]<<" "<<tets_final[91][2]<<" "<<tets_final[91][3]<<std::endl;
+    std::cout<<"tet 93: "<<tets_final[92][0]<<" "<<tets_final[92][1]<<" "<<tets_final[92][2]<<" "<<tets_final[92][3]<<std::endl;
+    std::cout<<"tet 93: "<<tets_final[93][0]<<" "<<tets_final[93][1]<<" "<<tets_final[93][2]<<" "<<tets_final[93][3]<<std::endl;
+    std::cout<<"tet 94: "<<tets_final[94][0]<<" "<<tets_final[94][1]<<" "<<tets_final[94][2]<<" "<<tets_final[94][3]<<std::endl;
 
 }
 
@@ -430,7 +445,7 @@ void tetwild::TetWild::init_from_Volumeremesher(
         std::vector<bool> &is_v_on_input,
         std::vector<std::array<size_t, 4>> &tets){
 
-    init(v_rational.size(), tets);
+    init_with_isolated_vertices(v_rational.size(), tets);
     assert(check_mesh_connectivity_validity());
     
 
