@@ -2,6 +2,7 @@
 #include <fastenvelope/FastEnvelope.h>
 #include <igl/Timer.h>
 #include <igl/predicates/predicates.h>
+#include <igl/writeDMAT.h>
 #include <igl/write_triangle_mesh.h>
 #include <tbb/concurrent_vector.h>
 #include <wmtk/utils/AMIPS2D.h>
@@ -51,6 +52,7 @@ bool TriWild::invariants(const std::vector<Tuple>& new_tris)
 
     for (auto& t : new_tris) {
         if (is_inverted(t)) return false;
+        assert(!is_inverted(t));
         Eigen::Vector2d a, b, c;
         auto verts = oriented_tri_vertices(t);
         assert(verts.size() == 3);
@@ -67,11 +69,14 @@ bool TriWild::invariants(const std::vector<Tuple>& new_tris)
         // add area check (degenerate tirangle)
         Eigen::Vector3d A, B, C;
         A.topRows(2) = a;
+        A(2) = 0.;
         B.topRows(2) = b;
+        B(2) = 0.;
         C.topRows(2) = c;
+        C(2) = 0.;
 
         double area = ((B - A).cross(C - A)).squaredNorm();
-        if (area < 1e-6) {
+        if (area < 1e-6 * ((B - A).squaredNorm() + (C - A).squaredNorm() + (B - C).squaredNorm())) {
             wmtk::logger().info("false in area ");
             wmtk::logger().info("failing ABC are {} {} {}", A, B, C);
             return false; // arbitrary chosen previous std::numeric_limits<double>::denorm_min() is
@@ -226,7 +231,7 @@ double TriWild::get_length2(const Tuple& t) const
     return length;
 }
 
-double TriWild::get_quality(const Tuple& loc) const
+double TriWild::get_quality(const Tuple& loc, int idx) const
 {
     // Global ids of the vertices of the triangle
     auto its = oriented_tri_vids(loc);
@@ -242,7 +247,7 @@ double TriWild::get_quality(const Tuple& loc) const
     wmtk::State state = {};
     state.input_triangle = T;
     state.scaling = m_target_l;
-
+    state.idx = idx;
     m_energy->eval(state);
     energy = state.value;
 
@@ -294,9 +299,6 @@ void TriWild::mesh_improvement(int max_its)
     wmtk::logger().info("current length {}", avg_edge_len(*this));
     js_log["edge_length_avg_start"] = avg_edge_len(*this);
     for (int it = 0; it < max_its; it++) {
-        if (it == 3) m_target_l *= 2;
-        if (it == 8) m_target_l /= 2;
-        ///ops
         wmtk::logger().info("\n========it {}========", it);
 
         ///energy check
@@ -310,17 +312,21 @@ void TriWild::mesh_improvement(int max_its)
         js_log["iteration_" + std::to_string(it)]["edge_len_target"] = m_target_l;
 
         split_all_edges();
+        assert(invariants(get_faces()));
+        consolidate_mesh();
         write_obj("after_split_" + std::to_string(it) + ".obj");
 
+        collapse_all_edges();
+        assert(invariants(get_faces()));
+        write_obj("after_collapse_" + std::to_string(it) + ".obj");
+
         swap_all_edges();
-        consolidate_mesh();
+        assert(invariants(get_faces()));
         write_obj("after_swap_" + std::to_string(it) + ".obj");
 
         smooth_all_vertices();
+        assert(invariants(get_faces()));
         write_obj("after_smooth_" + std::to_string(it) + ".obj");
-
-        collapse_all_edges();
-        write_obj("after_collapse_" + std::to_string(it) + ".obj");
 
         wmtk::logger().info(
             "++++++++v {} t {} max energy {}++++++++",
@@ -336,18 +342,22 @@ void TriWild::mesh_improvement(int max_its)
 
         if (m_target_l > 0 && (avg_len - m_target_l) * (avg_len - m_target_l) < 1e-4) {
             wmtk::logger().info(
-                "doesn't improve anymore. Stopping improvement.\n {} itr finished, max energy {}",
+                "doesn't improve edge length. Stopping improvement.\n {} itr finished, max energy "
+                "{}, avg length {} ",
                 it,
-                m_max_energy);
+                m_max_energy,
+                avg_len);
             break;
         }
         if (it > 0 &&
             (m_target_l <= 0 &&
              (pre_max_energy - m_stop_energy) * (pre_max_energy - m_stop_energy) < 1e-2)) {
             wmtk::logger().info(
-                "doesn't improve anymore. Stopping improvement.\n {} itr finished, max energy {}",
+                "doesn't improve energy. Stopping improvement.\n {} itr finished, max energy {}, "
+                "avg length {}",
                 it,
-                m_max_energy);
+                m_max_energy,
+                avg_len);
             break;
         }
         pre_avg_len = avg_len;
