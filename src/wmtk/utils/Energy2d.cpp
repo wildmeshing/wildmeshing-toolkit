@@ -217,6 +217,8 @@ void EdgeLengthEnergy::eval(State& state) const
     DiffScalarBase::setVariableCount(2);
     auto input_triangle = state.input_triangle;
     auto target_triangle = state.target_triangle;
+    assert(state.scaling > 0);
+
     for (auto i = 0; i < 6; i++) target_triangle[i] = state.scaling * target_triangle[i];
     int i = state.idx;
 
@@ -238,13 +240,11 @@ void EdgeLengthEnergy::eval(State& state) const
     // check if area is either inverted or smaller than certain A_hat
     DScalar area;
     area = (V2_V1.cross(V3_V1)).squaredNorm();
-    if (std::abs(area.getValue()) < std::numeric_limits<Scalar>::denorm_min()) {
-        state.value = std::numeric_limits<double>::infinity();
-        return;
-    }
+    assert(area > 0);
 
     DScalar total_energy = DScalar(0);
     double l_squared = std::pow(state.scaling, 2);
+    assert(l_squared > 0);
     // energies for edge length
     total_energy += (V2_V1.squaredNorm() - l_squared) * (V2_V1.squaredNorm() - l_squared);
     total_energy += (V3_V1.squaredNorm() - l_squared) * (V3_V1.squaredNorm() - l_squared);
@@ -253,13 +253,14 @@ void EdgeLengthEnergy::eval(State& state) const
     // energy barrier for small triangle only when A < A_hat
     // check if area is either inverted or smaller than certain A_hat
 
-    double A_hat =
-        1 / 2 * sqrt(3) / 2 * 1 / 2 * pow(state.scaling, 2) * 0.01; // this is arbitrary now
-    if (area < A_hat) total_energy += -(area - A_hat) * (area - A_hat) * log(area / A_hat);
+    double A_hat = 0.5 * (std::sqrt(3) / 2) * 0.5 * pow(state.scaling, 2); // this is arbitrary now
+    assert(A_hat > 0);
+    if (area < A_hat) {
+        assert((area / A_hat) < 1.0);
+        total_energy += -(area - A_hat) * (area - A_hat) * log(area / A_hat);
+    }
     state.value = total_energy.getValue();
     state.gradient = total_energy.getGradient();
     state.hessian = total_energy.getHessian();
-
-    wmtk::logger().info("/// idx {} value {} grad {}", state.idx, state.value, state.gradient);
 }
 } // namespace wmtk
