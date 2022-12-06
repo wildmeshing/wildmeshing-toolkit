@@ -23,21 +23,12 @@ bool triwild::TriWild::smooth_before(const Tuple& t)
 bool triwild::TriWild::smooth_after(const Tuple& t)
 {
     // Newton iterations are encapsulated here.
-    wmtk::logger().trace("Newton iteration for vertex smoothing with index.");
     auto vid = t.vid(*this);
     auto locs = get_one_ring_tris_for_vertex(t);
     assert(locs.size() > 0);
 
-    // Computes the maximal error around the one ring
-    // that is needed to ensure the operation will decrease the error measure
+    // Computes the avg energy around one ring
     auto avg_quality = 0.;
-    for (auto& tri : locs) {
-        avg_quality += get_quality(tri);
-    }
-    avg_quality /= locs.size();
-    assert(avg_quality > 0); // If max quality is zero it is likely that the triangles are flipped
-
-    // m_max_energy = avg_quality;
 
     // getting the assembles
     //( one ring triangle vertex position in stack with last entry as the local vid of the smoothing
@@ -52,18 +43,34 @@ bool triwild::TriWild::smooth_after(const Tuple& t)
         for (auto i = 0; i < 3; i++) {
             T[i * 2] = vertex_attrs[local_tuples[i].vid(*this)].pos(0);
             T[i * 2 + 1] = vertex_attrs[local_tuples[i].vid(*this)].pos(1);
-            if (local_tuples[i].vid(*this) == vid) idx = (double)i;
+            if (local_tuples[i].vid(*this) == vid) {
+                idx = (double)i;
+                avg_quality += get_quality(tri, i);
+            }
         }
         assert(idx != -1);
         T[6] = idx;
         assembles.emplace_back(T);
     }
+    avg_quality /= locs.size();
 
     // use a general root finding method that defaults to newton but if not changeing the position,
     // try gradient descent
     auto old_pos = vertex_attrs[vid].pos;
     vertex_attrs[vid].pos =
         wmtk::newton_method_with_fallback(this->m_target_l, assembles, *m_energy);
+
+    // check if energy is lowered
+    double new_avg_quality = 0.;
+    for (int j = 0; j < locs.size(); j++) {
+        new_avg_quality += get_quality(locs[j], assembles[j][6]);
+    }
+    new_avg_quality /= locs.size();
+
+    if (new_avg_quality > avg_quality) {
+        wmtk::logger().info("#### old {} , new {}", avg_quality, new_avg_quality);
+        assert(false);
+    }
 
     // check boundary and project
     if (is_boundary_vertex(t)) {
@@ -73,18 +80,12 @@ bool triwild::TriWild::smooth_after(const Tuple& t)
     auto new_tris = get_one_ring_tris_for_vertex(t);
 
     // check invariants
-    if (!invariants(new_tris)) {
+    if (!invariants(locs)) {
         vertex_attrs[vid].pos = old_pos;
         return false;
     }
-    // check if energy is lowered
-    double new_avg_quality = 0.;
-    for (auto tri : new_tris) new_avg_quality += get_quality(tri);
-    new_avg_quality /= locs.size();
 
-    if (new_avg_quality > avg_quality) return false;
-
-    assert(invariants(new_tris));
+    assert(invariants(locs));
     return true;
 }
 
@@ -125,7 +126,7 @@ void triwild::TriWild::smooth_all_vertices()
             executor(*this, collect_all_ops);
             // write_obj("smooth" + std::to_string(itr) + ".obj");
             std::vector<Tuple> verts = get_vertices();
-            for (int i = 0; i < vert_capacity() && nochange; i++) {
+            for (int i = 0; i < verts.size() && nochange; i++) {
                 auto vid = verts[i].vid(*this);
                 nochange &= ((old_pos[vid] - vertex_attrs[vid].pos).norm() < 1e-2);
             }
