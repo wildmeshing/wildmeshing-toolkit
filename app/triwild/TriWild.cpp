@@ -318,14 +318,17 @@ void TriWild::mesh_improvement(int max_its)
 
         collapse_all_edges();
         assert(invariants(get_faces()));
+        consolidate_mesh();
         write_obj("after_collapse_" + std::to_string(it) + ".obj");
 
         swap_all_edges();
         assert(invariants(get_faces()));
+        consolidate_mesh();
         write_obj("after_swap_" + std::to_string(it) + ".obj");
 
         smooth_all_vertices();
         assert(invariants(get_faces()));
+        consolidate_mesh();
         write_obj("after_smooth_" + std::to_string(it) + ".obj");
 
         wmtk::logger().info(

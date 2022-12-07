@@ -65,7 +65,7 @@ bool TriWild::split_edge_before(const Tuple& t)
     cache.local().v2 = t.switch_vertex(*this).vid(*this);
     cache.local().partition_id = vertex_attrs[t.vid(*this)].partition_id;
 
-    // get max_energy
+    // get max_energy // this isn't used for now. It is just purely heuristic
     cache.local().max_energy = get_quality(t);
     auto tris = get_one_ring_tris_for_vertex(t);
     for (auto tri : tris) {
@@ -106,11 +106,11 @@ bool TriWild::split_edge_after(const Tuple& t)
         return true;
     }
 
-    // check quality
-    auto tris = get_one_ring_tris_for_vertex(t);
-    for (auto tri : tris) {
-        if (get_quality(tri) > cache.local().max_energy) return false;
-    }
+    // check quality // this reallyis not checked if the edge is longer than target
+    // auto tris = get_one_ring_tris_for_vertex(t);
+    // for (auto tri : tris) {
+    //     if (get_quality(tri) > cache.local().max_energy) return false;
+    // }
 
     // only split can have operations on boundary edges
     if (m_bnd_freeze) {

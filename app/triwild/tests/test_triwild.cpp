@@ -4,13 +4,12 @@
 #include <igl/read_triangle_mesh.h>
 #include <igl/remove_duplicate_vertices.h>
 #include <remeshing/UniformRemeshing.h>
-
 #include <wmtk/utils/AMIPS2D.h>
 #include <wmtk/utils/AMIPS2D_autodiff.h>
+#include <wmtk/utils/autodiff.h>
 #include <catch2/catch.hpp>
 #include <wmtk/utils/ManifoldUtils.hpp>
 #include <wmtk/utils/TriQualityUtils.hpp>
-
 
 using namespace wmtk;
 using namespace triwild;
@@ -778,9 +777,8 @@ TEST_CASE("smoothing_amips_scaling")
     m.write_obj("smoothing_amips_test.obj");
 }
 
-TEST_CASE("smoothing_2.5")
+TEST_CASE("remeshing_symdi_scaling")
 {
-    using DScalar = wmtk::TwoAndAHalf::DScalar;
     Eigen::MatrixXd V(3, 2);
     V.row(0) << 0, 0;
     V.row(1) << 10, 0;
@@ -788,18 +786,316 @@ TEST_CASE("smoothing_2.5")
     Eigen::MatrixXi F(1, 3);
     F.row(0) << 0, 1, 2;
 
-    auto displacement = [](const DScalar& u, const DScalar& v) -> DScalar { return DScalar(1.0); };
-
     TriWild m;
     m.create_mesh(V, F, -1, false);
-    m.set_energy(std::make_unique<wmtk::TwoAndAHalf>(displacement));
+    RowMatrix2<Index> E = m.get_bnd_edge_matrix();
+    RowMatrix2<Scalar> V_aabb = Eigen::MatrixXd::Zero(m.vert_capacity(), 2);
+    for (int i = 0; i < m.vert_capacity(); ++i) {
+        V_aabb.row(i) << m.vertex_attrs[i].pos[0], m.vertex_attrs[i].pos[1];
+    }
+
+    lagrange::bvh::EdgeAABBTree<RowMatrix2<Scalar>, RowMatrix2<Index>, 2> aabb(V_aabb, E);
+    m.set_projection(aabb);
+    m.set_energy(std::make_unique<wmtk::SymDi>());
     m.m_target_l = 2;
-    m.m_get_closest_point = [](const Eigen::RowVector2d& p) -> Eigen::RowVector2d { return p; };
+
     assert(m.check_mesh_connectivity_validity());
+    m.mesh_improvement(10);
+    m.write_obj("remeshing_symdi_yesboundary.obj");
+}
+
+TEST_CASE("edge_length_energy_one_triangle_constant")
+{
+    using DScalar = wmtk::TwoAndAHalf::DScalar;
+    DiffScalarBase::setVariableCount(2);
+
+    Eigen::MatrixXd V(3, 2);
+    V.row(0) << 0, 0;
+    V.row(1) << 10, 0;
+    V.row(2) << 0, 10;
+    Eigen::MatrixXi F(1, 3);
+    F.row(0) << 0, 1, 2;
+    DiffScalarBase::setVariableCount(2);
+    auto displacement = [](const DScalar& u, const DScalar& v) -> DScalar { return DScalar(1); };
+    auto displacement_double = [&displacement](double u, double v) -> double {
+        return displacement(DScalar(u), DScalar(v)).getValue();
+    };
+    auto displacement_vector = [&displacement](double u, double v) -> Eigen::Vector3d {
+        Eigen::Vector3d p(u, v, displacement(DScalar(u), DScalar(v)).getValue());
+        return p;
+    };
+    TriWild m;
+    m.create_mesh(V, F, -1, false);
+    m.m_triwild_displacement = displacement_vector;
+
+    m.m_get_closest_point = [](const Eigen::RowVector2d& p) -> Eigen::RowVector2d { return p; };
+    m.set_energy(std::make_unique<wmtk::EdgeLengthEnergy>(displacement_vector));
+    m.m_target_l = 2;
+    // m.split_all_edges();
+
     m.smooth_all_vertices();
     m.write_displaced_obj(
-        "smoothing_twoandahalf.obj",
-        [&displacement](double u, double v) -> double {
-            return displacement(DScalar(u), DScalar(v)).getValue();
-        });
+        "twoandahalf_edge_length_one_triangle_constant_noboundary.obj",
+        displacement_double);
+}
+
+TEST_CASE("edge_length_energy_one_triangle_linear")
+{
+    using DScalar = wmtk::TwoAndAHalf::DScalar;
+    DiffScalarBase::setVariableCount(2);
+
+    Eigen::MatrixXd V(3, 2);
+    V.row(0) << 0, 0;
+    V.row(1) << 10, 0;
+    V.row(2) << 0, 10;
+    Eigen::MatrixXi F(1, 3);
+    F.row(0) << 0, 1, 2;
+    DiffScalarBase::setVariableCount(2);
+    auto displacement = [](const DScalar& u, const DScalar& v) -> DScalar { return DScalar(u); };
+    auto displacement_double = [&displacement](double u, double v) -> double {
+        return displacement(DScalar(u), DScalar(v)).getValue();
+    };
+    auto displacement_vector = [&displacement](double u, double v) -> Eigen::Vector3d {
+        Eigen::Vector3d p(u, v, displacement(DScalar(u), DScalar(v)).getValue());
+        return p;
+    };
+    TriWild m;
+    m.create_mesh(V, F, -1, false);
+    m.m_triwild_displacement = displacement_vector;
+
+    m.m_get_closest_point = [](const Eigen::RowVector2d& p) -> Eigen::RowVector2d { return p; };
+    m.set_energy(std::make_unique<wmtk::EdgeLengthEnergy>(displacement_vector));
+    m.m_target_l = 2;
+
+    m.smooth_all_vertices();
+    m.write_displaced_obj(
+        "twoandahalf_edge_length_one_triangle_linear_noboundary.obj",
+        displacement_double);
+}
+
+TEST_CASE("edge_length_energy_one_triangle_dramatic_linear")
+{
+    using DScalar = wmtk::TwoAndAHalf::DScalar;
+    DiffScalarBase::setVariableCount(2);
+
+    Eigen::MatrixXd V(3, 2);
+    V.row(0) << 0, 0;
+    V.row(1) << 10, 0;
+    V.row(2) << 0, 10;
+    Eigen::MatrixXi F(1, 3);
+    F.row(0) << 0, 1, 2;
+    DiffScalarBase::setVariableCount(2);
+    auto displacement = [](const DScalar& u, const DScalar& v) -> DScalar {
+        return DScalar(10 * u);
+    };
+    auto displacement_double = [&displacement](double u, double v) -> double {
+        return displacement(DScalar(u), DScalar(v)).getValue();
+    };
+    auto displacement_vector = [&displacement](double u, double v) -> Eigen::Vector3d {
+        Eigen::Vector3d p(u, v, displacement(DScalar(u), DScalar(v)).getValue());
+        return p;
+    };
+    TriWild m;
+    m.create_mesh(V, F, -1, false);
+    m.m_triwild_displacement = displacement_vector;
+
+    m.m_get_closest_point = [](const Eigen::RowVector2d& p) -> Eigen::RowVector2d { return p; };
+    m.set_energy(std::make_unique<wmtk::EdgeLengthEnergy>(displacement_vector));
+    m.m_target_l = 2;
+
+    m.smooth_all_vertices();
+    m.write_displaced_obj(
+        "twoandahalf_edge_length_one_triangle_dramatic_linear_noboundary.obj",
+        displacement_double);
+}
+
+TEST_CASE("edge_length_energy_one_triangle_constant_remesh")
+{
+    using DScalar = wmtk::TwoAndAHalf::DScalar;
+    DiffScalarBase::setVariableCount(2);
+
+    Eigen::MatrixXd V(3, 2);
+    V.row(0) << 0, 0;
+    V.row(1) << 10, 0;
+    V.row(2) << 0, 10;
+    Eigen::MatrixXi F(1, 3);
+    F.row(0) << 0, 1, 2;
+    DiffScalarBase::setVariableCount(2);
+    auto displacement = [](const DScalar& u, const DScalar& v) -> DScalar { return DScalar(1); };
+    auto displacement_double = [&displacement](double u, double v) -> double {
+        return displacement(DScalar(u), DScalar(v)).getValue();
+    };
+    auto displacement_vector = [&displacement](double u, double v) -> Eigen::Vector3d {
+        Eigen::Vector3d p(u, v, displacement(DScalar(u), DScalar(v)).getValue());
+        return p;
+    };
+    TriWild m;
+    m.create_mesh(V, F, -1, false);
+    m.m_triwild_displacement = displacement_vector;
+
+    RowMatrix2<Index> E = m.get_bnd_edge_matrix();
+    RowMatrix2<Scalar> V_aabb = Eigen::MatrixXd::Zero(m.vert_capacity(), 2);
+    for (int i = 0; i < m.vert_capacity(); ++i) {
+        V_aabb.row(i) << m.vertex_attrs[i].pos[0], m.vertex_attrs[i].pos[1];
+    }
+
+    lagrange::bvh::EdgeAABBTree<RowMatrix2<Scalar>, RowMatrix2<Index>, 2> aabb(V_aabb, E);
+    m.set_projection(aabb);
+    m.set_energy(std::make_unique<wmtk::EdgeLengthEnergy>(displacement_vector));
+    m.m_target_l = 0.5;
+    m.mesh_improvement(3);
+    m.write_displaced_obj(
+        "twoandahalf_edge_length_one_triangle_constant_remesh_yesboundary.obj",
+        displacement_double);
+}
+TEST_CASE("edge_length_energy_one_triangle_linear_remesh")
+{
+    using DScalar = wmtk::TwoAndAHalf::DScalar;
+    DiffScalarBase::setVariableCount(2);
+
+    Eigen::MatrixXd V(3, 2);
+    V.row(0) << 0, 0;
+    V.row(1) << 10, 0;
+    V.row(2) << 0, 10;
+    Eigen::MatrixXi F(1, 3);
+    F.row(0) << 0, 1, 2;
+
+    auto displacement = [](const DScalar& u, const DScalar& v) -> DScalar { return DScalar(u); };
+    auto displacement_double = [&displacement](double u, double v) -> double {
+        return displacement(DScalar(u), DScalar(v)).getValue();
+    };
+    auto displacement_vector = [&displacement](double u, double v) -> Eigen::Vector3d {
+        Eigen::Vector3d p(u, v, displacement(DScalar(u), DScalar(v)).getValue());
+        return p;
+    };
+    TriWild m;
+    m.create_mesh(V, F, -1, false);
+    m.m_triwild_displacement = displacement_vector;
+
+    RowMatrix2<Index> E = m.get_bnd_edge_matrix();
+    RowMatrix2<Scalar> V_aabb = Eigen::MatrixXd::Zero(m.vert_capacity(), 2);
+    for (int i = 0; i < m.vert_capacity(); ++i) {
+        V_aabb.row(i) << m.vertex_attrs[i].pos[0], m.vertex_attrs[i].pos[1];
+    }
+
+    lagrange::bvh::EdgeAABBTree<RowMatrix2<Scalar>, RowMatrix2<Index>, 2> aabb(V_aabb, E);
+    m.set_projection(aabb);
+    m.set_energy(std::make_unique<wmtk::EdgeLengthEnergy>(displacement_vector));
+    m.m_target_l = 0.5;
+    m.mesh_improvement(10);
+
+    m.write_displaced_obj(
+        "twoandahalf_edge_length_one_triangle_linear_remesh_yesboundary.obj",
+        displacement_double);
+}
+TEST_CASE("edge_length_energy_one_triangle_dramatic_linear_remesh")
+{
+    using DScalar = wmtk::TwoAndAHalf::DScalar;
+    DiffScalarBase::setVariableCount(2);
+
+    Eigen::MatrixXd V(3, 2);
+    V.row(0) << 0, 0;
+    V.row(1) << 10, 0;
+    V.row(2) << 0, 10;
+    Eigen::MatrixXi F(1, 3);
+    F.row(0) << 0, 1, 2;
+    // Eigen::MatrixXd V;
+    // Eigen::MatrixXi F;
+    // bool ok = igl::read_triangle_mesh("after_split_0.obj", V, F);
+    // assert(ok);
+    auto displacement = [](const DScalar& u, const DScalar& v) -> DScalar {
+        return DScalar(10 * u);
+    };
+    auto displacement_double = [&displacement](double u, double v) -> double {
+        return displacement(DScalar(u), DScalar(v)).getValue();
+    };
+    auto displacement_vector = [&displacement](double u, double v) -> Eigen::Vector3d {
+        Eigen::Vector3d p(u, v, displacement(DScalar(u), DScalar(v)).getValue());
+        return p;
+    };
+    TriWild m;
+    m.create_mesh(V, F, -1, false);
+    m.m_triwild_displacement = displacement_vector;
+
+    RowMatrix2<Index> E = m.get_bnd_edge_matrix();
+    RowMatrix2<Scalar> V_aabb = Eigen::MatrixXd::Zero(m.vert_capacity(), 2);
+    for (int i = 0; i < m.vert_capacity(); ++i) {
+        V_aabb.row(i) << m.vertex_attrs[i].pos[0], m.vertex_attrs[i].pos[1];
+    }
+
+    lagrange::bvh::EdgeAABBTree<RowMatrix2<Scalar>, RowMatrix2<Index>, 2> aabb(V_aabb, E);
+    m.set_projection(aabb);
+    m.set_energy(std::make_unique<wmtk::EdgeLengthEnergy>(displacement_vector));
+    m.m_target_l = 1;
+    m.mesh_improvement(15);
+
+    m.write_displaced_obj(
+        "twoandahalf_edge_length_one_triangle_dramatic_linear_remesh_yesboundary.obj",
+        displacement_double);
+}
+
+TEST_CASE("edge_length_energy_smooth_verify")
+{
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    bool ok = igl::read_triangle_mesh("split_perfect_mesh.obj", V, F);
+    TriWild m;
+    assert(ok);
+    m.create_mesh(V, F, -1, false);
+    RowMatrix2<Index> E = m.get_bnd_edge_matrix();
+    RowMatrix2<Scalar> V_aabb = Eigen::MatrixXd::Zero(m.vert_capacity(), 2);
+    for (int i = 0; i < m.vert_capacity(); ++i) {
+        V_aabb.row(i) << m.vertex_attrs[i].pos[0], m.vertex_attrs[i].pos[1];
+    }
+
+    lagrange::bvh::EdgeAABBTree<RowMatrix2<Scalar>, RowMatrix2<Index>, 2> aabb(V_aabb, E);
+
+    auto displacement_double = [](double u, double v) -> double { return 1; };
+    auto displacement_vector = [&displacement_double](double u, double v) -> Eigen::Vector3d {
+        Eigen::Vector3d p(u, v, displacement_double(u, v));
+        return p;
+    };
+
+    m.set_projection(aabb);
+    assert(m.invariants(m.get_faces()));
+
+    m.m_target_l = 1;
+    m.set_energy(std::make_unique<wmtk::EdgeLengthEnergy>(displacement_vector));
+    m.smooth_all_vertices();
+    for (auto f : m.get_faces()) assert(!m.is_inverted(f));
+    assert(m.invariants(m.get_faces()));
+    m.write_displaced_obj("same_perfect_mesh_0.021x10.obj", displacement_double);
+}
+
+TEST_CASE("edge_length_energy_collapse_verify")
+{
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    bool ok = igl::read_triangle_mesh("same_perfect_mesh_0.021.obj", V, F);
+    TriWild m;
+    assert(ok);
+    m.create_mesh(V, F, -1, false);
+    RowMatrix2<Index> E = m.get_bnd_edge_matrix();
+    RowMatrix2<Scalar> V_aabb = Eigen::MatrixXd::Zero(m.vert_capacity(), 2);
+    for (int i = 0; i < m.vert_capacity(); ++i) {
+        V_aabb.row(i) << m.vertex_attrs[i].pos[0], m.vertex_attrs[i].pos[1];
+    }
+
+    lagrange::bvh::EdgeAABBTree<RowMatrix2<Scalar>, RowMatrix2<Index>, 2> aabb(V_aabb, E);
+
+    auto displacement_double = [](double u, double v) -> double { return 1; };
+    auto displacement_vector = [&displacement_double](double u, double v) -> Eigen::Vector3d {
+        Eigen::Vector3d p(u, v, displacement_double(u, v));
+        return p;
+    };
+
+    m.set_projection(aabb);
+    assert(m.invariants(m.get_faces()));
+
+    m.m_target_l = 1;
+    m.set_energy(std::make_unique<wmtk::EdgeLengthEnergy>(displacement_vector));
+    m.collapse_all_edges();
+    for (auto f : m.get_faces()) assert(!m.is_inverted(f));
+    assert(m.invariants(m.get_faces()));
+    m.write_displaced_obj("collapse_perfect_mesh_0.021.obj", displacement_double);
 }
