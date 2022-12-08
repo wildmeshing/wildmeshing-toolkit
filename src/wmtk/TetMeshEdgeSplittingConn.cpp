@@ -76,7 +76,7 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     assert(fid_for_return != -1);
 
     // Tuple new_loc = tuple_from_vertex(v_id);
-    Tuple new_loc = Tuple(*this, v_B, eid_for_return, fid_for_return, tid_for_return);
+    Tuple new_loc = Tuple(*this, v_id, eid_for_return, fid_for_return, tid_for_return);
 
     start_protect_attributes();
     if (!split_edge_after(new_loc) || !invariants(get_one_ring_tets_for_vertex(new_loc))) {

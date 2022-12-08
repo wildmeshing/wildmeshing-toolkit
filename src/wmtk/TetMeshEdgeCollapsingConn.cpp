@@ -119,8 +119,8 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
     // refer to illustrations
     // return B, BC, BCA, BCAD
     auto v_B = loc0.switch_vertex(*this).vid(*this);
-    auto v_C_tuple = loc0.switch_vertex(*this).switch_edge(*this).switch_face(*this).switch_tetrahedron(*this);
-    assert(v_C_tuple.has_value());
+
+    auto v_C_tuple = loc0.switch_edge(*this).switch_face(*this).switch_tetrahedron(*this);
     auto v_C = (*v_C_tuple).switch_face(*this).switch_edge(*this).switch_vertex(*this).vid(*this);
     auto v_A = loc0.switch_edge(*this).switch_vertex(*this).vid(*this);
     auto v_D = loc0.switch_face(*this).switch_edge(*this).switch_vertex(*this).vid(*this);
@@ -194,6 +194,7 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
     assert(fid_for_return != -1);
 
     Tuple new_loc = Tuple(*this, v_B, eid_for_return, fid_for_return, tid_for_return);
+    assert(v2_id == v_B);
 
     // Tuple new_loc = tuple_from_vertex(v2_id);
 

@@ -198,14 +198,16 @@ bool wmtk::TetMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tet_tuples
     auto rollback_vert_conn = operation_update_connectivity_impl(new_tet_id, new_tets);
     assert(new_tet_id.size() == 2);
 
-    auto u0id = m_tet_connectivity[new_tet_id.front()].find(v1_id);
-    assert(u0id != -1);
+    // auto u0id = m_tet_connectivity[new_tet_id.front()].find(v1_id);
+    // assert(u0id != -1);
     // auto newt = tuple_from_face(new_tet_id.front(), m_map_vertex2oppo_face[u0id]);
 
     // get eid, fid, tid for return
     size_t tid_for_return = -1;
-    for (size_t tid_v : m_vertex_connectivity[v_B].m_conn_tets){
-        if(m_tet_connectivity[tid_v].find(v_A)!=-1 && m_tet_connectivity[tid_v].find(v_C)!=-1 && m_tet_connectivity[tid_v].find(v_D)!=-1){
+    for (size_t tid_v : m_vertex_connectivity[v_B].m_conn_tets) {
+        if (m_tet_connectivity[tid_v].find(v_A) != -1 &&
+            m_tet_connectivity[tid_v].find(v_C) != -1 &&
+            m_tet_connectivity[tid_v].find(v_D) != -1) {
             tid_for_return = tid_v;
             break;
         }
@@ -237,7 +239,7 @@ auto swap_4_4(
     const std::vector<std::array<size_t, 4>>& tets,
     size_t u0,
     size_t u1,
-    int type,
+    int v0,
     std::array<size_t, 2>& newedge)
 {
     auto n0 = -1, n1 = -1, n2 = -1, n3 = -1;
@@ -258,7 +260,7 @@ auto swap_4_4(
     verts.erase(u1);
     assert(verts.size() == 4);
 
-    auto v0 = (*verts.begin());
+    // auto v0 = (*verts.begin());
     auto find_other_v_local = [&](const auto& tet, const auto& tri) {
         for (auto i = 0; i < tet.size(); i++) {
             if (tet[i] != tri[0] && tet[i] != tri[1] && tet[i] != tri[2]) return i;
@@ -281,10 +283,10 @@ auto swap_4_4(
     verts.erase(s1);
     assert(verts.size() == 1);
     auto v1 = (*verts.begin());
-    if (type == 1) {
-        std::swap(v0, s0);
-        std::swap(v1, s1);
-    }
+    // if (type == 1) {
+    //     std::swap(v0, s0);
+    //     std::swap(v1, s1);
+    // }
 
     auto new_tet_conn = std::vector<std::array<size_t, 4>>();
     for (auto j = 0; j < 4; j++) {
@@ -329,6 +331,8 @@ bool wmtk::TetMesh::swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tet_tup
     auto v_C_tuple = t.switch_tetrahedron(*this);
     assert(v_C_tuple.has_value());
     auto v_C = (*v_C_tuple).switch_face(*this).switch_edge(*this).switch_vertex(*this).vid(*this);
+    auto v_F_tuple = t.switch_face(*this).switch_tetrahedron(*this);
+    auto v_F = (*v_F_tuple).switch_face(*this).switch_edge(*this).switch_vertex(*this).vid(*this);
 
     auto old_tets = record_old_tet_connectivity(m_tet_connectivity, affected);
     auto old_tets_conn = std::vector<std::array<size_t, 4>>();
@@ -336,9 +340,13 @@ bool wmtk::TetMesh::swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tet_tup
 
     std::vector<size_t> new_tet_id;
     bool is_succeed = false;
-    for (int type = 0; type < 2; type++) {
+    // for (int type = 0; type < 2; type++) {
+
+    std::array<size_t, 2> v0s = {{v_E, v_A}};
+    for (size_t v0 : v0s) {
         auto edge_vv = std::array<size_t, 2>();
-        auto new_tets = swap_4_4(old_tets_conn, v1_id, v2_id, type, edge_vv);
+        auto new_tets = swap_4_4(old_tets_conn, v1_id, v2_id, v0, edge_vv);
+
 
         new_tet_id = affected;
         auto rollback_vert_conn = operation_update_connectivity_impl(new_tet_id, new_tets);
@@ -357,22 +365,46 @@ bool wmtk::TetMesh::swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tet_tup
         // };
         // auto newt = new_tuple_from_edge();
 
-        // get eid, fid, tid for return
-        size_t tid_for_return = -1;
-        for (size_t tid_v : m_vertex_connectivity[v_A].m_conn_tets){
-            if(m_tet_connectivity[tid_v].find(v_C)!=-1 && m_tet_connectivity[tid_v].find(v_D)!=-1 && m_tet_connectivity[tid_v].find(v_E)!=-1){
-                tid_for_return = tid_v;
-                break;
+        Tuple newt;
+
+        if (v0 == v_A) {
+            size_t tid_for_return = -1;
+            for (size_t tid_v : m_vertex_connectivity[v_A].m_conn_tets) {
+                if (m_tet_connectivity[tid_v].find(v_E) != -1 &&
+                    m_tet_connectivity[tid_v].find(v_D) != -1 &&
+                    m_tet_connectivity[tid_v].find(v_F) != -1) {
+                    tid_for_return = tid_v;
+                    break;
+                }
             }
+
+            assert(tid_for_return != -1);
+
+            auto eid_for_return = m_tet_connectivity[tid_for_return].find_local_edge(v_A, v_F);
+            assert(eid_for_return != -1);
+            auto fid_for_return = m_tet_connectivity[tid_for_return].find_local_face(v_A, v_D, v_F);
+            assert(fid_for_return != -1);
+            newt = Tuple(*this, v_A, eid_for_return, fid_for_return, tid_for_return);
+        } else {
+            size_t tid_for_return = -1;
+            for (size_t tid_v : m_vertex_connectivity[v_A].m_conn_tets) {
+                if (m_tet_connectivity[tid_v].find(v_C) != -1 &&
+                    m_tet_connectivity[tid_v].find(v_D) != -1 &&
+                    m_tet_connectivity[tid_v].find(v_E) != -1) {
+                    tid_for_return = tid_v;
+                    break;
+                }
+            }
+
+            assert(tid_for_return != -1);
+
+            auto eid_for_return = m_tet_connectivity[tid_for_return].find_local_edge(v_E, v_C);
+            assert(eid_for_return != -1);
+            auto fid_for_return = m_tet_connectivity[tid_for_return].find_local_face(v_E, v_C, v_A);
+            assert(fid_for_return != -1);
+            newt = Tuple(*this, v_E, eid_for_return, fid_for_return, tid_for_return);
         }
-        assert(tid_for_return != -1);
 
-        auto eid_for_return = m_tet_connectivity[tid_for_return].find_local_edge(v_E, v_C);
-        assert(eid_for_return != -1);
-        auto fid_for_return = m_tet_connectivity[tid_for_return].find_local_face(v_E, v_C, v_A);
-        assert(fid_for_return != -1);
-
-        auto newt = Tuple(*this, v_E, eid_for_return, fid_for_return, tid_for_return);
 
         for (auto ti : new_tet_id) new_tet_tuples.emplace_back(tuple_from_tet(ti));
         start_protect_attributes();
@@ -452,16 +484,18 @@ bool wmtk::TetMesh::swap_face(const Tuple& t, std::vector<Tuple>& new_tet_tuples
         auto rollback_vert_conn = operation_update_connectivity_impl(new_tet_id, new_tets);
 
         assert(affected.size() == old_tets.size());
-        auto new_tid = new_tet_id.front();
-        auto new_eid = m_tet_connectivity[new_tid].find_local_edge(oppo_vid[0], oppo_vid[1]);
-        logger().trace("oppo vid {}", oppo_vid);
-        assert(new_eid != -1);
+        // auto new_tid = new_tet_id.front();
+        // auto new_eid = m_tet_connectivity[new_tid].find_local_edge(oppo_vid[0], oppo_vid[1]);
+        // logger().trace("oppo vid {}", oppo_vid);
+        // assert(new_eid != -1);
         // auto newt = tuple_from_edge(new_tid, new_eid);
 
         // get eid, fid, tid for return
         size_t tid_for_return = -1;
-        for (size_t tid_v : m_vertex_connectivity[v_A].m_conn_tets){
-            if(m_tet_connectivity[tid_v].find(v_B)!=-1 && m_tet_connectivity[tid_v].find(v_C)!=-1 && m_tet_connectivity[tid_v].find(v_E)!=-1){
+        for (size_t tid_v : m_vertex_connectivity[v_A].m_conn_tets) {
+            if (m_tet_connectivity[tid_v].find(v_B) != -1 &&
+                m_tet_connectivity[tid_v].find(v_C) != -1 &&
+                m_tet_connectivity[tid_v].find(v_E) != -1) {
                 tid_for_return = tid_v;
                 break;
             }

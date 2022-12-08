@@ -1,8 +1,8 @@
 
 #include "TetWild.h"
 
-#include "wmtk/utils/Rational.hpp"
 #include "common.h"
+#include "wmtk/utils/Rational.hpp"
 
 #include <wmtk/utils/AMIPS.h>
 #include <wmtk/utils/Logger.hpp>
@@ -153,8 +153,8 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
     // outputs scale_multipliers
     tbb::concurrent_vector<Scalar> scale_multipliers(vert_capacity(), recover_scalar);
 
-    std::vector<Vector3d> pts;
-    std::queue<size_t> v_queue;
+    tbb::concurrent_vector<Vector3d> pts;
+    tbb::concurrent_queue<size_t> v_queue;
     TetMesh::for_each_tetra([&](auto& t) {
         auto tid = t.tid(*this);
         if (std::cbrt(m_tet_attribute[tid].m_quality) < filter_energy) return;
@@ -180,10 +180,11 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
     nnsearch->set_points(pts.size(), pts[0].data());
 
     std::vector<size_t> cache_one_ring;
-    while (!v_queue.empty()) {
+    size_t vid;
+    while (v_queue.try_pop(vid)) {
         sum++;
-        size_t vid = v_queue.front();
-        v_queue.pop();
+        // size_t vid = v_queue.front();
+        // v_queue.pop();
         if (visited[vid]) continue;
         visited[vid] = true;
         adjcnt++;
