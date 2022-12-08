@@ -8,16 +8,13 @@
 #include <Eigen/LU>
 #include <array>
 #include <cmath>
+#include "Logger.hpp"
 namespace wmtk {
 class Boundary
 {
 public:
-    Boundary() = default;
-    ~Boundary() = default;
-
-public:
     std::vector<std::vector<Eigen::Vector2d>> m_boundaries;
-    std::vector<std::vector<double>> m_arclengties;
+    std::vector<std::vector<double>> m_arclengths;
 
 public:
     /**
@@ -28,7 +25,7 @@ public:
      * @param V Matrix of mesh vertices
      * @param F Matrix of mes faces
      */
-    void construct_boudaries(Eigen::MatrixXd& V, Eigen::MatrixXi& F);
+    void construct_boudaries(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F);
     Eigen::Vector2d t_to_uv(int i, double t);
     double uv_to_t(const Eigen::Vector2d& v);
 };

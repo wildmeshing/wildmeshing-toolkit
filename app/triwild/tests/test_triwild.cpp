@@ -6,6 +6,7 @@
 #include <remeshing/UniformRemeshing.h>
 #include <wmtk/utils/AMIPS2D.h>
 #include <wmtk/utils/AMIPS2D_autodiff.h>
+#include <wmtk/utils/BoundaryParametrization.h>
 #include <wmtk/utils/autodiff.h>
 #include <catch2/catch.hpp>
 #include <wmtk/utils/ManifoldUtils.hpp>
@@ -1098,4 +1099,51 @@ TEST_CASE("edge_length_energy_collapse_verify")
     for (auto f : m.get_faces()) assert(!m.is_inverted(f));
     assert(m.invariants(m.get_faces()));
     m.write_displaced_obj("collapse_perfect_mesh_0.021.obj", displacement_double);
+}
+
+TEST_CASE("boundary parametrization")
+{
+    Eigen::MatrixXd V(3, 2);
+    V.row(0) << 0, 0;
+    V.row(1) << 10, 0;
+    V.row(2) << 0, 10;
+    Eigen::MatrixXi F(1, 3);
+    F.row(0) << 0, 1, 2;
+
+    wmtk::Boundary bnd;
+    bnd.construct_boudaries(V, F);
+
+    REQUIRE(bnd.m_boundaries.size() == 1);
+    REQUIRE(bnd.m_arclengths.size() == 1);
+
+    REQUIRE(bnd.m_arclengths[0].size() == 4);
+
+    REQUIRE(bnd.m_arclengths[0][0] == 0);
+    REQUIRE(bnd.m_arclengths[0][1] == 10);
+    REQUIRE(bnd.m_arclengths[0][2] == 10 + 10 * sqrt(2));
+    REQUIRE(bnd.m_arclengths[0][3] == 10 + 10 + 10 * sqrt(2));
+
+    Eigen::Vector2d test_v0(0, 0);
+    auto t0 = bnd.uv_to_t(test_v0);
+    REQUIRE(t0 == 0.);
+    auto v0 = bnd.t_to_uv(0, t0);
+    REQUIRE(v0 == test_v0);
+
+    Eigen::Vector2d test_v1(5, 0);
+    auto t1 = bnd.uv_to_t(test_v1);
+    REQUIRE(t1 == 5.);
+    auto v1 = bnd.t_to_uv(0, t1);
+    REQUIRE(v1 == test_v1);
+
+    Eigen::Vector2d test_v2(5, 5);
+    auto t2 = bnd.uv_to_t(test_v2);
+    REQUIRE(t2 == 10 + 5. * sqrt(2));
+    auto v2 = bnd.t_to_uv(0, t2);
+    REQUIRE(v2 == test_v2);
+
+    Eigen::Vector2d test_v3(0, 0.1);
+    auto t3 = bnd.uv_to_t(test_v3);
+    REQUIRE(t3 == 10 + 10. * sqrt(2) + 9.9);
+    auto v3 = bnd.t_to_uv(0, t3);
+    REQUIRE((v3 - test_v3).stableNorm() < 1e-8);
 }

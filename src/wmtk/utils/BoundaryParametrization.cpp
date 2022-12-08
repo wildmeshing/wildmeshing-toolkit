@@ -1,6 +1,6 @@
 #include "BoundaryParametrization.h"
 namespace wmtk {
-void Boundary::construct_boudaries(Eigen::MatrixXd& V, Eigen::MatrixXi& F)
+void Boundary::construct_boudaries(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F)
 {
     std::vector<std::vector<int>> paths;
     igl::boundary_loop(F, paths);
@@ -12,17 +12,17 @@ void Boundary::construct_boudaries(Eigen::MatrixXd& V, Eigen::MatrixXi& F)
         arclength.emplace_back(len);
         for (auto i = 0; i < p.size(); i++) {
             boundary.emplace_back(V.row(p[i]));
-            len += (V.row(p[i]) - V.row(p[(i + 1) % p.size()])).norm();
+            len += (V.row(p[i]) - V.row(p[(i + 1) % p.size()])).stableNorm();
             arclength.emplace_back(len);
         }
         assert(arclength.size() == boundary.size() + 1);
         m_boundaries.emplace_back(boundary);
-        m_arclengties.emplace_back(arclength);
+        m_arclengths.emplace_back(arclength);
     }
 }
 Eigen::Vector2d Boundary::t_to_uv(int i, double t)
 {
-    const auto& arclength = m_arclengties[i];
+    const auto& arclength = m_arclengths[i];
     while (t < 0) t += arclength.back();
     assert(t < arclength.back());
     t = std::fmod(t, arclength.back());
@@ -42,20 +42,21 @@ Eigen::Vector2d Boundary::t_to_uv(int i, double t)
 double Boundary::uv_to_t(const Eigen::Vector2d& v)
 {
     double ret_t = 0.;
-    Eigen::MatrixXd P;
-    P.resize(1, 2);
-    P.row(0) = v.transpose();
-    Eigen::VectorXd tmp_t, tmp_d;
+    Eigen::RowVector2d P;
+    P = v.transpose();
+    Eigen::RowVector<double, 1> tmp_t, tmp_d;
     double d = std::numeric_limits<double>::infinity();
-
     for (auto i = 0; i < m_boundaries.size(); i++) {
         for (auto j = 0; j < m_boundaries[i].size(); j++) {
-            Eigen::RowVectorXd A = m_boundaries[i][j];
-            Eigen::RowVectorXd B = m_boundaries[i][(j + 1) % m_boundaries[i].size()];
+            Eigen::RowVector2d A = m_boundaries[i][j];
+            Eigen::RowVector2d B = m_boundaries[i][(j + 1) % m_boundaries[i].size()];
             igl::project_to_line_segment(P, A, B, tmp_t, tmp_d);
             if (tmp_d(0) < d) {
                 d = tmp_d(0);
-                ret_t = tmp_t(0);
+                ret_t = m_arclengths[i][j] +
+                        std::abs(
+                            tmp_t(0) * (m_arclengths[i][(j + 1) % m_arclengths[i].size()] -
+                                        m_arclengths[i][j]));
             }
         }
     }
