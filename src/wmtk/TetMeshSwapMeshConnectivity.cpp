@@ -239,7 +239,7 @@ auto swap_4_4(
     const std::vector<std::array<size_t, 4>>& tets,
     size_t u0,
     size_t u1,
-    int v0,
+    size_t v0,
     std::array<size_t, 2>& newedge)
 {
     auto n0 = -1, n1 = -1, n2 = -1, n3 = -1;
