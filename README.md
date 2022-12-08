@@ -107,6 +107,19 @@ If either the user specified invariants or the after operation check/update has 
 
 For easier usage and customization, here we demonstrate the before and after of each operation and the vertex, edge, face, and tet (in 3d) that is reference.
 
+### 2D operations
+- **edge collapse**
+![img](img/collapse_demonstration.svg)
+
+- **edge split**
+![img](img/split_demonstration.svg)
+- **edge swap**
+![img](img/swap_demonstration.svg)
+
+- **vertex smooth**
+This operation do not change the reference.
+
+### 3D operations
 
 ## Parallel Scheduling
 The type and scheduling of local operations is crucial in mesh editing algorithms. This involves maintaining a priority queue of operations, which is updated after every local operation.
