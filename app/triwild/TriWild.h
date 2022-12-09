@@ -5,11 +5,13 @@
 #include <lagrange/SurfaceMesh.h>
 #include <lagrange/bvh/EdgeAABBTree.h>
 #include <wmtk/TriMesh.h>
+#include <wmtk/utils/BoundaryParametrization.h>
 #include <wmtk/utils/Energy2d.h>
 #include <wmtk/utils/GeoUtils.h>
 #include <nlohmann/json.hpp>
 #include <sec/envelope/SampleEnvelope.hpp>
 #include "Parameters.h"
+
 using json = nlohmann::json;
 
 namespace triwild {
@@ -17,6 +19,8 @@ class VertexAttributes
 {
 public:
     Eigen::Vector2d pos;
+    double t = 0.;
+    size_t curve_id;
 
     size_t partition_id = 0; // TODO this should not be here
 
@@ -54,6 +58,7 @@ public:
         Eigen::Vector3d p(u, v, 0.);
         return p;
     }; // used for heuristic split, collapse. Default to return (u,v,0)
+    wmtk::Boundary m_boundary;
 
     TriWild(){};
 

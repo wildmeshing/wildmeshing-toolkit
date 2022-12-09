@@ -1147,3 +1147,26 @@ TEST_CASE("boundary parametrization")
     auto v3 = bnd.t_to_uv(0, t3);
     REQUIRE((v3 - test_v3).stableNorm() < 1e-8);
 }
+
+TEST_CASE("new boundary")
+{
+    Eigen::MatrixXd V(3, 2);
+    V.row(0) << 0, 0;
+    V.row(1) << 10, 0;
+    V.row(2) << 0, 10;
+    Eigen::MatrixXi F(1, 3);
+    F.row(0) << 0, 1, 2;
+
+    TriWild m;
+    m.create_mesh(V, F, -1, false);
+    m.m_get_closest_point = [](const Eigen::RowVector2d& p) -> Eigen::RowVector2d { return p; };
+    m.m_target_l = 4;
+    auto displacement_double = [](double u, double v) -> double { return 1; };
+    auto displacement_vector = [&displacement_double](double u, double v) -> Eigen::Vector3d {
+        Eigen::Vector3d p(u, v, displacement_double(u, v));
+        return p;
+    };
+    for (auto v : m.get_vertices()) {
+        REQUIRE(m.vertex_attrs[v.vid(m)].t >= 0);
+    }
+}

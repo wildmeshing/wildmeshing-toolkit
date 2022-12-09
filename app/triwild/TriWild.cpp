@@ -130,15 +130,30 @@ void TriWild::create_mesh(
     for (auto tri : this->get_faces()) {
         assert(!is_inverted(tri));
     }
+    // construct the boundary map for boundary parametrization
+    m_boundary.construct_boudaries(V, F);
+    for (auto v : get_vertices()) {
+        assert(vertex_attrs[v.vid(*this)].t >= 0);
+    }
 
     // mark boundary vertices as fixed
     // but this is not indiscriminatively fixed for all operations
     // only swap will always be reject for boundary edges
     // other operations are conditioned on whether m_bnd_freeze is turned on
+    // also obtain the boudnary parametrizatin too
     for (auto v : this->get_vertices()) {
-        vertex_attrs[v.vid(*this)].fixed = is_boundary_vertex(v);
+        if (is_boundary_vertex(v)) {
+            vertex_attrs[v.vid(*this)].fixed = is_boundary_vertex(v);
+            vertex_attrs[v.vid(*this)].curve_id = 0; /// only one connected mesh for now
+            vertex_attrs[v.vid(*this)].t = m_boundary.uv_to_t(vertex_attrs[v.vid(*this)].pos);
+        }
     }
 
+    for (auto v : get_vertices()) {
+        assert(
+            (vertex_attrs[v.vid(*this)].pos - m_boundary.t_to_uv(0, vertex_attrs[v.vid(*this)].t))
+                .squaredNorm() < 1e-8);
+    }
 
     if (eps > 0) {
         m_envelope.use_exact = true;
