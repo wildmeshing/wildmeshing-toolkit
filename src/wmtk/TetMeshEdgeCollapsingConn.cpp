@@ -112,7 +112,6 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
     logger().trace("{} {}", v1_id, v2_id);
     if (m_collapse_check_link_condition && !link_condition(v1_id, v2_id)) {
         wmtk::logger().trace("violate link condition");
-        // wmtk::logger().info("not pass link condition check");
         return false;
     }
 
@@ -183,11 +182,7 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
         operation_update_connectivity_impl(n1_t_ids, new_tet_conn, preserved_tids);
 
     auto& new_tet_id = preserved_tids;
-    // std::cout << new_tet_id.size() << std::endl;
-    // for (int i = 0; i < new_tet_id.size(); i++) {
-    //     std::cout << m_tet_connectivity[i][0] << " " << m_tet_connectivity[i][1] << " "
-    //               << m_tet_connectivity[i][2] << " " << m_tet_connectivity[i][3] << std::endl;
-    // }
+
     assert(rollback_vert_conn.find(v1_id) != rollback_vert_conn.end());
     //
     m_vertex_connectivity[v1_id].m_is_removed = true;
@@ -195,47 +190,25 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
 
     // get eid, fid, tid for return
     Tuple new_loc;
-    if (!boundary_flag) {
-        size_t tid_for_return = -1;
-        for (size_t tid_v : m_vertex_connectivity[v_B].m_conn_tets) {
-            if (m_tet_connectivity[tid_v].find(v_A) != -1 &&
-                m_tet_connectivity[tid_v].find(v_C) != -1 &&
-                m_tet_connectivity[tid_v].find(v_D) != -1) {
-                tid_for_return = tid_v;
-                break;
-            }
-        }
-        assert(tid_for_return != -1);
 
-        auto eid_for_return = m_tet_connectivity[tid_for_return].find_local_edge(v_B, v_C);
-        assert(eid_for_return != -1);
-        auto fid_for_return = m_tet_connectivity[tid_for_return].find_local_face(v_B, v_C, v_A);
-        assert(fid_for_return != -1);
-        assert(v2_id == v_B);
-        new_loc = Tuple(*this, v_B, eid_for_return, fid_for_return, tid_for_return);
-    } else {
-        // if (v_C_tuple.has_value()) {
-        size_t tid_for_return = -1;
-        for (size_t tid_v : m_vertex_connectivity[v_B].m_conn_tets) {
-            if (m_tet_connectivity[tid_v].find(v_A) != -1 &&
-                m_tet_connectivity[tid_v].find(v_C) != -1 &&
-                m_tet_connectivity[tid_v].find(v_D) != -1) {
-                tid_for_return = tid_v;
-                break;
-            }
+    size_t tid_for_return = -1;
+    for (size_t tid_v : m_vertex_connectivity[v_B].m_conn_tets) {
+        if (m_tet_connectivity[tid_v].find(v_A) != -1 &&
+            m_tet_connectivity[tid_v].find(v_C) != -1 &&
+            m_tet_connectivity[tid_v].find(v_D) != -1) {
+            tid_for_return = tid_v;
+            break;
         }
-        assert(tid_for_return != -1);
-
-        auto eid_for_return = m_tet_connectivity[tid_for_return].find_local_edge(v_B, v_C);
-        assert(eid_for_return != -1);
-        auto fid_for_return = m_tet_connectivity[tid_for_return].find_local_face(v_B, v_C, v_A);
-        assert(fid_for_return != -1);
-        assert(v2_id == v_B);
-        new_loc = Tuple(*this, v_B, eid_for_return, fid_for_return, tid_for_return);
-        // } else {
-        //     new_loc = tuple_from_vertex(v_B);
-        // }
     }
+    assert(tid_for_return != -1);
+
+    auto eid_for_return = m_tet_connectivity[tid_for_return].find_local_edge(v_B, v_C);
+    assert(eid_for_return != -1);
+    auto fid_for_return = m_tet_connectivity[tid_for_return].find_local_face(v_B, v_C, v_A);
+    assert(fid_for_return != -1);
+    assert(v2_id == v_B);
+    new_loc = Tuple(*this, v_B, eid_for_return, fid_for_return, tid_for_return);
+
 
     // Tuple new_loc = tuple_from_vertex(v2_id);
 
@@ -259,7 +232,6 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
         !invariants(get_one_ring_tets_for_vertex(new_loc))) {
         m_vertex_connectivity[v1_id].m_is_removed = false;
         operation_failure_rollback_imp(rollback_vert_conn, n1_t_ids, new_tet_id, old_tets);
-        // std::cout << "failing" << std::endl;
         return false;
     }
 

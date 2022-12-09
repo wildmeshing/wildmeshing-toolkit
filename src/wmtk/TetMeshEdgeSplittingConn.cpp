@@ -62,8 +62,10 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
 
     // get tid. eid, fid for return
     size_t tid_for_return = -1;
-    for (size_t new_v_tid : m_vertex_connectivity[v_id].m_conn_tets){
-        if(m_tet_connectivity[new_v_tid].find(v_A)!=-1 && m_tet_connectivity[new_v_tid].find(v_B)!=-1 && m_tet_connectivity[new_v_tid].find(v_D)!=-1){
+    for (size_t new_v_tid : m_vertex_connectivity[v_id].m_conn_tets) {
+        if (m_tet_connectivity[new_v_tid].find(v_A) != -1 &&
+            m_tet_connectivity[new_v_tid].find(v_B) != -1 &&
+            m_tet_connectivity[new_v_tid].find(v_D) != -1) {
             tid_for_return = new_v_tid;
             break;
         }
@@ -75,7 +77,6 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     auto fid_for_return = m_tet_connectivity[tid_for_return].find_local_face(v_B, v_id, v_A);
     assert(fid_for_return != -1);
 
-    // Tuple new_loc = tuple_from_vertex(v_id);
     Tuple new_loc = Tuple(*this, v_id, eid_for_return, fid_for_return, tid_for_return);
 
     start_protect_attributes();
