@@ -64,7 +64,14 @@ bool TriWild::split_edge_before(const Tuple& t)
     cache.local().v1 = t.vid(*this);
     cache.local().v2 = t.switch_vertex(*this).vid(*this);
     cache.local().partition_id = vertex_attrs[t.vid(*this)].partition_id;
-
+    if (is_boundary_vertex(t))
+        vertex_attrs[cache.local().v1].fixed = true;
+    else
+        vertex_attrs[cache.local().v1].fixed = false;
+    if (is_boundary_vertex(t.switch_vertex(*this)))
+        vertex_attrs[cache.local().v2].fixed = true;
+    else
+        vertex_attrs[cache.local().v2].fixed = false;
     // get max_energy // this isn't used for now. It is just purely heuristic
     cache.local().max_energy = get_quality(t);
     auto tris = get_one_ring_tris_for_vertex(t);
@@ -95,6 +102,12 @@ bool TriWild::split_edge_after(const Tuple& t)
     auto vid = t.vid(*this);
     vertex_attrs[vid].pos = p;
     vertex_attrs[vid].partition_id = cache.local().partition_id;
+
+    // update t for boundary vertex generated for boudnary edge
+    if (vertex_attrs[cache.local().v1].fixed && vertex_attrs[cache.local().v2].fixed)
+        vertex_attrs[t.vid(*this)].t =
+            (vertex_attrs[cache.local().v1].t + vertex_attrs[cache.local().v2].t) / 2.;
+
     // enforce length check
     if (length2 > 4. / 3. * 4. / 3. * m_target_l * m_target_l) {
         if (m_bnd_freeze) {

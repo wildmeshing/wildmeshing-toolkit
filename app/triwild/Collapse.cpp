@@ -119,8 +119,10 @@ bool TriWild::collapse_edge_after(const Tuple& t)
     Eigen::Vector2d p;
     if (vertex_attrs[cache.local().v1].fixed) {
         p = vertex_attrs[cache.local().v1].pos;
+        vertex_attrs[t.vid(*this)].t = vertex_attrs[cache.local().v1].t;
     } else if (vertex_attrs[cache.local().v2].fixed) {
         p = vertex_attrs[cache.local().v2].pos;
+        vertex_attrs[t.vid(*this)].t = vertex_attrs[cache.local().v2].t;
     } else {
         assert(!vertex_attrs[cache.local().v1].fixed);
         assert(!vertex_attrs[cache.local().v2].fixed);
