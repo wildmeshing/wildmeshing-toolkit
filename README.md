@@ -120,6 +120,21 @@ For easier usage and customization, here we demonstrate the before and after of 
 This operation do not change the reference.
 
 ### 3D operations
+- **edge collapse**
+![img](img/collapse3d.PNG)
+
+- **edge collapse boundary case**
+![img](img/collapseboundary3d.PNG)
+
+- **edge split**
+![img](img/split3d.PNG)
+
+- **edge swap 4-4**
+![img](img/swap44.PNG)
+
+- **edge swap 2-3 & 3-2**
+![img](img/swap32.PNG)
+
 
 ## Parallel Scheduling
 The type and scheduling of local operations is crucial in mesh editing algorithms. This involves maintaining a priority queue of operations, which is updated after every local operation.
