@@ -1,7 +1,4 @@
 var searchData=
 [
-  ['release_5fprotect_5fattributes_302',['release_protect_attributes',['../classwmtk_1_1_tri_mesh.html#a225083671f68132708976d88be0e2de4',1,'wmtk::TriMesh']]],
-  ['remove_5ftets_5fby_5fids_303',['remove_tets_by_ids',['../classwmtk_1_1_tet_mesh.html#afcb8ea0a43e2a2063af41b6a2ba8c91f',1,'wmtk::TetMesh']]],
-  ['rollback_304',['rollback',['../structwmtk_1_1_attribute_collection.html#a15d5ca94f6995d3e1363804f79d7c287',1,'wmtk::AttributeCollection']]],
-  ['rollback_5fprotected_5fattributes_305',['rollback_protected_attributes',['../classwmtk_1_1_tri_mesh.html#a6419d01660badf33195e0c3ad52d07f1',1,'wmtk::TriMesh']]]
+  ['print_5finfo_303',['print_info',['../classwmtk_1_1_tet_mesh_1_1_tuple.html#a49fd88de6c7178861506864665c4eaa3',1,'wmtk::TetMesh::Tuple::print_info() const'],['../classwmtk_1_1_tet_mesh_1_1_tuple.html#a6b102f37bc5870ed46df2630f412394b',1,'wmtk::TetMesh::Tuple::print_info(const TetMesh &amp;m) const']]]
 ];

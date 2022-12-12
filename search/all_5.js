@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['get_5fedges_44',['get_edges',['../classwmtk_1_1_tet_mesh.html#ac9aab5f828ccce15becbd0486d4a6c3d',1,'wmtk::TetMesh::get_edges()'],['../classwmtk_1_1_tri_mesh.html#aed585e848ce149908ce1e88f6331fc03',1,'wmtk::TriMesh::get_edges()']]],
+  ['get_5fedges_44',['get_edges',['../classwmtk_1_1_tri_mesh.html#aed585e848ce149908ce1e88f6331fc03',1,'wmtk::TriMesh::get_edges()'],['../classwmtk_1_1_tet_mesh.html#ac9aab5f828ccce15becbd0486d4a6c3d',1,'wmtk::TetMesh::get_edges() const']]],
   ['get_5fface_5fvertices_45',['get_face_vertices',['../classwmtk_1_1_tet_mesh.html#a79dea6f5a8757ac24be3ad0b85123d76',1,'wmtk::TetMesh']]],
   ['get_5ffaces_46',['get_faces',['../classwmtk_1_1_tet_mesh.html#a43785658d42031efaa783e810df47d92',1,'wmtk::TetMesh::get_faces()'],['../classwmtk_1_1_tri_mesh.html#a9409ac6f95238e5af58be7ee47c47e4e',1,'wmtk::TriMesh::get_faces()']]],
   ['get_5fincident_5ftets_5ffor_5fedge_47',['get_incident_tets_for_edge',['../classwmtk_1_1_tet_mesh.html#a91ceae79cdf4dc6990e043f8de1e8122',1,'wmtk::TetMesh']]],
