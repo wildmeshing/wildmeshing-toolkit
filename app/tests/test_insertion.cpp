@@ -8,7 +8,6 @@
 #include "Parameters.h"
 #include "sec/envelope/SampleEnvelope.hpp"
 #include "spdlog/common.h"
-#include "wmtk/ConcurrentTetMesh.h"
 #include "wmtk/utils/InsertTriangleUtils.hpp"
 
 #include <igl/read_triangle_mesh.h>

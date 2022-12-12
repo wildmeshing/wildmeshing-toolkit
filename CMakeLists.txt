@@ -72,6 +72,7 @@ source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src" PREFIX "Source Files" FILES 
 if(NOT TARGET igl::core)
     include(libigl)
 endif()
+igl_include(predicates)
 
 igl_include(predicates)
 

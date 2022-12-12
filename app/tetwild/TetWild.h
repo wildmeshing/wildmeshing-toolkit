@@ -1,7 +1,7 @@
 #pragma once
 
 #include <igl/Timer.h>
-#include <wmtk/ConcurrentTetMesh.h>
+#include <wmtk/TetMesh.h>
 #include <wmtk/utils/Morton.h>
 #include <wmtk/utils/PartitionMesh.h>
 #include "Parameters.h"
@@ -85,7 +85,7 @@ public:
     bool m_is_outside;
 };
 
-class TetWild : public wmtk::ConcurrentTetMesh
+class TetWild : public wmtk::TetMesh
 {
 public:
     double time_env = 0.0;
