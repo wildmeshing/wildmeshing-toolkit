@@ -14,6 +14,14 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     int v2_id = loc2.vid(*this);
     logger().trace("{} {}", v1_id, v2_id);
 
+    // infomation needed for return tuple
+    // refer to illustrations
+    // return B, BF, BFA, BFAD (F is new vertex)
+    size_t v_B = loc0.vid(*this);
+    size_t v_A = loc0.switch_edge(*this).switch_vertex(*this).vid(*this);
+    size_t v_D = loc0.switch_face(*this).switch_edge(*this).switch_vertex(*this).vid(*this);
+
+
     auto n12_t_ids = set_intersection(
         m_vertex_connectivity[v1_id].m_conn_tets,
         m_vertex_connectivity[v2_id].m_conn_tets);
@@ -52,7 +60,24 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     auto new_tet_id = n12_t_ids;
     auto rollback_vert_conn = operation_update_connectivity_impl(new_tet_id, new_tet_conn);
 
-    Tuple new_loc = tuple_from_vertex(v_id);
+    // get tid. eid, fid for return
+    size_t tid_for_return = -1;
+    for (size_t new_v_tid : m_vertex_connectivity[v_id].m_conn_tets) {
+        if (m_tet_connectivity[new_v_tid].find(v_A) != -1 &&
+            m_tet_connectivity[new_v_tid].find(v_B) != -1 &&
+            m_tet_connectivity[new_v_tid].find(v_D) != -1) {
+            tid_for_return = new_v_tid;
+            break;
+        }
+    }
+    assert(tid_for_return != -1);
+
+    auto eid_for_return = m_tet_connectivity[tid_for_return].find_local_edge(v_B, v_id);
+    assert(eid_for_return != -1);
+    auto fid_for_return = m_tet_connectivity[tid_for_return].find_local_face(v_B, v_id, v_A);
+    assert(fid_for_return != -1);
+
+    Tuple new_loc = Tuple(*this, v_id, eid_for_return, fid_for_return, tid_for_return);
 
     start_protect_attributes();
     if (!split_edge_after(new_loc) || !invariants(get_one_ring_tets_for_vertex(new_loc))) {
