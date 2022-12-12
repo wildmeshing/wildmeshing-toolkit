@@ -20,7 +20,7 @@ void Boundary::construct_boudaries(const Eigen::MatrixXd& V, const Eigen::Matrix
         m_arclengths.emplace_back(arclength);
     }
 }
-Eigen::Vector2d Boundary::t_to_uv(int i, double t)
+Eigen::Vector2d Boundary::t_to_uv(int i, double t) const
 {
     const auto& arclength = m_arclengths[i];
     while (t < 0) t += arclength.back();
@@ -39,7 +39,7 @@ Eigen::Vector2d Boundary::t_to_uv(int i, double t)
     assert(std::pow((n.squaredNorm() - 1), 2) < 1e-8);
     return A + r * n;
 }
-double Boundary::uv_to_t(const Eigen::Vector2d& v)
+double Boundary::uv_to_t(const Eigen::Vector2d& v) const
 {
     double ret_t = 0.;
     Eigen::RowVector2d P;
@@ -61,5 +61,33 @@ double Boundary::uv_to_t(const Eigen::Vector2d& v)
         }
     }
     return ret_t;
+}
+std::pair<int, int> Boundary::uv_to_ij(const Eigen::Vector2d& v, double& t) const
+{
+    std::pair<int, int> ij;
+    t = 0.;
+    Eigen::RowVector2d P;
+    P = v.transpose();
+    Eigen::RowVector<double, 1> tmp_t, tmp_d;
+    double d = std::numeric_limits<double>::infinity();
+    for (auto i = 0; i < m_boundaries.size(); i++) {
+        for (auto j = 0; j < m_boundaries[i].size(); j++) {
+            Eigen::RowVector2d A = m_boundaries[i][j];
+            Eigen::RowVector2d B = m_boundaries[i][(j + 1) % m_boundaries[i].size()];
+            igl::project_to_line_segment(P, A, B, tmp_t, tmp_d);
+            if (tmp_d(0) < d) {
+                d = tmp_d(0);
+                t = m_arclengths[i][j] +
+                    std::abs(
+                        tmp_t(0) *
+                        (m_arclengths[i][(j + 1) % m_arclengths[i].size()] - m_arclengths[i][j]));
+                ij.first = i;
+                ij.second = j;
+            }
+        }
+    }
+    std::cout << m_arclengths[ij.first].back() << std::endl;
+    assert(t <= m_arclengths[ij.first].back());
+    return ij;
 }
 } // namespace wmtk

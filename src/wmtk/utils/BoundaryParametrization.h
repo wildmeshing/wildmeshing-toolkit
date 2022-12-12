@@ -26,7 +26,8 @@ public:
      * @param F Matrix of mes faces
      */
     void construct_boudaries(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F);
-    Eigen::Vector2d t_to_uv(int i, double t);
-    double uv_to_t(const Eigen::Vector2d& v);
+    Eigen::Vector2d t_to_uv(int i, double t) const;
+    double uv_to_t(const Eigen::Vector2d& v) const;
+    std::pair<int, int> uv_to_ij(const Eigen::Vector2d& v, double& t) const;
 };
 } // namespace wmtk
