@@ -399,56 +399,63 @@ TEST_CASE("edge_collapse", "[test_2d_operation]")
 
 TEST_CASE("swap_operation", "[test_2d_operation]")
 {
-    const std::string root(WMT_DATA_DIR);
-    const std::string path = root + "/fan.obj";
-
-    Eigen::MatrixXd V;
-    Eigen::MatrixXi F;
-    bool ok = igl::read_triangle_mesh(path, V, F);
-    REQUIRE(ok);
-    std::vector<std::array<size_t, 3>> tri(F.rows());
-
-    for (int i = 0; i < F.rows(); i++) {
-        for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
-    }
-    TriMesh m;
-    m.create_mesh(V.rows(), tri);
-
     SECTION("swap")
     {
-        TriMesh::Tuple swap_e = TriMesh::Tuple(1, 0, 0, m);
-        REQUIRE(swap_e.is_valid(m));
-        std::vector<TriMesh::Tuple> new_e;
-        REQUIRE(m.swap_edge(swap_e, new_e));
-        REQUIRE_FALSE(swap_e.is_valid(m));
-        REQUIRE(new_e.front().is_valid(m));
-        REQUIRE(m.vert_capacity() == 8);
-        REQUIRE(m.tri_capacity() == 8);
+        TriMesh m;
+        std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{3, 1, 0}}};
+        m.create_mesh(4, tris);
+        TriMesh::Tuple edge(0, 2, 0, m);
+        assert(edge.is_valid(m));
 
-        std::vector<size_t> m_indices;
-        for (auto edge : m.get_one_ring_edges_for_vertex(new_e.front())) {
-            m_indices.push_back(edge.vid(m));
-        }
-        vector_unique(m_indices);
-        std::vector<size_t> tru_indices = {1, 3, 4, 5};
-        REQUIRE(std::equal(m_indices.begin(), m_indices.end(), tru_indices.begin()));
-    }
-    SECTION("swap_on_boundary_edge")
-    {
-        TriMesh::Tuple swap_e = TriMesh::Tuple(0, 2, 0, m);
-        REQUIRE(swap_e.is_valid(m));
         std::vector<TriMesh::Tuple> dummy;
-        REQUIRE_FALSE(m.swap_edge(swap_e, dummy));
+        REQUIRE(m.swap_edge(edge, dummy));
     }
+    SECTION("swap_boundary")
+    {
+        TriMesh m;
+        std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{3, 1, 0}}};
+        m.create_mesh(4, tris);
+        TriMesh::Tuple edge(0, 1, 0, m);
+        assert(edge.is_valid(m));
+
+        std::vector<TriMesh::Tuple> dummy;
+        REQUIRE_FALSE(m.swap_edge(edge, dummy));
+    }
+
     SECTION("swap_on_connected_vertices")
     {
         TriMesh m2;
         std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 0, 3}}, {{1, 3, 2}}};
         m2.create_mesh(4, tris);
-        TriMesh::Tuple edge(0, 2, 0, m);
-        assert(edge.is_valid(m));
+        TriMesh::Tuple edge(0, 2, 0, m2);
+        assert(edge.is_valid(m2));
         std::vector<TriMesh::Tuple> dummy;
-        REQUIRE_FALSE(m.swap_edge(edge, dummy));
+        REQUIRE_FALSE(m2.swap_edge(edge, dummy));
+    }
+
+    SECTION("swap 4 times retain start tuple")
+    {
+        TriMesh m3;
+        std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{3, 1, 0}}};
+        m3.create_mesh(4, tris);
+        TriMesh::Tuple edge(0, 2, 0, m3);
+        assert(edge.is_valid(m3));
+
+        std::vector<TriMesh::Tuple> dummy;
+        REQUIRE(m3.swap_edge(edge, dummy));
+        auto new_t = dummy[0];
+        assert(new_t.is_valid(m3));
+        REQUIRE(m3.swap_edge(new_t, dummy));
+        new_t = dummy[0];
+        assert(new_t.is_valid(m3));
+        REQUIRE(m3.swap_edge(new_t, dummy));
+        new_t = dummy[0];
+        assert(new_t.is_valid(m3));
+        REQUIRE(m3.swap_edge(new_t, dummy));
+        new_t = dummy[0];
+        REQUIRE(new_t.vid(m3) == 0);
+        REQUIRE(new_t.switch_vertex(m3).vid(m3) == 1);
+        REQUIRE(new_t.switch_edge(m3).switch_vertex(m3).vid(m3) == 2);
     }
 }
 

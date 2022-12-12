@@ -37,10 +37,10 @@ invariants. These algorithms are readable and easy to customize for specific use
 
 This software library implements the abstractiona in our paper and providing automatic shared memory parallelization.
 
-We will introduce the framework and run through the basic software structures and APIs with a step-by-step guide to a simple implementation of the shortest edge collapse algorithm. 
+We will use the implementation of the shortest edge collapse algorithm as an example to introduce the framework and run through the basic software structures and APIs of the toolkit. All the code that is referenced below can be found under the `app` folder of the toolkit. 
 
 ## Basic Algorithm
-The algorithm is after [Hoppe 1996] Progressive Meshes which performs a series of collapse operations prioritizing the shorter edges. The algorithm requires only one local operation, edge collapse. We use the common criteria for termination which is for the mesh to reach a desired number of mesh elements. For every collapsed edge, we generate a new vertex at the midpoint of the edge.
+The algorithm is after [Hoppe 1996] Progressive Meshes which performs a series of collapse operations prioritizing the shorter edges. The algorithm requires only one local operation, edge collapse. We terminate when the mesh reaches a desired number of mesh elements. For every collapsed edge, we generate a new vertex at the midpoint of the edge.
 
 We implemented `class ShortestEdgeCollapse` as a child class of `wmtk::TriMesh`. The 3d vertex positions are stored as a field of the `VertexAttributes`.
 ```
@@ -54,9 +54,9 @@ struct VertexAttributes
 
 ## Explicit Invariant Design
 It is common to have a set of desiderata on
-the mesh that needs to be satisfied, such as avoiding triangle insertions or self-intersections. This resposinbility of ensuring the user-defined explicit invariants are checked after every mesh
-modifications, and after the input is loaded is assumed by our library. It is much easier to ensure correctness for the user, as
-the checks are handled transparently by our library.
+the mesh that needs to be satisfied, such as avoiding triangle insertions or self-intersections. The responsibility of ensuring the user-defined explicit invariants being checked after every mesh
+modification, and after the input is loaded is assumed by the toolkit. It is much easier to ensure correctness for the user, as
+the checks are handled transparently by the toolkit.
 
 As an example of user-defined invariants, in our shortest edge collapse implementation, we created an envelope around the original surface and designated that any operation shall not cause any vertex to move outside of the envelop, so that during local operations we can roughly keep the shape of the input mesh and avoid self-intersection. 
 
@@ -77,16 +77,9 @@ bool sec::ShortestEdgeCollapse::invariants(const std::vector<Tuple>& new_tris)
 ```
 The envelope development is after [Exact and Efficient Polyhedral Envelope Containment Check](https://cims.nyu.edu/gcl/papers/2020-Fast-Envelope.pdf)
 
-## Operation Rollback
-It is common to perform mesh editing to
-improve a given energy functional, such as mesh quality or element
-size. However, due to the discrete nature of the operations, it is
-not possible to use standard smooth optimization techniques, and
-instead the effect of the energy is evaluated before and after every
-operation to measure its effect on the energy.
 
 ## Explicit Attribute Update 
-Opposed to the common practice of attaching mesh attributes to mesh elements we enable the users to only provide the rules on how to update attributes after local operations in a high-level specifications. The actual update is handled entirely by our library. 
+Opposed to the common practice of attaching mesh attributes to mesh elements we enable the users to only provide the rules on how to update attributes after local operations in a high-level specifications. The actual update is handled entirely by the toolkit. 
 
 This easy-to-write user-specified update rule is examplified in our shortest edge collapse as below
 ```
@@ -99,6 +92,50 @@ bool sec::ShortestEdgeCollapse::collapse_edge_after(const TriMesh::Tuple& t)
     return true;
 }
 ```
+
+## Operation Rollback
+It is common to perform mesh editing to
+improve a given energy functional, such as mesh quality or element
+size. However, due to the discrete nature of the operations, it is
+not possible to use standard smooth optimization techniques, and
+instead the effect of the energy is evaluated before and after every
+operation to measure its effect on the energy. If the user desires a certain property of the mesh for each operation, the desiderata can be easily coded up as a check in the after operation. 
+
+If either the user specified invariants or the after operation check/update has failed, the toolkit will perform an operation rollback that restores the mesh configuration to before the operation. And our toolkit also handles the recovery of element attributes on this occasion. The rollback and attribute protection gurantee both topology and geometry consistency for the mesh. Users would not need to perform any manual updates were the operations to fail, thank to the rollback.
+
+## Operation Demonstration
+
+For easier usage and customization, here we demonstrate the before and after of each operation and the vertex, edge, face, and tet (in 3d) that is reference.
+
+### 2D operations
+- **edge collapse**
+![img](img/collapse_demonstration.svg)
+
+- **edge split**
+![img](img/split_demonstration.svg)
+- **edge swap**
+![img](img/swap_demonstration.svg)
+
+- **vertex smooth**
+This operation do not change the reference.
+
+### 3D operations
+- **edge collapse**
+![img](img/collapse3d.PNG)
+
+- **edge collapse boundary case**
+![img](img/collapseboundary3d.PNG)
+
+- **edge split**
+![img](img/split3d.PNG)
+
+- **edge swap 4-4**
+![img](img/swap44.PNG)
+
+- **edge swap 2-3 & 3-2**
+![img](img/swap32.PNG)
+
+
 ## Parallel Scheduling
 The type and scheduling of local operations is crucial in mesh editing algorithms. This involves maintaining a priority queue of operations, which is updated after every local operation.
 
