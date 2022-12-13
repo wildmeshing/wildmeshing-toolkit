@@ -27,63 +27,72 @@ bool triwild::TriWild::smooth_after(const Tuple& t)
     auto locs = get_one_ring_tris_for_vertex(t);
     assert(locs.size() > 0);
 
-    // Computes the avg energy around one ring
-    auto avg_quality = 0.;
+    // infomation needed for newton's method
+    wmtk::NewtonMethodInfo nminfo;
+    nminfo.curve_id = vertex_attrs[t.vid(*this)].curve_id;
+    nminfo.target_length = this->m_target_l;
+    nminfo.neighbors.resize(locs.size(), 4);
 
-    // getting the assembles
-    //( one ring triangle vertex position in stack with last entry as the local vid of the smoothing
-    // vertex)
-    double idx = -1.;
-    std::vector<std::array<double, 7>> assembles;
-    for (auto tri : locs) {
+    auto is_inverted_coordinates = [this, &vid](auto& A, auto& B) {
+        auto res = igl::predicates::orient2d(A, B, this->vertex_attrs[vid].pos);
+        if (res != igl::predicates::Orientation::POSITIVE)
+            return true;
+        else
+            return false;
+    };
+
+    for (auto i = 0; i < locs.size(); i++) {
+        auto tri = locs[i];
         assert(!is_inverted(tri));
-        std::array<double, 7> T;
         auto local_tuples = oriented_tri_vertices(tri);
-
-        for (auto i = 0; i < 3; i++) {
-            T[i * 2] = vertex_attrs[local_tuples[i].vid(*this)].pos(0);
-            T[i * 2 + 1] = vertex_attrs[local_tuples[i].vid(*this)].pos(1);
-            if (local_tuples[i].vid(*this) == vid) {
-                idx = (double)i;
-                avg_quality += get_quality(tri, i);
+        for (auto j = 0; j < 3; j++) {
+            if (local_tuples[j].vid(*this) == vid) {
+                auto v2 = vertex_attrs[local_tuples[(j + 1) % 3].vid(*this)].pos;
+                auto v3 = vertex_attrs[local_tuples[(j + 2) % 3].vid(*this)].pos;
+                nminfo.neighbors.row(i) << v2(0), v2(1), v3(0), v3(1);
+                assert(!is_inverted_coordinates(v2, v3));
+                // sanity check, no inversion should be heres
             }
         }
-        assert(idx != -1);
-        T[6] = idx;
-        assembles.emplace_back(T);
     }
-    avg_quality /= locs.size();
+    assert(locs.size() == nminfo.neighbors.rows());
 
     // use a general root finding method that defaults to newton but if not changeing the position,
     // try gradient descent
     auto old_pos = vertex_attrs[vid].pos;
-    vertex_attrs[vid].pos =
-        wmtk::newton_method_with_fallback(this->m_target_l, assembles, *m_energy);
+    auto old_t = vertex_attrs[vid].t;
 
-    // check if energy is lowered
-    double new_avg_quality = 0.;
-    for (int j = 0; j < locs.size(); j++) {
-        new_avg_quality += get_quality(locs[j], assembles[j][6]);
+    wmtk::DofVector dofx;
+    if (is_boundary_vertex(t)) {
+        dofx.resize(1);
+        dofx[0] = vertex_attrs[t.vid(*this)].t; // t
+        wmtk::logger().info("////// boundary vertex dofx {} ", dofx);
+    } else {
+        dofx.resize(2);
+        dofx = vertex_attrs[t.vid(*this)].pos; // uv;
+        wmtk::logger().info("////// non boundary vertex dofx {}", dofx);
     }
-    new_avg_quality /= locs.size();
 
-    if (new_avg_quality > avg_quality) {
-        wmtk::logger().info("#### old {} , new {}", avg_quality, new_avg_quality);
-        assert(false);
-    }
+    wmtk::newton_method_with_fallback(*m_energy, m_boundary, nminfo, dofx);
 
     // check boundary and project
+    // this should be outdated since now every boundary vertex will be on boundary (but good to have
+    // as an assert)
+    // add assert!!!!
     if (is_boundary_vertex(t)) {
-        vertex_attrs[vid].pos = this->m_get_closest_point(vertex_attrs[vid].pos);
-    }
-    // get one-ring trinagles for new_tris
-    auto new_tris = get_one_ring_tris_for_vertex(t);
+        vertex_attrs[vid].t = dofx(0);
+        vertex_attrs[vid].pos = m_boundary.t_to_uv(nminfo.curve_id, dofx(0));
+        wmtk::logger().info("after smooth position {}", vertex_attrs[vid].pos);
+    } else
+        vertex_attrs[vid].pos = dofx;
 
     // check invariants
     if (!invariants(locs)) {
         vertex_attrs[vid].pos = old_pos;
+        vertex_attrs[vid].t = old_t;
         return false;
     }
+    wmtk::logger().info("!!! success !!!!");
 
     assert(invariants(locs));
     return true;
@@ -91,6 +100,7 @@ bool triwild::TriWild::smooth_after(const Tuple& t)
 
 void triwild::TriWild::smooth_all_vertices()
 {
+    assert(m_energy != nullptr);
     wmtk::logger().info("=======smooth==========");
     igl::Timer timer;
     double time;
@@ -131,7 +141,7 @@ void triwild::TriWild::smooth_all_vertices()
                 nochange &= ((old_pos[vid] - vertex_attrs[vid].pos).norm() < 1e-2);
             }
             itr++;
-        } while (!nochange && itr < 10);
+        } while (!nochange && itr < 1);
         wmtk::logger().info(itr);
         time = timer.getElapsedTime();
         wmtk::logger().info("vertex smoothing operation time serial: {}s", time);
