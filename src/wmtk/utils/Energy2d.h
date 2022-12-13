@@ -5,10 +5,12 @@
 
 #include <Eigen/LU>
 #include <iostream>
+#include "BoundaryParametrization.h"
 #include "Logger.hpp"
 #include "autodiff.h"
 
 namespace wmtk {
+using DofVector = Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 2, 1>;
 struct State
 {
     using DScalar = DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d>;
@@ -17,8 +19,53 @@ struct State
     double value;
     Eigen::Vector2d gradient;
     Eigen::Matrix2d hessian;
+    wmtk::DofVector dofx;
     std::array<double, 6> target_triangle = {0., 0., 1., 0., 1. / 2., sqrt(3) / 2.};
     std::array<double, 6> input_triangle;
+};
+struct DofsToPositions
+{
+    using DScalar = DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d>;
+
+protected:
+    const Boundary& m_boundary_mapping;
+    const int& m_curve_id;
+
+public:
+    DofsToPositions(const wmtk::Boundary& b, const int& curve_id)
+        : m_boundary_mapping(b)
+        , m_curve_id(curve_id)
+    {}
+    std::pair<DScalar, DScalar> eval(const DofVector& dofx) const
+    {
+        if (dofx.size() == 2) {
+            DScalar x1(0, dofx(0));
+            DScalar y1(1, dofx(1));
+            return std::pair<DScalar, DScalar>(x1, y1);
+        }
+        assert(m_boundary_mapping.m_arclengths.size() != 0);
+        auto arclength = m_boundary_mapping.m_arclengths[m_curve_id];
+        DScalar t(0, std::fmod(dofx(0), arclength.back()));
+
+        auto it = std::prev(std::upper_bound(arclength.begin(), arclength.end(), t.getValue()));
+        auto a = std::distance(arclength.begin(), it);
+        assert((a + 1) < arclength.size());
+
+        auto r = t - *it;
+        const auto& boundary = m_boundary_mapping.m_boundaries[m_curve_id];
+        assert(a < boundary.size());
+        Eigen::Vector2d A = boundary[a];
+        Eigen::Vector2d B = boundary[(a + 1) % boundary.size()];
+        auto n = (B - A) / (arclength[a + 1] - arclength[a]);
+        assert(std::pow((n.squaredNorm() - 1), 2) < 1e-8);
+        Eigen::Matrix<DScalar, 2, 1> tmpA;
+        tmpA << r * n(0), r * n(1);
+        Eigen::Matrix<DScalar, 2, 1> V;
+        V << A(0) + tmpA(0), A(1) + tmpA(1);
+        DScalar x1 = V(0);
+        DScalar y1 = V(1);
+        return std::pair<DScalar, DScalar>(x1, y1);
+    }
 };
 
 class Energy
@@ -33,16 +80,19 @@ public:
     virtual ~Energy() = default;
 
     virtual void eval(State& state) const = 0;
+    virtual void eval(State& state, DofsToPositions& dofstopositions) const = 0;
 };
 class AMIPS : public wmtk::Energy
 {
 public:
     void eval(State& state) const override;
+    void eval(State& state, DofsToPositions& dofstopositions) const override{};
 };
 class SymDi : public wmtk::Energy
 {
 public:
     void eval(State& state) const override;
+    void eval(State& state, DofsToPositions& dofstopositions) const override{};
 };
 class TwoAndAHalf : public wmtk::Energy
 {
@@ -56,6 +106,8 @@ public:
 
 public:
     void eval(State& state) const override;
+    void eval(State& state, DofsToPositions& dofstopositions) const override{};
+
     DScalar displacement(const DScalar& x, const DScalar& y) const { return m_displacement(x, y); };
 };
 class EdgeLengthEnergy : public wmtk::Energy
@@ -69,7 +121,8 @@ public:
     std::function<Eigen::Vector3d(const double&, const double&)> m_displacement;
 
 public:
-    void eval(State& state) const override;
+    void eval(State& state) const override{};
+    void eval(State& state, DofsToPositions& x) const override;
     Eigen::Vector3d displacement(const double& x, const double& y) const
     {
         return m_displacement(x, y);

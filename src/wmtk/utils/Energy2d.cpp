@@ -212,7 +212,7 @@ void TwoAndAHalf::eval(State& state) const
     wmtk::logger().info("/// idx {} value {} grad {}", state.idx, state.value, state.gradient);
 }
 
-void EdgeLengthEnergy::eval(State& state) const
+void EdgeLengthEnergy::eval(State& state, DofsToPositions& dof_to_positions) const
 {
     DiffScalarBase::setVariableCount(2);
     auto input_triangle = state.input_triangle;
@@ -220,15 +220,15 @@ void EdgeLengthEnergy::eval(State& state) const
     assert(state.scaling > 0);
 
     for (auto i = 0; i < 6; i++) target_triangle[i] = state.scaling * target_triangle[i];
-    int i = state.idx;
+    auto [x1, y1] = dof_to_positions.eval(state.dofx);
 
-    Eigen::Vector3d v1 = this->displacement(input_triangle[i * 2], input_triangle[i * 2 + 1]);
-    Eigen::Vector3d v2 =
-        this->displacement(input_triangle[(i * 2 + 2) % 6], input_triangle[(i * 2 + 3) % 6]);
-    Eigen::Vector3d v3 =
-        this->displacement(input_triangle[(i * 2 + 4) % 6], input_triangle[(i * 2 + 5) % 6]);
-
-    DScalar x1(0, v1(0)), y1(1, v1(1));
+    Eigen::Vector3d v1 = this->displacement(x1.getValue(), y1.getValue());
+    Eigen::Vector3d v2 = this->displacement(
+        input_triangle[(state.idx * 2 + 2) % 6],
+        input_triangle[(state.idx * 2 + 3) % 6]);
+    Eigen::Vector3d v3 = this->displacement(
+        input_triangle[(state.idx * 2 + 4) % 6],
+        input_triangle[(state.idx * 2 + 5) % 6]);
 
     Eigen::Matrix<DScalar, 3, 1> V2_V1(v2(0) - x1, v2(1) - y1, DScalar(v2(2) - v1(2)));
     Eigen::Matrix<DScalar, 3, 1> V3_V1(v3(0) - x1, v3(1) - y1, DScalar(v3(2) - v1(2)));
