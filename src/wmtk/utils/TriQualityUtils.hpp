@@ -6,7 +6,15 @@
 #include "Energy2d.h"
 
 namespace wmtk {
+// store information for Newton's emthod with fallbacks
+struct NewtonMethodInfo
+{
+    Eigen::MatrixXd neighbors; /// N x 4 matrix (2 vtx per triangle)
+    double target_length;
+    int curve_id = 0;
+};
 
+using DofVector = Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 2, 1>;
 /**
  * Newton method or gradient descent.
  *
@@ -55,8 +63,9 @@ Eigen::Vector2d try_project(
     const Eigen::Vector2d& point,
     const std::vector<std::array<double, 4>>& assembled_neighbor);
 
-Eigen::Vector2d newton_method_with_fallback(
-    double target_scaling,
-    std::vector<std::array<double, 7>>& assembles,
-    const wmtk::Energy& energy_def);
+void newton_method_with_fallback(
+    const wmtk::Energy& energy_def,
+    const wmtk::Boundary& boundary_mapping,
+    const NewtonMethodInfo& nminfo,
+    DofVector& dofx);
 } // namespace wmtk
