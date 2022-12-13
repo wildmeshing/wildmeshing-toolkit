@@ -79,34 +79,40 @@ auto gradient_direction_2d = [](auto& compute_energy,
 
 auto linesearch_2d = [](auto& is_inverted,
                         auto&& energy_from_point,
-                        const Eigen::Vector2d& pos,
-                        const Eigen::Vector2d& dir,
+                        const wmtk::DofVector& dofx,
+                        const wmtk::DofVector& dir,
                         const int& max_iter) {
+    wmtk::DofVector search_dir;
+    if (dofx.size() == 1) {
+        search_dir.resize(1);
+        search_dir(0) = dir(0);
+    } else
+        search_dir = dir;
     auto lr = 0.5;
-    // wmtk::logger().info("pos at linesearch {}", pos);
-    auto old_energy = energy_from_point(pos);
-    // wmtk::logger().info("old energy {} dir {}", old_energy, dir.transpose());
-    // max_iter = 10000;
+    if (dofx.size() == 1) wmtk::logger().info("pos at linesearch should be 1d {}", dofx);
+    auto old_energy = energy_from_point(dofx);
+
     for (auto iter = 1; iter <= max_iter; iter++) {
-        Eigen::Vector2d newpos = pos + std::pow(lr, iter) * dir;
-        // wmtk::logger()
-        //     .info("pos {}, dir {}, [{}]", pos.transpose(), dir.transpose(), std::pow(lr, iter));
-        auto new_energy = energy_from_point(newpos);
+        wmtk::DofVector new_dofx = dofx + std::pow(lr, iter) * search_dir;
+        if (dofx.size() == 1)
+            wmtk::logger().info(
+                "search_dir should be 1d {}, new_dofx should be 1d {}",
+                search_dir,
+                new_dofx);
+        auto new_energy = energy_from_point(new_dofx);
         if (new_energy < 0) {
             wmtk::logger().info("step too big. triangle is flipped try smaller step");
             auto half_lr = lr;
             do {
                 half_lr /= 2;
-                newpos = pos + std::pow(half_lr, iter) * dir;
-                new_energy = energy_from_point(newpos);
-                // wmtk::logger().info("new energy after new step {}", new_energy);
-            } while (is_inverted(newpos));
-            return newpos;
+                new_dofx = dofx + std::pow(half_lr, iter) * search_dir;
+                new_energy = energy_from_point(new_dofx);
+            } while (is_inverted(new_dofx));
+            return new_dofx;
         }
-        // wmtk::logger().info("iter {}, E= {}, [{}]", iter, new_energy, newpos.transpose());
-        if (new_energy < old_energy) return newpos; // TODO: armijo conditions.
+        if (new_energy < old_energy) return new_dofx; // TODO: armijo conditions.
     }
-    return pos;
+    return dofx;
 };
 
 Eigen::Vector2d wmtk::newton_method_from_stack_2d(
@@ -491,40 +497,49 @@ std::array<double, 6> wmtk::smooth_over_one_triangle(
  * where x*, y* are double, and idx should be cast to size_t to be used.
  * @note The specific assembles design is to bypass passing in mesh m and avoid doing navigations/vid-quiries in this function
  */
-auto newton_direction_2d_with_index = [](auto& target_scaling,
-                                         auto& energy_def,
-                                         auto& assembles,
-                                         const Eigen::Vector2d& pos) -> Eigen::Vector2d {
+auto newton_direction_2d_with_index = [](auto& energy_def,
+                                         const wmtk::NewtonMethodInfo& nminfo,
+                                         const wmtk::Boundary& boundary_mapping,
+                                         const wmtk::DofVector& dofx) -> wmtk::DofVector {
     auto total_energy = 0.;
     Eigen::Vector2d total_jac = Eigen::Vector2d::Zero();
     Eigen::Matrix2d total_hess = Eigen::Matrix2d::Zero();
-    // E = \sum_i E_i(x)
-    // J = \sum_i J_i(x)
-    // H = \sum_i H_i(x)
 
-    for (auto& tmp : assembles) {
+    for (auto i = 0; i < nminfo.neighbors.rows(); i++) {
+        // set State
+        // pass the state energy
         wmtk::State state = {};
-        state.idx = (int)tmp[6];
-        assert(state.idx != -1);
-        // find local vertex index
-        std::array<double, 6> T;
-        for (auto i = 0; i < 6; i++) T[i] = tmp[i];
-        T[state.idx * 2] = pos[0];
-        T[state.idx * 2 + 1] = pos[1];
-        auto jac = decltype(total_jac)();
-        auto hess = decltype(total_hess)();
-
-        state.input_triangle = T;
-        state.scaling = target_scaling;
-
-        energy_def.eval(state);
+        if (dofx.size() == 1) {
+            // can change input triangle to matrix 2d for ject two opposite vertex position then
+            // given that in energy.eval() the optimized vertex position can be obtained through
+            // x1.getValue() and y1.getValue()
+            auto uv = boundary_mapping.t_to_uv(nminfo.curve_id, dofx(0));
+            state.input_triangle = std::array{
+                uv(0),
+                uv(1),
+                nminfo.neighbors(i, 0),
+                nminfo.neighbors(i, 1),
+                nminfo.neighbors(i, 2),
+                nminfo.neighbors(i, 3)};
+        } else
+            state.input_triangle = std::array{
+                dofx(0),
+                dofx(1),
+                nminfo.neighbors(i, 0),
+                nminfo.neighbors(i, 1),
+                nminfo.neighbors(i, 2),
+                nminfo.neighbors(i, 3)};
+        state.dofx = dofx;
+        state.scaling = nminfo.target_length;
+        wmtk::DofsToPositions dofs_to_pos(boundary_mapping, nminfo.curve_id);
+        energy_def.eval(state, dofs_to_pos);
         total_energy += state.value;
         total_jac += state.gradient;
         total_hess += state.hessian;
         assert(!std::isnan(total_energy));
     }
     Eigen::Vector2d x = total_hess.ldlt().solve(total_jac);
-
+    if (dofx.size() == 1) wmtk::logger().info("dir in newton should be 1d {}", x);
     if (total_jac.isApprox(total_hess * x, 1e-6)) // a hacky PSD trick. TODO: change this.
         return -x;
     else {
@@ -532,116 +547,162 @@ auto newton_direction_2d_with_index = [](auto& target_scaling,
         return -total_jac;
     }
 };
-auto gradient_descent_direction_2d_with_index = [](auto& target_scaling,
-                                                   auto& energy_def,
-                                                   auto& assembles,
-                                                   const Eigen::Vector2d& pos) -> Eigen::Vector2d {
+auto gradient_descent_direction_2d_with_index = [](auto& energy_def,
+                                                   const wmtk::NewtonMethodInfo& nminfo,
+                                                   const wmtk::Boundary& boundary_mapping,
+                                                   const wmtk::DofVector& dofx) -> wmtk::DofVector {
     auto total_energy = 0.;
     Eigen::Vector2d total_jac = Eigen::Vector2d::Zero();
 
-    for (auto& tmp : assembles) {
+    for (auto i = 0; i < nminfo.neighbors.rows(); i++) {
+        // set State
+        // pass the state energy
         wmtk::State state = {};
-        state.idx = (int)tmp[6];
-        assert(state.idx != -1);
-        // find local vertex index
-        std::array<double, 6> T;
-        for (auto i = 0; i < 6; i++) T[i] = tmp[i];
-        T[state.idx * 2] = pos[0];
-        T[state.idx * 2 + 1] = pos[1];
-        auto jac = decltype(total_jac)();
+        if (dofx.size() == 1) {
+            // can change input triangle to matrix 2d for ject two opposite vertex position then
+            // given that in energy.eval() the optimized vertex position can be obtained through
+            // x1.getValue() and y1.getValue()
+            auto uv = boundary_mapping.t_to_uv(nminfo.curve_id, dofx(0));
+            state.input_triangle = {
+                uv(0),
+                uv(1),
+                nminfo.neighbors(i, 0),
+                nminfo.neighbors(i, 1),
+                nminfo.neighbors(i, 2),
+                nminfo.neighbors(i, 3)};
+        } else
+            state.input_triangle = {
+                dofx(0),
+                dofx(1),
+                nminfo.neighbors(i, 0),
+                nminfo.neighbors(i, 1),
+                nminfo.neighbors(i, 2),
+                nminfo.neighbors(i, 3)};
+        state.dofx = dofx;
+        state.scaling = nminfo.target_length;
+        wmtk::DofsToPositions dofs_to_pos(boundary_mapping, nminfo.curve_id);
+        energy_def.eval(state, dofs_to_pos);
 
-        state.input_triangle = T;
-        state.scaling = target_scaling;
-
-        energy_def.eval(state);
         total_energy += state.value;
         total_jac += state.gradient;
+        if (dofx.size() == 1) wmtk::logger().info("dir in newton should be 1d {}", total_jac);
         assert(!std::isnan(total_energy));
     }
     wmtk::logger().info("********* gradient descent instead.");
     return -total_jac;
 };
 
-Eigen::Vector2d wmtk::newton_method_with_fallback(
-    double target_scaling,
-    std::vector<std::array<double, 7>>& assembles,
-    const wmtk::Energy& energy_def)
+void wmtk::newton_method_with_fallback(
+    const wmtk::Energy& energy_def,
+    const wmtk::Boundary& boundary_mapping,
+    const NewtonMethodInfo& nminfo,
+    DofVector& dofx)
 {
-    assert(!assembles.empty());
-    auto& T0 = assembles.front();
-    Eigen::Vector2d old_pos(T0[(int)T0[6] * 2], T0[(int)T0[6] * 2 + 1]);
+    DofVector old_dofx = dofx;
+    if (dofx.size() == 1) {
+        wmtk::logger().info("old dofx in newton method with fallback should be 1d {}", dofx);
+        wmtk::logger().info(
+            "and the equivalent position is {} ",
+            boundary_mapping.t_to_uv(nminfo.curve_id, dofx(0)));
+    } else {
+        wmtk::logger().info("old dofx is 2d {} ", dofx);
+    }
 
-
+    // this is the same for both boundary vertex and interior veretx since energy is handled by
+    // energy function automatically
     auto energy_from_point =
-        [&target_scaling, &assembles, &energy_def](const Eigen::Vector2d& pos) -> double {
+        [&energy_def, &nminfo, &boundary_mapping](const DofVector& dofx) -> double {
         auto total_energy = 0.;
-        for (auto& tmp : assembles) {
-            int idx = (int)tmp[6];
-            std::array<double, 6> T;
-            for (auto i = 0; i < 6; i++) {
-                T[i] = tmp[i];
-            }
-
-            T[idx * 2] = pos[0];
-            T[idx * 2 + 1] = pos[1];
+        for (auto i = 0; i < nminfo.neighbors.rows(); i++) {
             // set State
             // pass the state energy
             State state = {};
-
-            state.input_triangle = T;
-            state.scaling = target_scaling;
-            energy_def.eval(state);
+            if (dofx.size() == 1) {
+                // can change input triangle to matrix 2d for ject two opposite vertex position then
+                // given that in energy.eval() the optimized vertex position can be obtained through
+                // x1.getValue() and y1.getValue()
+                auto uv = boundary_mapping.t_to_uv(nminfo.curve_id, dofx(0));
+                state.input_triangle = std::array{
+                    uv(0),
+                    uv(1),
+                    nminfo.neighbors(i, 0),
+                    nminfo.neighbors(i, 1),
+                    nminfo.neighbors(i, 2),
+                    nminfo.neighbors(i, 3)};
+            } else
+                state.input_triangle = std::array{
+                    dofx(0),
+                    dofx(1),
+                    nminfo.neighbors(i, 0),
+                    nminfo.neighbors(i, 1),
+                    nminfo.neighbors(i, 2),
+                    nminfo.neighbors(i, 3)};
+            state.dofx = dofx;
+            state.scaling = nminfo.target_length;
+            DofsToPositions dofs_to_pos(boundary_mapping, nminfo.curve_id);
+            energy_def.eval(state, dofs_to_pos);
             total_energy += state.value;
         }
         return total_energy;
     };
 
     // check every triangle in the assembles with the new position whether any trinagle is flipped
-    auto is_inverted = [&assembles](const Eigen::Vector2d& newpos) {
-        for (auto tmp : assembles) {
-            Eigen::Vector2d a, b, c;
-            int idx = (int)tmp[6];
-            std::array<double, 6> tmp_t;
-            for (auto i = 0; i < 6; i++) tmp_t[i] = tmp[i];
-            tmp_t[idx * 2] = newpos(0);
-            tmp_t[idx * 2 + 1] = newpos(1);
-            a << tmp_t[0], tmp_t[1];
-            b << tmp_t[2], tmp_t[3];
-            c << tmp_t[4], tmp_t[5];
-            auto res = igl::predicates::orient2d(a, b, c);
+    // this needs to accomodate boundary and interior vertex differently
+    // if it is boundary vertex, newpos is t but needs to be converted here
+    auto is_inverted = [&boundary_mapping, &nminfo](const DofVector& dofx) {
+        for (auto i = 0; i < nminfo.neighbors.rows(); i++) {
+            Eigen::Vector2d A, B, C;
+
+            if (dofx.size() == 1) {
+                A = boundary_mapping.t_to_uv(nminfo.curve_id, dofx(0));
+            } else
+                A = dofx;
+            B << nminfo.neighbors(i, 0), nminfo.neighbors(i, 1);
+            C << nminfo.neighbors(i, 2), nminfo.neighbors(i, 3);
+            auto res = igl::predicates::orient2d(A, B, C);
             if (res != igl::predicates::Orientation::POSITIVE) return true;
         }
         return false;
     };
 
+    // the position as input is 2d coordinates. need to convert to 1d before pass in
     auto compute_new_valid_pos = [&is_inverted,
                                   &energy_from_point,
-                                  &target_scaling,
-                                  &assembles,
-                                  &energy_def](const Eigen::Vector2d& pos, bool NEWTON) {
-        auto current_pos = pos;
+                                  &energy_def,
+                                  &boundary_mapping,
+                                  &nminfo](const DofVector& dofx, bool NEWTON) {
+        auto current_dofx = dofx;
         auto line_search_iters = 12;
-        Eigen::Vector2d dir;
+        DofVector dir; // size() == 1 if it's boundary, ow, size() == 2
         if (NEWTON) {
             dir =
-                newton_direction_2d_with_index(target_scaling, energy_def, assembles, current_pos);
+                newton_direction_2d_with_index(energy_def, nminfo, boundary_mapping, current_dofx);
         } else
             dir = gradient_descent_direction_2d_with_index(
-                target_scaling,
                 energy_def,
-                assembles,
-                current_pos);
+                nminfo,
+                boundary_mapping,
+                current_dofx);
 
-        auto newpos =
-            linesearch_2d(is_inverted, energy_from_point, current_pos, dir, line_search_iters);
+        auto new_dofx =
+            linesearch_2d(is_inverted, energy_from_point, current_dofx, dir, line_search_iters);
 
-        current_pos = newpos;
+        current_dofx = new_dofx;
 
-        return current_pos;
+        return current_dofx;
     };
-    auto new_pos = compute_new_valid_pos(old_pos, 1);
+
+    auto new_dofx = compute_new_valid_pos(old_dofx, 1);
     // check is the new position is same as the old. If yes switch to gradient descent
-    if ((new_pos - old_pos).squaredNorm() < std::numeric_limits<double>::denorm_min())
-        new_pos = compute_new_valid_pos(old_pos, 0);
-    return new_pos;
+    if ((new_dofx - old_dofx).squaredNorm() < std::numeric_limits<double>::denorm_min())
+        new_dofx = compute_new_valid_pos(old_dofx, 0);
+    if (dofx.size() == 1) {
+        // if it is a boundary vertex, the direction should be 1d embedded in 2dvector, and the
+        // new position is t embedded in 2dvector. We need to convert to uv position
+        wmtk::logger().info("after compute new valid pos and it's boundary vert?????");
+        wmtk::logger().info("newpos {} should be 1d", new_dofx);
+        auto new_pos = boundary_mapping.t_to_uv(nminfo.curve_id, new_dofx(0));
+        wmtk::logger().info("after convert to 2d {}", new_pos);
+    }
+    dofx = new_dofx;
 }
