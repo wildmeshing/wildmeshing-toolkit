@@ -20,7 +20,7 @@ class VertexAttributes
 public:
     Eigen::Vector2d pos;
     double t = 0.;
-    size_t curve_id;
+    size_t curve_id = 0; // questionable should I have this for each vertex?
 
     size_t partition_id = 0; // TODO this should not be here
 
