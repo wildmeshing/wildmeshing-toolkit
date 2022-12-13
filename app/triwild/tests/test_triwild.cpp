@@ -1123,29 +1123,47 @@ TEST_CASE("boundary parametrization")
     REQUIRE(bnd.m_arclengths[0][2] == 10 + 10 * sqrt(2));
     REQUIRE(bnd.m_arclengths[0][3] == 10 + 10 + 10 * sqrt(2));
 
+    double t;
+
     Eigen::Vector2d test_v0(0, 0);
     auto t0 = bnd.uv_to_t(test_v0);
     REQUIRE(t0 == 0.);
     auto v0 = bnd.t_to_uv(0, t0);
     REQUIRE(v0 == test_v0);
+    auto ij0 = bnd.uv_to_ij(v0, t);
+    assert(t == t0);
+    REQUIRE(ij0.first == 0);
+    REQUIRE(ij0.second == 0);
 
     Eigen::Vector2d test_v1(5, 0);
     auto t1 = bnd.uv_to_t(test_v1);
     REQUIRE(t1 == 5.);
     auto v1 = bnd.t_to_uv(0, t1);
     REQUIRE(v1 == test_v1);
+    auto ij1 = bnd.uv_to_ij(v1, t);
+    REQUIRE(t == t1);
+    REQUIRE(ij1.first == 0);
+    REQUIRE(ij1.second == 0);
 
     Eigen::Vector2d test_v2(5, 5);
     auto t2 = bnd.uv_to_t(test_v2);
     REQUIRE(t2 == 10 + 5. * sqrt(2));
     auto v2 = bnd.t_to_uv(0, t2);
     REQUIRE(v2 == test_v2);
+    auto ij2 = bnd.uv_to_ij(v2, t);
+    REQUIRE(t == t2);
+    REQUIRE(ij2.first == 0);
+    REQUIRE(ij2.second == 1);
 
     Eigen::Vector2d test_v3(0, 0.1);
     auto t3 = bnd.uv_to_t(test_v3);
     REQUIRE(t3 == 10 + 10. * sqrt(2) + 9.9);
     auto v3 = bnd.t_to_uv(0, t3);
     REQUIRE((v3 - test_v3).stableNorm() < 1e-8);
+    auto ij3 = bnd.uv_to_ij(v3, t);
+    REQUIRE(t == t3);
+    REQUIRE(ij3.first == 0);
+    REQUIRE(ij3.second == 2);
 }
 
 TEST_CASE("new boundary")
@@ -1161,12 +1179,20 @@ TEST_CASE("new boundary")
     m.create_mesh(V, F, -1, false);
     m.m_get_closest_point = [](const Eigen::RowVector2d& p) -> Eigen::RowVector2d { return p; };
     m.m_target_l = 4;
+
     auto displacement_double = [](double u, double v) -> double { return 1; };
     auto displacement_vector = [&displacement_double](double u, double v) -> Eigen::Vector3d {
         Eigen::Vector3d p(u, v, displacement_double(u, v));
         return p;
     };
+
+    m.set_energy(std::make_unique<wmtk::EdgeLengthEnergy>(displacement_vector));
+
     for (auto v : m.get_vertices()) {
         REQUIRE(m.vertex_attrs[v.vid(m)].t >= 0);
     }
+    REQUIRE(m.m_boundary.m_arclengths.size() != 0);
+    REQUIRE(m.m_boundary.m_boundaries.size() != 0);
+    m.smooth_all_vertices();
+    m.write_displaced_obj("new_boundary.obj", displacement_double);
 }
