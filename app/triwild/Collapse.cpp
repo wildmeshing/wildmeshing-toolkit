@@ -60,30 +60,35 @@ void TriWild::collapse_all_edges()
         setup_and_execute(executor);
     }
 }
-bool TriWild::collapse_edge_before(const Tuple& t)
+bool TriWild::collapse_edge_before(const Tuple& edge_tuple)
 {
-    if (!TriMesh::collapse_edge_before(t)) return false;
+    if (!TriMesh::collapse_edge_before(edge_tuple)) return false;
+
+    // check if the two vertices to be split is of the same vure_id
+    if (vertex_attrs[edge_tuple.vid(*this)].curve_id !=
+        vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].curve_id)
+        return false;
 
     // record boundary vertex as fixed in vertex attribute for accurate collapse after boundary
     // operations
 
-    if (is_boundary_vertex(t))
-        vertex_attrs[t.vid(*this)].fixed = true;
+    if (is_boundary_vertex(edge_tuple))
+        vertex_attrs[edge_tuple.vid(*this)].fixed = true;
     else
-        vertex_attrs[t.vid(*this)].fixed = false;
-    if (is_boundary_vertex(t.switch_vertex(*this)))
-        vertex_attrs[t.switch_vertex(*this).vid(*this)].fixed = true;
+        vertex_attrs[edge_tuple.vid(*this)].fixed = false;
+    if (is_boundary_vertex(edge_tuple.switch_vertex(*this)))
+        vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].fixed = true;
     else
-        vertex_attrs[t.switch_vertex(*this).vid(*this)].fixed = false;
-    if (m_bnd_freeze &&
-        (vertex_attrs[t.vid(*this)].fixed || vertex_attrs[t.switch_vertex(*this).vid(*this)].fixed))
+        vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].fixed = false;
+    if (m_bnd_freeze && (vertex_attrs[edge_tuple.vid(*this)].fixed ||
+                         vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].fixed))
         return false;
-    cache.local().v1 = t.vid(*this);
-    cache.local().v2 = t.switch_vertex(*this).vid(*this);
-    cache.local().partition_id = vertex_attrs[t.vid(*this)].partition_id;
+    cache.local().v1 = edge_tuple.vid(*this);
+    cache.local().v2 = edge_tuple.switch_vertex(*this).vid(*this);
+    cache.local().partition_id = vertex_attrs[edge_tuple.vid(*this)].partition_id;
     // get max_energy
-    cache.local().max_energy = get_quality(t);
-    auto tris = get_one_ring_tris_for_vertex(t);
+    cache.local().max_energy = get_quality(edge_tuple);
+    auto tris = get_one_ring_tris_for_vertex(edge_tuple);
     for (auto tri : tris) {
         cache.local().max_energy = std::max(cache.local().max_energy, get_quality(tri));
     }
@@ -102,7 +107,7 @@ bool TriWild::collapse_edge_before(const Tuple& t)
 
     return true;
 }
-bool TriWild::collapse_edge_after(const Tuple& t)
+bool TriWild::collapse_edge_after(const Tuple& edge_tuple)
 {
     // adding heuristic decision. If length2 < 4. / 5. * 4. / 5. * m.m_target_l * m.m_target_l always collapse
     double length2 =
@@ -117,21 +122,31 @@ bool TriWild::collapse_edge_after(const Tuple& t)
     length2 = (v23d - v13d).squaredNorm();
 
     Eigen::Vector2d p;
+    double t_parameter;
+    double mod_length =
+        m_boundary.m_arclengths[vertex_attrs[edge_tuple.vid(*this)].curve_id].back();
     if (vertex_attrs[cache.local().v1].fixed) {
         p = vertex_attrs[cache.local().v1].pos;
-        vertex_attrs[t.vid(*this)].t = vertex_attrs[cache.local().v1].t;
+        t_parameter = std::fmod(vertex_attrs[cache.local().v1].t, mod_length);
     } else if (vertex_attrs[cache.local().v2].fixed) {
         p = vertex_attrs[cache.local().v2].pos;
-        vertex_attrs[t.vid(*this)].t = vertex_attrs[cache.local().v2].t;
+        t_parameter = std::fmod(vertex_attrs[cache.local().v2].t, mod_length);
     } else {
         assert(!vertex_attrs[cache.local().v1].fixed);
         assert(!vertex_attrs[cache.local().v2].fixed);
         p = (vertex_attrs[cache.local().v1].pos + vertex_attrs[cache.local().v2].pos) / 2.0;
+        t_parameter = std::fmod(
+            (vertex_attrs[cache.local().v1].t + vertex_attrs[cache.local().v2].t) / 2.0,
+            mod_length);
+        // !!! update t_parameter and check for periodicity + curvid !!!
     }
-    auto vid = t.vid(*this);
+    auto vid = edge_tuple.vid(*this);
     vertex_attrs[vid].pos = p;
+    vertex_attrs[vid].t = t_parameter;
     vertex_attrs[vid].partition_id = cache.local().partition_id;
-
+    vertex_attrs[vid].fixed =
+        (vertex_attrs[cache.local().v1].fixed || vertex_attrs[cache.local().v2].fixed);
+    vertex_attrs[vid].curve_id = vertex_attrs[cache.local().v1].curve_id;
     // enforce heuristic
     if (length2 < 4. / 5. * 4. / 5. * m_target_l * m_target_l) {
         return true;

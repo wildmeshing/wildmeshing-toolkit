@@ -58,30 +58,38 @@ void TriWild::split_all_edges()
         setup_and_execute(executor);
     }
 }
-bool TriWild::split_edge_before(const Tuple& t)
+bool TriWild::split_edge_before(const Tuple& edge_tuple)
 {
-    if (!TriMesh::split_edge_before(t)) return false;
-    cache.local().v1 = t.vid(*this);
-    cache.local().v2 = t.switch_vertex(*this).vid(*this);
-    cache.local().partition_id = vertex_attrs[t.vid(*this)].partition_id;
-    if (is_boundary_vertex(t))
+    if (!TriMesh::split_edge_before(edge_tuple)) return false;
+
+    // check if the 2 vertices are on the same curve
+    if (vertex_attrs[edge_tuple.vid(*this)].curve_id !=
+        vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].curve_id)
+        return false;
+
+    cache.local().v1 = edge_tuple.vid(*this);
+    cache.local().v2 = edge_tuple.switch_vertex(*this).vid(*this);
+    cache.local().partition_id = vertex_attrs[edge_tuple.vid(*this)].partition_id;
+
+    if (is_boundary_vertex(edge_tuple))
         vertex_attrs[cache.local().v1].fixed = true;
     else
         vertex_attrs[cache.local().v1].fixed = false;
-    if (is_boundary_vertex(t.switch_vertex(*this)))
+    if (is_boundary_vertex(edge_tuple.switch_vertex(*this)))
         vertex_attrs[cache.local().v2].fixed = true;
     else
         vertex_attrs[cache.local().v2].fixed = false;
+
     // get max_energy // this isn't used for now. It is just purely heuristic
-    cache.local().max_energy = get_quality(t);
-    auto tris = get_one_ring_tris_for_vertex(t);
+    cache.local().max_energy = get_quality(edge_tuple);
+    auto tris = get_one_ring_tris_for_vertex(edge_tuple);
     for (auto tri : tris) {
         cache.local().max_energy = std::max(cache.local().max_energy, get_quality(tri));
     }
     m_max_energy = cache.local().max_energy;
     return true;
 }
-bool TriWild::split_edge_after(const Tuple& t)
+bool TriWild::split_edge_after(const Tuple& edge_tuple)
 {
     // adding heuristic decision. If length2 > 4. / 3. * 4. / 3. * m.m_target_l * m.m_target_l always collapse
     // transform edge length with displacement
@@ -99,19 +107,22 @@ bool TriWild::split_edge_after(const Tuple& t)
 
     const Eigen::Vector2d p =
         (vertex_attrs[cache.local().v1].pos + vertex_attrs[cache.local().v2].pos) / 2.0;
-    auto vid = t.vid(*this);
+    auto vid = edge_tuple.vid(*this);
     vertex_attrs[vid].pos = p;
     vertex_attrs[vid].partition_id = cache.local().partition_id;
-
-    // update t for boundary vertex generated for boudnary edge
-    if (vertex_attrs[cache.local().v1].fixed && vertex_attrs[cache.local().v2].fixed)
-        vertex_attrs[t.vid(*this)].t =
-            (vertex_attrs[cache.local().v1].t + vertex_attrs[cache.local().v2].t) / 2.;
+    vertex_attrs[vid].curve_id = vertex_attrs[cache.local().v1].curve_id;
+    // take into account of periodicity (add unit test)
+    if (vertex_attrs[cache.local().v1].fixed && vertex_attrs[cache.local().v2].fixed) {
+        vertex_attrs[vid].fixed = true;
+        vertex_attrs[edge_tuple.vid(*this)].t = std::fmod(
+            (vertex_attrs[cache.local().v1].t + vertex_attrs[cache.local().v2].t) / 2.,
+            m_boundary.m_arclengths[vertex_attrs[edge_tuple.vid(*this)].curve_id].back());
+    }
 
     // enforce length check
     if (length2 > 4. / 3. * 4. / 3. * m_target_l * m_target_l) {
         if (m_bnd_freeze) {
-            for (auto e : get_one_ring_edges_for_vertex(t)) {
+            for (auto e : get_one_ring_edges_for_vertex(edge_tuple)) {
                 vertex_attrs[e.switch_vertex(*this).vid(*this)].fixed =
                     is_boundary_vertex(e.switch_vertex(*this));
             }
@@ -127,7 +138,7 @@ bool TriWild::split_edge_after(const Tuple& t)
 
     // only split can have operations on boundary edges
     if (m_bnd_freeze) {
-        for (auto e : get_one_ring_edges_for_vertex(t)) {
+        for (auto e : get_one_ring_edges_for_vertex(edge_tuple)) {
             vertex_attrs[e.switch_vertex(*this).vid(*this)].fixed =
                 is_boundary_vertex(e.switch_vertex(*this));
         }
