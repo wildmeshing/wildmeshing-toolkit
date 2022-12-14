@@ -89,29 +89,20 @@ auto linesearch_2d = [](auto& is_inverted,
     } else
         search_dir = dir;
     auto lr = 0.5;
-    if (dofx.size() == 1) wmtk::logger().info("pos at linesearch should be 1d {}", dofx);
-    auto old_energy = energy_from_point(dofx);
 
-    for (auto iter = 1; iter <= max_iter; iter++) {
-        wmtk::DofVector new_dofx = dofx + std::pow(lr, iter) * search_dir;
-        if (dofx.size() == 1)
-            wmtk::logger().info(
-                "search_dir should be 1d {}, new_dofx should be 1d {}",
-                search_dir,
-                new_dofx);
-        auto new_energy = energy_from_point(new_dofx);
-        if (new_energy < 0) {
-            wmtk::logger().info("step too big. triangle is flipped try smaller step");
-            auto half_lr = lr;
-            do {
-                half_lr /= 2;
-                new_dofx = dofx + std::pow(half_lr, iter) * search_dir;
-                new_energy = energy_from_point(new_dofx);
-            } while (is_inverted(new_dofx));
-            return new_dofx;
+    auto old_energy = energy_from_point(dofx);
+    if (old_energy == std::numeric_limits<double>::infinity()) return dofx;
+
+    auto new_energy = std::numeric_limits<double>::infinity();
+    wmtk::DofVector new_dofx = dofx;
+    do {
+        new_dofx = dofx + lr * search_dir;
+        if (!is_inverted(new_dofx)) {
+            auto new_energy = energy_from_point(new_dofx);
+            if (new_energy < old_energy) return new_dofx;
         }
-        if (new_energy < old_energy) return new_dofx; // TODO: armijo conditions.
-    }
+        lr /= 2.;
+    } while (lr > std::numeric_limits<double>::denorm_min());
     return dofx;
 };
 
@@ -539,7 +530,6 @@ auto newton_direction_2d_with_index = [](auto& energy_def,
         assert(!std::isnan(total_energy));
     }
     Eigen::Vector2d x = total_hess.ldlt().solve(total_jac);
-    if (dofx.size() == 1) wmtk::logger().info("dir in newton should be 1d {}", x);
     if (total_jac.isApprox(total_hess * x, 1e-6)) // a hacky PSD trick. TODO: change this.
         return -x;
     else {
@@ -551,6 +541,8 @@ auto gradient_descent_direction_2d_with_index = [](auto& energy_def,
                                                    const wmtk::NewtonMethodInfo& nminfo,
                                                    const wmtk::Boundary& boundary_mapping,
                                                    const wmtk::DofVector& dofx) -> wmtk::DofVector {
+    wmtk::logger().info("XXXXXXXX using gradient descent xxxxxxxx");
+
     auto total_energy = 0.;
     Eigen::Vector2d total_jac = Eigen::Vector2d::Zero();
 
@@ -585,10 +577,8 @@ auto gradient_descent_direction_2d_with_index = [](auto& energy_def,
 
         total_energy += state.value;
         total_jac += state.gradient;
-        if (dofx.size() == 1) wmtk::logger().info("dir in newton should be 1d {}", total_jac);
         assert(!std::isnan(total_energy));
     }
-    wmtk::logger().info("********* gradient descent instead.");
     return -total_jac;
 };
 
@@ -599,14 +589,6 @@ void wmtk::newton_method_with_fallback(
     DofVector& dofx)
 {
     DofVector old_dofx = dofx;
-    if (dofx.size() == 1) {
-        wmtk::logger().info("old dofx in newton method with fallback should be 1d {}", dofx);
-        wmtk::logger().info(
-            "and the equivalent position is {} ",
-            boundary_mapping.t_to_uv(nminfo.curve_id, dofx(0)));
-    } else {
-        wmtk::logger().info("old dofx is 2d {} ", dofx);
-    }
 
     // this is the same for both boundary vertex and interior veretx since energy is handled by
     // energy function automatically
@@ -639,6 +621,8 @@ void wmtk::newton_method_with_fallback(
                     nminfo.neighbors(i, 3)};
             state.dofx = dofx;
             state.scaling = nminfo.target_length;
+            assert(boundary_mapping.m_arclengths.size() > 0);
+            assert(boundary_mapping.m_boundaries.size() > 0);
             DofsToPositions dofs_to_pos(boundary_mapping, nminfo.curve_id);
             energy_def.eval(state, dofs_to_pos);
             total_energy += state.value;
@@ -677,12 +661,13 @@ void wmtk::newton_method_with_fallback(
         if (NEWTON) {
             dir =
                 newton_direction_2d_with_index(energy_def, nminfo, boundary_mapping, current_dofx);
-        } else
+        } else {
             dir = gradient_descent_direction_2d_with_index(
                 energy_def,
                 nminfo,
                 boundary_mapping,
                 current_dofx);
+        }
 
         auto new_dofx =
             linesearch_2d(is_inverted, energy_from_point, current_dofx, dir, line_search_iters);
@@ -696,13 +681,5 @@ void wmtk::newton_method_with_fallback(
     // check is the new position is same as the old. If yes switch to gradient descent
     if ((new_dofx - old_dofx).squaredNorm() < std::numeric_limits<double>::denorm_min())
         new_dofx = compute_new_valid_pos(old_dofx, 0);
-    if (dofx.size() == 1) {
-        // if it is a boundary vertex, the direction should be 1d embedded in 2dvector, and the
-        // new position is t embedded in 2dvector. We need to convert to uv position
-        wmtk::logger().info("after compute new valid pos and it's boundary vert?????");
-        wmtk::logger().info("newpos {} should be 1d", new_dofx);
-        auto new_pos = boundary_mapping.t_to_uv(nminfo.curve_id, new_dofx(0));
-        wmtk::logger().info("after convert to 2d {}", new_pos);
-    }
     dofx = new_dofx;
 }

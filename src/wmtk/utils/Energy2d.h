@@ -45,10 +45,17 @@ public:
         }
         assert(m_boundary_mapping.m_arclengths.size() != 0);
         auto arclength = m_boundary_mapping.m_arclengths[m_curve_id];
-        DScalar t(0, std::fmod(dofx(0), arclength.back()));
+        double t_value = dofx(0);
+        while (t_value < 0) t_value += arclength.back();
+        t_value = std::fmod(dofx(0), arclength.back());
+        assert(t_value <= arclength.back());
+        assert(t_value >= 0);
+        DScalar t(0, t_value);
 
         auto it = std::prev(std::upper_bound(arclength.begin(), arclength.end(), t.getValue()));
+        assert(*it >= 0);
         auto a = std::distance(arclength.begin(), it);
+        assert(a >= 0);
         assert((a + 1) < arclength.size());
 
         auto r = t - *it;

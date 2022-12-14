@@ -218,8 +218,11 @@ void EdgeLengthEnergy::eval(State& state, DofsToPositions& dof_to_positions) con
     auto input_triangle = state.input_triangle;
     auto target_triangle = state.target_triangle;
     assert(state.scaling > 0);
-
+    DScalar total_energy = DScalar(0);
+    double l_squared = std::pow(state.scaling, 2);
+    assert(l_squared > 0);
     for (auto i = 0; i < 6; i++) target_triangle[i] = state.scaling * target_triangle[i];
+
     auto [x1, y1] = dof_to_positions.eval(state.dofx);
 
     Eigen::Vector3d v1 = this->displacement(x1.getValue(), y1.getValue());
@@ -240,11 +243,7 @@ void EdgeLengthEnergy::eval(State& state, DofsToPositions& dof_to_positions) con
     // check if area is either inverted or smaller than certain A_hat
     DScalar area;
     area = (V2_V1.cross(V3_V1)).squaredNorm();
-    assert(area > 0);
 
-    DScalar total_energy = DScalar(0);
-    double l_squared = std::pow(state.scaling, 2);
-    assert(l_squared > 0);
     // energies for edge length
     total_energy += (V2_V1.squaredNorm() - l_squared) * (V2_V1.squaredNorm() - l_squared);
     total_energy += (V3_V1.squaredNorm() - l_squared) * (V3_V1.squaredNorm() - l_squared);
@@ -252,9 +251,12 @@ void EdgeLengthEnergy::eval(State& state, DofsToPositions& dof_to_positions) con
 
     // energy barrier for small triangle only when A < A_hat
     // check if area is either inverted or smaller than certain A_hat
-
+    assert(state.scaling > 0);
     double A_hat = 0.5 * (std::sqrt(3) / 2) * 0.5 * pow(state.scaling, 2); // this is arbitrary now
     assert(A_hat > 0);
+    if (area <= 0) {
+        total_energy += std::numeric_limits<double>::infinity();
+    }
     if (area < A_hat) {
         assert((area / A_hat) < 1.0);
         total_energy += -(area - A_hat) * (area - A_hat) * log(area / A_hat);
