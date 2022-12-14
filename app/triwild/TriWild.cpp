@@ -8,6 +8,7 @@
 #include <wmtk/utils/AMIPS2D.h>
 #include <wmtk/utils/AMIPS2D_autodiff.h>
 #include <Eigen/Core>
+#include <wmtk/utils/TriQualityUtils.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
 using namespace wmtk;
 
@@ -132,9 +133,6 @@ void TriWild::create_mesh(
     }
     // construct the boundary map for boundary parametrization
     m_boundary.construct_boudaries(V, F);
-    for (auto v : get_vertices()) {
-        assert(vertex_attrs[v.vid(*this)].t >= 0);
-    }
 
     // mark boundary vertices as fixed
     // but this is not indiscriminatively fixed for all operations
@@ -150,9 +148,15 @@ void TriWild::create_mesh(
     }
 
     for (auto v : get_vertices()) {
-        assert(
-            (vertex_attrs[v.vid(*this)].pos - m_boundary.t_to_uv(0, vertex_attrs[v.vid(*this)].t))
-                .squaredNorm() < 1e-8);
+        assert(vertex_attrs[v.vid(*this)].t >= 0);
+    }
+
+    for (auto v : get_vertices()) {
+        if (is_boundary_vertex(v))
+            assert(
+                (vertex_attrs[v.vid(*this)].pos -
+                 m_boundary.t_to_uv(0, vertex_attrs[v.vid(*this)].t))
+                    .squaredNorm() < 1e-8);
     }
 
     if (eps > 0) {
@@ -270,6 +274,81 @@ double TriWild::get_quality(const Tuple& loc, int idx) const
     if (std::isinf(energy) || std::isnan(energy)) return MAX_ENERGY;
 
     return energy;
+}
+
+double TriWild::get_one_ring_energy(const Tuple& loc) const
+{
+    auto one_ring = get_one_ring_tris_for_vertex(loc);
+    wmtk::DofVector dofx;
+    if (is_boundary_vertex(loc)) {
+        dofx.resize(1);
+        dofx[0] = vertex_attrs[loc.vid(*this)].t; // t
+    } else {
+        dofx.resize(2);
+        dofx = vertex_attrs[loc.vid(*this)].pos; // uv;
+    }
+    wmtk::NewtonMethodInfo nminfo;
+    nminfo.curve_id = vertex_attrs[loc.vid(*this)].curve_id;
+    nminfo.target_length = this->m_target_l;
+    nminfo.neighbors.resize(one_ring.size(), 4);
+
+    auto is_inverted_coordinates = [this, &loc](auto& A, auto& B) {
+        auto res = igl::predicates::orient2d(A, B, this->vertex_attrs[loc.vid(*this)].pos);
+        if (res != igl::predicates::Orientation::POSITIVE)
+            return true;
+        else
+            return false;
+    };
+
+    for (auto i = 0; i < one_ring.size(); i++) {
+        auto tri = one_ring[i];
+        assert(!is_inverted(tri));
+        auto local_tuples = oriented_tri_vertices(tri);
+        for (auto j = 0; j < 3; j++) {
+            if (local_tuples[j].vid(*this) == loc.vid(*this)) {
+                auto v2 = vertex_attrs[local_tuples[(j + 1) % 3].vid(*this)].pos;
+                auto v3 = vertex_attrs[local_tuples[(j + 2) % 3].vid(*this)].pos;
+                nminfo.neighbors.row(i) << v2(0), v2(1), v3(0), v3(1);
+                assert(!is_inverted_coordinates(v2, v3));
+                // sanity check, no inversion should be heres
+            }
+        }
+    }
+    assert(one_ring.size() == nminfo.neighbors.rows());
+    auto total_energy = 0.;
+    for (auto i = 0; i < one_ring.size(); i++) {
+        // set State
+        // pass the state energy
+        State state = {};
+        if (dofx.size() == 1) {
+            // can change input triangle to matrix 2d for ject two opposite vertex position then
+            // given that in energy.eval() the optimized vertex position can be obtained through
+            // x1.getValue() and y1.getValue()
+            auto uv = m_boundary.t_to_uv(nminfo.curve_id, dofx(0));
+            state.input_triangle = std::array{
+                uv(0),
+                uv(1),
+                nminfo.neighbors(i, 0),
+                nminfo.neighbors(i, 1),
+                nminfo.neighbors(i, 2),
+                nminfo.neighbors(i, 3)};
+        } else
+            state.input_triangle = std::array{
+                dofx(0),
+                dofx(1),
+                nminfo.neighbors(i, 0),
+                nminfo.neighbors(i, 1),
+                nminfo.neighbors(i, 2),
+                nminfo.neighbors(i, 3)};
+        state.dofx = dofx;
+        state.scaling = nminfo.target_length;
+        assert(m_boundary.m_arclengths.size() > 0);
+        assert(m_boundary.m_boundaries.size() > 0);
+        DofsToPositions dofs_to_pos(m_boundary, nminfo.curve_id);
+        m_energy->eval(state, dofs_to_pos);
+        total_energy += state.value;
+    }
+    return total_energy;
 }
 
 Eigen::VectorXd TriWild::get_quality_all_triangles()

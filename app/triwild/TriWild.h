@@ -111,6 +111,7 @@ public:
 
     // Computes the quality of a triangle
     double get_quality(const Tuple& loc, int idx = 0) const;
+    double get_one_ring_energy(const Tuple& loc) const;
 
     // Computes the average quality of a mesh
     Eigen::VectorXd get_quality_all_triangles();
