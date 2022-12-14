@@ -45,9 +45,8 @@ public:
         }
         assert(m_boundary_mapping.m_arclengths.size() != 0);
         auto arclength = m_boundary_mapping.m_arclengths[m_curve_id];
-        double t_value = dofx(0);
+        double t_value = std::fmod(dofx(0), arclength.back());
         while (t_value < 0) t_value += arclength.back();
-        t_value = std::fmod(dofx(0), arclength.back());
         assert(t_value <= arclength.back());
         assert(t_value >= 0);
         DScalar t(0, t_value);
