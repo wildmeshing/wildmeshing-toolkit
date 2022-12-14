@@ -11,7 +11,7 @@ void Boundary::construct_boudaries(const Eigen::MatrixXd& V, const Eigen::Matrix
         double len = 0.; // cumulative length till current vertex
         arclength.emplace_back(len);
         for (auto i = 0; i < p.size(); i++) {
-            boundary.emplace_back(V.row(p[i]));
+            boundary.emplace_back(V.row(p[i])(0), V.row(p[i])(1));
             len += (V.row(p[i]) - V.row(p[(i + 1) % p.size()])).stableNorm();
             arclength.emplace_back(len);
         }
@@ -24,8 +24,9 @@ Eigen::Vector2d Boundary::t_to_uv(int i, double t) const
 {
     const auto& arclength = m_arclengths[i];
     while (t < 0) t += arclength.back();
-    assert(t < arclength.back());
     t = std::fmod(t, arclength.back());
+    assert(t < arclength.back());
+
     auto it = std::prev(std::upper_bound(arclength.begin(), arclength.end(), t));
     auto a = std::distance(arclength.begin(), it);
     assert((a + 1) < arclength.size());
