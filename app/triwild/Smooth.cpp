@@ -66,13 +66,14 @@ bool triwild::TriWild::smooth_after(const Tuple& t)
     if (is_boundary_vertex(t)) {
         dofx.resize(1);
         dofx[0] = vertex_attrs[t.vid(*this)].t; // t
-        wmtk::logger().info("////// boundary vertex dofx {} ", dofx);
     } else {
         dofx.resize(2);
         dofx = vertex_attrs[t.vid(*this)].pos; // uv;
-        wmtk::logger().info("////// non boundary vertex dofx {}", dofx);
     }
 
+    double before_energy = get_one_ring_energy(t);
+
+    // assert before energy is always less than after energy
     wmtk::newton_method_with_fallback(*m_energy, m_boundary, nminfo, dofx);
 
     // check boundary and project
@@ -82,7 +83,6 @@ bool triwild::TriWild::smooth_after(const Tuple& t)
     if (is_boundary_vertex(t)) {
         vertex_attrs[vid].t = dofx(0);
         vertex_attrs[vid].pos = m_boundary.t_to_uv(nminfo.curve_id, dofx(0));
-        wmtk::logger().info("after smooth position {}", vertex_attrs[vid].pos);
     } else
         vertex_attrs[vid].pos = dofx;
 
@@ -92,8 +92,15 @@ bool triwild::TriWild::smooth_after(const Tuple& t)
         vertex_attrs[vid].t = old_t;
         return false;
     }
-    wmtk::logger().info("!!! success !!!!");
 
+    double after_energy = get_one_ring_energy(t);
+    assert(after_energy <= before_energy);
+    assert(vid == t.vid(*this));
+    wmtk::logger().info(
+        "smoothing vertex {} before energy {} after energy {}",
+        vid,
+        before_energy,
+        after_energy);
     assert(invariants(locs));
     return true;
 }
@@ -141,7 +148,7 @@ void triwild::TriWild::smooth_all_vertices()
                 nochange &= ((old_pos[vid] - vertex_attrs[vid].pos).norm() < 1e-2);
             }
             itr++;
-        } while (!nochange && itr < 1);
+        } while (!nochange && itr < 3);
         wmtk::logger().info(itr);
         time = timer.getElapsedTime();
         wmtk::logger().info("vertex smoothing operation time serial: {}s", time);
