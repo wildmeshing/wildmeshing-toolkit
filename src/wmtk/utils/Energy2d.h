@@ -20,6 +20,7 @@ struct State
     Eigen::Vector2d gradient;
     Eigen::Matrix2d hessian;
     wmtk::DofVector dofx;
+    Eigen::MatrixXd two_opposite_vertices;
     std::array<double, 6> target_triangle = {0., 0., 1., 0., 1. / 2., sqrt(3) / 2.};
     std::array<double, 6> input_triangle;
 };

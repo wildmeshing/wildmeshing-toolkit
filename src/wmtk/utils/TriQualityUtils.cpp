@@ -500,26 +500,7 @@ auto newton_direction_2d_with_index = [](auto& energy_def,
         // set State
         // pass the state energy
         wmtk::State state = {};
-        if (dofx.size() == 1) {
-            // can change input triangle to matrix 2d for ject two opposite vertex position then
-            // given that in energy.eval() the optimized vertex position can be obtained through
-            // x1.getValue() and y1.getValue()
-            auto uv = boundary_mapping.t_to_uv(nminfo.curve_id, dofx(0));
-            state.input_triangle = std::array{
-                uv(0),
-                uv(1),
-                nminfo.neighbors(i, 0),
-                nminfo.neighbors(i, 1),
-                nminfo.neighbors(i, 2),
-                nminfo.neighbors(i, 3)};
-        } else
-            state.input_triangle = std::array{
-                dofx(0),
-                dofx(1),
-                nminfo.neighbors(i, 0),
-                nminfo.neighbors(i, 1),
-                nminfo.neighbors(i, 2),
-                nminfo.neighbors(i, 3)};
+        state.two_opposite_vertices = nminfo.neighbors.row(i);
         state.dofx = dofx;
         state.scaling = nminfo.target_length;
         wmtk::DofsToPositions dofs_to_pos(boundary_mapping, nminfo.curve_id);
@@ -550,26 +531,7 @@ auto gradient_descent_direction_2d_with_index = [](auto& energy_def,
         // set State
         // pass the state energy
         wmtk::State state = {};
-        if (dofx.size() == 1) {
-            // can change input triangle to matrix 2d for ject two opposite vertex position then
-            // given that in energy.eval() the optimized vertex position can be obtained through
-            // x1.getValue() and y1.getValue()
-            auto uv = boundary_mapping.t_to_uv(nminfo.curve_id, dofx(0));
-            state.input_triangle = {
-                uv(0),
-                uv(1),
-                nminfo.neighbors(i, 0),
-                nminfo.neighbors(i, 1),
-                nminfo.neighbors(i, 2),
-                nminfo.neighbors(i, 3)};
-        } else
-            state.input_triangle = {
-                dofx(0),
-                dofx(1),
-                nminfo.neighbors(i, 0),
-                nminfo.neighbors(i, 1),
-                nminfo.neighbors(i, 2),
-                nminfo.neighbors(i, 3)};
+        state.two_opposite_vertices = nminfo.neighbors.row(i);
         state.dofx = dofx;
         state.scaling = nminfo.target_length;
         wmtk::DofsToPositions dofs_to_pos(boundary_mapping, nminfo.curve_id);
@@ -599,26 +561,7 @@ void wmtk::newton_method_with_fallback(
             // set State
             // pass the state energy
             State state = {};
-            if (dofx.size() == 1) {
-                // can change input triangle to matrix 2d for ject two opposite vertex position then
-                // given that in energy.eval() the optimized vertex position can be obtained through
-                // x1.getValue() and y1.getValue()
-                auto uv = boundary_mapping.t_to_uv(nminfo.curve_id, dofx(0));
-                state.input_triangle = std::array{
-                    uv(0),
-                    uv(1),
-                    nminfo.neighbors(i, 0),
-                    nminfo.neighbors(i, 1),
-                    nminfo.neighbors(i, 2),
-                    nminfo.neighbors(i, 3)};
-            } else
-                state.input_triangle = std::array{
-                    dofx(0),
-                    dofx(1),
-                    nminfo.neighbors(i, 0),
-                    nminfo.neighbors(i, 1),
-                    nminfo.neighbors(i, 2),
-                    nminfo.neighbors(i, 3)};
+            state.two_opposite_vertices = nminfo.neighbors.row(i);
             state.dofx = dofx;
             state.scaling = nminfo.target_length;
             assert(boundary_mapping.m_arclengths.size() > 0);

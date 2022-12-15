@@ -11,8 +11,10 @@ void Boundary::construct_boudaries(const Eigen::MatrixXd& V, const Eigen::Matrix
         double len = 0.; // cumulative length till current vertex
         arclength.emplace_back(len);
         for (auto i = 0; i < p.size(); i++) {
-            boundary.emplace_back(V.row(p[i])(0), V.row(p[i])(1));
-            len += (V.row(p[i]) - V.row(p[(i + 1) % p.size()])).stableNorm();
+            auto V2d1 = V.row(p[i]).leftCols(2);
+            auto V2d2 = V.row(p[(i + 1) % p.size()]).leftCols(2);
+            boundary.emplace_back(V2d1);
+            len += (V2d1 - V2d2).stableNorm();
             arclength.emplace_back(len);
         }
         assert(arclength.size() == boundary.size() + 1);
