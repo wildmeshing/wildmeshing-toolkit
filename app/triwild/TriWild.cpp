@@ -154,8 +154,9 @@ void TriWild::create_mesh(
     for (auto v : get_vertices()) {
         if (is_boundary_vertex(v))
             assert(
-                (vertex_attrs[v.vid(*this)].pos -
-                 m_boundary.t_to_uv(0, vertex_attrs[v.vid(*this)].t))
+                (vertex_attrs[v.vid(*this)].pos - m_boundary.t_to_uv(
+                                                      vertex_attrs[v.vid(*this)].curve_id,
+                                                      vertex_attrs[v.vid(*this)].t))
                     .squaredNorm() < 1e-8);
     }
 
@@ -284,8 +285,8 @@ double TriWild::get_one_ring_energy(const Tuple& loc) const
         dofx.resize(1);
         dofx[0] = vertex_attrs[loc.vid(*this)].t; // t
     } else {
-        dofx.resize(2);
-        dofx = vertex_attrs[loc.vid(*this)].pos; // uv;
+        dofx.resize(2); // uv;
+        dofx = vertex_attrs[loc.vid(*this)].pos;
     }
     wmtk::NewtonMethodInfo nminfo;
     nminfo.curve_id = vertex_attrs[loc.vid(*this)].curve_id;
@@ -320,26 +321,7 @@ double TriWild::get_one_ring_energy(const Tuple& loc) const
         // set State
         // pass the state energy
         State state = {};
-        if (dofx.size() == 1) {
-            // can change input triangle to matrix 2d for ject two opposite vertex position then
-            // given that in energy.eval() the optimized vertex position can be obtained through
-            // x1.getValue() and y1.getValue()
-            auto uv = m_boundary.t_to_uv(nminfo.curve_id, dofx(0));
-            state.input_triangle = std::array{
-                uv(0),
-                uv(1),
-                nminfo.neighbors(i, 0),
-                nminfo.neighbors(i, 1),
-                nminfo.neighbors(i, 2),
-                nminfo.neighbors(i, 3)};
-        } else
-            state.input_triangle = std::array{
-                dofx(0),
-                dofx(1),
-                nminfo.neighbors(i, 0),
-                nminfo.neighbors(i, 1),
-                nminfo.neighbors(i, 2),
-                nminfo.neighbors(i, 3)};
+        state.two_opposite_vertices = nminfo.neighbors.row(i);
         state.dofx = dofx;
         state.scaling = nminfo.target_length;
         assert(m_boundary.m_arclengths.size() > 0);
@@ -424,6 +406,23 @@ void TriWild::mesh_improvement(int max_its)
         assert(invariants(get_faces()));
         consolidate_mesh();
         write_obj("after_smooth_" + std::to_string(it) + ".obj");
+
+        for (auto edge : get_edges()) {
+            if (is_boundary_edge(edge)) {
+                assert(is_boundary_vertex(edge));
+                assert(is_boundary_vertex(edge.switch_vertex(*this)));
+                auto uv1 = m_boundary.t_to_uv(
+                    vertex_attrs[edge.vid(*this)].curve_id,
+                    vertex_attrs[edge.vid(*this)].t);
+                auto projected_uv1 = m_get_closest_point(uv1);
+                assert((uv1 - projected_uv1.transpose()).squaredNorm() < 1e-8);
+                auto uv2 = m_boundary.t_to_uv(
+                    vertex_attrs[edge.switch_vertex(*this).vid(*this)].curve_id,
+                    vertex_attrs[edge.switch_vertex(*this).vid(*this)].t);
+                auto projected_uv2 = m_get_closest_point(uv2);
+                assert((uv2 - projected_uv2.transpose()).squaredNorm() < 1e-8);
+            }
+        }
 
         wmtk::logger().info(
             "++++++++v {} t {} max energy {}++++++++",
