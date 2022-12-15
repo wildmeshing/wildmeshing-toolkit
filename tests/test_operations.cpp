@@ -43,6 +43,16 @@ TEST_CASE("edge_collapsing", "[tuple_operation]")
     REQUIRE(mesh.check_mesh_connectivity_validity());
 }
 
+TEST_CASE("edge_collapsing_invalid", "[tuple_operation]")
+{
+    auto mesh = TetMesh();
+    mesh.init(6, {{{0, 1, 2, 3}}, {{1, 2, 3, 4}}, {{1, 3, 4, 5}}});
+    const auto tuple = mesh.tuple_from_edge(0, 1);
+    std::vector<TetMesh::Tuple> new_edge, dummy;
+    // Cannot collapse the edge
+    REQUIRE(!mesh.collapse_edge(tuple, dummy));
+}
+
 TEST_CASE("tet_mesh_swap", "[tuple_operation]")
 {
     TetMesh mesh;
@@ -196,18 +206,19 @@ TEST_CASE("divide-tet-customized")
             tet = t;
             return {t.tid(m)};
         }
-        int request_vert_slots() {return 1;}
-        std::vector<std::array<size_t, 4>> replacing_tets(const std::vector<size_t>& slots) { 
-            assert (slots.size() == 1);
+        int request_vert_slots() { return 1; }
+        std::vector<std::array<size_t, 4>> replacing_tets(const std::vector<size_t>& slots)
+        {
+            assert(slots.size() == 1);
             auto ux = slots.front();
-            
-            std::array<size_t,4> t_conn; 
+
+            std::array<size_t, 4> t_conn;
             auto vs = m.oriented_tet_vertices(tet);
-            for (auto i=0; i<4; i++) t_conn[i] = vs[i].vid(m);
+            for (auto i = 0; i < 4; i++) t_conn[i] = vs[i].vid(m);
             auto new_tets = std::vector<std::array<size_t, 4>>(4, t_conn);
             for (auto i = 0; i < 4; i++) new_tets[i][i] = ux;
 
-            return new_tets; 
+            return new_tets;
         }
     };
     auto op = DivideTet(mesh);

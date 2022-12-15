@@ -31,7 +31,7 @@ bool Edge2d::EdgeOperations2d::collapse_edge_after(const TriMesh::Tuple& t)
 bool Edge2d::EdgeOperations2d::split_edge_after(const TriMesh::Tuple& t)
 {
     const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
-    auto vid = t.vid(*this);
+    auto vid = t.switch_vertex(*this).vid(*this);
     vertex_attrs[vid].pos = p;
 
     return true;

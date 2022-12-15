@@ -115,6 +115,26 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
         return false;
     }
 
+    // infomation needed for return tuple
+    // refer to illustrations
+    // return B, BC, BCA, BCAD
+    bool boundary_flag = false;
+    auto v_B = loc0.switch_vertex(*this).vid(*this);
+
+    auto v_C_tuple = loc0.switch_edge(*this).switch_face(*this).switch_tetrahedron(*this);
+    if (!v_C_tuple.has_value()) {
+        // boundry case
+        //  find another tet vertex
+        boundary_flag = true;
+        v_C_tuple =
+            loc0.switch_vertex(*this).switch_edge(*this).switch_face(*this).switch_tetrahedron(
+                *this);
+    }
+    auto v_C = (*v_C_tuple).switch_face(*this).switch_edge(*this).switch_vertex(*this).vid(*this);
+    auto v_A = loc0.switch_edge(*this).switch_vertex(*this).vid(*this);
+    auto v_D = loc0.switch_face(*this).switch_edge(*this).switch_vertex(*this).vid(*this);
+
+
     // should be a copy, for the purpose of rollback
     auto n1_t_ids =
         m_vertex_connectivity[v1_id].m_conn_tets; // note: conn_tets for v1 without removed tets
@@ -162,12 +182,35 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
         operation_update_connectivity_impl(n1_t_ids, new_tet_conn, preserved_tids);
 
     auto& new_tet_id = preserved_tids;
+
     assert(rollback_vert_conn.find(v1_id) != rollback_vert_conn.end());
     //
     m_vertex_connectivity[v1_id].m_is_removed = true;
     m_vertex_connectivity[v1_id].m_conn_tets.clear();
 
-    Tuple new_loc = tuple_from_vertex(v2_id);
+    // get eid, fid, tid for return
+    Tuple new_loc;
+
+    size_t tid_for_return = -1;
+    for (size_t tid_v : m_vertex_connectivity[v_B].m_conn_tets) {
+        if (m_tet_connectivity[tid_v].find(v_A) != -1 &&
+            m_tet_connectivity[tid_v].find(v_C) != -1 &&
+            m_tet_connectivity[tid_v].find(v_D) != -1) {
+            tid_for_return = tid_v;
+            break;
+        }
+    }
+    assert(tid_for_return != -1);
+
+    auto eid_for_return = m_tet_connectivity[tid_for_return].find_local_edge(v_B, v_C);
+    assert(eid_for_return != -1);
+    auto fid_for_return = m_tet_connectivity[tid_for_return].find_local_face(v_B, v_C, v_A);
+    assert(fid_for_return != -1);
+    assert(v2_id == v_B);
+    new_loc = Tuple(*this, v_B, eid_for_return, fid_for_return, tid_for_return);
+
+
+    // Tuple new_loc = tuple_from_vertex(v2_id);
 
 
     auto check_topology = [&]() {
@@ -189,7 +232,6 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
         !invariants(get_one_ring_tets_for_vertex(new_loc))) {
         m_vertex_connectivity[v1_id].m_is_removed = false;
         operation_failure_rollback_imp(rollback_vert_conn, n1_t_ids, new_tet_id, old_tets);
-
         return false;
     }
 

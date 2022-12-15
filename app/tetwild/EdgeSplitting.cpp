@@ -101,7 +101,7 @@ bool tetwild::TetWild::split_edge_after(const Tuple& loc)
     if (!TetMesh::split_edge_after(
             loc)) // note: call from super class, cannot be done with pure virtual classes
         return false;
-
+        
     std::vector<Tuple> locs = get_one_ring_tets_for_vertex(loc);
     size_t v_id = loc.vid(*this);
 
