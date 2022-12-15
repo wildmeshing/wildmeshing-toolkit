@@ -27,6 +27,7 @@ public:
     virtual void rollback(){};
     virtual void begin_protect(){};
     virtual void end_protect(){};
+    virtual void grow_to_at_least(size_t){};
 };
 
 
@@ -40,7 +41,7 @@ struct AttributeCollection : public AbstractAttributeContainer
     }
     void resize(size_t s) override
     {
-        m_attributes.grow_to_at_least(s);
+        m_attributes.resize(s);
         // if (m_attributes.size() > s) {
         //     m_attributes.resize(s);
         //     m_attributes.shrink_to_fit();
@@ -48,15 +49,10 @@ struct AttributeCollection : public AbstractAttributeContainer
         // TODO: in Concurrent, vertex partition id, vertex mutex should be part of attribute
     }
 
-    void shrink_to_fit()
-    {
-        m_attributes.shrink_to_fit();
-    }
+    // !!! note this is not thread safe
+    void shrink_to_fit() { m_attributes.shrink_to_fit(); }
 
-    void grow_to_at_least(size_t s)
-    {
-        m_attributes.grow_to_at_least(s);
-    }
+    void grow_to_at_least(size_t s) override { m_attributes.grow_to_at_least(s); }
 
     bool assign(size_t to, T&& val) // always use this in OP_after
     {

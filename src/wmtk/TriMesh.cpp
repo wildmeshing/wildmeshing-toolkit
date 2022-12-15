@@ -365,8 +365,7 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
 }
 
 bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
-{   
-
+{
     if (!collapse_edge_before(loc0)) {
         return false;
     }
@@ -632,17 +631,17 @@ void TriMesh::consolidate_mesh()
     current_vert_size = v_cnt;
     current_tri_size = t_cnt;
 
-    m_vertex_connectivity.m_attributes.resize(v_cnt);
+    m_vertex_connectivity.resize(v_cnt);
     m_vertex_connectivity.shrink_to_fit();
-    m_tri_connectivity.m_attributes.resize(t_cnt);
+    m_tri_connectivity.resize(t_cnt);
     m_tri_connectivity.shrink_to_fit();
 
     resize_mutex(vert_capacity());
 
     // Resize user class attributes
-    if (p_vertex_attrs) p_vertex_attrs->resize(vert_capacity());
-    if (p_edge_attrs) p_edge_attrs->resize(tri_capacity() * 3);
-    if (p_face_attrs) p_face_attrs->resize(tri_capacity());
+    if (p_vertex_attrs) p_vertex_attrs->grow_to_at_least(vert_capacity());
+    if (p_edge_attrs) p_edge_attrs->grow_to_at_least(tri_capacity() * 3);
+    if (p_face_attrs) p_face_attrs->grow_to_at_least(tri_capacity());
 
     assert(check_edge_manifold());
     assert(check_mesh_connectivity_validity());
@@ -756,12 +755,11 @@ std::array<size_t, 3> TriMesh::oriented_tri_vids(const Tuple& t) const
 
 void TriMesh::create_mesh(size_t n_vertices, const std::vector<std::array<size_t, 3>>& tris)
 {
-    m_vertex_connectivity.m_attributes.resize(n_vertices);
-    for (int i = 0; i < n_vertices; i++)
-    {
+    m_vertex_connectivity.resize(n_vertices);
+    for (int i = 0; i < n_vertices; i++) {
         m_vertex_connectivity[i].m_is_removed = false;
     }
-    m_tri_connectivity.m_attributes.resize(tris.size());
+    m_tri_connectivity.resize(tris.size());
     size_t hash_cnt = 0;
     for (int i = 0; i < tris.size(); i++) {
         m_tri_connectivity[i].m_is_removed = false;
@@ -779,9 +777,9 @@ void TriMesh::create_mesh(size_t n_vertices, const std::vector<std::array<size_t
     m_vertex_mutex.grow_to_at_least(n_vertices);
 
     // Resize user class attributes
-    if (p_vertex_attrs) p_vertex_attrs->resize(vert_capacity());
-    if (p_edge_attrs) p_edge_attrs->resize(tri_capacity() * 3);
-    if (p_face_attrs) p_face_attrs->resize(tri_capacity());
+    if (p_vertex_attrs) p_vertex_attrs->grow_to_at_least(vert_capacity());
+    if (p_edge_attrs) p_edge_attrs->grow_to_at_least(tri_capacity() * 3);
+    if (p_face_attrs) p_face_attrs->grow_to_at_least(tri_capacity());
 }
 
 std::vector<TriMesh::Tuple> TriMesh::get_vertices() const

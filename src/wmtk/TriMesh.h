@@ -336,11 +336,8 @@ public:
     AbstractAttributeContainer* p_face_attrs = nullptr;
 
 private:
-// TODO: 
     wmtk::AttributeCollection<VertexConnectivity> m_vertex_connectivity;
     wmtk::AttributeCollection<TriangleConnectivity> m_tri_connectivity;
-    // vector<VertexConnectivity> m_vertex_connectivity;
-    // vector<TriangleConnectivity> m_tri_connectivity;
     std::atomic_long current_vert_size;
     std::atomic_long current_tri_size;
     tbb::spin_mutex vertex_connectivity_lock;
@@ -649,7 +646,7 @@ private:
 
     /**
      * @brief Start caching the connectivity that will be modified
-    */
+     */
     void start_protect_connectivity()
     {
         m_vertex_connectivity.begin_protect();
@@ -669,13 +666,13 @@ private:
 
     /**
      * @brief End Caching connectivity
-     * 
-    */
-   void release_protect_connectivity()
-   {
+     *
+     */
+    void release_protect_connectivity()
+    {
         m_vertex_connectivity.end_protect();
         m_tri_connectivity.end_protect();
-   }
+    }
 
     /**
      * @brief rollback the attributes that are modified if any condition failed
@@ -690,7 +687,7 @@ private:
 
     /**
      * @brief rollback the connectivity that are modified if any condition failed
-    */
+     */
     void rollback_protected_connectivity()
     {
         m_vertex_connectivity.rollback();
