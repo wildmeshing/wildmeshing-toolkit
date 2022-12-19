@@ -107,22 +107,22 @@ bool TriWild::split_edge_after(const Tuple& edge_tuple)
 
     const Eigen::Vector2d p =
         (vertex_attrs[cache.local().v1].pos + vertex_attrs[cache.local().v2].pos) / 2.0;
-    auto vid = edge_tuple.vid(*this);
+    auto vid = edge_tuple.switch_vertex(*this).vid(*this);
     vertex_attrs[vid].pos = p;
     vertex_attrs[vid].partition_id = cache.local().partition_id;
     vertex_attrs[vid].curve_id = vertex_attrs[cache.local().v1].curve_id;
     // take into account of periodicity (add unit test)
     if (vertex_attrs[cache.local().v1].fixed && vertex_attrs[cache.local().v2].fixed) {
         vertex_attrs[vid].fixed = true;
-        vertex_attrs[edge_tuple.vid(*this)].t = std::fmod(
+        vertex_attrs[vid].t = std::fmod(
             (vertex_attrs[cache.local().v1].t + vertex_attrs[cache.local().v2].t) / 2.,
-            m_boundary.m_arclengths[vertex_attrs[edge_tuple.vid(*this)].curve_id].back());
+            m_boundary.m_arclengths[vertex_attrs[vid].curve_id].back());
     }
 
     // enforce length check
     if (length2 > 4. / 3. * 4. / 3. * m_target_l * m_target_l) {
         if (m_bnd_freeze) {
-            for (auto e : get_one_ring_edges_for_vertex(edge_tuple)) {
+            for (auto e : get_one_ring_edges_for_vertex(edge_tuple.switch_vertex(*this))) {
                 vertex_attrs[e.switch_vertex(*this).vid(*this)].fixed =
                     is_boundary_vertex(e.switch_vertex(*this));
             }
