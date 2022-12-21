@@ -95,7 +95,14 @@ bool TriWild::swap_edge_before(const Tuple& t)
     if (!TriMesh::swap_edge_before(t)) return false;
 
     if (is_boundary_edge(t)) return false;
-
+    if (is_boundary_vertex(t))
+        vertex_attrs[cache.local().v1].fixed = true;
+    else
+        vertex_attrs[cache.local().v1].fixed = false;
+    if (is_boundary_vertex(t.switch_vertex(*this)))
+        vertex_attrs[cache.local().v2].fixed = true;
+    else
+        vertex_attrs[cache.local().v2].fixed = false;
     // // get max_energy
     // cache.local().max_energy = -1;
     // auto tris = get_one_ring_tris_for_vertex(t);
