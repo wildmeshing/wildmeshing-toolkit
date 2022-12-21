@@ -9,8 +9,10 @@
 #include <wmtk/utils/BoundaryParametrization.h>
 #include <wmtk/utils/autodiff.h>
 #include <catch2/catch.hpp>
+#include <functional>
 #include <wmtk/utils/ManifoldUtils.hpp>
 #include <wmtk/utils/TriQualityUtils.hpp>
+#include "finitediff.hpp"
 
 using namespace wmtk;
 using namespace triwild;
@@ -983,7 +985,7 @@ TEST_CASE("edge_length_energy_one_triangle_linear_remesh")
     m.set_projection(aabb);
     m.set_energy(std::make_unique<wmtk::EdgeLengthEnergy>(displacement_vector));
     m.m_target_l = 0.5;
-    m.mesh_improvement(10);
+    m.mesh_improvement(3);
 
     m.write_displaced_obj(
         "twoandahalf_edge_length_one_triangle_linear_remesh_yesboundary.obj",
@@ -1025,80 +1027,16 @@ TEST_CASE("edge_length_energy_one_triangle_dramatic_linear_remesh")
     }
 
     lagrange::bvh::EdgeAABBTree<RowMatrix2<Scalar>, RowMatrix2<Index>, 2> aabb(V_aabb, E);
-    m.set_projection(aabb);
+    // m.set_projection(aabb);
+    m.m_get_closest_point = [](const Eigen::RowVector2d& p) -> Eigen::RowVector2d { return p; };
+
     m.set_energy(std::make_unique<wmtk::EdgeLengthEnergy>(displacement_vector));
     m.m_target_l = 1;
-    m.mesh_improvement(15);
+    m.mesh_improvement(10);
 
     m.write_displaced_obj(
         "twoandahalf_edge_length_one_triangle_dramatic_linear_remesh_yesboundary.obj",
         displacement_double);
-}
-
-TEST_CASE("edge_length_energy_smooth_verify")
-{
-    Eigen::MatrixXd V;
-    Eigen::MatrixXi F;
-    bool ok = igl::read_triangle_mesh("split_perfect_mesh.obj", V, F);
-    TriWild m;
-    assert(ok);
-    m.create_mesh(V, F, -1, false);
-    RowMatrix2<Index> E = m.get_bnd_edge_matrix();
-    RowMatrix2<Scalar> V_aabb = Eigen::MatrixXd::Zero(m.vert_capacity(), 2);
-    for (int i = 0; i < m.vert_capacity(); ++i) {
-        V_aabb.row(i) << m.vertex_attrs[i].pos[0], m.vertex_attrs[i].pos[1];
-    }
-
-    lagrange::bvh::EdgeAABBTree<RowMatrix2<Scalar>, RowMatrix2<Index>, 2> aabb(V_aabb, E);
-
-    auto displacement_double = [](double u, double v) -> double { return 1; };
-    auto displacement_vector = [&displacement_double](double u, double v) -> Eigen::Vector3d {
-        Eigen::Vector3d p(u, v, displacement_double(u, v));
-        return p;
-    };
-
-    m.set_projection(aabb);
-    assert(m.invariants(m.get_faces()));
-
-    m.m_target_l = 1;
-    m.set_energy(std::make_unique<wmtk::EdgeLengthEnergy>(displacement_vector));
-    m.smooth_all_vertices();
-    for (auto f : m.get_faces()) assert(!m.is_inverted(f));
-    assert(m.invariants(m.get_faces()));
-    m.write_displaced_obj("same_perfect_mesh_0.021x10.obj", displacement_double);
-}
-
-TEST_CASE("edge_length_energy_collapse_verify")
-{
-    Eigen::MatrixXd V;
-    Eigen::MatrixXi F;
-    bool ok = igl::read_triangle_mesh("same_perfect_mesh_0.021.obj", V, F);
-    TriWild m;
-    assert(ok);
-    m.create_mesh(V, F, -1, false);
-    RowMatrix2<Index> E = m.get_bnd_edge_matrix();
-    RowMatrix2<Scalar> V_aabb = Eigen::MatrixXd::Zero(m.vert_capacity(), 2);
-    for (int i = 0; i < m.vert_capacity(); ++i) {
-        V_aabb.row(i) << m.vertex_attrs[i].pos[0], m.vertex_attrs[i].pos[1];
-    }
-
-    lagrange::bvh::EdgeAABBTree<RowMatrix2<Scalar>, RowMatrix2<Index>, 2> aabb(V_aabb, E);
-
-    auto displacement_double = [](double u, double v) -> double { return 1; };
-    auto displacement_vector = [&displacement_double](double u, double v) -> Eigen::Vector3d {
-        Eigen::Vector3d p(u, v, displacement_double(u, v));
-        return p;
-    };
-
-    m.set_projection(aabb);
-    assert(m.invariants(m.get_faces()));
-
-    m.m_target_l = 1;
-    m.set_energy(std::make_unique<wmtk::EdgeLengthEnergy>(displacement_vector));
-    m.collapse_all_edges();
-    for (auto f : m.get_faces()) assert(!m.is_inverted(f));
-    assert(m.invariants(m.get_faces()));
-    m.write_displaced_obj("collapse_perfect_mesh_0.021.obj", displacement_double);
 }
 
 TEST_CASE("boundary parametrization")
@@ -1166,7 +1104,7 @@ TEST_CASE("boundary parametrization")
     REQUIRE(ij3.second == 2);
 }
 
-TEST_CASE("new boundary")
+TEST_CASE("boundary parameter smooth")
 {
     Eigen::MatrixXd V(3, 2);
     V.row(0) << 0, 0;
@@ -1177,6 +1115,14 @@ TEST_CASE("new boundary")
 
     TriWild m;
     m.create_mesh(V, F, -1, false);
+    RowMatrix2<Index> E = m.get_bnd_edge_matrix();
+    RowMatrix2<Scalar> V_aabb = Eigen::MatrixXd::Zero(m.vert_capacity(), 2);
+    for (int i = 0; i < m.vert_capacity(); ++i) {
+        V_aabb.row(i) << m.vertex_attrs[i].pos[0], m.vertex_attrs[i].pos[1];
+    }
+
+    lagrange::bvh::EdgeAABBTree<RowMatrix2<Scalar>, RowMatrix2<Index>, 2> aabb(V_aabb, E);
+
     m.m_get_closest_point = [](const Eigen::RowVector2d& p) -> Eigen::RowVector2d { return p; };
     m.m_target_l = 4;
 
@@ -1194,5 +1140,262 @@ TEST_CASE("new boundary")
     REQUIRE(m.m_boundary.m_arclengths.size() != 0);
     REQUIRE(m.m_boundary.m_boundaries.size() != 0);
     m.smooth_all_vertices();
-    m.write_displaced_obj("new_boundary.obj", displacement_double);
+    m.write_displaced_obj("smooth_new_boundary.obj", displacement_double);
+    m.set_projection(aabb);
+    for (auto v : m.get_vertices()) {
+        auto v_project = m.m_get_closest_point(m.vertex_attrs[v.vid(m)].pos);
+        REQUIRE((v_project.transpose() - m.vertex_attrs[v.vid(m)].pos).squaredNorm() < 1e-5);
+    }
+}
+
+TEST_CASE("boundary parameter split")
+{
+    Eigen::MatrixXd V(3, 2);
+    V.row(0) << 0, 0;
+    V.row(1) << 10, 0;
+    V.row(2) << 0, 10;
+    Eigen::MatrixXi F(1, 3);
+    F.row(0) << 0, 1, 2;
+
+    TriWild m;
+    m.create_mesh(V, F, -1, false);
+    RowMatrix2<Index> E = m.get_bnd_edge_matrix();
+    RowMatrix2<Scalar> V_aabb = Eigen::MatrixXd::Zero(m.vert_capacity(), 2);
+    for (int i = 0; i < m.vert_capacity(); ++i) {
+        V_aabb.row(i) << m.vertex_attrs[i].pos[0], m.vertex_attrs[i].pos[1];
+    }
+    lagrange::bvh::EdgeAABBTree<RowMatrix2<Scalar>, RowMatrix2<Index>, 2> aabb(V_aabb, E);
+
+    m.m_get_closest_point = [](const Eigen::RowVector2d& p) -> Eigen::RowVector2d { return p; };
+    m.m_target_l = 4;
+
+    auto displacement_double = [](double u, double v) -> double { return 1; };
+    auto displacement_vector = [&displacement_double](double u, double v) -> Eigen::Vector3d {
+        Eigen::Vector3d p(u, v, displacement_double(u, v));
+        return p;
+    };
+
+    m.set_energy(std::make_unique<wmtk::EdgeLengthEnergy>(displacement_vector));
+
+    for (auto v : m.get_vertices()) {
+        REQUIRE(m.vertex_attrs[v.vid(m)].t >= 0);
+    }
+    REQUIRE(m.m_boundary.m_arclengths.size() != 0);
+    REQUIRE(m.m_boundary.m_boundaries.size() != 0);
+    for (auto f : m.get_faces()) REQUIRE(!m.is_inverted(f));
+    m.split_all_edges();
+    m.write_displaced_obj("split_new_boundary.obj", displacement_double);
+    m.set_projection(aabb);
+    for (auto e : m.get_edges()) {
+        if (m.is_boundary_edge(e)) {
+            auto v1_pos = m.m_boundary.t_to_uv(0, m.vertex_attrs[e.vid(m)].t);
+            auto v2_pos = m.m_boundary.t_to_uv(0, m.vertex_attrs[e.switch_vertex(m).vid(m)].t);
+            REQUIRE((m.m_get_closest_point(v1_pos) - v1_pos.transpose()).squaredNorm() < 1e-5);
+            REQUIRE((m.m_get_closest_point(v2_pos) - v2_pos.transpose()).squaredNorm() < 1e-5);
+        }
+    }
+}
+
+TEST_CASE("boundary parameter collapse")
+{
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    bool ok = igl::read_triangle_mesh("split_new_boundary.obj", V, F);
+    assert(ok);
+
+    TriWild m;
+    m.create_mesh(V, F, -1, false);
+    RowMatrix2<Index> E = m.get_bnd_edge_matrix();
+    RowMatrix2<Scalar> V_aabb = Eigen::MatrixXd::Zero(m.vert_capacity(), 2);
+    for (int i = 0; i < m.vert_capacity(); ++i) {
+        V_aabb.row(i) << m.vertex_attrs[i].pos[0], m.vertex_attrs[i].pos[1];
+    }
+    lagrange::bvh::EdgeAABBTree<RowMatrix2<Scalar>, RowMatrix2<Index>, 2> aabb(V_aabb, E);
+
+    m.m_get_closest_point = [](const Eigen::RowVector2d& p) -> Eigen::RowVector2d { return p; };
+    m.m_target_l = 10;
+
+    auto displacement_double = [](double u, double v) -> double { return 1; };
+    auto displacement_vector = [&displacement_double](double u, double v) -> Eigen::Vector3d {
+        Eigen::Vector3d p(u, v, displacement_double(u, v));
+        return p;
+    };
+
+    m.set_energy(std::make_unique<wmtk::EdgeLengthEnergy>(displacement_vector));
+
+    for (auto v : m.get_vertices()) {
+        REQUIRE(m.vertex_attrs[v.vid(m)].t >= 0);
+    }
+    REQUIRE(m.m_boundary.m_arclengths.size() != 0);
+    REQUIRE(m.m_boundary.m_boundaries.size() != 0);
+    m.collapse_all_edges();
+    m.consolidate_mesh();
+    m.write_displaced_obj("collapse_new_boundary.obj", displacement_double);
+    m.set_projection(aabb);
+    for (auto e : m.get_edges()) {
+        if (m.is_boundary_edge(e)) {
+            auto v1_pos = m.m_boundary.t_to_uv(0, m.vertex_attrs[e.vid(m)].t);
+            auto v2_pos = m.m_boundary.t_to_uv(0, m.vertex_attrs[e.switch_vertex(m).vid(m)].t);
+            REQUIRE((m.m_get_closest_point(v1_pos) - v1_pos.transpose()).squaredNorm() < 1e-5);
+            REQUIRE((m.m_get_closest_point(v2_pos) - v2_pos.transpose()).squaredNorm() < 1e-5);
+        }
+    }
+}
+
+TEST_CASE("edge_length_center_circle")
+{
+    using DScalar = wmtk::TwoAndAHalf::DScalar;
+    DiffScalarBase::setVariableCount(2);
+
+    Eigen::MatrixXd V(3, 2);
+    V.row(0) << 0, 0;
+    V.row(1) << 10, 0;
+    V.row(2) << 0, 10;
+    Eigen::MatrixXi F(1, 3);
+    F.row(0) << 0, 1, 2;
+    // Eigen::MatrixXd V;
+    // Eigen::MatrixXi F;
+    // bool ok = igl::read_triangle_mesh("after_split_0.obj", V, F);
+    // assert(ok);
+    auto displacement = [](const DScalar& u, const DScalar& v) -> DScalar {
+        if ((pow(u.getValue() - 2.5, 2) + pow(v.getValue() - 2.5, 2)) < 4.)
+            return DScalar(5);
+        else
+            return DScalar(0);
+    };
+    auto displacement_double = [&displacement](double u, double v) -> double {
+        return displacement(DScalar(u), DScalar(v)).getValue();
+    };
+    auto displacement_vector = [&displacement](double u, double v) -> Eigen::Vector3d {
+        Eigen::Vector3d p(u, v, displacement(DScalar(u), DScalar(v)).getValue());
+        return p;
+    };
+    TriWild m;
+    m.create_mesh(V, F, -1, false);
+    m.m_triwild_displacement = displacement_vector;
+
+    RowMatrix2<Index> E = m.get_bnd_edge_matrix();
+    RowMatrix2<Scalar> V_aabb = Eigen::MatrixXd::Zero(m.vert_capacity(), 2);
+    for (int i = 0; i < m.vert_capacity(); ++i) {
+        V_aabb.row(i) << m.vertex_attrs[i].pos[0], m.vertex_attrs[i].pos[1];
+    }
+
+    lagrange::bvh::EdgeAABBTree<RowMatrix2<Scalar>, RowMatrix2<Index>, 2> aabb(V_aabb, E);
+    // m.set_projection(aabb);
+    m.m_get_closest_point = [](const Eigen::RowVector2d& p) -> Eigen::RowVector2d { return p; };
+
+    m.set_energy(std::make_unique<wmtk::EdgeLengthEnergy>(displacement_vector));
+    m.m_target_l = 0.3;
+    m.mesh_improvement(4);
+
+    m.write_displaced_obj("center_circle.obj", displacement_double);
+}
+
+TEST_CASE("energy gradient")
+{
+    using DScalar = wmtk::TwoAndAHalf::DScalar;
+    DiffScalarBase::setVariableCount(2);
+
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    bool ok = igl::read_triangle_mesh("split_new_boundary.obj", V, F);
+    assert(ok);
+
+    TriWild m;
+    m.create_mesh(V, F, -1, false);
+    m.m_boundary_parameter = true;
+    auto displacement = [](const DScalar& u, const DScalar& v) -> DScalar { return DScalar(1); };
+    auto displacement_vector = [&displacement](double u, double v) -> Eigen::Vector3d {
+        Eigen::Vector3d p(u, v, displacement(DScalar(u), DScalar(v)).getValue());
+        return p;
+    };
+    m.m_triwild_displacement = displacement_vector;
+    m.m_target_l = 1;
+    m.set_energy(std::make_unique<wmtk::EdgeLengthEnergy>(displacement_vector));
+
+    Eigen::VectorXd v_flat;
+    m.flatten_dofs(v_flat);
+    Eigen::VectorXd finitediff_grad = Eigen::VectorXd::Zero(m.get_vertices().size() * 2);
+
+    std::function<double(const Eigen::VectorXd&)> f =
+        [&m](const Eigen::VectorXd& v_flat) -> double { return m.get_mesh_energy(v_flat); };
+    fd::finite_gradient(v_flat, f, finitediff_grad, fd::SECOND, 1e-2);
+
+    for (auto v : m.get_vertices()) {
+        auto autodiff = m.get_one_ring_energy(v);
+        wmtk::logger().info(
+            "boundary {} autodiff {} finitediff {}, {}",
+            m.is_boundary_vertex(v),
+            autodiff.second,
+            finitediff_grad[v.vid(m) * 2],
+            finitediff_grad[v.vid(m) * 2 + 1]);
+    }
+}
+
+TEST_CASE("gradient")
+{
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    bool ok = igl::read_triangle_mesh("split_new_boundary.obj", V, F);
+    assert(ok);
+    TriWild m;
+    m.create_mesh(V, F, -1, false);
+    m.m_boundary_parameter = true;
+    Eigen::VectorXd v_flat, finitediff_grad;
+    m.flatten_dofs(v_flat);
+    finitediff_grad.resize(v_flat.size());
+    std::function<double(const Eigen::VectorXd&)> f =
+        [&m](const Eigen::VectorXd& v_flat) -> double {
+        double energy = 0;
+        for (int i = 0; i < v_flat.size(); i++) {
+            if (v_flat(i) == std::numeric_limits<double>::infinity()) continue;
+            wmtk::logger().info("v_flat({}) {}", i, v_flat(i));
+            energy += v_flat(i);
+        }
+        return energy;
+    };
+    fd::finite_gradient(v_flat, f, finitediff_grad, fd::SECOND, 1e-2);
+}
+
+TEST_CASE("line_parametrization")
+{
+    using DScalar = DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d>;
+    DiffScalarBase::setVariableCount(2);
+
+    DScalar t(0, 0);
+    Eigen::Vector2d A(10, 0);
+    Eigen::Vector2d B(7.5, 2.5);
+    Eigen::Matrix<DScalar, 2, 1> ad_n;
+    ad_n << t * (B - A).normalized()(0), t * (B - A).normalized()(1);
+    wmtk::logger().info("ad_n {}", ad_n);
+    wmtk::logger().info(
+        "but they are actually {} {}",
+        t * (B - A).normalized()(0),
+        t * (B - A).normalized()(1));
+    auto x = A(0) + t * (B - A).normalized()(0);
+    auto y = A(1) + t * (B - A).normalized()(1);
+    wmtk::logger().info("tmpA_x {} ", x);
+    wmtk::logger().info("tmpA_y {}", y);
+    auto f = pow(5 - x, 2) + pow(0 - y, 2);
+    f = pow(f - 1, 2);
+    wmtk::logger().info(f.getValue());
+    wmtk::logger().info(f.getGradient());
+    wmtk::logger().info(f);
+
+    Eigen::VectorXd fd_t, finitediff_grad;
+    finitediff_grad.resize(1);
+    fd_t.resize(1);
+    fd_t(0) = 0.;
+    std::function<double(const Eigen::VectorXd&)> fd_f =
+        [&A, &B](const Eigen::VectorXd& fd_t) -> double {
+        double energy = 0;
+        auto n = (B - A).normalized();
+        wmtk::logger()
+            .info("fd_t {} A {} B {}", fd_t(0), (A(0) + fd_t(0) * n(0)), (A(1) + fd_t(0) * n(1)));
+        energy += pow(5 - (A(0) + fd_t(0) * n(0)), 2) + pow(0 - (A(1) + fd_t(0) * n(1)), 2);
+        energy = pow(energy - 1, 2);
+        wmtk::logger().info("energy {}", energy);
+        return energy;
+    };
+    fd::finite_gradient(fd_t, fd_f, finitediff_grad, fd::SECOND, 1e-2);
 }
