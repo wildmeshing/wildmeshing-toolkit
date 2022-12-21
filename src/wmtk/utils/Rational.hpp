@@ -11,6 +11,10 @@ public:
     mpq_t value;
     void canonicalize() { mpq_canonicalize(value); }
     int get_sign() { return mpq_sgn(value); }
+    template<typename T> 
+    void init(const T& v){ 
+        mpq_set(value, v);
+    }
 
     Rational()
     {

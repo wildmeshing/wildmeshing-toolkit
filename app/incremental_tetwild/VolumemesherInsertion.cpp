@@ -3,87 +3,55 @@
 
 
 std::vector<std::array<size_t, 3>> tetwild::TetWild::triangulate_polygon_face(std::vector<Vector3r> points){
-        
-        std::vector<Vector2r> points2d;
-        // std::cout<<points.size()<<std::endl;
-        for (int i=0;i<points.size();i++) points2d.push_back(Vector2r(0,0));
-        bool colinear = true;
-        // project to z,x,y plane in order
-        for (int k=0;k<3;k++){
-            colinear = true;
-            for (int i=0;i<points.size();i++){
-                points2d[i][0] = points[i][k % 3]*1000;
-                points2d[i][1] = points[i][(k + 1) % 3]*1000;
-            }
-            for (int i=0;i<points.size()-2;i++){
-                auto a = points2d[i]-points2d[i+1];
-                auto b = points2d[i+1]-points2d[i+2];
-                if (abs(a[0]*b[1]-a[1]*b[0])>1e-8){
-                    colinear = false;
-                    break;
-                }
-            }
-            if(!colinear){
-                // std::cout<<"zxy?: "<<k<<std::endl;  
+    // triangulate weak convex polygons
+    std::vector<std::array<size_t, 3>> triangulated_faces;
+    
+    std::vector<std::pair<Vector3r, int>> points_vector;
+    for (int i=0;i<points.size();i++){
+        points_vector.push_back(std::pair<Vector3r,int>(points[i],i));
+    }
+
+    // find the first colinear ABC with nonlinear BCD and delete C from vector
+    while(points_vector.size()>3){
+        bool no_colinear = true;
+        for (int i=0;i<points_vector.size();i++){
+            auto cur = points_vector[i];
+            auto next = points_vector[(i+1) % points_vector.size()];
+            auto prev = points_vector[(i+points_vector.size()-1) % points_vector.size()];
+            auto nextnext = points_vector[(i+2) % points_vector.size()];
+
+            Vector3r a = cur.first - prev.first;
+            Vector3r b = next.first - cur.first;
+            Vector3r c = nextnext.first - next.first;
+
+            if(
+                ((a[0]*b[1]-a[1]*b[0])==0 && (a[1]*b[2]-a[2]*b[1])==0 && (a[0]*b[2]-a[2]*b[0])==0)
+                && (((b[0]*c[1]-b[1]*c[0])!=0 || (b[1]*c[2]-b[2]*c[1])!=0 || (b[0]*c[2]-b[2]*c[0])!=0))
+            ){
+                no_colinear = false;
+                std::array<size_t,3> t = {cur.second, next.second, nextnext.second};
+                triangulated_faces.push_back(t);
+                points_vector.erase(points_vector.begin()+((i + 1) % points_vector.size()));
                 break;
             }
-        }
-        assert(colinear==false);
-
-        // ear clipping
-        Eigen::MatrixXd p2d(points2d.size(), 2);
-        Eigen::VectorXi rt(points2d.size(), 1);
-
-        // std::cout<<points2d.size()<<std::endl;
-
-        for (int i=0;i<points2d.size();i++){
-            p2d(i, 0) = points2d[i][0].to_double();
-            p2d(i, 1) = points2d[i][1].to_double();
-            rt(i, 0) = 0;
-        }
-        // std::cout<<"2d coords: "<<std::endl;
-        // for (int i=0;i<p2d.rows();i++){
-        //     std::cout<<p2d(i, 0)<<" "<<p2d(i, 1)<<std::endl;
-        // }
-
-
-        Eigen::VectorXi I;
-        Eigen::MatrixXi eF;
-        Eigen::MatrixXd nP;
-
-        igl::predicates::ear_clipping(p2d, rt, I, eF, nP);
-
-        std::vector<std::array<size_t, 3>> triangulated_faces;
-        // std::cout<<"triangulated_local_index"<<std::endl;
-
-        if (eF.rows() != p2d.rows()-2){
-            // deal with inversed orientation
-            Eigen::MatrixXd p2d_inv(points2d.size(), 2);
-            Eigen::VectorXi I_inv;
-            Eigen::MatrixXi eF_inv;
-            Eigen::MatrixXd nP_inv;
-            for (int i=0;i<p2d.rows();i++){
-                p2d_inv(i,0) = p2d(p2d.rows()-i-1,0);
-                p2d_inv(i,1) = p2d(p2d.rows()-i-1,1);
+            else{
+                continue;
             }
-            igl::predicates::ear_clipping(p2d_inv, rt, I_inv, eF_inv, nP_inv);
-
-            for (int i=0; i<eF_inv.rows(); i++){
-                triangulated_faces.push_back({p2d.rows()-1-eF_inv(i,0), p2d.rows()-1-eF_inv(i,1), p2d.rows()-1-eF_inv(i,2)});
-                // std::cout<<p2d.rows()-1-eF_inv(i,0)<<" "<<p2d.rows()-1-eF_inv(i,1)<<" "<<p2d.rows()-1-eF_inv(i,2)<<std::endl;
-            }
-
-            return triangulated_faces;
         }
 
-        
-        for (int i=0; i<eF.rows(); i++){
-            triangulated_faces.push_back({eF(i,0), eF(i,1), eF(i,2)});
-            // std::cout<<eF(i,0)<<" "<<eF(i,1)<<" "<<eF(i,2)<<std::endl;
-        }
-
-        return triangulated_faces;
+        if (no_colinear) break;
     }
+
+    // cleanup convex polygon
+    while(points_vector.size()>=3){
+        std::array<size_t,3> t = {points_vector[0].second, points_vector[1].second, points_vector[points_vector.size()-1].second};
+        triangulated_faces.push_back(t);
+        points_vector.erase(points_vector.begin());
+    }
+    
+    return triangulated_faces;
+}
+
 
 // we have the vertices and triangles
 // to generate what we need for volumemesher
@@ -99,40 +67,6 @@ void tetwild::TetWild::insertion_by_volumeremesher(
         std::vector<bool> &is_v_on_input,
         std::vector<std::array<size_t, 4>> &tets_after){
 
-//     Eigen::MatrixXd p2d(7, 2);
-// //     p2d<<15.0485, 36.0371,
-// // 15.1971, 36.0141,
-// // 9.05103, 33.9813,
-// // 9.17559, 34.6561,
-// // 9.24641, 35.0398,
-// // 11.6235, 35.4484,
-// // 12.9259, 35.6722;
-
-//     p2d<<12.9259, 35.6722,
-//             11.6235, 35.4484,
-//             9.24641, 35.0398,
-//             9.17559, 34.6561,
-//             9.05103, 33.9813,
-//             15.1971, 36.0141,
-//             15.0485, 36.0371;
-
-//     Eigen::VectorXi rt(7, 1);
-//     rt<<0,0,0,0,0,0,0;
-
-//     Eigen::VectorXi I;
-//     Eigen::MatrixXi eF;
-//     Eigen::MatrixXd nP;
-
-//     igl::predicates::ear_clipping(p2d, rt, I, eF, nP);
-
-//     std::vector<std::array<size_t, 3>> triangulated_faces;
-//     std::cout<<"triangulated_local_index_test: -------------"<<std::endl;
-//     for (int i=0; i<eF.rows(); i++){
-//         triangulated_faces.push_back({eF(i,0), eF(i,1), eF(i,2)});
-//         std::cout<<eF(i,0)<<" "<<eF(i,1)<<" "<<eF(i,2)<<std::endl;
-//     }
-
-//     return ;
 
     std::cout<<"vertices size: "<<vertices.size()<<std::endl;
     std::cout<<"faces size: "<<faces.size()<<std::endl;
@@ -207,11 +141,11 @@ void tetwild::TetWild::insertion_by_volumeremesher(
     // v_rational.reserve(embedded_vertices.size()/3);
 
     for (int i=0; i<embedded_vertices.size()/3; i++){
-        v_rational.push_back(Vector3r(
-            embedded_vertices[3 * i].get_d(),
-            embedded_vertices[3 * i + 1].get_d(),
-            embedded_vertices[3 * i + 2].get_d()
-        ));
+        v_rational.push_back(Vector3r());
+        v_rational.back()[0].init(embedded_vertices[3 * i].get_mpq_t());
+        v_rational.back()[1].init(embedded_vertices[3 * i + 1].get_mpq_t());
+        v_rational.back()[2].init(embedded_vertices[3 * i + 2].get_mpq_t());
+        
     }
 
     std::vector<std::vector<size_t>> polygon_faces;
@@ -371,8 +305,9 @@ void tetwild::TetWild::insertion_by_volumeremesher(
                 tets_final.push_back(tetra);
 
                 //debug code
-                if(tets_final.size()==91){
-                    std::cout<<"debug tet 91: ----------------"<<std::endl;
+                if(tets_final.size()==4913){
+                    std::cout<<"debug tet 4912: ----------------"<<std::endl;
+                    std::cout<<-1 %3<<std::endl;
                     std::cout<<"polygon index: "<<i<<std::endl;
                     std::cout<<"polygon faces: "<<std::endl;
                     for (auto ff: polygon_cell){
@@ -395,6 +330,14 @@ void tetwild::TetWild::insertion_by_volumeremesher(
                         }
                         std::cout<<std::endl;
                     } 
+
+                    std::cout<<"3334: "<<v_rational[3334][0]<<" "<<v_rational[3334][1]<<" "<<v_rational[3334][2]<<std::endl;
+                    std::cout<<"1128: "<<v_rational[1128][0]<<" "<<v_rational[1128][1]<<" "<<v_rational[1128][2]<<std::endl;
+                    std::cout<<"1127: "<<v_rational[1127][0]<<" "<<v_rational[1127][1]<<" "<<v_rational[1127][2]<<std::endl;
+                    std::cout<<"7158: "<<v_rational[7158][0]<<" "<<v_rational[7158][1]<<" "<<v_rational[7158][2]<<std::endl;
+                    std::cout<<"8542: "<<v_rational[8542][0]<<" "<<v_rational[8542][1]<<" "<<v_rational[8542][2]<<std::endl;
+                    std::cout<<"3324: "<<v_rational[3324][0]<<" "<<v_rational[3324][1]<<" "<<v_rational[3324][2]<<std::endl;
+                    
 
                     std::cout<<"end debug ---------------------"<<std::endl;
                 }
@@ -422,20 +365,20 @@ void tetwild::TetWild::insertion_by_volumeremesher(
 
     //check 4277
 
-    for (int i=0;i<embedded_facets.size();i++){
-        if(embedded_facets[i]==4277) std::cout<<"found 4277"<<std::endl;
-    }
+    // for (int i=0;i<embedded_facets.size();i++){
+    //     if(embedded_facets[i]==4277) std::cout<<"found 4277"<<std::endl;
+    // }
 
-    for (int i=4277;i<4279;i++){
-        std::cout<<v_rational[i][0]<<" "<<v_rational[i][1]<<" "<<v_rational[i][2]<<std::endl;
-    }
+    // for (int i=4277;i<4279;i++){
+    //     std::cout<<v_rational[i][0]<<" "<<v_rational[i][1]<<" "<<v_rational[i][2]<<std::endl;
+    // }
 
-    //check tet 90 91 93 94
-    std::cout<<"tet 90: "<<tets_final[90][0]<<" "<<tets_final[90][1]<<" "<<tets_final[90][2]<<" "<<tets_final[90][3]<<std::endl;
-    std::cout<<"tet 91: "<<tets_final[91][0]<<" "<<tets_final[91][1]<<" "<<tets_final[91][2]<<" "<<tets_final[91][3]<<std::endl;
-    std::cout<<"tet 93: "<<tets_final[92][0]<<" "<<tets_final[92][1]<<" "<<tets_final[92][2]<<" "<<tets_final[92][3]<<std::endl;
-    std::cout<<"tet 93: "<<tets_final[93][0]<<" "<<tets_final[93][1]<<" "<<tets_final[93][2]<<" "<<tets_final[93][3]<<std::endl;
-    std::cout<<"tet 94: "<<tets_final[94][0]<<" "<<tets_final[94][1]<<" "<<tets_final[94][2]<<" "<<tets_final[94][3]<<std::endl;
+    // //check tet 90 91 93 94
+    // std::cout<<"tet 90: "<<tets_final[90][0]<<" "<<tets_final[90][1]<<" "<<tets_final[90][2]<<" "<<tets_final[90][3]<<std::endl;
+    // std::cout<<"tet 91: "<<tets_final[91][0]<<" "<<tets_final[91][1]<<" "<<tets_final[91][2]<<" "<<tets_final[91][3]<<std::endl;
+    // std::cout<<"tet 93: "<<tets_final[92][0]<<" "<<tets_final[92][1]<<" "<<tets_final[92][2]<<" "<<tets_final[92][3]<<std::endl;
+    // std::cout<<"tet 93: "<<tets_final[93][0]<<" "<<tets_final[93][1]<<" "<<tets_final[93][2]<<" "<<tets_final[93][3]<<std::endl;
+    // std::cout<<"tet 94: "<<tets_final[94][0]<<" "<<tets_final[94][1]<<" "<<tets_final[94][2]<<" "<<tets_final[94][3]<<std::endl;
 
 }
 
@@ -448,62 +391,59 @@ void tetwild::TetWild::init_from_Volumeremesher(
     init_with_isolated_vertices(v_rational.size(), tets);
     assert(check_mesh_connectivity_validity());
     
+    m_vertex_attribute.m_attributes.resize(v_rational.size());
+    m_tet_attribute.m_attributes.resize(tets.size());
+    m_face_attribute.m_attributes.resize(tets.size() * 4);
 
+    for (int i = 0; i < vert_capacity(); i++){
+        m_vertex_attribute[i].m_pos = v_rational[i];
+        m_vertex_attribute[i].m_posf = to_double(v_rational[i]);
+    }
 
-    // m_vertex_attribute.m_attributes.resize(v_rational.size());
-    // m_tet_attribute.m_attributes.resize(tets.size());
-    // m_face_attribute.m_attributes.resize(tets.size() * 4);
+    // track faces
 
-    // for (int i = 0; i < vert_capacity(); i++){
-    //     m_vertex_attribute[i].m_pos = v_rational[i];
-    //     m_vertex_attribute[i].m_posf = Vector3d(v_after_insertion[i][0], v_after_insertion[i][1], v_after_insertion[i][2]);
-    // }
+    for (int i=0;i<is_v_on_input.size();i++){
+        m_vertex_attribute[i].m_is_on_surface = is_v_on_input[i];
+    }
+    
+    auto faces = get_faces();
+    for (auto f : faces){
+        auto v1 = f.vid(*this);
+        auto v2 = f.switch_vertex(*this).vid(*this);
+        auto v3 = f.switch_edge(*this).switch_vertex(*this).vid(*this);
+        if(m_vertex_attribute[v1].m_is_on_surface && m_vertex_attribute[v2].m_is_on_surface && m_vertex_attribute[v3].m_is_on_surface){
+            m_face_attribute[f.fid(*this)].m_is_surface_fs = 1;
+        }
+    }
 
-    // // track faces
-    // for (int i = 0; i < is_f_surface.size(); i++){
-    //     m_vertex_attribute[f_after_insertion[is_f_surface[i]][0]].m_is_on_surface = true;
-    //     m_vertex_attribute[f_after_insertion[is_f_surface[i]][1]].m_is_on_surface = true;
-    //     m_vertex_attribute[f_after_insertion[is_f_surface[i]][2]].m_is_on_surface = true;
-    // }
+    // track bounding box
 
-    // auto faces = get_faces();
-    // for (auto f : faces){
-    //     auto v1 = f.vid(*this);
-    //     auto v2 = f.switch_vertex(*this).vid(*this);
-    //     auto v3 = f.switch_edge(*this).switch_vertex(*this).vid(*this);
-    //     if(m_vertex_attribute[v1].m_is_on_surface && m_vertex_attribute[v1].m_is_on_surface && m_vertex_attribute[v1].m_is_on_surface){
-    //         m_face_attribute[f.fid(*this)].m_is_surface_fs = 1;
-    //     }
-    // }
-
-    // // track bounding box
-
-    // for (int i = 0; i < faces.size(); i++) {
-    //     auto vs = get_face_vertices(faces[i]);
-    //     std::array<size_t, 3> vids = {{vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
-    //     int on_bbox = -1;
-    //     for (int k = 0; k < 3; k++) {
-    //         if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_min[k] &&
-    //             m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_min[k] &&
-    //             m_vertex_attribute[vids[2]].m_pos[k] == m_params.box_min[k]) {
-    //             on_bbox = k * 2;
-    //             break;
-    //         }
-    //         if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_max[k] &&
-    //             m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_max[k] &&
-    //             m_vertex_attribute[vids[2]].m_pos[k] == m_params.box_max[k]) {
-    //             on_bbox = k * 2 + 1;
-    //             break;
-    //         }
-    //     }
-    //     if (on_bbox < 0) continue;
-    //     auto fid = faces[i].fid(*this);
-    //     m_face_attribute[fid].m_is_bbox_fs = on_bbox;
+    for (int i = 0; i < faces.size(); i++) {
+        auto vs = get_face_vertices(faces[i]);
+        std::array<size_t, 3> vids = {{vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
+        int on_bbox = -1;
+        for (int k = 0; k < 3; k++) {
+            if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_min[k] &&
+                m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_min[k] &&
+                m_vertex_attribute[vids[2]].m_pos[k] == m_params.box_min[k]) {
+                on_bbox = k * 2;
+                break;
+            }
+            if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_max[k] &&
+                m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_max[k] &&
+                m_vertex_attribute[vids[2]].m_pos[k] == m_params.box_max[k]) {
+                on_bbox = k * 2 + 1;
+                break;
+            }
+        }
+        if (on_bbox < 0) continue;
+        auto fid = faces[i].fid(*this);
+        m_face_attribute[fid].m_is_bbox_fs = on_bbox;
         
-    //     for (size_t vid : vids) {
-    //         m_vertex_attribute[vid].on_bbox_faces.push_back(on_bbox);
-    //     }
-    // }
+        for (size_t vid : vids) {
+            m_vertex_attribute[vid].on_bbox_faces.push_back(on_bbox);
+        }
+    }
 
 
 }
