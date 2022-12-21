@@ -47,12 +47,18 @@ bool TriWild::invariants(const std::vector<Tuple>& new_tris)
                 tris[j] << vertex_attrs[vs[j].vid(*this)].pos(0),
                     vertex_attrs[vs[j].vid(*this)].pos(1), 0.0;
             }
-            if (m_envelope.is_outside(tris)) return false;
+            if (m_envelope.is_outside(tris)) {
+                wmtk::logger().info("envelop invariant fail");
+                return false;
+            }
         }
     }
 
     for (auto& t : new_tris) {
-        if (is_inverted(t)) return false;
+        if (is_inverted(t)) {
+            wmtk::logger().info("inverted triangle {} ", t.fid(*this));
+            return false;
+        }
         assert(!is_inverted(t));
         Eigen::Vector2d a, b, c;
         auto verts = oriented_tri_vertices(t);
@@ -277,11 +283,11 @@ double TriWild::get_quality(const Tuple& loc, int idx) const
     return energy;
 }
 
-double TriWild::get_one_ring_energy(const Tuple& loc) const
+std::pair<double, Eigen::Vector2d> TriWild::get_one_ring_energy(const Tuple& loc) const
 {
     auto one_ring = get_one_ring_tris_for_vertex(loc);
     wmtk::DofVector dofx;
-    if (is_boundary_vertex(loc)) {
+    if (is_boundary_vertex(loc) && m_boundary_parameter) {
         dofx.resize(1);
         dofx[0] = vertex_attrs[loc.vid(*this)].t; // t
     } else {
@@ -317,6 +323,8 @@ double TriWild::get_one_ring_energy(const Tuple& loc) const
     }
     assert(one_ring.size() == nminfo.neighbors.rows());
     auto total_energy = 0.;
+    Eigen::Vector2d total_gradient;
+    total_gradient.setZero(2);
     for (auto i = 0; i < one_ring.size(); i++) {
         // set State
         // pass the state energy
@@ -329,8 +337,9 @@ double TriWild::get_one_ring_energy(const Tuple& loc) const
         DofsToPositions dofs_to_pos(m_boundary, nminfo.curve_id);
         m_energy->eval(state, dofs_to_pos);
         total_energy += state.value;
+        total_gradient += state.gradient;
     }
-    return total_energy;
+    return {total_energy, total_gradient};
 }
 
 Eigen::VectorXd TriWild::get_quality_all_triangles()
@@ -463,6 +472,66 @@ void TriWild::mesh_improvement(int max_its)
 
     wmtk::logger().info("/////final: max energy {} , avg len {} ", m_max_energy, avg_len);
     consolidate_mesh();
+}
+void TriWild::flatten_dofs(Eigen::VectorXd& v_flat)
+{
+    auto verts = get_vertices();
+    v_flat.resize(verts.size() * 2);
+    for (auto v : verts) {
+        if (is_boundary_vertex(v) && m_boundary_parameter) {
+            v_flat(v.vid(*this) * 2) = vertex_attrs[v.vid(*this)].t;
+            v_flat(v.vid(*this) * 2 + 1) = std::numeric_limits<double>::infinity();
+        } else {
+            v_flat(v.vid(*this) * 2) = vertex_attrs[v.vid(*this)].pos(0);
+            v_flat(v.vid(*this) * 2 + 1) = vertex_attrs[v.vid(*this)].pos(1);
+        }
+    }
+}
+
+// get the energy defined by edge_length_energy over each face of the mesh
+// assuming the vert_capacity() == get_vertices.size()
+double TriWild::get_mesh_energy(const Eigen::VectorXd& v_flat)
+{
+    double total_energy = 0;
+    int f_cnt = 0;
+    for (auto& face : get_faces()) {
+        // wmtk::logger().info("getting energy on {} ", f_cnt++);
+        auto verts = oriented_tri_vertices(face);
+        Eigen::Matrix3d v_matrix;
+        v_matrix.setZero(3, 3);
+        for (int i = 0; i < 3; i++) {
+            auto vert = verts[i];
+            if (is_boundary_vertex(vert) && m_boundary_parameter) {
+                auto uv = m_boundary.t_to_uv(
+                    vertex_attrs[vert.vid(*this)].curve_id,
+                    v_flat[vert.vid(*this) * 2]);
+                v_matrix.row(i) = m_triwild_displacement(uv(0), uv(1));
+            } else {
+                auto u = v_flat[vert.vid(*this) * 2];
+                auto v = v_flat[vert.vid(*this) * 2 + 1];
+                v_matrix.row(i) = m_triwild_displacement(u, v);
+            }
+        }
+
+        assert(m_target_l != 0);
+        auto BA = v_matrix.row(1) - v_matrix.row(0);
+        auto CA = v_matrix.row(2) - v_matrix.row(0);
+        auto BC = v_matrix.row(1) - v_matrix.row(2);
+        total_energy += pow(BA.squaredNorm() - pow(m_target_l, 2), 2);
+        total_energy += pow(BC.squaredNorm() - pow(m_target_l, 2), 2);
+        total_energy += pow(CA.squaredNorm() - pow(m_target_l, 2), 2);
+        double area = (BA.cross(CA)).squaredNorm();
+        double A_hat = 0.5 * (std::sqrt(3) / 2) * 0.5 * pow(m_target_l, 2); // this is arbitrary now
+        assert(A_hat > 0);
+        if (area <= 0) {
+            total_energy += std::numeric_limits<double>::infinity();
+        }
+        if (area < A_hat) {
+            assert((area / A_hat) < 1.0);
+            total_energy += -(area - A_hat) * (area - A_hat) * log(area / A_hat);
+        }
+    }
+    return total_energy;
 }
 
 } // namespace triwild

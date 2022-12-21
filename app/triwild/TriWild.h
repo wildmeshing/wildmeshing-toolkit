@@ -8,6 +8,7 @@
 #include <wmtk/utils/BoundaryParametrization.h>
 #include <wmtk/utils/Energy2d.h>
 #include <wmtk/utils/GeoUtils.h>
+#include <finitediff.hpp>
 #include <nlohmann/json.hpp>
 #include <sec/envelope/SampleEnvelope.hpp>
 #include "Parameters.h"
@@ -59,6 +60,7 @@ public:
         return p;
     }; // used for heuristic split, collapse. Default to return (u,v,0)
     wmtk::Boundary m_boundary;
+    bool m_boundary_parameter = false;
 
     TriWild(){};
 
@@ -111,7 +113,7 @@ public:
 
     // Computes the quality of a triangle
     double get_quality(const Tuple& loc, int idx = 0) const;
-    double get_one_ring_energy(const Tuple& loc) const;
+    std::pair<double, Eigen::Vector2d> get_one_ring_energy(const Tuple& loc) const;
 
     // Computes the average quality of a mesh
     Eigen::VectorXd get_quality_all_triangles();
@@ -141,6 +143,9 @@ public:
 
     void mesh_improvement(int max_its);
     double get_length2(const Tuple& t) const;
+
+    void flatten_dofs(Eigen::VectorXd& v_flat);
+    double get_mesh_energy(const Eigen::VectorXd& v_flat);
 };
 
 } // namespace triwild
