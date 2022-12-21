@@ -63,7 +63,7 @@ bool triwild::TriWild::smooth_after(const Tuple& t)
     auto old_t = vertex_attrs[vid].t;
 
     wmtk::DofVector dofx;
-    if (is_boundary_vertex(t)) {
+    if (is_boundary_vertex(t) && m_boundary_parameter) {
         dofx.resize(1);
         dofx[0] = vertex_attrs[t.vid(*this)].t; // t
     } else {
@@ -71,7 +71,7 @@ bool triwild::TriWild::smooth_after(const Tuple& t)
         dofx = vertex_attrs[t.vid(*this)].pos; // uv;
     }
 
-    double before_energy = get_one_ring_energy(t);
+    double before_energy = get_one_ring_energy(t).first;
 
     // assert before energy is always less than after energy
     wmtk::newton_method_with_fallback(*m_energy, m_boundary, nminfo, dofx);
@@ -80,7 +80,7 @@ bool triwild::TriWild::smooth_after(const Tuple& t)
     // this should be outdated since now every boundary vertex will be on boundary (but good to have
     // as an assert)
     // add assert!!!!
-    if (is_boundary_vertex(t)) {
+    if (is_boundary_vertex(t) && m_boundary_parameter) {
         vertex_attrs[vid].t = dofx(0);
         vertex_attrs[vid].pos = m_boundary.t_to_uv(nminfo.curve_id, dofx(0));
     } else
@@ -93,7 +93,7 @@ bool triwild::TriWild::smooth_after(const Tuple& t)
         return false;
     }
 
-    double after_energy = get_one_ring_energy(t);
+    double after_energy = get_one_ring_energy(t).first;
     assert(after_energy <= before_energy);
     assert(vid == t.vid(*this));
     wmtk::logger().info(
