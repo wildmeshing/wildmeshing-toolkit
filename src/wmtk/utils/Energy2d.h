@@ -40,6 +40,7 @@ public:
     std::pair<DScalar, DScalar> eval(const DofVector& dofx) const
     {
         if (dofx.size() == 2) {
+            DiffScalarBase::setVariableCount(2);
             DScalar x1(0, dofx(0));
             DScalar y1(1, dofx(1));
             return std::pair<DScalar, DScalar>(x1, y1);
@@ -59,19 +60,22 @@ public:
         assert((a + 1) < arclength.size());
 
         auto r = t - *it;
+
         const auto& boundary = m_boundary_mapping.m_boundaries[m_curve_id];
         assert(a < boundary.size());
         Eigen::Vector2d A = boundary[a];
         Eigen::Vector2d B = boundary[(a + 1) % boundary.size()];
+
         auto n = (B - A) / (arclength[a + 1] - arclength[a]);
+
         assert(std::pow((n.squaredNorm() - 1), 2) < 1e-8);
         Eigen::Matrix<DScalar, 2, 1> tmpA;
         tmpA << r * n(0), r * n(1);
+
         Eigen::Matrix<DScalar, 2, 1> V;
         V << A(0) + tmpA(0), A(1) + tmpA(1);
-        DScalar x1 = V(0);
-        DScalar y1 = V(1);
-        return std::pair<DScalar, DScalar>(x1, y1);
+
+        return {V(0), V(1)};
     }
 };
 

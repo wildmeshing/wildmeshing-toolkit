@@ -215,7 +215,6 @@ void TwoAndAHalf::eval(State& state) const
 void EdgeLengthEnergy::eval(State& state, DofsToPositions& dof_to_positions) const
 {
     DiffScalarBase::setVariableCount(2);
-    auto input_triangle = state.input_triangle;
     auto target_triangle = state.target_triangle;
     assert(state.scaling > 0);
     DScalar total_energy = DScalar(0);
@@ -231,21 +230,21 @@ void EdgeLengthEnergy::eval(State& state, DofsToPositions& dof_to_positions) con
     Eigen::Vector3d v3 =
         this->displacement(state.two_opposite_vertices(0, 2), state.two_opposite_vertices(0, 3));
 
-    Eigen::Matrix<DScalar, 3, 1> V2_V1(v2(0) - x1, v2(1) - y1, DScalar(v2(2) - v1(2)));
-    Eigen::Matrix<DScalar, 3, 1> V3_V1(v3(0) - x1, v3(1) - y1, DScalar(v3(2) - v1(2)));
-    Eigen::Matrix<DScalar, 3, 1> V3_V2(
-        DScalar(v3(0) - v2(0)),
-        DScalar(v3(1) - v2(1)),
-        DScalar(v3(2) - v2(2)));
+    Eigen::Matrix<DScalar, 3, 1> V2_V1;
+    V2_V1 << v2(0) - x1, v2(1) - y1, DScalar(v2(2) - v1(2));
+    Eigen::Matrix<DScalar, 3, 1> V3_V1;
+    V3_V1 << v3(0) - x1, v3(1) - y1, DScalar(v3(2) - v1(2));
+    Eigen::Matrix<DScalar, 3, 1> V3_V2;
+    V3_V2 << DScalar(v3(0) - v2(0)), DScalar(v3(1) - v2(1)), DScalar(v3(2) - v2(2));
 
     // check if area is either inverted or smaller than certain A_hat
     DScalar area;
     area = (V2_V1.cross(V3_V1)).squaredNorm();
 
     // energies for edge length
-    total_energy += (V2_V1.squaredNorm() - l_squared) * (V2_V1.squaredNorm() - l_squared);
-    total_energy += (V3_V1.squaredNorm() - l_squared) * (V3_V1.squaredNorm() - l_squared);
-    total_energy += (V3_V2.squaredNorm() - l_squared) * (V3_V2.squaredNorm() - l_squared);
+    total_energy += pow((V2_V1.squaredNorm() - l_squared), 2);
+    total_energy += pow((V3_V1.squaredNorm() - l_squared), 2);
+    total_energy += pow((V3_V2.squaredNorm() - l_squared), 2);
 
     // energy barrier for small triangle only when A < A_hat
     // check if area is either inverted or smaller than certain A_hat
