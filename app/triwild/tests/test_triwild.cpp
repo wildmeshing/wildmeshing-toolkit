@@ -7,6 +7,7 @@
 #include <wmtk/utils/AMIPS2D.h>
 #include <wmtk/utils/AMIPS2D_autodiff.h>
 #include <wmtk/utils/BoundaryParametrization.h>
+#include <wmtk/utils/Image.h>
 #include <wmtk/utils/autodiff.h>
 #include <catch2/catch.hpp>
 #include <functional>
@@ -1398,4 +1399,17 @@ TEST_CASE("line_parametrization")
         return energy;
     };
     fd::finite_gradient(fd_t, fd_f, finitediff_grad, fd::SECOND, 1e-2);
+}
+
+TEST_CASE("test dispacement saving and loading")
+{
+    Image image;
+    auto displacement_double = [](const double& u, const double& v) -> double { return 10 * u; };
+    image.set("tryout.png", displacement_double, 100, 100);
+    Image image2;
+    image2.load("tryout.png");
+    for (int i = 0; i < 10; i++) {
+        Eigen::Vector2d p(0.1 * i, 0.1 * i);
+        wmtk::logger().info("at i = {} , image2 {}, image {}", i, image2.get(p), image.get(p));
+    }
 }
