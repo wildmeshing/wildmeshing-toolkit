@@ -240,12 +240,11 @@ public:
     bool operator()(AppMesh& m, const std::vector<std::pair<Op, Tuple>>& operation_tuples)
     {
         auto cnt_update = std::atomic<int>(0);
-        auto cnt_success = std::atomic<int>(0);
-        auto cnt_fail = std::atomic<int>(0);
+        m_cnt_success = 0;
+        m_cnt_fail = 0;
         auto stop = std::atomic<bool>(false);
-        using Elem = std::tuple<double, Op, Tuple, size_t>;
-        auto queues = std::vector<tbb::concurrent_priority_queue<Elem>>(num_threads);
-        auto final_queue = tbb::concurrent_priority_queue<Elem>();
+        m_parallel_queues = std::vector<tbb::concurrent_priority_queue<Elem>>(num_threads);
+        m_serial_queue = tbb::concurrent_priority_queue<Elem>();
 
         auto run_single_queue = [&](auto& Q, int task_id) {
             auto ele_in_queue = Elem();
@@ -255,17 +254,15 @@ public:
 
                 std::vector<Elem> renewed_elements;
                 {
-                    auto locked_vid = lock_vertices(
-                        m,
-                        tup,
-                        task_id); // Note that returning `Tuples` would be invalid.
+                    // Note that returning `Tuples` would be invalid.
+                    auto locked_vid = lock_vertices(m, tup, task_id);
                     if (!locked_vid) {
                         retry++;
                         if (retry < max_retry_limit) {
                             Q.emplace(ele_in_queue);
                         } else {
                             retry = 0;
-                            final_queue.emplace(ele_in_queue);
+                            m_serial_queue.emplace(ele_in_queue);
                         }
                         continue;
                     }
@@ -283,11 +280,11 @@ public:
                         std::vector<std::pair<Op, Tuple>> renewed_tuples;
                         if (newtup) {
                             renewed_tuples = renew_neighbor_tuples(m, op, newtup.value());
-                            cnt_success++;
+                            m_cnt_success++;
                             cnt_update++;
                         } else {
                             on_fail(m, op, tup);
-                            cnt_fail++;
+                            m_cnt_fail++;
                         }
                         for (auto& [o, e] : renewed_tuples) {
                             auto val = priority(m, o, e);
@@ -301,7 +298,7 @@ public:
                 }
 
                 if (stop.load(std::memory_order_acquire)) return;
-                if (cnt_success > stopping_criterion_checking_frequency) {
+                if (m_cnt_success > stopping_criterion_checking_frequency) {
                     if (stopping_criterion(m)) {
                         stop.store(true);
                         return;
@@ -315,31 +312,50 @@ public:
         if constexpr (policy == ExecutionPolicy::kSeq) {
             for (auto& [op, e] : operation_tuples) {
                 if (!e.is_valid(m)) continue;
-                final_queue.emplace(priority(m, op, e), op, e, 0);
+                m_serial_queue.emplace(priority(m, op, e), op, e, 0);
             }
-            run_single_queue(final_queue, 0);
+            run_single_queue(m_serial_queue, 0);
         } else {
             for (auto& [op, e] : operation_tuples) {
                 if (!e.is_valid(m)) continue;
-                queues[get_partition_id(m, e)].emplace(priority(m, op, e), op, e, 0);
+                m_parallel_queues[get_partition_id(m, e)].emplace(priority(m, op, e), op, e, 0);
             }
             // Comment out parallel: work on serial first.
             tbb::task_arena arena(num_threads);
             tbb::task_group tg;
-            arena.execute([&queues, &run_single_queue, &tg]() {
-                for (int task_id = 0; task_id < queues.size(); task_id++) {
-                    tg.run([&run_single_queue, &queues, task_id] {
-                        run_single_queue(queues[task_id], task_id);
+            arena.execute([this, &run_single_queue, &tg]() {
+                for (int task_id = 0; task_id < this->m_parallel_queues.size(); task_id++) {
+                    tg.run([&run_single_queue, this, task_id] {
+                        run_single_queue(this->m_parallel_queues[task_id], task_id);
                     });
                 }
                 tg.wait();
             });
-            logger().debug("Parallel Complete, remains element {}", final_queue.size());
-            run_single_queue(final_queue, 0);
+            logger().debug("Parallel Complete, remains element {}", m_serial_queue.size());
+            run_single_queue(m_serial_queue, 0);
         }
 
-        logger().info("cnt_success {} cnt_fail {}", cnt_success, cnt_fail);
+        logger().info("cnt_success {} cnt_fail {}", cnt_success(), cnt_fail());
         return true;
     }
+
+public:
+    int cnt_success() const { return m_cnt_success; }
+    int cnt_fail() const { return m_cnt_fail; }
+
+    using Elem = std::tuple<double, Op, Tuple, size_t>;
+
+    const tbb::concurrent_priority_queue<Elem>& serial_queue() const { return m_serial_queue; }
+
+    const std::vector<tbb::concurrent_priority_queue<Elem>>& parallel_queues() const
+    {
+        return m_parallel_queues;
+    }
+
+protected:
+    std::atomic<int> m_cnt_success = std::atomic<int>(0);
+    std::atomic<int> m_cnt_fail = std::atomic<int>(0);
+    tbb::concurrent_priority_queue<Elem> m_serial_queue;
+    std::vector<tbb::concurrent_priority_queue<Elem>> m_parallel_queues;
 };
 } // namespace wmtk
