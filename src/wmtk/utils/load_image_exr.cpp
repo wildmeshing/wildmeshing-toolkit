@@ -4,9 +4,9 @@
 #define TINYEXR_USE_MINIZ 0
 #define TINYEXR_USE_STB_ZLIB 1
 #define TINYEXR_IMPLEMENTATION
+#include <tinyexr.h>
 #include <cassert>
 #include "Logger.hpp"
-#include "tinyexr.h"
 
 auto wmtk::load_image_exr_red_channel(const std::filesystem::path& path)
     -> std::tuple<size_t, size_t, std::vector<float>>
