@@ -107,6 +107,11 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
 )
 include(finite-diff)
 target_link_libraries(wildmeshing_toolkit PUBLIC finitediff::finitediff)
+include(stb)
+include(tinyexr)
+target_link_libraries(wildmeshing_toolkit PUBLIC
+    tinyexr
+    stb)
 
 # ###############################################################################
 # Subdirectories
