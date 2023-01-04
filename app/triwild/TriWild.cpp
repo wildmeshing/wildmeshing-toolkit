@@ -16,30 +16,98 @@ namespace triwild {
 auto avg_edge_len = [](auto& m) {
     double avg_len = 0.0;
     auto edges = m.get_edges();
-    for (auto& e : edges) avg_len += std::sqrt(m.get_length2(e));
+    for (auto& e : edges) avg_len += std::sqrt(m.get_length3d(e));
     return avg_len / edges.size();
 };
 
-void TriWild::set_energy(std::unique_ptr<Energy> f)
+void TriWild::set_parameters(
+    const double target_edge_length,
+    const std::function<Eigen::Vector3d(const double&, const double&)>& displacement_function,
+    const ENERGY_TYPE energy_type,
+    const bool boundary_parameter)
 {
-    this->m_energy = std::move(f);
+    mesh_parameters.m_target_l = target_edge_length;
+    mesh_parameters.m_triwild_displacement = displacement_function;
+    set_energy(
+        energy_type); // set the displacement_function first since it is used for energy setting
+    mesh_parameters.m_boundary_parameter = boundary_parameter;
 }
 
-void TriWild::set_projection(
-    lagrange::bvh::EdgeAABBTree<RowMatrix2<Scalar>, RowMatrix2<Index>, 2>& aabb)
+/// @brief set the v as feature vertex, that is, it is a boundary vertex and the  incident boundary vertices are not colinear
+/// @param v
+void TriWild::set_feature(Tuple& v)
 {
-    this->m_get_closest_point = [&aabb](const Eigen::RowVector2d& p) -> Eigen::RowVector2d {
+    // only set the feature if it is a boundary vertex
+    assert(is_boundary_vertex(v));
+    // get 3 vertices
+
+    std::vector<size_t> incident_boundary_verts;
+    auto one_ring = get_one_ring_edges_for_vertex(v);
+    for (auto e : one_ring) {
+        if (is_boundary_edge(e)) incident_boundary_verts.emplace_back(e.vid(*this));
+    }
+    // every boundary vertex has to have 2 neighbors that are boundary vertices
+    assert(incident_boundary_verts.size() == 2);
+    auto p1 = vertex_attrs[v.vid(*this)].pos;
+    auto p2 = vertex_attrs[incident_boundary_verts[0]].pos;
+    auto p3 = vertex_attrs[incident_boundary_verts[1]].pos;
+    // check if they are co linear. set fixed = true if not
+    double costheta = ((p2 - p1).stableNormalized()).dot((p3 - p1).stableNormalized()); // cos theta
+    double theta = std::acos(std::clamp<double>(costheta, -1, 1));
+    if (theta <= M_PI / 2)
+        vertex_attrs[v.vid(*this)].fixed = true;
+    else
+        vertex_attrs[v.vid(*this)].fixed = false;
+}
+
+// assuming the m_triwild_displacement in mesh_parameter has been set
+void TriWild::set_energy(ENERGY_TYPE energy_type)
+{
+    std::unique_ptr<Energy> energy_ptr;
+    switch (energy_type) {
+    case AMIPS: energy_ptr = std::make_unique<wmtk::AMIPS>(); break;
+    case SYMDI: energy_ptr = std::make_unique<wmtk::SymDi>(); break;
+    case EDGE_LENGTH:
+        energy_ptr =
+            std::make_unique<wmtk::EdgeLengthEnergy>(mesh_parameters.m_triwild_displacement);
+        break;
+    }
+    mesh_parameters.m_energy = std::move(energy_ptr);
+}
+
+void TriWild::set_projection()
+{
+    struct Data
+    {
+        RowMatrix2<Index> E;
+        RowMatrix2<Scalar> V;
+        lagrange::bvh::EdgeAABBTree<RowMatrix2<Scalar>, RowMatrix2<Index>, 2> aabb;
+    };
+    auto data = std::make_shared<Data>();
+    data->E = get_bnd_edge_matrix();
+    RowMatrix2<Scalar> V_aabb = Eigen::MatrixXd::Zero(vert_capacity(), 2);
+    for (int i = 0; i < vert_capacity(); ++i) {
+        V_aabb.row(i) << vertex_attrs[i].pos[0], vertex_attrs[i].pos[1];
+    }
+    data->V = V_aabb;
+    data->aabb =
+        lagrange::bvh::EdgeAABBTree<RowMatrix2<Scalar>, RowMatrix2<Index>, 2>(data->V, data->E);
+    std::function<Eigen::RowVector2d(const Eigen::RowVector2d& p)> projection =
+        [data = std::move(data)](const Eigen::RowVector2d& p) -> Eigen::RowVector2d {
         uint64_t ind = 0;
         double distance = 0.0;
         static Eigen::RowVector2d p_ret;
-        aabb.get_closest_point(p, ind, p_ret, distance);
+        assert(data != nullptr);
+        (data->aabb).get_closest_point(p, ind, p_ret, distance);
         return p_ret;
     };
+
+    mesh_parameters.m_get_closest_point = std::move(projection);
 }
 
 bool TriWild::invariants(const std::vector<Tuple>& new_tris)
 {
-    if (m_has_envelope) {
+    if (mesh_parameters.m_has_envelope) {
         for (auto& t : new_tris) {
             std::array<Eigen::Vector3d, 3> tris;
             auto vs = oriented_tri_vertices(t);
@@ -47,7 +115,7 @@ bool TriWild::invariants(const std::vector<Tuple>& new_tris)
                 tris[j] << vertex_attrs[vs[j].vid(*this)].pos(0),
                     vertex_attrs[vs[j].vid(*this)].pos(1), 0.0;
             }
-            if (m_envelope.is_outside(tris)) {
+            if (mesh_parameters.m_envelope.is_outside(tris)) {
                 wmtk::logger().info("envelop invariant fail");
                 return false;
             }
@@ -105,11 +173,7 @@ std::vector<TriMesh::Tuple> TriWild::new_edges_after(const std::vector<TriMesh::
     return new_edges;
 }
 
-void TriWild::create_mesh(
-    const Eigen::MatrixXd& V,
-    const Eigen::MatrixXi& F,
-    double eps,
-    bool bnd_freeze)
+void TriWild::create_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F)
 {
     std::vector<Eigen::Vector3d> V_env;
     V_env.resize(V.rows());
@@ -138,18 +202,19 @@ void TriWild::create_mesh(
         assert(!is_inverted(tri));
     }
     // construct the boundary map for boundary parametrization
-    m_boundary.construct_boudaries(V, F);
+    if (mesh_parameters.m_boundary_parameter) mesh_parameters.m_boundary.construct_boudaries(V, F);
 
-    // mark boundary vertices as fixed
-    // but this is not indiscriminatively fixed for all operations
-    // only swap will always be reject for boundary edges
+    // mark boundary vertices as boundary_vertex
+    // but this is not indiscriminatively rejected for all operations
     // other operations are conditioned on whether m_bnd_freeze is turned on
     // also obtain the boudnary parametrizatin too
     for (auto v : this->get_vertices()) {
         if (is_boundary_vertex(v)) {
-            vertex_attrs[v.vid(*this)].fixed = is_boundary_vertex(v);
+            vertex_attrs[v.vid(*this)].boundary_vertex = is_boundary_vertex(v);
+            set_feature(v);
             vertex_attrs[v.vid(*this)].curve_id = 0; /// only one connected mesh for now
-            vertex_attrs[v.vid(*this)].t = m_boundary.uv_to_t(vertex_attrs[v.vid(*this)].pos);
+            vertex_attrs[v.vid(*this)].t =
+                mesh_parameters.m_boundary.uv_to_t(vertex_attrs[v.vid(*this)].pos);
         }
     }
 
@@ -160,18 +225,10 @@ void TriWild::create_mesh(
     for (auto v : get_vertices()) {
         if (is_boundary_vertex(v))
             assert(
-                (vertex_attrs[v.vid(*this)].pos - m_boundary.t_to_uv(
+                (vertex_attrs[v.vid(*this)].pos - mesh_parameters.m_boundary.t_to_uv(
                                                       vertex_attrs[v.vid(*this)].curve_id,
                                                       vertex_attrs[v.vid(*this)].t))
                     .squaredNorm() < 1e-8);
-    }
-
-    if (eps > 0) {
-        m_envelope.use_exact = true;
-        m_envelope.init(V_env, F_env, eps);
-        m_has_envelope = true;
-    } else if (bnd_freeze) {
-        m_bnd_freeze = bnd_freeze;
     }
 }
 
@@ -240,19 +297,43 @@ void TriWild::write_displaced_obj(
     igl::writeOBJ(path, V3, F);
 }
 
-double TriWild::get_length2(const Tuple& t) const
+void TriWild::write_displaced_obj(
+    const std::string& path,
+    const std::function<Eigen::Vector3d(double, double)>& displacement)
+{
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+
+    export_mesh(V, F);
+
+    Eigen::MatrixXd V3 = Eigen::MatrixXd::Zero(V.rows(), 3);
+    for (int i = 0; i < V.rows(); i++) {
+        V3.row(i) = displacement(V(i, 0), V(i, 1));
+    }
+
+    igl::writeOBJ(path, V3, F);
+}
+
+double TriWild::get_length2d(const Tuple& t) const
 {
     auto& m = *this;
     auto& v1 = t;
     auto v2 = t.switch_vertex(m);
-    auto v12d = m.vertex_attrs[v1.vid(m)].pos;
-    auto v22d = m.vertex_attrs[v2.vid(m)].pos;
-
     double length = (m.vertex_attrs[v1.vid(m)].pos - m.vertex_attrs[v2.vid(m)].pos).squaredNorm();
+    return length;
+}
+double TriWild::get_length3d(const Tuple& t) const
+{
+    auto& v1 = t;
+    auto v2 = t.switch_vertex(*this);
+    auto v12d = vertex_attrs[v1.vid(*this)].pos;
+    auto v22d = vertex_attrs[v2.vid(*this)].pos;
+
+    double length = 0.0;
 
     // add 3d displacement
-    auto v13d = m.m_triwild_displacement(v12d(0), v12d(1));
-    auto v23d = m.m_triwild_displacement(v22d(0), v22d(1));
+    auto v13d = mesh_parameters.m_triwild_displacement(v12d(0), v12d(1));
+    auto v23d = mesh_parameters.m_triwild_displacement(v22d(0), v22d(1));
     length = (v13d - v23d).squaredNorm();
     return length;
 }
@@ -272,13 +353,13 @@ double TriWild::get_quality(const Tuple& loc, int idx) const
     // energy = wmtk::AMIPS2D_energy(T);
     wmtk::State state = {};
     state.input_triangle = T;
-    state.scaling = m_target_l;
+    state.scaling = mesh_parameters.m_target_l;
     state.idx = idx;
-    m_energy->eval(state);
+    mesh_parameters.m_energy->eval(state);
     energy = state.value;
 
     // Filter for numerical issues
-    if (std::isinf(energy) || std::isnan(energy)) return MAX_ENERGY;
+    if (std::isinf(energy) || std::isnan(energy)) return mesh_parameters.MAX_ENERGY;
 
     return energy;
 }
@@ -287,7 +368,7 @@ std::pair<double, Eigen::Vector2d> TriWild::get_one_ring_energy(const Tuple& loc
 {
     auto one_ring = get_one_ring_tris_for_vertex(loc);
     wmtk::DofVector dofx;
-    if (is_boundary_vertex(loc) && m_boundary_parameter) {
+    if (is_boundary_vertex(loc) && mesh_parameters.m_boundary_parameter) {
         dofx.resize(1);
         dofx[0] = vertex_attrs[loc.vid(*this)].t; // t
     } else {
@@ -296,7 +377,7 @@ std::pair<double, Eigen::Vector2d> TriWild::get_one_ring_energy(const Tuple& loc
     }
     wmtk::NewtonMethodInfo nminfo;
     nminfo.curve_id = vertex_attrs[loc.vid(*this)].curve_id;
-    nminfo.target_length = this->m_target_l;
+    nminfo.target_length = mesh_parameters.m_target_l;
     nminfo.neighbors.resize(one_ring.size(), 4);
 
     auto is_inverted_coordinates = [this, &loc](auto& A, auto& B) {
@@ -332,10 +413,12 @@ std::pair<double, Eigen::Vector2d> TriWild::get_one_ring_energy(const Tuple& loc
         state.two_opposite_vertices = nminfo.neighbors.row(i);
         state.dofx = dofx;
         state.scaling = nminfo.target_length;
-        assert(m_boundary.m_arclengths.size() > 0);
-        assert(m_boundary.m_boundaries.size() > 0);
-        DofsToPositions dofs_to_pos(m_boundary, nminfo.curve_id);
-        m_energy->eval(state, dofs_to_pos);
+        if (mesh_parameters.m_boundary_parameter) {
+            assert(mesh_parameters.m_boundary.m_arclengths.size() > 0);
+            assert(mesh_parameters.m_boundary.m_boundaries.size() > 0);
+        }
+        DofsToPositions dofs_to_pos(mesh_parameters.m_boundary, nminfo.curve_id);
+        mesh_parameters.m_energy->eval(state, dofs_to_pos);
         total_energy += state.value;
         total_gradient += state.gradient;
     }
@@ -380,97 +463,120 @@ void TriWild::mesh_improvement(int max_its)
     double avg_len = 0.0;
     double pre_avg_len = 0.0;
     double pre_max_energy = -1.0;
-    wmtk::logger().info("target len {}", m_target_l);
+    double old_average = 1e-4;
+    wmtk::logger().info("target len {}", mesh_parameters.m_target_l);
     wmtk::logger().info("current length {}", avg_edge_len(*this));
-    js_log["edge_length_avg_start"] = avg_edge_len(*this);
+    // mesh_parameters.js_log["edge_length_avg_start"] = avg_edge_len(*this);
     for (int it = 0; it < max_its; it++) {
         wmtk::logger().info("\n========it {}========", it);
 
         ///energy check
-        wmtk::logger().info("current max energy {} stop energy {}", m_max_energy, m_stop_energy);
+        wmtk::logger().info(
+            "current max energy {} stop energy {}",
+            mesh_parameters.m_max_energy,
+            mesh_parameters.m_stop_energy);
         wmtk::logger().info("current length {}", avg_edge_len(*this));
 
-        js_log["iteration_" + std::to_string(it)]["num_v"] = vert_capacity();
-        js_log["iteration_" + std::to_string(it)]["num_f"] = tri_capacity();
-        js_log["iteration_" + std::to_string(it)]["energy_max"] = m_max_energy;
-        js_log["iteration_" + std::to_string(it)]["edge_len_avg"] = avg_edge_len(*this);
-        js_log["iteration_" + std::to_string(it)]["edge_len_target"] = m_target_l;
+        mesh_parameters.js_log["iteration_" + std::to_string(it)]["num_v"] = vert_capacity();
+        mesh_parameters.js_log["iteration_" + std::to_string(it)]["num_f"] = tri_capacity();
+        mesh_parameters.js_log["iteration_" + std::to_string(it)]["energy_max"] =
+            mesh_parameters.m_max_energy;
+        mesh_parameters.js_log["iteration_" + std::to_string(it)]["edge_len_avg"] =
+            avg_edge_len(*this);
+        mesh_parameters.js_log["iteration_" + std::to_string(it)]["edge_len_target"] =
+            mesh_parameters.m_target_l;
 
+        for (auto v : get_vertices()) {
+            if (is_boundary_vertex(v)) set_feature(v);
+        }
         split_all_edges();
         assert(invariants(get_faces()));
         consolidate_mesh();
-        write_obj("after_split_" + std::to_string(it) + ".obj");
+        write_displaced_obj(
+            "after_split_" + std::to_string(it) + ".obj",
+            mesh_parameters.m_triwild_displacement);
 
+        for (auto v : get_vertices()) {
+            if (is_boundary_vertex(v)) set_feature(v);
+        }
         collapse_all_edges();
         assert(invariants(get_faces()));
         consolidate_mesh();
-        write_obj("after_collapse_" + std::to_string(it) + ".obj");
+        write_displaced_obj(
+            "after_collapse_" + std::to_string(it) + ".obj",
+            mesh_parameters.m_triwild_displacement);
 
+        for (auto v : get_vertices()) {
+            if (is_boundary_vertex(v)) set_feature(v);
+        }
         swap_all_edges();
         assert(invariants(get_faces()));
         consolidate_mesh();
-        write_obj("after_swap_" + std::to_string(it) + ".obj");
+        write_displaced_obj(
+            "after_swap_" + std::to_string(it) + ".obj",
+            mesh_parameters.m_triwild_displacement);
 
+        for (auto v : get_vertices()) {
+            if (is_boundary_vertex(v)) set_feature(v);
+        }
         smooth_all_vertices();
         assert(invariants(get_faces()));
         consolidate_mesh();
-        write_obj("after_smooth_" + std::to_string(it) + ".obj");
+        write_displaced_obj(
+            "after_smooth_" + std::to_string(it) + ".obj",
+            mesh_parameters.m_triwild_displacement);
 
-        for (auto edge : get_edges()) {
-            if (is_boundary_edge(edge)) {
-                assert(is_boundary_vertex(edge));
-                assert(is_boundary_vertex(edge.switch_vertex(*this)));
-                auto uv1 = m_boundary.t_to_uv(
-                    vertex_attrs[edge.vid(*this)].curve_id,
-                    vertex_attrs[edge.vid(*this)].t);
-                auto projected_uv1 = m_get_closest_point(uv1);
-                assert((uv1 - projected_uv1.transpose()).squaredNorm() < 1e-8);
-                auto uv2 = m_boundary.t_to_uv(
-                    vertex_attrs[edge.switch_vertex(*this).vid(*this)].curve_id,
-                    vertex_attrs[edge.switch_vertex(*this).vid(*this)].t);
-                auto projected_uv2 = m_get_closest_point(uv2);
-                assert((uv2 - projected_uv2.transpose()).squaredNorm() < 1e-8);
-            }
-        }
+        auto avg_grad = (mesh_parameters.m_gradient / vert_capacity()).stableNorm();
 
         wmtk::logger().info(
-            "++++++++v {} t {} max energy {}++++++++",
+            "++++++++v {} t {} avg gradient {}++++++++",
             vert_capacity(),
             tri_capacity(),
-            m_max_energy);
-
+            mesh_parameters.m_gradient / vert_capacity());
+        mesh_parameters.js_log["iteration_" + std::to_string(it)]["avg_grad"] =
+            (mesh_parameters.m_gradient / vert_capacity()).stableNorm();
+        mesh_parameters.m_gradient = Eigen::Vector2d(0., 0.);
         avg_len = avg_edge_len(*this);
-        js_log["edge_len_avg_final"] = avg_len;
-        if (m_target_l <= 0 && m_max_energy < m_stop_energy) {
+        mesh_parameters.js_log["iteration_" + std::to_string(it)]["edge_len_avg_final"] = avg_len;
+        if (abs(avg_grad - old_average) < 1e-5) break;
+        old_average = avg_grad;
+        if (mesh_parameters.m_target_l <= 0 &&
+            mesh_parameters.m_max_energy < mesh_parameters.m_stop_energy) {
             break;
         }
 
-        if (m_target_l > 0 && (avg_len - m_target_l) * (avg_len - m_target_l) < 1e-4) {
+        if (mesh_parameters.m_target_l > 0 &&
+            (avg_len - mesh_parameters.m_target_l) * (avg_len - mesh_parameters.m_target_l) <
+                1e-4) {
             wmtk::logger().info(
                 "doesn't improve edge length. Stopping improvement.\n {} itr finished, max energy "
                 "{}, avg length {} ",
                 it,
-                m_max_energy,
+                mesh_parameters.m_max_energy,
                 avg_len);
             break;
         }
-        if (it > 0 &&
-            (m_target_l <= 0 &&
-             (pre_max_energy - m_stop_energy) * (pre_max_energy - m_stop_energy) < 1e-2)) {
+        if (it > 0 && (mesh_parameters.m_target_l <= 0 &&
+                       (pre_max_energy - mesh_parameters.m_stop_energy) *
+                               (pre_max_energy - mesh_parameters.m_stop_energy) <
+                           1e-2)) {
             wmtk::logger().info(
                 "doesn't improve energy. Stopping improvement.\n {} itr finished, max energy {}, "
                 "avg length {}",
                 it,
-                m_max_energy,
+                mesh_parameters.m_max_energy,
                 avg_len);
             break;
         }
         pre_avg_len = avg_len;
-        pre_max_energy = m_max_energy;
+        pre_max_energy = mesh_parameters.m_max_energy;
         consolidate_mesh();
     }
 
-    wmtk::logger().info("/////final: max energy {} , avg len {} ", m_max_energy, avg_len);
+    wmtk::logger().info(
+        "/////final: max energy {} , avg len {} ",
+        mesh_parameters.m_max_energy,
+        avg_len);
     consolidate_mesh();
 }
 void TriWild::flatten_dofs(Eigen::VectorXd& v_flat)
@@ -478,7 +584,7 @@ void TriWild::flatten_dofs(Eigen::VectorXd& v_flat)
     auto verts = get_vertices();
     v_flat.resize(verts.size() * 2);
     for (auto v : verts) {
-        if (is_boundary_vertex(v) && m_boundary_parameter) {
+        if (is_boundary_vertex(v) && mesh_parameters.m_boundary_parameter) {
             v_flat(v.vid(*this) * 2) = vertex_attrs[v.vid(*this)].t;
             v_flat(v.vid(*this) * 2 + 1) = std::numeric_limits<double>::infinity();
         } else {
@@ -501,27 +607,28 @@ double TriWild::get_mesh_energy(const Eigen::VectorXd& v_flat)
         v_matrix.setZero(3, 3);
         for (int i = 0; i < 3; i++) {
             auto vert = verts[i];
-            if (is_boundary_vertex(vert) && m_boundary_parameter) {
-                auto uv = m_boundary.t_to_uv(
+            if (is_boundary_vertex(vert) && mesh_parameters.m_boundary_parameter) {
+                auto uv = mesh_parameters.m_boundary.t_to_uv(
                     vertex_attrs[vert.vid(*this)].curve_id,
                     v_flat[vert.vid(*this) * 2]);
-                v_matrix.row(i) = m_triwild_displacement(uv(0), uv(1));
+                v_matrix.row(i) = mesh_parameters.m_triwild_displacement(uv(0), uv(1));
             } else {
                 auto u = v_flat[vert.vid(*this) * 2];
                 auto v = v_flat[vert.vid(*this) * 2 + 1];
-                v_matrix.row(i) = m_triwild_displacement(u, v);
+                v_matrix.row(i) = mesh_parameters.m_triwild_displacement(u, v);
             }
         }
 
-        assert(m_target_l != 0);
+        assert(mesh_parameters.m_target_l != 0);
         auto BA = v_matrix.row(1) - v_matrix.row(0);
         auto CA = v_matrix.row(2) - v_matrix.row(0);
         auto BC = v_matrix.row(1) - v_matrix.row(2);
-        total_energy += pow(BA.squaredNorm() - pow(m_target_l, 2), 2);
-        total_energy += pow(BC.squaredNorm() - pow(m_target_l, 2), 2);
-        total_energy += pow(CA.squaredNorm() - pow(m_target_l, 2), 2);
+        total_energy += pow(BA.squaredNorm() - pow(mesh_parameters.m_target_l, 2), 2);
+        total_energy += pow(BC.squaredNorm() - pow(mesh_parameters.m_target_l, 2), 2);
+        total_energy += pow(CA.squaredNorm() - pow(mesh_parameters.m_target_l, 2), 2);
         double area = (BA.cross(CA)).squaredNorm();
-        double A_hat = 0.5 * (std::sqrt(3) / 2) * 0.5 * pow(m_target_l, 2); // this is arbitrary now
+        double A_hat = 0.5 * (std::sqrt(3) / 2) * 0.5 *
+                       pow(mesh_parameters.m_target_l, 2); // this is arbitrary now
         assert(A_hat > 0);
         if (area <= 0) {
             total_energy += std::numeric_limits<double>::infinity();
@@ -533,5 +640,42 @@ double TriWild::get_mesh_energy(const Eigen::VectorXd& v_flat)
     }
     return total_energy;
 }
+/// debugging
+void TriWild::gradient_debug(int max_its)
+{
+    // debugging
+    // for (auto v : get_vertices()) {
+    //     if (is_boundary_vertex(v)) set_feature(v);
+    // }
+    split_all_edges();
+    assert(invariants(get_faces()));
+    consolidate_mesh();
+    write_obj("before_smooth.obj");
+    double old_average = 1e-4;
+    for (int it = 0; it < max_its; it++) {
+        wmtk::logger().info("\n========it {}========", it);
+        wmtk::logger().info("current length {}", avg_edge_len(*this));
+        // for (auto v : get_vertices()) {
+        //     if (is_boundary_vertex(v)) set_feature(v);
+        // }
+        smooth_all_vertices();
+        assert(invariants(get_faces()));
+        consolidate_mesh();
+        write_displaced_obj(
+            "smooth_" + std::to_string(it) + ".obj",
+            mesh_parameters.m_triwild_displacement);
 
+        wmtk::logger().info(
+            "++++++++v {} t {} avg gradient {}++++++++",
+            vert_capacity(),
+            tri_capacity(),
+            mesh_parameters.m_gradient / vert_capacity());
+        auto avg_grad = (mesh_parameters.m_gradient / vert_capacity()).stableNorm();
+
+        mesh_parameters.js_log["iteration_" + std::to_string(it)]["avg_grad"] = avg_grad;
+        if (abs(avg_grad - old_average) < 1e-5) break;
+        old_average = avg_grad;
+        mesh_parameters.m_gradient = Eigen::Vector2d(0., 0.);
+    }
+}
 } // namespace triwild
