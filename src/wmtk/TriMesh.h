@@ -511,8 +511,8 @@ public:
     /**
      * @brief Get the one ring edges for a vertex, edges are the incident edges
      *
-     * @param t tuple pointing to a vertex
-     * @return one-ring
+     * @param t
+     * @return tuple pointing to the vertex referred to by t from one_ring vertices
      */
     std::vector<Tuple> get_one_ring_edges_for_vertex(const Tuple& t) const;
 
