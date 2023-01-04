@@ -12,7 +12,6 @@ auto wmtk::load_image_exr_red_channel(const std::filesystem::path& path)
     -> std::tuple<size_t, size_t, std::vector<float>>
 {
     using namespace wmtk;
-
     spdlog::trace("[load_image_exr_red_channel] start \"{}\"", path.string());
     assert(std::filesystem::exists(path));
     const std::string filename_ = path.string();
@@ -122,11 +121,11 @@ auto wmtk::load_image_exr_red_channel(const std::filesystem::path& path)
         return exr_image_;
     }();
 
-    spdlog::trace(
+    wmtk::logger().info(
         "[load_image_exr_red_channel] num_channels {} tiled {}",
         exr_header.num_channels,
         exr_header.tiled);
-    spdlog::trace("[load_image_exr_red_channel] index_red {}", index_red);
+    wmtk::logger().info("[load_image_exr_red_channel] index_red {}", index_red);
     assert(index_red >= 0);
     assert(!exr_header.tiled);
 
@@ -140,7 +139,7 @@ auto wmtk::load_image_exr_red_channel(const std::filesystem::path& path)
     FreeEXRHeader(&exr_header);
     FreeEXRImage(&exr_image);
 
-    spdlog::trace("[load_image_exr_red_channel] done \"{}\"", path.string());
+    wmtk::logger().info("[load_image_exr_red_channel] done \"{}\"", path.string());
 
     return {
         static_cast<size_t>(exr_image.width),

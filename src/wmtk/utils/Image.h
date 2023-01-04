@@ -10,6 +10,7 @@
 #include <stb_image_write.h>
 #include "bicubic_interpolation.h"
 #include "load_image_exr.h"
+#include "save_image_exr.h"
 
 namespace wmtk {
 class Image
@@ -110,8 +111,9 @@ bool Image::save(const std::filesystem::path& path) const
         auto res = stbi_write_hdr(path.string().c_str(), w, h, 1, buffer.data());
         assert(res);
     }
-
-    else {
+    if (path.extension() == ".exr") {
+        auto res = save_image_exr_red_channel(w, h, buffer, path);
+    } else {
         spdlog::trace("[save_image_hdr] format doesn't support \"{}\"", path.string());
         return false;
     }
@@ -132,18 +134,15 @@ void Image::load(const std::filesystem::path& path)
         std::tie(w, h, buffer_vector) = load_image_exr_red_channel(path);
         buffer = &buffer_vector[0];
         assert(buffer != nullptr);
-    }
-
-    if (path.extension() == ".hdr") {
+    } else if (path.extension() == ".hdr") {
         stbi_ldr_to_hdr_gamma(1.f);
         buffer = stbi_loadf(path.c_str(), &w, &h, &channels, 1);
         assert(buffer != nullptr);
-    }
-
-    else {
+    } else {
         spdlog::trace("[load_image] format doesn't support \"{}\"", path.string());
         return;
     }
+
     m_image.resize(w, h);
 
     for (int i = 0; i < h; i++) {
