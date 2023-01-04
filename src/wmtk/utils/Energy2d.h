@@ -96,14 +96,14 @@ public:
 class AMIPS : public wmtk::Energy
 {
 public:
-    void eval(State& state) const override;
-    void eval(State& state, DofsToPositions& dofstopositions) const override{};
+    void eval(State& state) const override{};
+    void eval(State& state, DofsToPositions& dofstopositions) const override;
 };
 class SymDi : public wmtk::Energy
 {
 public:
-    void eval(State& state) const override;
-    void eval(State& state, DofsToPositions& dofstopositions) const override{};
+    void eval(State& state) const override{};
+    void eval(State& state, DofsToPositions& dofstopositions) const override;
 };
 class TwoAndAHalf : public wmtk::Energy
 {

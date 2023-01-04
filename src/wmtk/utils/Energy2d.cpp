@@ -1,10 +1,17 @@
 #include "Energy2d.h"
 
 namespace wmtk {
-void AMIPS::eval(State& state) const
+void AMIPS::eval(State& state, DofsToPositions& dof_to_positions) const
 {
     DiffScalarBase::setVariableCount(2);
-    auto input_triangle = state.input_triangle;
+    auto [x1, y1] = dof_to_positions.eval(state.dofx);
+    auto input_triangle = std::array{
+        x1.getValue(),
+        y1.getValue(),
+        state.two_opposite_vertices(0, 0),
+        state.two_opposite_vertices(0, 1),
+        state.two_opposite_vertices(0, 2),
+        state.two_opposite_vertices(0, 3)};
     auto target_triangle = state.target_triangle;
     for (auto i = 0; i < 6; i++) target_triangle[i] = state.scaling * target_triangle[i];
     int i = state.idx;
@@ -49,11 +56,18 @@ void AMIPS::eval(State& state) const
     state.hessian = AMIPS_function.getHessian();
 }
 
-void SymDi::eval(State& state) const
+void SymDi::eval(State& state, DofsToPositions& dof_to_positions) const
 {
     DiffScalarBase::setVariableCount(2);
 
-    auto input_triangle = state.input_triangle;
+    auto [x1, y1] = dof_to_positions.eval(state.dofx);
+    auto input_triangle = std::array{
+        x1.getValue(),
+        y1.getValue(),
+        state.two_opposite_vertices(0, 0),
+        state.two_opposite_vertices(0, 1),
+        state.two_opposite_vertices(0, 2),
+        state.two_opposite_vertices(0, 3)};
     auto target_triangle = state.target_triangle;
     for (auto i = 0; i < 6; i++) target_triangle[i] = state.scaling * target_triangle[i];
     int i = state.idx;
