@@ -13,8 +13,6 @@
 #include <sec/envelope/SampleEnvelope.hpp>
 #include "Parameters.h"
 
-using json = nlohmann::json;
-
 namespace triwild {
 class VertexAttributes
 {
@@ -27,6 +25,7 @@ public:
 
     // Vertices marked as fixed cannot be modified by any local operation
     bool fixed = false;
+    bool boundary_vertex = false;
 };
 
 class TriWild : public wmtk::TriMesh
@@ -38,33 +37,18 @@ public:
     using Scalar = double;
 
 public:
-    json js_log;
-    // default envelop use_exact = true
-    sample_envelope::SampleEnvelope m_envelope;
-
-    bool m_has_envelope = false;
-    // Energy Assigned to undefined energy
-    // TODO: why not the max double?
-    const double MAX_ENERGY = 1e50;
-    double m_target_l = -1.; // targeted edge length
-    double m_target_lr = 5e-2; // targeted relative edge length
-    double m_eps = 0.0; // envelope size default to 0.0
-    bool m_bnd_freeze = false; // freeze boundary default to false
-    double m_max_energy = -1;
-    double m_stop_energy = 5;
-    std::function<Eigen::RowVector2d(const Eigen::RowVector2d&)> m_get_closest_point;
-    std::unique_ptr<wmtk::Energy> m_energy;
-    std::function<Eigen::Vector3d(double&, double&)> m_triwild_displacement =
-        [](double& u, double& v) -> Eigen::Vector3d {
-        Eigen::Vector3d p(u, v, 0.);
-        return p;
-    }; // used for heuristic split, collapse. Default to return (u,v,0)
-    wmtk::Boundary m_boundary;
-    bool m_boundary_parameter = false;
-
     TriWild(){};
 
     virtual ~TriWild(){};
+
+    Parameters mesh_parameters;
+    // set often used parameters in a bundle. User can also set each used parameters that are used
+    // separately
+    void set_parameters(
+        const double target_edge_length,
+        const std::function<Eigen::Vector3d(const double&, const double&)>& displacement_function,
+        const ENERGY_TYPE energy_type,
+        const bool boundary_parameter);
 
     // Store the per-vertex attributes
     wmtk::AttributeCollection<VertexAttributes> vertex_attrs;
@@ -77,29 +61,26 @@ public:
     };
     tbb::enumerable_thread_specific<InfoCache> cache;
 
-    void set_energy(std::unique_ptr<wmtk::Energy> f);
-    void set_projection(
-        lagrange::bvh::EdgeAABBTree<RowMatrix2<Scalar>, RowMatrix2<Index>, 2>& aabb);
+    void set_energy(const ENERGY_TYPE energy_type);
+    void set_energy(std::unique_ptr<wmtk::Energy> f) { mesh_parameters.m_energy = std::move(f); }
+    void set_projection();
+
+    Eigen::Matrix<uint64_t, Eigen::Dynamic, 2, Eigen::RowMajor> get_bnd_edge_matrix();
+
 
     bool invariants(const std::vector<Tuple>& new_tris);
 
+    void set_feature(Tuple& t); // find the feature vertex and freeze them
+
     // Initializes the mesh
-    // default with strict boundary freeze
     /**
-     * @brief Create a mesh object
+     * @brief Create a mesh object. Assumed the parameters are already set before here. Can,
+     * therefore, construct member variables according to the parameters
      *
      * @param V igl format vertices
      * @param F igl format faces
-     * @param eps absolute envelop size
-     * @param bnd_freeze boundary not moving
      */
-    void create_mesh(
-        const Eigen::MatrixXd& V,
-        const Eigen::MatrixXi& F,
-        double eps = 0.0,
-        bool bnd_freeze = true);
-
-    Eigen::Matrix<uint64_t, Eigen::Dynamic, 2, Eigen::RowMajor> get_bnd_edge_matrix();
+    void create_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F);
 
     // Exports V and F of the stored mesh
     void export_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F);
@@ -110,6 +91,9 @@ public:
     void write_displaced_obj(
         const std::string& path,
         const std::function<double(double, double)>& displacement);
+    void write_displaced_obj(
+        const std::string& path,
+        const std::function<Eigen::Vector3d(double, double)>& displacement);
 
     // Computes the quality of a triangle
     double get_quality(const Tuple& loc, int idx = 0) const;
@@ -142,7 +126,10 @@ public:
     bool swap_edge_after(const Tuple& t) override;
 
     void mesh_improvement(int max_its);
-    double get_length2(const Tuple& t) const;
+    void gradient_debug(int max_its);
+
+    double get_length2d(const Tuple& t) const;
+    double get_length3d(const Tuple& t) const;
 
     void flatten_dofs(Eigen::VectorXd& v_flat);
     double get_mesh_energy(const Eigen::VectorXd& v_flat);
