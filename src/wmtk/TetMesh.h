@@ -6,18 +6,18 @@
 #include <wmtk/utils/Logger.hpp>
 
 #include <tbb/concurrent_vector.h>
-#include <tbb/spin_mutex.h>
 #include <tbb/enumerable_thread_specific.h>
+#include <tbb/spin_mutex.h>
 
 #include <Tracy.hpp>
 
 #include <array>
 #include <cassert>
+#include <limits>
 #include <map>
 #include <optional>
 #include <queue>
 #include <vector>
-#include <limits>
 
 namespace wmtk {
 class TetMesh
@@ -53,6 +53,9 @@ public:
         size_t m_global_tid = std::numeric_limits<size_t>::max();
 
         int m_hash = 0;
+
+    public:
+        void update_hash(const TetMesh& m) { m_hash = m.m_tet_connectivity[m_global_tid].hash; }
 
     private:
         /**
@@ -489,11 +492,13 @@ public:
     AbstractAttributeContainer *p_vertex_attrs, *p_edge_attrs, *p_face_attrs, *p_tet_attrs;
     AbstractAttributeContainer vertex_attrs, edge_attrs, face_attrs, tet_attrs;
 
+protected:
+    vector<TetrahedronConnectivity> m_tet_connectivity;
 
 private:
     // Stores the connectivity of the mesh
     vector<VertexConnectivity> m_vertex_connectivity;
-    vector<TetrahedronConnectivity> m_tet_connectivity;
+    // vector<TetrahedronConnectivity> m_tet_connectivity;
     std::atomic_long current_vert_size;
     std::atomic_long current_tet_size;
     tbb::spin_mutex vertex_connectivity_lock;

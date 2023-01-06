@@ -34,9 +34,9 @@ public:
         size_t m_fid = -1;
         size_t m_hash = -1;
 
+    public:
         void update_hash(const TriMesh& m);
 
-    public:
         void print_info();
 
         //         v2        /
@@ -278,9 +278,12 @@ public:
     AbstractAttributeContainer* p_edge_attrs = nullptr;
     AbstractAttributeContainer* p_face_attrs = nullptr;
 
+protected:
+    vector<TriangleConnectivity> m_tri_connectivity;
+
 private:
     vector<VertexConnectivity> m_vertex_connectivity;
-    vector<TriangleConnectivity> m_tri_connectivity;
+    // vector<TriangleConnectivity> m_tri_connectivity;
     std::atomic_long current_vert_size;
     std::atomic_long current_tri_size;
     tbb::spin_mutex vertex_connectivity_lock;

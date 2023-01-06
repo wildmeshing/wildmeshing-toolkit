@@ -91,13 +91,14 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     release_protect_attributes();
 
     // new_edges
-    assert(std::is_sorted(new_tet_id.begin(), new_tet_id.end()));
-    for (size_t t_id : new_tet_id) {
-        for (int j = 0; j < 6; j++) {
-            new_edges.push_back(tuple_from_edge(t_id, j));
-        }
-    }
-    unique_edge_tuples(*this, new_edges);
+    // assert(std::is_sorted(new_tet_id.begin(), new_tet_id.end()));
+    // for (size_t t_id : new_tet_id) {
+    //     for (int j = 0; j < 6; j++) {
+    //         new_edges.push_back(tuple_from_edge(t_id, j));
+    //     }
+    // }
+    // unique_edge_tuples(*this, new_edges);
+    new_edges = {{new_loc}};
 
     return true;
 }
