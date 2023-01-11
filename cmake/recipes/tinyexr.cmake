@@ -54,3 +54,5 @@ target_include_directories(tinyexr
 target_link_libraries(tinyexr
     PRIVATE
     miniz)
+
+target_compile_features(tinyexr PUBLIC cxx_std_17)

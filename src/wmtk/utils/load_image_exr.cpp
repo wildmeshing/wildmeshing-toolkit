@@ -89,11 +89,22 @@ auto wmtk::load_image_exr_red_channel(const std::filesystem::path& path)
         for (int i = 0; i < exr_header_.num_channels; i++) {
             if (strcmp(exr_header_.channels[i].name, "R") == 0) index_red_ = i;
         }
+        if (index_red_ < 0) {
+            spdlog::warn("Could not find R channel. Looking for Y channel instead.");
+            for (int i = 0; i < exr_header_.num_channels; i++) {
+                if (strcmp(exr_header_.channels[i].name, "Y") == 0) index_red_ = i;
+            }
+        }
 
         if (index_red_ < 0) {
+            std::vector<std::string> channels;
+            for (int i = 0; i < exr_header_.num_channels; i++) {
+                channels.push_back(exr_header_.channels[i].name);
+            }
             spdlog::error(
-                "failed LoadImageEXR \"{}\" \"can't find all expected channels\"",
-                path.string());
+                "failed LoadImageEXR \"{}\" can't find all expected channels: [{}]",
+                path.string(),
+                fmt::join(channels, ","));
             FreeEXRHeader(&exr_header_);
             throw std::runtime_error("LoadImageEXRError");
         }
