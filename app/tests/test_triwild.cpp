@@ -117,14 +117,14 @@ TEST_CASE("triwild_boundary", "[triwild_int]")
 
     // detect the boundary and freeze the vertices on it
     triwild.for_each_vertex([&](auto& v) {
-        triwild.vertex_attrs[v.vid(triwild)].fixed = triwild.is_boundary_vertex(v);
+        triwild.vertex_attrs[v.vid(triwild)].boundary_vertex = triwild.is_boundary_vertex(v);
     });
 
-    REQUIRE(triwild.vertex_attrs[0].fixed == true);
-    REQUIRE(triwild.vertex_attrs[1].fixed == true);
-    REQUIRE(triwild.vertex_attrs[2].fixed == true);
-    REQUIRE(triwild.vertex_attrs[3].fixed == true);
-    REQUIRE(triwild.vertex_attrs[4].fixed == false);
+    REQUIRE(triwild.vertex_attrs[0].boundary_vertex == true);
+    REQUIRE(triwild.vertex_attrs[1].boundary_vertex == true);
+    REQUIRE(triwild.vertex_attrs[2].boundary_vertex == true);
+    REQUIRE(triwild.vertex_attrs[3].boundary_vertex == true);
+    REQUIRE(triwild.vertex_attrs[4].boundary_vertex == false);
 
     for (unsigned i = 0; i < 10; ++i) triwild.smooth_all_vertices();
 

@@ -31,6 +31,7 @@ public:
         return p;
     }; // dafault is to return the current point. Legacy, was once used for boundary projection
 
+    // this need to be a function acting on the uv domain [0,1]
     std::function<Eigen::Vector3d(const double&, const double&)> m_triwild_displacement =
         [](const double& u, const double& v) -> Eigen::Vector3d {
         Eigen::Vector3d p(u, v, 0.);

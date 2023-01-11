@@ -115,9 +115,7 @@ bool TriWild::split_edge_after(const Tuple& edge_tuple)
     if (vertex_attrs[cache.local().v1].boundary_vertex &&
         vertex_attrs[cache.local().v2].boundary_vertex) {
         vertex_attrs[vid].boundary_vertex = true;
-        vertex_attrs[vid].t = std::fmod(
-            (vertex_attrs[cache.local().v1].t + vertex_attrs[cache.local().v2].t) / 2.,
-            mesh_parameters.m_boundary.m_arclengths[vertex_attrs[vid].curve_id].back());
+        vertex_attrs[vid].t = mesh_parameters.m_boundary.uv_to_t(vertex_attrs[vid].pos);
     }
     for (auto e : get_one_ring_edges_for_vertex(edge_tuple.switch_vertex(*this))) {
         vertex_attrs[e.switch_vertex(*this).vid(*this)].boundary_vertex =

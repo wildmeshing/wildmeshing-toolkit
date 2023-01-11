@@ -132,7 +132,23 @@ bool TriWild::collapse_edge_after(const Tuple& edge_tuple)
     double mod_length =
         mesh_parameters.m_boundary.m_arclengths[vertex_attrs[edge_tuple.vid(*this)].curve_id]
             .back();
-    if (vertex_attrs[cache.local().v1].boundary_vertex) {
+
+    if (vertex_attrs[cache.local().v1].boundary_vertex &&
+        vertex_attrs[cache.local().v2].boundary_vertex) {
+        vertex_attrs[vid].boundary_vertex = true;
+        vertex_attrs[vid].curve_id = vertex_attrs[cache.local().v1].curve_id;
+        // compare collapse to which one would give lower energy
+        vertex_attrs[vid].pos = vertex_attrs[cache.local().v1].pos;
+        vertex_attrs[vid].t = std::fmod(vertex_attrs[cache.local().v1].t, mod_length);
+        auto energy1 = get_one_ring_energy(edge_tuple).first;
+        vertex_attrs[vid].pos = vertex_attrs[cache.local().v2].pos;
+        vertex_attrs[vid].t = std::fmod(vertex_attrs[cache.local().v2].t, mod_length);
+        auto energy2 = get_one_ring_energy(edge_tuple).first;
+        p = energy1 < energy2 ? vertex_attrs[cache.local().v1].pos
+                              : vertex_attrs[cache.local().v2].pos;
+        t_parameter = energy1 < energy2 ? std::fmod(vertex_attrs[cache.local().v1].t, mod_length)
+                                        : std::fmod(vertex_attrs[cache.local().v2].t, mod_length);
+    } else if (vertex_attrs[cache.local().v1].boundary_vertex) {
         p = vertex_attrs[cache.local().v1].pos;
         t_parameter = std::fmod(vertex_attrs[cache.local().v1].t, mod_length);
     } else if (vertex_attrs[cache.local().v2].boundary_vertex) {
