@@ -66,8 +66,6 @@ float Image::get(const Eigen::Vector2d& p) const
     float y = static_cast<float>(p.y() * size); // p.y() == p[1]
     // use bicubic interpolation
 
-    BicubicMatrix A_inv = make_samples_to_bicubic_coeffs_operator();
-
     BicubicVector sample_vector = extract_samples(
         static_cast<size_t>(w),
         static_cast<size_t>(h),
@@ -76,7 +74,7 @@ float Image::get(const Eigen::Vector2d& p) const
         y,
         m_mode_x,
         m_mode_y);
-    BicubicVector bicubic_coeff = A_inv * sample_vector;
+    BicubicVector bicubic_coeff = get_bicubic_matrix() * sample_vector;
     return eval_bicubic_coeffs(bicubic_coeff, x, y);
 }
 

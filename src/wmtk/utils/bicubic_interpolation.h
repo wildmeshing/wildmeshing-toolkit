@@ -19,6 +19,8 @@ BicubicVector extract_samples(
 
 BicubicMatrix make_samples_to_bicubic_coeffs_operator();
 
+const BicubicMatrix & get_bicubic_matrix();
+
 float eval_bicubic_coeffs(const BicubicVector& coeffs, const float xx, const float yy);
 
 } // namespace wmtk

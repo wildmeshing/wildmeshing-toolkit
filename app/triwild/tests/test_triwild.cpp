@@ -1461,7 +1461,7 @@ TEST_CASE("stripe")
 {
     Image image(512, 512);
     image.load(
-        "/home/yunfan/data/plastic_stripes_Height.exr",
+        "/Users/jedumas/Downloads/plastic_stripes_Height.exr",
         WrappingMode::MIRROR_REPEAT,
         WrappingMode::MIRROR_REPEAT);
     auto displacement_vector = [&image](const double& u, const double& v) -> Eigen::Vector3d {
@@ -1472,7 +1472,7 @@ TEST_CASE("stripe")
         auto p = Eigen::Vector2d(u, v);
         return image.get(p);
     };
-    Eigen::MatrixXd V(3, 2);
+    Eigen::MatrixXd V(4, 2);
     V.row(0) << 0, 0;
     V.row(1) << 1, 0;
     V.row(2) << 0, 1;

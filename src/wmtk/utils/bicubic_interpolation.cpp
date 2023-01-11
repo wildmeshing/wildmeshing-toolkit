@@ -116,6 +116,11 @@ wmtk::BicubicMatrix wmtk::make_samples_to_bicubic_coeffs_operator()
     return ope_inv;
 }
 
+const BicubicMatrix & wmtk::get_bicubic_matrix() {
+    static BicubicMatrix mat = make_samples_to_bicubic_coeffs_operator();
+    return mat;
+}
+
 float wmtk::eval_bicubic_coeffs(const wmtk::BicubicVector& coeffs, const float sx, const float sy)
 {
     const auto xx = sx - static_cast<size_t>(sx);
