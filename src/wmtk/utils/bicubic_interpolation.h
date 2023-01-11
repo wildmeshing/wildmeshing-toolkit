@@ -2,6 +2,7 @@
 
 #include <Eigen/Dense>
 
+enum WrappingMode { REPEAT, MIRROR_REPEAT, CLAMP_TO_EDGE };
 namespace wmtk {
 
 using BicubicVector = Eigen::Matrix<float, 16, 1>;
@@ -12,7 +13,9 @@ BicubicVector extract_samples(
     const size_t height,
     const std::vector<float>& buffer,
     const float xx,
-    const float yy);
+    const float yy,
+    const WrappingMode mode_x,
+    const WrappingMode mode_y);
 
 BicubicMatrix make_samples_to_bicubic_coeffs_operator();
 

@@ -7,37 +7,55 @@ wmtk::BicubicVector wmtk::extract_samples(
     const size_t height,
     const std::vector<float>& buffer,
     const float sx_,
-    const float sy_)
+    const float sy_,
+    const WrappingMode mode_x,
+    const WrappingMode mode_y)
 {
     wmtk::BicubicVector samples;
 
-    const auto get_buffer_value =
-        [&width, &height, &buffer](const size_t xx, const size_t yy) -> float {
-        const size_t index = (yy % height) * width + (xx % width);
+    const auto get_coordinate = [](const int x, const int size, const WrappingMode mode) -> int {
+        switch (mode) {
+        case WrappingMode::REPEAT: return (x + size) % size;
+
+        case WrappingMode::MIRROR_REPEAT:
+            if (x < 0)
+                return -x;
+            else if (x < size)
+                return x;
+            else
+                return 2 * size - x - 1;
+        case WrappingMode::CLAMP_TO_EDGE: return std::clamp(x, 0, size - 1);
+        default: return (x + size) % size;
+        }
+    };
+    const auto get_buffer_value = [&](int xx, int yy) -> float {
+        xx = get_coordinate(xx, static_cast<int>(width), mode_x);
+        yy = get_coordinate(yy, static_cast<int>(height), mode_y);
+        const int index = (yy % height) * width + (xx % width);
         return buffer[index];
     };
 
-    const auto sx = static_cast<size_t>(sx_);
-    const auto sy = static_cast<size_t>(sy_);
+    const auto sx = static_cast<int>(std::floor(sx_));
+    const auto sy = static_cast<int>(std::floor(sy_));
     assert(static_cast<float>(sx) <= sx_);
     assert(static_cast<float>(sy) <= sy_);
 
-    samples(0) = get_buffer_value(sx + width - 1, sy + height - 1);
-    samples(1) = get_buffer_value(sx, sy + height - 1);
-    samples(2) = get_buffer_value(sx + 1, sy + height - 1);
-    samples(3) = get_buffer_value(sx + 2, sy + height - 1);
+    samples(0) = get_buffer_value(sx - 1, sy - 1);
+    samples(1) = get_buffer_value(sx, sy - 1);
+    samples(2) = get_buffer_value(sx + 1, sy - 1);
+    samples(3) = get_buffer_value(sx + 2, sy - 1);
 
-    samples(4) = get_buffer_value(sx + width - 1, sy);
+    samples(4) = get_buffer_value(sx - 1, sy);
     samples(5) = get_buffer_value(sx, sy);
     samples(6) = get_buffer_value(sx + 1, sy);
     samples(7) = get_buffer_value(sx + 2, sy);
 
-    samples(8) = get_buffer_value(sx + width - 1, sy + 1);
+    samples(8) = get_buffer_value(sx - 1, sy + 1);
     samples(9) = get_buffer_value(sx, sy + 1);
     samples(10) = get_buffer_value(sx + 1, sy + 1);
     samples(11) = get_buffer_value(sx + 2, sy + 1);
 
-    samples(12) = get_buffer_value(sx + width - 1, sy + 2);
+    samples(12) = get_buffer_value(sx - 1, sy + 2);
     samples(13) = get_buffer_value(sx, sy + 2);
     samples(14) = get_buffer_value(sx + 1, sy + 2);
     samples(15) = get_buffer_value(sx + 2, sy + 2);

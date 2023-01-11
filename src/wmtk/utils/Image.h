@@ -11,13 +11,17 @@
 #include "bicubic_interpolation.h"
 #include "load_image_exr.h"
 #include "save_image_exr.h"
-
 namespace wmtk {
 class Image
 {
 protected:
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
         m_image; // saving scanline images
+    WrappingMode m_mode_x;
+    WrappingMode m_mode_y;
+    // need to unroll into a vector
+    std::vector<float> m_buffer;
+
 public:
     Image(int height_, int width_) { m_image.resize(height_, width_); };
 
@@ -29,7 +33,13 @@ public:
     double get_raw(const Eigen::Vector2i& index) const { return m_image(index.y(), index.x()); };
     bool set(const std::function<double(const double&, const double&)>& f);
     bool save(const std::filesystem::path& path) const;
-    void load(const std::filesystem::path& path);
+    void
+    load(const std::filesystem::path& path, const WrappingMode mode_x, const WrappingMode mode_y);
+    void set_wrapping_mode(WrappingMode mode_x, WrappingMode mode_y)
+    {
+        m_mode_x = mode_x;
+        m_mode_y = mode_y;
+    };
 };
 
 float modulo(double x, double n)
@@ -57,19 +67,17 @@ double Image::get(const Eigen::Vector2d& p) const
     float x = static_cast<float>(p.x() * size); // p.x() == p[0]
     float y = static_cast<float>(p.y() * size); // p.y() == p[1]
     // use bicubic interpolation
-    // need to unroll into a vector
-    std::vector<float> buffer;
-    buffer.resize(w * h);
-    for (auto i = 0; i < h; i++) {
-        for (auto j = 0; j < w; j++) {
-            buffer[i * w + j] = static_cast<float>(m_image(i, j));
-        }
-    }
 
     BicubicMatrix A_inv = make_samples_to_bicubic_coeffs_operator();
 
-    BicubicVector sample_vector =
-        extract_samples(static_cast<size_t>(w), static_cast<size_t>(h), buffer, x, y);
+    BicubicVector sample_vector = extract_samples(
+        static_cast<size_t>(w),
+        static_cast<size_t>(h),
+        m_buffer,
+        x,
+        y,
+        m_mode_x,
+        m_mode_y);
     BicubicVector bicubic_coeff = A_inv * sample_vector;
     double value = static_cast<double>(eval_bicubic_coeffs(bicubic_coeff, x, y));
     return value;
@@ -91,6 +99,7 @@ bool Image::set(const std::function<double(const double&, const double&)>& f)
             m_image(i, j) = f(u, v);
         }
     }
+    return true;
 }
 
 // save to hdr or exr
@@ -124,19 +133,17 @@ bool Image::save(const std::filesystem::path& path) const
 }
 
 // load from hdr or exr
-void Image::load(const std::filesystem::path& path)
+void Image::load(
+    const std::filesystem::path& path,
+    const WrappingMode mode_x,
+    const WrappingMode mode_y)
 {
     int w, h, channels;
     float* buffer;
     channels = 1;
-    std::vector<float> buffer_vector;
     if (path.extension() == ".exr") {
-        std::tie(w, h, buffer_vector) = load_image_exr_red_channel(path);
-        buffer = &buffer_vector[0];
-        assert(buffer != nullptr);
-    } else if (path.extension() == ".hdr") {
-        stbi_ldr_to_hdr_gamma(1.f);
-        buffer = stbi_loadf(path.c_str(), &w, &h, &channels, 1);
+        std::tie(w, h, m_buffer) = load_image_exr_red_channel(path);
+        buffer = &m_buffer[0];
         assert(buffer != nullptr);
     } else {
         spdlog::trace("[load_image] format doesn't support \"{}\"", path.string());
@@ -151,5 +158,6 @@ void Image::load(const std::filesystem::path& path)
             buffer++;
         }
     }
+    set_wrapping_mode(mode_x, mode_y);
 }
 } // namespace wmtk
