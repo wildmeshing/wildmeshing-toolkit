@@ -1346,7 +1346,7 @@ TEST_CASE("exr saving and loading")
     }
     Image image3(512, 512);
     image3.load(
-        "/home/yunfan/data/plastic_stripes_Height.exr",
+        "/Users/jedumas/Downloads/plastic_stripes_Height.exr",
         WrappingMode::MIRROR_REPEAT,
         WrappingMode::MIRROR_REPEAT);
     for (int i = 0; i < 10; i++) {

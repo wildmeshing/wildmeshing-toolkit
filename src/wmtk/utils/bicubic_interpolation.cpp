@@ -5,7 +5,7 @@ using namespace wmtk;
 wmtk::BicubicVector wmtk::extract_samples(
     const size_t width,
     const size_t height,
-    const std::vector<float>& buffer,
+    const float * buffer,
     const float sx_,
     const float sy_,
     const WrappingMode mode_x,

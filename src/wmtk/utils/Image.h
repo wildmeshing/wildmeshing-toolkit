@@ -15,12 +15,10 @@ namespace wmtk {
 class Image
 {
 protected:
-    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
+    Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
         m_image; // saving scanline images
     WrappingMode m_mode_x;
     WrappingMode m_mode_y;
-    // need to unroll into a vector
-    std::vector<float> m_buffer;
 
 public:
     Image(int height_, int width_) { m_image.resize(height_, width_); };
@@ -29,9 +27,9 @@ public:
     // point coordinates between [0, 1]
     int width() const { return static_cast<int>(m_image.cols()); };
     int height() const { return static_cast<int>(m_image.rows()); };
-    double get(const Eigen::Vector2d& p) const;
-    double get_raw(const Eigen::Vector2i& index) const { return m_image(index.y(), index.x()); };
-    bool set(const std::function<double(const double&, const double&)>& f);
+    float get(const Eigen::Vector2d& p) const;
+    float get_raw(const Eigen::Vector2i& index) const { return m_image(index.y(), index.x()); };
+    bool set(const std::function<float(const double&, const double&)>& f);
     bool save(const std::filesystem::path& path) const;
     void
     load(const std::filesystem::path& path, const WrappingMode mode_x, const WrappingMode mode_y);
@@ -58,7 +56,7 @@ unsigned char double_to_unsignedchar(const double d)
 
 unsigned char unsignedchar_to_double(const unsigned char c){};
 
-double Image::get(const Eigen::Vector2d& p) const
+float Image::get(const Eigen::Vector2d& p) const
 {
     int w = width();
     int h = height();
@@ -73,18 +71,17 @@ double Image::get(const Eigen::Vector2d& p) const
     BicubicVector sample_vector = extract_samples(
         static_cast<size_t>(w),
         static_cast<size_t>(h),
-        m_buffer,
+        m_image.data(),
         x,
         y,
         m_mode_x,
         m_mode_y);
     BicubicVector bicubic_coeff = A_inv * sample_vector;
-    double value = static_cast<double>(eval_bicubic_coeffs(bicubic_coeff, x, y));
-    return value;
+    return eval_bicubic_coeffs(bicubic_coeff, x, y);
 }
 
 // set an image to have same value as the analytical function and save it to the file given
-bool Image::set(const std::function<double(const double&, const double&)>& f)
+bool Image::set(const std::function<float(const double&, const double&)>& f)
 {
     int h = height();
     int w = width();
@@ -139,12 +136,11 @@ void Image::load(
     const WrappingMode mode_y)
 {
     int w, h, channels;
-    float* buffer;
     channels = 1;
+    std::vector<float> buffer;
     if (path.extension() == ".exr") {
-        std::tie(w, h, m_buffer) = load_image_exr_red_channel(path);
-        buffer = &m_buffer[0];
-        assert(buffer != nullptr);
+        std::tie(w, h, buffer) = load_image_exr_red_channel(path);
+        assert(!buffer.empty());
     } else {
         spdlog::trace("[load_image] format doesn't support \"{}\"", path.string());
         return;
@@ -152,10 +148,9 @@ void Image::load(
 
     m_image.resize(w, h);
 
-    for (int i = 0; i < h; i++) {
+    for (int i = 0, k = 0; i < h; i++) {
         for (int j = 0; j < w; j++) {
-            m_image(i, j) = (*buffer);
-            buffer++;
+            m_image(i, j) = buffer[k++];
         }
     }
     set_wrapping_mode(mode_x, mode_y);
