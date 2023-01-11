@@ -159,7 +159,7 @@ public:
          * @brief is the vertex removed
          *
          */
-        bool m_is_removed = false;
+        bool m_is_removed = true;
 
         inline size_t& operator[](const size_t index)
         {
