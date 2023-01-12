@@ -112,7 +112,7 @@ auto wmtk::load_image_exr_red_channel(const std::filesystem::path& path)
         return {exr_header_, index_red_};
     }();
     auto& exr_header = std::get<0>(exr_header_data);
-    const auto& index_red = std::get<1>(exr_header_data);
+    const auto& index_data = std::get<1>(exr_header_data);
 
     auto exr_image = [&filename, &path, &exr_header]() -> EXRImage {
         EXRImage exr_image_;
@@ -133,11 +133,11 @@ auto wmtk::load_image_exr_red_channel(const std::filesystem::path& path)
     }();
 
     wmtk::logger().info(
-        "[load_image_exr_red_channel] num_channels {} tiled {}",
+        "[load_image_exr] num_channels {} tiled {}",
         exr_header.num_channels,
         exr_header.tiled);
-    wmtk::logger().info("[load_image_exr_red_channel] index_red {}", index_red);
-    assert(index_red >= 0);
+    wmtk::logger().info("[load_image_exr] index_data {}", index_data);
+    assert(index_data >= 0);
     assert(!exr_header.tiled);
 
     std::vector<float> data;
@@ -145,7 +145,7 @@ auto wmtk::load_image_exr_red_channel(const std::filesystem::path& path)
 
     const auto images = reinterpret_cast<float**>(exr_image.images);
     for (int i = 0; i < exr_image.width * exr_image.height; i++)
-        data.emplace_back(images[index_red][i]);
+        data.emplace_back(images[index_data][i]);
 
     FreeEXRHeader(&exr_header);
     FreeEXRImage(&exr_image);

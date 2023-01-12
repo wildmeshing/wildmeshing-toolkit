@@ -17,8 +17,8 @@ class Image
 protected:
     Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
         m_image; // saving scanline images
-    WrappingMode m_mode_x;
-    WrappingMode m_mode_y;
+    WrappingMode m_mode_x = WrappingMode::CLAMP_TO_EDGE;
+    WrappingMode m_mode_y = WrappingMode::CLAMP_TO_EDGE;
 
 public:
     Image(int height_, int width_) { m_image.resize(height_, width_); };
@@ -53,8 +53,6 @@ unsigned char double_to_unsignedchar(const double d)
 {
     return round(std::max(std::min(1., d), 0.) * 255);
 }
-
-unsigned char unsignedchar_to_double(const unsigned char c){};
 
 float Image::get(const Eigen::Vector2d& p) const
 {
@@ -104,7 +102,7 @@ bool Image::save(const std::filesystem::path& path) const
     int w = width();
     int h = height();
     std::vector<float> buffer;
-    buffer.resize(w * h * sizeof(float));
+    buffer.resize(w * h);
 
     for (auto i = 0; i < h; i++) {
         for (auto j = 0; j < w; j++) {
