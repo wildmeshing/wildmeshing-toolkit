@@ -104,7 +104,7 @@ bool Image::save(const std::filesystem::path& path) const
     int w = width();
     int h = height();
     std::vector<float> buffer;
-    buffer.reserve(w * h * sizeof(float));
+    buffer.resize(w * h * sizeof(float));
 
     for (auto i = 0; i < h; i++) {
         for (auto j = 0; j < w; j++) {
