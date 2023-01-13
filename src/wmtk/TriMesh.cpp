@@ -454,7 +454,7 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
             m_tri_connectivity[fid].m_indices[j] = new_vid;
         }
     }
-    m_vertex_connectivity[new_vid].m_is_removed == false;
+    m_vertex_connectivity[new_vid].m_is_removed = false;
     // now work on vids
     // add in the new vertex
 
@@ -514,6 +514,8 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
         }
         m_vertex_connectivity[new_vid].m_conn_tris.clear();
         m_vertex_connectivity[new_vid].m_is_removed = true;
+        m_vertex_connectivity[vid1].m_is_removed = false;
+        m_vertex_connectivity[vid2].m_is_removed = false;
         for (auto vid_fid : same_edge_vid_fid) {
             size_t vid = vid_fid.first;
             size_t fid = vid_fid.second;
