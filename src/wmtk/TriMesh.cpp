@@ -368,6 +368,10 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
         return false;
     }
     release_protect_attributes();
+
+    return_tuple.update_hash(*this);
+    new_tris = {{return_tuple}};
+
     return true;
 }
 
@@ -528,6 +532,10 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
         return false;
     }
     release_protect_attributes();
+
+    return_t.update_hash(*this);
+    new_tris = {{return_t}};
+
     return true;
 }
 
