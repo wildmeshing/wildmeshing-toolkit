@@ -760,7 +760,7 @@ TEST_CASE("edge_length_energy_smooth_constant")
     for (auto v : m.get_vertices()) {
         m.vertex_attrs[v.vid(m)].fixed = false;
     }
-    m.set_parameters(2, displacement_vector, EDGE_LENGTH, false);
+    m.set_parameters(2, displacement, EDGE_LENGTH, false);
 
     m.smooth_all_vertices();
     m.write_displaced_obj(
@@ -793,7 +793,7 @@ TEST_CASE("edge_length_energy_smooth_linear")
     for (auto v : m.get_vertices()) {
         m.vertex_attrs[v.vid(m)].fixed = false;
     }
-    m.set_parameters(2, displacement_vector, EDGE_LENGTH, false);
+    m.set_parameters(2, displacement, EDGE_LENGTH, false);
 
     m.smooth_all_vertices();
     m.write_displaced_obj(
@@ -829,7 +829,7 @@ TEST_CASE("edge_length_energy_smooth_dramatic_linear")
     for (auto v : m.get_vertices()) {
         m.vertex_attrs[v.vid(m)].fixed = false;
     }
-    m.set_parameters(2, displacement_vector, EDGE_LENGTH, false);
+    m.set_parameters(2, displacement, EDGE_LENGTH, false);
     // set the 3 feature point as not fixed
     for (auto v : m.get_vertices()) {
         m.vertex_attrs[v.vid(m)].fixed = false;
@@ -862,7 +862,7 @@ TEST_CASE("edge_length_energy_constant_remesh")
     };
     TriWild m;
     m.create_mesh(V, F);
-    m.set_parameters(0.5, displacement_vector, EDGE_LENGTH, true);
+    m.set_parameters(0.5, displacement, EDGE_LENGTH, true);
     m.mesh_improvement(3);
     m.write_displaced_obj(
         "twoandahalf_edge_length_one_triangle_constant_remesh_yesboundary.obj",
@@ -890,7 +890,7 @@ TEST_CASE("edge_length_energy_one_triangle_linear_remesh")
     };
     TriWild m;
     m.create_mesh(V, F);
-    m.set_parameters(0.5, displacement_vector, EDGE_LENGTH, true);
+    m.set_parameters(0.5, displacement, EDGE_LENGTH, true);
 
     m.mesh_improvement(3);
 
@@ -927,7 +927,7 @@ TEST_CASE("edge_length_energy_one_triangle_dramatic_linear_remesh")
     // create the json file to record logs
     std::ofstream js_o("dramatic_linear_nobnd.json");
     m.create_mesh(V, F);
-    m.set_parameters(1, displacement_vector, EDGE_LENGTH, false);
+    m.set_parameters(1, displacement, EDGE_LENGTH, false);
     for (auto v : m.get_vertices()) {
         m.vertex_attrs[v.vid(m)].fixed = false;
     }
@@ -965,7 +965,7 @@ TEST_CASE("edge_length_energy_one_triangle_smooth_remesh")
     // create the json file to record logs
     std::ofstream js_o("smooth_yesbnd.json");
     m.create_mesh(V, F);
-    m.set_parameters(0.1, displacement_vector, EDGE_LENGTH, true);
+    m.set_parameters(0.1, displacement, EDGE_LENGTH, true);
     for (auto v : m.get_vertices()) {
         REQUIRE(m.vertex_attrs[v.vid(m)].fixed);
     }
@@ -1007,7 +1007,7 @@ TEST_CASE("smoothing_gradient_debug")
     // create the json file to record logs
     std::ofstream js_o("gradient_debug_yesbnd.json");
     m.create_mesh(V, F);
-    m.set_parameters(1, displacement_vector, EDGE_LENGTH, true);
+    m.set_parameters(1, displacement, EDGE_LENGTH, true);
     for (auto v : m.get_vertices()) {
         // m.vertex_attrs[v.vid(m)].fixed = false;
     }
@@ -1085,6 +1085,8 @@ TEST_CASE("boundary parametrization")
 
 TEST_CASE("boundary parameter smooth")
 {
+    using DScalar = wmtk::EdgeLengthEnergy::DScalar;
+
     Eigen::MatrixXd V(3, 2);
     V.row(0) << 0, 0;
     V.row(1) << 10, 0;
@@ -1096,12 +1098,17 @@ TEST_CASE("boundary parameter smooth")
     m.create_mesh(V, F);
     m.set_projection();
 
+    auto displacement = [](const DScalar& u, const DScalar& v) -> DScalar {
+        (void)u;
+        (void)v;
+        return DScalar(1);
+    };
     auto displacement_double = [](double u, double v) -> double { return 1; };
     auto displacement_vector = [&displacement_double](double u, double v) -> Eigen::Vector3d {
         Eigen::Vector3d p(u, v, displacement_double(u, v));
         return p;
     };
-    m.set_parameters(4, displacement_vector, EDGE_LENGTH, true);
+    m.set_parameters(4, displacement, EDGE_LENGTH, true);
 
     for (auto v : m.get_vertices()) {
         REQUIRE(m.vertex_attrs[v.vid(m)].t >= 0);
@@ -1119,6 +1126,8 @@ TEST_CASE("boundary parameter smooth")
 
 TEST_CASE("boundary parameter split")
 {
+    using DScalar = wmtk::EdgeLengthEnergy::DScalar;
+
     Eigen::MatrixXd V(3, 2);
     V.row(0) << 0, 0;
     V.row(1) << 10, 0;
@@ -1129,13 +1138,14 @@ TEST_CASE("boundary parameter split")
     TriWild m;
     m.create_mesh(V, F);
     m.set_projection();
+    auto displacement = [](const DScalar& u, const DScalar& v) -> DScalar { return DScalar(1); };
     auto displacement_double = [](double u, double v) -> double { return 1; };
     auto displacement_vector = [&displacement_double](double u, double v) -> Eigen::Vector3d {
         Eigen::Vector3d p(u, v, displacement_double(u, v));
         return p;
     };
 
-    m.set_parameters(4, displacement_vector, EDGE_LENGTH, true);
+    m.set_parameters(4, displacement, EDGE_LENGTH, true);
 
     for (auto v : m.get_vertices()) {
         REQUIRE(m.vertex_attrs[v.vid(m)].t >= 0);
@@ -1164,6 +1174,8 @@ TEST_CASE("boundary parameter split")
 
 TEST_CASE("boundary parameter collapse")
 {
+    using DScalar = wmtk::EdgeLengthEnergy::DScalar;
+
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     bool ok = igl::read_triangle_mesh("../build_release/after_split_7.obj", V, F);
@@ -1171,13 +1183,16 @@ TEST_CASE("boundary parameter collapse")
 
     TriWild m;
     m.create_mesh(V, F);
+    auto displacement = [](const DScalar& u, const DScalar& v) -> DScalar {
+        return DScalar(10 * u);
+    };
     auto displacement_double = [](double u, double v) -> double { return 10 * u; };
     auto displacement_vector = [](double u, double v) -> Eigen::Vector3d {
         Eigen::Vector3d p(u, v, 10 * u);
         return p;
     };
 
-    m.set_parameters(1, displacement_vector, EDGE_LENGTH, true);
+    m.set_parameters(1, displacement, EDGE_LENGTH, true);
 
     for (auto v : m.get_vertices()) {
         REQUIRE(m.vertex_attrs[v.vid(m)].t >= 0);
@@ -1206,7 +1221,7 @@ TEST_CASE("boundary parameter collapse")
 
 TEST_CASE("energy gradient")
 {
-    using DScalar = wmtk::TwoAndAHalf::DScalar;
+    using DScalar = wmtk::EdgeLengthEnergy::DScalar;
     DiffScalarBase::setVariableCount(2);
 
     Eigen::MatrixXd V;
@@ -1220,11 +1235,14 @@ TEST_CASE("energy gradient")
     TriWild m;
     m.create_mesh(V, F);
 
+    auto displacement = [](const DScalar& u, const DScalar& v) -> DScalar {
+        return DScalar(10 * u);
+    };
     auto displacement_vector = [](double u, double v) -> Eigen::Vector3d {
         Eigen::Vector3d p(u, v, 10 * u);
         return p;
     };
-    m.set_parameters(1, displacement_vector, EDGE_LENGTH, true);
+    m.set_parameters(1, displacement, EDGE_LENGTH, true);
 
     Eigen::VectorXd v_flat;
     m.flatten_dofs(v_flat);
@@ -1247,17 +1265,23 @@ TEST_CASE("energy gradient")
 
 TEST_CASE("gradient")
 {
+    using DScalar = wmtk::EdgeLengthEnergy::DScalar;
+
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     bool ok = igl::read_triangle_mesh("split_new_boundary.obj", V, F);
     assert(ok);
     TriWild m;
     m.create_mesh(V, F);
+
+    auto displacement = [](const DScalar& u, const DScalar& v) -> DScalar {
+        return DScalar(10 * u);
+    };
     auto displacement_vector = [](double u, double v) -> Eigen::Vector3d {
         Eigen::Vector3d p(u, v, 10 * u);
         return p;
     };
-    m.set_parameters(1, displacement_vector, EDGE_LENGTH, true);
+    m.set_parameters(1, displacement, EDGE_LENGTH, true);
 
     Eigen::VectorXd v_flat, finitediff_grad;
     m.flatten_dofs(v_flat);
@@ -1277,7 +1301,8 @@ TEST_CASE("gradient")
 
 TEST_CASE("line_parametrization")
 {
-    using DScalar = DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d>;
+    using DScalar = wmtk::EdgeLengthEnergy::DScalar;
+
     DiffScalarBase::setVariableCount(2);
 
     DScalar t(0, 0);
@@ -1327,9 +1352,14 @@ TEST_CASE("exr saving and loading")
     Image image2(10, 10);
     image2.load("tryout.exr", WrappingMode::MIRROR_REPEAT, WrappingMode::MIRROR_REPEAT);
     for (int i = 0; i < 10; i++) {
-        Eigen::Vector2d p(0.1 * i, 0.1 * i);
-        wmtk::logger().info("at p = {} , image2 {}, image {}", p, image2.get(p), image.get(p));
-        REQUIRE(abs(image2.get(p) - image.get(p)) < 1e-4);
+        auto p = static_cast<float>(0.1 * i);
+        wmtk::logger().info(
+            "at p = {},{} , image2 {}, image {}",
+            0.1 * i,
+            0.1 * i,
+            image2.get(p, p),
+            image.get(p, p));
+        REQUIRE(abs(image2.get(p, p) - image.get(p, p)) < 1e-4);
     }
     // test bicubic interpolation
     std::mt19937 rand_generator;
@@ -1341,42 +1371,75 @@ TEST_CASE("exr saving and loading")
         wmtk::logger().info(
             "image2 at {} : {} =? {}",
             rand_p,
-            image2.get(rand_p),
+            image2.get(static_cast<float>(rand_p(0)), static_cast<float>(rand_p(1))),
             displacement_double(rand_p.x(), rand_p.y()));
     }
-    Image image3(512, 512);
-    image3.load(
-        "/Users/jedumas/Downloads/plastic_stripes_Height.exr",
+}
+
+TEST_CASE("hdr saving and loading")
+{
+    Image image(512, 512);
+    image.load(
+        "/home/yunfan/data/one_ramp.exr",
         WrappingMode::MIRROR_REPEAT,
         WrappingMode::MIRROR_REPEAT);
-    for (int i = 0; i < 10; i++) {
-        Eigen::Vector2d p(0.1 * i, 0.1 * i);
-        wmtk::logger().info("at p = {} , image3 {}", p, image3.get(p));
+    // auto displacement_stripe = [&image](const DScalar& u, const DScalar& v) -> DScalar {
+    //     return image.get(u, v);
+    // };
+    auto displacement_double = [&image](const double& u, const double& v) -> float {
+        auto x = static_cast<float>(u);
+        auto y = static_cast<float>(v);
+        return image.get(x, y);
+    };
+    Image image2(1024, 1024);
+    image2.set(displacement_double);
+    image2.save("interpolated_one_ramp.hdr");
+
+    Image image3(1024, 1024);
+    image3.load(
+        "interpolated_one_ramp.hdr",
+        WrappingMode::MIRROR_REPEAT,
+        WrappingMode::MIRROR_REPEAT);
+    std::mt19937 rand_generator;
+    std::uniform_real_distribution<double> rand_dist;
+    for (int j = 0; j < 10; j++) {
+        Eigen::Vector2d rand_p;
+        rand_p = Eigen::Vector2d(rand_dist(rand_generator), rand_dist(rand_generator));
+
+        wmtk::logger().info(
+            "image2 at {} : {} =? {}",
+            rand_p,
+            image3.get(static_cast<float>(rand_p.x()), static_cast<float>(rand_p.y())),
+            displacement_double(rand_p.x(), rand_p.y()));
     }
 }
 
 TEST_CASE("remeshing using image data")
 {
+    using DScalar = wmtk::EdgeLengthEnergy::DScalar;
+
     int w, h;
-    w = 10;
-    h = 10;
+    w = 512;
+    h = 512;
     Image image(h, w);
-    auto displacement_double = [](const double& u, const double& v) -> double {
-        // return sin(2 * M_PI * u) * cos(2 * M_PI * v);
-        return 10 * u;
+    auto displacement_double = [](const double& u, const double& v) -> float {
+        return static_cast<float>(10 * sin(M_PI * u) * cos(M_PI * v));
+        // return 10 * u;
+    };
+    auto displacement_dscalar = [](const DScalar& u, const DScalar& v) -> DScalar {
+        return 10 * sin(M_PI * u) * cos(M_PI * v);
+        // return 10 * u;
     };
     image.set(displacement_double);
     image.save("tryout.exr");
-    Image image2(10, 10);
-    image2.load("tryout.exr", WrappingMode::CLAMP_TO_EDGE, WrappingMode::CLAMP_TO_EDGE);
+    Image image2(512, 512);
+    image2.load("tryout.exr", WrappingMode::MIRROR_REPEAT, WrappingMode::MIRROR_REPEAT);
 
-    auto displacement_vector = [&image2](const double& u, const double& v) -> Eigen::Vector3d {
-        auto p = Eigen::Vector2d(u / 10., v / 10.);
-        return Eigen::Vector3d(u, v, image2.get(p));
+    auto displacement = [&image2](const DScalar& u, const DScalar& v) -> DScalar {
+        return image2.get(u, v);
     };
     auto displacement_image_double = [&image2](const double& u, const double& v) -> double {
-        auto p = Eigen::Vector2d(u / 10., v / 10.);
-        return image2.get(p);
+        return image2.get(u / 10., v / 10.);
     };
     Eigen::MatrixXd V(3, 2);
     V.row(0) << 0, 0;
@@ -1386,10 +1449,10 @@ TEST_CASE("remeshing using image data")
     F.row(0) << 0, 1, 2;
     TriWild m;
     m.create_mesh(V, F);
-    m.set_parameters(0.2, displacement_vector, EDGE_LENGTH, true);
+    m.set_parameters(0.01, displacement, EDGE_LENGTH, true);
     m.mesh_improvement(3);
 
-    m.write_displaced_obj("remesh_from_image_linear_clamp.obj", displacement_image_double);
+    m.write_displaced_obj("remesh_from_image_linear.obj", displacement_image_double);
 }
 
 TEST_CASE("fixed corner")
@@ -1407,85 +1470,38 @@ TEST_CASE("fixed corner")
     }
 }
 
-TEST_CASE("blub")
-{
-    Image image(2048, 2048);
-    image.load(
-        "/home/yunfan/data/blub_height.exr",
-        WrappingMode::MIRROR_REPEAT,
-        WrappingMode::MIRROR_REPEAT);
-    auto displacement_vector = [&image](const double& u, const double& v) -> Eigen::Vector3d {
-        auto p = Eigen::Vector2d(u, v);
-        return Eigen::Vector3d(u, v, image.get(p));
-    };
-    auto displacement_image_double = [&image](const double& u, const double& v) -> double {
-        auto p = Eigen::Vector2d(u, v);
-        return image.get(p);
-    };
-    // Eigen::MatrixXd V;
-    // Eigen::MatrixXd TC;
-    // Eigen::MatrixXd CN;
-    // Eigen::MatrixXi F;
-    // Eigen::MatrixXi FTC;
-    // Eigen::MatrixXi FN;
-    // Eigen::MatrixXi C;
-    // igl::readOBJ("/home/yunfan/data/blub.obj", V, TC, CN, F, FTC, FN);
-    // igl::facet_components(FTC, C);
-    // Eigen::MatrixXi F0 = Eigen::MatrixXi::Zero(F.rows(), 3);
-    // int cnt = 0;
-    // for (int i = 0; i < C.rows(); i++) {
-    //     if (C(i, 0) == 0) {
-    //         F0.row(cnt) << FTC(i, 0), FTC(i, 1), FTC(i, 2);
-    //         cnt++;
-    //     }
-    // }
-
-    // F0.conservativeResize(cnt, 3);
-
-    TriWild m;
-    // m.create_mesh(TC, F0);
-    Eigen::MatrixXd V;
-    Eigen::MatrixXi F;
-    igl::read_triangle_mesh("patch0.obj", V, F);
-    m.create_mesh(V, F);
-    // m.consolidate_mesh();
-    // m.write_obj("test_patch0.obj");
-    wmtk::logger().info("#v {}, #f {} ", m.vert_capacity(), m.tri_capacity());
-    m.set_parameters(0.001, displacement_vector, EDGE_LENGTH, true);
-    m.mesh_improvement(3);
-
-    m.write_displaced_obj("blub.obj", displacement_image_double);
-}
-
 TEST_CASE("stripe")
 {
-    Image image(512, 512);
+    using DScalar = wmtk::EdgeLengthEnergy::DScalar;
+
+    Image image(1024, 1024);
     image.load(
-        "/Users/jedumas/Downloads/plastic_stripes_Height.exr",
+        "/home/yunfan/data/one_ramp.exr",
         WrappingMode::MIRROR_REPEAT,
         WrappingMode::MIRROR_REPEAT);
-    auto displacement_vector = [&image](const double& u, const double& v) -> Eigen::Vector3d {
-        auto p = Eigen::Vector2d(u, v);
-        return Eigen::Vector3d(u, v, image.get(p));
+    auto displacement = [&image](const DScalar& u, const DScalar& v) -> DScalar {
+        return 10 * image.get(u / DScalar(10.), v / DScalar(10.));
     };
     auto displacement_image_double = [&image](const double& u, const double& v) -> double {
-        auto p = Eigen::Vector2d(u, v);
-        return image.get(p);
+        return (10 * image.get(u / 10., v / 10.));
     };
     Eigen::MatrixXd V(4, 2);
     V.row(0) << 0, 0;
-    V.row(1) << 1, 0;
-    V.row(2) << 0, 1;
-    V.row(3) << 1, 1;
+    V.row(1) << 10, 0;
+    V.row(2) << 0, 10;
+    V.row(3) << 10, 10;
     Eigen::MatrixXi F(2, 3);
     F.row(0) << 0, 1, 2;
     F.row(1) << 1, 3, 2;
 
     TriWild m;
     m.create_mesh(V, F);
+    std::ofstream js_o("one_ramp.json");
     wmtk::logger().info("#v {}, #f {} ", m.vert_capacity(), m.tri_capacity());
-    m.set_parameters(0.1, displacement_vector, EDGE_LENGTH, true);
-    m.mesh_improvement(3);
+    m.set_parameters(0.5, displacement, EDGE_LENGTH, true);
+    m.mesh_improvement(10);
 
-    m.write_displaced_obj("stripe.obj", displacement_image_double);
+    m.write_displaced_obj("one_ramp_exr.obj", displacement_image_double);
+    js_o << std::setw(4) << m.mesh_parameters.js_log << std::endl;
+    js_o.close();
 }
