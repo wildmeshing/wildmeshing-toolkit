@@ -22,12 +22,12 @@ auto avg_edge_len = [](auto& m) {
 
 void TriWild::set_parameters(
     const double target_edge_length,
-    const std::function<Eigen::Vector3d(const double&, const double&)>& displacement_function,
+    const std::function<DScalar(const DScalar&, const DScalar&)>& displacement_function,
     const ENERGY_TYPE energy_type,
     const bool boundary_parameter)
 {
     mesh_parameters.m_target_l = target_edge_length;
-    mesh_parameters.m_triwild_displacement = displacement_function;
+    mesh_parameters.m_get_z = displacement_function;
     set_energy(
         energy_type); // set the displacement_function first since it is used for energy setting
     mesh_parameters.m_boundary_parameter = boundary_parameter;
@@ -68,8 +68,7 @@ void TriWild::set_energy(ENERGY_TYPE energy_type)
     case AMIPS: energy_ptr = std::make_unique<wmtk::AMIPS>(); break;
     case SYMDI: energy_ptr = std::make_unique<wmtk::SymDi>(); break;
     case EDGE_LENGTH:
-        energy_ptr =
-            std::make_unique<wmtk::EdgeLengthEnergy>(mesh_parameters.m_triwild_displacement);
+        energy_ptr = std::make_unique<wmtk::EdgeLengthEnergy>(mesh_parameters.m_get_z);
         break;
     }
     mesh_parameters.m_energy = std::move(energy_ptr);
@@ -331,10 +330,44 @@ double TriWild::get_length3d(const Tuple& t) const
 
     double length = 0.0;
 
-    // add 3d displacement
-    auto v13d = mesh_parameters.m_triwild_displacement(v12d(0), v12d(1));
-    auto v23d = mesh_parameters.m_triwild_displacement(v22d(0), v22d(1));
-    length = (v13d - v23d).squaredNorm();
+    // add 3d displacement. add 3 implicit points to approximate quadrature of the curve
+    auto implicit1 = v12d * 0.75 + v22d * 0.25;
+    auto implicit2 = v12d * 0.5 + v22d * 0.5;
+    auto implicit3 = v12d * 0.25 + v22d * 0.75;
+    auto v1_3d = mesh_parameters.m_project_to_3d(v12d(0), v12d(1));
+    auto implicit1_3d = mesh_parameters.m_project_to_3d(implicit1(0), implicit1(1));
+    auto implicit2_3d = mesh_parameters.m_project_to_3d(implicit2(0), implicit2(1));
+    auto implicit3_3d = mesh_parameters.m_project_to_3d(implicit3(0), implicit3(1));
+    auto v2_3d = mesh_parameters.m_project_to_3d(v22d(0), v22d(1));
+    length = (v1_3d - implicit1_3d).squaredNorm();
+    length += (implicit1_3d - implicit2_3d).squaredNorm();
+    length += (implicit2_3d - implicit3_3d).squaredNorm();
+    length += (v2_3d - implicit3_3d).squaredNorm();
+
+    return length;
+}
+
+double TriWild::get_length3d(const size_t& vid1, const size_t& vid2) const
+{
+    auto v12d = vertex_attrs[vid1].pos;
+    auto v22d = vertex_attrs[vid2].pos;
+
+    double length = 0.0;
+
+    // add 3d displacement. add 3 implicit points to approximate quadrature of the curve
+    auto implicit1 = v12d * 0.75 + v22d * 0.25;
+    auto implicit2 = v12d * 0.5 + v22d * 0.5;
+    auto implicit3 = v12d * 0.25 + v22d * 0.75;
+    auto v1_3d = mesh_parameters.m_project_to_3d(v12d(0), v12d(1));
+    auto implicit1_3d = mesh_parameters.m_project_to_3d(implicit1(0), implicit1(1));
+    auto implicit2_3d = mesh_parameters.m_project_to_3d(implicit2(0), implicit2(1));
+    auto implicit3_3d = mesh_parameters.m_project_to_3d(implicit3(0), implicit3(1));
+    auto v2_3d = mesh_parameters.m_project_to_3d(v22d(0), v22d(1));
+    length = (v1_3d - implicit1_3d).squaredNorm();
+    length += (implicit1_3d - implicit2_3d).squaredNorm();
+    length += (implicit2_3d - implicit3_3d).squaredNorm();
+    length += (v2_3d - implicit3_3d).squaredNorm();
+
     return length;
 }
 
@@ -397,8 +430,8 @@ std::pair<double, Eigen::Vector2d> TriWild::get_one_ring_energy(const Tuple& loc
                 auto v2 = vertex_attrs[local_tuples[(j + 1) % 3].vid(*this)].pos;
                 auto v3 = vertex_attrs[local_tuples[(j + 2) % 3].vid(*this)].pos;
                 nminfo.neighbors.row(i) << v2(0), v2(1), v3(0), v3(1);
-                assert(!is_inverted_coordinates(v2, v3));
-                // sanity check, no inversion should be heres
+                assert(
+                    !is_inverted_coordinates(v2, v3)); // sanity check, no inversion should be heres
             }
         }
     }
@@ -486,45 +519,32 @@ void TriWild::mesh_improvement(int max_its)
         mesh_parameters.js_log["iteration_" + std::to_string(it)]["edge_len_target"] =
             mesh_parameters.m_target_l;
 
-        for (auto v : get_vertices()) {
-            if (is_boundary_vertex(v)) set_feature(v);
-        }
         split_all_edges();
         assert(invariants(get_faces()));
         consolidate_mesh();
         write_displaced_obj(
             "after_split_" + std::to_string(it) + ".obj",
-            mesh_parameters.m_triwild_displacement);
+            mesh_parameters.m_project_to_3d);
 
-        for (auto v : get_vertices()) {
-            if (is_boundary_vertex(v)) set_feature(v);
-        }
         collapse_all_edges();
         assert(invariants(get_faces()));
         consolidate_mesh();
         write_displaced_obj(
             "after_collapse_" + std::to_string(it) + ".obj",
-            mesh_parameters.m_triwild_displacement);
-
-        for (auto v : get_vertices()) {
-            if (is_boundary_vertex(v)) set_feature(v);
-        }
+            mesh_parameters.m_project_to_3d);
         swap_all_edges();
         assert(invariants(get_faces()));
         consolidate_mesh();
         write_displaced_obj(
             "after_swap_" + std::to_string(it) + ".obj",
-            mesh_parameters.m_triwild_displacement);
+            mesh_parameters.m_project_to_3d);
 
-        for (auto v : get_vertices()) {
-            if (is_boundary_vertex(v)) set_feature(v);
-        }
         smooth_all_vertices();
         assert(invariants(get_faces()));
         consolidate_mesh();
         write_displaced_obj(
             "after_smooth_" + std::to_string(it) + ".obj",
-            mesh_parameters.m_triwild_displacement);
+            mesh_parameters.m_project_to_3d);
 
         auto avg_grad = (mesh_parameters.m_gradient / vert_capacity()).stableNorm();
 
@@ -532,9 +552,18 @@ void TriWild::mesh_improvement(int max_its)
             "++++++++v {} t {} avg gradient {}++++++++",
             vert_capacity(),
             tri_capacity(),
-            mesh_parameters.m_gradient / vert_capacity());
-        mesh_parameters.js_log["iteration_" + std::to_string(it)]["avg_grad"] =
-            (mesh_parameters.m_gradient / vert_capacity()).stableNorm();
+            avg_grad);
+
+        mesh_parameters.js_log["iteration_" + std::to_string(it)]["avg_grad"] = avg_grad;
+
+        if (avg_grad < 1e-6) {
+            wmtk::logger().info(
+                "!!!avg grad is less than 1e-6 !!! energy doesn't improve anymore. early stop"
+                "itr {}, avg length {} ",
+                it,
+                avg_len);
+            break;
+        }
         mesh_parameters.m_gradient = Eigen::Vector2d(0., 0.);
         avg_len = avg_edge_len(*this);
         mesh_parameters.js_log["iteration_" + std::to_string(it)]["edge_len_avg_final"] = avg_len;
@@ -542,30 +571,6 @@ void TriWild::mesh_improvement(int max_its)
         old_average = avg_grad;
         if (mesh_parameters.m_target_l <= 0 &&
             mesh_parameters.m_max_energy < mesh_parameters.m_stop_energy) {
-            break;
-        }
-
-        if (mesh_parameters.m_target_l > 0 &&
-            (avg_len - mesh_parameters.m_target_l) * (avg_len - mesh_parameters.m_target_l) <
-                1e-4) {
-            wmtk::logger().info(
-                "doesn't improve edge length. Stopping improvement.\n {} itr finished, max energy "
-                "{}, avg length {} ",
-                it,
-                mesh_parameters.m_max_energy,
-                avg_len);
-            break;
-        }
-        if (it > 0 && (mesh_parameters.m_target_l <= 0 &&
-                       (pre_max_energy - mesh_parameters.m_stop_energy) *
-                               (pre_max_energy - mesh_parameters.m_stop_energy) <
-                           1e-2)) {
-            wmtk::logger().info(
-                "doesn't improve energy. Stopping improvement.\n {} itr finished, max energy {}, "
-                "avg length {}",
-                it,
-                mesh_parameters.m_max_energy,
-                avg_len);
             break;
         }
         pre_avg_len = avg_len;
@@ -600,6 +605,8 @@ double TriWild::get_mesh_energy(const Eigen::VectorXd& v_flat)
 {
     double total_energy = 0;
     int f_cnt = 0;
+    Eigen::MatrixXd energy_matrix;
+    energy_matrix.resize(get_faces().size(), 2);
     for (auto& face : get_faces()) {
         // wmtk::logger().info("getting energy on {} ", f_cnt++);
         auto verts = oriented_tri_vertices(face);
@@ -611,33 +618,41 @@ double TriWild::get_mesh_energy(const Eigen::VectorXd& v_flat)
                 auto uv = mesh_parameters.m_boundary.t_to_uv(
                     vertex_attrs[vert.vid(*this)].curve_id,
                     v_flat[vert.vid(*this) * 2]);
-                v_matrix.row(i) = mesh_parameters.m_triwild_displacement(uv(0), uv(1));
+                v_matrix.row(i) = mesh_parameters.m_project_to_3d(uv(0), uv(1));
             } else {
                 auto u = v_flat[vert.vid(*this) * 2];
                 auto v = v_flat[vert.vid(*this) * 2 + 1];
-                v_matrix.row(i) = mesh_parameters.m_triwild_displacement(u, v);
+                v_matrix.row(i) = mesh_parameters.m_project_to_3d(u, v);
             }
         }
 
         assert(mesh_parameters.m_target_l != 0);
+        double tri_energy = 0.;
         auto BA = v_matrix.row(1) - v_matrix.row(0);
         auto CA = v_matrix.row(2) - v_matrix.row(0);
         auto BC = v_matrix.row(1) - v_matrix.row(2);
-        total_energy += pow(BA.squaredNorm() - pow(mesh_parameters.m_target_l, 2), 2);
-        total_energy += pow(BC.squaredNorm() - pow(mesh_parameters.m_target_l, 2), 2);
-        total_energy += pow(CA.squaredNorm() - pow(mesh_parameters.m_target_l, 2), 2);
+        tri_energy += pow(BA.squaredNorm() - pow(mesh_parameters.m_target_l, 2), 2);
+        tri_energy += pow(BC.squaredNorm() - pow(mesh_parameters.m_target_l, 2), 2);
+        tri_energy += pow(CA.squaredNorm() - pow(mesh_parameters.m_target_l, 2), 2);
+
+        energy_matrix(face.fid(*this), 0) = tri_energy;
         double area = (BA.cross(CA)).squaredNorm();
         double A_hat = 0.5 * (std::sqrt(3) / 2) * 0.5 *
                        pow(mesh_parameters.m_target_l, 2); // this is arbitrary now
         assert(A_hat > 0);
         if (area <= 0) {
-            total_energy += std::numeric_limits<double>::infinity();
+            tri_energy += std::numeric_limits<double>::infinity();
         }
         if (area < A_hat) {
             assert((area / A_hat) < 1.0);
-            total_energy += -(area - A_hat) * (area - A_hat) * log(area / A_hat);
+            tri_energy += -(area - A_hat) * (area - A_hat) * log(area / A_hat);
         }
+        total_energy += tri_energy;
+
+        energy_matrix(face.fid(*this), 1) = tri_energy;
     }
+    igl::writeDMAT("mesh_energy.dmat", energy_matrix);
+
     return total_energy;
 }
 /// debugging
@@ -663,7 +678,7 @@ void TriWild::gradient_debug(int max_its)
         consolidate_mesh();
         write_displaced_obj(
             "smooth_" + std::to_string(it) + ".obj",
-            mesh_parameters.m_triwild_displacement);
+            mesh_parameters.m_project_to_3d);
 
         wmtk::logger().info(
             "++++++++v {} t {} avg gradient {}++++++++",
@@ -673,6 +688,10 @@ void TriWild::gradient_debug(int max_its)
         auto avg_grad = (mesh_parameters.m_gradient / vert_capacity()).stableNorm();
 
         mesh_parameters.js_log["iteration_" + std::to_string(it)]["avg_grad"] = avg_grad;
+        Eigen::VectorXd v_flat;
+        flatten_dofs(v_flat);
+        mesh_parameters.js_log["iteration_" + std::to_string(it)]["energy"] =
+            get_mesh_energy(v_flat);
         if (abs(avg_grad - old_average) < 1e-5) break;
         old_average = avg_grad;
         mesh_parameters.m_gradient = Eigen::Vector2d(0., 0.);

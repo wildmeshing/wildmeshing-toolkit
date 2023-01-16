@@ -64,10 +64,14 @@ bool TriWild::collapse_edge_before(const Tuple& edge_tuple)
 {
     if (!TriMesh::collapse_edge_before(edge_tuple)) return false;
 
-    // check if the two vertices to be split is of the same vure_id
+    // check if the two vertices to be split is of the same curve_id
     if (vertex_attrs[edge_tuple.vid(*this)].curve_id !=
         vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].curve_id)
         return false;
+
+    double length3d = get_length3d(edge_tuple);
+    // enforce heuristic
+    assert(length3d < pow(4. / 5. * mesh_parameters.m_target_l, 2));
 
     // record boundary vertex as boudnary_vertex in vertex attribute for accurate collapse after
     // boundary operations
@@ -95,17 +99,6 @@ bool TriWild::collapse_edge_before(const Tuple& edge_tuple)
     }
     mesh_parameters.m_max_energy = cache.local().max_energy;
 
-    auto v13d = mesh_parameters.m_triwild_displacement(
-        vertex_attrs[cache.local().v1].pos(0),
-        vertex_attrs[cache.local().v1].pos(1));
-    auto v23d = mesh_parameters.m_triwild_displacement(
-        vertex_attrs[cache.local().v2].pos(0),
-        vertex_attrs[cache.local().v2].pos(1));
-    double length2 = (v23d - v13d).squaredNorm();
-
-    // enforce heuristic
-    assert(length2 < pow(4. / 5. * mesh_parameters.m_target_l, 2));
-
     return true;
 }
 bool TriWild::collapse_edge_after(const Tuple& edge_tuple)
@@ -115,16 +108,7 @@ bool TriWild::collapse_edge_after(const Tuple& edge_tuple)
     if (vertex_attrs[cache.local().v1].fixed && vertex_attrs[cache.local().v2].fixed) return false;
 
     // adding heuristic decision. If length2 < 4. / 5. * 4. / 5. * m.m_target_l * m.m_target_l always collapse
-    double length2 =
-        (vertex_attrs[cache.local().v1].pos - vertex_attrs[cache.local().v2].pos).squaredNorm();
-
-    auto v13d = mesh_parameters.m_triwild_displacement(
-        vertex_attrs[cache.local().v1].pos(0),
-        vertex_attrs[cache.local().v1].pos(1));
-    auto v23d = mesh_parameters.m_triwild_displacement(
-        vertex_attrs[cache.local().v2].pos(0),
-        vertex_attrs[cache.local().v2].pos(1));
-    length2 = (v23d - v13d).squaredNorm();
+    double length3d = get_length3d(cache.local().v1, cache.local().v2);
 
     auto vid = edge_tuple.vid(*this);
     Eigen::Vector2d p;
@@ -184,7 +168,7 @@ bool TriWild::collapse_edge_after(const Tuple& edge_tuple)
         (vertex_attrs[cache.local().v1].fixed || vertex_attrs[cache.local().v2].fixed);
     vertex_attrs[vid].curve_id = vertex_attrs[cache.local().v1].curve_id;
     // enforce heuristic
-    if (length2 < pow(4. / 5. * mesh_parameters.m_target_l, 2)) {
+    if (length3d < pow(4. / 5. * mesh_parameters.m_target_l, 2)) {
         return true;
     }
     // // check quality

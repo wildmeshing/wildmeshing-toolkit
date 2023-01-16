@@ -94,16 +94,7 @@ bool TriWild::split_edge_after(const Tuple& edge_tuple)
     // adding heuristic decision. If length2 > 4. / 3. * 4. / 3. * m.m_target_l * m.m_target_l always split
     // transform edge length with displacement
 
-    double length2 =
-        (vertex_attrs[cache.local().v1].pos - vertex_attrs[cache.local().v2].pos).squaredNorm();
-
-    auto v13d = mesh_parameters.m_triwild_displacement(
-        vertex_attrs[cache.local().v1].pos(0),
-        vertex_attrs[cache.local().v1].pos(1));
-    auto v23d = mesh_parameters.m_triwild_displacement(
-        vertex_attrs[cache.local().v2].pos(0),
-        vertex_attrs[cache.local().v2].pos(1));
-    length2 = (v23d - v13d).squaredNorm();
+    double length3d = get_length3d(cache.local().v1, cache.local().v2);
 
     const Eigen::Vector2d p =
         (vertex_attrs[cache.local().v1].pos + vertex_attrs[cache.local().v2].pos) / 2.0;
@@ -122,7 +113,7 @@ bool TriWild::split_edge_after(const Tuple& edge_tuple)
             is_boundary_vertex(e.switch_vertex(*this));
     }
     // enforce length check
-    if (length2 > pow(4. / 3. * mesh_parameters.m_target_l, 2)) {
+    if (length3d > pow(4. / 3. * mesh_parameters.m_target_l, 2)) {
         return true;
     }
 

@@ -35,6 +35,7 @@ public:
     using RowMatrix2 = Eigen::Matrix<T, Eigen::Dynamic, 2, Eigen::RowMajor>;
     using Index = uint64_t;
     using Scalar = double;
+    using DScalar = DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d>;
 
 public:
     TriWild(){};
@@ -46,7 +47,7 @@ public:
     // separately
     void set_parameters(
         const double target_edge_length,
-        const std::function<Eigen::Vector3d(const double&, const double&)>& displacement_function,
+        const std::function<DScalar(const DScalar&, const DScalar&)>& displacement_function,
         const ENERGY_TYPE energy_type,
         const bool boundary_parameter);
 
@@ -130,6 +131,10 @@ public:
 
     double get_length2d(const Tuple& t) const;
     double get_length3d(const Tuple& t) const;
+    double get_length3d(const size_t& vid1, const size_t& vid2)
+        const; // overload of the version that takes a tuple.
+               // used when the tuple is invalid but use vids to uquest for positions in the
+               // vertex_attrs
 
     void flatten_dofs(Eigen::VectorXd& v_flat);
     double get_mesh_energy(const Eigen::VectorXd& v_flat);
