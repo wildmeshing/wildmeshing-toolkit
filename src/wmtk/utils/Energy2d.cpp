@@ -238,16 +238,16 @@ void EdgeLengthEnergy::eval(State& state, DofsToPositions& dof_to_positions) con
     assert(state.two_opposite_vertices.rows() == 1);
     auto [x1, y1] = dof_to_positions.eval(state.dofx);
 
-    Eigen::Vector3d v1 = this->displacement(x1.getValue(), y1.getValue());
+    DScalar v1z = this->m_displacement(x1, y1);
     Eigen::Vector3d v2 =
         this->displacement(state.two_opposite_vertices(0, 0), state.two_opposite_vertices(0, 1));
     Eigen::Vector3d v3 =
         this->displacement(state.two_opposite_vertices(0, 2), state.two_opposite_vertices(0, 3));
 
     Eigen::Matrix<DScalar, 3, 1> V2_V1;
-    V2_V1 << v2(0) - x1, v2(1) - y1, DScalar(v2(2) - v1(2));
+    V2_V1 << v2(0) - x1, v2(1) - y1, DScalar(v2(2)) - v1z;
     Eigen::Matrix<DScalar, 3, 1> V3_V1;
-    V3_V1 << v3(0) - x1, v3(1) - y1, DScalar(v3(2) - v1(2));
+    V3_V1 << v3(0) - x1, v3(1) - y1, DScalar(v3(2)) - v1z;
     Eigen::Matrix<DScalar, 3, 1> V3_V2;
     V3_V2 << DScalar(v3(0) - v2(0)), DScalar(v3(1) - v2(1)), DScalar(v3(2) - v2(2));
 

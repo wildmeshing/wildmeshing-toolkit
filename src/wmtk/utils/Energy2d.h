@@ -124,19 +124,23 @@ public:
 class EdgeLengthEnergy : public wmtk::Energy
 {
 public:
-    EdgeLengthEnergy(std::function<Eigen::Vector3d(const double&, const double&)> displacement_func)
+    // m_displacement needs to be defined with 2 arguments of DScalar, and return a DScalar
+    EdgeLengthEnergy(std::function<DScalar(const DScalar&, const DScalar&)> displacement_func)
         : m_displacement(std::move(displacement_func))
     {}
 
 public:
-    std::function<Eigen::Vector3d(const double&, const double&)> m_displacement;
+    std::function<DScalar(const DScalar&, const DScalar&)> m_displacement;
 
 public:
     void eval(State& state) const override{};
     void eval(State& state, DofsToPositions& x) const override;
+    // a wrapper function of m_displacement that takes 2 doubles and cast into DScalar, and returns
+    // a Vector3d
     Eigen::Vector3d displacement(const double& x, const double& y) const
     {
-        return m_displacement(x, y);
+        double z = m_displacement(DScalar(x), DScalar(y)).getValue();
+        return Eigen::Vector3d(x, y, z);
     };
 };
 } // namespace wmtk

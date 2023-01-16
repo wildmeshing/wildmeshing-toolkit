@@ -1,19 +1,20 @@
 #pragma once
 
+#include <stb_image.h>
+#include <stb_image_write.h>
 #include <Eigen/Core>
 #include <array>
 #include <cmath>
 #include <filesystem>
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include <stb_image_write.h>
+#include <type_traits>
 #include "bicubic_interpolation.h"
 #include "load_image_exr.h"
 #include "save_image_exr.h"
 namespace wmtk {
 class Image
 {
+    using DScalar = DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d>;
+
 protected:
     Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
         m_image; // saving scanline images
@@ -27,7 +28,8 @@ public:
     // point coordinates between [0, 1]
     int width() const { return static_cast<int>(m_image.cols()); };
     int height() const { return static_cast<int>(m_image.rows()); };
-    float get(const Eigen::Vector2d& p) const;
+    template <class T>
+    std::decay_t<T> get(const T& u, const T& v) const;
     float get_raw(const Eigen::Vector2i& index) const { return m_image(index.y(), index.x()); };
     bool set(const std::function<float(const double&, const double&)>& f);
     bool save(const std::filesystem::path& path) const;
@@ -54,25 +56,29 @@ unsigned char double_to_unsignedchar(const double d)
     return round(std::max(std::min(1., d), 0.) * 255);
 }
 
-float Image::get(const Eigen::Vector2d& p) const
+/// @brief
+/// @param p coordinates between (0,1)
+/// @return /
+template <class T>
+std::decay_t<T> Image::get(const T& u, const T& v) const
 {
     int w = width();
     int h = height();
     auto size = std::max(w, h);
     // x, y are between 0 and 1
-    float x = static_cast<float>(p.x() * size); // p.x() == p[0]
-    float y = static_cast<float>(p.y() * size); // p.y() == p[1]
+    auto x = u * static_cast<std::decay_t<T>>(size);
+    auto y = v * static_cast<std::decay_t<T>>(size);
     // use bicubic interpolation
 
-    BicubicVector sample_vector = extract_samples(
+    BicubicVector<float> sample_vector = extract_samples(
         static_cast<size_t>(w),
         static_cast<size_t>(h),
         m_image.data(),
-        x,
-        y,
+        wmtk::get_value(x),
+        wmtk::get_value(y),
         m_mode_x,
         m_mode_y);
-    BicubicVector bicubic_coeff = get_bicubic_matrix() * sample_vector;
+    BicubicVector<float> bicubic_coeff = get_bicubic_matrix() * sample_vector;
     return eval_bicubic_coeffs(bicubic_coeff, x, y);
 }
 
@@ -112,15 +118,14 @@ bool Image::save(const std::filesystem::path& path) const
     if (path.extension() == ".hdr") {
         auto res = stbi_write_hdr(path.string().c_str(), w, h, 1, buffer.data());
         assert(res);
-    }
-    if (path.extension() == ".exr") {
+    } else if (path.extension() == ".exr") {
         auto res = save_image_exr_red_channel(w, h, buffer, path);
     } else {
         spdlog::trace("[save_image_hdr] format doesn't support \"{}\"", path.string());
         return false;
     }
 
-    spdlog::trace("[save_image_hdr] done \"{}\"", path.string());
+    spdlog::trace("[save_image] done \"{}\"", path.string());
 
     return true;
 }
@@ -137,6 +142,9 @@ void Image::load(
     if (path.extension() == ".exr") {
         std::tie(w, h, buffer) = load_image_exr_red_channel(path);
         assert(!buffer.empty());
+    } else if (path.extension() == ".hdr") {
+        auto res = stbi_loadf(path.string().c_str(), &w, &h, &channels, 1);
+        buffer.assign(res, res + w * h);
     } else {
         spdlog::trace("[load_image] format doesn't support \"{}\"", path.string());
         return;

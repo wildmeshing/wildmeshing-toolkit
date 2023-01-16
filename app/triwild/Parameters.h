@@ -1,4 +1,5 @@
 #pragma once
+#include <wmtk/utils/autodiff.h>
 #include <nlohmann/json.hpp>
 #include <sec/envelope/SampleEnvelope.hpp>
 namespace triwild {
@@ -6,6 +7,7 @@ enum ENERGY_TYPE { AMIPS, SYMDI, EDGE_LENGTH };
 struct Parameters
 {
     using json = nlohmann::json;
+    using DScalar = DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d>;
 
 public:
     json js_log;
@@ -37,6 +39,22 @@ public:
         Eigen::Vector3d p(u, v, 0.);
         return p;
     }; // used for heuristic split, collapse. Default to return (u,v,0)
+
+    // takes 2 DScalar and returns z coordinates in DScalar
+    // this is directly used by autodiff for taking Gradient and Hessian
+    std::function<DScalar(const DScalar&, const DScalar&)> m_get_z;
+    // takes 2 doubles and cast into DScalar. Then use the obtained z coordinate to consturct
+    // directly a Vector3d
+    // This is used to get a Vector3d for functions that requires 3d coordinates but no need for
+    // taking gradients or hessian
+    std::function<Eigen::Vector3d(const double&, const double&)> m_project_to_3d =
+        [&](const double& u, const double& v) -> Eigen::Vector3d {
+        DiffScalarBase::setVariableCount(2);
+        auto z = this->m_get_z(DScalar(u), DScalar(v)).getValue();
+        return Eigen::Vector3d(u, v, z);
+    };
+
+
     wmtk::Boundary m_boundary; // stores boundary information
     bool m_boundary_parameter = true; // use boundary single variable parameterization
 };

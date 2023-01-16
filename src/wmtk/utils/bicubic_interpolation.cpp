@@ -2,16 +2,16 @@
 
 #include <spdlog/spdlog.h>
 using namespace wmtk;
-wmtk::BicubicVector wmtk::extract_samples(
+wmtk::BicubicVector<float> wmtk::extract_samples(
     const size_t width,
     const size_t height,
-    const float * buffer,
+    const float* buffer,
     const float sx_,
     const float sy_,
     const WrappingMode mode_x,
     const WrappingMode mode_y)
 {
-    wmtk::BicubicVector samples;
+    wmtk::BicubicVector<float> samples;
 
     const auto get_coordinate = [](const int x, const int size, const WrappingMode mode) -> int {
         switch (mode) {
@@ -35,8 +35,8 @@ wmtk::BicubicVector wmtk::extract_samples(
         return buffer[index];
     };
 
-    const auto sx = static_cast<int>(std::floor(sx_));
-    const auto sy = static_cast<int>(std::floor(sy_));
+    const auto sx = static_cast<int>(floor(sx_));
+    const auto sy = static_cast<int>(floor(sy_));
     assert(static_cast<float>(sx) <= sx_);
     assert(static_cast<float>(sy) <= sy_);
 
@@ -116,39 +116,8 @@ wmtk::BicubicMatrix wmtk::make_samples_to_bicubic_coeffs_operator()
     return ope_inv;
 }
 
-const BicubicMatrix & wmtk::get_bicubic_matrix() {
+const BicubicMatrix& wmtk::get_bicubic_matrix()
+{
     static BicubicMatrix mat = make_samples_to_bicubic_coeffs_operator();
     return mat;
-}
-
-float wmtk::eval_bicubic_coeffs(const wmtk::BicubicVector& coeffs, const float sx, const float sy)
-{
-    const auto xx = sx - static_cast<size_t>(sx);
-    const auto yy = sy - static_cast<size_t>(sy);
-    assert(0 <= xx && xx < 1);
-    assert(0 <= yy && yy < 1);
-
-    wmtk::BicubicVector vv;
-
-    vv(0) = 1;
-    vv(1) = xx;
-    vv(2) = xx * xx;
-    vv(3) = xx * xx * xx;
-
-    vv(4) = yy;
-    vv(5) = xx * yy;
-    vv(6) = xx * xx * yy;
-    vv(7) = xx * xx * xx * yy;
-
-    vv(8) = yy * yy;
-    vv(9) = xx * yy * yy;
-    vv(10) = xx * xx * yy * yy;
-    vv(11) = xx * xx * xx * yy * yy;
-
-    vv(12) = yy * yy * yy;
-    vv(13) = xx * yy * yy * yy;
-    vv(14) = xx * xx * yy * yy * yy;
-    vv(15) = xx * xx * xx * yy * yy * yy;
-
-    return coeffs.transpose() * vv;
 }
