@@ -237,12 +237,14 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
 
     release_protect_attributes();
 
-    for (size_t t_id : new_tet_id) {
-        for (int j = 0; j < 6; j++) {
-            new_edges.push_back(tuple_from_edge(t_id, j));
-        }
-    }
-    unique_edge_tuples(*this, new_edges);
+    // for (size_t t_id : new_tet_id) {
+    //     for (int j = 0; j < 6; j++) {
+    //         new_edges.push_back(tuple_from_edge(t_id, j));
+    //     }
+    // }
+    // unique_edge_tuples(*this, new_edges);
+    new_loc.update_hash(*this);
+    new_edges = {{new_loc}};
 
     return true;
 }
