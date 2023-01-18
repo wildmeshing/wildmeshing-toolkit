@@ -6,17 +6,17 @@
 enum class WrappingMode { REPEAT, MIRROR_REPEAT, CLAMP_TO_EDGE };
 namespace wmtk {
 
-inline int get_floor_value(float x)
+inline double get_value(float x)
 {
-    return static_cast<int>(floor(x));
+    return static_cast<double>(x);
 }
-inline int get_floor_value(double x)
+inline double get_value(double x)
 {
-    return static_cast<int>(floor(x));
+    return x;
 }
-inline int get_floor_value(DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d> x)
+inline double get_value(DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d> x)
 {
-    return static_cast<int>(floor(x.getValue()));
+    return x.getValue();
 }
 
 template <class T>
@@ -27,8 +27,8 @@ BicubicVector<float> extract_samples(
     const size_t width,
     const size_t height,
     const float* buffer,
-    const int xx,
-    const int yy,
+    const double xx,
+    const double yy,
     const WrappingMode mode_x,
     const WrappingMode mode_y);
 
@@ -41,10 +41,11 @@ std::decay_t<T>
 eval_bicubic_coeffs(const wmtk::BicubicVector<float>& coeffs, const T& sx, const T& sy)
 {
     using ImageScalar = std::decay_t<T>;
-    const auto xx = sx - get_floor_value(sx);
-    const auto yy = sy - get_floor_value(sy);
-    assert(0 <= get_floor_value(xx) && get_floor_value(xx) < 1);
-    assert(0 <= get_floor_value(yy) && get_floor_value(yy) < 1);
+
+    const auto xx = sx - (floor(get_value(sx) - 0.5f) + 0.5f);
+    const auto yy = sy - (floor(get_value(sy) - 0.5f) + 0.5f);
+    assert(0 <= get_value(xx) && get_value(xx) < 1);
+    assert(0 <= get_value(yy) && get_value(yy) < 1);
 
     wmtk::BicubicVector<ImageScalar> vv;
 

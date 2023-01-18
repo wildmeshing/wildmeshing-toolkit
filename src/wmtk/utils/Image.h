@@ -10,6 +10,7 @@
 #include "bicubic_interpolation.h"
 #include "load_image_exr.h"
 #include "save_image_exr.h"
+
 namespace wmtk {
 class Image
 {
@@ -29,13 +30,19 @@ public:
     // point coordinates between [0, 1]
     int width() const { return static_cast<int>(m_image.cols()); };
     int height() const { return static_cast<int>(m_image.rows()); };
+
     template <class T>
     std::decay_t<T> get(const T& u, const T& v) const;
     std::pair<size_t, size_t> get_raw(const double& u, const double& v) const;
-    bool set(const std::function<float(const double&, const double&)>& f);
+
+    bool set(
+        const std::function<float(const double&, const double&)>& f,
+        const WrappingMode mode_x = WrappingMode::CLAMP_TO_EDGE,
+        const WrappingMode mode_y = WrappingMode::CLAMP_TO_EDGE);
+
     bool save(const std::filesystem::path& path) const;
-    void
-    load(const std::filesystem::path& path, const WrappingMode mode_x, const WrappingMode mode_y);
+    void load(const std::filesystem::path& path, WrappingMode mode_x, WrappingMode mode_y);
+
     void set_wrapping_mode(WrappingMode mode_x, WrappingMode mode_y)
     {
         m_mode_x = mode_x;
@@ -75,15 +82,16 @@ std::decay_t<T> Image::get(const T& u, const T& v) const
         static_cast<size_t>(w),
         static_cast<size_t>(h),
         m_image.data(),
-        wmtk::get_floor_value(x),
-        wmtk::get_floor_value(y),
+        wmtk::get_value(x),
+        wmtk::get_value(y),
         m_mode_x,
         m_mode_y);
     BicubicVector<float> bicubic_coeff = get_bicubic_matrix() * sample_vector;
     return eval_bicubic_coeffs(bicubic_coeff, x, y);
 }
 
-std::pair<size_t, size_t> Image::get_raw(const double& u, const double& v) const {
+std::pair<size_t, size_t> Image::get_raw(const double& u, const double& v) const
+{
     int w = width();
     int h = height();
     auto size = std::max(w, h);
@@ -95,7 +103,10 @@ std::pair<size_t, size_t> Image::get_raw(const double& u, const double& v) const
 }
 
 // set an image to have same value as the analytical function and save it to the file given
-bool Image::set(const std::function<float(const double&, const double&)>& f)
+bool Image::set(
+    const std::function<float(const double&, const double&)>& f,
+    WrappingMode mode_x,
+    WrappingMode mode_y)
 {
     int h = height();
     int w = width();
@@ -110,6 +121,7 @@ bool Image::set(const std::function<float(const double&, const double&)>& f)
             m_image(i, j) = f(u, v);
         }
     }
+    set_wrapping_mode(mode_x, mode_y);
     return true;
 }
 
@@ -143,10 +155,7 @@ bool Image::save(const std::filesystem::path& path) const
 }
 
 // load from hdr or exr
-void Image::load(
-    const std::filesystem::path& path,
-    const WrappingMode mode_x,
-    const WrappingMode mode_y)
+void Image::load(const std::filesystem::path& path, WrappingMode mode_x, WrappingMode mode_y)
 {
     int w, h, channels;
     channels = 1;
@@ -171,4 +180,5 @@ void Image::load(
     }
     set_wrapping_mode(mode_x, mode_y);
 }
+
 } // namespace wmtk

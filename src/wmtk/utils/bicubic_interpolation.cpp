@@ -7,8 +7,8 @@ wmtk::BicubicVector<float> wmtk::extract_samples(
     const size_t width,
     const size_t height,
     const float* buffer,
-    const int sx,
-    const int sy,
+    const double sx_,
+    const double sy_,
     const WrappingMode mode_x,
     const WrappingMode mode_y)
 {
@@ -35,6 +35,9 @@ wmtk::BicubicVector<float> wmtk::extract_samples(
         const int index = (yy % height) * width + (xx % width);
         return buffer[index];
     };
+
+    const auto sx = static_cast<int>(std::floor(sx_ - 0.5));
+    const auto sy = static_cast<int>(std::floor(sy_ - 0.5));
 
     samples(0) = get_buffer_value(sx - 1, sy - 1);
     samples(1) = get_buffer_value(sx, sy - 1);

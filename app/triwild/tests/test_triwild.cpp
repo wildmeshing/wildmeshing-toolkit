@@ -1419,6 +1419,147 @@ TEST_CASE("hdr saving and loading")
     }
 }
 
+TEST_CASE("bicubic interpolation")
+{
+    // Create a random bivariate cubic polynomial
+    std::mt19937 gen;
+    std::uniform_real_distribution<float> dist_coeffs(-0.5f, 0.5f);
+
+    Eigen::Matrix4f M = Eigen::Matrix4f::NullaryExpr([&]() { return dist_coeffs(gen); });
+    auto bivariate_cubic_polynomial = [&](double x, double y) -> double {
+        Eigen::Vector4f X(1, x, x * x, x * x * x);
+        Eigen::Vector4f Y(1, y, y * y, y * y * y);
+        return X.transpose() * M * Y;
+    };
+
+    // Create an image from the polynomial function
+    int width = 40;
+    int height = 40;
+    Image image(width, height);
+    image.set(bivariate_cubic_polynomial);
+
+    // Sample random points in the image and check correctness.
+    // Avoid image boundaries since finite diff will be off at image border.
+    std::uniform_real_distribution<float> dist_samples(0.1, 0.9);
+
+    for (size_t k = 0; k < 100; ++k) {
+        Eigen::Vector2d p(dist_samples(gen), dist_samples(gen));
+        auto value0 = image.get(p.x(), p.y());
+        auto expected = bivariate_cubic_polynomial(p.x(), p.y());
+        CAPTURE(k, p.x(), p.y(), value0, expected);
+        REQUIRE_THAT(value0, Catch::Matchers::WithinRel(expected, 0.001));
+    }
+}
+
+TEST_CASE("bicubic autodiff")
+{
+    // Create a random bivariate cubic polynomial
+    std::mt19937 gen;
+    std::uniform_real_distribution<float> dist_coeffs(-0.5f, 0.5f);
+
+    Eigen::Matrix4f M = Eigen::Matrix4f::NullaryExpr([&]() { return dist_coeffs(gen); });
+    auto bivariate_cubic_polynomial = [&](auto x, auto y) {
+        using T = std::decay_t<decltype(x)>;
+        Eigen::Vector4<T> X(T(1), x, x * x, x * x * x);
+        Eigen::Vector4<T> Y(T(1), y, y * y, y * y * y);
+        return T(X.transpose() * M.cast<T>() * Y);
+    };
+
+    // Create an image from the polynomial function
+    int width = 40;
+    int height = 40;
+    Image image(width, height);
+    image.set(bivariate_cubic_polynomial);
+
+    // Sample random points in the image and check correctness.
+    std::uniform_real_distribution<float> dist_samples(0.1, 0.9);
+
+    DiffScalarBase::setVariableCount(2);
+    using DScalar = DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d>;
+    for (size_t k = 0; k < 100; ++k) {
+        Eigen::Vector2d p(dist_samples(gen), dist_samples(gen));
+        DScalar x(0, p.x());
+        DScalar y(1, p.y());
+        DScalar value0 = image.get(x, y);
+        DScalar expected = bivariate_cubic_polynomial(x, y);
+        auto g0 = value0.getGradient().eval();
+        auto g1 = expected.getGradient().eval();
+        auto h0 = value0.getHessian().eval();
+        auto h1 = expected.getHessian().eval();
+
+        auto i = static_cast<int>(std::floor(p.x() * width - Scalar(0.5)));
+        auto j = static_cast<int>(std::floor(p.y() * height - Scalar(0.5)));
+        CAPTURE(k, i, j, p.x(), p.y(), value0, expected);
+        REQUIRE_THAT(value0.getValue(), Catch::Matchers::WithinRel(expected.getValue(), 1e-2));
+        for (int k = 0; k < g0.size(); ++k) {
+            REQUIRE_THAT(g0[k], Catch::Matchers::WithinRel(g1[k], 1e-3));
+        }
+        for (int k = 0; k < h0.size(); ++k) {
+            REQUIRE_THAT(
+                h0.data()[k],
+                Catch::Matchers::WithinRel(h1.data()[k], 1e-3) ||
+                    Catch::Matchers::WithinAbs(0, 1e-3));
+        }
+    }
+}
+
+TEST_CASE("bicubic periodic")
+{
+    // Use periodic analytical function
+    std::mt19937 gen;
+    std::uniform_real_distribution<float> dist_coeffs(-0.5f, 0.5f);
+
+    Eigen::Vector2f coeffs = Eigen::Vector2f::NullaryExpr([&]() { return dist_coeffs(gen); });
+    auto periodic_function = [&](auto x, auto y) {
+        using T = std::decay_t<decltype(x)>;
+        T z = coeffs[0] * sin(x * 2.f * M_PI) + coeffs[1] * sin(y * 2.f * M_PI);
+        return z;
+    };
+
+    // Create an image from the polynomial function
+    int width = 40;
+    int height = 40;
+    Image image(width, height);
+    image.set(periodic_function, WrappingMode::REPEAT, WrappingMode::REPEAT);
+
+    // Sample random points in the image and check correctness.
+    std::uniform_real_distribution<float> dist_samples(0, 1);
+
+    DiffScalarBase::setVariableCount(2);
+    using DScalar = DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d>;
+    for (size_t k = 0; k < 100; ++k) {
+        Eigen::Vector2d p(dist_samples(gen), dist_samples(gen));
+        DScalar x(0, p.x());
+        DScalar y(1, p.y());
+        DScalar value0 = image.get(x, y);
+        DScalar expected = periodic_function(x, y);
+        auto g0 = value0.getGradient().eval();
+        auto g1 = expected.getGradient().eval();
+        auto h0 = value0.getHessian().eval();
+        auto h1 = expected.getHessian().eval();
+
+        auto i = static_cast<int>(std::floor(p.x() * width - Scalar(0.5)));
+        auto j = static_cast<int>(std::floor(p.y() * height - Scalar(0.5)));
+        CAPTURE(k, i, j, p.x(), p.y(), value0, expected);
+
+        // Since the function is not truly a cubic polynomial, we relax our gradient/hessian
+        // tolerance to a much lower value... but hopefully this is enough to check that our signal
+        // is periodic over the image.
+        REQUIRE_THAT(value0.getValue(), Catch::Matchers::WithinRel(expected.getValue(), 1e-2));
+        for (int k = 0; k < g0.size(); ++k) {
+            REQUIRE_THAT(g0[k], Catch::Matchers::WithinRel(g1[k], 1e-1));
+        }
+        for (int k = 0; k < h0.size(); ++k) {
+            REQUIRE_THAT(
+                h0.data()[k],
+                Catch::Matchers::WithinRel(h1.data()[k], 1e-1) ||
+                    Catch::Matchers::WithinAbs(0, 1e-3));
+        }
+    }
+}
+
+// TODO: Try out sin(x) with periodic boundary cond + autodiff + gradient
+
 TEST_CASE("remeshing using image data")
 {
     using DScalar = wmtk::EdgeLengthEnergy::DScalar;
@@ -1559,7 +1700,7 @@ TEST_CASE("quadrature")
     }
 }
 
-TEST_CASE("exact length") 
+TEST_CASE("exact length")
 {
     using DScalar = wmtk::EdgeLengthEnergy::DScalar;
     Image image(512, 512);
@@ -1573,7 +1714,7 @@ TEST_CASE("exact length")
     auto displacement_image_double = [&image](const double& u, const double& v) -> double {
         return (10 * image.get(u / 10., v / 10.));
     };
-    
+
     TriWild m;
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
