@@ -352,9 +352,10 @@ public:
         return m_parallel_queues;
     }
 
-protected:
     std::atomic<int> m_cnt_success = std::atomic<int>(0);
     std::atomic<int> m_cnt_fail = std::atomic<int>(0);
+
+protected:
     tbb::concurrent_priority_queue<Elem> m_serial_queue;
     std::vector<tbb::concurrent_priority_queue<Elem>> m_parallel_queues;
 };
