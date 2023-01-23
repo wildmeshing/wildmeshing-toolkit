@@ -43,7 +43,7 @@ void TriWild::collapse_all_edges()
             auto length = m.get_length3d(tup);
             if (length != -weight) return false;
 
-            if (length > pow(4. / 5. * m.mesh_parameters.m_target_l, 2)) return false;
+            if (length > (4. / 5. * m.mesh_parameters.m_target_l)) return false;
 
             return true;
         };
@@ -71,7 +71,7 @@ bool TriWild::collapse_edge_before(const Tuple& edge_tuple)
 
     double length3d = get_length3d(edge_tuple);
     // enforce heuristic
-    assert(length3d < pow(4. / 5. * mesh_parameters.m_target_l, 2));
+    assert(length3d < 4. / 5. * mesh_parameters.m_target_l);
 
     // record boundary vertex as boudnary_vertex in vertex attribute for accurate collapse after
     // boundary operations
@@ -168,7 +168,7 @@ bool TriWild::collapse_edge_after(const Tuple& edge_tuple)
         (vertex_attrs[cache.local().v1].fixed || vertex_attrs[cache.local().v2].fixed);
     vertex_attrs[vid].curve_id = vertex_attrs[cache.local().v1].curve_id;
     // enforce heuristic
-    if (length3d < pow(4. / 5. * mesh_parameters.m_target_l, 2)) {
+    if (length3d < (4. / 5. * mesh_parameters.m_target_l)) {
         return true;
     }
     // // check quality

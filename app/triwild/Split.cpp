@@ -42,7 +42,7 @@ void TriWild::split_all_edges()
             auto& [weight, op, tup] = ele;
             auto length = m.get_length3d(tup);
             if (length != weight) return false;
-            if (length < pow(4. / 3. * m.mesh_parameters.m_target_l, 2)) return false;
+            if (length < 4. / 3. * m.mesh_parameters.m_target_l) return false;
             return true;
         };
         executor(*this, collect_all_ops);
@@ -60,8 +60,19 @@ void TriWild::split_all_edges()
 }
 bool TriWild::split_edge_before(const Tuple& edge_tuple)
 {
+    static std::atomic_int cnt = 0;
     if (!TriMesh::split_edge_before(edge_tuple)) return false;
-
+    write_vtk(fmt::format("split_{:04d}.vtu", cnt++));
+    if (cnt == 3) {
+        auto a = vertex_attrs[edge_tuple.vid(*this)].pos;
+        auto b = vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].pos;
+        wmtk::logger().info("{} {}", a, b);
+        wmtk::logger().info(
+            "{} {}",
+            mesh_parameters.m_project_to_3d(a(0), a(1)),
+            mesh_parameters.m_project_to_3d(b(0), b(1)));
+    }
+    if (cnt == 100) exit(10000);
     // check if the 2 vertices are on the same curve
     if (vertex_attrs[edge_tuple.vid(*this)].curve_id !=
         vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].curve_id)
@@ -113,7 +124,7 @@ bool TriWild::split_edge_after(const Tuple& edge_tuple)
             is_boundary_vertex(e.switch_vertex(*this));
     }
     // enforce length check
-    if (length3d > pow(4. / 3. * mesh_parameters.m_target_l, 2)) {
+    if (length3d > (4. / 3. * mesh_parameters.m_target_l)) {
         return true;
     }
 

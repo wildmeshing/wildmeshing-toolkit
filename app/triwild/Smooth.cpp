@@ -141,24 +141,13 @@ void triwild::TriWild::smooth_all_vertices()
     } else {
         timer.start();
         auto executor = wmtk::ExecutePass<TriWild, wmtk::ExecutionPolicy::kSeq>();
-        bool nochange = 1;
         int itr = 0;
         do {
-            nochange = 1;
-            std::vector<Eigen::Vector2d> old_pos(vert_capacity());
-            for (auto& v : get_vertices()) {
-                old_pos[v.vid(*this)] = vertex_attrs[v.vid(*this)].pos;
-            }
+            mesh_parameters.m_gradient = Eigen::Vector2d(0., 0.);
             executor(*this, collect_all_ops);
-            // write_obj("smooth" + std::to_string(itr) + ".obj");
-            std::vector<Tuple> verts = get_vertices();
-            for (int i = 0; i < verts.size() && nochange; i++) {
-                auto vid = verts[i].vid(*this);
-                nochange &= ((old_pos[vid] - vertex_attrs[vid].pos).norm() < 1e-5);
-            }
             itr++;
-        } while (!nochange && itr < 5);
-        wmtk::logger().info(itr);
+        } while ((mesh_parameters.m_gradient / vert_capacity()).stableNorm() < 1e-4 && itr < 5);
+        wmtk::logger().info("===== terminate smooth after {} itrs", itr);
         time = timer.getElapsedTime();
         wmtk::logger().info("vertex smoothing operation time serial: {}s", time);
     }

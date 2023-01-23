@@ -89,6 +89,10 @@ public:
     // Writes a triangle mesh in OBJ format
     void write_obj(const std::string& path);
 
+    // Writes a triangle mesh in ply format
+    void write_ply(const std::string& path);
+    void write_vtk(const std::string& path);
+
     void write_displaced_obj(
         const std::string& path,
         const std::function<double(double, double)>& displacement);
@@ -135,7 +139,7 @@ public:
         const; // overload of the version that takes a tuple.
                // used when the tuple is invalid but use vids to uquest for positions in the
                // vertex_attrs
-
+    double get_length_quadrature(const Eigen::Vector2d& p1, const Eigen::Vector2d& p2) const;
     void flatten_dofs(Eigen::VectorXd& v_flat);
     double get_mesh_energy(const Eigen::VectorXd& v_flat);
 };

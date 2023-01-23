@@ -7,7 +7,9 @@
 #include <tbb/concurrent_vector.h>
 #include <wmtk/utils/AMIPS2D.h>
 #include <wmtk/utils/AMIPS2D_autodiff.h>
+#include <wmtk/utils/AdaptiveGuassQuadrature.h>
 #include <Eigen/Core>
+#include <lean_vtk.hpp>
 #include <wmtk/utils/TriQualityUtils.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
 using namespace wmtk;
@@ -122,40 +124,41 @@ bool TriWild::invariants(const std::vector<Tuple>& new_tris)
     }
 
     for (auto& t : new_tris) {
-        if (is_inverted(t)) {
-            wmtk::logger().info("inverted triangle {} ", t.fid(*this));
-            return false;
-        }
-        assert(!is_inverted(t));
         Eigen::Vector2d a, b, c;
         auto verts = oriented_tri_vertices(t);
         assert(verts.size() == 3);
-        a << vertex_attrs[verts[0].vid(*this)].pos(0), vertex_attrs[verts[0].vid(*this)].pos(1);
-        b << vertex_attrs[verts[1].vid(*this)].pos(0), vertex_attrs[verts[1].vid(*this)].pos(1);
-        c << vertex_attrs[verts[2].vid(*this)].pos(0), vertex_attrs[verts[2].vid(*this)].pos(1);
+        a = vertex_attrs[verts[0].vid(*this)].pos;
+        b = vertex_attrs[verts[1].vid(*this)].pos;
+        c = vertex_attrs[verts[2].vid(*this)].pos;
 
         // check both inverted and exact colinear
         if (wmtk::orient2d_t(a, b, c) != 1) {
-            wmtk::logger().info("false in orientation and collinear {}", wmtk::orient2d_t(a, b, c));
+            wmtk::logger().info(
+                "----{} false in orientation and collinear {}",
+                t.fid(*this),
+                wmtk::orient2d_t(a, b, c));
+            wmtk::logger().info("{} {} {}", a, b, c);
+            // write_ply("rejected_split_" + std::to_string(t.fid(*this)) + ".ply");
             return false;
         }
 
-        // add area check (degenerate tirangle)
-        Eigen::Vector3d A, B, C;
-        A.topRows(2) = a;
-        A(2) = 0.;
-        B.topRows(2) = b;
-        B(2) = 0.;
-        C.topRows(2) = c;
-        C(2) = 0.;
+        // // add area check (degenerate tirangle)
+        // Eigen::Vector3d A, B, C;
+        // A.topRows(2) = a;
+        // A(2) = 0.;
+        // B.topRows(2) = b;
+        // B(2) = 0.;
+        // C.topRows(2) = c;
+        // C(2) = 0.;
 
-        double area = ((B - A).cross(C - A)).squaredNorm();
-        if (area < 1e-6 * ((B - A).squaredNorm() + (C - A).squaredNorm() + (B - C).squaredNorm())) {
-            wmtk::logger().info("false in area ");
-            wmtk::logger().info("failing ABC are {} {} {}", A, B, C);
-            return false; // arbitrary chosen previous std::numeric_limits<double>::denorm_min() is
-                          // too small}
-        }
+        // double area = ((B - A).cross(C - A)).squaredNorm();
+        // if (area < 1e-6 * ((B - A).squaredNorm() + (C - A).squaredNorm() + (B -
+        // C).squaredNorm())) {
+        //     wmtk::logger().info("====false in area ");
+        //     wmtk::logger().info("{} {} {}", a, b, c);
+        //     return false; // arbitrary chosen previous std::numeric_limits<double>::denorm_min() is
+        //                   // too small}
+        // }
     }
     return true;
 }
@@ -279,6 +282,57 @@ void TriWild::write_obj(const std::string& path)
     igl::writeOBJ(path, V3, F);
 }
 
+void TriWild::write_ply(const std::string& path)
+{
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+
+    export_mesh(V, F);
+
+    Eigen::MatrixXd V3 = Eigen::MatrixXd::Zero(V.rows(), 3);
+    V3.leftCols(2) = V;
+
+    igl::writePLY(path, V3, F);
+}
+
+void TriWild::write_vtk(const std::string& path)
+{
+    std::vector<double> points;
+    std::vector<int> elements;
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+
+    export_mesh(V, F);
+    for (int i = 0; i < V.rows(); i++) {
+        auto p = mesh_parameters.m_project_to_3d(V(i, 0), V(i, 1));
+        points.emplace_back(p(0));
+        points.emplace_back(p(1));
+        points.emplace_back(p(2));
+    }
+    assert(points.size() == 3 * V.rows());
+
+    for (auto e : get_edges()) {
+        elements.emplace_back(e.vid(*this));
+        elements.emplace_back(e.switch_vertex(*this).vid(*this));
+    }
+    assert(elements.size() == 2 * get_edges().size());
+    // vector<double> scalar_field = {0., 1., 2.};
+    // vector<double> vector_field = points;
+    const int dim = 3;
+    const int cell_size = 3;
+    leanvtk::VTUWriter writer;
+
+    std::vector<double> scalar_field;
+    for (auto e : get_edges()) {
+        if (!e.is_valid(*this)) continue;
+        scalar_field.emplace_back(get_length3d(e));
+    }
+    writer.add_scalar_field("scalar_field", scalar_field);
+    // writer.add_vector_field("vector_field", vector_field, dim);
+
+    writer.write_surface_mesh(path, dim, cell_size, points, elements);
+}
+
 void TriWild::write_displaced_obj(
     const std::string& path,
     const std::function<double(double, double)>& displacement)
@@ -318,9 +372,9 @@ double TriWild::get_length2d(const Tuple& t) const
     auto& m = *this;
     auto& v1 = t;
     auto v2 = t.switch_vertex(m);
-    double length = (m.vertex_attrs[v1.vid(m)].pos - m.vertex_attrs[v2.vid(m)].pos).squaredNorm();
-    return length;
+    return (m.vertex_attrs[v1.vid(m)].pos - m.vertex_attrs[v2.vid(m)].pos).stableNorm();
 }
+
 double TriWild::get_length3d(const Tuple& t) const
 {
     auto& v1 = t;
@@ -330,20 +384,15 @@ double TriWild::get_length3d(const Tuple& t) const
 
     double length = 0.0;
 
-    // add 3d displacement. add 3 implicit points to approximate quadrature of the curve
-    auto implicit1 = v12d * 0.75 + v22d * 0.25;
-    auto implicit2 = v12d * 0.5 + v22d * 0.5;
-    auto implicit3 = v12d * 0.25 + v22d * 0.75;
-    auto v1_3d = mesh_parameters.m_project_to_3d(v12d(0), v12d(1));
-    auto implicit1_3d = mesh_parameters.m_project_to_3d(implicit1(0), implicit1(1));
-    auto implicit2_3d = mesh_parameters.m_project_to_3d(implicit2(0), implicit2(1));
-    auto implicit3_3d = mesh_parameters.m_project_to_3d(implicit3(0), implicit3(1));
-    auto v2_3d = mesh_parameters.m_project_to_3d(v22d(0), v22d(1));
-    length = (v1_3d - implicit1_3d).squaredNorm();
-    length += (implicit1_3d - implicit2_3d).squaredNorm();
-    length += (implicit2_3d - implicit3_3d).squaredNorm();
-    length += (v2_3d - implicit3_3d).squaredNorm();
-
+    // add 3d displacement. add n implicit points to approximate quadrature of the curve
+    std::vector<Eigen::Vector3d> quadrature;
+    for (int i = 0; i < 6; i++) {
+        auto tmp_v2d = v12d * (5 - i) / 5. + v22d * i / 5.;
+        quadrature.emplace_back(mesh_parameters.m_project_to_3d(tmp_v2d(0), tmp_v2d(1)));
+    }
+    for (int i = 0; i < 5; i++) {
+        length += (quadrature[i] - quadrature[i + 1]).stableNorm();
+    }
     return length;
 }
 
@@ -354,19 +403,32 @@ double TriWild::get_length3d(const size_t& vid1, const size_t& vid2) const
 
     double length = 0.0;
 
-    // add 3d displacement. add 3 implicit points to approximate quadrature of the curve
-    auto implicit1 = v12d * 0.75 + v22d * 0.25;
-    auto implicit2 = v12d * 0.5 + v22d * 0.5;
-    auto implicit3 = v12d * 0.25 + v22d * 0.75;
-    auto v1_3d = mesh_parameters.m_project_to_3d(v12d(0), v12d(1));
-    auto implicit1_3d = mesh_parameters.m_project_to_3d(implicit1(0), implicit1(1));
-    auto implicit2_3d = mesh_parameters.m_project_to_3d(implicit2(0), implicit2(1));
-    auto implicit3_3d = mesh_parameters.m_project_to_3d(implicit3(0), implicit3(1));
-    auto v2_3d = mesh_parameters.m_project_to_3d(v22d(0), v22d(1));
-    length = (v1_3d - implicit1_3d).squaredNorm();
-    length += (implicit1_3d - implicit2_3d).squaredNorm();
-    length += (implicit2_3d - implicit3_3d).squaredNorm();
-    length += (v2_3d - implicit3_3d).squaredNorm();
+    // add 3d displacement. add n implicit points to approximate quadrature of the curve
+    std::vector<Eigen::Vector3d> quadrature;
+    for (int i = 0; i < 6; i++) {
+        auto tmp_v2d = v12d * (5 - i) / 5. + v22d * i / 5.;
+        quadrature.emplace_back(mesh_parameters.m_project_to_3d(tmp_v2d(0), tmp_v2d(1)));
+    }
+    for (int i = 0; i < 5; i++) {
+        length += (quadrature[i] - quadrature[i + 1]).stableNorm();
+    }
+    return length;
+}
+
+double TriWild::get_length_quadrature(const Eigen::Vector2d& p1, const Eigen::Vector2d& p2) const
+{
+    double length = (mesh_parameters.m_project_to_3d(p1(0), p1(1)) -
+                     mesh_parameters.m_project_to_3d(p2(0), p2(1)))
+                        .stableNorm();
+    auto mid_point = (p1 + p2) / 2.;
+    double length_tmp = (mesh_parameters.m_project_to_3d(p1(0), p1(1)) -
+                         mesh_parameters.m_project_to_3d(mid_point(0), mid_point(1)))
+                            .stableNorm() +
+                        (mesh_parameters.m_project_to_3d(mid_point(0), mid_point(1)) -
+                         mesh_parameters.m_project_to_3d(p2(0), p2(1)))
+                            .stableNorm();
+    if (pow(length_tmp - length, 2) < 1e-2 * length)
+        length = get_length_quadrature(p1, mid_point) + get_length_quadrature(mid_point, p2);
 
     return length;
 }
@@ -423,7 +485,9 @@ std::pair<double, Eigen::Vector2d> TriWild::get_one_ring_energy(const Tuple& loc
 
     for (auto i = 0; i < one_ring.size(); i++) {
         auto tri = one_ring[i];
-        assert(!is_inverted(tri));
+        if (is_inverted(tri)) {
+            return {std::numeric_limits<double>::max(), Eigen::Vector2d::Zero()};
+        }
         auto local_tuples = oriented_tri_vertices(tri);
         for (auto j = 0; j < 3; j++) {
             if (local_tuples[j].vid(*this) == loc.vid(*this)) {
@@ -485,7 +549,6 @@ bool TriWild::is_inverted(const Tuple& loc) const
         vertex_attrs[vs[0].vid(*this)].pos,
         vertex_attrs[vs[1].vid(*this)].pos,
         vertex_attrs[vs[2].vid(*this)].pos);
-
     // The element is inverted if it not positive (i.e. it is negative or it is degenerate)
     return (res != igl::predicates::Orientation::POSITIVE);
 }
@@ -556,9 +619,9 @@ void TriWild::mesh_improvement(int max_its)
 
         mesh_parameters.js_log["iteration_" + std::to_string(it)]["avg_grad"] = avg_grad;
 
-        if (avg_grad < 1e-6) {
+        if (avg_grad < 1e-4) {
             wmtk::logger().info(
-                "!!!avg grad is less than 1e-6 !!! energy doesn't improve anymore. early stop"
+                "!!!avg grad is less than 1e-4 !!! energy doesn't improve anymore. early stop"
                 "itr {}, avg length {} ",
                 it,
                 avg_len);
@@ -567,7 +630,7 @@ void TriWild::mesh_improvement(int max_its)
         mesh_parameters.m_gradient = Eigen::Vector2d(0., 0.);
         avg_len = avg_edge_len(*this);
         mesh_parameters.js_log["iteration_" + std::to_string(it)]["edge_len_avg_final"] = avg_len;
-        if (abs(avg_grad - old_average) < 1e-5) break;
+        if (abs(avg_grad - old_average) < 1e-4) break;
         old_average = avg_grad;
         if (mesh_parameters.m_target_l <= 0 &&
             mesh_parameters.m_max_energy < mesh_parameters.m_stop_energy) {
