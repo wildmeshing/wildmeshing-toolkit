@@ -7,6 +7,7 @@
 #include <remeshing/UniformRemeshing.h>
 #include <wmtk/utils/AMIPS2D.h>
 #include <wmtk/utils/AMIPS2D_autodiff.h>
+#include <wmtk/utils/AdaptiveGuassQuadrature.h>
 #include <wmtk/utils/BoundaryParametrization.h>
 #include <wmtk/utils/Image.h>
 #include <wmtk/utils/autodiff.h>
@@ -1362,6 +1363,11 @@ TEST_CASE("exr saving and loading")
         REQUIRE(abs(image2.get(p, p) - image.get(p, p)) < 1e-4);
     }
     // test bicubic interpolation
+    Image image3(512, 512);
+    image3.load(
+        "/home/yunfan/data/plastic_stripes_Height.exr",
+        WrappingMode::MIRROR_REPEAT,
+        WrappingMode::MIRROR_REPEAT);
     std::mt19937 rand_generator;
     std::uniform_real_distribution<double> rand_dist;
     for (int j = 0; j < 10; j++) {
@@ -1369,10 +1375,9 @@ TEST_CASE("exr saving and loading")
         rand_p = Eigen::Vector2d(rand_dist(rand_generator), rand_dist(rand_generator));
 
         wmtk::logger().info(
-            "image2 at {} : {} =? {}",
+            "image3 at {} : {} ",
             rand_p,
-            image2.get(static_cast<float>(rand_p(0)), static_cast<float>(rand_p(1))),
-            displacement_double(rand_p.x(), rand_p.y()));
+            image3.get(static_cast<float>(rand_p(0)), static_cast<float>(rand_p(1))));
     }
 }
 
@@ -1474,9 +1479,9 @@ TEST_CASE("stripe")
 {
     using DScalar = wmtk::EdgeLengthEnergy::DScalar;
 
-    Image image(1024, 1024);
+    Image image(512, 512);
     image.load(
-        "/home/yunfan/data/one_ramp.exr",
+        "/home/yunfan/data/plastic_stripes_Height.exr",
         WrappingMode::MIRROR_REPEAT,
         WrappingMode::MIRROR_REPEAT);
     auto displacement = [&image](const DScalar& u, const DScalar& v) -> DScalar {
@@ -1485,23 +1490,71 @@ TEST_CASE("stripe")
     auto displacement_image_double = [&image](const double& u, const double& v) -> double {
         return (10 * image.get(u / 10., v / 10.));
     };
-    Eigen::MatrixXd V(4, 2);
-    V.row(0) << 0, 0;
-    V.row(1) << 10, 0;
-    V.row(2) << 0, 10;
-    V.row(3) << 10, 10;
-    Eigen::MatrixXi F(2, 3);
-    F.row(0) << 0, 1, 2;
-    F.row(1) << 1, 3, 2;
 
     TriWild m;
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    igl::read_triangle_mesh("/home/yunfan/data/input.obj", V, F);
     m.create_mesh(V, F);
-    std::ofstream js_o("one_ramp.json");
-    wmtk::logger().info("#v {}, #f {} ", m.vert_capacity(), m.tri_capacity());
-    m.set_parameters(0.5, displacement, EDGE_LENGTH, true);
-    m.mesh_improvement(10);
+    for (auto f : m.get_faces()) {
+        REQUIRE(!m.is_inverted(f));
+    }
+    REQUIRE(m.invariants(m.get_faces()));
 
-    m.write_displaced_obj("one_ramp_exr.obj", displacement_image_double);
-    js_o << std::setw(4) << m.mesh_parameters.js_log << std::endl;
-    js_o.close();
+    wmtk::logger().info("#v {}, #f {} ", m.vert_capacity(), m.tri_capacity());
+    m.set_parameters(0.05, displacement, EDGE_LENGTH, true);
+    wmtk::logger().info("height at 0,0 is {}", m.mesh_parameters.m_project_to_3d(0., 0.));
+    wmtk::logger().info("height at 5,5 is {}", m.mesh_parameters.m_project_to_3d(5., 5.));
+    wmtk::logger().info("height at 0,5 is {}", m.mesh_parameters.m_project_to_3d(0., 5.));
+    wmtk::logger().info("height at 5,0 is {}", m.mesh_parameters.m_project_to_3d(5., 0.));
+    m.split_all_edges();
+}
+
+TEST_CASE("implicit points")
+{
+    using DScalar = wmtk::EdgeLengthEnergy::DScalar;
+
+    TriWild m;
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    igl::read_triangle_mesh("/home/yunfan/data/moonface_output.obj", V, F);
+    m.create_mesh(V, F);
+
+    auto displacement = [](const DScalar& u, const DScalar& v) -> DScalar { return DScalar(1.); };
+    m.set_parameters(0.05, displacement, EDGE_LENGTH, true);
+    int edge_cnt = 0;
+    for (auto e : m.get_edges()) {
+        auto length2d = m.get_length2d(e);
+        auto length3d = m.get_length3d(e);
+        if (pow((length2d - length3d), 2) > 1e-6)
+            wmtk::logger().info(
+                "{} {}",
+                m.vertex_attrs[e.vid(m)].pos,
+                m.vertex_attrs[e.switch_vertex(m).vid(m)].pos);
+        REQUIRE(pow((length2d - length3d), 2) < 1e-6);
+        edge_cnt++;
+    }
+    wmtk::logger().info(edge_cnt);
+}
+
+TEST_CASE("quadrature")
+{
+    using DScalar = wmtk::EdgeLengthEnergy::DScalar;
+    DiffScalarBase::setVariableCount(2);
+    TriWild m;
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    igl::read_triangle_mesh("/home/yunfan/data/input.obj", V, F);
+    m.create_mesh(V, F);
+    auto displacement = [](const DScalar& u, const DScalar& v) -> DScalar { return DScalar(1.); };
+    m.set_parameters(0.05, displacement, EDGE_LENGTH, true);
+    int edge_cnt = 0;
+    for (auto e : m.get_edges()) {
+        auto length2d = m.get_length2d(e);
+        auto length3d = m.get_length3d(e);
+        auto v1 = m.vertex_attrs[e.vid(m)].pos;
+        auto v2 = m.vertex_attrs[e.switch_vertex(m).vid(m)].pos;
+        auto length_q = adaptive_gauss_quadrature(m.mesh_parameters.m_project_to_3d, v1, v2, 0.5);
+        wmtk::logger().info("edge 2d {} 3d {} guass {}", length2d, length3d, length_q);
+    }
 }

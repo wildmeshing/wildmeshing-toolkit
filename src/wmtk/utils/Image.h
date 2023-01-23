@@ -74,8 +74,8 @@ std::decay_t<T> Image::get(const T& u, const T& v) const
         static_cast<size_t>(w),
         static_cast<size_t>(h),
         m_image.data(),
-        wmtk::get_value(x),
-        wmtk::get_value(y),
+        wmtk::get_floor_value(x),
+        wmtk::get_floor_value(y),
         m_mode_x,
         m_mode_y);
     BicubicVector<float> bicubic_coeff = get_bicubic_matrix() * sample_vector;
