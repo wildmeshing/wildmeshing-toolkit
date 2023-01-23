@@ -1,13 +1,14 @@
 #include "bicubic_interpolation.h"
 
 #include <spdlog/spdlog.h>
+#include "Logger.hpp"
 using namespace wmtk;
 wmtk::BicubicVector<float> wmtk::extract_samples(
     const size_t width,
     const size_t height,
     const float* buffer,
-    const float sx_,
-    const float sy_,
+    const int sx,
+    const int sy,
     const WrappingMode mode_x,
     const WrappingMode mode_y)
 {
@@ -34,11 +35,6 @@ wmtk::BicubicVector<float> wmtk::extract_samples(
         const int index = (yy % height) * width + (xx % width);
         return buffer[index];
     };
-
-    const auto sx = static_cast<int>(floor(sx_));
-    const auto sy = static_cast<int>(floor(sy_));
-    assert(static_cast<float>(sx) <= sx_);
-    assert(static_cast<float>(sy) <= sy_);
 
     samples(0) = get_buffer_value(sx - 1, sy - 1);
     samples(1) = get_buffer_value(sx, sy - 1);
