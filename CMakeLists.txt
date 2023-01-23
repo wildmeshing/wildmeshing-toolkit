@@ -112,6 +112,8 @@ include(tinyexr)
 target_link_libraries(wildmeshing_toolkit PUBLIC
     tinyexr
     stb)
+include(lean-vtk)
+target_link_libraries(wildmeshing_toolkit PUBLIC LeanVTK)
 
 # ###############################################################################
 # Subdirectories
