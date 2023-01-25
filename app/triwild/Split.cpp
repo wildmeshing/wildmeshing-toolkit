@@ -36,11 +36,11 @@ void TriWild::split_all_edges()
     wmtk::logger().info("size for edges to be split is {}", collect_all_ops.size());
     auto setup_and_execute = [&](auto executor) {
         executor.renew_neighbor_tuples = split_renew;
-        executor.priority = [&](auto& m, auto _, auto& e) { return m.get_length3d(e); };
+        executor.priority = [&](auto& m, auto _, auto& e) { return m.get_length_exact(e); };
         executor.num_threads = NUM_THREADS;
         executor.is_weight_up_to_date = [](auto& m, auto& ele) {
             auto& [weight, op, tup] = ele;
-            auto length = m.get_length3d(tup);
+            auto length = m.get_length_exact(tup);
             if (length != weight) return false;
             if (length < 4. / 3. * m.mesh_parameters.m_target_l) return false;
             return true;
@@ -62,17 +62,8 @@ bool TriWild::split_edge_before(const Tuple& edge_tuple)
 {
     static std::atomic_int cnt = 0;
     if (!TriMesh::split_edge_before(edge_tuple)) return false;
-    write_vtk(fmt::format("split_{:04d}.vtu", cnt++));
-    if (cnt == 3) {
-        auto a = vertex_attrs[edge_tuple.vid(*this)].pos;
-        auto b = vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].pos;
-        wmtk::logger().info("{} {}", a, b);
-        wmtk::logger().info(
-            "{} {}",
-            mesh_parameters.m_project_to_3d(a(0), a(1)),
-            mesh_parameters.m_project_to_3d(b(0), b(1)));
-    }
-    if (cnt == 100) exit(10000);
+    
+    // if (cnt % 100 == 0) write_vtk(fmt::format("split_{:04d}.vtu", cnt));
     // check if the 2 vertices are on the same curve
     if (vertex_attrs[edge_tuple.vid(*this)].curve_id !=
         vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].curve_id)
@@ -98,6 +89,7 @@ bool TriWild::split_edge_before(const Tuple& edge_tuple)
         cache.local().max_energy = std::max(cache.local().max_energy, get_quality(tri));
     }
     mesh_parameters.m_max_energy = cache.local().max_energy;
+    cnt++;
     return true;
 }
 bool TriWild::split_edge_after(const Tuple& edge_tuple)
@@ -105,7 +97,7 @@ bool TriWild::split_edge_after(const Tuple& edge_tuple)
     // adding heuristic decision. If length2 > 4. / 3. * 4. / 3. * m.m_target_l * m.m_target_l always split
     // transform edge length with displacement
 
-    double length3d = get_length3d(cache.local().v1, cache.local().v2);
+    double length3d = get_length_exact(cache.local().v1, cache.local().v2);
 
     const Eigen::Vector2d p =
         (vertex_attrs[cache.local().v1].pos + vertex_attrs[cache.local().v2].pos) / 2.0;

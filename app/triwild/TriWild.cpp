@@ -319,15 +319,15 @@ void TriWild::write_vtk(const std::string& path)
     // vector<double> scalar_field = {0., 1., 2.};
     // vector<double> vector_field = points;
     const int dim = 3;
-    const int cell_size = 3;
+    const int cell_size = 2;
     leanvtk::VTUWriter writer;
 
     std::vector<double> scalar_field;
     for (auto e : get_edges()) {
         if (!e.is_valid(*this)) continue;
-        scalar_field.emplace_back(get_length3d(e));
+        scalar_field.emplace_back(get_length_exact(e));
     }
-    writer.add_scalar_field("scalar_field", scalar_field);
+    writer.add_cell_scalar_field("scalar_field", scalar_field);
     // writer.add_vector_field("vector_field", vector_field, dim);
 
     writer.write_surface_mesh(path, dim, cell_size, points, elements);
@@ -432,6 +432,55 @@ double TriWild::get_length_quadrature(const Eigen::Vector2d& p1, const Eigen::Ve
 
     return length;
 }
+
+double TriWild::get_length_exact(const size_t& vid1, const size_t& vid2) const{
+    auto v12d = vertex_attrs[vid1].pos;
+    auto v22d = vertex_attrs[vid2].pos;
+
+    double length = 0.0;
+    // get the pixel index of p1 and p2
+    int xx1, yy1, xx2, yy2;
+    std::tie(xx1, yy1) = mesh_parameters.m_image_get_raw(v12d(0), v12d(1));
+    std::tie(xx2, yy2) = mesh_parameters.m_image_get_raw(v22d(0), v22d(1));
+    // get all the pixels in between p1 and p2
+    auto pixel_num = static_cast<int>(ceil(sqrt(pow(xx2 - xx1, 2) + pow(yy2 - yy1, 2))));
+    // sum up the length 
+    // add 3d displacement. add n implicit points to approximate quadrature of the curve
+    std::vector<Eigen::Vector3d> quadrature;
+    for (int i = 0; i < (pixel_num + 1); i++) {
+        auto tmp_v2d = v12d * (pixel_num - i) / pixel_num + v22d * i / pixel_num;
+        quadrature.emplace_back(mesh_parameters.m_project_to_3d(tmp_v2d(0), tmp_v2d(1)));
+    }
+    for (int i = 0; i < pixel_num; i++) {
+        length += (quadrature[i] - quadrature[i + 1]).stableNorm();
+    }
+    return length;
+}
+
+double TriWild::get_length_exact(const Tuple& e) const{
+    auto v12d = vertex_attrs[e.vid(*this)].pos;
+    auto v22d = vertex_attrs[e.switch_vertex(*this).vid(*this)].pos;
+
+    double length = 0.0;
+    // get the pixel index of p1 and p2
+    int xx1, yy1, xx2, yy2;
+    std::tie(xx1, yy1) = mesh_parameters.m_image_get_raw(v12d(0), v12d(1));
+    std::tie(xx2, yy2) = mesh_parameters.m_image_get_raw(v22d(0), v22d(1));
+    // get all the pixels in between p1 and p2
+    auto pixel_num = static_cast<int>(ceil(sqrt(pow(xx2 - xx1, 2) + pow(yy2 - yy1, 2))));
+    // sum up the length 
+    // add 3d displacement. add n implicit points to approximate quadrature of the curve
+    std::vector<Eigen::Vector3d> quadrature;
+    for (int i = 0; i < (pixel_num + 1); i++) {
+        auto tmp_v2d = v12d * (pixel_num - i) / pixel_num + v22d * i / pixel_num;
+        quadrature.emplace_back(mesh_parameters.m_project_to_3d(tmp_v2d(0), tmp_v2d(1)));
+    }
+    for (int i = 0; i < pixel_num; i++) {
+        length += (quadrature[i] - quadrature[i + 1]).stableNorm();
+    }
+    return length;
+}
+
 
 double TriWild::get_quality(const Tuple& loc, int idx) const
 {

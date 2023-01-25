@@ -30,7 +30,7 @@ public:
     int height() const { return static_cast<int>(m_image.rows()); };
     template <class T>
     std::decay_t<T> get(const T& u, const T& v) const;
-    float get_raw(const Eigen::Vector2i& index) const { return m_image(index.y(), index.x()); };
+    std::pair<size_t, size_t> get_raw(const double& u, const double& v) const;
     bool set(const std::function<float(const double&, const double&)>& f);
     bool save(const std::filesystem::path& path) const;
     void
@@ -80,6 +80,17 @@ std::decay_t<T> Image::get(const T& u, const T& v) const
         m_mode_y);
     BicubicVector<float> bicubic_coeff = get_bicubic_matrix() * sample_vector;
     return eval_bicubic_coeffs(bicubic_coeff, x, y);
+}
+
+std::pair<size_t, size_t> Image::get_raw(const double& u, const double& v) const {
+    int w = width();
+    int h = height();
+    auto size = std::max(w, h);
+    // x, y are between 0 and 1
+    auto x = u * static_cast<size_t>(size);
+    auto y = v * static_cast<size_t>(size);
+
+    return {x, y};
 }
 
 // set an image to have same value as the analytical function and save it to the file given
