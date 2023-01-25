@@ -1505,12 +1505,9 @@ TEST_CASE("stripe")
     m.mesh_parameters.m_image_get_raw = [&image](const double& u, const double& v) -> std::pair<size_t, size_t> {
         return image.get_raw(u / 10., v / 10.);
     };
-    m.set_parameters(0.05, displacement, EDGE_LENGTH, true);
-    wmtk::logger().info("height at 0,0 is {}", m.mesh_parameters.m_project_to_3d(0., 0.));
-    wmtk::logger().info("height at 5,5 is {}", m.mesh_parameters.m_project_to_3d(5., 5.));
-    wmtk::logger().info("height at 0,5 is {}", m.mesh_parameters.m_project_to_3d(0., 5.));
-    wmtk::logger().info("height at 5,0 is {}", m.mesh_parameters.m_project_to_3d(5., 0.));
-    m.split_all_edges();
+    m.set_parameters(0.1, displacement, EDGE_LENGTH, true);
+    m.mesh_improvement(3);
+    m.write_displaced_obj("stripe_final.obj", m.mesh_parameters.m_project_to_3d);
 }
 
 TEST_CASE("implicit points")

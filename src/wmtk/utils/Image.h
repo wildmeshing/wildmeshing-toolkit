@@ -22,6 +22,7 @@ protected:
     WrappingMode m_mode_y = WrappingMode::CLAMP_TO_EDGE;
 
 public:
+    Image() = default;
     Image(int height_, int width_) { m_image.resize(height_, width_); };
 
 public:
