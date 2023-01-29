@@ -1,4 +1,6 @@
 #pragma once
+#include <wmtk/utils/Image.h>
+#include <wmtk/utils/MipMap.h>
 #include <wmtk/utils/autodiff.h>
 #include <nlohmann/json.hpp>
 #include <sec/envelope/SampleEnvelope.hpp>
@@ -54,9 +56,11 @@ public:
         return Eigen::Vector3d(u, v, z);
     };
 
-    std::function<std::pair<size_t, size_t>(const double&, const double&)> m_image_get_raw;
-
     wmtk::Boundary m_boundary; // stores boundary information
     bool m_boundary_parameter = true; // use boundary single variable parameterization
+
+    std::function<std::pair<size_t, size_t>(const double&, const double&)> m_image_get_raw;
+
+    wmtk::MipMap m_mipmap;
 };
 } // namespace triwild

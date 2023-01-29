@@ -8,6 +8,8 @@
 #include <wmtk/utils/BoundaryParametrization.h>
 #include <wmtk/utils/Energy2d.h>
 #include <wmtk/utils/GeoUtils.h>
+#include <wmtk/utils/Image.h>
+#include <wmtk/utils/MipMap.h>
 #include <finitediff.hpp>
 #include <nlohmann/json.hpp>
 #include <sec/envelope/SampleEnvelope.hpp>
@@ -48,9 +50,14 @@ public:
     void set_parameters(
         const double target_edge_length,
         const std::function<DScalar(const DScalar&, const DScalar&)>& displacement_function,
+        const wmtk::Image& image,
         const ENERGY_TYPE energy_type,
         const bool boundary_parameter);
-
+    void set_parameters(
+        const double target_edge_length,
+        const std::function<DScalar(const DScalar&, const DScalar&)>& displacement_function,
+        const ENERGY_TYPE energy_type,
+        const bool boundary_parameter);
     // Store the per-vertex attributes
     wmtk::AttributeCollection<VertexAttributes> vertex_attrs;
     struct InfoCache
@@ -140,8 +147,10 @@ public:
                // used when the tuple is invalid but use vids to uquest for positions in the
                // vertex_attrs
     double get_length_quadrature(const Eigen::Vector2d& p1, const Eigen::Vector2d& p2) const;
-    double get_length_exact(const size_t& vid1, const size_t& vid2) const;
-    double get_length_exact(const Tuple& e) const;
+    double get_legnth_1ptperpixel(const size_t& vid1, const size_t& vid2) const;
+    double get_legnth_1ptperpixel(const Tuple& e) const;
+    double get_length_mipmap(const size_t& vid1, const size_t& vid2) const;
+    double get_length_mipmap(const Tuple& e) const;
     void flatten_dofs(Eigen::VectorXd& v_flat);
     double get_mesh_energy(const Eigen::VectorXd& v_flat);
 };

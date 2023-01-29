@@ -146,7 +146,7 @@ void triwild::TriWild::smooth_all_vertices()
             mesh_parameters.m_gradient = Eigen::Vector2d(0., 0.);
             executor(*this, collect_all_ops);
             itr++;
-        } while ((mesh_parameters.m_gradient / vert_capacity()).stableNorm() < 1e-4 && itr < 5);
+        } while ((mesh_parameters.m_gradient / vert_capacity()).stableNorm() > 1e-4 && itr < 5);
         wmtk::logger().info("===== terminate smooth after {} itrs", itr);
         time = timer.getElapsedTime();
         wmtk::logger().info("vertex smoothing operation time serial: {}s", time);
