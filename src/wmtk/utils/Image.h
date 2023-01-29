@@ -10,6 +10,7 @@
 #include "bicubic_interpolation.h"
 #include "load_image_exr.h"
 #include "save_image_exr.h"
+
 namespace wmtk {
 class Image
 {
@@ -29,6 +30,7 @@ public:
     // point coordinates between [0, 1]
     int width() const { return static_cast<int>(m_image.cols()); };
     int height() const { return static_cast<int>(m_image.rows()); };
+
     template <class T>
     std::decay_t<T> get(const T& u, const T& v) const;
     std::pair<int, int> get_raw(const double& u, const double& v) const;
@@ -39,8 +41,8 @@ public:
         return true;
     };
     bool save(const std::filesystem::path& path) const;
-    void
-    load(const std::filesystem::path& path, const WrappingMode mode_x, const WrappingMode mode_y);
+    void load(const std::filesystem::path& path, WrappingMode mode_x, WrappingMode mode_y);
+
     void set_wrapping_mode(WrappingMode mode_x, WrappingMode mode_y)
     {
         m_mode_x = mode_x;
@@ -67,8 +69,8 @@ std::decay_t<T> Image::get(const T& u, const T& v) const
         static_cast<size_t>(w),
         static_cast<size_t>(h),
         m_image.data(),
-        wmtk::get_floor_value(x),
-        wmtk::get_floor_value(y),
+        wmtk::get_value(x),
+        wmtk::get_value(y),
         m_mode_x,
         m_mode_y);
     BicubicVector<float> bicubic_coeff = get_bicubic_matrix() * sample_vector;
