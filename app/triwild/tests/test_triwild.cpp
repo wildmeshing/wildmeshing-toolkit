@@ -10,6 +10,7 @@
 #include <wmtk/utils/AdaptiveGuassQuadrature.h>
 #include <wmtk/utils/BoundaryParametrization.h>
 #include <wmtk/utils/Image.h>
+#include <wmtk/utils/MipMap.h>
 #include <wmtk/utils/autodiff.h>
 #include <wmtk/utils/bicubic_interpolation.h>
 #include <catch2/catch.hpp>
@@ -1620,9 +1621,9 @@ TEST_CASE("stripe")
 {
     using DScalar = wmtk::EdgeLengthEnergy::DScalar;
 
-    Image image(512, 512);
+    Image image(1024, 1024);
     image.load(
-        "/Users/yunfanzhou/Downloads/tmp/plastic_stripes_Height.exr",
+        "/home/yunfan/wildmeshing-toolkit/build_debug/drlin.exr",
         WrappingMode::MIRROR_REPEAT,
         WrappingMode::MIRROR_REPEAT);
     auto displacement = [&image](const DScalar& u, const DScalar& v) -> DScalar {
@@ -1635,7 +1636,7 @@ TEST_CASE("stripe")
     TriWild m;
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
-    igl::read_triangle_mesh("/Users/yunfanzhou/Downloads/tmp/input.obj", V, F);
+    igl::read_triangle_mesh("/home/yunfan/data/input.obj", V, F);
     m.create_mesh(V, F);
     for (auto f : m.get_faces()) {
         REQUIRE(!m.is_inverted(f));
@@ -1643,10 +1644,11 @@ TEST_CASE("stripe")
     REQUIRE(m.invariants(m.get_faces()));
 
     wmtk::logger().info("#v {}, #f {} ", m.vert_capacity(), m.tri_capacity());
-    m.mesh_parameters.m_image_get_raw = [&image](const double& u, const double& v) -> std::pair<size_t, size_t> {
+    m.mesh_parameters.m_image_get_raw =
+        [&image](const double& u, const double& v) -> std::pair<size_t, size_t> {
         return image.get_raw(u / 10., v / 10.);
     };
-    m.set_parameters(0.1, displacement, EDGE_LENGTH, true);
+    m.set_parameters(1, displacement, EDGE_LENGTH, true);
     m.mesh_improvement(3);
     m.write_displaced_obj("stripe_final.obj", m.mesh_parameters.m_project_to_3d);
 }
@@ -1720,7 +1722,8 @@ TEST_CASE("exact length")
     Eigen::MatrixXi F;
     igl::read_triangle_mesh("/Users/yunfanzhou/Downloads/tmp/input.obj", V, F);
     m.create_mesh(V, F);
-    m.mesh_parameters.m_image_get_raw = [&image](const double& u, const double& v) -> std::pair<size_t, size_t> {
+    m.mesh_parameters.m_image_get_raw =
+        [&image](const double& u, const double& v) -> std::pair<size_t, size_t> {
         return image.get_raw(u / 10., v / 10.);
     };
     m.set_parameters(0.05, displacement, EDGE_LENGTH, true);
@@ -1728,6 +1731,45 @@ TEST_CASE("exact length")
     for (auto e : m.get_edges()) {
         auto length = m.get_length_exact(e.vid(m), e.switch_vertex(m).vid(m));
         auto length3d = m.get_length3d(e);
-        wmtk::logger().info("length_exact {} length3d {} between {}, {}", length, length3d, e.vid(m), e.switch_vertex(m).vid(m));
+        wmtk::logger().info(
+            "length_exact {} length3d {} between {}, {}",
+            length,
+            length3d,
+            e.vid(m),
+            e.switch_vertex(m).vid(m));
     }
+}
+
+TEST_CASE("mipmap")
+{
+    using DScalar = wmtk::EdgeLengthEnergy::DScalar;
+
+    auto displacement_double = [&](const double& u, const double& v) -> float { return 10 * u; };
+    Image image(1024, 1024);
+    image.set(displacement_double);
+    image.save("drlin.exr");
+
+    MipMap mipmap(image);
+    REQUIRE(mipmap.level() == 10);
+    // for (int i = 0; i < mipmap.level(); i++) {
+    //     auto tmp_image = mipmap.get_image(i);
+    //     tmp_image.save(fmt::format("drlin_{:04d}.exr", i));
+    // }
+
+    // now test the length of the edges using a dummy example
+    TriWild m;
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    igl::read_triangle_mesh("/home/yunfan/data/input.obj", V, F);
+    m.create_mesh(V, F);
+    for (auto f : m.get_faces()) {
+        REQUIRE(!m.is_inverted(f));
+    }
+    REQUIRE(m.invariants(m.get_faces()));
+    auto displacement = [&image](const DScalar& u, const DScalar& v) -> DScalar {
+        return 10 * image.get(u / DScalar(10.), v / DScalar(10.));
+    };
+    m.set_parameters(0.1, displacement, image, EDGE_LENGTH, true);
+    m.mesh_improvement(1);
+    m.write_displaced_obj("mipmap_out.obj", m.mesh_parameters.m_project_to_3d);
 }
