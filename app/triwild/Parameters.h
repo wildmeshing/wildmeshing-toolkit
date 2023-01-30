@@ -59,7 +59,7 @@ public:
     wmtk::Boundary m_boundary; // stores boundary information
     bool m_boundary_parameter = true; // use boundary single variable parameterization
 
-    std::function<std::pair<size_t, size_t>(const double&, const double&)> m_image_get_raw;
+    std::function<std::pair<int, int>(const double&, const double&)> m_image_get_raw;
 
     wmtk::MipMap m_mipmap;
 };

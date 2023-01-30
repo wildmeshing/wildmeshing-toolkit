@@ -49,7 +49,6 @@ public:
     // separately
     void set_parameters(
         const double target_edge_length,
-        const std::function<DScalar(const DScalar&, const DScalar&)>& displacement_function,
         const wmtk::Image& image,
         const ENERGY_TYPE energy_type,
         const bool boundary_parameter);
@@ -147,8 +146,8 @@ public:
                // used when the tuple is invalid but use vids to uquest for positions in the
                // vertex_attrs
     double get_length_quadrature(const Eigen::Vector2d& p1, const Eigen::Vector2d& p2) const;
-    double get_legnth_1ptperpixel(const size_t& vid1, const size_t& vid2) const;
-    double get_legnth_1ptperpixel(const Tuple& e) const;
+    double get_length_1ptperpixel(const size_t& vid1, const size_t& vid2) const;
+    double get_length_1ptperpixel(const Tuple& e) const;
     double get_length_mipmap(const size_t& vid1, const size_t& vid2) const;
     double get_length_mipmap(const Tuple& e) const;
     void flatten_dofs(Eigen::VectorXd& v_flat);

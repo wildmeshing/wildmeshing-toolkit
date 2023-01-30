@@ -1729,7 +1729,7 @@ TEST_CASE("exact length")
     m.set_parameters(0.05, displacement, EDGE_LENGTH, true);
 
     for (auto e : m.get_edges()) {
-        auto length = m.get_length_exact(e.vid(m), e.switch_vertex(m).vid(m));
+        auto length = m.get_length_1ptperpixel(e.vid(m), e.switch_vertex(m).vid(m));
         auto length3d = m.get_length3d(e);
         wmtk::logger().info(
             "length_exact {} length3d {} between {}, {}",
@@ -1769,7 +1769,7 @@ TEST_CASE("mipmap")
     auto displacement = [&image](const DScalar& u, const DScalar& v) -> DScalar {
         return 10 * image.get(u / DScalar(10.), v / DScalar(10.));
     };
-    m.set_parameters(0.1, displacement, image, EDGE_LENGTH, true);
+    m.set_parameters(0.1, image, EDGE_LENGTH, true);
     m.mesh_improvement(1);
     m.write_displaced_obj("mipmap_out.obj", m.mesh_parameters.m_project_to_3d);
 }

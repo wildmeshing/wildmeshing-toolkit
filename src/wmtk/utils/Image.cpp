@@ -28,7 +28,10 @@ std::pair<int, int> Image::get_raw(const double& u, const double& v) const
 }
 
 // set an image to have same value as the analytical function and save it to the file given
-bool Image::set(const std::function<float(const double&, const double&)>& f)
+bool Image::set(
+    const std::function<float(const double&, const double&)>& f,
+    WrappingMode mode_x,
+    WrappingMode mode_y)
 {
     int h = height();
     int w = width();
@@ -43,6 +46,7 @@ bool Image::set(const std::function<float(const double&, const double&)>& f)
             m_image(i, j) = f(u, v);
         }
     }
+    set_wrapping_mode(mode_x, mode_y);
     return true;
 }
 

@@ -36,11 +36,11 @@ void TriWild::split_all_edges()
     wmtk::logger().info("size for edges to be split is {}", collect_all_ops.size());
     auto setup_and_execute = [&](auto executor) {
         executor.renew_neighbor_tuples = split_renew;
-        executor.priority = [&](auto& m, auto _, auto& e) { return m.get_legnth_1ptperpixel(e); };
+        executor.priority = [&](auto& m, auto _, auto& e) { return m.get_length_1ptperpixel(e); };
         executor.num_threads = NUM_THREADS;
         executor.is_weight_up_to_date = [](auto& m, auto& ele) {
             auto& [weight, op, tup] = ele;
-            auto length = m.get_legnth_1ptperpixel(tup);
+            auto length = m.get_length_1ptperpixel(tup);
             if (length != weight) return false;
             if (length < 4. / 3. * m.mesh_parameters.m_target_l) return false;
             return true;
@@ -63,7 +63,7 @@ bool TriWild::split_edge_before(const Tuple& edge_tuple)
     static std::atomic_int cnt = 0;
     if (!TriMesh::split_edge_before(edge_tuple)) return false;
 
-    // if (cnt % 100 == 0) write_vtk(fmt::format("split_{:04d}.vtu", cnt));
+    if (cnt % 1000 == 0) write_vtk(fmt::format("split_{:04d}.vtu", cnt));
     // check if the 2 vertices are on the same curve
     if (vertex_attrs[edge_tuple.vid(*this)].curve_id !=
         vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].curve_id)
@@ -97,8 +97,8 @@ bool TriWild::split_edge_after(const Tuple& edge_tuple)
     // adding heuristic decision. If length2 > 4. / 3. * 4. / 3. * m.m_target_l * m.m_target_l always split
     // transform edge length with displacement
 
-    double length3d = get_legnth_1ptperpixel(cache.local().v1, cache.local().v2);
-
+    double length3d = get_length_1ptperpixel(cache.local().v1, cache.local().v2);
+    if (length3d < 0.) return false;
     const Eigen::Vector2d p =
         (vertex_attrs[cache.local().v1].pos + vertex_attrs[cache.local().v2].pos) / 2.0;
     auto vid = edge_tuple.switch_vertex(*this).vid(*this);
@@ -111,10 +111,11 @@ bool TriWild::split_edge_after(const Tuple& edge_tuple)
         vertex_attrs[vid].boundary_vertex = true;
         vertex_attrs[vid].t = mesh_parameters.m_boundary.uv_to_t(vertex_attrs[vid].pos);
     }
-    for (auto e : get_one_ring_edges_for_vertex(edge_tuple.switch_vertex(*this))) {
-        vertex_attrs[e.switch_vertex(*this).vid(*this)].boundary_vertex =
-            is_boundary_vertex(e.switch_vertex(*this));
-    }
+    // for (auto e : get_one_ring_edges_for_vertex(edge_tuple.switch_vertex(*this))) {
+    // assert(e.switch_vertex(*this).vid(*this) != edge_tuple.switch_vertex(*this).vid(*this));
+    //     vertex_attrs[e.switch_vertex(*this).vid(*this)].boundary_vertex =
+    //         is_boundary_vertex(e.switch_vertex(*this));
+    // }
     // enforce length check
     if (length3d > (4. / 3. * mesh_parameters.m_target_l)) {
         return true;

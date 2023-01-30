@@ -70,11 +70,6 @@ int main(int argc, char** argv)
     assert(ok);
     wmtk::logger().info("/////input: {}", input_file);
     wmtk::logger().info("/////interpolation wrapping mode: {}", wrapping_mode);
-    // std::string output =
-    //     std::regex_replace(input_file, std::regex("[^0-9]*([0-9]+).*"), std::string("$1"));
-    // std::string output_file1 = output_file + output + ".obj";
-
-    // create the json file to record logs
     std::ofstream js_o(output_json);
 
     igl::Timer timer;
@@ -104,7 +99,7 @@ int main(int argc, char** argv)
     auto displacement_image_double = [&image](const double& u, const double& v) -> double {
         return (10 * image.get(u / 10., v / 10.));
     };
-    triwild.set_parameters(target_l, displacement, energy_type, boundary_parameter_on);
+    triwild.set_parameters(target_l, image, energy_type, boundary_parameter_on);
     int max_iter = 10;
     max_iter = config["max_iter"];
     triwild.mesh_improvement(max_iter);

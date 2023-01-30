@@ -34,7 +34,10 @@ public:
     template <class T>
     std::decay_t<T> get(const T& u, const T& v) const;
     std::pair<int, int> get_raw(const double& u, const double& v) const;
-    bool set(const std::function<float(const double&, const double&)>& f);
+    bool set(
+        const std::function<float(const double&, const double&)>& f,
+        const WrappingMode mode_x = WrappingMode::CLAMP_TO_EDGE,
+        const WrappingMode mode_y = WrappingMode::CLAMP_TO_EDGE);
     bool set(const int r, const int c, const float v)
     {
         m_image(r, c) = v;

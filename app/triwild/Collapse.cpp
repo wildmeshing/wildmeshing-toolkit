@@ -36,11 +36,11 @@ void TriWild::collapse_all_edges()
     wmtk::logger().info("size for edges to be collapse is {}", collect_all_ops.size());
     auto setup_and_execute = [&](auto executor) {
         executor.renew_neighbor_tuples = renew;
-        executor.priority = [&](auto& m, auto _, auto& e) { return -m.get_legnth_1ptperpixel(e); };
+        executor.priority = [&](auto& m, auto _, auto& e) { return -m.get_length_1ptperpixel(e); };
         executor.num_threads = NUM_THREADS;
         executor.is_weight_up_to_date = [](auto& m, auto& ele) {
             auto& [weight, op, tup] = ele;
-            auto length = m.get_legnth_1ptperpixel(tup);
+            auto length = m.get_length_1ptperpixel(tup);
             if (length != -weight) return false;
 
             if (length > (4. / 5. * m.mesh_parameters.m_target_l)) return false;
@@ -69,7 +69,7 @@ bool TriWild::collapse_edge_before(const Tuple& edge_tuple)
         vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].curve_id)
         return false;
 
-    double length3d = get_legnth_1ptperpixel(edge_tuple);
+    double length3d = get_length_1ptperpixel(edge_tuple);
     // enforce heuristic
     assert(length3d < 4. / 5. * mesh_parameters.m_target_l);
 
@@ -108,7 +108,7 @@ bool TriWild::collapse_edge_after(const Tuple& edge_tuple)
     if (vertex_attrs[cache.local().v1].fixed && vertex_attrs[cache.local().v2].fixed) return false;
 
     // adding heuristic decision. If length2 < 4. / 5. * 4. / 5. * m.m_target_l * m.m_target_l always collapse
-    double length3d = get_legnth_1ptperpixel(cache.local().v1, cache.local().v2);
+    double length3d = get_length_1ptperpixel(cache.local().v1, cache.local().v2);
 
     auto vid = edge_tuple.vid(*this);
     Eigen::Vector2d p;

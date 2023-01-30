@@ -24,13 +24,17 @@ auto avg_edge_len = [](auto& m) {
 
 void TriWild::set_parameters(
     const double target_edge_length,
-    const std::function<DScalar(const DScalar&, const DScalar&)>& displacement_function,
     const Image& image,
     const ENERGY_TYPE energy_type,
     const bool boundary_parameter)
 {
     mesh_parameters.m_target_l = target_edge_length;
-    mesh_parameters.m_get_z = displacement_function;
+    mesh_parameters.m_image_get_raw = [&](const double& x, const double& y) -> std::pair<int, int> {
+        return image.get_raw(x / 10., y / 10.);
+    };
+    mesh_parameters.m_get_z = [&](const DScalar& u, const DScalar& v) -> DScalar {
+        return 10 * image.get(u / DScalar(10.), v / DScalar(10.));
+    };
     set_energy(
         energy_type); // set the displacement_function first since it is used for energy setting
     mesh_parameters.m_boundary_parameter = boundary_parameter;
@@ -340,7 +344,7 @@ void TriWild::write_vtk(const std::string& path)
     std::vector<double> scalar_field;
     for (auto e : get_edges()) {
         if (!e.is_valid(*this)) continue;
-        scalar_field.emplace_back(get_length_mipmap(e));
+        scalar_field.emplace_back(get_length_1ptperpixel(e));
     }
     writer.add_cell_scalar_field("scalar_field", scalar_field);
     // writer.add_vector_field("vector_field", vector_field, dim);
@@ -448,21 +452,22 @@ double TriWild::get_length_quadrature(const Eigen::Vector2d& p1, const Eigen::Ve
     return length;
 }
 
-double TriWild::get_legnth_1ptperpixel(const size_t& vid1, const size_t& vid2) const
+double TriWild::get_length_1ptperpixel(const size_t& vid1, const size_t& vid2) const
 {
     auto v12d = vertex_attrs[vid1].pos;
     auto v22d = vertex_attrs[vid2].pos;
 
     double length = 0.0;
     // get the pixel index of p1 and p2
-    int xx1, yy1, xx2, yy2;
-    std::tie(xx1, yy1) = mesh_parameters.m_image_get_raw(v12d(0), v12d(1));
-    std::tie(xx2, yy2) = mesh_parameters.m_image_get_raw(v22d(0), v22d(1));
+    auto [xx1, yy1] = mesh_parameters.m_image_get_raw(v12d(0), v12d(1));
+    auto [xx2, yy2] = mesh_parameters.m_image_get_raw(v22d(0), v22d(1));
     // get all the pixels in between p1 and p2
-    auto pixel_num = static_cast<int>(ceil(sqrt(pow(xx2 - xx1, 2) + pow(yy2 - yy1, 2))));
+    auto pixel_num = std::max(abs(xx2 - xx1), abs(yy2 - yy1));
     // sum up the length
     // add 3d displacement. add n implicit points to approximate quadrature of the curve
-    std::vector<Eigen::Vector3d> quadrature;
+    if (pixel_num <= 0) return -1.;
+    assert(pixel_num > 0);
+    std ::vector<Eigen::Vector3d> quadrature;
     for (int i = 0; i < (pixel_num + 1); i++) {
         auto tmp_v2d = v12d * (pixel_num - i) / pixel_num + v22d * i / pixel_num;
         quadrature.emplace_back(mesh_parameters.m_project_to_3d(tmp_v2d(0), tmp_v2d(1)));
@@ -473,18 +478,19 @@ double TriWild::get_legnth_1ptperpixel(const size_t& vid1, const size_t& vid2) c
     return length;
 }
 
-double TriWild::get_legnth_1ptperpixel(const Tuple& e) const
+double TriWild::get_length_1ptperpixel(const Tuple& e) const
 {
     auto v12d = vertex_attrs[e.vid(*this)].pos;
     auto v22d = vertex_attrs[e.switch_vertex(*this).vid(*this)].pos;
 
     double length = 0.0;
     // get the pixel index of p1 and p2
-    int xx1, yy1, xx2, yy2;
-    std::tie(xx1, yy1) = mesh_parameters.m_image_get_raw(v12d(0), v12d(1));
-    std::tie(xx2, yy2) = mesh_parameters.m_image_get_raw(v22d(0), v22d(1));
+    auto [xx1, yy1] = mesh_parameters.m_image_get_raw(v12d(0), v12d(1));
+    auto [xx2, yy2] = mesh_parameters.m_image_get_raw(v22d(0), v22d(1));
     // get all the pixels in between p1 and p2
-    auto pixel_num = static_cast<int>(ceil(sqrt(pow(xx2 - xx1, 2) + pow(yy2 - yy1, 2))));
+    auto pixel_num = std::max(abs(xx2 - xx1), abs(yy2 - yy1));
+    if (pixel_num <= 0) return -1.;
+    assert(pixel_num > 0);
     // sum up the length
     // add 3d displacement. add n implicit points to approximate quadrature of the curve
     std::vector<Eigen::Vector3d> quadrature;
