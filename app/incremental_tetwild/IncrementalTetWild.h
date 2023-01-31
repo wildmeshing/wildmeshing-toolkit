@@ -7,7 +7,6 @@
 #include "Parameters.h"
 #include "common.h"
 #include "sec/envelope/SampleEnvelope.hpp"
-#include <VolumeRemesher/embed.h>
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
@@ -22,6 +21,7 @@
 #include <tbb/task_arena.h>
 #include <tbb/parallel_sort.h>
 #include <wmtk/utils/EnableWarnings.hpp>
+#include <VolumeRemesher/embed.h>
 // clang-format on
 
 #include <igl/remove_unreferenced.h>
@@ -262,7 +262,6 @@ public:
     bool triangle_insertion_after(const std::vector<std::vector<Tuple>>& new_faces) override;
 
 
-
 public:
     void split_all_edges();
     bool split_edge_before(const Tuple& t) override;
@@ -368,27 +367,24 @@ private:
     tbb::enumerable_thread_specific<SwapInfoCache> swap_cache;
 
 
-    //for incremental tetwild
+    // for incremental tetwild
 public:
     void insertion_by_volumeremesher(
         const std::vector<Vector3d>& vertices,
         const std::vector<std::array<size_t, 3>>& faces,
-        std::vector<Vector3r> &v_rational,
-        std::vector<std::array<size_t, 3>> &facets_after,
-        std::vector<bool> &is_v_on_input,
-        std::vector<std::array<size_t, 4>> &tets_after
-        );
+        std::vector<Vector3r>& v_rational,
+        std::vector<std::array<size_t, 3>>& facets_after,
+        std::vector<bool>& is_v_on_input,
+        std::vector<std::array<size_t, 4>>& tets_after);
 
     void init_from_Volumeremesher(
-        std::vector<Vector3r> &v_rational,
-        std::vector<std::array<size_t, 3>> &facets,
-        std::vector<bool> &is_v_on_input,
-        std::vector<std::array<size_t, 4>> &tets
-        );
+        std::vector<Vector3r>& v_rational,
+        std::vector<std::array<size_t, 3>>& facets,
+        std::vector<bool>& is_v_on_input,
+        std::vector<std::array<size_t, 4>>& tets);
 
     std::vector<std::array<size_t, 3>> triangulate_polygon_face(std::vector<Vector3r> points);
-
-
+    bool check_polygon_face_validity(std::vector<tetwild::Vector3r> points);
 };
 
 } // namespace tetwild

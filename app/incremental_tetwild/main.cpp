@@ -1,7 +1,7 @@
 // #include <remeshing/UniformRemeshing.h>
 #include <sec/ShortestEdgeCollapse.h>
-#include "Parameters.h"
 #include "IncrementalTetWild.h"
+#include "Parameters.h"
 #include "common.h"
 #include "sec/envelope/SampleEnvelope.hpp"
 
@@ -148,24 +148,25 @@ int main(int argc, char** argv)
     std::vector<bool> is_v_on_input;
     std::vector<std::array<size_t, 4>> tets;
 
-    std::cout<<"vsimp size: "<<vsimp.size()<<std::endl;
-    std::cout<<"fsimp size: "<<fsimp.size()<<std::endl;
+    std::cout << "vsimp size: " << vsimp.size() << std::endl;
+    std::cout << "fsimp size: " << fsimp.size() << std::endl;
 
     mesh.insertion_by_volumeremesher(vsimp, fsimp, v_rational, facets, is_v_on_input, tets);
 
-    std::cout<< "here" <<std::endl;
+    std::cout << "here" << std::endl;
 
-    //generate new mesh
+    // generate new mesh
     tetwild::TetWild mesh_new(params, *ptr_env, NUM_THREADS);
     mesh_new.init_from_Volumeremesher(v_rational, facets, is_v_on_input, tets);
 
-    std::cout<< "here2" <<std::endl;    
+    std::cout << "here2" << std::endl;
 
-    mesh_new.output_mesh("test_output.msh");
-    std::cout<< "here3"<<std::endl;
+    mesh_new.output_mesh("test_embed_output.msh");
+    std::cout << "here3" << std::endl;
 
     // /////////mesh improvement
-    // mesh.mesh_improvement(max_its);
+    mesh_new.mesh_improvement(max_its);
+    std::cout << "here4" << std::endl;
     // ////winding number
     // if (filter_with_input)
     //     mesh.filter_outside(verts, tris, true);

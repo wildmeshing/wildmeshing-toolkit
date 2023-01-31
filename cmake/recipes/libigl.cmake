@@ -17,41 +17,12 @@ endif()
 
 message(STATUS "Third-party: creating target 'igl::core'")
 
-# Options for libigl modules
-option(LIBIGL_USE_STATIC_LIBRARY     "Use libigl as static library" OFF)
-option(LIBIGL_WITH_COMISO            "Use CoMiso"                   OFF)
-option(LIBIGL_WITH_EMBREE            "Use Embree"                   OFF)
-option(LIBIGL_WITH_OPENGL            "Use OpenGL"                   OFF)
-option(LIBIGL_WITH_OPENGL_GLFW       "Use GLFW"                     OFF)
-option(LIBIGL_WITH_OPENGL_GLFW_IMGUI "Use ImGui"                    OFF)
-option(LIBIGL_WITH_PNG               "Use PNG"                      OFF)
-option(LIBIGL_WITH_TETGEN            "Use Tetgen"                   OFF)
-option(LIBIGL_WITH_TRIANGLE          "Use Triangle"                 OFF)
-option(LIBIGL_WITH_PREDICATES        "Use exact predicates"         ON)
-option(LIBIGL_WITH_XML               "Use XML"                      OFF)
-
 include(FetchContent)
 FetchContent_Declare(
     libigl
-    URL https://github.com/libigl/libigl/archive/refs/tags/v2.3.0.zip
-    URL_HASH MD5=6f17257bf1c898872091e5095d477cbf
+    GIT_REPOSITORY https://github.com/libigl/libigl.git
+    GIT_TAG 3ea7f9480967fcf6bf02ce9b993c0ea6d2fc45f6
 )
-FetchContent_GetProperties(libigl)
-if(libigl_POPULATED)
-    return()
-endif()
-FetchContent_Populate(libigl)
-
 include(eigen)
-
-set(LIBIGL_WITH_PREDICATES ON CACHE BOOL "Use exact predicates" FORCE)
-
-list(APPEND CMAKE_MODULE_PATH ${libigl_SOURCE_DIR}/cmake)
-include(${libigl_SOURCE_DIR}/cmake/libigl.cmake ${libigl_BINARY_DIR})
-
-# Install rules
-set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME libigl)
-set_target_properties(igl PROPERTIES EXPORT_NAME core)
-install(DIRECTORY ${libigl_SOURCE_DIR}/include/igl DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-install(TARGETS igl igl_common EXPORT Libigl_Targets)
-install(EXPORT Libigl_Targets DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/igl NAMESPACE igl::)
+option(LIBIGL_INSTALL "Enable installation of libigl targets" ON)
+FetchContent_MakeAvailable(libigl)

@@ -1,6 +1,7 @@
 #include "UniformRemeshing.h"
 #include <igl/Timer.h>
 #include <igl/is_edge_manifold.h>
+#include <igl/predicates/predicates.h>
 #include <wmtk/TriMesh.h>
 #include <wmtk/utils/VectorUtils.h>
 #include <Eigen/Core>
@@ -8,7 +9,6 @@
 #include <atomic>
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
-
 using namespace app::remeshing;
 using namespace wmtk;
 
@@ -287,10 +287,6 @@ bool UniformRemeshing::collapse_edge_after(const TriMesh::Tuple& t)
 bool UniformRemeshing::split_edge_before(const Tuple& t)
 {
     if (!TriMesh::split_edge_before(t)) return false;
-    if (vertex_attrs[t.vid(*this)].freeze &&
-        vertex_attrs[t.switch_vertex(*this).vid(*this)].freeze) {
-        if (!t.switch_face(*this).has_value()) return false; // check if it's bondary
-    }
     cache_edge_positions(t);
     return true;
 }
@@ -299,7 +295,7 @@ bool UniformRemeshing::split_edge_before(const Tuple& t)
 bool UniformRemeshing::split_edge_after(const TriMesh::Tuple& t)
 {
     const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
-    auto vid = t.vid(*this);
+    auto vid = t.switch_vertex(*this).vid(*this);
     vertex_attrs[vid].pos = p;
     vertex_attrs[vid].partition_id = position_cache.local().partition_id;
     return true;
