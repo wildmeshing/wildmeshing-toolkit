@@ -87,9 +87,12 @@ int main(int argc, char** argv)
     double target_l = config["target_edge_length"];
     wmtk::logger().info("/////target edge length: {}", target_l);
 
-    triwild::ENERGY_TYPE energy_type = triwild::EDGE_LENGTH;
+    triwild::ENERGY_TYPE energy_type = triwild::ENERGY_TYPE::EDGE_LENGTH;
+    triwild::EDGE_LEN_TYPE edge_len_type = triwild::EDGE_LEN_TYPE::PT_PER_PIXEL;
     energy_type = config["energy_type"];
+    edge_len_type = config["edge_len_type"];
     wmtk::logger().info("/////energy type: {}", energy_type);
+    wmtk::logger().info("/////energy length type: {}", edge_len_type);
 
     bool boundary_parameter_on = true;
     boundary_parameter_on = config["boundary_parameter_on"];
@@ -99,7 +102,8 @@ int main(int argc, char** argv)
     auto displacement_image_double = [&image](const double& u, const double& v) -> double {
         return (10 * image.get(u / 10., v / 10.));
     };
-    triwild.set_parameters(target_l, image, energy_type, boundary_parameter_on);
+
+    triwild.set_parameters(target_l, image, edge_len_type, energy_type, boundary_parameter_on);
     int max_iter = 10;
     max_iter = config["max_iter"];
     triwild.mesh_improvement(max_iter);

@@ -5,7 +5,8 @@
 #include <nlohmann/json.hpp>
 #include <sec/envelope/SampleEnvelope.hpp>
 namespace triwild {
-enum ENERGY_TYPE { AMIPS, SYMDI, EDGE_LENGTH };
+enum class ENERGY_TYPE { AMIPS, SYMDI, EDGE_LENGTH };
+enum class EDGE_LEN_TYPE { LINEAR2D, LINEAR3D, PT_PER_PIXEL, MIPMAP };
 struct Parameters
 {
     using json = nlohmann::json;
@@ -62,5 +63,7 @@ public:
     std::function<std::pair<int, int>(const double&, const double&)> m_image_get_raw;
 
     wmtk::MipMap m_mipmap;
+
+    std::function<double(const std::size_t&, const std::size_t&)> m_get_length;
 };
 } // namespace triwild

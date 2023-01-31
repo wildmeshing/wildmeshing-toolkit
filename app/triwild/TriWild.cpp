@@ -18,13 +18,15 @@ namespace triwild {
 auto avg_edge_len = [](auto& m) {
     double avg_len = 0.0;
     auto edges = m.get_edges();
-    for (auto& e : edges) avg_len += std::sqrt(m.get_length3d(e));
+    for (auto& e : edges)
+        avg_len += std::sqrt(m.mesh_parameters.m_get_length(e.vid(m), e.switch_vertex(m).vid(m)));
     return avg_len / edges.size();
 };
 
 void TriWild::set_parameters(
     const double target_edge_length,
     const Image& image,
+    const EDGE_LEN_TYPE edge_len_type,
     const ENERGY_TYPE energy_type,
     const bool boundary_parameter)
 {
@@ -37,6 +39,7 @@ void TriWild::set_parameters(
     };
     set_energy(
         energy_type); // set the displacement_function first since it is used for energy setting
+    set_edge_length_measurement(edge_len_type);
     mesh_parameters.m_boundary_parameter = boundary_parameter;
     mesh_parameters.m_mipmap = wmtk::MipMap(image);
 }
@@ -51,6 +54,7 @@ void TriWild::set_parameters(
     mesh_parameters.m_get_z = displacement_function;
     set_energy(
         energy_type); // set the displacement_function first since it is used for energy setting
+    set_edge_length_measurement(EDGE_LEN_TYPE::LINEAR3D); // set the default to get_legnth_3d
     mesh_parameters.m_boundary_parameter = boundary_parameter;
 }
 
@@ -82,17 +86,43 @@ void TriWild::set_feature(Tuple& v)
 }
 
 // assuming the m_triwild_displacement in mesh_parameter has been set
-void TriWild::set_energy(ENERGY_TYPE energy_type)
+void TriWild::set_energy(const ENERGY_TYPE energy_type)
 {
     std::unique_ptr<Energy> energy_ptr;
     switch (energy_type) {
-    case AMIPS: energy_ptr = std::make_unique<wmtk::AMIPS>(); break;
-    case SYMDI: energy_ptr = std::make_unique<wmtk::SymDi>(); break;
-    case EDGE_LENGTH:
+    case ENERGY_TYPE::AMIPS: energy_ptr = std::make_unique<wmtk::AMIPS>(); break;
+    case ENERGY_TYPE::SYMDI: energy_ptr = std::make_unique<wmtk::SymDi>(); break;
+    case ENERGY_TYPE::EDGE_LENGTH:
         energy_ptr = std::make_unique<wmtk::EdgeLengthEnergy>(mesh_parameters.m_get_z);
         break;
     }
     mesh_parameters.m_energy = std::move(energy_ptr);
+}
+
+void TriWild::set_edge_length_measurement(const EDGE_LEN_TYPE edge_len_type)
+{
+    switch (edge_len_type) {
+    case EDGE_LEN_TYPE::LINEAR2D:
+        mesh_parameters.m_get_length = [&](const size_t& vid1, const size_t& vid2) -> double {
+            this->get_length2d(vid1, vid2);
+        };
+        break;
+    case EDGE_LEN_TYPE::LINEAR3D:
+        mesh_parameters.m_get_length = [&](const size_t& vid1, const size_t& vid2) -> double {
+            this->get_length3d(vid1, vid2);
+        };
+        break;
+    case EDGE_LEN_TYPE::PT_PER_PIXEL:
+        mesh_parameters.m_get_length = [&](const size_t& vid1, const size_t& vid2) -> double {
+            this->get_length_1ptperpixel(vid1, vid2);
+        };
+        break;
+    case EDGE_LEN_TYPE::MIPMAP:
+        mesh_parameters.m_get_length = [&](const size_t& vid1, const size_t& vid2) -> double {
+            this->get_length_mipmap(vid1, vid2);
+        };
+        break;
+    }
 }
 
 void TriWild::set_projection()
@@ -136,7 +166,7 @@ bool TriWild::invariants(const std::vector<Tuple>& new_tris)
                     vertex_attrs[vs[j].vid(*this)].pos(1), 0.0;
             }
             if (mesh_parameters.m_envelope.is_outside(tris)) {
-                wmtk::logger().info("envelop invariant fail");
+                wmtk::logger().debug("envelop invariant fail");
                 return false;
             }
         }
@@ -152,11 +182,11 @@ bool TriWild::invariants(const std::vector<Tuple>& new_tris)
 
         // check both inverted and exact colinear
         if (wmtk::orient2d_t(a, b, c) != 1) {
-            wmtk::logger().info(
+            wmtk::logger().debug(
                 "----{} false in orientation and collinear {}",
                 t.fid(*this),
                 wmtk::orient2d_t(a, b, c));
-            wmtk::logger().info("{} {} {}", a, b, c);
+            wmtk::logger().debug("{} {} {}", a, b, c);
             // write_ply("rejected_split_" + std::to_string(t.fid(*this)) + ".ply");
             return false;
         }
@@ -344,7 +374,8 @@ void TriWild::write_vtk(const std::string& path)
     std::vector<double> scalar_field;
     for (auto e : get_edges()) {
         if (!e.is_valid(*this)) continue;
-        scalar_field.emplace_back(get_length_1ptperpixel(e));
+        scalar_field.emplace_back(
+            mesh_parameters.m_get_length(e.vid(*this), e.switch_vertex(*this).vid(*this)));
     }
     writer.add_cell_scalar_field("scalar_field", scalar_field);
     // writer.add_vector_field("vector_field", vector_field, dim);
@@ -386,34 +417,11 @@ void TriWild::write_displaced_obj(
     igl::writeOBJ(path, V3, F);
 }
 
-double TriWild::get_length2d(const Tuple& t) const
+double TriWild::get_length2d(const size_t& v1, const size_t& v2) const
 {
-    auto& m = *this;
-    auto& v1 = t;
-    auto v2 = t.switch_vertex(m);
-    return (m.vertex_attrs[v1.vid(m)].pos - m.vertex_attrs[v2.vid(m)].pos).stableNorm();
+    return (vertex_attrs[v1].pos - vertex_attrs[v2].pos).stableNorm();
 }
 
-double TriWild::get_length3d(const Tuple& t) const
-{
-    auto& v1 = t;
-    auto v2 = t.switch_vertex(*this);
-    auto v12d = vertex_attrs[v1.vid(*this)].pos;
-    auto v22d = vertex_attrs[v2.vid(*this)].pos;
-
-    double length = 0.0;
-
-    // add 3d displacement. add n implicit points to approximate quadrature of the curve
-    std::vector<Eigen::Vector3d> quadrature;
-    for (int i = 0; i < 6; i++) {
-        auto tmp_v2d = v12d * (5 - i) / 5. + v22d * i / 5.;
-        quadrature.emplace_back(mesh_parameters.m_project_to_3d(tmp_v2d(0), tmp_v2d(1)));
-    }
-    for (int i = 0; i < 5; i++) {
-        length += (quadrature[i] - quadrature[i + 1]).stableNorm();
-    }
-    return length;
-}
 
 double TriWild::get_length3d(const size_t& vid1, const size_t& vid2) const
 {
@@ -471,59 +479,6 @@ double TriWild::get_length_1ptperpixel(const size_t& vid1, const size_t& vid2) c
     for (int i = 0; i < (pixel_num + 1); i++) {
         auto tmp_v2d = v12d * (pixel_num - i) / pixel_num + v22d * i / pixel_num;
         quadrature.emplace_back(mesh_parameters.m_project_to_3d(tmp_v2d(0), tmp_v2d(1)));
-    }
-    for (int i = 0; i < pixel_num; i++) {
-        length += (quadrature[i] - quadrature[i + 1]).stableNorm();
-    }
-    return length;
-}
-
-double TriWild::get_length_1ptperpixel(const Tuple& e) const
-{
-    auto v12d = vertex_attrs[e.vid(*this)].pos;
-    auto v22d = vertex_attrs[e.switch_vertex(*this).vid(*this)].pos;
-
-    double length = 0.0;
-    // get the pixel index of p1 and p2
-    auto [xx1, yy1] = mesh_parameters.m_image_get_raw(v12d(0), v12d(1));
-    auto [xx2, yy2] = mesh_parameters.m_image_get_raw(v22d(0), v22d(1));
-    // get all the pixels in between p1 and p2
-    auto pixel_num = std::max(abs(xx2 - xx1), abs(yy2 - yy1));
-    if (pixel_num <= 0) return -1.;
-    assert(pixel_num > 0);
-    // sum up the length
-    // add 3d displacement. add n implicit points to approximate quadrature of the curve
-    std::vector<Eigen::Vector3d> quadrature;
-    for (int i = 0; i < (pixel_num + 1); i++) {
-        auto tmp_v2d = v12d * (pixel_num - i) / pixel_num + v22d * i / pixel_num;
-        quadrature.emplace_back(mesh_parameters.m_project_to_3d(tmp_v2d(0), tmp_v2d(1)));
-    }
-    for (int i = 0; i < pixel_num; i++) {
-        length += (quadrature[i] - quadrature[i + 1]).stableNorm();
-    }
-    return length;
-}
-
-double TriWild::get_length_mipmap(const Tuple& e) const
-{
-    auto v12d = vertex_attrs[e.vid(*this)].pos;
-    auto v22d = vertex_attrs[e.switch_vertex(*this).vid(*this)].pos;
-
-    auto idx = mesh_parameters.m_mipmap.get_mipmap_level(v12d, v22d);
-    auto image = mesh_parameters.m_mipmap.get_image(idx);
-    double length = 0.0;
-    // get the pixel index of p1 and p2
-    auto [xx1, yy1] = image.get_raw(v12d(0), v12d(1));
-    auto [xx2, yy2] = image.get_raw(v22d(0), v22d(1));
-    // get all the pixels in between p1 and p2
-    auto pixel_num = std::max(abs(xx2 - xx1), abs(yy2 - yy1));
-    // sum up the length
-    // add 3d displacement. add n implicit points to approximate quadrature of the curve
-    std::vector<Eigen::Vector3d> quadrature;
-    for (int i = 0; i < (pixel_num + 1); i++) {
-        auto tmp_v2d = v12d * (pixel_num - i) / pixel_num + v22d * i / pixel_num;
-        double z = image.get(tmp_v2d(0), tmp_v2d(1));
-        quadrature.emplace_back(tmp_v2d(0), tmp_v2d(1), z);
     }
     for (int i = 0; i < pixel_num; i++) {
         length += (quadrature[i] - quadrature[i + 1]).stableNorm();

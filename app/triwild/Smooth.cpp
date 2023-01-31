@@ -104,7 +104,7 @@ bool triwild::TriWild::smooth_after(const Tuple& t)
     if (!vertex_attrs[t.vid(*this)].fixed) {
         mesh_parameters.m_gradient += energy_gradient.second;
     }
-    wmtk::logger().info(
+    wmtk::logger().debug(
         "smoothing vertex {} before energy {} after energy {} gradient {}",
         vid,
         before_energy,

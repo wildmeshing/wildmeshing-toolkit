@@ -50,6 +50,7 @@ public:
     void set_parameters(
         const double target_edge_length,
         const wmtk::Image& image,
+        const EDGE_LEN_TYPE edge_len_type,
         const ENERGY_TYPE energy_type,
         const bool boundary_parameter);
     void set_parameters(
@@ -69,9 +70,9 @@ public:
     tbb::enumerable_thread_specific<InfoCache> cache;
 
     void set_energy(const ENERGY_TYPE energy_type);
-    void set_energy(std::unique_ptr<wmtk::Energy> f) { mesh_parameters.m_energy = std::move(f); }
+    void set_energy(std::unique_ptr<wmtk::Energy> f) { mesh_parameters.m_energy = std::move(f); };
+    void set_edge_length_measurement(const EDGE_LEN_TYPE edge_len_type);
     void set_projection();
-
     Eigen::Matrix<uint64_t, Eigen::Dynamic, 2, Eigen::RowMajor> get_bnd_edge_matrix();
 
 
@@ -139,17 +140,14 @@ public:
     void mesh_improvement(int max_its);
     void gradient_debug(int max_its);
 
-    double get_length2d(const Tuple& t) const;
-    double get_length3d(const Tuple& t) const;
+    double get_length2d(const size_t& vid1, const size_t& vid2) const;
     double get_length3d(const size_t& vid1, const size_t& vid2)
         const; // overload of the version that takes a tuple.
                // used when the tuple is invalid but use vids to uquest for positions in the
                // vertex_attrs
     double get_length_quadrature(const Eigen::Vector2d& p1, const Eigen::Vector2d& p2) const;
     double get_length_1ptperpixel(const size_t& vid1, const size_t& vid2) const;
-    double get_length_1ptperpixel(const Tuple& e) const;
     double get_length_mipmap(const size_t& vid1, const size_t& vid2) const;
-    double get_length_mipmap(const Tuple& e) const;
     void flatten_dofs(Eigen::VectorXd& v_flat);
     double get_mesh_energy(const Eigen::VectorXd& v_flat);
 };
