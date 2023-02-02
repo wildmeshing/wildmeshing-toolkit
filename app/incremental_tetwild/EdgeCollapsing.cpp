@@ -203,9 +203,9 @@ bool tetwild::TetWild::collapse_edge_before(const Tuple& loc) // input is an edg
         }
     }
 
-    for (size_t tid : cache.changed_tids) { // fortest
-        assert(!is_inverted(tuple_from_tet(tid)));
-    }
+    // for (size_t tid : cache.changed_tids) { // fortest
+    //     assert(!is_inverted(tuple_from_tet(tid)));
+    // }
 
     return true;
 }

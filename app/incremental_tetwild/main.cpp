@@ -147,22 +147,42 @@ int main(int argc, char** argv)
     std::vector<std::array<size_t, 3>> facets;
     std::vector<bool> is_v_on_input;
     std::vector<std::array<size_t, 4>> tets;
+    std::vector<bool> tet_face_on_input_surface;
 
     std::cout << "vsimp size: " << vsimp.size() << std::endl;
     std::cout << "fsimp size: " << fsimp.size() << std::endl;
 
-    mesh.insertion_by_volumeremesher(vsimp, fsimp, v_rational, facets, is_v_on_input, tets);
+    mesh.insertion_by_volumeremesher(
+        vsimp,
+        fsimp,
+        v_rational,
+        facets,
+        is_v_on_input,
+        tets,
+        tet_face_on_input_surface);
 
     std::cout << "here" << std::endl;
 
     // generate new mesh
     tetwild::TetWild mesh_new(params, *ptr_env, NUM_THREADS);
-    mesh_new.init_from_Volumeremesher(v_rational, facets, is_v_on_input, tets);
+    mesh_new.init_from_Volumeremesher(
+        v_rational,
+        facets,
+        is_v_on_input,
+        tets,
+        tet_face_on_input_surface);
 
     std::cout << "here2" << std::endl;
 
     mesh_new.output_mesh("test_embed_output.msh");
     std::cout << "here3" << std::endl;
+
+    mesh_new.output_faces("test_embed_output_surface.obj", [](auto& f) {
+        return f.m_is_surface_fs;
+    });
+
+    std::cout << "here4" << std::endl;
+
 
     // /////////mesh improvement
     mesh_new.mesh_improvement(max_its);

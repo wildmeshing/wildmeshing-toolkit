@@ -375,16 +375,20 @@ public:
         std::vector<Vector3r>& v_rational,
         std::vector<std::array<size_t, 3>>& facets_after,
         std::vector<bool>& is_v_on_input,
-        std::vector<std::array<size_t, 4>>& tets_after);
+        std::vector<std::array<size_t, 4>>& tets_after,
+        std::vector<bool>& tet_face_on_input_surface);
 
     void init_from_Volumeremesher(
         std::vector<Vector3r>& v_rational,
         std::vector<std::array<size_t, 3>>& facets,
         std::vector<bool>& is_v_on_input,
-        std::vector<std::array<size_t, 4>>& tets);
+        std::vector<std::array<size_t, 4>>& tets,
+        std::vector<bool>& tet_face_on_input_surface);
 
     std::vector<std::array<size_t, 3>> triangulate_polygon_face(std::vector<Vector3r> points);
     bool check_polygon_face_validity(std::vector<tetwild::Vector3r> points);
+
+    bool check_nondegenerate_tets();
 };
 
 } // namespace tetwild
