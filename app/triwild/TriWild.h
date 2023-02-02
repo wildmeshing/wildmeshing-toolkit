@@ -45,8 +45,12 @@ public:
     virtual ~TriWild(){};
 
     Parameters mesh_parameters;
-    // set often used parameters in a bundle. User can also set each used parameters that are used
-    // separately
+    void set_output_folder(std::filesystem::path output_folder)
+    {
+        mesh_parameters.m_output_folder = output_folder;
+    }
+    // set often used parameters in a bundle. User can also set each used parameters that are
+    // used separately
     void set_parameters(
         const double target_edge_length,
         const wmtk::Image& image,

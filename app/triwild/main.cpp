@@ -52,6 +52,7 @@ int main(int argc, char** argv)
     jsonFile >> config;
     // Access the parameters in the JSON file
     std::string input_file = config["input_file"];
+    std::string output_folder = config["output_folder"];
     std::string output_file = config["output_file"];
     output_json = config["output_json"];
 
@@ -80,6 +81,7 @@ int main(int argc, char** argv)
     triwild.mesh_parameters.js_log["output"] = output_file;
 
     triwild.create_mesh(V, F);
+    triwild.set_output_folder(output_folder);
     assert(triwild.check_mesh_connectivity_validity());
     triwild.mesh_parameters.js_log["num_vert"] = V.rows();
     triwild.mesh_parameters.js_log["num_faces"] = F.rows();

@@ -15,6 +15,7 @@ struct Parameters
 
 public:
     json js_log;
+    std::string m_output_folder = "./";
     // default envelop use_exact = true
     sample_envelope::SampleEnvelope m_envelope;
     bool m_has_envelope = false;

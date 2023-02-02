@@ -676,27 +676,27 @@ void TriWild::mesh_improvement(int max_its)
         assert(invariants(get_faces()));
         consolidate_mesh();
         write_displaced_obj(
-            "after_split_" + std::to_string(it) + ".obj",
+            mesh_parameters.m_output_folder + "after_split_" + std::to_string(it) + ".obj",
             mesh_parameters.m_project_to_3d);
 
         collapse_all_edges();
         assert(invariants(get_faces()));
         consolidate_mesh();
         write_displaced_obj(
-            "after_collapse_" + std::to_string(it) + ".obj",
+            mesh_parameters.m_output_folder + "after_collapse_" + std::to_string(it) + ".obj",
             mesh_parameters.m_project_to_3d);
         swap_all_edges();
         assert(invariants(get_faces()));
         consolidate_mesh();
         write_displaced_obj(
-            "after_swap_" + std::to_string(it) + ".obj",
+            mesh_parameters.m_output_folder + "after_swap_" + std::to_string(it) + ".obj",
             mesh_parameters.m_project_to_3d);
 
         smooth_all_vertices();
         assert(invariants(get_faces()));
         consolidate_mesh();
         write_displaced_obj(
-            "after_smooth_" + std::to_string(it) + ".obj",
+            mesh_parameters.m_output_folder + "after_smooth_" + std::to_string(it) + ".obj",
             mesh_parameters.m_project_to_3d);
 
         auto avg_grad = (mesh_parameters.m_gradient / vert_capacity()).stableNorm();
@@ -811,10 +811,6 @@ double TriWild::get_mesh_energy(const Eigen::VectorXd& v_flat)
 /// debugging
 void TriWild::gradient_debug(int max_its)
 {
-    // debugging
-    // for (auto v : get_vertices()) {
-    //     if (is_boundary_vertex(v)) set_feature(v);
-    // }
     split_all_edges();
     assert(invariants(get_faces()));
     consolidate_mesh();
@@ -823,9 +819,7 @@ void TriWild::gradient_debug(int max_its)
     for (int it = 0; it < max_its; it++) {
         wmtk::logger().info("\n========it {}========", it);
         wmtk::logger().info("current length {}", avg_edge_len(*this));
-        // for (auto v : get_vertices()) {
-        //     if (is_boundary_vertex(v)) set_feature(v);
-        // }
+
         smooth_all_vertices();
         assert(invariants(get_faces()));
         consolidate_mesh();
