@@ -2,6 +2,7 @@
 #include <wmtk/utils/Image.h>
 #include <wmtk/utils/MipMap.h>
 #include <wmtk/utils/autodiff.h>
+#include <wmtk/utils/bicubic_interpolation.h>
 #include <nlohmann/json.hpp>
 #include <sec/envelope/SampleEnvelope.hpp>
 namespace triwild {
@@ -60,7 +61,9 @@ public:
     wmtk::Boundary m_boundary; // stores boundary information
     bool m_boundary_parameter = true; // use boundary single variable parameterization
 
-    std::function<std::pair<int, int>(const double&, const double&)> m_image_get_raw;
+    WrappingMode m_wrapping_mode = WrappingMode::MIRROR_REPEAT;
+
+    std::function<std::pair<int, int>(const double&, const double&)> m_image_get_coordinate;
 
     wmtk::MipMap m_mipmap;
 

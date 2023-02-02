@@ -65,7 +65,7 @@ bool TriWild::split_edge_before(const Tuple& edge_tuple)
     static std::atomic_int cnt = 0;
     if (!TriMesh::split_edge_before(edge_tuple)) return false;
 
-    if (cnt % 1000 == 0) write_vtk(fmt::format("split_{:04d}.vtu", cnt));
+    if (cnt % 50 == 0) write_vtk(fmt::format("split_{:04d}.vtu", cnt));
     // check if the 2 vertices are on the same curve
     if (vertex_attrs[edge_tuple.vid(*this)].curve_id !=
         vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].curve_id)
@@ -83,14 +83,6 @@ bool TriWild::split_edge_before(const Tuple& edge_tuple)
         vertex_attrs[cache.local().v2].boundary_vertex = true;
     else
         vertex_attrs[cache.local().v2].boundary_vertex = false;
-
-    // get max_energy // this isn't used for now. It is just purely heuristic
-    cache.local().max_energy = get_quality(edge_tuple);
-    auto tris = get_one_ring_tris_for_vertex(edge_tuple);
-    for (auto tri : tris) {
-        cache.local().max_energy = std::max(cache.local().max_energy, get_quality(tri));
-    }
-    mesh_parameters.m_max_energy = cache.local().max_energy;
     cnt++;
     return true;
 }
@@ -113,21 +105,9 @@ bool TriWild::split_edge_after(const Tuple& edge_tuple)
         vertex_attrs[vid].boundary_vertex = true;
         vertex_attrs[vid].t = mesh_parameters.m_boundary.uv_to_t(vertex_attrs[vid].pos);
     }
-    // for (auto e : get_one_ring_edges_for_vertex(edge_tuple.switch_vertex(*this))) {
-    // assert(e.switch_vertex(*this).vid(*this) != edge_tuple.switch_vertex(*this).vid(*this));
-    //     vertex_attrs[e.switch_vertex(*this).vid(*this)].boundary_vertex =
-    //         is_boundary_vertex(e.switch_vertex(*this));
-    // }
     // enforce length check
     if (length3d > (4. / 3. * mesh_parameters.m_target_l)) {
         return true;
     }
-
-    // check quality // this reallyis not checked if the edge is longer than target
-    // auto tris = get_one_ring_tris_for_vertex(t);
-    // for (auto tri : tris) {
-    //     if (get_quality(tri) > cache.local().max_energy) return false;
-    // }
-
     return false;
 }

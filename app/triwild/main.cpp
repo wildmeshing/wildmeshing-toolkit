@@ -97,13 +97,19 @@ int main(int argc, char** argv)
     bool boundary_parameter_on = true;
     boundary_parameter_on = config["boundary_parameter_on"];
     auto displacement = [&image](const DScalar& u, const DScalar& v) -> DScalar {
-        return 10 * image.get(u / DScalar(10.), v / DScalar(10.));
+        return image.get(u, v);
     };
     auto displacement_image_double = [&image](const double& u, const double& v) -> double {
-        return (10 * image.get(u / 10., v / 10.));
+        return (image.get(u, v));
     };
 
-    triwild.set_parameters(target_l, image, edge_len_type, energy_type, boundary_parameter_on);
+    triwild.set_parameters(
+        target_l,
+        image,
+        wrapping_mode,
+        edge_len_type,
+        energy_type,
+        boundary_parameter_on);
     int max_iter = 10;
     max_iter = config["max_iter"];
     triwild.mesh_improvement(max_iter);

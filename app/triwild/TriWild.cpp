@@ -25,23 +25,18 @@ auto avg_edge_len = [](auto& m) {
 
 void TriWild::set_parameters(
     const double target_edge_length,
-    const Image& image,
+    const wmtk::Image& image,
+    const WrappingMode wrapping_mode,
     const EDGE_LEN_TYPE edge_len_type,
     const ENERGY_TYPE energy_type,
     const bool boundary_parameter)
 {
     mesh_parameters.m_target_l = target_edge_length;
-    mesh_parameters.m_image_get_raw = [&](const double& x, const double& y) -> std::pair<int, int> {
-        return image.get_raw(x / 10., y / 10.);
-    };
-    mesh_parameters.m_get_z = [&](const DScalar& u, const DScalar& v) -> DScalar {
-        return 10 * image.get(u / DScalar(10.), v / DScalar(10.));
-    };
+    set_image_function(image, wrapping_mode);
     set_energy(
         energy_type); // set the displacement_function first since it is used for energy setting
     set_edge_length_measurement(edge_len_type);
     mesh_parameters.m_boundary_parameter = boundary_parameter;
-    mesh_parameters.m_mipmap = wmtk::MipMap(image);
 }
 
 void TriWild::set_parameters(
@@ -125,6 +120,21 @@ void TriWild::set_edge_length_measurement(const EDGE_LEN_TYPE edge_len_type)
     }
 }
 
+void TriWild::set_image_function(const wmtk::Image& image, const WrappingMode wrapping_mode)
+{
+    mesh_parameters.m_wrapping_mode = wrapping_mode;
+    mesh_parameters.m_get_z = [&](const DScalar& u, const DScalar& v) -> DScalar {
+        return 10 * image.get(u / DScalar(10.), v / DScalar(10.));
+    };
+    mesh_parameters.m_image_get_coordinate = [&](const double& x,
+                                                 const double& y) -> std::pair<int, int> {
+        auto [xx, yy] = image.get_raw(x, y);
+        return {image.get_coordinate(xx, mesh_parameters.m_wrapping_mode),
+                image.get_coordinate(yy, mesh_parameters.m_wrapping_mode)};
+    };
+    mesh_parameters.m_mipmap = wmtk::MipMap(image);
+    mesh_parameters.m_mipmap.set_wrapping_mode(wrapping_mode);
+}
 void TriWild::set_projection()
 {
     struct Data
@@ -374,8 +384,8 @@ void TriWild::write_vtk(const std::string& path)
     std::vector<double> scalar_field;
     for (auto e : get_edges()) {
         if (!e.is_valid(*this)) continue;
-        scalar_field.emplace_back(
-            mesh_parameters.m_get_length(e.vid(*this), e.switch_vertex(*this).vid(*this)));
+        auto cost = mesh_parameters.m_get_length(e.vid(*this), e.switch_vertex(*this).vid(*this));
+        scalar_field.emplace_back(cost);
     }
     writer.add_cell_scalar_field("scalar_field", scalar_field);
     // writer.add_vector_field("vector_field", vector_field, dim);
@@ -467,8 +477,8 @@ double TriWild::get_length_1ptperpixel(const size_t& vid1, const size_t& vid2) c
 
     double length = 0.0;
     // get the pixel index of p1 and p2
-    auto [xx1, yy1] = mesh_parameters.m_image_get_raw(v12d(0), v12d(1));
-    auto [xx2, yy2] = mesh_parameters.m_image_get_raw(v22d(0), v22d(1));
+    auto [xx1, yy1] = mesh_parameters.m_image_get_coordinate(v12d(0), v12d(1));
+    auto [xx2, yy2] = mesh_parameters.m_image_get_coordinate(v22d(0), v22d(1));
     // get all the pixels in between p1 and p2
     auto pixel_num = std::max(abs(xx2 - xx1), abs(yy2 - yy1));
     // sum up the length
@@ -490,15 +500,14 @@ double TriWild::get_length_mipmap(const size_t& vid1, const size_t& vid2) const
 {
     auto v12d = vertex_attrs[vid1].pos;
     auto v22d = vertex_attrs[vid2].pos;
+    int idx = 0;
+    int pixel_num = -1;
 
-    auto idx = mesh_parameters.m_mipmap.get_mipmap_level(v12d, v22d);
+    std::tie(idx, pixel_num) = mesh_parameters.m_mipmap.get_mipmap_level_pixelnum(v12d, v22d);
     auto image = mesh_parameters.m_mipmap.get_image(idx);
     double length = 0.0;
-    // get the pixel index of p1 and p2
-    auto [xx1, yy1] = image.get_raw(v12d(0), v12d(1));
-    auto [xx2, yy2] = image.get_raw(v22d(0), v22d(1));
-    // get all the pixels in between p1 and p2
-    auto pixel_num = std::max(abs(xx2 - xx1), abs(yy2 - yy1));
+
+    if (pixel_num <= 0) return -1.;
     // sum up the length
     // add 3d displacement. add n implicit points to approximate quadrature of the curve
     std::vector<Eigen::Vector3d> quadrature;
@@ -574,8 +583,9 @@ std::pair<double, Eigen::Vector2d> TriWild::get_one_ring_energy(const Tuple& loc
                 auto v2 = vertex_attrs[local_tuples[(j + 1) % 3].vid(*this)].pos;
                 auto v3 = vertex_attrs[local_tuples[(j + 2) % 3].vid(*this)].pos;
                 nminfo.neighbors.row(i) << v2(0), v2(1), v3(0), v3(1);
-                assert(
-                    !is_inverted_coordinates(v2, v3)); // sanity check, no inversion should be heres
+                assert(!is_inverted_coordinates(
+                    v2,
+                    v3)); // sanity check, no inversion should be heres
             }
         }
     }

@@ -15,6 +15,25 @@ unsigned char double_to_unsignedchar(const double d)
     return round(std::max(std::min(1., d), 0.) * 255);
 }
 
+int Image::get_coordinate(const int x, const WrappingMode mode) const
+{
+    auto size = std::max(width(), height());
+    switch (mode) {
+    case WrappingMode::REPEAT: return (x + size) % size;
+
+    case WrappingMode::MIRROR_REPEAT:
+        if (x < 0)
+            return -(x % size);
+        else if (x < size)
+            return x;
+        else
+            return size - 1 - (x - size) % size;
+
+    case WrappingMode::CLAMP_TO_EDGE: return std::clamp(x, 0, size - 1);
+    default: return (x + size) % size;
+    }
+}
+
 std::pair<int, int> Image::get_raw(const double& u, const double& v) const
 {
     int w = width();
@@ -23,8 +42,10 @@ std::pair<int, int> Image::get_raw(const double& u, const double& v) const
     // x, y are between 0 and 1
     auto x = u * size;
     auto y = v * size;
+    const auto sx = static_cast<int>(std::floor(x - 0.5));
+    const auto sy = static_cast<int>(std::floor(y - 0.5));
 
-    return {x, y};
+    return {sx, sy};
 }
 
 // set an image to have same value as the analytical function and save it to the file given

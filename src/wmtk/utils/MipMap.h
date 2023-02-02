@@ -13,10 +13,17 @@ public:
 
 protected:
     std::vector<Image> m_image_hierarchy;
+    WrappingMode m_mipmap_wrapping_mode;
 
 public:
-    int level() { return m_image_hierarchy.size(); };
-    int get_mipmap_level(const Eigen::Vector2d& a, const Eigen::Vector2d& b) const;
+    int level() const { return m_image_hierarchy.size(); };
+    void set_wrapping_mode(const WrappingMode wrapping_mode)
+    {
+        m_mipmap_wrapping_mode = wrapping_mode;
+    };
+    std::pair<int, int> get_mipmap_level_pixelnum(
+        const Eigen::Vector2d& a,
+        const Eigen::Vector2d& b) const;
     inline const Image& get_image(int idx) const { return m_image_hierarchy[idx]; };
 };
 } // namespace wmtk

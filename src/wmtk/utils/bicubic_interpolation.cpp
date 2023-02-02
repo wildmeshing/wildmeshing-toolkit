@@ -20,11 +20,11 @@ wmtk::BicubicVector<float> wmtk::extract_samples(
 
         case WrappingMode::MIRROR_REPEAT:
             if (x < 0)
-                return -x;
+                return -(x % size);
             else if (x < size)
                 return x;
             else
-                return 2 * size - x - 1;
+                return size - 1 - (x - size) % size;
         case WrappingMode::CLAMP_TO_EDGE: return std::clamp(x, 0, size - 1);
         default: return (x + size) % size;
         }
