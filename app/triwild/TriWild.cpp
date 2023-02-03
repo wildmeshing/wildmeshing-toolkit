@@ -49,7 +49,7 @@ void TriWild::set_parameters(
     mesh_parameters.m_get_z = displacement_function;
     set_energy(
         energy_type); // set the displacement_function first since it is used for energy setting
-    set_edge_length_measurement(EDGE_LEN_TYPE::LINEAR3D); // set the default to get_legnth_3d
+    set_edge_length_measurement(EDGE_LEN_TYPE::MIPMAP); // set the default to get_legnth_3d
     mesh_parameters.m_boundary_parameter = boundary_parameter;
 }
 
@@ -676,27 +676,27 @@ void TriWild::mesh_improvement(int max_its)
         assert(invariants(get_faces()));
         consolidate_mesh();
         write_displaced_obj(
-            mesh_parameters.m_output_folder + "after_split_" + std::to_string(it) + ".obj",
+            mesh_parameters.m_output_folder + "/after_split_" + std::to_string(it) + ".obj",
             mesh_parameters.m_project_to_3d);
 
         collapse_all_edges();
         assert(invariants(get_faces()));
         consolidate_mesh();
         write_displaced_obj(
-            mesh_parameters.m_output_folder + "after_collapse_" + std::to_string(it) + ".obj",
+            mesh_parameters.m_output_folder + "/after_collapse_" + std::to_string(it) + ".obj",
             mesh_parameters.m_project_to_3d);
         swap_all_edges();
         assert(invariants(get_faces()));
         consolidate_mesh();
         write_displaced_obj(
-            mesh_parameters.m_output_folder + "after_swap_" + std::to_string(it) + ".obj",
+            mesh_parameters.m_output_folder + "/after_swap_" + std::to_string(it) + ".obj",
             mesh_parameters.m_project_to_3d);
 
         smooth_all_vertices();
         assert(invariants(get_faces()));
         consolidate_mesh();
         write_displaced_obj(
-            mesh_parameters.m_output_folder + "after_smooth_" + std::to_string(it) + ".obj",
+            mesh_parameters.m_output_folder + "/after_smooth_" + std::to_string(it) + ".obj",
             mesh_parameters.m_project_to_3d);
 
         auto avg_grad = (mesh_parameters.m_gradient / vert_capacity()).stableNorm();

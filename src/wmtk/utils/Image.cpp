@@ -18,6 +18,7 @@ unsigned char double_to_unsignedchar(const double d)
 int Image::get_coordinate(const int x, const WrappingMode mode) const
 {
     auto size = std::max(width(), height());
+    assert(-size < x && x < 2 * size);
     switch (mode) {
     case WrappingMode::REPEAT: return (x + size) % size;
 

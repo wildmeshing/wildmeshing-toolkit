@@ -64,17 +64,20 @@ def displace_mesh(input_mesh: Path, intput_heightmap: Path, output_folder: Path,
 def write_config_json(input_mesh: Path, texture: Path, output_folder: Path, method: Method):
     meshname = input_mesh.name.removesuffix(".obj").lower()
     texname = texture.name.removesuffix("_2048_height.exr")
+    output_folder = output_folder.joinpath(f"{texname}/")
     output_mesh = output_folder.joinpath(f"{meshname}/{texname}.obj")
     output_mesh.parent.mkdir(parents=True, exist_ok=True)
     logfile = output_folder.joinpath(f"{meshname}/{texname}.json")
     config_dic = {
     "input_file": str(input_mesh),
     "output_file": str(output_mesh),
+    "output_folder": str(output_folder),
     "output_json": str(logfile),
     "image_path": str(texture),
     "image_size": 2048,
     "wrapping_mode": 1,
-    "target_edge_length": 0.1,
+    "target_edge_length": 0.01,
+    "edge_len_type": 3,
     "energy_type": 2,
     "boundary_parameter_on": True,
     "max_iter": 3
@@ -113,7 +116,7 @@ def displace_mesh(input_config: Path):
         "--config",
             str(config)]
         
-        print(" ".join(args))
+        print(" ".join(args).replace("build_release", "build_debug"))
         
         subprocess.run(args, check=True)
 
