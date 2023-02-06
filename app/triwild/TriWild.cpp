@@ -124,7 +124,7 @@ void TriWild::set_image_function(const wmtk::Image& image, const WrappingMode wr
 {
     mesh_parameters.m_wrapping_mode = wrapping_mode;
     mesh_parameters.m_get_z = [&](const DScalar& u, const DScalar& v) -> DScalar {
-        return 10 * image.get(u / DScalar(10.), v / DScalar(10.));
+        return image.get(u, v);
     };
     mesh_parameters.m_image_get_coordinate = [&](const double& x,
                                                  const double& y) -> std::pair<int, int> {
