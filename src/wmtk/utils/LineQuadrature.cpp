@@ -4690,8 +4690,6 @@ std::vector<double> quadrature_weights(const int order)
 }
 } // namespace
 
-LineQuadrature::LineQuadrature() {}
-
 void LineQuadrature::get_quadrature(const int order, LineQuadrature& quad)
 {
     std::vector<double> xi = quadrature_points(order);
@@ -4706,8 +4704,8 @@ void LineQuadrature::get_quadrature(const int order, LineQuadrature& quad)
     quad.points = Eigen::Map<Eigen::MatrixXd>(&xi[0], xi.size(), 1);
     quad.weights = Eigen::Map<Eigen::MatrixXd>(&wi[0], wi.size(), 1);
 
-    quad.weights /= 2;
-    quad.points /= 2;
+    quad.weights *= 0.5;
+    quad.points *= 0.5;
     quad.points += Eigen::MatrixXd::Ones(quad.points.rows(), quad.points.cols()) * 0.5;
 
     assert(fabs(quad.weights.sum() - 1) < 1e-14);
