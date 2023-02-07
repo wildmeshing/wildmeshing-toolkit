@@ -137,10 +137,10 @@ public:
     void eval(State& state, DofsToPositions& x) const override;
     // a wrapper function of m_displacement that takes 2 doubles and cast into DScalar, and returns
     // a Vector3d
-    Eigen::Vector3d displacement(const double& x, const double& y) const
+    double displacement(const double& x, const double& y) const
     {
         double z = m_displacement(DScalar(x), DScalar(y)).getValue();
-        return Eigen::Vector3d(x, y, z);
+        return z;
     };
 };
 } // namespace wmtk
