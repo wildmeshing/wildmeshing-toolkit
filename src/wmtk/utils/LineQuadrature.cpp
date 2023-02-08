@@ -4690,7 +4690,7 @@ std::vector<double> quadrature_weights(const int order)
 }
 } // namespace
 
-void LineQuadrature::get_quadrature(const int order, LineQuadrature& quad)
+void LineQuadrature::get_quadrature(const int order)
 {
     std::vector<double> xi = quadrature_points(order);
     std::vector<double> wi = quadrature_weights(order);
@@ -4701,17 +4701,17 @@ void LineQuadrature::get_quadrature(const int order, LineQuadrature& quad)
 
     std::sort(xi.begin(), xi.end(), [xi](int i1, int i2) { return xi[i1] < xi[i2]; });
 
-    quad.points = Eigen::Map<Eigen::MatrixXd>(&xi[0], xi.size(), 1);
-    quad.weights = Eigen::Map<Eigen::MatrixXd>(&wi[0], wi.size(), 1);
+    points = Eigen::Map<Eigen::MatrixXd>(&xi[0], xi.size(), 1);
+    weights = Eigen::Map<Eigen::MatrixXd>(&wi[0], wi.size(), 1);
 
-    quad.weights *= 0.5;
-    quad.points *= 0.5;
-    quad.points += Eigen::MatrixXd::Ones(quad.points.rows(), quad.points.cols()) * 0.5;
+    weights *= 0.5;
+    points *= 0.5;
+    points += Eigen::MatrixXd::Ones(points.rows(), points.cols()) * 0.5;
 
-    assert(fabs(quad.weights.sum() - 1) < 1e-14);
-    assert(quad.points.minCoeff() >= 0 && quad.points.maxCoeff() <= 1);
+    assert(fabs(weights.sum() - 1) < 1e-14);
+    assert(points.minCoeff() >= 0 && points.maxCoeff() <= 1);
 
-    assert((quad.points.size() == quad.weights.size()));
-    quad.weights /= quad.weights.sum();
+    assert((points.size() == weights.size()));
+    weights /= weights.sum();
 }
 } // namespace wmtk

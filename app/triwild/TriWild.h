@@ -13,6 +13,7 @@
 #include <finitediff.hpp>
 #include <nlohmann/json.hpp>
 #include <sec/envelope/SampleEnvelope.hpp>
+#include <wmtk/utils/LineQuadrature.hpp>
 #include "Parameters.h"
 
 namespace triwild {
@@ -154,8 +155,34 @@ public:
     double get_length_quadrature(const Eigen::Vector2d& p1, const Eigen::Vector2d& p2) const;
     double get_length_1ptperpixel(const size_t& vid1, const size_t& vid2) const;
     double get_length_mipmap(const size_t& vid1, const size_t& vid2) const;
+
     void flatten_dofs(Eigen::VectorXd& v_flat);
     double get_mesh_energy(const Eigen::VectorXd& v_flat);
+
+    double get_accuracy_error(const size_t& vid1, const size_t& vid2);
+
+    template <class T, int order>
+    inline std::decay_t<T> line_quadrature_eval(
+        const Eigen::Matrix<T, 1, 4> edge_verts,
+        std::function<T(const T&, const T&)> image_get_z,
+        wmtk::LineQuadrature& quad)
+    {
+        quad.get_quadrature(order);
+        double ret = 0.0;
+        auto edge_length = pow(edge_verts(0, 2) - edge_verts(0, 0), 2) +
+                           pow(edge_verts(0, 3) - edge_verts(0, 1), 2);
+        edge_length = sqrt(edge_length);
+        auto u_dir = (edge_verts(0, 2) - edge_verts(0, 0)) / edge_length;
+        auto v_dir = (edge_verts(0, 3) - edge_verts(0, 1)) / edge_length;
+        // now do 1d quadrature
+        for (int i = 0; i < quad.points.rows(); i++) {
+            auto tmpu = edge_verts(0, 0) + u_dir * quad.points(i, 0);
+            auto tmpv = edge_verts(0, 1) + v_dir * quad.points(i, 0);
+            auto tmpz = image_get_z(tmpu, tmpv);
+            ret += quad.weights(i) * tmpz;
+        }
+        return ret;
+    }
 };
 
 } // namespace triwild

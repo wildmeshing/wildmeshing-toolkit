@@ -548,6 +548,28 @@ double TriWild::get_quality(const Tuple& loc, int idx) const
     return energy;
 }
 
+double TriWild::get_accuracy_error(const size_t& vid1, const size_t& vid2)
+{
+    Eigen::Matrix<double, 1, 4> edge_verts;
+    edge_verts << vertex_attrs[vid1].pos(0), vertex_attrs[vid1].pos(1), vertex_attrs[vid2].pos(0),
+        vertex_attrs[vid2].pos(1);
+
+    std::function<double(const double&, const double&)> get_z = [&](const double& u,
+                                                                    const double& v) -> double {
+        return mesh_parameters.m_image.get(u, v);
+    };
+
+    auto v1z = mesh_parameters.m_image.get(vertex_attrs[vid1].pos(0), vertex_attrs[vid1].pos(1));
+    auto v2z = mesh_parameters.m_image.get(vertex_attrs[vid2].pos(0), vertex_attrs[vid2].pos(1));
+    LineQuadrature quad;
+    auto displaced_edge_length = line_quadrature_eval<double, 5>(edge_verts, get_z, quad);
+    Eigen::Vector3d p1 = Eigen::Vector3d(vertex_attrs[vid1].pos(0), vertex_attrs[vid1].pos(1), v1z);
+    Eigen::Vector3d p2 = Eigen::Vector3d(vertex_attrs[vid2].pos(0), vertex_attrs[vid2].pos(1), v2z);
+    auto approximate_length = (p1 - p2).stableNorm();
+
+    return abs(approximate_length - displaced_edge_length);
+}
+
 std::pair<double, Eigen::Vector2d> TriWild::get_one_ring_energy(const Tuple& loc) const
 {
     auto one_ring = get_one_ring_tris_for_vertex(loc);
