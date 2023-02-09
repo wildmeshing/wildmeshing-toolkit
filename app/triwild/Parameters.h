@@ -66,6 +66,8 @@ public:
 
     std::function<std::pair<int, int>(const double&, const double&)> m_image_get_coordinate;
 
+    wmtk::Image m_image;
+
     wmtk::MipMap m_mipmap;
 
     std::function<double(const std::size_t&, const std::size_t&)> m_get_length;

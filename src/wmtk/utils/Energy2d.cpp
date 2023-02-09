@@ -5,13 +5,12 @@ void AMIPS::eval(State& state, DofsToPositions& dof_to_positions) const
 {
     DiffScalarBase::setVariableCount(2);
     auto [x1, y1] = dof_to_positions.eval(state.dofx);
-    auto input_triangle = std::array{
-        x1.getValue(),
-        y1.getValue(),
-        state.two_opposite_vertices(0, 0),
-        state.two_opposite_vertices(0, 1),
-        state.two_opposite_vertices(0, 2),
-        state.two_opposite_vertices(0, 3)};
+    auto input_triangle = std::array{x1.getValue(),
+                                     y1.getValue(),
+                                     state.two_opposite_vertices(0, 0),
+                                     state.two_opposite_vertices(0, 1),
+                                     state.two_opposite_vertices(0, 2),
+                                     state.two_opposite_vertices(0, 3)};
     auto target_triangle = state.target_triangle;
     for (auto i = 0; i < 6; i++) target_triangle[i] = state.scaling * target_triangle[i];
     int i = state.idx;
@@ -61,13 +60,12 @@ void SymDi::eval(State& state, DofsToPositions& dof_to_positions) const
     DiffScalarBase::setVariableCount(2);
 
     auto [x1, y1] = dof_to_positions.eval(state.dofx);
-    auto input_triangle = std::array{
-        x1.getValue(),
-        y1.getValue(),
-        state.two_opposite_vertices(0, 0),
-        state.two_opposite_vertices(0, 1),
-        state.two_opposite_vertices(0, 2),
-        state.two_opposite_vertices(0, 3)};
+    auto input_triangle = std::array{x1.getValue(),
+                                     y1.getValue(),
+                                     state.two_opposite_vertices(0, 0),
+                                     state.two_opposite_vertices(0, 1),
+                                     state.two_opposite_vertices(0, 2),
+                                     state.two_opposite_vertices(0, 3)};
     auto target_triangle = state.target_triangle;
     for (auto i = 0; i < 6; i++) target_triangle[i] = state.scaling * target_triangle[i];
     int i = state.idx;
@@ -239,17 +237,18 @@ void EdgeLengthEnergy::eval(State& state, DofsToPositions& dof_to_positions) con
     auto [x1, y1] = dof_to_positions.eval(state.dofx);
 
     DScalar v1z = this->m_displacement(x1, y1);
-    Eigen::Vector3d v2 =
-        this->displacement(state.two_opposite_vertices(0, 0), state.two_opposite_vertices(0, 1));
-    Eigen::Vector3d v3 =
-        this->displacement(state.two_opposite_vertices(0, 2), state.two_opposite_vertices(0, 3));
-
+    DScalar v2u = DScalar(state.two_opposite_vertices(0, 0));
+    DScalar v2v = DScalar(state.two_opposite_vertices(0, 1));
+    DScalar v2z = this->m_displacement(v2u, v2v);
+    DScalar v3u = DScalar(state.two_opposite_vertices(0, 2));
+    DScalar v3v = DScalar(state.two_opposite_vertices(0, 3));
+    DScalar v3z = this->m_displacement(v3u, v3v);
     Eigen::Matrix<DScalar, 3, 1> V2_V1;
-    V2_V1 << v2(0) - x1, v2(1) - y1, DScalar(v2(2)) - v1z;
+    V2_V1 << v2u - x1, v2v - y1, v2z - v1z;
     Eigen::Matrix<DScalar, 3, 1> V3_V1;
-    V3_V1 << v3(0) - x1, v3(1) - y1, DScalar(v3(2)) - v1z;
+    V3_V1 << v3u - x1, v3v - y1, v3z - v1z;
     Eigen::Matrix<DScalar, 3, 1> V3_V2;
-    V3_V2 << DScalar(v3(0) - v2(0)), DScalar(v3(1) - v2(1)), DScalar(v3(2) - v2(2));
+    V3_V2 << v3u - v2u, v3v - v2v, DScalar(v3z - v2z);
 
     // check if area is either inverted or smaller than certain A_hat
     DScalar area;
