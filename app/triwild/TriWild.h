@@ -152,6 +152,7 @@ public:
         const; // overload of the version that takes a tuple.
                // used when the tuple is invalid but use vids to uquest for positions in the
                // vertex_attrs
+    double get_length_n_implicit_points(const size_t& vid1, const size_t& vid2) const;
     double get_length_quadrature(const Eigen::Vector2d& p1, const Eigen::Vector2d& p2) const;
     double get_length_1ptperpixel(const size_t& vid1, const size_t& vid2) const;
     double get_length_mipmap(const size_t& vid1, const size_t& vid2) const;
@@ -162,24 +163,37 @@ public:
     double get_accuracy_error(const size_t& vid1, const size_t& vid2);
 
     template <class T, int order>
-    inline std::decay_t<T> line_quadrature_eval(
+    inline std::decay_t<T> quadrature_error_eval(
         const Eigen::Matrix<T, 1, 4> edge_verts,
         std::function<T(const T&, const T&)> image_get_z,
         wmtk::LineQuadrature& quad)
     {
         quad.get_quadrature(order);
         double ret = 0.0;
-        auto edge_length = pow(edge_verts(0, 2) - edge_verts(0, 0), 2) +
-                           pow(edge_verts(0, 3) - edge_verts(0, 1), 2);
-        edge_length = sqrt(edge_length);
-        auto u_dir = (edge_verts(0, 2) - edge_verts(0, 0)) / edge_length;
-        auto v_dir = (edge_verts(0, 3) - edge_verts(0, 1)) / edge_length;
+        auto v1z = image_get_z(edge_verts(0, 0), edge_verts(0, 1));
+        auto v2z = image_get_z(edge_verts(0, 2), edge_verts(0, 3));
+        wmtk::logger().info(
+            "   points are ({},{}) ({},{}) error is {}",
+            edge_verts(0, 0),
+            edge_verts(0, 1),
+            edge_verts(0, 2),
+            edge_verts(0, 3),
+            ret);
         // now do 1d quadrature
-        for (int i = 0; i < quad.points.rows(); i++) {
-            auto tmpu = edge_verts(0, 0) + u_dir * quad.points(i, 0);
-            auto tmpv = edge_verts(0, 1) + v_dir * quad.points(i, 0);
-            auto tmpz = image_get_z(tmpu, tmpv);
-            ret += quad.weights(i) * tmpz;
+        for (int i = 0; i < quad.points.rows() - 1; i++) {
+            auto tmpu =
+                (1 - quad.points(i, 0)) * edge_verts(0, 0) + quad.points(i, 0) * edge_verts(0, 2);
+            auto tmpv =
+                (1 - quad.points(i, 0)) * edge_verts(0, 1) + quad.points(i, 0) * edge_verts(0, 3);
+            auto tmph = image_get_z(tmpu, tmpv);
+            auto tmpz = (1 - quad.points(i, 0)) * v1z + quad.points(i, 0) * v2z;
+            wmtk::logger().info(
+                "     quad point ({},{}) quad.points(i, 0) {}",
+                tmpu,
+                tmpv,
+                quad.points(i, 0));
+            wmtk::logger().info("     tmph {} tmpz {}", tmph, tmpz);
+            ret += pow(quad.weights(i) * (tmph - tmpz), 2);
         }
         return ret;
     }

@@ -123,6 +123,7 @@ void TriWild::set_edge_length_measurement(const EDGE_LEN_TYPE edge_len_type)
 void TriWild::set_image_function(const wmtk::Image& image, const WrappingMode wrapping_mode)
 {
     mesh_parameters.m_wrapping_mode = wrapping_mode;
+    mesh_parameters.m_image = image;
     mesh_parameters.m_get_z = [&](const DScalar& u, const DScalar& v) -> DScalar {
         return image.get(u, v);
     };
@@ -432,8 +433,14 @@ double TriWild::get_length2d(const size_t& v1, const size_t& v2) const
     return (vertex_attrs[v1].pos - vertex_attrs[v2].pos).stableNorm();
 }
 
+double TriWild::get_length3d(const size_t& v1, const size_t& v2) const
+{
+    auto v13d = mesh_parameters.m_project_to_3d(vertex_attrs[v1].pos(0), vertex_attrs[v1].pos(1));
+    auto v23d = mesh_parameters.m_project_to_3d(vertex_attrs[v2].pos(0), vertex_attrs[v2].pos(1));
+    return (v13d - v23d).stableNorm();
+}
 
-double TriWild::get_length3d(const size_t& vid1, const size_t& vid2) const
+double TriWild::get_length_n_implicit_points(const size_t& vid1, const size_t& vid2) const
 {
     auto v12d = vertex_attrs[vid1].pos;
     auto v22d = vertex_attrs[vid2].pos;
@@ -487,7 +494,8 @@ double TriWild::get_length_1ptperpixel(const size_t& vid1, const size_t& vid2) c
     assert(pixel_num > 0);
     std ::vector<Eigen::Vector3d> quadrature;
     for (int i = 0; i < (pixel_num + 1); i++) {
-        auto tmp_v2d = v12d * (pixel_num - i) / pixel_num + v22d * i / pixel_num;
+        const double u = static_cast<double>(i) / pixel_num;
+        auto tmp_v2d = v12d * (1. - u) + v22d * u;
         quadrature.emplace_back(mesh_parameters.m_project_to_3d(tmp_v2d(0), tmp_v2d(1)));
     }
     for (int i = 0; i < pixel_num; i++) {
@@ -550,24 +558,33 @@ double TriWild::get_quality(const Tuple& loc, int idx) const
 
 double TriWild::get_accuracy_error(const size_t& vid1, const size_t& vid2)
 {
-    Eigen::Matrix<double, 1, 4> edge_verts;
-    edge_verts << vertex_attrs[vid1].pos(0), vertex_attrs[vid1].pos(1), vertex_attrs[vid2].pos(0),
-        vertex_attrs[vid2].pos(1);
-
     std::function<double(const double&, const double&)> get_z = [&](const double& u,
                                                                     const double& v) -> double {
         return mesh_parameters.m_image.get(u, v);
     };
+    auto v12d = vertex_attrs[vid1].pos;
+    auto v22d = vertex_attrs[vid2].pos;
+    // get the pixel index of p1 and p2
+    auto [xx1, yy1] = mesh_parameters.m_image_get_coordinate(v12d(0), v12d(1));
+    auto [xx2, yy2] = mesh_parameters.m_image_get_coordinate(v22d(0), v22d(1));
+    // get all the pixels in between p1 and p2
+    auto pixel_num = std::max(abs(xx2 - xx1), abs(yy2 - yy1));
+    if (pixel_num <= 0) return -1.;
+    assert(pixel_num > 0);
 
-    auto v1z = mesh_parameters.m_image.get(vertex_attrs[vid1].pos(0), vertex_attrs[vid1].pos(1));
-    auto v2z = mesh_parameters.m_image.get(vertex_attrs[vid2].pos(0), vertex_attrs[vid2].pos(1));
-    LineQuadrature quad;
-    auto displaced_edge_length = line_quadrature_eval<double, 5>(edge_verts, get_z, quad);
-    Eigen::Vector3d p1 = Eigen::Vector3d(vertex_attrs[vid1].pos(0), vertex_attrs[vid1].pos(1), v1z);
-    Eigen::Vector3d p2 = Eigen::Vector3d(vertex_attrs[vid2].pos(0), vertex_attrs[vid2].pos(1), v2z);
-    auto approximate_length = (p1 - p2).stableNorm();
-
-    return abs(approximate_length - displaced_edge_length);
+    double error = 0.0;
+    for (int i = 0; i < pixel_num; i++) {
+        const double r0 = static_cast<double>(i) / pixel_num;
+        auto tmp_v12d = v12d * (1. - r0) + v22d * r0;
+        const double r1 = static_cast<double>(i + 1) / pixel_num;
+        auto tmp_v22d = v12d * (1. - r1) + v22d * r1;
+        Eigen::Matrix<double, 1, 4> edge_verts;
+        edge_verts << tmp_v12d(0), tmp_v12d(1), tmp_v22d(0), tmp_v22d(1);
+        LineQuadrature quad;
+        auto displaced_pixel_error = quadrature_error_eval<double, 5>(edge_verts, get_z, quad);
+        error += displaced_pixel_error;
+    }
+    return error;
 }
 
 std::pair<double, Eigen::Vector2d> TriWild::get_one_ring_energy(const Tuple& loc) const

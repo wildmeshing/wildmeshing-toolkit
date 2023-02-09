@@ -14,8 +14,8 @@ MipMap::MipMap(Image image)
 
     for (int i = 0; i < size; i++) {
         m_image_hierarchy[i + 1] = m_image_hierarchy[i].down_sample();
-        assert(m_image_hierarchy[i + 1].width() * 2 == m_image_hierarchy[i].width());
-        assert(m_image_hierarchy[i + 1].height() * 2 == m_image_hierarchy[i].height());
+        assert(m_image_hierarchy[i + 1].width() * 2 <= m_image_hierarchy[i].width());
+        assert(m_image_hierarchy[i + 1].height() * 2 <= m_image_hierarchy[i].height());
     }
     assert(m_image_hierarchy[size].width() == 1);
     assert(m_image_hierarchy[size].height() == 1);

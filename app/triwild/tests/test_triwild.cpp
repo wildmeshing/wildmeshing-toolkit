@@ -1623,7 +1623,7 @@ TEST_CASE("stripe")
 
     Image image(1024, 1024);
     image.load(
-        "/home/yunfan/wildmeshing-toolkit/build_debug/drlin.exr",
+        "/home/yunfan/data/plastic_stripes_Height.exr",
         WrappingMode::MIRROR_REPEAT,
         WrappingMode::MIRROR_REPEAT);
     auto displacement = [&image](const DScalar& u, const DScalar& v) -> DScalar {
@@ -1645,7 +1645,7 @@ TEST_CASE("stripe")
 
     wmtk::logger().info("#v {}, #f {} ", m.vert_capacity(), m.tri_capacity());
     m.set_image_function(image, WrappingMode::MIRROR_REPEAT);
-    m.set_parameters(1, displacement, ENERGY_TYPE::EDGE_LENGTH, true);
+    m.set_parameters(0.1, displacement, ENERGY_TYPE::EDGE_LENGTH, true);
     m.mesh_improvement(3);
     m.write_displaced_obj("stripe_final.obj", m.mesh_parameters.m_project_to_3d);
 }
@@ -1681,21 +1681,48 @@ TEST_CASE("quadrature")
 {
     using DScalar = wmtk::EdgeLengthEnergy::DScalar;
     DiffScalarBase::setVariableCount(2);
+    Image image(10, 10);
+    auto displacement_double = [](const double& u, const double& v) -> double { return 10; };
+    image.set(displacement_double);
+
     TriWild m;
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
-    igl::read_triangle_mesh("/Users/yunfanzhou/Downloads/tmp/input.obj", V, F);
+    igl::read_triangle_mesh("/home/yunfan/data/input.obj", V, F);
     m.create_mesh(V, F);
-    auto displacement = [](const DScalar& u, const DScalar& v) -> DScalar { return DScalar(1.); };
-    m.set_parameters(0.05, displacement, ENERGY_TYPE::EDGE_LENGTH, true);
-    int edge_cnt = 0;
+    m.set_parameters(
+        0.05,
+        image,
+        WrappingMode::MIRROR_REPEAT,
+        EDGE_LEN_TYPE::PT_PER_PIXEL,
+        ENERGY_TYPE::EDGE_LENGTH,
+        true);
     for (auto e : m.get_edges()) {
         auto length2d = m.get_length2d(e.vid(m), e.switch_vertex(m).vid(m));
         auto length3d = m.get_length3d(e.vid(m), e.switch_vertex(m).vid(m));
-        auto v1 = m.vertex_attrs[e.vid(m)].pos;
-        auto v2 = m.vertex_attrs[e.switch_vertex(m).vid(m)].pos;
-        auto length_q = adaptive_gauss_quadrature(m.mesh_parameters.m_project_to_3d, v1, v2, 0.5);
-        wmtk::logger().info("edge 2d {} 3d {} guass {}", length2d, length3d, length_q);
+        auto lengthquad = m.get_accuracy_error(e.vid(m), e.switch_vertex(m).vid(m)); // should be 0
+        wmtk::logger().info("edge 2d {} 3d {} quad error {}", length2d, length3d, lengthquad);
+        REQUIRE(lengthquad < 1e-8);
+    }
+    wmtk::logger().info("============= dramatic lin=============");
+    Image image1(10, 10);
+    auto displacement_double2 = [](const double& u, const double& v) -> double {
+        return (10. * u);
+    };
+    image1.set(displacement_double2);
+    m.set_parameters(
+        0.05,
+        image1,
+        WrappingMode::MIRROR_REPEAT,
+        EDGE_LEN_TYPE::PT_PER_PIXEL,
+        ENERGY_TYPE::EDGE_LENGTH,
+        true);
+    for (auto e : m.get_edges()) {
+        auto length2d = m.get_length2d(e.vid(m), e.switch_vertex(m).vid(m));
+        auto length3d = m.get_length3d(e.vid(m), e.switch_vertex(m).vid(m));
+        auto lengthquad = m.get_accuracy_error(e.vid(m), e.switch_vertex(m).vid(m));
+        wmtk::logger().info("edge 2d {} 3d {} quad error {}", length2d, length3d, lengthquad);
+        // REQUIRE(lengthquad < 1e-8);
     }
 }
 
@@ -1704,7 +1731,7 @@ TEST_CASE("exact length")
     using DScalar = wmtk::EdgeLengthEnergy::DScalar;
     Image image(512, 512);
     image.load(
-        "/Users/yunfanzhou/Downloads/tmp/plastic_stripes_Height.exr",
+        "/home/yunfan/data/plastic_stripes_Height.exr",
         WrappingMode::MIRROR_REPEAT,
         WrappingMode::MIRROR_REPEAT);
     auto displacement = [&image](const DScalar& u, const DScalar& v) -> DScalar {
@@ -1717,7 +1744,7 @@ TEST_CASE("exact length")
     TriWild m;
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
-    igl::read_triangle_mesh("/Users/yunfanzhou/Downloads/tmp/input.obj", V, F);
+    igl::read_triangle_mesh("/home/yunfan/data/input.obj", V, F);
     m.create_mesh(V, F);
     m.set_image_function(image, WrappingMode::MIRROR_REPEAT);
 
@@ -1725,10 +1752,12 @@ TEST_CASE("exact length")
 
     for (auto e : m.get_edges()) {
         auto length = m.get_length_1ptperpixel(e.vid(m), e.switch_vertex(m).vid(m));
+        auto lengthmipmap = m.get_length_mipmap(e.vid(m), e.switch_vertex(m).vid(m));
         auto length3d = m.get_length3d(e.vid(m), e.switch_vertex(m).vid(m));
         wmtk::logger().info(
-            "length_exact {} length3d {} between {}, {}",
+            "length_exact {} lengthMIPMAP {} length3d {} between {}, {}",
             length,
+            lengthmipmap,
             length3d,
             e.vid(m),
             e.switch_vertex(m).vid(m));
@@ -1768,7 +1797,7 @@ TEST_CASE("mipmap")
         0.1,
         image,
         WrappingMode::MIRROR_REPEAT,
-        EDGE_LEN_TYPE::MIPMAP,
+        EDGE_LEN_TYPE::PT_PER_PIXEL,
         ENERGY_TYPE::EDGE_LENGTH,
         true);
     m.mesh_improvement(1);
