@@ -23,6 +23,10 @@ auto split_renew = [](auto& m, auto op, auto& tris) {
     return optup;
 };
 
+// split edge accuracy error
+
+// optimized to find the new vertex position
+
 void TriWild::split_all_edges()
 {
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
@@ -44,7 +48,10 @@ void TriWild::split_all_edges()
             auto& [weight, op, tup] = ele;
             auto length = m.mesh_parameters.m_get_length(tup.vid(m), tup.switch_vertex(m).vid(m));
             if (length != weight) return false;
-            if (length < 4. / 3. * m.mesh_parameters.m_target_l) return false;
+            if (m.mesh_parameters.m_accuracy) {
+                if (length < m.mesh_parameters.m_accuracy_threshold) return false;
+            } else if (length < 4. / 3. * m.mesh_parameters.m_target_l)
+                return false;
             return true;
         };
         executor(*this, collect_all_ops);
@@ -65,8 +72,8 @@ bool TriWild::split_edge_before(const Tuple& edge_tuple)
     static std::atomic_int cnt = 0;
     if (!TriMesh::split_edge_before(edge_tuple)) return false;
 
-    if (cnt % 50 == 0)
-        write_vtk(mesh_parameters.m_output_folder + fmt::format("split_{:04d}.vtu", cnt));
+    if (cnt % 100 == 0)
+        write_vtk(mesh_parameters.m_output_folder + fmt::format("/split_{:04d}.vtu", cnt));
     // check if the 2 vertices are on the same curve
     if (vertex_attrs[edge_tuple.vid(*this)].curve_id !=
         vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].curve_id)
@@ -107,7 +114,9 @@ bool TriWild::split_edge_after(const Tuple& edge_tuple)
         vertex_attrs[vid].t = mesh_parameters.m_boundary.uv_to_t(vertex_attrs[vid].pos);
     }
     // enforce length check
-    if (length3d > (4. / 3. * mesh_parameters.m_target_l)) {
+    if (mesh_parameters.m_accuracy) {
+        if (length3d > mesh_parameters.m_accuracy_threshold) return true;
+    } else if (length3d > (4. / 3. * mesh_parameters.m_target_l)) {
         return true;
     }
     return false;

@@ -7,7 +7,7 @@
 #include <sec/envelope/SampleEnvelope.hpp>
 namespace triwild {
 enum class ENERGY_TYPE { AMIPS, SYMDI, EDGE_LENGTH };
-enum class EDGE_LEN_TYPE { LINEAR2D, LINEAR3D, PT_PER_PIXEL, MIPMAP };
+enum class EDGE_LEN_TYPE { LINEAR2D, LINEAR3D, N_IMPLICIT_POINTS, PT_PER_PIXEL, MIPMAP, ACCURACY };
 struct Parameters
 {
     using json = nlohmann::json;
@@ -71,5 +71,8 @@ public:
     wmtk::MipMap m_mipmap;
 
     std::function<double(const std::size_t&, const std::size_t&)> m_get_length;
+
+    double m_accuracy_threshold = 0.01;
+    bool m_accuracy = 1;
 };
 } // namespace triwild

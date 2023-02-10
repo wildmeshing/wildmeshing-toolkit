@@ -62,6 +62,7 @@ public:
     void set_parameters(
         const double target_edge_length,
         const std::function<DScalar(const DScalar&, const DScalar&)>& displacement_function,
+        const EDGE_LEN_TYPE edge_len_type,
         const ENERGY_TYPE energy_type,
         const bool boundary_parameter);
     // Store the per-vertex attributes
@@ -160,40 +161,28 @@ public:
     void flatten_dofs(Eigen::VectorXd& v_flat);
     double get_mesh_energy(const Eigen::VectorXd& v_flat);
 
-    double get_accuracy_error(const size_t& vid1, const size_t& vid2);
+    double get_accuracy_error(const size_t& vid1, const size_t& vid2) const;
 
     template <class T, int order>
-    inline std::decay_t<T> quadrature_error_eval(
-        const Eigen::Matrix<T, 1, 4> edge_verts,
+    inline std::decay_t<T> quadrature_error_1pixel_eval(
+        const Eigen::Matrix<T, 2, 3> edge_verts,
         std::function<T(const T&, const T&)> image_get_z,
-        wmtk::LineQuadrature& quad)
+        wmtk::LineQuadrature& quad) const
     {
         quad.get_quadrature(order);
         double ret = 0.0;
-        auto v1z = image_get_z(edge_verts(0, 0), edge_verts(0, 1));
-        auto v2z = image_get_z(edge_verts(0, 2), edge_verts(0, 3));
-        wmtk::logger().info(
-            "   points are ({},{}) ({},{}) error is {}",
-            edge_verts(0, 0),
-            edge_verts(0, 1),
-            edge_verts(0, 2),
-            edge_verts(0, 3),
-            ret);
+        auto v1z = edge_verts(0, 2);
+        auto v2z = edge_verts(1, 2);
+
         // now do 1d quadrature
-        for (int i = 0; i < quad.points.rows() - 1; i++) {
+        for (int i = 0; i < quad.points.rows(); i++) {
             auto tmpu =
-                (1 - quad.points(i, 0)) * edge_verts(0, 0) + quad.points(i, 0) * edge_verts(0, 2);
+                (1 - quad.points(i, 0)) * edge_verts(0, 0) + quad.points(i, 0) * edge_verts(1, 0);
             auto tmpv =
-                (1 - quad.points(i, 0)) * edge_verts(0, 1) + quad.points(i, 0) * edge_verts(0, 3);
+                (1 - quad.points(i, 0)) * edge_verts(0, 1) + quad.points(i, 0) * edge_verts(1, 1);
             auto tmph = image_get_z(tmpu, tmpv);
             auto tmpz = (1 - quad.points(i, 0)) * v1z + quad.points(i, 0) * v2z;
-            wmtk::logger().info(
-                "     quad point ({},{}) quad.points(i, 0) {}",
-                tmpu,
-                tmpv,
-                quad.points(i, 0));
-            wmtk::logger().info("     tmph {} tmpz {}", tmph, tmpz);
-            ret += pow(quad.weights(i) * (tmph - tmpz), 2);
+            ret += abs(quad.weights(i) * (tmph - tmpz));
         }
         return ret;
     }

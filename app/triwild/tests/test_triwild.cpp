@@ -762,7 +762,7 @@ TEST_CASE("edge_length_energy_smooth_constant")
     for (auto v : m.get_vertices()) {
         m.vertex_attrs[v.vid(m)].fixed = false;
     }
-    m.set_parameters(2, displacement, ENERGY_TYPE::EDGE_LENGTH, false);
+    m.set_parameters(2, displacement, EDGE_LEN_TYPE::LINEAR3D, ENERGY_TYPE::EDGE_LENGTH, false);
 
     m.smooth_all_vertices();
     m.write_displaced_obj(
@@ -795,7 +795,7 @@ TEST_CASE("edge_length_energy_smooth_linear")
     for (auto v : m.get_vertices()) {
         m.vertex_attrs[v.vid(m)].fixed = false;
     }
-    m.set_parameters(2, displacement, ENERGY_TYPE::EDGE_LENGTH, false);
+    m.set_parameters(2, displacement, EDGE_LEN_TYPE::LINEAR3D, ENERGY_TYPE::EDGE_LENGTH, false);
 
     m.smooth_all_vertices();
     m.write_displaced_obj(
@@ -831,7 +831,7 @@ TEST_CASE("edge_length_energy_smooth_dramatic_linear")
     for (auto v : m.get_vertices()) {
         m.vertex_attrs[v.vid(m)].fixed = false;
     }
-    m.set_parameters(2, displacement, ENERGY_TYPE::EDGE_LENGTH, false);
+    m.set_parameters(2, displacement, EDGE_LEN_TYPE::LINEAR3D, ENERGY_TYPE::EDGE_LENGTH, false);
     // set the 3 feature point as not fixed
     for (auto v : m.get_vertices()) {
         m.vertex_attrs[v.vid(m)].fixed = false;
@@ -864,7 +864,7 @@ TEST_CASE("edge_length_energy_constant_remesh")
     };
     TriWild m;
     m.create_mesh(V, F);
-    m.set_parameters(0.5, displacement, ENERGY_TYPE::EDGE_LENGTH, true);
+    m.set_parameters(0.5, displacement, EDGE_LEN_TYPE::LINEAR3D, ENERGY_TYPE::EDGE_LENGTH, true);
     m.mesh_improvement(3);
     m.write_displaced_obj(
         "twoandahalf_edge_length_one_triangle_constant_remesh_yesboundary.obj",
@@ -892,7 +892,7 @@ TEST_CASE("edge_length_energy_one_triangle_linear_remesh")
     };
     TriWild m;
     m.create_mesh(V, F);
-    m.set_parameters(0.5, displacement, ENERGY_TYPE::EDGE_LENGTH, true);
+    m.set_parameters(0.5, displacement, EDGE_LEN_TYPE::LINEAR3D, ENERGY_TYPE::EDGE_LENGTH, true);
 
     m.mesh_improvement(3);
 
@@ -929,7 +929,7 @@ TEST_CASE("edge_length_energy_one_triangle_dramatic_linear_remesh")
     // create the json file to record logs
     std::ofstream js_o("dramatic_linear_nobnd.json");
     m.create_mesh(V, F);
-    m.set_parameters(1, displacement, ENERGY_TYPE::EDGE_LENGTH, false);
+    m.set_parameters(1, displacement, EDGE_LEN_TYPE::LINEAR3D, ENERGY_TYPE::EDGE_LENGTH, false);
     for (auto v : m.get_vertices()) {
         m.vertex_attrs[v.vid(m)].fixed = false;
     }
@@ -967,7 +967,7 @@ TEST_CASE("edge_length_energy_one_triangle_smooth_remesh")
     // create the json file to record logs
     std::ofstream js_o("smooth_yesbnd.json");
     m.create_mesh(V, F);
-    m.set_parameters(0.1, displacement, ENERGY_TYPE::EDGE_LENGTH, true);
+    m.set_parameters(0.1, displacement, EDGE_LEN_TYPE::LINEAR3D, ENERGY_TYPE::EDGE_LENGTH, true);
     for (auto v : m.get_vertices()) {
         REQUIRE(m.vertex_attrs[v.vid(m)].fixed);
     }
@@ -1009,7 +1009,7 @@ TEST_CASE("smoothing_gradient_debug")
     // create the json file to record logs
     std::ofstream js_o("gradient_debug_yesbnd.json");
     m.create_mesh(V, F);
-    m.set_parameters(1, displacement, ENERGY_TYPE::EDGE_LENGTH, true);
+    m.set_parameters(1, displacement, EDGE_LEN_TYPE::LINEAR3D, ENERGY_TYPE::EDGE_LENGTH, true);
     for (auto v : m.get_vertices()) {
         // m.vertex_attrs[v.vid(m)].fixed = false;
     }
@@ -1110,7 +1110,7 @@ TEST_CASE("boundary parameter smooth")
         Eigen::Vector3d p(u, v, displacement_double(u, v));
         return p;
     };
-    m.set_parameters(4, displacement, ENERGY_TYPE::EDGE_LENGTH, true);
+    m.set_parameters(4, displacement, EDGE_LEN_TYPE::LINEAR3D, ENERGY_TYPE::EDGE_LENGTH, true);
 
     for (auto v : m.get_vertices()) {
         REQUIRE(m.vertex_attrs[v.vid(m)].t >= 0);
@@ -1147,7 +1147,7 @@ TEST_CASE("boundary parameter split")
         return p;
     };
 
-    m.set_parameters(4, displacement, ENERGY_TYPE::EDGE_LENGTH, true);
+    m.set_parameters(4, displacement, EDGE_LEN_TYPE::LINEAR3D, ENERGY_TYPE::EDGE_LENGTH, true);
 
     for (auto v : m.get_vertices()) {
         REQUIRE(m.vertex_attrs[v.vid(m)].t >= 0);
@@ -1194,7 +1194,7 @@ TEST_CASE("boundary parameter collapse")
         return p;
     };
 
-    m.set_parameters(1, displacement, ENERGY_TYPE::EDGE_LENGTH, true);
+    m.set_parameters(1, displacement, EDGE_LEN_TYPE::LINEAR3D, ENERGY_TYPE::EDGE_LENGTH, true);
 
     for (auto v : m.get_vertices()) {
         REQUIRE(m.vertex_attrs[v.vid(m)].t >= 0);
@@ -1244,7 +1244,7 @@ TEST_CASE("energy gradient")
         Eigen::Vector3d p(u, v, 10 * u);
         return p;
     };
-    m.set_parameters(1, displacement, ENERGY_TYPE::EDGE_LENGTH, true);
+    m.set_parameters(1, displacement, EDGE_LEN_TYPE::LINEAR3D, ENERGY_TYPE::EDGE_LENGTH, true);
 
     Eigen::VectorXd v_flat;
     m.flatten_dofs(v_flat);
@@ -1283,7 +1283,7 @@ TEST_CASE("gradient")
         Eigen::Vector3d p(u, v, 10 * u);
         return p;
     };
-    m.set_parameters(1, displacement, ENERGY_TYPE::EDGE_LENGTH, true);
+    m.set_parameters(1, displacement, EDGE_LEN_TYPE::LINEAR3D, ENERGY_TYPE::EDGE_LENGTH, true);
 
     Eigen::VectorXd v_flat, finitediff_grad;
     m.flatten_dofs(v_flat);
@@ -1596,7 +1596,13 @@ TEST_CASE("remeshing using image data")
     F.row(0) << 0, 1, 2;
     TriWild m;
     m.create_mesh(V, F);
-    m.set_parameters(0.01, displacement, ENERGY_TYPE::EDGE_LENGTH, true);
+    m.set_parameters(
+        0.01,
+        image2,
+        WrappingMode::MIRROR_REPEAT,
+        EDGE_LEN_TYPE::LINEAR3D,
+        ENERGY_TYPE::EDGE_LENGTH,
+        true);
     m.mesh_improvement(3);
 
     m.write_displaced_obj("remesh_from_image_linear.obj", displacement_image_double);
@@ -1645,7 +1651,13 @@ TEST_CASE("stripe")
 
     wmtk::logger().info("#v {}, #f {} ", m.vert_capacity(), m.tri_capacity());
     m.set_image_function(image, WrappingMode::MIRROR_REPEAT);
-    m.set_parameters(0.1, displacement, ENERGY_TYPE::EDGE_LENGTH, true);
+    m.set_parameters(
+        0.1,
+        image,
+        WrappingMode::MIRROR_REPEAT,
+        EDGE_LEN_TYPE::N_IMPLICIT_POINTS,
+        ENERGY_TYPE::EDGE_LENGTH,
+        true);
     m.mesh_improvement(3);
     m.write_displaced_obj("stripe_final.obj", m.mesh_parameters.m_project_to_3d);
 }
@@ -1661,7 +1673,12 @@ TEST_CASE("implicit points")
     m.create_mesh(V, F);
 
     auto displacement = [](const DScalar& u, const DScalar& v) -> DScalar { return DScalar(1.); };
-    m.set_parameters(0.05, displacement, ENERGY_TYPE::EDGE_LENGTH, true);
+    m.set_parameters(
+        0.05,
+        displacement,
+        EDGE_LEN_TYPE::N_IMPLICIT_POINTS,
+        ENERGY_TYPE::EDGE_LENGTH,
+        true);
     int edge_cnt = 0;
     for (auto e : m.get_edges()) {
         auto length2d = m.get_length2d(e.vid(m), e.switch_vertex(m).vid(m));
@@ -1694,34 +1711,49 @@ TEST_CASE("quadrature")
         0.05,
         image,
         WrappingMode::MIRROR_REPEAT,
-        EDGE_LEN_TYPE::PT_PER_PIXEL,
+        EDGE_LEN_TYPE::ACCURACY,
         ENERGY_TYPE::EDGE_LENGTH,
         true);
     for (auto e : m.get_edges()) {
         auto length2d = m.get_length2d(e.vid(m), e.switch_vertex(m).vid(m));
         auto length3d = m.get_length3d(e.vid(m), e.switch_vertex(m).vid(m));
         auto lengthquad = m.get_accuracy_error(e.vid(m), e.switch_vertex(m).vid(m)); // should be 0
-        wmtk::logger().info("edge 2d {} 3d {} quad error {}", length2d, length3d, lengthquad);
-        REQUIRE(lengthquad < 1e-8);
+        REQUIRE(lengthquad < 1e-5);
     }
-    wmtk::logger().info("============= dramatic lin=============");
-    Image image1(10, 10);
-    auto displacement_double2 = [](const double& u, const double& v) -> double {
-        return (10. * u);
+    wmtk::logger().info("============= 10x =============");
+
+    auto displacement_double2 = [](const DScalar& u, const DScalar& v) -> DScalar {
+        return DScalar(10) * u; // sin(M_PI * u);
     };
-    image1.set(displacement_double2);
     m.set_parameters(
         0.05,
-        image1,
-        WrappingMode::MIRROR_REPEAT,
-        EDGE_LEN_TYPE::PT_PER_PIXEL,
+        displacement_double2,
+        EDGE_LEN_TYPE::ACCURACY,
         ENERGY_TYPE::EDGE_LENGTH,
         true);
     for (auto e : m.get_edges()) {
         auto length2d = m.get_length2d(e.vid(m), e.switch_vertex(m).vid(m));
         auto length3d = m.get_length3d(e.vid(m), e.switch_vertex(m).vid(m));
         auto lengthquad = m.get_accuracy_error(e.vid(m), e.switch_vertex(m).vid(m));
-        wmtk::logger().info("edge 2d {} 3d {} quad error {}", length2d, length3d, lengthquad);
+        REQUIRE(lengthquad < 1e-8);
+    }
+
+    wmtk::logger().info("============= sin(PI * u) =============");
+
+    auto displacement_double3 = [](const DScalar& u, const DScalar& v) -> DScalar {
+        return sin(M_PI * u);
+    };
+    m.set_parameters(
+        0.05,
+        displacement_double3,
+        EDGE_LEN_TYPE::ACCURACY,
+        ENERGY_TYPE::EDGE_LENGTH,
+        true);
+    for (auto e : m.get_edges()) {
+        auto length2d = m.get_length2d(e.vid(m), e.switch_vertex(m).vid(m));
+        auto length3d = m.get_length3d(e.vid(m), e.switch_vertex(m).vid(m));
+        auto lengthquad = m.get_accuracy_error(e.vid(m), e.switch_vertex(m).vid(m));
+        wmtk::logger().info("2d {} 3d {} lengthquad {}", length2d, length3d, lengthquad);
         // REQUIRE(lengthquad < 1e-8);
     }
 }
@@ -1748,7 +1780,12 @@ TEST_CASE("exact length")
     m.create_mesh(V, F);
     m.set_image_function(image, WrappingMode::MIRROR_REPEAT);
 
-    m.set_parameters(0.05, displacement, ENERGY_TYPE::EDGE_LENGTH, true);
+    m.set_parameters(
+        0.05,
+        displacement,
+        EDGE_LEN_TYPE::PT_PER_PIXEL,
+        ENERGY_TYPE::EDGE_LENGTH,
+        true);
 
     for (auto e : m.get_edges()) {
         auto length = m.get_length_1ptperpixel(e.vid(m), e.switch_vertex(m).vid(m));
@@ -1802,4 +1839,30 @@ TEST_CASE("mipmap")
         true);
     m.mesh_improvement(1);
     m.write_displaced_obj("mipmap_out.obj", m.mesh_parameters.m_project_to_3d);
+}
+
+TEST_CASE("accuracy split")
+{
+    Image image1(10, 10);
+    auto displacement_double2 = [](const double& u, const double& v) -> double {
+        return sin(M_PI * u);
+    };
+    image1.set(displacement_double2);
+    TriWild m;
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    igl::read_triangle_mesh("/home/yunfan/data/input.obj", V, F);
+    m.create_mesh(V, F);
+    m.set_parameters(
+        0.05,
+        image1,
+        WrappingMode::MIRROR_REPEAT,
+        EDGE_LEN_TYPE::ACCURACY,
+        ENERGY_TYPE::EDGE_LENGTH,
+        true);
+    m.split_all_edges();
+    m.consolidate_mesh();
+    m.write_displaced_obj("accuracy_guided_split.obj", m.mesh_parameters.m_project_to_3d);
+    m.swap_all_edges();
+    m.write_displaced_obj("accuracy_guided_swap.obj", m.mesh_parameters.m_project_to_3d);
 }
