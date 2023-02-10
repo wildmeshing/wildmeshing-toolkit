@@ -58,7 +58,7 @@ int main(int argc, char** argv)
 
     int image_size = 512;
     image_size = config["image_size"];
-    std::filesystem::path image_path = config["image_path"];
+    std::string image_path = config["image_path"];
     WrappingMode wrapping_mode = WrappingMode::MIRROR_REPEAT;
     wrapping_mode = config["wrapping_mode"];
     Image image(image_size, image_size);

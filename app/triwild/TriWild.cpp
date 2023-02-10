@@ -100,12 +100,12 @@ void TriWild::set_edge_length_measurement(const EDGE_LEN_TYPE edge_len_type)
     switch (edge_len_type) {
     case EDGE_LEN_TYPE::LINEAR2D:
         mesh_parameters.m_get_length = [&](const size_t& vid1, const size_t& vid2) -> double {
-            this->get_length2d(vid1, vid2);
+            return this->get_length2d(vid1, vid2);
         };
         break;
     case EDGE_LEN_TYPE::LINEAR3D:
         mesh_parameters.m_get_length = [&](const size_t& vid1, const size_t& vid2) -> double {
-            this->get_length3d(vid1, vid2);
+            return this->get_length3d(vid1, vid2);
         };
         break;
     case EDGE_LEN_TYPE::N_IMPLICIT_POINTS:
@@ -115,12 +115,12 @@ void TriWild::set_edge_length_measurement(const EDGE_LEN_TYPE edge_len_type)
         break;
     case EDGE_LEN_TYPE::PT_PER_PIXEL:
         mesh_parameters.m_get_length = [&](const size_t& vid1, const size_t& vid2) -> double {
-            this->get_length_1ptperpixel(vid1, vid2);
+            return this->get_length_1ptperpixel(vid1, vid2);
         };
         break;
     case EDGE_LEN_TYPE::MIPMAP:
         mesh_parameters.m_get_length = [&](const size_t& vid1, const size_t& vid2) -> double {
-            this->get_length_mipmap(vid1, vid2);
+            return this->get_length_mipmap(vid1, vid2);
         };
         break;
     case EDGE_LEN_TYPE::ACCURACY:

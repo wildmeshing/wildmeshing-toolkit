@@ -48,7 +48,7 @@ public:
     Parameters mesh_parameters;
     void set_output_folder(std::filesystem::path output_folder)
     {
-        mesh_parameters.m_output_folder = output_folder;
+        mesh_parameters.m_output_folder = output_folder.string();
     }
     // set often used parameters in a bundle. User can also set each used parameters that are
     // used separately

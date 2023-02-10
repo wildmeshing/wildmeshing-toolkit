@@ -54,7 +54,7 @@ bool wmtk::save_image_exr_red_channel(
     }
 
     const char* err = NULL; // or nullptr in C++11 or later.
-    int ret = SaveEXRImageToFile(&image, &header, path.c_str(), &err);
+    int ret = SaveEXRImageToFile(&image, &header, path.string().data(), &err);
     if (ret != TINYEXR_SUCCESS) {
         fprintf(stderr, "Save EXR err: %s\n", err);
         FreeEXRErrorMessage(err); // free's buffer for an error message
