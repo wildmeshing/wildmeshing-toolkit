@@ -42,6 +42,7 @@ void TriWild::set_parameters(
 void TriWild::set_parameters(
     const double target_edge_length,
     const std::function<DScalar(const DScalar&, const DScalar&)>& displacement_function,
+    const EDGE_LEN_TYPE edge_len_type,
     const ENERGY_TYPE energy_type,
     const bool boundary_parameter)
 {
@@ -49,7 +50,7 @@ void TriWild::set_parameters(
     mesh_parameters.m_get_z = displacement_function;
     set_energy(
         energy_type); // set the displacement_function first since it is used for energy setting
-    set_edge_length_measurement(EDGE_LEN_TYPE::MIPMAP); // set the default to get_legnth_3d
+    set_edge_length_measurement(edge_len_type); // set the default to get_legnth_3d
     mesh_parameters.m_boundary_parameter = boundary_parameter;
 }
 
@@ -107,6 +108,11 @@ void TriWild::set_edge_length_measurement(const EDGE_LEN_TYPE edge_len_type)
             return this->get_length3d(vid1, vid2);
         };
         break;
+    case EDGE_LEN_TYPE::N_IMPLICIT_POINTS:
+        mesh_parameters.m_get_length = [&](const size_t& vid1, const size_t& vid2) -> double {
+            this->get_length_n_implicit_points(vid1, vid2);
+        };
+        break;
     case EDGE_LEN_TYPE::PT_PER_PIXEL:
         mesh_parameters.m_get_length = [&](const size_t& vid1, const size_t& vid2) -> double {
             return this->get_length_1ptperpixel(vid1, vid2);
@@ -117,12 +123,18 @@ void TriWild::set_edge_length_measurement(const EDGE_LEN_TYPE edge_len_type)
             return this->get_length_mipmap(vid1, vid2);
         };
         break;
+    case EDGE_LEN_TYPE::ACCURACY:
+        mesh_parameters.m_get_length = [&](const size_t& vid1, const size_t& vid2) -> double {
+            this->get_accuracy_error(vid1, vid2);
+        };
+        break;
     }
 }
 
 void TriWild::set_image_function(const wmtk::Image& image, const WrappingMode wrapping_mode)
 {
     mesh_parameters.m_wrapping_mode = wrapping_mode;
+    mesh_parameters.m_image = image;
     mesh_parameters.m_get_z = [&](const DScalar& u, const DScalar& v) -> DScalar {
         return image.get(u, v);
     };
@@ -432,8 +444,14 @@ double TriWild::get_length2d(const size_t& v1, const size_t& v2) const
     return (vertex_attrs[v1].pos - vertex_attrs[v2].pos).stableNorm();
 }
 
+double TriWild::get_length3d(const size_t& v1, const size_t& v2) const
+{
+    auto v13d = mesh_parameters.m_project_to_3d(vertex_attrs[v1].pos(0), vertex_attrs[v1].pos(1));
+    auto v23d = mesh_parameters.m_project_to_3d(vertex_attrs[v2].pos(0), vertex_attrs[v2].pos(1));
+    return (v13d - v23d).stableNorm();
+}
 
-double TriWild::get_length3d(const size_t& vid1, const size_t& vid2) const
+double TriWild::get_length_n_implicit_points(const size_t& vid1, const size_t& vid2) const
 {
     auto v12d = vertex_attrs[vid1].pos;
     auto v22d = vertex_attrs[vid2].pos;
@@ -487,7 +505,8 @@ double TriWild::get_length_1ptperpixel(const size_t& vid1, const size_t& vid2) c
     assert(pixel_num > 0);
     std ::vector<Eigen::Vector3d> quadrature;
     for (int i = 0; i < (pixel_num + 1); i++) {
-        auto tmp_v2d = v12d * (pixel_num - i) / pixel_num + v22d * i / pixel_num;
+        const double u = static_cast<double>(i) / pixel_num;
+        auto tmp_v2d = v12d * (1. - u) + v22d * u;
         quadrature.emplace_back(mesh_parameters.m_project_to_3d(tmp_v2d(0), tmp_v2d(1)));
     }
     for (int i = 0; i < pixel_num; i++) {
@@ -548,26 +567,40 @@ double TriWild::get_quality(const Tuple& loc, int idx) const
     return energy;
 }
 
-double TriWild::get_accuracy_error(const size_t& vid1, const size_t& vid2)
+double TriWild::get_accuracy_error(const size_t& vid1, const size_t& vid2) const
 {
-    Eigen::Matrix<double, 1, 4> edge_verts;
-    edge_verts << vertex_attrs[vid1].pos(0), vertex_attrs[vid1].pos(1), vertex_attrs[vid2].pos(0),
-        vertex_attrs[vid2].pos(1);
-
     std::function<double(const double&, const double&)> get_z = [&](const double& u,
                                                                     const double& v) -> double {
-        return mesh_parameters.m_image.get(u, v);
+        return mesh_parameters.m_project_to_3d(u, v)(2);
     };
-
-    auto v1z = mesh_parameters.m_image.get(vertex_attrs[vid1].pos(0), vertex_attrs[vid1].pos(1));
-    auto v2z = mesh_parameters.m_image.get(vertex_attrs[vid2].pos(0), vertex_attrs[vid2].pos(1));
-    LineQuadrature quad;
-    auto displaced_edge_length = line_quadrature_eval<double, 5>(edge_verts, get_z, quad);
-    Eigen::Vector3d p1 = Eigen::Vector3d(vertex_attrs[vid1].pos(0), vertex_attrs[vid1].pos(1), v1z);
-    Eigen::Vector3d p2 = Eigen::Vector3d(vertex_attrs[vid2].pos(0), vertex_attrs[vid2].pos(1), v2z);
-    auto approximate_length = (p1 - p2).stableNorm();
-
-    return abs(approximate_length - displaced_edge_length);
+    auto v12d = vertex_attrs[vid1].pos;
+    auto v22d = vertex_attrs[vid2].pos;
+    auto v1z = get_z(v12d(0), v12d(1));
+    auto v2z = get_z(v22d(0), v22d(1));
+    // get the pixel index of p1 and p2
+    auto [xx1, yy1] = mesh_parameters.m_image_get_coordinate(v12d(0), v12d(1));
+    auto [xx2, yy2] = mesh_parameters.m_image_get_coordinate(v22d(0), v22d(1));
+    // get all the pixels in between p1 and p2
+    auto pixel_num = std::max(abs(xx2 - xx1), abs(yy2 - yy1));
+    if (pixel_num <= 0) return -1.;
+    assert(pixel_num > 0);
+    double error = 0.0;
+    for (int i = 0; i < pixel_num; i++) {
+        const double r0 = static_cast<double>(i) / pixel_num;
+        auto tmp_v12d = v12d * (1. - r0) + v22d * r0;
+        auto tmp_v1z = v1z * (1. - r0) + v2z * r0;
+        const double r1 = static_cast<double>(i + 1) / pixel_num;
+        auto tmp_v22d = v12d * (1. - r1) + v22d * r1;
+        auto tmp_v2z = v1z * (1. - r1) + v2z * r1;
+        Eigen::Matrix<double, 2, 3> edge_verts;
+        edge_verts.row(0) << tmp_v12d(0), tmp_v12d(1), tmp_v1z;
+        edge_verts.row(1) << tmp_v22d(0), tmp_v22d(1), tmp_v2z;
+        LineQuadrature quad;
+        auto displaced_pixel_error =
+            quadrature_error_1pixel_eval<double, 5>(edge_verts, get_z, quad);
+        error += displaced_pixel_error;
+    }
+    return error;
 }
 
 std::pair<double, Eigen::Vector2d> TriWild::get_one_ring_energy(const Tuple& loc) const

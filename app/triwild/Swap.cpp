@@ -56,6 +56,17 @@ auto swap_cost = [](auto& m, const TriMesh::Tuple& t) {
     return (cost_before_swap - cost_after_swap);
 };
 
+auto swap_accuracy_cost = [](auto& m, const TriMesh::Tuple& e) {
+    auto e_before = m.get_accuracy_error(e.vid(m), e.switch_vertex(m).vid(m));
+    if ((e.switch_face(m)).has_value()) {
+        auto t4 = (((e.switch_face(m)).value()).switch_edge(m)).switch_vertex(m);
+        auto t3 = (e.switch_edge(m)).switch_vertex(m);
+        auto e_after = m.get_accuracy_error(t3.vid(m), t4.vid(m));
+        return (e_before - e_after);
+    } else
+        return -1.;
+};
+
 void TriWild::swap_all_edges()
 {
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
@@ -69,12 +80,24 @@ void TriWild::swap_all_edges()
     wmtk::logger().info("size for edges to be swap is {}", collect_all_ops.size());
     auto setup_and_execute = [&](auto executor) {
         executor.renew_neighbor_tuples = swap_renew;
-        executor.priority = [&](auto& m, auto _, auto& e) { return swap_cost(m, e); };
+        executor.priority = [&](auto& m, auto _, auto& e) {
+            if (m.mesh_parameters.m_accuracy)
+                return swap_accuracy_cost(m, e);
+            else
+                return swap_cost(m, e);
+        };
         executor.num_threads = NUM_THREADS;
         executor.is_weight_up_to_date = [](auto& m, auto& ele) {
             auto& [weight, op, tup] = ele;
-            auto cost = swap_cost(m, tup);
-            if (cost < 1e-5 || std::pow(cost - weight, 2) > 1e-5) return false;
+            if (m.mesh_parameters.m_accuracy) {
+                auto cost = swap_accuracy_cost(m, tup);
+                if (cost < m.mesh_parameters.m_accuracy_threshold ||
+                    std::pow(cost - weight, 2) > 1e-5)
+                    return false;
+            } else {
+                auto cost = swap_cost(m, tup);
+                if (cost < 1e-5 || std::pow(cost - weight, 2) > 1e-5) return false;
+            }
             return true;
         };
         executor(*this, collect_all_ops);

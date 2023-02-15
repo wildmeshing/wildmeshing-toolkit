@@ -62,6 +62,7 @@ public:
     void set_parameters(
         const double target_edge_length,
         const std::function<DScalar(const DScalar&, const DScalar&)>& displacement_function,
+        const EDGE_LEN_TYPE edge_len_type,
         const ENERGY_TYPE energy_type,
         const bool boundary_parameter);
     // Store the per-vertex attributes
@@ -152,6 +153,7 @@ public:
         const; // overload of the version that takes a tuple.
                // used when the tuple is invalid but use vids to uquest for positions in the
                // vertex_attrs
+    double get_length_n_implicit_points(const size_t& vid1, const size_t& vid2) const;
     double get_length_quadrature(const Eigen::Vector2d& p1, const Eigen::Vector2d& p2) const;
     double get_length_1ptperpixel(const size_t& vid1, const size_t& vid2) const;
     double get_length_mipmap(const size_t& vid1, const size_t& vid2) const;
@@ -159,27 +161,28 @@ public:
     void flatten_dofs(Eigen::VectorXd& v_flat);
     double get_mesh_energy(const Eigen::VectorXd& v_flat);
 
-    double get_accuracy_error(const size_t& vid1, const size_t& vid2);
+    double get_accuracy_error(const size_t& vid1, const size_t& vid2) const;
 
     template <class T, int order>
-    inline std::decay_t<T> line_quadrature_eval(
-        const Eigen::Matrix<T, 1, 4> edge_verts,
+    inline std::decay_t<T> quadrature_error_1pixel_eval(
+        const Eigen::Matrix<T, 2, 3> edge_verts,
         std::function<T(const T&, const T&)> image_get_z,
-        wmtk::LineQuadrature& quad)
+        wmtk::LineQuadrature& quad) const
     {
         quad.get_quadrature(order);
         double ret = 0.0;
-        auto edge_length = pow(edge_verts(0, 2) - edge_verts(0, 0), 2) +
-                           pow(edge_verts(0, 3) - edge_verts(0, 1), 2);
-        edge_length = sqrt(edge_length);
-        auto u_dir = (edge_verts(0, 2) - edge_verts(0, 0)) / edge_length;
-        auto v_dir = (edge_verts(0, 3) - edge_verts(0, 1)) / edge_length;
+        auto v1z = edge_verts(0, 2);
+        auto v2z = edge_verts(1, 2);
+
         // now do 1d quadrature
         for (int i = 0; i < quad.points.rows(); i++) {
-            auto tmpu = edge_verts(0, 0) + u_dir * quad.points(i, 0);
-            auto tmpv = edge_verts(0, 1) + v_dir * quad.points(i, 0);
-            auto tmpz = image_get_z(tmpu, tmpv);
-            ret += quad.weights(i) * tmpz;
+            auto tmpu =
+                (1 - quad.points(i, 0)) * edge_verts(0, 0) + quad.points(i, 0) * edge_verts(1, 0);
+            auto tmpv =
+                (1 - quad.points(i, 0)) * edge_verts(0, 1) + quad.points(i, 0) * edge_verts(1, 1);
+            auto tmph = image_get_z(tmpu, tmpv);
+            auto tmpz = (1 - quad.points(i, 0)) * v1z + quad.points(i, 0) * v2z;
+            ret += abs(quad.weights(i) * (tmph - tmpz));
         }
         return ret;
     }
