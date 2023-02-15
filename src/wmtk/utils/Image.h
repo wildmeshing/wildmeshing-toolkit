@@ -26,6 +26,8 @@ public:
     Image() = default;
     Image(int height_, int width_) { m_image.resize(height_, width_); };
 
+    auto get_raw_image() const { return m_image; }
+
 public:
     // point coordinates between [0, 1]
     int width() const { return static_cast<int>(m_image.cols()); };

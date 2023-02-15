@@ -12,6 +12,7 @@ add_library(wmtk_triwild
 	Smooth.cpp
 	TriWild.cpp
 	TriWild.h
+	Parameters.h
 )
 add_library(wmtk::triwild ALIAS wmtk_triwild)
 
