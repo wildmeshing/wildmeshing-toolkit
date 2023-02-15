@@ -2,6 +2,7 @@
 
 #include <gmp.h>
 #include <iostream>
+#include <string>
 
 namespace wmtk {
 
@@ -11,8 +12,9 @@ public:
     mpq_t value;
     void canonicalize() { mpq_canonicalize(value); }
     int get_sign() { return mpq_sgn(value); }
-    template<typename T> 
-    void init(const T& v){ 
+    template <typename T>
+    void init(const T& v)
+    {
         mpq_set(value, v);
     }
 
@@ -138,6 +140,41 @@ public:
     // to double
     double to_double() const { return mpq_get_d(value); }
 
+    // get str
+    std::string get_str()
+    {
+        char* s = mpq_get_str(NULL, 10, value);
+        std::string Str = s;
+        free(s);
+        return Str;
+    }
+
+    // get num str
+    std::string get_num_str() const
+    {
+        mpz_t num;
+        mpz_init(num);
+        mpq_get_num(num, value);
+        char* s = mpz_get_str(NULL, 10, num);
+        std::string Str = s;
+        free(s);
+        mpz_clear(num);
+        return Str;
+    }
+
+    // get den str
+    std::string get_den_str() const
+    {
+        mpz_t den;
+        mpz_init(den);
+        mpq_get_den(den, value);
+        char* s = mpz_get_str(NULL, 10, den);
+        std::string Str = s;
+        free(s);
+        mpz_clear(den);
+        return Str;
+    }
+
     friend Rational abs(const Rational& r0)
     {
         Rational r;
@@ -152,4 +189,4 @@ public:
         return os;
     }
 };
-} // namespace apps
+} // namespace wmtk

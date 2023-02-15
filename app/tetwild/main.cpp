@@ -138,6 +138,11 @@ int main(int argc, char** argv)
     /////////triangle insertion with the simplified mesh
     mesh.init_from_input_surface(vsimp, fsimp, partition_id);
 
+    mesh.output_faces("test_ti_output_surface.obj", [](auto& f) { return f.m_is_surface_fs; });
+
+    mesh.output_faces("test_ti_output_bbox.obj", [](auto& f) { return f.m_is_bbox_fs != -1; });
+
+
     /////////mesh improvement
     mesh.mesh_improvement(max_its);
     ////winding number

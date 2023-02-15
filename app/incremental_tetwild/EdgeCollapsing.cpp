@@ -105,6 +105,14 @@ bool tetwild::TetWild::collapse_edge_before(const Tuple& loc) // input is an edg
     cache.edge_length =
         (VA[v1_id].m_posf - VA[v2_id].m_posf).norm(); // todo: duplicated computation
 
+    // debug code
+    // wmtk::logger().info(
+    //     "try to collapse eid:{}, vid1: {}, vid2: {}, length: {}",
+    //     loc.fid(*this),
+    //     v1_id,
+    //     v2_id,
+    //     cache.edge_length);
+
     ///check if on bbox/surface/boundary
     // bbox
     if (!VA[v1_id].on_bbox_faces.empty()) {
@@ -113,13 +121,21 @@ bool tetwild::TetWild::collapse_edge_before(const Tuple& loc) // input is an edg
             if (std::find(
                     VA[v2_id].on_bbox_faces.begin(),
                     VA[v2_id].on_bbox_faces.end(),
-                    on_bbox) == VA[v2_id].on_bbox_faces.end())
+                    on_bbox) == VA[v2_id].on_bbox_faces.end()) {
+                // debug code
+                // wmtk::logger().info("edge {} not passing bbox before check!", loc.fid(*this));
                 return false;
+            }
     }
 
     // surface
     if (cache.edge_length > 0 && VA[v1_id].m_is_on_surface) {
-        if (!VA[v2_id].m_is_on_surface && m_envelope.is_outside(VA[v2_id].m_posf)) return false;
+        if (!VA[v2_id].m_is_on_surface && m_envelope.is_outside(VA[v2_id].m_posf)) {
+            // debug code
+            // wmtk::logger().info("edge {} not passing surface before check!", loc.fid(*this));
+
+            return false;
+        }
     }
 
 
@@ -207,17 +223,27 @@ bool tetwild::TetWild::collapse_edge_before(const Tuple& loc) // input is an edg
     //     assert(!is_inverted(tuple_from_tet(tid)));
     // }
 
+    // debug code
+    // wmtk::logger().info("edge {} pass collapse before check", loc.fid(*this));
+
     return true;
 }
 
 bool tetwild::TetWild::collapse_edge_after(const Tuple& loc)
 {
-    if (!TetMesh::collapse_edge_after(loc)) return false;
+    if (!TetMesh::collapse_edge_after(loc)) {
+        // debug code
+        // wmtk::logger().info("edge {} not pass connectivity after check", loc.fid(*this));
+
+        return false;
+    }
     auto& VA = m_vertex_attribute;
     auto& cache = collapse_cache.local();
 
     size_t v1_id = cache.v1_id;
     size_t v2_id = cache.v2_id;
+
+    // wmtk::logger().info("changed tids: {}", cache.changed_tids);
 
     // check quality
     std::vector<double> qs;
@@ -230,6 +256,8 @@ bool tetwild::TetWild::collapse_edge_after(const Tuple& loc)
         }
         qs.push_back(q);
     }
+
+    // wmtk::logger().info("changed qualities: {}", qs);
 
     // surface
 

@@ -38,12 +38,12 @@ public:
     bool m_is_rounded = false;
 
     bool m_is_on_surface = false;
-    std::vector<int> on_bbox_faces;
-    bool m_is_outside = false;
+    std::vector<int> on_bbox_faces; // same as is_bbox_fs?
+    bool m_is_outside = false; // never used?
 
     Scalar m_sizing_scalar = 1;
-    Scalar m_scalar = 1;
-    bool m_is_freezed = false;
+    // Scalar m_scalar = 1; // never used?
+    // bool m_is_freezed = false;// never used?
 
     size_t partition_id = 0;
 
@@ -60,7 +60,7 @@ public:
     bool m_is_surface_fs = false; // 0; 1
     int m_is_bbox_fs = -1; //-1; 0~5
 
-    int m_surface_tags = -1;
+    int m_surface_tags = -1; // never used?
 
     void reset()
     {
@@ -82,8 +82,8 @@ class TetAttributes
 {
 public:
     Scalar m_quality;
-    Scalar m_scalar;
-    bool m_is_outside;
+    // Scalar m_scalar; // never used?
+    bool m_is_outside; // never used?
 };
 
 class TetWild : public wmtk::TetMesh
@@ -379,16 +379,33 @@ public:
         std::vector<bool>& tet_face_on_input_surface);
 
     void init_from_Volumeremesher(
-        std::vector<Vector3r>& v_rational,
-        std::vector<std::array<size_t, 3>>& facets,
-        std::vector<bool>& is_v_on_input,
-        std::vector<std::array<size_t, 4>>& tets,
-        std::vector<bool>& tet_face_on_input_surface);
+        const std::vector<Vector3r>& v_rational,
+        const std::vector<std::array<size_t, 3>>& facets,
+        const std::vector<bool>& is_v_on_input,
+        const std::vector<std::array<size_t, 4>>& tets,
+        const std::vector<bool>& tet_face_on_input_surface);
+
+    void init_from_file(std::string input_dir);
 
     std::vector<std::array<size_t, 3>> triangulate_polygon_face(std::vector<Vector3r> points);
     bool check_polygon_face_validity(std::vector<tetwild::Vector3r> points);
 
     bool check_nondegenerate_tets();
+    void output_embedded_polygon_mesh(
+        std::string output_dir,
+        const std::vector<Vector3r>& v_rational,
+        const std::vector<std::vector<size_t>>& polygon_faces,
+        const std::vector<std::vector<size_t>>& polygon_cells,
+        const std::vector<bool>& polygon_faces_on_input_surface);
+
+    void output_tetrahedralized_embedded_mesh(
+        std::string output_dir,
+        const std::vector<Vector3r>& v_rational,
+        const std::vector<std::array<size_t, 3>>& facets,
+        const std::vector<std::array<size_t, 4>>& tets,
+        const std::vector<bool>& tet_face_on_input_surface);
+
+    void output_init_tetmesh(std::string output_dir);
 };
 
 } // namespace tetwild

@@ -8,6 +8,6 @@ include(FetchContent)
 FetchContent_Declare(
     volumemesher
     GIT_REPOSITORY https://github.com/JcDai/VolumeRemesher.git
-    GIT_TAG 69b9d748bf764a077359167b6ab035cfce314a6c
+    GIT_TAG 87ac225118ad8c969beb530f837491e356266e52
 )
 FetchContent_MakeAvailable(volumemesher)

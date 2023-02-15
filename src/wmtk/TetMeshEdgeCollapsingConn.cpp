@@ -119,11 +119,12 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
     // refer to illustrations
     // return B, BC, BCA, BCAD
     bool boundary_flag = false;
-    auto v_B = loc0.switch_vertex(*this).vid(*this);
+    auto v_B = loc0.switch_vertex(*this).vid(*this); // in boundary case v_B is v_F
 
     auto v_C_tuple = loc0.switch_edge(*this).switch_face(*this).switch_tetrahedron(*this);
     if (!v_C_tuple.has_value()) {
-        // boundry case
+        // boundary case
+        // boundary case v_C is v_B
         //  find another tet vertex
         boundary_flag = true;
         v_C_tuple =
@@ -191,7 +192,7 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
     // get eid, fid, tid for return
     Tuple new_loc;
 
-    size_t tid_for_return = -1;
+    long long tid_for_return = -1;
     for (size_t tid_v : m_vertex_connectivity[v_B].m_conn_tets) {
         if (m_tet_connectivity[tid_v].find(v_A) != -1 &&
             m_tet_connectivity[tid_v].find(v_C) != -1 &&

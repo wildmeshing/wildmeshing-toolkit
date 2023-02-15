@@ -172,7 +172,18 @@ int main(int argc, char** argv)
         tets,
         tet_face_on_input_surface);
 
+    mesh_new.output_tetrahedralized_embedded_mesh(
+        "tetrahedralized_embedded_mesh.txt",
+        v_rational,
+        facets,
+        tets,
+        tet_face_on_input_surface);
+
+    mesh_new.output_init_tetmesh("tetmesh_before_opt.txt");
+
     std::cout << "here2" << std::endl;
+
+    mesh_new.consolidate_mesh();
 
     mesh_new.output_mesh("test_embed_output.msh");
     std::cout << "here3" << std::endl;
@@ -181,30 +192,53 @@ int main(int argc, char** argv)
         return f.m_is_surface_fs;
     });
 
+    mesh_new.output_faces("test_embed_output_bbox.obj", [](auto& f) {
+        return f.m_is_bbox_fs != -1;
+    });
+
     std::cout << "here4" << std::endl;
 
+    auto fs = mesh_new.get_faces();
+    std::cout << fs.size() << std::endl;
+    for (auto f : fs) {
+        size_t x = f.fid(mesh_new);
+    }
 
-    // /////////mesh improvement
-    mesh_new.mesh_improvement(max_its);
-    std::cout << "here4" << std::endl;
-    // ////winding number
+
+    std::cout << "here5" << std::endl;
+
+    // // test with a fixed mesh tet.obj
+    // tetwild::TetWild mesh_tet(params, *ptr_env, NUM_THREADS);
+    // mesh_tet.init_from_file("input_tetmesh_before_opt.txt");
+
+    // mesh_tet.output_faces("fixed_embed_output_surface.obj", [](auto& f) {
+    //     return f.m_is_surface_fs;
+    // });
+
+    // mesh_tet.output_faces("fixed_embed_output_bbox.obj", [](auto& f) {
+    //     return f.m_is_bbox_fs != -1;
+    // });
+    // // /////////mesh improvement
+    // mesh_tet.mesh_improvement(max_its);
+    // std::cout << "here6" << std::endl;
+    // // ////winding number
     // if (filter_with_input)
-    //     mesh.filter_outside(verts, tris, true);
+    //     mesh_tet.filter_outside(verts, tris, true);
     // else
-    //     mesh.filter_outside({}, {}, true);
-    // mesh.consolidate_mesh();
+    //     mesh_tet.filter_outside({}, {}, true);
+    // mesh_tet.consolidate_mesh();
     // double time = timer.getElapsedTime();
     // wmtk::logger().info("total time {}s", time);
-    // if (mesh.tet_size() == 0) {
+    // if (mesh_tet.tet_size() == 0) {
     //     wmtk::logger().critical("Empty Output after Filter!");
     //     return 1;
     // }
 
     // /////////output
-    // auto [max_energy, avg_energy] = mesh.get_max_avg_energy();
+    // auto [max_energy, avg_energy] = mesh_tet.get_max_avg_energy();
     // std::ofstream fout(output_path + ".log");
-    // fout << "#t: " << mesh.tet_size() << std::endl;
-    // fout << "#v: " << mesh.vertex_size() << std::endl;
+    // fout << "#t: " << mesh_tet.tet_size() << std::endl;
+    // fout << "#v: " << mesh_tet.vertex_size() << std::endl;
     // fout << "max_energy: " << max_energy << std::endl;
     // fout << "avg_energy: " << avg_energy << std::endl;
     // fout << "eps: " << params.eps << std::endl;
@@ -213,24 +247,24 @@ int main(int argc, char** argv)
     // fout.close();
 
     // wmtk::logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
-    // mesh.output_mesh(output_path + "_final.msh");
+    // mesh_tet.output_mesh(output_path + "_final.msh");
 
     // {
     //     auto outface = std::vector<std::array<size_t, 3>>();
-    //     for (auto f : mesh.get_faces()) {
-    //         auto res = mesh.switch_tetrahedron(f);
+    //     for (auto f : mesh_tet.get_faces()) {
+    //         auto res = mesh_tet.switch_tetrahedron(f);
     //         if (!res.has_value()) {
-    //             auto verts = mesh.get_face_vertices(f);
+    //             auto verts = mesh_tet.get_face_vertices(f);
     //             std::array<size_t, 3> vids = {
-    //                 {verts[0].vid(mesh), verts[1].vid(mesh), verts[2].vid(mesh)}};
-    //             auto vs = mesh.oriented_tet_vertices(f);
+    //                 {verts[0].vid(mesh_tet), verts[1].vid(mesh_tet), verts[2].vid(mesh_tet)}};
+    //             auto vs = mesh_tet.oriented_tet_vertices(f);
     //             for (int j = 0; j < 4; j++) {
-    //                 if (std::find(vids.begin(), vids.end(), vs[j].vid(mesh)) == vids.end()) {
+    //                 if (std::find(vids.begin(), vids.end(), vs[j].vid(mesh_tet)) == vids.end()) {
     //                     auto res = igl::predicates::orient3d(
-    //                         mesh.m_vertex_attribute[vids[0]].m_posf,
-    //                         mesh.m_vertex_attribute[vids[1]].m_posf,
-    //                         mesh.m_vertex_attribute[vids[2]].m_posf,
-    //                         mesh.m_vertex_attribute[vs[j].vid(mesh)].m_posf);
+    //                         mesh_tet.m_vertex_attribute[vids[0]].m_posf,
+    //                         mesh_tet.m_vertex_attribute[vids[1]].m_posf,
+    //                         mesh_tet.m_vertex_attribute[vids[2]].m_posf,
+    //                         mesh_tet.m_vertex_attribute[vs[j].vid(mesh_tet)].m_posf);
     //                     if (res == igl::predicates::Orientation::NEGATIVE)
     //                         std::swap(vids[1], vids[2]);
     //                     break;
@@ -239,10 +273,10 @@ int main(int argc, char** argv)
     //             outface.emplace_back(vids);
     //         }
     //     }
-    //     Eigen::MatrixXd matV = Eigen::MatrixXd::Zero(mesh.vert_capacity(), 3);
-    //     for (auto v : mesh.get_vertices()) {
-    //         auto vid = v.vid(mesh);
-    //         matV.row(vid) = mesh.m_vertex_attribute[vid].m_posf;
+    //     Eigen::MatrixXd matV = Eigen::MatrixXd::Zero(mesh_tet.vert_capacity(), 3);
+    //     for (auto v : mesh_tet.get_vertices()) {
+    //         auto vid = v.vid(mesh_tet);
+    //         matV.row(vid) = mesh_tet.m_vertex_attribute[vid].m_posf;
     //     }
     //     Eigen::MatrixXi matF(outface.size(), 3);
     //     for (auto i = 0; i < outface.size(); i++) {
@@ -252,6 +286,75 @@ int main(int argc, char** argv)
     //     wmtk::logger().info("Output face size {}", outface.size());
     //     wmtk::logger().info("======= finish =========");
     // }
+
+    // /////////mesh improvement
+    mesh_new.mesh_improvement(max_its);
+    std::cout << "here6" << std::endl;
+    // ////winding number
+    if (filter_with_input)
+        mesh_new.filter_outside(verts, tris, true);
+    else
+        mesh_new.filter_outside({}, {}, true);
+    mesh_new.consolidate_mesh();
+    double time = timer.getElapsedTime();
+    wmtk::logger().info("total time {}s", time);
+    if (mesh_new.tet_size() == 0) {
+        wmtk::logger().critical("Empty Output after Filter!");
+        return 1;
+    }
+
+    /////////output
+    auto [max_energy, avg_energy] = mesh_new.get_max_avg_energy();
+    std::ofstream fout(output_path + ".log");
+    fout << "#t: " << mesh_new.tet_size() << std::endl;
+    fout << "#v: " << mesh_new.vertex_size() << std::endl;
+    fout << "max_energy: " << max_energy << std::endl;
+    fout << "avg_energy: " << avg_energy << std::endl;
+    fout << "eps: " << params.eps << std::endl;
+    fout << "threads: " << NUM_THREADS << std::endl;
+    fout << "time: " << time << std::endl;
+    fout.close();
+
+    wmtk::logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
+    mesh_new.output_mesh(output_path + "_final.msh");
+
+    {
+        auto outface = std::vector<std::array<size_t, 3>>();
+        for (auto f : mesh_new.get_faces()) {
+            auto res = mesh_new.switch_tetrahedron(f);
+            if (!res.has_value()) {
+                auto verts = mesh_new.get_face_vertices(f);
+                std::array<size_t, 3> vids = {
+                    {verts[0].vid(mesh_new), verts[1].vid(mesh_new), verts[2].vid(mesh_new)}};
+                auto vs = mesh_new.oriented_tet_vertices(f);
+                for (int j = 0; j < 4; j++) {
+                    if (std::find(vids.begin(), vids.end(), vs[j].vid(mesh_new)) == vids.end()) {
+                        auto res = igl::predicates::orient3d(
+                            mesh_new.m_vertex_attribute[vids[0]].m_posf,
+                            mesh_new.m_vertex_attribute[vids[1]].m_posf,
+                            mesh_new.m_vertex_attribute[vids[2]].m_posf,
+                            mesh_new.m_vertex_attribute[vs[j].vid(mesh_new)].m_posf);
+                        if (res == igl::predicates::Orientation::NEGATIVE)
+                            std::swap(vids[1], vids[2]);
+                        break;
+                    }
+                }
+                outface.emplace_back(vids);
+            }
+        }
+        Eigen::MatrixXd matV = Eigen::MatrixXd::Zero(mesh_new.vert_capacity(), 3);
+        for (auto v : mesh_new.get_vertices()) {
+            auto vid = v.vid(mesh_new);
+            matV.row(vid) = mesh_new.m_vertex_attribute[vid].m_posf;
+        }
+        Eigen::MatrixXi matF(outface.size(), 3);
+        for (auto i = 0; i < outface.size(); i++) {
+            matF.row(i) << outface[i][0], outface[i][1], outface[i][2];
+        }
+        igl::write_triangle_mesh(output_path + "_surface.obj", matV, matF);
+        wmtk::logger().info("Output face size {}", outface.size());
+        wmtk::logger().info("======= finish =========");
+    }
 
     return 0;
 }

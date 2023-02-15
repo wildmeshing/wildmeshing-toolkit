@@ -61,7 +61,7 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     auto rollback_vert_conn = operation_update_connectivity_impl(new_tet_id, new_tet_conn);
 
     // get tid. eid, fid for return
-    size_t tid_for_return = -1;
+    long long tid_for_return = -1;
     for (size_t new_v_tid : m_vertex_connectivity[v_id].m_conn_tets) {
         if (m_tet_connectivity[new_v_tid].find(v_A) != -1 &&
             m_tet_connectivity[new_v_tid].find(v_B) != -1 &&

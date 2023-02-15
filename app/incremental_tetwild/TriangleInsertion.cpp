@@ -31,9 +31,12 @@ void tetwild::TetWild::init_from_delaunay_box_mesh(const std::vector<Eigen::Vect
     double delta = m_params.diag_l / 15.0;
     Vector3d box_min(m_params.min[0] - delta, m_params.min[1] - delta, m_params.min[2] - delta);
     Vector3d box_max(m_params.max[0] + delta, m_params.max[1] + delta, m_params.max[2] + delta);
-    int Nx = std::max(2, int((box_max[0] - box_min[0]) / delta));
-    int Ny = std::max(2, int((box_max[1] - box_min[1]) / delta));
-    int Nz = std::max(2, int((box_max[2] - box_min[2]) / delta));
+    // int Nx = std::max(2, int((box_max[0] - box_min[0]) / delta));
+    // int Ny = std::max(2, int((box_max[1] - box_min[1]) / delta));
+    // int Nz = std::max(2, int((box_max[2] - box_min[2]) / delta));
+    int Nx = 3;
+    int Ny = 3;
+    int Nz = 3;
     for (double i = 0; i <= Nx; i++) {
         for (double j = 0; j <= Ny; j++) {
             for (double k = 0; k <= Nz; k++) {
@@ -59,7 +62,7 @@ void tetwild::TetWild::init_from_delaunay_box_mesh(const std::vector<Eigen::Vect
     m_params.box_max = box_max;
 
     ///delaunay
-    auto [unused_points,tets] = wmtk::delaunay3D(points);
+    auto [unused_points, tets] = wmtk::delaunay3D(points);
     wmtk::logger().info(
         "after delauney tets.size() {}  points.size() {}",
         tets.size(),
@@ -353,10 +356,9 @@ void tetwild::TetWild::init_from_input_surface(
     wmtk::logger().info("setup attributes #t {} #v {}", tet_capacity(), vert_capacity());
 } // note: skip preserve open boundaries
 
-void tetwild::TetWild::finalize_triangle_insertion(
-    const std::vector<std::array<size_t, 3>>& faces)
+void tetwild::TetWild::finalize_triangle_insertion(const std::vector<std::array<size_t, 3>>& faces)
 {
-    tbb::task_arena arena(std::max(NUM_THREADS,1));
+    tbb::task_arena arena(std::max(NUM_THREADS, 1));
 
     arena.execute([&faces, this] {
         tbb::parallel_for(this->tet_face_tags.range(), [&faces, this](auto& r) {

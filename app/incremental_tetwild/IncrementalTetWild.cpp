@@ -1,8 +1,8 @@
 
 #include "IncrementalTetWild.h"
 
-#include "wmtk/utils/Rational.hpp"
 #include "common.h"
+#include "wmtk/utils/Rational.hpp"
 
 #include <wmtk/utils/AMIPS.h>
 #include <wmtk/utils/Logger.hpp>
@@ -108,11 +108,27 @@ std::tuple<double, double> tetwild::TetWild::local_operations(
             for (int n = 0; n < ops[i]; n++) {
                 wmtk::logger().info("==splitting {}==", n);
                 split_all_edges();
+                wmtk::logger().info(
+                    "#vertices {}, #tets {} after split",
+                    vert_capacity(),
+                    tet_capacity());
+                auto faces = get_faces();
+                for (auto f : faces) {
+                    auto x = f.fid(*this);
+                }
             }
         } else if (i == 1) {
             for (int n = 0; n < ops[i]; n++) {
                 wmtk::logger().info("==collapsing {}==", n);
                 collapse_all_edges();
+                wmtk::logger().info(
+                    "#vertices {}, #tets {} after collapse",
+                    vert_capacity(),
+                    tet_capacity());
+                auto faces = get_faces();
+                for (auto f : faces) {
+                    auto x = f.fid(*this);
+                }
             }
         } else if (i == 2) {
             for (int n = 0; n < ops[i]; n++) {
@@ -153,8 +169,8 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
     // outputs scale_multipliers
     tbb::concurrent_vector<Scalar> scale_multipliers(vert_capacity(), recover_scalar);
 
-    std::vector<Vector3d> pts;
-    std::queue<size_t> v_queue;
+    tbb::concurrent_vector<Vector3d> pts;
+    tbb::concurrent_queue<size_t> v_queue;
     TetMesh::for_each_tetra([&](auto& t) {
         auto tid = t.tid(*this);
         if (std::cbrt(m_tet_attribute[tid].m_quality) < filter_energy) return;
@@ -180,10 +196,11 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
     nnsearch->set_points(pts.size(), pts[0].data());
 
     std::vector<size_t> cache_one_ring;
-    while (!v_queue.empty()) {
+    size_t vid;
+    while (v_queue.try_pop(vid)) {
         sum++;
-        size_t vid = v_queue.front();
-        v_queue.pop();
+        // size_t vid = v_queue.front();
+        // v_queue.pop();
         if (visited[vid]) continue;
         visited[vid] = true;
         adjcnt++;
@@ -445,12 +462,21 @@ std::tuple<double, double> tetwild::TetWild::get_max_avg_energy()
     double max_energy = -1.;
     double avg_energy = 0.;
     auto cnt = 0;
-    TetMesh::for_each_tetra([&](auto& t) {
-        auto q = m_tet_attribute[t.tid(*this)].m_quality;
+    // TetMesh::for_each_tetra([&](auto& t) {
+    //     auto q = m_tet_attribute[t.tid(*this)].m_quality;
+    //     max_energy = std::max(max_energy, q);
+    //     avg_energy += std::cbrt(q);
+    //     cnt++;
+    // });
+
+    for (int i = 0; i < tet_capacity(); i++) {
+        auto tup = tuple_from_tet(i);
+        if (!tup.is_valid(*this)) continue;
+        auto q = m_tet_attribute[tup.tid(*this)].m_quality;
         max_energy = std::max(max_energy, q);
         avg_energy += std::cbrt(q);
         cnt++;
-    });
+    }
 
     avg_energy /= cnt;
 
