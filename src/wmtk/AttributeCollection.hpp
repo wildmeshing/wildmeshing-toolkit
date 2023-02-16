@@ -18,15 +18,17 @@ namespace wmtk {
  * @brief serving as buffers for attributes data that can be modified by operations
  *
  */
+class OperationRecorder;
 class AbstractAttributeContainer
 {
 public:
     virtual ~AbstractAttributeContainer() = default;
-    virtual void move(size_t from, size_t to){};
-    virtual void resize(size_t){};
+    virtual void move(size_t /*from*/, size_t to) = 0;
+    virtual void resize(size_t) = 0;
     virtual void rollback(){};
     virtual void begin_protect(){};
     virtual void end_protect(){};
+    virtual void record_updates(OperationRecorder&, const std::string_view&){};
 };
 
 
@@ -47,6 +49,10 @@ struct AttributeCollection : public AbstractAttributeContainer
         // }
         // TODO: in Concurrent, vertex partition id, vertex mutex should be part of attribute
     }
+
+    void shrink_to_fit() { m_attributes.shrink_to_fit(); }
+
+    void grow_to_at_least(size_t s) { m_attributes.grow_to_at_least(s); }
 
     bool assign(size_t to, T&& val) // always use this in OP_after
     {
@@ -74,6 +80,7 @@ struct AttributeCollection : public AbstractAttributeContainer
     {
         m_rollback_list.local().clear();
         recording.local() = true;
+        m_rollback_size.local() = m_attributes.size();
     };
     /**
      * @brief clear local buffers and finish recording
@@ -84,6 +91,12 @@ struct AttributeCollection : public AbstractAttributeContainer
         m_rollback_list.local().clear();
         recording.local() = false;
     }
+    // void record_updates(OperationRecorder& recorder, const std::string_view& name) override
+    //{
+    //     if (recording.local()) {
+    //         recorder.attribute_update(name, m_attributes, m_rollback_list.local());
+    //     }
+    // }
 
     const T& operator[](size_t i) const { return m_attributes[i]; }
 
@@ -99,6 +112,7 @@ struct AttributeCollection : public AbstractAttributeContainer
 
     size_t size() const { return m_attributes.size(); }
     tbb::enumerable_thread_specific<std::map<size_t, T>> m_rollback_list;
+    tbb::enumerable_thread_specific<size_t> m_rollback_size;
     // experimenting with tbb, could be templated as well.
     tbb::concurrent_vector<T> m_attributes;
     tbb::enumerable_thread_specific<bool> recording{false};

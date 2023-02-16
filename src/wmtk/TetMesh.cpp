@@ -1,10 +1,9 @@
 #include <wmtk/TetMesh.h>
 
-#include <wmtk/AttributeCollection.hpp>
-#include <wmtk/utils/TupleUtils.hpp>
-#include <wmtk/utils/EnableWarnings.hpp>
-
 #include <tbb/parallel_for.h>
+#include <wmtk/AttributeCollection.hpp>
+#include <wmtk/utils/EnableWarnings.hpp>
+#include <wmtk/utils/TupleUtils.hpp>
 
 #include <Tracy.hpp>
 
@@ -19,9 +18,9 @@ int wmtk::TetMesh::get_next_empty_slot_t()
             }
             tet_connectivity_synchronizing_flag = true;
             auto current_capacity = m_tet_connectivity.size();
-            p_edge_attrs->resize(2 * current_capacity * 6);
-            p_face_attrs->resize(2 * current_capacity * 4);
-            p_tet_attrs->resize(2 * current_capacity);
+            if(p_edge_attrs != nullptr) {p_edge_attrs->resize(2 * current_capacity * 6);}
+            if(p_face_attrs != nullptr) {p_face_attrs->resize(2 * current_capacity * 4);}
+            if(p_tet_attrs != nullptr) {p_tet_attrs->resize(2 * current_capacity);}
             m_tet_connectivity.grow_to_at_least(2 * current_capacity);
             tet_connectivity_synchronizing_flag = false;
             tet_connectivity_lock.unlock();
@@ -46,7 +45,7 @@ int wmtk::TetMesh::get_next_empty_slot_v()
             }
             vertex_connectivity_synchronizing_flag = true;
             auto current_capacity = m_vertex_connectivity.size();
-            p_vertex_attrs->resize(2 * current_capacity);
+            if(p_vertex_attrs != nullptr) {p_vertex_attrs->resize(2 * current_capacity);}
             resize_vertex_mutex(2 * current_capacity);
             m_vertex_connectivity.grow_to_at_least(2 * current_capacity);
             vertex_connectivity_synchronizing_flag = false;
@@ -60,10 +59,10 @@ int wmtk::TetMesh::get_next_empty_slot_v()
 
 wmtk::TetMesh::TetMesh()
 {
-    p_vertex_attrs = &vertex_attrs;
-    p_edge_attrs = &edge_attrs;
-    p_face_attrs = &face_attrs;
-    p_tet_attrs = &tet_attrs;
+    // p_vertex_attrs = &vertex_attrs;
+    // p_edge_attrs = &edge_attrs;
+    // p_face_attrs = &face_attrs;
+    // p_tet_attrs = &tet_attrs;
 }
 
 void wmtk::TetMesh::init(size_t n_vertices, const std::vector<std::array<size_t, 4>>& tets)
@@ -84,10 +83,19 @@ void wmtk::TetMesh::init(size_t n_vertices, const std::vector<std::array<size_t,
     m_vertex_mutex.grow_to_at_least(n_vertices);
 
     // resize attributes
-    p_vertex_attrs->resize(n_vertices);
-    p_tet_attrs->resize(tets.size());
-    p_face_attrs->resize(4 * tets.size());
-    p_edge_attrs->resize(6 * tets.size());
+    if (p_vertex_attrs != nullptr) {
+        p_vertex_attrs->resize(n_vertices);
+    }
+    if (p_tet_attrs != nullptr) {
+        p_tet_attrs->resize(tets.size());
+    }
+
+    if (p_face_attrs != nullptr) {
+        p_face_attrs->resize(4 * tets.size());
+    }
+    if (p_edge_attrs != nullptr) {
+        p_edge_attrs->resize(6 * tets.size());
+    }
 }
 
 
@@ -137,7 +145,6 @@ void wmtk::TetMesh::for_each_face(const std::function<void(const TetMesh::Tuple&
         }
     }
 }
-
 
 
 std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_faces() const
@@ -587,7 +594,9 @@ void wmtk::TetMesh::consolidate_mesh()
         if (v_cnt != i) {
             assert(v_cnt < i);
             m_vertex_connectivity[v_cnt] = m_vertex_connectivity[i];
-            p_vertex_attrs->move(i, v_cnt);
+            if (p_vertex_attrs != nullptr) {
+                p_vertex_attrs->move(i, v_cnt);
+            }
         }
         for (size_t& t_id : m_vertex_connectivity[v_cnt].m_conn_tets) t_id = map_t_ids[t_id];
         v_cnt++;
@@ -600,13 +609,19 @@ void wmtk::TetMesh::consolidate_mesh()
             assert(t_cnt < i);
             m_tet_connectivity[t_cnt] = m_tet_connectivity[i];
             m_tet_connectivity[t_cnt].hash = 0;
-            p_tet_attrs->move(i, t_cnt);
-
-            for (auto j = 0; j < 4; j++) {
-                p_face_attrs->move(i * 4 + j, t_cnt * 4 + j);
+            if (p_tet_attrs != nullptr) {
+                p_tet_attrs->move(i, t_cnt);
             }
-            for (auto j = 0; j < 6; j++) {
-                p_edge_attrs->move(i * 6 + j, t_cnt * 6 + j);
+
+            if (p_face_attrs != nullptr) {
+                for (auto j = 0; j < 4; j++) {
+                    p_face_attrs->move(i * 4 + j, t_cnt * 4 + j);
+                }
+            }
+            if (p_edge_attrs != nullptr) {
+                for (auto j = 0; j < 6; j++) {
+                    p_edge_attrs->move(i * 6 + j, t_cnt * 6 + j);
+                }
             }
         }
         for (size_t& v_id : m_tet_connectivity[t_cnt].m_indices) v_id = map_v_ids[v_id];
@@ -619,10 +634,19 @@ void wmtk::TetMesh::consolidate_mesh()
     m_vertex_connectivity.resize(v_cnt);
     m_tet_connectivity.resize(t_cnt);
 
-    p_vertex_attrs->resize(v_cnt);
-    p_edge_attrs->resize(6 * t_cnt);
-    p_face_attrs->resize(4 * t_cnt);
-    p_tet_attrs->resize(t_cnt);
+    if (p_vertex_attrs != nullptr) {
+        p_vertex_attrs->resize(v_cnt);
+    }
+    if (p_edge_attrs != nullptr) {
+        p_edge_attrs->resize(6 * t_cnt);
+    }
+
+    if (p_face_attrs != nullptr) {
+        p_face_attrs->resize(4 * t_cnt);
+    }
+    if (p_tet_attrs != nullptr) {
+        p_tet_attrs->resize(t_cnt);
+    }
 
     assert(check_mesh_connectivity_validity());
 }
@@ -697,8 +721,7 @@ bool wmtk::TetMesh::try_set_vertex_mutex_two_ring_vid(const Tuple& v, int thread
             {
                 stack.push_back(v_one_ring);
             }
-            for (auto v_two_ring :
-                 get_one_ring_vids_for_vertex(v_one_ring, cache)) {
+            for (auto v_two_ring : get_one_ring_vids_for_vertex(v_one_ring, cache)) {
                 if (m_vertex_mutex[v_two_ring].get_owner() == threadid) continue;
                 if (try_set_vertex_mutex(v_two_ring, threadid)) {
                     stack.push_back(v_two_ring);
@@ -716,13 +739,12 @@ bool wmtk::TetMesh::try_set_vertex_mutex_two_ring_vid(const Tuple& v, int thread
 bool wmtk::TetMesh::try_set_vertex_mutex_two_ring_vid(size_t v, int threadid)
 {
     auto& cache = get_one_ring_cache.local();
-    auto& stack =  mutex_release_stack.local();
+    auto& stack = mutex_release_stack.local();
     for (auto v_one_ring : get_one_ring_vids_for_vertex(v, cache)) {
         if (m_vertex_mutex[v_one_ring].get_owner() == threadid) continue;
         if (try_set_vertex_mutex(v_one_ring, threadid)) {
             stack.push_back(v_one_ring);
-            for (auto v_two_ring :
-                 get_one_ring_vids_for_vertex(v_one_ring, cache)) {
+            for (auto v_two_ring : get_one_ring_vids_for_vertex(v_one_ring, cache)) {
                 if (m_vertex_mutex[v_two_ring].get_owner() == threadid) continue;
                 if (try_set_vertex_mutex(v_two_ring, threadid)) {
                     stack.push_back(v_two_ring);
@@ -951,11 +973,7 @@ bool wmtk::TetMesh::try_set_face_mutex_two_ring(
     return true;
 }
 
-bool wmtk::TetMesh::try_set_face_mutex_two_ring(
-    size_t v1,
-    size_t v2,
-    size_t v3,
-    int threadid)
+bool wmtk::TetMesh::try_set_face_mutex_two_ring(size_t v1, size_t v2, size_t v3, int threadid)
 {
     bool release_flag = false;
     auto& stack = mutex_release_stack.local();
@@ -995,8 +1013,7 @@ bool wmtk::TetMesh::try_set_vertex_mutex_one_ring(const Tuple& v, int threadid)
     if (m_vertex_mutex[v.vid(*this)].get_owner() != threadid) {
         if (try_set_vertex_mutex(v, threadid)) {
             stack.push_back(v.vid(*this));
-            for (auto v_one_ring :
-                 get_one_ring_vids_for_vertex(v.vid(*this), cache)) {
+            for (auto v_one_ring : get_one_ring_vids_for_vertex(v.vid(*this), cache)) {
                 if (m_vertex_mutex[v_one_ring].get_owner() != threadid) {
                     if (try_set_vertex_mutex(v_one_ring, threadid)) {
                         stack.push_back(v_one_ring);
@@ -1052,8 +1069,7 @@ void wmtk::TetMesh::for_each_tetra(const std::function<void(const TetMesh::Tuple
 }
 
 
-void wmtk::TetMesh::for_each_vertex(
-    const std::function<void(const TetMesh::Tuple&)>& func)
+void wmtk::TetMesh::for_each_vertex(const std::function<void(const TetMesh::Tuple&)>& func)
 {
     tbb::task_arena arena(NUM_THREADS);
     arena.execute([&] {

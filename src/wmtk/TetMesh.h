@@ -6,18 +6,18 @@
 #include <wmtk/utils/Logger.hpp>
 
 #include <tbb/concurrent_vector.h>
-#include <tbb/spin_mutex.h>
 #include <tbb/enumerable_thread_specific.h>
+#include <tbb/spin_mutex.h>
 
 #include <Tracy.hpp>
 
 #include <array>
 #include <cassert>
+#include <limits>
 #include <map>
 #include <optional>
 #include <queue>
 #include <vector>
-#include <limits>
 
 namespace wmtk {
 class TetMesh
@@ -266,7 +266,7 @@ public:
                     e[1] = j;
             }
             if (e[0] > e[1]) std::swap(e[0], e[1]);
-            int i =
+            size_t i =
                 std::find(m_local_edges.begin(), m_local_edges.end(), e) - m_local_edges.begin();
             if (i >= m_local_edges.size()) return -1;
             return i;
@@ -284,7 +284,7 @@ public:
                     f[2] = j;
             }
             std::sort(f.begin(), f.end());
-            int i =
+            size_t i =
                 std::find(m_local_faces.begin(), m_local_faces.end(), f) - m_local_faces.begin();
             if (i >= m_local_edges.size()) return -1;
             return i;
@@ -321,7 +321,7 @@ public:
     size_t vertex_size() const
     {
         int cnt = 0;
-        for (auto i = 0; i < vert_capacity(); i++) {
+        for (size_t i = 0; i < vert_capacity(); i++) {
             if (!m_vertex_connectivity[i].m_is_removed) cnt++;
         }
         return cnt;
@@ -333,7 +333,7 @@ public:
     size_t tet_size() const
     {
         int cnt = 0;
-        for (auto i = 0; i < tet_capacity(); i++) {
+        for (size_t i = 0; i < tet_capacity(); i++) {
             if (!m_tet_connectivity[i].m_is_removed) cnt++;
         }
         return cnt;
@@ -415,6 +415,13 @@ public:
         std::vector<size_t>& new_center_vids,
         std::vector<std::array<size_t, 4>>& center_split_tets);
 
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-parameter"
+#elif (defined(__GNUC__) || defined(__GNUG__)) && !(defined(__clang__) || defined(__INTEL_COMPILER))
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#endif
     /**
      * @brief Insert a point into a tetmesh inside a tet.
      * In general position, this split a tet into 4.
@@ -486,8 +493,9 @@ public:
     using vector = tbb::concurrent_vector<T>;
 
 public:
-    AbstractAttributeContainer *p_vertex_attrs, *p_edge_attrs, *p_face_attrs, *p_tet_attrs;
-    AbstractAttributeContainer vertex_attrs, edge_attrs, face_attrs, tet_attrs;
+    AbstractAttributeContainer *p_vertex_attrs = nullptr, *p_edge_attrs = nullptr,
+                               *p_face_attrs = nullptr, *p_tet_attrs = nullptr;
+    // AbstractAttributeContainer vertex_attrs, edge_attrs, face_attrs, tet_attrs;
 
 
 private:
@@ -631,6 +639,11 @@ protected:
 
     // virtual void resize_vertex_mutex(size_t v) {}
 
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#elif (defined(__GNUC__) || defined(__GNUG__)) && !(defined(__clang__) || defined(__INTEL_COMPILER))
+#pragma GCC diagnostic pop
+#endif
 public:
     /**
      * @brief get a Tuple from global tetra index and __local__ edge index (from 0-5).
@@ -862,26 +875,50 @@ private:
     }
     void start_protect_attributes()
     {
-        p_vertex_attrs->begin_protect();
-        p_edge_attrs->begin_protect();
-        p_face_attrs->begin_protect();
-        p_tet_attrs->begin_protect();
+        if (p_vertex_attrs != nullptr) {
+            p_vertex_attrs->begin_protect();
+        }
+        if (p_edge_attrs != nullptr) {
+            p_edge_attrs->begin_protect();
+        }
+        if (p_face_attrs != nullptr) {
+            p_face_attrs->begin_protect();
+        }
+        if (p_tet_attrs != nullptr) {
+            p_tet_attrs->begin_protect();
+        }
     }
 
     void release_protect_attributes()
     {
-        p_vertex_attrs->end_protect();
-        p_edge_attrs->end_protect();
-        p_face_attrs->end_protect();
-        p_tet_attrs->end_protect();
+        if (p_vertex_attrs != nullptr) {
+            p_vertex_attrs->end_protect();
+        }
+        if (p_edge_attrs != nullptr) {
+            p_edge_attrs->end_protect();
+        }
+        if (p_face_attrs != nullptr) {
+            p_face_attrs->end_protect();
+        }
+        if (p_tet_attrs != nullptr) {
+            p_tet_attrs->end_protect();
+        }
     }
 
     void rollback_protected_attributes()
     {
-        p_vertex_attrs->rollback();
-        p_edge_attrs->rollback();
-        p_face_attrs->rollback();
-        p_tet_attrs->rollback();
+        if (p_vertex_attrs != nullptr) {
+            p_vertex_attrs->rollback();
+        }
+        if (p_edge_attrs != nullptr) {
+            p_edge_attrs->rollback();
+        }
+        if (p_face_attrs != nullptr) {
+            p_face_attrs->rollback();
+        }
+        if (p_tet_attrs != nullptr) {
+            p_tet_attrs->rollback();
+        }
     }
 
 public:

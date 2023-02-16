@@ -1,5 +1,6 @@
 #pragma once
 
+#define USE_OPERATION_LOGGER
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/AttributeCollection.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -22,6 +23,17 @@
 
 namespace wmtk {
 
+class OperationLogger;
+class OperationRecorder;
+class TriMeshOperationLogger;
+class TriMeshOperationRecorder;
+class OperationRecorder;
+class TriMeshOperation;
+class TriMeshTupleData;
+template <typename T>
+class AttributeCollectionRecorder;
+
+
 class TriMesh
 {
 public:
@@ -29,6 +41,7 @@ public:
     class Tuple
     {
     private:
+        friend class TriMeshTupleData;
         size_t m_vid = -1;
         size_t m_eid = -1;
         size_t m_fid = -1;
@@ -37,7 +50,8 @@ public:
         void update_hash(const TriMesh& m);
 
     public:
-        void print_info();
+        void print_info() const;
+        std::string info() const;
 
         //         v2        /
         //       /    \      /
@@ -52,7 +66,11 @@ public:
          * @param fid face id
          * @note edge ordering
          */
-        Tuple() {}
+        Tuple() = default;
+        Tuple(const Tuple& other) = default;
+        Tuple(Tuple&& other) = default;
+        Tuple& operator=(const Tuple& other) = default;
+        Tuple& operator=(Tuple&& other) = default;
         Tuple(size_t vid, size_t eid, size_t fid, const TriMesh& m)
             : m_vid(vid)
             , m_eid(eid)
@@ -87,7 +105,7 @@ public:
          * share the same edge.
          */
         size_t eid(const TriMesh& m) const;
-
+        size_t eid_unsafe(const TriMesh& m) const;
         /**
          * returns the local eid of the tuple
          *
@@ -129,16 +147,27 @@ public:
          */
         bool is_valid(const TriMesh& m) const;
 
+        bool is_ccw(const TriMesh& m) const;
         /**
          * Positively oriented 3 vertices (represented by Tuples) in a tri.
          * @return std::array<Tuple, 3> each tuple owns a different vertex.
          */
         std::array<Tuple, 3> oriented_tri_vertices(const TriMesh& m) const;
+
+        std::tuple<size_t, size_t, size_t, size_t> as_stl_tuple() const
+        {
+            return std::tie(m_vid, m_eid, m_fid, m_hash);
+        }
+        std::array<size_t, 3> as_stl_array() const
+        {
+            return std::array<size_t, 3>{{m_vid, m_eid, m_fid}};
+        }
         friend bool operator<(const Tuple& a, const Tuple& t)
         {
             return (
                 std::tie(a.m_vid, a.m_eid, a.m_fid, a.m_hash) <
                 std::tie(t.m_vid, t.m_eid, t.m_fid, t.m_hash));
+            // return a.as_stl_tuple() < t.as_stl_tuple();
         }
     };
 
@@ -159,7 +188,7 @@ public:
          * @brief is the vertex removed
          *
          */
-        bool m_is_removed = false;
+        bool m_is_removed = true;
 
         inline size_t& operator[](const size_t index)
         {
@@ -190,7 +219,7 @@ public:
          * @brief is the triangle removed
          *
          */
-        bool m_is_removed = false;
+        bool m_is_removed = true;
         /**
          * @brief the hash is changed every time there is an operation that influences the
          * triangle
@@ -223,8 +252,22 @@ public:
         }
     };
 
-    TriMesh() {}
-    virtual ~TriMesh() {}
+    friend class TriMeshOperation;
+    friend class TriMeshOperationLogger;
+    friend class TriMeshOperationRecorder;
+    friend class OperationReplayer;
+    template <typename T>
+    friend class AttributeCollectionRecorder;
+
+
+    TriMesh();
+    virtual ~TriMesh();
+
+    /**
+     * Copy connectivity from another mesh
+     * @param o the other mesh who's connectivity is being copied
+     */
+    void copy_connectivity(const TriMesh& o);
 
     /**
      * Generate the connectivity of the mesh
@@ -278,9 +321,14 @@ public:
     AbstractAttributeContainer* p_edge_attrs = nullptr;
     AbstractAttributeContainer* p_face_attrs = nullptr;
 
-private:
-    vector<VertexConnectivity> m_vertex_connectivity;
-    vector<TriangleConnectivity> m_tri_connectivity;
+
+protected:
+    wmtk::AttributeCollection<VertexConnectivity> m_vertex_connectivity;
+    wmtk::AttributeCollection<TriangleConnectivity> m_tri_connectivity;
+
+    TriMeshOperationLogger* p_operation_logger = nullptr;
+
+protected:
     std::atomic_long current_vert_size;
     std::atomic_long current_tri_size;
     tbb::spin_mutex vertex_connectivity_lock;
@@ -288,6 +336,11 @@ private:
     bool vertex_connectivity_synchronizing_flag = false;
     bool tri_connectivity_synchronizing_flag = false;
     int MAX_THREADS = 128;
+
+#if defined(USE_OPERATION_LOGGER)
+    tbb::enumerable_thread_specific<std::weak_ptr<TriMeshOperationRecorder>> p_operation_recorder{
+        {}};
+#endif
     /**
      * @brief Get the next avaiblie global index for the triangle
      *
@@ -301,25 +354,25 @@ private:
      */
     size_t get_next_empty_slot_v();
 
-protected:
+public: // MTAO: TODO:: these are all deprecatd and should be delegated to TriMeshOperation
     /**
      * @brief User specified invariants that can't be violated
      * @param std::vector<Tuple> a vector of Tuples that are concerned in a given operation
      * @return true if the invairnats are not violated
      */
-    virtual bool invariants(const std::vector<Tuple>&) { return true; }
+    virtual bool invariants(const std::vector<Tuple>&);
     /**
      * @brief User specified preparations and desideratas for an edge split
      * @param the edge Tuple to be split
      * @return true if the preparation succeed
      */
-    virtual bool split_edge_before(const Tuple& t) { return true; }
+    virtual bool split_edge_before(const Tuple& t);
     /**
      * @brief User specified modifications and desideratas after an edge split
      * @param the edge Tuple to be split
      * @return true if the modifications succeed
      */
-    virtual bool split_edge_after(const Tuple& t) { return true; }
+    virtual bool split_edge_after(const Tuple& t);
 
     /**
      * @brief User specified preparations and desideratas for an edge collapse
@@ -328,23 +381,19 @@ protected:
      * @param the edge Tuple to be split
      * @return true if the preparation succeed
      */
-    virtual bool collapse_edge_before(const Tuple& t)
-    {
-        if (check_link_condition(t)) return true;
-        return false;
-    }
+    virtual bool collapse_edge_before(const Tuple& t);
     /**
      * @brief User specified modifications and desideratas after an edge collapse
      * @param the edge Tuple to be collapsed
      * @return true if the modifications succeed
      */
-    virtual bool collapse_edge_after(const Tuple& t) { return true; }
+    virtual bool collapse_edge_after(const Tuple& t);
     /**
      * @brief User specified modifications and desideras after an edge swap
      * @param the edge Tuple to be swaped
      * @return true if the modifications succeed
      */
-    virtual bool swap_edge_after(const Tuple& t) { return true; }
+    virtual bool swap_edge_after(const Tuple& t);
     /**
      * @brief User specified preparations and desideratas for an edge swap
      * including 1.can't swap on boundary edge. 2. when swap edge between v1, v2,
@@ -360,13 +409,13 @@ protected:
      * @param the edge Tuple to be smoothed
      * @return true if the preparation succeed
      */
-    virtual bool smooth_before(const Tuple& t) { return true; }
+    virtual bool smooth_before(const Tuple& t);
     /**
      * @brief User specified modifications and desideras after an edge smooth
      * @param the edge Tuple to be smoothed
      * @return true if the modifications succeed
      */
-    virtual bool smooth_after(const Tuple& t) { return true; }
+    virtual bool smooth_after(const Tuple& t);
 
 public:
     /**
@@ -450,6 +499,7 @@ public:
      * @return if split succeed
      */
     bool split_edge(const Tuple& t, std::vector<Tuple>& new_t);
+    Tuple split_edge_new(const Tuple& t, std::vector<Tuple>& new_t);
 
     /**
      * Collapse an edge
@@ -461,6 +511,7 @@ public:
      * @return if collapse succeed
      */
     bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_t);
+    Tuple collapse_edge_new(const Tuple& t, std::vector<Tuple>& new_t);
 
     /**
      * Swap an edge
@@ -472,6 +523,8 @@ public:
      * @return if swap succeed
      */
     bool swap_edge(const Tuple& t, std::vector<Tuple>& new_t);
+    Tuple swap_edge_new(const Tuple& t, std::vector<Tuple>& new_t);
+
 
     /**
      * Smooth a vertex
@@ -507,7 +560,13 @@ public:
      * @return a vector of vids that can have duplicates
      */
     std::vector<size_t> get_one_ring_vids_for_vertex_duplicate(const size_t& t) const;
-
+    /**
+     * @brief Get the vids of the incident one ring tris for a vertex
+     *
+     * @param t tuple pointing to a vertex
+     * @return a vector of vids that have no duplicates
+     */
+    std::vector<size_t> get_one_ring_vids_for_vertex(const size_t& t) const;
     /**
      * @brief Get the one ring edges for a vertex, edges are the incident edges
      *
@@ -569,27 +628,44 @@ public:
         return Tuple(vid, local_eid, fid, *this);
     }
 
-private:
+    // private:
+protected:
+    /**
+     * Generate the vertex connectivity of the mesh using the existing triangle structure
+     * @param n_vertices Input number of vertices
+     */
+    void build_vertex_connectivity(size_t n_vertices);
     /**
      * @brief Start the phase where the attributes that will be modified can be recorded
      *
      */
-    void start_protect_attributes()
+    void start_protected_attributes()
     {
         if (p_vertex_attrs) p_vertex_attrs->begin_protect();
         if (p_edge_attrs) p_edge_attrs->begin_protect();
         if (p_face_attrs) p_face_attrs->begin_protect();
     }
     /**
+     * @brief Start caching the connectivity that will be modified
+     */
+    void start_protected_connectivity()
+    {
+        m_vertex_connectivity.begin_protect();
+        m_tri_connectivity.begin_protect();
+    }
+
+    /**
      * @brief End the modification phase
      *
      */
-    void release_protect_attributes()
-    {
-        if (p_vertex_attrs) p_vertex_attrs->end_protect();
-        if (p_edge_attrs) p_edge_attrs->end_protect();
-        if (p_face_attrs) p_face_attrs->end_protect();
-    }
+    void release_protected_attributes();
+
+    /**
+     * @brief End Caching connectivity
+     *
+     */
+    void release_protected_connectivity();
+
     /**
      * @brief rollback the attributes that are modified if any condition failed
      *
@@ -599,6 +675,15 @@ private:
         if (p_vertex_attrs) p_vertex_attrs->rollback();
         if (p_edge_attrs) p_edge_attrs->rollback();
         if (p_face_attrs) p_face_attrs->rollback();
+    }
+
+    /**
+     * @brief rollback the connectivity that are modified if any condition failed
+     */
+    void rollback_protected_connectivity()
+    {
+        m_vertex_connectivity.rollback();
+        m_tri_connectivity.rollback();
     }
 
     // Moved code from concurrent TriMesh
