@@ -2,6 +2,9 @@
 # Harmonic Triangulations for TetMesh [Alexa2019]
 ################################################################################
 
+# Include more application dependencies here
+include(cli11)
+
 add_library(wmtk_app_harmonic_tet
 	HarmonicTet.hpp
 	HarmonicTet.cpp
