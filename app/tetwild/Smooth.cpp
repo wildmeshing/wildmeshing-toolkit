@@ -123,7 +123,7 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
     if (max_after_quality > max_quality) return false;
 
 
-    m_vertex_attribute[vid].m_pos = tetwild::to_rational(m_vertex_attribute[vid].m_posf);
+    m_vertex_attribute[vid].m_pos = m_vertex_attribute[vid].m_posf.cast<wmtk::Rational>();
 
 
     return true;

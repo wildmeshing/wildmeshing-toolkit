@@ -2,16 +2,42 @@
 # Tests
 ################################################################################
 
-file(GLOB test_sources CONFIGURE_DEPENDS "*.cpp")
 
-add_executable(app_unit_tests ${test_sources})
+set(APP_UNIT_TEST_SOURCES
+    main.cpp
+    )
 
-target_link_libraries(app_unit_tests PUBLIC wmtk::toolkit wmtk::tetwild wmtk::triwild)
-target_link_libraries(app_unit_tests PUBLIC wmtk::harmonic_tet)
+set(APP_UNIT_TEST_LIBS wmtk::toolkit)
+
+if(WMTK_APP_TRIWILD)
+    set(APP_UNIT_TEST_LIBS ${APP_UNIT_TEST_LIBS} wmtk::triwild)
+    set(APP_UNIT_TEST_SOURCES ${APP_UNIT_TEST_SOURCES}
+        test_triwild.cpp
+        )
+endif()
+if(WMTK_APP_TETWILD)
+    set(APP_UNIT_TEST_LIBS ${APP_UNIT_TEST_LIBS} wmtk::tetwild)
+    set(APP_UNIT_TEST_SOURCES ${APP_UNIT_TEST_SOURCES}
+        file_write.cpp
+        test_runner.cpp
+        test_insertion.cpp
+        test_operation_smooth.cpp
+        test_operations.cpp
+        )
+endif()
+if(WMTK_APP_HARMTET)
+    set(APP_UNIT_TEST_LIBS ${APP_UNIT_TEST_LIBS} wmtk::harmonic_tet)
+    set(APP_UNIT_TEST_SOURCES ${APP_UNIT_TEST_SOURCES}
+        test_harmonic_triangulations.cpp
+        )
+endif()
+
+add_executable(app_unit_tests ${APP_UNIT_TEST_SOURCES})
 
 include(catch2)
 target_link_libraries(app_unit_tests PUBLIC Catch2::Catch2)
 
+target_link_libraries(app_unit_tests PUBLIC ${APP_UNIT_TEST_LIBS})
 wmtk_copy_dll(app_unit_tests)
 
 
@@ -24,7 +50,7 @@ target_compile_definitions(app_unit_tests PUBLIC CATCH_CONFIG_ENABLE_BENCHMARKIN
 # Register tests
 ################################################################################
 
-foreach(source IN ITEMS ${test_sources})
+foreach(source IN ITEMS ${APP_UNIT_TEST_SOURCES})
     source_group("tests" FILES "${source}")
 endforeach()
 

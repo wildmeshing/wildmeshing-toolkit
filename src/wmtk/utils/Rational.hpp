@@ -133,6 +133,7 @@ public:
 
     // to double
     double to_double() const { return mpq_get_d(value); }
+    explicit operator double() const { return to_double(); }
 
     friend Rational abs(const Rational& r0)
     {
@@ -148,4 +149,6 @@ public:
         return os;
     }
 };
+
+
 } // namespace apps
