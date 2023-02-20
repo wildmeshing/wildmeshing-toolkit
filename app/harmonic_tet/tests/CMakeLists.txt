@@ -15,6 +15,3 @@ set_target_properties(harmonic_tet_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${
 
 catch_discover_tests(harmonic_tet_tests)
 
-if(WMTK_APP_UNIT_TESTS)
-    add_subdirectory(tests)
-endif()
