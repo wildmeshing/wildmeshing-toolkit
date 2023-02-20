@@ -25,3 +25,7 @@ target_link_libraries(wmtk_harmonic_tet_bin PUBLIC
 	CLI11::CLI11
 )
 wmtk_copy_dll(wmtk_harmonic_tet_bin)
+
+if(WMTK_APP_UNIT_TESTS)
+    add_subdirectory(tests)
+endif()

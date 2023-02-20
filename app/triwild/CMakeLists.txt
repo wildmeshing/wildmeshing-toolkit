@@ -29,3 +29,7 @@ add_executable(triwild main.cpp)
 target_compile_options(triwild PRIVATE "-rdynamic")
 target_link_libraries(triwild PUBLIC wmtk::triwild)
 wmtk_copy_dll(triwild)
+
+if(WMTK_APP_UNIT_TESTS)
+    add_subdirectory(tests)
+endif()
