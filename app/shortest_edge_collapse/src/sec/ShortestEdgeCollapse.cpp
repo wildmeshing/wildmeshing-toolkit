@@ -10,6 +10,20 @@
 using namespace wmtk;
 using namespace app::sec;
 
+class ShortestEdgeCollapseOperation: public wmtk::TriMeshEdgeCollapseOperation
+{
+public:
+    bool before_check(const Tuple& t, TriMesh& m) override {
+        ShortestEdgeCollapse& secm = static_cast<ShortestEdgeCollapse&>(m);
+        return secm.collapse_edge_before(t);
+    }
+    bool after_check(const ExecuteReturnData& ret_data, TriMesh& m) override {
+        ShortestEdgeCollapse& secm = static_cast<ShortestEdgeCollapse&>(m);
+        return secm.collapse_edge_after(ret_data.tuple);
+    }
+
+};
+
 ShortestEdgeCollapse::ShortestEdgeCollapse(
     std::vector<Eigen::Vector3d> _m_vertex_positions,
     int num_threads,
@@ -176,12 +190,15 @@ bool ShortestEdgeCollapse::collapse_shortest(int target_vert_number)
 
     if (NUM_THREADS > 0) {
         auto executor = wmtk::ExecutePass<ShortestEdgeCollapse, ExecutionPolicy::kPartition>();
+
+        executor.add_operation(std::make_shared<ShortestEdgeCollapseOperation>());
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) {
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };
         setup_and_execute(executor);
     } else {
         auto executor = wmtk::ExecutePass<ShortestEdgeCollapse, ExecutionPolicy::kSeq>();
+        executor.add_operation(std::make_shared<ShortestEdgeCollapseOperation>());
         setup_and_execute(executor);
     }
     return true;
