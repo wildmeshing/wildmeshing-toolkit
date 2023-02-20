@@ -1,4 +1,5 @@
 #pragma once
+#define USE_ONLY_OPERATIONS
 
 #define USE_OPERATION_LOGGER
 #include <wmtk/utils/VectorUtils.h>
@@ -113,7 +114,7 @@ public:
          * @return size_t
          * @note use mostly for constructing consistent tuples in operations
          */
-        size_t local_eid(const TriMesh& m) const { return m_eid; };
+        size_t local_eid(const TriMesh& ) const { return m_eid; }
         /**
          * Switch operation.
          *
@@ -360,7 +361,9 @@ public: // MTAO: TODO:: these are all deprecatd and should be delegated to TriMe
      * @param std::vector<Tuple> a vector of Tuples that are concerned in a given operation
      * @return true if the invairnats are not violated
      */
+    // MTAO: TODO: figure out if invariants is a property of the mesh or a property o
     virtual bool invariants(const std::vector<Tuple>&);
+#if !defined(USE_ONLY_OPERATIONS)
     /**
      * @brief User specified preparations and desideratas for an edge split
      * @param the edge Tuple to be split
@@ -416,6 +419,7 @@ public: // MTAO: TODO:: these are all deprecatd and should be delegated to TriMe
      * @return true if the modifications succeed
      */
     virtual bool smooth_after(const Tuple& t);
+#endif
 
 public:
     /**
@@ -490,6 +494,8 @@ public:
         return false;
     }
 
+
+#if !defined(USE_ONLY_OPERATIONS)
     /**
      * Split an edge
      *
@@ -534,6 +540,7 @@ public:
      * @return if smooth succeed
      */
     bool smooth_vertex(const Tuple& t);
+#endif
 
     /**
      * @brief Count the number of the one ring tris for a vertex

@@ -96,7 +96,9 @@ std::weak_ptr<OperationRecorder> TriMeshOperation::recorder(TriMesh& m) const
 #endif
 bool TriMeshOperation::invariants(const ExecuteReturnData& ret_data, TriMesh& m)
 {
-    return m.invariants(ret_data.new_tris);
+
+return m.invariants(ret_data.new_tris);
+
 }
 
 void TriMeshOperation::set_vertex_size(size_t v_cnt, TriMesh& m)
@@ -238,11 +240,19 @@ auto TriMeshSplitEdgeOperation::execute(const Tuple& t, TriMesh& m) -> ExecuteRe
 }
 bool TriMeshSplitEdgeOperation::before_check(const Tuple& t, TriMesh& m)
 {
+#if defined(USE_ONLY_OPERATIONS)
+    return true;
+#else
     return m.split_edge_before(t);
+#endif
 }
 bool TriMeshSplitEdgeOperation::after_check(const ExecuteReturnData& ret_data, TriMesh& m)
 {
+#if defined(USE_ONLY_OPERATIONS)
+    return true;
+#else
     return m.split_edge_after(ret_data.tuple);
+#endif
 }
 std::string TriMeshSplitEdgeOperation::name() const
 {
@@ -295,7 +305,9 @@ auto TriMeshSwapEdgeOperation::execute(const Tuple& t, TriMesh& m) -> ExecuteRet
     size_t vid2 = t.switch_vertex(m).vid(m);
 
     auto tmp_tuple_opt = m.switch_face(t);
-    assert(tmp_tuple_opt.has_value());
+    if(!tmp_tuple_opt.has_value()) {
+        return ret_data;
+    }
     Tuple tmp_tuple = tmp_tuple_opt.value();
     assert(tmp_tuple.is_valid(m));
 
@@ -342,14 +354,30 @@ auto TriMeshSwapEdgeOperation::execute(const Tuple& t, TriMesh& m) -> ExecuteRet
     ret_data.success = true;
     return ret_data;
 }
-bool TriMeshSwapEdgeOperation::before_check(const Tuple& t, TriMesh& m)
+bool TriMeshSwapEdgeOperation::before_check(const Tuple& t, TriMesh& mesh)
 {
-    return m.swap_edge_before(t);
+#if defined(USE_ONLY_OPERATIONS)
+    if (!t.switch_face(mesh).has_value()) return false;
+    size_t v4 = ((t.switch_face(mesh).value()).switch_edge(mesh)).switch_vertex(mesh).vid(mesh);
+    size_t v3 = ((t.switch_edge(mesh)).switch_vertex(mesh)).vid(mesh);
+    if (!set_intersection(
+             vertex_connectivity(mesh)[v4].m_conn_tris,
+             vertex_connectivity(mesh)[v3].m_conn_tris)
+             .empty()) {
+        return false;
+    }
+    return true;
+#else
+-    return m.swap_edge_before(t);
+#endif
 }
 bool TriMeshSwapEdgeOperation::after_check(const ExecuteReturnData& ret_data, TriMesh& m)
 {
+#if defined(USE_ONLY_OPERATIONS)
+    return true;
+#else
     return m.swap_edge_after(ret_data.tuple);
-    ;
+#endif
 }
 std::string TriMeshSwapEdgeOperation::name() const
 {
@@ -364,12 +392,19 @@ auto TriMeshSmoothVertexOperation::execute(const Tuple& t, TriMesh&) -> ExecuteR
 }
 bool TriMeshSmoothVertexOperation::before_check(const Tuple& t, TriMesh& m)
 {
+#if defined(USE_ONLY_OPERATIONS)
+    return true;
+#else
     return m.smooth_before(t);
+#endif
 }
 bool TriMeshSmoothVertexOperation::after_check(const ExecuteReturnData& ret_data, TriMesh& m)
 {
-    // if we see a tri, the
+#if defined(USE_ONLY_OPERATIONS)
+    return true;
+#else
     return m.smooth_after(ret_data.tuple);
+#endif
 }
 std::string TriMeshSmoothVertexOperation::name() const
 {
@@ -378,7 +413,9 @@ std::string TriMeshSmoothVertexOperation::name() const
 
 bool TriMeshSmoothVertexOperation::invariants(const ExecuteReturnData& ret_data, TriMesh& m)
 {
+    //todo: mtao: figure out how to incorporate this properly
     // our execute should have tuple set to the input tuple (vertex)
+    //return TriMesh::invariants(m.get_one_ring_tris_for_vertex(ret_data.tuple));
     return m.invariants(m.get_one_ring_tris_for_vertex(ret_data.tuple));
 }
 
@@ -596,11 +633,12 @@ bool TriMeshEdgeCollapseOperation::check_link_condition(const Tuple& edge, const
 
 bool TriMeshEdgeCollapseOperation::before_check(const Tuple& t, TriMesh& m)
 {
-    return m.collapse_edge_before(t);
+    return check_link_condition(t, m);
 }
+
 bool TriMeshEdgeCollapseOperation::after_check(const ExecuteReturnData& ret_data, TriMesh& m)
 {
-    return m.collapse_edge_after(ret_data.tuple);
+    return true;
 }
 
 std::string TriMeshEdgeCollapseOperation::name() const
@@ -690,4 +728,5 @@ std::string TriMeshConsolidateOperation::name() const
 {
     return "consolidate";
 }
+
 
