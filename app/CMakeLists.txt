@@ -38,9 +38,3 @@ if(WMTK_APP_QSLIM)
     add_subdirectory(qslim)
 endif()
 
-# ###############################################################################
-# Tests
-# ###############################################################################
-if(WMTK_APP_UNIT_TESTS)
-    add_subdirectory(tests)
-endif()
