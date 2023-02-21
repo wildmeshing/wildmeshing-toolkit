@@ -10,6 +10,7 @@
 using namespace wmtk;
 using namespace app::sec;
 
+namespace {
 class ShortestEdgeCollapseOperation : public wmtk::TriMeshOperationShim<
                                           ShortestEdgeCollapse,
                                           ShortestEdgeCollapseOperation,
@@ -30,6 +31,7 @@ public:
         return wmtk::TriMeshEdgeCollapseOperation::invariants(ret_data, m);
     }
 };
+}
 
 /*
 class ShortestEdgeCollapseOperation : public wmtk::TriMeshEdgeCollapseOperation
