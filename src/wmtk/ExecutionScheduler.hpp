@@ -138,10 +138,10 @@ struct ExecutePass
     }
     // convenience function for when we want to default construct the op but use a custom name
     template <typename OpType>
-    void add_operation(const std::string& op)
+    void add_operation(const std::string& name)
     {
         auto op = std::make_shared<OpType>();
-        add_operation(op, op->name());
+        add_operation(op, name);
     }
     // convenience function for when we want to default construct the op an use default name
     template <typename OpType>
@@ -323,9 +323,9 @@ public:
                         } // this can encode, in qslim, recompute(energy) == weight.
                         std::vector<std::pair<Op, Tuple>> renewed_tuples;
                         if constexpr (std::is_base_of<wmtk::TriMesh, AppMesh>::value) {
-                            auto ret_data = (*new_edit_operation_maps[op])(m, tup);
+                            auto ret_data = (*new_edit_operation_maps[op])(tup, m);
                             if (ret_data.success) {
-                                renewed_tuples = renew_neighbor_tuples(m, op, ret_data.tuple);
+                                renewed_tuples = renew_neighbor_tuples(m, op, ret_data.new_tris);
                                 cnt_success++;
                                 cnt_update++;
                             } else {

@@ -434,12 +434,14 @@ public:
      * @return size_t
      */
     size_t vert_capacity() const { return current_vert_size; }
+#if !defined(USE_ONLY_OPERATIONS)
     /**
      * @brief removing the elements that are removed
      *
      * @param bnd_output when turn on will write the boundary vertices to "bdn_table.dmat"
      */
     void consolidate_mesh();
+#endif
     /**
      * @brief a duplicate of Tuple::switch_vertex funciton
      */
