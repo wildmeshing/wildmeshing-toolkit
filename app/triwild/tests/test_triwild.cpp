@@ -1754,8 +1754,11 @@ TEST_CASE("quadrature")
         auto length3d = m.get_length3d(e.vid(m), e.switch_vertex(m).vid(m));
         auto lengthquad = m.get_accuracy_error(e.vid(m), e.switch_vertex(m).vid(m));
         wmtk::logger().info("2d {} 3d {} lengthquad {}", length2d, length3d, lengthquad);
-        // REQUIRE(lengthquad < 1e-8);
     }
+    Eigen::Vector2d v1, v2;
+    v1 << 0., 0.;
+    v2 << 1., 0.;
+    REQUIRE(abs(m.get_accuracy_error(v1, v2) - 0.636619772367581) < 1e-8);
 }
 
 TEST_CASE("exact length")

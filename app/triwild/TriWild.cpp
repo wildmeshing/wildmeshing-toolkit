@@ -397,6 +397,10 @@ void TriWild::write_vtk(const std::string& path)
     for (auto e : get_edges()) {
         if (!e.is_valid(*this)) continue;
         auto cost = mesh_parameters.m_get_length(e.vid(*this), e.switch_vertex(*this).vid(*this));
+        auto pos1 = vertex_attrs[e.vid(*this)].pos;
+        auto pos2 = vertex_attrs[e.switch_vertex(*this).vid(*this)].pos;
+        auto posnew = (pos1 + pos2) * 0.5;
+        cost -= (get_accuracy_error(pos1, posnew) + get_accuracy_error(posnew, pos2));
         scalar_field.emplace_back(cost);
     }
     writer.add_cell_scalar_field("scalar_field", scalar_field);
@@ -569,37 +573,43 @@ double TriWild::get_quality(const Tuple& loc, int idx) const
 
 double TriWild::get_accuracy_error(const size_t& vid1, const size_t& vid2) const
 {
+    auto v12d = vertex_attrs[vid1].pos;
+    auto v22d = vertex_attrs[vid2].pos;
+    get_accuracy_error(v12d, v22d);
+}
+
+double TriWild::get_accuracy_error(const Eigen::Vector2d& p1, const Eigen::Vector2d& p2) const
+{
     std::function<double(const double&, const double&)> get_z = [&](const double& u,
                                                                     const double& v) -> double {
         return mesh_parameters.m_project_to_3d(u, v)(2);
     };
-    auto v12d = vertex_attrs[vid1].pos;
-    auto v22d = vertex_attrs[vid2].pos;
-    auto v1z = get_z(v12d(0), v12d(1));
-    auto v2z = get_z(v22d(0), v22d(1));
+    auto v1z = get_z(p1(0), p1(1));
+    auto v2z = get_z(p2(0), p2(1));
     // get the pixel index of p1 and p2
-    auto [xx1, yy1] = mesh_parameters.m_image_get_coordinate(v12d(0), v12d(1));
-    auto [xx2, yy2] = mesh_parameters.m_image_get_coordinate(v22d(0), v22d(1));
+    auto [xx1, yy1] = mesh_parameters.m_image_get_coordinate(p1(0), p1(1));
+    auto [xx2, yy2] = mesh_parameters.m_image_get_coordinate(p2(0), p2(1));
     // get all the pixels in between p1 and p2
     auto pixel_num = std::max(abs(xx2 - xx1), abs(yy2 - yy1));
-    if (pixel_num <= 0) return -1.;
+    if (pixel_num <= 0) return 0.;
     assert(pixel_num > 0);
     double error = 0.0;
     for (int i = 0; i < pixel_num; i++) {
         const double r0 = static_cast<double>(i) / pixel_num;
-        auto tmp_v12d = v12d * (1. - r0) + v22d * r0;
+        auto tmp_p1 = p1 * (1. - r0) + p2 * r0;
         auto tmp_v1z = v1z * (1. - r0) + v2z * r0;
         const double r1 = static_cast<double>(i + 1) / pixel_num;
-        auto tmp_v22d = v12d * (1. - r1) + v22d * r1;
+        auto tmp_p2 = p1 * (1. - r1) + p2 * r1;
         auto tmp_v2z = v1z * (1. - r1) + v2z * r1;
         Eigen::Matrix<double, 2, 3> edge_verts;
-        edge_verts.row(0) << tmp_v12d(0), tmp_v12d(1), tmp_v1z;
-        edge_verts.row(1) << tmp_v22d(0), tmp_v22d(1), tmp_v2z;
+        edge_verts.row(0) << tmp_p1(0), tmp_p1(1), tmp_v1z;
+        edge_verts.row(1) << tmp_p2(0), tmp_p2(1), tmp_v2z;
         LineQuadrature quad;
         auto displaced_pixel_error =
             quadrature_error_1pixel_eval<double, 5>(edge_verts, get_z, quad);
         error += displaced_pixel_error;
     }
+    assert(error >= 0);
     return error;
 }
 

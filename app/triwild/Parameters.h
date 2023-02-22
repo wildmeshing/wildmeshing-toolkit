@@ -72,7 +72,7 @@ public:
 
     std::function<double(const std::size_t&, const std::size_t&)> m_get_length;
 
-    double m_accuracy_threshold = 0.01;
+    double m_accuracy_threshold = 0.001;
     bool m_accuracy = 1;
 };
 } // namespace triwild

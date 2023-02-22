@@ -41,13 +41,29 @@ void TriWild::split_all_edges()
     auto setup_and_execute = [&](auto executor) {
         executor.renew_neighbor_tuples = split_renew;
         executor.priority = [&](auto& m, auto _, auto& e) {
+            if (m.mesh_parameters.m_accuracy) {
+                auto pos0 = m.vertex_attrs[e.vid(m)].pos;
+                auto pos1 = m.vertex_attrs[e.switch_vertex(m).vid(m)].pos;
+                Eigen::Vector2d posnew = (pos0 + pos1) * 0.5;
+                auto error1 = m.get_accuracy_error(pos0, posnew);
+                auto error2 = m.get_accuracy_error(posnew, pos1);
+                return m.get_accuracy_error(pos0, pos1) - error1 - error2;
+            }
             return m.mesh_parameters.m_get_length(e.vid(m), e.switch_vertex(m).vid(m));
         };
         executor.num_threads = NUM_THREADS;
         executor.is_weight_up_to_date = [](auto& m, auto& ele) {
             auto& [weight, op, tup] = ele;
             auto length = m.mesh_parameters.m_get_length(tup.vid(m), tup.switch_vertex(m).vid(m));
-            if (length != weight) return false;
+            if (m.mesh_parameters.m_accuracy) {
+                auto pos0 = m.vertex_attrs[tup.vid(m)].pos;
+                auto pos1 = m.vertex_attrs[tup.switch_vertex(m).vid(m)].pos;
+                Eigen::Vector2d posnew = (pos0 + pos1) * 0.5;
+                auto error1 = m.get_accuracy_error(pos0, posnew);
+                auto error2 = m.get_accuracy_error(posnew, pos1);
+                length -= (error1 + error2);
+            }
+            if (abs(length - weight) > 1e-10) return false;
             if (m.mesh_parameters.m_accuracy) {
                 if (length < m.mesh_parameters.m_accuracy_threshold) return false;
             } else if (length < 4. / 3. * m.mesh_parameters.m_target_l)
@@ -71,9 +87,9 @@ bool TriWild::split_edge_before(const Tuple& edge_tuple)
 {
     static std::atomic_int cnt = 0;
     if (!TriMesh::split_edge_before(edge_tuple)) return false;
+    write_vtk(mesh_parameters.m_output_folder + fmt::format("/split_{:04d}.vtu", cnt));
+    // if (cnt % 100 == 0)
 
-    if (cnt % 100 == 0)
-        write_vtk(mesh_parameters.m_output_folder + fmt::format("/split_{:04d}.vtu", cnt));
     // check if the 2 vertices are on the same curve
     if (vertex_attrs[edge_tuple.vid(*this)].curve_id !=
         vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].curve_id)
@@ -115,7 +131,10 @@ bool TriWild::split_edge_after(const Tuple& edge_tuple)
     }
     // enforce length check
     if (mesh_parameters.m_accuracy) {
-        if (length3d > mesh_parameters.m_accuracy_threshold) return true;
+        auto after_operation_error = length3d - get_accuracy_error(cache.local().v1, vid) -
+                                     get_accuracy_error(cache.local().v2, vid);
+        // operation happens when error difference is higher than user determined value
+        if (after_operation_error > mesh_parameters.m_accuracy_threshold) return true;
     } else if (length3d > (4. / 3. * mesh_parameters.m_target_l)) {
         return true;
     }

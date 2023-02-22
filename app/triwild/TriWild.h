@@ -162,6 +162,7 @@ public:
     double get_mesh_energy(const Eigen::VectorXd& v_flat);
 
     double get_accuracy_error(const size_t& vid1, const size_t& vid2) const;
+    double get_accuracy_error(const Eigen::Vector2d& p1, const Eigen::Vector2d& p2) const;
 
     template <class T, int order>
     inline std::decay_t<T> quadrature_error_1pixel_eval(
@@ -173,7 +174,9 @@ public:
         double ret = 0.0;
         auto v1z = edge_verts(0, 2);
         auto v2z = edge_verts(1, 2);
-
+        Eigen::Matrix<T, 1, 2> v12d, v22d;
+        v12d << edge_verts(0, 0), edge_verts(0, 1);
+        v22d << edge_verts(1, 0), edge_verts(1, 1);
         // now do 1d quadrature
         for (int i = 0; i < quad.points.rows(); i++) {
             auto tmpu =
@@ -184,7 +187,7 @@ public:
             auto tmpz = (1 - quad.points(i, 0)) * v1z + quad.points(i, 0) * v2z;
             ret += abs(quad.weights(i) * (tmph - tmpz));
         }
-        return ret;
+        return ret * (v12d - v22d).stableNorm();
     }
 };
 
