@@ -114,6 +114,8 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     stb)
 include(lean-vtk)
 target_link_libraries(wildmeshing_toolkit PUBLIC LeanVTK)
+include(nanospline)
+target_link_libraries(wildmeshing_toolkit PUBLIC nanospline::nanospline)
 
 # ###############################################################################
 # Subdirectories
