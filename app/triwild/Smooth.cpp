@@ -68,7 +68,6 @@ bool triwild::TriWild::smooth_after(const Tuple& t)
     auto locs = get_one_ring_tris_for_vertex(t);
     assert(locs.size() > 0);
 
-    write_obj("smooth_after_1.obj");
 
     // Computes the maximal error around the one ring
     // that is needed to ensure the operation will decrease the error measure
