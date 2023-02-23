@@ -594,13 +594,13 @@ bool TriMesh::smooth_vertex(const Tuple& t)
     TriMeshOperation::ExecuteReturnData ret_data = op(t, *this);
     return ret_data.success;
 }
+#endif
 
 void TriMesh::consolidate_mesh()
 {
     TriMeshConsolidateOperation op;
     op(TriMesh::Tuple{}, *this);
 }
-#endif
 
 
 std::vector<size_t> TriMesh::get_one_ring_vids_for_vertex_duplicate(const size_t& vid) const

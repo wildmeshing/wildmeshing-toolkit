@@ -12,6 +12,45 @@
 
 #include <limits>
 #include <optional>
+
+namespace {
+
+using namespace triwild;
+using namespace wmtk;
+
+class TriWildSmoothVertexOperation : public wmtk::TriMeshOperationShim<
+                                                  TriWild,
+                                                  TriWildSmoothVertexOperation,
+                                                  wmtk::TriMeshSmoothVertexOperation>
+{
+public:
+    ExecuteReturnData execute(const Tuple& t, TriWild& m)
+    {
+        return wmtk::TriMeshSmoothVertexOperation::execute(t, m);
+    }
+    bool before_check(const Tuple& t, TriWild& m)
+    {
+        return wmtk::TriMeshSmoothVertexOperation::before_check(t, m) && m.smooth_before(t);
+    }
+    bool after_check(const ExecuteReturnData& ret_data, TriWild& m)
+    {
+        return wmtk::TriMeshSmoothVertexOperation::after_check(ret_data, m) &&
+               m.smooth_after(ret_data.tuple);
+    }
+    bool invariants(const ExecuteReturnData& ret_data, TriWild& m)
+    {
+        return wmtk::TriMeshSmoothVertexOperation::invariants(ret_data, m) &&
+               m.invariants(ret_data.new_tris);
+    }
+};
+
+    template <typename Executor>
+    void addCustomOps(Executor& e) {
+
+        e.add_operation(std::make_shared<TriWildSmoothVertexOperation>());
+    }
+}
+
 bool triwild::TriWild::smooth_before(const Tuple& t)
 {
     if (vertex_attrs[t.vid(*this)].fixed)
@@ -105,6 +144,7 @@ void triwild::TriWild::smooth_all_vertices()
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
             return m.try_set_vertex_mutex_one_ring(e, task_id);
         };
+        addCustomOps(executor);
         executor.num_threads = NUM_THREADS;
         executor(*this, collect_all_ops);
         time = timer.getElapsedTime();
@@ -112,6 +152,7 @@ void triwild::TriWild::smooth_all_vertices()
     } else {
         timer.start();
         auto executor = wmtk::ExecutePass<TriWild, wmtk::ExecutionPolicy::kSeq>();
+        addCustomOps(executor);
         executor(*this, collect_all_ops);
         time = timer.getElapsedTime();
         wmtk::logger().info("vertex smoothing operation time serial: {}s", time);

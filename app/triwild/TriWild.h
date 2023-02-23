@@ -61,8 +61,8 @@ bool is_inverted(const Tuple& loc) const;
 
 // Smoothing
 void smooth_all_vertices();
-bool smooth_before(const Tuple& t) override;
-bool smooth_after(const Tuple& t) override;
+bool smooth_before(const Tuple& t) ;
+bool smooth_after(const Tuple& t) ;
 
 
 };

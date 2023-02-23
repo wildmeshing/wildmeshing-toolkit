@@ -12,46 +12,32 @@ using namespace app::sec;
 
 namespace {
 class ShortestEdgeCollapseOperation : public wmtk::TriMeshOperationShim<
-                                          ShortestEdgeCollapse,
-                                          ShortestEdgeCollapseOperation,
-                                          TriMeshEdgeCollapseOperation>
+                                                  ShortestEdgeCollapse,
+                                                  ShortestEdgeCollapseOperation,
+                                                  wmtk::TriMeshEdgeCollapseOperation>
 {
 public:
     ExecuteReturnData execute(const Tuple& t, ShortestEdgeCollapse& m)
     {
         return wmtk::TriMeshEdgeCollapseOperation::execute(t, m);
     }
-    bool before_check(const Tuple& t, ShortestEdgeCollapse& m) { return m.collapse_edge_before(t); }
+    bool before_check(const Tuple& t, ShortestEdgeCollapse& m)
+    {
+        return wmtk::TriMeshEdgeCollapseOperation::before_check(t, m) && m.collapse_edge_before(t);
+    }
     bool after_check(const ExecuteReturnData& ret_data, ShortestEdgeCollapse& m)
     {
-        return m.collapse_edge_after(ret_data.tuple);
+        return wmtk::TriMeshEdgeCollapseOperation::after_check(ret_data, m) &&
+               m.collapse_edge_after(ret_data.tuple);
     }
     bool invariants(const ExecuteReturnData& ret_data, ShortestEdgeCollapse& m)
     {
-        return wmtk::TriMeshEdgeCollapseOperation::invariants(ret_data, m);
+        return wmtk::TriMeshEdgeCollapseOperation::invariants(ret_data, m) &&
+               m.invariants(ret_data.new_tris);
     }
 };
 }
 
-/*
-class ShortestEdgeCollapseOperation : public wmtk::TriMeshEdgeCollapseOperation
-{
-public:
-    bool before_check(const Tuple& t, TriMesh& m) override
-    {
-        // if(!TriMeshOperation::before_check(t,m)) {
-        //     return false;
-        // }
-        ShortestEdgeCollapse& secm = static_cast<ShortestEdgeCollapse&>(m);
-        return secm.collapse_edge_before(t);
-    }
-    bool after_check(const ExecuteReturnData& ret_data, TriMesh& m) override
-    {
-        ShortestEdgeCollapse& secm = static_cast<ShortestEdgeCollapse&>(m);
-        return secm.collapse_edge_after(ret_data.tuple);
-    }
-};
-*/
 ShortestEdgeCollapse::ShortestEdgeCollapse(
     std::vector<Eigen::Vector3d> _m_vertex_positions,
     int num_threads,
@@ -204,8 +190,10 @@ bool ShortestEdgeCollapse::collapse_shortest(int target_vert_number)
                 .squaredNorm();
         return -len2;
     };
-    auto setup_and_execute = [&](auto executor) {
+    auto setup_and_execute = [&](auto& executor) {
+        executor.add_operation(std::make_shared<ShortestEdgeCollapseOperation>());
         executor.num_threads = NUM_THREADS;
+        spdlog::info("Num threads: {}", executor.num_threads);
         executor.renew_neighbor_tuples = renew;
         executor.priority = measure_len2;
         executor.stopping_criterion_checking_frequency =
@@ -213,20 +201,19 @@ bool ShortestEdgeCollapse::collapse_shortest(int target_vert_number)
                                    : std::numeric_limits<int>::max();
         executor.stopping_criterion = [](auto& m) { return true; };
         executor(*this, collect_all_ops);
+        spdlog::info("Calling consolidate");
         executor(*this, {{"consolidate", {}}});
     };
 
     if (NUM_THREADS > 0) {
         auto executor = wmtk::ExecutePass<ShortestEdgeCollapse, ExecutionPolicy::kPartition>();
 
-        executor.add_operation(std::make_shared<ShortestEdgeCollapseOperation>());
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) {
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };
         setup_and_execute(executor);
     } else {
         auto executor = wmtk::ExecutePass<ShortestEdgeCollapse, ExecutionPolicy::kSeq>();
-        executor.add_operation(std::make_shared<ShortestEdgeCollapseOperation>());
         setup_and_execute(executor);
     }
     return true;

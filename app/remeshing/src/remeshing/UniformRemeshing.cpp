@@ -1,4 +1,5 @@
 #include "UniformRemeshing.h"
+#include "UniformRemeshingOperations.h"
 #include <igl/Timer.h>
 #include <igl/is_edge_manifold.h>
 #include <igl/predicates/predicates.h>
@@ -12,101 +13,6 @@
 using namespace app::remeshing;
 using namespace wmtk;
 
-namespace {
-class UniformRemeshingEdgeCollapseOperation : public wmtk::TriMeshOperationShim<
-                                          UniformRemeshing,
-                                          UniformRemeshingEdgeCollapseOperation,
-                                          TriMeshEdgeCollapseOperation>
-{
-public:
-    ExecuteReturnData execute(const Tuple& t, UniformRemeshing& m)
-    {
-        return wmtk::TriMeshEdgeCollapseOperation::execute(t, m);
-    }
-    bool before_check(const Tuple& t, UniformRemeshing& m) { return m.collapse_edge_before(t); }
-    bool after_check(const ExecuteReturnData& ret_data, UniformRemeshing& m)
-    {
-        return m.collapse_edge_after(ret_data.tuple);
-    }
-    bool invariants(const ExecuteReturnData& ret_data, UniformRemeshing& m)
-    {
-        return m.invariants(ret_data.new_tris);
-    }
-};
-
-class UniformRemeshingSplitEdgeOperation : public wmtk::TriMeshOperationShim<
-                                          UniformRemeshing,
-                                          UniformRemeshingSplitEdgeOperation,
-                                          TriMeshSplitEdgeOperation>
-{
-public:
-    ExecuteReturnData execute(const Tuple& t, UniformRemeshing& m)
-    {
-        return wmtk::TriMeshSplitEdgeOperation::execute(t, m);
-    }
-    bool before_check(const Tuple& t, UniformRemeshing& m) { return m.split_edge_before(t); }
-    bool after_check(const ExecuteReturnData& ret_data, UniformRemeshing& m)
-    {
-        return m.split_edge_after(ret_data.tuple);
-    }
-    bool invariants(const ExecuteReturnData& ret_data, UniformRemeshing& m)
-    {
-        return m.invariants(ret_data.new_tris);
-    }
-};
-
-class UniformRemeshingSwapEdgeOperation : public wmtk::TriMeshOperationShim<
-                                          UniformRemeshing,
-                                          UniformRemeshingSwapEdgeOperation,
-                                          TriMeshSwapEdgeOperation>
-{
-public:
-    ExecuteReturnData execute(const Tuple& t, UniformRemeshing& m)
-    {
-        return wmtk::TriMeshSwapEdgeOperation::execute(t, m);
-    }
-    bool before_check(const Tuple& t, UniformRemeshing& m) { return m.split_edge_before(t); }
-    bool after_check(const ExecuteReturnData& ret_data, UniformRemeshing& m)
-    {
-        return m.split_edge_after(ret_data.tuple);
-    }
-    bool invariants(const ExecuteReturnData& ret_data, UniformRemeshing& m)
-    {
-        return m.invariants(ret_data.new_tris);
-    }
-};
-
-
-class UniformRemeshingSmoothVertexOperation : public wmtk::TriMeshOperationShim<
-                                          UniformRemeshing,
-                                          UniformRemeshingSmoothVertexOperation,
-                                          TriMeshSmoothVertexOperation>
-{
-public:
-    ExecuteReturnData execute(const Tuple& t, UniformRemeshing& m)
-    {
-        return wmtk::TriMeshSmoothVertexOperation::execute(t, m);
-    }
-    bool before_check(const Tuple& t, UniformRemeshing& m) { return m.split_edge_before(t); }
-    bool after_check(const ExecuteReturnData& ret_data, UniformRemeshing& m)
-    {
-        return m.split_edge_after(ret_data.tuple);
-    }
-    bool invariants(const ExecuteReturnData& ret_data, UniformRemeshing& m)
-    {
-        return m.invariants(ret_data.new_tris);
-    }
-};
-
-    template <typename Executor>
-    void addCustomOps(Executor& e) {
-
-        e.add_operation(std::make_shared<UniformRemeshingEdgeCollapseOperation>());
-        e.add_operation(std::make_shared<UniformRemeshingSplitEdgeOperation>());
-        e.add_operation(std::make_shared<UniformRemeshingSwapEdgeOperation>());
-        e.add_operation(std::make_shared<UniformRemeshingSmoothVertexOperation>());
-    }
-}
 auto renew = [](auto& m, auto op, auto& tris) {
     auto edges = m.new_edges_after(tris);
     auto optup = std::vector<std::pair<std::string, TriMesh::Tuple>>();
@@ -525,7 +431,8 @@ bool UniformRemeshing::collapse_remeshing(double L)
         timer.getElapsedTimeInMilliSec());
 
     wmtk::logger().info("size for edges to be collapse is {}", collect_all_ops.size());
-    auto setup_and_execute = [&](auto executor) {
+    auto setup_and_execute = [&](auto& executor) {
+        addCustomOps(executor);
         executor.renew_neighbor_tuples = renew;
         executor.priority = [&](auto& m, auto _, auto& e) {
             return m.compute_edge_cost_collapse(e, L);
@@ -543,12 +450,10 @@ bool UniformRemeshing::collapse_remeshing(double L)
     if (NUM_THREADS > 0) {
         auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kPartition>();
         
-        addCustomOps(executor);
         executor.lock_vertices = edge_locker;
         setup_and_execute(executor);
     } else {
         auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kSeq>();
-        addCustomOps(executor);
         setup_and_execute(executor);
     }
 
@@ -573,6 +478,7 @@ bool UniformRemeshing::split_remeshing(double L)
     wmtk::logger().info("size for edges to be split is {}", collect_all_ops.size());
     auto edges2 = tbb::concurrent_vector<std::pair<std::string, TriMesh::Tuple>>();
     auto setup_and_execute = [&](auto& executor) {
+        addCustomOps(executor);
         vid_threshold = vert_capacity();
         executor.num_threads = NUM_THREADS;
         executor.renew_neighbor_tuples = [&](auto& m, auto op, auto& tris) {
@@ -606,12 +512,10 @@ bool UniformRemeshing::split_remeshing(double L)
 
     if (NUM_THREADS > 0) {
         auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kPartition>();
-        addCustomOps(executor);
         executor.lock_vertices = edge_locker;
         setup_and_execute(executor);
     } else {
         auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kSeq>();
-        addCustomOps(executor);
         setup_and_execute(executor);
     }
 
@@ -623,7 +527,8 @@ bool UniformRemeshing::smooth_all_vertices()
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("vertex_smooth", loc);
 
-    auto setup_and_execute = [&](auto executor) {
+    auto setup_and_execute = [&](auto& executor) {
+        addCustomOps(executor);
         executor.num_threads = NUM_THREADS;
 
         executor(*this, collect_all_ops);
@@ -631,14 +536,12 @@ bool UniformRemeshing::smooth_all_vertices()
     };
     if (NUM_THREADS > 0) {
         auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kPartition>();
-        addCustomOps(executor);
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) {
             return m.try_set_vertex_mutex_one_ring(e, task_id);
         };
         setup_and_execute(executor);
     } else {
         auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kSeq>();
-        addCustomOps(executor);
         setup_and_execute(executor);
     }
 
@@ -659,7 +562,8 @@ bool UniformRemeshing::swap_remeshing()
     wmtk::logger().info("***** swap get edges time *****: {} ms", timer.getElapsedTimeInMilliSec());
 
 
-    auto setup_and_execute = [&](auto executor) {
+    auto setup_and_execute = [&](auto& executor) {
+        addCustomOps(executor);
         executor.renew_neighbor_tuples = renew;
         executor.num_threads = NUM_THREADS;
         executor.priority = [](auto& m, auto op, const Tuple& e) {
@@ -676,12 +580,10 @@ bool UniformRemeshing::swap_remeshing()
     };
     if (NUM_THREADS > 0) {
         auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kPartition>();
-        addCustomOps(executor);
         executor.lock_vertices = edge_locker;
         setup_and_execute(executor);
     } else {
         auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kSeq>();
-        addCustomOps(executor);
         setup_and_execute(executor);
     }
 
@@ -817,3 +719,7 @@ bool UniformRemeshing::write_triangle_mesh(std::string path)
 
     return manifold;
 }
+
+
+
+

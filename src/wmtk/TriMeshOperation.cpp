@@ -433,9 +433,16 @@ auto TriMeshEdgeCollapseOperation::execute(const Tuple& loc0, TriMesh& m) -> Exe
     // take the face that shares the same vertex the loc0 tuple is pointing to
     // or if that face doesn't exit
     // take the face that shares the same vertex of loc0
-    auto new_fid = loc0.switch_vertex(m).switch_edge(m).switch_face(m).has_value()
-                       ? (loc0.switch_vertex(m).switch_edge(m).switch_face(m).value()).fid(m)
-                       : (loc0.switch_edge(m).switch_face(m).value()).fid(m);
+    size_t new_fid;
+    {
+        std::optional<Tuple> new_tup_opt;
+        new_tup_opt = loc0.switch_vertex(m).switch_edge(m).switch_face(m);
+        if(!new_tup_opt.has_value()) {
+            new_tup_opt = loc0.switch_edge(m).switch_face(m);
+            assert(new_tup_opt.has_value());
+        }
+        new_fid = new_tup_opt.value().fid(m);
+    }
 
     // get the vids
     size_t vid1 = loc0.vid(m);

@@ -11,6 +11,41 @@ using namespace wmtk;
 using namespace app::qslim;
 
 
+namespace {
+class QSLIMEdgeCollapseOperation : public wmtk::TriMeshOperationShim<
+                                                  QSLIM,
+                                                  QSLIMEdgeCollapseOperation,
+                                                  wmtk::TriMeshEdgeCollapseOperation>
+{
+public:
+    ExecuteReturnData execute(const Tuple& t, QSLIM& m)
+    {
+        return wmtk::TriMeshEdgeCollapseOperation::execute(t, m);
+    }
+    bool before_check(const Tuple& t, QSLIM& m)
+    {
+        return wmtk::TriMeshEdgeCollapseOperation::before_check(t, m) && m.collapse_edge_before(t);
+    }
+    bool after_check(const ExecuteReturnData& ret_data, QSLIM& m)
+    {
+        return wmtk::TriMeshEdgeCollapseOperation::after_check(ret_data, m) &&
+               m.collapse_edge_after(ret_data.tuple);
+    }
+    bool invariants(const ExecuteReturnData& ret_data, QSLIM& m)
+    {
+        return wmtk::TriMeshEdgeCollapseOperation::invariants(ret_data, m) &&
+               m.invariants(ret_data.new_tris);
+    }
+};
+
+
+    template <typename Executor>
+    void addCustomOps(Executor& e) {
+
+        e.add_operation(std::make_shared<QSLIMEdgeCollapseOperation>());
+    }
+}
+
 QSLIM::QSLIM(std::vector<Eigen::Vector3d> _m_vertex_positions, int num_threads)
 {
     p_vertex_attrs = &vertex_attrs;
@@ -300,7 +335,7 @@ bool QSLIM::write_triangle_mesh(std::string path)
 
 bool QSLIM::collapse_edge_before(const Tuple& t)
 {
-    if (!TriMesh::collapse_edge_before(t)) return false;
+    //if (!TriMesh::collapse_edge_before(t)) return false;
     if (vertex_attrs[t.vid(*this)].freeze || vertex_attrs[t.switch_vertex(*this).vid(*this)].freeze)
         return false;
     cache.local().v1p = vertex_attrs[t.vid(*this)].pos;
@@ -360,7 +395,8 @@ bool QSLIM::collapse_qslim(int target_vert_number)
     auto measure_priority = [this](auto& m, auto op, const Tuple& new_e) {
         return -compute_cost_for_e(new_e);
     };
-    auto setup_and_execute = [&](auto executor) {
+    auto setup_and_execute = [&](auto& executor) {
+        addCustomOps(executor);
         executor.num_threads = NUM_THREADS;
         executor.renew_neighbor_tuples = renew;
         executor.priority = measure_priority;
