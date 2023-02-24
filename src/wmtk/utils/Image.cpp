@@ -35,7 +35,7 @@ int Image::get_coordinate(const int x, const WrappingMode mode) const
     }
 }
 
-std::pair<int, int> Image::get_raw(const double& u, const double& v) const
+std::pair<int, int> Image::get_pixel_index(const double& u, const double& v) const
 {
     int w = width();
     int h = height();

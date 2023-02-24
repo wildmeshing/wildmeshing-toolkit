@@ -6,6 +6,8 @@
 #include <lagrange/bvh/EdgeAABBTree.h>
 #include <wmtk/TriMesh.h>
 #include <wmtk/utils/BoundaryParametrization.h>
+#include <wmtk/utils/Displacement.h>
+#include <wmtk/utils/DisplacementBicubic.h>
 #include <wmtk/utils/Energy2d.h>
 #include <wmtk/utils/GeoUtils.h>
 #include <wmtk/utils/Image.h>
@@ -162,7 +164,8 @@ public:
     double get_mesh_energy(const Eigen::VectorXd& v_flat);
 
     double get_accuracy_error(const size_t& vid1, const size_t& vid2) const;
-    double get_accuracy_error(const Eigen::Vector2d& p1, const Eigen::Vector2d& p2) const;
+    double get_accuracy_error(const Eigen::Vector2d& p1, const Eigen::Vector2d& p2)
+        const; // outdated
 
     template <class T, int order>
     inline std::decay_t<T> quadrature_error_1pixel_eval(
@@ -185,8 +188,12 @@ public:
                 (1 - quad.points(i, 0)) * edge_verts(0, 1) + quad.points(i, 0) * edge_verts(1, 1);
             auto tmph = image_get_z(tmpu, tmpv);
             auto tmpz = (1 - quad.points(i, 0)) * v1z + quad.points(i, 0) * v2z;
+            wmtk::logger()
+                .info("   triwild tmpu {} tmpv {} tmph {} tmpz {}", tmpu, tmpv, tmph, tmpz);
             ret += abs(quad.weights(i) * (tmph - tmpz));
         }
+        wmtk::logger().info("   ret for {} {} in triwild is {}", v12d, v22d, ret);
+
         return ret * (v12d - v22d).stableNorm();
     }
 };

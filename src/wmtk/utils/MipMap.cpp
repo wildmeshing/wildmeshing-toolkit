@@ -36,8 +36,8 @@ std::pair<int, int> MipMap::get_mipmap_level_pixelnum(
     for (int i = level() - 4; i >= 0; i--) {
         auto image = get_image(i);
         // get the pixel index of p1 and p2
-        auto [x1, y1] = image.get_raw(a(0), a(1));
-        auto [x2, y2] = image.get_raw(b(0), b(1));
+        auto [x1, y1] = image.get_pixel_index(a(0), a(1));
+        auto [x2, y2] = image.get_pixel_index(b(0), b(1));
         auto xx1 = image.get_coordinate(x1, m_mipmap_wrapping_mode);
         auto yy1 = image.get_coordinate(y1, m_mipmap_wrapping_mode);
         auto xx2 = image.get_coordinate(x2, m_mipmap_wrapping_mode);

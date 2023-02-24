@@ -129,10 +129,17 @@ void TriWild::set_edge_length_measurement(const EDGE_LEN_TYPE edge_len_type)
         mesh_parameters.m_accuracy = 0;
         break;
     case EDGE_LEN_TYPE::ACCURACY:
+        std::unique_ptr<DisplacementBicubic> displacement_ptr =
+            std::make_unique<DisplacementBicubic>(
+                mesh_parameters.m_image,
+                mesh_parameters.m_wrapping_mode,
+                mesh_parameters.m_wrapping_mode);
+        mesh_parameters.m_displacement = std::move(displacement_ptr);
         mesh_parameters.m_get_length = [&](const size_t& vid1, const size_t& vid2) -> double {
             this->get_accuracy_error(vid1, vid2);
         };
         mesh_parameters.m_accuracy = 1;
+
         break;
     }
 }
@@ -146,7 +153,7 @@ void TriWild::set_image_function(const wmtk::Image& image, const WrappingMode wr
     };
     mesh_parameters.m_image_get_coordinate = [&](const double& x,
                                                  const double& y) -> std::pair<int, int> {
-        auto [xx, yy] = image.get_raw(x, y);
+        auto [xx, yy] = image.get_pixel_index(x, y);
         return {image.get_coordinate(xx, mesh_parameters.m_wrapping_mode),
                 image.get_coordinate(yy, mesh_parameters.m_wrapping_mode)};
     };
@@ -403,10 +410,12 @@ void TriWild::write_vtk(const std::string& path)
     for (auto e : get_edges()) {
         if (!e.is_valid(*this)) continue;
         auto cost = mesh_parameters.m_get_length(e.vid(*this), e.switch_vertex(*this).vid(*this));
-        auto pos1 = vertex_attrs[e.vid(*this)].pos;
-        auto pos2 = vertex_attrs[e.switch_vertex(*this).vid(*this)].pos;
-        auto posnew = (pos1 + pos2) * 0.5;
-        cost -= (get_accuracy_error(pos1, posnew) + get_accuracy_error(posnew, pos2));
+        Eigen::Matrix<double, 2, 1> pos1 = vertex_attrs[e.vid(*this)].pos;
+        Eigen::Matrix<double, 2, 1> pos2 = vertex_attrs[e.switch_vertex(*this).vid(*this)].pos;
+        Eigen::Matrix<double, 2, 1> posnew = (pos1 + pos2) * 0.5;
+        cost -=
+            (mesh_parameters.m_displacement->get_error_per_edge(pos1, posnew) +
+             mesh_parameters.m_displacement->get_error_per_edge(posnew, pos2));
         scalar_field.emplace_back(cost);
     }
     writer.add_cell_scalar_field("scalar_field", scalar_field);
@@ -581,7 +590,8 @@ double TriWild::get_accuracy_error(const size_t& vid1, const size_t& vid2) const
 {
     auto v12d = vertex_attrs[vid1].pos;
     auto v22d = vertex_attrs[vid2].pos;
-    get_accuracy_error(v12d, v22d);
+
+    mesh_parameters.m_displacement->get_error_per_edge<double>(v12d, v22d);
 }
 
 double TriWild::get_accuracy_error(const Eigen::Vector2d& p1, const Eigen::Vector2d& p2) const

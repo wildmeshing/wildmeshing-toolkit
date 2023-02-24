@@ -35,7 +35,7 @@ public:
 
     template <class T>
     std::decay_t<T> get(const T& u, const T& v) const;
-    std::pair<int, int> get_raw(const double& u, const double& v) const;
+    std::pair<int, int> get_pixel_index(const double& u, const double& v) const;
     int get_coordinate(const int x, const WrappingMode mode) const;
     bool set(
         const std::function<float(const double&, const double&)>& f,

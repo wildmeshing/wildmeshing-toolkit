@@ -42,12 +42,13 @@ void TriWild::split_all_edges()
         executor.renew_neighbor_tuples = split_renew;
         executor.priority = [&](auto& m, auto _, auto& e) {
             if (m.mesh_parameters.m_accuracy) {
-                auto pos0 = m.vertex_attrs[e.vid(m)].pos;
-                auto pos1 = m.vertex_attrs[e.switch_vertex(m).vid(m)].pos;
-                Eigen::Vector2d posnew = (pos0 + pos1) * 0.5;
-                auto error1 = m.get_accuracy_error(pos0, posnew);
-                auto error2 = m.get_accuracy_error(posnew, pos1);
-                return m.get_accuracy_error(pos0, pos1) - error1 - error2;
+                Eigen::Matrix<double, 2, 1> pos0 = m.vertex_attrs[e.vid(m)].pos;
+                Eigen::Matrix<double, 2, 1> pos1 = m.vertex_attrs[e.switch_vertex(m).vid(m)].pos;
+                Eigen::Matrix<double, 2, 1> posnew = (pos0 + pos1) * 0.5;
+                auto error1 = m.mesh_parameters.m_displacement->get_error_per_edge(pos0, posnew);
+                auto error2 = m.mesh_parameters.m_displacement->get_error_per_edge(posnew, pos1);
+                return m.mesh_parameters.m_displacement->get_error_per_edge(pos0, pos1) - error1 -
+                       error2;
             }
             return m.mesh_parameters.m_get_length(e.vid(m), e.switch_vertex(m).vid(m));
         };
@@ -56,11 +57,11 @@ void TriWild::split_all_edges()
             auto& [weight, op, tup] = ele;
             auto length = m.mesh_parameters.m_get_length(tup.vid(m), tup.switch_vertex(m).vid(m));
             if (m.mesh_parameters.m_accuracy) {
-                auto pos0 = m.vertex_attrs[tup.vid(m)].pos;
-                auto pos1 = m.vertex_attrs[tup.switch_vertex(m).vid(m)].pos;
-                Eigen::Vector2d posnew = (pos0 + pos1) * 0.5;
-                auto error1 = m.get_accuracy_error(pos0, posnew);
-                auto error2 = m.get_accuracy_error(posnew, pos1);
+                Eigen::Matrix<double, 2, 1> pos0 = m.vertex_attrs[tup.vid(m)].pos;
+                Eigen::Matrix<double, 2, 1> pos1 = m.vertex_attrs[tup.switch_vertex(m).vid(m)].pos;
+                Eigen::Matrix<double, 2, 1> posnew = (pos0 + pos1) * 0.5;
+                auto error1 = m.mesh_parameters.m_displacement->get_error_per_edge(pos0, posnew);
+                auto error2 = m.mesh_parameters.m_displacement->get_error_per_edge(posnew, pos1);
                 length -= (error1 + error2);
             }
             if (abs(length - weight) > 1e-10) return false;

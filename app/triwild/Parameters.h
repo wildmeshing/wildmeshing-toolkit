@@ -1,4 +1,5 @@
 #pragma once
+#include <wmtk/utils/Displacement.h>
 #include <wmtk/utils/Image.h>
 #include <wmtk/utils/MipMap.h>
 #include <wmtk/utils/autodiff.h>
@@ -72,7 +73,9 @@ public:
 
     std::function<double(const std::size_t&, const std::size_t&)> m_get_length;
 
-    double m_accuracy_threshold = 0.001;
+    double m_accuracy_threshold = 0.01;
     bool m_accuracy = 0;
+
+    std::unique_ptr<wmtk::DisplacementBicubic> m_displacement;
 };
 } // namespace triwild
