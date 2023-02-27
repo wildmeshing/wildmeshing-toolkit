@@ -1718,8 +1718,8 @@ TEST_CASE("quadrature")
     for (auto e : m.get_edges()) {
         auto length2d = m.get_length2d(e.vid(m), e.switch_vertex(m).vid(m));
         auto length3d = m.get_length3d(e.vid(m), e.switch_vertex(m).vid(m));
-        auto lengthquad = m.(e.vid(m),
-                             e.switch_vertex(m).vid(m)); // should be 0
+        auto lengthquad = m.get_accuracy_error(e.vid(m),
+                                               e.switch_vertex(m).vid(m)); // should be 0
         REQUIRE(lengthquad < 1e-5);
     }
     wmtk::logger().info("============= 10x =============");
