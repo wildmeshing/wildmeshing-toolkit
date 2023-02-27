@@ -38,8 +38,8 @@ struct DisplacementBicubic : public DisplacementImage<DisplacementBicubic>
             m_image.get_raw_image().data(),
             wmtk::get_value(x),
             wmtk::get_value(y),
-            m_wrap_x,
-            m_wrap_y);
+            m_image.get_wrapping_mode_x(),
+            m_image.get_wrapping_mode_y());
         BicubicVector<float> bicubic_coeff = get_bicubic_matrix() * sample_vector;
         return eval_bicubic_coeffs(bicubic_coeff, x, y);
         return x;

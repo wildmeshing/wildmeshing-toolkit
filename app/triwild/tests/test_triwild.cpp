@@ -1699,78 +1699,51 @@ TEST_CASE("quadrature")
 {
     using DScalar = wmtk::EdgeLengthEnergy::DScalar;
     DiffScalarBase::setVariableCount(2);
-    Image image(10, 10);
+    Image image(100, 100);
     auto displacement_double = [](const double& u, const double& v) -> double { return 10; };
-    image.set(displacement_double);
-
-    TriWild m;
-    Eigen::MatrixXd V;
-    Eigen::MatrixXi F;
-    igl::read_triangle_mesh("/home/yunfan/data/input.obj", V, F);
-    m.create_mesh(V, F);
-    m.set_parameters(
-        0.05,
-        image,
-        WrappingMode::MIRROR_REPEAT,
-        EDGE_LEN_TYPE::ACCURACY,
-        ENERGY_TYPE::EDGE_LENGTH,
-        true);
-    for (auto e : m.get_edges()) {
-        auto length2d = m.get_length2d(e.vid(m), e.switch_vertex(m).vid(m));
-        auto length3d = m.get_length3d(e.vid(m), e.switch_vertex(m).vid(m));
-        auto lengthquad = m.get_accuracy_error(e.vid(m),
-                                               e.switch_vertex(m).vid(m)); // should be 0
-        REQUIRE(lengthquad < 1e-5);
+    image.set(displacement_double, WrappingMode::MIRROR_REPEAT, WrappingMode::MIRROR_REPEAT);
+    std::mt19937 rand_generator;
+    std::uniform_real_distribution<double> rand_dist(0.1, 0.9); // not too close to the boundary
+    DisplacementBicubic displ = DisplacementBicubic(image);
+    for (int i = 0; i < 10; i++) {
+        Eigen::Vector2d p1, p2;
+        p1 = Eigen::Vector2d(rand_dist(rand_generator), rand_dist(rand_generator));
+        p2 = Eigen::Vector2d(rand_dist(rand_generator), rand_dist(rand_generator));
+        REQUIRE(displ.get_error_per_edge(p1, p2) < 1e-7);
     }
     wmtk::logger().info("============= 10x =============");
 
-    auto displacement_double2 = [](const DScalar& u, const DScalar& v) -> DScalar {
-        return DScalar(10) * u; // sin(M_PI * u);
+    auto displacement_double2 = [](const double& u, const double& v) -> float {
+        return static_cast<float>(10 * u); // sin(M_PI * u);
     };
-    m.set_parameters(
-        0.05,
-        displacement_double2,
-        EDGE_LEN_TYPE::ACCURACY,
-        ENERGY_TYPE::EDGE_LENGTH,
-        true);
-    for (auto e : m.get_edges()) {
-        auto length2d = m.get_length2d(e.vid(m), e.switch_vertex(m).vid(m));
-        auto length3d = m.get_length3d(e.vid(m), e.switch_vertex(m).vid(m));
-        // auto lengthquad = m.get_accuracy_error(
-        //     m.vertex_attrs[e.vid(m)].pos,
-        //     m.vertex_attrs[e.switch_vertex(m).vid(m)].pos);
-        if (m.get_accuracy_error(
-                m.vertex_attrs[e.vid(m)].pos,
-                m.vertex_attrs[e.switch_vertex(m).vid(m)].pos) !=
-            m.get_accuracy_error(e.vid(m), e.switch_vertex(m).vid(m)))
-            wmtk::logger().info(
-                "different points are {} {}",
-                m.vertex_attrs[e.vid(m)].pos,
-                m.vertex_attrs[e.switch_vertex(m).vid(m)].pos);
-        // REQUIRE(lengthquad < 1e-8);
+    image.set(displacement_double2, WrappingMode::MIRROR_REPEAT, WrappingMode::MIRROR_REPEAT);
+    displ.set_image(image);
+    for (int i = 0; i < 10; i++) {
+        Eigen::Vector2d p1, p2;
+        p1 = Eigen::Vector2d(rand_dist(rand_generator), rand_dist(rand_generator));
+        p2 = Eigen::Vector2d(rand_dist(rand_generator), rand_dist(rand_generator));
+        auto edge_error = displ.get_error_per_edge(p1, p2);
+        REQUIRE(edge_error < 1e-6);
     }
 
     wmtk::logger().info("============= sin(PI * u) =============");
 
-    auto displacement_double3 = [](const DScalar& u, const DScalar& v) -> DScalar {
-        return sin(M_PI * u);
+    auto displacement_double3 = [](const double& u, const double& v) -> float {
+        return static_cast<float>(sin(M_PI * u));
     };
-    m.set_parameters(
-        0.05,
-        displacement_double3,
-        EDGE_LEN_TYPE::ACCURACY,
-        ENERGY_TYPE::EDGE_LENGTH,
-        true);
-    for (auto e : m.get_edges()) {
-        auto length2d = m.get_length2d(e.vid(m), e.switch_vertex(m).vid(m));
-        auto length3d = m.get_length3d(e.vid(m), e.switch_vertex(m).vid(m));
-        auto lengthquad = m.get_accuracy_error(e.vid(m), e.switch_vertex(m).vid(m));
-        wmtk::logger().info("2d {} 3d {} lengthquad {}", length2d, length3d, lengthquad);
-    }
+    image.set(displacement_double3, WrappingMode::MIRROR_REPEAT, WrappingMode::MIRROR_REPEAT);
+    displ.set_image(image);
     Eigen::Vector2d v1, v2;
-    v1 << 0., 0.;
-    v2 << 1., 0.;
-    REQUIRE(abs(m.get_accuracy_error(v1, v2) - 0.636619772367581) < 1e-8);
+    v1 << 0.1, 0.;
+    v2 << 0.9, 0.;
+    auto edge_error = displ.get_error_per_edge(v1, v2);
+    wmtk::logger().info("final edge error {} ", edge_error);
+    REQUIRE(abs(edge_error - 0.358247787412568) < 1e-8);
+    v1 = Eigen::Vector2d(0, 0.1);
+    v2 = Eigen::Vector2d(0, 0.9);
+    edge_error = displ.get_error_per_edge(v1, v2);
+    wmtk::logger().info("final edge error {} ", edge_error);
+    REQUIRE(abs(edge_error) < 1e-8);
 }
 
 TEST_CASE("exact length")

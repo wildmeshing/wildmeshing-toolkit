@@ -27,19 +27,15 @@ class DisplacementImage : public Displacement
 {
 protected:
     wmtk::Image m_image;
-    ::WrappingMode m_wrap_x = ::WrappingMode::MIRROR_REPEAT;
-    ::WrappingMode m_wrap_y = ::WrappingMode::MIRROR_REPEAT;
-    // ...
 
 public:
-    DisplacementImage(const wmtk::Image img, const WrappingMode wrap_x, const WrappingMode wrap_y)
+    DisplacementImage(const wmtk::Image img)
         : m_image(img)
-        , m_wrap_x(wrap_x)
-        , m_wrap_y(wrap_y)
     {
         assert(m_image.width() == m_image.height());
     }
 
+public:
     double get(double x, double y) const override
     {
         return static_cast<const Derived*>(this)->get(x, y);
@@ -49,6 +45,7 @@ public:
     {
         return static_cast<const Derived*>(this)->get(x, y);
     }
+    void set_image(const Image& image) { m_image = image; }
 
 public:
     template <class T, int order>
@@ -101,7 +98,8 @@ public:
         // get the pixel index of p1 and p2
         auto get_coordinate = [&](const T& x, const T& y) -> std::pair<int, int> {
             auto [xx, yy] = m_image.get_pixel_index(get_value(x), get_value(y));
-            return {m_image.get_coordinate(xx, m_wrap_x), m_image.get_coordinate(yy, m_wrap_y)};
+            return {m_image.get_coordinate(xx, m_image.get_wrapping_mode_x()),
+                    m_image.get_coordinate(yy, m_image.get_wrapping_mode_y())};
         };
         auto [xx1, yy1] = get_coordinate(p1(0), p1(1));
         auto [xx2, yy2] = get_coordinate(p2(0), p2(1));
@@ -121,8 +119,8 @@ public:
             edge_verts.row(0) << tmp_p1(0), tmp_p1(1), tmp_v1z;
             edge_verts.row(1) << tmp_p2(0), tmp_p2(1), tmp_v2z;
             wmtk::LineQuadrature quad;
-            auto displaced_pixel_error = quadrature_error_1pixel_eval<T, 5>(edge_verts, quad);
-            error += displaced_pixel_error;
+            auto displaced_error_per_pixel = quadrature_error_1pixel_eval<T, 5>(edge_verts, quad);
+            error += displaced_error_per_pixel;
         }
         assert(error >= 0);
         return error;
