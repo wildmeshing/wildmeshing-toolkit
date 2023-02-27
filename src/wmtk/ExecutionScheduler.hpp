@@ -217,7 +217,7 @@ struct ExecutePass
                     op.name(),
                     [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
                         spdlog::info("Running {}!", MyOpType().name());
-                        auto retdata = MyOpType()(t, m);
+                        auto retdata = MyOpType()(m,t);
                         if (retdata.success) {
                             spdlog::info("Operation {} succeeded!", MyOpType().name());
                             return retdata.new_tris;
@@ -323,7 +323,7 @@ public:
                         } // this can encode, in qslim, recompute(energy) == weight.
                         std::vector<std::pair<Op, Tuple>> renewed_tuples;
                         if constexpr (std::is_base_of<wmtk::TriMesh, AppMesh>::value) {
-                            auto ret_data = (*new_edit_operation_maps[op])(tup, m);
+                            auto ret_data = (*new_edit_operation_maps[op])( m, tup);
                             if (ret_data.success) {
                                 renewed_tuples = renew_neighbor_tuples(m, op, ret_data.new_tris);
                                 cnt_success++;

@@ -12,31 +12,31 @@ using namespace app::sec;
 
 namespace {
 class ShortestEdgeCollapseOperation : public wmtk::TriMeshOperationShim<
-                                                  ShortestEdgeCollapse,
-                                                  ShortestEdgeCollapseOperation,
-                                                  wmtk::TriMeshEdgeCollapseOperation>
+                                          ShortestEdgeCollapse,
+                                          ShortestEdgeCollapseOperation,
+                                          wmtk::TriMeshEdgeCollapseOperation>
 {
 public:
-    ExecuteReturnData execute(const Tuple& t, ShortestEdgeCollapse& m)
+    ExecuteReturnData execute(ShortestEdgeCollapse& m, const Tuple& t)
     {
-        return wmtk::TriMeshEdgeCollapseOperation::execute(t, m);
+        return wmtk::TriMeshEdgeCollapseOperation::execute(m, t);
     }
-    bool before_check(const Tuple& t, ShortestEdgeCollapse& m)
+    bool before(ShortestEdgeCollapse& m, const Tuple& t)
     {
-        return wmtk::TriMeshEdgeCollapseOperation::before_check(t, m) && m.collapse_edge_before(t);
+        return wmtk::TriMeshEdgeCollapseOperation::before(m, t) && m.collapse_edge_before(t);
     }
-    bool after_check(const ExecuteReturnData& ret_data, ShortestEdgeCollapse& m)
+    bool after(ShortestEdgeCollapse& m, ExecuteReturnData& ret_data)
     {
-        return wmtk::TriMeshEdgeCollapseOperation::after_check(ret_data, m) &&
+        return wmtk::TriMeshEdgeCollapseOperation::after(m, ret_data) &&
                m.collapse_edge_after(ret_data.tuple);
     }
-    bool invariants(const ExecuteReturnData& ret_data, ShortestEdgeCollapse& m)
+    bool invariants(ShortestEdgeCollapse& m, ExecuteReturnData& ret_data)
     {
-        return wmtk::TriMeshEdgeCollapseOperation::invariants(ret_data, m) &&
+        return wmtk::TriMeshEdgeCollapseOperation::invariants(m, ret_data) &&
                m.invariants(ret_data.new_tris);
     }
 };
-}
+} // namespace
 
 ShortestEdgeCollapse::ShortestEdgeCollapse(
     std::vector<Eigen::Vector3d> _m_vertex_positions,

@@ -148,11 +148,11 @@ struct fmt::formatter<TestVec2>
 
 struct SimpleMeshSplitEdgeOperation : public wmtk::TriMeshSplitEdgeOperation
 {
-    bool after_check(const ExecuteReturnData& ret_data, wmtk::TriMesh& m) override
+    bool after(wmtk::TriMesh& m, ExecuteReturnData& ret_data) override
     {
         auto& sm = dynamic_cast<SimpleMesh&>(m);
-        auto [ta, tb] = original_endpoints(ret_data.tuple, m);
-        auto tn = new_vertex(ret_data.tuple, m);
+        auto [ta, tb] = original_endpoints(m, ret_data.tuple);
+        auto tn = new_vertex(m, ret_data.tuple);
         const auto& a = sm.vertices[ta.vid(m)];
         const auto& b = sm.vertices[tb.vid(m)];
 
@@ -512,7 +512,7 @@ TEST_CASE("dynamic_boundary_updates", "[test_2d_operation]")
             REQUIRE(edge.is_valid(final_mesh));
             std::string op_name = "edge_collapse";
             spdlog::info("Performing {}", op_name);
-            for(auto& [k,v]: scheduler.edit_operation_maps) {
+            for (auto& [k, v] : scheduler.edit_operation_maps) {
                 spdlog::info("{}", k);
             }
             auto ret = scheduler.edit_operation_maps[op_name](final_mesh, edge);

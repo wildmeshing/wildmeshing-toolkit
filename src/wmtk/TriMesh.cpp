@@ -19,16 +19,14 @@ using namespace wmtk;
 
 void TriMesh::copy_connectivity(const TriMesh& o)
 {
-
-    //auto l = std::scoped_lock(vertex_connectivity_lock, tri_connectivity_lock, o.vertex_connectivity_lock, o.tri_connectivity_lock);
-    // explicitly make sure that the connectivity data is copied and sized properly
+    // auto l = std::scoped_lock(vertex_connectivity_lock, tri_connectivity_lock,
+    // o.vertex_connectivity_lock, o.tri_connectivity_lock);
+    //  explicitly make sure that the connectivity data is copied and sized properly
     m_vertex_connectivity = o.m_vertex_connectivity;
     m_tri_connectivity = o.m_tri_connectivity;
     current_vert_size.store(o.current_vert_size.load());
-    current_tri_size.store( o.current_tri_size.load());
+    current_tri_size.store(o.current_tri_size.load());
     m_vertex_mutex.grow_to_at_least(o.m_vertex_connectivity.size());
-
-
 }
 TriMesh::TriMesh() {}
 TriMesh::~TriMesh() {}
@@ -39,13 +37,14 @@ void TriMesh::Tuple::update_hash(const TriMesh& m)
     m_hash = m.m_tri_connectivity[m_fid].hash;
 }
 
-std::string TriMesh::Tuple::info() const {
+std::string TriMesh::Tuple::info() const
+{
     return fmt::format("tuple: v{} e{} f{} (h{})", m_vid, m_eid, m_fid, m_hash);
 }
 
 void TriMesh::Tuple::print_info() const
 {
-    logger().trace("{}",info());
+    logger().trace("{}", info());
 }
 
 size_t TriMesh::Tuple::eid_unsafe(const TriMesh& m) const
@@ -449,7 +448,7 @@ TriMesh::Tuple TriMesh::split_edge_new(const Tuple& t, std::vector<Tuple>& new_t
 bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
 {
     TriMeshSplitEdgeOperation op;
-    TriMeshOperation::ExecuteReturnData ret_data = op(t, *this);
+    TriMeshOperation::ExecuteReturnData ret_data = op(*this, t);
     new_tris = std::move(ret_data.new_tris);
     return ret_data.success;
 }
@@ -573,7 +572,7 @@ TriMesh::Tuple TriMesh::collapse_edge_new(const Tuple& loc0, std::vector<Tuple>&
 bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
 {
     TriMeshEdgeCollapseOperation op;
-    TriMeshOperation::ExecuteReturnData ret_data = op(loc0, *this);
+    TriMeshOperation::ExecuteReturnData ret_data = op(*this, loc0);
     new_tris = std::move(ret_data.new_tris);
     return ret_data.success;
 }
@@ -582,7 +581,7 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
 bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
 {
     TriMeshSwapEdgeOperation op;
-    TriMeshOperation::ExecuteReturnData ret_data = op(t, *this);
+    TriMeshOperation::ExecuteReturnData ret_data = op(*this, t);
     new_tris = std::move(ret_data.new_tris);
     return ret_data.success;
 }
@@ -591,7 +590,7 @@ bool TriMesh::smooth_vertex(const Tuple& t)
 {
     ZoneScoped;
     TriMeshSmoothVertexOperation op;
-    TriMeshOperation::ExecuteReturnData ret_data = op(t, *this);
+    TriMeshOperation::ExecuteReturnData ret_data = op(*this, t);
     return ret_data.success;
 }
 #endif
@@ -599,7 +598,7 @@ bool TriMesh::smooth_vertex(const Tuple& t)
 void TriMesh::consolidate_mesh()
 {
     TriMeshConsolidateOperation op;
-    op(TriMesh::Tuple{}, *this);
+    op(*this, TriMesh::Tuple{});
 }
 
 
@@ -886,7 +885,7 @@ size_t TriMesh::get_next_empty_slot_v()
 #if !defined(USE_ONLY_OPERATIONS)
 bool TriMesh::swap_edge_before(const Tuple& t)
 {
-    TriMeshSwapEdgeOperation{}.before_check();
+    TriMeshSwapEdgeOperation{}.before();
 }
 #endif
 
@@ -894,7 +893,7 @@ bool TriMesh::swap_edge_before(const Tuple& t)
 // link check, prerequisite for edge collapse
 bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
 {
-    return TriMeshEdgeCollapseOperation::check_link_condition(edge,*this);
+    return TriMeshEdgeCollapseOperation::check_link_condition(*this, edge);
 }
 
 int TriMesh::release_vertex_mutex_in_stack()

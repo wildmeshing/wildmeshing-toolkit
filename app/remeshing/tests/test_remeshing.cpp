@@ -88,10 +88,10 @@ TEST_CASE("test_swap", "[test_remeshing]")
         if (cnt > 200) break;
         if (!edge.is_valid(m)) continue;
         if (!(edge.switch_face(m)).has_value()) {
-            REQUIRE_FALSE(swap_op(edge,m).success);
+            REQUIRE_FALSE(swap_op(m, edge).success);
             continue;
         }
-        REQUIRE(swap_op(edge,m).success);
+        REQUIRE(swap_op(m, edge).success);
         cnt++;
     }
     REQUIRE(m.check_mesh_connectivity_validity());
@@ -301,7 +301,7 @@ TEST_CASE("swap orient", "[test_remeshing]")
     auto edges = m.get_edges();
     for (auto e : edges) {
         if (!m.is_boundary_edge(e)) {
-            swap_op(e,m);
+            swap_op(m,e);
             break;
         }
     }

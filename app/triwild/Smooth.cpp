@@ -24,23 +24,30 @@ class TriWildSmoothVertexOperation : public wmtk::TriMeshOperationShim<
                                                   wmtk::TriMeshSmoothVertexOperation>
 {
 public:
-    ExecuteReturnData execute(const Tuple& t, TriWild& m)
+    ExecuteReturnData execute(TriWild& m, const Tuple& t)
     {
-        return wmtk::TriMeshSmoothVertexOperation::execute(t, m);
+        return wmtk::TriMeshSmoothVertexOperation::execute(m, t);
     }
-    bool before_check(const Tuple& t, TriWild& m)
+    bool before(TriWild& m, const Tuple& t)
     {
-        return wmtk::TriMeshSmoothVertexOperation::before_check(t, m) && m.smooth_before(t);
+        if (wmtk::TriMeshSmoothVertexOperation::before(m, t)) {
+            return  m.smooth_before(t);
+        }
+        return false;
     }
-    bool after_check(const ExecuteReturnData& ret_data, TriWild& m)
+    bool after(TriWild& m, ExecuteReturnData& ret_data)
     {
-        return wmtk::TriMeshSmoothVertexOperation::after_check(ret_data, m) &&
-               m.smooth_after(ret_data.tuple);
+        if (wmtk::TriMeshSmoothVertexOperation::after(m, ret_data)) {
+            ret_data.success |= m.smooth_after(ret_data.tuple);
+        }
+        return ret_data;
     }
-    bool invariants(const ExecuteReturnData& ret_data, TriWild& m)
+    bool invariants(TriWild& m, ExecuteReturnData& ret_data)
     {
-        return wmtk::TriMeshSmoothVertexOperation::invariants(ret_data, m) &&
-               m.invariants(ret_data.new_tris);
+        if (wmtk::TriMeshSmoothVertexOperation::invariants(m, ret_data)) {
+            ret_data.success |= m.invariants(ret_data.new_tris);
+        }
+        return ret_data;
     }
 };
 

@@ -8,23 +8,30 @@ class UniformRemeshingEdgeCollapseOperation : public wmtk::TriMeshOperationShim<
                                                   wmtk::TriMeshEdgeCollapseOperation>
 {
 public:
-    ExecuteReturnData execute(const Tuple& t, UniformRemeshing& m)
+    ExecuteReturnData execute(UniformRemeshing& m, const Tuple& t)
     {
-        return wmtk::TriMeshEdgeCollapseOperation::execute(t, m);
+        return wmtk::TriMeshEdgeCollapseOperation::execute(m, t);
     }
-    bool before_check(const Tuple& t, UniformRemeshing& m)
+    bool before(UniformRemeshing& m, const Tuple& t)
     {
-        return wmtk::TriMeshEdgeCollapseOperation::before_check(t, m) && m.collapse_edge_before(t);
+        if (wmtk::TriMeshEdgeCollapseOperation::before(m, t)) {
+            return  m.collapse_edge_before(t);
+        }
+        return false;
     }
-    bool after_check(const ExecuteReturnData& ret_data, UniformRemeshing& m)
+    bool after(UniformRemeshing& m, ExecuteReturnData& ret_data)
     {
-        return wmtk::TriMeshEdgeCollapseOperation::after_check(ret_data, m) &&
-               m.collapse_edge_after(ret_data.tuple);
+        if (wmtk::TriMeshEdgeCollapseOperation::after(m, ret_data)) {
+            ret_data.success &= m.collapse_edge_after(ret_data.tuple);
+        }
+        return ret_data;
     }
-    bool invariants(const ExecuteReturnData& ret_data, UniformRemeshing& m)
+    bool invariants(UniformRemeshing& m, ExecuteReturnData& ret_data)
     {
-        return wmtk::TriMeshEdgeCollapseOperation::invariants(ret_data, m) &&
-               m.invariants(ret_data.new_tris);
+        if (wmtk::TriMeshEdgeCollapseOperation::invariants(m, ret_data)) {
+            ret_data.success &= m.invariants(ret_data.new_tris);
+        }
+        return ret_data;
     }
 };
 
@@ -34,23 +41,30 @@ class UniformRemeshingSplitEdgeOperation : public wmtk::TriMeshOperationShim<
                                                wmtk::TriMeshSplitEdgeOperation>
 {
 public:
-    ExecuteReturnData execute(const Tuple& t, UniformRemeshing& m)
+    ExecuteReturnData execute(UniformRemeshing& m, const Tuple& t)
     {
-        return wmtk::TriMeshSplitEdgeOperation::execute(t, m);
+        return wmtk::TriMeshSplitEdgeOperation::execute(m, t);
     }
-    bool before_check(const Tuple& t, UniformRemeshing& m)
+    bool before(UniformRemeshing& m, const Tuple& t)
     {
-        return wmtk::TriMeshSplitEdgeOperation::before_check(t, m) && m.split_edge_before(t);
+        if (wmtk::TriMeshSplitEdgeOperation::before(m, t)) {
+            return  m.split_edge_before(t);
+        }
+        return false;
     }
-    bool after_check(const ExecuteReturnData& ret_data, UniformRemeshing& m)
+    bool after(UniformRemeshing& m, ExecuteReturnData& ret_data)
     {
-        return wmtk::TriMeshSplitEdgeOperation::after_check(ret_data, m) &&
-               m.split_edge_after(ret_data.tuple);
+        if (wmtk::TriMeshSplitEdgeOperation::after(m, ret_data)) {
+            ret_data.success |= m.split_edge_after(ret_data.tuple);
+        }
+        return ret_data;
     }
-    bool invariants(const ExecuteReturnData& ret_data, UniformRemeshing& m)
+    bool invariants(UniformRemeshing& m, ExecuteReturnData& ret_data)
     {
-        return wmtk::TriMeshSplitEdgeOperation::invariants(ret_data, m) &&
-               m.invariants(ret_data.new_tris);
+        if (wmtk::TriMeshSplitEdgeOperation::invariants(m, ret_data)) {
+            ret_data.success |= m.invariants(ret_data.new_tris);
+        }
+        return ret_data;
     }
 };
 
@@ -60,23 +74,30 @@ class UniformRemeshingSwapEdgeOperation : public wmtk::TriMeshOperationShim<
                                               wmtk::TriMeshSwapEdgeOperation>
 {
 public:
-    ExecuteReturnData execute(const Tuple& t, UniformRemeshing& m)
+    ExecuteReturnData execute(UniformRemeshing& m, const Tuple& t)
     {
-        return wmtk::TriMeshSwapEdgeOperation::execute(t, m);
+        return wmtk::TriMeshSwapEdgeOperation::execute(m, t);
     }
-    bool before_check(const Tuple& t, UniformRemeshing& m)
+    bool before(UniformRemeshing& m, const Tuple& t)
     {
-        return wmtk::TriMeshSwapEdgeOperation::before_check(t, m) && m.swap_edge_before(t);
+        if (wmtk::TriMeshSwapEdgeOperation::before(m, t)) {
+            return  m.swap_edge_before(t);
+        }
+        return false;
     }
-    bool after_check(const ExecuteReturnData& ret_data, UniformRemeshing& m)
+    bool after(UniformRemeshing& m, ExecuteReturnData& ret_data)
     {
-        return wmtk::TriMeshSwapEdgeOperation::after_check(ret_data, m) &&
-               m.swap_edge_after(ret_data.tuple);
+        if (wmtk::TriMeshSwapEdgeOperation::after(m, ret_data)) {
+            ret_data.success |= m.swap_edge_after(ret_data.tuple);
+        }
+        return ret_data;
     }
-    bool invariants(const ExecuteReturnData& ret_data, UniformRemeshing& m)
+    bool invariants(UniformRemeshing& m, ExecuteReturnData& ret_data)
     {
-        return wmtk::TriMeshSwapEdgeOperation::invariants(ret_data, m) &&
-               m.invariants(ret_data.new_tris);
+        if (wmtk::TriMeshSwapEdgeOperation::invariants(m, ret_data)) {
+            ret_data.success |= m.invariants(ret_data.new_tris);
+        }
+        return ret_data;
     }
 };
 
@@ -87,23 +108,30 @@ class UniformRemeshingSmoothVertexOperation : public wmtk::TriMeshOperationShim<
                                                   wmtk::TriMeshSmoothVertexOperation>
 {
 public:
-    ExecuteReturnData execute(const Tuple& t, UniformRemeshing& m)
+    ExecuteReturnData execute(UniformRemeshing& m, const Tuple& t)
     {
-        return wmtk::TriMeshSmoothVertexOperation::execute(t, m);
+        return wmtk::TriMeshSmoothVertexOperation::execute(m, t);
     }
-    bool before_check(const Tuple& t, UniformRemeshing& m)
+    bool before(UniformRemeshing& m, const Tuple& t)
     {
-        return wmtk::TriMeshSmoothVertexOperation::before_check(t, m) && m.smooth_before(t);
+        if (wmtk::TriMeshSmoothVertexOperation::before(m, t)) {
+            return  m.smooth_before(t);
+        }
+        return false;
     }
-    bool after_check(const ExecuteReturnData& ret_data, UniformRemeshing& m)
+    bool after(UniformRemeshing& m, ExecuteReturnData& ret_data)
     {
-        return wmtk::TriMeshSmoothVertexOperation::after_check(ret_data, m) &&
-               m.smooth_after(ret_data.tuple);
+        if (wmtk::TriMeshSmoothVertexOperation::after(m, ret_data)) {
+            ret_data.success |= m.smooth_after(ret_data.tuple);
+        }
+        return ret_data;
     }
-    bool invariants(const ExecuteReturnData& ret_data, UniformRemeshing& m)
+    bool invariants(UniformRemeshing& m, ExecuteReturnData& ret_data)
     {
-        return wmtk::TriMeshSmoothVertexOperation::invariants(ret_data, m) &&
-               m.invariants(ret_data.new_tris);
+        if (wmtk::TriMeshSmoothVertexOperation::invariants(m, ret_data)) {
+            ret_data.success |= m.invariants(ret_data.new_tris);
+        }
+        return ret_data;
     }
 };
 

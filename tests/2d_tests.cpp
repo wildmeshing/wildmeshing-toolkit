@@ -2,9 +2,9 @@
 #include <wmtk/TriMesh.h>
 
 
-#include <wmtk/TriMeshOperation.h>
 #include <igl/read_triangle_mesh.h>
 #include <stdlib.h>
+#include <wmtk/TriMeshOperation.h>
 #include <catch2/catch.hpp>
 #include <highfive/H5File.hpp>
 #include <iostream>
@@ -181,21 +181,21 @@ TEST_CASE("random 10 switches on 2 traingles", "[tuple_operation]")
     }
 }
 
-TriMesh::Tuple double_switch_vertex(TriMesh::Tuple t, TriMesh& m)
+TriMesh::Tuple double_switch_vertex(TriMesh& m, TriMesh::Tuple t)
 {
     TriMesh::Tuple t_after = t.switch_vertex(m);
     t_after = t_after.switch_vertex(m);
     return t_after;
 }
 
-TriMesh::Tuple double_switch_edge(TriMesh::Tuple t, TriMesh& m)
+TriMesh::Tuple double_switch_edge(TriMesh& m, TriMesh::Tuple t)
 {
     TriMesh::Tuple t_after = t.switch_edge(m);
     t_after = t_after.switch_edge(m);
     return t_after;
 }
 
-TriMesh::Tuple double_switch_face(TriMesh::Tuple t, TriMesh& m)
+TriMesh::Tuple double_switch_face(TriMesh& m, TriMesh::Tuple t)
 {
     TriMesh::Tuple t_after = t.switch_face(m).value_or(t);
     t_after = t_after.switch_face(m).value_or(t);
@@ -224,11 +224,11 @@ TEST_CASE("double switches is identity", "[tuple_operation]")
         auto vertices_tuples = m.get_vertices();
         for (size_t i = 0; i < vertices_tuples.size(); i++) {
             TriMesh::Tuple v_tuple = vertices_tuples[i];
-            v_tuple_after = double_switch_vertex(v_tuple, m);
+            v_tuple_after = double_switch_vertex(m, v_tuple);
             REQUIRE(tuple_equal(m, v_tuple_after, v_tuple));
-            v_tuple_after = double_switch_edge(v_tuple, m);
+            v_tuple_after = double_switch_edge(m, v_tuple);
             REQUIRE(tuple_equal(m, v_tuple_after, v_tuple));
-            v_tuple_after = double_switch_face(v_tuple, m);
+            v_tuple_after = double_switch_face(m, v_tuple);
             REQUIRE(tuple_equal(m, v_tuple_after, v_tuple));
         }
     }
@@ -239,11 +239,11 @@ TEST_CASE("double switches is identity", "[tuple_operation]")
         auto edges_tuples = m.get_edges();
         for (size_t i = 0; i < edges_tuples.size(); i++) {
             TriMesh::Tuple e_tuple = edges_tuples[i];
-            e_tuple_after = double_switch_vertex(e_tuple, m);
+            e_tuple_after = double_switch_vertex(m, e_tuple);
             REQUIRE(tuple_equal(m, e_tuple_after, e_tuple));
-            e_tuple_after = double_switch_edge(e_tuple, m);
+            e_tuple_after = double_switch_edge(m, e_tuple);
             REQUIRE(tuple_equal(m, e_tuple_after, e_tuple));
-            e_tuple_after = double_switch_face(e_tuple, m);
+            e_tuple_after = double_switch_face(m, e_tuple);
             REQUIRE(tuple_equal(m, e_tuple_after, e_tuple));
         }
     }
@@ -254,11 +254,11 @@ TEST_CASE("double switches is identity", "[tuple_operation]")
         auto faces_tuples = m.get_faces();
         for (size_t i = 0; i < faces_tuples.size(); i++) {
             TriMesh::Tuple f_tuple = faces_tuples[i];
-            f_tuple_after = double_switch_vertex(f_tuple, m);
+            f_tuple_after = double_switch_vertex(m, f_tuple);
             REQUIRE(tuple_equal(m, f_tuple_after, f_tuple));
-            f_tuple_after = double_switch_edge(f_tuple, m);
+            f_tuple_after = double_switch_edge(m, f_tuple);
             REQUIRE(tuple_equal(m, f_tuple_after, f_tuple));
-            f_tuple_after = double_switch_face(f_tuple, m);
+            f_tuple_after = double_switch_face(m, f_tuple);
             REQUIRE(tuple_equal(m, f_tuple_after, f_tuple));
         }
     }
@@ -382,24 +382,26 @@ TEST_CASE("edge_collapse", "[test_2d_operation]")
     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 3, 2}}, {{4, 1, 0}}, {{0, 2, 5}}};
     SECTION("rollback")
     {
-        class NoCollapseCollapseOperation: public wmtk::TriMeshEdgeCollapseOperation {
-            bool before_check(const TriMesh::Tuple& loc, TriMesh& m) override { return true; };
-            bool after_check(const ExecuteReturnData& dat, TriMesh& m) override { return false; };
+        class NoCollapseCollapseOperation : public wmtk::TriMeshEdgeCollapseOperation
+        {
+            bool before(TriMesh&, const TriMesh::Tuple&) override { return true; };
+            bool after(TriMesh&, ExecuteReturnData&) override { return false; };
         } collapse_op;
         TriMesh m;
-        //auto m = NoCollapseMesh();
+        // auto m = NoCollapseMesh();
         m.create_mesh(6, tris);
         const auto tuple = TriMesh::Tuple(1, 0, 0, m);
         REQUIRE(tuple.is_valid(m));
         std::vector<TriMesh::Tuple> dummy;
-        REQUIRE_FALSE(collapse_op(tuple,m).success);
+        REQUIRE_FALSE(collapse_op(m, tuple).success);
         REQUIRE(tuple.is_valid(m));
     }
     SECTION("collapse")
     {
-        class AllCollapseCollapseOperation: public wmtk::TriMeshEdgeCollapseOperation {
-            bool before_check(const TriMesh::Tuple& loc, TriMesh& m) override { return true; };
-            bool after_check(const ExecuteReturnData& dat, TriMesh& m) override { return true; };
+        class AllCollapseCollapseOperation : public wmtk::TriMeshEdgeCollapseOperation
+        {
+            bool before(TriMesh&, const TriMesh::Tuple&) override { return true; };
+            bool after(TriMesh&, ExecuteReturnData&) override { return true; };
         } collapse_op;
         TriMesh m;
 
@@ -408,7 +410,7 @@ TEST_CASE("edge_collapse", "[test_2d_operation]")
 
         REQUIRE(tuple.is_valid(m));
 
-        REQUIRE(collapse_op(tuple ,m).success);// fail at check manifold
+        REQUIRE(collapse_op(m, tuple).success); // fail at check manifold
         REQUIRE_FALSE(tuple.is_valid(m));
     }
 }
@@ -424,7 +426,7 @@ TEST_CASE("swap_operation", "[test_2d_operation]")
         TriMesh::Tuple edge(0, 2, 0, m);
         assert(edge.is_valid(m));
 
-        REQUIRE(swap_op(edge,m).success);
+        REQUIRE(swap_op(m, edge).success);
     }
     SECTION("swap_boundary")
     {
@@ -434,7 +436,7 @@ TEST_CASE("swap_operation", "[test_2d_operation]")
         TriMesh::Tuple edge(0, 1, 0, m);
         assert(edge.is_valid(m));
 
-        REQUIRE_FALSE(swap_op(edge,m).success);
+        REQUIRE_FALSE(swap_op(m, edge).success);
     }
 
     SECTION("swap_on_connected_vertices")
@@ -444,7 +446,7 @@ TEST_CASE("swap_operation", "[test_2d_operation]")
         m2.create_mesh(4, tris);
         TriMesh::Tuple edge(0, 2, 0, m2);
         assert(edge.is_valid(m2));
-        REQUIRE_FALSE(swap_op(edge,m2).success);
+        REQUIRE_FALSE(swap_op(m2, edge).success);
     }
 
     SECTION("swap 4 times retain start tuple")
@@ -457,22 +459,22 @@ TEST_CASE("swap_operation", "[test_2d_operation]")
 
         wmtk::TriMeshOperation::ExecuteReturnData retdata;
 
-        retdata = swap_op(edge,m3);
+        retdata = swap_op(m3, edge);
         REQUIRE(retdata.success);
         auto new_t = retdata.new_tris[0];
         assert(new_t.is_valid(m3));
 
-        retdata = swap_op(new_t,m3);
+        retdata = swap_op(m3, new_t);
         REQUIRE(retdata.success);
         new_t = retdata.new_tris[0];
         assert(new_t.is_valid(m3));
 
-        retdata = swap_op(new_t,m3);
+        retdata = swap_op(m3, new_t);
         REQUIRE(retdata.success);
         new_t = retdata.new_tris[0];
         assert(new_t.is_valid(m3));
 
-        retdata = swap_op(new_t,m3);
+        retdata = swap_op(m3, new_t);
         REQUIRE(retdata.success);
         new_t = retdata.new_tris[0];
         REQUIRE(new_t.vid(m3) == 0);
@@ -483,7 +485,6 @@ TEST_CASE("swap_operation", "[test_2d_operation]")
 
 TEST_CASE("split_operation", "[test_2d_operation]")
 {
-
     wmtk::TriMeshSplitEdgeOperation split_op;
     TriMesh m;
     SECTION("1_tri_split")
@@ -493,7 +494,7 @@ TEST_CASE("split_operation", "[test_2d_operation]")
         auto edges = m.get_edges();
         TriMesh::Tuple edge(0, 1, 0, m);
         assert(edge.is_valid(m));
-        REQUIRE(split_op(edge,m).success);
+        REQUIRE(split_op(m, edge).success);
         REQUIRE_FALSE(edges[0].is_valid(m));
     }
     SECTION("2_tris_split")
@@ -503,9 +504,8 @@ TEST_CASE("split_operation", "[test_2d_operation]")
         auto edges = m.get_edges();
         TriMesh::Tuple edge(1, 0, 0, m);
         assert(edge.is_valid(m));
-        REQUIRE(split_op(edge,m).success);
+        REQUIRE(split_op(m, edge).success);
         for (auto e : edges) REQUIRE_FALSE(e.is_valid(m));
     }
 }
-
 

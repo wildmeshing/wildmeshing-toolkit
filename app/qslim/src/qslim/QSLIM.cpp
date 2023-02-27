@@ -18,23 +18,30 @@ class QSLIMEdgeCollapseOperation : public wmtk::TriMeshOperationShim<
                                                   wmtk::TriMeshEdgeCollapseOperation>
 {
 public:
-    ExecuteReturnData execute(const Tuple& t, QSLIM& m)
+    ExecuteReturnData execute(QSLIM& m, const Tuple& t)
     {
-        return wmtk::TriMeshEdgeCollapseOperation::execute(t, m);
+        return wmtk::TriMeshEdgeCollapseOperation::execute(m, t);
     }
-    bool before_check(const Tuple& t, QSLIM& m)
+    bool before(QSLIM& m, const Tuple& t)
     {
-        return wmtk::TriMeshEdgeCollapseOperation::before_check(t, m) && m.collapse_edge_before(t);
+        if (wmtk::TriMeshEdgeCollapseOperation::before(m, t)) {
+            return  m.collapse_edge_before(t);
+        }
+        return false;
     }
-    bool after_check(const ExecuteReturnData& ret_data, QSLIM& m)
+    bool after(QSLIM& m, ExecuteReturnData& ret_data)
     {
-        return wmtk::TriMeshEdgeCollapseOperation::after_check(ret_data, m) &&
-               m.collapse_edge_after(ret_data.tuple);
+        if (wmtk::TriMeshEdgeCollapseOperation::after(m, ret_data)) {
+            ret_data.success &= m.collapse_edge_after(ret_data.tuple);
+        }
+        return ret_data;
     }
-    bool invariants(const ExecuteReturnData& ret_data, QSLIM& m)
+    bool invariants(QSLIM& m, ExecuteReturnData& ret_data)
     {
-        return wmtk::TriMeshEdgeCollapseOperation::invariants(ret_data, m) &&
-               m.invariants(ret_data.new_tris);
+        if (wmtk::TriMeshEdgeCollapseOperation::invariants(m, ret_data)) {
+            ret_data.success &= m.invariants(ret_data.new_tris);
+        }
+        return ret_data;
     }
 };
 
