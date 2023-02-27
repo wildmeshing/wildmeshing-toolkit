@@ -23,7 +23,7 @@ TEST_CASE("smooth_in_single_tet", "[tetwild_operation]")
     vertices[3].m_posf = Vector3d(0, 0, 1);
     for (auto& v : vertices) {
         v.m_is_rounded = true;
-        v.m_pos = tetwild::to_rational(v.m_posf);
+        v.m_pos = v.m_posf.cast<wmtk::Rational>();
     }
     std::vector<std::array<size_t, 4>> tets = {{{0, 1, 2, 3}}};
     std::vector<TetAttributes> tet_attrs(1);

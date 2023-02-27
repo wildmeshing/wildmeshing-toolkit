@@ -4,14 +4,19 @@
 ################################################################################
 
 include(gmp)
-include(fenvelope)
+
+if(NOT WMTK_APP_UNIFORM_REMESH)
+message(FATAL_ERROR "Remeshing requires shorted edge collapse app; try WMTK_APP_UNIFORM_REMESH=ON")
+endif()
+if(NOT WMTK_APP_SEC)
+message(FATAL_ERROR "Remeshing requires shorted edge collapse app; try WMTK_APP_SEC=ON")
+endif()
 
 add_library(wmtk_tetwild
 	TetWild.cpp
 	TetWild.h
 
 	common.h
-	common.cpp
 	Parameters.h
 
 	EdgeSplitting.cpp
@@ -39,3 +44,9 @@ add_executable(tetwild main.cpp)
 target_compile_options(tetwild PRIVATE "-rdynamic")
 target_link_libraries(tetwild PUBLIC wmtk::tetwild)
 wmtk_copy_dll(tetwild)
+
+
+
+if(WMTK_APP_UNIT_TESTS)
+    add_subdirectory(tests)
+endif()

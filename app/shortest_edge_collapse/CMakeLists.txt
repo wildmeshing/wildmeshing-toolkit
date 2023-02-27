@@ -4,6 +4,8 @@ file(GLOB_RECURSE LIB_SOURCES CONFIGURE_DEPENDS
     "src/*.h"
     "src/*.hpp"
 )
+
+include(fenvelope)
 add_library(wmtk_sec_lib "${LIB_SOURCES}")
 add_library(wmtk::sec_lib ALIAS wmtk_sec_lib)
 
@@ -21,4 +23,6 @@ target_link_libraries(wmtk_sec_lib PUBLIC
 )
 
 add_subdirectory(app)
-add_subdirectory(tests)
+if(WMTK_APP_UNIT_TESTS)
+    add_subdirectory(tests)
+endif()
