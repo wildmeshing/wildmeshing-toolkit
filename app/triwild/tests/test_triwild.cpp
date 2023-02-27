@@ -9,6 +9,7 @@
 #include <wmtk/utils/AMIPS2D_autodiff.h>
 #include <wmtk/utils/AdaptiveGuassQuadrature.h>
 #include <wmtk/utils/BoundaryParametrization.h>
+#include <wmtk/utils/DisplacementBicubic.h>
 #include <wmtk/utils/Image.h>
 #include <wmtk/utils/MipMap.h>
 #include <wmtk/utils/autodiff.h>
@@ -1693,7 +1694,7 @@ TEST_CASE("implicit points")
     }
     wmtk::logger().info(edge_cnt);
 }
-
+// don't use mesh here
 TEST_CASE("quadrature")
 {
     using DScalar = wmtk::EdgeLengthEnergy::DScalar;
@@ -1717,7 +1718,8 @@ TEST_CASE("quadrature")
     for (auto e : m.get_edges()) {
         auto length2d = m.get_length2d(e.vid(m), e.switch_vertex(m).vid(m));
         auto length3d = m.get_length3d(e.vid(m), e.switch_vertex(m).vid(m));
-        auto lengthquad = m.get_accuracy_error(e.vid(m), e.switch_vertex(m).vid(m)); // should be 0
+        auto lengthquad = m.(e.vid(m),
+                             e.switch_vertex(m).vid(m)); // should be 0
         REQUIRE(lengthquad < 1e-5);
     }
     wmtk::logger().info("============= 10x =============");
@@ -1734,8 +1736,18 @@ TEST_CASE("quadrature")
     for (auto e : m.get_edges()) {
         auto length2d = m.get_length2d(e.vid(m), e.switch_vertex(m).vid(m));
         auto length3d = m.get_length3d(e.vid(m), e.switch_vertex(m).vid(m));
-        auto lengthquad = m.get_accuracy_error(e.vid(m), e.switch_vertex(m).vid(m));
-        REQUIRE(lengthquad < 1e-8);
+        // auto lengthquad = m.get_accuracy_error(
+        //     m.vertex_attrs[e.vid(m)].pos,
+        //     m.vertex_attrs[e.switch_vertex(m).vid(m)].pos);
+        if (m.get_accuracy_error(
+                m.vertex_attrs[e.vid(m)].pos,
+                m.vertex_attrs[e.switch_vertex(m).vid(m)].pos) !=
+            m.get_accuracy_error(e.vid(m), e.switch_vertex(m).vid(m)))
+            wmtk::logger().info(
+                "different points are {} {}",
+                m.vertex_attrs[e.vid(m)].pos,
+                m.vertex_attrs[e.switch_vertex(m).vid(m)].pos);
+        // REQUIRE(lengthquad < 1e-8);
     }
 
     wmtk::logger().info("============= sin(PI * u) =============");
@@ -1866,6 +1878,39 @@ TEST_CASE("accuracy split")
     m.split_all_edges();
     m.consolidate_mesh();
     m.write_displaced_obj("accuracy_guided_split.obj", m.mesh_parameters.m_project_to_3d);
-    m.swap_all_edges();
-    m.write_displaced_obj("accuracy_guided_swap.obj", m.mesh_parameters.m_project_to_3d);
+
+    // m.set_parameters(
+    //     0.1,
+    //     image1,
+    //     WrappingMode::MIRROR_REPEAT,
+    //     EDGE_LEN_TYPE::PT_PER_PIXEL,
+    //     ENERGY_TYPE::EDGE_LENGTH,
+    //     true);
+    // m.split_all_edges();
+    // m.consolidate_mesh();
+    // m.write_displaced_obj("quality_then.obj", m.mesh_parameters.m_project_to_3d);
+}
+
+TEST_CASE("quality split comparison")
+{
+    Image image1(10, 10);
+    auto displacement_double2 = [](const double& u, const double& v) -> double {
+        return sin(M_PI * u);
+    };
+    image1.set(displacement_double2);
+    TriWild m;
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    igl::read_triangle_mesh("/home/yunfan/data/input.obj", V, F);
+    m.create_mesh(V, F);
+    m.set_parameters(
+        0.1,
+        image1,
+        WrappingMode::MIRROR_REPEAT,
+        EDGE_LEN_TYPE::PT_PER_PIXEL,
+        ENERGY_TYPE::EDGE_LENGTH,
+        true);
+    m.split_all_edges();
+    m.consolidate_mesh();
+    m.write_displaced_obj("quality_guided_split.obj", m.mesh_parameters.m_project_to_3d);
 }

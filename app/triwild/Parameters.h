@@ -76,6 +76,6 @@ public:
     double m_accuracy_threshold = 0.01;
     bool m_accuracy = 0;
 
-    std::unique_ptr<wmtk::DisplacementBicubic> m_displacement;
+    std::unique_ptr<wmtk::Displacement> m_displacement;
 };
 } // namespace triwild

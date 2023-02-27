@@ -1,3 +1,5 @@
+// clang-format off
+
 /**
 	Automatic differentiation data type for C++, depends on the Eigen
 	linear algebra library.
@@ -30,7 +32,7 @@
 #include <Eigen/Core>
 #include <cmath>
 #include <stdexcept>
-
+// clang-format off
 /**
  * \brief Base class of all automatic differentiation types
  *
@@ -709,6 +711,11 @@ public:
 	/// @{ \name Miscellaneous functions
 	// ======================================================================
 
+	friend DScalar2 abs(const DScalar2 &s)
+	{
+		return s.value < 0?  -s: s;	
+	}
+
 	friend DScalar2 sqrt(const DScalar2 &s)
 	{
 		Scalar sqrtVal = std::sqrt(s.value),
@@ -905,6 +912,8 @@ public:
 	inline bool operator<=(const DScalar2 &s) const { return value <= s.value; }
 	inline bool operator>(const DScalar2 &s) const { return value > s.value; }
 	inline bool operator>=(const DScalar2 &s) const { return value >= s.value; }
+	inline bool operator!=(const DScalar2 &s) const { return value != s.value; }
+
 	inline bool operator<(const Scalar &s) const { return value < s; }
 	inline bool operator<=(const Scalar &s) const { return value <= s; }
 	inline bool operator>(const Scalar &s) const { return value > s; }

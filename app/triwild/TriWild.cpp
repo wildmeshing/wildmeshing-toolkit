@@ -129,11 +129,10 @@ void TriWild::set_edge_length_measurement(const EDGE_LEN_TYPE edge_len_type)
         mesh_parameters.m_accuracy = 0;
         break;
     case EDGE_LEN_TYPE::ACCURACY:
-        std::unique_ptr<DisplacementBicubic> displacement_ptr =
-            std::make_unique<DisplacementBicubic>(
-                mesh_parameters.m_image,
-                mesh_parameters.m_wrapping_mode,
-                mesh_parameters.m_wrapping_mode);
+        std::unique_ptr<Displacement> displacement_ptr = std::make_unique<DisplacementBicubic>(
+            mesh_parameters.m_image,
+            mesh_parameters.m_wrapping_mode,
+            mesh_parameters.m_wrapping_mode);
         mesh_parameters.m_displacement = std::move(displacement_ptr);
         mesh_parameters.m_get_length = [&](const size_t& vid1, const size_t& vid2) -> double {
             this->get_accuracy_error(vid1, vid2);
@@ -591,7 +590,7 @@ double TriWild::get_accuracy_error(const size_t& vid1, const size_t& vid2) const
     auto v12d = vertex_attrs[vid1].pos;
     auto v22d = vertex_attrs[vid2].pos;
 
-    mesh_parameters.m_displacement->get_error_per_edge<double>(v12d, v22d);
+    mesh_parameters.m_displacement->get_error_per_edge(v12d, v22d);
 }
 
 double TriWild::get_accuracy_error(const Eigen::Vector2d& p1, const Eigen::Vector2d& p2) const
