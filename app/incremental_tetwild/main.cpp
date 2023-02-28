@@ -16,6 +16,7 @@
 #include "wmtk/utils/InsertTriangleUtils.hpp"
 #include "wmtk/utils/Logger.hpp"
 
+#include <geogram/basic/process.h>
 #include <geogram/mesh/mesh_io.h>
 #include <igl/Timer.h>
 #include <igl/boundary_facets.h>
@@ -29,6 +30,8 @@
 int main(int argc, char** argv)
 {
     ZoneScopedN("tetwildmain");
+
+    GEO::Process::enable_multithreading(false);
 
     tetwild::Parameters params;
 
@@ -152,6 +155,9 @@ int main(int argc, char** argv)
     std::cout << "vsimp size: " << vsimp.size() << std::endl;
     std::cout << "fsimp size: " << fsimp.size() << std::endl;
 
+    igl::Timer insertion_timer;
+    insertion_timer.start();
+
     mesh.insertion_by_volumeremesher(
         vsimp,
         fsimp,
@@ -165,12 +171,17 @@ int main(int argc, char** argv)
 
     // generate new mesh
     tetwild::TetWild mesh_new(params, *ptr_env, NUM_THREADS);
+
+
     mesh_new.init_from_Volumeremesher(
         v_rational,
         facets,
         is_v_on_input,
         tets,
         tet_face_on_input_surface);
+
+    double insertion_time = insertion_timer.getElapsedTime();
+    wmtk::logger().info("volume remesher insertion time: {}s", insertion_time);
 
     mesh_new.output_tetrahedralized_embedded_mesh(
         "tetrahedralized_embedded_mesh.txt",
@@ -198,14 +209,6 @@ int main(int argc, char** argv)
 
     std::cout << "here4" << std::endl;
 
-    auto fs = mesh_new.get_faces();
-    std::cout << fs.size() << std::endl;
-    for (auto f : fs) {
-        size_t x = f.fid(mesh_new);
-    }
-
-
-    std::cout << "here5" << std::endl;
 
     // // test with a fixed mesh tet.obj
     // tetwild::TetWild mesh_tet(params, *ptr_env, NUM_THREADS);

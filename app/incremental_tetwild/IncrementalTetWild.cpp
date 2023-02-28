@@ -77,7 +77,8 @@ void tetwild::TetWild::mesh_improvement(int max_its)
             m++;
             if (m == M) {
                 wmtk::logger().info(">>>>adjust_sizing_field...");
-                is_hit_min_edge_length = adjust_sizing_field(max_energy);
+                is_hit_min_edge_length = adjust_sizing_field_serial(max_energy);
+                // is_hit_min_edge_length = adjust_sizing_field(max_energy);
                 wmtk::logger().info(">>>>adjust_sizing_field finished...");
                 m = 0;
             }
@@ -179,11 +180,24 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
         for (int j = 0; j < 4; j++) {
             c += (m_vertex_attribute[vs[j]].m_posf);
             v_queue.emplace(vs[j]);
+            std::cout << vs[j] << " ";
         }
         pts.emplace_back(c / 4);
     });
 
+    std::cout << std::endl;
+
     wmtk::logger().info("filter energy {} Low Quality Tets {}", filter_energy, pts.size());
+
+    // debug code
+    std::queue<size_t> v_queue_serial;
+    for (tbb::concurrent_queue<size_t>::const_iterator i(v_queue.unsafe_begin());
+         i != v_queue.unsafe_end();
+         ++i) {
+        // std::cout << *i << " ";
+        v_queue_serial.push(*i);
+    }
+    std::cout << std::endl;
 
     const double R = m_params.l * 1.8;
 
@@ -197,10 +211,13 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
 
     std::vector<size_t> cache_one_ring;
     size_t vid;
-    while (v_queue.try_pop(vid)) {
+
+    while (!v_queue_serial.empty()) {
+        // std::cout << vid << " ";
         sum++;
-        // size_t vid = v_queue.front();
-        // v_queue.pop();
+        size_t vid = v_queue_serial.front();
+        std::cout << vid << " ";
+        v_queue_serial.pop();
         if (visited[vid]) continue;
         visited[vid] = true;
         adjcnt++;
@@ -210,6 +227,154 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
         GEO::index_t _1;
         nnsearch->get_nearest_neighbors(1, pos_v.data(), &_1, &sq_dist);
         auto dist = std::sqrt(std::max(sq_dist, 0.)); // compute dist(pts, pos_v);
+        // std::cout << dist << " ";
+
+        if (dist > R) { // outside R-ball, unmark.
+            continue;
+        }
+
+        scale_multipliers[vid] = std::min(
+            scale_multipliers[vid],
+            dist / R * (1 - refine_scalar) + refine_scalar); // linear interpolate
+
+        auto vids = get_one_ring_vids_for_vertex_adj(vid, cache_one_ring);
+        for (size_t n_vid : vids) {
+            if (visited[n_vid]) continue;
+            v_queue_serial.push(n_vid);
+        }
+    }
+
+    std::cout << std::endl;
+
+    std::cout << sum << " " << adjcnt << std::endl;
+    // while (v_queue.try_pop(vid)) {
+    //     // std::cout << vid << " ";
+    //     sum++;
+    //     // size_t vid = v_queue.front();
+    //     // v_queue.pop();
+    //     if (visited[vid]) continue;
+    //     visited[vid] = true;
+    //     adjcnt++;
+
+    //     auto& pos_v = m_vertex_attribute[vid].m_posf;
+    //     auto sq_dist = 0.;
+    //     GEO::index_t _1;
+    //     nnsearch->get_nearest_neighbors(1, pos_v.data(), &_1, &sq_dist);
+    //     auto dist = std::sqrt(std::max(sq_dist, 0.)); // compute dist(pts, pos_v);
+
+    //     if (dist > R) { // outside R-ball, unmark.
+    //         continue;
+    //     }
+
+    //     scale_multipliers[vid] = std::min(
+    //         scale_multipliers[vid],
+    //         dist / R * (1 - refine_scalar) + refine_scalar); // linear interpolate
+
+    //     auto vids = get_one_ring_vids_for_vertex_adj(vid, cache_one_ring);
+    //     for (size_t n_vid : vids) {
+    //         if (visited[n_vid]) continue;
+    //         v_queue.emplace(n_vid);
+    //     }
+    // }
+
+    std::atomic_bool is_hit_min_edge_length = false;
+    for_each_vertex([&](auto& v) {
+        auto vid = v.vid(*this);
+        std::cout << vid << " ";
+        auto& v_attr = m_vertex_attribute[vid];
+
+        auto new_scale = v_attr.m_sizing_scalar * scale_multipliers[vid];
+        if (new_scale > 1)
+            v_attr.m_sizing_scalar = 1;
+        else if (new_scale < min_refine_scalar) {
+            is_hit_min_edge_length = true;
+            v_attr.m_sizing_scalar = min_refine_scalar;
+        } else
+            v_attr.m_sizing_scalar = new_scale;
+    });
+    std::cout << std::endl;
+
+
+    return is_hit_min_edge_length.load();
+}
+
+bool tetwild::TetWild::adjust_sizing_field_serial(double max_energy)
+{
+    wmtk::logger().info("#vertices {}, #tets {}", vert_capacity(), tet_capacity());
+
+    const double stop_filter_energy = m_params.stop_energy * 0.8;
+    double filter_energy = std::max(max_energy / 100, stop_filter_energy);
+    filter_energy = std::min(filter_energy, 100.);
+
+    const auto recover_scalar = 1.5;
+    const auto refine_scalar = 0.5;
+    const auto min_refine_scalar = m_params.l_min / m_params.l;
+
+    // outputs scale_multipliers
+    std::vector<Scalar> scale_multipliers(vert_capacity(), recover_scalar);
+
+    std::vector<Vector3d> pts;
+    std::queue<size_t> v_queue;
+
+    for (int i = 0; i < tet_capacity(); i++) {
+        auto t = tuple_from_tet(i);
+        if (!t.is_valid(*this)) continue;
+        auto tid = t.tid(*this);
+        if (std::cbrt(m_tet_attribute[tid].m_quality) < filter_energy) continue;
+        auto vs = oriented_tet_vids(t);
+        Vector3d c(0, 0, 0);
+        for (int j = 0; j < 4; j++) {
+            c += (m_vertex_attribute[vs[j]].m_posf);
+            v_queue.emplace(vs[j]);
+            // std::cout << vs[j] << " ";
+        }
+        pts.emplace_back(c / 4);
+    }
+
+    // std::cout << std::endl;
+
+
+    wmtk::logger().info("filter energy {} Low Quality Tets {}", filter_energy, pts.size());
+
+    // debug code
+    // std::queue<size_t> v_queue_serial;
+    // for (tbb::concurrent_queue<size_t>::const_iterator i(v_queue.unsafe_begin());
+    //      i != v_queue.unsafe_end();
+    //      ++i) {
+    //     // std::cout << *i << " ";
+    //     v_queue_serial.push(*i);
+    // }
+    // std::cout << std::endl;
+
+    const double R = m_params.l * 1.8;
+
+    int sum = 0;
+    int adjcnt = 0;
+
+    std::vector<bool> visited(vert_capacity(), false);
+
+    GEO::NearestNeighborSearch_var nnsearch = GEO::NearestNeighborSearch::create(3, "BNN");
+    nnsearch->set_points(pts.size(), pts[0].data());
+
+    std::vector<size_t> cache_one_ring;
+    size_t vid;
+
+    while (!v_queue.empty()) {
+        // std::cout << vid << " ";
+        sum++;
+        size_t vid = v_queue.front();
+        // std::cout << vid << " ";
+        v_queue.pop();
+        if (visited[vid]) continue;
+        visited[vid] = true;
+        adjcnt++;
+
+        auto& pos_v = m_vertex_attribute[vid].m_posf;
+        auto sq_dist = 0.;
+        GEO::index_t _1;
+        nnsearch->get_nearest_neighbors(1, pos_v.data(), &_1, &sq_dist);
+        auto dist = std::sqrt(std::max(sq_dist, 0.)); // compute dist(pts, pos_v);
+        // std::cout << dist << " ";
 
         if (dist > R) { // outside R-ball, unmark.
             continue;
@@ -226,9 +391,17 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
         }
     }
 
+    // std::cout << std::endl;
+
+    std::cout << sum << " " << adjcnt << std::endl;
+
     std::atomic_bool is_hit_min_edge_length = false;
-    for_each_vertex([&](auto& v) {
+
+    for (int i = 0; i < vert_capacity(); i++) {
+        auto v = tuple_from_vertex(i);
+        if (!v.is_valid(*this)) continue;
         auto vid = v.vid(*this);
+        // std::cout << vid << " ";
         auto& v_attr = m_vertex_attribute[vid];
 
         auto new_scale = v_attr.m_sizing_scalar * scale_multipliers[vid];
@@ -239,7 +412,8 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
             v_attr.m_sizing_scalar = min_refine_scalar;
         } else
             v_attr.m_sizing_scalar = new_scale;
-    });
+    }
+    // std::cout << std::endl;
 
     return is_hit_min_edge_length.load();
 }
@@ -737,4 +911,56 @@ bool tetwild::TetWild::check_attributes()
         }
     }
     return true;
+}
+
+long long tetwild::TetWild::checksum_vidx()
+{
+    long long checksum = 0;
+    auto vs = get_vertices();
+    for (int i = 0; i < vs.size(); i++) {
+        if (vs[i].is_valid(*this)) checksum += i;
+    }
+    return checksum;
+}
+
+long long tetwild::TetWild::checksum_tidx()
+{
+    long long checksum = 0;
+    auto ts = get_tets();
+    for (int i = 0; i < ts.size(); i++) {
+        if (ts[i].is_valid(*this)) checksum += i;
+    }
+    return checksum;
+}
+
+void tetwild::TetWild::find_open_boundary()
+{
+    auto fs = get_faces();
+    auto es = get_edges();
+    std::vector<bool> edge_on_open_boundary(es.size(), false);
+
+    for (auto f : fs) {
+        if (!m_face_attribute[f.fid(*this)].m_is_surface_fs) continue;
+        size_t eid1 = f.eid(*this);
+        size_t eid2 = f.switch_edge(*this).eid(*this);
+        size_t eid3 = f.switch_vertex(*this).switch_edge(*this).eid(*this);
+
+        edge_on_open_boundary[eid1] = !edge_on_open_boundary[eid1];
+        edge_on_open_boundary[eid2] = !edge_on_open_boundary[eid2];
+        edge_on_open_boundary[eid3] = !edge_on_open_boundary[eid3];
+    }
+
+    for (auto e : es) {
+        if (!edge_on_open_boundary[e.eid(*this)]) continue;
+        m_vertex_attribute[e.vid(*this)].m_is_on_open_boundary = true;
+        m_vertex_attribute[e.switch_vertex(*this).vid(*this)].m_is_on_open_boundary = true;
+    }
+}
+
+bool tetwild::TetWild::is_open_boundary_edge(const Tuple& e)
+{
+    if (m_vertex_attribute[e.vid(*this)].m_is_on_open_boundary &&
+        m_vertex_attribute[e.switch_vertex(*this).vid(*this)].m_is_on_open_boundary)
+        return true;
+    return false;
 }

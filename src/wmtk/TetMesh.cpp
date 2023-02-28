@@ -1040,54 +1040,87 @@ bool wmtk::TetMesh::try_set_vertex_mutex_one_ring(const Tuple& v, int threadid)
 
 void wmtk::TetMesh::for_each_edge(const std::function<void(const TetMesh::Tuple&)>& func)
 {
-    tbb::task_arena arena(NUM_THREADS);
-    arena.execute([&] {
-        tbb::parallel_for(
-            tbb::blocked_range<int>(0, tet_capacity()),
-            [&](tbb::blocked_range<int> r) {
-                for (int i = r.begin(); i < r.end(); i++) {
-                    if (!tuple_from_tet(i).is_valid(*this)) continue;
-                    for (int j = 0; j < 6; j++) {
-                        auto tup = tuple_from_edge(i, j);
-                        if (tup.eid(*this) == 6 * i + j) {
-                            func(tup);
+    if (NUM_THREADS == 0) {
+        for (int i = 0; i < tet_capacity(); i++) {
+            if (!tuple_from_tet(i).is_valid(*this)) continue;
+            for (int j = 0; j < 6; j++) {
+                auto tup = tuple_from_edge(i, j);
+                if (tup.eid(*this) == 6 * i + j) {
+                    func(tup);
+                }
+            }
+        }
+    } else {
+        tbb::task_arena arena(NUM_THREADS);
+        arena.execute([&] {
+            tbb::parallel_for(
+                tbb::blocked_range<int>(0, tet_capacity()),
+                [&](tbb::blocked_range<int> r) {
+                    for (int i = r.begin(); i < r.end(); i++) {
+                        if (!tuple_from_tet(i).is_valid(*this)) continue;
+                        for (int j = 0; j < 6; j++) {
+                            auto tup = tuple_from_edge(i, j);
+                            if (tup.eid(*this) == 6 * i + j) {
+                                func(tup);
+                            }
                         }
                     }
-                }
-            });
-    });
+                });
+        });
+    }
 }
 
 
 void wmtk::TetMesh::for_each_tetra(const std::function<void(const TetMesh::Tuple&)>& func)
 {
-    tbb::task_arena arena(NUM_THREADS);
-    arena.execute([&] {
-        tbb::parallel_for(
-            tbb::blocked_range<int>(0, tet_capacity()),
-            [&](tbb::blocked_range<int> r) {
-                for (int i = r.begin(); i < r.end(); i++) {
-                    auto tup = tuple_from_tet(i);
-                    if (!tup.is_valid(*this)) continue;
-                    func(tup);
-                }
-            });
-    });
+    if (NUM_THREADS == 0) {
+        std::cout << "in serial for each tet" << std::endl;
+        for (int i = 0; i < tet_capacity(); i++) {
+            auto tup = tuple_from_tet(i);
+            if (!tup.is_valid(*this)) continue;
+            func(tup);
+        }
+    } else {
+        std::cout << "in parallel for each tet" << std::endl;
+
+        tbb::task_arena arena(NUM_THREADS);
+        arena.execute([&] {
+            tbb::parallel_for(
+                tbb::blocked_range<int>(0, tet_capacity()),
+                [&](tbb::blocked_range<int> r) {
+                    for (int i = r.begin(); i < r.end(); i++) {
+                        auto tup = tuple_from_tet(i);
+                        if (!tup.is_valid(*this)) continue;
+                        func(tup);
+                    }
+                });
+        });
+    }
 }
 
 
 void wmtk::TetMesh::for_each_vertex(const std::function<void(const TetMesh::Tuple&)>& func)
 {
-    tbb::task_arena arena(NUM_THREADS);
-    arena.execute([&] {
-        tbb::parallel_for(
-            tbb::blocked_range<int>(0, vert_capacity()),
-            [&](tbb::blocked_range<int> r) {
-                for (int i = r.begin(); i < r.end(); i++) {
-                    auto tup = tuple_from_vertex(i);
-                    if (!tup.is_valid(*this)) continue;
-                    func(tup);
-                }
-            });
-    });
+    if (NUM_THREADS == 0) {
+        std::cout << "in serial for each vertex" << std::endl;
+        for (int i = 0; i < vert_capacity(); i++) {
+            auto tup = tuple_from_vertex(i);
+            if (!tup.is_valid(*this)) continue;
+            func(tup);
+        }
+    } else {
+        std::cout << "in parallel for each vertex" << std::endl;
+        tbb::task_arena arena(NUM_THREADS);
+        arena.execute([&] {
+            tbb::parallel_for(
+                tbb::blocked_range<int>(0, vert_capacity()),
+                [&](tbb::blocked_range<int> r) {
+                    for (int i = r.begin(); i < r.end(); i++) {
+                        auto tup = tuple_from_vertex(i);
+                        if (!tup.is_valid(*this)) continue;
+                        func(tup);
+                    }
+                });
+        });
+    }
 }

@@ -47,9 +47,19 @@ public:
 
     size_t partition_id = 0;
 
+    // for open boundary
+    bool m_is_on_open_boundary = false;
+
     VertexAttributes(){};
     VertexAttributes(const Vector3r& p);
 };
+
+
+// class EdgeAttributes
+// {
+// public:
+//     bool m_is_on_open_boundary = false;
+// };
 
 // TODO: missing comments on what these attributes are
 class FaceAttributes
@@ -111,9 +121,11 @@ public:
     using VertAttCol = wmtk::AttributeCollection<VertexAttributes>;
     using FaceAttCol = wmtk::AttributeCollection<FaceAttributes>;
     using TetAttCol = wmtk::AttributeCollection<TetAttributes>;
+    // using EdgeAttCol = wmtk::AttributeCollection<EdgeAttributes>;
     VertAttCol m_vertex_attribute;
     FaceAttCol m_face_attribute;
     TetAttCol m_tet_attribute;
+    // EdgeAttCol m_edge_attribute;
 
     // only used with unit tests
     void create_mesh_attributes(
@@ -124,6 +136,9 @@ public:
         m_vertex_attribute.resize(_vertex_attribute.size());
         m_face_attribute.resize(4 * n_tet);
         m_tet_attribute.resize(n_tet);
+
+        // new for edge
+        // m_edge_attribute.resize(6 * n_tet);
 
         for (auto i = 0; i < _vertex_attribute.size(); i++)
             m_vertex_attribute[i] = _vertex_attribute[i];
@@ -406,6 +421,17 @@ public:
         const std::vector<bool>& tet_face_on_input_surface);
 
     void output_init_tetmesh(std::string output_dir);
+
+    long long checksum_vidx();
+    wmtk::Rational checksum_vpos();
+    long long checksum_tidx();
+    Scalar checksum_tquality();
+
+    bool adjust_sizing_field_serial(double max_energy);
+
+    // for open boundary
+    void find_open_boundary();
+    bool is_open_boundary_edge(const Tuple& e);
 };
 
 } // namespace tetwild

@@ -136,7 +136,11 @@ int main(int argc, char** argv)
         std::max(NUM_THREADS, 1),
         partition_id);
     /////////triangle insertion with the simplified mesh
+
+    igl::Timer insertion_timer;
+    insertion_timer.start();
     mesh.init_from_input_surface(vsimp, fsimp, partition_id);
+    wmtk::logger().info("triangle insertion time: {}s", insertion_timer.getElapsedTime());
 
     mesh.output_faces("test_ti_output_surface.obj", [](auto& f) { return f.m_is_surface_fs; });
 

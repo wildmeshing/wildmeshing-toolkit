@@ -345,15 +345,16 @@ void tetwild::TetWild::insertion_by_volumeremesher(
     std::cout << "polygon cells num: " << polygon_cells.size() << std::endl;
 
     // check polygon face validity
-    for (int i = 0; i < polygon_faces.size(); i++) {
-        std::vector<tetwild::Vector3r> polyface_coordinates;
-        for (int j = 0; j < polygon_faces[i].size(); j++) {
-            polyface_coordinates.push_back(v_rational[polygon_faces[i][j]]);
-        }
-        if (!check_polygon_face_validity(polyface_coordinates)) {
-            std::cout << "polygon face invalid!!: " << i << std::endl;
-        }
-    }
+    // only for debug use
+    // for (int i = 0; i < polygon_faces.size(); i++) {
+    //     std::vector<tetwild::Vector3r> polyface_coordinates;
+    //     for (int j = 0; j < polygon_faces[i].size(); j++) {
+    //         polyface_coordinates.push_back(v_rational[polygon_faces[i][j]]);
+    //     }
+    //     if (!check_polygon_face_validity(polyface_coordinates)) {
+    //         std::cout << "polygon face invalid!!: " << i << std::endl;
+    //     }
+    // }
 
     std::vector<bool> polygon_faces_on_input_surface(polygon_faces.size());
     for (int i = 0; i < polygon_faces.size(); i++) {
@@ -363,27 +364,27 @@ void tetwild::TetWild::insertion_by_volumeremesher(
         polygon_faces_on_input_surface[embedded_facets_on_input[i]] = true;
     }
 
-    output_embedded_polygon_mesh(
-        "embedded_polygon_mesh.txt",
-        v_rational,
-        polygon_faces,
-        polygon_cells,
-        polygon_faces_on_input_surface);
+    // output_embedded_polygon_mesh(
+    //     "embedded_polygon_mesh.txt",
+    //     v_rational,
+    //     polygon_faces,
+    //     polygon_cells,
+    //     polygon_faces_on_input_surface);
 
     // test mqz output
 
-    std::cout << "------mpz output------" << std::endl;
-    std::cout << "------1------" << std::endl;
-    std::cout << v_rational[15][0].to_double() << std::endl;
-    std::cout << "------2------" << std::endl;
-    std::cout << v_rational[15][0].get_str() << std::endl;
-    std::cout << "------3------" << std::endl;
-    std::cout << v_rational[15][0].get_num_str() << std::endl;
-    std::cout << v_rational[15][0].get_den_str() << std::endl;
-    // exit(0);
+    // std::cout << "------mpz output------" << std::endl;
+    // std::cout << "------1------" << std::endl;
+    // std::cout << v_rational[15][0].to_double() << std::endl;
+    // std::cout << "------2------" << std::endl;
+    // std::cout << v_rational[15][0].get_str() << std::endl;
+    // std::cout << "------3------" << std::endl;
     // std::cout << v_rational[15][0].get_num_str() << std::endl;
     // std::cout << v_rational[15][0].get_den_str() << std::endl;
-    std::cout << "------mpz output end------" << std::endl;
+    // // exit(0);
+    // // std::cout << v_rational[15][0].get_num_str() << std::endl;
+    // // std::cout << v_rational[15][0].get_den_str() << std::endl;
+    // std::cout << "------mpz output end------" << std::endl;
 
     std::vector<std::array<size_t, 3>> triangulated_faces;
     std::vector<bool> triangulated_faces_on_input;
@@ -452,31 +453,34 @@ void tetwild::TetWild::insertion_by_volumeremesher(
         }
     }
 
-    std::cout << triangulated_faces.size() << std::endl;
-    int sum = 0;
-    for (int i = 0; i < map_poly_to_tri_face.size(); i++) {
-        sum += map_poly_to_tri_face[i].size();
-    }
-    std::cout << sum << std::endl;
+    // std::cout << triangulated_faces.size() << std::endl;
+    // int sum = 0;
+    // for (int i = 0; i < map_poly_to_tri_face.size(); i++) {
+    //     sum += map_poly_to_tri_face[i].size();
+    // }
+    // std::cout << sum << std::endl;
 
-    std::cout << "triangulated faces on input vector size: " << triangulated_faces_on_input.size()
-              << std::endl;
-    int on_sur_cnt = 0;
-    for (int i = 0; i < triangulated_faces_on_input.size(); i++) {
-        if (triangulated_faces_on_input[i]) on_sur_cnt++;
-    }
-    std::cout << "triangulated faces on input: " << on_sur_cnt << std::endl;
+    // std::cout << "triangulated faces on input vector size: " <<
+    // triangulated_faces_on_input.size()
+    //           << std::endl;
+    // int on_sur_cnt = 0;
+    // for (int i = 0; i < triangulated_faces_on_input.size(); i++) {
+    //     if (triangulated_faces_on_input[i]) on_sur_cnt++;
+    // }
+    // std::cout << "triangulated faces on input: " << on_sur_cnt << std::endl;
 
     std::cout << "finish triangulation" << std::endl;
 
     std::cout << "vertice before tetra num: " << v_rational.size() << std::endl;
 
     // invert the orientation of all the triangles
-    int cnt_inverted_tri = 0;
-    for (size_t i = 0; i < triangulated_faces.size(); i++) {
-        triangulated_faces[i] = {
-            {triangulated_faces[i][0], triangulated_faces[i][2], triangulated_faces[i][1]}};
-    }
+    // maybe commented
+    // debug code?
+    // int cnt_inverted_tri = 0;
+    // for (size_t i = 0; i < triangulated_faces.size(); i++) {
+    //     triangulated_faces[i] = {
+    //         {triangulated_faces[i][0], triangulated_faces[i][2], triangulated_faces[i][1]}};
+    // }
 
     // wmtk::logger().info(
     //     "inverted tri num: {}, total num: {}",
@@ -686,16 +690,17 @@ void tetwild::TetWild::init_from_Volumeremesher(
         // wmtk::logger().info("double: {}", m_vertex_attribute[i].m_posf);
     }
 
-    int cnt_flip = 0;
-    auto all_tets = get_tets();
-    for (auto t : all_tets) {
-        if (is_inverted(t)) {
-            // wmtk::logger().info("tet flipped!");
-            cnt_flip++;
-        }
-    }
+    // debug code
+    // int cnt_flip = 0;
+    // auto all_tets = get_tets();
+    // for (auto t : all_tets) {
+    //     if (is_inverted(t)) {
+    //         // wmtk::logger().info("tet flipped!");
+    //         cnt_flip++;
+    //     }
+    // }
 
-    wmtk::logger().info("{} tet flipped, total tet {}", cnt_flip, all_tets.size());
+    // wmtk::logger().info("{} tet flipped, total tet {}", cnt_flip, all_tets.size());
 
 
     // track faces
@@ -756,13 +761,17 @@ void tetwild::TetWild::init_from_Volumeremesher(
 
     // rounding
     std::atomic_int cnt_round(0);
+    std::atomic_int cnt_valid(0);
 
     auto vertices = get_vertices();
     for (auto v : vertices) {
+        // debug code
+        if (v.is_valid(*this)) cnt_valid++;
+
         if (round(v)) cnt_round++;
     }
 
-    wmtk::logger().info("cnt_round {}/{}", cnt_round, vert_capacity());
+    wmtk::logger().info("cnt_round {}/{}", cnt_round, cnt_valid);
 
     // init qualities
     auto& m = *this;
@@ -770,13 +779,14 @@ void tetwild::TetWild::init_from_Volumeremesher(
 
 
     // enable on for tests
-    if (!check_nondegenerate_tets()) {
-        std::cout << "find tet with <=0 volume!" << std::endl;
-    }
+    // debug codes
+    // if (!check_nondegenerate_tets()) {
+    //     std::cout << "find tet with <=0 volume!" << std::endl;
+    // }
 
-    if (!check_mesh_connectivity_validity()) {
-        std::cout << "invalid mesh connectivity!" << std::endl;
-    }
+    // if (!check_mesh_connectivity_validity()) {
+    //     std::cout << "invalid mesh connectivity!" << std::endl;
+    // }
 }
 
 void tetwild::TetWild::init_from_file(std::string input_dir)

@@ -446,12 +446,21 @@ std::tuple<double, double> tetwild::TetWild::get_max_avg_energy()
     double max_energy = -1.;
     double avg_energy = 0.;
     auto cnt = 0;
-    TetMesh::for_each_tetra([&](auto& t) {
-        auto q = m_tet_attribute[t.tid(*this)].m_quality;
+    // TetMesh::for_each_tetra([&](auto& t) {
+    //     auto q = m_tet_attribute[t.tid(*this)].m_quality;
+    //     max_energy = std::max(max_energy, q);
+    //     avg_energy += std::cbrt(q);
+    //     cnt++;
+    // });
+
+    for (int i = 0; i < tet_capacity(); i++) {
+        auto tup = tuple_from_tet(i);
+        if (!tup.is_valid(*this)) continue;
+        auto q = m_tet_attribute[tup.tid(*this)].m_quality;
         max_energy = std::max(max_energy, q);
         avg_energy += std::cbrt(q);
         cnt++;
-    });
+    }
 
     avg_energy /= cnt;
 
