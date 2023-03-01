@@ -43,11 +43,23 @@ public:
     using DScalar = DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d>;
 
 public:
+    Parameters mesh_parameters;
+    // Store the per-vertex attributes
+    wmtk::AttributeCollection<VertexAttributes> vertex_attrs;
+    struct InfoCache
+    {
+        size_t v1;
+        size_t v2;
+        double max_energy;
+        int partition_id;
+    };
+    tbb::enumerable_thread_specific<InfoCache> cache;
+
+public:
     TriWild(){};
 
     virtual ~TriWild(){};
 
-    Parameters mesh_parameters;
     void set_output_folder(std::filesystem::path output_folder)
     {
         mesh_parameters.m_output_folder = output_folder.string();
@@ -67,16 +79,6 @@ public:
         const EDGE_LEN_TYPE edge_len_type,
         const ENERGY_TYPE energy_type,
         const bool boundary_parameter);
-    // Store the per-vertex attributes
-    wmtk::AttributeCollection<VertexAttributes> vertex_attrs;
-    struct InfoCache
-    {
-        size_t v1;
-        size_t v2;
-        double max_energy;
-        int partition_id;
-    };
-    tbb::enumerable_thread_specific<InfoCache> cache;
 
     void set_energy(const ENERGY_TYPE energy_type);
     void set_energy(std::unique_ptr<wmtk::Energy> f) { mesh_parameters.m_energy = std::move(f); };

@@ -88,8 +88,8 @@ bool TriWild::split_edge_before(const Tuple& edge_tuple)
 {
     static std::atomic_int cnt = 0;
     if (!TriMesh::split_edge_before(edge_tuple)) return false;
-    write_vtk(mesh_parameters.m_output_folder + fmt::format("/split_{:04d}.vtu", cnt));
-    // if (cnt % 100 == 0)
+    if (cnt % 50 == 0)
+        write_vtk(mesh_parameters.m_output_folder + fmt::format("/split_{:04d}.vtu", cnt));
 
     // check if the 2 vertices are on the same curve
     if (vertex_attrs[edge_tuple.vid(*this)].curve_id !=

@@ -121,7 +121,7 @@ void TriWild::set_edge_length_measurement(const EDGE_LEN_TYPE edge_len_type)
         break;
     case EDGE_LEN_TYPE::N_IMPLICIT_POINTS:
         mesh_parameters.m_get_length = [&](const size_t& vid1, const size_t& vid2) -> double {
-            this->get_length_n_implicit_points(vid1, vid2);
+            return this->get_length_n_implicit_points(vid1, vid2);
         };
         mesh_parameters.m_accuracy = 0;
         break;
@@ -139,7 +139,7 @@ void TriWild::set_edge_length_measurement(const EDGE_LEN_TYPE edge_len_type)
         break;
     case EDGE_LEN_TYPE::ACCURACY:
         mesh_parameters.m_get_length = [&](const size_t& vid1, const size_t& vid2) -> double {
-            this->get_accuracy_error(vid1, vid2);
+            return this->get_accuracy_error(vid1, vid2);
         };
         mesh_parameters.m_accuracy = 1;
 
@@ -168,9 +168,9 @@ void TriWild::set_displacement()
 {
     // needs to be called after m_image is initiated
     // can be also set depending on a user parameter that initialize different Displacement type
-    std::unique_ptr<Displacement> displacement_ptr =
-        std::make_unique<DisplacementBicubic>(mesh_parameters.m_image);
-    mesh_parameters.m_displacement = std::move(displacement_ptr);
+    std::shared_ptr<Displacement> displacement_ptr =
+        std::make_shared<DisplacementBicubic>(mesh_parameters.m_image);
+    mesh_parameters.m_displacement = displacement_ptr;
 }
 
 void TriWild::set_projection()
@@ -604,7 +604,7 @@ double TriWild::get_accuracy_error(const size_t& vid1, const size_t& vid2) const
     auto v12d = vertex_attrs[vid1].pos;
     auto v22d = vertex_attrs[vid2].pos;
 
-    mesh_parameters.m_displacement->get_error_per_edge(v12d, v22d);
+    return mesh_parameters.m_displacement->get_error_per_edge(v12d, v22d);
 }
 
 double TriWild::get_accuracy_error(const Eigen::Vector2d& p1, const Eigen::Vector2d& p2) const

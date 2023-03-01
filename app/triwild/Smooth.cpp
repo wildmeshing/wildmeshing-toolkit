@@ -24,7 +24,7 @@ bool triwild::TriWild::smooth_before(const Tuple& t)
 bool triwild::TriWild::smooth_after(const Tuple& t)
 {
     static std::atomic_int cnt = 0;
-    wmtk::logger("smothing op # {}", cnt);
+    wmtk::logger().info("smothing op # {}", cnt);
     // Newton iterations are encapsulated here.
     auto vid = t.vid(*this);
     auto locs = get_one_ring_tris_for_vertex(t);
@@ -161,6 +161,9 @@ void triwild::TriWild::smooth_all_vertices()
         do {
             mesh_parameters.m_gradient = Eigen::Vector2d(0., 0.);
             executor(*this, collect_all_ops);
+            write_displaced_obj(
+                fmt::format("smooth_{:03d}.obj", itr),
+                mesh_parameters.m_project_to_3d);
             itr++;
         } while ((mesh_parameters.m_gradient / vert_capacity()).stableNorm() > 1e-4 && itr < 5);
         wmtk::logger().info("===== terminate smooth after {} itrs", itr);
