@@ -1842,11 +1842,11 @@ TEST_CASE("accuracy split")
     igl::read_triangle_mesh("/home/yunfan/data/input.obj", V, F);
     m.create_mesh(V, F);
     m.set_parameters(
-        0.05,
+        0.01,
         image1,
         WrappingMode::MIRROR_REPEAT,
         EDGE_LEN_TYPE::ACCURACY,
-        ENERGY_TYPE::EDGE_LENGTH,
+        ENERGY_TYPE::EDGE_QUADRATURE,
         true);
     m.split_all_edges();
     m.consolidate_mesh();
@@ -1862,6 +1862,29 @@ TEST_CASE("accuracy split")
     // m.split_all_edges();
     // m.consolidate_mesh();
     // m.write_displaced_obj("quality_then.obj", m.mesh_parameters.m_project_to_3d);
+}
+
+TEST_CASE("accuracy smooth")
+{
+    Image image1(10, 10);
+    auto displacement_double2 = [](const double& u, const double& v) -> double {
+        return sin(M_PI * u);
+    };
+    image1.set(displacement_double2);
+    TriWild m;
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    igl::read_triangle_mesh("accuracy_guided_split.obj", V, F);
+    m.create_mesh(V, F);
+    m.set_parameters(
+        0.01,
+        image1,
+        WrappingMode::MIRROR_REPEAT,
+        EDGE_LEN_TYPE::ACCURACY,
+        ENERGY_TYPE::EDGE_QUADRATURE,
+        true);
+    m.smooth_all_vertices();
+    m.write_displaced_obj("accuracy_guided_smooth.obj", m.mesh_parameters.m_project_to_3d);
 }
 
 TEST_CASE("quality split comparison")
