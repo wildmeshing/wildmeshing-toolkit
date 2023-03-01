@@ -9,6 +9,7 @@ class Displacement
 {
 public:
     using DScalar = DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d>;
+    virtual ~Displacement(){};
 
 public:
     virtual double get(double x, double y) const = 0;
@@ -71,7 +72,9 @@ public:
                         static_cast<T>(quad.points(i, 0)) * v2z;
             ret += static_cast<T>(quad.weights(i)) * abs(tmph - tmpz);
         }
-        return ret * (v12d - v22d).stableNorm();
+        auto edge_norm = sqrt(
+            (v12d(0) - v22d(0)) * (v12d(0) - v22d(0)) + (v12d(1) - v22d(1)) * (v12d(1) - v22d(1)));
+        return ret * edge_norm;
     }
 
     inline double get_error_per_edge(
