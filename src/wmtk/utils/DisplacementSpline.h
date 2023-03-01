@@ -32,13 +32,17 @@ struct DisplacementSpline : public DisplacementImage<DisplacementSpline>
 
 public:
     // Repeated constructor
-    DisplacementSpline(const Image& img, const ::WrappingMode& wrap_x, const ::WrappingMode& wrap_y)
-        : Super(img, wrap_x, wrap_y)
+    DisplacementSpline(const Image& img)
+        : Super(img)
         , m_img_size(img.width())
         , m_inv_img_size(1.0 / img.width())
     {
         assert(m_image.width() == m_image.height());
         assert(m_image.width() != 0);
+
+        ::WrappingMode wrap_x = img.get_wrapping_mode_x();
+        ::WrappingMode wrap_y = img.get_wrapping_mode_y();
+        auto img_raw = img.get_raw_image();
 
         m_n_grid_points = m_img_size;
         m_inv_n_grid_points = m_inv_img_size;
@@ -56,12 +60,12 @@ public:
         m_control_mat.resize(m_n_control_points * m_n_control_points, 3);
         for (int i = 0; i < m_n_control_points; ++i) {
             const int i_px = cp_to_px(i);
-            const int img_i_px = img.get_coordinate(i_px, m_wrap_x);
+            const int img_i_px = img.get_coordinate(i_px, wrap_x);
             for (int j = 0; j < m_n_control_points; ++j) {
                 const int j_px = cp_to_px(j);
-                const int img_j_px = img.get_coordinate(j_px, m_wrap_y);
+                const int img_j_px = img.get_coordinate(j_px, wrap_y);
                 m_control_mat.row(j * m_n_control_points + i) =
-                    Eigen::Matrix<Scalar, 1, 3>(i_px, j_px, img(img_i_px, img_j_px));
+                    Eigen::Matrix<Scalar, 1, 3>(i_px, j_px, img_raw(img_i_px, img_j_px));
             }
         }
 
@@ -97,6 +101,26 @@ public:
         const double px_x = param_to_px(wmtk::get_value(u));
         const double px_y = param_to_px(wmtk::get_value(v));
         return m_patch.evaluate(px_x, px_y)[2];
+    }
+
+    DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d> get(
+        const DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d>& u,
+        const DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d>& v) const
+    {
+        const double px_x = param_to_px(wmtk::get_value(u));
+        const double px_y = param_to_px(wmtk::get_value(v));
+        const double value = m_patch.evaluate(px_x, px_y)[2];
+
+        const double du = m_patch.evaluate_derivative_u(px_x, px_y)[2];
+        const double dv = m_patch.evaluate_derivative_v(px_x, px_y)[2];
+        const Eigen::Vector2d grad = {du, dv};
+
+        const double duu = m_patch.evaluate_2nd_derivative_uu(px_x, px_y)[2];
+        const double dvv = m_patch.evaluate_2nd_derivative_vv(px_x, px_y)[2];
+        const double duv = m_patch.evaluate_2nd_derivative_uv(px_x, px_y)[2];
+        const Eigen::Matrix2d hess{{duu, duv}, {duv, dvv}};
+
+        return {value, grad, hess};
     }
 
     Scalar operator()(const Scalar& u, const Scalar& v) { return get(u, v); }
