@@ -7,7 +7,7 @@
 #include <nlohmann/json.hpp>
 #include <sec/envelope/SampleEnvelope.hpp>
 namespace triwild {
-enum class ENERGY_TYPE { AMIPS, SYMDI, EDGE_LENGTH };
+enum class ENERGY_TYPE { AMIPS, SYMDI, EDGE_LENGTH, EDGE_QUADRATURE };
 enum class EDGE_LEN_TYPE { LINEAR2D, LINEAR3D, N_IMPLICIT_POINTS, PT_PER_PIXEL, MIPMAP, ACCURACY };
 struct Parameters
 {
@@ -76,6 +76,6 @@ public:
     double m_accuracy_threshold = 0.01;
     bool m_accuracy = 0;
 
-    std::unique_ptr<wmtk::Displacement> m_displacement;
+    std::shared_ptr<wmtk::Displacement> m_displacement;
 };
 } // namespace triwild

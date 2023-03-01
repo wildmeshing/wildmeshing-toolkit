@@ -23,6 +23,8 @@ bool triwild::TriWild::smooth_before(const Tuple& t)
 
 bool triwild::TriWild::smooth_after(const Tuple& t)
 {
+    static std::atomic_int cnt = 0;
+    wmtk::logger("smothing op # {}", cnt);
     // Newton iterations are encapsulated here.
     auto vid = t.vid(*this);
     auto locs = get_one_ring_tris_for_vertex(t);
@@ -42,6 +44,19 @@ bool triwild::TriWild::smooth_after(const Tuple& t)
             return false;
     };
 
+
+    /// should only happen in debug
+    // wmtk::logger().info("========== one ring contians  !!!{}!!!  tris ", locs.size());
+    // auto last_tuples = oriented_tri_vertices(locs[0]);
+    // Eigen::Vector2d last_v2, last_v3;
+    // for (auto j = 0; j < 3; j++) {
+    //     if (last_tuples[j].vid(*this) == vid) {
+    //         last_v2 = vertex_attrs[last_tuples[(j + 1) % 3].vid(*this)].pos;
+    //         last_v3 = vertex_attrs[last_tuples[(j + 2) % 3].vid(*this)].pos;
+    //     }
+    // }
+    /// should only happen in debug
+
     for (auto i = 0; i < locs.size(); i++) {
         auto tri = locs[i];
         assert(!is_inverted(tri));
@@ -52,14 +67,15 @@ bool triwild::TriWild::smooth_after(const Tuple& t)
                 auto v3 = vertex_attrs[local_tuples[(j + 2) % 3].vid(*this)].pos;
                 nminfo.neighbors.row(i) << v2(0), v2(1), v3(0), v3(1);
                 assert(!is_inverted_coordinates(v2, v3));
+                // if (i != 0) assert(last_v2 != v2);
+                // last_v2 = v2;
                 // sanity check, no inversion should be heres
             }
         }
+        assert(locs.size() == nminfo.neighbors.rows());
     }
-    assert(locs.size() == nminfo.neighbors.rows());
-
-    // use a general root finding method that defaults to newton but if not changeing the position,
-    // try gradient descent
+    // use a general root finding method that defaults to newton but if not changeing the
+    // position, try gradient descent
     auto old_pos = vertex_attrs[vid].pos;
     auto old_t = vertex_attrs[vid].t;
 
@@ -82,9 +98,8 @@ bool triwild::TriWild::smooth_after(const Tuple& t)
         dofx);
 
     // check boundary and project
-    // this should be outdated since now every boundary vertex will be on boundary (but good to have
-    // as an assert)
-    // add assert!!!!
+    // this should be outdated since now every boundary vertex will be on boundary (but good
+    // to have as an assert) add assert!!!!
     if (is_boundary_vertex(t) && mesh_parameters.m_boundary_parameter) {
         vertex_attrs[vid].t = dofx(0);
         vertex_attrs[vid].pos = mesh_parameters.m_boundary.t_to_uv(nminfo.curve_id, dofx(0));
@@ -111,6 +126,7 @@ bool triwild::TriWild::smooth_after(const Tuple& t)
         after_energy,
         energy_gradient.second);
     assert(invariants(locs));
+    cnt++;
     return true;
 }
 

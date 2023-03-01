@@ -47,8 +47,8 @@ void TriWild::split_all_edges()
                 Eigen::Matrix<double, 2, 1> posnew = (pos0 + pos1) * 0.5;
                 auto error1 = m.mesh_parameters.m_displacement->get_error_per_edge(pos0, posnew);
                 auto error2 = m.mesh_parameters.m_displacement->get_error_per_edge(posnew, pos1);
-                return m.mesh_parameters.m_displacement->get_error_per_edge(pos0, pos1) - error1 -
-                       error2;
+                auto length = m.mesh_parameters.m_displacement->get_error_per_edge(pos0, pos1);
+                return length - error1 - error2;
             }
             return m.mesh_parameters.m_get_length(e.vid(m), e.switch_vertex(m).vid(m));
         };

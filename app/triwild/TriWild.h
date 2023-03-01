@@ -81,6 +81,7 @@ public:
     void set_energy(const ENERGY_TYPE energy_type);
     void set_energy(std::unique_ptr<wmtk::Energy> f) { mesh_parameters.m_energy = std::move(f); };
     void set_image_function(const wmtk::Image& image, const WrappingMode wrapping_mode);
+    void set_displacement();
     void set_edge_length_measurement(const EDGE_LEN_TYPE edge_len_type);
     void set_projection();
     Eigen::Matrix<uint64_t, Eigen::Dynamic, 2, Eigen::RowMajor> get_bnd_edge_matrix();

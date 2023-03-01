@@ -31,10 +31,16 @@ void TriWild::set_parameters(
     const ENERGY_TYPE energy_type,
     const bool boundary_parameter)
 {
-    mesh_parameters.m_target_l = target_edge_length;
+    switch (edge_len_type) {
+    case EDGE_LEN_TYPE::ACCURACY: mesh_parameters.m_accuracy_threshold = target_edge_length; break;
+    default: mesh_parameters.m_target_l = target_edge_length; break;
+    }
+
+    // setting needs to be in the order of image-> displacement-> energy-> edge_length
+    // set the image first since it is used for displacement and energy setting
     set_image_function(image, wrapping_mode);
-    set_energy(
-        energy_type); // set the displacement_function first since it is used for energy setting
+    set_displacement();
+    set_energy(energy_type);
     set_edge_length_measurement(edge_len_type);
     mesh_parameters.m_boundary_parameter = boundary_parameter;
 }
@@ -91,7 +97,10 @@ void TriWild::set_energy(const ENERGY_TYPE energy_type)
     case ENERGY_TYPE::EDGE_LENGTH:
         energy_ptr = std::make_unique<wmtk::EdgeLengthEnergy>(mesh_parameters.m_get_z);
         break;
+    case ENERGY_TYPE::EDGE_QUADRATURE:
+        energy_ptr = std::make_unique<wmtk::AccuracyEnergy>(mesh_parameters.m_displacement);
     }
+
     mesh_parameters.m_energy = std::move(energy_ptr);
 }
 
@@ -129,11 +138,6 @@ void TriWild::set_edge_length_measurement(const EDGE_LEN_TYPE edge_len_type)
         mesh_parameters.m_accuracy = 0;
         break;
     case EDGE_LEN_TYPE::ACCURACY:
-        std::unique_ptr<Displacement> displacement_ptr = std::make_unique<DisplacementBicubic>(
-            mesh_parameters.m_image,
-            mesh_parameters.m_wrapping_mode,
-            mesh_parameters.m_wrapping_mode);
-        mesh_parameters.m_displacement = std::move(displacement_ptr);
         mesh_parameters.m_get_length = [&](const size_t& vid1, const size_t& vid2) -> double {
             this->get_accuracy_error(vid1, vid2);
         };
@@ -159,6 +163,16 @@ void TriWild::set_image_function(const wmtk::Image& image, const WrappingMode wr
     mesh_parameters.m_mipmap = wmtk::MipMap(image);
     mesh_parameters.m_mipmap.set_wrapping_mode(wrapping_mode);
 }
+
+void TriWild::set_displacement()
+{
+    // needs to be called after m_image is initiated
+    // can be also set depending on a user parameter that initialize different Displacement type
+    std::unique_ptr<Displacement> displacement_ptr =
+        std::make_unique<DisplacementBicubic>(mesh_parameters.m_image);
+    mesh_parameters.m_displacement = std::move(displacement_ptr);
+}
+
 void TriWild::set_projection()
 {
     struct Data

@@ -64,7 +64,7 @@ auto swap_accuracy_cost = [](auto& m, const TriMesh::Tuple& e) {
         auto e_after = m.get_accuracy_error(t3.vid(m), t4.vid(m));
         return (e_before - e_after);
     } else
-        return -1.;
+        return 0.;
 };
 
 void TriWild::swap_all_edges()

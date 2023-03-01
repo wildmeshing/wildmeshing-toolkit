@@ -6,6 +6,8 @@
 #include <Eigen/LU>
 #include <iostream>
 #include "BoundaryParametrization.h"
+#include "Displacement.h"
+#include "Image.h"
 #include "Logger.hpp"
 #include "autodiff.h"
 
@@ -24,55 +26,6 @@ struct State
     std::array<double, 6> target_triangle = {0., 0., 1., 0., 1. / 2., sqrt(3) / 2.};
     std::array<double, 6> input_triangle;
 };
-
-struct AccuracyState
-{
-    using DScalar = DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d>;
-    Eigen::Vector2d gradient;
-    Eigen::Matrix2d hessian;
-
-    wmtk::DofVector dofx;
-
-    Eigen::MatrixXd incident_vertices;
-    // this matrix is varying sized depending on the operation
-    // different from State that enables always value energy over a triangle then sum up
-    // one_ring_energy in TriWild class, this one sums up all the relevant errors for each operation
-    // split: 2 edge-vertices
-    // collapse: 2 one-ring vertices for each edge-vertices
-};
-
-struct DofsToPositions_accuracyenergy
-{
-    using DScalar = DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d>;
-
-protected:
-    const Eigen::Matrix<double, 4, 1>& m_edge_vertices;
-
-public:
-    DofsToPositions_accuracyenergy(
-        const Eigen::Matrix<double, 4, 1>& edge_vertices) // vertuces are in vid1, vid2 order
-        : m_edge_vertices(edge_vertices)
-    {}
-    std::pair<DScalar, DScalar> eval(const DofVector& dofx) const
-    {
-        if (dofx.size() == 2) {
-            DiffScalarBase::setVariableCount(2);
-            DScalar x1(0, dofx(0));
-            DScalar y1(1, dofx(1));
-            return std::pair<DScalar, DScalar>(x1, y1);
-        } // not likely to happen this is case
-        DScalar t(0, dofx(0));
-        Eigen::Vector2d A, dir;
-        A << m_edge_vertices(0, 0), m_edge_vertices(1, 0);
-        dir << m_edge_vertices(2, 0) - m_edge_vertices(0, 0),
-            m_edge_vertices(3, 0) - m_edge_vertices(1, 0);
-        dir = dir.stableNormalized();
-        Eigen::Matrix<DScalar, 2, 1> V;
-        V << A(0) + t * dir(0), A(1) + t * dir(1);
-        return {V(0), V(1)};
-    }
-};
-
 struct DofsToPositions
 {
     using DScalar = DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d>;
@@ -192,5 +145,19 @@ public:
         double z = m_displacement(DScalar(x), DScalar(y)).getValue();
         return z;
     };
+};
+class AccuracyEnergy : public wmtk::Energy
+{
+public:
+    AccuracyEnergy(std::shared_ptr<Displacement> displ)
+        : m_displ(displ)
+    {}
+
+public:
+    std::shared_ptr<Displacement> m_displ; // Initiated using the Displacement class
+
+public:
+    void eval(State& state) const override{};
+    void eval(State& state, DofsToPositions& x) const override;
 };
 } // namespace wmtk
