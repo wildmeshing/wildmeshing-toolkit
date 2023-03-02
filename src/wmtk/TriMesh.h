@@ -1,5 +1,4 @@
 #pragma once
-#define USE_ONLY_OPERATIONS
 
 #define USE_OPERATION_LOGGER
 #include <wmtk/utils/VectorUtils.h>
@@ -355,7 +354,7 @@ protected:
      */
     size_t get_next_empty_slot_v();
 
-public: // MTAO: TODO:: these are all deprecatd and should be delegated to TriMeshOperation
+public:
     /**
      * @brief User specified invariants that can't be violated
      * @param std::vector<Tuple> a vector of Tuples that are concerned in a given operation
@@ -363,65 +362,7 @@ public: // MTAO: TODO:: these are all deprecatd and should be delegated to TriMe
      */
     // MTAO: TODO: figure out if invariants is a property of the mesh or a property o
     virtual bool invariants(const std::vector<Tuple>&);
-#if !defined(USE_ONLY_OPERATIONS)
-    /**
-     * @brief User specified preparations and desideratas for an edge split
-     * @param the edge Tuple to be split
-     * @return true if the preparation succeed
-     */
-    virtual bool split_edge_before(const Tuple& t);
-    /**
-     * @brief User specified modifications and desideratas after an edge split
-     * @param the edge Tuple to be split
-     * @return true if the modifications succeed
-     */
-    virtual bool split_edge_after(const Tuple& t);
 
-    /**
-     * @brief User specified preparations and desideratas for an edge collapse
-     * including the link check as collapse prerequisite
-     *
-     * @param the edge Tuple to be split
-     * @return true if the preparation succeed
-     */
-    virtual bool collapse_edge_before(const Tuple& t);
-    /**
-     * @brief User specified modifications and desideratas after an edge collapse
-     * @param the edge Tuple to be collapsed
-     * @return true if the modifications succeed
-     */
-    virtual bool collapse_edge_after(const Tuple& t);
-    /**
-     * @brief User specified modifications and desideras after an edge swap
-     * @param the edge Tuple to be swaped
-     * @return true if the modifications succeed
-     */
-    virtual bool swap_edge_after(const Tuple& t);
-    /**
-     * @brief User specified preparations and desideratas for an edge swap
-     * including 1.can't swap on boundary edge. 2. when swap edge between v1, v2,
-     * there can't exist edges between the two opposite vertices v3, v4
-     *
-     * @param the edge Tuple to be swaped
-     * @return true if the preparation succeed
-     */
-    virtual bool swap_edge_before(const Tuple& t);
-    /**
-     * @brief User specified preparations and desideratas for an edge smooth
-     *
-     * @param the edge Tuple to be smoothed
-     * @return true if the preparation succeed
-     */
-    virtual bool smooth_before(const Tuple& t);
-    /**
-     * @brief User specified modifications and desideras after an edge smooth
-     * @param the edge Tuple to be smoothed
-     * @return true if the modifications succeed
-     */
-    virtual bool smooth_after(const Tuple& t);
-#endif
-
-public:
     /**
      * @brief get the current largest global fid
      *
@@ -455,12 +396,6 @@ public:
     std::optional<Tuple> switch_face(const Tuple& t) const { return t.switch_face(*this); }
 
     /**
-     * @brief prerequisite for collapse
-     * @param t Tuple referes to the edge to be collapsed
-     * @returns true is the link check is passed
-     */
-    bool check_link_condition(const Tuple& t) const;
-    /**
      * @brief verify the connectivity validity of the mesh
      * @note a valid mesh can have triangles that are is_removed == true
      */
@@ -486,61 +421,9 @@ public:
      *
      * @param t Tuple refering to an edge
      */
-    bool is_boundary_vertex(const TriMesh::Tuple& t) const
-    {
-        auto ve = get_one_ring_edges_for_vertex(t);
-        for (auto e : ve)
-            if (is_boundary_edge(e)) return true;
-        return false;
-    }
+    bool is_boundary_vertex(const TriMesh::Tuple& t) const;
 
 
-#if !defined(USE_ONLY_OPERATIONS)
-    /**
-     * Split an edge
-     *
-     * @param t Input Tuple for the edge to split.
-     * @param[out] new_edges a vector of Tuples refering to the triangles incident to the new vertex
-     * introduced
-     * @return if split succeed
-     */
-    bool split_edge(const Tuple& t, std::vector<Tuple>& new_t);
-    Tuple split_edge_new(const Tuple& t, std::vector<Tuple>& new_t);
-
-    /**
-     * Collapse an edge
-     *
-     * @param t Input Tuple for the edge to be collapsed.
-     * @param[out] new_edges a vector of Tuples refering to the triangles incident to the new vertex
-     * introduced
-     * @note collapse edge a,b and generate a new vertex c
-     * @return if collapse succeed
-     */
-    bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_t);
-    Tuple collapse_edge_new(const Tuple& t, std::vector<Tuple>& new_t);
-
-    /**
-     * Swap an edge
-     *
-     * @param t Input Tuple for the edge to be swaped.
-     * @param[out] new_edges a vector of Tuples refering to the triangles incident to the new edge
-     * introduced
-     * @note swap edge a,b to edge c,d
-     * @return if swap succeed
-     */
-    bool swap_edge(const Tuple& t, std::vector<Tuple>& new_t);
-    Tuple swap_edge_new(const Tuple& t, std::vector<Tuple>& new_t);
-
-
-    /**
-     * Smooth a vertex
-     *
-     * @param t Input Tuple for the vertex
-     * @note no geometry changed here
-     * @return if smooth succeed
-     */
-    bool smooth_vertex(const Tuple& t);
-#endif
 
     /**
      * @brief Count the number of the one ring tris for a vertex

@@ -119,6 +119,14 @@ private:
 };
 
 
+    /**
+     * Split an edge
+     *
+     * @param t Input Tuple for the edge to split.
+     * @param[out] new_edges a vector of Tuples refering to the triangles incident to the new vertex
+     * introduced
+     * @return if split succeed
+     */
 class TriMeshSplitEdgeOperation : public TriMeshOperation
 {
 public:
@@ -132,6 +140,18 @@ public:
     Tuple new_vertex(TriMesh& m, const Tuple& t) const;
     std::array<Tuple, 2> original_endpoints(TriMesh& m, const Tuple& t) const;
 };
+
+
+
+    /**
+     * Swap an edge
+     *
+     * @param t Input Tuple for the edge to be swaped.
+     * @param[out] new_edges a vector of Tuples refering to the triangles incident to the new edge
+     * introduced
+     * @note swap edge a,b to edge c,d
+     * @return if swap succeed
+     */
 class TriMeshSwapEdgeOperation : public TriMeshOperation
 {
 public:
@@ -141,6 +161,15 @@ public:
     std::string name() const override;
 };
 
+    /**
+     * Collapse an edge
+     *
+     * @param t Input Tuple for the edge to be collapsed.
+     * @param[out] new_edges a vector of Tuples refering to the triangles incident to the new vertex
+     * introduced
+     * @note collapse edge a,b and generate a new vertex c
+     * @return if collapse succeed
+     */
 class TriMeshEdgeCollapseOperation : public TriMeshOperation
 {
 public:
@@ -149,9 +178,21 @@ public:
     bool after(TriMesh& m, ExecuteReturnData& ret_data) override;
     std::string name() const override;
 
+    /**
+     * @brief prerequisite for collapse
+     * @param t Tuple referes to the edge to be collapsed
+     * @returns true is the link check is passed
+     */
     static bool check_link_condition(const TriMesh& m, const Tuple& t);
 };
 
+    /**
+     * Smooth a vertex
+     *
+     * @param t Input Tuple for the vertex
+     * @note no geometry changed here
+     * @return if smooth succeed
+     */
 class TriMeshSmoothVertexOperation : public TriMeshOperation
 {
 public:
@@ -162,6 +203,11 @@ public:
     bool invariants(TriMesh& m, ExecuteReturnData& ret_data) override;
 };
 
+/**
+ * @brief removing the elements that are removed
+ *
+ * @param bnd_output when turn on will write the boundary vertices to "bdn_table.dmat"
+ */
 class TriMeshConsolidateOperation : public TriMeshOperation
 {
 public:

@@ -329,7 +329,7 @@ TEST_CASE("test_link_check", "[test_pre_check]")
             {{{1, 2, 3}}, {{0, 1, 4}}, {{0, 2, 5}}, {{0, 1, 6}}, {{0, 2, 6}}, {{1, 2, 6}}};
         m.create_mesh(7, tris);
         TriMesh::Tuple edge(1, 2, 0, m);
-        REQUIRE_FALSE(m.check_link_condition(edge));
+        REQUIRE_FALSE(TriMeshEdgeCollapseOperation::check_link_condition(m, edge));
     }
     SECTION("one_triangle")
     {
@@ -338,7 +338,7 @@ TEST_CASE("test_link_check", "[test_pre_check]")
 
         TriMesh::Tuple edge(0, 2, 0, m);
         assert(edge.is_valid(m));
-        REQUIRE_FALSE(m.check_link_condition(edge));
+        REQUIRE_FALSE(TriMeshEdgeCollapseOperation::check_link_condition(m, edge));
     }
     SECTION("one_tet")
     {
@@ -351,7 +351,7 @@ TEST_CASE("test_link_check", "[test_pre_check]")
 
         TriMesh::Tuple edge(1, 0, 0, m);
         assert(edge.is_valid(m));
-        REQUIRE_FALSE(m.check_link_condition(edge));
+        REQUIRE_FALSE(TriMeshEdgeCollapseOperation::check_link_condition(m, edge));
     }
     SECTION("non_manifold_after_collapse")
     {
@@ -363,9 +363,9 @@ TEST_CASE("test_link_check", "[test_pre_check]")
         m.create_mesh(6, tris);
 
         TriMesh::Tuple fail_edge(5, 0, 1, m);
-        REQUIRE_FALSE(m.check_link_condition(fail_edge));
+        REQUIRE_FALSE(TriMeshEdgeCollapseOperation::check_link_condition(m, fail_edge));
         TriMesh::Tuple pass_edge(0, 2, 0, m);
-        REQUIRE(m.check_link_condition(pass_edge));
+        REQUIRE(TriMeshEdgeCollapseOperation::check_link_condition(m, pass_edge));
     }
 }
 // test manifold (eid uniqueness)
