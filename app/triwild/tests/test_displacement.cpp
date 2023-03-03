@@ -20,7 +20,7 @@ TEST_CASE("displacement_bicubic_constant", "[displacement]")
         auto f_42 = [](const double& u, const double& v) -> double { return 42; };
         image.set(f_42, wrapping_mode, wrapping_mode);
     }
-    DisplacementBicubic displ(image, wrapping_mode, wrapping_mode);
+    DisplacementBicubic displ(image);
 
     // Make sure that image.get(), displ.get(), and f() all give the same result
     for (float u = 0; u <= 1; u += 0.1) {
@@ -38,7 +38,7 @@ TEST_CASE("displacement_bicubic_linear", "[displacement]")
     auto f_linear = [](const double& u, const double& v) -> double { return u; };
     image.set(f_linear, wrapping_mode, wrapping_mode);
 
-    DisplacementBicubic displ(image, wrapping_mode, wrapping_mode);
+    DisplacementBicubic displ(image);
 
     // Make sure that image.get(), displ.get(), and f() all give the same result
     for (float u = 0; u <= 1; u += 0.1) {
@@ -68,7 +68,7 @@ TEST_CASE("displacement_spline_constant", "[displacement]")
         auto f_42 = [](const double& u, const double& v) -> double { return 42; };
         image.set(f_42, wrapping_mode, wrapping_mode);
     }
-    DisplacementSpline displ(image, wrapping_mode, wrapping_mode);
+    DisplacementSpline displ(image);
 
     // Make sure that image.get(), displ.get(), and f() all give the same result
     for (double u = 0; u <= 1; u += 0.1) {
@@ -88,7 +88,7 @@ TEST_CASE("displacement_spline_linear", "[displacement]")
     auto f_linear = [](const double& u, const double& v) -> double { return u; };
     image.set(f_linear, wrapping_mode, wrapping_mode);
 
-    DisplacementSpline displ(image, wrapping_mode, wrapping_mode);
+    DisplacementSpline displ(image);
     //displ.set_wrapping_mode(wrapping_mode, wrapping_mode);
 
     // Make sure that displ.get(), and f() give the same result on the interior
