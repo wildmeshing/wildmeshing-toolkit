@@ -1,7 +1,6 @@
 #pragma once
-#include <wmtk/utils/Hdf5Utils.h>
+#include <wmtk/utils/Hdf5Utils.hpp>
 #include <wmtk/AttributeCollection.hpp>
-#include <wmtk/utils/OperationRecordingDataTypes.hpp>
 
 
 namespace wmtk {

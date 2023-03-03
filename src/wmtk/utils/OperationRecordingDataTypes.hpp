@@ -9,15 +9,6 @@
 
 namespace wmtk {
 
-// Helper for adding values to a dataset holding a 1d vector
-template <typename T, typename Allocator>
-std::array<size_t, 2> append_values_to_1d_dataset(
-    HighFive::DataSet& dataset,
-    const std::vector<T, Allocator>& data);
-
-// Helper for adding a single value to a dataset holding a 1d vector
-template <typename T>
-size_t append_value_to_1d_dataset(HighFive::DataSet& dataset, const T& value);
 
 // The actions of an operator are defined by a sequence of commands and how those commands affect
 // attributes. They are tehrefore serialized through 2 + N tables of data, where N is the number of
@@ -164,39 +155,4 @@ HighFive::CompoundType AttributeUpdateData<T>::datatype()
 }
 
 
-template <typename T, typename Allocator>
-std::array<size_t, 2> append_values_to_1d_dataset(
-    HighFive::DataSet& dataset,
-    const std::vector<T, Allocator>& data)
-{
-    // compute the new dataset size
-    std::vector<size_t> first_position = dataset.getDimensions();
-    // double check that the dataset is 1-dimensional
-    assert(first_position.size() == 1);
-    std::vector<size_t> new_size{first_position[0] + data.size()};
-    std::vector<size_t> count{data.size()};
-
-    // resize the datset to the right size
-    dataset.resize(new_size);
-
-    dataset.select(first_position, count).write(data);
-    return std::array<size_t, 2>{{first_position[0], new_size[0]}};
-}
-
-template <typename T>
-size_t append_value_to_1d_dataset(HighFive::DataSet& dataset, const T& value)
-{
-    // compute the new dataset size
-    std::vector<size_t> first_position = dataset.getDimensions();
-    // double check that the dataset is 1-dimensional
-    assert(first_position.size() == 1);
-    std::vector<size_t> new_size{first_position[0] + 1};
-    std::vector<size_t> count{1};
-
-    // resize the datset to the right size
-    dataset.resize(new_size);
-
-    dataset.select(first_position, count).write_raw(&value);
-    return new_size[0];
-}
 } // namespace wmtk
