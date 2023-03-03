@@ -65,6 +65,11 @@ public:
         const double);
     bool is_outside(const std::array<Eigen::Vector3d, 3>& tris);
     bool is_outside(const Eigen::Vector3d& pts);
+    double nearest_point(const Eigen::Vector3d& pts, Eigen::Vector3d& result) {
+        auto dist = 0.;
+        geo_tree_ptr_->nearest_facet(pts, result, dist);
+        return dist;
+    }
 
 private:
     std::shared_ptr<GEO::MeshFacetsAABBWithEps> geo_tree_ptr_;
