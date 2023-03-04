@@ -96,7 +96,7 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
                 }
             }
         }
-        auto prject = Eigen::Vector3d();
+        auto project = Eigen::Vector3d();
         triangles_tree.nearest_point(m_vertex_attribute[vid].m_posf, project);
         m_vertex_attribute[vid].m_posf = project;
         for (auto& n : neighbor_assemble) {

@@ -16,7 +16,8 @@ TEST_CASE("tetwild_file_write", "[tetwild_operation]")
     params.init(Vector3d(0, 0, 0), Vector3d(1, 1, 1));
 
     wmtk::Envelope envelope;
-    TetWild tetwild(params, envelope);
+    sample_envelope::SampleEnvelope sample_env;
+    TetWild tetwild(params, envelope, sample_env);
 
     std::vector<VertexAttributes> vertices(4);
     vertices[0].m_posf = Vector3d(0, 0, 0);
