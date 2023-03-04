@@ -171,14 +171,14 @@ void SampleEnvelope::init(
     for (int i = 0; i < face_indices.size(); i++) geo_face_ind[i] = face_indices[i];
 }
 
-bool SampleEnvelope::is_outside(const Eigen::Vector3d& pts)
+bool SampleEnvelope::is_outside(const Eigen::Vector3d& pts) const
 {
     if (use_exact) return exact_envelope.is_outside(pts);
     auto dist2 = geo_tree_ptr_->squared_distance(GEO::vec3(pts[0], pts[1], pts[2]));
     return (dist2 > eps2);
 }
 
-bool SampleEnvelope::is_outside(const std::array<Eigen::Vector3d, 3>& tri)
+bool SampleEnvelope::is_outside(const std::array<Eigen::Vector3d, 3>& tri) const
 {
     if (use_exact) return exact_envelope.is_outside(tri);
     std::array<GEO::vec3, 3> vs = {
@@ -232,7 +232,7 @@ bool SampleEnvelope::is_outside(const std::array<Eigen::Vector3d, 3>& tri)
     return false;
 }
 
-double SampleEnvelope::nearest_point(const Eigen::Vector3d& pts, Eigen::Vector3d& result) 
+double SampleEnvelope::nearest_point(const Eigen::Vector3d& pts, Eigen::Vector3d& result) const
 {
     auto dist = 0.;
     GEO::vec3 current_point(pts[0], pts[1], pts[2]);
