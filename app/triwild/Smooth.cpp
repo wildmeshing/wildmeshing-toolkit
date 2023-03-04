@@ -91,11 +91,13 @@ bool triwild::TriWild::smooth_after(const Tuple& t)
     double before_energy = get_one_ring_energy(t).first;
 
     // assert before energy is always less than after energy
+    wmtk::State state = {};
     wmtk::newton_method_with_fallback(
         *mesh_parameters.m_energy,
         mesh_parameters.m_boundary,
         nminfo,
-        dofx);
+        dofx,
+        state);
 
     // check boundary and project
     // this should be outdated since now every boundary vertex will be on boundary (but good

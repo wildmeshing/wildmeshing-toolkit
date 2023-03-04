@@ -488,10 +488,13 @@ std::array<double, 6> wmtk::smooth_over_one_triangle(
  * where x*, y* are double, and idx should be cast to size_t to be used.
  * @note The specific assembles design is to bypass passing in mesh m and avoid doing navigations/vid-quiries in this function
  */
-auto newton_direction_2d_with_index = [](auto& energy_def,
-                                         const wmtk::NewtonMethodInfo& nminfo,
-                                         const wmtk::Boundary& boundary_mapping,
-                                         const wmtk::DofVector& dofx) -> wmtk::DofVector {
+wmtk::DofVector wmtk::newton_direction_2d_with_index(
+    const wmtk::Energy& energy_def,
+    State& state,
+    const wmtk::NewtonMethodInfo& nminfo,
+    const wmtk::Boundary& boundary_mapping,
+    const wmtk::DofVector& dofx)
+{
     auto total_energy = 0.;
     Eigen::Vector2d total_jac = Eigen::Vector2d::Zero();
     Eigen::Matrix2d total_hess = Eigen::Matrix2d::Zero();
@@ -499,7 +502,6 @@ auto newton_direction_2d_with_index = [](auto& energy_def,
     for (auto i = 0; i < nminfo.neighbors.rows(); i++) {
         // set State
         // pass the state energy
-        wmtk::State state = {};
         state.two_opposite_vertices = nminfo.neighbors.row(i);
         state.dofx = dofx;
         state.scaling = nminfo.target_length;
@@ -518,11 +520,14 @@ auto newton_direction_2d_with_index = [](auto& energy_def,
         return -total_jac;
     }
 };
-auto gradient_descent_direction_2d_with_index = [](auto& energy_def,
-                                                   const wmtk::NewtonMethodInfo& nminfo,
-                                                   const wmtk::Boundary& boundary_mapping,
-                                                   const wmtk::DofVector& dofx) -> wmtk::DofVector {
-    wmtk::logger().info("XXXXXXXX using gradient descent xxxxxxxx");
+wmtk::DofVector wmtk::gradient_descent_direction_2d_with_index(
+    const wmtk::Energy& energy_def,
+    State& state,
+    const wmtk::NewtonMethodInfo& nminfo,
+    const wmtk::Boundary& boundary_mapping,
+    const wmtk::DofVector& dofx)
+{
+    wmtk::logger().info("######### using gradient descent #########");
 
     auto total_energy = 0.;
     Eigen::Vector2d total_jac = Eigen::Vector2d::Zero();
@@ -530,7 +535,6 @@ auto gradient_descent_direction_2d_with_index = [](auto& energy_def,
     for (auto i = 0; i < nminfo.neighbors.rows(); i++) {
         // set State
         // pass the state energy
-        wmtk::State state = {};
         state.two_opposite_vertices = nminfo.neighbors.row(i);
         state.dofx = dofx;
         state.scaling = nminfo.target_length;
@@ -542,25 +546,25 @@ auto gradient_descent_direction_2d_with_index = [](auto& energy_def,
         assert(!std::isnan(total_energy));
     }
     return -total_jac;
-};
+}
 
 void wmtk::newton_method_with_fallback(
     const wmtk::Energy& energy_def,
     const wmtk::Boundary& boundary_mapping,
     const NewtonMethodInfo& nminfo,
-    DofVector& dofx)
+    DofVector& dofx,
+    State& state)
 {
     DofVector old_dofx = dofx;
 
     // this is the same for both boundary vertex and interior veretx since energy is handled by
     // energy function automatically
     auto energy_from_point =
-        [&energy_def, &nminfo, &boundary_mapping](const DofVector& dofx) -> double {
+        [&energy_def, &nminfo, &boundary_mapping, &state](const DofVector& dofx) -> double {
         auto total_energy = 0.;
         for (auto i = 0; i < nminfo.neighbors.rows(); i++) {
             // set State
             // pass the state energy
-            State state = {};
             state.two_opposite_vertices = nminfo.neighbors.row(i);
             state.dofx = dofx;
             state.scaling = nminfo.target_length;
@@ -593,32 +597,36 @@ void wmtk::newton_method_with_fallback(
     };
 
     // the position as input is 2d coordinates. need to convert to 1d before pass in
-    auto compute_new_valid_pos = [&is_inverted,
-                                  &energy_from_point,
-                                  &energy_def,
-                                  &boundary_mapping,
-                                  &nminfo](const DofVector& dofx, bool NEWTON) {
-        auto current_dofx = dofx;
-        auto line_search_iters = 12;
-        DofVector dir; // size() == 1 if it's boundary, ow, size() == 2
-        if (NEWTON) {
-            dir =
-                newton_direction_2d_with_index(energy_def, nminfo, boundary_mapping, current_dofx);
-        } else {
-            dir = gradient_descent_direction_2d_with_index(
-                energy_def,
-                nminfo,
-                boundary_mapping,
-                current_dofx);
-        }
+    auto compute_new_valid_pos =
+        [&is_inverted, &energy_from_point, &energy_def, &boundary_mapping, &nminfo, &state](
+            const DofVector& dofx,
+            bool NEWTON) {
+            auto current_dofx = dofx;
+            auto line_search_iters = 12;
+            DofVector dir; // size() == 1 if it's boundary, ow, size() == 2
+            if (NEWTON) {
+                dir = newton_direction_2d_with_index(
+                    energy_def,
+                    state,
+                    nminfo,
+                    boundary_mapping,
+                    current_dofx);
+            } else {
+                dir = gradient_descent_direction_2d_with_index(
+                    energy_def,
+                    state,
+                    nminfo,
+                    boundary_mapping,
+                    current_dofx);
+            }
 
-        auto new_dofx =
-            linesearch_2d(is_inverted, energy_from_point, current_dofx, dir, line_search_iters);
+            auto new_dofx =
+                linesearch_2d(is_inverted, energy_from_point, current_dofx, dir, line_search_iters);
 
-        current_dofx = new_dofx;
+            current_dofx = new_dofx;
 
-        return current_dofx;
-    };
+            return current_dofx;
+        };
 
     auto new_dofx = compute_new_valid_pos(old_dofx, 1);
     // check is the new position is same as the old. If yes switch to gradient descent

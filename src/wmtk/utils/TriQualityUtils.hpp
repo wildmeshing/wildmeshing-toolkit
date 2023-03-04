@@ -63,9 +63,24 @@ Eigen::Vector2d try_project(
     const Eigen::Vector2d& point,
     const std::vector<std::array<double, 4>>& assembled_neighbor);
 
+wmtk::DofVector newton_direction_2d_with_index(
+    const wmtk::Energy& energy_def,
+    State& state,
+    const wmtk::NewtonMethodInfo& nminfo,
+    const wmtk::Boundary& boundary_mapping,
+    const wmtk::DofVector& dofx);
+
+wmtk::DofVector gradient_descent_direction_2d_with_index(
+    const wmtk::Energy& energy_def,
+    State& state,
+    const wmtk::NewtonMethodInfo& nminfo,
+    const wmtk::Boundary& boundary_mapping,
+    const wmtk::DofVector& dofx);
+
 void newton_method_with_fallback(
     const wmtk::Energy& energy_def,
     const wmtk::Boundary& boundary_mapping,
     const NewtonMethodInfo& nminfo,
-    DofVector& dofx);
+    DofVector& dofx,
+    State& state);
 } // namespace wmtk
