@@ -95,7 +95,7 @@ public:
          * @return size_t
          * @note use mostly for constructing consistent tuples in operations
          */
-        size_t local_eid(const TriMesh& m) const { return m_eid; };
+        size_t local_eid([[maybe_unused]] const TriMesh& m) const { return m_eid; };
         /**
          * Switch operation.
          *
@@ -313,13 +313,13 @@ protected:
      * @param the edge Tuple to be split
      * @return true if the preparation succeed
      */
-    virtual bool split_edge_before(const Tuple& t) { return true; }
+    virtual bool split_edge_before([[maybe_unused]] const Tuple& t) { return true; }
     /**
      * @brief User specified modifications and desideratas after an edge split
      * @param the edge Tuple to be split
      * @return true if the modifications succeed
      */
-    virtual bool split_edge_after(const Tuple& t) { return true; }
+    virtual bool split_edge_after([[maybe_unused]] const Tuple& t) { return true; }
 
     /**
      * @brief User specified preparations and desideratas for an edge collapse
@@ -338,13 +338,13 @@ protected:
      * @param the edge Tuple to be collapsed
      * @return true if the modifications succeed
      */
-    virtual bool collapse_edge_after(const Tuple& t) { return true; }
+    virtual bool collapse_edge_after([[maybe_unused]] const Tuple& t) { return true; }
     /**
      * @brief User specified modifications and desideras after an edge swap
      * @param the edge Tuple to be swaped
      * @return true if the modifications succeed
      */
-    virtual bool swap_edge_after(const Tuple& t) { return true; }
+    virtual bool swap_edge_after([[maybe_unused]] const Tuple& t) { return true; }
     /**
      * @brief User specified preparations and desideratas for an edge swap
      * including 1.can't swap on boundary edge. 2. when swap edge between v1, v2,
@@ -353,20 +353,20 @@ protected:
      * @param the edge Tuple to be swaped
      * @return true if the preparation succeed
      */
-    virtual bool swap_edge_before(const Tuple& t);
+    virtual bool swap_edge_before([[maybe_unused]] const Tuple& t);
     /**
      * @brief User specified preparations and desideratas for an edge smooth
      *
      * @param the edge Tuple to be smoothed
      * @return true if the preparation succeed
      */
-    virtual bool smooth_before(const Tuple& t) { return true; }
+    virtual bool smooth_before([[maybe_unused]] const Tuple& t) { return true; }
     /**
      * @brief User specified modifications and desideras after an edge smooth
      * @param the edge Tuple to be smoothed
      * @return true if the modifications succeed
      */
-    virtual bool smooth_after(const Tuple& t) { return true; }
+    virtual bool smooth_after([[maybe_unused]] const Tuple& t) { return true; }
 
 public:
     /**

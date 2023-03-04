@@ -7,7 +7,6 @@
 #include <remeshing/UniformRemeshing.h>
 #include <wmtk/utils/AMIPS2D.h>
 #include <wmtk/utils/AMIPS2D_autodiff.h>
-#include <wmtk/utils/AdaptiveGuassQuadrature.h>
 #include <wmtk/utils/BoundaryParametrization.h>
 #include <wmtk/utils/DisplacementBicubic.h>
 #include <wmtk/utils/Image.h>
@@ -27,42 +26,6 @@ template <class T>
 using RowMatrix2 = Eigen::Matrix<T, Eigen::Dynamic, 2, Eigen::RowMajor>;
 using Index = uint64_t;
 using Scalar = double;
-
-std::function<bool(std::array<double, 6>&)> is_inverted = [](auto& tri) {
-    Eigen::Vector2d a, b, c;
-    a << tri[0], tri[1];
-    b << tri[2], tri[3];
-    c << tri[4], tri[5];
-    auto res = igl::predicates::orient2d(a, b, c);
-    return (res != igl::predicates::Orientation::POSITIVE);
-};
-std::function<bool(std::array<double, 6>&)> is_degenerate = [](auto& tri) {
-    Eigen::Vector3d a, b;
-    a << tri[2] - tri[0], tri[3] - tri[1], 0.;
-    b << tri[4] - tri[0], tri[5] - tri[1], 0.;
-    auto area = (a.cross(b)).norm();
-    auto long_e = std::max(a.norm(), b.norm());
-    return (std::pow(area, 2) < 1e-5 || std::pow((area / long_e - 0.01), 2) < 1e-5);
-};
-
-TEST_CASE("tri_energy")
-{
-    Eigen::MatrixXd V(3, 2);
-    Eigen::MatrixXi F1(1, 3);
-    Eigen::MatrixXi F2(1, 3);
-    V << -1, 1, 1, 1, -1, -1;
-    F1 << 0, 1, 2;
-    F2 << 0, 2, 1;
-    triwild::TriWild m2;
-    m2.create_mesh(V, F2);
-    m2.set_energy(std::make_unique<wmtk::AMIPS>());
-
-    for (auto& t : m2.get_faces()) {
-        wmtk::logger().info(m2.get_quality(t));
-        wmtk::logger().info(m2.get_quality(t) > 0);
-        REQUIRE(m2.get_quality(t) > 0);
-    }
-}
 
 TEST_CASE("triwild_collapse", "[triwild_collapse][.]")
 {
@@ -199,22 +162,6 @@ TEST_CASE("triwild_improve")
     m.write_obj("triwild_improve_freezebnd.obj");
 }
 
-TEST_CASE("autodiff")
-{
-    for (int i = 0; i < 100; i++) {
-        std::array<double, 6> rand_tri;
-        for (int j = 0; j < 6; j++) {
-            rand_tri[j] = rand() % 100 - 50;
-        }
-        REQUIRE(std::pow(AMIPS2D_energy(rand_tri) - AMIPS_autodiff(rand_tri).getValue(), 2) < 1e-4);
-        Eigen::Vector2d Jac;
-        AMIPS2D_jacobian(rand_tri, Jac);
-        REQUIRE((Jac - AMIPS_autodiff(rand_tri).getGradient()).norm() < 1e-4);
-        Eigen::Matrix2d Hes;
-        AMIPS2D_hessian(rand_tri, Hes);
-        REQUIRE((Hes - AMIPS_autodiff(rand_tri).getHessian()).norm() < 1e-4);
-    }
-}
 TEST_CASE("AABB")
 {
     const std::string root(WMT_DATA_DIR);
@@ -232,510 +179,6 @@ TEST_CASE("AABB")
     auto result = m.mesh_parameters.m_get_closest_point(Eigen::RowVector2d(-0.7, 0.6));
     REQUIRE(result == Eigen::RowVector2d(-1, 0.6));
 }
-TEST_CASE("test_degenrate")
-{
-    std::array<double, 6> rand_tri = {27, 35, -14, -46, 26, 33};
-    REQUIRE(is_degenerate(rand_tri));
-}
-TEST_CASE("symdi 2 rand tris")
-{
-    int pass = 0;
-    for (int i = 0; i < 50; i++) {
-        std::array<double, 6> rand_tri;
-        for (int j = 0; j < 6; j++) {
-            rand_tri[j] = rand() % 100 - 50;
-        }
-        // // rand_tri = {0, 0, 2, 0, 1, 1.73};
-        // rand_tri = {27, 35, -14, -46, 26, 33};
-        if (is_degenerate(rand_tri)) {
-            pass++;
-            continue;
-        }
-        if (is_inverted(rand_tri)) {
-            wmtk::logger().info("is_inverted");
-
-            Eigen::Vector2d tmp;
-            tmp << rand_tri[0], rand_tri[1];
-            rand_tri[0] = rand_tri[2];
-            rand_tri[1] = rand_tri[3];
-            rand_tri[2] = tmp(0);
-            rand_tri[3] = tmp(1);
-        }
-        wmtk::logger().info("target {}", rand_tri);
-        std::function<double(const std::array<double, 6>&, int&)> SymDi_auto_value =
-            [&rand_tri](auto& T, auto& i) {
-                return wmtk::SymDi_autodiff_customize_target(rand_tri, T, i).getValue();
-            };
-        std::function<void(const std::array<double, 6>&, Eigen::Vector2d&, int&)> SymDi_auto_grad =
-            [&rand_tri](auto& T, auto& G, auto& i) {
-                G = wmtk::SymDi_autodiff_customize_target(rand_tri, T, i).getGradient();
-            };
-        std::function<void(const std::array<double, 6>&, Eigen::Matrix2d&, int&)>
-            SymDi_auto_hessian = [&rand_tri](auto& T, auto& H, auto& i) {
-                H = wmtk::SymDi_autodiff_customize_target(rand_tri, T, i).getHessian();
-            };
-
-        std::array<double, 6> rand_tri1 = rand_tri;
-        for (int j = 0; j < 6; j++) {
-            rand_tri1[j] = rand() % 100 - 50;
-        }
-        if (is_degenerate(rand_tri1)) {
-            pass++;
-            continue;
-        }
-
-        if (is_inverted(rand_tri1)) {
-            wmtk::logger().info("is_inverted");
-            Eigen::Vector2d tmp;
-            tmp << rand_tri1[0], rand_tri1[1];
-            rand_tri1[0] = rand_tri1[2];
-            rand_tri1[1] = rand_tri1[3];
-            rand_tri1[2] = tmp(0);
-            rand_tri1[3] = tmp(1);
-        }
-        wmtk::logger().info("input {}", rand_tri1);
-        auto tri_output = wmtk::smooth_over_one_triangle(
-            rand_tri1,
-            SymDi_auto_value,
-            SymDi_auto_grad,
-            SymDi_auto_hessian);
-        wmtk::logger().info("output {}", tri_output);
-        wmtk::logger().info(
-            "grad 1 {}",
-            wmtk::SymDi_autodiff_customize_target(rand_tri, tri_output).getGradient());
-        wmtk::logger().info(
-            "grad test2 {}",
-            wmtk::SymDi_autodiff_customize_target(rand_tri, tri_output, 1).getGradient());
-        wmtk::logger().info(
-            "grad test3 {}",
-            wmtk::SymDi_autodiff_customize_target(rand_tri, tri_output, 2).getGradient());
-        if (std::pow(
-                wmtk::SymDi_autodiff_customize_target(rand_tri, tri_output, 0).getValue() - 4.0,
-                2) < 1e-5)
-            pass++;
-    }
-    wmtk::logger().info("number of successs {}", pass);
-    REQUIRE(pass == 50);
-}
-
-TEST_CASE("amips 2 rand tris")
-{
-    int pass = 0;
-    for (int i = 0; i < 50; i++) {
-        std::array<double, 6> rand_tri;
-        for (int j = 0; j < 6; j++) {
-            rand_tri[j] = rand() % 100 - 50;
-        }
-        if (is_degenerate(rand_tri)) {
-            pass++;
-            continue;
-        }
-        if (is_inverted(rand_tri)) {
-            wmtk::logger().info("is_inverted");
-
-            Eigen::Vector2d tmp;
-            tmp << rand_tri[0], rand_tri[1];
-            rand_tri[0] = rand_tri[2];
-            rand_tri[1] = rand_tri[3];
-            rand_tri[2] = tmp(0);
-            rand_tri[3] = tmp(1);
-        }
-
-        wmtk::logger().info("target {}", rand_tri);
-        std::function<double(const std::array<double, 6>&, int&)> AMIPS_auto_value =
-            [&rand_tri](auto& T, auto& i) {
-                return wmtk::AMIPS_autodiff_customize_target(rand_tri, T, i).getValue();
-            };
-        std::function<void(const std::array<double, 6>&, Eigen::Vector2d&, int&)> AMIPS_auto_grad =
-            [&rand_tri](auto& T, auto& G, auto& i) {
-                G = wmtk::AMIPS_autodiff_customize_target(rand_tri, T, i).getGradient();
-            };
-        std::function<void(const std::array<double, 6>&, Eigen::Matrix2d&, int&)>
-            AMIPS_auto_hessian = [&rand_tri](auto& T, auto& H, auto& i) {
-                H = wmtk::AMIPS_autodiff_customize_target(rand_tri, T, i).getHessian();
-            };
-
-        std::array<double, 6> rand_tri1 = rand_tri;
-        for (int j = 0; j < 6; j++) {
-            rand_tri1[j] = rand() % 100 - 50;
-        }
-        if (is_degenerate(rand_tri1)) {
-            pass++;
-            continue;
-        }
-        if (is_inverted(rand_tri1)) {
-            wmtk::logger().info("is_inverted");
-            Eigen::Vector2d tmp;
-            tmp << rand_tri1[0], rand_tri1[1];
-            rand_tri1[0] = rand_tri1[2];
-            rand_tri1[1] = rand_tri1[3];
-            rand_tri1[2] = tmp(0);
-            rand_tri1[3] = tmp(1);
-        }
-
-        wmtk::logger().info("input {}", rand_tri1);
-        auto tri_output = wmtk::smooth_over_one_triangle(
-            rand_tri1,
-            AMIPS_auto_value,
-            AMIPS_auto_grad,
-            AMIPS_auto_hessian);
-        wmtk::logger().info("output {}", tri_output);
-        wmtk::logger().info(
-            "grad 1 {}",
-            wmtk::AMIPS_autodiff_customize_target(rand_tri, tri_output).getGradient());
-        wmtk::logger().info(
-            "grad test2 {}",
-            wmtk::AMIPS_autodiff_customize_target(rand_tri, tri_output, 1).getGradient());
-        wmtk::logger().info(
-            "grad test3 {}",
-            wmtk::AMIPS_autodiff_customize_target(rand_tri, tri_output, 2).getGradient());
-        if (std::pow(
-                wmtk::AMIPS_autodiff_customize_target(rand_tri, tri_output, 0).getValue() - 2.0,
-                2) < 1e-5)
-            pass++;
-    }
-    wmtk::logger().info("number of successs {}", pass);
-    REQUIRE(pass == 50);
-}
-
-TEST_CASE("symdi perturb one vert")
-{
-    int pass = 0;
-    for (int i = 0; i < 50; i++) {
-        std::array<double, 6> rand_tri;
-
-        for (int j = 0; j < 6; j++) {
-            rand_tri[j] = rand() % 100 - 50;
-        }
-        if (is_inverted(rand_tri)) {
-            wmtk::logger().info("is_inverted");
-
-            Eigen::Vector2d tmp;
-            tmp << rand_tri[0], rand_tri[1];
-            rand_tri[0] = rand_tri[2];
-            rand_tri[1] = rand_tri[3];
-            rand_tri[2] = tmp(0);
-            rand_tri[3] = tmp(1);
-        }
-        if (is_degenerate(rand_tri)) {
-            pass++;
-            continue;
-        }
-        wmtk::logger().info("target {}", rand_tri);
-
-        std::function<double(const std::array<double, 6>&, int&)> SymDi_auto_value =
-            [&rand_tri](auto& T, auto& i) {
-                return wmtk::SymDi_autodiff_customize_target(rand_tri, T, i).getValue();
-            };
-        std::function<void(const std::array<double, 6>&, Eigen::Vector2d&, int&)> SymDi_auto_grad =
-            [&rand_tri](auto& T, auto& G, auto& i) {
-                G = wmtk::SymDi_autodiff_customize_target(rand_tri, T, i).getGradient();
-            };
-        std::function<void(const std::array<double, 6>&, Eigen::Matrix2d&, int&)>
-            SymDi_auto_hessian = [&rand_tri](auto& T, auto& H, auto& i) {
-                H = wmtk::SymDi_autodiff_customize_target(rand_tri, T, i).getHessian();
-            };
-
-        std::array<double, 6> rand_tri1 = rand_tri;
-        rand_tri1[0] += rand() % 20;
-        rand_tri1[1] += rand() % 20;
-        if (is_degenerate(rand_tri1)) {
-            pass++;
-            continue;
-        }
-        wmtk::logger().info("input {}", rand_tri1);
-
-        auto tri_output = wmtk::smooth_over_one_triangle(
-            rand_tri1,
-            SymDi_auto_value,
-            SymDi_auto_grad,
-            SymDi_auto_hessian);
-        wmtk::logger().info("output {}", tri_output);
-        if (std::pow(
-                wmtk::SymDi_autodiff_customize_target(rand_tri, tri_output, 0).getValue() - 4.0,
-                2) < 1e-5)
-            pass++;
-
-        else {
-            wmtk::logger().info(
-                "======fail with {}",
-                wmtk::SymDi_autodiff_customize_target(rand_tri, tri_output, 0).getValue());
-        }
-    }
-    wmtk::logger().info("number of successs {}", pass);
-    REQUIRE(pass == 50);
-}
-
-
-TEST_CASE("symdi same tri")
-{
-    int pass = 0;
-    for (int i = 0; i < 100; i++) {
-        std::array<double, 6> rand_tri;
-        for (int j = 0; j < 6; j++) {
-            rand_tri[j] = rand() % 100 - 50;
-        }
-        if (is_inverted(rand_tri)) {
-            wmtk::logger().info("is_inverted");
-
-            Eigen::Vector2d tmp;
-            tmp << rand_tri[0], rand_tri[1];
-            rand_tri[0] = rand_tri[2];
-            rand_tri[1] = rand_tri[3];
-            rand_tri[2] = tmp(0);
-            rand_tri[3] = tmp(1);
-        }
-        if (is_degenerate(rand_tri)) {
-            pass++;
-            continue;
-        }
-        wmtk::logger().info("target {}", rand_tri);
-
-        std::function<double(const std::array<double, 6>&, int&)> SymDi_auto_value =
-            [&rand_tri](auto& T, auto& i) {
-                return wmtk::SymDi_autodiff_customize_target(rand_tri, T, i).getValue();
-            };
-        std::function<void(const std::array<double, 6>&, Eigen::Vector2d&, int&)> SymDi_auto_grad =
-            [&rand_tri](auto& T, auto& G, auto& i) {
-                G = wmtk::SymDi_autodiff_customize_target(rand_tri, T, i).getGradient();
-            };
-        std::function<void(const std::array<double, 6>&, Eigen::Matrix2d&, int&)>
-            SymDi_auto_hessian = [&rand_tri](auto& T, auto& H, auto& i) {
-                H = wmtk::SymDi_autodiff_customize_target(rand_tri, T, i).getHessian();
-            };
-
-        std::array<double, 6> rand_tri1 = rand_tri;
-        auto tri_output = wmtk::smooth_over_one_triangle(
-            rand_tri1,
-            SymDi_auto_value,
-            SymDi_auto_grad,
-            SymDi_auto_hessian);
-        if (std::pow(
-                wmtk::SymDi_autodiff_customize_target(rand_tri, tri_output, 0).getValue() - 4.0,
-                2) < 1e-5)
-            pass++;
-    }
-    wmtk::logger().info("number of successs {}", pass);
-
-    REQUIRE(pass == 100);
-}
-
-TEST_CASE("amips same tri")
-{
-    int pass = 0;
-    for (int i = 0; i < 100; i++) {
-        std::array<double, 6> rand_tri;
-        for (int j = 0; j < 6; j++) {
-            rand_tri[j] = rand() % 100 - 50;
-        }
-        if (is_inverted(rand_tri)) {
-            wmtk::logger().info("is_inverted");
-
-            Eigen::Vector2d tmp;
-            tmp << rand_tri[0], rand_tri[1];
-            rand_tri[0] = rand_tri[2];
-            rand_tri[1] = rand_tri[3];
-            rand_tri[2] = tmp(0);
-            rand_tri[3] = tmp(1);
-        }
-        if (is_degenerate(rand_tri)) {
-            pass++;
-            continue;
-        }
-        std::function<double(const std::array<double, 6>&, int&)> AMIPS_auto_value =
-            [&rand_tri](auto& T, auto& i) {
-                return wmtk::AMIPS_autodiff_customize_target(rand_tri, T, i).getValue();
-            };
-        std::function<void(const std::array<double, 6>&, Eigen::Vector2d&, int&)> AMIPS_auto_grad =
-            [&rand_tri](auto& T, auto& G, auto& i) {
-                G = wmtk::AMIPS_autodiff_customize_target(rand_tri, T, i).getGradient();
-            };
-        std::function<void(const std::array<double, 6>&, Eigen::Matrix2d&, int&)>
-            AMIPS_auto_hessian = [&rand_tri](auto& T, auto& H, auto& i) {
-                H = wmtk::AMIPS_autodiff_customize_target(rand_tri, T, i).getHessian();
-            };
-
-        std::array<double, 6> rand_tri1 = rand_tri;
-        auto tri_output = wmtk::smooth_over_one_triangle(
-            rand_tri1,
-            AMIPS_auto_value,
-            AMIPS_auto_grad,
-            AMIPS_auto_hessian);
-        if (std::pow(
-                wmtk::AMIPS_autodiff_customize_target(rand_tri, tri_output, 0).getValue() - 2.0,
-                2) < 1e-5)
-            pass++;
-    }
-    REQUIRE(pass == 100);
-}
-
-TEST_CASE("symdi rototranslation energy")
-{
-    // given 2 triangles only differ by rotation
-    std::array<double, 6> rand_tri = {-1, 0, 2, 0.5, 0, 8};
-    std::array<double, 6> rand_tri1 = {4., 4., 3.5, 7., -4., 5.};
-    REQUIRE(
-        std::pow((SymDi_autodiff_customize_target(rand_tri, rand_tri1).getValue() - 4.0), 2) <
-        1e-5);
-}
-
-TEST_CASE("amips rototranslation energy")
-{
-    // given 2 triangles only differ by rotation
-    std::array<double, 6> rand_tri = {-1, 0, 2, 0.5, 0, 8};
-    std::array<double, 6> rand_tri1 = {4., 4., 3.5, 7., -4., 5.};
-    REQUIRE(
-        std::pow((AMIPS_autodiff_customize_target(rand_tri, rand_tri1).getValue() - 2.0), 2) <
-        1e-5);
-}
-
-TEST_CASE("symdi with energy scaling")
-{
-    // input
-    std::array<double, 6> rand_tri = {0., 0., 5, -1., -3., 10.};
-    std::array<double, 6> rand_tri1 = rand_tri;
-    // using input to masage a target
-    Eigen::Vector3d ac;
-    ac << rand_tri[4] - rand_tri[0], rand_tri[5] - rand_tri[1], 0.0;
-    Eigen::Vector3d ab;
-    ab << rand_tri[2] - rand_tri[0], rand_tri[3] - rand_tri[1], 0.0;
-    double S = ((ac.cross(ab)).norm()) / 2.;
-    double r = sqrt(S);
-    assert(r > 0);
-    // 0, 0, 2* 1/sqrt(sqrt(3)),0, 1/sqrt(sqrt(3)), sqrt(sqrt(3))
-    rand_tri = {0, 0, r * 2 * 1 / sqrt(sqrt(3)), 0, r * 1 / sqrt(sqrt(3)), r * sqrt(sqrt(3))};
-    std::function<double(const std::array<double, 6>&, int&)> SymDi_auto_value =
-        [&rand_tri](auto& T, auto& i) {
-            return wmtk::SymDi_autodiff_customize_target(rand_tri, T, i).getValue();
-        };
-    std::function<void(const std::array<double, 6>&, Eigen::Vector2d&, int&)> SymDi_auto_grad =
-        [&rand_tri](auto& T, auto& G, auto& i) {
-            G = wmtk::SymDi_autodiff_customize_target(rand_tri, T, i).getGradient();
-        };
-    std::function<void(const std::array<double, 6>&, Eigen::Matrix2d&, int&)> SymDi_auto_hessian =
-        [&rand_tri](auto& T, auto& H, auto& i) {
-            H = wmtk::SymDi_autodiff_customize_target(rand_tri, T, i).getHessian();
-        };
-
-    auto tri_output = wmtk::smooth_over_one_triangle(
-        rand_tri1,
-        SymDi_auto_value,
-        SymDi_auto_grad,
-        SymDi_auto_hessian);
-    wmtk::logger().info("output is {}", tri_output);
-
-    Eigen::Vector2d a, b, c;
-    a << tri_output[0], tri_output[1];
-    b << tri_output[2], tri_output[3];
-    c << tri_output[4], tri_output[5];
-    // check it is equilateral
-    REQUIRE(std::pow((b - a).norm() - (c - a).norm(), 2) < 1e-5);
-    REQUIRE(std::pow((b - c).norm() - (a - c).norm(), 2) < 1e-5);
-    // check the area is same
-    ac << tri_output[4] - tri_output[0], tri_output[5] - tri_output[1], 0.0;
-
-    ab << tri_output[2] - tri_output[0], tri_output[3] - tri_output[1], 0.0;
-    auto area = ((ac.cross(ab)).norm()) / 2.;
-
-    REQUIRE(std::pow(area - S, 2) < 1e-5);
-}
-
-TEST_CASE("smoothing_symdi_scaling")
-{
-    Eigen::MatrixXd V(3, 2);
-    V.row(0) << 0, 0;
-    V.row(1) << 10, 0;
-    V.row(2) << 0, 10;
-    Eigen::MatrixXi F(1, 3);
-    F.row(0) << 0, 1, 2;
-
-    TriWild m;
-    m.create_mesh(V, F);
-    // set the 3 feature point as not fixed
-    for (auto v : m.get_vertices()) {
-        m.vertex_attrs[v.vid(m)].fixed = false;
-    }
-    m.set_energy(std::make_unique<wmtk::SymDi>());
-    assert(m.mesh_parameters.m_energy != nullptr);
-    m.mesh_parameters.m_target_l = 2;
-    m.mesh_parameters.m_boundary_parameter = false;
-    assert(m.check_mesh_connectivity_validity());
-    m.smooth_all_vertices();
-    std::array<double, 6> T;
-    double r = 2;
-    std::array<double, 6> target_tri = {0, 0, r * 1, 0, r * 1 / 2, r * sqrt(3) / 2};
-
-    for (auto i = 0; i < 3; ++i) {
-        T[i * 2] = m.vertex_attrs[i].pos[0];
-        T[i * 2 + 1] = m.vertex_attrs[i].pos[1];
-    }
-    // energy is 4.0 after smooth
-    REQUIRE(abs(wmtk::SymDi_autodiff_customize_target(target_tri, T, 0).getValue() - 4) < 1e-3);
-    REQUIRE(abs(wmtk::SymDi_autodiff_customize_target(target_tri, T, 1).getValue() - 4) < 1e-3);
-    REQUIRE(abs(wmtk::SymDi_autodiff_customize_target(target_tri, T, 2).getValue() - 4) < 1e-3);
-
-    // grad is (0,0) after smooth
-    REQUIRE((wmtk::SymDi_autodiff_customize_target(target_tri, T, 0).getGradient()).norm() < 1e-2);
-    REQUIRE((wmtk::SymDi_autodiff_customize_target(target_tri, T, 1).getGradient()).norm() < 1e-2);
-    REQUIRE((wmtk::SymDi_autodiff_customize_target(target_tri, T, 2).getGradient()).norm() < 1e-2);
-    m.write_obj("smoothing_symdi_test.obj");
-}
-
-TEST_CASE("smoothing_amips_scaling")
-{
-    Eigen::MatrixXd V(3, 2);
-    V.row(0) << 0, 0;
-    V.row(1) << 10, 0;
-    V.row(2) << 0, 10;
-    Eigen::MatrixXi F(1, 3);
-    F.row(0) << 0, 1, 2;
-
-    TriWild m;
-    m.create_mesh(V, F);
-    assert(m.check_mesh_connectivity_validity());
-    m.set_energy(std::make_unique<wmtk::AMIPS>());
-    m.mesh_parameters.m_target_l = 2;
-    m.smooth_all_vertices();
-    std::array<double, 6> T;
-    double r = 2;
-    std::array<double, 6> target_tri = {0, 0, r * 1, 0, r * 1 / 2, r * sqrt(3) / 2};
-
-    for (auto i = 0; i < 3; ++i) {
-        T[i * 2] = m.vertex_attrs[i].pos[0];
-        T[i * 2 + 1] = m.vertex_attrs[i].pos[1];
-    }
-
-    // energy is 2.0 after smooth
-    REQUIRE(abs(wmtk::AMIPS_autodiff_customize_target(target_tri, T, 0).getValue() - 2) < 1e-3);
-    REQUIRE(abs(wmtk::AMIPS_autodiff_customize_target(target_tri, T, 1).getValue() - 2) < 1e-3);
-    REQUIRE(abs(wmtk::AMIPS_autodiff_customize_target(target_tri, T, 2).getValue() - 2) < 1e-3);
-
-    // grad is (0,0) after smooth
-    REQUIRE((wmtk::AMIPS_autodiff_customize_target(target_tri, T, 0).getGradient()).norm() < 1e-3);
-    REQUIRE((wmtk::AMIPS_autodiff_customize_target(target_tri, T, 1).getGradient()).norm() < 1e-3);
-    REQUIRE((wmtk::AMIPS_autodiff_customize_target(target_tri, T, 2).getGradient()).norm() < 1e-3);
-    m.write_obj("smoothing_amips_test.obj");
-}
-
-TEST_CASE("remeshing_symdi_scaling")
-{
-    Eigen::MatrixXd V(3, 2);
-    V.row(0) << 0, 0;
-    V.row(1) << 10, 0;
-    V.row(2) << 0, 10;
-    Eigen::MatrixXi F(1, 3);
-    F.row(0) << 0, 1, 2;
-
-    TriWild m;
-    m.create_mesh(V, F);
-    m.set_projection();
-    m.set_energy(std::make_unique<wmtk::SymDi>());
-    m.mesh_parameters.m_target_l = 2;
-
-    assert(m.check_mesh_connectivity_validity());
-    m.mesh_improvement(10);
-    m.write_obj("remeshing_symdi_yesboundary.obj");
-}
 
 TEST_CASE("edge_length_energy_smooth_constant")
 {
@@ -749,7 +192,8 @@ TEST_CASE("edge_length_energy_smooth_constant")
     Eigen::MatrixXi F(1, 3);
     F.row(0) << 0, 1, 2;
     DiffScalarBase::setVariableCount(2);
-    auto displacement = [](const DScalar& u, const DScalar& v) -> DScalar { return DScalar(1); };
+    auto displacement = []([[maybe_unused]] const DScalar& u,
+                           [[maybe_unused]] const DScalar& v) -> DScalar { return DScalar(1); };
     auto displacement_double = [&displacement](double u, double v) -> double {
         return displacement(DScalar(u), DScalar(v)).getValue();
     };
@@ -782,7 +226,9 @@ TEST_CASE("edge_length_energy_smooth_linear")
     V.row(2) << 0, 10;
     Eigen::MatrixXi F(1, 3);
     F.row(0) << 0, 1, 2;
-    auto displacement = [](const DScalar& u, const DScalar& v) -> DScalar { return DScalar(u); };
+    auto displacement = [](const DScalar& u, [[maybe_unused]] const DScalar& v) -> DScalar {
+        return DScalar(u);
+    };
     auto displacement_double = [&displacement](double u, double v) -> double {
         return displacement(DScalar(u), DScalar(v)).getValue();
     };
@@ -1346,220 +792,6 @@ TEST_CASE("line_parametrization")
     fd::finite_gradient(fd_t, fd_f, finitediff_grad, fd::SECOND, 1e-2);
 }
 
-TEST_CASE("exr saving and loading")
-{
-    Image image(10, 10);
-    auto displacement_double = [](const double& u, const double& v) -> double { return 10 * u; };
-    image.set(displacement_double);
-    image.save("tryout.exr");
-    Image image2(10, 10);
-    image2.load("tryout.exr", WrappingMode::MIRROR_REPEAT, WrappingMode::MIRROR_REPEAT);
-    for (int i = 0; i < 10; i++) {
-        auto p = static_cast<float>(0.1 * i);
-        wmtk::logger().info(
-            "at p = {},{} , image2 {}, image {}",
-            0.1 * i,
-            0.1 * i,
-            image2.get(p, p),
-            image.get(p, p));
-        REQUIRE(abs(image2.get(p, p) - image.get(p, p)) < 1e-4);
-    }
-    // test bicubic interpolation
-    Image image3(512, 512);
-    image3.load(
-        "/home/yunfan/data/plastic_stripes_Height.exr",
-        WrappingMode::MIRROR_REPEAT,
-        WrappingMode::MIRROR_REPEAT);
-    std::mt19937 rand_generator;
-    std::uniform_real_distribution<double> rand_dist;
-    for (int j = 0; j < 10; j++) {
-        Eigen::Vector2d rand_p;
-        rand_p = Eigen::Vector2d(rand_dist(rand_generator), rand_dist(rand_generator));
-
-        wmtk::logger().info(
-            "image3 at {} : {} ",
-            rand_p,
-            image3.get(static_cast<float>(rand_p(0)), static_cast<float>(rand_p(1))));
-    }
-}
-
-TEST_CASE("hdr saving and loading")
-{
-    Image image(512, 512);
-    image.load(
-        "/home/yunfan/data/one_ramp.exr",
-        WrappingMode::MIRROR_REPEAT,
-        WrappingMode::MIRROR_REPEAT);
-    // auto displacement_stripe = [&image](const DScalar& u, const DScalar& v) -> DScalar {
-    //     return image.get(u, v);
-    // };
-    auto displacement_double = [&image](const double& u, const double& v) -> float {
-        auto x = static_cast<float>(u);
-        auto y = static_cast<float>(v);
-        return image.get(x, y);
-    };
-    Image image2(1024, 1024);
-    image2.set(displacement_double);
-    image2.save("interpolated_one_ramp.hdr");
-
-    Image image3(1024, 1024);
-    image3.load(
-        "interpolated_one_ramp.hdr",
-        WrappingMode::MIRROR_REPEAT,
-        WrappingMode::MIRROR_REPEAT);
-    std::mt19937 rand_generator;
-    std::uniform_real_distribution<double> rand_dist;
-    for (int j = 0; j < 10; j++) {
-        Eigen::Vector2d rand_p;
-        rand_p = Eigen::Vector2d(rand_dist(rand_generator), rand_dist(rand_generator));
-
-        wmtk::logger().info(
-            "image2 at {} : {} =? {}",
-            rand_p,
-            image3.get(static_cast<float>(rand_p.x()), static_cast<float>(rand_p.y())),
-            displacement_double(rand_p.x(), rand_p.y()));
-    }
-}
-
-TEST_CASE("bicubic interpolation")
-{
-    // Create a random bivariate cubic polynomial
-    std::mt19937 gen;
-    std::uniform_real_distribution<float> dist_coeffs(-0.5f, 0.5f);
-
-    Eigen::Matrix4f M = Eigen::Matrix4f::NullaryExpr([&]() { return dist_coeffs(gen); });
-    auto bivariate_cubic_polynomial = [&](double x, double y) -> double {
-        Eigen::Vector4f X(1, x, x * x, x * x * x);
-        Eigen::Vector4f Y(1, y, y * y, y * y * y);
-        return X.transpose() * M * Y;
-    };
-
-    // Create an image from the polynomial function
-    int width = 40;
-    int height = 40;
-    Image image(width, height);
-    image.set(bivariate_cubic_polynomial);
-
-    // Sample random points in the image and check correctness.
-    // Avoid image boundaries since finite diff will be off at image border.
-    std::uniform_real_distribution<float> dist_samples(0.1, 0.9);
-
-    for (size_t k = 0; k < 100; ++k) {
-        Eigen::Vector2d p(dist_samples(gen), dist_samples(gen));
-        auto value0 = image.get(p.x(), p.y());
-        auto expected = bivariate_cubic_polynomial(p.x(), p.y());
-        CAPTURE(k, p.x(), p.y(), value0, expected);
-        REQUIRE_THAT(value0, Catch::Matchers::WithinRel(expected, 0.001));
-    }
-}
-
-TEST_CASE("bicubic autodiff")
-{
-    // Create a random bivariate cubic polynomial
-    std::mt19937 gen;
-    std::uniform_real_distribution<float> dist_coeffs(-0.5f, 0.5f);
-
-    Eigen::Matrix4f M = Eigen::Matrix4f::NullaryExpr([&]() { return dist_coeffs(gen); });
-    auto bivariate_cubic_polynomial = [&](auto x, auto y) {
-        using T = std::decay_t<decltype(x)>;
-        Eigen::Vector4<T> X(T(1), x, x * x, x * x * x);
-        Eigen::Vector4<T> Y(T(1), y, y * y, y * y * y);
-        return T(X.transpose() * M.cast<T>() * Y);
-    };
-
-    // Create an image from the polynomial function
-    int width = 40;
-    int height = 40;
-    Image image(width, height);
-    image.set(bivariate_cubic_polynomial);
-
-    // Sample random points in the image and check correctness.
-    std::uniform_real_distribution<float> dist_samples(0.1, 0.9);
-
-    DiffScalarBase::setVariableCount(2);
-    using DScalar = DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d>;
-    for (size_t k = 0; k < 100; ++k) {
-        Eigen::Vector2d p(dist_samples(gen), dist_samples(gen));
-        DScalar x(0, p.x());
-        DScalar y(1, p.y());
-        DScalar value0 = image.get(x, y);
-        DScalar expected = bivariate_cubic_polynomial(x, y);
-        auto g0 = value0.getGradient().eval();
-        auto g1 = expected.getGradient().eval();
-        auto h0 = value0.getHessian().eval();
-        auto h1 = expected.getHessian().eval();
-
-        auto i = static_cast<int>(std::floor(p.x() * width - Scalar(0.5)));
-        auto j = static_cast<int>(std::floor(p.y() * height - Scalar(0.5)));
-        CAPTURE(k, i, j, p.x(), p.y(), value0, expected);
-        REQUIRE_THAT(value0.getValue(), Catch::Matchers::WithinRel(expected.getValue(), 1e-2));
-        for (int k = 0; k < g0.size(); ++k) {
-            REQUIRE_THAT(g0[k], Catch::Matchers::WithinRel(g1[k], 1e-3));
-        }
-        for (int k = 0; k < h0.size(); ++k) {
-            REQUIRE_THAT(
-                h0.data()[k],
-                Catch::Matchers::WithinRel(h1.data()[k], 1e-3) ||
-                    Catch::Matchers::WithinAbs(0, 1e-3));
-        }
-    }
-}
-
-TEST_CASE("bicubic periodic")
-{
-    // Use periodic analytical function
-    std::mt19937 gen;
-    std::uniform_real_distribution<float> dist_coeffs(-0.5f, 0.5f);
-
-    Eigen::Vector2f coeffs = Eigen::Vector2f::NullaryExpr([&]() { return dist_coeffs(gen); });
-    auto periodic_function = [&](auto x, auto y) {
-        using T = std::decay_t<decltype(x)>;
-        T z = coeffs[0] * sin(x * 2.f * M_PI) + coeffs[1] * sin(y * 2.f * M_PI);
-        return z;
-    };
-
-    // Create an image from the polynomial function
-    int width = 40;
-    int height = 40;
-    Image image(width, height);
-    image.set(periodic_function, WrappingMode::REPEAT, WrappingMode::REPEAT);
-
-    // Sample random points in the image and check correctness.
-    std::uniform_real_distribution<float> dist_samples(0, 1);
-
-    DiffScalarBase::setVariableCount(2);
-    using DScalar = DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d>;
-    for (size_t k = 0; k < 100; ++k) {
-        Eigen::Vector2d p(dist_samples(gen), dist_samples(gen));
-        DScalar x(0, p.x());
-        DScalar y(1, p.y());
-        DScalar value0 = image.get(x, y);
-        DScalar expected = periodic_function(x, y);
-        auto g0 = value0.getGradient().eval();
-        auto g1 = expected.getGradient().eval();
-        auto h0 = value0.getHessian().eval();
-        auto h1 = expected.getHessian().eval();
-
-        auto i = static_cast<int>(std::floor(p.x() * width - Scalar(0.5)));
-        auto j = static_cast<int>(std::floor(p.y() * height - Scalar(0.5)));
-        CAPTURE(k, i, j, p.x(), p.y(), value0, expected);
-
-        // Since the function is not truly a cubic polynomial, we relax our gradient/hessian
-        // tolerance to a much lower value... but hopefully this is enough to check that our signal
-        // is periodic over the image.
-        REQUIRE_THAT(value0.getValue(), Catch::Matchers::WithinRel(expected.getValue(), 1e-2));
-        for (int k = 0; k < g0.size(); ++k) {
-            REQUIRE_THAT(g0[k], Catch::Matchers::WithinRel(g1[k], 1e-1));
-        }
-        for (int k = 0; k < h0.size(); ++k) {
-            REQUIRE_THAT(
-                h0.data()[k],
-                Catch::Matchers::WithinRel(h1.data()[k], 1e-1) ||
-                    Catch::Matchers::WithinAbs(0, 1e-3));
-        }
-    }
-}
-
 // TODO: Try out sin(x) with periodic boundary cond + autodiff + gradient
 
 TEST_CASE("remeshing using image data")
@@ -1694,57 +926,6 @@ TEST_CASE("implicit points")
     }
     wmtk::logger().info(edge_cnt);
 }
-// don't use mesh here
-TEST_CASE("quadrature")
-{
-    using DScalar = wmtk::EdgeLengthEnergy::DScalar;
-    DiffScalarBase::setVariableCount(2);
-    Image image(100, 100);
-    auto displacement_double = [](const double& u, const double& v) -> double { return 10; };
-    image.set(displacement_double, WrappingMode::MIRROR_REPEAT, WrappingMode::MIRROR_REPEAT);
-    std::mt19937 rand_generator;
-    std::uniform_real_distribution<double> rand_dist(0.1, 0.9); // not too close to the boundary
-    DisplacementBicubic displ = DisplacementBicubic(image);
-    for (int i = 0; i < 10; i++) {
-        Eigen::Vector2d p1, p2;
-        p1 = Eigen::Vector2d(rand_dist(rand_generator), rand_dist(rand_generator));
-        p2 = Eigen::Vector2d(rand_dist(rand_generator), rand_dist(rand_generator));
-        REQUIRE(displ.get_error_per_edge(p1, p2) < 1e-7);
-    }
-    wmtk::logger().info("============= 10x =============");
-
-    auto displacement_double2 = [](const double& u, const double& v) -> float {
-        return static_cast<float>(10 * u); // sin(M_PI * u);
-    };
-    image.set(displacement_double2, WrappingMode::MIRROR_REPEAT, WrappingMode::MIRROR_REPEAT);
-    displ.set_image(image);
-    for (int i = 0; i < 10; i++) {
-        Eigen::Vector2d p1, p2;
-        p1 = Eigen::Vector2d(rand_dist(rand_generator), rand_dist(rand_generator));
-        p2 = Eigen::Vector2d(rand_dist(rand_generator), rand_dist(rand_generator));
-        auto edge_error = displ.get_error_per_edge(p1, p2);
-        REQUIRE(edge_error < 1e-6);
-    }
-
-    wmtk::logger().info("============= sin(PI * u) =============");
-
-    auto displacement_double3 = [](const double& u, const double& v) -> float {
-        return static_cast<float>(sin(M_PI * u));
-    };
-    image.set(displacement_double3, WrappingMode::MIRROR_REPEAT, WrappingMode::MIRROR_REPEAT);
-    displ.set_image(image);
-    Eigen::Vector2d v1, v2;
-    v1 << 0.1, 0.;
-    v2 << 0.9, 0.;
-    auto edge_error = displ.get_error_per_edge(v1, v2);
-    wmtk::logger().info("final edge error {} ", edge_error);
-    REQUIRE(abs(edge_error - 0.358247787412568) < 1e-8);
-    v1 = Eigen::Vector2d(0, 0.1);
-    v2 = Eigen::Vector2d(0, 0.9);
-    edge_error = displ.get_error_per_edge(v1, v2);
-    wmtk::logger().info("final edge error {} ", edge_error);
-    REQUIRE(abs(edge_error) < 1e-8);
-}
 
 TEST_CASE("exact length")
 {
@@ -1831,7 +1012,7 @@ TEST_CASE("mipmap")
 
 TEST_CASE("accuracy split")
 {
-    Image image1(10, 10);
+    Image image1(100, 100);
     auto displacement_double2 = [](const double& u, const double& v) -> double {
         return sin(M_PI * u);
     };
@@ -1842,7 +1023,7 @@ TEST_CASE("accuracy split")
     igl::read_triangle_mesh("/home/yunfan/data/input.obj", V, F);
     m.create_mesh(V, F);
     m.set_parameters(
-        0.01,
+        0.001,
         image1,
         WrappingMode::MIRROR_REPEAT,
         EDGE_LEN_TYPE::ACCURACY,
@@ -1866,7 +1047,7 @@ TEST_CASE("accuracy split")
 
 TEST_CASE("accuracy smooth")
 {
-    Image image1(10, 10);
+    Image image1(100, 100);
     auto displacement_double2 = [](const double& u, const double& v) -> double {
         return sin(M_PI * u);
     };
@@ -1909,4 +1090,32 @@ TEST_CASE("quality split comparison")
     m.split_all_edges();
     m.consolidate_mesh();
     m.write_displaced_obj("quality_guided_split.obj", m.mesh_parameters.m_project_to_3d);
+}
+
+TEST_CASE("accuracy image operations")
+{
+    using DScalar = wmtk::EdgeLengthEnergy::DScalar;
+    Image image(512, 512);
+    image.load(
+        "/home/yunfan/data/plastic_stripes_Height.exr",
+        WrappingMode::MIRROR_REPEAT,
+        WrappingMode::MIRROR_REPEAT);
+    TriWild m;
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    igl::read_triangle_mesh("/home/yunfan/data/input.obj", V, F);
+    m.create_mesh(V, F);
+    m.set_parameters(
+        0.005,
+        image,
+        WrappingMode::MIRROR_REPEAT,
+        EDGE_LEN_TYPE::ACCURACY,
+        ENERGY_TYPE::EDGE_QUADRATURE,
+        true);
+    m.split_all_edges();
+    m.write_displaced_obj("image_accuracy_split.obj", m.mesh_parameters.m_project_to_3d);
+    // m.swap_all_edges();
+    // m.write_displaced_obj("image_accuracy_swap.obj", m.mesh_parameters.m_project_to_3d);
+    // m.smooth_all_vertices();
+    // m.write_displaced_obj("image_accuracy_smooth.obj", m.mesh_parameters.m_project_to_3d);
 }

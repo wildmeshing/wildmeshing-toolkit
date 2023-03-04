@@ -99,13 +99,13 @@ public:
 class AMIPS : public wmtk::Energy
 {
 public:
-    void eval(State& state) const override{};
+    void eval([[maybe_unused]] State& state) const override{};
     void eval(State& state, DofsToPositions& dofstopositions) const override;
 };
 class SymDi : public wmtk::Energy
 {
 public:
-    void eval(State& state) const override{};
+    void eval([[maybe_unused]] State& state) const override{};
     void eval(State& state, DofsToPositions& dofstopositions) const override;
 };
 class TwoAndAHalf : public wmtk::Energy
@@ -120,7 +120,8 @@ public:
 
 public:
     void eval(State& state) const override;
-    void eval(State& state, DofsToPositions& dofstopositions) const override{};
+    void eval([[maybe_unused]] State& state, [[maybe_unused]] DofsToPositions& dofstopositions)
+        const override{};
 
     DScalar displacement(const DScalar& x, const DScalar& y) const { return m_displacement(x, y); };
 };
@@ -136,7 +137,7 @@ public:
     std::function<DScalar(const DScalar&, const DScalar&)> m_displacement;
 
 public:
-    void eval(State& state) const override{};
+    void eval([[maybe_unused]] State& state) const override{};
     void eval(State& state, DofsToPositions& x) const override;
     // a wrapper function of m_displacement that takes 2 doubles and cast into DScalar, and
     // returns a Vector3d
@@ -157,7 +158,7 @@ public:
     std::shared_ptr<Displacement> m_displ; // Initiated using the Displacement class
 
 public:
-    void eval(State& state) const override{};
+    void eval([[maybe_unused]] State& state) const override{};
     void eval(State& state, DofsToPositions& x) const override;
 };
 } // namespace wmtk

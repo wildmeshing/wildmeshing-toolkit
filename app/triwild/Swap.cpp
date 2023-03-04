@@ -80,7 +80,7 @@ void TriWild::swap_all_edges()
     wmtk::logger().info("size for edges to be swap is {}", collect_all_ops.size());
     auto setup_and_execute = [&](auto executor) {
         executor.renew_neighbor_tuples = swap_renew;
-        executor.priority = [&](auto& m, auto _, auto& e) {
+        executor.priority = [&](auto& m, [[maybe_unused]] auto _, auto& e) {
             if (m.mesh_parameters.m_accuracy)
                 return swap_accuracy_cost(m, e);
             else
@@ -136,7 +136,7 @@ bool TriWild::swap_edge_before(const Tuple& t)
     // m_max_energy = cache.local().max_energy;
     return true;
 }
-bool TriWild::swap_edge_after(const Tuple& t)
+bool TriWild::swap_edge_after([[maybe_unused]] const Tuple& t)
 {
     // check quality and degenerate
     // auto tris = get_one_ring_tris_for_vertex(t);

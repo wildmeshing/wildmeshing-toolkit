@@ -7,7 +7,6 @@
 #include <tbb/concurrent_vector.h>
 #include <wmtk/utils/AMIPS2D.h>
 #include <wmtk/utils/AMIPS2D_autodiff.h>
-#include <wmtk/utils/AdaptiveGuassQuadrature.h>
 #include <Eigen/Core>
 #include <lean_vtk.hpp>
 #include <wmtk/utils/TriQualityUtils.hpp>
@@ -502,24 +501,6 @@ double TriWild::get_length_n_implicit_points(const size_t& vid1, const size_t& v
     return length;
 }
 
-double TriWild::get_length_quadrature(const Eigen::Vector2d& p1, const Eigen::Vector2d& p2) const
-{
-    double length = (mesh_parameters.m_project_to_3d(p1(0), p1(1)) -
-                     mesh_parameters.m_project_to_3d(p2(0), p2(1)))
-                        .stableNorm();
-    auto mid_point = (p1 + p2) / 2.;
-    double length_tmp = (mesh_parameters.m_project_to_3d(p1(0), p1(1)) -
-                         mesh_parameters.m_project_to_3d(mid_point(0), mid_point(1)))
-                            .stableNorm() +
-                        (mesh_parameters.m_project_to_3d(mid_point(0), mid_point(1)) -
-                         mesh_parameters.m_project_to_3d(p2(0), p2(1)))
-                            .stableNorm();
-    if (pow(length_tmp - length, 2) < 1e-2 * length)
-        length = get_length_quadrature(p1, mid_point) + get_length_quadrature(mid_point, p2);
-
-    return length;
-}
-
 double TriWild::get_length_1ptperpixel(const size_t& vid1, const size_t& vid2) const
 {
     auto v12d = vertex_attrs[vid1].pos;
@@ -739,11 +720,11 @@ bool TriWild::is_inverted(const Tuple& loc) const
 
 void TriWild::mesh_improvement(int max_its)
 {
-    igl::Timer timer;
-    double avg_len = 0.0;
-    double pre_avg_len = 0.0;
-    double pre_max_energy = -1.0;
-    double old_average = 1e-4;
+    [[maybe_unused]] igl::Timer timer;
+    [[maybe_unused]] double avg_len = 0.0;
+    [[maybe_unused]] double pre_avg_len = 0.0;
+    [[maybe_unused]] double pre_max_energy = -1.0;
+    [[maybe_unused]] double old_average = 1e-4;
     wmtk::logger().info("target len {}", mesh_parameters.m_target_l);
     wmtk::logger().info("current length {}", avg_edge_len(*this));
     // mesh_parameters.js_log["edge_length_avg_start"] = avg_edge_len(*this);
@@ -851,7 +832,6 @@ void TriWild::flatten_dofs(Eigen::VectorXd& v_flat)
 double TriWild::get_mesh_energy(const Eigen::VectorXd& v_flat)
 {
     double total_energy = 0;
-    int f_cnt = 0;
     Eigen::MatrixXd energy_matrix;
     energy_matrix.resize(get_faces().size(), 2);
     for (auto& face : get_faces()) {

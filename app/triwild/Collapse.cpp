@@ -36,7 +36,7 @@ void TriWild::collapse_all_edges()
     wmtk::logger().info("size for edges to be collapse is {}", collect_all_ops.size());
     auto setup_and_execute = [&](auto executor) {
         executor.renew_neighbor_tuples = renew;
-        executor.priority = [&](auto& m, auto _, auto& e) {
+        executor.priority = [&](auto& m, [[maybe_unused]] auto _, auto& e) {
             return -m.mesh_parameters.m_get_length(e.vid(m), e.switch_vertex(m).vid(m));
         };
         executor.num_threads = NUM_THREADS;

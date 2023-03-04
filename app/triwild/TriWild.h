@@ -159,7 +159,6 @@ public:
                // used when the tuple is invalid but use vids to uquest for positions in the
                // vertex_attrs
     double get_length_n_implicit_points(const size_t& vid1, const size_t& vid2) const;
-    double get_length_quadrature(const Eigen::Vector2d& p1, const Eigen::Vector2d& p2) const;
     double get_length_1ptperpixel(const size_t& vid1, const size_t& vid2) const;
     double get_length_mipmap(const size_t& vid1, const size_t& vid2) const;
 
