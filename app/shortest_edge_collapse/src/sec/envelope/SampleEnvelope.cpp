@@ -232,5 +232,15 @@ bool SampleEnvelope::is_outside(const std::array<Eigen::Vector3d, 3>& tri)
     return false;
 }
 
+double SampleEnvelope::nearest_point(const Eigen::Vector3d& pts, Eigen::Vector3d& result) 
+{
+    auto dist = 0.;
+    GEO::vec3 current_point(pts[0], pts[1], pts[2]);
+    GEO::vec3 r;
+    geo_tree_ptr_->nearest_facet(current_point, r, dist);
+    result << r.x, r.y, r.z;
+    return dist;
+}
+
 
 } // namespace sample_envelope
