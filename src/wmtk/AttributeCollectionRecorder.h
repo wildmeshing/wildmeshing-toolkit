@@ -12,22 +12,20 @@ struct AttributeUpdateData;
 // Interface for adding an attribute to a logged hdf5 file
 class AttributeCollectionRecorderBase
 {
-public:
+protected:
+    // the file being serialized to, the name of the attribute, and information on how the data should be serialized
     AttributeCollectionRecorderBase(
         HighFive::File& file,
         const std::string& name,
         const HighFive::DataType& data_type);
     AttributeCollectionRecorderBase(HighFive::DataSet&& dataset_);
     virtual ~AttributeCollectionRecorderBase();
+public:
     static HighFive::CompoundType record_datatype();
     static HighFive::DataSetCreateProps create_properties();
     static HighFive::DataSetAccessProps access_properties();
-    // returns the range of values used and size
-    virtual std::array<size_t, 3> record(HighFive::DataSet& data_set) = 0;
-    virtual void load(
-        const AttributeChanges& changes,
-        const HighFive::DataSet& data_set,
-        bool forward = true) = 0;
+
+
 
     virtual size_t size() const = 0;
 
@@ -38,6 +36,20 @@ protected:
     friend class OperationRecorder;
     void save_size();
     tbb::enumerable_thread_specific<size_t> last_size{0};
+
+    // returns the range of values used and size
+    // {start_index, end_index, new size of data}
+    virtual std::array<size_t, 3> record(HighFive::DataSet& data_set) = 0;
+
+    // load a particular set of attribute changes from a particular dataset. loading backwards
+    virtual void load(
+        const AttributeChanges& changes,
+        const HighFive::DataSet& data_set) = 0;
+
+    // undoes a particular change to an attribute
+    virtual void unload(
+        const AttributeChanges& changes,
+        const HighFive::DataSet& data_set) = 0;
 
 private:
     HighFive::DataSet dataset;
