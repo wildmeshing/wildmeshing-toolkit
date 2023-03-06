@@ -422,12 +422,12 @@ void TriWild::write_vtk(const std::string& path)
     for (auto e : get_edges()) {
         if (!e.is_valid(*this)) continue;
         auto cost = mesh_parameters.m_get_length(e.vid(*this), e.switch_vertex(*this).vid(*this));
-        Eigen::Matrix<double, 2, 1> pos1 = vertex_attrs[e.vid(*this)].pos;
-        Eigen::Matrix<double, 2, 1> pos2 = vertex_attrs[e.switch_vertex(*this).vid(*this)].pos;
-        Eigen::Matrix<double, 2, 1> posnew = (pos1 + pos2) * 0.5;
-        cost -=
-            (mesh_parameters.m_displacement->get_error_per_edge(pos1, posnew) +
-             mesh_parameters.m_displacement->get_error_per_edge(posnew, pos2));
+        // Eigen::Matrix<double, 2, 1> pos1 = vertex_attrs[e.vid(*this)].pos;
+        // Eigen::Matrix<double, 2, 1> pos2 = vertex_attrs[e.switch_vertex(*this).vid(*this)].pos;
+        // Eigen::Matrix<double, 2, 1> posnew = (pos1 + pos2) * 0.5;
+        // cost -=
+        //     (mesh_parameters.m_displacement->get_error_per_edge(pos1, posnew) +
+        //      mesh_parameters.m_displacement->get_error_per_edge(posnew, pos2));
         scalar_field.emplace_back(cost);
     }
     writer.add_cell_scalar_field("scalar_field", scalar_field);
@@ -754,12 +754,12 @@ void TriWild::mesh_improvement(int max_its)
             mesh_parameters.m_output_folder + "/after_split_" + std::to_string(it) + ".obj",
             mesh_parameters.m_project_to_3d);
 
-        collapse_all_edges();
-        assert(invariants(get_faces()));
-        consolidate_mesh();
-        write_displaced_obj(
-            mesh_parameters.m_output_folder + "/after_collapse_" + std::to_string(it) + ".obj",
-            mesh_parameters.m_project_to_3d);
+        // collapse_all_edges();
+        // assert(invariants(get_faces()));
+        // consolidate_mesh();
+        // write_displaced_obj(
+        //     mesh_parameters.m_output_folder + "/after_collapse_" + std::to_string(it) + ".obj",
+        //     mesh_parameters.m_project_to_3d);
         swap_all_edges();
         assert(invariants(get_faces()));
         consolidate_mesh();

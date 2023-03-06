@@ -44,11 +44,11 @@ void TriWild::split_all_edges()
             if (m.mesh_parameters.m_accuracy) {
                 Eigen::Matrix<double, 2, 1> pos0 = m.vertex_attrs[e.vid(m)].pos;
                 Eigen::Matrix<double, 2, 1> pos1 = m.vertex_attrs[e.switch_vertex(m).vid(m)].pos;
-                Eigen::Matrix<double, 2, 1> posnew = (pos0 + pos1) * 0.5;
-                auto error1 = m.mesh_parameters.m_displacement->get_error_per_edge(pos0, posnew);
-                auto error2 = m.mesh_parameters.m_displacement->get_error_per_edge(posnew, pos1);
+                // Eigen::Matrix<double, 2, 1> posnew = (pos0 + pos1) * 0.5;
+                // auto error1 = m.mesh_parameters.m_displacement->get_error_per_edge(pos0, posnew);
+                // auto error2 = m.mesh_parameters.m_displacement->get_error_per_edge(posnew, pos1);
                 auto length = m.mesh_parameters.m_displacement->get_error_per_edge(pos0, pos1);
-                return length - error1 - error2;
+                return length;
             }
             return m.mesh_parameters.m_get_length(e.vid(m), e.switch_vertex(m).vid(m));
         };
@@ -56,14 +56,15 @@ void TriWild::split_all_edges()
         executor.is_weight_up_to_date = [](auto& m, auto& ele) {
             auto& [weight, op, tup] = ele;
             auto length = m.mesh_parameters.m_get_length(tup.vid(m), tup.switch_vertex(m).vid(m));
-            if (m.mesh_parameters.m_accuracy) {
-                Eigen::Matrix<double, 2, 1> pos0 = m.vertex_attrs[tup.vid(m)].pos;
-                Eigen::Matrix<double, 2, 1> pos1 = m.vertex_attrs[tup.switch_vertex(m).vid(m)].pos;
-                Eigen::Matrix<double, 2, 1> posnew = (pos0 + pos1) * 0.5;
-                auto error1 = m.mesh_parameters.m_displacement->get_error_per_edge(pos0, posnew);
-                auto error2 = m.mesh_parameters.m_displacement->get_error_per_edge(posnew, pos1);
-                length -= (error1 + error2);
-            }
+            // if (m.mesh_parameters.m_accuracy) {
+            //     Eigen::Matrix<double, 2, 1> pos0 = m.vertex_attrs[tup.vid(m)].pos;
+            //     Eigen::Matrix<double, 2, 1> pos1 =
+            //     m.vertex_attrs[tup.switch_vertex(m).vid(m)].pos; Eigen::Matrix<double, 2, 1>
+            //     posnew = (pos0 + pos1) * 0.5; auto error1 =
+            //     m.mesh_parameters.m_displacement->get_error_per_edge(pos0, posnew); auto error2 =
+            //     m.mesh_parameters.m_displacement->get_error_per_edge(posnew, pos1); length -=
+            //     (error1 + error2);
+            // }
             if (abs(length - weight) > 1e-10) return false;
             if (m.mesh_parameters.m_accuracy) {
                 if (length < m.mesh_parameters.m_accuracy_threshold) return false;
@@ -88,8 +89,8 @@ bool TriWild::split_edge_before(const Tuple& edge_tuple)
 {
     static std::atomic_int cnt = 0;
     if (!TriMesh::split_edge_before(edge_tuple)) return false;
-    if (cnt % 50 == 0)
-        write_vtk(mesh_parameters.m_output_folder + fmt::format("/split_{:04d}.vtu", cnt));
+    // if (cnt % 50 == 0)
+    write_vtk(mesh_parameters.m_output_folder + fmt::format("/split_{:04d}.vtu", cnt));
 
     // check if the 2 vertices are on the same curve
     if (vertex_attrs[edge_tuple.vid(*this)].curve_id !=
@@ -99,7 +100,6 @@ bool TriWild::split_edge_before(const Tuple& edge_tuple)
     cache.local().v1 = edge_tuple.vid(*this);
     cache.local().v2 = edge_tuple.switch_vertex(*this).vid(*this);
     cache.local().partition_id = vertex_attrs[edge_tuple.vid(*this)].partition_id;
-
     if (is_boundary_vertex(edge_tuple))
         vertex_attrs[cache.local().v1].boundary_vertex = true;
     else
@@ -132,10 +132,14 @@ bool TriWild::split_edge_after(const Tuple& edge_tuple)
     }
     // enforce length check
     if (mesh_parameters.m_accuracy) {
-        auto after_operation_error = length3d - get_accuracy_error(cache.local().v1, vid) -
-                                     get_accuracy_error(cache.local().v2, vid);
-        // operation happens when error difference is higher than user determined value
-        if (after_operation_error > mesh_parameters.m_accuracy_threshold) return true;
+        // auto after_operation_error = length3d - get_accuracy_error(cache.local().v1, vid) -
+        //                              get_accuracy_error(cache.local().v2, vid);
+        // // operation happens when error difference is higher than user determined value
+        // // if (after_operation_error > mesh_parameters.m_accuracy_threshold) return true;
+        // // [Change To] if after operation error is bigger than before, reject operation
+        // // o.w. accept
+        // if (after_operation_error >= -1e-4) return true;
+        return true;
     } else if (length3d > (4. / 3. * mesh_parameters.m_target_l)) {
         return true;
     }
