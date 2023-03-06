@@ -118,7 +118,7 @@ TEST_CASE("edge_collapsing", "[tetwild_operation]")
     std::vector<TetAttributes> tet_attrs(1);
     for (auto& v : vertices) {
         v.m_is_rounded = true;
-        v.m_pos = to_rational(v.m_posf);
+        v.m_pos = v.m_posf.cast<wmtk::Rational>();
         // v.m_is_on_surface = true;
     }
     tetwild.m_collapse_check_link_condition = true;

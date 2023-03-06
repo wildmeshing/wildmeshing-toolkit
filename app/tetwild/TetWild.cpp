@@ -29,7 +29,7 @@
 tetwild::VertexAttributes::VertexAttributes(const Vector3r& p)
 {
     m_pos = p;
-    m_posf = to_double(p);
+    m_posf = p.cast<double>();
 }
 
 void tetwild::TetWild::mesh_improvement(int max_its)
@@ -690,7 +690,7 @@ bool tetwild::TetWild::check_attributes()
                 return false;
             }
         } else {
-            Vector3d p = to_double(m_vertex_attribute[i].m_pos);
+            Vector3d p = m_vertex_attribute[i].m_pos.cast<double>();
             if (p != m_vertex_attribute[i].m_posf) {
                 wmtk::logger().critical("rounding error {} unrounded", i);
                 return false;

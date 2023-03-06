@@ -27,7 +27,7 @@ TEST_CASE("tetwild_file_write", "[tetwild_operation]")
     std::vector<TetAttributes> tet_attrs(1);
     for (auto& v : vertices) {
         v.m_is_rounded = true;
-        v.m_pos = tetwild::to_rational(v.m_posf);
+        v.m_pos = v.m_posf.cast<wmtk::Rational>();
     }
 
     tetwild.init(vertices.size(), tets);
