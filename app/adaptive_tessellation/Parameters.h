@@ -6,7 +6,7 @@
 #include <wmtk/utils/bicubic_interpolation.h>
 #include <nlohmann/json.hpp>
 #include <sec/envelope/SampleEnvelope.hpp>
-namespace triwild {
+namespace adaptive_tessellation {
 enum class ENERGY_TYPE { AMIPS, SYMDI, EDGE_LENGTH, EDGE_QUADRATURE };
 enum class EDGE_LEN_TYPE { LINEAR2D, LINEAR3D, N_IMPLICIT_POINTS, PT_PER_PIXEL, MIPMAP, ACCURACY };
 struct Parameters
@@ -40,8 +40,9 @@ public:
     }; // dafault is to return the current point. Legacy, was once used for boundary projection
 
     // this need to be a function acting on the uv domain [0,1]
-    std::function<Eigen::Vector3d(const double&, const double&)> m_triwild_displacement =
-        [](const double& u, const double& v) -> Eigen::Vector3d {
+    std::function<Eigen::Vector3d(const double&, const double&)>
+        m_adaptive_tessellation_displacement =
+            [](const double& u, const double& v) -> Eigen::Vector3d {
         Eigen::Vector3d p(u, v, 0.);
         return p;
     }; // used for heuristic split, collapse. Default to return (u,v,0)
@@ -78,4 +79,4 @@ public:
 
     std::shared_ptr<wmtk::Displacement> m_displacement;
 };
-} // namespace triwild
+} // namespace adaptive_tessellation

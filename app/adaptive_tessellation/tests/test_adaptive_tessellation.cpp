@@ -1,4 +1,4 @@
-#include <TriWild.h>
+#include <AdaptiveTessellation.h>
 #include <igl/facet_components.h>
 #include <igl/is_edge_manifold.h>
 #include <igl/is_vertex_manifold.h>
@@ -20,18 +20,18 @@
 #include <wmtk/utils/TriQualityUtils.hpp>
 
 using namespace wmtk;
-using namespace triwild;
+using namespace adaptive_tessellation;
 
 template <class T>
 using RowMatrix2 = Eigen::Matrix<T, Eigen::Dynamic, 2, Eigen::RowMajor>;
 using Index = uint64_t;
 using Scalar = double;
 
-TEST_CASE("triwild_collapse", "[triwild_collapse][.]")
+TEST_CASE("adaptive_tessellation_collapse", "[adaptive_tessellation_collapse][.]")
 {
     // dummy case. Collapse 5 times. 1 tri
     const std::string root(WMT_DATA_DIR);
-    const std::string path = root + "/test_triwild_collapse_onboundary.obj";
+    const std::string path = root + "/test_adaptive_tessellation_collapse_onboundary.obj";
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     bool ok = igl::read_triangle_mesh(path, V, F);
@@ -49,7 +49,7 @@ TEST_CASE("triwild_collapse", "[triwild_collapse][.]")
 
     // without envelop. boundary is locked, nothing changes
     // center vertex have 7 tris
-    triwild::TriWild m;
+    adaptive_tessellation::AdaptiveTessellation m;
     m.mesh_parameters.m_target_l = 1.;
     m.create_mesh(V, F);
     m.mesh_parameters.m_bnd_freeze = true;
@@ -63,14 +63,14 @@ TEST_CASE("triwild_collapse", "[triwild_collapse][.]")
     for (auto v : m.get_vertices()) {
         if (v.vid(m) == 2) REQUIRE(m.get_valence_for_vertex(v) == 7);
     }
-    m.write_obj("triwild_collapse_freeze.obj");
+    m.write_obj("adaptive_tessellation_collapse_freeze.obj");
 }
 
-TEST_CASE("triwild_split", "[triwild_split][.]")
+TEST_CASE("adaptive_tessellation_split", "[adaptive_tessellation_split][.]")
 {
     // dummy case. swap 5 times. 1 tri
     const std::string root(WMT_DATA_DIR);
-    const std::string path = root + "/test_triwild.obj";
+    const std::string path = root + "/test_adaptive_tessellation.obj";
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     bool ok = igl::read_triangle_mesh(path, V, F);
@@ -87,7 +87,7 @@ TEST_CASE("triwild_split", "[triwild_split][.]")
     }
 
     // edges are split regardless of envelope or not
-    triwild::TriWild m;
+    adaptive_tessellation::AdaptiveTessellation m;
     m.mesh_parameters.m_target_l = 1.;
     m.create_mesh(V, F);
     m.set_energy(std::make_unique<wmtk::AMIPS>());
@@ -97,13 +97,13 @@ TEST_CASE("triwild_split", "[triwild_split][.]")
     for (auto f : m.get_faces()) {
         REQUIRE(!m.is_inverted(f));
     }
-    m.write_obj("triwild_split.obj");
+    m.write_obj("adaptive_tessellation_split.obj");
 }
 
-TEST_CASE("triwild_swap", "[triwild_swap][.]")
+TEST_CASE("adaptive_tessellation_swap", "[adaptive_tessellation_swap][.]")
 {
     const std::string root(WMT_DATA_DIR);
-    const std::string path = root + "/test_triwild_swap.obj";
+    const std::string path = root + "/test_adaptive_tessellation_swap.obj";
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     bool ok = igl::read_triangle_mesh(path, V, F);
@@ -112,7 +112,7 @@ TEST_CASE("triwild_swap", "[triwild_swap][.]")
 
     // without envelop. boundary is locked, nothing changes
     // center vertex have 7 tris
-    TriWild m;
+    AdaptiveTessellation m;
     m.mesh_parameters.m_target_l = 5e-2;
     m.create_mesh(V, F);
     m.set_energy(std::make_unique<wmtk::AMIPS>());
@@ -124,10 +124,10 @@ TEST_CASE("triwild_swap", "[triwild_swap][.]")
     for (auto v : m.get_vertices()) {
         if (v.vid(m) == 2) REQUIRE(m.get_valence_for_vertex(v) == 7);
     }
-    m.write_obj("triwild_swap_freeze.obj");
+    m.write_obj("adaptive_tessellation_swap_freeze.obj");
     // with envelop. can be swapped
     // center vertex have 6 tris after swap
-    TriWild m2;
+    AdaptiveTessellation m2;
     m2.mesh_parameters.m_target_l = 5e-2;
     m2.create_mesh(V, F);
     m2.mesh_parameters.m_bnd_freeze = true;
@@ -140,18 +140,18 @@ TEST_CASE("triwild_swap", "[triwild_swap][.]")
     for (auto v : m2.get_vertices()) {
         if (v.vid(m2) == 2) REQUIRE(m2.get_valence_for_vertex(v) == 6);
     }
-    m.write_obj("triwild_swap_envelop.obj");
+    m.write_obj("adaptive_tessellation_swap_envelop.obj");
 }
 
-TEST_CASE("triwild_improve")
+TEST_CASE("adaptive_tessellation_improve")
 {
     const std::string root(WMT_DATA_DIR);
-    const std::string path = root + "/test_triwild.obj";
+    const std::string path = root + "/test_adaptive_tessellation.obj";
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     bool ok = igl::read_triangle_mesh(path, V, F);
     REQUIRE(ok);
-    TriWild m;
+    AdaptiveTessellation m;
     m.mesh_parameters.m_target_l = 0.5;
     m.mesh_parameters.m_stop_energy = 2.0;
     m.create_mesh(V, F);
@@ -159,20 +159,20 @@ TEST_CASE("triwild_improve")
     m.set_energy(std::make_unique<wmtk::AMIPS>());
 
     m.mesh_improvement(10);
-    m.write_obj("triwild_improve_freezebnd.obj");
+    m.write_obj("adaptive_tessellation_improve_freezebnd.obj");
 }
 
 TEST_CASE("AABB")
 {
     const std::string root(WMT_DATA_DIR);
-    const std::string path = root + "/test_triwild.obj";
+    const std::string path = root + "/test_adaptive_tessellation.obj";
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
 
     bool ok = igl::read_triangle_mesh(path, V, F);
 
     REQUIRE(ok);
-    TriWild m;
+    AdaptiveTessellation m;
     m.create_mesh(V, F);
     m.set_projection();
 
@@ -201,7 +201,7 @@ TEST_CASE("edge_length_energy_smooth_constant")
         Eigen::Vector3d p(u, v, displacement(DScalar(u), DScalar(v)).getValue());
         return p;
     };
-    TriWild m;
+    AdaptiveTessellation m;
     m.create_mesh(V, F);
     // set the 3 feature point as not fixed
     for (auto v : m.get_vertices()) {
@@ -236,7 +236,7 @@ TEST_CASE("edge_length_energy_smooth_linear")
         Eigen::Vector3d p(u, v, displacement(DScalar(u), DScalar(v)).getValue());
         return p;
     };
-    TriWild m;
+    AdaptiveTessellation m;
     m.create_mesh(V, F);
     // set the 3 feature point as not fixed
     for (auto v : m.get_vertices()) {
@@ -272,7 +272,7 @@ TEST_CASE("edge_length_energy_smooth_dramatic_linear")
         Eigen::Vector3d p(u, v, displacement(DScalar(u), DScalar(v)).getValue());
         return p;
     };
-    TriWild m;
+    AdaptiveTessellation m;
     m.create_mesh(V, F);
     // set the 3 feature point as not fixed
     for (auto v : m.get_vertices()) {
@@ -309,7 +309,7 @@ TEST_CASE("edge_length_energy_constant_remesh")
         Eigen::Vector3d p(u, v, displacement(DScalar(u), DScalar(v)).getValue());
         return p;
     };
-    TriWild m;
+    AdaptiveTessellation m;
     m.create_mesh(V, F);
     m.set_parameters(0.5, displacement, EDGE_LEN_TYPE::LINEAR3D, ENERGY_TYPE::EDGE_LENGTH, true);
     m.mesh_improvement(3);
@@ -337,7 +337,7 @@ TEST_CASE("edge_length_energy_one_triangle_linear_remesh")
         Eigen::Vector3d p(u, v, displacement(DScalar(u), DScalar(v)).getValue());
         return p;
     };
-    TriWild m;
+    AdaptiveTessellation m;
     m.create_mesh(V, F);
     m.set_parameters(0.5, displacement, EDGE_LEN_TYPE::LINEAR3D, ENERGY_TYPE::EDGE_LENGTH, true);
 
@@ -372,7 +372,7 @@ TEST_CASE("edge_length_energy_one_triangle_dramatic_linear_remesh")
         Eigen::Vector3d p(u, v, displacement(DScalar(u), DScalar(v)).getValue());
         return p;
     };
-    TriWild m;
+    AdaptiveTessellation m;
     // create the json file to record logs
     std::ofstream js_o("dramatic_linear_nobnd.json");
     m.create_mesh(V, F);
@@ -410,7 +410,7 @@ TEST_CASE("edge_length_energy_one_triangle_smooth_remesh")
         Eigen::Vector3d p(u, v, displacement(DScalar(u) / 10., DScalar(v) / 10.).getValue());
         return p;
     };
-    TriWild m;
+    AdaptiveTessellation m;
     // create the json file to record logs
     std::ofstream js_o("smooth_yesbnd.json");
     m.create_mesh(V, F);
@@ -452,7 +452,7 @@ TEST_CASE("smoothing_gradient_debug")
         Eigen::Vector3d p(u, v, displacement(DScalar(u), DScalar(v)).getValue());
         return p;
     };
-    TriWild m;
+    AdaptiveTessellation m;
     // create the json file to record logs
     std::ofstream js_o("gradient_debug_yesbnd.json");
     m.create_mesh(V, F);
@@ -543,7 +543,7 @@ TEST_CASE("boundary parameter smooth")
     Eigen::MatrixXi F(1, 3);
     F.row(0) << 0, 1, 2;
 
-    TriWild m;
+    AdaptiveTessellation m;
     m.create_mesh(V, F);
     m.set_projection();
 
@@ -584,7 +584,7 @@ TEST_CASE("boundary parameter split")
     Eigen::MatrixXi F(1, 3);
     F.row(0) << 0, 1, 2;
 
-    TriWild m;
+    AdaptiveTessellation m;
     m.create_mesh(V, F);
     m.set_projection();
     auto displacement = [](const DScalar& u, const DScalar& v) -> DScalar { return DScalar(1); };
@@ -630,7 +630,7 @@ TEST_CASE("boundary parameter collapse")
     bool ok = igl::read_triangle_mesh("../build_release/after_split_7.obj", V, F);
     assert(ok);
 
-    TriWild m;
+    AdaptiveTessellation m;
     m.create_mesh(V, F);
     auto displacement = [](const DScalar& u, const DScalar& v) -> DScalar {
         return DScalar(10 * u);
@@ -681,7 +681,7 @@ TEST_CASE("energy gradient")
         F);
     assert(ok);
 
-    TriWild m;
+    AdaptiveTessellation m;
     m.create_mesh(V, F);
 
     auto displacement = [](const DScalar& u, const DScalar& v) -> DScalar {
@@ -720,7 +720,7 @@ TEST_CASE("gradient")
     Eigen::MatrixXi F;
     bool ok = igl::read_triangle_mesh("split_new_boundary.obj", V, F);
     assert(ok);
-    TriWild m;
+    AdaptiveTessellation m;
     m.create_mesh(V, F);
 
     auto displacement = [](const DScalar& u, const DScalar& v) -> DScalar {
@@ -827,7 +827,7 @@ TEST_CASE("remeshing using image data")
     V.row(2) << 0, 10;
     Eigen::MatrixXi F(1, 3);
     F.row(0) << 0, 1, 2;
-    TriWild m;
+    AdaptiveTessellation m;
     m.create_mesh(V, F);
     m.set_parameters(
         0.01,
@@ -849,7 +849,7 @@ TEST_CASE("fixed corner")
     V.row(2) << 0, 10;
     Eigen::MatrixXi F(1, 3);
     F.row(0) << 0, 1, 2;
-    TriWild m;
+    AdaptiveTessellation m;
     m.create_mesh(V, F);
     for (auto v : m.get_vertices()) {
         REQUIRE(m.vertex_attrs[v.vid(m)].fixed);
@@ -872,7 +872,7 @@ TEST_CASE("stripe")
         return (image.get(u, v));
     };
 
-    TriWild m;
+    AdaptiveTessellation m;
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     igl::read_triangle_mesh("/home/yunfan/data/input.obj", V, F);
@@ -899,7 +899,7 @@ TEST_CASE("implicit points")
 {
     using DScalar = wmtk::EdgeLengthEnergy::DScalar;
 
-    TriWild m;
+    AdaptiveTessellation m;
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     igl::read_triangle_mesh("/home/yunfan/data/moonface_output.obj", V, F);
@@ -942,7 +942,7 @@ TEST_CASE("exact length")
         return (image.get(u, v));
     };
 
-    TriWild m;
+    AdaptiveTessellation m;
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     igl::read_triangle_mesh("/home/yunfan/data/input.obj", V, F);
@@ -987,7 +987,7 @@ TEST_CASE("mipmap")
     }
 
     // now test the length of the edges using a dummy example
-    TriWild m;
+    AdaptiveTessellation m;
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     igl::read_triangle_mesh("/home/yunfan/data/input.obj", V, F);
@@ -1017,7 +1017,7 @@ TEST_CASE("accuracy split")
         return sin(M_PI * u);
     };
     image1.set(displacement_double2);
-    TriWild m;
+    AdaptiveTessellation m;
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     igl::read_triangle_mesh("/home/yunfan/data/input.obj", V, F);
@@ -1052,7 +1052,7 @@ TEST_CASE("accuracy smooth")
         return sin(M_PI * u);
     };
     image1.set(displacement_double2);
-    TriWild m;
+    AdaptiveTessellation m;
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     igl::read_triangle_mesh("accuracy_guided_split.obj", V, F);
@@ -1075,7 +1075,7 @@ TEST_CASE("quality split comparison")
         return sin(M_PI * u);
     };
     image1.set(displacement_double2);
-    TriWild m;
+    AdaptiveTessellation m;
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     igl::read_triangle_mesh("/home/yunfan/data/input.obj", V, F);
@@ -1095,25 +1095,25 @@ TEST_CASE("quality split comparison")
 TEST_CASE("accuracy image operations")
 {
     using DScalar = wmtk::EdgeLengthEnergy::DScalar;
-    Image image(512, 512);
+    Image image(100, 100);
     image.load(
-        "/home/yunfan/data/plastic_stripes_Height.exr",
+        "/home/yunfan/data/test_03.exr",
         WrappingMode::MIRROR_REPEAT,
         WrappingMode::MIRROR_REPEAT);
-    TriWild m;
+    AdaptiveTessellation m;
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     igl::read_triangle_mesh("/home/yunfan/data/input.obj", V, F);
     m.create_mesh(V, F);
     m.set_parameters(
-        0.005,
+        0.001,
         image,
         WrappingMode::MIRROR_REPEAT,
         EDGE_LEN_TYPE::ACCURACY,
         ENERGY_TYPE::EDGE_QUADRATURE,
         true);
     m.split_all_edges();
-    m.write_displaced_obj("image_accuracy_split.obj", m.mesh_parameters.m_project_to_3d);
+    m.write_displaced_obj("image_accuracy_split_03.obj", m.mesh_parameters.m_project_to_3d);
     // m.swap_all_edges();
     // m.write_displaced_obj("image_accuracy_swap.obj", m.mesh_parameters.m_project_to_3d);
     // m.smooth_all_vertices();

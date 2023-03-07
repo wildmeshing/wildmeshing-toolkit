@@ -1,5 +1,5 @@
 
-#include "TriWild.h"
+#include "AdaptiveTessellation.h"
 #include "wmtk/ExecutionScheduler.hpp"
 
 #include <Eigen/src/Core/util/Constants.h>
@@ -14,14 +14,14 @@
 #include <limits>
 #include <optional>
 
-bool triwild::TriWild::smooth_before(const Tuple& t)
+bool adaptive_tessellation::AdaptiveTessellation::smooth_before(const Tuple& t)
 {
     if (vertex_attrs[t.vid(*this)].fixed) return false;
     if (mesh_parameters.m_bnd_freeze && is_boundary_vertex(t)) return false;
     return true;
 }
 
-bool triwild::TriWild::smooth_after(const Tuple& t)
+bool adaptive_tessellation::AdaptiveTessellation::smooth_after(const Tuple& t)
 {
     static std::atomic_int cnt = 0;
     wmtk::logger().info("smothing op # {}", cnt);
@@ -132,7 +132,7 @@ bool triwild::TriWild::smooth_after(const Tuple& t)
     return true;
 }
 
-void triwild::TriWild::smooth_all_vertices()
+void adaptive_tessellation::AdaptiveTessellation::smooth_all_vertices()
 {
     assert(mesh_parameters.m_energy != nullptr);
     wmtk::logger().info("=======smooth==========");
@@ -148,7 +148,8 @@ void triwild::TriWild::smooth_all_vertices()
     wmtk::logger().debug("Num verts {}", collect_all_ops.size());
     if (NUM_THREADS > 0) {
         timer.start();
-        auto executor = wmtk::ExecutePass<TriWild, wmtk::ExecutionPolicy::kPartition>();
+        auto executor =
+            wmtk::ExecutePass<AdaptiveTessellation, wmtk::ExecutionPolicy::kPartition>();
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
             return m.try_set_vertex_mutex_one_ring(e, task_id);
         };
@@ -158,7 +159,7 @@ void triwild::TriWild::smooth_all_vertices()
         wmtk::logger().info("vertex smoothing operation time parallel: {}s", time);
     } else {
         timer.start();
-        auto executor = wmtk::ExecutePass<TriWild, wmtk::ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<AdaptiveTessellation, wmtk::ExecutionPolicy::kSeq>();
         int itr = 0;
         do {
             mesh_parameters.m_gradient = Eigen::Vector2d(0., 0.);

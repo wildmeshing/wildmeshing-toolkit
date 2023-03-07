@@ -1,4 +1,4 @@
-#include "TriWild.h"
+#include "AdaptiveTessellation.h"
 #include <fastenvelope/FastEnvelope.h>
 #include <igl/Timer.h>
 #include <igl/predicates/predicates.h>
@@ -13,7 +13,7 @@
 #include <wmtk/utils/TupleUtils.hpp>
 using namespace wmtk;
 
-namespace triwild {
+namespace adaptive_tessellation {
 auto avg_edge_len = [](auto& m) {
     double avg_len = 0.0;
     auto edges = m.get_edges();
@@ -22,7 +22,7 @@ auto avg_edge_len = [](auto& m) {
     return avg_len / edges.size();
 };
 
-void TriWild::set_parameters(
+void AdaptiveTessellation::set_parameters(
     const double target_edge_length,
     const wmtk::Image& image,
     const WrappingMode wrapping_mode,
@@ -44,7 +44,7 @@ void TriWild::set_parameters(
     mesh_parameters.m_boundary_parameter = boundary_parameter;
 }
 
-void TriWild::set_parameters(
+void AdaptiveTessellation::set_parameters(
     const double target_edge_length,
     const std::function<DScalar(const DScalar&, const DScalar&)>& displacement_function,
     const EDGE_LEN_TYPE edge_len_type,
@@ -61,7 +61,7 @@ void TriWild::set_parameters(
 
 /// @brief set the v as feature vertex, that is, it is a boundary vertex and the  incident boundary vertices are not colinear
 /// @param v
-void TriWild::set_feature(Tuple& v)
+void AdaptiveTessellation::set_feature(Tuple& v)
 {
     // only set the feature if it is a boundary vertex
     assert(is_boundary_vertex(v));
@@ -87,7 +87,7 @@ void TriWild::set_feature(Tuple& v)
 }
 
 // assuming the m_triwild_displacement in mesh_parameter has been set
-void TriWild::set_energy(const ENERGY_TYPE energy_type)
+void AdaptiveTessellation::set_energy(const ENERGY_TYPE energy_type)
 {
     std::unique_ptr<Energy> energy_ptr;
     switch (energy_type) {
@@ -103,7 +103,7 @@ void TriWild::set_energy(const ENERGY_TYPE energy_type)
     mesh_parameters.m_energy = std::move(energy_ptr);
 }
 
-void TriWild::set_edge_length_measurement(const EDGE_LEN_TYPE edge_len_type)
+void AdaptiveTessellation::set_edge_length_measurement(const EDGE_LEN_TYPE edge_len_type)
 {
     switch (edge_len_type) {
     case EDGE_LEN_TYPE::LINEAR2D:
@@ -146,7 +146,9 @@ void TriWild::set_edge_length_measurement(const EDGE_LEN_TYPE edge_len_type)
     }
 }
 
-void TriWild::set_image_function(const wmtk::Image& image, const WrappingMode wrapping_mode)
+void AdaptiveTessellation::set_image_function(
+    const wmtk::Image& image,
+    const WrappingMode wrapping_mode)
 {
     mesh_parameters.m_wrapping_mode = wrapping_mode;
     mesh_parameters.m_image = image;
@@ -163,7 +165,7 @@ void TriWild::set_image_function(const wmtk::Image& image, const WrappingMode wr
     mesh_parameters.m_mipmap.set_wrapping_mode(wrapping_mode);
 }
 
-void TriWild::set_displacement()
+void AdaptiveTessellation::set_displacement()
 {
     // needs to be called after m_image is initiated
     // can be also set depending on a user parameter that initialize different Displacement type
@@ -172,7 +174,7 @@ void TriWild::set_displacement()
     mesh_parameters.m_displacement = displacement_ptr;
 }
 
-void TriWild::set_projection()
+void AdaptiveTessellation::set_projection()
 {
     struct Data
     {
@@ -202,7 +204,7 @@ void TriWild::set_projection()
     mesh_parameters.m_get_closest_point = std::move(projection);
 }
 
-bool TriWild::invariants(const std::vector<Tuple>& new_tris)
+bool AdaptiveTessellation::invariants(const std::vector<Tuple>& new_tris)
 {
     if (mesh_parameters.m_has_envelope) {
         for (auto& t : new_tris) {
@@ -258,9 +260,10 @@ bool TriWild::invariants(const std::vector<Tuple>& new_tris)
     }
     return true;
 }
-std::vector<TriMesh::Tuple> TriWild::new_edges_after(const std::vector<TriMesh::Tuple>& tris) const
+std::vector<AdaptiveTessellation::Tuple> AdaptiveTessellation::new_edges_after(
+    const std::vector<AdaptiveTessellation::Tuple>& tris) const
 {
-    std::vector<TriMesh::Tuple> new_edges;
+    std::vector<AdaptiveTessellation::Tuple> new_edges;
 
     for (auto t : tris) {
         for (auto j = 0; j < 3; j++) {
@@ -271,7 +274,7 @@ std::vector<TriMesh::Tuple> TriWild::new_edges_after(const std::vector<TriMesh::
     return new_edges;
 }
 
-void TriWild::create_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F)
+void AdaptiveTessellation::create_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F)
 {
     std::vector<Eigen::Vector3d> V_env;
     V_env.resize(V.rows());
@@ -330,7 +333,8 @@ void TriWild::create_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F)
     }
 }
 
-Eigen::Matrix<uint64_t, Eigen::Dynamic, 2, Eigen::RowMajor> TriWild::get_bnd_edge_matrix()
+Eigen::Matrix<uint64_t, Eigen::Dynamic, 2, Eigen::RowMajor>
+AdaptiveTessellation::get_bnd_edge_matrix()
 {
     int num_bnd_edge = 0;
     for (auto e : get_edges()) {
@@ -347,7 +351,7 @@ Eigen::Matrix<uint64_t, Eigen::Dynamic, 2, Eigen::RowMajor> TriWild::get_bnd_edg
     return E;
 }
 
-void TriWild::export_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F)
+void AdaptiveTessellation::export_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F)
 {
     V = Eigen::MatrixXd::Zero(vert_capacity(), 2);
     for (auto& t : get_vertices()) {
@@ -365,7 +369,7 @@ void TriWild::export_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F)
     }
 }
 
-void TriWild::write_obj(const std::string& path)
+void AdaptiveTessellation::write_obj(const std::string& path)
 {
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
@@ -378,7 +382,7 @@ void TriWild::write_obj(const std::string& path)
     igl::writeOBJ(path, V3, F);
 }
 
-void TriWild::write_ply(const std::string& path)
+void AdaptiveTessellation::write_ply(const std::string& path)
 {
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
@@ -391,7 +395,7 @@ void TriWild::write_ply(const std::string& path)
     igl::writePLY(path, V3, F);
 }
 
-void TriWild::write_vtk(const std::string& path)
+void AdaptiveTessellation::write_vtk(const std::string& path)
 {
     std::vector<double> points;
     std::vector<int> elements;
@@ -436,7 +440,7 @@ void TriWild::write_vtk(const std::string& path)
     writer.write_surface_mesh(path, dim, cell_size, points, elements);
 }
 
-void TriWild::write_displaced_obj(
+void AdaptiveTessellation::write_displaced_obj(
     const std::string& path,
     const std::function<double(double, double)>& displacement)
 {
@@ -453,7 +457,7 @@ void TriWild::write_displaced_obj(
     igl::writeOBJ(path, V3, F);
 }
 
-void TriWild::write_displaced_obj(
+void AdaptiveTessellation::write_displaced_obj(
     const std::string& path,
     const std::function<Eigen::Vector3d(double, double)>& displacement)
 {
@@ -470,19 +474,20 @@ void TriWild::write_displaced_obj(
     igl::writeOBJ(path, V3, F);
 }
 
-double TriWild::get_length2d(const size_t& v1, const size_t& v2) const
+double AdaptiveTessellation::get_length2d(const size_t& v1, const size_t& v2) const
 {
     return (vertex_attrs[v1].pos - vertex_attrs[v2].pos).stableNorm();
 }
 
-double TriWild::get_length3d(const size_t& v1, const size_t& v2) const
+double AdaptiveTessellation::get_length3d(const size_t& v1, const size_t& v2) const
 {
     auto v13d = mesh_parameters.m_project_to_3d(vertex_attrs[v1].pos(0), vertex_attrs[v1].pos(1));
     auto v23d = mesh_parameters.m_project_to_3d(vertex_attrs[v2].pos(0), vertex_attrs[v2].pos(1));
     return (v13d - v23d).stableNorm();
 }
 
-double TriWild::get_length_n_implicit_points(const size_t& vid1, const size_t& vid2) const
+double AdaptiveTessellation::get_length_n_implicit_points(const size_t& vid1, const size_t& vid2)
+    const
 {
     auto v12d = vertex_attrs[vid1].pos;
     auto v22d = vertex_attrs[vid2].pos;
@@ -501,7 +506,7 @@ double TriWild::get_length_n_implicit_points(const size_t& vid1, const size_t& v
     return length;
 }
 
-double TriWild::get_length_1ptperpixel(const size_t& vid1, const size_t& vid2) const
+double AdaptiveTessellation::get_length_1ptperpixel(const size_t& vid1, const size_t& vid2) const
 {
     auto v12d = vertex_attrs[vid1].pos;
     auto v22d = vertex_attrs[vid2].pos;
@@ -528,7 +533,7 @@ double TriWild::get_length_1ptperpixel(const size_t& vid1, const size_t& vid2) c
     return length;
 }
 
-double TriWild::get_length_mipmap(const size_t& vid1, const size_t& vid2) const
+double AdaptiveTessellation::get_length_mipmap(const size_t& vid1, const size_t& vid2) const
 {
     auto v12d = vertex_attrs[vid1].pos;
     auto v22d = vertex_attrs[vid2].pos;
@@ -554,7 +559,7 @@ double TriWild::get_length_mipmap(const size_t& vid1, const size_t& vid2) const
     return length;
 }
 
-double TriWild::get_quality(const Tuple& loc, int idx) const
+double AdaptiveTessellation::get_quality(const Tuple& loc, int idx) const
 {
     // Global ids of the vertices of the triangle
     auto its = oriented_tri_vids(loc);
@@ -580,7 +585,7 @@ double TriWild::get_quality(const Tuple& loc, int idx) const
     return energy;
 }
 
-double TriWild::get_accuracy_error(const size_t& vid1, const size_t& vid2) const
+double AdaptiveTessellation::get_accuracy_error(const size_t& vid1, const size_t& vid2) const
 {
     auto v12d = vertex_attrs[vid1].pos;
     auto v22d = vertex_attrs[vid2].pos;
@@ -588,7 +593,9 @@ double TriWild::get_accuracy_error(const size_t& vid1, const size_t& vid2) const
     return mesh_parameters.m_displacement->get_error_per_edge(v12d, v22d);
 }
 
-double TriWild::get_accuracy_error(const Eigen::Vector2d& p1, const Eigen::Vector2d& p2) const
+double AdaptiveTessellation::get_accuracy_error(
+    const Eigen::Vector2d& p1,
+    const Eigen::Vector2d& p2) const
 {
     std::function<double(const double&, const double&)> get_z = [&](const double& u,
                                                                     const double& v) -> double {
@@ -623,7 +630,7 @@ double TriWild::get_accuracy_error(const Eigen::Vector2d& p1, const Eigen::Vecto
     return error;
 }
 
-std::pair<double, Eigen::Vector2d> TriWild::get_one_ring_energy(const Tuple& loc) const
+std::pair<double, Eigen::Vector2d> AdaptiveTessellation::get_one_ring_energy(const Tuple& loc) const
 {
     auto one_ring = get_one_ring_tris_for_vertex(loc);
     wmtk::DofVector dofx;
@@ -687,7 +694,7 @@ std::pair<double, Eigen::Vector2d> TriWild::get_one_ring_energy(const Tuple& loc
     return {total_energy, total_gradient};
 }
 
-Eigen::VectorXd TriWild::get_quality_all_triangles()
+Eigen::VectorXd AdaptiveTessellation::get_quality_all_triangles()
 {
     // Use a concurrent vector as for_each_face is parallel
     tbb::concurrent_vector<double> quality;
@@ -702,7 +709,7 @@ Eigen::VectorXd TriWild::get_quality_all_triangles()
     return ret;
 }
 
-bool TriWild::is_inverted(const Tuple& loc) const
+bool AdaptiveTessellation::is_inverted(const Tuple& loc) const
 {
     // Get the vertices ids
     auto vs = oriented_tri_vertices(loc);
@@ -718,7 +725,7 @@ bool TriWild::is_inverted(const Tuple& loc) const
     return (res != igl::predicates::Orientation::POSITIVE);
 }
 
-void TriWild::mesh_improvement(int max_its)
+void AdaptiveTessellation::mesh_improvement(int max_its)
 {
     [[maybe_unused]] igl::Timer timer;
     [[maybe_unused]] double avg_len = 0.0;
@@ -812,7 +819,7 @@ void TriWild::mesh_improvement(int max_its)
         avg_len);
     consolidate_mesh();
 }
-void TriWild::flatten_dofs(Eigen::VectorXd& v_flat)
+void AdaptiveTessellation::flatten_dofs(Eigen::VectorXd& v_flat)
 {
     auto verts = get_vertices();
     v_flat.resize(verts.size() * 2);
@@ -829,7 +836,7 @@ void TriWild::flatten_dofs(Eigen::VectorXd& v_flat)
 
 // get the energy defined by edge_length_energy over each face of the mesh
 // assuming the vert_capacity() == get_vertices.size()
-double TriWild::get_mesh_energy(const Eigen::VectorXd& v_flat)
+double AdaptiveTessellation::get_mesh_energy(const Eigen::VectorXd& v_flat)
 {
     double total_energy = 0;
     Eigen::MatrixXd energy_matrix;
@@ -883,7 +890,7 @@ double TriWild::get_mesh_energy(const Eigen::VectorXd& v_flat)
     return total_energy;
 }
 /// debugging
-void TriWild::gradient_debug(int max_its)
+void AdaptiveTessellation::gradient_debug(int max_its)
 {
     split_all_edges();
     assert(invariants(get_faces()));
@@ -918,4 +925,4 @@ void TriWild::gradient_debug(int max_its)
         mesh_parameters.m_gradient = Eigen::Vector2d(0., 0.);
     }
 }
-} // namespace triwild
+} // namespace adaptive_tessellation

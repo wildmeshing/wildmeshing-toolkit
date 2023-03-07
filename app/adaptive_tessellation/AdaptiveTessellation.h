@@ -18,7 +18,7 @@
 #include <wmtk/utils/LineQuadrature.hpp>
 #include "Parameters.h"
 
-namespace triwild {
+namespace adaptive_tessellation {
 class VertexAttributes
 {
 public:
@@ -33,7 +33,7 @@ public:
     bool boundary_vertex = false;
 };
 
-class TriWild : public wmtk::TriMesh
+class AdaptiveTessellation : public wmtk::TriMesh
 {
 public:
     template <class T>
@@ -56,9 +56,9 @@ public:
     tbb::enumerable_thread_specific<InfoCache> cache;
 
 public:
-    TriWild(){};
+    AdaptiveTessellation(){};
 
-    virtual ~TriWild(){};
+    virtual ~AdaptiveTessellation(){};
 
     void set_output_folder(std::filesystem::path output_folder)
     {
@@ -190,14 +190,11 @@ public:
                 (1 - quad.points(i, 0)) * edge_verts(0, 1) + quad.points(i, 0) * edge_verts(1, 1);
             auto tmph = image_get_z(tmpu, tmpv);
             auto tmpz = (1 - quad.points(i, 0)) * v1z + quad.points(i, 0) * v2z;
-            wmtk::logger()
-                .info("   triwild tmpu {} tmpv {} tmph {} tmpz {}", tmpu, tmpv, tmph, tmpz);
             ret += abs(quad.weights(i) * (tmph - tmpz));
         }
-        wmtk::logger().info("   ret for {} {} in triwild is {}", v12d, v22d, ret);
 
         return ret * (v12d - v22d).stableNorm();
     }
 };
 
-} // namespace triwild
+} // namespace adaptive_tessellation

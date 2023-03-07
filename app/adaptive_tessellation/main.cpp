@@ -1,4 +1,4 @@
-#include <TriWild.h>
+#include <AdaptiveTessellation.h>
 #include <igl/Timer.h>
 #include <igl/facet_components.h>
 #include <igl/is_edge_manifold.h>
@@ -23,8 +23,8 @@
 #include <regex>
 #include <wmtk/utils/ManifoldUtils.hpp>
 #include <wmtk/utils/TriQualityUtils.hpp>
+#include "AdaptiveTessellation.h"
 #include "Parameters.h"
-#include "TriWild.h"
 
 template <class T>
 using RowMatrix2 = Eigen::Matrix<T, Eigen::Dynamic, 2, Eigen::RowMajor>;
@@ -38,7 +38,7 @@ int main(int argc, char** argv)
 {
     using DScalar = wmtk::EdgeLengthEnergy::DScalar;
 
-    ZoneScopedN("triwildmain");
+    ZoneScopedN("adaptive_tessellation_main");
     lagrange::enable_fpe();
     CLI::App app{argv[0]};
     std::string input_json;
@@ -75,22 +75,24 @@ int main(int argc, char** argv)
 
     igl::Timer timer;
     double time = 0.;
-    triwild::TriWild triwild;
+    adaptive_tessellation::AdaptiveTessellation adaptive_tessellation;
 
-    triwild.mesh_parameters.js_log["input"] = input_file;
-    triwild.mesh_parameters.js_log["output"] = output_file;
+    adaptive_tessellation.mesh_parameters.js_log["input"] = input_file;
+    adaptive_tessellation.mesh_parameters.js_log["output"] = output_file;
 
-    triwild.create_mesh(V, F);
-    triwild.set_output_folder(output_folder);
-    assert(triwild.check_mesh_connectivity_validity());
-    triwild.mesh_parameters.js_log["num_vert"] = V.rows();
-    triwild.mesh_parameters.js_log["num_faces"] = F.rows();
+    adaptive_tessellation.create_mesh(V, F);
+    adaptive_tessellation.set_output_folder(output_folder);
+    assert(adaptive_tessellation.check_mesh_connectivity_validity());
+    adaptive_tessellation.mesh_parameters.js_log["num_vert"] = V.rows();
+    adaptive_tessellation.mesh_parameters.js_log["num_faces"] = F.rows();
 
     double target_l = config["target_edge_length"];
     wmtk::logger().info("/////target edge length: {}", target_l);
 
-    triwild::ENERGY_TYPE energy_type = triwild::ENERGY_TYPE::EDGE_LENGTH;
-    triwild::EDGE_LEN_TYPE edge_len_type = triwild::EDGE_LEN_TYPE::PT_PER_PIXEL;
+    adaptive_tessellation::ENERGY_TYPE energy_type =
+        adaptive_tessellation::ENERGY_TYPE::EDGE_LENGTH;
+    adaptive_tessellation::EDGE_LEN_TYPE edge_len_type =
+        adaptive_tessellation::EDGE_LEN_TYPE::PT_PER_PIXEL;
     energy_type = config["energy_type"];
     edge_len_type = config["edge_len_type"];
     wmtk::logger().info("/////energy type: {}", energy_type);
@@ -105,25 +107,25 @@ int main(int argc, char** argv)
         return (image.get(u, v));
     };
 
-    triwild.set_parameters(
+    adaptive_tessellation.set_parameters(
         target_l,
         image,
         wrapping_mode,
         edge_len_type,
         energy_type,
         boundary_parameter_on);
-    int max_iter = 10;
+    int max_iter = 1;
     max_iter = config["max_iter"];
-    triwild.mesh_improvement(max_iter);
-    triwild.consolidate_mesh();
+    adaptive_tessellation.mesh_improvement(max_iter);
+    adaptive_tessellation.consolidate_mesh();
 
     time = timer.getElapsedTime();
     wmtk::logger().info("!!!!finished {}!!!!", time);
-    triwild.mesh_parameters.js_log["total_time"] = time;
-    triwild.write_displaced_obj(output_file, displacement_image_double);
+    adaptive_tessellation.mesh_parameters.js_log["total_time"] = time;
+    adaptive_tessellation.write_displaced_obj(output_file, displacement_image_double);
     // Save the optimized mesh
     wmtk::logger().info("/////output : {}", output_file);
-    js_o << std::setw(4) << triwild.mesh_parameters.js_log << std::endl;
+    js_o << std::setw(4) << adaptive_tessellation.mesh_parameters.js_log << std::endl;
     js_o.close();
     return 0;
 }

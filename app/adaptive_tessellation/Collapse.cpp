@@ -1,4 +1,4 @@
-#include "TriWild.h"
+#include "AdaptiveTessellation.h"
 #include "wmtk/ExecutionScheduler.hpp"
 
 #include <Eigen/src/Core/util/Constants.h>
@@ -11,8 +11,8 @@
 
 #include <limits>
 #include <optional>
-using namespace triwild;
 using namespace wmtk;
+using namespace adaptive_tessellation;
 
 // every edge is collapsed, if it is shorter than 3/4 L
 
@@ -23,7 +23,7 @@ auto renew = [](auto& m, auto op, auto& tris) {
     return optup;
 };
 
-void TriWild::collapse_all_edges()
+void AdaptiveTessellation::collapse_all_edges()
 {
     for (auto f : get_faces()) assert(!is_inverted(f));
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
@@ -52,17 +52,17 @@ void TriWild::collapse_all_edges()
         executor(*this, collect_all_ops);
     };
     if (NUM_THREADS > 0) {
-        auto executor = wmtk::ExecutePass<TriWild, ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<AdaptiveTessellation, ExecutionPolicy::kPartition>();
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) {
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<TriWild, ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<AdaptiveTessellation, ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
     }
 }
-bool TriWild::collapse_edge_before(const Tuple& edge_tuple)
+bool AdaptiveTessellation::collapse_edge_before(const Tuple& edge_tuple)
 {
     if (!TriMesh::collapse_edge_before(edge_tuple)) return false;
 
@@ -105,7 +105,7 @@ bool TriWild::collapse_edge_before(const Tuple& edge_tuple)
 
     return true;
 }
-bool TriWild::collapse_edge_after(const Tuple& edge_tuple)
+bool AdaptiveTessellation::collapse_edge_after(const Tuple& edge_tuple)
 {
     // check if the both of the 2 vertices are fixed
     // if yes, then collapse is rejected

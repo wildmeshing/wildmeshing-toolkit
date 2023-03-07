@@ -1,4 +1,4 @@
-#include "TriWild.h"
+#include "AdaptiveTessellation.h"
 #include "wmtk/ExecutionScheduler.hpp"
 
 #include <Eigen/src/Core/util/Constants.h>
@@ -11,7 +11,7 @@
 
 #include <limits>
 #include <optional>
-using namespace triwild;
+using namespace adaptive_tessellation;
 using namespace wmtk;
 
 // every edge is split if it is longer than 4/5 L
@@ -27,7 +27,7 @@ auto split_renew = [](auto& m, auto op, auto& tris) {
 
 // optimized to find the new vertex position
 
-void TriWild::split_all_edges()
+void AdaptiveTessellation::split_all_edges()
 {
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     auto collect_tuples = tbb::concurrent_vector<Tuple>();
@@ -75,17 +75,17 @@ void TriWild::split_all_edges()
         executor(*this, collect_all_ops);
     };
     if (NUM_THREADS > 0) {
-        auto executor = wmtk::ExecutePass<TriWild, ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<AdaptiveTessellation, ExecutionPolicy::kPartition>();
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) {
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<TriWild, ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<AdaptiveTessellation, ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
     }
 }
-bool TriWild::split_edge_before(const Tuple& edge_tuple)
+bool AdaptiveTessellation::split_edge_before(const Tuple& edge_tuple)
 {
     static std::atomic_int cnt = 0;
     if (!TriMesh::split_edge_before(edge_tuple)) return false;
@@ -111,7 +111,7 @@ bool TriWild::split_edge_before(const Tuple& edge_tuple)
     cnt++;
     return true;
 }
-bool TriWild::split_edge_after(const Tuple& edge_tuple)
+bool AdaptiveTessellation::split_edge_after(const Tuple& edge_tuple)
 {
     // adding heuristic decision. If length2 > 4. / 3. * 4. / 3. * m.m_target_l * m.m_target_l always split
     // transform edge length with displacement

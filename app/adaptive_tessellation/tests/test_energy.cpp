@@ -1,4 +1,4 @@
-#include <TriWild.h>
+#include <igl/predicates/predicates.h>
 #include <igl/read_triangle_mesh.h>
 #include <wmtk/utils/AMIPS2D.h>
 #include <wmtk/utils/AMIPS2D_autodiff.h>
@@ -11,7 +11,6 @@
 #include <functional>
 
 using namespace wmtk;
-using namespace triwild;
 
 template <class T>
 using RowMatrix2 = Eigen::Matrix<T, Eigen::Dynamic, 2, Eigen::RowMajor>;
@@ -260,3 +259,5 @@ TEST_CASE("2 rand tris")
         }
     }
 }
+// TODO: test for edge length error
+// TODO: test for accuracy error

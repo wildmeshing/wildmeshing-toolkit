@@ -1,4 +1,4 @@
-#include "TriWild.h"
+#include "AdaptiveTessellation.h"
 #include "wmtk/ExecutionScheduler.hpp"
 
 #include <Eigen/src/Core/util/Constants.h>
@@ -11,7 +11,7 @@
 
 #include <limits>
 #include <optional>
-using namespace triwild;
+using namespace adaptive_tessellation;
 using namespace wmtk;
 
 auto swap_renew = [](auto& m, auto op, auto& tris) {
@@ -67,7 +67,7 @@ auto swap_accuracy_cost = [](auto& m, const TriMesh::Tuple& e) {
         return 0.;
 };
 
-void TriWild::swap_all_edges()
+void AdaptiveTessellation::swap_all_edges()
 {
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     auto collect_tuples = tbb::concurrent_vector<Tuple>();
@@ -103,17 +103,17 @@ void TriWild::swap_all_edges()
         executor(*this, collect_all_ops);
     };
     if (NUM_THREADS > 0) {
-        auto executor = wmtk::ExecutePass<TriWild, ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<AdaptiveTessellation, ExecutionPolicy::kPartition>();
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) {
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<TriWild, ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<AdaptiveTessellation, ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
     }
 }
-bool TriWild::swap_edge_before(const Tuple& t)
+bool AdaptiveTessellation::swap_edge_before(const Tuple& t)
 {
     if (!TriMesh::swap_edge_before(t)) return false;
 
@@ -136,7 +136,7 @@ bool TriWild::swap_edge_before(const Tuple& t)
     // m_max_energy = cache.local().max_energy;
     return true;
 }
-bool TriWild::swap_edge_after([[maybe_unused]] const Tuple& t)
+bool AdaptiveTessellation::swap_edge_after([[maybe_unused]] const Tuple& t)
 {
     // check quality and degenerate
     // auto tris = get_one_ring_tris_for_vertex(t);
