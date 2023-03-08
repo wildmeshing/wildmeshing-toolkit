@@ -10,7 +10,15 @@ void ClippedQuadrature::clipped_triangle_box_quadrature(
     const TriangleVertices& triangle,
     const Eigen::AlignedBox2d& box,
     Quadrature& quadr)
-{}
+{
+    // Naive implementation for testing
+    PolygonVertices poly(4, 2);
+    poly.row(0) = box.corner(Eigen::AlignedBox2d::CornerType::BottomLeft).transpose();
+    poly.row(1) = box.corner(Eigen::AlignedBox2d::CornerType::BottomRight).transpose();
+    poly.row(2) = box.corner(Eigen::AlignedBox2d::CornerType::TopRight).transpose();
+    poly.row(3) = box.corner(Eigen::AlignedBox2d::CornerType::TopLeft).transpose();
+    clipped_triangle_polygon_quadrature(order, triangle, poly, quadr);
+}
 
 void ClippedQuadrature::clipped_triangle_polygon_quadrature(
     const int order,

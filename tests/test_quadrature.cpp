@@ -1,3 +1,4 @@
+// #include <igl/write_triangle_mesh.h>
 #include <wmtk/quadrature/ClippedQuadrature.h>
 #include <wmtk/quadrature/TriangleQuadrature.h>
 #include <wmtk/utils/PolygonClipping.h>
@@ -135,7 +136,7 @@ double eval_over_box(const Eigen::AlignedBox2d& box, Func f)
            f(box.max().x(), box.min().y()) + f(box.min().x(), box.min().y());
 }
 
-template<typename Derived>
+template <typename Derived>
 Eigen::AlignedBox2d points_bbox(const Eigen::MatrixBase<Derived>& pts)
 {
     Eigen::AlignedBox2d box;
@@ -215,17 +216,23 @@ std::string format_poly(const Eigen::MatrixXd& pts)
     return fmt::format("[{}] ({} pts)", fmt::join(items, " ; "), pts.rows());
 }
 
-void save_poly(const std::string &filename, const PolygonVertices &pts) {
+void save_poly(const std::string& filename, const PolygonVertices& pts)
+{
     int num_vertices = pts.rows();
-    assert(num_vertices >= 3);
+    int num_facets = std::max(1, num_vertices - 2);
+    if (num_vertices == 0) {
+        wmtk::logger().warn("empty mesh");
+        return;
+    }
     Eigen::MatrixXd V(num_vertices, 3);
     V.leftCols<2>() = pts;
     V.col(2).setZero();
-    Eigen::MatrixXi F(num_vertices - 2, 3);
+    Eigen::MatrixXi F(num_facets, 3);
+    F.row(0) << 0, 1 % num_vertices, 2 % num_vertices;
     for (int i = 1; i + 1 < num_vertices; ++i) {
-        F.row(i - 1) << 0, i, i+1;
+        F.row(i - 1) << 0, i, i + 1;
     }
-    (void) filename;
+    (void)filename;
     // igl::write_triangle_mesh(filename, V, F);
 }
 
@@ -249,7 +256,8 @@ std::vector<PolygonVertices> split_polygon_randomly(const PolygonVertices& conto
         const Eigen::RowVector2d q1 = bbox.center().transpose() + lambda * nrm;
         const Eigen::RowVector2d q2 = q1 + Eigen::RowVector2d(std::cos(theta), std::sin(theta));
         wmtk::logger().debug(
-            "- Splitting angle is: {:.2f}, offset is {:.2f}, q1=({:.2f}, {:.2f}), q2=({:.2f}, {:.2f})",
+            "- Splitting angle is: {:.2f}, offset is {:.2f}, q1=({:.2f}, {:.2f}), q2=({:.2f}, "
+            "{:.2f})",
             theta,
             lambda,
             q1.x(),
@@ -282,21 +290,27 @@ std::vector<PolygonVertices> split_polygon_randomly(const PolygonVertices& conto
     return current;
 }
 
-std::vector<PolygonVertices> split_bbox_randomly(const Eigen::AlignedBox2d& box, int num)
+PolygonVertices polygon_from_box(const Eigen::AlignedBox2d& box)
 {
     PolygonVertices poly(4, 2);
     poly.row(0) = box.corner(Eigen::AlignedBox2d::CornerType::BottomLeft).transpose();
     poly.row(1) = box.corner(Eigen::AlignedBox2d::CornerType::BottomRight).transpose();
     poly.row(2) = box.corner(Eigen::AlignedBox2d::CornerType::TopRight).transpose();
     poly.row(3) = box.corner(Eigen::AlignedBox2d::CornerType::TopLeft).transpose();
-    return split_polygon_randomly(poly, num);
+    return poly;
+}
+
+std::vector<PolygonVertices> split_box_in_random_polygons(const Eigen::AlignedBox2d& box, int num)
+{
+    return split_polygon_randomly(polygon_from_box(box), num);
 }
 
 template <int Degree>
-void test_clipped_quadrature()
+void test_clipped_polygon_quadrature()
 {
     using MyBivariatePolynomial = BivariatePolynomial<double, Degree>;
     const int order = 2 * (Degree - 1);
+    const int num_splits = 6;
 
     // Create a bivariate polynomial
     auto poly = MyBivariatePolynomial::random();
@@ -308,15 +322,109 @@ void test_clipped_quadrature()
         TriangleVertices triangle;
         triangle << 0, 0.2, 1, 0.5, 0.3, 1;
 
-        auto box = points_bbox(triangle);
-        auto expected = integrate(order, triangle, g);
-        auto polys = split_bbox_randomly(box, 6);
+        const auto box = points_bbox(triangle);
+        const auto expected = integrate(order, triangle, g);
+        const auto polys = split_box_in_random_polygons(box, num_splits);
         double value = 0;
         for (const auto& p : polys) {
             value += integrate_clipped_polygon(order, triangle, p, g);
         }
         CAPTURE(Degree);
         REQUIRE_THAT(value, Catch::Matchers::WithinRel(expected, 1e-14));
+    }
+}
+
+std::vector<Eigen::AlignedBox2d> random_boxes_inside_box(const Eigen::AlignedBox2d& box, int num)
+{
+    std::mt19937 gen;
+    std::uniform_real_distribution<double> dist_x(box.min().x(), box.max().x());
+    std::uniform_real_distribution<double> dist_y(box.min().y(), box.max().y());
+
+    std::vector<Eigen::AlignedBox2d> boxes(num);
+    for (auto& b : boxes) {
+        b.extend(Eigen::Vector2d(dist_x(gen), dist_y(gen)));
+        b.extend(Eigen::Vector2d(dist_x(gen), dist_y(gen)));
+    }
+
+    for (size_t i = 0; i < boxes.size(); ++i) {
+        save_poly(fmt::format("box_{}.obj", i), polygon_from_box(boxes[i]));
+    }
+
+    return boxes;
+}
+
+PolygonVertices clip_triangle_with_polygon(
+    const TriangleVertices& triangle,
+    const PolygonVertices& polygon)
+{
+    Eigen::MatrixXd current = polygon;
+    Eigen::MatrixXd next;
+    for (int i = 0; i < 3; ++i) {
+        Eigen::RowVector2d q1 = triangle.row(i);
+        Eigen::RowVector2d q2 = triangle.row((i + 1) % 3);
+        wmtk::clip_polygon_by_half_plane(current, q1, q2, next);
+        std::swap(current, next);
+    }
+    return current;
+}
+
+template <int Degree>
+void test_clipped_box_quadrature()
+{
+    using MyBivariatePolynomial = BivariatePolynomial<double, Degree>;
+    const int order = 2 * (Degree - 1);
+    const int num_boxes = 23;
+
+    // Create a bivariate polynomial
+    auto poly = MyBivariatePolynomial::random();
+
+    auto g = [&](double x, double y) { return poly.eval_dxdy(x, y); };
+
+    // Clip triangle with random boxes and compare two clipping implementations
+    {
+        TriangleVertices triangle;
+        triangle << 0, 0.2, 1, 0.5, 0.3, 1;
+        save_poly("triangle.obj", triangle);
+
+        size_t num_nonempty = 0;
+        const auto boxes = random_boxes_inside_box(points_bbox(triangle), num_boxes);
+        for (const auto& box : boxes) {
+            const auto expected =
+                integrate_clipped_polygon(order, triangle, polygon_from_box(box), g);
+            const auto value = integrate_clipped_box(order, triangle, box, g);
+            if (expected > 0) {
+                num_nonempty++;
+            }
+            CAPTURE(Degree);
+            REQUIRE_THAT(value, Catch::Matchers::WithinRel(expected, 1e-14));
+        }
+        wmtk::logger().info("Number of nonempty intersections: {}", num_nonempty);
+    }
+}
+
+void check_approx_equal(const PolygonVertices& value, const PolygonVertices& expected)
+{
+    REQUIRE(expected.size() == value.size());
+    if (expected.rows() == 0) {
+        return;
+    }
+    // Find closest starting point
+    const int num_vertices = expected.rows();
+    int idx_expected = 0;
+    double best_sq_distance = std::numeric_limits<double>::max();
+    for (int v = 0; v < num_vertices; ++v) {
+        const double sq_dist = (value.row(0) - expected.row(v)).squaredNorm();
+        if (sq_dist < best_sq_distance) {
+            idx_expected = v;
+            best_sq_distance = sq_dist;
+        }
+    }
+    for (int v = 0; v < expected.rows(); ++v) {
+        for (int c = 0; c < expected.cols(); ++c) {
+            REQUIRE_THAT(
+                value(v, c),
+                Catch::Matchers::WithinRel(expected((v + idx_expected) % num_vertices, c), 1e-12));
+        }
     }
 }
 
@@ -337,10 +445,39 @@ TEST_CASE("test_triangle_quadrature", "[quadrature]")
     test_triangle_quadrature<5, PolynomialType::Random>();
 }
 
-TEST_CASE("test_clipped_quadrature", "[quadrature]")
+TEST_CASE("test_clipped_polygon_quadrature", "[quadrature]")
 {
-    test_clipped_quadrature<2>();
-    test_clipped_quadrature<3>();
-    test_clipped_quadrature<4>();
-    test_clipped_quadrature<5>();
+    test_clipped_polygon_quadrature<2>();
+    test_clipped_polygon_quadrature<3>();
+    test_clipped_polygon_quadrature<4>();
+    test_clipped_polygon_quadrature<5>();
+}
+
+TEST_CASE("test_clipped_box_quadrature", "[quadrature]")
+{
+    test_clipped_box_quadrature<2>();
+    test_clipped_box_quadrature<3>();
+    test_clipped_box_quadrature<4>();
+    test_clipped_box_quadrature<5>();
+}
+
+TEST_CASE("test_triangle_box_clipping", "[clipping]")
+{
+    const int num_triangles = 47;
+    const int num_boxes = 29;
+    std::mt19937 gen;
+    std::uniform_real_distribution<double> dist(-1, 1);
+    for (int i = 0; i < num_triangles; ++i) {
+        TriangleVertices triangle = TriangleVertices::NullaryExpr([&]() { return dist(gen); });
+        const auto signed_area = wmtk::polygon_signed_area(triangle);
+        if (signed_area < 0) {
+            triangle.row(0).swap(triangle.row(1));
+        }
+        const auto boxes = random_boxes_inside_box(points_bbox(triangle), num_boxes);
+        for (const auto& box : boxes) {
+            auto expected = clip_triangle_with_polygon(triangle, polygon_from_box(box));
+            auto value = wmtk::clip_triangle_by_box(triangle, box);
+            check_approx_equal(value, expected);
+        }
+    }
 }
