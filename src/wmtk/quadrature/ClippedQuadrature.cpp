@@ -9,8 +9,10 @@ void ClippedQuadrature::clipped_triangle_box_quadrature(
     const int order,
     const TriangleVertices& triangle,
     const Eigen::AlignedBox2d& box,
-    Quadrature& quadr)
+    Quadrature& quadr,
+    Quadrature* tmp)
 {
+#if 0
     // Naive implementation for testing
     PolygonVertices poly(4, 2);
     poly.row(0) = box.corner(Eigen::AlignedBox2d::CornerType::BottomLeft).transpose();
@@ -18,6 +20,28 @@ void ClippedQuadrature::clipped_triangle_box_quadrature(
     poly.row(2) = box.corner(Eigen::AlignedBox2d::CornerType::TopRight).transpose();
     poly.row(3) = box.corner(Eigen::AlignedBox2d::CornerType::TopLeft).transpose();
     clipped_triangle_polygon_quadrature(order, triangle, poly, quadr);
+#else
+    auto clipped = clip_triangle_by_box(triangle, box);
+
+    Quadrature dummy;
+    if (tmp == nullptr) {
+        tmp = &dummy;
+    }
+
+    TriangleQuadrature rules;
+    quadr.set_dimension(2);
+    quadr.clear();
+    for (int i = 1; i + 1 < clipped.rows(); ++i) {
+        TriangleVertices tri;
+        tri.row(0) = clipped.row(0);
+        tri.row(1) = clipped.row(i);
+        tri.row(2) = clipped.row(i + 1);
+        rules.transformed_triangle_quadrature(order, tri, *tmp);
+        quadr.resize(quadr.size() + tmp->size());
+        quadr.points().bottomRows(tmp->size()) = tmp->points();
+        quadr.weights().tail(tmp->size()) = tmp->weights();
+    }
+#endif
 }
 
 void ClippedQuadrature::clipped_triangle_polygon_quadrature(

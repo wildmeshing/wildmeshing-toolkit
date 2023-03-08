@@ -14,16 +14,20 @@ public:
     ///
     /// Computes quadrature points and weights for a triangle clipped by an axis-aligned box.
     ///
-    /// @param[in]  order     Requested quadrature order.
-    /// @param[in]  triangle  Vertices of the triangle to be clipped.
-    /// @param[in]  box       Axis-aligned box to clip with.
-    /// @param[out] quadr     Output quadrature points and weights.
+    /// @param[in]     order     Requested quadrature order.
+    /// @param[in]     triangle  Vertices of the triangle to be clipped.
+    /// @param[in]     box       Axis-aligned box to clip with.
+    /// @param[out]    quadr     Output quadrature points and weights.
+    /// @param[in,out] tmp       Optional quadrature object to use as temporary storage for internal
+    ///                          per-triangle quadrature computation. Use this to efficiently
+    ///                          compute integral over a set of boxes.
     ///
     static void clipped_triangle_box_quadrature(
         const int order,
         const TriangleVertices& triangle,
         const Eigen::AlignedBox2d& box,
-        Quadrature& quadr);
+        Quadrature& quadr,
+        Quadrature* tmp = nullptr);
 
     ///
     /// Computes quadrature points and weights for a triangle clipped by a convex polygon.

@@ -76,7 +76,7 @@ double integrate(int order, const TriangleVertices& triangle, Func f)
     wmtk::TriangleQuadrature rules;
     rules.transformed_triangle_quadrature(order, triangle, quad);
     double result = 0;
-    for (int i = 0; i < quad.size(); ++i) {
+    for (size_t i = 0; i < quad.size(); ++i) {
         result += f(quad.points()(i, 0), quad.points()(i, 1)) * quad.weights()[i];
     }
     return result;
@@ -89,7 +89,7 @@ double integrate_reference(int order, Func f)
     wmtk::TriangleQuadrature rules;
     rules.reference_triangle_quadrature(order, quad);
     double result = 0;
-    for (int i = 0; i < quad.size(); ++i) {
+    for (size_t i = 0; i < quad.size(); ++i) {
         result += f(quad.points()(i, 0), quad.points()(i, 1)) * quad.weights()[i];
     }
     return result;
@@ -106,7 +106,7 @@ double integrate_clipped_polygon(
     wmtk::ClippedQuadrature rules;
     rules.clipped_triangle_polygon_quadrature(order, triangle, poly, quad);
     double result = 0;
-    for (int i = 0; i < quad.size(); ++i) {
+    for (size_t i = 0; i < quad.size(); ++i) {
         result += f(quad.points()(i, 0), quad.points()(i, 1)) * quad.weights()[i];
     }
     return result;
@@ -123,7 +123,25 @@ double integrate_clipped_box(
     wmtk::ClippedQuadrature rules;
     rules.clipped_triangle_box_quadrature(order, triangle, box, quad);
     double result = 0;
-    for (int i = 0; i < quad.size(); ++i) {
+    for (size_t i = 0; i < quad.size(); ++i) {
+        result += f(quad.points()(i, 0), quad.points()(i, 1)) * quad.weights()[i];
+    }
+    return result;
+}
+
+template <typename Func>
+double integrate_clipped_box_cached(
+    int order,
+    const TriangleVertices& triangle,
+    const Eigen::AlignedBox2d& box,
+    Func f,
+    wmtk::Quadrature& quad,
+    wmtk::Quadrature& tmp)
+{
+    wmtk::ClippedQuadrature rules;
+    rules.clipped_triangle_box_quadrature(order, triangle, box, quad, &tmp);
+    double result = 0;
+    for (size_t i = 0; i < quad.size(); ++i) {
         result += f(quad.points()(i, 0), quad.points()(i, 1)) * quad.weights()[i];
     }
     return result;
@@ -480,4 +498,65 @@ TEST_CASE("test_triangle_box_clipping", "[quadrature]")
             check_approx_equal(value, expected);
         }
     }
+}
+
+TEST_CASE("benchmark_clipped_box_quadrature", "[quadrature][!benchmark]")
+{
+    constexpr int Degree = 4;
+    using MyBivariatePolynomial = BivariatePolynomial<double, Degree>;
+    const int order = 2 * (Degree - 1);
+
+    TriangleVertices triangle;
+    triangle << 0, 0.2, 1, 0.5, 0.3, 1;
+    const auto bbox = points_bbox(triangle);
+    const size_t num_pixels = 100;
+    const double pixel_size = bbox.diagonal().maxCoeff() / num_pixels;
+
+    const auto poly = MyBivariatePolynomial::random();
+
+    auto g = [&](double x, double y) { return poly.eval_dxdy(x, y); };
+
+    typedef std::integral_constant<int, 0> poly_t;
+    typedef std::integral_constant<int, 1> box_t;
+    typedef std::integral_constant<int, 2> cached_t;
+
+    wmtk::Quadrature quad;
+    wmtk::Quadrature tmp;
+
+    auto integrate_over_pixels = [&](auto flag) {
+        using FlagType = std::decay_t<decltype(flag)>;
+        double value = 0;
+        size_t num_pixels = 100;
+        for (size_t x = 0; x < num_pixels; ++x) {
+            for (size_t y = 0; y < num_pixels; ++y) {
+                Eigen::AlignedBox2d box;
+                box.extend(bbox.min() + Eigen::Vector2d(x * pixel_size, y * pixel_size));
+                box.extend(
+                    bbox.min() + Eigen::Vector2d((x + 1) * pixel_size, (y + 1) * pixel_size));
+                if constexpr (std::is_same_v<poly_t, FlagType>) {
+                    value += integrate_clipped_polygon(order, triangle, polygon_from_box(box), g);
+                } else if constexpr (std::is_same_v<box_t, FlagType>) {
+                    value += integrate_clipped_box(order, triangle, box, g);
+                } else {
+                    value += integrate_clipped_box_cached(order, triangle, box, g, quad, tmp);
+                }
+            }
+        }
+        return value;
+    };
+
+    BENCHMARK("clip_via_polygon")
+    {
+        return integrate_over_pixels(poly_t{});
+    };
+
+    BENCHMARK("clip_via_box")
+    {
+        return integrate_over_pixels(box_t{});
+    };
+
+    BENCHMARK("clip_via_box_cached")
+    {
+        return integrate_over_pixels(cached_t{});
+    };
 }
