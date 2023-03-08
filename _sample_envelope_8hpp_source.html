@@ -94,8 +94,8 @@ $(function() {
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;        <span class="keyword">const</span> std::vector&lt;Eigen::Vector3d&gt;&amp; m_ver,</div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;        <span class="keyword">const</span> std::vector&lt;Eigen::Vector3i&gt;&amp; m_faces,</div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;        <span class="keyword">const</span> <span class="keywordtype">double</span>){};</div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span> is_outside(<span class="keyword">const</span> std::array&lt;Eigen::Vector3d, 3&gt;&amp; tris) { <span class="keywordflow">return</span> <span class="keyword">false</span>; };</div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span> is_outside(<span class="keyword">const</span> Eigen::Vector3d&amp; pts) { <span class="keywordflow">return</span> <span class="keyword">false</span>; };</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span> is_outside(<span class="keyword">const</span> std::array&lt;Eigen::Vector3d, 3&gt;&amp; tris)<span class="keyword"> const </span>{ <span class="keywordflow">return</span> <span class="keyword">false</span>; };</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span> is_outside(<span class="keyword">const</span> Eigen::Vector3d&amp; pts)<span class="keyword"> const </span>{ <span class="keywordflow">return</span> <span class="keyword">false</span>; };</div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;};</div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160; </div>
 <div class="line"><a name="l00030"></a><span class="lineno"><a class="line" href="classwmtk_1_1_exact_envelope.html">   30</a></span>&#160;<span class="keyword">class </span><a class="code" href="classwmtk_1_1_exact_envelope.html">ExactEnvelope</a> : <span class="keyword">public</span> <a class="code" href="classwmtk_1_1_envelope.html">Envelope</a>, <span class="keyword">public</span> fastEnvelope::FastEnvelope</div>
@@ -111,12 +111,12 @@ $(function() {
 <div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    {</div>
 <div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        fastEnvelope::FastEnvelope::init(m_ver, m_faces, eps);</div>
 <div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    }</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <span class="keywordtype">bool</span> is_outside(<span class="keyword">const</span> std::array&lt;Eigen::Vector3d, 3&gt;&amp; tris)</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    {</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <span class="keywordtype">bool</span> is_outside(<span class="keyword">const</span> std::array&lt;Eigen::Vector3d, 3&gt;&amp; tris)<span class="keyword"> const</span></div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;<span class="keyword">    </span>{</div>
 <div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        <span class="keywordflow">return</span> fastEnvelope::FastEnvelope::is_outside(tris);</div>
 <div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    }</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <span class="keywordtype">bool</span> is_outside(<span class="keyword">const</span> Eigen::Vector3d&amp; pts)</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    {</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <span class="keywordtype">bool</span> is_outside(<span class="keyword">const</span> Eigen::Vector3d&amp; pts)<span class="keyword"> const</span></div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<span class="keyword">    </span>{</div>
 <div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        <span class="keywordflow">return</span> fastEnvelope::FastEnvelope::is_outside(pts);</div>
 <div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    }</div>
 <div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;};</div>
@@ -134,19 +134,21 @@ $(function() {
 <div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        <span class="keyword">const</span> std::vector&lt;Eigen::Vector3d&gt;&amp; m_ver,</div>
 <div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        <span class="keyword">const</span> std::vector&lt;Eigen::Vector3i&gt;&amp; m_faces,</div>
 <div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;        <span class="keyword">const</span> <span class="keywordtype">double</span>);</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <span class="keywordtype">bool</span> is_outside(<span class="keyword">const</span> std::array&lt;Eigen::Vector3d, 3&gt;&amp; tris);</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    <span class="keywordtype">bool</span> is_outside(<span class="keyword">const</span> Eigen::Vector3d&amp; pts);</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160; </div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    std::shared_ptr&lt;GEO::MeshFacetsAABBWithEps&gt; geo_tree_ptr_;</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    std::shared_ptr&lt;GEO::Mesh&gt; geo_polyhedron_ptr_;</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    std::vector&lt;int&gt; geo_vertex_ind;</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    std::vector&lt;int&gt; geo_face_ind;</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    fastEnvelope::FastEnvelope exact_envelope;</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;};</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;} <span class="comment">// namespace sample_envelope</span></div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <span class="keywordtype">bool</span> is_outside(<span class="keyword">const</span> std::array&lt;Eigen::Vector3d, 3&gt;&amp; tris) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    <span class="keywordtype">bool</span> is_outside(<span class="keyword">const</span> Eigen::Vector3d&amp; pts) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <span class="keywordtype">double</span> nearest_point(<span class="keyword">const</span> Eigen::Vector3d&amp; pts, Eigen::Vector3d&amp; result) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <span class="keywordtype">bool</span> initialized() {<span class="keywordflow">return</span> geo_tree_ptr_ != <span class="keyword">nullptr</span>;};</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160; </div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    std::shared_ptr&lt;GEO::MeshFacetsAABBWithEps&gt; geo_tree_ptr_ = <span class="keyword">nullptr</span>;</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    std::shared_ptr&lt;GEO::Mesh&gt; geo_polyhedron_ptr_;</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    std::vector&lt;int&gt; geo_vertex_ind;</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    std::vector&lt;int&gt; geo_face_ind;</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160; </div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    fastEnvelope::FastEnvelope exact_envelope;</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;};</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;} <span class="comment">// namespace sample_envelope</span></div>
 <div class="ttc" id="aclasssample__envelope_1_1_sample_envelope_html"><div class="ttname"><a href="classsample__envelope_1_1_sample_envelope.html">sample_envelope::SampleEnvelope</a></div><div class="ttdef"><b>Definition:</b> SampleEnvelope.hpp:55</div></div>
 <div class="ttc" id="aclasswmtk_1_1_envelope_html"><div class="ttname"><a href="classwmtk_1_1_envelope.html">wmtk::Envelope</a></div><div class="ttdef"><b>Definition:</b> SampleEnvelope.hpp:19</div></div>
 <div class="ttc" id="aclasswmtk_1_1_exact_envelope_html"><div class="ttname"><a href="classwmtk_1_1_exact_envelope.html">wmtk::ExactEnvelope</a></div><div class="ttdef"><b>Definition:</b> SampleEnvelope.hpp:31</div></div>

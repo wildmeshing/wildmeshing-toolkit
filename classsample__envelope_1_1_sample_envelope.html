@@ -92,12 +92,18 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ac1ba5305acaaf9db82646676b9c6cba8"><td class="memItemLeft" align="right" valign="top"><a id="ac1ba5305acaaf9db82646676b9c6cba8"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>init</b> (const std::vector&lt; Eigen::Vector3d &gt; &amp;m_ver, const std::vector&lt; Eigen::Vector3i &gt; &amp;m_faces, const double)</td></tr>
 <tr class="separator:ac1ba5305acaaf9db82646676b9c6cba8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad36adec2c8770d7c7015f9e9d1c0b0f1"><td class="memItemLeft" align="right" valign="top"><a id="ad36adec2c8770d7c7015f9e9d1c0b0f1"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_outside</b> (const std::array&lt; Eigen::Vector3d, 3 &gt; &amp;tris)</td></tr>
-<tr class="separator:ad36adec2c8770d7c7015f9e9d1c0b0f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1c7ed476acb7d4fa4465e5652c30c70b"><td class="memItemLeft" align="right" valign="top"><a id="a1c7ed476acb7d4fa4465e5652c30c70b"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_outside</b> (const Eigen::Vector3d &amp;pts)</td></tr>
-<tr class="separator:a1c7ed476acb7d4fa4465e5652c30c70b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa1ee3da2a47dad56b6ad4f1416f7c509"><td class="memItemLeft" align="right" valign="top"><a id="aa1ee3da2a47dad56b6ad4f1416f7c509"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_outside</b> (const std::array&lt; Eigen::Vector3d, 3 &gt; &amp;tris) const</td></tr>
+<tr class="separator:aa1ee3da2a47dad56b6ad4f1416f7c509"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1f33c46afd869511663117884485af7c"><td class="memItemLeft" align="right" valign="top"><a id="a1f33c46afd869511663117884485af7c"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_outside</b> (const Eigen::Vector3d &amp;pts) const</td></tr>
+<tr class="separator:a1f33c46afd869511663117884485af7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8e0fedff899d6eb045cc6bf3162e4e00"><td class="memItemLeft" align="right" valign="top"><a id="a8e0fedff899d6eb045cc6bf3162e4e00"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>nearest_point</b> (const Eigen::Vector3d &amp;pts, Eigen::Vector3d &amp;result) const</td></tr>
+<tr class="separator:a8e0fedff899d6eb045cc6bf3162e4e00"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9babcdc8354786ffea83e44b350c951c"><td class="memItemLeft" align="right" valign="top"><a id="a9babcdc8354786ffea83e44b350c951c"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>initialized</b> ()</td></tr>
+<tr class="separator:a9babcdc8354786ffea83e44b350c951c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -114,7 +120,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>use_exact</b> = false
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
 <tr class="memitem:af9481e3031230a85d5540c8d605a1562"><td class="memItemLeft" align="right" valign="top"><a id="af9481e3031230a85d5540c8d605a1562"></a>
-std::shared_ptr&lt; <a class="el" href="class_g_e_o_1_1_mesh_facets_a_a_b_b_with_eps.html">GEO::MeshFacetsAABBWithEps</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>geo_tree_ptr_</b></td></tr>
+std::shared_ptr&lt; <a class="el" href="class_g_e_o_1_1_mesh_facets_a_a_b_b_with_eps.html">GEO::MeshFacetsAABBWithEps</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>geo_tree_ptr_</b> = nullptr</td></tr>
 <tr class="separator:af9481e3031230a85d5540c8d605a1562"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a047b601bf7211194c839b1417137dec8"><td class="memItemLeft" align="right" valign="top"><a id="a047b601bf7211194c839b1417137dec8"></a>
 std::shared_ptr&lt; GEO::Mesh &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>geo_polyhedron_ptr_</b></td></tr>
