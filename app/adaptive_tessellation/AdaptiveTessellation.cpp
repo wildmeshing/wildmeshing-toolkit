@@ -4,6 +4,7 @@
 #include <igl/predicates/predicates.h>
 #include <igl/writeDMAT.h>
 #include <igl/write_triangle_mesh.h>
+#include <lagrange/utils/timing.h>
 #include <tbb/concurrent_vector.h>
 #include <wmtk/utils/AMIPS2D.h>
 #include <wmtk/utils/AMIPS2D_autodiff.h>
@@ -11,6 +12,7 @@
 #include <lean_vtk.hpp>
 #include <wmtk/utils/TriQualityUtils.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
+
 using namespace wmtk;
 
 namespace adaptive_tessellation {
@@ -727,6 +729,8 @@ bool AdaptiveTessellation::is_inverted(const Tuple& loc) const
 
 void AdaptiveTessellation::mesh_improvement(int max_its)
 {
+    auto start_time = lagrange::get_timestamp();
+
     [[maybe_unused]] igl::Timer timer;
     [[maybe_unused]] double avg_len = 0.0;
     [[maybe_unused]] double pre_avg_len = 0.0;
@@ -745,17 +749,11 @@ void AdaptiveTessellation::mesh_improvement(int max_its)
             mesh_parameters.m_stop_energy);
         wmtk::logger().info("current length {}", avg_edge_len(*this));
 
-        mesh_parameters.js_log["iteration_" + std::to_string(it)]["num_v"] = vert_capacity();
-        mesh_parameters.js_log["iteration_" + std::to_string(it)]["num_f"] = tri_capacity();
-        mesh_parameters.js_log["iteration_" + std::to_string(it)]["energy_max"] =
-            mesh_parameters.m_max_energy;
-        mesh_parameters.js_log["iteration_" + std::to_string(it)]["edge_len_avg"] =
-            avg_edge_len(*this);
-        mesh_parameters.js_log["iteration_" + std::to_string(it)]["edge_len_target"] =
-            mesh_parameters.m_target_l;
-
         split_all_edges();
         assert(invariants(get_faces()));
+        auto split_finish_time = lagrange::get_timestamp();
+        mesh_parameters.js_log["iteration_" + std::to_string(it)]["split time"] =
+            lagrange::timestamp_diff_in_seconds(start_time, split_finish_time);
         consolidate_mesh();
         write_displaced_obj(
             mesh_parameters.m_output_folder + "/after_split_" + std::to_string(it) + ".obj",
@@ -767,15 +765,23 @@ void AdaptiveTessellation::mesh_improvement(int max_its)
         // write_displaced_obj(
         //     mesh_parameters.m_output_folder + "/after_collapse_" + std::to_string(it) + ".obj",
         //     mesh_parameters.m_project_to_3d);
+        split_finish_time = lagrange::get_timestamp();
         swap_all_edges();
         assert(invariants(get_faces()));
+        auto swap_finish_time = lagrange::get_timestamp();
+        mesh_parameters.js_log["iteration_" + std::to_string(it)]["swap time"] =
+            lagrange::timestamp_diff_in_seconds(split_finish_time, swap_finish_time);
         consolidate_mesh();
         write_displaced_obj(
             mesh_parameters.m_output_folder + "/after_swap_" + std::to_string(it) + ".obj",
             mesh_parameters.m_project_to_3d);
 
+        swap_finish_time = lagrange::get_timestamp();
         smooth_all_vertices();
         assert(invariants(get_faces()));
+        auto smooth_finish_time = lagrange::get_timestamp();
+        mesh_parameters.js_log["iteration_" + std::to_string(it)]["smooth time"] =
+            lagrange::timestamp_diff_in_seconds(swap_finish_time, smooth_finish_time);
         consolidate_mesh();
         write_displaced_obj(
             mesh_parameters.m_output_folder + "/after_smooth_" + std::to_string(it) + ".obj",
@@ -790,7 +796,14 @@ void AdaptiveTessellation::mesh_improvement(int max_its)
             avg_grad);
 
         mesh_parameters.js_log["iteration_" + std::to_string(it)]["avg_grad"] = avg_grad;
-
+        mesh_parameters.js_log["iteration_" + std::to_string(it)]["num_v"] = vert_capacity();
+        mesh_parameters.js_log["iteration_" + std::to_string(it)]["num_f"] = tri_capacity();
+        mesh_parameters.js_log["iteration_" + std::to_string(it)]["energy_max"] =
+            mesh_parameters.m_max_energy;
+        mesh_parameters.js_log["iteration_" + std::to_string(it)]["edge_len_avg"] =
+            avg_edge_len(*this);
+        mesh_parameters.js_log["iteration_" + std::to_string(it)]["edge_len_target"] =
+            mesh_parameters.m_target_l;
         if (avg_grad < 1e-4) {
             wmtk::logger().info(
                 "!!!avg grad is less than 1e-4 !!! energy doesn't improve anymore. early stop"

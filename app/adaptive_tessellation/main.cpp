@@ -7,6 +7,7 @@
 #include <igl/read_triangle_mesh.h>
 #include <igl/remove_duplicate_vertices.h>
 #include <lagrange/utils/fpe.h>
+#include <lagrange/utils/timing.h>
 #include <remeshing/UniformRemeshing.h>
 #include <spdlog/common.h>
 #include <wmtk/utils/AMIPS2D.h>
@@ -73,8 +74,7 @@ int main(int argc, char** argv)
     wmtk::logger().info("/////interpolation wrapping mode: {}", wrapping_mode);
     std::ofstream js_o(output_json);
 
-    igl::Timer timer;
-    double time = 0.;
+    auto start_time = lagrange::get_timestamp();
     adaptive_tessellation::AdaptiveTessellation adaptive_tessellation;
 
     adaptive_tessellation.mesh_parameters.js_log["input"] = input_file;
@@ -119,9 +119,10 @@ int main(int argc, char** argv)
     adaptive_tessellation.mesh_improvement(max_iter);
     adaptive_tessellation.consolidate_mesh();
 
-    time = timer.getElapsedTime();
-    wmtk::logger().info("!!!!finished {}!!!!", time);
-    adaptive_tessellation.mesh_parameters.js_log["total_time"] = time;
+    auto finish_time = lagrange::get_timestamp();
+    auto duration = lagrange::timestamp_diff_in_seconds(start_time, finish_time);
+    wmtk::logger().info("!!!!finished {}!!!!", duration);
+    adaptive_tessellation.mesh_parameters.js_log["total_time"] = duration;
     adaptive_tessellation.write_displaced_obj(output_file, displacement_image_double);
     // Save the optimized mesh
     wmtk::logger().info("/////output : {}", output_file);

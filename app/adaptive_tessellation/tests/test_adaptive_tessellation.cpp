@@ -31,7 +31,7 @@ TEST_CASE("adaptive_tessellation_collapse", "[adaptive_tessellation_collapse][.]
 {
     // dummy case. Collapse 5 times. 1 tri
     const std::string root(WMT_DATA_DIR);
-    const std::string path = root + "/test_adaptive_tessellation_collapse_onboundary.obj";
+    const std::string path = root + "/test_triwild_collapse_onboundary.obj";
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     bool ok = igl::read_triangle_mesh(path, V, F);
@@ -70,7 +70,7 @@ TEST_CASE("adaptive_tessellation_split", "[adaptive_tessellation_split][.]")
 {
     // dummy case. swap 5 times. 1 tri
     const std::string root(WMT_DATA_DIR);
-    const std::string path = root + "/test_adaptive_tessellation.obj";
+    const std::string path = root + "/test_triwild.obj";
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     bool ok = igl::read_triangle_mesh(path, V, F);
@@ -103,7 +103,7 @@ TEST_CASE("adaptive_tessellation_split", "[adaptive_tessellation_split][.]")
 TEST_CASE("adaptive_tessellation_swap", "[adaptive_tessellation_swap][.]")
 {
     const std::string root(WMT_DATA_DIR);
-    const std::string path = root + "/test_adaptive_tessellation_swap.obj";
+    const std::string path = root + "/test_triwild_swap.obj";
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     bool ok = igl::read_triangle_mesh(path, V, F);
@@ -146,7 +146,7 @@ TEST_CASE("adaptive_tessellation_swap", "[adaptive_tessellation_swap][.]")
 TEST_CASE("adaptive_tessellation_improve")
 {
     const std::string root(WMT_DATA_DIR);
-    const std::string path = root + "/test_adaptive_tessellation.obj";
+    const std::string path = root + "/test_triwild.obj";
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     bool ok = igl::read_triangle_mesh(path, V, F);
@@ -165,7 +165,7 @@ TEST_CASE("adaptive_tessellation_improve")
 TEST_CASE("AABB")
 {
     const std::string root(WMT_DATA_DIR);
-    const std::string path = root + "/test_adaptive_tessellation.obj";
+    const std::string path = root + "/test_triwild.obj";
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
 
