@@ -19,7 +19,7 @@ public:
     /// @param[in]  box       Axis-aligned box to clip with.
     /// @param[out] quadr     Output quadrature points and weights.
     ///
-    static void clipped_triangle_quad_quadrature(
+    static void clipped_triangle_box_quadrature(
         const int order,
         const TriangleVertices& triangle,
         const Eigen::AlignedBox2d& box,
@@ -27,6 +27,8 @@ public:
 
     ///
     /// Computes quadrature points and weights for a triangle clipped by a convex polygon.
+    ///
+    /// @note       This routine is not optimized and should only be used for testing purposes.
     ///
     /// @param[in]  order     Requested quadrature order.
     /// @param[in]  triangle  Vertices of the triangle to be clipped.
