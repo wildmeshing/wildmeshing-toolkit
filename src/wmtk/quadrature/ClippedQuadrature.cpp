@@ -36,18 +36,17 @@ void ClippedQuadrature::clipped_triangle_polygon_quadrature(
     }
     Quadrature tmp;
     TriangleQuadrature rules;
-    quadr.points.resize(0, 2);
-    quadr.weights.resize(0);
+    quadr.set_dimension(2);
+    quadr.clear();
     for (int i = 1; i + 1 < current.rows(); ++i) {
         TriangleVertices tri;
         tri.row(0) = current.row(0);
         tri.row(1) = current.row(i);
         tri.row(2) = current.row(i + 1);
         rules.transformed_triangle_quadrature(order, tri, tmp);
-        quadr.points.conservativeResize(quadr.points.rows() + tmp.points.rows(), 2);
-        quadr.weights.conservativeResize(quadr.weights.rows() + tmp.weights.rows());
-        quadr.points.bottomRows(tmp.size()) = tmp.points;
-        quadr.weights.tail(tmp.size()) = tmp.weights;
+        quadr.resize(quadr.size() + tmp.size());
+        quadr.points().bottomRows(tmp.size()) = tmp.points();
+        quadr.weights().tail(tmp.size()) = tmp.weights();
     }
 }
 

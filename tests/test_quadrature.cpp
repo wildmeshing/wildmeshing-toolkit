@@ -77,7 +77,7 @@ double integrate(int order, const TriangleVertices& triangle, Func f)
     rules.transformed_triangle_quadrature(order, triangle, quad);
     double result = 0;
     for (int i = 0; i < quad.size(); ++i) {
-        result += f(quad.points(i, 0), quad.points(i, 1)) * quad.weights[i];
+        result += f(quad.points()(i, 0), quad.points()(i, 1)) * quad.weights()[i];
     }
     return result;
 }
@@ -90,7 +90,7 @@ double integrate_reference(int order, Func f)
     rules.reference_triangle_quadrature(order, quad);
     double result = 0;
     for (int i = 0; i < quad.size(); ++i) {
-        result += f(quad.points(i, 0), quad.points(i, 1)) * quad.weights[i];
+        result += f(quad.points()(i, 0), quad.points()(i, 1)) * quad.weights()[i];
     }
     return result;
 }
@@ -107,7 +107,7 @@ double integrate_clipped_polygon(
     rules.clipped_triangle_polygon_quadrature(order, triangle, poly, quad);
     double result = 0;
     for (int i = 0; i < quad.size(); ++i) {
-        result += f(quad.points(i, 0), quad.points(i, 1)) * quad.weights[i];
+        result += f(quad.points()(i, 0), quad.points()(i, 1)) * quad.weights()[i];
     }
     return result;
 }
@@ -124,7 +124,7 @@ double integrate_clipped_box(
     rules.clipped_triangle_box_quadrature(order, triangle, box, quad);
     double result = 0;
     for (int i = 0; i < quad.size(); ++i) {
-        result += f(quad.points(i, 0), quad.points(i, 1)) * quad.weights[i];
+        result += f(quad.points()(i, 0), quad.points()(i, 1)) * quad.weights()[i];
     }
     return result;
 }
@@ -461,7 +461,7 @@ TEST_CASE("test_clipped_box_quadrature", "[quadrature]")
     test_clipped_box_quadrature<5>();
 }
 
-TEST_CASE("test_triangle_box_clipping", "[clipping]")
+TEST_CASE("test_triangle_box_clipping", "[quadrature]")
 {
     const int num_triangles = 47;
     const int num_boxes = 29;
