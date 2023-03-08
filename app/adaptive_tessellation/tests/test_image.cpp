@@ -1,4 +1,5 @@
 #include <wmtk/utils/Image.h>
+#include <wmtk/utils/MipMap.h>
 #include <catch2/catch.hpp>
 using namespace wmtk;
 TEST_CASE("exr saving and loading")
@@ -41,5 +42,23 @@ TEST_CASE("hdr saving and loading")
             pow(static_cast<double>(image3.get(rand_p.x(), rand_p.y())) -
                     static_cast<double>(displacement(rand_p.x(), rand_p.y())),
                 2) < 1e-2);
+    }
+}
+
+TEST_CASE("mipmap")
+{
+    auto displacement_double = [&](const double& u, [[maybe_unused]] const double& v) -> float {
+        return 10 * u;
+    };
+    Image image(1024, 1024);
+    image.set(displacement_double);
+    image.save("drlin.exr");
+
+    MipMap mipmap(image);
+    REQUIRE(mipmap.level() == 11);
+    for (int i = 0; i < mipmap.level(); i++) {
+        auto tmp_image = mipmap.get_image(i);
+        REQUIRE(tmp_image.width() == tmp_image.height());
+        REQUIRE(tmp_image.width() == pow(2, (10 - i)));
     }
 }
