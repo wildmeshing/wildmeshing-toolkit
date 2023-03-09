@@ -690,25 +690,6 @@ void tetwild::TetWild::init_from_Volumeremesher(
         // wmtk::logger().info("double: {}", m_vertex_attribute[i].m_posf);
     }
 
-    // debug code
-    // int cnt_flip = 0;
-    // auto all_tets = get_tets();
-    // for (auto t : all_tets) {
-    //     if (is_inverted(t)) {
-    //         // wmtk::logger().info("tet flipped!");
-    //         cnt_flip++;
-    //     }
-    // }
-
-    // wmtk::logger().info("{} tet flipped, total tet {}", cnt_flip, all_tets.size());
-
-
-    // track faces
-
-    // for (int i = 0; i < is_v_on_input.size(); i++) {
-    //     m_vertex_attribute[i].m_is_on_surface = is_v_on_input[i];
-    // }
-
     // check here
     for (size_t i = 0; i < tet_face_on_input_surface.size(); i++) {
         if (tet_face_on_input_surface[i]) m_face_attribute[i].m_is_surface_fs = 1;
@@ -717,6 +698,7 @@ void tetwild::TetWild::init_from_Volumeremesher(
     auto faces = get_faces();
     std::cout << "faces size: " << faces.size() << std::endl;
     for (auto f : faces) {
+        auto fid = f.fid(*this);
         auto v1 = f.vid(*this);
         auto v2 = f.switch_vertex(*this).vid(*this);
         auto v3 = f.switch_edge(*this).switch_vertex(*this).vid(*this);
@@ -730,6 +712,7 @@ void tetwild::TetWild::init_from_Volumeremesher(
     // track bounding box
 
     for (size_t i = 0; i < faces.size(); i++) {
+        auto fid_test = faces[i].fid(*this);
         auto vs = get_face_vertices(faces[i]);
         std::array<size_t, 3> vids = {{vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
         int on_bbox = -1;
@@ -747,6 +730,7 @@ void tetwild::TetWild::init_from_Volumeremesher(
                 break;
             }
         }
+        // auto fid = faces[i].fid(*this);
         if (on_bbox < 0) continue;
         auto fid = faces[i].fid(*this);
         m_face_attribute[fid].m_is_bbox_fs = on_bbox;
@@ -758,6 +742,23 @@ void tetwild::TetWild::init_from_Volumeremesher(
 
     for_each_vertex(
         [&](auto& v) { wmtk::vector_unique(m_vertex_attribute[v.vid(*this)].on_bbox_faces); });
+
+
+    // test code
+    for (auto f : get_faces()) {
+        auto fid = f.fid(*this);
+    }
+
+    std::cout << "pass test fid" << std::endl;
+
+    // track open boundaries
+    find_open_boundary();
+
+    int open_boundary_cnt = 0;
+    for (auto e : get_edges()) {
+        if (is_open_boundary_edge(e)) open_boundary_cnt++;
+    }
+    wmtk::logger().info("#open boundary edges: {}", open_boundary_cnt);
 
     // rounding
     std::atomic_int cnt_round(0);
@@ -911,4 +912,55 @@ void tetwild::TetWild::init_from_file(std::string input_dir)
 
 
     input.close();
+}
+
+void tetwild::TetWild::find_open_boundary()
+{
+    auto fs = get_faces();
+    std::cout << "fs size: " << fs.size() << std::endl;
+    auto es = get_edges();
+    std::vector<int> edge_on_open_boundary(6 * tet_capacity(), 0);
+
+    // for open boundary envelope
+    std::vector<Eigen::Vector3d> v_posf(vert_capacity());
+    std::vector<Eigen::Vector3i> open_boundaries;
+
+    for (size_t i = 0; i < vert_capacity(); i++) {
+        v_posf[i] = m_vertex_attribute[i].m_posf;
+    }
+
+    for (auto f : fs) {
+        auto fid = f.fid(*this);
+        // std::cout << fid << ": ";
+        if (!m_face_attribute[fid].m_is_surface_fs) continue;
+        size_t eid1 = f.eid(*this);
+        size_t eid2 = f.switch_edge(*this).eid(*this);
+        size_t eid3 = f.switch_vertex(*this).switch_edge(*this).eid(*this);
+
+        // std::cout << eid1 << " " << eid2 << " " << eid3 << std::endl;
+
+        edge_on_open_boundary[eid1]++;
+        edge_on_open_boundary[eid2]++;
+        edge_on_open_boundary[eid3]++;
+    }
+
+    for (auto e : es) {
+        if (edge_on_open_boundary[e.eid(*this)] != 1) continue;
+        size_t v1 = e.vid(*this);
+        size_t v2 = e.switch_vertex(*this).vid(*this);
+        m_vertex_attribute[v1].m_is_on_open_boundary = true;
+        m_vertex_attribute[v2].m_is_on_open_boundary = true;
+        open_boundaries.push_back(Eigen::Vector3i(v1, v2, v1));
+    }
+
+    // init open boundary envelope
+    m_open_boundary_envelope.init(v_posf, open_boundaries, m_params.epsr * m_params.diag_l / 2.0);
+}
+
+bool tetwild::TetWild::is_open_boundary_edge(const Tuple& e)
+{
+    if (m_vertex_attribute[e.vid(*this)].m_is_on_open_boundary &&
+        m_vertex_attribute[e.switch_vertex(*this).vid(*this)].m_is_on_open_boundary)
+        return true;
+    return false;
 }

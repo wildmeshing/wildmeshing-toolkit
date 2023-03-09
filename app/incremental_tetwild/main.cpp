@@ -290,6 +290,8 @@ int main(int argc, char** argv)
     //     wmtk::logger().info("======= finish =========");
     // }
 
+    return 0;
+
     // /////////mesh improvement
     mesh_new.mesh_improvement(max_its);
     std::cout << "here6" << std::endl;

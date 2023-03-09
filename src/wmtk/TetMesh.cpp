@@ -98,7 +98,7 @@ void wmtk::TetMesh::init_with_isolated_vertices(
     m_tet_connectivity.resize(tets.size());
     current_vert_size = n_vertices;
     current_tet_size = tets.size();
-    for (int i = 0; i < tets.size(); i++) {
+    for (size_t i = 0; i < tets.size(); i++) {
         m_tet_connectivity[i].m_indices = tets[i];
         for (int j = 0; j < 4; j++) {
             assert(tets[i][j] < vert_capacity());
@@ -106,7 +106,7 @@ void wmtk::TetMesh::init_with_isolated_vertices(
         }
     }
 
-    for (int i = 0; i < vert_capacity(); i++) {
+    for (size_t i = 0; i < vert_capacity(); i++) {
         if (m_vertex_connectivity[i].m_conn_tets.empty()) {
             m_vertex_connectivity[i].m_is_removed = true;
         }

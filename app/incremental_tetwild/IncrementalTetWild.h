@@ -106,6 +106,9 @@ public:
     Parameters& m_params;
     wmtk::Envelope& m_envelope;
 
+    // for open boundary
+    wmtk::ExactEnvelope m_open_boundary_envelope; // todo: add sample envelope option
+
     TetWild(Parameters& _m_params, wmtk::Envelope& _m_envelope, int _num_threads = 1)
         : m_params(_m_params)
         , m_envelope(_m_envelope)
@@ -352,6 +355,7 @@ private:
         size_t v1_id;
         size_t v2_id;
         bool is_edge_on_surface = false;
+        bool is_edge_open_boundary = false;
 
         std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
     };

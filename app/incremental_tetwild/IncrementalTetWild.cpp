@@ -932,35 +932,3 @@ long long tetwild::TetWild::checksum_tidx()
     }
     return checksum;
 }
-
-void tetwild::TetWild::find_open_boundary()
-{
-    auto fs = get_faces();
-    auto es = get_edges();
-    std::vector<bool> edge_on_open_boundary(es.size(), false);
-
-    for (auto f : fs) {
-        if (!m_face_attribute[f.fid(*this)].m_is_surface_fs) continue;
-        size_t eid1 = f.eid(*this);
-        size_t eid2 = f.switch_edge(*this).eid(*this);
-        size_t eid3 = f.switch_vertex(*this).switch_edge(*this).eid(*this);
-
-        edge_on_open_boundary[eid1] = !edge_on_open_boundary[eid1];
-        edge_on_open_boundary[eid2] = !edge_on_open_boundary[eid2];
-        edge_on_open_boundary[eid3] = !edge_on_open_boundary[eid3];
-    }
-
-    for (auto e : es) {
-        if (!edge_on_open_boundary[e.eid(*this)]) continue;
-        m_vertex_attribute[e.vid(*this)].m_is_on_open_boundary = true;
-        m_vertex_attribute[e.switch_vertex(*this).vid(*this)].m_is_on_open_boundary = true;
-    }
-}
-
-bool tetwild::TetWild::is_open_boundary_edge(const Tuple& e)
-{
-    if (m_vertex_attribute[e.vid(*this)].m_is_on_open_boundary &&
-        m_vertex_attribute[e.switch_vertex(*this).vid(*this)].m_is_on_open_boundary)
-        return true;
-    return false;
-}

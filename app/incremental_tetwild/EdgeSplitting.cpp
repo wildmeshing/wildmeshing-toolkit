@@ -1,9 +1,9 @@
 #include "IncrementalTetWild.h"
 
+#include <igl/Timer.h>
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/Logger.hpp>
-#include <igl/Timer.h>
 
 void tetwild::TetWild::split_all_edges()
 {
@@ -17,10 +17,10 @@ void tetwild::TetWild::split_all_edges()
     auto setup_and_execute = [&](auto& executor) {
         executor.renew_neighbor_tuples = wmtk::renewal_simple;
 
-        executor.priority = [&](auto &m, auto op, auto &t) { return m.get_length2(t); };
+        executor.priority = [&](auto& m, auto op, auto& t) { return m.get_length2(t); };
         executor.num_threads = NUM_THREADS;
-        executor.is_weight_up_to_date = [&](const auto &m, const auto &ele) {
-            auto[weight, op, tup] = ele;
+        executor.is_weight_up_to_date = [&](const auto& m, const auto& ele) {
+            auto [weight, op, tup] = ele;
             auto length = m.get_length2(tup);
             if (length != weight) return false;
             //
@@ -29,8 +29,7 @@ void tetwild::TetWild::split_all_edges()
             double sizing_ratio = (m_vertex_attribute[v1_id].m_sizing_scalar +
                                    m_vertex_attribute[v2_id].m_sizing_scalar) /
                                   2;
-            if (length < m_params.splitting_l2 * sizing_ratio * sizing_ratio)
-                return false;
+            if (length < m_params.splitting_l2 * sizing_ratio * sizing_ratio) return false;
             return true;
         };
         executor(*this, collect_all_ops);
@@ -65,6 +64,9 @@ bool tetwild::TetWild::split_edge_before(const Tuple& loc0)
     size_t v2_id = split_cache.local().v2_id;
 
     split_cache.local().is_edge_on_surface = is_edge_on_surface(loc0);
+
+    // todo: can be optimized
+    split_cache.local().is_edge_open_boundary = is_open_boundary_edge(loc0);
 
     /// save face track info
     auto comp = [](const std::pair<FaceAttributes, std::array<size_t, 3>>& v1,
@@ -138,6 +140,9 @@ bool tetwild::TetWild::split_edge_after(const Tuple& loc)
         m_vertex_attribute[v2_id].on_bbox_faces);
     // surface
     m_vertex_attribute[v_id].m_is_on_surface = split_cache.local().is_edge_on_surface;
+
+    // open boundary
+    m_vertex_attribute[v_id].m_is_on_open_boundary = split_cache.local().is_edge_open_boundary;
 
     /// update face attribute
     // add new and erase old

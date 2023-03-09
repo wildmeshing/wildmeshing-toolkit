@@ -138,6 +138,14 @@ bool tetwild::TetWild::collapse_edge_before(const Tuple& loc) // input is an edg
         }
     }
 
+    // open boundary
+    if (cache.edge_length > 0 && VA[v1_id].m_is_on_open_boundary) {
+        if (!VA[v2_id].m_is_on_open_boundary &&
+            m_open_boundary_envelope.is_outside(VA[v2_id].m_posf)) {
+            return false;
+        }
+    }
+
 
     auto n1_locs = get_one_ring_tets_for_vertex(loc);
     auto n12_locs = get_incident_tets_for_edge(loc); // todo: duplicated computation
@@ -260,13 +268,33 @@ bool tetwild::TetWild::collapse_edge_after(const Tuple& loc)
     // wmtk::logger().info("changed qualities: {}", qs);
 
     // surface
+    // and open boundary
 
     if (cache.edge_length > 0) {
         for (auto& vids : cache.surface_faces) {
+            // surface envelope
             bool is_out = m_envelope.is_outside(
                 {{VA[vids[0]].m_posf, VA[vids[1]].m_posf, VA[vids[2]].m_posf}});
             if (is_out) {
                 return false;
+            }
+
+            // open boundary envelope
+            // by checking each edge on cached surface
+            if (VA[vids[0]].m_is_on_open_boundary && VA[vids[1]].m_is_on_open_boundary) {
+                if (m_open_boundary_envelope.is_outside(
+                        {{VA[vids[0]].m_posf, VA[vids[1]].m_posf, VA[vids[0]].m_posf}}))
+                    return false;
+            }
+            if (VA[vids[1]].m_is_on_open_boundary && VA[vids[2]].m_is_on_open_boundary) {
+                if (m_open_boundary_envelope.is_outside(
+                        {{VA[vids[1]].m_posf, VA[vids[2]].m_posf, VA[vids[1]].m_posf}}))
+                    return false;
+            }
+            if (VA[vids[2]].m_is_on_open_boundary && VA[vids[0]].m_is_on_open_boundary) {
+                if (m_open_boundary_envelope.is_outside(
+                        {{VA[vids[2]].m_posf, VA[vids[0]].m_posf, VA[vids[2]].m_posf}}))
+                    return false;
             }
         }
     }
@@ -279,6 +307,10 @@ bool tetwild::TetWild::collapse_edge_after(const Tuple& loc)
     // vertex attr
     round(loc);
     VA[v2_id].m_is_on_surface = VA[v1_id].m_is_on_surface || VA[v2_id].m_is_on_surface;
+    // open boundary
+    VA[v2_id].m_is_on_open_boundary =
+        VA[v1_id].m_is_on_open_boundary || VA[v2_id].m_is_on_open_boundary;
+
     // no need to update on_bbox_faces
     // face attr
     for (auto& info : cache.changed_faces) {
