@@ -432,12 +432,12 @@ bool UniformRemeshing::collapse_remeshing(double L)
     wmtk::logger().info("size for edges to be collapse is {}", collect_all_ops.size());
     auto setup_and_execute = [&](auto executor) {
         executor.renew_neighbor_tuples = renew;
-        executor.priority = [&](auto& m, [[maybe_unused]] auto _, auto& e) {
+        executor.priority = [&](auto& m, auto _, auto& e) {
             return m.compute_edge_cost_collapse(e, L);
         };
         executor.num_threads = NUM_THREADS;
         executor.should_renew = [](auto val) { return (val > 0); };
-        executor.is_weight_up_to_date = []([[maybe_unused]] auto& m, auto& ele) {
+        executor.is_weight_up_to_date = [](auto& m, auto& ele) {
             auto& [val, op, e] = ele;
             if (val < 0) return false; // priority is negated.
             return true;
@@ -484,11 +484,11 @@ bool UniformRemeshing::split_remeshing(double L)
             for (auto& e : edges) optup.emplace_back(op, e);
             return optup;
         };
-        executor.priority = [&](auto& m, [[maybe_unused]] auto _, auto& e) {
+        executor.priority = [&](auto& m, auto _, auto& e) {
             return m.compute_edge_cost_split(e, L);
         };
         executor.should_renew = [](auto val) { return (val > 0); };
-        executor.is_weight_up_to_date = []([[maybe_unused]] auto& m, auto& ele) {
+        executor.is_weight_up_to_date = [](auto& m, auto& ele) {
             auto& [val, op, e] = ele;
             if (val < 0) return false;
             return true;
@@ -556,7 +556,7 @@ bool UniformRemeshing::swap_remeshing()
     auto setup_and_execute = [&](auto executor) {
         executor.renew_neighbor_tuples = renew;
         executor.num_threads = NUM_THREADS;
-        executor.priority = [](auto& m, [[maybe_unused]] auto op, const Tuple& e) {
+        executor.priority = [](auto& m, auto op, const Tuple& e) {
             return m.compute_vertex_valence(e);
         };
         executor.should_renew = [](auto val) { return (val > 0); };
