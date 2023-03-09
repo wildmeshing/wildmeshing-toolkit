@@ -4,7 +4,8 @@ if(TARGET nanospline::nanospline)
 endif()
 
 message(STATUS "Third-party (external): creating target 'nanospline::nanospline'")
-
+option(NANOSPLINE_BUILD_TESTS "Build Tests" OFF)
+set(NANOSPLINE_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 include(FetchContent)
 FetchContent_Declare(
     nanospline

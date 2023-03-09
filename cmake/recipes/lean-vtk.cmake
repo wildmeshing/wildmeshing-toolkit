@@ -3,7 +3,8 @@ if(TARGET LeanVTK)
 endif()
 
 message(STATUS "Third-party (external): creating target 'LeanVTK'")
-
+option(LEANVTK_BUILD_TESTS "Build Tests" OFF)
+set(LEANVTK_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 include(FetchContent)
 FetchContent_Declare(
     lean-vtk
