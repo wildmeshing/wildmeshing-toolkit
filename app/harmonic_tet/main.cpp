@@ -13,13 +13,13 @@
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
 #include <CLI/CLI.hpp>
-#include <wmtk/utils/EnableWarnings.hpp>
-// clang-format on
-
 #include <igl/Timer.h>
 #include <igl/doublearea.h>
 #include <igl/read_triangle_mesh.h>
 #include <igl/remove_duplicate_vertices.h>
+#include <wmtk/utils/EnableWarnings.hpp>
+// clang-format on
+
 
 struct
 {
