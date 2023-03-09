@@ -1,6 +1,5 @@
 
 #include <TriWild.h>
-#include <common.h>
 
 #include <igl/read_triangle_mesh.h>
 #include <igl/write_triangle_mesh.h>

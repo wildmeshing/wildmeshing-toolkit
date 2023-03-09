@@ -57,7 +57,8 @@ TEST_CASE("mesh_improvement", "[tetwild_operation][.slow]")
     }
     //
     //
-    tetwild::TetWild mesh(params, envelope, NUM_THREADS);
+    sample_envelope::SampleEnvelope sample_env;
+    tetwild::TetWild mesh(params, envelope, sample_env, NUM_THREADS);
 
     mesh.init_from_input_surface(vertices, faces, partition_id);
     REQUIRE(mesh.check_attributes());
@@ -72,7 +73,8 @@ TEST_CASE("edge_splitting", "[tetwild_operation]")
     params.init(Vector3d(0, 0, 0), Vector3d(1, 1, 1));
 
     wmtk::Envelope envelope;
-    TetWild tetwild(params, envelope);
+    sample_envelope::SampleEnvelope sample_env;
+    TetWild tetwild(params, envelope, sample_env);
 
     std::vector<VertexAttributes> vertices(4);
     vertices[0].m_posf = Vector3d(0, 0, 0);
@@ -106,7 +108,8 @@ TEST_CASE("edge_collapsing", "[tetwild_operation]")
     params.init(Vector3d(0, 0, 0), Vector3d(1, 1, 1));
 
     wmtk::Envelope envelope;
-    TetWild tetwild(params, envelope);
+    sample_envelope::SampleEnvelope sample_env;
+    TetWild tetwild(params, envelope, sample_env);
 
 
     std::vector<VertexAttributes> vertices(4);
@@ -118,7 +121,7 @@ TEST_CASE("edge_collapsing", "[tetwild_operation]")
     std::vector<TetAttributes> tet_attrs(1);
     for (auto& v : vertices) {
         v.m_is_rounded = true;
-        v.m_pos = to_rational(v.m_posf);
+        v.m_pos = v.m_posf.cast<wmtk::Rational>();
         // v.m_is_on_surface = true;
     }
     tetwild.m_collapse_check_link_condition = true;
@@ -157,7 +160,8 @@ TEST_CASE("inversion-check-rational-tetwild", "[tetwild_operation]")
     params.init(Vector3d(0, 0, 0), Vector3d(1, 1, 1));
 
     wmtk::Envelope envelope;
-    TetWild tetwild(params, envelope);
+    sample_envelope::SampleEnvelope sample_env;
+    TetWild tetwild(params, envelope, sample_env);
 
     std::vector<VertexAttributes> vertices(4);
     vertices[0].m_pos = Vector3r(0, 0, 0);
@@ -190,7 +194,8 @@ TEST_CASE("optimize-bunny-tw", "[tetwild_operation][.slow]")
     params.init(Vector3d(0, 0, 0), Vector3d(1, 1, 1));
 
     wmtk::Envelope envelope;
-    TetWild tetwild(params, envelope);
+    sample_envelope::SampleEnvelope sample_env;
+    TetWild tetwild(params, envelope, sample_env);
 
     tetwild.init(vec_attrs.size(), tets);
     std::vector<TetAttributes> tet_attrs(tets.size());

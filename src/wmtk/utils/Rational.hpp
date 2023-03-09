@@ -139,6 +139,7 @@ public:
 
     // to double
     double to_double() const { return mpq_get_d(value); }
+    explicit operator double() const { return to_double(); }
 
     // get str
     std::string get_str()
