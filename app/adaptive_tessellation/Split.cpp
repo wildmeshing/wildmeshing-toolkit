@@ -41,32 +41,16 @@ void AdaptiveTessellation::split_all_edges()
     auto setup_and_execute = [&](auto executor) {
         executor.renew_neighbor_tuples = split_renew;
         executor.priority = [&](auto& m, auto _, auto& e) {
-            if (m.mesh_parameters.m_accuracy) {
-                Eigen::Matrix<double, 2, 1> pos0 = m.vertex_attrs[e.vid(m)].pos;
-                Eigen::Matrix<double, 2, 1> pos1 = m.vertex_attrs[e.switch_vertex(m).vid(m)].pos;
-                // Eigen::Matrix<double, 2, 1> posnew = (pos0 + pos1) * 0.5;
-                // auto error1 = m.mesh_parameters.m_displacement->get_error_per_edge(pos0, posnew);
-                // auto error2 = m.mesh_parameters.m_displacement->get_error_per_edge(posnew, pos1);
-                auto length = m.mesh_parameters.m_displacement->get_error_per_edge(pos0, pos1);
-                return length;
-            }
-            return m.mesh_parameters.m_get_length(e.vid(m), e.switch_vertex(m).vid(m));
+            return m.mesh_parameters.m_get_length(e);
         };
         executor.num_threads = NUM_THREADS;
         executor.is_weight_up_to_date = [](auto& m, auto& ele) {
             auto& [weight, op, tup] = ele;
-            auto length = m.mesh_parameters.m_get_length(tup.vid(m), tup.switch_vertex(m).vid(m));
-            // if (m.mesh_parameters.m_accuracy) {
-            //     Eigen::Matrix<double, 2, 1> pos0 = m.vertex_attrs[tup.vid(m)].pos;
-            //     Eigen::Matrix<double, 2, 1> pos1 =
-            //     m.vertex_attrs[tup.switch_vertex(m).vid(m)].pos; Eigen::Matrix<double, 2, 1>
-            //     posnew = (pos0 + pos1) * 0.5; auto error1 =
-            //     m.mesh_parameters.m_displacement->get_error_per_edge(pos0, posnew); auto error2 =
-            //     m.mesh_parameters.m_displacement->get_error_per_edge(posnew, pos1); length -=
-            //     (error1 + error2);
-            // }
+            auto length = m.mesh_parameters.m_get_length(tup);
             if (abs(length - weight) > 1e-10) return false;
-            if (m.mesh_parameters.m_accuracy) {
+            if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::ACCURACY ||
+                m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
+                wmtk::logger().info("length in split {}", length);
                 if (length < m.mesh_parameters.m_accuracy_threshold) return false;
             } else if (length < 4. / 3. * m.mesh_parameters.m_target_l)
                 return false;
@@ -115,9 +99,6 @@ bool AdaptiveTessellation::split_edge_after(const Tuple& edge_tuple)
 {
     // adding heuristic decision. If length2 > 4. / 3. * 4. / 3. * m.m_target_l * m.m_target_l always split
     // transform edge length with displacement
-
-    double length3d = mesh_parameters.m_get_length(cache.local().v1, cache.local().v2);
-    if (length3d < 0.) return false;
     const Eigen::Vector2d p =
         (vertex_attrs[cache.local().v1].pos + vertex_attrs[cache.local().v2].pos) / 2.0;
     auto vid = edge_tuple.switch_vertex(*this).vid(*this);
@@ -130,18 +111,5 @@ bool AdaptiveTessellation::split_edge_after(const Tuple& edge_tuple)
         vertex_attrs[vid].boundary_vertex = true;
         vertex_attrs[vid].t = mesh_parameters.m_boundary.uv_to_t(vertex_attrs[vid].pos);
     }
-    // enforce length check
-    if (mesh_parameters.m_accuracy) {
-        // auto after_operation_error = length3d - get_accuracy_error(cache.local().v1, vid) -
-        //                              get_accuracy_error(cache.local().v2, vid);
-        // // operation happens when error difference is higher than user determined value
-        // // if (after_operation_error > mesh_parameters.m_accuracy_threshold) return true;
-        // // [Change To] if after operation error is bigger than before, reject operation
-        // // o.w. accept
-        // if (after_operation_error >= -1e-4) return true;
-        return true;
-    } else if (length3d > (4. / 3. * mesh_parameters.m_target_l)) {
-        return true;
-    }
-    return false;
+    return true;
 }
