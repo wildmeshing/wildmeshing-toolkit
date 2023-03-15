@@ -6,9 +6,18 @@
 #include <wmtk/utils/bicubic_interpolation.h>
 #include <nlohmann/json.hpp>
 #include <sec/envelope/SampleEnvelope.hpp>
+using namespace wmtk;
 namespace adaptive_tessellation {
-enum class ENERGY_TYPE { AMIPS, SYMDI, EDGE_LENGTH, EDGE_QUADRATURE };
-enum class EDGE_LEN_TYPE { LINEAR2D, LINEAR3D, N_IMPLICIT_POINTS, PT_PER_PIXEL, MIPMAP, ACCURACY };
+enum class ENERGY_TYPE { AMIPS, SYMDI, EDGE_LENGTH, EDGE_QUADRATURE, AREA_QUADRATURE };
+enum class EDGE_LEN_TYPE {
+    LINEAR2D,
+    LINEAR3D,
+    N_IMPLICIT_POINTS,
+    PT_PER_PIXEL,
+    MIPMAP,
+    ACCURACY,
+    AREA_ACCURACY
+};
 struct Parameters
 {
     using json = nlohmann::json;
@@ -72,10 +81,10 @@ public:
 
     wmtk::MipMap m_mipmap;
 
-    std::function<double(const std::size_t&, const std::size_t&)> m_get_length;
+    std::function<double(const TriMesh::Tuple& edge_tuple)> m_get_length;
 
     double m_accuracy_threshold = 0.01;
-    bool m_accuracy = 0;
+    EDGE_LEN_TYPE m_edge_length_type = EDGE_LEN_TYPE::ACCURACY;
 
     std::shared_ptr<wmtk::Displacement> m_displacement;
 };

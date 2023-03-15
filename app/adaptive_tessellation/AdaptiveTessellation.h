@@ -50,6 +50,7 @@ public:
     {
         size_t v1;
         size_t v2;
+        double error;
         double max_energy;
         int partition_id;
     };
@@ -153,48 +154,20 @@ public:
     void mesh_improvement(int max_its);
     void gradient_debug(int max_its);
 
-    double get_length2d(const size_t& vid1, const size_t& vid2) const;
-    double get_length3d(const size_t& vid1, const size_t& vid2)
-        const; // overload of the version that takes a tuple.
-               // used when the tuple is invalid but use vids to uquest for positions in the
-               // vertex_attrs
-    double get_length_n_implicit_points(const size_t& vid1, const size_t& vid2) const;
-    double get_length_1ptperpixel(const size_t& vid1, const size_t& vid2) const;
-    double get_length_mipmap(const size_t& vid1, const size_t& vid2) const;
+    double get_length2d(const Tuple& edge_tuple) const;
+    double get_length3d(
+        const Tuple& edge_tuple) const; // overload of the version that takes a tuple.
+                                        // used when the tuple is invalid but use vids to uquest for
+                                        // positions in the vertex_attrs
+    double get_length_n_implicit_points(const Tuple& edge_tuple) const;
+    double get_length_1ptperpixel(const Tuple& edge_tuple) const;
+    double get_length_mipmap(const Tuple& edge_tuple) const;
 
     void flatten_dofs(Eigen::VectorXd& v_flat);
     double get_mesh_energy(const Eigen::VectorXd& v_flat);
 
-    double get_accuracy_error(const size_t& vid1, const size_t& vid2) const;
-    double get_accuracy_error(const Eigen::Vector2d& p1, const Eigen::Vector2d& p2)
-        const; // outdated
-
-    template <class T, int order>
-    inline std::decay_t<T> quadrature_error_1pixel_eval(
-        const Eigen::Matrix<T, 2, 3> edge_verts,
-        std::function<T(const T&, const T&)> image_get_z,
-        wmtk::LineQuadrature& quad) const
-    {
-        quad.get_quadrature(order);
-        double ret = 0.0;
-        auto v1z = edge_verts(0, 2);
-        auto v2z = edge_verts(1, 2);
-        Eigen::Matrix<T, 1, 2> v12d, v22d;
-        v12d << edge_verts(0, 0), edge_verts(0, 1);
-        v22d << edge_verts(1, 0), edge_verts(1, 1);
-        // now do 1d quadrature
-        for (int i = 0; i < quad.points.rows(); i++) {
-            auto tmpu =
-                (1 - quad.points(i, 0)) * edge_verts(0, 0) + quad.points(i, 0) * edge_verts(1, 0);
-            auto tmpv =
-                (1 - quad.points(i, 0)) * edge_verts(0, 1) + quad.points(i, 0) * edge_verts(1, 1);
-            auto tmph = image_get_z(tmpu, tmpv);
-            auto tmpz = (1 - quad.points(i, 0)) * v1z + quad.points(i, 0) * v2z;
-            ret += abs(quad.weights(i) * (tmph - tmpz));
-        }
-
-        return ret * (v12d - v22d).stableNorm();
-    }
+    double get_edge_accuracy_error(const Tuple& edge_tuple) const;
+    double get_area_accuracy_error(const Tuple& edge_tuple) const;
 };
 
 } // namespace adaptive_tessellation

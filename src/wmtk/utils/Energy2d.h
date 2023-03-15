@@ -161,4 +161,19 @@ public:
     void eval([[maybe_unused]] State& state) const override{};
     void eval(State& state, DofsToPositions& x) const override;
 };
+
+class AreaAccuracyEnergy : public wmtk::Energy
+{
+public:
+    AreaAccuracyEnergy(std::shared_ptr<Displacement> displ)
+        : m_displ(displ)
+    {}
+
+public:
+    std::shared_ptr<Displacement> m_displ; // Initiated using the Displacement class
+
+public:
+    void eval([[maybe_unused]] State& state) const override{};
+    void eval(State& state, DofsToPositions& x) const override;
+};
 } // namespace wmtk

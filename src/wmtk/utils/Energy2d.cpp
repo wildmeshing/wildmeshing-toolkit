@@ -294,4 +294,24 @@ void AccuracyEnergy::eval(State& state, DofsToPositions& dof_to_positions) const
     state.gradient = total_energy.getGradient();
     state.hessian = total_energy.getHessian();
 }
+
+void AreaAccuracyEnergy::eval(State& state, DofsToPositions& dof_to_positions) const
+// measure edge quadrature. For each one-ring triangle only takes one edge, which will cover all the
+// one-ring edges without repeat
+{
+    DiffScalarBase::setVariableCount(2);
+    DScalar total_energy = DScalar(0);
+    assert(state.two_opposite_vertices.rows() == 1);
+    auto [x1, y1] = dof_to_positions.eval(state.dofx);
+
+    Eigen::Matrix<DScalar, 3, 2, 1> triangle;
+    triangle << x1, y1, DScalar(state.two_opposite_vertices(0, 0)),
+        DScalar(state.two_opposite_vertices(0, 1)), DScalar(state.two_opposite_vertices(0, 2)),
+        DScalar(state.two_opposite_vertices(0, 3));
+
+    total_energy = m_displ->get_error_per_triangle(triangle);
+    state.value = total_energy.getValue();
+    state.gradient = total_energy.getGradient();
+    state.hessian = total_energy.getHessian();
+}
 } // namespace wmtk

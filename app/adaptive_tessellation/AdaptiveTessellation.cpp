@@ -16,11 +16,11 @@
 using namespace wmtk;
 
 namespace adaptive_tessellation {
+// TODO change this to accomodate new error
 auto avg_edge_len = [](auto& m) {
     double avg_len = 0.0;
     auto edges = m.get_edges();
-    for (auto& e : edges)
-        avg_len += std::sqrt(m.mesh_parameters.m_get_length(e.vid(m), e.switch_vertex(m).vid(m)));
+    for (auto& e : edges) avg_len += std::sqrt(m.mesh_parameters.m_get_length(e));
     return avg_len / edges.size();
 };
 
@@ -100,6 +100,10 @@ void AdaptiveTessellation::set_energy(const ENERGY_TYPE energy_type)
         break;
     case ENERGY_TYPE::EDGE_QUADRATURE:
         energy_ptr = std::make_unique<wmtk::AccuracyEnergy>(mesh_parameters.m_displacement);
+        break;
+    case ENERGY_TYPE::AREA_QUADRATURE:
+        energy_ptr = std::make_unique<wmtk::AreaAccuracyEnergy>(mesh_parameters.m_displacement);
+        break;
     }
 
     mesh_parameters.m_energy = std::move(energy_ptr);
@@ -107,43 +111,42 @@ void AdaptiveTessellation::set_energy(const ENERGY_TYPE energy_type)
 
 void AdaptiveTessellation::set_edge_length_measurement(const EDGE_LEN_TYPE edge_len_type)
 {
+    mesh_parameters.m_edge_length_type = edge_len_type;
     switch (edge_len_type) {
     case EDGE_LEN_TYPE::LINEAR2D:
-        mesh_parameters.m_get_length = [&](const size_t& vid1, const size_t& vid2) -> double {
-            return this->get_length2d(vid1, vid2);
+        mesh_parameters.m_get_length = [&](const Tuple& edge_tuple) -> double {
+            return this->get_length2d(edge_tuple);
         };
-        mesh_parameters.m_accuracy = 0;
         break;
     case EDGE_LEN_TYPE::LINEAR3D:
-        mesh_parameters.m_get_length = [&](const size_t& vid1, const size_t& vid2) -> double {
-            return this->get_length3d(vid1, vid2);
+        mesh_parameters.m_get_length = [&](const Tuple& edge_tuple) -> double {
+            return this->get_length3d(edge_tuple);
         };
-        mesh_parameters.m_accuracy = 0;
         break;
     case EDGE_LEN_TYPE::N_IMPLICIT_POINTS:
-        mesh_parameters.m_get_length = [&](const size_t& vid1, const size_t& vid2) -> double {
-            return this->get_length_n_implicit_points(vid1, vid2);
+        mesh_parameters.m_get_length = [&](const Tuple& edge_tuple) -> double {
+            return this->get_length_n_implicit_points(edge_tuple);
         };
-        mesh_parameters.m_accuracy = 0;
         break;
     case EDGE_LEN_TYPE::PT_PER_PIXEL:
-        mesh_parameters.m_get_length = [&](const size_t& vid1, const size_t& vid2) -> double {
-            return this->get_length_1ptperpixel(vid1, vid2);
+        mesh_parameters.m_get_length = [&](const Tuple& edge_tuple) -> double {
+            return this->get_length_1ptperpixel(edge_tuple);
         };
-        mesh_parameters.m_accuracy = 0;
         break;
     case EDGE_LEN_TYPE::MIPMAP:
-        mesh_parameters.m_get_length = [&](const size_t& vid1, const size_t& vid2) -> double {
-            return this->get_length_mipmap(vid1, vid2);
+        mesh_parameters.m_get_length = [&](const Tuple& edge_tuple) -> double {
+            return this->get_length_mipmap(edge_tuple);
         };
-        mesh_parameters.m_accuracy = 0;
         break;
     case EDGE_LEN_TYPE::ACCURACY:
-        mesh_parameters.m_get_length = [&](const size_t& vid1, const size_t& vid2) -> double {
-            return this->get_accuracy_error(vid1, vid2);
+        mesh_parameters.m_get_length = [&](const Tuple& edge_tuple) -> double {
+            return this->get_edge_accuracy_error(edge_tuple);
         };
-        mesh_parameters.m_accuracy = 1;
-
+        break;
+    case EDGE_LEN_TYPE::AREA_ACCURACY:
+        mesh_parameters.m_get_length = [&](const Tuple& edge_tuple) -> double {
+            return this->get_area_accuracy_error(edge_tuple);
+        };
         break;
     }
 }
@@ -427,7 +430,7 @@ void AdaptiveTessellation::write_vtk(const std::string& path)
     std::vector<double> scalar_field;
     for (auto e : get_edges()) {
         if (!e.is_valid(*this)) continue;
-        auto cost = mesh_parameters.m_get_length(e.vid(*this), e.switch_vertex(*this).vid(*this));
+        auto cost = mesh_parameters.m_get_length(e);
         // Eigen::Matrix<double, 2, 1> pos1 = vertex_attrs[e.vid(*this)].pos;
         // Eigen::Matrix<double, 2, 1> pos2 = vertex_attrs[e.switch_vertex(*this).vid(*this)].pos;
         // Eigen::Matrix<double, 2, 1> posnew = (pos1 + pos2) * 0.5;
@@ -476,23 +479,28 @@ void AdaptiveTessellation::write_displaced_obj(
     igl::writeOBJ(path, V3, F);
 }
 
-double AdaptiveTessellation::get_length2d(const size_t& v1, const size_t& v2) const
+double AdaptiveTessellation::get_length2d(const Tuple& edge_tuple) const
 {
+    auto v1 = edge_tuple.vid(*this);
+    auto v2 = edge_tuple.switch_vertex(*this).vid(*this);
     return (vertex_attrs[v1].pos - vertex_attrs[v2].pos).stableNorm();
 }
 
-double AdaptiveTessellation::get_length3d(const size_t& v1, const size_t& v2) const
+double AdaptiveTessellation::get_length3d(const Tuple& edge_tuple) const
 {
+    auto v1 = edge_tuple.vid(*this);
+    auto v2 = edge_tuple.switch_vertex(*this).vid(*this);
     auto v13d = mesh_parameters.m_project_to_3d(vertex_attrs[v1].pos(0), vertex_attrs[v1].pos(1));
     auto v23d = mesh_parameters.m_project_to_3d(vertex_attrs[v2].pos(0), vertex_attrs[v2].pos(1));
     return (v13d - v23d).stableNorm();
 }
 
-double AdaptiveTessellation::get_length_n_implicit_points(const size_t& vid1, const size_t& vid2)
-    const
+double AdaptiveTessellation::get_length_n_implicit_points(const Tuple& edge_tuple) const
 {
-    auto v12d = vertex_attrs[vid1].pos;
-    auto v22d = vertex_attrs[vid2].pos;
+    auto v1 = edge_tuple.vid(*this);
+    auto v2 = edge_tuple.switch_vertex(*this).vid(*this);
+    auto v12d = vertex_attrs[v1].pos;
+    auto v22d = vertex_attrs[v2].pos;
 
     double length = 0.0;
 
@@ -508,8 +516,10 @@ double AdaptiveTessellation::get_length_n_implicit_points(const size_t& vid1, co
     return length;
 }
 
-double AdaptiveTessellation::get_length_1ptperpixel(const size_t& vid1, const size_t& vid2) const
+double AdaptiveTessellation::get_length_1ptperpixel(const Tuple& edge_tuple) const
 {
+    auto vid1 = edge_tuple.vid(*this);
+    auto vid2 = edge_tuple.switch_vertex(*this).vid(*this);
     auto v12d = vertex_attrs[vid1].pos;
     auto v22d = vertex_attrs[vid2].pos;
 
@@ -535,8 +545,10 @@ double AdaptiveTessellation::get_length_1ptperpixel(const size_t& vid1, const si
     return length;
 }
 
-double AdaptiveTessellation::get_length_mipmap(const size_t& vid1, const size_t& vid2) const
+double AdaptiveTessellation::get_length_mipmap(const Tuple& edge_tuple) const
 {
+    auto vid1 = edge_tuple.vid(*this);
+    auto vid2 = edge_tuple.switch_vertex(*this).vid(*this);
     auto v12d = vertex_attrs[vid1].pos;
     auto v22d = vertex_attrs[vid2].pos;
     int idx = 0;
@@ -587,48 +599,42 @@ double AdaptiveTessellation::get_quality(const Tuple& loc, int idx) const
     return energy;
 }
 
-double AdaptiveTessellation::get_accuracy_error(const size_t& vid1, const size_t& vid2) const
+double AdaptiveTessellation::get_edge_accuracy_error(const Tuple& edge_tuple) const
 {
+    auto vid1 = edge_tuple.vid(*this);
+    auto vid2 = edge_tuple.switch_vertex(*this).vid(*this);
     auto v12d = vertex_attrs[vid1].pos;
     auto v22d = vertex_attrs[vid2].pos;
 
     return mesh_parameters.m_displacement->get_error_per_edge(v12d, v22d);
 }
 
-double AdaptiveTessellation::get_accuracy_error(
-    const Eigen::Vector2d& p1,
-    const Eigen::Vector2d& p2) const
+double AdaptiveTessellation::get_area_accuracy_error(const Tuple& edge_tuple) const
 {
-    std::function<double(const double&, const double&)> get_z = [&](const double& u,
-                                                                    const double& v) -> double {
-        return mesh_parameters.m_project_to_3d(u, v)(2);
-    };
-    auto v1z = get_z(p1(0), p1(1));
-    auto v2z = get_z(p2(0), p2(1));
-    // get the pixel index of p1 and p2
-    auto [xx1, yy1] = mesh_parameters.m_image_get_coordinate(p1(0), p1(1));
-    auto [xx2, yy2] = mesh_parameters.m_image_get_coordinate(p2(0), p2(1));
-    // get all the pixels in between p1 and p2
-    auto pixel_num = std::max(abs(xx2 - xx1), abs(yy2 - yy1));
-    if (pixel_num <= 0) return 0.;
-    assert(pixel_num > 0);
-    double error = 0.0;
-    for (int i = 0; i < pixel_num; i++) {
-        const double r0 = static_cast<double>(i) / pixel_num;
-        auto tmp_p1 = p1 * (1. - r0) + p2 * r0;
-        auto tmp_v1z = v1z * (1. - r0) + v2z * r0;
-        const double r1 = static_cast<double>(i + 1) / pixel_num;
-        auto tmp_p2 = p1 * (1. - r1) + p2 * r1;
-        auto tmp_v2z = v1z * (1. - r1) + v2z * r1;
-        Eigen::Matrix<double, 2, 3> edge_verts;
-        edge_verts.row(0) << tmp_p1(0), tmp_p1(1), tmp_v1z;
-        edge_verts.row(1) << tmp_p2(0), tmp_p2(1), tmp_v2z;
-        LineQuadrature quad;
-        auto displaced_pixel_error =
-            quadrature_error_1pixel_eval<double, 5>(edge_verts, get_z, quad);
-        error += displaced_pixel_error;
+    auto vids1 = oriented_tri_vertices(edge_tuple);
+    Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle1;
+    for (int i = 0; i < 3; i++) {
+        triangle1.row(i) = vertex_attrs[vids1[i].vid(*this)].pos;
     }
-    assert(error >= 0);
+    // wmtk::logger().info("===============");
+    // wmtk::logger().info("   triangle1 is {}", triangle1);
+
+    auto error = mesh_parameters.m_displacement->get_error_per_triangle(triangle1);
+    // wmtk::logger().info("   ---error1 is {}", error);
+
+    auto tmp_tuple = edge_tuple.switch_face(*this);
+    if (tmp_tuple.has_value()) {
+        auto vids2 = oriented_tri_vertices(tmp_tuple);
+        Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle2;
+        for (int i = 0; i < 3; i++) {
+            triangle2.row(i) = vertex_attrs[vids2[i].vid(*this)].pos;
+        }
+        // wmtk::logger().info("   triangle2 is {}", triangle2);
+
+        error += mesh_parameters.m_displacement->get_error_per_triangle(triangle2);
+        // wmtk::logger().info("   ---error2 is {}", error);
+    }
+    wmtk::logger().info("   error is {}", error);
     return error;
 }
 
