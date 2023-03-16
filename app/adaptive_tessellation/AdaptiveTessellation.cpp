@@ -160,11 +160,14 @@ void AdaptiveTessellation::set_image_function(
     mesh_parameters.m_get_z = [&](const DScalar& u, const DScalar& v) -> DScalar {
         return image.get(u, v);
     };
-    mesh_parameters.m_image_get_coordinate = [&](const double& x,
-                                                 const double& y) -> std::pair<int, int> {
-        auto [xx, yy] = image.get_pixel_index(x, y);
-        return {image.get_coordinate(xx, mesh_parameters.m_wrapping_mode),
-                image.get_coordinate(yy, mesh_parameters.m_wrapping_mode)};
+    mesh_parameters.m_image_get_coordinate =
+        [this](const double& x, const double& y) -> std::pair<int, int> {
+        auto [xx, yy] = this->mesh_parameters.m_image.get_pixel_index(x, y);
+        return {
+            this->mesh_parameters.m_image.get_coordinate(xx, this->mesh_parameters.m_wrapping_mode),
+            this->mesh_parameters.m_image.get_coordinate(
+                yy,
+                this->mesh_parameters.m_wrapping_mode)};
     };
     mesh_parameters.m_mipmap = wmtk::MipMap(image);
     mesh_parameters.m_mipmap.set_wrapping_mode(wrapping_mode);
@@ -200,7 +203,7 @@ void AdaptiveTessellation::set_projection()
         [data = std::move(data)](const Eigen::RowVector2d& p) -> Eigen::RowVector2d {
         uint64_t ind = 0;
         double distance = 0.0;
-        static Eigen::RowVector2d p_ret;
+        Eigen::RowVector2d p_ret;
         assert(data != nullptr);
         (data->aabb).get_closest_point(p, ind, p_ret, distance);
         return p_ret;
