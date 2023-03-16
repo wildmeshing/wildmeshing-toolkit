@@ -154,8 +154,8 @@ void AdaptiveTessellation::set_image_function(
 {
     mesh_parameters.m_wrapping_mode = wrapping_mode;
     mesh_parameters.m_image = image;
-    mesh_parameters.m_get_z = [&](const DScalar& u, const DScalar& v) -> DScalar {
-        return image.get(u, v);
+    mesh_parameters.m_get_z = [this](const DScalar& u, const DScalar& v) -> DScalar {
+        return this->mesh_parameters.m_image.get(u, v);
     };
     mesh_parameters.m_image_get_coordinate =
         [this](const double& x, const double& y) -> std::pair<int, int> {
