@@ -12,6 +12,7 @@
 #include <wmtk/utils/GeoUtils.h>
 #include <wmtk/utils/Image.h>
 #include <wmtk/utils/MipMap.h>
+#include <wmtk/utils/PolygonClipping.h>
 #include <finitediff.hpp>
 #include <nlohmann/json.hpp>
 #include <sec/envelope/SampleEnvelope.hpp>
@@ -113,6 +114,7 @@ public:
     // Writes a triangle mesh in ply format
     void write_ply(const std::string& path);
     void write_vtk(const std::string& path);
+    void write_perface_vtk(const std::string& path);
 
     void write_displaced_obj(
         const std::string& path,
@@ -167,6 +169,7 @@ public:
     double get_mesh_energy(const Eigen::VectorXd& v_flat);
 
     double get_edge_accuracy_error(const Tuple& edge_tuple) const;
+    double get_area_accuracy_error_per_face(const Tuple& edge_tuple) const;
     double get_area_accuracy_error(const Tuple& edge_tuple) const;
 };
 
