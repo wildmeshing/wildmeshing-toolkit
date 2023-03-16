@@ -62,7 +62,7 @@ public:
         return {m_weights.data(), static_cast<Eigen::Index>(size())};
     }
 
-public:
+private:
     size_t m_dimension = 0;
     std::vector<double> m_points;
     std::vector<double> m_weights;
