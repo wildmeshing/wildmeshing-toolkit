@@ -46,12 +46,28 @@ void AdaptiveTessellation::split_all_edges()
         executor.num_threads = NUM_THREADS;
         executor.is_weight_up_to_date = [](auto& m, auto& ele) {
             auto& [weight, op, tup] = ele;
-            auto length = m.mesh_parameters.m_get_length(tup);
+            double length = 0.;
+            double error1 = 0.;
+            double error2 = 0.;
+            if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
+                error1 = m.get_area_accuracy_error_per_face(tup);
+                if (tup.switch_face(m).has_value()) {
+                    error2 = m.get_area_accuracy_error_per_face(tup.switch_face(m).value());
+                } else
+                    error2 = error1;
+                length = (error1 + error2) * m.get_length2d(tup);
+            } else
+                length = m.mesh_parameters.m_get_length(tup);
+            // check if out of date
             if (abs(length - weight) > 1e-10) return false;
-            if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::ACCURACY ||
-                m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
-                wmtk::logger().info("length in split {}", length);
+            // check if meet operating threshold
+            if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::ACCURACY) {
                 if (length < m.mesh_parameters.m_accuracy_threshold) return false;
+            } else if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
+                wmtk::logger().info("error1 {} error2 {} length {}", error1, error2, length);
+                if (error1 < m.mesh_parameters.m_accuracy_threshold &&
+                    error2 < m.mesh_parameters.m_accuracy_threshold)
+                    return false;
             } else if (length < 4. / 3. * m.mesh_parameters.m_target_l)
                 return false;
             return true;
@@ -75,6 +91,7 @@ bool AdaptiveTessellation::split_edge_before(const Tuple& edge_tuple)
     if (!TriMesh::split_edge_before(edge_tuple)) return false;
     // if (cnt % 50 == 0)
     write_vtk(mesh_parameters.m_output_folder + fmt::format("/split_{:04d}.vtu", cnt));
+    write_perface_vtk(mesh_parameters.m_output_folder + fmt::format("/tri_{:04d}.vtu", cnt));
 
     // check if the 2 vertices are on the same curve
     if (vertex_attrs[edge_tuple.vid(*this)].curve_id !=
