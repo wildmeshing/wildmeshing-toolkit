@@ -441,7 +441,7 @@ public:
      * @param t tuple pointing to a vertex
      * @return a vector of vids that can have duplicates
      */
-    std::vector<size_t> get_one_ring_vids_for_vertex_duplicate(const size_t& t) const;
+    std::vector<size_t> get_one_ring_vids_for_vertex_with_duplicates(const size_t& t) const;
     /**
      * @brief Get the vids of the incident one ring tris for a vertex
      *

@@ -304,7 +304,7 @@ void TriMesh::consolidate_mesh()
 }
 
 
-std::vector<size_t> TriMesh::get_one_ring_vids_for_vertex_duplicate(const size_t& vid) const
+std::vector<size_t> TriMesh::get_one_ring_vids_for_vertex_with_duplicates(const size_t& vid) const
 {
     std::vector<size_t> one_ring;
     auto& conn_tri = m_vertex_connectivity[vid].m_conn_tris;
@@ -682,7 +682,7 @@ bool wmtk::TriMesh::try_set_vertex_mutex_one_ring(const Tuple& v, int threadid)
     if (m_vertex_mutex[vid].get_owner() != threadid) {
         if (try_set_vertex_mutex(v, threadid)) {
             stack.push_back(vid);
-            for (auto v_one_ring : get_one_ring_vids_for_vertex_duplicate(vid)) {
+            for (auto v_one_ring : get_one_ring_vids_for_vertex_with_duplicates(vid)) {
                 if (m_vertex_mutex[v_one_ring].get_owner() != threadid) {
                     if (try_set_vertex_mutex(v_one_ring, threadid)) {
                         stack.push_back(v_one_ring);
