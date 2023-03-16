@@ -1,39 +1,57 @@
-#include <wmtk/utils/AttributeCollectionRecorder.h>
-#include <wmtk/utils/Hdf5Utils.hpp>
+#include <wmtk/AttributeCollectionRecorder.h>
+#include <wmtk/AttributeCollectionSerialization.h>
 #include <wmtk/AttributeCollection.hpp>
+#include <wmtk/utils/Hdf5Utils.hpp>
 
 using namespace wmtk;
-AttributeCollectionRecorderBase::AttributeCollectionRecorderBase(
-    HighFive::File& file,
-    const std::string& name,
-    const HighFive::DataType& data_type)
-    : AttributeCollectionRecorderBase(create_dataset(file, name, data_type))
-{}
-
-void AttributeCollectionRecorderBase::save_size()
+AttributeCollectionRecorder::AttributeCollectionRecorder(
+    std::unique_ptr<AttributeCollectionSerializationBase>&& serialization)
+    : m_serialization(std::move(serialization))
 {
-    last_size.local() = size();
+    AbstractAttributeCollection& aac = m_serialization->abstract_attribute_collection();
+
+    aac.recorder_ptrs.emplace_back(this);
 }
 
-AttributeCollectionRecorderBase::AttributeCollectionRecorderBase(HighFive::DataSet&& dataset_)
-    : dataset(dataset_)
-{}
 
-AttributeCollectionRecorderBase::~AttributeCollectionRecorderBase() = default;
+AttributeCollectionRecorder::~AttributeCollectionRecorder()
+{
+    AbstractAttributeCollection& aac = m_serialization->abstract_attribute_collection();
 
-HighFive::DataSetAccessProps AttributeCollectionRecorderBase::access_properties()
-{
-    HighFive::DataSetAccessProps props;
-    return props;
-}
-HighFive::DataSetCreateProps AttributeCollectionRecorderBase::create_properties()
-{
-    HighFive::DataSetCreateProps props;
-    props.add(HighFive::Chunking(std::vector<hsize_t>{2}));
-    return props;
+    aac.recorder_ptrs.remove(this);
 }
 
-std::array<size_t, 3> AttributeCollectionRecorderBase::record()
+
+size_t AttributeCollectionRecorder::record()
 {
-    return record(dataset);
+    return m_serialization->record();
+}
+
+// load a particular set of attribute changes from a particular dataset
+void AttributeCollectionRecorder::load(
+    const AttributeCollectionUpdate& update,
+    const HighFive::DataSet& data_set)
+{
+    m_serialization->load(update, data_set);
+}
+
+// undoes a particular change to an attribute
+void AttributeCollectionRecorder::unload(
+    const AttributeCollectionUpdate& update,
+    const HighFive::DataSet& data_set)
+{
+    m_serialization->load(update, data_set);
+}
+
+size_t AttributeCollectionRecorder::updates_size() const
+{
+    return m_serialization->updates_size();
+}
+size_t AttributeCollectionRecorder::changes_size() const
+{
+    return m_serialization->changes_size();
+}
+AttributeCollectionUpdate AttributeCollectionRecorder::update(size_t index) const
+{
+    return m_serialization->update(index);
 }

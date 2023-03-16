@@ -1,22 +1,38 @@
-#include <wmtk/AttributeCollectionRecorder.h>
-// The actions of an operator are defined by a sequence of commands and how those commands affect
-// attributes. They are tehrefore serialized through 2 + N tables of data, where N is the number of
-// attributes 1...N) each table containing all attribute updates for a single attribute, organized
-// implicitly by attribute and which command
-//        each table is named by the attribute name
-// N+1) A table of index ranges into the attribute update table, organized by which attribute and
-// (implicitly) which command N+2) A ordered table of commands + references to ranges of attribute
-// update groups
+#pragma once
+#include <wmtk/utils/Hdf5Utils.hpp>
+
+
+// Attribute Change tables:
+// Given an attribute named ATTR
+//
+// ATTR_value_changes
+// stores changes to an attribute
+// ============
+// Type: AttributeCollectionValueChange<T>
+// size_t index;
+// T old_value;
+// T new_value;
+//
+// ATTR_updates
+// AttributeCollectionUpdate
+// Stores the changes associated with a single "operation"
+// Assumes ATTR_value_changes stores values consecutively
+// ============
+// size_t old_size;
+// size_t new_size;
+// AttributeCollectionRange range; <-- points into ATTR_value_changes
+//
+
 //
 // The attribute update tables use columns [index, old_value, new_value], where
 // the index is the index update in some pertinent AttributeCollection and
 // the latter two columns are customized for each attribute type.
 //
 //
-// The Index ranges use columns [attribute_name, change_range_begin,change_range_end]
+// The Index ranges use columns [attribute_name, range_begin,range_end]
 // If we let Data[attribute_name] point to the attribute update table 'attribute_name'
 // Then in pythonic-slice notation we see that the updates to 'attribute_name' are stored by
-// Data[attribute_name][change_range_begin:change_range_end] .
+// Data[attribute_name][range_begin:range_end] .
 // This intermediate table is to allow us to track updates of different attributes/types.
 //
 //
@@ -45,22 +61,95 @@
 // and then outside of any namespace's scope we declare the following two lines
 // HIGHFIVE_REGISTER_TYPE(Vec, vec_datatype)
 // WMTK_HDF5_REGISTER_ATTRIBUTE_TYPE(Vec)
-#define WMTK_HDF5_REGISTER_ATTRIBUTE_TYPE(type)              \
-    HIGHFIVE_REGISTER_TYPE(                                  \
-        wmtk::AttributeCollectionRecorder<type>::UpdateData, \
-        wmtk::AttributeCollectionRecorder<type>::datatype)   \
-    HIGHFIVE_REGISTER_TYPE(                                  \
-        wmtk::AttributeUpdateData<type>, \
-        wmtk::AttributeUpdateData<type>::datatype)
+#define WMTK_HDF5_REGISTER_ATTRIBUTE_TYPE(type)     \
+    HIGHFIVE_REGISTER_TYPE(                         \
+        wmtk::AttributeCollectionValueChange<type>, \
+        wmtk::AttributeCollectionValueChange<type>::datatype)
 
-#define WMTK_HDF5_DECLARE_ATTRIBUTE_TYPE(type)               \
-    HIGHFIVE_REGISTER_TYPE(                                  \
-        wmtk::AttributeCollectionRecorder<type>::UpdateData, \
-        wmtk::AttributeCollectionRecorder<type>::datatype)
+#define WMTK_HDF5_DECLARE_ATTRIBUTE_TYPE(type) \
+    WMTK_HIGHFIVE_DECLARE_TYPE(wmtk::AttributeCollectionValueChange<type>)
 
 namespace wmtk {
+
 template <typename T>
-struct AttributeUpdateData
+struct AttributeCollectionValueChange;
+struct AttributeCollectionUpdate;
+
+class AttributeCollectionRecorder;
+class AttributeCollectionReplayer;
+
+struct AbstractAttributeCollection;
+template <typename T>
+struct AttributeCollection;
+
+struct AttributeCollectionRange
+{
+    size_t begin = 0;
+    size_t end = 0;
+    static HighFive::CompoundType datatype();
+};
+
+// internal Interface for adding an attribute to a logged hdf5 file
+// this is intended as an internal interface because Recording should only append while Replaying
+// should allow for forward and backward playback. Please look at AttributeCollectionRecorder and
+// AttributeCollectionReplayer for these functionalities. the HDF5 interactions are, as much as
+// possible, shoved into the AttributeCollectionSerializationBase class with implementation in the
+// related cpp file whereas the type-specific details are defined with
+// AttributeCollectionSerialization<T> and implemeneted at the bottom of this file.
+//
+class AttributeCollectionSerializationBase
+{
+protected:
+    friend class AttributeCollectionRecorder;
+    friend class AttributeCollectionReplayer;
+    // the file being serialized to, the name of the attribute, and information on how the data
+    // should be serialized
+    AttributeCollectionSerializationBase(
+        HighFive::File& file,
+        const std::string& name,
+        const HighFive::DataType& data_type);
+    AttributeCollectionSerializationBase(
+        HighFive::DataSet&& value_changes_ds,
+        HighFive::DataSet&& updates_ds);
+
+public:
+    virtual ~AttributeCollectionSerializationBase();
+    static HighFive::CompoundType record_datatype();
+    static HighFive::DataSetCreateProps create_properties();
+    static HighFive::DataSetAccessProps access_properties();
+
+
+    // the number of updates serialized
+    size_t changes_size() const;
+    // the number of updates serialized
+    size_t updates_size() const;
+
+    AttributeCollectionUpdate update(size_t index) const;
+
+protected:
+    virtual AttributeCollectionUpdate record_value_changes() = 0;
+    // returns the index of the recorded changes in the updates_dataset
+    size_t record();
+
+    // load a particular set of attribute changes from a particular dataset
+    virtual void load(
+        const AttributeCollectionUpdate& changes,
+        const HighFive::DataSet& data_set) = 0;
+
+    // undoes a particular change to an attribute
+    virtual void unload(
+        const AttributeCollectionUpdate& changes,
+        const HighFive::DataSet& data_set) = 0;
+
+    virtual AbstractAttributeCollection& abstract_attribute_collection() = 0;
+
+
+    HighFive::DataSet value_changes_dataset;
+    HighFive::DataSet updates_dataset;
+};
+
+template <typename T>
+struct AttributeCollectionValueChange
 {
     size_t index;
     T old_value;
@@ -68,39 +157,174 @@ struct AttributeUpdateData
     static HighFive::CompoundType datatype();
 };
 
+// Class capable of recording updates to a single attribute
+template <typename T>
+class AttributeCollectionSerialization : public AttributeCollectionSerializationBase
+{
+public:
+    using UpdateData = AttributeCollectionValueChange<T>;
+    static HighFive::CompoundType datatype();
+    AttributeCollectionSerialization(
+        HighFive::File& file,
+        const std::string& name,
+        AttributeCollection<T>& attr_);
+
+    AbstractAttributeCollection& abstract_attribute_collection() override
+    {
+        return this->attribute_collection;
+    }
+
+    AttributeCollectionUpdate record_value_changes() override;
+    // load a particular set of attribute changes from a particular dataset. loading backwards
+    void load(const AttributeCollectionUpdate& changes, const HighFive::DataSet& data_set) override;
+
+    // undoes a particular change to an attribute
+    void unload(const AttributeCollectionUpdate& changes, const HighFive::DataSet& data_set)
+        override;
+    using AttributeCollectionSerializationBase::record;
+
+private:
+    AttributeCollection<T>& attribute_collection;
+};
+
 
 // Indicates which attribute was changed and the range of updates that are associated with its
 // updates in the per-attribute update table
-struct AttributeChanges
+struct AttributeCollectionUpdate
 {
-    AttributeChanges() = default;
-    AttributeChanges(AttributeChanges&&) = default;
-    AttributeChanges(AttributeChanges const&) = default;
-    AttributeChanges& operator=(AttributeChanges const&) = default;
-    AttributeChanges& operator=(AttributeChanges&&) = default;
+    AttributeCollectionUpdate() = default;
+    AttributeCollectionUpdate(AttributeCollectionUpdate&&) = default;
+    AttributeCollectionUpdate(AttributeCollectionUpdate const&) = default;
+    AttributeCollectionUpdate& operator=(AttributeCollectionUpdate const&) = default;
+    AttributeCollectionUpdate& operator=(AttributeCollectionUpdate&&) = default;
 
-    AttributeChanges(const std::string_view& view, size_t begin, size_t end, size_t size);
-    char name[20];
+    AttributeCollectionUpdate(size_t begin, size_t end, size_t old_size, size_t size);
 
-    size_t attribute_size = 0;
-    size_t change_range_begin = 0;
-    size_t change_range_end = 0;
+    size_t old_attribute_size = 0;
+    size_t new_attribute_size = 0;
+    AttributeCollectionRange range;
 
     static HighFive::CompoundType datatype();
 };
 
-inline AttributeChanges::AttributeChanges(
-    const std::string_view& view,
-    size_t begin,
-    size_t end,
-    size_t size)
-    : attribute_size(size)
-    , change_range_begin(begin)
-    , change_range_end(end)
+// deduction guide
+template <typename T>
+AttributeCollectionSerialization(
+    HighFive::File& file,
+    const std::string& name,
+    const AttributeCollection<T>&) -> AttributeCollectionSerialization<T>;
+
+template <typename T>
+AttributeCollectionSerialization<T>::AttributeCollectionSerialization(
+    HighFive::File& file,
+    const std::string& name,
+    AttributeCollection<T>& attr_)
+    : AttributeCollectionSerializationBase(file, name, datatype())
+    , attribute_collection(attr_)
+{}
+
+template <typename T>
+HighFive::CompoundType AttributeCollectionSerialization<T>::datatype()
 {
-    strncpy(
-        name,
-        view.data(),
-        sizeof(name) / sizeof(char)); // yes sizeof(char)==1, maybe chartype changes someday?
+    return HighFive::CompoundType{
+        {"index", HighFive::create_datatype<size_t>()},
+        {"old_value", HighFive::create_datatype<T>()},
+        {"new_value", HighFive::create_datatype<T>()}};
 }
+
+
+template <typename T>
+AttributeCollectionUpdate AttributeCollectionSerialization<T>::record_value_changes()
+{
+    const std::map<size_t, T>& rollback_list = attribute_collection.m_rollback_list.local();
+    const size_t old_size = attribute_collection.m_rollback_size.local();
+    const auto& attributes = attribute_collection.m_attributes;
+    // const tbb::concurrent_vector<T>& attributes = attribute_collection.m_attributes;
+
+    std::vector<UpdateData> data;
+    data.reserve(rollback_list.size());
+    std::transform(
+        rollback_list.begin(),
+        rollback_list.end(),
+        std::back_inserter(data),
+        [&attributes](const std::pair<const size_t, T>& pr) -> UpdateData {
+            const auto& [index, old_value] = pr;
+            const T& new_value = attributes[index];
+            return UpdateData{index, old_value, new_value};
+        });
+
+    auto [start, end] = utils::append_values_to_dataset(value_changes_dataset, data);
+    return AttributeCollectionUpdate(start, end, old_size, attribute_collection.size());
+    // return std::array<size_t, 3>{{start, end, attribute_collection.m_rollback_size.local(),
+    // attribute_collection.size()}};
 }
+
+template <typename T>
+void AttributeCollectionSerialization<T>::load(
+    const AttributeCollectionUpdate& changes,
+    const HighFive::DataSet& data_set)
+{
+    // the update data
+    std::vector<AttributeCollectionValueChange<T>> updates;
+
+    // compute hte parts of hte update data we want to read
+    std::vector<size_t> start, size;
+    start.emplace_back(changes.range.begin);
+    size.emplace_back(changes.range.end - changes.range.begin);
+
+    // read the data
+    data_set.select(start, size).read(updates);
+
+    // resize the AC to the new size
+    attribute_collection.resize(changes.new_attribute_size);
+
+
+    // write data
+    for (const AttributeCollectionValueChange<T>& upd : updates) {
+        attribute_collection[upd.index] = upd.new_value;
+    }
+}
+template <typename T>
+void AttributeCollectionSerialization<T>::unload(
+    const AttributeCollectionUpdate& changes,
+    const HighFive::DataSet& data_set)
+{
+    attribute_collection.begin_protect();
+
+    attribute_collection.m_rollback_size.local() = changes.old_attribute_size;
+
+
+    // the update data
+    std::vector<AttributeCollectionValueChange<T>> updates;
+
+
+    // compute the part of the input data we need to parse
+    std::vector<size_t> start, size;
+    start.emplace_back(changes.range.begin);
+    size.emplace_back(changes.range.end - changes.range.begin);
+
+    //
+    data_set.select(start, size).read(updates);
+
+    auto& rollback_list = attribute_collection.m_rollback_list.local();
+
+    for (const AttributeCollectionValueChange<T>& upd : updates) {
+        rollback_list[upd.index] = upd.old_value;
+    }
+
+    attribute_collection.rollback();
+}
+
+
+template <typename T>
+HighFive::CompoundType AttributeCollectionValueChange<T>::datatype()
+{
+    return HighFive::CompoundType{
+        {"index", HighFive::create_datatype<size_t>()},
+        {"old_value", HighFive::create_datatype<T>()},
+        {"new_value", HighFive::create_datatype<T>()}};
+}
+} // namespace wmtk
+
+
+WMTK_HDF5_DECLARE_ATTRIBUTE_TYPE(wmtk::AttributeCollectionRange)

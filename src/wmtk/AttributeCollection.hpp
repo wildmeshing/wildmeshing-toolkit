@@ -9,31 +9,47 @@
 #include <algorithm>
 #include <array>
 #include <cassert>
+#include <list>
 #include <map>
 #include <optional>
-#include <vector>
 
 namespace wmtk {
 /**
  * @brief serving as buffers for attributes data that can be modified by operations
  *
  */
-class OperationRecorder;
-class AbstractAttributeContainer
+class AttributeCollectionRecorder;
+template <typename T>
+class AttributeCollectionSerialization;
+class AbstractAttributeCollection
 {
 public:
-    virtual ~AbstractAttributeContainer() = default;
+    AbstractAttributeCollection();
+    virtual ~AbstractAttributeCollection();
     virtual void move(size_t /*from*/, size_t to) = 0;
     virtual void resize(size_t) = 0;
-    virtual void rollback(){};
-    virtual void begin_protect(){};
-    virtual void end_protect(){};
-    virtual void record_updates(OperationRecorder&, const std::string_view&){};
+    virtual size_t size() const = 0;
+    virtual void rollback() = 0;
+    virtual void begin_protect();
+    virtual std::optional<size_t> end_protect();
+
+
+    template <typename T>
+    friend class AttributeCollectionSerialization;
+    friend class AttributeCollectionRecorder;
+
+protected:
+    tbb::enumerable_thread_specific<size_t> m_rollback_size;
+    tbb::enumerable_thread_specific<bool> in_protected{false};
+    // the AttributeCollectionRecorder is in charge of cleaning this up
+    // TODO: is there a point in making this concurrent? attribute collections should identify their
+    // recorders at times where the number of threads is pretty static?
+    std::list<AttributeCollectionRecorder*> recorder_ptrs;
 };
 
 
 template <typename T>
-struct AttributeCollection : public AbstractAttributeContainer
+struct AttributeCollection : public AbstractAttributeCollection
 {
     void move(size_t from, size_t to) override
     {
@@ -57,7 +73,7 @@ struct AttributeCollection : public AbstractAttributeContainer
     bool assign(size_t to, T&& val) // always use this in OP_after
     {
         m_attributes[to] = val;
-        if (recording.local()) m_rollback_list.local()[to] = val;
+        if (in_protected.local()) m_rollback_list.local()[to] = val;
         // TODO: are locks necessary? not now.
         return true;
     }
@@ -70,39 +86,34 @@ struct AttributeCollection : public AbstractAttributeContainer
         for (auto& [i, v] : m_rollback_list.local()) {
             m_attributes[i] = std::move(v);
         }
+        in_protected.local() = false;
         end_protect();
     }
     /**
-     * @brief clean local buffers for attribute, and start recording
+     * @brief clean local buffers for attribute, and start in_protected
      *
      */
     void begin_protect() override
     {
         m_rollback_list.local().clear();
-        recording.local() = true;
-        m_rollback_size.local() = m_attributes.size();
+        AbstractAttributeCollection::begin_protect();
     };
     /**
-     * @brief clear local buffers and finish recording
+     * @brief clear local buffers and finish in_protected
      *
      */
-    void end_protect() override
+    std::optional<size_t> end_protect() override
     {
+        std::optional<size_t> ret = AbstractAttributeCollection::end_protect();
         m_rollback_list.local().clear();
-        recording.local() = false;
+        return ret;
     }
-    // void record_updates(OperationRecorder& recorder, const std::string_view& name) override
-    //{
-    //     if (recording.local()) {
-    //         recorder.attribute_update(name, m_attributes, m_rollback_list.local());
-    //     }
-    // }
 
     const T& operator[](size_t i) const { return m_attributes[i]; }
 
     T& operator[](size_t i)
     {
-        if (recording.local()) {
+        if (in_protected.local()) {
             m_rollback_list.local().emplace(i, m_attributes[i]);
         }
         return m_attributes[i];
@@ -110,11 +121,9 @@ struct AttributeCollection : public AbstractAttributeContainer
 
     const T& at(size_t i) const { return m_attributes[i]; }
 
-    size_t size() const { return m_attributes.size(); }
+    size_t size() const override { return m_attributes.size(); }
     tbb::enumerable_thread_specific<std::map<size_t, T>> m_rollback_list;
-    tbb::enumerable_thread_specific<size_t> m_rollback_size;
     // experimenting with tbb, could be templated as well.
     tbb::concurrent_vector<T> m_attributes;
-    tbb::enumerable_thread_specific<bool> recording{false};
 };
 } // namespace wmtk

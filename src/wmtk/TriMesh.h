@@ -30,7 +30,6 @@ class TriMeshOperationRecorder;
 class OperationRecorder;
 class TriMeshOperation;
 class TriMeshTupleData;
-template <typename T>
 class AttributeCollectionRecorder;
 
 
@@ -113,7 +112,7 @@ public:
          * @return size_t
          * @note use mostly for constructing consistent tuples in operations
          */
-        size_t local_eid(const TriMesh& ) const { return m_eid; }
+        size_t local_eid(const TriMesh&) const { return m_eid; }
         /**
          * Switch operation.
          *
@@ -157,10 +156,6 @@ public:
         std::tuple<size_t, size_t, size_t, size_t> as_stl_tuple() const
         {
             return std::tie(m_vid, m_eid, m_fid, m_hash);
-        }
-        std::array<size_t, 3> as_stl_array() const
-        {
-            return std::array<size_t, 3>{{m_vid, m_eid, m_fid}};
         }
         friend bool operator<(const Tuple& a, const Tuple& t)
         {
@@ -256,9 +251,7 @@ public:
     friend class TriMeshOperationLogger;
     friend class TriMeshOperationRecorder;
     friend class OperationReplayer;
-    template <typename T>
     friend class AttributeCollectionRecorder;
-
 
     TriMesh();
     virtual ~TriMesh();
@@ -317,9 +310,9 @@ public:
     using vector = tbb::concurrent_vector<T>;
 
 public:
-    AbstractAttributeContainer* p_vertex_attrs = nullptr;
-    AbstractAttributeContainer* p_edge_attrs = nullptr;
-    AbstractAttributeContainer* p_face_attrs = nullptr;
+    AbstractAttributeCollection* p_vertex_attrs = nullptr;
+    AbstractAttributeCollection* p_edge_attrs = nullptr;
+    AbstractAttributeCollection* p_face_attrs = nullptr;
 
 
 protected:
@@ -422,7 +415,6 @@ public:
      * @param t Tuple refering to an edge
      */
     bool is_boundary_vertex(const TriMesh::Tuple& t) const;
-
 
 
     /**

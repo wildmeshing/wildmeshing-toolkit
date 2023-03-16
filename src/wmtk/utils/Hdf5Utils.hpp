@@ -16,6 +16,18 @@
 #elif (defined(__GNUC__) || defined(__GNUG__)) && !(defined(__clang__) || defined(__INTEL_COMPILER))
 #pragma GCC diagnostic pop
 #endif
+
+
+
+// Macro for pre-declaring HighFive's HDF5 datatypes
+// HighFive defines a macro HIGHFIVE_REGISTER_TYPE that implements a template specialization.
+// That macro cannot be used to fully specialize in a header so this macro is
+// provided so specialization can be declared in a header and implementation
+// performed in a source file
+#define WMTK_HIGHFIVE_DECLARE_TYPE(type) \
+    template <> inline HighFive::DataType HighFive::create_datatype<type>();
+
+
 namespace wmtk::utils {
 
 
@@ -24,13 +36,13 @@ bool does_dataset_exist(const HighFive::File& file, const std::string& name);
 
 
 HighFive::DataSet
-create_dataset(HighFive::File& file, const std::string& name, const HighFive::DataType& datatype);
+create_extendable_dataset(HighFive::File& file, const std::string& name, const HighFive::DataType& datatype);
 
 
 template <typename T>
-HighFive::DataSet create_dataset(HighFive::File& file, const std::string& name)
+HighFive::DataSet create_extendable_dataset(HighFive::File& file, const std::string& name)
 {
-    return create_dataset(file, name, HighFive::create_datatype<T>());
+    return create_extendable_dataset(file, name, HighFive::create_datatype<T>());
 }
 
 
@@ -51,6 +63,8 @@ size_t append_value_to_dataset(HighFive::DataSet& dataset, const T& value);
 
 
 
+
+  
 
 
 

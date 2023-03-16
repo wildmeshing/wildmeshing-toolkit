@@ -1,6 +1,6 @@
 #include <wmtk/utils/Hdf5Utils.hpp>
 #include <wmtk/utils/Logger.hpp>
-namespace wmtk {
+namespace wmtk::utils {
 // checks whether the file holding the dataset exists
 bool does_dataset_exist(const HighFive::File& file, const std::string& name)
 {
