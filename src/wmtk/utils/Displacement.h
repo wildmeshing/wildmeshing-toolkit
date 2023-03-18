@@ -1,5 +1,6 @@
 #pragma once
 
+#include <tbb/enumerable_thread_specific.h>
 #include <wmtk/quadrature/ClippedQuadrature.h>
 #include <wmtk/quadrature/TriangleQuadrature.h>
 #include <wmtk/utils/PolygonClipping.h>
@@ -25,9 +26,9 @@ public:
         const Eigen::Matrix<DScalar, 2, 1>& p1,
         const Eigen::Matrix<DScalar, 2, 1>& p2) const = 0;
     virtual double get_error_per_triangle(
-        const Eigen::Matrix<double, 3, 2, Eigen::RowMajor>& triangle) const = 0;
+        const Eigen::Matrix<double, 3, 2, Eigen::RowMajor>& triangle) = 0;
     virtual DScalar get_error_per_triangle(
-        const Eigen::Matrix<DScalar, 3, 2, Eigen::RowMajor>& triangle) const = 0;
+        const Eigen::Matrix<DScalar, 3, 2, Eigen::RowMajor>& triangle) = 0;
 };
 
 // Shared templated parent class
@@ -36,6 +37,14 @@ class DisplacementImage : public Displacement
 {
 protected:
     wmtk::Image m_image;
+
+public:
+    struct QuadrCache
+    {
+        wmtk::Quadrature quad;
+        wmtk::Quadrature tmp;
+    };
+    tbb::enumerable_thread_specific<QuadrCache> cache;
 
 public:
     DisplacementImage(const wmtk::Image img)
@@ -138,19 +147,19 @@ public:
     }
 
     inline double get_error_per_triangle(
-        const Eigen::Matrix<double, 3, 2, Eigen::RowMajor>& triangle) const override
+        const Eigen::Matrix<double, 3, 2, Eigen::RowMajor>& triangle) override
     {
         return get_error_per_triangle_T(triangle);
     }
 
     inline DScalar get_error_per_triangle(
-        const Eigen::Matrix<DScalar, 3, 2, Eigen::RowMajor>& triangle) const override
+        const Eigen::Matrix<DScalar, 3, 2, Eigen::RowMajor>& triangle) override
     {
         return get_error_per_triangle_T(triangle);
     }
 
     template <class T>
-    inline T get_error_per_triangle_T(const Eigen::Matrix<T, 3, 2, Eigen::RowMajor>& triangle) const
+    inline T get_error_per_triangle_T(const Eigen::Matrix<T, 3, 2, Eigen::RowMajor>& triangle)
     {
         constexpr int Degree = 4;
         const int order = 2 * (Degree - 1);
@@ -177,8 +186,6 @@ public:
 
         typedef std::integral_constant<int, 2> cached_t;
 
-        wmtk::Quadrature quad;
-        wmtk::Quadrature tmp;
         auto z_barycentric = [&](const T& u, const T& v) -> T {
             /*
             λ1 = ((v2 - v3)(u - u3) + (u3 - u2)(v - v3)) / ((v2 - v3)(u1 - u3) + (u3 - u2)(v1 - v3))
@@ -216,21 +223,26 @@ public:
                 //     triangle_double,
                 //     box.min(),
                 //     box.max());
-                rules.clipped_triangle_box_quadrature(order, triangle_double, box, quad, &tmp);
-                for (size_t i = 0; i < quad.size(); ++i) {
-                    auto tmpu = static_cast<T>(quad.points()(i, 0));
-                    auto tmpv = static_cast<T>(quad.points()(i, 1));
+                rules.clipped_triangle_box_quadrature(
+                    order,
+                    triangle_double,
+                    box,
+                    cache.local().quad,
+                    &cache.local().tmp);
+                for (size_t i = 0; i < cache.local().quad.size(); ++i) {
+                    auto tmpu = static_cast<T>(cache.local().quad.points()(i, 0));
+                    auto tmpv = static_cast<T>(cache.local().quad.points()(i, 1));
                     auto tmph = get(tmpu, tmpv);
                     auto tmpz = z_barycentric(tmpu, tmpv);
                     // wmtk::logger().info("           u {} v {}", tmpu, tmpv);
                     // wmtk::logger().info("           tmph {} tmpz {}", tmph, tmpz);
-                    value += abs(tmph - tmpz) * static_cast<T>(quad.weights()[i]);
+                    value += abs(tmph - tmpz) * static_cast<T>(cache.local().quad.weights()[i]);
                     if (value < 0)
                         wmtk::logger().info(
                             "           h-z {} value {} weight {}",
                             abs(tmph - tmpz),
                             value,
-                            quad.weights()[i]);
+                            cache.local().quad.weights()[i]);
                 }
             }
         }
