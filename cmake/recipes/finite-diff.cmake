@@ -10,6 +10,5 @@ FetchContent_Declare(
     finite-diff
     GIT_REPOSITORY https://github.com/zfergus/finite-diff.git
     GIT_TAG 632a73424cf3eafa8c6315ae0de3efe387936c17
-    GIT_SHALLOW TRUE
 )
 FetchContent_MakeAvailable(finite-diff)
