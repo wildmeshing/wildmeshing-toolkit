@@ -9,6 +9,8 @@
 #include <wmtk/utils/TriQualityUtils.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
 
+#include <lagrange/utils/fpe.h>
+
 #include <limits>
 #include <optional>
 using namespace adaptive_tessellation;
@@ -56,15 +58,66 @@ auto swap_cost = [](auto& m, const TriMesh::Tuple& t) {
     return (cost_before_swap - cost_after_swap);
 };
 
-auto swap_accuracy_cost = [](auto& m, const TriMesh::Tuple& e) {
-    auto e_before = m.get_accuracy_error(e.vid(m), e.switch_vertex(m).vid(m));
+// list the triangle verteics in order
+// return cost 0.for colinear or flipped triangle after swap (to save quadrature computation)
+auto swap_accuracy_cost = [&swap_cost](auto& m, const TriMesh::Tuple& e) {
+    double e_before = 0.0;
+    auto e_after = e_before;
     if ((e.switch_face(m)).has_value()) {
-        auto t4 = (((e.switch_face(m)).value()).switch_edge(m)).switch_vertex(m);
-        auto t3 = (e.switch_edge(m)).switch_vertex(m);
-        auto e_after = m.get_accuracy_error(t3.vid(m), t4.vid(m));
-        return (e_before - e_after);
-    } else
-        return 0.;
+        lagrange::enable_fpe();
+        if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::ACCURACY) {
+            e_before = m.mesh_parameters.m_get_length(e);
+            auto t4 = (((e.switch_face(m)).value()).switch_edge(m)).switch_vertex(m);
+            auto t3 = (e.switch_edge(m)).switch_vertex(m);
+            auto t3_pos = m.vertex_attrs[t3.vid(m)].pos;
+            auto t4_pos = m.vertex_attrs[t4.vid(m)].pos;
+            e_after = m.mesh_parameters.m_displacement->get_error_per_edge(t3_pos, t4_pos);
+            // positive if error decreases
+            return e_before - e_after;
+        } else
+        // (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY)
+        {
+            auto other_face = e.switch_face(m).value();
+            auto other_vid = other_face.switch_edge(m).switch_vertex(m).vid(m);
+            // get oriented vids
+            auto vids1 = m.oriented_tri_vids(e);
+            auto vids2 = m.oriented_tri_vids(other_face);
+
+            Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle1;
+            Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle2;
+            for (int i = 0; i < 3; i++) {
+                triangle1.row(i) = m.vertex_attrs[vids1[i]].pos;
+                triangle2.row(i) = m.vertex_attrs[vids2[i]].pos;
+            }
+            e_before = m.mesh_parameters.m_displacement->get_error_per_triangle(triangle1);
+            e_before += m.mesh_parameters.m_displacement->get_error_per_triangle(triangle2);
+
+            // replace the vids with the swapped vids
+            for (auto i = 0; i < 3; i++) {
+                if (vids1[i] == e.switch_vertex(m).vid(m)) vids1[i] = other_vid;
+                if (vids2[i] == e.vid(m)) vids2[i] = e.switch_edge(m).switch_vertex(m).vid(m);
+            }
+            for (auto i = 0; i < 3; i++) {
+                triangle1.row(i) = m.vertex_attrs[vids1[i]].pos;
+                triangle2.row(i) = m.vertex_attrs[vids2[i]].pos;
+            }
+
+            if (polygon_signed_area(triangle1) <= 0 || polygon_signed_area(triangle2) <= 0) {
+                return -std::numeric_limits<double>::infinity();
+            } else {
+                e_after = m.mesh_parameters.m_displacement->get_error_per_triangle(triangle1);
+                e_after += m.mesh_parameters.m_displacement->get_error_per_triangle(triangle2);
+            }
+
+            // negative, if error increase
+            // positive, if error decrease
+            if ((e_before - e_after) < 0) // the accuracy decreases more than 10%
+                return -std::numeric_limits<double>::infinity();
+
+            return swap_cost(m, e) * (e_before - e_after);
+        }
+        return -std::numeric_limits<double>::infinity();
+    }
 };
 
 void AdaptiveTessellation::swap_all_edges()
@@ -81,23 +134,28 @@ void AdaptiveTessellation::swap_all_edges()
     auto setup_and_execute = [&](auto executor) {
         executor.renew_neighbor_tuples = swap_renew;
         executor.priority = [&](auto& m, [[maybe_unused]] auto _, auto& e) {
-            if (m.mesh_parameters.m_accuracy)
-                return swap_accuracy_cost(m, e);
-            else
+            if (m.is_boundary_edge(e))
+                return -std::numeric_limits<double>::infinity(); // boundary edge shouldn't swap
+            if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::ACCURACY ||
+                m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
+                auto current_error = swap_accuracy_cost(m, e);
+                return current_error;
+            } else
                 return swap_cost(m, e);
         };
         executor.num_threads = NUM_THREADS;
         executor.is_weight_up_to_date = [](auto& m, auto& ele) {
             auto& [weight, op, tup] = ele;
-            if (m.mesh_parameters.m_accuracy) {
-                auto cost = swap_accuracy_cost(m, tup);
-                if (cost < m.mesh_parameters.m_accuracy_threshold ||
-                    std::pow(cost - weight, 2) > 1e-5)
-                    return false;
+            if (weight == -std::numeric_limits<double>::infinity()) return false;
+            double current_cost = 0.;
+            if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::ACCURACY ||
+                m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
+                current_cost = swap_accuracy_cost(m, tup);
             } else {
-                auto cost = swap_cost(m, tup);
-                if (cost < 1e-5 || std::pow(cost - weight, 2) > 1e-5) return false;
+                current_cost = swap_cost(m, tup);
+                if (current_cost < 1e-5) return false;
             }
+            if (std::pow(current_cost - weight, 2) > 1e-5) return false;
             return true;
         };
         executor(*this, collect_all_ops);

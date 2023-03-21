@@ -163,7 +163,6 @@ public:
     {
         constexpr int Degree = 4;
         const int order = 2 * (Degree - 1);
-
         Eigen::AlignedBox2d bbox;
         Eigen::Matrix<double, 3, 2, 1> triangle_double;
         for (auto i = 0; i < 3; i++) {
@@ -183,7 +182,6 @@ public:
         auto [xx2, yy2] = get_coordinate(bbox_max(0), bbox_max(1));
         auto num_pixels = std::max(abs(xx2 - xx1), abs(yy2 - yy1));
         const double pixel_size = bbox.diagonal().maxCoeff() / num_pixels;
-
         typedef std::integral_constant<int, 2> cached_t;
 
         auto z_barycentric = [&](const T& u, const T& v) -> T {
@@ -218,11 +216,6 @@ public:
                 box.extend(
                     bbox.min() + Eigen::Vector2d((x + 1) * pixel_size, (y + 1) * pixel_size));
                 wmtk::ClippedQuadrature rules;
-                // wmtk::logger().info(
-                //     "   triangle double {} box min {} max {}",
-                //     triangle_double,
-                //     box.min(),
-                //     box.max());
                 rules.clipped_triangle_box_quadrature(
                     order,
                     triangle_double,
@@ -237,12 +230,6 @@ public:
                     // wmtk::logger().info("           u {} v {}", tmpu, tmpv);
                     // wmtk::logger().info("           tmph {} tmpz {}", tmph, tmpz);
                     value += abs(tmph - tmpz) * static_cast<T>(cache.local().quad.weights()[i]);
-                    if (value < 0)
-                        wmtk::logger().info(
-                            "           h-z {} value {} weight {}",
-                            abs(tmph - tmpz),
-                            value,
-                            cache.local().quad.weights()[i]);
                 }
             }
         }
