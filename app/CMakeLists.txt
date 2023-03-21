@@ -18,7 +18,7 @@ if(WMTK_APP_TETWILD)
     add_subdirectory(tetwild)
 endif()
 
-if(WMTK_APP_TRIWILD)
+if(WMTK_APP_ADAPTIVE_TESSELLATION)
     add_subdirectory(adaptive_tessellation)
 endif()
 
