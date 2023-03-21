@@ -105,13 +105,21 @@ public:
 
     Parameters& m_params;
     wmtk::Envelope& m_envelope;
+    // for surface projection
+    sample_envelope::SampleEnvelope& triangles_tree;
 
     // for open boundary
     wmtk::ExactEnvelope m_open_boundary_envelope; // todo: add sample envelope option
+    sample_envelope::SampleEnvelope boundaries_tree;
 
-    TetWild(Parameters& _m_params, wmtk::Envelope& _m_envelope, int _num_threads = 1)
+    TetWild(
+        Parameters& _m_params,
+        wmtk::Envelope& _m_envelope,
+        sample_envelope::SampleEnvelope& _triangles_tree,
+        int _num_threads = 1)
         : m_params(_m_params)
         , m_envelope(_m_envelope)
+        , triangles_tree(_triangles_tree)
     {
         NUM_THREADS = _num_threads;
         p_vertex_attrs = &m_vertex_attribute;

@@ -127,7 +127,7 @@ int main(int argc, char** argv)
     } else {
         ptr_env = &(exact_envelope);
     }
-    tetwild::TetWild mesh(params, *ptr_env, NUM_THREADS);
+    tetwild::TetWild mesh(params, *ptr_env, surf_mesh.m_envelope, NUM_THREADS);
 
     /////////////////////////////////////////////////////
 
@@ -170,7 +170,7 @@ int main(int argc, char** argv)
     std::cout << "here" << std::endl;
 
     // generate new mesh
-    tetwild::TetWild mesh_new(params, *ptr_env, NUM_THREADS);
+    tetwild::TetWild mesh_new(params, *ptr_env, surf_mesh.m_envelope, NUM_THREADS);
 
 
     mesh_new.init_from_Volumeremesher(
@@ -290,10 +290,16 @@ int main(int argc, char** argv)
     //     wmtk::logger().info("======= finish =========");
     // }
 
-    return 0;
+    // return 0;
 
     // /////////mesh improvement
     mesh_new.mesh_improvement(max_its);
+
+    mesh_new.output_mesh(output_path + "after_optimization.msh");
+    mesh_new.output_faces(output_path + "after_optimization_surface.obj", [](auto& f) {
+        return f.m_is_surface_fs;
+    });
+
     std::cout << "here6" << std::endl;
     // ////winding number
     if (filter_with_input)

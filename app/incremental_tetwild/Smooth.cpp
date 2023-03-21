@@ -18,7 +18,7 @@ bool tetwild::TetWild::smooth_before(const Tuple& t)
     if (m_vertex_attribute[t.vid(*this)].m_is_rounded) return true;
     // try to round.
     // Note: no need to roll back.
-    return  round(t);
+    return round(t);
 }
 
 
@@ -71,7 +71,68 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
         old_pos.transpose(),
         m_vertex_attribute[vid].m_posf.transpose());
 
-    if (m_vertex_attribute[vid].m_is_on_surface) {
+    if (m_vertex_attribute[vid].m_is_on_open_boundary) {
+        // debug code
+        // std::cout << "in smoothing open boundary" << std::endl;
+
+        std::vector<std::array<double, 9>> neighbor_assemble;
+        std::set<size_t> unique_eid;
+        for (auto& t : locs) {
+            for (auto j = 0; j < 6; j++) {
+                auto e_t = tuple_from_edge(t.tid(*this), j);
+                auto eid = e_t.eid(*this);
+                auto [it, suc] = unique_eid.emplace(eid);
+                if (!suc) continue;
+                if (is_open_boundary_edge(e_t)) {
+                    size_t v1_id = e_t.vid(*this);
+                    size_t v2_id = e_t.switch_vertex(*this).vid(*this);
+                    if (v2_id == vid) {
+                        size_t tmp = v1_id;
+                        v1_id = v2_id;
+                        v2_id = tmp;
+                    }
+                    if (v1_id != vid) continue; // does not contain point of interest
+                    std::array<double, 9> coords = {
+                        {m_vertex_attribute[v1_id].m_posf[0],
+                         m_vertex_attribute[v1_id].m_posf[1],
+                         m_vertex_attribute[v1_id].m_posf[2],
+                         m_vertex_attribute[v2_id].m_posf[0],
+                         m_vertex_attribute[v2_id].m_posf[1],
+                         m_vertex_attribute[v2_id].m_posf[2],
+                         m_vertex_attribute[v1_id].m_posf[0],
+                         m_vertex_attribute[v1_id].m_posf[1],
+                         m_vertex_attribute[v1_id].m_posf[2]}}; // {v1, v2, v1}
+                    neighbor_assemble.emplace_back(coords);
+                }
+            }
+        }
+
+        // auto project = wmtk::try_project(m_vertex_attribute[vid].m_posf, neighbor_assemble);
+        auto project = Eigen::Vector3d();
+        if (boundaries_tree.initialized()) {
+            // std::cout << "in smoothing open boundary" << std::endl;
+            boundaries_tree.nearest_point(m_vertex_attribute[vid].m_posf, project);
+
+        } else
+            project = wmtk::try_project(m_vertex_attribute[vid].m_posf, neighbor_assemble);
+        m_vertex_attribute[vid].m_posf = project;
+        for (auto& n : neighbor_assemble) {
+            n[0] = m_vertex_attribute[vid].m_posf[0];
+            n[1] = m_vertex_attribute[vid].m_posf[1];
+            n[2] = m_vertex_attribute[vid].m_posf[2];
+            n[6] = m_vertex_attribute[vid].m_posf[0];
+            n[7] = m_vertex_attribute[vid].m_posf[1];
+            n[8] = m_vertex_attribute[vid].m_posf[2];
+        }
+        for (auto& n : neighbor_assemble) {
+            auto boundaries = std::array<Eigen::Vector3d, 3>();
+            for (auto k = 0; k < 3; k++) {
+                for (auto kk = 0; kk < 3; kk++) boundaries[k][kk] = n[k * 3 + kk];
+            }
+            bool is_out = m_open_boundary_envelope.is_outside(boundaries);
+            if (is_out) return false;
+        }
+    } else if (m_vertex_attribute[vid].m_is_on_surface) {
         std::vector<std::array<double, 9>> neighbor_assemble;
         std::set<size_t> unique_fid;
         for (auto& t : locs) {
@@ -97,7 +158,12 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
                 }
             }
         }
-        auto project = wmtk::try_project(m_vertex_attribute[vid].m_posf, neighbor_assemble);
+        // auto project = wmtk::try_project(m_vertex_attribute[vid].m_posf, neighbor_assemble);
+        auto project = Eigen::Vector3d();
+        if (triangles_tree.initialized())
+            triangles_tree.nearest_point(m_vertex_attribute[vid].m_posf, project);
+        else
+            project = wmtk::try_project(m_vertex_attribute[vid].m_posf, neighbor_assemble);
         m_vertex_attribute[vid].m_posf = project;
         for (auto& n : neighbor_assemble) {
             for (auto kk = 0; kk < 3; kk++) n[kk] = m_vertex_attribute[vid].m_posf[kk];

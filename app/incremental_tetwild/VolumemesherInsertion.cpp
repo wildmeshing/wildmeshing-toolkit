@@ -945,6 +945,7 @@ void tetwild::TetWild::find_open_boundary()
     }
 
     for (auto e : es) {
+        // std::cout << edge_on_open_boundary[e.eid(*this)] << " ";
         if (edge_on_open_boundary[e.eid(*this)] != 1) continue;
         size_t v1 = e.vid(*this);
         size_t v2 = e.switch_vertex(*this).vid(*this);
@@ -953,14 +954,25 @@ void tetwild::TetWild::find_open_boundary()
         open_boundaries.push_back(Eigen::Vector3i(v1, v2, v1));
     }
 
+    wmtk::logger().info("open boundary num: {}", open_boundaries.size());
+
+    if (open_boundaries.size() == 0) return;
+
     // init open boundary envelope
     m_open_boundary_envelope.init(v_posf, open_boundaries, m_params.epsr * m_params.diag_l / 2.0);
+    boundaries_tree.init(v_posf, open_boundaries, m_params.epsr * m_params.diag_l / 2.0);
 }
 
 bool tetwild::TetWild::is_open_boundary_edge(const Tuple& e)
 {
-    if (m_vertex_attribute[e.vid(*this)].m_is_on_open_boundary &&
-        m_vertex_attribute[e.switch_vertex(*this).vid(*this)].m_is_on_open_boundary)
-        return true;
-    return false;
+    size_t v1 = e.vid(*this);
+    size_t v2 = e.switch_vertex(*this).vid(*this);
+    if (!m_vertex_attribute[v1].m_is_on_open_boundary ||
+        !m_vertex_attribute[v2].m_is_on_open_boundary)
+        return false;
+
+    return !m_open_boundary_envelope.is_outside(
+        {{m_vertex_attribute[v1].m_posf,
+          m_vertex_attribute[v2].m_posf,
+          m_vertex_attribute[v1].m_posf}});
 }
