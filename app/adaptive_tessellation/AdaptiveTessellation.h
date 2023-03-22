@@ -69,6 +69,7 @@ public:
     // set often used parameters in a bundle. User can also set each used parameters that are
     // used separately
     void set_parameters(
+        const double target_accuracy,
         const double target_edge_length,
         const wmtk::Image& image,
         const WrappingMode wrapping_mode,
