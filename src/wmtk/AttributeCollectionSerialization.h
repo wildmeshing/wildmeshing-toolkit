@@ -78,9 +78,9 @@ struct AttributeCollectionUpdate;
 class AttributeCollectionRecorder;
 class AttributeCollectionReplayer;
 
-struct AbstractAttributeCollection;
+class AbstractAttributeCollection;
 template <typename T>
-struct AttributeCollection;
+class AttributeCollection;
 
 struct AttributeCollectionRange
 {

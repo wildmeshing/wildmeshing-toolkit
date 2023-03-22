@@ -210,28 +210,6 @@ struct ExecutePass
                  }}};
         }
         if constexpr (std::is_base_of<wmtk::TriMesh, AppMesh>::value) {
-            auto make_op = []<typename MyOpType>(MyOpType op)
-
-                -> std::pair<const Op, OperatorFunc> {
-                return std::make_pair<const Op, OperatorFunc>(
-                    op.name(),
-                    [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
-                        spdlog::info("Running {}!", MyOpType().name());
-                        auto retdata = MyOpType()(m,t);
-                        if (retdata.success) {
-                            spdlog::info("Operation {} succeeded!", MyOpType().name());
-                            return retdata.new_tris;
-                        } else {
-                            spdlog::info("Operation {} failed!", MyOpType().name());
-                            return {};
-                        }
-                    });
-            };
-            edit_operation_maps.emplace(make_op(wmtk::TriMeshEdgeCollapseOperation()));
-            edit_operation_maps.emplace(make_op(wmtk::TriMeshSwapEdgeOperation()));
-            edit_operation_maps.emplace(make_op(wmtk::TriMeshSplitEdgeOperation()));
-            edit_operation_maps.emplace(make_op(wmtk::TriMeshSmoothVertexOperation()));
-            edit_operation_maps.emplace(make_op(wmtk::TriMeshConsolidateOperation()));
 
             add_operation<wmtk::TriMeshEdgeCollapseOperation>();
             add_operation<wmtk::TriMeshSwapEdgeOperation>();
