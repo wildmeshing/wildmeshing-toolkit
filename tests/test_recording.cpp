@@ -33,10 +33,18 @@ TEST_CASE("double_recorder", "[attribute_recording]")
 
     AttributeCollection<double> attribute_collection;
     attribute_collection.resize(20);
-    AttributeCollectionRecorder attribute_recorder(file, "attribute1", attribute_collection);
 
     for (size_t j = 0; j < attribute_collection.size(); ++j) {
         attribute_collection[j] = -double(j);
+    }
+
+    AttributeCollectionRecorder attribute_recorder(file, "attribute1", attribute_collection);
+    size_t update_index = 0;
+    {
+        AttributeCollectionUpdate update = attribute_recorder.update(update_index);
+        CHECK(update.range.begin == 0);
+        CHECK(update.range.end == 20);
+        CHECK(update.new_size == 20);
     }
 
     attribute_collection.begin_protect();
@@ -55,29 +63,31 @@ TEST_CASE("double_recorder", "[attribute_recording]")
 
     REQUIRE(rollback_list.size() <= attribute_collection.size());
 
-    size_t update_index = attribute_recorder.record();
-
-    attribute_collection.end_protect();
-    return;
+    std::optional<size_t> update_index_opt;
+    update_index_opt = attribute_collection.end_protect();
+    REQUIRE(update_index_opt.has_value());
+    update_index = update_index_opt.value();
 
     {
         AttributeCollectionUpdate update = attribute_recorder.update(update_index);
-        CHECK(update.range.begin == 0);
-        CHECK(update.range.end == 20);
-        CHECK(update.new_attribute_size == 20);
+        CHECK(update.range.begin == 20);
+        CHECK(update.range.end == 40);
+        CHECK(update.new_size == 20);
     }
 
     attribute_collection.begin_protect();
     for (size_t j = 0; j < attribute_collection.size(); j += 2) {
         attribute_collection[j] = double(3 * j);
     }
-    attribute_collection.end_protect();
+    update_index_opt = attribute_collection.end_protect();
+    REQUIRE(update_index_opt.has_value());
+    update_index = update_index_opt.value();
     {
-        size_t update_index = attribute_recorder.updates_size() - 1;
+        REQUIRE(update_index == attribute_recorder.updates_size() - 1);
         AttributeCollectionUpdate update = attribute_recorder.update(update_index);
-        CHECK(update.range.begin == update.new_attribute_size);
-        CHECK(update.range.end == (update.new_attribute_size + update.new_attribute_size / 2));
-        CHECK(update.new_attribute_size == attribute_collection.size());
+        CHECK(update.range.begin == 20 + 20);
+        CHECK(update.range.end == (update.range.begin + update.new_size / 2));
+        CHECK(update.new_size == attribute_collection.size());
     }
 
     for (size_t j = 0; j < attribute_collection.size(); ++j) {
@@ -99,7 +109,7 @@ TEST_CASE("complex_recorder", "[attribute_recording]")
     File file("complex_recorder.hd5", File::ReadWrite | File::Create | File::Truncate);
 
 
-    AttributeCollection<double> attribute_collection;
+    AttributeCollection<TestComplexStruct> attribute_collection;
     attribute_collection.resize(5);
     AttributeCollectionRecorder attribute_recorder(file, "attribute1", attribute_collection);
 

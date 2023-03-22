@@ -128,18 +128,20 @@ public:
 
 protected:
     virtual AttributeCollectionUpdate record_value_changes() = 0;
+    virtual AttributeCollectionUpdate record_entire_state() = 0;
     // returns the index of the recorded changes in the updates_dataset
     size_t record();
+    size_t record_initial_state();
 
     // load a particular set of attribute changes from a particular dataset
-    virtual void load(
-        const AttributeCollectionUpdate& changes,
-        const HighFive::DataSet& data_set) = 0;
+    virtual void apply_update(const AttributeCollectionUpdate& update) = 0;
 
     // undoes a particular change to an attribute
-    virtual void unload(
-        const AttributeCollectionUpdate& changes,
-        const HighFive::DataSet& data_set) = 0;
+    virtual void unapply_update(const AttributeCollectionUpdate& update) = 0;
+
+
+    void load(size_t index);
+    void unload(size_t index);
 
     virtual AbstractAttributeCollection& abstract_attribute_collection() = 0;
 
@@ -175,13 +177,17 @@ public:
     }
 
     AttributeCollectionUpdate record_value_changes() override;
+    AttributeCollectionUpdate record_entire_state() override;
     // load a particular set of attribute changes from a particular dataset. loading backwards
-    void load(const AttributeCollectionUpdate& changes, const HighFive::DataSet& data_set) override;
+    void apply_update(const AttributeCollectionUpdate& update) override;
 
     // undoes a particular change to an attribute
-    void unload(const AttributeCollectionUpdate& changes, const HighFive::DataSet& data_set)
-        override;
+    void unapply_update(const AttributeCollectionUpdate& update) override;
     using AttributeCollectionSerializationBase::record;
+
+private:
+    std::vector<AttributeCollectionValueChange<T>> get_value_changes(
+        const AttributeCollectionUpdate& update) const;
 
 private:
     AttributeCollection<T>& attribute_collection;
@@ -200,8 +206,8 @@ struct AttributeCollectionUpdate
 
     AttributeCollectionUpdate(size_t begin, size_t end, size_t old_size, size_t size);
 
-    size_t old_attribute_size = 0;
-    size_t new_attribute_size = 0;
+    size_t old_size = 0;
+    size_t new_size = 0;
     AttributeCollectionRange range;
 
     static HighFive::CompoundType datatype();
@@ -260,59 +266,64 @@ AttributeCollectionUpdate AttributeCollectionSerialization<T>::record_value_chan
 }
 
 template <typename T>
-void AttributeCollectionSerialization<T>::load(
-    const AttributeCollectionUpdate& changes,
-    const HighFive::DataSet& data_set)
+AttributeCollectionUpdate AttributeCollectionSerialization<T>::record_entire_state()
 {
-    // the update data
-    std::vector<AttributeCollectionValueChange<T>> updates;
+    const std::map<size_t, T>& rollback_list = attribute_collection.m_rollback_list.local();
+    const size_t old_size = attribute_collection.m_rollback_size.local();
+    const auto& attributes = attribute_collection.m_attributes;
+    // const tbb::concurrent_vector<T>& attributes = attribute_collection.m_attributes;
 
-    // compute hte parts of hte update data we want to read
-    std::vector<size_t> start, size;
-    start.emplace_back(changes.range.begin);
-    size.emplace_back(changes.range.end - changes.range.begin);
 
-    // read the data
-    data_set.select(start, size).read(updates);
+    std::vector<UpdateData> data;
+    data.reserve(attribute_collection.size());
+    auto& attr_data = attribute_collection.m_attributes;
+    for (size_t index = 0; index < attr_data.size(); ++index) {
+        const T& new_value = attr_data[index];
+        data.emplace_back(UpdateData{index, T{}, new_value});
+    }
 
+    auto [start, end] = utils::append_values_to_dataset(value_changes_dataset, data);
+    return AttributeCollectionUpdate(start, end, old_size, attribute_collection.size());
+    // return std::array<size_t, 3>{{start, end, attribute_collection.m_rollback_size.local(),
+    // attribute_collection.size()}};
+}
+
+template <typename T>
+void AttributeCollectionSerialization<T>::apply_update(const AttributeCollectionUpdate& update)
+{
     // resize the AC to the new size
-    attribute_collection.resize(changes.new_attribute_size);
+    attribute_collection.resize(update.new_size);
 
 
     // write data
-    for (const AttributeCollectionValueChange<T>& upd : updates) {
+    for (const AttributeCollectionValueChange<T>& upd : get_value_changes(update)) {
         attribute_collection[upd.index] = upd.new_value;
     }
 }
 template <typename T>
-void AttributeCollectionSerialization<T>::unload(
-    const AttributeCollectionUpdate& changes,
-    const HighFive::DataSet& data_set)
+void AttributeCollectionSerialization<T>::unapply_update(const AttributeCollectionUpdate& update)
 {
-    attribute_collection.begin_protect();
+    attribute_collection.resize(update.old_size);
 
-    attribute_collection.m_rollback_size.local() = changes.old_attribute_size;
-
-
-    // the update data
-    std::vector<AttributeCollectionValueChange<T>> updates;
-
-
-    // compute the part of the input data we need to parse
-    std::vector<size_t> start, size;
-    start.emplace_back(changes.range.begin);
-    size.emplace_back(changes.range.end - changes.range.begin);
-
-    //
-    data_set.select(start, size).read(updates);
-
-    auto& rollback_list = attribute_collection.m_rollback_list.local();
-
-    for (const AttributeCollectionValueChange<T>& upd : updates) {
-        rollback_list[upd.index] = upd.old_value;
+    for (const AttributeCollectionValueChange<T>& upd : get_value_changes(update)) {
+        attribute_collection[upd.index] = upd.old_value;
     }
+}
+template <typename T>
+std::vector<AttributeCollectionValueChange<T>> AttributeCollectionSerialization<T>::get_value_changes(
+    const AttributeCollectionUpdate& update) const
+{
+    // the update data
+    std::vector<AttributeCollectionValueChange<T>> value_changes;
 
-    attribute_collection.rollback();
+    // compute hte parts of hte update data we want to read
+    std::vector<size_t> start, size;
+    start.emplace_back(update.range.begin);
+    size.emplace_back(update.range.end - update.range.begin);
+
+    // read the data
+    value_changes_dataset.select(start, size).read(value_changes);
+    return value_changes;
 }
 
 

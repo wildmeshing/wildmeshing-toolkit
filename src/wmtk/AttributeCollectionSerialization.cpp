@@ -3,9 +3,7 @@
 
 HIGHFIVE_REGISTER_TYPE(wmtk::AttributeCollectionRange, wmtk::AttributeCollectionRange::datatype);
 using namespace wmtk;
-HIGHFIVE_REGISTER_TYPE(
-    wmtk::AttributeCollectionUpdate,
-    wmtk::AttributeCollectionUpdate::datatype);
+HIGHFIVE_REGISTER_TYPE(wmtk::AttributeCollectionUpdate, wmtk::AttributeCollectionUpdate::datatype);
 
 
 HighFive::CompoundType AttributeCollectionUpdate::datatype()
@@ -28,17 +26,19 @@ AttributeCollectionSerializationBase::AttributeCollectionSerializationBase(
     const std::string& name,
     const HighFive::DataType& data_type)
     : AttributeCollectionSerializationBase(
-            utils::create_extendable_dataset(file, name + "_value_changes", data_type),
-            utils::create_extendable_dataset(file, name + "_update", AttributeCollectionUpdate::datatype())
-            )
+          utils::create_extendable_dataset(file, name + "_value_changes", data_type),
+          utils::create_extendable_dataset(
+              file,
+              name + "_update",
+              AttributeCollectionUpdate::datatype()))
 {}
 
 
 AttributeCollectionSerializationBase::AttributeCollectionSerializationBase(
     HighFive::DataSet&& value_changes_ds,
-    HighFive::DataSet&& updates_ds):
-    value_changes_dataset(value_changes_ds),
-    updates_dataset(updates_ds)
+    HighFive::DataSet&& updates_ds)
+    : value_changes_dataset(value_changes_ds)
+    , updates_dataset(updates_ds)
 {}
 
 AttributeCollectionSerializationBase::~AttributeCollectionSerializationBase() = default;
@@ -58,24 +58,29 @@ HighFive::DataSetCreateProps AttributeCollectionSerializationBase::create_proper
 size_t AttributeCollectionSerializationBase::record()
 {
     AttributeCollectionUpdate update = record_value_changes();
-    return utils::append_value_to_dataset(updates_dataset, update);
+    return utils::append_value_to_dataset(updates_dataset, update) - 1;
+}
 
+size_t AttributeCollectionSerializationBase::record_initial_state()
+{
+    AttributeCollectionUpdate update = record_entire_state();
+    return utils::append_value_to_dataset(updates_dataset, update) - 1;
 }
 
 // the number of updates serialized
-size_t AttributeCollectionSerializationBase::changes_size() const {
-    return  value_changes_dataset.getElementCount();
+size_t AttributeCollectionSerializationBase::changes_size() const
+{
+    return value_changes_dataset.getElementCount();
 }
 // the number of updates serialized
-size_t AttributeCollectionSerializationBase::updates_size() const {
-
-    return  updates_dataset.getElementCount();
+size_t AttributeCollectionSerializationBase::updates_size() const
+{
+    return updates_dataset.getElementCount();
 }
 
-AttributeCollectionUpdate  AttributeCollectionSerializationBase::update(size_t index) const {
-
-
-    assert(index < changes_size());
+AttributeCollectionUpdate AttributeCollectionSerializationBase::update(size_t index) const
+{
+    assert(index < updates_size());
     AttributeCollectionUpdate ret;
     std::vector<AttributeCollectionUpdate> retvec;
     updates_dataset.select({index}, {1}).read(retvec);
@@ -85,20 +90,30 @@ AttributeCollectionUpdate  AttributeCollectionSerializationBase::update(size_t i
 AttributeCollectionUpdate::AttributeCollectionUpdate(
     size_t begin,
     size_t end,
-    size_t old_size,
-    size_t size)
-    : old_attribute_size(old_size)
-    , new_attribute_size(size)
-    , range{begin,end}
+    size_t old_size_,
+    size_t new_size_)
+    : old_size(old_size_)
+    , new_size(new_size_)
+    , range{begin, end}
+{}
+void AttributeCollectionSerializationBase::load(size_t index)
 {
+    AttributeCollectionUpdate upd = update(index);
+    apply_update(upd);
+}
+void AttributeCollectionSerializationBase::unload(size_t index)
+{
+    AttributeCollectionUpdate upd = update(index);
+    unapply_update(upd);
 }
 
-//void read_attribute_changes()
+
+// void read_attribute_changes()
 //{
-//    std::vector<AttributeCollectionUpdate> attr_changes;
-//    std::vector<size_t> attr_start, attr_size;
-//    attr_start.emplace_back(tri_op.update_range_begin);
-//    attr_size.emplace_back(tri_op.update_range_end - tri_op.update_range_begin);
+//     std::vector<AttributeCollectionUpdate> attr_changes;
+//     std::vector<size_t> attr_start, attr_size;
+//     attr_start.emplace_back(tri_op.update_range_begin);
+//     attr_size.emplace_back(tri_op.update_range_end - tri_op.update_range_begin);
 //
-//    logger.attribute_changes_dataset.select(attr_start, attr_size).read(attr_changes);
-//}
+//     logger.attribute_changes_dataset.select(attr_start, attr_size).read(attr_changes);
+// }

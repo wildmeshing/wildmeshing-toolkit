@@ -1,3 +1,8 @@
+#pragma once
+#include <wmtk/AttributeCollectionSerialization.h>
+#include <wmtk/AttributeCollection.hpp>
+#include <wmtk/utils/Hdf5Utils.hpp>
+
 
 namespace wmtk {
 
@@ -7,13 +12,11 @@ class AttributeCollectionReplayer
 {
 public:
     template <typename T>
-    create(HighFive::File& file, const std::string& name, AttributeCollection<T>& attr_);
-
-protected:
-    // the file being serialized to, the name of the attribute, and information on how the data
-    // should be serialized
     AttributeCollectionReplayer(
-        std::unique_ptr<AttributeCollectionSerializationBase>&& serialization);
+        HighFive::File& file,
+        const std::string& name,
+        AttributeCollection<T>& attr_);
+
     ~AttributeCollectionReplayer();
 
 
@@ -21,34 +24,42 @@ protected:
     bool step_backward();
 
 protected:
+    // the file being serialized to, the name of the attribute, and information on how the data
+    // should be serialized
+    AttributeCollectionReplayer(
+        std::unique_ptr<AttributeCollectionSerializationBase>&& serialization);
     // friend class OperationSerialization;
 
-    // returns the range of values used and size
-    // {start_index, end_index, new size of data}
-    std::array<size_t, 3> record(HighFive::DataSet& data_set);
 
-    // load a particular set of attribute changes from a particular dataset
-    void load(const AttributeChanges& changes, const HighFive::DataSet& data_set);
+    // the number of updates serialized
+    size_t updates_size() const;
+    // indexe over updates
+    size_t current_update_index() const { return m_current_update_index; }
 
-    // undoes a particular change to an attribute
-    void unload(const AttributeChanges& changes, const HighFive::DataSet& data_set);
+
 
 
 protected:
     std::unique_ptr<AttributeCollectionSerializationBase> m_serialization;
-    size_t current_index = 0;
+    size_t m_current_update_index = 0;
+
+private:
+    // load a particular set of attribute changes from a particular dataset
+    void load(size_t update_index);
+
+    // undoes a particular change to an attribute
+    void unload(size_t update_index);
 };
 
 
 // Class capable of recording updates to a single attribute
 template <typename T>
-AttributeCollectionReplayer::create(
+AttributeCollectionReplayer::AttributeCollectionReplayer(
     HighFive::File& file,
     const std::string& name,
     AttributeCollection<T>& attr_)
-{
-    return AttributeCollectionReplayer(
-        std::make_unique<AttributeCollectionSerialization<T>>(file, name, attr_));
-}
+    : AttributeCollectionReplayer(
+          std::make_unique<AttributeCollectionSerialization<T>>(file, name, attr_))
+{}
 
 } // namespace wmtk

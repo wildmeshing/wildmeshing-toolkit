@@ -4,6 +4,15 @@
 
 using namespace wmtk;
 
+void AbstractAttributeCollection::add_recorder(AttributeCollectionRecorder* ptr) {
+
+    recorder_ptrs.emplace_back(ptr);
+    ptr->record_initial_state();
+}
+void AbstractAttributeCollection::remove_recorder(AttributeCollectionRecorder* ptr) {
+    recorder_ptrs.remove(ptr);
+
+}
 void AbstractAttributeCollection::begin_protect()
 {
     in_protected.local() = true;

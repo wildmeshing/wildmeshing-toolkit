@@ -1,4 +1,4 @@
-
+/*
 #include <wmtk/TriMesh.h>
 #include <wmtk/utils/OperationLogger.h>
 #include <wmtk/utils/OperationReplayer.h>
@@ -150,3 +150,4 @@ size_t OperationReplayer::play_to(size_t end)
     return (current_index = end);
 }
 
+*/

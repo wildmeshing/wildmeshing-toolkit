@@ -19,6 +19,7 @@ namespace wmtk {
  *
  */
 class AttributeCollectionRecorder;
+class AttributeCollectionReplayer;
 template <typename T>
 class AttributeCollectionSerialization;
 class AbstractAttributeCollection
@@ -37,10 +38,17 @@ public:
     template <typename T>
     friend class AttributeCollectionSerialization;
     friend class AttributeCollectionRecorder;
+    friend class AttributeCollectionReplayer;
 
+    // checks 
+    bool has_recorders() const { return !recorder_ptrs.empty(); }
+    void add_recorder(AttributeCollectionRecorder*);
+    void remove_recorder(AttributeCollectionRecorder*);
 protected:
     tbb::enumerable_thread_specific<size_t> m_rollback_size;
     tbb::enumerable_thread_specific<bool> in_protected{false};
+
+private:
     // the AttributeCollectionRecorder is in charge of cleaning this up
     // TODO: is there a point in making this concurrent? attribute collections should identify their
     // recorders at times where the number of threads is pretty static?
@@ -54,10 +62,19 @@ struct AttributeCollection : public AbstractAttributeCollection
     void move(size_t from, size_t to) override
     {
         if (from == to) return;
+            // disallow unprotected access with an active recorder
+        if (!in_protected.local()) {
+            assert(!has_recorders());
+        }
         m_attributes[to] = std::move(m_attributes[from]);
     }
     void resize(size_t s) override
     {
+
+        // disallow unprotected access with an active recorder
+        if (!in_protected.local()) {
+            assert(!has_recorders());
+        }
         m_attributes.grow_to_at_least(s);
         // if (m_attributes.size() > s) {
         //     m_attributes.resize(s);
@@ -70,13 +87,6 @@ struct AttributeCollection : public AbstractAttributeCollection
 
     void grow_to_at_least(size_t s) { m_attributes.grow_to_at_least(s); }
 
-    bool assign(size_t to, T&& val) // always use this in OP_after
-    {
-        m_attributes[to] = val;
-        if (in_protected.local()) m_rollback_list.local()[to] = val;
-        // TODO: are locks necessary? not now.
-        return true;
-    }
     /**
      * @brief retrieve the protected attribute data on operation-fail
      *
@@ -115,6 +125,9 @@ struct AttributeCollection : public AbstractAttributeCollection
     {
         if (in_protected.local()) {
             m_rollback_list.local().emplace(i, m_attributes[i]);
+        } else {
+            // disallow unprotected access with an active recorder
+            assert(!has_recorders());
         }
         return m_attributes[i];
     }

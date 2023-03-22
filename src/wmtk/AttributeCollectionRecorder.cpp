@@ -10,7 +10,8 @@ AttributeCollectionRecorder::AttributeCollectionRecorder(
 {
     AbstractAttributeCollection& aac = m_serialization->abstract_attribute_collection();
 
-    aac.recorder_ptrs.emplace_back(this);
+    aac.add_recorder(this);
+
 }
 
 
@@ -18,7 +19,7 @@ AttributeCollectionRecorder::~AttributeCollectionRecorder()
 {
     AbstractAttributeCollection& aac = m_serialization->abstract_attribute_collection();
 
-    aac.recorder_ptrs.remove(this);
+    aac.remove_recorder(this);
 }
 
 
@@ -27,21 +28,11 @@ size_t AttributeCollectionRecorder::record()
     return m_serialization->record();
 }
 
-// load a particular set of attribute changes from a particular dataset
-void AttributeCollectionRecorder::load(
-    const AttributeCollectionUpdate& update,
-    const HighFive::DataSet& data_set)
+size_t AttributeCollectionRecorder::record_initial_state()
 {
-    m_serialization->load(update, data_set);
+    return m_serialization->record_initial_state();
 }
 
-// undoes a particular change to an attribute
-void AttributeCollectionRecorder::unload(
-    const AttributeCollectionUpdate& update,
-    const HighFive::DataSet& data_set)
-{
-    m_serialization->load(update, data_set);
-}
 
 size_t AttributeCollectionRecorder::updates_size() const
 {

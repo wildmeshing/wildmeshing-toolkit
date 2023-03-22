@@ -6,6 +6,7 @@
 
 namespace wmtk {
 
+    class AbstractAttributeCollection;
 // Interface for adding an attribute to a logged hdf5 file
 class AttributeCollectionRecorder
 {
@@ -24,10 +25,12 @@ public:
     // number of individual value changes recorded
     size_t changes_size() const;
 
-    size_t record();
     AttributeCollectionUpdate  update(size_t index) const;
 
+    friend class AbstractAttributeCollection;
 protected:
+    size_t record();
+    size_t record_initial_state();
     // the file being serialized to, the name of the attribute, and information on how the data
     // should be serialized
     AttributeCollectionRecorder(
@@ -35,11 +38,6 @@ protected:
     // friend class OperationSerialization;
 
 
-    // load a particular set of attribute changes from a particular dataset
-    void load(const AttributeCollectionUpdate& update, const HighFive::DataSet& data_set);
-
-    // undoes a particular change to an attribute
-    void unload(const AttributeCollectionUpdate& update, const HighFive::DataSet& data_set);
 
 protected:
     std::unique_ptr<AttributeCollectionSerializationBase> m_serialization;
