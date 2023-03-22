@@ -265,31 +265,3 @@ TEST_CASE("autodiff vs finitediff")
 
 // TODO: Try out sin(x) with periodic boundary cond + autodiff + gradient
 
-
-TEST_CASE("accuracy image operations")
-{
-    using DScalar = wmtk::EdgeLengthEnergy::DScalar;
-    Image image(100, 100);
-    image.load(
-        "/home/yunfan/data/test_03.exr",
-        WrappingMode::MIRROR_REPEAT,
-        WrappingMode::MIRROR_REPEAT);
-    AdaptiveTessellation m;
-    Eigen::MatrixXd V;
-    Eigen::MatrixXi F;
-    igl::read_triangle_mesh("/home/yunfan/data/input.obj", V, F);
-    m.create_mesh(V, F);
-    m.set_parameters(
-        0.001,
-        image,
-        WrappingMode::MIRROR_REPEAT,
-        EDGE_LEN_TYPE::ACCURACY,
-        ENERGY_TYPE::EDGE_QUADRATURE,
-        true);
-    m.split_all_edges();
-    m.write_displaced_obj("image_accuracy_split_03.obj", m.mesh_parameters.m_project_to_3d);
-    // m.swap_all_edges();
-    // m.write_displaced_obj("image_accuracy_swap.obj", m.mesh_parameters.m_project_to_3d);
-    // m.smooth_all_vertices();
-    // m.write_displaced_obj("image_accuracy_smooth.obj", m.mesh_parameters.m_project_to_3d);
-}
