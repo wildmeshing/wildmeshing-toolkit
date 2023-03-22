@@ -107,18 +107,6 @@ bool AdaptiveTessellation::collapse_edge_before(const Tuple& edge_tuple)
     //     cache.local().max_energy = std::max(cache.local().max_energy, get_quality(tri));
     // }
     // mesh_parameters.m_max_energy = cache.local().max_energy;
-
-    std::set<Tuple> one_ring;
-
-    for (auto tri : get_one_ring_tris_for_vertex(edge_tuple)) one_ring.insert(tri);
-    for (auto tri : get_one_ring_tris_for_vertex(edge_tuple.switch_vertex(*this)))
-        one_ring.insert(tri);
-
-    double error = 0;
-    for (auto tri : one_ring) error += get_area_accuracy_error_per_face(tri);
-
-    cache.local().error = error;
-
     return true;
 }
 bool AdaptiveTessellation::collapse_edge_after(const Tuple& edge_tuple)
@@ -202,7 +190,7 @@ bool AdaptiveTessellation::collapse_edge_after(const Tuple& edge_tuple)
     }
     // check quality
     // if error increases more than 10% return false
-    if ((current_error - cache.local().error) / cache.local().error > 0.1) return false;
+    if (current_error > 1.1 * mesh_parameters.m_accuracy_threshold) return false;
     // // check quality
     // auto tris = get_one_ring_tris_for_vertex(t);
     // for (auto tri : tris) {

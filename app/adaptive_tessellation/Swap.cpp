@@ -109,9 +109,8 @@ auto swap_accuracy_cost = [&swap_cost](auto& m, const TriMesh::Tuple& e) {
                 e_after += m.mesh_parameters.m_displacement->get_error_per_triangle(triangle2);
             }
 
-            // negative, if error increase
-            // positive, if error decrease
-            if ((e_before - e_after) < 0) // the accuracy decreases more than 10%
+            if (e_after < 1.1 * m.mesh_parameters.m_accuracy_threshold)
+                // the accuracy decreases more than 10%
                 return -std::numeric_limits<double>::infinity();
 
             return swap_cost(m, e) * (e_before - e_after);
