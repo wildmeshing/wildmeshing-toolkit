@@ -64,11 +64,10 @@ void AdaptiveTessellation::split_all_edges()
             if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::ACCURACY) {
                 if (length < m.mesh_parameters.m_accuracy_threshold) return false;
             } else if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
-                wmtk::logger().info("error1 {} error2 {} length {}", error1, error2, length);
                 if (error1 < m.mesh_parameters.m_accuracy_threshold &&
                     error2 < m.mesh_parameters.m_accuracy_threshold)
                     return false;
-            } else if (length < 4. / 3. * m.mesh_parameters.m_target_l)
+            } else if (length < 4. / 3. * m.mesh_parameters.m_quality_threshold)
                 return false;
             return true;
         };

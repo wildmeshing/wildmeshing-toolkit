@@ -25,6 +25,12 @@ auto renew = [](auto& m, auto op, auto& tris) {
 
 void AdaptiveTessellation::collapse_all_edges()
 {
+    // collapse is not define for EDGE_QUADRATURE
+    // collapse in AREA_QUADRATURE uses 3d edge length
+    mesh_parameters.m_get_length = [&](const Tuple& edge_tuple) -> double {
+        return this->get_length3d(edge_tuple);
+    };
+
     for (auto f : get_faces()) assert(!is_inverted(f));
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     auto collect_tuples = tbb::concurrent_vector<Tuple>();
@@ -37,15 +43,15 @@ void AdaptiveTessellation::collapse_all_edges()
     auto setup_and_execute = [&](auto executor) {
         executor.renew_neighbor_tuples = renew;
         executor.priority = [&](auto& m, [[maybe_unused]] auto _, auto& e) {
-            return -m.mesh_parameters.m_get_length(e.vid(m), e.switch_vertex(m).vid(m));
+            return -m.mesh_parameters.m_get_length(e);
         };
         executor.num_threads = NUM_THREADS;
         executor.is_weight_up_to_date = [](auto& m, auto& ele) {
             auto& [weight, op, tup] = ele;
-            auto length = m.mesh_parameters.m_get_length(tup.vid(m), tup.switch_vertex(m).vid(m));
+            auto length = m.mesh_parameters.m_get_length(tup);
             if (length != -weight) return false;
 
-            if (length > (4. / 5. * m.mesh_parameters.m_target_l)) return false;
+            if (length > (4. / 5. * m.mesh_parameters.m_quality_threshold)) return false;
 
             return true;
         };
@@ -71,11 +77,9 @@ bool AdaptiveTessellation::collapse_edge_before(const Tuple& edge_tuple)
         vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].curve_id)
         return false;
 
-    double length3d = mesh_parameters.m_get_length(
-        edge_tuple.vid(*this),
-        edge_tuple.switch_vertex(*this).vid(*this));
+    double length3d = mesh_parameters.m_get_length(edge_tuple);
     // enforce heuristic
-    assert(length3d < 4. / 5. * mesh_parameters.m_target_l);
+    assert(length3d < 4. / 5. * mesh_parameters.m_quality_threshold);
 
     // record boundary vertex as boudnary_vertex in vertex attribute for accurate collapse after
     // boundary operations
@@ -94,14 +98,26 @@ bool AdaptiveTessellation::collapse_edge_before(const Tuple& edge_tuple)
         return false;
     cache.local().v1 = edge_tuple.vid(*this);
     cache.local().v2 = edge_tuple.switch_vertex(*this).vid(*this);
+    cache.local().error = length3d;
     cache.local().partition_id = vertex_attrs[edge_tuple.vid(*this)].partition_id;
-    // get max_energy
-    cache.local().max_energy = get_quality(edge_tuple);
-    auto tris = get_one_ring_tris_for_vertex(edge_tuple);
-    for (auto tri : tris) {
-        cache.local().max_energy = std::max(cache.local().max_energy, get_quality(tri));
-    }
-    mesh_parameters.m_max_energy = cache.local().max_energy;
+    // // get max_energy
+    // cache.local().max_energy = get_quality(edge_tuple);
+    // auto tris = get_one_ring_tris_for_vertex(edge_tuple);
+    // for (auto tri : tris) {
+    //     cache.local().max_energy = std::max(cache.local().max_energy, get_quality(tri));
+    // }
+    // mesh_parameters.m_max_energy = cache.local().max_energy;
+
+    std::set<Tuple> one_ring;
+
+    for (auto tri : get_one_ring_tris_for_vertex(edge_tuple)) one_ring.insert(tri);
+    for (auto tri : get_one_ring_tris_for_vertex(edge_tuple.switch_vertex(*this)))
+        one_ring.insert(tri);
+
+    double error = 0;
+    for (auto tri : one_ring) error += get_area_accuracy_error_per_face(tri);
+
+    cache.local().error = error;
 
     return true;
 }
@@ -112,7 +128,11 @@ bool AdaptiveTessellation::collapse_edge_after(const Tuple& edge_tuple)
     if (vertex_attrs[cache.local().v1].fixed && vertex_attrs[cache.local().v2].fixed) return false;
 
     // adding heuristic decision. If length2 < 4. / 5. * 4. / 5. * m.m_target_l * m.m_target_l always collapse
-    double length3d = mesh_parameters.m_get_length(cache.local().v1, cache.local().v2);
+    double length3d = cache.local().error;
+    // enforce heuristic
+    if (length3d >= (4. / 5. * mesh_parameters.m_quality_threshold)) {
+        return false;
+    }
 
     auto vid = edge_tuple.vid(*this);
     Eigen::Vector2d p;
@@ -120,37 +140,6 @@ bool AdaptiveTessellation::collapse_edge_after(const Tuple& edge_tuple)
     double mod_length =
         mesh_parameters.m_boundary.m_arclengths[vertex_attrs[edge_tuple.vid(*this)].curve_id]
             .back();
-
-    if (vertex_attrs[cache.local().v1].boundary_vertex &&
-        vertex_attrs[cache.local().v2].boundary_vertex) {
-        vertex_attrs[vid].boundary_vertex = true;
-        vertex_attrs[vid].curve_id = vertex_attrs[cache.local().v1].curve_id;
-        // compare collapse to which one would give lower energy
-        vertex_attrs[vid].pos = vertex_attrs[cache.local().v1].pos;
-        vertex_attrs[vid].t = std::fmod(vertex_attrs[cache.local().v1].t, mod_length);
-        auto energy1 = get_one_ring_energy(edge_tuple).first;
-        vertex_attrs[vid].pos = vertex_attrs[cache.local().v2].pos;
-        vertex_attrs[vid].t = std::fmod(vertex_attrs[cache.local().v2].t, mod_length);
-        auto energy2 = get_one_ring_energy(edge_tuple).first;
-        p = energy1 < energy2 ? vertex_attrs[cache.local().v1].pos
-                              : vertex_attrs[cache.local().v2].pos;
-        t_parameter = energy1 < energy2 ? std::fmod(vertex_attrs[cache.local().v1].t, mod_length)
-                                        : std::fmod(vertex_attrs[cache.local().v2].t, mod_length);
-    } else if (vertex_attrs[cache.local().v1].boundary_vertex) {
-        p = vertex_attrs[cache.local().v1].pos;
-        t_parameter = std::fmod(vertex_attrs[cache.local().v1].t, mod_length);
-    } else if (vertex_attrs[cache.local().v2].boundary_vertex) {
-        p = vertex_attrs[cache.local().v2].pos;
-        t_parameter = std::fmod(vertex_attrs[cache.local().v2].t, mod_length);
-    } else {
-        assert(!vertex_attrs[cache.local().v1].boundary_vertex);
-        assert(!vertex_attrs[cache.local().v2].boundary_vertex);
-        p = (vertex_attrs[cache.local().v1].pos + vertex_attrs[cache.local().v2].pos) / 2.0;
-        t_parameter = std::fmod(
-            (vertex_attrs[cache.local().v1].t + vertex_attrs[cache.local().v2].t) / 2.0,
-            mod_length);
-        // !!! update t_parameter and check for periodicity + curvid !!!
-    }
     if (vertex_attrs[cache.local().v1].fixed) {
         p = vertex_attrs[cache.local().v1].pos;
         t_parameter = std::fmod(vertex_attrs[cache.local().v1].t, mod_length);
@@ -161,6 +150,38 @@ bool AdaptiveTessellation::collapse_edge_after(const Tuple& edge_tuple)
         assert(!vertex_attrs[cache.local().v1].fixed);
         assert(!vertex_attrs[cache.local().v2].fixed);
         // this is the same case as both are not boundary
+
+        if (vertex_attrs[cache.local().v1].boundary_vertex &&
+            vertex_attrs[cache.local().v2].boundary_vertex) {
+            vertex_attrs[vid].boundary_vertex = true;
+            vertex_attrs[vid].curve_id = vertex_attrs[cache.local().v1].curve_id;
+            // compare collapse to which one would give lower energy
+            vertex_attrs[vid].pos = vertex_attrs[cache.local().v1].pos;
+            vertex_attrs[vid].t = std::fmod(vertex_attrs[cache.local().v1].t, mod_length);
+            auto energy1 = get_one_ring_energy(edge_tuple).first;
+            vertex_attrs[vid].pos = vertex_attrs[cache.local().v2].pos;
+            vertex_attrs[vid].t = std::fmod(vertex_attrs[cache.local().v2].t, mod_length);
+            auto energy2 = get_one_ring_energy(edge_tuple).first;
+            p = energy1 < energy2 ? vertex_attrs[cache.local().v1].pos
+                                  : vertex_attrs[cache.local().v2].pos;
+            t_parameter = energy1 < energy2
+                              ? std::fmod(vertex_attrs[cache.local().v1].t, mod_length)
+                              : std::fmod(vertex_attrs[cache.local().v2].t, mod_length);
+        } else if (vertex_attrs[cache.local().v1].boundary_vertex) {
+            p = vertex_attrs[cache.local().v1].pos;
+            t_parameter = std::fmod(vertex_attrs[cache.local().v1].t, mod_length);
+        } else if (vertex_attrs[cache.local().v2].boundary_vertex) {
+            p = vertex_attrs[cache.local().v2].pos;
+            t_parameter = std::fmod(vertex_attrs[cache.local().v2].t, mod_length);
+        } else {
+            assert(!vertex_attrs[cache.local().v1].boundary_vertex);
+            assert(!vertex_attrs[cache.local().v2].boundary_vertex);
+            p = (vertex_attrs[cache.local().v1].pos + vertex_attrs[cache.local().v2].pos) / 2.0;
+            t_parameter = std::fmod(
+                (vertex_attrs[cache.local().v1].t + vertex_attrs[cache.local().v2].t) / 2.0,
+                mod_length);
+            // !!! update t_parameter and check for periodicity + curvid !!!
+        }
     }
     vertex_attrs[vid].pos = p;
     vertex_attrs[vid].t = t_parameter;
@@ -171,14 +192,21 @@ bool AdaptiveTessellation::collapse_edge_after(const Tuple& edge_tuple)
     vertex_attrs[vid].fixed =
         (vertex_attrs[cache.local().v1].fixed || vertex_attrs[cache.local().v2].fixed);
     vertex_attrs[vid].curve_id = vertex_attrs[cache.local().v1].curve_id;
-    // enforce heuristic
-    if (length3d < (4. / 5. * mesh_parameters.m_target_l)) {
-        return true;
+
+    auto one_ring = get_one_ring_tris_for_vertex(edge_tuple);
+    // check invariants here since get_area_accuracy_error_per_face requires valid triangle
+    if (!invariants(one_ring)) return false;
+    double current_error = 0.;
+    for (auto tri : one_ring) {
+        current_error += get_area_accuracy_error_per_face(tri);
     }
+    // check quality
+    // if error increases more than 10% return false
+    if ((current_error - cache.local().error) / cache.local().error > 0.1) return false;
     // // check quality
     // auto tris = get_one_ring_tris_for_vertex(t);
     // for (auto tri : tris) {
     //     if (get_quality(tri) > cache.local().max_energy) return false;
     // }
-    return false;
+    return true;
 }

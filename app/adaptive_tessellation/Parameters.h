@@ -83,7 +83,9 @@ public:
 
     std::function<double(const TriMesh::Tuple& edge_tuple)> m_get_length;
 
-    double m_accuracy_threshold = 0.01;
+    double m_quality_threshold = 0.01;
+    double m_accuracy_threshold = 0.001;
+
     EDGE_LEN_TYPE m_edge_length_type = EDGE_LEN_TYPE::ACCURACY;
 
     std::shared_ptr<wmtk::Displacement> m_displacement;

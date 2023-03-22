@@ -88,11 +88,13 @@ int main(int argc, char** argv)
 
     double target_l = config["target_edge_length"];
     wmtk::logger().info("/////target edge length: {}", target_l);
+    double target_accuracy = config["target_accuracy"];
+    wmtk::logger().info("/////target accuracy: {}", target_accuracy);
 
     adaptive_tessellation::ENERGY_TYPE energy_type =
-        adaptive_tessellation::ENERGY_TYPE::EDGE_LENGTH;
+        adaptive_tessellation::ENERGY_TYPE::AREA_QUADRATURE;
     adaptive_tessellation::EDGE_LEN_TYPE edge_len_type =
-        adaptive_tessellation::EDGE_LEN_TYPE::PT_PER_PIXEL;
+        adaptive_tessellation::EDGE_LEN_TYPE::AREA_ACCURACY;
     energy_type = config["energy_type"];
     edge_len_type = config["edge_len_type"];
     wmtk::logger().info("/////energy type: {}", energy_type);
@@ -108,6 +110,7 @@ int main(int argc, char** argv)
     };
 
     adaptive_tessellation.set_parameters(
+        target_accuracy,
         target_l,
         image,
         wrapping_mode,
