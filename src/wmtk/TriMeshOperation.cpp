@@ -73,7 +73,7 @@ void TriMeshOperation::set_vertex_size(TriMesh& m, size_t v_cnt)
 {
     m.current_vert_size = v_cnt;
     auto& vertex_con = vertex_connectivity(m);
-    vertex_con.m_attributes.resize(v_cnt);
+    vertex_con.m_attributes.grow_to_at_least(v_cnt);
     vertex_con.shrink_to_fit();
     m.resize_mutex(m.vert_capacity());
 }
@@ -82,7 +82,7 @@ void TriMeshOperation::set_tri_size(TriMesh& m, size_t t_cnt)
     m.current_tri_size = t_cnt;
 
     auto& tri_con = tri_connectivity(m);
-    tri_con.m_attributes.resize(t_cnt);
+    tri_con.m_attributes.grow_to_at_least(t_cnt);
     tri_con.shrink_to_fit();
 }
 
@@ -664,9 +664,9 @@ auto TriMeshConsolidateOperation::execute(TriMesh& m, const Tuple& t) -> Execute
     set_tri_size(m, t_cnt);
 
     // Resize user class attributes
-    if (m.p_vertex_attrs) m.p_vertex_attrs->resize(m.vert_capacity());
-    if (m.p_edge_attrs) m.p_edge_attrs->resize(m.tri_capacity() * 3);
-    if (m.p_face_attrs) m.p_face_attrs->resize(m.tri_capacity());
+    if (m.p_vertex_attrs) m.p_vertex_attrs->grow_to_at_least(m.vert_capacity());
+    if (m.p_edge_attrs) m.p_edge_attrs->grow_to_at_least(m.tri_capacity() * 3);
+    if (m.p_face_attrs) m.p_face_attrs->grow_to_at_least(m.tri_capacity());
 
     assert(m.check_edge_manifold());
     assert(m.check_mesh_connectivity_validity());

@@ -310,7 +310,8 @@ void AttributeCollectionSerialization<T>::unapply_update(const AttributeCollecti
     }
 }
 template <typename T>
-std::vector<AttributeCollectionValueChange<T>> AttributeCollectionSerialization<T>::get_value_changes(
+std::vector<AttributeCollectionValueChange<T>>
+AttributeCollectionSerialization<T>::get_value_changes(
     const AttributeCollectionUpdate& update) const
 {
     // the update data

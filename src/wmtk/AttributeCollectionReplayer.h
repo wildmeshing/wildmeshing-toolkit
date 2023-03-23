@@ -20,8 +20,23 @@ public:
     ~AttributeCollectionReplayer();
 
 
+    // sets the held attribute collection's state to the initial recorded state
+    bool reset_to_initial_state();
+    // runs forwards or backwards to a target update index
+    bool run_to_step(size_t index);
+    bool run_to_end();
+
+    // advances one set of updates
     bool step_forward();
+    // undoes one set of updates
     bool step_backward();
+
+    bool valid_current_update_index() const;
+
+    // the number of updates serialized
+    size_t updates_size() const;
+    // indexe over updates
+    size_t current_update_index() const { return m_current_update_index; }
 
 protected:
     // the file being serialized to, the name of the attribute, and information on how the data
@@ -29,14 +44,6 @@ protected:
     AttributeCollectionReplayer(
         std::unique_ptr<AttributeCollectionSerializationBase>&& serialization);
     // friend class OperationSerialization;
-
-
-    // the number of updates serialized
-    size_t updates_size() const;
-    // indexe over updates
-    size_t current_update_index() const { return m_current_update_index; }
-
-
 
 
 protected:

@@ -28,7 +28,11 @@ public:
     AbstractAttributeCollection();
     virtual ~AbstractAttributeCollection();
     virtual void move(size_t /*from*/, size_t to) = 0;
+    // resize an attribute, including shrinking its size
+    // in potentially parallel code use grow_to_at_least insetad
     virtual void resize(size_t) = 0;
+    // parallel-safe resize of teh data that can only increase the size of the held data
+    virtual void grow_to_at_least(size_t) = 0;
     virtual size_t size() const = 0;
     virtual void rollback() = 0;
     virtual void begin_protect();
@@ -40,10 +44,11 @@ public:
     friend class AttributeCollectionRecorder;
     friend class AttributeCollectionReplayer;
 
-    // checks 
+    // checks
     bool has_recorders() const { return !recorder_ptrs.empty(); }
     void add_recorder(AttributeCollectionRecorder*);
     void remove_recorder(AttributeCollectionRecorder*);
+
 protected:
     tbb::enumerable_thread_specific<size_t> m_rollback_size;
     tbb::enumerable_thread_specific<bool> in_protected{false};
@@ -62,7 +67,7 @@ struct AttributeCollection : public AbstractAttributeCollection
     void move(size_t from, size_t to) override
     {
         if (from == to) return;
-            // disallow unprotected access with an active recorder
+        // disallow unprotected access with an active recorder
         if (!in_protected.local()) {
             assert(!has_recorders());
         }
@@ -70,22 +75,34 @@ struct AttributeCollection : public AbstractAttributeCollection
     }
     void resize(size_t s) override
     {
-
         // disallow unprotected access with an active recorder
         if (!in_protected.local()) {
             assert(!has_recorders());
+
+        } else {
+            m_rollback_size.local() = m_attributes.size();
+            if (has_recorders()) {
+                auto& rollback = m_rollback_list.local();
+                for (size_t j = m_attributes.size(); j < s; ++j) {
+                    rollback[j] = m_attributes[j];
+                }
+            }
         }
-        m_attributes.grow_to_at_least(s);
+        m_attributes.resize(s);
         // if (m_attributes.size() > s) {
         //     m_attributes.resize(s);
         //     m_attributes.shrink_to_fit();
         // }
         // TODO: in Concurrent, vertex partition id, vertex mutex should be part of attribute
     }
+    auto begin() { return m_attributes.begin(); }
+    auto end() { return m_attributes.end(); }
+    auto begin() const { return m_attributes.begin(); }
+    auto end() const { return m_attributes.end(); }
 
     void shrink_to_fit() { m_attributes.shrink_to_fit(); }
 
-    void grow_to_at_least(size_t s) { m_attributes.grow_to_at_least(s); }
+    void grow_to_at_least(size_t s) override { m_attributes.grow_to_at_least(s); }
 
     /**
      * @brief retrieve the protected attribute data on operation-fail
@@ -93,6 +110,7 @@ struct AttributeCollection : public AbstractAttributeCollection
      */
     void rollback() override
     {
+        resize(m_rollback_size.local());
         for (auto& [i, v] : m_rollback_list.local()) {
             m_attributes[i] = std::move(v);
         }

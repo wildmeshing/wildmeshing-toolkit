@@ -47,7 +47,7 @@ ShortestEdgeCollapse::ShortestEdgeCollapse(
     m_envelope.use_exact = use_exact_envelope;
     p_vertex_attrs = &vertex_attrs;
 
-    vertex_attrs.resize(_m_vertex_positions.size());
+    vertex_attrs.grow_to_at_least(_m_vertex_positions.size());
 
     for (auto i = 0; i < _m_vertex_positions.size(); i++)
         vertex_attrs[i] = {_m_vertex_positions[i], 0, false};

@@ -18,9 +18,15 @@ int wmtk::TetMesh::get_next_empty_slot_t()
             }
             tet_connectivity_synchronizing_flag = true;
             auto current_capacity = m_tet_connectivity.size();
-            if(p_edge_attrs != nullptr) {p_edge_attrs->resize(2 * current_capacity * 6);}
-            if(p_face_attrs != nullptr) {p_face_attrs->resize(2 * current_capacity * 4);}
-            if(p_tet_attrs != nullptr) {p_tet_attrs->resize(2 * current_capacity);}
+            if (p_edge_attrs != nullptr) {
+                p_edge_attrs->grow_to_at_least(2 * current_capacity * 6);
+            }
+            if (p_face_attrs != nullptr) {
+                p_face_attrs->grow_to_at_least(2 * current_capacity * 4);
+            }
+            if (p_tet_attrs != nullptr) {
+                p_tet_attrs->grow_to_at_least(2 * current_capacity);
+            }
             m_tet_connectivity.grow_to_at_least(2 * current_capacity);
             tet_connectivity_synchronizing_flag = false;
             tet_connectivity_lock.unlock();
@@ -45,7 +51,9 @@ int wmtk::TetMesh::get_next_empty_slot_v()
             }
             vertex_connectivity_synchronizing_flag = true;
             auto current_capacity = m_vertex_connectivity.size();
-            if(p_vertex_attrs != nullptr) {p_vertex_attrs->resize(2 * current_capacity);}
+            if (p_vertex_attrs != nullptr) {
+                p_vertex_attrs->grow_to_at_least(2 * current_capacity);
+            }
             resize_vertex_mutex(2 * current_capacity);
             m_vertex_connectivity.grow_to_at_least(2 * current_capacity);
             vertex_connectivity_synchronizing_flag = false;
@@ -84,17 +92,17 @@ void wmtk::TetMesh::init(size_t n_vertices, const std::vector<std::array<size_t,
 
     // resize attributes
     if (p_vertex_attrs != nullptr) {
-        p_vertex_attrs->resize(n_vertices);
+        p_vertex_attrs->grow_to_at_least(n_vertices);
     }
     if (p_tet_attrs != nullptr) {
-        p_tet_attrs->resize(tets.size());
+        p_tet_attrs->grow_to_at_least(tets.size());
     }
 
     if (p_face_attrs != nullptr) {
-        p_face_attrs->resize(4 * tets.size());
+        p_face_attrs->grow_to_at_least(4 * tets.size());
     }
     if (p_edge_attrs != nullptr) {
-        p_edge_attrs->resize(6 * tets.size());
+        p_edge_attrs->grow_to_at_least(6 * tets.size());
     }
 }
 
@@ -635,17 +643,17 @@ void wmtk::TetMesh::consolidate_mesh()
     m_tet_connectivity.resize(t_cnt);
 
     if (p_vertex_attrs != nullptr) {
-        p_vertex_attrs->resize(v_cnt);
+        p_vertex_attrs->grow_to_at_least(v_cnt);
     }
     if (p_edge_attrs != nullptr) {
-        p_edge_attrs->resize(6 * t_cnt);
+        p_edge_attrs->grow_to_at_least(6 * t_cnt);
     }
 
     if (p_face_attrs != nullptr) {
-        p_face_attrs->resize(4 * t_cnt);
+        p_face_attrs->grow_to_at_least(4 * t_cnt);
     }
     if (p_tet_attrs != nullptr) {
-        p_tet_attrs->resize(t_cnt);
+        p_tet_attrs->grow_to_at_least(t_cnt);
     }
 
     assert(check_mesh_connectivity_validity());

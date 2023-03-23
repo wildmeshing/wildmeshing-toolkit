@@ -414,9 +414,9 @@ void TriMesh::create_mesh(size_t n_vertices, const std::vector<std::array<size_t
     // TODO: use more STL for filling in new vertex/tri
     // std::fill(m_vertex_connectivity.begin(), m_vertex_connectivity.end(), VertexConnectivity{});
     // std::fill(m_tri_connectivity.begin(), m_tri_connectivity.end(), TriangleConnectivity{});
-    // m_vertex_connectivity.resize(n_vertices, {});
-    // m_tri_connectivity.resize(tris.size(), {});
-    m_tri_connectivity.m_attributes.resize(tris.size());
+    // m_vertex_connectivity.grow_to_at_least(n_vertices, {});
+    // m_tri_connectivity.grow_to_at_least(tris.size(), {});
+    m_tri_connectivity.m_attributes.grow_to_at_least(tris.size());
 
     size_t hash_cnt = 0;
     for (int i = 0; i < tris.size(); i++) {
@@ -431,14 +431,14 @@ void TriMesh::create_mesh(size_t n_vertices, const std::vector<std::array<size_t
     build_vertex_connectivity(n_vertices);
 
     // Resize user class attributes
-    if (p_vertex_attrs) p_vertex_attrs->resize(vert_capacity());
-    if (p_edge_attrs) p_edge_attrs->resize(tri_capacity() * 3);
-    if (p_face_attrs) p_face_attrs->resize(tri_capacity());
+    if (p_vertex_attrs) p_vertex_attrs->grow_to_at_least(vert_capacity());
+    if (p_edge_attrs) p_edge_attrs->grow_to_at_least(tri_capacity() * 3);
+    if (p_face_attrs) p_face_attrs->grow_to_at_least(tri_capacity());
 }
 
 void TriMesh::build_vertex_connectivity(size_t n_vertices)
 {
-    m_vertex_connectivity.m_attributes.resize(n_vertices);
+    m_vertex_connectivity.m_attributes.grow_to_at_least(n_vertices);
     for (int i = 0; i < n_vertices; i++) {
         m_vertex_connectivity[i].m_is_removed = false;
     }
@@ -549,8 +549,8 @@ size_t TriMesh::get_next_empty_slot_t()
             }
             tri_connectivity_synchronizing_flag = true;
             auto current_capacity = m_tri_connectivity.size();
-            if (p_edge_attrs) p_edge_attrs->resize(2 * current_capacity * 3);
-            if (p_face_attrs) p_face_attrs->resize(2 * current_capacity);
+            if (p_edge_attrs) p_edge_attrs->grow_to_at_least(2 * current_capacity * 3);
+            if (p_face_attrs) p_face_attrs->grow_to_at_least(2 * current_capacity);
             m_tri_connectivity.grow_to_at_least(2 * current_capacity);
             tri_connectivity_synchronizing_flag = false;
             tri_connectivity_lock.unlock();
@@ -572,7 +572,7 @@ size_t TriMesh::get_next_empty_slot_v()
             }
             vertex_connectivity_synchronizing_flag = true;
             auto current_capacity = m_vertex_connectivity.size();
-            if (p_vertex_attrs) p_vertex_attrs->resize(2 * current_capacity);
+            if (p_vertex_attrs) p_vertex_attrs->grow_to_at_least(2 * current_capacity);
             resize_mutex(2 * current_capacity);
             m_vertex_connectivity.grow_to_at_least(2 * current_capacity);
             vertex_connectivity_synchronizing_flag = false;

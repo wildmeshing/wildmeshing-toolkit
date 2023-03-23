@@ -1,5 +1,6 @@
 
 #include <wmtk/AttributeCollectionRecorder.h>
+#include <wmtk/AttributeCollectionReplayer.h>
 
 WMTK_HDF5_REGISTER_ATTRIBUTE_TYPE(double)
 
@@ -46,6 +47,7 @@ TEST_CASE("double_recorder", "[attribute_recording]")
         CHECK(update.range.end == 20);
         CHECK(update.new_size == 20);
     }
+    spdlog::info("State: {}", fmt::join(attribute_collection, ","));
 
     attribute_collection.begin_protect();
 
@@ -55,7 +57,7 @@ TEST_CASE("double_recorder", "[attribute_recording]")
     }
 
     for (size_t j = 0; j < attribute_collection.size(); ++j) {
-        REQUIRE(attribute_collection[j] == 2 * j);
+        CHECK(attribute_collection[j] == 2 * j);
     }
 
     const auto& rollback_list = attribute_collection.m_rollback_list.local();
@@ -68,11 +70,14 @@ TEST_CASE("double_recorder", "[attribute_recording]")
     REQUIRE(update_index_opt.has_value());
     update_index = update_index_opt.value();
 
+    spdlog::info("State {}: {}", update_index, fmt::join(attribute_collection, ","));
+
     {
         AttributeCollectionUpdate update = attribute_recorder.update(update_index);
         CHECK(update.range.begin == 20);
         CHECK(update.range.end == 40);
         CHECK(update.new_size == 20);
+        CHECK(update.old_size == 20);
     }
 
     attribute_collection.begin_protect();
@@ -82,13 +87,16 @@ TEST_CASE("double_recorder", "[attribute_recording]")
     update_index_opt = attribute_collection.end_protect();
     REQUIRE(update_index_opt.has_value());
     update_index = update_index_opt.value();
+    spdlog::info("State {}: {}", update_index, fmt::join(attribute_collection, ","));
     {
         REQUIRE(update_index == attribute_recorder.updates_size() - 1);
         AttributeCollectionUpdate update = attribute_recorder.update(update_index);
         CHECK(update.range.begin == 20 + 20);
         CHECK(update.range.end == (update.range.begin + update.new_size / 2));
         CHECK(update.new_size == attribute_collection.size());
+        CHECK(update.old_size == attribute_collection.size());
     }
+
 
     for (size_t j = 0; j < attribute_collection.size(); ++j) {
         if (j % 2 == 0) {
@@ -98,8 +106,63 @@ TEST_CASE("double_recorder", "[attribute_recording]")
         }
     }
 
+    attribute_collection.begin_protect();
+    attribute_collection.resize(30);
+    update_index_opt = attribute_collection.end_protect();
+    REQUIRE(update_index_opt.has_value());
+    update_index = update_index_opt.value();
+    spdlog::info("State {}: {}", update_index, fmt::join(attribute_collection, ","));
     {
-        // File read_file("double_recorder.hd5", File::Read);
+        REQUIRE(update_index == attribute_recorder.updates_size() - 1);
+        AttributeCollectionUpdate update = attribute_recorder.update(update_index);
+        CHECK(update.range.begin == 50);
+        CHECK(update.range.end == update.range.begin + 10);
+        CHECK(update.new_size == 30);
+        CHECK(update.old_size == 20);
+    }
+    const AttributeCollection<double>& old_attribute_collection = attribute_collection;
+    {
+        update_index = 0;
+        File read_file("double_recorder.hd5", File::ReadOnly);
+
+        AttributeCollection<double> attribute_collection;
+        AttributeCollectionReplayer replayer(read_file, "attribute1", attribute_collection);
+
+        REQUIRE(attribute_collection.size() == 20);
+
+        for (size_t j = 0; j < attribute_collection.size(); ++j) {
+            CHECK(attribute_collection[j] == -double(j));
+        }
+        spdlog::info("State {}: {}", update_index, fmt::join(attribute_collection, ","));
+
+        // manually play to end
+        for (int j = 0; j < replayer.updates_size(); ++j) {
+            replayer.step_forward();
+            update_index = replayer.current_update_index() - 1;
+            spdlog::info("State {}: {}", update_index, fmt::join(attribute_collection, ","));
+        }
+        REQUIRE(attribute_collection.size() == old_attribute_collection.size());
+        for (size_t j = 0; j < old_attribute_collection.size(); ++j) {
+            CHECK(attribute_collection[j] == old_attribute_collection[j]);
+        }
+        // see how randomly resetting state works
+        replayer.reset_to_initial_state();
+        REQUIRE(attribute_collection.size() == 20);
+        for (size_t j = 0; j < attribute_collection.size(); ++j) {
+            CHECK(attribute_collection[j] == -double(j));
+        }
+        spdlog::info("Running to end");
+        replayer.run_to_end();
+        spdlog::info("Done running to end {}", replayer.current_update_index());
+        REQUIRE(attribute_collection.size() == old_attribute_collection.size());
+        for (size_t j = 0; j < old_attribute_collection.size(); ++j) {
+            CHECK(attribute_collection[j] == old_attribute_collection[j]);
+        }
+        replayer.run_to_step(0);
+        REQUIRE(attribute_collection.size() == 20);
+        for (size_t j = 0; j < attribute_collection.size(); ++j) {
+            CHECK(attribute_collection[j] == -double(j));
+        }
     }
 }
 

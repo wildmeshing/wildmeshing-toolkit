@@ -1,5 +1,4 @@
 #include "UniformRemeshing.h"
-#include "UniformRemeshingOperations.h"
 #include <igl/Timer.h>
 #include <igl/is_edge_manifold.h>
 #include <igl/predicates/predicates.h>
@@ -10,6 +9,7 @@
 #include <atomic>
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
+#include "UniformRemeshingOperations.h"
 using namespace app::remeshing;
 using namespace wmtk;
 
@@ -36,7 +36,7 @@ UniformRemeshing::UniformRemeshing(
 
     p_vertex_attrs = &vertex_attrs;
 
-    vertex_attrs.resize(_m_vertex_positions.size());
+    vertex_attrs.grow_to_at_least(_m_vertex_positions.size());
 
     for (auto i = 0; i < _m_vertex_positions.size(); i++)
         vertex_attrs[i] = {_m_vertex_positions[i], 0};
@@ -216,7 +216,7 @@ std::vector<TriMesh::Tuple> UniformRemeshing::new_edges_after(
 
 bool UniformRemeshing::swap_edge_before(const Tuple& t)
 {
-    //if (!TriMesh::swap_edge_before(t)) return false;
+    // if (!TriMesh::swap_edge_before(t)) return false;
     if (vertex_attrs[t.vid(*this)].freeze && vertex_attrs[t.switch_vertex(*this).vid(*this)].freeze)
         return false;
     return true;
@@ -267,7 +267,7 @@ std::vector<TriMesh::Tuple> UniformRemeshing::new_sub_edges_after_split(
 
 bool UniformRemeshing::collapse_edge_before(const Tuple& t)
 {
-    //if (!TriMesh::collapse_edge_before(t)) return false;
+    // if (!TriMesh::collapse_edge_before(t)) return false;
     if (vertex_attrs[t.vid(*this)].freeze || vertex_attrs[t.switch_vertex(*this).vid(*this)].freeze)
         return false;
     cache_edge_positions(t);
@@ -287,7 +287,7 @@ bool UniformRemeshing::collapse_edge_after(const TriMesh::Tuple& t)
 
 bool UniformRemeshing::split_edge_before(const Tuple& t)
 {
-    //if (!TriMesh::split_edge_before(t)) return false;
+    // if (!TriMesh::split_edge_before(t)) return false;
     cache_edge_positions(t);
     return true;
 }
@@ -449,7 +449,7 @@ bool UniformRemeshing::collapse_remeshing(double L)
     };
     if (NUM_THREADS > 0) {
         auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kPartition>();
-        
+
         executor.lock_vertices = edge_locker;
         setup_and_execute(executor);
     } else {
@@ -719,7 +719,4 @@ bool UniformRemeshing::write_triangle_mesh(std::string path)
 
     return manifold;
 }
-
-
-
 
