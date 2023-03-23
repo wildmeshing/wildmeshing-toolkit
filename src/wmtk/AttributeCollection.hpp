@@ -102,7 +102,13 @@ struct AttributeCollection : public AbstractAttributeCollection
 
     void shrink_to_fit() { m_attributes.shrink_to_fit(); }
 
-    void grow_to_at_least(size_t s) override { m_attributes.grow_to_at_least(s); }
+    void grow_to_at_least(size_t s) override { 
+
+        // disallow unprotected access with an active recorder
+        if (!in_protected.local()) {
+            assert(!has_recorders());
+        }
+        m_attributes.grow_to_at_least(s); }
 
     /**
      * @brief retrieve the protected attribute data on operation-fail
