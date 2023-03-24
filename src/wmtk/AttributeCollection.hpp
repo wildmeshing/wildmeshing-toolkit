@@ -116,7 +116,7 @@ struct AttributeCollection : public AbstractAttributeCollection
      */
     void rollback() override
     {
-        resize(m_rollback_size.local());
+        grow_to_at_least(m_rollback_size.local());
         for (auto& [i, v] : m_rollback_list.local()) {
             m_attributes[i] = std::move(v);
         }
