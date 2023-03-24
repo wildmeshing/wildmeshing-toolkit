@@ -38,28 +38,24 @@ auto TriMeshOperation::operator()(TriMesh& m, const Tuple& t) -> ExecuteReturnDa
     ExecuteReturnData retdata;
     retdata.success = false;
 
+    m.start_protected_connectivity();
+    m.start_protected_attributes();
     if (before(m, t)) {
-        m.start_protected_connectivity();
-        {
-            retdata = execute(m, t);
+        retdata = execute(m, t);
 
-            if (retdata.success) {
-                m.start_protected_attributes();
-
-                if (!(after(m, retdata) && invariants(m, retdata))) {
-                    retdata.success = false;
-
-                    m.rollback_protected_connectivity();
-                    m.rollback_protected_attributes();
-                }
-            } else {
+        if (retdata.success) {
+            if (!(after(m, retdata) && invariants(m, retdata))) {
+                retdata.success = false;
             }
         }
-        m.release_protected_connectivity();
-        m.release_protected_attributes();
-    } else {
     }
 
+    if (retdata.success == false) {
+        m.rollback_protected_connectivity();
+        m.rollback_protected_attributes();
+    }
+    m.release_protected_connectivity();
+    m.release_protected_attributes();
 
     return retdata;
 }
