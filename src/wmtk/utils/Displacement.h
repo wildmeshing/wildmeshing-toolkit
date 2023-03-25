@@ -17,8 +17,8 @@ public:
     virtual ~Displacement(){};
 
 public:
-    virtual double get(double x, double y) const = 0;
-    virtual DScalar get(const DScalar& x, const DScalar& y) const = 0;
+    virtual Eigen::Matrix<double, 3, 1> get(double x, double y) const = 0;
+    virtual Eigen::Matrix<DScalar, 3, 1> get(const DScalar& x, const DScalar& y) const = 0;
     virtual double get_error_per_edge(
         const Eigen::Matrix<double, 2, 1>& p1,
         const Eigen::Matrix<double, 2, 1>& p2) const = 0;
@@ -30,21 +30,33 @@ public:
     virtual DScalar get_error_per_triangle(
         const Eigen::Matrix<DScalar, 3, 2, Eigen::RowMajor>& triangle) = 0;
 };
+// class DisplacementImage : public Displacement
+// {
+//     get_error_per_edge;
+//     sampler;
+// };
 
+// class DisplacementMesh : public DisplacementImage
+// {
+// protected:
+//     std::array<wmtk::Image, 3> m_position_image;
+//     std::array<wmtk::Image, 3> m_normals_image;
+// };
 // Shared templated parent class
+// class DisplacementPlane : public DisplacementImage
 template <typename Derived>
 class DisplacementImage : public Displacement
 {
 protected:
     wmtk::Image m_image;
 
-public:
+protected:
     struct QuadrCache
     {
         wmtk::Quadrature quad;
         wmtk::Quadrature tmp;
     };
-    tbb::enumerable_thread_specific<QuadrCache> cache;
+    tbb::enumerable_thread_specific<QuadrCache> m_cache;
 
 public:
     DisplacementImage(const wmtk::Image img)
@@ -54,93 +66,89 @@ public:
     }
 
 public:
-    double get(double x, double y) const override
+    Eigen::Matrix<double, 3, 1> get(double x, double y) const override
     {
-        return static_cast<const Derived*>(this)->get(x, y);
+        auto z = static_cast<const Derived*>(this)->get_height(x, y);
+        Eigen::Matrix<double, 3, 1> coord_3d;
+        coord_3d << x, y, z;
+        return coord_3d;
     }
 
-    DScalar get(const DScalar& x, const DScalar& y) const override
+    Eigen::Matrix<DScalar, 3, 1> get(const DScalar& x, const DScalar& y) const override
     {
-        return static_cast<const Derived*>(this)->get(x, y);
+        auto z = static_cast<const Derived*>(this)->get_height(x, y);
+        Eigen::Matrix<DScalar, 3, 1> coord_3d;
+        coord_3d << x, y, z;
+        return coord_3d;
     }
     void set_image(const Image& image) { m_image = image; }
 
 public:
-    template <class T, int order>
-    inline T quadrature_error_1pixel_eval(
-        const Eigen::Matrix<T, 2, 3> edge_verts,
-        wmtk::LineQuadrature& quad) const
-    {
-        quad.get_quadrature(order);
-        T ret = static_cast<T>(0.0);
-        auto v1z = edge_verts(0, 2);
-        auto v2z = edge_verts(1, 2);
-        Eigen::Matrix<T, 1, 2> v12d, v22d;
-        v12d << edge_verts(0, 0), edge_verts(0, 1);
-        v22d << edge_verts(1, 0), edge_verts(1, 1);
-        // now do 1d quadrature
-        for (int i = 0; i < quad.points.rows(); i++) {
-            auto tmpu =
-                (1 - quad.points(i, 0)) * edge_verts(0, 0) + quad.points(i, 0) * edge_verts(1, 0);
-            auto tmpv =
-                (1 - quad.points(i, 0)) * edge_verts(0, 1) + quad.points(i, 0) * edge_verts(1, 1);
-            auto tmph = get(tmpu, tmpv);
-            auto tmpz = static_cast<T>(1 - quad.points(i, 0)) * v1z +
-                        static_cast<T>(quad.points(i, 0)) * v2z;
-            ret += static_cast<T>(quad.weights(i)) * abs(tmph - tmpz);
-        }
-        auto edge_norm = sqrt(
-            (v12d(0) - v22d(0)) * (v12d(0) - v22d(0)) + (v12d(1) - v22d(1)) * (v12d(1) - v22d(1)));
-        return ret * edge_norm;
-    }
-
     inline double get_error_per_edge(
         const Eigen::Matrix<double, 2, 1>& p1,
         const Eigen::Matrix<double, 2, 1>& p2) const override
     {
-        return get_error_per_edge_T(p1, p2);
+        return get_error_per_edge_T<double, 5>(p1, p2);
     }
 
     inline DScalar get_error_per_edge(
         const Eigen::Matrix<DScalar, 2, 1>& p1,
         const Eigen::Matrix<DScalar, 2, 1>& p2) const override
     {
-        return get_error_per_edge_T(p1, p2);
+        return get_error_per_edge_T<DScalar, 5>(p1, p2);
     }
 
-    template <class T>
+    template <class T, int order>
     inline T get_error_per_edge_T(
-        const Eigen::Matrix<T, 2, 1>& p1,
-        const Eigen::Matrix<T, 2, 1>& p2) const
+        const Eigen::Matrix<T, 2, 1>& uv1,
+        const Eigen::Matrix<T, 2, 1>& uv2) const
     {
-        auto v1z = get(p1(0), p1(1));
-        auto v2z = get(p2(0), p2(1));
+        auto p1_displaced = get(uv1(0), uv1(1));
+        auto p2_displaced = get(uv2(0), uv2(1));
         // get the pixel index of p1 and p2
         auto get_coordinate = [&](const T& x, const T& y) -> std::pair<int, int> {
             auto [xx, yy] = m_image.get_pixel_index(get_value(x), get_value(y));
             return {m_image.get_coordinate(xx, m_image.get_wrapping_mode_x()),
                     m_image.get_coordinate(yy, m_image.get_wrapping_mode_y())};
         };
-        auto [xx1, yy1] = get_coordinate(p1(0), p1(1));
-        auto [xx2, yy2] = get_coordinate(p2(0), p2(1));
+        auto [xx1, yy1] = get_coordinate(uv1(0), uv1(1));
+        auto [xx2, yy2] = get_coordinate(uv2(0), uv2(1));
         // get all the pixels in between p1 and p2
         auto pixel_num = std::max(abs(xx2 - xx1), abs(yy2 - yy1));
         if (pixel_num <= 0) return static_cast<T>(0.);
         assert(pixel_num > 0);
         T error = static_cast<T>(0.0);
+        auto norm_T = [&](const Eigen::Matrix<T, 1, Eigen::Dynamic> row_v) -> T {
+            T ret = static_cast<T>(0.);
+            for (auto i = 0; i < row_v.cols(); i++) {
+                auto debug_rowv = row_v(0, i);
+                ret += pow(row_v(0, i), 2);
+            }
+            return sqrt(ret);
+        };
         for (int i = 0; i < pixel_num; i++) {
             const auto r0 = static_cast<T>(i) / pixel_num;
-            auto tmp_p1 = p1 * (1. - r0) + p2 * r0;
-            auto tmp_v1z = v1z * (1. - r0) + v2z * r0;
             const auto r1 = static_cast<T>(i + 1) / pixel_num;
-            auto tmp_p2 = p1 * (1. - r1) + p2 * r1;
-            auto tmp_v2z = v1z * (1. - r1) + v2z * r1;
-            Eigen::Matrix<T, 2, 3> edge_verts;
-            edge_verts.row(0) << tmp_p1(0), tmp_p1(1), tmp_v1z;
-            edge_verts.row(1) << tmp_p2(0), tmp_p2(1), tmp_v2z;
+            Eigen::Matrix<T, 2, 1> pixel_uv1 = uv1 * (1. - r0) + uv2 * r0;
+            Eigen::Matrix<T, 2, 1> pixel_uv2 = uv1 * (1. - r1) + uv2 * r1;
+            Eigen::Matrix<T, 3, 1> pixel_p1 = p1_displaced * (1. - r0) + p2_displaced * r0;
+            Eigen::Matrix<T, 3, 1> pixel_p2 = p1_displaced * (1. - r1) + p2_displaced * r1;
             wmtk::LineQuadrature quad;
-            auto displaced_error_per_pixel = quadrature_error_1pixel_eval<T, 5>(edge_verts, quad);
-            error += displaced_error_per_pixel;
+            quad.get_quadrature(order);
+
+            T unweighted_error = static_cast<T>(0.0);
+            for (int j = 0; j < quad.points.rows(); j++) {
+                Eigen::Matrix<T, 2, 1> tmpuv = static_cast<T>(1 - quad.points(j, 0)) * pixel_uv1 +
+                                               static_cast<T>(quad.points(j, 0)) * pixel_uv2;
+                Eigen::Matrix<T, 3, 1> tmpp_displaced = get(tmpuv(0), tmpuv(1));
+
+                Eigen::Matrix<T, 3, 1> tmpp_tri = static_cast<T>(1 - quad.points(j, 0)) * pixel_p1 +
+                                                  static_cast<T>(quad.points(j, 0)) * pixel_p2;
+                Eigen::Matrix<T, 3, 1> diffp = tmpp_tri - tmpp_displaced;
+                unweighted_error += static_cast<T>(quad.weights(j)) * norm_T(diffp);
+            }
+            auto diffuv = pixel_uv1 - pixel_uv2;
+            error += unweighted_error * norm_T(diffuv);
         }
         assert(error >= 0);
         return error;
@@ -158,6 +166,13 @@ public:
         return get_error_per_triangle_T(triangle);
     }
 
+    /**
+     * @brief Get the error per triangle T object
+     *
+     * @tparam T
+     * @param triangle 3 x 2 matrix of triangle 3 vertices 2d uv coordinates
+     * @return T
+     */
     template <class T>
     inline T get_error_per_triangle_T(const Eigen::Matrix<T, 3, 2, Eigen::RowMajor>& triangle)
     {
@@ -171,6 +186,14 @@ public:
             triangle_double.row(i) << p_double(0), p_double(1);
             bbox.extend(p_double);
         }
+        auto norm_T = [&](const Eigen::Matrix<T, 1, Eigen::Dynamic> row_v) -> T {
+            T ret = static_cast<T>(0.);
+            for (auto i = 0; i < row_v.cols(); i++) {
+                auto debug_rowv = row_v(0, i);
+                ret += pow(row_v(0, i), 2);
+            }
+            return sqrt(ret);
+        };
         auto get_coordinate = [&](const double& x, const double& y) -> std::pair<int, int> {
             auto [xx, yy] = m_image.get_pixel_index(get_value(x), get_value(y));
             return {m_image.get_coordinate(xx, m_image.get_wrapping_mode_x()),
@@ -182,9 +205,18 @@ public:
         auto [xx2, yy2] = get_coordinate(bbox_max(0), bbox_max(1));
         auto num_pixels = std::max(abs(xx2 - xx1), abs(yy2 - yy1));
         const double pixel_size = bbox.diagonal().maxCoeff() / num_pixels;
+
+        T z1 = m_image.get(triangle(0, 0), triangle(0, 1));
+        T z2 = m_image.get(triangle(1, 0), triangle(1, 1));
+        T z3 = m_image.get(triangle(2, 0), triangle(2, 1));
+        wmtk::logger().info("x1 {} y1 {} z1 {}", triangle(0, 0), triangle(0, 1), z1);
+        wmtk::logger().info("x2 {} y2 {} z2 {}", triangle(1, 0), triangle(1, 1), z2);
+        wmtk::logger().info("x3 {} y3 {} z3 {}", triangle(2, 0), triangle(2, 1), z3);
         typedef std::integral_constant<int, 2> cached_t;
 
-        auto z_barycentric = [&](const T& u, const T& v) -> T {
+        // calculate the barycentric coordinate of the a point using u, v cooridnates
+        // returns the 3d coordinate on the current mesh
+        auto get_p_tri = [&](const T& u, const T& v) -> Eigen::Matrix<T, 3, 1> {
             /*
             λ1 = ((v2 - v3)(u - u3) + (u3 - u2)(v - v3)) / ((v2 - v3)(u1 - u3) + (u3 - u2)(v1 - v3))
             λ2 = ((v3 - v1)(u - u3) + (u1 - u3)(v - v3)) / ((v2 - v3)(u1 - u3) + (u3 - u2)(v1 - v3))
@@ -203,9 +235,10 @@ public:
             auto lambda2 = ((v3 - v1) * (u - u3) + (u1 - u3) * (v - v3)) /
                            ((v2 - v3) * (u1 - u3) + (u3 - u2) * (v1 - v3));
             auto lambda3 = 1 - lambda1 - lambda2;
-            return (
-                lambda1 * m_image.get(u1, v1) + lambda2 * m_image.get(u2, v2) +
-                lambda3 * m_image.get(u3, v3));
+            auto z = (lambda1 * z1 + lambda2 * z2 + lambda3 * z3);
+            Eigen::Matrix<T, 3, 1> p_tri;
+            p_tri << u, v, z;
+            return p_tri;
         };
 
         T value = static_cast<T>(0.);
@@ -220,16 +253,17 @@ public:
                     order,
                     triangle_double,
                     box,
-                    cache.local().quad,
-                    &cache.local().tmp);
-                for (size_t i = 0; i < cache.local().quad.size(); ++i) {
-                    auto tmpu = static_cast<T>(cache.local().quad.points()(i, 0));
-                    auto tmpv = static_cast<T>(cache.local().quad.points()(i, 1));
-                    auto tmph = get(tmpu, tmpv);
-                    auto tmpz = z_barycentric(tmpu, tmpv);
+                    m_cache.local().quad,
+                    &m_cache.local().tmp);
+                for (size_t i = 0; i < m_cache.local().quad.size(); ++i) {
+                    auto tmpu = static_cast<T>(m_cache.local().quad.points()(i, 0));
+                    auto tmpv = static_cast<T>(m_cache.local().quad.points()(i, 1));
+                    auto tmpp_displaced = get(tmpu, tmpv);
+                    auto tmpp_tri = get_p_tri(tmpu, tmpv);
                     // wmtk::logger().info("           u {} v {}", tmpu, tmpv);
                     // wmtk::logger().info("           tmph {} tmpz {}", tmph, tmpz);
-                    value += abs(tmph - tmpz) * static_cast<T>(cache.local().quad.weights()[i]);
+                    auto diffp = tmpp_displaced - tmpp_tri;
+                    value += norm_T(diffp) * static_cast<T>(m_cache.local().quad.weights()[i]);
                 }
             }
         }

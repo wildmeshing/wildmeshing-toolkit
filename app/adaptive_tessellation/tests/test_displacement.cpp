@@ -32,7 +32,7 @@ TEST_CASE("displacement_bicubic_constant", "[displacement]")
     // Make sure that image.get(), displ.get(), and f() all give the same result
     for (float u = 0; u <= 1; u += 0.1) {
         for (float v = 0; v <= 1; v += 0.1) {
-            REQUIRE_THAT(image.get(u, v), Catch::Matchers::WithinRel(displ.get(u, v)));
+            REQUIRE_THAT(image.get(u, v), Catch::Matchers::WithinRel(displ.get_height(u, v)));
         }
     }
 }
@@ -50,7 +50,7 @@ TEST_CASE("displacement_bicubic_linear", "[displacement]")
     // Make sure that image.get(), displ.get(), and f() all give the same result
     for (float u = 0; u <= 1; u += 0.1) {
         for (float v = 0; v <= 1; v += 0.1) {
-            REQUIRE(image.get(u, v) == displ.get(u, v));
+            REQUIRE(image.get(u, v) == displ.get_height(u, v));
         }
     }
 
@@ -82,9 +82,9 @@ TEST_CASE("displacement_spline_constant", "[displacement]")
     // Make sure that image.get(), displ.get(), and f() all give the same result
     for (double u = 0; u <= 1; u += 0.1) {
         for (double v = 0; v <= 1; v += 0.1) {
-            std::cout << "Img = " << image.get(u, v) << ", Spline = " << displ.get(u, v)
+            std::cout << "Img = " << image.get(u, v) << ", Spline = " << displ.get_height(u, v)
                       << std::endl;
-            REQUIRE_THAT(image.get(u, v), Catch::Matchers::WithinRel(displ.get(u, v), 1e-5));
+            REQUIRE_THAT(image.get(u, v), Catch::Matchers::WithinRel(displ.get_height(u, v), 1e-5));
         }
     }
 }
@@ -104,8 +104,8 @@ TEST_CASE("displacement_spline_linear", "[displacement]")
     for (double u = 0.2; u <= 0.8; u += 0.1) {
         for (double v = 0.2; v <= 0.8; v += 0.1) {
             std::cout << "u, v = " << u << ", " << v << ", f() = " << f_linear(u, v)
-                      << ", Spline = " << displ.get(u, v) << std::endl;
-            REQUIRE_THAT(image.get(u, v), Catch::Matchers::WithinRel(displ.get(u, v), 1e-5));
+                      << ", Spline = " << displ.get_height(u, v) << std::endl;
+            REQUIRE_THAT(image.get(u, v), Catch::Matchers::WithinRel(displ.get_height(u, v), 1e-5));
         }
     }
 }
@@ -249,7 +249,7 @@ TEST_CASE("bicubic periodic")
     }
 }
 
-TEST_CASE("displacement_bicubic_quadrature")
+TEST_CASE("displacement_bicubic_edge_quadrature")
 {
     using DScalar = wmtk::EdgeLengthEnergy::DScalar;
     DiffScalarBase::setVariableCount(2);
@@ -299,4 +299,30 @@ TEST_CASE("displacement_bicubic_quadrature")
     edge_error = displ.get_error_per_edge(v1, v2);
     wmtk::logger().info("final edge error {} ", edge_error);
     REQUIRE(abs(edge_error) < 1e-8);
+}
+
+TEST_CASE("displacement_bicubic_area_quadrature")
+{
+    using DScalar = wmtk::EdgeLengthEnergy::DScalar;
+    Image image(100, 100);
+    auto displacement_double = []([[maybe_unused]] const double& u,
+                                  [[maybe_unused]] const double& v) -> double {
+        return sin(M_PI * u) * cos(M_PI * (v - 0.5));
+    };
+    image.set(displacement_double, WrappingMode::MIRROR_REPEAT, WrappingMode::MIRROR_REPEAT);
+    DisplacementBicubic displ = DisplacementBicubic(image);
+    displ.set_image(image);
+
+    Eigen::Matrix<double, 3, 2, 1> tri1, tri2;
+    tri1.row(0) << 0.1, 0.1;
+    tri1.row(1) << 0.9, 0.1;
+    tri1.row(2) << 0.9, 0.9;
+    tri2.row(0) << 0.1, 0.1;
+    tri2.row(1) << 0.9, 0.9;
+    tri2.row(2) << 0.1, 0.9;
+
+    auto error1 = displ.get_error_per_triangle(tri1);
+    auto error2 = displ.get_error_per_triangle(tri2);
+
+    REQUIRE(abs(error2 + error1 - (0.36658 - 0.06111)) < 1e-3);
 }

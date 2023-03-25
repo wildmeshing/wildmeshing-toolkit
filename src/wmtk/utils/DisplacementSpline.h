@@ -96,14 +96,14 @@ public:
     }
 
     template <class T>
-    T get(const T& u, const T& v) const
+    T get_height(const T& u, const T& v) const
     {
         const double px_x = param_to_px(wmtk::get_value(u));
         const double px_y = param_to_px(wmtk::get_value(v));
         return m_patch.evaluate(px_x, px_y)[2];
     }
 
-    DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d> get(
+    DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d> get_height(
         const DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d>& u,
         const DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d>& v) const
     {
@@ -123,6 +123,6 @@ public:
         return {value, grad, hess};
     }
 
-    Scalar operator()(const Scalar& u, const Scalar& v) { return get(u, v); }
+    Scalar operator()(const Scalar& u, const Scalar& v) { return get_height(u, v); }
 };
 } // namespace wmtk

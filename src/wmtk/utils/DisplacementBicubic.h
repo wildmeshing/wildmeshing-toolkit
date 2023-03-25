@@ -23,7 +23,7 @@ struct DisplacementBicubic : public DisplacementImage<DisplacementBicubic>
 
     // Templated getter using autodiff
     template <typename T>
-    T get(T u, T v) const
+    T get_height(T u, T v) const
     {
         auto w = m_image.width();
         auto h = m_image.height();
