@@ -807,6 +807,17 @@ void AdaptiveTessellation::mesh_improvement(int max_its)
             mesh_parameters.m_output_folder + "/after_split_" + std::to_string(it) + ".obj",
             mesh_parameters.m_project_to_3d);
 
+        swap_all_edges();
+        assert(invariants(get_faces()));
+        auto swap_finish_time = lagrange::get_timestamp();
+        mesh_parameters.js_log["iteration_" + std::to_string(it)]["swap time"] =
+            lagrange::timestamp_diff_in_seconds(split_finish_time, swap_finish_time);
+        consolidate_mesh();
+        write_displaced_obj(
+            mesh_parameters.m_output_folder + "/after_swap_" + std::to_string(it) + ".obj",
+            mesh_parameters.m_project_to_3d);
+        swap_finish_time = lagrange::get_timestamp();
+
         collapse_all_edges();
         assert(invariants(get_faces()));
         consolidate_mesh();
@@ -815,24 +826,13 @@ void AdaptiveTessellation::mesh_improvement(int max_its)
             mesh_parameters.m_project_to_3d);
         auto collapse_finish_time = lagrange::get_timestamp();
         mesh_parameters.js_log["iteration_" + std::to_string(it)]["collapse time"] =
-            lagrange::timestamp_diff_in_seconds(split_finish_time, collapse_finish_time);
+            lagrange::timestamp_diff_in_seconds(swap_finish_time, collapse_finish_time);
 
-        swap_all_edges();
-        assert(invariants(get_faces()));
-        auto swap_finish_time = lagrange::get_timestamp();
-        mesh_parameters.js_log["iteration_" + std::to_string(it)]["swap time"] =
-            lagrange::timestamp_diff_in_seconds(collapse_finish_time, swap_finish_time);
-        consolidate_mesh();
-        write_displaced_obj(
-            mesh_parameters.m_output_folder + "/after_swap_" + std::to_string(it) + ".obj",
-            mesh_parameters.m_project_to_3d);
-
-        swap_finish_time = lagrange::get_timestamp();
         smooth_all_vertices();
         assert(invariants(get_faces()));
         auto smooth_finish_time = lagrange::get_timestamp();
         mesh_parameters.js_log["iteration_" + std::to_string(it)]["smooth time"] =
-            lagrange::timestamp_diff_in_seconds(swap_finish_time, smooth_finish_time);
+            lagrange::timestamp_diff_in_seconds(collapse_finish_time, smooth_finish_time);
         consolidate_mesh();
         write_displaced_obj(
             mesh_parameters.m_output_folder + "/after_smooth_" + std::to_string(it) + ".obj",
