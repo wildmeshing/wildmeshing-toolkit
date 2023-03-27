@@ -209,9 +209,6 @@ public:
         T z1 = m_image.get(triangle(0, 0), triangle(0, 1));
         T z2 = m_image.get(triangle(1, 0), triangle(1, 1));
         T z3 = m_image.get(triangle(2, 0), triangle(2, 1));
-        wmtk::logger().info("x1 {} y1 {} z1 {}", triangle(0, 0), triangle(0, 1), z1);
-        wmtk::logger().info("x2 {} y2 {} z2 {}", triangle(1, 0), triangle(1, 1), z2);
-        wmtk::logger().info("x3 {} y3 {} z3 {}", triangle(2, 0), triangle(2, 1), z3);
         typedef std::integral_constant<int, 2> cached_t;
 
         // calculate the barycentric coordinate of the a point using u, v cooridnates
@@ -260,8 +257,6 @@ public:
                     auto tmpv = static_cast<T>(m_cache.local().quad.points()(i, 1));
                     auto tmpp_displaced = get(tmpu, tmpv);
                     auto tmpp_tri = get_p_tri(tmpu, tmpv);
-                    // wmtk::logger().info("           u {} v {}", tmpu, tmpv);
-                    // wmtk::logger().info("           tmph {} tmpz {}", tmph, tmpz);
                     auto diffp = tmpp_displaced - tmpp_tri;
                     value += norm_T(diffp) * static_cast<T>(m_cache.local().quad.weights()[i]);
                 }
