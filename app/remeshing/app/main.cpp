@@ -54,7 +54,6 @@ int main(int argc, char** argv)
     double target_len = -1;
     int itrs = 2;
     bool freeze = true;
-    bool bnd_output = false;
     bool sample_envelope = false;
 
     CLI::App app{argv[0]};

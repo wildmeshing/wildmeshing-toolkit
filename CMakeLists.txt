@@ -72,6 +72,9 @@ source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src" PREFIX "Source Files" FILES 
 if(NOT TARGET igl::core)
     include(libigl)
 endif()
+
+igl_include(predicates)
+
 igl_include(predicates)
 
 if(NOT TARGET spdlog)
@@ -82,8 +85,12 @@ include(geogram)
 include(onetbb)
 include(mshio)
 include(metis)
-include(lagrange)
 include(gmp)
+
+include(lagrange)
+lagrange_include_modules(bvh)
+
+include(nlohmann_json)
 target_link_libraries(wildmeshing_toolkit PRIVATE wmtk::warnings)
 target_link_libraries(wildmeshing_toolkit PUBLIC
     spdlog::spdlog
@@ -95,7 +102,20 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     metis::metis
     lagrange::core
     Tracy::TracyClient
+    lagrange::bvh
+    nlohmann_json
 )
+include(finite-diff)
+target_link_libraries(wildmeshing_toolkit PUBLIC finitediff::finitediff)
+include(stb)
+include(tinyexr)
+target_link_libraries(wildmeshing_toolkit PUBLIC
+    tinyexr
+    stb)
+include(lean-vtk)
+target_link_libraries(wildmeshing_toolkit PUBLIC LeanVTK)
+include(nanospline)
+target_link_libraries(wildmeshing_toolkit PUBLIC nanospline::nanospline)
 
 # ###############################################################################
 # Subdirectories

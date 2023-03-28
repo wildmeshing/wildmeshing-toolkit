@@ -22,8 +22,8 @@ class AbstractAttributeContainer
 {
 public:
     virtual ~AbstractAttributeContainer() = default;
-    virtual void move(size_t from, size_t to){};
-    virtual void resize(size_t){};
+    virtual void move([[maybe_unused]] size_t from, [[maybe_unused]] size_t to){};
+    virtual void resize([[maybe_unused]] size_t){};
     virtual void rollback(){};
     virtual void begin_protect(){};
     virtual void end_protect(){};

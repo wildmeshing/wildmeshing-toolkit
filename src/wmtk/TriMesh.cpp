@@ -304,6 +304,7 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
     }
 
     // new_vid
+    m_vertex_connectivity[new_vid].m_is_removed = false;
     m_vertex_connectivity[new_vid].m_conn_tris.push_back(fid1);
     m_vertex_connectivity[new_vid].m_conn_tris.push_back(new_fid1);
     if (fid2.has_value()) {
@@ -348,6 +349,7 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
     auto new_vertex = Tuple(new_vid, (l + 2) % 3, new_fid, *this);
     auto return_tuple = Tuple(vid1, eid, fid1, *this);
     assert(new_vertex.is_valid(*this));
+    assert(return_tuple.switch_vertex(*this).vid(*this) == new_vid);
     assert(return_tuple.is_valid(*this));
 
     new_tris = get_one_ring_tris_for_vertex(new_vertex);
@@ -452,7 +454,7 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
             m_tri_connectivity[fid].m_indices[j] = new_vid;
         }
     }
-
+    m_vertex_connectivity[new_vid].m_is_removed = false;
     // now work on vids
     // add in the new vertex
 
@@ -485,7 +487,7 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
     // call back check will be done on this vector of tuples
 
     assert(m_vertex_connectivity[new_vid].m_conn_tris.size() != 0);
-
+    assert(m_vertex_connectivity[new_vid].m_is_removed == false);
     const size_t gfid = m_vertex_connectivity[new_vid].m_conn_tris[0];
     int j = m_tri_connectivity[gfid].find(new_vid);
     auto new_t = Tuple(new_vid, (j + 2) % 3, gfid, *this);
@@ -512,6 +514,8 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
         }
         m_vertex_connectivity[new_vid].m_conn_tris.clear();
         m_vertex_connectivity[new_vid].m_is_removed = true;
+        m_vertex_connectivity[vid1].m_is_removed = false;
+        m_vertex_connectivity[vid2].m_is_removed = false;
         for (auto vid_fid : same_edge_vid_fid) {
             size_t vid = vid_fid.first;
             size_t fid = vid_fid.second;
@@ -785,6 +789,7 @@ void TriMesh::create_mesh(size_t n_vertices, const std::vector<std::array<size_t
         m_tri_connectivity[i].hash = hash_cnt;
         for (int j = 0; j < 3; j++) {
             m_vertex_connectivity[tris[i][j]].m_conn_tris.push_back(i);
+            m_vertex_connectivity[tris[i][j]].m_is_removed = false;
         }
     }
     current_vert_size = n_vertices;
@@ -808,6 +813,11 @@ std::vector<TriMesh::Tuple> TriMesh::get_vertices() const
         if (m_vertex_connectivity[i].m_is_removed) continue;
 
         const std::vector<size_t>& v_conn_fids = m_vertex_connectivity[i].m_conn_tris;
+        if (v_conn_fids.size() == 0) {
+            assert(m_vertex_connectivity[i].m_is_removed);
+            assert(false);
+            continue;
+        }
         size_t fid = *min_element(v_conn_fids.begin(), v_conn_fids.end());
 
         // get the 3 vid
