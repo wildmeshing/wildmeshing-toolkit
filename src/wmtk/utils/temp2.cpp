@@ -22,7 +22,7 @@ namespace wmtk {
             for (auto j = 0; j < 2; j++) {
                 points[i][j] = dis(gen);  //(std::rand() % 10 + 1);
             }
-            std::cout << "{ " << points[i][0] << ", " << points[i][1] << "}" << std::endl;
+            //std::cout << "{ " << points[i][0] << ", " << points[i][1] << "}" << std::endl;
         }
         return points;
     }

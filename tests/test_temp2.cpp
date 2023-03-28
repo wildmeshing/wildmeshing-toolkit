@@ -1,8 +1,5 @@
-#define CATCH_CONFIG_MAIN
-
-//#include <catch2/catch.hpp>
-#include "catch.hpp"
-#include "temp2.cpp"
+#include <catch2/catch.hpp>
+#include <wmtk/utils/temp2.hpp>
 
 
 // TEST_CASE( "Factorial of 0 is 1 (fail)", "[single-file]" ) {
