@@ -1,4 +1,6 @@
 var searchData=
 [
-  ['uniformremeshing_233',['UniformRemeshing',['../classapp_1_1remeshing_1_1_uniform_remeshing.html',1,'app::remeshing']]]
+  ['qslim_274',['QSLIM',['../classapp_1_1qslim_1_1_q_s_l_i_m.html',1,'app::qslim']]],
+  ['quadrature_275',['Quadrature',['../classwmtk_1_1_quadrature.html',1,'wmtk']]],
+  ['quadrics_276',['Quadrics',['../structapp_1_1qslim_1_1_quadrics.html',1,'app::qslim']]]
 ];

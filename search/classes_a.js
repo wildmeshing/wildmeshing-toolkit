@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['rational_217',['Rational',['../classwmtk_1_1_rational.html',1,'wmtk']]]
+  ['newtonmethodinfo_270',['NewtonMethodInfo',['../structwmtk_1_1_newton_method_info.html',1,'wmtk']]]
 ];

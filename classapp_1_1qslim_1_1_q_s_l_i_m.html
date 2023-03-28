@@ -117,8 +117,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>partition_mesh_morton
 <tr class="memitem:ab60f7e0476322cb161d6bb006d998975"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classapp_1_1qslim_1_1_q_s_l_i_m.html#ab60f7e0476322cb161d6bb006d998975">collapse_edge_before</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) override</td></tr>
 <tr class="memdesc:ab60f7e0476322cb161d6bb006d998975"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified preparations and desideratas for an edge collapse including the link check as collapse prerequisite.  <a href="classapp_1_1qslim_1_1_q_s_l_i_m.html#ab60f7e0476322cb161d6bb006d998975">More...</a><br /></td></tr>
 <tr class="separator:ab60f7e0476322cb161d6bb006d998975"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af1a46be16cd39bf3e4d8fc09240a34b9"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classapp_1_1qslim_1_1_q_s_l_i_m.html#af1a46be16cd39bf3e4d8fc09240a34b9">collapse_edge_after</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) override</td></tr>
-<tr class="memdesc:af1a46be16cd39bf3e4d8fc09240a34b9"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified modifications and desideratas after an edge collapse.  <a href="classapp_1_1qslim_1_1_q_s_l_i_m.html#af1a46be16cd39bf3e4d8fc09240a34b9">More...</a><br /></td></tr>
+<tr class="memitem:af1a46be16cd39bf3e4d8fc09240a34b9"><td class="memItemLeft" align="right" valign="top"><a id="af1a46be16cd39bf3e4d8fc09240a34b9"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_edge_after</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) override</td></tr>
 <tr class="separator:af1a46be16cd39bf3e4d8fc09240a34b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a77ebe7422a3572fa8e598a1e29eb9c01"><td class="memItemLeft" align="right" valign="top"><a id="a77ebe7422a3572fa8e598a1e29eb9c01"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_qslim</b> (int target_vertex_count)</td></tr>
@@ -299,66 +299,32 @@ template&lt;typename T &gt; </td></tr>
 <tr class="memitem:a789f9bdc3ece59a5f11143e6ae1d5cd1 inherit pub_types_classwmtk_1_1_tri_mesh"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>vector</b> = tbb::concurrent_vector&lt; T &gt;</td></tr>
 <tr class="separator:a789f9bdc3ece59a5f11143e6ae1d5cd1 inherit pub_types_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_methods_classwmtk_1_1_tri_mesh"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_classwmtk_1_1_tri_mesh')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></td></tr>
-<tr class="memitem:abf13b037d7eabeec3de1d96043540928 inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#abf13b037d7eabeec3de1d96043540928">split_edge_before</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
-<tr class="memdesc:abf13b037d7eabeec3de1d96043540928 inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified preparations and desideratas for an edge split.  <a href="classwmtk_1_1_tri_mesh.html#abf13b037d7eabeec3de1d96043540928">More...</a><br /></td></tr>
-<tr class="separator:abf13b037d7eabeec3de1d96043540928 inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0546648a3a6611054148240e7fe729d7 inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a0546648a3a6611054148240e7fe729d7">split_edge_after</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
-<tr class="memdesc:a0546648a3a6611054148240e7fe729d7 inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified modifications and desideratas after an edge split.  <a href="classwmtk_1_1_tri_mesh.html#a0546648a3a6611054148240e7fe729d7">More...</a><br /></td></tr>
-<tr class="separator:a0546648a3a6611054148240e7fe729d7 inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6747100b09ad94b555942110b5a3bd8b inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a6747100b09ad94b555942110b5a3bd8b">swap_edge_after</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
-<tr class="memdesc:a6747100b09ad94b555942110b5a3bd8b inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified modifications and desideras after an edge swap.  <a href="classwmtk_1_1_tri_mesh.html#a6747100b09ad94b555942110b5a3bd8b">More...</a><br /></td></tr>
-<tr class="separator:a6747100b09ad94b555942110b5a3bd8b inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a35127e4e7b1674f0c9c6351304bea0b6 inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a35127e4e7b1674f0c9c6351304bea0b6">swap_edge_before</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
-<tr class="memdesc:a35127e4e7b1674f0c9c6351304bea0b6 inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified preparations and desideratas for an edge swap including 1.can't swap on boundary edge. 2. when swap edge between v1, v2, there can't exist edges between the two opposite vertices v3, v4.  <a href="classwmtk_1_1_tri_mesh.html#a35127e4e7b1674f0c9c6351304bea0b6">More...</a><br /></td></tr>
-<tr class="separator:a35127e4e7b1674f0c9c6351304bea0b6 inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaeb1f51faeb8d72947bfb60bc0599cde inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#aaeb1f51faeb8d72947bfb60bc0599cde">smooth_before</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
-<tr class="memdesc:aaeb1f51faeb8d72947bfb60bc0599cde inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified preparations and desideratas for an edge smooth.  <a href="classwmtk_1_1_tri_mesh.html#aaeb1f51faeb8d72947bfb60bc0599cde">More...</a><br /></td></tr>
-<tr class="separator:aaeb1f51faeb8d72947bfb60bc0599cde inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3abed590e223f98039da79bc30dc242f inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a3abed590e223f98039da79bc30dc242f">smooth_after</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
-<tr class="memdesc:a3abed590e223f98039da79bc30dc242f inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified modifications and desideras after an edge smooth.  <a href="classwmtk_1_1_tri_mesh.html#a3abed590e223f98039da79bc30dc242f">More...</a><br /></td></tr>
-<tr class="separator:a3abed590e223f98039da79bc30dc242f inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acde955fe197a8938b579a4fe7ce54c75 inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#acde955fe197a8938b579a4fe7ce54c75">split_edge_before</a> ([[maybe_unused]] const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
+<tr class="memdesc:acde955fe197a8938b579a4fe7ce54c75 inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified preparations and desideratas for an edge split.  <a href="classwmtk_1_1_tri_mesh.html#acde955fe197a8938b579a4fe7ce54c75">More...</a><br /></td></tr>
+<tr class="separator:acde955fe197a8938b579a4fe7ce54c75 inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ada80acdaacd14b5d78212d98ad0d59fd inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#ada80acdaacd14b5d78212d98ad0d59fd">split_edge_after</a> ([[maybe_unused]] const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
+<tr class="memdesc:ada80acdaacd14b5d78212d98ad0d59fd inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified modifications and desideratas after an edge split.  <a href="classwmtk_1_1_tri_mesh.html#ada80acdaacd14b5d78212d98ad0d59fd">More...</a><br /></td></tr>
+<tr class="separator:ada80acdaacd14b5d78212d98ad0d59fd inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a06fed3ff7fd8de4fa6abcc3a34556400 inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a06fed3ff7fd8de4fa6abcc3a34556400">collapse_edge_after</a> ([[maybe_unused]] const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
+<tr class="memdesc:a06fed3ff7fd8de4fa6abcc3a34556400 inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified modifications and desideratas after an edge collapse.  <a href="classwmtk_1_1_tri_mesh.html#a06fed3ff7fd8de4fa6abcc3a34556400">More...</a><br /></td></tr>
+<tr class="separator:a06fed3ff7fd8de4fa6abcc3a34556400 inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a11c7673c043083df3265ee1575359f65 inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a11c7673c043083df3265ee1575359f65">swap_edge_after</a> ([[maybe_unused]] const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
+<tr class="memdesc:a11c7673c043083df3265ee1575359f65 inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified modifications and desideras after an edge swap.  <a href="classwmtk_1_1_tri_mesh.html#a11c7673c043083df3265ee1575359f65">More...</a><br /></td></tr>
+<tr class="separator:a11c7673c043083df3265ee1575359f65 inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ace39438874440fc589b4eb07c3c24d71 inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#ace39438874440fc589b4eb07c3c24d71">swap_edge_before</a> ([[maybe_unused]] const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
+<tr class="memdesc:ace39438874440fc589b4eb07c3c24d71 inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified preparations and desideratas for an edge swap including 1.can't swap on boundary edge. 2. when swap edge between v1, v2, there can't exist edges between the two opposite vertices v3, v4.  <a href="classwmtk_1_1_tri_mesh.html#ace39438874440fc589b4eb07c3c24d71">More...</a><br /></td></tr>
+<tr class="separator:ace39438874440fc589b4eb07c3c24d71 inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a24b460f31fc9c9d83a34d7c5672edad9 inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a24b460f31fc9c9d83a34d7c5672edad9">smooth_before</a> ([[maybe_unused]] const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
+<tr class="memdesc:a24b460f31fc9c9d83a34d7c5672edad9 inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified preparations and desideratas for an edge smooth.  <a href="classwmtk_1_1_tri_mesh.html#a24b460f31fc9c9d83a34d7c5672edad9">More...</a><br /></td></tr>
+<tr class="separator:a24b460f31fc9c9d83a34d7c5672edad9 inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acb4dba54e2666f1315a5d3ce77260587 inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#acb4dba54e2666f1315a5d3ce77260587">smooth_after</a> ([[maybe_unused]] const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
+<tr class="memdesc:acb4dba54e2666f1315a5d3ce77260587 inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified modifications and desideras after an edge smooth.  <a href="classwmtk_1_1_tri_mesh.html#acb4dba54e2666f1315a5d3ce77260587">More...</a><br /></td></tr>
+<tr class="separator:acb4dba54e2666f1315a5d3ce77260587 inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae1fa52701ce0be73479b416da52fd77e inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="memItemLeft" align="right" valign="top"><a id="ae1fa52701ce0be73479b416da52fd77e"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (size_t v)</td></tr>
 <tr class="separator:ae1fa52701ce0be73479b416da52fd77e inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="af1a46be16cd39bf3e4d8fc09240a34b9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af1a46be16cd39bf3e4d8fc09240a34b9">&#9670;&nbsp;</a></span>collapse_edge_after()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool QSLIM::collapse_edge_after </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
-          <td class="paramname"><em>t</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>User specified modifications and desideratas after an edge collapse. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">the</td><td>edge Tuple to be collapsed </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>true if the modifications succeed </dd></dl>
-
-<p>Reimplemented from <a class="el" href="classwmtk_1_1_tri_mesh.html#a4560949720560b41ea9473b10b1f3a21">wmtk::TriMesh</a>.</p>
-
-</div>
-</div>
 <a id="ab60f7e0476322cb161d6bb006d998975"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab60f7e0476322cb161d6bb006d998975">&#9670;&nbsp;</a></span>collapse_edge_before()</h2>
 

@@ -1,5 +1,25 @@
 var searchData=
 [
-  ['harmonictet_63',['HarmonicTet',['../classharmonic__tet_1_1_harmonic_tet.html',1,'harmonic_tet']]],
-  ['hash_64',['hash',['../classwmtk_1_1_tri_mesh_1_1_triangle_connectivity.html#ae80c31e0e64bcec276d7688027dc83bb',1,'wmtk::TriMesh::TriangleConnectivity']]]
+  ['get_64',['get',['../classwmtk_1_1_image.html#a8d0e55f435266dae8e3d062a9ccaff37',1,'wmtk::Image']]],
+  ['get_5fedges_65',['get_edges',['../classwmtk_1_1_tet_mesh.html#ac9aab5f828ccce15becbd0486d4a6c3d',1,'wmtk::TetMesh::get_edges()'],['../classwmtk_1_1_tri_mesh.html#aed585e848ce149908ce1e88f6331fc03',1,'wmtk::TriMesh::get_edges()']]],
+  ['get_5fface_5fvertices_66',['get_face_vertices',['../classwmtk_1_1_tet_mesh.html#a79dea6f5a8757ac24be3ad0b85123d76',1,'wmtk::TetMesh']]],
+  ['get_5ffaces_67',['get_faces',['../classwmtk_1_1_tet_mesh.html#a43785658d42031efaa783e810df47d92',1,'wmtk::TetMesh::get_faces()'],['../classwmtk_1_1_tri_mesh.html#a9409ac6f95238e5af58be7ee47c47e4e',1,'wmtk::TriMesh::get_faces()']]],
+  ['get_5fincident_5ftets_5ffor_5fedge_68',['get_incident_tets_for_edge',['../classwmtk_1_1_tet_mesh.html#a91ceae79cdf4dc6990e043f8de1e8122',1,'wmtk::TetMesh']]],
+  ['get_5fnearest_5ffacet_5fhint_69',['get_nearest_facet_hint',['../class_g_e_o_1_1_mesh_facets_a_a_b_b_with_eps.html#a71c2631805965b8b8908b3eb3ada943a',1,'GEO::MeshFacetsAABBWithEps']]],
+  ['get_5fnext_5fempty_5fslot_5ft_70',['get_next_empty_slot_t',['../classwmtk_1_1_tri_mesh.html#a28d98d996ddd4e6f2c30f1fe8368e1f0',1,'wmtk::TriMesh']]],
+  ['get_5fnext_5fempty_5fslot_5fv_71',['get_next_empty_slot_v',['../classwmtk_1_1_tri_mesh.html#a30fbe4786afbf362d26131cf9bad91f2',1,'wmtk::TriMesh']]],
+  ['get_5fone_5fring_5fedges_5ffor_5fvertex_72',['get_one_ring_edges_for_vertex',['../classwmtk_1_1_tri_mesh.html#a9208cec662f3d90924bafdf9153530e0',1,'wmtk::TriMesh']]],
+  ['get_5fone_5fring_5ftets_5ffor_5fedge_73',['get_one_ring_tets_for_edge',['../classwmtk_1_1_tet_mesh.html#ab7731062896fb394761225ac1bef51b6',1,'wmtk::TetMesh']]],
+  ['get_5fone_5fring_5ftets_5ffor_5fvertex_74',['get_one_ring_tets_for_vertex',['../classwmtk_1_1_tet_mesh.html#ab59e9581b1d59c2e1d47e3fa4f537a26',1,'wmtk::TetMesh']]],
+  ['get_5fone_5fring_5ftids_5ffor_5fvertex_75',['get_one_ring_tids_for_vertex',['../classwmtk_1_1_tet_mesh.html#aaf99d19a2b5b7e8ccc1871e4079822b2',1,'wmtk::TetMesh']]],
+  ['get_5fone_5fring_5ftris_5ffor_5fvertex_76',['get_one_ring_tris_for_vertex',['../classwmtk_1_1_tri_mesh.html#afb11cab951b3e96d3a1ebe8ee14a7565',1,'wmtk::TriMesh']]],
+  ['get_5fone_5fring_5fvertices_5ffor_5fvertex_77',['get_one_ring_vertices_for_vertex',['../classwmtk_1_1_tet_mesh.html#a20ac5b582a8a7e7d68eff4ce6cbef9e7',1,'wmtk::TetMesh']]],
+  ['get_5fone_5fring_5fvids_5ffor_5fvertex_78',['get_one_ring_vids_for_vertex',['../classwmtk_1_1_tet_mesh.html#a71f69b2cf285973833a06ae2096ad2b8',1,'wmtk::TetMesh::get_one_ring_vids_for_vertex(size_t vid, std::vector&lt; size_t &gt; &amp;cache)'],['../classwmtk_1_1_tet_mesh.html#a7af1bc5b0045ec31cdfea9a2204f1d6a',1,'wmtk::TetMesh::get_one_ring_vids_for_vertex(size_t vid) const']]],
+  ['get_5fone_5fring_5fvids_5ffor_5fvertex_5fadj_79',['get_one_ring_vids_for_vertex_adj',['../classwmtk_1_1_tet_mesh.html#a8bdd0460f834bf2be58997f11f9d285e',1,'wmtk::TetMesh::get_one_ring_vids_for_vertex_adj(size_t vid) const'],['../classwmtk_1_1_tet_mesh.html#adb4409199debd1c8489578ebb1f60774',1,'wmtk::TetMesh::get_one_ring_vids_for_vertex_adj(size_t vid, std::vector&lt; size_t &gt; &amp;cache)']]],
+  ['get_5fone_5fring_5fvids_5ffor_5fvertex_5fduplicate_80',['get_one_ring_vids_for_vertex_duplicate',['../classwmtk_1_1_tri_mesh.html#a093687c9af6a86dba72259a5c7ff1926',1,'wmtk::TriMesh']]],
+  ['get_5ftets_81',['get_tets',['../classwmtk_1_1_tet_mesh.html#a4140b7b11e5de17d64d2d82408878fb6',1,'wmtk::TetMesh']]],
+  ['get_5fvalence_5ffor_5fvertex_82',['get_valence_for_vertex',['../classwmtk_1_1_tri_mesh.html#a24bb2f44a4eaf19f4e3ca2d0d53442f2',1,'wmtk::TriMesh']]],
+  ['get_5fvertices_83',['get_vertices',['../classwmtk_1_1_tet_mesh.html#ab4c0a585fa3220f63dd237bfba4e6999',1,'wmtk::TetMesh::get_vertices()'],['../classwmtk_1_1_tri_mesh.html#a286a3f4e4b464723a1f7b17d9cb6a446',1,'wmtk::TriMesh::get_vertices()']]],
+  ['getvariablecount_84',['getVariableCount',['../struct_diff_scalar_base.html#a663329a7a315a38a711116c4dd056995',1,'DiffScalarBase']]],
+  ['gradient_5fdebug_85',['gradient_debug',['../classadaptive__tessellation_1_1_adaptive_tessellation.html#a5752961a51d1678439444a7fe36ff0e7',1,'adaptive_tessellation::AdaptiveTessellation']]]
 ];
