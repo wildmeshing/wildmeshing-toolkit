@@ -24,7 +24,6 @@ namespace wmtk {
             }
             std::cout << "{ " << points[i][0] << ", " << points[i][1] << "}" << std::endl;
         }
-
         return points;
     }
 }
