@@ -110,10 +110,11 @@ auto swap_accuracy_cost = [&swap_cost](auto& m, const TriMesh::Tuple& e) {
             }
 
             if (e_after < m.mesh_parameters.m_accuracy_threshold)
-                // the accuracy decreases more than 10%
+                // the accuracy decreases more than global bond
                 return -std::numeric_limits<double>::infinity();
-
-            return swap_cost(m, e) * (e_before - e_after);
+            auto valence_cost = swap_cost(m, e);
+            if (valence_cost <= 0) return -std::numeric_limits<double>::infinity();
+            return valence_cost * (e_before - e_after);
         }
         return -std::numeric_limits<double>::infinity();
     }
@@ -152,8 +153,8 @@ void AdaptiveTessellation::swap_all_edges()
                 current_cost = swap_accuracy_cost(m, tup);
             } else {
                 current_cost = swap_cost(m, tup);
-                if (current_cost < 1e-5) return false;
             }
+            if (current_cost < 0.) return false;
             if (std::pow(current_cost - weight, 2) > 1e-5) return false;
             return true;
         };
