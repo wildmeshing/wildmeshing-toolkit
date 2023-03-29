@@ -1,5 +1,5 @@
 #include <catch2/catch.hpp>
-#include <wmtk/utils/temp2.hpp>
+#include <wmtk/utils/Manifold-extraction.hpp>
 
 
 // TEST_CASE( "Factorial of 0 is 1 (fail)", "[single-file]" ) {
