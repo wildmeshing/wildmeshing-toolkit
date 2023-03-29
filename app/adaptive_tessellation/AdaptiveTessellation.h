@@ -7,7 +7,6 @@
 #include <wmtk/TriMesh.h>
 #include <wmtk/utils/BoundaryParametrization.h>
 #include <wmtk/utils/Displacement.h>
-#include <wmtk/utils/DisplacementBicubic.h>
 #include <wmtk/utils/Energy2d.h>
 #include <wmtk/utils/GeoUtils.h>
 #include <wmtk/utils/Image.h>
