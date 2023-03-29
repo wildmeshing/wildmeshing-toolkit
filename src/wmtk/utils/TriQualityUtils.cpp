@@ -431,7 +431,7 @@ std::array<double, 6> wmtk::smooth_over_one_triangle(
     std::array<double, 6> input_triangle;
     input_triangle = triangle;
     auto norm = [](const std::array<double, 6>& a, const std::array<double, 6>& b) {
-        double ret;
+        double ret = 0.;
         for (int i = 0; i < 6; i++) {
             ret += std::pow(a[i] - b[i], 2);
         }
