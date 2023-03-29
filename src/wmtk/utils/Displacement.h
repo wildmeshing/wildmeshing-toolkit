@@ -7,6 +7,7 @@
 #include <type_traits>
 #include "Image.h"
 #include "LineQuadrature.hpp"
+#include "Sampling.h"
 #include "autodiff.h"
 
 namespace wmtk {
@@ -30,25 +31,13 @@ public:
     virtual DScalar get_error_per_triangle(
         const Eigen::Matrix<DScalar, 3, 2, Eigen::RowMajor>& triangle) = 0;
 };
-// class DisplacementImage : public Displacement
-// {
-//     get_error_per_edge;
-//     sampler;
-// };
 
-// class DisplacementMesh : public DisplacementImage
-// {
-// protected:
-//     std::array<wmtk::Image, 3> m_position_image;
-//     std::array<wmtk::Image, 3> m_normals_image;
-// };
-// Shared templated parent class
-// class DisplacementPlane : public DisplacementImage
 template <typename Derived>
 class DisplacementImage : public Displacement
 {
 protected:
-    wmtk::Image m_image;
+    wmtk::Image m_image; // default, used for height map displaced value
+    std::unique_ptr<wmtk::Sampling> m_sampler;
 
 protected:
     struct QuadrCache
@@ -59,29 +48,32 @@ protected:
     tbb::enumerable_thread_specific<QuadrCache> m_cache;
 
 public:
-    DisplacementImage(const wmtk::Image img)
+    DisplacementImage(const wmtk::Image img, const SAMPLING_MODE sampling_mode)
         : m_image(img)
     {
         assert(m_image.width() == m_image.height());
+        set_sampling_mode(sampling_mode);
     }
+    // prevent DisplacementImage being accidentally moved or copied
+    DisplacementImage(DisplacementImage&&) = delete;
+    DisplacementImage& operator=(DisplacementImage&&) = delete;
+    DisplacementImage(const DisplacementImage&) = delete;
+    DisplacementImage& operator=(const DisplacementImage&) = delete;
 
 public:
-    Eigen::Matrix<double, 3, 1> get(double x, double y) const override
+    virtual void set_sampling_mode(const SAMPLING_MODE sampling_mode)
     {
-        auto z = static_cast<const Derived*>(this)->get_height(x, y);
-        Eigen::Matrix<double, 3, 1> coord_3d;
-        coord_3d << x, y, z;
-        return coord_3d;
+        m_sampler = create_sampler(m_image, sampling_mode);
+    }
+    Eigen::Matrix<double, 3, 1> get(double u, double v) const override
+    {
+        return static_cast<const Derived*>(this)->get(u, v);
     }
 
-    Eigen::Matrix<DScalar, 3, 1> get(const DScalar& x, const DScalar& y) const override
+    Eigen::Matrix<DScalar, 3, 1> get(const DScalar& u, const DScalar& v) const override
     {
-        auto z = static_cast<const Derived*>(this)->get_height(x, y);
-        Eigen::Matrix<DScalar, 3, 1> coord_3d;
-        coord_3d << x, y, z;
-        return coord_3d;
+        return static_cast<const Derived*>(this)->get(u, v);
     }
-    void set_image(const Image& image) { m_image = image; }
 
 public:
     inline double get_error_per_edge(
@@ -115,11 +107,11 @@ public:
         auto [xx2, yy2] = get_coordinate(uv2(0), uv2(1));
         // get all the pixels in between p1 and p2
         auto pixel_num = std::max(abs(xx2 - xx1), abs(yy2 - yy1));
-        if (pixel_num <= 0) return static_cast<T>(0.);
+        if (pixel_num <= 0) return T(0.);
         assert(pixel_num > 0);
-        T error = static_cast<T>(0.0);
+        T error = T(0.0);
         auto norm_T = [&](const Eigen::Matrix<T, 1, Eigen::Dynamic> row_v) -> T {
-            T ret = static_cast<T>(0.);
+            T ret = T(0.);
             for (auto i = 0; i < row_v.cols(); i++) {
                 auto debug_rowv = row_v(0, i);
                 ret += pow(row_v(0, i), 2);
@@ -127,8 +119,8 @@ public:
             return sqrt(ret);
         };
         for (int i = 0; i < pixel_num; i++) {
-            const auto r0 = static_cast<T>(i) / pixel_num;
-            const auto r1 = static_cast<T>(i + 1) / pixel_num;
+            const auto r0 = T(i) / pixel_num;
+            const auto r1 = T(i + 1) / pixel_num;
             Eigen::Matrix<T, 2, 1> pixel_uv1 = uv1 * (1. - r0) + uv2 * r0;
             Eigen::Matrix<T, 2, 1> pixel_uv2 = uv1 * (1. - r1) + uv2 * r1;
             Eigen::Matrix<T, 3, 1> pixel_p1 = p1_displaced * (1. - r0) + p2_displaced * r0;
@@ -136,16 +128,16 @@ public:
             wmtk::LineQuadrature quad;
             quad.get_quadrature(order);
 
-            T unweighted_error = static_cast<T>(0.0);
+            T unweighted_error = T(0.0);
             for (int j = 0; j < quad.points.rows(); j++) {
-                Eigen::Matrix<T, 2, 1> tmpuv = static_cast<T>(1 - quad.points(j, 0)) * pixel_uv1 +
-                                               static_cast<T>(quad.points(j, 0)) * pixel_uv2;
+                Eigen::Matrix<T, 2, 1> tmpuv =
+                    T(1 - quad.points(j, 0)) * pixel_uv1 + T(quad.points(j, 0)) * pixel_uv2;
                 Eigen::Matrix<T, 3, 1> tmpp_displaced = get(tmpuv(0), tmpuv(1));
 
-                Eigen::Matrix<T, 3, 1> tmpp_tri = static_cast<T>(1 - quad.points(j, 0)) * pixel_p1 +
-                                                  static_cast<T>(quad.points(j, 0)) * pixel_p2;
+                Eigen::Matrix<T, 3, 1> tmpp_tri =
+                    T(1 - quad.points(j, 0)) * pixel_p1 + T(quad.points(j, 0)) * pixel_p2;
                 Eigen::Matrix<T, 3, 1> diffp = tmpp_tri - tmpp_displaced;
-                unweighted_error += static_cast<T>(quad.weights(j)) * norm_T(diffp);
+                unweighted_error += T(quad.weights(j)) * norm_T(diffp);
             }
             auto diffuv = pixel_uv1 - pixel_uv2;
             error += unweighted_error * norm_T(diffuv);
@@ -186,13 +178,13 @@ public:
             triangle_double.row(i) << p_double(0), p_double(1);
             bbox.extend(p_double);
         }
-        auto norm_T = [&](const Eigen::Matrix<T, 1, Eigen::Dynamic> row_v) -> T {
-            T ret = static_cast<T>(0.);
+        auto squared_norm_T = [&](const Eigen::Matrix<T, 1, Eigen::Dynamic> row_v) -> T {
+            T ret = T(0.);
             for (auto i = 0; i < row_v.cols(); i++) {
                 auto debug_rowv = row_v(0, i);
                 ret += pow(row_v(0, i), 2);
             }
-            return sqrt(ret);
+            return ret;
         };
         auto get_coordinate = [&](const double& x, const double& y) -> std::pair<int, int> {
             auto [xx, yy] = m_image.get_pixel_index(get_value(x), get_value(y));
@@ -238,7 +230,7 @@ public:
             return p_tri;
         };
 
-        T value = static_cast<T>(0.);
+        T value = T(0.);
         for (size_t x = 0; x < num_pixels; ++x) {
             for (size_t y = 0; y < num_pixels; ++y) {
                 Eigen::AlignedBox2d box;
@@ -253,16 +245,93 @@ public:
                     m_cache.local().quad,
                     &m_cache.local().tmp);
                 for (size_t i = 0; i < m_cache.local().quad.size(); ++i) {
-                    auto tmpu = static_cast<T>(m_cache.local().quad.points()(i, 0));
-                    auto tmpv = static_cast<T>(m_cache.local().quad.points()(i, 1));
-                    auto tmpp_displaced = get(tmpu, tmpv);
-                    auto tmpp_tri = get_p_tri(tmpu, tmpv);
-                    auto diffp = tmpp_displaced - tmpp_tri;
-                    value += norm_T(diffp) * static_cast<T>(m_cache.local().quad.weights()[i]);
+                    auto tmpu = T(m_cache.local().quad.points()(i, 0));
+                    auto tmpv = T(m_cache.local().quad.points()(i, 1));
+                    Eigen::Matrix<T, 3, 1> tmpp_displaced = get(tmpu, tmpv);
+                    Eigen::Matrix<T, 3, 1> tmpp_tri = get_p_tri(tmpu, tmpv);
+                    Eigen::Matrix<T, 3, 1> diffp = tmpp_displaced - tmpp_tri;
+                    value += squared_norm_T(diffp) * T(m_cache.local().quad.weights()[i]);
                 }
             }
         }
         return value;
+    }
+};
+
+class DisplacementMesh : public DisplacementImage<DisplacementMesh>
+{
+public:
+    using DScalar = DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d>;
+    using Super = DisplacementImage<DisplacementMesh>;
+
+public:
+    DisplacementMesh(const wmtk::Image img, const SAMPLING_MODE sampling_mode)
+        : DisplacementImage(std::move(img), sampling_mode){};
+
+protected:
+    std::array<wmtk::Image, 3> m_position_image;
+    std::array<std::unique_ptr<wmtk::Sampling>, 3> m_position_sampler;
+    std::array<wmtk::Image, 3> m_normal_image;
+    std::array<std::unique_ptr<wmtk::Sampling>, 3> m_normal_sampler;
+
+public:
+    void set_sampling_mode(const wmtk::SAMPLING_MODE sampling_mode) override
+    {
+        Super::set_sampling_mode(sampling_mode);
+        for (auto i = 0; i < 3; i++) {
+            m_position_sampler[i] = create_sampler(m_position_image[i], sampling_mode);
+            m_normal_sampler[i] = create_sampler(m_normal_image[i], sampling_mode);
+        }
+    }
+
+    Eigen::Matrix<double, 3, 1> get(double u, double v) const
+    {
+        double z = m_sampler->sample(u, v);
+        Eigen::Matrix<double, 3, 1> displace_3d;
+        for (auto i = 0; i < 3; i++) {
+            double p = m_position_sampler[i]->sample(u, v);
+            double d = m_normal_sampler[i]->sample(u, v);
+            displace_3d(i, 0) = p + z * d;
+        }
+        return displace_3d;
+    }
+
+    Eigen::Matrix<DScalar, 3, 1> get(const DScalar& u, const DScalar& v) const
+    {
+        DScalar z = m_sampler->sample(u, v);
+        Eigen::Matrix<DScalar, 3, 1> displace_3d;
+        for (auto i = 0; i < 3; i++) {
+            DScalar p = m_position_sampler[i]->sample(u, v);
+            DScalar d = m_normal_sampler[i]->sample(u, v);
+            displace_3d(i, 0) = p + z * d;
+        }
+        return displace_3d;
+    }
+};
+
+class DisplacementPlane : public DisplacementImage<DisplacementPlane>
+{
+    using DScalar = DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d>;
+
+public:
+    DisplacementPlane(const wmtk::Image img, const SAMPLING_MODE sampling_mode)
+        : DisplacementImage(img, sampling_mode){};
+
+public:
+    Eigen::Matrix<double, 3, 1> get(double u, double v) const
+    {
+        auto z = m_sampler->sample(u, v);
+        Eigen::Matrix<double, 3, 1> coord_3d;
+        coord_3d << u, v, z;
+        return coord_3d;
+    }
+
+    Eigen::Matrix<DScalar, 3, 1> get(const DScalar& u, const DScalar& v) const
+    {
+        auto z = m_sampler->sample(u, v);
+        Eigen::Matrix<DScalar, 3, 1> coord_3d;
+        coord_3d << u, v, z;
+        return coord_3d;
     }
 };
 } // namespace wmtk
