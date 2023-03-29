@@ -22,6 +22,10 @@ namespace wmtk {
     auto tagassign(std::vector<Triangle> triangles)
     -> std::map<size_t, size_t>&{
         static std::map<size_t, size_t> tagass;
+        std::srand(10);
+        for (size_t i = 0 ; i < triangles.size(); i++){
+            tagass.insert({i, std::rand() % 2});
+        }
         return tagass;
     }
 }
