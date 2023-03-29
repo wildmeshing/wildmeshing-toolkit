@@ -5,6 +5,7 @@
 #include <vector>
 #include <cstdlib>
 #include <random>
+#include <map>
 
 
 namespace wmtk {
@@ -20,5 +21,6 @@ using Triangle = std::array<size_t, 3>;
  *
  */
 auto pntgen() -> const std::vector<Point2D>&;
-
+auto tagassign(std::vector<Triangle> triangles)
+    -> std::map<size_t, size_t>&;
 } // namespace wmtk

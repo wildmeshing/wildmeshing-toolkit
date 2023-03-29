@@ -1,18 +1,9 @@
 #include "Manifold-extraction.hpp"
 
-#include <cstdlib>
-/*
-int Factorial( int number ) {
-   //return number <= 1 ? number : Factorial( number - 1 ) * number;  // fail
-    return number <= 1 ? 1      : Factorial( number - 1 ) * number;  // pass
-}
-*/
-
 namespace wmtk {
     auto pntgen() -> const std::vector<wmtk::Point2D>&{
 
-        static size_t nb_points = 100;
-        //size_t sz = sizeof(int) * 20;
+        static size_t nb_points = 10;
         static std::vector<Point2D> points(nb_points);
         
         // seed of random gen is 10 
@@ -26,5 +17,11 @@ namespace wmtk {
             }
         }
         return points;
+    }
+
+    auto tagassign(std::vector<Triangle> triangles)
+    -> std::map<size_t, size_t>&{
+        static std::map<size_t, size_t> tagass;
+        return tagass;
     }
 }
