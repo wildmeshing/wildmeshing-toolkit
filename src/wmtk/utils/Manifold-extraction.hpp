@@ -8,16 +8,17 @@
 
 
 namespace wmtk {
+using Point3D = std::array<double, 3>;
+using Tetrahedron = std::array<size_t, 4>;
 using Point2D = std::array<double, 2>;
 using Triangle = std::array<size_t, 3>;
 
 /**
- * Generate 10 random points in 2D square domain
+ * Generate 100 random points in 2D square domain
  *
  * @returns A vector of Point2D type.
  *
  */
 auto pntgen() -> const std::vector<Point2D>&;
 
-//int Factorial( int number );
 } // namespace wmtk
