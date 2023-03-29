@@ -177,8 +177,10 @@ void AdaptiveTessellation::set_displacement()
 {
     // needs to be called after m_image is initiated
     // can be also set depending on a user parameter that initialize different Displacement type
-    std::shared_ptr<Displacement> displacement_ptr =
-        std::make_shared<DisplacementBicubic>(mesh_parameters.m_image);
+
+    std::shared_ptr<Displacement> displacement_ptr = std::make_shared<DisplacementPlane>(
+        mesh_parameters.m_image,
+        mesh_parameters.m_sampling_mode);
     mesh_parameters.m_displacement = displacement_ptr;
 }
 

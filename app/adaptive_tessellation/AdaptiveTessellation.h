@@ -13,12 +13,12 @@
 #include <wmtk/utils/Image.h>
 #include <wmtk/utils/MipMap.h>
 #include <wmtk/utils/PolygonClipping.h>
+#include <Eigen/Core>
 #include <finitediff.hpp>
 #include <nlohmann/json.hpp>
 #include <sec/envelope/SampleEnvelope.hpp>
 #include <wmtk/utils/LineQuadrature.hpp>
 #include "Parameters.h"
-
 namespace adaptive_tessellation {
 class VertexAttributes
 {

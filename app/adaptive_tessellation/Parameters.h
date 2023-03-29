@@ -87,6 +87,7 @@ public:
     double m_accuracy_threshold = 0.001;
 
     EDGE_LEN_TYPE m_edge_length_type = EDGE_LEN_TYPE::ACCURACY;
+    SAMPLING_MODE m_sampling_mode = SAMPLING_MODE::BICUBIC;
 
     std::shared_ptr<wmtk::Displacement> m_displacement;
 };
