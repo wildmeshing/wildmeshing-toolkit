@@ -166,7 +166,7 @@ void adaptive_tessellation::AdaptiveTessellation::smooth_all_vertices()
             executor(*this, collect_all_ops);
             write_displaced_obj(
                 mesh_parameters.m_output_folder + fmt::format("/smooth_{:03d}.obj", itr),
-                mesh_parameters.m_project_to_3d);
+                mesh_parameters.m_displacement);
             itr++;
         } while ((mesh_parameters.m_gradient / vert_capacity()).stableNorm() > 1e-4 && itr < 10);
         wmtk::logger().info("===== terminate smooth after {} itrs", itr);

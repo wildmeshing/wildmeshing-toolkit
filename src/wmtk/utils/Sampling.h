@@ -29,6 +29,7 @@ public:
         : m_image(img)
     {
         assert(m_image.width() == m_image.height());
+        assert(m_image.width() != 0);
     }
 
 public:

@@ -11,6 +11,7 @@
 #include "autodiff.h"
 
 namespace wmtk {
+enum class DISPLACEMENT_MODE { MESH_3D, PLANE };
 class Displacement
 {
 public:
@@ -170,6 +171,10 @@ public:
     {
         constexpr int Degree = 4;
         const int order = 2 * (Degree - 1);
+
+        Eigen::Matrix<T, 3, 1> p1 = get(triangle(0, 0), triangle(0, 1));
+        Eigen::Matrix<T, 3, 1> p2 = get(triangle(1, 0), triangle(1, 1));
+        Eigen::Matrix<T, 3, 1> p3 = get(triangle(2, 0), triangle(2, 1));
         Eigen::AlignedBox2d bbox;
         Eigen::Matrix<double, 3, 2, 1> triangle_double;
         for (auto i = 0; i < 3; i++) {
@@ -197,10 +202,6 @@ public:
         auto [xx2, yy2] = get_coordinate(bbox_max(0), bbox_max(1));
         auto num_pixels = std::max(abs(xx2 - xx1), abs(yy2 - yy1));
         const double pixel_size = bbox.diagonal().maxCoeff() / num_pixels;
-
-        T z1 = m_image.get(triangle(0, 0), triangle(0, 1));
-        T z2 = m_image.get(triangle(1, 0), triangle(1, 1));
-        T z3 = m_image.get(triangle(2, 0), triangle(2, 1));
         typedef std::integral_constant<int, 2> cached_t;
 
         // calculate the barycentric coordinate of the a point using u, v cooridnates
@@ -224,9 +225,7 @@ public:
             auto lambda2 = ((v3 - v1) * (u - u3) + (u1 - u3) * (v - v3)) /
                            ((v2 - v3) * (u1 - u3) + (u3 - u2) * (v1 - v3));
             auto lambda3 = 1 - lambda1 - lambda2;
-            auto z = (lambda1 * z1 + lambda2 * z2 + lambda3 * z3);
-            Eigen::Matrix<T, 3, 1> p_tri;
-            p_tri << u, v, z;
+            Eigen::Matrix<T, 3, 1> p_tri = (lambda1 * p1 + lambda2 * p2 + lambda3 * p3);
             return p_tri;
         };
 
@@ -265,8 +264,16 @@ public:
     using Super = DisplacementImage<DisplacementMesh>;
 
 public:
-    DisplacementMesh(const wmtk::Image img, const SAMPLING_MODE sampling_mode)
-        : DisplacementImage(std::move(img), sampling_mode){};
+    DisplacementMesh(
+        const wmtk::Image img,
+        std::array<wmtk::Image, 6> images,
+        const SAMPLING_MODE sampling_mode)
+        : DisplacementImage(std::move(img), sampling_mode)
+    {
+        set_position_normal_images(images);
+        set_sampling_mode(sampling_mode);
+        assert(m_image.width() != 0);
+    };
 
 protected:
     std::array<wmtk::Image, 3> m_position_image;
@@ -283,7 +290,15 @@ public:
             m_normal_sampler[i] = create_sampler(m_normal_image[i], sampling_mode);
         }
     }
-
+    void set_position_normal_images(std::array<wmtk::Image, 6> images)
+    {
+        // first 3 of the input are position maps
+        // last 3 of the input are normal maps
+        for (auto i = 0; i < 3; i++) {
+            m_position_image[i] = images[i];
+            m_normal_image[i] = images[3 + i];
+        }
+    }
     Eigen::Matrix<double, 3, 1> get(double u, double v) const
     {
         double z = m_sampler->sample(u, v);
