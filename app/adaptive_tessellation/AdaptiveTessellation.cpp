@@ -29,8 +29,10 @@ void AdaptiveTessellation::set_parameters(
     const double target_edge_length,
     const wmtk::Image& image,
     const WrappingMode wrapping_mode,
-    const EDGE_LEN_TYPE edge_len_type,
+    const SAMPLING_MODE sampling_mode,
+    const DISPLACEMENT_MODE displacement_mode,
     const ENERGY_TYPE energy_type,
+    const EDGE_LEN_TYPE edge_len_type,
     const bool boundary_parameter)
 {
     if (mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::ACCURACY ||
@@ -40,7 +42,8 @@ void AdaptiveTessellation::set_parameters(
     // setting needs to be in the order of image-> displacement-> energy-> edge_length
     // set the image first since it is used for displacement and energy setting
     set_image_function(image, wrapping_mode);
-    set_displacement();
+    mesh_parameters.m_sampling_mode = sampling_mode;
+    set_displacement(displacement_mode);
     set_energy(energy_type);
     set_edge_length_measurement(edge_len_type);
     mesh_parameters.m_boundary_parameter = boundary_parameter;
@@ -173,14 +176,25 @@ void AdaptiveTessellation::set_image_function(
     mesh_parameters.m_mipmap.set_wrapping_mode(wrapping_mode);
 }
 
-void AdaptiveTessellation::set_displacement()
+void AdaptiveTessellation::set_displacement(const DISPLACEMENT_MODE displacement_mode)
 {
     // needs to be called after m_image is initiated
     // can be also set depending on a user parameter that initialize different Displacement type
-
-    std::shared_ptr<Displacement> displacement_ptr = std::make_shared<DisplacementPlane>(
-        mesh_parameters.m_image,
-        mesh_parameters.m_sampling_mode);
+    std::shared_ptr<Displacement> displacement_ptr;
+    switch (displacement_mode) {
+    case DISPLACEMENT_MODE::MESH_3D:
+        displacement_ptr = std::make_shared<DisplacementMesh>(
+            mesh_parameters.m_image,
+            mesh_parameters.m_position_normal_images,
+            mesh_parameters.m_sampling_mode);
+        break;
+    case DISPLACEMENT_MODE::PLANE:
+        displacement_ptr = std::make_shared<DisplacementPlane>(
+            mesh_parameters.m_image,
+            mesh_parameters.m_sampling_mode);
+        break;
+    default: break;
+    }
     mesh_parameters.m_displacement = displacement_ptr;
 }
 
@@ -414,7 +428,7 @@ void AdaptiveTessellation::write_vtk(const std::string& path)
 
     export_mesh(V, F);
     for (int i = 0; i < V.rows(); i++) {
-        auto p = mesh_parameters.m_project_to_3d(V(i, 0), V(i, 1));
+        auto p = mesh_parameters.m_displacement->get(V(i, 0), V(i, 1));
         points.emplace_back(p(0));
         points.emplace_back(p(1));
         points.emplace_back(p(2));
@@ -515,19 +529,19 @@ void AdaptiveTessellation::write_displaced_obj(
 
 void AdaptiveTessellation::write_displaced_obj(
     const std::string& path,
-    const std::function<Eigen::Vector3d(double, double)>& displacement)
+    const std::shared_ptr<wmtk::Displacement> displacement)
 {
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
 
     export_mesh(V, F);
 
-    Eigen::MatrixXd V3 = Eigen::MatrixXd::Zero(V.rows(), 3);
+    Eigen::MatrixXd V3d = Eigen::MatrixXd::Zero(V.rows(), 3);
     for (int i = 0; i < V.rows(); i++) {
-        V3.row(i) = displacement(V(i, 0), V(i, 1));
+        V3d.row(i) = displacement->get(V(i, 0), V(i, 1));
     }
 
-    igl::writeOBJ(path, V3, F);
+    igl::writeOBJ(path, V3d, F);
 }
 
 double AdaptiveTessellation::get_length2d(const Tuple& edge_tuple) const
@@ -807,7 +821,7 @@ void AdaptiveTessellation::mesh_improvement(int max_its)
         consolidate_mesh();
         write_displaced_obj(
             mesh_parameters.m_output_folder + "/after_split_" + std::to_string(it) + ".obj",
-            mesh_parameters.m_project_to_3d);
+            mesh_parameters.m_displacement);
 
         swap_all_edges();
         assert(invariants(get_faces()));
@@ -817,7 +831,7 @@ void AdaptiveTessellation::mesh_improvement(int max_its)
         consolidate_mesh();
         write_displaced_obj(
             mesh_parameters.m_output_folder + "/after_swap_" + std::to_string(it) + ".obj",
-            mesh_parameters.m_project_to_3d);
+            mesh_parameters.m_displacement);
         swap_finish_time = lagrange::get_timestamp();
 
         collapse_all_edges();
@@ -825,7 +839,7 @@ void AdaptiveTessellation::mesh_improvement(int max_its)
         consolidate_mesh();
         write_displaced_obj(
             mesh_parameters.m_output_folder + "/after_collapse_" + std::to_string(it) + ".obj",
-            mesh_parameters.m_project_to_3d);
+            mesh_parameters.m_displacement);
         auto collapse_finish_time = lagrange::get_timestamp();
         mesh_parameters.js_log["iteration_" + std::to_string(it)]["collapse time"] =
             lagrange::timestamp_diff_in_seconds(swap_finish_time, collapse_finish_time);
@@ -838,7 +852,7 @@ void AdaptiveTessellation::mesh_improvement(int max_its)
         consolidate_mesh();
         write_displaced_obj(
             mesh_parameters.m_output_folder + "/after_smooth_" + std::to_string(it) + ".obj",
-            mesh_parameters.m_project_to_3d);
+            mesh_parameters.m_displacement);
 
         auto avg_grad = (mesh_parameters.m_gradient / vert_capacity()).stableNorm();
 
@@ -972,7 +986,7 @@ void AdaptiveTessellation::gradient_debug(int max_its)
         consolidate_mesh();
         write_displaced_obj(
             "smooth_" + std::to_string(it) + ".obj",
-            mesh_parameters.m_project_to_3d);
+            mesh_parameters.m_displacement);
 
         wmtk::logger().info(
             "++++++++v {} t {} avg gradient {}++++++++",

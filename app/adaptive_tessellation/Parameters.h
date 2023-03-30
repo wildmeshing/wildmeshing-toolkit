@@ -78,7 +78,7 @@ public:
     std::function<std::pair<int, int>(const double&, const double&)> m_image_get_coordinate;
 
     wmtk::Image m_image;
-
+    std::array<wmtk::Image, 6> m_position_normal_images;
     wmtk::MipMap m_mipmap;
 
     std::function<double(const TriMesh::Tuple& edge_tuple)> m_get_length;
@@ -88,7 +88,7 @@ public:
 
     EDGE_LEN_TYPE m_edge_length_type = EDGE_LEN_TYPE::ACCURACY;
     SAMPLING_MODE m_sampling_mode = SAMPLING_MODE::BICUBIC;
-
+    DISPLACEMENT_MODE m_displacement_mode = DISPLACEMENT_MODE::PLANE;
     std::shared_ptr<wmtk::Displacement> m_displacement;
 };
 } // namespace adaptive_tessellation
