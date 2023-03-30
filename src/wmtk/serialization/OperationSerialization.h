@@ -27,52 +27,47 @@ class File;
 
 namespace wmtk {
 class TriMesh;
-class OperationLogger;
+class OperationSerialization;
 class OperationReplayer;
 class AttributeCollectionRecorderBase;
 ;
 
 
-class OperationRecorder
-{
-public:
-    struct OperationData;
-    using Ptr = std::shared_ptr<OperationRecorder>;
-    OperationRecorder(OperationLogger& logger_, const std::string& cmd);
-    virtual ~OperationRecorder();
+//class OperationRecorder
+//{
+//public:
+//    struct OperationData;
+//    using Ptr = std::shared_ptr<OperationRecorder>;
+//    OperationRecorder(OperationSerialization& logger_, const std::string& cmd);
+//    virtual ~OperationRecorder();
+//
+//
+//    // If the operation
+//    void cancel();
+//    bool cancelled() const { return this->is_cancelled; }
+//    virtual size_t commit(size_t start, size_t end) = 0;
+//    void flush();
+//
+//
+//protected:
+//    OperationSerialization& logger;
+//    std::string name;
+//    // each derived class is in charge of its own tuple data
+//    std::vector<std::pair<std::string, std::array<size_t, 2>>> attribute_updates;
+//    bool is_cancelled = false;
+//};
 
-
-    // If the operation
-    void cancel();
-    bool cancelled() const { return this->is_cancelled; }
-    virtual size_t commit(size_t start, size_t end) = 0;
-    void flush();
-
-
-protected:
-    OperationLogger& logger;
-    std::string name;
-    // each derived class is in charge of its own tuple data
-    std::vector<std::pair<std::string, std::array<size_t, 2>>> attribute_updates;
-    bool is_cancelled = false;
-};
-
-class OperationLogger
+// expects an operation serialization format 
+class OperationSerialization
 {
 public:
     friend class OperationRecorder;
     friend class OperationReplayer;
     friend class AttributeCollectionRecorderBase;
-    OperationLogger(HighFive::File& file, const HighFive::DataType& operation_datatype);
-    virtual ~OperationLogger();
+    OperationSerialization(HighFive::File& file, const HighFive::DataType& operation_datatype);
+    virtual ~OperationSerialization();
 
 
-    void set_readonly();
-    bool is_readonly();
-
-    void add_attribute_recorder(
-        std::string&& attribute_name,
-        AttributeCollectionRecorderBase& attribute_recorder);
     // the total number of operations that were logged
     size_t operation_count() const;
     // the total number of attribute changes that were logged. multiple can happen per operation
@@ -87,15 +82,13 @@ private:
     HighFive::File& file;
 
 protected:
-    HighFive::DataSet operation_dataset;
+    HighFive::DataSet m_operation_dataset;
     HighFive::DataSet attribute_changes_dataset;
     // std::ostream& output_stream;
-    std::map<std::string, AttributeCollectionRecorderBase*> attribute_recorders;
 
 
     // returns true if attribute was successfully recorded
     std::array<size_t, 2> record_attribute(const std::string& attribute_name);
-    bool read_mode = false;
 };
 
 

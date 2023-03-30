@@ -109,6 +109,7 @@ protected:
         const std::string& name,
         const HighFive::DataType& data_type);
     AttributeCollectionSerializationBase(
+        const std::string& name,
         HighFive::DataSet&& value_changes_ds,
         HighFive::DataSet&& updates_ds);
 
@@ -123,13 +124,14 @@ public:
     size_t changes_size() const;
     // the number of updates serialized
     size_t updates_size() const;
+    const std::string& name() const;
 
     AttributeCollectionUpdate update(size_t index) const;
 
 protected:
     virtual AttributeCollectionUpdate record_value_changes() = 0;
     virtual AttributeCollectionUpdate record_entire_state() = 0;
-    // returns the index of the recorded changes in the updates_dataset
+    // returns the index of the recorded changes in the m_updates_dataset
     size_t record();
     size_t record_initial_state();
 
@@ -146,8 +148,9 @@ protected:
     virtual AbstractAttributeCollection& abstract_attribute_collection() = 0;
 
 
-    HighFive::DataSet value_changes_dataset;
-    HighFive::DataSet updates_dataset;
+    std::string m_name;
+    HighFive::DataSet m_value_changes_dataset;
+    HighFive::DataSet m_updates_dataset;
 };
 
 template <typename T>
@@ -259,7 +262,7 @@ AttributeCollectionUpdate AttributeCollectionSerialization<T>::record_value_chan
             return UpdateData{index, old_value, new_value};
         });
 
-    auto [start, end] = utils::append_values_to_dataset(value_changes_dataset, data);
+    auto [start, end] = utils::append_values_to_dataset(m_value_changes_dataset, data);
     return AttributeCollectionUpdate(start, end, old_size, attribute_collection.size());
     // return std::array<size_t, 3>{{start, end, attribute_collection.m_rollback_size.local(),
     // attribute_collection.size()}};
@@ -282,7 +285,7 @@ AttributeCollectionUpdate AttributeCollectionSerialization<T>::record_entire_sta
         data.emplace_back(UpdateData{index, T{}, new_value});
     }
 
-    auto [start, end] = utils::append_values_to_dataset(value_changes_dataset, data);
+    auto [start, end] = utils::append_values_to_dataset(m_value_changes_dataset, data);
     return AttributeCollectionUpdate(start, end, old_size, attribute_collection.size());
     // return std::array<size_t, 3>{{start, end, attribute_collection.m_rollback_size.local(),
     // attribute_collection.size()}};
@@ -323,7 +326,7 @@ AttributeCollectionSerialization<T>::get_value_changes(
     size.emplace_back(update.range.end - update.range.begin);
 
     // read the data
-    value_changes_dataset.select(start, size).read(value_changes);
+    m_value_changes_dataset.select(start, size).read(value_changes);
     return value_changes;
 }
 

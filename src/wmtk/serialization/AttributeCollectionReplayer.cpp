@@ -1,7 +1,6 @@
-#include <wmtk/AttributeCollectionReplayer.h>
-#include <wmtk/AttributeCollectionSerialization.h>
-#include <wmtk/AttributeCollection.hpp>
-#include <wmtk/utils/Hdf5Utils.hpp>
+#include <wmtk/serialization/AttributeCollectionReplayer.h>
+#include <wmtk/serialization/AttributeCollectionSerialization.h>
+#include <wmtk/serialization/Hdf5Utils.hpp>
 
 using namespace wmtk;
 AttributeCollectionReplayer::AttributeCollectionReplayer(

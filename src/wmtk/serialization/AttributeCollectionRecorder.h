@@ -1,17 +1,17 @@
 #pragma once
-#include <wmtk/AttributeCollectionSerialization.h>
-#include <wmtk/AttributeCollection.hpp>
-#include <wmtk/utils/Hdf5Utils.hpp>
+#include <wmtk/serialization/AttributeCollectionSerialization.h>
 
+namespace HighFive {
+    class File;
+}
 
 namespace wmtk {
 
-    class AbstractAttributeCollection;
+class AbstractAttributeCollection;
 // Interface for adding an attribute to a logged hdf5 file
 class AttributeCollectionRecorder
 {
 public:
-
     template <typename T>
     AttributeCollectionRecorder(
         HighFive::File& file,
@@ -20,14 +20,16 @@ public:
     ~AttributeCollectionRecorder();
 
 
+    const std::string& name() const;
     // number of updates (chunks of changes) recorded
     size_t updates_size() const;
     // number of individual value changes recorded
     size_t changes_size() const;
 
-    AttributeCollectionUpdate  update(size_t index) const;
+    AttributeCollectionUpdate update(size_t index) const;
 
     friend class AbstractAttributeCollection;
+
 protected:
     size_t record();
     size_t record_initial_state();
@@ -36,7 +38,6 @@ protected:
     AttributeCollectionRecorder(
         std::unique_ptr<AttributeCollectionSerializationBase>&& serialization);
     // friend class OperationSerialization;
-
 
 
 protected:

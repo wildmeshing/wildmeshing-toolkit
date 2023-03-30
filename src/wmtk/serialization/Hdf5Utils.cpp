@@ -1,4 +1,4 @@
-#include <wmtk/utils/Hdf5Utils.hpp>
+#include <wmtk/serialization/Hdf5Utils.hpp>
 #include <wmtk/utils/Logger.hpp>
 namespace wmtk::utils {
 // checks whether the file holding the dataset exists

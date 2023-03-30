@@ -62,7 +62,10 @@ protected:
 
 private:
     TriMesh& mesh;
-    AttributeCollectionRecorder<TriMesh::TriangleConnectivity> tri_recorder;
+    AttributeCollectionRecorder triangle_recorder;
+    std::unique_ptr<AttributeCollectionRecorder> vertex_attribute_recorder;
+    std::unique_ptr<AttributeCollectionRecorder> edge_attribute_recorder;
+    std::unique_ptr<AttributeCollectionRecorder> face_attribute_recorder;
 };
 
 } // namespace wmtk

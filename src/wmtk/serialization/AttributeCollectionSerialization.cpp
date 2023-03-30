@@ -1,4 +1,4 @@
-#include <wmtk/AttributeCollectionSerialization.h>
+#include <wmtk/serialization/AttributeCollectionSerialization.h>
 #include <wmtk/utils/Logger.hpp>
 
 HIGHFIVE_REGISTER_TYPE(wmtk::AttributeCollectionRange, wmtk::AttributeCollectionRange::datatype);
@@ -26,6 +26,7 @@ AttributeCollectionSerializationBase::AttributeCollectionSerializationBase(
     const std::string& name,
     const HighFive::DataType& data_type)
     : AttributeCollectionSerializationBase(
+          name,
           utils::create_extendable_dataset(file, name + "_value_changes", data_type),
           utils::create_extendable_dataset(
               file,
@@ -33,12 +34,18 @@ AttributeCollectionSerializationBase::AttributeCollectionSerializationBase(
               AttributeCollectionUpdate::datatype()))
 {}
 
+const std::string& AttributeCollectionSerializationBase::name() const
+{
+    return m_name;
+}
 
 AttributeCollectionSerializationBase::AttributeCollectionSerializationBase(
+    const std::string& name_,
     HighFive::DataSet&& value_changes_ds,
     HighFive::DataSet&& updates_ds)
-    : value_changes_dataset(value_changes_ds)
-    , updates_dataset(updates_ds)
+    : m_name(name_)
+    , m_value_changes_dataset(value_changes_ds)
+    , m_updates_dataset(updates_ds)
 {}
 
 AttributeCollectionSerializationBase::~AttributeCollectionSerializationBase() = default;
@@ -58,24 +65,24 @@ HighFive::DataSetCreateProps AttributeCollectionSerializationBase::create_proper
 size_t AttributeCollectionSerializationBase::record()
 {
     AttributeCollectionUpdate update = record_value_changes();
-    return utils::append_value_to_dataset(updates_dataset, update) - 1;
+    return utils::append_value_to_dataset(m_updates_dataset, update) - 1;
 }
 
 size_t AttributeCollectionSerializationBase::record_initial_state()
 {
     AttributeCollectionUpdate update = record_entire_state();
-    return utils::append_value_to_dataset(updates_dataset, update) - 1;
+    return utils::append_value_to_dataset(m_updates_dataset, update) - 1;
 }
 
 // the number of updates serialized
 size_t AttributeCollectionSerializationBase::changes_size() const
 {
-    return value_changes_dataset.getElementCount();
+    return m_value_changes_dataset.getElementCount();
 }
 // the number of updates serialized
 size_t AttributeCollectionSerializationBase::updates_size() const
 {
-    return updates_dataset.getElementCount();
+    return m_updates_dataset.getElementCount();
 }
 
 AttributeCollectionUpdate AttributeCollectionSerializationBase::update(size_t index) const
@@ -83,7 +90,7 @@ AttributeCollectionUpdate AttributeCollectionSerializationBase::update(size_t in
     assert(index < updates_size());
     AttributeCollectionUpdate ret;
     std::vector<AttributeCollectionUpdate> retvec;
-    updates_dataset.select({index}, {1}).read(retvec);
+    m_updates_dataset.select({index}, {1}).read(retvec);
     return retvec[0];
 }
 

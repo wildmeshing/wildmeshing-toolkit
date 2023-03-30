@@ -3,6 +3,7 @@
 #define USE_OPERATION_LOGGER
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/AttributeCollection.hpp>
+#include <wmtk/TriMeshTuple.h>
 #include <wmtk/utils/Logger.hpp>
 
 // clang-format off
@@ -36,136 +37,8 @@ class AttributeCollectionRecorder;
 class TriMesh
 {
 public:
-    // Cell Tuple Navigator
-    class Tuple
-    {
-    private:
-        friend class TriMeshTupleData;
-        size_t m_vid = -1;
-        size_t m_eid = -1;
-        size_t m_fid = -1;
-        size_t m_hash = -1;
 
-        void update_hash(const TriMesh& m);
-
-    public:
-        void print_info() const;
-        std::string info() const;
-
-        //         v2        /
-        //       /    \      /
-        //  e1  /      \  e0 /
-        //     v0 - - - v1   /
-        //         e2        /
-        /**
-         * Construct a new Tuple object with global vertex/triangle index and local edge index
-         *
-         * @param vid vertex id
-         * @param eid edge id (local)
-         * @param fid face id
-         * @note edge ordering
-         */
-        Tuple() = default;
-        Tuple(const Tuple& other) = default;
-        Tuple(Tuple&& other) = default;
-        Tuple& operator=(const Tuple& other) = default;
-        Tuple& operator=(Tuple&& other) = default;
-        Tuple(size_t vid, size_t eid, size_t fid, const TriMesh& m)
-            : m_vid(vid)
-            , m_eid(eid)
-            , m_fid(fid)
-        {
-            update_hash(m);
-        }
-
-
-        /**
-         * returns global vertex id.
-         * @param m TriMesh where the tuple belongs.
-         * @return size_t
-         */
-        inline size_t vid(const TriMesh&) const { return m_vid; }
-
-        /**
-         * returns a global unique face id
-         *
-         * @param m TriMesh where the tuple belongs.
-         * @return size_t
-         */
-        inline size_t fid(const TriMesh&) const { return m_fid; }
-
-
-        /**
-         * returns a global unique edge id
-         *
-         * @param m TriMesh where the tuple belongs.
-         * @return size_t
-         * @note The global id may not be consecutive. The edges are undirected and different tetra
-         * share the same edge.
-         */
-        size_t eid(const TriMesh& m) const;
-        size_t eid_unsafe(const TriMesh& m) const;
-        /**
-         * returns the local eid of the tuple
-         *
-         * @param m TriMesh where the tuple belongs.
-         * @return size_t
-         * @note use mostly for constructing consistent tuples in operations
-         */
-        size_t local_eid(const TriMesh&) const { return m_eid; }
-        /**
-         * Switch operation.
-         *
-         * @param m Mesh
-         * @return another Tuple that share the same face, edge, but different vertex.
-         */
-        Tuple switch_vertex(const TriMesh& m) const;
-        /**
-         *
-         * @param m
-         * @return another Tuple that share the same face, vertex, but different edge.
-         */
-        Tuple switch_edge(const TriMesh& m) const;
-        /**
-         * Switch operation for the adjacent triangle
-         *
-         * @param m Mesh
-         * @return Tuple for the edge-adjacent triangle, sharing same edge, and vertex.
-         * @note nullopt if the Tuple of the switch goes off the boundary.
-         */
-        std::optional<Tuple> switch_face(const TriMesh& m) const;
-
-        /**
-         * @brief check if a Tuple is valid
-         *
-         * @param m the Mesh
-         * @return false if 1. the fid of the Tuple is -1, 2. either the vertex or the face
-         * refered to by the Tuple is removed, 3. the hash of the Tuple is not the same as
-         * the hash of the triangle it refers to in the mesh
-         *
-         */
-        bool is_valid(const TriMesh& m) const;
-
-        bool is_ccw(const TriMesh& m) const;
-        /**
-         * Positively oriented 3 vertices (represented by Tuples) in a tri.
-         * @return std::array<Tuple, 3> each tuple owns a different vertex.
-         */
-        std::array<Tuple, 3> oriented_tri_vertices(const TriMesh& m) const;
-
-        std::tuple<size_t, size_t, size_t, size_t> as_stl_tuple() const
-        {
-            return std::tie(m_vid, m_eid, m_fid, m_hash);
-        }
-        friend bool operator<(const Tuple& a, const Tuple& t)
-        {
-            return (
-                std::tie(a.m_vid, a.m_eid, a.m_fid, a.m_hash) <
-                std::tie(t.m_vid, t.m_eid, t.m_fid, t.m_hash));
-            // return a.as_stl_tuple() < t.as_stl_tuple();
-        }
-    };
-
+    using Tuple = TriMeshTuple;
     /**
      * (internal use) Maintains a list of triangles connected to the given vertex, and a flag to
      * mark removal.
@@ -319,7 +192,6 @@ protected:
     wmtk::AttributeCollection<VertexConnectivity> m_vertex_connectivity;
     wmtk::AttributeCollection<TriangleConnectivity> m_tri_connectivity;
 
-    TriMeshOperationLogger* p_operation_logger = nullptr;
 
 protected:
     std::atomic_long current_vert_size;
@@ -540,13 +412,13 @@ protected:
      * @brief End the modification phase
      *
      */
-    void release_protected_attributes();
+    std::array<std::optional<size_t>,3> release_protected_attributes();
 
     /**
      * @brief End Caching connectivity
      *
      */
-    void release_protected_connectivity();
+    std::optional<size_t> release_protected_connectivity();
 
     /**
      * @brief rollback the attributes that are modified if any condition failed

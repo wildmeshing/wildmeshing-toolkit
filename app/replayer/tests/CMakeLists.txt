@@ -4,7 +4,7 @@ list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/contrib)
 include(Catch)
 
 file(GLOB TEST_SOURCES CONFIGURE_DEPENDS "*.h" "*.cpp")
-add_executable(sec_tests ${TEST_SOURCES})
+add_executable(replayer_tests ${TEST_SOURCES})
 target_link_libraries(replayer_tests PUBLIC
     wmtk::replayer_lib
     Catch2::Catch2

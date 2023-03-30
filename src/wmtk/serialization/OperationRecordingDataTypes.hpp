@@ -21,13 +21,14 @@ namespace wmtk {
 // stores the update data for a single operation as well as a range into the table of per-attribute
 // updates
 //
-struct TriMeshOperationData
+template <typename TupleType>
+struct OperationData
 {
     // TODO: operation_name could be mapped to an enum at some point
     char name[20];
-    TriMeshTupleData input_tuple;
-    TriMeshTupleData output_tuple;
-    AttributeCollectionRange update_range;
+    TupleType input_tuple;
+    //TupleType output_tuple;
+    AttributeCollectionRange updates;
     size_t vertex_size = 0;
     size_t triangle_size = 0;
 

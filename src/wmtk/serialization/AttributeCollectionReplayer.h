@@ -1,7 +1,5 @@
 #pragma once
-#include <wmtk/AttributeCollectionSerialization.h>
-#include <wmtk/AttributeCollection.hpp>
-#include <wmtk/utils/Hdf5Utils.hpp>
+#include <wmtk/serialization/AttributeCollectionSerialization.h>
 
 
 namespace wmtk {

@@ -1,7 +1,6 @@
-#include <wmtk/AttributeCollectionRecorder.h>
-#include <wmtk/AttributeCollectionSerialization.h>
-#include <wmtk/AttributeCollection.hpp>
-#include <wmtk/utils/Hdf5Utils.hpp>
+#include <wmtk/serialization/AttributeCollectionRecorder.h>
+#include <wmtk/serialization/AttributeCollectionSerialization.h>
+#include <wmtk/serializaation/Hdf5Utils.hpp>
 
 using namespace wmtk;
 AttributeCollectionRecorder::AttributeCollectionRecorder(
@@ -11,9 +10,14 @@ AttributeCollectionRecorder::AttributeCollectionRecorder(
     AbstractAttributeCollection& aac = m_serialization->abstract_attribute_collection();
 
     aac.add_recorder(this);
-
 }
 
+AttributeCollectionRecorder::AttributeCollectionRecorder() = default;
+
+AttributeCollectionRecorder::AttributeCollectionRecorder(AttributeCollectionRecorder&&) = default;
+
+AttributeCollectionRecorder& AttributeCollectionRecorder::operator=(AttributeCollectionRecorder&&) =
+    default;
 
 AttributeCollectionRecorder::~AttributeCollectionRecorder()
 {
@@ -33,6 +37,10 @@ size_t AttributeCollectionRecorder::record_initial_state()
     return m_serialization->record_initial_state();
 }
 
+const std::string& AttributeCollectionRecorder::name() const
+{
+    return m_serialization->name();
+}
 
 size_t AttributeCollectionRecorder::updates_size() const
 {
