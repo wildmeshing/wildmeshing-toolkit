@@ -4,7 +4,9 @@
 
 include(gmp)
 include(fenvelope)
-
+include(lagrange)
+lagrange_include_modules(io)
+lagrange_include_modules(core)
 add_library(wmtk_adaptive_tessellation
 	Collapse.cpp
 	Swap.cpp
@@ -26,9 +28,11 @@ target_link_libraries(wmtk_adaptive_tessellation PUBLIC
 	wmtk::remeshing_lib
 	igl::predicates
 	lagrange::bvh
+	lagrange::io
+	lagrange::core
 	gmp::gmp
+	stb::image
 )
-
 add_executable(adaptive_tessellation main.cpp)
 target_compile_options(adaptive_tessellation PRIVATE "-rdynamic")
 target_link_libraries(adaptive_tessellation PUBLIC wmtk::adaptive_tessellation)

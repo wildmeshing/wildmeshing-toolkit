@@ -111,7 +111,7 @@ include(stb)
 include(tinyexr)
 target_link_libraries(wildmeshing_toolkit PUBLIC
     tinyexr
-    stb)
+    stb::image)
 include(lean-vtk)
 target_link_libraries(wildmeshing_toolkit PUBLIC LeanVTK)
 include(nanospline)
