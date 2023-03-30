@@ -1,5 +1,5 @@
 #pragma once
-#include <wmtk/utils/Hdf5Utils.hpp>
+#include <wmtk/serialization/Hdf5Utils.hpp>
 
 
 // Attribute Change tables:

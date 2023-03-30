@@ -240,6 +240,7 @@ void TriMesh::build_vertex_connectivity(size_t n_vertices)
         if (!tri_con.m_is_removed) {
             for (const size_t vind : tri_con.m_indices) {
                 m_vertex_connectivity[vind].m_conn_tris.push_back(i);
+                m_vertex_connectivity[vind].m_is_removed = false;
             }
         }
     }

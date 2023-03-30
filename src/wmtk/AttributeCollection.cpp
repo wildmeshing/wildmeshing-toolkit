@@ -1,4 +1,4 @@
-#include <wmtk/AttributeCollectionRecorder.h>
+#include <wmtk/serialization/AttributeCollectionRecorder.h>
 #include <wmtk/AttributeCollection.hpp>
 
 

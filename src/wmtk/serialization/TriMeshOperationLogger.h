@@ -1,6 +1,6 @@
 #pragma once
 #include <wmtk/TriMesh.h>
-#include <wmtk/utils/OperationRecordingDataTypes.hpp>
+#include <wmtk/serialization//OperationRecordingDataTypes.hpp>
 
 
 template <>
@@ -13,8 +13,8 @@ HighFive::DataType
 HighFive::create_datatype<wmtk::AttributeUpdateData<wmtk::TriMesh::TriangleConnectivity>>();
 
 
-#include <wmtk/utils/AttributeRecorder.h>
-#include <wmtk/utils/OperationLogger.h>
+#include <wmtk/serialization/AttributeCollectionRecorder.h>
+#include <wmtk/serialization/OperationLogger.h>
 
 namespace wmtk {
 

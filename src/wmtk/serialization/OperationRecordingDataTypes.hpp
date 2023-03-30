@@ -1,7 +1,7 @@
 #pragma once
 #include <wmtk/TriMesh.h>
-#include <wmtk/utils/AttributeCollectionRecorder.h>
-#include <wmtk/utils/Hdf5Utils.h>
+#include <wmtk/serialization/AttributeCollectionRecorder.h>
+#include <wmtk/serialization/Hdf5Utils.hpp>
 #include <ostream>
 #include <string_view>
 #include <wmtk/utils/Logger.hpp>

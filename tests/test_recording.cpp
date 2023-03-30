@@ -1,6 +1,7 @@
 
-#include <wmtk/AttributeCollectionRecorder.h>
-#include <wmtk/AttributeCollectionReplayer.h>
+#include <wmtk/AttributeCollection.hpp>
+#include <wmtk/serialization/AttributeCollectionRecorder.h>
+#include <wmtk/serialization/AttributeCollectionReplayer.h>
 
 WMTK_HDF5_REGISTER_ATTRIBUTE_TYPE(double)
 

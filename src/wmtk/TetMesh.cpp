@@ -1,4 +1,5 @@
 #include <wmtk/TetMesh.h>
+#include <wmtk/utils/TetMeshElementTopology.h>
 
 #include <tbb/parallel_for.h>
 #include <wmtk/AttributeCollection.hpp>
@@ -6,6 +7,7 @@
 #include <wmtk/utils/TupleUtils.hpp>
 
 #include <Tracy.hpp>
+using namespace wmtk;
 
 int wmtk::TetMesh::get_next_empty_slot_t()
 {
@@ -292,30 +294,32 @@ bool wmtk::TetMesh::smooth_vertex(const Tuple& loc0)
 wmtk::TetMesh::Tuple wmtk::TetMesh::tuple_from_edge(size_t tid, int local_eid) const
 {
     assert(tid < tet_capacity());
-    assert(local_eid >= 0 && local_eid < m_local_edges.size());
+    assert(local_eid >= 0 && local_eid < utils::tet_element_topology::local_edges.size());
 
-    int vid = m_tet_connectivity[tid][m_local_edges[local_eid][0]];
-    int fid = m_map_edge2face[local_eid];
+    int vid = m_tet_connectivity[tid][utils::tet_element_topology::local_edges[local_eid][0]];
+    int fid = utils::tet_element_topology::map_edge2face[local_eid];
     return Tuple(*this, vid, local_eid, fid, tid);
 }
 
 wmtk::TetMesh::Tuple wmtk::TetMesh::tuple_from_face(size_t tid, int local_fid) const
 {
     assert(tid < tet_capacity());
-    assert(local_fid >= 0 && local_fid < m_local_faces.size());
+    assert(local_fid >= 0 && local_fid < utils::tet_element_topology::local_faces.size());
 
-    int vid = m_tet_connectivity[tid][m_local_faces[local_fid][0]];
-    int lvid1 = m_local_faces[local_fid][0];
-    int lvid2 = m_local_faces[local_fid][1];
+    int vid = m_tet_connectivity[tid][utils::tet_element_topology::local_faces[local_fid][0]];
+    int lvid1 = utils::tet_element_topology::local_faces[local_fid][0];
+    int lvid2 = utils::tet_element_topology::local_faces[local_fid][1];
     int eid = -1;
     for (int i = 0; i < 6; i++) {
-        if ((m_local_edges[i][0] == lvid1 && m_local_edges[i][1] == lvid2) ||
-            (m_local_edges[i][0] == lvid2 && m_local_edges[i][1] == lvid1)) {
+        if ((utils::tet_element_topology::local_edges[i][0] == lvid1 &&
+             utils::tet_element_topology::local_edges[i][1] == lvid2) ||
+            (utils::tet_element_topology::local_edges[i][0] == lvid2 &&
+             utils::tet_element_topology::local_edges[i][1] == lvid1)) {
             eid = i;
             break;
         }
     }
-    int fid = m_map_edge2face[local_fid];
+    int fid = utils::tet_element_topology::map_edge2face[local_fid];
     return Tuple(*this, vid, eid, local_fid, tid);
 }
 
@@ -340,12 +344,17 @@ std::tuple<wmtk::TetMesh::Tuple, size_t> wmtk::TetMesh::tuple_from_face(
         f[j] = m_tet_connectivity[face.m_global_tid].find(vids[j]);
     }
     std::sort(f.begin(), f.end());
-    face.m_local_fid =
-        std::find(m_local_faces.begin(), m_local_faces.end(), f) - m_local_faces.begin();
+    face.m_local_fid = std::find(
+                           utils::tet_element_topology::local_faces.begin(),
+                           utils::tet_element_topology::local_faces.end(),
+                           f) -
+                       utils::tet_element_topology::local_faces.begin();
     // eid
-    face.m_local_eid = m_local_edges_in_a_face[face.m_local_fid][0];
+    face.m_local_eid = utils::tet_element_topology::local_edges_in_a_face[face.m_local_fid][0];
     // vid
-    face.m_global_vid = m_tet_connectivity[face.m_global_tid][m_local_edges[face.m_local_eid][0]];
+    face.m_global_vid =
+        m_tet_connectivity[face.m_global_tid]
+                          [utils::tet_element_topology::local_edges[face.m_local_eid][0]];
 
     size_t global_fid = face.m_global_tid * 4 + face.m_local_fid;
 
@@ -368,7 +377,7 @@ wmtk::TetMesh::Tuple wmtk::TetMesh::tuple_from_edge(const std::array<size_t, 2>&
     auto local_ind = m_tet_connectivity[tid].m_indices;
 
     for (auto local_eid = 0; local_eid < 6; local_eid++) {
-        auto [l0, l1] = m_local_edges[local_eid];
+        auto [l0, l1] = utils::tet_element_topology::local_edges[local_eid];
         auto v0 = local_ind[l0], v1 = local_ind[l1];
         if (v0 != vids[0] && v1 != vids[0]) continue;
         if (v0 != vids[1] && v1 != vids[1]) continue;
@@ -386,8 +395,8 @@ wmtk::TetMesh::Tuple wmtk::TetMesh::tuple_from_vertex(size_t vid) const
     if (m_vertex_connectivity[vid].m_is_removed) return Tuple();
     int tid = m_vertex_connectivity[vid].m_conn_tets[0];
     int j = m_tet_connectivity[tid].find(vid);
-    int eid = m_map_vertex2edge[j];
-    int fid = m_map_edge2face[eid];
+    int eid = utils::tet_element_topology::map_vertex2edge[j];
+    int fid = utils::tet_element_topology::map_edge2face[eid];
 
     return Tuple(*this, vid, eid, fid, tid);
 }
@@ -398,8 +407,8 @@ wmtk::TetMesh::Tuple wmtk::TetMesh::tuple_from_tet(size_t tid) const
     if (m_tet_connectivity[tid].m_is_removed) return Tuple();
 
     int vid = m_tet_connectivity[tid][0];
-    int eid = m_map_vertex2edge[0];
-    int fid = m_map_edge2face[eid];
+    int eid = utils::tet_element_topology::map_vertex2edge[0];
+    int fid = utils::tet_element_topology::map_edge2face[eid];
     return Tuple(*this, vid, eid, fid, tid);
 }
 
@@ -409,8 +418,8 @@ std::array<wmtk::TetMesh::Tuple, 4> wmtk::TetMesh::oriented_tet_vertices(const T
     std::array<Tuple, 4> vs;
     for (int j = 0; j < 4; j++) {
         vs[j].m_global_vid = m_tet_connectivity[t.m_global_tid][j];
-        vs[j].m_local_eid = m_map_vertex2edge[j];
-        vs[j].m_local_fid = m_map_edge2face[vs[j].m_local_eid];
+        vs[j].m_local_eid = utils::tet_element_topology::map_vertex2edge[j];
+        vs[j].m_local_fid = utils::tet_element_topology::map_edge2face[vs[j].m_local_eid];
         vs[j].m_global_tid = t.m_global_tid;
     }
     return vs;
@@ -439,9 +448,10 @@ std::array<wmtk::TetMesh::Tuple, 6> wmtk::TetMesh::tet_edges(const Tuple& t) con
     std::array<Tuple, 6> es;
     for (int j = 0; j < 6; j++) {
         es[j].m_local_eid = j;
-        es[j].m_local_fid = m_map_edge2face[j];
+        es[j].m_local_fid = utils::tet_element_topology::map_edge2face[j];
 
-        es[j].m_global_vid = m_tet_connectivity[t.m_global_tid][m_local_edges[j][0]];
+        es[j].m_global_vid =
+            m_tet_connectivity[t.m_global_tid][utils::tet_element_topology::local_edges[j][0]];
         es[j].m_global_tid = t.m_global_tid;
     }
     return es;
@@ -546,8 +556,10 @@ std::vector<size_t> wmtk::TetMesh::get_one_ring_vids_for_vertex_adj(
 
 std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_incident_tets_for_edge(const Tuple& t) const
 {
-    int v1_id = m_tet_connectivity[t.m_global_tid][m_local_edges[t.m_local_eid][0]];
-    int v2_id = m_tet_connectivity[t.m_global_tid][m_local_edges[t.m_local_eid][1]];
+    int v1_id = m_tet_connectivity[t.m_global_tid]
+                                  [utils::tet_element_topology::local_edges[t.m_local_eid][0]];
+    int v2_id = m_tet_connectivity[t.m_global_tid]
+                                  [utils::tet_element_topology::local_edges[t.m_local_eid][1]];
 
     auto tids = set_intersection(
         m_vertex_connectivity[v1_id].m_conn_tets,
@@ -561,8 +573,10 @@ std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_incident_tets_for_edge(cons
 
 std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_one_ring_tets_for_edge(const Tuple& t) const
 {
-    int v1_id = m_tet_connectivity[t.m_global_tid][m_local_edges[t.m_local_eid][0]];
-    int v2_id = m_tet_connectivity[t.m_global_tid][m_local_edges[t.m_local_eid][1]];
+    int v1_id = m_tet_connectivity[t.m_global_tid]
+                                  [utils::tet_element_topology::local_edges[t.m_local_eid][0]];
+    int v2_id = m_tet_connectivity[t.m_global_tid]
+                                  [utils::tet_element_topology::local_edges[t.m_local_eid][1]];
 
     auto tids = m_vertex_connectivity[v1_id].m_conn_tets;
     tids.insert(
@@ -667,9 +681,9 @@ std::vector<std::array<size_t, 3>> wmtk::TetMesh::vertex_adjacent_boundary_faces
     for (auto t : m_vertex_connectivity[v].m_conn_tets) {
         auto& tet = m_tet_connectivity[t];
         for (auto j = 0; j < 4; j++) {
-            if (tet[m_map_vertex2oppo_face[j]] == v)
+            if (tet[utils::tet_element_topology::map_vertex2oppo_face[j]] == v)
                 continue; // only consider those not connecting to it.
-            auto& f = m_local_faces[j];
+            auto& f = utils::tet_element_topology::local_faces[j];
             auto face = std::array<size_t, 3>{{tet[f[0]], tet[f[1]], tet[f[2]]}};
             std::sort(face.begin(), face.end());
             auto it = result_faces.find(face);
@@ -1091,4 +1105,46 @@ void wmtk::TetMesh::for_each_vertex(const std::function<void(const TetMesh::Tupl
                 }
             });
     });
+}
+
+
+int TetMesh::TetrahedronConnectivity::find_local_edge(size_t v1_id, size_t v2_id) const
+{
+    std::array<int, 2> e;
+    for (int j = 0; j < 4; j++) {
+        if (v1_id == m_indices[j])
+            e[0] = j;
+        else if (v2_id == m_indices[j])
+            e[1] = j;
+    }
+    if (e[0] > e[1]) std::swap(e[0], e[1]);
+    size_t i = std::find(
+                   utils::tet_element_topology::local_edges.begin(),
+                   utils::tet_element_topology::local_edges.end(),
+                   e) -
+               utils::tet_element_topology::local_edges.begin();
+    if (i >= utils::tet_element_topology::local_edges.size()) return -1;
+    return i;
+}
+int TetMesh::TetrahedronConnectivity::find_local_face(size_t v1_id, size_t v2_id, size_t v3_id)
+    const
+
+{
+    std::array<int, 3> f;
+    for (int j = 0; j < 4; j++) {
+        if (v1_id == m_indices[j])
+            f[0] = j;
+        else if (v2_id == m_indices[j])
+            f[1] = j;
+        else if (v3_id == m_indices[j])
+            f[2] = j;
+    }
+    std::sort(f.begin(), f.end());
+    size_t i = std::find(
+                   utils::tet_element_topology::local_faces.begin(),
+                   utils::tet_element_topology::local_faces.end(),
+                   f) -
+               utils::tet_element_topology::local_faces.begin();
+    if (i >= utils::tet_element_topology::local_edges.size()) return -1;
+    return i;
 }

@@ -1,9 +1,9 @@
 #pragma once
 
+#include <wmtk/TetMeshTuple.h>
 #include <wmtk/utils/VectorUtils.h>
 #include <type_traits>
 #include <wmtk/AttributeCollection.hpp>
-#include <wmtk/TetMeshTuple.h>
 #include <wmtk/utils/Logger.hpp>
 
 #include <tbb/concurrent_vector.h>
@@ -23,25 +23,9 @@
 namespace wmtk {
 class TetMesh
 {
-private:
-    /**
-     * @brief local edges within a tet
-     *
-     */
-    static constexpr std::array<std::array<int, 2>, 6> m_local_edges = {
-        {{{0, 1}}, {{1, 2}}, {{0, 2}}, {{0, 3}}, {{1, 3}}, {{2, 3}}}};
-
-    static constexpr std::array<int, 4> m_map_vertex2edge = {{0, 0, 1, 3}};
-    static constexpr std::array<int, 4> m_map_vertex2oppo_face = {{3, 1, 2, 0}};
-    static constexpr std::array<int, 6> m_map_edge2face = {{0, 0, 0, 1, 2, 1}};
-    static constexpr std::array<std::array<int, 3>, 4> m_local_faces = {
-        {{{0, 1, 2}}, {{0, 2, 3}}, {{0, 1, 3}}, {{1, 2, 3}}}}; // sorted local vids
-    static constexpr std::array<std::array<int, 3>, 4> m_local_edges_in_a_face = {
-        {{{0, 1, 2}}, {{2, 5, 3}}, {{3, 4, 0}}, {{5, 1, 4}}}};
-
 public:
-
     using Tuple = TetMeshTuple;
+    friend class TetMeshTuple;
     /**
      * (internal use) Maintains a list of tetra connected to the given vertex, and a flag to
      * mark removal.
@@ -106,39 +90,9 @@ public:
             return -1;
         }
 
-        int find_local_edge(size_t v1_id, size_t v2_id) const
-        {
-            std::array<int, 2> e;
-            for (int j = 0; j < 4; j++) {
-                if (v1_id == m_indices[j])
-                    e[0] = j;
-                else if (v2_id == m_indices[j])
-                    e[1] = j;
-            }
-            if (e[0] > e[1]) std::swap(e[0], e[1]);
-            size_t i =
-                std::find(m_local_edges.begin(), m_local_edges.end(), e) - m_local_edges.begin();
-            if (i >= m_local_edges.size()) return -1;
-            return i;
-        }
+        int find_local_edge(size_t v1_id, size_t v2_id) const;
 
-        int find_local_face(size_t v1_id, size_t v2_id, size_t v3_id) const
-        {
-            std::array<int, 3> f;
-            for (int j = 0; j < 4; j++) {
-                if (v1_id == m_indices[j])
-                    f[0] = j;
-                else if (v2_id == m_indices[j])
-                    f[1] = j;
-                else if (v3_id == m_indices[j])
-                    f[2] = j;
-            }
-            std::sort(f.begin(), f.end());
-            size_t i =
-                std::find(m_local_faces.begin(), m_local_faces.end(), f) - m_local_faces.begin();
-            if (i >= m_local_edges.size()) return -1;
-            return i;
-        }
+        int find_local_face(size_t v1_id, size_t v2_id, size_t v3_id) const;
 
         friend bool operator==(const TetrahedronConnectivity& l, const TetrahedronConnectivity& r)
         {
@@ -282,8 +236,8 @@ public:
      * @return false
      */
     bool insert_point(const Tuple& t, std::vector<Tuple>& new_tets);
-    virtual bool insert_point_before(const Tuple& t) { return true; };
-    virtual bool insert_point_after(std::vector<Tuple>& new_tets) { return true; };
+    virtual bool insert_point_before([[maybe_unused]] const Tuple& t) { return true; };
+    virtual bool insert_point_after([[maybe_unused]] std::vector<Tuple>& new_tets) { return true; };
     /**
      * @brief cleans up the deleted vertices or tetrahedra, fixes the corresponding indices, and
      * reset the version number. WARNING: it invalidates all tuples!
@@ -385,9 +339,15 @@ private:
         std::vector<std::array<size_t, 4>>& center_split_tets);
 
 protected:
-    virtual bool invariants(const std::vector<Tuple>&) { return true; }
-    virtual bool triangle_insertion_before(const std::vector<Tuple>& faces) { return true; }
-    virtual bool triangle_insertion_after(const std::vector<std::vector<Tuple>>&) { return true; }
+    virtual bool invariants([[maybe_unused]] const std::vector<Tuple>&) { return true; }
+    virtual bool triangle_insertion_before([[maybe_unused]] const std::vector<Tuple>& faces)
+    {
+        return true;
+    }
+    virtual bool triangle_insertion_after([[maybe_unused]] const std::vector<std::vector<Tuple>>&)
+    {
+        return true;
+    }
 
     //// Split the edge in the tuple
     // Checks if the split should be performed or not (user controlled)
@@ -397,7 +357,10 @@ protected:
      * @param the edge Tuple to be split
      * @return true if the preparation succeed
      */
-    virtual bool split_edge_before(const Tuple& t) { return true; } // check edge condition
+    virtual bool split_edge_before([[maybe_unused]] const Tuple& t)
+    {
+        return true;
+    } // check edge condition
     // This function computes the attributes for the added simplices
     // if it returns false then the operation is undone
     /**
@@ -406,7 +369,10 @@ protected:
      * @param the edge Tuple to be split
      * @return true if the modification succeed
      */
-    virtual bool split_edge_after(const Tuple& t) { return true; } // check tet condition
+    virtual bool split_edge_after([[maybe_unused]] const Tuple& t)
+    {
+        return true;
+    } // check tet condition
 
     //// Collapse the edge in the tuple
     // Checks if the collapse should be performed or not (user controlled)
@@ -417,7 +383,7 @@ protected:
      * @param t edge Tuple to be collapsed
      * @return true is the preparation succeed
      */
-    virtual bool collapse_edge_before(const Tuple& t) { return true; }
+    virtual bool collapse_edge_before([[maybe_unused]] const Tuple& t) { return true; }
     // If it returns false then the operation is undone (the tuple indexes a vertex and tet that
     // survived)
     /**
@@ -426,7 +392,7 @@ protected:
      * @param t edge Tuple that's collapsed
      * @return true if the modification succeed
      */
-    virtual bool collapse_edge_after(const Tuple& t) { return true; }
+    virtual bool collapse_edge_after([[maybe_unused]] const Tuple& t) { return true; }
     /**
      * @brief User specified preparations and desideratas for an 4-4 edge swap before changing the
      * connectivity
@@ -434,14 +400,14 @@ protected:
      * @param t edge Tuple to be swaped
      * @return true if the preparation succeed
      */
-    virtual bool swap_edge_44_before(const Tuple& t) { return true; }
+    virtual bool swap_edge_44_before([[maybe_unused]] const Tuple& t) { return true; }
     /**
      * @brief User specified modifications and desideratas for after a 4-4 edge swap
      *
      * @param t edge Tuple that's swaped
      * @return true if the modification succeed
      */
-    virtual bool swap_edge_44_after(const Tuple& t) { return true; }
+    virtual bool swap_edge_44_after([[maybe_unused]] const Tuple& t) { return true; }
     /**
      * @brief User specified preparations and desideratas for an 3-2 edge swap before changing the
      * conenctivity
@@ -449,14 +415,14 @@ protected:
      * @param t edge Tuple to be swaped
      * @return true if the preparation succeed
      */
-    virtual bool swap_edge_before(const Tuple& t) { return true; }
+    virtual bool swap_edge_before([[maybe_unused]] const Tuple& t) { return true; }
     /**
      * @brief User specified modifications and desideratas for after a 3-2 edge swap
      *
      * @param t edge Tuple that's swaped
      * @return true if the modification succeed
      */
-    virtual bool swap_edge_after(const Tuple& t) { return true; }
+    virtual bool swap_edge_after([[maybe_unused]] const Tuple& t) { return true; }
     /**
      * @brief User specified preparations and desideratas for an 2-3 face swap befroe changing the
      * geometry
@@ -464,28 +430,28 @@ protected:
      * @param t edge Tuple to be swaped
      * @return true if the preparation succeed
      */
-    virtual bool swap_face_before(const Tuple& t) { return true; }
+    virtual bool swap_face_before([[maybe_unused]] const Tuple& t) { return true; }
     /**
      * @brief User specified modifications and desideratas for after a 2-3 face swap
      *
      * @param t edge Tuple that's swaped
      * @return true if the modification succeed
      */
-    virtual bool swap_face_after(const Tuple& t) { return true; }
+    virtual bool swap_face_after([[maybe_unused]] const Tuple& t) { return true; }
     /**
      * @brief  User specified preparations and desideratas for smoothing a vertex
      *
      * @param t Tuple refering to a vertex Tuple
      * @return true if the preparation succeed
      */
-    virtual bool smooth_before(const Tuple& t) { return true; }
+    virtual bool smooth_before([[maybe_unused]] const Tuple& t) { return true; }
     /**
      * @brief  User specified modifications and desideratas for after smoothing a vertex
      *
      * @param t Tuple refering to a vertex
      * @return true if the preparation succeed
      */
-    virtual bool smooth_after(const Tuple& t) { return true; }
+    virtual bool smooth_after([[maybe_unused]] const Tuple& t) { return true; }
 
     // virtual void resize_vertex_mutex(size_t v) {}
 

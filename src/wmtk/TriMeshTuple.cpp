@@ -1,28 +1,28 @@
 
 #include "TriMesh.h"
 using namespace wmtk;
-void TriMesh::Tuple::update_hash(const TriMesh& m)
+void TriMeshTuple::update_hash(const TriMesh& m)
 {
     assert(m_fid < m.m_tri_connectivity.size());
     m_hash = m.m_tri_connectivity[m_fid].hash;
 }
 
-std::string TriMesh::Tuple::info() const
+std::string TriMeshTuple::info() const
 {
     return fmt::format("tuple: v{} e{} f{} (h{})", m_vid, m_eid, m_fid, m_hash);
 }
 
-void TriMesh::Tuple::print_info() const
+void TriMeshTuple::print_info() const
 {
     logger().trace("{}", info());
 }
 
-size_t TriMesh::Tuple::eid_unsafe(const TriMesh& m) const
+size_t TriMeshTuple::eid_unsafe(const TriMesh& m) const
 {
     return m_fid * 3 + m_eid;
 }
 
-size_t TriMesh::Tuple::eid(const TriMesh& m) const
+size_t TriMeshTuple::eid(const TriMesh& m) const
 {
     if (switch_face(m).has_value()) {
         size_t fid2 = switch_face(m)->fid(m);
@@ -38,7 +38,7 @@ size_t TriMesh::Tuple::eid(const TriMesh& m) const
 }
 
 
-TriMesh::Tuple TriMesh::Tuple::switch_vertex(const TriMesh& m) const
+TriMeshTuple TriMeshTuple::switch_vertex(const TriMesh& m) const
 {
     assert(is_valid(m));
 
@@ -46,7 +46,7 @@ TriMesh::Tuple TriMesh::Tuple::switch_vertex(const TriMesh& m) const
     const int v1 = m.m_tri_connectivity[m_fid][1];
     const int v2 = m.m_tri_connectivity[m_fid][2];
 
-    Tuple loc = *this;
+    TriMeshTuple loc = *this;
     switch (m_eid) {
     case 0:
         assert(m_vid == v1 || m_vid == v2);
@@ -67,14 +67,14 @@ TriMesh::Tuple TriMesh::Tuple::switch_vertex(const TriMesh& m) const
     return loc;
 }
 
-TriMesh::Tuple TriMesh::Tuple::switch_edge(const TriMesh& m) const
+TriMeshTuple TriMeshTuple::switch_edge(const TriMesh& m) const
 {
     assert(is_valid(m));
 
     const int lvid = m.m_tri_connectivity[m_fid].find(m_vid);
     assert(lvid == 0 || lvid == 1 || lvid == 2);
 
-    Tuple loc = *this;
+    TriMeshTuple loc = *this;
     switch (lvid) {
     case 0:
         assert(m_eid == 1 || m_eid == 2);
@@ -94,7 +94,7 @@ TriMesh::Tuple TriMesh::Tuple::switch_edge(const TriMesh& m) const
     return loc;
 }
 
-std::optional<TriMesh::Tuple> TriMesh::Tuple::switch_face(const TriMesh& m) const
+std::optional<TriMeshTuple> TriMeshTuple::switch_face(const TriMesh& m) const
 {
     assert(is_valid(m));
 
@@ -118,7 +118,7 @@ std::optional<TriMesh::Tuple> TriMesh::Tuple::switch_face(const TriMesh& m) cons
 
     if (fids.size() == 1) return {};
 
-    Tuple loc = *this;
+    TriMeshTuple loc = *this;
 
     // There is a triangle on the other side
     if (fids.size() == 2) {
@@ -151,14 +151,14 @@ std::optional<TriMesh::Tuple> TriMesh::Tuple::switch_face(const TriMesh& m) cons
     return loc;
 }
 
-bool TriMesh::Tuple::is_ccw(const TriMesh& m) const
+bool TriMeshTuple::is_ccw(const TriMesh& m) const
 {
     if (m.m_tri_connectivity[m_fid][(m_eid + 1) % 3] == m_vid)
         return true;
     else
         return false;
 }
-bool TriMesh::Tuple::is_valid(const TriMesh& m) const
+bool TriMeshTuple::is_valid(const TriMesh& m) const
 {
     if (m_fid >= m.m_tri_connectivity.size()) {
         return false;

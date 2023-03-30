@@ -17,6 +17,9 @@ public:
         HighFive::File& file,
         const std::string& name,
         AttributeCollection<T>& attr_);
+    AttributeCollectionRecorder();
+    AttributeCollectionRecorder(AttributeCollectionRecorder&&);
+    AttributeCollectionRecorder& operator=(AttributeCollectionRecorder&&);
     ~AttributeCollectionRecorder();
 
 
@@ -29,6 +32,9 @@ public:
     AttributeCollectionUpdate update(size_t index) const;
 
     friend class AbstractAttributeCollection;
+
+    // returns if this recorder has a valid serialization state
+    bool valid() const;
 
 protected:
     size_t record();

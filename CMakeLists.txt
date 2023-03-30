@@ -78,6 +78,9 @@ if(NOT TARGET igl::core)
     option(LIBIGL_WITH_OPENGL_GLFW       "Use GLFW"                     ON)
     include(libigl)
 endif()
+
+igl_include(predicates)
+
 igl_include(predicates)
 
 if(NOT TARGET spdlog)
@@ -88,8 +91,12 @@ include(geogram)
 include(onetbb)
 include(mshio)
 include(metis)
-include(lagrange)
 include(gmp)
+
+include(lagrange)
+lagrange_include_modules(bvh)
+
+include(nlohmann_json)
 target_link_libraries(wildmeshing_toolkit PRIVATE wmtk::warnings)
 target_link_libraries(wildmeshing_toolkit PUBLIC
     spdlog::spdlog
@@ -104,7 +111,19 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     nlohmann_json::nlohmann_json
     HighFive::HighFive
     hdf5::hdf5
+    lagrange::bvh
 )
+include(finite-diff)
+target_link_libraries(wildmeshing_toolkit PUBLIC finitediff::finitediff)
+include(stb)
+include(tinyexr)
+target_link_libraries(wildmeshing_toolkit PUBLIC
+    tinyexr
+    stb)
+include(lean-vtk)
+target_link_libraries(wildmeshing_toolkit PUBLIC LeanVTK)
+include(nanospline)
+target_link_libraries(wildmeshing_toolkit PUBLIC nanospline::nanospline)
 
 # ###############################################################################
 # Subdirectories

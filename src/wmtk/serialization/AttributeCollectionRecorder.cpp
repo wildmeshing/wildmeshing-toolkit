@@ -1,6 +1,7 @@
 #include <wmtk/serialization/AttributeCollectionRecorder.h>
+#include <wmtk/AttributeCollection.hpp>
 #include <wmtk/serialization/AttributeCollectionSerialization.h>
-#include <wmtk/serializaation/Hdf5Utils.hpp>
+#include <wmtk/serialization/Hdf5Utils.hpp>
 
 using namespace wmtk;
 AttributeCollectionRecorder::AttributeCollectionRecorder(
@@ -54,3 +55,6 @@ AttributeCollectionUpdate AttributeCollectionRecorder::update(size_t index) cons
 {
     return m_serialization->update(index);
 }
+    bool AttributeCollectionRecorder::valid() const {
+        return bool(m_serialization);
+    }
