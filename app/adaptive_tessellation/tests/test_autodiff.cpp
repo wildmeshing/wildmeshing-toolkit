@@ -6,10 +6,12 @@
 using namespace wmtk;
 TEST_CASE("autodiff 100 random tris")
 {
+    std::mt19937 rand_generator;
+    std::uniform_real_distribution<double> rand_dist(-50, 50);
     for (int i = 0; i < 100; i++) {
         std::array<double, 6> rand_tri;
         for (int j = 0; j < 6; j++) {
-            rand_tri[j] = rand() % 100 - 50;
+            rand_tri[j] = rand_dist(rand_generator);
         }
         REQUIRE(std::pow(AMIPS2D_energy(rand_tri) - AMIPS_autodiff(rand_tri).getValue(), 2) < 1e-4);
         Eigen::Vector2d Jac;
