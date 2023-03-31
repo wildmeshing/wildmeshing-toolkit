@@ -61,14 +61,21 @@ public:
         export_mesh(V, F);
 
         // get idx as Eigen::Matrix
-        Eigen::MatrixXd idx;
-        idx.resize(V.rows(), 1);
+        Eigen::MatrixXd vidx;
+        vidx.resize(V.rows(), 1);
         for (unsigned i = 0; i < V.rows(); ++i) {
-            idx(i, 0) = vertex_attrs[i].idx;
+            vidx(i, 0) = vertex_attrs[i].idx;
+        }
+
+        Eigen::MatrixXd fidx;
+        fidx.resize(F.rows(), 1);
+        for (unsigned i = 0; i < F.rows(); ++i) {
+            fidx(i, 0) = i;
         }
 
         paraviewo::VTUWriter writer;
-        writer.add_field("vidx", idx);
+        writer.add_field("vidx", vidx);
+        writer.add_cell_field("fidx", fidx);
         writer.write_mesh(filename, V, F);
     }
 };

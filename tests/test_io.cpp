@@ -119,13 +119,13 @@ TEST_CASE("io-hang", "[io][mshio]")
 TEST_CASE("paraviewo", "[io][paraviewo]")
 {
     Eigen::MatrixXd V;
-    V.resize(3, 2);
-    V << 0, 0, 1, 0, 0, 1;
+    V.resize(4, 2);
+    V << 0, 0, 1, 0, 0, 1, 1, 1;
     std::cout << "V = \n" << V << std::endl;
 
     Eigen::MatrixXi F;
-    F.resize(1, 3);
-    F << 0, 1, 2;
+    F.resize(2, 3);
+    F << 0, 1, 2, 1, 3, 2;
     std::cout << "F = \n" << F << std::endl;
     TriMeshWithWriter m;
     m.create_mesh(V, F);
