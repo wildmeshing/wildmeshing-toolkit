@@ -1,3 +1,8 @@
+#include <wmtk/TriMesh.h>
+#include <wmtk/utils/TriMeshWithWriter.h>
+#include <paraviewo/HDF5VTUWriter.hpp>
+#include <paraviewo/ParaviewWriter.hpp>
+#include <paraviewo/VTUWriter.hpp>
 #include <wmtk/utils/Delaunay.hpp>
 #include <wmtk/utils/io.hpp>
 
@@ -103,4 +108,27 @@ TEST_CASE("io-hang", "[io][mshio]")
 {
     wmtk::MshData msh;
     REQUIRE_THROWS(msh.load(WMT_DATA_DIR "nofile.msh"));
+}
+
+// required test cases
+//  2D
+//  3D
+//  attributes
+//
+
+TEST_CASE("paraviewo", "[io][paraviewo]")
+{
+    Eigen::MatrixXd V;
+    V.resize(3, 2);
+    V << 0, 0, 1, 0, 0, 1;
+    std::cout << "V = \n" << V << std::endl;
+
+    Eigen::MatrixXi F;
+    F.resize(1, 3);
+    F << 0, 1, 2;
+    std::cout << "F = \n" << F << std::endl;
+    TriMeshWithWriter m;
+    m.create_mesh(V, F);
+
+    m.writeToVTU("testWrite.vtu");
 }
