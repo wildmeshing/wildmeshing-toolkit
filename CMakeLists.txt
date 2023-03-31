@@ -24,6 +24,7 @@ project(WildMeshingToolkit DESCRIPTION "A mesh optimization toolkit")
 
 # ###############################################################################
 option(WMTK_BUILD_DOCS "Build doxygen" OFF)
+option (BUILD_SHARED_LIBS "Build Shared Libraries" OFF) # we globally want to disable this option due to use of TBB
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/recipes/")
