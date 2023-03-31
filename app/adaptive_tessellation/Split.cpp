@@ -1,13 +1,12 @@
-#include "AdaptiveTessellation.h"
-#include "wmtk/ExecutionScheduler.hpp"
-
-#include <Eigen/src/Core/util/Constants.h>
 #include <igl/Timer.h>
 #include <wmtk/utils/AMIPS2D.h>
+#include <wmtk/utils/ScalarUtils.h>
 #include <array>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TriQualityUtils.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
+#include "AdaptiveTessellation.h"
+#include "wmtk/ExecutionScheduler.hpp"
 
 #include <limits>
 #include <optional>
@@ -41,7 +40,9 @@ void AdaptiveTessellation::split_all_edges()
     auto setup_and_execute = [&](auto executor) {
         executor.renew_neighbor_tuples = split_renew;
         executor.priority = [&](auto& m, auto _, auto& e) {
-            return m.mesh_parameters.m_get_length(e);
+            auto error = m.mesh_parameters.m_get_length(e);
+            wmtk::logger().info("error {}", error);
+            return error;
         };
         executor.num_threads = NUM_THREADS;
         executor.is_weight_up_to_date = [](auto& m, auto& ele) {
@@ -59,7 +60,7 @@ void AdaptiveTessellation::split_all_edges()
             } else
                 length = m.mesh_parameters.m_get_length(tup);
             // check if out of date
-            if (abs(length - weight) > 1e-10) return false;
+            if (!is_close(length, weight)) return false;
             // check if meet operating threshold
             if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::ACCURACY) {
                 if (length < m.mesh_parameters.m_accuracy_threshold) return false;
@@ -88,9 +89,10 @@ bool AdaptiveTessellation::split_edge_before(const Tuple& edge_tuple)
 {
     static std::atomic_int cnt = 0;
     if (!TriMesh::split_edge_before(edge_tuple)) return false;
-    // if (cnt % 50 == 0)
+    // if (cnt % 3 == 0) {
     write_vtk(mesh_parameters.m_output_folder + fmt::format("/split_{:04d}.vtu", cnt));
     write_perface_vtk(mesh_parameters.m_output_folder + fmt::format("/tri_{:04d}.vtu", cnt));
+    // }
 
     // check if the 2 vertices are on the same curve
     if (vertex_attrs[edge_tuple.vid(*this)].curve_id !=
@@ -115,6 +117,7 @@ bool AdaptiveTessellation::split_edge_after(const Tuple& edge_tuple)
 {
     // adding heuristic decision. If length2 > 4. / 3. * 4. / 3. * m.m_target_l * m.m_target_l always split
     // transform edge length with displacement
+    static std::atomic_int success_cnt = 0;
     const Eigen::Vector2d p =
         (vertex_attrs[cache.local().v1].pos + vertex_attrs[cache.local().v2].pos) / 2.0;
     auto vid = edge_tuple.switch_vertex(*this).vid(*this);
@@ -127,5 +130,7 @@ bool AdaptiveTessellation::split_edge_after(const Tuple& edge_tuple)
         vertex_attrs[vid].boundary_vertex = true;
         vertex_attrs[vid].t = mesh_parameters.m_boundary.uv_to_t(vertex_attrs[vid].pos);
     }
+    wmtk::logger().info("split success {}", success_cnt);
+    success_cnt++;
     return true;
 }

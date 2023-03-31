@@ -200,7 +200,8 @@ public:
         auto bbox_max = bbox.max();
         auto [xx1, yy1] = get_coordinate(bbox_min(0), bbox_min(1));
         auto [xx2, yy2] = get_coordinate(bbox_max(0), bbox_max(1));
-        auto num_pixels = std::max(abs(xx2 - xx1), abs(yy2 - yy1));
+        auto num_pixels = std::max(abs(xx2 - xx1), abs(yy2 - yy1)) + 1;
+        assert(num_pixels > 0);
         const double pixel_size = bbox.diagonal().maxCoeff() / num_pixels;
         typedef std::integral_constant<int, 2> cached_t;
 
@@ -273,6 +274,8 @@ public:
         set_position_normal_images(images);
         set_sampling_mode(sampling_mode);
         assert(m_image.width() != 0);
+        assert(m_position_image[0].width() != 0);
+        assert(m_normal_image[0].width() != 0);
     };
 
 protected:

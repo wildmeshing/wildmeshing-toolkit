@@ -3,13 +3,13 @@
 
 #include <Eigen/src/Core/util/Constants.h>
 #include <igl/Timer.h>
+#include <lagrange/utils/fpe.h>
 #include <wmtk/utils/AMIPS2D.h>
+#include <wmtk/utils/ScalarUtils.h>
 #include <array>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TriQualityUtils.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
-
-#include <lagrange/utils/fpe.h>
 
 #include <limits>
 #include <optional>
@@ -85,12 +85,6 @@ auto swap_accuracy_cost = [&swap_cost](auto& m, const TriMesh::Tuple& e) {
 
             Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle1;
             Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle2;
-            for (int i = 0; i < 3; i++) {
-                triangle1.row(i) = m.vertex_attrs[vids1[i]].pos;
-                triangle2.row(i) = m.vertex_attrs[vids2[i]].pos;
-            }
-            e_before = m.mesh_parameters.m_displacement->get_error_per_triangle(triangle1);
-            e_before += m.mesh_parameters.m_displacement->get_error_per_triangle(triangle2);
 
             // replace the vids with the swapped vids
             for (auto i = 0; i < 3; i++) {
@@ -108,13 +102,12 @@ auto swap_accuracy_cost = [&swap_cost](auto& m, const TriMesh::Tuple& e) {
                 e_after = m.mesh_parameters.m_displacement->get_error_per_triangle(triangle1);
                 e_after += m.mesh_parameters.m_displacement->get_error_per_triangle(triangle2);
             }
-
-            if (e_after < m.mesh_parameters.m_accuracy_threshold)
-                // the accuracy decreases more than global bond
-                return -std::numeric_limits<double>::infinity();
             auto valence_cost = swap_cost(m, e);
             if (valence_cost <= 0) return -std::numeric_limits<double>::infinity();
-            return valence_cost * (e_before - e_after);
+            if (e_after > m.mesh_parameters.m_accuracy_threshold)
+                // the accuracy exceeds global bond
+                return -std::numeric_limits<double>::infinity();
+            return valence_cost * e_after;
         }
         return -std::numeric_limits<double>::infinity();
     }
@@ -155,7 +148,7 @@ void AdaptiveTessellation::swap_all_edges()
                 current_cost = swap_cost(m, tup);
             }
             if (current_cost < 0.) return false;
-            if (std::pow(current_cost - weight, 2) > 1e-5) return false;
+            if (!is_close(current_cost, weight)) return false;
             return true;
         };
         executor(*this, collect_all_ops);
