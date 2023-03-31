@@ -83,7 +83,11 @@ struct AttributeCollection : public AbstractAttributeCollection
             m_rollback_size.local() = m_attributes.size();
             if (has_recorders()) {
                 auto& rollback = m_rollback_list.local();
-                for (size_t j = m_attributes.size(); j < s; ++j) {
+                // if we are shrinking then indices lie like
+                // [0, ... ,s, ... ,m_attributes.size()-1]
+                // we need to copy out these elements:
+                // [        s, ... ,m_attributes.size()-1]
+                for (size_t j = s; j < m_attributes.size(); ++j) {
                     rollback[j] = m_attributes[j];
                 }
             }
@@ -102,13 +106,14 @@ struct AttributeCollection : public AbstractAttributeCollection
 
     void shrink_to_fit() { m_attributes.shrink_to_fit(); }
 
-    void grow_to_at_least(size_t s) override { 
-
+    void grow_to_at_least(size_t s) override
+    {
         // disallow unprotected access with an active recorder
         if (!in_protected.local()) {
             assert(!has_recorders());
         }
-        m_attributes.grow_to_at_least(s); }
+        m_attributes.grow_to_at_least(s);
+    }
 
     /**
      * @brief retrieve the protected attribute data on operation-fail
