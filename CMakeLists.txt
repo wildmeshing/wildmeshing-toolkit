@@ -118,6 +118,7 @@ target_link_libraries(wildmeshing_toolkit PUBLIC finitediff::finitediff)
 include(stb)
 include(tinyexr)
 target_link_libraries(wildmeshing_toolkit PUBLIC
+    miniz # MTAO: I had a build issue with windows not finding miniz at linktime - adding here to make sure it's there?
     tinyexr
     stb)
 include(lean-vtk)
