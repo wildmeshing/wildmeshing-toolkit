@@ -11,6 +11,48 @@ using namespace wmtk;
 using namespace app::qslim;
 
 
+namespace {
+class QSLIMEdgeCollapseOperation : public wmtk::TriMeshOperationShim<
+                                       QSLIM,
+                                       QSLIMEdgeCollapseOperation,
+                                       wmtk::TriMeshEdgeCollapseOperation>
+{
+public:
+    ExecuteReturnData execute(QSLIM& m, const Tuple& t)
+    {
+        return wmtk::TriMeshEdgeCollapseOperation::execute(m, t);
+    }
+    bool before(QSLIM& m, const Tuple& t)
+    {
+        if (wmtk::TriMeshEdgeCollapseOperation::before(m, t)) {
+            return m.collapse_edge_before(t);
+        }
+        return false;
+    }
+    bool after(QSLIM& m, ExecuteReturnData& ret_data)
+    {
+        if (wmtk::TriMeshEdgeCollapseOperation::after(m, ret_data)) {
+            ret_data.success &= m.collapse_edge_after(ret_data.tuple);
+        }
+        return ret_data;
+    }
+    bool invariants(QSLIM& m, ExecuteReturnData& ret_data)
+    {
+        if (wmtk::TriMeshEdgeCollapseOperation::invariants(m, ret_data)) {
+            ret_data.success &= m.invariants(ret_data.new_tris);
+        }
+        return ret_data;
+    }
+};
+
+
+template <typename Executor>
+void addCustomOps(Executor& e)
+{
+    e.add_operation(std::make_shared<QSLIMEdgeCollapseOperation>());
+}
+} // namespace
+
 QSLIM::QSLIM(std::vector<Eigen::Vector3d> _m_vertex_positions, int num_threads)
 {
     p_vertex_attrs = &vertex_attrs;
@@ -18,7 +60,7 @@ QSLIM::QSLIM(std::vector<Eigen::Vector3d> _m_vertex_positions, int num_threads)
     p_edge_attrs = &edge_attrs;
     NUM_THREADS = (num_threads);
 
-    vertex_attrs.resize(_m_vertex_positions.size());
+    vertex_attrs.grow_to_at_least(_m_vertex_positions.size());
 
     for (auto i = 0; i < _m_vertex_positions.size(); i++) {
         vertex_attrs[i] = {_m_vertex_positions[i], 0, false, {}};
@@ -59,8 +101,8 @@ void QSLIM::create_mesh(
         m_envelope.init(V, F, eps);
         m_has_envelope = true;
     }
-    face_attrs.resize(tri_capacity());
-    edge_attrs.resize(tri_capacity() * 3);
+    face_attrs.grow_to_at_least(tri_capacity());
+    edge_attrs.grow_to_at_least(tri_capacity() * 3);
 
     Eigen::MatrixXd N = Eigen::MatrixXd::Zero(F.size(), 3);
     wmtk::logger().info("----normal-------");
@@ -300,7 +342,7 @@ bool QSLIM::write_triangle_mesh(std::string path)
 
 bool QSLIM::collapse_edge_before(const Tuple& t)
 {
-    if (!TriMesh::collapse_edge_before(t)) return false;
+    // if (!TriMesh::collapse_edge_before(t)) return false;
     if (vertex_attrs[t.vid(*this)].freeze || vertex_attrs[t.switch_vertex(*this).vid(*this)].freeze)
         return false;
     cache.local().v1p = vertex_attrs[t.vid(*this)].pos;
@@ -360,7 +402,8 @@ bool QSLIM::collapse_qslim(int target_vert_number)
     auto measure_priority = [this](auto& m, auto op, const Tuple& new_e) {
         return -compute_cost_for_e(new_e);
     };
-    auto setup_and_execute = [&](auto executor) {
+    auto setup_and_execute = [&](auto& executor) {
+        addCustomOps(executor);
         executor.num_threads = NUM_THREADS;
         executor.renew_neighbor_tuples = renew;
         executor.priority = measure_priority;

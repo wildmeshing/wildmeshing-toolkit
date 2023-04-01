@@ -6,7 +6,7 @@
 include(gmp)
 
 if(NOT WMTK_APP_UNIFORM_REMESH)
-message(FATAL_ERROR "Remeshing requires shorted edge collapse app; try WMTK_APP_UNIFORM_REMESH=ON")
+message(FATAL_ERROR "Remeshing requires uniform remeshing; try WMTK_APP_UNIFORM_REMESH=ON")
 endif()
 if(NOT WMTK_APP_SEC)
 message(FATAL_ERROR "Remeshing requires shorted edge collapse app; try WMTK_APP_SEC=ON")

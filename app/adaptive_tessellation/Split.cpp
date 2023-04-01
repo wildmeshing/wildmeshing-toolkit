@@ -88,7 +88,6 @@ void AdaptiveTessellation::split_all_edges()
 bool AdaptiveTessellation::split_edge_before(const Tuple& edge_tuple)
 {
     static std::atomic_int cnt = 0;
-    if (!TriMesh::split_edge_before(edge_tuple)) return false;
     // if (cnt % 50 == 0)
     write_vtk(mesh_parameters.m_output_folder + fmt::format("/split_{:04d}.vtu", cnt));
 

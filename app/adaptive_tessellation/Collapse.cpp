@@ -23,6 +23,101 @@ auto renew = [](auto& m, auto op, auto& tris) {
     return optup;
 };
 
+namespace {
+class AdaptiveTessellationEdgeCollapseOperation : public wmtk::TriMeshOperationShim<
+                                                  AdaptiveTessellation,
+                                                  AdaptiveTessellationEdgeCollapseOperation,
+                                                  wmtk::TriMeshEdgeCollapseOperation>
+{
+public:
+    ExecuteReturnData execute(AdaptiveTessellation& m, const Tuple& t)
+    {
+        return wmtk::TriMeshEdgeCollapseOperation::execute(m, t);
+    }
+    bool before(AdaptiveTessellation& m, const Tuple& t)
+    {
+        if (wmtk::TriMeshEdgeCollapseOperation::before(m, t)) {
+            return  m.collapse_edge_before(t);
+        }
+        return false;
+    }
+    bool after(AdaptiveTessellation& m, ExecuteReturnData& ret_data)
+    {
+        if (wmtk::TriMeshEdgeCollapseOperation::after(m, ret_data)) {
+            ret_data.success |= m.collapse_edge_after(ret_data.tuple);
+        }
+        return ret_data;
+    }
+    bool invariants(AdaptiveTessellation& m, ExecuteReturnData& ret_data)
+    {
+        if (wmtk::TriMeshEdgeCollapseOperation::invariants(m, ret_data)) {
+            ret_data.success |= m.invariants(ret_data.new_tris);
+        }
+        return ret_data;
+    }
+};
+
+    template <typename Executor>
+    void addCustomOps(Executor& e) {
+
+        e.add_operation(std::make_shared<AdaptiveTessellationEdgeCollapseOperation>());
+    }
+
+
+auto swap_renew = [](auto& m, auto op, auto& tris) {
+    auto edges = m.new_edges_after(tris);
+    auto optup = std::vector<std::pair<std::string, wmtk::TriMesh::Tuple>>();
+    for (auto& e : edges) optup.emplace_back(op, e);
+    return optup;
+};
+auto swap_cost = [](auto& m, const TriMesh::Tuple& t) {
+    std::vector<std::pair<TriMesh::Tuple, int>> valences(3);
+    valences[0] = std::make_pair(t, m.get_valence_for_vertex(t));
+    auto t2 = t.switch_vertex(m);
+    valences[1] = std::make_pair(t2, m.get_valence_for_vertex(t2));
+    auto t3 = (t.switch_edge(m)).switch_vertex(m);
+    valences[2] = std::make_pair(t3, m.get_valence_for_vertex(t3));
+
+    if ((t.switch_face(m)).has_value()) {
+        auto t4 = (((t.switch_face(m)).value()).switch_edge(m)).switch_vertex(m);
+        valences.emplace_back(t4, m.get_valence_for_vertex(t4));
+    }
+    double cost_before_swap = 0.0;
+    double cost_after_swap = 0.0;
+
+    // check if it's internal vertex or bondary vertex
+    // navigating starting one edge and getting back to the start
+
+    for (int i = 0; i < valences.size(); i++) {
+        TriMesh::Tuple vert = valences[i].first;
+        int val = 6;
+        auto one_ring_edges = m.get_one_ring_edges_for_vertex(vert);
+        for (auto edge : one_ring_edges) {
+            if (m.is_boundary_edge(edge)) {
+                val = 4;
+                break;
+            }
+        }
+        cost_before_swap += (double)(valences[i].second - val) * (valences[i].second - val);
+        cost_after_swap +=
+            (i < 2) ? (double)(valences[i].second - 1 - val) * (valences[i].second - 1 - val)
+                    : (double)(valences[i].second + 1 - val) * (valences[i].second + 1 - val);
+    }
+    return (cost_before_swap - cost_after_swap);
+};
+
+auto swap_accuracy_cost = [](auto& m, const TriMesh::Tuple& e) {
+    auto e_before = m.get_accuracy_error(e.vid(m), e.switch_vertex(m).vid(m));
+    if ((e.switch_face(m)).has_value()) {
+        auto t4 = (((e.switch_face(m)).value()).switch_edge(m)).switch_vertex(m);
+        auto t3 = (e.switch_edge(m)).switch_vertex(m);
+        auto e_after = m.get_accuracy_error(t3.vid(m), t4.vid(m));
+        return (e_before - e_after);
+    } else
+        return 0.;
+};
+}
+
 void AdaptiveTessellation::collapse_all_edges()
 {
     for (auto f : get_faces()) assert(!is_inverted(f));
@@ -64,7 +159,6 @@ void AdaptiveTessellation::collapse_all_edges()
 }
 bool AdaptiveTessellation::collapse_edge_before(const Tuple& edge_tuple)
 {
-    if (!TriMesh::collapse_edge_before(edge_tuple)) return false;
 
     // check if the two vertices to be split is of the same curve_id
     if (vertex_attrs[edge_tuple.vid(*this)].curve_id !=

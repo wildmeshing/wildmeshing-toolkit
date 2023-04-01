@@ -14,6 +14,51 @@
 #include <limits>
 #include <optional>
 
+namespace {
+
+using namespace adaptive_tessellation;
+using namespace wmtk;
+
+class AdaptiveTessellationSmoothVertexOperation : public wmtk::TriMeshOperationShim<
+                                                  AdaptiveTessellation,
+                                                  AdaptiveTessellationSmoothVertexOperation,
+                                                  wmtk::TriMeshSmoothVertexOperation>
+{
+public:
+    ExecuteReturnData execute(AdaptiveTessellation& m, const Tuple& t)
+    {
+        return wmtk::TriMeshSmoothVertexOperation::execute(m, t);
+    }
+    bool before(AdaptiveTessellation& m, const Tuple& t)
+    {
+        if (wmtk::TriMeshSmoothVertexOperation::before(m, t)) {
+            return  m.smooth_before(t);
+        }
+        return false;
+    }
+    bool after(AdaptiveTessellation& m, ExecuteReturnData& ret_data)
+    {
+        if (wmtk::TriMeshSmoothVertexOperation::after(m, ret_data)) {
+            ret_data.success |= m.smooth_after(ret_data.tuple);
+        }
+        return ret_data;
+    }
+    bool invariants(AdaptiveTessellation& m, ExecuteReturnData& ret_data)
+    {
+        if (wmtk::TriMeshSmoothVertexOperation::invariants(m, ret_data)) {
+            ret_data.success |= m.invariants(ret_data.new_tris);
+        }
+        return ret_data;
+    }
+};
+
+    template <typename Executor>
+    void addCustomOps(Executor& e) {
+
+        e.add_operation(std::make_shared<AdaptiveTessellationSmoothVertexOperation>());
+    }
+}
+
 bool adaptive_tessellation::AdaptiveTessellation::smooth_before(const Tuple& t)
 {
     if (vertex_attrs[t.vid(*this)].fixed) return false;
@@ -150,6 +195,7 @@ void adaptive_tessellation::AdaptiveTessellation::smooth_all_vertices()
         timer.start();
         auto executor =
             wmtk::ExecutePass<AdaptiveTessellation, wmtk::ExecutionPolicy::kPartition>();
+        addCustomOps(executor);
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
             return m.try_set_vertex_mutex_one_ring(e, task_id);
         };
@@ -160,6 +206,7 @@ void adaptive_tessellation::AdaptiveTessellation::smooth_all_vertices()
     } else {
         timer.start();
         auto executor = wmtk::ExecutePass<AdaptiveTessellation, wmtk::ExecutionPolicy::kSeq>();
+        addCustomOps(executor);
         int itr = 0;
         do {
             mesh_parameters.m_gradient = Eigen::Vector2d(0., 0.);

@@ -3,6 +3,7 @@
 #include <igl/read_triangle_mesh.h>
 #include <igl/remove_duplicate_vertices.h>
 #include <remeshing/UniformRemeshing.h>
+#include <remeshing/UniformRemeshingOperations.h>
 #include <catch2/catch.hpp>
 #include <wmtk/utils/ManifoldUtils.hpp>
 
@@ -81,16 +82,16 @@ TEST_CASE("test_swap", "[test_remeshing]")
     int e_invariant = m.get_edges().size();
     REQUIRE(m.check_mesh_connectivity_validity());
     auto edges = m.get_edges();
-    std::vector<TriMesh::Tuple> new_e;
     int cnt = 0;
+    UniformRemeshingSwapEdgeOperation swap_op;
     for (auto edge : edges) {
         if (cnt > 200) break;
         if (!edge.is_valid(m)) continue;
         if (!(edge.switch_face(m)).has_value()) {
-            REQUIRE_FALSE(m.swap_edge(edge, new_e));
+            REQUIRE_FALSE(swap_op(m, edge).success);
             continue;
         }
-        REQUIRE(m.swap_edge(edge, new_e));
+        REQUIRE(swap_op(m, edge).success);
         cnt++;
     }
     REQUIRE(m.check_mesh_connectivity_validity());
@@ -296,11 +297,11 @@ TEST_CASE("swap orient", "[test_remeshing]")
         REQUIRE(!is_inverted(tri));
     }
 
+    UniformRemeshingSwapEdgeOperation swap_op;
     auto edges = m.get_edges();
     for (auto e : edges) {
         if (!m.is_boundary_edge(e)) {
-            std::vector<wmtk::TriMesh::Tuple> dummy;
-            m.swap_edge(e, dummy);
+            swap_op(m,e);
             break;
         }
     }

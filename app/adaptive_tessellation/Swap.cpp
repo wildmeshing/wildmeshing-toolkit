@@ -14,6 +14,50 @@
 using namespace adaptive_tessellation;
 using namespace wmtk;
 
+
+namespace {
+class AdaptiveTessellationSwapEdgeOperation : public wmtk::TriMeshOperationShim<
+                                                  AdaptiveTessellation,
+                                                  AdaptiveTessellationSwapEdgeOperation,
+                                                  wmtk::TriMeshSwapEdgeOperation>
+{
+public:
+    ExecuteReturnData execute(AdaptiveTessellation& m, const Tuple& t)
+    {
+        return wmtk::TriMeshSwapEdgeOperation::execute(m, t);
+    }
+    bool before(AdaptiveTessellation& m, const Tuple& t)
+    {
+        if (wmtk::TriMeshSwapEdgeOperation::before(m, t)) {
+            return true;
+            //return  m.swap_before(t);
+        }
+        return false;
+    }
+    bool after(AdaptiveTessellation& m, ExecuteReturnData& ret_data)
+    {
+        if (wmtk::TriMeshSwapEdgeOperation::after(m, ret_data)) {
+            return true;
+            //ret_data.success |= m.swap_after(ret_data.tuple);
+        }
+        return ret_data;
+    }
+    bool invariants(AdaptiveTessellation& m, ExecuteReturnData& ret_data)
+    {
+        if (wmtk::TriMeshSwapEdgeOperation::invariants(m, ret_data)) {
+            ret_data.success |= m.invariants(ret_data.new_tris);
+        }
+        return ret_data;
+    }
+};
+
+    template <typename Executor>
+    void addCustomOps(Executor& e) {
+
+        e.add_operation(std::make_shared<AdaptiveTessellationSwapEdgeOperation>());
+    }
+
+
 auto swap_renew = [](auto& m, auto op, auto& tris) {
     auto edges = m.new_edges_after(tris);
     auto optup = std::vector<std::pair<std::string, wmtk::TriMesh::Tuple>>();
@@ -66,6 +110,7 @@ auto swap_accuracy_cost = [](auto& m, const TriMesh::Tuple& e) {
     } else
         return 0.;
 };
+}
 
 void AdaptiveTessellation::swap_all_edges()
 {
@@ -79,6 +124,7 @@ void AdaptiveTessellation::swap_all_edges()
 
     wmtk::logger().info("size for edges to be swap is {}", collect_all_ops.size());
     auto setup_and_execute = [&](auto executor) {
+        addCustomOps(executor);
         executor.renew_neighbor_tuples = swap_renew;
         executor.priority = [&](auto& m, [[maybe_unused]] auto _, auto& e) {
             if (m.mesh_parameters.m_accuracy)
@@ -115,7 +161,6 @@ void AdaptiveTessellation::swap_all_edges()
 }
 bool AdaptiveTessellation::swap_edge_before(const Tuple& t)
 {
-    if (!TriMesh::swap_edge_before(t)) return false;
 
     if (is_boundary_edge(t)) return false;
     if (is_boundary_vertex(t))

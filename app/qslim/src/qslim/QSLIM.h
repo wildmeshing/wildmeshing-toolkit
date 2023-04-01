@@ -87,8 +87,8 @@ public:
     void partition_mesh_morton();
     
 public:
-    bool collapse_edge_before(const Tuple& t) override;
-    bool collapse_edge_after(const Tuple& t) override;
+    bool collapse_edge_before(const Tuple& t) ;
+    bool collapse_edge_after(const Tuple& t) ;
     bool collapse_qslim(int target_vertex_count);
     bool write_triangle_mesh(std::string path);
     bool invariants(const std::vector<Tuple>& new_tris) override;

@@ -122,9 +122,9 @@ public:
         const std::vector<TetAttributes>& _tet_attribute)
     {
         auto n_tet = _tet_attribute.size();
-        m_vertex_attribute.resize(_vertex_attribute.size());
-        m_face_attribute.resize(4 * n_tet);
-        m_tet_attribute.resize(n_tet);
+        m_vertex_attribute.grow_to_at_least(_vertex_attribute.size());
+        m_face_attribute.grow_to_at_least(4 * n_tet);
+        m_tet_attribute.grow_to_at_least(n_tet);
 
         for (auto i = 0; i < _vertex_attribute.size(); i++)
             m_vertex_attribute[i] = _vertex_attribute[i];

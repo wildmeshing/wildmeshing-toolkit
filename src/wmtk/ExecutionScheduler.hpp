@@ -2,6 +2,7 @@
 
 #include "wmtk/TetMesh.h"
 #include "wmtk/TriMesh.h"
+#include "wmtk/TriMeshOperation.h"
 #include "wmtk/utils/Logger.hpp"
 
 // clang-format off
@@ -36,14 +37,22 @@ template <class AppMesh, ExecutionPolicy policy = ExecutionPolicy::kSeq>
 struct ExecutePass
 {
     using Tuple = typename AppMesh::Tuple;
+    using OperatorFunc = std::function<std::optional<std::vector<Tuple>>(AppMesh&, const Tuple&)>;
+    constexpr static bool IsTetMesh = std::is_base_of_v<wmtk::TetMesh, AppMesh>;
+    // assume other than tetmesh we just have TriMesh
+    using OperationType = std::conditional_t<IsTetMesh, OperatorFunc, TriMeshOperation>;
     /**
      * @brief A dictionary that registers names with operations.
      *
      */
     std::map<
         Op, // strings
-        std::function<std::optional<std::vector<Tuple>>(AppMesh&, const Tuple&)>>
+        OperatorFunc>
         edit_operation_maps;
+    std::map<
+        Op, // strings
+        std::shared_ptr<OperationType>>
+        new_edit_operation_maps;
     /**
      * @brief Priority function (default to edge length)
      *
@@ -110,13 +119,45 @@ struct ExecutePass
      *
      */
     size_t max_retry_limit = 10;
+
+    /* 
+     * Add an operation to the set of operation types
+     */
+    template <typename OpType>
+    void add_operation(std::shared_ptr<OpType> op, const std::string& name)
+    {
+        new_edit_operation_maps[name] = op;
+    }
+    /* 
+     * Add an operation using its default name
+     */
+    template <typename OpType>
+    void add_operation(std::shared_ptr<OpType> op)
+    {
+        add_operation(op,op->name());
+    }
+    // convenience function for when we want to default construct the op but use a custom name
+    template <typename OpType>
+    void add_operation(const std::string& name)
+    {
+        auto op = std::make_shared<OpType>();
+        add_operation(op, name);
+    }
+    // convenience function for when we want to default construct the op an use default name
+    template <typename OpType>
+    void add_operation()
+    {
+        auto op = std::make_shared<OpType>();
+        add_operation(op);
+    }
     /**
      * @brief Construct a new Execute Pass object. It contains the name-to-operation map and the
      *functions that define the rules for operations
      *@note the constructor is differentiated by the type of mesh, namingly wmtk::TetMesh or
      *wmtk::TriMesh
      */
-    ExecutePass()
+
+    ExecutePass(const std::map<Op, OperatorFunc>& customized_ops = {})
     {
         if constexpr (std::is_base_of<wmtk::TetMesh, AppMesh>::value) {
             edit_operation_maps = {
@@ -169,40 +210,19 @@ struct ExecutePass
                  }}};
         }
         if constexpr (std::is_base_of<wmtk::TriMesh, AppMesh>::value) {
-            edit_operation_maps = {
-                {"edge_collapse",
-                 [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
-                     std::vector<Tuple> ret;
-                     if (m.collapse_edge(t, ret))
-                         return ret;
-                     else
-                         return {};
-                 }},
-                {"edge_swap",
-                 [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
-                     std::vector<Tuple> ret;
-                     if (m.swap_edge(t, ret))
-                         return ret;
-                     else
-                         return {};
-                 }},
-                {"edge_split",
-                 [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
-                     std::vector<Tuple> ret;
-                     if (m.split_edge(t, ret))
-                         return ret;
-                     else
-                         return {};
-                 }},
-                {"vertex_smooth",
-                 [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
-                     if (m.smooth_vertex(t))
-                         return std::vector<Tuple>{};
-                     else
-                         return {};
-                 }}};
+
+            add_operation<wmtk::TriMeshEdgeCollapseOperation>();
+            add_operation<wmtk::TriMeshSwapEdgeOperation>();
+            add_operation<wmtk::TriMeshSplitEdgeOperation>();
+            add_operation<wmtk::TriMeshSmoothVertexOperation>();
+            add_operation<wmtk::TriMeshConsolidateOperation>();
         }
-    };
+
+        if (!customized_ops.empty()) {
+            edit_operation_maps.insert(customized_ops.begin(), customized_ops.end());
+        }
+    }
+
 
 private:
     void operation_cleanup(AppMesh& m)
@@ -279,16 +299,29 @@ public:
                             operation_cleanup(m);
                             continue;
                         } // this can encode, in qslim, recompute(energy) == weight.
-                        auto newtup = edit_operation_maps[op](m, tup);
                         std::vector<std::pair<Op, Tuple>> renewed_tuples;
-                        if (newtup) {
-                            renewed_tuples = renew_neighbor_tuples(m, op, newtup.value());
-                            cnt_success++;
-                            cnt_update++;
+                        if constexpr (std::is_base_of<wmtk::TriMesh, AppMesh>::value) {
+                            auto ret_data = (*new_edit_operation_maps[op])( m, tup);
+                            if (ret_data.success) {
+                                renewed_tuples = renew_neighbor_tuples(m, op, ret_data.new_tris);
+                                cnt_success++;
+                                cnt_update++;
+                            } else {
+                                on_fail(m, op, tup);
+                                cnt_fail++;
+                            }
                         } else {
-                            on_fail(m, op, tup);
-                            cnt_fail++;
+                            auto newtup = edit_operation_maps[op](m, tup);
+                            if (newtup) {
+                                renewed_tuples = renew_neighbor_tuples(m, op, newtup.value());
+                                cnt_success++;
+                                cnt_update++;
+                            } else {
+                                on_fail(m, op, tup);
+                                cnt_fail++;
+                            }
                         }
+
                         for (auto& [o, e] : renewed_tuples) {
                             auto val = priority(m, o, e);
                             if (should_renew(val)) renewed_elements.emplace_back(val, o, e, 0);
