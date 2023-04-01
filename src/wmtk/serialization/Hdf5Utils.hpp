@@ -18,14 +18,14 @@
 #endif
 
 
-
 // Macro for pre-declaring HighFive's HDF5 datatypes
 // HighFive defines a macro HIGHFIVE_REGISTER_TYPE that implements a template specialization.
 // That macro cannot be used to fully specialize in a header so this macro is
 // provided so specialization can be declared in a header and implementation
 // performed in a source file
 #define WMTK_HIGHFIVE_DECLARE_TYPE(type) \
-    template <> inline HighFive::DataType HighFive::create_datatype<type>();
+    template <>                          \
+    inline HighFive::DataType HighFive::create_datatype<type>();
 
 
 namespace wmtk::utils {
@@ -35,8 +35,10 @@ namespace wmtk::utils {
 bool does_dataset_exist(const HighFive::File& file, const std::string& name);
 
 
-HighFive::DataSet
-create_extendable_dataset(HighFive::File& file, const std::string& name, const HighFive::DataType& datatype);
+HighFive::DataSet create_extendable_dataset(
+    HighFive::File& file,
+    const std::string& name,
+    const HighFive::DataType& datatype);
 
 
 template <typename T>
@@ -62,14 +64,6 @@ template <typename T>
 size_t append_value_to_dataset(HighFive::DataSet& dataset, const T& value);
 
 
-
-
-  
-
-
-
-
-
 // implementation
 
 template <typename T, typename Allocator>
@@ -77,6 +71,8 @@ std::array<size_t, 2> append_values_to_dataset(
     HighFive::DataSet& dataset,
     const std::vector<T, Allocator>& data)
 {
+    assert(data.size() != 0);
+
     // compute the new dataset size
     std::vector<size_t> first_position = dataset.getDimensions();
     // double check that the dataset is 1-dimensional
@@ -108,4 +104,4 @@ size_t append_value_to_dataset(HighFive::DataSet& dataset, const T& value)
     return new_size[0];
 }
 
-} // namespace wmtk
+} // namespace wmtk::utils

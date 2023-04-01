@@ -251,18 +251,30 @@ AttributeCollectionUpdate AttributeCollectionSerialization<T>::record_value_chan
     // const tbb::concurrent_vector<T>& attributes = attribute_collection.m_attributes;
 
     std::vector<UpdateData> data;
-    data.reserve(rollback_list.size());
-    std::transform(
-        rollback_list.begin(),
-        rollback_list.end(),
-        std::back_inserter(data),
-        [&attributes](const std::pair<const size_t, T>& pr) -> UpdateData {
-            const auto& [index, old_value] = pr;
-            const T& new_value = attributes[index];
-            return UpdateData{index, old_value, new_value};
-        });
+    size_t start, end;
+    if (rollback_list.size() > 0) {
+        data.reserve(rollback_list.size());
+        std::transform(
+            rollback_list.begin(),
+            rollback_list.end(),
+            std::back_inserter(data),
+            [&attributes](const std::pair<const size_t, T>& pr) -> UpdateData {
+                const auto& [index, old_value] = pr;
+                if (index < attributes.size()) {
+                    const T& new_value = attributes[index];
+                    return UpdateData{index, old_value, new_value};
+                } else {
+                    return UpdateData{index, old_value, {}};
+                }
+            });
 
-    auto [start, end] = utils::append_values_to_dataset(m_value_changes_dataset, data);
+        auto [s, e] = utils::append_values_to_dataset(m_value_changes_dataset, data);
+        start = s;
+        end = e;
+    } else {
+        start = 0;
+        end = 0;
+    }
     return AttributeCollectionUpdate(start, end, old_size, attribute_collection.size());
     // return std::array<size_t, 3>{{start, end, attribute_collection.m_rollback_size.local(),
     // attribute_collection.size()}};
@@ -300,7 +312,9 @@ void AttributeCollectionSerialization<T>::apply_update(const AttributeCollection
 
     // write data
     for (const AttributeCollectionValueChange<T>& upd : get_value_changes(update)) {
-        attribute_collection[upd.index] = upd.new_value;
+        if (upd.index < attribute_collection.size()) {
+            attribute_collection[upd.index] = upd.new_value;
+        }
     }
 }
 template <typename T>
@@ -324,6 +338,9 @@ AttributeCollectionSerialization<T>::get_value_changes(
     std::vector<size_t> start, size;
     start.emplace_back(update.range.begin);
     size.emplace_back(update.range.end - update.range.begin);
+    if (size[0] == 0) {
+        return value_changes;
+    }
 
     // read the data
     m_value_changes_dataset.select(start, size).read(value_changes);

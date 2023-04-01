@@ -1,7 +1,7 @@
 
-#include <wmtk/AttributeCollection.hpp>
 #include <wmtk/serialization/AttributeCollectionRecorder.h>
 #include <wmtk/serialization/AttributeCollectionReplayer.h>
+#include <wmtk/AttributeCollection.hpp>
 
 WMTK_HDF5_REGISTER_ATTRIBUTE_TYPE(double)
 
@@ -116,10 +116,25 @@ TEST_CASE("double_recorder", "[attribute_recording]")
     {
         REQUIRE(update_index == attribute_recorder.updates_size() - 1);
         AttributeCollectionUpdate update = attribute_recorder.update(update_index);
-        CHECK(update.range.begin == 50);
-        CHECK(update.range.end == update.range.begin + 10);
+        CHECK(update.range.begin == 0);
+        CHECK(update.range.end == 0);
         CHECK(update.new_size == 30);
         CHECK(update.old_size == 20);
+    }
+
+    attribute_collection.begin_protect();
+    attribute_collection.resize(20);
+    update_index_opt = attribute_collection.end_protect();
+    REQUIRE(update_index_opt.has_value());
+    update_index = update_index_opt.value();
+    spdlog::info("State {}: {}", update_index, fmt::join(attribute_collection, ","));
+    {
+        REQUIRE(update_index == attribute_recorder.updates_size() - 1);
+        AttributeCollectionUpdate update = attribute_recorder.update(update_index);
+        CHECK(update.range.begin == 50);
+        CHECK(update.range.end == update.range.begin + 10);
+        CHECK(update.new_size == 20);
+        CHECK(update.old_size == 30);
     }
     const AttributeCollection<double>& old_attribute_collection = attribute_collection;
     {
