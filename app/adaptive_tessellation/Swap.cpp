@@ -60,7 +60,7 @@ auto swap_cost = [](auto& m, const TriMesh::Tuple& t) {
 
 // list the triangle verteics in order
 // return cost 0.for colinear or flipped triangle after swap (to save quadrature computation)
-auto swap_accuracy_cost = [&swap_cost](auto& m, const TriMesh::Tuple& e) {
+auto swap_accuracy_cost = [](auto& m, const TriMesh::Tuple& e, const double valence_cost) {
     double e_before = 0.0;
     auto e_after = e_before;
     if ((e.switch_face(m)).has_value()) {
@@ -102,7 +102,6 @@ auto swap_accuracy_cost = [&swap_cost](auto& m, const TriMesh::Tuple& e) {
                 e_after = m.mesh_parameters.m_displacement->get_error_per_triangle(triangle1);
                 e_after += m.mesh_parameters.m_displacement->get_error_per_triangle(triangle2);
             }
-            auto valence_cost = swap_cost(m, e);
             if (valence_cost <= 0) return -std::numeric_limits<double>::infinity();
             if (e_after > m.mesh_parameters.m_accuracy_threshold)
                 // the accuracy exceeds global bond
@@ -129,25 +128,25 @@ void AdaptiveTessellation::swap_all_edges()
         executor.priority = [&](auto& m, [[maybe_unused]] auto _, auto& e) {
             if (m.is_boundary_edge(e))
                 return -std::numeric_limits<double>::infinity(); // boundary edge shouldn't swap
+            double valence_cost = swap_cost(m, e);
             if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::ACCURACY ||
                 m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
-                auto current_error = swap_accuracy_cost(m, e);
+                auto current_error = swap_accuracy_cost(m, e, valence_cost);
                 return current_error;
-            } else
-                return swap_cost(m, e);
+            }
+            return valence_cost;
         };
         executor.num_threads = NUM_THREADS;
         executor.is_weight_up_to_date = [](auto& m, auto& ele) {
             auto& [weight, op, tup] = ele;
             if (weight == -std::numeric_limits<double>::infinity()) return false;
             double current_cost = 0.;
+            current_cost = swap_cost(m, tup);
+            if (current_cost < 0.) return false;
             if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::ACCURACY ||
                 m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
-                current_cost = swap_accuracy_cost(m, tup);
-            } else {
-                current_cost = swap_cost(m, tup);
+                current_cost = swap_accuracy_cost(m, tup, current_cost);
             }
-            if (current_cost < 0.) return false;
             if (!is_close(current_cost, weight)) return false;
             return true;
         };
