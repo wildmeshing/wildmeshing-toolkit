@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: wmtk::AttributeCollection&lt; T &gt; Struct Template Reference</title>
+<title>Wildmeshing Toolkit: wmtk::AttributeCollection&lt; T &gt; Class Template Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -70,7 +70,7 @@ $(function() {
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="structwmtk_1_1_attribute_collection-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">wmtk::AttributeCollection&lt; T &gt; Struct Template Reference</div>  </div>
+<div class="title">wmtk::AttributeCollection&lt; T &gt; Class Template Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 <div class="dynheader">
@@ -79,7 +79,7 @@ Inheritance diagram for wmtk::AttributeCollection&lt; T &gt;:</div>
  <div class="center">
   <img src="structwmtk_1_1_attribute_collection.png" usemap="#wmtk::AttributeCollection_3C_20T_20_3E_map" alt=""/>
   <map id="wmtk::AttributeCollection_3C_20T_20_3E_map" name="wmtk::AttributeCollection_3C_20T_20_3E_map">
-<area href="classwmtk_1_1_abstract_attribute_container.html" title="serving as buffers for attributes data that can be modified by operations" alt="wmtk::AbstractAttributeContainer" shape="rect" coords="0,0,194,24"/>
+<area href="classwmtk_1_1_abstract_attribute_collection.html" alt="wmtk::AbstractAttributeCollection" shape="rect" coords="0,0,195,24"/>
   </map>
 </div></div>
 <table class="memberdecls">
@@ -91,21 +91,36 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>move</b> (size_t from
 <tr class="memitem:a885c38d5d3806768e037cea069952d34"><td class="memItemLeft" align="right" valign="top"><a id="a885c38d5d3806768e037cea069952d34"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>resize</b> (size_t s) override</td></tr>
 <tr class="separator:a885c38d5d3806768e037cea069952d34"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad19072aa566ad2da558339c62fb7c0a9"><td class="memItemLeft" align="right" valign="top"><a id="ad19072aa566ad2da558339c62fb7c0a9"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>assign</b> (size_t to, T &amp;&amp;val)</td></tr>
-<tr class="separator:ad19072aa566ad2da558339c62fb7c0a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac6ccee091557fde21b2a8718c1b3b603"><td class="memItemLeft" align="right" valign="top"><a id="ac6ccee091557fde21b2a8718c1b3b603"></a>
+auto&#160;</td><td class="memItemRight" valign="bottom"><b>begin</b> ()</td></tr>
+<tr class="separator:ac6ccee091557fde21b2a8718c1b3b603"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a904602825116fb0593708e0ee1460847"><td class="memItemLeft" align="right" valign="top"><a id="a904602825116fb0593708e0ee1460847"></a>
+auto&#160;</td><td class="memItemRight" valign="bottom"><b>end</b> ()</td></tr>
+<tr class="separator:a904602825116fb0593708e0ee1460847"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4e181b790a8af46f2b8c717792b71e9b"><td class="memItemLeft" align="right" valign="top"><a id="a4e181b790a8af46f2b8c717792b71e9b"></a>
+auto&#160;</td><td class="memItemRight" valign="bottom"><b>begin</b> () const</td></tr>
+<tr class="separator:a4e181b790a8af46f2b8c717792b71e9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae04a0b88278545ac1473ec817204829a"><td class="memItemLeft" align="right" valign="top"><a id="ae04a0b88278545ac1473ec817204829a"></a>
+auto&#160;</td><td class="memItemRight" valign="bottom"><b>end</b> () const</td></tr>
+<tr class="separator:ae04a0b88278545ac1473ec817204829a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a06a0a739430a6d581d6964a32da754a1"><td class="memItemLeft" align="right" valign="top"><a id="a06a0a739430a6d581d6964a32da754a1"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>shrink_to_fit</b> ()</td></tr>
+<tr class="separator:a06a0a739430a6d581d6964a32da754a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac2768680c01bc215724153e14dbad7b6"><td class="memItemLeft" align="right" valign="top"><a id="ac2768680c01bc215724153e14dbad7b6"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>grow_to_at_least</b> (size_t s) override</td></tr>
+<tr class="separator:ac2768680c01bc215724153e14dbad7b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a15d5ca94f6995d3e1363804f79d7c287"><td class="memItemLeft" align="right" valign="top"><a id="a15d5ca94f6995d3e1363804f79d7c287"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_attribute_collection.html#a15d5ca94f6995d3e1363804f79d7c287">rollback</a> () override</td></tr>
 <tr class="memdesc:a15d5ca94f6995d3e1363804f79d7c287"><td class="mdescLeft">&#160;</td><td class="mdescRight">retrieve the protected attribute data on operation-fail <br /></td></tr>
 <tr class="separator:a15d5ca94f6995d3e1363804f79d7c287"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae0505eb2677a9eb03e9a76fe03ccf770"><td class="memItemLeft" align="right" valign="top"><a id="ae0505eb2677a9eb03e9a76fe03ccf770"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_attribute_collection.html#ae0505eb2677a9eb03e9a76fe03ccf770">begin_protect</a> () override</td></tr>
-<tr class="memdesc:ae0505eb2677a9eb03e9a76fe03ccf770"><td class="mdescLeft">&#160;</td><td class="mdescRight">clean local buffers for attribute, and start recording <br /></td></tr>
+<tr class="memdesc:ae0505eb2677a9eb03e9a76fe03ccf770"><td class="mdescLeft">&#160;</td><td class="mdescRight">clean local buffers for attribute, and start in_protected <br /></td></tr>
 <tr class="separator:ae0505eb2677a9eb03e9a76fe03ccf770"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abc4e548acb727ba52b6ab64aa3d6e742"><td class="memItemLeft" align="right" valign="top"><a id="abc4e548acb727ba52b6ab64aa3d6e742"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_attribute_collection.html#abc4e548acb727ba52b6ab64aa3d6e742">end_protect</a> () override</td></tr>
-<tr class="memdesc:abc4e548acb727ba52b6ab64aa3d6e742"><td class="mdescLeft">&#160;</td><td class="mdescRight">clear local buffers and finish recording <br /></td></tr>
-<tr class="separator:abc4e548acb727ba52b6ab64aa3d6e742"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abb90939e3ef9afff709f11bd0f79628f"><td class="memItemLeft" align="right" valign="top"><a id="abb90939e3ef9afff709f11bd0f79628f"></a>
+std::optional&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_attribute_collection.html#abb90939e3ef9afff709f11bd0f79628f">end_protect</a> () override</td></tr>
+<tr class="memdesc:abb90939e3ef9afff709f11bd0f79628f"><td class="mdescLeft">&#160;</td><td class="mdescRight">clear local buffers and finish in_protected <br /></td></tr>
+<tr class="separator:abb90939e3ef9afff709f11bd0f79628f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a101ce23be335d51b46720541d2f465a5"><td class="memItemLeft" align="right" valign="top"><a id="a101ce23be335d51b46720541d2f465a5"></a>
 const T &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator[]</b> (size_t i) const</td></tr>
 <tr class="separator:a101ce23be335d51b46720541d2f465a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -115,16 +130,19 @@ T &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator[]</b> (si
 <tr class="memitem:aef7f0d4c6088e47280cc90a6b514b416"><td class="memItemLeft" align="right" valign="top"><a id="aef7f0d4c6088e47280cc90a6b514b416"></a>
 const T &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>at</b> (size_t i) const</td></tr>
 <tr class="separator:aef7f0d4c6088e47280cc90a6b514b416"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aeec84e9a59c6d4f6446310c9b6f93e78"><td class="memItemLeft" align="right" valign="top"><a id="aeec84e9a59c6d4f6446310c9b6f93e78"></a>
-size_t&#160;</td><td class="memItemRight" valign="bottom"><b>size</b> () const</td></tr>
-<tr class="separator:aeec84e9a59c6d4f6446310c9b6f93e78"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="inherit_header pub_methods_classwmtk_1_1_abstract_attribute_container"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classwmtk_1_1_abstract_attribute_container')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classwmtk_1_1_abstract_attribute_container.html">wmtk::AbstractAttributeContainer</a></td></tr>
-<tr class="memitem:a69e39f2250bf5884ca5a145dd0d0c890 inherit pub_methods_classwmtk_1_1_abstract_attribute_container"><td class="memItemLeft" align="right" valign="top"><a id="a69e39f2250bf5884ca5a145dd0d0c890"></a>
-virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>move</b> ([[maybe_unused]] size_t from, [[maybe_unused]] size_t to)</td></tr>
-<tr class="separator:a69e39f2250bf5884ca5a145dd0d0c890 inherit pub_methods_classwmtk_1_1_abstract_attribute_container"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af4975473a7b4b44eb2875869bc369a03 inherit pub_methods_classwmtk_1_1_abstract_attribute_container"><td class="memItemLeft" align="right" valign="top"><a id="af4975473a7b4b44eb2875869bc369a03"></a>
-virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>resize</b> ([[maybe_unused]] size_t)</td></tr>
-<tr class="separator:af4975473a7b4b44eb2875869bc369a03 inherit pub_methods_classwmtk_1_1_abstract_attribute_container"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a38f8dd8f218ae1fc45dfa6c77aab2fda"><td class="memItemLeft" align="right" valign="top"><a id="a38f8dd8f218ae1fc45dfa6c77aab2fda"></a>
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>size</b> () const override</td></tr>
+<tr class="separator:a38f8dd8f218ae1fc45dfa6c77aab2fda"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_methods_classwmtk_1_1_abstract_attribute_collection"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classwmtk_1_1_abstract_attribute_collection')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classwmtk_1_1_abstract_attribute_collection.html">wmtk::AbstractAttributeCollection</a></td></tr>
+<tr class="memitem:ac33653a7a3ca829d818674ba0fb41ca4 inherit pub_methods_classwmtk_1_1_abstract_attribute_collection"><td class="memItemLeft" align="right" valign="top"><a id="ac33653a7a3ca829d818674ba0fb41ca4"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>has_recorders</b> () const</td></tr>
+<tr class="separator:ac33653a7a3ca829d818674ba0fb41ca4 inherit pub_methods_classwmtk_1_1_abstract_attribute_collection"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a979d2ac9299390194b40d9a2cd984f88 inherit pub_methods_classwmtk_1_1_abstract_attribute_collection"><td class="memItemLeft" align="right" valign="top"><a id="a979d2ac9299390194b40d9a2cd984f88"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>add_recorder</b> (<a class="el" href="classwmtk_1_1_attribute_collection_recorder.html">AttributeCollectionRecorder</a> *)</td></tr>
+<tr class="separator:a979d2ac9299390194b40d9a2cd984f88 inherit pub_methods_classwmtk_1_1_abstract_attribute_collection"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3357a4d49df977dce7132f8e06a5c1b7 inherit pub_methods_classwmtk_1_1_abstract_attribute_collection"><td class="memItemLeft" align="right" valign="top"><a id="a3357a4d49df977dce7132f8e06a5c1b7"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>remove_recorder</b> (<a class="el" href="classwmtk_1_1_attribute_collection_recorder.html">AttributeCollectionRecorder</a> *)</td></tr>
+<tr class="separator:a3357a4d49df977dce7132f8e06a5c1b7 inherit pub_methods_classwmtk_1_1_abstract_attribute_collection"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -134,11 +152,18 @@ tbb::enumerable_thread_specific&lt; std::map&lt; size_t, T &gt; &gt;&#160;</td><
 <tr class="memitem:a4d2e6219d9d0bf9a1e230528f20797dc"><td class="memItemLeft" align="right" valign="top"><a id="a4d2e6219d9d0bf9a1e230528f20797dc"></a>
 tbb::concurrent_vector&lt; T &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_attributes</b></td></tr>
 <tr class="separator:a4d2e6219d9d0bf9a1e230528f20797dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae2783ffca207a175059f64b7ace1d1bc"><td class="memItemLeft" align="right" valign="top"><a id="ae2783ffca207a175059f64b7ace1d1bc"></a>
-tbb::enumerable_thread_specific&lt; bool &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>recording</b> {false}</td></tr>
-<tr class="separator:ae2783ffca207a175059f64b7ace1d1bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="inherited"></a>
+Additional Inherited Members</h2></td></tr>
+<tr class="inherit_header pro_attribs_classwmtk_1_1_abstract_attribute_collection"><td colspan="2" onclick="javascript:toggleInherit('pro_attribs_classwmtk_1_1_abstract_attribute_collection')"><img src="closed.png" alt="-"/>&#160;Protected Attributes inherited from <a class="el" href="classwmtk_1_1_abstract_attribute_collection.html">wmtk::AbstractAttributeCollection</a></td></tr>
+<tr class="memitem:a4ae06bdfaf4487577a4c84c140d9f6f0 inherit pro_attribs_classwmtk_1_1_abstract_attribute_collection"><td class="memItemLeft" align="right" valign="top"><a id="a4ae06bdfaf4487577a4c84c140d9f6f0"></a>
+tbb::enumerable_thread_specific&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_rollback_size</b></td></tr>
+<tr class="separator:a4ae06bdfaf4487577a4c84c140d9f6f0 inherit pro_attribs_classwmtk_1_1_abstract_attribute_collection"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2a2fdb091a249ad65f730030fd9d5d4f inherit pro_attribs_classwmtk_1_1_abstract_attribute_collection"><td class="memItemLeft" align="right" valign="top"><a id="a2a2fdb091a249ad65f730030fd9d5d4f"></a>
+tbb::enumerable_thread_specific&lt; bool &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>in_protected</b> {false}</td></tr>
+<tr class="separator:a2a2fdb091a249ad65f730030fd9d5d4f inherit pro_attribs_classwmtk_1_1_abstract_attribute_collection"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<hr/>The documentation for this struct was generated from the following file:<ul>
+<hr/>The documentation for this class was generated from the following file:<ul>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/<a class="el" href="_attribute_collection_8hpp_source.html">AttributeCollection.hpp</a></li>
 </ul>
 </div><!-- contents -->

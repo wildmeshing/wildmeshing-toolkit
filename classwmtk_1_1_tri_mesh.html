@@ -71,8 +71,10 @@ $(function() {
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="#pro-methods">Protected Member Functions</a> &#124;
+<a href="#pro-attribs">Protected Attributes</a> &#124;
 <a href="#pri-methods">Private Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
+<a href="#friends">Friends</a> &#124;
 <a href="classwmtk_1_1_tri_mesh-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">wmtk::TriMesh Class Reference</div>  </div>
@@ -88,14 +90,13 @@ Inheritance diagram for wmtk::TriMesh:</div>
 <area href="classapp_1_1qslim_1_1_q_s_l_i_m.html" alt="app::qslim::QSLIM" shape="rect" coords="261,56,512,80"/>
 <area href="classapp_1_1remeshing_1_1_uniform_remeshing.html" alt="app::remeshing::UniformRemeshing" shape="rect" coords="522,56,773,80"/>
 <area href="classapp_1_1sec_1_1_shortest_edge_collapse.html" alt="app::sec::ShortestEdgeCollapse" shape="rect" coords="783,56,1034,80"/>
+<area href="classwmtk_1_1_replaying_tri_mesh.html" alt="wmtk::ReplayingTriMesh" shape="rect" coords="1044,56,1295,80"/>
   </map>
 </div></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_triangle_connectivity.html">TriangleConnectivity</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex_connectivity.html">VertexConnectivity</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -104,6 +105,9 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
+<tr class="memitem:acd93c4096b56b2351c683356babd1e34"><td class="memItemLeft" align="right" valign="top"><a id="acd93c4096b56b2351c683356babd1e34"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>Tuple</b> = <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">TriMeshTuple</a></td></tr>
+<tr class="separator:acd93c4096b56b2351c683356babd1e34"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a789f9bdc3ece59a5f11143e6ae1d5cd1"><td class="memTemplParams" colspan="2"><a id="a789f9bdc3ece59a5f11143e6ae1d5cd1"></a>
 template&lt;typename T &gt; </td></tr>
 <tr class="memitem:a789f9bdc3ece59a5f11143e6ae1d5cd1"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>vector</b> = tbb::concurrent_vector&lt; T &gt;</td></tr>
@@ -111,16 +115,21 @@ template&lt;typename T &gt; </td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:a9eac88e594bf6aab03921b6e63aa9f98"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a9eac88e594bf6aab03921b6e63aa9f98">copy_connectivity</a> (const <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;o)</td></tr>
+<tr class="separator:a9eac88e594bf6aab03921b6e63aa9f98"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0df708995dc83adf65f0a30285c31aff"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a0df708995dc83adf65f0a30285c31aff">create_mesh</a> (size_t n_vertices, const std::vector&lt; std::array&lt; size_t, 3 &gt;&gt; &amp;tris)</td></tr>
 <tr class="separator:a0df708995dc83adf65f0a30285c31aff"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a286a3f4e4b464723a1f7b17d9cb6a446"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a286a3f4e4b464723a1f7b17d9cb6a446">get_vertices</a> () const</td></tr>
+<tr class="memitem:a286a3f4e4b464723a1f7b17d9cb6a446"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a286a3f4e4b464723a1f7b17d9cb6a446">get_vertices</a> () const</td></tr>
 <tr class="separator:a286a3f4e4b464723a1f7b17d9cb6a446"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9409ac6f95238e5af58be7ee47c47e4e"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a9409ac6f95238e5af58be7ee47c47e4e">get_faces</a> () const</td></tr>
+<tr class="memitem:a9409ac6f95238e5af58be7ee47c47e4e"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a9409ac6f95238e5af58be7ee47c47e4e">get_faces</a> () const</td></tr>
 <tr class="separator:a9409ac6f95238e5af58be7ee47c47e4e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aed585e848ce149908ce1e88f6331fc03"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#aed585e848ce149908ce1e88f6331fc03">get_edges</a> () const</td></tr>
+<tr class="memitem:aed585e848ce149908ce1e88f6331fc03"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#aed585e848ce149908ce1e88f6331fc03">get_edges</a> () const</td></tr>
 <tr class="separator:aed585e848ce149908ce1e88f6331fc03"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab07342fac165c5ff95aecb82f346338e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#ab07342fac165c5ff95aecb82f346338e">init_from_edge</a> (size_t vid1, size_t vid2, size_t fid) const</td></tr>
+<tr class="memitem:ab07342fac165c5ff95aecb82f346338e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#ab07342fac165c5ff95aecb82f346338e">init_from_edge</a> (size_t vid1, size_t vid2, size_t fid) const</td></tr>
 <tr class="separator:ab07342fac165c5ff95aecb82f346338e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2fac8e1c0c5e2f311896725e1476da62"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a2fac8e1c0c5e2f311896725e1476da62">invariants</a> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> &gt; &amp;)</td></tr>
+<tr class="memdesc:a2fac8e1c0c5e2f311896725e1476da62"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified invariants that can't be violated.  <a href="classwmtk_1_1_tri_mesh.html#a2fac8e1c0c5e2f311896725e1476da62">More...</a><br /></td></tr>
+<tr class="separator:a2fac8e1c0c5e2f311896725e1476da62"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab64cc4ece77d894286c2e433e039dae2"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#ab64cc4ece77d894286c2e433e039dae2">tri_capacity</a> () const</td></tr>
 <tr class="memdesc:ab64cc4ece77d894286c2e433e039dae2"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the current largest global fid  <a href="classwmtk_1_1_tri_mesh.html#ab64cc4ece77d894286c2e433e039dae2">More...</a><br /></td></tr>
 <tr class="separator:ab64cc4ece77d894286c2e433e039dae2"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -131,19 +140,16 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a9939b4491bd9afc357468072368ab392"><td class="mdescLeft">&#160;</td><td class="mdescRight">removing the elements that are removed  <a href="classwmtk_1_1_tri_mesh.html#a9939b4491bd9afc357468072368ab392">More...</a><br /></td></tr>
 <tr class="separator:a9939b4491bd9afc357468072368ab392"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af239b4f32ec1733261c301c351283dbc"><td class="memItemLeft" align="right" valign="top"><a id="af239b4f32ec1733261c301c351283dbc"></a>
-<a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#af239b4f32ec1733261c301c351283dbc">switch_vertex</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) const</td></tr>
-<tr class="memdesc:af239b4f32ec1733261c301c351283dbc"><td class="mdescLeft">&#160;</td><td class="mdescRight">a duplicate of <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html#a2fe6f785e3cd6443b9f2b8b923a3be13">Tuple::switch_vertex</a> funciton <br /></td></tr>
+<a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#af239b4f32ec1733261c301c351283dbc">switch_vertex</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> &amp;t) const</td></tr>
+<tr class="memdesc:af239b4f32ec1733261c301c351283dbc"><td class="mdescLeft">&#160;</td><td class="mdescRight">a duplicate of <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html#a41ed4bc121bb0ff605e177b5227ad613">Tuple::switch_vertex</a> funciton <br /></td></tr>
 <tr class="separator:af239b4f32ec1733261c301c351283dbc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a550a163f5f906a33b8fc4a44fc427203"><td class="memItemLeft" align="right" valign="top"><a id="a550a163f5f906a33b8fc4a44fc427203"></a>
-<a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a550a163f5f906a33b8fc4a44fc427203">switch_edge</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) const</td></tr>
-<tr class="memdesc:a550a163f5f906a33b8fc4a44fc427203"><td class="mdescLeft">&#160;</td><td class="mdescRight">a duplicate of <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html#a45bfe41ecf0f323c3b74452526aca8fc">Tuple::switch_edge</a> funciton <br /></td></tr>
+<a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a550a163f5f906a33b8fc4a44fc427203">switch_edge</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> &amp;t) const</td></tr>
+<tr class="memdesc:a550a163f5f906a33b8fc4a44fc427203"><td class="mdescLeft">&#160;</td><td class="mdescRight">a duplicate of <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html#a8381d1d93385d36f3136ec4329244ea9">Tuple::switch_edge</a> funciton <br /></td></tr>
 <tr class="separator:a550a163f5f906a33b8fc4a44fc427203"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a463afcdb12224df869bfd1c4c9aea2d4"><td class="memItemLeft" align="right" valign="top">std::optional&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a463afcdb12224df869bfd1c4c9aea2d4">switch_face</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) const</td></tr>
-<tr class="memdesc:a463afcdb12224df869bfd1c4c9aea2d4"><td class="mdescLeft">&#160;</td><td class="mdescRight">a duplicate of <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html#a683f9597a1eef47b6b64ee818484c510">Tuple::switch_face</a> funciton  <a href="classwmtk_1_1_tri_mesh.html#a463afcdb12224df869bfd1c4c9aea2d4">More...</a><br /></td></tr>
+<tr class="memitem:a463afcdb12224df869bfd1c4c9aea2d4"><td class="memItemLeft" align="right" valign="top">std::optional&lt; <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a463afcdb12224df869bfd1c4c9aea2d4">switch_face</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> &amp;t) const</td></tr>
+<tr class="memdesc:a463afcdb12224df869bfd1c4c9aea2d4"><td class="mdescLeft">&#160;</td><td class="mdescRight">a duplicate of <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html#a674eb9494fdf12283390a0b2d3707ea1">Tuple::switch_face</a> funciton  <a href="classwmtk_1_1_tri_mesh.html#a463afcdb12224df869bfd1c4c9aea2d4">More...</a><br /></td></tr>
 <tr class="separator:a463afcdb12224df869bfd1c4c9aea2d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae3dca4cc8f5751b15375589789c14a9e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#ae3dca4cc8f5751b15375589789c14a9e">check_link_condition</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) const</td></tr>
-<tr class="memdesc:ae3dca4cc8f5751b15375589789c14a9e"><td class="mdescLeft">&#160;</td><td class="mdescRight">prerequisite for collapse  <a href="classwmtk_1_1_tri_mesh.html#ae3dca4cc8f5751b15375589789c14a9e">More...</a><br /></td></tr>
-<tr class="separator:ae3dca4cc8f5751b15375589789c14a9e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a94345a58f612ec8b985f7ed98e048ea8"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a94345a58f612ec8b985f7ed98e048ea8">check_mesh_connectivity_validity</a> () const</td></tr>
 <tr class="memdesc:a94345a58f612ec8b985f7ed98e048ea8"><td class="mdescLeft">&#160;</td><td class="mdescRight">verify the connectivity validity of the mesh  <a href="classwmtk_1_1_tri_mesh.html#a94345a58f612ec8b985f7ed98e048ea8">More...</a><br /></td></tr>
 <tr class="separator:a94345a58f612ec8b985f7ed98e048ea8"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -151,80 +157,75 @@ Public Member Functions</h2></td></tr>
 bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#afed481085d19c5abe959c56ccfb750e2">check_edge_manifold</a> () const</td></tr>
 <tr class="memdesc:afed481085d19c5abe959c56ccfb750e2"><td class="mdescLeft">&#160;</td><td class="mdescRight">verify the edge manifoldness of the mesh <br /></td></tr>
 <tr class="separator:afed481085d19c5abe959c56ccfb750e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adcc31a34edcc7605d3bbfa25bae84ece"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#adcc31a34edcc7605d3bbfa25bae84ece">is_boundary_edge</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">TriMesh::Tuple</a> &amp;t) const</td></tr>
-<tr class="memdesc:adcc31a34edcc7605d3bbfa25bae84ece"><td class="mdescLeft">&#160;</td><td class="mdescRight">check if edge that's represented by a <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> is at the boundary of the mesh  <a href="classwmtk_1_1_tri_mesh.html#adcc31a34edcc7605d3bbfa25bae84ece">More...</a><br /></td></tr>
+<tr class="memitem:adcc31a34edcc7605d3bbfa25bae84ece"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#adcc31a34edcc7605d3bbfa25bae84ece">is_boundary_edge</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">TriMesh::Tuple</a> &amp;t) const</td></tr>
+<tr class="memdesc:adcc31a34edcc7605d3bbfa25bae84ece"><td class="mdescLeft">&#160;</td><td class="mdescRight">check if edge that's represented by a Tuple is at the boundary of the mesh  <a href="classwmtk_1_1_tri_mesh.html#adcc31a34edcc7605d3bbfa25bae84ece">More...</a><br /></td></tr>
 <tr class="separator:adcc31a34edcc7605d3bbfa25bae84ece"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af69f2ad9b7b8b70c297337e0f26e75e4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#af69f2ad9b7b8b70c297337e0f26e75e4">is_boundary_vertex</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">TriMesh::Tuple</a> &amp;t) const</td></tr>
-<tr class="memdesc:af69f2ad9b7b8b70c297337e0f26e75e4"><td class="mdescLeft">&#160;</td><td class="mdescRight">check if the vertex that's represented by a <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> is at the boundary of the mesh  <a href="classwmtk_1_1_tri_mesh.html#af69f2ad9b7b8b70c297337e0f26e75e4">More...</a><br /></td></tr>
-<tr class="separator:af69f2ad9b7b8b70c297337e0f26e75e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a65804964b0866957f1f8b4b8519965a8"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a65804964b0866957f1f8b4b8519965a8">split_edge</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t, std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;new_t)</td></tr>
-<tr class="separator:a65804964b0866957f1f8b4b8519965a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af2eaee316c260a2c1996c9db2d124798"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#af2eaee316c260a2c1996c9db2d124798">collapse_edge</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t, std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;new_t)</td></tr>
-<tr class="separator:af2eaee316c260a2c1996c9db2d124798"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6f2170cf9031a6f15fe94df2787615e3"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a6f2170cf9031a6f15fe94df2787615e3">swap_edge</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t, std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;new_t)</td></tr>
-<tr class="separator:a6f2170cf9031a6f15fe94df2787615e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aebe6602f7e5b3921dbda54a82e76394a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#aebe6602f7e5b3921dbda54a82e76394a">smooth_vertex</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
-<tr class="separator:aebe6602f7e5b3921dbda54a82e76394a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a24bb2f44a4eaf19f4e3ca2d0d53442f2"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a24bb2f44a4eaf19f4e3ca2d0d53442f2">get_valence_for_vertex</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) const</td></tr>
+<tr class="memitem:a3b067d4cb256162e5fa3ae8a217431d0"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a3b067d4cb256162e5fa3ae8a217431d0">is_boundary_vertex</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">TriMesh::Tuple</a> &amp;t) const</td></tr>
+<tr class="memdesc:a3b067d4cb256162e5fa3ae8a217431d0"><td class="mdescLeft">&#160;</td><td class="mdescRight">check if the vertex that's represented by a Tuple is at the boundary of the mesh  <a href="classwmtk_1_1_tri_mesh.html#a3b067d4cb256162e5fa3ae8a217431d0">More...</a><br /></td></tr>
+<tr class="separator:a3b067d4cb256162e5fa3ae8a217431d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a24bb2f44a4eaf19f4e3ca2d0d53442f2"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a24bb2f44a4eaf19f4e3ca2d0d53442f2">get_valence_for_vertex</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> &amp;t) const</td></tr>
 <tr class="memdesc:a24bb2f44a4eaf19f4e3ca2d0d53442f2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Count the number of the one ring tris for a vertex.  <a href="classwmtk_1_1_tri_mesh.html#a24bb2f44a4eaf19f4e3ca2d0d53442f2">More...</a><br /></td></tr>
 <tr class="separator:a24bb2f44a4eaf19f4e3ca2d0d53442f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afb11cab951b3e96d3a1ebe8ee14a7565"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#afb11cab951b3e96d3a1ebe8ee14a7565">get_one_ring_tris_for_vertex</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) const</td></tr>
+<tr class="memitem:afb11cab951b3e96d3a1ebe8ee14a7565"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#afb11cab951b3e96d3a1ebe8ee14a7565">get_one_ring_tris_for_vertex</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> &amp;t) const</td></tr>
 <tr class="memdesc:afb11cab951b3e96d3a1ebe8ee14a7565"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the one ring tris for a vertex.  <a href="classwmtk_1_1_tri_mesh.html#afb11cab951b3e96d3a1ebe8ee14a7565">More...</a><br /></td></tr>
 <tr class="separator:afb11cab951b3e96d3a1ebe8ee14a7565"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a093687c9af6a86dba72259a5c7ff1926"><td class="memItemLeft" align="right" valign="top">std::vector&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a093687c9af6a86dba72259a5c7ff1926">get_one_ring_vids_for_vertex_duplicate</a> (const size_t &amp;t) const</td></tr>
-<tr class="memdesc:a093687c9af6a86dba72259a5c7ff1926"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the vids of the incident one ring tris for a vertex.  <a href="classwmtk_1_1_tri_mesh.html#a093687c9af6a86dba72259a5c7ff1926">More...</a><br /></td></tr>
-<tr class="separator:a093687c9af6a86dba72259a5c7ff1926"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9208cec662f3d90924bafdf9153530e0"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a9208cec662f3d90924bafdf9153530e0">get_one_ring_edges_for_vertex</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) const</td></tr>
+<tr class="memitem:a069e719b032bfd8f9c6eb92c6b9bc41c"><td class="memItemLeft" align="right" valign="top">std::vector&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a069e719b032bfd8f9c6eb92c6b9bc41c">get_one_ring_vids_for_vertex_with_duplicates</a> (const size_t &amp;t) const</td></tr>
+<tr class="memdesc:a069e719b032bfd8f9c6eb92c6b9bc41c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the vids of the incident one ring tris for a vertex.  <a href="classwmtk_1_1_tri_mesh.html#a069e719b032bfd8f9c6eb92c6b9bc41c">More...</a><br /></td></tr>
+<tr class="separator:a069e719b032bfd8f9c6eb92c6b9bc41c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2758317ca43646ec3bb92fa238203812"><td class="memItemLeft" align="right" valign="top">std::vector&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a2758317ca43646ec3bb92fa238203812">get_one_ring_vids_for_vertex</a> (const size_t &amp;t) const</td></tr>
+<tr class="memdesc:a2758317ca43646ec3bb92fa238203812"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the vids of the incident one ring tris for a vertex.  <a href="classwmtk_1_1_tri_mesh.html#a2758317ca43646ec3bb92fa238203812">More...</a><br /></td></tr>
+<tr class="separator:a2758317ca43646ec3bb92fa238203812"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9208cec662f3d90924bafdf9153530e0"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a9208cec662f3d90924bafdf9153530e0">get_one_ring_edges_for_vertex</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> &amp;t) const</td></tr>
 <tr class="memdesc:a9208cec662f3d90924bafdf9153530e0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the one ring edges for a vertex, edges are the incident edges.  <a href="classwmtk_1_1_tri_mesh.html#a9208cec662f3d90924bafdf9153530e0">More...</a><br /></td></tr>
 <tr class="separator:a9208cec662f3d90924bafdf9153530e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaab31eef8e025f6185a4760ed80be722"><td class="memItemLeft" align="right" valign="top">std::array&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>, 3 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#aaab31eef8e025f6185a4760ed80be722">oriented_tri_vertices</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) const</td></tr>
+<tr class="memitem:aaab31eef8e025f6185a4760ed80be722"><td class="memItemLeft" align="right" valign="top">std::array&lt; <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a>, 3 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#aaab31eef8e025f6185a4760ed80be722">oriented_tri_vertices</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> &amp;t) const</td></tr>
 <tr class="memdesc:aaab31eef8e025f6185a4760ed80be722"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the incident vertices for a triangle.  <a href="classwmtk_1_1_tri_mesh.html#aaab31eef8e025f6185a4760ed80be722">More...</a><br /></td></tr>
 <tr class="separator:aaab31eef8e025f6185a4760ed80be722"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a07f1bdac973f713076d7ea8073082ef5"><td class="memItemLeft" align="right" valign="top">std::array&lt; size_t, 3 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a07f1bdac973f713076d7ea8073082ef5">oriented_tri_vids</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) const</td></tr>
+<tr class="memitem:a07f1bdac973f713076d7ea8073082ef5"><td class="memItemLeft" align="right" valign="top">std::array&lt; size_t, 3 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a07f1bdac973f713076d7ea8073082ef5">oriented_tri_vids</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> &amp;t) const</td></tr>
 <tr class="memdesc:a07f1bdac973f713076d7ea8073082ef5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the incident vertices for a triangle.  <a href="classwmtk_1_1_tri_mesh.html#a07f1bdac973f713076d7ea8073082ef5">More...</a><br /></td></tr>
 <tr class="separator:a07f1bdac973f713076d7ea8073082ef5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a77fbfdff7715fb793ed9df3a8250ae9d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a77fbfdff7715fb793ed9df3a8250ae9d">tuple_from_tri</a> (size_t fid) const</td></tr>
+<tr class="memitem:a77fbfdff7715fb793ed9df3a8250ae9d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a77fbfdff7715fb793ed9df3a8250ae9d">tuple_from_tri</a> (size_t fid) const</td></tr>
 <tr class="separator:a77fbfdff7715fb793ed9df3a8250ae9d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae13c4b65caf906f9c2840dcf0fa7a321"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#ae13c4b65caf906f9c2840dcf0fa7a321">tuple_from_vertex</a> (size_t vid) const</td></tr>
+<tr class="memitem:ae13c4b65caf906f9c2840dcf0fa7a321"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#ae13c4b65caf906f9c2840dcf0fa7a321">tuple_from_vertex</a> (size_t vid) const</td></tr>
 <tr class="separator:ae13c4b65caf906f9c2840dcf0fa7a321"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a54e4d2c265d1a6664ed71fdffdc27605"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a54e4d2c265d1a6664ed71fdffdc27605">tuple_from_edge</a> (size_t fid, size_t local_eid) const</td></tr>
+<tr class="memitem:a54e4d2c265d1a6664ed71fdffdc27605"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a54e4d2c265d1a6664ed71fdffdc27605">tuple_from_edge</a> (size_t fid, size_t local_eid) const</td></tr>
 <tr class="separator:a54e4d2c265d1a6664ed71fdffdc27605"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a30a1205184217985b33666c30fc058f1"><td class="memItemLeft" align="right" valign="top"><a id="a30a1205184217985b33666c30fc058f1"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>release_vertex_mutex_in_stack</b> ()</td></tr>
 <tr class="separator:a30a1205184217985b33666c30fc058f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a69a5650ae9b12e41bbb1c47f4d4056d1"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a69a5650ae9b12e41bbb1c47f4d4056d1">try_set_vertex_mutex_two_ring</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;v, int threadid)</td></tr>
+<tr class="memitem:a69a5650ae9b12e41bbb1c47f4d4056d1"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a69a5650ae9b12e41bbb1c47f4d4056d1">try_set_vertex_mutex_two_ring</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> &amp;v, int threadid)</td></tr>
 <tr class="memdesc:a69a5650ae9b12e41bbb1c47f4d4056d1"><td class="mdescLeft">&#160;</td><td class="mdescRight">try lock the two-ring neighboring traingles' incident vertices  <a href="classwmtk_1_1_tri_mesh.html#a69a5650ae9b12e41bbb1c47f4d4056d1">More...</a><br /></td></tr>
 <tr class="separator:a69a5650ae9b12e41bbb1c47f4d4056d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa7aa6081b542d64dd2f21231b9954a78"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#aa7aa6081b542d64dd2f21231b9954a78">try_set_edge_mutex_two_ring</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;e, int threadid)</td></tr>
+<tr class="memitem:aa7aa6081b542d64dd2f21231b9954a78"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#aa7aa6081b542d64dd2f21231b9954a78">try_set_edge_mutex_two_ring</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> &amp;e, int threadid)</td></tr>
 <tr class="memdesc:aa7aa6081b542d64dd2f21231b9954a78"><td class="mdescLeft">&#160;</td><td class="mdescRight">try lock the two-ring neighboring triangles' incident vertices for the two ends of an edge  <a href="classwmtk_1_1_tri_mesh.html#aa7aa6081b542d64dd2f21231b9954a78">More...</a><br /></td></tr>
 <tr class="separator:aa7aa6081b542d64dd2f21231b9954a78"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a66704b4e966f9df2d0653dfd39df9eac"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a66704b4e966f9df2d0653dfd39df9eac">try_set_vertex_mutex_one_ring</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;v, int threadid)</td></tr>
+<tr class="memitem:a66704b4e966f9df2d0653dfd39df9eac"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a66704b4e966f9df2d0653dfd39df9eac">try_set_vertex_mutex_one_ring</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> &amp;v, int threadid)</td></tr>
 <tr class="memdesc:a66704b4e966f9df2d0653dfd39df9eac"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the lock for one ring neighboring triangles' incident vertices  <a href="classwmtk_1_1_tri_mesh.html#a66704b4e966f9df2d0653dfd39df9eac">More...</a><br /></td></tr>
 <tr class="separator:a66704b4e966f9df2d0653dfd39df9eac"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aff00722ce154f7709a38b7e1e5f6f14d"><td class="memItemLeft" align="right" valign="top"><a id="aff00722ce154f7709a38b7e1e5f6f14d"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#aff00722ce154f7709a38b7e1e5f6f14d">for_each_face</a> (const std::function&lt; void(const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;)&gt; &amp;)</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#aff00722ce154f7709a38b7e1e5f6f14d">for_each_face</a> (const std::function&lt; void(const <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> &amp;)&gt; &amp;)</td></tr>
 <tr class="memdesc:aff00722ce154f7709a38b7e1e5f6f14d"><td class="mdescLeft">&#160;</td><td class="mdescRight">perform the given function for each face <br /></td></tr>
 <tr class="separator:aff00722ce154f7709a38b7e1e5f6f14d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:add7c37abdd77ac618366163a9d0d6c38"><td class="memItemLeft" align="right" valign="top"><a id="add7c37abdd77ac618366163a9d0d6c38"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#add7c37abdd77ac618366163a9d0d6c38">for_each_edge</a> (const std::function&lt; void(const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;)&gt; &amp;)</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#add7c37abdd77ac618366163a9d0d6c38">for_each_edge</a> (const std::function&lt; void(const <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> &amp;)&gt; &amp;)</td></tr>
 <tr class="memdesc:add7c37abdd77ac618366163a9d0d6c38"><td class="mdescLeft">&#160;</td><td class="mdescRight">perform the given function for each edge <br /></td></tr>
 <tr class="separator:add7c37abdd77ac618366163a9d0d6c38"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a39cb851ebc804e41aebf9680e7d5a1fd"><td class="memItemLeft" align="right" valign="top"><a id="a39cb851ebc804e41aebf9680e7d5a1fd"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a39cb851ebc804e41aebf9680e7d5a1fd">for_each_vertex</a> (const std::function&lt; void(const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;)&gt; &amp;)</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a39cb851ebc804e41aebf9680e7d5a1fd">for_each_vertex</a> (const std::function&lt; void(const <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> &amp;)&gt; &amp;)</td></tr>
 <tr class="memdesc:a39cb851ebc804e41aebf9680e7d5a1fd"><td class="mdescLeft">&#160;</td><td class="mdescRight">perform the given function for each vertex <br /></td></tr>
 <tr class="separator:a39cb851ebc804e41aebf9680e7d5a1fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:a0ab2ef76d0893ba8694c7a9c554fa76f"><td class="memItemLeft" align="right" valign="top"><a id="a0ab2ef76d0893ba8694c7a9c554fa76f"></a>
-<a class="el" href="classwmtk_1_1_abstract_attribute_container.html">AbstractAttributeContainer</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>p_vertex_attrs</b> = nullptr</td></tr>
-<tr class="separator:a0ab2ef76d0893ba8694c7a9c554fa76f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4ef24d28dad270e82eebce36b36f714a"><td class="memItemLeft" align="right" valign="top"><a id="a4ef24d28dad270e82eebce36b36f714a"></a>
-<a class="el" href="classwmtk_1_1_abstract_attribute_container.html">AbstractAttributeContainer</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>p_edge_attrs</b> = nullptr</td></tr>
-<tr class="separator:a4ef24d28dad270e82eebce36b36f714a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5d24607eb938d53a7d0e35d72afe0846"><td class="memItemLeft" align="right" valign="top"><a id="a5d24607eb938d53a7d0e35d72afe0846"></a>
-<a class="el" href="classwmtk_1_1_abstract_attribute_container.html">AbstractAttributeContainer</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>p_face_attrs</b> = nullptr</td></tr>
-<tr class="separator:a5d24607eb938d53a7d0e35d72afe0846"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a506a88bd6fac9787bb9bd84e7acc12f2"><td class="memItemLeft" align="right" valign="top"><a id="a506a88bd6fac9787bb9bd84e7acc12f2"></a>
+<a class="el" href="classwmtk_1_1_abstract_attribute_collection.html">AbstractAttributeCollection</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>p_vertex_attrs</b> = nullptr</td></tr>
+<tr class="separator:a506a88bd6fac9787bb9bd84e7acc12f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8d95f0043ff147e6cc6fe8ee5dff42d0"><td class="memItemLeft" align="right" valign="top"><a id="a8d95f0043ff147e6cc6fe8ee5dff42d0"></a>
+<a class="el" href="classwmtk_1_1_abstract_attribute_collection.html">AbstractAttributeCollection</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>p_edge_attrs</b> = nullptr</td></tr>
+<tr class="separator:a8d95f0043ff147e6cc6fe8ee5dff42d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6bed647f184fdbcf872eadf1d668920f"><td class="memItemLeft" align="right" valign="top"><a id="a6bed647f184fdbcf872eadf1d668920f"></a>
+<a class="el" href="classwmtk_1_1_abstract_attribute_collection.html">AbstractAttributeCollection</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>p_face_attrs</b> = nullptr</td></tr>
+<tr class="separator:a6bed647f184fdbcf872eadf1d668920f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aca451bcd61095fe567b3305a6fc469ce"><td class="memItemLeft" align="right" valign="top"><a id="aca451bcd61095fe567b3305a6fc469ce"></a>
 tbb::enumerable_thread_specific&lt; std::vector&lt; size_t &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>mutex_release_stack</b></td></tr>
 <tr class="separator:aca451bcd61095fe567b3305a6fc469ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -234,78 +235,50 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>NUM_THREADS</b> = 0</t
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
-<tr class="memitem:a3d8bb552e20bda83d8113874e62f54fe"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a3d8bb552e20bda83d8113874e62f54fe">invariants</a> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;)</td></tr>
-<tr class="memdesc:a3d8bb552e20bda83d8113874e62f54fe"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified invariants that can't be violated.  <a href="classwmtk_1_1_tri_mesh.html#a3d8bb552e20bda83d8113874e62f54fe">More...</a><br /></td></tr>
-<tr class="separator:a3d8bb552e20bda83d8113874e62f54fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acde955fe197a8938b579a4fe7ce54c75"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#acde955fe197a8938b579a4fe7ce54c75">split_edge_before</a> ([[maybe_unused]] const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
-<tr class="memdesc:acde955fe197a8938b579a4fe7ce54c75"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified preparations and desideratas for an edge split.  <a href="classwmtk_1_1_tri_mesh.html#acde955fe197a8938b579a4fe7ce54c75">More...</a><br /></td></tr>
-<tr class="separator:acde955fe197a8938b579a4fe7ce54c75"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ada80acdaacd14b5d78212d98ad0d59fd"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#ada80acdaacd14b5d78212d98ad0d59fd">split_edge_after</a> ([[maybe_unused]] const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
-<tr class="memdesc:ada80acdaacd14b5d78212d98ad0d59fd"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified modifications and desideratas after an edge split.  <a href="classwmtk_1_1_tri_mesh.html#ada80acdaacd14b5d78212d98ad0d59fd">More...</a><br /></td></tr>
-<tr class="separator:ada80acdaacd14b5d78212d98ad0d59fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af004507051c4f5cf2c0c515baf366372"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#af004507051c4f5cf2c0c515baf366372">collapse_edge_before</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
-<tr class="memdesc:af004507051c4f5cf2c0c515baf366372"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified preparations and desideratas for an edge collapse including the link check as collapse prerequisite.  <a href="classwmtk_1_1_tri_mesh.html#af004507051c4f5cf2c0c515baf366372">More...</a><br /></td></tr>
-<tr class="separator:af004507051c4f5cf2c0c515baf366372"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a06fed3ff7fd8de4fa6abcc3a34556400"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a06fed3ff7fd8de4fa6abcc3a34556400">collapse_edge_after</a> ([[maybe_unused]] const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
-<tr class="memdesc:a06fed3ff7fd8de4fa6abcc3a34556400"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified modifications and desideratas after an edge collapse.  <a href="classwmtk_1_1_tri_mesh.html#a06fed3ff7fd8de4fa6abcc3a34556400">More...</a><br /></td></tr>
-<tr class="separator:a06fed3ff7fd8de4fa6abcc3a34556400"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a11c7673c043083df3265ee1575359f65"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a11c7673c043083df3265ee1575359f65">swap_edge_after</a> ([[maybe_unused]] const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
-<tr class="memdesc:a11c7673c043083df3265ee1575359f65"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified modifications and desideras after an edge swap.  <a href="classwmtk_1_1_tri_mesh.html#a11c7673c043083df3265ee1575359f65">More...</a><br /></td></tr>
-<tr class="separator:a11c7673c043083df3265ee1575359f65"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ace39438874440fc589b4eb07c3c24d71"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#ace39438874440fc589b4eb07c3c24d71">swap_edge_before</a> ([[maybe_unused]] const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
-<tr class="memdesc:ace39438874440fc589b4eb07c3c24d71"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified preparations and desideratas for an edge swap including 1.can't swap on boundary edge. 2. when swap edge between v1, v2, there can't exist edges between the two opposite vertices v3, v4.  <a href="classwmtk_1_1_tri_mesh.html#ace39438874440fc589b4eb07c3c24d71">More...</a><br /></td></tr>
-<tr class="separator:ace39438874440fc589b4eb07c3c24d71"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a24b460f31fc9c9d83a34d7c5672edad9"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a24b460f31fc9c9d83a34d7c5672edad9">smooth_before</a> ([[maybe_unused]] const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
-<tr class="memdesc:a24b460f31fc9c9d83a34d7c5672edad9"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified preparations and desideratas for an edge smooth.  <a href="classwmtk_1_1_tri_mesh.html#a24b460f31fc9c9d83a34d7c5672edad9">More...</a><br /></td></tr>
-<tr class="separator:a24b460f31fc9c9d83a34d7c5672edad9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acb4dba54e2666f1315a5d3ce77260587"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#acb4dba54e2666f1315a5d3ce77260587">smooth_after</a> ([[maybe_unused]] const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
-<tr class="memdesc:acb4dba54e2666f1315a5d3ce77260587"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified modifications and desideras after an edge smooth.  <a href="classwmtk_1_1_tri_mesh.html#acb4dba54e2666f1315a5d3ce77260587">More...</a><br /></td></tr>
-<tr class="separator:acb4dba54e2666f1315a5d3ce77260587"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae1fa52701ce0be73479b416da52fd77e"><td class="memItemLeft" align="right" valign="top"><a id="ae1fa52701ce0be73479b416da52fd77e"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (size_t v)</td></tr>
-<tr class="separator:ae1fa52701ce0be73479b416da52fd77e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
-Private Member Functions</h2></td></tr>
 <tr class="memitem:a28d98d996ddd4e6f2c30f1fe8368e1f0"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a28d98d996ddd4e6f2c30f1fe8368e1f0">get_next_empty_slot_t</a> ()</td></tr>
 <tr class="memdesc:a28d98d996ddd4e6f2c30f1fe8368e1f0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the next avaiblie global index for the triangle.  <a href="classwmtk_1_1_tri_mesh.html#a28d98d996ddd4e6f2c30f1fe8368e1f0">More...</a><br /></td></tr>
 <tr class="separator:a28d98d996ddd4e6f2c30f1fe8368e1f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a30fbe4786afbf362d26131cf9bad91f2"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a30fbe4786afbf362d26131cf9bad91f2">get_next_empty_slot_v</a> ()</td></tr>
 <tr class="memdesc:a30fbe4786afbf362d26131cf9bad91f2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the next avaiblie global index for the vertex.  <a href="classwmtk_1_1_tri_mesh.html#a30fbe4786afbf362d26131cf9bad91f2">More...</a><br /></td></tr>
 <tr class="separator:a30fbe4786afbf362d26131cf9bad91f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab8ec966cffe59f191a752844eae90617"><td class="memItemLeft" align="right" valign="top"><a id="ab8ec966cffe59f191a752844eae90617"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#ab8ec966cffe59f191a752844eae90617">start_protect_attributes</a> ()</td></tr>
-<tr class="memdesc:ab8ec966cffe59f191a752844eae90617"><td class="mdescLeft">&#160;</td><td class="mdescRight">Start the phase where the attributes that will be modified can be recorded. <br /></td></tr>
-<tr class="separator:ab8ec966cffe59f191a752844eae90617"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a225083671f68132708976d88be0e2de4"><td class="memItemLeft" align="right" valign="top"><a id="a225083671f68132708976d88be0e2de4"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a225083671f68132708976d88be0e2de4">release_protect_attributes</a> ()</td></tr>
-<tr class="memdesc:a225083671f68132708976d88be0e2de4"><td class="mdescLeft">&#160;</td><td class="mdescRight">End the modification phase. <br /></td></tr>
-<tr class="separator:a225083671f68132708976d88be0e2de4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a03d96e713c9f8463718f56b615629789"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a03d96e713c9f8463718f56b615629789">build_vertex_connectivity</a> (size_t n_vertices)</td></tr>
+<tr class="separator:a03d96e713c9f8463718f56b615629789"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3a1aa5828be2a6c8b95d64216fd6576e"><td class="memItemLeft" align="right" valign="top"><a id="a3a1aa5828be2a6c8b95d64216fd6576e"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a3a1aa5828be2a6c8b95d64216fd6576e">start_protected_attributes</a> ()</td></tr>
+<tr class="memdesc:a3a1aa5828be2a6c8b95d64216fd6576e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Start the phase where the attributes that will be modified can be recorded. <br /></td></tr>
+<tr class="separator:a3a1aa5828be2a6c8b95d64216fd6576e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa131bd22913b8a52da021f45bd0683ce"><td class="memItemLeft" align="right" valign="top"><a id="aa131bd22913b8a52da021f45bd0683ce"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#aa131bd22913b8a52da021f45bd0683ce">start_protected_connectivity</a> ()</td></tr>
+<tr class="memdesc:aa131bd22913b8a52da021f45bd0683ce"><td class="mdescLeft">&#160;</td><td class="mdescRight">Start caching the connectivity that will be modified. <br /></td></tr>
+<tr class="separator:aa131bd22913b8a52da021f45bd0683ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7d7640d47adbf43fe3d2442c2bc6fedf"><td class="memItemLeft" align="right" valign="top"><a id="a7d7640d47adbf43fe3d2442c2bc6fedf"></a>
+std::array&lt; std::optional&lt; size_t &gt;, 3 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a7d7640d47adbf43fe3d2442c2bc6fedf">release_protected_attributes</a> ()</td></tr>
+<tr class="memdesc:a7d7640d47adbf43fe3d2442c2bc6fedf"><td class="mdescLeft">&#160;</td><td class="mdescRight">End the modification phase. <br /></td></tr>
+<tr class="separator:a7d7640d47adbf43fe3d2442c2bc6fedf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aad1e65b91c30b702ebd3085ce499ae24"><td class="memItemLeft" align="right" valign="top"><a id="aad1e65b91c30b702ebd3085ce499ae24"></a>
+std::optional&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#aad1e65b91c30b702ebd3085ce499ae24">release_protected_connectivity</a> ()</td></tr>
+<tr class="memdesc:aad1e65b91c30b702ebd3085ce499ae24"><td class="mdescLeft">&#160;</td><td class="mdescRight">End Caching connectivity. <br /></td></tr>
+<tr class="separator:aad1e65b91c30b702ebd3085ce499ae24"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6419d01660badf33195e0c3ad52d07f1"><td class="memItemLeft" align="right" valign="top"><a id="a6419d01660badf33195e0c3ad52d07f1"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a6419d01660badf33195e0c3ad52d07f1">rollback_protected_attributes</a> ()</td></tr>
 <tr class="memdesc:a6419d01660badf33195e0c3ad52d07f1"><td class="mdescLeft">&#160;</td><td class="mdescRight">rollback the attributes that are modified if any condition failed <br /></td></tr>
 <tr class="separator:a6419d01660badf33195e0c3ad52d07f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af0da6d2c873a318123efd93f1a40f532"><td class="memItemLeft" align="right" valign="top"><a id="af0da6d2c873a318123efd93f1a40f532"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>try_set_vertex_mutex</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;v, int threadid)</td></tr>
-<tr class="separator:af0da6d2c873a318123efd93f1a40f532"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aacd5a0cf3c0c71a365e72815ab441979"><td class="memItemLeft" align="right" valign="top"><a id="aacd5a0cf3c0c71a365e72815ab441979"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>try_set_vertex_mutex</b> (size_t vid, int threadid)</td></tr>
-<tr class="separator:aacd5a0cf3c0c71a365e72815ab441979"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad6567e9643d575b1c8a9afb4e3be3e49"><td class="memItemLeft" align="right" valign="top"><a id="ad6567e9643d575b1c8a9afb4e3be3e49"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>unlock_vertex_mutex</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;v)</td></tr>
-<tr class="separator:ad6567e9643d575b1c8a9afb4e3be3e49"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aec623af96286004080fda94de49f0353"><td class="memItemLeft" align="right" valign="top"><a id="aec623af96286004080fda94de49f0353"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>unlock_vertex_mutex</b> (size_t vid)</td></tr>
-<tr class="separator:aec623af96286004080fda94de49f0353"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a01afc7787347dd00e416d72806b4b8d1"><td class="memItemLeft" align="right" valign="top"><a id="a01afc7787347dd00e416d72806b4b8d1"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a01afc7787347dd00e416d72806b4b8d1">rollback_protected_connectivity</a> ()</td></tr>
+<tr class="memdesc:a01afc7787347dd00e416d72806b4b8d1"><td class="mdescLeft">&#160;</td><td class="mdescRight">rollback the connectivity that are modified if any condition failed <br /></td></tr>
+<tr class="separator:a01afc7787347dd00e416d72806b4b8d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae1fa52701ce0be73479b416da52fd77e"><td class="memItemLeft" align="right" valign="top"><a id="ae1fa52701ce0be73479b416da52fd77e"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (size_t v)</td></tr>
+<tr class="separator:ae1fa52701ce0be73479b416da52fd77e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
-Private Attributes</h2></td></tr>
-<tr class="memitem:a38f8a18895e7512faad343d53778fc64"><td class="memItemLeft" align="right" valign="top"><a id="a38f8a18895e7512faad343d53778fc64"></a>
-vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex_connectivity.html">VertexConnectivity</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_vertex_connectivity</b></td></tr>
-<tr class="separator:a38f8a18895e7512faad343d53778fc64"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae7ecd5418d1322aa4395402a8f56e864"><td class="memItemLeft" align="right" valign="top"><a id="ae7ecd5418d1322aa4395402a8f56e864"></a>
-vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_triangle_connectivity.html">TriangleConnectivity</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_tri_connectivity</b></td></tr>
-<tr class="separator:ae7ecd5418d1322aa4395402a8f56e864"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
+Protected Attributes</h2></td></tr>
+<tr class="memitem:a75aa73bddf7d6e3773ea25da7501aebf"><td class="memItemLeft" align="right" valign="top"><a id="a75aa73bddf7d6e3773ea25da7501aebf"></a>
+<a class="el" href="structwmtk_1_1_attribute_collection.html">wmtk::AttributeCollection</a>&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex_connectivity.html">VertexConnectivity</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_vertex_connectivity</b></td></tr>
+<tr class="separator:a75aa73bddf7d6e3773ea25da7501aebf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adacd03bcf2292b57056260ced79f0daa"><td class="memItemLeft" align="right" valign="top"><a id="adacd03bcf2292b57056260ced79f0daa"></a>
+<a class="el" href="structwmtk_1_1_attribute_collection.html">wmtk::AttributeCollection</a>&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_triangle_connectivity.html">TriangleConnectivity</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_tri_connectivity</b></td></tr>
+<tr class="separator:adacd03bcf2292b57056260ced79f0daa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9d9f00e14f8f4ed9143c33b4524ad386"><td class="memItemLeft" align="right" valign="top"><a id="a9d9f00e14f8f4ed9143c33b4524ad386"></a>
 std::atomic_long&#160;</td><td class="memItemRight" valign="bottom"><b>current_vert_size</b></td></tr>
 <tr class="separator:a9d9f00e14f8f4ed9143c33b4524ad386"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -327,35 +300,81 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>tri_connectivity_sync
 <tr class="memitem:a094f36de31a7583fefe7bdd02dde7ff7"><td class="memItemLeft" align="right" valign="top"><a id="a094f36de31a7583fefe7bdd02dde7ff7"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>MAX_THREADS</b> = 128</td></tr>
 <tr class="separator:a094f36de31a7583fefe7bdd02dde7ff7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a35a3451856a6208a9787e777ad842b9a"><td class="memItemLeft" align="right" valign="top">tbb::enumerable_thread_specific&lt; std::weak_ptr&lt; <a class="el" href="classwmtk_1_1_tri_mesh_operation_recorder.html">TriMeshOperationRecorder</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>p_operation_recorder</b></td></tr>
+<tr class="separator:a35a3451856a6208a9787e777ad842b9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
+Private Member Functions</h2></td></tr>
+<tr class="memitem:af0da6d2c873a318123efd93f1a40f532"><td class="memItemLeft" align="right" valign="top"><a id="af0da6d2c873a318123efd93f1a40f532"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>try_set_vertex_mutex</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> &amp;v, int threadid)</td></tr>
+<tr class="separator:af0da6d2c873a318123efd93f1a40f532"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aacd5a0cf3c0c71a365e72815ab441979"><td class="memItemLeft" align="right" valign="top"><a id="aacd5a0cf3c0c71a365e72815ab441979"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>try_set_vertex_mutex</b> (size_t vid, int threadid)</td></tr>
+<tr class="separator:aacd5a0cf3c0c71a365e72815ab441979"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad6567e9643d575b1c8a9afb4e3be3e49"><td class="memItemLeft" align="right" valign="top"><a id="ad6567e9643d575b1c8a9afb4e3be3e49"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>unlock_vertex_mutex</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> &amp;v)</td></tr>
+<tr class="separator:ad6567e9643d575b1c8a9afb4e3be3e49"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aec623af96286004080fda94de49f0353"><td class="memItemLeft" align="right" valign="top"><a id="aec623af96286004080fda94de49f0353"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>unlock_vertex_mutex</b> (size_t vid)</td></tr>
+<tr class="separator:aec623af96286004080fda94de49f0353"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
+Private Attributes</h2></td></tr>
 <tr class="memitem:ad88b9b081507a2438d0bfab58ea43205"><td class="memItemLeft" align="right" valign="top"><a id="ad88b9b081507a2438d0bfab58ea43205"></a>
 tbb::concurrent_vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex_mutex.html">VertexMutex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_vertex_mutex</b></td></tr>
 <tr class="separator:ad88b9b081507a2438d0bfab58ea43205"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="friends"></a>
+Friends</h2></td></tr>
+<tr class="memitem:abc19a02aeee6b31a0e42acca883a07f5"><td class="memItemLeft" align="right" valign="top"><a id="abc19a02aeee6b31a0e42acca883a07f5"></a>
+class&#160;</td><td class="memItemRight" valign="bottom"><b>TriMeshTuple</b></td></tr>
+<tr class="separator:abc19a02aeee6b31a0e42acca883a07f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abedc2ec9b6a0b4c23038ad4bf9871548"><td class="memItemLeft" align="right" valign="top"><a id="abedc2ec9b6a0b4c23038ad4bf9871548"></a>
+class&#160;</td><td class="memItemRight" valign="bottom"><b>TriMeshOperation</b></td></tr>
+<tr class="separator:abedc2ec9b6a0b4c23038ad4bf9871548"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a443d367ad180a9c66477ba3a82a00d07"><td class="memItemLeft" align="right" valign="top"><a id="a443d367ad180a9c66477ba3a82a00d07"></a>
+class&#160;</td><td class="memItemRight" valign="bottom"><b>TriMeshOperationLogger</b></td></tr>
+<tr class="separator:a443d367ad180a9c66477ba3a82a00d07"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a17d2fc4d6aee6e8639b5e38ec8d43bac"><td class="memItemLeft" align="right" valign="top"><a id="a17d2fc4d6aee6e8639b5e38ec8d43bac"></a>
+class&#160;</td><td class="memItemRight" valign="bottom"><b>TriMeshOperationRecorder</b></td></tr>
+<tr class="separator:a17d2fc4d6aee6e8639b5e38ec8d43bac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9b4ff488510a517380eacdf24a5ae436"><td class="memItemLeft" align="right" valign="top"><a id="a9b4ff488510a517380eacdf24a5ae436"></a>
+class&#160;</td><td class="memItemRight" valign="bottom"><b>OperationReplayer</b></td></tr>
+<tr class="separator:a9b4ff488510a517380eacdf24a5ae436"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6f2f83fd9d17e5cf0bc0324b4ecd7a5a"><td class="memItemLeft" align="right" valign="top"><a id="a6f2f83fd9d17e5cf0bc0324b4ecd7a5a"></a>
+class&#160;</td><td class="memItemRight" valign="bottom"><b>AttributeCollectionRecorder</b></td></tr>
+<tr class="separator:a6f2f83fd9d17e5cf0bc0324b4ecd7a5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="ae3dca4cc8f5751b15375589789c14a9e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae3dca4cc8f5751b15375589789c14a9e">&#9670;&nbsp;</a></span>check_link_condition()</h2>
+<a id="a03d96e713c9f8463718f56b615629789"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a03d96e713c9f8463718f56b615629789">&#9670;&nbsp;</a></span>build_vertex_connectivity()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">bool wmtk::TriMesh::check_link_condition </td>
+          <td class="memname">void TriMesh::build_vertex_connectivity </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
-          <td class="paramname"><em>t</em></td><td>)</td>
-          <td> const</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>n_vertices</em></td><td>)</td>
+          <td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
-
-<p>prerequisite for collapse </p>
-<dl class="params"><dt>Parameters</dt><dd>
+<p>Generate the vertex connectivity of the mesh using the existing triangle structure </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">t</td><td><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> referes to the edge to be collapsed </td></tr>
+    <tr><td class="paramname">n_vertices</td><td>Input number of vertices </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>true is the link check is passed </dd></dl>
 
 </div>
 </div>
@@ -379,116 +398,6 @@ tbb::concurrent_vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex
 
 </div>
 </div>
-<a id="af2eaee316c260a2c1996c9db2d124798"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af2eaee316c260a2c1996c9db2d124798">&#9670;&nbsp;</a></span>collapse_edge()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool TriMesh::collapse_edge </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
-          <td class="paramname"><em>t</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;&#160;</td>
-          <td class="paramname"><em>new_t</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Collapse an edge</p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir"></td><td class="paramname">t</td><td>Input <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> for the edge to be collapsed. </td></tr>
-    <tr><td class="paramdir">[out]</td><td class="paramname">new_edges</td><td>a vector of Tuples refering to the triangles incident to the new vertex introduced </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section note"><dt>Note</dt><dd>collapse edge a,b and generate a new vertex c </dd></dl>
-<dl class="section return"><dt>Returns</dt><dd>if collapse succeed </dd></dl>
-
-</div>
-</div>
-<a id="a06fed3ff7fd8de4fa6abcc3a34556400"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a06fed3ff7fd8de4fa6abcc3a34556400">&#9670;&nbsp;</a></span>collapse_edge_after()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">virtual bool wmtk::TriMesh::collapse_edge_after </td>
-          <td>(</td>
-          <td class="paramtype">[[maybe_unused] ] const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
-          <td class="paramname"><em>t</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>User specified modifications and desideratas after an edge collapse. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">the</td><td>edge <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> to be collapsed </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>true if the modifications succeed </dd></dl>
-
-</div>
-</div>
-<a id="af004507051c4f5cf2c0c515baf366372"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af004507051c4f5cf2c0c515baf366372">&#9670;&nbsp;</a></span>collapse_edge_before()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">virtual bool wmtk::TriMesh::collapse_edge_before </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
-          <td class="paramname"><em>t</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>User specified preparations and desideratas for an edge collapse including the link check as collapse prerequisite. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">the</td><td>edge <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> to be split </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>true if the preparation succeed </dd></dl>
-
-<p>Reimplemented in <a class="el" href="classapp_1_1sec_1_1_shortest_edge_collapse.html#acfa064aeda09911c9e78a4aa48b71de5">app::sec::ShortestEdgeCollapse</a>, <a class="el" href="classapp_1_1remeshing_1_1_uniform_remeshing.html#a0cc86cfef531d59a0a7350cc4e452f8d">app::remeshing::UniformRemeshing</a>, <a class="el" href="classapp_1_1qslim_1_1_q_s_l_i_m.html#ab60f7e0476322cb161d6bb006d998975">app::qslim::QSLIM</a>, and <a class="el" href="classadaptive__tessellation_1_1_adaptive_tessellation.html#aa3038133dbbf3ae2173df21b9af16cbc">adaptive_tessellation::AdaptiveTessellation</a>.</p>
-
-</div>
-</div>
 <a id="a9939b4491bd9afc357468072368ab392"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a9939b4491bd9afc357468072368ab392">&#9670;&nbsp;</a></span>consolidate_mesh()</h2>
 
@@ -508,6 +417,30 @@ tbb::concurrent_vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">bnd_output</td><td>when turn on will write the boundary vertices to "bdn_table.dmat" </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a9eac88e594bf6aab03921b6e63aa9f98"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9eac88e594bf6aab03921b6e63aa9f98">&#9670;&nbsp;</a></span>copy_connectivity()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void TriMesh::copy_connectivity </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>o</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Copy connectivity from another mesh </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">o</td><td>the other mesh who's connectivity is being copied </td></tr>
   </table>
   </dd>
 </dl>
@@ -556,7 +489,7 @@ tbb::concurrent_vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">TriMesh::Tuple</a> &gt; TriMesh::get_edges </td>
+          <td class="memname">std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">TriMesh::Tuple</a> &gt; TriMesh::get_edges </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -575,7 +508,7 @@ tbb::concurrent_vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">TriMesh::Tuple</a> &gt; TriMesh::get_faces </td>
+          <td class="memname">std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">TriMesh::Tuple</a> &gt; TriMesh::get_faces </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -605,7 +538,7 @@ tbb::concurrent_vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
@@ -633,7 +566,7 @@ tbb::concurrent_vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
@@ -650,9 +583,9 @@ tbb::concurrent_vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">wmtk::TriMesh::Tuple</a> &gt; TriMesh::get_one_ring_edges_for_vertex </td>
+          <td class="memname">std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">wmtk::TriMesh::Tuple</a> &gt; TriMesh::get_one_ring_edges_for_vertex </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> &amp;&#160;</td>
           <td class="paramname"><em>t</em></td><td>)</td>
           <td> const</td>
         </tr>
@@ -677,9 +610,9 @@ tbb::concurrent_vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">wmtk::TriMesh::Tuple</a> &gt; TriMesh::get_one_ring_tris_for_vertex </td>
+          <td class="memname">std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">wmtk::TriMesh::Tuple</a> &gt; TriMesh::get_one_ring_tris_for_vertex </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> &amp;&#160;</td>
           <td class="paramname"><em>t</em></td><td>)</td>
           <td> const</td>
         </tr>
@@ -697,14 +630,41 @@ tbb::concurrent_vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex
 
 </div>
 </div>
-<a id="a093687c9af6a86dba72259a5c7ff1926"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a093687c9af6a86dba72259a5c7ff1926">&#9670;&nbsp;</a></span>get_one_ring_vids_for_vertex_duplicate()</h2>
+<a id="a2758317ca43646ec3bb92fa238203812"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2758317ca43646ec3bb92fa238203812">&#9670;&nbsp;</a></span>get_one_ring_vids_for_vertex()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">std::vector&lt; size_t &gt; TriMesh::get_one_ring_vids_for_vertex_duplicate </td>
+          <td class="memname">std::vector&lt; size_t &gt; TriMesh::get_one_ring_vids_for_vertex </td>
+          <td>(</td>
+          <td class="paramtype">const size_t &amp;&#160;</td>
+          <td class="paramname"><em>t</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Get the vids of the incident one ring tris for a vertex. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">t</td><td>tuple pointing to a vertex </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>a vector of vids that have no duplicates </dd></dl>
+
+</div>
+</div>
+<a id="a069e719b032bfd8f9c6eb92c6b9bc41c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a069e719b032bfd8f9c6eb92c6b9bc41c">&#9670;&nbsp;</a></span>get_one_ring_vids_for_vertex_with_duplicates()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; size_t &gt; TriMesh::get_one_ring_vids_for_vertex_with_duplicates </td>
           <td>(</td>
           <td class="paramtype">const size_t &amp;&#160;</td>
           <td class="paramname"><em>t</em></td><td>)</td>
@@ -736,7 +696,7 @@ tbb::concurrent_vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex
         <tr>
           <td class="memname">size_t wmtk::TriMesh::get_valence_for_vertex </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> &amp;&#160;</td>
           <td class="paramname"><em>t</em></td><td>)</td>
           <td> const</td>
         </tr>
@@ -766,14 +726,14 @@ tbb::concurrent_vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">TriMesh::Tuple</a> &gt; TriMesh::get_vertices </td>
+          <td class="memname">std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">TriMesh::Tuple</a> &gt; TriMesh::get_vertices </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Generate a vector of Tuples from global vertex index and <b>local</b> edge index </p><dl class="section note"><dt>Note</dt><dd>Each vertex generate <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> that has the smallest fid to be among incident triangles'. Local vid to be in the same order as thier indices in the m_conn_tris. Local eid assigned counter clockwise as in the ilustrated example </dd></dl>
+<p>Generate a vector of Tuples from global vertex index and <b>local</b> edge index </p><dl class="section note"><dt>Note</dt><dd>Each vertex generate Tuple that has the smallest fid to be among incident triangles'. Local vid to be in the same order as thier indices in the m_conn_tris. Local eid assigned counter clockwise as in the ilustrated example </dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>vector of Tuples refering to each vertex </dd></dl>
 
 </div>
@@ -785,7 +745,7 @@ tbb::concurrent_vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">TriMesh::Tuple</a> TriMesh::init_from_edge </td>
+          <td class="memname"><a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">TriMesh::Tuple</a> TriMesh::init_from_edge </td>
           <td>(</td>
           <td class="paramtype">size_t&#160;</td>
           <td class="paramname"><em>vid1</em>, </td>
@@ -821,8 +781,8 @@ tbb::concurrent_vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex
 
 </div>
 </div>
-<a id="a3d8bb552e20bda83d8113874e62f54fe"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3d8bb552e20bda83d8113874e62f54fe">&#9670;&nbsp;</a></span>invariants()</h2>
+<a id="a2fac8e1c0c5e2f311896725e1476da62"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2fac8e1c0c5e2f311896725e1476da62">&#9670;&nbsp;</a></span>invariants()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -831,16 +791,16 @@ tbb::concurrent_vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual bool wmtk::TriMesh::invariants </td>
+          <td class="memname">bool TriMesh::invariants </td>
           <td>(</td>
-          <td class="paramtype">const std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;&#160;</td>
+          <td class="paramtype">const std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> &gt; &amp;&#160;</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
         </tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span><span class="mlabel">virtual</span></span>  </td>
+<span class="mlabels"><span class="mlabel">virtual</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
@@ -870,7 +830,7 @@ tbb::concurrent_vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex
         <tr>
           <td class="memname">bool wmtk::TriMesh::is_boundary_edge </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">TriMesh::Tuple</a> &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">TriMesh::Tuple</a> &amp;&#160;</td>
           <td class="paramname"><em>t</em></td><td>)</td>
           <td> const</td>
         </tr>
@@ -882,44 +842,36 @@ tbb::concurrent_vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex
 </table>
 </div><div class="memdoc">
 
-<p>check if edge that's represented by a <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> is at the boundary of the mesh </p>
+<p>check if edge that's represented by a Tuple is at the boundary of the mesh </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">t</td><td><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> refering to an edge </td></tr>
+    <tr><td class="paramname">t</td><td>Tuple refering to an edge </td></tr>
   </table>
   </dd>
 </dl>
 
 </div>
 </div>
-<a id="af69f2ad9b7b8b70c297337e0f26e75e4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af69f2ad9b7b8b70c297337e0f26e75e4">&#9670;&nbsp;</a></span>is_boundary_vertex()</h2>
+<a id="a3b067d4cb256162e5fa3ae8a217431d0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3b067d4cb256162e5fa3ae8a217431d0">&#9670;&nbsp;</a></span>is_boundary_vertex()</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">bool wmtk::TriMesh::is_boundary_vertex </td>
+          <td class="memname">bool TriMesh::is_boundary_vertex </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">TriMesh::Tuple</a> &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">TriMesh::Tuple</a> &amp;&#160;</td>
           <td class="paramname"><em>t</em></td><td>)</td>
           <td> const</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
-<p>check if the vertex that's represented by a <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> is at the boundary of the mesh </p>
+<p>check if the vertex that's represented by a Tuple is at the boundary of the mesh </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">t</td><td><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> refering to an edge </td></tr>
+    <tr><td class="paramname">t</td><td>Tuple refering to an edge </td></tr>
   </table>
   </dd>
 </dl>
@@ -933,9 +885,9 @@ tbb::concurrent_vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">std::array&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">wmtk::TriMesh::Tuple</a>, 3 &gt; TriMesh::oriented_tri_vertices </td>
+          <td class="memname">std::array&lt; <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">wmtk::TriMesh::Tuple</a>, 3 &gt; TriMesh::oriented_tri_vertices </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> &amp;&#160;</td>
           <td class="paramname"><em>t</em></td><td>)</td>
           <td> const</td>
         </tr>
@@ -962,7 +914,7 @@ tbb::concurrent_vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex
         <tr>
           <td class="memname">std::array&lt; size_t, 3 &gt; TriMesh::oriented_tri_vids </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> &amp;&#160;</td>
           <td class="paramname"><em>t</em></td><td>)</td>
           <td> const</td>
         </tr>
@@ -980,318 +932,6 @@ tbb::concurrent_vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex
 
 </div>
 </div>
-<a id="acb4dba54e2666f1315a5d3ce77260587"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acb4dba54e2666f1315a5d3ce77260587">&#9670;&nbsp;</a></span>smooth_after()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">virtual bool wmtk::TriMesh::smooth_after </td>
-          <td>(</td>
-          <td class="paramtype">[[maybe_unused] ] const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
-          <td class="paramname"><em>t</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>User specified modifications and desideras after an edge smooth. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">the</td><td>edge <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> to be smoothed </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>true if the modifications succeed </dd></dl>
-
-</div>
-</div>
-<a id="a24b460f31fc9c9d83a34d7c5672edad9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a24b460f31fc9c9d83a34d7c5672edad9">&#9670;&nbsp;</a></span>smooth_before()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">virtual bool wmtk::TriMesh::smooth_before </td>
-          <td>(</td>
-          <td class="paramtype">[[maybe_unused] ] const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
-          <td class="paramname"><em>t</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>User specified preparations and desideratas for an edge smooth. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">the</td><td>edge <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> to be smoothed </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>true if the preparation succeed </dd></dl>
-
-</div>
-</div>
-<a id="aebe6602f7e5b3921dbda54a82e76394a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aebe6602f7e5b3921dbda54a82e76394a">&#9670;&nbsp;</a></span>smooth_vertex()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool TriMesh::smooth_vertex </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
-          <td class="paramname"><em>t</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Smooth a vertex</p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">t</td><td>Input <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> for the vertex </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section note"><dt>Note</dt><dd>no geometry changed here </dd></dl>
-<dl class="section return"><dt>Returns</dt><dd>if smooth succeed </dd></dl>
-
-</div>
-</div>
-<a id="a65804964b0866957f1f8b4b8519965a8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a65804964b0866957f1f8b4b8519965a8">&#9670;&nbsp;</a></span>split_edge()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool TriMesh::split_edge </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
-          <td class="paramname"><em>t</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;&#160;</td>
-          <td class="paramname"><em>new_t</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Split an edge</p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir"></td><td class="paramname">t</td><td>Input <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> for the edge to split. </td></tr>
-    <tr><td class="paramdir">[out]</td><td class="paramname">new_edges</td><td>a vector of Tuples refering to the triangles incident to the new vertex introduced </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>if split succeed </dd></dl>
-
-</div>
-</div>
-<a id="ada80acdaacd14b5d78212d98ad0d59fd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ada80acdaacd14b5d78212d98ad0d59fd">&#9670;&nbsp;</a></span>split_edge_after()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">virtual bool wmtk::TriMesh::split_edge_after </td>
-          <td>(</td>
-          <td class="paramtype">[[maybe_unused] ] const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
-          <td class="paramname"><em>t</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>User specified modifications and desideratas after an edge split. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">the</td><td>edge <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> to be split </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>true if the modifications succeed </dd></dl>
-
-</div>
-</div>
-<a id="acde955fe197a8938b579a4fe7ce54c75"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acde955fe197a8938b579a4fe7ce54c75">&#9670;&nbsp;</a></span>split_edge_before()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">virtual bool wmtk::TriMesh::split_edge_before </td>
-          <td>(</td>
-          <td class="paramtype">[[maybe_unused] ] const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
-          <td class="paramname"><em>t</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>User specified preparations and desideratas for an edge split. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">the</td><td>edge <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> to be split </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>true if the preparation succeed </dd></dl>
-
-</div>
-</div>
-<a id="a6f2170cf9031a6f15fe94df2787615e3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6f2170cf9031a6f15fe94df2787615e3">&#9670;&nbsp;</a></span>swap_edge()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool TriMesh::swap_edge </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
-          <td class="paramname"><em>t</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;&#160;</td>
-          <td class="paramname"><em>new_t</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Swap an edge</p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir"></td><td class="paramname">t</td><td>Input <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> for the edge to be swaped. </td></tr>
-    <tr><td class="paramdir">[out]</td><td class="paramname">new_edges</td><td>a vector of Tuples refering to the triangles incident to the new edge introduced </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section note"><dt>Note</dt><dd>swap edge a,b to edge c,d </dd></dl>
-<dl class="section return"><dt>Returns</dt><dd>if swap succeed </dd></dl>
-
-</div>
-</div>
-<a id="a11c7673c043083df3265ee1575359f65"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a11c7673c043083df3265ee1575359f65">&#9670;&nbsp;</a></span>swap_edge_after()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">virtual bool wmtk::TriMesh::swap_edge_after </td>
-          <td>(</td>
-          <td class="paramtype">[[maybe_unused] ] const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
-          <td class="paramname"><em>t</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>User specified modifications and desideras after an edge swap. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">the</td><td>edge <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> to be swaped </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>true if the modifications succeed </dd></dl>
-
-</div>
-</div>
-<a id="ace39438874440fc589b4eb07c3c24d71"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ace39438874440fc589b4eb07c3c24d71">&#9670;&nbsp;</a></span>swap_edge_before()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool TriMesh::swap_edge_before </td>
-          <td>(</td>
-          <td class="paramtype">[[maybe_unused] ] const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
-          <td class="paramname"><em>t</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">protected</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>User specified preparations and desideratas for an edge swap including 1.can't swap on boundary edge. 2. when swap edge between v1, v2, there can't exist edges between the two opposite vertices v3, v4. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">the</td><td>edge <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> to be swaped </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>true if the preparation succeed </dd></dl>
-
-</div>
-</div>
 <a id="a463afcdb12224df869bfd1c4c9aea2d4"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a463afcdb12224df869bfd1c4c9aea2d4">&#9670;&nbsp;</a></span>switch_face()</h2>
 
@@ -1302,9 +942,9 @@ tbb::concurrent_vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::optional&lt;<a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&gt; wmtk::TriMesh::switch_face </td>
+          <td class="memname">std::optional&lt;<a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a>&gt; wmtk::TriMesh::switch_face </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> &amp;&#160;</td>
           <td class="paramname"><em>t</em></td><td>)</td>
           <td> const</td>
         </tr>
@@ -1316,8 +956,8 @@ tbb::concurrent_vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex
 </table>
 </div><div class="memdoc">
 
-<p>a duplicate of <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html#a683f9597a1eef47b6b64ee818484c510">Tuple::switch_face</a> funciton </p>
-<dl class="section note"><dt>Note</dt><dd>Returns nullptr if current <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> referes to a boundary triangle </dd></dl>
+<p>a duplicate of <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html#a674eb9494fdf12283390a0b2d3707ea1">Tuple::switch_face</a> funciton </p>
+<dl class="section note"><dt>Note</dt><dd>Returns nullptr if current Tuple referes to a boundary triangle </dd></dl>
 
 </div>
 </div>
@@ -1358,7 +998,7 @@ tbb::concurrent_vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex
         <tr>
           <td class="memname">bool TriMesh::try_set_edge_mutex_two_ring </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> &amp;&#160;</td>
           <td class="paramname"><em>e</em>, </td>
         </tr>
         <tr>
@@ -1378,7 +1018,7 @@ tbb::concurrent_vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex
 <p>try lock the two-ring neighboring triangles' incident vertices for the two ends of an edge </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">e</td><td><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> refers to the edge </td></tr>
+    <tr><td class="paramname">e</td><td>Tuple refers to the edge </td></tr>
     <tr><td class="paramname">threadid</td><td></td></tr>
   </table>
   </dd>
@@ -1396,7 +1036,7 @@ tbb::concurrent_vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex
         <tr>
           <td class="memname">bool wmtk::TriMesh::try_set_vertex_mutex_one_ring </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> &amp;&#160;</td>
           <td class="paramname"><em>v</em>, </td>
         </tr>
         <tr>
@@ -1434,7 +1074,7 @@ tbb::concurrent_vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex
         <tr>
           <td class="memname">bool TriMesh::try_set_vertex_mutex_two_ring </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> &amp;&#160;</td>
           <td class="paramname"><em>v</em>, </td>
         </tr>
         <tr>
@@ -1454,7 +1094,7 @@ tbb::concurrent_vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex
 <p>try lock the two-ring neighboring traingles' incident vertices </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">v</td><td><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> refers to the vertex </td></tr>
+    <tr><td class="paramname">v</td><td>Tuple refers to the vertex </td></tr>
     <tr><td class="paramname">threadid</td><td></td></tr>
   </table>
   </dd>
@@ -1473,7 +1113,7 @@ tbb::concurrent_vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> wmtk::TriMesh::tuple_from_edge </td>
+          <td class="memname"><a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> wmtk::TriMesh::tuple_from_edge </td>
           <td>(</td>
           <td class="paramtype">size_t&#160;</td>
           <td class="paramname"><em>fid</em>, </td>
@@ -1496,7 +1136,7 @@ tbb::concurrent_vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex
   </tr>
 </table>
 </div><div class="memdoc">
-<p>Generate a edge <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> using global fid and local eid </p><dl class="params"><dt>Parameters</dt><dd>
+<p>Generate a edge Tuple using global fid and local eid </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">fid</td><td>globale fid for the triangle </td></tr>
     <tr><td class="paramname">local_eid</td><td>local eid </td></tr>
@@ -1517,7 +1157,7 @@ tbb::concurrent_vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> wmtk::TriMesh::tuple_from_tri </td>
+          <td class="memname"><a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> wmtk::TriMesh::tuple_from_tri </td>
           <td>(</td>
           <td class="paramtype">size_t&#160;</td>
           <td class="paramname"><em>fid</em></td><td>)</td>
@@ -1530,14 +1170,14 @@ tbb::concurrent_vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex
   </tr>
 </table>
 </div><div class="memdoc">
-<p>Generate a face <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> using global fid </p><dl class="params"><dt>Parameters</dt><dd>
+<p>Generate a face Tuple using global fid </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">fid</td><td>global fid for the triangle </td></tr>
   </table>
   </dd>
 </dl>
 <dl class="section note"><dt>Note</dt><dd>Use the local vid of the first vertex among the incident vertices in the connectivity of the triangle </dd></dl>
-<dl class="section return"><dt>Returns</dt><dd>a face <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>a face Tuple </dd></dl>
 
 </div>
 </div>
@@ -1551,7 +1191,7 @@ tbb::concurrent_vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> wmtk::TriMesh::tuple_from_vertex </td>
+          <td class="memname"><a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> wmtk::TriMesh::tuple_from_vertex </td>
           <td>(</td>
           <td class="paramtype">size_t&#160;</td>
           <td class="paramname"><em>vid</em></td><td>)</td>
@@ -1564,7 +1204,7 @@ tbb::concurrent_vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex
   </tr>
 </table>
 </div><div class="memdoc">
-<p>Generate avertex <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> using local vid and global fid </p><dl class="params"><dt>Parameters</dt><dd>
+<p>Generate avertex Tuple using local vid and global fid </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">vid</td><td>globale vid for the triangle </td></tr>
   </table>
@@ -1600,6 +1240,31 @@ tbb::concurrent_vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex
 <p>get the current largest global vid </p>
 <dl class="section return"><dt>Returns</dt><dd>size_t </dd></dl>
 
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="a35a3451856a6208a9787e777ad842b9a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a35a3451856a6208a9787e777ad842b9a">&#9670;&nbsp;</a></span>p_operation_recorder</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">tbb::enumerable_thread_specific&lt;std::weak_ptr&lt;<a class="el" href="classwmtk_1_1_tri_mesh_operation_recorder.html">TriMeshOperationRecorder</a>&gt; &gt; wmtk::TriMesh::p_operation_recorder</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line">{</div>
+<div class="line">        {}}</div>
+</div><!-- fragment -->
 </div>
 </div>
 <hr/>The documentation for this class was generated from the following files:<ul>

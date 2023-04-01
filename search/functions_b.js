@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['print_5finfo_374',['print_info',['../classwmtk_1_1_tet_mesh_1_1_tuple.html#a49fd88de6c7178861506864665c4eaa3',1,'wmtk::TetMesh::Tuple::print_info() const'],['../classwmtk_1_1_tet_mesh_1_1_tuple.html#a6b102f37bc5870ed46df2630f412394b',1,'wmtk::TetMesh::Tuple::print_info(const TetMesh &amp;m) const']]]
+  ['print_5finfo_452',['print_info',['../classwmtk_1_1_tet_mesh_tuple.html#ae9c0309eebee8d0bfe7d5c79dcf24fca',1,'wmtk::TetMeshTuple::print_info() const'],['../classwmtk_1_1_tet_mesh_tuple.html#af1f4ee1d2975d95a3542818e0422556d',1,'wmtk::TetMeshTuple::print_info(const TetMesh &amp;m) const']]]
 ];

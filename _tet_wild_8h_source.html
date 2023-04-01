@@ -193,9 +193,9 @@ $(function() {
 <div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;        <span class="keyword">const</span> std::vector&lt;TetAttributes&gt;&amp; _tet_attribute)</div>
 <div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;    {</div>
 <div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;        <span class="keyword">auto</span> n_tet = _tet_attribute.size();</div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;        m_vertex_attribute.resize(_vertex_attribute.size());</div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;        m_face_attribute.resize(4 * n_tet);</div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;        m_tet_attribute.resize(n_tet);</div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;        m_vertex_attribute.grow_to_at_least(_vertex_attribute.size());</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;        m_face_attribute.grow_to_at_least(4 * n_tet);</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;        m_tet_attribute.grow_to_at_least(n_tet);</div>
 <div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160; </div>
 <div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> i = 0; i &lt; _vertex_attribute.size(); i++)</div>
 <div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;            m_vertex_attribute[i] = _vertex_attribute[i];</div>
@@ -444,9 +444,9 @@ $(function() {
 <div class="ttc" id="aclasstetwild_1_1_tet_wild_html"><div class="ttname"><a href="classtetwild_1_1_tet_wild.html">tetwild::TetWild</a></div><div class="ttdef"><b>Definition:</b> TetWild.h:89</div></div>
 <div class="ttc" id="aclasstetwild_1_1_vertex_attributes_html"><div class="ttname"><a href="classtetwild_1_1_vertex_attributes.html">tetwild::VertexAttributes</a></div><div class="ttdef"><b>Definition:</b> TetWild.h:33</div></div>
 <div class="ttc" id="aclasswmtk_1_1_envelope_html"><div class="ttname"><a href="classwmtk_1_1_envelope.html">wmtk::Envelope</a></div><div class="ttdef"><b>Definition:</b> SampleEnvelope.hpp:19</div></div>
-<div class="ttc" id="aclasswmtk_1_1_tet_mesh_html"><div class="ttname"><a href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a></div><div class="ttdef"><b>Definition:</b> TetMesh.h:24</div></div>
-<div class="ttc" id="aclasswmtk_1_1_tet_mesh_html_a204a973795d87f3b69a06cf699b400f2"><div class="ttname"><a href="classwmtk_1_1_tet_mesh.html#a204a973795d87f3b69a06cf699b400f2">wmtk::TetMesh::vert_capacity</a></div><div class="ttdeci">size_t vert_capacity() const</div><div class="ttdoc">get the current largest global vid</div><div class="ttdef"><b>Definition:</b> TetMesh.h:309</div></div>
-<div class="ttc" id="aclasswmtk_1_1_tet_mesh_html_ad37dd5a5a436472b182afdf20932605c"><div class="ttname"><a href="classwmtk_1_1_tet_mesh.html#ad37dd5a5a436472b182afdf20932605c">wmtk::TetMesh::tuple_from_tet</a></div><div class="ttdeci">Tuple tuple_from_tet(size_t tid) const</div><div class="ttdoc">get a Tuple from global tetra index</div><div class="ttdef"><b>Definition:</b> TetMesh.cpp:380</div></div>
+<div class="ttc" id="aclasswmtk_1_1_tet_mesh_html"><div class="ttname"><a href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a></div><div class="ttdef"><b>Definition:</b> TetMesh.h:25</div></div>
+<div class="ttc" id="aclasswmtk_1_1_tet_mesh_html_a204a973795d87f3b69a06cf699b400f2"><div class="ttname"><a href="classwmtk_1_1_tet_mesh.html#a204a973795d87f3b69a06cf699b400f2">wmtk::TetMesh::vert_capacity</a></div><div class="ttdeci">size_t vert_capacity() const</div><div class="ttdoc">get the current largest global vid</div><div class="ttdef"><b>Definition:</b> TetMesh.h:113</div></div>
+<div class="ttc" id="aclasswmtk_1_1_tet_mesh_html_ad37dd5a5a436472b182afdf20932605c"><div class="ttname"><a href="classwmtk_1_1_tet_mesh.html#ad37dd5a5a436472b182afdf20932605c">wmtk::TetMesh::tuple_from_tet</a></div><div class="ttdeci">Tuple tuple_from_tet(size_t tid) const</div><div class="ttdoc">get a Tuple from global tetra index</div><div class="ttdef"><b>Definition:</b> TetMesh.cpp:404</div></div>
 <div class="ttc" id="astructtetwild_1_1_parameters_html"><div class="ttname"><a href="structtetwild_1_1_parameters.html">tetwild::Parameters</a></div><div class="ttdef"><b>Definition:</b> Parameters.h:6</div></div>
 <div class="ttc" id="astructtetwild_1_1_tet_wild_1_1_collapse_info_cache_html"><div class="ttname"><a href="structtetwild_1_1_tet_wild_1_1_collapse_info_cache.html">tetwild::TetWild::CollapseInfoCache</a></div><div class="ttdef"><b>Definition:</b> TetWild.h:346</div></div>
 <div class="ttc" id="astructtetwild_1_1_tet_wild_1_1_split_info_cache_html"><div class="ttname"><a href="structtetwild_1_1_tet_wild_1_1_split_info_cache.html">tetwild::TetWild::SplitInfoCache</a></div><div class="ttdef"><b>Definition:</b> TetWild.h:335</div></div>
