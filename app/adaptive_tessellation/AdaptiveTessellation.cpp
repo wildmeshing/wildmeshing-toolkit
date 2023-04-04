@@ -12,6 +12,7 @@
 #include <lean_vtk.hpp>
 #include <wmtk/utils/TriQualityUtils.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
+#include <tracy/Tracy.hpp>
 
 using namespace wmtk;
 
@@ -891,6 +892,7 @@ void AdaptiveTessellation::mesh_improvement(int max_its)
         pre_avg_len = avg_len;
         pre_max_energy = mesh_parameters.m_max_energy;
         consolidate_mesh();
+        FrameMark;
     }
 
     wmtk::logger().info(

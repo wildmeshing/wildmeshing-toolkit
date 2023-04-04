@@ -23,6 +23,7 @@
 #include <wmtk/utils/Image.h>
 #include <wmtk/utils/autodiff.h>
 #include <wmtk/utils/bicubic_interpolation.h>
+#include <tracy/Tracy.hpp>
 #include <CLI/CLI.hpp>
 #include <fstream>
 #include <functional>
@@ -63,6 +64,8 @@ int main(int argc, char** argv)
     std::string output_folder = config["output_folder"];
     std::string output_file = config["output_file"];
     output_json = config["output_json"];
+
+    FrameMark;
 
     int image_size = 512;
     image_size = config["image_size"];

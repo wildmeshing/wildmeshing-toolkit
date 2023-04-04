@@ -1,6 +1,6 @@
 #include <wmtk/utils/TupleUtils.hpp>
 
-#include <Tracy.hpp>
+#include <tracy/Tracy.hpp>
 
 #include <algorithm>
 #include "wmtk/TriMesh.h"
