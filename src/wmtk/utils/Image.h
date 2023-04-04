@@ -15,10 +15,10 @@ namespace wmtk {
 class Image
 {
     using DScalar = DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d>;
+    using ImageMatrixf = Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 
 protected:
-    Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
-        m_image; // saving scanline images
+    ImageMatrixf m_image; // saving scanline images
     WrappingMode m_mode_x = WrappingMode::CLAMP_TO_EDGE;
     WrappingMode m_mode_y = WrappingMode::CLAMP_TO_EDGE;
 
@@ -26,7 +26,7 @@ public:
     Image() = default;
     Image(int height_, int width_) { m_image.resize(height_, width_); };
 
-    auto get_raw_image() const { return m_image; }
+    const ImageMatrixf & get_raw_image() const { return m_image; }
 
 public:
     // point coordinates between [0, 1]
