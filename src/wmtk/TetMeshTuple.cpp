@@ -1,6 +1,6 @@
 #include "TetMesh.h"
 
-#include <Tracy.hpp>
+#include <tracy/Tracy.hpp>
 
 using namespace wmtk;
 

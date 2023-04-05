@@ -111,7 +111,7 @@ public:
         if (pixel_num <= 0) return T(0.);
         assert(pixel_num > 0);
         T error = T(0.0);
-        auto norm_T = [&](const Eigen::Matrix<T, 1, Eigen::Dynamic> row_v) -> T {
+        auto norm_T = [&](const Eigen::Matrix<T, 2, 1>& row_v) -> T {
             T ret = T(0.);
             for (auto i = 0; i < row_v.cols(); i++) {
                 auto debug_rowv = row_v(0, i);
@@ -183,7 +183,7 @@ public:
             triangle_double.row(i) << p_double(0), p_double(1);
             bbox.extend(p_double);
         }
-        auto squared_norm_T = [&](const Eigen::Matrix<T, 1, Eigen::Dynamic> row_v) -> T {
+        auto squared_norm_T = [&](const Eigen::Matrix<T, 3, 1>& row_v) -> T {
             T ret = T(0.);
             for (auto i = 0; i < row_v.cols(); i++) {
                 auto debug_rowv = row_v(0, i);

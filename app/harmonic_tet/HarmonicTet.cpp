@@ -10,7 +10,7 @@
 
 #include <igl/predicates/predicates.h>
 
-#include <Tracy.hpp>
+#include <tracy/Tracy.hpp>
 
 #include <limits>
 #include <queue>

@@ -6,7 +6,7 @@
 
 #include <tbb/parallel_for.h>
 
-#include <Tracy.hpp>
+#include <tracy/Tracy.hpp>
 
 int wmtk::TetMesh::get_next_empty_slot_t()
 {
