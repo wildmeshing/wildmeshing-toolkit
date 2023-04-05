@@ -4,10 +4,10 @@
 #include <wmtk/quadrature/ClippedQuadrature.h>
 #include <wmtk/quadrature/TriangleQuadrature.h>
 #include <wmtk/utils/PolygonClipping.h>
+#include <wmtk/utils/Sampling.h>
 #include <type_traits>
 #include "Image.h"
 #include "LineQuadrature.hpp"
-#include "Sampling.h"
 #include "autodiff.h"
 
 namespace wmtk {
@@ -231,8 +231,8 @@ public:
         };
 
         T value = T(0.);
-        for (size_t x = 0; x < num_pixels; ++x) {
-            for (size_t y = 0; y < num_pixels; ++y) {
+        for (auto x = 0; x < num_pixels; ++x) {
+            for (auto y = 0; y < num_pixels; ++y) {
                 Eigen::AlignedBox2d box;
                 box.extend(bbox.min() + Eigen::Vector2d(x * pixel_size, y * pixel_size));
                 box.extend(
@@ -244,7 +244,7 @@ public:
                     box,
                     m_cache.local().quad,
                     &m_cache.local().tmp);
-                for (size_t i = 0; i < m_cache.local().quad.size(); ++i) {
+                for (auto i = 0; i < m_cache.local().quad.size(); ++i) {
                     auto tmpu = T(m_cache.local().quad.points()(i, 0));
                     auto tmpv = T(m_cache.local().quad.points()(i, 1));
                     Eigen::Matrix<T, 3, 1> tmpp_displaced = get(tmpu, tmpv);
@@ -267,11 +267,15 @@ public:
 public:
     DisplacementMesh(
         const wmtk::Image img,
-        std::array<wmtk::Image, 6> images,
-        const SAMPLING_MODE sampling_mode)
+        std::array<wmtk::Image, 6> position_normal_images,
+        const SAMPLING_MODE sampling_mode,
+        double scale,
+        Eigen::Matrix<double, 3, 1> offset)
         : DisplacementImage(std::move(img), sampling_mode)
+        , m_normalization_scale(scale)
+        , m_normalization_offset(offset)
     {
-        set_position_normal_images(images);
+        set_position_normal_images(position_normal_images);
         set_sampling_mode(sampling_mode);
         assert(m_image.width() != 0);
         assert(m_position_image[0].width() != 0);
@@ -283,6 +287,8 @@ protected:
     std::array<std::unique_ptr<wmtk::Sampling>, 3> m_position_sampler;
     std::array<wmtk::Image, 3> m_normal_image;
     std::array<std::unique_ptr<wmtk::Sampling>, 3> m_normal_sampler;
+    double m_normalization_scale = 0.0;
+    Eigen::Matrix<double, 3, 1> m_normalization_offset;
 
 public:
     void set_sampling_mode(const wmtk::SAMPLING_MODE sampling_mode) override
@@ -304,14 +310,21 @@ public:
     }
     Eigen::Matrix<double, 3, 1> get(double u, double v) const
     {
-        double z = m_sampler->sample(u, v);
+        // double z = m_sampler->sample(u, v);
+        double z = 1.0;
         Eigen::Matrix<double, 3, 1> displace_3d;
         for (auto i = 0; i < 3; i++) {
             double p = m_position_sampler[i]->sample(u, v);
             double d = m_normal_sampler[i]->sample(u, v);
             displace_3d(i, 0) = p + z * d;
         }
-        return displace_3d;
+        auto scaled_p = displace_3d * m_normalization_scale;
+        Eigen::Matrix<double, 3, 1> final_p;
+        final_p(0, 0) = scaled_p(0, 0) - m_normalization_offset(0, 0);
+        final_p(1, 0) = scaled_p(1, 0) - m_normalization_offset(1, 0);
+        final_p(2, 0) = scaled_p(2, 0) - m_normalization_offset(2, 0);
+        wmtk::logger().info("interpolate_3d {}", displace_3d);
+        return final_p;
     }
 
     Eigen::Matrix<DScalar, 3, 1> get(const DScalar& u, const DScalar& v) const

@@ -131,18 +131,12 @@ int main(int argc, char** argv)
     displacement_mesh_images = config["displacement_mesh_images"].get<std::vector<std::string>>();
 
     assert(displacement_mesh_images.size() == 6);
-    for (auto i = 0; i < 3; i++) {
-        // single channel position images
-        adaptive_tessellation.mesh_parameters.m_position_normal_images[i].load(
-            displacement_mesh_images[i],
-            wrapping_mode,
-            wrapping_mode);
-        // single channel normal images
-        adaptive_tessellation.mesh_parameters.m_position_normal_images[i + 3].load(
-            displacement_mesh_images[i + 3],
-            wrapping_mode,
-            wrapping_mode);
-    }
+
+    // 3channel position images
+    adaptive_tessellation.mesh_parameters.m_position_normal_paths[0] = displacement_mesh_images[0];
+    // 3channel normal images
+    adaptive_tessellation.mesh_parameters.m_position_normal_paths[1] = displacement_mesh_images[1];
+
     adaptive_tessellation.set_parameters(
         target_accuracy,
         target_l,

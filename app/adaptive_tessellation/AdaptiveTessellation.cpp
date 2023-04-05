@@ -10,9 +10,9 @@
 #include <wmtk/utils/AMIPS2D_autodiff.h>
 #include <Eigen/Core>
 #include <lean_vtk.hpp>
+#include <tracy/Tracy.hpp>
 #include <wmtk/utils/TriQualityUtils.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
-#include <tracy/Tracy.hpp>
 
 using namespace wmtk;
 
@@ -183,12 +183,39 @@ void AdaptiveTessellation::set_displacement(const DISPLACEMENT_MODE displacement
     // can be also set depending on a user parameter that initialize different Displacement type
     std::shared_ptr<Displacement> displacement_ptr;
     switch (displacement_mode) {
-    case DISPLACEMENT_MODE::MESH_3D:
+    case DISPLACEMENT_MODE::MESH_3D: {
+        std::array<wmtk::Image, 6> position_normal_images;
+        for (auto i = 0; i < 2; i++) {
+            std::filesystem::path path = mesh_parameters.m_position_normal_paths[i];
+            wmtk::split_and_save_3channels(path);
+            std::string directory = path.parent_path().string();
+            std::string file = path.filename().string();
+            std::filesystem::path path_r(directory + "/" + file + "_r.exr");
+            std::filesystem::path path_g(directory + "/" + file + "_g.exr");
+            std::filesystem::path path_b(directory + "/" + file + "_b.exr");
+            position_normal_images[i * 3].load(
+                path_r,
+                mesh_parameters.m_wrapping_mode,
+                mesh_parameters.m_wrapping_mode);
+            position_normal_images[i * 3 + 1].load(
+                path_g,
+                mesh_parameters.m_wrapping_mode,
+                mesh_parameters.m_wrapping_mode);
+            position_normal_images[i * 3 + 2].load(
+                path_b,
+                mesh_parameters.m_wrapping_mode,
+                mesh_parameters.m_wrapping_mode);
+        }
         displacement_ptr = std::make_shared<DisplacementMesh>(
             mesh_parameters.m_image,
-            mesh_parameters.m_position_normal_images,
-            mesh_parameters.m_sampling_mode);
+            position_normal_images,
+            mesh_parameters.m_sampling_mode,
+            mesh_parameters.m_scale,
+            mesh_parameters.m_offset);
+        wmtk::logger().info("scaling factor is {}", mesh_parameters.m_scale);
+        wmtk::logger().info("scene offset is {}", mesh_parameters.m_offset);
         break;
+    }
     case DISPLACEMENT_MODE::PLANE:
         displacement_ptr = std::make_shared<DisplacementPlane>(
             mesh_parameters.m_image,
@@ -198,6 +225,7 @@ void AdaptiveTessellation::set_displacement(const DISPLACEMENT_MODE displacement
     }
     mesh_parameters.m_displacement = displacement_ptr;
 }
+
 
 void AdaptiveTessellation::set_projection()
 {
@@ -536,12 +564,14 @@ void AdaptiveTessellation::write_displaced_obj(
     Eigen::MatrixXi F;
 
     export_mesh(V, F);
-
-    Eigen::MatrixXd V3d = Eigen::MatrixXd::Zero(V.rows(), 3);
-    for (int i = 0; i < V.rows(); i++) {
+    auto rows = V.rows();
+    Eigen::MatrixXd V3d = Eigen::MatrixXd::Zero(rows, 3);
+    wmtk::logger().info("get [0.805107 0.707497], {} ", displacement->get(0.805107, 0.707497));
+    for (int i = 0; i < rows; i++) {
         V3d.row(i) = displacement->get(V(i, 0), V(i, 1));
+        wmtk::logger().info("in writer {}", V3d.row(i));
+        wmtk::logger().info("progress: {}/{}", i, rows);
     }
-
     igl::writeOBJ(path, V3d, F);
 }
 

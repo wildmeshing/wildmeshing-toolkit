@@ -1,10 +1,18 @@
 #pragma once
 
+#include <fastenvelope/FastEnvelope.h>
 #include <igl/Timer.h>
 #include <igl/doublearea.h>
+#include <igl/predicates/predicates.h>
+#include <igl/writeDMAT.h>
+#include <igl/write_triangle_mesh.h>
 #include <lagrange/SurfaceMesh.h>
 #include <lagrange/bvh/EdgeAABBTree.h>
+#include <lagrange/utils/timing.h>
+#include <tbb/concurrent_vector.h>
 #include <wmtk/TriMesh.h>
+#include <wmtk/utils/AMIPS2D.h>
+#include <wmtk/utils/AMIPS2D_autodiff.h>
 #include <wmtk/utils/BoundaryParametrization.h>
 #include <wmtk/utils/Displacement.h>
 #include <wmtk/utils/Energy2d.h>
@@ -14,10 +22,14 @@
 #include <wmtk/utils/PolygonClipping.h>
 #include <Eigen/Core>
 #include <finitediff.hpp>
+#include <lean_vtk.hpp>
 #include <nlohmann/json.hpp>
 #include <sec/envelope/SampleEnvelope.hpp>
 #include <wmtk/utils/LineQuadrature.hpp>
+#include <wmtk/utils/TriQualityUtils.hpp>
+#include <wmtk/utils/TupleUtils.hpp>
 #include "Parameters.h"
+
 namespace adaptive_tessellation {
 class VertexAttributes
 {

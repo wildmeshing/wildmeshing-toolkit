@@ -4,6 +4,7 @@
 #include <wmtk/utils/MipMap.h>
 #include <wmtk/utils/autodiff.h>
 #include <wmtk/utils/bicubic_interpolation.h>
+#include <Eigen/Dense>
 #include <nlohmann/json.hpp>
 #include <sec/envelope/SampleEnvelope.hpp>
 using namespace wmtk;
@@ -78,7 +79,7 @@ public:
     std::function<std::pair<int, int>(const double&, const double&)> m_image_get_coordinate;
 
     wmtk::Image m_image;
-    std::array<wmtk::Image, 6> m_position_normal_images;
+    std::array<std::filesystem::path, 2> m_position_normal_paths;
     wmtk::MipMap m_mipmap;
 
     std::function<double(const TriMesh::Tuple& edge_tuple)> m_get_length;
@@ -90,5 +91,7 @@ public:
     SAMPLING_MODE m_sampling_mode = SAMPLING_MODE::BICUBIC;
     DISPLACEMENT_MODE m_displacement_mode = DISPLACEMENT_MODE::PLANE;
     std::shared_ptr<wmtk::Displacement> m_displacement;
+    double m_scale = 1.0;
+    Eigen::Matrix<double, 3, 1> m_offset;
 };
 } // namespace adaptive_tessellation
