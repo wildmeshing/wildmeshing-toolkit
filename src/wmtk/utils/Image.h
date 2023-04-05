@@ -35,6 +35,7 @@ public:
 
     template <class T>
     std::decay_t<T> get(const T& u, const T& v) const;
+    float get_pixel(const int i, const int j) const { return m_image(i, j); };
     std::pair<int, int> get_pixel_index(const double& u, const double& v) const;
     int get_coordinate(const int x, const WrappingMode mode) const;
     WrappingMode get_wrapping_mode_x() const { return m_mode_x; };
@@ -83,5 +84,41 @@ std::decay_t<T> Image::get(const T& u, const T& v) const
         m_mode_y);
     BicubicVector<float> bicubic_coeff = get_bicubic_matrix() * sample_vector;
     return eval_bicubic_coeffs(bicubic_coeff, x, y);
+};
+
+inline void split_and_save_3channels(const std::filesystem::path& path)
+{
+    int w, h, channels, index_red, index_blue, index_green;
+    channels = 1;
+    std::vector<float> buffer_r, buffer_g, buffer_b;
+    if (path.extension() == ".exr") {
+        std::tie(w, h, index_red, index_green, index_blue, buffer_r, buffer_g, buffer_b) =
+            load_image_exr_split_3channels(path);
+        assert(!buffer_r.empty());
+        assert(!buffer_g.empty());
+        assert(!buffer_b.empty());
+        save_image_exr_3channels(
+            w,
+            h,
+            index_red,
+            index_green,
+            index_blue,
+            buffer_r,
+            buffer_g,
+            buffer_b,
+            "test_retored.exr");
+    } else {
+        spdlog::trace("[split_image] format doesn't support \"{}\"", path.string());
+        return;
+    }
+    std::filesystem::path directory = path.parent_path();
+    std::filesystem::path file = path.filename();
+    std::filesystem::path path_r(directory.string() + "/" + file.string() + "_r.exr");
+    std::filesystem::path path_g(directory.string() + "/" + file.string() + "_g.exr");
+    std::filesystem::path path_b(directory.string() + "/" + file.string() + "_b.exr");
+    // just saves single channel data to red channel
+    auto res = save_image_exr_red_channel(w, h, buffer_r, path_r);
+    res = save_image_exr_red_channel(w, h, buffer_g, path_g);
+    res = save_image_exr_red_channel(w, h, buffer_b, path_b);
 }
 } // namespace wmtk
