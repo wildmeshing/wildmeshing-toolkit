@@ -13,7 +13,6 @@
 #include <tracy/Tracy.hpp>
 #include <wmtk/utils/TriQualityUtils.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
-
 using namespace wmtk;
 
 namespace adaptive_tessellation {
@@ -21,7 +20,7 @@ namespace adaptive_tessellation {
 auto avg_edge_len = [](auto& m) {
     double avg_len = 0.0;
     auto edges = m.get_edges();
-    for (auto& e : edges) avg_len += std::sqrt(m.mesh_parameters.m_get_length(e));
+    for (auto& e : edges) avg_len += std::sqrt(m.get_length3d(e));
     return avg_len / edges.size();
 };
 
@@ -337,12 +336,12 @@ void AdaptiveTessellation::create_mesh(const Eigen::MatrixXd& V, const Eigen::Ma
     // Convert from eigen to internal representation (TODO: move to utils and remove it from all
     // app)
     std::vector<std::array<size_t, 3>> tri(F.rows());
-
+    //// TODO switching F order for now because of the uv coordinate change in load
     for (int i = 0; i < F.rows(); i++) {
-        F_env[i] << (size_t)F(i, 0), (size_t)F(i, 1), (size_t)F(i, 2);
-        for (int j = 0; j < 3; j++) {
-            tri[i][j] = (size_t)F(i, j);
-        }
+        F_env[i] << (size_t)F(i, 1), (size_t)F(i, 0), (size_t)F(i, 2);
+        tri[i][0] = (size_t)F(i, 1);
+        tri[i][1] = (size_t)F(i, 0);
+        tri[i][2] = (size_t)F(i, 2);
     }
     // Initialize the trimesh class which handles connectivity
     wmtk::TriMesh::create_mesh(V.rows(), tri);
@@ -432,6 +431,7 @@ void AdaptiveTessellation::write_obj(const std::string& path)
     V3.leftCols(2) = V;
 
     igl::writeOBJ(path, V3, F);
+    wmtk::logger().info("============>> current edge length {}", avg_edge_len(*this));
 }
 
 void AdaptiveTessellation::write_ply(const std::string& path)
@@ -455,6 +455,7 @@ void AdaptiveTessellation::write_vtk(const std::string& path)
     Eigen::MatrixXi F;
 
     export_mesh(V, F);
+    wmtk::logger().info("=== # vertices {}", V.rows());
     for (int i = 0; i < V.rows(); i++) {
         auto p = mesh_parameters.m_displacement->get(V(i, 0), V(i, 1));
         points.emplace_back(p(0));
@@ -490,7 +491,8 @@ void AdaptiveTessellation::write_vtk(const std::string& path)
     // writer.add_vector_field("vector_field", vector_field, dim);
     writer.write_surface_mesh(path, dim, cell_size, points, elements);
 }
-
+/// @brief need to change to support 3d
+/// @param path
 void AdaptiveTessellation::write_perface_vtk(const std::string& path)
 {
     std::vector<double> points;
@@ -500,7 +502,7 @@ void AdaptiveTessellation::write_perface_vtk(const std::string& path)
 
     export_mesh(V, F);
     for (int i = 0; i < V.rows(); i++) {
-        auto p = mesh_parameters.m_project_to_3d(V(i, 0), V(i, 1));
+        auto p = mesh_parameters.m_displacement->get(V(i, 0), V(i, 1));
         points.emplace_back(p(0));
         points.emplace_back(p(1));
         points.emplace_back(p(2));
@@ -527,6 +529,12 @@ void AdaptiveTessellation::write_perface_vtk(const std::string& path)
         Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle1;
         for (int i = 0; i < 3; i++) {
             triangle1.row(i) = vertex_attrs[vids1[i].vid(*this)].pos;
+        }
+        if (wmtk::polygon_signed_area(triangle1) < 0) {
+            Eigen::Matrix<double, 1, 2, Eigen::RowMajor> tmp;
+            tmp = triangle1.row(0);
+            triangle1.row(0) = triangle1.row(1);
+            triangle1.row(1) = tmp;
         }
         auto error = mesh_parameters.m_displacement->get_error_per_triangle(triangle1);
 
@@ -567,7 +575,7 @@ void AdaptiveTessellation::write_displaced_obj(
     Eigen::MatrixXd V3d = Eigen::MatrixXd::Zero(rows, 3);
     for (int i = 0; i < rows; i++) {
         V3d.row(i) = displacement->get(V(i, 0), V(i, 1));
-        wmtk::logger().info("progress: {}/{}", i, rows);
+        // wmtk::logger().info("progress: {}/{}", i, rows);
     }
     igl::writeOBJ(path, V3d, F);
 }
@@ -708,6 +716,13 @@ double AdaptiveTessellation::get_area_accuracy_error_per_face(const Tuple& edge_
     Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle;
     for (int i = 0; i < 3; i++) {
         triangle.row(i) = vertex_attrs[vids[i].vid(*this)].pos;
+    }
+    auto triangle_area = wmtk::polygon_signed_area(triangle);
+    if (triangle_area < 0.) {
+        Eigen::Matrix<double, 1, 2, Eigen::RowMajor> tmp;
+        tmp = triangle.row(0);
+        triangle.row(0) = triangle.row(1);
+        triangle.row(1) = tmp;
     }
     return mesh_parameters.m_displacement->get_error_per_triangle(triangle);
 }
