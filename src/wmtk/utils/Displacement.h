@@ -111,11 +111,11 @@ public:
         if (pixel_num <= 0) return T(0.);
         assert(pixel_num > 0);
         T error = T(0.0);
-        auto norm_T = [&](const Eigen::Matrix<T, 2, 1>& row_v) -> T {
+        auto norm_T = [&](const Eigen::Matrix<T, Eigen::Dynamic, 1>& row_v) -> T {
             T ret = T(0.);
-            for (auto i = 0; i < row_v.cols(); i++) {
-                auto debug_rowv = row_v(0, i);
-                ret += pow(row_v(0, i), 2);
+            for (auto i = 0; i < row_v.rows(); i++) {
+                auto debug_rowv = row_v(i, 0);
+                ret += pow(row_v(i, 0), 2);
             }
             return sqrt(ret);
         };
@@ -185,9 +185,9 @@ public:
         }
         auto squared_norm_T = [&](const Eigen::Matrix<T, 3, 1>& row_v) -> T {
             T ret = T(0.);
-            for (auto i = 0; i < row_v.cols(); i++) {
-                auto debug_rowv = row_v(0, i);
-                ret += pow(row_v(0, i), 2);
+            for (auto i = 0; i < row_v.rows(); i++) {
+                auto debug_rowv = row_v(i, 0);
+                ret += pow(row_v(i, 0), 2);
             }
             return ret;
         };
@@ -310,21 +310,14 @@ public:
     }
     Eigen::Matrix<double, 3, 1> get(double u, double v) const
     {
-        // double z = m_sampler->sample(u, v);
-        double z = 1.0;
+        double z = 3 * m_sampler->sample(u, v);
         Eigen::Matrix<double, 3, 1> displace_3d;
         for (auto i = 0; i < 3; i++) {
             double p = m_position_sampler[i]->sample(u, v);
-            double d = m_normal_sampler[i]->sample(u, v);
-            displace_3d(i, 0) = p + z * d;
+            double d = m_normal_sampler[i]->sample(u, v) - 0.5;
+            displace_3d(i, 0) = p * m_normalization_scale - m_normalization_offset(i, 0) + z * d;
         }
-        auto scaled_p = displace_3d * m_normalization_scale;
-        Eigen::Matrix<double, 3, 1> final_p;
-        final_p(0, 0) = scaled_p(0, 0) - m_normalization_offset(0, 0);
-        final_p(1, 0) = scaled_p(1, 0) - m_normalization_offset(1, 0);
-        final_p(2, 0) = scaled_p(2, 0) - m_normalization_offset(2, 0);
-        wmtk::logger().info("interpolate_3d {}", displace_3d);
-        return final_p;
+        return displace_3d;
     }
 
     Eigen::Matrix<DScalar, 3, 1> get(const DScalar& u, const DScalar& v) const

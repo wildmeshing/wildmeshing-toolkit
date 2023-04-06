@@ -303,13 +303,11 @@ auto wmtk::load_image_exr_split_3channels(const std::filesystem::path& path) -> 
     data_b.reserve(static_cast<size_t>(exr_image.width) * static_cast<size_t>(exr_image.height));
 
     const auto images = reinterpret_cast<float**>(exr_image.images);
-    wmtk::logger().info("[load image {} {} {}]", images[0][0], images[1][0], images[2][0]);
     for (int i = 0; i < exr_image.width * exr_image.height; i++) {
         data_r.emplace_back(images[index_red][i]);
         data_g.emplace_back(images[index_green][i]);
         data_b.emplace_back(images[index_blue][i]);
     }
-    wmtk::logger().info("[load r {} g {} b {}]", data_r[0], data_g[0], data_b[0]);
     FreeEXRHeader(&exr_header);
     FreeEXRImage(&exr_image);
 

@@ -26,7 +26,7 @@ public:
     Image() = default;
     Image(int height_, int width_) { m_image.resize(height_, width_); };
 
-    const ImageMatrixf & get_raw_image() const { return m_image; }
+    const ImageMatrixf& get_raw_image() const { return m_image; }
 
 public:
     // point coordinates between [0, 1]
@@ -97,16 +97,6 @@ inline void split_and_save_3channels(const std::filesystem::path& path)
         assert(!buffer_r.empty());
         assert(!buffer_g.empty());
         assert(!buffer_b.empty());
-        save_image_exr_3channels(
-            w,
-            h,
-            index_red,
-            index_green,
-            index_blue,
-            buffer_r,
-            buffer_g,
-            buffer_b,
-            "test_retored.exr");
     } else {
         spdlog::trace("[split_image] format doesn't support \"{}\"", path.string());
         return;
