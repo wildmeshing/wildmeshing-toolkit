@@ -187,6 +187,7 @@ void AdaptiveTessellation::set_displacement(const DISPLACEMENT_MODE displacement
         std::array<wmtk::Image, 6> position_normal_images;
         for (auto i = 0; i < 2; i++) {
             std::filesystem::path path = mesh_parameters.m_position_normal_paths[i];
+            wmtk::logger().info("======= path {} {}", i, path);
             wmtk::split_and_save_3channels(path);
             std::string directory = path.parent_path().string();
             std::string file = path.filename().string();
@@ -212,8 +213,6 @@ void AdaptiveTessellation::set_displacement(const DISPLACEMENT_MODE displacement
             mesh_parameters.m_sampling_mode,
             mesh_parameters.m_scale,
             mesh_parameters.m_offset);
-        wmtk::logger().info("scaling factor is {}", mesh_parameters.m_scale);
-        wmtk::logger().info("scene offset is {}", mesh_parameters.m_offset);
         break;
     }
     case DISPLACEMENT_MODE::PLANE:
@@ -566,10 +565,8 @@ void AdaptiveTessellation::write_displaced_obj(
     export_mesh(V, F);
     auto rows = V.rows();
     Eigen::MatrixXd V3d = Eigen::MatrixXd::Zero(rows, 3);
-    wmtk::logger().info("get [0.805107 0.707497], {} ", displacement->get(0.805107, 0.707497));
     for (int i = 0; i < rows; i++) {
         V3d.row(i) = displacement->get(V(i, 0), V(i, 1));
-        wmtk::logger().info("in writer {}", V3d.row(i));
         wmtk::logger().info("progress: {}/{}", i, rows);
     }
     igl::writeOBJ(path, V3d, F);
