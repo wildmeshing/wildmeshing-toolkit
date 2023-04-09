@@ -13,7 +13,7 @@ using namespace app::remeshing;
 
 TEST_CASE("uniform_remeshing", "[test_remeshing][.]")
 {
-    const std::string root(WMT_DATA_DIR);
+    const std::string root(WMTK_DATA_DIR);
     const std::string path = root + "/circle.obj";
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
@@ -58,7 +58,7 @@ TEST_CASE("split_each_edge", "[test_remeshing]")
 
 TEST_CASE("test_swap", "[test_remeshing]")
 {
-    const std::string root(WMT_DATA_DIR);
+    const std::string root(WMTK_DATA_DIR);
     const std::string path = root + "/circle.obj";
 
     Eigen::MatrixXd V;
@@ -101,7 +101,7 @@ TEST_CASE("test_swap", "[test_remeshing]")
 
 TEST_CASE("test_split", "[test_remeshing]")
 {
-    const std::string root(WMT_DATA_DIR);
+    const std::string root(WMTK_DATA_DIR);
     const std::string path = root + "/fan.obj";
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
@@ -126,7 +126,7 @@ TEST_CASE("test_split", "[test_remeshing]")
 
 TEST_CASE("remeshing_hanging", "[test_remeshing]")
 {
-    const std::string root(WMT_DATA_DIR);
+    const std::string root(WMTK_DATA_DIR);
     const std::string path = root + "/100071_sf.obj";
     std::string output = "100071_out.obj";
     double env_rel = 1e-3;
@@ -204,7 +204,7 @@ std::function<bool(std::array<double, 6>&)> is_dgenerate = [](auto& tri) {
 
 TEST_CASE("operation orient", "[test_remeshing]")
 {
-    const std::string root(WMT_DATA_DIR);
+    const std::string root(WMTK_DATA_DIR);
     const std::string path = root + "/fan.obj";
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
@@ -266,7 +266,7 @@ TEST_CASE("operation orient", "[test_remeshing]")
 
 TEST_CASE("swap orient", "[test_remeshing]")
 {
-    const std::string root(WMT_DATA_DIR);
+    const std::string root(WMTK_DATA_DIR);
     const std::string path = root + "/fan.obj";
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;

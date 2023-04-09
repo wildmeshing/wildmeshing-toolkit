@@ -29,7 +29,7 @@ using Scalar = double;
 
 TEST_CASE("AABB")
 {
-    const std::string root(WMT_DATA_DIR);
+    const std::string root(WMTK_DATA_DIR);
     const std::string path = root + "/test_triwild.obj";
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
