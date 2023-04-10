@@ -338,9 +338,9 @@ void AdaptiveTessellation::create_mesh(const Eigen::MatrixXd& V, const Eigen::Ma
     std::vector<std::array<size_t, 3>> tri(F.rows());
     //// TODO switching F order for now because of the uv coordinate change in load
     for (int i = 0; i < F.rows(); i++) {
-        F_env[i] << (size_t)F(i, 1), (size_t)F(i, 0), (size_t)F(i, 2);
-        tri[i][0] = (size_t)F(i, 1);
-        tri[i][1] = (size_t)F(i, 0);
+        F_env[i] << (size_t)F(i, 0), (size_t)F(i, 1), (size_t)F(i, 2);
+        tri[i][0] = (size_t)F(i, 0);
+        tri[i][1] = (size_t)F(i, 1);
         tri[i][2] = (size_t)F(i, 2);
     }
     // Initialize the trimesh class which handles connectivity
@@ -561,6 +561,7 @@ void AdaptiveTessellation::write_displaced_obj(
     }
 
     igl::writeOBJ(path, V3, F);
+    wmtk::logger().info("============>> current edge length {}", avg_edge_len(*this));
 }
 
 void AdaptiveTessellation::write_displaced_obj(
@@ -578,6 +579,7 @@ void AdaptiveTessellation::write_displaced_obj(
         // wmtk::logger().info("progress: {}/{}", i, rows);
     }
     igl::writeOBJ(path, V3d, F);
+    wmtk::logger().info("============>> current edge length {}", avg_edge_len(*this));
 }
 
 double AdaptiveTessellation::get_length2d(const Tuple& edge_tuple) const
@@ -865,6 +867,8 @@ void AdaptiveTessellation::mesh_improvement(int max_its)
         write_displaced_obj(
             mesh_parameters.m_output_folder + "/after_split_" + std::to_string(it) + ".obj",
             mesh_parameters.m_displacement);
+        write_obj(
+            mesh_parameters.m_output_folder + "/after_split_" + std::to_string(it) + "2d.obj");
 
         swap_all_edges();
         assert(invariants(get_faces()));
@@ -875,17 +879,20 @@ void AdaptiveTessellation::mesh_improvement(int max_its)
         write_displaced_obj(
             mesh_parameters.m_output_folder + "/after_swap_" + std::to_string(it) + ".obj",
             mesh_parameters.m_displacement);
-        swap_finish_time = lagrange::get_timestamp();
+        write_obj(mesh_parameters.m_output_folder + "/after_swap_" + std::to_string(it) + "2d.obj");
 
         collapse_all_edges();
         assert(invariants(get_faces()));
         consolidate_mesh();
-        write_displaced_obj(
-            mesh_parameters.m_output_folder + "/after_collapse_" + std::to_string(it) + ".obj",
-            mesh_parameters.m_displacement);
         auto collapse_finish_time = lagrange::get_timestamp();
         mesh_parameters.js_log["iteration_" + std::to_string(it)]["collapse time"] =
             lagrange::timestamp_diff_in_seconds(swap_finish_time, collapse_finish_time);
+
+        write_displaced_obj(
+            mesh_parameters.m_output_folder + "/after_collapse_" + std::to_string(it) + ".obj",
+            mesh_parameters.m_displacement);
+        write_obj(
+            mesh_parameters.m_output_folder + "/after_collapse_" + std::to_string(it) + "2d.obj");
 
         smooth_all_vertices();
         assert(invariants(get_faces()));
@@ -896,6 +903,8 @@ void AdaptiveTessellation::mesh_improvement(int max_its)
         write_displaced_obj(
             mesh_parameters.m_output_folder + "/after_smooth_" + std::to_string(it) + ".obj",
             mesh_parameters.m_displacement);
+        write_obj(
+            mesh_parameters.m_output_folder + "/after_smooth_" + std::to_string(it) + "2d.obj");
 
         auto avg_grad = (mesh_parameters.m_gradient / vert_capacity()).stableNorm();
 

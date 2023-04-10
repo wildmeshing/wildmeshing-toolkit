@@ -128,6 +128,7 @@ void Image::load(
             m_image(i, j) = buffer[k++];
         }
     }
+    m_image.colwise().reverseInPlace();
     set_wrapping_mode(mode_x, mode_y);
 }
 // down sample a image to size/2 by size/2
