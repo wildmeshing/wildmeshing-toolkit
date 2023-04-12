@@ -4,11 +4,18 @@
 #include <igl/Timer.h>
 #include <igl/doublearea.h>
 #include <igl/predicates/predicates.h>
+#include <igl/read_triangle_mesh.h>
 #include <igl/writeDMAT.h>
 #include <igl/write_triangle_mesh.h>
 #include <lagrange/SurfaceMesh.h>
+#include <lagrange/attribute_names.h>
 #include <lagrange/bvh/EdgeAABBTree.h>
+#include <lagrange/foreach_attribute.h>
+#include <lagrange/io/load_mesh.h>
+#include <lagrange/triangulate_polygonal_facets.h>
+#include <lagrange/utils/fpe.h>
 #include <lagrange/utils/timing.h>
+#include <lagrange/views.h>
 #include <tbb/concurrent_vector.h>
 #include <wmtk/TriMesh.h>
 #include <wmtk/utils/AMIPS2D.h>
@@ -72,6 +79,11 @@ public:
     AdaptiveTessellation(){};
 
     virtual ~AdaptiveTessellation(){};
+
+    void load_texcoord_set_scale_offset(
+        const std::filesystem::path input_mesh_path,
+        Eigen::MatrixXd& UV,
+        Eigen::MatrixXi& F);
 
     void set_output_folder(std::filesystem::path output_folder)
     {
@@ -184,6 +196,8 @@ public:
 
     double get_edge_accuracy_error(const Tuple& edge_tuple) const;
     double get_area_accuracy_error_per_face(const Tuple& edge_tuple) const;
+    double get_area_accuracy_error_per_face_triangle_matrix(
+        Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle) const;
     double get_area_accuracy_error(const Tuple& edge_tuple) const;
 };
 

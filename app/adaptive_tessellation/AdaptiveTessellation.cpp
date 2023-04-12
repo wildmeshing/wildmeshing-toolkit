@@ -14,7 +14,6 @@
 #include <wmtk/utils/TriQualityUtils.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
 using namespace wmtk;
-
 namespace adaptive_tessellation {
 // TODO change this to accomodate new error
 auto avg_edge_len = [](auto& m) {
@@ -224,7 +223,6 @@ void AdaptiveTessellation::set_displacement(const DISPLACEMENT_MODE displacement
     mesh_parameters.m_displacement = displacement_ptr;
 }
 
-
 void AdaptiveTessellation::set_projection()
 {
     struct Data
@@ -253,6 +251,38 @@ void AdaptiveTessellation::set_projection()
     };
 
     mesh_parameters.m_get_closest_point = std::move(projection);
+}
+
+void AdaptiveTessellation::load_texcoord_set_scale_offset(
+    const std::filesystem::path input_mesh_path,
+    Eigen::MatrixXd& UV,
+    Eigen::MatrixXi& F)
+{
+    // load uv coordinates and connectivities
+    auto mesh = lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(input_mesh_path);
+    triangulate_polygonal_facets(mesh);
+    auto& uv_attr = mesh.get_indexed_attribute<double>(lagrange::AttributeName::texcoord);
+    UV = lagrange::matrix_view(uv_attr.values());
+    F = lagrange::reshaped_view(uv_attr.indices(), 3).cast<int>();
+    assert(mesh.is_triangle_mesh());
+    assert(mesh.get_num_facets() == F.rows());
+
+    // load 3d coordinates and connectivities for computing the offset and scaling
+    Eigen::MatrixXd V3d;
+    Eigen::MatrixXi F3d;
+    igl::read_triangle_mesh(input_mesh_path, V3d, F3d);
+
+    const Eigen::MatrixXd box_min = V3d.colwise().minCoeff();
+    const Eigen::MatrixXd box_max = V3d.colwise().maxCoeff();
+    double max_comp = (box_max - box_min).maxCoeff();
+    Eigen::MatrixXd scene_offset = -box_min;
+    Eigen::MatrixXd scene_extent = box_max - box_min;
+    scene_offset.array() -= (scene_extent.array() - max_comp) * 0.5;
+    mesh_parameters.m_scale = max_comp;
+    mesh_parameters.m_offset = scene_offset;
+
+    wmtk::logger().info("///// #v : {} {}", UV.rows(), UV.cols());
+    wmtk::logger().info("///// #f : {} {}", F.rows(), F.cols());
 }
 
 bool AdaptiveTessellation::invariants(const std::vector<Tuple>& new_tris)
@@ -491,7 +521,7 @@ void AdaptiveTessellation::write_vtk(const std::string& path)
     // writer.add_vector_field("vector_field", vector_field, dim);
     writer.write_surface_mesh(path, dim, cell_size, points, elements);
 }
-/// @brief need to change to support 3d
+/// @brief write vtu with elements represent per face attributes
 /// @param path
 void AdaptiveTessellation::write_perface_vtk(const std::string& path)
 {
@@ -729,16 +759,63 @@ double AdaptiveTessellation::get_area_accuracy_error_per_face(const Tuple& edge_
     return mesh_parameters.m_displacement->get_error_per_triangle(triangle);
 }
 
+double AdaptiveTessellation::get_area_accuracy_error_per_face_triangle_matrix(
+    Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle) const
+{
+    auto triangle_area = wmtk::polygon_signed_area(triangle);
+    if (triangle_area < 0.) {
+        Eigen::Matrix<double, 1, 2, Eigen::RowMajor> tmp;
+        tmp = triangle.row(0);
+        triangle.row(0) = triangle.row(1);
+        triangle.row(1) = tmp;
+    }
+    return mesh_parameters.m_displacement->get_error_per_triangle(triangle);
+}
+
 double AdaptiveTessellation::get_area_accuracy_error(const Tuple& edge_tuple) const
 {
-    auto error = get_area_accuracy_error_per_face(edge_tuple);
+    double length = 0.;
+    double error1 = get_area_accuracy_error_per_face(edge_tuple);
+    double error2 = 0.;
     auto tmp_tuple = edge_tuple.switch_face(*this);
     if (tmp_tuple.has_value()) {
-        error += get_area_accuracy_error_per_face(tmp_tuple.value());
+        error2 = get_area_accuracy_error_per_face(tmp_tuple.value());
     } else
-        error *= 2;
+        error2 = error1;
+    if (mesh_parameters.m_split_absolute_error_metric) {
+        length = (error1 + error2) * get_length2d(edge_tuple);
+    } else {
+        double e_before = error1 + error2;
+        Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle;
+        double e_after, error_after_1, error_after_2, error_after_3, error_after_4;
 
-    return error * get_length2d(edge_tuple);
+        triangle.row(0) = vertex_attrs[edge_tuple.vid(*this)].pos;
+        triangle.row(1) = (vertex_attrs[edge_tuple.vid(*this)].pos +
+                           vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].pos) /
+                          2.;
+        triangle.row(2) =
+            vertex_attrs[edge_tuple.switch_edge(*this).switch_vertex(*this).vid(*this)].pos;
+
+        error_after_1 = get_area_accuracy_error_per_face_triangle_matrix(triangle);
+        triangle.row(0) = vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].pos;
+        error_after_2 = get_area_accuracy_error_per_face_triangle_matrix(triangle);
+        if (edge_tuple.switch_face(*this).has_value()) {
+            triangle.row(2) = vertex_attrs[(edge_tuple.switch_face(*this).value())
+                                               .switch_edge(*this)
+                                               .switch_vertex(*this)
+                                               .vid(*this)]
+                                  .pos;
+            error_after_3 = get_area_accuracy_error_per_face_triangle_matrix(triangle);
+            triangle.row(0) = vertex_attrs[edge_tuple.vid(*this)].pos;
+            error_after_4 = get_area_accuracy_error_per_face_triangle_matrix(triangle);
+        } else {
+            error_after_3 = error_after_1;
+            error_after_4 = error_after_2;
+        }
+        e_after = error_after_1 + error_after_2 + error_after_3 + error_after_4;
+        length = e_before - e_after;
+    }
+    return length;
 }
 
 std::pair<double, Eigen::Vector2d> AdaptiveTessellation::get_one_ring_energy(const Tuple& loc) const
