@@ -1,5 +1,6 @@
 #pragma once
 
+#include <lagrange/utils/fpe.h>
 #include <tbb/enumerable_thread_specific.h>
 #include <wmtk/quadrature/ClippedQuadrature.h>
 #include <wmtk/quadrature/TriangleQuadrature.h>
@@ -172,6 +173,8 @@ public:
         constexpr int Degree = 4;
         const int order = 2 * (Degree - 1);
 
+        lagrange::enable_fpe();
+
         Eigen::Matrix<T, 3, 1> p1 = get(triangle(0, 0), triangle(0, 1));
         Eigen::Matrix<T, 3, 1> p2 = get(triangle(1, 0), triangle(1, 1));
         Eigen::Matrix<T, 3, 1> p3 = get(triangle(2, 0), triangle(2, 1));
@@ -230,6 +233,18 @@ public:
             return p_tri;
         };
 
+        auto check_degenerate = [&]() -> bool {
+            auto u1 = triangle(0, 0);
+            auto v1 = triangle(0, 1);
+            auto u2 = triangle(1, 0);
+            auto v2 = triangle(1, 1);
+            auto u3 = triangle(2, 0);
+            auto v3 = triangle(2, 1);
+            if ((v2 - v3) * (u1 - u3) + (u3 - u2) * (v1 - v3) == 0.) return false;
+            if ((v2 - v3) * (u1 - u3) + (u3 - u2) * (v1 - v3) == 0.) return false;
+            return true;
+        };
+
         T value = T(0.);
         for (auto x = 0; x < num_pixels; ++x) {
             for (auto y = 0; y < num_pixels; ++y) {
@@ -247,10 +262,14 @@ public:
                 for (auto i = 0; i < m_cache.local().quad.size(); ++i) {
                     auto tmpu = T(m_cache.local().quad.points()(i, 0));
                     auto tmpv = T(m_cache.local().quad.points()(i, 1));
-                    Eigen::Matrix<T, 3, 1> tmpp_displaced = get(tmpu, tmpv);
-                    Eigen::Matrix<T, 3, 1> tmpp_tri = get_p_tri(tmpu, tmpv);
-                    Eigen::Matrix<T, 3, 1> diffp = tmpp_displaced - tmpp_tri;
-                    value += squared_norm_T(diffp) * T(m_cache.local().quad.weights()[i]);
+                    if (!check_degenerate())
+                        continue;
+                    else {
+                        Eigen::Matrix<T, 3, 1> tmpp_displaced = get(tmpu, tmpv);
+                        Eigen::Matrix<T, 3, 1> tmpp_tri = get_p_tri(tmpu, tmpv);
+                        Eigen::Matrix<T, 3, 1> diffp = tmpp_displaced - tmpp_tri;
+                        value += squared_norm_T(diffp) * T(m_cache.local().quad.weights()[i]);
+                    }
                 }
             }
         }
