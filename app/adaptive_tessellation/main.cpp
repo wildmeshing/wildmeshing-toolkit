@@ -23,12 +23,12 @@
 #include <wmtk/utils/Image.h>
 #include <wmtk/utils/autodiff.h>
 #include <wmtk/utils/bicubic_interpolation.h>
-#include <tracy/Tracy.hpp>
 #include <CLI/CLI.hpp>
 #include <fstream>
 #include <functional>
 #include <nlohmann/json.hpp>
 #include <regex>
+#include <tracy/Tracy.hpp>
 #include <wmtk/utils/ManifoldUtils.hpp>
 #include <wmtk/utils/TriQualityUtils.hpp>
 #include "AdaptiveTessellation.h"
@@ -69,75 +69,65 @@ int main(int argc, char** argv)
 
     int image_size = 512;
     image_size = config["image_size"];
-    std::string image_path = config["image_path"];
-    WrappingMode wrapping_mode = WrappingMode::MIRROR_REPEAT;
-    wrapping_mode = config["wrapping_mode"];
-    Image image(image_size, image_size);
-    image.load(image_path, wrapping_mode, wrapping_mode);
-    wmtk::logger().info("/////height image: {}", image_path);
-    // Loading the input mesh
-
-    AdaptiveTessellation m;
-    auto mesh = lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(input_file);
-    triangulate_polygonal_facets(mesh);
-    auto& uv_attr = mesh.get_indexed_attribute<double>(lagrange::AttributeName::texcoord);
-    auto V = matrix_view(uv_attr.values());
-    auto F = reshaped_view(uv_attr.indices(), 3);
-    assert(mesh.is_triangle_mesh());
-    assert(mesh.get_num_facets() == F.rows());
-    wmtk::logger().info("/////input: {}", input_file);
-    wmtk::logger().info("/////interpolation wrapping mode: {}", wrapping_mode);
-
-    std::ofstream js_o(output_json);
-    auto start_time = lagrange::get_timestamp();
-    adaptive_tessellation::AdaptiveTessellation adaptive_tessellation;
-
-    adaptive_tessellation.mesh_parameters.js_log["input"] = input_file;
-    adaptive_tessellation.mesh_parameters.js_log["output"] = output_file;
-
-    adaptive_tessellation.create_mesh(V, F.cast<int>());
-    adaptive_tessellation.set_output_folder(output_folder);
-    assert(adaptive_tessellation.check_mesh_connectivity_validity());
-    adaptive_tessellation.mesh_parameters.js_log["num_vert"] = V.rows();
-    adaptive_tessellation.mesh_parameters.js_log["num_faces"] = F.rows();
-
+    std::string height_map_path = config["height_map_path"];
+    std::filesystem::path position_map_path = config["position_map_path"];
+    // "/mnt/ssd2/yunfan/adaptive_tessellation/textures/3d_mesh/ninja/3channel_normal_position/"
+    // "ninja_position.exr";
+    std::filesystem::path normal_map_path = config["normal_map_path"];
+    // "/mnt/ssd2/yunfan/adaptive_tessellation/textures/3d_mesh/ninja/3channel_normal_position/"
+    // "ninja_normal.exr";
     double target_l = config["target_edge_length"];
-    wmtk::logger().info("/////target edge length: {}", target_l);
     double target_accuracy = config["target_accuracy"];
-    wmtk::logger().info("/////target accuracy: {}", target_accuracy);
-
     SAMPLING_MODE sampling_mode = SAMPLING_MODE::BICUBIC;
     DISPLACEMENT_MODE displacement_mode = DISPLACEMENT_MODE::MESH_3D;
     sampling_mode = config["sampling_mode"];
     displacement_mode = config["displacement_mode"];
-    wmtk::logger().info("/////sampling mode: {}", sampling_mode);
-    wmtk::logger().info("/////dispalcement mode: {}", displacement_mode);
-
+    WrappingMode wrapping_mode = WrappingMode::MIRROR_REPEAT;
+    wrapping_mode = config["wrapping_mode"];
     adaptive_tessellation::ENERGY_TYPE energy_type =
         adaptive_tessellation::ENERGY_TYPE::AREA_QUADRATURE;
     adaptive_tessellation::EDGE_LEN_TYPE edge_len_type =
         adaptive_tessellation::EDGE_LEN_TYPE::AREA_ACCURACY;
     energy_type = config["energy_type"];
     edge_len_type = config["edge_len_type"];
-    wmtk::logger().info("/////energy type: {}", energy_type);
-    wmtk::logger().info("/////energy length type: {}", edge_len_type);
-
+    int max_iter = 1;
+    max_iter = config["max_iter"];
     bool boundary_parameter_on = true;
     boundary_parameter_on = config["boundary_parameter_on"];
 
-    ///load an array of 6 image paths for DisplacementMesh
-    /// can be in set_diplacement
-    std::vector<std::string> displacement_mesh_images;
-    displacement_mesh_images = config["displacement_mesh_images"].get<std::vector<std::string>>();
+    // Loading the input 2d mesh
+    AdaptiveTessellation m;
+    Eigen::MatrixXd UV;
+    Eigen::MatrixXi F;
+    m.load_texcoord_set_scale_offset(input_file, UV, F);
 
-    assert(displacement_mesh_images.size() == 6);
+    std::ofstream js_o(output_json);
+    auto start_time = lagrange::get_timestamp();
 
-    // 3channel position images
-    adaptive_tessellation.mesh_parameters.m_position_normal_paths[0] = displacement_mesh_images[0];
-    // 3channel normal images
-    adaptive_tessellation.mesh_parameters.m_position_normal_paths[1] = displacement_mesh_images[1];
+    Image image;
+    image.load(height_map_path, wrapping_mode, wrapping_mode);
+    wmtk::logger().info("/////height image: {}", height_map_path);
 
-    adaptive_tessellation.set_parameters(
+    m.create_mesh(UV, F);
+    m.set_output_folder(output_folder);
+    m.mesh_parameters.m_position_normal_paths = {position_map_path, normal_map_path};
+    assert(m.check_mesh_connectivity_validity());
+    m.mesh_parameters.js_log["input"] = input_file;
+    m.mesh_parameters.js_log["output"] = output_file;
+    m.mesh_parameters.js_log["num_vert"] = UV.rows();
+    m.mesh_parameters.js_log["num_faces"] = F.rows();
+
+    wmtk::logger().info("/////target edge length: {}", target_l);
+    wmtk::logger().info("/////target accuracy: {}", target_accuracy);
+
+    wmtk::logger().info("/////sampling mode: {}", sampling_mode);
+    wmtk::logger().info("/////dispalcement mode: {}", displacement_mode);
+
+
+    wmtk::logger().info("/////energy type: {}", energy_type);
+    wmtk::logger().info("/////energy length type: {}", edge_len_type);
+
+    m.set_parameters(
         target_accuracy,
         target_l,
         image,
@@ -147,21 +137,18 @@ int main(int argc, char** argv)
         energy_type,
         edge_len_type,
         boundary_parameter_on);
-    int max_iter = 1;
-    max_iter = config["max_iter"];
-    adaptive_tessellation.mesh_improvement(max_iter);
-    adaptive_tessellation.consolidate_mesh();
+
+    m.mesh_improvement(max_iter);
+    m.consolidate_mesh();
 
     auto finish_time = lagrange::get_timestamp();
     auto duration = lagrange::timestamp_diff_in_seconds(start_time, finish_time);
     wmtk::logger().info("!!!!finished {}!!!!", duration);
-    adaptive_tessellation.mesh_parameters.js_log["total_time"] = duration;
-    adaptive_tessellation.write_displaced_obj(
-        output_file,
-        adaptive_tessellation.mesh_parameters.m_displacement);
+    m.mesh_parameters.js_log["total_time"] = duration;
+    m.write_displaced_obj(output_file, m.mesh_parameters.m_displacement);
     // Save the optimized mesh
     wmtk::logger().info("/////output : {}", output_file);
-    js_o << std::setw(4) << adaptive_tessellation.mesh_parameters.js_log << std::endl;
+    js_o << std::setw(4) << m.mesh_parameters.js_log << std::endl;
     js_o.close();
     return 0;
 }
