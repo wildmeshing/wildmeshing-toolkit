@@ -49,14 +49,6 @@ public:
         return p;
     }; // dafault is to return the current point. Legacy, was once used for boundary projection
 
-    // this need to be a function acting on the uv domain [0,1]
-    std::function<Eigen::Vector3d(const double&, const double&)>
-        m_adaptive_tessellation_displacement =
-            [](const double& u, const double& v) -> Eigen::Vector3d {
-        Eigen::Vector3d p(u, v, 0.);
-        return p;
-    }; // used for heuristic split, collapse. Default to return (u,v,0)
-
     // takes 2 DScalar and returns z coordinates in DScalar
     // this is directly used by autodiff for taking Gradient and Hessian
     std::function<DScalar(const DScalar&, const DScalar&)> m_get_z;
@@ -86,6 +78,7 @@ public:
 
     double m_quality_threshold = 0.01;
     double m_accuracy_threshold = 0.001;
+    double m_accruacy_safeguard_ratio = 1.1;
 
     EDGE_LEN_TYPE m_edge_length_type = EDGE_LEN_TYPE::ACCURACY;
     SAMPLING_MODE m_sampling_mode = SAMPLING_MODE::BICUBIC;
@@ -93,5 +86,8 @@ public:
     std::shared_ptr<wmtk::Displacement> m_displacement;
     double m_scale = 1.0;
     Eigen::Matrix<double, 1, 3> m_offset;
+
+    bool m_swap_using_valence = 1;
+    bool m_split_absolute_error_metric = 1;
 };
 } // namespace adaptive_tessellation
