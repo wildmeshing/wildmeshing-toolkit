@@ -27,9 +27,6 @@ void AdaptiveTessellation::collapse_all_edges()
 {
     // collapse is not define for EDGE_QUADRATURE
     // collapse in AREA_QUADRATURE uses 3d edge length
-    mesh_parameters.m_get_length = [&](const Tuple& edge_tuple) -> double {
-        return this->get_length3d(edge_tuple);
-    };
 
     for (auto f : get_faces()) assert(!is_inverted(f));
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
@@ -43,12 +40,12 @@ void AdaptiveTessellation::collapse_all_edges()
     auto setup_and_execute = [&](auto executor) {
         executor.renew_neighbor_tuples = renew;
         executor.priority = [&](auto& m, [[maybe_unused]] auto _, auto& e) {
-            return -m.mesh_parameters.m_get_length(e);
+            return -m.get_length3d(e); // m.mesh_parameters.m_get_length(e);
         };
         executor.num_threads = NUM_THREADS;
         executor.is_weight_up_to_date = [](auto& m, auto& ele) {
             auto& [weight, op, tup] = ele;
-            auto length = m.mesh_parameters.m_get_length(tup);
+            auto length = m.get_length3d(tup);
             if (length != -weight) return false;
 
             if (length > (4. / 5. * m.mesh_parameters.m_quality_threshold)) return false;
@@ -186,15 +183,10 @@ bool AdaptiveTessellation::collapse_edge_after(const Tuple& edge_tuple)
     if (!invariants(one_ring)) return false;
     double current_error = 0.;
     for (auto tri : one_ring) {
-        current_error += get_area_accuracy_error_per_face(tri);
+        auto one_ring_tri_error = get_area_accuracy_error_per_face(tri);
+        if (one_ring_tri_error >
+            mesh_parameters.m_accruacy_safeguard_ratio * mesh_parameters.m_accuracy_threshold)
+            return false;
     }
-    // check quality
-    // if error increases more than 10% return false
-    if (current_error > 1.1 * mesh_parameters.m_accuracy_threshold) return false;
-    // // check quality
-    // auto tris = get_one_ring_tris_for_vertex(t);
-    // for (auto tri : tris) {
-    //     if (get_quality(tri) > cache.local().max_energy) return false;
-    // }
     return true;
 }

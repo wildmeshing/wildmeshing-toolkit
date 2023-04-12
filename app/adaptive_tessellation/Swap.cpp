@@ -85,6 +85,12 @@ auto swap_accuracy_cost = [](auto& m, const TriMesh::Tuple& e, const double vale
 
             Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle1;
             Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle2;
+            for (auto i = 0; i < 3; i++) {
+                triangle1.row(i) = m.vertex_attrs[vids1[i]].pos;
+                triangle2.row(i) = m.vertex_attrs[vids2[i]].pos;
+            }
+            e_before = m.mesh_parameters.m_displacement->get_error_per_triangle(triangle1);
+            e_before += m.mesh_parameters.m_displacement->get_error_per_triangle(triangle2);
 
             // replace the vids with the swapped vids
             for (auto i = 0; i < 3; i++) {
@@ -103,10 +109,14 @@ auto swap_accuracy_cost = [](auto& m, const TriMesh::Tuple& e, const double vale
                 e_after += m.mesh_parameters.m_displacement->get_error_per_triangle(triangle2);
             }
             if (valence_cost <= 0) return -std::numeric_limits<double>::infinity();
-            if (e_after > m.mesh_parameters.m_accuracy_threshold)
+            if (e_after > m.mesh_parameters.m_accruacy_safeguard_ratio *
+                              m.mesh_parameters.m_accuracy_threshold)
                 // the accuracy exceeds global bond
                 return -std::numeric_limits<double>::infinity();
-            return valence_cost * e_after;
+            if (m.mesh_parameters.m_swap_using_valence)
+                return valence_cost * (e_before - e_after);
+            else
+                return (e_before - e_after);
         }
         return -std::numeric_limits<double>::infinity();
     }
