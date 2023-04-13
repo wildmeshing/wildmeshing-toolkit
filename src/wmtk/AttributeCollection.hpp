@@ -13,6 +13,10 @@
 #include <map>
 #include <optional>
 
+
+namespace HighFive{
+    class DataSet;
+}
 namespace wmtk {
 /**
  * @brief serving as buffers for attributes data that can be modified by operations
@@ -37,6 +41,9 @@ public:
     virtual void rollback() = 0;
     virtual void begin_protect();
     virtual std::optional<size_t> end_protect();
+
+    virtual void serialize(const DataSet& dataset, const std::string_view& attribute_name) const = 0;
+    virtual void deserialize(const DataSet& dataset, const std::string_view& attribute_name) = 0;
 
 
     template <typename T>
@@ -162,6 +169,12 @@ struct AttributeCollection : public AbstractAttributeCollection
     }
 
     const T& at(size_t i) const { return m_attributes[i]; }
+
+    void serialize(const DataSet& dataset, const std::string_view& attribute_name) const override {
+        if constexpr(
+    }
+    void deserialize(const DataSet& dataset, const std::string_view& attribute_name) {
+    }
 
     size_t size() const override { return m_attributes.size(); }
     tbb::enumerable_thread_specific<std::map<size_t, T>> m_rollback_list;
