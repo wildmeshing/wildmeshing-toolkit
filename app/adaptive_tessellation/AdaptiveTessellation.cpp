@@ -2,6 +2,7 @@
 #include <fastenvelope/FastEnvelope.h>
 #include <igl/Timer.h>
 #include <igl/predicates/predicates.h>
+#include <igl/read_triangle_mesh.h>
 #include <igl/writeDMAT.h>
 #include <igl/write_triangle_mesh.h>
 #include <lagrange/utils/timing.h>
@@ -73,14 +74,14 @@ void AdaptiveTessellation::set_feature(Tuple& v)
 
     std::vector<size_t> incident_boundary_verts;
     auto one_ring = get_one_ring_edges_for_vertex(v);
-    for (auto e : one_ring) {
+    for (const auto& e : one_ring) {
         if (is_boundary_edge(e)) incident_boundary_verts.emplace_back(e.vid(*this));
     }
     // every boundary vertex has to have 2 neighbors that are boundary vertices
     assert(incident_boundary_verts.size() == 2);
-    auto p1 = vertex_attrs[v.vid(*this)].pos;
-    auto p2 = vertex_attrs[incident_boundary_verts[0]].pos;
-    auto p3 = vertex_attrs[incident_boundary_verts[1]].pos;
+    const auto& p1 = vertex_attrs[v.vid(*this)].pos;
+    const auto& p2 = vertex_attrs[incident_boundary_verts[0]].pos;
+    const auto& p3 = vertex_attrs[incident_boundary_verts[1]].pos;
     // check if they are co linear. set fixed = true if not
     double costheta = ((p2 - p1).stableNormalized()).dot((p3 - p1).stableNormalized()); // cos theta
     double theta = std::acos(std::clamp<double>(costheta, -1, 1));
@@ -183,7 +184,7 @@ void AdaptiveTessellation::set_displacement(const DISPLACEMENT_MODE displacement
     switch (displacement_mode) {
     case DISPLACEMENT_MODE::MESH_3D: {
         std::array<wmtk::Image, 6> position_normal_images;
-        for (auto i = 0; i < 2; i++) {
+        for (size_t i = 0; i < 2; i++) {
             std::filesystem::path path = mesh_parameters.m_position_normal_paths[i];
             wmtk::logger().info("======= path {} {}", i, path);
             wmtk::split_and_save_3channels(path);
@@ -270,7 +271,7 @@ void AdaptiveTessellation::load_texcoord_set_scale_offset(
     // load 3d coordinates and connectivities for computing the offset and scaling
     Eigen::MatrixXd V3d;
     Eigen::MatrixXi F3d;
-    igl::read_triangle_mesh(input_mesh_path, V3d, F3d);
+    igl::read_triangle_mesh(input_mesh_path.string(), V3d, F3d);
 
     const Eigen::MatrixXd box_min = V3d.colwise().minCoeff();
     const Eigen::MatrixXd box_max = V3d.colwise().maxCoeff();
@@ -346,7 +347,7 @@ std::vector<AdaptiveTessellation::Tuple> AdaptiveTessellation::new_edges_after(
 {
     std::vector<AdaptiveTessellation::Tuple> new_edges;
 
-    for (auto t : tris) {
+    for (const auto& t : tris) {
         for (auto j = 0; j < 3; j++) {
             new_edges.push_back(tuple_from_edge(t.fid(*this), j));
         }
@@ -380,7 +381,7 @@ void AdaptiveTessellation::create_mesh(const Eigen::MatrixXd& V, const Eigen::Ma
         vertex_attrs[i].pos << V.row(i)[0], V.row(i)[1];
         V_env[i] << V.row(i)[0], V.row(i)[1], 0.0;
     }
-    for (auto tri : this->get_faces()) {
+    for (const auto& tri : this->get_faces()) {
         assert(!is_inverted(tri));
     }
     // construct the boundary map for boundary parametrization
@@ -400,11 +401,11 @@ void AdaptiveTessellation::create_mesh(const Eigen::MatrixXd& V, const Eigen::Ma
         }
     }
 
-    for (auto v : get_vertices()) {
+    for (const auto& v : get_vertices()) {
         assert(vertex_attrs[v.vid(*this)].t >= 0);
     }
 
-    for (auto v : get_vertices()) {
+    for (const auto& v : get_vertices()) {
         if (is_boundary_vertex(v))
             assert(
                 (vertex_attrs[v.vid(*this)].pos - mesh_parameters.m_boundary.t_to_uv(
@@ -418,12 +419,12 @@ Eigen::Matrix<uint64_t, Eigen::Dynamic, 2, Eigen::RowMajor>
 AdaptiveTessellation::get_bnd_edge_matrix()
 {
     int num_bnd_edge = 0;
-    for (auto e : get_edges()) {
+    for (const auto& e : get_edges()) {
         if (is_boundary_edge(e)) num_bnd_edge++;
     }
     Eigen::Matrix<uint64_t, Eigen::Dynamic, 2, Eigen::RowMajor> E(num_bnd_edge, 2);
     int i = 0;
-    for (auto e : get_edges()) {
+    for (const auto& e : get_edges()) {
         if (is_boundary_edge(e)) {
             E.row(i) << (uint64_t)e.vid(*this), (uint64_t)e.switch_vertex(*this).vid(*this);
             i++;
@@ -494,7 +495,7 @@ void AdaptiveTessellation::write_vtk(const std::string& path)
     }
     assert(points.size() == 3 * V.rows());
 
-    for (auto e : get_edges()) {
+    for (const auto& e : get_edges()) {
         elements.emplace_back(e.vid(*this));
         elements.emplace_back(e.switch_vertex(*this).vid(*this));
     }
@@ -506,7 +507,7 @@ void AdaptiveTessellation::write_vtk(const std::string& path)
     leanvtk::VTUWriter writer;
 
     std::vector<double> scalar_field;
-    for (auto e : get_edges()) {
+    for (const auto& e : get_edges()) {
         if (!e.is_valid(*this)) continue;
         auto cost = mesh_parameters.m_get_length(e);
         // Eigen::Matrix<double, 2, 1> pos1 = vertex_attrs[e.vid(*this)].pos;
@@ -539,7 +540,7 @@ void AdaptiveTessellation::write_perface_vtk(const std::string& path)
     }
     assert(points.size() == 3 * V.rows());
 
-    for (auto f : get_faces()) {
+    for (const auto& f : get_faces()) {
         auto its = oriented_tri_vids(f);
         elements.emplace_back(its[0]);
         elements.emplace_back(its[1]);
@@ -553,7 +554,7 @@ void AdaptiveTessellation::write_perface_vtk(const std::string& path)
     leanvtk::VTUWriter writer;
 
     std::vector<double> scalar_field2;
-    for (auto f : get_faces()) {
+    for (const auto& f : get_faces()) {
         if (!f.is_valid(*this)) continue;
         auto vids1 = oriented_tri_vertices(f);
         Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle1;
@@ -630,20 +631,20 @@ double AdaptiveTessellation::get_length3d(const Tuple& edge_tuple) const
 
 double AdaptiveTessellation::get_length_n_implicit_points(const Tuple& edge_tuple) const
 {
-    auto v1 = edge_tuple.vid(*this);
-    auto v2 = edge_tuple.switch_vertex(*this).vid(*this);
-    auto v12d = vertex_attrs[v1].pos;
-    auto v22d = vertex_attrs[v2].pos;
+    const auto& v1 = edge_tuple.vid(*this);
+    const auto& v2 = edge_tuple.switch_vertex(*this).vid(*this);
+    const auto& v12d = vertex_attrs[v1].pos;
+    const auto& v22d = vertex_attrs[v2].pos;
 
     double length = 0.0;
 
     // add 3d displacement. add n implicit points to approximate quadrature of the curve
     std::vector<Eigen::Vector3d> quadrature;
-    for (int i = 0; i < 6; i++) {
+    for (size_t i = 0; i < 6; i++) {
         auto tmp_v2d = v12d * (5 - i) / 5. + v22d * i / 5.;
         quadrature.emplace_back(mesh_parameters.m_project_to_3d(tmp_v2d(0), tmp_v2d(1)));
     }
-    for (int i = 0; i < 5; i++) {
+    for (size_t i = 0; i < 5; i++) {
         length += (quadrature[i] - quadrature[i + 1]).stableNorm();
     }
     return length;
@@ -651,28 +652,28 @@ double AdaptiveTessellation::get_length_n_implicit_points(const Tuple& edge_tupl
 
 double AdaptiveTessellation::get_length_1ptperpixel(const Tuple& edge_tuple) const
 {
-    auto vid1 = edge_tuple.vid(*this);
-    auto vid2 = edge_tuple.switch_vertex(*this).vid(*this);
-    auto v12d = vertex_attrs[vid1].pos;
-    auto v22d = vertex_attrs[vid2].pos;
+    const auto& vid1 = edge_tuple.vid(*this);
+    const auto& vid2 = edge_tuple.switch_vertex(*this).vid(*this);
+    const auto& v12d = vertex_attrs[vid1].pos;
+    const auto& v22d = vertex_attrs[vid2].pos;
 
     double length = 0.0;
     // get the pixel index of p1 and p2
-    auto [xx1, yy1] = mesh_parameters.m_image_get_coordinate(v12d(0), v12d(1));
-    auto [xx2, yy2] = mesh_parameters.m_image_get_coordinate(v22d(0), v22d(1));
+    const auto [xx1, yy1] = mesh_parameters.m_image_get_coordinate(v12d(0), v12d(1));
+    const auto [xx2, yy2] = mesh_parameters.m_image_get_coordinate(v22d(0), v22d(1));
     // get all the pixels in between p1 and p2
-    auto pixel_num = std::max(abs(xx2 - xx1), abs(yy2 - yy1));
+    const size_t pixel_num = std::max(abs(xx2 - xx1), abs(yy2 - yy1));
     // sum up the length
     // add 3d displacement. add n implicit points to approximate quadrature of the curve
     if (pixel_num <= 0) return -1.;
     assert(pixel_num > 0);
     std ::vector<Eigen::Vector3d> quadrature;
-    for (int i = 0; i < (pixel_num + 1); i++) {
+    for (size_t i = 0; i < (pixel_num + 1); i++) {
         const double u = static_cast<double>(i) / pixel_num;
         auto tmp_v2d = v12d * (1. - u) + v22d * u;
         quadrature.emplace_back(mesh_parameters.m_project_to_3d(tmp_v2d(0), tmp_v2d(1)));
     }
-    for (int i = 0; i < pixel_num; i++) {
+    for (size_t i = 0; i < pixel_num; i++) {
         length += (quadrature[i] - quadrature[i + 1]).stableNorm();
     }
     return length;
@@ -680,15 +681,15 @@ double AdaptiveTessellation::get_length_1ptperpixel(const Tuple& edge_tuple) con
 
 double AdaptiveTessellation::get_length_mipmap(const Tuple& edge_tuple) const
 {
-    auto vid1 = edge_tuple.vid(*this);
-    auto vid2 = edge_tuple.switch_vertex(*this).vid(*this);
-    auto v12d = vertex_attrs[vid1].pos;
-    auto v22d = vertex_attrs[vid2].pos;
+    const auto& vid1 = edge_tuple.vid(*this);
+    const auto& vid2 = edge_tuple.switch_vertex(*this).vid(*this);
+    const auto& v12d = vertex_attrs[vid1].pos;
+    const auto& v22d = vertex_attrs[vid2].pos;
     int idx = 0;
     int pixel_num = -1;
 
     std::tie(idx, pixel_num) = mesh_parameters.m_mipmap.get_mipmap_level_pixelnum(v12d, v22d);
-    auto image = mesh_parameters.m_mipmap.get_image(idx);
+    const auto& image = mesh_parameters.m_mipmap.get_image(idx);
     double length = 0.0;
 
     if (pixel_num <= 0) return -1.;
@@ -700,7 +701,7 @@ double AdaptiveTessellation::get_length_mipmap(const Tuple& edge_tuple) const
         double z = image.get(tmp_v2d(0), tmp_v2d(1));
         quadrature.emplace_back(tmp_v2d(0), tmp_v2d(1), z);
     }
-    for (int i = 0; i < pixel_num; i++) {
+    for (size_t i = 0; i < pixel_num; i++) {
         length += (quadrature[i] - quadrature[i + 1]).stableNorm();
     }
     return length;
@@ -714,8 +715,8 @@ double AdaptiveTessellation::get_quality(const Tuple& loc, int idx) const
     // Temporary variable to store the stacked coordinates of the triangle
     std::array<double, 6> T;
     auto energy = -1.;
-    for (auto k = 0; k < 3; k++)
-        for (auto j = 0; j < 2; j++) T[k * 2 + j] = vertex_attrs[its[k]].pos[j];
+    for (size_t k = 0; k < 3; k++)
+        for (size_t j = 0; j < 2; j++) T[k * 2 + j] = vertex_attrs[its[k]].pos[j];
 
     // Energy evaluation
     // energy = wmtk::AMIPS2D_energy(T);
@@ -734,10 +735,10 @@ double AdaptiveTessellation::get_quality(const Tuple& loc, int idx) const
 
 double AdaptiveTessellation::get_edge_accuracy_error(const Tuple& edge_tuple) const
 {
-    auto vid1 = edge_tuple.vid(*this);
-    auto vid2 = edge_tuple.switch_vertex(*this).vid(*this);
-    auto v12d = vertex_attrs[vid1].pos;
-    auto v22d = vertex_attrs[vid2].pos;
+    const auto& vid1 = edge_tuple.vid(*this);
+    const auto& vid2 = edge_tuple.switch_vertex(*this).vid(*this);
+    const auto& v12d = vertex_attrs[vid1].pos;
+    const auto& v22d = vertex_attrs[vid2].pos;
 
     return mesh_parameters.m_displacement->get_error_per_edge(v12d, v22d);
 }
@@ -843,15 +844,15 @@ std::pair<double, Eigen::Vector2d> AdaptiveTessellation::get_one_ring_energy(con
     };
 
     for (auto i = 0; i < one_ring.size(); i++) {
-        auto tri = one_ring[i];
+        const auto& tri = one_ring[i];
         if (is_inverted(tri)) {
             return {std::numeric_limits<double>::max(), Eigen::Vector2d::Zero()};
         }
         auto local_tuples = oriented_tri_vertices(tri);
-        for (auto j = 0; j < 3; j++) {
+        for (size_t j = 0; j < 3; j++) {
             if (local_tuples[j].vid(*this) == loc.vid(*this)) {
-                auto v2 = vertex_attrs[local_tuples[(j + 1) % 3].vid(*this)].pos;
-                auto v3 = vertex_attrs[local_tuples[(j + 2) % 3].vid(*this)].pos;
+                const auto& v2 = vertex_attrs[local_tuples[(j + 1) % 3].vid(*this)].pos;
+                const auto& v3 = vertex_attrs[local_tuples[(j + 2) % 3].vid(*this)].pos;
                 nminfo.neighbors.row(i) << v2(0), v2(1), v3(0), v3(1);
                 assert(!is_inverted_coordinates(
                     v2,
@@ -1033,7 +1034,7 @@ void AdaptiveTessellation::flatten_dofs(Eigen::VectorXd& v_flat)
 {
     auto verts = get_vertices();
     v_flat.resize(verts.size() * 2);
-    for (auto v : verts) {
+    for (const auto& v : verts) {
         if (is_boundary_vertex(v) && mesh_parameters.m_boundary_parameter) {
             v_flat(v.vid(*this) * 2) = vertex_attrs[v.vid(*this)].t;
             v_flat(v.vid(*this) * 2 + 1) = std::numeric_limits<double>::infinity();
@@ -1057,7 +1058,7 @@ double AdaptiveTessellation::get_mesh_energy(const Eigen::VectorXd& v_flat)
         Eigen::Matrix3d v_matrix;
         v_matrix.setZero(3, 3);
         for (int i = 0; i < 3; i++) {
-            auto vert = verts[i];
+            const auto& vert = verts[i];
             if (is_boundary_vertex(vert) && mesh_parameters.m_boundary_parameter) {
                 auto uv = mesh_parameters.m_boundary.t_to_uv(
                     vertex_attrs[vert.vid(*this)].curve_id,

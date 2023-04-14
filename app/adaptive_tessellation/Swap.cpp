@@ -118,8 +118,8 @@ auto swap_accuracy_cost = [](auto& m, const TriMesh::Tuple& e, const double vale
             else
                 return (e_before - e_after);
         }
-        return -std::numeric_limits<double>::infinity();
     }
+    return -std::numeric_limits<double>::infinity();
 };
 
 void AdaptiveTessellation::swap_all_edges()
