@@ -58,13 +58,13 @@ bool adaptive_tessellation::AdaptiveTessellation::smooth_after(const Tuple& t)
     /// should only happen in debug
 
     for (auto i = 0; i < locs.size(); i++) {
-        auto tri = locs[i];
+        const auto& tri = locs[i];
         assert(!is_inverted(tri));
         auto local_tuples = oriented_tri_vertices(tri);
-        for (auto j = 0; j < 3; j++) {
+        for (size_t j = 0; j < 3; j++) {
             if (local_tuples[j].vid(*this) == vid) {
-                auto v2 = vertex_attrs[local_tuples[(j + 1) % 3].vid(*this)].pos;
-                auto v3 = vertex_attrs[local_tuples[(j + 2) % 3].vid(*this)].pos;
+                const auto& v2 = vertex_attrs[local_tuples[(j + 1) % 3].vid(*this)].pos;
+                const auto& v3 = vertex_attrs[local_tuples[(j + 2) % 3].vid(*this)].pos;
                 nminfo.neighbors.row(i) << v2(0), v2(1), v3(0), v3(1);
                 assert(!is_inverted_coordinates(v2, v3));
                 // if (i != 0) assert(last_v2 != v2);
@@ -76,7 +76,7 @@ bool adaptive_tessellation::AdaptiveTessellation::smooth_after(const Tuple& t)
     }
     // use a general root finding method that defaults to newton but if not changeing the
     // position, try gradient descent
-    auto old_pos = vertex_attrs[vid].pos;
+    const auto& old_pos = vertex_attrs[vid].pos;
     auto old_t = vertex_attrs[vid].t;
 
     wmtk::DofVector dofx;
