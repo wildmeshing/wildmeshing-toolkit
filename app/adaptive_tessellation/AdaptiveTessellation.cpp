@@ -2,6 +2,7 @@
 #include <fastenvelope/FastEnvelope.h>
 #include <igl/Timer.h>
 #include <igl/predicates/predicates.h>
+#include <igl/read_triangle_mesh.h>
 #include <igl/writeDMAT.h>
 #include <igl/write_triangle_mesh.h>
 #include <lagrange/utils/timing.h>
@@ -270,7 +271,7 @@ void AdaptiveTessellation::load_texcoord_set_scale_offset(
     // load 3d coordinates and connectivities for computing the offset and scaling
     Eigen::MatrixXd V3d;
     Eigen::MatrixXi F3d;
-    igl::read_triangle_mesh(input_mesh_path, V3d, F3d);
+    igl::read_triangle_mesh(input_mesh_path.string(), V3d, F3d);
 
     const Eigen::MatrixXd box_min = V3d.colwise().minCoeff();
     const Eigen::MatrixXd box_max = V3d.colwise().maxCoeff();

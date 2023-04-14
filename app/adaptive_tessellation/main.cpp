@@ -70,10 +70,10 @@ int main(int argc, char** argv)
     int image_size = 512;
     image_size = config["image_size"];
     std::string height_map_path = config["height_map_path"];
-    std::filesystem::path position_map_path = config["position_map_path"];
+    std::filesystem::path position_map_path = std::string(config["position_map_path"]);
     // "/mnt/ssd2/yunfan/adaptive_tessellation/textures/3d_mesh/ninja/3channel_normal_position/"
     // "ninja_position.exr";
-    std::filesystem::path normal_map_path = config["normal_map_path"];
+    std::filesystem::path normal_map_path = std::string(config["normal_map_path"]);
     // "/mnt/ssd2/yunfan/adaptive_tessellation/textures/3d_mesh/ninja/3channel_normal_position/"
     // "ninja_normal.exr";
     double target_l = config["target_edge_length"];
