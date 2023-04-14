@@ -6,19 +6,19 @@ include(Catch)
 
 # Sources
 file(GLOB TEST_SOURCES CONFIGURE_DEPENDS "*.h" "*.cpp")
-add_executable(tests_wmtk ${TEST_SOURCES})
+add_executable(wmtk_tests ${TEST_SOURCES})
 
 # Macros
-target_compile_definitions(tests_wmtk PUBLIC CATCH_CONFIG_ENABLE_BENCHMARKING)
+target_compile_definitions(wmtk_tests PUBLIC CATCH_CONFIG_ENABLE_BENCHMARKING)
 
 # Dependencies
 include(wmtk_data)
-target_link_libraries(tests_wmtk PUBLIC
+target_link_libraries(wmtk_tests PUBLIC
     wmtk::toolkit
     wmtk::data
     Catch2::Catch2
 )
-wmtk_copy_dll(tests_wmtk)
+wmtk_copy_dll(wmtk_tests)
 
 # Register unit tests
-catch_discover_tests(tests_wmtk)
+catch_discover_tests(wmtk_tests)

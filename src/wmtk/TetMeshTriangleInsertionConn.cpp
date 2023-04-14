@@ -1,10 +1,12 @@
 
 #include <wmtk/TetMesh.h>
+#include <wmtk/utils/TetMeshElementTopology.h>
 #include <wmtk/TetMeshCutTable.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
 
 #include <bitset>
 
+using namespace wmtk;
 
 void wmtk::TetMesh::triangle_insertion(
     const std::vector<Tuple>& intersected_tets,
@@ -67,8 +69,11 @@ void wmtk::TetMesh::triangle_insertion(
         for (int j = 0; j < 4; j++) {
             std::array<int, 3> l_f = {{(j + 1) % 4, (j + 2) % 4, (j + 3) % 4}};
             std::sort(l_f.begin(), l_f.end());
-            size_t l_fid =
-                std::find(m_local_faces.begin(), m_local_faces.end(), l_f) - m_local_faces.begin();
+            size_t l_fid = std::find(
+                               utils::tet_element_topology::local_faces.begin(),
+                               utils::tet_element_topology::local_faces.end(),
+                               l_f) -
+                           utils::tet_element_topology::local_faces.begin();
             //
             old_face_vids.push_back(
                 {{m_tet_connectivity[tid][(j + 1) % 4],
@@ -109,7 +114,7 @@ void wmtk::TetMesh::triangle_insertion(
         new_face_vids,
         new_vids,
         new_tids,
-        new_center_vids, 
+        new_center_vids,
         center_split_tets);
 
     /// track surface after
@@ -168,8 +173,8 @@ void wmtk::TetMesh::subdivide_tets(
         std::array<int, 6> new_v_ids = {{-1, -1, -1, -1, -1, -1}};
         for (int j = 0; j < 6; j++) {
             std::array<size_t, 2> e = {
-                {m_tet_connectivity[t_id][m_local_edges[j][0]],
-                 m_tet_connectivity[t_id][m_local_edges[j][1]]}};
+                {m_tet_connectivity[t_id][utils::tet_element_topology::local_edges[j][0]],
+                 m_tet_connectivity[t_id][utils::tet_element_topology::local_edges[j][1]]}};
             if (e[0] > e[1]) std::swap(e[0], e[1]);
             auto it = map_edge2vid.find(e);
             if (it != map_edge2vid.end()) new_v_ids[j] = it->second;
@@ -236,9 +241,11 @@ void wmtk::TetMesh::subdivide_a_tet(
     using namespace Eigen;
 
     std::map<std::array<int, 2>, int> get_local_e_id;
-    for (int i = 0; i < m_local_edges.size(); i++) {
-        get_local_e_id[m_local_edges[i]] = i;
-        get_local_e_id[{{m_local_edges[i][1], m_local_edges[i][0]}}] = i;
+    for (int i = 0; i < utils::tet_element_topology::local_edges.size(); i++) {
+        get_local_e_id[utils::tet_element_topology::local_edges[i]] = i;
+        get_local_e_id[{
+            {utils::tet_element_topology::local_edges[i][1],
+             utils::tet_element_topology::local_edges[i][0]}}] = i;
     }
 
     std::vector<size_t> all_v_ids = {
@@ -270,15 +277,20 @@ void wmtk::TetMesh::subdivide_a_tet(
         std::vector<std::array<size_t, 2>> tmp_diags; // global ids
         std::vector<std::array<int, 2>> tmp_local_diags; // global ids
         for (int k = 0; k < 3; k++) {
-            int l_eid = get_local_e_id[{{m_local_faces[j][k], m_local_faces[j][(k + 1) % 3]}}];
+            int l_eid = get_local_e_id[{
+                {utils::tet_element_topology::local_faces[j][k],
+                 utils::tet_element_topology::local_faces[j][(k + 1) % 3]}}];
             if (new_v_ids[l_eid] >= 0) {
                 tmp_diags.push_back(
                     {{(size_t)new_v_ids[l_eid],
-                      m_tet_connectivity[t_id][m_local_faces[j][(k + 2) % 3]]}});
+                      m_tet_connectivity
+                          [t_id][utils::tet_element_topology::local_faces[j][(k + 2) % 3]]}});
                 tmp_local_diags.push_back(
-                    {{local_new_v_ids[l_eid], m_local_faces[j][(k + 2) % 3]}});
+                    {{local_new_v_ids[l_eid],
+                      utils::tet_element_topology::local_faces[j][(k + 2) % 3]}});
                 //                if (new_v_ids[l_eid] > diag[1])//todo: buggy
-                //                    diag << m_local_faces[j][(k + 2) % 3], local_new_v_ids[l_eid];
+                //                    diag << utils::tet_element_topology::local_faces[j][(k + 2) %
+                //                    3], local_new_v_ids[l_eid];
                 //                cnt_diags++;
             }
         }
@@ -358,10 +370,13 @@ void wmtk::TetMesh::subdivide_a_tet(
             if (!old_f_vids.empty()) {
                 std::array<int, 3> l_f = {{(j + 1) % 4, (j + 2) % 4, (j + 3) % 4}};
                 std::sort(l_f.begin(), l_f.end());
-                size_t l_fid =
-                    std::find(m_local_faces.begin(), m_local_faces.end(), l_f) -
-                    m_local_faces
-                        .begin(); // note tuple_from_face use the l_fid corresponds to m_local_faces
+                size_t l_fid = std::find(
+                                   utils::tet_element_topology::local_faces.begin(),
+                                   utils::tet_element_topology::local_faces.end(),
+                                   l_f) -
+                               utils::tet_element_topology::local_faces
+                                   .begin(); // note tuple_from_face use the l_fid corresponds to
+                                             // utils::tet_element_topology::local_faces
                 //
                 std::array<size_t, 5> new_f_vids = {
                     {tet[(j + 1) % 4], tet[(j + 2) % 4], tet[(j + 3) % 4], new_t_id, l_fid}};
