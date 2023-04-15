@@ -611,6 +611,7 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
 
         return false;
     }
+    new_tris = {new_t}; // Same as passed to swap_edge_after
     release_protect_attributes();
     return true;
 }
