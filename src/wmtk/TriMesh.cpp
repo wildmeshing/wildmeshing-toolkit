@@ -613,8 +613,8 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
     }
     release_protect_attributes();
 
-    return_t.update_hash(*this);
-    new_tris = {{return_t}};
+    new_t.update_hash(*this);
+    new_tris = {{new_t}};
 
     return true;
 }
