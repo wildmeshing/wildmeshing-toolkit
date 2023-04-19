@@ -1,0 +1,40 @@
+
+#include <igl/Timer.h>
+#include <wmtk/utils/AMIPS2D.h>
+#include <wmtk/utils/ScalarUtils.h>
+#include <array>
+#include <limits>
+#include <optional>
+#include <typeinfo>
+#include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/TriQualityUtils.hpp>
+#include <wmtk/utils/TupleUtils.hpp>
+#include "AdaptiveTessellation.h"
+#include "wmtk/ExecutionScheduler.hpp"
+using namespace adaptive_tessellation;
+using namespace wmtk;
+
+class AdaptiveTessellationSplitEdgeOperation : public wmtk::TriMeshOperationShim<
+                                                   AdaptiveTessellation,
+                                                   AdaptiveTessellationSplitEdgeOperation,
+                                                   wmtk::TriMeshSplitEdgeOperation>
+{
+public:
+    ExecuteReturnData execute(AdaptiveTessellation& m, const Tuple& t);
+    bool before(AdaptiveTessellation& m, const Tuple& t);
+    bool after(AdaptiveTessellation& m, ExecuteReturnData& ret_data);
+    bool invariants(AdaptiveTessellation& m, ExecuteReturnData& ret_data);
+};
+
+class AdaptiveTessellationPairedSplitEdgeOperation
+    : public wmtk::TriMeshOperationShim<
+          AdaptiveTessellation,
+          AdaptiveTessellationPairedSplitEdgeOperation,
+          wmtk::TriMeshSplitEdgeOperation>
+{
+public:
+    ExecuteReturnData execute(AdaptiveTessellation& m, const Tuple& t);
+    bool before(AdaptiveTessellation& m, const Tuple& t);
+    bool after(AdaptiveTessellation& m, ExecuteReturnData& ret_data);
+    bool invariants(AdaptiveTessellation& m, ExecuteReturnData& ret_data);
+};

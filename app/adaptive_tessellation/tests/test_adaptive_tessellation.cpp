@@ -1,9 +1,19 @@
+#pragma once
+
 #include <AdaptiveTessellation.h>
 #include <igl/facet_components.h>
 #include <igl/is_edge_manifold.h>
 #include <igl/is_vertex_manifold.h>
 #include <igl/read_triangle_mesh.h>
 #include <igl/remove_duplicate_vertices.h>
+#include <igl/writeOBJ.h>
+#include <lagrange/IndexedAttribute.h>
+#include <lagrange/attribute_names.h>
+#include <lagrange/foreach_attribute.h>
+#include <lagrange/io/load_mesh.h>
+#include <lagrange/triangulate_polygonal_facets.h>
+#include <lagrange/utils/fpe.h>
+#include <lagrange/views.h>
 #include <remeshing/UniformRemeshing.h>
 #include <wmtk/utils/AMIPS2D.h>
 #include <wmtk/utils/AMIPS2D_autodiff.h>
@@ -17,8 +27,10 @@
 #include <functional>
 #include <wmtk/utils/ManifoldUtils.hpp>
 #include <wmtk/utils/TriQualityUtils.hpp>
+#include "Split.h"
 
 using namespace wmtk;
+using namespace lagrange;
 using namespace adaptive_tessellation;
 
 template <class T>
@@ -192,7 +204,7 @@ TEST_CASE("operations with boundary parameterization")
     SECTION("collapse")
     {
         m.set_parameters(10, displacement, EDGE_LEN_TYPE::LINEAR3D, ENERGY_TYPE::EDGE_LENGTH, true);
-        wmtk::logger().info(m.mesh_parameters.m_target_l);
+        wmtk::logger().info(m.mesh_parameters.m_quality_threshold);
         m.collapse_all_edges();
 
         for (auto e : m.get_edges()) {
@@ -264,3 +276,87 @@ TEST_CASE("autodiff vs finitediff")
 
 // TODO: Try out sin(x) with periodic boundary cond + autodiff + gradient
 
+TEST_CASE("paired split")
+{
+    SECTION("diamond")
+    {
+        Eigen::MatrixXd V(4, 2);
+        Eigen::MatrixXi F(2, 3);
+        V.row(0) << -1., 0.;
+        V.row(1) << 0., 1.;
+        V.row(2) << 0., -1;
+        V.row(3) << 1., 0;
+        F.row(0) << 0, 2, 1;
+        F.row(1) << 1, 2, 3;
+        AdaptiveTessellation m;
+        m.create_mesh(V, F);
+        m.face_attrs[0].mirror_edges[0] =
+            std::make_optional<wmtk::TriMesh::Tuple>(Tuple(2, 2, 1, m));
+        m.face_attrs[1].mirror_edges[2] =
+            std::make_optional<wmtk::TriMesh::Tuple>(Tuple(2, 0, 0, m));
+        auto tup = Tuple(2, 0, 0, m);
+        REQUIRE(tup.vid(m) == 2);
+        AdaptiveTessellationSplitEdgeOperation op;
+        op(m, tup);
+        REQUIRE(m.vert_capacity() == 5);
+        REQUIRE(m.tri_capacity() == 4);
+        // checking for first face
+        REQUIRE(m.face_attrs[0].mirror_edges[0].has_value());
+        REQUIRE(m.face_attrs[0].mirror_edges[0].value().fid(m) == 1);
+        REQUIRE(m.face_attrs[0].mirror_edges[0].value().vid(m) == 2);
+        // checking for first face mirroring face
+        REQUIRE(m.face_attrs[1].mirror_edges[2].has_value());
+        REQUIRE(m.face_attrs[1].mirror_edges[2].value().fid(m) == 0);
+        REQUIRE(m.face_attrs[1].mirror_edges[2].value().vid(m) == 2);
+        // checking for second face
+        REQUIRE(m.face_attrs[2].mirror_edges[0].has_value());
+        REQUIRE(m.face_attrs[2].mirror_edges[0].value().fid(m) == 3);
+        REQUIRE(m.face_attrs[2].mirror_edges[0].value().vid(m) == 4);
+        // checking for second face mirroring face
+        REQUIRE(m.face_attrs[3].mirror_edges[2].has_value());
+        REQUIRE(m.face_attrs[3].mirror_edges[2].value().fid(m) == 4);
+        REQUIRE(m.face_attrs[3].mirror_edges[2].value().vid(m) == 4);
+    }
+    SECTION("isosceles triangles")
+    {
+        Eigen::MatrixXd V(4, 2);
+        Eigen::MatrixXi F(2, 3);
+        V.row(0) << -1., 0.;
+        V.row(1) << 0., 1.;
+        V.row(2) << 0., 0;
+        V.row(3) << 1., 0;
+        F.row(0) << 0, 2, 1;
+        F.row(1) << 1, 2, 3;
+        AdaptiveTessellation m;
+        m.create_mesh(V, F);
+        m.face_attrs[0].mirror_edges[2] =
+            std::make_optional<wmtk::TriMesh::Tuple>(m.tuple_from_edge(1, 1));
+        m.face_attrs[1].mirror_edges[1] =
+            std::make_optional<wmtk::TriMesh::Tuple>(m.tuple_from_edge(0, 2));
+        auto tup = m.tuple_from_edge(0, 2);
+        AdaptiveTessellationSplitEdgeOperation op;
+        op(m, tup);
+        REQUIRE(m.vert_capacity() == 6);
+        REQUIRE(m.tri_capacity() == 4);
+        // checking for first face
+        REQUIRE(m.face_attrs[0].mirror_edges[2].has_value());
+        REQUIRE(m.face_attrs[0].mirror_edges[2].value().fid(m) == 1);
+        REQUIRE(m.face_attrs[0].mirror_edges[2].value().vid(m) == 3);
+        // checking for first face mirroring face
+        REQUIRE(m.face_attrs[1].mirror_edges[1].has_value());
+        REQUIRE(m.face_attrs[1].mirror_edges[1].value().fid(m) == 0);
+        REQUIRE(m.face_attrs[1].mirror_edges[1].value().vid(m) == 2);
+        // checking for second face
+        REQUIRE(m.face_attrs[2].mirror_edges[2].has_value());
+        REQUIRE(m.face_attrs[2].mirror_edges[2].value().fid(m) == 3);
+        REQUIRE(m.face_attrs[2].mirror_edges[2].value().vid(m) == 4);
+        // checking for second face mirroring face
+        REQUIRE(m.face_attrs[3].mirror_edges[1].has_value());
+        REQUIRE(m.face_attrs[3].mirror_edges[1].value().fid(m) == 4);
+        REQUIRE(m.face_attrs[3].mirror_edges[1].value().vid(m) == 5);
+    }
+}
+
+// TODO add test for load and build mirror face attrs.
+// check each seam edge if edge.vid(m) and edge.switch_vertex(m).vid(m) for the mirror edge are the
+// same.
