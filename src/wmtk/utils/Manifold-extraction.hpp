@@ -20,7 +20,7 @@ using Triangle = std::array<size_t, 3>;
  * @returns A vector of Point2D type.
  *
  */
-auto pntgen() -> const std::vector<Point2D>&;
-auto tagassign(std::vector<Triangle> triangles)
-    -> std::map<size_t, size_t>&;
+auto pntgen2d(size_t nb_points, double range) -> const std::vector<Point2D>*;
+auto pntgen3d(size_t nb_points, double range) -> const std::vector<Point3D>*;
+auto tagassign(size_t nb_triangles) -> std::vector<size_t>*;
 } // namespace wmtk
