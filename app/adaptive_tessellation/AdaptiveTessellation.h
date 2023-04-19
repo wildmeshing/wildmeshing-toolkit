@@ -52,6 +52,12 @@ public:
     bool boundary_vertex = false;
 };
 
+class FaceAttributes
+{
+public:
+    std::array<std::optional<wmtk::TriMesh::Tuple>, 3> mirror_edges;
+};
+
 class AdaptiveTessellation : public wmtk::TriMesh
 {
 public:
@@ -65,6 +71,7 @@ public:
     Parameters mesh_parameters;
     // Store the per-vertex attributes
     wmtk::AttributeCollection<VertexAttributes> vertex_attrs;
+    wmtk::AttributeCollection<FaceAttributes> face_attrs;
     struct InfoCache
     {
         size_t v1;
@@ -163,21 +170,21 @@ public:
 
     // Smoothing
     void smooth_all_vertices();
-    bool smooth_before(const Tuple& t) ;
-    bool smooth_after(const Tuple& t) ;
+    bool smooth_before(const Tuple& t);
+    bool smooth_after(const Tuple& t);
 
     // Collapse
     void collapse_all_edges();
-    bool collapse_edge_before(const Tuple& t) ;
-    bool collapse_edge_after(const Tuple& t) ;
+    bool collapse_edge_before(const Tuple& t);
+    bool collapse_edge_after(const Tuple& t);
     // Split
     void split_all_edges();
-    bool split_edge_before(const Tuple& t) ;
-    bool split_edge_after(const Tuple& t) ;
+    bool split_edge_before(const Tuple& t);
+    bool split_edge_after(const Tuple& t);
     // Swap
     void swap_all_edges();
-    bool swap_edge_before(const Tuple& t) ;
-    bool swap_edge_after(const Tuple& t) ;
+    bool swap_edge_before(const Tuple& t);
+    bool swap_edge_after(const Tuple& t);
 
     void mesh_improvement(int max_its);
     void gradient_debug(int max_its);

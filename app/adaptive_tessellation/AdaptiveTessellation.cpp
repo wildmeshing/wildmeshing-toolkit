@@ -284,6 +284,55 @@ void AdaptiveTessellation::load_texcoord_set_scale_offset(
 
     wmtk::logger().info("///// #v : {} {}", UV.rows(), UV.cols());
     wmtk::logger().info("///// #f : {} {}", F.rows(), F.cols());
+
+    wmtk::TriMesh m_3d;
+    std::vector<std::array<size_t, 3>> tris;
+    for (auto f = 0; f < F3d.rows(); f++) {
+        std::array<size_t, 3> tri = {F3d(f, 0), F3d(f, 1), F3d(f, 2)};
+        tris.emplace_back(tri);
+    }
+    m_3d.create_mesh(V3d.rows(), tris);
+    create_mesh(UV, F);
+
+    // loop through faces
+    // for each edge, get fid on both side.
+    // if it's boundary edge, do nothing
+    // if not, index to the matrix for F_3d, and check the 3 edges
+
+    for (auto fi = 0; fi < m_3d.tri_capacity(); ++fi) {
+        for (auto lvi1 = 0; lvi1 < 3; ++lvi1) {
+            auto lvi2 = (lvi1 + 1) % 3;
+            auto local_eid = 3 - lvi1 - lvi2;
+            auto edge1 = m_3d.tuple_from_edge(fi, 3 - lvi1 - lvi2);
+
+            assert(F3d(fi, lvi1) == edge1.vid(m_3d));
+            if (!edge1.switch_face(m_3d).has_value()) {
+                // Boundary edge, skipping...
+                continue;
+            } else {
+                auto edge2 = edge1.switch_face(m_3d).value();
+                auto fj = edge2.fid(m_3d);
+                auto lvj1 = edge2.local_eid(m_3d);
+                auto lvj2 = (lvj1 + 1) % 3;
+                for (auto i = 0; i < 3; i++) {
+                    if (F3d(fj, i) == edge1.vid(m_3d)) lvj1 = i;
+                    if (F3d(fj, i) == edge1.switch_vertex(m_3d).vid(m_3d)) lvj2 = i;
+                }
+
+                assert(F3d(fi, lvi1) == F3d(fj, lvj1));
+                assert(F3d(fi, lvi2) == F3d(fj, lvj2));
+                if (F(fi, lvi1) != F(fj, lvj1) && F(fi, lvi2) != F(fj, lvj2)) {
+                    // this is a seam. init the mirror_edge tuple
+                    face_attrs[fi].mirror_edges[local_eid] =
+                        std::make_optional<wmtk::TriMesh::Tuple>(
+                            Tuple(F(fj, lvj1), (3 - lvj1 - lvj2), fj, *this));
+                    face_attrs[fj].mirror_edges[(3 - lvj1 - lvj2)] =
+                        std::make_optional<wmtk::TriMesh::Tuple>(
+                            Tuple(F(fi, lvi1), local_eid, fi, *this));
+                }
+            }
+        }
+    }
 }
 
 bool AdaptiveTessellation::invariants(const std::vector<Tuple>& new_tris)
@@ -321,24 +370,6 @@ bool AdaptiveTessellation::invariants(const std::vector<Tuple>& new_tris)
             // write_ply("rejected_split_" + std::to_string(t.fid(*this)) + ".ply");
             return false;
         }
-
-        // // add area check (degenerate tirangle)
-        // Eigen::Vector3d A, B, C;
-        // A.topRows(2) = a;
-        // A(2) = 0.;
-        // B.topRows(2) = b;
-        // B(2) = 0.;
-        // C.topRows(2) = c;
-        // C(2) = 0.;
-
-        // double area = ((B - A).cross(C - A)).squaredNorm();
-        // if (area < 1e-6 * ((B - A).squaredNorm() + (C - A).squaredNorm() + (B -
-        // C).squaredNorm())) {
-        //     wmtk::logger().info("====false in area ");
-        //     wmtk::logger().info("{} {} {}", a, b, c);
-        //     return false; // arbitrary chosen previous std::numeric_limits<double>::denorm_min() is
-        //                   // too small}
-        // }
     }
     return true;
 }
@@ -364,10 +395,10 @@ void AdaptiveTessellation::create_mesh(const Eigen::MatrixXd& V, const Eigen::Ma
     F_env.resize(F.rows());
     // Register attributes
     p_vertex_attrs = &vertex_attrs;
+    p_face_attrs = &face_attrs;
     // Convert from eigen to internal representation (TODO: move to utils and remove it from all
     // app)
     std::vector<std::array<size_t, 3>> tri(F.rows());
-    //// TODO switching F order for now because of the uv coordinate change in load
     for (int i = 0; i < F.rows(); i++) {
         F_env[i] << (size_t)F(i, 0), (size_t)F(i, 1), (size_t)F(i, 2);
         tri[i][0] = (size_t)F(i, 0);
