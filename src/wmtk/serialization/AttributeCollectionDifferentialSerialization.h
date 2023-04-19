@@ -1,6 +1,6 @@
 #pragma once
 #include <wmtk/serialization/Hdf5Utils.hpp>
-#include "Declarations.h"
+#include "Macros.h"
 
 
 // Attribute Change tables:
@@ -70,28 +70,28 @@ struct AttributeCollectionRange
 // this is intended as an internal interface because Recording should only append while Replaying
 // should allow for forward and backward playback. Please look at AttributeCollectionRecorder and
 // AttributeCollectionReplayer for these functionalities. the HDF5 interactions are, as much as
-// possible, shoved into the AttributeCollectionSerializationBase class with implementation in the
+// possible, shoved into the AttributeCollectionDifferentialSerializationBase class with implementation in the
 // related cpp file whereas the type-specific details are defined with
-// AttributeCollectionSerialization<T> and implemeneted at the bottom of this file.
+// AttributeCollectionDifferentialSerialization<T> and implemeneted at the bottom of this file.
 //
-class AttributeCollectionSerializationBase
+class AttributeCollectionDifferentialSerializationBase
 {
 protected:
     friend class AttributeCollectionRecorder;
     friend class AttributeCollectionReplayer;
     // the file being serialized to, the name of the attribute, and information on how the data
     // should be serialized
-    AttributeCollectionSerializationBase(
+    AttributeCollectionDifferentialSerializationBase(
         HighFive::File& file,
         const std::string& name,
         const HighFive::DataType& data_type);
-    AttributeCollectionSerializationBase(
+    AttributeCollectionDifferentialSerializationBase(
         const std::string& name,
         HighFive::DataSet&& value_changes_ds,
         HighFive::DataSet&& updates_ds);
 
 public:
-    virtual ~AttributeCollectionSerializationBase();
+    virtual ~AttributeCollectionDifferentialSerializationBase();
     static HighFive::CompoundType record_datatype();
     static HighFive::DataSetCreateProps create_properties();
     static HighFive::DataSetAccessProps access_properties();
@@ -141,12 +141,12 @@ struct AttributeCollectionValueChange
 
 // Class capable of recording updates to a single attribute
 template <typename T>
-class AttributeCollectionSerialization : public AttributeCollectionSerializationBase
+class AttributeCollectionDifferentialSerialization : public AttributeCollectionDifferentialSerializationBase
 {
 public:
     using UpdateData = AttributeCollectionValueChange<T>;
     static HighFive::CompoundType datatype();
-    AttributeCollectionSerialization(
+    AttributeCollectionDifferentialSerialization(
         HighFive::File& file,
         const std::string& name,
         AttributeCollection<T>& attr_);
@@ -163,7 +163,7 @@ public:
 
     // undoes a particular change to an attribute
     void unapply_update(const AttributeCollectionUpdate& update) override;
-    using AttributeCollectionSerializationBase::record;
+    using AttributeCollectionDifferentialSerializationBase::record;
 
 private:
     std::vector<AttributeCollectionValueChange<T>> get_value_changes(
@@ -195,22 +195,22 @@ struct AttributeCollectionUpdate
 
 // deduction guide
 template <typename T>
-AttributeCollectionSerialization(
+AttributeCollectionDifferentialSerialization(
     HighFive::File& file,
     const std::string& name,
-    const AttributeCollection<T>&) -> AttributeCollectionSerialization<T>;
+    const AttributeCollection<T>&) -> AttributeCollectionDifferentialSerialization<T>;
 
 template <typename T>
-AttributeCollectionSerialization<T>::AttributeCollectionSerialization(
+AttributeCollectionDifferentialSerialization<T>::AttributeCollectionDifferentialSerialization(
     HighFive::File& file,
     const std::string& name,
     AttributeCollection<T>& attr_)
-    : AttributeCollectionSerializationBase(file, name, datatype())
+    : AttributeCollectionDifferentialSerializationBase(file, name, datatype())
     , attribute_collection(attr_)
 {}
 
 template <typename T>
-HighFive::CompoundType AttributeCollectionSerialization<T>::datatype()
+HighFive::CompoundType AttributeCollectionDifferentialSerialization<T>::datatype()
 {
     return HighFive::CompoundType{
         {"index", HighFive::create_datatype<size_t>()},
@@ -220,7 +220,7 @@ HighFive::CompoundType AttributeCollectionSerialization<T>::datatype()
 
 
 template <typename T>
-AttributeCollectionUpdate AttributeCollectionSerialization<T>::record_value_changes()
+AttributeCollectionUpdate AttributeCollectionDifferentialSerialization<T>::record_value_changes()
 {
     const std::map<size_t, T>& rollback_list = attribute_collection.m_rollback_list.local();
     const size_t old_size = attribute_collection.m_rollback_size.local();
@@ -258,7 +258,7 @@ AttributeCollectionUpdate AttributeCollectionSerialization<T>::record_value_chan
 }
 
 template <typename T>
-AttributeCollectionUpdate AttributeCollectionSerialization<T>::record_entire_state()
+AttributeCollectionUpdate AttributeCollectionDifferentialSerialization<T>::record_entire_state()
 {
     const std::map<size_t, T>& rollback_list = attribute_collection.m_rollback_list.local();
     const size_t old_size = attribute_collection.m_rollback_size.local();
@@ -281,7 +281,7 @@ AttributeCollectionUpdate AttributeCollectionSerialization<T>::record_entire_sta
 }
 
 template <typename T>
-void AttributeCollectionSerialization<T>::apply_update(const AttributeCollectionUpdate& update)
+void AttributeCollectionDifferentialSerialization<T>::apply_update(const AttributeCollectionUpdate& update)
 {
     // resize the AC to the new size
     attribute_collection.resize(update.new_size);
@@ -295,7 +295,7 @@ void AttributeCollectionSerialization<T>::apply_update(const AttributeCollection
     }
 }
 template <typename T>
-void AttributeCollectionSerialization<T>::unapply_update(const AttributeCollectionUpdate& update)
+void AttributeCollectionDifferentialSerialization<T>::unapply_update(const AttributeCollectionUpdate& update)
 {
     attribute_collection.resize(update.old_size);
 
@@ -305,7 +305,7 @@ void AttributeCollectionSerialization<T>::unapply_update(const AttributeCollecti
 }
 template <typename T>
 std::vector<AttributeCollectionValueChange<T>>
-AttributeCollectionSerialization<T>::get_value_changes(
+AttributeCollectionDifferentialSerialization<T>::get_value_changes(
     const AttributeCollectionUpdate& update) const
 {
     // the update data

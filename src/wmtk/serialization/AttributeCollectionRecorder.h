@@ -1,5 +1,5 @@
 #pragma once
-#include <wmtk/serialization/AttributeCollectionSerialization.h>
+#include <wmtk/serialization/AttributeCollectionDifferentialSerialization.h>
 
 namespace HighFive {
     class File;
@@ -42,12 +42,12 @@ protected:
     // the file being serialized to, the name of the attribute, and information on how the data
     // should be serialized
     AttributeCollectionRecorder(
-        std::unique_ptr<AttributeCollectionSerializationBase>&& serialization);
+        std::unique_ptr<AttributeCollectionDifferentialSerializationBase>&& serialization);
     // friend class OperationSerialization;
 
 
 protected:
-    std::unique_ptr<AttributeCollectionSerializationBase> m_serialization;
+    std::unique_ptr<AttributeCollectionDifferentialSerializationBase> m_serialization;
 };
 
 
@@ -58,7 +58,7 @@ AttributeCollectionRecorder::AttributeCollectionRecorder(
     const std::string& name,
     AttributeCollection<T>& attr_)
     : AttributeCollectionRecorder(
-          std::make_unique<AttributeCollectionSerialization<T>>(file, name, attr_))
+          std::make_unique<AttributeCollectionDifferentialSerialization<T>>(file, name, attr_))
 {}
 
 

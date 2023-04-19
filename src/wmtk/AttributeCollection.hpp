@@ -25,7 +25,9 @@ namespace wmtk {
 class AttributeCollectionRecorder;
 class AttributeCollectionReplayer;
 template <typename T>
-class AttributeCollectionSerialization;
+class AttributeCollectionDifferentialSerialization;
+template <typename T>
+class AttributeCollectionSerializer;
 class AbstractAttributeCollection
 {
 public:
@@ -42,12 +44,10 @@ public:
     virtual void begin_protect();
     virtual std::optional<size_t> end_protect();
 
-    virtual void serialize(const DataSet& dataset, const std::string_view& attribute_name) const = 0;
-    virtual void deserialize(const DataSet& dataset, const std::string_view& attribute_name) = 0;
 
 
     template <typename T>
-    friend class AttributeCollectionSerialization;
+    friend class AttributeCollectionDifferentialSerialization;
     friend class AttributeCollectionRecorder;
     friend class AttributeCollectionReplayer;
 
@@ -71,6 +71,13 @@ private:
 template <typename T>
 struct AttributeCollection : public AbstractAttributeCollection
 {
+    friend class AttributeCollectionSerializer<T>;
+    AttributeCollection() = default;
+    AttributeCollection(const AttributeCollection& o) = default;
+    AttributeCollection& operator=(const AttributeCollection& o) = default;
+    AttributeCollection(AttributeCollection&& o) = default;
+    AttributeCollection& operator=(AttributeCollection&& o) = default;
+    ~AttributeCollection() = default;
     void move(size_t from, size_t to) override
     {
         if (from == to) return;
@@ -170,15 +177,13 @@ struct AttributeCollection : public AbstractAttributeCollection
 
     const T& at(size_t i) const { return m_attributes[i]; }
 
-    void serialize(const DataSet& dataset, const std::string_view& attribute_name) const override {
-        if constexpr(
-    }
-    void deserialize(const DataSet& dataset, const std::string_view& attribute_name) {
-    }
 
     size_t size() const override { return m_attributes.size(); }
     tbb::enumerable_thread_specific<std::map<size_t, T>> m_rollback_list;
     // experimenting with tbb, could be templated as well.
     tbb::concurrent_vector<T> m_attributes;
+    protected:
+    T* data() { return m_attributes.pointer(); }
+    const T* data() const { return m_attributes.as_const_pointer(); }
 };
 } // namespace wmtk

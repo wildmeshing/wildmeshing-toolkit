@@ -1,5 +1,5 @@
 #pragma once
-#include <wmtk/serialization/AttributeCollectionSerialization.h>
+#include <wmtk/serialization/AttributeCollectionDifferentialSerialization.h>
 
 
 namespace wmtk {
@@ -40,12 +40,12 @@ protected:
     // the file being serialized to, the name of the attribute, and information on how the data
     // should be serialized
     AttributeCollectionReplayer(
-        std::unique_ptr<AttributeCollectionSerializationBase>&& serialization);
+        std::unique_ptr<AttributeCollectionDifferentialSerializationBase>&& serialization);
     // friend class OperationSerialization;
 
 
 protected:
-    std::unique_ptr<AttributeCollectionSerializationBase> m_serialization;
+    std::unique_ptr<AttributeCollectionDifferentialSerializationBase> m_serialization;
     size_t m_current_update_index = 0;
 
 private:
@@ -64,7 +64,7 @@ AttributeCollectionReplayer::AttributeCollectionReplayer(
     const std::string& name,
     AttributeCollection<T>& attr_)
     : AttributeCollectionReplayer(
-          std::make_unique<AttributeCollectionSerialization<T>>(file, name, attr_))
+          std::make_unique<AttributeCollectionDifferentialSerialization<T>>(file, name, attr_))
 {}
 
 } // namespace wmtk

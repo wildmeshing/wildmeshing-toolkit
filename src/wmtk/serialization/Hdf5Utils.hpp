@@ -17,18 +17,20 @@
 #pragma GCC diagnostic pop
 #endif
 
-
-// Macro for pre-declaring HighFive's HDF5 datatypes
-// HighFive defines a macro HIGHFIVE_REGISTER_TYPE that implements a template specialization.
-// That macro cannot be used to fully specialize in a header so this macro is
-// provided so specialization can be declared in a header and implementation
-// performed in a source file
-#define WMTK_HIGHFIVE_DECLARE_TYPE(type) \
-    template <>                          \
-    inline HighFive::DataType HighFive::create_datatype<type>();
+#include "Macros.h"
 
 
 namespace wmtk::utils {
+
+namespace detail {
+// Useful typedef for implementing type erasure
+// The FixedLenStringArray is just a char array, so it effectively reflects a binary chunk of data
+// and is a builtin of HighFive
+template <typename T>
+using TypeErasedVectorType = HighFive::FixedLenStringArray<sizeof(T) / sizeof(char)>;
+template <typename T>
+using TypeErasedType =std::array<std::char8_t, sizeof(T) / sizeof(std::char8_t)>;
+} // namespace detail
 
 
 // checks whether the file holding the dataset exists
@@ -47,6 +49,10 @@ HighFive::DataSet create_extendable_dataset(HighFive::File& file, const std::str
     return create_extendable_dataset(file, name, HighFive::create_datatype<T>());
 }
 
+template <typename T, typename Allocator>
+void write_values_to_dataset(
+    HighFive::DataSet& dataset,
+    const std::vector<T, Allocator>& data);
 
 // Helper for adding values to the end of a dataset holding a 1d vector takes
 // in a dataset and the input data in a vector outputs the start and end
@@ -65,6 +71,19 @@ size_t append_value_to_dataset(HighFive::DataSet& dataset, const T& value);
 
 
 // implementation
+//
+template <typename T, typename Allocator>
+void write_values_to_dataset(
+    HighFive::DataSet& dataset,
+    const std::vector<T, Allocator>& data)
+{
+    assert(data.size() != 0);
+
+    // resize the datset to the right size
+    dataset.resize({data.size()});
+
+    dataset.select().write(data);
+}
 
 template <typename T, typename Allocator>
 std::array<size_t, 2> append_values_to_dataset(

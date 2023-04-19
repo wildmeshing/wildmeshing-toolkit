@@ -1,10 +1,10 @@
 #include <wmtk/serialization/AttributeCollectionReplayer.h>
-#include <wmtk/serialization/AttributeCollectionSerialization.h>
+#include <wmtk/serialization/AttributeCollectionDifferentialSerialization.h>
 #include <wmtk/serialization/Hdf5Utils.hpp>
 
 using namespace wmtk;
 AttributeCollectionReplayer::AttributeCollectionReplayer(
-    std::unique_ptr<AttributeCollectionSerializationBase>&& serialization)
+    std::unique_ptr<AttributeCollectionDifferentialSerializationBase>&& serialization)
     : m_serialization(std::move(serialization))
 {
     reset_to_initial_state();

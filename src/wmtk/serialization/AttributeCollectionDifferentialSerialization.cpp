@@ -1,4 +1,4 @@
-#include <wmtk/serialization/AttributeCollectionSerialization.h>
+#include <wmtk/serialization/AttributeCollectionDifferentialSerialization.h>
 #include <wmtk/utils/Logger.hpp>
 
 HIGHFIVE_REGISTER_TYPE(wmtk::AttributeCollectionRange, wmtk::AttributeCollectionRange::datatype);
@@ -21,11 +21,11 @@ HighFive::CompoundType AttributeCollectionRange::datatype()
         {"end", HighFive::create_datatype<size_t>()}};
 }
 
-AttributeCollectionSerializationBase::AttributeCollectionSerializationBase(
+AttributeCollectionDifferentialSerializationBase::AttributeCollectionDifferentialSerializationBase(
     HighFive::File& file,
     const std::string& name,
     const HighFive::DataType& data_type)
-    : AttributeCollectionSerializationBase(
+    : AttributeCollectionDifferentialSerializationBase(
           name,
           utils::create_extendable_dataset(file, name + "_value_changes", data_type),
           utils::create_extendable_dataset(
@@ -34,12 +34,12 @@ AttributeCollectionSerializationBase::AttributeCollectionSerializationBase(
               AttributeCollectionUpdate::datatype()))
 {}
 
-const std::string& AttributeCollectionSerializationBase::name() const
+const std::string& AttributeCollectionDifferentialSerializationBase::name() const
 {
     return m_name;
 }
 
-AttributeCollectionSerializationBase::AttributeCollectionSerializationBase(
+AttributeCollectionDifferentialSerializationBase::AttributeCollectionDifferentialSerializationBase(
     const std::string& name_,
     HighFive::DataSet&& value_changes_ds,
     HighFive::DataSet&& updates_ds)
@@ -48,44 +48,44 @@ AttributeCollectionSerializationBase::AttributeCollectionSerializationBase(
     , m_updates_dataset(updates_ds)
 {}
 
-AttributeCollectionSerializationBase::~AttributeCollectionSerializationBase() = default;
+AttributeCollectionDifferentialSerializationBase::~AttributeCollectionDifferentialSerializationBase() = default;
 
-HighFive::DataSetAccessProps AttributeCollectionSerializationBase::access_properties()
+HighFive::DataSetAccessProps AttributeCollectionDifferentialSerializationBase::access_properties()
 {
     HighFive::DataSetAccessProps props;
     return props;
 }
-HighFive::DataSetCreateProps AttributeCollectionSerializationBase::create_properties()
+HighFive::DataSetCreateProps AttributeCollectionDifferentialSerializationBase::create_properties()
 {
     HighFive::DataSetCreateProps props;
     props.add(HighFive::Chunking(std::vector<hsize_t>{2}));
     return props;
 }
 
-size_t AttributeCollectionSerializationBase::record()
+size_t AttributeCollectionDifferentialSerializationBase::record()
 {
     AttributeCollectionUpdate update = record_value_changes();
     return utils::append_value_to_dataset(m_updates_dataset, update) - 1;
 }
 
-size_t AttributeCollectionSerializationBase::record_initial_state()
+size_t AttributeCollectionDifferentialSerializationBase::record_initial_state()
 {
     AttributeCollectionUpdate update = record_entire_state();
     return utils::append_value_to_dataset(m_updates_dataset, update) - 1;
 }
 
 // the number of updates serialized
-size_t AttributeCollectionSerializationBase::changes_size() const
+size_t AttributeCollectionDifferentialSerializationBase::changes_size() const
 {
     return m_value_changes_dataset.getElementCount();
 }
 // the number of updates serialized
-size_t AttributeCollectionSerializationBase::updates_size() const
+size_t AttributeCollectionDifferentialSerializationBase::updates_size() const
 {
     return m_updates_dataset.getElementCount();
 }
 
-AttributeCollectionUpdate AttributeCollectionSerializationBase::update(size_t index) const
+AttributeCollectionUpdate AttributeCollectionDifferentialSerializationBase::update(size_t index) const
 {
     assert(index < updates_size());
     AttributeCollectionUpdate ret;
@@ -103,12 +103,12 @@ AttributeCollectionUpdate::AttributeCollectionUpdate(
     , new_size(new_size_)
     , range{begin, end}
 {}
-void AttributeCollectionSerializationBase::load(size_t index)
+void AttributeCollectionDifferentialSerializationBase::load(size_t index)
 {
     AttributeCollectionUpdate upd = update(index);
     apply_update(upd);
 }
-void AttributeCollectionSerializationBase::unload(size_t index)
+void AttributeCollectionDifferentialSerializationBase::unload(size_t index)
 {
     AttributeCollectionUpdate upd = update(index);
     unapply_update(upd);
