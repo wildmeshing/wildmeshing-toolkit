@@ -70,8 +70,8 @@ wmtk::TriMeshOperation::ExecuteReturnData AdaptiveTessellationPairedSplitEdgeOpe
             wmtk::TriMeshSplitEdgeOperation::execute(m, mirror_edge_tuple.value());
         ret_data.success &= ret_mirror_data.success;
         for (auto& nt : ret_mirror_data.new_tris) ret_data.new_tris.emplace_back(nt);
-        assert(mirror_edge_tuple.vid(m) == ret_mirror_data.tuple.vid(m));
-        assert(mirror_edge_tuple.fid(m) == ret_mirror_data.tuple.fid(m));
+        assert(mirror_edge_tuple.value().vid(m) == ret_mirror_data.tuple.vid(m));
+        assert(mirror_edge_tuple.value().fid(m) == ret_mirror_data.tuple.fid(m));
         // update the mirror edge
         m.face_attrs[ret_data.tuple.fid(m)].mirror_edges[t.local_eid(m)] =
             std::make_optional<wmtk::TriMesh::Tuple>(ret_mirror_data.tuple);

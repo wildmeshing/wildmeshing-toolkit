@@ -291,10 +291,10 @@ TEST_CASE("paired split")
         AdaptiveTessellation m;
         m.create_mesh(V, F);
         m.face_attrs[0].mirror_edges[0] =
-            std::make_optional<wmtk::TriMesh::Tuple>(Tuple(2, 2, 1, m));
+            std::make_optional<wmtk::TriMesh::Tuple>(wmtk::TriMesh::Tuple(2, 2, 1, m));
         m.face_attrs[1].mirror_edges[2] =
-            std::make_optional<wmtk::TriMesh::Tuple>(Tuple(2, 0, 0, m));
-        auto tup = Tuple(2, 0, 0, m);
+            std::make_optional<wmtk::TriMesh::Tuple>(wmtk::TriMesh::Tuple(2, 0, 0, m));
+        auto tup = wmtk::TriMesh::Tuple(2, 0, 0, m);
         REQUIRE(tup.vid(m) == 2);
         AdaptiveTessellationSplitEdgeOperation op;
         op(m, tup);
