@@ -14,7 +14,7 @@ public:
         Tuple tuple;
         std::vector<Tuple> new_tris;
         bool success = false;
-        operator bool() const { return success;}
+        operator bool() const { return success; }
     };
 
     ExecuteReturnData operator()(TriMesh& m, const Tuple& t);
@@ -69,15 +69,14 @@ template <
     typename BaseOperationType = TriMeshOperation
 #if defined(__cpp_concepts)
     >
-    requires(
-        std::is_base_of_v<TriMesh, MeshType> &&
-        std::is_base_of_v<TriMeshOperation, BaseOperationType>)
+requires(
+    std::is_base_of_v<TriMesh, MeshType>&& std::is_base_of_v<TriMeshOperation, BaseOperationType>)
 #else
     ,
     typename = std::enable_if_t<std::is_base_of_v<TriMesh, MeshType>, void>,
     typename = std::enable_if_t<std::is_base_of_v<TriMeshOperation, BaseOperationType>, void>>
 #endif
-class TriMeshOperationShim : public BaseOperationType
+    class TriMeshOperationShim : public BaseOperationType
 {
 public:
     using ExecuteReturnData = TriMeshOperation::ExecuteReturnData;
@@ -90,7 +89,7 @@ public:
 
     ExecuteReturnData execute(TriMesh& m, const Tuple& t) override
     {
-        return execute( static_cast<MeshType&>(m), t);
+        return execute(static_cast<MeshType&>(m), t);
     }
     bool before(TriMesh& m, const Tuple& t) override
     {
@@ -98,35 +97,32 @@ public:
     }
     bool after(TriMesh& m, ExecuteReturnData& ret_data) override
     {
-        return after( static_cast<MeshType&>(m), ret_data);
+        return after(static_cast<MeshType&>(m), ret_data);
     }
     bool invariants(TriMesh& m, ExecuteReturnData& ret_data) override
     {
-        return invariants( static_cast<MeshType&>(m), ret_data);
+        return invariants(static_cast<MeshType&>(m), ret_data);
     }
 
 private:
     ExecuteReturnData execute(MeshType& m, const Tuple& t) { return derived().execute(m, t); }
     bool before(MeshType& m, const Tuple& t) { return derived().before(m, t); }
-    bool after( MeshType& m, ExecuteReturnData& ret_data)
-    {
-        return derived().after(m, ret_data);
-    }
-    bool invariants( MeshType& m, ExecuteReturnData& ret_data)
+    bool after(MeshType& m, ExecuteReturnData& ret_data) { return derived().after(m, ret_data); }
+    bool invariants(MeshType& m, ExecuteReturnData& ret_data)
     {
         return derived().invariants(m, ret_data);
     }
 };
 
 
-    /**
-     * Split an edge
-     *
-     * @param t Input Tuple for the edge to split.
-     * @param[out] new_edges a vector of Tuples refering to the triangles incident to the new vertex
-     * introduced
-     * @return if split succeed
-     */
+/**
+ * Split an edge
+ *
+ * @param t Input Tuple for the edge to split.
+ * @param[out] new_edges a vector of Tuples refering to the triangles incident to the new vertex
+ * introduced
+ * @return if split succeed
+ */
 class TriMeshSplitEdgeOperation : public TriMeshOperation
 {
 public:
@@ -141,17 +137,15 @@ public:
     std::array<Tuple, 2> original_endpoints(TriMesh& m, const Tuple& t) const;
 };
 
-
-
-    /**
-     * Swap an edge
-     *
-     * @param t Input Tuple for the edge to be swaped.
-     * @param[out] new_edges a vector of Tuples refering to the triangles incident to the new edge
-     * introduced
-     * @note swap edge a,b to edge c,d
-     * @return if swap succeed
-     */
+/**
+ * Swap an edge
+ *
+ * @param t Input Tuple for the edge to be swaped.
+ * @param[out] new_edges a vector of Tuples refering to the triangles incident to the new edge
+ * introduced
+ * @note swap edge a,b to edge c,d
+ * @return if swap succeed
+ */
 class TriMeshSwapEdgeOperation : public TriMeshOperation
 {
 public:
@@ -161,15 +155,15 @@ public:
     std::string name() const override;
 };
 
-    /**
-     * Collapse an edge
-     *
-     * @param t Input Tuple for the edge to be collapsed.
-     * @param[out] new_edges a vector of Tuples refering to the triangles incident to the new vertex
-     * introduced
-     * @note collapse edge a,b and generate a new vertex c
-     * @return if collapse succeed
-     */
+/**
+ * Collapse an edge
+ *
+ * @param t Input Tuple for the edge to be collapsed.
+ * @param[out] new_edges a vector of Tuples refering to the triangles incident to the new vertex
+ * introduced
+ * @note collapse edge a,b and generate a new vertex c
+ * @return if collapse succeed
+ */
 class TriMeshEdgeCollapseOperation : public TriMeshOperation
 {
 public:
@@ -186,13 +180,13 @@ public:
     static bool check_link_condition(const TriMesh& m, const Tuple& t);
 };
 
-    /**
-     * Smooth a vertex
-     *
-     * @param t Input Tuple for the vertex
-     * @note no geometry changed here
-     * @return if smooth succeed
-     */
+/**
+ * Smooth a vertex
+ *
+ * @param t Input Tuple for the vertex
+ * @note no geometry changed here
+ * @return if smooth succeed
+ */
 class TriMeshSmoothVertexOperation : public TriMeshOperation
 {
 public:

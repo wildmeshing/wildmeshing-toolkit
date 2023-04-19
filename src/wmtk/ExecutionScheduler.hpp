@@ -120,7 +120,7 @@ struct ExecutePass
      */
     size_t max_retry_limit = 10;
 
-    /* 
+    /*
      * Add an operation to the set of operation types
      */
     template <typename OpType>
@@ -128,13 +128,13 @@ struct ExecutePass
     {
         new_edit_operation_maps[name] = op;
     }
-    /* 
+    /*
      * Add an operation using its default name
      */
     template <typename OpType>
     void add_operation(std::shared_ptr<OpType> op)
     {
-        add_operation(op,op->name());
+        add_operation(op, op->name());
     }
     // convenience function for when we want to default construct the op but use a custom name
     template <typename OpType>
@@ -210,7 +210,6 @@ struct ExecutePass
                  }}};
         }
         if constexpr (std::is_base_of<wmtk::TriMesh, AppMesh>::value) {
-
             add_operation<wmtk::TriMeshEdgeCollapseOperation>();
             add_operation<wmtk::TriMeshSwapEdgeOperation>();
             add_operation<wmtk::TriMeshSplitEdgeOperation>();
@@ -301,7 +300,7 @@ public:
                         } // this can encode, in qslim, recompute(energy) == weight.
                         std::vector<std::pair<Op, Tuple>> renewed_tuples;
                         if constexpr (std::is_base_of<wmtk::TriMesh, AppMesh>::value) {
-                            auto ret_data = (*new_edit_operation_maps[op])( m, tup);
+                            auto ret_data = (*new_edit_operation_maps[op])(m, tup);
                             if (ret_data.success) {
                                 renewed_tuples = renew_neighbor_tuples(m, op, ret_data.new_tris);
                                 cnt_success++;
