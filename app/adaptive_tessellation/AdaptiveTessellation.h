@@ -206,6 +206,30 @@ public:
     double get_area_accuracy_error_per_face_triangle_matrix(
         Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle) const;
     double get_area_accuracy_error(const Tuple& edge_tuple) const;
-};
 
+    // unit test functions
+    inline void create_mesh_debug(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F)
+    {
+        // Register attributes
+        p_vertex_attrs = &vertex_attrs;
+        p_face_attrs = &face_attrs;
+        // Convert from eigen to internal representation (TODO: move to utils and remove it from all
+        // app)
+        std::vector<std::array<size_t, 3>> tri(F.rows());
+        for (int i = 0; i < F.rows(); i++) {
+            tri[i][0] = (size_t)F(i, 0);
+            tri[i][1] = (size_t)F(i, 1);
+            tri[i][2] = (size_t)F(i, 2);
+        }
+        // Initialize the trimesh class which handles connectivity
+        wmtk::TriMesh::create_mesh(V.rows(), tri);
+        // Save the vertex position in the vertex attributes
+        for (unsigned i = 0; i < V.rows(); ++i) {
+            vertex_attrs[i].pos << V.row(i)[0], V.row(i)[1];
+        }
+        for (const auto& tri : this->get_faces()) {
+            assert(!is_inverted(tri));
+        }
+    }
+};
 } // namespace adaptive_tessellation

@@ -280,30 +280,33 @@ TEST_CASE("paired split")
 {
     SECTION("diamond")
     {
-        Eigen::MatrixXd V(4, 2);
+        Eigen::MatrixXd V(6, 2);
         Eigen::MatrixXi F(2, 3);
         V.row(0) << -1., 0.;
         V.row(1) << 0., 1.;
         V.row(2) << 0., -1;
         V.row(3) << 1., 0;
+        V.row(4) << 0., 1.;
+        V.row(5) << 0., -1.;
         F.row(0) << 0, 2, 1;
-        F.row(1) << 1, 2, 3;
+        F.row(1) << 3, 4, 5;
         AdaptiveTessellation m;
-        m.create_mesh(V, F);
+
+        m.create_mesh_debug(V, F);
         m.face_attrs[0].mirror_edges[0] =
-            std::make_optional<wmtk::TriMesh::Tuple>(wmtk::TriMesh::Tuple(2, 2, 1, m));
+            std::make_optional<wmtk::TriMesh::Tuple>(wmtk::TriMesh::Tuple(4, 2, 1, m));
         m.face_attrs[1].mirror_edges[2] =
             std::make_optional<wmtk::TriMesh::Tuple>(wmtk::TriMesh::Tuple(2, 0, 0, m));
         auto tup = wmtk::TriMesh::Tuple(2, 0, 0, m);
         REQUIRE(tup.vid(m) == 2);
-        AdaptiveTessellationSplitEdgeOperation op;
+        AdaptiveTessellationPairedSplitEdgeOperation op;
         op(m, tup);
-        REQUIRE(m.vert_capacity() == 5);
+        REQUIRE(m.vert_capacity() == 8);
         REQUIRE(m.tri_capacity() == 4);
         // checking for first face
         REQUIRE(m.face_attrs[0].mirror_edges[0].has_value());
         REQUIRE(m.face_attrs[0].mirror_edges[0].value().fid(m) == 1);
-        REQUIRE(m.face_attrs[0].mirror_edges[0].value().vid(m) == 2);
+        REQUIRE(m.face_attrs[0].mirror_edges[0].value().vid(m) == 4);
         // checking for first face mirroring face
         REQUIRE(m.face_attrs[1].mirror_edges[2].has_value());
         REQUIRE(m.face_attrs[1].mirror_edges[2].value().fid(m) == 0);
@@ -311,11 +314,55 @@ TEST_CASE("paired split")
         // checking for second face
         REQUIRE(m.face_attrs[2].mirror_edges[0].has_value());
         REQUIRE(m.face_attrs[2].mirror_edges[0].value().fid(m) == 3);
-        REQUIRE(m.face_attrs[2].mirror_edges[0].value().vid(m) == 4);
+        REQUIRE(m.face_attrs[2].mirror_edges[0].value().vid(m) == 3);
         // checking for second face mirroring face
         REQUIRE(m.face_attrs[3].mirror_edges[2].has_value());
-        REQUIRE(m.face_attrs[3].mirror_edges[2].value().fid(m) == 4);
-        REQUIRE(m.face_attrs[3].mirror_edges[2].value().vid(m) == 4);
+        REQUIRE(m.face_attrs[3].mirror_edges[2].value().fid(m) == 2);
+        REQUIRE(m.face_attrs[3].mirror_edges[2].value().vid(m) == 1);
+    }
+    SECTION("diamond backward edge")
+    // to test edge in operation that of opposite direction
+    {
+        Eigen::MatrixXd V(6, 2);
+        Eigen::MatrixXi F(2, 3);
+        V.row(0) << -1., 0.;
+        V.row(1) << 0., 1.;
+        V.row(2) << 0., -1;
+        V.row(3) << 1., 0;
+        V.row(4) << 0., 1.;
+        V.row(5) << 0., -1.;
+        F.row(0) << 0, 2, 1;
+        F.row(1) << 3, 4, 5;
+        AdaptiveTessellation m;
+
+        m.create_mesh_debug(V, F);
+        m.face_attrs[0].mirror_edges[0] =
+            std::make_optional<wmtk::TriMesh::Tuple>(wmtk::TriMesh::Tuple(4, 2, 1, m));
+        m.face_attrs[1].mirror_edges[2] =
+            std::make_optional<wmtk::TriMesh::Tuple>(wmtk::TriMesh::Tuple(2, 0, 0, m));
+        auto tup = wmtk::TriMesh::Tuple(2, 0, 0, m);
+        tup = tup.switch_vertex(m);
+        REQUIRE(tup.vid(m) == 1);
+        AdaptiveTessellationPairedSplitEdgeOperation op;
+        op(m, tup);
+        REQUIRE(m.vert_capacity() == 8);
+        REQUIRE(m.tri_capacity() == 4);
+        // checking for first face
+        REQUIRE(m.face_attrs[0].mirror_edges[0].has_value());
+        REQUIRE(m.face_attrs[0].mirror_edges[0].value().fid(m) == 1);
+        REQUIRE(m.face_attrs[0].mirror_edges[0].value().vid(m) == 4);
+        // checking for first face mirroring face
+        REQUIRE(m.face_attrs[1].mirror_edges[2].has_value());
+        REQUIRE(m.face_attrs[1].mirror_edges[2].value().fid(m) == 0);
+        REQUIRE(m.face_attrs[1].mirror_edges[2].value().vid(m) == 2);
+        // checking for second face
+        REQUIRE(m.face_attrs[2].mirror_edges[0].has_value());
+        REQUIRE(m.face_attrs[2].mirror_edges[0].value().fid(m) == 3);
+        REQUIRE(m.face_attrs[2].mirror_edges[0].value().vid(m) == 3);
+        // checking for second face mirroring face
+        REQUIRE(m.face_attrs[3].mirror_edges[2].has_value());
+        REQUIRE(m.face_attrs[3].mirror_edges[2].value().fid(m) == 2);
+        REQUIRE(m.face_attrs[3].mirror_edges[2].value().vid(m) == 1);
     }
     SECTION("isosceles triangles")
     {
@@ -328,32 +375,36 @@ TEST_CASE("paired split")
         F.row(0) << 0, 2, 1;
         F.row(1) << 1, 2, 3;
         AdaptiveTessellation m;
-        m.create_mesh(V, F);
-        m.face_attrs[0].mirror_edges[2] =
-            std::make_optional<wmtk::TriMesh::Tuple>(m.tuple_from_edge(1, 1));
+        m.create_mesh_debug(V, F);
+        REQUIRE(m.check_mesh_connectivity_validity());
+        m.face_attrs[0].mirror_edges[1] =
+            std::make_optional<wmtk::TriMesh::Tuple>(wmtk::TriMesh::Tuple(3, 1, 1, m));
         m.face_attrs[1].mirror_edges[1] =
-            std::make_optional<wmtk::TriMesh::Tuple>(m.tuple_from_edge(0, 2));
-        auto tup = m.tuple_from_edge(0, 2);
-        AdaptiveTessellationSplitEdgeOperation op;
+            std::make_optional<wmtk::TriMesh::Tuple>(wmtk::TriMesh::Tuple(0, 1, 0, m));
+        auto tup = m.tuple_from_edge(0, 1);
+        REQUIRE(tup.is_valid(m));
+        REQUIRE(tup.vid(m) == 1);
+
+        AdaptiveTessellationPairedSplitEdgeOperation op;
         op(m, tup);
         REQUIRE(m.vert_capacity() == 6);
         REQUIRE(m.tri_capacity() == 4);
         // checking for first face
-        REQUIRE(m.face_attrs[0].mirror_edges[2].has_value());
-        REQUIRE(m.face_attrs[0].mirror_edges[2].value().fid(m) == 1);
-        REQUIRE(m.face_attrs[0].mirror_edges[2].value().vid(m) == 3);
+        REQUIRE(m.face_attrs[0].mirror_edges[1].has_value());
+        REQUIRE(m.face_attrs[0].mirror_edges[1].value().fid(m) == 1);
+        REQUIRE(m.face_attrs[0].mirror_edges[1].value().vid(m) == 3);
         // checking for first face mirroring face
         REQUIRE(m.face_attrs[1].mirror_edges[1].has_value());
         REQUIRE(m.face_attrs[1].mirror_edges[1].value().fid(m) == 0);
-        REQUIRE(m.face_attrs[1].mirror_edges[1].value().vid(m) == 2);
+        REQUIRE(m.face_attrs[1].mirror_edges[1].value().vid(m) == 0);
         // checking for second face
-        REQUIRE(m.face_attrs[2].mirror_edges[2].has_value());
-        REQUIRE(m.face_attrs[2].mirror_edges[2].value().fid(m) == 3);
-        REQUIRE(m.face_attrs[2].mirror_edges[2].value().vid(m) == 4);
+        REQUIRE(m.face_attrs[2].mirror_edges[1].has_value());
+        REQUIRE(m.face_attrs[2].mirror_edges[1].value().fid(m) == 3);
+        REQUIRE(m.face_attrs[2].mirror_edges[1].value().vid(m) == 1);
         // checking for second face mirroring face
         REQUIRE(m.face_attrs[3].mirror_edges[1].has_value());
-        REQUIRE(m.face_attrs[3].mirror_edges[1].value().fid(m) == 4);
-        REQUIRE(m.face_attrs[3].mirror_edges[1].value().vid(m) == 5);
+        REQUIRE(m.face_attrs[3].mirror_edges[1].value().fid(m) == 2);
+        REQUIRE(m.face_attrs[3].mirror_edges[1].value().vid(m) == 1);
     }
 }
 

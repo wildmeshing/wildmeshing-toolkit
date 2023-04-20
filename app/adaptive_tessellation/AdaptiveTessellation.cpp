@@ -303,7 +303,7 @@ void AdaptiveTessellation::load_texcoord_set_scale_offset(
         for (auto lvi1 = 0; lvi1 < 3; ++lvi1) {
             auto lvi2 = (lvi1 + 1) % 3;
             auto local_eid = 3 - lvi1 - lvi2;
-            auto edge1 = m_3d.tuple_from_edge(fi, 3 - lvi1 - lvi2);
+            auto edge1 = m_3d.tuple_from_edge(fi, local_eid);
 
             assert(F3d(fi, lvi1) == edge1.vid(m_3d));
             if (!edge1.switch_face(m_3d).has_value()) {
@@ -312,8 +312,7 @@ void AdaptiveTessellation::load_texcoord_set_scale_offset(
             } else {
                 auto edge2 = edge1.switch_face(m_3d).value();
                 auto fj = edge2.fid(m_3d);
-                auto lvj1 = edge2.local_eid(m_3d);
-                auto lvj2 = (lvj1 + 1) % 3;
+                size_t lvj1, lvj2;
                 for (auto i = 0; i < 3; i++) {
                     if (F3d(fj, i) == edge1.vid(m_3d)) lvj1 = i;
                     if (F3d(fj, i) == edge1.switch_vertex(m_3d).vid(m_3d)) lvj2 = i;
@@ -324,11 +323,14 @@ void AdaptiveTessellation::load_texcoord_set_scale_offset(
                 if (F(fi, lvi1) != F(fj, lvj1) && F(fi, lvi2) != F(fj, lvj2)) {
                     // this is a seam. init the mirror_edge tuple
                     face_attrs[fi].mirror_edges[local_eid] =
-                        std::make_optional<wmtk::TriMesh::Tuple>(
-                            Tuple(F(fj, lvj1), (3 - lvj1 - lvj2), fj, *this));
-                    face_attrs[fj].mirror_edges[(3 - lvj1 - lvj2)] =
-                        std::make_optional<wmtk::TriMesh::Tuple>(
-                            Tuple(F(fi, lvi1), local_eid, fi, *this));
+                        std::make_optional<wmtk::TriMesh::Tuple>(Tuple(
+                            F(fj, lvj1),
+                            (3 - lvj1 - lvj2),
+                            fj,
+                            *this)); // tuple points from lvj1 to lvj2
+                    face_attrs[fj]
+                        .mirror_edges[(3 - lvj1 - lvj2)] = std::make_optional<wmtk::TriMesh::Tuple>(
+                        Tuple(F(fi, lvi1), local_eid, fi, *this)); // tuple points from lvi1 to lvi2
                 }
             }
         }
