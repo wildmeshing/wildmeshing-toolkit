@@ -87,7 +87,7 @@ public:
 
     virtual ~AdaptiveTessellation(){};
 
-    void load_texcoord_set_scale_offset(
+    void create_paired_seam_mesh_with_offset(
         const std::filesystem::path input_mesh_path,
         Eigen::MatrixXd& UV,
         Eigen::MatrixXi& F);

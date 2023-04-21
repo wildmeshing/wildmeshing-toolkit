@@ -416,7 +416,7 @@ TEST_CASE("test mirror edge setup")
     Eigen::MatrixXd UV;
     Eigen::MatrixXi F;
     std::filesystem::path input_mesh_path = "/home/yunfan/hemisphere.obj";
-    m.load_texcoord_set_scale_offset(input_mesh_path.string(), UV, F);
+    m.create_paired_seam_mesh_with_offset(input_mesh_path.string(), UV, F);
     // load 3d coordinates and connectivities for computing the offset and scaling
     Eigen::MatrixXd V3d;
     Eigen::MatrixXi F3d;

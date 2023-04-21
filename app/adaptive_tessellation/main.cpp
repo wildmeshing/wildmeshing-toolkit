@@ -99,7 +99,7 @@ int main(int argc, char** argv)
     AdaptiveTessellation m;
     Eigen::MatrixXd UV;
     Eigen::MatrixXi F;
-    m.load_texcoord_set_scale_offset(input_file, UV, F);
+    m.create_paired_seam_mesh_with_offset(input_file, UV, F);
 
     std::ofstream js_o(output_json);
     auto start_time = lagrange::get_timestamp();
@@ -108,7 +108,6 @@ int main(int argc, char** argv)
     image.load(height_map_path, wrapping_mode, wrapping_mode);
     wmtk::logger().info("/////height image: {}", height_map_path);
 
-    m.create_mesh(UV, F);
     m.set_output_folder(output_folder);
     m.mesh_parameters.m_position_normal_paths = {position_map_path, normal_map_path};
     assert(m.check_mesh_connectivity_validity());
