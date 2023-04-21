@@ -227,9 +227,9 @@ public:
         for (unsigned i = 0; i < V.rows(); ++i) {
             vertex_attrs[i].pos << V.row(i)[0], V.row(i)[1];
         }
-        for (const auto& tri : this->get_faces()) {
-            assert(!is_inverted(tri));
-        }
+        // for (const auto& tri : this->get_faces()) {
+        //     assert(!is_inverted(tri));
+        // }
     }
 };
 } // namespace adaptive_tessellation

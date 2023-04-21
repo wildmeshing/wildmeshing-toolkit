@@ -408,6 +408,45 @@ TEST_CASE("paired split")
     }
 }
 
-// TODO add test for load and build mirror face attrs.
 // check each seam edge if edge.vid(m) and edge.switch_vertex(m).vid(m) for the mirror edge are the
 // same.
+TEST_CASE("test mirror edge setup")
+{
+    AdaptiveTessellation m;
+    Eigen::MatrixXd UV;
+    Eigen::MatrixXi F;
+    std::filesystem::path input_mesh_path = "/home/yunfan/hemisphere.obj";
+    m.load_texcoord_set_scale_offset(input_mesh_path.string(), UV, F);
+    // load 3d coordinates and connectivities for computing the offset and scaling
+    Eigen::MatrixXd V3d;
+    Eigen::MatrixXi F3d;
+    igl::read_triangle_mesh(input_mesh_path.string(), V3d, F3d);
+    AdaptiveTessellation m_3d;
+    m_3d.create_mesh_debug(V3d, F3d);
+    for (const auto& f : m.get_faces()) {
+        size_t fi = f.fid(m);
+        for (auto i = 0; i < 3; ++i) {
+            auto mirror_edge = m.face_attrs[fi].mirror_edges[i];
+            wmtk::TriMesh::Tuple tup = m.tuple_from_edge(fi, i);
+            auto lv1 = (i + 1) % 3;
+            auto lv2 = (i + 2) % 3;
+            REQUIRE(3 - lv1 - lv2 == i);
+            REQUIRE(tup.vid(m) == F(fi, lv1));
+            if (mirror_edge.has_value()) {
+                auto fj = mirror_edge.value().fid(m);
+                auto mirror_vid1 = mirror_edge.value().vid(m);
+                auto mirror_vid2 = mirror_edge.value().switch_vertex(m).vid(m);
+                auto mirror_lv1 = (mirror_edge.value().local_eid(m) + 1) % 3;
+                auto mirror_lv2 = (mirror_edge.value().local_eid(m) + 2) % 3;
+                auto original_tup =
+                    m.face_attrs[fj].mirror_edges[mirror_edge.value().local_eid(m)].value();
+                REQUIRE(
+                    (original_tup.vid(m) == tup.vid(m) ||
+                     original_tup.switch_vertex(m).vid(m) == tup.vid(m)));
+
+                REQUIRE(F(fi, lv1) != F(fj, mirror_lv1));
+                REQUIRE(F(fi, lv2) != F(fj, mirror_lv2));
+            }
+        }
+    }
+}

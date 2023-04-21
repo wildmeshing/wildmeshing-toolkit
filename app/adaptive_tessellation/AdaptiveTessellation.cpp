@@ -328,9 +328,12 @@ void AdaptiveTessellation::load_texcoord_set_scale_offset(
                             (3 - lvj1 - lvj2),
                             fj,
                             *this)); // tuple points from lvj1 to lvj2
-                    face_attrs[fj]
-                        .mirror_edges[(3 - lvj1 - lvj2)] = std::make_optional<wmtk::TriMesh::Tuple>(
-                        Tuple(F(fi, lvi1), local_eid, fi, *this)); // tuple points from lvi1 to lvi2
+                    face_attrs[fj].mirror_edges[(3 - lvj1 - lvj2)] =
+                        std::make_optional<wmtk::TriMesh::Tuple>(Tuple(
+                            F(fi, lvi1),
+                            local_eid,
+                            fi,
+                            *this)); // tuple points from lvi1 to lvi2
                 }
             }
         }
@@ -544,9 +547,9 @@ void AdaptiveTessellation::write_vtk(const std::string& path)
         if (!e.is_valid(*this)) continue;
         auto cost = mesh_parameters.m_get_length(e);
         // Eigen::Matrix<double, 2, 1> pos1 = vertex_attrs[e.vid(*this)].pos;
-        // Eigen::Matrix<double, 2, 1> pos2 = vertex_attrs[e.switch_vertex(*this).vid(*this)].pos;
-        // Eigen::Matrix<double, 2, 1> posnew = (pos1 + pos2) * 0.5;
-        // cost -=
+        // Eigen::Matrix<double, 2, 1> pos2 =
+        // vertex_attrs[e.switch_vertex(*this).vid(*this)].pos; Eigen::Matrix<double, 2, 1>
+        // posnew = (pos1 + pos2) * 0.5; cost -=
         //     (mesh_parameters.m_displacement->get_error_per_edge(pos1, posnew) +
         //      mesh_parameters.m_displacement->get_error_per_edge(posnew, pos2));
         scalar_field.emplace_back(cost);

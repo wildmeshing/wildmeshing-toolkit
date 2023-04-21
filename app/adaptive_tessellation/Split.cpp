@@ -65,7 +65,6 @@ wmtk::TriMeshOperation::ExecuteReturnData AdaptiveTessellationPairedSplitEdgeOpe
         mirror_fid = mirror_edge_tuple.value().fid(m);
         vj2 = mirror_edge_tuple.value().switch_vertex(m).vid(m);
         mirror_leid = mirror_edge_tuple.value().local_eid(m);
-        wmtk::logger().info("mirrored leid {}", mirror_leid);
         if (m.face_attrs[mirror_fid]
                 .mirror_edges[mirror_edge_tuple.value().local_eid(m)]
                 .value()
@@ -113,7 +112,6 @@ wmtk::TriMeshOperation::ExecuteReturnData AdaptiveTessellationPairedSplitEdgeOpe
         new_temp = new_temp.switch_vertex(m).switch_edge(m).switch_face(m).value();
         assert(new_temp.switch_edge(m).switch_vertex(m).vid(m) == vi2);
         assert(new_temp.fid(m) != ret_data.tuple.fid(m));
-        wmtk::logger().info("new_temp.fid(m) = {}", new_temp.fid(m));
         auto same_side_new_tuple = wmtk::TriMesh::Tuple(vi2, t.local_eid(m), new_temp.fid(m), m);
 
         // get the other side new fid
@@ -122,7 +120,6 @@ wmtk::TriMeshOperation::ExecuteReturnData AdaptiveTessellationPairedSplitEdgeOpe
             other_side_new_temp.switch_vertex(m).switch_edge(m).switch_face(m).value();
         assert(other_side_new_temp.switch_edge(m).switch_vertex(m).vid(m) == vj2);
         assert(other_side_new_temp.fid(m) != ret_mirror_data.tuple.fid(m));
-        wmtk::logger().info("new_temp.fid(m) = {}", other_side_new_temp.fid(m));
         auto other_side_new_tuple =
             wmtk::TriMesh::Tuple(vj2, mirror_leid, other_side_new_temp.fid(m), m);
 
