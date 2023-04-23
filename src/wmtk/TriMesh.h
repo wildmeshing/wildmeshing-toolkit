@@ -1,9 +1,9 @@
 #pragma once
 
 #define USE_OPERATION_LOGGER
+#include <wmtk/TriMeshTuple.h>
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/AttributeCollection.hpp>
-#include <wmtk/TriMeshTuple.h>
 #include <wmtk/utils/Logger.hpp>
 
 // clang-format off
@@ -37,7 +37,6 @@ class AttributeCollectionRecorder;
 class TriMesh
 {
 public:
-
     using Tuple = TriMeshTuple;
     friend class TriMeshTuple;
     /**
@@ -413,7 +412,7 @@ protected:
      * @brief End the modification phase
      *
      */
-    std::array<std::optional<size_t>,3> release_protected_attributes();
+    std::array<std::optional<size_t>, 3> release_protected_attributes();
 
     /**
      * @brief End Caching connectivity
@@ -425,67 +424,32 @@ protected:
      * @brief rollback the attributes that are modified if any condition failed
      *
      */
-    void rollback_protected_attributes()
-    {
-        if (p_vertex_attrs) p_vertex_attrs->rollback();
-        if (p_edge_attrs) p_edge_attrs->rollback();
-        if (p_face_attrs) p_face_attrs->rollback();
-    }
+    void rollback_protected_attributes();
 
     /**
      * @brief rollback the connectivity that are modified if any condition failed
      */
-    void rollback_protected_connectivity()
-    {
-        m_vertex_connectivity.rollback();
-        m_tri_connectivity.rollback();
-    }
+    void rollback_protected_connectivity();
+
+    /**
+     * @brief rollback both connectivity and attributes
+     */
+    void rollback_protected();
 
     // Moved code from concurrent TriMesh
 
-public:
-    class VertexMutex
-    {
-        tbb::spin_mutex mutex;
-        int owner = std::numeric_limits<int>::max();
-
-    public:
-        bool trylock() { return mutex.try_lock(); }
-
-        void unlock()
-        {
-            reset_owner();
-            mutex.unlock();
-        }
-
-        int get_owner() { return owner; }
-
-        void set_owner(int n) { owner = n; }
-
-        void reset_owner() { owner = std::numeric_limits<int>::max(); }
-    };
-
 private:
+    class VertexMutex;
     tbb::concurrent_vector<VertexMutex> m_vertex_mutex;
 
-    bool try_set_vertex_mutex(const Tuple& v, int threadid)
-    {
-        bool got = m_vertex_mutex[v.vid(*this)].trylock();
-        if (got) m_vertex_mutex[v.vid(*this)].set_owner(threadid);
-        return got;
-    }
-    bool try_set_vertex_mutex(size_t vid, int threadid)
-    {
-        bool got = m_vertex_mutex[vid].trylock();
-        if (got) m_vertex_mutex[vid].set_owner(threadid);
-        return got;
-    }
+    bool try_set_vertex_mutex(const Tuple& v, int threadid);
+    bool try_set_vertex_mutex(size_t vid, int threadid);
 
-    void unlock_vertex_mutex(const Tuple& v) { m_vertex_mutex[v.vid(*this)].unlock(); }
-    void unlock_vertex_mutex(size_t vid) { m_vertex_mutex[vid].unlock(); }
+    void unlock_vertex_mutex(const Tuple& v);
+    void unlock_vertex_mutex(size_t vid);
 
 protected:
-    void resize_mutex(size_t v) { m_vertex_mutex.grow_to_at_least(v); }
+    void resize_mutex(size_t v);
 
 public:
     tbb::enumerable_thread_specific<std::vector<size_t>> mutex_release_stack;

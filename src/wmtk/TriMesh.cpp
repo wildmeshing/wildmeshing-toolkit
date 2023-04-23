@@ -15,6 +15,53 @@
 
 using namespace wmtk;
 
+class TriMesh::VertexMutex
+{
+    tbb::spin_mutex mutex;
+    int owner = std::numeric_limits<int>::max();
+
+public:
+    bool trylock() { return mutex.try_lock(); }
+
+    void unlock()
+    {
+        reset_owner();
+        mutex.unlock();
+    }
+
+    int get_owner() { return owner; }
+
+    void set_owner(int n) { owner = n; }
+
+    void reset_owner() { owner = std::numeric_limits<int>::max(); }
+};
+bool TriMesh::try_set_vertex_mutex(const Tuple& v, int threadid)
+{
+    bool got = m_vertex_mutex[v.vid(*this)].trylock();
+    if (got) m_vertex_mutex[v.vid(*this)].set_owner(threadid);
+    return got;
+}
+bool TriMesh::try_set_vertex_mutex(size_t vid, int threadid)
+{
+    bool got = m_vertex_mutex[vid].trylock();
+    if (got) m_vertex_mutex[vid].set_owner(threadid);
+    return got;
+}
+
+void TriMesh::unlock_vertex_mutex(const Tuple& v)
+{
+    unlock_vertex_mutex(v.vid(*this));
+}
+void TriMesh::unlock_vertex_mutex(size_t vid)
+{
+    m_vertex_mutex[vid].unlock();
+}
+
+void TriMesh::resize_mutex(size_t v)
+{
+    m_vertex_mutex.grow_to_at_least(v);
+}
+
 void TriMesh::copy_connectivity(const TriMesh& o)
 {
     // auto l = std::scoped_lock(vertex_connectivity_lock, tri_connectivity_lock,
@@ -552,7 +599,7 @@ std::optional<size_t> TriMesh::release_protected_connectivity()
     return m_tri_connectivity.end_protect();
 }
 
-std::array<std::optional<size_t>,3> TriMesh::release_protected_attributes()
+std::array<std::optional<size_t>, 3> TriMesh::release_protected_attributes()
 {
     std::array<std::optional<size_t>, 3> updates;
     if (p_vertex_attrs) {
@@ -565,4 +612,26 @@ std::array<std::optional<size_t>,3> TriMesh::release_protected_attributes()
         updates[2] = p_face_attrs->end_protect();
     }
     return updates;
+}
+
+void TriMesh::rollback_protected_attributes()
+{
+    if (p_vertex_attrs) p_vertex_attrs->rollback();
+    if (p_edge_attrs) p_edge_attrs->rollback();
+    if (p_face_attrs) p_face_attrs->rollback();
+}
+
+/**
+ * @brief rollback the connectivity that are modified if any condition failed
+ */
+void TriMesh::rollback_protected_connectivity()
+{
+    m_vertex_connectivity.rollback();
+    m_tri_connectivity.rollback();
+}
+
+void TriMesh::rollback_protected()
+{
+    rollback_protected_connectivity();
+    rollback_protected_attributes();
 }
