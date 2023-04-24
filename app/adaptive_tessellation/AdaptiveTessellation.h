@@ -79,6 +79,9 @@ public:
         double error;
         double max_energy;
         int partition_id;
+        // for pair operation
+        size_t v3;
+        size_t v4;
     };
     tbb::enumerable_thread_specific<InfoCache> cache;
 
