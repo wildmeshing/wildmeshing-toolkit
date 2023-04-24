@@ -14,8 +14,8 @@
 #include <optional>
 
 
-namespace HighFive{
-    class DataSet;
+namespace HighFive {
+class DataSet;
 }
 namespace wmtk {
 /**
@@ -43,7 +43,6 @@ public:
     virtual void rollback() = 0;
     virtual void begin_protect();
     virtual std::optional<size_t> end_protect();
-
 
 
     template <typename T>
@@ -182,8 +181,7 @@ struct AttributeCollection : public AbstractAttributeCollection
     tbb::enumerable_thread_specific<std::map<size_t, T>> m_rollback_list;
     // experimenting with tbb, could be templated as well.
     tbb::concurrent_vector<T> m_attributes;
-    protected:
-    T* data() { return m_attributes.pointer(); }
-    const T* data() const { return m_attributes.as_const_pointer(); }
+
+protected:
 };
 } // namespace wmtk
