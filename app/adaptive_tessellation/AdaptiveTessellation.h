@@ -142,7 +142,7 @@ public:
     void create_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F);
 
     // Exports V and F of the stored mesh
-    void export_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F);
+    void export_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
 
     // Writes a triangle mesh in OBJ format
     void write_obj(const std::string& path);

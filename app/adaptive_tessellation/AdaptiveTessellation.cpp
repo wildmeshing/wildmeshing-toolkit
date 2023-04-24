@@ -469,7 +469,7 @@ AdaptiveTessellation::get_bnd_edge_matrix()
     return E;
 }
 
-void AdaptiveTessellation::export_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F)
+void AdaptiveTessellation::export_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const
 {
     V = Eigen::MatrixXd::Zero(vert_capacity(), 2);
     for (auto& t : get_vertices()) {
