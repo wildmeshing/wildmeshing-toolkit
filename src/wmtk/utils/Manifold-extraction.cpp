@@ -3,8 +3,11 @@
 namespace wmtk {
     auto pntgen2d(size_t nb_points, double range) -> const std::vector<wmtk::Point2D>*{
         std::vector<Point2D>* points = new std::vector<Point2D>(nb_points);
-        // seed of random gen is 10 
-        std::mt19937 gen(10);
+        //auto points = std::make_unique<std::vector<wmtk::Point2D>>(nb_points);
+
+        std::random_device rd{};
+        std::mt19937 gen(rd());
+        // seed of random gen is 10  //std::mt19937 gen(10);
         std::uniform_real_distribution<double> dis(0.0, range);
         for (size_t i = 0; i < nb_points; ++i) {
             // generate 3 random doubles between 0 and the given range
@@ -17,8 +20,9 @@ namespace wmtk {
 
     auto pntgen3d(size_t nb_points, double range) -> const std::vector<wmtk::Point3D>*{
         std::vector<Point3D>* points = new std::vector<Point3D>(nb_points);
-        // seed of random gen is 10 
-        std::mt19937 gen(10);
+        std::random_device rd{};
+        std::mt19937 gen(rd());
+        // seed of random gen is 10  //std::mt19937 gen(10);
         std::uniform_real_distribution<double> dis(0.0, range);
         for (size_t i = 0; i < nb_points; ++i) {
             // generate 3 random doubles between 0 and the given range
