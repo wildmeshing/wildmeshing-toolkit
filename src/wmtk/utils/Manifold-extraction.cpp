@@ -3,8 +3,7 @@
 namespace wmtk {
     auto pntgen2d(size_t nb_points, double range) -> const std::vector<wmtk::Point2D>*{
         std::vector<Point2D>* points = new std::vector<Point2D>(nb_points);
-        //auto points = std::make_unique<std::vector<wmtk::Point2D>>(nb_points);
-
+        //auto points = std::make_unique<std::vector<Point2D>>(nb_points);
         std::random_device rd{};
         std::mt19937 gen(rd());
         // seed of random gen is 10  //std::mt19937 gen(10);

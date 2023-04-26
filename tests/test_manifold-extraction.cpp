@@ -6,16 +6,19 @@
 TEST_CASE("Manifold-Extraction2D", "[man-ext2d]"){
     
     using namespace wmtk;
-    size_t nb_points = 10;
+    size_t nb_points = 20;
     size_t nb_triangles;
     double range = 10.0;
     size_t tagass_loop = 100;
     size_t pntgen_loop = 10;
+    //std::vector<std::vector<Point2D>*>* pntgen_arr = new std::vector<std::vector<Point2D>*>(pntgen_loop);
+    std::vector<std::vector<size_t>*>* tagass_arr = new std::vector<std::vector<size_t>*>(tagass_loop);
+
     for (size_t i = 0; i < pntgen_loop; i++){
         const std::vector<Point2D>* points = pntgen2d(nb_points, range);  // generate nb_points of random points
+        //const std::vector<Point2D>* points = pntgen2d(nb_points, range);  // generate nb_points of random points
         auto [vertices, triangles] = delaunay2D(*points); // do Delaunay on them, output vertices and triangles
         nb_triangles = triangles.size();
-        std::vector<std::vector<size_t>*>* tagass_arr = new std::vector<std::vector<size_t>*>(tagass_loop);
         for (size_t j = 0 ; j < tagass_loop; j++){
             tagass_arr->assign(j, tagassign(nb_triangles)); // assign tags to triangles, only keep the inside ones
         }
