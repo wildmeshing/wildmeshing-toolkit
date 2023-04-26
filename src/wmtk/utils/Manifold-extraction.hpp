@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <random>
 #include <map>
+#include <memory>
 
 
 namespace wmtk {
@@ -20,7 +21,7 @@ using Triangle = std::array<size_t, 3>;
  * @returns A vector of Point2D type.
  *
  */
-auto pntgen2d(size_t nb_points, double range) -> const std::vector<Point2D>*;
-auto pntgen3d(size_t nb_points, double range) -> const std::vector<Point3D>*;
-auto tagassign(size_t nb_triangles) -> std::vector<size_t>*;
+auto pntgen2d(const size_t nb_points, const double range) -> std::vector<Point2D>;
+auto pntgen3d(size_t nb_points, double range) -> std::vector<Point3D>;
+auto tagassign(size_t nb_triangles) -> std::vector<size_t>;
 } // namespace wmtk
