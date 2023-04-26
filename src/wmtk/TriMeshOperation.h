@@ -88,6 +88,13 @@ public:
         return static_cast<const DerivedOperationType&>(*this);
     }
 
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Woverloaded-virtual"
+#elif (defined(__GNUC__) || defined(__GNUG__)) && !(defined(__clang__) || defined(__INTEL_COMPILER))
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Woverloaded-virtual"
+#endif
     ExecuteReturnData execute(TriMesh& m, const Tuple& t) override
     {
         return execute( static_cast<MeshType&>(m), t);
@@ -104,6 +111,11 @@ public:
     {
         return invariants( static_cast<MeshType&>(m), ret_data);
     }
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#elif (defined(__GNUC__) || defined(__GNUG__)) && !(defined(__clang__) || defined(__INTEL_COMPILER))
+#pragma GCC diagnostic pop
+#endif
 
 private:
     ExecuteReturnData execute(MeshType& m, const Tuple& t) { return derived().execute(m, t); }
