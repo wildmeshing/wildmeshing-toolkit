@@ -23,17 +23,40 @@ void addCustomOps(Executor& e)
     e.add_operation(std::make_shared<AdaptiveTessellationSplitEdgeOperation>());
 }
 
-wmtk::TriMeshOperation::ExecuteReturnData AdaptiveTessellationSplitEdgeOperation::execute(
+TriMeshOperation::ExecuteReturnData AdaptiveTessellationSplitEdgeOperation::execute(
     AdaptiveTessellation& m,
     const Tuple& t)
 {
-    return wmtk::TriMeshSplitEdgeOperation::execute(m, t);
+    assert(m.check_mesh_connectivity_validity());
+    TriMeshSplitEdgeOperation::ExecuteReturnData ret_data =
+        TriMeshSplitEdgeOperation::execute(m, t);
+    return_edge_tuple = ret_data.tuple;
+    return ret_data;
 }
 
 bool AdaptiveTessellationSplitEdgeOperation::before(AdaptiveTessellation& m, const Tuple& t)
 {
+    static std::atomic_int cnt = 0;
     if (wmtk::TriMeshSplitEdgeOperation::before(m, t)) {
-        return m.split_edge_before(t);
+        if (m.vertex_attrs[t.vid(m)].curve_id != m.vertex_attrs[t.switch_vertex(m).vid(m)].curve_id)
+            return false;
+        m.write_displaced_obj(
+            m.mesh_parameters.m_output_folder + fmt::format("/split_{:02d}.obj", cnt++),
+            m.mesh_parameters.m_displacement);
+
+        op_cache.local().v1 = t.vid(m);
+        op_cache.local().v2 = t.switch_vertex(m).vid(m);
+        // TODO is this correct?
+        m.cache.local().partition_id = m.vertex_attrs[t.vid(m)].partition_id;
+        if (m.is_boundary_vertex(t))
+            m.vertex_attrs[op_cache.local().v1].boundary_vertex = true;
+        else
+            m.vertex_attrs[op_cache.local().v1].boundary_vertex = false;
+        if (m.is_boundary_vertex(t.switch_vertex(m)))
+            m.vertex_attrs[op_cache.local().v2].boundary_vertex = true;
+        else
+            m.vertex_attrs[op_cache.local().v2].boundary_vertex = false;
+        return true;
     }
     return false;
 }
@@ -43,9 +66,22 @@ bool AdaptiveTessellationSplitEdgeOperation::after(
     wmtk::TriMeshOperation::ExecuteReturnData& ret_data)
 {
     if (wmtk::TriMeshSplitEdgeOperation::after(m, ret_data)) {
-        ret_data.success &= m.split_edge_after(ret_data.tuple);
+        const Eigen::Vector2d p =
+            (m.vertex_attrs[op_cache.local().v1].pos + m.vertex_attrs[op_cache.local().v2].pos) /
+            2.0;
+        wmtk::logger().info(p);
+        auto vid = return_edge_tuple.switch_vertex(m).vid(m);
+        m.vertex_attrs[vid].pos = p;
+        m.vertex_attrs[vid].partition_id = m.cache.local().partition_id;
+        m.vertex_attrs[vid].curve_id = m.vertex_attrs[op_cache.local().v1].curve_id;
+        // take into account of periodicity
+        if (m.vertex_attrs[op_cache.local().v1].boundary_vertex &&
+            m.vertex_attrs[op_cache.local().v2].boundary_vertex) {
+            m.vertex_attrs[vid].boundary_vertex = true;
+            m.vertex_attrs[vid].t = m.mesh_parameters.m_boundary.uv_to_t(m.vertex_attrs[vid].pos);
+        }
     }
-    return ret_data;
+    return ret_data.success;
 }
 
 bool AdaptiveTessellationSplitEdgeOperation::invariants(
@@ -68,6 +104,7 @@ wmtk::TriMeshOperation::ExecuteReturnData AdaptiveTessellationPairedSplitEdgeOpe
     Tuple t_copy = t;
     if (mirror_edge_tuple.has_value()) {
         mirror_fid = mirror_edge_tuple.value().fid(m);
+        // get vj2 for the other side new tuple update
         vj2 = mirror_edge_tuple.value().switch_vertex(m).vid(m);
         mirror_leid = mirror_edge_tuple.value().local_eid(m);
         if (m.face_attrs[mirror_fid]
@@ -140,11 +177,7 @@ wmtk::TriMeshOperation::ExecuteReturnData AdaptiveTessellationPairedSplitEdgeOpe
 
 bool AdaptiveTessellationPairedSplitEdgeOperation::before(AdaptiveTessellation& m, const Tuple& t)
 {
-    if (!wmtk::TriMeshSplitEdgeOperation::before(m, t)) {
-        return false;
-    }
-    // check for current edge and mirrored edge on the seam
-    if (!m.split_edge_before(t)) return false;
+    bool split_edge_success = split_edge.before(m, t);
     auto mirror_edge_tuple = m.face_attrs[t.fid(m)].mirror_edges[t.local_eid(m)];
     if (mirror_edge_tuple.has_value()) {
         if (!wmtk::TriMeshSplitEdgeOperation::before(m, mirror_edge_tuple.value())) return false;
@@ -202,7 +235,7 @@ void AdaptiveTessellation::split_all_edges()
 
     wmtk::logger().info("size for edges to be split is {}", collect_all_ops.size());
     auto setup_and_execute = [&](auto executor) {
-        addPairedCustomOps(executor);
+        addCustomOps(executor);
         executor.renew_neighbor_tuples = split_renew;
         executor.priority = [&](auto& m, auto _, auto& e) {
             auto error = m.mesh_parameters.m_get_length(e);
