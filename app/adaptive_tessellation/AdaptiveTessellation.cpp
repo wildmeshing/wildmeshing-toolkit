@@ -3,6 +3,7 @@
 #include <igl/Timer.h>
 #include <igl/predicates/predicates.h>
 #include <igl/read_triangle_mesh.h>
+#include <igl/remove_unreferenced.h>
 #include <igl/writeDMAT.h>
 #include <igl/write_triangle_mesh.h>
 #include <lagrange/utils/timing.h>
@@ -449,6 +450,35 @@ void AdaptiveTessellation::export_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F) c
             F(i, j) = vs[j].vid(*this);
         }
     }
+}
+
+void AdaptiveTessellation::export_seamless_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const
+{
+    throw std::logic_error("Function not yet implemented");
+
+    V = Eigen::MatrixXd::Zero(vert_capacity(), 2);
+    for (auto& t : get_vertices()) {
+        auto i = t.vid(*this);
+        V.row(i) = vertex_attrs[i].pos;
+    }
+
+    F = Eigen::MatrixXi::Constant(tri_capacity(), 3, -1);
+    for (auto& t : get_faces()) {
+        auto i = t.fid(*this);
+        auto vs = oriented_tri_vertices(t);
+        for (int j = 0; j < 3; j++) {
+            F(i, j) = vs[j].vid(*this);
+        }
+    }
+
+    // find / merge seam vertices
+    // TODO ... this depends on knowing the seams but they do not exist in this branch yet...
+
+    Eigen::MatrixXd NV;
+    Eigen::MatrixXi NF;
+    Eigen::MatrixXi I; // no clue what that is
+
+    igl::remove_unreferenced(V, F, NV, NF, I);
 }
 
 void AdaptiveTessellation::write_obj(const std::string& path)

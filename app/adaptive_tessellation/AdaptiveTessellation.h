@@ -134,6 +134,9 @@ public:
     // Exports V and F of the stored mesh
     void export_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
 
+    // Exports V and F of the stored mesh where all seam vertices are merged
+    void export_seamless_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
+
     // Writes a triangle mesh in OBJ format
     void write_obj(const std::string& path);
 
