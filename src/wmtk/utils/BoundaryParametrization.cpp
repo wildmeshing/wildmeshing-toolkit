@@ -41,15 +41,12 @@ CurveNetwork split_loops(
 {
     CurveNetwork result;
 
-    logger().info("Num loops: {}", loops.size());
+    logger().debug("Num loops: {}", loops.size());
 
-    // Color each loop edge based on seam info
-    std::unordered_map<int, int> seam_to_loop;
-    std::vector<std::vector<int>> edge_colors(loops.size());
+    // Map seam to incident loop ids
+    std::unordered_multimap<int, int> seam_to_loop;
     for (int loop_id = 0; loop_id < static_cast<int>(loops.size()); ++loop_id) {
         const auto& loop = loops[loop_id];
-        auto& colors = edge_colors[loop_id];
-        colors.resize(loop.size());
         for (size_t i = 0; i < loop.size(); ++i) {
             const int v0 = loop[i];
             const int v1 = loop[(i + 1) % loop.size()];
@@ -57,11 +54,47 @@ CurveNetwork split_loops(
             auto it = edge_to_seam.find(e);
             if (it != edge_to_seam.end()) {
                 const int seam_id = it->second;
-                auto [lt, _] = seam_to_loop.try_emplace(seam_id, loop_id);
-                colors[i] = lt->second;
-            } else {
-                colors[i] = -1;
+                seam_to_loop.emplace(seam_id, loop_id);
+                la_runtime_assert(seam_to_loop.count(seam_id) <= 2, "Non-manifold seam detected!");
             }
+        }
+    }
+
+    // Color each loop edge according using the following strategy:
+    // 1. If the edge is a seam edge, use a unique color based on the (loop_id0, loop_id1) on either
+    //    side of the seam.
+    // 2. If the edge is a boundary edge, use a unique color based on the loop_id
+    int num_colors = 0;
+    using LoopPair = Edge;
+    std::map<LoopPair, int> loop_pair_to_color;
+    std::vector<std::vector<int>> edge_colors(loops.size());
+
+    auto color_from_edge = [&](int v0, int v1, int default_color) {
+        Edge e(v0, v1);
+        auto it = edge_to_seam.find(e);
+        if (it != edge_to_seam.end()) {
+            auto range = seam_to_loop.equal_range(it->second);
+            la_runtime_assert(std::distance(range.first, range.second) == 2);
+            LoopPair key(range.first->second, std::next(range.first)->second);
+            auto [ct, inserted] = loop_pair_to_color.try_emplace(key, num_colors);
+            if (inserted) {
+                ++num_colors;
+            }
+            return ct->second;
+        } else {
+            return default_color;
+        }
+    };
+
+    for (int loop_id = 0; loop_id < static_cast<int>(loops.size()); ++loop_id) {
+        const auto& loop = loops[loop_id];
+        auto& colors = edge_colors[loop_id];
+        colors.resize(loop.size());
+        const int current_color = num_colors++;
+        for (size_t i = 0; i < loop.size(); ++i) {
+            const int v0 = loop[i];
+            const int v1 = loop[(i + 1) % loop.size()];
+            colors[i] = color_from_edge(v0, v1, current_color);
         }
     }
 
@@ -79,7 +112,6 @@ CurveNetwork split_loops(
             result.is_closed.push_back(true);
         } else {
             // 2nd case: split each chunk of edges sharing the same color
-
             {
                 // First we rotate the vertex ids to make sure the same color doesn't run
                 // periodically across the loop indices.
@@ -99,6 +131,8 @@ CurveNetwork split_loops(
                 result.is_closed.emplace_back(false);
                 it = std::adjacent_find(colors.begin(), colors.end(), std::not_equal_to<>());
             }
+            result.curves.emplace_back(std::move(loop));
+            result.is_closed.emplace_back(false);
         }
     }
 

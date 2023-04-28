@@ -2,8 +2,8 @@
 #include <wmtk/utils/BoundaryParametrization.h>
 
 #include <lagrange/IndexedAttribute.h>
-#include <lagrange/io/load_mesh.h>
 #include <lagrange/attribute_names.h>
+#include <lagrange/io/load_mesh.h>
 #include <lagrange/io/save_mesh.h>
 #include <lagrange/utils/assert.h>
 #include <lagrange/utils/invalid.h>
@@ -70,11 +70,18 @@ std::pair<Eigen::MatrixXi, Eigen::MatrixXi> compute_seam_edges(MeshType mesh)
     return std::make_pair(E0, E1);
 }
 
-void test_boundary_parameterization(const MeshType& mesh)
+void test_boundary_parameterization(const MeshType& mesh, int expected_num_curves)
 {
     auto& uv_attr = mesh.get_indexed_attribute<double>(lagrange::AttributeName::texcoord);
     auto uv_vertices = matrix_view(uv_attr.values());
     auto uv_facets = reshaped_view(uv_attr.indices(), 3);
+
+    MeshType uv_mesh(2);
+    uv_mesh.add_vertices(uv_vertices.rows());
+    uv_mesh.add_triangles(uv_facets.rows());
+    vertex_ref(uv_mesh) = uv_vertices;
+    facet_ref(uv_mesh) = uv_facets;
+    // lagrange::io::save_mesh("uv_mesh.obj", uv_mesh);
 
     auto [E0, E1] = compute_seam_edges(mesh);
 
@@ -98,12 +105,13 @@ void test_boundary_parameterization(const MeshType& mesh)
     };
 
     wmtk::logger().info("Num curves: {}", boundary.num_curves());
+    REQUIRE(boundary.num_curves() == expected_num_curves);
 
     for (int curve_id = 0; curve_id < static_cast<int>(boundary.num_curves()); ++curve_id) {
         auto curve_mesh = curve_to_mesh(curve_id);
         auto parent_mesh = curve_to_mesh(boundary.parent_curve(curve_id));
-        lagrange::io::save_mesh("seam_{}.obj", curve_mesh);
-        lagrange::io::save_mesh("seam_{}_parent.obj", parent_mesh);
+        // lagrange::io::save_mesh(fmt::format("seam_{}.obj", curve_id), curve_mesh);
+        // lagrange::io::save_mesh(fmt::format("seam_{}_parent.obj", curve_id), parent_mesh);
     }
 }
 
@@ -111,8 +119,10 @@ void test_boundary_parameterization(const MeshType& mesh)
 
 TEST_CASE("Boundary Parameterization", "[utils][boundary]")
 {
-    test_boundary_parameterization(
-        lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMT_DATA_DIR "/blub.obj"));
     // test_boundary_parameterization(
-    //     lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMT_DATA_DIR "/blub_open.obj"));
+    //     lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMT_DATA_DIR "/blub.obj"),
+    //     18);
+    test_boundary_parameterization(
+        lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMT_DATA_DIR "/blub_open.obj"),
+        15);
 }
