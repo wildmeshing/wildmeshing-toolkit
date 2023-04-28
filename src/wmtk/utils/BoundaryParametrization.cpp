@@ -68,7 +68,7 @@ CurveNetwork split_loops(
         if (loop.empty()) {
             continue;
         }
-        auto it = std::adjacent_find(colors.begin(), colors.end(), std::not_equal_to<>);
+        auto it = std::adjacent_find(colors.begin(), colors.end(), std::not_equal_to<>());
         if (it == colors.end()) {
             // 1st case: every edge is the same color. Keep loop intact.
             result.curves.push_back(loop);
@@ -85,7 +85,7 @@ CurveNetwork split_loops(
             }
 
             // Now we can split safely each continuous chunk...
-            it = std::adjacent_find(colors.begin(), colors.end(), std::not_equal_to<>);
+            it = std::adjacent_find(colors.begin(), colors.end(), std::not_equal_to<>());
             while (it != colors.end()) {
                 std::ptrdiff_t m = std::distance(colors.begin(), it) + 1;
                 CurveNetwork::Curve path(loop.begin(), loop.begin() + m);
@@ -93,7 +93,7 @@ CurveNetwork split_loops(
                 colors.erase(colors.begin(), colors.begin() + m);
                 result.curves.emplace_back(std::move(path));
                 result.is_closed.emplace_back(false);
-                it = std::adjacent_find(colors.begin(), colors.end(), std::not_equal_to<>);
+                it = std::adjacent_find(colors.begin(), colors.end(), std::not_equal_to<>());
             }
         }
     }
@@ -142,7 +142,7 @@ Boundary::ParameterizedCurves parameterize_curves(
 
         // Check if we need to flip the current curve
         if (parent_id != curve_id) {
-            la_runtime_assert(curve.size(), input.curves[parent_id].size());
+            la_runtime_assert(curve.size() == input.curves[parent_id].size());
             if (check_orientation(curve, parent_id)) {
                 std::reverse(curve.begin(), curve.end());
                 la_runtime_assert(check_orientation(curve, parent_id));
@@ -167,8 +167,8 @@ Boundary::ParameterizedCurves parameterize_curves(
         assert(arclengths.size() == positions.size() + 1);
         result.positions.emplace_back(std::move(positions));
         result.arclengths.emplace_back(std::move(arclengths));
-        result.periodic.emplace(input.is_closed[curve_id]);
-        result.parent_curve.emplace(parent_id);
+        result.periodic.emplace_back(input.is_closed[curve_id]);
+        result.parent_curve.emplace_back(parent_id);
     }
 
     // Sanity check: When two curves are paired, and one of them is "open", we make sure we use the
@@ -182,6 +182,8 @@ Boundary::ParameterizedCurves parameterize_curves(
             result.parent_curve[curve_id] = curve_id;
         }
     }
+
+    return result;
 }
 
 } // namespace
@@ -210,12 +212,14 @@ void Boundary::construct_boundaries(
     m_curves = parameterize_curves(split_loops(paths, edge_to_seam), V, edge_to_seam);
 }
 
-ParameterizedSegment Boundary::t_to_segment(int curve_id, double t) const
+Boundary::ParameterizedSegment Boundary::t_to_segment(int curve_id, double t) const
 {
     ParameterizedSegment result;
 
     const auto& arclength = m_curves.arclengths[m_curves.parent_curve[curve_id]];
-    while (t < 0) t += arclength.back();
+    while (t < 0) {
+        t += arclength.back();
+    }
     t = std::fmod(t, arclength.back());
     assert(t < arclength.back());
 
