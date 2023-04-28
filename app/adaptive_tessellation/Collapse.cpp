@@ -161,9 +161,9 @@ bool AdaptiveTessellation::collapse_edge_after(const Tuple& edge_tuple)
     auto vid = edge_tuple.vid(*this);
     Eigen::Vector2d p;
     double t_parameter;
-    double mod_length =
-        mesh_parameters.m_boundary.m_arclengths[vertex_attrs[edge_tuple.vid(*this)].curve_id]
-            .back();
+    double mod_length = 0;
+        //mesh_parameters.m_boundary.m_arclengths[vertex_attrs[edge_tuple.vid(*this)].curve_id]
+        //    .back();
     if (vertex_attrs[cache.local().v1].fixed) {
         p = vertex_attrs[cache.local().v1].pos;
         t_parameter = std::fmod(vertex_attrs[cache.local().v1].t, mod_length);

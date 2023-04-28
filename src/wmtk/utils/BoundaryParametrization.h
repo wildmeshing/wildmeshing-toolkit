@@ -91,6 +91,10 @@ public:
     double upper_bound(int curve_id) const { return m_curves.arclengths[curve_id].back(); }
 
     bool is_periodic(int curve_id) const { return m_curves.periodic[curve_id]; }
+
+    const std::vector<double> &arclengths(int curve_id) const { return m_curves.arclengths[curve_id]; }
+
+    size_t num_curves() const { return m_curves.arclengths.size(); }
 };
 
 } // namespace wmtk

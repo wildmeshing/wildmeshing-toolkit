@@ -568,8 +568,7 @@ void wmtk::newton_method_with_fallback(
             state.two_opposite_vertices = nminfo.neighbors.row(i);
             state.dofx = dofx;
             state.scaling = nminfo.target_length;
-            // assert(boundary_mapping.m_arclengths.size() > 0);
-            // assert(boundary_mapping.m_boundaries.size() > 0);
+            assert(boundary_mapping.num_curves() > 0);
             DofsToPositions dofs_to_pos(boundary_mapping, nminfo.curve_id);
             energy_def.eval(state, dofs_to_pos);
             total_energy += state.value;
