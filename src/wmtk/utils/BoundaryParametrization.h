@@ -78,7 +78,8 @@ public:
     ///
     ParameterizedSegment t_to_segment(int curve_id, double t) const;
 
-    Eigen::Vector2d t_to_uv(int curve_id, double t) const {
+    Eigen::Vector2d t_to_uv(int curve_id, double t) const
+    {
         auto s = t_to_segment(curve_id, t);
         return s.A + (s.B - s.A) * (t - s.t0) / s.tlen;
     }
@@ -96,7 +97,14 @@ public:
     /// @return     If the curve is not periodic (open polyline), the total arclength of the curve.
     ///             Otherwise, nullopt.
     ///
-    std::optional<double> upper_bound(int curve_id) const;
+    std::optional<double> upper_bound(int curve_id) const
+    {
+        if (m_curves.periodic[curve_id]) {
+            return std::nullopt;
+        } else {
+            return m_curves.arclengths[curve_id].back();
+        }
+    }
 };
 
 } // namespace wmtk
