@@ -342,6 +342,7 @@ void AdaptiveTessellation::create_paired_seam_mesh_with_offset(
 
 bool AdaptiveTessellation::invariants(const std::vector<Tuple>& new_tris)
 {
+    TriMesh::invariants(new_tris);
     if (mesh_parameters.m_has_envelope) {
         for (auto& t : new_tris) {
             std::array<Eigen::Vector3d, 3> tris;

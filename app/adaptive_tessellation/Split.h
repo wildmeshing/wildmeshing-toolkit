@@ -32,7 +32,6 @@ public:
     ExecuteReturnData execute(AdaptiveTessellation& m, const Tuple& t);
     bool before(AdaptiveTessellation& m, const Tuple& t);
     bool after(AdaptiveTessellation& m, ExecuteReturnData& ret_data);
-    bool invariants(AdaptiveTessellation& m, ExecuteReturnData& ret_data);
 };
 
 class AdaptiveTessellationPairedSplitEdgeOperation
@@ -44,10 +43,10 @@ class AdaptiveTessellationPairedSplitEdgeOperation
 public:
     AdaptiveTessellationSplitEdgeOperation split_edge;
     AdaptiveTessellationSplitEdgeOperation split_mirror_edge;
+    std::optional<Tuple> mirror_edge_tuple;
 
 public:
     ExecuteReturnData execute(AdaptiveTessellation& m, const Tuple& t);
     bool before(AdaptiveTessellation& m, const Tuple& t);
     bool after(AdaptiveTessellation& m, ExecuteReturnData& ret_data);
-    bool invariants(AdaptiveTessellation& m, ExecuteReturnData& ret_data);
 };

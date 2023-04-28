@@ -343,7 +343,7 @@ std::string TriMeshSwapEdgeOperation::name() const
 auto TriMeshSmoothVertexOperation::execute(TriMesh& m, const Tuple& t) -> ExecuteReturnData
 {
     // always succeed and return the Tuple for the (vertex) that we pointed at
-    return {t, {}, true};
+    return {t, m.get_one_ring_tris_for_vertex(t), true};
 }
 bool TriMeshSmoothVertexOperation::before(TriMesh& m, const Tuple& t)
 {
@@ -358,13 +358,13 @@ std::string TriMeshSmoothVertexOperation::name() const
     return "vertex_smooth";
 }
 
-bool TriMeshSmoothVertexOperation::invariants(TriMesh& m, ExecuteReturnData& ret_data)
-{
-    // todo: mtao: figure out how to incorporate this properly
-    //  our execute should have tuple set to the input tuple (vertex)
-    // return TriMesh::invariants(m.get_one_ring_tris_for_vertex(ret_data.tuple));
-    return m.invariants(m.get_one_ring_tris_for_vertex(ret_data.tuple));
-}
+// bool TriMeshSmoothVertexOperation::invariants(TriMesh& m, ExecuteReturnData& ret_data)
+// {
+//     // todo: mtao: figure out how to incorporate this properly
+//     //  our execute should have tuple set to the input tuple (vertex)
+//     // return TriMesh::invariants(m.get_one_ring_tris_for_vertex(ret_data.tuple));
+//     return m.invariants();
+// }
 
 
 auto TriMeshEdgeCollapseOperation::execute(TriMesh& m, const Tuple& loc0) -> ExecuteReturnData
@@ -683,4 +683,3 @@ std::string TriMeshConsolidateOperation::name() const
 {
     return "consolidate";
 }
-
