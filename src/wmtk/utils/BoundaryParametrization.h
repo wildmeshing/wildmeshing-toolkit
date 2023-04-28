@@ -88,23 +88,9 @@ public:
 
     std::pair<int, int> uv_to_ij(const Eigen::Vector2d& v, double& t) const;
 
-    ///
-    /// If curve_id is a periodic loop, returns nullopt. Otherwise, it returns the total arclength
-    /// of the specified curve (i.e. the upper bound of its parameter t).
-    ///
-    /// @param[in]  curve_id  Curve index.
-    ///
-    /// @return     If the curve is not periodic (open polyline), the total arclength of the curve.
-    ///             Otherwise, nullopt.
-    ///
-    std::optional<double> upper_bound(int curve_id) const
-    {
-        if (m_curves.periodic[curve_id]) {
-            return std::nullopt;
-        } else {
-            return m_curves.arclengths[curve_id].back();
-        }
-    }
+    double upper_bound(int curve_id) const { return m_curves.arclengths[curve_id].back(); }
+
+    bool is_periodic(int curve_id) const { return m_curves.periodic[curve_id]; }
 };
 
 } // namespace wmtk

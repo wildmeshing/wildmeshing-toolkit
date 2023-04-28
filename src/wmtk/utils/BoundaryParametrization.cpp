@@ -12,10 +12,10 @@ namespace {
 
 struct Edge
 {
-    Index v1;
-    Index v2;
+    int v1;
+    int v2;
 
-    Edge(Index x, Index y)
+    Edge(int x, int y)
         : v1(std::min(x, y))
         , v2(std::max(x, y))
     {}
@@ -52,8 +52,8 @@ CurveNetwork split_loops(
             Edge e(v0, v1);
             auto it = edge_to_seam.find(e);
             if (it != edge_to_seam.end()) {
-                const int seam_id = *it;
-                auto [lt, _] seam_to_loop.try_emplace(seam_id, loop_id);
+                const int seam_id = it->second;
+                auto [lt, _] = seam_to_loop.try_emplace(seam_id, loop_id);
                 colors[i] = lt->second;
             } else {
                 colors[i] = -1;
@@ -63,12 +63,12 @@ CurveNetwork split_loops(
 
     // Split each loop based on continuous edge colors
     for (int loop_id = 0; loop_id < static_cast<int>(loops.size()); ++loop_id) {
-        const auto& loop = loops[loop_id];
-        const auto& colors = edge_colors[loop_id];
+        auto loop = loops[loop_id];
+        auto& colors = edge_colors[loop_id];
         if (loop.empty()) {
             continue;
         }
-        auto it = std::adjacent_find(colors.begin(), colors.end(), std::not_equal_to<int>);
+        auto it = std::adjacent_find(colors.begin(), colors.end(), std::not_equal_to<>);
         if (it == colors.end()) {
             // 1st case: every edge is the same color. Keep loop intact.
             result.curves.push_back(loop);
@@ -85,15 +85,15 @@ CurveNetwork split_loops(
             }
 
             // Now we can split safely each continuous chunk...
-            it = std::adjacent_find(colors.begin(), colors.end(), std::not_equal_to<int>);
+            it = std::adjacent_find(colors.begin(), colors.end(), std::not_equal_to<>);
             while (it != colors.end()) {
                 std::ptrdiff_t m = std::distance(colors.begin(), it) + 1;
-                Curve path(loop.begin(), loop.begin() + m);
+                CurveNetwork::Curve path(loop.begin(), loop.begin() + m);
                 loop.erase(loop.begin(), loop.begin() + m);
                 colors.erase(colors.begin(), colors.begin() + m);
                 result.curves.emplace_back(std::move(path));
                 result.is_closed.emplace_back(false);
-                it = std::adjacent_find(colors.begin(), colors.end(), std::not_equal_to<int>);
+                it = std::adjacent_find(colors.begin(), colors.end(), std::not_equal_to<>);
             }
         }
     }
@@ -103,6 +103,7 @@ CurveNetwork split_loops(
 
 Boundary::ParameterizedCurves parameterize_curves(
     const CurveNetwork& input,
+    const Eigen::MatrixXd& V,
     const std::map<Edge, int> edge_to_seam)
 {
     Boundary::ParameterizedCurves result;
@@ -130,7 +131,7 @@ Boundary::ParameterizedCurves parameterize_curves(
             Edge e(v0, v1);
             auto it = edge_to_seam.find(e);
             if (it != edge_to_seam.end()) {
-                const int seam_id = *it;
+                const int seam_id = it->second;
                 auto [ct, inserted] = seam_to_curve.try_emplace(seam_id, curve_id);
                 if (!inserted) {
                     la_runtime_assert(parent_id == curve_id || parent_id == ct->second);
@@ -206,7 +207,7 @@ void Boundary::construct_boundaries(
         }
     }
 
-    m_curves = parameterize_curves(split_loops(paths, edge_to_seam), edge_to_seam);
+    m_curves = parameterize_curves(split_loops(paths, edge_to_seam), V, edge_to_seam);
 }
 
 ParameterizedSegment Boundary::t_to_segment(int curve_id, double t) const

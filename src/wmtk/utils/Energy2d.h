@@ -48,6 +48,10 @@ public:
             DScalar y1(1, dofx(1));
             return std::pair<DScalar, DScalar>(x1, y1);
         }
+        auto s = m_boundary_mapping.t_to_segment(m_curve_id, dofx(0));
+
+        /*
+
         assert(m_boundary_mapping.m_arclengths.size() != 0);
         auto arclength = m_boundary_mapping.m_arclengths[m_curve_id];
         double t_value = std::fmod(dofx(0), arclength.back());
@@ -74,9 +78,9 @@ public:
         assert(std::pow((n.squaredNorm() - 1), 2) < 1e-8);
         Eigen::Matrix<DScalar, 2, 1> tmpA;
         tmpA << r * n(0), r * n(1);
-
+        */
         Eigen::Matrix<DScalar, 2, 1> V;
-        V << A(0) + tmpA(0), A(1) + tmpA(1);
+        // V << A(0) + tmpA(0), A(1) + tmpA(1);
 
         return {V(0), V(1)};
     }
