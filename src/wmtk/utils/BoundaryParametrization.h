@@ -1,14 +1,14 @@
 #pragma once
 
-#include <igl/boundary_loop.h>
-#include <igl/project_to_line_segment.h>
+#include "Logger.hpp"
+
 #include <Eigen/Cholesky>
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <Eigen/LU>
+
 #include <array>
 #include <cmath>
-#include "Logger.hpp"
 
 namespace wmtk {
 class Boundary
@@ -92,9 +92,19 @@ public:
 
     bool is_periodic(int curve_id) const { return m_curves.periodic[curve_id]; }
 
-    const std::vector<double> &arclengths(int curve_id) const { return m_curves.arclengths[curve_id]; }
+    const std::vector<Eigen::Vector2d>& positions(int curve_id) const
+    {
+        return m_curves.positions[curve_id];
+    }
+
+    const std::vector<double>& arclengths(int curve_id) const
+    {
+        return m_curves.arclengths[curve_id];
+    }
 
     size_t num_curves() const { return m_curves.arclengths.size(); }
+
+    int parent_curve(int curve_id) const { return m_curves.parent_curve[curve_id]; }
 };
 
 } // namespace wmtk

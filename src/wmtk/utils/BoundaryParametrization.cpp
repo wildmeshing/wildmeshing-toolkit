@@ -1,5 +1,7 @@
 #include "BoundaryParametrization.h"
 
+#include <igl/boundary_loop.h>
+#include <igl/project_to_line_segment.h>
 #include <lagrange/utils/assert.h>
 
 #include <map>
@@ -38,6 +40,8 @@ CurveNetwork split_loops(
     const std::map<Edge, int> edge_to_seam)
 {
     CurveNetwork result;
+
+    logger().info("Num loops: {}", loops.size());
 
     // Color each loop edge based on seam info
     std::unordered_map<int, int> seam_to_loop;
@@ -142,7 +146,12 @@ Boundary::ParameterizedCurves parameterize_curves(
 
         // Check if we need to flip the current curve
         if (parent_id != curve_id) {
-            la_runtime_assert(curve.size() == input.curves[parent_id].size());
+            la_runtime_assert(
+                curve.size() == input.curves[parent_id].size(),
+                fmt::format(
+                    "Parent curve has {} vertices, while current curve has {} vertices",
+                    input.curves[parent_id].size(),
+                    curve.size()));
             if (check_orientation(curve, parent_id)) {
                 std::reverse(curve.begin(), curve.end());
                 la_runtime_assert(check_orientation(curve, parent_id));
