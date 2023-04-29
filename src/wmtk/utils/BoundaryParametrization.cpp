@@ -288,16 +288,15 @@ double Boundary::uv_to_t(const Eigen::Vector2d& v) const
     double d = std::numeric_limits<double>::infinity();
     for (auto i = 0; i < m_curves.positions.size(); i++) {
         for (auto j = 0; j < m_curves.positions[i].size(); j++) {
+            size_t j2 = (j + 1) % m_curves.positions[i].size();
             Eigen::RowVector2d A = m_curves.positions[i][j];
-            Eigen::RowVector2d B = m_curves.positions[i][(j + 1) % m_curves.positions[i].size()];
+            Eigen::RowVector2d B = m_curves.positions[i][j2];
             igl::project_to_line_segment(P, A, B, tmp_t, tmp_d);
             if (tmp_d(0) < d) {
                 d = tmp_d(0);
-                ret_t = m_curves.arclengths[i][j] +
-                        std::abs(
-                            tmp_t(0) *
-                            (m_curves.arclengths[i][(j + 1) % m_curves.arclengths[i].size()] -
-                             m_curves.arclengths[i][j]));
+                int k = m_curves.parent_curve[i];
+                double len = m_curves.arclengths[k][j + 1] - m_curves.arclengths[k][j];
+                ret_t = m_curves.arclengths[k][j] + tmp_t(0) * len;
             }
         }
     }
@@ -314,16 +313,15 @@ std::pair<int, int> Boundary::uv_to_ij(const Eigen::Vector2d& v, double& t) cons
     double d = std::numeric_limits<double>::infinity();
     for (auto i = 0; i < m_curves.positions.size(); i++) {
         for (auto j = 0; j < m_curves.positions[i].size(); j++) {
+            size_t j2 = (j + 1) % m_curves.positions[i].size();
             Eigen::RowVector2d A = m_curves.positions[i][j];
-            Eigen::RowVector2d B = m_curves.positions[i][(j + 1) % m_curves.positions[i].size()];
+            Eigen::RowVector2d B = m_curves.positions[i][j2];
             igl::project_to_line_segment(P, A, B, tmp_t, tmp_d);
             if (tmp_d(0) < d) {
                 d = tmp_d(0);
-                t = m_curves.arclengths[i][j] +
-                    std::abs(
-                        tmp_t(0) *
-                        (m_curves.arclengths[i][(j + 1) % m_curves.arclengths[i].size()] -
-                         m_curves.arclengths[i][j]));
+                int k = m_curves.parent_curve[i];
+                double len = m_curves.arclengths[k][j + 1] - m_curves.arclengths[k][j];
+                t = m_curves.arclengths[k][j] + tmp_t(0) * len;
                 ij.first = i;
                 ij.second = j;
             }
