@@ -1,4 +1,4 @@
-
+#pragma once
 #include <igl/Timer.h>
 #include <wmtk/utils/AMIPS2D.h>
 #include <wmtk/utils/ScalarUtils.h>

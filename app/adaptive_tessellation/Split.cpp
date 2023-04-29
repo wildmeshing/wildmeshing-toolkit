@@ -100,11 +100,10 @@ wmtk::TriMeshOperation::ExecuteReturnData AdaptiveTessellationPairedSplitEdgeOpe
     AdaptiveTessellation& m,
     const Tuple& t)
 {
-    size_t mirror_fid, mirror_leid = -1;
+    size_t mirror_leid = -1;
     size_t vi2, vj2 = -1;
     Tuple t_copy = t;
     if (mirror_edge_tuple.has_value()) {
-        mirror_fid = mirror_edge_tuple.value().fid(m);
         assert(
             mirror_edge_tuple.value().fid(m) ==
             m.face_attrs[t.fid(m)].mirror_edges[t.local_eid(m)].value().fid(m));
@@ -133,10 +132,8 @@ wmtk::TriMeshOperation::ExecuteReturnData AdaptiveTessellationPairedSplitEdgeOpe
     if (mirror_edge_tuple.has_value() && ret_data.success) {
         assert(
             split_edge.return_edge_tuple.vid(m) ==
-            m.face_attrs[mirror_edge_tuple.value().fid(m)]
-                .mirror_edges[mirror_edge_tuple.value().local_eid(m)]
-                .value()
-                .vid(m));
+            m.face_attrs[mirror_edge_tuple.value().fid(m)].mirror_edges[mirror_leid].value().vid(
+                m));
         wmtk::TriMeshOperation::ExecuteReturnData ret_mirror_data =
             split_mirror_edge.execute(m, mirror_edge_tuple.value());
         ret_data.success &= ret_mirror_data.success;
@@ -145,9 +142,7 @@ wmtk::TriMeshOperation::ExecuteReturnData AdaptiveTessellationPairedSplitEdgeOpe
         }
         assert(split_mirror_edge.return_edge_tuple.vid(m) == mirror_edge_tuple.value().vid(m));
         assert(split_mirror_edge.return_edge_tuple.fid(m) == mirror_edge_tuple.value().fid(m));
-        assert(
-            split_mirror_edge.return_edge_tuple.local_eid(m) ==
-            mirror_edge_tuple.value().local_eid(m));
+        assert(split_mirror_edge.return_edge_tuple.local_eid(m) == mirror_leid);
         // the 3 asserts above based on the knowledge of the implementation of
         // TriMeshSplitEdgeOperation
         // make sure after the operations mirror edges are corresponding to the right triangle/vertex
@@ -194,7 +189,6 @@ bool AdaptiveTessellationPairedSplitEdgeOperation::after(
     AdaptiveTessellation& m,
     wmtk::TriMeshOperation::ExecuteReturnData& ret_data)
 {
-    size_t v1, v2;
     split_edge.after(m, ret_data);
     auto mirror_edge_tuple =
         m.face_attrs[ret_data.tuple.fid(m)].mirror_edges[ret_data.tuple.local_eid(m)];
@@ -303,7 +297,7 @@ void AdaptiveTessellation::split_all_edges()
     }
 }
 
-bool AdaptiveTessellation::split_edge_before(const Tuple& edge_tuple)
+bool AdaptiveTessellation::split_edge_before(const Tuple& edge_tuple) // not used anymore
 {
     static std::atomic_int cnt = 0;
     // debug
@@ -350,7 +344,7 @@ bool AdaptiveTessellation::split_edge_before(const Tuple& edge_tuple)
     return true;
 }
 
-bool AdaptiveTessellation::split_edge_after(const Tuple& edge_tuple)
+bool AdaptiveTessellation::split_edge_after(const Tuple& edge_tuple) // not used anymore
 {
     // adding heuristic decision. If length2 > 4. / 3. * 4. / 3. * m.m_target_l * m.m_target_l always split
     // transform edge length with displacement

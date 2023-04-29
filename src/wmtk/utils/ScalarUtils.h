@@ -1,3 +1,4 @@
+#pragma once
 #include <Eigen/Core>
 template <typename Scalar>
 inline bool is_close(
