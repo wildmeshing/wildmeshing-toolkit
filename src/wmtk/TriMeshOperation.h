@@ -99,19 +99,19 @@ public:
     {
         return after(static_cast<MeshType&>(m), ret_data);
     }
-    bool invariants(TriMesh& m, ExecuteReturnData& ret_data) override
-    {
-        return invariants(static_cast<MeshType&>(m), ret_data);
-    }
+    // bool invariants(TriMesh& m, ExecuteReturnData& ret_data) override
+    // {
+    //     return invariants(static_cast<MeshType&>(m), ret_data);
+    // }
 
 private:
     ExecuteReturnData execute(MeshType& m, const Tuple& t) { return derived().execute(m, t); }
     bool before(MeshType& m, const Tuple& t) { return derived().before(m, t); }
     bool after(MeshType& m, ExecuteReturnData& ret_data) { return derived().after(m, ret_data); }
-    bool invariants(MeshType& m, ExecuteReturnData& ret_data)
-    {
-        return derived().invariants(m, ret_data);
-    }
+    // bool invariants(MeshType& m, ExecuteReturnData& ret_data)
+    // {
+    //     return derived().invariants(m, ret_data);
+    // }
 };
 
 
@@ -194,7 +194,7 @@ public:
     bool before(TriMesh& m, const Tuple& t) override;
     bool after(TriMesh& m, ExecuteReturnData& ret_data) override;
     std::string name() const override;
-    bool invariants(TriMesh& m, ExecuteReturnData& ret_data) override;
+    // bool invariants(TriMesh& m, ExecuteReturnData& ret_data) override;
 };
 
 /**
