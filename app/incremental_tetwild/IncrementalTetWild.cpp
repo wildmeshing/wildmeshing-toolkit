@@ -932,3 +932,259 @@ long long tetwild::TetWild::checksum_tidx()
     }
     return checksum;
 }
+
+// util functions for union find
+int find_uf(int v, std::vector<int>& parent)
+{
+    int root = v;
+    while (parent[root] != root) {
+        root = parent[root];
+    }
+    // path compression optimization
+    while (parent[v] != root) {
+        int next = parent[v];
+        parent[v] = root;
+        v = next;
+    }
+    return root;
+}
+
+void union_uf(int u, int v, std::vector<int>& parent)
+{
+    int root_u = find_uf(u, parent);
+    int root_v = find_uf(v, parent);
+    if (root_u != root_v) {
+        parent[root_u] = root_v;
+    }
+}
+
+int tetwild::TetWild::count_vertex_links(const Tuple& v)
+{
+    // get one ring faces on surface
+    auto one_ring_tets = get_one_ring_tets_for_vertex(v);
+    std::vector<Tuple> surface_fs;
+    for (auto t : one_ring_tets) {
+        Tuple f1 = t;
+        Tuple f2 = t.switch_face(*this);
+        Tuple f3 = t.switch_edge(*this).switch_face(*this);
+        Tuple f4 = t.switch_vertex(*this).switch_edge(*this).switch_face(*this);
+        if (m_face_attribute[f1.fid(*this)].m_is_surface_fs) surface_fs.push_back(f1);
+        if (m_face_attribute[f2.fid(*this)].m_is_surface_fs) surface_fs.push_back(f2);
+        if (m_face_attribute[f3.fid(*this)].m_is_surface_fs) surface_fs.push_back(f3);
+        if (m_face_attribute[f4.fid(*this)].m_is_surface_fs) surface_fs.push_back(f4);
+    }
+
+    // construct the graph by V and E
+    // eliminate those edges that contains v
+    size_t vid = v.vid(*this); // current vid
+    std::vector<size_t> one_ring_surface_vertices;
+    std::vector<std::pair<size_t, size_t>> one_ring_surface_edges;
+
+    for (auto f : surface_fs) {
+        auto vs = get_face_vertices(f);
+        if (vs[0].vid(*this) != vid && vs[1].vid(*this) != vid && vs[2].vid(*this) != vid) continue;
+        for (auto v_tuple : vs) {
+            if (v_tuple.vid(*this) != vid) one_ring_surface_vertices.push_back(v_tuple.vid(*this));
+        }
+        if (vs[0].vid(*this) != vid && vs[1].vid(*this) != vid)
+            one_ring_surface_edges.push_back(std::make_pair(vs[0].vid(*this), vs[1].vid(*this)));
+        if (vs[0].vid(*this) != vid && vs[2].vid(*this) != vid)
+            one_ring_surface_edges.push_back(std::make_pair(vs[0].vid(*this), vs[2].vid(*this)));
+        if (vs[1].vid(*this) != vid && vs[2].vid(*this) != vid)
+            one_ring_surface_edges.push_back(std::make_pair(vs[1].vid(*this), vs[2].vid(*this)));
+    }
+
+    wmtk::vector_unique(one_ring_surface_vertices);
+    std::map<size_t, int> v_idx_map;
+    for (int i = 0; i < one_ring_surface_vertices.size(); i++) {
+        v_idx_map[one_ring_surface_vertices[i]] = i;
+    }
+
+    // adjacency matrix
+    int m = one_ring_surface_vertices.size();
+    bool** adj_mat = new bool*[m];
+    for (int i = 0; i < m; i++) {
+        adj_mat[i] = new bool[m];
+    }
+
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < m; j++) {
+            adj_mat[i][j] = false;
+        }
+    }
+
+    for (auto e : one_ring_surface_edges) {
+        adj_mat[v_idx_map[e.first]][v_idx_map[e.second]] = true;
+        adj_mat[v_idx_map[e.second]][v_idx_map[e.first]] = true;
+    }
+
+    // count links
+    int cnt_links = 0;
+
+    // union find
+    std::vector<int> parent(m);
+    for (int i = 0; i < m; i++) {
+        parent[i] = i;
+    }
+
+    for (int i = 0; i < m; i++) {
+        for (int j = i + 1; j < m; j++) {
+            if (adj_mat[i][j]) {
+                union_uf(i, j, parent);
+            }
+        }
+    }
+
+    for (int i = 0; i < m; i++) {
+        if (parent[i] == i) {
+            cnt_links++;
+        }
+    }
+
+    // delete adjacency matrix
+    for (int i = 0; i < m; i++) delete[] adj_mat[i];
+    delete[] adj_mat;
+
+    // test code
+    // if (cnt_links > 1) {
+    //     std::cout << "----------------------------" << std::endl;
+    //     std::cout << "vid: " << vid << std::endl;
+    //     std::cout << "one ring vs: ";
+    //     for (int i = 0; i < one_ring_surface_vertices.size(); i++) {
+    //         std::cout << one_ring_surface_vertices[i] << ": "
+    //                   << m_vertex_attribute[one_ring_surface_vertices[i]].m_is_on_surface << " ";
+    //     }
+    //     std::cout << std::endl;
+    //     std::cout << "one ring edges: ";
+    //     for (int i = 0; i < one_ring_surface_edges.size(); i++) {
+    //         std::cout << one_ring_surface_edges[i].first << "-" <<
+    //         one_ring_surface_edges[i].second
+    //                   << " ";
+    //     }
+    //     std::cout << std::endl;
+    // }
+
+    return cnt_links;
+}
+
+// int tetwild::TetWild::count_edge_links(const Tuple& e)
+// {
+//     auto one_ring_tets = get_incident_tets_for_edge(e);
+//     std::vector<Tuple> surface_fs;
+//     for (auto t : one_ring_tets) {
+//         Tuple f1 = t;
+//         Tuple f2 = t.switch_face(*this);
+//         Tuple f3 = t.switch_edge(*this).switch_face(*this);
+//         Tuple f4 = t.switch_vertex(*this).switch_edge(*this).switch_face(*this);
+//         if (m_face_attribute[f1.fid(*this)].m_is_surface_fs) surface_fs.push_back(f1);
+//         if (m_face_attribute[f2.fid(*this)].m_is_surface_fs) surface_fs.push_back(f2);
+//         if (m_face_attribute[f3.fid(*this)].m_is_surface_fs) surface_fs.push_back(f3);
+//         if (m_face_attribute[f4.fid(*this)].m_is_surface_fs) surface_fs.push_back(f4);
+//     }
+
+//     size_t vid1 = e.vid(*this);
+//     size_t vid2 = e.switch_vertex(*this).vid(*this);
+//     std::vector<size_t> one_ring_surface_vertices;
+//     std::vector<std::pair<size_t, size_t>> one_ring_surface_edges;
+
+//     for (auto f : surface_fs) {
+//         auto vs = get_face_vertices(f);
+//         for (auto v_tuple : vs) {
+//             if (v_tuple.vid(*this) != vid1 && v_tuple.vid(*this) != vid2)
+//                 one_ring_surface_vertices.push_back(v_tuple.vid(*this));
+//         }
+//         if (vs[0].vid(*this) != vid1 && vs[1].vid(*this) != vid1 && vs[0].vid(*this) != vid2 &&
+//             vs[1].vid(*this) != vid2)
+//             one_ring_surface_edges.push_back(std::make_pair(vs[0].vid(*this), vs[1].vid(*this)));
+//         if (vs[0].vid(*this) != vid1 && vs[2].vid(*this) != vid1 && vs[0].vid(*this) != vid2 &&
+//             vs[2].vid(*this) != vid2)
+//             one_ring_surface_edges.push_back(std::make_pair(vs[0].vid(*this), vs[2].vid(*this)));
+//         if (vs[1].vid(*this) != vid1 && vs[2].vid(*this) != vid1 && vs[1].vid(*this) != vid2 &&
+//             vs[2].vid(*this) != vid2)
+//             one_ring_surface_edges.push_back(std::make_pair(vs[1].vid(*this), vs[2].vid(*this)));
+//     }
+
+//     wmtk::vector_unique(one_ring_surface_vertices);
+//     std::map<size_t, int> v_idx_map;
+//     for (int i = 0; i < one_ring_surface_vertices.size(); i++) {
+//         v_idx_map[one_ring_surface_vertices[i]] = i;
+//     }
+
+//     int m = one_ring_surface_vertices.size();
+//     bool** adj_mat = new bool*[m];
+//     for (int i = 0; i < m; i++) {
+//         adj_mat[i] = new bool[m];
+//     }
+
+//     for (int i = 0; i < m; i++) {
+//         for (int j = 0; j < m; j++) {
+//             adj_mat[i][j] = false;
+//         }
+//     }
+
+//     for (auto e : one_ring_surface_edges) {
+//         adj_mat[v_idx_map[e.first]][v_idx_map[e.second]] = true;
+//         adj_mat[v_idx_map[e.second]][v_idx_map[e.first]] = true;
+//     }
+
+//     // count links
+//     int cnt_links = 0;
+
+//     // union find
+//     std::vector<int> parent(m);
+//     for (int i = 0; i < m; i++) {
+//         parent[i] = i;
+//     }
+
+//     for (int i = 0; i < m; i++) {
+//         for (int j = i + 1; j < m; j++) {
+//             if (adj_mat[i][j]) {
+//                 union_uf(i, j, parent);
+//             }
+//         }
+//     }
+
+//     for (int i = 0; i < m; i++) {
+//         if (parent[i] == i) {
+//             cnt_links++;
+//         }
+//     }
+
+//     // delete adjacency matrix
+//     for (int i = 0; i < m; i++) delete[] adj_mat[i];
+//     delete[] adj_mat;
+
+
+//     return cnt_links;
+
+//     return 0;
+// }
+
+int tetwild::TetWild::count_edge_links(const Tuple& e)
+{
+    size_t vid1 = e.vid(*this);
+    size_t vid2 = e.switch_vertex(*this).vid(*this);
+    auto tets = get_incident_tets_for_edge(e);
+    std::vector<size_t> incident_surface_faces;
+    for (auto t : tets) {
+        std::vector<Tuple> f(4);
+        f[0] = t;
+        f[1] = t.switch_face(*this);
+        f[2] = t.switch_edge(*this).switch_face(*this);
+        f[3] = t.switch_vertex(*this).switch_edge(*this).switch_face(*this);
+
+        for (int i = 0; i < 4; i++) {
+            if (!m_face_attribute[f[i].fid(*this)].m_is_surface_fs) continue;
+            auto vs = get_face_vertices(f[i]);
+            std::array<size_t, 3> vids = {{vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
+            if (std::find(vids.begin(), vids.end(), vid1) != vids.end() &&
+                std::find(vids.begin(), vids.end(), vid2) != vids.end()) {
+                incident_surface_faces.push_back(f[i].fid(*this));
+            }
+        }
+    }
+
+    wmtk::vector_unique(incident_surface_faces);
+
+    return incident_surface_faces.size();
+}

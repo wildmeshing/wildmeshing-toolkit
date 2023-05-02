@@ -60,6 +60,14 @@ int main(int argc, char** argv)
         "--sample-envelope",
         use_sample_envelope,
         "use_sample_envelope for both simp and optim");
+    app.add_flag(
+        "--preserve-global-topology",
+        params.preserve_global_topology,
+        "preserve the global topology");
+    if (params.preserve_global_topology) {
+        skip_simplify = true;
+    }
+
     CLI11_PARSE(app, argc, argv);
 
     std::vector<Eigen::Vector3d> verts;
@@ -74,6 +82,23 @@ int main(int argc, char** argv)
         verts,
         tris,
         modified_nonmanifold_v);
+
+    // rotate by an arbitrary angle
+    // double theta = M_PI * 0.2;
+    // Eigen::Matrix3d rotation_m;
+    // rotation_m << 1, 0, 0, 0, cos(theta), -sin(theta), 0, sin(theta), cos(theta);
+
+    // box_minmax.first = Eigen::Vector3d(10000, 10000, 10000);
+    // box_minmax.second = Eigen::Vector3d(-10000, -10000, -10000);
+    // for (size_t i = 0; i < verts.size(); i++) {
+    //     verts[i] = rotation_m * verts[i];
+    //     if (verts[i][0] < box_minmax.first[0]) box_minmax.first[0] = verts[i][0];
+    //     if (verts[i][1] < box_minmax.first[1]) box_minmax.first[1] = verts[i][1];
+    //     if (verts[i][2] < box_minmax.first[0]) box_minmax.first[2] = verts[i][2];
+    //     if (verts[i][0] > box_minmax.second[0]) box_minmax.second[0] = verts[i][0];
+    //     if (verts[i][1] > box_minmax.second[1]) box_minmax.second[1] = verts[i][1];
+    //     if (verts[i][2] > box_minmax.second[2]) box_minmax.second[2] = verts[i][2];
+    // }
 
     double diag = (box_minmax.first - box_minmax.second).norm();
     const double envelope_size = params.epsr * diag;
@@ -209,7 +234,21 @@ int main(int argc, char** argv)
 
     std::cout << "here4" << std::endl;
 
+    size_t nonmani_ver_cnt = 0;
+    size_t surface_v_cnt = 0;
+    for (auto v : mesh_new.get_vertices()) {
+        if (mesh_new.m_vertex_attribute[v.vid(mesh_new)].m_is_on_surface) {
+            surface_v_cnt++;
+            if (mesh_new.count_vertex_links(v) > 1) {
+                nonmani_ver_cnt++;
+            }
+        }
+    }
 
+    wmtk::logger().info("MESH NONMANIFOLD VERTEX COUNT BEFORE OPTIMIZE: {}", nonmani_ver_cnt);
+    wmtk::logger().info("MESH surface VERTEX COUNT BEFORE OPTIMIZE: {}", surface_v_cnt);
+
+    // exit(0);
     // // test with a fixed mesh tet.obj
     // tetwild::TetWild mesh_tet(params, *ptr_env, NUM_THREADS);
     // mesh_tet.init_from_file("input_tetmesh_before_opt.txt");

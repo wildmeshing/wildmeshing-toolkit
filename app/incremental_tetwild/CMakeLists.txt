@@ -43,5 +43,8 @@ target_link_libraries(incremental_tetwild_bin PUBLIC wmtk::incremental_tetwild
 )
 wmtk_copy_dll(incremental_tetwild_bin)
 
+if(WMTK_APP_UNIT_TESTS)
+    add_subdirectory(tests)
+endif()
 
 

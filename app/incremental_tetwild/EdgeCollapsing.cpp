@@ -234,6 +234,101 @@ bool tetwild::TetWild::collapse_edge_before(const Tuple& loc) // input is an edg
     // debug code
     // wmtk::logger().info("edge {} pass collapse before check", loc.fid(*this));
 
+
+    if (m_params.preserve_global_topology) {
+        // global topology preservation
+        // count #links for vertices and edges on the surface
+
+        cache.edge_link.clear();
+        cache.vertex_link.clear();
+
+        auto one_ring_tets = get_one_ring_tets_for_edge(loc);
+        std::vector<Tuple> surface_fs;
+        for (auto t : one_ring_tets) {
+            Tuple f1 = t;
+            Tuple f2 = t.switch_face(*this);
+            Tuple f3 = t.switch_edge(*this).switch_face(*this);
+            Tuple f4 = t.switch_vertex(*this).switch_edge(*this).switch_face(*this);
+            if (m_face_attribute[f1.fid(*this)].m_is_surface_fs) surface_fs.push_back(f1);
+            if (m_face_attribute[f2.fid(*this)].m_is_surface_fs) surface_fs.push_back(f2);
+            if (m_face_attribute[f3.fid(*this)].m_is_surface_fs) surface_fs.push_back(f3);
+            if (m_face_attribute[f4.fid(*this)].m_is_surface_fs) surface_fs.push_back(f4);
+        }
+        for (auto f : surface_fs) {
+            // e1 = v1v2 e2 = v1v3 e3 = v2v3
+            Tuple v1 = f;
+            Tuple v2 = v1.switch_vertex(*this);
+            Tuple v3 = v1.switch_edge(*this).switch_vertex(*this);
+            Tuple e1 = v1;
+            Tuple e2 = v1.switch_edge(*this);
+            Tuple e3 = v1.switch_vertex(*this).switch_edge(*this);
+
+            if (cache.vertex_link.find(v1.vid(*this)) == cache.vertex_link.end()) {
+                cache.vertex_link[v1.vid(*this)] = count_vertex_links(v1);
+            }
+            if (cache.vertex_link.find(v2.vid(*this)) == cache.vertex_link.end()) {
+                cache.vertex_link[v2.vid(*this)] = count_vertex_links(v2);
+            }
+            if (cache.vertex_link.find(v3.vid(*this)) == cache.vertex_link.end()) {
+                cache.vertex_link[v3.vid(*this)] = count_vertex_links(v3);
+            }
+
+            if (v1.vid(*this) < v2.vid(*this)) {
+                if (cache.edge_link.find(std::make_pair(v1.vid(*this), v2.vid(*this))) ==
+                    cache.edge_link.end()) {
+                    cache.edge_link[std::make_pair(v1.vid(*this), v2.vid(*this))] =
+                        count_edge_links(e1);
+                }
+            } else {
+                if (cache.edge_link.find(std::make_pair(v2.vid(*this), v1.vid(*this))) ==
+                    cache.edge_link.end()) {
+                    cache.edge_link[std::make_pair(v2.vid(*this), v1.vid(*this))] =
+                        count_edge_links(e1);
+                }
+            }
+
+            if (v1.vid(*this) < v3.vid(*this)) {
+                if (cache.edge_link.find(std::make_pair(v1.vid(*this), v3.vid(*this))) ==
+                    cache.edge_link.end()) {
+                    cache.edge_link[std::make_pair(v1.vid(*this), v3.vid(*this))] =
+                        count_edge_links(e2);
+                }
+            } else {
+                if (cache.edge_link.find(std::make_pair(v3.vid(*this), v1.vid(*this))) ==
+                    cache.edge_link.end()) {
+                    cache.edge_link[std::make_pair(v3.vid(*this), v1.vid(*this))] =
+                        count_edge_links(e2);
+                }
+            }
+
+            if (v2.vid(*this) < v3.vid(*this)) {
+                if (cache.edge_link.find(std::make_pair(v2.vid(*this), v3.vid(*this))) ==
+                    cache.edge_link.end()) {
+                    cache.edge_link[std::make_pair(v2.vid(*this), v3.vid(*this))] =
+                        count_edge_links(e3);
+                }
+            } else {
+                if (cache.edge_link.find(std::make_pair(v3.vid(*this), v2.vid(*this))) ==
+                    cache.edge_link.end()) {
+                    cache.edge_link[std::make_pair(v3.vid(*this), v2.vid(*this))] =
+                        count_edge_links(e3);
+                }
+            }
+        }
+    }
+
+    // test code
+    // check global number nonmanifold vertex
+
+    // cache.global_nonmani_ver_cnt = 0;
+    // for (auto v : get_vertices()) {
+    //     if (m_vertex_attribute[v.vid(*this)].m_is_on_surface) {
+    //         if (count_vertex_links(v) > 1) {
+    //             cache.global_nonmani_ver_cnt++;
+    //         }
+    //     }
+    // }
+
     return true;
 }
 
@@ -298,6 +393,136 @@ bool tetwild::TetWild::collapse_edge_after(const Tuple& loc)
             }
         }
     }
+
+    // global topology check
+    if (m_params.preserve_global_topology) {
+        std::map<std::pair<size_t, size_t>, int> after_edge_link;
+        std::map<size_t, int> after_vertex_link;
+
+        auto one_ring_tets = get_one_ring_tets_for_vertex(loc);
+        std::vector<Tuple> surface_fs;
+        for (auto t : one_ring_tets) {
+            Tuple f1 = t;
+            Tuple f2 = t.switch_face(*this);
+            Tuple f3 = t.switch_edge(*this).switch_face(*this);
+            Tuple f4 = t.switch_vertex(*this).switch_edge(*this).switch_face(*this);
+            if (m_face_attribute[f1.fid(*this)].m_is_surface_fs) surface_fs.push_back(f1);
+            if (m_face_attribute[f2.fid(*this)].m_is_surface_fs) surface_fs.push_back(f2);
+            if (m_face_attribute[f3.fid(*this)].m_is_surface_fs) surface_fs.push_back(f3);
+            if (m_face_attribute[f4.fid(*this)].m_is_surface_fs) surface_fs.push_back(f4);
+        }
+        for (auto f : surface_fs) {
+            // e1 = v1v2 e2 = v1v3 e3 = v2v3
+            Tuple v1 = f;
+            Tuple v2 = v1.switch_vertex(*this);
+            Tuple v3 = v1.switch_edge(*this).switch_vertex(*this);
+            Tuple e1 = v1;
+            Tuple e2 = v1.switch_edge(*this);
+            Tuple e3 = v1.switch_vertex(*this).switch_edge(*this);
+
+            if (after_vertex_link.find(v1.vid(*this)) == after_vertex_link.end()) {
+                after_vertex_link[v1.vid(*this)] = count_vertex_links(v1);
+            }
+            if (after_vertex_link.find(v2.vid(*this)) == after_vertex_link.end()) {
+                after_vertex_link[v2.vid(*this)] = count_vertex_links(v2);
+            }
+            if (after_vertex_link.find(v3.vid(*this)) == after_vertex_link.end()) {
+                after_vertex_link[v3.vid(*this)] = count_vertex_links(v3);
+            }
+
+            if (v1.vid(*this) < v2.vid(*this)) {
+                if (after_edge_link.find(std::make_pair(v1.vid(*this), v2.vid(*this))) ==
+                    after_edge_link.end()) {
+                    after_edge_link[std::make_pair(v1.vid(*this), v2.vid(*this))] =
+                        count_edge_links(e1);
+                }
+            } else {
+                if (after_edge_link.find(std::make_pair(v2.vid(*this), v1.vid(*this))) ==
+                    after_edge_link.end()) {
+                    after_edge_link[std::make_pair(v2.vid(*this), v1.vid(*this))] =
+                        count_edge_links(e1);
+                }
+            }
+
+            if (v1.vid(*this) < v3.vid(*this)) {
+                if (after_edge_link.find(std::make_pair(v1.vid(*this), v3.vid(*this))) ==
+                    after_edge_link.end()) {
+                    after_edge_link[std::make_pair(v1.vid(*this), v3.vid(*this))] =
+                        count_edge_links(e2);
+                }
+            } else {
+                if (after_edge_link.find(std::make_pair(v3.vid(*this), v1.vid(*this))) ==
+                    after_edge_link.end()) {
+                    after_edge_link[std::make_pair(v3.vid(*this), v1.vid(*this))] =
+                        count_edge_links(e2);
+                }
+            }
+
+            if (v2.vid(*this) < v3.vid(*this)) {
+                if (after_edge_link.find(std::make_pair(v2.vid(*this), v3.vid(*this))) ==
+                    after_edge_link.end()) {
+                    after_edge_link[std::make_pair(v2.vid(*this), v3.vid(*this))] =
+                        count_edge_links(e3);
+                }
+            } else {
+                if (after_edge_link.find(std::make_pair(v3.vid(*this), v2.vid(*this))) ==
+                    after_edge_link.end()) {
+                    after_edge_link[std::make_pair(v3.vid(*this), v2.vid(*this))] =
+                        count_edge_links(e3);
+                }
+            }
+        }
+
+        // check if #links remain the same
+        for (auto [key, val] : cache.vertex_link) {
+            if (key == v1_id) {
+                // the collpased vertex
+                if (val != after_vertex_link[v2_id]) return false;
+            } else {
+                if (val != after_vertex_link[key]) return false;
+            }
+        }
+
+        for (auto [key, val] : cache.edge_link) {
+            if (key.first == v1_id && key.second == v2_id) continue;
+            if (key.first == v2_id && key.second == v1_id) continue;
+            if (key.first == v1_id) {
+                if (v2_id < key.second) {
+                    if (val != after_edge_link[std::make_pair(v2_id, key.second)]) return false;
+                } else {
+                    if (val != after_edge_link[std::make_pair(key.second, v2_id)]) return false;
+                }
+            } else if (key.second == v1_id) {
+                if (v2_id < key.first) {
+                    if (val != after_edge_link[std::make_pair(v2_id, key.first)]) return false;
+                } else {
+                    if (val != after_edge_link[std::make_pair(key.first, v2_id)]) return false;
+                }
+            } else {
+                if (val != after_edge_link[key]) return false;
+            }
+        }
+    }
+
+    // test code
+    // check global number nonmanifold vertex
+
+    // size_t nonmani_ver_cnt = 0;
+    // for (auto v : get_vertices()) {
+    //     if (m_vertex_attribute[v.vid(*this)].m_is_on_surface) {
+    //         if (count_vertex_links(v) > 1) {
+    //             nonmani_ver_cnt++;
+    //         }
+    //     }
+    // }
+    // if (nonmani_ver_cnt != cache.global_nonmani_ver_cnt) {
+    //     wmtk::logger().info(
+    //         "COLLAPSE EDGE CAUSE NONMANIFOLDNESS CHANGE ON VERTICE. BEFORE COUNT: {} AFTER COUNT:
+    //         "
+    //         "{}",
+    //         cache.global_nonmani_ver_cnt,
+    //         nonmani_ver_cnt);
+    // }
 
     //// update attrs
     // tet attr

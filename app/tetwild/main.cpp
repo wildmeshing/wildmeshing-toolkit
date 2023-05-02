@@ -71,6 +71,7 @@ int main(int argc, char** argv)
         tris,
         modified_nonmanifold_v);
 
+
     double diag = (box_minmax.first - box_minmax.second).norm();
     const double envelope_size = params.epsr * diag;
     app::sec::ShortestEdgeCollapse surf_mesh(verts, NUM_THREADS, false);

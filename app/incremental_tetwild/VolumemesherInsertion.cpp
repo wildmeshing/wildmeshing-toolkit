@@ -390,6 +390,8 @@ void tetwild::TetWild::insertion_by_volumeremesher(
     std::vector<bool> triangulated_faces_on_input;
     std::vector<std::vector<size_t>> map_poly_to_tri_face(polygon_faces.size());
 
+    int poly_cnt = 0;
+
     // triangulate polygon faces
     for (int i = 0; i < polygon_faces.size(); i++) {
         // already clipped in other polygon
@@ -416,6 +418,7 @@ void tetwild::TetWild::insertion_by_volumeremesher(
             }
             map_poly_to_tri_face[i].push_back(idx);
         } else {
+            poly_cnt++;
             // std::cout<<std::endl<<"polyface: ";
             // for (int j=0; j<polygon_face.size(); j++){
             // std::cout<<polygon_face[j]<<" ";
@@ -452,6 +455,8 @@ void tetwild::TetWild::insertion_by_volumeremesher(
             }
         }
     }
+
+    std::cout << "poly_cnt:" << poly_cnt << std::endl;
 
     // std::cout << triangulated_faces.size() << std::endl;
     // int sum = 0;

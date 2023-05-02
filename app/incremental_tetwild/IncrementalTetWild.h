@@ -382,6 +382,10 @@ private:
         std::vector<size_t> changed_tids;
 
         std::vector<std::array<size_t, 2>> failed_edges;
+
+        std::map<std::pair<size_t, size_t>, int> edge_link;
+        std::map<size_t, int> vertex_link;
+        size_t global_nonmani_ver_cnt;
     };
     tbb::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
 
@@ -444,6 +448,10 @@ public:
     // for open boundary
     void find_open_boundary();
     bool is_open_boundary_edge(const Tuple& e);
+
+    // for topology preservation
+    int count_vertex_links(const Tuple& v);
+    int count_edge_links(const Tuple& e);
 };
 
 } // namespace tetwild
