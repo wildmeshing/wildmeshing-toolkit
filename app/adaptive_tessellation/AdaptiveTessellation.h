@@ -145,7 +145,7 @@ public:
     void export_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
 
     // Exports V and F of the stored mesh where all seam vertices are merged
-    void export_seamless_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
+    void remove_seams(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
 
     // Writes a triangle mesh in OBJ format
     void write_obj(const std::string& path);
@@ -159,6 +159,9 @@ public:
         const std::string& path,
         const std::function<double(double, double)>& displacement);
     void write_displaced_obj(
+        const std::string& path,
+        const std::shared_ptr<wmtk::Displacement> displacement);
+    void write_displaced_seamless_obj(
         const std::string& path,
         const std::shared_ptr<wmtk::Displacement> displacement);
 

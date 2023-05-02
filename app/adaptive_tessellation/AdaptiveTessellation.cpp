@@ -489,33 +489,92 @@ void AdaptiveTessellation::export_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F) c
     }
 }
 
-void AdaptiveTessellation::export_seamless_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const
+void AdaptiveTessellation::remove_seams(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const
 {
-    throw std::logic_error("Function not yet implemented");
+    std::map<size_t, size_t> paired_vertices; // mapping from removed to remaining vertex
 
-    V = Eigen::MatrixXd::Zero(vert_capacity(), 2);
-    for (auto& t : get_vertices()) {
-        auto i = t.vid(*this);
-        V.row(i) = vertex_attrs[i].pos;
-    }
+    // find seam vertices
+    for (const auto& t : get_faces()) {
+        const auto f_id = t.fid(*this);
+        for (size_t e = 0; e < 3; ++e) {
+            if (face_attrs[f_id].mirror_edges[e].has_value()) {
+                // Tuple e_tuple = tuple_from_edge(f_id, e);
+                Tuple e_tuple1 = face_attrs[f_id].mirror_edges[e].value();
+                size_t e_tuple1_fid = e_tuple1.fid(*this);
+                size_t e_tuple1_eid = e_tuple1.local_eid(*this);
+                assert(face_attrs[e_tuple1_fid].mirror_edges[e_tuple1_eid].has_value());
+                Tuple e_tuple2 = face_attrs[e_tuple1_fid].mirror_edges[e_tuple1_eid].value();
+                const size_t v0 = e_tuple1.vid(*this);
+                const size_t v1 = e_tuple1.switch_vertex(*this).vid(*this);
+                const size_t v3 = e_tuple2.vid(*this);
+                const size_t v2 = e_tuple2.switch_vertex(*this).vid(*this);
+                assert(v0 != v3);
+                if (v0 < v3) {
+                    paired_vertices.insert({v3, v0});
+                } else {
+                    paired_vertices.insert({v0, v3});
+                }
 
-    F = Eigen::MatrixXi::Constant(tri_capacity(), 3, -1);
-    for (auto& t : get_faces()) {
-        auto i = t.fid(*this);
-        auto vs = oriented_tri_vertices(t);
-        for (int j = 0; j < 3; j++) {
-            F(i, j) = vs[j].vid(*this);
+                assert(v1 != v2);
+                if (v1 < v2) {
+                    paired_vertices.insert({v2, v1});
+                } else {
+                    paired_vertices.insert({v1, v2});
+                }
+            }
         }
     }
 
-    // find / merge seam vertices
-    // TODO ... this depends on knowing the seams but they do not exist in this branch yet...
+    constexpr size_t INVALID_ID = std::numeric_limits<size_t>::max();
 
+    std::vector<size_t> old_to_new_vertex_ids(V.rows(), INVALID_ID);
+    {
+        size_t counter = 0;
+        for (size_t i = 0; i < old_to_new_vertex_ids.size(); ++i) {
+            if (paired_vertices.count(i) == 0) {
+                old_to_new_vertex_ids[i] = counter++;
+            }
+        }
+    }
+
+    // transfer V to NV but ignore paired vertices
+    // TODO Merge vertices instead of ignoring them!
     Eigen::MatrixXd NV;
-    Eigen::MatrixXi NF;
-    Eigen::MatrixXi I; // no clue what that is
+    NV.resize(V.rows() - paired_vertices.size(), 3);
+    for (size_t i = 0; i < V.rows(); ++i) {
+        if (old_to_new_vertex_ids[i] != INVALID_ID) {
+            NV.row(old_to_new_vertex_ids[i]) = V.row(i);
+        }
+    }
 
-    igl::remove_unreferenced(V, F, NV, NF, I);
+    Eigen::MatrixXi NF;
+    NF.resize(F.rows(), F.cols());
+    for (size_t i = 0; i < NF.rows(); ++i) {
+        for (size_t j = 0; j < NF.cols(); ++j) {
+            size_t tries = 0;
+            size_t new_v_id = F(i, j);
+            while (paired_vertices.count(new_v_id) != 0) {
+                new_v_id = paired_vertices[new_v_id];
+                if (++tries == 10000) {
+                    // something definitely went wrong here --> looks like an endless loop
+                    spdlog::warn(
+                        "Over 1000 iterations while trying to find the correct mapping for "
+                        "vertex " +
+                        new_v_id);
+                    if (tries == 10100) {
+                        // abort
+                        spdlog::critical("Cannot find correct mapping. Return mesh with seams!");
+                        return;
+                    }
+                }
+            }
+            NF(i, j) = old_to_new_vertex_ids[new_v_id];
+        }
+    }
+
+    // overwrite V and F
+    V = NV;
+    F = NF;
 }
 
 void AdaptiveTessellation::write_obj(const std::string& path)
@@ -676,6 +735,26 @@ void AdaptiveTessellation::write_displaced_obj(
         V3d.row(i) = displacement->get(V(i, 0), V(i, 1));
         // wmtk::logger().info("progress: {}/{}", i, rows);
     }
+    igl::writeOBJ(path, V3d, F);
+    wmtk::logger().info("============>> current edge length {}", avg_edge_len(*this));
+}
+
+void AdaptiveTessellation::write_displaced_seamless_obj(
+    const std::string& path,
+    const std::shared_ptr<wmtk::Displacement> displacement)
+{
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+
+    export_mesh(V, F);
+    auto rows = V.rows();
+    Eigen::MatrixXd V3d = Eigen::MatrixXd::Zero(rows, 3);
+    for (int i = 0; i < rows; i++) {
+        V3d.row(i) = displacement->get(V(i, 0), V(i, 1));
+        // wmtk::logger().info("progress: {}/{}", i, rows);
+    }
+
+    remove_seams(V3d, F);
     igl::writeOBJ(path, V3d, F);
     wmtk::logger().info("============>> current edge length {}", avg_edge_len(*this));
 }
