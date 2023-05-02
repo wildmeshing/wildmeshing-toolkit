@@ -320,20 +320,22 @@ void AdaptiveTessellation::create_paired_seam_mesh_with_offset(
 
                 assert(F3d(fi, lvi1) == F3d(fj, lvj1));
                 assert(F3d(fi, lvi2) == F3d(fj, lvj2));
-                if (F(fi, lvi1) != F(fj, lvj1) && F(fi, lvi2) != F(fj, lvj2)) {
+                if (F(fi, lvi1) != F(fj, lvj1) || F(fi, lvi2) != F(fj, lvj2)) {
                     // this is a seam. init the mirror_edge tuple
+                    // the orientation of the mirror edges is inccw (half edge conventions)
+                    // However, the edge tuple in operations have arbitraty orientation
+                    // !!! need to check orientations of mirror edge in operations !!!!!
+                    TriMesh::Tuple seam_edge_lvj(F(fj, lvj2), (3 - lvj1 - lvj2), fj, *this);
+                    if (!seam_edge_lvj.is_ccw(*this))
+                        seam_edge_lvj = seam_edge_lvj.switch_vertex(*this);
                     face_attrs[fi].mirror_edges[local_eid] =
-                        std::make_optional<wmtk::TriMesh::Tuple>(Tuple(
-                            F(fj, lvj1),
-                            (3 - lvj1 - lvj2),
-                            fj,
-                            *this)); // tuple points from lvj1 to lvj2
+                        std::make_optional<wmtk::TriMesh::Tuple>(seam_edge_lvj);
+
+                    TriMesh::Tuple seam_edge_lvi(F(fi, lvi1), local_eid, fi, *this);
+                    if (!seam_edge_lvi.is_ccw(*this))
+                        seam_edge_lvi = seam_edge_lvi.switch_vertex(*this);
                     face_attrs[fj].mirror_edges[(3 - lvj1 - lvj2)] =
-                        std::make_optional<wmtk::TriMesh::Tuple>(Tuple(
-                            F(fi, lvi1),
-                            local_eid,
-                            fi,
-                            *this)); // tuple points from lvi1 to lvi2
+                        std::make_optional<wmtk::TriMesh::Tuple>(seam_edge_lvi);
                 }
             }
         }
@@ -1173,4 +1175,47 @@ void AdaptiveTessellation::gradient_debug(int max_its)
         mesh_parameters.m_gradient = Eigen::Vector2d(0., 0.);
     }
 }
+
+bool AdaptiveTessellation::is_seam_edge(const TriMesh::Tuple& t)
+{
+    return face_attrs[t.fid(*this)].mirror_edges[t.local_eid(*this)].has_value();
+}
+
+void AdaptiveTessellation::set_mirror_edge_data(
+    const TriMesh::Tuple& primary_t,
+    const TriMesh::Tuple& mirror_edge)
+{
+    face_attrs[primary_t.fid(*this)].mirror_edges[primary_t.local_eid(*this)] =
+        mirror_edge.is_ccw(*this) ? mirror_edge : mirror_edge.switch_vertex(*this);
+}
+std::optional<TriMesh::Tuple> AdaptiveTessellation::get_sibling_edge(const TriMesh::Tuple& t)
+{
+    if (is_boundary_edge(t)) {
+        if (is_seam_edge(t)) {
+            return get_oriented_mirror_edge(t);
+        } else {
+            return std::nullopt;
+        }
+    } else {
+        assert(t.switch_face(*this).has_value());
+        return t.switch_face(*this).value().switch_vertex(*this);
+        // return the sibling edge that's of opposite diretion
+    }
+}
+
+// given a seam edge retrieve its mirror edge in opposite direction (half egde conventions )
+TriMesh::Tuple AdaptiveTessellation::get_oriented_mirror_edge(const TriMesh::Tuple& t)
+{
+    assert(is_seam_edge(t));
+    TriMesh::Tuple mirror_edge = face_attrs[t.fid(*this)].mirror_edges[t.local_eid(*this)].value();
+    assert(is_seam_edge(mirror_edge));
+    TriMesh::Tuple primary_edge =
+        face_attrs[mirror_edge.fid(*this)].mirror_edges[mirror_edge.local_eid(*this)].value();
+    if (primary_edge.is_ccw(*this) == t.is_ccw(*this)) {
+        return mirror_edge;
+    } else {
+        return mirror_edge.switch_vertex(*this);
+    }
+}
+
 } // namespace adaptive_tessellation
