@@ -8,6 +8,7 @@ var searchData=
   ['renew_5fneighbor_5ftuples_157',['renew_neighbor_tuples',['../structwmtk_1_1_execute_pass.html#af0f4f220460b40510ed4ce265b696df3',1,'wmtk::ExecutePass']]],
   ['replayingtrimesh_158',['ReplayingTriMesh',['../classwmtk_1_1_replaying_tri_mesh.html',1,'wmtk']]],
   ['rollback_159',['rollback',['../structwmtk_1_1_attribute_collection.html#a15d5ca94f6995d3e1363804f79d7c287',1,'wmtk::AttributeCollection']]],
-  ['rollback_5fprotected_5fattributes_160',['rollback_protected_attributes',['../classwmtk_1_1_tri_mesh.html#a6419d01660badf33195e0c3ad52d07f1',1,'wmtk::TriMesh']]],
-  ['rollback_5fprotected_5fconnectivity_161',['rollback_protected_connectivity',['../classwmtk_1_1_tri_mesh.html#a01afc7787347dd00e416d72806b4b8d1',1,'wmtk::TriMesh']]]
+  ['rollback_5fprotected_160',['rollback_protected',['../classwmtk_1_1_tri_mesh.html#a1176d1cbb0c33ea0f91cea0ca3a0f55e',1,'wmtk::TriMesh']]],
+  ['rollback_5fprotected_5fattributes_161',['rollback_protected_attributes',['../classwmtk_1_1_tri_mesh.html#ae2c0cd96f44fc5f4434db581e6847136',1,'wmtk::TriMesh']]],
+  ['rollback_5fprotected_5fconnectivity_162',['rollback_protected_connectivity',['../classwmtk_1_1_tri_mesh.html#acabbc4cf743a3b9dede4023a19a07a9e',1,'wmtk::TriMesh']]]
 ];

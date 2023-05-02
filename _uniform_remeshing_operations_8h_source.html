@@ -126,14 +126,14 @@ $(function() {
 <div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <span class="keywordtype">bool</span> after(<a class="code" href="classapp_1_1remeshing_1_1_uniform_remeshing.html">UniformRemeshing</a>&amp; m, <a class="code" href="structwmtk_1_1_tri_mesh_operation_1_1_execute_return_data.html">ExecuteReturnData</a>&amp; ret_data)</div>
 <div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    {</div>
 <div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;        <span class="keywordflow">if</span> (wmtk::TriMeshSplitEdgeOperation::after(m, ret_data)) {</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;            ret_data.success |= m.split_edge_after(ret_data.tuple);</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;            ret_data.success &amp;= m.split_edge_after(ret_data.tuple);</div>
 <div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;        }</div>
 <div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        <span class="keywordflow">return</span> ret_data;</div>
 <div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    }</div>
 <div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <span class="keywordtype">bool</span> invariants(<a class="code" href="classapp_1_1remeshing_1_1_uniform_remeshing.html">UniformRemeshing</a>&amp; m, <a class="code" href="structwmtk_1_1_tri_mesh_operation_1_1_execute_return_data.html">ExecuteReturnData</a>&amp; ret_data)</div>
 <div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    {</div>
 <div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        <span class="keywordflow">if</span> (wmtk::TriMeshSplitEdgeOperation::invariants(m, ret_data)) {</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;            ret_data.success |= m.<a class="code" href="classapp_1_1remeshing_1_1_uniform_remeshing.html#aa8537b74d1589fbd12e1039bcfa216bd">invariants</a>(ret_data.new_tris);</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;            ret_data.success &amp;= m.<a class="code" href="classapp_1_1remeshing_1_1_uniform_remeshing.html#aa8537b74d1589fbd12e1039bcfa216bd">invariants</a>(ret_data.new_tris);</div>
 <div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        }</div>
 <div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        <span class="keywordflow">return</span> ret_data;</div>
 <div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    }</div>
@@ -159,14 +159,14 @@ $(function() {
 <div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    <span class="keywordtype">bool</span> after(<a class="code" href="classapp_1_1remeshing_1_1_uniform_remeshing.html">UniformRemeshing</a>&amp; m, <a class="code" href="structwmtk_1_1_tri_mesh_operation_1_1_execute_return_data.html">ExecuteReturnData</a>&amp; ret_data)</div>
 <div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    {</div>
 <div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;        <span class="keywordflow">if</span> (wmtk::TriMeshSwapEdgeOperation::after(m, ret_data)) {</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;            ret_data.success |= m.swap_edge_after(ret_data.tuple);</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;            ret_data.success &amp;= m.swap_edge_after(ret_data.tuple);</div>
 <div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;        }</div>
 <div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;        <span class="keywordflow">return</span> ret_data;</div>
 <div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    }</div>
 <div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    <span class="keywordtype">bool</span> invariants(<a class="code" href="classapp_1_1remeshing_1_1_uniform_remeshing.html">UniformRemeshing</a>&amp; m, <a class="code" href="structwmtk_1_1_tri_mesh_operation_1_1_execute_return_data.html">ExecuteReturnData</a>&amp; ret_data)</div>
 <div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    {</div>
 <div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;        <span class="keywordflow">if</span> (wmtk::TriMeshSwapEdgeOperation::invariants(m, ret_data)) {</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;            ret_data.success |= m.<a class="code" href="classapp_1_1remeshing_1_1_uniform_remeshing.html#aa8537b74d1589fbd12e1039bcfa216bd">invariants</a>(ret_data.new_tris);</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;            ret_data.success &amp;= m.<a class="code" href="classapp_1_1remeshing_1_1_uniform_remeshing.html#aa8537b74d1589fbd12e1039bcfa216bd">invariants</a>(ret_data.new_tris);</div>
 <div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;        }</div>
 <div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;        <span class="keywordflow">return</span> ret_data;</div>
 <div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;    }</div>
@@ -193,14 +193,14 @@ $(function() {
 <div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;    <span class="keywordtype">bool</span> after(<a class="code" href="classapp_1_1remeshing_1_1_uniform_remeshing.html">UniformRemeshing</a>&amp; m, <a class="code" href="structwmtk_1_1_tri_mesh_operation_1_1_execute_return_data.html">ExecuteReturnData</a>&amp; ret_data)</div>
 <div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;    {</div>
 <div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;        <span class="keywordflow">if</span> (wmtk::TriMeshSmoothVertexOperation::after(m, ret_data)) {</div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;            ret_data.success |= m.smooth_after(ret_data.tuple);</div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;            ret_data.success &amp;= m.smooth_after(ret_data.tuple);</div>
 <div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;        }</div>
 <div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;        <span class="keywordflow">return</span> ret_data;</div>
 <div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;    }</div>
 <div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;    <span class="keywordtype">bool</span> invariants(<a class="code" href="classapp_1_1remeshing_1_1_uniform_remeshing.html">UniformRemeshing</a>&amp; m, <a class="code" href="structwmtk_1_1_tri_mesh_operation_1_1_execute_return_data.html">ExecuteReturnData</a>&amp; ret_data)</div>
 <div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;    {</div>
 <div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;        <span class="keywordflow">if</span> (wmtk::TriMeshSmoothVertexOperation::invariants(m, ret_data)) {</div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;            ret_data.success |= m.<a class="code" href="classapp_1_1remeshing_1_1_uniform_remeshing.html#aa8537b74d1589fbd12e1039bcfa216bd">invariants</a>(ret_data.new_tris);</div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;            ret_data.success &amp;= m.<a class="code" href="classapp_1_1remeshing_1_1_uniform_remeshing.html#aa8537b74d1589fbd12e1039bcfa216bd">invariants</a>(ret_data.new_tris);</div>
 <div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;        }</div>
 <div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;        <span class="keywordflow">return</span> ret_data;</div>
 <div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;    }</div>
@@ -224,7 +224,7 @@ $(function() {
 <div class="ttc" id="aclassapp_1_1remeshing_1_1_uniform_remeshing_split_edge_operation_html"><div class="ttname"><a href="classapp_1_1remeshing_1_1_uniform_remeshing_split_edge_operation.html">app::remeshing::UniformRemeshingSplitEdgeOperation</a></div><div class="ttdef"><b>Definition:</b> UniformRemeshingOperations.h:42</div></div>
 <div class="ttc" id="aclassapp_1_1remeshing_1_1_uniform_remeshing_swap_edge_operation_html"><div class="ttname"><a href="classapp_1_1remeshing_1_1_uniform_remeshing_swap_edge_operation.html">app::remeshing::UniformRemeshingSwapEdgeOperation</a></div><div class="ttdef"><b>Definition:</b> UniformRemeshingOperations.h:75</div></div>
 <div class="ttc" id="aclasswmtk_1_1_tri_mesh_operation_shim_html"><div class="ttname"><a href="classwmtk_1_1_tri_mesh_operation_shim.html">wmtk::TriMeshOperationShim</a></div><div class="ttdef"><b>Definition:</b> TriMeshOperation.h:81</div></div>
-<div class="ttc" id="aclasswmtk_1_1_tri_mesh_tuple_html"><div class="ttname"><a href="classwmtk_1_1_tri_mesh_tuple.html">wmtk::TriMeshTuple</a></div><div class="ttdef"><b>Definition:</b> TriMeshTuple.h:9</div></div>
+<div class="ttc" id="aclasswmtk_1_1_tri_mesh_tuple_html"><div class="ttname"><a href="classwmtk_1_1_tri_mesh_tuple.html">wmtk::TriMeshTuple</a></div><div class="ttdef"><b>Definition:</b> TriMeshTuple.h:12</div></div>
 <div class="ttc" id="astructwmtk_1_1_tri_mesh_operation_1_1_execute_return_data_html"><div class="ttname"><a href="structwmtk_1_1_tri_mesh_operation_1_1_execute_return_data.html">wmtk::TriMeshOperation::ExecuteReturnData</a></div><div class="ttdef"><b>Definition:</b> TriMeshOperation.h:13</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
