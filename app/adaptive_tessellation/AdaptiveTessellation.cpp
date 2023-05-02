@@ -498,16 +498,18 @@ void AdaptiveTessellation::remove_seams(Eigen::MatrixXd& V, Eigen::MatrixXi& F) 
         const auto f_id = t.fid(*this);
         for (size_t e = 0; e < 3; ++e) {
             if (face_attrs[f_id].mirror_edges[e].has_value()) {
-                // Tuple e_tuple = tuple_from_edge(f_id, e);
-                Tuple e_tuple1 = face_attrs[f_id].mirror_edges[e].value();
-                size_t e_tuple1_fid = e_tuple1.fid(*this);
-                size_t e_tuple1_eid = e_tuple1.local_eid(*this);
-                assert(face_attrs[e_tuple1_fid].mirror_edges[e_tuple1_eid].has_value());
-                Tuple e_tuple2 = face_attrs[e_tuple1_fid].mirror_edges[e_tuple1_eid].value();
+                Tuple e_tuple1 = tuple_from_edge(f_id, e);
+                if (!e_tuple1.is_ccw(*this)) {
+                    e_tuple1 = e_tuple1.switch_vertex(*this);
+                }
+                Tuple e_tuple2 = face_attrs[f_id].mirror_edges[e].value();
+                if (!e_tuple2.is_ccw(*this)) {
+                    e_tuple2 = e_tuple2.switch_vertex(*this);
+                }
                 const size_t v0 = e_tuple1.vid(*this);
                 const size_t v1 = e_tuple1.switch_vertex(*this).vid(*this);
-                const size_t v3 = e_tuple2.vid(*this);
-                const size_t v2 = e_tuple2.switch_vertex(*this).vid(*this);
+                const size_t v2 = e_tuple2.vid(*this);
+                const size_t v3 = e_tuple2.switch_vertex(*this).vid(*this);
                 assert(v0 != v3);
                 if (v0 < v3) {
                     paired_vertices.insert({v3, v0});
