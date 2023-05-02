@@ -1,5 +1,12 @@
+#include <igl/edges.h>
+#include <igl/oriented_facets.h>
+#include <wmtk/TriMesh.h>
+#include <paraviewo/HDF5VTUWriter.hpp>
+#include <paraviewo/ParaviewWriter.hpp>
+#include <paraviewo/VTUWriter.hpp>
 #include <wmtk/utils/Delaunay.hpp>
 #include <wmtk/utils/io.hpp>
+
 
 #include <catch2/catch.hpp>
 
@@ -102,5 +109,138 @@ TEST_CASE("io", "[io][mshio]")
 TEST_CASE("io-hang", "[io][mshio]")
 {
     wmtk::MshData msh;
-    REQUIRE_THROWS(msh.load(WMT_DATA_DIR "nofile.msh"));
+    REQUIRE_THROWS(msh.load(WMTK_DATA_DIR "nofile.msh"));
+}
+
+
+TEST_CASE("paraviewo-tri", "[io][paraviewo]")
+{
+    Eigen::MatrixXd vertices;
+    vertices.resize(4, 2); // can be also 3D
+    vertices << 0, 0, 1, 0, 0, 1, 1, 1;
+
+    Eigen::MatrixXi faces;
+    faces.resize(2, 3);
+    faces << 0, 1, 2, 1, 3, 2;
+
+    paraviewo::HDF5VTUWriter writer;
+
+    SECTION("No attributes")
+    {
+        writer.write_mesh("triMesh_NoAttributes.hdf", vertices, faces);
+    }
+
+    SECTION("Add basic attributes")
+    {
+        // create some pseudo vertex attribute
+        Eigen::MatrixXd vertex_idx;
+        vertex_idx.resize(vertices.rows(), 1);
+        for (unsigned i = 0; i < vertices.rows(); ++i) {
+            vertex_idx(i, 0) = i;
+        }
+
+        // create some pseudo cell (in 2D that is a face) attribute
+        Eigen::MatrixXd face_idx;
+        face_idx.resize(faces.rows(), 1);
+        for (unsigned i = 0; i < faces.rows(); ++i) {
+            face_idx(i, 0) = i;
+        }
+
+        writer.add_field("vertex_idx", vertex_idx);
+        writer.add_cell_field("face_idx", face_idx);
+        writer.write_mesh("triMesh_BasicAttributes.hdf", vertices, faces);
+    }
+
+    // everything that is not a vertex or cell must be stored in its own file
+    SECTION("Edge attributes")
+    {
+        Eigen::MatrixXi edges;
+        igl::edges(faces, edges);
+
+        // create some pseudo edge attribute
+        Eigen::MatrixXd edge_idx;
+        edge_idx.resize(edges.rows(), 1);
+        for (unsigned i = 0; i < edges.rows(); ++i) {
+            edge_idx(i, 0) = i;
+        }
+
+        // consider edges as cells
+        writer.add_cell_field("edge_idx", edge_idx);
+        writer.write_mesh("triMesh_EdgeAttributes.hdf", vertices, edges);
+    }
+}
+
+TEST_CASE("paraviewo-tet", "[io][paraviewo]")
+{
+    Eigen::MatrixXd vertices;
+    vertices.resize(5, 3);
+    vertices << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 1;
+
+    Eigen::MatrixXi tets;
+    tets.resize(2, 4);
+    tets << 0, 2, 1, 3, 0, 1, 2, 4;
+
+    paraviewo::HDF5VTUWriter writer;
+
+    SECTION("No attributes")
+    {
+        writer.write_mesh("tetMesh_NoAttributes.hdf", vertices, tets);
+    }
+
+    SECTION("Add basic attributes")
+    {
+        // create some pseudo vertex attribute
+        Eigen::MatrixXd vertex_idx;
+        vertex_idx.resize(vertices.rows(), 1);
+        for (unsigned i = 0; i < vertices.rows(); ++i) {
+            vertex_idx(i, 0) = i;
+        }
+
+        // create some pseudo cell (in 3D that is a tet) attribute
+        Eigen::MatrixXd cell_idx;
+        cell_idx.resize(tets.rows(), 1);
+        for (unsigned i = 0; i < tets.rows(); ++i) {
+            cell_idx(i, 0) = i;
+        }
+
+        writer.add_field("vertex_idx", vertex_idx);
+        writer.add_cell_field("cell_idx", cell_idx);
+        writer.write_mesh("tetMesh_BasicAttributes.hdf", vertices, tets);
+    }
+
+    // everything that is not a vertex or cell must be stored in its own file
+    SECTION("Edge attributes")
+    {
+        Eigen::MatrixXi edges;
+        igl::edges(tets, edges);
+
+        // create some pseudo edge attribute
+        Eigen::MatrixXd edge_idx;
+        edge_idx.resize(edges.rows(), 1);
+        for (unsigned i = 0; i < edges.rows(); ++i) {
+            edge_idx(i, 0) = i;
+        }
+
+        // consider edges as cells
+        writer.add_cell_field("edge_idx", edge_idx);
+        writer.write_mesh("tetMesh_EdgeAttributes.hdf", vertices, edges);
+    }
+
+    SECTION("Face attributes")
+    {
+        Eigen::MatrixXi faces;
+        igl::oriented_facets(tets, faces);
+
+
+        // create some pseudo edge attribute
+        Eigen::MatrixXd face_idx;
+        face_idx.resize(faces.rows(), 1);
+        for (unsigned i = 0; i < faces.rows(); ++i) {
+            face_idx(i, 0) = i;
+        }
+
+        // consider faces as cells
+        writer.add_cell_field("face_idx", face_idx);
+        writer.write_mesh("tetMesh_FaceAttributes.hdf", vertices, faces);
+    }
 }

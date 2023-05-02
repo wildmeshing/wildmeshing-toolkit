@@ -9,8 +9,8 @@
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
-#include "wmtk/utils/Logger.hpp"
 #include <wmtk/utils/partition_utils.hpp>
+#include "wmtk/utils/Logger.hpp"
 
 #include <Eigen/Core>
 #include <atomic>
@@ -41,20 +41,20 @@ public:
         p_vertex_attrs = &vertex_attrs;
         p_tet_attrs = &tet_attrs;
 
-        vertex_attrs.resize(_vertex_attribute.size());
+        vertex_attrs.grow_to_at_least(_vertex_attribute.size());
 
         NUM_THREADS = num_threads;
         init(_vertex_attribute.size(), tets);
 
-        for_each_vertex([&](auto& v){
+        for_each_vertex([&](auto& v) {
             auto i = v.vid(*this);
             vertex_attrs[i].pos = _vertex_attribute[i];
         });
-        for_each_tetra([&](auto& t){
+        for_each_tetra([&](auto& t) {
             auto i = t.tid(*this);
             tet_attrs[i].quality = get_quality(t);
         });
-        
+
         compute_vertex_partition_morton();
     }
     HarmonicTet(){};
@@ -64,21 +64,22 @@ public:
     // TODO: this should not be exposed in the application
     void compute_vertex_partition_morton()
     {
-        if (NUM_THREADS==0) return;
+        if (NUM_THREADS == 0) return;
         wmtk::logger().info("Number of parts: {} by morton", NUM_THREADS);
         std::vector<size_t> par;
-        wmtk::partition_vertex_morton(vert_capacity(), [&](auto vid){
-            return vertex_attrs[vid].pos;
-        }, NUM_THREADS, par
-        );
-        for_each_vertex([&](auto& v){
+        wmtk::partition_vertex_morton(
+            vert_capacity(),
+            [&](auto vid) { return vertex_attrs[vid].pos; },
+            NUM_THREADS,
+            par);
+        for_each_vertex([&](auto& v) {
             auto vid = v.vid(*this);
             vertex_attrs[vid].partition_id = par[vid];
         });
     }
 
     void output_mesh(std::string file) const;
-    
+
     size_t get_partition_id(const Tuple& loc) const
     {
         return vertex_attrs[loc.vid(*this)].partition_id;

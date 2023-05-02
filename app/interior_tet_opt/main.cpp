@@ -131,7 +131,7 @@ bool adjust_sizing_field(
 std::tuple<double, double> local_operations(
     app::interior_tet_opt::InteriorTetOpt& mesh,
     const std::array<int, 4>& ops,
-    bool collapse_limit_length = true)
+    [[maybe_unused]] bool collapse_limit_length = true)
 {
     igl::Timer timer;
 
@@ -143,7 +143,7 @@ std::tuple<double, double> local_operations(
         wmtk::logger().critical("Already Violating Invariants!!!");
     }
 
-    for (int i = 0; i < ops.size(); i++) {
+    for (unsigned int i = 0; i < ops.size(); i++) {
         timer.start();
         if (i == 0) {
             for (int n = 0; n < ops[i]; n++) {
@@ -224,7 +224,7 @@ void mesh_improvement(app::interior_tet_opt::InteriorTetOpt& mesh, int max_its, 
 int main(int argc, char** argv)
 {
     CLI::App app{argv[0]};
-    auto harmonize = true;
+    [[maybe_unused]] auto harmonize = true;
     app.add_option("input", args.input, "Input mesh.");
     app.add_option("output", args.output, "output mesh.");
     app.add_option("-j, --thread", args.thread, "thread.");

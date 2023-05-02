@@ -8,12 +8,12 @@ endif()
 include(ExternalProject)
 include(FetchContent)
 
-set(WMT_DATA_ROOT "${PROJECT_SOURCE_DIR}/data/" CACHE PATH "Where should the toolkit download and look for test data?")
+set(WMTK_DATA_ROOT "${PROJECT_SOURCE_DIR}/data/" CACHE PATH "Where should the toolkit download and look for test data?")
 
 ExternalProject_Add(
     wmtk_data_download
     PREFIX "${FETCHCONTENT_BASE_DIR}/wmtk-test-data"
-    SOURCE_DIR ${WMT_DATA_ROOT}
+    SOURCE_DIR ${WMTK_DATA_ROOT}
 
     GIT_REPOSITORY https://github.com/wildmeshing/data.git
     GIT_TAG 6aabfcf477df26b17d0a488195d119e20a0c018d
@@ -30,4 +30,4 @@ add_library(wmtk::data ALIAS wmtk_data)
 
 add_dependencies(wmtk_data wmtk_data_download)
 
-target_compile_definitions(wmtk_data INTERFACE WMT_DATA_DIR=\"${WMT_DATA_ROOT}\")
+target_compile_definitions(wmtk_data INTERFACE WMTK_DATA_DIR=\"${WMTK_DATA_ROOT}\")

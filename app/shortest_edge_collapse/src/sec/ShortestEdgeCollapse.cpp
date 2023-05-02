@@ -10,6 +10,34 @@
 using namespace wmtk;
 using namespace app::sec;
 
+namespace {
+class ShortestEdgeCollapseOperation : public wmtk::TriMeshOperationShim<
+                                          ShortestEdgeCollapse,
+                                          ShortestEdgeCollapseOperation,
+                                          wmtk::TriMeshEdgeCollapseOperation>
+{
+public:
+    ExecuteReturnData execute(ShortestEdgeCollapse& m, const Tuple& t)
+    {
+        return wmtk::TriMeshEdgeCollapseOperation::execute(m, t);
+    }
+    bool before(ShortestEdgeCollapse& m, const Tuple& t)
+    {
+        return wmtk::TriMeshEdgeCollapseOperation::before(m, t) && m.collapse_edge_before(t);
+    }
+    bool after(ShortestEdgeCollapse& m, ExecuteReturnData& ret_data)
+    {
+        return wmtk::TriMeshEdgeCollapseOperation::after(m, ret_data) &&
+               m.collapse_edge_after(ret_data.tuple);
+    }
+    bool invariants(ShortestEdgeCollapse& m, ExecuteReturnData& ret_data)
+    {
+        return wmtk::TriMeshEdgeCollapseOperation::invariants(m, ret_data) &&
+               m.invariants(ret_data.new_tris);
+    }
+};
+} // namespace
+
 ShortestEdgeCollapse::ShortestEdgeCollapse(
     std::vector<Eigen::Vector3d> _m_vertex_positions,
     int num_threads,
@@ -19,7 +47,7 @@ ShortestEdgeCollapse::ShortestEdgeCollapse(
     m_envelope.use_exact = use_exact_envelope;
     p_vertex_attrs = &vertex_attrs;
 
-    vertex_attrs.resize(_m_vertex_positions.size());
+    vertex_attrs.grow_to_at_least(_m_vertex_positions.size());
 
     for (auto i = 0; i < _m_vertex_positions.size(); i++)
         vertex_attrs[i] = {_m_vertex_positions[i], 0, false};
@@ -111,7 +139,6 @@ bool ShortestEdgeCollapse::write_triangle_mesh(std::string path)
 
 bool ShortestEdgeCollapse::collapse_edge_before(const Tuple& t)
 {
-    if (!TriMesh::collapse_edge_before(t)) return false;
     if (vertex_attrs[t.vid(*this)].freeze || vertex_attrs[t.switch_vertex(*this).vid(*this)].freeze)
         return false;
     position_cache.local().v1p = vertex_attrs[t.vid(*this)].pos;
@@ -163,8 +190,10 @@ bool ShortestEdgeCollapse::collapse_shortest(int target_vert_number)
                 .squaredNorm();
         return -len2;
     };
-    auto setup_and_execute = [&](auto executor) {
+    auto setup_and_execute = [&](auto& executor) {
+        executor.add_operation(std::make_shared<ShortestEdgeCollapseOperation>());
         executor.num_threads = NUM_THREADS;
+        spdlog::info("Num threads: {}", executor.num_threads);
         executor.renew_neighbor_tuples = renew;
         executor.priority = measure_len2;
         executor.stopping_criterion_checking_frequency =
@@ -172,10 +201,13 @@ bool ShortestEdgeCollapse::collapse_shortest(int target_vert_number)
                                    : std::numeric_limits<int>::max();
         executor.stopping_criterion = [](auto& m) { return true; };
         executor(*this, collect_all_ops);
+        spdlog::info("Calling consolidate");
+        executor(*this, {{"consolidate", {}}});
     };
 
     if (NUM_THREADS > 0) {
         auto executor = wmtk::ExecutePass<ShortestEdgeCollapse, ExecutionPolicy::kPartition>();
+
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) {
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };

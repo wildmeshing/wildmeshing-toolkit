@@ -27,11 +27,11 @@ void run_remeshing(std::string input, double len, std::string output, UniformRem
     auto start = high_resolution_clock::now();
     wmtk::logger().info("target len: {}", len);
     m.uniform_remeshing(len, itrs);
-    m.consolidate_mesh();
+    //m.consolidate_mesh();
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<milliseconds>(stop - start);
 
-    m.consolidate_mesh();
+    //m.consolidate_mesh();
     m.write_triangle_mesh(output);
     auto properties = m.average_len_valen();
     wmtk::logger().info("runtime in ms {}", duration.count());
@@ -54,7 +54,6 @@ int main(int argc, char** argv)
     double target_len = -1;
     int itrs = 2;
     bool freeze = true;
-    bool bnd_output = false;
     bool sample_envelope = false;
 
     CLI::App app{argv[0]};

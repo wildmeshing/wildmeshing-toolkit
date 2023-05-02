@@ -80,11 +80,11 @@ public:
 
     Eigen::Vector3d tangential_smooth(const Tuple& t);
 
-    bool collapse_edge_before(const Tuple& t) override;
-    bool collapse_edge_after(const Tuple& t) override;
+    bool collapse_edge_before(const Tuple& t) ;
+    bool collapse_edge_after(const Tuple& t) ;
 
-    bool swap_edge_before(const Tuple& t) override;
-    bool swap_edge_after(const Tuple& t) override;
+    bool swap_edge_before(const Tuple& t) ;
+    bool swap_edge_after(const Tuple& t) ;
 
     std::vector<TriMesh::Tuple> new_edges_after(const std::vector<TriMesh::Tuple>& tris) const;
     std::vector<TriMesh::Tuple> new_edges_after_swap(const TriMesh::Tuple& t) const;
@@ -95,11 +95,11 @@ public:
         const std::vector<TriMesh::Tuple>& tris) const;
 
 
-    bool split_edge_before(const Tuple& t) override;
-    bool split_edge_after(const Tuple& t) override;
+    bool split_edge_before(const Tuple& t) ;
+    bool split_edge_after(const Tuple& t) ;
 
-    bool smooth_before(const Tuple& t) override;
-    bool smooth_after(const Tuple& t) override;
+    bool smooth_before(const Tuple& t) ;
+    bool smooth_after(const Tuple& t) ;
 
     double compute_edge_cost_collapse(const TriMesh::Tuple& t, double L) const;
     double compute_edge_cost_split(const TriMesh::Tuple& t, double L) const;

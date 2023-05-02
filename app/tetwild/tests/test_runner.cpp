@@ -11,7 +11,7 @@ using namespace tetwild;
 
 TEST_CASE("optimize_mesh", "[test_runner]")
 {
-    const std::string root(WMT_DATA_DIR);
+    const std::string root(WMTK_DATA_DIR);
     const std::string path = root + "/Octocat.obj";
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;

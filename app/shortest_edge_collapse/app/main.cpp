@@ -36,7 +36,7 @@ void run_shortest_collapse(
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<milliseconds>(stop - start);
     wmtk::logger().info("runtime {}", duration.count());
-    m.consolidate_mesh();
+    //m.consolidate_mesh();
     m.write_triangle_mesh(output);
     wmtk::logger().info(
         "After_vertices#: {} \n After_tris#: {}",
@@ -105,6 +105,6 @@ int main(int argc, char** argv)
     run_shortest_collapse(path, target_verts, output, m);
     timer.stop();
     logger().info("Took {}", timer.getElapsedTimeInSec());
-    m.consolidate_mesh();
+    //m.consolidate_mesh();
     return 0;
 }
