@@ -13,7 +13,7 @@ public:
     {
         Tuple tuple;
         std::vector<Tuple> new_tris;
-        bool success = false;
+        bool success = true;
         operator bool() const { return success;}
     };
 
