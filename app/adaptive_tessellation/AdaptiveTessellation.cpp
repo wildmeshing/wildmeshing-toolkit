@@ -320,7 +320,7 @@ void AdaptiveTessellation::create_paired_seam_mesh_with_offset(
 
                 assert(F3d(fi, lvi1) == F3d(fj, lvj1));
                 assert(F3d(fi, lvi2) == F3d(fj, lvj2));
-                if (F(fi, lvi1) != F(fj, lvj1) || F(fi, lvi2) != F(fj, lvj2)) {
+                if ((F(fi, lvi1) != F(fj, lvj1)) || (F(fi, lvi2) != F(fj, lvj2))) {
                     // this is a seam. init the mirror_edge tuple
                     // the orientation of the mirror edges is inccw (half edge conventions)
                     // However, the edge tuple in operations have arbitraty orientation
@@ -1192,13 +1192,14 @@ std::optional<TriMesh::Tuple> AdaptiveTessellation::get_sibling_edge(const TriMe
 {
     if (is_boundary_edge(t)) {
         if (is_seam_edge(t)) {
-            return get_oriented_mirror_edge(t);
+            return std::make_optional<TriMesh::Tuple>(get_oriented_mirror_edge(t));
         } else {
             return std::nullopt;
         }
     } else {
         assert(t.switch_face(*this).has_value());
-        return t.switch_face(*this).value().switch_vertex(*this);
+        return std::make_optional<TriMesh::Tuple>(
+            t.switch_face(*this).value().switch_vertex(*this));
         // return the sibling edge that's of opposite diretion
     }
 }
