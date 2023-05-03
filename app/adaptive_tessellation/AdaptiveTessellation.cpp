@@ -321,7 +321,7 @@ void AdaptiveTessellation::create_paired_seam_mesh_with_offset(
 
                 assert(F3d(fi, lvi1) == F3d(fj, lvj1));
                 assert(F3d(fi, lvi2) == F3d(fj, lvj2));
-                if (F(fi, lvi1) != F(fj, lvj1) && F(fi, lvi2) != F(fj, lvj2)) {
+                if (F(fi, lvi1) != F(fj, lvj1) || F(fi, lvi2) != F(fj, lvj2)) {
                     // this is a seam. init the mirror_edge tuple
                     face_attrs[fi].mirror_edges[local_eid] =
                         std::make_optional<wmtk::TriMesh::Tuple>(Tuple(
@@ -510,21 +510,45 @@ void AdaptiveTessellation::remove_seams(Eigen::MatrixXd& V, Eigen::MatrixXi& F) 
                 const size_t v1 = e_tuple1.switch_vertex(*this).vid(*this);
                 const size_t v2 = e_tuple2.vid(*this);
                 const size_t v3 = e_tuple2.switch_vertex(*this).vid(*this);
-                assert(v0 != v3);
                 if (v0 < v3) {
-                    paired_vertices.insert({v3, v0});
-                } else {
-                    paired_vertices.insert({v0, v3});
+                    paired_vertices[v3] = v0;
+                } else if (v3 < v0) {
+                    paired_vertices[v0] = v3;
                 }
 
-                assert(v1 != v2);
                 if (v1 < v2) {
-                    paired_vertices.insert({v2, v1});
-                } else {
-                    paired_vertices.insert({v1, v2});
+                    paired_vertices[v2] = v1;
+                } else if (v2 < v1) {
+                    paired_vertices[v1] = v2;
                 }
             }
         }
+    }
+
+    // make sure that all vertices are paired with the partner that has the lowest index
+    for (const auto& [v0, _] : paired_vertices) {
+        while (paired_vertices.count(paired_vertices[v0]) != 0) {
+            paired_vertices[v0] = paired_vertices[paired_vertices[v0]];
+        }
+    }
+
+    // collect all positions that belong to the same seam vertex
+    std::map<size_t, std::vector<Eigen::Vector3d>> map_id_to_pos_vec;
+    for (const auto& [v0, v1] : paired_vertices) {
+        if (map_id_to_pos_vec.count(v1) == 0) {
+            map_id_to_pos_vec[v1] = {V.row(v1)};
+        }
+        map_id_to_pos_vec[v1].push_back(V.row(v0));
+    }
+
+    // compute averate positions
+    for (const auto& [v, pos_vec] : map_id_to_pos_vec) {
+        Eigen::Vector3d p(0, 0, 0);
+        for (const auto& pp : pos_vec) {
+            p += pp;
+        }
+        p /= pos_vec.size();
+        V.row(v) = p;
     }
 
     constexpr size_t INVALID_ID = std::numeric_limits<size_t>::max();
@@ -540,7 +564,6 @@ void AdaptiveTessellation::remove_seams(Eigen::MatrixXd& V, Eigen::MatrixXi& F) 
     }
 
     // transfer V to NV but ignore paired vertices
-    // TODO Merge vertices instead of ignoring them!
     Eigen::MatrixXd NV;
     NV.resize(V.rows() - paired_vertices.size(), 3);
     for (size_t i = 0; i < V.rows(); ++i) {
@@ -555,21 +578,10 @@ void AdaptiveTessellation::remove_seams(Eigen::MatrixXd& V, Eigen::MatrixXi& F) 
         for (size_t j = 0; j < NF.cols(); ++j) {
             size_t tries = 0;
             size_t new_v_id = F(i, j);
-            while (paired_vertices.count(new_v_id) != 0) {
+            if (paired_vertices.count(new_v_id) != 0) {
                 new_v_id = paired_vertices[new_v_id];
-                if (++tries == 10000) {
-                    // something definitely went wrong here --> looks like an endless loop
-                    spdlog::warn(
-                        "Over 1000 iterations while trying to find the correct mapping for "
-                        "vertex " +
-                        new_v_id);
-                    if (tries == 10100) {
-                        // abort
-                        spdlog::critical("Cannot find correct mapping. Return mesh with seams!");
-                        return;
-                    }
-                }
             }
+            assert(paired_vertices.count(new_v_id) == 0);
             NF(i, j) = old_to_new_vertex_ids[new_v_id];
         }
     }
