@@ -56,6 +56,7 @@ class FaceAttributes
 {
 public:
     std::array<std::optional<wmtk::TriMesh::Tuple>, 3> mirror_edges;
+    std::array<wmtk::TriMesh::Tuple, 3> opposite_edges;
 };
 
 class AdaptiveTessellation : public wmtk::TriMesh
@@ -239,6 +240,35 @@ public:
         // for (const auto& tri : this->get_faces()) {
         //     assert(!is_inverted(tri));
         // }
+    }
+
+    // opposite edge tuple
+    Tuple opposite(const Tuple& edge_tuple) const
+    {
+        assert(edge_tuple.is_ccw(*this));
+        const size_t& f = edge_tuple.fid(*this);
+        const size_t& loc_e = edge_tuple.local_eid(*this);
+        Tuple ret = face_attrs[f].opposite_edges[loc_e];
+        assert(ret.is_ccw(*this) || ret.vid(*this) == -1);
+        return ret;
+    }
+
+    // next edge tuple
+    Tuple next(const Tuple& edge_tuple) const
+    {
+        assert(edge_tuple.is_ccw(*this));
+        Tuple ret = edge_tuple.switch_vertex(*this).switch_edge(*this);
+        assert(ret.is_ccw(*this) || ret.vid(*this) == -1);
+        return ret;
+    }
+
+    // previous edge tuple
+    Tuple prev(const Tuple& edge_tuple) const
+    {
+        assert(edge_tuple.is_ccw(*this));
+        Tuple ret = edge_tuple.switch_edge(*this).switch_vertex(*this);
+        assert(ret.is_ccw(*this) || ret.vid(*this) == -1);
+        return ret;
     }
 };
 } // namespace adaptive_tessellation
