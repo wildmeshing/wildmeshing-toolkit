@@ -300,90 +300,42 @@ void AdaptiveTessellation::create_paired_seam_mesh_with_offset(
     // if it's boundary edge, do nothing
     // if not, index to the matrix for F_3d, and check the 3 edges
 
-    for (size_t f_id = 0; f_id < m_3d.tri_capacity(); ++f_id) {
-        for (size_t loc_v_id_1 = 0; loc_v_id_1 < 3; ++loc_v_id_1) {
-            const size_t loc_v_id_2 = (loc_v_id_1 + 1) % 3;
-            const size_t local_eid = (loc_v_id_1 + 2) % 3;
-            const wmtk::TriMesh::Tuple e = m_3d.tuple_from_edge(f_id, local_eid);
+    for (auto fi = 0; fi < m_3d.tri_capacity(); ++fi) {
+        for (auto lvi1 = 0; lvi1 < 3; ++lvi1) {
+            auto lvi2 = (lvi1 + 1) % 3;
+            auto local_eid = 3 - lvi1 - lvi2;
+            auto edge1 = m_3d.tuple_from_edge(fi, local_eid);
 
-            assert(F3d(f_id, loc_v_id_1) == e.vid(m_3d));
-            if (!e.switch_face(m_3d).has_value()) {
+            assert(F3d(fi, lvi1) == edge1.vid(m_3d));
+            if (!edge1.switch_face(m_3d).has_value()) {
                 // Boundary edge, skipping...
                 continue;
             } else {
-                const wmtk::TriMesh::Tuple e_opp = e.switch_face(m_3d).value();
-                const size_t f_id_opp = e_opp.fid(m_3d);
-                size_t loc_v_id_1_opp = -1, loc_v_id_2_opp = -1;
+                auto edge2 = edge1.switch_face(m_3d).value();
+                auto fj = edge2.fid(m_3d);
+                size_t lvj1, lvj2;
                 for (auto i = 0; i < 3; i++) {
-                    if (F3d(f_id_opp, i) == e.vid(m_3d)) loc_v_id_1_opp = i;
-                    if (F3d(f_id_opp, i) == e.switch_vertex(m_3d).vid(m_3d)) loc_v_id_2_opp = i;
+                    if (F3d(fj, i) == edge1.vid(m_3d)) lvj1 = i;
+                    if (F3d(fj, i) == edge1.switch_vertex(m_3d).vid(m_3d)) lvj2 = i;
                 }
-                assert(loc_v_id_1_opp != -1);
-                assert(loc_v_id_2_opp != -1);
 
-
-                assert(F3d(f_id, loc_v_id_1) == F3d(f_id_opp, loc_v_id_1_opp));
-                assert(F3d(f_id, loc_v_id_2) == F3d(f_id_opp, loc_v_id_2_opp));
-
-                const size_t local_eid_opp = (loc_v_id_2_opp + 2) % 3;
-
-                if (F(f_id, loc_v_id_1) != F(f_id_opp, loc_v_id_1_opp) ||
-                    F(f_id, loc_v_id_2) != F(f_id_opp, loc_v_id_2_opp)) {
+                assert(F3d(fi, lvi1) == F3d(fj, lvj1));
+                assert(F3d(fi, lvi2) == F3d(fj, lvj2));
+                if (F(fi, lvi1) != F(fj, lvj1) && F(fi, lvi2) != F(fj, lvj2)) {
                     // this is a seam. init the mirror_edge tuple
-                    face_attrs[f_id].mirror_edges[local_eid] =
+                    face_attrs[fi].mirror_edges[local_eid] =
                         std::make_optional<wmtk::TriMesh::Tuple>(Tuple(
-                            F(f_id_opp, loc_v_id_1_opp),
-                            local_eid_opp,
-                            f_id_opp,
-                            *this)); // tuple points from loc_v_id_1_opp to loc_v_id_2_opp
-                    face_attrs[f_id_opp].mirror_edges[local_eid_opp] =
+                            F(fj, lvj1),
+                            (3 - lvj1 - lvj2),
+                            fj,
+                            *this)); // tuple points from lvj1 to lvj2
+                    face_attrs[fj].mirror_edges[(3 - lvj1 - lvj2)] =
                         std::make_optional<wmtk::TriMesh::Tuple>(Tuple(
-                            F(f_id, loc_v_id_1),
+                            F(fi, lvi1),
                             local_eid,
-                            f_id,
-                            *this)); // tuple points from loc_v_id_1_opp to loc_v_id_2_opp
+                            fi,
+                            *this)); // tuple points from lvi1 to lvi2
                 }
-                face_attrs[f_id].opposite_edges[local_eid] = Tuple(
-                    F(f_id_opp, loc_v_id_1_opp),
-                    local_eid_opp,
-                    f_id_opp,
-                    *this); // tuple points from loc_v_id_1_opp to loc_v_id_2_opp
-                face_attrs[f_id_opp].opposite_edges[local_eid_opp] = Tuple(
-                    F(f_id, loc_v_id_1),
-                    local_eid,
-                    f_id,
-                    *this); // tuple points from loc_v_id_1_opp to loc_v_id_2_opp
-            }
-        }
-    }
-
-    for (size_t f_id = 0; f_id < tri_capacity(); ++f_id) {
-        for (size_t local_eid = 0; local_eid < 3; ++local_eid) {
-            Tuple& opp = face_attrs[f_id].opposite_edges[local_eid];
-            if (opp.vid(*this) == -1) {
-                continue;
-            }
-            if (opp.is_ccw(*this)) {
-                opp = opp.switch_vertex(*this);
-            }
-        }
-    }
-
-    // check if opposite edges are correct
-    for (size_t f_id = 0; f_id < tri_capacity(); ++f_id) {
-        for (size_t local_eid = 0; local_eid < 3; ++local_eid) {
-            const Tuple& opp = face_attrs[f_id].opposite_edges[local_eid];
-            if (opp.vid(*this) == -1) {
-                continue;
-            }
-            if (face_attrs[f_id].mirror_edges[local_eid].has_value()) {
-                assert(
-                    opp.fid(*this) == face_attrs[f_id].mirror_edges[local_eid].value().fid(*this));
-            } else {
-                Tuple e = tuple_from_edge(f_id, local_eid);
-                const size_t f1 = opp.fid(*this);
-                const size_t f2 = e.switch_face(*this).value().fid(*this);
-                assert(opp.fid(*this) == e.switch_face(*this).value().fid(*this));
             }
         }
     }
@@ -558,15 +510,17 @@ void AdaptiveTessellation::remove_seams(Eigen::MatrixXd& V, Eigen::MatrixXi& F) 
                 const size_t v1 = e_tuple1.switch_vertex(*this).vid(*this);
                 const size_t v2 = e_tuple2.vid(*this);
                 const size_t v3 = e_tuple2.switch_vertex(*this).vid(*this);
+                assert(v0 != v3);
                 if (v0 < v3) {
                     paired_vertices.insert({v3, v0});
-                } else if (v3 < v0) {
+                } else {
                     paired_vertices.insert({v0, v3});
                 }
 
+                assert(v1 != v2);
                 if (v1 < v2) {
                     paired_vertices.insert({v2, v1});
-                } else if (v2 < v1) {
+                } else {
                     paired_vertices.insert({v1, v2});
                 }
             }
