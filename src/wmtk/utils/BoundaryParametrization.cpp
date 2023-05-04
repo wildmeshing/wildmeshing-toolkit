@@ -260,12 +260,15 @@ Boundary::ParameterizedSegment Boundary::t_to_segment(int curve_id, double t) co
     ParameterizedSegment result;
 
     const auto& arclength = m_curves.arclengths[m_curves.parent_curve[curve_id]];
-    while (t < 0) {
-        t += arclength.back();
+    if (is_periodic(curve_id)) {
+        while (t < 0) {
+            t += arclength.back();
+        }
+        t = std::fmod(t, arclength.back());
+    } else {
+        t = std::clamp(t, 0., arclength.back());
     }
-    // TODO: Change for non-periodic curves
-    t = std::fmod(t, arclength.back());
-    assert(t < arclength.back());
+    assert(t <= arclength.back());
 
     auto it = std::prev(std::upper_bound(arclength.begin(), arclength.end(), t));
     auto a = std::distance(arclength.begin(), it);
