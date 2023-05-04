@@ -2,6 +2,8 @@
 using namespace adaptive_tessellation;
 using namespace wmtk;
 
+#include "global_intersection.h"
+
 // every edge is split if it is longer than 4/5 L
 
 auto split_renew = [](auto& m, auto op, auto& tris) {
@@ -33,7 +35,7 @@ bool AdaptiveTessellationSplitEdgeOperation::before(AdaptiveTessellation& m, con
     if (wmtk::TriMeshSplitEdgeOperation::before(m, t)) {
         if (m.vertex_attrs[t.vid(m)].curve_id != m.vertex_attrs[t.switch_vertex(m).vid(m)].curve_id)
             return false;
-        if (cnt % 10 == 0) {
+        if (cnt > 47) {
             m.write_displaced_obj(
                 m.mesh_parameters.m_output_folder + fmt::format("/split_{:02d}_seams.obj", cnt),
                 m.mesh_parameters.m_displacement);
@@ -41,7 +43,6 @@ bool AdaptiveTessellationSplitEdgeOperation::before(AdaptiveTessellation& m, con
                 m.mesh_parameters.m_output_folder + fmt::format("/split_{:02d}_seamless.obj", cnt),
                 m.mesh_parameters.m_displacement);
         }
-        ++cnt;
 
         op_cache.local().v1 = t.vid(m);
         op_cache.local().v2 = t.switch_vertex(m).vid(m);
@@ -305,6 +306,13 @@ bool AdaptiveTessellationPairedSplitEdgeOperation::after(
 {
     split_edge.after(m, ret_data);
     if (!ret_data.success) return false;
+
+    // collision test
+    if (has_intersection(m)) {
+        ret_data.success = false;
+        return false;
+    }
+
     // nullify the inside edges old mirror info
     m.face_attrs[split_edge.return_edge_tuple.switch_vertex(m).switch_edge(m).fid(m)]
         .mirror_edges[split_edge.return_edge_tuple.switch_vertex(m).switch_edge(m).local_eid(m)] =
@@ -413,6 +421,7 @@ bool AdaptiveTessellationPairedSplitEdgeOperation::after(
                           .switch_edge(m)
                           .switch_vertex(m)
                           .local_eid(m)] = std::nullopt;
+
     return ret_data.success;
 }
 

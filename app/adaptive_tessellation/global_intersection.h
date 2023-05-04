@@ -16,7 +16,8 @@ inline double compute_collision_free_stepsize(
 {
     Eigen::MatrixXd vertices;
     Eigen::MatrixXi faces;
-    mesh.export_mesh(vertices, faces);
+    mesh.export_mesh_3d(vertices, faces);
+    mesh.remove_seams(vertices, faces);
     Eigen::MatrixXi edges;
     igl::edges(faces, edges);
 
@@ -31,14 +32,13 @@ inline double compute_collision_free_stepsize(
 
 /**
  * @brief Wrapper for has_intersection from the ipc toolkit.
- * @param mesh The mesh for which an operation should be performed
- * @param vn The new vertex positions after the operation
+ * @param mesh the AdaptiveTessellation mesh
  */
-inline bool has_intersection(const AdaptiveTessellation& mesh, const Eigen::MatrixXd& vn)
+inline bool has_intersection(const AdaptiveTessellation& mesh)
 {
     Eigen::MatrixXd vertices;
     Eigen::MatrixXi faces;
-    mesh.export_mesh(vertices, faces);
+    mesh.export_seamless_mesh_3d(vertices, faces);
     Eigen::MatrixXi edges;
     igl::edges(faces, edges);
 

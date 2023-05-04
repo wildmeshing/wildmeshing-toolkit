@@ -491,6 +491,18 @@ void AdaptiveTessellation::export_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F) c
     }
 }
 
+void AdaptiveTessellation::export_mesh_3d(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const
+{
+    export_mesh(V, F);
+    auto rows = V.rows();
+    Eigen::MatrixXd V3d = Eigen::MatrixXd::Zero(rows, 3);
+    for (int i = 0; i < rows; i++) {
+        V3d.row(i) = mesh_parameters.m_displacement->get(V(i, 0), V(i, 1));
+    }
+
+    V = V3d;
+}
+
 void AdaptiveTessellation::remove_seams(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const
 {
     std::map<size_t, size_t> paired_vertices; // mapping from removed to remaining vertex
@@ -567,7 +579,7 @@ void AdaptiveTessellation::remove_seams(Eigen::MatrixXd& V, Eigen::MatrixXi& F) 
 
     // transfer V to NV but ignore paired vertices
     Eigen::MatrixXd NV;
-    NV.resize(V.rows() - paired_vertices.size(), 3);
+    NV.resize(V.rows() - paired_vertices.size(), V.cols());
     for (size_t i = 0; i < V.rows(); ++i) {
         if (old_to_new_vertex_ids[i] != INVALID_ID) {
             NV.row(old_to_new_vertex_ids[i]) = V.row(i);
@@ -591,6 +603,12 @@ void AdaptiveTessellation::remove_seams(Eigen::MatrixXd& V, Eigen::MatrixXi& F) 
     // overwrite V and F
     V = NV;
     F = NF;
+}
+
+void AdaptiveTessellation::export_seamless_mesh_3d(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const
+{
+    export_mesh_3d(V, F);
+    remove_seams(V, F);
 }
 
 void AdaptiveTessellation::write_obj(const std::string& path)
