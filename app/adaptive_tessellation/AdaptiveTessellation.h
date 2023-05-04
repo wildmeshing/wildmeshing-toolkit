@@ -216,6 +216,16 @@ public:
         Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle) const;
     double get_area_accuracy_error(const Tuple& edge_tuple) const;
 
+    // get sibling edge for paired operations
+    // return the oriented mirror edge if t is seam
+    // return the sibling if t is interior
+    // return nullopt if t is boundary
+    std::optional<TriMesh::Tuple> get_sibling_edge(const TriMesh::Tuple& t);
+    // given a seam edge retrieve its mirror edge in opposite direction (half egde conventions )
+    TriMesh::Tuple get_oriented_mirror_edge(const TriMesh::Tuple& t);
+    // set primary_t's mirror edge data to a ccw ordered mirror_edge
+    void set_mirror_edge_data(const TriMesh::Tuple& primary_t, const TriMesh::Tuple& mirror_edge);
+    bool is_seam_edge(const TriMesh::Tuple& t);
     // unit test functions
     inline void create_mesh_debug(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F)
     {
