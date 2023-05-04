@@ -51,9 +51,10 @@ public:
         //    /  \                                 / ｜\ 
         // s2/2  1\s1                           s2/2'|1'\ s1
         //  / ---> \                             /->^｜v \   
-        // /___0____\           ===>            /_0'_｜_6_\ 
+        // /___0____\           ===>            /_0'_｜_6_\    
         // if size == 3, it's a boundary edge,
-        // sibling edges: nullopt, s1, s2
+        // before_sibling_edges: nullopt, s1, s2
+        // mirror data of ^ v in the middle needs to be nullified
         // ___ 3 ____                           __7__ __3'_
         // \        /                           \    | <--/
         //  \ <--- /                             \4' | 5'/
@@ -61,8 +62,11 @@ public:
         //    \  /                                 \ | /
         //     \/                                   \ /
         // if size == 6, it's interior or seam edge
-        // sibling edges: 3, s1, s2, 0, s4, s5
-        std::vector<std::optional<TriMesh::Tuple>> sibling_edges;
+        // before_sibling_edges: 3, s1, s2, 0, s4, s5
+        std::vector<std::optional<TriMesh::Tuple>> before_sibling_edges;
+        // after_sibling_edges: 0', 1', 2', 6
+        // after_sibling_edges: 0', 1', 2', 3', 4', 5', 6, 7
+        std::vector<TriMesh::Tuple> after_sibling_edges;
     };
     tbb::enumerable_thread_specific<PairedOpCache> paired_op_cache;
 
