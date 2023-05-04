@@ -33,9 +33,15 @@ bool AdaptiveTessellationSplitEdgeOperation::before(AdaptiveTessellation& m, con
     if (wmtk::TriMeshSplitEdgeOperation::before(m, t)) {
         if (m.vertex_attrs[t.vid(m)].curve_id != m.vertex_attrs[t.switch_vertex(m).vid(m)].curve_id)
             return false;
-        // m.write_displaced_obj(
-        //     m.mesh_parameters.m_output_folder + fmt::format("/split_{:02d}.obj", cnt++),
-        //     m.mesh_parameters.m_displacement);
+        if (cnt % 10 == 0) {
+            m.write_displaced_obj(
+                m.mesh_parameters.m_output_folder + fmt::format("/split_{:02d}_seams.obj", cnt),
+                m.mesh_parameters.m_displacement);
+            m.write_displaced_seamless_obj(
+                m.mesh_parameters.m_output_folder + fmt::format("/split_{:02d}_seamless.obj", cnt),
+                m.mesh_parameters.m_displacement);
+        }
+        ++cnt;
 
         op_cache.local().v1 = t.vid(m);
         op_cache.local().v2 = t.switch_vertex(m).vid(m);
