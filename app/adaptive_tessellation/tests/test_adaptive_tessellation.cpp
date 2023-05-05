@@ -81,17 +81,16 @@ TEST_CASE("boundary parametrization")
     F.row(0) << 0, 1, 2;
 
     wmtk::Boundary bnd;
-    bnd.construct_boudaries(V, F);
+    bnd.construct_boundaries(V, F, {}, {});
 
-    REQUIRE(bnd.m_boundaries.size() == 1);
-    REQUIRE(bnd.m_arclengths.size() == 1);
+    REQUIRE(bnd.num_curves() == 1);
 
-    REQUIRE(bnd.m_arclengths[0].size() == 4);
+    REQUIRE(bnd.arclengths(0).size() == 4);
 
-    REQUIRE(bnd.m_arclengths[0][0] == 0);
-    REQUIRE(bnd.m_arclengths[0][1] == 10);
-    REQUIRE(bnd.m_arclengths[0][2] == 10 + 10 * sqrt(2));
-    REQUIRE(bnd.m_arclengths[0][3] == 10 + 10 + 10 * sqrt(2));
+    REQUIRE(bnd.arclengths(0)[0] == 0);
+    REQUIRE(bnd.arclengths(0)[1] == 10);
+    REQUIRE(bnd.arclengths(0)[2] == 10 + 10 * sqrt(2));
+    REQUIRE(bnd.arclengths(0)[3] == 10 + 10 + 10 * sqrt(2));
 
     double t;
 
@@ -170,8 +169,7 @@ TEST_CASE("operations with boundary parameterization")
             REQUIRE(m.vertex_attrs[v.vid(m)].t >= 0);
             m.vertex_attrs[v.vid(m)].fixed = false;
         }
-        REQUIRE(m.mesh_parameters.m_boundary.m_arclengths.size() != 0);
-        REQUIRE(m.mesh_parameters.m_boundary.m_boundaries.size() != 0);
+        REQUIRE(m.mesh_parameters.m_boundary.num_curves() != 0);
         m.smooth_all_vertices();
 
         for (auto v : m.get_vertices()) {

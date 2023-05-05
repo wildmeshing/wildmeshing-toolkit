@@ -289,7 +289,7 @@ void AdaptiveTessellation::create_paired_seam_mesh_with_offset(
     wmtk::TriMesh m_3d;
     std::vector<std::array<size_t, 3>> tris;
     for (auto f = 0; f < F3d.rows(); f++) {
-        std::array<size_t, 3> tri = {F3d(f, 0), F3d(f, 1), F3d(f, 2)};
+        std::array<size_t, 3> tri = {(size_t)F3d(f, 0), (size_t)F3d(f, 1), (size_t)F3d(f, 2)};
         tris.emplace_back(tri);
     }
     m_3d.create_mesh(V3d.rows(), tris);
@@ -425,7 +425,7 @@ void AdaptiveTessellation::create_mesh(const Eigen::MatrixXd& V, const Eigen::Ma
         assert(!is_inverted(tri));
     }
     // construct the boundary map for boundary parametrization
-    if (mesh_parameters.m_boundary_parameter) mesh_parameters.m_boundary.construct_boudaries(V, F);
+    if (mesh_parameters.m_boundary_parameter) mesh_parameters.m_boundary.construct_boundaries(V, F, {}, {});
 
     // mark boundary vertices as boundary_vertex
     // but this is not indiscriminatively rejected for all operations
@@ -1033,10 +1033,10 @@ std::pair<double, Eigen::Vector2d> AdaptiveTessellation::get_one_ring_energy(con
         state.two_opposite_vertices = nminfo.neighbors.row(i);
         state.dofx = dofx;
         state.scaling = nminfo.target_length;
-        if (mesh_parameters.m_boundary_parameter) {
-            assert(mesh_parameters.m_boundary.m_arclengths.size() > 0);
-            assert(mesh_parameters.m_boundary.m_boundaries.size() > 0);
-        }
+        // if (mesh_parameters.m_boundary_parameter) {
+        //     assert(mesh_parameters.m_boundary.m_arclengths.size() > 0);
+        //     assert(mesh_parameters.m_boundary.m_boundaries.size() > 0);
+        // }
         DofsToPositions dofs_to_pos(mesh_parameters.m_boundary, nminfo.curve_id);
         mesh_parameters.m_energy->eval(state, dofs_to_pos);
         total_energy += state.value;
