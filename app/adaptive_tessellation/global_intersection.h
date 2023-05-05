@@ -2,6 +2,7 @@
 #include "AdaptiveTessellation.h"
 
 #include <igl/edges.h>
+#include <igl/remove_unreferenced.h>
 #include <ipc/ipc.hpp>
 
 namespace adaptive_tessellation {
@@ -36,13 +37,19 @@ inline double compute_collision_free_stepsize(
 inline bool has_intersection(const AdaptiveTessellation& mesh)
 {
     Eigen::MatrixXd vertices;
-    Eigen::MatrixXi edges;
     Eigen::MatrixXi faces;
     mesh.export_seamless_mesh_3d(vertices, faces);
-    igl::edges(faces, edges);
 
-    const ipc::CollisionMesh collisionMesh(vertices, edges, faces);
+    Eigen::MatrixXd vertices2;
+    Eigen::MatrixXi faces2;
+    Eigen::MatrixXi I;
+    igl::remove_unreferenced(vertices, faces, vertices2, faces2, I);
 
-    return ipc::has_intersections(collisionMesh, vertices);
+    Eigen::MatrixXi edges;
+    igl::edges(faces2, edges);
+
+    const ipc::CollisionMesh collisionMesh(vertices2, edges, faces2);
+
+    return ipc::has_intersections(collisionMesh, vertices2);
 }
 } // namespace adaptive_tessellation

@@ -583,43 +583,20 @@ void AdaptiveTessellation::remove_seams(Eigen::MatrixXd& V, Eigen::MatrixXi& F) 
         V.row(v) = p;
     }
 
-    constexpr size_t INVALID_ID = std::numeric_limits<size_t>::max();
-
-    std::vector<size_t> old_to_new_vertex_ids(V.rows(), INVALID_ID);
-    {
-        size_t counter = 0;
-        for (size_t i = 0; i < old_to_new_vertex_ids.size(); ++i) {
-            if (paired_vertices.count(i) == 0) {
-                old_to_new_vertex_ids[i] = counter++;
-            }
-        }
-    }
-
-    // transfer V to NV but ignore paired vertices
-    Eigen::MatrixXd NV;
-    NV.resize(V.rows() - paired_vertices.size(), V.cols());
-    for (size_t i = 0; i < V.rows(); ++i) {
-        if (old_to_new_vertex_ids[i] != INVALID_ID) {
-            NV.row(old_to_new_vertex_ids[i]) = V.row(i);
-        }
-    }
-
     Eigen::MatrixXi NF;
     NF.resize(F.rows(), F.cols());
     for (size_t i = 0; i < NF.rows(); ++i) {
         for (size_t j = 0; j < NF.cols(); ++j) {
-            size_t tries = 0;
             size_t new_v_id = F(i, j);
             if (paired_vertices.count(new_v_id) != 0) {
                 new_v_id = paired_vertices[new_v_id];
             }
             assert(paired_vertices.count(new_v_id) == 0);
-            NF(i, j) = old_to_new_vertex_ids[new_v_id];
+            NF(i, j) = new_v_id;
         }
     }
 
-    // overwrite V and F
-    V = NV;
+    // overwrite F
     F = NF;
 }
 
