@@ -66,7 +66,8 @@ public:
         assert(a >= 0);
         assert((a + 1) < arclength.size());
 
-        auto r = t - *it;
+        double t0 = *it;
+        auto r = t - t0;
 
         const auto& boundary = m_boundary_mapping.m_boundaries[m_curve_id];
         assert(a < boundary.size());

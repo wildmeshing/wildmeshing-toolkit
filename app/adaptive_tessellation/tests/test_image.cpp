@@ -1,3 +1,4 @@
+#include <wmtk/utils/Displacement.h>
 #include <wmtk/utils/Image.h>
 #include <wmtk/utils/MipMap.h>
 #include <catch2/catch.hpp>
@@ -61,4 +62,41 @@ TEST_CASE("mipmap")
         REQUIRE(tmp_image.width() == tmp_image.height());
         REQUIRE(tmp_image.width() == pow(2, (10 - i)));
     }
+}
+
+TEST_CASE("sampler debug")
+{
+    Image image(4096, 4096);
+    image.load(
+        "/mnt/ssd2/yunfan/adaptive_tessellation/textures/3d_mesh/ninja/"
+        "position_normal_highres/ninja_position_g.exr",
+        WrappingMode::MIRROR_REPEAT,
+        WrappingMode::MIRROR_REPEAT);
+    SamplingBicubic sampler(image);
+    wmtk::logger().info(sampler.sample(0.5666910000000002, 0.032134));
+    wmtk::logger().info(sampler.sample(0.768782, 0.8556950000000002));
+    wmtk::logger().info(sampler.sample(0.7714219999999999, 0.8738730000000001));
+    wmtk::logger().info(sampler.sample(0.537205, 0.034348000000000004));
+    // u 0.768782 v 0.8556950000000002
+    // u 0.7714219999999999 v 0.8738730000000001
+    // u 0.537205 v 0.034348000000000004
+}
+
+TEST_CASE("downsize quickrun")
+{
+    wmtk::split_and_save_3channels("/home/yunfan/material_0_world_space_normals.exr");
+
+    // MipMap mipmap(image);
+    // auto image_100 = mipmap.get_image(4);
+    // image_100.save(
+    //     "/mnt/ssd2/yunfan/adaptive_tessellation/textures/3d_mesh/ninja/ninja_hieght_128.exr");
+    // // Image image2(100, 100);
+    // image2.load(
+    //     "/home/yunfan/ninja_position.exr",
+    //     WrappingMode::MIRROR_REPEAT,
+    //     WrappingMode::MIRROR_REPEAT);
+    // MipMap mipmap2(image2);
+    // auto image_100_2 = mipmap2.get_image(4);
+    // image_100_2.save(
+    //     "/mnt/ssd2/yunfan/adaptive_tessellation/textures/ninja_position_100_height.exr");
 }
