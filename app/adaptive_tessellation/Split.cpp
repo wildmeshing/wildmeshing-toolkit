@@ -382,48 +382,49 @@ bool AdaptiveTessellationPairedSplitEdgeOperation::after(
 
     // now we update 4_prime, 5_prime, s4, s5 mirror data if s4, s5 exist and if they are seam
     // edges
-    if (paired_op_cache.local().before_sibling_edges.size() == 3) return ret_data.success;
-    assert(paired_op_cache.local().before_sibling_edges.size() == 6);
-    assert(paired_op_cache.local().after_sibling_edges.size() == 8);
-    if (paired_op_cache.local().before_sibling_edges[4].has_value() &&
-        m.is_seam_edge(paired_op_cache.local().before_sibling_edges[4].value())) {
-        assert(paired_op_cache.local().after_sibling_edges[4].is_valid(m));
-        // s4
-        m.set_mirror_edge_data(
-            paired_op_cache.local().before_sibling_edges[4].value(),
-            paired_op_cache.local().after_sibling_edges[4]);
-        // 4_prime
-        m.set_mirror_edge_data(
-            paired_op_cache.local().after_sibling_edges[4],
-            paired_op_cache.local().before_sibling_edges[4].value());
+    if (paired_op_cache.local().before_sibling_edges.size() != 3) {
+        assert(paired_op_cache.local().before_sibling_edges.size() == 6);
+        assert(paired_op_cache.local().after_sibling_edges.size() == 8);
+        if (paired_op_cache.local().before_sibling_edges[4].has_value() &&
+            m.is_seam_edge(paired_op_cache.local().before_sibling_edges[4].value())) {
+            assert(paired_op_cache.local().after_sibling_edges[4].is_valid(m));
+            // s4
+            m.set_mirror_edge_data(
+                paired_op_cache.local().before_sibling_edges[4].value(),
+                paired_op_cache.local().after_sibling_edges[4]);
+            // 4_prime
+            m.set_mirror_edge_data(
+                paired_op_cache.local().after_sibling_edges[4],
+                paired_op_cache.local().before_sibling_edges[4].value());
+        }
+        if (paired_op_cache.local().before_sibling_edges[5].has_value() &&
+            m.is_seam_edge(paired_op_cache.local().before_sibling_edges[5].value())) {
+            assert(paired_op_cache.local().after_sibling_edges[5].is_valid(m));
+            // s5
+            m.set_mirror_edge_data(
+                paired_op_cache.local().before_sibling_edges[5].value(),
+                paired_op_cache.local().after_sibling_edges[5]);
+            // 5_prime
+            m.set_mirror_edge_data(
+                paired_op_cache.local().after_sibling_edges[5],
+                paired_op_cache.local().before_sibling_edges[5].value());
+        }
+        // nullify the 2 inside edges' corresponding mirror edge data in face_attrs
+        m.face_attrs
+            [paired_op_cache.local().after_sibling_edges[3].switch_vertex(m).switch_edge(m).fid(m)]
+                .mirror_edges[paired_op_cache.local()
+                                  .after_sibling_edges[3]
+                                  .switch_vertex(m)
+                                  .switch_edge(m)
+                                  .local_eid(m)] = std::nullopt;
+        m.face_attrs
+            [paired_op_cache.local().after_sibling_edges[7].switch_edge(m).switch_vertex(m).fid(m)]
+                .mirror_edges[paired_op_cache.local()
+                                  .after_sibling_edges[7]
+                                  .switch_edge(m)
+                                  .switch_vertex(m)
+                                  .local_eid(m)] = std::nullopt;
     }
-    if (paired_op_cache.local().before_sibling_edges[5].has_value() &&
-        m.is_seam_edge(paired_op_cache.local().before_sibling_edges[5].value())) {
-        assert(paired_op_cache.local().after_sibling_edges[5].is_valid(m));
-        // s5
-        m.set_mirror_edge_data(
-            paired_op_cache.local().before_sibling_edges[5].value(),
-            paired_op_cache.local().after_sibling_edges[5]);
-        // 5_prime
-        m.set_mirror_edge_data(
-            paired_op_cache.local().after_sibling_edges[5],
-            paired_op_cache.local().before_sibling_edges[5].value());
-    }
-    // nullify the 2 inside edges' corresponding mirror edge data in face_attrs
-    m.face_attrs[paired_op_cache.local().after_sibling_edges[3].switch_vertex(m).switch_edge(m).fid(
-                     m)]
-        .mirror_edges[paired_op_cache.local()
-                          .after_sibling_edges[3]
-                          .switch_vertex(m)
-                          .switch_edge(m)
-                          .local_eid(m)] = std::nullopt;
-    m.face_attrs[paired_op_cache.local().after_sibling_edges[7].switch_edge(m).switch_vertex(m).fid(
-                     m)]
-        .mirror_edges[paired_op_cache.local()
-                          .after_sibling_edges[7]
-                          .switch_edge(m)
-                          .switch_vertex(m)
-                          .local_eid(m)] = std::nullopt;
 
     // collision test
     {
@@ -435,8 +436,10 @@ bool AdaptiveTessellationPairedSplitEdgeOperation::after(
         const Eigen::Vector2d uv1 = m.vertex_attrs[v1].pos;
         const Eigen::Vector2d uv2 = m.vertex_attrs[v2].pos;
         const Eigen::Vector2d uv12 = 0.5 * (uv1 + uv2);
-        const Eigen::Vector3d p1 = m.mesh_parameters.m_displacement->get(uv1[0], uv1[1]);
-        const Eigen::Vector3d p2 = m.mesh_parameters.m_displacement->get(uv2[0], uv2[1]);
+        // const Eigen::Vector3d p1 = m.mesh_parameters.m_displacement->get(uv1[0], uv1[1]);
+        // const Eigen::Vector3d p2 = m.mesh_parameters.m_displacement->get(uv2[0], uv2[1]);
+        const Eigen::Vector3d p1 = m.vertex_attrs[v1].pos_world;
+        const Eigen::Vector3d p2 = m.vertex_attrs[v2].pos_world;
         const Eigen::Vector3d p12_current = 0.5 * (p1 + p2);
         const Eigen::Vector3d p12_target = m.mesh_parameters.m_displacement->get(uv12[0], uv12[1]);
         current_positions[v12] = p12_current;
@@ -449,8 +452,10 @@ bool AdaptiveTessellationPairedSplitEdgeOperation::after(
             const Eigen::Vector2d uv3 = m.vertex_attrs[v3].pos;
             const Eigen::Vector2d uv4 = m.vertex_attrs[v4].pos;
             const Eigen::Vector2d uv34 = 0.5 * (uv3 + uv4);
-            const Eigen::Vector3d p3 = m.mesh_parameters.m_displacement->get(uv3[0], uv3[1]);
-            const Eigen::Vector3d p4 = m.mesh_parameters.m_displacement->get(uv4[0], uv4[1]);
+            // const Eigen::Vector3d p3 = m.mesh_parameters.m_displacement->get(uv3[0], uv3[1]);
+            // const Eigen::Vector3d p4 = m.mesh_parameters.m_displacement->get(uv4[0], uv4[1]);
+            const Eigen::Vector3d p3 = m.vertex_attrs[v3].pos_world;
+            const Eigen::Vector3d p4 = m.vertex_attrs[v4].pos_world;
             const Eigen::Vector3d p34_current = 0.5 * (p3 + p4);
             const Eigen::Vector3d p1234_current = 0.5 * (p12_current + p34_current);
             const Eigen::Vector3d p34_target =
@@ -470,15 +475,16 @@ bool AdaptiveTessellationPairedSplitEdgeOperation::after(
             target_positions,
             collision_free_positions);
 
-        if (t < 1.0) {
+        for (const auto& [v, p] : collision_free_positions) {
+            m.vertex_attrs[v].pos_world = p;
+        }
+
+        if (has_intersection(m)) {
+            spdlog::error("Self intersection appeared in split. This should only be possible if "
+                          "the input already contains self intersections.");
             ret_data.success = false;
             return false;
         }
-
-        // if (has_intersection(m)) {
-        //     ret_data.success = false;
-        //     return false;
-        // }
     }
 
     return ret_data.success;

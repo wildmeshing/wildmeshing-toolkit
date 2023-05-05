@@ -255,6 +255,81 @@ void AdaptiveTessellation::set_projection()
     mesh_parameters.m_get_closest_point = std::move(projection);
 }
 
+void AdaptiveTessellation::set_vertex_world_positions()
+{
+    for (const auto& v : get_vertices()) {
+        const size_t v_id = v.vid(*this);
+        vertex_attrs[v_id].pos_world = mesh_parameters.m_displacement->get(
+            vertex_attrs[v_id].pos[0],
+            vertex_attrs[v_id].pos[1]);
+    }
+
+    std::map<size_t, size_t> paired_vertices; // mapping from removed to remaining vertex
+
+    // find seam vertices
+    for (const auto& t : get_faces()) {
+        const auto f_id = t.fid(*this);
+        for (size_t e = 0; e < 3; ++e) {
+            if (face_attrs[f_id].mirror_edges[e].has_value()) {
+                Tuple e_tuple1 = tuple_from_edge(f_id, e);
+                if (!e_tuple1.is_ccw(*this)) {
+                    e_tuple1 = e_tuple1.switch_vertex(*this);
+                }
+                Tuple e_tuple2 = face_attrs[f_id].mirror_edges[e].value();
+                if (!e_tuple2.is_ccw(*this)) {
+                    e_tuple2 = e_tuple2.switch_vertex(*this);
+                }
+                const size_t v0 = e_tuple1.vid(*this);
+                const size_t v1 = e_tuple1.switch_vertex(*this).vid(*this);
+                const size_t v2 = e_tuple2.vid(*this);
+                const size_t v3 = e_tuple2.switch_vertex(*this).vid(*this);
+                if (v0 < v3) {
+                    paired_vertices[v3] = v0;
+                } else if (v3 < v0) {
+                    paired_vertices[v0] = v3;
+                }
+
+                if (v1 < v2) {
+                    paired_vertices[v2] = v1;
+                } else if (v2 < v1) {
+                    paired_vertices[v1] = v2;
+                }
+            }
+        }
+    }
+
+    // make sure that all vertices are paired with the partner that has the lowest index
+    for (const auto& [v0, _] : paired_vertices) {
+        while (paired_vertices.count(paired_vertices[v0]) != 0) {
+            paired_vertices[v0] = paired_vertices[paired_vertices[v0]];
+        }
+    }
+
+    // collect all positions that belong to the same seam vertex
+    std::map<size_t, std::vector<Eigen::Vector3d>> map_id_to_pos_vec;
+    std::map<size_t, std::vector<size_t>> map_id_to_ids;
+    for (const auto& [v0, v1] : paired_vertices) {
+        if (map_id_to_pos_vec.count(v1) == 0) {
+            map_id_to_pos_vec[v1] = {vertex_attrs[v1].pos_world};
+            map_id_to_ids[v1].push_back(v1);
+        }
+        map_id_to_pos_vec[v1].push_back(vertex_attrs[v0].pos_world);
+        map_id_to_ids[v1].push_back(v0);
+    }
+
+    // compute averate positions
+    for (const auto& [v, pos_vec] : map_id_to_pos_vec) {
+        Eigen::Vector3d p(0, 0, 0);
+        for (const auto& pp : pos_vec) {
+            p += pp;
+        }
+        p /= pos_vec.size();
+        for (const auto& vv : map_id_to_ids[v]) {
+            vertex_attrs[vv].pos_world = p;
+        }
+    }
+}
+
 void AdaptiveTessellation::create_paired_seam_mesh_with_offset(
     const std::filesystem::path input_mesh_path,
     Eigen::MatrixXd& UV,
@@ -516,6 +591,7 @@ void AdaptiveTessellation::export_mesh_3d(Eigen::MatrixXd& V, Eigen::MatrixXi& F
     Eigen::MatrixXd V3d = Eigen::MatrixXd::Zero(rows, 3);
     for (int i = 0; i < rows; i++) {
         V3d.row(i) = mesh_parameters.m_displacement->get(V(i, 0), V(i, 1));
+        // V3d.row(i) = vertex_attrs[i].pos_world;
     }
 
     V = V3d;
@@ -776,6 +852,11 @@ void AdaptiveTessellation::write_displaced_seamless_obj(
     Eigen::MatrixXi F;
 
     export_seamless_mesh_3d(V, F);
+
+    for (int i = 0; i < V.rows(); i++) {
+        V.row(i) = vertex_attrs[i].pos_world;
+    }
+
     igl::writeOBJ(path, V, F);
     wmtk::logger().info("============>> current edge length {}", avg_edge_len(*this));
 }

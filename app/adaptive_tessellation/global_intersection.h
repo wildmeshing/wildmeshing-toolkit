@@ -20,6 +20,9 @@ inline double compute_collision_free_stepsize(
     Eigen::MatrixXd vertices_incl_invalids;
     Eigen::MatrixXi faces_incl_invalids;
     mesh.export_seamless_mesh_3d(vertices_incl_invalids, faces_incl_invalids);
+    for (int i = 0; i < vertices_incl_invalids.rows(); i++) {
+        vertices_incl_invalids.row(i) = mesh.vertex_attrs[i].pos_world;
+    }
 
     Eigen::MatrixXd vertices_clean;
     Eigen::MatrixXi faces_clean;
@@ -54,14 +57,10 @@ inline double compute_collision_free_stepsize(
     const double t =
         ipc::compute_collision_free_stepsize(collisionMesh, vertices_clean, vertices_targets);
 
-    for (const auto& [v_id_old, p_target] : target_positions) {
-        const int v_id_new = map_old_to_new_v_ids(v_id_old, 0);
-        if (v_id_new < 0) {
-            continue;
-        }
-        const Eigen::Vector3d p_current = vertices_clean.row(v_id_new);
+    for (const auto& [v, p_target] : target_positions) {
+        const Eigen::Vector3d p_current = current_positions.at(v);
         const Eigen::Vector3d p = (1 - t) * p_current + t * p_target;
-        collision_free_positions[v_id_old] = p;
+        collision_free_positions[v] = p;
     }
 
     return t;
@@ -76,6 +75,9 @@ inline bool has_intersection(const AdaptiveTessellation& mesh)
     Eigen::MatrixXd vertices;
     Eigen::MatrixXi faces;
     mesh.export_seamless_mesh_3d(vertices, faces);
+    for (int i = 0; i < vertices.rows(); i++) {
+        vertices.row(i) = mesh.vertex_attrs[i].pos_world;
+    }
 
     {
         Eigen::MatrixXd vertices_buf;

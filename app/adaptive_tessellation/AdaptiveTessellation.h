@@ -42,6 +42,7 @@ class VertexAttributes
 {
 public:
     Eigen::Vector2d pos;
+    Eigen::Vector3d pos_world;
     double t = 0.;
     size_t curve_id = 0; // questionable should I have this for each vertex?
 
@@ -124,6 +125,7 @@ public:
     void set_displacement(const DISPLACEMENT_MODE displacement_mode);
     void set_edge_length_measurement(const EDGE_LEN_TYPE edge_len_type);
     void set_projection();
+    void set_vertex_world_positions();
     Eigen::Matrix<uint64_t, Eigen::Dynamic, 2, Eigen::RowMajor> get_bnd_edge_matrix();
 
 
