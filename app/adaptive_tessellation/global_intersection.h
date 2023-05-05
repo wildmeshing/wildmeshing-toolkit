@@ -15,6 +15,10 @@ inline double compute_collision_free_stepsize(
     const AdaptiveTessellation& mesh,
     const Eigen::MatrixXd& vn)
 {
+    throw std::exception("Not fully implemented function!");
+
+    // TODO adjust this function to work just like the "has_intersection" function below
+
     Eigen::MatrixXd vertices;
     Eigen::MatrixXi faces;
     mesh.export_seamless_mesh_3d(vertices, faces);
@@ -40,16 +44,20 @@ inline bool has_intersection(const AdaptiveTessellation& mesh)
     Eigen::MatrixXi faces;
     mesh.export_seamless_mesh_3d(vertices, faces);
 
-    Eigen::MatrixXd vertices2;
-    Eigen::MatrixXi faces2;
-    Eigen::MatrixXi I;
-    igl::remove_unreferenced(vertices, faces, vertices2, faces2, I);
+    {
+        Eigen::MatrixXd vertices_buf;
+        Eigen::MatrixXi faces_buf;
+        Eigen::MatrixXi I;
+        igl::remove_unreferenced(vertices, faces, vertices_buf, faces_buf, I);
+        vertices = vertices_buf;
+        faces = faces_buf;
+    }
 
     Eigen::MatrixXi edges;
-    igl::edges(faces2, edges);
+    igl::edges(faces, edges);
 
-    const ipc::CollisionMesh collisionMesh(vertices2, edges, faces2);
+    const ipc::CollisionMesh collisionMesh(vertices, edges, faces);
 
-    return ipc::has_intersections(collisionMesh, vertices2);
+    return ipc::has_intersections(collisionMesh, vertices);
 }
 } // namespace adaptive_tessellation
