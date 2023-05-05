@@ -31,12 +31,13 @@ std::pair<Eigen::MatrixXi, Eigen::MatrixXi> compute_seam_edges(MeshType mesh)
         corners_around_edge.clear();
         mesh.foreach_corner_around_edge(e, [&](Index c) { corners_around_edge.push_back(c); });
         if (corners_around_edge.size() <= 1) {
-            // Interior edge, skip
+            // Boundary edge, skip
             continue;
         }
         if (corners_around_edge.size() > 2) {
             throw std::runtime_error("Non-manifold edges are not supported");
         }
+        // Interior edge with exactly two incident facets
         Index ci = corners_around_edge.front();
         Index cj = corners_around_edge.back();
         Index fi = mesh.get_corner_facet(ci);
@@ -47,7 +48,7 @@ std::pair<Eigen::MatrixXi, Eigen::MatrixXi> compute_seam_edges(MeshType mesh)
         Index lvj1 = (lvj0 + 1) % 3;
         la_debug_assert(facets(fi, lvi0) == facets(fj, lvj1));
         la_debug_assert(facets(fi, lvi1) == facets(fj, lvj0));
-        if (uv_facets(fi, lvi0) != uv_facets(fj, lvj1) &&
+        if (uv_facets(fi, lvi0) != uv_facets(fj, lvj1) ||
             uv_facets(fi, lvi1) != uv_facets(fj, lvj0)) {
             // Edge e is a seam! Do something...
             seams.push_back({

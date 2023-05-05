@@ -260,11 +260,15 @@ Boundary::ParameterizedSegment Boundary::t_to_segment(int curve_id, double t) co
     ParameterizedSegment result;
 
     const auto& arclength = m_curves.arclengths[m_curves.parent_curve[curve_id]];
-    while (t < 0) {
-        t += arclength.back();
+    if (is_periodic(curve_id)) {
+        while (t < 0) {
+            t += arclength.back();
+        }
+        t = std::fmod(t, arclength.back());
+    } else {
+        t = std::clamp(t, 0., arclength.back());
     }
-    t = std::fmod(t, arclength.back());
-    assert(t < arclength.back());
+    assert(t <= arclength.back());
 
     auto it = std::prev(std::upper_bound(arclength.begin(), arclength.end(), t));
     auto a = std::distance(arclength.begin(), it);
@@ -279,8 +283,9 @@ Boundary::ParameterizedSegment Boundary::t_to_segment(int curve_id, double t) co
     return result;
 }
 
-double Boundary::uv_to_t(const Eigen::Vector2d& v) const
+std::pair<int, double> Boundary::uv_to_t(const Eigen::Vector2d& v) const
 {
+    int ret_i = -1;
     double ret_t = 0.;
     Eigen::RowVector2d P;
     P = v.transpose();
@@ -296,11 +301,12 @@ double Boundary::uv_to_t(const Eigen::Vector2d& v) const
                 d = tmp_d(0);
                 int k = m_curves.parent_curve[i];
                 double len = m_curves.arclengths[k][j + 1] - m_curves.arclengths[k][j];
+                ret_i = i;
                 ret_t = m_curves.arclengths[k][j] + tmp_t(0) * len;
             }
         }
     }
-    return ret_t;
+    return std::make_pair(ret_i, ret_t);
 }
 
 std::pair<int, int> Boundary::uv_to_ij(const Eigen::Vector2d& v, double& t) const

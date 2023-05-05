@@ -84,7 +84,8 @@ public:
         return s.A + (s.B - s.A) * (t - s.t0) / s.tlen;
     }
 
-    double uv_to_t(const Eigen::Vector2d& v) const;
+    /// @return A pair (curve_id, t) such that uv = t_to_uv(curve_id, t)
+    std::pair<int, double> uv_to_t(const Eigen::Vector2d& v) const;
 
     std::pair<int, int> uv_to_ij(const Eigen::Vector2d& v, double& t) const;
 
