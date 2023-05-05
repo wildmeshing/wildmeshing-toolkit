@@ -99,6 +99,10 @@ bool AdaptiveTessellationPairedSplitEdgeOperation::before(AdaptiveTessellation& 
 {
     static std::atomic_int cnt = 0;
     assert(t.is_valid(m));
+
+    paired_op_cache.local().v1 = t.vid(m);
+    paired_op_cache.local().v2 = t.switch_vertex(m).vid(m);
+
     // TODO is this thread safe?
     mirror_edge_tuple = std::nullopt; // reset the mirror edge tuple
     paired_op_cache.local().before_sibling_edges.resize(0); // clear the sibling edge cache
@@ -307,12 +311,6 @@ bool AdaptiveTessellationPairedSplitEdgeOperation::after(
     split_edge.after(m, ret_data);
     if (!ret_data.success) return false;
 
-    // collision test
-    if (has_intersection(m)) {
-        ret_data.success = false;
-        return false;
-    }
-
     // nullify the inside edges old mirror info
     m.face_attrs[split_edge.return_edge_tuple.switch_vertex(m).switch_edge(m).fid(m)]
         .mirror_edges[split_edge.return_edge_tuple.switch_vertex(m).switch_edge(m).local_eid(m)] =
@@ -326,11 +324,16 @@ bool AdaptiveTessellationPairedSplitEdgeOperation::after(
                               .local_eid(m)] = std::nullopt;
 
     // old t is seam edge
+    std::optional<TriMeshOperation::ExecuteReturnData> mirror_ret_data_opt;
     if (mirror_edge_tuple.has_value()) {
         assert(paired_op_cache.local().before_sibling_edges.size() == 6);
         assert(paired_op_cache.local().after_sibling_edges.size() == 8);
-        ret_data.success &=
-            mirror_split_edge.after(m, ret_data); // after doesn't use contents of ret_data
+
+        TriMeshOperation::ExecuteReturnData mirror_ret_data;
+        mirror_split_edge.after(m, mirror_ret_data);
+        mirror_ret_data_opt = std::make_optional(mirror_ret_data);
+
+        ret_data.success &= mirror_ret_data.success; // after doesn't use contents of ret_data
         // now do the siling edge tranfering
         if (!ret_data.success) return false;
         // it's a seam edge update mirror edge data using the sibling edges
@@ -421,6 +424,62 @@ bool AdaptiveTessellationPairedSplitEdgeOperation::after(
                           .switch_edge(m)
                           .switch_vertex(m)
                           .local_eid(m)] = std::nullopt;
+
+    // collision test
+    {
+        std::map<size_t, Eigen::Vector3d> current_positions;
+        std::map<size_t, Eigen::Vector3d> target_positions;
+        const size_t& v12 = ret_data.tuple.switch_vertex(m).vid(m);
+        const size_t& v1 = paired_op_cache.local().v1;
+        const size_t& v2 = paired_op_cache.local().v2;
+        const Eigen::Vector2d uv1 = m.vertex_attrs[v1].pos;
+        const Eigen::Vector2d uv2 = m.vertex_attrs[v2].pos;
+        const Eigen::Vector2d uv12 = 0.5 * (uv1 + uv2);
+        const Eigen::Vector3d p1 = m.mesh_parameters.m_displacement->get(uv1[0], uv1[1]);
+        const Eigen::Vector3d p2 = m.mesh_parameters.m_displacement->get(uv2[0], uv2[1]);
+        const Eigen::Vector3d p12_current = 0.5 * (p1 + p2);
+        const Eigen::Vector3d p12_target = m.mesh_parameters.m_displacement->get(uv12[0], uv12[1]);
+        current_positions[v12] = p12_current;
+        target_positions[v12] = p12_target;
+
+        if (mirror_ret_data_opt.has_value()) {
+            const size_t v34 = mirror_ret_data_opt.value().tuple.switch_vertex(m).vid(m);
+            const size_t& v3 = paired_op_cache.local().v3;
+            const size_t& v4 = paired_op_cache.local().v4;
+            const Eigen::Vector2d uv3 = m.vertex_attrs[v3].pos;
+            const Eigen::Vector2d uv4 = m.vertex_attrs[v4].pos;
+            const Eigen::Vector2d uv34 = 0.5 * (uv3 + uv4);
+            const Eigen::Vector3d p3 = m.mesh_parameters.m_displacement->get(uv3[0], uv3[1]);
+            const Eigen::Vector3d p4 = m.mesh_parameters.m_displacement->get(uv4[0], uv4[1]);
+            const Eigen::Vector3d p34_current = 0.5 * (p3 + p4);
+            const Eigen::Vector3d p1234_current = 0.5 * (p12_current + p34_current);
+            const Eigen::Vector3d p34_target =
+                m.mesh_parameters.m_displacement->get(uv34[0], uv34[1]);
+            const Eigen::Vector3d p1234_target = 0.5 * (p12_target + p34_target);
+            current_positions[v12] = p1234_current;
+            current_positions[v34] = p1234_current;
+            target_positions[v12] = p1234_target;
+            target_positions[v34] = p1234_target;
+        }
+
+
+        std::map<size_t, Eigen::Vector3d> collision_free_positions;
+        double t = compute_collision_free_stepsize(
+            m,
+            current_positions,
+            target_positions,
+            collision_free_positions);
+
+        if (t < 1.0) {
+            ret_data.success = false;
+            return false;
+        }
+
+        // if (has_intersection(m)) {
+        //     ret_data.success = false;
+        //     return false;
+        // }
+    }
 
     return ret_data.success;
 }
