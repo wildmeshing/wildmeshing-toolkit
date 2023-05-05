@@ -491,9 +491,27 @@ void AdaptiveTessellation::export_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F) c
     }
 }
 
+void AdaptiveTessellation::export_mesh_clean(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const
+{
+    V = Eigen::MatrixXd::Zero(vert_capacity(), 2);
+    for (auto& t : get_vertices()) {
+        auto i = t.vid(*this);
+        V.row(i) = vertex_attrs[i].pos;
+    }
+
+    const auto faces = get_faces();
+    F = Eigen::MatrixXi::Constant(faces.size(), 3, -1);
+    for (size_t i = 0; i < faces.size(); ++i) {
+        const auto vs = oriented_tri_vertices(faces[i]);
+        for (size_t j = 0; j < 3; ++j) {
+            F(i, j) = vs[j].vid(*this);
+        }
+    }
+}
+
 void AdaptiveTessellation::export_mesh_3d(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const
 {
-    export_mesh(V, F);
+    export_mesh_clean(V, F);
     auto rows = V.rows();
     Eigen::MatrixXd V3d = Eigen::MatrixXd::Zero(rows, 3);
     for (int i = 0; i < rows; i++) {
@@ -780,16 +798,8 @@ void AdaptiveTessellation::write_displaced_seamless_obj(
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
 
-    export_mesh(V, F);
-    auto rows = V.rows();
-    Eigen::MatrixXd V3d = Eigen::MatrixXd::Zero(rows, 3);
-    for (int i = 0; i < rows; i++) {
-        V3d.row(i) = displacement->get(V(i, 0), V(i, 1));
-        // wmtk::logger().info("progress: {}/{}", i, rows);
-    }
-
-    remove_seams(V3d, F);
-    igl::writeOBJ(path, V3d, F);
+    export_seamless_mesh_3d(V, F);
+    igl::writeOBJ(path, V, F);
     wmtk::logger().info("============>> current edge length {}", avg_edge_len(*this));
 }
 

@@ -145,6 +145,9 @@ public:
     void export_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
 
     // Exports V and F of the stored mesh
+    void export_mesh_clean(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
+
+    // Exports V and F of the stored mesh
     void export_mesh_3d(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
 
     // Exports V and F of the stored mesh where all seam vertices are merged
