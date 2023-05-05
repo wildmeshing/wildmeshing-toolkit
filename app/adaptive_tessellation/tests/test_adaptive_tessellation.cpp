@@ -27,7 +27,6 @@
 #include <functional>
 #include <wmtk/utils/ManifoldUtils.hpp>
 #include <wmtk/utils/TriQualityUtils.hpp>
-#include "Collapse.h"
 #include "Split.h"
 
 using namespace wmtk;
@@ -279,19 +278,6 @@ TEST_CASE("paired split")
 {
     SECTION("diamond")
     {
-        //              1  4
-        //              /||\ 
-        //             / || \ 
-        //            /  ||  \ 
-        //           /   ||   \ 
-        //          /  ^ || |  \ 
-        //         0   | || |  3
-        //           \ | || v /
-        //            \  ||  /
-        //             \ || /
-        //              \||/
-        //              2  5
-
         Eigen::MatrixXd V(6, 2);
         Eigen::MatrixXi F(2, 3);
         V.row(0) << -1., 0.;
@@ -378,13 +364,6 @@ TEST_CASE("paired split")
     }
     SECTION("isosceles triangles")
     {
-        //               1
-        //               ^
-        //             / | \ 
-        //            /  |  \ 
-        //           / ->| ->\ 
-        //          /___ | ___\ 
-        //         0     2     3
         Eigen::MatrixXd V(4, 2);
         Eigen::MatrixXi F(2, 3);
         V.row(0) << -1., 0.;
@@ -436,20 +415,12 @@ TEST_CASE("test mirror edge setup")
     Eigen::MatrixXi F;
     std::filesystem::path input_mesh_path = "/home/yunfan/hemisphere.obj";
     m.create_paired_seam_mesh_with_offset(input_mesh_path.string(), UV, F);
-    // test is_ccw
-    for (auto e : m.get_edges()) {
-        if (!e.is_ccw(m)) {
-            e = e.switch_vertex(m);
-            REQUIRE(e.is_ccw(m));
-        }
-    }
-    // test get_oriented_mirror_edge
-    for (auto& e : m.get_edges()) {
-        if (m.is_seam_edge(e)) {
-            REQUIRE(m.get_oriented_mirror_edge(e).is_ccw(m) == e.is_ccw(m));
-        }
-    }
-    // test mirror edge setup
+    // load 3d coordinates and connectivities for computing the offset and scaling
+    Eigen::MatrixXd V3d;
+    Eigen::MatrixXi F3d;
+    igl::read_triangle_mesh(input_mesh_path.string(), V3d, F3d);
+    AdaptiveTessellation m_3d;
+    m_3d.create_mesh_debug(V3d, F3d);
     for (const auto& f : m.get_faces()) {
         size_t fi = f.fid(m);
         for (auto i = 0; i < 3; ++i) {
@@ -471,7 +442,8 @@ TEST_CASE("test mirror edge setup")
                     (original_tup.vid(m) == tup.vid(m) ||
                      original_tup.switch_vertex(m).vid(m) == tup.vid(m)));
 
-                REQUIRE((F(fi, lv1) != F(fj, mirror_lv1) || F(fi, lv2) != F(fj, mirror_lv2)));
+                REQUIRE(F(fi, lv1) != F(fj, mirror_lv1));
+                REQUIRE(F(fi, lv2) != F(fj, mirror_lv2));
             }
         }
     }

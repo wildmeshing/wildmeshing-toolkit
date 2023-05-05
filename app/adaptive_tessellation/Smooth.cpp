@@ -1,84 +1,63 @@
-#include "Smooth.h"
+
+#include "AdaptiveTessellation.h"
+#include "wmtk/ExecutionScheduler.hpp"
+
+#include <Eigen/src/Core/util/Constants.h>
+#include <igl/Timer.h>
+#include <wmtk/utils/AMIPS2D.h>
+#include <wmtk/utils/AMIPS2D_autodiff.h>
+#include <array>
+#include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/TriQualityUtils.hpp>
+
+
+#include <limits>
+#include <optional>
+
+namespace {
 
 using namespace adaptive_tessellation;
 using namespace wmtk;
 
-wmtk::TriMeshOperation::ExecuteReturnData AdaptiveTessellationSmoothVertexOperation::execute(
-    AdaptiveTessellation& m,
-    const Tuple& t)
+class AdaptiveTessellationSmoothVertexOperation : public wmtk::TriMeshOperationShim<
+                                                      AdaptiveTessellation,
+                                                      AdaptiveTessellationSmoothVertexOperation,
+                                                      wmtk::TriMeshSmoothVertexOperation>
 {
-    return wmtk::TriMeshSmoothVertexOperation::execute(m, t);
-}
-bool AdaptiveTessellationSmoothVertexOperation::before(AdaptiveTessellation& m, const Tuple& t)
-{
-    if (wmtk::TriMeshSmoothVertexOperation::before(m, t)) {
-        return m.smooth_before(t);
+public:
+    ExecuteReturnData execute(AdaptiveTessellation& m, const Tuple& t)
+    {
+        return wmtk::TriMeshSmoothVertexOperation::execute(m, t);
     }
-    return false;
-}
-bool AdaptiveTessellationSmoothVertexOperation::after(
-    AdaptiveTessellation& m,
-    ExecuteReturnData& ret_data)
-{
-    if (wmtk::TriMeshSmoothVertexOperation::after(m, ret_data)) {
-        ret_data.success |= m.smooth_after(ret_data.tuple);
+    bool before(AdaptiveTessellation& m, const Tuple& t)
+    {
+        if (wmtk::TriMeshSmoothVertexOperation::before(m, t)) {
+            return m.smooth_before(t);
+        }
+        return false;
     }
-    return ret_data;
-}
-bool AdaptiveTessellationSmoothVertexOperation::invariants(
-    AdaptiveTessellation& m,
-    ExecuteReturnData& ret_data)
-{
-    if (wmtk::TriMeshSmoothVertexOperation::invariants(m, ret_data)) {
-        ret_data.success |= m.invariants(ret_data.new_tris);
+    bool after(AdaptiveTessellation& m, ExecuteReturnData& ret_data)
+    {
+        if (wmtk::TriMeshSmoothVertexOperation::after(m, ret_data)) {
+            ret_data.success |= m.smooth_after(ret_data.tuple);
+        }
+        return ret_data;
     }
-    return ret_data;
-}
+    bool invariants(AdaptiveTessellation& m, ExecuteReturnData& ret_data)
+    {
+        if (wmtk::TriMeshSmoothVertexOperation::invariants(m, ret_data)) {
+            ret_data.success |= m.invariants(ret_data.new_tris);
+        }
+        return ret_data;
+    }
+};
+
 template <typename Executor>
 void addCustomOps(Executor& e)
 {
     e.add_operation(std::make_shared<AdaptiveTessellationSmoothVertexOperation>());
 }
-
-wmtk::TriMeshOperation::ExecuteReturnData AdaptiveTessellationPairedSmoothVertexOperation::execute(
-    AdaptiveTessellation& m,
-    const Tuple& t)
-{
-    return wmtk::TriMeshSmoothVertexOperation::execute(m, t);
-}
-bool AdaptiveTessellationPairedSmoothVertexOperation::before(
-    AdaptiveTessellation& m,
-    const Tuple& t)
-{
-    if (wmtk::TriMeshSmoothVertexOperation::before(m, t)) {
-        return m.smooth_before(t);
-    }
-    return false;
-}
-bool AdaptiveTessellationPairedSmoothVertexOperation::after(
-    AdaptiveTessellation& m,
-    ExecuteReturnData& ret_data)
-{
-    if (wmtk::TriMeshSmoothVertexOperation::after(m, ret_data)) {
-        ret_data.success |= m.smooth_after(ret_data.tuple);
-    }
-    return ret_data;
-}
-bool AdaptiveTessellationPairedSmoothVertexOperation::invariants(
-    AdaptiveTessellation& m,
-    ExecuteReturnData& ret_data)
-{
-    if (wmtk::TriMeshSmoothVertexOperation::invariants(m, ret_data)) {
-        ret_data.success |= m.invariants(ret_data.new_tris);
-    }
-    return ret_data;
-}
-template <typename Executor>
-void addPairedCustomOps(Executor& e)
-{
-    e.add_operation(std::make_shared<AdaptiveTessellationPairedSmoothVertexOperation>());
-}
-
+} // namespace
 
 bool adaptive_tessellation::AdaptiveTessellation::smooth_before(const Tuple& t)
 {
