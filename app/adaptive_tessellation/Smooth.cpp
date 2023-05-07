@@ -1,63 +1,168 @@
 
-#include "AdaptiveTessellation.h"
-#include "wmtk/ExecutionScheduler.hpp"
-
+#include "Smooth.h"
 #include <Eigen/src/Core/util/Constants.h>
 #include <igl/Timer.h>
 #include <wmtk/utils/AMIPS2D.h>
 #include <wmtk/utils/AMIPS2D_autodiff.h>
+#include <wmtk/utils/Energy2dOptimizationUtils.h>
 #include <array>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TriQualityUtils.hpp>
-
+#include "AdaptiveTessellation.h"
+#include "wmtk/ExecutionScheduler.hpp"
 
 #include <limits>
 #include <optional>
 
-namespace {
-
 using namespace adaptive_tessellation;
 using namespace wmtk;
 
-class AdaptiveTessellationSmoothVertexOperation : public wmtk::TriMeshOperationShim<
-                                                      AdaptiveTessellation,
-                                                      AdaptiveTessellationSmoothVertexOperation,
-                                                      wmtk::TriMeshSmoothVertexOperation>
+TriMeshOperation::ExecuteReturnData AdaptiveTessellationSmoothVertexOperation::execute(
+    AdaptiveTessellation& m,
+    const Tuple& t)
 {
-public:
-    ExecuteReturnData execute(AdaptiveTessellation& m, const Tuple& t)
-    {
-        return wmtk::TriMeshSmoothVertexOperation::execute(m, t);
+    return wmtk::TriMeshSmoothVertexOperation::execute(m, t);
+}
+bool AdaptiveTessellationSmoothVertexOperation::before(AdaptiveTessellation& m, const Tuple& t)
+{
+    if (wmtk::TriMeshSmoothVertexOperation::before(m, t)) {
+        return m.smooth_before(t);
     }
-    bool before(AdaptiveTessellation& m, const Tuple& t)
-    {
-        if (wmtk::TriMeshSmoothVertexOperation::before(m, t)) {
-            return m.smooth_before(t);
+    return false;
+}
+bool AdaptiveTessellationSmoothVertexOperation::after(
+    AdaptiveTessellation& m,
+    ExecuteReturnData& ret_data)
+{
+    if (wmtk::TriMeshSmoothVertexOperation::after(m, ret_data)) {
+        ret_data.success &= m.smooth_after(ret_data.tuple);
+    }
+    return ret_data;
+}
+
+TriMeshOperation::ExecuteReturnData AdaptiveTessellationSmoothSeamVertexOperation::execute(
+    AdaptiveTessellation& m,
+    const Tuple& t)
+{
+    return wmtk::TriMeshSmoothVertexOperation::execute(m, t);
+}
+bool AdaptiveTessellationSmoothSeamVertexOperation::before(AdaptiveTessellation& m, const Tuple& t)
+{
+    if (wmtk::TriMeshSmoothVertexOperation::before(m, t)) {
+        return m.smooth_before(t);
+    }
+    return false;
+}
+bool AdaptiveTessellationSmoothSeamVertexOperation::after(
+    AdaptiveTessellation& m,
+    ExecuteReturnData& ret_data)
+{
+    if (!wmtk::TriMeshSmoothVertexOperation::after(m, ret_data)) return false;
+
+    if (!ret_data.success) return false;
+    // check if the vertex is fixed
+    if (m.vertex_attrs[ret_data.tuple.vid(m)].fixed) return false;
+    static std::atomic_int cnt = 0;
+    wmtk::logger().info("smothing op # {}", cnt);
+
+    std::vector<wmtk::TriMesh::Tuple> one_ring_tris =
+        m.get_one_ring_tris_for_vertex(ret_data.tuple);
+    assert(one_ring_tris.size() > 0);
+
+    // infomation needed for newton's method
+    // multiple nminfo for seam vertices
+    std::vector<wmtk::NewtonMethodInfo> nminfos;
+    // push in current vertex's nminfo
+    wmtk::NewtonMethodInfo primary_nminfo;
+    m.get_nminfo_for_vertex(ret_data.tuple, primary_nminfo);
+    nminfos.emplace_back(primary_nminfo);
+    // check if it is seam by getting the one ring edges
+    // add the nminfo for each seam edge
+    // keep a list of mirror vertices to update the dofx later
+    std::vector<wmtk::TriMesh::Tuple> mirror_vertices;
+    for (auto& e : m.get_one_ring_edges_for_vertex(ret_data.tuple)) {
+        if (m.is_seam_edge(e)) {
+            wmtk::NewtonMethodInfo nminfo;
+            wmtk::TriMesh::Tuple mirror_v = m.get_mirror_vertex(e);
+            mirror_vertices.emplace_back(mirror_v);
+            // collect the triangles for invariants check
+            for (auto& mirror_v_tri : m.get_one_ring_tris_for_vertex(mirror_v)) {
+                one_ring_tris.emplace_back(mirror_v_tri);
+            }
+            m.get_nminfo_for_vertex(mirror_v, nminfo);
+            nminfos.push_back(nminfo);
         }
+    }
+    ret_data.new_tris = one_ring_tris;
+    // use a general root finding method that defaults to newton but if not changeing
+    // the position, try gradient descent
+    const auto& old_pos = m.vertex_attrs[ret_data.tuple.vid(m)].pos;
+    auto old_t = m.vertex_attrs[ret_data.tuple.vid(m)].t;
+
+    wmtk::State state = {};
+    if (m.is_boundary_vertex(ret_data.tuple) && m.mesh_parameters.m_boundary_parameter) {
+        state.dofx.resize(1);
+        state.dofx[0] = m.vertex_attrs[ret_data.tuple.vid(m)].t; // t
+    } else {
+        state.dofx.resize(2);
+        state.dofx = m.vertex_attrs[ret_data.tuple.vid(m)].pos; // uv;
+    }
+    // TODO change the get_onr_ring_energy
+    double before_energy = m.get_one_ring_energy(ret_data.tuple).first;
+
+    wmtk::optimization_dofx_update(
+        *m.mesh_parameters.m_energy,
+        m.mesh_parameters.m_boundary,
+        nminfos,
+        state);
+
+    if (m.is_boundary_vertex(ret_data.tuple) && m.mesh_parameters.m_boundary_parameter) {
+        m.vertex_attrs[ret_data.tuple.vid(m)].t = state.dofx(0);
+        m.vertex_attrs[ret_data.tuple.vid(m)].pos =
+            m.mesh_parameters.m_boundary.t_to_uv(primary_nminfo.curve_id, state.dofx(0));
+    } else
+        m.vertex_attrs[ret_data.tuple.vid(m)].pos = state.dofx;
+
+    // check invariants after update the vertex position
+    if (!m.invariants(one_ring_tris)) {
+        m.vertex_attrs[ret_data.tuple.vid(m)].pos = old_pos;
+        m.vertex_attrs[ret_data.tuple.vid(m)].t = old_t;
         return false;
     }
-    bool after(AdaptiveTessellation& m, ExecuteReturnData& ret_data)
-    {
-        if (wmtk::TriMeshSmoothVertexOperation::after(m, ret_data)) {
-            ret_data.success |= m.smooth_after(ret_data.tuple);
-        }
-        return ret_data;
+    // assert before energy is always less than after energy
+    // TODO change the get_one_ring_energy
+    auto one_ring_energy_and_gradient = m.get_one_ring_energy(ret_data.tuple);
+    double after_energy = one_ring_energy_and_gradient.first;
+    assert(after_energy <= before_energy);
+
+    // now update the mirror vertices
+    // TODO vertify if this update is correct with Jeremie
+    assert(mirror_vertices.size() == nminfos.size() - 1);
+    for (int i = 0; i < mirror_vertices.size(); i++) {
+        wmtk::TriMesh::Tuple mirror_v = mirror_vertices[i];
+        m.vertex_attrs[mirror_v.vid(m)].t = state.dofx(0);
+        m.vertex_attrs[mirror_v.vid(m)].pos =
+            m.mesh_parameters.m_boundary.t_to_uv(nminfos[i + 1].curve_id, state.dofx(0));
     }
-    bool invariants(AdaptiveTessellation& m, ExecuteReturnData& ret_data)
-    {
-        if (wmtk::TriMeshSmoothVertexOperation::invariants(m, ret_data)) {
-            ret_data.success |= m.invariants(ret_data.new_tris);
-        }
-        return ret_data;
-    }
-};
+    m.mesh_parameters.m_gradient += one_ring_energy_and_gradient.second;
+    assert(m.invariants(one_ring_tris));
+    cnt++;
+
+    return ret_data.success;
+}
+
 
 template <typename Executor>
 void addCustomOps(Executor& e)
 {
     e.add_operation(std::make_shared<AdaptiveTessellationSmoothVertexOperation>());
 }
-} // namespace
+
+template <typename Executor>
+void addSeamCustomOps(Executor& e)
+{
+    e.add_operation(std::make_shared<AdaptiveTessellationSmoothSeamVertexOperation>());
+}
 
 bool adaptive_tessellation::AdaptiveTessellation::smooth_before(const Tuple& t)
 {
@@ -88,19 +193,6 @@ bool adaptive_tessellation::AdaptiveTessellation::smooth_after(const Tuple& t)
         else
             return false;
     };
-
-
-    /// should only happen in debug
-    // wmtk::logger().info("========== one ring contians  !!!{}!!!  tris ", locs.size());
-    // auto last_tuples = oriented_tri_vertices(locs[0]);
-    // Eigen::Vector2d last_v2, last_v3;
-    // for (auto j = 0; j < 3; j++) {
-    //     if (last_tuples[j].vid(*this) == vid) {
-    //         last_v2 = vertex_attrs[last_tuples[(j + 1) % 3].vid(*this)].pos;
-    //         last_v3 = vertex_attrs[last_tuples[(j + 2) % 3].vid(*this)].pos;
-    //     }
-    // }
-    /// should only happen in debug
 
     for (auto i = 0; i < locs.size(); i++) {
         const auto& tri = locs[i];
