@@ -12,6 +12,7 @@
 #include <wmtk/utils/AMIPS2D_autodiff.h>
 #include <Eigen/Core>
 #include <lean_vtk.hpp>
+#include <map>
 #include <tracy/Tracy.hpp>
 #include <wmtk/utils/TriQualityUtils.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
@@ -293,13 +294,14 @@ void AdaptiveTessellation::create_paired_seam_mesh_with_offset(
         tris.emplace_back(tri);
     }
     m_3d.create_mesh(V3d.rows(), tris);
-    create_mesh(UV, F);
 
     // loop through faces
     // for each edge, get fid on both side.
     // if it's boundary edge, do nothing
     // if not, index to the matrix for F_3d, and check the 3 edges
-
+    // populate E0 and E1 for boundary construction
+    std::map<std::pair<size_t, size_t>, std::pair<size_t, size_t>> seam_edges;
+    Eigen::MatrixXi E0, E1;
     for (auto fi = 0; fi < m_3d.tri_capacity(); ++fi) {
         for (auto lvi1 = 0; lvi1 < 3; ++lvi1) {
             auto lvi2 = (lvi1 + 1) % 3;
@@ -326,21 +328,36 @@ void AdaptiveTessellation::create_paired_seam_mesh_with_offset(
                     // the orientation of the mirror edges is inccw (half edge conventions)
                     // However, the edge tuple in operations have arbitraty orientation
                     // !!! need to check orientations of mirror edge in operations !!!!!
-                    TriMesh::Tuple seam_edge_lvj(F(fj, lvj2), (3 - lvj1 - lvj2), fj, *this);
-                    if (!seam_edge_lvj.is_ccw(*this))
-                        seam_edge_lvj = seam_edge_lvj.switch_vertex(*this);
+                    TriMesh::Tuple seam_edge_fj(F(fj, lvj2), (3 - lvj1 - lvj2), fj, *this);
+                    if (!seam_edge_fj.is_ccw(*this))
+                        seam_edge_fj = seam_edge_fj.switch_vertex(*this);
                     face_attrs[fi].mirror_edges[local_eid] =
-                        std::make_optional<wmtk::TriMesh::Tuple>(seam_edge_lvj);
+                        std::make_optional<wmtk::TriMesh::Tuple>(seam_edge_fj);
 
-                    TriMesh::Tuple seam_edge_lvi(F(fi, lvi1), local_eid, fi, *this);
-                    if (!seam_edge_lvi.is_ccw(*this))
-                        seam_edge_lvi = seam_edge_lvi.switch_vertex(*this);
+                    TriMesh::Tuple seam_edge_fi(F(fi, lvi1), local_eid, fi, *this);
+                    if (!seam_edge_fi.is_ccw(*this))
+                        seam_edge_fi = seam_edge_fi.switch_vertex(*this);
                     face_attrs[fj].mirror_edges[(3 - lvj1 - lvj2)] =
-                        std::make_optional<wmtk::TriMesh::Tuple>(seam_edge_lvi);
+                        std::make_optional<wmtk::TriMesh::Tuple>(seam_edge_fi);
+                    // check if seam_edge_fj is already in the map
+                    size_t ei0 = std::min(F(fi, lvi1), F(fi, lvi2));
+                    size_t ei1 = std::max(F(fi, lvi1), F(fi, lvi2));
+                    size_t ej0 = std::min(F(fj, lvj1), F(fj, lvj2));
+                    size_t ej1 = std::max(F(fj, lvj1), F(fj, lvj2));
+                    if (seam_edges.find(std::pair{ei0, ei1}) != seam_edges.end()) {
+                        assert((seam_edges[{ei0, ei1}] == std::pair<size_t, size_t>(ej0, ej1)));
+                    } else {
+                        // if not add it to the map and add to the edge matrix
+                        seam_edges[{ej0, ej1}] = std::pair<size_t, size_t>(ei0, ei1);
+                        E0 << ei0, ei1;
+                        E1 << ej0, ej1;
+                    }
                 }
             }
         }
     }
+    assert(E0.rows() == E1.rows());
+    create_mesh(UV, F, E0, E1);
 }
 
 bool AdaptiveTessellation::invariants(const std::vector<Tuple>& new_tris)
@@ -396,7 +413,11 @@ std::vector<AdaptiveTessellation::Tuple> AdaptiveTessellation::new_edges_after(
     return new_edges;
 }
 
-void AdaptiveTessellation::create_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F)
+void AdaptiveTessellation::create_mesh(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXi& E0,
+    const Eigen::MatrixXi& E1)
 {
     std::vector<Eigen::Vector3d> V_env;
     V_env.resize(V.rows());
@@ -425,7 +446,8 @@ void AdaptiveTessellation::create_mesh(const Eigen::MatrixXd& V, const Eigen::Ma
         assert(!is_inverted(tri));
     }
     // construct the boundary map for boundary parametrization
-    if (mesh_parameters.m_boundary_parameter) mesh_parameters.m_boundary.construct_boundaries(V, F, {}, {});
+    if (mesh_parameters.m_boundary_parameter)
+        mesh_parameters.m_boundary.construct_boundaries(V, F, E0, E1);
 
     // mark boundary vertices as boundary_vertex
     // but this is not indiscriminatively rejected for all operations
@@ -435,8 +457,8 @@ void AdaptiveTessellation::create_mesh(const Eigen::MatrixXd& V, const Eigen::Ma
         if (is_boundary_vertex(v)) {
             vertex_attrs[v.vid(*this)].boundary_vertex = is_boundary_vertex(v);
             set_feature(v);
-            vertex_attrs[v.vid(*this)].curve_id = 0; /// only one connected mesh for now
-            vertex_attrs[v.vid(*this)].t =
+            // vertex_attrs[v.vid(*this)].curve_id = 0; /// only one connected mesh for now
+            std::tie(vertex_attrs[v.vid(*this)].curve_id, vertex_attrs[v.vid(*this)].t) =
                 mesh_parameters.m_boundary.uv_to_t(vertex_attrs[v.vid(*this)].pos);
         }
     }
@@ -981,68 +1003,83 @@ double AdaptiveTessellation::get_area_accuracy_error(const Tuple& edge_tuple) co
     return length;
 }
 
-std::pair<double, Eigen::Vector2d> AdaptiveTessellation::get_one_ring_energy(const Tuple& loc) const
+void AdaptiveTessellation::get_nminfo_for_vertex(const Tuple& v, wmtk::NewtonMethodInfo& nminfo)
+    const
 {
-    auto one_ring = get_one_ring_tris_for_vertex(loc);
-    wmtk::DofVector dofx;
-    if (is_boundary_vertex(loc) && mesh_parameters.m_boundary_parameter) {
-        dofx.resize(1);
-        dofx[0] = vertex_attrs[loc.vid(*this)].t; // t
-    } else {
-        dofx.resize(2); // uv;
-        dofx = vertex_attrs[loc.vid(*this)].pos;
-    }
-    wmtk::NewtonMethodInfo nminfo;
-    nminfo.curve_id = vertex_attrs[loc.vid(*this)].curve_id;
-    nminfo.target_length = mesh_parameters.m_target_l;
-    nminfo.neighbors.resize(one_ring.size(), 4);
-
-    auto is_inverted_coordinates = [this, &loc](auto& A, auto& B) {
-        auto res = igl::predicates::orient2d(A, B, this->vertex_attrs[loc.vid(*this)].pos);
+    auto is_inverted_coordinates = [](auto& A, auto& B, auto& primary_pos) {
+        auto res = igl::predicates::orient2d(A, B, primary_pos);
         if (res != igl::predicates::Orientation::POSITIVE)
             return true;
         else
             return false;
     };
-
-    for (auto i = 0; i < one_ring.size(); i++) {
-        const auto& tri = one_ring[i];
-        if (is_inverted(tri)) {
-            return {std::numeric_limits<double>::max(), Eigen::Vector2d::Zero()};
-        }
-        auto local_tuples = oriented_tri_vertices(tri);
+    std::vector<Tuple> one_ring_tris = get_one_ring_tris_for_vertex(v);
+    nminfo.curve_id = vertex_attrs[v.vid(*this)].curve_id;
+    nminfo.target_length = mesh_parameters.m_target_l;
+    nminfo.neighbors.resize(one_ring_tris.size(), 4);
+    for (auto i = 0; i < one_ring_tris.size(); i++) {
+        const Tuple& tri = one_ring_tris[i];
+        assert(!is_inverted(tri));
+        std::array<Tuple, 3> local_tuples = oriented_tri_vertices(tri);
         for (size_t j = 0; j < 3; j++) {
-            if (local_tuples[j].vid(*this) == loc.vid(*this)) {
-                const auto& v2 = vertex_attrs[local_tuples[(j + 1) % 3].vid(*this)].pos;
-                const auto& v3 = vertex_attrs[local_tuples[(j + 2) % 3].vid(*this)].pos;
+            if (local_tuples[j].vid(*this) == v.vid(*this)) {
+                const Eigen::Vector2d& v2 = vertex_attrs[local_tuples[(j + 1) % 3].vid(*this)].pos;
+                const Eigen::Vector2d& v3 = vertex_attrs[local_tuples[(j + 2) % 3].vid(*this)].pos;
                 nminfo.neighbors.row(i) << v2(0), v2(1), v3(0), v3(1);
-                assert(!is_inverted_coordinates(
-                    v2,
-                    v3)); // sanity check, no inversion should be heres
+                assert(!is_inverted_coordinates(v2, v3, vertex_attrs[v.vid(*this)].pos));
+                // sanity check. Should not be inverted
             }
         }
+        assert(one_ring_tris.size() == nminfo.neighbors.rows());
     }
-    assert(one_ring.size() == nminfo.neighbors.rows());
-    auto total_energy = 0.;
-    Eigen::Vector2d total_gradient;
-    total_gradient.setZero(2);
-    for (auto i = 0; i < one_ring.size(); i++) {
-        // set State
-        // pass the state energy
-        State state = {};
-        state.two_opposite_vertices = nminfo.neighbors.row(i);
-        state.dofx = dofx;
-        state.scaling = nminfo.target_length;
-        // if (mesh_parameters.m_boundary_parameter) {
-        //     assert(mesh_parameters.m_boundary.m_arclengths.size() > 0);
-        //     assert(mesh_parameters.m_boundary.m_boundaries.size() > 0);
-        // }
-        DofsToPositions dofs_to_pos(mesh_parameters.m_boundary, nminfo.curve_id);
-        mesh_parameters.m_energy->eval(state, dofs_to_pos);
-        total_energy += state.value;
-        total_gradient += state.gradient;
+}
+
+std::pair<double, Eigen::Vector2d> AdaptiveTessellation::get_one_ring_energy(const Tuple& v) const
+{
+    std::vector<wmtk::TriMesh::Tuple> one_ring_tris = get_one_ring_tris_for_vertex(v);
+    assert(one_ring_tris.size() > 0);
+    wmtk::DofVector dofx;
+    if (is_boundary_vertex(v) && mesh_parameters.m_boundary_parameter) {
+        dofx.resize(1);
+        dofx[0] = vertex_attrs[v.vid(*this)].t; // t
+    } else {
+        dofx.resize(2); // uv;
+        dofx = vertex_attrs[v.vid(*this)].pos;
     }
-    return {total_energy, total_gradient};
+
+    // infomation needed for newton's method
+    // multiple nminfo for seam vertices
+    std::vector<wmtk::NewtonMethodInfo> nminfos;
+    // push in current vertex's nminfo
+    wmtk::NewtonMethodInfo primary_nminfo;
+    get_nminfo_for_vertex(v, primary_nminfo);
+    nminfos.emplace_back(primary_nminfo);
+    // check if it is seam by getting the one ring edges
+    // add the nminfo for each seam edge
+    // keep a list of mirror vertices to update the dofx later
+    std::vector<wmtk::TriMesh::Tuple> mirror_vertices;
+    for (auto& e : get_one_ring_edges_for_vertex(v)) {
+        if (is_seam_edge(e)) {
+            wmtk::NewtonMethodInfo nminfo;
+            wmtk::TriMesh::Tuple mirror_v = get_mirror_vertex(e);
+            mirror_vertices.emplace_back(mirror_v);
+            // collect the triangles for invariants check
+            for (auto& mirror_v_tri : get_one_ring_tris_for_vertex(mirror_v)) {
+                one_ring_tris.emplace_back(mirror_v_tri);
+            }
+            get_nminfo_for_vertex(mirror_v, nminfo);
+            nminfos.push_back(nminfo);
+        }
+    }
+    State state = {};
+    state.dofx = dofx;
+    wmtk::optimization_state_update(
+        *mesh_parameters.m_energy,
+        nminfos,
+        mesh_parameters.m_boundary,
+        state);
+
+    return {state.value, state.gradient};
 }
 
 Eigen::VectorXd AdaptiveTessellation::get_quality_all_triangles()
@@ -1299,7 +1336,7 @@ void AdaptiveTessellation::gradient_debug(int max_its)
     }
 }
 
-bool AdaptiveTessellation::is_seam_edge(const TriMesh::Tuple& t)
+bool AdaptiveTessellation::is_seam_edge(const TriMesh::Tuple& t) const
 {
     return face_attrs[t.fid(*this)].mirror_edges[t.local_eid(*this)].has_value();
 }
@@ -1311,7 +1348,7 @@ void AdaptiveTessellation::set_mirror_edge_data(
     face_attrs[primary_t.fid(*this)].mirror_edges[primary_t.local_eid(*this)] =
         mirror_edge.is_ccw(*this) ? mirror_edge : mirror_edge.switch_vertex(*this);
 }
-std::optional<TriMesh::Tuple> AdaptiveTessellation::get_sibling_edge(const TriMesh::Tuple& t)
+std::optional<TriMesh::Tuple> AdaptiveTessellation::get_sibling_edge(const TriMesh::Tuple& t) const
 {
     if (is_boundary_edge(t)) {
         if (is_seam_edge(t)) {
@@ -1328,7 +1365,7 @@ std::optional<TriMesh::Tuple> AdaptiveTessellation::get_sibling_edge(const TriMe
 }
 
 // given a seam edge retrieve its mirror edge in opposite direction (half egde conventions )
-TriMesh::Tuple AdaptiveTessellation::get_oriented_mirror_edge(const TriMesh::Tuple& t)
+TriMesh::Tuple AdaptiveTessellation::get_oriented_mirror_edge(const TriMesh::Tuple& t) const
 {
     assert(is_seam_edge(t));
     TriMesh::Tuple mirror_edge = face_attrs[t.fid(*this)].mirror_edges[t.local_eid(*this)].value();
@@ -1340,6 +1377,14 @@ TriMesh::Tuple AdaptiveTessellation::get_oriented_mirror_edge(const TriMesh::Tup
     } else {
         return mirror_edge.switch_vertex(*this);
     }
+}
+
+// given a seam edge with vid v retrieve the correpsonding vertex on the mirror edge
+TriMesh::Tuple AdaptiveTessellation::get_mirror_vertex(const TriMesh::Tuple& t) const
+{
+    assert(is_seam_edge(t));
+    TriMesh::Tuple mirror_edge = get_oriented_mirror_edge(t);
+    return mirror_edge.switch_vertex(*this);
 }
 
 } // namespace adaptive_tessellation

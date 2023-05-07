@@ -23,6 +23,7 @@
 #include <wmtk/utils/BoundaryParametrization.h>
 #include <wmtk/utils/Displacement.h>
 #include <wmtk/utils/Energy2d.h>
+#include <wmtk/utils/Energy2dOptimizationUtils.h>
 #include <wmtk/utils/GeoUtils.h>
 #include <wmtk/utils/Image.h>
 #include <wmtk/utils/MipMap.h>
@@ -139,7 +140,11 @@ public:
      * @param V igl format vertices
      * @param F igl format faces
      */
-    void create_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F);
+    void create_mesh(
+        const Eigen::MatrixXd& V,
+        const Eigen::MatrixXi& F,
+        const Eigen::MatrixXi& E0,
+        const Eigen::MatrixXi& E1);
 
     // Exports V and F of the stored mesh
     void export_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
@@ -216,16 +221,20 @@ public:
         Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle) const;
     double get_area_accuracy_error(const Tuple& edge_tuple) const;
 
+    void get_nminfo_for_vertex(const Tuple& v, wmtk::NewtonMethodInfo& nminfo) const;
+
     // get sibling edge for paired operations
     // return the oriented mirror edge if t is seam
     // return the sibling if t is interior
     // return nullopt if t is boundary
-    std::optional<TriMesh::Tuple> get_sibling_edge(const TriMesh::Tuple& t);
+    std::optional<TriMesh::Tuple> get_sibling_edge(const TriMesh::Tuple& t) const;
     // given a seam edge retrieve its mirror edge in opposite direction (half egde conventions )
-    TriMesh::Tuple get_oriented_mirror_edge(const TriMesh::Tuple& t);
+    TriMesh::Tuple get_oriented_mirror_edge(const TriMesh::Tuple& t) const;
+    // given a seam edge with vid v retrieve the correpsonding vertex on the mirror edge
+    TriMesh::Tuple get_mirror_vertex(const TriMesh::Tuple& t) const;
     // set primary_t's mirror edge data to a ccw ordered mirror_edge
     void set_mirror_edge_data(const TriMesh::Tuple& primary_t, const TriMesh::Tuple& mirror_edge);
-    bool is_seam_edge(const TriMesh::Tuple& t);
+    bool is_seam_edge(const TriMesh::Tuple& t) const;
     // unit test functions
     inline void create_mesh_debug(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F)
     {
