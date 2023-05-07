@@ -84,11 +84,11 @@ bool AdaptiveTessellationSplitEdgeOperation::after(
         m.vertex_attrs[vid].pos = p;
         m.vertex_attrs[vid].partition_id = m.cache.local().partition_id;
         m.vertex_attrs[vid].curve_id = m.vertex_attrs[op_cache.local().v1].curve_id;
-        // take into account of periodicity
         if (m.vertex_attrs[op_cache.local().v1].boundary_vertex &&
             m.vertex_attrs[op_cache.local().v2].boundary_vertex) {
             m.vertex_attrs[vid].boundary_vertex = true;
-            m.vertex_attrs[vid].t = m.mesh_parameters.m_boundary.uv_to_t(m.vertex_attrs[vid].pos);
+            m.vertex_attrs[vid].t =
+                m.mesh_parameters.m_boundary.uv_to_t(m.vertex_attrs[vid].pos).second;
         }
     }
     return ret_data.success;
@@ -554,7 +554,7 @@ bool AdaptiveTessellation::split_edge_after(const Tuple& edge_tuple) // not used
     if (vertex_attrs[cache.local().v1].boundary_vertex &&
         vertex_attrs[cache.local().v2].boundary_vertex) {
         vertex_attrs[vid].boundary_vertex = true;
-        vertex_attrs[vid].t = mesh_parameters.m_boundary.uv_to_t(vertex_attrs[vid].pos);
+        vertex_attrs[vid].t = mesh_parameters.m_boundary.uv_to_t(vertex_attrs[vid].pos).second;
     }
     // wmtk::logger().info("new 3d position {}", mesh_parameters.m_displacement->get(p(0),
     // p(1)));
