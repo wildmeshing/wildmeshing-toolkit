@@ -49,7 +49,7 @@ TEST_CASE("AABB")
 
     REQUIRE(ok);
     AdaptiveTessellation m;
-    m.create_mesh(V, F);
+    m.create_mesh(V, F, {}, {});
     m.set_projection();
 
     auto result = m.mesh_parameters.m_get_closest_point(Eigen::RowVector2d(-0.7, 0.6));
@@ -65,7 +65,7 @@ TEST_CASE("fixed corner")
     Eigen::MatrixXi F(1, 3);
     F.row(0) << 0, 1, 2;
     AdaptiveTessellation m;
-    m.create_mesh(V, F);
+    m.create_mesh(V, F, {}, {});
     for (auto v : m.get_vertices()) {
         REQUIRE(m.vertex_attrs[v.vid(m)].fixed);
     }
@@ -95,7 +95,7 @@ TEST_CASE("boundary parametrization")
     double t;
 
     Eigen::Vector2d test_v0(0, 0);
-    auto t0 = bnd.uv_to_t(test_v0);
+    auto t0 = bnd.uv_to_t(test_v0).second;
     REQUIRE(t0 == 0.);
     auto v0 = bnd.t_to_uv(0, t0);
     REQUIRE(v0 == test_v0);
@@ -105,7 +105,7 @@ TEST_CASE("boundary parametrization")
     REQUIRE(ij0.second == 0);
 
     Eigen::Vector2d test_v1(5, 0);
-    auto t1 = bnd.uv_to_t(test_v1);
+    auto t1 = bnd.uv_to_t(test_v1).second;
     REQUIRE(t1 == 5.);
     auto v1 = bnd.t_to_uv(0, t1);
     REQUIRE(v1 == test_v1);
@@ -115,7 +115,7 @@ TEST_CASE("boundary parametrization")
     REQUIRE(ij1.second == 0);
 
     Eigen::Vector2d test_v2(5, 5);
-    auto t2 = bnd.uv_to_t(test_v2);
+    auto t2 = bnd.uv_to_t(test_v2).second;
     REQUIRE(t2 == 10 + 5. * sqrt(2));
     auto v2 = bnd.t_to_uv(0, t2);
     REQUIRE(v2 == test_v2);
@@ -125,7 +125,7 @@ TEST_CASE("boundary parametrization")
     REQUIRE(ij2.second == 1);
 
     Eigen::Vector2d test_v3(0, 0.1);
-    auto t3 = bnd.uv_to_t(test_v3);
+    auto t3 = bnd.uv_to_t(test_v3).second;
     REQUIRE(t3 == 10 + 10. * sqrt(2) + 9.9);
     auto v3 = bnd.t_to_uv(0, t3);
     REQUIRE((v3 - test_v3).stableNorm() < 1e-8);
@@ -147,7 +147,7 @@ TEST_CASE("operations with boundary parameterization")
     F.row(0) << 0, 1, 2;
 
     AdaptiveTessellation m;
-    m.create_mesh(V, F);
+    m.create_mesh(V, F, {}, {});
     m.set_projection();
 
     auto displacement = [](const DScalar& u, const DScalar& v) -> DScalar {
@@ -234,7 +234,7 @@ TEST_CASE("autodiff vs finitediff")
     Eigen::MatrixXi F(1, 3);
     F.row(0) << 0, 1, 2;
     AdaptiveTessellation m;
-    m.create_mesh(V, F);
+    m.create_mesh(V, F, {}, {});
 
     auto displacement = [](const DScalar& u, const DScalar& v) -> DScalar {
         return DScalar(10 * u);
@@ -448,3 +448,9 @@ TEST_CASE("test mirror edge setup")
         }
     }
 }
+
+// TODO test get_mirror_edge and get_mirror_vertex
+
+// TODO test set fixed for vertex that has more than 2 curveid
+
+// TODO add test for new boundary setup with seam edges (maybe should be in boundary testing)
