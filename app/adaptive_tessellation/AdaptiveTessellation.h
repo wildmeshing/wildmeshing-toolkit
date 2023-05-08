@@ -80,11 +80,12 @@ public:
         double error;
         double max_energy;
         int partition_id;
-        // for pair operation
-        size_t v3;
-        size_t v4;
     };
     tbb::enumerable_thread_specific<InfoCache> cache;
+
+    // seam vertex coloring
+    std::unordered_map<size_t, int> uv_index_to_color;
+    std::vector<std::vector<size_t>> color_to_uv_indices;
 
 public:
     AdaptiveTessellation(){};
@@ -125,6 +126,9 @@ public:
     void set_displacement(const DISPLACEMENT_MODE displacement_mode);
     void set_edge_length_measurement(const EDGE_LEN_TYPE edge_len_type);
     void set_projection();
+    // using boundary parametrization, find the vertex that are the start and end of each cruve and
+    // set them as fixed
+    void set_fixed();
     Eigen::Matrix<uint64_t, Eigen::Dynamic, 2, Eigen::RowMajor> get_bnd_edge_matrix();
 
 
