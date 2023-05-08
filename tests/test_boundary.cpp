@@ -92,6 +92,7 @@ void test_boundary_parameterization(const MeshType& mesh, int expected_num_curve
     auto curve_to_mesh = [&](int curve_id) {
         MeshType seams;
         const auto& positions = boundary.positions(curve_id);
+        REQUIRE(positions.size() >= 2);
         seams.add_vertices(positions.size(), [&](Index v, lagrange::span<Scalar> p) {
             p[0] = positions[v].x();
             p[1] = positions[v].y();
@@ -120,10 +121,13 @@ void test_boundary_parameterization(const MeshType& mesh, int expected_num_curve
 
 TEST_CASE("Boundary Parameterization", "[utils][boundary]")
 {
-    // test_boundary_parameterization(
-    //     lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMT_DATA_DIR "/blub.obj"),
-    //     18);
+    test_boundary_parameterization(
+        lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMT_DATA_DIR "/blub.obj"),
+        18);
     test_boundary_parameterization(
         lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMT_DATA_DIR "/blub_open.obj"),
         15);
+    test_boundary_parameterization(
+        lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMT_DATA_DIR "/hemisphere.obj"),
+        18);
 }

@@ -1429,14 +1429,14 @@ std::vector<TriMesh::Tuple> AdaptiveTessellation::get_all_mirror_vertices(
     // case 1
     //    --seam-- o --seam----
     //  --seam--o  o  o--seam--
-    //         /  / \  \ 
+    //         /  / \  \
     //    seam seam seam seam
-    //      /  /      \   \ 
+    //      /  /      \   \
     // case 2
     // --boundary-- o  o  o-- boundary--
-    //             /  / \  \ 
+    //             /  / \  \
     //        seam seam seam seam
-    //           /  /      \  \ 
+    //           /  /      \  \
 
     assert(mirror_vertices.size() > 1);
     return mirror_vertices;

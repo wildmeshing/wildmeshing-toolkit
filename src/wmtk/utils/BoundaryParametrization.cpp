@@ -120,11 +120,17 @@ CurveNetwork split_loops(
                 std::rotate(colors.begin(), colors.begin() + m, colors.end());
             }
 
+            // Duplicate the first point to the back of the loop, so that we can split the loop.
+            // Don't duplicate the color, we have one color per edge, so now that the loop is not
+            // periodic, we have loop.size() == colors.size() + 1.
+            loop.push_back(loop.front());
+
             // Now we can split safely each continuous chunk...
             it = std::adjacent_find(colors.begin(), colors.end(), std::not_equal_to<>());
             while (it != colors.end()) {
                 std::ptrdiff_t m = std::distance(colors.begin(), it) + 1;
-                CurveNetwork::Curve path(loop.begin(), loop.begin() + m);
+                la_debug_assert(m < colors.size());
+                CurveNetwork::Curve path(loop.begin(), loop.begin() + m + 1);
                 loop.erase(loop.begin(), loop.begin() + m);
                 colors.erase(colors.begin(), colors.begin() + m);
                 result.curves.emplace_back(std::move(path));
@@ -158,6 +164,7 @@ Boundary::ParameterizedCurves parameterize_curves(
 
     for (int curve_id = 0; curve_id < static_cast<int>(input.curves.size()); ++curve_id) {
         auto curve = input.curves[curve_id];
+        la_debug_assert(curve.size() > 1);
 
         // First pass on the curve to find the parent curve id
         int parent_id = curve_id;
@@ -200,15 +207,16 @@ Boundary::ParameterizedCurves parameterize_curves(
         arclengths.emplace_back(len);
         for (size_t i = 0; i < curve.size(); ++i) {
             const int v0 = curve[i];
-            const int v1 = curve[(i + 1) % curve.size()];
             auto p0 = V.row(v0).leftCols(2);
-            auto p1 = V.row(v1).leftCols(2);
             positions.emplace_back(p0);
+            if (!input.is_closed[curve_id] && i == curve.size() - 1) continue;
+            const int v1 = curve[(i + 1) % curve.size()];
+            auto p1 = V.row(v1).leftCols(2);
             len += (p1 - p0).stableNorm();
             arclengths.emplace_back(len);
         }
 
-        assert(arclengths.size() == positions.size() + 1);
+        assert(arclengths.size() == positions.size() + (input.is_closed[curve_id] ? 1 : 0));
         result.positions.emplace_back(std::move(positions));
         result.arclengths.emplace_back(std::move(arclengths));
         result.periodic.emplace_back(input.is_closed[curve_id]);
