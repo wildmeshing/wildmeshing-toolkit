@@ -2,10 +2,13 @@
 
 #include <igl/boundary_loop.h>
 #include <igl/project_to_line_segment.h>
+#include <lagrange/utils/DisjointSets.h>
 #include <lagrange/utils/assert.h>
 
+#include <fstream>
 #include <map>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace wmtk {
@@ -35,9 +38,44 @@ struct CurveNetwork
     std::vector<bool> is_closed;
 };
 
+std::vector<bool> compute_cone_vertices(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& E0,
+    const Eigen::MatrixXi& E1)
+{
+    int num_vertices = V.rows();
+    int num_seams = E0.rows();
+    std::vector<bool> is_cone_vertex(num_vertices, false);
+
+    lagrange::DisjointSets<int> vertex_colors(num_vertices);
+    for (int e = 0; e < num_seams; ++e) {
+        vertex_colors.merge(E0(e, 0), E1(e, 0));
+        vertex_colors.merge(E0(e, 1), E1(e, 1));
+    }
+
+    std::vector<std::unordered_set<int>> color_to_seams(num_vertices);
+    for (int e = 0; e < num_seams; ++e) {
+        for (int v : {E0(e, 0), E0(e, 1), E1(e, 0), E1(e, 1)}) {
+            color_to_seams[vertex_colors.find(v)].insert(e);
+        }
+    }
+
+    for (int e = 0; e < num_seams; ++e) {
+        for (int v : {E0(e, 0), E0(e, 1), E1(e, 0), E1(e, 1)}) {
+            if (color_to_seams[vertex_colors.find(v)].size() != 2) {
+                is_cone_vertex[v] = true;
+            }
+        }
+    }
+
+    return is_cone_vertex;
+}
+
 CurveNetwork split_loops(
+    const Eigen::MatrixXd& vertices,
     const std::vector<std::vector<int>>& loops,
-    const std::map<Edge, int> edge_to_seam)
+    const std::map<Edge, int> edge_to_seam,
+    const std::vector<bool>& is_cone_vertex)
 {
     CurveNetwork result;
 
@@ -95,6 +133,46 @@ CurveNetwork split_loops(
             const int v0 = loop[i];
             const int v1 = loop[(i + 1) % loop.size()];
             colors[i] = color_from_edge(v0, v1, current_color);
+        }
+    }
+
+    // If a loop has cone vertices, update edge colors on each side of the cone vertices
+    for (int loop_id = 0; loop_id < static_cast<int>(loops.size()); ++loop_id) {
+        const auto& loop = loops[loop_id];
+        auto& colors = edge_colors[loop_id];
+        bool has_cone_vertices = false;
+        int max_color = 0;
+        for (size_t i = 0; i < loop.size(); ++i) {
+            const int v0 = loop[i];
+            max_color = std::max(max_color, colors[i]);
+            if (is_cone_vertex[v0]) {
+                has_cone_vertices = true;
+            }
+        }
+        if (!has_cone_vertices) {
+            continue;
+        }
+        int loop_num_colors = max_color + 1;
+        const size_t n = loop.size();
+        for (size_t i = 0; i < n; ++i) {
+            const int v0 = loop[i];
+            if (is_cone_vertex[v0]) {
+                size_t j = i + 1;
+                for (; j < n; ++j) {
+                    const int v1 = loop[j];
+                    if (is_cone_vertex[v1]) {
+                        break;
+                    }
+                }
+                if (j == n) {
+                    break;
+                }
+                la_debug_assert(is_cone_vertex[loop[j]]);
+                for (size_t k = i; k < j; ++k) {
+                    colors[k] += loop_num_colors;
+                }
+                loop_num_colors += max_color + 1;
+            }
         }
     }
 
@@ -261,7 +339,10 @@ void Boundary::construct_boundaries(
         }
     }
 
-    m_curves = parameterize_curves(split_loops(paths, edge_to_seam), V, edge_to_seam);
+    m_curves = parameterize_curves(
+        split_loops(V, paths, edge_to_seam, compute_cone_vertices(V, E0, E1)),
+        V,
+        edge_to_seam);
 }
 
 Boundary::ParameterizedSegment Boundary::t_to_segment(int curve_id, double t) const

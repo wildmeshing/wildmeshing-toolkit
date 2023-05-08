@@ -129,5 +129,5 @@ TEST_CASE("Boundary Parameterization", "[utils][boundary]")
         15);
     test_boundary_parameterization(
         lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMT_DATA_DIR "/hemisphere.obj"),
-        18);
+        39);
 }
