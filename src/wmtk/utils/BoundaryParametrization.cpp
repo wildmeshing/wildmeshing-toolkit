@@ -162,6 +162,7 @@ Boundary::ParameterizedCurves parameterize_curves(
         // First pass on the curve to find the parent curve id
         int parent_id = curve_id;
         for (size_t i = 0; i < curve.size(); ++i) {
+            if (!input.is_closed[curve_id] && i == curve.size() - 1) continue;
             const int v0 = curve[i];
             const int v1 = curve[(i + 1) % curve.size()];
 
@@ -272,13 +273,14 @@ Boundary::ParameterizedSegment Boundary::t_to_segment(int curve_id, double t) co
 
     auto it = std::prev(std::upper_bound(arclength.begin(), arclength.end(), t));
     auto a = std::distance(arclength.begin(), it);
-    assert((a + 1) < arclength.size());
+    assert(a < arclength.size());
 
     result.t0 = *it;
     const auto& boundary = m_curves.positions[curve_id];
     assert(a < boundary.size());
     result.A = boundary[a];
-    result.B = boundary[(a + 1) % boundary.size()];
+    result.B =
+        m_curves.periodic[curve_id] ? boundary[(a + 1) % boundary.size()] : boundary[(a + 1)];
     result.tlen = arclength[a + 1] - arclength[a];
     return result;
 }
@@ -293,7 +295,8 @@ std::pair<int, double> Boundary::uv_to_t(const Eigen::Vector2d& v) const
     double d = std::numeric_limits<double>::infinity();
     for (auto i = 0; i < m_curves.positions.size(); i++) {
         for (auto j = 0; j < m_curves.positions[i].size(); j++) {
-            size_t j2 = (j + 1) % m_curves.positions[i].size();
+            if (!m_curves.periodic[i] && j == m_curves.positions[i].size() - 1) continue;
+            size_t j2 = m_curves.periodic[i] ? (j + 1) % m_curves.positions[i].size() : j + 1;
             Eigen::RowVector2d A = m_curves.positions[i][j];
             Eigen::RowVector2d B = m_curves.positions[i][j2];
             igl::project_to_line_segment(P, A, B, tmp_t, tmp_d);
@@ -319,7 +322,8 @@ std::pair<int, int> Boundary::uv_to_ij(const Eigen::Vector2d& v, double& t) cons
     double d = std::numeric_limits<double>::infinity();
     for (auto i = 0; i < m_curves.positions.size(); i++) {
         for (auto j = 0; j < m_curves.positions[i].size(); j++) {
-            size_t j2 = (j + 1) % m_curves.positions[i].size();
+            if (!m_curves.periodic[i] && j == m_curves.positions[i].size() - 1) continue;
+            size_t j2 = m_curves.periodic[i] ? (j + 1) % m_curves.positions[i].size() : j + 1;
             Eigen::RowVector2d A = m_curves.positions[i][j];
             Eigen::RowVector2d B = m_curves.positions[i][j2];
             igl::project_to_line_segment(P, A, B, tmp_t, tmp_d);
