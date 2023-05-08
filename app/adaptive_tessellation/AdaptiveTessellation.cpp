@@ -294,14 +294,15 @@ void AdaptiveTessellation::create_paired_seam_mesh_with_offset(
         tris.emplace_back(tri);
     }
     m_3d.create_mesh(V3d.rows(), tris);
-
+    create_mesh(UV, F);
     // loop through faces
     // for each edge, get fid on both side.
     // if it's boundary edge, do nothing
     // if not, index to the matrix for F_3d, and check the 3 edges
     // populate E0 and E1 for boundary construction
     std::map<std::pair<size_t, size_t>, std::pair<size_t, size_t>> seam_edges;
-    Eigen::MatrixXi E0, E1;
+    Eigen::MatrixXi E0(F.rows() * 3, 2), E1(F.rows() * 3, 2);
+    int seam_edge_cnt = 0;
     for (auto fi = 0; fi < m_3d.tri_capacity(); ++fi) {
         for (auto lvi1 = 0; lvi1 < 3; ++lvi1) {
             auto lvi2 = (lvi1 + 1) % 3;
@@ -349,15 +350,18 @@ void AdaptiveTessellation::create_paired_seam_mesh_with_offset(
                     } else {
                         // if not add it to the map and add to the edge matrix
                         seam_edges[{ej0, ej1}] = std::pair<size_t, size_t>(ei0, ei1);
-                        E0 << ei0, ei1;
-                        E1 << ej0, ej1;
+                        E0.row(seam_edge_cnt) << ei0, ei1;
+                        E1.row(seam_edge_cnt) << ej0, ej1;
+                        seam_edge_cnt++;
                     }
                 }
             }
         }
     }
+    E0.conservativeResize(seam_edge_cnt, 2);
+    E1.conservativeResize(seam_edge_cnt, 2);
     assert(E0.rows() == E1.rows());
-    create_mesh(UV, F, E0, E1);
+    mesh_construct_boundaries(UV, F, E0, E1);
 }
 
 bool AdaptiveTessellation::invariants(const std::vector<Tuple>& new_tris)
@@ -413,11 +417,7 @@ std::vector<AdaptiveTessellation::Tuple> AdaptiveTessellation::new_edges_after(
     return new_edges;
 }
 
-void AdaptiveTessellation::create_mesh(
-    const Eigen::MatrixXd& V,
-    const Eigen::MatrixXi& F,
-    const Eigen::MatrixXi& E0,
-    const Eigen::MatrixXi& E1)
+void AdaptiveTessellation::create_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F)
 {
     std::vector<Eigen::Vector3d> V_env;
     V_env.resize(V.rows());
@@ -445,6 +445,15 @@ void AdaptiveTessellation::create_mesh(
     for (const auto& tri : this->get_faces()) {
         assert(!is_inverted(tri));
     }
+}
+
+// TODO set feature include when vertex get more than 2 curveids
+void AdaptiveTessellation::mesh_construct_boundaries(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXi& E0,
+    const Eigen::MatrixXi& E1)
+{
     // construct the boundary map for boundary parametrization
     if (mesh_parameters.m_boundary_parameter)
         mesh_parameters.m_boundary.construct_boundaries(V, F, E0, E1);
@@ -463,6 +472,7 @@ void AdaptiveTessellation::create_mesh(
         }
     }
 
+    // TODO move this to the boundary unit test
     for (const auto& v : get_vertices()) {
         assert(vertex_attrs[v.vid(*this)].t >= 0);
     }

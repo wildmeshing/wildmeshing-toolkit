@@ -140,7 +140,8 @@ public:
      * @param V igl format vertices
      * @param F igl format faces
      */
-    void create_mesh(
+    void create_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F);
+    void mesh_construct_boundaries(
         const Eigen::MatrixXd& V,
         const Eigen::MatrixXi& F,
         const Eigen::MatrixXi& E0,
