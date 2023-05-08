@@ -227,7 +227,8 @@ wmtk::TriMeshOperation::ExecuteReturnData AdaptiveTessellationPairedCollapseEdge
     // i guess one of check is the new_vid replace in-place the old vid in the tri_connectivity for
     // traingles influenced by the collapse
 
-    // update the seam edges mirror_edges info
+    // TODO check if the one_ring_edges is assuming e.vid(m) ==
+    // collapse_edge.return_edge_tuple.vid(m) update the seam edges mirror_edges info
     if (mirror_edge_tuple.has_value()) {
         auto one_ring_edges = m.get_one_ring_edges_for_vertex(collapse_edge.return_edge_tuple);
         for (auto& e : one_ring_edges) {
@@ -248,6 +249,7 @@ wmtk::TriMeshOperation::ExecuteReturnData AdaptiveTessellationPairedCollapseEdge
             }
         }
 
+        // TODO same thing. check the one_ring_edges direction
         auto mirror_one_ring_edges =
             m.get_one_ring_edges_for_vertex(collapse_mirror_edge.return_edge_tuple);
         for (auto& e : mirror_one_ring_edges) {
@@ -461,7 +463,7 @@ bool AdaptiveTessellation::collapse_edge_before(const Tuple& edge_tuple)
         vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].curve_id)
         return false;
 
-    double length3d = mesh_parameters.m_get_length(edge_tuple);
+    double length3d = get_length3d(edge_tuple);
     // enforce heuristic
     assert(length3d < 4. / 5. * mesh_parameters.m_quality_threshold);
 

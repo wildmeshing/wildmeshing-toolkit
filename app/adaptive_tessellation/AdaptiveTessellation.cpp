@@ -974,7 +974,7 @@ double AdaptiveTessellation::get_area_accuracy_error_per_face_triangle_matrix(
 
 double AdaptiveTessellation::get_area_accuracy_error(const Tuple& edge_tuple) const
 {
-    double length = 0.;
+    double error = 0.;
     double error1 = get_area_accuracy_error_per_face(edge_tuple);
     double error2 = 0.;
     auto tmp_tuple = edge_tuple.switch_face(*this);
@@ -983,7 +983,7 @@ double AdaptiveTessellation::get_area_accuracy_error(const Tuple& edge_tuple) co
     } else
         error2 = error1;
     if (mesh_parameters.m_split_absolute_error_metric) {
-        length = (error1 + error2) * get_length2d(edge_tuple);
+        error = (error1 + error2) * get_length2d(edge_tuple);
     } else {
         double e_before = error1 + error2;
         Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle;
@@ -1013,9 +1013,9 @@ double AdaptiveTessellation::get_area_accuracy_error(const Tuple& edge_tuple) co
             error_after_4 = error_after_2;
         }
         e_after = error_after_1 + error_after_2 + error_after_3 + error_after_4;
-        length = e_before - e_after;
+        error = e_before - e_after;
     }
-    return length;
+    return error;
 }
 
 void AdaptiveTessellation::get_nminfo_for_vertex(const Tuple& v, wmtk::NewtonMethodInfo& nminfo)

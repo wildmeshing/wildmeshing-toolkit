@@ -12,10 +12,12 @@ add_library(wmtk_adaptive_tessellation
 	Swap.cpp
 	Split.cpp
 	Smooth.cpp
+	Smooth.h
+	Collapse.h
 	AdaptiveTessellation.cpp
 	AdaptiveTessellation.h
 	Parameters.h
-	global_intersection.h
+	GlobalIntersection.h
 )
 add_library(wmtk::adaptive_tessellation ALIAS wmtk_adaptive_tessellation)
 
