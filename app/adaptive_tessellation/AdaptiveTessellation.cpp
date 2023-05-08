@@ -15,6 +15,7 @@
 #include <tracy/Tracy.hpp>
 #include <wmtk/utils/TriQualityUtils.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
+#include "global_intersection.h"
 using namespace wmtk;
 namespace adaptive_tessellation {
 // TODO change this to accomodate new error
@@ -1195,6 +1196,11 @@ void AdaptiveTessellation::mesh_improvement(int max_its)
             mesh_parameters.m_displacement);
         write_obj(
             mesh_parameters.m_output_folder + "/after_split_" + std::to_string(it) + "2d.obj");
+        displace_self_intersection_free(*this);
+        write_displaced_seamless_obj(
+            mesh_parameters.m_output_folder + "/after_split_" + std::to_string(it) +
+                "3d_intersectin_free.obj",
+            mesh_parameters.m_displacement);
 
         swap_all_edges();
         assert(invariants(get_faces()));

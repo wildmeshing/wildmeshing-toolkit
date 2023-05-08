@@ -35,7 +35,7 @@ bool AdaptiveTessellationSplitEdgeOperation::before(AdaptiveTessellation& m, con
     if (wmtk::TriMeshSplitEdgeOperation::before(m, t)) {
         if (m.vertex_attrs[t.vid(m)].curve_id != m.vertex_attrs[t.switch_vertex(m).vid(m)].curve_id)
             return false;
-        if (cnt % 100 == 0) {
+        if (false) {
             m.write_displaced_obj(
                 m.mesh_parameters.m_output_folder + fmt::format("/split_{:02d}_seams.obj", cnt),
                 m.mesh_parameters.m_displacement);
@@ -427,7 +427,7 @@ bool AdaptiveTessellationPairedSplitEdgeOperation::after(
     }
 
     // collision test
-    {
+    if constexpr (false) {
         std::map<size_t, Eigen::Vector3d> current_positions;
         std::map<size_t, Eigen::Vector3d> target_positions;
         const size_t& v12 = ret_data.tuple.switch_vertex(m).vid(m);

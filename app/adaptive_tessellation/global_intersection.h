@@ -95,4 +95,75 @@ inline bool has_intersection(const AdaptiveTessellation& mesh)
 
     return ipc::has_intersections(collisionMesh, vertices);
 }
+
+inline void displace_self_intersection_free(AdaptiveTessellation& mesh)
+{
+    // set all world positions according to the position map
+    Eigen::MatrixXd vertices_uv_with_seams;
+    Eigen::MatrixXi faces;
+    mesh.export_mesh(vertices_uv_with_seams, faces);
+
+    Eigen::MatrixXd vertices_on_position_map;
+    vertices_on_position_map.resize(vertices_uv_with_seams.rows(), 3);
+    Eigen::MatrixXd vertices_displaced;
+    vertices_displaced.resize(vertices_uv_with_seams.rows(), 3);
+    for (int i = 0; i < vertices_uv_with_seams.rows(); i++) {
+        const double& u = vertices_uv_with_seams(i, 0);
+        const double& v = vertices_uv_with_seams(i, 1);
+        vertices_on_position_map.row(i) = mesh.mesh_parameters.m_displacement->get_position(u, v);
+        vertices_displaced.row(i) = mesh.mesh_parameters.m_displacement->get(u, v);
+    }
+
+    mesh.remove_seams(vertices_on_position_map, faces);
+    mesh.remove_seams(vertices_displaced, faces);
+
+    Eigen::MatrixXd vertices_on_position_map_clean;
+    Eigen::MatrixXd vertices_displaced_clean;
+    Eigen::MatrixXi faces_clean;
+    Eigen::MatrixXi map_old_to_new_v_ids;
+    Eigen::MatrixXi map_new_to_old_v_ids;
+    igl::remove_unreferenced(
+        vertices_on_position_map,
+        faces,
+        vertices_on_position_map_clean,
+        faces_clean,
+        map_old_to_new_v_ids,
+        map_new_to_old_v_ids);
+
+    igl::remove_unreferenced(
+        vertices_displaced,
+        faces,
+        vertices_displaced_clean,
+        faces_clean,
+        map_old_to_new_v_ids);
+
+    // check for self intersections - if there are any, find edges that self intersect and split
+    // them until no more self intersections exist
+    Eigen::MatrixXi edges;
+    igl::edges(faces_clean, edges);
+    const ipc::CollisionMesh collisionMesh(vertices_on_position_map_clean, edges, faces_clean);
+    if (ipc::has_intersections(collisionMesh, vertices_on_position_map_clean)) {
+        // TODO ....
+    }
+
+    // move vertices towards displaced positions as far as possible
+    const double t0 = ipc::compute_collision_free_stepsize(
+        collisionMesh,
+        vertices_on_position_map_clean,
+        vertices_displaced_clean);
+
+    // move vertices
+    for (int i = 0; i < vertices_on_position_map_clean.rows(); i++) {
+        const Eigen::Vector3d& p0 = vertices_on_position_map_clean.row(i);
+        const Eigen::Vector3d& p1 = vertices_displaced_clean.row(i);
+        const Eigen::Vector3d p = (1 - t0) * p0 + t0 * p1;
+        mesh.vertex_attrs[map_new_to_old_v_ids(i)].pos_world = p0;
+    }
+    if (t0 == 1.0) {
+        return;
+    }
+
+    // move vertices one by one as far as possible
+    // TODO ....
+}
 } // namespace adaptive_tessellation
