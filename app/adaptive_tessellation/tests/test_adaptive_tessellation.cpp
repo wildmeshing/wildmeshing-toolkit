@@ -49,7 +49,7 @@ TEST_CASE("AABB")
 
     REQUIRE(ok);
     AdaptiveTessellation m;
-    m.create_mesh(V, F, {}, {});
+    m.create_mesh(V, F);
     m.set_projection();
 
     auto result = m.mesh_parameters.m_get_closest_point(Eigen::RowVector2d(-0.7, 0.6));
@@ -65,7 +65,8 @@ TEST_CASE("fixed corner")
     Eigen::MatrixXi F(1, 3);
     F.row(0) << 0, 1, 2;
     AdaptiveTessellation m;
-    m.create_mesh(V, F, {}, {});
+    m.create_mesh(V, F);
+    m.mesh_construct_boundaries(V, F, {}, {});
     for (auto v : m.get_vertices()) {
         REQUIRE(m.vertex_attrs[v.vid(m)].fixed);
     }
@@ -147,7 +148,7 @@ TEST_CASE("operations with boundary parameterization")
     F.row(0) << 0, 1, 2;
 
     AdaptiveTessellation m;
-    m.create_mesh(V, F, {}, {});
+    m.create_mesh(V, F);
     m.set_projection();
 
     auto displacement = [](const DScalar& u, const DScalar& v) -> DScalar {
@@ -234,7 +235,8 @@ TEST_CASE("autodiff vs finitediff")
     Eigen::MatrixXi F(1, 3);
     F.row(0) << 0, 1, 2;
     AdaptiveTessellation m;
-    m.create_mesh(V, F, {}, {});
+    m.create_mesh(V, F);
+    m.mesh_construct_boundaries(V, F, {}, {});
 
     auto displacement = [](const DScalar& u, const DScalar& v) -> DScalar {
         return DScalar(10 * u);
@@ -406,8 +408,6 @@ TEST_CASE("paired split")
     }
 }
 
-// check each seam edge if edge.vid(m) and edge.switch_vertex(m).vid(m) for the mirror edge are the
-// same.
 TEST_CASE("test mirror edge setup")
 {
     AdaptiveTessellation m;
@@ -415,12 +415,9 @@ TEST_CASE("test mirror edge setup")
     Eigen::MatrixXi F;
     std::filesystem::path input_mesh_path = "/home/yunfan/hemisphere.obj";
     m.create_paired_seam_mesh_with_offset(input_mesh_path.string(), UV, F);
-    // load 3d coordinates and connectivities for computing the offset and scaling
     Eigen::MatrixXd V3d;
     Eigen::MatrixXi F3d;
     igl::read_triangle_mesh(input_mesh_path.string(), V3d, F3d);
-    AdaptiveTessellation m_3d;
-    m_3d.create_mesh_debug(V3d, F3d);
     for (const auto& f : m.get_faces()) {
         size_t fi = f.fid(m);
         for (auto i = 0; i < 3; ++i) {
@@ -450,7 +447,68 @@ TEST_CASE("test mirror edge setup")
 }
 
 // TODO test get_mirror_edge and get_mirror_vertex
+TEST_CASE("get mirror")
+{
+    AdaptiveTessellation m;
+    Eigen::MatrixXd UV;
+    Eigen::MatrixXi F;
+    std::filesystem::path input_mesh_path = "/home/yunfan/hemisphere.obj";
+    m.create_paired_seam_mesh_with_offset(input_mesh_path.string(), UV, F);
+    Eigen::MatrixXd V3d;
+    Eigen::MatrixXi F3d;
+    igl::read_triangle_mesh(input_mesh_path.string(), V3d, F3d);
+    for (const auto& f : m.get_faces()) {
+        size_t fi = f.fid(m);
+        for (auto i = 0; i < 3; ++i) {
+            //          F(fi, lv1)    F(fj, lv1)
+            //          lv1\ \         -----------
+            //          /   \ \         \        /
+            //         /  fi \ \|     |\ \  fj  /
+            //        /       \         \ \    /
+            //       /_____lv2_\         \ \  /
+            //     F(fi,i)    F(fi,lv2)     F(fj, lv2)
+
+            auto lv1 = (i + 1) % 3;
+            auto lv2 = (i + 2) % 3;
+            REQUIRE(3 - lv1 - lv2 == i);
+            auto mirror_edge = m.face_attrs[fi].mirror_edges[i];
+            wmtk::TriMesh::Tuple tup = wmtk::TriMesh::Tuple(F(fi, lv1), i, fi, m);
+            REQUIRE(tup.vid(m) == F(fi, lv1));
+            if (mirror_edge.has_value()) {
+                auto fj = mirror_edge.value().fid(m);
+                REQUIRE(F(fi, lv1) != F(fj, lv1));
+                REQUIRE(F(fi, lv2) != F(fj, lv2));
+                REQUIRE(F3d(fi, lv1) == F3d(fj, lv1));
+                REQUIRE(F3d(fi, lv2) == F3d(fj, lv2));
+                REQUIRE(m.is_seam_edge(mirror_edge.value()));
+                REQUIRE(m.is_seam_edge(tup));
+                auto get_back_tup =
+                    m.face_attrs[fj].mirror_edges[mirror_edge.value().local_eid(m)].value();
+                auto mirror_edge_with_getter = m.get_oriented_mirror_edge(tup);
+                REQUIRE(mirror_edge_with_getter.vid(m) == F(fj, lv2));
+                REQUIRE(mirror_edge_with_getter.fid(m) == fj);
+                if (tup.is_ccw(m)) {
+                    REQUIRE(tup.vid(m) == get_back_tup.vid(m));
+                    REQUIRE(get_back_tup.vid(m) == F(fi, lv1));
+                    REQUIRE(mirror_edge_with_getter.is_ccw(m));
+                } else {
+                    REQUIRE(tup.vid(m) == get_back_tup.switch_vertex(m).vid(m));
+                    REQUIRE(get_back_tup.vid(m) == F(fi, lv2));
+                    REQUIRE(!mirror_edge_with_getter.is_ccw(m));
+                }
+                auto mirror_vertex_with_getter = m.get_mirror_vertex(tup);
+                REQUIRE(mirror_vertex_with_getter.vid(m) == F(fj, lv1));
+                REQUIRE(
+                    m.get_mirror_vertex(mirror_edge_with_getter).vid(m) ==
+                    tup.switch_vertex(m).vid(m));
+                REQUIRE(m.get_mirror_vertex(mirror_edge_with_getter).vid(m) == F(fi, lv2));
+            }
+        }
+    }
+}
 
 // TODO test set fixed for vertex that has more than 2 curveid
 
 // TODO add test for new boundary setup with seam edges (maybe should be in boundary testing)
+
+// TODO special case for link condition in seamed mesh. a tube with a seam edge in the middle
