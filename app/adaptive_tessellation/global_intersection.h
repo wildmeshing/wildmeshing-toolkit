@@ -157,7 +157,7 @@ inline void displace_self_intersection_free(AdaptiveTessellation& mesh)
         const Eigen::Vector3d& p0 = vertices_on_position_map_clean.row(i);
         const Eigen::Vector3d& p1 = vertices_displaced_clean.row(i);
         const Eigen::Vector3d p = (1 - t0) * p0 + t0 * p1;
-        mesh.vertex_attrs[map_new_to_old_v_ids(i)].pos_world = p0;
+        mesh.vertex_attrs[map_new_to_old_v_ids(i)].pos_world = p;
     }
     if (t0 == 1.0) {
         return;
