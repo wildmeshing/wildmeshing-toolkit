@@ -83,7 +83,8 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::after(
     for (auto& e : m.get_one_ring_edges_for_vertex(ret_data.tuple)) {
         if (m.is_seam_edge(e)) {
             wmtk::NewtonMethodInfo nminfo;
-            wmtk::TriMesh::Tuple mirror_v = m.get_mirror_vertex(e);
+            assert(e.switch_vertex(m).vid(m) == ret_data.tuple.vid(m));
+            wmtk::TriMesh::Tuple mirror_v = m.get_mirror_vertex(e.switch_vertex(m));
             mirror_vertices.emplace_back(mirror_v);
             // collect the triangles for invariants check
             for (auto& mirror_v_tri : m.get_one_ring_tris_for_vertex(mirror_v)) {

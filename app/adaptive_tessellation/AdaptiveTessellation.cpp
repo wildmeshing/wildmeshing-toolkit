@@ -70,6 +70,8 @@ void AdaptiveTessellation::set_parameters(
 /// @param v
 void AdaptiveTessellation::set_feature(Tuple& v)
 {
+    // default fixed is false
+    vertex_attrs[v.vid(*this)].fixed = false;
     // only set the feature if it is a boundary vertex
     assert(is_boundary_vertex(v));
     // get 3 vertices
@@ -87,10 +89,13 @@ void AdaptiveTessellation::set_feature(Tuple& v)
     // check if they are co linear. set fixed = true if not
     double costheta = ((p2 - p1).stableNormalized()).dot((p3 - p1).stableNormalized()); // cos theta
     double theta = std::acos(std::clamp<double>(costheta, -1, 1));
-    if (theta <= M_PI / 2)
-        vertex_attrs[v.vid(*this)].fixed = true;
-    else
-        vertex_attrs[v.vid(*this)].fixed = false;
+    if (theta <= M_PI / 2) vertex_attrs[v.vid(*this)].fixed = true;
+
+    // if it is a seam vertex and has more than one mirror verteices, set it as fixed
+    if (is_seam_vertex(v)) {
+        std::vector<Tuple> all_mirror_vertices = get_all_mirror_vertices(v); // contains v
+        if (all_mirror_vertices.size() > 2) vertex_attrs[v.vid(*this)].fixed = true;
+    }
 }
 
 // assuming the m_triwild_displacement in mesh_parameter has been set
@@ -1071,7 +1076,8 @@ std::pair<double, Eigen::Vector2d> AdaptiveTessellation::get_one_ring_energy(con
     for (auto& e : get_one_ring_edges_for_vertex(v)) {
         if (is_seam_edge(e)) {
             wmtk::NewtonMethodInfo nminfo;
-            wmtk::TriMesh::Tuple mirror_v = get_mirror_vertex(e);
+            assert(e.switch_vertex(*this).vid(*this) == v.vid(m));
+            wmtk::TriMesh::Tuple mirror_v = get_mirror_vertex(e.switch_vertex(*this));
             mirror_vertices.emplace_back(mirror_v);
             // collect the triangles for invariants check
             for (auto& mirror_v_tri : get_one_ring_tris_for_vertex(mirror_v)) {
@@ -1350,6 +1356,14 @@ bool AdaptiveTessellation::is_seam_edge(const TriMesh::Tuple& t) const
 {
     return face_attrs[t.fid(*this)].mirror_edges[t.local_eid(*this)].has_value();
 }
+bool AdaptiveTessellation::is_seam_vertex(const TriMesh::Tuple& t) const
+{
+    // it is seam vertex if it's incident to a seam edge
+    for (auto& e : get_one_ring_edges_for_vertex(t)) {
+        if (is_seam_edge(e)) return true;
+    }
+    return false;
+}
 
 void AdaptiveTessellation::set_mirror_edge_data(
     const TriMesh::Tuple& primary_t,
@@ -1395,6 +1409,37 @@ TriMesh::Tuple AdaptiveTessellation::get_mirror_vertex(const TriMesh::Tuple& t) 
     assert(is_seam_edge(t));
     TriMesh::Tuple mirror_edge = get_oriented_mirror_edge(t);
     return mirror_edge.switch_vertex(*this);
+}
+
+// return a vector of mirror vertices. store v itself at index 0 of the returned vector
+std::vector<TriMesh::Tuple> AdaptiveTessellation::get_all_mirror_vertices(
+    const TriMesh::Tuple& v) const
+{
+    assert(is_seam_vertex(v));
+    std::vector<TriMesh::Tuple> mirror_vertices;
+    mirror_vertices.emplace_back(v);
+    std::vector<TriMesh::Tuple> original_vertex_seam_edge;
+    // e is pointing towards v
+    for (auto& e : get_one_ring_edges_for_vertex(v)) {
+        if (is_seam_edge(e)) original_vertex_seam_edge.emplace_back(e);
+    }
+    // every seam vertex in uv should have at most 2 seam edges
+    assert(original_vertex_seam_edge.size() <= 2);
+    TriMesh::Tuple e = original_vertex_seam_edge[0];
+    // case 1
+    //    --seam-- o --seam----
+    //  --seam--o  o  o--seam--
+    //         /  / \  \ 
+    //    seam seam seam seam
+    //      /  /      \   \ 
+    // case 2
+    // --boundary-- o  o  o-- boundary--
+    //             /  / \  \ 
+    //        seam seam seam seam
+    //           /  /      \  \ 
+
+    assert(mirror_vertices.size() > 1);
+    return mirror_vertices;
 }
 
 } // namespace adaptive_tessellation

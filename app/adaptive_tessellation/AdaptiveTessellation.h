@@ -233,9 +233,12 @@ public:
     TriMesh::Tuple get_oriented_mirror_edge(const TriMesh::Tuple& t) const;
     // given a seam edge with vid v retrieve the correpsonding vertex on the mirror edge
     TriMesh::Tuple get_mirror_vertex(const TriMesh::Tuple& t) const;
+    // return a vector of mirror vertices. store v itself at index 0 of the returned vector
+    std::vector<TriMesh::Tuple> get_all_mirror_vertices(const TriMesh::Tuple& v) const;
     // set primary_t's mirror edge data to a ccw ordered mirror_edge
     void set_mirror_edge_data(const TriMesh::Tuple& primary_t, const TriMesh::Tuple& mirror_edge);
     bool is_seam_edge(const TriMesh::Tuple& t) const;
+    bool is_seam_vertex(const TriMesh::Tuple& t) const;
     // unit test functions
     inline void create_mesh_debug(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F)
     {
