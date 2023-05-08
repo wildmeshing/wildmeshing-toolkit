@@ -92,6 +92,7 @@ void test_boundary_parameterization(const MeshType& mesh, int expected_num_curve
     auto curve_to_mesh = [&](int curve_id) {
         MeshType seams;
         const auto& positions = boundary.positions(curve_id);
+        REQUIRE(positions.size() >= 2);
         seams.add_vertices(positions.size(), [&](Index v, lagrange::span<Scalar> p) {
             p[0] = positions[v].x();
             p[1] = positions[v].y();

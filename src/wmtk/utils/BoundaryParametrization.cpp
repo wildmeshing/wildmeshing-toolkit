@@ -69,8 +69,6 @@ CurveNetwork split_loops(
     std::map<LoopPair, int> loop_pair_to_color;
     std::vector<std::vector<int>> edge_colors(loops.size());
 
-    logger().info("Num loops: {}", loops.size());
-
     auto color_from_edge = [&](int v0, int v1, int default_color) {
         Edge e(v0, v1);
         auto it = edge_to_seam.find(e);
@@ -208,17 +206,17 @@ Boundary::ParameterizedCurves parameterize_curves(
         double len = 0.; // cumulative length till current vertex
         arclengths.emplace_back(len);
         for (size_t i = 0; i < curve.size(); ++i) {
-            if (!input.is_closed[curve_id] && i == curve.size() - 1) continue;
             const int v0 = curve[i];
-            const int v1 = curve[(i + 1) % curve.size()];
             auto p0 = V.row(v0).leftCols(2);
-            auto p1 = V.row(v1).leftCols(2);
             positions.emplace_back(p0);
+            if (!input.is_closed[curve_id] && i == curve.size() - 1) continue;
+            const int v1 = curve[(i + 1) % curve.size()];
+            auto p1 = V.row(v1).leftCols(2);
             len += (p1 - p0).stableNorm();
             arclengths.emplace_back(len);
         }
 
-        assert(arclengths.size() == positions.size() + 1);
+        assert(arclengths.size() == positions.size() + (input.is_closed[curve_id] ? 1 : 0));
         result.positions.emplace_back(std::move(positions));
         result.arclengths.emplace_back(std::move(arclengths));
         result.periodic.emplace_back(input.is_closed[curve_id]);
