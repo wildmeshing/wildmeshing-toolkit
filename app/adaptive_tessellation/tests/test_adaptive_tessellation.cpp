@@ -452,7 +452,7 @@ TEST_CASE("get mirror")
     AdaptiveTessellation m;
     Eigen::MatrixXd UV;
     Eigen::MatrixXi F;
-    std::filesystem::path input_mesh_path = "/home/yunfan/hemisphere.obj";
+    std::filesystem::path input_mesh_path = WMT_DATA_DIR "/hemisphere.obj";
     m.create_paired_seam_mesh_with_offset(input_mesh_path.string(), UV, F);
     Eigen::MatrixXd V3d;
     Eigen::MatrixXi F3d;
