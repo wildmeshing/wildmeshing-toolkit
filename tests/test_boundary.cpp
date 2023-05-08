@@ -120,10 +120,13 @@ void test_boundary_parameterization(const MeshType& mesh, int expected_num_curve
 
 TEST_CASE("Boundary Parameterization", "[utils][boundary]")
 {
-    // test_boundary_parameterization(
-    //     lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMT_DATA_DIR "/blub.obj"),
-    //     18);
+    test_boundary_parameterization(
+        lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMT_DATA_DIR "/blub.obj"),
+        18);
     test_boundary_parameterization(
         lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMT_DATA_DIR "/blub_open.obj"),
         15);
+    test_boundary_parameterization(
+        lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMT_DATA_DIR "/hemisphere.obj"),
+        18);
 }

@@ -69,6 +69,8 @@ CurveNetwork split_loops(
     std::map<LoopPair, int> loop_pair_to_color;
     std::vector<std::vector<int>> edge_colors(loops.size());
 
+    logger().info("Num loops: {}", loops.size());
+
     auto color_from_edge = [&](int v0, int v1, int default_color) {
         Edge e(v0, v1);
         auto it = edge_to_seam.find(e);
@@ -120,11 +122,17 @@ CurveNetwork split_loops(
                 std::rotate(colors.begin(), colors.begin() + m, colors.end());
             }
 
+            // Duplicate the first point to the back of the loop, so that we can split the loop.
+            // Don't duplicate the color, we have one color per edge, so now that the loop is not
+            // periodic, we have loop.size() == colors.size() + 1.
+            loop.push_back(loop.front());
+
             // Now we can split safely each continuous chunk...
             it = std::adjacent_find(colors.begin(), colors.end(), std::not_equal_to<>());
             while (it != colors.end()) {
                 std::ptrdiff_t m = std::distance(colors.begin(), it) + 1;
-                CurveNetwork::Curve path(loop.begin(), loop.begin() + m);
+                la_debug_assert(m < colors.size());
+                CurveNetwork::Curve path(loop.begin(), loop.begin() + m + 1);
                 loop.erase(loop.begin(), loop.begin() + m);
                 colors.erase(colors.begin(), colors.begin() + m);
                 result.curves.emplace_back(std::move(path));
@@ -158,6 +166,7 @@ Boundary::ParameterizedCurves parameterize_curves(
 
     for (int curve_id = 0; curve_id < static_cast<int>(input.curves.size()); ++curve_id) {
         auto curve = input.curves[curve_id];
+        la_debug_assert(curve.size() > 1);
 
         // First pass on the curve to find the parent curve id
         int parent_id = curve_id;
@@ -199,6 +208,7 @@ Boundary::ParameterizedCurves parameterize_curves(
         double len = 0.; // cumulative length till current vertex
         arclengths.emplace_back(len);
         for (size_t i = 0; i < curve.size(); ++i) {
+            if (!input.is_closed[curve_id] && i == curve.size() - 1) continue;
             const int v0 = curve[i];
             const int v1 = curve[(i + 1) % curve.size()];
             auto p0 = V.row(v0).leftCols(2);
