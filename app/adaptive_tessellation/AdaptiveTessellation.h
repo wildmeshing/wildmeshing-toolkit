@@ -83,8 +83,13 @@ public:
     };
     tbb::enumerable_thread_specific<InfoCache> cache;
 
-    // seam vertex coloring
+    //////// ======= seam vertex coloring ========
+    // both coloring mappings contains the regular seam vertex and v shape seams vertex
+    // mapping is built at loading and is not maintained during the mesh operations
+    // since seam vertices at t-junctions should not be modified,
+    // those colorings do not need updates
     std::unordered_map<size_t, int> uv_index_to_color;
+    // each color can have 1 vertex, 2 vertices, or 3 above vertices
     std::vector<std::vector<size_t>> color_to_uv_indices;
 
 public:

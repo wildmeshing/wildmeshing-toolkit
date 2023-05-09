@@ -514,7 +514,45 @@ TEST_CASE("get mirror")
 }
 
 // TODO test set fixed for vertex that has more than 2 curveid
+// all vertices that have coloring that have more than 2 vertices should be fixed
 
-// TODO add test for new boundary setup with seam edges (maybe should be in boundary testing)
+
+// TODO test uv-index to color mapping. test color to uv-index
+TEST_CASE("uv-index and coloring test")
+{
+    AdaptiveTessellation m;
+    Eigen::MatrixXd UV;
+    Eigen::MatrixXi F;
+    std::filesystem::path input_mesh_path = WMT_DATA_DIR "/hemisphere.obj";
+    m.create_paired_seam_mesh_with_offset(input_mesh_path.string(), UV, F);
+    Eigen::MatrixXd V3d;
+    Eigen::MatrixXi F3d;
+    igl::read_triangle_mesh(input_mesh_path.string(), V3d, F3d);
+    for (auto& v : m.get_vertices()) {
+        // iterate through vertices
+        int color = m.uv_index_to_color[v.vid(m)];
+        if (m.is_seam_vertex(v)) {
+            for (auto& e : m.get_one_ring_edges_for_vertex(v)) {
+                if (m.is_seam_edge(e)) {
+                    REQUIRE(e.switch_vertex(m).vid(m) == v.vid(m));
+                    wmtk::TriMesh::Tuple mirror_vertex_with_getter =
+                        m.get_mirror_vertex(e.switch_vertex(m));
+                    REQUIRE(m.uv_index_to_color[mirror_vertex_with_getter.vid(m)] == color);
+                    REQUIRE(
+                        std::find(
+                            m.color_to_uv_indices[color].begin(),
+                            m.color_to_uv_indices[color].end(),
+                            v.vid(m)) != m.color_to_uv_indices[color].end());
+                    REQUIRE(
+                        std::find(
+                            m.color_to_uv_indices[color].begin(),
+                            m.color_to_uv_indices[color].end(),
+                            mirror_vertex_with_getter.vid(m)) !=
+                        m.color_to_uv_indices[color].end());
+                }
+            }
+        }
+    }
+}
 
 // TODO special case for link condition in seamed mesh. a tube with a seam edge in the middle
