@@ -89,7 +89,10 @@ public:
 
     std::pair<int, int> uv_to_ij(const Eigen::Vector2d& v, double& t) const;
 
-    double upper_bound(int curve_id) const { return m_curves.arclengths[curve_id].back(); }
+    double upper_bound(int curve_id) const
+    {
+        return m_curves.arclengths[parent_curve(curve_id)].back();
+    }
 
     bool is_periodic(int curve_id) const { return m_curves.periodic[curve_id]; }
 
