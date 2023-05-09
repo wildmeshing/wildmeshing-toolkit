@@ -2,8 +2,10 @@
 
 #include <wmtk/quadrature/ClippedQuadrature.h>
 #include <wmtk/quadrature/TriangleQuadrature.h>
+#include <wmtk/utils/Sampling.h>
 
 #include <tbb/enumerable_thread_specific.h>
+#include <tbb/parallel_for.h>
 
 namespace wmtk {
 
@@ -132,21 +134,33 @@ double get_error_per_triangle_exact(
 
 struct TextureIntegral::Cache
 {
+public:
+    Cache(std::array<wmtk::SamplingBicubic, 3> samplers_)
+        : samplers(std::move(samplers_))
+    {}
+
+public:
     // Data for exact error computation
     tbb::enumerable_thread_specific<QuadratureCache> quadrature_cache;
+    std::array<wmtk::SamplingBicubic, 3> samplers;
 };
 
 TextureIntegral::TextureIntegral(std::array<wmtk::Image, 3> data)
     : m_data(std::move(data))
-    , m_cache(lagrange::make_value_ptr<Cache>())
+    , m_cache(lagrange::make_value_ptr<Cache>(std::array<wmtk::SamplingBicubic, 3>{
+          SamplingBicubic(m_data[0]),
+          SamplingBicubic(m_data[1]),
+          SamplingBicubic(m_data[2])}))
 {}
+
+TextureIntegral::~TextureIntegral() = default;
 
 void TextureIntegral::get_error_per_triangle(
     lagrange::span<const std::array<float, 6>> input_triangles,
     lagrange::span<float> output_errors)
 {
     assert(input_triangles.size() == output_errors.size());
-    for (size_t i = 0; i < input_triangles.size(); i++) {
+    tbb::parallel_for(size_t(0), input_triangles.size(), [&](size_t i) {
         Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle;
         triangle.row(0) << input_triangles[i][0], input_triangles[i][1];
         triangle.row(1) << input_triangles[i][2], input_triangles[i][3];
@@ -156,9 +170,13 @@ void TextureIntegral::get_error_per_triangle(
             triangle,
             m_cache->quadrature_cache,
             [&](double u, double v) -> Eigen::Matrix<double, 3, 1> {
-                return Eigen::Matrix<double, 3, 1>(u, v, 0);
+                Eigen::Matrix<double, 3, 1> displaced_position;
+                for (auto i = 0; i < 3; ++i) {
+                    displaced_position[i] = m_cache->samplers[i].sample(u, v);
+                }
+                return displaced_position;
             });
-    }
+    });
 }
 
 void TextureIntegral::get_integral_per_triangle(

@@ -12,6 +12,7 @@ class TextureIntegral
 {
 public:
     TextureIntegral(std::array<wmtk::Image, 3> data);
+    ~TextureIntegral();
 
     TextureIntegral(TextureIntegral&&) = delete;
     TextureIntegral& operator=(TextureIntegral&&) = delete;
@@ -37,7 +38,7 @@ public:
     /// The "error" function is then defined as the integral of the distance between q_img(u, v) and
     /// q_tri(u, v) over the triangle f:
     ///
-    /// error(f) = ∫_{u,v \in f} ‖q_tri(u, v) - q_img(u, v)‖ du dv
+    /// error(f) = ∫_{u,v \in f} ‖q_tri(u, v) - q_img(u, v)‖^2 du dv
     ///
     /// @param[in]  input_triangles  UV coordinates of each input triangle corners (u0, v0, u1, v1,
     ///                              u2, v2).

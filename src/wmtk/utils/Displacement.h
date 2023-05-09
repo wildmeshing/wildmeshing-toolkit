@@ -329,11 +329,11 @@ public:
     }
     Eigen::Matrix<double, 3, 1> get(double u, double v) const
     {
-        double z = 3 * m_sampler->sample(u, v);
+        double z = m_sampler->sample(u, v);
         Eigen::Matrix<double, 3, 1> displace_3d;
         for (auto i = 0; i < 3; i++) {
             double p = m_position_sampler[i]->sample(u, v);
-            double d = m_normal_sampler[i]->sample(u, v) - 0.5;
+            double d = 2.0 * m_normal_sampler[i]->sample(u, v) - 1.0;
             displace_3d(i, 0) = p * m_normalization_scale - m_normalization_offset(i, 0) + z * d;
         }
         return displace_3d;
@@ -341,11 +341,11 @@ public:
 
     Eigen::Matrix<DScalar, 3, 1> get(const DScalar& u, const DScalar& v) const
     {
-        DScalar z = 3 * m_sampler->sample(u, v);
+        DScalar z = m_sampler->sample(u, v);
         Eigen::Matrix<DScalar, 3, 1> displace_3d;
         for (auto i = 0; i < 3; i++) {
             DScalar p = m_position_sampler[i]->sample(u, v);
-            DScalar d = m_normal_sampler[i]->sample(u, v) - 0.5;
+            DScalar d = 2.0 * m_normal_sampler[i]->sample(u, v) - 1.0;
             displace_3d(i, 0) = p * m_normalization_scale - m_normalization_offset(i, 0) + z * d;
         }
         return displace_3d;

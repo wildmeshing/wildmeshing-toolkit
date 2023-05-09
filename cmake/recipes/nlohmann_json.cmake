@@ -17,6 +17,7 @@ FetchContent_MakeAvailable(nlohmann_json)
 
 add_library(nlohmann_json INTERFACE)
 add_library(nlohmann_json::nlohmann_json ALIAS nlohmann_json)
+target_compile_features(nlohmann_json INTERFACE cxx_std_17)
 
 include(GNUInstallDirs)
 target_include_directories(nlohmann_json INTERFACE
