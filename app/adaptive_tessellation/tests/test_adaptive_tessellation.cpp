@@ -446,7 +446,6 @@ TEST_CASE("test mirror edge setup")
     }
 }
 
-// TODO test get_mirror_edge and get_mirror_vertex
 TEST_CASE("get mirror")
 {
     AdaptiveTessellation m;
@@ -476,16 +475,23 @@ TEST_CASE("get mirror")
             REQUIRE(tup.vid(m) == F(fi, lv1));
             if (mirror_edge.has_value()) {
                 auto fj = mirror_edge.value().fid(m);
-                REQUIRE(F(fi, lv1) != F(fj, lv1));
-                REQUIRE(F(fi, lv2) != F(fj, lv2));
-                REQUIRE(F3d(fi, lv1) == F3d(fj, lv1));
-                REQUIRE(F3d(fi, lv2) == F3d(fj, lv2));
+                int lvj1 = -1;
+                int lvj2 = -1;
+                for (int i = 0; i < 3; i++) {
+                    if (F3d(fj, i) == F3d(fi, lv1)) lvj1 = i;
+                    if (F3d(fj, i) == F3d(fi, lv2)) lvj2 = i;
+                }
+
+                REQUIRE((F(fi, lv1) != F(fj, lvj1) || F(fi, lv2) != F(fj, lvj2)));
+                REQUIRE(F3d(fi, lv1) == F3d(fj, lvj1));
+                REQUIRE(F3d(fi, lv2) == F3d(fj, lvj2));
+
                 REQUIRE(m.is_seam_edge(mirror_edge.value()));
                 REQUIRE(m.is_seam_edge(tup));
                 auto get_back_tup =
                     m.face_attrs[fj].mirror_edges[mirror_edge.value().local_eid(m)].value();
                 auto mirror_edge_with_getter = m.get_oriented_mirror_edge(tup);
-                REQUIRE(mirror_edge_with_getter.vid(m) == F(fj, lv2));
+                if (lvj2 != -1) REQUIRE(mirror_edge_with_getter.vid(m) == F(fj, lvj2));
                 REQUIRE(mirror_edge_with_getter.fid(m) == fj);
                 if (tup.is_ccw(m)) {
                     REQUIRE(tup.vid(m) == get_back_tup.vid(m));
@@ -497,7 +503,7 @@ TEST_CASE("get mirror")
                     REQUIRE(!mirror_edge_with_getter.is_ccw(m));
                 }
                 auto mirror_vertex_with_getter = m.get_mirror_vertex(tup);
-                REQUIRE(mirror_vertex_with_getter.vid(m) == F(fj, lv1));
+                REQUIRE(mirror_vertex_with_getter.vid(m) == F(fj, lvj1));
                 REQUIRE(
                     m.get_mirror_vertex(mirror_edge_with_getter).vid(m) ==
                     tup.switch_vertex(m).vid(m));
