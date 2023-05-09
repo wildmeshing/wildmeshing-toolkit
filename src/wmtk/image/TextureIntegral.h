@@ -1,6 +1,7 @@
 #pragma once
 
 #include <lagrange/utils/span.h>
+#include <lagrange/utils/value_ptr.h>
 #include <wmtk/utils/Image.h>
 
 #include <array>
@@ -9,9 +10,6 @@ namespace wmtk {
 
 class TextureIntegral
 {
-protected:
-    std::array<wmtk::Image, 3> m_data;
-
 public:
     TextureIntegral(std::array<wmtk::Image, 3> data);
 
@@ -47,8 +45,8 @@ public:
     ///                              each input triangle.
     ///
     void get_error_per_triangle(
-        lagrange::span<const std::array<double, 6>> input_triangles,
-        lagrange::span<double> output_errors);
+        lagrange::span<const std::array<float, 6>> input_triangles,
+        lagrange::span<float> output_errors);
 
     ///
     /// Computes the integral of the input texture over each input UV triangle.
@@ -63,8 +61,13 @@ public:
     ///                               input triangle.
     ///
     void get_integral_per_triangle(
-        lagrange::span<const std::array<double, 6>> input_triangles,
-        lagrange::span<std::array<double, 3>> output_integrals);
+        lagrange::span<const std::array<float, 6>> input_triangles,
+        lagrange::span<std::array<float, 3>> output_integrals);
+
+private:
+    struct Cache;
+    std::array<wmtk::Image, 3> m_data;
+    lagrange::value_ptr<Cache> m_cache;
 };
 
 } // namespace wmtk
