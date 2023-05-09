@@ -93,6 +93,9 @@ public:
 
     bool is_periodic(int curve_id) const { return m_curves.periodic[curve_id]; }
 
+    size_t num_curves() const { return m_curves.arclengths.size(); }
+
+protected:
     const std::vector<Eigen::Vector2d>& positions(int curve_id) const
     {
         return m_curves.positions[curve_id];
@@ -102,8 +105,6 @@ public:
     {
         return m_curves.arclengths[curve_id];
     }
-
-    size_t num_curves() const { return m_curves.arclengths.size(); }
 
     int parent_curve(int curve_id) const { return m_curves.parent_curve[curve_id]; }
 };
