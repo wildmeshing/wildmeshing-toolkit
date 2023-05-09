@@ -75,8 +75,10 @@ void AdaptiveTessellation::set_fixed()
             continue;
         }
         // set the first and last vertex as fixed
-        auto uv_first = mesh_parameters.m_boundary.positions(curve_id).front();
-        auto uv_last = mesh_parameters.m_boundary.positions(curve_id).back();
+        auto uv_first = mesh_parameters.m_boundary.t_to_uv(curve_id, 0.);
+        auto uv_last = mesh_parameters.m_boundary.t_to_uv(
+            curve_id,
+            mesh_parameters.m_boundary.upper_bound(curve_id));
         // find the closest points to the uv_first and uv_last
         double dist_first = std::numeric_limits<double>::infinity();
         double dist_last = std::numeric_limits<double>::infinity();
@@ -422,7 +424,7 @@ void AdaptiveTessellation::create_paired_seam_mesh_with_offset(
                             F(fi, lvi1)) == color_to_uv_indices[current_color].end())
                         color_to_uv_indices[current_color].emplace_back(F(fi, lvi1));
                     else
-                        color_to_uv_indices.emplace_back(F(fi, lvi1));
+                        color_to_uv_indices.emplace_back(1, F(fi, lvi1));
                     for (auto& e_3d : m_3d.get_one_ring_edges_for_vertex(edge1_3d)) {
                         if (!e_3d.switch_face(m_3d).has_value()) {
                             // Boundary edge, skipping...
@@ -1531,7 +1533,7 @@ std::vector<TriMesh::Tuple> AdaptiveTessellation::get_all_mirror_vertices(const 
     return ret_vertices;
 }
 
-// while loop
+// get all mirror_vids using navigation
 std::vector<size_t> AdaptiveTessellation::get_all_mirror_vids(const TriMesh::Tuple& v)
 {
     std::vector<size_t> ret_vertices_vid;
@@ -1544,7 +1546,7 @@ std::vector<size_t> AdaptiveTessellation::get_all_mirror_vids(const TriMesh::Tup
         auto e = queue.front();
         queue.pop();
         if (is_seam_edge(e)) {
-            auto mirror_v = get_mirror_vertex(e);
+            auto mirror_v = get_mirror_vertex(e.switch_vertex(*this));
             if (std::find(ret_vertices_vid.begin(), ret_vertices_vid.end(), mirror_v.vid(*this)) ==
                 ret_vertices_vid.end()) {
                 ret_vertices_vid.emplace_back(mirror_v.vid(*this));
