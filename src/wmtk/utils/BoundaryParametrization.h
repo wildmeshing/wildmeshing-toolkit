@@ -98,6 +98,14 @@ public:
 
     size_t num_curves() const { return m_curves.arclengths.size(); }
 
+    // ==== debug unit tests ====
+    double get_t_at_x(int curve_id, int x) const { return m_curves.arclengths[curve_id][x]; }
+    Eigen::Vector2d get_position_at_x(int curve_id, int x) const
+    {
+        return m_curves.positions[curve_id][x];
+    }
+    double curve_size(int curve_id) const { return m_curves.arclengths[curve_id].size(); }
+
 protected:
     const std::vector<Eigen::Vector2d>& positions(int curve_id) const
     {

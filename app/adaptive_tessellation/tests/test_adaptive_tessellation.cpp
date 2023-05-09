@@ -86,12 +86,12 @@ TEST_CASE("boundary parametrization")
 
     REQUIRE(bnd.num_curves() == 1);
 
-    REQUIRE(bnd.arclengths(0).size() == 4);
+    REQUIRE(bnd.curve_size(0) == 4);
 
-    REQUIRE(bnd.arclengths(0)[0] == 0);
-    REQUIRE(bnd.arclengths(0)[1] == 10);
-    REQUIRE(bnd.arclengths(0)[2] == 10 + 10 * sqrt(2));
-    REQUIRE(bnd.arclengths(0)[3] == 10 + 10 + 10 * sqrt(2));
+    REQUIRE(bnd.get_t_at_x(0, 0) == 0);
+    REQUIRE(bnd.get_t_at_x(0, 1) == 10);
+    REQUIRE(bnd.get_t_at_x(0, 2) == 10 + 10 * sqrt(2));
+    REQUIRE(bnd.get_t_at_x(0, 3) == 10 + 10 + 10 * sqrt(2));
 
     double t;
 
@@ -515,7 +515,7 @@ TEST_CASE("get mirror")
 
 // TODO test set fixed for vertex that has more than 2 curveid
 // all vertices that have coloring that have more than 2 vertices should be fixed
-TEST_CASE("test curve fixed")
+TEST_CASE("test curve fixed get_all_mirror_vids")
 {
     AdaptiveTessellation m;
     Eigen::MatrixXd UV;
@@ -525,14 +525,30 @@ TEST_CASE("test curve fixed")
     m.set_fixed();
     for (auto i = 0; i < m.vert_capacity(); ++i) {
         if (m.color_to_uv_indices[m.uv_index_to_color[i]].size() > 2) {
-            // REQUIRE(m.vertex_attrs[i].fixed);
+            REQUIRE(m.vertex_attrs[i].fixed);
         }
     }
 
     auto uv_last =
-        m.mesh_parameters.m_boundary.t_to_uv(9, m.mesh_parameters.m_boundary.arclengths(9).back());
-    REQUIRE(m.mesh_parameters.m_boundary.positions(9).size() == 2);
-    REQUIRE((uv_last - m.mesh_parameters.m_boundary.positions(9).back()).squaredNorm() < 1e-5);
+        m.mesh_parameters.m_boundary.t_to_uv(9, m.mesh_parameters.m_boundary.upper_bound(9));
+    REQUIRE(m.mesh_parameters.m_boundary.curve_size(9) == 2);
+    REQUIRE((uv_last - m.mesh_parameters.m_boundary.get_position_at_x(9, 1)).squaredNorm() < 1e-5);
+
+    // test for get_all_mirror_vids
+    for (auto i = 0; i < m.vert_capacity(); ++i) {
+        if (m.color_to_uv_indices[m.uv_index_to_color[i]].size() > 2) {
+            REQUIRE(m.vertex_attrs[i].fixed);
+            REQUIRE(m.tuple_from_vertex(i).is_valid(m));
+            auto vector_vids = m.get_all_mirror_vids(m.tuple_from_vertex(i));
+            for (auto vid : vector_vids) {
+                REQUIRE(
+                    std::find(
+                        m.color_to_uv_indices[m.uv_index_to_color[i]].begin(),
+                        m.color_to_uv_indices[m.uv_index_to_color[i]].end(),
+                        vid) != m.color_to_uv_indices[m.uv_index_to_color[i]].end());
+            }
+        }
+    }
 }
 
 // TODO test uv-index to color mapping. test color to uv-index
