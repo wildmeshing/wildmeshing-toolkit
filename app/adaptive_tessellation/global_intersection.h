@@ -167,13 +167,31 @@ inline void displace_self_intersection_free(AdaptiveTessellation& mesh)
         return;
     }
 
-    // move vertices one by one as far as possible
+    // move only half the possible distance and iterate a few times
+    for (int r = 0; r < 4; ++r) {
+        for (int i = 0; i < vertices_non_intersecting.rows(); i++) {
+            Eigen::MatrixXd buf = vertices_non_intersecting;
+            buf.row(i) = vertices_target.row(i);
+            const double t =
+                0.5 *
+                ipc::compute_collision_free_stepsize(collisionMesh, vertices_non_intersecting, buf);
+
+            const Eigen::Vector3d& p0 = vertices_non_intersecting.row(i);
+            const Eigen::Vector3d& p1 = vertices_target.row(i);
+            const Eigen::Vector3d p = (1 - t) * p0 + t * p1;
+
+
+            vertices_non_intersecting.row(i) = p;
+            mesh.vertex_attrs[map_new_to_old_v_ids(i)].pos_world = p;
+        }
+    }
+
+    // move vertices as far as possible
     for (int i = 0; i < vertices_non_intersecting.rows(); i++) {
         Eigen::MatrixXd buf = vertices_non_intersecting;
         buf.row(i) = vertices_target.row(i);
         const double t =
             ipc::compute_collision_free_stepsize(collisionMesh, vertices_non_intersecting, buf);
-
 
         const Eigen::Vector3d& p0 = vertices_non_intersecting.row(i);
         const Eigen::Vector3d& p1 = vertices_target.row(i);
