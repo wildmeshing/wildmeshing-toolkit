@@ -89,14 +89,21 @@ void test_boundary_parameterization(const MeshType& mesh, int expected_num_curve
     wmtk::Boundary boundary;
     boundary.construct_boundaries(uv_vertices, uv_facets.cast<int>(), E0, E1);
 
-    auto curve_to_mesh = [&](int curve_id) {
+    auto curve_to_mesh = [&](int curve_id, bool parametrized = false) {
         MeshType seams;
         const auto& positions = boundary.positions(curve_id);
         REQUIRE(positions.size() >= 2);
         seams.add_vertices(positions.size(), [&](Index v, lagrange::span<Scalar> p) {
-            p[0] = positions[v].x();
-            p[1] = positions[v].y();
-            p[2] = 0;
+            if (parametrized) {
+                auto result = boundary.t_to_uv(curve_id, boundary.arclengths(curve_id)[v]);
+                p[0] = result.x();
+                p[1] = result.y();
+                p[2] = 0;
+            } else {
+                p[0] = positions[v].x();
+                p[1] = positions[v].y();
+                p[2] = 0;
+            }
         });
         seams.add_triangles(positions.size() - 1, [&](Index f, lagrange::span<Index> t) {
             t[0] = f;
@@ -110,10 +117,35 @@ void test_boundary_parameterization(const MeshType& mesh, int expected_num_curve
     REQUIRE(boundary.num_curves() == expected_num_curves);
 
     for (int curve_id = 0; curve_id < static_cast<int>(boundary.num_curves()); ++curve_id) {
+        auto parent_id = boundary.parent_curve(curve_id);
         auto curve_mesh = curve_to_mesh(curve_id);
-        auto parent_mesh = curve_to_mesh(boundary.parent_curve(curve_id));
+        auto param_mesh = curve_to_mesh(curve_id, true);
+        auto parent_mesh = curve_to_mesh(parent_id);
         // lagrange::io::save_mesh(fmt::format("seam_{}.obj", curve_id), curve_mesh);
+        // lagrange::io::save_mesh(fmt::format("seam_{}_t.obj", curve_id), param_mesh);
         // lagrange::io::save_mesh(fmt::format("seam_{}_parent.obj", curve_id), parent_mesh);
+
+        for (size_t i = 0; i < boundary.positions(curve_id).size(); ++i) {
+            auto expected = boundary.positions(curve_id)[i];
+            auto result = boundary.t_to_uv(curve_id, boundary.arclengths(parent_id)[i]);
+            for (size_t k = 0; k < expected.size(); ++k) {
+                CAPTURE(curve_id, i, k);
+                REQUIRE_THAT(
+                    result[k],
+                    Catch::Matchers::WithinRel(expected[k], 1e-5) ||
+                        Catch::Matchers::WithinAbs(expected[k], 1e-5));
+            }
+        }
+        if (boundary.is_periodic(curve_id)) {
+            auto expected = boundary.positions(curve_id).front();
+            auto result = boundary.t_to_uv(curve_id, boundary.arclengths(parent_id).back());
+            for (size_t k = 0; k < expected.size(); ++k) {
+                REQUIRE_THAT(
+                    result[k],
+                    Catch::Matchers::WithinRel(expected[k], 1e-5) ||
+                        Catch::Matchers::WithinAbs(expected[k], 1e-5));
+            }
+        }
     }
 }
 
@@ -121,13 +153,22 @@ void test_boundary_parameterization(const MeshType& mesh, int expected_num_curve
 
 TEST_CASE("Boundary Parameterization", "[utils][boundary]")
 {
-    test_boundary_parameterization(
-        lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMT_DATA_DIR "/blub.obj"),
-        18);
-    test_boundary_parameterization(
-        lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMT_DATA_DIR "/blub_open.obj"),
-        15);
-    test_boundary_parameterization(
-        lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMT_DATA_DIR "/hemisphere.obj"),
-        39);
+    SECTION("blub")
+    {
+        test_boundary_parameterization(
+            lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMT_DATA_DIR "/blub.obj"),
+            18);
+    }
+    SECTION("blub_open")
+    {
+        test_boundary_parameterization(
+            lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMT_DATA_DIR "/blub_open.obj"),
+            15);
+    }
+    SECTION("hemisphere")
+    {
+        test_boundary_parameterization(
+            lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMT_DATA_DIR "/hemisphere.obj"),
+            39);
+    }
 }

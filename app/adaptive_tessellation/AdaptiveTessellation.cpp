@@ -422,7 +422,7 @@ void AdaptiveTessellation::create_paired_seam_mesh_with_offset(
                             F(fi, lvi1)) == color_to_uv_indices[current_color].end())
                         color_to_uv_indices[current_color].emplace_back(F(fi, lvi1));
                     else
-                        color_to_uv_indices.emplace_back(std::vector<size_t>{F(fi, lvi1)});
+                        color_to_uv_indices.emplace_back(F(fi, lvi1));
                     for (auto& e_3d : m_3d.get_one_ring_edges_for_vertex(edge1_3d)) {
                         if (!e_3d.switch_face(m_3d).has_value()) {
                             // Boundary edge, skipping...
