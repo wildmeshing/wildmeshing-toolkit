@@ -1199,7 +1199,7 @@ void AdaptiveTessellation::mesh_improvement(int max_its)
         displace_self_intersection_free(*this);
         write_displaced_seamless_obj(
             mesh_parameters.m_output_folder + "/after_split_" + std::to_string(it) +
-                "3d_intersectin_free.obj",
+                "3d_intersection_free.obj",
             mesh_parameters.m_displacement);
 
         swap_all_edges();

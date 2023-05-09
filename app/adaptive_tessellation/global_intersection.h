@@ -168,13 +168,22 @@ inline void displace_self_intersection_free(AdaptiveTessellation& mesh)
     }
 
     // move only half the possible distance and iterate a few times
+    std::vector<bool> vertex_is_converged(vertices_non_intersecting.rows(), false);
     for (int r = 0; r < 4; ++r) {
         for (int i = 0; i < vertices_non_intersecting.rows(); i++) {
+            if (vertex_is_converged[i]) {
+                continue;
+            }
             Eigen::MatrixXd buf = vertices_non_intersecting;
             buf.row(i) = vertices_target.row(i);
             const double t =
                 0.5 *
                 ipc::compute_collision_free_stepsize(collisionMesh, vertices_non_intersecting, buf);
+
+            if (t == 0) {
+                vertex_is_converged[i] = true;
+                continue;
+            }
 
             const Eigen::Vector3d& p0 = vertices_non_intersecting.row(i);
             const Eigen::Vector3d& p1 = vertices_target.row(i);
@@ -188,6 +197,9 @@ inline void displace_self_intersection_free(AdaptiveTessellation& mesh)
 
     // move vertices as far as possible
     for (int i = 0; i < vertices_non_intersecting.rows(); i++) {
+        if (vertex_is_converged[i]) {
+            continue;
+        }
         Eigen::MatrixXd buf = vertices_non_intersecting;
         buf.row(i) = vertices_target.row(i);
         const double t =
