@@ -75,12 +75,8 @@ void AdaptiveTessellation::set_fixed()
             continue;
         }
         // set the first and last vertex as fixed
-        auto uv_first = mesh_parameters.m_boundary.t_to_uv(
-            curve_id,
-            mesh_parameters.m_boundary.arclengths(curve_id).front());
-        auto uv_last = mesh_parameters.m_boundary.t_to_uv(
-            curve_id,
-            mesh_parameters.m_boundary.arclengths(curve_id).back());
+        auto uv_first = mesh_parameters.m_boundary.positions(curve_id).front();
+        auto uv_last = mesh_parameters.m_boundary.positions(curve_id).back();
         // find the closest points to the uv_first and uv_last
         double dist_first = std::numeric_limits<double>::infinity();
         double dist_last = std::numeric_limits<double>::infinity();
@@ -1534,5 +1530,10 @@ std::vector<TriMesh::Tuple> AdaptiveTessellation::get_all_mirror_vertices(const 
         ret_vertices.emplace_back(get_mirror_vertex(v));
     return ret_vertices;
 }
+// std::vector<TriMesh::Tuple> AdaptiveTessellation::get_all_mirror_vertices(const TriMesh::Tuple&
+// v)
+// {
+// }
+
 
 } // namespace adaptive_tessellation

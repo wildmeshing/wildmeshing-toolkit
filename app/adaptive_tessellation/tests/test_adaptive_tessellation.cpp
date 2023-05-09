@@ -515,7 +515,25 @@ TEST_CASE("get mirror")
 
 // TODO test set fixed for vertex that has more than 2 curveid
 // all vertices that have coloring that have more than 2 vertices should be fixed
+TEST_CASE("test curve fixed")
+{
+    AdaptiveTessellation m;
+    Eigen::MatrixXd UV;
+    Eigen::MatrixXi F;
+    std::filesystem::path input_mesh_path = WMT_DATA_DIR "/hemisphere.obj";
+    m.create_paired_seam_mesh_with_offset(input_mesh_path.string(), UV, F);
+    m.set_fixed();
+    for (auto i = 0; i < m.vert_capacity(); ++i) {
+        if (m.color_to_uv_indices[m.uv_index_to_color[i]].size() > 2) {
+            REQUIRE(m.vertex_attrs[i].fixed);
+        }
+    }
 
+    auto uv_last =
+        m.mesh_parameters.m_boundary.t_to_uv(9, m.mesh_parameters.m_boundary.arclengths(9).back());
+    REQUIRE(m.mesh_parameters.m_boundary.positions(9).size() == 2);
+    REQUIRE((uv_last - m.mesh_parameters.m_boundary.positions(9).back()).squaredNorm() < 1e-5);
+}
 
 // TODO test uv-index to color mapping. test color to uv-index
 TEST_CASE("uv-index and coloring test")
