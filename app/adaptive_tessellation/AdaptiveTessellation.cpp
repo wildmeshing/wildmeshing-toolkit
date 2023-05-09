@@ -69,12 +69,37 @@ void AdaptiveTessellation::set_parameters(
 // them as fixed
 void AdaptiveTessellation::set_fixed()
 {
-    for (auto& curve : mesh_parameters.m_boundary.m_curves) {
-        auto& curve_vertices = curve.m_vertices;
-        if (curve_vertices.size() < 2) continue;
+    for (int curve_id = 0; curve_id < mesh_parameters.m_boundary.num_curves(); curve_id++) {
+        if (mesh_parameters.m_boundary.is_periodic(curve_id)) {
+            // periodic curve has no fixed vertex
+            continue;
+        }
         // set the first and last vertex as fixed
-        set_fixed(curve_vertices[0]);
-        set_fixed(curve_vertices.back());
+        auto uv_first = mesh_parameters.m_boundary.t_to_uv(
+            curve_id,
+            mesh_parameters.m_boundary.arclengths(curve_id).front());
+        auto uv_last = mesh_parameters.m_boundary.t_to_uv(
+            curve_id,
+            mesh_parameters.m_boundary.arclengths(curve_id).back());
+        // find the closest points to the uv_first and uv_last
+        double dist_first = std::numeric_limits<double>::infinity();
+        double dist_last = std::numeric_limits<double>::infinity();
+        size_t first_vid = -1;
+        size_t last_vid = -1;
+        for (auto& v : get_vertices()) {
+            if ((vertex_attrs[v.vid(*this)].pos - uv_first).squaredNorm() < dist_first) {
+                dist_first = (vertex_attrs[v.vid(*this)].pos - uv_first).squaredNorm();
+                first_vid = v.vid(*this);
+            }
+            if ((vertex_attrs[v.vid(*this)].pos - uv_last).squaredNorm() < dist_last) {
+                dist_last = (vertex_attrs[v.vid(*this)].pos - uv_last).squaredNorm();
+                last_vid = v.vid(*this);
+            }
+        }
+        assert(dist_first < 1e-8);
+        assert(dist_last < 1e-8);
+        vertex_attrs[first_vid].fixed = true;
+        vertex_attrs[last_vid].fixed = true;
     }
 }
 
