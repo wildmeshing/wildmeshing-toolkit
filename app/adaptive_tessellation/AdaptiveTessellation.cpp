@@ -67,7 +67,16 @@ void AdaptiveTessellation::set_parameters(
 }
 // using boundary parametrization, find the vertex that are the start and end of each cruve and set
 // them as fixed
-void AdaptiveTessellation::set_fixed() {}
+void AdaptiveTessellation::set_fixed()
+{
+    for (auto& curve : mesh_parameters.m_boundary.m_curves) {
+        auto& curve_vertices = curve.m_vertices;
+        if (curve_vertices.size() < 2) continue;
+        // set the first and last vertex as fixed
+        set_fixed(curve_vertices[0]);
+        set_fixed(curve_vertices.back());
+    }
+}
 
 /// @brief set the v as feature vertex, that is, it is a boundary vertex and the  incident boundary vertices are not colinear
 /// @param v
@@ -1484,34 +1493,21 @@ TriMesh::Tuple AdaptiveTessellation::get_mirror_vertex(const TriMesh::Tuple& t) 
 }
 
 // return a vector of mirror vertices. store v itself at index 0 of the returned vector
-std::vector<TriMesh::Tuple> AdaptiveTessellation::get_all_mirror_vertices(
-    const TriMesh::Tuple& v) const
+// assume no operation has made fixed vertices outdated
+std::vector<TriMesh::Tuple> AdaptiveTessellation::get_all_mirror_vertices(const TriMesh::Tuple& v)
 {
     assert(is_seam_vertex(v));
-    std::vector<TriMesh::Tuple> mirror_vertices;
-    mirror_vertices.emplace_back(v);
-    std::vector<TriMesh::Tuple> original_vertex_seam_edge;
-    // e is pointing towards v
-    for (auto& e : get_one_ring_edges_for_vertex(v)) {
-        if (is_seam_edge(e)) original_vertex_seam_edge.emplace_back(e);
-    }
-    // every seam vertex in uv should have at most 2 seam edges
-    assert(original_vertex_seam_edge.size() <= 2);
-    TriMesh::Tuple e = original_vertex_seam_edge[0];
-    // case 1
-    //    --seam-- o --seam----
-    //  --seam--o  o  o--seam--
-    //         /  / \  \
-    //    seam seam seam seam
-    //      /  /      \   \
-    // case 2
-    // --boundary-- o  o  o-- boundary--
-    //             /  / \  \
-    //        seam seam seam seam
-    //           /  /      \  \
-
-    assert(mirror_vertices.size() > 1);
-    return mirror_vertices;
+    std::vector<TriMesh::Tuple> ret_vertices;
+    // always put v itself at index 0
+    ret_vertices.emplace_back(v);
+    if (vertex_attrs[v.vid(*this)].fixed) {
+        // use the same color vids to initiate Tuples
+        auto same_color_uv_indices = color_to_uv_indices[uv_index_to_color[v.vid(*this)]];
+        for (auto mirror_vid : same_color_uv_indices)
+            ret_vertices.emplace_back(tuple_from_vertex(mirror_vid));
+    } else
+        ret_vertices.emplace_back(get_mirror_vertex(v));
+    return ret_vertices;
 }
 
 } // namespace adaptive_tessellation
