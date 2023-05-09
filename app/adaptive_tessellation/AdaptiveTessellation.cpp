@@ -309,6 +309,7 @@ void AdaptiveTessellation::create_paired_seam_mesh_with_offset(
     // build the mapping from uv_index to color
     // and mapping from color to uv_index
     color_to_uv_indices.reserve(UV.rows());
+    assert(uv_index_to_color.empty());
     int current_color = 0;
     for (auto fi = 0; fi < m_3d.tri_capacity(); ++fi) {
         for (auto lvi1 = 0; lvi1 < 3; ++lvi1) {
@@ -370,43 +371,67 @@ void AdaptiveTessellation::create_paired_seam_mesh_with_offset(
             if (uv_index_to_color.find(F(fi, lvi1)) != uv_index_to_color.end()) {
                 // already colored, skipping...
                 continue;
-            }
-            uv_index_to_color.insert(std::make_pair(F(fi, lvi1), current_color));
-            color_to_uv_indices[current_color].push_back(F(fi, lvi1));
-            for (auto& e_3d : m_3d.get_one_ring_edges_for_vertex(edge1_3d)) {
-                if (!e_3d.switch_face(m_3d).has_value()) {
-                    // Boundary edge, skipping...
-                    continue;
-                } else {
-                    auto e2_3d = e_3d.switch_face(m_3d).value();
-                    auto fj = e2_3d.fid(m_3d);
-                    size_t lvj1, lvj2;
-                    for (auto i = 0; i < 3; i++) {
-                        if (F3d(fj, i) == edge1_3d.vid(m_3d)) lvj1 = i;
-                        if (F3d(fj, i) == e2_3d.vid(m_3d)) lvj2 = i;
-                    }
-                    assert(F3d(fi, lvi1) == F3d(fj, lvj1));
-                    assert(F3d(fi, lvi2) == F3d(fj, lvj2));
-                    // this is a mirror vertex at a seam edge
-                    if (F(fi, lvi1) != F(fj, lvj1)) {
-                        // the mirror vertex has not been colored yet
-                        if (uv_index_to_color.find(F(fj, lvj1)) == uv_index_to_color.end()) {
-                            // add the color or the primary vertex to the mirror vertex
-                            uv_index_to_color.insert({F(fj, lvj1), uv_index_to_color[F(fi, lvi1)]});
+            } else {
+                auto edge2_3d = edge1_3d.switch_face(m_3d).value();
+                auto fj_3d = edge2_3d.fid(m_3d);
+                size_t lvj1_3d, lvj2_3d;
+                for (auto i = 0; i < 3; i++) {
+                    if (F3d(fj_3d, i) == edge1_3d.vid(m_3d)) lvj1_3d = i;
+                    if (F3d(fj_3d, i) == edge1_3d.switch_vertex(m_3d).vid(m_3d)) lvj2_3d = i;
+                }
+
+                assert(F3d(fi, lvi1) == F3d(fj_3d, lvj1_3d));
+                assert(F3d(fi, lvi2) == F3d(fj_3d, lvj2_3d));
+                // edge1_3d is a seam edge
+                if ((F(fi, lvi1) != F(fj_3d, lvj1_3d)) || (F(fi, lvi2) != F(fj_3d, lvj2_3d))) {
+                    uv_index_to_color.insert({F(fi, lvi1), current_color});
+                    if (current_color < color_to_uv_indices.size() &&
+                        std::find(
+                            color_to_uv_indices[current_color].begin(),
+                            color_to_uv_indices[current_color].end(),
+                            F(fi, lvi1)) == color_to_uv_indices[current_color].end())
+                        color_to_uv_indices[current_color].emplace_back(F(fi, lvi1));
+                    else
+                        color_to_uv_indices.emplace_back(std::vector<size_t>{F(fi, lvi1)});
+                    for (auto& e_3d : m_3d.get_one_ring_edges_for_vertex(edge1_3d)) {
+                        if (!e_3d.switch_face(m_3d).has_value()) {
+                            // Boundary edge, skipping...
+                            continue;
+                        } else {
+                            auto e2_3d = e_3d.switch_face(m_3d).value();
+                            auto fj = e2_3d.fid(m_3d);
+                            size_t lvj1, lvj2;
+                            for (auto i = 0; i < 3; i++) {
+                                if (F3d(fj, i) == edge1_3d.vid(m_3d)) lvj1 = i;
+                                if (F3d(fj, i) == e2_3d.vid(m_3d)) lvj2 = i;
+                            }
+                            assert(F3d(fi, lvi1) == F3d(fj, lvj1));
+                            // this is a mirror vertex at a seam edge
+                            if (F(fi, lvi1) != F(fj, lvj1)) {
+                                // the mirror vertex has not been colored yet
+                                if (uv_index_to_color.find(F(fj, lvj1)) ==
+                                    uv_index_to_color.end()) {
+                                    // add the color or the primary vertex to the mirror vertex
+                                    uv_index_to_color.insert(
+                                        {F(fj, lvj1), uv_index_to_color[F(fi, lvi1)]});
+                                }
+                                // if the mirror vertex is not in the color busket, add it
+                                if (std::find(
+                                        color_to_uv_indices[uv_index_to_color[F(fi, lvi1)]].begin(),
+                                        color_to_uv_indices[uv_index_to_color[F(fi, lvi1)]].end(),
+                                        F(fj, lvj1)) ==
+                                    color_to_uv_indices[uv_index_to_color[F(fi, lvi1)]].end())
+                                    color_to_uv_indices[uv_index_to_color[F(fi, lvi1)]]
+                                        .emplace_back(F(fj, lvj1));
+                                assert(
+                                    uv_index_to_color[F(fj, lvj1)] ==
+                                    uv_index_to_color[F(fi, lvi1)]);
+                            }
                         }
-                        // if the mirror vertex is not in the color busket, add it
-                        if (std::find(
-                                color_to_uv_indices[uv_index_to_color[F(fi, lvi1)]].begin(),
-                                color_to_uv_indices[uv_index_to_color[F(fi, lvi1)]].end(),
-                                F(fj, lvj1)) ==
-                            color_to_uv_indices[uv_index_to_color[F(fi, lvi1)]].end())
-                            color_to_uv_indices[uv_index_to_color[F(fi, lvi1)]].emplace_back(
-                                F(fj, lvj1));
-                        assert(uv_index_to_color[F(fj, lvj1)] == uv_index_to_color[F(fi, lvi1)]);
                     }
+                    current_color++;
                 }
             }
-            current_color++;
         }
     }
     color_to_uv_indices.resize(current_color);
