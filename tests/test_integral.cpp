@@ -137,45 +137,56 @@ void test_integral_reference(
     wmtk::logger().info("done with integral test");
 }
 
-void test_integral_correctness(
-    const MeshType& mesh,
-    std::array<wmtk::Image, 3> displaced)
+struct IntegralTester : public wmtk::TextureIntegral
 {
-    auto& uv_attr = mesh.get_indexed_attribute<double>(lagrange::AttributeName::texcoord);
-    auto uv_vertices = matrix_view(uv_attr.values());
-    auto uv_facets = reshaped_view(uv_attr.indices(), 3);
+    static void correctness(const MeshType& mesh, std::array<wmtk::Image, 3> displaced)
+    {
+        // 1st, check interpolation at pixel centers...
+        const int w = displaced[0].width();
+        const int h = displaced[0].height();
+        for (int x = 0; x < w; ++x) {
+            for (int y = 0; y < h; ++y) {
+                const float u = (static_cast<float>(x) + 0.5) / static_cast<float>(w);
+                const float v = (static_cast<float>(y) + 0.5) / static_cast<float>(h);
+                for (size_t i = 0; i < 3; ++i) {
+                    const auto value_pixel = displaced[i].get_raw_image()(x, y);
+                    const auto value_nearest = sample_nearest(displaced[i], u, v);
+                    const auto value_bilinear = sample_bilinear(displaced[i], u, v);
+                    const auto value_bicubic = sample_bicubic(displaced[i], u, v);
+                    CAPTURE(x, y, u, v);
+                    REQUIRE_THAT(value_nearest, Catch::Matchers::WithinRel(value_pixel, 1e-5f));
+                    REQUIRE_THAT(value_bilinear, Catch::Matchers::WithinRel(value_pixel, 1e-5f));
+                    // REQUIRE_THAT(value_bicubic, Catch::Matchers::WithinRel(value_pixel, 1e-2f));
+                }
+            }
+        }
 
-    MeshType uv_mesh(2);
-    uv_mesh.add_vertices(uv_vertices.rows());
-    uv_mesh.add_triangles(uv_facets.rows());
-    vertex_ref(uv_mesh) = uv_vertices;
-    facet_ref(uv_mesh) = uv_facets;
-    std::vector<std::array<float, 6>> uv_triangles(uv_mesh.get_num_facets());
-    for (Index i = 0; i < uv_mesh.get_num_facets(); i++) {
-        for (Index j = 0; j < 3; j++) {
-            uv_triangles[i][2 * j + 0] = uv_vertices(uv_facets(i, j), 0);
-            uv_triangles[i][2 * j + 1] = uv_vertices(uv_facets(i, j), 1);
+        // 2nd, check bilinear interpolation at midpoints between pixels
+        for (int x = 0; x + 1 < w; ++x) {
+            for (int y = 0; y + 1 < h; ++y) {
+                const float u00 = (static_cast<float>(x) + 0.5) / static_cast<float>(w);
+                const float u05 = (static_cast<float>(x) + 1) / static_cast<float>(w);
+                const float v00 = (static_cast<float>(y) + 0.5) / static_cast<float>(h);
+                const float v05 = (static_cast<float>(y) + 1) / static_cast<float>(h);
+                for (size_t i = 0; i < 3; ++i) {
+                    const auto p00 = displaced[i].get_raw_image()(x, y);
+                    const auto p10 = displaced[i].get_raw_image()(x + 1, y);
+                    const auto p01 = displaced[i].get_raw_image()(x, y + 1);
+                    const auto p11 = displaced[i].get_raw_image()(x + 1, y + 1);
+                    const auto q01 = sample_bilinear(displaced[i], u00, v05);
+                    const auto q10 = sample_bilinear(displaced[i], u05, v00);
+                    const auto q11 = sample_bilinear(displaced[i], u05, v05);
+                    CAPTURE(x, y);
+                    REQUIRE_THAT(q01, Catch::Matchers::WithinRel(0.5f * (p00 + p01), 1e-5f));
+                    REQUIRE_THAT(q10, Catch::Matchers::WithinRel(0.5f * (p00 + p10), 1e-5f));
+                    REQUIRE_THAT(
+                        q11,
+                        Catch::Matchers::WithinRel(0.25f * (p00 + p01 + p10 + p11), 1e-4f));
+                }
+            }
         }
     }
-
-    // Test with new engine
-    std::vector<float> errors_bicubic(uv_mesh.get_num_facets());
-    std::vector<float> errors_nearest(uv_mesh.get_num_facets());
-    std::vector<float> errors_bilinear(uv_mesh.get_num_facets());
-    wmtk::TextureIntegral integral(std::move(displaced));
-    integral.get_error_per_triangle(uv_triangles, errors_bicubic, 0);
-    integral.get_error_per_triangle(uv_triangles, errors_nearest, 1);
-    integral.get_error_per_triangle(uv_triangles, errors_bilinear, 2);
-
-    for (int f = 0; f < mesh.get_num_facets(); ++f) {
-        // REQUIRE_THAT(
-        //     errors_nearest[f],
-        //     Catch::Matchers::WithinRel(errors_bicubic[f], 1e-2f));
-        REQUIRE_THAT(
-            errors_bilinear[f],
-            Catch::Matchers::WithinRel(errors_bicubic[f], 1e-2f));
-    }
-}
+};
 
 } // namespace
 
@@ -206,7 +217,7 @@ TEST_CASE("Texture Integral Reference", "[utils][integral]")
 TEST_CASE("Texture Integral Correctness", "[utils][integral]")
 {
     std::string displaced_positions = WMT_DATA_DIR "/images/hemisphere_512_displaced.exr";
-    test_integral_correctness(
+    IntegralTester::correctness(
         lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMT_DATA_DIR "/hemisphere.obj"),
         load_rgb_image(displaced_positions));
 }

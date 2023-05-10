@@ -129,7 +129,9 @@ double get_error_per_triangle_exact(
     return value;
 }
 
-float sample_nearest(const wmtk::Image& image, float u, float v)
+} // namespace
+
+float TextureIntegral::sample_nearest(const wmtk::Image& image, float u, float v)
 {
     auto w = image.width();
     auto h = image.height();
@@ -145,7 +147,7 @@ float sample_nearest(const wmtk::Image& image, float u, float v)
     return array(sx, sy);
 }
 
-float sample_bilinear(const wmtk::Image& image, float u, float v)
+float TextureIntegral::sample_bilinear(const wmtk::Image& image, float u, float v)
 {
     auto w = image.width();
     auto h = image.height();
@@ -155,7 +157,7 @@ float sample_bilinear(const wmtk::Image& image, float u, float v)
 
     auto sample_coord = [](const float coord,
                            const size_t size) -> std::tuple<size_t, size_t, float> {
-        assert(_0 <= coord && coord <= static_cast<float>(size));
+        assert(0.f <= coord && coord <= static_cast<float>(size));
         size_t coord0, coord1;
         float t;
         if (coord <= 0.5f) {
@@ -186,7 +188,7 @@ float sample_bilinear(const wmtk::Image& image, float u, float v)
     return pix.dot(weight);
 }
 
-float sample_bicubic(const wmtk::Image& image, float u, float v)
+float TextureIntegral::sample_bicubic(const wmtk::Image& image, float u, float v)
 {
     auto w = image.width();
     auto h = image.height();
@@ -206,8 +208,6 @@ float sample_bicubic(const wmtk::Image& image, float u, float v)
     BicubicVector<float> bicubic_coeff = get_bicubic_matrix() * sample_vector;
     return eval_bicubic_coeffs(bicubic_coeff, x, y);
 }
-
-} // namespace
 
 struct TextureIntegral::Cache
 {

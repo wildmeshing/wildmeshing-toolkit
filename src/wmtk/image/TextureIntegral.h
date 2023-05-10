@@ -66,6 +66,11 @@ public:
         lagrange::span<const std::array<float, 6>> input_triangles,
         lagrange::span<std::array<float, 3>> output_integrals);
 
+protected:
+    static float sample_nearest(const wmtk::Image& image, float u, float v);
+    static float sample_bilinear(const wmtk::Image& image, float u, float v);
+    static float sample_bicubic(const wmtk::Image& image, float u, float v);
+
 private:
     struct Cache;
     std::array<wmtk::Image, 3> m_data;
