@@ -599,6 +599,15 @@ void AdaptiveTessellation::export_mesh_with_displacement(Eigen::MatrixXd& V, Eig
     V = vertices_displaced;
 }
 
+void AdaptiveTessellation::export_mesh_complete(
+    Eigen::MatrixXd& V,
+    Eigen::MatrixXi& F,
+    Eigen::MatrixXd& TC,
+    Eigen::MatrixXi& FTC) const
+{
+    throw std::exception("Method not implemented!");
+}
+
 void AdaptiveTessellation::remove_seams(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const
 {
     std::map<size_t, size_t> paired_vertices; // mapping from removed to remaining vertex

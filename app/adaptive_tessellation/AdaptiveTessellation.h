@@ -152,6 +152,13 @@ public:
     // Exports V and F of the stored mesh
     void export_mesh_with_displacement(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
 
+    // Exports the mesh including UV coordinates
+    void export_mesh_complete(
+        Eigen::MatrixXd& V,
+        Eigen::MatrixXi& F,
+        Eigen::MatrixXd& TC,
+        Eigen::MatrixXi& FTC) const;
+
     /**
      * @brief Exports V and F of the stored mesh where all seam vertices are merged.
      *
