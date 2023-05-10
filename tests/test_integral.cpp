@@ -168,20 +168,6 @@ TEST_CASE("Texture Integral Benchmark", "[utils][!benchmark]")
     spdlog::set_level(spdlog::level::off);
 
     std::string displaced_positions = WMT_DATA_DIR "/images/hemisphere_512_displaced.exr";
-    std::string position_path = WMT_DATA_DIR "/images/hemisphere_512_position.exr";
-    std::string normal_path = WMT_DATA_DIR "/images/hemisphere_512_normal-world-space.exr";
-    std::string height_path = WMT_DATA_DIR "/images/riveted_castle_iron_door_512_height.exr";
-    wmtk::Image height;
-    height.load(height_path, WrappingMode::CLAMP_TO_EDGE, WrappingMode::CLAMP_TO_EDGE);
-    std::array<wmtk::Image, 6> position_normal_images;
-    {
-        auto pos = load_rgb_image(position_path);
-        auto nrm = load_rgb_image(normal_path);
-        for (int i = 0; i < 3; i++) {
-            position_normal_images[i] = pos[i];
-            position_normal_images[i + 3] = nrm[i];
-        }
-    }
 
     auto mesh = lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMT_DATA_DIR "/hemisphere.obj");
     auto& uv_attr = mesh.get_indexed_attribute<double>(lagrange::AttributeName::texcoord);
