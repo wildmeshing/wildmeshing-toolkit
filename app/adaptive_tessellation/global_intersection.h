@@ -19,7 +19,7 @@ inline double compute_collision_free_stepsize(
 {
     Eigen::MatrixXd vertices_incl_invalids;
     Eigen::MatrixXi faces_incl_invalids;
-    mesh.export_seamless_mesh_3d(vertices_incl_invalids, faces_incl_invalids);
+    mesh.export_seamless_mesh_with_displacement(vertices_incl_invalids, faces_incl_invalids);
     for (int i = 0; i < vertices_incl_invalids.rows(); i++) {
         vertices_incl_invalids.row(i) = mesh.vertex_attrs[i].pos_world;
     }
@@ -74,7 +74,7 @@ inline bool has_intersection(const AdaptiveTessellation& mesh)
 {
     Eigen::MatrixXd vertices;
     Eigen::MatrixXi faces;
-    mesh.export_seamless_mesh_3d(vertices, faces);
+    mesh.export_seamless_mesh_with_displacement(vertices, faces);
     for (int i = 0; i < vertices.rows(); i++) {
         vertices.row(i) = mesh.vertex_attrs[i].pos_world;
     }
@@ -137,6 +137,11 @@ inline void displace_self_intersection_free(AdaptiveTessellation& mesh)
         faces_clean,
         map_old_to_new_v_ids);
 
+    for (int i = 0; i < vertices_non_intersecting.rows(); i++) {
+        const Eigen::Vector3d& p = vertices_non_intersecting.row(i);
+        mesh.vertex_attrs[map_new_to_old_v_ids(i)].pos_world = p;
+    }
+
     // check for self intersections - if there are any, find edges that self intersect and split
     // them until no more self intersections exist
     Eigen::MatrixXi edges;
@@ -163,6 +168,7 @@ inline void displace_self_intersection_free(AdaptiveTessellation& mesh)
         vertices_non_intersecting.row(i) = p;
         mesh.vertex_attrs[map_new_to_old_v_ids(i)].pos_world = p;
     }
+    return;
     if (t0 == 1.0) {
         return;
     }

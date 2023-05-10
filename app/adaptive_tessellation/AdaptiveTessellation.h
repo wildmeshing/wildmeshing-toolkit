@@ -147,16 +147,24 @@ public:
     void export_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
 
     // Exports V and F of the stored mesh
-    void export_mesh_clean(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
+    void export_mesh_without_invalid_faces(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
 
     // Exports V and F of the stored mesh
-    void export_mesh_3d(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
+    void export_mesh_with_displacement(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
 
-    // Exports V and F of the stored mesh where all seam vertices are merged
+    /**
+     * @brief Exports V and F of the stored mesh where all seam vertices are merged.
+     *
+     * Positions are averaged in between seam vertices. Faces are updated so that they only
+     * reference the seam vertex with the lowest index. Unreferenced vertices are not removed.
+     *
+     * @param V igl format vertices
+     * @param F igl format faces
+     */
     void remove_seams(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
 
     // Exports V and F of the stored mesh
-    void export_seamless_mesh_3d(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
+    void export_seamless_mesh_with_displacement(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
 
     // Writes a triangle mesh in OBJ format
     void write_obj(const std::string& path);
@@ -173,6 +181,9 @@ public:
         const std::string& path,
         const std::shared_ptr<wmtk::Displacement> displacement);
     void write_displaced_seamless_obj(
+        const std::string& path,
+        const std::shared_ptr<wmtk::Displacement> displacement);
+    void write_world_obj(
         const std::string& path,
         const std::shared_ptr<wmtk::Displacement> displacement);
 

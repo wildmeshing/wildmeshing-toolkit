@@ -567,7 +567,8 @@ void AdaptiveTessellation::export_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F) c
     }
 }
 
-void AdaptiveTessellation::export_mesh_clean(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const
+void AdaptiveTessellation::export_mesh_without_invalid_faces(Eigen::MatrixXd& V, Eigen::MatrixXi& F)
+    const
 {
     V = Eigen::MatrixXd::Zero(vert_capacity(), 2);
     for (auto& t : get_vertices()) {
@@ -585,17 +586,17 @@ void AdaptiveTessellation::export_mesh_clean(Eigen::MatrixXd& V, Eigen::MatrixXi
     }
 }
 
-void AdaptiveTessellation::export_mesh_3d(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const
+void AdaptiveTessellation::export_mesh_with_displacement(Eigen::MatrixXd& V, Eigen::MatrixXi& F)
+    const
 {
-    export_mesh_clean(V, F);
-    auto rows = V.rows();
-    Eigen::MatrixXd V3d = Eigen::MatrixXd::Zero(rows, 3);
-    for (int i = 0; i < rows; i++) {
-        V3d.row(i) = mesh_parameters.m_displacement->get(V(i, 0), V(i, 1));
-        // V3d.row(i) = vertex_attrs[i].pos_world;
+    export_mesh_without_invalid_faces(V, F);
+    const size_t rows = V.rows();
+    Eigen::MatrixXd vertices_displaced = Eigen::MatrixXd::Zero(rows, 3);
+    for (size_t i = 0; i < rows; ++i) {
+        vertices_displaced.row(i) = mesh_parameters.m_displacement->get(V(i, 0), V(i, 1));
     }
 
-    V = V3d;
+    V = vertices_displaced;
 }
 
 void AdaptiveTessellation::remove_seams(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const
@@ -650,7 +651,7 @@ void AdaptiveTessellation::remove_seams(Eigen::MatrixXd& V, Eigen::MatrixXi& F) 
         map_id_to_pos_vec[v1].push_back(V.row(v0));
     }
 
-    // compute averate positions
+    // compute average positions
     for (const auto& [v, pos_vec] : map_id_to_pos_vec) {
         Eigen::Vector3d p(0, 0, 0);
         for (const auto& pp : pos_vec) {
@@ -677,9 +678,11 @@ void AdaptiveTessellation::remove_seams(Eigen::MatrixXd& V, Eigen::MatrixXi& F) 
     F = NF;
 }
 
-void AdaptiveTessellation::export_seamless_mesh_3d(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const
+void AdaptiveTessellation::export_seamless_mesh_with_displacement(
+    Eigen::MatrixXd& V,
+    Eigen::MatrixXi& F) const
 {
-    export_mesh_3d(V, F);
+    export_mesh_with_displacement(V, F);
     remove_seams(V, F);
 }
 
@@ -852,7 +855,20 @@ void AdaptiveTessellation::write_displaced_seamless_obj(
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
 
-    export_seamless_mesh_3d(V, F);
+    export_seamless_mesh_with_displacement(V, F);
+
+    igl::writeOBJ(path, V, F);
+    wmtk::logger().info("============>> current edge length {}", avg_edge_len(*this));
+}
+
+void AdaptiveTessellation::write_world_obj(
+    const std::string& path,
+    const std::shared_ptr<wmtk::Displacement> displacement)
+{
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+
+    export_seamless_mesh_with_displacement(V, F);
 
     for (int i = 0; i < V.rows(); i++) {
         V.row(i) = vertex_attrs[i].pos_world;
@@ -1190,14 +1206,14 @@ void AdaptiveTessellation::mesh_improvement(int max_its)
         auto split_finish_time = lagrange::get_timestamp();
         mesh_parameters.js_log["iteration_" + std::to_string(it)]["split time"] =
             lagrange::timestamp_diff_in_seconds(start_time, split_finish_time);
-        consolidate_mesh();
+        // consolidate_mesh();
         write_displaced_obj(
             mesh_parameters.m_output_folder + "/after_split_" + std::to_string(it) + ".obj",
             mesh_parameters.m_displacement);
         write_obj(
             mesh_parameters.m_output_folder + "/after_split_" + std::to_string(it) + "2d.obj");
         displace_self_intersection_free(*this);
-        write_displaced_seamless_obj(
+        write_world_obj(
             mesh_parameters.m_output_folder + "/after_split_" + std::to_string(it) +
                 "3d_intersection_free.obj",
             mesh_parameters.m_displacement);
