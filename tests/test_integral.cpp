@@ -191,7 +191,7 @@ TEST_CASE("Texture Integral Benchmark", "[utils][!benchmark]")
     std::vector<float> computed_errors(uv_mesh.get_num_facets());
     wmtk::TextureIntegral integral(load_rgb_image(displaced_positions));
 
-    BENCHMARK("Virtual Call")
+    BENCHMARK("Bicubic")
     {
         integral.get_error_per_triangle(uv_triangles, computed_errors, 0);
         float total = 0;
@@ -200,9 +200,18 @@ TEST_CASE("Texture Integral Benchmark", "[utils][!benchmark]")
         }
         return total;
     };
-    BENCHMARK("No Virtual Call")
+    BENCHMARK("Nearest")
     {
         integral.get_error_per_triangle(uv_triangles, computed_errors, 1);
+        float total = 0;
+        for (size_t i = 0; i < computed_errors.size(); ++i) {
+            total += computed_errors[i];
+        }
+        return total;
+    };
+    BENCHMARK("Bilinear")
+    {
+        integral.get_error_per_triangle(uv_triangles, computed_errors, 2);
         float total = 0;
         for (size_t i = 0; i < computed_errors.size(); ++i) {
             total += computed_errors[i];
