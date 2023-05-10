@@ -19,7 +19,21 @@ public:
     TextureIntegral(const TextureIntegral&) = delete;
     TextureIntegral& operator=(const TextureIntegral&) = delete;
 
+    enum class SamplingMethod {
+        Nearest,
+        Bilinear,
+        Bicubic,
+    };
+
+    enum class IntegrationMethod {
+        Naive,
+        Adaptive
+    };
+
 public:
+    void set_sampling_method(SamplingMethod method) { m_sampling_method = method; }
+    void set_integration_method(IntegrationMethod method) { m_integration_method = method; }
+
     ///
     /// Computes the error integral per triangle.
     ///
@@ -47,8 +61,7 @@ public:
     ///
     void get_error_per_triangle(
         lagrange::span<const std::array<float, 6>> input_triangles,
-        lagrange::span<float> output_errors,
-        int flag = 0);
+        lagrange::span<float> output_errors);
 
     ///
     /// Computes the integral of the input texture over each input UV triangle.
@@ -71,10 +84,17 @@ protected:
     static float sample_bilinear(const wmtk::Image& image, float u, float v);
     static float sample_bicubic(const wmtk::Image& image, float u, float v);
 
+    template<SamplingMethod sampling_method, IntegrationMethod integration_method>
+    void get_error_per_triangle_internal(
+        lagrange::span<const std::array<float, 6>> input_triangles,
+        lagrange::span<float> output_errors);
+
 private:
     struct Cache;
     std::array<wmtk::Image, 3> m_data;
     lagrange::value_ptr<Cache> m_cache;
+    SamplingMethod m_sampling_method = SamplingMethod::Bicubic;
+    IntegrationMethod m_integration_method = IntegrationMethod::Naive;
 };
 
 } // namespace wmtk

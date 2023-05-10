@@ -141,7 +141,7 @@ struct IntegralTester : public wmtk::TextureIntegral
 {
     static void correctness(const MeshType& mesh, std::array<wmtk::Image, 3> displaced)
     {
-        // 1st, check interpolation at pixel centers...
+        // Check interpolation at pixel centers
         const int w = displaced[0].width();
         const int h = displaced[0].height();
         for (int x = 0; x < w; ++x) {
@@ -161,7 +161,27 @@ struct IntegralTester : public wmtk::TextureIntegral
             }
         }
 
-        // 2nd, check bilinear interpolation at midpoints between pixels
+        // Check nearest interpolation around pixel centers
+        std::mt19937 gen;
+        std::uniform_real_distribution<float> dist(-0.45f, 0.45f);
+        for (int x = 0; x < w; ++x) {
+            for (int y = 0; y < h; ++y) {
+                for (size_t k = 0; k < 4; ++k) {
+                    const float u =
+                        (static_cast<float>(x) + 0.5 + dist(gen)) / static_cast<float>(w);
+                    const float v =
+                        (static_cast<float>(y) + 0.5 + dist(gen)) / static_cast<float>(h);
+                    for (size_t i = 0; i < 3; ++i) {
+                        const auto value_pixel = displaced[i].get_raw_image()(x, y);
+                        const auto value_nearest = sample_nearest(displaced[i], u, v);
+                        CAPTURE(x, y, u, v);
+                        REQUIRE_THAT(value_nearest, Catch::Matchers::WithinRel(value_pixel, 1e-5f));
+                    }
+                }
+            }
+        }
+
+        // Check bilinear interpolation at midpoints between pixels
         for (int x = 0; x + 1 < w; ++x) {
             for (int y = 0; y + 1 < h; ++y) {
                 const float u00 = (static_cast<float>(x) + 0.5) / static_cast<float>(w);
@@ -252,7 +272,8 @@ TEST_CASE("Texture Integral Benchmark", "[utils][!benchmark]")
 
     BENCHMARK("Bicubic")
     {
-        integral.get_error_per_triangle(uv_triangles, computed_errors, 0);
+        integral.set_sampling_method(wmtk::TextureIntegral::SamplingMethod::Bicubic);
+        integral.get_error_per_triangle(uv_triangles, computed_errors);
         float total = 0;
         for (size_t i = 0; i < computed_errors.size(); ++i) {
             total += computed_errors[i];
@@ -261,7 +282,8 @@ TEST_CASE("Texture Integral Benchmark", "[utils][!benchmark]")
     };
     BENCHMARK("Nearest")
     {
-        integral.get_error_per_triangle(uv_triangles, computed_errors, 1);
+        integral.set_sampling_method(wmtk::TextureIntegral::SamplingMethod::Nearest);
+        integral.get_error_per_triangle(uv_triangles, computed_errors);
         float total = 0;
         for (size_t i = 0; i < computed_errors.size(); ++i) {
             total += computed_errors[i];
@@ -270,7 +292,8 @@ TEST_CASE("Texture Integral Benchmark", "[utils][!benchmark]")
     };
     BENCHMARK("Bilinear")
     {
-        integral.get_error_per_triangle(uv_triangles, computed_errors, 2);
+        integral.set_sampling_method(wmtk::TextureIntegral::SamplingMethod::Bilinear);
+        integral.get_error_per_triangle(uv_triangles, computed_errors);
         float total = 0;
         for (size_t i = 0; i < computed_errors.size(); ++i) {
             total += computed_errors[i];
