@@ -25,6 +25,7 @@ public:
     {
         size_t v1;
         size_t v2;
+        std::optional<int> curve_id = std::nullopt;
     };
     tbb::enumerable_thread_specific<OpCache> op_cache;
 
@@ -55,6 +56,7 @@ public:
         // if size == 3, it's a boundary edge,
         // before_sibling_edges: nullopt, s1, s2
         // mirror data of ^ v in the middle needs to be nullified
+        // so are the edge_attrs data of the middle edges
         // ___ 3 ____                           __7__ __3'_
         // \        /                           \    | <--/
         //  \ <--- /                             \4' | 5'/

@@ -28,23 +28,12 @@ void addCustomOps(Executor& e)
 
 bool AdaptiveTessellationSplitEdgeOperation::before(AdaptiveTessellation& m, const Tuple& t)
 {
-    static std::atomic_int cnt = 0;
-    cnt++;
     if (wmtk::TriMeshSplitEdgeOperation::before(m, t)) {
-        if (m.vertex_attrs[t.vid(m)].curve_id != m.vertex_attrs[t.switch_vertex(m).vid(m)].curve_id)
-            return false;
-        if (cnt % 10 == 0) {
-            m.write_displaced_obj(
-                m.mesh_parameters.m_output_folder + fmt::format("/split_{:02d}_seams.obj", cnt),
-                m.mesh_parameters.m_displacement);
-            m.write_displaced_seamless_obj(
-                m.mesh_parameters.m_output_folder + fmt::format("/split_{:02d}_seamless.obj", cnt),
-                m.mesh_parameters.m_displacement);
-        }
-        ++cnt;
-
+        // record the operation cache
         op_cache.local().v1 = t.vid(m);
         op_cache.local().v2 = t.switch_vertex(m).vid(m);
+        op_cache.local().curve_id = m.edge_attrs[t.eid(m)].curve_id;
+        // record the mesh cache
         m.cache.local().partition_id = m.vertex_attrs[t.vid(m)].partition_id;
         if (m.is_boundary_vertex(t))
             m.vertex_attrs[op_cache.local().v1].boundary_vertex = true;
@@ -81,6 +70,7 @@ bool AdaptiveTessellationSplitEdgeOperation::after(
             2.0;
         wmtk::logger().info(p);
         auto vid = return_edge_tuple.switch_vertex(m).vid(m);
+        // update the vertex_attrs
         m.vertex_attrs[vid].pos = p;
         m.vertex_attrs[vid].partition_id = m.cache.local().partition_id;
         m.vertex_attrs[vid].curve_id = m.vertex_attrs[op_cache.local().v1].curve_id;
@@ -90,6 +80,32 @@ bool AdaptiveTessellationSplitEdgeOperation::after(
             m.vertex_attrs[vid].t =
                 m.mesh_parameters.m_boundary.uv_to_t(m.vertex_attrs[vid].pos).second;
         }
+        // update the edge_attrs
+        m.edge_attrs[return_edge_tuple.eid(m)].curve_id = op_cache.local().curve_id;
+        // edge 6
+        auto edge_6 =
+            return_edge_tuple.switch_vertex(m).switch_edge(m).switch_face(m).value().switch_edge(m);
+        m.edge_attrs[edge_6.eid(m)].curve_id = op_cache.local().curve_id;
+        // nullify the middle interior edge outdated edge_attrs data
+        m.edge_attrs[return_edge_tuple.switch_vertex(m).switch_edge(m).eid(m)].curve_id =
+            std::nullopt;
+        m.edge_attrs[return_edge_tuple.switch_vertex(m).switch_edge(m).switch_face(m).value().eid(
+                         m)]
+            .curve_id = std::nullopt;
+        // check if it has a neighbore face whose edge_attrs data also need to be nullified
+        if (return_edge_tuple.switch_face(m).has_value()) {
+            m.edge_attrs
+                [return_edge_tuple.switch_face(m).value().switch_vertex(m).switch_edge(m).eid(m)]
+                    .curve_id = std::nullopt;
+            m.edge_attrs[return_edge_tuple.switch_face(m)
+                             .value()
+                             .switch_vertex(m)
+                             .switch_edge(m)
+                             .switch_face(m)
+                             .value()
+                             .eid(m)]
+                .curve_id = std::nullopt;
+        }
     }
     return ret_data.success;
 }
@@ -97,11 +113,12 @@ bool AdaptiveTessellationSplitEdgeOperation::after(
 bool AdaptiveTessellationPairedSplitEdgeOperation::before(AdaptiveTessellation& m, const Tuple& t)
 {
     static std::atomic_int cnt = 0;
+    cnt++;
     assert(t.is_valid(m));
     // TODO is this thread safe?
     mirror_edge_tuple = std::nullopt; // reset the mirror edge tuple
     paired_op_cache.local().before_sibling_edges.resize(0); // clear the sibling edge cache
-    //// === initiate the paired edge chache  === ////
+    //// === initiate the paired edge cache  === ////
     paired_op_cache.local().before_sibling_edges.emplace_back(m.get_sibling_edge(t));
     paired_op_cache.local().before_sibling_edges.emplace_back(
         m.get_sibling_edge(t.switch_vertex(m).switch_edge(m)));
@@ -136,13 +153,14 @@ bool AdaptiveTessellationPairedSplitEdgeOperation::before(AdaptiveTessellation& 
     assert(m.is_seam_edge(t) == mirror_edge_tuple.has_value());
     bool split_mirror_edge_success =
         m.is_seam_edge(t) ? mirror_split_edge.before(m, mirror_edge_tuple.value()) : true;
+    // m.write_vtk(m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}.vtu", cnt));
+    // m.write_perface_vtk(
+    //     m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}_face.vtu", cnt));
+    // m.write_displaced_obj(
+    //     m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}.obj", cnt),
+    //     m.mesh_parameters.m_displacement);
+    // m.write_obj(m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}_2d.obj", cnt));
 
-    if (cnt % 1000 == 0) {
-        m.write_displaced_obj(
-            m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}.obj", cnt),
-            m.mesh_parameters.m_displacement);
-        m.write_obj(m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}_2d.obj", cnt));
-    }
     cnt++;
     assert(
         (paired_op_cache.local().before_sibling_edges.size() == 3 ||
@@ -432,6 +450,7 @@ void AdaptiveTessellation::split_all_edges()
     wmtk::logger().info("size for edges to be split is {}", collect_all_ops.size());
     auto setup_and_execute = [&](auto executor) {
         addPairedCustomOps(executor);
+        // executor.stopping_criterion_checking_frequency = 100;
         executor.renew_neighbor_tuples = split_renew;
         executor.priority = [&](auto& m, auto _, auto& e) {
             auto error = m.mesh_parameters.m_get_length(e);
@@ -444,14 +463,25 @@ void AdaptiveTessellation::split_all_edges()
             double error1 = 0.;
             double error2 = 0.;
             if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
-                error1 = m.get_area_accuracy_error_per_face(tup);
-                if (tup.switch_face(m).has_value()) {
-                    error2 = m.get_area_accuracy_error_per_face(tup.switch_face(m).value());
-                } else
-                    error2 = error1;
                 if (m.mesh_parameters.m_split_absolute_error_metric) {
+                    error1 = m.get_area_accuracy_error_per_face(tup);
+                    if (tup.switch_face(m).has_value()) {
+                        error2 = m.get_area_accuracy_error_per_face(tup.switch_face(m).value());
+                    } else {
+                        if (m.is_seam_edge(tup))
+                            error2 =
+                                m.get_area_accuracy_error_per_face(m.get_oriented_mirror_edge(tup));
+                        else
+                            error2 = error1;
+                    }
                     length = (error1 + error2) * m.get_length2d(tup);
                 } else {
+                    ///////// !!! TODO this should be deleted
+                    error1 = m.get_area_accuracy_error_per_face(tup);
+                    if (tup.switch_face(m).has_value()) {
+                        error2 = m.get_area_accuracy_error_per_face(tup.switch_face(m).value());
+                    } else
+                        error2 = error1;
                     double e_before = error1 + error2;
                     Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle;
                     double e_after, error_after_1, error_after_2, error_after_3, error_after_4;

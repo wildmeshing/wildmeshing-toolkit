@@ -265,6 +265,7 @@ public:
         // Register attributes
         p_vertex_attrs = &vertex_attrs;
         p_face_attrs = &face_attrs;
+        p_edge_attrs = &edge_attrs;
         // Convert from eigen to internal representation (TODO: move to utils and remove it from all
         // app)
         std::vector<std::array<size_t, 3>> tri(F.rows());
