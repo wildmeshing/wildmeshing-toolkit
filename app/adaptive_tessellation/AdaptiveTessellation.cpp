@@ -1586,4 +1586,5 @@ void AdaptiveTessellation::assign_edge_curveid()
     }
 }
 
+
 } // namespace adaptive_tessellation

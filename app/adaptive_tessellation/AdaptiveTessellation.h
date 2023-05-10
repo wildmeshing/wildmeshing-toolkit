@@ -283,5 +283,8 @@ public:
         //     assert(!is_inverted(tri));
         // }
     }
+
+
+
 };
 } // namespace adaptive_tessellation

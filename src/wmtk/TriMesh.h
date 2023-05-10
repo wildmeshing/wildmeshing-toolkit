@@ -1,9 +1,9 @@
 #pragma once
 
 #define USE_OPERATION_LOGGER
+#include <wmtk/TriMeshTuple.h>
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/AttributeCollection.hpp>
-#include <wmtk/TriMeshTuple.h>
 #include <wmtk/utils/Logger.hpp>
 
 // clang-format off
@@ -37,7 +37,6 @@ class AttributeCollectionRecorder;
 class TriMesh
 {
 public:
-
     using Tuple = TriMeshTuple;
     friend class TriMeshTuple;
     /**
@@ -383,6 +382,13 @@ public:
         return Tuple(vid, local_eid, fid, *this);
     }
 
+    /**
+     * Generate the tuples for the tuples at the boundary of a triangle
+     * @param triangle for which we are computing the boundary of
+     * @return array of tuples storing the three edges
+     */
+    std::array<Tuple, 3> triangle_boundary_edge_tuples(const Tuple& triangle) const;
+
     // private:
 protected:
     /**
@@ -413,7 +419,7 @@ protected:
      * @brief End the modification phase
      *
      */
-    std::array<std::optional<size_t>,3> release_protected_attributes();
+    std::array<std::optional<size_t>, 3> release_protected_attributes();
 
     /**
      * @brief End Caching connectivity
