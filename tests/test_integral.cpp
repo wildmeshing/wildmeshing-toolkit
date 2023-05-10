@@ -62,7 +62,7 @@ std::pair<double, Eigen::RowVector3d> compute_mesh_normalization(const MeshType&
     return {max_comp, scene_offset};
 }
 
-void test_integral(
+void test_integral_reference(
     const MeshType& mesh,
     std::array<wmtk::Image, 6> position_normal_images,
     wmtk::Image height,
@@ -137,9 +137,49 @@ void test_integral(
     wmtk::logger().info("done with integral test");
 }
 
+void test_integral_correctness(
+    const MeshType& mesh,
+    std::array<wmtk::Image, 3> displaced)
+{
+    auto& uv_attr = mesh.get_indexed_attribute<double>(lagrange::AttributeName::texcoord);
+    auto uv_vertices = matrix_view(uv_attr.values());
+    auto uv_facets = reshaped_view(uv_attr.indices(), 3);
+
+    MeshType uv_mesh(2);
+    uv_mesh.add_vertices(uv_vertices.rows());
+    uv_mesh.add_triangles(uv_facets.rows());
+    vertex_ref(uv_mesh) = uv_vertices;
+    facet_ref(uv_mesh) = uv_facets;
+    std::vector<std::array<float, 6>> uv_triangles(uv_mesh.get_num_facets());
+    for (Index i = 0; i < uv_mesh.get_num_facets(); i++) {
+        for (Index j = 0; j < 3; j++) {
+            uv_triangles[i][2 * j + 0] = uv_vertices(uv_facets(i, j), 0);
+            uv_triangles[i][2 * j + 1] = uv_vertices(uv_facets(i, j), 1);
+        }
+    }
+
+    // Test with new engine
+    std::vector<float> errors_bicubic(uv_mesh.get_num_facets());
+    std::vector<float> errors_nearest(uv_mesh.get_num_facets());
+    std::vector<float> errors_bilinear(uv_mesh.get_num_facets());
+    wmtk::TextureIntegral integral(std::move(displaced));
+    integral.get_error_per_triangle(uv_triangles, errors_bicubic, 0);
+    integral.get_error_per_triangle(uv_triangles, errors_nearest, 1);
+    integral.get_error_per_triangle(uv_triangles, errors_bilinear, 2);
+
+    for (int f = 0; f < mesh.get_num_facets(); ++f) {
+        // REQUIRE_THAT(
+        //     errors_nearest[f],
+        //     Catch::Matchers::WithinRel(errors_bicubic[f], 1e-2f));
+        REQUIRE_THAT(
+            errors_bilinear[f],
+            Catch::Matchers::WithinRel(errors_bicubic[f], 1e-2f));
+    }
+}
+
 } // namespace
 
-TEST_CASE("Texture Integral", "[utils][integral]")
+TEST_CASE("Texture Integral Reference", "[utils][integral]")
 {
     std::string displaced_positions = WMT_DATA_DIR "/images/hemisphere_512_displaced.exr";
     std::string position_path = WMT_DATA_DIR "/images/hemisphere_512_position.exr";
@@ -156,10 +196,18 @@ TEST_CASE("Texture Integral", "[utils][integral]")
             position_normal_images[i + 3] = nrm[i];
         }
     }
-    test_integral(
+    test_integral_reference(
         lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMT_DATA_DIR "/hemisphere.obj"),
         std::move(position_normal_images),
         std::move(height),
+        load_rgb_image(displaced_positions));
+}
+
+TEST_CASE("Texture Integral Correctness", "[utils][integral]")
+{
+    std::string displaced_positions = WMT_DATA_DIR "/images/hemisphere_512_displaced.exr";
+    test_integral_correctness(
+        lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMT_DATA_DIR "/hemisphere.obj"),
         load_rgb_image(displaced_positions));
 }
 

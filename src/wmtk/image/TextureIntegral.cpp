@@ -2,7 +2,6 @@
 
 #include <wmtk/quadrature/ClippedQuadrature.h>
 #include <wmtk/quadrature/TriangleQuadrature.h>
-#include <wmtk/utils/Sampling.h>
 
 #include <tbb/enumerable_thread_specific.h>
 #include <tbb/parallel_for.h>
@@ -187,28 +186,38 @@ float sample_bilinear(const wmtk::Image& image, float u, float v)
     return pix.dot(weight);
 }
 
+float sample_bicubic(const wmtk::Image& image, float u, float v)
+{
+    auto w = image.width();
+    auto h = image.height();
+    // x, y are between 0 and 1
+    auto x = u * static_cast<float>(w);
+    auto y = v * static_cast<float>(h);
+
+    // use bicubic interpolation
+    BicubicVector<float> sample_vector = extract_samples(
+        static_cast<size_t>(w),
+        static_cast<size_t>(h),
+        image.get_raw_image().data(),
+        wmtk::get_value(x),
+        wmtk::get_value(y),
+        image.get_wrapping_mode_x(),
+        image.get_wrapping_mode_y());
+    BicubicVector<float> bicubic_coeff = get_bicubic_matrix() * sample_vector;
+    return eval_bicubic_coeffs(bicubic_coeff, x, y);
+}
 
 } // namespace
 
 struct TextureIntegral::Cache
 {
-public:
-    Cache(std::array<wmtk::SamplingBicubic, 3> samplers_)
-        : samplers(std::move(samplers_))
-    {}
-
-public:
     // Data for exact error computation
     tbb::enumerable_thread_specific<QuadratureCache> quadrature_cache;
-    std::array<wmtk::SamplingBicubic, 3> samplers;
 };
 
 TextureIntegral::TextureIntegral(std::array<wmtk::Image, 3> data)
     : m_data(std::move(data))
-    , m_cache(lagrange::make_value_ptr<Cache>(std::array<wmtk::SamplingBicubic, 3>{
-          SamplingBicubic(m_data[0]),
-          SamplingBicubic(m_data[1]),
-          SamplingBicubic(m_data[2])}))
+    , m_cache(lagrange::make_value_ptr<Cache>())
 {}
 
 TextureIntegral::~TextureIntegral() = default;
@@ -232,7 +241,7 @@ void TextureIntegral::get_error_per_triangle(
                 [&](double u, double v) -> Eigen::Matrix<double, 3, 1> {
                     Eigen::Matrix<double, 3, 1> displaced_position;
                     for (auto i = 0; i < 3; ++i) {
-                        displaced_position[i] = m_cache->samplers[i].sample(u, v);
+                        displaced_position[i] = sample_bicubic(m_data[i], u, v);
                     }
                     return displaced_position;
                 });
