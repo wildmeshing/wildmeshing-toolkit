@@ -44,7 +44,8 @@ class VertexAttributes
 public:
     Eigen::Vector2d pos;
     double t = 0.;
-    size_t curve_id = 0; // questionable should I have this for each vertex?
+    size_t curve_id = 0; // TODO questionable should I have this for each vertex? change to be for
+                         // each edge, but still keep one copy for vertex
 
     size_t partition_id = 0; // TODO this should not be here
 
@@ -57,6 +58,12 @@ class FaceAttributes
 {
 public:
     std::array<std::optional<wmtk::TriMesh::Tuple>, 3> mirror_edges;
+};
+
+class EdgeAttributes
+{
+public:
+    std::optional<int> curve_id = std::nullopt;
 };
 
 class AdaptiveTessellation : public wmtk::TriMesh
@@ -73,6 +80,7 @@ public:
     // Store the per-vertex attributes
     wmtk::AttributeCollection<VertexAttributes> vertex_attrs;
     wmtk::AttributeCollection<FaceAttributes> face_attrs;
+    wmtk::AttributeCollection<EdgeAttributes> edge_attrs;
     struct InfoCache
     {
         size_t v1;
@@ -133,7 +141,7 @@ public:
     void set_projection();
     // using boundary parametrization, find the vertex that are the start and end of each cruve and
     // set them as fixed
-    void set_fixed();
+    void set_fixed_assign_edge_curveid();
     Eigen::Matrix<uint64_t, Eigen::Dynamic, 2, Eigen::RowMajor> get_bnd_edge_matrix();
 
 

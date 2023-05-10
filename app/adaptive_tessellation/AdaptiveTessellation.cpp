@@ -65,12 +65,47 @@ void AdaptiveTessellation::set_parameters(
     set_edge_length_measurement(edge_len_type); // set the default to get_legnth_3d
     mesh_parameters.m_boundary_parameter = boundary_parameter;
 }
-// using boundary parametrization, find the vertex that are the start and end of each cruve and set
-// them as fixed
-void AdaptiveTessellation::set_fixed()
+// using boundary parametrization,
+// find the vertex that are the start and end of each cruve and set them as fixed
+// use the vertex curve-id and assign edge curve-id
+void AdaptiveTessellation::set_fixed_assign_edge_curveid()
 {
     for (int curve_id = 0; curve_id < mesh_parameters.m_boundary.num_curves(); curve_id++) {
         if (mesh_parameters.m_boundary.is_periodic(curve_id)) {
+            // assign edge curve id
+            auto uv_origin = mesh_parameters.m_boundary.t_to_uv(curve_id, 0.);
+            double dist_origin = std::numeric_limits<double>::infinity();
+            size_t origin_vid = -1;
+            for (auto& v : get_vertices()) {
+                if ((vertex_attrs[v.vid(*this)].pos - uv_origin).squaredNorm() < dist_origin) {
+                    dist_origin = (vertex_attrs[v.vid(*this)].pos - uv_origin).squaredNorm();
+                    origin_vid = v.vid(*this);
+                }
+            }
+
+            TriMesh::Tuple origin_tuple;
+            for (auto& e : get_one_ring_edges_for_vertex(tuple_from_vertex(origin_vid))) {
+                if (is_boundary_edge(e)) {
+                    origin_tuple = e.switch_vertex(*this);
+                    break;
+                }
+            }
+            assert(origin_tuple.is_valid(*this));
+            assert(origin_vid == origin_tuple.vid(*this));
+            while (true) {
+                // assign current edge the same curve-id
+                edge_attrs[origin_tuple.eid(*this)].curve_id = std::make_optional<int>(curve_id);
+                if (origin_tuple.switch_vertex(*this).vid(*this) == origin_vid) break;
+                // else, get the next boundary edge on the same curve
+                for (auto& e : get_one_ring_edges_for_vertex(origin_tuple.switch_vertex(*this))) {
+                    if (is_boundary_edge(e) && e.vid(*this) != origin_tuple.vid(*this)) {
+                        origin_tuple = e.switch_vertex(*this);
+                        assert(vertex_attrs[origin_tuple.vid(*this)].curve_id == curve_id);
+                        break;
+                    }
+                }
+            }
+            assert(origin_vid == origin_tuple.switch_vertex(*this).vid(*this));
             // periodic curve has no fixed vertex
             continue;
         }
@@ -98,6 +133,31 @@ void AdaptiveTessellation::set_fixed()
         assert(dist_last < 1e-8);
         vertex_attrs[first_vid].fixed = true;
         vertex_attrs[last_vid].fixed = true;
+
+        // assign edge curve id
+        TriMesh::Tuple first_tuple = tuple_from_vertex(first_vid);
+        for (auto& e : get_one_ring_edges_for_vertex(first_tuple)) {
+            if (is_boundary_edge(e) && vertex_attrs[e.vid(*this)].curve_id == curve_id) {
+                first_tuple = e.switch_vertex(*this);
+                break;
+            }
+        }
+        assert(first_tuple.vid(*this) == first_vid);
+        assert(first_tuple.is_valid(*this));
+        while (true) {
+            // assign current edge the same curve-id
+            edge_attrs[first_tuple.eid(*this)].curve_id = std::make_optional<int>(curve_id);
+            if (first_tuple.switch_vertex(*this).vid(*this) == last_vid) break;
+            // else, get the next seam edge on the same curve
+            for (auto& e : get_one_ring_edges_for_vertex(first_tuple.switch_vertex(*this))) {
+                if (is_boundary_edge(e) && e.vid(*this) != first_tuple.vid(*this)) {
+                    first_tuple = e.switch_vertex(*this);
+                    assert(vertex_attrs[first_tuple.vid(*this)].curve_id == curve_id);
+                    break;
+                }
+            }
+        }
+        assert(last_vid == first_tuple.switch_vertex(*this).vid(*this));
     }
 }
 
@@ -566,11 +626,11 @@ void AdaptiveTessellation::mesh_construct_boundaries(
     // construct the boundary map for boundary parametrization
     if (mesh_parameters.m_boundary_parameter)
         mesh_parameters.m_boundary.construct_boundaries(V, F, E0, E1);
-
     // mark boundary vertices as boundary_vertex
     // but this is not indiscriminatively rejected for all operations
     // other operations are conditioned on whether m_bnd_freeze is turned on
-    // also obtain the boudnary parametrizatin too
+    // also obtain the boudnary parametrizatin t for each vertex
+    // for now keep the per vertex curve-id. but this is now a edge property
     for (auto v : this->get_vertices()) {
         if (is_boundary_vertex(v)) {
             vertex_attrs[v.vid(*this)].boundary_vertex = is_boundary_vertex(v);
@@ -580,13 +640,14 @@ void AdaptiveTessellation::mesh_construct_boundaries(
                 mesh_parameters.m_boundary.uv_to_t(vertex_attrs[v.vid(*this)].pos);
         }
     }
+    // after the boundary is constructed, set the start and end of each curve to be fixed
+    // and assign curve-id to each edge using the curve-it assigned for each vertex
+    set_fixed_assign_edge_curveid();
+
 
     // TODO move this to the boundary unit test
     for (const auto& v : get_vertices()) {
         assert(vertex_attrs[v.vid(*this)].t >= 0);
-    }
-
-    for (const auto& v : get_vertices()) {
         if (is_boundary_vertex(v))
             assert(
                 (vertex_attrs[v.vid(*this)].pos - mesh_parameters.m_boundary.t_to_uv(
@@ -1084,8 +1145,12 @@ double AdaptiveTessellation::get_area_accuracy_error(const Tuple& edge_tuple) co
     auto tmp_tuple = edge_tuple.switch_face(*this);
     if (tmp_tuple.has_value()) {
         error2 = get_area_accuracy_error_per_face(tmp_tuple.value());
-    } else
-        error2 = error1;
+    } else {
+        if (is_seam_edge(edge_tuple))
+            error2 = get_area_accuracy_error_per_face(get_oriented_mirror_edge(edge_tuple));
+        else
+            error2 = error1;
+    }
     if (mesh_parameters.m_split_absolute_error_metric) {
         error = (error1 + error2) * get_length2d(edge_tuple);
     } else {
