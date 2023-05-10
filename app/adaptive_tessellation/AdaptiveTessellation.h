@@ -141,7 +141,8 @@ public:
     void set_projection();
     // using boundary parametrization, find the vertex that are the start and end of each cruve and
     // set them as fixed
-    void set_fixed_assign_edge_curveid();
+    void set_fixed();
+    void assign_edge_curveid();
     Eigen::Matrix<uint64_t, Eigen::Dynamic, 2, Eigen::RowMajor> get_bnd_edge_matrix();
 
 

@@ -590,3 +590,86 @@ TEST_CASE("uv-index and coloring test")
 }
 
 // TODO special case for link condition in seamed mesh. a tube with a seam edge in the middle
+
+TEST_CASE("edge curve-id assignment")
+{
+    AdaptiveTessellation m;
+    Eigen::MatrixXd UV;
+    Eigen::MatrixXi F;
+    std::filesystem::path input_mesh_path = WMT_DATA_DIR "/hemisphere.obj";
+    m.create_paired_seam_mesh_with_offset(input_mesh_path.string(), UV, F);
+    m.set_fixed();
+    for (auto& e : m.get_edges()) {
+        if (m.is_boundary_edge(e)) {
+            REQUIRE(m.edge_attrs[e.eid(m)].curve_id.has_value());
+        }
+    }
+    for (int curve_id = 0; curve_id < m.mesh_parameters.m_boundary.num_curves(); curve_id++) {
+        for (int positionx = 0; positionx < m.mesh_parameters.m_boundary.curve_size(curve_id) - 1;
+             positionx++) {
+            auto uv1 = m.mesh_parameters.m_boundary.get_position_at_x(curve_id, positionx);
+            auto uv2 = m.mesh_parameters.m_boundary.get_position_at_x(curve_id, positionx + 1);
+            double dist_first = std::numeric_limits<double>::infinity();
+            double dist_last = std::numeric_limits<double>::infinity();
+            size_t vid_1 = -1;
+            size_t vid_2 = -1;
+            for (auto& v : m.get_vertices()) {
+                if ((m.vertex_attrs[v.vid(m)].pos - uv1).squaredNorm() < dist_first) {
+                    dist_first = (m.vertex_attrs[v.vid(m)].pos - uv1).squaredNorm();
+                    vid_1 = v.vid(m);
+                }
+                if ((m.vertex_attrs[v.vid(m)].pos - uv2).squaredNorm() < dist_last) {
+                    dist_last = (m.vertex_attrs[v.vid(m)].pos - uv2).squaredNorm();
+                    vid_2 = v.vid(m);
+                }
+            }
+            assert(dist_first < 1e-8);
+            assert(dist_last < 1e-8);
+            auto e = m.tuple_from_vertex(vid_1);
+            for (auto& one_ring_e : m.get_one_ring_edges_for_vertex(e)) {
+                if (one_ring_e.vid(m) == vid_2) {
+                    e = one_ring_e;
+                    break;
+                }
+            }
+            REQUIRE(m.edge_attrs[e.eid(m)].curve_id.has_value());
+            REQUIRE(m.edge_attrs[e.eid(m)].curve_id.value() == curve_id);
+        }
+    }
+}
+
+TEST_CASE("quickrun")
+{
+    // Loading the input 2d mesh
+    AdaptiveTessellation m;
+    Eigen::MatrixXd UV;
+    Eigen::MatrixXi F;
+    m.create_paired_seam_mesh_with_offset("/home/yunfan/seamPyramid.obj", UV, F);
+
+    Image image;
+    image.load(
+        "/home/yunfan/seamPyramid_height_10.exr",
+        WrappingMode::MIRROR_REPEAT,
+        WrappingMode::MIRROR_REPEAT);
+
+    m.mesh_parameters.m_position_normal_paths = {"/home/yunfan/seamPyramid_position.exr",
+                                                 "/home/yunfan/seamPyramid_normal_smooth.exr"};
+    assert(m.check_mesh_connectivity_validity());
+    m.set_parameters(
+        0.00001,
+        0.4,
+        image,
+        WrappingMode::MIRROR_REPEAT,
+        SAMPLING_MODE::BICUBIC,
+        DISPLACEMENT_MODE::MESH_3D,
+        adaptive_tessellation::ENERGY_TYPE::AREA_QUADRATURE,
+        adaptive_tessellation::EDGE_LEN_TYPE::AREA_ACCURACY,
+        1);
+    m.split_all_edges();
+    m.consolidate_mesh();
+    m.write_displaced_obj("split_result.obj", m.mesh_parameters.m_displacement);
+    m.write_obj("split_result_2d.obj");
+    m.smooth_all_vertices();
+    m.write_displaced_obj("smooth_result.obj", m.mesh_parameters.m_displacement);
+    m.write_obj("smooth_result_2d.obj");
+}

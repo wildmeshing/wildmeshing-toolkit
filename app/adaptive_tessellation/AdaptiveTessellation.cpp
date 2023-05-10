@@ -68,44 +68,10 @@ void AdaptiveTessellation::set_parameters(
 // using boundary parametrization,
 // find the vertex that are the start and end of each cruve and set them as fixed
 // use the vertex curve-id and assign edge curve-id
-void AdaptiveTessellation::set_fixed_assign_edge_curveid()
+void AdaptiveTessellation::set_fixed()
 {
     for (int curve_id = 0; curve_id < mesh_parameters.m_boundary.num_curves(); curve_id++) {
         if (mesh_parameters.m_boundary.is_periodic(curve_id)) {
-            // assign edge curve id
-            auto uv_origin = mesh_parameters.m_boundary.t_to_uv(curve_id, 0.);
-            double dist_origin = std::numeric_limits<double>::infinity();
-            size_t origin_vid = -1;
-            for (auto& v : get_vertices()) {
-                if ((vertex_attrs[v.vid(*this)].pos - uv_origin).squaredNorm() < dist_origin) {
-                    dist_origin = (vertex_attrs[v.vid(*this)].pos - uv_origin).squaredNorm();
-                    origin_vid = v.vid(*this);
-                }
-            }
-
-            TriMesh::Tuple origin_tuple;
-            for (auto& e : get_one_ring_edges_for_vertex(tuple_from_vertex(origin_vid))) {
-                if (is_boundary_edge(e)) {
-                    origin_tuple = e.switch_vertex(*this);
-                    break;
-                }
-            }
-            assert(origin_tuple.is_valid(*this));
-            assert(origin_vid == origin_tuple.vid(*this));
-            while (true) {
-                // assign current edge the same curve-id
-                edge_attrs[origin_tuple.eid(*this)].curve_id = std::make_optional<int>(curve_id);
-                if (origin_tuple.switch_vertex(*this).vid(*this) == origin_vid) break;
-                // else, get the next boundary edge on the same curve
-                for (auto& e : get_one_ring_edges_for_vertex(origin_tuple.switch_vertex(*this))) {
-                    if (is_boundary_edge(e) && e.vid(*this) != origin_tuple.vid(*this)) {
-                        origin_tuple = e.switch_vertex(*this);
-                        assert(vertex_attrs[origin_tuple.vid(*this)].curve_id == curve_id);
-                        break;
-                    }
-                }
-            }
-            assert(origin_vid == origin_tuple.switch_vertex(*this).vid(*this));
             // periodic curve has no fixed vertex
             continue;
         }
@@ -133,31 +99,6 @@ void AdaptiveTessellation::set_fixed_assign_edge_curveid()
         assert(dist_last < 1e-8);
         vertex_attrs[first_vid].fixed = true;
         vertex_attrs[last_vid].fixed = true;
-
-        // assign edge curve id
-        TriMesh::Tuple first_tuple = tuple_from_vertex(first_vid);
-        for (auto& e : get_one_ring_edges_for_vertex(first_tuple)) {
-            if (is_boundary_edge(e) && vertex_attrs[e.vid(*this)].curve_id == curve_id) {
-                first_tuple = e.switch_vertex(*this);
-                break;
-            }
-        }
-        assert(first_tuple.vid(*this) == first_vid);
-        assert(first_tuple.is_valid(*this));
-        while (true) {
-            // assign current edge the same curve-id
-            edge_attrs[first_tuple.eid(*this)].curve_id = std::make_optional<int>(curve_id);
-            if (first_tuple.switch_vertex(*this).vid(*this) == last_vid) break;
-            // else, get the next seam edge on the same curve
-            for (auto& e : get_one_ring_edges_for_vertex(first_tuple.switch_vertex(*this))) {
-                if (is_boundary_edge(e) && e.vid(*this) != first_tuple.vid(*this)) {
-                    first_tuple = e.switch_vertex(*this);
-                    assert(vertex_attrs[first_tuple.vid(*this)].curve_id == curve_id);
-                    break;
-                }
-            }
-        }
-        assert(last_vid == first_tuple.switch_vertex(*this).vid(*this));
     }
 }
 
@@ -595,6 +536,7 @@ void AdaptiveTessellation::create_mesh(const Eigen::MatrixXd& V, const Eigen::Ma
     // Register attributes
     p_vertex_attrs = &vertex_attrs;
     p_face_attrs = &face_attrs;
+    p_edge_attrs = &edge_attrs;
     // Convert from eigen to internal representation (TODO: move to utils and remove it from all
     // app)
     std::vector<std::array<size_t, 3>> tri(F.rows());
@@ -616,7 +558,8 @@ void AdaptiveTessellation::create_mesh(const Eigen::MatrixXd& V, const Eigen::Ma
     }
 }
 
-// TODO set feature include when vertex get more than 2 curveids
+// set fixed vertices due to boundary
+// set the curve-id for each edge
 void AdaptiveTessellation::mesh_construct_boundaries(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,
@@ -635,16 +578,16 @@ void AdaptiveTessellation::mesh_construct_boundaries(
         if (is_boundary_vertex(v)) {
             vertex_attrs[v.vid(*this)].boundary_vertex = is_boundary_vertex(v);
             set_feature(v);
-            // vertex_attrs[v.vid(*this)].curve_id = 0; /// only one connected mesh for now
+            // one vertex can have more than one curve-id.
+            // current curve-id ofr vertex is arbitrarily picked among them
             std::tie(vertex_attrs[v.vid(*this)].curve_id, vertex_attrs[v.vid(*this)].t) =
                 mesh_parameters.m_boundary.uv_to_t(vertex_attrs[v.vid(*this)].pos);
         }
     }
     // after the boundary is constructed, set the start and end of each curve to be fixed
-    // and assign curve-id to each edge using the curve-it assigned for each vertex
-    set_fixed_assign_edge_curveid();
-
-
+    set_fixed();
+    // assign curve-id to each edge using the curve-it assigned for each vertex
+    assign_edge_curveid();
     // TODO move this to the boundary unit test
     for (const auto& v : get_vertices()) {
         assert(vertex_attrs[v.vid(*this)].t >= 0);
@@ -1622,5 +1565,25 @@ std::vector<size_t> AdaptiveTessellation::get_all_mirror_vids(const TriMesh::Tup
     return ret_vertices_vid;
 }
 
+void AdaptiveTessellation::assign_edge_curveid()
+{
+    for (const auto& e : get_edges()) {
+        assert(e.is_valid(*this));
+        if (!is_boundary_edge(e)) {
+            // is an interior edge, skip ....
+            continue;
+        }
+        // find the mid-point uv of the edge
+        auto midpoint_uv =
+            (vertex_attrs[e.vid(*this)].pos + vertex_attrs[e.switch_vertex(*this).vid(*this)].pos) /
+            2.;
+        // use the mid-point uv to find edge curve id
+        int curve_id = -1;
+        double t = 0.;
+        std::tie(curve_id, t) = mesh_parameters.m_boundary.uv_to_t(midpoint_uv);
+        // assign the curve id to the edge
+        edge_attrs[e.eid(*this)].curve_id = std::make_optional<int>(curve_id);
+    }
+}
 
 } // namespace adaptive_tessellation
