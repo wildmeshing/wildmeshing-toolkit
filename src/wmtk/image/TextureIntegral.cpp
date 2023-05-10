@@ -130,6 +130,22 @@ double get_error_per_triangle_exact(
     return value;
 }
 
+float sample(const wmtk::Image& image, float u, float v)
+{
+    auto w = image.width();
+    auto h = image.height();
+    // x, y are between 0 and 1
+    auto x = u * static_cast<float>(w);
+    auto y = v * static_cast<float>(h);
+
+    const auto sx = std::clamp(static_cast<int>(std::floor(x - 0.5)), 0, w - 1);
+    const auto sy = std::clamp(static_cast<int>(std::floor(y - 0.5)), 0, h - 1);
+
+    const auto& array = image.get_raw_image();
+
+    return array(sx, sy);
+}
+
 } // namespace
 
 struct TextureIntegral::Cache
@@ -157,26 +173,47 @@ TextureIntegral::~TextureIntegral() = default;
 
 void TextureIntegral::get_error_per_triangle(
     lagrange::span<const std::array<float, 6>> input_triangles,
-    lagrange::span<float> output_errors)
+    lagrange::span<float> output_errors,
+    int flag)
 {
     assert(input_triangles.size() == output_errors.size());
-    tbb::parallel_for(size_t(0), input_triangles.size(), [&](size_t i) {
-        Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle;
-        triangle.row(0) << input_triangles[i][0], input_triangles[i][1];
-        triangle.row(1) << input_triangles[i][2], input_triangles[i][3];
-        triangle.row(2) << input_triangles[i][4], input_triangles[i][5];
-        output_errors[i] = get_error_per_triangle_exact(
-            m_data[0],
-            triangle,
-            m_cache->quadrature_cache,
-            [&](double u, double v) -> Eigen::Matrix<double, 3, 1> {
-                Eigen::Matrix<double, 3, 1> displaced_position;
-                for (auto i = 0; i < 3; ++i) {
-                    displaced_position[i] = m_cache->samplers[i].sample(u, v);
-                }
-                return displaced_position;
-            });
-    });
+    if (flag == 0) {
+        tbb::parallel_for(size_t(0), input_triangles.size(), [&](size_t i) {
+            Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle;
+            triangle.row(0) << input_triangles[i][0], input_triangles[i][1];
+            triangle.row(1) << input_triangles[i][2], input_triangles[i][3];
+            triangle.row(2) << input_triangles[i][4], input_triangles[i][5];
+            output_errors[i] = get_error_per_triangle_exact(
+                m_data[0],
+                triangle,
+                m_cache->quadrature_cache,
+                [&](double u, double v) -> Eigen::Matrix<double, 3, 1> {
+                    Eigen::Matrix<double, 3, 1> displaced_position;
+                    for (auto i = 0; i < 3; ++i) {
+                        displaced_position[i] = m_cache->samplers[i].sample(u, v);
+                    }
+                    return displaced_position;
+                });
+        });
+    } else {
+        tbb::parallel_for(size_t(0), input_triangles.size(), [&](size_t i) {
+            Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle;
+            triangle.row(0) << input_triangles[i][0], input_triangles[i][1];
+            triangle.row(1) << input_triangles[i][2], input_triangles[i][3];
+            triangle.row(2) << input_triangles[i][4], input_triangles[i][5];
+            output_errors[i] = get_error_per_triangle_exact(
+                m_data[0],
+                triangle,
+                m_cache->quadrature_cache,
+                [&](double u, double v) -> Eigen::Matrix<double, 3, 1> {
+                    Eigen::Matrix<double, 3, 1> displaced_position;
+                    for (auto i = 0; i < 3; ++i) {
+                        displaced_position[i] = sample(m_data[i], u, v);
+                    }
+                    return displaced_position;
+                });
+        });
+    }
 }
 
 void TextureIntegral::get_integral_per_triangle(

@@ -47,7 +47,8 @@ public:
     ///
     void get_error_per_triangle(
         lagrange::span<const std::array<float, 6>> input_triangles,
-        lagrange::span<float> output_errors);
+        lagrange::span<float> output_errors,
+        int flag = 0);
 
     ///
     /// Computes the integral of the input texture over each input UV triangle.

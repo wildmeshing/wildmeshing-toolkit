@@ -10,6 +10,7 @@
 #include <lagrange/utils/invalid.h>
 #include <lagrange/views.h>
 
+#include <spdlog/spdlog.h>
 #include <catch2/catch.hpp>
 
 #include <limits>
@@ -160,4 +161,66 @@ TEST_CASE("Texture Integral", "[utils][integral]")
         std::move(position_normal_images),
         std::move(height),
         load_rgb_image(displaced_positions));
+}
+
+TEST_CASE("Texture Integral Benchmark", "[utils][!benchmark]")
+{
+    spdlog::set_level(spdlog::level::off);
+
+    std::string displaced_positions = WMT_DATA_DIR "/images/hemisphere_512_displaced.exr";
+    std::string position_path = WMT_DATA_DIR "/images/hemisphere_512_position.exr";
+    std::string normal_path = WMT_DATA_DIR "/images/hemisphere_512_normal-world-space.exr";
+    std::string height_path = WMT_DATA_DIR "/images/riveted_castle_iron_door_512_height.exr";
+    wmtk::Image height;
+    height.load(height_path, WrappingMode::CLAMP_TO_EDGE, WrappingMode::CLAMP_TO_EDGE);
+    std::array<wmtk::Image, 6> position_normal_images;
+    {
+        auto pos = load_rgb_image(position_path);
+        auto nrm = load_rgb_image(normal_path);
+        for (int i = 0; i < 3; i++) {
+            position_normal_images[i] = pos[i];
+            position_normal_images[i + 3] = nrm[i];
+        }
+    }
+
+    auto mesh = lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMT_DATA_DIR "/hemisphere.obj");
+    auto& uv_attr = mesh.get_indexed_attribute<double>(lagrange::AttributeName::texcoord);
+    auto uv_vertices = matrix_view(uv_attr.values());
+    auto uv_facets = reshaped_view(uv_attr.indices(), 3);
+
+    MeshType uv_mesh(2);
+    uv_mesh.add_vertices(uv_vertices.rows());
+    uv_mesh.add_triangles(uv_facets.rows());
+    vertex_ref(uv_mesh) = uv_vertices;
+    facet_ref(uv_mesh) = uv_facets;
+    std::vector<std::array<float, 6>> uv_triangles(uv_mesh.get_num_facets());
+    for (Index i = 0; i < uv_mesh.get_num_facets(); i++) {
+        for (Index j = 0; j < 3; j++) {
+            uv_triangles[i][2 * j + 0] = uv_vertices(uv_facets(i, j), 0);
+            uv_triangles[i][2 * j + 1] = uv_vertices(uv_facets(i, j), 1);
+        }
+    }
+
+    // Test with new engine
+    std::vector<float> computed_errors(uv_mesh.get_num_facets());
+    wmtk::TextureIntegral integral(load_rgb_image(displaced_positions));
+
+    BENCHMARK("Virtual Call")
+    {
+        integral.get_error_per_triangle(uv_triangles, computed_errors, 0);
+        float total = 0;
+        for (size_t i = 0; i < computed_errors.size(); ++i) {
+            total += computed_errors[i];
+        }
+        return total;
+    };
+    BENCHMARK("No Virtual Call")
+    {
+        integral.get_error_per_triangle(uv_triangles, computed_errors, 1);
+        float total = 0;
+        for (size_t i = 0; i < computed_errors.size(); ++i) {
+            total += computed_errors[i];
+        }
+        return total;
+    };
 }
