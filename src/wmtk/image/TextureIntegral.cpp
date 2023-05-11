@@ -1,13 +1,13 @@
 #include "TextureIntegral.h"
 
+#include "helpers.h"
+
 #include <wmtk/quadrature/ClippedQuadrature.h>
 #include <wmtk/quadrature/TriangleQuadrature.h>
 
 #include <lagrange/utils/assert.h>
 #include <tbb/enumerable_thread_specific.h>
 #include <tbb/parallel_for.h>
-
-#include <iostream>
 
 namespace wmtk {
 
@@ -249,11 +249,11 @@ double get_error_per_triangle_adaptive(
                     p_displaced[k] = images[k].get_raw_image()(x, y);
                 }
                 value += (p_displaced - p_tri).squaredNorm() * pixel_size(0) * pixel_size(1);
-                #if 0
+#if 0
                 wmtk::ClippedQuadrature rules;
                 auto& quadr = m_cache.local().quad;
                 rules.clipped_triangle_box_quadrature(
-                    1,
+                    order,
                     triangle_uv,
                     box,
                     quadr,
@@ -265,7 +265,7 @@ double get_error_per_triangle_adaptive(
                     Eigen::Matrix<T, 3, 1> p_tri = get_p_interpolated(u, v);
                     value += (p_displaced - p_tri).squaredNorm() * quadr.weights()[i];
                 }
-                #endif
+#endif
             } else {
                 wmtk::ClippedQuadrature rules;
                 auto& quadr = m_cache.local().quad;
@@ -288,141 +288,18 @@ double get_error_per_triangle_adaptive(
             }
         }
     }
-    // logger().info("Num inside: {}, boundary: {}, total: {}", num_inside, num_boundary, num_total);
+    // logger().info("Num inside: {}, boundary: {}, total: {}", num_inside, num_boundary,
+    // num_total);
     return value;
 }
 
 } // namespace
-
-float TextureIntegral::sample_nearest(const wmtk::Image& image, float u, float v)
-{
-    auto w = image.width();
-    auto h = image.height();
-    // x, y are between 0 and 1
-    auto x = u * static_cast<float>(w);
-    auto y = v * static_cast<float>(h);
-
-    const auto sx = std::clamp(static_cast<int>(x), 0, w - 1);
-    const auto sy = std::clamp(static_cast<int>(y), 0, h - 1);
-
-    const auto& array = image.get_raw_image();
-
-    return array(sx, sy);
-}
-
-float TextureIntegral::sample_bilinear(const wmtk::Image& image, float u, float v)
-{
-    auto w = image.width();
-    auto h = image.height();
-    // x, y are between 0 and 1
-    auto x = u * static_cast<float>(w);
-    auto y = v * static_cast<float>(h);
-
-    auto sample_coord = [](const float coord,
-                           const size_t size) -> std::tuple<size_t, size_t, float> {
-        assert(0.f <= coord && coord <= static_cast<float>(size));
-        size_t coord0, coord1;
-        float t;
-        if (coord <= 0.5f) {
-            coord0 = 0;
-            coord1 = 0;
-            t = 0.5f + coord;
-        } else if (coord + 0.5f >= static_cast<float>(size)) {
-            coord0 = size - 1;
-            coord1 = size - 1;
-            t = coord - (static_cast<float>(coord0) + 0.5f);
-        } else {
-            assert(1 < size);
-            coord0 = std::min(size - 2, static_cast<size_t>(coord - 0.5f));
-            coord1 = coord0 + 1;
-            t = coord - (static_cast<float>(coord0) + 0.5f);
-        }
-        return std::make_tuple(coord0, coord1, t);
-    };
-
-    const auto [x0, x1, tx] = sample_coord(x, w);
-    const auto [y0, y1, ty] = sample_coord(y, h);
-
-    const auto& array = image.get_raw_image();
-
-    Eigen::Vector4f pix(array(x0, y0), array(x1, y0), array(x0, y1), array(x1, y1));
-    Eigen::Vector4f weight((1.f - tx) * (1.f - ty), tx * (1.f - ty), (1.f - tx) * ty, tx * ty);
-
-    return pix.dot(weight);
-}
-
-float TextureIntegral::sample_bicubic(const wmtk::Image& image, float u, float v)
-{
-    auto w = image.width();
-    auto h = image.height();
-    // x, y are between 0 and 1
-    auto x = u * static_cast<float>(w);
-    auto y = v * static_cast<float>(h);
-
-    // use bicubic interpolation
-    BicubicVector<float> sample_vector = extract_samples(
-        static_cast<size_t>(w),
-        static_cast<size_t>(h),
-        image.get_raw_image().data(),
-        wmtk::get_value(x),
-        wmtk::get_value(y),
-        image.get_wrapping_mode_x(),
-        image.get_wrapping_mode_y());
-    BicubicVector<float> bicubic_coeff = get_bicubic_matrix() * sample_vector;
-    return eval_bicubic_coeffs(bicubic_coeff, x, y);
-}
 
 struct TextureIntegral::Cache
 {
     // Data for exact error computation
     tbb::enumerable_thread_specific<QuadratureCache> quadrature_cache;
 };
-
-wmtk::Image TextureIntegral::precompute_integrals(const wmtk::Image& image)
-{
-    constexpr int Degree = 4;
-    const int order = 2 * (Degree - 1);
-    const int w = image.width();
-    const int h = image.height();
-    const Eigen::Vector2d pixel_size(1.0 / w, 1.0 / h);
-
-    tbb::enumerable_thread_specific<wmtk::Quadrature> cache;
-
-    wmtk::Image filtered(w, h);
-    tbb::parallel_for(0, w, [&](int x) {
-        auto& quadr = cache.local();
-        for (int y = 0; y < h; ++y) {
-            using CornerType = Eigen::AlignedBox2d::CornerType;
-            Eigen::Vector2i pixel_coord(x, y);
-            Eigen::AlignedBox2d box;
-            box.extend(pixel_coord.cast<double>().cwiseProduct(pixel_size));
-            box.extend(
-                (pixel_coord + Eigen::Vector2i::Ones()).cast<double>().cwiseProduct(pixel_size));
-
-            Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangles[2];
-            triangles[0].row(0) << box.corner(CornerType::BottomLeft).transpose();
-            triangles[0].row(1) << box.corner(CornerType::BottomRight).transpose();
-            triangles[0].row(2) << box.corner(CornerType::TopLeft).transpose();
-            triangles[1].row(0) << box.corner(CornerType::TopLeft).transpose();
-            triangles[1].row(1) << box.corner(CornerType::BottomRight).transpose();
-            triangles[1].row(2) << box.corner(CornerType::TopRight).transpose();
-
-            float value = 0.f;
-            for (size_t k : {0, 1}) {
-                wmtk::TriangleQuadrature rules;
-                rules.transformed_triangle_quadrature(order, triangles[k], quadr);
-                for (size_t i = 0; i < quadr.size(); ++i) {
-                    double u = quadr.points()(i, 0);
-                    double v = quadr.points()(i, 1);
-                    value += sample_bicubic(image, u, v) * quadr.weights()[i];
-                }
-            }
-
-            filtered.set(x, y, value);
-        }
-    });
-    return filtered;
-}
 
 TextureIntegral::TextureIntegral(std::array<wmtk::Image, 3> data)
     : m_data(std::move(data))
@@ -443,17 +320,13 @@ void TextureIntegral::get_error_per_triangle_internal(
         triangle.row(1) << input_triangles[i][2], input_triangles[i][3];
         triangle.row(2) << input_triangles[i][4], input_triangles[i][5];
         auto sampling_func = [&](double u, double v) -> Eigen::Matrix<double, 3, 1> {
-            Eigen::Matrix<double, 3, 1> displaced_position;
-            for (auto i = 0; i < 3; ++i) {
-                if constexpr (Sampling == SamplingMethod::Bicubic) {
-                    displaced_position[i] = sample_bicubic(m_data[i], u, v);
-                } else if constexpr (Sampling == SamplingMethod::Nearest) {
-                    displaced_position[i] = sample_nearest(m_data[i], u, v);
-                } else if constexpr (Sampling == SamplingMethod::Bilinear) {
-                    displaced_position[i] = sample_bilinear(m_data[i], u, v);
-                }
+            if constexpr (Sampling == SamplingMethod::Bicubic) {
+                return internal::sample_bicubic(m_data, u, v).cast<double>();
+            } else if constexpr (Sampling == SamplingMethod::Nearest) {
+                return internal::sample_nearest(m_data, u, v).cast<double>();
+            } else if constexpr (Sampling == SamplingMethod::Bilinear) {
+                return internal::sample_bilinear(m_data, u, v).cast<double>();
             }
-            return displaced_position;
         };
         if constexpr (Integration == IntegrationMethod::Exact)
             output_errors[i] = get_error_per_triangle_exact(

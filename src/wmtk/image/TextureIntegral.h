@@ -80,10 +80,6 @@ public:
         lagrange::span<std::array<float, 3>> output_integrals);
 
 protected:
-    static wmtk::Image precompute_integrals(const wmtk::Image& image);
-    static float sample_nearest(const wmtk::Image& image, float u, float v);
-    static float sample_bilinear(const wmtk::Image& image, float u, float v);
-    static float sample_bicubic(const wmtk::Image& image, float u, float v);
 
     template<SamplingMethod sampling_method, IntegrationMethod integration_method>
     void get_error_per_triangle_internal(

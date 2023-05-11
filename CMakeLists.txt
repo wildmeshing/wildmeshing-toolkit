@@ -93,6 +93,7 @@ include(onetbb)
 include(mshio)
 include(metis)
 include(gmp)
+include(probabilistic_quadrics)
 
 include(lagrange)
 lagrange_include_modules(bvh)
@@ -113,6 +114,7 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     HighFive::HighFive
     hdf5::hdf5
     lagrange::bvh
+    probabilistic_quadrics::probabilistic_quadrics
 )
 include(finite-diff)
 target_link_libraries(wildmeshing_toolkit PUBLIC finitediff::finitediff)

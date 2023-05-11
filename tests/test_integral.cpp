@@ -1,4 +1,5 @@
 #include <wmtk/image/TextureIntegral.h>
+#include <wmtk/image/helpers.h>
 #include <wmtk/utils/Displacement.h>
 #include <wmtk/utils/load_image_exr.h>
 
@@ -159,76 +160,71 @@ void test_integral_reference(
     wmtk::logger().info("done with integral test");
 }
 
-struct IntegralTester : public wmtk::TextureIntegral
+void test_sampling(const MeshType& mesh, std::array<wmtk::Image, 3> displaced)
 {
-    static void sampling(const MeshType& mesh, std::array<wmtk::Image, 3> displaced)
-    {
-        // Check interpolation at pixel centers
-        const int w = displaced[0].width();
-        const int h = displaced[0].height();
-        for (int x = 0; x < w; ++x) {
-            for (int y = 0; y < h; ++y) {
-                const float u = (static_cast<float>(x) + 0.5) / static_cast<float>(w);
-                const float v = (static_cast<float>(y) + 0.5) / static_cast<float>(h);
+    // Check interpolation at pixel centers
+    const int w = displaced[0].width();
+    const int h = displaced[0].height();
+    for (int x = 0; x < w; ++x) {
+        for (int y = 0; y < h; ++y) {
+            const float u = (static_cast<float>(x) + 0.5) / static_cast<float>(w);
+            const float v = (static_cast<float>(y) + 0.5) / static_cast<float>(h);
+            const auto value_nearest = wmtk::internal::sample_nearest(displaced, u, v);
+            const auto value_bilinear = wmtk::internal::sample_bilinear(displaced, u, v);
+            const auto value_bicubic = wmtk::internal::sample_bicubic(displaced, u, v);
+            for (size_t i = 0; i < 3; ++i) {
+                const auto value_pixel = displaced[i].get_raw_image()(x, y);
+                CAPTURE(x, y, u, v);
+                REQUIRE_THAT(value_nearest[i], Catch::Matchers::WithinRel(value_pixel, 1e-5f));
+                REQUIRE_THAT(value_bilinear[i], Catch::Matchers::WithinRel(value_pixel, 1e-5f));
+                // REQUIRE_THAT(value_bicubic, Catch::Matchers::WithinRel(value_pixel, 1e-2f));
+            }
+        }
+    }
+
+    // Check nearest interpolation around pixel centers
+    std::mt19937 gen;
+    std::uniform_real_distribution<float> dist(-0.45f, 0.45f);
+    for (int x = 0; x < w; ++x) {
+        for (int y = 0; y < h; ++y) {
+            for (size_t k = 0; k < 4; ++k) {
+                const float u = (static_cast<float>(x) + 0.5 + dist(gen)) / static_cast<float>(w);
+                const float v = (static_cast<float>(y) + 0.5 + dist(gen)) / static_cast<float>(h);
+                const auto value_nearest = wmtk::internal::sample_nearest(displaced, u, v);
                 for (size_t i = 0; i < 3; ++i) {
                     const auto value_pixel = displaced[i].get_raw_image()(x, y);
-                    const auto value_nearest = sample_nearest(displaced[i], u, v);
-                    const auto value_bilinear = sample_bilinear(displaced[i], u, v);
-                    const auto value_bicubic = sample_bicubic(displaced[i], u, v);
                     CAPTURE(x, y, u, v);
-                    REQUIRE_THAT(value_nearest, Catch::Matchers::WithinRel(value_pixel, 1e-5f));
-                    REQUIRE_THAT(value_bilinear, Catch::Matchers::WithinRel(value_pixel, 1e-5f));
-                    // REQUIRE_THAT(value_bicubic, Catch::Matchers::WithinRel(value_pixel, 1e-2f));
-                }
-            }
-        }
-
-        // Check nearest interpolation around pixel centers
-        std::mt19937 gen;
-        std::uniform_real_distribution<float> dist(-0.45f, 0.45f);
-        for (int x = 0; x < w; ++x) {
-            for (int y = 0; y < h; ++y) {
-                for (size_t k = 0; k < 4; ++k) {
-                    const float u =
-                        (static_cast<float>(x) + 0.5 + dist(gen)) / static_cast<float>(w);
-                    const float v =
-                        (static_cast<float>(y) + 0.5 + dist(gen)) / static_cast<float>(h);
-                    for (size_t i = 0; i < 3; ++i) {
-                        const auto value_pixel = displaced[i].get_raw_image()(x, y);
-                        const auto value_nearest = sample_nearest(displaced[i], u, v);
-                        CAPTURE(x, y, u, v);
-                        REQUIRE_THAT(value_nearest, Catch::Matchers::WithinRel(value_pixel, 1e-5f));
-                    }
-                }
-            }
-        }
-
-        // Check bilinear interpolation at midpoints between pixels
-        for (int x = 0; x + 1 < w; ++x) {
-            for (int y = 0; y + 1 < h; ++y) {
-                const float u00 = (static_cast<float>(x) + 0.5) / static_cast<float>(w);
-                const float u05 = (static_cast<float>(x) + 1) / static_cast<float>(w);
-                const float v00 = (static_cast<float>(y) + 0.5) / static_cast<float>(h);
-                const float v05 = (static_cast<float>(y) + 1) / static_cast<float>(h);
-                for (size_t i = 0; i < 3; ++i) {
-                    const auto p00 = displaced[i].get_raw_image()(x, y);
-                    const auto p10 = displaced[i].get_raw_image()(x + 1, y);
-                    const auto p01 = displaced[i].get_raw_image()(x, y + 1);
-                    const auto p11 = displaced[i].get_raw_image()(x + 1, y + 1);
-                    const auto q01 = sample_bilinear(displaced[i], u00, v05);
-                    const auto q10 = sample_bilinear(displaced[i], u05, v00);
-                    const auto q11 = sample_bilinear(displaced[i], u05, v05);
-                    CAPTURE(x, y);
-                    REQUIRE_THAT(q01, Catch::Matchers::WithinRel(0.5f * (p00 + p01), 1e-5f));
-                    REQUIRE_THAT(q10, Catch::Matchers::WithinRel(0.5f * (p00 + p10), 1e-5f));
-                    REQUIRE_THAT(
-                        q11,
-                        Catch::Matchers::WithinRel(0.25f * (p00 + p01 + p10 + p11), 1e-4f));
+                    REQUIRE_THAT(value_nearest[i], Catch::Matchers::WithinRel(value_pixel, 1e-5f));
                 }
             }
         }
     }
-};
+
+    // Check bilinear interpolation at midpoints between pixels
+    for (int x = 0; x + 1 < w; ++x) {
+        for (int y = 0; y + 1 < h; ++y) {
+            const float u00 = (static_cast<float>(x) + 0.5) / static_cast<float>(w);
+            const float u05 = (static_cast<float>(x) + 1) / static_cast<float>(w);
+            const float v00 = (static_cast<float>(y) + 0.5) / static_cast<float>(h);
+            const float v05 = (static_cast<float>(y) + 1) / static_cast<float>(h);
+            const auto q01 = wmtk::internal::sample_bilinear(displaced, u00, v05);
+            const auto q10 = wmtk::internal::sample_bilinear(displaced, u05, v00);
+            const auto q11 = wmtk::internal::sample_bilinear(displaced, u05, v05);
+            for (size_t i = 0; i < 3; ++i) {
+                const auto p00 = displaced[i].get_raw_image()(x, y);
+                const auto p10 = displaced[i].get_raw_image()(x + 1, y);
+                const auto p01 = displaced[i].get_raw_image()(x, y + 1);
+                const auto p11 = displaced[i].get_raw_image()(x + 1, y + 1);
+                CAPTURE(x, y);
+                REQUIRE_THAT(q01[i], Catch::Matchers::WithinRel(0.5f * (p00 + p01), 1e-5f));
+                REQUIRE_THAT(q10[i], Catch::Matchers::WithinRel(0.5f * (p00 + p10), 1e-5f));
+                REQUIRE_THAT(
+                    q11[i],
+                    Catch::Matchers::WithinRel(0.25f * (p00 + p01 + p10 + p11), 1e-4f));
+            }
+        }
+    }
+}
 
 } // namespace
 
@@ -259,7 +255,7 @@ TEST_CASE("Texture Integral Reference", "[utils][integral]")
 TEST_CASE("Texture Integral Sampling", "[utils][integral]")
 {
     std::string displaced_positions = WMT_DATA_DIR "/images/hemisphere_512_displaced.exr";
-    IntegralTester::sampling(
+    test_sampling(
         lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMT_DATA_DIR "/hemisphere.obj"),
         load_rgb_image(displaced_positions));
 }
