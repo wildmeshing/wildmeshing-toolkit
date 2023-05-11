@@ -599,13 +599,35 @@ void AdaptiveTessellation::export_mesh_with_displacement(Eigen::MatrixXd& V, Eig
     V = vertices_displaced;
 }
 
-void AdaptiveTessellation::export_mesh_complete(
+void AdaptiveTessellation::export_mesh(
     Eigen::MatrixXd& V,
     Eigen::MatrixXi& F,
-    Eigen::MatrixXd& TC,
-    Eigen::MatrixXi& FTC) const
+    Eigen::MatrixXd& VT,
+    Eigen::MatrixXi& FT) const
 {
-    throw std::exception("Method not implemented!");
+    export_mesh_without_invalid_faces(VT, FT);
+
+    V.resize(VT.rows(), 3);
+    for (int i = 0; i < VT.rows(); i++) {
+        const double& u = VT(i, 0);
+        const double& v = VT(i, 1);
+        V.row(i) = mesh_parameters.m_displacement->get(u, v);
+    }
+
+    F = FT;
+    remove_seams(V, F);
+
+    // get rid of unreferenced vertices in both meshes
+    Eigen::MatrixXd V_buf;
+    Eigen::MatrixXi F_buf;
+    Eigen::MatrixXi map_old_to_new_v_ids;
+    igl::remove_unreferenced(V, F, V_buf, F_buf, map_old_to_new_v_ids);
+    V = V_buf;
+    F = F_buf;
+
+    igl::remove_unreferenced(VT, FT, V_buf, F_buf, map_old_to_new_v_ids);
+    VT = V_buf;
+    FT = F_buf;
 }
 
 void AdaptiveTessellation::remove_seams(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const
@@ -884,6 +906,19 @@ void AdaptiveTessellation::write_world_obj(
     }
 
     igl::writeOBJ(path, V, F);
+    wmtk::logger().info("============>> current edge length {}", avg_edge_len(*this));
+}
+
+void AdaptiveTessellation::write_obj_with_texture_coords(const std::string& path)
+{
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    Eigen::MatrixXd CN;
+    Eigen::MatrixXd FN;
+    Eigen::MatrixXd VT;
+    Eigen::MatrixXi FT;
+    export_mesh(V, F, VT, FT);
+    igl::writeOBJ(path, V, F, CN, FN, VT, FT);
     wmtk::logger().info("============>> current edge length {}", avg_edge_len(*this));
 }
 

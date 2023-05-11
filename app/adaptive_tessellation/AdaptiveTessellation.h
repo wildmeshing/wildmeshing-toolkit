@@ -152,8 +152,15 @@ public:
     // Exports V and F of the stored mesh
     void export_mesh_with_displacement(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
 
-    // Exports the mesh including UV coordinates
-    void export_mesh_complete(
+    /**
+     * @brief Exports the mesh including UV coordinates
+     *
+     * @param V igl format vertices
+     * @param F igl format faces
+     * @param VT igl format texture vertices
+     * @param FT igl format texture faces
+     */
+    void export_mesh(
         Eigen::MatrixXd& V,
         Eigen::MatrixXi& F,
         Eigen::MatrixXd& TC,
@@ -193,6 +200,7 @@ public:
     void write_world_obj(
         const std::string& path,
         const std::shared_ptr<wmtk::Displacement> displacement);
+    void write_obj_with_texture_coords(const std::string& path);
 
     // Computes the quality of a triangle
     double get_quality(const Tuple& loc, int idx = 0) const;
