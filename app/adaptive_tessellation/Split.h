@@ -11,9 +11,9 @@
 #include <wmtk/utils/TupleUtils.hpp>
 #include "AdaptiveTessellation.h"
 #include "wmtk/ExecutionScheduler.hpp"
-using namespace adaptive_tessellation;
 using namespace wmtk;
 
+namespace adaptive_tessellation {
 class AdaptiveTessellationSplitEdgeOperation : public wmtk::TriMeshOperationShim<
                                                    AdaptiveTessellation,
                                                    AdaptiveTessellationSplitEdgeOperation,
@@ -79,3 +79,4 @@ public:
     bool before(AdaptiveTessellation& m, const Tuple& t);
     bool after(AdaptiveTessellation& m, ExecuteReturnData& ret_data);
 };
+}

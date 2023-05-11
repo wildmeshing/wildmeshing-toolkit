@@ -1,6 +1,11 @@
 
 #pragma once
 
+#include <cstddef>
+#include <wmtk/utils/Logger.hpp>
+#include <string>
+#include <optional>
+#include <tbb/enumerable_thread_specific.h>
 
 namespace wmtk {
 class TriMesh;
