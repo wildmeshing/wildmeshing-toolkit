@@ -92,5 +92,7 @@ public:
 
     // early stopping after n operations. default to infinity
     int m_early_stopping_number = std::numeric_limits<size_t>::max();
+    // only operate to modify topologies
+    bool m_ignore_embedding = false;
 };
 } // namespace adaptive_tessellation

@@ -29,11 +29,12 @@ bool AdaptiveTessellationCollapseEdgeOperation::before(AdaptiveTessellation& m, 
         // check if the two vertices to be split is of the same curve_id
         if (m.vertex_attrs[t.vid(m)].curve_id != m.vertex_attrs[t.switch_vertex(m).vid(m)].curve_id)
             return false;
-
-        double length3d = m.mesh_parameters.m_get_length(t);
-        // enforce heuristic
-        assert(length3d < 4. / 5. * m.mesh_parameters.m_quality_threshold);
-
+        if (!m.mesh_parameters.m_ignore_embedding) {
+            double length3d = m.mesh_parameters.m_get_length(t);
+            // enforce heuristic
+            assert(length3d < 4. / 5. * m.mesh_parameters.m_quality_threshold);
+            op_cache.local().length3d = length3d;
+        }
         // record boundary vertex as boudnary_vertex in vertex attribute for accurate collapse
         // after boundary operations
 
@@ -50,7 +51,7 @@ bool AdaptiveTessellationCollapseEdgeOperation::before(AdaptiveTessellation& m, 
         // record the two vertices vids to the operation cache
         op_cache.local().v1 = t.vid(m);
         op_cache.local().v2 = t.switch_vertex(m).vid(m);
-        op_cache.local().length3d = length3d;
+
         m.cache.local().partition_id = m.vertex_attrs[t.vid(m)].partition_id;
         return true;
     }
