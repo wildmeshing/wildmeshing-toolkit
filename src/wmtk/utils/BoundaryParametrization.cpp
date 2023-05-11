@@ -361,6 +361,9 @@ Boundary::ParameterizedSegment Boundary::t_to_segment(int curve_id, double t) co
     assert(t <= arclength.back());
 
     auto it = std::prev(std::upper_bound(arclength.begin(), arclength.end(), t));
+    if (!is_periodic(curve_id) && std::next(it) == arclength.end()) {
+        --it;
+    }
     auto a = std::distance(arclength.begin(), it);
     assert(a < arclength.size());
 
