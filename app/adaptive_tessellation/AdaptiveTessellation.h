@@ -69,6 +69,11 @@ public:
 
 class AdaptiveTessellation : public wmtk::TriMesh
 {
+    Eigen::MatrixXd input_V_;
+    Eigen::MatrixXi input_F_;
+    Eigen::MatrixXd input_VT_;
+    Eigen::MatrixXi input_FT_;
+
 public:
     template <class T>
     using RowMatrix2 = Eigen::Matrix<T, Eigen::Dynamic, 2, Eigen::RowMajor>;
@@ -187,8 +192,23 @@ public:
     void export_mesh(
         Eigen::MatrixXd& V,
         Eigen::MatrixXi& F,
-        Eigen::MatrixXd& TC,
-        Eigen::MatrixXi& FTC) const;
+        Eigen::MatrixXd& VT,
+        Eigen::MatrixXi& FT) const;
+
+    /**
+     * @brief Exports the mesh including UV coordinates where all 3D positions are mapped onto the
+     * input.
+     *
+     * @param V igl format vertices
+     * @param F igl format faces
+     * @param VT igl format texture vertices
+     * @param FT igl format texture faces
+     */
+    void export_mesh_mapped_on_input(
+        Eigen::MatrixXd& V,
+        Eigen::MatrixXi& F,
+        Eigen::MatrixXd& VT,
+        Eigen::MatrixXi& FT) const;
 
     /**
      * @brief Exports V and F of the stored mesh where all seam vertices are merged.

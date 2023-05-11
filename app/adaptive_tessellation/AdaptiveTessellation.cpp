@@ -382,12 +382,13 @@ void AdaptiveTessellation::create_paired_seam_mesh_with_offset(
     assert(mesh.get_num_facets() == F.rows());
 
     // load 3d coordinates and connectivities for computing the offset and scaling
-    Eigen::MatrixXd V3d;
-    Eigen::MatrixXi F3d;
-    igl::read_triangle_mesh(input_mesh_path.string(), V3d, F3d);
+    Eigen::MatrixXd CN;
+    Eigen::MatrixXd FN;
+    // igl::read_triangle_mesh(input_mesh_path.string(), input_V_, input_F_);
+    igl::readOBJ(input_mesh_path.string(), input_V_, input_VT_, CN, input_F_, input_FT_, FN);
 
-    const Eigen::MatrixXd box_min = V3d.colwise().minCoeff();
-    const Eigen::MatrixXd box_max = V3d.colwise().maxCoeff();
+    const Eigen::MatrixXd box_min = input_V_.colwise().minCoeff();
+    const Eigen::MatrixXd box_max = input_V_.colwise().maxCoeff();
     double max_comp = (box_max - box_min).maxCoeff();
     Eigen::MatrixXd scene_offset = -box_min;
     Eigen::MatrixXd scene_extent = box_max - box_min;
@@ -400,11 +401,14 @@ void AdaptiveTessellation::create_paired_seam_mesh_with_offset(
 
     wmtk::TriMesh m_3d;
     std::vector<std::array<size_t, 3>> tris;
-    for (auto f = 0; f < F3d.rows(); f++) {
-        std::array<size_t, 3> tri = {(size_t)F3d(f, 0), (size_t)F3d(f, 1), (size_t)F3d(f, 2)};
+    for (auto f = 0; f < input_F_.rows(); f++) {
+        std::array<size_t, 3> tri = {
+            (size_t)input_F_(f, 0),
+            (size_t)input_F_(f, 1),
+            (size_t)input_F_(f, 2)};
         tris.emplace_back(tri);
     }
-    m_3d.create_mesh(V3d.rows(), tris);
+    m_3d.create_mesh(input_V_.rows(), tris);
     create_mesh(UV, F);
     // loop through faces
     // for each edge, get fid on both side.
@@ -425,8 +429,8 @@ void AdaptiveTessellation::create_paired_seam_mesh_with_offset(
             auto lvi2 = (lvi1 + 1) % 3;
             auto local_eid = 3 - lvi1 - lvi2;
             // construct the edge tuple of current vertex in 3d mesh
-            Tuple edge1_3d = Tuple(F3d(fi, lvi1), local_eid, fi, m_3d);
-            assert(F3d(fi, lvi1) == edge1_3d.vid(m_3d));
+            Tuple edge1_3d = Tuple(input_F_(fi, lvi1), local_eid, fi, m_3d);
+            assert(input_F_(fi, lvi1) == edge1_3d.vid(m_3d));
             if (!edge1_3d.switch_face(m_3d).has_value()) {
                 // Boundary edge, skipping...
                 continue;
@@ -435,12 +439,12 @@ void AdaptiveTessellation::create_paired_seam_mesh_with_offset(
                 auto fj = edge2_3d.fid(m_3d);
                 size_t lvj1, lvj2;
                 for (auto i = 0; i < 3; i++) {
-                    if (F3d(fj, i) == edge1_3d.vid(m_3d)) lvj1 = i;
-                    if (F3d(fj, i) == edge1_3d.switch_vertex(m_3d).vid(m_3d)) lvj2 = i;
+                    if (input_F_(fj, i) == edge1_3d.vid(m_3d)) lvj1 = i;
+                    if (input_F_(fj, i) == edge1_3d.switch_vertex(m_3d).vid(m_3d)) lvj2 = i;
                 }
 
-                assert(F3d(fi, lvi1) == F3d(fj, lvj1));
-                assert(F3d(fi, lvi2) == F3d(fj, lvj2));
+                assert(input_F_(fi, lvi1) == input_F_(fj, lvj1));
+                assert(input_F_(fi, lvi2) == input_F_(fj, lvj2));
                 // set up seam edge
                 if ((F(fi, lvi1) != F(fj, lvj1)) || (F(fi, lvi2) != F(fj, lvj2))) {
                     // this is a seam. init the mirror_edge tuple
@@ -485,12 +489,12 @@ void AdaptiveTessellation::create_paired_seam_mesh_with_offset(
                 auto fj_3d = edge2_3d.fid(m_3d);
                 size_t lvj1_3d, lvj2_3d;
                 for (auto i = 0; i < 3; i++) {
-                    if (F3d(fj_3d, i) == edge1_3d.vid(m_3d)) lvj1_3d = i;
-                    if (F3d(fj_3d, i) == edge1_3d.switch_vertex(m_3d).vid(m_3d)) lvj2_3d = i;
+                    if (input_F_(fj_3d, i) == edge1_3d.vid(m_3d)) lvj1_3d = i;
+                    if (input_F_(fj_3d, i) == edge1_3d.switch_vertex(m_3d).vid(m_3d)) lvj2_3d = i;
                 }
 
-                assert(F3d(fi, lvi1) == F3d(fj_3d, lvj1_3d));
-                assert(F3d(fi, lvi2) == F3d(fj_3d, lvj2_3d));
+                assert(input_F_(fi, lvi1) == input_F_(fj_3d, lvj1_3d));
+                assert(input_F_(fi, lvi2) == input_F_(fj_3d, lvj2_3d));
                 // edge1_3d is a seam edge
                 if ((F(fi, lvi1) != F(fj_3d, lvj1_3d)) || (F(fi, lvi2) != F(fj_3d, lvj2_3d))) {
                     uv_index_to_color.insert({F(fi, lvi1), current_color});
@@ -511,10 +515,10 @@ void AdaptiveTessellation::create_paired_seam_mesh_with_offset(
                             auto fj = e2_3d.fid(m_3d);
                             size_t lvj1, lvj2;
                             for (auto i = 0; i < 3; i++) {
-                                if (F3d(fj, i) == edge1_3d.vid(m_3d)) lvj1 = i;
-                                if (F3d(fj, i) == e2_3d.vid(m_3d)) lvj2 = i;
+                                if (input_F_(fj, i) == edge1_3d.vid(m_3d)) lvj1 = i;
+                                if (input_F_(fj, i) == e2_3d.vid(m_3d)) lvj2 = i;
                             }
-                            assert(F3d(fi, lvi1) == F3d(fj, lvj1));
+                            assert(input_F_(fi, lvi1) == input_F_(fj, lvj1));
                             // this is a mirror vertex at a seam edge
                             if (F(fi, lvi1) != F(fj, lvj1)) {
                                 // the mirror vertex has not been colored yet
@@ -756,6 +760,40 @@ void AdaptiveTessellation::export_mesh(
     for (int i = 0; i < VT.rows(); i++) {
         const double& u = VT(i, 0);
         const double& v = VT(i, 1);
+        V.row(i) = mesh_parameters.m_displacement->get(u, v);
+    }
+
+    F = FT;
+    remove_seams(V, F);
+
+    // get rid of unreferenced vertices in both meshes
+    Eigen::MatrixXd V_buf;
+    Eigen::MatrixXi F_buf;
+    Eigen::MatrixXi map_old_to_new_v_ids;
+    igl::remove_unreferenced(V, F, V_buf, F_buf, map_old_to_new_v_ids);
+    V = V_buf;
+    F = F_buf;
+
+    igl::remove_unreferenced(VT, FT, V_buf, F_buf, map_old_to_new_v_ids);
+    VT = V_buf;
+    FT = F_buf;
+}
+
+void AdaptiveTessellation::export_mesh_mapped_on_input(
+    Eigen::MatrixXd& V,
+    Eigen::MatrixXi& F,
+    Eigen::MatrixXd& VT,
+    Eigen::MatrixXi& FT) const
+{
+    throw std::exception("Method not fully implemented yet.");
+
+    export_mesh_without_invalid_faces(VT, FT);
+
+    V.resize(VT.rows(), 3);
+    for (int i = 0; i < VT.rows(); i++) {
+        const double& u = VT(i, 0);
+        const double& v = VT(i, 1);
+        // TODO find input triangle and map to it
         V.row(i) = mesh_parameters.m_displacement->get(u, v);
     }
 
