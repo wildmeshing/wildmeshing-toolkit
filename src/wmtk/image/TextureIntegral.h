@@ -26,7 +26,7 @@ public:
     };
 
     enum class IntegrationMethod {
-        Naive,
+        Exact,
         Adaptive
     };
 
@@ -94,7 +94,7 @@ private:
     std::array<wmtk::Image, 3> m_data;
     lagrange::value_ptr<Cache> m_cache;
     SamplingMethod m_sampling_method = SamplingMethod::Bicubic;
-    IntegrationMethod m_integration_method = IntegrationMethod::Naive;
+    IntegrationMethod m_integration_method = IntegrationMethod::Exact;
 };
 
 } // namespace wmtk

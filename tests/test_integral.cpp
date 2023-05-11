@@ -50,6 +50,28 @@ std::array<wmtk::Image, 3> load_rgb_image(const std::filesystem::path& path)
     };
 }
 
+std::vector<std::array<float, 6>> load_uv_triangles(const std::filesystem::path& path)
+{
+    auto mesh = lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(path);
+    auto& uv_attr = mesh.get_indexed_attribute<double>(lagrange::AttributeName::texcoord);
+    auto uv_vertices = matrix_view(uv_attr.values());
+    auto uv_facets = reshaped_view(uv_attr.indices(), 3);
+
+    MeshType uv_mesh(2);
+    uv_mesh.add_vertices(uv_vertices.rows());
+    uv_mesh.add_triangles(uv_facets.rows());
+    vertex_ref(uv_mesh) = uv_vertices;
+    facet_ref(uv_mesh) = uv_facets;
+    std::vector<std::array<float, 6>> uv_triangles(uv_mesh.get_num_facets());
+    for (Index i = 0; i < uv_mesh.get_num_facets(); i++) {
+        for (Index j = 0; j < 3; j++) {
+            uv_triangles[i][2 * j + 0] = uv_vertices(uv_facets(i, j), 0);
+            uv_triangles[i][2 * j + 1] = uv_vertices(uv_facets(i, j), 1);
+        }
+    }
+    return uv_triangles;
+}
+
 std::pair<double, Eigen::RowVector3d> compute_mesh_normalization(const MeshType& mesh)
 {
     auto vertices = vertex_view(mesh);
@@ -139,7 +161,7 @@ void test_integral_reference(
 
 struct IntegralTester : public wmtk::TextureIntegral
 {
-    static void correctness(const MeshType& mesh, std::array<wmtk::Image, 3> displaced)
+    static void sampling(const MeshType& mesh, std::array<wmtk::Image, 3> displaced)
     {
         // Check interpolation at pixel centers
         const int w = displaced[0].width();
@@ -234,70 +256,84 @@ TEST_CASE("Texture Integral Reference", "[utils][integral]")
         load_rgb_image(displaced_positions));
 }
 
-TEST_CASE("Texture Integral Correctness", "[utils][integral]")
+TEST_CASE("Texture Integral Sampling", "[utils][integral]")
 {
     std::string displaced_positions = WMT_DATA_DIR "/images/hemisphere_512_displaced.exr";
-    IntegralTester::correctness(
+    IntegralTester::sampling(
         lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMT_DATA_DIR "/hemisphere.obj"),
         load_rgb_image(displaced_positions));
 }
 
-TEST_CASE("Texture Integral Benchmark", "[utils][!benchmark]")
+TEST_CASE("Texture Integral Adaptive", "[utils][integral]")
 {
-    spdlog::set_level(spdlog::level::off);
-
     std::string displaced_positions = WMT_DATA_DIR "/images/hemisphere_512_displaced.exr";
+    auto uv_triangles = load_uv_triangles(WMT_DATA_DIR "/hemisphere.obj");
 
-    auto mesh = lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMT_DATA_DIR "/hemisphere.obj");
-    auto& uv_attr = mesh.get_indexed_attribute<double>(lagrange::AttributeName::texcoord);
-    auto uv_vertices = matrix_view(uv_attr.values());
-    auto uv_facets = reshaped_view(uv_attr.indices(), 3);
-
-    MeshType uv_mesh(2);
-    uv_mesh.add_vertices(uv_vertices.rows());
-    uv_mesh.add_triangles(uv_facets.rows());
-    vertex_ref(uv_mesh) = uv_vertices;
-    facet_ref(uv_mesh) = uv_facets;
-    std::vector<std::array<float, 6>> uv_triangles(uv_mesh.get_num_facets());
-    for (Index i = 0; i < uv_mesh.get_num_facets(); i++) {
-        for (Index j = 0; j < 3; j++) {
-            uv_triangles[i][2 * j + 0] = uv_vertices(uv_facets(i, j), 0);
-            uv_triangles[i][2 * j + 1] = uv_vertices(uv_facets(i, j), 1);
-        }
-    }
-
-    // Test with new engine
-    std::vector<float> computed_errors(uv_mesh.get_num_facets());
     wmtk::TextureIntegral integral(load_rgb_image(displaced_positions));
 
-    BENCHMARK("Bicubic")
+    std::vector<float> errors_exact(uv_triangles.size());
+    integral.set_integration_method(wmtk::TextureIntegral::IntegrationMethod::Exact);
+    integral.get_error_per_triangle(uv_triangles, errors_exact);
+
+    std::vector<float> errors_adaptive(uv_triangles.size());
+    integral.set_integration_method(wmtk::TextureIntegral::IntegrationMethod::Adaptive);
+    integral.get_error_per_triangle(uv_triangles, errors_adaptive);
+
+    for (size_t f = 0; f < uv_triangles.size(); ++f) {
+        REQUIRE_THAT(errors_adaptive[f], Catch::Matchers::WithinRel(errors_exact[f], 1e-5f));
+    }
+}
+
+TEST_CASE("Texture Integral Benchmark", "[utils][!benchmark]")
+{
+    // spdlog::set_level(spdlog::level::off);
+
+    std::string displaced_positions = WMT_DATA_DIR "/images/hemisphere_512_displaced.exr";
+    auto uv_triangles = load_uv_triangles(WMT_DATA_DIR "/hemisphere.obj");
+
+    std::vector<float> computed_errors(uv_triangles.size());
+    wmtk::TextureIntegral integral(load_rgb_image(displaced_positions));
+
+    BENCHMARK("Bicubic + Exact")
     {
         integral.set_sampling_method(wmtk::TextureIntegral::SamplingMethod::Bicubic);
+        integral.set_integration_method(wmtk::TextureIntegral::IntegrationMethod::Exact);
         integral.get_error_per_triangle(uv_triangles, computed_errors);
-        float total = 0;
-        for (size_t i = 0; i < computed_errors.size(); ++i) {
-            total += computed_errors[i];
-        }
-        return total;
+        return std::accumulate(computed_errors.begin(), computed_errors.end(), 0.f);
     };
-    BENCHMARK("Nearest")
+    BENCHMARK("Bicubic + Adaptive")
+    {
+        integral.set_sampling_method(wmtk::TextureIntegral::SamplingMethod::Bicubic);
+        integral.set_integration_method(wmtk::TextureIntegral::IntegrationMethod::Adaptive);
+        integral.get_error_per_triangle(uv_triangles, computed_errors);
+        return std::accumulate(computed_errors.begin(), computed_errors.end(), 0.f);
+    };
+    BENCHMARK("Nearest + Exact")
     {
         integral.set_sampling_method(wmtk::TextureIntegral::SamplingMethod::Nearest);
+        integral.set_integration_method(wmtk::TextureIntegral::IntegrationMethod::Exact);
         integral.get_error_per_triangle(uv_triangles, computed_errors);
-        float total = 0;
-        for (size_t i = 0; i < computed_errors.size(); ++i) {
-            total += computed_errors[i];
-        }
-        return total;
+        return std::accumulate(computed_errors.begin(), computed_errors.end(), 0.f);
     };
-    BENCHMARK("Bilinear")
+    BENCHMARK("Nearest + Adaptive")
+    {
+        integral.set_sampling_method(wmtk::TextureIntegral::SamplingMethod::Nearest);
+        integral.set_integration_method(wmtk::TextureIntegral::IntegrationMethod::Adaptive);
+        integral.get_error_per_triangle(uv_triangles, computed_errors);
+        return std::accumulate(computed_errors.begin(), computed_errors.end(), 0.f);
+    };
+    BENCHMARK("Bilinear + Exact")
     {
         integral.set_sampling_method(wmtk::TextureIntegral::SamplingMethod::Bilinear);
+        integral.set_integration_method(wmtk::TextureIntegral::IntegrationMethod::Exact);
         integral.get_error_per_triangle(uv_triangles, computed_errors);
-        float total = 0;
-        for (size_t i = 0; i < computed_errors.size(); ++i) {
-            total += computed_errors[i];
-        }
-        return total;
+        return std::accumulate(computed_errors.begin(), computed_errors.end(), 0.f);
+    };
+    BENCHMARK("Bilinear + Adaptive")
+    {
+        integral.set_sampling_method(wmtk::TextureIntegral::SamplingMethod::Bilinear);
+        integral.set_integration_method(wmtk::TextureIntegral::IntegrationMethod::Adaptive);
+        integral.get_error_per_triangle(uv_triangles, computed_errors);
+        return std::accumulate(computed_errors.begin(), computed_errors.end(), 0.f);
     };
 }
