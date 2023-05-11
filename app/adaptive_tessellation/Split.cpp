@@ -33,6 +33,22 @@ bool AdaptiveTessellationSplitEdgeOperation::before(AdaptiveTessellation& m, con
         op_cache.local().v1 = t.vid(m);
         op_cache.local().v2 = t.switch_vertex(m).vid(m);
         op_cache.local().curve_id = m.edge_attrs[t.eid(m)].curve_id;
+        op_cache.local().before_curve_ids.resize(0); // clear the cache
+        // edge 2
+        op_cache.local().before_curve_ids.emplace_back(
+            m.edge_attrs[t.switch_edge(m).eid(m)].curve_id);
+        // edge 1
+        op_cache.local().before_curve_ids.emplace_back(
+            m.edge_attrs[t.switch_vertex(m).switch_edge(m).eid(m)].curve_id);
+        if (t.switch_face(m).has_value()) {
+            // edge 5
+            op_cache.local().before_curve_ids.emplace_back(
+                m.edge_attrs[t.switch_face(m).value().switch_edge(m).eid(m)].curve_id);
+            // edge 4
+            op_cache.local().before_curve_ids.emplace_back(
+                m.edge_attrs[t.switch_face(m).value().switch_vertex(m).switch_edge(m).eid(m)]
+                    .curve_id);
+        }
         // record the mesh cache
         m.cache.local().partition_id = m.vertex_attrs[t.vid(m)].partition_id;
         if (m.is_boundary_vertex(t))
@@ -86,14 +102,42 @@ bool AdaptiveTessellationSplitEdgeOperation::after(
         auto edge_6 =
             return_edge_tuple.switch_vertex(m).switch_edge(m).switch_face(m).value().switch_edge(m);
         m.edge_attrs[edge_6.eid(m)].curve_id = op_cache.local().curve_id;
+        // edge 2'
+        m.edge_attrs[return_edge_tuple.switch_edge(m).eid(m)].curve_id =
+            op_cache.local().before_curve_ids[0];
+        // edge 1'
+        auto edge_1_prime = return_edge_tuple.switch_vertex(m)
+                                .switch_edge(m)
+                                .switch_face(m)
+                                .value()
+                                .switch_edge(m)
+                                .switch_vertex(m)
+                                .switch_edge(m);
+        m.edge_attrs[edge_1_prime.eid(m)].curve_id = op_cache.local().before_curve_ids[1];
         // nullify the middle interior edge outdated edge_attrs data
         m.edge_attrs[return_edge_tuple.switch_vertex(m).switch_edge(m).eid(m)].curve_id =
             std::nullopt;
         m.edge_attrs[return_edge_tuple.switch_vertex(m).switch_edge(m).switch_face(m).value().eid(
                          m)]
             .curve_id = std::nullopt;
-        // check if it has a neighbore face whose edge_attrs data also need to be nullified
+        // check if it has a neighbore face whose edge_attrs data also need to be updated/nullified
         if (return_edge_tuple.switch_face(m).has_value()) {
+            assert(op_cache.local().before_curve_ids.size() == 4);
+            // edge 4'
+            m.edge_attrs[return_edge_tuple.switch_face(m).value().switch_edge(m).eid(m)].curve_id =
+                op_cache.local().before_curve_ids[2];
+            // edge 5'
+            auto edge_5_prime = return_edge_tuple.switch_face(m)
+                                    .value()
+                                    .switch_vertex(m)
+                                    .switch_edge(m)
+                                    .switch_face(m)
+                                    .value()
+                                    .switch_edge(m)
+                                    .switch_vertex(m)
+                                    .switch_edge(m);
+            m.edge_attrs[edge_5_prime.eid(m)].curve_id = op_cache.local().before_curve_ids[3];
+            // nullify the middle interior edge outdated edge_attrs data
             m.edge_attrs
                 [return_edge_tuple.switch_face(m).value().switch_vertex(m).switch_edge(m).eid(m)]
                     .curve_id = std::nullopt;
@@ -113,7 +157,6 @@ bool AdaptiveTessellationSplitEdgeOperation::after(
 bool AdaptiveTessellationPairedSplitEdgeOperation::before(AdaptiveTessellation& m, const Tuple& t)
 {
     static std::atomic_int cnt = 0;
-    cnt++;
     assert(t.is_valid(m));
     // TODO is this thread safe?
     mirror_edge_tuple = std::nullopt; // reset the mirror edge tuple
@@ -160,7 +203,6 @@ bool AdaptiveTessellationPairedSplitEdgeOperation::before(AdaptiveTessellation& 
     //     m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}.obj", cnt),
     //     m.mesh_parameters.m_displacement);
     // m.write_obj(m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}_2d.obj", cnt));
-
     cnt++;
     assert(
         (paired_op_cache.local().before_sibling_edges.size() == 3 ||
@@ -541,6 +583,7 @@ void AdaptiveTessellation::split_all_edges()
         setup_and_execute(executor);
     } else {
         auto executor = wmtk::ExecutePass<AdaptiveTessellation, ExecutionPolicy::kSeq>();
+        set_early_termination_number(mesh_parameters.m_early_stopping_number, executor);
         setup_and_execute(executor);
     }
 }

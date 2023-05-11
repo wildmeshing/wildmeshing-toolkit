@@ -319,7 +319,14 @@ TEST_CASE("paired split")
     m.edge_attrs[primary_edge2.switch_edge(m).eid(m)].curve_id = std::make_optional<int>(3);
     m.edge_attrs[primary_edge2.switch_vertex(m).switch_edge(m).eid(m)].curve_id =
         std::make_optional<int>(3);
-
+    /////// debug
+    for (auto& e : m.get_edges()) {
+        if (m.is_boundary_edge(e)) {
+            REQUIRE(m.edge_attrs[e.eid(m)].curve_id.has_value());
+        } else {
+            REQUIRE(!m.edge_attrs[e.eid(m)].curve_id.has_value());
+        }
+    }
     AdaptiveTessellationPairedSplitEdgeOperation op;
     op(m, primary_edge2);
 
@@ -368,6 +375,14 @@ TEST_CASE("paired split")
     REQUIRE(m.edge_attrs[primary_edge2.eid(m)].curve_id.value() == 1);
     REQUIRE(m.edge_attrs[m.get_oriented_mirror_edge(primary_edge1).eid(m)].curve_id.value() == 1);
     REQUIRE(m.edge_attrs[m.get_oriented_mirror_edge(primary_edge2).eid(m)].curve_id.value() == 0);
+    /////// debug
+    for (auto& e : m.get_edges()) {
+        if (m.is_boundary_edge(e)) {
+            REQUIRE(m.edge_attrs[e.eid(m)].curve_id.has_value());
+        } else {
+            REQUIRE(!m.edge_attrs[e.eid(m)].curve_id.has_value());
+        }
+    }
 
     //////////======= interior edge split
     // acsii art diamond
@@ -415,6 +430,14 @@ TEST_CASE("paired split")
     REQUIRE(primary_edge3.vid(m) == 0);
     REQUIRE(primary_edge3.fid(m) == 0);
     REQUIRE(primary_edge3.switch_vertex(m).vid(m) == 8);
+    /////// debug
+    for (auto& e : m.get_edges()) {
+        if (m.is_boundary_edge(e)) {
+            REQUIRE(m.edge_attrs[e.eid(m)].curve_id.has_value());
+        } else {
+            REQUIRE(!m.edge_attrs[e.eid(m)].curve_id.has_value());
+        }
+    }
 
     ////////// ======= boundary edge split
     // acsii art diamond
@@ -467,6 +490,14 @@ TEST_CASE("paired split")
     REQUIRE(m.edge_attrs[primary_edge5.eid(m)].curve_id.value() == 2);
     REQUIRE(m.is_boundary_edge(primary_edge5));
     REQUIRE(!m.is_seam_edge(primary_edge5));
+    /////// debug
+    for (auto& e : m.get_edges()) {
+        if (m.is_boundary_edge(e)) {
+            REQUIRE(m.edge_attrs[e.eid(m)].curve_id.has_value());
+        } else {
+            REQUIRE(!m.edge_attrs[e.eid(m)].curve_id.has_value());
+        }
+    }
 }
 
 TEST_CASE("test mirror edge setup")
@@ -725,10 +756,56 @@ TEST_CASE("quickrun")
         adaptive_tessellation::EDGE_LEN_TYPE::AREA_ACCURACY,
         1);
     m.split_all_edges();
-    m.consolidate_mesh();
+}
+
+TEST_CASE("check curveid consistency after split")
+{
+    // logger().set_level(spdlog::level::trace);
+    // Loading the input 2d mesh
+    AdaptiveTessellation m;
+    Eigen::MatrixXd UV;
+    Eigen::MatrixXi F;
+    m.create_paired_seam_mesh_with_offset("/home/yunfan/seamPyramid.obj", UV, F);
+
+    Image image;
+    image.load(
+        "/home/yunfan/seamPyramid_height_10.exr",
+        WrappingMode::MIRROR_REPEAT,
+        WrappingMode::MIRROR_REPEAT);
+
+    m.mesh_parameters.m_position_normal_paths = {"/home/yunfan/seamPyramid_position.exr",
+                                                 "/home/yunfan/seamPyramid_normal_smooth.exr"};
+    assert(m.check_mesh_connectivity_validity());
+    // stop after 10 iterations
+    m.mesh_parameters.m_early_stopping_number = 10;
+    m.set_parameters(
+        0.00001,
+        0.4,
+        image,
+        WrappingMode::MIRROR_REPEAT,
+        SAMPLING_MODE::BICUBIC,
+        DISPLACEMENT_MODE::MESH_3D,
+        adaptive_tessellation::ENERGY_TYPE::AREA_QUADRATURE,
+        adaptive_tessellation::EDGE_LEN_TYPE::AREA_ACCURACY,
+        1);
+    m.split_all_edges();
     m.write_displaced_obj("split_result.obj", m.mesh_parameters.m_displacement);
     m.write_obj("split_result_2d.obj");
-    m.smooth_all_vertices();
-    m.write_displaced_obj("smooth_result.obj", m.mesh_parameters.m_displacement);
-    m.write_obj("smooth_result_2d.obj");
+    // check curve-id after split per edge
+    for (auto& e : m.get_edges()) {
+        if (m.is_boundary_edge(e)) {
+            wmtk::logger().info(e.info());
+            REQUIRE(m.edge_attrs[e.eid(m)].curve_id.has_value());
+            // find the mid-point uv of the edge
+            auto uv =
+                (m.vertex_attrs[e.vid(m)].pos + m.vertex_attrs[e.switch_vertex(m).vid(m)].pos) / 2.;
+            // find the curve id of the mid-point uv
+            int curve_id = -1;
+            double t = 0.;
+            std::tie(curve_id, t) = m.mesh_parameters.m_boundary.uv_to_t(uv);
+            REQUIRE(m.edge_attrs[e.eid(m)].curve_id.value() == curve_id);
+        } else {
+            REQUIRE(!m.edge_attrs[e.eid(m)].curve_id.has_value());
+        }
+    }
 }

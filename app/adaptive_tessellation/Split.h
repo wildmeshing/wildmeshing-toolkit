@@ -26,6 +26,8 @@ public:
         size_t v1;
         size_t v2;
         std::optional<int> curve_id = std::nullopt;
+        std::vector<std::optional<int>>
+            before_curve_ids; // record 1,2 curve_id and 4,5 curve_id if they exist
     };
     tbb::enumerable_thread_specific<OpCache> op_cache;
 
