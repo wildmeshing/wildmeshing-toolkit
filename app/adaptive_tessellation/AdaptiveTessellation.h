@@ -259,6 +259,13 @@ public:
     void set_mirror_edge_data(const TriMesh::Tuple& primary_t, const TriMesh::Tuple& mirror_edge);
     bool is_seam_edge(const TriMesh::Tuple& t) const;
     bool is_seam_vertex(const TriMesh::Tuple& t) const;
+
+    // set early termination for a execution pass for unit test and debugging purpose
+    template <typename Executor>
+    void set_early_termination_number(int n, Executor& e)
+    {
+        e.stopping_criterion_checking_frequency = n;
+    }
     // unit test functions
     inline void create_mesh_debug(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F)
     {
