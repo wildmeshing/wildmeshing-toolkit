@@ -376,10 +376,6 @@ struct TextureIntegral::Cache
 {
     // Data for exact error computation
     tbb::enumerable_thread_specific<QuadratureCache> quadrature_cache;
-
-    // Precomputed integrals for each pixels (rather than assuming constant value per pixel, we
-    // precompute the integral of the pixel to match the exact integration approach)
-    std::array<wmtk::Image, 3> prefiltered_images;
 };
 
 wmtk::Image TextureIntegral::precompute_integrals(const wmtk::Image& image)
@@ -431,11 +427,7 @@ wmtk::Image TextureIntegral::precompute_integrals(const wmtk::Image& image)
 TextureIntegral::TextureIntegral(std::array<wmtk::Image, 3> data)
     : m_data(std::move(data))
     , m_cache(lagrange::make_value_ptr<Cache>())
-{
-    m_cache->prefiltered_images[0] = precompute_integrals(m_data[0]);
-    m_cache->prefiltered_images[1] = precompute_integrals(m_data[1]);
-    m_cache->prefiltered_images[2] = precompute_integrals(m_data[2]);
-}
+{}
 
 TextureIntegral::~TextureIntegral() = default;
 
