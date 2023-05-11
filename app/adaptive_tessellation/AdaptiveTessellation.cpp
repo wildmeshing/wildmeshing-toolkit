@@ -749,6 +749,7 @@ void AdaptiveTessellation::write_obj(const std::string& path)
     V3.leftCols(2) = V;
 
     igl::writeOBJ(path, V3, F);
+    wmtk::logger().info("writting to {}", path);
     wmtk::logger().info("============>> current edge length {}", avg_edge_len(*this));
 }
 
@@ -1160,7 +1161,7 @@ void AdaptiveTessellation::get_nminfo_for_vertex(const Tuple& v, wmtk::NewtonMet
         assert(one_ring_tris.size() == nminfo.neighbors.rows());
     }
 }
-
+// do not include one-ring energy of the mirror vertex
 std::pair<double, Eigen::Vector2d> AdaptiveTessellation::get_one_ring_energy(const Tuple& v) const
 {
     std::vector<wmtk::TriMesh::Tuple> one_ring_tris = get_one_ring_tris_for_vertex(v);
@@ -1181,24 +1182,7 @@ std::pair<double, Eigen::Vector2d> AdaptiveTessellation::get_one_ring_energy(con
     wmtk::NewtonMethodInfo primary_nminfo;
     get_nminfo_for_vertex(v, primary_nminfo);
     nminfos.emplace_back(primary_nminfo);
-    // check if it is seam by getting the one ring edges
-    // add the nminfo for each seam edge
-    // keep a list of mirror vertices to update the dofx later
-    std::vector<wmtk::TriMesh::Tuple> mirror_vertices;
-    for (auto& e : get_one_ring_edges_for_vertex(v)) {
-        if (is_seam_edge(e)) {
-            wmtk::NewtonMethodInfo nminfo;
-            assert(e.switch_vertex(*this).vid(*this) == v.vid(*this));
-            wmtk::TriMesh::Tuple mirror_v = get_mirror_vertex(e.switch_vertex(*this));
-            mirror_vertices.emplace_back(mirror_v);
-            // collect the triangles for invariants check
-            for (auto& mirror_v_tri : get_one_ring_tris_for_vertex(mirror_v)) {
-                one_ring_tris.emplace_back(mirror_v_tri);
-            }
-            get_nminfo_for_vertex(mirror_v, nminfo);
-            nminfos.push_back(nminfo);
-        }
-    }
+
     State state = {};
     state.dofx = dofx;
     wmtk::optimization_state_update(

@@ -26,7 +26,17 @@ TriMeshOperation::ExecuteReturnData AdaptiveTessellationSmoothVertexOperation::e
 bool AdaptiveTessellationSmoothVertexOperation::before(AdaptiveTessellation& m, const Tuple& t)
 {
     if (wmtk::TriMeshSmoothVertexOperation::before(m, t)) {
-        return m.smooth_before(t);
+        if (m.vertex_attrs[t.vid(m)].fixed) return false;
+        if (m.mesh_parameters.m_bnd_freeze && m.is_boundary_vertex(t)) return false;
+        if (m.is_boundary_vertex(t)) {
+            for (auto& e : m.get_one_ring_edges_for_vertex(t)) {
+                if (m.is_boundary_edge(e)) {
+                    m.vertex_attrs[t.vid(m)].curve_id = m.edge_attrs[e.eid(m)].curve_id.value();
+                    break;
+                }
+            }
+        }
+        return true;
     }
     return false;
 }
@@ -48,9 +58,21 @@ TriMeshOperation::ExecuteReturnData AdaptiveTessellationSmoothSeamVertexOperatio
 }
 bool AdaptiveTessellationSmoothSeamVertexOperation::before(AdaptiveTessellation& m, const Tuple& t)
 {
+    static std::atomic_int cnt = 0;
+    m.write_displaced_obj(
+        m.mesh_parameters.m_output_folder + fmt::format("/smooth_{:04d}.obj", cnt),
+        m.mesh_parameters.m_displacement);
+    m.write_obj(m.mesh_parameters.m_output_folder + fmt::format("/smooth_{:04d}_2d.obj", cnt));
+
     if (wmtk::TriMeshSmoothVertexOperation::before(m, t)) {
+        assert(!m.vertex_attrs[t.vid(m)].fixed);
+        if (m.is_seam_vertex(t)) {
+            wmtk::logger().info("///// seam vertex smooth");
+        }
+        cnt++;
         return m.smooth_before(t);
     }
+
     return false;
 }
 bool AdaptiveTessellationSmoothSeamVertexOperation::after(
@@ -80,11 +102,16 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::after(
     // add the nminfo for each seam edge
     // keep a list of mirror vertices to update the dofx later
     std::vector<wmtk::TriMesh::Tuple> mirror_vertices;
+    // can not be start/end or t-junction of curve
+    assert(m.get_all_mirror_vids(ret_data.tuple).size() <= 2);
     for (auto& e : m.get_one_ring_edges_for_vertex(ret_data.tuple)) {
         if (m.is_seam_edge(e)) {
             wmtk::NewtonMethodInfo nminfo;
             assert(e.switch_vertex(m).vid(m) == ret_data.tuple.vid(m));
-            wmtk::TriMesh::Tuple mirror_v = m.get_mirror_vertex(e.switch_vertex(m));
+            wmtk::TriMesh::Tuple mirror_edge = m.get_oriented_mirror_edge(e.switch_vertex(m));
+            wmtk::TriMesh::Tuple mirror_v = mirror_edge.switch_vertex(m);
+            m.vertex_attrs[mirror_v.vid(m)].curve_id =
+                m.edge_attrs[mirror_edge.eid(m)].curve_id.value();
             mirror_vertices.emplace_back(mirror_v);
             // collect the triangles for invariants check
             for (auto& mirror_v_tri : m.get_one_ring_tris_for_vertex(mirror_v)) {
@@ -92,6 +119,7 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::after(
             }
             m.get_nminfo_for_vertex(mirror_v, nminfo);
             nminfos.push_back(nminfo);
+            break;
         }
     }
     ret_data.new_tris = one_ring_tris;
@@ -108,7 +136,7 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::after(
         state.dofx.resize(2);
         state.dofx = m.vertex_attrs[ret_data.tuple.vid(m)].pos; // uv;
     }
-    // TODO change the get_onr_ring_energy
+    wmtk::logger().info("{} of nminfo", nminfos.size());
     double before_energy = m.get_one_ring_energy(ret_data.tuple).first;
 
     wmtk::optimization_dofx_update(
@@ -131,8 +159,15 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::after(
         return false;
     }
     // assert before energy is always less than after energy
-    // TODO change the get_one_ring_energy
+    // get the primary vertex
     auto one_ring_energy_and_gradient = m.get_one_ring_energy(ret_data.tuple);
+    // get the mirror vertices energies
+    for (int i = 0; i < mirror_vertices.size(); i++) {
+        wmtk::TriMesh::Tuple mirror_v = mirror_vertices[i];
+        auto mirror_v_energy_and_gradient = m.get_one_ring_energy(mirror_v);
+        one_ring_energy_and_gradient.first += mirror_v_energy_and_gradient.first; // energy
+        one_ring_energy_and_gradient.second += mirror_v_energy_and_gradient.second; // gradient
+    }
     double after_energy = one_ring_energy_and_gradient.first;
     assert(after_energy <= before_energy);
 
@@ -299,7 +334,8 @@ void adaptive_tessellation::AdaptiveTessellation::smooth_all_vertices()
     } else {
         timer.start();
         auto executor = wmtk::ExecutePass<AdaptiveTessellation, wmtk::ExecutionPolicy::kSeq>();
-        addCustomOps(executor);
+        addSeamCustomOps(executor);
+        // set_early_termination_number(mesh_parameters.m_early_stopping_number, executor);
         int itr = 0;
         do {
             mesh_parameters.m_gradient = Eigen::Vector2d(0., 0.);
