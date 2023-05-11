@@ -21,14 +21,20 @@ class AdaptiveTessellationCollapseEdgeOperation : public wmtk::TriMeshOperationS
                                                       wmtk::TriMeshEdgeCollapseOperation>
 {
 public:
-    TriMesh::Tuple return_edge_tuple;
     struct OpCache
     {
-        size_t v1;
-        size_t v2;
+        TriMesh::Tuple return_edge_tuple;
+        size_t v1; // first vertex index of the edge being collapsed
+        size_t v2; // second vertex index of hte edge being collapsed
+
         double length3d;
+
+        size_t v_top; // remaining vertex of the input triangle being collapsed
+        size_t v_bot; // remaining vertex of the other triangle being collapsed
+
+        std::map<std::array<size_t, 2>, Tuple> mirrored_edges;
     };
-    tbb::enumerable_thread_specific<OpCache> op_cache;
+    tbb::enumerable_thread_specific<OpCache> m_op_cache;
 
 public:
     ExecuteReturnData execute(AdaptiveTessellation& m, const Tuple& t);

@@ -581,7 +581,7 @@ TEST_CASE("paired operations")
     //             \     ||    /
     //              \(1) ||(2)/
     //                2     5
-    primary_edge6 = op4.collapse_edge.return_edge_tuple;
+    primary_edge6 = op4.collapse_edge.m_op_cache.local().return_edge_tuple;
     REQUIRE(m.vert_capacity() == 9);
     REQUIRE(m.is_seam_edge(primary_edge6));
     REQUIRE(m.edge_attrs[primary_edge6.eid(m)].curve_id.has_value());
@@ -864,8 +864,9 @@ TEST_CASE("quickrun")
         WrappingMode::MIRROR_REPEAT,
         WrappingMode::MIRROR_REPEAT);
 
-    m.mesh_parameters.m_position_normal_paths = {"/home/yunfan/seamPyramid_position.exr",
-                                                 "/home/yunfan/seamPyramid_normal_smooth.exr"};
+    m.mesh_parameters.m_position_normal_paths = {
+        "/home/yunfan/seamPyramid_position.exr",
+        "/home/yunfan/seamPyramid_normal_smooth.exr"};
     m.mesh_parameters.m_early_stopping_number = 100;
 
     assert(m.check_mesh_connectivity_validity());
@@ -902,8 +903,9 @@ TEST_CASE("check curveid consistency after split")
         WrappingMode::MIRROR_REPEAT,
         WrappingMode::MIRROR_REPEAT);
 
-    m.mesh_parameters.m_position_normal_paths = {"/home/yunfan/seamPyramid_position.exr",
-                                                 "/home/yunfan/seamPyramid_normal_smooth.exr"};
+    m.mesh_parameters.m_position_normal_paths = {
+        "/home/yunfan/seamPyramid_position.exr",
+        "/home/yunfan/seamPyramid_normal_smooth.exr"};
     assert(m.check_mesh_connectivity_validity());
     // stop after 10 iterations
     m.mesh_parameters.m_early_stopping_number = 10;
