@@ -27,6 +27,8 @@
 #include <functional>
 #include <wmtk/utils/ManifoldUtils.hpp>
 #include <wmtk/utils/TriQualityUtils.hpp>
+#include "Collapse.h"
+#include "Smooth.h"
 #include "Split.h"
 
 using namespace wmtk;
@@ -282,11 +284,11 @@ TEST_CASE("paired split")
     // acsii art diamond
     //               1    4
     //             /   ||   \     
-    //            / (2)||(1) \     
+    //     cv3    / (2)||(1) \   cv2
     //           /     || |pe1\    
-    //          /      || |/   \   
+    //          /  cv1 || |/   \   
     //        0(0)   f0||f1   (0)3
-    //          \   /| ||      /
+    //          \   /| || cv0  /
     //           \pe2| ||     /
     //            \(1) ||(2) /
     //             \   ||   /
@@ -437,6 +439,27 @@ TEST_CASE("paired split")
         } else {
             REQUIRE(!m.edge_attrs[e.eid(m)].curve_id.has_value());
         }
+        if (m.is_seam_edge(e)) {
+            switch (e.vid(m)) {
+            case 2:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 3);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 7);
+
+            case 5:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 4);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 6);
+
+            case 1:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 1);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 7);
+
+            case 4:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 5);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 6);
+
+            default: break;
+            }
+        }
     }
 
     ////////// ======= boundary edge split
@@ -466,7 +489,7 @@ TEST_CASE("paired split")
     //              /(2)/||(1)\ 
     //             /   | ||    \ 9
     //            /f2 /f5|| f6 /\     
-    //           /    |  ||   //\\    
+    //           /    |  ||   /|\\    
     //          /    /   ||  /f1 \\   
     //        0(0)--8|--6||7----(0)3
     //          \    \   ||       /
@@ -496,6 +519,103 @@ TEST_CASE("paired split")
             REQUIRE(m.edge_attrs[e.eid(m)].curve_id.has_value());
         } else {
             REQUIRE(!m.edge_attrs[e.eid(m)].curve_id.has_value());
+        }
+        if (m.is_seam_edge(e)) {
+            switch (e.vid(m)) {
+            case 2:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 3);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 7);
+
+            case 5:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 4);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 6);
+
+            case 1:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 6);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 7);
+
+            case 4:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 5);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 6);
+
+            default: break;
+            }
+        }
+    }
+
+    ////////// ======= interior edge collapse
+    // acsii art diamond
+    //                1    4
+    //              /(2)/||(1)\ 
+    //             /   | ||    \ 9
+    //            /f2 /f5|| f6 /\     
+    //           /    |  ||   /  \    
+    //          /    /   ||  /f1  \   
+    //        0(0)--8|--6||7----(0)3
+    //          \    \<--||       /
+    //           \   |pe5||      /
+    //            \ f0\f4|| f3  /
+    //             \   | ||    /
+    //              \(1)\||(2)/
+    //                2     5
+
+    wmtk::TriMesh::Tuple primary_edge6 = wmtk::TriMesh::Tuple(6, 1, 4, m);
+    REQUIRE(m.is_seam_vertex(primary_edge6));
+    REQUIRE(!m.is_boundary_edge(primary_edge6));
+    REQUIRE(!m.is_seam_edge(primary_edge6));
+    REQUIRE(!m.edge_attrs[primary_edge4.eid(m)].curve_id.has_value());
+
+    AdaptiveTessellationPairedCollapseEdgeOperation op4;
+    op4(m, primary_edge6);
+    // acsii art diamond
+    //                1    4
+    //              /(2) ||(1)\ 
+    //             /     ||    \ 9
+    //            /f2    || f6 /\     
+    //           /       ||   /  \    
+    //          /        ||  /f1  \   
+    //        0(0)----- 9||7----(0)3
+    //          \       |||       /
+    //           \      |||      /
+    //            \ f0 \||| f3  /
+    //             \     ||    /
+    //              \(1) ||(2)/
+    //                2     5
+    primary_edge6 = op4.collapse_edge.return_edge_tuple;
+    REQUIRE(m.vert_capacity() == 9);
+    REQUIRE(m.is_seam_edge(primary_edge6));
+    REQUIRE(m.edge_attrs[primary_edge6.eid(m)].curve_id.has_value());
+    REQUIRE(m.edge_attrs[primary_edge6.eid(m)].curve_id.value() == 1);
+    REQUIRE(m.get_oriented_mirror_edge(primary_edge6).is_valid(m));
+    REQUIRE(m.get_oriented_mirror_edge(primary_edge6).fid(m) == 3);
+    REQUIRE(m.get_oriented_mirror_edge(primary_edge6).vid(m) == 5);
+    /////// debug
+    for (auto& e : m.get_edges()) {
+        REQUIRE(e.is_valid(m));
+        if (m.is_boundary_edge(e)) {
+            REQUIRE(m.edge_attrs[e.eid(m)].curve_id.has_value());
+        } else {
+            REQUIRE(!m.edge_attrs[e.eid(m)].curve_id.has_value());
+        }
+        if (m.is_seam_edge(e)) {
+            switch (e.vid(m)) {
+            case 2:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 3);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 7);
+
+            case 5:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 0);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 9);
+
+            case 1:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 6);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 7);
+
+            case 4:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 2);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 9);
+            default: break;
+            }
         }
     }
 }
@@ -679,7 +799,8 @@ TEST_CASE("uv-index and coloring test")
     }
 }
 
-// TODO special case for link condition in seamed mesh. a tube with a seam edge in the middle
+// TODO special case for link condition in seamed mesh. a tube with a seam edge in
+// the middle
 
 TEST_CASE("edge curve-id assignment")
 {
@@ -744,6 +865,8 @@ TEST_CASE("quickrun")
 
     m.mesh_parameters.m_position_normal_paths = {"/home/yunfan/seamPyramid_position.exr",
                                                  "/home/yunfan/seamPyramid_normal_smooth.exr"};
+    m.mesh_parameters.m_early_stopping_number = 100;
+
     assert(m.check_mesh_connectivity_validity());
     m.set_parameters(
         0.00001,
@@ -756,6 +879,11 @@ TEST_CASE("quickrun")
         adaptive_tessellation::EDGE_LEN_TYPE::AREA_ACCURACY,
         1);
     m.split_all_edges();
+    m.write_displaced_obj("split_result.obj", m.mesh_parameters.m_displacement);
+    m.write_obj("split_result_2d.obj");
+    m.smooth_all_vertices();
+    m.write_displaced_obj("smooth_result.obj", m.mesh_parameters.m_displacement);
+    m.write_obj("smooth_result_2d.obj");
 }
 
 TEST_CASE("check curveid consistency after split")
