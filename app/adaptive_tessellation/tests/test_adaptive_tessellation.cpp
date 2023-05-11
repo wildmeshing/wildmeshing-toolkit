@@ -892,6 +892,104 @@ TEST_CASE("paired collapse")
     }
 }
 
+TEST_CASE("paired swap")
+{
+    Eigen::MatrixXd V(6, 2);
+    Eigen::MatrixXi F(2, 3);
+    V.row(0) << -1., 0.;
+    V.row(1) << 0., 1.;
+    V.row(2) << 0., -1;
+    V.row(3) << 1., 0;
+    V.row(4) << 0., 1.;
+    V.row(5) << 0., -1.;
+    F.row(0) << 0, 2, 1;
+    F.row(1) << 3, 4, 5;
+    AdaptiveTessellation m;
+
+    m.create_mesh_debug(V, F);
+    m.mesh_parameters.m_ignore_embedding = true;
+    // set up mesh
+    wmtk::TriMesh::Tuple primary_edge1 = wmtk::TriMesh::Tuple(4, 0, 1, m);
+    wmtk::TriMesh::Tuple primary_edge2 = wmtk::TriMesh::Tuple(2, 0, 0, m);
+    primary_edge1 = primary_edge1.is_ccw(m) ? primary_edge1 : primary_edge1.switch_vertex(m);
+    primary_edge2 = primary_edge2.is_ccw(m) ? primary_edge2 : primary_edge2.switch_vertex(m);
+    m.face_attrs[0].mirror_edges[0] = std::make_optional<wmtk::TriMesh::Tuple>(primary_edge1);
+    m.face_attrs[1].mirror_edges[0] = std::make_optional<wmtk::TriMesh::Tuple>(primary_edge2);
+    m.edge_attrs[primary_edge1.eid(m)].curve_id = std::make_optional<int>(0);
+    m.edge_attrs[primary_edge2.eid(m)].curve_id = std::make_optional<int>(1);
+    m.edge_attrs[primary_edge1.switch_edge(m).eid(m)].curve_id = std::make_optional<int>(2);
+    m.edge_attrs[primary_edge1.switch_vertex(m).switch_edge(m).eid(m)].curve_id =
+        std::make_optional<int>(2);
+    m.edge_attrs[primary_edge2.switch_edge(m).eid(m)].curve_id = std::make_optional<int>(3);
+    m.edge_attrs[primary_edge2.switch_vertex(m).switch_edge(m).eid(m)].curve_id =
+        std::make_optional<int>(3);
+    // split a few times
+    AdaptiveTessellationPairedSplitEdgeOperation op;
+    op(m, primary_edge2);
+    REQUIRE(m.vert_capacity() == 8);
+    REQUIRE(m.tri_capacity() == 4);
+    wmtk::TriMesh::Tuple primary_edge3 = wmtk::TriMesh::Tuple(0, 1, 0, m);
+    AdaptiveTessellationPairedSplitEdgeOperation op2;
+    op2(m, primary_edge3);
+    REQUIRE(m.vert_capacity() == 9);
+    REQUIRE(m.tri_capacity() == 6);
+    wmtk::TriMesh::Tuple primary_edge4 = wmtk::TriMesh::Tuple(3, 2, 1, m);
+    AdaptiveTessellationPairedSplitEdgeOperation op3;
+    op3(m, primary_edge4);
+    /////// make sure it is valid mesh
+    REQUIRE(m.vert_capacity() == 10);
+    REQUIRE(m.tri_capacity() == 7);
+    for (auto& e : m.get_edges()) {
+        if (m.is_boundary_edge(e)) {
+            REQUIRE(m.edge_attrs[e.eid(m)].curve_id.has_value());
+        } else {
+            REQUIRE(!m.edge_attrs[e.eid(m)].curve_id.has_value());
+        }
+        if (m.is_seam_edge(e)) {
+            switch (e.vid(m)) {
+            case 2:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 3);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 7);
+                break;
+            case 5:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 4);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 6);
+                break;
+            case 1:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 6);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 7);
+                break;
+            case 4:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 5);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 6);
+                break;
+            default: break;
+            }
+        }
+    }
+    ////////// ======= interior edge swap
+    // acsii art diamond
+    //                1          4
+    //              /(2)/|      |(1)\ 
+    //             /   | |      |    \ 9
+    //            /f2 /f5|      | f6 /\     
+    //     cv3   /    |  |   cv0| /|/  \    cv2
+    //          /    /   |      |/ / f1 \   
+    //        0(0)--8|--6|      |7----(0)3
+    //          \    \<--|cv1   |       /
+    //           \   |pe5|      |      /
+    //            \ f0\f4|      | f3  /
+    //             \   | |      |    /
+    //              \(1)\|      |(2)/
+    //                2           5
+    wmtk::TriMesh::Tuple primary_edge5 = wmtk::TriMesh::Tuple(7, 1, 6, m);
+    REQUIRE(primary_edge5.is_valid(m));
+    REQUIRE(primary_edge5.vid(m) == 7);
+    REQUIRE(primary_edge5.switch_vertex(m).vid(m) == 9);
+    AdaptiveTessellationPairedSplitEdgeOperation op4;
+    op4(m, primary_edge5);
+}
+
 TEST_CASE("test mirror edge setup")
 {
     AdaptiveTessellation m;
