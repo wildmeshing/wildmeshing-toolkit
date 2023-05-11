@@ -157,12 +157,13 @@ bool point_in_triangle(
 // Optimized implementation that switches between nearest and bilinear interpolation
 template <typename DisplacementFunc>
 double get_error_per_triangle_adaptive(
-    const wmtk::Image& image,
+    const std::array<wmtk::Image, 3>& images,
     const Eigen::Matrix<double, 3, 2, Eigen::RowMajor>& triangle_uv,
     tbb::enumerable_thread_specific<QuadratureCache>& m_cache,
     DisplacementFunc get)
 {
     using T = double;
+    // const int order = 1;
     constexpr int Degree = 4;
     const int order = 2 * (Degree - 1);
 
@@ -175,8 +176,8 @@ double get_error_per_triangle_adaptive(
         bbox_uv.extend(p.transpose());
     }
 
-    const int w = image.width();
-    const int h = image.height();
+    const int w = images[0].width();
+    const int h = images[0].height();
     auto get_coordinate = [&](double u, double v) -> Eigen::Vector2i {
         auto x = u * static_cast<float>(w);
         auto y = v * static_cast<float>(h);
@@ -187,7 +188,7 @@ double get_error_per_triangle_adaptive(
 
     const auto min_pixel = get_coordinate(bbox_uv.min()(0), bbox_uv.min()(1));
     const auto max_pixel = get_coordinate(bbox_uv.max()(0), bbox_uv.max()(1));
-    Eigen::Vector2d pixel_size(1.0 / w, 1.0 / h);
+    const Eigen::Vector2d pixel_size(1.0 / w, 1.0 / h);
 
     const double u1 = triangle_uv(0, 0);
     const double v1 = triangle_uv(0, 1);
@@ -218,7 +219,6 @@ double get_error_per_triangle_adaptive(
     };
 
     T value = T(0.);
-    size_t num_inside = 0;
     for (int x = min_pixel.x(); x <= max_pixel.x(); ++x) {
         for (int y = min_pixel.y(); y <= max_pixel.y(); ++y) {
             Eigen::Vector2i pixel_coord(x, y);
@@ -236,8 +236,13 @@ double get_error_per_triangle_adaptive(
                 }
             }
             if (all_inside) {
-                value += image.get_raw_image()(x, y) * pixel_size(0) * pixel_size(1);
-                ++num_inside;
+                Eigen::Matrix<T, 3, 1> p_tri =
+                    get_p_interpolated(box.center().x(), box.center().y());
+                Eigen::Matrix<T, 3, 1> p_displaced;
+                for (size_t k = 0; k < 3; ++k) {
+                    p_displaced[k] = images[k].get_raw_image()(x, y);
+                }
+                value += (p_displaced - p_tri).squaredNorm() * pixel_size(0) * pixel_size(1);
             } else {
                 wmtk::ClippedQuadrature rules;
                 auto& quadr = m_cache.local().quad;
@@ -258,6 +263,42 @@ double get_error_per_triangle_adaptive(
         }
     }
     return value;
+}
+
+wmtk::Image precompute_integrals(const wmtk::Image& image)
+{
+    constexpr int Degree = 4;
+    const int order = 2 * (Degree - 1);
+    const int w = image.width();
+    const int h = image.height();
+    const Eigen::Vector2d pixel_size(1.0 / w, 1.0 / h);
+
+    wmtk::Quadrature quadr;
+    wmtk::Quadrature tmp;
+
+    wmtk::Image filtered(w, h);
+    // WIP
+    // tbb::parallel_for(0, w, [&](int x) {
+    //     for (int y = 0; y < h; ++y) {
+    //         Eigen::Vector2i pixel_coord(x, y);
+    //         Eigen::AlignedBox2d box;
+    //         box.extend(pixel_coord.cast<double>().cwiseProduct(pixel_size));
+    //         box.extend(
+    //             (pixel_coord + Eigen::Vector2i::Ones()).cast<double>().cwiseProduct(pixel_size));
+    //         wmtk::ClippedQuadrature rules;
+    //         rules.clipped_triangle_box_quadrature(order, triangle_uv, box, quadr, tmp);
+    //         float value = 0.f;
+    //         for (size_t i = 0; i < quadr.size(); ++i) {
+    //             double u = quadr.points()(i, 0);
+    //             double v = quadr.points()(i, 1);
+    //             Eigen::Matrix<T, 3, 1> p_displaced = get(u, v);
+    //             Eigen::Matrix<T, 3, 1> p_tri = get_p_interpolated(u, v);
+    //             value += (p_displaced - p_tri).squaredNorm() * quadr.weights()[i];
+    //         }
+    //         filtered.set(x, y, value);
+    //     }
+    // });
+    return filtered;
 }
 
 } // namespace
@@ -344,6 +385,10 @@ struct TextureIntegral::Cache
 {
     // Data for exact error computation
     tbb::enumerable_thread_specific<QuadratureCache> quadrature_cache;
+
+    // Precomputed integrals for each pixels (rather than assuming constant value per pixel, we
+    // precompute the integral of the pixel to match the exact integration approach)
+    std::array<wmtk::Image, 3> prefiltered_images;
 };
 
 TextureIntegral::TextureIntegral(std::array<wmtk::Image, 3> data)
@@ -385,7 +430,7 @@ void TextureIntegral::get_error_per_triangle_internal(
                 sampling_func);
         else if constexpr (Integration == IntegrationMethod::Adaptive) {
             output_errors[i] = get_error_per_triangle_adaptive(
-                m_data[0],
+                m_data,
                 triangle,
                 m_cache->quadrature_cache,
                 sampling_func);

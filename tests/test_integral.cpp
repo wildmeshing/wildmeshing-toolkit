@@ -280,7 +280,7 @@ TEST_CASE("Texture Integral Adaptive", "[utils][integral]")
     integral.get_error_per_triangle(uv_triangles, errors_adaptive);
 
     for (size_t f = 0; f < uv_triangles.size(); ++f) {
-        REQUIRE_THAT(errors_adaptive[f], Catch::Matchers::WithinRel(errors_exact[f], 1e-5f));
+        REQUIRE_THAT(errors_adaptive[f], Catch::Matchers::WithinRel(errors_exact[f], 1e-3f));
     }
 }
 
@@ -289,6 +289,8 @@ TEST_CASE("Texture Integral Benchmark", "[utils][!benchmark]")
     // spdlog::set_level(spdlog::level::off);
 
     std::string displaced_positions = WMT_DATA_DIR "/images/hemisphere_512_displaced.exr";
+    // std::string displaced_positions =
+    //     "/Users/jedumas/cloud/tessellation/sandbox/benchmark/hemisphere_4096_displaced.exr";
     auto uv_triangles = load_uv_triangles(WMT_DATA_DIR "/hemisphere.obj");
 
     std::vector<float> computed_errors(uv_triangles.size());
