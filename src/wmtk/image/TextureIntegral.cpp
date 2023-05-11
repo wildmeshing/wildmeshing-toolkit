@@ -3,6 +3,7 @@
 #include <wmtk/quadrature/ClippedQuadrature.h>
 #include <wmtk/quadrature/TriangleQuadrature.h>
 
+#include <lagrange/utils/assert.h>
 #include <tbb/enumerable_thread_specific.h>
 #include <tbb/parallel_for.h>
 
@@ -164,7 +165,7 @@ double get_error_per_triangle_adaptive(
 {
     using T = double;
     // const int order = 1;
-    constexpr int Degree = 4;
+    constexpr int Degree = 1;
     const int order = 2 * (Degree - 1);
 
     Eigen::Matrix3d triangle_3d;
@@ -219,8 +220,12 @@ double get_error_per_triangle_adaptive(
     };
 
     T value = T(0.);
+    size_t num_inside = 0;
+    size_t num_total = 0;
+    size_t num_boundary = 0;
     for (int x = min_pixel.x(); x <= max_pixel.x(); ++x) {
         for (int y = min_pixel.y(); y <= max_pixel.y(); ++y) {
+            ++num_total;
             Eigen::Vector2i pixel_coord(x, y);
             Eigen::AlignedBox2d box;
             box.extend(pixel_coord.cast<double>().cwiseProduct(pixel_size));
@@ -236,6 +241,7 @@ double get_error_per_triangle_adaptive(
                 }
             }
             if (all_inside) {
+                ++num_inside;
                 Eigen::Matrix<T, 3, 1> p_tri =
                     get_p_interpolated(box.center().x(), box.center().y());
                 Eigen::Matrix<T, 3, 1> p_displaced;
@@ -243,11 +249,11 @@ double get_error_per_triangle_adaptive(
                     p_displaced[k] = images[k].get_raw_image()(x, y);
                 }
                 value += (p_displaced - p_tri).squaredNorm() * pixel_size(0) * pixel_size(1);
-            } else {
+                #if 0
                 wmtk::ClippedQuadrature rules;
                 auto& quadr = m_cache.local().quad;
                 rules.clipped_triangle_box_quadrature(
-                    order,
+                    1,
                     triangle_uv,
                     box,
                     quadr,
@@ -259,46 +265,31 @@ double get_error_per_triangle_adaptive(
                     Eigen::Matrix<T, 3, 1> p_tri = get_p_interpolated(u, v);
                     value += (p_displaced - p_tri).squaredNorm() * quadr.weights()[i];
                 }
+                #endif
+            } else {
+                wmtk::ClippedQuadrature rules;
+                auto& quadr = m_cache.local().quad;
+                rules.clipped_triangle_box_quadrature(
+                    order,
+                    triangle_uv,
+                    box,
+                    quadr,
+                    &m_cache.local().tmp);
+                if (quadr.size() > 0) {
+                    ++num_boundary;
+                }
+                for (size_t i = 0; i < quadr.size(); ++i) {
+                    double u = quadr.points()(i, 0);
+                    double v = quadr.points()(i, 1);
+                    Eigen::Matrix<T, 3, 1> p_displaced = get(u, v);
+                    Eigen::Matrix<T, 3, 1> p_tri = get_p_interpolated(u, v);
+                    value += (p_displaced - p_tri).squaredNorm() * quadr.weights()[i];
+                }
             }
         }
     }
+    // logger().info("Num inside: {}, boundary: {}, total: {}", num_inside, num_boundary, num_total);
     return value;
-}
-
-wmtk::Image precompute_integrals(const wmtk::Image& image)
-{
-    constexpr int Degree = 4;
-    const int order = 2 * (Degree - 1);
-    const int w = image.width();
-    const int h = image.height();
-    const Eigen::Vector2d pixel_size(1.0 / w, 1.0 / h);
-
-    wmtk::Quadrature quadr;
-    wmtk::Quadrature tmp;
-
-    wmtk::Image filtered(w, h);
-    // WIP
-    // tbb::parallel_for(0, w, [&](int x) {
-    //     for (int y = 0; y < h; ++y) {
-    //         Eigen::Vector2i pixel_coord(x, y);
-    //         Eigen::AlignedBox2d box;
-    //         box.extend(pixel_coord.cast<double>().cwiseProduct(pixel_size));
-    //         box.extend(
-    //             (pixel_coord + Eigen::Vector2i::Ones()).cast<double>().cwiseProduct(pixel_size));
-    //         wmtk::ClippedQuadrature rules;
-    //         rules.clipped_triangle_box_quadrature(order, triangle_uv, box, quadr, tmp);
-    //         float value = 0.f;
-    //         for (size_t i = 0; i < quadr.size(); ++i) {
-    //             double u = quadr.points()(i, 0);
-    //             double v = quadr.points()(i, 1);
-    //             Eigen::Matrix<T, 3, 1> p_displaced = get(u, v);
-    //             Eigen::Matrix<T, 3, 1> p_tri = get_p_interpolated(u, v);
-    //             value += (p_displaced - p_tri).squaredNorm() * quadr.weights()[i];
-    //         }
-    //         filtered.set(x, y, value);
-    //     }
-    // });
-    return filtered;
 }
 
 } // namespace
@@ -391,10 +382,60 @@ struct TextureIntegral::Cache
     std::array<wmtk::Image, 3> prefiltered_images;
 };
 
+wmtk::Image TextureIntegral::precompute_integrals(const wmtk::Image& image)
+{
+    constexpr int Degree = 4;
+    const int order = 2 * (Degree - 1);
+    const int w = image.width();
+    const int h = image.height();
+    const Eigen::Vector2d pixel_size(1.0 / w, 1.0 / h);
+
+    tbb::enumerable_thread_specific<wmtk::Quadrature> cache;
+
+    wmtk::Image filtered(w, h);
+    tbb::parallel_for(0, w, [&](int x) {
+        auto& quadr = cache.local();
+        for (int y = 0; y < h; ++y) {
+            using CornerType = Eigen::AlignedBox2d::CornerType;
+            Eigen::Vector2i pixel_coord(x, y);
+            Eigen::AlignedBox2d box;
+            box.extend(pixel_coord.cast<double>().cwiseProduct(pixel_size));
+            box.extend(
+                (pixel_coord + Eigen::Vector2i::Ones()).cast<double>().cwiseProduct(pixel_size));
+
+            Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangles[2];
+            triangles[0].row(0) << box.corner(CornerType::BottomLeft).transpose();
+            triangles[0].row(1) << box.corner(CornerType::BottomRight).transpose();
+            triangles[0].row(2) << box.corner(CornerType::TopLeft).transpose();
+            triangles[1].row(0) << box.corner(CornerType::TopLeft).transpose();
+            triangles[1].row(1) << box.corner(CornerType::BottomRight).transpose();
+            triangles[1].row(2) << box.corner(CornerType::TopRight).transpose();
+
+            float value = 0.f;
+            for (size_t k : {0, 1}) {
+                wmtk::TriangleQuadrature rules;
+                rules.transformed_triangle_quadrature(order, triangles[k], quadr);
+                for (size_t i = 0; i < quadr.size(); ++i) {
+                    double u = quadr.points()(i, 0);
+                    double v = quadr.points()(i, 1);
+                    value += sample_bicubic(image, u, v) * quadr.weights()[i];
+                }
+            }
+
+            filtered.set(x, y, value);
+        }
+    });
+    return filtered;
+}
+
 TextureIntegral::TextureIntegral(std::array<wmtk::Image, 3> data)
     : m_data(std::move(data))
     , m_cache(lagrange::make_value_ptr<Cache>())
-{}
+{
+    m_cache->prefiltered_images[0] = precompute_integrals(m_data[0]);
+    m_cache->prefiltered_images[1] = precompute_integrals(m_data[1]);
+    m_cache->prefiltered_images[2] = precompute_integrals(m_data[2]);
+}
 
 TextureIntegral::~TextureIntegral() = default;
 

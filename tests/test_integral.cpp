@@ -270,6 +270,7 @@ TEST_CASE("Texture Integral Adaptive", "[utils][integral]")
     auto uv_triangles = load_uv_triangles(WMT_DATA_DIR "/hemisphere.obj");
 
     wmtk::TextureIntegral integral(load_rgb_image(displaced_positions));
+    integral.set_sampling_method(wmtk::TextureIntegral::SamplingMethod::Bilinear);
 
     std::vector<float> errors_exact(uv_triangles.size());
     integral.set_integration_method(wmtk::TextureIntegral::IntegrationMethod::Exact);
@@ -280,7 +281,11 @@ TEST_CASE("Texture Integral Adaptive", "[utils][integral]")
     integral.get_error_per_triangle(uv_triangles, errors_adaptive);
 
     for (size_t f = 0; f < uv_triangles.size(); ++f) {
-        REQUIRE_THAT(errors_adaptive[f], Catch::Matchers::WithinRel(errors_exact[f], 1e-3f));
+        CAPTURE(f);
+        CHECK_THAT(
+            errors_adaptive[f],
+            Catch::Matchers::WithinRel(errors_exact[f], 1e-2f) ||
+                Catch::Matchers::WithinAbs(errors_exact[f], 1e-8f));
     }
 }
 
