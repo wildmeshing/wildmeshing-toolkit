@@ -278,7 +278,7 @@ TEST_CASE("autodiff vs finitediff")
 
 // TODO: Try out sin(x) with periodic boundary cond + autodiff + gradient
 
-TEST_CASE("paired split")
+TEST_CASE("paired operations")
 {
     //////////// ======== seam edge split
     // acsii art diamond
@@ -444,19 +444,19 @@ TEST_CASE("paired split")
             case 2:
                 REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 3);
                 REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 7);
-
+                break;
             case 5:
                 REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 4);
                 REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 6);
-
+                break;
             case 1:
                 REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 1);
                 REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 7);
-
+                break;
             case 4:
                 REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 5);
                 REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 6);
-
+                break;
             default: break;
             }
         }
@@ -525,19 +525,19 @@ TEST_CASE("paired split")
             case 2:
                 REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 3);
                 REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 7);
-
+                break;
             case 5:
                 REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 4);
                 REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 6);
-
+                break;
             case 1:
                 REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 6);
                 REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 7);
-
+                break;
             case 4:
                 REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 5);
                 REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 6);
-
+                break;
             default: break;
             }
         }
@@ -602,18 +602,19 @@ TEST_CASE("paired split")
             case 2:
                 REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 3);
                 REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 7);
-
+                break;
             case 5:
                 REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 0);
                 REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 9);
-
+                break;
             case 1:
                 REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 6);
                 REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 7);
-
+                break;
             case 4:
                 REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 2);
                 REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 9);
+                break;
             default: break;
             }
         }
