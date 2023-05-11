@@ -367,7 +367,6 @@ Boundary::ParameterizedSegment Boundary::t_to_segment(int curve_id, double t) co
     result.t0 = *it;
     const auto& boundary = m_curves.positions[curve_id];
     assert(a < boundary.size());
-    assert(!is_periodic(curve_id) && (a + 1) == boundary.size());
     result.A = boundary[a];
     result.B =
         m_curves.periodic[curve_id] ? boundary[(a + 1) % boundary.size()] : boundary[(a + 1)];
