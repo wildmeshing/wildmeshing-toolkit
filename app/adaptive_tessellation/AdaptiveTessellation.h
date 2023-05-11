@@ -140,6 +140,7 @@ public:
     void set_displacement(const DISPLACEMENT_MODE displacement_mode);
     void set_edge_length_measurement(const EDGE_LEN_TYPE edge_len_type);
     void set_projection();
+    void set_vertex_world_positions();
     // using boundary parametrization, find the vertex that are the start and end of each cruve and
     // set them as fixed
     void set_fixed();
