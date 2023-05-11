@@ -47,6 +47,21 @@ public:
     AdaptiveTessellationCollapseEdgeOperation collapse_mirror_edge;
     std::optional<Tuple> mirror_edge_tuple;
 
+    //        / | \                         |\ 
+    //       /  |  \                        | \ 
+    //    s2/2 1|s1 \                    \s2|s1\ 
+    // \ | /-> ^｜v  \                    \^|v  \ 
+    // _\|/_0 __｜____\                  __\|____\ 
+    //          |\                          |\ 
+    //update the one ring edges' mirror edge data
+    // __ ___3__|/____                   __ |/____
+    //  /|\  <--|    /                    / |    /
+    //   s4\4  5|s5 /                    /s4|s5 /
+    //      \  ^|v /                        |v /
+    //       \  | /                         | /
+    //        \ |/                          |/
+
+
 public:
     ExecuteReturnData execute(AdaptiveTessellation& m, const Tuple& t);
     bool before(AdaptiveTessellation& m, const Tuple& t);

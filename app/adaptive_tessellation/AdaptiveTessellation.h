@@ -23,6 +23,7 @@
 #include <wmtk/utils/BoundaryParametrization.h>
 #include <wmtk/utils/Displacement.h>
 #include <wmtk/utils/Energy2d.h>
+#include <wmtk/utils/Energy2dOptimizationUtils.h>
 #include <wmtk/utils/GeoUtils.h>
 #include <wmtk/utils/Image.h>
 #include <wmtk/utils/MipMap.h>
@@ -44,7 +45,8 @@ public:
     Eigen::Vector2d pos;
     Eigen::Vector3d pos_world;
     double t = 0.;
-    size_t curve_id = 0; // questionable should I have this for each vertex?
+    size_t curve_id = 0; // TODO questionable should I have this for each vertex? change to be for
+                         // each edge, but still keep one copy for vertex
 
     size_t partition_id = 0; // TODO this should not be here
 
@@ -57,6 +59,12 @@ class FaceAttributes
 {
 public:
     std::array<std::optional<wmtk::TriMesh::Tuple>, 3> mirror_edges;
+};
+
+class EdgeAttributes
+{
+public:
+    std::optional<int> curve_id = std::nullopt;
 };
 
 class AdaptiveTessellation : public wmtk::TriMesh
@@ -73,6 +81,7 @@ public:
     // Store the per-vertex attributes
     wmtk::AttributeCollection<VertexAttributes> vertex_attrs;
     wmtk::AttributeCollection<FaceAttributes> face_attrs;
+    wmtk::AttributeCollection<EdgeAttributes> edge_attrs;
     struct InfoCache
     {
         size_t v1;
@@ -80,11 +89,17 @@ public:
         double error;
         double max_energy;
         int partition_id;
-        // for pair operation
-        size_t v3;
-        size_t v4;
     };
     tbb::enumerable_thread_specific<InfoCache> cache;
+
+    //////// ======= seam vertex coloring ========
+    // both coloring mappings contains the regular seam vertex and v shape seams vertex
+    // mapping is built at loading and is not maintained during the mesh operations
+    // since seam vertices at t-junctions should not be modified,
+    // those colorings do not need updates
+    std::unordered_map<size_t, int> uv_index_to_color;
+    // each color can have 1 vertex, 2 vertices, or 3 above vertices
+    std::vector<std::vector<size_t>> color_to_uv_indices;
 
 public:
     AdaptiveTessellation(){};
@@ -125,7 +140,10 @@ public:
     void set_displacement(const DISPLACEMENT_MODE displacement_mode);
     void set_edge_length_measurement(const EDGE_LEN_TYPE edge_len_type);
     void set_projection();
-    void set_vertex_world_positions();
+    // using boundary parametrization, find the vertex that are the start and end of each cruve and
+    // set them as fixed
+    void set_fixed();
+    void assign_edge_curveid();
     Eigen::Matrix<uint64_t, Eigen::Dynamic, 2, Eigen::RowMajor> get_bnd_edge_matrix();
 
 
@@ -142,6 +160,11 @@ public:
      * @param F igl format faces
      */
     void create_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F);
+    void mesh_construct_boundaries(
+        const Eigen::MatrixXd& V,
+        const Eigen::MatrixXi& F,
+        const Eigen::MatrixXi& E0,
+        const Eigen::MatrixXi& E1);
 
     // Exports V and F of the stored mesh
     void export_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
@@ -253,22 +276,39 @@ public:
         Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle) const;
     double get_area_accuracy_error(const Tuple& edge_tuple) const;
 
+    void get_nminfo_for_vertex(const Tuple& v, wmtk::NewtonMethodInfo& nminfo) const;
+
     // get sibling edge for paired operations
     // return the oriented mirror edge if t is seam
     // return the sibling if t is interior
     // return nullopt if t is boundary
-    std::optional<TriMesh::Tuple> get_sibling_edge(const TriMesh::Tuple& t);
+    std::optional<TriMesh::Tuple> get_sibling_edge(const TriMesh::Tuple& t) const;
     // given a seam edge retrieve its mirror edge in opposite direction (half egde conventions )
-    TriMesh::Tuple get_oriented_mirror_edge(const TriMesh::Tuple& t);
+    TriMesh::Tuple get_oriented_mirror_edge(const TriMesh::Tuple& t) const;
+    // given a seam edge with vid v retrieve the correpsonding vertex on the mirror edge
+    TriMesh::Tuple get_mirror_vertex(const TriMesh::Tuple& t) const;
+    // return a vector of mirror vertices. store v itself at index 0 of the returned vector
+    // !!! assume no operation has made fixed vertices outdated
+    std::vector<TriMesh::Tuple> get_all_mirror_vertices(const TriMesh::Tuple& v);
+    std::vector<size_t> get_all_mirror_vids(const TriMesh::Tuple& v);
     // set primary_t's mirror edge data to a ccw ordered mirror_edge
     void set_mirror_edge_data(const TriMesh::Tuple& primary_t, const TriMesh::Tuple& mirror_edge);
-    bool is_seam_edge(const TriMesh::Tuple& t);
+    bool is_seam_edge(const TriMesh::Tuple& t) const;
+    bool is_seam_vertex(const TriMesh::Tuple& t) const;
+
+    // set early termination for a execution pass for unit test and debugging purpose
+    template <typename Executor>
+    void set_early_termination_number(int n, Executor& e)
+    {
+        e.stopping_criterion_checking_frequency = n;
+    }
     // unit test functions
     inline void create_mesh_debug(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F)
     {
         // Register attributes
         p_vertex_attrs = &vertex_attrs;
         p_face_attrs = &face_attrs;
+        p_edge_attrs = &edge_attrs;
         // Convert from eigen to internal representation (TODO: move to utils and remove it from all
         // app)
         std::vector<std::array<size_t, 3>> tri(F.rows());

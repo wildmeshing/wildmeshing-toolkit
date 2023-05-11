@@ -90,17 +90,11 @@ bool AdaptiveTessellationCollapseEdgeOperation::after(
     if (m.vertex_attrs[op_cache.local().v1].fixed) {
         assert(!m.vertex_attrs[op_cache.local().v2].fixed);
         p = m.vertex_attrs[op_cache.local().v1].pos;
-        mod_length =
-            m.mesh_parameters.m_boundary.m_arclengths[m.vertex_attrs[op_cache.local().v1].curve_id]
-                .back();
-        t_parameter = std::fmod(m.vertex_attrs[op_cache.local().v1].t, mod_length);
+        t_parameter = m.vertex_attrs[op_cache.local().v1].t;
     } else if (m.vertex_attrs[op_cache.local().v2].fixed) {
         assert(!m.vertex_attrs[op_cache.local().v1].fixed);
         p = m.vertex_attrs[op_cache.local().v2].pos;
-        mod_length =
-            m.mesh_parameters.m_boundary.m_arclengths[m.vertex_attrs[op_cache.local().v2].curve_id]
-                .back();
-        t_parameter = std::fmod(m.vertex_attrs[op_cache.local().v2].t, mod_length);
+        t_parameter = m.vertex_attrs[op_cache.local().v2].t;
     } else {
         assert(!m.vertex_attrs[op_cache.local().v1].fixed);
         assert(!m.vertex_attrs[op_cache.local().v2].fixed);
@@ -110,43 +104,28 @@ bool AdaptiveTessellationCollapseEdgeOperation::after(
 
             // compare collapse to which one would give lower energy
             m.vertex_attrs[return_edge_tuple.vid(m)].pos = m.vertex_attrs[op_cache.local().v1].pos;
-            mod_length = m.mesh_parameters.m_boundary
-                             .m_arclengths[m.vertex_attrs[op_cache.local().v1].curve_id]
-                             .back();
-            m.vertex_attrs[return_edge_tuple.vid(m)].t =
-                std::fmod(m.vertex_attrs[op_cache.local().v1].t, mod_length);
+            m.vertex_attrs[return_edge_tuple.vid(m)].t = m.vertex_attrs[op_cache.local().v1].t;
             auto energy1 = m.get_one_ring_energy(return_edge_tuple).first;
             m.vertex_attrs[return_edge_tuple.vid(m)].pos = m.vertex_attrs[op_cache.local().v2].pos;
-            mod_length = m.mesh_parameters.m_boundary
-                             .m_arclengths[m.vertex_attrs[op_cache.local().v2].curve_id]
-                             .back();
-            m.vertex_attrs[return_edge_tuple.vid(m)].t =
-                std::fmod(m.vertex_attrs[op_cache.local().v2].t, mod_length);
+            m.vertex_attrs[return_edge_tuple.vid(m)].t = m.vertex_attrs[op_cache.local().v2].t;
             auto energy2 = m.get_one_ring_energy(return_edge_tuple).first;
             p = energy1 < energy2 ? m.vertex_attrs[op_cache.local().v1].pos
                                   : m.vertex_attrs[op_cache.local().v2].pos;
             m.vertex_attrs[return_edge_tuple.vid(m)].curve_id =
                 energy1 < energy2 ? m.vertex_attrs[op_cache.local().v1].curve_id
                                   : m.vertex_attrs[op_cache.local().v2].curve_id;
-            t_parameter = energy1 < energy2
-                              ? std::fmod(m.vertex_attrs[op_cache.local().v1].t, mod_length)
-                              : std::fmod(m.vertex_attrs[op_cache.local().v2].t, mod_length);
+            t_parameter = energy1 < energy2 ? m.vertex_attrs[op_cache.local().v1].t
+                                            : m.vertex_attrs[op_cache.local().v2].t;
         } else if (m.vertex_attrs[op_cache.local().v1].boundary_vertex) {
             p = m.vertex_attrs[op_cache.local().v1].pos;
-            mod_length = m.mesh_parameters.m_boundary
-                             .m_arclengths[m.vertex_attrs[op_cache.local().v1].curve_id]
-                             .back();
-            t_parameter = std::fmod(m.vertex_attrs[op_cache.local().v1].t, mod_length);
+            t_parameter = m.vertex_attrs[op_cache.local().v1].t;
             m.vertex_attrs[return_edge_tuple.vid(m)].curve_id =
                 m.vertex_attrs[op_cache.local().v1].curve_id;
         } else if (m.vertex_attrs[op_cache.local().v2].boundary_vertex) {
             p = m.vertex_attrs[op_cache.local().v2].pos;
             m.vertex_attrs[return_edge_tuple.vid(m)].curve_id =
                 m.vertex_attrs[op_cache.local().v2].curve_id;
-            mod_length = m.mesh_parameters.m_boundary
-                             .m_arclengths[m.vertex_attrs[op_cache.local().v2].curve_id]
-                             .back();
-            t_parameter = std::fmod(m.vertex_attrs[op_cache.local().v2].t, mod_length);
+            t_parameter = m.vertex_attrs[op_cache.local().v2].t;
         } else {
             assert(!m.vertex_attrs[op_cache.local().v1].boundary_vertex);
             assert(!m.vertex_attrs[op_cache.local().v2].boundary_vertex);
@@ -156,13 +135,9 @@ bool AdaptiveTessellationCollapseEdgeOperation::after(
             // the curve id is the same as the first vertex
             m.vertex_attrs[return_edge_tuple.vid(m)].curve_id =
                 m.vertex_attrs[op_cache.local().v1].curve_id;
-            mod_length = m.mesh_parameters.m_boundary
-                             .m_arclengths[m.vertex_attrs[op_cache.local().v1].curve_id]
-                             .back();
-            t_parameter = std::fmod(
+            t_parameter =
                 (m.vertex_attrs[op_cache.local().v1].t + m.vertex_attrs[op_cache.local().v2].t) /
-                    2.0,
-                mod_length);
+                2.0;
 
             // !!! update t_parameter and check for periodicity + curretid!!!
         }
@@ -252,7 +227,8 @@ wmtk::TriMeshOperation::ExecuteReturnData AdaptiveTessellationPairedCollapseEdge
     // i guess one of check is the new_vid replace in-place the old vid in the tri_connectivity for
     // traingles influenced by the collapse
 
-    // update the seam edges mirror_edges info
+    // TODO check if the one_ring_edges is assuming e.vid(m) ==
+    // collapse_edge.return_edge_tuple.vid(m) update the seam edges mirror_edges info
     if (mirror_edge_tuple.has_value()) {
         auto one_ring_edges = m.get_one_ring_edges_for_vertex(collapse_edge.return_edge_tuple);
         for (auto& e : one_ring_edges) {
@@ -273,6 +249,7 @@ wmtk::TriMeshOperation::ExecuteReturnData AdaptiveTessellationPairedCollapseEdge
             }
         }
 
+        // TODO same thing. check the one_ring_edges direction
         auto mirror_one_ring_edges =
             m.get_one_ring_edges_for_vertex(collapse_mirror_edge.return_edge_tuple);
         for (auto& e : mirror_one_ring_edges) {
@@ -486,7 +463,7 @@ bool AdaptiveTessellation::collapse_edge_before(const Tuple& edge_tuple)
         vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].curve_id)
         return false;
 
-    double length3d = mesh_parameters.m_get_length(edge_tuple);
+    double length3d = get_length3d(edge_tuple);
     // enforce heuristic
     assert(length3d < 4. / 5. * mesh_parameters.m_quality_threshold);
 
@@ -534,9 +511,9 @@ bool AdaptiveTessellation::collapse_edge_after(const Tuple& edge_tuple)
     auto vid = edge_tuple.vid(*this);
     Eigen::Vector2d p;
     double t_parameter;
-    double mod_length =
-        mesh_parameters.m_boundary.m_arclengths[vertex_attrs[edge_tuple.vid(*this)].curve_id]
-            .back();
+    double mod_length = 0;
+    // mesh_parameters.m_boundary.m_arclengths[vertex_attrs[edge_tuple.vid(*this)].curve_id]
+    //    .back();
     if (vertex_attrs[cache.local().v1].fixed) {
         // assert that the old edge is not a seam edge since it would have been prevented by
         // the before

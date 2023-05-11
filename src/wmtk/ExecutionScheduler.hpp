@@ -86,7 +86,7 @@ struct ExecutePass
      *
      */
     std::function<bool(const AppMesh&)> stopping_criterion = [](const AppMesh&) {
-        return false; // non-stop, process everything
+        return true; // non-stop, process everything
     };
     /**
      * @brief checking frequency to decide whether to stop execution given the stopping criterion

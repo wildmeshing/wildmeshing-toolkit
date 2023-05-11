@@ -49,7 +49,7 @@ TEST_CASE("amips energy")
     V << -1, 1, 1, 1, -1, -1;
     F << 0, 1, 2;
     Boundary b;
-    b.construct_boudaries(V, F);
+    b.construct_boundaries(V, F, {}, {});
 
     AMIPS amips;
     DofsToPositions dof_to_pos(b, 0);
@@ -119,7 +119,7 @@ TEST_CASE("symdi energy")
     V << -1, 1, 1, 1, -1, -1;
     F << 0, 1, 2;
     Boundary b;
-    b.construct_boudaries(V, F);
+    b.construct_boundaries(V, F, {}, {});
 
     SymDi symdi;
     DofsToPositions dof_to_pos(b, 0);
@@ -196,7 +196,7 @@ TEST_CASE("2 rand tris")
     V << -1, 1, 1, 1, -1, -1;
     F << 0, 1, 2;
     Boundary b;
-    b.construct_boudaries(V, F);
+    b.construct_boundaries(V, F, {}, {});
     DofsToPositions dof_to_pos(b, 0);
 
     std::array<std::shared_ptr<Energy>, 2> symdi_amips;

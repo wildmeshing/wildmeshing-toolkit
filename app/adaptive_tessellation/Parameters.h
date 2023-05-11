@@ -89,5 +89,8 @@ public:
 
     bool m_swap_using_valence = 1;
     bool m_split_absolute_error_metric = 1;
+
+    // early stopping after n operations. default to infinity
+    int m_early_stopping_number = std::numeric_limits<size_t>::max();
 };
 } // namespace adaptive_tessellation

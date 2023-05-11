@@ -144,6 +144,7 @@ std::vector<wmtk::TriMesh::Tuple> TriMesh::get_one_ring_tris_for_vertex(
     return one_ring;
 }
 
+// edges pointing from the one-ring vertex to the center vertex
 std::vector<wmtk::TriMesh::Tuple> TriMesh::get_one_ring_edges_for_vertex(
     const wmtk::TriMesh::Tuple& t) const
 {
@@ -552,7 +553,7 @@ std::optional<size_t> TriMesh::release_protected_connectivity()
     return m_tri_connectivity.end_protect();
 }
 
-std::array<std::optional<size_t>,3> TriMesh::release_protected_attributes()
+std::array<std::optional<size_t>, 3> TriMesh::release_protected_attributes()
 {
     std::array<std::optional<size_t>, 3> updates;
     if (p_vertex_attrs) {
