@@ -160,30 +160,6 @@ private:
     tbb::enumerable_thread_specific<Tuple> m_new_tuple;
 };
 
-/**
- * Collapse an edge
- *
- * @param t Input Tuple for the edge to be collapsed.
- * @param[out] new_edges a vector of Tuples refering to the triangles incident to the new vertex
- * introduced
- * @note collapse edge a,b and generate a new vertex c
- * @return if collapse succeed
- */
-class TriMeshEdgeCollapseOperation : public TriMeshOperation
-{
-public:
-    ExecuteReturnData execute(TriMesh& m, const Tuple& t) override;
-    bool before(TriMesh& m, const Tuple& t) override;
-    bool after(TriMesh& m, ExecuteReturnData& ret_data) override;
-    std::string name() const override;
-
-    /**
-     * @brief prerequisite for collapse
-     * @param t Tuple referes to the edge to be collapsed
-     * @returns true is the link check is passed
-     */
-    static bool check_link_condition(const TriMesh& m, const Tuple& t);
-};
 
 /**
  * Smooth a vertex
@@ -216,3 +192,5 @@ public:
     std::string name() const override;
 };
 } // namespace wmtk
+
+#include <wmtk/operations/TriMeshEdgeCollapseOperation.h>
