@@ -35,13 +35,13 @@ bool AdaptiveTessellationSwapEdgeOperation::before(AdaptiveTessellation& m, cons
     for (const Tuple& edge_tuple : m.triangle_boundary_edge_tuples(t)) {
         if (m.is_boundary_edge(edge_tuple)) {
             // for seam edge get_sibling_edge_opt return the mirror edge as std::optional
-            auto opt =
+            std::optional<Tuple> opt =
                 m.is_seam_edge(edge_tuple) ? m.get_sibling_edge_opt(edge_tuple) : std::nullopt;
             size_t vid0 = edge_tuple.vid(m);
             size_t vid1 = edge_tuple.switch_vertex(m).vid(m);
             vids_to_mirror_edge[std::array<size_t, 2>{{vid0, vid1}}] = {
                 opt,
-                m.edge_attrs[edge_tuple.eid(m)].curve_id};
+                m.edge_attrs[edge_tuple.eid(m)].curve_id.value()};
         }
     }
 

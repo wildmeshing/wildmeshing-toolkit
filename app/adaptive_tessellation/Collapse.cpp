@@ -42,9 +42,9 @@ bool AdaptiveTessellationCollapseEdgeOperation::before(AdaptiveTessellation& m, 
 
 
         if (!m.mesh_parameters.m_ignore_embedding) {
-        const double& length_3d = op_cache.length3d = m.mesh_parameters.m_get_length(t);
-        // enforce heuristic
-        assert(length3d < 4. / 5. * m.mesh_parameters.m_quality_threshold);
+            const double& length_3d = op_cache.length3d = m.mesh_parameters.m_get_length(t);
+            // enforce heuristic
+            assert(length_3d < 4. / 5. * m.mesh_parameters.m_quality_threshold);
         }
         // record boundary vertex as boudnary_vertex in vertex attribute for accurate collapse
         // after boundary operations
@@ -176,7 +176,7 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::before(
     bool collapse_edge_success = collapse_edge.before(m, t);
     auto& op_cache = m_op_cache.local();
     auto& mirror_edge_tuple_opt = op_cache.mirror_edge_tuple_opt;
-    mirror_edge_tuple= m.face_attrs[t.fid(m)].mirror_edges[t.local_eid(m)];
+    mirror_edge_tuple_opt = m.face_attrs[t.fid(m)].mirror_edges[t.local_eid(m)];
     bool collapse_mirror_edge_success = true;
     if (mirror_edge_tuple_opt.has_value()) {
         const Tuple& mirror_edge_tuple = mirror_edge_tuple_opt.value();
@@ -195,23 +195,14 @@ wmtk::TriMeshOperation::ExecuteReturnData AdaptiveTessellationPairedCollapseEdge
     auto& op_cache = m_op_cache.local();
 
 
-    wmtk::TriMeshOperation::ExecuteReturnData ret_data= collapse_edge.execute(m, t);
-
-    Tuple t_copy = t;
+    wmtk::TriMeshOperation::ExecuteReturnData ret_data = collapse_edge.execute(m, t);
+    if (!ret_data) return ret_data;
     // if we have a mirror edge we need to
     if (op_cache.mirror_edge_tuple_opt.has_value()) {
         const Tuple& mirror_edge_tuple = op_cache.mirror_edge_tuple_opt.value();
-        collapse_mirror_edge.execute(m, mirror_edge_tuple.swap_vertex());
+        collapse_mirror_edge.execute(m, mirror_edge_tuple.switch_vertex(m));
     }
 
-    if (mirror_edge_tuple.has_value() && ret_data.success) {
-        wmtk::TriMeshOperation::ExecuteReturnData mirror_ret_data =
-            collapse_mirror_edge.execute(m, mirror_edge_tuple.value());
-        ret_data.success &= mirror_ret_data.success;
-        if (!ret_data.success) return ret_data;
-        // add the mirror_ret_data.new_tris to the ret_data.new_tris
-        for (auto& nt : mirror_ret_data.new_tris) ret_data.new_tris.emplace_back(nt);
-    }
     // update influenced seam edges to correspond to the right triangle/vertex
     // TODO add assertions
     // TODO needs some assertions to check the premise
@@ -220,50 +211,48 @@ wmtk::TriMeshOperation::ExecuteReturnData AdaptiveTessellationPairedCollapseEdge
 
     // TODO check if the one_ring_edges is assuming e.vid(m) ==
     // collapse_edge.return_edge_tuple.vid(m) update the seam edges mirror_edges info
-    if (mirror_edge_tuple.has_value()) {
+    if (op_cache.mirror_edge_tuple_opt.has_value()) {
         auto one_ring_edges =
             m.get_one_ring_edges_for_vertex(collapse_edge_cache.return_edge_tuple);
         for (auto& e : one_ring_edges) {
             if (m.face_attrs[e.fid(m)].mirror_edges[e.local_eid(m)].has_value()) {
                 // this is a seam edge
                 // check if the mirror_edge data needs to be updated
-                auto mirror_edge_tuple =
-                    m.face_attrs[e.fid(m)].mirror_edges[e.local_eid(m)].value();
-                if (mirror_edge_tuple.vid(m) == mirror_edge_cache.v1 ||
-                    mirror_edge_tuple.vid(m) == mirror_edge_cache.v2) {
-                    m.face_attrs[e.fid(m)].mirror_edges[e.local_eid(m)] =
-                        std::make_optional<wmtk::TriMesh::Tuple>(wmtk::TriMesh::Tuple(
-                            mirror_edge_cache.return_edge_tuple.vid(m),
-                            mirror_edge_tuple.local_eid(m),
-                            mirror_edge_tuple.fid(m),
-                            m));
-                }
+                // auto mirror_edge_tuple =
+                //     m.face_attrs[e.fid(m)].mirror_edges[e.local_eid(m)].value();
+                // if (mirror_edge_tuple.vid(m) == mirror_edge_cache.v1 ||
+                //     mirror_edge_tuple.vid(m) == mirror_edge_cache.v2) {
+                //     m.face_attrs[e.fid(m)].mirror_edges[e.local_eid(m)] =
+                //         std::make_optional<wmtk::TriMesh::Tuple>(wmtk::TriMesh::Tuple(
+                //             mirror_edge_cache.return_edge_tuple.vid(m),
+                //             mirror_edge_tuple.local_eid(m),
+                //             mirror_edge_tuple.fid(m),
+                //             m));
             }
         }
-
-        // TODO same thing. check the one_ring_edges direction
-        auto mirror_one_ring_edges =
-            m.get_one_ring_edges_for_vertex(mirror_edge_cache.return_edge_tuple);
-        for (auto& e : mirror_one_ring_edges) {
-            if (m.face_attrs[e.fid(m)].mirror_edges[e.local_eid(m)].has_value()) {
-                // this is a seam edge
-                // check if the mirror_edge data needs to be updated
-                auto primary_edge_tuple =
-                    m.face_attrs[e.fid(m)].mirror_edges[e.local_eid(m)].value();
-                if (primary_edge_tuple.vid(m) == collapse_edge_cache.v1 ||
-                    primary_edge_tuple.vid(m) == collapse_edge_cache.v2) {
-                    m.face_attrs[e.fid(m)].mirror_edges[e.local_eid(m)] =
-                        std::make_optional<wmtk::TriMesh::Tuple>(wmtk::TriMesh::Tuple(
-                            collapse_edge_cache.return_edge_tuple.vid(m),
-                            primary_edge_tuple.local_eid(m),
-                            primary_edge_tuple.fid(m),
-                            m));
-                }
-            }
-        }
-        // TODO add assertion for the above
-        return ret_data;
     }
+
+    // TODO same thing. check the one_ring_edges direction
+    auto mirror_one_ring_edges =
+        m.get_one_ring_edges_for_vertex(mirror_edge_cache.return_edge_tuple);
+    for (auto& e : mirror_one_ring_edges) {
+        if (m.face_attrs[e.fid(m)].mirror_edges[e.local_eid(m)].has_value()) {
+            // this is a seam edge
+            // check if the mirror_edge data needs to be updated
+            auto primary_edge_tuple = m.face_attrs[e.fid(m)].mirror_edges[e.local_eid(m)].value();
+            if (primary_edge_tuple.vid(m) == collapse_edge_cache.v1 ||
+                primary_edge_tuple.vid(m) == collapse_edge_cache.v2) {
+                m.face_attrs[e.fid(m)].mirror_edges[e.local_eid(m)] =
+                    std::make_optional<wmtk::TriMesh::Tuple>(wmtk::TriMesh::Tuple(
+                        collapse_edge_cache.return_edge_tuple.vid(m),
+                        primary_edge_tuple.local_eid(m),
+                        primary_edge_tuple.fid(m),
+                        m));
+            }
+        }
+    }
+    // TODO add assertion for the above
+    return ret_data;
 }
 
 bool AdaptiveTessellationPairedCollapseEdgeOperation::after(

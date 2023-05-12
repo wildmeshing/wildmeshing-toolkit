@@ -32,7 +32,6 @@ protected:
     virtual bool invariants(TriMesh& m, ExecuteReturnData& ret_data);
 
 
-
     // forwarding of operations in TriMesh
     static wmtk::AttributeCollection<VertexConnectivity>& vertex_connectivity(TriMesh& m);
     static wmtk::AttributeCollection<TriangleConnectivity>& tri_connectivity(TriMesh& m);
@@ -134,8 +133,17 @@ public:
 
     // returns a tuple to the new vertex created by this operation, where the
     // input is the tuple passed into after's ret_data.tuple.
-    Tuple new_vertex(TriMesh& m, const Tuple& t) const;
+    Tuple new_vertex(const TriMesh& m, const Tuple& t) const { return t.switch_vertex(m); }
+    Tuple new_vertex(const TriMesh& m);
     std::array<Tuple, 2> original_endpoints(TriMesh& m, const Tuple& t) const;
+
+    std::vector<Tuple> modified_tuples(const TriMesh& m);
+    operator bool() { return m_return_tuple_opt.local().has_value(); }
+
+    std::optional<Tuple> get_return_tuple_opt() { return m_return_tuple_opt.local(); }
+
+private:
+    tbb::enumerable_thread_specific<std::optional<Tuple>> m_return_tuple_opt;
 };
 
 /**
@@ -155,9 +163,12 @@ public:
     bool after(TriMesh& m, ExecuteReturnData& ret_data) override;
     std::string name() const override;
 
-    std::vector<Tuple> modified_tuples(const TriMesh& m) ;
+    std::vector<Tuple> modified_tuples(const TriMesh& m);
+    operator bool() { return m_return_tuple_opt.local().has_value(); }
+    std::optional<Tuple> get_return_tuple_opt() { return m_return_tuple_opt.local(); }
+
 private:
-    tbb::enumerable_thread_specific<Tuple> m_new_tuple;
+    tbb::enumerable_thread_specific<std::optional<Tuple>> m_return_tuple_opt;
 };
 
 
@@ -176,6 +187,13 @@ public:
     bool after(TriMesh& m, ExecuteReturnData& ret_data) override;
     std::string name() const override;
     // bool invariants(TriMesh& m, ExecuteReturnData& ret_data) override;
+
+    std::vector<Tuple> modified_tuples(const TriMesh& m);
+    operator bool() { return m_return_tuple_opt.local().has_value(); }
+    std::optional<Tuple> get_return_tuple_opt() { return m_return_tuple_opt.local(); }
+
+private:
+    tbb::enumerable_thread_specific<std::optional<Tuple>> m_return_tuple_opt;
 };
 
 /**

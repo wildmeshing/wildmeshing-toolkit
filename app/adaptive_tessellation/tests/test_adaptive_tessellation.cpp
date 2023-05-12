@@ -657,16 +657,18 @@ TEST_CASE("paired collapse")
     //             \     ||    /
     //              \(1) ||(2)/
     //                2     5
-    primary_edge6 = op4.collapse_edge.return_edge_tuple;
-    REQUIRE(primary_edge6.is_valid(m));
-    REQUIRE(primary_edge6.vid(m) == 10);
+    const auto& primary_edge6_opt = op4.collapse_edge.get_return_tuple_opt();
+    REQUIRE(primary_edge6_opt.has_value());
+    const auto& primary_edge6_ret = primary_edge6_opt.value();
+    REQUIRE(primary_edge6_ret.is_valid(m));
+    REQUIRE(primary_edge6_ret.vid(m) == 10);
     REQUIRE(m.vert_capacity() == 9);
-    REQUIRE(m.is_seam_edge(primary_edge6));
-    REQUIRE(m.edge_attrs[primary_edge6.eid(m)].curve_id.has_value());
-    REQUIRE(m.edge_attrs[primary_edge6.eid(m)].curve_id.value() == 1);
-    REQUIRE(m.get_oriented_mirror_edge(primary_edge6).is_valid(m));
-    REQUIRE(m.get_oriented_mirror_edge(primary_edge6).fid(m) == 3);
-    REQUIRE(m.get_oriented_mirror_edge(primary_edge6).vid(m) == 5);
+    REQUIRE(m.is_seam_edge(primary_edge6_ret));
+    REQUIRE(m.edge_attrs[primary_edge6_ret.eid(m)].curve_id.has_value());
+    REQUIRE(m.edge_attrs[primary_edge6_ret.eid(m)].curve_id.value() == 1);
+    REQUIRE(m.get_oriented_mirror_edge(primary_edge6_ret).is_valid(m));
+    REQUIRE(m.get_oriented_mirror_edge(primary_edge6_ret).fid(m) == 3);
+    REQUIRE(m.get_oriented_mirror_edge(primary_edge6_ret).vid(m) == 5);
     /////// debug
     for (auto& e : m.get_edges()) {
         REQUIRE(e.is_valid(m));
@@ -736,8 +738,11 @@ TEST_CASE("paired collapse")
     //             \     ||    /
     //              \(1) ||(2)/
     //                2     5
-    primary_edge7 = op5.collapse_edge.return_edge_tuple;
-    REQUIRE(primary_edge7.vid(m) == 11);
+    const auto& primary_edge7_opt = op5.collapse_edge.get_return_tuple_opt();
+    REQUIRE(primary_edge7_opt.has_value());
+    const auto& primary_edge7_ret = primary_edge7_opt.value();
+    REQUIRE(primary_edge7_ret.is_valid(m));
+    REQUIRE(primary_edge7_ret.vid(m) == 11);
     int valid_verts_cnt = 0;
     for (auto& v : m.get_vertices()) {
         if (v.is_valid(m)) {
@@ -752,10 +757,10 @@ TEST_CASE("paired collapse")
         }
     }
     REQUIRE(valid_faces_cnt == 4);
-    REQUIRE(!m.is_seam_edge(primary_edge7));
-    REQUIRE(!m.edge_attrs[primary_edge7.eid(m)].curve_id.has_value());
-    REQUIRE(m.edge_attrs[primary_edge7.switch_edge(m).eid(m)].curve_id.has_value());
-    REQUIRE(m.edge_attrs[primary_edge7.switch_edge(m).eid(m)].curve_id.value() == 2);
+    REQUIRE(!m.is_seam_edge(primary_edge7_ret));
+    REQUIRE(!m.edge_attrs[primary_edge7_ret.eid(m)].curve_id.has_value());
+    REQUIRE(m.edge_attrs[primary_edge7_ret.switch_edge(m).eid(m)].curve_id.has_value());
+    REQUIRE(m.edge_attrs[primary_edge7_ret.switch_edge(m).eid(m)].curve_id.value() == 2);
 
     /////// debug
     for (auto& e : m.get_edges()) {
@@ -828,10 +833,14 @@ TEST_CASE("paired collapse")
     //              \(1) ||(2)/
     //                13    12
 
-    primary_edge8 = op6.collapse_edge.return_edge_tuple;
-    TriMesh::Tuple primary_edge9 = op6.collapse_mirror_edge.return_edge_tuple;
-    REQUIRE(primary_edge8.vid(m) == 12);
-    REQUIRE(primary_edge9.vid(m) == 13);
+    const auto& primary_edge8_opt = op6.collapse_edge.get_return_tuple_opt();
+    const auto& primary_edge9_opt = op6.collapse_mirror_edge.get_return_tuple();
+    REQUIRE(primary_edge8_opt.has_value());
+    REQUIRE(primary_edge9_opt.has_value());
+    const auto& primary_edge8_ret = primary_edge8_opt.value();
+    const auto& primary_edge9_ret = primary_edge9_opt.value();
+    REQUIRE(primary_edge8_ret.vid(m) == 12);
+    REQUIRE(primary_edge9_ret.vid(m) == 13);
     valid_verts_cnt = 0;
     for (auto& v : m.get_vertices()) {
         if (v.is_valid(m)) {
@@ -846,19 +855,19 @@ TEST_CASE("paired collapse")
         }
     }
     REQUIRE(valid_faces_cnt == 2);
-    REQUIRE(!m.is_seam_edge(primary_edge8));
-    REQUIRE(!m.is_seam_edge(primary_edge9));
-    REQUIRE(m.is_boundary_edge(primary_edge8));
-    REQUIRE(m.is_boundary_edge(primary_edge9));
-    REQUIRE(m.edge_attrs[primary_edge8.eid(m)].curve_id.has_value());
-    REQUIRE(m.edge_attrs[primary_edge8.eid(m)].curve_id.value() == 2);
-    REQUIRE(m.edge_attrs[primary_edge9.eid(m)].curve_id.has_value());
-    REQUIRE(m.edge_attrs[primary_edge9.eid(m)].curve_id.value() == 3);
-    REQUIRE(m.is_seam_edge(primary_edge8.switch_edge(m)));
-    REQUIRE(m.is_seam_vertex(primary_edge8));
-    REQUIRE(m.is_seam_edge(primary_edge9.switch_edge(m)));
-    REQUIRE(m.is_seam_vertex(primary_edge9));
-    REQUIRE(m.get_oriented_mirror_edge(primary_edge8.switch_edge(m)).vid(m) == 1);
+    REQUIRE(!m.is_seam_edge(primary_edge8_ret));
+    REQUIRE(!m.is_seam_edge(primary_edge9_ret));
+    REQUIRE(m.is_boundary_edge(primary_edge8_ret));
+    REQUIRE(m.is_boundary_edge(primary_edge9_ret));
+    REQUIRE(m.edge_attrs[primary_edge8_ret.eid(m)].curve_id.has_value());
+    REQUIRE(m.edge_attrs[primary_edge8_ret.eid(m)].curve_id.value() == 2);
+    REQUIRE(m.edge_attrs[primary_edge9_ret.eid(m)].curve_id.has_value());
+    REQUIRE(m.edge_attrs[primary_edge9_ret.eid(m)].curve_id.value() == 3);
+    REQUIRE(m.is_seam_edge(primary_edge8_ret.switch_edge(m)));
+    REQUIRE(m.is_seam_vertex(primary_edge8_ret));
+    REQUIRE(m.is_seam_edge(primary_edge9_ret.switch_edge(m)));
+    REQUIRE(m.is_seam_vertex(primary_edge9_ret));
+    REQUIRE(m.get_oriented_mirror_edge(primary_edge8_ret.switch_edge(m)).vid(m) == 1);
 
     /////// debug
     for (auto& e : m.get_edges()) {
@@ -1004,12 +1013,14 @@ TEST_CASE("paired swap")
     //             \   | |      |    /
     //              \(1)\|      |(2)/
     //                2           5
-    primary_edge5 = op4.modified_tuples(m)[0];
-    REQUIRE(primary_edge5.is_valid(m));
-    REQUIRE(primary_edge5.vid(m) == 4);
-    REQUIRE(m.is_boundary_edge(primary_edge5.switch_edge(m)));
-    REQUIRE(m.edge_attrs[primary_edge5.switch_edge(m).eid(m)].curve_id.has_value());
-    REQUIRE(m.edge_attrs[primary_edge5.switch_edge(m).eid(m)].curve_id.value() == 2);
+    std::vector<Tuple> op4_modified_tuples = op4.modified_tuples(m);
+    REQUIRE(op_modified_tuples.size() == 2);
+    const auto& primary_edge5_ret = op4_modified_tuples[0];
+    REQUIRE(primary_edge5_ret.is_valid(m));
+    REQUIRE(primary_edge5_ret.vid(m) == 4);
+    REQUIRE(m.is_boundary_edge(primary_edge5_ret.switch_edge(m)));
+    REQUIRE(m.edge_attrs[primary_edge5_ret.switch_edge(m).eid(m)].curve_id.has_value());
+    REQUIRE(m.edge_attrs[primary_edge5_ret.switch_edge(m).eid(m)].curve_id.value() == 2);
     REQUIRE(m.is_seam_edge(op4.modified_tuples(m)[1].switch_edge(m)));
     REQUIRE(m.edge_attrs[op4.modified_tuples(m)[1].switch_edge(m).eid(m)].curve_id.has_value());
     REQUIRE(m.edge_attrs[op4.modified_tuples(m)[1].switch_edge(m).eid(m)].curve_id.value() == 0);
@@ -1056,7 +1067,8 @@ TEST_CASE("paired swap")
     REQUIRE(primary_edge6.switch_vertex(m).vid(m) == 3);
     AdaptiveTessellationSwapEdgeOperation op5;
     op5(m, primary_edge6);
-    // REQUIRE(op5.modified_tuples(m).size() == 0);
+    std::vector<Tuple> op5_modified_tuples = op5.modified_tuples(m);
+    REQUIRE(op5_modified_tuples.size() == 0);
 
     ////////// ======= seam edge swap
     /// should be rejected
@@ -1066,7 +1078,8 @@ TEST_CASE("paired swap")
     REQUIRE(primary_edge7.switch_vertex(m).vid(m) == 2);
     AdaptiveTessellationSwapEdgeOperation op6;
     op6(m, primary_edge7);
-    // REQUIRE(op6.modified_tuples(m).size() == 0);
+    std::vector<Tuple> op6_modified_tuples = op6.modified_tuples(m);
+    REQUIRE(op6_modified_tuples.size() == 0);
 }
 
 TEST_CASE("test mirror edge setup")
@@ -1312,9 +1325,8 @@ TEST_CASE("quickrun")
         WrappingMode::MIRROR_REPEAT,
         WrappingMode::MIRROR_REPEAT);
 
-    m.mesh_parameters.m_position_normal_paths = {
-        "/home/yunfan/seamPyramid_position.exr",
-        "/home/yunfan/seamPyramid_normal_smooth.exr"};
+    m.mesh_parameters.m_position_normal_paths = {"/home/yunfan/seamPyramid_position.exr",
+                                                 "/home/yunfan/seamPyramid_normal_smooth.exr"};
     m.mesh_parameters.m_early_stopping_number = 100;
 
     assert(m.check_mesh_connectivity_validity());
@@ -1351,9 +1363,8 @@ TEST_CASE("check curveid consistency after split")
         WrappingMode::MIRROR_REPEAT,
         WrappingMode::MIRROR_REPEAT);
 
-    m.mesh_parameters.m_position_normal_paths = {
-        "/home/yunfan/seamPyramid_position.exr",
-        "/home/yunfan/seamPyramid_normal_smooth.exr"};
+    m.mesh_parameters.m_position_normal_paths = {"/home/yunfan/seamPyramid_position.exr",
+                                                 "/home/yunfan/seamPyramid_normal_smooth.exr"};
     assert(m.check_mesh_connectivity_validity());
     // stop after 10 iterations
     m.mesh_parameters.m_early_stopping_number = 10;

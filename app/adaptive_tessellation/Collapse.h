@@ -27,7 +27,6 @@ public:
     };
     struct OpCache
     {
-        TriMesh::Tuple return_edge_tuple;
         size_t v1; // first vertex index of the edge being collapsed
         size_t v2; // second vertex index of hte edge being collapsed
 
@@ -77,6 +76,7 @@ public:
     struct OpCache
     {
         std::optional<Tuple> mirror_edge_tuple_opt;
+        // std::optional<Tuple> return_tuple;
     };
     tbb::enumerable_thread_specific<OpCache> m_op_cache;
 

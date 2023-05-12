@@ -128,18 +128,26 @@ auto TriMeshEdgeCollapseOperation::execute(TriMesh& m, const Tuple& loc0) -> Exe
     return_t = Tuple(new_vid, (j_ret + 2) % 3, new_fid, m);
     assert(new_t.is_valid(m));
 
-    new_tris = m.get_one_ring_tris_for_vertex(new_t);
+    m_return_tuple_opt.local() = new_t;
+    new_tris = modified_tuples(m);
 
     ret_data.success = true;
     return ret_data;
 }
+
+auto TriMeshEdgeCollapseOperation::modified_tuples(const TriMesh& m) -> std::vector<Tuple>
+{
+    const auto& new_tup_opt = m_return_tuple_opt.local();
+    assert(new_tup_opt.has_value());
+    return m.get_one_ring_tris_for_vertex(new_tup_opt.value());
+}
 namespace {
-    constexpr static size_t dummy = std::numeric_limits<size_t>::max();
+constexpr static size_t dummy = std::numeric_limits<size_t>::max();
 }
 
-auto TriMeshEdgeCollapseOperation::links_of_vertex(const TriMesh& mesh, const Tuple& vertex)  -> LinksOfVertex{
-
-
+auto TriMeshEdgeCollapseOperation::links_of_vertex(const TriMesh& mesh, const Tuple& vertex)
+    -> LinksOfVertex
+{
     size_t vid = vertex.vid(mesh);
     auto vid_ring = mesh.get_one_ring_edges_for_vertex(vertex);
 
@@ -167,10 +175,11 @@ auto TriMeshEdgeCollapseOperation::links_of_vertex(const TriMesh& mesh, const Tu
     vector_unique(lk_vid);
     std::sort(lk_e_vid.begin(), lk_e_vid.end());
     return ret;
-
 }
-std::vector<size_t> TriMeshEdgeCollapseOperation::edge_link_of_edge(const TriMesh& mesh, const Tuple& edge) {
-
+std::vector<size_t> TriMeshEdgeCollapseOperation::edge_link_of_edge(
+    const TriMesh& mesh,
+    const Tuple& edge)
+{
     std::vector<size_t> lk_edge;
     lk_edge.push_back((edge.switch_edge(mesh)).switch_vertex(mesh).vid(mesh));
     if (!edge.switch_face(mesh).has_value()) {
@@ -190,7 +199,7 @@ bool TriMeshEdgeCollapseOperation::check_link_condition(const TriMesh& mesh, con
     const LinksOfVertex v1 = links_of_vertex(mesh, edge);
     const LinksOfVertex v2 = links_of_vertex(mesh, edge.switch_vertex(mesh));
 
-    // compute vertex link condition 
+    // compute vertex link condition
     auto lk_vid12 = set_intersection(v1.vertex, v2.vertex);
     bool v_link = lk_vid12 == edge_link_of_edge(mesh, edge);
 
@@ -198,8 +207,8 @@ bool TriMeshEdgeCollapseOperation::check_link_condition(const TriMesh& mesh, con
     // in 2d edge link for an edge is always empty
 
     std::vector<std::pair<size_t, size_t>> res;
-    const auto & lk_e_vid1 = v1.edge;
-    const auto & lk_e_vid2 = v2.edge;
+    const auto& lk_e_vid1 = v1.edge;
+    const auto& lk_e_vid2 = v2.edge;
     std::set_intersection(
         lk_e_vid1.begin(),
         lk_e_vid1.end(),
@@ -226,4 +235,4 @@ std::string TriMeshEdgeCollapseOperation::name() const
 {
     return "edge_collapse";
 }
-}
+} // namespace wmtk

@@ -32,9 +32,15 @@ public:
      */
     static bool check_link_condition(const TriMesh& m, const Tuple& t);
 
-    // computes the 
+    // computes the
     static LinksOfVertex links_of_vertex(const TriMesh& m, const Tuple& vertex);
     static std::vector<size_t> edge_link_of_edge(const TriMesh& m, const Tuple& edge);
 
+    std::vector<Tuple> modified_tuples(const TriMesh& m);
+    operator bool() { return m_return_tuple_opt.local().has_value(); }
+    std::optional<Tuple> get_return_tuple_opt() { return m_return_tuple_opt.local(); }
+
+private:
+    tbb::enumerable_thread_specific<std::optional<Tuple>> m_return_tuple_opt;
 };
-}
+} // namespace wmtk
