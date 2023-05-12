@@ -22,6 +22,7 @@ public:
 public:
     virtual Eigen::Matrix<double, 3, 1> get(double x, double y) const = 0;
     virtual Eigen::Matrix<DScalar, 3, 1> get(const DScalar& x, const DScalar& y) const = 0;
+    virtual Eigen::Matrix<double, 3, 1> get_position(double u, double v) const = 0;
     virtual double get_error_per_edge(
         const Eigen::Matrix<double, 2, 1>& p1,
         const Eigen::Matrix<double, 2, 1>& p2) const = 0;
@@ -77,6 +78,11 @@ public:
         return static_cast<const Derived*>(this)->get(u, v);
     }
 
+    Eigen::Matrix<double, 3, 1> get_position(double u, double v) const override
+    {
+        return static_cast<const Derived*>(this)->get_position(u, v);
+    }
+
 public:
     inline double get_error_per_edge(
         const Eigen::Matrix<double, 2, 1>& p1,
@@ -102,8 +108,9 @@ public:
         // get the pixel index of p1 and p2
         auto get_coordinate = [&](const T& x, const T& y) -> std::pair<int, int> {
             auto [xx, yy] = m_image.get_pixel_index(get_value(x), get_value(y));
-            return {m_image.get_coordinate(xx, m_image.get_wrapping_mode_x()),
-                    m_image.get_coordinate(yy, m_image.get_wrapping_mode_y())};
+            return {
+                m_image.get_coordinate(xx, m_image.get_wrapping_mode_x()),
+                m_image.get_coordinate(yy, m_image.get_wrapping_mode_y())};
         };
         auto [xx1, yy1] = get_coordinate(uv1(0), uv1(1));
         auto [xx2, yy2] = get_coordinate(uv2(0), uv2(1));
@@ -196,8 +203,9 @@ public:
         };
         auto get_coordinate = [&](const double& x, const double& y) -> std::pair<int, int> {
             auto [xx, yy] = m_image.get_pixel_index(get_value(x), get_value(y));
-            return {m_image.get_coordinate(xx, m_image.get_wrapping_mode_x()),
-                    m_image.get_coordinate(yy, m_image.get_wrapping_mode_y())};
+            return {
+                m_image.get_coordinate(xx, m_image.get_wrapping_mode_x()),
+                m_image.get_coordinate(yy, m_image.get_wrapping_mode_y())};
         };
         auto bbox_min = bbox.min();
         auto bbox_max = bbox.max();
@@ -329,11 +337,11 @@ public:
     }
     Eigen::Matrix<double, 3, 1> get(double u, double v) const
     {
-        double z = 3 * m_sampler->sample(u, v);
+        double z = m_sampler->sample(u, v);
         Eigen::Matrix<double, 3, 1> displace_3d;
         for (auto i = 0; i < 3; i++) {
             double p = m_position_sampler[i]->sample(u, v);
-            double d = m_normal_sampler[i]->sample(u, v) - 0.5;
+            double d = 2.0 * m_normal_sampler[i]->sample(u, v) - 1.0;
             displace_3d(i, 0) = p * m_normalization_scale - m_normalization_offset(i, 0) + z * d;
         }
         return displace_3d;
@@ -341,12 +349,22 @@ public:
 
     Eigen::Matrix<DScalar, 3, 1> get(const DScalar& u, const DScalar& v) const
     {
-        DScalar z = 3 * m_sampler->sample(u, v);
+        DScalar z = m_sampler->sample(u, v);
         Eigen::Matrix<DScalar, 3, 1> displace_3d;
         for (auto i = 0; i < 3; i++) {
             DScalar p = m_position_sampler[i]->sample(u, v);
-            DScalar d = m_normal_sampler[i]->sample(u, v) - 0.5;
+            DScalar d = 2.0 * m_normal_sampler[i]->sample(u, v) - 1.0;
             displace_3d(i, 0) = p * m_normalization_scale - m_normalization_offset(i, 0) + z * d;
+        }
+        return displace_3d;
+    }
+
+    Eigen::Matrix<double, 3, 1> get_position(double u, double v) const
+    {
+        Eigen::Matrix<double, 3, 1> displace_3d;
+        for (auto i = 0; i < 3; i++) {
+            double p = m_position_sampler[i]->sample(u, v);
+            displace_3d(i, 0) = p * m_normalization_scale - m_normalization_offset(i, 0);
         }
         return displace_3d;
     }

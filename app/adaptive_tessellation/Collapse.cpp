@@ -40,10 +40,12 @@ bool AdaptiveTessellationCollapseEdgeOperation::before(AdaptiveTessellation& m, 
         // check these aren't hte same curve
         if (other_vattr.curve_id != other_vattr.curve_id) return false;
 
+
+        if (!m.mesh_parameters.m_ignore_embedding) {
         const double& length_3d = op_cache.length3d = m.mesh_parameters.m_get_length(t);
         // enforce heuristic
         assert(length3d < 4. / 5. * m.mesh_parameters.m_quality_threshold);
-
+        }
         // record boundary vertex as boudnary_vertex in vertex attribute for accurate collapse
         // after boundary operations
 

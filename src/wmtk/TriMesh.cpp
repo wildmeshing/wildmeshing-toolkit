@@ -570,13 +570,8 @@ std::array<std::optional<size_t>, 3> TriMesh::release_protected_attributes()
 
 auto TriMesh::triangle_boundary_edge_tuples(const Tuple& triangle) const -> std::array<Tuple, 3>
 {
-    assert(is_valid(triangle));
+    assert(triangle.is_valid(*this));
     const size_t fid = triangle.fid(*this);
 
-    return {{
-        tuple_from_edge(fid,0),
-        tuple_from_edge(fid,1),
-        tuple_from_edge(fid,2)
-    }};
-
+    return {{tuple_from_edge(fid, 0), tuple_from_edge(fid, 1), tuple_from_edge(fid, 2)}};
 }

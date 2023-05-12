@@ -361,13 +361,15 @@ Boundary::ParameterizedSegment Boundary::t_to_segment(int curve_id, double t) co
     assert(t <= arclength.back());
 
     auto it = std::prev(std::upper_bound(arclength.begin(), arclength.end(), t));
+    if (!is_periodic(curve_id) && std::next(it) == arclength.end()) {
+        --it;
+    }
     auto a = std::distance(arclength.begin(), it);
     assert(a < arclength.size());
 
     result.t0 = *it;
     const auto& boundary = m_curves.positions[curve_id];
     assert(a < boundary.size());
-    assert(!is_periodic(curve_id) && (a + 1) == boundary.size());
     result.A = boundary[a];
     result.B =
         m_curves.periodic[curve_id] ? boundary[(a + 1) % boundary.size()] : boundary[(a + 1)];

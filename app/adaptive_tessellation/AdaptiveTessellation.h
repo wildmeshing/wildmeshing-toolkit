@@ -43,6 +43,7 @@ class VertexAttributes
 {
 public:
     Eigen::Vector2d pos;
+    Eigen::Vector3d pos_world;
     double t = 0.;
     size_t curve_id = 0; // TODO questionable should I have this for each vertex? change to be for
                          // each edge, but still keep one copy for vertex
@@ -68,6 +69,11 @@ public:
 
 class AdaptiveTessellation : public wmtk::TriMesh
 {
+    Eigen::MatrixXd input_V_;
+    Eigen::MatrixXi input_F_;
+    Eigen::MatrixXd input_VT_;
+    Eigen::MatrixXi input_FT_;
+
 public:
     template <class T>
     using RowMatrix2 = Eigen::Matrix<T, Eigen::Dynamic, 2, Eigen::RowMajor>;
@@ -139,6 +145,7 @@ public:
     void set_displacement(const DISPLACEMENT_MODE displacement_mode);
     void set_edge_length_measurement(const EDGE_LEN_TYPE edge_len_type);
     void set_projection();
+    void set_vertex_world_positions();
     // using boundary parametrization, find the vertex that are the start and end of each cruve and
     // set them as fixed
     void set_fixed();
@@ -168,8 +175,54 @@ public:
     // Exports V and F of the stored mesh
     void export_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
 
-    // Exports V and F of the stored mesh where all seam vertices are merged
+    // Exports V and F of the stored mesh
+    void export_mesh_without_invalid_faces(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
+
+    // Exports V and F of the stored mesh
+    void export_mesh_with_displacement(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
+
+    /**
+     * @brief Exports the mesh including UV coordinates
+     *
+     * @param V igl format vertices
+     * @param F igl format faces
+     * @param VT igl format texture vertices
+     * @param FT igl format texture faces
+     */
+    void export_mesh(
+        Eigen::MatrixXd& V,
+        Eigen::MatrixXi& F,
+        Eigen::MatrixXd& VT,
+        Eigen::MatrixXi& FT) const;
+
+    /**
+     * @brief Exports the mesh including UV coordinates where all 3D positions are mapped onto the
+     * input.
+     *
+     * @param V igl format vertices
+     * @param F igl format faces
+     * @param VT igl format texture vertices
+     * @param FT igl format texture faces
+     */
+    void export_mesh_mapped_on_input(
+        Eigen::MatrixXd& V,
+        Eigen::MatrixXi& F,
+        Eigen::MatrixXd& VT,
+        Eigen::MatrixXi& FT) const;
+
+    /**
+     * @brief Exports V and F of the stored mesh where all seam vertices are merged.
+     *
+     * Positions are averaged in between seam vertices. Faces are updated so that they only
+     * reference the seam vertex with the lowest index. Unreferenced vertices are not removed.
+     *
+     * @param V igl format vertices
+     * @param F igl format faces
+     */
     void remove_seams(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
+
+    // Exports V and F of the stored mesh
+    void export_seamless_mesh_with_displacement(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
 
     // Writes a triangle mesh in OBJ format
     void write_obj(const std::string& path);
@@ -188,6 +241,10 @@ public:
     void write_displaced_seamless_obj(
         const std::string& path,
         const std::shared_ptr<wmtk::Displacement> displacement);
+    void write_world_obj(
+        const std::string& path,
+        const std::shared_ptr<wmtk::Displacement> displacement);
+    void write_obj_with_texture_coords(const std::string& path);
 
     // Computes the quality of a triangle
     double get_quality(const Tuple& loc, int idx = 0) const;
