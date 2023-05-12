@@ -1,5 +1,6 @@
 #include <wmtk/TriMeshOperation.h>
 #include <wmtk/utils/VectorUtils.h>
+#include <wmtk/utils/link_condition.h>
 using namespace wmtk;
 
 
@@ -502,85 +503,7 @@ auto TriMeshEdgeCollapseOperation::execute(TriMesh& m, const Tuple& loc0) -> Exe
 
 bool TriMeshEdgeCollapseOperation::check_link_condition(const TriMesh& mesh, const Tuple& edge)
 {
-    assert(edge.is_valid(mesh));
-    size_t vid1 = edge.vid(mesh);
-    size_t vid2 = mesh.switch_vertex(edge).vid(mesh);
-    auto vid1_ring = mesh.get_one_ring_edges_for_vertex(edge);
-    auto vid2_ring = mesh.get_one_ring_edges_for_vertex(mesh.switch_vertex(edge));
-
-
-    size_t dummy = std::numeric_limits<size_t>::max();
-
-    std::vector<size_t> lk_vid1;
-    std::vector<size_t> lk_vid2;
-
-
-    std::vector<std::pair<size_t, size_t>> lk_e_vid1;
-    std::vector<std::pair<size_t, size_t>> lk_e_vid2;
-
-    for (auto e_vid : vid1_ring) {
-        if (!e_vid.switch_face(mesh).has_value()) {
-            lk_vid1.push_back(dummy);
-            lk_e_vid1.emplace_back(e_vid.vid(mesh), dummy);
-        }
-        lk_vid1.push_back(e_vid.vid(mesh));
-    }
-    std::vector<Tuple> vid1_tris = mesh.get_one_ring_tris_for_vertex(edge);
-    for (auto v1_tri_t : vid1_tris) {
-        auto indices = tri_connectivity(mesh)[v1_tri_t.fid(mesh)].m_indices;
-        auto l = tri_connectivity(mesh)[v1_tri_t.fid(mesh)].find(vid1);
-        assert(l != -1);
-        auto i0 = indices[(l + 1) % 3], i1 = indices[(l + 2) % 3];
-        lk_e_vid1.emplace_back(std::min(i0, i1), std::max(i0, i1));
-    }
-    vector_unique(lk_vid1);
-
-    for (auto e_vid : vid2_ring) {
-        if (!e_vid.switch_face(mesh).has_value()) {
-            lk_vid2.push_back(dummy);
-            lk_e_vid2.emplace_back(e_vid.vid(mesh), dummy);
-        }
-        lk_vid2.push_back(e_vid.vid(mesh));
-    }
-    std::vector<Tuple> vid2_tris = mesh.get_one_ring_tris_for_vertex(mesh.switch_vertex(edge));
-    for (auto v2_tri_t : vid2_tris) {
-        auto indices = tri_connectivity(mesh)[v2_tri_t.fid(mesh)].m_indices;
-        auto l = tri_connectivity(mesh)[v2_tri_t.fid(mesh)].find(vid2);
-        assert(l != -1);
-        auto i0 = indices[(l + 1) % 3], i1 = indices[(l + 2) % 3];
-        lk_e_vid2.emplace_back(std::min(i0, i1), std::max(i0, i1));
-    }
-    vector_unique(lk_vid2);
-    auto lk_vid12 = set_intersection(lk_vid1, lk_vid2);
-    std::vector<size_t> lk_edge;
-    lk_edge.push_back((edge.switch_edge(mesh)).switch_vertex(mesh).vid(mesh));
-    if (!edge.switch_face(mesh).has_value())
-        lk_edge.push_back(dummy);
-    else
-        lk_edge.push_back(
-            ((edge.switch_face(mesh).value()).switch_edge(mesh)).switch_vertex(mesh).vid(mesh));
-    vector_sort(lk_edge);
-    bool v_link =
-        (lk_vid12.size() == lk_edge.size() &&
-         std::equal(lk_vid12.begin(), lk_vid12.end(), lk_edge.begin()));
-
-    // check edge link condition
-    // in 2d edge link for an edge is always empty
-
-    bool e_link = true;
-    std::vector<std::pair<size_t, size_t>> res;
-    std::sort(lk_e_vid1.begin(), lk_e_vid1.end());
-    std::sort(lk_e_vid2.begin(), lk_e_vid2.end());
-    std::set_intersection(
-        lk_e_vid1.begin(),
-        lk_e_vid1.end(),
-        lk_e_vid2.begin(),
-        lk_e_vid2.end(),
-        std::back_inserter(res));
-    if (res.size() > 0) {
-        return false;
-    }
-    return v_link;
+    return utils::link_condition(mesh, edge);
 }
 
 
