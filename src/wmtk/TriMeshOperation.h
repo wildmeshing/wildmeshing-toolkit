@@ -32,6 +32,7 @@ protected:
     virtual bool invariants(TriMesh& m, ExecuteReturnData& ret_data);
 
 
+
     // forwarding of operations in TriMesh
     static wmtk::AttributeCollection<VertexConnectivity>& vertex_connectivity(TriMesh& m);
     static wmtk::AttributeCollection<TriangleConnectivity>& tri_connectivity(TriMesh& m);
@@ -153,6 +154,10 @@ public:
     bool before(TriMesh& m, const Tuple& t) override;
     bool after(TriMesh& m, ExecuteReturnData& ret_data) override;
     std::string name() const override;
+
+    std::vector<Tuple> modified_tuples(const TriMesh& m) ;
+private:
+    tbb::enumerable_thread_specific<Tuple> m_new_tuple;
 };
 
 /**

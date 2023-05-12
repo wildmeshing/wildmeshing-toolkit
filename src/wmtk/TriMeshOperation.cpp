@@ -300,20 +300,25 @@ auto TriMeshSwapEdgeOperation::execute(TriMesh& m, const Tuple& t) -> ExecuteRet
     vertex_connectivity[vid4].m_conn_tris.push_back(test_fid2);
     vector_unique(vertex_connectivity[vid4].m_conn_tris);
     // change the tuple to the new edge tuple
-    return_tuple = m.init_from_edge(vid4, vid3, test_fid2);
+    Tuple& new_tuple_loc = m_new_tuple.local();
+    new_tuple_loc = m.init_from_edge(vid4, vid3, test_fid2);
+    return_tuple = new_tuple_loc;
 
     assert(return_tuple.switch_vertex(m).vid(m) != vid1);
     assert(return_tuple.switch_vertex(m).vid(m) != vid2);
     assert(return_tuple.is_valid(m));
-    auto new_other_face_opt = return_tuple.switch_face(m);
-    if (new_other_face_opt) {
-        new_tris = {return_tuple, new_other_face_opt.value()};
-    } else {
-        return ret_data;
-    }
+    new_tris = modified_tuples(m);
 
     ret_data.success = true;
     return ret_data;
+}
+
+auto TriMeshSwapEdgeOperation::modified_tuples(const TriMesh& m) -> std::vector<Tuple> {
+    const Tuple& new_tuple= m_new_tuple.local();
+    assert(new_tuple.is_valid(m));
+    auto new_other_face_opt = new_tuple.switch_face(m);
+    assert(new_other_face_opt);
+    return  {new_tuple, new_other_face_opt.value()};
 }
 bool TriMeshSwapEdgeOperation::before(TriMesh& mesh, const Tuple& t)
 {
