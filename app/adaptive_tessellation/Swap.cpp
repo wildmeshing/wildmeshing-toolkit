@@ -27,17 +27,20 @@ auto AdaptiveTessellationSwapEdgeOperation::execute(AdaptiveTessellation& m, con
 }
 bool AdaptiveTessellationSwapEdgeOperation::before(AdaptiveTessellation& m, const Tuple& t)
 {
-    if (m.is_seam_edge(t)) {
+    if (m.is_boundary_edge(t)) {
         return false;
     }
 
     auto& vids_to_mirror_edge = vid_edge_to_mirror_edge.local();
     for (const Tuple& edge_tuple : m.triangle_boundary_edge_tuples(t)) {
-        if (auto opt = m.get_sibling_edge(edge_tuple); opt) {
-            // then this is a mirror edge
-            size_t vid0 = t.vid(m);
-            size_t vid1 = t.switch_vertex(m).vid(m);
-            vids_to_mirror_edge[std::array<size_t, 2>{{vid0, vid1}}] = *opt;
+        if (m.is_boundary_edge(edge_tuple)) {
+            // for seam edge get_sibling_edge return the mirror edge as std::optional
+            auto opt = m.is_seam_edge(edge_tuple) ? m.get_sibling_edge(edge_tuple) : std::nullopt;
+            size_t vid0 = edge_tuple.vid(m);
+            size_t vid1 = edge_tuple.switch_vertex(m).vid(m);
+            vids_to_mirror_edge[std::array<size_t, 2>{{vid0, vid1}}] = {
+                opt,
+                m.edge_attrs[edge_tuple.eid(m)].curve_id};
         }
     }
 
@@ -90,7 +93,7 @@ bool AdaptiveTessellationSwapEdgeOperation::after(
             return {};
         };
 
-        for (const auto& [vids, mirror_edge] : vid_edge_to_mirror_edge.local()) {
+        for (const auto& [vids, mirror_edge_curveid] : vid_edge_to_mirror_edge.local()) {
             // use vids to find an edge in the current triangle
             const auto [vid0, vid1] = vids;
             const Tuple edge_tup = find_edge_tup(vid0, vid1);
@@ -104,13 +107,16 @@ bool AdaptiveTessellationSwapEdgeOperation::after(
                 assert(vid != ovid);
             }
 #endif
-            m.set_mirror_edge_data(edge_tup, mirror_edge);
-            m.set_mirror_edge_data(mirror_edge, edge_tup);
-            m.edge_attrs[edge_tup.eid(m)].curve_id = m.edge_attrs[mirror_edge.eid(m)].curve_id;
+            // only set mirror edge if what's stored is a valid edge
+            if (mirror_edge_curveid.first.has_value()) {
+                m.set_mirror_edge_data(edge_tup, mirror_edge_curveid.first.value());
+                m.set_mirror_edge_data(mirror_edge_curveid.first.value(), edge_tup);
+            }
+
+            m.edge_attrs[edge_tup.eid(m)].curve_id = mirror_edge_curveid.second;
         }
 
         return true;
-        // ret_data.success |= m.swap_after(ret_data.tuple);
     }
     return ret_data;
 }
