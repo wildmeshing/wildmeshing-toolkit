@@ -137,7 +137,7 @@ namespace {
     constexpr static size_t dummy = std::numeric_limits<size_t>::max();
 }
 
-bool TriMeshEdgeCollapseOperation::links_of_vertex(const TriMesh& mesh, const Tuple& edge) {
+auto TriMeshEdgeCollapseOperation::links_of_vertex(const TriMesh& mesh, const Tuple& vertex)  -> LinksOfVertex{
 
 
     size_t vid = vertex.vid(mesh);
@@ -154,12 +154,12 @@ bool TriMeshEdgeCollapseOperation::links_of_vertex(const TriMesh& mesh, const Tu
         }
         lk_vid.push_back(e_vid.vid(mesh));
     }
-    std::vector<Tuple> vid_tris = mesh.get_one_ring_tris_for_vertex(edge);
+    std::vector<Tuple> vid_tris = mesh.get_one_ring_tris_for_vertex(vertex);
     for (const auto& v_tri_t : vid_tris) {
-        const aut const size_t fid = v1_tri_t.fid(mesh);
+        const size_t fid = v_tri_t.fid(mesh);
         const auto& tri_con = tri_connectivity(mesh)[fid];
         const auto& indices = tri_con.m_indices;
-        auto l = tri_con.find(vid1);
+        auto l = tri_con.find(vid);
         assert(l != -1);
         auto i0 = indices[(l + 1) % 3], i1 = indices[(l + 2) % 3];
         lk_e_vid.emplace_back(std::min(i0, i1), std::max(i0, i1));
@@ -169,7 +169,7 @@ bool TriMeshEdgeCollapseOperation::links_of_vertex(const TriMesh& mesh, const Tu
     return ret;
 
 }
-bool TriMeshEdgeCollapseOperation::edge_link_of_edge(const TriMesh& mesh, const Tuple& edge) {
+std::vector<size_t> TriMeshEdgeCollapseOperation::edge_link_of_edge(const TriMesh& mesh, const Tuple& edge) {
 
     std::vector<size_t> lk_edge;
     lk_edge.push_back((edge.switch_edge(mesh)).switch_vertex(mesh).vid(mesh));
@@ -187,12 +187,12 @@ bool TriMeshEdgeCollapseOperation::check_link_condition(const TriMesh& mesh, con
 {
     assert(edge.is_valid(mesh));
     // the edge initially points at the first of two vertex links we are computing
-    const LinksOfVertex v1 = links_of_vertex(m, edge);
-    const LinksOfVertex v2 = links_of_vertex(m, edge.switch_vertex(m));
+    const LinksOfVertex v1 = links_of_vertex(mesh, edge);
+    const LinksOfVertex v2 = links_of_vertex(mesh, edge.switch_vertex(mesh));
 
     // compute vertex link condition 
     auto lk_vid12 = set_intersection(v1.vertex, v2.vertex);
-    bool v_link = lk_vid12 == edge_link_of_edge(m, edge);
+    bool v_link = lk_vid12 == edge_link_of_edge(mesh, edge);
 
     // check edge link condition
     // in 2d edge link for an edge is always empty

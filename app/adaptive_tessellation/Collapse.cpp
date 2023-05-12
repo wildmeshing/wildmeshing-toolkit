@@ -27,18 +27,18 @@ bool AdaptiveTessellationCollapseEdgeOperation::before(AdaptiveTessellation& m, 
 {
     m_op_cache.local() = {};
     if (wmtk::TriMeshEdgeCollapseOperation::before(m, t)) {
-        if(
+        // TODO check link conditions
         OpCache& op_cache = m_op_cache.local();
         // check if the two vertices to be split is of the same curve_id
         const size_t my_vid = t.vid(m);
         const Tuple other_tuple = t.switch_vertex(m);
         const size_t other_vid = other_tuple.vid(m);
-        const auto& my_vattr = m.vertex_attrs[my_vid];
-        const auto& other_vattr = m.vertex_attrs[other_vid];
+        auto& my_vattr = m.vertex_attrs[my_vid];
+        auto& other_vattr = m.vertex_attrs[other_vid];
 
 
         // check these aren't hte same curve
-        if (other_vattr.curve_id != other_vattr.curve_id) return false;
+        if (my_vattr.curve_id != other_vattr.curve_id) return false;
 
 
         if (!m.mesh_parameters.m_ignore_embedding) {
@@ -175,8 +175,8 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::before(
 {
     bool collapse_edge_success = collapse_edge.before(m, t);
     auto& op_cache = m_op_cache.local();
-    auto& mirror_edge_tuple = op_cache.mirror_edge_tuple_opt;
-    mirror_edge_tuple_opt = m.face_attrs[t.fid(m)].mirror_edges[t.local_eid(m)];
+    auto& mirror_edge_tuple_opt = op_cache.mirror_edge_tuple_opt;
+    mirror_edge_tuple= m.face_attrs[t.fid(m)].mirror_edges[t.local_eid(m)];
     bool collapse_mirror_edge_success = true;
     if (mirror_edge_tuple_opt.has_value()) {
         const Tuple& mirror_edge_tuple = mirror_edge_tuple_opt.value();
@@ -195,7 +195,7 @@ wmtk::TriMeshOperation::ExecuteReturnData AdaptiveTessellationPairedCollapseEdge
     auto& op_cache = m_op_cache.local();
 
 
-    wmtk::TriMeshOperation::ExecuteReturnData = collapse_edge.execute(m, t);
+    wmtk::TriMeshOperation::ExecuteReturnData ret_data= collapse_edge.execute(m, t);
 
     Tuple t_copy = t;
     // if we have a mirror edge we need to

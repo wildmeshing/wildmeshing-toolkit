@@ -1,11 +1,12 @@
+#pragma once
 #include <wmtk/TriMeshOperation.h>
 
 
 namespace wmtk {
 struct LinksOfVertex
 {
-    std::vector<size_t> vertex_link;
-    std::vector<std::pair<size_t, size_t>> edge_link;
+    std::vector<size_t> vertex;
+    std::vector<std::pair<size_t, size_t>> edge;
 };
 /**
  * Collapse an edge

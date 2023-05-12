@@ -1,6 +1,5 @@
 #include <wmtk/TriMeshOperation.h>
 #include <wmtk/utils/VectorUtils.h>
-#include <wmtk/utils/link_condition.h>
 using namespace wmtk;
 
 
