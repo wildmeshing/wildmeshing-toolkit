@@ -137,6 +137,8 @@ int main(int argc, char** argv)
         edge_len_type,
         boundary_parameter_on);
 
+    m.set_vertex_world_positions(); // compute 3d positions for each vertex
+
     m.mesh_improvement(max_iter);
     m.consolidate_mesh();
 
