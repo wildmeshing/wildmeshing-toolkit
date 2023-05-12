@@ -13,6 +13,14 @@ namespace wmtk {
 
 namespace {
 
+template <typename T, typename Func>
+void sequential_for(T start, T end, Func func)
+{
+    for (T i = start; i < end; ++i) {
+        func(i);
+    }
+}
+
 struct QuadratureCache
 {
     wmtk::Quadrature quad;
@@ -131,28 +139,50 @@ double get_error_per_triangle_exact(
     return value;
 }
 
+// bool point_in_triangle(
+//     const Eigen::Matrix<double, 3, 2, Eigen::RowMajor>& triangle,
+//     const Eigen::Vector2d& point)
+// {
+//     Eigen::Vector2d v0 = triangle.row(0);
+//     Eigen::Vector2d v1 = triangle.row(1);
+//     Eigen::Vector2d v2 = triangle.row(2);
+//     Eigen::Vector2d v0v1 = v1 - v0;
+//     Eigen::Vector2d v0v2 = v2 - v0;
+//     Eigen::Vector2d v0p = point - v0;
+
+//     double dot00 = v0v2.dot(v0v2);
+//     double dot01 = v0v2.dot(v0v1);
+//     double dot02 = v0v2.dot(v0p);
+//     double dot11 = v0v1.dot(v0v1);
+//     double dot12 = v0v1.dot(v0p);
+
+//     double inv_denom = 1 / (dot00 * dot11 - dot01 * dot01);
+//     double u = (dot11 * dot02 - dot01 * dot12) * inv_denom;
+//     double v = (dot00 * dot12 - dot01 * dot02) * inv_denom;
+
+//     return (u >= 0) && (v >= 0) && (u + v < 1);
+// }
+
 bool point_in_triangle(
     const Eigen::Matrix<double, 3, 2, Eigen::RowMajor>& triangle,
     const Eigen::Vector2d& point)
 {
-    Eigen::Vector2d v0 = triangle.row(0);
-    Eigen::Vector2d v1 = triangle.row(1);
-    Eigen::Vector2d v2 = triangle.row(2);
-    Eigen::Vector2d v0v1 = v1 - v0;
-    Eigen::Vector2d v0v2 = v2 - v0;
-    Eigen::Vector2d v0p = point - v0;
+    const auto& a = triangle.row(0);
+    const auto& b = triangle.row(1);
+    const auto& c = triangle.row(2);
 
-    double dot00 = v0v2.dot(v0v2);
-    double dot01 = v0v2.dot(v0v1);
-    double dot02 = v0v2.dot(v0p);
-    double dot11 = v0v1.dot(v0v1);
-    double dot12 = v0v1.dot(v0p);
+    const double as_x = point.x() - a.x();
+    const double as_y = point.y() - a.y();
 
-    double inv_denom = 1 / (dot00 * dot11 - dot01 * dot01);
-    double u = (dot11 * dot02 - dot01 * dot12) * inv_denom;
-    double v = (dot00 * dot12 - dot01 * dot02) * inv_denom;
+    bool s_ab = (b.x() - a.x()) * as_y - (b.y() - a.y()) * as_x > 0;
 
-    return (u >= 0) && (v >= 0) && (u + v < 1);
+    if ((c.x() - a.x()) * as_y - (c.y() - a.y()) * as_x > 0 == s_ab) {
+        return false;
+    }
+    if ((c.x() - b.x()) * (point.y() - b.y()) - (c.y() - b.y()) * (point.x() - b.x()) > 0 != s_ab) {
+        return false;
+    }
+    return true;
 }
 
 // Optimized implementation that switches between nearest and bilinear interpolation
@@ -164,9 +194,9 @@ double get_error_per_triangle_adaptive(
     DisplacementFunc get)
 {
     using T = double;
-    // const int order = 1;
-    constexpr int Degree = 1;
-    const int order = 2 * (Degree - 1);
+    const int order = 1;
+    // constexpr int Degree = 2;
+    // const int order = 2 * (Degree - 1);
 
     Eigen::Matrix3d triangle_3d;
     triangle_3d.row(0) = get(triangle_uv(0, 0), triangle_uv(0, 1));
@@ -233,9 +263,10 @@ double get_error_per_triangle_adaptive(
                 (pixel_coord + Eigen::Vector2i::Ones()).cast<double>().cwiseProduct(pixel_size));
             bool all_inside = true;
             for (int k = 0; k < 4; ++k) {
-                if (!point_in_triangle(
-                        triangle_uv,
-                        box.corner(static_cast<Eigen::AlignedBox2d::CornerType>(k)))) {
+                bool inside = point_in_triangle(
+                    triangle_uv,
+                    box.corner(static_cast<Eigen::AlignedBox2d::CornerType>(k)));
+                if (!inside) {
                     all_inside = false;
                     break;
                 }
@@ -249,23 +280,28 @@ double get_error_per_triangle_adaptive(
                     p_displaced[k] = images[k].get_raw_image()(x, y);
                 }
                 value += (p_displaced - p_tri).squaredNorm() * pixel_size(0) * pixel_size(1);
-#if 0
-                wmtk::ClippedQuadrature rules;
-                auto& quadr = m_cache.local().quad;
-                rules.clipped_triangle_box_quadrature(
-                    order,
-                    triangle_uv,
-                    box,
-                    quadr,
-                    &m_cache.local().tmp);
-                for (size_t i = 0; i < quadr.size(); ++i) {
-                    double u = quadr.points()(i, 0);
-                    double v = quadr.points()(i, 1);
-                    Eigen::Matrix<T, 3, 1> p_displaced = get(u, v);
-                    Eigen::Matrix<T, 3, 1> p_tri = get_p_interpolated(u, v);
-                    value += (p_displaced - p_tri).squaredNorm() * quadr.weights()[i];
+                if (0) {
+                    wmtk::ClippedQuadrature rules;
+                    auto& quadr = m_cache.local().quad;
+                    rules.clipped_triangle_box_quadrature(
+                        1,
+                        triangle_uv,
+                        box,
+                        quadr,
+                        &m_cache.local().tmp);
+                    la_runtime_assert(quadr.size() == 2);
+                    for (size_t i = 0; i < quadr.size(); ++i) {
+                        double u = quadr.points()(i, 0);
+                        double v = quadr.points()(i, 1);
+                        Eigen::Matrix<T, 3, 1> p_displaced2 =
+                            internal::sample_nearest<3>(images, u, v).cast<T>();
+                        Eigen::Matrix<T, 3, 1> p_tri2 = get_p_interpolated(u, v);
+                        la_runtime_assert(p_displaced2 == p_displaced);
+                    }
+                    double w = quadr.weights().sum();
+                    double diff = std::abs(quadr.weights().sum() - pixel_size(0) * pixel_size(1));
+                    la_runtime_assert(diff < 1e-10);
                 }
-#endif
             } else {
                 wmtk::ClippedQuadrature rules;
                 auto& quadr = m_cache.local().quad;

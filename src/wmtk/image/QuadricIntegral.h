@@ -2,8 +2,8 @@
 
 #include <lagrange/utils/span.h>
 #include <lagrange/utils/value_ptr.h>
-#include <wmtk/utils/Quadric.h>
 #include <wmtk/utils/Image.h>
+#include <wmtk/utils/Quadric.h>
 
 #include <array>
 
@@ -18,7 +18,7 @@ public:
     ///
     /// @param[in]  displaced_positions  Displaced position texture.
     ///
-    QuadricIntegral(std::array<wmtk::Image, 3> displaced_positions);
+    QuadricIntegral(const std::array<wmtk::Image, 3>& displaced_positions);
 
     ~QuadricIntegral();
 
@@ -42,7 +42,11 @@ public:
 
 private:
     struct Cache;
-    std::array<wmtk::Image, 3> m_data;
+
+    // Quadrics coefficients
+    std::array<wmtk::Image, 10> m_quadrics;
+
+    // Hidden cache data
     lagrange::value_ptr<Cache> m_cache;
 };
 

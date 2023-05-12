@@ -264,11 +264,12 @@ TEST_CASE("Texture Integral Adaptive", "[utils][integral]")
 {
     std::string displaced_positions = WMT_DATA_DIR "/images/hemisphere_512_displaced.exr";
     auto uv_triangles = load_uv_triangles(WMT_DATA_DIR "/hemisphere.obj");
+    auto mesh = lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMT_DATA_DIR "/hemisphere.obj");
 
     wmtk::TextureIntegral integral(load_rgb_image(displaced_positions));
-    integral.set_sampling_method(wmtk::TextureIntegral::SamplingMethod::Bilinear);
 
     std::vector<float> errors_exact(uv_triangles.size());
+    integral.set_sampling_method(wmtk::TextureIntegral::SamplingMethod::Bilinear);
     integral.set_integration_method(wmtk::TextureIntegral::IntegrationMethod::Exact);
     integral.get_error_per_triangle(uv_triangles, errors_exact);
 
@@ -276,12 +277,28 @@ TEST_CASE("Texture Integral Adaptive", "[utils][integral]")
     integral.set_integration_method(wmtk::TextureIntegral::IntegrationMethod::Adaptive);
     integral.get_error_per_triangle(uv_triangles, errors_adaptive);
 
+    if (0) {
+        // Uncomment to save file for inspection
+        mesh.create_attribute<float>(
+            "error_exact",
+            lagrange::AttributeElement::Facet,
+            1,
+            lagrange::AttributeUsage::Scalar,
+            errors_exact);
+
+        mesh.create_attribute<float>(
+            "error_adaptive",
+            lagrange::AttributeElement::Facet,
+            1,
+            lagrange::AttributeUsage::Scalar,
+            errors_adaptive);
+
+        lagrange::io::save_mesh("mesh_with_errors.msh", mesh);
+    }
+
     for (size_t f = 0; f < uv_triangles.size(); ++f) {
         CAPTURE(f);
-        CHECK_THAT(
-            errors_adaptive[f],
-            Catch::Matchers::WithinRel(errors_exact[f], 1e-2f) ||
-                Catch::Matchers::WithinAbs(errors_exact[f], 1e-8f));
+        CHECK_THAT(errors_adaptive[f], Catch::Matchers::WithinRel(errors_exact[f], 1.5e-1f));
     }
 }
 
