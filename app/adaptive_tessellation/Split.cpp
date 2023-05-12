@@ -162,32 +162,32 @@ bool AdaptiveTessellationPairedSplitEdgeOperation::before(AdaptiveTessellation& 
     mirror_edge_tuple = std::nullopt; // reset the mirror edge tuple
     paired_op_cache.local().before_sibling_edges.resize(0); // clear the sibling edge cache
     //// === initiate the paired edge cache  === ////
-    paired_op_cache.local().before_sibling_edges.emplace_back(m.get_sibling_edge(t));
+    paired_op_cache.local().before_sibling_edges.emplace_back(m.get_sibling_edge_opt(t));
     paired_op_cache.local().before_sibling_edges.emplace_back(
-        m.get_sibling_edge(t.switch_vertex(m).switch_edge(m)));
+        m.get_sibling_edge_opt(t.switch_vertex(m).switch_edge(m)));
     paired_op_cache.local().before_sibling_edges.emplace_back(
-        m.get_sibling_edge(t.switch_edge(m).switch_vertex(m)));
+        m.get_sibling_edge_opt(t.switch_edge(m).switch_vertex(m)));
     assert(paired_op_cache.local().before_sibling_edges.size() == 3);
     // if it's a seam edge
     if (m.is_seam_edge(t)) {
         mirror_edge_tuple = std::make_optional<wmtk::TriMesh::Tuple>(m.get_oriented_mirror_edge(t));
         paired_op_cache.local().before_sibling_edges.emplace_back(
-            m.get_sibling_edge(mirror_edge_tuple.value()));
+            m.get_sibling_edge_opt(mirror_edge_tuple.value()));
         paired_op_cache.local().before_sibling_edges.emplace_back(
-            m.get_sibling_edge(mirror_edge_tuple.value().switch_vertex(m).switch_edge(m)));
+            m.get_sibling_edge_opt(mirror_edge_tuple.value().switch_vertex(m).switch_edge(m)));
         paired_op_cache.local().before_sibling_edges.emplace_back(
-            m.get_sibling_edge(mirror_edge_tuple.value().switch_edge(m).switch_vertex(m)));
+            m.get_sibling_edge_opt(mirror_edge_tuple.value().switch_edge(m).switch_vertex(m)));
         assert(paired_op_cache.local().before_sibling_edges.size() == 6);
     } // else if it is an interior edge
     else if (t.switch_face(m).has_value()) {
         assert(!m.is_seam_edge(t));
         wmtk::TriMesh::Tuple switch_face_oriented = t.switch_face(m).value().switch_vertex(m);
         paired_op_cache.local().before_sibling_edges.emplace_back(
-            m.get_sibling_edge(switch_face_oriented));
+            m.get_sibling_edge_opt(switch_face_oriented));
         paired_op_cache.local().before_sibling_edges.emplace_back(
-            m.get_sibling_edge(switch_face_oriented.switch_vertex(m).switch_edge(m)));
+            m.get_sibling_edge_opt(switch_face_oriented.switch_vertex(m).switch_edge(m)));
         paired_op_cache.local().before_sibling_edges.emplace_back(
-            m.get_sibling_edge(switch_face_oriented.switch_edge(m).switch_vertex(m)));
+            m.get_sibling_edge_opt(switch_face_oriented.switch_edge(m).switch_vertex(m)));
         assert(paired_op_cache.local().before_sibling_edges.size() == 6);
     }
 

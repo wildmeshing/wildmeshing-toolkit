@@ -402,10 +402,9 @@ void AdaptiveTessellation::create_paired_seam_mesh_with_offset(
     wmtk::TriMesh m_3d;
     std::vector<std::array<size_t, 3>> tris;
     for (auto f = 0; f < input_F_.rows(); f++) {
-        std::array<size_t, 3> tri = {
-            (size_t)input_F_(f, 0),
-            (size_t)input_F_(f, 1),
-            (size_t)input_F_(f, 2)};
+        std::array<size_t, 3> tri = {(size_t)input_F_(f, 0),
+                                     (size_t)input_F_(f, 1),
+                                     (size_t)input_F_(f, 2)};
         tris.emplace_back(tri);
     }
     m_3d.create_mesh(input_V_.rows(), tris);
@@ -785,7 +784,7 @@ void AdaptiveTessellation::export_mesh_mapped_on_input(
     Eigen::MatrixXd& VT,
     Eigen::MatrixXi& FT) const
 {
-    throw std::exception("Method not fully implemented yet.");
+    // throw std::exception("Method not fully implemented yet.");
 
     export_mesh_without_invalid_faces(VT, FT);
 
@@ -1658,7 +1657,8 @@ void AdaptiveTessellation::set_mirror_edge_data(
     face_attrs[primary_t.fid(*this)].mirror_edges[primary_t.local_eid(*this)] =
         mirror_edge.is_ccw(*this) ? mirror_edge : mirror_edge.switch_vertex(*this);
 }
-std::optional<TriMesh::Tuple> AdaptiveTessellation::get_sibling_edge(const TriMesh::Tuple& t) const
+std::optional<TriMesh::Tuple> AdaptiveTessellation::get_sibling_edge_opt(
+    const TriMesh::Tuple& t) const
 {
     if (is_boundary_edge(t)) {
         if (is_seam_edge(t)) {

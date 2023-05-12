@@ -45,10 +45,10 @@ public:
     Eigen::Vector2d pos;
     Eigen::Vector3d pos_world;
     double t = 0.;
-    size_t curve_id = 0; // TODO questionable should I have this for each vertex? change to be for
-                         // each edge, but still keep one copy for vertex
+    size_t curve_id = 0; // change to be for each edge, but still keep one copy for vertex for easy
+                         // access in smoothing
 
-    size_t partition_id = 0; // TODO this should not be here
+    size_t partition_id = 0; // this should not be here
 
     // Vertices marked as fixed cannot be modified by any local operation
     bool fixed = false;
@@ -59,6 +59,8 @@ class FaceAttributes
 {
 public:
     std::array<std::optional<wmtk::TriMesh::Tuple>, 3> mirror_edges;
+    double accuracy_error; // cacheing the accuracy error for each face
+                           // doesn't support autodiff
 };
 
 class EdgeAttributes
@@ -149,13 +151,18 @@ public:
     // using boundary parametrization, find the vertex that are the start and end of each cruve and
     // set them as fixed
     void set_fixed();
+    void set_feature(Tuple& t); // find the feature vertex and freeze them
     void assign_edge_curveid();
     Eigen::Matrix<uint64_t, Eigen::Dynamic, 2, Eigen::RowMajor> get_bnd_edge_matrix();
 
+    //// preprocess the mesh for remeshing
+    // 1. set feature vertex fixed
+    // 2. set start/end/t-junction of curve fixed
+    // 3. assign each boudnary edge a curveid
+    // 4. set initial accuracy error for each triangle
+    void mesh_preprocessing();
 
     bool invariants(const std::vector<Tuple>& new_tris);
-
-    void set_feature(Tuple& t); // find the feature vertex and freeze them
 
     // Initializes the mesh
     /**
@@ -277,7 +284,6 @@ public:
     bool swap_edge_after(const Tuple& t);
 
     void mesh_improvement(int max_its);
-    void gradient_debug(int max_its);
 
     double get_length2d(const Tuple& edge_tuple) const;
     double get_length3d(
@@ -303,7 +309,7 @@ public:
     // return the oriented mirror edge if t is seam
     // return the sibling if t is interior
     // return nullopt if t is boundary
-    std::optional<TriMesh::Tuple> get_sibling_edge(const TriMesh::Tuple& t) const;
+    std::optional<TriMesh::Tuple> get_sibling_edge_opt(const TriMesh::Tuple& t) const;
     // given a seam edge retrieve its mirror edge in opposite direction (half egde conventions )
     TriMesh::Tuple get_oriented_mirror_edge(const TriMesh::Tuple& t) const;
     // given a seam edge with vid v retrieve the correpsonding vertex on the mirror edge
@@ -317,6 +323,9 @@ public:
     bool is_seam_edge(const TriMesh::Tuple& t) const;
     bool is_seam_vertex(const TriMesh::Tuple& t) const;
 
+
+    ////// debug/unit test helper functions
+    void gradient_debug(int max_its);
     // set early termination for a execution pass for unit test and debugging purpose
     template <typename Executor>
     void set_early_termination_number(int n, Executor& e)
@@ -348,8 +357,5 @@ public:
         //     assert(!is_inverted(tri));
         // }
     }
-
-
-
 };
 } // namespace adaptive_tessellation
