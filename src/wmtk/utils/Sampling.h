@@ -2,9 +2,9 @@
 #include <nanospline/BSplinePatch.h>
 #include <nanospline/arc_length.h>
 #include <Eigen/Core>
-#include "Displacement.h"
 #include "Image.h"
 #include "bicubic_interpolation.h"
+
 namespace wmtk {
 enum class SAMPLING_MODE { BICUBIC, SPLINE };
 class Sampling
