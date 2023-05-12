@@ -236,9 +236,10 @@ struct QuadricIntegral::Cache
 
 QuadricIntegral::~QuadricIntegral() = default;
 
-QuadricIntegral::QuadricIntegral(const std::array<wmtk::Image, 3>& displaced_positions)
-    : m_displaced(displaced_positions)
-    , m_cache(lagrange::make_value_ptr<Cache>())
+QuadricIntegral::QuadricIntegral(
+    const std::array<wmtk::Image, 3>& displaced_positions,
+    QuadricType quadric_type)
+    : m_cache(lagrange::make_value_ptr<Cache>())
 {
     auto w = displaced_positions[0].width();
     auto h = displaced_positions[0].height();
@@ -260,7 +261,7 @@ QuadricIntegral::QuadricIntegral(const std::array<wmtk::Image, 3>& displaced_pos
     tbb::parallel_for(0, w, [&](int x) {
         for (int y = 0; y < h; ++y) {
             auto stencil = get_stencil(displaced_positions, x, y);
-            switch (m_quadric_type) {
+            switch (quadric_type) {
             case QuadricType::Point: {
                 auto quadric = compute_pixel_point_quadric(stencil);
                 set_coefficients_from_quadric(m_quadrics, x, y, quadric);
@@ -298,25 +299,6 @@ void QuadricIntegral::get_quadric_per_triangle(
         auto sampling_func = [&](double u, double v) -> Eigen::Matrix<float, 10, 1> {
             return internal::sample_bilinear(m_quadrics, u, v);
         };
-
-        // Eigen::Vector3d p0 =
-        //     internal::sample_bilinear(m_displaced, triangle(0, 0), triangle(0, 1)).cast<double>();
-        // Eigen::Vector3d p1 =
-        //     internal::sample_bilinear(m_displaced, triangle(1, 0), triangle(1, 1)).cast<double>();
-        // Eigen::Vector3d p2 =
-        //     internal::sample_bilinear(m_displaced, triangle(2, 0), triangle(2, 1)).cast<double>();
-
-        // Eigen::Vector3d p_mean = (p0 + p1 + p2) / 3.0;
-        // Eigen::Vector3d p_norm = (p1 - p0).cross(p2 - p0);
-        // double area = 0.5 * p_norm.norm();
-        // double weight = area;
-        // p_norm /= p_norm.norm();
-        // output_quadrics[i] =
-        //     weight *
-        //     Quadric<double>::probabilistic_plane_quadric(p_mean, p_norm, sigma_q, m_sigma_n);
-
-        // output_quadrics[i] = Quadric<double>::probabilistic_triangle_quadric(p0, p1, p2,
-        // sigma_q);
 
         output_quadrics[i] = get_quadric_per_triangle_adaptive(
             m_quadrics,

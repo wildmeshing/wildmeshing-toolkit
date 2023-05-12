@@ -13,13 +13,22 @@ namespace wmtk {
 class QuadricIntegral
 {
 public:
+    enum class QuadricType {
+        Point,
+        Plane,
+        Triangle,
+    };
+
     ///
     /// Constructs an acceleration structure to efficiently compute the integral of a quadric error
     /// function encoding the distance from a point to the displaced surface in a triangular region.
     ///
     /// @param[in]  displaced_positions  Displaced position texture.
+    /// @param[in]  quadric_type         Quadric type to use.
     ///
-    QuadricIntegral(const std::array<wmtk::Image, 3>& displaced_positions);
+    QuadricIntegral(
+        const std::array<wmtk::Image, 3>& displaced_positions,
+        QuadricType quadric_type);
 
     ~QuadricIntegral();
 
@@ -27,12 +36,6 @@ public:
     QuadricIntegral& operator=(QuadricIntegral&&) = delete;
     QuadricIntegral(const QuadricIntegral&) = delete;
     QuadricIntegral& operator=(const QuadricIntegral&) = delete;
-
-    enum class QuadricType {
-        Point,
-        Plane,
-        Triangle,
-    };
 
 public:
     ///
@@ -53,9 +56,6 @@ public:
 private:
     struct Cache;
 
-    // Displaced positions
-    std::array<wmtk::Image, 3> m_displaced;
-
     // Quadrics coefficients
     std::array<wmtk::Image, 10> m_quadrics;
 
@@ -71,9 +71,6 @@ private:
 
     // Uncertainty on normal directions
     double m_sigma_n = 0.001;
-
-    // Type of quadric to use
-    QuadricType m_quadric_type = QuadricType::Plane;
 };
 
 } // namespace wmtk

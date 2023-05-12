@@ -62,7 +62,10 @@ std::pair<double, Eigen::RowVector3d> compute_mesh_normalization(const MeshType&
     return {max_comp, scene_offset};
 }
 
-void advect_vertices(MeshType& mesh, wmtk::QuadricIntegral& integral)
+MeshType advect_vertices(
+    MeshType mesh,
+    const std::array<wmtk::Image, 3>& displaced_positions,
+    wmtk::QuadricIntegral::QuadricType quadric_type)
 {
     auto& uv_attr = mesh.get_indexed_attribute<double>(lagrange::AttributeName::texcoord);
     auto uv_vertices = matrix_view(uv_attr.values());
@@ -70,6 +73,7 @@ void advect_vertices(MeshType& mesh, wmtk::QuadricIntegral& integral)
 
     // Compute per-facet quadrics using image integral
     std::vector<wmtk::Quadric<double>> per_facet_quadrics(mesh.get_num_facets());
+    wmtk::QuadricIntegral integral(displaced_positions, quadric_type);
     integral.get_quadric_per_triangle(
         mesh.get_num_facets(),
         [&](int f) {
@@ -98,101 +102,120 @@ void advect_vertices(MeshType& mesh, wmtk::QuadricIntegral& integral)
     for (int v = 0; v < static_cast<int>(mesh.get_num_vertices()); ++v) {
         vertices.row(v) = per_vertex_quadrics[v].minimizer().transpose();
     }
+
+    return mesh;
 }
 
 // Simple midpoint subdivision that preserves UV attributes
-// MeshType midpoint_subdivision(const MeshType& mesh)
-// {
-//     mesh.initialize_edges();
-//     const auto nv = mesh.get_num_vertices();
-//     const auto ne = mesh.get_num_edges();
-//     const auto nf = mesh.get_num_facets();
-
-//     VertexArray V(nv + ne, mesh.get_dim());
-//     FacetArray F(nf * 4, 3);
-//     V.topRows(nv) = mesh.get_vertices();
-//     for (Index e = 0; e < ne; ++e) {
-//         auto v = mesh.get_edge_vertices(e);
-//         V.row(nv + e) =
-//             Scalar(0.5) * (mesh.get_vertices().row(v[0]) + mesh.get_vertices().row(v[1]));
-//     }
-//     for (Index f = 0; f < mesh.get_num_facets(); ++f) {
-//         const Index v0 = mesh.get_facets()(f, 0);
-//         const Index v1 = mesh.get_facets()(f, 1);
-//         const Index v2 = mesh.get_facets()(f, 2);
-//         const Index e0 = nv + mesh.get_edge(f, 0);
-//         const Index e1 = nv + mesh.get_edge(f, 1);
-//         const Index e2 = nv + mesh.get_edge(f, 2);
-//         F.row(4 * f + 0) << v0, e0, e2;
-//         F.row(4 * f + 1) << v1, e1, e0;
-//         F.row(4 * f + 2) << v2, e2, e1;
-//         F.row(4 * f + 3) << e0, e1, e2;
-//     }
-
-//     return lagrange::create_mesh(V, F);
-// }
-
-MeshType displace_mesh(const MeshType& mesh, const std::array<wmtk::Image, 3>& positions)
+MeshType midpoint_subdivision(MeshType mesh)
 {
-    auto [scale, offset] = compute_mesh_normalization(mesh);
+    mesh.initialize_edges();
+    const auto nv = mesh.get_num_vertices();
+    const auto ne = mesh.get_num_edges();
+    const auto nf = mesh.get_num_facets();
+
+    MeshType new_mesh(mesh.get_dimension());
+    new_mesh.add_vertices(nv + ne);
+    new_mesh.add_triangles(nf * 4);
+
+    auto vertices = vertex_ref(new_mesh);
+    auto facets = facet_ref(new_mesh);
+    vertices.topRows(nv) = vertex_view(mesh);
+    for (Index e = 0; e < ne; ++e) {
+        auto v = mesh.get_edge_vertices(e);
+        vertices.row(nv + e) = Scalar(0.5) * (vertices.row(v[0]) + vertices.row(v[1]));
+    }
+    for (Index f = 0; f < mesh.get_num_facets(); ++f) {
+        const Index v0 = mesh.get_facet_vertex(f, 0);
+        const Index v1 = mesh.get_facet_vertex(f, 1);
+        const Index v2 = mesh.get_facet_vertex(f, 2);
+        const Index e0 = nv + mesh.get_edge(f, 0);
+        const Index e1 = nv + mesh.get_edge(f, 1);
+        const Index e2 = nv + mesh.get_edge(f, 2);
+        facets.row(4 * f + 0) << v0, e0, e2;
+        facets.row(4 * f + 1) << v1, e1, e0;
+        facets.row(4 * f + 2) << v2, e2, e1;
+        facets.row(4 * f + 3) << e0, e1, e2;
+    }
+
+    if (mesh.has_attribute(lagrange::AttributeName::texcoord)) {
+        lagrange::SurfaceMesh32d uv_mesh(2);
+        {
+            auto& uv_attr = mesh.get_indexed_attribute<double>(lagrange::AttributeName::texcoord);
+            auto uv_vertices = matrix_view(uv_attr.values());
+            auto uv_facets = reshaped_view(uv_attr.indices(), 3);
+            uv_mesh.add_vertices(uv_vertices.rows());
+            uv_mesh.add_triangles(uv_facets.rows());
+            vertex_ref(uv_mesh) = uv_vertices;
+            facet_ref(uv_mesh) = uv_facets;
+        }
+        uv_mesh = midpoint_subdivision(uv_mesh);
+        new_mesh.create_attribute<double>(
+            lagrange::AttributeName::texcoord,
+            lagrange::AttributeElement::Indexed,
+            2,
+            lagrange::AttributeUsage::UV);
+        auto& uv_attr = new_mesh.ref_indexed_attribute<double>(lagrange::AttributeName::texcoord);
+        uv_attr.values().resize_elements(uv_mesh.get_num_vertices());
+        auto uv_vertices = matrix_ref(uv_attr.values());
+        auto uv_facets = reshaped_ref(uv_attr.indices(), 3);
+        uv_vertices = vertex_view(uv_mesh);
+        uv_facets = facet_view(uv_mesh);
+    }
+
+    return new_mesh;
+}
+
+MeshType displace_mesh(MeshType mesh, const std::array<wmtk::Image, 3>& positions)
+{
+    // auto [scale, offset] = compute_mesh_normalization(mesh);
     auto& uv_attr = mesh.get_indexed_attribute<double>(lagrange::AttributeName::texcoord);
     auto uv_vertices = matrix_view(uv_attr.values());
     auto uv_facets = reshaped_view(uv_attr.indices(), 3);
-    Eigen::MatrixXd V(mesh.get_num_facets() * 3, 3);
-    Eigen::MatrixXi F(mesh.get_num_facets(), 3);
+    auto facets = facet_view(mesh);
+    Eigen::MatrixXd V(mesh.get_num_vertices(), 3);
+    Eigen::VectorXd denom(mesh.get_num_vertices());
+    V.setZero();
+    denom.setZero();
     for (int f = 0; f < static_cast<int>(mesh.get_num_facets()); ++f) {
         for (int lv = 0; lv < 3; ++lv) {
             const float u = uv_vertices(uv_facets(f, lv), 0);
             const float v = uv_vertices(uv_facets(f, lv), 1);
-            V.row(3 * f + lv) =
-                wmtk::internal::sample_nearest(positions, u, v).transpose().cast<double>() * scale -
-                offset;
-            F(f, lv) = 3 * f + lv;
+            V.row(facets(f, lv)) +=
+                wmtk::internal::sample_bilinear(positions, u, v).transpose().cast<double>();
+            denom(facets(f, lv)) += 1;
         }
     }
-    MeshType displaced_mesh;
-    displaced_mesh.add_vertices(V.rows());
-    displaced_mesh.add_triangles(mesh.get_num_facets());
-    vertex_ref(displaced_mesh) = V;
-    facet_ref(displaced_mesh) = F.cast<MeshType::Index>();
-    return displaced_mesh;
+    V.array().colwise() /= denom.array();
+    vertex_ref(mesh) = V;
+    return mesh;
 }
 
 } // namespace
 
 TEST_CASE("Quadric Integral Advection", "[utils][quadric]")
 {
-    std::string displaced_positions = WMT_DATA_DIR "/images/hemisphere_512_displaced.exr";
-    // std::string displaced_positions =
-    //     "/Users/jedumas/cloud/tessellation/mesh_maps/hemisphere/hemisphere_512_position.exr";
+    // std::string displaced_positions = WMT_DATA_DIR "/images/hemisphere_512_displaced.exr";
+    std::string displaced_positions =
+        "/Users/jedumas/cloud/tessellation/sandbox/benchmark/hemisphere_4096_displaced.exr";
     auto mesh = lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMT_DATA_DIR "/hemisphere.obj");
-
     auto positions = load_rgb_image(displaced_positions);
-    wmtk::QuadricIntegral integral(positions);
-    advect_vertices(mesh, integral);
-    if (0) {
-        auto& uv_attr = mesh.get_indexed_attribute<double>(lagrange::AttributeName::texcoord);
-        auto uv_vertices = matrix_view(uv_attr.values());
-        auto uv_facets = reshaped_view(uv_attr.indices(), 3);
-        auto vertices = vertex_ref(mesh);
-        auto facets = facet_view(mesh);
-        Eigen::MatrixXd V(vertices.rows(), vertices.cols());
-        Eigen::VectorXd denom(vertices.rows());
-        V.setZero();
-        denom.setZero();
-        for (int f = 0; f < static_cast<int>(mesh.get_num_facets()); ++f) {
-            for (int lv = 0; lv < 3; ++lv) {
-                const float u = uv_vertices(uv_facets(f, lv), 0);
-                const float v = uv_vertices(uv_facets(f, lv), 1);
-                V.row(facets(f, lv)) +=
-                    wmtk::internal::sample_bilinear(positions, u, v).transpose().cast<double>();
-                denom(facets(f, lv)) += 1;
-            }
-        }
-        V.array().colwise() /= denom.array();
-        vertices = V;
+
+    for (size_t k = 0; k < 3; ++k) {
+        mesh = midpoint_subdivision(mesh);
     }
-    lagrange::io::save_mesh("mesh_smoothed.obj", mesh);
+
+    using QuadricType = wmtk::QuadricIntegral::QuadricType;
+    lagrange::io::save_mesh("mesh_displaced.obj", displace_mesh(mesh, positions));
+    lagrange::io::save_mesh(
+        "mesh_point_quadric.obj",
+        advect_vertices(mesh, positions, QuadricType::Point));
+    lagrange::io::save_mesh(
+        "mesh_plane_quadric.obj",
+        advect_vertices(mesh, positions, QuadricType::Plane));
+    lagrange::io::save_mesh(
+        "mesh_triangle_quadric.obj",
+        advect_vertices(mesh, positions, QuadricType::Triangle));
 
     {
         auto& uv_attr = mesh.get_indexed_attribute<double>(lagrange::AttributeName::texcoord);
