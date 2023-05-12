@@ -15,7 +15,8 @@ namespace wmtk {
 class Image
 {
     using DScalar = DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d>;
-    using ImageMatrixf = Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+    using ImageMatrixf =
+        Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor | Eigen::AutoAlign>;
 
 protected:
     ImageMatrixf m_image; // saving scanline images

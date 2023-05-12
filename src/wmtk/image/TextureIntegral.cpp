@@ -3,7 +3,6 @@
 #include "helpers.h"
 
 #include <wmtk/quadrature/ClippedQuadrature.h>
-#include <wmtk/quadrature/TriangleQuadrature.h>
 
 #include <lagrange/utils/assert.h>
 #include <tbb/enumerable_thread_specific.h>
@@ -139,52 +138,6 @@ double get_error_per_triangle_exact(
     return value;
 }
 
-// bool point_in_triangle(
-//     const Eigen::Matrix<double, 3, 2, Eigen::RowMajor>& triangle,
-//     const Eigen::Vector2d& point)
-// {
-//     Eigen::Vector2d v0 = triangle.row(0);
-//     Eigen::Vector2d v1 = triangle.row(1);
-//     Eigen::Vector2d v2 = triangle.row(2);
-//     Eigen::Vector2d v0v1 = v1 - v0;
-//     Eigen::Vector2d v0v2 = v2 - v0;
-//     Eigen::Vector2d v0p = point - v0;
-
-//     double dot00 = v0v2.dot(v0v2);
-//     double dot01 = v0v2.dot(v0v1);
-//     double dot02 = v0v2.dot(v0p);
-//     double dot11 = v0v1.dot(v0v1);
-//     double dot12 = v0v1.dot(v0p);
-
-//     double inv_denom = 1 / (dot00 * dot11 - dot01 * dot01);
-//     double u = (dot11 * dot02 - dot01 * dot12) * inv_denom;
-//     double v = (dot00 * dot12 - dot01 * dot02) * inv_denom;
-
-//     return (u >= 0) && (v >= 0) && (u + v < 1);
-// }
-
-bool point_in_triangle(
-    const Eigen::Matrix<double, 3, 2, Eigen::RowMajor>& triangle,
-    const Eigen::Vector2d& point)
-{
-    const auto& a = triangle.row(0);
-    const auto& b = triangle.row(1);
-    const auto& c = triangle.row(2);
-
-    const double as_x = point.x() - a.x();
-    const double as_y = point.y() - a.y();
-
-    bool s_ab = (b.x() - a.x()) * as_y - (b.y() - a.y()) * as_x > 0;
-
-    if ((c.x() - a.x()) * as_y - (c.y() - a.y()) * as_x > 0 == s_ab) {
-        return false;
-    }
-    if ((c.x() - b.x()) * (point.y() - b.y()) - (c.y() - b.y()) * (point.x() - b.x()) > 0 != s_ab) {
-        return false;
-    }
-    return true;
-}
-
 // Optimized implementation that switches between nearest and bilinear interpolation
 template <typename DisplacementFunc>
 double get_error_per_triangle_adaptive(
@@ -253,8 +206,8 @@ double get_error_per_triangle_adaptive(
     size_t num_inside = 0;
     size_t num_total = 0;
     size_t num_boundary = 0;
-    for (int x = min_pixel.x(); x <= max_pixel.x(); ++x) {
-        for (int y = min_pixel.y(); y <= max_pixel.y(); ++y) {
+    for (int y = min_pixel.y(); y <= max_pixel.y(); ++y) {
+        for (int x = min_pixel.x(); x <= max_pixel.x(); ++x) {
             ++num_total;
             Eigen::Vector2i pixel_coord(x, y);
             Eigen::AlignedBox2d box;
@@ -263,7 +216,7 @@ double get_error_per_triangle_adaptive(
                 (pixel_coord + Eigen::Vector2i::Ones()).cast<double>().cwiseProduct(pixel_size));
             bool all_inside = true;
             for (int k = 0; k < 4; ++k) {
-                bool inside = point_in_triangle(
+                bool inside = internal::point_in_triangle(
                     triangle_uv,
                     box.corner(static_cast<Eigen::AlignedBox2d::CornerType>(k)));
                 if (!inside) {
@@ -277,7 +230,7 @@ double get_error_per_triangle_adaptive(
                     get_p_interpolated(box.center().x(), box.center().y());
                 Eigen::Matrix<T, 3, 1> p_displaced;
                 for (size_t k = 0; k < 3; ++k) {
-                    p_displaced[k] = images[k].get_raw_image()(x, y);
+                    p_displaced[k] = images[k].get_raw_image()(y, x);
                 }
                 value += (p_displaced - p_tri).squaredNorm() * pixel_size(0) * pixel_size(1);
                 if (0) {
@@ -298,7 +251,6 @@ double get_error_per_triangle_adaptive(
                         Eigen::Matrix<T, 3, 1> p_tri2 = get_p_interpolated(u, v);
                         la_runtime_assert(p_displaced2 == p_displaced);
                     }
-                    double w = quadr.weights().sum();
                     double diff = std::abs(quadr.weights().sum() - pixel_size(0) * pixel_size(1));
                     la_runtime_assert(diff < 1e-10);
                 }

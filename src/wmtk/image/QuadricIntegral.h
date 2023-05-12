@@ -29,6 +29,7 @@ public:
     QuadricIntegral& operator=(const QuadricIntegral&) = delete;
 
     enum class QuadricType {
+        Point,
         Plane,
         Triangle,
     };
@@ -41,7 +42,8 @@ public:
     /// @param[in]  get_triangle     A thread-safe function for retrieving the UV coordinates of
     ///                              each input triangle corners (u0, v0, u1, v1, u2, v2).
     /// @param[in]  output_quadrics  A pre-allocated buffer where to store the quadric for each
-    ///                              input triangle.
+    ///                              input triangle. Output quadrics are weighted by the facet uv
+    ///                              area.
     ///
     void get_quadric_per_triangle(
         int num_triangles,
@@ -50,6 +52,9 @@ public:
 
 private:
     struct Cache;
+
+    // Displaced positions
+    std::array<wmtk::Image, 3> m_displaced;
 
     // Quadrics coefficients
     std::array<wmtk::Image, 10> m_quadrics;

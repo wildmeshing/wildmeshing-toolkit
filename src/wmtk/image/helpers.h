@@ -46,7 +46,7 @@ Eigen::Vector<float, N> sample_nearest(const std::array<wmtk::Image, N>& images,
 
     Eigen::Vector<float, N> res;
     for (size_t k = 0; k < N; ++k) {
-        res[k] = images[k].get_raw_image()(sx, sy);
+        res[k] = images[k].get_raw_image()(sy, sx);
     }
     return res;
 }
@@ -72,7 +72,7 @@ Eigen::Vector<float, N> sample_bilinear(const std::array<wmtk::Image, N>& images
     Eigen::Vector<float, N> res;
     for (size_t k = 0; k < N; ++k) {
         const auto& array = images[k].get_raw_image();
-        Eigen::Vector4f pix(array(x0, y0), array(x1, y0), array(x0, y1), array(x1, y1));
+        Eigen::Vector4f pix(array(y0, x0), array(y1, x0), array(y0, x1), array(y1, x1));
         res[k] = pix.dot(weight);
     }
 
@@ -103,6 +103,52 @@ Eigen::Vector<float, N> sample_bicubic(const std::array<wmtk::Image, N>& images,
         res[k] = eval_bicubic_coeffs(bicubic_coeff, x, y);
     }
     return res;
+}
+
+// bool point_in_triangle(
+//     const Eigen::Matrix<double, 3, 2, Eigen::RowMajor>& triangle,
+//     const Eigen::Vector2d& point)
+// {
+//     Eigen::Vector2d v0 = triangle.row(0);
+//     Eigen::Vector2d v1 = triangle.row(1);
+//     Eigen::Vector2d v2 = triangle.row(2);
+//     Eigen::Vector2d v0v1 = v1 - v0;
+//     Eigen::Vector2d v0v2 = v2 - v0;
+//     Eigen::Vector2d v0p = point - v0;
+
+//     double dot00 = v0v2.dot(v0v2);
+//     double dot01 = v0v2.dot(v0v1);
+//     double dot02 = v0v2.dot(v0p);
+//     double dot11 = v0v1.dot(v0v1);
+//     double dot12 = v0v1.dot(v0p);
+
+//     double inv_denom = 1 / (dot00 * dot11 - dot01 * dot01);
+//     double u = (dot11 * dot02 - dot01 * dot12) * inv_denom;
+//     double v = (dot00 * dot12 - dot01 * dot02) * inv_denom;
+
+//     return (u >= 0) && (v >= 0) && (u + v < 1);
+// }
+
+inline bool point_in_triangle(
+    const Eigen::Matrix<double, 3, 2, Eigen::RowMajor>& triangle,
+    const Eigen::Vector2d& point)
+{
+    const auto& a = triangle.row(0);
+    const auto& b = triangle.row(1);
+    const auto& c = triangle.row(2);
+
+    const double as_x = point.x() - a.x();
+    const double as_y = point.y() - a.y();
+
+    bool s_ab = (b.x() - a.x()) * as_y - (b.y() - a.y()) * as_x > 0;
+
+    if ((c.x() - a.x()) * as_y - (c.y() - a.y()) * as_x > 0 == s_ab) {
+        return false;
+    }
+    if ((c.x() - b.x()) * (point.y() - b.y()) - (c.y() - b.y()) * (point.x() - b.x()) > 0 != s_ab) {
+        return false;
+    }
+    return true;
 }
 
 } // namespace wmtk::internal
