@@ -425,9 +425,4 @@ void TextureIntegral::get_error_per_triangle(
     }
 }
 
-void TextureIntegral::get_integral_per_triangle(
-    lagrange::span<const std::array<float, 6>> input_triangles,
-    lagrange::span<std::array<float, 3>> output_integrals)
-{}
-
 } // namespace wmtk
