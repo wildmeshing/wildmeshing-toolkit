@@ -111,4 +111,9 @@ inline void split_and_save_3channels(const std::filesystem::path& path)
     res = save_image_exr_red_channel(w, h, buffer_g, path_g);
     res = save_image_exr_red_channel(w, h, buffer_b, path_b);
 }
+
+
+std::array<wmtk::Image, 3> load_rgb_image(const std::filesystem::path& path);
+
+wmtk::Image buffer_to_image(const std::vector<float>& buffer, int w, int h);
 } // namespace wmtk

@@ -18,6 +18,7 @@
 #include <lagrange/views.h>
 #include <tbb/concurrent_vector.h>
 #include <wmtk/TriMesh.h>
+#include <wmtk/image/TextureIntegral.h>
 #include <wmtk/utils/AMIPS2D.h>
 #include <wmtk/utils/AMIPS2D_autodiff.h>
 #include <wmtk/utils/BoundaryParametrization.h>
@@ -28,6 +29,7 @@
 #include <wmtk/utils/Image.h>
 #include <wmtk/utils/MipMap.h>
 #include <wmtk/utils/PolygonClipping.h>
+#include <wmtk/utils/load_image_exr.h>
 #include <Eigen/Core>
 #include <finitediff.hpp>
 #include <lean_vtk.hpp>
@@ -156,11 +158,20 @@ public:
     Eigen::Matrix<uint64_t, Eigen::Dynamic, 2, Eigen::RowMajor> get_bnd_edge_matrix();
 
     //// preprocess the mesh for remeshing
-    // 1. set feature vertex fixed
-    // 2. set start/end/t-junction of curve fixed
-    // 3. assign each boudnary edge a curveid
-    // 4. set initial accuracy error for each triangle
-    void mesh_preprocessing();
+    //// replace function create_paired_seam_mesh_with_offset, and mesh_construct_boundaries
+    // 0. create mesh
+    // 1. vertex_attrs: initiate uv pos and pos_world
+    // 2. face_attrs:   set seam local edge mirror data
+    // 3. build seam vertex index to color mapping
+    // 4. construct boundary parametrization
+    // 5. vertex_attrs: set boundary vertex with boudary tag
+    //                  set boundary vertex curve_id, and boundary paramter t
+    //                  set feature vertex as fixed, set strat/end/t-junction of curve fixed
+    // 6. edge_attrs:   set curve-id for each edge
+    // 7. face_attrs:   set initial accuracy error for each triangle
+    void mesh_preprocessing(
+        const std::filesystem::path& input_mesh_path,
+        const std::filesystem::path& displaced_image_path);
 
     bool invariants(const std::vector<Tuple>& new_tris);
 
@@ -178,6 +189,24 @@ public:
         const Eigen::MatrixXi& F,
         const Eigen::MatrixXi& E0,
         const Eigen::MatrixXi& E1);
+    // return E0, E1 of corresponding seam edges in uv mesh
+    // set up the seam vertex coloring
+    std::pair<Eigen::MatrixXi, Eigen::MatrixXi> seam_edges_set_up(
+        const Eigen::MatrixXd& V,
+        const Eigen::MatrixXi& F,
+        const wmtk::TriMesh& m_3d,
+        const Eigen::MatrixXd& VT,
+        const Eigen::MatrixXi& FT);
+    // for each vertex that's seam vertex, assign same color for mirror vertices
+    // build the mapping from uv_index to color
+    // and mapping from color to uv_index
+    void set_seam_vertex_coloring(
+        const Eigen::MatrixXd& V,
+        const Eigen::MatrixXi& F,
+        const wmtk::TriMesh& m_3d,
+        const Eigen::MatrixXd& VT,
+        const Eigen::MatrixXi& FT);
+
 
     // Exports V and F of the stored mesh
     void export_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
@@ -203,8 +232,8 @@ public:
         Eigen::MatrixXi& FT) const;
 
     /**
-     * @brief Exports the mesh including UV coordinates where all 3D positions are mapped onto the
-     * input.
+     * @brief Exports the mesh including UV coordinates where all 3D positions are mapped onto
+     * the input.
      *
      * @param V igl format vertices
      * @param F igl format faces
@@ -339,8 +368,8 @@ public:
         p_vertex_attrs = &vertex_attrs;
         p_face_attrs = &face_attrs;
         p_edge_attrs = &edge_attrs;
-        // Convert from eigen to internal representation (TODO: move to utils and remove it from all
-        // app)
+        // Convert from eigen to internal representation (TODO: move to utils and remove it from
+        // all app)
         std::vector<std::array<size_t, 3>> tri(F.rows());
         for (int i = 0; i < F.rows(); i++) {
             tri[i][0] = (size_t)F(i, 0);
