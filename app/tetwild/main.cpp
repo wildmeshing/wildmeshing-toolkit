@@ -32,7 +32,7 @@ int main(int argc, char** argv)
     tetwild::Parameters params;
 
     CLI::App app{argv[0]};
-    std::string input_path = WMT_DATA_DIR "/37322.stl";
+    std::string input_path = WMTK_DATA_DIR "/37322.stl";
     std::string output_path = "./";
     bool skip_simplify = false;
     bool use_sample_envelope = false;

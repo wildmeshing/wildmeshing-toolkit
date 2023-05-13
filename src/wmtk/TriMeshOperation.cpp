@@ -40,19 +40,26 @@ auto TriMeshOperation::operator()(TriMesh& m, const Tuple& t) -> ExecuteReturnDa
 
     m.start_protected_connectivity();
     m.start_protected_attributes();
-    if (before(m, t)) {
-        retdata = execute(m, t);
 
-        if (retdata.success) {
-            if (!(after(m, retdata) && invariants(m, retdata))) {
-                retdata.success = false;
-            }
-        }
+    retdata.success = before(m, t);
+    if (!retdata.success) {
+        goto finish;
     }
 
-    if (retdata.success == false) {
-        m.rollback_protected_connectivity();
-        m.rollback_protected_attributes();
+    retdata = execute(m, t);
+    if (!retdata.success) {
+        goto finish;
+    }
+
+    retdata.success = after(m, retdata) && invariants(m, retdata);
+    if (!retdata.success) {
+        goto finish;
+    }
+
+    //
+finish:
+    if (!retdata.success) {
+        m.rollback_protected();
     }
     m.release_protected_connectivity();
     m.release_protected_attributes();
@@ -276,6 +283,7 @@ auto TriMeshSwapEdgeOperation::execute(TriMesh& m, const Tuple& t) -> ExecuteRet
 
     auto tmp_tuple_opt = m.switch_face(t);
     if (!tmp_tuple_opt.has_value()) {
+        ret_data.success = false;
         return ret_data;
     }
     Tuple tmp_tuple = tmp_tuple_opt.value();
@@ -290,6 +298,7 @@ auto TriMeshSwapEdgeOperation::execute(TriMesh& m, const Tuple& t) -> ExecuteRet
     size_t test_fid1 = t.fid(m);
     auto other_face_opt = m.switch_face(t);
     if (!other_face_opt.has_value()) {
+        ret_data.success = false;
         return ret_data; // can't sawp on boundary edge
     }
     assert(other_face_opt.has_value());

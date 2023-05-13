@@ -2,6 +2,48 @@
 using namespace adaptive_tessellation;
 using namespace wmtk;
 
+
+namespace {
+
+class AdaptiveTessellationSplitEdgeOperation : public wmtk::TriMeshOperationShim<
+                                                   AdaptiveTessellation,
+                                                   AdaptiveTessellationSplitEdgeOperation,
+                                                   wmtk::TriMeshSplitEdgeOperation>
+{
+public:
+    ExecuteReturnData execute(AdaptiveTessellation& m, const Tuple& t)
+    {
+        return wmtk::TriMeshSplitEdgeOperation::execute(m, t);
+    }
+    bool before(AdaptiveTessellation& m, const Tuple& t)
+    {
+        if (wmtk::TriMeshSplitEdgeOperation::before(m, t)) {
+            return m.split_edge_before(t);
+        }
+        return false;
+    }
+    bool after(AdaptiveTessellation& m, ExecuteReturnData& ret_data)
+    {
+        if (wmtk::TriMeshSplitEdgeOperation::after(m, ret_data)) {
+            ret_data.success &= m.split_edge_after(ret_data.tuple);
+        }
+        return ret_data;
+    }
+    bool invariants(AdaptiveTessellation& m, ExecuteReturnData& ret_data)
+    {
+        if (wmtk::TriMeshSplitEdgeOperation::invariants(m, ret_data)) {
+            ret_data.success &= m.invariants(ret_data.new_tris);
+        }
+        return ret_data;
+    }
+};
+
+template <typename Executor>
+void addCustomOps(Executor& e)
+{
+    e.add_operation(std::make_shared<AdaptiveTessellationSplitEdgeOperation>());
+}
+} // namespace
 // every edge is split if it is longer than 4/5 L
 
 auto split_renew = [](auto& m, auto op, auto& tris) {
@@ -494,6 +536,7 @@ void AdaptiveTessellation::split_all_edges()
         addPairedCustomOps(executor);
         // executor.stopping_criterion_checking_frequency = 100;
         executor.renew_neighbor_tuples = split_renew;
+        addCustomOps(executor);
         executor.priority = [&](auto& m, auto _, auto& e) {
             auto error = m.mesh_parameters.m_get_length(e);
             return error;

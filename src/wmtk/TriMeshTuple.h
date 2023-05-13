@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include <cstddef>
@@ -6,6 +5,10 @@
 #include <string>
 #include <optional>
 #include <tbb/enumerable_thread_specific.h>
+#include <array>
+#include <optional>
+#include <string>
+#include <tuple>
 
 namespace wmtk {
 class TriMesh;
@@ -13,7 +16,6 @@ class TriMesh;
 class TriMeshTuple
 {
 private:
-    friend class TriMeshTriMeshTupleData;
     size_t m_vid = -1;
     size_t m_eid = -1;
     size_t m_fid = -1;
@@ -85,7 +87,7 @@ public:
      * @return size_t
      * @note use mostly for constructing consistent tuples in operations
      */
-    size_t local_eid(const TriMesh& m) const { return m_eid; }
+    size_t local_eid(const TriMesh&) const { return m_eid; }
     /**
      * Switch operation.
      *

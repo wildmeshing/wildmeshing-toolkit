@@ -280,6 +280,7 @@ void AdaptiveTessellation::swap_all_edges()
     };
     if (NUM_THREADS > 0) {
         auto executor = wmtk::ExecutePass<AdaptiveTessellation, ExecutionPolicy::kPartition>();
+        addCustomOps(executor);
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) {
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };

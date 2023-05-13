@@ -33,7 +33,7 @@ TEST_CASE("separate-manifold-patch", "[test_util]")
 
 TEST_CASE("manifold-separate-test-37989", "[test_util]")
 {
-    std::string filename = WMT_DATA_DIR "/37989_sf.obj";
+    std::string filename = WMTK_DATA_DIR "/37989_sf.obj";
     wmtk::manifold_internal::Vertices V;
     wmtk::manifold_internal::Facets F;
     igl::read_triangle_mesh(filename, V, F);
