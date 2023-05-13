@@ -200,16 +200,21 @@ auto TriMeshSplitEdgeOperation::execute(TriMesh& m, const Tuple& t) -> ExecuteRe
     size_t new_fid = std::min(fid1, new_fid1);
     if (new_fid2.has_value()) new_fid = std::min(new_fid, new_fid2.value());
     int l = tri_connectivity[new_fid].find(new_vid);
-    auto new_vertex = Tuple(new_vid, (l + 2) % 3, new_fid, m);
     return_tuple = Tuple(vid1, eid, fid1, m);
-    assert(new_vertex.is_valid(m));
     assert(return_tuple.is_valid(m));
+
+#if defined(_DEBUG)
+    auto new_vertex = Tuple(new_vid, (l + 2) % 3, new_fid, m);
+    assert(new_vertex.is_valid(m));
+    assert(new_vertex == this->new_vertex(m));
+#endif
 
     m_return_tuple_opt.local() = return_tuple;
     new_tris = modified_tuples(m);
     ret_data.success = true;
     return ret_data;
 }
+
 bool TriMeshSplitEdgeOperation::before(TriMesh& m, const Tuple& t)
 {
     m_return_tuple_opt.local() = {};
