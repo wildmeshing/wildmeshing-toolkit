@@ -22,7 +22,7 @@ class AdaptiveTessellationCollapseEdgeOperation : public wmtk::TriMeshOperationS
 public:
     struct SeamData
     {
-        Tuple mirror_edge_tuple;
+        std::optional<Tuple> mirror_edge_tuple;
         size_t curve_id;
     };
     struct OpCache
@@ -35,13 +35,21 @@ public:
         size_t v_top; // remaining vertex of the input triangle being collapsed
         size_t v_bot; // remaining vertex of the other triangle being collapsed
 
-        // pair of vids that are an existing edge -> mirror edge, curveid
-        std::map<std::array<size_t, 2>, SeamData> mirrored_edges;
+        // pairs of vids for edges where no vertex changes in the collapse
+        std::map<std::array<size_t, 2>, SeamData> seam_data;
 
-        std::optional<SeamData> top_seam;
-        std::optional<SeamData> bot_seam;
+        // pairs of vids for edges where a vertex changes in the collapse
+        std::unordered_map<size_t, SeamData> new_vertex_seam_data;
     };
     tbb::enumerable_thread_specific<OpCache> m_op_cache;
+
+    static bool check_seamed_link_condition(AdaptiveTessellation& m, const Tuple& t);
+
+    // computes the
+    static LinksOfVertex seamed_links_of_vertex(AdaptiveTessellation& m, const Tuple& vertex);
+    static std::vector<size_t> seamed_edge_link_of_edge(
+        AdaptiveTessellation& m,
+        const Tuple& edge);
 
 public:
     ExecuteReturnData execute(AdaptiveTessellation& m, const Tuple& t);
@@ -76,9 +84,11 @@ public:
     struct OpCache
     {
         std::optional<Tuple> mirror_edge_tuple_opt;
-        // std::optional<Tuple> return_tuple;
     };
     tbb::enumerable_thread_specific<OpCache> m_op_cache;
+
+    // std::vector<Tuple> modified_tuples(const TriMesh& m);
+    operator bool();
 
 public:
     ExecuteReturnData execute(AdaptiveTessellation& m, const Tuple& t);

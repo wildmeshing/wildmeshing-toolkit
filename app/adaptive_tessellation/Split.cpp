@@ -2,6 +2,7 @@
 using namespace adaptive_tessellation;
 using namespace wmtk;
 
+
 // every edge is split if it is longer than 4/5 L
 
 auto split_renew = [](auto& m, auto op, auto& tris) {
@@ -502,6 +503,7 @@ void AdaptiveTessellation::split_all_edges()
         //     auto error = m.mesh_parameters.m_get_length(e);
         //     return error;
         // };
+        addCustomOps(executor);
         executor.priority = [&](auto& m, auto _, auto& e) {
             double error = 0.;
             if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {

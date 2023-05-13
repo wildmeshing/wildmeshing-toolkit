@@ -13,8 +13,8 @@ public:
     {
         Tuple tuple;
         std::vector<Tuple> new_tris;
-        bool success = false;
-        operator bool() const { return success; }
+        bool success = true;
+        operator bool() const { return success;}
     };
 
     ExecuteReturnData operator()(TriMesh& m, const Tuple& t);

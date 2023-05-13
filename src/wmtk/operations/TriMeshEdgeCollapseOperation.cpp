@@ -180,13 +180,16 @@ std::vector<size_t> TriMeshEdgeCollapseOperation::edge_link_of_edge(
     const TriMesh& mesh,
     const Tuple& edge)
 {
+    auto get_opposing_vertex_vid = [&mesh](const Tuple& t) {
+return t.switch_edge(mesh).switch_vertex(mesh).vid(mesh);
+    };
     std::vector<size_t> lk_edge;
-    lk_edge.push_back((edge.switch_edge(mesh)).switch_vertex(mesh).vid(mesh));
-    if (!edge.switch_face(mesh).has_value()) {
+    lk_edge.push_back(get_opposing_vertex_vid(edge));
+    const std::optional<Tuple> other_face_opt = edge.switch_face(mesh);
+    if (!other_face_opt.has_value()) {
         lk_edge.push_back(dummy);
     } else {
-        lk_edge.push_back(
-            ((edge.switch_face(mesh).value()).switch_edge(mesh)).switch_vertex(mesh).vid(mesh));
+        lk_edge.push_back(get_opposing_vertex_vid(other_face_opt.value()));
     }
     vector_sort(lk_edge);
     return lk_edge;

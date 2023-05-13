@@ -42,7 +42,7 @@ using Scalar = double;
 
 TEST_CASE("AABB")
 {
-    const std::string root(WMT_DATA_DIR);
+    const std::string root(WMTK_DATA_DIR);
     const std::string path = root + "/test_triwild.obj";
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
@@ -834,7 +834,7 @@ TEST_CASE("paired collapse")
     //                13    12
 
     const auto& primary_edge8_opt = op6.collapse_edge.get_return_tuple_opt();
-    const auto& primary_edge9_opt = op6.collapse_mirror_edge.get_return_tuple();
+    const auto& primary_edge9_opt = op6.collapse_mirror_edge.get_return_tuple_opt();
     REQUIRE(primary_edge8_opt.has_value());
     REQUIRE(primary_edge9_opt.has_value());
     const auto& primary_edge8_ret = primary_edge8_opt.value();
@@ -1013,8 +1013,8 @@ TEST_CASE("paired swap")
     //             \   | |      |    /
     //              \(1)\|      |(2)/
     //                2           5
-    std::vector<Tuple> op4_modified_tuples = op4.modified_tuples(m);
-    REQUIRE(op_modified_tuples.size() == 2);
+    std::vector<TriMeshTuple> op4_modified_tuples = op4.modified_tuples(m);
+    REQUIRE(op4_modified_tuples.size() == 2);
     const auto& primary_edge5_ret = op4_modified_tuples[0];
     REQUIRE(primary_edge5_ret.is_valid(m));
     REQUIRE(primary_edge5_ret.vid(m) == 4);
@@ -1067,7 +1067,7 @@ TEST_CASE("paired swap")
     REQUIRE(primary_edge6.switch_vertex(m).vid(m) == 3);
     AdaptiveTessellationSwapEdgeOperation op5;
     op5(m, primary_edge6);
-    std::vector<Tuple> op5_modified_tuples = op5.modified_tuples(m);
+    std::vector<TriMeshTuple> op5_modified_tuples = op5.modified_tuples(m);
     REQUIRE(op5_modified_tuples.size() == 0);
 
     ////////// ======= seam edge swap
@@ -1078,7 +1078,7 @@ TEST_CASE("paired swap")
     REQUIRE(primary_edge7.switch_vertex(m).vid(m) == 2);
     AdaptiveTessellationSwapEdgeOperation op6;
     op6(m, primary_edge7);
-    std::vector<Tuple> op6_modified_tuples = op6.modified_tuples(m);
+    std::vector<TriMeshTuple> op6_modified_tuples = op6.modified_tuples(m);
     REQUIRE(op6_modified_tuples.size() == 0);
 }
 
@@ -1125,7 +1125,7 @@ TEST_CASE("get mirror")
     AdaptiveTessellation m;
     Eigen::MatrixXd UV;
     Eigen::MatrixXi F;
-    std::filesystem::path input_mesh_path = WMT_DATA_DIR "/hemisphere.obj";
+    std::filesystem::path input_mesh_path = WMTK_DATA_DIR "/hemisphere.obj";
     m.create_paired_seam_mesh_with_offset(input_mesh_path.string(), UV, F);
     Eigen::MatrixXd V3d;
     Eigen::MatrixXi F3d;
@@ -1193,7 +1193,7 @@ TEST_CASE("test curve fixed get_all_mirror_vids")
     AdaptiveTessellation m;
     Eigen::MatrixXd UV;
     Eigen::MatrixXi F;
-    std::filesystem::path input_mesh_path = WMT_DATA_DIR "/hemisphere.obj";
+    std::filesystem::path input_mesh_path = WMTK_DATA_DIR "/hemisphere.obj";
     m.create_paired_seam_mesh_with_offset(input_mesh_path.string(), UV, F);
     m.set_fixed();
     for (auto i = 0; i < m.vert_capacity(); ++i) {
@@ -1229,7 +1229,7 @@ TEST_CASE("uv-index and coloring test")
     AdaptiveTessellation m;
     Eigen::MatrixXd UV;
     Eigen::MatrixXi F;
-    std::filesystem::path input_mesh_path = WMT_DATA_DIR "/hemisphere.obj";
+    std::filesystem::path input_mesh_path = WMTK_DATA_DIR "/hemisphere.obj";
     m.create_paired_seam_mesh_with_offset(input_mesh_path.string(), UV, F);
     Eigen::MatrixXd V3d;
     Eigen::MatrixXi F3d;
@@ -1269,7 +1269,7 @@ TEST_CASE("edge curve-id assignment")
     AdaptiveTessellation m;
     Eigen::MatrixXd UV;
     Eigen::MatrixXi F;
-    std::filesystem::path input_mesh_path = WMT_DATA_DIR "/hemisphere.obj";
+    std::filesystem::path input_mesh_path = WMTK_DATA_DIR "/hemisphere.obj";
     m.create_paired_seam_mesh_with_offset(input_mesh_path.string(), UV, F);
     m.set_fixed();
     for (auto& e : m.get_edges()) {
