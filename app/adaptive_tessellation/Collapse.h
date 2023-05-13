@@ -76,9 +76,11 @@ public:
     struct OpCache
     {
         std::optional<Tuple> mirror_edge_tuple_opt;
-        // std::optional<Tuple> return_tuple;
     };
     tbb::enumerable_thread_specific<OpCache> m_op_cache;
+
+    //std::vector<Tuple> modified_tuples(const TriMesh& m);
+    operator bool();
 
 public:
     ExecuteReturnData execute(AdaptiveTessellation& m, const Tuple& t);
