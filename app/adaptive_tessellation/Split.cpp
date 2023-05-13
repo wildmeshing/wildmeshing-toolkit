@@ -499,11 +499,6 @@ void AdaptiveTessellation::split_all_edges()
     auto setup_and_execute = [&](auto executor) {
         addPairedCustomOps(executor);
         executor.renew_neighbor_tuples = split_renew;
-        // executor.priority = [&](auto& m, auto _, auto& e) {
-        //     auto error = m.mesh_parameters.m_get_length(e);
-        //     return error;
-        // };
-        addCustomOps(executor);
         executor.priority = [&](auto& m, auto _, auto& e) {
             double error = 0.;
             if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
