@@ -196,13 +196,11 @@ MeshType advect_vertices(
 
 TEST_CASE("Quadric Integral Advection", "[utils][quadric]")
 {
-    // std::string displaced_positions = WMT_DATA_DIR "/images/hemisphere_512_displaced.exr";
-    std::string displaced_positions =
-        "/Users/jedumas/cloud/tessellation/sandbox/benchmark/hemisphere_4096_displaced.exr";
+    std::string displaced_positions = WMT_DATA_DIR "/images/hemisphere_512_displaced.exr";
     auto mesh = lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMT_DATA_DIR "/hemisphere.obj");
     auto positions = load_rgb_image(displaced_positions);
 
-    for (size_t k = 0; k < 3; ++k) {
+    for (size_t k = 0; k < 1; ++k) {
         mesh = midpoint_subdivision(mesh);
     }
 
