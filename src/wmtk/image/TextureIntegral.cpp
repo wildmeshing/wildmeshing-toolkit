@@ -10,7 +10,6 @@
 #include <tbb/parallel_for.h>
 
 namespace wmtk {
-
 namespace {
 
 template <typename T, typename Func>
@@ -60,9 +59,8 @@ double get_error_per_triangle_exact(
     };
     auto get_coordinate = [&](const double& x, const double& y) -> std::pair<int, int> {
         auto [xx, yy] = m_image.get_pixel_index(get_value(x), get_value(y));
-        return {
-            m_image.get_coordinate(xx, m_image.get_wrapping_mode_x()),
-            m_image.get_coordinate(yy, m_image.get_wrapping_mode_y())};
+        return {m_image.get_coordinate(xx, m_image.get_wrapping_mode_x()),
+                m_image.get_coordinate(yy, m_image.get_wrapping_mode_y())};
     };
     auto bbox_min = bbox.min();
     auto bbox_max = bbox.max();
@@ -334,8 +332,13 @@ double get_error_per_triangle_adaptive(
 struct TextureIntegral::Cache
 {
     // Data for exact error computation
-    tbb::enumerable_thread_specific<QuadratureCache> quadrature_cache;
+    mutable tbb::enumerable_thread_specific<QuadratureCache> quadrature_cache;
 };
+
+TextureIntegral::TextureIntegral() = default;
+TextureIntegral::TextureIntegral(TextureIntegral&&) = default; // move constructor
+TextureIntegral& TextureIntegral::operator=(TextureIntegral&&) =
+    default; // move assignment operator
 
 TextureIntegral::TextureIntegral(std::array<wmtk::Image, 3> data)
     : m_data(std::move(data))
@@ -347,7 +350,7 @@ TextureIntegral::~TextureIntegral() = default;
 template <TextureIntegral::SamplingMethod Sampling, TextureIntegral::IntegrationMethod Integration>
 void TextureIntegral::get_error_per_triangle_internal(
     lagrange::span<const std::array<float, 6>> input_triangles,
-    lagrange::span<float> output_errors)
+    lagrange::span<float> output_errors) const
 {
     assert(input_triangles.size() == output_errors.size());
     tbb::parallel_for(size_t(0), input_triangles.size(), [&](size_t i) {
@@ -382,7 +385,7 @@ void TextureIntegral::get_error_per_triangle_internal(
 
 void TextureIntegral::get_error_per_triangle(
     lagrange::span<const std::array<float, 6>> input_triangles,
-    lagrange::span<float> output_errors)
+    lagrange::span<float> output_errors) const
 {
     assert(input_triangles.size() == output_errors.size());
     switch (m_sampling_method) {
