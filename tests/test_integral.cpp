@@ -230,10 +230,10 @@ void test_sampling(const MeshType& mesh, std::array<wmtk::Image, 3> displaced)
 
 TEST_CASE("Texture Integral Reference", "[utils][integral]")
 {
-    std::string displaced_positions = WMT_DATA_DIR "/images/hemisphere_512_displaced.exr";
-    std::string position_path = WMT_DATA_DIR "/images/hemisphere_512_position.exr";
-    std::string normal_path = WMT_DATA_DIR "/images/hemisphere_512_normal-world-space.exr";
-    std::string height_path = WMT_DATA_DIR "/images/riveted_castle_iron_door_512_height.exr";
+    std::string displaced_positions = WMTK_DATA_DIR "/images/hemisphere_512_displaced.exr";
+    std::string position_path = WMTK_DATA_DIR "/images/hemisphere_512_position.exr";
+    std::string normal_path = WMTK_DATA_DIR "/images/hemisphere_512_normal-world-space.exr";
+    std::string height_path = WMTK_DATA_DIR "/images/riveted_castle_iron_door_512_height.exr";
     wmtk::Image height;
     height.load(height_path, WrappingMode::CLAMP_TO_EDGE, WrappingMode::CLAMP_TO_EDGE);
     std::array<wmtk::Image, 6> position_normal_images;
@@ -246,7 +246,7 @@ TEST_CASE("Texture Integral Reference", "[utils][integral]")
         }
     }
     test_integral_reference(
-        lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMT_DATA_DIR "/hemisphere.obj"),
+        lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMTK_DATA_DIR "/hemisphere.obj"),
         std::move(position_normal_images),
         std::move(height),
         load_rgb_image(displaced_positions));
@@ -254,17 +254,17 @@ TEST_CASE("Texture Integral Reference", "[utils][integral]")
 
 TEST_CASE("Texture Integral Sampling", "[utils][integral]")
 {
-    std::string displaced_positions = WMT_DATA_DIR "/images/hemisphere_512_displaced.exr";
+    std::string displaced_positions = WMTK_DATA_DIR "/images/hemisphere_512_displaced.exr";
     test_sampling(
-        lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMT_DATA_DIR "/hemisphere.obj"),
+        lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMTK_DATA_DIR "/hemisphere.obj"),
         load_rgb_image(displaced_positions));
 }
 
 TEST_CASE("Texture Integral Adaptive", "[utils][integral]")
 {
-    std::string displaced_positions = WMT_DATA_DIR "/images/hemisphere_512_displaced.exr";
-    auto uv_triangles = load_uv_triangles(WMT_DATA_DIR "/hemisphere.obj");
-    auto mesh = lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMT_DATA_DIR "/hemisphere.obj");
+    std::string displaced_positions = WMTK_DATA_DIR "/images/hemisphere_512_displaced.exr";
+    auto uv_triangles = load_uv_triangles(WMTK_DATA_DIR "/hemisphere.obj");
+    auto mesh = lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMTK_DATA_DIR "/hemisphere.obj");
 
     wmtk::TextureIntegral integral(load_rgb_image(displaced_positions));
 
@@ -306,10 +306,10 @@ TEST_CASE("Texture Integral Benchmark", "[utils][!benchmark]")
 {
     // spdlog::set_level(spdlog::level::off);
 
-    std::string displaced_positions = WMT_DATA_DIR "/images/hemisphere_512_displaced.exr";
+    std::string displaced_positions = WMTK_DATA_DIR "/images/hemisphere_512_displaced.exr";
     // std::string displaced_positions =
     //     "/Users/jedumas/cloud/tessellation/sandbox/benchmark/hemisphere_4096_displaced.exr";
-    auto uv_triangles = load_uv_triangles(WMT_DATA_DIR "/hemisphere.obj");
+    auto uv_triangles = load_uv_triangles(WMTK_DATA_DIR "/hemisphere.obj");
 
     std::vector<float> computed_errors(uv_triangles.size());
     wmtk::TextureIntegral integral(load_rgb_image(displaced_positions));
