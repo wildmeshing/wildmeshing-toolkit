@@ -12,23 +12,36 @@
 #include <wmtk/utils/TupleUtils.hpp>
 #include "AdaptiveTessellation.h"
 #include "wmtk/ExecutionScheduler.hpp"
-using namespace adaptive_tessellation;
-using namespace wmtk;
 
+namespace adaptive_tessellation {
 class AdaptiveTessellationCollapseEdgeOperation : public wmtk::TriMeshOperationShim<
                                                       AdaptiveTessellation,
                                                       AdaptiveTessellationCollapseEdgeOperation,
                                                       wmtk::TriMeshEdgeCollapseOperation>
 {
 public:
-    TriMesh::Tuple return_edge_tuple;
+    struct SeamData
+    {
+        Tuple mirror_edge_tuple;
+        size_t curve_id;
+    };
     struct OpCache
     {
-        size_t v1;
-        size_t v2;
+        size_t v1; // first vertex index of the edge being collapsed
+        size_t v2; // second vertex index of hte edge being collapsed
+
         double length3d;
+
+        size_t v_top; // remaining vertex of the input triangle being collapsed
+        size_t v_bot; // remaining vertex of the other triangle being collapsed
+
+        // pair of vids that are an existing edge -> mirror edge, curveid
+        std::map<std::array<size_t, 2>, SeamData> mirrored_edges;
+
+        std::optional<SeamData> top_seam;
+        std::optional<SeamData> bot_seam;
     };
-    tbb::enumerable_thread_specific<OpCache> op_cache;
+    tbb::enumerable_thread_specific<OpCache> m_op_cache;
 
 public:
     ExecuteReturnData execute(AdaptiveTessellation& m, const Tuple& t);
@@ -45,7 +58,6 @@ class AdaptiveTessellationPairedCollapseEdgeOperation
 public:
     AdaptiveTessellationCollapseEdgeOperation collapse_edge;
     AdaptiveTessellationCollapseEdgeOperation collapse_mirror_edge;
-    std::optional<Tuple> mirror_edge_tuple;
 
     //        / | \                         |\ 
     //       /  |  \                        | \ 
@@ -61,9 +73,16 @@ public:
     //       \  | /                         | /
     //        \ |/                          |/
 
+    struct OpCache
+    {
+        std::optional<Tuple> mirror_edge_tuple_opt;
+        // std::optional<Tuple> return_tuple;
+    };
+    tbb::enumerable_thread_specific<OpCache> m_op_cache;
 
 public:
     ExecuteReturnData execute(AdaptiveTessellation& m, const Tuple& t);
     bool before(AdaptiveTessellation& m, const Tuple& t);
     bool after(AdaptiveTessellation& m, ExecuteReturnData& ret_data);
 };
+} // namespace adaptive_tessellation

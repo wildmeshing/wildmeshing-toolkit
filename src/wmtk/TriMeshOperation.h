@@ -32,7 +32,6 @@ protected:
     virtual bool invariants(TriMesh& m, ExecuteReturnData& ret_data);
 
 
-
     // forwarding of operations in TriMesh
     static wmtk::AttributeCollection<VertexConnectivity>& vertex_connectivity(TriMesh& m);
     static wmtk::AttributeCollection<TriangleConnectivity>& tri_connectivity(TriMesh& m);
@@ -134,8 +133,17 @@ public:
 
     // returns a tuple to the new vertex created by this operation, where the
     // input is the tuple passed into after's ret_data.tuple.
-    Tuple new_vertex(TriMesh& m, const Tuple& t) const;
+    Tuple new_vertex(const TriMesh& m, const Tuple& t) const { return t.switch_vertex(m); }
+    Tuple new_vertex(const TriMesh& m);
     std::array<Tuple, 2> original_endpoints(TriMesh& m, const Tuple& t) const;
+
+    std::vector<Tuple> modified_tuples(const TriMesh& m);
+    operator bool() { return m_return_tuple_opt.local().has_value(); }
+
+    std::optional<Tuple> get_return_tuple_opt() { return m_return_tuple_opt.local(); }
+
+private:
+    tbb::enumerable_thread_specific<std::optional<Tuple>> m_return_tuple_opt;
 };
 
 /**
@@ -155,35 +163,14 @@ public:
     bool after(TriMesh& m, ExecuteReturnData& ret_data) override;
     std::string name() const override;
 
-    std::vector<Tuple> modified_tuples(const TriMesh& m) ;
+    std::vector<Tuple> modified_tuples(const TriMesh& m);
+    operator bool() { return m_return_tuple_opt.local().has_value(); }
+    std::optional<Tuple> get_return_tuple_opt() { return m_return_tuple_opt.local(); }
+
 private:
-    tbb::enumerable_thread_specific<Tuple> m_new_tuple;
+    tbb::enumerable_thread_specific<std::optional<Tuple>> m_return_tuple_opt;
 };
 
-/**
- * Collapse an edge
- *
- * @param t Input Tuple for the edge to be collapsed.
- * @param[out] new_edges a vector of Tuples refering to the triangles incident to the new vertex
- * introduced
- * @note collapse edge a,b and generate a new vertex c
- * @return if collapse succeed
- */
-class TriMeshEdgeCollapseOperation : public TriMeshOperation
-{
-public:
-    ExecuteReturnData execute(TriMesh& m, const Tuple& t) override;
-    bool before(TriMesh& m, const Tuple& t) override;
-    bool after(TriMesh& m, ExecuteReturnData& ret_data) override;
-    std::string name() const override;
-
-    /**
-     * @brief prerequisite for collapse
-     * @param t Tuple referes to the edge to be collapsed
-     * @returns true is the link check is passed
-     */
-    static bool check_link_condition(const TriMesh& m, const Tuple& t);
-};
 
 /**
  * Smooth a vertex
@@ -200,6 +187,13 @@ public:
     bool after(TriMesh& m, ExecuteReturnData& ret_data) override;
     std::string name() const override;
     // bool invariants(TriMesh& m, ExecuteReturnData& ret_data) override;
+
+    std::vector<Tuple> modified_tuples(const TriMesh& m);
+    operator bool() { return m_return_tuple_opt.local().has_value(); }
+    std::optional<Tuple> get_return_tuple_opt() { return m_return_tuple_opt.local(); }
+
+private:
+    tbb::enumerable_thread_specific<std::optional<Tuple>> m_return_tuple_opt;
 };
 
 /**
@@ -216,3 +210,5 @@ public:
     std::string name() const override;
 };
 } // namespace wmtk
+
+#include <wmtk/operations/TriMeshEdgeCollapseOperation.h>
