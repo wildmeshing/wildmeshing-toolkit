@@ -17,7 +17,7 @@ class TriMeshTuple
 {
 private:
     size_t m_vid = -1;
-    size_t m_eid = -1;
+    size_t m_local_eid = -1;
     size_t m_fid = -1;
     size_t m_hash = -1;
 
@@ -45,9 +45,9 @@ public:
     TriMeshTuple(TriMeshTuple&& other) = default;
     TriMeshTuple& operator=(const TriMeshTuple& other) = default;
     TriMeshTuple& operator=(TriMeshTuple&& other) = default;
-    TriMeshTuple(size_t vid, size_t eid, size_t fid, const TriMesh& m)
+    TriMeshTuple(size_t vid, size_t local_eid, size_t fid, const TriMesh& m)
         : m_vid(vid)
-        , m_eid(eid)
+        , m_local_eid(local_eid)
         , m_fid(fid)
     {
         update_hash(m);
@@ -87,7 +87,7 @@ public:
      * @return size_t
      * @note use mostly for constructing consistent tuples in operations
      */
-    size_t local_eid(const TriMesh&) const { return m_eid; }
+    size_t local_eid(const TriMesh&) const { return m_local_eid; }
     /**
      * Switch operation.
      *
@@ -130,13 +130,13 @@ public:
 
     std::tuple<size_t, size_t, size_t, size_t> as_stl_tuple() const
     {
-        return std::tie(m_vid, m_eid, m_fid, m_hash);
+        return std::tie(m_vid, m_local_eid, m_fid, m_hash);
     }
     friend bool operator<(const TriMeshTuple& a, const TriMeshTuple& t)
     {
         return (
-            std::tie(a.m_vid, a.m_eid, a.m_fid, a.m_hash) <
-            std::tie(t.m_vid, t.m_eid, t.m_fid, t.m_hash));
+            std::tie(a.m_vid, a.m_local_eid, a.m_fid, a.m_hash) <
+            std::tie(t.m_vid, t.m_local_eid, t.m_fid, t.m_hash));
         // return a.as_stl_tuple() < t.as_stl_tuple();
     }
 };
