@@ -61,16 +61,6 @@ private:
 
     // Hidden cache data
     lagrange::value_ptr<Cache> m_cache;
-
-    // Average distance between adjacent pixels in the input image
-    double m_avg_pixel_distance = 1.0;
-
-    // Uncertainty on point positions (relative to the mean distance between adjacent pixels in the
-    // input image)
-    double m_sigma_q_rel = 1e-4;
-
-    // Uncertainty on normal directions
-    double m_sigma_n = 0.001;
 };
 
 } // namespace wmtk

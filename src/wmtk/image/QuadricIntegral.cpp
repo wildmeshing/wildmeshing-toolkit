@@ -241,22 +241,29 @@ QuadricIntegral::QuadricIntegral(
     QuadricType quadric_type)
     : m_cache(lagrange::make_value_ptr<Cache>())
 {
+    // Uncertainty on point positions (relative to the mean distance between adjacent pixels in the
+    // input image)
+    const double sigma_q_rel = 0.1;
+
+    // Uncertainty on normal directions
+    const double sigma_n = 0.1;
+
     auto w = displaced_positions[0].width();
     auto h = displaced_positions[0].height();
     for (auto& img : m_quadrics) {
         img = wmtk::Image(w, h);
     }
 
-    m_avg_pixel_distance = 0;
+    double avg_pixel_distance = 0;
     for (int x = 0; x < w; ++x) {
         for (int y = 0; y < h; ++y) {
             auto stencil = get_stencil(displaced_positions, x, y);
-            m_avg_pixel_distance += avg_distance_from_patch(stencil);
+            avg_pixel_distance += avg_distance_from_patch(stencil);
         }
     }
-    m_avg_pixel_distance /= w * h;
+    avg_pixel_distance /= w * h;
 
-    const double sigma_q = m_avg_pixel_distance * m_sigma_q_rel;
+    const double sigma_q = avg_pixel_distance * sigma_q_rel;
 
     tbb::parallel_for(0, w, [&](int x) {
         for (int y = 0; y < h; ++y) {
@@ -268,7 +275,7 @@ QuadricIntegral::QuadricIntegral(
                 break;
             }
             case QuadricType::Plane: {
-                auto quadric = compute_pixel_plane_quadric(stencil, sigma_q, m_sigma_n);
+                auto quadric = compute_pixel_plane_quadric(stencil, sigma_q, sigma_n);
                 set_coefficients_from_quadric(m_quadrics, x, y, quadric);
                 break;
             }
@@ -289,7 +296,6 @@ void QuadricIntegral::get_quadric_per_triangle(
     lagrange::span<wmtk::Quadric<double>> output_quadrics)
 {
     assert(num_triangles == output_quadrics.size());
-    const double sigma_q = m_avg_pixel_distance * m_sigma_q_rel;
     tbb::parallel_for(0, num_triangles, [&](int i) {
         auto input_triangle = get_triangle(i);
         Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle;

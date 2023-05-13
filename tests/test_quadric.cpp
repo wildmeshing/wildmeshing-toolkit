@@ -62,50 +62,6 @@ std::pair<double, Eigen::RowVector3d> compute_mesh_normalization(const MeshType&
     return {max_comp, scene_offset};
 }
 
-MeshType advect_vertices(
-    MeshType mesh,
-    const std::array<wmtk::Image, 3>& displaced_positions,
-    wmtk::QuadricIntegral::QuadricType quadric_type)
-{
-    auto& uv_attr = mesh.get_indexed_attribute<double>(lagrange::AttributeName::texcoord);
-    auto uv_vertices = matrix_view(uv_attr.values());
-    auto uv_facets = reshaped_view(uv_attr.indices(), 3);
-
-    // Compute per-facet quadrics using image integral
-    std::vector<wmtk::Quadric<double>> per_facet_quadrics(mesh.get_num_facets());
-    wmtk::QuadricIntegral integral(displaced_positions, quadric_type);
-    integral.get_quadric_per_triangle(
-        mesh.get_num_facets(),
-        [&](int f) {
-            std::array<float, 6> uv_triangle;
-            uv_triangle[0] = uv_vertices(uv_facets(f, 0), 0);
-            uv_triangle[1] = uv_vertices(uv_facets(f, 0), 1);
-            uv_triangle[2] = uv_vertices(uv_facets(f, 1), 0);
-            uv_triangle[3] = uv_vertices(uv_facets(f, 1), 1);
-            uv_triangle[4] = uv_vertices(uv_facets(f, 2), 0);
-            uv_triangle[5] = uv_vertices(uv_facets(f, 2), 1);
-            return uv_triangle;
-        },
-        per_facet_quadrics);
-
-    // Accumulate per-facet quadrics over their incident vertices
-    auto facets = facet_view(mesh);
-    std::vector<wmtk::Quadric<double>> per_vertex_quadrics(mesh.get_num_vertices());
-    for (int f = 0; f < static_cast<int>(mesh.get_num_facets()); ++f) {
-        for (int j = 0; j < 3; j++) {
-            per_vertex_quadrics[facets(f, j)] += per_facet_quadrics[f];
-        }
-    }
-
-    // Advect vertices to their quadric minimizer
-    auto vertices = vertex_ref(mesh);
-    for (int v = 0; v < static_cast<int>(mesh.get_num_vertices()); ++v) {
-        vertices.row(v) = per_vertex_quadrics[v].minimizer().transpose();
-    }
-
-    return mesh;
-}
-
 // Simple midpoint subdivision that preserves UV attributes
 MeshType midpoint_subdivision(MeshType mesh)
 {
@@ -191,6 +147,51 @@ MeshType displace_mesh(MeshType mesh, const std::array<wmtk::Image, 3>& position
     return mesh;
 }
 
+MeshType advect_vertices(
+    MeshType mesh,
+    const std::array<wmtk::Image, 3>& displaced_positions,
+    wmtk::QuadricIntegral::QuadricType quadric_type)
+{
+    auto& uv_attr = mesh.get_indexed_attribute<double>(lagrange::AttributeName::texcoord);
+    auto uv_vertices = matrix_view(uv_attr.values());
+    auto uv_facets = reshaped_view(uv_attr.indices(), 3);
+
+    // Compute per-facet quadrics using image integral
+    std::vector<wmtk::Quadric<double>> per_facet_quadrics(mesh.get_num_facets());
+    wmtk::QuadricIntegral integral(displaced_positions, quadric_type);
+    integral.get_quadric_per_triangle(
+        mesh.get_num_facets(),
+        [&](int f) {
+            std::array<float, 6> uv_triangle;
+            uv_triangle[0] = uv_vertices(uv_facets(f, 0), 0);
+            uv_triangle[1] = uv_vertices(uv_facets(f, 0), 1);
+            uv_triangle[2] = uv_vertices(uv_facets(f, 1), 0);
+            uv_triangle[3] = uv_vertices(uv_facets(f, 1), 1);
+            uv_triangle[4] = uv_vertices(uv_facets(f, 2), 0);
+            uv_triangle[5] = uv_vertices(uv_facets(f, 2), 1);
+            return uv_triangle;
+        },
+        per_facet_quadrics);
+
+    // Accumulate per-facet quadrics over their incident vertices
+    auto facets = facet_view(mesh);
+    std::vector<wmtk::Quadric<double>> per_vertex_quadrics(mesh.get_num_vertices());
+    for (int f = 0; f < static_cast<int>(mesh.get_num_facets()); ++f) {
+        for (int j = 0; j < 3; j++) {
+            per_vertex_quadrics[facets(f, j)] += per_facet_quadrics[f];
+        }
+    }
+
+    // Advect vertices to their quadric minimizer
+    auto vertices = vertex_ref(mesh);
+    for (int v = 0; v < static_cast<int>(mesh.get_num_vertices()); ++v) {
+        vertices.row(v) = per_vertex_quadrics[v].minimizer().transpose();
+    }
+
+    return mesh;
+}
+
+
 } // namespace
 
 TEST_CASE("Quadric Integral Advection", "[utils][quadric]")
@@ -216,6 +217,7 @@ TEST_CASE("Quadric Integral Advection", "[utils][quadric]")
     lagrange::io::save_mesh(
         "mesh_triangle_quadric.obj",
         advect_vertices(mesh, positions, QuadricType::Triangle));
+    wmtk::logger().info("done");
 
     {
         auto& uv_attr = mesh.get_indexed_attribute<double>(lagrange::AttributeName::texcoord);
