@@ -98,126 +98,110 @@ inline bool has_intersection(const AdaptiveTessellation& mesh)
 
 inline void displace_self_intersection_free(AdaptiveTessellation& mesh)
 {
-    // set all world positions according to the position map
-    Eigen::MatrixXd vertices_uv_with_seams;
-    Eigen::MatrixXi faces;
-    mesh.export_mesh(vertices_uv_with_seams, faces);
-
-    Eigen::MatrixXd vertices_on_position_map;
-    vertices_on_position_map.resize(vertices_uv_with_seams.rows(), 3);
-    Eigen::MatrixXd vertices_displaced;
-    vertices_displaced.resize(vertices_uv_with_seams.rows(), 3);
-    for (int i = 0; i < vertices_uv_with_seams.rows(); i++) {
-        const double& u = vertices_uv_with_seams(i, 0);
-        const double& v = vertices_uv_with_seams(i, 1);
-        vertices_on_position_map.row(i) = mesh.mesh_parameters.m_displacement->get_position(u, v);
-        vertices_displaced.row(i) = mesh.mesh_parameters.m_displacement->get(u, v);
-    }
-
-    mesh.remove_seams(vertices_on_position_map, faces);
-    mesh.remove_seams(vertices_displaced, faces);
-
-    Eigen::MatrixXd vertices_non_intersecting;
+    spdlog::info("Compute self-intersection free displacement");
     Eigen::MatrixXd vertices_target;
-    Eigen::MatrixXi faces_clean;
-    Eigen::MatrixXi map_old_to_new_v_ids;
-    Eigen::MatrixXi map_new_to_old_v_ids;
-    igl::remove_unreferenced(
-        vertices_on_position_map,
-        faces,
-        vertices_non_intersecting,
-        faces_clean,
-        map_old_to_new_v_ids,
-        map_new_to_old_v_ids);
+    Eigen::MatrixXi faces_target;
+    Eigen::MatrixXd vertices_texture;
+    Eigen::MatrixXi faces_texture;
+    mesh.export_mesh(vertices_target, faces_target, vertices_texture, faces_texture);
 
-    igl::remove_unreferenced(
-        vertices_displaced,
-        faces,
-        vertices_target,
-        faces_clean,
-        map_old_to_new_v_ids);
+    Eigen::MatrixXd vertices_start;
+    Eigen::MatrixXi faces;
+    mesh.export_mesh_mapped_on_input(vertices_start, faces, vertices_texture, faces_texture);
 
-    for (int i = 0; i < vertices_non_intersecting.rows(); i++) {
-        const Eigen::Vector3d& p = vertices_non_intersecting.row(i);
-        mesh.vertex_attrs[map_new_to_old_v_ids(i)].pos_world = p;
+    assert(faces == faces_target);
+
+    std::map<size_t, std::set<size_t>> world_to_uv_ids;
+    for (Eigen::Index i = 0; i < faces.rows(); ++i) {
+        for (Eigen::Index j = 0; j < faces.cols(); ++j) {
+            world_to_uv_ids[faces(i, j)].insert(faces_texture(i, j));
+        }
     }
+
+    auto update_pos_world = [&world_to_uv_ids, &mesh](const size_t i, const Eigen::Vector3d& p) {
+        for (const size_t idx : world_to_uv_ids[i]) {
+            mesh.vertex_attrs[idx].pos_world = p;
+        }
+    };
 
     // check for self intersections - if there are any, find edges that self intersect and split
     // them until no more self intersections exist
     Eigen::MatrixXi edges;
-    igl::edges(faces_clean, edges);
-    const ipc::CollisionMesh collisionMesh(vertices_non_intersecting, edges, faces_clean);
-    if (ipc::has_intersections(collisionMesh, vertices_non_intersecting)) {
+    igl::edges(faces, edges);
+    const ipc::CollisionMesh collisionMesh(vertices_start, edges, faces);
+    if (ipc::has_intersections(collisionMesh, vertices_start)) {
         // TODO perform edge splits to remove self-intersections
         spdlog::warn("Mesh has self-self intersections even for 0 displacement. This case was not "
                      "handled yet.");
         return;
     }
+    spdlog::info("No self intersections on start positions.");
 
     // move vertices towards displaced positions as far as possible
-    const double t0 = ipc::compute_collision_free_stepsize(
-        collisionMesh,
-        vertices_non_intersecting,
-        vertices_target);
+    const double t0 =
+        ipc::compute_collision_free_stepsize(collisionMesh, vertices_start, vertices_target);
+    spdlog::info("t0 = {}", t0);
 
     // move vertices
-    for (int i = 0; i < vertices_non_intersecting.rows(); i++) {
-        const Eigen::Vector3d& p0 = vertices_non_intersecting.row(i);
+    for (int i = 0; i < vertices_start.rows(); i++) {
+        const Eigen::Vector3d& p0 = vertices_start.row(i);
         const Eigen::Vector3d& p1 = vertices_target.row(i);
         const Eigen::Vector3d p = (1 - t0) * p0 + t0 * p1;
-        vertices_non_intersecting.row(i) = p;
-        mesh.vertex_attrs[map_new_to_old_v_ids(i)].pos_world = p;
+        vertices_start.row(i) = p;
+        // mesh.vertex_attrs[map_new_to_old_v_ids(i)].pos_world = p;
+        update_pos_world(i, p);
     }
-    return;
     if (t0 == 1.0) {
         return;
     }
 
     // move only half the possible distance and iterate a few times
-    std::vector<bool> vertex_is_converged(vertices_non_intersecting.rows(), false);
+    std::vector<bool> vertex_is_converged(vertices_start.rows(), false);
     for (int r = 0; r < 4; ++r) {
-        for (int i = 0; i < vertices_non_intersecting.rows(); i++) {
+        spdlog::info("Iteration {} of 4", r);
+        for (int i = 0; i < vertices_start.rows(); i++) {
             if (vertex_is_converged[i]) {
                 continue;
             }
-            Eigen::MatrixXd buf = vertices_non_intersecting;
+            Eigen::MatrixXd buf = vertices_start;
             buf.row(i) = vertices_target.row(i);
             const double t =
-                0.5 *
-                ipc::compute_collision_free_stepsize(collisionMesh, vertices_non_intersecting, buf);
+                0.5 * ipc::compute_collision_free_stepsize(collisionMesh, vertices_start, buf);
 
             if (t == 0) {
                 vertex_is_converged[i] = true;
                 continue;
             }
 
-            const Eigen::Vector3d& p0 = vertices_non_intersecting.row(i);
+            const Eigen::Vector3d& p0 = vertices_start.row(i);
             const Eigen::Vector3d& p1 = vertices_target.row(i);
             const Eigen::Vector3d p = (1 - t) * p0 + t * p1;
 
 
-            vertices_non_intersecting.row(i) = p;
-            mesh.vertex_attrs[map_new_to_old_v_ids(i)].pos_world = p;
+            vertices_start.row(i) = p;
+            // mesh.vertex_attrs[map_new_to_old_v_ids(i)].pos_world = p;
+            update_pos_world(i, p);
         }
     }
 
     // move vertices as far as possible
-    for (int i = 0; i < vertices_non_intersecting.rows(); i++) {
+    spdlog::info("Final vertex displacing.");
+    for (int i = 0; i < vertices_start.rows(); i++) {
         if (vertex_is_converged[i]) {
             continue;
         }
-        Eigen::MatrixXd buf = vertices_non_intersecting;
+        Eigen::MatrixXd buf = vertices_start;
         buf.row(i) = vertices_target.row(i);
-        const double t =
-            ipc::compute_collision_free_stepsize(collisionMesh, vertices_non_intersecting, buf);
+        const double t = ipc::compute_collision_free_stepsize(collisionMesh, vertices_start, buf);
 
-        const Eigen::Vector3d& p0 = vertices_non_intersecting.row(i);
+        const Eigen::Vector3d& p0 = vertices_start.row(i);
         const Eigen::Vector3d& p1 = vertices_target.row(i);
         const Eigen::Vector3d p = (1 - t) * p0 + t * p1;
 
 
-        vertices_non_intersecting.row(i) = p;
-        mesh.vertex_attrs[map_new_to_old_v_ids(i)].pos_world = p;
+        vertices_start.row(i) = p;
+        // mesh.vertex_attrs[map_new_to_old_v_ids(i)].pos_world = p;
+        update_pos_world(i, p);
     }
 }
 } // namespace adaptive_tessellation

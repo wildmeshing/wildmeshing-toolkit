@@ -785,7 +785,31 @@ void AdaptiveTessellation::export_mesh_mapped_on_input(
     Eigen::MatrixXd& VT,
     Eigen::MatrixXi& FT) const
 {
-    throw std::exception("Method not fully implemented yet.");
+    auto tri_signed_area =
+        [](const Eigen::Vector2d& a, const Eigen::Vector2d& b, const Eigen::Vector2d& c) -> double {
+        return 0.5 * (a[0] * (b[1] - c[1]) + b[0] * (c[1] - a[1]) + c[0] * (a[1] - b[1]));
+    };
+
+    // throw std::exception("Method not fully implemented yet.");
+    auto compute_barycentric_coordinates = [tri_signed_area](
+                                               const Eigen::Vector2d& p,
+                                               const Eigen::Vector2d& a,
+                                               const Eigen::Vector2d& b,
+                                               const Eigen::Vector2d& c) -> Eigen::Vector3d {
+        const double area = tri_signed_area(a, b, c);
+        const double area_a = tri_signed_area(p, b, c);
+        const double area_b = tri_signed_area(a, p, c);
+        const double area_c = tri_signed_area(a, b, p);
+
+        return {area_a / area, area_b / area, area_c / area};
+    };
+
+    auto compute_barycentric_interpolation = [](const Eigen::Vector3d& a,
+                                                const Eigen::Vector3d& b,
+                                                const Eigen::Vector3d& c,
+                                                const Eigen::Vector3d& coords) -> Eigen::Vector3d {
+        return a * coords[0] + b * coords[1] + c * coords[2];
+    };
 
     export_mesh_without_invalid_faces(VT, FT);
 
@@ -793,8 +817,40 @@ void AdaptiveTessellation::export_mesh_mapped_on_input(
     for (int i = 0; i < VT.rows(); i++) {
         const double& u = VT(i, 0);
         const double& v = VT(i, 1);
-        // TODO find input triangle and map to it
-        V.row(i) = mesh_parameters.m_displacement->get(u, v);
+        Eigen::Vector2d uv = {u, v};
+        // find input triangle and map to it
+        double barycentric_min = -std::numeric_limits<double>::max();
+        Eigen::Vector3d barycentric_coords;
+        size_t j_min = -1;
+        for (size_t j = 0; j < input_FT_.rows(); ++j) {
+            const Eigen::Vector3i tri = input_FT_.row(j);
+            const std::array<Eigen::Vector2d, 3> pts = {
+                input_VT_.row(tri[0]),
+                input_VT_.row(tri[1]),
+                input_VT_.row(tri[2])};
+            const Eigen::Vector3d bars =
+                compute_barycentric_coordinates(uv, pts[0], pts[1], pts[2]);
+            const double bar_min = bars.minCoeff();
+            if (bar_min > barycentric_min) {
+                barycentric_min = bar_min;
+                barycentric_coords = bars;
+                j_min = j;
+            }
+        }
+
+        const auto& input_triangle = input_F_.row(j_min);
+        Eigen::Matrix3d pts;
+        pts.row(0) = input_V_.row(input_triangle[0]);
+        pts.row(1) = input_V_.row(input_triangle[1]);
+        pts.row(2) = input_V_.row(input_triangle[2]);
+
+        Eigen::Vector3d p = compute_barycentric_interpolation(
+            input_V_.row(input_triangle[0]),
+            input_V_.row(input_triangle[1]),
+            input_V_.row(input_triangle[2]),
+            barycentric_coords);
+
+        V.row(i) = p;
     }
 
     F = FT;
@@ -1101,6 +1157,19 @@ void AdaptiveTessellation::write_obj_with_texture_coords(const std::string& path
     Eigen::MatrixXd VT;
     Eigen::MatrixXi FT;
     export_mesh(V, F, VT, FT);
+    igl::writeOBJ(path, V, F, CN, FN, VT, FT);
+    wmtk::logger().info("============>> current edge length {}", avg_edge_len(*this));
+}
+
+void AdaptiveTessellation::write_obj_with_texture_coords_mapped_on_input(const std::string& path)
+{
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    Eigen::MatrixXd CN;
+    Eigen::MatrixXd FN;
+    Eigen::MatrixXd VT;
+    Eigen::MatrixXi FT;
+    export_mesh_mapped_on_input(V, F, VT, FT);
     igl::writeOBJ(path, V, F, CN, FN, VT, FT);
     wmtk::logger().info("============>> current edge length {}", avg_edge_len(*this));
 }
@@ -1442,11 +1511,6 @@ void AdaptiveTessellation::mesh_improvement(int max_its)
             mesh_parameters.m_displacement);
         write_obj(
             mesh_parameters.m_output_folder + "/after_split_" + std::to_string(it) + "2d.obj");
-        displace_self_intersection_free(*this);
-        write_world_obj(
-            mesh_parameters.m_output_folder + "/after_split_" + std::to_string(it) +
-                "3d_intersection_free.obj",
-            mesh_parameters.m_displacement);
 
         swap_all_edges();
         assert(invariants(get_faces()));

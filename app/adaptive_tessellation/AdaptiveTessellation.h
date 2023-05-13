@@ -246,6 +246,8 @@ public:
         const std::shared_ptr<wmtk::Displacement> displacement);
     void write_obj_with_texture_coords(const std::string& path);
 
+    void write_obj_with_texture_coords_mapped_on_input(const std::string& path);
+
     // Computes the quality of a triangle
     double get_quality(const Tuple& loc, int idx = 0) const;
     std::pair<double, Eigen::Vector2d> get_one_ring_energy(const Tuple& loc) const;
