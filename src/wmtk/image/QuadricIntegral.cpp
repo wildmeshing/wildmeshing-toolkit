@@ -48,6 +48,16 @@ Stencil get_stencil(const std::array<wmtk::Image, 3>& images, int x, int y)
     return stencil;
 }
 
+Stencil adjusted_stencil(const Stencil& p)
+{
+    Stencil q = p;
+    q.col(1) = 0.25 * (p.col(0) + p.col(1) + p.col(8) + p.col(2));
+    q.col(3) = 0.25 * (p.col(0) + p.col(2) + p.col(3) + p.col(4));
+    q.col(5) = 0.25 * (p.col(0) + p.col(4) + p.col(5) + p.col(6));
+    q.col(7) = 0.25 * (p.col(0) + p.col(6) + p.col(7) + p.col(8));
+    return q;
+}
+
 double avg_distance_from_patch(const Stencil& patch)
 {
     double dist = 0;
@@ -59,29 +69,44 @@ double avg_distance_from_patch(const Stencil& patch)
     return dist / 8;
 }
 
+// Return unnormalized vector to weight the resulting quadric by the area of the patch
 Eigen::Vector3d normal_from_patch(const Stencil& patch)
 {
     Eigen::Vector3d n = Eigen::Vector3d::Zero();
-    for (int i = 1; i < 8; ++i) {
+    for (int i = 1; i <= 8; ++i) {
         const Eigen::Vector3d p0 = patch.col(0).cast<double>();
         const Eigen::Vector3d p1 = patch.col(i).cast<double>();
         const Eigen::Vector3d p2 = patch.col((i % 8) + 1).cast<double>();
         n += (p1 - p0).cross(p2 - p0);
     }
-    return n.stableNormalized();
+    return n;
+}
+
+Eigen::Vector3d stdev_from_patch(const Stencil& patch)
+{
+    // Mean
+    Eigen::Vector3d mean = patch.cast<double>().rowwise().mean();
+
+    // Standard Deviation
+    Eigen::Vector3d std = (patch.cast<double>().colwise() - mean).array().pow(2).rowwise().mean();
+
+    return std;
 }
 
 Quadric<double> compute_pixel_plane_quadric(const Stencil& patch, double sigma_q, double sigma_n)
 {
     const auto mean_p = patch.col(0).cast<double>();
     const auto mean_n = normal_from_patch(patch);
+    sigma_q *= stdev_from_patch(patch).norm();
+    sigma_n /= mean_n.norm();
     return Quadric<double>::probabilistic_plane_quadric(mean_p, mean_n, sigma_q, sigma_n);
 }
 
 Quadric<double> compute_pixel_triangle_quadric(const Stencil& patch, double sigma_q)
 {
     Quadric<double> q;
-    for (int i = 1; i < 8; ++i) {
+    sigma_q *= stdev_from_patch(patch).norm();
+    for (int i = 1; i <= 8; ++i) {
         const Eigen::Vector3d p0 = patch.col(0).cast<double>();
         const Eigen::Vector3d p1 = patch.col(i).cast<double>();
         const Eigen::Vector3d p2 = patch.col((i % 8) + 1).cast<double>();
@@ -241,12 +266,11 @@ QuadricIntegral::QuadricIntegral(
     QuadricType quadric_type)
     : m_cache(lagrange::make_value_ptr<Cache>())
 {
-    // Uncertainty on point positions (relative to the mean distance between adjacent pixels in the
-    // input image)
-    const double sigma_q_rel = 0.1;
+    // Relative uncertainty on point positions
+    const double sigma_q = 1e-4;
 
-    // Uncertainty on normal directions
-    const double sigma_n = 0.1;
+    // Relative uncertainty on normal directions
+    const double sigma_n = 0.001;
 
     auto w = displaced_positions[0].width();
     auto h = displaced_positions[0].height();
@@ -254,20 +278,9 @@ QuadricIntegral::QuadricIntegral(
         img = wmtk::Image(w, h);
     }
 
-    double avg_pixel_distance = 0;
-    for (int x = 0; x < w; ++x) {
-        for (int y = 0; y < h; ++y) {
-            auto stencil = get_stencil(displaced_positions, x, y);
-            avg_pixel_distance += avg_distance_from_patch(stencil);
-        }
-    }
-    avg_pixel_distance /= w * h;
-
-    const double sigma_q = avg_pixel_distance * sigma_q_rel;
-
     tbb::parallel_for(0, w, [&](int x) {
         for (int y = 0; y < h; ++y) {
-            auto stencil = get_stencil(displaced_positions, x, y);
+            auto stencil = adjusted_stencil(get_stencil(displaced_positions, x, y));
             switch (quadric_type) {
             case QuadricType::Point: {
                 auto quadric = compute_pixel_point_quadric(stencil);

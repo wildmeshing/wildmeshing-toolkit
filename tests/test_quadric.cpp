@@ -159,33 +159,36 @@ MeshType advect_vertices(
     // Compute per-facet quadrics using image integral
     std::vector<wmtk::Quadric<double>> per_facet_quadrics(mesh.get_num_facets());
     wmtk::QuadricIntegral integral(displaced_positions, quadric_type);
-    integral.get_quadric_per_triangle(
-        mesh.get_num_facets(),
-        [&](int f) {
-            std::array<float, 6> uv_triangle;
-            uv_triangle[0] = uv_vertices(uv_facets(f, 0), 0);
-            uv_triangle[1] = uv_vertices(uv_facets(f, 0), 1);
-            uv_triangle[2] = uv_vertices(uv_facets(f, 1), 0);
-            uv_triangle[3] = uv_vertices(uv_facets(f, 1), 1);
-            uv_triangle[4] = uv_vertices(uv_facets(f, 2), 0);
-            uv_triangle[5] = uv_vertices(uv_facets(f, 2), 1);
-            return uv_triangle;
-        },
-        per_facet_quadrics);
 
-    // Accumulate per-facet quadrics over their incident vertices
-    auto facets = facet_view(mesh);
-    std::vector<wmtk::Quadric<double>> per_vertex_quadrics(mesh.get_num_vertices());
-    for (int f = 0; f < static_cast<int>(mesh.get_num_facets()); ++f) {
-        for (int j = 0; j < 3; j++) {
-            per_vertex_quadrics[facets(f, j)] += per_facet_quadrics[f];
+    for (int k = 0; k < 1; ++k) {
+        integral.get_quadric_per_triangle(
+            mesh.get_num_facets(),
+            [&](int f) {
+                std::array<float, 6> uv_triangle;
+                uv_triangle[0] = uv_vertices(uv_facets(f, 0), 0);
+                uv_triangle[1] = uv_vertices(uv_facets(f, 0), 1);
+                uv_triangle[2] = uv_vertices(uv_facets(f, 1), 0);
+                uv_triangle[3] = uv_vertices(uv_facets(f, 1), 1);
+                uv_triangle[4] = uv_vertices(uv_facets(f, 2), 0);
+                uv_triangle[5] = uv_vertices(uv_facets(f, 2), 1);
+                return uv_triangle;
+            },
+            per_facet_quadrics);
+
+        // Accumulate per-facet quadrics over their incident vertices
+        auto facets = facet_view(mesh);
+        std::vector<wmtk::Quadric<double>> per_vertex_quadrics(mesh.get_num_vertices());
+        for (int f = 0; f < static_cast<int>(mesh.get_num_facets()); ++f) {
+            for (int j = 0; j < 3; j++) {
+                per_vertex_quadrics[facets(f, j)] += per_facet_quadrics[f];
+            }
         }
-    }
 
-    // Advect vertices to their quadric minimizer
-    auto vertices = vertex_ref(mesh);
-    for (int v = 0; v < static_cast<int>(mesh.get_num_vertices()); ++v) {
-        vertices.row(v) = per_vertex_quadrics[v].minimizer().transpose();
+        // Advect vertices to their quadric minimizer
+        auto vertices = vertex_ref(mesh);
+        for (int v = 0; v < static_cast<int>(mesh.get_num_vertices()); ++v) {
+            vertices.row(v) = per_vertex_quadrics[v].minimizer().transpose();
+        }
     }
 
     return mesh;
