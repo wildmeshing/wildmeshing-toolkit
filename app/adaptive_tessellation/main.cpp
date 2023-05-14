@@ -146,7 +146,7 @@ int main(int argc, char** argv)
     auto duration = lagrange::timestamp_diff_in_seconds(start_time, finish_time);
     wmtk::logger().info("!!!!finished {}!!!!", duration);
     m.mesh_parameters.js_log["total_time"] = duration;
-    m.write_displaced_obj(output_file, m.mesh_parameters.m_displacement);
+    m.write_obj_displaced(output_file);
     // Save the optimized mesh
     wmtk::logger().info("/////output : {}", output_file);
     js_o << std::setw(4) << m.mesh_parameters.js_log << std::endl;
