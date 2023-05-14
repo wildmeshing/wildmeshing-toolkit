@@ -12,7 +12,7 @@ auto wmtk::load_image_exr_red_channel(const std::filesystem::path& path)
     -> std::tuple<size_t, size_t, std::vector<float>>
 {
     using namespace wmtk;
-    wmtk::logger().trace("[load_image_exr_red_channel] start \"{}\"", path.string());
+    wmtk::logger().debug("[load_image_exr_red_channel] start \"{}\"", path.string());
     assert(std::filesystem::exists(path));
     const std::string filename_ = path.string();
     const char* filename = filename_.c_str();
@@ -165,7 +165,7 @@ auto wmtk::load_image_exr_split_3channels(const std::filesystem::path& path) -> 
     tuple<size_t, size_t, int, int, int, std::vector<float>, std::vector<float>, std::vector<float>>
 {
     using namespace wmtk;
-    wmtk::logger().trace("[load_image_exr_red_channel] start \"{}\"", path.string());
+    wmtk::logger().debug("[load_image_exr_red_channel] start \"{}\"", path.string());
     assert(std::filesystem::exists(path));
     const std::string filename_ = path.string();
     const char* filename = filename_.c_str();
@@ -287,13 +287,13 @@ auto wmtk::load_image_exr_split_3channels(const std::filesystem::path& path) -> 
         return exr_image_;
     }();
 
-    wmtk::logger().info(
+    wmtk::logger().debug(
         "[load_image_exr_3channels] num_channels {} tiled {}",
         exr_header.num_channels,
         exr_header.tiled);
-    wmtk::logger().info("[load_image_exr_3channels] index_red {}", index_red);
-    wmtk::logger().info("[load_image_exr_3channels] index_green {}", index_green);
-    wmtk::logger().info("[load_image_exr_3channels] index_blue {}", index_blue);
+    wmtk::logger().debug("[load_image_exr_3channels] index_red {}", index_red);
+    wmtk::logger().debug("[load_image_exr_3channels] index_green {}", index_green);
+    wmtk::logger().debug("[load_image_exr_3channels] index_blue {}", index_blue);
     assert(index_red >= 0);
     assert(index_green >= 0);
     assert(index_blue >= 0);
@@ -315,7 +315,7 @@ auto wmtk::load_image_exr_split_3channels(const std::filesystem::path& path) -> 
     FreeEXRHeader(&exr_header);
     FreeEXRImage(&exr_image);
 
-    wmtk::logger().info("[load_image_exr_3channels] done \"{}\"", path.string());
+    wmtk::logger().debug("[load_image_exr_3channels] done \"{}\"", path.string());
 
     return {
         static_cast<size_t>(exr_image.width),

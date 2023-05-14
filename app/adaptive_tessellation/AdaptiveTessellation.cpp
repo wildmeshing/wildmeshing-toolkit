@@ -486,7 +486,7 @@ void AdaptiveTessellation::set_displacement(const DISPLACEMENT_MODE displacement
         std::array<wmtk::Image, 6> position_normal_images;
         for (size_t i = 0; i < 2; i++) {
             std::filesystem::path path = mesh_parameters.m_position_normal_paths[i];
-            wmtk::logger().info("======= path {} {}", i, path);
+            wmtk::logger().debug("======= path {} {}", i, path);
             wmtk::split_and_save_3channels(path);
             std::string directory = path.parent_path().string();
             std::string file = path.filename().string();

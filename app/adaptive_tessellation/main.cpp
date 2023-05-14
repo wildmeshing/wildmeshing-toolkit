@@ -41,13 +41,28 @@ using Index = uint64_t;
 using Scalar = double;
 using json = nlohmann::json;
 
-inline void ensure_file_exists(const std::filesystem::path& f)
+inline void ensure_path_exists(const std::filesystem::path& f)
 {
     if (!std::filesystem::exists(f)) {
         wmtk::logger().critical("File `{}` does not exist.", f);
         exit(-1);
     }
 };
+
+// Returns f if it exists or dir/f if that exists. If both do not exist exit.
+inline std::filesystem::path get_existing_path(
+    const std::filesystem::path& dir,
+    const std::filesystem::path& f)
+{
+    if (std::filesystem::exists(f)) {
+        return f;
+    }
+    if (std::filesystem::exists(dir / f)) {
+        return dir / f;
+    }
+    wmtk::logger().critical("File `{}` does not exist.", f);
+    exit(-1);
+}
 
 using namespace wmtk;
 using namespace adaptive_tessellation;
@@ -67,29 +82,27 @@ int main(int argc, char** argv)
 
     CLI11_PARSE(app, argc, argv);
 
-    ensure_file_exists(input_json);
+    ensure_path_exists(input_json);
     json config;
     {
         std::ifstream jsonFile(input_json);
         jsonFile >> config;
     }
     // Access the parameters in the JSON file
-    const path input_file = std::string(config["input_file"]);
-    const path output_folder = std::string(config["output_folder"]);
-    const path output_file = std::string(config["output_file"]);
-    const path output_json = std::string(config["output_json"]);
-    ensure_file_exists(input_file);
-    ensure_file_exists(output_folder);
+    const path input_folder = config["input_folder"];
+    ensure_path_exists(input_folder);
+    const path input_file = get_existing_path(input_folder, config["input_file"]);
+    const path output_folder = config["output_folder"];
+    ensure_path_exists(output_folder);
+    const path output_file = output_folder / config["output_file"];
+    const path output_json = output_folder / config["output_json"];
 
     FrameMark;
 
     const int image_size = config["image_size"];
-    const path height_map_path = config["height_map_path"];
-    const path position_map_path = std::string(config["position_map_path"]);
-    const path normal_map_path = std::string(config["normal_map_path"]);
-    ensure_file_exists(height_map_path);
-    ensure_file_exists(position_map_path);
-    ensure_file_exists(normal_map_path);
+    const path height_map_path = get_existing_path(input_folder, config["height_map"]);
+    const path position_map_path = get_existing_path(input_folder, config["position_map"]);
+    const path normal_map_path = get_existing_path(input_folder, config["normal_map"]);
     const double target_l = config["target_edge_length"];
     const double target_accuracy = config["target_accuracy"];
     const SAMPLING_MODE sampling_mode = config["sampling_mode"];
@@ -99,6 +112,10 @@ int main(int argc, char** argv)
     const adaptive_tessellation::EDGE_LEN_TYPE edge_len_type = config["edge_len_type"];
     const int max_iter = config["max_iter"];
     const bool boundary_parameter_on = config["boundary_parameter_on"];
+
+    wmtk::logger().info("///// height map: {}", height_map_path);
+    wmtk::logger().info("///// normal map: {}", normal_map_path);
+    wmtk::logger().info("///// position map: {}", position_map_path);
 
     // Loading the input 2d mesh
     AdaptiveTessellation m;
@@ -111,7 +128,6 @@ int main(int argc, char** argv)
 
     Image height_map;
     height_map.load(height_map_path, wrapping_mode, wrapping_mode);
-    wmtk::logger().info("///// height image: {}", height_map_path);
 
     m.set_output_folder(output_folder);
     m.mesh_parameters.m_position_normal_paths = {position_map_path, normal_map_path};
