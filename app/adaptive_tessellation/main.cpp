@@ -24,6 +24,7 @@
 #include <wmtk/utils/autodiff.h>
 #include <wmtk/utils/bicubic_interpolation.h>
 #include <CLI/CLI.hpp>
+#include <filesystem>
 #include <fstream>
 #include <functional>
 #include <nlohmann/json.hpp>
@@ -40,60 +41,64 @@ using Index = uint64_t;
 using Scalar = double;
 using json = nlohmann::json;
 
+inline void ensure_file_exists(const std::filesystem::path& f)
+{
+    if (!std::filesystem::exists(f)) {
+        wmtk::logger().critical("File `{}` does not exist.", f);
+        exit(-1);
+    }
+};
+
 using namespace wmtk;
 using namespace adaptive_tessellation;
 using namespace lagrange;
 int main(int argc, char** argv)
 {
     using DScalar = wmtk::EdgeLengthEnergy::DScalar;
+    using path = std::filesystem::path;
 
     ZoneScopedN("adaptive_tessellation_main");
     lagrange::enable_fpe();
     CLI::App app{argv[0]};
     std::string input_json;
-    std::string output_json;
 
-    app.add_option("-c, --config", input_json, "input json file");
+    app.add_option("-c, --config", input_json, "input json file")->required(true);
+
 
     CLI11_PARSE(app, argc, argv);
-    std::ifstream jsonFile(input_json);
+
+    ensure_file_exists(input_json);
     json config;
-    jsonFile >> config;
+    {
+        std::ifstream jsonFile(input_json);
+        jsonFile >> config;
+    }
     // Access the parameters in the JSON file
-    std::string input_file = config["input_file"];
-    std::string output_folder = config["output_folder"];
-    std::string output_file = config["output_file"];
-    output_json = config["output_json"];
+    const path input_file = std::string(config["input_file"]);
+    const path output_folder = std::string(config["output_folder"]);
+    const path output_file = std::string(config["output_file"]);
+    const path output_json = std::string(config["output_json"]);
+    ensure_file_exists(input_file);
+    ensure_file_exists(output_folder);
 
     FrameMark;
 
-    int image_size = 512;
-    image_size = config["image_size"];
-    std::string height_map_path = config["height_map_path"];
-    std::filesystem::path position_map_path = std::string(config["position_map_path"]);
-    // "/mnt/ssd2/yunfan/adaptive_tessellation/textures/3d_mesh/ninja/3channel_normal_position/"
-    // "ninja_position.exr";
-    std::filesystem::path normal_map_path = std::string(config["normal_map_path"]);
-    // "/mnt/ssd2/yunfan/adaptive_tessellation/textures/3d_mesh/ninja/3channel_normal_position/"
-    // "ninja_normal.exr";
-    double target_l = config["target_edge_length"];
-    double target_accuracy = config["target_accuracy"];
-    SAMPLING_MODE sampling_mode = SAMPLING_MODE::BICUBIC;
-    DISPLACEMENT_MODE displacement_mode = DISPLACEMENT_MODE::MESH_3D;
-    sampling_mode = config["sampling_mode"];
-    displacement_mode = config["displacement_mode"];
-    WrappingMode wrapping_mode = WrappingMode::MIRROR_REPEAT;
-    wrapping_mode = config["wrapping_mode"];
-    adaptive_tessellation::ENERGY_TYPE energy_type =
-        adaptive_tessellation::ENERGY_TYPE::AREA_QUADRATURE;
-    adaptive_tessellation::EDGE_LEN_TYPE edge_len_type =
-        adaptive_tessellation::EDGE_LEN_TYPE::AREA_ACCURACY;
-    energy_type = config["energy_type"];
-    edge_len_type = config["edge_len_type"];
-    int max_iter = 1;
-    max_iter = config["max_iter"];
-    bool boundary_parameter_on = true;
-    boundary_parameter_on = config["boundary_parameter_on"];
+    const int image_size = config["image_size"];
+    const path height_map_path = config["height_map_path"];
+    const path position_map_path = std::string(config["position_map_path"]);
+    const path normal_map_path = std::string(config["normal_map_path"]);
+    ensure_file_exists(height_map_path);
+    ensure_file_exists(position_map_path);
+    ensure_file_exists(normal_map_path);
+    const double target_l = config["target_edge_length"];
+    const double target_accuracy = config["target_accuracy"];
+    const SAMPLING_MODE sampling_mode = config["sampling_mode"];
+    const DISPLACEMENT_MODE displacement_mode = config["displacement_mode"];
+    const WrappingMode wrapping_mode = config["wrapping_mode"];
+    const adaptive_tessellation::ENERGY_TYPE energy_type = config["energy_type"];
+    const adaptive_tessellation::EDGE_LEN_TYPE edge_len_type = config["edge_len_type"];
+    const int max_iter = config["max_iter"];
+    const bool boundary_parameter_on = config["boundary_parameter_on"];
 
     // Loading the input 2d mesh
     AdaptiveTessellation m;
@@ -104,8 +109,8 @@ int main(int argc, char** argv)
     std::ofstream js_o(output_json);
     auto start_time = lagrange::get_timestamp();
 
-    Image image;
-    image.load(height_map_path, wrapping_mode, wrapping_mode);
+    Image height_map;
+    height_map.load(height_map_path, wrapping_mode, wrapping_mode);
     wmtk::logger().info("/////height image: {}", height_map_path);
 
     m.set_output_folder(output_folder);
@@ -122,14 +127,13 @@ int main(int argc, char** argv)
     wmtk::logger().info("/////sampling mode: {}", sampling_mode);
     wmtk::logger().info("/////dispalcement mode: {}", displacement_mode);
 
-
     wmtk::logger().info("/////energy type: {}", energy_type);
     wmtk::logger().info("/////energy length type: {}", edge_len_type);
 
     m.set_parameters(
         target_accuracy,
         target_l,
-        image,
+        height_map,
         wrapping_mode,
         sampling_mode,
         displacement_mode,

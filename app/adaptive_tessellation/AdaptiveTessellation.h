@@ -280,12 +280,12 @@ public:
      *
      * @param path name of the OBJ file
      */
-    void write_obj_only_texture_coords(const std::string& path);
+    void write_obj_only_texture_coords(const std::filesystem::path& path);
 
     // Writes a triangle mesh in ply format
-    void write_ply(const std::string& path);
-    void write_vtk(const std::string& path);
-    void write_perface_vtk(const std::string& path);
+    void write_ply(const std::filesystem::path& path);
+    void write_vtk(const std::filesystem::path& path);
+    void write_perface_vtk(const std::filesystem::path& path);
 
     /**
      * @brief Write triangle mesh with world positions in OBJ format.
@@ -296,7 +296,7 @@ public:
      *
      * @param path name of the OBJ file
      */
-    void write_obj(const std::string& path);
+    void write_obj(const std::filesystem::path& path);
     /**
      * @brief Write triangle mesh with displaced UV positions in OBJ format.
      *
@@ -304,7 +304,7 @@ public:
      *
      * @param path name of the OBJ file
      */
-    void write_obj_displaced(const std::string& path);
+    void write_obj_displaced(const std::filesystem::path& path);
     /**
      * @brief Write triangle mesh in OBJ format where UV positions are mapped onto the input
      * triangles.
@@ -313,7 +313,7 @@ public:
      *
      * @param path name of the OBJ file
      */
-    void write_obj_mapped_on_input(const std::string& path);
+    void write_obj_mapped_on_input(const std::filesystem::path& path);
 
     // Computes the quality of a triangle
     double get_quality(const Tuple& loc, int idx = 0) const;

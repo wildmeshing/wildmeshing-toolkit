@@ -43,9 +43,10 @@ void AdaptiveTessellation::create_paired_seam_mesh_with_offset(
     wmtk::TriMesh m_3d;
     std::vector<std::array<size_t, 3>> tris;
     for (auto f = 0; f < input_F_.rows(); f++) {
-        std::array<size_t, 3> tri = {(size_t)input_F_(f, 0),
-                                     (size_t)input_F_(f, 1),
-                                     (size_t)input_F_(f, 2)};
+        std::array<size_t, 3> tri = {
+            (size_t)input_F_(f, 0),
+            (size_t)input_F_(f, 1),
+            (size_t)input_F_(f, 2)};
         tris.emplace_back(tri);
     }
     m_3d.create_mesh(input_V_.rows(), tris);
@@ -518,7 +519,7 @@ void AdaptiveTessellation::remove_seams(Eigen::MatrixXd& V, Eigen::MatrixXi& F) 
     F = NF;
 }
 
-void AdaptiveTessellation::write_obj_only_texture_coords(const std::string& path)
+void AdaptiveTessellation::write_obj_only_texture_coords(const std::filesystem::path& path)
 {
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
@@ -528,11 +529,11 @@ void AdaptiveTessellation::write_obj_only_texture_coords(const std::string& path
     Eigen::MatrixXd V3 = Eigen::MatrixXd::Zero(V.rows(), 3);
     V3.leftCols(2) = V;
 
-    igl::writeOBJ(path, V3, F);
+    igl::writeOBJ(path.string(), V3, F);
     wmtk::logger().info("============>> current edge length {}", avg_edge_len());
 }
 
-void AdaptiveTessellation::write_ply(const std::string& path)
+void AdaptiveTessellation::write_ply(const std::filesystem::path& path)
 {
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
@@ -542,10 +543,10 @@ void AdaptiveTessellation::write_ply(const std::string& path)
     Eigen::MatrixXd V3 = Eigen::MatrixXd::Zero(V.rows(), 3);
     V3.leftCols(2) = V;
 
-    igl::writePLY(path, V3, F);
+    igl::writePLY(path.string(), V3, F);
 }
 
-void AdaptiveTessellation::write_vtk(const std::string& path)
+void AdaptiveTessellation::write_vtk(const std::filesystem::path& path)
 {
     std::vector<double> points;
     std::vector<int> elements;
@@ -587,11 +588,11 @@ void AdaptiveTessellation::write_vtk(const std::string& path)
     }
     writer.add_cell_scalar_field("scalar_field", scalar_field);
     // writer.add_vector_field("vector_field", vector_field, dim);
-    writer.write_surface_mesh(path, dim, cell_size, points, elements);
+    writer.write_surface_mesh(path.string(), dim, cell_size, points, elements);
 }
 /// @brief write vtu with elements represent per face attributes
 /// @param path
-void AdaptiveTessellation::write_perface_vtk(const std::string& path)
+void AdaptiveTessellation::write_perface_vtk(const std::filesystem::path& path)
 {
     std::vector<double> points;
     std::vector<int> elements;
@@ -641,10 +642,10 @@ void AdaptiveTessellation::write_perface_vtk(const std::string& path)
     writer.add_cell_scalar_field("scalar_field", scalar_field2);
     // writer.add_vector_field("vector_field", vector_field, dim);
 
-    writer.write_surface_mesh(path, dim, cell_size, points, elements);
+    writer.write_surface_mesh(path.string(), dim, cell_size, points, elements);
 }
 
-void AdaptiveTessellation::write_obj(const std::string& path)
+void AdaptiveTessellation::write_obj(const std::filesystem::path& path)
 {
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
@@ -665,11 +666,11 @@ void AdaptiveTessellation::write_obj(const std::string& path)
         V.row(i) = vertex_attrs[world_to_uv_ids[i]].pos_world;
     }
 
-    igl::writeOBJ(path, V, F, CN, FN, VT, FT);
+    igl::writeOBJ(path.string(), V, F, CN, FN, VT, FT);
     wmtk::logger().info("============>> current edge length {}", avg_edge_len());
 }
 
-void AdaptiveTessellation::write_obj_displaced(const std::string& path)
+void AdaptiveTessellation::write_obj_displaced(const std::filesystem::path& path)
 {
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
@@ -678,11 +679,11 @@ void AdaptiveTessellation::write_obj_displaced(const std::string& path)
     Eigen::MatrixXd VT;
     Eigen::MatrixXi FT;
     export_mesh_with_displacement(V, F, VT, FT);
-    igl::writeOBJ(path, V, F, CN, FN, VT, FT);
+    igl::writeOBJ(path.string(), V, F, CN, FN, VT, FT);
     wmtk::logger().info("============>> current edge length {}", avg_edge_len());
 }
 
-void AdaptiveTessellation::write_obj_mapped_on_input(const std::string& path)
+void AdaptiveTessellation::write_obj_mapped_on_input(const std::filesystem::path& path)
 {
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
@@ -691,6 +692,6 @@ void AdaptiveTessellation::write_obj_mapped_on_input(const std::string& path)
     Eigen::MatrixXd VT;
     Eigen::MatrixXi FT;
     export_mesh_mapped_on_input(V, F, VT, FT);
-    igl::writeOBJ(path, V, F, CN, FN, VT, FT);
+    igl::writeOBJ(path.string(), V, F, CN, FN, VT, FT);
     wmtk::logger().info("============>> current edge length {}", avg_edge_len());
 }
