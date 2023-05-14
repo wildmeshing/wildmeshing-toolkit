@@ -16,7 +16,8 @@
 using namespace wmtk;
 namespace adaptive_tessellation {
 // TODO change this to accomodate new error
-double AdaptiveTessellation::avg_edge_len() const {
+double AdaptiveTessellation::avg_edge_len() const
+{
     double avg_len = 0.0;
     auto edges = get_edges();
     for (auto& e : edges) avg_len += std::sqrt(get_length3d(e));
@@ -179,6 +180,8 @@ std::pair<Eigen::MatrixXi, Eigen::MatrixXi> AdaptiveTessellation::seam_edges_set
     return {E0, E1};
 } // namespace adaptive_tessellation
 
+// TODO wait why I'm doing this? The coloring isn't used anymore.
+// i wanted to use it for get_all_mirror_vertex
 // for each vertex that's seam vertex, assign same color for mirror vertices
 // build the mapping from uv_index to color
 // and mapping from color to uv_index
@@ -201,7 +204,10 @@ void AdaptiveTessellation::set_seam_vertex_coloring(
             assert(F(fi, lvi1) == edge1_3d.vid(m_3d));
             // current vertex in 2d mesh
             int current_v = FT(fi, lvi1);
-            if (uv_index_to_color.find(current_v) != uv_index_to_color.end()) {
+            if (!edge1_3d.switch_face(m_3d).has_value()) {
+                // Boundary edge
+                continue;
+            } else if (uv_index_to_color.find(current_v) != uv_index_to_color.end()) {
                 // already colored, skipping...
                 continue;
             } else {
@@ -1073,8 +1079,7 @@ void AdaptiveTessellation::mesh_improvement(int max_its)
         mesh_parameters.js_log["iteration_" + std::to_string(it)]["num_f"] = tri_capacity();
         mesh_parameters.js_log["iteration_" + std::to_string(it)]["energy_max"] =
             mesh_parameters.m_max_energy;
-        mesh_parameters.js_log["iteration_" + std::to_string(it)]["edge_len_avg"] =
-            avg_edge_len();
+        mesh_parameters.js_log["iteration_" + std::to_string(it)]["edge_len_avg"] = avg_edge_len();
         mesh_parameters.js_log["iteration_" + std::to_string(it)]["edge_len_target"] =
             mesh_parameters.m_target_l;
         if (avg_grad < 1e-4) {
