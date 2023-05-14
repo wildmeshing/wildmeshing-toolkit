@@ -1137,14 +1137,24 @@ void AdaptiveTessellation::write_world_obj(
 {
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
+    Eigen::MatrixXd CN;
+    Eigen::MatrixXd FN;
+    Eigen::MatrixXd VT;
+    Eigen::MatrixXi FT;
+    export_mesh(V, F, VT, FT);
 
-    export_seamless_mesh_with_displacement(V, F);
-
-    for (int i = 0; i < V.rows(); i++) {
-        V.row(i) = vertex_attrs[i].pos_world;
+    std::map<size_t, size_t> world_to_uv_ids;
+    for (Eigen::Index i = 0; i < F.rows(); ++i) {
+        for (Eigen::Index j = 0; j < F.cols(); ++j) {
+            world_to_uv_ids[F(i, j)] = FT(i, j);
+        }
     }
 
-    igl::writeOBJ(path, V, F);
+    for (int i = 0; i < V.rows(); i++) {
+        V.row(i) = vertex_attrs[world_to_uv_ids[i]].pos_world;
+    }
+
+    igl::writeOBJ(path, V, F, CN, FN, VT, FT);
     wmtk::logger().info("============>> current edge length {}", avg_edge_len(*this));
 }
 
