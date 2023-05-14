@@ -38,6 +38,7 @@ auto TriMeshOperation::operator()(TriMesh& m, const Tuple& t) -> ExecuteReturnDa
     ExecuteReturnData retdata;
     retdata.success = false;
 
+    mark_failed();
     m.start_protected_connectivity();
     m.start_protected_attributes();
 
@@ -47,6 +48,7 @@ auto TriMeshOperation::operator()(TriMesh& m, const Tuple& t) -> ExecuteReturnDa
     }
 
     retdata = execute(m, t);
+    assign(retdata.tuple);
     if (!retdata.success) {
         goto finish;
     }
@@ -60,6 +62,7 @@ auto TriMeshOperation::operator()(TriMesh& m, const Tuple& t) -> ExecuteReturnDa
 finish:
     if (!retdata.success) {
         m.rollback_protected();
+        mark_failed();
     }
     m.release_protected_connectivity();
     m.release_protected_attributes();
@@ -208,8 +211,7 @@ auto TriMeshSplitEdgeOperation::execute(TriMesh& m, const Tuple& t) -> ExecuteRe
     assert(new_vertex.is_valid(m));
     assert(new_vertex == this->new_vertex(m));
 #endif
-
-    m_return_tuple_opt.local() = return_tuple;
+    assign(return_tuple);
     new_tris = modified_tuples(m);
     ret_data.success = true;
     return ret_data;
@@ -217,7 +219,6 @@ auto TriMeshSplitEdgeOperation::execute(TriMesh& m, const Tuple& t) -> ExecuteRe
 
 bool TriMeshSplitEdgeOperation::before(TriMesh& m, const Tuple& t)
 {
-    m_return_tuple_opt.local() = {};
     return true;
 }
 bool TriMeshSplitEdgeOperation::after(TriMesh& m, ExecuteReturnData& ret_data)
@@ -231,7 +232,8 @@ std::string TriMeshSplitEdgeOperation::name() const
 
 auto TriMeshSplitEdgeOperation::new_vertex(const TriMesh& m) -> Tuple
 {
-    const std::optional<Tuple>& new_tup = m_return_tuple_opt.local();
+    assert(bool(*this));
+    const std::optional<Tuple>& new_tup = get_return_tuple_opt();
     assert(new_tup.has_value());
     return new_tup.value().switch_vertex(m);
 }
@@ -263,7 +265,7 @@ auto TriMeshSplitEdgeOperation::original_endpoints(TriMesh& m, const Tuple& t) c
 }
 auto TriMeshSplitEdgeOperation::modified_tuples(const TriMesh& m) -> std::vector<Tuple>
 {
-    if (!m_return_tuple_opt.local().has_value()) {
+    if (bool(*this)) {
         return {};
     }
 
@@ -327,9 +329,9 @@ auto TriMeshSwapEdgeOperation::execute(TriMesh& m, const Tuple& t) -> ExecuteRet
     vertex_connectivity[vid4].m_conn_tris.push_back(test_fid2);
     vector_unique(vertex_connectivity[vid4].m_conn_tris);
     // change the tuple to the new edge tuple
-    std::optional<Tuple>& new_tuple_loc = m_return_tuple_opt.local();
-    new_tuple_loc = m.init_from_edge(vid4, vid3, test_fid2);
-    return_tuple = new_tuple_loc.value();
+    assign(m.init_from_edge(vid4, vid3, test_fid2));
+    // we just assigned so we are confident that the value exists
+    return_tuple = get_return_tuple_opt().value();
 
     assert(return_tuple.switch_vertex(m).vid(m) != vid1);
     assert(return_tuple.switch_vertex(m).vid(m) != vid2);
@@ -342,7 +344,7 @@ auto TriMeshSwapEdgeOperation::execute(TriMesh& m, const Tuple& t) -> ExecuteRet
 
 auto TriMeshSwapEdgeOperation::modified_tuples(const TriMesh& m) -> std::vector<Tuple>
 {
-    const std::optional<Tuple>& new_tuple_opt = m_return_tuple_opt.local();
+    const std::optional<Tuple>& new_tuple_opt = get_return_tuple_opt();
     if (!new_tuple_opt.has_value()) {
         return {};
     }
@@ -354,7 +356,6 @@ auto TriMeshSwapEdgeOperation::modified_tuples(const TriMesh& m) -> std::vector<
 }
 bool TriMeshSwapEdgeOperation::before(TriMesh& mesh, const Tuple& t)
 {
-    m_return_tuple_opt.local() = {};
     auto other_face_opt = t.switch_face(mesh);
     if (!other_face_opt) {
         return false;
@@ -381,19 +382,18 @@ std::string TriMeshSwapEdgeOperation::name() const
 
 auto TriMeshSmoothVertexOperation::execute(TriMesh& m, const Tuple& t) -> ExecuteReturnData
 {
-    m_return_tuple_opt.local() = t;
+    assign(t);
     // always succeed and return the Tuple for the (vertex) that we pointed at
     return {t, modified_tuples(m), true};
 }
 auto TriMeshSmoothVertexOperation::modified_tuples(const TriMesh& m) -> std::vector<Tuple>
 {
-    const auto& new_tup_opt = m_return_tuple_opt.local();
+    const auto& new_tup_opt = get_return_tuple_opt();
     assert(new_tup_opt);
     return m.get_one_ring_tris_for_vertex(new_tup_opt.value());
 }
 bool TriMeshSmoothVertexOperation::before(TriMesh& m, const Tuple& t)
 {
-    m_return_tuple_opt.local() = {};
     return true;
 }
 bool TriMeshSmoothVertexOperation::after(TriMesh& m, ExecuteReturnData& ret_data)

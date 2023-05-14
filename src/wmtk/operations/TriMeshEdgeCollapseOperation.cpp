@@ -128,7 +128,7 @@ auto TriMeshEdgeCollapseOperation::execute(TriMesh& m, const Tuple& loc0) -> Exe
     return_t = Tuple(new_vid, (j_ret + 2) % 3, new_fid, m);
     assert(new_t.is_valid(m));
 
-    m_return_tuple_opt.local() = new_t;
+    assign(new_t);
     new_tris = modified_tuples(m);
 
     ret_data.success = true;
@@ -137,7 +137,7 @@ auto TriMeshEdgeCollapseOperation::execute(TriMesh& m, const Tuple& loc0) -> Exe
 
 auto TriMeshEdgeCollapseOperation::modified_tuples(const TriMesh& m) -> std::vector<Tuple>
 {
-    const auto& new_tup_opt = m_return_tuple_opt.local();
+    const auto& new_tup_opt = get_return_tuple_opt();
     assert(new_tup_opt.has_value());
     return m.get_one_ring_tris_for_vertex(new_tup_opt.value());
 }
@@ -181,7 +181,7 @@ std::vector<size_t> TriMeshEdgeCollapseOperation::edge_link_of_edge(
     const Tuple& edge)
 {
     auto get_opposing_vertex_vid = [&mesh](const Tuple& t) {
-return t.switch_edge(mesh).switch_vertex(mesh).vid(mesh);
+        return t.switch_edge(mesh).switch_vertex(mesh).vid(mesh);
     };
     std::vector<size_t> lk_edge;
     lk_edge.push_back(get_opposing_vertex_vid(edge));
