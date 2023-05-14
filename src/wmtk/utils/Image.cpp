@@ -75,7 +75,7 @@ bool Image::set(
 // save to hdr or exr
 bool Image::save(const std::filesystem::path& path) const
 {
-    spdlog::trace("[save_image_hdr] start \"{}\"", path.string());
+    wmtk::logger().trace("[save_image_hdr] start \"{}\"", path.string());
     int w = width();
     int h = height();
     std::vector<float> buffer;
@@ -92,11 +92,11 @@ bool Image::save(const std::filesystem::path& path) const
     } else if (path.extension() == ".exr") {
         auto res = save_image_exr_red_channel(w, h, buffer, path);
     } else {
-        spdlog::trace("[save_image_hdr] format doesn't support \"{}\"", path.string());
+        wmtk::logger().trace("[save_image_hdr] format doesn't support \"{}\"", path.string());
         return false;
     }
 
-    spdlog::trace("[save_image] done \"{}\"", path.string());
+    wmtk::logger().trace("[save_image] done \"{}\"", path.string());
 
     return true;
 }
@@ -117,7 +117,7 @@ void Image::load(
         auto res = stbi_loadf(path.string().c_str(), &w, &h, &channels, 1);
         buffer.assign(res, res + w * h);
     } else {
-        spdlog::trace("[load_image] format doesn't support \"{}\"", path.string());
+        wmtk::logger().trace("[load_image] format doesn't support \"{}\"", path.string());
         return;
     }
 

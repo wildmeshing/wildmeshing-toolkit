@@ -12,7 +12,7 @@ auto wmtk::load_image_exr_red_channel(const std::filesystem::path& path)
     -> std::tuple<size_t, size_t, std::vector<float>>
 {
     using namespace wmtk;
-    spdlog::trace("[load_image_exr_red_channel] start \"{}\"", path.string());
+    wmtk::logger().trace("[load_image_exr_red_channel] start \"{}\"", path.string());
     assert(std::filesystem::exists(path));
     const std::string filename_ = path.string();
     const char* filename = filename_.c_str();
@@ -22,12 +22,14 @@ auto wmtk::load_image_exr_red_channel(const std::filesystem::path& path)
 
         const auto ret = ParseEXRVersionFromFile(&exr_version_, filename);
         if (ret != TINYEXR_SUCCESS) {
-            spdlog::error("failed LoadImageEXR \"{}\" \"version error\"", path.string());
+            wmtk::logger().error("failed LoadImageEXR \"{}\" \"version error\"", path.string());
             throw std::runtime_error("LoadImageEXRError");
         }
 
         if (exr_version_.multipart || exr_version_.non_image) {
-            spdlog::error("failed LoadImageEXR \"{}\" \"multipart or non image\"", path.string());
+            wmtk::logger().error(
+                "failed LoadImageEXR \"{}\" \"multipart or non image\"",
+                path.string());
             throw std::runtime_error("LoadImageEXRError");
         }
 
@@ -42,7 +44,7 @@ auto wmtk::load_image_exr_red_channel(const std::filesystem::path& path)
         [[maybe_unused]] const char* err = nullptr;
         const auto ret = ParseEXRHeaderFromFile(&exr_header_, &exr_version, filename, &err);
         if (ret != TINYEXR_SUCCESS) {
-            spdlog::error("failed LoadImageEXR \"{}\" \"header error\"", path.string());
+            wmtk::logger().error("failed LoadImageEXR \"{}\" \"header error\"", path.string());
             FreeEXRHeader(&exr_header_);
             throw std::runtime_error("LoadImageEXRError");
         }
@@ -51,7 +53,7 @@ auto wmtk::load_image_exr_red_channel(const std::filesystem::path& path)
         for (int i = 0; i < exr_header_.num_channels; i++) {
             if (exr_header_.pixel_types[i] != exr_header_.pixel_types[0] ||
                 exr_header_.requested_pixel_types[i] != exr_header_.pixel_types[i]) {
-                spdlog::error(
+                wmtk::logger().error(
                     "failed LoadImageEXR \"{}\" \"inconsistent pixel_types\"",
                     path.string());
                 FreeEXRHeader(&exr_header_);
@@ -68,7 +70,7 @@ auto wmtk::load_image_exr_red_channel(const std::filesystem::path& path)
 
         // only FLOAT are supported
         if (exr_header_.requested_pixel_types[0] != TINYEXR_PIXELTYPE_FLOAT) {
-            spdlog::error(
+            wmtk::logger().error(
                 "failed LoadImageEXR \"{}\" \"only float exr are supported\"",
                 path.string());
             FreeEXRHeader(&exr_header_);
@@ -77,7 +79,7 @@ auto wmtk::load_image_exr_red_channel(const std::filesystem::path& path)
 
         // only non tiled image are supported
         if (exr_header_.tiled) {
-            spdlog::error(
+            wmtk::logger().error(
                 "failed LoadImageEXR \"{}\" \"only non tiled exr are supported\"",
                 path.string());
             FreeEXRHeader(&exr_header_);
@@ -90,7 +92,7 @@ auto wmtk::load_image_exr_red_channel(const std::filesystem::path& path)
             if (strcmp(exr_header_.channels[i].name, "R") == 0) index_red_ = i;
         }
         if (index_red_ < 0) {
-            spdlog::warn("Could not find R channel. Looking for Y channel instead.");
+            wmtk::logger().warn("Could not find R channel. Looking for Y channel instead.");
             for (int i = 0; i < exr_header_.num_channels; i++) {
                 if (strcmp(exr_header_.channels[i].name, "Y") == 0) index_red_ = i;
             }
@@ -101,7 +103,7 @@ auto wmtk::load_image_exr_red_channel(const std::filesystem::path& path)
             for (int i = 0; i < exr_header_.num_channels; i++) {
                 channels.push_back(exr_header_.channels[i].name);
             }
-            spdlog::error(
+            wmtk::logger().error(
                 "failed LoadImageEXR \"{}\" can't find all expected channels: [{}]",
                 path.string(),
                 fmt::join(channels, ","));
@@ -121,7 +123,7 @@ auto wmtk::load_image_exr_red_channel(const std::filesystem::path& path)
         [[maybe_unused]] const char* err = nullptr;
         const auto ret = LoadEXRImageFromFile(&exr_image_, &exr_header, filename, &err);
         if (ret != TINYEXR_SUCCESS) {
-            spdlog::error(
+            wmtk::logger().error(
                 "failed LoadImageEXR \"{}\" \"failed to load image data\"",
                 path.string());
             FreeEXRHeader(&exr_header);
@@ -132,11 +134,11 @@ auto wmtk::load_image_exr_red_channel(const std::filesystem::path& path)
         return exr_image_;
     }();
 
-    wmtk::logger().info(
+    wmtk::logger().debug(
         "[load_image_exr_red_channel] num_channels {} tiled {}",
         exr_header.num_channels,
         exr_header.tiled);
-    wmtk::logger().info("[load_image_exr_red_channel] index_data {}", index_data);
+    wmtk::logger().debug("[load_image_exr_red_channel] index_data {}", index_data);
     assert(index_data >= 0);
     assert(!exr_header.tiled);
 
@@ -150,7 +152,7 @@ auto wmtk::load_image_exr_red_channel(const std::filesystem::path& path)
     FreeEXRHeader(&exr_header);
     FreeEXRImage(&exr_image);
 
-    wmtk::logger().info("[load_image_exr_red_channel] done \"{}\"", path.string());
+    wmtk::logger().debug("[load_image_exr_red_channel] done \"{}\"", path.string());
 
     return {
         static_cast<size_t>(exr_image.width),
@@ -163,7 +165,7 @@ auto wmtk::load_image_exr_split_3channels(const std::filesystem::path& path) -> 
     tuple<size_t, size_t, int, int, int, std::vector<float>, std::vector<float>, std::vector<float>>
 {
     using namespace wmtk;
-    spdlog::trace("[load_image_exr_red_channel] start \"{}\"", path.string());
+    wmtk::logger().trace("[load_image_exr_red_channel] start \"{}\"", path.string());
     assert(std::filesystem::exists(path));
     const std::string filename_ = path.string();
     const char* filename = filename_.c_str();
@@ -173,12 +175,14 @@ auto wmtk::load_image_exr_split_3channels(const std::filesystem::path& path) -> 
 
         const auto ret = ParseEXRVersionFromFile(&exr_version_, filename);
         if (ret != TINYEXR_SUCCESS) {
-            spdlog::error("failed LoadImageEXR \"{}\" \"version error\"", path.string());
+            wmtk::logger().error("failed LoadImageEXR \"{}\" \"version error\"", path.string());
             throw std::runtime_error("LoadImageEXRError");
         }
 
         if (exr_version_.multipart || exr_version_.non_image) {
-            spdlog::error("failed LoadImageEXR \"{}\" \"multipart or non image\"", path.string());
+            wmtk::logger().error(
+                "failed LoadImageEXR \"{}\" \"multipart or non image\"",
+                path.string());
             throw std::runtime_error("LoadImageEXRError");
         }
 
@@ -193,7 +197,7 @@ auto wmtk::load_image_exr_split_3channels(const std::filesystem::path& path) -> 
         [[maybe_unused]] const char* err = nullptr;
         const auto ret = ParseEXRHeaderFromFile(&exr_header_, &exr_version, filename, &err);
         if (ret != TINYEXR_SUCCESS) {
-            spdlog::error("failed LoadImageEXR \"{}\" \"header error\"", path.string());
+            wmtk::logger().error("failed LoadImageEXR \"{}\" \"header error\"", path.string());
             FreeEXRHeader(&exr_header_);
             throw std::runtime_error("LoadImageEXRError");
         }
@@ -202,7 +206,7 @@ auto wmtk::load_image_exr_split_3channels(const std::filesystem::path& path) -> 
         for (int i = 0; i < exr_header_.num_channels; i++) {
             if (exr_header_.pixel_types[i] != exr_header_.pixel_types[0] ||
                 exr_header_.requested_pixel_types[i] != exr_header_.pixel_types[i]) {
-                spdlog::error(
+                wmtk::logger().error(
                     "failed LoadImageEXR \"{}\" \"inconsistent pixel_types\"",
                     path.string());
                 FreeEXRHeader(&exr_header_);
@@ -219,7 +223,7 @@ auto wmtk::load_image_exr_split_3channels(const std::filesystem::path& path) -> 
 
         // only FLOAT are supported
         if (exr_header_.requested_pixel_types[0] != TINYEXR_PIXELTYPE_FLOAT) {
-            spdlog::error(
+            wmtk::logger().error(
                 "failed LoadImageEXR \"{}\" \"only float exr are supported\"",
                 path.string());
             FreeEXRHeader(&exr_header_);
@@ -228,7 +232,7 @@ auto wmtk::load_image_exr_split_3channels(const std::filesystem::path& path) -> 
 
         // only non tiled image are supported
         if (exr_header_.tiled) {
-            spdlog::error(
+            wmtk::logger().error(
                 "failed LoadImageEXR \"{}\" \"only non tiled exr are supported\"",
                 path.string());
             FreeEXRHeader(&exr_header_);
@@ -250,7 +254,7 @@ auto wmtk::load_image_exr_split_3channels(const std::filesystem::path& path) -> 
             for (int i = 0; i < exr_header_.num_channels; i++) {
                 channels.push_back(exr_header_.channels[i].name);
             }
-            spdlog::error(
+            wmtk::logger().error(
                 "failed LoadImageEXR \"{}\" can't find all 3 expected channels: [{}]",
                 path.string(),
                 fmt::join(channels, ","));
@@ -272,7 +276,7 @@ auto wmtk::load_image_exr_split_3channels(const std::filesystem::path& path) -> 
         [[maybe_unused]] const char* err = nullptr;
         const auto ret = LoadEXRImageFromFile(&exr_image_, &exr_header, filename, &err);
         if (ret != TINYEXR_SUCCESS) {
-            spdlog::error(
+            wmtk::logger().error(
                 "failed LoadImageEXR \"{}\" \"failed to load image data\"",
                 path.string());
             FreeEXRHeader(&exr_header);
@@ -313,12 +317,13 @@ auto wmtk::load_image_exr_split_3channels(const std::filesystem::path& path) -> 
 
     wmtk::logger().info("[load_image_exr_3channels] done \"{}\"", path.string());
 
-    return {static_cast<size_t>(exr_image.width),
-            static_cast<size_t>(exr_image.height),
-            std::move(index_red),
-            std::move(index_green),
-            std::move(index_blue),
-            std::move(data_r),
-            std::move(data_g),
-            std::move(data_b)};
+    return {
+        static_cast<size_t>(exr_image.width),
+        static_cast<size_t>(exr_image.height),
+        std::move(index_red),
+        std::move(index_green),
+        std::move(index_blue),
+        std::move(data_r),
+        std::move(data_g),
+        std::move(data_b)};
 }

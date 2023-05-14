@@ -111,7 +111,7 @@ int main(int argc, char** argv)
 
     Image height_map;
     height_map.load(height_map_path, wrapping_mode, wrapping_mode);
-    wmtk::logger().info("/////height image: {}", height_map_path);
+    wmtk::logger().info("///// height image: {}", height_map_path);
 
     m.set_output_folder(output_folder);
     m.mesh_parameters.m_position_normal_paths = {position_map_path, normal_map_path};
@@ -121,14 +121,14 @@ int main(int argc, char** argv)
     m.mesh_parameters.js_log["num_vert"] = UV.rows();
     m.mesh_parameters.js_log["num_faces"] = F.rows();
 
-    wmtk::logger().info("/////target edge length: {}", target_l);
-    wmtk::logger().info("/////target accuracy: {}", target_accuracy);
+    wmtk::logger().info("///// target edge length: {}", target_l);
+    wmtk::logger().info("///// target accuracy: {}", target_accuracy);
 
-    wmtk::logger().info("/////sampling mode: {}", sampling_mode);
-    wmtk::logger().info("/////dispalcement mode: {}", displacement_mode);
+    wmtk::logger().info("///// sampling mode: {}", sampling_mode);
+    wmtk::logger().info("///// dispalcement mode: {}", displacement_mode);
 
-    wmtk::logger().info("/////energy type: {}", energy_type);
-    wmtk::logger().info("/////energy length type: {}", edge_len_type);
+    wmtk::logger().info("///// energy type: {}", energy_type);
+    wmtk::logger().info("///// energy length type: {}", edge_len_type);
 
     m.set_parameters(
         target_accuracy,
@@ -152,7 +152,7 @@ int main(int argc, char** argv)
     m.mesh_parameters.js_log["total_time"] = duration;
     m.write_obj_displaced(output_file);
     // Save the optimized mesh
-    wmtk::logger().info("/////output : {}", output_file);
+    wmtk::logger().info("///// output : {}", output_file);
     js_o << std::setw(4) << m.mesh_parameters.js_log << std::endl;
     js_o.close();
     return 0;
