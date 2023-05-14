@@ -17,7 +17,7 @@ struct LinksOfVertex
  * @note collapse edge a,b and generate a new vertex c
  * @return if collapse succeed
  */
-class TriMeshEdgeCollapseOperation : public TriMeshOperation
+class TriMeshEdgeCollapseOperation : public TriMeshOperation, public SingleTupleOperationInfo
 {
 public:
     ExecuteReturnData execute(TriMesh& m, const Tuple& t) override;
@@ -37,10 +37,7 @@ public:
     static std::vector<size_t> edge_link_of_edge(const TriMesh& m, const Tuple& edge);
 
     std::vector<Tuple> modified_tuples(const TriMesh& m);
-    operator bool() const { return m_return_tuple_opt.local().has_value(); }
-    std::optional<Tuple> get_return_tuple_opt() const { return m_return_tuple_opt.local(); }
-
-private:
-    mutable tbb::enumerable_thread_specific<std::optional<Tuple>> m_return_tuple_opt;
+    void assign(const Tuple& t) override { SingleTupleOperationInfo::assign(t); }
+    void mark_failed() override { SingleTupleOperationInfo::reset(); }
 };
 } // namespace wmtk

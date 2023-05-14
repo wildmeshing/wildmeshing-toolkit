@@ -35,6 +35,7 @@ double AdaptiveTessellation::avg_edge_len() const {
 //                  set feature vertex as fixed, set strat/end/t-junction of curve fixed
 // 6. edge_attrs:   set curve-id for each edge
 // 7. face_attrs:   set initial accuracy error for each triangle
+// 8. initiate the texture integraler
 void AdaptiveTessellation::mesh_preprocessing(
     const std::filesystem::path& input_mesh_path,
     const std::filesystem::path& displaced_image_path)
@@ -92,8 +93,8 @@ void AdaptiveTessellation::mesh_preprocessing(
         }
     }
     std::vector<float> computed_errors(tri_capacity());
-    wmtk::TextureIntegral integral(std::move(displaced));
-    integral.get_error_per_triangle(uv_triangles, computed_errors);
+    m_texture_integral = wmtk::TextureIntegral(std::move(displaced));
+    m_texture_integral.get_error_per_triangle(uv_triangles, computed_errors);
     for (auto& f : get_faces()) {
         face_attrs[f.fid(*this)].accuracy_error = computed_errors[f.fid(*this)];
     }
@@ -425,11 +426,13 @@ void AdaptiveTessellation::set_edge_length_measurement(const EDGE_LEN_TYPE edge_
             return this->get_edge_accuracy_error(edge_tuple);
         };
         break;
-    case EDGE_LEN_TYPE::AREA_ACCURACY:
-        mesh_parameters.m_get_length = [&](const Tuple& edge_tuple) -> double {
-            return this->get_area_accuracy_error(edge_tuple);
-        };
-        break;
+        // don't set for AREA_ACCURACY since it is more intricate
+    // case EDGE_LEN_TYPE::AREA_ACCURACY:
+    //     mesh_parameters.m_get_length = [&](const Tuple& edge_tuple) -> double {
+    //         return this->get_area_accuracy_error(edge_tuple);
+    //     };
+    // break;
+    default: break;
     }
 }
 
@@ -824,54 +827,68 @@ double AdaptiveTessellation::get_area_accuracy_error_per_face_triangle_matrix(
     return mesh_parameters.m_displacement->get_error_per_triangle(triangle);
 }
 
-double AdaptiveTessellation::get_area_accuracy_error(const Tuple& edge_tuple) const
+std::tuple<double, double, double> AdaptiveTessellation::get_area_accuracy_error_for_split(
+    const Tuple& edge_tuple) const
 {
     double error = 0.;
-    double error1 = get_area_accuracy_error_per_face(edge_tuple);
+    double error1 = 0.;
     double error2 = 0.;
-    auto tmp_tuple = edge_tuple.switch_face(*this);
-    if (tmp_tuple.has_value()) {
-        error2 = get_area_accuracy_error_per_face(tmp_tuple.value());
-    } else {
-        if (is_seam_edge(edge_tuple))
-            error2 = get_area_accuracy_error_per_face(get_oriented_mirror_edge(edge_tuple));
-        else
-            error2 = error1;
-    }
     if (mesh_parameters.m_split_absolute_error_metric) {
+        error1 = face_attrs[edge_tuple.fid(*this)].accuracy_error;
+        if (edge_tuple.switch_face(*this).has_value()) {
+            error2 = face_attrs[edge_tuple.switch_face(*this).value().fid(*this)].accuracy_error;
+        } else {
+            if (is_seam_edge(edge_tuple))
+                error2 = face_attrs[get_oriented_mirror_edge(edge_tuple).fid(*this)].accuracy_error;
+            else
+                error2 = error1;
+        }
         error = (error1 + error2) * get_length2d(edge_tuple);
     } else {
-        double e_before = error1 + error2;
-        Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle;
-        double e_after, error_after_1, error_after_2, error_after_3, error_after_4;
-
-        triangle.row(0) = vertex_attrs[edge_tuple.vid(*this)].pos;
-        triangle.row(1) = (vertex_attrs[edge_tuple.vid(*this)].pos +
-                           vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].pos) /
-                          2.;
-        triangle.row(2) =
-            vertex_attrs[edge_tuple.switch_edge(*this).switch_vertex(*this).vid(*this)].pos;
-
-        error_after_1 = get_area_accuracy_error_per_face_triangle_matrix(triangle);
-        triangle.row(0) = vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].pos;
-        error_after_2 = get_area_accuracy_error_per_face_triangle_matrix(triangle);
+        ///////// !!! TODO this is not deleted keep here just in case
+        error1 = face_attrs[edge_tuple.fid(*this)].accuracy_error;
         if (edge_tuple.switch_face(*this).has_value()) {
-            triangle.row(2) = vertex_attrs[(edge_tuple.switch_face(*this).value())
-                                               .switch_edge(*this)
-                                               .switch_vertex(*this)
-                                               .vid(*this)]
-                                  .pos;
-            error_after_3 = get_area_accuracy_error_per_face_triangle_matrix(triangle);
-            triangle.row(0) = vertex_attrs[edge_tuple.vid(*this)].pos;
-            error_after_4 = get_area_accuracy_error_per_face_triangle_matrix(triangle);
+            error2 = face_attrs[edge_tuple.switch_face(*this).value().fid(*this)].accuracy_error;
+        } else
+            error2 = error1;
+        double e_before = error1 + error2;
+
+        double e_after, error_after_1, error_after_2, error_after_3, error_after_4;
+        std::vector<std::array<float, 6>> new_triangles(2);
+        std::vector<float> new_computed_errors(2);
+        auto mid_point_uv = (vertex_attrs[edge_tuple.vid(*this)].pos +
+                             vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].pos) /
+                            2.;
+        auto uv1 = vertex_attrs[edge_tuple.vid(*this)].pos;
+        auto uv2 = vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].pos;
+        auto uv3 = vertex_attrs[edge_tuple.switch_edge(*this).switch_vertex(*this).vid(*this)].pos;
+        new_triangles[0] = {uv1(0), uv1(1), mid_point_uv(0), mid_point_uv(1), uv3(0), uv3(1)};
+        new_triangles[1] = {uv2(0), uv2(1), mid_point_uv(0), mid_point_uv(1), uv3(0), uv3(1)};
+        m_texture_integral.get_error_per_triangle(new_triangles, new_computed_errors);
+        error_after_1 = new_computed_errors[0];
+        error_after_2 = new_computed_errors[1];
+        if (edge_tuple.switch_face(*this).has_value()) {
+            auto uv4 = vertex_attrs[edge_tuple.switch_face(*this)
+                                        .value()
+                                        .switch_edge(*this)
+                                        .switch_vertex(*this)
+                                        .vid(*this)]
+                           .pos;
+            new_triangles[0] = {uv1(0), uv1(1), mid_point_uv(0), mid_point_uv(1), uv4(0), uv4(1)};
+            new_triangles[1] = {uv2(0), uv2(1), mid_point_uv(0), mid_point_uv(1), uv4(0), uv4(1)};
+            m_texture_integral.get_error_per_triangle(new_triangles, new_computed_errors);
+
+            error_after_3 = new_computed_errors[0];
+            error_after_4 = new_computed_errors[1];
         } else {
+            // TODO set error after 3 and 4 to the the mirror face error when it's seam
             error_after_3 = error_after_1;
             error_after_4 = error_after_2;
         }
         e_after = error_after_1 + error_after_2 + error_after_3 + error_after_4;
         error = e_before - e_after;
     }
-    return error;
+    return {error, error1, error2};
 }
 
 void AdaptiveTessellation::get_nminfo_for_vertex(const Tuple& v, wmtk::NewtonMethodInfo& nminfo)

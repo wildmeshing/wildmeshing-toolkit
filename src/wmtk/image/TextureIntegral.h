@@ -11,13 +11,14 @@ namespace wmtk {
 class TextureIntegral
 {
 public:
-    TextureIntegral(std::array<wmtk::Image, 3> data);
-    ~TextureIntegral();
+    TextureIntegral(); // default constructor
+    TextureIntegral(const TextureIntegral&) = delete; // copy constructor
+    TextureIntegral(TextureIntegral&&); // move constructor
+    TextureIntegral& operator=(const TextureIntegral&) = delete; // copy assignment operator
+    TextureIntegral& operator=(TextureIntegral&&); // move assignment operator
+    ~TextureIntegral(); // destructor
 
-    TextureIntegral(TextureIntegral&&) = delete;
-    TextureIntegral& operator=(TextureIntegral&&) = delete;
-    TextureIntegral(const TextureIntegral&) = delete;
-    TextureIntegral& operator=(const TextureIntegral&) = delete;
+    TextureIntegral(std::array<wmtk::Image, 3> data);
 
     enum class SamplingMethod {
         Nearest,
@@ -25,10 +26,7 @@ public:
         Bicubic,
     };
 
-    enum class IntegrationMethod {
-        Exact,
-        Adaptive
-    };
+    enum class IntegrationMethod { Exact, Adaptive };
 
 public:
     void set_sampling_method(SamplingMethod method) { m_sampling_method = method; }
@@ -61,7 +59,7 @@ public:
     ///
     void get_error_per_triangle(
         lagrange::span<const std::array<float, 6>> input_triangles,
-        lagrange::span<float> output_errors);
+        lagrange::span<float> output_errors) const;
 
     ///
     /// Computes the integral of the input texture over each input UV triangle.
@@ -80,11 +78,10 @@ public:
         lagrange::span<std::array<float, 3>> output_integrals);
 
 protected:
-
-    template<SamplingMethod sampling_method, IntegrationMethod integration_method>
+    template <SamplingMethod sampling_method, IntegrationMethod integration_method>
     void get_error_per_triangle_internal(
         lagrange::span<const std::array<float, 6>> input_triangles,
-        lagrange::span<float> output_errors);
+        lagrange::span<float> output_errors) const;
 
 private:
     struct Cache;

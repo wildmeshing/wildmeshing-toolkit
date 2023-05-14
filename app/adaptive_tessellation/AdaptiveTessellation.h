@@ -110,6 +110,9 @@ public:
     // each color can have 1 vertex, 2 vertices, or 3 above vertices
     std::vector<std::vector<size_t>> color_to_uv_indices;
 
+    // texture integraler
+    wmtk::TextureIntegral m_texture_integral;
+
 public:
     AdaptiveTessellation(){};
 
@@ -330,7 +333,9 @@ public:
     double get_area_accuracy_error_per_face(const Tuple& edge_tuple) const;
     double get_area_accuracy_error_per_face_triangle_matrix(
         Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle) const;
-    double get_area_accuracy_error(const Tuple& edge_tuple) const;
+    // return in order {total_error, face1_error, face2_error}
+    std::tuple<double, double, double> get_area_accuracy_error_for_split(
+        const Tuple& edge_tuple) const;
 
     void get_nminfo_for_vertex(const Tuple& v, wmtk::NewtonMethodInfo& nminfo) const;
 
