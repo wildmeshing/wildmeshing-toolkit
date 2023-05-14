@@ -75,9 +75,11 @@ int main(int argc, char** argv)
     ZoneScopedN("adaptive_tessellation_main");
     lagrange::enable_fpe();
     CLI::App app{argv[0]};
-    std::string input_json;
+    path input_json;
+    path output_folder;
 
     app.add_option("-c, --config", input_json, "input json file")->required(true);
+    app.add_option("-o, --output", output_folder, "output folder");
 
 
     CLI11_PARSE(app, argc, argv);
@@ -92,7 +94,11 @@ int main(int argc, char** argv)
     const path input_folder = config["input_folder"];
     ensure_path_exists(input_folder);
     const path input_file = get_existing_path(input_folder, config["input_file"]);
-    const path output_folder = config["output_folder"];
+    if (output_folder.empty()) {
+        wmtk::logger().warn(
+            "Output folder not specified in parameters. Use folder specified in config file.");
+        output_folder = std::string(config["output_folder"]);
+    }
     ensure_path_exists(output_folder);
     const path output_file = output_folder / config["output_file"];
     const path output_json = output_folder / config["output_json"];
