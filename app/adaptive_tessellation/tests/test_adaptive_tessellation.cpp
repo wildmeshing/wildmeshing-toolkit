@@ -27,8 +27,10 @@
 #include <functional>
 #include <wmtk/utils/ManifoldUtils.hpp>
 #include <wmtk/utils/TriQualityUtils.hpp>
+#include "Collapse.h"
+#include "Smooth.h"
 #include "Split.h"
-
+#include "Swap.h"
 using namespace wmtk;
 using namespace lagrange;
 using namespace adaptive_tessellation;
@@ -40,7 +42,7 @@ using Scalar = double;
 
 TEST_CASE("AABB")
 {
-    const std::string root(WMT_DATA_DIR);
+    const std::string root(WMTK_DATA_DIR);
     const std::string path = root + "/test_triwild.obj";
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
@@ -280,17 +282,17 @@ TEST_CASE("paired split")
 {
     //////////// ======== seam edge split
     // acsii art diamond
-    //               1    4
-    //             /   ||   \     
-    //            / (2)||(1) \     
-    //           /     || |pe1\    
-    //          /      || |/   \   
-    //        0(0)   f0||f1   (0)3
-    //          \   /| ||      /
-    //           \pe2| ||     /
-    //            \(1) ||(2) /
-    //             \   ||   /
-    //               2    5
+    //               1            4
+    //             /   |        |   \     
+    //     cv3    / (2)|        |(1) \   cv2
+    //           /     |     cv0| |pe1\    
+    //          /      |        | |/   \   
+    //        0(0)   f0|        |f1   (0)3
+    //          \   /| |        |      /
+    //           \pe2| |        |     /
+    //            \(1) |cv1     |(2) /
+    //             \   |        |   /
+    //               2            5
 
     Eigen::MatrixXd V(6, 2);
     Eigen::MatrixXi F(2, 3);
@@ -437,6 +439,27 @@ TEST_CASE("paired split")
         } else {
             REQUIRE(!m.edge_attrs[e.eid(m)].curve_id.has_value());
         }
+        if (m.is_seam_edge(e)) {
+            switch (e.vid(m)) {
+            case 2:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 3);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 7);
+                break;
+            case 5:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 4);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 6);
+                break;
+            case 1:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 1);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 7);
+                break;
+            case 4:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 5);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 6);
+                break;
+            default: break;
+            }
+        }
     }
 
     ////////// ======= boundary edge split
@@ -466,7 +489,7 @@ TEST_CASE("paired split")
     //              /(2)/||(1)\ 
     //             /   | ||    \ 9
     //            /f2 /f5|| f6 /\     
-    //           /    |  ||   //\\    
+    //           /    |  ||   /|\\    
     //          /    /   ||  /f1 \\   
     //        0(0)--8|--6||7----(0)3
     //          \    \   ||       /
@@ -497,7 +520,613 @@ TEST_CASE("paired split")
         } else {
             REQUIRE(!m.edge_attrs[e.eid(m)].curve_id.has_value());
         }
+        if (m.is_seam_edge(e)) {
+            switch (e.vid(m)) {
+            case 2:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 3);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 7);
+                break;
+            case 5:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 4);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 6);
+                break;
+            case 1:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 6);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 7);
+                break;
+            case 4:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 5);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 6);
+                break;
+            default: break;
+            }
+        }
     }
+}
+
+TEST_CASE("paired collapse")
+{
+    Eigen::MatrixXd V(6, 2);
+    Eigen::MatrixXi F(2, 3);
+    V.row(0) << -1., 0.;
+    V.row(1) << 0., 1.;
+    V.row(2) << 0., -1;
+    V.row(3) << 1., 0;
+    V.row(4) << 0., 1.;
+    V.row(5) << 0., -1.;
+    F.row(0) << 0, 2, 1;
+    F.row(1) << 3, 4, 5;
+    AdaptiveTessellation m;
+
+    m.create_mesh_debug(V, F);
+    m.mesh_parameters.m_ignore_embedding = true;
+    // set up mesh
+    wmtk::TriMesh::Tuple primary_edge1 = wmtk::TriMesh::Tuple(4, 0, 1, m);
+    wmtk::TriMesh::Tuple primary_edge2 = wmtk::TriMesh::Tuple(2, 0, 0, m);
+    primary_edge1 = primary_edge1.is_ccw(m) ? primary_edge1 : primary_edge1.switch_vertex(m);
+    primary_edge2 = primary_edge2.is_ccw(m) ? primary_edge2 : primary_edge2.switch_vertex(m);
+    m.face_attrs[0].mirror_edges[0] = std::make_optional<wmtk::TriMesh::Tuple>(primary_edge1);
+    m.face_attrs[1].mirror_edges[0] = std::make_optional<wmtk::TriMesh::Tuple>(primary_edge2);
+    m.edge_attrs[primary_edge1.eid(m)].curve_id = std::make_optional<int>(0);
+    m.edge_attrs[primary_edge2.eid(m)].curve_id = std::make_optional<int>(1);
+    m.edge_attrs[primary_edge1.switch_edge(m).eid(m)].curve_id = std::make_optional<int>(2);
+    m.edge_attrs[primary_edge1.switch_vertex(m).switch_edge(m).eid(m)].curve_id =
+        std::make_optional<int>(2);
+    m.edge_attrs[primary_edge2.switch_edge(m).eid(m)].curve_id = std::make_optional<int>(3);
+    m.edge_attrs[primary_edge2.switch_vertex(m).switch_edge(m).eid(m)].curve_id =
+        std::make_optional<int>(3);
+    // split a few times
+    AdaptiveTessellationPairedSplitEdgeOperation op;
+    op(m, primary_edge2);
+    REQUIRE(m.vert_capacity() == 8);
+    REQUIRE(m.tri_capacity() == 4);
+    wmtk::TriMesh::Tuple primary_edge3 = wmtk::TriMesh::Tuple(0, 1, 0, m);
+    AdaptiveTessellationPairedSplitEdgeOperation op2;
+    op2(m, primary_edge3);
+    REQUIRE(m.vert_capacity() == 9);
+    REQUIRE(m.tri_capacity() == 6);
+    wmtk::TriMesh::Tuple primary_edge4 = wmtk::TriMesh::Tuple(3, 2, 1, m);
+    AdaptiveTessellationPairedSplitEdgeOperation op3;
+    op3(m, primary_edge4);
+    /////// make sure it is valid mesh
+    REQUIRE(m.vert_capacity() == 10);
+    REQUIRE(m.tri_capacity() == 7);
+    for (auto& e : m.get_edges()) {
+        if (m.is_boundary_edge(e)) {
+            REQUIRE(m.edge_attrs[e.eid(m)].curve_id.has_value());
+        } else {
+            REQUIRE(!m.edge_attrs[e.eid(m)].curve_id.has_value());
+        }
+        if (m.is_seam_edge(e)) {
+            switch (e.vid(m)) {
+            case 2:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 3);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 7);
+                break;
+            case 5:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 4);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 6);
+                break;
+            case 1:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 6);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 7);
+                break;
+            case 4:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 5);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 6);
+                break;
+            default: break;
+            }
+        }
+    }
+    ////////// ======= interior edge collapse
+    // acsii art diamond
+    //                1          4
+    //              /(2)/|      |(1)\ 
+    //             /   | |      |    \ 9
+    //            /f2 /f5|      | f6 /\     
+    //     cv3   /    |  |   cv0|   /  \    cv2
+    //          /    /   |      |  /f1  \   
+    //        0(0)--8|--6|      |7----(0)3
+    //          \    \<--|cv1   |       /
+    //           \   |pe5|      |      /
+    //            \ f0\f4|      | f3  /
+    //             \   | |      |    /
+    //              \(1)\|      |(2)/
+    //                2           5
+
+    wmtk::TriMesh::Tuple primary_edge6 = wmtk::TriMesh::Tuple(6, 1, 4, m);
+    REQUIRE(m.is_seam_vertex(primary_edge6));
+    REQUIRE(!m.is_boundary_edge(primary_edge6));
+    REQUIRE(!m.is_seam_edge(primary_edge6));
+    REQUIRE(!m.edge_attrs[primary_edge6.eid(m)].curve_id.has_value());
+    REQUIRE(primary_edge6.is_valid(m));
+    AdaptiveTessellationPairedCollapseEdgeOperation op4;
+    op4(m, primary_edge6);
+    // acsii art diamond
+    //                1    4
+    //              /(2) ||(1)\ 
+    //             /     ||    \ 9
+    //            /f2    || f6 /\     
+    //           /       ||   /  \    
+    //          /        ||  /f1  \   
+    //        0(0)-----10||7----(0)3
+    //          \       |||       /
+    //           \      |||      /
+    //            \ f0 \||| f3  /
+    //             \     ||    /
+    //              \(1) ||(2)/
+    //                2     5
+    const auto& primary_edge6_opt = op4.collapse_edge.get_return_tuple_opt();
+    REQUIRE(primary_edge6_opt.has_value());
+    const auto& primary_edge6_ret = primary_edge6_opt.value();
+    REQUIRE(primary_edge6_ret.is_valid(m));
+    REQUIRE(primary_edge6_ret.vid(m) == 10);
+    REQUIRE(m.vert_capacity() == 9);
+    REQUIRE(m.is_seam_edge(primary_edge6_ret));
+    REQUIRE(m.edge_attrs[primary_edge6_ret.eid(m)].curve_id.has_value());
+    REQUIRE(m.edge_attrs[primary_edge6_ret.eid(m)].curve_id.value() == 1);
+    REQUIRE(m.get_oriented_mirror_edge(primary_edge6_ret).is_valid(m));
+    REQUIRE(m.get_oriented_mirror_edge(primary_edge6_ret).fid(m) == 3);
+    REQUIRE(m.get_oriented_mirror_edge(primary_edge6_ret).vid(m) == 5);
+    /////// debug
+    for (auto& e : m.get_edges()) {
+        REQUIRE(e.is_valid(m));
+        if (m.is_boundary_edge(e)) {
+            REQUIRE(m.edge_attrs[e.eid(m)].curve_id.has_value());
+        } else {
+            REQUIRE(!m.edge_attrs[e.eid(m)].curve_id.has_value());
+        }
+        if (m.is_seam_edge(e)) {
+            switch (e.vid(m)) {
+            case 2:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 3);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 7);
+                break;
+            case 5:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 0);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 10);
+                break;
+            case 1:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 6);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 7);
+                break;
+            case 4:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 2);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 10);
+                break;
+            default: break;
+            }
+        }
+    }
+
+    ////////// ======= boundary edge collapse
+    //                1    4
+    //              /(2) ||(1)\ 
+    //             /     ||    \ 9
+    //            /f2    || f6 /\     
+    //           /       ||   /|\\ pe7
+    //          /        ||  /f1 \\   
+    //        0(0)-----10||7----(0)3
+    //          \        ||       /
+    //           \       ||      /
+    //            \ f0   || f3  /
+    //             \     ||    /
+    //              \(1) ||(2)/
+    //                2     5
+    wmtk::TriMesh::Tuple primary_edge7 = wmtk::TriMesh::Tuple(3, 2, 1, m);
+    REQUIRE(primary_edge7.switch_vertex(m).vid(m) == 9);
+    REQUIRE(!m.is_seam_vertex(primary_edge7));
+    REQUIRE(m.is_boundary_edge(primary_edge7));
+    REQUIRE(!m.is_seam_edge(primary_edge7));
+    REQUIRE(m.edge_attrs[primary_edge7.eid(m)].curve_id.has_value());
+    REQUIRE(m.edge_attrs[primary_edge7.eid(m)].curve_id.value() == 2);
+
+    AdaptiveTessellationPairedCollapseEdgeOperation op5;
+    op5(m, primary_edge7);
+    // acsii art diamond
+    //                1    4
+    //              /(2) ||(1)\ 
+    //             /     ||    \ 
+    //            /f2    || f6  \     
+    //           /       ||      \    
+    //          /        ||       \   
+    //        0(0)-----10||7----(0)11
+    //          \        || <---  /
+    //           \       ||      /
+    //            \ f0   || f3  /
+    //             \     ||    /
+    //              \(1) ||(2)/
+    //                2     5
+    const auto& primary_edge7_opt = op5.collapse_edge.get_return_tuple_opt();
+    REQUIRE(primary_edge7_opt.has_value());
+    const auto& primary_edge7_ret = primary_edge7_opt.value();
+    REQUIRE(primary_edge7_ret.is_valid(m));
+    REQUIRE(primary_edge7_ret.vid(m) == 11);
+    int valid_verts_cnt = 0;
+    for (auto& v : m.get_vertices()) {
+        if (v.is_valid(m)) {
+            valid_verts_cnt++;
+        }
+    }
+    REQUIRE(valid_verts_cnt == 8);
+    int valid_faces_cnt = 0;
+    for (auto& f : m.get_faces()) {
+        if (f.is_valid(m)) {
+            valid_faces_cnt++;
+        }
+    }
+    REQUIRE(valid_faces_cnt == 4);
+    REQUIRE(!m.is_seam_edge(primary_edge7_ret));
+    REQUIRE(!m.edge_attrs[primary_edge7_ret.eid(m)].curve_id.has_value());
+    REQUIRE(m.edge_attrs[primary_edge7_ret.switch_edge(m).eid(m)].curve_id.has_value());
+    REQUIRE(m.edge_attrs[primary_edge7_ret.switch_edge(m).eid(m)].curve_id.value() == 2);
+
+    /////// debug
+    for (auto& e : m.get_edges()) {
+        REQUIRE(e.is_valid(m));
+        if (m.is_boundary_edge(e)) {
+            REQUIRE(m.edge_attrs[e.eid(m)].curve_id.has_value());
+        } else {
+            REQUIRE(!m.edge_attrs[e.eid(m)].curve_id.has_value());
+        }
+        if (m.is_seam_edge(e)) {
+            switch (e.vid(m)) {
+            case 2:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 3);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 7);
+                break;
+            case 5:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 0);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 10);
+                break;
+            case 1:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 6);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 7);
+                break;
+            case 4:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 2);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 10);
+                break;
+            default: break;
+            }
+        }
+    }
+
+    ////////// ======= seam edge collapse
+    // acsii art diamond
+    //                1    4
+    //              /(2) ||(1)\ 
+    //             /     ||    \ 
+    //            /f2    || f6  \     
+    //           /       ||      \    
+    //          /        ||       \   
+    //        0(0)-----10||7----(0)11
+    //          \        || |     /
+    //           \       || |    /
+    //            \ f0   || |/f3/
+    //             \     ||    /
+    //              \(1) ||(2)/
+    //                2     5
+    wmtk::TriMesh::Tuple primary_edge8 = wmtk::TriMesh::Tuple(7, 0, 3, m);
+    REQUIRE(primary_edge8.switch_vertex(m).vid(m) == 5);
+    REQUIRE(m.is_seam_vertex(primary_edge8));
+    REQUIRE(m.is_seam_edge(primary_edge8));
+    REQUIRE(m.edge_attrs[primary_edge8.eid(m)].curve_id.has_value());
+    REQUIRE(m.edge_attrs[primary_edge8.eid(m)].curve_id.value() == 0);
+
+    AdaptiveTessellationPairedCollapseEdgeOperation op6;
+    op6(m, primary_edge8);
+
+    // acsii art diamond
+    //                1    4
+    //              /(2) ||(1)\ 
+    //             /     ||    \ 9
+    //            /      ||     \     
+    //           /       ||      \    
+    //          /    f2  ||  f3   \   
+    //        0(0)       ||      (0)11
+    //          \|\      ||     /|/
+    //           \ \pe9  || pe8/ /
+    //            \ \    ||   / /
+    //             \     ||    /
+    //              \(1) ||(2)/
+    //                13    12
+
+    const auto& primary_edge8_opt = op6.collapse_edge.get_return_tuple_opt();
+    const auto& primary_edge9_opt = op6.collapse_mirror_edge.get_return_tuple_opt();
+    REQUIRE(primary_edge8_opt.has_value());
+    REQUIRE(primary_edge9_opt.has_value());
+    const auto& primary_edge8_ret = primary_edge8_opt.value();
+    const auto& primary_edge9_ret = primary_edge9_opt.value();
+    REQUIRE(primary_edge8_ret.vid(m) == 12);
+    REQUIRE(primary_edge9_ret.vid(m) == 13);
+    valid_verts_cnt = 0;
+    for (auto& v : m.get_vertices()) {
+        if (v.is_valid(m)) {
+            valid_verts_cnt++;
+        }
+    }
+    REQUIRE(valid_verts_cnt == 6);
+    valid_faces_cnt = 0;
+    for (auto& f : m.get_faces()) {
+        if (f.is_valid(m)) {
+            valid_faces_cnt++;
+        }
+    }
+    REQUIRE(valid_faces_cnt == 2);
+    REQUIRE(!m.is_seam_edge(primary_edge8_ret));
+    REQUIRE(!m.is_seam_edge(primary_edge9_ret));
+    REQUIRE(m.is_boundary_edge(primary_edge8_ret));
+    REQUIRE(m.is_boundary_edge(primary_edge9_ret));
+    REQUIRE(m.edge_attrs[primary_edge8_ret.eid(m)].curve_id.has_value());
+    REQUIRE(m.edge_attrs[primary_edge8_ret.eid(m)].curve_id.value() == 2);
+    REQUIRE(m.edge_attrs[primary_edge9_ret.eid(m)].curve_id.has_value());
+    REQUIRE(m.edge_attrs[primary_edge9_ret.eid(m)].curve_id.value() == 3);
+    REQUIRE(m.is_seam_edge(primary_edge8_ret.switch_edge(m)));
+    REQUIRE(m.is_seam_vertex(primary_edge8_ret));
+    REQUIRE(m.is_seam_edge(primary_edge9_ret.switch_edge(m)));
+    REQUIRE(m.is_seam_vertex(primary_edge9_ret));
+    REQUIRE(m.get_oriented_mirror_edge(primary_edge8_ret.switch_edge(m)).vid(m) == 1);
+
+    /////// debug
+    for (auto& e : m.get_edges()) {
+        REQUIRE(e.is_valid(m));
+        if (m.is_boundary_edge(e)) {
+            REQUIRE(m.edge_attrs[e.eid(m)].curve_id.has_value());
+        } else {
+            REQUIRE(!m.edge_attrs[e.eid(m)].curve_id.has_value());
+        }
+        if (m.is_seam_edge(e)) {
+            switch (e.vid(m)) {
+            case 12:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 2);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 1);
+                break;
+            case 13:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 3);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 4);
+                break;
+            case 1:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 3);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 12);
+                break;
+            case 4:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 2);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 13);
+                break;
+            default: break;
+            }
+        }
+    }
+}
+
+TEST_CASE("paired swap")
+{
+    Eigen::MatrixXd V(6, 2);
+    Eigen::MatrixXi F(2, 3);
+    V.row(0) << -1., 0.;
+    V.row(1) << 0., 1.;
+    V.row(2) << 0., -1;
+    V.row(3) << 1., 0;
+    V.row(4) << 0., 1.;
+    V.row(5) << 0., -1.;
+    F.row(0) << 0, 2, 1;
+    F.row(1) << 3, 4, 5;
+    AdaptiveTessellation m;
+
+    m.create_mesh_debug(V, F);
+    m.mesh_parameters.m_ignore_embedding = true;
+    // set up mesh
+    wmtk::TriMesh::Tuple primary_edge1 = wmtk::TriMesh::Tuple(4, 0, 1, m);
+    wmtk::TriMesh::Tuple primary_edge2 = wmtk::TriMesh::Tuple(2, 0, 0, m);
+    primary_edge1 = primary_edge1.is_ccw(m) ? primary_edge1 : primary_edge1.switch_vertex(m);
+    primary_edge2 = primary_edge2.is_ccw(m) ? primary_edge2 : primary_edge2.switch_vertex(m);
+    m.face_attrs[0].mirror_edges[0] = std::make_optional<wmtk::TriMesh::Tuple>(primary_edge1);
+    m.face_attrs[1].mirror_edges[0] = std::make_optional<wmtk::TriMesh::Tuple>(primary_edge2);
+    m.edge_attrs[primary_edge1.eid(m)].curve_id = std::make_optional<int>(0);
+    m.edge_attrs[primary_edge2.eid(m)].curve_id = std::make_optional<int>(1);
+    m.edge_attrs[primary_edge1.switch_edge(m).eid(m)].curve_id = std::make_optional<int>(2);
+    m.edge_attrs[primary_edge1.switch_vertex(m).switch_edge(m).eid(m)].curve_id =
+        std::make_optional<int>(2);
+    m.edge_attrs[primary_edge2.switch_edge(m).eid(m)].curve_id = std::make_optional<int>(3);
+    m.edge_attrs[primary_edge2.switch_vertex(m).switch_edge(m).eid(m)].curve_id =
+        std::make_optional<int>(3);
+    // split a few times
+    AdaptiveTessellationPairedSplitEdgeOperation op;
+    op(m, primary_edge2);
+    REQUIRE(m.vert_capacity() == 8);
+    REQUIRE(m.tri_capacity() == 4);
+    wmtk::TriMesh::Tuple primary_edge3 = wmtk::TriMesh::Tuple(0, 1, 0, m);
+    AdaptiveTessellationPairedSplitEdgeOperation op2;
+    op2(m, primary_edge3);
+    REQUIRE(m.vert_capacity() == 9);
+    REQUIRE(m.tri_capacity() == 6);
+    wmtk::TriMesh::Tuple primary_edge4 = wmtk::TriMesh::Tuple(3, 2, 1, m);
+    AdaptiveTessellationPairedSplitEdgeOperation op3;
+    op3(m, primary_edge4);
+    /////// make sure it is valid mesh
+    REQUIRE(m.vert_capacity() == 10);
+    REQUIRE(m.tri_capacity() == 7);
+    for (auto& e : m.get_edges()) {
+        if (m.is_boundary_edge(e)) {
+            REQUIRE(m.edge_attrs[e.eid(m)].curve_id.has_value());
+        } else {
+            REQUIRE(!m.edge_attrs[e.eid(m)].curve_id.has_value());
+        }
+        if (m.is_seam_edge(e)) {
+            switch (e.vid(m)) {
+            case 2:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 3);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 7);
+                break;
+            case 5:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 4);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 6);
+                break;
+            case 1:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 6);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 7);
+                break;
+            case 4:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 5);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 6);
+                break;
+            default: break;
+            }
+        }
+    }
+    ////////// ======= interior edge swap
+    // acsii art diamond
+    //                1          4
+    //              /(2)/|      |(1)\ 
+    //             /   | |      |    \ 9
+    //            /f2 /f5|      | f6 /\     
+    //     cv3   /    |  |   cv0| /|/  \    cv2
+    //          /    /   |      |/ / f1 \   
+    //        0(0)--8|--6|      |7----(0)3
+    //          \    \   |cv1   |       /
+    //           \   |   |      |      /
+    //            \ f0\f4|      | f3  /
+    //             \   | |      |    /
+    //              \(1)\|      |(2)/
+    //                2           5
+    wmtk::TriMesh::Tuple primary_edge5 = wmtk::TriMesh::Tuple(7, 1, 6, m);
+    REQUIRE(primary_edge5.is_valid(m));
+    REQUIRE(primary_edge5.vid(m) == 7);
+    REQUIRE(primary_edge5.switch_vertex(m).vid(m) == 9);
+    AdaptiveTessellationSwapEdgeOperation op4;
+    // this operation should fail because of it would generate colinear traingles
+    op4(m, primary_edge5);
+    std::vector<TriMeshTuple> op4_modified_tuples = op4.modified_tuples(m);
+    REQUIRE(!op4);
+    REQUIRE(op4_modified_tuples.size() == 0);
+
+    ////////// ======= interior edge swap
+    // acsii art diamond
+    //                1          4
+    //              /(2)/|      |(1)\ 
+    //             /   | |      |    \ 9
+    //            /f2 /f5|      | f6 /\     
+    //     cv3   /    |  |   cv0|   /  \    cv2
+    //          /    /   |      |  / f1 \   
+    //        0(0)--8|--6|      |7----(0)3
+    //          \    \   |cv1   |  ---> /
+    //           \   |   |      |  pe6 /
+    //            \ f0\f4|      | f3  /
+    //             \   | |      |    /
+    //              \(1)\|      |(2)/
+    //                2           5
+
+    wmtk::TriMesh::Tuple primary_edge6 = wmtk::TriMesh::Tuple(7, 2, 3, m);
+    REQUIRE(primary_edge6.is_valid(m));
+    REQUIRE(primary_edge6.vid(m) == 7);
+    REQUIRE(primary_edge6.switch_vertex(m).vid(m) == 3);
+    AdaptiveTessellationSwapEdgeOperation op5;
+    // this operation should fail because of it would generate colinear traingles
+    op5(m, primary_edge6);
+    std::vector<TriMeshTuple> op5_modified_tuples = op5.modified_tuples(m);
+
+    // acsii art diamond
+    //                1          4
+    //              /(2)/|      |(1)\ 
+    //             /   | |      |    \ 9
+    //            /f2 /f5|      | f6 /\     
+    //     cv3   /    |  |   cv0|   // \    cv2
+    //          /    /   |      |  / |  \   
+    //        0(0)--8|--6|      |7   ||\(0)3
+    //          \    \   |cv1   |    ||  /
+    //           \   |   |      |   / | /
+    //            \ f0\f4|      |f3| f1/
+    //             \   | |      |  |  /
+    //              \(1)\|      |(2)/
+    //                2           5
+
+    REQUIRE(op5_modified_tuples.size() == 2);
+    const wmtk::TriMesh::Tuple op5_ret = op5.get_return_tuple_opt().value();
+    REQUIRE(op5_ret.is_valid(m));
+    REQUIRE(op5_ret.vid(m) == 5);
+    // edge 3-5
+    REQUIRE(m.is_boundary_edge(op5_ret.switch_edge(m)));
+    REQUIRE(m.edge_attrs[op5_ret.switch_edge(m).eid(m)].curve_id.has_value());
+    REQUIRE(m.edge_attrs[op5_ret.switch_edge(m).eid(m)].curve_id.value() == 2);
+    // edge 5-7
+    REQUIRE(m.is_seam_edge(op5_modified_tuples[1].switch_edge(m)));
+    REQUIRE(m.edge_attrs[op5_modified_tuples[1].switch_edge(m).eid(m)].curve_id.has_value());
+    REQUIRE(m.edge_attrs[op5_modified_tuples[1].switch_edge(m).eid(m)].curve_id.value() == 0);
+    REQUIRE(m.get_oriented_mirror_edge(op5_modified_tuples[1].switch_edge(m)).vid(m) == 6);
+    REQUIRE(m.get_oriented_mirror_edge(op5_modified_tuples[1].switch_edge(m)).fid(m) == 4);
+    //////
+    REQUIRE(m.vert_capacity() == 10);
+    REQUIRE(m.tri_capacity() == 7);
+    for (auto& e : m.get_edges()) {
+        if (m.is_boundary_edge(e)) {
+            REQUIRE(m.edge_attrs[e.eid(m)].curve_id.has_value());
+        } else {
+            REQUIRE(!m.edge_attrs[e.eid(m)].curve_id.has_value());
+        }
+        if (m.is_seam_edge(e)) {
+            switch (e.vid(m)) {
+            case 2:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 3);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 7);
+                break;
+            case 5:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 4);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 6);
+                break;
+            case 1:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 6);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 7);
+                break;
+            case 4:
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 5);
+                REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 6);
+                break;
+            default: break;
+            }
+        }
+    }
+
+    // acsii art diamond
+    //                1          4
+    //              /(2)/|      |(1)\ 
+    //             /   | |      |    \ 9
+    //            /f2 /f5|      | f6 /\     
+    //     cv3   /    |  |   cv0|   // \    cv2
+    //          /    /   |      |  / |  \   
+    //        0(0)--8|--6|      |7   ||\(0)3
+    //          \    \   |cv1   |    ||  /
+    //           \   |   |      |   / | /
+    //            \ f0\f4|      |f3| f1/
+    //             \   | |      |  |  /
+    //              \(1)\|      |(2)/
+    //                2           5
+    ////////// ======= seam edge swap
+    /// should be rejected. not swapping seam edge
+    wmtk::TriMesh::Tuple primary_edge7 = wmtk::TriMesh::Tuple(5, 0, 3, m);
+    REQUIRE(primary_edge7.is_valid(m));
+    REQUIRE(primary_edge7.vid(m) == 5);
+    REQUIRE(primary_edge7.switch_vertex(m).vid(m) == 7);
+    REQUIRE(m.is_seam_edge(primary_edge7));
+    AdaptiveTessellationSwapEdgeOperation op6;
+    op6(m, primary_edge7);
+    std::vector<TriMeshTuple> op6_modified_tuples = op6.modified_tuples(m);
+    REQUIRE(!op6);
+    REQUIRE(op6_modified_tuples.size() == 0);
+
+    ////////// ======= boundary edge swap
+    /// should be rejected. don't swap boundary
+    wmtk::TriMesh::Tuple primary_edge8 = wmtk::TriMesh::Tuple(2, 2, 0, m);
+    REQUIRE(primary_edge8.is_valid(m));
+    REQUIRE(primary_edge8.vid(m) == 2);
+    REQUIRE(primary_edge8.switch_vertex(m).vid(m) == 0);
+    REQUIRE(m.is_boundary_edge(primary_edge8));
+    AdaptiveTessellationSwapEdgeOperation op7;
+    op7(m, primary_edge8);
+    REQUIRE(!op7);
+    std::vector<TriMeshTuple> op7_modified_tuples = op7.modified_tuples(m);
+    REQUIRE(op7_modified_tuples.size() == 0);
 }
 
 TEST_CASE("test mirror edge setup")
@@ -543,7 +1172,7 @@ TEST_CASE("get mirror")
     AdaptiveTessellation m;
     Eigen::MatrixXd UV;
     Eigen::MatrixXi F;
-    std::filesystem::path input_mesh_path = WMT_DATA_DIR "/hemisphere.obj";
+    std::filesystem::path input_mesh_path = WMTK_DATA_DIR "/hemisphere.obj";
     m.create_paired_seam_mesh_with_offset(input_mesh_path.string(), UV, F);
     Eigen::MatrixXd V3d;
     Eigen::MatrixXi F3d;
@@ -611,7 +1240,7 @@ TEST_CASE("test curve fixed get_all_mirror_vids")
     AdaptiveTessellation m;
     Eigen::MatrixXd UV;
     Eigen::MatrixXi F;
-    std::filesystem::path input_mesh_path = WMT_DATA_DIR "/hemisphere.obj";
+    std::filesystem::path input_mesh_path = WMTK_DATA_DIR "/hemisphere.obj";
     m.create_paired_seam_mesh_with_offset(input_mesh_path.string(), UV, F);
     m.set_fixed();
     for (auto i = 0; i < m.vert_capacity(); ++i) {
@@ -647,7 +1276,7 @@ TEST_CASE("uv-index and coloring test")
     AdaptiveTessellation m;
     Eigen::MatrixXd UV;
     Eigen::MatrixXi F;
-    std::filesystem::path input_mesh_path = WMT_DATA_DIR "/hemisphere.obj";
+    std::filesystem::path input_mesh_path = WMTK_DATA_DIR "/hemisphere.obj";
     m.create_paired_seam_mesh_with_offset(input_mesh_path.string(), UV, F);
     Eigen::MatrixXd V3d;
     Eigen::MatrixXi F3d;
@@ -679,14 +1308,15 @@ TEST_CASE("uv-index and coloring test")
     }
 }
 
-// TODO special case for link condition in seamed mesh. a tube with a seam edge in the middle
+// TODO special case for link condition in seamed mesh. a tube with a seam edge in
+// the middle
 
 TEST_CASE("edge curve-id assignment")
 {
     AdaptiveTessellation m;
     Eigen::MatrixXd UV;
     Eigen::MatrixXi F;
-    std::filesystem::path input_mesh_path = WMT_DATA_DIR "/hemisphere.obj";
+    std::filesystem::path input_mesh_path = WMTK_DATA_DIR "/hemisphere.obj";
     m.create_paired_seam_mesh_with_offset(input_mesh_path.string(), UV, F);
     m.set_fixed();
     for (auto& e : m.get_edges()) {
@@ -744,6 +1374,8 @@ TEST_CASE("quickrun")
 
     m.mesh_parameters.m_position_normal_paths = {"/home/yunfan/seamPyramid_position.exr",
                                                  "/home/yunfan/seamPyramid_normal_smooth.exr"};
+    m.mesh_parameters.m_early_stopping_number = 100;
+
     assert(m.check_mesh_connectivity_validity());
     m.set_parameters(
         0.00001,
@@ -756,6 +1388,11 @@ TEST_CASE("quickrun")
         adaptive_tessellation::EDGE_LEN_TYPE::AREA_ACCURACY,
         1);
     m.split_all_edges();
+    m.write_displaced_obj("split_result.obj", m.mesh_parameters.m_displacement);
+    m.write_obj("split_result_2d.obj");
+    m.smooth_all_vertices();
+    m.write_displaced_obj("smooth_result.obj", m.mesh_parameters.m_displacement);
+    m.write_obj("smooth_result_2d.obj");
 }
 
 TEST_CASE("check curveid consistency after split")

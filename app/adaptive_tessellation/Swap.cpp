@@ -1,4 +1,4 @@
-#include "AdaptiveTessellation.h"
+#include "Swap.h"
 #include "wmtk/ExecutionScheduler.hpp"
 
 #include <Eigen/src/Core/util/Constants.h>
@@ -16,48 +16,135 @@
 using namespace adaptive_tessellation;
 using namespace wmtk;
 
+AdaptiveTessellationSwapEdgeOperation::AdaptiveTessellationSwapEdgeOperation() = default;
+AdaptiveTessellationSwapEdgeOperation::~AdaptiveTessellationSwapEdgeOperation() = default;
 
-namespace {
-class AdaptiveTessellationSwapEdgeOperation : public wmtk::TriMeshOperationShim<
-                                                  AdaptiveTessellation,
-                                                  AdaptiveTessellationSwapEdgeOperation,
-                                                  wmtk::TriMeshSwapEdgeOperation>
+
+auto AdaptiveTessellationSwapEdgeOperation::execute(AdaptiveTessellation& m, const Tuple& t)
+    -> ExecuteReturnData
 {
-public:
-    ExecuteReturnData execute(AdaptiveTessellation& m, const Tuple& t)
-    {
-        return wmtk::TriMeshSwapEdgeOperation::execute(m, t);
-    }
-    bool before(AdaptiveTessellation& m, const Tuple& t)
-    {
-        if (wmtk::TriMeshSwapEdgeOperation::before(m, t)) {
-            return true;
-            //return  m.swap_before(t);
-        }
+    return wmtk::TriMeshSwapEdgeOperation::execute(m, t);
+}
+bool AdaptiveTessellationSwapEdgeOperation::before(AdaptiveTessellation& m, const Tuple& t)
+{
+    if (m.is_boundary_edge(t)) {
         return false;
     }
-    bool after(AdaptiveTessellation& m, ExecuteReturnData& ret_data)
-    {
-        if (wmtk::TriMeshSwapEdgeOperation::after(m, ret_data)) {
-            return true;
-            //ret_data.success |= m.swap_after(ret_data.tuple);
-        }
-        return ret_data;
-    }
-    bool invariants(AdaptiveTessellation& m, ExecuteReturnData& ret_data)
-    {
-        if (wmtk::TriMeshSwapEdgeOperation::invariants(m, ret_data)) {
-            ret_data.success |= m.invariants(ret_data.new_tris);
-        }
-        return ret_data;
-    }
-};
 
-    template <typename Executor>
-    void addCustomOps(Executor& e) {
-
-        e.add_operation(std::make_shared<AdaptiveTessellationSwapEdgeOperation>());
+    auto& vids_to_mirror_edge = vid_edge_to_mirror_edge.local();
+    std::vector<Tuple> incident_tri_tuples;
+    incident_tri_tuples.emplace_back(t);
+    if (t.switch_face(m).has_value()) incident_tri_tuples.emplace_back(t.switch_face(m).value());
+    for (const auto& tri : incident_tri_tuples) {
+        for (const Tuple& edge_tuple : m.triangle_boundary_edge_tuples(tri)) {
+            if (m.is_boundary_edge(edge_tuple)) {
+                // for seam edge get_sibling_edge_opt return the mirror edge as std::optional
+                std::optional<Tuple> opt =
+                    m.is_seam_edge(edge_tuple) ? m.get_sibling_edge_opt(edge_tuple) : std::nullopt;
+                size_t vid0 = edge_tuple.vid(m);
+                size_t vid1 = edge_tuple.switch_vertex(m).vid(m);
+                vids_to_mirror_edge[std::array<size_t, 2>{{vid0, vid1}}] = {
+                    opt,
+                    m.edge_attrs[edge_tuple.eid(m)].curve_id.value()};
+            }
+        }
     }
+    for (const Tuple& edge_tuple : m.triangle_boundary_edge_tuples(t)) {
+        if (m.is_boundary_edge(edge_tuple)) {
+            // for seam edge get_sibling_edge_opt return the mirror edge as std::optional
+            std::optional<Tuple> opt =
+                m.is_seam_edge(edge_tuple) ? m.get_sibling_edge_opt(edge_tuple) : std::nullopt;
+            size_t vid0 = edge_tuple.vid(m);
+            size_t vid1 = edge_tuple.switch_vertex(m).vid(m);
+            vids_to_mirror_edge[std::array<size_t, 2>{{vid0, vid1}}] = {
+                opt,
+                m.edge_attrs[edge_tuple.eid(m)].curve_id.value()};
+        }
+    }
+
+
+    if (wmtk::TriMeshSwapEdgeOperation::before(m, t)) {
+        return true;
+        // return  m.swap_before(t);
+    }
+    return false;
+}
+bool AdaptiveTessellationSwapEdgeOperation::after(
+    AdaptiveTessellation& m,
+    ExecuteReturnData& ret_data)
+{
+    if (wmtk::TriMeshSwapEdgeOperation::after(m, ret_data)) {
+        const auto mod_tups = modified_tuples(m);
+        const auto& tri_con = tri_connectivity(m);
+
+        // wipe out existing face attribute data beacuse it's invalidated
+        for (const Tuple& tri : mod_tups) {
+            m.face_attrs[tri.fid(m)] = {};
+            for (const Tuple& edge : m.triangle_boundary_edge_tuples(tri)) {
+                m.edge_attrs[edge.eid(m)] = {};
+            }
+        }
+
+        auto find_edge_tup =
+            [&tri_con, &mod_tups, &m](const size_t vid0, const size_t vid1) -> Tuple {
+            // go through the (two) triangles to find the edge
+            for (const Tuple& tri : mod_tups) {
+                const size_t fid = tri.fid(m);
+                const auto& con = tri_con[fid].m_indices;
+
+                // go through the vertices in the triangle to find the right local_eid (j) if it
+                // exists
+                for (size_t j = 0; j < con.size(); ++j) {
+                    size_t jp1 = (j + 1) % con.size();
+                    size_t jp2 = (j + 2) % con.size();
+
+                    // if we find the pair of vertices use the ordering to return a tuple
+                    if (con[jp1] == vid0 && con[jp2] == vid1) {
+                        return Tuple(vid0, j, fid, m);
+                    } else if (con[jp1] == vid1 && con[jp2] == vid0) {
+                        return Tuple(vid1, j, fid, m);
+                    }
+                }
+            }
+            assert(false); // if vid pairs were in the map then they must be on the boundary
+                           // and still edges
+            return {};
+        };
+
+        for (const auto& [vids, mirror_edge_curveid] : vid_edge_to_mirror_edge.local()) {
+            // use vids to find an edge in the current triangle
+            const auto [vid0, vid1] = vids;
+            const Tuple edge_tup = find_edge_tup(vid0, vid1);
+#if defined(_DEBUG)
+            { // make sure that the edge tuple returned is appropriate
+                assert(edge_tup.is_valid(m));
+                const size_t vid = edge_tup.vid(m);
+                assert(vid0 == vid || vid1 == vid);
+                const size_t ovid = edge_tup.switch_vertex(m).vid(m);
+                assert(vid0 == ovid || vid1 == ovid);
+                assert(vid != ovid);
+            }
+#endif
+            // only set mirror edge if what's stored is a valid edge
+            if (mirror_edge_curveid.first.has_value()) {
+                m.set_mirror_edge_data(edge_tup, mirror_edge_curveid.first.value());
+                m.set_mirror_edge_data(mirror_edge_curveid.first.value(), edge_tup);
+            }
+
+            m.edge_attrs[edge_tup.eid(m)].curve_id = mirror_edge_curveid.second;
+        }
+
+        return true;
+    }
+    return ret_data;
+}
+
+namespace {
+template <typename Executor>
+void addCustomOps(Executor& e)
+{
+    e.add_operation(std::make_shared<AdaptiveTessellationSwapEdgeOperation>());
+}
 
 
 auto swap_renew = [](auto& m, auto op, auto& tris) {
@@ -165,7 +252,7 @@ auto swap_accuracy_cost = [](auto& m, const TriMesh::Tuple& e, const double vale
     }
     return -std::numeric_limits<double>::infinity();
 };
-}
+} // namespace
 
 void AdaptiveTessellation::swap_all_edges()
 {
@@ -210,6 +297,7 @@ void AdaptiveTessellation::swap_all_edges()
     };
     if (NUM_THREADS > 0) {
         auto executor = wmtk::ExecutePass<AdaptiveTessellation, ExecutionPolicy::kPartition>();
+        addCustomOps(executor);
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) {
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };
@@ -221,7 +309,6 @@ void AdaptiveTessellation::swap_all_edges()
 }
 bool AdaptiveTessellation::swap_edge_before(const Tuple& t)
 {
-
     if (is_boundary_edge(t)) return false;
     if (is_boundary_vertex(t))
         vertex_attrs[cache.local().v1].boundary_vertex = true;

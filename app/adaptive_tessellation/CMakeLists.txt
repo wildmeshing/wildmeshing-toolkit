@@ -1,6 +1,14 @@
 # ###############################################################################
-# Triwild
+# Adaptive Tessellation
 # ###############################################################################
+
+if(NOT WMTK_APP_UNIFORM_REMESH)
+    message(FATAL_ERROR "Adaptive tessellation requires remeshing app; try WMTK_APP_UNIFORM_REMESH=ON")
+endif()
+
+if(NOT WMTK_APP_SEC)
+    message(FATAL_ERROR "Adaptive tessellation requires shorted edge collapse app; try WMTK_APP_SEC=ON")
+endif()
 
 include(gmp)
 include(fenvelope)
@@ -15,6 +23,8 @@ add_library(wmtk_adaptive_tessellation
 	Smooth.h
 	Collapse.h
 	AdaptiveTessellation.cpp
+    AdaptiveTessellation_debug.cpp
+    AdaptiveTessellation_serialization.cpp
 	AdaptiveTessellation.h
 	Parameters.h
 	GlobalIntersection.h

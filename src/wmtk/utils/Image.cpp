@@ -150,3 +150,25 @@ Image Image::down_sample() const
     }
     return low_res_image;
 }
+
+std::array<wmtk::Image, 3> wmtk::load_rgb_image(const std::filesystem::path& path)
+{
+    auto [w, h, index_red, index_green, index_blue, buffer_r, buffer_g, buffer_b] =
+        load_image_exr_split_3channels(path);
+    return {
+        buffer_to_image(buffer_r, w, h),
+        buffer_to_image(buffer_g, w, h),
+        buffer_to_image(buffer_b, w, h),
+    };
+}
+
+wmtk::Image wmtk::buffer_to_image(const std::vector<float>& buffer, int w, int h)
+{
+    wmtk::Image image(w, h);
+    for (int i = 0, k = 0; i < h; i++) {
+        for (int j = 0; j < w; j++) {
+            image.set(h - i - 1, j, buffer[k++]);
+        }
+    }
+    return image;
+}

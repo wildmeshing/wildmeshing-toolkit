@@ -61,7 +61,7 @@ TEST_CASE("separate-manifold-patch", "[test_sec]")
 
 TEST_CASE("manifold-separate-test-37989", "[test_sec]")
 {
-    std::string filename = WMT_DATA_DIR "/37989_sf.obj";
+    std::string filename = WMTK_DATA_DIR "/37989_sf.obj";
     wmtk::manifold_internal::Vertices V;
     wmtk::manifold_internal::Facets F;
     igl::read_triangle_mesh(filename, V, F);
@@ -181,7 +181,7 @@ TEST_CASE("shortest_edge_collapse_closed_mesh", "[test_sec]")
     {
         // then test on a cube
         // will have a tet in the end
-        const std::string root(WMT_DATA_DIR);
+        const std::string root(WMTK_DATA_DIR);
         const std::string path = root + "/piece_0.obj";
 
         Eigen::MatrixXd V;
@@ -216,7 +216,7 @@ TEST_CASE("shortest_edge_collapse_closed_mesh", "[test_sec]")
 
 TEST_CASE("shortest_edge_collapse_octocat", "[test_sec][.slow]")
 {
-    const std::string root(WMT_DATA_DIR);
+    const std::string root(WMTK_DATA_DIR);
     const std::string path = root + "/Octocat.obj";
 
     Eigen::MatrixXd V;
@@ -241,7 +241,7 @@ TEST_CASE("shortest_edge_collapse_octocat", "[test_sec][.slow]")
 
 TEST_CASE("edge_manifold", "[test_sec]")
 {
-    const std::string root(WMT_DATA_DIR);
+    const std::string root(WMTK_DATA_DIR);
     const std::string path = root + "/circle.obj";
 
     Eigen::MatrixXd V;
@@ -266,7 +266,7 @@ TEST_CASE("edge_manifold", "[test_sec]")
 
 TEST_CASE("shortest_edge_collapse_circle", "[test_sec]")
 {
-    const std::string root(WMT_DATA_DIR);
+    const std::string root(WMTK_DATA_DIR);
     const std::string path = root + "/circle.obj";
 
     Eigen::MatrixXd V;
@@ -296,7 +296,7 @@ TEST_CASE("shortest_edge_collapse_circle", "[test_sec]")
 
 TEST_CASE("metis_test_bigmesh", "[test_sec][.slow]")
 {
-    const std::string root(WMT_DATA_DIR);
+    const std::string root(WMTK_DATA_DIR);
     const std::string path = root + "/circle.obj";
 
     Eigen::MatrixXd V;

@@ -160,19 +160,19 @@ TEST_CASE("Boundary Parameterization", "[utils][boundary]")
     SECTION("blub")
     {
         BoundaryTester::test_boundary_parameterization(
-            lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMT_DATA_DIR "/blub.obj"),
+            lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMTK_DATA_DIR "/blub.obj"),
             18);
     }
     SECTION("blub_open")
     {
         BoundaryTester::test_boundary_parameterization(
-            lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMT_DATA_DIR "/blub_open.obj"),
+            lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMTK_DATA_DIR "/blub_open.obj"),
             15);
     }
     SECTION("hemisphere")
     {
         BoundaryTester::test_boundary_parameterization(
-            lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMT_DATA_DIR "/hemisphere.obj"),
+            lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMTK_DATA_DIR "/hemisphere.obj"),
             39);
     }
 }

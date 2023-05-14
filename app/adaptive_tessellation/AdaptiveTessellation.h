@@ -18,6 +18,7 @@
 #include <lagrange/views.h>
 #include <tbb/concurrent_vector.h>
 #include <wmtk/TriMesh.h>
+#include <wmtk/image/TextureIntegral.h>
 #include <wmtk/utils/AMIPS2D.h>
 #include <wmtk/utils/AMIPS2D_autodiff.h>
 #include <wmtk/utils/BoundaryParametrization.h>
@@ -28,6 +29,7 @@
 #include <wmtk/utils/Image.h>
 #include <wmtk/utils/MipMap.h>
 #include <wmtk/utils/PolygonClipping.h>
+#include <wmtk/utils/load_image_exr.h>
 #include <Eigen/Core>
 #include <finitediff.hpp>
 #include <lean_vtk.hpp>
@@ -45,10 +47,10 @@ public:
     Eigen::Vector2d pos;
     Eigen::Vector3d pos_world;
     double t = 0.;
-    size_t curve_id = 0; // TODO questionable should I have this for each vertex? change to be for
-                         // each edge, but still keep one copy for vertex
+    size_t curve_id = 0; // change to be for each edge, but still keep one copy for vertex for easy
+                         // access in smoothing
 
-    size_t partition_id = 0; // TODO this should not be here
+    size_t partition_id = 0; // this should not be here
 
     // Vertices marked as fixed cannot be modified by any local operation
     bool fixed = false;
@@ -59,6 +61,8 @@ class FaceAttributes
 {
 public:
     std::array<std::optional<wmtk::TriMesh::Tuple>, 3> mirror_edges;
+    double accuracy_error; // cacheing the accuracy error for each face
+                           // doesn't support autodiff
 };
 
 class EdgeAttributes
@@ -106,6 +110,9 @@ public:
     // each color can have 1 vertex, 2 vertices, or 3 above vertices
     std::vector<std::vector<size_t>> color_to_uv_indices;
 
+    // texture integraler
+    wmtk::TextureIntegral m_texture_integral;
+
 public:
     AdaptiveTessellation(){};
 
@@ -149,13 +156,27 @@ public:
     // using boundary parametrization, find the vertex that are the start and end of each cruve and
     // set them as fixed
     void set_fixed();
+    void set_feature(Tuple& t); // find the feature vertex and freeze them
     void assign_edge_curveid();
     Eigen::Matrix<uint64_t, Eigen::Dynamic, 2, Eigen::RowMajor> get_bnd_edge_matrix();
 
+    //// preprocess the mesh for remeshing
+    //// replace function create_paired_seam_mesh_with_offset, and mesh_construct_boundaries
+    // 0. create mesh
+    // 1. vertex_attrs: initiate uv pos and pos_world
+    // 2. face_attrs:   set seam local edge mirror data
+    // 3. build seam vertex index to color mapping
+    // 4. construct boundary parametrization
+    // 5. vertex_attrs: set boundary vertex with boudary tag
+    //                  set boundary vertex curve_id, and boundary paramter t
+    //                  set feature vertex as fixed, set strat/end/t-junction of curve fixed
+    // 6. edge_attrs:   set curve-id for each edge
+    // 7. face_attrs:   set initial accuracy error for each triangle
+    void mesh_preprocessing(
+        const std::filesystem::path& input_mesh_path,
+        const std::filesystem::path& displaced_image_path);
 
     bool invariants(const std::vector<Tuple>& new_tris);
-
-    void set_feature(Tuple& t); // find the feature vertex and freeze them
 
     // Initializes the mesh
     /**
@@ -171,6 +192,24 @@ public:
         const Eigen::MatrixXi& F,
         const Eigen::MatrixXi& E0,
         const Eigen::MatrixXi& E1);
+    // return E0, E1 of corresponding seam edges in uv mesh
+    // set up the seam vertex coloring
+    std::pair<Eigen::MatrixXi, Eigen::MatrixXi> seam_edges_set_up(
+        const Eigen::MatrixXd& V,
+        const Eigen::MatrixXi& F,
+        const wmtk::TriMesh& m_3d,
+        const Eigen::MatrixXd& VT,
+        const Eigen::MatrixXi& FT);
+    // for each vertex that's seam vertex, assign same color for mirror vertices
+    // build the mapping from uv_index to color
+    // and mapping from color to uv_index
+    void set_seam_vertex_coloring(
+        const Eigen::MatrixXd& V,
+        const Eigen::MatrixXi& F,
+        const wmtk::TriMesh& m_3d,
+        const Eigen::MatrixXd& VT,
+        const Eigen::MatrixXi& FT);
+
 
     // Exports V and F of the stored mesh
     void export_uv(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
@@ -204,7 +243,7 @@ public:
         Eigen::MatrixXi& FT) const;
 
     /**
-     * @brief Exports the mesh including texture coordinates where all 3D positions are mapped onto
+     * @brief Exports the mesh including UV coordinates where all 3D positions are mapped onto
      * the input.
      *
      * @param V igl format vertices
@@ -303,7 +342,6 @@ public:
     bool swap_edge_after(const Tuple& t);
 
     void mesh_improvement(int max_its);
-    void gradient_debug(int max_its);
 
     double get_length2d(const Tuple& edge_tuple) const;
     double get_length3d(
@@ -321,7 +359,9 @@ public:
     double get_area_accuracy_error_per_face(const Tuple& edge_tuple) const;
     double get_area_accuracy_error_per_face_triangle_matrix(
         Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle) const;
-    double get_area_accuracy_error(const Tuple& edge_tuple) const;
+    // return in order {total_error, face1_error, face2_error}
+    std::tuple<double, double, double> get_area_accuracy_error_for_split(
+        const Tuple& edge_tuple) const;
 
     void get_nminfo_for_vertex(const Tuple& v, wmtk::NewtonMethodInfo& nminfo) const;
 
@@ -329,7 +369,9 @@ public:
     // return the oriented mirror edge if t is seam
     // return the sibling if t is interior
     // return nullopt if t is boundary
-    std::optional<TriMesh::Tuple> get_sibling_edge(const TriMesh::Tuple& t) const;
+    std::optional<TriMesh::Tuple> get_sibling_edge_opt(const TriMesh::Tuple& t) const;
+    // given an edge returns an opt that provides a mirror edge if it exists
+    std::optional<TriMesh::Tuple> get_mirror_edge_opt(const TriMesh::Tuple& t) const;
     // given a seam edge retrieve its mirror edge in opposite direction (half egde conventions )
     TriMesh::Tuple get_oriented_mirror_edge(const TriMesh::Tuple& t) const;
     // given a seam edge with vid v retrieve the correpsonding vertex on the mirror edge
@@ -343,6 +385,9 @@ public:
     bool is_seam_edge(const TriMesh::Tuple& t) const;
     bool is_seam_vertex(const TriMesh::Tuple& t) const;
 
+
+    ////// debug/unit test helper functions
+    void gradient_debug(int max_its);
     // set early termination for a execution pass for unit test and debugging purpose
     template <typename Executor>
     void set_early_termination_number(int n, Executor& e)
@@ -356,8 +401,8 @@ public:
         p_vertex_attrs = &vertex_attrs;
         p_face_attrs = &face_attrs;
         p_edge_attrs = &edge_attrs;
-        // Convert from eigen to internal representation (TODO: move to utils and remove it from all
-        // app)
+        // Convert from eigen to internal representation (TODO: move to utils and remove it from
+        // all app)
         std::vector<std::array<size_t, 3>> tri(F.rows());
         for (int i = 0; i < F.rows(); i++) {
             tri[i][0] = (size_t)F(i, 0);
@@ -374,5 +419,7 @@ public:
         //     assert(!is_inverted(tri));
         // }
     }
+
+    double avg_edge_len() const;
 };
 } // namespace adaptive_tessellation
