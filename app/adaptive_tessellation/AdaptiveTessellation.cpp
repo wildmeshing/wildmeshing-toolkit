@@ -86,19 +86,20 @@ void AdaptiveTessellation::mesh_preprocessing(
     // cache the initial accuracy error per triangle
     std::array<wmtk::Image, 3> displaced = wmtk::load_rgb_image(displaced_image_path.string());
     std::vector<std::array<float, 6>> uv_triangles(tri_capacity());
-    for (auto& f : get_faces()) {
-        auto oriented_vids = oriented_tri_vids(f);
+    std::vector<TriMesh::Tuple> tris_tuples = get_faces();
+    for (int i = 0; i < tris_tuples.size(); i++) {
+        auto oriented_vids = oriented_tri_vids(tris_tuples[i]);
         for (int j = 0; j < 3; j++) {
-            uv_triangles[f.fid(*this)][2 * j + 0] = vertex_attrs[oriented_vids[j]].pos[0];
-            uv_triangles[f.fid(*this)][2 * j + 1] = vertex_attrs[oriented_vids[j]].pos[1];
+            uv_triangles[tris_tuples[i].fid(*this)][2 * j + 0] =
+                vertex_attrs[oriented_vids[j]].pos[0];
+            uv_triangles[tris_tuples[i].fid(*this)][2 * j + 1] =
+                vertex_attrs[oriented_vids[j]].pos[1];
         }
     }
     std::vector<float> computed_errors(tri_capacity());
     m_texture_integral = wmtk::TextureIntegral(std::move(displaced));
     m_texture_integral.get_error_per_triangle(uv_triangles, computed_errors);
-    for (auto& f : get_faces()) {
-        face_attrs[f.fid(*this)].accuracy_error = computed_errors[f.fid(*this)];
-    }
+    set_faces_accuracy_error(tris_tuples, computed_errors);
 }
 
 // return E0, E1 of corresponding seam edges in uv mesh
@@ -396,6 +397,16 @@ void AdaptiveTessellation::set_energy(const ENERGY_TYPE energy_type)
     }
 
     mesh_parameters.m_energy = std::move(energy_ptr);
+}
+
+void AdaptiveTessellation::set_faces_accuracy_error(
+    const std::vector<TriMesh::Tuple>& tris,
+    const std::vector<float>& computed_errors)
+{
+    // update the face_attrs with modified tris error
+    for (int i = 0; i < tris.size(); i++) {
+        face_attrs[tris[i].fid(*this)].accuracy_error = computed_errors[i];
+    }
 }
 
 void AdaptiveTessellation::set_edge_length_measurement(const EDGE_LEN_TYPE edge_len_type)

@@ -306,6 +306,7 @@ TEST_CASE("paired split")
     F.row(1) << 3, 4, 5;
     AdaptiveTessellation m;
     m.create_mesh_debug(V, F);
+    m.mesh_parameters.m_ignore_embedding = true;
     wmtk::TriMesh::Tuple primary_edge1 = wmtk::TriMesh::Tuple(4, 0, 1, m);
     wmtk::TriMesh::Tuple primary_edge2 = wmtk::TriMesh::Tuple(2, 0, 0, m);
     primary_edge1 = primary_edge1.is_ccw(m) ? primary_edge1 : primary_edge1.switch_vertex(m);
@@ -1408,11 +1409,11 @@ TEST_CASE("check curveid consistency after split")
         WrappingMode::MIRROR_REPEAT,
         WrappingMode::MIRROR_REPEAT);
 
-    // m.mesh_parameters.m_position_normal_paths = {"/home/yunfan/seamPyramid_position.exr",
-    //                                              "/home/yunfan/seamPyramid_normal_smooth.exr"};
+    m.mesh_parameters.m_position_normal_paths = {"/home/yunfan/seamPyramid_position.exr",
+                                                 "/home/yunfan/seamPyramid_normal_smooth.exr"};
     assert(m.check_mesh_connectivity_validity());
-    // stop after 10 iterations
-    m.mesh_parameters.m_early_stopping_number = 10;
+    // stop after 100 iterations
+    m.mesh_parameters.m_early_stopping_number = 100;
     m.set_parameters(
         0.00001,
         0.4,

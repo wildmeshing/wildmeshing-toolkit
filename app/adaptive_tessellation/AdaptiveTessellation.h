@@ -210,6 +210,10 @@ public:
         const Eigen::MatrixXd& VT,
         const Eigen::MatrixXi& FT);
 
+    void set_faces_accuracy_error(
+        const std::vector<TriMesh::Tuple>& tris,
+        const std::vector<float>& computed_errors);
+
 
     // Exports V and F of the stored mesh
     void export_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;

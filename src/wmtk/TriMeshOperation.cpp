@@ -265,7 +265,7 @@ auto TriMeshSplitEdgeOperation::original_endpoints(TriMesh& m, const Tuple& t) c
 }
 auto TriMeshSplitEdgeOperation::modified_tuples(const TriMesh& m) -> std::vector<Tuple>
 {
-    if (bool(*this)) {
+    if (!bool(*this)) {
         return {};
     }
 

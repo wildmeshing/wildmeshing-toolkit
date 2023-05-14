@@ -151,12 +151,27 @@ bool AdaptiveTessellationSplitEdgeOperation::after(
                              .eid(m)]
                 .curve_id = std::nullopt;
         }
-
-        // update the face_attrs (accuracy error)
-        if (!m.mesh_parameters.m_ignore_embedding) {
-            // TODO update the new faces accruacy error in face_attrs
-        }
     }
+    // update the face_attrs (accuracy error)
+    if (!m.mesh_parameters.m_ignore_embedding) {
+        auto modified_tris = modified_tuples(m);
+        // get a vector of new traingles uvs
+        std::vector<std::array<float, 6>> modified_tris_uv(modified_tris.size());
+        for (int i = 0; i < modified_tris.size(); i++) {
+            auto tri = modified_tris[i];
+            auto verts = m.oriented_tri_vids(tri);
+            std::array<float, 6> tri_uv;
+            for (int i = 0; i < 3; i++) {
+                tri_uv[i * 2] = m.vertex_attrs[verts[i]].pos(0);
+                tri_uv[i * 2 + 1] = m.vertex_attrs[verts[i]].pos(1);
+            }
+            modified_tris_uv.emplace_back(tri_uv);
+        }
+        std::vector<float> renewed_errors(modified_tris.size());
+        m.m_texture_integral.get_error_per_triangle(modified_tris_uv, renewed_errors);
+        m.set_faces_accuracy_error(modified_tris, renewed_errors);
+    }
+
     return ret_data.success;
 }
 
@@ -222,7 +237,7 @@ wmtk::TriMeshOperation::ExecuteReturnData AdaptiveTessellationPairedSplitEdgeOpe
     const Tuple& t)
 {
     bool old_t_is_seam = m.is_seam_edge(t);
-    bool old_t_is_boundary = m.is_boundary_edge(t) & (!old_t_is_seam);
+    bool old_t_is_boundary = m.is_boundary_edge(t) && (!old_t_is_seam);
     assert(m.check_mesh_connectivity_validity());
     assert(m.is_seam_edge(t) == mirror_edge_tuple.has_value());
     TriMeshSplitEdgeOperation::ExecuteReturnData ret_data =
