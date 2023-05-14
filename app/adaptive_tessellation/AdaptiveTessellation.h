@@ -339,6 +339,8 @@ public:
     // return the sibling if t is interior
     // return nullopt if t is boundary
     std::optional<TriMesh::Tuple> get_sibling_edge_opt(const TriMesh::Tuple& t) const;
+    // given an edge returns an opt that provides a mirror edge if it exists
+    std::optional<TriMesh::Tuple> get_mirror_edge_opt(const TriMesh::Tuple& t) const;
     // given a seam edge retrieve its mirror edge in opposite direction (half egde conventions )
     TriMesh::Tuple get_oriented_mirror_edge(const TriMesh::Tuple& t) const;
     // given a seam edge with vid v retrieve the correpsonding vertex on the mirror edge
@@ -386,5 +388,7 @@ public:
         //     assert(!is_inverted(tri));
         // }
     }
+
+    double avg_edge_len() const;
 };
 } // namespace adaptive_tessellation
