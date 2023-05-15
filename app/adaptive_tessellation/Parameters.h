@@ -78,7 +78,7 @@ public:
 
     double m_quality_threshold = 0.01;
     double m_accuracy_threshold = 0.001;
-    double m_accruacy_safeguard_ratio = 1.1;
+    double m_accuracy_safeguard_ratio = 1.1;
 
     EDGE_LEN_TYPE m_edge_length_type = EDGE_LEN_TYPE::ACCURACY;
     SAMPLING_MODE m_sampling_mode = SAMPLING_MODE::BICUBIC;
