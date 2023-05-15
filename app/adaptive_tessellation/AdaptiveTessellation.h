@@ -304,8 +304,7 @@ public:
 
     // Collapse
     void collapse_all_edges();
-    bool collapse_edge_before(const Tuple& t);
-    bool collapse_edge_after(const Tuple& t);
+
     // Split
     void split_all_edges();
     bool split_edge_before(const Tuple& t);

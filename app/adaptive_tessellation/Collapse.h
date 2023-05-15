@@ -14,6 +14,13 @@
 #include "wmtk/ExecutionScheduler.hpp"
 
 namespace adaptive_tessellation {
+
+
+// CollapseEdgeOperation stores some details on the collapse that it occurred
+// CollapseEdgePairOperation
+//
+
+
 class AdaptiveTessellationCollapseEdgeOperation : public wmtk::TriMeshOperationShim<
                                                       AdaptiveTessellation,
                                                       AdaptiveTessellationCollapseEdgeOperation,
@@ -32,12 +39,44 @@ public:
 
         double length3d = 0;
 
-        size_t v_top = 0; // remaining vertex of the input triangle being collapsed
-        size_t v_bot = 0; // remaining vertex of the other triangle being collapsed
+        // Given an input triangle with tuple X
+        //               v_top
+        //   ------------o-------------
+        //   |\          /\v         /|
+        //   | \        /  \        / |
+        //   |  \      /    \      /  |
+        //   |   \    /  X   \    /   |
+        //   |    \  /        \  /    |
+        //   |     \/          \/     |
+        //   ------X-----X-------------
+        //   |     /\          /\     |
+        //   |    /  \        /  \    |
+        //   |   /    \      /    \   |
+        //   |  /      \    /      \  |
+        //   | /        \  /        \ |
+        //   |/          \/          \|
+        //   ----------- -o------------
+        //              v_bot
+        //
+        // it is transformed to
+        //   ---------------
+        //   |\     |     /|
+        //   | \    |    / |
+        //   |  \   |   /  |
+        //   |   \  |  /   |
+        //   |    \ | /    |
+        //   |     \|/     |
+        //   ---------------
+        //   |     /|\     |
+        //   |    / | \    |
+        //   |   /  |  \   |
+        //   |  /   |   \  |
+        //   | /    |    \ |
+        //   |/     |     \|
+        //   ---------------
+        std::optional<size_t> v_top = 0; // remaining vertex of the input triangle being collapsed
+        std::optional<size_t> v_bot = 0; // remaining vertex of the other triangle being collapsed
 
-        // pairs of vids for edges where no vertex changes in the collapse
-        // TODO: add a hash and convert to unordered_map
-        std::map<std::array<size_t, 2>, SeamData> seam_data;
 
         // pairs of vids for edges where a vertex changes in the collapse
         std::unordered_map<size_t, SeamData> new_vertex_seam_data;
@@ -61,11 +100,13 @@ class AdaptiveTessellationPairedCollapseEdgeOperation
     : public wmtk::TriMeshOperationShim<
           AdaptiveTessellation,
           AdaptiveTessellationPairedCollapseEdgeOperation,
-          wmtk::TriMeshEdgeCollapseOperation>
+          wmtk::TriMeshOperation>
 {
 public:
     AdaptiveTessellationCollapseEdgeOperation collapse_edge;
     AdaptiveTessellationCollapseEdgeOperation collapse_mirror_edge;
+    std::string name() const override { return collapse_edge.name(); }
+    using SeamData = AdaptiveTessellationCollapseEdgeOperation::SeamData;
 
     //        / | \                         |\ 
     //       /  |  \                        | \ 
@@ -85,18 +126,24 @@ public:
     {
         // when the input is a seam
         std::optional<Tuple> mirror_edge_tuple_opt;
+
+        // pairs of vids for edges where no vertex changes in the collapse
+        // TODO: add a hash and convert to unordered_map
+        std::map<std::array<size_t, 2>, SeamData> seam_data;
     };
     mutable tbb::enumerable_thread_specific<OpCache> m_op_cache;
 
     // std::vector<Tuple> modified_tuples(const TriMesh& m);
-    operator bool();
 
 public:
     ExecuteReturnData execute(AdaptiveTessellation& m, const Tuple& t);
     bool before(AdaptiveTessellation& m, const Tuple& t);
     bool after(AdaptiveTessellation& m, ExecuteReturnData& ret_data);
     bool after(AdaptiveTessellation& m);
+    operator bool() const;
+    std::vector<Tuple> modified_tuples(const AdaptiveTessellation& m) const;
 
+    void mark_failed() override;
 
 private:
     // stores the input edge's mirror for future use (if applicable)

@@ -16,7 +16,44 @@ struct LinksOfVertex
  * introduced
  * @note collapse edge a,b and generate a new vertex c
  * @return if collapse succeed
+ *
+ *
+ *
  */
+// Given an input triangle with tuple X
+//   --------------------------
+//   |\          /\          /|
+//   | \        /  \   A    / |
+//   |  \      /    \      /  |
+//   |   \    /  X   \    /   |
+//   |    \  /        \  /    |
+//   |     \/          \/     |
+//   ------X-----X-------------
+//   |     /\          /\     |
+//   |    /  \        /  \    |
+//   |   /    \      /    \   |
+//   |  /      \    /      \  |
+//   | /        \  /        \ |
+//   |/          \/          \|
+//   --------------------------
+//
+// it is transformed to
+//   ---------------
+//   |\     |     /|
+//   | \ o  | X  / |
+//   |  \   o   /  |
+//   |   \  |  X   |
+//   |    \ | /    |
+//   |     \|/     |
+//   -------X-------
+//   |     /|\     |
+//   |    / | \    |
+//   |   /  |  \   |
+//   |  /   |   \  |
+//   | /    |    \ |
+//   |/     |     \|
+//   ---------------
+//   returns X, or if the triangle A does not exist then edge/face O are chosen
 class TriMeshEdgeCollapseOperation : public TriMeshOperation, public SingleTupleOperationInfo
 {
 public:
@@ -36,7 +73,7 @@ public:
     static LinksOfVertex links_of_vertex(const TriMesh& m, const Tuple& vertex);
     static std::vector<size_t> edge_link_of_edge(const TriMesh& m, const Tuple& edge);
 
-    std::vector<Tuple> modified_tuples(const TriMesh& m);
+    std::vector<Tuple> modified_tuples(const TriMesh& m) const;
     void assign(const Tuple& t) override { SingleTupleOperationInfo::assign(t); }
     void mark_failed() override { SingleTupleOperationInfo::reset(); }
 };

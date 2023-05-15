@@ -230,7 +230,7 @@ std::string TriMeshSplitEdgeOperation::name() const
     return "edge_split";
 }
 
-auto TriMeshSplitEdgeOperation::new_vertex(const TriMesh& m) -> Tuple
+auto TriMeshSplitEdgeOperation::new_vertex(const TriMesh& m) const -> Tuple
 {
     assert(bool(*this));
     const std::optional<Tuple>& new_tup = get_return_tuple_opt();
@@ -263,7 +263,7 @@ auto TriMeshSplitEdgeOperation::original_endpoints(TriMesh& m, const Tuple& t) c
 
     return {{t, face_opt->switch_edge(m).switch_vertex(m)}};
 }
-auto TriMeshSplitEdgeOperation::modified_tuples(const TriMesh& m) -> std::vector<Tuple>
+auto TriMeshSplitEdgeOperation::modified_tuples(const TriMesh& m) const -> std::vector<Tuple>
 {
     if (bool(*this)) {
         return {};
@@ -342,7 +342,7 @@ auto TriMeshSwapEdgeOperation::execute(TriMesh& m, const Tuple& t) -> ExecuteRet
     return ret_data;
 }
 
-auto TriMeshSwapEdgeOperation::modified_tuples(const TriMesh& m) -> std::vector<Tuple>
+auto TriMeshSwapEdgeOperation::modified_tuples(const TriMesh& m) const -> std::vector<Tuple>
 {
     const std::optional<Tuple>& new_tuple_opt = get_return_tuple_opt();
     if (!new_tuple_opt.has_value()) {
@@ -386,7 +386,7 @@ auto TriMeshSmoothVertexOperation::execute(TriMesh& m, const Tuple& t) -> Execut
     // always succeed and return the Tuple for the (vertex) that we pointed at
     return {t, modified_tuples(m), true};
 }
-auto TriMeshSmoothVertexOperation::modified_tuples(const TriMesh& m) -> std::vector<Tuple>
+auto TriMeshSmoothVertexOperation::modified_tuples(const TriMesh& m) const -> std::vector<Tuple>
 {
     const auto& new_tup_opt = get_return_tuple_opt();
     assert(new_tup_opt);

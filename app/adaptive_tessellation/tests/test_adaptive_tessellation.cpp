@@ -1,5 +1,3 @@
-#pragma once
-
 #include <AdaptiveTessellation.h>
 #include <igl/facet_components.h>
 #include <igl/is_edge_manifold.h>
@@ -1372,8 +1370,9 @@ TEST_CASE("quickrun")
         WrappingMode::MIRROR_REPEAT,
         WrappingMode::MIRROR_REPEAT);
 
-    m.mesh_parameters.m_position_normal_paths = {"/home/yunfan/seamPyramid_position.exr",
-                                                 "/home/yunfan/seamPyramid_normal_smooth.exr"};
+    m.mesh_parameters.m_position_normal_paths = {
+        "/home/yunfan/seamPyramid_position.exr",
+        "/home/yunfan/seamPyramid_normal_smooth.exr"};
     m.mesh_parameters.m_early_stopping_number = 100;
 
     assert(m.check_mesh_connectivity_validity());
@@ -1410,8 +1409,9 @@ TEST_CASE("check curveid consistency after split")
         WrappingMode::MIRROR_REPEAT,
         WrappingMode::MIRROR_REPEAT);
 
-    m.mesh_parameters.m_position_normal_paths = {"/home/yunfan/seamPyramid_position.exr",
-                                                 "/home/yunfan/seamPyramid_normal_smooth.exr"};
+    m.mesh_parameters.m_position_normal_paths = {
+        "/home/yunfan/seamPyramid_position.exr",
+        "/home/yunfan/seamPyramid_normal_smooth.exr"};
     assert(m.check_mesh_connectivity_validity());
     // stop after 10 iterations
     m.mesh_parameters.m_early_stopping_number = 10;

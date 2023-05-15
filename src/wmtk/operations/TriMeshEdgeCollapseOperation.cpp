@@ -30,9 +30,9 @@ auto TriMeshEdgeCollapseOperation::execute(TriMesh& m, const Tuple& loc0) -> Exe
 
 
     // get the fids
-    auto n1_fids = vertex_connectivity[vid1].m_conn_tris;
+    const auto& n1_fids = vertex_connectivity[vid1].m_conn_tris;
 
-    auto n2_fids = vertex_connectivity[vid2].m_conn_tris;
+    const auto& n2_fids = vertex_connectivity[vid2].m_conn_tris;
 
     // get the fids that will be modified
     auto n12_intersect_fids = set_intersection(n1_fids, n2_fids);
@@ -135,7 +135,7 @@ auto TriMeshEdgeCollapseOperation::execute(TriMesh& m, const Tuple& loc0) -> Exe
     return ret_data;
 }
 
-auto TriMeshEdgeCollapseOperation::modified_tuples(const TriMesh& m) -> std::vector<Tuple>
+auto TriMeshEdgeCollapseOperation::modified_tuples(const TriMesh& m) const -> std::vector<Tuple>
 {
     const auto& new_tup_opt = get_return_tuple_opt();
     assert(new_tup_opt.has_value());

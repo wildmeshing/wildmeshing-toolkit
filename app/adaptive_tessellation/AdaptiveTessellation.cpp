@@ -1125,7 +1125,7 @@ void AdaptiveTessellation::flatten_dofs(Eigen::VectorXd& v_flat)
 
 bool AdaptiveTessellation::is_seam_edge(const TriMesh::Tuple& t) const
 {
-    return face_attrs[t.fid(*this)].mirror_edges[t.local_eid(*this)].has_value();
+    return get_mirror_edge_opt(t).has_value();
 }
 bool AdaptiveTessellation::is_seam_vertex(const TriMesh::Tuple& t) const
 {

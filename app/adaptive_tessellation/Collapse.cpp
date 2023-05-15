@@ -1,4 +1,5 @@
 #include "Collapse.h"
+#include "PairUtils.hpp"
 using namespace wmtk;
 using namespace adaptive_tessellation;
 
@@ -157,7 +158,6 @@ bool AdaptiveTessellationCollapseEdgeOperation::after(AdaptiveTessellation& m)
     if (!bool(ret_tup)) {
         return false;
     }
-    return m.collapse_edge_after(ret_tup.value());
     OpCache& op_cache = m_op_cache.local();
     const Tuple& return_edge_tuple = get_return_tuple_opt().value();
 
@@ -249,28 +249,18 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::input_edge_is_mirror() con
     return op_cache.mirror_edge_tuple_opt.has_value();
 }
 
-AdaptiveTessellationPairedCollapseEdgeOperation::operator bool()
+AdaptiveTessellationPairedCollapseEdgeOperation::operator bool() const
 {
-    auto& op_cache = m_op_cache.local();
-    const std::optional<Tuple> normal_ret_opt = collapse_edge.get_return_tuple_opt();
-
-    const bool normal_ok = normal_ret_opt.has_value();
-
-    bool mirror_ok = true;
-    if (input_edge_is_mirror()) {
-        const std::optional<Tuple> mirror_ret_opt = collapse_mirror_edge.get_return_tuple_opt();
-        mirror_ok = mirror_ret_opt.has_value();
-    }
-    return normal_ok && mirror_ok;
+    return operation_success_T(collapse_edge, collapse_mirror_edge, input_edge_is_mirror());
 }
 void AdaptiveTessellationPairedCollapseEdgeOperation::set_input_edge_mirror(
     const AdaptiveTessellation& m,
     const Tuple& t)
 {
     auto& op_cache = m_op_cache.local();
-    const Tuple& mt =
-        (op_cache.mirror_edge_tuple_opt = m.face_attrs[t.fid(m)].mirror_edges[t.local_eid(m)])
-            .value();
+    if (m.get_mirror_edge_opt(t)) {
+        op_cache.mirror_edge_tuple_opt = m.get_mirror_edge_opt(t);
+    }
 }
 
 
@@ -315,15 +305,19 @@ wmtk::TriMeshOperation::ExecuteReturnData AdaptiveTessellationPairedCollapseEdge
         const Tuple& mirror_edge_tuple = op_cache.mirror_edge_tuple_opt.value();
         wmtk::TriMeshOperation::ExecuteReturnData ret_data2 =
             collapse_mirror_edge.execute(m, mirror_edge_tuple.switch_vertex(m));
-
-        ret_data.success &= ret_data2.success;
-
-        ret_data.new_tris.insert(
-            ret_data.new_tris.end(),
-            ret_data2.new_tris.begin(),
-            ret_data2.new_tris.end());
     }
+
+    ret_data.success = bool(*this);
+    ret_data.new_tris = modified_tuples(m);
+
     return ret_data;
+}
+
+
+auto AdaptiveTessellationPairedCollapseEdgeOperation::modified_tuples(
+    const AdaptiveTessellation& m) const -> std::vector<Tuple>
+{
+    modified_tuples_T(m, collapse_edge, collapse_mirror_edge);
 }
 
 bool AdaptiveTessellationPairedCollapseEdgeOperation::after(
@@ -351,6 +345,12 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::after(AdaptiveTessellation
 
     rebuild_boundary_data(m);
     return true;
+}
+
+void AdaptiveTessellationPairedCollapseEdgeOperation::mark_failed()
+{
+    collapse_edge.mark_failed();
+    collapse_mirror_edge.mark_failed();
 }
 
 auto AdaptiveTessellationPairedCollapseEdgeOperation::get_mirror_edge_tuple_opt() const
@@ -403,137 +403,6 @@ void AdaptiveTessellation::collapse_all_edges()
         auto executor = wmtk::ExecutePass<AdaptiveTessellation, ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
     }
-}
-bool AdaptiveTessellation::collapse_edge_before(const Tuple& edge_tuple)
-{
-    // check if the two vertices to be split is of the same curve_id
-    if (vertex_attrs[edge_tuple.vid(*this)].curve_id !=
-        vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].curve_id)
-        return false;
-
-    double length3d = get_length3d(edge_tuple);
-    // enforce heuristic
-    assert(length3d < 4. / 5. * mesh_parameters.m_quality_threshold);
-
-    // record boundary vertex as boudnary_vertex in vertex attribute for accurate collapse
-    // after boundary operations
-
-    if (is_boundary_vertex(edge_tuple))
-        vertex_attrs[edge_tuple.vid(*this)].boundary_vertex = true;
-    else
-        vertex_attrs[edge_tuple.vid(*this)].boundary_vertex = false;
-    if (is_boundary_vertex(edge_tuple.switch_vertex(*this)))
-        vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].boundary_vertex = true;
-    else
-        vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].boundary_vertex = false;
-    if (mesh_parameters.m_bnd_freeze &&
-        (vertex_attrs[edge_tuple.vid(*this)].boundary_vertex ||
-         vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].boundary_vertex))
-        return false;
-    cache.local().v1 = edge_tuple.vid(*this);
-    cache.local().v2 = edge_tuple.switch_vertex(*this).vid(*this);
-    cache.local().error = length3d;
-    cache.local().partition_id = vertex_attrs[edge_tuple.vid(*this)].partition_id;
-    // // get max_energy
-    // cache.local().max_energy = get_quality(edge_tuple);
-    // auto tris = get_one_ring_tris_for_vertex(edge_tuple);
-    // for (auto tri : tris) {
-    //     cache.local().max_energy = std::max(cache.local().max_energy, get_quality(tri));
-    // }
-    // mesh_parameters.m_max_energy = cache.local().max_energy;
-    return true;
-}
-bool AdaptiveTessellation::collapse_edge_after(const Tuple& edge_tuple)
-{
-    // check if the both of the 2 vertices are fixed
-    // if yes, then collapse is rejected
-    if (vertex_attrs[cache.local().v1].fixed && vertex_attrs[cache.local().v2].fixed) return false;
-
-    // adding heuristic decision. If length2 < 4. / 5. * 4. / 5. * m.m_target_l * m.m_target_l always collapse
-    double length3d = cache.local().error;
-    // enforce heuristic
-    if (length3d >= (4. / 5. * mesh_parameters.m_quality_threshold)) {
-        return false;
-    }
-
-    auto vid = edge_tuple.vid(*this);
-    Eigen::Vector2d p;
-    double t_parameter;
-    double mod_length = 0;
-    // mesh_parameters.m_boundary.m_arclengths[vertex_attrs[edge_tuple.vid(*this)].curve_id]
-    //    .back();
-    if (vertex_attrs[cache.local().v1].fixed) {
-        // assert that the old edge is not a seam edge since it would have been prevented by
-        // the before
-        // assert(!vertex_attrs[cache.local().operation_tuple]
-        //             .mirror_edges[cache.local().operation_tuple.local_eid(*this)]
-        //             .has_value());
-        p = vertex_attrs[cache.local().v1].pos;
-        t_parameter = std::fmod(vertex_attrs[cache.local().v1].t, mod_length);
-    } else if (vertex_attrs[cache.local().v2].fixed) {
-        // assert(!vertex_attrs[cache.local().operation_tuple]
-        //             .mirror_edges[cache.local().operation_tuple.local_eid(*this)]
-        //             .has_value());
-        p = vertex_attrs[cache.local().v2].pos;
-        t_parameter = std::fmod(vertex_attrs[cache.local().v2].t, mod_length);
-    } else {
-        assert(!vertex_attrs[cache.local().v1].fixed);
-        assert(!vertex_attrs[cache.local().v2].fixed);
-        // this is the same case as both are not boundary
-
-        if (vertex_attrs[cache.local().v1].boundary_vertex &&
-            vertex_attrs[cache.local().v2].boundary_vertex) {
-            vertex_attrs[vid].boundary_vertex = true;
-            vertex_attrs[vid].curve_id = vertex_attrs[cache.local().v1].curve_id;
-            // compare collapse to which one would give lower energy
-            vertex_attrs[vid].pos = vertex_attrs[cache.local().v1].pos;
-            vertex_attrs[vid].t = std::fmod(vertex_attrs[cache.local().v1].t, mod_length);
-            auto energy1 = get_one_ring_energy(edge_tuple).first;
-            vertex_attrs[vid].pos = vertex_attrs[cache.local().v2].pos;
-            vertex_attrs[vid].t = std::fmod(vertex_attrs[cache.local().v2].t, mod_length);
-            auto energy2 = get_one_ring_energy(edge_tuple).first;
-            p = energy1 < energy2 ? vertex_attrs[cache.local().v1].pos
-                                  : vertex_attrs[cache.local().v2].pos;
-            t_parameter = energy1 < energy2
-                              ? std::fmod(vertex_attrs[cache.local().v1].t, mod_length)
-                              : std::fmod(vertex_attrs[cache.local().v2].t, mod_length);
-        } else if (vertex_attrs[cache.local().v1].boundary_vertex) {
-            p = vertex_attrs[cache.local().v1].pos;
-            t_parameter = std::fmod(vertex_attrs[cache.local().v1].t, mod_length);
-        } else if (vertex_attrs[cache.local().v2].boundary_vertex) {
-            p = vertex_attrs[cache.local().v2].pos;
-            t_parameter = std::fmod(vertex_attrs[cache.local().v2].t, mod_length);
-        } else {
-            assert(!vertex_attrs[cache.local().v1].boundary_vertex);
-            assert(!vertex_attrs[cache.local().v2].boundary_vertex);
-            p = (vertex_attrs[cache.local().v1].pos + vertex_attrs[cache.local().v2].pos) / 2.0;
-            t_parameter = std::fmod(
-                (vertex_attrs[cache.local().v1].t + vertex_attrs[cache.local().v2].t) / 2.0,
-                mod_length);
-            // !!! update t_parameter and check for periodicity + curvid !!!
-        }
-    }
-    vertex_attrs[vid].pos = p;
-    vertex_attrs[vid].t = t_parameter;
-    vertex_attrs[vid].partition_id = cache.local().partition_id;
-    vertex_attrs[vid].boundary_vertex =
-        (vertex_attrs[cache.local().v1].boundary_vertex ||
-         vertex_attrs[cache.local().v2].boundary_vertex);
-    vertex_attrs[vid].fixed =
-        (vertex_attrs[cache.local().v1].fixed || vertex_attrs[cache.local().v2].fixed);
-    vertex_attrs[vid].curve_id = vertex_attrs[cache.local().v1].curve_id;
-
-    auto one_ring = get_one_ring_tris_for_vertex(edge_tuple);
-    // check invariants here since get_area_accuracy_error_per_face requires valid triangle
-    if (!invariants(one_ring)) return false;
-    double current_error = 0.;
-    for (auto tri : one_ring) {
-        auto one_ring_tri_error = get_area_accuracy_error_per_face(tri);
-        if (one_ring_tri_error >
-            mesh_parameters.m_accruacy_safeguard_ratio * mesh_parameters.m_accuracy_threshold)
-            return false;
-    }
-    return true;
 }
 
 
