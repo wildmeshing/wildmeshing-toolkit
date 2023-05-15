@@ -55,6 +55,10 @@ Stencil adjusted_stencil(const Stencil& p)
     q.col(3) = 0.25 * (p.col(0) + p.col(2) + p.col(3) + p.col(4));
     q.col(5) = 0.25 * (p.col(0) + p.col(4) + p.col(5) + p.col(6));
     q.col(7) = 0.25 * (p.col(0) + p.col(6) + p.col(7) + p.col(8));
+    q.col(2) = 0.5 * (p.col(1) + p.col(3));
+    q.col(4) = 0.5 * (p.col(3) + p.col(5));
+    q.col(6) = 0.5 * (p.col(5) + p.col(7));
+    q.col(8) = 0.5 * (p.col(7) + p.col(1));
     return q;
 }
 
