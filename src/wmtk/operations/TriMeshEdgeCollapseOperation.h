@@ -76,5 +76,11 @@ public:
     std::vector<Tuple> modified_tuples(const TriMesh& m) const;
     void assign(const Tuple& t) override { SingleTupleOperationInfo::assign(t); }
     void mark_failed() override { SingleTupleOperationInfo::reset(); }
+    std::optional<Tuple> new_vertex(const TriMesh& m) const;
+
+protected:
+    std::vector<size_t> fids_containing_edge(const TriMesh& m, size_t vid1, size_t vid2) const;
+    std::vector<size_t> fids_containing_edge(const TriMesh& m, const Tuple& t) const;
 };
+
 } // namespace wmtk

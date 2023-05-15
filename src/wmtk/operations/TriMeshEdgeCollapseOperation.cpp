@@ -35,7 +35,7 @@ auto TriMeshEdgeCollapseOperation::execute(TriMesh& m, const Tuple& loc0) -> Exe
     const auto& n2_fids = vertex_connectivity[vid2].m_conn_tris;
 
     // get the fids that will be modified
-    auto n12_intersect_fids = set_intersection(n1_fids, n2_fids);
+    auto n12_intersect_fids = fids_containing_edge(m, vid1, vid2);
     // check if the triangles intersection is the one adjcent to the edge
     size_t test_fid1 = loc0.fid(m);
     TriMesh::Tuple loc1 = m.switch_face(loc0).value_or(loc0);
@@ -62,30 +62,30 @@ auto TriMeshEdgeCollapseOperation::execute(TriMesh& m, const Tuple& loc0) -> Exe
 
     // record the fids that will be modified/erased for roll back on failure
     vector_unique(n12_union_fids);
-    std::vector<std::pair<size_t, TriangleConnectivity>> old_tris(n12_union_fids.size());
 
     for (const size_t fid : n12_union_fids) {
         tri_connectivity[fid].hash++;
     }
     // modify the triangles
     // the m_conn_tris needs to be sorted
-    size_t new_vid = get_next_empty_slot_v(m);
-    for (size_t fid : n1_fids) {
-        if (tri_connectivity[fid].m_is_removed)
-            continue;
-        else {
-            int j = tri_connectivity[fid].find(vid1);
-            tri_connectivity[fid].m_indices[j] = new_vid;
+    const size_t new_vid = get_next_empty_slot_v(m);
+
+    auto update_fid_vids = [&](const std::vector<size_t> fids, const size_t old_vid) {
+        for (size_t fid : fids) {
+            auto& tri_con = tri_connectivity[fid];
+            if (tri_con.m_is_removed) {
+                continue;
+            }
+            for (size_t& id : tri_con.m_indices) {
+                if (id == old_vid) {
+                    id = new_vid;
+                }
+            }
         }
-    }
-    for (size_t fid : n2_fids) {
-        if (tri_connectivity[fid].m_is_removed)
-            continue;
-        else {
-            int j = tri_connectivity[fid].find(vid2);
-            tri_connectivity[fid].m_indices[j] = new_vid;
-        }
-    }
+    };
+
+    update_fid_vids(n1_fids, vid1);
+    update_fid_vids(n1_fids, vid2);
 
     // now work on vids
     // add in the new vertex
@@ -102,12 +102,10 @@ auto TriMeshEdgeCollapseOperation::execute(TriMesh& m, const Tuple& loc0) -> Exe
 
     // remove the erased fids from the vertices' (the one of the triangles that is not the end
     // points of the edge) connectivity list
-    std::vector<std::pair<size_t, size_t>> same_edge_vid_fid;
     for (size_t fid : n12_intersect_fids) {
         auto f_vids = tri_connectivity[fid].m_indices;
         for (size_t f_vid : f_vids) {
             if (f_vid != vid1 && f_vid != vid2) {
-                same_edge_vid_fid.emplace_back(f_vid, fid);
                 assert(vector_contains(vertex_connectivity[f_vid].m_conn_tris, fid));
                 vector_erase(vertex_connectivity[f_vid].m_conn_tris, fid);
             }
@@ -140,6 +138,11 @@ auto TriMeshEdgeCollapseOperation::modified_tuples(const TriMesh& m) const -> st
     const auto& new_tup_opt = get_return_tuple_opt();
     assert(new_tup_opt.has_value());
     return m.get_one_ring_tris_for_vertex(new_tup_opt.value());
+}
+
+auto TriMeshEdgeCollapseOperation::new_vertex(const TriMesh& m) const -> std::optional<Tuple>
+{
+    return get_return_tuple_opt();
 }
 namespace {
 constexpr static size_t dummy = std::numeric_limits<size_t>::max();
@@ -237,5 +240,26 @@ bool TriMeshEdgeCollapseOperation::after(TriMesh& m, ExecuteReturnData& ret_data
 std::string TriMeshEdgeCollapseOperation::name() const
 {
     return "edge_collapse";
+}
+
+std::vector<size_t>
+TriMeshEdgeCollapseOperation::fids_containing_edge(const TriMesh& m, size_t vid1, size_t vid2) const
+{
+    const auto& vertex_connectivity = this->vertex_connectivity(m);
+    // get the fids
+    const auto& n1_fids = vertex_connectivity[vid1].m_conn_tris;
+
+    const auto& n2_fids = vertex_connectivity[vid2].m_conn_tris;
+
+    // get the fids that will be modified
+    return set_intersection(n1_fids, n2_fids);
+}
+std::vector<size_t> TriMeshEdgeCollapseOperation::fids_containing_edge(
+    const TriMesh& m,
+    const Tuple& t) const
+{
+    size_t vid1 = t.vid(m);
+    size_t vid2 = m.switch_vertex(t).vid(m);
+    return fids_containing_edge(m, vid1, vid2);
 }
 } // namespace wmtk

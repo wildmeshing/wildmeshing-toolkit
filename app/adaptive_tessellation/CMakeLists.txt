@@ -23,6 +23,7 @@ add_library(wmtk_adaptive_tessellation
 	Smooth.h
 	Collapse.h
 	AdaptiveTessellation.cpp
+	AdaptiveTessellation_attributes.cpp
     AdaptiveTessellation_debug.cpp
     AdaptiveTessellation_serialization.cpp
 	AdaptiveTessellation.h

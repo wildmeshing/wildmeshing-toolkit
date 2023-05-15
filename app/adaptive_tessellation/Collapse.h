@@ -16,8 +16,11 @@
 namespace adaptive_tessellation {
 
 
-// CollapseEdgeOperation stores some details on the collapse that it occurred
-// CollapseEdgePairOperation
+// CollapseEdgeOperation stores some details on the collapse that it occurred and fixing seams on
+// JUST the result of merging two edges (i.e the attributes of
+// v_new <-> v_top and v_new <-> v_bot)
+//
+// CollapseEdgePairOperation is responsible for updating all other edges
 //
 
 
@@ -74,14 +77,11 @@ public:
         //   | /    |    \ |
         //   |/     |     \|
         //   ---------------
-        std::optional<size_t> v_top = 0; // remaining vertex of the input triangle being collapsed
-        std::optional<size_t> v_bot = 0; // remaining vertex of the other triangle being collapsed
-
 
         // pairs of vids for edges where a vertex changes in the collapse
         std::unordered_map<size_t, SeamData> new_vertex_seam_data;
     };
-    tbb::enumerable_thread_specific<OpCache> m_op_cache;
+    mutable tbb::enumerable_thread_specific<OpCache> m_op_cache;
 
     static bool check_seamed_link_condition(AdaptiveTessellation& m, const Tuple& t);
 
@@ -94,6 +94,15 @@ public:
     bool before(AdaptiveTessellation& m, const Tuple& t);
     bool after(AdaptiveTessellation& m, ExecuteReturnData& ret_data);
     bool after(AdaptiveTessellation& m);
+
+    void store_merged_seam_data(const AdaptiveTessellation& m, const Tuple& edge_tuple);
+
+    // constructs and assigns vertex attributes to the new vertex
+    void assign_new_vertex_attributes(AdaptiveTessellation& m) const;
+
+    // constructs and assigns vertex attributes to the new vertex using a known target attribute
+    void assign_new_vertex_attributes(AdaptiveTessellation& m, const VertexAttributes& attr) const;
+    void assign_collapsed_edge_attributes(AdaptiveTessellation& m) const;
 };
 
 class AdaptiveTessellationPairedCollapseEdgeOperation
@@ -106,7 +115,10 @@ public:
     AdaptiveTessellationCollapseEdgeOperation collapse_edge;
     AdaptiveTessellationCollapseEdgeOperation collapse_mirror_edge;
     std::string name() const override { return collapse_edge.name(); }
-    using SeamData = AdaptiveTessellationCollapseEdgeOperation::SeamData;
+    struct SeamData : public AdaptiveTessellationCollapseEdgeOperation::SeamData
+    {
+        size_t fid;
+    };
 
     //        / | \                         |\ 
     //       /  |  \                        | \ 

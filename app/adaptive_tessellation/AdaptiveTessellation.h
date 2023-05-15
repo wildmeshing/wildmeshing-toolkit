@@ -358,6 +358,13 @@ public:
     bool is_seam_edge(const TriMesh::Tuple& t) const;
     bool is_seam_vertex(const TriMesh::Tuple& t) const;
 
+    VertexAttributes& get_vertex_attrs(const Tuple& t);
+    const VertexAttributes& get_vertex_attrs(const Tuple& t) const;
+    FaceAttributes& get_face_attrs(const Tuple& t);
+    const FaceAttributes& get_face_attrs(const Tuple& t) const;
+    EdgeAttributes& get_edge_attrs(const Tuple& t);
+    const EdgeAttributes& get_edge_attrs(const Tuple& t) const;
+
 
     ////// debug/unit test helper functions
     void gradient_debug(int max_its);

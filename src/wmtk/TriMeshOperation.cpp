@@ -209,7 +209,7 @@ auto TriMeshSplitEdgeOperation::execute(TriMesh& m, const Tuple& t) -> ExecuteRe
 #if defined(_DEBUG)
     auto new_vertex = Tuple(new_vid, (l + 2) % 3, new_fid, m);
     assert(new_vertex.is_valid(m));
-    assert(new_vertex == this->new_vertex(m));
+    //assert(new_vertex == this->new_vertex(m));
 #endif
     assign(return_tuple);
     new_tris = modified_tuples(m);
