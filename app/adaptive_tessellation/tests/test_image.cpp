@@ -62,3 +62,35 @@ TEST_CASE("mipmap")
         REQUIRE(tmp_image.width() == pow(2, (10 - i)));
     }
 }
+
+TEST_CASE("combined displaced map")
+{
+    std::array<wmtk::Image, 3> displaced_images = wmtk::combine_position_normal_texture(
+        (double)1.,
+        "/home/yunfan/seamPyramid_position.exr",
+        "/home/yunfan/seamPyramid_normal_smooth.exr",
+        "/home/yunfan/seamPyramid_height_10.exr",
+        "displaced_seam_pyramid.exr");
+
+    std::array<wmtk::Image, 3> displaced_from_precomputed =
+        wmtk::load_rgb_image("/home/yunfan/seamPyramid_displaced.exr");
+    REQUIRE(displaced_from_precomputed[0].width() == displaced_images[0].width());
+    REQUIRE(displaced_from_precomputed[0].height() == displaced_images[0].height());
+    REQUIRE(displaced_from_precomputed[1].width() == displaced_images[1].width());
+    REQUIRE(displaced_from_precomputed[1].height() == displaced_images[1].height());
+    REQUIRE(displaced_from_precomputed[2].width() == displaced_images[2].width());
+    REQUIRE(displaced_from_precomputed[2].height() == displaced_images[2].height());
+    for (int i = 0; i < displaced_from_precomputed[0].height(); i++) {
+        for (int j = 0; j < displaced_from_precomputed[0].width(); j++) {
+            REQUIRE_THAT(
+                displaced_from_precomputed[0].get_pixel(i, j),
+                Catch::Matchers::WithinAbs(displaced_images[0].get_pixel(i, j), (float)1e-5));
+            REQUIRE_THAT(
+                displaced_from_precomputed[1].get_pixel(i, j),
+                Catch::Matchers::WithinAbs(displaced_images[1].get_pixel(i, j), (float)1e-5));
+            REQUIRE_THAT(
+                displaced_from_precomputed[2].get_pixel(i, j),
+                Catch::Matchers::WithinAbs(displaced_images[2].get_pixel(i, j), (float)1e-5));
+        }
+    }
+}

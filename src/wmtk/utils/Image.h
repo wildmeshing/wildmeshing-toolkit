@@ -112,6 +112,12 @@ inline void split_and_save_3channels(const std::filesystem::path& path)
     res = save_image_exr_red_channel(w, h, buffer_b, path_b);
 }
 
+std::array<wmtk::Image, 3> combine_position_normal_texture(
+    double normalization_scale,
+    const std::filesystem::path& position_path,
+    const std::filesystem::path& normal_path,
+    const std::filesystem::path& texture_path,
+    const std::filesystem::path& displaced_path);
 
 std::array<wmtk::Image, 3> load_rgb_image(const std::filesystem::path& path);
 
