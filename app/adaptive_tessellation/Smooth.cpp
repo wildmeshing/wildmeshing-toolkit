@@ -59,10 +59,10 @@ TriMeshOperation::ExecuteReturnData AdaptiveTessellationSmoothSeamVertexOperatio
 bool AdaptiveTessellationSmoothSeamVertexOperation::before(AdaptiveTessellation& m, const Tuple& t)
 {
     static std::atomic_int cnt = 0;
-    m.write_displaced_obj(
-        m.mesh_parameters.m_output_folder + fmt::format("/smooth_{:04d}.obj", cnt),
-        m.mesh_parameters.m_displacement);
-    m.write_obj(m.mesh_parameters.m_output_folder + fmt::format("/smooth_{:04d}_2d.obj", cnt));
+    // m.write_displaced_obj(
+    //     m.mesh_parameters.m_output_folder + fmt::format("/smooth_{:04d}.obj", cnt),
+    //     m.mesh_parameters.m_displacement);
+    // m.write_obj(m.mesh_parameters.m_output_folder + fmt::format("/smooth_{:04d}_2d.obj", cnt));
 
     if (wmtk::TriMeshSmoothVertexOperation::before(m, t)) {
         assert(!m.vertex_attrs[t.vid(m)].fixed);

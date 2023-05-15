@@ -108,9 +108,8 @@ public:
         // get the pixel index of p1 and p2
         auto get_coordinate = [&](const T& x, const T& y) -> std::pair<int, int> {
             auto [xx, yy] = m_image.get_pixel_index(get_value(x), get_value(y));
-            return {
-                m_image.get_coordinate(xx, m_image.get_wrapping_mode_x()),
-                m_image.get_coordinate(yy, m_image.get_wrapping_mode_y())};
+            return {m_image.get_coordinate(xx, m_image.get_wrapping_mode_x()),
+                    m_image.get_coordinate(yy, m_image.get_wrapping_mode_y())};
         };
         auto [xx1, yy1] = get_coordinate(uv1(0), uv1(1));
         auto [xx2, yy2] = get_coordinate(uv2(0), uv2(1));
@@ -203,9 +202,8 @@ public:
         };
         auto get_coordinate = [&](const double& x, const double& y) -> std::pair<int, int> {
             auto [xx, yy] = m_image.get_pixel_index(get_value(x), get_value(y));
-            return {
-                m_image.get_coordinate(xx, m_image.get_wrapping_mode_x()),
-                m_image.get_coordinate(yy, m_image.get_wrapping_mode_y())};
+            return {m_image.get_coordinate(xx, m_image.get_wrapping_mode_x()),
+                    m_image.get_coordinate(yy, m_image.get_wrapping_mode_y())};
         };
         auto bbox_min = bbox.min();
         auto bbox_max = bbox.max();
@@ -314,8 +312,8 @@ protected:
     std::array<std::unique_ptr<wmtk::Sampling>, 3> m_position_sampler;
     std::array<wmtk::Image, 3> m_normal_image;
     std::array<std::unique_ptr<wmtk::Sampling>, 3> m_normal_sampler;
-    double m_normalization_scale = 0.0;
-    Eigen::Matrix<double, 3, 1> m_normalization_offset;
+    double m_normalization_scale = 1.0;
+    Eigen::Vector3d m_normalization_offset = Eigen::Vector3d::Zero();
 
 public:
     void set_sampling_mode(const wmtk::SAMPLING_MODE sampling_mode) override
@@ -342,7 +340,7 @@ public:
         for (auto i = 0; i < 3; i++) {
             double p = m_position_sampler[i]->sample(u, v);
             double d = 2.0 * m_normal_sampler[i]->sample(u, v) - 1.0;
-            displace_3d(i, 0) = p * m_normalization_scale - m_normalization_offset(i, 0) + z * d;
+            displace_3d(i, 0) = p - m_normalization_scale * m_normalization_offset(i, 0) + z * d;
         }
         return displace_3d;
     }
@@ -354,7 +352,7 @@ public:
         for (auto i = 0; i < 3; i++) {
             DScalar p = m_position_sampler[i]->sample(u, v);
             DScalar d = 2.0 * m_normal_sampler[i]->sample(u, v) - 1.0;
-            displace_3d(i, 0) = p * m_normalization_scale - m_normalization_offset(i, 0) + z * d;
+            displace_3d(i, 0) = p - m_normalization_scale * m_normalization_offset(i, 0) + z * d;
         }
         return displace_3d;
     }
@@ -364,7 +362,7 @@ public:
         Eigen::Matrix<double, 3, 1> displace_3d;
         for (auto i = 0; i < 3; i++) {
             double p = m_position_sampler[i]->sample(u, v);
-            displace_3d(i, 0) = p * m_normalization_scale - m_normalization_offset(i, 0);
+            displace_3d(i, 0) = p - m_normalization_scale * m_normalization_offset(i, 0);
         }
         return displace_3d;
     }
