@@ -78,7 +78,7 @@ public:
 
     double m_quality_threshold = 0.01;
     double m_accuracy_threshold = 0.001;
-    double m_accruacy_safeguard_ratio = 1.1;
+    double m_accuracy_safeguard_ratio = 1.1;
 
     EDGE_LEN_TYPE m_edge_length_type = EDGE_LEN_TYPE::ACCURACY;
     SAMPLING_MODE m_sampling_mode = SAMPLING_MODE::BICUBIC;
@@ -94,5 +94,7 @@ public:
     int m_early_stopping_number = std::numeric_limits<size_t>::max();
     // only operate to modify topologies
     bool m_ignore_embedding = false;
+    // used for scaling the height map
+    double m_normalization_scale = 1.0;
 };
 } // namespace adaptive_tessellation

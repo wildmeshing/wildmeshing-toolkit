@@ -76,7 +76,9 @@ int main(int argc, char** argv)
     std::filesystem::path normal_map_path = std::string(config["normal_map_path"]);
     // "/mnt/ssd2/yunfan/adaptive_tessellation/textures/3d_mesh/ninja/3channel_normal_position/"
     // "ninja_normal.exr";
+    std::filesystem::path displaced_image_path = output_folder + "displaced_image.exr";
     double target_l = config["target_edge_length"];
+
     double target_accuracy = config["target_accuracy"];
     SAMPLING_MODE sampling_mode = SAMPLING_MODE::BICUBIC;
     DISPLACEMENT_MODE displacement_mode = DISPLACEMENT_MODE::MESH_3D;
@@ -97,9 +99,9 @@ int main(int argc, char** argv)
 
     // Loading the input 2d mesh
     AdaptiveTessellation m;
-    Eigen::MatrixXd UV;
-    Eigen::MatrixXi F;
-    m.create_paired_seam_mesh_with_offset(input_file, UV, F);
+    // Eigen::MatrixXd UV;
+    // Eigen::MatrixXi F;
+    // m.create_paired_seam_mesh_with_offset(input_file, UV, F);
 
     std::ofstream js_o(output_json);
     auto start_time = lagrange::get_timestamp();
@@ -108,13 +110,31 @@ int main(int argc, char** argv)
     image.load(height_map_path, wrapping_mode, wrapping_mode);
     wmtk::logger().info("/////height image: {}", height_map_path);
 
+
     m.set_output_folder(output_folder);
     m.mesh_parameters.m_position_normal_paths = {position_map_path, normal_map_path};
+
+    m.mesh_preprocessing(input_file, position_map_path, normal_map_path, height_map_path);
+
+    assert(m.check_mesh_connectivity_validity());
+    // stop after 100 iterations
+    m.mesh_parameters.m_early_stopping_number = 100;
+    m.set_parameters(
+        0.00001,
+        0.4,
+        image,
+        WrappingMode::MIRROR_REPEAT,
+        SAMPLING_MODE::BICUBIC,
+        DISPLACEMENT_MODE::MESH_3D,
+        adaptive_tessellation::ENERGY_TYPE::AREA_QUADRATURE,
+        adaptive_tessellation::EDGE_LEN_TYPE::AREA_ACCURACY,
+        1);
+    m.split_all_edges();
     assert(m.check_mesh_connectivity_validity());
     m.mesh_parameters.js_log["input"] = input_file;
     m.mesh_parameters.js_log["output"] = output_file;
-    m.mesh_parameters.js_log["num_vert"] = UV.rows();
-    m.mesh_parameters.js_log["num_faces"] = F.rows();
+    // m.mesh_parameters.js_log["num_vert"] = UV.rows();
+    // m.mesh_parameters.js_log["num_faces"] = F.rows();
 
     wmtk::logger().info("/////target edge length: {}", target_l);
     wmtk::logger().info("/////target accuracy: {}", target_accuracy);

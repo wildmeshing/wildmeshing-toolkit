@@ -39,7 +39,9 @@ double AdaptiveTessellation::avg_edge_len() const
 // 8. initiate the texture integraler
 void AdaptiveTessellation::mesh_preprocessing(
     const std::filesystem::path& input_mesh_path,
-    const std::filesystem::path& displaced_image_path)
+    const std::filesystem::path& position_image_path,
+    const std::filesystem::path& normal_image_path,
+    const std::filesystem::path& height_image_path)
 {
     Eigen::MatrixXd CN, FN;
     Eigen::MatrixXd V, VT;
@@ -84,7 +86,12 @@ void AdaptiveTessellation::mesh_preprocessing(
     // assign curve-id to each edge using the curve-it assigned for each vertex
     assign_edge_curveid();
     // cache the initial accuracy error per triangle
-    std::array<wmtk::Image, 3> displaced = wmtk::load_rgb_image(displaced_image_path.string());
+    std::array<wmtk::Image, 3> displaced = wmtk::combine_position_normal_texture(
+        mesh_parameters.m_normalization_scale,
+        position_image_path,
+        normal_image_path,
+        height_image_path,
+        "debug_combined_displaced_image.exr");
     std::vector<std::array<float, 6>> uv_triangles(tri_capacity());
     std::vector<TriMesh::Tuple> tris_tuples = get_faces();
     for (int i = 0; i < tris_tuples.size(); i++) {
