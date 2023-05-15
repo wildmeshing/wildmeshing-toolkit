@@ -409,6 +409,9 @@ bool AdaptiveTessellationPairedSplitEdgeOperation::after(
         assert(paired_op_cache.local().after_sibling_edges.size() == 8);
         ret_data.success &=
             mirror_split_edge.after(m, ret_data); // after doesn't use contents of ret_data
+        // enforce the mirror_split_edge t to be the same as the primary t
+        m.vertex_attrs[mirror_split_edge.return_edge_tuple.vid(m)].t =
+            m.vertex_attrs[split_edge.return_edge_tuple.vid(m)].t;
         // now do the siling edge tranfering
         if (!ret_data.success) return false;
         // it's a seam edge update mirror edge data using the sibling edges

@@ -99,9 +99,9 @@ int main(int argc, char** argv)
 
     // Loading the input 2d mesh
     AdaptiveTessellation m;
-    Eigen::MatrixXd UV;
-    Eigen::MatrixXi F;
-    m.create_paired_seam_mesh_with_offset(input_file, UV, F);
+    // Eigen::MatrixXd UV;
+    // Eigen::MatrixXi F;
+    // m.create_paired_seam_mesh_with_offset(input_file, UV, F);
 
     std::ofstream js_o(output_json);
     auto start_time = lagrange::get_timestamp();
@@ -114,10 +114,8 @@ int main(int argc, char** argv)
     m.set_output_folder(output_folder);
     m.mesh_parameters.m_position_normal_paths = {position_map_path, normal_map_path};
 
-    // m.mesh_preprocessing(input_file, displaced);
+    m.mesh_preprocessing(input_file, position_map_path, normal_map_path, height_map_path);
 
-    m.mesh_parameters.m_position_normal_paths = {"/home/yunfan/seamPyramid_position.exr",
-                                                 "/home/yunfan/seamPyramid_normal_smooth.exr"};
     assert(m.check_mesh_connectivity_validity());
     // stop after 100 iterations
     m.mesh_parameters.m_early_stopping_number = 100;
@@ -135,8 +133,8 @@ int main(int argc, char** argv)
     assert(m.check_mesh_connectivity_validity());
     m.mesh_parameters.js_log["input"] = input_file;
     m.mesh_parameters.js_log["output"] = output_file;
-    m.mesh_parameters.js_log["num_vert"] = UV.rows();
-    m.mesh_parameters.js_log["num_faces"] = F.rows();
+    // m.mesh_parameters.js_log["num_vert"] = UV.rows();
+    // m.mesh_parameters.js_log["num_faces"] = F.rows();
 
     wmtk::logger().info("/////target edge length: {}", target_l);
     wmtk::logger().info("/////target accuracy: {}", target_accuracy);

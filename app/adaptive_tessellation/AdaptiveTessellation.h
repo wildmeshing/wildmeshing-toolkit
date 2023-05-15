@@ -106,9 +106,9 @@ public:
     // mapping is built at loading and is not maintained during the mesh operations
     // since seam vertices at t-junctions should not be modified,
     // those colorings do not need updates
-    std::unordered_map<size_t, int> uv_index_to_color;
+    std::unordered_map<size_t, int> uv_index_to_color = {};
     // each color can have 1 vertex, 2 vertices, or 3 above vertices
-    std::vector<std::vector<size_t>> color_to_uv_indices;
+    std::vector<std::vector<size_t>> color_to_uv_indices = {};
 
     // texture integraler
     wmtk::TextureIntegral m_texture_integral;
@@ -174,7 +174,9 @@ public:
     // 7. face_attrs:   set initial accuracy error for each triangle
     void mesh_preprocessing(
         const std::filesystem::path& input_mesh_path,
-        const std::filesystem::path& displaced_image_path);
+        const std::filesystem::path& position_image_path,
+        const std::filesystem::path& normal_image_path,
+        const std::filesystem::path& height_image_path);
 
     bool invariants(const std::vector<Tuple>& new_tris);
 
@@ -365,6 +367,9 @@ public:
 
 
     ////// debug/unit test helper functions
+    void mesh_preprocessing(
+        const std::filesystem::path& input_mesh_path,
+        const std::filesystem::path& displaced_image_path);
     void gradient_debug(int max_its);
     // set early termination for a execution pass for unit test and debugging purpose
     template <typename Executor>

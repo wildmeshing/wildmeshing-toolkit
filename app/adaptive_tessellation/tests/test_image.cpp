@@ -94,3 +94,14 @@ TEST_CASE("combined displaced map")
         }
     }
 }
+
+TEST_CASE("downsample image")
+{
+    Image image(1024, 1024);
+    image.load(
+        "/home/yunfan/riveted_castle_iron_door_2048_height.exr",
+        WrappingMode::MIRROR_REPEAT,
+        WrappingMode::MIRROR_REPEAT);
+    auto low_res = image.down_sample();
+    low_res.save("/home/yunfan/riveted_castle_iron_door_1024_height.exr");
+}

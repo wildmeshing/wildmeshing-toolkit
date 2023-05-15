@@ -94,5 +94,7 @@ public:
     int m_early_stopping_number = std::numeric_limits<size_t>::max();
     // only operate to modify topologies
     bool m_ignore_embedding = false;
+    // used for scaling the height map
+    double m_normalization_scale = 1.0;
 };
 } // namespace adaptive_tessellation
