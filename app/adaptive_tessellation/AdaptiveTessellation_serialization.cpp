@@ -13,6 +13,7 @@ void AdaptiveTessellation::create_paired_seam_mesh_with_offset(
     Eigen::MatrixXd& UV,
     Eigen::MatrixXi& F)
 {
+    throw std::runtime_error("Archived function. Please use mesh_preprocessing instead.");
     // load uv coordinates and connectivities
     auto mesh = lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(input_mesh_path);
     triangulate_polygonal_facets(mesh);

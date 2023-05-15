@@ -1366,19 +1366,18 @@ TEST_CASE("quickrun")
 {
     // Loading the input 2d mesh
     AdaptiveTessellation m;
-    m.mesh_preprocessing("/home/yunfan/seamPyramid.obj", "/home/yunfan/seamPyramid_displaced.exr");
-
+    m.mesh_preprocessing("swap_0006.obj", "/home/yunfan/seamPyramid_displaced.exr");
     Image image;
     image.load(
         "/home/yunfan/seamPyramid_height_10.exr",
         WrappingMode::MIRROR_REPEAT,
         WrappingMode::MIRROR_REPEAT);
 
-    // m.mesh_parameters.m_position_normal_paths = {"/home/yunfan/seamPyramid_position.exr",
-    //                                              "/home/yunfan/seamPyramid_normal_smooth.exr"};
-    // m.mesh_parameters.m_early_stopping_number = 100;
+    m.mesh_parameters.m_position_normal_paths = {"/home/yunfan/seamPyramid_position.exr",
+                                                 "/home/yunfan/seamPyramid_normal_smooth.exr"};
+    REQUIRE(m.check_mesh_connectivity_validity());
+    m.mesh_parameters.m_early_stopping_number = 100;
 
-    assert(m.check_mesh_connectivity_validity());
     m.set_parameters(
         0.00001,
         0.4,
@@ -1386,12 +1385,13 @@ TEST_CASE("quickrun")
         WrappingMode::MIRROR_REPEAT,
         SAMPLING_MODE::BICUBIC,
         DISPLACEMENT_MODE::MESH_3D,
-        adaptive_tessellation::ENERGY_TYPE::AREA_QUADRATURE,
+        adaptive_tessellation::ENERGY_TYPE::AREA_QUADRATURE,    
         adaptive_tessellation::EDGE_LEN_TYPE::AREA_ACCURACY,
         1);
-    m.split_all_edges();
-    m.write_displaced_obj("split_result.obj", m.mesh_parameters.m_displacement);
-    m.write_obj("split_result_2d.obj");
+    // m.split_all_edges();
+    // m.write_obj_with_texture_coords("split_result.obj");
+    m.swap_all_edges();
+    m.write_obj_with_texture_coords("swap_result.obj");
     m.smooth_all_vertices();
     m.write_displaced_obj("smooth_result.obj", m.mesh_parameters.m_displacement);
     m.write_obj("smooth_result_2d.obj");
