@@ -110,5 +110,10 @@ public:
         ATlogger->flush();
         }
     }
+
+    // log that always writes to file immediately beause it's flushing
+    void log_flush(const nlohmann::json& js) {
+        log(js, true);
+    }
 };
 } // namespace adaptive_tessellation
