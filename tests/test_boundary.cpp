@@ -175,4 +175,11 @@ TEST_CASE("Boundary Parameterization", "[utils][boundary]")
             lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMTK_DATA_DIR "/hemisphere.obj"),
             39);
     }
+    SECTION("hemisphere_splited")
+    {
+        BoundaryTester::test_boundary_parameterization(
+            lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMTK_DATA_DIR
+                                                              "/hemisphere_splited.obj"),
+            39);
+    }
 }

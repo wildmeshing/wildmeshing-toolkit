@@ -1452,3 +1452,79 @@ TEST_CASE("logging")
 
     m.mesh_parameters.log({{"logging info", {"your info should be in runtime.log"}}});
 }
+
+TEST_CASE("mirror vertex t_to_uv")
+{
+    AdaptiveTessellation m;
+    m.mesh_preprocessing(
+        WMTK_DATA_DIR "/hemisphere_splited.obj",
+        WMTK_DATA_DIR "/images/hemisphere_512_displaced.exr");
+    wmtk::Boundary bd_map = m.mesh_parameters.m_boundary;
+    for (auto& e : m.get_edges()) {
+        if (m.is_seam_edge(e)) {
+            // first vertex
+
+            if (m.vertex_attrs[e.vid(m)].fixed) continue;
+            wmtk::TriMesh::Tuple mirror_v = m.get_mirror_vertex(e);
+            // t and mirror_v.t should be the same
+            REQUIRE_THAT(
+                m.vertex_attrs[mirror_v.vid(m)].t,
+                Catch::Matchers::WithinAbs(m.vertex_attrs[e.vid(m)].t, (float)1e-7));
+            REQUIRE(m.get_mirror_vertex(mirror_v).vid(m) == e.vid(m));
+            REQUIRE(m.edge_attrs[mirror_v.eid(m)].curve_id.has_value());
+            REQUIRE(m.edge_attrs[e.eid(m)].curve_id.has_value());
+
+            // the uv pos for mirror vertex should be the same as result of t_to_uv
+            if (!(m.vertex_attrs[mirror_v.vid(m)].pos -
+                  bd_map.t_to_uv(
+                      m.edge_attrs[mirror_v.eid(m)].curve_id.value(),
+                      m.vertex_attrs[mirror_v.vid(m)].t))
+                     .squaredNorm() < 1e-5) {
+                wmtk::logger().error("mirror vertex uv pos not match");
+                wmtk::logger().info(
+                    "curve id {}, t {}",
+                    m.edge_attrs[mirror_v.eid(m)].curve_id.value(),
+                    m.vertex_attrs[mirror_v.vid(m)].t);
+                wmtk::logger().info(
+                    "t to uv {} uv pos {}",
+                    bd_map.t_to_uv(
+                        m.edge_attrs[mirror_v.eid(m)].curve_id.value(),
+                        m.vertex_attrs[mirror_v.vid(m)].t),
+                    m.vertex_attrs[mirror_v.vid(m)].pos);
+                REQUIRE(false);
+            }
+            // second vertex
+            if (m.vertex_attrs[e.switch_vertex(m).vid(m)].fixed) continue;
+            wmtk::TriMesh::Tuple mirror_v2 = m.get_mirror_vertex(e.switch_vertex(m));
+            // t and mirror_v.t should be the same
+            REQUIRE_THAT(
+                m.vertex_attrs[mirror_v2.vid(m)].t,
+                Catch::Matchers::WithinAbs(
+                    m.vertex_attrs[e.switch_vertex(m).vid(m)].t,
+                    (float)1e-7));
+
+            REQUIRE(m.get_mirror_vertex(mirror_v2).vid(m) == e.switch_vertex(m).vid(m));
+            REQUIRE(m.edge_attrs[mirror_v2.eid(m)].curve_id.has_value());
+            REQUIRE(m.edge_attrs[e.eid(m)].curve_id.has_value());
+            // the uv pos for mirror vertex should be the same as result of t_to_uv
+            if (!(m.vertex_attrs[mirror_v2.vid(m)].pos -
+                  bd_map.t_to_uv(
+                      m.edge_attrs[mirror_v2.eid(m)].curve_id.value(),
+                      m.vertex_attrs[mirror_v2.vid(m)].t))
+                     .squaredNorm() < 1e-5) {
+                wmtk::logger().error("mirror vertex uv pos not match");
+                wmtk::logger().info(
+                    "curve id {}, t {}",
+                    m.edge_attrs[mirror_v2.eid(m)].curve_id.value(),
+                    m.vertex_attrs[mirror_v2.vid(m)].t);
+                wmtk::logger().info(
+                    "t to uv {} uv pos {}",
+                    bd_map.t_to_uv(
+                        m.edge_attrs[mirror_v2.eid(m)].curve_id.value(),
+                        m.vertex_attrs[mirror_v2.vid(m)].t),
+                    m.vertex_attrs[mirror_v2.vid(m)].pos);
+                REQUIRE(false);
+            }
+        }
+    }
+}
