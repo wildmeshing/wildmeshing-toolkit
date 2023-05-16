@@ -69,9 +69,6 @@ public:
      */
     static bool check_link_condition(const TriMesh& m, const Tuple& t);
 
-    // computes the
-    static LinksOfVertex links_of_vertex(const TriMesh& m, const Tuple& vertex);
-    static std::vector<size_t> edge_link_of_edge(const TriMesh& m, const Tuple& edge);
 
     std::vector<Tuple> modified_tuples(const TriMesh& m) const;
     void assign(const Tuple& t) override { SingleTupleOperationInfo::assign(t); }
@@ -79,8 +76,12 @@ public:
     std::optional<Tuple> new_vertex(const TriMesh& m) const;
 
 protected:
-    std::vector<size_t> fids_containing_edge(const TriMesh& m, size_t vid1, size_t vid2) const;
+    constexpr static size_t link_dummy = std::numeric_limits<size_t>::max();
     std::vector<size_t> fids_containing_edge(const TriMesh& m, const Tuple& t) const;
+    // computes the
+    static LinksOfVertex links_of_vertex(const TriMesh& m, const Tuple& vertex);
+    static std::vector<size_t> edge_link_of_edge_vids(const TriMesh& m, const Tuple& edge);
+    // static std::vector<Tuple> edge_link_of_edge(const TriMesh& m, const Tuple& edge);
 };
 
 } // namespace wmtk

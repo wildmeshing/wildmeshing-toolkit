@@ -374,6 +374,10 @@ public:
      */
     std::array<Tuple, 3> triangle_boundary_edge_tuples(const Tuple& triangle) const;
 
+    std::vector<Tuple> tris_bounded_by_edge(const Tuple& edge) const;
+
+private:
+    std::vector<size_t> tri_fids_bounded_by_edge(const Tuple& edge) const;
 
     // private:
 protected:

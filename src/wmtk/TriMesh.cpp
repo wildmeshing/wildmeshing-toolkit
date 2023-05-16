@@ -678,3 +678,31 @@ void TriMesh::start_protected_connectivity()
     m_vertex_connectivity.begin_protect();
     m_tri_connectivity.begin_protect();
 }
+
+auto TriMesh::tris_bounded_by_edge(const Tuple& edge) const -> std::vector<Tuple>
+{
+    std::vector<Tuple> ret;
+    const std::vector<size_t> fids = tri_fids_bounded_by_edge(edge);
+    ret.reserve(fids.size());
+    std::transform(
+        fids.begin(),
+        fids.end(),
+        std::back_inserter(ret),
+        [&](const size_t fid) -> Tuple { return tuple_from_tri(fid); });
+    return ret;
+}
+
+std::vector<size_t> TriMesh::tri_fids_bounded_by_edge(const Tuple& edge) const
+{
+    size_t v0 = edge.vid(*this);
+    size_t v1 = edge.switch_vertex(*this).vid(*this);
+
+    // get the fids
+    const auto& f0 = m_vertex_connectivity[v0].m_conn_tris;
+
+    const auto& f1 = m_vertex_connectivity[v1].m_conn_tris;
+
+    // get the fids that will be modified
+    return set_intersection(f0, f1);
+}
+
