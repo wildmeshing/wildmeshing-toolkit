@@ -629,6 +629,26 @@ void TriMesh::rollback_protected_attributes()
     if (p_face_attrs) p_face_attrs->rollback();
 }
 
+auto TriMesh::tuple_from_tri(size_t fid) const -> Tuple
+{
+    if (fid >= m_tri_connectivity.size() || m_tri_connectivity[fid].m_is_removed) return Tuple();
+    auto vid = m_tri_connectivity[fid][0];
+    return Tuple(vid, 1, fid, *this);
+}
+
+auto TriMesh::tuple_from_vertex(size_t vid) const -> Tuple
+{
+    auto fid = m_vertex_connectivity[vid][0];
+    auto eid = m_tri_connectivity[fid].find(vid);
+    return Tuple(vid, (eid + 1) % 3, fid, *this);
+}
+
+auto TriMesh::tuple_from_edge(size_t fid, size_t local_eid) const -> Tuple
+{
+    auto vid = m_tri_connectivity[fid][(local_eid + 1) % 3];
+    return Tuple(vid, local_eid, fid, *this);
+}
+
 /**
  * @brief rollback the connectivity that are modified if any condition failed
  */

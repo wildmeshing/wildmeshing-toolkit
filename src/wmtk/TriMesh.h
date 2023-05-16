@@ -352,35 +352,20 @@ public:
      * of the triangle
      * @return a face Tuple
      */
-    Tuple tuple_from_tri(size_t fid) const
-    {
-        if (fid >= m_tri_connectivity.size() || m_tri_connectivity[fid].m_is_removed)
-            return Tuple();
-        auto vid = m_tri_connectivity[fid][0];
-        return Tuple(vid, 1, fid, *this);
-    }
+    Tuple tuple_from_tri(size_t fid) const;
     /**
      * Generate avertex Tuple using local vid and global fid
      * @param vid globale vid for the triangle
      * @note tuple refers to vid
      */
-    Tuple tuple_from_vertex(size_t vid) const
-    {
-        auto fid = m_vertex_connectivity[vid][0];
-        auto eid = m_tri_connectivity[fid].find(vid);
-        return Tuple(vid, (eid + 1) % 3, fid, *this);
-    }
+    Tuple tuple_from_vertex(size_t vid) const;
     /**
      * Generate a edge Tuple using global fid and local eid
      * @param fid globale fid for the triangle
      * @param local_eid local eid
      * @return tuple refers to the edge
      */
-    Tuple tuple_from_edge(size_t fid, size_t local_eid) const
-    {
-        auto vid = m_tri_connectivity[fid][(local_eid + 1) % 3];
-        return Tuple(vid, local_eid, fid, *this);
-    }
+    Tuple tuple_from_edge(size_t fid, size_t local_eid) const;
 
     /**
      * Generate the tuples for the tuples at the boundary of a triangle
