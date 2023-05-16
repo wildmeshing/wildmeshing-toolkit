@@ -76,29 +76,40 @@ int main(int argc, char** argv)
     ZoneScopedN("adaptive_tessellation_main");
     lagrange::enable_fpe();
     CLI::App app{argv[0]};
-    path input_json;
+    path input_folder;
+    path config_json;
     path output_folder;
 
-    app.add_option("-c, --config", input_json, "input json file")->required(true);
-    app.add_option("-o, --output", output_folder, "output folder");
+    app.add_option("-i, --input", input_folder, "input folder")->required(false);
+    app.add_option("-c, --config", config_json, "input json file")->required(false);
+    app.add_option("-o, --output", output_folder, "output folder")->required(false);
 
 
     CLI11_PARSE(app, argc, argv);
 
-    ensure_path_exists(input_json);
+    if (input_folder.empty()) {
+        input_folder = ".";
+        wmtk::logger().info("No input path specified. Using current working directory.");
+    }
+    ensure_path_exists(input_folder);
+
+    if (config_json.empty()) {
+        config_json = "config.json";
+        wmtk::logger().info("No config file specified. Using default: {}", config_json.string());
+    }
+
+    ensure_path_exists(input_folder / config_json);
     json config;
     {
-        std::ifstream jsonFile(input_json);
+        std::ifstream jsonFile(input_folder / config_json);
         jsonFile >> config;
     }
     // Access the parameters in the JSON file
-    const path input_folder = config["input_folder"];
-    ensure_path_exists(input_folder);
     const path input_file = get_existing_path(input_folder, config["input_file"]);
     if (output_folder.empty()) {
-        wmtk::logger().warn(
-            "Output folder not specified in parameters. Use folder specified in config file.");
-        output_folder = std::string(config["output_folder"]);
+        output_folder = "./output";
+        wmtk::logger().info("No input path specified. Using './output'.");
+        std::filesystem::create_directory(output_folder);
     }
     ensure_path_exists(output_folder);
     const path output_file = output_folder / config["output_file"];
