@@ -27,15 +27,16 @@ public:
     };
     struct OpCache
     {
-        size_t v1; // first vertex index of the edge being collapsed
-        size_t v2; // second vertex index of hte edge being collapsed
+        size_t v1 = 0; // first vertex index of the edge being collapsed
+        size_t v2 = 0; // second vertex index of hte edge being collapsed
 
-        double length3d;
+        double length3d = 0;
 
-        size_t v_top; // remaining vertex of the input triangle being collapsed
-        size_t v_bot; // remaining vertex of the other triangle being collapsed
+        size_t v_top = 0; // remaining vertex of the input triangle being collapsed
+        size_t v_bot = 0; // remaining vertex of the other triangle being collapsed
 
         // pairs of vids for edges where no vertex changes in the collapse
+        // TODO: add a hash and convert to unordered_map
         std::map<std::array<size_t, 2>, SeamData> seam_data;
 
         // pairs of vids for edges where a vertex changes in the collapse
@@ -47,14 +48,13 @@ public:
 
     // computes the
     static LinksOfVertex seamed_links_of_vertex(AdaptiveTessellation& m, const Tuple& vertex);
-    static std::vector<size_t> seamed_edge_link_of_edge(
-        AdaptiveTessellation& m,
-        const Tuple& edge);
+    static std::vector<size_t> seamed_edge_link_of_edge(AdaptiveTessellation& m, const Tuple& edge);
 
 public:
     ExecuteReturnData execute(AdaptiveTessellation& m, const Tuple& t);
     bool before(AdaptiveTessellation& m, const Tuple& t);
     bool after(AdaptiveTessellation& m, ExecuteReturnData& ret_data);
+    bool after(AdaptiveTessellation& m);
 };
 
 class AdaptiveTessellationPairedCollapseEdgeOperation
@@ -83,9 +83,10 @@ public:
 
     struct OpCache
     {
+        // when the input is a seam
         std::optional<Tuple> mirror_edge_tuple_opt;
     };
-    tbb::enumerable_thread_specific<OpCache> m_op_cache;
+    mutable tbb::enumerable_thread_specific<OpCache> m_op_cache;
 
     // std::vector<Tuple> modified_tuples(const TriMesh& m);
     operator bool();
@@ -94,5 +95,20 @@ public:
     ExecuteReturnData execute(AdaptiveTessellation& m, const Tuple& t);
     bool before(AdaptiveTessellation& m, const Tuple& t);
     bool after(AdaptiveTessellation& m, ExecuteReturnData& ret_data);
+    bool after(AdaptiveTessellation& m);
+
+
+private:
+    // stores the input edge's mirror for future use (if applicable)
+    void set_input_edge_mirror(const AdaptiveTessellation& m, const Tuple& t);
+    bool input_edge_is_mirror() const;
+
+    std::optional<Tuple> get_mirror_edge_tuple_opt() const;
+
+
+    // stores information about curves and mirrors to be rebuilt later
+    void store_boundary_data(const AdaptiveTessellation& m, const Tuple& t);
+    // populates curves and mirrors in the updated mesh
+    void rebuild_boundary_data(AdaptiveTessellation& m);
 };
 } // namespace adaptive_tessellation

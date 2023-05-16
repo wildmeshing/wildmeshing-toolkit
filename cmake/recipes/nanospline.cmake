@@ -14,3 +14,5 @@ FetchContent_Declare(
     GIT_SHALLOW TRUE
 )
 FetchContent_MakeAvailable(nanospline)
+
+set_target_properties(nanospline_ PROPERTIES FOLDER third_party)
