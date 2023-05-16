@@ -101,11 +101,11 @@ inline void split_and_save_3channels(const std::filesystem::path& path)
         spdlog::trace("[split_image] format doesn't support \"{}\"", path.string());
         return;
     }
-    std::filesystem::path directory = path.parent_path();
-    std::filesystem::path file = path.filename();
-    std::filesystem::path path_r(directory.string() + "/" + file.string() + "_r.exr");
-    std::filesystem::path path_g(directory.string() + "/" + file.string() + "_g.exr");
-    std::filesystem::path path_b(directory.string() + "/" + file.string() + "_b.exr");
+    const std::filesystem::path directory = path.parent_path();
+    const std::string file = path.stem().string();
+    const std::filesystem::path path_r = directory / (file + "_r.exr");
+    const std::filesystem::path path_g = directory / (file + "_g.exr");
+    const std::filesystem::path path_b = directory / (file + "_b.exr");
     // just saves single channel data to red channel
     auto res = save_image_exr_red_channel(w, h, buffer_r, path_r);
     res = save_image_exr_red_channel(w, h, buffer_g, path_g);
