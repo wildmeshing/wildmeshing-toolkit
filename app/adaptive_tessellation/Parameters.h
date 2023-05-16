@@ -100,10 +100,20 @@ public:
     double m_normalization_scale = 1.0;
 
 public:
-    void log(const nlohmann::json& js)
+    void log(const nlohmann::json& js, bool flush = false)// flush should force file output immediately, but will be slow for per-operation things
     {
         std::cout << js.dump() << std::endl;
         ATlogger->error(js.dump());
+
+
+        if(flush) {
+        ATlogger->flush();
+        }
+    }
+
+    // log that always writes to file immediately beause it's flushing
+    void log_flush(const nlohmann::json& js) {
+        log(js, true);
     }
 };
 } // namespace adaptive_tessellation
