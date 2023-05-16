@@ -216,7 +216,14 @@ Quadric<double> get_quadric_per_triangle_adaptive(
         return {};
     }
 
+    const std::array<Eigen::Hyperplane<double, 2>, 3> edges = {
+        Eigen::Hyperplane<double, 2>::Through(triangle_uv.row(0), triangle_uv.row(1)),
+        Eigen::Hyperplane<double, 2>::Through(triangle_uv.row(1), triangle_uv.row(2)),
+        Eigen::Hyperplane<double, 2>::Through(triangle_uv.row(2), triangle_uv.row(0)),
+    };
+
     Quadric<double> q;
+    const double pixel_radius = pixel_size.norm() * 0.5;
     for (int y = min_pixel.y(); y <= max_pixel.y(); ++y) {
         for (int x = min_pixel.x(); x <= max_pixel.x(); ++x) {
             Eigen::Vector2i pixel_coord(x, y);
@@ -224,17 +231,14 @@ Quadric<double> get_quadric_per_triangle_adaptive(
             box.extend(pixel_coord.cast<double>().cwiseProduct(pixel_size));
             box.extend(
                 (pixel_coord + Eigen::Vector2i::Ones()).cast<double>().cwiseProduct(pixel_size));
-            bool all_inside = true;
-            for (int k = 0; k < 4; ++k) {
-                bool inside = internal::point_in_triangle(
-                    triangle_uv,
-                    box.corner(static_cast<Eigen::AlignedBox2d::CornerType>(k)));
-                if (!inside) {
-                    all_inside = false;
-                    break;
-                }
+            auto sign = internal::point_in_triangle_quick(edges, box.center(), pixel_radius);
+            if (sign == internal::Classification::Unknown) {
+                sign = internal::pixel_inside_triangle(triangle_uv, box);
             }
-            if (all_inside) {
+            if (sign == internal::Classification::Outside) {
+                continue;
+            }
+            if (sign == internal::Classification::Inside) {
                 q += quadric_from_coefficients(images, x, y) * pixel_size(0) * pixel_size(1);
             } else {
                 wmtk::ClippedQuadrature rules;

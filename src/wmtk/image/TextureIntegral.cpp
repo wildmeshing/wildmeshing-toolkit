@@ -221,7 +221,7 @@ double get_error_per_triangle_adaptive(
             box.extend(pixel_coord.cast<double>().cwiseProduct(pixel_size));
             box.extend(
                 (pixel_coord + Eigen::Vector2i::Ones()).cast<double>().cwiseProduct(pixel_size));
-            auto sign_quick = internal::point_in_triangle_quick(edges, box.center(), pixel_radius);
+            auto sign = internal::point_in_triangle_quick(edges, box.center(), pixel_radius);
             if (sign == internal::Classification::Unknown) {
                 sign = internal::pixel_inside_triangle(triangle_uv, box);
             }
