@@ -44,28 +44,30 @@ void AdaptiveTessellation::mesh_preprocessing(
     const std::filesystem::path& height_image_path)
 {
     Eigen::MatrixXd CN, FN;
-    Eigen::MatrixXd V, VT;
-    Eigen::MatrixXi F, FT;
     // igl::read_triangle_mesh(input_mesh_path.string(), input_V_, input_F_);
-    igl::readOBJ(input_mesh_path.string(), V, VT, CN, F, FT, FN);
+    // igl::readOBJ(input_mesh_path.string(), V, VT, CN, F, FT, FN);
+    igl::readOBJ(input_mesh_path.string(), input_V_, input_VT_, CN, input_F_, input_FT_, FN);
 
-    wmtk::logger().info("///// #v : {} {}", VT.rows(), VT.cols());
-    wmtk::logger().info("///// #f : {} {}", FT.rows(), FT.cols());
+    wmtk::logger().info("///// #v : {} {}", input_VT_.rows(), input_VT_.cols());
+    wmtk::logger().info("///// #f : {} {}", input_FT_.rows(), input_FT_.cols());
     wmtk::TriMesh m_3d;
     std::vector<std::array<size_t, 3>> tris;
-    for (auto f = 0; f < F.rows(); f++) {
-        std::array<size_t, 3> tri = {(size_t)F(f, 0), (size_t)F(f, 1), (size_t)F(f, 2)};
+    for (auto f = 0; f < input_F_.rows(); f++) {
+        std::array<size_t, 3> tri = {
+            (size_t)input_F_(f, 0),
+            (size_t)input_F_(f, 1),
+            (size_t)input_F_(f, 2)};
         tris.emplace_back(tri);
     }
-    m_3d.create_mesh(V.rows(), tris);
-    create_mesh(VT, FT);
+    m_3d.create_mesh(input_V_.rows(), tris);
+    create_mesh(input_VT_, input_FT_);
     // set up seam edges and seam vertex coloring
     Eigen::MatrixXi E0, E1;
-    std::tie(E0, E1) = seam_edges_set_up(V, F, m_3d, VT, FT);
-    set_seam_vertex_coloring(V, F, m_3d, VT, FT);
+    std::tie(E0, E1) = seam_edges_set_up(input_V_, input_F_, m_3d, input_VT_, input_FT_);
+    set_seam_vertex_coloring(input_V_, input_F_, m_3d, input_VT_, input_FT_);
     assert(E0.rows() == E1.rows());
     // construct the boundary map for boundary parametrization
-    mesh_parameters.m_boundary.construct_boundaries(VT, FT, E0, E1);
+    mesh_parameters.m_boundary.construct_boundaries(input_VT_, input_FT_, E0, E1);
     // mark boundary vertices as boundary_vertex
     // but this is not indiscriminatively rejected for all operations
     // other operations are conditioned on whether m_bnd_freeze is turned on

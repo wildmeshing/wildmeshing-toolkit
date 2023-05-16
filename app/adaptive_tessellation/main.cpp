@@ -23,6 +23,7 @@
 #include <wmtk/utils/Image.h>
 #include <wmtk/utils/autodiff.h>
 #include <wmtk/utils/bicubic_interpolation.h>
+#include <wmtk/utils/json_sink.h>
 #include <CLI/CLI.hpp>
 #include <filesystem>
 #include <fstream>
@@ -143,6 +144,14 @@ int main(int argc, char** argv)
 
     assert(m.check_mesh_connectivity_validity());
 
+    m.mesh_parameters.js_log["input"] = input_file;
+    m.mesh_parameters.js_log["output"] = output_file;
+    // m.mesh_parameters.js_log["num_vert"] = UV.rows();
+    // m.mesh_parameters.js_log["num_faces"] = F.rows();
+
+    wmtk::logger().info("/////target edge length: {}", target_l);
+    wmtk::logger().info("/////target accuracy: {}", target_accuracy);
+
     wmtk::logger().info("///// target edge length: {}", target_l);
     wmtk::logger().info("///// target accuracy: {}", target_accuracy);
 
@@ -151,6 +160,9 @@ int main(int argc, char** argv)
 
     wmtk::logger().info("///// energy type: {}", energy_type);
     wmtk::logger().info("///// energy length type: {}", edge_len_type);
+
+    m.mesh_parameters.ATlogger =
+        wmtk::make_json_file_logger("ATlogger", output_folder / "runtime.log", true);
 
     m.set_parameters(
         target_accuracy,
@@ -162,7 +174,7 @@ int main(int argc, char** argv)
         energy_type,
         edge_len_type,
         boundary_parameter_on);
-
+    m.mesh_parameters.m_early_stopping_number = 100;
     m.set_vertex_world_positions(); // compute 3d positions for each vertex
 
     m.mesh_improvement(max_iter);

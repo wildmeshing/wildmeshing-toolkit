@@ -25,6 +25,7 @@ struct Parameters
     using DScalar = DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d>;
 
 public:
+    std::shared_ptr<spdlog::logger> ATlogger;
     json js_log;
     std::string m_output_folder = "./";
     // default envelop use_exact = true

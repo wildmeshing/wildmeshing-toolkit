@@ -122,6 +122,7 @@ inline void displace_self_intersection_free(AdaptiveTessellation& mesh)
         vertices_current.row(i) = p;
         update_pos_world(i, p);
     }
+    return;
     if (t0 == 1.0) {
         return;
     }
