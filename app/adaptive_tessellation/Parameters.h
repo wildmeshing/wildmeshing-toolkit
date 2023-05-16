@@ -25,9 +25,10 @@ struct Parameters
     using DScalar = DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d>;
 
 public:
-    std::shared_ptr<spdlog::logger> ATlogger;
     json js_log;
     std::string m_output_folder = "./";
+    std::shared_ptr<spdlog::logger> ATlogger =
+        wmtk::make_json_file_logger("ATlogger", m_output_folder + "/runtime.log", true);
     // default envelop use_exact = true
     sample_envelope::SampleEnvelope m_envelope;
     bool m_has_envelope = false;
@@ -97,5 +98,12 @@ public:
     bool m_ignore_embedding = false;
     // used for scaling the height map
     double m_normalization_scale = 1.0;
+
+public:
+    void log(const nlohmann::json& js)
+    {
+        std::cout << js.dump() << std::endl;
+        ATlogger->error(js.dump());
+    }
 };
 } // namespace adaptive_tessellation

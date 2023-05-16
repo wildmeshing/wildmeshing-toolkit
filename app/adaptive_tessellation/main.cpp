@@ -134,9 +134,6 @@ int main(int argc, char** argv)
     wmtk::logger().info("/////energy type: {}", energy_type);
     wmtk::logger().info("/////energy length type: {}", edge_len_type);
 
-    m.mesh_parameters.ATlogger =
-        wmtk::make_json_file_logger("ATlogger", output_folder + "/runtime.log", true);
-
     m.set_parameters(
         target_accuracy,
         target_l,
@@ -150,7 +147,7 @@ int main(int argc, char** argv)
     m.mesh_parameters.m_early_stopping_number = 100;
     m.set_vertex_world_positions(); // compute 3d positions for each vertex
 
-    m.mesh_improvement(max_iter);
+    m.smooth_all_vertices();
     m.consolidate_mesh();
 
     auto finish_time = lagrange::get_timestamp();

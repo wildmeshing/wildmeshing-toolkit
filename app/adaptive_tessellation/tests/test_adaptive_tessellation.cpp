@@ -1385,7 +1385,7 @@ TEST_CASE("quickrun")
         WrappingMode::MIRROR_REPEAT,
         SAMPLING_MODE::BICUBIC,
         DISPLACEMENT_MODE::MESH_3D,
-        adaptive_tessellation::ENERGY_TYPE::AREA_QUADRATURE,    
+        adaptive_tessellation::ENERGY_TYPE::AREA_QUADRATURE,
         adaptive_tessellation::EDGE_LEN_TYPE::AREA_ACCURACY,
         1);
     // m.split_all_edges();
@@ -1444,4 +1444,11 @@ TEST_CASE("check curveid consistency after split")
             REQUIRE(!m.edge_attrs[e.eid(m)].curve_id.has_value());
         }
     }
+}
+
+TEST_CASE("logging")
+{
+    AdaptiveTessellation m;
+
+    m.mesh_parameters.log({{"logging info", {"your info should be in runtime.log"}}});
 }

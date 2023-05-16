@@ -2,6 +2,7 @@
 #include "Smooth.h"
 #include <Eigen/src/Core/util/Constants.h>
 #include <igl/Timer.h>
+#include <lagrange/utils/timing.h>
 #include <wmtk/utils/AMIPS2D.h>
 #include <wmtk/utils/AMIPS2D_autodiff.h>
 #include <wmtk/utils/Energy2dOptimizationUtils.h>
@@ -79,6 +80,7 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::after(
     AdaptiveTessellation& m,
     ExecuteReturnData& ret_data)
 {
+    auto smooth_start_time = lagrange::get_timestamp();
     if (!wmtk::TriMeshSmoothVertexOperation::after(m, ret_data)) return false;
 
     if (!ret_data.success) return false;
@@ -183,6 +185,10 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::after(
     m.mesh_parameters.m_gradient += one_ring_energy_and_gradient.second;
     assert(m.invariants(one_ring_tris));
     cnt++;
+    auto smooth_end_time = lagrange::get_timestamp();
+    wmtk::logger().info(
+        "smooth time: {}",
+        lagrange::timestamp_diff_in_seconds(smooth_start_time, smooth_end_time));
 
     return ret_data.success;
 }

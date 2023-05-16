@@ -29,6 +29,7 @@
 #include <wmtk/utils/Image.h>
 #include <wmtk/utils/MipMap.h>
 #include <wmtk/utils/PolygonClipping.h>
+#include <wmtk/utils/json_sink.h>
 #include <wmtk/utils/load_image_exr.h>
 #include <Eigen/Core>
 #include <finitediff.hpp>
