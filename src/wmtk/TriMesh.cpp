@@ -663,3 +663,18 @@ void TriMesh::rollback_protected()
     rollback_protected_connectivity();
     rollback_protected_attributes();
 }
+
+void TriMesh::start_protected_attributes()
+{
+    if (p_vertex_attrs) p_vertex_attrs->begin_protect();
+    if (p_edge_attrs) p_edge_attrs->begin_protect();
+    if (p_face_attrs) p_face_attrs->begin_protect();
+}
+/**
+ * @brief Start caching the connectivity that will be modified
+ */
+void TriMesh::start_protected_connectivity()
+{
+    m_vertex_connectivity.begin_protect();
+    m_tri_connectivity.begin_protect();
+}
