@@ -177,7 +177,7 @@ void test_sampling(const MeshType& mesh, std::array<wmtk::Image, 3> displaced)
                 CAPTURE(x, y, u, v);
                 REQUIRE_THAT(value_nearest[i], Catch::Matchers::WithinRel(value_pixel, 1e-5f));
                 REQUIRE_THAT(value_bilinear[i], Catch::Matchers::WithinRel(value_pixel, 1e-5f));
-                // REQUIRE_THAT(value_bicubic, Catch::Matchers::WithinRel(value_pixel, 1e-2f));
+                REQUIRE_THAT(value_bicubic[i], Catch::Matchers::WithinRel(value_pixel, 1e-5f));
             }
         }
     }
