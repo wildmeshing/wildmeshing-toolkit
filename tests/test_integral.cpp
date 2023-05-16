@@ -312,8 +312,23 @@ TEST_CASE("Texture Integral Benchmark", "[utils][!benchmark]")
     auto uv_triangles = load_uv_triangles(WMTK_DATA_DIR "/hemisphere.obj");
 
     std::vector<float> computed_errors(uv_triangles.size());
-    wmtk::TextureIntegral integral(load_rgb_image(displaced_positions));
 
+    auto displacement_image_linear = load_rgb_image(displaced_positions);
+    auto displacement_image_zorder = wmtk::internal::convert_image_to_morton_z_order(displacement_image_linear);
+
+    auto num_planes = displacement_image_linear.size();
+    auto width = displacement_image_linear[0].width();
+    auto height = displacement_image_linear[0].height();
+    for (int k = 0; k < num_planes; ++k)
+        for (int y = 0; y < height; ++y)
+            for (int x = 0; x < width; ++x)
+            {
+                auto zoffset = wmtk::internal::to_morton_z_order(x, y);
+                REQUIRE(displacement_image_zorder[k].get_raw_image().data()[zoffset] == displacement_image_linear[k].get_raw_image().coeff(x, y));
+            }
+
+    wmtk::TextureIntegral integral(displacement_image_zorder);
+    
     BENCHMARK("Bicubic + Exact")
     {
         integral.set_sampling_method(wmtk::TextureIntegral::SamplingMethod::Bicubic);

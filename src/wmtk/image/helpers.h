@@ -105,4 +105,39 @@ Eigen::Vector<float, N> sample_bicubic(const std::array<wmtk::Image, N>& images,
     return res;
 }
 
+inline uint32_t to_morton_z_order(uint16_t x, uint16_t y)
+{
+    constexpr auto swizzle = [](uint16_t x) {
+        uint32_t z = x; // x &= 0x00'00'FF'FF
+        z = (z ^ (z << 8)) & 0x00'FF'00'FF;
+        z = (z ^ (z << 4)) & 0x0F'0F'0F'0F;
+        z = (z ^ (z << 2)) & 0x33'33'33'33;
+        z = (z ^ (z << 1)) & 0x55'55'55'55;
+        return z;
+    };
+    auto z = (swizzle(y) << 1) + swizzle(x);
+    return z;
+}
+
+template <size_t N>
+inline std::array<wmtk::Image, N> convert_image_to_morton_z_order(const std::array<wmtk::Image, N>& linear_image)
+{
+    auto zorder_image = linear_image;
+    auto num_planes = linear_image.size();
+    auto width = linear_image[0].width();
+    auto height = linear_image[0].height();
+    for (int k = 0; k < num_planes; ++k)
+    {
+        for (int y = 0; y < height; ++y)
+        {
+            for (int x = 0; x < width; ++x)
+            {
+                auto zoffset = wmtk::internal::to_morton_z_order(x, y);
+                zorder_image[k].get_raw_image().data()[zoffset] = linear_image[k].get_raw_image().coeff(x, y);
+            }
+        }
+    }
+    return zorder_image;
+}
+
 } // namespace wmtk::internal
