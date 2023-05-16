@@ -3,6 +3,7 @@
 #include <wmtk/utils/Image.h>
 
 #include <Eigen/Core>
+#include <Eigen/Geometry>
 
 #include <algorithm>
 #include <array>
@@ -149,6 +150,55 @@ inline bool point_in_triangle(
         return false;
     }
     return true;
+}
+
+enum class Classification {
+    Unknown,
+    Inside,
+    Outside,
+};
+
+inline Classification point_in_triangle_quick(
+    const std::array<Eigen::Hyperplane<double, 2>, 3>& edges,
+    const Eigen::Vector2d& point,
+    double radius)
+{
+    Classification res = Classification::Inside;
+    for (const auto& edge : edges) {
+        const double s = edge.signedDistance(point);
+        if (s < -radius) {
+            return Classification::Outside;
+        }
+        if (s <= radius) {
+            res = Classification::Unknown;
+        }
+    }
+    return res;
+}
+
+inline Classification pixel_inside_triangle(
+    const Eigen::Matrix<double, 3, 2, Eigen::RowMajor>& triangle,
+    const Eigen::AlignedBox2d& pixel)
+{
+    bool all_inside = true;
+    bool all_outside = true;
+    for (int k = 0; k < 4; ++k) {
+        bool inside = point_in_triangle(
+            triangle,
+            pixel.corner(static_cast<Eigen::AlignedBox2d::CornerType>(k)));
+        if (!inside) {
+            all_inside = false;
+        } else {
+            all_outside = false;
+        }
+    }
+    if (all_inside) {
+        return Classification::Inside;
+    }
+    if (all_outside) {
+        return Classification::Outside;
+    }
+    return Classification::Unknown;
 }
 
 } // namespace wmtk::internal

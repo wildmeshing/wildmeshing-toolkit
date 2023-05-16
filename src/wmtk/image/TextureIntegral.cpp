@@ -186,6 +186,12 @@ double get_error_per_triangle_adaptive(
         return 0.;
     }
 
+    const std::array<Eigen::Hyperplane<double, 2>, 3> edges = {
+        Eigen::Hyperplane<double, 2>::Through(triangle_uv.row(0), triangle_uv.row(1)),
+        Eigen::Hyperplane<double, 2>::Through(triangle_uv.row(1), triangle_uv.row(2)),
+        Eigen::Hyperplane<double, 2>::Through(triangle_uv.row(2), triangle_uv.row(0)),
+    };
+
     // calculate the barycentric coordinate of the a point using u, v coordinates
     // returns the 3d coordinate on the current mesh
     auto get_p_interpolated = [&](double u, double v) -> Eigen::Matrix<T, 3, 1> {
@@ -206,6 +212,7 @@ double get_error_per_triangle_adaptive(
     size_t num_inside = 0;
     size_t num_total = 0;
     size_t num_boundary = 0;
+    const double pixel_radius = pixel_size.norm() * 0.5;
     for (int y = min_pixel.y(); y <= max_pixel.y(); ++y) {
         for (int x = min_pixel.x(); x <= max_pixel.x(); ++x) {
             ++num_total;
@@ -214,17 +221,14 @@ double get_error_per_triangle_adaptive(
             box.extend(pixel_coord.cast<double>().cwiseProduct(pixel_size));
             box.extend(
                 (pixel_coord + Eigen::Vector2i::Ones()).cast<double>().cwiseProduct(pixel_size));
-            bool all_inside = true;
-            for (int k = 0; k < 4; ++k) {
-                bool inside = internal::point_in_triangle(
-                    triangle_uv,
-                    box.corner(static_cast<Eigen::AlignedBox2d::CornerType>(k)));
-                if (!inside) {
-                    all_inside = false;
-                    break;
-                }
+            auto sign = internal::point_in_triangle_quick(edges, box.center(), pixel_radius);
+            if (sign == internal::Classification::Unknown) {
+                sign = internal::pixel_inside_triangle(triangle_uv, box);
             }
-            if (all_inside) {
+            if (sign == internal::Classification::Outside) {
+                continue;
+            }
+            if (sign == internal::Classification::Inside) {
                 ++num_inside;
                 Eigen::Matrix<T, 3, 1> p_tri =
                     get_p_interpolated(box.center().x(), box.center().y());
