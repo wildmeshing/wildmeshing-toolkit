@@ -92,8 +92,7 @@ void AdaptiveTessellation::mesh_preprocessing(
         mesh_parameters.m_normalization_scale,
         position_image_path,
         normal_image_path,
-        height_image_path,
-        "debug_combined_displaced_image.exr");
+        height_image_path);
     std::vector<std::array<float, 6>> uv_triangles(tri_capacity());
     std::vector<TriMesh::Tuple> tris_tuples = get_faces();
     for (int i = 0; i < tris_tuples.size(); i++) {
@@ -506,24 +505,10 @@ void AdaptiveTessellation::set_displacement(const DISPLACEMENT_MODE displacement
         for (size_t i = 0; i < 2; i++) {
             std::filesystem::path path = mesh_parameters.m_position_normal_paths[i];
             wmtk::logger().debug("======= path {} {}", i, path);
-            wmtk::split_and_save_3channels(path);
-            const std::filesystem::path directory = path.parent_path();
-            const std::string file = path.stem().string();
-            const std::filesystem::path path_r = directory / (file + "_r.exr");
-            const std::filesystem::path path_g = directory / (file + "_g.exr");
-            const std::filesystem::path path_b = directory / (file + "_b.exr");
-            position_normal_images[i * 3].load(
-                path_r,
-                mesh_parameters.m_wrapping_mode,
-                mesh_parameters.m_wrapping_mode);
-            position_normal_images[i * 3 + 1].load(
-                path_g,
-                mesh_parameters.m_wrapping_mode,
-                mesh_parameters.m_wrapping_mode);
-            position_normal_images[i * 3 + 2].load(
-                path_b,
-                mesh_parameters.m_wrapping_mode,
-                mesh_parameters.m_wrapping_mode);
+            std::array<wmtk::Image, 3> normal_images = wmtk::load_rgb_image(path);
+            position_normal_images[i * 3 + 0] = normal_images[0];
+            position_normal_images[i * 3 + 1] = normal_images[1];
+            position_normal_images[i * 3 + 2] = normal_images[2];
         }
         displacement_ptr = std::make_shared<DisplacementMesh>(
             mesh_parameters.m_image,
