@@ -30,6 +30,7 @@ class AdaptiveTessellationCollapseEdgeOperation : public wmtk::TriMeshOperationS
                                                       wmtk::TriMeshEdgeCollapseOperation>
 {
 public:
+    friend class AdaptiveTessellationPairedCollapseEdgeOperation;
     struct SeamData
     {
         std::optional<Tuple> mirror_edge_tuple;
@@ -41,6 +42,7 @@ public:
         size_t v2 = 0; // second vertex index of hte edge being collapsed
 
         double length3d = 0;
+        size_t partition_id;
 
         // Given an input triangle with tuple X
         //               v_top
@@ -83,25 +85,31 @@ public:
     };
     mutable tbb::enumerable_thread_specific<OpCache> m_op_cache;
 
-    static bool check_seamed_link_condition(AdaptiveTessellation& m, const Tuple& t);
-
-    // computes the
-    static LinksOfVertex seamed_links_of_vertex(AdaptiveTessellation& m, const Tuple& vertex);
-    static std::vector<size_t> seamed_edge_link_of_edge(AdaptiveTessellation& m, const Tuple& edge);
 
 public:
     ExecuteReturnData execute(AdaptiveTessellation& m, const Tuple& t);
     bool before(AdaptiveTessellation& m, const Tuple& t);
+    bool check_vertex_mergeability(const AdaptiveTessellation& m, const Tuple& t) const;
+    bool check_edge_mergeability(const AdaptiveTessellation& m, const Tuple& t) const;
+
+
     bool after(AdaptiveTessellation& m, ExecuteReturnData& ret_data);
     bool after(AdaptiveTessellation& m);
 
+    void fill_cache(const AdaptiveTessellation& m, const Tuple& edge_tuple);
     void store_merged_seam_data(const AdaptiveTessellation& m, const Tuple& edge_tuple);
 
     // constructs and assigns vertex attributes to the new vertex
-    void assign_new_vertex_attributes(AdaptiveTessellation& m) const;
+    // returns a reference to the vertex attribute assigned to (the one of hte new vertex)
+    const VertexAttributes& assign_new_vertex_attributes(AdaptiveTessellation& m) const;
 
     // constructs and assigns vertex attributes to the new vertex using a known target attribute
-    void assign_new_vertex_attributes(AdaptiveTessellation& m, const VertexAttributes& attr) const;
+    // returns a reference to the vertex attribute assigned to (the one of hte new vertex)
+    const VertexAttributes& assign_new_vertex_attributes(
+        AdaptiveTessellation& m,
+        const VertexAttributes& attr) const;
+
+    //
     void assign_collapsed_edge_attributes(AdaptiveTessellation& m) const;
 };
 
@@ -156,6 +164,12 @@ public:
     std::vector<Tuple> modified_tuples(const AdaptiveTessellation& m) const;
 
     void mark_failed() override;
+
+protected:
+    static bool check_seamed_link_condition(AdaptiveTessellation& m, const Tuple& t);
+
+    static LinksOfVertex seamed_links_of_vertex(AdaptiveTessellation& m, const Tuple& vertex);
+    static std::vector<size_t> seamed_edge_link_of_edge(AdaptiveTessellation& m, const Tuple& edge);
 
 private:
     // stores the input edge's mirror for future use (if applicable)
