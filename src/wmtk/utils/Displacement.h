@@ -254,8 +254,8 @@ public:
         };
 
         T value = T(0.);
-        for (auto x = 0; x < num_pixels; ++x) {
-            for (auto y = 0; y < num_pixels; ++y) {
+        for (auto y = 0; y < num_pixels; ++y) {
+            for (auto x = 0; x < num_pixels; ++x) {
                 Eigen::AlignedBox2d box;
                 box.extend(bbox.min() + Eigen::Vector2d(x * pixel_size, y * pixel_size));
                 box.extend(
