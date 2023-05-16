@@ -2,8 +2,6 @@
 
 #include <wmtk/utils/Image.h>
 
-#include <lagrange/utils/assert.h>
-
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
@@ -108,29 +106,29 @@ Eigen::Vector<float, N> sample_bicubic(const std::array<wmtk::Image, N>& images,
     return res;
 }
 
-inline bool point_in_triangle2(
-    const Eigen::Matrix<double, 3, 2, Eigen::RowMajor>& triangle,
-    const Eigen::Vector2d& point)
-{
-    Eigen::Vector2d v0 = triangle.row(0);
-    Eigen::Vector2d v1 = triangle.row(1);
-    Eigen::Vector2d v2 = triangle.row(2);
-    Eigen::Vector2d v0v1 = v1 - v0;
-    Eigen::Vector2d v0v2 = v2 - v0;
-    Eigen::Vector2d v0p = point - v0;
+// inline bool point_in_triangle(
+//     const Eigen::Matrix<double, 3, 2, Eigen::RowMajor>& triangle,
+//     const Eigen::Vector2d& point)
+// {
+//     Eigen::Vector2d v0 = triangle.row(0);
+//     Eigen::Vector2d v1 = triangle.row(1);
+//     Eigen::Vector2d v2 = triangle.row(2);
+//     Eigen::Vector2d v0v1 = v1 - v0;
+//     Eigen::Vector2d v0v2 = v2 - v0;
+//     Eigen::Vector2d v0p = point - v0;
 
-    double dot00 = v0v2.dot(v0v2);
-    double dot01 = v0v2.dot(v0v1);
-    double dot02 = v0v2.dot(v0p);
-    double dot11 = v0v1.dot(v0v1);
-    double dot12 = v0v1.dot(v0p);
+//     double dot00 = v0v2.dot(v0v2);
+//     double dot01 = v0v2.dot(v0v1);
+//     double dot02 = v0v2.dot(v0p);
+//     double dot11 = v0v1.dot(v0v1);
+//     double dot12 = v0v1.dot(v0p);
 
-    double inv_denom = 1 / (dot00 * dot11 - dot01 * dot01);
-    double u = (dot11 * dot02 - dot01 * dot12) * inv_denom;
-    double v = (dot00 * dot12 - dot01 * dot02) * inv_denom;
+//     double inv_denom = 1 / (dot00 * dot11 - dot01 * dot01);
+//     double u = (dot11 * dot02 - dot01 * dot12) * inv_denom;
+//     double v = (dot00 * dot12 - dot01 * dot02) * inv_denom;
 
-    return (u >= 0) && (v >= 0) && (u + v < 1);
-}
+//     return (u >= 0) && (v >= 0) && (u + v < 1);
+// }
 
 inline bool point_in_triangle(
     const Eigen::Matrix<double, 3, 2, Eigen::RowMajor>& triangle,
@@ -188,10 +186,6 @@ inline Classification pixel_inside_triangle(
         bool inside = point_in_triangle(
             triangle,
             pixel.corner(static_cast<Eigen::AlignedBox2d::CornerType>(k)));
-        bool inside2 = point_in_triangle2(
-            triangle,
-            pixel.corner(static_cast<Eigen::AlignedBox2d::CornerType>(k)));
-        la_runtime_assert(inside == inside2);
         if (!inside) {
             all_inside = false;
         } else {
