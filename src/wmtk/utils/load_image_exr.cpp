@@ -243,10 +243,17 @@ auto wmtk::load_image_exr_split_3channels(const std::filesystem::path& path) -> 
         int index_red_ = -1;
         int index_green_ = -1;
         int index_blue_ = -1;
-        for (int i = 0; i < exr_header_.num_channels; i++) {
-            if (strcmp(exr_header_.channels[i].name, "R") == 0) index_red_ = i;
-            if (strcmp(exr_header_.channels[i].name, "G") == 0) index_green_ = i;
-            if (strcmp(exr_header_.channels[i].name, "B") == 0) index_blue_ = i;
+        if (exr_header_.num_channels == 1) {
+            wmtk::logger().warn("Treat grayscale image as RGB: {}", path.string());
+            index_red_ = 0;
+            index_green_ = 0;
+            index_blue_ = 0;
+        } else {
+            for (int i = 0; i < exr_header_.num_channels; i++) {
+                if (strcmp(exr_header_.channels[i].name, "R") == 0) index_red_ = i;
+                if (strcmp(exr_header_.channels[i].name, "G") == 0) index_green_ = i;
+                if (strcmp(exr_header_.channels[i].name, "B") == 0) index_blue_ = i;
+            }
         }
 
         if (index_red_ < 0) {
