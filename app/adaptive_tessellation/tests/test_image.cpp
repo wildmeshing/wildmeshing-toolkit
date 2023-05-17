@@ -69,8 +69,7 @@ TEST_CASE("combined displaced map")
         (double)1.,
         "/home/yunfan/seamPyramid_position.exr",
         "/home/yunfan/seamPyramid_normal_smooth.exr",
-        "/home/yunfan/seamPyramid_height_10.exr",
-        "displaced_seam_pyramid.exr");
+        "/home/yunfan/seamPyramid_height_10.exr");
 
     std::array<wmtk::Image, 3> displaced_from_precomputed =
         wmtk::load_rgb_image("/home/yunfan/seamPyramid_displaced.exr");

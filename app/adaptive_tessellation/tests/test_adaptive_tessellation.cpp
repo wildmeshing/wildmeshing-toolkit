@@ -1385,15 +1385,15 @@ TEST_CASE("quickrun")
         WrappingMode::MIRROR_REPEAT,
         SAMPLING_MODE::BICUBIC,
         DISPLACEMENT_MODE::MESH_3D,
-        adaptive_tessellation::ENERGY_TYPE::AREA_QUADRATURE,    
+        adaptive_tessellation::ENERGY_TYPE::AREA_QUADRATURE,
         adaptive_tessellation::EDGE_LEN_TYPE::AREA_ACCURACY,
         1);
     // m.split_all_edges();
-    // m.write_obj_with_texture_coords("split_result.obj");
+    // m.write_obj_displaced("split_result.obj");
     m.swap_all_edges();
-    m.write_obj_with_texture_coords("swap_result.obj");
+    m.write_obj_displaced("swap_result.obj");
     m.smooth_all_vertices();
-    m.write_displaced_obj("smooth_result.obj", m.mesh_parameters.m_displacement);
+    m.write_obj_displaced("smooth_result.obj");
     m.write_obj("smooth_result_2d.obj");
 }
 
@@ -1425,7 +1425,7 @@ TEST_CASE("check curveid consistency after split")
         adaptive_tessellation::EDGE_LEN_TYPE::AREA_ACCURACY,
         1);
     m.split_all_edges();
-    m.write_obj_displaced("split_result.obj", m.mesh_parameters.m_displacement);
+    m.write_obj_displaced("split_result.obj");
     m.write_obj_only_texture_coords("split_result_2d.obj");
     // check curve-id after split per edge
     for (auto& e : m.get_edges()) {
