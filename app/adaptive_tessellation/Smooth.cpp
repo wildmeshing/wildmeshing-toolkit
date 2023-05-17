@@ -189,15 +189,15 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::after(
     wmtk::logger().info(
         "smooth time: {}",
         lagrange::timestamp_diff_in_seconds(smooth_start_time, smooth_end_time));
-    m.mesh_parameters.log(
-        {{"smooth_op_" + std::to_string(cnt),
-          {{"before_energy", std::to_string(before_energy)},
-           {"is_seam_vertex", std::to_string(m.is_seam_vertex(ret_data.tuple))},
-           {"num_neighbor", std::to_string(nminfos.size())},
-           {"after_energy", std::to_string(after_energy)},
-           {"smooth_time",
-            std::to_string(
-                lagrange::timestamp_diff_in_seconds(smooth_start_time, smooth_end_time))}}}});
+    // m.mesh_parameters.log(
+    //     {{"smooth_op_" + std::to_string(cnt),
+    //       {{"before_energy", std::to_string(before_energy)},
+    //        {"is_seam_vertex", std::to_string(m.is_seam_vertex(ret_data.tuple))},
+    //        {"num_neighbor", std::to_string(nminfos.size())},
+    //        {"after_energy", std::to_string(after_energy)},
+    //        {"smooth_time",
+    //         std::to_string(
+    //             lagrange::timestamp_diff_in_seconds(smooth_start_time, smooth_end_time))}}}});
     cnt++;
     return ret_data.success;
 }

@@ -34,6 +34,7 @@
 #include <wmtk/utils/ManifoldUtils.hpp>
 #include <wmtk/utils/TriQualityUtils.hpp>
 #include "AdaptiveTessellation.h"
+#include "LoggerDataCollector.h"
 #include "Parameters.h"
 
 template <class T>
@@ -190,8 +191,21 @@ int main(int argc, char** argv)
     m.mesh_parameters.m_early_stopping_number = 100;
     m.set_vertex_world_positions(); // compute 3d positions for each vertex
 
+    {
+        LoggerDataCollector ldc;
+        ldc.evaluate_mesh(m);
+        ldc.log_json(m, "before_remeshing");
+    }
+
+    LoggerDataCollector ldc;
+    ldc.start_timer();
     m.smooth_all_vertices();
+    ldc.stop_timer();
+
     m.consolidate_mesh();
+
+    ldc.evaluate_mesh(m);
+    ldc.log_json(m, "after_remeshing");
 
     auto finish_time = lagrange::get_timestamp();
     auto duration = lagrange::timestamp_diff_in_seconds(start_time, finish_time);
