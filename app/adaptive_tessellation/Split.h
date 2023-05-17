@@ -41,7 +41,7 @@ class AdaptiveTessellationPairedSplitEdgeOperation
     : public wmtk::TriMeshOperationShim<
           AdaptiveTessellation,
           AdaptiveTessellationPairedSplitEdgeOperation,
-          wmtk::TriMeshSplitEdgeOperation>
+          wmtk::TriMeshOperation>
 {
 public:
     AdaptiveTessellationSplitEdgeOperation split_edge;
@@ -71,11 +71,6 @@ public:
         // after_sibling_edges: 0', 1', 2', 6
         // after_sibling_edges: 0', 1', 2', 3', 4', 5', 6, 7
         std::vector<TriMesh::Tuple> after_sibling_edges;
-
-        size_t v1 = std::numeric_limits<size_t>::max();
-        size_t v2 = std::numeric_limits<size_t>::max();
-        size_t v3 = std::numeric_limits<size_t>::max();
-        size_t v4 = std::numeric_limits<size_t>::max();
     };
     tbb::enumerable_thread_specific<PairedOpCache> paired_op_cache;
 
@@ -83,5 +78,6 @@ public:
     ExecuteReturnData execute(AdaptiveTessellation& m, const Tuple& t);
     bool before(AdaptiveTessellation& m, const Tuple& t);
     bool after(AdaptiveTessellation& m, ExecuteReturnData& ret_data);
+    std::string name() const override { return split_edge.name(); };
 };
-}
+} // namespace adaptive_tessellation

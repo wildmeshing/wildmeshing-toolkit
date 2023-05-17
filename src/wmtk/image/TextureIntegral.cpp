@@ -3,14 +3,12 @@
 #include "helpers.h"
 
 #include <wmtk/quadrature/ClippedQuadrature.h>
-#include <wmtk/quadrature/TriangleQuadrature.h>
 
 #include <lagrange/utils/assert.h>
 #include <tbb/enumerable_thread_specific.h>
 #include <tbb/parallel_for.h>
 
 namespace wmtk {
-
 namespace {
 
 template <typename T, typename Func>
@@ -60,9 +58,8 @@ double get_error_per_triangle_exact(
     };
     auto get_coordinate = [&](const double& x, const double& y) -> std::pair<int, int> {
         auto [xx, yy] = m_image.get_pixel_index(get_value(x), get_value(y));
-        return {
-            m_image.get_coordinate(xx, m_image.get_wrapping_mode_x()),
-            m_image.get_coordinate(yy, m_image.get_wrapping_mode_y())};
+        return {m_image.get_coordinate(xx, m_image.get_wrapping_mode_x()),
+                m_image.get_coordinate(yy, m_image.get_wrapping_mode_y())};
     };
     auto bbox_min = bbox.min();
     auto bbox_max = bbox.max();
@@ -139,52 +136,6 @@ double get_error_per_triangle_exact(
     return value;
 }
 
-// bool point_in_triangle(
-//     const Eigen::Matrix<double, 3, 2, Eigen::RowMajor>& triangle,
-//     const Eigen::Vector2d& point)
-// {
-//     Eigen::Vector2d v0 = triangle.row(0);
-//     Eigen::Vector2d v1 = triangle.row(1);
-//     Eigen::Vector2d v2 = triangle.row(2);
-//     Eigen::Vector2d v0v1 = v1 - v0;
-//     Eigen::Vector2d v0v2 = v2 - v0;
-//     Eigen::Vector2d v0p = point - v0;
-
-//     double dot00 = v0v2.dot(v0v2);
-//     double dot01 = v0v2.dot(v0v1);
-//     double dot02 = v0v2.dot(v0p);
-//     double dot11 = v0v1.dot(v0v1);
-//     double dot12 = v0v1.dot(v0p);
-
-//     double inv_denom = 1 / (dot00 * dot11 - dot01 * dot01);
-//     double u = (dot11 * dot02 - dot01 * dot12) * inv_denom;
-//     double v = (dot00 * dot12 - dot01 * dot02) * inv_denom;
-
-//     return (u >= 0) && (v >= 0) && (u + v < 1);
-// }
-
-bool point_in_triangle(
-    const Eigen::Matrix<double, 3, 2, Eigen::RowMajor>& triangle,
-    const Eigen::Vector2d& point)
-{
-    const auto& a = triangle.row(0);
-    const auto& b = triangle.row(1);
-    const auto& c = triangle.row(2);
-
-    const double as_x = point.x() - a.x();
-    const double as_y = point.y() - a.y();
-
-    bool s_ab = (b.x() - a.x()) * as_y - (b.y() - a.y()) * as_x > 0;
-
-    if ((c.x() - a.x()) * as_y - (c.y() - a.y()) * as_x > 0 == s_ab) {
-        return false;
-    }
-    if ((c.x() - b.x()) * (point.y() - b.y()) - (c.y() - b.y()) * (point.x() - b.x()) > 0 != s_ab) {
-        return false;
-    }
-    return true;
-}
-
 // Optimized implementation that switches between nearest and bilinear interpolation
 template <typename DisplacementFunc>
 double get_error_per_triangle_adaptive(
@@ -233,6 +184,12 @@ double get_error_per_triangle_adaptive(
         return 0.;
     }
 
+    const std::array<Eigen::Hyperplane<double, 2>, 3> edges = {
+        Eigen::Hyperplane<double, 2>::Through(triangle_uv.row(0), triangle_uv.row(1)),
+        Eigen::Hyperplane<double, 2>::Through(triangle_uv.row(1), triangle_uv.row(2)),
+        Eigen::Hyperplane<double, 2>::Through(triangle_uv.row(2), triangle_uv.row(0)),
+    };
+
     // calculate the barycentric coordinate of the a point using u, v coordinates
     // returns the 3d coordinate on the current mesh
     auto get_p_interpolated = [&](double u, double v) -> Eigen::Matrix<T, 3, 1> {
@@ -253,31 +210,29 @@ double get_error_per_triangle_adaptive(
     size_t num_inside = 0;
     size_t num_total = 0;
     size_t num_boundary = 0;
-    for (int x = min_pixel.x(); x <= max_pixel.x(); ++x) {
-        for (int y = min_pixel.y(); y <= max_pixel.y(); ++y) {
+    const double pixel_radius = pixel_size.norm() * 0.5;
+    for (int y = min_pixel.y(); y <= max_pixel.y(); ++y) {
+        for (int x = min_pixel.x(); x <= max_pixel.x(); ++x) {
             ++num_total;
             Eigen::Vector2i pixel_coord(x, y);
             Eigen::AlignedBox2d box;
             box.extend(pixel_coord.cast<double>().cwiseProduct(pixel_size));
             box.extend(
                 (pixel_coord + Eigen::Vector2i::Ones()).cast<double>().cwiseProduct(pixel_size));
-            bool all_inside = true;
-            for (int k = 0; k < 4; ++k) {
-                bool inside = point_in_triangle(
-                    triangle_uv,
-                    box.corner(static_cast<Eigen::AlignedBox2d::CornerType>(k)));
-                if (!inside) {
-                    all_inside = false;
-                    break;
-                }
+            auto sign = internal::point_in_triangle_quick(edges, box.center(), pixel_radius);
+            if (sign == internal::Classification::Unknown) {
+                sign = internal::pixel_inside_triangle(triangle_uv, box);
             }
-            if (all_inside) {
+            if (sign == internal::Classification::Outside) {
+                continue;
+            }
+            if (sign == internal::Classification::Inside) {
                 ++num_inside;
                 Eigen::Matrix<T, 3, 1> p_tri =
                     get_p_interpolated(box.center().x(), box.center().y());
                 Eigen::Matrix<T, 3, 1> p_displaced;
                 for (size_t k = 0; k < 3; ++k) {
-                    p_displaced[k] = images[k].get_raw_image()(x, y);
+                    p_displaced[k] = images[k].get_raw_image()(y, x);
                 }
                 value += (p_displaced - p_tri).squaredNorm() * pixel_size(0) * pixel_size(1);
                 if (0) {
@@ -298,7 +253,6 @@ double get_error_per_triangle_adaptive(
                         Eigen::Matrix<T, 3, 1> p_tri2 = get_p_interpolated(u, v);
                         la_runtime_assert(p_displaced2 == p_displaced);
                     }
-                    double w = quadr.weights().sum();
                     double diff = std::abs(quadr.weights().sum() - pixel_size(0) * pixel_size(1));
                     la_runtime_assert(diff < 1e-10);
                 }
@@ -334,8 +288,13 @@ double get_error_per_triangle_adaptive(
 struct TextureIntegral::Cache
 {
     // Data for exact error computation
-    tbb::enumerable_thread_specific<QuadratureCache> quadrature_cache;
+    mutable tbb::enumerable_thread_specific<QuadratureCache> quadrature_cache;
 };
+
+TextureIntegral::TextureIntegral() = default;
+TextureIntegral::TextureIntegral(TextureIntegral&&) = default; // move constructor
+TextureIntegral& TextureIntegral::operator=(TextureIntegral&&) =
+    default; // move assignment operator
 
 TextureIntegral::TextureIntegral(std::array<wmtk::Image, 3> data)
     : m_data(std::move(data))
@@ -347,7 +306,7 @@ TextureIntegral::~TextureIntegral() = default;
 template <TextureIntegral::SamplingMethod Sampling, TextureIntegral::IntegrationMethod Integration>
 void TextureIntegral::get_error_per_triangle_internal(
     lagrange::span<const std::array<float, 6>> input_triangles,
-    lagrange::span<float> output_errors)
+    lagrange::span<float> output_errors) const
 {
     assert(input_triangles.size() == output_errors.size());
     tbb::parallel_for(size_t(0), input_triangles.size(), [&](size_t i) {
@@ -382,7 +341,7 @@ void TextureIntegral::get_error_per_triangle_internal(
 
 void TextureIntegral::get_error_per_triangle(
     lagrange::span<const std::array<float, 6>> input_triangles,
-    lagrange::span<float> output_errors)
+    lagrange::span<float> output_errors) const
 {
     assert(input_triangles.size() == output_errors.size());
     switch (m_sampling_method) {
@@ -424,10 +383,5 @@ void TextureIntegral::get_error_per_triangle(
         break;
     }
 }
-
-void TextureIntegral::get_integral_per_triangle(
-    lagrange::span<const std::array<float, 6>> input_triangles,
-    lagrange::span<std::array<float, 3>> output_integrals)
-{}
 
 } // namespace wmtk

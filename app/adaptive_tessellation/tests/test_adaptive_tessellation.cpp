@@ -42,7 +42,7 @@ using Scalar = double;
 
 TEST_CASE("AABB")
 {
-    const std::string root(WMT_DATA_DIR);
+    const std::string root(WMTK_DATA_DIR);
     const std::string path = root + "/test_triwild.obj";
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
@@ -306,6 +306,7 @@ TEST_CASE("paired split")
     F.row(1) << 3, 4, 5;
     AdaptiveTessellation m;
     m.create_mesh_debug(V, F);
+    m.mesh_parameters.m_ignore_embedding = true;
     wmtk::TriMesh::Tuple primary_edge1 = wmtk::TriMesh::Tuple(4, 0, 1, m);
     wmtk::TriMesh::Tuple primary_edge2 = wmtk::TriMesh::Tuple(2, 0, 0, m);
     primary_edge1 = primary_edge1.is_ccw(m) ? primary_edge1 : primary_edge1.switch_vertex(m);
@@ -834,7 +835,7 @@ TEST_CASE("paired collapse")
     //                13    12
 
     const auto& primary_edge8_opt = op6.collapse_edge.get_return_tuple_opt();
-    const auto& primary_edge9_opt = op6.collapse_mirror_edge.get_return_tuple();
+    const auto& primary_edge9_opt = op6.collapse_mirror_edge.get_return_tuple_opt();
     REQUIRE(primary_edge8_opt.has_value());
     REQUIRE(primary_edge9_opt.has_value());
     const auto& primary_edge8_ret = primary_edge8_opt.value();
@@ -985,8 +986,8 @@ TEST_CASE("paired swap")
     //     cv3   /    |  |   cv0| /|/  \    cv2
     //          /    /   |      |/ / f1 \   
     //        0(0)--8|--6|      |7----(0)3
-    //          \    \<--|cv1   |       /
-    //           \   |pe5|      |      /
+    //          \    \   |cv1   |       /
+    //           \   |   |      |      /
     //            \ f0\f4|      | f3  /
     //             \   | |      |    /
     //              \(1)\|      |(2)/
@@ -996,37 +997,66 @@ TEST_CASE("paired swap")
     REQUIRE(primary_edge5.vid(m) == 7);
     REQUIRE(primary_edge5.switch_vertex(m).vid(m) == 9);
     AdaptiveTessellationSwapEdgeOperation op4;
+    // this operation should fail because of it would generate colinear traingles
     op4(m, primary_edge5);
+    std::vector<TriMeshTuple> op4_modified_tuples = op4.modified_tuples(m);
+    REQUIRE(!op4);
+    REQUIRE(op4_modified_tuples.size() == 0);
 
     ////////// ======= interior edge swap
     // acsii art diamond
     //                1          4
-    //              /(2)/|      |(1) \ 
-    //             /   | |      |||f1 \ 9
-    //            /f2 /f5|      | \\|  \     
-    //     cv3   /    |  |   cv0|   \   \    cv2
-    //          /    /   |      |  f6 \  \   
+    //              /(2)/|      |(1)\ 
+    //             /   | |      |    \ 9
+    //            /f2 /f5|      | f6 /\     
+    //     cv3   /    |  |   cv0|   /  \    cv2
+    //          /    /   |      |  / f1 \   
     //        0(0)--8|--6|      |7----(0)3
-    //          \    \<--|cv1   |       /
-    //           \   |pe5|      |      /
+    //          \    \   |cv1   |  ---> /
+    //           \   |   |      |  pe6 /
     //            \ f0\f4|      | f3  /
     //             \   | |      |    /
     //              \(1)\|      |(2)/
     //                2           5
-    std::vector<Tuple> op4_modified_tuples = op4.modified_tuples(m);
-    REQUIRE(op_modified_tuples.size() == 2);
-    const auto& primary_edge5_ret = op4_modified_tuples[0];
-    REQUIRE(primary_edge5_ret.is_valid(m));
-    REQUIRE(primary_edge5_ret.vid(m) == 4);
-    REQUIRE(m.is_boundary_edge(primary_edge5_ret.switch_edge(m)));
-    REQUIRE(m.edge_attrs[primary_edge5_ret.switch_edge(m).eid(m)].curve_id.has_value());
-    REQUIRE(m.edge_attrs[primary_edge5_ret.switch_edge(m).eid(m)].curve_id.value() == 2);
-    REQUIRE(m.is_seam_edge(op4.modified_tuples(m)[1].switch_edge(m)));
-    REQUIRE(m.edge_attrs[op4.modified_tuples(m)[1].switch_edge(m).eid(m)].curve_id.has_value());
-    REQUIRE(m.edge_attrs[op4.modified_tuples(m)[1].switch_edge(m).eid(m)].curve_id.value() == 0);
-    REQUIRE(m.is_seam_edge(op4.modified_tuples(m)[1].switch_edge(m)));
-    REQUIRE(m.get_oriented_mirror_edge(op4.modified_tuples(m)[1].switch_edge(m)).vid(m) == 6);
-    REQUIRE(m.get_oriented_mirror_edge(op4.modified_tuples(m)[1].switch_edge(m)).fid(m) == 5);
+
+    wmtk::TriMesh::Tuple primary_edge6 = wmtk::TriMesh::Tuple(7, 2, 3, m);
+    REQUIRE(primary_edge6.is_valid(m));
+    REQUIRE(primary_edge6.vid(m) == 7);
+    REQUIRE(primary_edge6.switch_vertex(m).vid(m) == 3);
+    AdaptiveTessellationSwapEdgeOperation op5;
+    // this operation should fail because of it would generate colinear traingles
+    op5(m, primary_edge6);
+    std::vector<TriMeshTuple> op5_modified_tuples = op5.modified_tuples(m);
+
+    // acsii art diamond
+    //                1          4
+    //              /(2)/|      |(1)\ 
+    //             /   | |      |    \ 9
+    //            /f2 /f5|      | f6 /\     
+    //     cv3   /    |  |   cv0|   // \    cv2
+    //          /    /   |      |  / |  \   
+    //        0(0)--8|--6|      |7   ||\(0)3
+    //          \    \   |cv1   |    ||  /
+    //           \   |   |      |   / | /
+    //            \ f0\f4|      |f3| f1/
+    //             \   | |      |  |  /
+    //              \(1)\|      |(2)/
+    //                2           5
+
+    REQUIRE(op5_modified_tuples.size() == 2);
+    const wmtk::TriMesh::Tuple op5_ret = op5.get_return_tuple_opt().value();
+    REQUIRE(op5_ret.is_valid(m));
+    REQUIRE(op5_ret.vid(m) == 5);
+    // edge 3-5
+    REQUIRE(m.is_boundary_edge(op5_ret.switch_edge(m)));
+    REQUIRE(m.edge_attrs[op5_ret.switch_edge(m).eid(m)].curve_id.has_value());
+    REQUIRE(m.edge_attrs[op5_ret.switch_edge(m).eid(m)].curve_id.value() == 2);
+    // edge 5-7
+    REQUIRE(m.is_seam_edge(op5_modified_tuples[1].switch_edge(m)));
+    REQUIRE(m.edge_attrs[op5_modified_tuples[1].switch_edge(m).eid(m)].curve_id.has_value());
+    REQUIRE(m.edge_attrs[op5_modified_tuples[1].switch_edge(m).eid(m)].curve_id.value() == 0);
+    REQUIRE(m.get_oriented_mirror_edge(op5_modified_tuples[1].switch_edge(m)).vid(m) == 6);
+    REQUIRE(m.get_oriented_mirror_edge(op5_modified_tuples[1].switch_edge(m)).fid(m) == 4);
     //////
     REQUIRE(m.vert_capacity() == 10);
     REQUIRE(m.tri_capacity() == 7);
@@ -1059,27 +1089,45 @@ TEST_CASE("paired swap")
         }
     }
 
-    ////////// ======= boundary edge swap
-    /// should be rejected
-    wmtk::TriMesh::Tuple primary_edge6 = wmtk::TriMesh::Tuple(5, 1, 3, m);
-    REQUIRE(primary_edge6.is_valid(m));
-    REQUIRE(primary_edge6.vid(m) == 5);
-    REQUIRE(primary_edge6.switch_vertex(m).vid(m) == 3);
-    AdaptiveTessellationSwapEdgeOperation op5;
-    op5(m, primary_edge6);
-    std::vector<Tuple> op5_modified_tuples = op5.modified_tuples(m);
-    REQUIRE(op5_modified_tuples.size() == 0);
-
+    // acsii art diamond
+    //                1          4
+    //              /(2)/|      |(1)\ 
+    //             /   | |      |    \ 9
+    //            /f2 /f5|      | f6 /\     
+    //     cv3   /    |  |   cv0|   // \    cv2
+    //          /    /   |      |  / |  \   
+    //        0(0)--8|--6|      |7   ||\(0)3
+    //          \    \   |cv1   |    ||  /
+    //           \   |   |      |   / | /
+    //            \ f0\f4|      |f3| f1/
+    //             \   | |      |  |  /
+    //              \(1)\|      |(2)/
+    //                2           5
     ////////// ======= seam edge swap
-    /// should be rejected
-    wmtk::TriMesh::Tuple primary_edge7 = wmtk::TriMesh::Tuple(6, 0, 4, m);
+    /// should be rejected. not swapping seam edge
+    wmtk::TriMesh::Tuple primary_edge7 = wmtk::TriMesh::Tuple(5, 0, 3, m);
     REQUIRE(primary_edge7.is_valid(m));
-    REQUIRE(primary_edge7.vid(m) == 6);
-    REQUIRE(primary_edge7.switch_vertex(m).vid(m) == 2);
+    REQUIRE(primary_edge7.vid(m) == 5);
+    REQUIRE(primary_edge7.switch_vertex(m).vid(m) == 7);
+    REQUIRE(m.is_seam_edge(primary_edge7));
     AdaptiveTessellationSwapEdgeOperation op6;
     op6(m, primary_edge7);
-    std::vector<Tuple> op6_modified_tuples = op6.modified_tuples(m);
+    std::vector<TriMeshTuple> op6_modified_tuples = op6.modified_tuples(m);
+    REQUIRE(!op6);
     REQUIRE(op6_modified_tuples.size() == 0);
+
+    ////////// ======= boundary edge swap
+    /// should be rejected. don't swap boundary
+    wmtk::TriMesh::Tuple primary_edge8 = wmtk::TriMesh::Tuple(2, 2, 0, m);
+    REQUIRE(primary_edge8.is_valid(m));
+    REQUIRE(primary_edge8.vid(m) == 2);
+    REQUIRE(primary_edge8.switch_vertex(m).vid(m) == 0);
+    REQUIRE(m.is_boundary_edge(primary_edge8));
+    AdaptiveTessellationSwapEdgeOperation op7;
+    op7(m, primary_edge8);
+    REQUIRE(!op7);
+    std::vector<TriMeshTuple> op7_modified_tuples = op7.modified_tuples(m);
+    REQUIRE(op7_modified_tuples.size() == 0);
 }
 
 TEST_CASE("test mirror edge setup")
@@ -1087,11 +1135,13 @@ TEST_CASE("test mirror edge setup")
     AdaptiveTessellation m;
     Eigen::MatrixXd UV;
     Eigen::MatrixXi F;
-    std::filesystem::path input_mesh_path = "/home/yunfan/hemisphere.obj";
-    m.create_paired_seam_mesh_with_offset(input_mesh_path.string(), UV, F);
     Eigen::MatrixXd V3d;
     Eigen::MatrixXi F3d;
-    igl::read_triangle_mesh(input_mesh_path.string(), V3d, F3d);
+    Eigen::MatrixXd CN, FN;
+    std::string input_mesh_path = WMTK_DATA_DIR "/hemisphere.obj";
+    igl::readOBJ(input_mesh_path, V3d, UV, CN, F3d, F, FN);
+    std::string displaced_positions = WMTK_DATA_DIR "/images/hemisphere_512_displaced.exr";
+    m.mesh_preprocessing(input_mesh_path, displaced_positions);
     for (const auto& f : m.get_faces()) {
         size_t fi = f.fid(m);
         for (auto i = 0; i < 3; ++i) {
@@ -1125,11 +1175,13 @@ TEST_CASE("get mirror")
     AdaptiveTessellation m;
     Eigen::MatrixXd UV;
     Eigen::MatrixXi F;
-    std::filesystem::path input_mesh_path = WMT_DATA_DIR "/hemisphere.obj";
-    m.create_paired_seam_mesh_with_offset(input_mesh_path.string(), UV, F);
     Eigen::MatrixXd V3d;
     Eigen::MatrixXi F3d;
-    igl::read_triangle_mesh(input_mesh_path.string(), V3d, F3d);
+    Eigen::MatrixXd CN, FN;
+    std::string input_mesh_path = WMTK_DATA_DIR "/hemisphere.obj";
+    igl::readOBJ(input_mesh_path, V3d, UV, CN, F3d, F, FN);
+    std::string displaced_positions = WMTK_DATA_DIR "/images/hemisphere_512_displaced.exr";
+    m.mesh_preprocessing(input_mesh_path, displaced_positions);
     for (const auto& f : m.get_faces()) {
         size_t fi = f.fid(m);
         for (auto i = 0; i < 3; ++i) {
@@ -1191,11 +1243,9 @@ TEST_CASE("get mirror")
 TEST_CASE("test curve fixed get_all_mirror_vids")
 {
     AdaptiveTessellation m;
-    Eigen::MatrixXd UV;
-    Eigen::MatrixXi F;
-    std::filesystem::path input_mesh_path = WMT_DATA_DIR "/hemisphere.obj";
-    m.create_paired_seam_mesh_with_offset(input_mesh_path.string(), UV, F);
-    m.set_fixed();
+    std::string input_mesh_path = WMTK_DATA_DIR "/hemisphere.obj";
+    std::string displaced_positions = WMTK_DATA_DIR "/images/hemisphere_512_displaced.exr";
+    m.mesh_preprocessing(input_mesh_path, displaced_positions);
     for (auto i = 0; i < m.vert_capacity(); ++i) {
         if (m.color_to_uv_indices[m.uv_index_to_color[i]].size() > 2) {
             REQUIRE(m.vertex_attrs[i].fixed);
@@ -1229,11 +1279,14 @@ TEST_CASE("uv-index and coloring test")
     AdaptiveTessellation m;
     Eigen::MatrixXd UV;
     Eigen::MatrixXi F;
-    std::filesystem::path input_mesh_path = WMT_DATA_DIR "/hemisphere.obj";
-    m.create_paired_seam_mesh_with_offset(input_mesh_path.string(), UV, F);
     Eigen::MatrixXd V3d;
     Eigen::MatrixXi F3d;
-    igl::read_triangle_mesh(input_mesh_path.string(), V3d, F3d);
+    Eigen::MatrixXd CN, FN;
+    std::string input_mesh_path = WMTK_DATA_DIR "/hemisphere.obj";
+    igl::readOBJ(input_mesh_path, V3d, UV, CN, F3d, F, FN);
+    std::string displaced_positions = WMTK_DATA_DIR "/images/hemisphere_512_displaced.exr";
+    m.mesh_preprocessing(input_mesh_path, displaced_positions);
+
     for (auto& v : m.get_vertices()) {
         // iterate through vertices
         int color = m.uv_index_to_color[v.vid(m)];
@@ -1267,11 +1320,9 @@ TEST_CASE("uv-index and coloring test")
 TEST_CASE("edge curve-id assignment")
 {
     AdaptiveTessellation m;
-    Eigen::MatrixXd UV;
-    Eigen::MatrixXi F;
-    std::filesystem::path input_mesh_path = WMT_DATA_DIR "/hemisphere.obj";
-    m.create_paired_seam_mesh_with_offset(input_mesh_path.string(), UV, F);
-    m.set_fixed();
+    std::filesystem::path input_mesh_path = WMTK_DATA_DIR "/hemisphere.obj";
+    std::string displaced_positions = WMTK_DATA_DIR "/images/hemisphere_512_displaced.exr";
+    m.mesh_preprocessing(input_mesh_path.string(), displaced_positions);
     for (auto& e : m.get_edges()) {
         if (m.is_boundary_edge(e)) {
             REQUIRE(m.edge_attrs[e.eid(m)].curve_id.has_value());
@@ -1315,10 +1366,7 @@ TEST_CASE("quickrun")
 {
     // Loading the input 2d mesh
     AdaptiveTessellation m;
-    Eigen::MatrixXd UV;
-    Eigen::MatrixXi F;
-    m.create_paired_seam_mesh_with_offset("/home/yunfan/seamPyramid.obj", UV, F);
-
+    m.mesh_preprocessing("swap_0006.obj", "/home/yunfan/seamPyramid_displaced.exr");
     Image image;
     image.load(
         "/home/yunfan/seamPyramid_height_10.exr",
@@ -1327,9 +1375,9 @@ TEST_CASE("quickrun")
 
     m.mesh_parameters.m_position_normal_paths = {"/home/yunfan/seamPyramid_position.exr",
                                                  "/home/yunfan/seamPyramid_normal_smooth.exr"};
+    REQUIRE(m.check_mesh_connectivity_validity());
     m.mesh_parameters.m_early_stopping_number = 100;
 
-    assert(m.check_mesh_connectivity_validity());
     m.set_parameters(
         0.00001,
         0.4,
@@ -1337,12 +1385,13 @@ TEST_CASE("quickrun")
         WrappingMode::MIRROR_REPEAT,
         SAMPLING_MODE::BICUBIC,
         DISPLACEMENT_MODE::MESH_3D,
-        adaptive_tessellation::ENERGY_TYPE::AREA_QUADRATURE,
+        adaptive_tessellation::ENERGY_TYPE::AREA_QUADRATURE,    
         adaptive_tessellation::EDGE_LEN_TYPE::AREA_ACCURACY,
         1);
-    m.split_all_edges();
-    m.write_displaced_obj("split_result.obj", m.mesh_parameters.m_displacement);
-    m.write_obj("split_result_2d.obj");
+    // m.split_all_edges();
+    // m.write_obj_with_texture_coords("split_result.obj");
+    m.swap_all_edges();
+    m.write_obj_with_texture_coords("swap_result.obj");
     m.smooth_all_vertices();
     m.write_displaced_obj("smooth_result.obj", m.mesh_parameters.m_displacement);
     m.write_obj("smooth_result_2d.obj");
@@ -1353,10 +1402,7 @@ TEST_CASE("check curveid consistency after split")
     // logger().set_level(spdlog::level::trace);
     // Loading the input 2d mesh
     AdaptiveTessellation m;
-    Eigen::MatrixXd UV;
-    Eigen::MatrixXi F;
-    m.create_paired_seam_mesh_with_offset("/home/yunfan/seamPyramid.obj", UV, F);
-
+    m.mesh_preprocessing("/home/yunfan/seamPyramid.obj", "/home/yunfan/seamPyramid_displaced.exr");
     Image image;
     image.load(
         "/home/yunfan/seamPyramid_height_10.exr",
@@ -1366,8 +1412,8 @@ TEST_CASE("check curveid consistency after split")
     m.mesh_parameters.m_position_normal_paths = {"/home/yunfan/seamPyramid_position.exr",
                                                  "/home/yunfan/seamPyramid_normal_smooth.exr"};
     assert(m.check_mesh_connectivity_validity());
-    // stop after 10 iterations
-    m.mesh_parameters.m_early_stopping_number = 10;
+    // stop after 100 iterations
+    m.mesh_parameters.m_early_stopping_number = 100;
     m.set_parameters(
         0.00001,
         0.4,
@@ -1379,8 +1425,8 @@ TEST_CASE("check curveid consistency after split")
         adaptive_tessellation::EDGE_LEN_TYPE::AREA_ACCURACY,
         1);
     m.split_all_edges();
-    m.write_displaced_obj("split_result.obj", m.mesh_parameters.m_displacement);
-    m.write_obj("split_result_2d.obj");
+    m.write_obj_displaced("split_result.obj", m.mesh_parameters.m_displacement);
+    m.write_obj_only_texture_coords("split_result_2d.obj");
     // check curve-id after split per edge
     for (auto& e : m.get_edges()) {
         if (m.is_boundary_edge(e)) {

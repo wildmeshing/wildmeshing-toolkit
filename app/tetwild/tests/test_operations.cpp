@@ -17,7 +17,7 @@ using namespace tetwild;
 
 TEST_CASE("mesh_improvement", "[tetwild_operation][.slow]")
 {
-    std::string input_path = WMT_DATA_DIR "/37322.stl";
+    std::string input_path = WMTK_DATA_DIR "/37322.stl";
 
     Eigen::MatrixXd V;
     Eigen::MatrixXd F;
@@ -180,7 +180,7 @@ TEST_CASE("inversion-check-rational-tetwild", "[tetwild_operation]")
 TEST_CASE("optimize-bunny-tw", "[tetwild_operation][.slow]")
 {
     MshData msh;
-    msh.load(WMT_DATA_DIR "bunny_tetwild_80.msh");
+    msh.load(WMTK_DATA_DIR "bunny_tetwild_80.msh");
     auto vec_attrs = std::vector<VertexAttributes>(msh.get_num_tet_vertices());
     auto tets = std::vector<std::array<size_t, 4>>(msh.get_num_tets());
     msh.extract_tet_vertices(

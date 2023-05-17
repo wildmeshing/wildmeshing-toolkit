@@ -27,26 +27,37 @@ auto AdaptiveTessellationSwapEdgeOperation::execute(AdaptiveTessellation& m, con
 }
 bool AdaptiveTessellationSwapEdgeOperation::before(AdaptiveTessellation& m, const Tuple& t)
 {
+    static std::atomic_int cnt = 0;
+    assert(t.is_valid(m));
+    assert(m.check_mesh_connectivity_validity());
     if (m.is_boundary_edge(t)) {
         return false;
     }
-
+    // clean out old data
+    vid_edge_to_mirror_edge.local().clear();
     auto& vids_to_mirror_edge = vid_edge_to_mirror_edge.local();
-    for (const Tuple& edge_tuple : m.triangle_boundary_edge_tuples(t)) {
-        if (m.is_boundary_edge(edge_tuple)) {
-            // for seam edge get_sibling_edge_opt return the mirror edge as std::optional
-            std::optional<Tuple> opt =
-                m.is_seam_edge(edge_tuple) ? m.get_sibling_edge_opt(edge_tuple) : std::nullopt;
-            size_t vid0 = edge_tuple.vid(m);
-            size_t vid1 = edge_tuple.switch_vertex(m).vid(m);
-            vids_to_mirror_edge[std::array<size_t, 2>{{vid0, vid1}}] = {
-                opt,
-                m.edge_attrs[edge_tuple.eid(m)].curve_id.value()};
+    std::vector<Tuple> incident_tri_tuples;
+    incident_tri_tuples.emplace_back(t);
+    if (t.switch_face(m).has_value()) incident_tri_tuples.emplace_back(t.switch_face(m).value());
+    for (const auto& tri : incident_tri_tuples) {
+        for (const Tuple& edge_tuple : m.triangle_boundary_edge_tuples(tri)) {
+            if (m.is_boundary_edge(edge_tuple)) {
+                // for seam edge get_sibling_edge_opt return the mirror edge as std::optional
+                std::optional<Tuple> opt =
+                    m.is_seam_edge(edge_tuple) ? m.get_sibling_edge_opt(edge_tuple) : std::nullopt;
+                size_t vid0 = edge_tuple.vid(m);
+                size_t vid1 = edge_tuple.switch_vertex(m).vid(m);
+                vids_to_mirror_edge[std::array<size_t, 2>{{vid0, vid1}}] = {
+                    opt,
+                    m.edge_attrs[edge_tuple.eid(m)].curve_id.value()};
+            }
         }
     }
 
-
     if (wmtk::TriMeshSwapEdgeOperation::before(m, t)) {
+        wmtk::logger().info("swap {}", cnt);
+        m.write_obj(m.mesh_parameters.m_output_folder + fmt::format("/swap_{:04d}.obj", cnt));
+        cnt++;
         return true;
         // return  m.swap_before(t);
     }
@@ -117,6 +128,25 @@ bool AdaptiveTessellationSwapEdgeOperation::after(
             m.edge_attrs[edge_tup.eid(m)].curve_id = mirror_edge_curveid.second;
         }
 
+        // update the face_attrs (accuracy error)
+        if (!m.mesh_parameters.m_ignore_embedding) {
+            assert(bool(*this));
+            // get a vector of new traingles uvs
+            std::vector<std::array<float, 6>> modified_tris_uv(mod_tups.size());
+            for (int i = 0; i < mod_tups.size(); i++) {
+                auto tri = mod_tups[i];
+                auto verts = m.oriented_tri_vids(tri);
+                std::array<float, 6> tri_uv;
+                for (int i = 0; i < 3; i++) {
+                    tri_uv[i * 2] = m.vertex_attrs[verts[i]].pos(0);
+                    tri_uv[i * 2 + 1] = m.vertex_attrs[verts[i]].pos(1);
+                }
+                modified_tris_uv[i] = tri_uv;
+            }
+            std::vector<float> renewed_errors(mod_tups.size());
+            m.m_texture_integral.get_error_per_triangle(modified_tris_uv, renewed_errors);
+            m.set_faces_accuracy_error(mod_tups, renewed_errors);
+        }
         return true;
     }
     return ret_data;
@@ -191,39 +221,50 @@ auto swap_accuracy_cost = [](auto& m, const TriMesh::Tuple& e, const double vale
         } else
         // (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY)
         {
-            auto other_face = e.switch_face(m).value();
-            auto other_vid = other_face.switch_edge(m).switch_vertex(m).vid(m);
+            assert(e.switch_face(m).has_value());
+            TriMesh::Tuple other_face = e.switch_face(m).value();
+            size_t other_vid = other_face.switch_edge(m).switch_vertex(m).vid(m);
             // get oriented vids
-            auto vids1 = m.oriented_tri_vids(e);
-            auto vids2 = m.oriented_tri_vids(other_face);
+            std::array<size_t, 3> vids1 = m.oriented_tri_vids(e);
+            std::array<size_t, 3> vids2 = m.oriented_tri_vids(other_face);
 
             Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle1;
             Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle2;
-            for (auto i = 0; i < 3; i++) {
-                triangle1.row(i) = m.vertex_attrs[vids1[i]].pos;
-                triangle2.row(i) = m.vertex_attrs[vids2[i]].pos;
-            }
-            e_before = m.mesh_parameters.m_displacement->get_error_per_triangle(triangle1);
-            e_before += m.mesh_parameters.m_displacement->get_error_per_triangle(triangle2);
+            // e_before = m.mesh_parameters.m_displacement->get_error_per_triangle(triangle1);
+            // e_before += m.mesh_parameters.m_displacement->get_error_per_triangle(triangle2);
 
+            // using the cached error
+            e_before = m.face_attrs[e.fid(m)].accuracy_error;
+            e_before += m.face_attrs[other_face.fid(m)].accuracy_error;
+
+            std::vector<std::array<float, 6>> modified_tris(2);
+            std::vector<float> compute_errors(2);
             // replace the vids with the swapped vids
             for (auto i = 0; i < 3; i++) {
                 if (vids1[i] == e.switch_vertex(m).vid(m)) vids1[i] = other_vid;
                 if (vids2[i] == e.vid(m)) vids2[i] = e.switch_edge(m).switch_vertex(m).vid(m);
             }
             for (auto i = 0; i < 3; i++) {
+                modified_tris[0][i * 2] = m.vertex_attrs[vids1[i]].pos(0);
+                modified_tris[0][i * 2 + 1] = m.vertex_attrs[vids1[i]].pos(1);
+                modified_tris[1][i * 2] = m.vertex_attrs[vids2[i]].pos(0);
+                modified_tris[1][i * 2 + 1] = m.vertex_attrs[vids2[i]].pos(1);
+
                 triangle1.row(i) = m.vertex_attrs[vids1[i]].pos;
                 triangle2.row(i) = m.vertex_attrs[vids2[i]].pos;
             }
 
+            m.m_texture_integral.get_error_per_triangle(modified_tris, compute_errors);
+
             if (polygon_signed_area(triangle1) <= 0 || polygon_signed_area(triangle2) <= 0) {
                 return -std::numeric_limits<double>::infinity();
             } else {
-                e_after = m.mesh_parameters.m_displacement->get_error_per_triangle(triangle1);
-                e_after += m.mesh_parameters.m_displacement->get_error_per_triangle(triangle2);
+                // e_after = m.mesh_parameters.m_displacement->get_error_per_triangle(triangle1);
+                // e_after += m.mesh_parameters.m_displacement->get_error_per_triangle(triangle2);
+                e_after = compute_errors[0] + compute_errors[1];
             }
             if (valence_cost <= 0) return -std::numeric_limits<double>::infinity();
-            if (e_after > m.mesh_parameters.m_accruacy_safeguard_ratio *
+            if (e_after > m.mesh_parameters.m_accuracy_safeguard_ratio *
                               m.mesh_parameters.m_accuracy_threshold)
                 // the accuracy exceeds global bond
                 return -std::numeric_limits<double>::infinity();
@@ -280,6 +321,7 @@ void AdaptiveTessellation::swap_all_edges()
     };
     if (NUM_THREADS > 0) {
         auto executor = wmtk::ExecutePass<AdaptiveTessellation, ExecutionPolicy::kPartition>();
+        addCustomOps(executor);
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) {
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };
