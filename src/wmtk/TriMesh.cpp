@@ -372,9 +372,18 @@ std::vector<TriMesh::Tuple> TriMesh::get_edges() const
 
 TriMesh::Tuple TriMesh::init_from_edge(size_t vid1, size_t vid2, size_t fid) const
 {
+    const auto opt = init_from_edge_opt(vid1, vid2, fid);
+    assert(opt.has_value());
+    return opt.value();
+}
+std::optional<TriMesh::Tuple> TriMesh::init_from_edge_opt(size_t vid1, size_t vid2, size_t fid)
+    const
+{
     auto a = m_tri_connectivity[fid].find(vid1);
     auto b = m_tri_connectivity[fid].find(vid2);
-    assert(a != -1 && b != -1);
+    if (a == -1 || b == -1) {
+        return {};
+    }
     // 0,1 - >2, 1,2-> 0, 0,2->1
     return Tuple(vid1, 3 - (a + b), fid, *this);
 }
