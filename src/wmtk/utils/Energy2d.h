@@ -10,6 +10,7 @@
 #include "Image.h"
 #include "Logger.hpp"
 #include "autodiff.h"
+#include "Quadric.h"
 
 namespace wmtk {
 using DofVector = Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 2, 1>;
@@ -22,9 +23,9 @@ struct State
     Eigen::Matrix2d hessian;
     wmtk::DofVector dofx;
     Eigen::MatrixXd two_opposite_vertices;
+    int idx = 0; // facet index
 
     ////// ==== archived ===== (keep for compilation)
-    int idx = 0;
     double scaling = 1.;
     std::array<double, 6> target_triangle = {0., 0., 1., 0., 1. / 2., sqrt(3) / 2.};
     std::array<double, 6> input_triangle;
@@ -157,4 +158,23 @@ public:
     void eval([[maybe_unused]] State& state) const override{};
     void eval(State& state, DofsToPositions& x) const override;
 };
+
+class QuadricEnergy : public wmtk::Energy
+{
+protected:
+    std::shared_ptr<Displacement> m_displ;
+    std::vector<wmtk::Quadric<double>> m_facet_quadrics;
+
+public:
+    QuadricEnergy(std::shared_ptr<Displacement> displ)
+        : m_displ(std::move(displ))
+    {}
+
+    std::vector<wmtk::Quadric<double>> &facet_quadrics() { return m_facet_quadrics; }
+
+public:
+    void eval([[maybe_unused]] State& state) const override {};
+    void eval(State& state, DofsToPositions& x) const override;
+};
+
 } // namespace wmtk

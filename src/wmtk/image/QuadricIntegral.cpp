@@ -264,10 +264,13 @@ Quadric<double> get_quadric_per_triangle_adaptive(
 
 struct QuadricIntegral::Cache
 {
-    tbb::enumerable_thread_specific<QuadratureCache> quadrature_cache;
+    mutable tbb::enumerable_thread_specific<QuadratureCache> quadrature_cache;
 };
 
+QuadricIntegral::QuadricIntegral() = default;
 QuadricIntegral::~QuadricIntegral() = default;
+QuadricIntegral::QuadricIntegral(QuadricIntegral&&) = default;
+QuadricIntegral& QuadricIntegral::operator=(QuadricIntegral&&) = default;
 
 QuadricIntegral::QuadricIntegral(
     const std::array<wmtk::Image, 3>& displaced_positions,
@@ -314,7 +317,7 @@ QuadricIntegral::QuadricIntegral(
 void QuadricIntegral::get_quadric_per_triangle(
     int num_triangles,
     lagrange::function_ref<std::array<float, 6>(int)> get_triangle,
-    lagrange::span<wmtk::Quadric<double>> output_quadrics)
+    lagrange::span<wmtk::Quadric<double>> output_quadrics) const
 {
     assert(num_triangles == output_quadrics.size());
     tbb::parallel_for(0, num_triangles, [&](int i) {
