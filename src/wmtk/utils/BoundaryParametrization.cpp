@@ -38,6 +38,9 @@ struct CurveNetwork
     std::vector<bool> is_closed;
 };
 
+
+// A cone vertex is a vertex that lies at the intersection of more than two seams, or at the
+// endpoint of a seam.
 std::vector<bool> compute_cone_vertices(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& E0,
@@ -272,7 +275,7 @@ Boundary::ParameterizedCurves parameterize_curves(
                     "Parent curve has {} vertices, while current curve has {} vertices",
                     input.curves[parent_id].size(),
                     curve.size()));
-            if (check_orientation(curve, parent_id)) {
+            if (!check_orientation(curve, parent_id)) {
                 std::reverse(curve.begin(), curve.end());
                 la_runtime_assert(check_orientation(curve, parent_id));
             }

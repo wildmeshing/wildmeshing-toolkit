@@ -174,8 +174,8 @@ std::pair<Eigen::MatrixXi, Eigen::MatrixXi> AdaptiveTessellation::seam_edges_set
                     } else {
                         // if not add it to the map and add to the edge matrix
                         seam_edges[{ej0, ej1}] = std::pair<size_t, size_t>(ei0, ei1);
-                        E0.row(seam_edge_cnt) << ei0, ei1;
-                        E1.row(seam_edge_cnt) << ej0, ej1;
+                        E0.row(seam_edge_cnt) << FT(fi, lvi1), FT(fi, lvi2);
+                        E1.row(seam_edge_cnt) << FT(fj, lvj1), FT(fj, lvj2);
                         seam_edge_cnt++;
                     }
                 }
@@ -881,11 +881,11 @@ std::tuple<double, double, double> AdaptiveTessellation::get_area_accuracy_error
         std::vector<std::array<float, 6>> new_triangles(2);
         std::vector<float> new_computed_errors(2);
         auto mid_point_uv = (vertex_attrs[edge_tuple.vid(*this)].pos +
-                             vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].pos) /
+                             vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].pos).cast<float>() /
                             2.;
-        auto uv1 = vertex_attrs[edge_tuple.vid(*this)].pos;
-        auto uv2 = vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].pos;
-        auto uv3 = vertex_attrs[edge_tuple.switch_edge(*this).switch_vertex(*this).vid(*this)].pos;
+        auto uv1 = vertex_attrs[edge_tuple.vid(*this)].pos.cast<float>();
+        auto uv2 = vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].pos.cast<float>();
+        auto uv3 = vertex_attrs[edge_tuple.switch_edge(*this).switch_vertex(*this).vid(*this)].pos.cast<float>();
         new_triangles[0] = {uv1(0), uv1(1), mid_point_uv(0), mid_point_uv(1), uv3(0), uv3(1)};
         new_triangles[1] = {uv2(0), uv2(1), mid_point_uv(0), mid_point_uv(1), uv3(0), uv3(1)};
         m_texture_integral.get_error_per_triangle(new_triangles, new_computed_errors);
@@ -897,7 +897,7 @@ std::tuple<double, double, double> AdaptiveTessellation::get_area_accuracy_error
                                         .switch_edge(*this)
                                         .switch_vertex(*this)
                                         .vid(*this)]
-                           .pos;
+                           .pos.cast<float>();
             new_triangles[0] = {uv1(0), uv1(1), mid_point_uv(0), mid_point_uv(1), uv4(0), uv4(1)};
             new_triangles[1] = {uv2(0), uv2(1), mid_point_uv(0), mid_point_uv(1), uv4(0), uv4(1)};
             m_texture_integral.get_error_per_triangle(new_triangles, new_computed_errors);

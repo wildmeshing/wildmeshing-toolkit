@@ -98,7 +98,8 @@ public:
             REQUIRE(positions.size() >= 2);
             seams.add_vertices(positions.size(), [&](Index v, lagrange::span<Scalar> p) {
                 if (parametrized) {
-                    auto result = boundary.t_to_uv(curve_id, boundary.arclengths(curve_id)[v]);
+                    auto parent_id = boundary.parent_curve(curve_id);
+                    auto result = boundary.t_to_uv(curve_id, boundary.arclengths(parent_id)[v]);
                     p[0] = result.x();
                     p[1] = result.y();
                     p[2] = 0;
