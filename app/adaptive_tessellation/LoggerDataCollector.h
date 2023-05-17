@@ -56,6 +56,13 @@ class LoggerDataCollector
     bool timer_stopped_ = false;
 
 public:
+    /**
+     * @brief Collect logging data from the mesh.
+     *
+     * Computes the following things: peak memory, number of faces, number of vertices, edge length
+     * statistics, energy statistic, area statistic. All statistics contain min, max, mean, median,
+     * and standard deviation.
+     */
     void evaluate_mesh(const AdaptiveTessellation& mesh)
     {
         using Tuple = wmtk::TriMesh::Tuple;
@@ -123,6 +130,14 @@ public:
 
     double time_in_seconds() const { return timer_.getElapsedTimeInSec(); }
 
+    /**
+     * @brief Log collected data using the mesh logger.
+     *
+     * If timer was not started or stopped, -1 will be printed for the runtime.
+     *
+     * @param mesh
+     * @param log_name name of the log message
+     */
     void log_json(const AdaptiveTessellation& mesh, const std::string& log_name) const
     {
         const double runtime = (timer_started_ && timer_stopped_) ? time_in_seconds() : -1;
