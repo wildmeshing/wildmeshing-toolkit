@@ -38,7 +38,7 @@ std::shared_ptr<spdlog::logger> make_json_file_logger(
     bool also_output_stdout)
 {
     // create sinks
-    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(path, true);
+    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(path.string(), true);
     file_sink->set_level(spdlog::level::trace);
     auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
     console_sink->set_level(spdlog::level::trace);
@@ -50,6 +50,5 @@ std::shared_ptr<spdlog::logger> make_json_file_logger(
 
     set_json_format(*js_logger, messages_are_json);
     return js_logger;
-
 }
 } // namespace wmtk
