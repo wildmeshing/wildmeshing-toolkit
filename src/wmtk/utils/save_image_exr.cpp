@@ -60,7 +60,7 @@ bool wmtk::save_image_exr_red_channel(
         FreeEXRErrorMessage(err); // free's buffer for an error message
         return ret;
     }
-    printf("Saved exr file. [ %s ] \n", path.c_str());
+    wmtk::logger().debug("Saved exr file. {} ", path);
 
     free(header.channels);
     free(header.pixel_types);

@@ -306,6 +306,7 @@ TEST_CASE("paired split")
     F.row(1) << 3, 4, 5;
     AdaptiveTessellation m;
     m.create_mesh_debug(V, F);
+    m.mesh_parameters.m_ignore_embedding = true;
     wmtk::TriMesh::Tuple primary_edge1 = wmtk::TriMesh::Tuple(4, 0, 1, m);
     wmtk::TriMesh::Tuple primary_edge2 = wmtk::TriMesh::Tuple(2, 0, 0, m);
     primary_edge1 = primary_edge1.is_ccw(m) ? primary_edge1 : primary_edge1.switch_vertex(m);
@@ -1134,11 +1135,13 @@ TEST_CASE("test mirror edge setup")
     AdaptiveTessellation m;
     Eigen::MatrixXd UV;
     Eigen::MatrixXi F;
-    std::filesystem::path input_mesh_path = "/home/yunfan/hemisphere.obj";
-    m.create_paired_seam_mesh_with_offset(input_mesh_path.string(), UV, F);
     Eigen::MatrixXd V3d;
     Eigen::MatrixXi F3d;
-    igl::read_triangle_mesh(input_mesh_path.string(), V3d, F3d);
+    Eigen::MatrixXd CN, FN;
+    std::string input_mesh_path = WMTK_DATA_DIR "/hemisphere.obj";
+    igl::readOBJ(input_mesh_path, V3d, UV, CN, F3d, F, FN);
+    std::string displaced_positions = WMTK_DATA_DIR "/images/hemisphere_512_displaced.exr";
+    m.mesh_preprocessing(input_mesh_path, displaced_positions);
     for (const auto& f : m.get_faces()) {
         size_t fi = f.fid(m);
         for (auto i = 0; i < 3; ++i) {
@@ -1172,11 +1175,13 @@ TEST_CASE("get mirror")
     AdaptiveTessellation m;
     Eigen::MatrixXd UV;
     Eigen::MatrixXi F;
-    std::filesystem::path input_mesh_path = WMTK_DATA_DIR "/hemisphere.obj";
-    m.create_paired_seam_mesh_with_offset(input_mesh_path.string(), UV, F);
     Eigen::MatrixXd V3d;
     Eigen::MatrixXi F3d;
-    igl::read_triangle_mesh(input_mesh_path.string(), V3d, F3d);
+    Eigen::MatrixXd CN, FN;
+    std::string input_mesh_path = WMTK_DATA_DIR "/hemisphere.obj";
+    igl::readOBJ(input_mesh_path, V3d, UV, CN, F3d, F, FN);
+    std::string displaced_positions = WMTK_DATA_DIR "/images/hemisphere_512_displaced.exr";
+    m.mesh_preprocessing(input_mesh_path, displaced_positions);
     for (const auto& f : m.get_faces()) {
         size_t fi = f.fid(m);
         for (auto i = 0; i < 3; ++i) {
@@ -1238,11 +1243,9 @@ TEST_CASE("get mirror")
 TEST_CASE("test curve fixed get_all_mirror_vids")
 {
     AdaptiveTessellation m;
-    Eigen::MatrixXd UV;
-    Eigen::MatrixXi F;
-    std::filesystem::path input_mesh_path = WMTK_DATA_DIR "/hemisphere.obj";
-    m.create_paired_seam_mesh_with_offset(input_mesh_path.string(), UV, F);
-    m.set_fixed();
+    std::string input_mesh_path = WMTK_DATA_DIR "/hemisphere.obj";
+    std::string displaced_positions = WMTK_DATA_DIR "/images/hemisphere_512_displaced.exr";
+    m.mesh_preprocessing(input_mesh_path, displaced_positions);
     for (auto i = 0; i < m.vert_capacity(); ++i) {
         if (m.color_to_uv_indices[m.uv_index_to_color[i]].size() > 2) {
             REQUIRE(m.vertex_attrs[i].fixed);
@@ -1276,11 +1279,14 @@ TEST_CASE("uv-index and coloring test")
     AdaptiveTessellation m;
     Eigen::MatrixXd UV;
     Eigen::MatrixXi F;
-    std::filesystem::path input_mesh_path = WMTK_DATA_DIR "/hemisphere.obj";
-    m.create_paired_seam_mesh_with_offset(input_mesh_path.string(), UV, F);
     Eigen::MatrixXd V3d;
     Eigen::MatrixXi F3d;
-    igl::read_triangle_mesh(input_mesh_path.string(), V3d, F3d);
+    Eigen::MatrixXd CN, FN;
+    std::string input_mesh_path = WMTK_DATA_DIR "/hemisphere.obj";
+    igl::readOBJ(input_mesh_path, V3d, UV, CN, F3d, F, FN);
+    std::string displaced_positions = WMTK_DATA_DIR "/images/hemisphere_512_displaced.exr";
+    m.mesh_preprocessing(input_mesh_path, displaced_positions);
+
     for (auto& v : m.get_vertices()) {
         // iterate through vertices
         int color = m.uv_index_to_color[v.vid(m)];
@@ -1314,11 +1320,9 @@ TEST_CASE("uv-index and coloring test")
 TEST_CASE("edge curve-id assignment")
 {
     AdaptiveTessellation m;
-    Eigen::MatrixXd UV;
-    Eigen::MatrixXi F;
     std::filesystem::path input_mesh_path = WMTK_DATA_DIR "/hemisphere.obj";
-    m.create_paired_seam_mesh_with_offset(input_mesh_path.string(), UV, F);
-    m.set_fixed();
+    std::string displaced_positions = WMTK_DATA_DIR "/images/hemisphere_512_displaced.exr";
+    m.mesh_preprocessing(input_mesh_path.string(), displaced_positions);
     for (auto& e : m.get_edges()) {
         if (m.is_boundary_edge(e)) {
             REQUIRE(m.edge_attrs[e.eid(m)].curve_id.has_value());
@@ -1362,10 +1366,7 @@ TEST_CASE("quickrun")
 {
     // Loading the input 2d mesh
     AdaptiveTessellation m;
-    Eigen::MatrixXd UV;
-    Eigen::MatrixXi F;
-    m.create_paired_seam_mesh_with_offset("/home/yunfan/seamPyramid.obj", UV, F);
-
+    m.mesh_preprocessing("swap_0006.obj", "/home/yunfan/seamPyramid_displaced.exr");
     Image image;
     image.load(
         "/home/yunfan/seamPyramid_height_10.exr",
@@ -1374,9 +1375,9 @@ TEST_CASE("quickrun")
 
     m.mesh_parameters.m_position_normal_paths = {"/home/yunfan/seamPyramid_position.exr",
                                                  "/home/yunfan/seamPyramid_normal_smooth.exr"};
+    REQUIRE(m.check_mesh_connectivity_validity());
     m.mesh_parameters.m_early_stopping_number = 100;
 
-    assert(m.check_mesh_connectivity_validity());
     m.set_parameters(
         0.00001,
         0.4,
@@ -1384,12 +1385,13 @@ TEST_CASE("quickrun")
         WrappingMode::MIRROR_REPEAT,
         SAMPLING_MODE::BICUBIC,
         DISPLACEMENT_MODE::MESH_3D,
-        adaptive_tessellation::ENERGY_TYPE::AREA_QUADRATURE,
+        adaptive_tessellation::ENERGY_TYPE::AREA_QUADRATURE,    
         adaptive_tessellation::EDGE_LEN_TYPE::AREA_ACCURACY,
         1);
-    m.split_all_edges();
-    m.write_displaced_obj("split_result.obj", m.mesh_parameters.m_displacement);
-    m.write_obj("split_result_2d.obj");
+    // m.split_all_edges();
+    // m.write_obj_with_texture_coords("split_result.obj");
+    m.swap_all_edges();
+    m.write_obj_with_texture_coords("swap_result.obj");
     m.smooth_all_vertices();
     m.write_displaced_obj("smooth_result.obj", m.mesh_parameters.m_displacement);
     m.write_obj("smooth_result_2d.obj");
@@ -1400,10 +1402,7 @@ TEST_CASE("check curveid consistency after split")
     // logger().set_level(spdlog::level::trace);
     // Loading the input 2d mesh
     AdaptiveTessellation m;
-    Eigen::MatrixXd UV;
-    Eigen::MatrixXi F;
-    m.create_paired_seam_mesh_with_offset("/home/yunfan/seamPyramid.obj", UV, F);
-
+    m.mesh_preprocessing("/home/yunfan/seamPyramid.obj", "/home/yunfan/seamPyramid_displaced.exr");
     Image image;
     image.load(
         "/home/yunfan/seamPyramid_height_10.exr",
@@ -1413,8 +1412,8 @@ TEST_CASE("check curveid consistency after split")
     m.mesh_parameters.m_position_normal_paths = {"/home/yunfan/seamPyramid_position.exr",
                                                  "/home/yunfan/seamPyramid_normal_smooth.exr"};
     assert(m.check_mesh_connectivity_validity());
-    // stop after 10 iterations
-    m.mesh_parameters.m_early_stopping_number = 10;
+    // stop after 100 iterations
+    m.mesh_parameters.m_early_stopping_number = 100;
     m.set_parameters(
         0.00001,
         0.4,
@@ -1426,8 +1425,8 @@ TEST_CASE("check curveid consistency after split")
         adaptive_tessellation::EDGE_LEN_TYPE::AREA_ACCURACY,
         1);
     m.split_all_edges();
-    m.write_displaced_obj("split_result.obj", m.mesh_parameters.m_displacement);
-    m.write_obj("split_result_2d.obj");
+    m.write_obj_displaced("split_result.obj", m.mesh_parameters.m_displacement);
+    m.write_obj_only_texture_coords("split_result_2d.obj");
     // check curve-id after split per edge
     for (auto& e : m.get_edges()) {
         if (m.is_boundary_edge(e)) {
