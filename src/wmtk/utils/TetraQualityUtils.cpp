@@ -28,14 +28,16 @@ std::array<size_t, 4> wmtk::orient_preserve_tet_reorder(
 }
 
 // TODO: These three functions should not be in global namespace
+template <int dim>
 auto newton_direction = [](auto& compute_energy,
                            auto& compute_jacobian,
                            auto& compute_hessian,
                            auto& assembles,
-                           const Eigen::Vector3d& pos) -> Eigen::Vector3d {
+                           const Eigen::Vector3d& pos) -> Eigen::Matrix<double, dim, 1> {
     auto total_energy = 0.;
-    Eigen::Vector3d total_jac = Eigen::Vector3d::Zero();
-    Eigen::Matrix3d total_hess = Eigen::Matrix3d::Zero();
+    Eigen::Matrix<double, dim, 1> total_jac = Eigen::Matrix<double, dim, 1>::Zero();
+    Eigen::Matrix<double, dim, dim> total_hess = Eigen::Matrix<double, dim, dim>::Zero();
+
 
     // E = \sum_i E_i(x)
     // J = \sum_i J_i(x)
@@ -54,7 +56,7 @@ auto newton_direction = [](auto& compute_energy,
         total_hess += hess;
         assert(!std::isnan(total_energy));
     }
-    Eigen::Vector3d x = total_hess.ldlt().solve(total_jac);
+    Eigen::Matrix<double, dim, 1> x = total_hess.ldlt().solve(total_jac);
     wmtk::logger().trace("energy {}", total_energy);
     if (total_jac.isApprox(total_hess * x)) // a hacky PSD trick. TODO: change this.
         return -x;
@@ -82,22 +84,75 @@ auto gradient_direction = [](auto& compute_energy,
     return total_jac;
 };
 
+template <int dim>
 auto linesearch = [](auto&& energy_from_point,
-                     const Eigen::Vector3d& pos,
-                     const Eigen::Vector3d& dir,
+                     const Eigen::Matrix<double, dim, 1>& pos,
+                     const Eigen::Matrix<double, dim, 1>& dir,
                      const int& max_iter) {
     auto lr = 0.5;
     auto old_energy = energy_from_point(pos);
     wmtk::logger().trace("old energy {} dir {}", old_energy, dir.transpose());
     for (auto iter = 1; iter <= max_iter; iter++) {
-        Eigen::Vector3d newpos = pos + std::pow(lr, iter) * dir;
-        wmtk::logger().trace("pos {}, dir {}, [{}]", pos.transpose(), dir.transpose(), std::pow(lr, iter));
+        const Eigen::Matrix<double, dim, 1> newpos = pos + std::pow(lr, iter) * dir;
+        wmtk::logger()
+            .trace("pos {}, dir {}, [{}]", pos.transpose(), dir.transpose(), std::pow(lr, iter));
         auto new_energy = energy_from_point(newpos);
         wmtk::logger().trace("iter {}, E= {}, [{}]", iter, new_energy, newpos.transpose());
         if (new_energy < old_energy) return newpos; // TODO: armijo conditions.
     }
     return pos;
 };
+
+Eigen::Vector2d wmtk::newton_method_from_stack(
+    const Eigen::Vector2d& uv,
+    std::vector<std::array<double, 12>>& assembles,
+    std::function<Eigen::Vector3d(const Eigen::Vector2d& uv)> param,
+    std::function<double(const std::array<double, 12>&)> compute_energy,
+    std::function<void(const std::array<double, 12>&, Eigen::Vector2d&)> compute_jacobian,
+    std::function<void(const std::array<double, 12>&, Eigen::Matrix2d&)> compute_hessian)
+{
+    assert(!assembles.empty());
+    auto& T0 = assembles.front();
+    Eigen::Vector2d old_pos = uv;
+
+    auto energy_from_uv =
+        [&assembles, &param, &compute_energy](const Eigen::Vector2d& uvpos) -> double {
+        auto total_energy = 0.;
+        const Eigen::Vector3d pos = param(uvpos);
+
+        for (auto& T : assembles) {
+            for (auto j = 0; j < 3; j++) {
+                T[j] = pos[j]; // only filling the front point x,y,z.
+            }
+            total_energy += compute_energy(T);
+        }
+        return total_energy;
+    };
+
+    auto compute_new_valid_pos =
+        [&energy_from_uv, &assembles, &param, &compute_energy, &compute_jacobian, &compute_hessian](
+            const Eigen::Vector2d& uvpos) {
+            auto current_pos = uvpos;
+            auto line_search_iters = 12;
+            auto newton_iters = 10;
+            for (auto iter = 0; iter < newton_iters; iter++) {
+                auto dir = newton_direction<2>(
+                    compute_energy,
+                    compute_jacobian,
+                    compute_hessian,
+                    assembles,
+                    param(current_pos));
+                auto newpos = linesearch<2>(energy_from_uv, current_pos, dir, line_search_iters);
+                if ((newpos - current_pos).norm() < 1e-9) // barely moves
+                {
+                    break;
+                }
+                current_pos = newpos;
+            }
+            return current_pos;
+        };
+    return compute_new_valid_pos(old_pos);
+}
 
 Eigen::Vector3d wmtk::newton_method_from_stack(
     std::vector<std::array<double, 12>>& assembles,
@@ -127,13 +182,13 @@ Eigen::Vector3d wmtk::newton_method_from_stack(
             auto line_search_iters = 12;
             auto newton_iters = 10;
             for (auto iter = 0; iter < newton_iters; iter++) {
-                auto dir = newton_direction(
+                auto dir = newton_direction<3>(
                     compute_energy,
                     compute_jacobian,
                     compute_hessian,
                     assembles,
                     current_pos);
-                auto newpos = linesearch(energy_from_point, current_pos, dir, line_search_iters);
+                auto newpos = linesearch<3>(energy_from_point, current_pos, dir, line_search_iters);
                 if ((newpos - current_pos).norm() < 1e-9) // barely moves
                 {
                     break;
@@ -176,7 +231,7 @@ Eigen::Vector3d wmtk::gradient_descent_from_stack(
             Eigen::Vector3d dir =
                 -gradient_direction(compute_energy, compute_jacobian, assembles, current_pos);
             dir.normalize(); // HACK: TODO: should use flip_avoid_line_search.
-            auto newpos = linesearch(energy_from_point, current_pos, dir, line_search_iters);
+            auto newpos = linesearch<3>(energy_from_point, current_pos, dir, line_search_iters);
             if ((newpos - current_pos).norm() < 1e-9) // barely moves
             {
                 break;

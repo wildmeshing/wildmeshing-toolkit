@@ -67,6 +67,101 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
         }
         loc_id++;
     }
+    /*
+    uv = ...
+    auto param = [&o, &x, &y](const Vector2d &uv)
+    {
+        return o + uv[0]*x + uv[1]*y;
+    }
+
+    //verify me with FD
+    auto jac = [&x, &y](const std::array<double, 12>& T, Eigen::Vector2d& result)
+    {
+        Matrix<double, 3, 2> jac_param;
+        jac_param.col(0) = x;
+        jac_param.col(1) = y;
+
+        Eigen::Vector3d jac_amips;
+        wmtk::AMIPS_jacobian(T, jac_amips);
+
+        // not 100 sure
+        result = jac_param * jac_amips;
+    }
+    //FD gradient
+    du = uv; du[0] += eps;
+    duT = T;
+    for (auto& t : duT)
+        for (auto j = 0; j < 3; j++) {
+            t[j] = param(du)[j]; // only filling the front point x,y,z.
+        }
+    double dufd = (wmtk::AMIPS_energy(duT) - wmtk::AMIPS_energy(T))/eps;
+
+    dv = uv; dv[1] += eps;
+    dvT = T;
+    for (auto& t : dvT)
+        for (auto j = 0; j < 3; j++) {
+            t[j] = param(dv)[j]; // only filling the front point x,y,z.
+        }
+    double dvfd = (wmtk::AMIPS_energy(dvT) - wmtk::AMIPS_energy(T))/eps;
+
+    Vector2d J;
+    jac(T, J)
+    J[0] == dufd; J[1] == dvfd;
+    //end of FD
+
+
+    //verify me with FD
+    auto hessian = [&x, &y](const std::array<double, 12>& T, Eigen::Matrix2d& result)
+    {
+        Matrix<double, 3, 2> jac_param;
+        jac_param.col(0) = x;
+        jac_param.col(1) = y;
+
+        Eigen::Vector3d hessian_amips;
+        wmtk::AMIPS_hessian(T, hessian_amips);
+
+        // not 100 sure
+        result = jac_param * hessian_amips * jac_param.transpose();
+    }
+    //FD hessian
+    du = uv; du[0] += eps;
+    duT = T;
+    for (auto& t : duT)
+        for (auto j = 0; j < 3; j++) {
+            t[j] = param(du)[j]; // only filling the front point x,y,z.
+        }
+        Vector2d jacdu, jacn;
+        jac(duT, jacdu);
+        jac(T, jacn);
+    Vector2d dufd = (jacdu- jacn)/eps;
+
+    dv = uv; dv[1] += eps;
+    dvT = T;
+    for (auto& t : dvT)
+        for (auto j = 0; j < 3; j++) {
+            t[j] = param(dv)[j]; // only filling the front point x,y,z.
+        }
+    Vector2d jacdv, jacn;
+        jac(dvT, jacdv);
+        jac(T, jacn);
+    Vector2d dvfd = (jacdv- jacn)/eps;
+
+    Matrix2d J;
+    hessian(T, J)
+    J.col(0) == dufd; J.col(1) == dvfd;
+    //end of FD
+
+
+
+
+    wmtk::newton_method_from_stack(
+        uv,
+        assembles,
+        param,
+        wmtk::AMIPS_energy,
+        jac,
+        hessian);
+    */
 
     auto old_pos = m_vertex_attribute[vid].m_posf;
     auto old_asssembles = assembles;
