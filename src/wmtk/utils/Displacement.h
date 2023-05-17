@@ -341,7 +341,9 @@ public:
         Eigen::Matrix<double, 3, 1> displace_3d;
         for (auto i = 0; i < 3; i++) {
             double p = m_position_sampler[i]->sample(u, v);
+
             double d = m_normal_sampler[i]->sample(u, v) - 0.5;
+
             displace_3d(i, 0) = p * m_normalization_scale - m_normalization_offset(i, 0) + z * d;
         }
         return displace_3d;
@@ -353,7 +355,9 @@ public:
         Eigen::Matrix<DScalar, 3, 1> displace_3d;
         for (auto i = 0; i < 3; i++) {
             DScalar p = m_position_sampler[i]->sample(u, v);
+
             DScalar d = m_normal_sampler[i]->sample(u, v) - 0.5;
+
             displace_3d(i, 0) = p * m_normalization_scale - m_normalization_offset(i, 0) + z * d;
         }
         return displace_3d;
@@ -364,7 +368,7 @@ public:
         Eigen::Matrix<double, 3, 1> displace_3d;
         for (auto i = 0; i < 3; i++) {
             double p = m_position_sampler[i]->sample(u, v);
-            displace_3d(i, 0) = p - m_normalization_scale * m_normalization_offset(i, 0);
+            displace_3d(i, 0) = p * m_normalization_scale - m_normalization_offset(i, 0);
         }
         return displace_3d;
     }

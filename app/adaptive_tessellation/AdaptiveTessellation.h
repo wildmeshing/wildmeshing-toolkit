@@ -30,6 +30,7 @@
 #include <wmtk/utils/Image.h>
 #include <wmtk/utils/MipMap.h>
 #include <wmtk/utils/PolygonClipping.h>
+#include <wmtk/utils/json_sink.h>
 #include <wmtk/utils/load_image_exr.h>
 #include <Eigen/Core>
 #include <finitediff.hpp>
@@ -322,7 +323,7 @@ public:
 
     // Computes the quality of a triangle
     double get_quality(const Tuple& loc, int idx = 0) const;
-    std::pair<double, Eigen::Vector2d> get_one_ring_energy(const Tuple& loc) const;
+    std::pair<double, Eigen::Vector2d> get_one_ring_energy(const Tuple& loc);
 
     // Computes the average quality of a mesh
     Eigen::VectorXd get_quality_all_triangles();
