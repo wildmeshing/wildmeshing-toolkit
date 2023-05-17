@@ -110,8 +110,11 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::after(
         if (m.is_seam_edge(e)) {
             wmtk::NewtonMethodInfo nminfo;
             assert(e.switch_vertex(m).vid(m) == ret_data.tuple.vid(m));
-            wmtk::TriMesh::Tuple mirror_edge = m.get_oriented_mirror_edge(e.switch_vertex(m));
-            wmtk::TriMesh::Tuple mirror_v = mirror_edge.switch_vertex(m);
+            wmtk::TriMesh::Tuple mirror_edge = m.get_oriented_mirror_edge(e);
+            wmtk::TriMesh::Tuple mirror_v = mirror_edge;
+            assert(m.get_mirror_vertex(mirror_v).vid(m) == ret_data.tuple.vid(m));
+            if (m.vertex_attrs[mirror_v.vid(m)].fixed) return false;
+            if (m.mesh_parameters.m_bnd_freeze) return false;
             m.vertex_attrs[mirror_v.vid(m)].curve_id =
                 m.edge_attrs[mirror_edge.eid(m)].curve_id.value();
             mirror_vertices.emplace_back(mirror_v);
@@ -138,15 +141,28 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::after(
         state.dofx.resize(2);
         state.dofx = m.vertex_attrs[ret_data.tuple.vid(m)].pos; // uv;
     }
-    wmtk::logger().info("{} of nminfo", nminfos.size());
-    double before_energy = m.get_one_ring_energy(ret_data.tuple).first;
+    // get current state: energy, gradient, hessiane
+    wmtk::optimization_state_update(
+        *m.mesh_parameters.m_energy,
+        nminfos,
+        m.mesh_parameters.m_boundary,
+        state);
+    double before_energy = state.value;
 
+    wmtk::logger().info("{} of nminfo", nminfos.size());
+    wmtk::logger().info("before energy: {}", state.value);
+
+    // this is the main optimization function
+    // newton's method
     wmtk::optimization_dofx_update(
         *m.mesh_parameters.m_energy,
         m.mesh_parameters.m_boundary,
         nminfos,
         state);
-
+    // assert after energy is always less than before energy
+    assert(state.value <= before_energy);
+    wmtk::logger().info("after energy: {}", state.value);
+    // update the vertex attr for current vertex
     if (m.is_boundary_vertex(ret_data.tuple) && m.mesh_parameters.m_boundary_parameter) {
         m.vertex_attrs[ret_data.tuple.vid(m)].t = state.dofx(0);
         m.vertex_attrs[ret_data.tuple.vid(m)].pos =
@@ -160,29 +176,17 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::after(
         m.vertex_attrs[ret_data.tuple.vid(m)].t = old_t;
         return false;
     }
-    // assert before energy is always less than after energy
-    // get the primary vertex
-    auto one_ring_energy_and_gradient = m.get_one_ring_energy(ret_data.tuple);
-    // get the mirror vertices energies
-    for (int i = 0; i < mirror_vertices.size(); i++) {
-        wmtk::TriMesh::Tuple mirror_v = mirror_vertices[i];
-        auto mirror_v_energy_and_gradient = m.get_one_ring_energy(mirror_v);
-        one_ring_energy_and_gradient.first += mirror_v_energy_and_gradient.first; // energy
-        one_ring_energy_and_gradient.second += mirror_v_energy_and_gradient.second; // gradient
-    }
-    double after_energy = one_ring_energy_and_gradient.first;
-    assert(after_energy <= before_energy);
 
     // now update the mirror vertices
     // TODO vertify if this update is correct with Jeremie
     assert(mirror_vertices.size() == nminfos.size() - 1);
+    // update the mirror vertices vertex_attrs if exists
     for (int i = 0; i < mirror_vertices.size(); i++) {
         wmtk::TriMesh::Tuple mirror_v = mirror_vertices[i];
         m.vertex_attrs[mirror_v.vid(m)].t = state.dofx(0);
         m.vertex_attrs[mirror_v.vid(m)].pos =
             m.mesh_parameters.m_boundary.t_to_uv(nminfos[i + 1].curve_id, state.dofx(0));
     }
-    m.mesh_parameters.m_gradient += one_ring_energy_and_gradient.second;
     assert(m.invariants(one_ring_tris));
     cnt++;
     auto smooth_end_time = lagrange::get_timestamp();
