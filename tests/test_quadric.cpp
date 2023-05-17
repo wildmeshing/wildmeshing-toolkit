@@ -199,8 +199,8 @@ MeshType advect_vertices(
 
 TEST_CASE("Quadric Integral Advection", "[utils][quadric]")
 {
-    std::string displaced_positions = WMT_DATA_DIR "/images/hemisphere_512_displaced.exr";
-    auto mesh = lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMT_DATA_DIR "/hemisphere.obj");
+    std::string displaced_positions = WMTK_DATA_DIR "/images/hemisphere_512_displaced.exr";
+    auto mesh = lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMTK_DATA_DIR "/hemisphere.obj");
     auto positions = load_rgb_image(displaced_positions);
 
     for (size_t k = 0; k < 1; ++k) {
