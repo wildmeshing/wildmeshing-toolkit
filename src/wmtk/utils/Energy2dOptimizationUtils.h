@@ -1,6 +1,6 @@
 #pragma once
-
 #include <igl/predicates/predicates.h>
+#include <lagrange/utils/timing.h>
 #include <Eigen/Core>
 #include <optional>
 #include "Energy2d.h"
