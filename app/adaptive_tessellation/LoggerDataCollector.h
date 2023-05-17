@@ -52,6 +52,8 @@ class LoggerDataCollector
     // StatisticsObj min_angle_;
 
     mutable igl::Timer timer_;
+    bool timer_started_ = false;
+    bool timer_stopped_ = false;
 
 public:
     void evaluate_mesh(const AdaptiveTessellation& mesh)
@@ -108,20 +110,29 @@ public:
         }
     }
 
-    void start_timer() { timer_.start(); }
-    void stop_timer() { timer_.stop(); }
-    igl::Timer& timer() { return timer_; }
+    void start_timer()
+    {
+        timer_.start();
+        timer_started_ = true;
+    }
+    void stop_timer()
+    {
+        timer_.stop();
+        timer_stopped_ = true;
+    }
 
     double time_in_seconds() const { return timer_.getElapsedTimeInSec(); }
 
     void log_json(const AdaptiveTessellation& mesh, const std::string& log_name) const
     {
+        const double runtime = (timer_started_ && timer_stopped_) ? time_in_seconds() : -1;
+
         mesh.mesh_parameters.log(
             {{log_name,
               {{"peak_memory", peak_memory_},
                {"num_faces", num_faces_},
                {"num_vertices", num_vertices_},
-               {"runtime", time_in_seconds()},
+               {"runtime", runtime},
                {"edge_length",
                 {{"min", edge_length_.min()},
                  {"max", edge_length_.max()},
