@@ -51,6 +51,7 @@ public:
          * @brief incident triangles of a given vertex
          *
          */
+        // TODO: this needs to be private
         std::vector<size_t> m_conn_tris;
         /**
          * @brief is the vertex removed
@@ -58,16 +59,32 @@ public:
          */
         bool m_is_removed = true;
 
-        inline size_t& operator[](const size_t index)
-        {
-            assert(index < m_conn_tris.size());
-            return m_conn_tris[index];
-        }
+        // inline size_t& operator[](const size_t index)
+        //{
+        //     assert(index < m_conn_tris.size());
+        //     return m_conn_tris[index];
+        // }
 
         inline size_t operator[](const size_t index) const
         {
             assert(index < m_conn_tris.size());
             return m_conn_tris[index];
+        }
+
+        void insert(const size_t value) { set_insert(m_conn_tris, value); }
+        // replace the value stored at an index by another value
+        void replace(const size_t index, const size_t value)
+        {
+            assert(index < m_conn_tris.size());
+            auto it = m_conn_tris.begin() + index;
+            m_conn_tris.erase(it);
+            set_insert(m_conn_tris, value);
+        }
+        // replace a value with another value
+        void replace_value(const size_t index, const size_t value)
+        {
+            vector_erase(m_conn_tris, index);
+            insert(value);
         }
     };
 
@@ -180,6 +197,9 @@ public:
     Tuple init_from_edge(size_t vid1, size_t vid2, size_t fid) const;
     // same as init_from_edge but if the edge doesn't exist it returns returns nohting
     std::optional<Tuple> init_from_edge_opt(size_t vid1, size_t vid2, size_t fid) const;
+
+    // generates a tuple from
+    std::optional<Tuple> init_from_edge_opt(size_t vid1, size_t vid2) const;
 
     template <typename T>
     using vector = tbb::concurrent_vector<T>;
@@ -370,16 +390,26 @@ public:
     Tuple tuple_from_edge(size_t fid, size_t local_eid) const;
 
     /**
+     * Generate a edge Tuple using two vids
+     * @param a global vid
+     * @param another global vid
+     * @return tuple refers to the edge
+     */
+    std::optional<Tuple> tuple_from_edge_vids_opt(size_t vid1, size_t vid2) const;
+
+    /**
      * Generate the tuples for the tuples at the boundary of a triangle
      * @param triangle for which we are computing the boundary of
      * @return array of tuples storing the three edges
      */
     std::array<Tuple, 3> triangle_boundary_edge_tuples(const Tuple& triangle) const;
 
+    // returns edge tuples that all represent teh same edge, but attached to different triangles
     std::vector<Tuple> tris_bounded_by_edge(const Tuple& edge) const;
 
 private:
     std::vector<size_t> tri_fids_bounded_by_edge(const Tuple& edge) const;
+    std::vector<size_t> tri_fids_bounded_by_edge_vids(size_t v0, size_t v1) const;
 
     // private:
 protected:

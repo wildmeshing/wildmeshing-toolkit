@@ -541,6 +541,131 @@ TEST_CASE("paired split")
         }
     }
 }
+TEST_CASE("test_link_check", "[test_pre_check]")
+{
+    AdaptiveTessellation m;
+    auto check_link_results = [&](const TriMeshTuple& edge) {
+
+        auto vlink = TriMeshEdgeCollapseOperation::links_of_vertex(m, edge);
+        auto elink = TriMeshEdgeCollapseOperation::edge_link_of_edge_vids(m, edge);
+
+        auto svlink = AdaptiveTessellationPairedCollapseEdgeOperation::seamed_links_of_vertex(m, edge);
+        auto selink = AdaptiveTessellationPairedCollapseEdgeOperation::seamed_edge_link_of_edge(m, edge);
+        {
+            const auto& [ee,ie] = elink;
+            const auto& [see,sie] = selink;
+
+            CHECK(ie==sie);
+            CHECK(ee==see);
+            spdlog::info("Edge edge links: {} seamd: {}", ee,see);
+        }
+        {
+
+            CHECK(vlink.infinite_vertex == svlink.infinite_vertex);
+            CHECK(vlink.vertex==svlink.vertex);
+            spdlog::info("vertex links: {} seamd: {}", vlink.vertex,svlink.vertex);
+            CHECK(vlink.edge==svlink.edge);
+            spdlog::info("Edge links: {} seamd: {}", vlink.edge,svlink.edge);
+            CHECK(vlink.infinite_edge==svlink.infinite_edge);
+            spdlog::info("infinite edge links: {} seamd: {}", vlink.infinite_edge,svlink.infinite_edge);
+        }
+
+    };
+    SECTION("extra_face_after_collapse")
+    {
+        std::vector<std::array<int, 3>> tris =
+            {{{1, 2, 3}}, {{0, 1, 4}}, {{0, 2, 5}}, {{0, 1, 6}}, {{0, 2, 6}}, {{1, 2, 6}}};
+        Eigen::MatrixXi F(tris.size(), 3);
+        for(size_t j = 0; j < tris.size(); ++j) {
+            auto f = F.row(j);
+            const auto& tri = tris[j];
+            f = Eigen::RowVector3i::ConstMapType(tri.data());
+        }
+        m.create_mesh_debug(Eigen::MatrixXd(7,3), F);
+        TriMesh::Tuple edge(1, 2, 0, m);
+
+        REQUIRE(edge.vid(m) == 1);
+        REQUIRE(edge.switch_vertex(m).vid(m) == 2);
+
+        {
+            // short test for tris_bounded_by_edge
+            std::vector<TriMeshTuple> faces = m.tris_bounded_by_edge(edge);
+            for (const auto& f : faces) {
+                REQUIRE(f.is_valid(m));
+            }
+            std::vector<size_t> fids;
+            std::transform(
+                faces.begin(),
+                faces.end(),
+                std::back_inserter(fids),
+                [&](const TriMeshTuple& t) -> size_t { return t.fid(m); });
+            REQUIRE(std::is_sorted(fids.begin(), fids.end()));
+            CHECK(fids[0] == 0);
+            CHECK(fids[1] == 5);
+        }
+        check_link_results(edge);
+
+        REQUIRE_FALSE(AdaptiveTessellationPairedCollapseEdgeOperation::check_seamed_link_condition(m, edge));
+    }
+    SECTION("one_triangle")
+    {
+        std::vector<std::array<int, 3>> tris = {{{0, 1, 2}}};
+        Eigen::MatrixXi F(tris.size(), 3);
+        for(size_t j = 0; j < tris.size(); ++j) {
+            auto f = F.row(j);
+            const auto& tri = tris[j];
+            f = Eigen::RowVector3i::ConstMapType(tri.data());
+        }
+        m.create_mesh_debug(Eigen::MatrixXd(3,3), F);
+
+        TriMesh::Tuple edge(0, 2, 0, m);
+        assert(edge.is_valid(m));
+        check_link_results(edge);
+        REQUIRE_FALSE(AdaptiveTessellationPairedCollapseEdgeOperation::check_seamed_link_condition(m, edge));
+    }
+    SECTION("one_tet")
+    {
+        std::vector<std::array<int, 3>> tris = {
+            {{0, 1, 2}},
+            {{1, 3, 2}},
+            {{0, 2, 3}},
+            {{3, 0, 1}}};
+        Eigen::MatrixXi F(tris.size(), 3);
+        for(size_t j = 0; j < tris.size(); ++j) {
+            auto f = F.row(j);
+            const auto& tri = tris[j];
+            f = Eigen::RowVector3i::ConstMapType(tri.data());
+        }
+        m.create_mesh_debug(Eigen::MatrixXd(4,3), F);
+
+        TriMesh::Tuple edge(1, 0, 0, m);
+        assert(edge.is_valid(m));
+        check_link_results(edge);
+        REQUIRE_FALSE(AdaptiveTessellationPairedCollapseEdgeOperation::check_seamed_link_condition(m, edge));
+    }
+    SECTION("non_manifold_after_collapse")
+    {
+        std::vector<std::array<int, 3>> tris = {
+            {{0, 1, 5}},
+            {{1, 2, 5}},
+            {{2, 3, 5}},
+            {{5, 3, 4}}};
+        Eigen::MatrixXi F(tris.size(), 3);
+        for(size_t j = 0; j < tris.size(); ++j) {
+            auto f = F.row(j);
+            const auto& tri = tris[j];
+            f = Eigen::RowVector3i::ConstMapType(tri.data());
+        }
+        m.create_mesh_debug(Eigen::MatrixXd(6,3), F);
+
+        TriMesh::Tuple fail_edge(5, 0, 1, m);
+        check_link_results(fail_edge);
+        REQUIRE_FALSE(AdaptiveTessellationPairedCollapseEdgeOperation::check_seamed_link_condition(m, fail_edge));
+        TriMesh::Tuple pass_edge(0, 2, 0, m);
+        check_link_results(pass_edge);
+        REQUIRE(AdaptiveTessellationPairedCollapseEdgeOperation::check_seamed_link_condition(m, pass_edge));
+    }
+}
 
 TEST_CASE("paired collapse")
 {
@@ -617,6 +742,7 @@ TEST_CASE("paired collapse")
             }
         }
     }
+    spdlog::warn("0===========================");
     ////////// ======= interior edge collapse
     // acsii art diamond
     //                1          4
@@ -640,7 +766,9 @@ TEST_CASE("paired collapse")
     REQUIRE(!m.edge_attrs[primary_edge6.eid(m)].curve_id.has_value());
     REQUIRE(primary_edge6.is_valid(m));
     AdaptiveTessellationPairedCollapseEdgeOperation op4;
+    spdlog::warn("0==========================run=");
     op4(m, primary_edge6);
+    spdlog::warn("1===========================");
     // acsii art diamond
     //                1    4
     //              /(2) ||(1)\ 
@@ -667,6 +795,7 @@ TEST_CASE("paired collapse")
     REQUIRE(m.get_oriented_mirror_edge(primary_edge6_ret).is_valid(m));
     REQUIRE(m.get_oriented_mirror_edge(primary_edge6_ret).fid(m) == 3);
     REQUIRE(m.get_oriented_mirror_edge(primary_edge6_ret).vid(m) == 5);
+    spdlog::warn("2===========================");
     /////// debug
     for (auto& e : m.get_edges()) {
         REQUIRE(e.is_valid(m));

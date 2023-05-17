@@ -202,11 +202,12 @@ public:
 
     void mark_failed() override;
 
-protected:
     static bool check_seamed_link_condition(AdaptiveTessellation& m, const Tuple& t);
 
     static LinksOfVertex seamed_links_of_vertex(AdaptiveTessellation& m, const Tuple& vertex);
-    static std::vector<size_t> seamed_edge_link_of_edge(AdaptiveTessellation& m, const Tuple& edge);
+    static std::tuple<std::vector<size_t>, bool> seamed_edge_link_of_edge(
+        AdaptiveTessellation& m,
+        const Tuple& edge);
 
     std::vector<Tuple> accumulate_mirror_vertices(
         const AdaptiveTessellation& m,

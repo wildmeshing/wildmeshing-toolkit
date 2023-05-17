@@ -449,7 +449,14 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::before(
     AdaptiveTessellation& m,
     const Tuple& t)
 {
+    spdlog::info("PCStart");
     auto& op_cache = m_op_cache.local();
+
+    spdlog::info("Seamed link");
+    if (!check_seamed_link_condition(m, t)) {
+        return false;
+    }
+    spdlog::info("Collapse before");
     if (!collapse_edge.before(m, t)) {
         return false;
     }
@@ -459,6 +466,7 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::before(
 
     if (input_edge_is_mirror()) {
         const Tuple& mirror_edge_tuple = op_cache.mirror_edge_tuple_opt.value();
+        spdlog::info("has mirror, doing before");
         if (!collapse_mirror_edge.before(m, mirror_edge_tuple)) {
             return false;
         }
@@ -469,9 +477,11 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::before(
         auto& a = collapse_edge_cache.constrained_boundary_type;
         auto& b = mirror_edge_cache.constrained_boundary_type;
 
+        spdlog::info("PC merging constarintness");
         const auto merged = AdaptiveTessellationCollapseEdgeOperation::merge(a, b);
         if (merged ==
             AdaptiveTessellationCollapseEdgeOperation::ConstrainedBoundaryType::BothConstrained) {
+        spdlog::info("PC both constrained");
             return false;
         }
         a = merged;
@@ -487,17 +497,20 @@ wmtk::TriMeshOperation::ExecuteReturnData AdaptiveTessellationPairedCollapseEdge
     AdaptiveTessellation& m,
     const Tuple& t)
 {
+        spdlog::info("PC exec");
     auto& collapse_edge_cache = collapse_edge.m_op_cache.local();
     auto& mirror_edge_cache = collapse_mirror_edge.m_op_cache.local();
     auto& op_cache = m_op_cache.local();
 
 
+        spdlog::info("PC exec primary");
     wmtk::TriMeshOperation::ExecuteReturnData ret_data = collapse_edge.execute(m, t);
 
     if (!ret_data) return ret_data;
 
     // if we have a mirror edge we need to
     if (input_edge_is_mirror()) {
+        spdlog::info("PC exec secondary");
         const Tuple& mirror_edge_tuple = op_cache.mirror_edge_tuple_opt.value();
         wmtk::TriMeshOperation::ExecuteReturnData ret_data2 =
             collapse_mirror_edge.execute(m, mirror_edge_tuple.switch_vertex(m));
@@ -505,6 +518,7 @@ wmtk::TriMeshOperation::ExecuteReturnData AdaptiveTessellationPairedCollapseEdge
 
     ret_data.success = bool(*this);
     ret_data.new_tris = modified_tuples(m);
+        spdlog::info("PC exec done");
 
     return ret_data;
 }

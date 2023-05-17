@@ -652,6 +652,15 @@ auto TriMesh::tuple_from_vertex(size_t vid) const -> Tuple
     return Tuple(vid, (eid + 1) % 3, fid, *this);
 }
 
+auto TriMesh::tuple_from_edge_vids_opt(size_t vid1, size_t vid2) const -> std::optional<Tuple>
+{
+    const auto fids = tri_fids_bounded_by_edge_vids(vid1, vid2);
+    if (fids.size() > 0) {
+        return init_from_edge_opt(vid1, vid2, fids[0]);
+    }
+    return {};
+}
+
 auto TriMesh::tuple_from_edge(size_t fid, size_t local_eid) const -> Tuple
 {
     auto vid = m_tri_connectivity[fid][(local_eid + 1) % 3];
@@ -692,12 +701,14 @@ auto TriMesh::tris_bounded_by_edge(const Tuple& edge) const -> std::vector<Tuple
 {
     std::vector<Tuple> ret;
     const std::vector<size_t> fids = tri_fids_bounded_by_edge(edge);
+    const size_t v0 = edge.vid(*this);
+    const size_t v1 = edge.switch_vertex(*this).vid(*this);
     ret.reserve(fids.size());
     std::transform(
         fids.begin(),
         fids.end(),
         std::back_inserter(ret),
-        [&](const size_t fid) -> Tuple { return tuple_from_tri(fid); });
+        [&](const size_t fid) -> Tuple { return init_from_edge(v0, v1, fid); });
     return ret;
 }
 
@@ -705,7 +716,11 @@ std::vector<size_t> TriMesh::tri_fids_bounded_by_edge(const Tuple& edge) const
 {
     size_t v0 = edge.vid(*this);
     size_t v1 = edge.switch_vertex(*this).vid(*this);
+    return tri_fids_bounded_by_edge_vids(v0, v1);
+}
 
+std::vector<size_t> TriMesh::tri_fids_bounded_by_edge_vids(size_t v0, size_t v1) const
+{
     // get the fids
     const auto& f0 = m_vertex_connectivity[v0].m_conn_tris;
 
