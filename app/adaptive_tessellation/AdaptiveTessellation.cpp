@@ -93,6 +93,7 @@ void AdaptiveTessellation::mesh_preprocessing(
         }
     }
     std::vector<float> computed_errors(tri_capacity());
+    m_quadric_integral = wmtk::QuadricIntegral(displaced, wmtk::QuadricIntegral::QuadricType::Plane);
     m_texture_integral = wmtk::TextureIntegral(std::move(displaced));
     m_texture_integral.get_error_per_triangle(uv_triangles, computed_errors);
     for (auto& f : get_faces()) {
@@ -385,6 +386,9 @@ void AdaptiveTessellation::set_energy(const ENERGY_TYPE energy_type)
         energy_ptr = std::make_unique<wmtk::AccuracyEnergy>(mesh_parameters.m_displacement);
         break;
     case ENERGY_TYPE::AREA_QUADRATURE:
+        energy_ptr = std::make_unique<wmtk::AreaAccuracyEnergy>(mesh_parameters.m_displacement);
+        break;
+    case ENERGY_TYPE::QUADRICS:
         energy_ptr = std::make_unique<wmtk::AreaAccuracyEnergy>(mesh_parameters.m_displacement);
         break;
     }
@@ -857,11 +861,11 @@ std::tuple<double, double, double> AdaptiveTessellation::get_area_accuracy_error
         std::vector<std::array<float, 6>> new_triangles(2);
         std::vector<float> new_computed_errors(2);
         auto mid_point_uv = (vertex_attrs[edge_tuple.vid(*this)].pos +
-                             vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].pos) /
-                            2.;
-        auto uv1 = vertex_attrs[edge_tuple.vid(*this)].pos;
-        auto uv2 = vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].pos;
-        auto uv3 = vertex_attrs[edge_tuple.switch_edge(*this).switch_vertex(*this).vid(*this)].pos;
+                             vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].pos).cast<float>() /
+                            2.f;
+        auto uv1 = vertex_attrs[edge_tuple.vid(*this)].pos.cast<float>();
+        auto uv2 = vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].pos.cast<float>();
+        auto uv3 = vertex_attrs[edge_tuple.switch_edge(*this).switch_vertex(*this).vid(*this)].pos.cast<float>();
         new_triangles[0] = {uv1(0), uv1(1), mid_point_uv(0), mid_point_uv(1), uv3(0), uv3(1)};
         new_triangles[1] = {uv2(0), uv2(1), mid_point_uv(0), mid_point_uv(1), uv3(0), uv3(1)};
         m_texture_integral.get_error_per_triangle(new_triangles, new_computed_errors);
@@ -873,7 +877,7 @@ std::tuple<double, double, double> AdaptiveTessellation::get_area_accuracy_error
                                         .switch_edge(*this)
                                         .switch_vertex(*this)
                                         .vid(*this)]
-                           .pos;
+                           .pos.cast<float>();
             new_triangles[0] = {uv1(0), uv1(1), mid_point_uv(0), mid_point_uv(1), uv4(0), uv4(1)};
             new_triangles[1] = {uv2(0), uv2(1), mid_point_uv(0), mid_point_uv(1), uv4(0), uv4(1)};
             m_texture_integral.get_error_per_triangle(new_triangles, new_computed_errors);
@@ -905,10 +909,12 @@ void AdaptiveTessellation::get_nminfo_for_vertex(const Tuple& v, wmtk::NewtonMet
     nminfo.curve_id = vertex_attrs[v.vid(*this)].curve_id;
     nminfo.target_length = mesh_parameters.m_target_l;
     nminfo.neighbors.resize(one_ring_tris.size(), 4);
+    nminfo.facet_ids.resize(one_ring_tris.size());
     for (auto i = 0; i < one_ring_tris.size(); i++) {
         const Tuple& tri = one_ring_tris[i];
         assert(!is_inverted(tri));
         std::array<Tuple, 3> local_tuples = oriented_tri_vertices(tri);
+        nminfo.facet_ids[i] = tri.fid(*this);
         for (size_t j = 0; j < 3; j++) {
             if (local_tuples[j].vid(*this) == v.vid(*this)) {
                 const Eigen::Vector2d& v2 = vertex_attrs[local_tuples[(j + 1) % 3].vid(*this)].pos;

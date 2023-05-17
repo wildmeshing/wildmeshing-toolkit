@@ -9,7 +9,7 @@
 #include <sec/envelope/SampleEnvelope.hpp>
 using namespace wmtk;
 namespace adaptive_tessellation {
-enum class ENERGY_TYPE { AMIPS, SYMDI, EDGE_LENGTH, EDGE_QUADRATURE, AREA_QUADRATURE };
+enum class ENERGY_TYPE { AMIPS, SYMDI, EDGE_LENGTH, EDGE_QUADRATURE, AREA_QUADRATURE, QUADRICS };
 enum class EDGE_LEN_TYPE {
     LINEAR2D,
     LINEAR3D,

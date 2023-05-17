@@ -19,6 +19,7 @@
 #include <tbb/concurrent_vector.h>
 #include <wmtk/TriMesh.h>
 #include <wmtk/image/TextureIntegral.h>
+#include <wmtk/image/QuadricIntegral.h>
 #include <wmtk/utils/AMIPS2D.h>
 #include <wmtk/utils/AMIPS2D_autodiff.h>
 #include <wmtk/utils/BoundaryParametrization.h>
@@ -112,6 +113,8 @@ public:
 
     // texture integraler
     wmtk::TextureIntegral m_texture_integral;
+
+    wmtk::QuadricIntegral m_quadric_integral;
 
 public:
     AdaptiveTessellation(){};
@@ -298,6 +301,7 @@ public:
     std::vector<TriMesh::Tuple> new_edges_after(const std::vector<TriMesh::Tuple>& tris) const;
 
     // Smoothing
+    void prepare_quadrics(wmtk::QuadricEnergy &energy);
     void smooth_all_vertices();
     bool smooth_before(const Tuple& t);
     bool smooth_after(const Tuple& t);

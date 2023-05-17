@@ -30,10 +30,11 @@ public:
         const std::array<wmtk::Image, 3>& displaced_positions,
         QuadricType quadric_type);
 
+    QuadricIntegral();
     ~QuadricIntegral();
 
-    QuadricIntegral(QuadricIntegral&&) = delete;
-    QuadricIntegral& operator=(QuadricIntegral&&) = delete;
+    QuadricIntegral(QuadricIntegral&&);
+    QuadricIntegral& operator=(QuadricIntegral&&);
     QuadricIntegral(const QuadricIntegral&) = delete;
     QuadricIntegral& operator=(const QuadricIntegral&) = delete;
 
@@ -51,7 +52,7 @@ public:
     void get_quadric_per_triangle(
         int num_triangles,
         lagrange::function_ref<std::array<float, 6>(int)> get_triangle,
-        lagrange::span<wmtk::Quadric<double>> output_quadrics);
+        lagrange::span<wmtk::Quadric<double>> output_quadrics) const;
 
 private:
     struct Cache;
