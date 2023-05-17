@@ -1047,7 +1047,7 @@ void AdaptiveTessellation::mesh_improvement(int max_its)
         auto swap_finish_time = lagrange::get_timestamp();
         mesh_parameters.js_log["iteration_" + std::to_string(it)]["swap time"] =
             lagrange::timestamp_diff_in_seconds(split_finish_time, swap_finish_time);
-        consolidate_mesh();
+        // consolidate_mesh();
         write_obj_displaced(
             mesh_parameters.m_output_folder + "/after_swap_" + std::to_string(it) + ".obj");
         write_obj_only_texture_coords(
@@ -1055,7 +1055,7 @@ void AdaptiveTessellation::mesh_improvement(int max_its)
 
         collapse_all_edges();
         assert(invariants(get_faces()));
-        consolidate_mesh();
+        // consolidate_mesh();
         auto collapse_finish_time = lagrange::get_timestamp();
         mesh_parameters.js_log["iteration_" + std::to_string(it)]["collapse time"] =
             lagrange::timestamp_diff_in_seconds(swap_finish_time, collapse_finish_time);
@@ -1070,7 +1070,7 @@ void AdaptiveTessellation::mesh_improvement(int max_its)
         auto smooth_finish_time = lagrange::get_timestamp();
         mesh_parameters.js_log["iteration_" + std::to_string(it)]["smooth time"] =
             lagrange::timestamp_diff_in_seconds(collapse_finish_time, smooth_finish_time);
-        consolidate_mesh();
+        // consolidate_mesh();
         write_obj_displaced(
             mesh_parameters.m_output_folder + "/after_smooth_" + std::to_string(it) + ".obj");
         write_obj_only_texture_coords(
@@ -1112,7 +1112,7 @@ void AdaptiveTessellation::mesh_improvement(int max_its)
         }
         pre_avg_len = avg_len;
         pre_max_energy = mesh_parameters.m_max_energy;
-        consolidate_mesh();
+        // consolidate_mesh();
         FrameMark;
     }
 
@@ -1120,7 +1120,7 @@ void AdaptiveTessellation::mesh_improvement(int max_its)
         "/////final: max energy {} , avg len {} ",
         mesh_parameters.m_max_energy,
         avg_len);
-    consolidate_mesh();
+    // consolidate_mesh();
 }
 void AdaptiveTessellation::flatten_dofs(Eigen::VectorXd& v_flat)
 {
