@@ -6,7 +6,13 @@ namespace wmtk {
 struct LinksOfVertex
 {
     std::vector<size_t> vertex;
-    std::vector<std::pair<size_t, size_t>> edge;
+    bool infinite_vertex = false;
+
+    // finite edges as vids on the opposite edge of each triangle
+    std::vector<std::array<size_t,2>> edge;
+
+    // vids of boundary edges (infinite link edges)
+    std::vector<size_t> infinite_edge;
 };
 /**
  * Collapse an edge
@@ -78,9 +84,12 @@ public:
 protected:
     constexpr static size_t link_dummy = std::numeric_limits<size_t>::max();
     std::vector<size_t> fids_containing_edge(const TriMesh& m, const Tuple& t) const;
-    // computes the
+
     static LinksOfVertex links_of_vertex(const TriMesh& m, const Tuple& vertex);
-    static std::vector<size_t> edge_link_of_edge_vids(const TriMesh& m, const Tuple& edge);
+    
+
+    // returns the vids opposite to an edge, including a bool for the "infinite" vertex if no opposite exists
+    static std::tuple<std::vector<size_t>,bool> edge_link_of_edge_vids(const TriMesh& m, const Tuple& edge);
     // static std::vector<Tuple> edge_link_of_edge(const TriMesh& m, const Tuple& edge);
 };
 
