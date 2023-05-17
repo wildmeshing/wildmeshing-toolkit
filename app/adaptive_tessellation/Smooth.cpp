@@ -151,7 +151,12 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::after(
 
     wmtk::logger().info("{} of nminfo", nminfos.size());
     wmtk::logger().info("before energy: {}", state.value);
-
+    m.mesh_parameters.log(
+        {{"smooth_op_" + std::to_string(cnt), {"before_energy", std::to_string(state.value)}}});
+    m.mesh_parameters.log({{"smooth_op_" + std::to_string(cnt),
+                            {"is_seam_vertex", std::to_string(m.is_seam_vertex(ret_data.tuple))}}});
+    m.mesh_parameters.log(
+        {{"smooth_op_" + std::to_string(cnt), {"num_neighbor", std::to_string(nminfos.size())}}});
     // this is the main optimization function
     // newton's method
     wmtk::optimization_dofx_update(
@@ -161,7 +166,8 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::after(
         state);
     // assert after energy is always less than before energy
     assert(state.value <= before_energy);
-    wmtk::logger().info("after energy: {}", state.value);
+    m.mesh_parameters.log(
+        {{"smooth_op_" + std::to_string(cnt), {"after_energy", std::to_string(state.value)}}});
     // update the vertex attr for current vertex
     if (m.is_boundary_vertex(ret_data.tuple) && m.mesh_parameters.m_boundary_parameter) {
         m.vertex_attrs[ret_data.tuple.vid(m)].t = state.dofx(0);
@@ -193,7 +199,8 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::after(
     wmtk::logger().info(
         "smooth time: {}",
         lagrange::timestamp_diff_in_seconds(smooth_start_time, smooth_end_time));
-
+    m.mesh_parameters.log(
+        {{"smooth_op_" + std::to_string(cnt), {"smooth_time", std::to_string(lagrange::timestamp_diff_in_seconds(smooth_start_time, smooth_end_time))}}});
     return ret_data.success;
 }
 
@@ -350,9 +357,10 @@ void adaptive_tessellation::AdaptiveTessellation::smooth_all_vertices()
         do {
             mesh_parameters.m_gradient = Eigen::Vector2d(0., 0.);
             executor(*this, collect_all_ops);
-            write_displaced_obj(
-                mesh_parameters.m_output_folder + fmt::format("/smooth_{:03d}.obj", itr),
-                mesh_parameters.m_displacement);
+            if (!mesh_parameters.m_do_not_output) {
+                write_obj_with_texture_coords(
+                    mesh_parameters.m_output_folder + fmt::format("/smooth_{:03d}.obj", itr));
+            }
             itr++;
         } while ((mesh_parameters.m_gradient / vert_capacity()).stableNorm() > 1e-4 && itr < 10);
         wmtk::logger().info("===== terminate smooth after {} itrs", itr);

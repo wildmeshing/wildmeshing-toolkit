@@ -152,7 +152,10 @@ TEST_CASE("operations with boundary parameterization")
     AdaptiveTessellation m;
     m.create_mesh(V, F);
     m.set_projection();
-
+    m.mesh_parameters.m_ignore_embedding = true;
+    m.mesh_parameters.m_early_stopping_number = 10000;
+    m.mesh_parameters.m_boundary.construct_boundaries(V, F, {}, {});
+    m.mesh_parameters.m_do_not_output = true;
     auto displacement = [](const DScalar& u, const DScalar& v) -> DScalar {
         (void)u;
         (void)v;

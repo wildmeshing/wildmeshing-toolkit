@@ -881,11 +881,13 @@ std::tuple<double, double, double> AdaptiveTessellation::get_area_accuracy_error
         std::vector<std::array<float, 6>> new_triangles(2);
         std::vector<float> new_computed_errors(2);
         auto mid_point_uv = (vertex_attrs[edge_tuple.vid(*this)].pos +
-                             vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].pos).cast<float>() /
+                             vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].pos)
+                                .cast<float>() /
                             2.;
         auto uv1 = vertex_attrs[edge_tuple.vid(*this)].pos.cast<float>();
         auto uv2 = vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].pos.cast<float>();
-        auto uv3 = vertex_attrs[edge_tuple.switch_edge(*this).switch_vertex(*this).vid(*this)].pos.cast<float>();
+        auto uv3 = vertex_attrs[edge_tuple.switch_edge(*this).switch_vertex(*this).vid(*this)]
+                       .pos.cast<float>();
         new_triangles[0] = {uv1(0), uv1(1), mid_point_uv(0), mid_point_uv(1), uv3(0), uv3(1)};
         new_triangles[1] = {uv2(0), uv2(1), mid_point_uv(0), mid_point_uv(1), uv3(0), uv3(1)};
         m_texture_integral.get_error_per_triangle(new_triangles, new_computed_errors);
@@ -1049,13 +1051,15 @@ void AdaptiveTessellation::mesh_improvement(int max_its)
               {"split time", lagrange::timestamp_diff_in_seconds(start_time, split_finish_time)}}});
 
         // consolidate_mesh();
-        write_obj_with_texture_coords(
-            mesh_parameters.m_output_folder + "/after_split_" + std::to_string(it) + ".obj");
-        displace_self_intersection_free(*this);
-        write_world_obj(
-            mesh_parameters.m_output_folder + "/after_split_" + std::to_string(it) +
-                "3d_intersection_free.obj",
-            mesh_parameters.m_displacement);
+        if (!mesh_parameters.m_do_not_output) {
+            write_obj_with_texture_coords(
+                mesh_parameters.m_output_folder + "/after_split_" + std::to_string(it) + ".obj");
+            displace_self_intersection_free(*this);
+            write_world_obj(
+                mesh_parameters.m_output_folder + "/after_split_" + std::to_string(it) +
+                    "3d_intersection_free.obj",
+                mesh_parameters.m_displacement);
+        }
 
         // swap_all_edges();
         // assert(invariants(get_faces()));
@@ -1091,9 +1095,10 @@ void AdaptiveTessellation::mesh_improvement(int max_its)
         //     {{"iteration_" + std::to_string(it),
         //       {"smooth time",
         //        lagrange::timestamp_diff_in_seconds(swap_finish_time, smooth_finish_time)}}});
-        write_obj_with_texture_coords(
-            mesh_parameters.m_output_folder + "/after_smooth_" + std::to_string(it) + ".obj");
-
+        if (!mesh_parameters.m_do_not_output) {
+            write_obj_with_texture_coords(
+                mesh_parameters.m_output_folder + "/after_smooth_" + std::to_string(it) + ".obj");
+        }
         auto avg_grad = (mesh_parameters.m_gradient / vert_capacity()).stableNorm();
 
         wmtk::logger().info(
