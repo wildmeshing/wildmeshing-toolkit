@@ -105,6 +105,7 @@ public:
         const nlohmann::json& js,
         bool flush = false) // flush should force file output immediately, but will be slow for
                             // per-operation things
+        const
     {
         std::cout << js.dump() << std::endl;
         ATlogger->error(js.dump());
@@ -116,6 +117,6 @@ public:
     }
 
     // log that always writes to file immediately beause it's flushing
-    void log_flush(const nlohmann::json& js) { log(js, true); }
+    void log_flush(const nlohmann::json& js) const { log(js, true); }
 };
 } // namespace adaptive_tessellation
