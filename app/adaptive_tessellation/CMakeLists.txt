@@ -28,6 +28,7 @@ add_library(wmtk_adaptive_tessellation
 	AdaptiveTessellation.h
 	Parameters.h
 	GlobalIntersection.h
+	LoggerDataCollector.h
 )
 add_library(wmtk::adaptive_tessellation ALIAS wmtk_adaptive_tessellation)
 
