@@ -5,12 +5,13 @@ void AMIPS::eval(State& state, DofsToPositions& dof_to_positions) const
 {
     DiffScalarBase::setVariableCount(2);
     auto [x1, y1] = dof_to_positions.eval(state.dofx);
-    auto input_triangle = std::array{x1.getValue(),
-                                     y1.getValue(),
-                                     state.two_opposite_vertices(0, 0),
-                                     state.two_opposite_vertices(0, 1),
-                                     state.two_opposite_vertices(0, 2),
-                                     state.two_opposite_vertices(0, 3)};
+    auto input_triangle = std::array{
+        x1.getValue(),
+        y1.getValue(),
+        state.two_opposite_vertices(0, 0),
+        state.two_opposite_vertices(0, 1),
+        state.two_opposite_vertices(0, 2),
+        state.two_opposite_vertices(0, 3)};
     auto target_triangle = state.target_triangle;
     for (auto i = 0; i < 6; i++) target_triangle[i] = state.scaling * target_triangle[i];
     int i = state.idx;
@@ -60,12 +61,13 @@ void SymDi::eval(State& state, DofsToPositions& dof_to_positions) const
     DiffScalarBase::setVariableCount(2);
 
     auto [x1, y1] = dof_to_positions.eval(state.dofx);
-    auto input_triangle = std::array{x1.getValue(),
-                                     y1.getValue(),
-                                     state.two_opposite_vertices(0, 0),
-                                     state.two_opposite_vertices(0, 1),
-                                     state.two_opposite_vertices(0, 2),
-                                     state.two_opposite_vertices(0, 3)};
+    auto input_triangle = std::array{
+        x1.getValue(),
+        y1.getValue(),
+        state.two_opposite_vertices(0, 0),
+        state.two_opposite_vertices(0, 1),
+        state.two_opposite_vertices(0, 2),
+        state.two_opposite_vertices(0, 3)};
     auto target_triangle = state.target_triangle;
     for (auto i = 0; i < 6; i++) target_triangle[i] = state.scaling * target_triangle[i];
     int i = state.idx;
@@ -341,4 +343,23 @@ void AreaAccuracyEnergy::eval(State& state, DofsToPositions& dof_to_positions) c
     state.gradient = total_energy.getGradient();
     state.hessian = total_energy.getHessian();
 }
+
+void QuadricEnergy::eval(State& state, DofsToPositions& dof_to_positions) const
+// measure edge quadrature. For each one-ring triangle only takes one edge, which will cover all the
+// one-ring edges without repeat
+{
+    DiffScalarBase::setVariableCount(2);
+    assert(state.two_opposite_vertices.rows() == 1);
+    auto [x1, y1] = dof_to_positions.eval(state.dofx);
+
+    auto p = m_displ->get(x1, y1);
+
+    const auto& q = m_facet_quadrics[state.idx];
+    DScalar energy =
+        p.transpose() * q.A().cast<DScalar>() * p - DScalar(2.0) * p.dot(q.b().cast<DScalar>()) + DScalar(q.c);
+    state.value = energy.getValue();
+    state.gradient = energy.getGradient();
+    state.hessian = energy.getHessian();
+}
+
 } // namespace wmtk

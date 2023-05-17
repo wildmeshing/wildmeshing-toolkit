@@ -139,9 +139,7 @@ void AdaptiveTessellation::gradient_debug(int max_its)
         smooth_all_vertices();
         assert(invariants(get_faces()));
         consolidate_mesh();
-        write_displaced_obj(
-            "smooth_" + std::to_string(it) + ".obj",
-            mesh_parameters.m_displacement);
+        write_obj_displaced("smooth_" + std::to_string(it) + ".obj");
 
         wmtk::logger().info(
             "++++++++v {} t {} avg gradient {}++++++++",

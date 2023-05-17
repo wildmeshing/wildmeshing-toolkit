@@ -50,5 +50,6 @@ std::shared_ptr<spdlog::logger> make_json_file_logger(
 
     set_json_format(*js_logger, messages_are_json);
     return js_logger;
+
 }
 } // namespace wmtk

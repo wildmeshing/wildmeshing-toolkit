@@ -15,7 +15,8 @@ namespace wmtk {
 class Image
 {
     using DScalar = DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d>;
-    using ImageMatrixf = Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+    using ImageMatrixf =
+        Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor | Eigen::AutoAlign>;
 
 protected:
     ImageMatrixf m_image; // saving scanline images
@@ -101,23 +102,58 @@ inline void split_and_save_3channels(const std::filesystem::path& path)
         spdlog::trace("[split_image] format doesn't support \"{}\"", path.string());
         return;
     }
-    std::filesystem::path directory = path.parent_path();
-    std::filesystem::path file = path.filename();
-    std::filesystem::path path_r(directory.string() + "/" + file.string() + "_r.exr");
-    std::filesystem::path path_g(directory.string() + "/" + file.string() + "_g.exr");
-    std::filesystem::path path_b(directory.string() + "/" + file.string() + "_b.exr");
+    const std::filesystem::path directory = path.parent_path();
+    const std::string file = path.stem().string();
+    const std::filesystem::path path_r = directory / (file + "_r.exr");
+    const std::filesystem::path path_g = directory / (file + "_g.exr");
+    const std::filesystem::path path_b = directory / (file + "_b.exr");
     // just saves single channel data to red channel
     auto res = save_image_exr_red_channel(w, h, buffer_r, path_r);
+    assert(res);
     res = save_image_exr_red_channel(w, h, buffer_g, path_g);
+    assert(res);
     res = save_image_exr_red_channel(w, h, buffer_b, path_b);
+    assert(res);
+}
+
+inline wmtk::Image buffer_to_image(const std::vector<float>& buffer, int w, int h)
+{
+    wmtk::Image image(w, h);
+    for (int i = 0, k = 0; i < h; i++) {
+        for (int j = 0; j < w; j++) {
+            image.set(h - i - 1, j, buffer[k++]);
+        }
+    }
+    return image;
+}
+
+inline std::array<wmtk::Image, 3> load_rgb_image(const std::filesystem::path& path)
+{
+    int w, h, channels, index_red, index_blue, index_green;
+    channels = 1;
+    std::vector<float> buffer_r, buffer_g, buffer_b;
+    if (path.extension() == ".exr") {
+        std::tie(w, h, index_red, index_green, index_blue, buffer_r, buffer_g, buffer_b) =
+            load_image_exr_split_3channels(path);
+        assert(!buffer_r.empty());
+        assert(!buffer_g.empty());
+        assert(!buffer_b.empty());
+    } else {
+        wmtk::logger().error("[load_rgb_image] format doesn't support \"{}\"", path.string());
+        exit(-1);
+    }
+    return {
+        buffer_to_image(buffer_r, w, h),
+        buffer_to_image(buffer_g, w, h),
+        buffer_to_image(buffer_b, w, h),
+    };
 }
 
 std::array<wmtk::Image, 3> combine_position_normal_texture(
     double normalization_scale,
     const std::filesystem::path& position_path,
     const std::filesystem::path& normal_path,
-    const std::filesystem::path& texture_path,
-    const std::filesystem::path& displaced_path);
+    const std::filesystem::path& texture_path);
 
 std::array<wmtk::Image, 3> load_rgb_image(const std::filesystem::path& path);
 

@@ -47,6 +47,7 @@ void wmtk::optimization_state_update(
             // pass the state energy
             state.two_opposite_vertices = nminfo.neighbors.row(i);
             state.scaling = nminfo.target_length;
+            state.idx = nminfo.facet_ids(i);
             assert(boundary_mapping.num_curves() > 0);
             DofsToPositions dofs_to_pos(boundary_mapping, nminfo.curve_id);
             energy_def.eval(state, dofs_to_pos);

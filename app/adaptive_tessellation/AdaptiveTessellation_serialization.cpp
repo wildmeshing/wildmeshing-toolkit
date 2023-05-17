@@ -44,9 +44,10 @@ void AdaptiveTessellation::create_paired_seam_mesh_with_offset(
     wmtk::TriMesh m_3d;
     std::vector<std::array<size_t, 3>> tris;
     for (auto f = 0; f < input_F_.rows(); f++) {
-        std::array<size_t, 3> tri = {(size_t)input_F_(f, 0),
-                                     (size_t)input_F_(f, 1),
-                                     (size_t)input_F_(f, 2)};
+        std::array<size_t, 3> tri = {
+            (size_t)input_F_(f, 0),
+            (size_t)input_F_(f, 1),
+            (size_t)input_F_(f, 2)};
         tris.emplace_back(tri);
     }
     m_3d.create_mesh(input_V_.rows(), tris);
@@ -206,8 +207,8 @@ void AdaptiveTessellation::create_mesh(const Eigen::MatrixXd& V, const Eigen::Ma
     p_vertex_attrs = &vertex_attrs;
     p_face_attrs = &face_attrs;
     p_edge_attrs = &edge_attrs;
-    // Convert from eigen to internal representation (TODO: move to utils and remove it from
-    // all app)
+    // Convert from eigen to internal representation (TODO: move to utils and remove it from all
+    // app)
     std::vector<std::array<size_t, 3>> tri(F.rows());
     for (int i = 0; i < F.rows(); i++) {
         F_env[i] << (size_t)F(i, 0), (size_t)F(i, 1), (size_t)F(i, 2);
@@ -226,6 +227,7 @@ void AdaptiveTessellation::create_mesh(const Eigen::MatrixXd& V, const Eigen::Ma
         assert(!is_inverted(tri));
     }
 }
+
 // set fixed vertices due to boundary
 // set the curve-id for each edge
 void AdaptiveTessellation::mesh_construct_boundaries(
@@ -267,6 +269,7 @@ void AdaptiveTessellation::mesh_construct_boundaries(
                     .squaredNorm() < 1e-8);
     }
 }
+
 Eigen::Matrix<uint64_t, Eigen::Dynamic, 2, Eigen::RowMajor>
 AdaptiveTessellation::get_bnd_edge_matrix()
 {
@@ -285,26 +288,7 @@ AdaptiveTessellation::get_bnd_edge_matrix()
     return E;
 }
 
-void AdaptiveTessellation::export_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const
-{
-    V = Eigen::MatrixXd::Zero(vert_capacity(), 2);
-    for (auto& t : get_vertices()) {
-        auto i = t.vid(*this);
-        V.row(i) = vertex_attrs[i].pos;
-    }
-
-    F = Eigen::MatrixXi::Constant(tri_capacity(), 3, -1);
-    for (auto& t : get_faces()) {
-        auto i = t.fid(*this);
-        auto vs = oriented_tri_vertices(t);
-        for (int j = 0; j < 3; j++) {
-            F(i, j) = vs[j].vid(*this);
-        }
-    }
-}
-
-void AdaptiveTessellation::export_mesh_without_invalid_faces(Eigen::MatrixXd& V, Eigen::MatrixXi& F)
-    const
+void AdaptiveTessellation::export_uv(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const
 {
     V = Eigen::MatrixXd::Zero(vert_capacity(), 2);
     for (auto& t : get_vertices()) {
@@ -322,18 +306,141 @@ void AdaptiveTessellation::export_mesh_without_invalid_faces(Eigen::MatrixXd& V,
     }
 }
 
-void AdaptiveTessellation::export_mesh_with_displacement(Eigen::MatrixXd& V, Eigen::MatrixXi& F)
-    const
+void AdaptiveTessellation::export_displaced_uv(
+    Eigen::MatrixXd& vertices,
+    Eigen::MatrixXi& faces,
+    Eigen::MatrixXd& vertices_uv,
+    Eigen::MatrixXi& faces_uv) const
 {
-    export_mesh_without_invalid_faces(V, F);
-    const size_t rows = V.rows();
-    Eigen::MatrixXd vertices_displaced = Eigen::MatrixXd::Zero(rows, 3);
+    export_uv(vertices_uv, faces_uv);
+    faces = faces_uv;
+    const size_t rows = vertices_uv.rows();
+    vertices = Eigen::MatrixXd::Zero(rows, 3);
     for (size_t i = 0; i < rows; ++i) {
-        vertices_displaced.row(i) = mesh_parameters.m_displacement->get(V(i, 0), V(i, 1));
+        vertices.row(i) = mesh_parameters.m_displacement->get(vertices_uv(i, 0), vertices_uv(i, 1));
+    }
+}
+
+void AdaptiveTessellation::export_mesh_with_displacement(
+    Eigen::MatrixXd& vertices,
+    Eigen::MatrixXi& faces,
+    Eigen::MatrixXd& vertices_uv,
+    Eigen::MatrixXi& faces_uv) const
+{
+    export_uv(vertices_uv, faces_uv);
+
+    vertices.resize(vertices_uv.rows(), 3);
+    for (int i = 0; i < vertices_uv.rows(); i++) {
+        const double& u = vertices_uv(i, 0);
+        const double& v = vertices_uv(i, 1);
+        vertices.row(i) = mesh_parameters.m_displacement->get(u, v);
     }
 
-    V = vertices_displaced;
+    faces = faces_uv;
+    remove_seams(vertices, faces);
+
+    // get rid of unreferenced vertices in both meshes
+    Eigen::MatrixXd V_buf;
+    Eigen::MatrixXi F_buf;
+    Eigen::MatrixXi map_old_to_new_v_ids;
+    igl::remove_unreferenced(vertices, faces, V_buf, F_buf, map_old_to_new_v_ids);
+    vertices = V_buf;
+    faces = F_buf;
+
+    igl::remove_unreferenced(vertices_uv, faces_uv, V_buf, F_buf, map_old_to_new_v_ids);
+    vertices_uv = V_buf;
+    faces_uv = F_buf;
 }
+
+void AdaptiveTessellation::export_mesh_mapped_on_input(
+    Eigen::MatrixXd& vertices,
+    Eigen::MatrixXi& faces,
+    Eigen::MatrixXd& vertices_uv,
+    Eigen::MatrixXi& faces_uv) const
+{
+    auto tri_signed_area =
+        [](const Eigen::Vector2d& a, const Eigen::Vector2d& b, const Eigen::Vector2d& c) -> double {
+        return 0.5 * (a[0] * (b[1] - c[1]) + b[0] * (c[1] - a[1]) + c[0] * (a[1] - b[1]));
+    };
+
+    auto compute_barycentric_coordinates = [tri_signed_area](
+                                               const Eigen::Vector2d& p,
+                                               const Eigen::Vector2d& a,
+                                               const Eigen::Vector2d& b,
+                                               const Eigen::Vector2d& c) -> Eigen::Vector3d {
+        const double area = tri_signed_area(a, b, c);
+        const double area_a = tri_signed_area(p, b, c);
+        const double area_b = tri_signed_area(a, p, c);
+        const double area_c = tri_signed_area(a, b, p);
+
+        return {area_a / area, area_b / area, area_c / area};
+    };
+
+    auto compute_barycentric_interpolation = [](const Eigen::Vector3d& a,
+                                                const Eigen::Vector3d& b,
+                                                const Eigen::Vector3d& c,
+                                                const Eigen::Vector3d& coords) -> Eigen::Vector3d {
+        return a * coords[0] + b * coords[1] + c * coords[2];
+    };
+
+    export_uv(vertices_uv, faces_uv);
+
+    vertices.resize(vertices_uv.rows(), 3);
+    for (int i = 0; i < vertices_uv.rows(); i++) {
+        const double& u = vertices_uv(i, 0);
+        const double& v = vertices_uv(i, 1);
+        Eigen::Vector2d uv = {u, v};
+        // find input triangle and map to it
+        double barycentric_min = -std::numeric_limits<double>::max();
+        Eigen::Vector3d barycentric_coords;
+        size_t j_min = -1;
+        for (size_t j = 0; j < input_FT_.rows(); ++j) {
+            const Eigen::Vector3i tri = input_FT_.row(j);
+            const std::array<Eigen::Vector2d, 3> pts = {
+                input_VT_.row(tri[0]),
+                input_VT_.row(tri[1]),
+                input_VT_.row(tri[2])};
+            const Eigen::Vector3d bars =
+                compute_barycentric_coordinates(uv, pts[0], pts[1], pts[2]);
+            const double bar_min = bars.minCoeff();
+            if (bar_min > barycentric_min) {
+                barycentric_min = bar_min;
+                barycentric_coords = bars;
+                j_min = j;
+            }
+        }
+
+        const auto& input_triangle = input_F_.row(j_min);
+        Eigen::Matrix3d pts;
+        pts.row(0) = input_V_.row(input_triangle[0]);
+        pts.row(1) = input_V_.row(input_triangle[1]);
+        pts.row(2) = input_V_.row(input_triangle[2]);
+
+        Eigen::Vector3d p = compute_barycentric_interpolation(
+            input_V_.row(input_triangle[0]),
+            input_V_.row(input_triangle[1]),
+            input_V_.row(input_triangle[2]),
+            barycentric_coords);
+
+        vertices.row(i) = p;
+    }
+
+    faces = faces_uv;
+    remove_seams(vertices, faces);
+
+    // get rid of unreferenced vertices in both meshes
+    Eigen::MatrixXd V_buf;
+    Eigen::MatrixXi F_buf;
+    Eigen::MatrixXi map_old_to_new_v_ids;
+    igl::remove_unreferenced(vertices, faces, V_buf, F_buf, map_old_to_new_v_ids);
+    vertices = V_buf;
+    faces = F_buf;
+
+    igl::remove_unreferenced(vertices_uv, faces_uv, V_buf, F_buf, map_old_to_new_v_ids);
+    vertices_uv = V_buf;
+    faces_uv = F_buf;
+}
+
 void AdaptiveTessellation::remove_seams(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const
 {
     std::map<size_t, size_t> paired_vertices; // mapping from removed to remaining vertex
@@ -412,116 +519,42 @@ void AdaptiveTessellation::remove_seams(Eigen::MatrixXd& V, Eigen::MatrixXi& F) 
     // overwrite F
     F = NF;
 }
-void AdaptiveTessellation::export_mesh(
-    Eigen::MatrixXd& V,
-    Eigen::MatrixXi& F,
-    Eigen::MatrixXd& VT,
-    Eigen::MatrixXi& FT) const
-{
-    export_mesh_without_invalid_faces(VT, FT);
 
-    V.resize(VT.rows(), 3);
-    for (int i = 0; i < VT.rows(); i++) {
-        const double& u = VT(i, 0);
-        const double& v = VT(i, 1);
-        V.row(i) = mesh_parameters.m_displacement->get(u, v);
-    }
-
-    F = FT;
-    remove_seams(V, F);
-
-    // get rid of unreferenced vertices in both meshes
-    Eigen::MatrixXd V_buf;
-    Eigen::MatrixXi F_buf;
-    Eigen::MatrixXi map_old_to_new_v_ids;
-    igl::remove_unreferenced(V, F, V_buf, F_buf, map_old_to_new_v_ids);
-    V = V_buf;
-    F = F_buf;
-
-    igl::remove_unreferenced(VT, FT, V_buf, F_buf, map_old_to_new_v_ids);
-    VT = V_buf;
-    FT = F_buf;
-}
-
-void AdaptiveTessellation::export_mesh_mapped_on_input(
-    Eigen::MatrixXd& V,
-    Eigen::MatrixXi& F,
-    Eigen::MatrixXd& VT,
-    Eigen::MatrixXi& FT) const
-{
-    // throw std::exception("Method not fully implemented yet.");
-
-    export_mesh_without_invalid_faces(VT, FT);
-
-    V.resize(VT.rows(), 3);
-    for (int i = 0; i < VT.rows(); i++) {
-        const double& u = VT(i, 0);
-        const double& v = VT(i, 1);
-        // TODO find input triangle and map to it
-        V.row(i) = mesh_parameters.m_displacement->get(u, v);
-    }
-
-    F = FT;
-    remove_seams(V, F);
-
-    // get rid of unreferenced vertices in both meshes
-    Eigen::MatrixXd V_buf;
-    Eigen::MatrixXi F_buf;
-    Eigen::MatrixXi map_old_to_new_v_ids;
-    igl::remove_unreferenced(V, F, V_buf, F_buf, map_old_to_new_v_ids);
-    V = V_buf;
-    F = F_buf;
-
-    igl::remove_unreferenced(VT, FT, V_buf, F_buf, map_old_to_new_v_ids);
-    VT = V_buf;
-    FT = F_buf;
-}
-
-
-void AdaptiveTessellation::export_seamless_mesh_with_displacement(
-    Eigen::MatrixXd& V,
-    Eigen::MatrixXi& F) const
-{
-    export_mesh_with_displacement(V, F);
-    remove_seams(V, F);
-}
-
-void AdaptiveTessellation::write_obj(const std::string& path)
+void AdaptiveTessellation::write_obj_only_texture_coords(const std::filesystem::path& path)
 {
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
 
-    export_mesh(V, F);
+    export_uv(V, F);
 
     Eigen::MatrixXd V3 = Eigen::MatrixXd::Zero(V.rows(), 3);
     V3.leftCols(2) = V;
 
-    igl::writeOBJ(path, V3, F);
-    wmtk::logger().info("writting to {}", path);
+    igl::writeOBJ(path.string(), V3, F);
     wmtk::logger().info("============>> current edge length {}", avg_edge_len());
 }
 
-void AdaptiveTessellation::write_ply(const std::string& path)
+void AdaptiveTessellation::write_ply(const std::filesystem::path& path)
 {
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
 
-    export_mesh(V, F);
+    export_uv(V, F);
 
     Eigen::MatrixXd V3 = Eigen::MatrixXd::Zero(V.rows(), 3);
     V3.leftCols(2) = V;
 
-    igl::writePLY(path, V3, F);
+    igl::writePLY(path.string(), V3, F);
 }
 
-void AdaptiveTessellation::write_vtk(const std::string& path)
+void AdaptiveTessellation::write_vtk(const std::filesystem::path& path)
 {
     std::vector<double> points;
     std::vector<int> elements;
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
 
-    export_mesh(V, F);
+    export_uv(V, F);
     wmtk::logger().info("=== # vertices {}", V.rows());
     for (int i = 0; i < V.rows(); i++) {
         auto p = mesh_parameters.m_displacement->get(V(i, 0), V(i, 1));
@@ -556,18 +589,18 @@ void AdaptiveTessellation::write_vtk(const std::string& path)
     }
     writer.add_cell_scalar_field("scalar_field", scalar_field);
     // writer.add_vector_field("vector_field", vector_field, dim);
-    writer.write_surface_mesh(path, dim, cell_size, points, elements);
+    writer.write_surface_mesh(path.string(), dim, cell_size, points, elements);
 }
 /// @brief write vtu with elements represent per face attributes
 /// @param path
-void AdaptiveTessellation::write_perface_vtk(const std::string& path)
+void AdaptiveTessellation::write_perface_vtk(const std::filesystem::path& path)
 {
     std::vector<double> points;
     std::vector<int> elements;
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
 
-    export_mesh(V, F);
+    export_uv(V, F);
     for (int i = 0; i < V.rows(); i++) {
         auto p = mesh_parameters.m_displacement->get(V(i, 0), V(i, 1));
         points.emplace_back(p(0));
@@ -610,76 +643,10 @@ void AdaptiveTessellation::write_perface_vtk(const std::string& path)
     writer.add_cell_scalar_field("scalar_field", scalar_field2);
     // writer.add_vector_field("vector_field", vector_field, dim);
 
-    writer.write_surface_mesh(path, dim, cell_size, points, elements);
+    writer.write_surface_mesh(path.string(), dim, cell_size, points, elements);
 }
 
-void AdaptiveTessellation::write_displaced_obj(
-    const std::string& path,
-    const std::function<double(double, double)>& displacement)
-{
-    Eigen::MatrixXd V;
-    Eigen::MatrixXi F;
-
-    export_mesh(V, F);
-
-    Eigen::MatrixXd V3 = Eigen::MatrixXd::Zero(V.rows(), 3);
-    for (int i = 0; i < V.rows(); i++) {
-        V3.row(i) << V(i, 0), V(i, 1), displacement(V(i, 0), V(i, 1));
-    }
-
-    igl::writeOBJ(path, V3, F);
-    wmtk::logger().info("============>> current edge length {}", avg_edge_len());
-}
-
-void AdaptiveTessellation::write_displaced_obj(
-    const std::string& path,
-    const std::shared_ptr<wmtk::Displacement> displacement)
-{
-    Eigen::MatrixXd V;
-    Eigen::MatrixXi F;
-
-    export_mesh(V, F);
-    auto rows = V.rows();
-    Eigen::MatrixXd V3d = Eigen::MatrixXd::Zero(rows, 3);
-    for (int i = 0; i < rows; i++) {
-        V3d.row(i) = displacement->get(V(i, 0), V(i, 1));
-        // wmtk::logger().info("progress: {}/{}", i, rows);
-    }
-    igl::writeOBJ(path, V3d, F);
-    wmtk::logger().info("============>> current edge length {}", avg_edge_len());
-}
-
-void AdaptiveTessellation::write_displaced_seamless_obj(
-    const std::string& path,
-    const std::shared_ptr<wmtk::Displacement> displacement)
-{
-    Eigen::MatrixXd V;
-    Eigen::MatrixXi F;
-
-    export_seamless_mesh_with_displacement(V, F);
-
-    igl::writeOBJ(path, V, F);
-    wmtk::logger().info("============>> current edge length {}", avg_edge_len());
-}
-
-void AdaptiveTessellation::write_world_obj(
-    const std::string& path,
-    const std::shared_ptr<wmtk::Displacement> displacement)
-{
-    Eigen::MatrixXd V;
-    Eigen::MatrixXi F;
-
-    export_seamless_mesh_with_displacement(V, F);
-
-    for (int i = 0; i < V.rows(); i++) {
-        V.row(i) = vertex_attrs[i].pos_world;
-    }
-
-    igl::writeOBJ(path, V, F);
-    wmtk::logger().info("============>> current edge length {}", avg_edge_len());
-}
-
-void AdaptiveTessellation::write_obj_with_texture_coords(const std::string& path)
+void AdaptiveTessellation::write_obj(const std::filesystem::path& path)
 {
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
@@ -687,7 +654,45 @@ void AdaptiveTessellation::write_obj_with_texture_coords(const std::string& path
     Eigen::MatrixXd FN;
     Eigen::MatrixXd VT;
     Eigen::MatrixXi FT;
-    export_mesh(V, F, VT, FT);
-    igl::writeOBJ(path, V, F, CN, FN, VT, FT);
+    export_mesh_with_displacement(V, F, VT, FT);
+
+    std::map<size_t, size_t> world_to_uv_ids;
+    for (Eigen::Index i = 0; i < F.rows(); ++i) {
+        for (Eigen::Index j = 0; j < F.cols(); ++j) {
+            world_to_uv_ids[F(i, j)] = FT(i, j);
+        }
+    }
+
+    for (int i = 0; i < V.rows(); i++) {
+        V.row(i) = vertex_attrs[world_to_uv_ids[i]].pos_world;
+    }
+
+    igl::writeOBJ(path.string(), V, F, CN, FN, VT, FT);
+    wmtk::logger().info("============>> current edge length {}", avg_edge_len());
+}
+
+void AdaptiveTessellation::write_obj_displaced(const std::filesystem::path& path)
+{
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    Eigen::MatrixXd CN;
+    Eigen::MatrixXd FN;
+    Eigen::MatrixXd VT;
+    Eigen::MatrixXi FT;
+    export_mesh_with_displacement(V, F, VT, FT);
+    igl::writeOBJ(path.string(), V, F, CN, FN, VT, FT);
+    wmtk::logger().info("============>> current edge length {}", avg_edge_len());
+}
+
+void AdaptiveTessellation::write_obj_mapped_on_input(const std::filesystem::path& path)
+{
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    Eigen::MatrixXd CN;
+    Eigen::MatrixXd FN;
+    Eigen::MatrixXd VT;
+    Eigen::MatrixXi FT;
+    export_mesh_mapped_on_input(V, F, VT, FT);
+    igl::writeOBJ(path.string(), V, F, CN, FN, VT, FT);
     wmtk::logger().info("============>> current edge length {}", avg_edge_len());
 }

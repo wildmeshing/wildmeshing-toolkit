@@ -322,6 +322,28 @@ bool adaptive_tessellation::AdaptiveTessellation::smooth_after(const Tuple& t)
     return true;
 }
 
+void adaptive_tessellation::AdaptiveTessellation::prepare_quadrics(wmtk::QuadricEnergy& energy)
+{
+    wmtk::logger().info("computing quadric energy");
+    auto facets = get_faces();
+    std::vector<wmtk::Quadric<double>> compressed_quadrics(facets.size());
+    m_quadric_integral.get_quadric_per_triangle(
+        facets.size(),
+        [&](int f) -> std::array<float, 6> {
+            // Get triangle uv positions
+            std::array<Tuple, 3> local_tuples = oriented_tri_vertices(facets[f]);
+            const Eigen::Vector2f& p0 = vertex_attrs[local_tuples[0].vid(*this)].pos.cast<float>();
+            const Eigen::Vector2f& p1 = vertex_attrs[local_tuples[1].vid(*this)].pos.cast<float>();
+            const Eigen::Vector2f& p2 = vertex_attrs[local_tuples[2].vid(*this)].pos.cast<float>();
+            return {p0.x(), p0.y(), p1.x(), p1.y(), p2.x(), p2.y()};
+        },
+        compressed_quadrics);
+    energy.facet_quadrics().resize(tri_capacity());
+    for (size_t i = 0; i < facets.size(); ++i) {
+        energy.facet_quadrics()[facets[i].fid(*this)] = compressed_quadrics[i];
+    }
+}
+
 void adaptive_tessellation::AdaptiveTessellation::smooth_all_vertices()
 {
     assert(mesh_parameters.m_energy != nullptr);
@@ -332,6 +354,10 @@ void adaptive_tessellation::AdaptiveTessellation::smooth_all_vertices()
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_vertices()) {
         collect_all_ops.emplace_back("vertex_smooth", loc);
+    }
+    if (auto quadric_energy = dynamic_cast<QuadricEnergy*>(mesh_parameters.m_energy.get());
+        quadric_energy) {
+        prepare_quadrics(*quadric_energy);
     }
     time = timer.getElapsedTime();
     wmtk::logger().info("vertex smoothing prepare time: {}s", time);
@@ -357,10 +383,12 @@ void adaptive_tessellation::AdaptiveTessellation::smooth_all_vertices()
         do {
             mesh_parameters.m_gradient = Eigen::Vector2d(0., 0.);
             executor(*this, collect_all_ops);
+
             if (!mesh_parameters.m_do_not_output) {
-                write_obj_with_texture_coords(
+                write_obj_displaced(
                     mesh_parameters.m_output_folder + fmt::format("/smooth_{:03d}.obj", itr));
             }
+
             itr++;
         } while ((mesh_parameters.m_gradient / vert_capacity()).stableNorm() > 1e-4 && itr < 10);
         wmtk::logger().info("===== terminate smooth after {} itrs", itr);

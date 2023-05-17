@@ -19,6 +19,7 @@
 #include <tbb/concurrent_vector.h>
 #include <wmtk/TriMesh.h>
 #include <wmtk/image/TextureIntegral.h>
+#include <wmtk/image/QuadricIntegral.h>
 #include <wmtk/utils/AMIPS2D.h>
 #include <wmtk/utils/AMIPS2D_autodiff.h>
 #include <wmtk/utils/BoundaryParametrization.h>
@@ -113,6 +114,8 @@ public:
 
     // texture integraler
     wmtk::TextureIntegral m_texture_integral;
+
+    wmtk::QuadricIntegral m_quadric_integral;
 
 public:
     AdaptiveTessellation(){};
@@ -219,23 +222,31 @@ public:
 
 
     // Exports V and F of the stored mesh
-    void export_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
-
-    // Exports V and F of the stored mesh
-    void export_mesh_without_invalid_faces(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
-
-    // Exports V and F of the stored mesh
-    void export_mesh_with_displacement(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
+    void export_uv(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
 
     /**
-     * @brief Exports the mesh including UV coordinates
+     * @brief Exports the texture mesh with applied displacement and the texture mesh itself.
+     *
+     * @param vertices igl format vertices
+     * @param faces igl format faces
+     * @param vertices_uv igl format texture vertices
+     * @param faces_uv igl format texture faces
+     */
+    void export_displaced_uv(
+        Eigen::MatrixXd& vertices,
+        Eigen::MatrixXi& faces,
+        Eigen::MatrixXd& vertices_uv,
+        Eigen::MatrixXi& faces_uv) const;
+
+    /**
+     * @brief Exports the mesh including texture coordinates.
      *
      * @param V igl format vertices
      * @param F igl format faces
      * @param VT igl format texture vertices
      * @param FT igl format texture faces
      */
-    void export_mesh(
+    void export_mesh_with_displacement(
         Eigen::MatrixXd& V,
         Eigen::MatrixXi& F,
         Eigen::MatrixXd& VT,
@@ -267,30 +278,48 @@ public:
      */
     void remove_seams(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
 
-    // Exports V and F of the stored mesh
-    void export_seamless_mesh_with_displacement(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
-
-    // Writes a triangle mesh in OBJ format
-    void write_obj(const std::string& path);
+    /**
+     * @brief Write texture faces and vertices in OBJ format.
+     *
+     * To represent vertices in OBJ, the 2D positions are extended to 3D where the third coordinate
+     * is 0.
+     *
+     * @param path name of the OBJ file
+     */
+    void write_obj_only_texture_coords(const std::filesystem::path& path);
 
     // Writes a triangle mesh in ply format
-    void write_ply(const std::string& path);
-    void write_vtk(const std::string& path);
-    void write_perface_vtk(const std::string& path);
+    void write_ply(const std::filesystem::path& path);
+    void write_vtk(const std::filesystem::path& path);
+    void write_perface_vtk(const std::filesystem::path& path);
 
-    void write_displaced_obj(
-        const std::string& path,
-        const std::function<double(double, double)>& displacement);
-    void write_displaced_obj(
-        const std::string& path,
-        const std::shared_ptr<wmtk::Displacement> displacement);
-    void write_displaced_seamless_obj(
-        const std::string& path,
-        const std::shared_ptr<wmtk::Displacement> displacement);
-    void write_world_obj(
-        const std::string& path,
-        const std::shared_ptr<wmtk::Displacement> displacement);
-    void write_obj_with_texture_coords(const std::string& path);
+    /**
+     * @brief Write triangle mesh with world positions in OBJ format.
+     *
+     * World positions and texture coordinates are written. World positions should be computed
+     * before using the function `displace_self_intersection_free`. For getting the displacement
+     * with potential intersections, use `write_obj_displaced`.
+     *
+     * @param path name of the OBJ file
+     */
+    void write_obj(const std::filesystem::path& path);
+    /**
+     * @brief Write triangle mesh with displaced UV positions in OBJ format.
+     *
+     * Displaced UV positions and texture coordinates are written.
+     *
+     * @param path name of the OBJ file
+     */
+    void write_obj_displaced(const std::filesystem::path& path);
+    /**
+     * @brief Write triangle mesh in OBJ format where UV positions are mapped onto the input
+     * triangles.
+     *
+     * Mapped positions and texture coordinates are written.
+     *
+     * @param path name of the OBJ file
+     */
+    void write_obj_mapped_on_input(const std::filesystem::path& path);
 
     // Computes the quality of a triangle
     double get_quality(const Tuple& loc, int idx = 0) const;
@@ -305,6 +334,7 @@ public:
     std::vector<TriMesh::Tuple> new_edges_after(const std::vector<TriMesh::Tuple>& tris) const;
 
     // Smoothing
+    void prepare_quadrics(wmtk::QuadricEnergy &energy);
     void smooth_all_vertices();
     bool smooth_before(const Tuple& t);
     bool smooth_after(const Tuple& t);

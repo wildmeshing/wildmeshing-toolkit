@@ -75,7 +75,7 @@ bool Image::set(
 // save to hdr or exr
 bool Image::save(const std::filesystem::path& path) const
 {
-    spdlog::trace("[save_image_hdr] start \"{}\"", path.string());
+    wmtk::logger().trace("[save_image_hdr] start \"{}\"", path.string());
     int w = width();
     int h = height();
     std::vector<float> buffer;
@@ -92,11 +92,11 @@ bool Image::save(const std::filesystem::path& path) const
     } else if (path.extension() == ".exr") {
         auto res = save_image_exr_red_channel(w, h, buffer, path);
     } else {
-        spdlog::trace("[save_image_hdr] format doesn't support \"{}\"", path.string());
+        wmtk::logger().trace("[save_image_hdr] format doesn't support \"{}\"", path.string());
         return false;
     }
 
-    spdlog::trace("[save_image] done \"{}\"", path.string());
+    wmtk::logger().trace("[save_image] done \"{}\"", path.string());
 
     return true;
 }
@@ -117,7 +117,7 @@ void Image::load(
         auto res = stbi_loadf(path.string().c_str(), &w, &h, &channels, 1);
         buffer.assign(res, res + w * h);
     } else {
-        spdlog::trace("[load_image] format doesn't support \"{}\"", path.string());
+        wmtk::logger().trace("[load_image] format doesn't support \"{}\"", path.string());
         return;
     }
 
@@ -151,34 +151,11 @@ Image Image::down_sample() const
     return low_res_image;
 }
 
-std::array<wmtk::Image, 3> wmtk::load_rgb_image(const std::filesystem::path& path)
-{
-    auto [w, h, index_red, index_green, index_blue, buffer_r, buffer_g, buffer_b] =
-        load_image_exr_split_3channels(path);
-    return {
-        buffer_to_image(buffer_r, w, h),
-        buffer_to_image(buffer_g, w, h),
-        buffer_to_image(buffer_b, w, h),
-    };
-}
-
-wmtk::Image wmtk::buffer_to_image(const std::vector<float>& buffer, int w, int h)
-{
-    wmtk::Image image(w, h);
-    for (int i = 0, k = 0; i < h; i++) {
-        for (int j = 0; j < w; j++) {
-            image.set(h - i - 1, j, buffer[k++]);
-        }
-    }
-    return image;
-}
-
 std::array<wmtk::Image, 3> wmtk::combine_position_normal_texture(
     double normalization_scale,
     const std::filesystem::path& position_path,
     const std::filesystem::path& normal_path,
-    const std::filesystem::path& height_path,
-    const std::filesystem::path& displaced_path)
+    const std::filesystem::path& height_path)
 {
     // displaced = positions + normalization_scale * heights * (2.0 * normals - 1.0)
     auto [w_p, h_p, index_red_p, index_green_p, index_blue_p, buffer_r_p, buffer_g_p, buffer_b_p] =
@@ -203,16 +180,16 @@ std::array<wmtk::Image, 3> wmtk::combine_position_normal_texture(
         buffer_b_d[i] =
             buffer_b_p[i] + normalization_scale * buffer_b_h[i] * (2.0 * buffer_b_n[i] - 1.0);
     }
-    auto res = save_image_exr_3channels(
-        w,
-        h,
-        index_red_p,
-        index_green_p,
-        index_blue_p,
-        buffer_r_d,
-        buffer_g_d,
-        buffer_b_d,
-        displaced_path);
+    // auto res = save_image_exr_3channels(
+    //     w,
+    //     h,
+    //     index_red_p,
+    //     index_green_p,
+    //     index_blue_p,
+    //     buffer_r_d,
+    //     buffer_g_d,
+    //     buffer_b_d,
+    //     displaced_path);
     return {
         buffer_to_image(buffer_r_d, w, h),
         buffer_to_image(buffer_g_d, w, h),

@@ -56,10 +56,12 @@ bool AdaptiveTessellationSwapEdgeOperation::before(AdaptiveTessellation& m, cons
 
     if (wmtk::TriMeshSwapEdgeOperation::before(m, t)) {
         wmtk::logger().info("swap {}", cnt);
+
         if (!m.mesh_parameters.m_do_not_output) {
-            m.write_obj_with_texture_coords(
+            m.write_obj_displaced(
                 m.mesh_parameters.m_output_folder + fmt::format("/swap_{:04d}.obj", cnt));
         }
+
         cnt++;
         return true;
         // return  m.swap_before(t);

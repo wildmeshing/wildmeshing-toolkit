@@ -9,7 +9,7 @@
 #include <sec/envelope/SampleEnvelope.hpp>
 using namespace wmtk;
 namespace adaptive_tessellation {
-enum class ENERGY_TYPE { AMIPS, SYMDI, EDGE_LENGTH, EDGE_QUADRATURE, AREA_QUADRATURE };
+enum class ENERGY_TYPE { AMIPS, SYMDI, EDGE_LENGTH, EDGE_QUADRATURE, AREA_QUADRATURE, QUADRICS };
 enum class EDGE_LEN_TYPE {
     LINEAR2D,
     LINEAR3D,
@@ -87,7 +87,7 @@ public:
     DISPLACEMENT_MODE m_displacement_mode = DISPLACEMENT_MODE::PLANE;
     std::shared_ptr<wmtk::Displacement> m_displacement;
     double m_scale = 1.0;
-    Eigen::Matrix<double, 1, 3> m_offset;
+    Eigen::Matrix<double, 1, 3> m_offset = Eigen::Vector3d::Zero();
 
     bool m_swap_using_valence = 1;
     bool m_split_absolute_error_metric = 1;
