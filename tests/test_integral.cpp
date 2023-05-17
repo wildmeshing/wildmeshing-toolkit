@@ -160,7 +160,7 @@ void test_integral_reference(
     wmtk::logger().info("done with integral test");
 }
 
-void test_sampling(const MeshType& mesh, std::array<wmtk::Image, 3> displaced)
+void test_sampling(std::array<wmtk::Image, 3> displaced)
 {
     // Check interpolation at pixel centers
     const int w = displaced[0].width();
@@ -255,9 +255,32 @@ TEST_CASE("Texture Integral Reference", "[utils][integral]")
 TEST_CASE("Texture Integral Sampling", "[utils][integral]")
 {
     std::string displaced_positions = WMTK_DATA_DIR "/images/hemisphere_512_displaced.exr";
-    test_sampling(
-        lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMTK_DATA_DIR "/hemisphere.obj"),
-        load_rgb_image(displaced_positions));
+    auto displacement_image = load_rgb_image(displaced_positions);
+    test_sampling(displacement_image);
+}
+
+TEST_CASE("Morton Z-Order", "[utils][integral]")
+{
+    std::string displaced_positions = WMTK_DATA_DIR "/images/hemisphere_512_displaced.exr";
+
+    auto displacement_image_linear = load_rgb_image(displaced_positions);
+    auto displacement_image_zorder = wmtk::internal::convert_image_to_morton_z_order(displacement_image_linear);
+
+    auto planes = displacement_image_linear.size();
+    auto width = displacement_image_linear[0].width();
+    auto height = displacement_image_linear[0].height();
+    for (int k = 0; k < planes; ++k)
+    {
+        for (int y = 0; y < height; ++y)
+        {
+            for (int x = 0; x < width; ++x)
+            {
+                auto zorder = wmtk::internal::fetch_texels_zorder(displacement_image_zorder, x, y);
+                auto linear = wmtk::internal::fetch_texels(displacement_image_linear, x, y);
+                REQUIRE(zorder == linear);
+            }
+        }
+    }
 }
 
 TEST_CASE("Texture Integral Adaptive", "[utils][integral]")
@@ -314,20 +337,7 @@ TEST_CASE("Texture Integral Benchmark", "[utils][!benchmark]")
     std::vector<float> computed_errors(uv_triangles.size());
 
     auto displacement_image_linear = load_rgb_image(displaced_positions);
-    auto displacement_image_zorder = wmtk::internal::convert_image_to_morton_z_order(displacement_image_linear);
-
-    auto num_planes = displacement_image_linear.size();
-    auto width = displacement_image_linear[0].width();
-    auto height = displacement_image_linear[0].height();
-    for (int k = 0; k < num_planes; ++k)
-        for (int y = 0; y < height; ++y)
-            for (int x = 0; x < width; ++x)
-            {
-                auto zoffset = wmtk::internal::to_morton_z_order(x, y);
-                REQUIRE(displacement_image_zorder[k].get_raw_image().data()[zoffset] == displacement_image_linear[k].get_raw_image().coeff(x, y));
-            }
-
-    wmtk::TextureIntegral integral(displacement_image_zorder);
+    wmtk::TextureIntegral integral(displacement_image_linear);
     
     BENCHMARK("Bicubic + Exact")
     {

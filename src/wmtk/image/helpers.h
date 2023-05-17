@@ -32,6 +32,37 @@ inline std::tuple<size_t, size_t, float> sample_coord(const float coord, const s
     return std::make_tuple(coord0, coord1, t);
 };
 
+inline float fetch_texel(const wmtk::Image& image, int offset)
+{
+    return image.get_raw_image().data()[offset];
+}
+
+inline float fetch_texel(const wmtk::Image& image, int x, int y)
+{
+    return image.get_raw_image()(x, y);
+}
+
+template <size_t N>
+Eigen::Vector<float, N> fetch_texels(const std::array<wmtk::Image, N>& images, int x, int y)
+{
+    Eigen::Vector<float, N> res;
+    for (size_t k = 0; k < N; ++k) {
+        res[k] = fetch_texel(images[k], x, y);
+    }
+    return res;
+}
+
+template <size_t N>
+Eigen::Vector<float, N> fetch_texels_zorder(const std::array<wmtk::Image, N>& images, int x, int y)
+{
+    Eigen::Vector<float, N> res;
+    auto zoffset = to_morton_z_order(x, y);
+    for (size_t k = 0; k < N; ++k) {
+        res[k] = fetch_texel(images[k], zoffset);
+    }
+    return res;
+}
+
 template <size_t N>
 Eigen::Vector<float, N> sample_nearest(const std::array<wmtk::Image, N>& images, float u, float v)
 {
@@ -44,11 +75,7 @@ Eigen::Vector<float, N> sample_nearest(const std::array<wmtk::Image, N>& images,
     const auto sx = std::clamp(static_cast<int>(x), 0, w - 1);
     const auto sy = std::clamp(static_cast<int>(y), 0, h - 1);
 
-    Eigen::Vector<float, N> res;
-    for (size_t k = 0; k < N; ++k) {
-        res[k] = images[k].get_raw_image()(sx, sy);
-    }
-    return res;
+    return fetch_texels(images, sx, sy);
 }
 
 template <size_t N>
@@ -71,8 +98,10 @@ Eigen::Vector<float, N> sample_bilinear(const std::array<wmtk::Image, N>& images
 
     Eigen::Vector<float, N> res;
     for (size_t k = 0; k < N; ++k) {
-        const auto& array = images[k].get_raw_image();
-        Eigen::Vector4f pix(array(x0, y0), array(x1, y0), array(x0, y1), array(x1, y1));
+        Eigen::Vector4f pix(fetch_texel(images[k], x0, y0),
+                            fetch_texel(images[k], x1, y0),
+                            fetch_texel(images[k], x0, y1),
+                            fetch_texel(images[k], x1, y1));
         res[k] = pix.dot(weight);
     }
 

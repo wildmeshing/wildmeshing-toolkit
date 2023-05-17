@@ -273,10 +273,7 @@ double get_error_per_triangle_adaptive(
                 ++num_inside;
                 Eigen::Matrix<T, 3, 1> p_tri =
                     get_p_interpolated(box.center().x(), box.center().y());
-                Eigen::Matrix<T, 3, 1> p_displaced;
-                for (size_t k = 0; k < 3; ++k) {
-                    p_displaced[k] = images[k].get_raw_image()(x, y);
-                }
+                Eigen::Matrix<T, 3, 1> p_displaced = internal::fetch_texels(images, x, y).cast<T>();
                 value += (p_displaced - p_tri).squaredNorm() * pixel_size(0) * pixel_size(1);
                 if (0) {
                     wmtk::ClippedQuadrature rules;
