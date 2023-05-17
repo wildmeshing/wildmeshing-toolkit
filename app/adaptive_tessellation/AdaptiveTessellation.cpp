@@ -186,8 +186,8 @@ std::pair<Eigen::MatrixXi, Eigen::MatrixXi> AdaptiveTessellation::seam_edges_set
                     } else {
                         // if not add it to the map and add to the edge matrix
                         seam_edges[{ej0, ej1}] = std::pair<size_t, size_t>(ei0, ei1);
-                        E0.row(seam_edge_cnt) << ei0, ei1;
-                        E1.row(seam_edge_cnt) << ej0, ej1;
+                        E0.row(seam_edge_cnt) << FT(fi, lvi1), FT(fi, lvi2);
+                        E1.row(seam_edge_cnt) << FT(fj, lvj1), FT(fj, lvj2);
                         seam_edge_cnt++;
                     }
                 }
@@ -966,7 +966,8 @@ void AdaptiveTessellation::get_nminfo_for_vertex(const Tuple& v, wmtk::NewtonMet
     }
 }
 // do not include one-ring energy of the mirror vertex
-std::pair<double, Eigen::Vector2d> AdaptiveTessellation::get_one_ring_energy(const Tuple& v) const
+// the curveid of the vertex is the curve id of any seam edge incident to this vertex
+std::pair<double, Eigen::Vector2d> AdaptiveTessellation::get_one_ring_energy(const Tuple& v)
 {
     std::vector<wmtk::TriMesh::Tuple> one_ring_tris = get_one_ring_tris_for_vertex(v);
     assert(one_ring_tris.size() > 0);
@@ -979,6 +980,14 @@ std::pair<double, Eigen::Vector2d> AdaptiveTessellation::get_one_ring_energy(con
         dofx = vertex_attrs[v.vid(*this)].pos;
     }
 
+    // assign curve id for vertex using the boundary edge of the one ring edges if it has one
+    // (if it has more than one, it's ok to be the first one)
+    for (auto& e : get_one_ring_edges_for_vertex(v)) {
+        if (is_boundary_edge(e)) {
+            vertex_attrs[v.vid(*this)].curve_id = edge_attrs[e.eid(*this)].curve_id.value();
+            break;
+        }
+    }
     // infomation needed for newton's method
     // multiple nminfo for seam vertices
     std::vector<wmtk::NewtonMethodInfo> nminfos;
@@ -1054,13 +1063,22 @@ void AdaptiveTessellation::mesh_improvement(int max_its)
         split_all_edges();
         assert(invariants(get_faces()));
         auto split_finish_time = lagrange::get_timestamp();
-        mesh_parameters.js_log["iteration_" + std::to_string(it)]["split time"] =
-            lagrange::timestamp_diff_in_seconds(start_time, split_finish_time);
+
+        mesh_parameters.log(
+            {{"iteration_" + std::to_string(it),
+              {"split time", lagrange::timestamp_diff_in_seconds(start_time, split_finish_time)}}});
+
         // consolidate_mesh();
-        write_obj_displaced(
-            mesh_parameters.m_output_folder + "/after_split_" + std::to_string(it) + ".obj");
-        write_obj_only_texture_coords(
-            mesh_parameters.m_output_folder + "/after_split_" + std::to_string(it) + "2d.obj");
+
+        if (!mesh_parameters.m_do_not_output) {
+            write_obj_with_texture_coords(
+                mesh_parameters.m_output_folder + "/after_split_" + std::to_string(it) + ".obj");
+            displace_self_intersection_free(*this);
+            write_world_obj(
+                mesh_parameters.m_output_folder + "/after_split_" + std::to_string(it) +
+                    "3d_intersection_free.obj",
+                mesh_parameters.m_displacement);
+        }
 
         swap_all_edges();
         assert(invariants(get_faces()));
@@ -1068,33 +1086,39 @@ void AdaptiveTessellation::mesh_improvement(int max_its)
         mesh_parameters.js_log["iteration_" + std::to_string(it)]["swap time"] =
             lagrange::timestamp_diff_in_seconds(split_finish_time, swap_finish_time);
         // consolidate_mesh();
-        write_obj_displaced(
-            mesh_parameters.m_output_folder + "/after_swap_" + std::to_string(it) + ".obj");
-        write_obj_only_texture_coords(
-            mesh_parameters.m_output_folder + "/after_swap_" + std::to_string(it) + "2d.obj");
-
+        if (!mesh_parameters.m_do_not_output) {
+            write_obj_displaced(
+                mesh_parameters.m_output_folder + "/after_swap_" + std::to_string(it) + ".obj");
+            write_obj_only_texture_coords(
+                mesh_parameters.m_output_folder + "/after_swap_" + std::to_string(it) + "2d.obj");
+        }
         collapse_all_edges();
         assert(invariants(get_faces()));
         // consolidate_mesh();
         auto collapse_finish_time = lagrange::get_timestamp();
         mesh_parameters.js_log["iteration_" + std::to_string(it)]["collapse time"] =
             lagrange::timestamp_diff_in_seconds(swap_finish_time, collapse_finish_time);
-
-        write_obj_displaced(
-            mesh_parameters.m_output_folder + "/after_collapse_" + std::to_string(it) + ".obj");
-        write_obj_only_texture_coords(
-            mesh_parameters.m_output_folder + "/after_collapse_" + std::to_string(it) + "2d.obj");
+        if (!mesh_parameters.m_do_not_output) {
+            write_obj_displaced(
+                mesh_parameters.m_output_folder + "/after_collapse_" + std::to_string(it) + ".obj");
+            write_obj_only_texture_coords(
+                mesh_parameters.m_output_folder + "/after_collapse_" + std::to_string(it) + "2d.obj");
+        }
 
         smooth_all_vertices();
         assert(invariants(get_faces()));
         auto smooth_finish_time = lagrange::get_timestamp();
-        mesh_parameters.js_log["iteration_" + std::to_string(it)]["smooth time"] =
-            lagrange::timestamp_diff_in_seconds(collapse_finish_time, smooth_finish_time);
-        // consolidate_mesh();
-        write_obj_displaced(
-            mesh_parameters.m_output_folder + "/after_smooth_" + std::to_string(it) + ".obj");
-        write_obj_only_texture_coords(
-            mesh_parameters.m_output_folder + "/after_smooth_" + std::to_string(it) + "2d.obj");
+
+        mesh_parameters.log(
+            {{"iteration_" + std::to_string(it),
+              {"smooth time",
+               lagrange::timestamp_diff_in_seconds(swap_finish_time, smooth_finish_time)}}});
+        if (!mesh_parameters.m_do_not_output) {
+            write_obj_displaced(
+                mesh_parameters.m_output_folder + "/after_smooth_" + std::to_string(it) + ".obj");
+            write_obj_only_texture_coords(
+                mesh_parameters.m_output_folder + "/after_smooth_" + std::to_string(it) + "2d.obj");
+        }
 
         auto avg_grad = (mesh_parameters.m_gradient / vert_capacity()).stableNorm();
 

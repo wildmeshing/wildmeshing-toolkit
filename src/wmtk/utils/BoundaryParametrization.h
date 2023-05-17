@@ -57,6 +57,9 @@ public:
     /// edges can be provided, causing loops to be split at T-junctions between seams. Curves across
     /// the same seam will have a "parent curve" defined between the two of them.
     ///
+    /// @note       **IMPORTANT** Vertices on the left column of E0 must match vertices on the left
+    ///             column of E1. I.e. the orientation matters for E0 and E1.
+    ///
     /// @param[in]  V     #V x 2 matrix of mesh vertices.
     /// @param[in]  F     #F x 3 matrix of mesh faces.
     /// @param[in]  E0    #E x 2 matrix of seam edges (left side).
