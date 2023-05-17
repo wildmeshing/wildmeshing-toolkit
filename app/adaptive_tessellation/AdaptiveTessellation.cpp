@@ -48,6 +48,16 @@ void AdaptiveTessellation::mesh_preprocessing(
     // igl::readOBJ(input_mesh_path.string(), V, VT, CN, F, FT, FN);
     igl::readOBJ(input_mesh_path.string(), input_V_, input_VT_, CN, input_F_, input_FT_, FN);
 
+    {
+        Eigen::MatrixXd V_buf;
+        Eigen::MatrixXi F_buf;
+        Eigen::MatrixXi map_old_to_new_v_ids;
+        igl::remove_unreferenced(input_VT_, input_FT_, V_buf, F_buf, map_old_to_new_v_ids);
+        input_VT_ = V_buf;
+        input_FT_ = F_buf;
+        assert(input_FT_.rows() == input_F_.rows());
+    }
+
     wmtk::logger().info("///// #v : {} {}", input_VT_.rows(), input_VT_.cols());
     wmtk::logger().info("///// #f : {} {}", input_FT_.rows(), input_FT_.cols());
     wmtk::TriMesh m_3d;
