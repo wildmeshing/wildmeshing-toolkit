@@ -43,6 +43,7 @@ void AdaptiveTessellation::mesh_preprocessing(
     const std::filesystem::path& normal_image_path,
     const std::filesystem::path& height_image_path)
 {
+    mesh_parameters.m_position_normal_paths = {position_image_path, normal_image_path};
     Eigen::MatrixXd CN, FN;
     // igl::read_triangle_mesh(input_mesh_path.string(), input_V_, input_F_);
     // igl::readOBJ(input_mesh_path.string(), V, VT, CN, F, FT, FN);
@@ -424,7 +425,7 @@ void AdaptiveTessellation::set_energy(const ENERGY_TYPE energy_type)
         energy_ptr = std::make_unique<wmtk::AreaAccuracyEnergy>(mesh_parameters.m_displacement);
         break;
     case ENERGY_TYPE::QUADRICS:
-        energy_ptr = std::make_unique<wmtk::AreaAccuracyEnergy>(mesh_parameters.m_displacement);
+        energy_ptr = std::make_unique<wmtk::QuadricEnergy>(mesh_parameters.m_displacement);
         break;
     }
 
