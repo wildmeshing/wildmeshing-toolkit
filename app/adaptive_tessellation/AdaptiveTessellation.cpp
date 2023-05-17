@@ -16,7 +16,8 @@
 using namespace wmtk;
 namespace adaptive_tessellation {
 // TODO change this to accomodate new error
-double AdaptiveTessellation::avg_edge_len() const {
+double AdaptiveTessellation::avg_edge_len() const
+{
     double avg_len = 0.0;
     auto edges = get_edges();
     for (auto& e : edges) avg_len += std::sqrt(get_length3d(e));
@@ -1073,8 +1074,7 @@ void AdaptiveTessellation::mesh_improvement(int max_its)
         mesh_parameters.js_log["iteration_" + std::to_string(it)]["num_f"] = tri_capacity();
         mesh_parameters.js_log["iteration_" + std::to_string(it)]["energy_max"] =
             mesh_parameters.m_max_energy;
-        mesh_parameters.js_log["iteration_" + std::to_string(it)]["edge_len_avg"] =
-            avg_edge_len();
+        mesh_parameters.js_log["iteration_" + std::to_string(it)]["edge_len_avg"] = avg_edge_len();
         mesh_parameters.js_log["iteration_" + std::to_string(it)]["edge_len_target"] =
             mesh_parameters.m_target_l;
         if (avg_grad < 1e-4) {
@@ -1190,7 +1190,8 @@ TriMesh::Tuple AdaptiveTessellation::get_mirror_vertex(const TriMesh::Tuple& t) 
 
 // return a vector of mirror vertices. store v itself at index 0 of the returned vector
 // assume no operation has made fixed vertices outdated
-std::vector<TriMesh::Tuple> AdaptiveTessellation::get_all_mirror_vertices(const TriMesh::Tuple& v)
+std::vector<TriMesh::Tuple> AdaptiveTessellation::get_all_mirror_vertices(
+    const TriMesh::Tuple& v) const
 {
     assert(is_seam_vertex(v));
     std::vector<TriMesh::Tuple> ret_vertices;
@@ -1198,7 +1199,7 @@ std::vector<TriMesh::Tuple> AdaptiveTessellation::get_all_mirror_vertices(const 
     ret_vertices.emplace_back(v);
     if (vertex_attrs[v.vid(*this)].fixed) {
         // use the same color vids to initiate Tuples
-        auto same_color_uv_indices = color_to_uv_indices[uv_index_to_color[v.vid(*this)]];
+        auto same_color_uv_indices = color_to_uv_indices.at(uv_index_to_color.at(v.vid(*this)));
         for (auto mirror_vid : same_color_uv_indices)
             ret_vertices.emplace_back(tuple_from_vertex(mirror_vid));
     } else
@@ -1207,7 +1208,7 @@ std::vector<TriMesh::Tuple> AdaptiveTessellation::get_all_mirror_vertices(const 
 }
 
 // get all mirror_vids using navigation
-std::vector<size_t> AdaptiveTessellation::get_all_mirror_vids(const TriMesh::Tuple& v)
+std::vector<size_t> AdaptiveTessellation::get_all_mirror_vids(const TriMesh::Tuple& v) const
 {
     std::vector<size_t> ret_vertices_vid;
     std::queue<TriMesh::Tuple> queue;

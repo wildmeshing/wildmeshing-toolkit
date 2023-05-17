@@ -56,6 +56,73 @@ void AdaptiveTessellationCollapseEdgeOperation::store_merged_seam_data(
     }
 }
 
+auto AdaptiveTessellationCollapseEdgeOperation::get_constrained_boundary_type(
+    const AdaptiveTessellation& m,
+    const Tuple& t) const -> ConstrainedBoundaryType
+{
+    ConstrainedBoundaryType primary = get_constrained_boundary_type_per_face(m, t);
+    if (const auto oface_opt = t.switch_face(m); oface_opt.has_value()) {
+        ConstrainedBoundaryType secondary =
+            get_constrained_boundary_type_per_face(m, oface_opt.value());
+
+        // constraint is implemented as a bitmask so or hte bitmasks to get maximal constraintness
+        return static_cast<ConstrainedBoundaryType>(
+            static_cast<char>(primary) | static_cast<char>(secondary));
+    } else {
+        return primary;
+    }
+}
+auto AdaptiveTessellationCollapseEdgeOperation::get_constrained_boundary_type_per_face(
+    const AdaptiveTessellation& m,
+    const Tuple& t) const -> ConstrainedBoundaryType
+{
+    const Tuple other_tuple = t.switch_vertex(m);
+
+
+    auto vertex_is_constrained = [&](const Tuple& v) -> bool {
+        return m.get_vertex_attrs(v).fixed;
+    };
+    auto edge_is_constrained = [&](const Tuple& e) -> bool { return m.is_boundary_edge(e); };
+
+    // t must be an edge tuple  pointing at the desired vertex on a particular face
+    auto side_is_constrained = [&](const Tuple& edge) -> bool {
+        const bool this_side_constrained =
+            edge_is_constrained(edge.switch_edge(m)) || vertex_is_constrained(edge);
+
+        auto edge2_opt = edge.switch_face(m);
+        if (edge2_opt) {
+            const Tuple& edge2 = edge2_opt.value();
+            const bool other_edge_constrained = edge_is_constrained(edge2.switch_edge(m));
+            return other_edge_constrained || this_side_constrained;
+        } else {
+            return this_side_constrained;
+        }
+    };
+
+
+    const bool ts = side_is_constrained(t);
+
+
+    const bool os = side_is_constrained(other_tuple);
+
+
+    if (ts) {
+        if (os) {
+            return ConstrainedBoundaryType::BothConstrained;
+
+        } else {
+            return ConstrainedBoundaryType::TupleSideConstrained;
+        }
+    } else {
+        if (os) {
+            return ConstrainedBoundaryType::OtherSideConstrained;
+        } else {
+            return ConstrainedBoundaryType::NoConstraints;
+        }
+    }
+    return ConstrainedBoundaryType::NoConstraints;
+}
+
 void AdaptiveTessellationCollapseEdgeOperation::fill_cache(
     const AdaptiveTessellation& m,
     const Tuple& t)
@@ -80,12 +147,67 @@ void AdaptiveTessellationCollapseEdgeOperation::fill_cache(
     op_cache.v1 = my_vid;
     op_cache.v2 = other_vid;
     op_cache.partition_id = my_vattr.partition_id;
+
+    op_cache.constrained_boundary_type = get_constrained_boundary_type(m, t);
+
     store_merged_seam_data(m, t);
 }
 bool AdaptiveTessellationCollapseEdgeOperation::check_edge_mergeability(
     const AdaptiveTessellation& m,
-    const Tuple& t) const
-{}
+    const Tuple& edge) const
+{
+    // opposing edges are mergeable if only one of them is boundary
+    auto mergeable = [&](const Tuple& e) -> bool {
+        const Tuple e0 = edge.switch_edge(m);
+        const Tuple e1 = e0.switch_vertex(m).switch_edge(m);
+
+        const bool e0_is_boundary = m.is_boundary_edge(e0);
+        const bool e1_is_boundary = m.is_boundary_edge(e1);
+        if (e0_is_boundary && e1_is_boundary) {
+            return false;
+        }
+        return true;
+    };
+
+    // alternate impl that was used for debug
+#if defined(LET_TRIMESH_NONMANIFOLD)
+    // lazy code that uses VIDs to check other edges
+    auto edge_to_vids = [&](const Tuple& e) -> std::array<size_t, 2> {
+        const size_t v0 = e.vid(m);
+        const size_t v1 = e.switch_vertex().vid(m);
+        if (v0 > v1) {
+            std::swap(v0, v1);
+        }
+        return std::array<size_t, 2>{{v0, v1}};
+    };
+    const auto my_vids = edge_to_vids(edge);
+    for (const auto& tri : tris_bounded_by_edge(edge)) {
+        Tuple e = tri;
+        size_t attempt = 0;
+        for (; edge_to_vids(e) != my_vids && attempt < 3; ++attempt) {
+            e.switch_edge(m).switch_vertex(m);
+        }
+        assert(attempt < 3);
+        if (!mergeable(e)) {
+            return false;
+        }
+    }
+#else
+
+    // check this edge (and potentially the other face across the boundary)
+    if (!mergeable(edge)) {
+        return false;
+    }
+
+    if (const std::optional<Tuple> other_face_opt = edge.switch_face(m);
+        other_face_opt.has_value()) {
+        if (!mergeable(other_face_opt.value())) {
+            return false;
+        }
+    }
+#endif
+    return true;
+}
 bool AdaptiveTessellationCollapseEdgeOperation::check_vertex_mergeability(
     const AdaptiveTessellation& m,
     const Tuple& t) const
@@ -113,7 +235,9 @@ bool AdaptiveTessellationCollapseEdgeOperation::before(AdaptiveTessellation& m, 
     m_op_cache.local() = {};
     if (wmtk::TriMeshEdgeCollapseOperation::before(m, t)) {
         check_vertex_mergeability(m, t);
-        check_edge_mergeability(m, t);
+        // TODO: currently edge mergeability just checks for double boundaries
+        // which is caught by link condition, is there something else?
+        //check_edge_mergeability(m, t);
 
         // record boundary vertex as boudnary_vertex in vertex attribute for accurate collapse
         // after boundary operations
@@ -126,6 +250,7 @@ bool AdaptiveTessellationCollapseEdgeOperation::before(AdaptiveTessellation& m, 
         // record if the two vertices of the edge is boundary vertex
         my_vattr.boundary_vertex = m.is_boundary_vertex(t);
         other_vattr.boundary_vertex = m.is_boundary_vertex(other_tuple);
+
 
         fill_cache(m, t);
         return false;

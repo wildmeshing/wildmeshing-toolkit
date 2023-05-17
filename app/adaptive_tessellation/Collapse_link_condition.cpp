@@ -1,3 +1,4 @@
+#include <wmtk/utils/TupleUtils.hpp>
 #include "Collapse.h"
 using namespace wmtk;
 using namespace adaptive_tessellation;
@@ -36,6 +37,20 @@ std::vector<size_t> AdaptiveTessellationPairedCollapseEdgeOperation::seamed_edge
     return lk_edge;
 }
 
+auto AdaptiveTessellationPairedCollapseEdgeOperation::accumulate_mirror_vertices(
+    const AdaptiveTessellation& m,
+    const std::vector<Tuple>& vertices) const -> std::vector<Tuple>
+{
+    std::vector<Tuple> ret = vertices;
+
+    for (const Tuple& v : vertices) {
+        auto tups = m.get_all_mirror_vertices(v);
+        ret.insert(ret.end(), tups.begin(), tups.end());
+    }
+
+    wmtk::unique_vertex_tuples(m, ret);
+    return ret;
+}
 bool AdaptiveTessellationPairedCollapseEdgeOperation::check_seamed_link_condition(
     AdaptiveTessellation& mesh,
     const Tuple& edge)
@@ -52,7 +67,7 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::check_seamed_link_conditio
     // check edge link condition
     // in 2d edge link for an edge is always empty
 
-    std::vector<std::pair<size_t, size_t>> res;
+    std::vector<std::array<size_t, 2>> res;
     const auto& lk_e_vid1 = v1.edge;
     const auto& lk_e_vid2 = v2.edge;
     std::set_intersection(

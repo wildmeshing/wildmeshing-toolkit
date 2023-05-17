@@ -30,6 +30,21 @@ class AdaptiveTessellationCollapseEdgeOperation : public wmtk::TriMeshOperationS
                                                       wmtk::TriMeshEdgeCollapseOperation>
 {
 public:
+    // TODO: maybe just inherit std::bitmask with a convention?
+    enum class ConstrainedBoundaryType : char {
+        NoConstraints = 0,
+        TupleSideConstrained = 1,
+        OtherSideConstrained = 2,
+        BothConstrained = 3
+    };
+    // we can only perform a collapse if
+    // - we satisfy vertex link conditoin
+    // - we can satisfy edge link condition
+    // - we can keep a unique set of edge attributes
+    // - we maintain constraints on vertex positions
+    //
+
+
     friend class AdaptiveTessellationPairedCollapseEdgeOperation;
     struct SeamData
     {
@@ -38,8 +53,9 @@ public:
     };
     struct OpCache
     {
-        size_t v1 = 0; // first vertex index of the edge being collapsed
-        size_t v2 = 0; // second vertex index of hte edge being collapsed
+        ConstrainedBoundaryType constrained_boundary_type;
+        size_t v1 = 0; // first vertex index of the edge being collapsed (tuple side)
+        size_t v2 = 0; // second vertex index of hte edge being collapsed (otherside)
 
         double length3d = 0;
         size_t partition_id;
@@ -50,13 +66,13 @@ public:
         //   |\          /\v         /|
         //   | \        /  \        / |
         //   |  \      /    \      /  |
-        //   |   \    /  X   \    /   |
+        //   |   \    A  X   B    /   |
         //   |    \  /        \  /    |
         //   |     \/          \/     |
         //   ------X-----X-------------
         //   |     /\          /\     |
         //   |    /  \        /  \    |
-        //   |   /    \      /    \   |
+        //   |   /    C      D    \   |
         //   |  /      \    /      \  |
         //   | /        \  /        \ |
         //   |/          \/          \|
@@ -92,6 +108,12 @@ public:
     bool check_vertex_mergeability(const AdaptiveTessellation& m, const Tuple& t) const;
     bool check_edge_mergeability(const AdaptiveTessellation& m, const Tuple& t) const;
 
+    ConstrainedBoundaryType get_constrained_boundary_type_per_face(
+        const AdaptiveTessellation& m,
+        const Tuple& t) const;
+    ConstrainedBoundaryType get_constrained_boundary_type(
+        const AdaptiveTessellation& m,
+        const Tuple& t) const;
 
     bool after(AdaptiveTessellation& m, ExecuteReturnData& ret_data);
     bool after(AdaptiveTessellation& m);
@@ -170,6 +192,10 @@ protected:
 
     static LinksOfVertex seamed_links_of_vertex(AdaptiveTessellation& m, const Tuple& vertex);
     static std::vector<size_t> seamed_edge_link_of_edge(AdaptiveTessellation& m, const Tuple& edge);
+
+    std::vector<Tuple> accumulate_mirror_vertices(
+        const AdaptiveTessellation& m,
+        const std::vector<Tuple>& tuples) const;
 
 private:
     // stores the input edge's mirror for future use (if applicable)

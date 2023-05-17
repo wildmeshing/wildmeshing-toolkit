@@ -351,12 +351,13 @@ public:
     TriMesh::Tuple get_mirror_vertex(const TriMesh::Tuple& t) const;
     // return a vector of mirror vertices. store v itself at index 0 of the returned vector
     // !!! assume no operation has made fixed vertices outdated
-    std::vector<TriMesh::Tuple> get_all_mirror_vertices(const TriMesh::Tuple& v);
-    std::vector<size_t> get_all_mirror_vids(const TriMesh::Tuple& v);
+    std::vector<TriMesh::Tuple> get_all_mirror_vertices(const TriMesh::Tuple& v) const;
+    std::vector<size_t> get_all_mirror_vids(const TriMesh::Tuple& v) const;
     // set primary_t's mirror edge data to a ccw ordered mirror_edge
     void set_mirror_edge_data(const TriMesh::Tuple& primary_t, const TriMesh::Tuple& mirror_edge);
     bool is_seam_edge(const TriMesh::Tuple& t) const;
     bool is_seam_vertex(const TriMesh::Tuple& t) const;
+
 
     VertexAttributes& get_vertex_attrs(const Tuple& t);
     const VertexAttributes& get_vertex_attrs(const Tuple& t) const;
