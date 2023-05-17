@@ -63,10 +63,9 @@ void AdaptiveTessellation::mesh_preprocessing(
     wmtk::TriMesh m_3d;
     std::vector<std::array<size_t, 3>> tris;
     for (auto f = 0; f < input_F_.rows(); f++) {
-        std::array<size_t, 3> tri = {
-            (size_t)input_F_(f, 0),
-            (size_t)input_F_(f, 1),
-            (size_t)input_F_(f, 2)};
+        std::array<size_t, 3> tri = {(size_t)input_F_(f, 0),
+                                     (size_t)input_F_(f, 1),
+                                     (size_t)input_F_(f, 2)};
         tris.emplace_back(tri);
     }
     m_3d.create_mesh(input_V_.rows(), tris);
@@ -115,7 +114,8 @@ void AdaptiveTessellation::mesh_preprocessing(
         }
     }
     std::vector<float> computed_errors(tri_capacity());
-    m_quadric_integral = wmtk::QuadricIntegral(displaced, wmtk::QuadricIntegral::QuadricType::Plane);
+    m_quadric_integral =
+        wmtk::QuadricIntegral(displaced, wmtk::QuadricIntegral::QuadricType::Plane);
     m_texture_integral = wmtk::TextureIntegral(std::move(displaced));
     m_texture_integral.get_error_per_triangle(uv_triangles, computed_errors);
     set_faces_accuracy_error(tris_tuples, computed_errors);
@@ -908,7 +908,6 @@ std::tuple<double, double, double> AdaptiveTessellation::get_area_accuracy_error
         error_after_1 = new_computed_errors[0];
         error_after_2 = new_computed_errors[1];
         if (edge_tuple.switch_face(*this).has_value()) {
-
             const Eigen::Vector2f uv4 = vertex_attrs[edge_tuple.switch_face(*this)
                                                          .value()
                                                          .switch_edge(*this)
@@ -1071,13 +1070,12 @@ void AdaptiveTessellation::mesh_improvement(int max_its)
         // consolidate_mesh();
 
         if (!mesh_parameters.m_do_not_output) {
-            write_obj_with_texture_coords(
+            write_obj_displaced(
                 mesh_parameters.m_output_folder + "/after_split_" + std::to_string(it) + ".obj");
             displace_self_intersection_free(*this);
-            write_world_obj(
+            write_obj(
                 mesh_parameters.m_output_folder + "/after_split_" + std::to_string(it) +
-                    "3d_intersection_free.obj",
-                mesh_parameters.m_displacement);
+                "3d_intersection_free.obj");
         }
 
         swap_all_edges();
@@ -1102,7 +1100,8 @@ void AdaptiveTessellation::mesh_improvement(int max_its)
             write_obj_displaced(
                 mesh_parameters.m_output_folder + "/after_collapse_" + std::to_string(it) + ".obj");
             write_obj_only_texture_coords(
-                mesh_parameters.m_output_folder + "/after_collapse_" + std::to_string(it) + "2d.obj");
+                mesh_parameters.m_output_folder + "/after_collapse_" + std::to_string(it) +
+                "2d.obj");
         }
 
         smooth_all_vertices();
