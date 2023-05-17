@@ -27,6 +27,39 @@ std::array<size_t, 4> wmtk::orient_preserve_tet_reorder(
     return newconn;
 }
 
+auto newton_direction_1d = [](auto& compute_energy,
+                              auto& compute_jacobian,
+                              auto& compute_hessian,
+                              auto& assembles,
+                              const Eigen::Vector3d& pos) -> double {
+    auto total_energy = 0.;
+    double total_jac = 0;
+    double total_hess = 0;
+
+
+    // E = \sum_i E_i(x)
+    // J = \sum_i J_i(x)
+    // H = \sum_i H_i(x)
+    auto local_id = 0;
+    for (auto& T : assembles) {
+        for (auto j = 0; j < 3; j++) {
+            T[j] = pos[j]; // only filling the front point.
+        }
+
+        total_energy += compute_energy(T);
+        total_jac += compute_jacobian(T);
+        total_hess += compute_hessian(T);
+        assert(!std::isnan(total_energy));
+    }
+    wmtk::logger().trace("energy {}", total_energy);
+    if (std::abs(total_hess) > 1e-10) // a hacky PSD trick. TODO: change this.
+        return -total_jac / total_hess;
+    else {
+        wmtk::logger().trace("gradient descent instead.");
+        return -total_jac;
+    }
+};
+
 // TODO: These three functions should not be in global namespace
 template <int dim>
 auto newton_direction = [](auto& compute_energy,
@@ -84,6 +117,21 @@ auto gradient_direction = [](auto& compute_energy,
     return total_jac;
 };
 
+auto linesearch_1d =
+    [](auto&& energy_from_point, const double pos, const double dir, const int& max_iter) {
+        auto lr = 0.5;
+        auto old_energy = energy_from_point(pos);
+        wmtk::logger().trace("old energy {} dir {}", old_energy, dir);
+        for (auto iter = 1; iter <= max_iter; iter++) {
+            const double newpos = pos + std::pow(lr, iter) * dir;
+            wmtk::logger().trace("pos {}, dir {}, [{}]", pos, dir, std::pow(lr, iter));
+            auto new_energy = energy_from_point(newpos);
+            wmtk::logger().trace("iter {}, E= {}, [{}]", iter, new_energy, newpos);
+            if (new_energy < old_energy) return newpos; // TODO: armijo conditions.
+        }
+        return pos;
+    };
+
 template <int dim>
 auto linesearch = [](auto&& energy_from_point,
                      const Eigen::Matrix<double, dim, 1>& pos,
@@ -103,6 +151,55 @@ auto linesearch = [](auto&& energy_from_point,
     return pos;
 };
 
+double wmtk::newton_method_from_stack(
+    const double t,
+    std::vector<std::array<double, 12>>& assembles,
+    std::function<Eigen::Vector3d(const double t)> param,
+    std::function<double(const std::array<double, 12>&)> compute_energy,
+    std::function<double(const std::array<double, 12>&)> compute_jacobian,
+    std::function<double(const std::array<double, 12>&)> compute_hessian)
+{
+    assert(!assembles.empty());
+    double old_pos = t;
+
+    auto energy_from_uv = [&assembles, &param, &compute_energy](const double t) -> double {
+        auto total_energy = 0.;
+        const Eigen::Vector3d pos = param(t);
+
+        for (auto& T : assembles) {
+            for (auto j = 0; j < 3; j++) {
+                T[j] = pos[j]; // only filling the front point x,y,z.
+            }
+            total_energy += compute_energy(T);
+        }
+        return total_energy;
+    };
+
+    auto compute_new_valid_pos =
+        [&energy_from_uv, &assembles, &param, &compute_energy, &compute_jacobian, &compute_hessian](
+            const double t) {
+            double current_pos = t;
+            auto line_search_iters = 12;
+            auto newton_iters = 10;
+            for (auto iter = 0; iter < newton_iters; iter++) {
+                auto dir = newton_direction_1d(
+                    compute_energy,
+                    compute_jacobian,
+                    compute_hessian,
+                    assembles,
+                    param(current_pos));
+                auto newpos = linesearch_1d(energy_from_uv, current_pos, dir, line_search_iters);
+                if (std::abs(newpos - current_pos) < 1e-9) // barely moves
+                {
+                    break;
+                }
+                current_pos = newpos;
+            }
+            return current_pos;
+        };
+    return compute_new_valid_pos(old_pos);
+}
+
 Eigen::Vector2d wmtk::newton_method_from_stack(
     const Eigen::Vector2d& uv,
     std::vector<std::array<double, 12>>& assembles,
@@ -112,7 +209,6 @@ Eigen::Vector2d wmtk::newton_method_from_stack(
     std::function<void(const std::array<double, 12>&, Eigen::Matrix2d&)> compute_hessian)
 {
     assert(!assembles.empty());
-    auto& T0 = assembles.front();
     Eigen::Vector2d old_pos = uv;
 
     auto energy_from_uv =
