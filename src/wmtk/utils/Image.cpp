@@ -75,7 +75,7 @@ bool Image::set(
 // save to hdr or exr
 bool Image::save(const std::filesystem::path& path) const
 {
-    spdlog::trace("[save_image_hdr] start \"{}\"", path.string());
+    wmtk::logger().trace("[save_image_hdr] start \"{}\"", path.string());
     int w = width();
     int h = height();
     std::vector<float> buffer;
@@ -92,11 +92,11 @@ bool Image::save(const std::filesystem::path& path) const
     } else if (path.extension() == ".exr") {
         auto res = save_image_exr_red_channel(w, h, buffer, path);
     } else {
-        spdlog::trace("[save_image_hdr] format doesn't support \"{}\"", path.string());
+        wmtk::logger().trace("[save_image_hdr] format doesn't support \"{}\"", path.string());
         return false;
     }
 
-    spdlog::trace("[save_image] done \"{}\"", path.string());
+    wmtk::logger().trace("[save_image] done \"{}\"", path.string());
 
     return true;
 }
@@ -117,7 +117,7 @@ void Image::load(
         auto res = stbi_loadf(path.string().c_str(), &w, &h, &channels, 1);
         buffer.assign(res, res + w * h);
     } else {
-        spdlog::trace("[load_image] format doesn't support \"{}\"", path.string());
+        wmtk::logger().trace("[load_image] format doesn't support \"{}\"", path.string());
         return;
     }
 
@@ -151,24 +151,48 @@ Image Image::down_sample() const
     return low_res_image;
 }
 
-std::array<wmtk::Image, 3> wmtk::load_rgb_image(const std::filesystem::path& path)
+std::array<wmtk::Image, 3> wmtk::combine_position_normal_texture(
+    double normalization_scale,
+    const std::filesystem::path& position_path,
+    const std::filesystem::path& normal_path,
+    const std::filesystem::path& height_path)
 {
-    auto [w, h, index_red, index_green, index_blue, buffer_r, buffer_g, buffer_b] =
-        load_image_exr_split_3channels(path);
-    return {
-        buffer_to_image(buffer_r, w, h),
-        buffer_to_image(buffer_g, w, h),
-        buffer_to_image(buffer_b, w, h),
-    };
-}
-
-wmtk::Image wmtk::buffer_to_image(const std::vector<float>& buffer, int w, int h)
-{
-    wmtk::Image image(w, h);
-    for (int i = 0, k = 0; i < h; i++) {
-        for (int j = 0; j < w; j++) {
-            image.set(h - i - 1, j, buffer[k++]);
-        }
+    // displaced = positions + normalization_scale * heights * (2.0 * normals - 1.0)
+    auto [w_p, h_p, index_red_p, index_green_p, index_blue_p, buffer_r_p, buffer_g_p, buffer_b_p] =
+        load_image_exr_split_3channels(position_path);
+    auto [w_n, h_n, index_red_n, index_green_n, index_blue_n, buffer_r_n, buffer_g_n, buffer_b_n] =
+        load_image_exr_split_3channels(normal_path);
+    auto [w_h, h_h, index_red_h, index_green_h, index_blue_h, buffer_r_h, buffer_g_h, buffer_b_h] =
+        load_image_exr_split_3channels(height_path);
+    assert(buffer_r_p.size() == buffer_r_n.size());
+    assert(buffer_r_p.size() == buffer_r_h.size());
+    assert(buffer_r_p.size() == buffer_g_p.size());
+    assert(buffer_r_p.size() == buffer_b_p.size());
+    auto buffer_size = buffer_r_p.size();
+    auto w = w_p;
+    auto h = h_p;
+    std::vector<float> buffer_r_d(buffer_size), buffer_g_d(buffer_size), buffer_b_d(buffer_size);
+    for (int i = 0; i < buffer_size; i++) {
+        buffer_r_d[i] =
+            buffer_r_p[i] + normalization_scale * buffer_r_h[i] * (2.0 * buffer_r_n[i] - 1.0);
+        buffer_g_d[i] =
+            buffer_g_p[i] + normalization_scale * buffer_g_h[i] * (2.0 * buffer_g_n[i] - 1.0);
+        buffer_b_d[i] =
+            buffer_b_p[i] + normalization_scale * buffer_b_h[i] * (2.0 * buffer_b_n[i] - 1.0);
     }
-    return image;
+    // auto res = save_image_exr_3channels(
+    //     w,
+    //     h,
+    //     index_red_p,
+    //     index_green_p,
+    //     index_blue_p,
+    //     buffer_r_d,
+    //     buffer_g_d,
+    //     buffer_b_d,
+    //     displaced_path);
+    return {
+        buffer_to_image(buffer_r_d, w, h),
+        buffer_to_image(buffer_g_d, w, h),
+        buffer_to_image(buffer_b_d, w, h),
+    };
 }

@@ -59,10 +59,10 @@ TriMeshOperation::ExecuteReturnData AdaptiveTessellationSmoothSeamVertexOperatio
 bool AdaptiveTessellationSmoothSeamVertexOperation::before(AdaptiveTessellation& m, const Tuple& t)
 {
     static std::atomic_int cnt = 0;
-    m.write_displaced_obj(
-        m.mesh_parameters.m_output_folder + fmt::format("/smooth_{:04d}.obj", cnt),
-        m.mesh_parameters.m_displacement);
-    m.write_obj(m.mesh_parameters.m_output_folder + fmt::format("/smooth_{:04d}_2d.obj", cnt));
+    // m.write_displaced_obj(
+    //     m.mesh_parameters.m_output_folder + fmt::format("/smooth_{:04d}.obj", cnt),
+    //     m.mesh_parameters.m_displacement);
+    // m.write_obj(m.mesh_parameters.m_output_folder + fmt::format("/smooth_{:04d}_2d.obj", cnt));
 
     if (wmtk::TriMeshSmoothVertexOperation::before(m, t)) {
         assert(!m.vertex_attrs[t.vid(m)].fixed);
@@ -366,9 +366,8 @@ void adaptive_tessellation::AdaptiveTessellation::smooth_all_vertices()
         do {
             mesh_parameters.m_gradient = Eigen::Vector2d(0., 0.);
             executor(*this, collect_all_ops);
-            write_displaced_obj(
-                mesh_parameters.m_output_folder + fmt::format("/smooth_{:03d}.obj", itr),
-                mesh_parameters.m_displacement);
+            write_obj_displaced(
+                mesh_parameters.m_output_folder + fmt::format("/smooth_{:03d}.obj", itr));
             itr++;
         } while ((mesh_parameters.m_gradient / vert_capacity()).stableNorm() > 1e-4 && itr < 10);
         wmtk::logger().info("===== terminate smooth after {} itrs", itr);

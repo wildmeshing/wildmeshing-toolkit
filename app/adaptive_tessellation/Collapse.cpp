@@ -235,7 +235,7 @@ bool AdaptiveTessellationCollapseEdgeOperation::after(AdaptiveTessellation& m)
     if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
         for (const Tuple& tri : one_ring) {
             double one_ring_tri_error = m.get_area_accuracy_error_per_face(tri);
-            if (one_ring_tri_error > m.mesh_parameters.m_accruacy_safeguard_ratio *
+            if (one_ring_tri_error > m.mesh_parameters.m_accuracy_safeguard_ratio *
                                          m.mesh_parameters.m_accuracy_threshold)
                 return false;
         }
@@ -530,7 +530,7 @@ bool AdaptiveTessellation::collapse_edge_after(const Tuple& edge_tuple)
     for (auto tri : one_ring) {
         auto one_ring_tri_error = get_area_accuracy_error_per_face(tri);
         if (one_ring_tri_error >
-            mesh_parameters.m_accruacy_safeguard_ratio * mesh_parameters.m_accuracy_threshold)
+            mesh_parameters.m_accuracy_safeguard_ratio * mesh_parameters.m_accuracy_threshold)
             return false;
     }
     return true;
