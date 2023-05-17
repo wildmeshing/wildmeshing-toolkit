@@ -131,7 +131,7 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::after(
     // use a general root finding method that defaults to newton but if not changeing
     // the position, try gradient descent
     const auto& old_pos = m.vertex_attrs[ret_data.tuple.vid(m)].pos;
-    auto old_t = m.vertex_attrs[ret_data.tuple.vid(m)].t;
+    const auto old_t = m.vertex_attrs[ret_data.tuple.vid(m)].t;
 
     wmtk::State state = {};
     if (m.is_boundary_vertex(ret_data.tuple) && m.mesh_parameters.m_boundary_parameter) {
@@ -147,27 +147,18 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::after(
         nminfos,
         m.mesh_parameters.m_boundary,
         state);
-    double before_energy = state.value;
+    const double before_energy = state.value;
 
     wmtk::logger().info("{} of nminfo", nminfos.size());
     wmtk::logger().info("before energy: {}", state.value);
-    m.mesh_parameters.log(
-        {{"smooth_op_" + std::to_string(cnt), {"before_energy", std::to_string(state.value)}}});
-    m.mesh_parameters.log({{"smooth_op_" + std::to_string(cnt),
-                            {"is_seam_vertex", std::to_string(m.is_seam_vertex(ret_data.tuple))}}});
-    m.mesh_parameters.log(
-        {{"smooth_op_" + std::to_string(cnt), {"num_neighbor", std::to_string(nminfos.size())}}});
-    // this is the main optimization function
-    // newton's method
     wmtk::optimization_dofx_update(
         *m.mesh_parameters.m_energy,
         m.mesh_parameters.m_boundary,
         nminfos,
         state);
     // assert after energy is always less than before energy
-    assert(state.value <= before_energy);
-    m.mesh_parameters.log(
-        {{"smooth_op_" + std::to_string(cnt), {"after_energy", std::to_string(state.value)}}});
+    const double after_energy = state.value;
+    assert(after_energy <= before_energy);
     // update the vertex attr for current vertex
     if (m.is_boundary_vertex(ret_data.tuple) && m.mesh_parameters.m_boundary_parameter) {
         m.vertex_attrs[ret_data.tuple.vid(m)].t = state.dofx(0);
@@ -194,13 +185,20 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::after(
             m.mesh_parameters.m_boundary.t_to_uv(nminfos[i + 1].curve_id, state.dofx(0));
     }
     assert(m.invariants(one_ring_tris));
-    cnt++;
-    auto smooth_end_time = lagrange::get_timestamp();
+    const auto smooth_end_time = lagrange::get_timestamp();
     wmtk::logger().info(
         "smooth time: {}",
         lagrange::timestamp_diff_in_seconds(smooth_start_time, smooth_end_time));
     m.mesh_parameters.log(
-        {{"smooth_op_" + std::to_string(cnt), {"smooth_time", std::to_string(lagrange::timestamp_diff_in_seconds(smooth_start_time, smooth_end_time))}}});
+        {{"smooth_op_" + std::to_string(cnt),
+          {{"before_energy", std::to_string(before_energy)},
+           {"is_seam_vertex", std::to_string(m.is_seam_vertex(ret_data.tuple))},
+           {"num_neighbor", std::to_string(nminfos.size())},
+           {"after_energy", std::to_string(after_energy)},
+           {"smooth_time",
+            std::to_string(
+                lagrange::timestamp_diff_in_seconds(smooth_start_time, smooth_end_time))}}}});
+    cnt++;
     return ret_data.success;
 }
 
