@@ -946,7 +946,8 @@ void AdaptiveTessellation::get_nminfo_for_vertex(const Tuple& v, wmtk::NewtonMet
     }
 }
 // do not include one-ring energy of the mirror vertex
-std::pair<double, Eigen::Vector2d> AdaptiveTessellation::get_one_ring_energy(const Tuple& v) const
+// the curveid of the vertex is the curve id of any seam edge incident to this vertex
+std::pair<double, Eigen::Vector2d> AdaptiveTessellation::get_one_ring_energy(const Tuple& v)
 {
     std::vector<wmtk::TriMesh::Tuple> one_ring_tris = get_one_ring_tris_for_vertex(v);
     assert(one_ring_tris.size() > 0);
@@ -959,6 +960,14 @@ std::pair<double, Eigen::Vector2d> AdaptiveTessellation::get_one_ring_energy(con
         dofx = vertex_attrs[v.vid(*this)].pos;
     }
 
+    // assign curve id for vertex using the boundary edge of the one ring edges if it has one
+    // (if it has more than one, it's ok to be the first one)
+    for (auto& e : get_one_ring_edges_for_vertex(v)) {
+        if (is_boundary_edge(e)) {
+            vertex_attrs[v.vid(*this)].curve_id = edge_attrs[e.eid(*this)].curve_id.value();
+            break;
+        }
+    }
     // infomation needed for newton's method
     // multiple nminfo for seam vertices
     std::vector<wmtk::NewtonMethodInfo> nminfos;

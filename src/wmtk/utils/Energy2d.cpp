@@ -303,11 +303,38 @@ void AreaAccuracyEnergy::eval(State& state, DofsToPositions& dof_to_positions) c
     DScalar total_energy = DScalar(0);
     assert(state.two_opposite_vertices.rows() == 1);
     auto [x1, y1] = dof_to_positions.eval(state.dofx);
-
     Eigen::Matrix<DScalar, 3, 2, 1> triangle;
     triangle << x1, y1, DScalar(state.two_opposite_vertices(0, 0)),
         DScalar(state.two_opposite_vertices(0, 1)), DScalar(state.two_opposite_vertices(0, 2)),
         DScalar(state.two_opposite_vertices(0, 3));
+
+
+    Eigen::Matrix<DScalar, 3, 1> v1 = m_displ->get(x1, y1);
+    DScalar v2u = DScalar(state.two_opposite_vertices(0, 0));
+    DScalar v2v = DScalar(state.two_opposite_vertices(0, 1));
+    Eigen::Matrix<DScalar, 3, 1> v2 = m_displ->get(v2u, v2v);
+    DScalar v3u = DScalar(state.two_opposite_vertices(0, 2));
+    DScalar v3v = DScalar(state.two_opposite_vertices(0, 3));
+    Eigen::Matrix<DScalar, 3, 1> v3 = m_displ->get(v3u, v3v);
+    Eigen::Matrix<DScalar, 3, 1> V2_V1;
+    V2_V1 = v2 - v1;
+    Eigen::Matrix<DScalar, 3, 1> V3_V1;
+    V3_V1 = v3 - v1;
+    // check if area is either inverted or smaller than certain A_hat
+    DScalar area;
+    area = (V2_V1.cross(V3_V1)).squaredNorm();
+    // wmtk::logger().info("----current area {}", area.getValue());
+    double A_hat = 1; // this is arbitrary now
+    assert(A_hat > 0);
+    if (area <= 0) {
+        total_energy += std::numeric_limits<double>::infinity();
+    }
+    if (area < A_hat) {
+        assert((area / A_hat) < 1.0);
+        DScalar barrier_energy = -(area - A_hat) * (area - A_hat) * log(area / A_hat);
+        // wmtk::logger().info("----current barrier energy {}", barrier_energy.getValue());
+        total_energy += barrier_energy;
+    }
 
     total_energy = m_displ->get_error_per_triangle(triangle);
     state.value = total_energy.getValue();
