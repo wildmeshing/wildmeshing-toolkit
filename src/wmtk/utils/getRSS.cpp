@@ -6,8 +6,10 @@
  */
 
 #if defined(_WIN32)
+// clang-format off
 #include <windows.h>    // must be included BEFORE psapi.h
 #include <psapi.h>
+// clang-format on
 
 #elif defined(__unix__) || defined(__unix) || defined(unix) || \
     (defined(__APPLE__) && defined(__MACH__))
