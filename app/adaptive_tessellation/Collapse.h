@@ -23,6 +23,20 @@ namespace adaptive_tessellation {
 // CollapseEdgePairOperation is responsible for updating all other edges
 //
 
+// seam cases:
+// collapsed edge (E)
+// - need ot make sure remaining vertices have consistent position
+// + PairOperation makes sure that the updated t values on new vertex are compatible
+// merged edge  (A,B,C,D)
+// - edge is now a new edge iwth new tris
+// + keep track of the other vertex and transfer attribute over <- done
+// + + pair is responsible for executing - two ops vertex constraindness is updated to be compaibtle
+// in before
+// + + after updates the vertices are moved. 3d position are unified between attrs
+// + No matter what 2<->3 need to be latched
+// + Say A is constrained. then c moves to a exactly
+// one end was a or b (F)
+// - b has attributes that need to be updated
 
 class AdaptiveTessellationCollapseEdgeOperation : public wmtk::TriMeshOperationShim<
                                                       AdaptiveTessellation,
@@ -37,6 +51,7 @@ public:
         OtherSideConstrained = 2,
         BothConstrained = 3
     };
+    static ConstrainedBoundaryType merge(ConstrainedBoundaryType a, ConstrainedBoundaryType b);
     // we can only perform a collapse if
     // - we satisfy vertex link conditoin
     // - we can satisfy edge link condition
@@ -65,11 +80,11 @@ public:
         //   ------------o-------------
         //   |\          /\v         /|
         //   | \        /  \        / |
-        //   |  \      /    \      /  |
-        //   |   \    A  X   B    /   |
-        //   |    \  /        \  /    |
+        //   |  \  2   /    \   3  /  |
+        //   |   \    A  X   B    F   |
+        //   |    \  /    1   \  /    |
         //   |     \/          \/     |
-        //   ------X-----X-------------
+        //   ------Xa---cX-E----b------
         //   |     /\          /\     |
         //   |    /  \        /  \    |
         //   |   /    C      D    \   |
@@ -123,11 +138,11 @@ public:
 
     // constructs and assigns vertex attributes to the new vertex
     // returns a reference to the vertex attribute assigned to (the one of hte new vertex)
-    const VertexAttributes& assign_new_vertex_attributes(AdaptiveTessellation& m) const;
+    VertexAttributes& assign_new_vertex_attributes(AdaptiveTessellation& m) const;
 
     // constructs and assigns vertex attributes to the new vertex using a known target attribute
     // returns a reference to the vertex attribute assigned to (the one of hte new vertex)
-    const VertexAttributes& assign_new_vertex_attributes(
+    VertexAttributes& assign_new_vertex_attributes(
         AdaptiveTessellation& m,
         const VertexAttributes& attr) const;
 

@@ -42,18 +42,35 @@ void AdaptiveTessellationCollapseEdgeOperation::store_merged_seam_data(
 
     auto store_edge = [&](const Tuple& edge_tuple) {
         if (m.is_seam_edge(edge_tuple)) {
-            seam_data_map[edge_tuple.switch_vertex(m).vid(m)] = SeamData{
+            seam_data_map[edge_tuple.vid(m)] = SeamData{
                 .mirror_edge_tuple = m.get_mirror_edge_opt(edge_tuple),
                 .curve_id = m.get_edge_attrs(edge_tuple).curve_id.value()};
         }
     };
 
-    for (const Tuple& e : m.get_one_ring_edges_for_vertex(edge_tuple)) {
-        store_edge(e);
+    // store A B according to previous diagram
+    {
+        const Tuple e1 = edge_tuple.switch_edge(m).switch_vertex(m);
+        store_edge(e1);
+        const Tuple e2 = e1.switch_edge(m);
+        store_edge(e2);
     }
-    for (const Tuple& e : m.get_one_ring_edges_for_vertex(edge_tuple.switch_vertex(m))) {
-        store_edge(e);
+    {
+        // Store C D according to previous
+        if (auto face_opt = edge_tuple.switch_face(m); face_opt.has_value()) {
+            const Tuple e1 = face_opt.value().switch_edge(m).switch_vertex(m);
+            store_edge(e1);
+            const Tuple e2 = e1.switch_edge(m);
+            store_edge(e2);
+        }
     }
+}
+auto AdaptiveTessellationCollapseEdgeOperation::merge(
+    ConstrainedBoundaryType a,
+    ConstrainedBoundaryType b) -> ConstrainedBoundaryType
+{
+    // constraint is implemented as a bitmask so or hte bitmasks to get maximal constraintness
+    return static_cast<ConstrainedBoundaryType>(static_cast<char>(a) | static_cast<char>(b));
 }
 
 auto AdaptiveTessellationCollapseEdgeOperation::get_constrained_boundary_type(
@@ -65,9 +82,7 @@ auto AdaptiveTessellationCollapseEdgeOperation::get_constrained_boundary_type(
         ConstrainedBoundaryType secondary =
             get_constrained_boundary_type_per_face(m, oface_opt.value());
 
-        // constraint is implemented as a bitmask so or hte bitmasks to get maximal constraintness
-        return static_cast<ConstrainedBoundaryType>(
-            static_cast<char>(primary) | static_cast<char>(secondary));
+        return merge(primary, secondary);
     } else {
         return primary;
     }
@@ -77,10 +92,35 @@ auto AdaptiveTessellationCollapseEdgeOperation::get_constrained_boundary_type_pe
     const Tuple& t) const -> ConstrainedBoundaryType
 {
     const Tuple other_tuple = t.switch_vertex(m);
+    const auto& t_vattr = m.get_vertex_attrs(t);
+    const auto& o_vattr = m.get_vertex_attrs(other_tuple);
 
+    const auto& edge_curveid_opt = m.get_edge_attrs(t).curve_id;
+
+    // const bool vertex_same_vattrs = t_vattr.curve_id == o_vattr.curve_id;
 
     auto vertex_is_constrained = [&](const Tuple& v) -> bool {
-        return m.get_vertex_attrs(v).fixed;
+        const auto& vattr = m.get_vertex_attrs(v);
+        // fixed vertices can't move
+        if (vattr.fixed) {
+            return true;
+        }
+
+        // if a vertex is on boundary then the other one cannot be on a boundary unless it's on an
+        // edge
+        // TODO: make sure boundary vertices are properly handled
+        if (edge_curveid_opt.has_value()) {
+            const size_t curveid = edge_curveid_opt.value();
+            if (vattr.curve_id != curveid) {
+                return true;
+            }
+        } else {
+            if (m.is_boundary_vertex(v)) {
+                return true;
+            }
+        }
+
+        return false;
     };
     auto edge_is_constrained = [&](const Tuple& e) -> bool { return m.is_boundary_edge(e); };
 
@@ -215,15 +255,6 @@ bool AdaptiveTessellationCollapseEdgeOperation::check_vertex_mergeability(
     const auto& v1_attr = m.get_vertex_attrs(t);
     const auto& v2_attr = m.get_vertex_attrs(t.switch_vertex(m));
 
-
-    const bool v1_is_fixed = v1_attr.fixed;
-    const bool v2_is_fixed = v2_attr.fixed;
-    // For now letes reject any condition where the vertices are fixed
-    if (v1_is_fixed || v2_is_fixed) return false;
-
-    // check if the both of the 2 vertices are fixed
-    // if yes, then collapse is rejected
-    if (v1_is_fixed && v2_is_fixed) return false;
     if (m.mesh_parameters.m_bnd_freeze && (v1_attr.boundary_vertex || v2_attr.boundary_vertex)) {
         return false;
     }
@@ -234,10 +265,12 @@ bool AdaptiveTessellationCollapseEdgeOperation::before(AdaptiveTessellation& m, 
 {
     m_op_cache.local() = {};
     if (wmtk::TriMeshEdgeCollapseOperation::before(m, t)) {
-        check_vertex_mergeability(m, t);
+        if (!check_vertex_mergeability(m, t)) {
+            return false;
+        }
         // TODO: currently edge mergeability just checks for double boundaries
         // which is caught by link condition, is there something else?
-        //check_edge_mergeability(m, t);
+        // if(!check_edge_mergeability(m, t)) { return false; }
 
         // record boundary vertex as boudnary_vertex in vertex attribute for accurate collapse
         // after boundary operations
@@ -253,7 +286,13 @@ bool AdaptiveTessellationCollapseEdgeOperation::before(AdaptiveTessellation& m, 
 
 
         fill_cache(m, t);
-        return false;
+
+        // make sure that we'll be able to put a vertex in the right positoin
+        const ConstrainedBoundaryType cbt = m_op_cache.local().constrained_boundary_type;
+        if (cbt == ConstrainedBoundaryType::BothConstrained) {
+            return false;
+            ;
+        }
     }
     return true;
 }
@@ -289,67 +328,43 @@ bool AdaptiveTessellationCollapseEdgeOperation::after(AdaptiveTessellation& m)
 
 auto AdaptiveTessellationCollapseEdgeOperation::assign_new_vertex_attributes(
     AdaptiveTessellation& m,
-    const VertexAttributes& attr) const -> const VertexAttributes&
+    const VertexAttributes& attr) const -> VertexAttributes&
 {
     return m.get_vertex_attrs(get_return_tuple_opt().value()) = attr;
 }
 
 auto AdaptiveTessellationCollapseEdgeOperation::assign_new_vertex_attributes(
-    AdaptiveTessellation& m) const -> const VertexAttributes&
+    AdaptiveTessellation& m) const -> VertexAttributes&
 {
     assert(bool(*this));
     const auto return_edge_tuple = get_return_tuple_opt().value();
     const size_t return_vid = return_edge_tuple.vid(m);
     auto& return_v_attr = m.vertex_attrs[return_vid];
 
-    auto assign_attr = [&](const auto& attr) {
-        return_v_attr.pos = attr.pos;
-        return_v_attr.t = attr.t;
-    };
     const OpCache& op_cache = m_op_cache.local();
     const auto& v1_attr = m.vertex_attrs[op_cache.v1];
     const auto& v2_attr = m.vertex_attrs[op_cache.v2];
-
-    auto assign_v1_attr = [&]() { assign_attr(v1_attr); };
-    auto assign_v2_attr = [&]() { assign_attr(v2_attr); };
-    if (v1_attr.fixed) {
-        assert(!v2_attr.fixed);
-
-        assign_v1_attr();
-    } else if (v2_attr.fixed) {
-        assert(!v1_attr.fixed);
-        assign_v2_attr();
-    } else {
-        assert(!v1_attr.fixed);
-        assert(!v2_attr.fixed);
-        if (v1_attr.boundary_vertex && v2_attr.boundary_vertex) {
-            auto try_energy = [&](const auto& attr) -> double {
-                assign_attr(attr);
-                return m.get_one_ring_energy(return_edge_tuple).first;
-            };
-            // compare collapse to which one would give lower energy
-            double energy1 = try_energy(v1_attr);
-            double energy2 = try_energy(v2_attr);
-
-            if (energy1 < energy2) {
-                assign_v1_attr();
-            } else {
-                assign_v2_attr();
-            }
-        } else if (v1_attr.boundary_vertex) {
-            assign_v1_attr();
-        } else if (v2_attr.boundary_vertex) {
-            assign_v2_attr();
-        } else {
-            assert(!v1_attr.boundary_vertex);
-            assert(!v2_attr.boundary_vertex);
-            return_v_attr.pos = (v1_attr.pos + v2_attr.pos) / 2.0;
-            return_v_attr.t = (v1_attr.t + v2_attr.t) / 2.0;
-
-            // !!! update t_parameter and check for periodicity + curretid!!!
-        }
+    switch (op_cache.constrained_boundary_type) {
+    case ConstrainedBoundaryType::NoConstraints: {
+        return_v_attr.pos = (v1_attr.pos + v2_attr.pos) / 2.0;
+        return_v_attr.t = (v1_attr.t + v2_attr.t) / 2.0;
+        return_v_attr.partition_id = op_cache.partition_id;
+    } break;
+    case ConstrainedBoundaryType::TupleSideConstrained: {
+        return_v_attr = v1_attr;
+    } break;
+    case ConstrainedBoundaryType::OtherSideConstrained: {
+        return_v_attr = v2_attr;
+    } break;
+    case ConstrainedBoundaryType::BothConstrained: {
+        assert(false); // before should have caught this?
+    } break;
     }
+
+
+    // TODO: figure out if any of htese are redundant / necessary
     return_v_attr.partition_id = op_cache.partition_id;
+    // TODO: boundary_vertex is always overwritten / is a cache varible?
     return_v_attr.boundary_vertex = (v1_attr.boundary_vertex || v2_attr.boundary_vertex);
     return_v_attr.fixed = (v1_attr.fixed || v2_attr.fixed);
     return return_v_attr;
@@ -364,37 +379,50 @@ void AdaptiveTessellationCollapseEdgeOperation::assign_collapsed_edge_attributes
     const Tuple& new_vertex_tuple = nt_opt.value();
     const size_t new_vertex_vid = new_vertex_tuple.vid(m);
     auto& op_cache = m_op_cache.local();
+
+    //==========
+    // for every triangle in the seam-ful one ring nbd lets look for boundary edges
+    //==========
+
+
+    // we cache the edges that do not involve the new vertex lets
+
+    auto try_latching_seam_data =
+        [&](size_t v0, size_t v1, const Tuple& tri, const SeamData& data) -> bool {
+        const size_t fid = tri.fid(m);
+        const auto edge_opt = m.init_from_edge_opt(v0, v1, fid);
+        if (!edge_opt.has_value()) {
+            return false;
+        }
+        // edge points to new_vertex
+        const Tuple edge = edge_opt.value();
+
+        m.edge_attrs[edge.eid(m)].curve_id = data.curve_id;
+        const auto& mopt = data.mirror_edge_tuple;
+        if (mopt) {
+            const auto& mirror = mopt.value();
+            m.set_mirror_edge_data(edge, mirror);
+            m.set_mirror_edge_data(mirror, edge);
+        }
+
+
+        return true;
+    };
+
     const std::vector<Tuple> possible_tris = m.get_one_ring_tris_for_vertex(new_vertex_tuple);
+    auto try_latching_seam_data_to_possibles = [&](size_t v0, size_t v1, const SeamData& data) {
+        for (const Tuple& t : possible_tris) {
+            if (try_latching_seam_data(v0, v1, t, data)) {
+                break;
+            }
+        }
+    };
     // TODO: cache tris that have already been used
     for (const auto& [other_vertex, seam_data] : op_cache.new_vertex_seam_data) {
-        for (const Tuple t : possible_tris) {
-            const size_t fid = t.fid(m);
-            int other_index = tri_connectivity[fid].find(other_vertex);
-            if (other_index == -1) {
-                continue;
-            }
-            // this tuple is the triangle of this vertex's vid
-            int new_vid_index = tri_connectivity[fid].find(new_vertex_vid);
-            assert(new_vid_index != -1);
-            assert(new_vid_index != other_index);
-            assert(new_vid_index >= 0);
-            assert(new_vid_index < 3);
-            assert(other_index >= 0);
-            assert(other_index < 3);
-            // 0 + 1 + 2 == 3
-            int edge_index = 3 - other_index - new_vid_index;
-            // TODO: do this in a more tuple-navigation like way
-            Tuple edge_tuple(t.fid(m), edge_index, new_vid_index, m);
-
-            assert(edge_tuple.switch_vertex(m).vid(m) == other_index);
-
-            m.edge_attrs[t.eid(m)].curve_id = seam_data.curve_id;
-
-            m.face_attrs[t.fid(m)].mirror_edges[edge_tuple.local_eid(m)] =
-                seam_data.mirror_edge_tuple;
-        }
+        try_latching_seam_data_to_possibles(new_vertex_vid, other_vertex, seam_data);
     }
 }
+
 
 bool AdaptiveTessellationPairedCollapseEdgeOperation::input_edge_is_mirror() const
 {
@@ -428,11 +456,26 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::before(
 
     set_input_edge_mirror(m, t);
 
+
     if (input_edge_is_mirror()) {
         const Tuple& mirror_edge_tuple = op_cache.mirror_edge_tuple_opt.value();
         if (!collapse_mirror_edge.before(m, mirror_edge_tuple)) {
             return false;
         }
+
+        // check that if both are constrained they aren't overconstrained
+        auto& collapse_edge_cache = collapse_edge.m_op_cache.local();
+        auto& mirror_edge_cache = collapse_mirror_edge.m_op_cache.local();
+        auto& a = collapse_edge_cache.constrained_boundary_type;
+        auto& b = mirror_edge_cache.constrained_boundary_type;
+
+        const auto merged = AdaptiveTessellationCollapseEdgeOperation::merge(a, b);
+        if (merged ==
+            AdaptiveTessellationCollapseEdgeOperation::ConstrainedBoundaryType::BothConstrained) {
+            return false;
+        }
+        a = merged;
+        b = merged;
     }
 
     store_boundary_data(m, t);
@@ -488,13 +531,24 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::after(AdaptiveTessellation
         return false;
     }
 
+    const auto& new_vertex_attr = collapse_edge.assign_new_vertex_attributes(m);
 
+    collapse_edge.assign_collapsed_edge_attributes(m);
     if (input_edge_is_mirror()) {
-        const Tuple& mirror_edge_tuple = collapse_mirror_edge.get_return_tuple_opt().value();
         if (!collapse_mirror_edge.after(m)) {
             return false;
         }
+        collapse_mirror_edge.assign_collapsed_edge_attributes(m);
+        // const Tuple& mirror_edge_tuple = collapse_mirror_edge.get_return_tuple_opt().value();
+        auto& mirror_vertex_attr = collapse_mirror_edge.assign_new_vertex_attributes(m);
+
+        if (collapse_edge.m_op_cache.local().constrained_boundary_type ==
+            AdaptiveTessellationCollapseEdgeOperation::ConstrainedBoundaryType::NoConstraints) {
+            mirror_vertex_attr.pos = new_vertex_attr.pos;
+        }
     }
+
+
     auto one_ring = m.get_one_ring_tris_for_vertex(edge_tuple);
     // check invariants here since get_area_accuracy_error_per_face requires valid triangle
     if (!m.invariants(one_ring)) return false;

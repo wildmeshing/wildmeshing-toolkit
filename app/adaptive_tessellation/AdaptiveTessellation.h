@@ -54,6 +54,7 @@ public:
 
     // Vertices marked as fixed cannot be modified by any local operation
     bool fixed = false;
+    // a cache variable
     bool boundary_vertex = false;
 };
 
