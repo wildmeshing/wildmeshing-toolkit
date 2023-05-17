@@ -64,7 +64,11 @@ int main(int argc, char** argv)
         "--preserve-global-topology",
         params.preserve_global_topology,
         "preserve the global topology");
+    app.add_flag("--preserve-geometry", params.preserve_geometry, "preserve geometry");
     if (params.preserve_global_topology) {
+        skip_simplify = true;
+    }
+    if (params.preserve_geometry) {
         skip_simplify = true;
     }
 
@@ -197,6 +201,15 @@ int main(int argc, char** argv)
     // generate new mesh
     tetwild::TetWild mesh_new(params, *ptr_env, surf_mesh.m_envelope, NUM_THREADS);
 
+    if (params.preserve_geometry) {
+        std::cout << "compute coplanar triangle collections start" << std::endl;
+        mesh_new.detect_coplanar_triangle_collections(vsimp, fsimp);
+        std::cout << "#collections: "
+                  << mesh_new.triangle_collections_from_input_surface.collections.size()
+                  << std::endl;
+        std::cout << "compute coplanar triangle collections end" << std::endl;
+    }
+
 
     mesh_new.init_from_Volumeremesher(
         v_rational,
@@ -204,6 +217,7 @@ int main(int argc, char** argv)
         is_v_on_input,
         tets,
         tet_face_on_input_surface);
+    // exit(0);
 
     double insertion_time = insertion_timer.getElapsedTime();
     wmtk::logger().info("volume remesher insertion time: {}s", insertion_time);
@@ -226,6 +240,10 @@ int main(int argc, char** argv)
 
     mesh_new.output_faces("test_embed_output_surface.obj", [](auto& f) {
         return f.m_is_surface_fs;
+    });
+
+    mesh_new.output_faces("matched_surface.obj", [](auto& f) {
+        return f.from_input_collection_id > -1;
     });
 
     mesh_new.output_faces("test_embed_output_bbox.obj", [](auto& f) {

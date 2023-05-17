@@ -21,6 +21,7 @@
 #include <igl/Timer.h>
 #include <igl/orientable_patches.h>
 #include <wmtk/utils/EnableWarnings.hpp>
+#include <wmtk/utils/GeoUtils.h>
 // clang-format on
 
 #include <geogram/points/kd_tree.h>
@@ -113,9 +114,12 @@ std::tuple<double, double> tetwild::TetWild::local_operations(
                     "#vertices {}, #tets {} after split",
                     vert_capacity(),
                     tet_capacity());
-                auto faces = get_faces();
-                for (auto f : faces) {
-                    auto x = f.fid(*this);
+                // auto faces = get_faces();
+                // for (auto f : faces) {
+                //     auto x = f.fid(*this);
+                // }
+                if (!check_vertex_param_type()) {
+                    std::cout << "missing param!!!!!!!!" << std::endl;
                 }
             }
         } else if (i == 1) {
@@ -126,9 +130,12 @@ std::tuple<double, double> tetwild::TetWild::local_operations(
                     "#vertices {}, #tets {} after collapse",
                     vert_capacity(),
                     tet_capacity());
-                auto faces = get_faces();
-                for (auto f : faces) {
-                    auto x = f.fid(*this);
+                // auto faces = get_faces();
+                // for (auto f : faces) {
+                //     auto x = f.fid(*this);
+                // }
+                if (!check_vertex_param_type()) {
+                    std::cout << "missing param!!!!!!!!" << std::endl;
                 }
             }
         } else if (i == 2) {
@@ -1187,4 +1194,434 @@ int tetwild::TetWild::count_edge_links(const Tuple& e)
     wmtk::vector_unique(incident_surface_faces);
 
     return incident_surface_faces.size();
+}
+
+
+bool tetwild::TetWild::is_triangle_coplanar_collection(
+    const Vector3r& v1,
+    const Vector3r& v2,
+    const Vector3r& v3,
+    const coplanar_triangle_collection& collection)
+{
+    // // check normal (exact)
+    // Vector3r triangle_normal = (v2 - v1).cross(v3 - v1);
+    // if (triangle_normal.cross(collection.normal) != Vector3r(0, 0, 0)) return false;
+
+    // // check coplanar
+    // Vector3r vec = v1 - collection.a_pos;
+    // if (vec.dot(collection.normal) != 0) return false; // dot?
+
+    int o1 = orient3d_t(collection.a_pos, collection.b_pos, collection.c_pos, v1);
+    int o2 = orient3d_t(collection.a_pos, collection.b_pos, collection.c_pos, v2);
+    int o3 = orient3d_t(collection.a_pos, collection.b_pos, collection.c_pos, v3);
+
+    return o1 == 0 && o2 == 0 && o3 == 0;
+    // return true;
+}
+
+bool tetwild::TetWild::is_triangle_nearly_coplanar_collection(
+    const Vector3r& v1,
+    const Vector3r& v2,
+    const Vector3r& v3,
+    const coplanar_triangle_collection& collection,
+    double theta = 2)
+{
+    // // check normal (exact)
+    // theta is in degree
+    Vector3d tri_normal = to_double((v1 - v2).cross(v1 - v3));
+    Vector3d collection_normal = to_double(collection.normal);
+    if (tri_normal.cross(collection_normal).norm() /
+            (tri_normal.norm() * collection_normal.norm()) <
+        std::sin(theta))
+        return true;
+
+    return false;
+}
+
+std::vector<std::vector<size_t>> tetwild::TetWild::transfer_vf_to_face_face_connectivity(
+    size_t num_v,
+    std::vector<std::array<size_t, 3>> faces)
+{
+    struct v_conn
+    {
+        std::vector<size_t> conn_faces;
+    };
+
+    std::vector<v_conn> vertex_connectivity(num_v);
+
+    for (int i = 0; i < faces.size(); i++) {
+        for (int j = 0; j < 3; j++) {
+            vertex_connectivity[faces[i][j]].conn_faces.push_back(i);
+        }
+    }
+
+    std::vector<std::vector<size_t>> face_connectivity(faces.size());
+    for (int i = 0; i < faces.size(); i++) {
+        size_t v1 = faces[i][0];
+        size_t v2 = faces[i][1];
+        size_t v3 = faces[i][2];
+
+        auto edge_conn_1 = wmtk::set_intersection(
+            vertex_connectivity[v1].conn_faces,
+            vertex_connectivity[v2].conn_faces);
+
+        auto edge_conn_2 = wmtk::set_intersection(
+            vertex_connectivity[v1].conn_faces,
+            vertex_connectivity[v3].conn_faces);
+
+        auto edge_conn_3 = wmtk::set_intersection(
+            vertex_connectivity[v2].conn_faces,
+            vertex_connectivity[v3].conn_faces);
+
+        for (int k = 0; k < edge_conn_1.size(); k++) {
+            if (edge_conn_1[k] != i) face_connectivity[i].push_back(edge_conn_1[k]);
+        }
+
+        for (int k = 0; k < edge_conn_2.size(); k++) {
+            if (edge_conn_2[k] != i) face_connectivity[i].push_back(edge_conn_2[k]);
+        }
+
+        for (int k = 0; k < edge_conn_3.size(); k++) {
+            if (edge_conn_3[k] != i) face_connectivity[i].push_back(edge_conn_3[k]);
+        }
+    }
+
+    return face_connectivity;
+}
+
+void tetwild::TetWild::detect_coplanar_triangle_collections(
+    const std::vector<Vector3d>& vertices,
+    const std::vector<std::array<size_t, 3>>& faces)
+{
+    // transfer to rational coords
+    std::vector<Vector3r> vertices_rational(vertices.size());
+    for (size_t i = 0; i < vertices.size(); i++) {
+        vertices_rational[i] = to_rational(vertices[i]);
+    }
+
+    // get face-face connectivity graph
+    std::vector<std::vector<size_t>> face_adj_list =
+        transfer_vf_to_face_face_connectivity(vertices.size(), faces);
+
+    // debug code
+    // for (int i = 0; i < face_adj_list.size(); i++) {
+    //     std::cout << i << ": ";
+    //     for (int j = 0; j < face_adj_list[i].size(); j++) {
+    //         std::cout << face_adj_list[i][j] << " ";
+    //     }
+    //     std::cout << std::endl;
+    // }
+
+    // bfs to get the collection
+    std::vector<tetwild::TetWild::coplanar_triangle_collection> collections;
+    std::vector<bool> visited_face(faces.size(), false); // visited if is already in a collection
+
+    for (size_t i = 0; i < faces.size(); i++) {
+        if (visited_face[i]) continue;
+        visited_face[i] = true;
+
+        // init a new collection with face[i]
+        coplanar_triangle_collection collection;
+        collection.face_ids.push_back(i);
+        collection.a_pos = vertices_rational[faces[i][0]];
+        collection.b_pos = vertices_rational[faces[i][1]];
+        collection.c_pos = vertices_rational[faces[i][2]];
+        collection.normal =
+            (collection.a_pos - collection.b_pos).cross(collection.a_pos - collection.c_pos);
+        collection.param_u = collection.b_pos - collection.a_pos;
+        collection.param_v = collection.normal.cross(collection.param_v);
+
+        // bfs
+        std::queue<size_t> bfs_queue;
+        for (int j = 0; j < face_adj_list[i].size(); j++) {
+            if (!visited_face[face_adj_list[i][j]]) bfs_queue.push(face_adj_list[i][j]);
+        }
+        while (!bfs_queue.empty()) {
+            size_t fid = bfs_queue.front();
+            bfs_queue.pop();
+            // std::cout << "faces.size(): " << faces.size() << std::endl;
+            // std::cout << "fid: " << fid << std::endl;
+            if (visited_face[fid]) continue;
+
+            // check if nearly coplanar
+            if (is_triangle_coplanar_collection(
+                    vertices_rational[faces[fid][0]],
+                    vertices_rational[faces[fid][1]],
+                    vertices_rational[faces[fid][2]],
+                    collection)) {
+                visited_face[fid] = true;
+                collection.face_ids.push_back(fid);
+                for (int j = 0; j < face_adj_list[fid].size(); j++) {
+                    if (!visited_face[face_adj_list[fid][j]]) bfs_queue.push(face_adj_list[fid][j]);
+                }
+            }
+        }
+        collections.push_back(collection);
+    }
+    // return collections;
+    // pass to tetwild;
+
+    // test code
+    for (int i = 0; i < visited_face.size(); i++) {
+        if (!visited_face[i])
+            std::cout << "INPUT TRIANGLE NOT INSERT INTO ANY COLLECTION!!!" << std::endl;
+    }
+
+    triangle_collections_from_input_surface.input_vertices_rational = vertices_rational;
+    triangle_collections_from_input_surface.input_faces = faces;
+    triangle_collections_from_input_surface.collections = collections;
+
+    // detect nearly coplanar collections
+    std::vector<tetwild::TetWild::coplanar_triangle_collection> collections_nearly;
+    std::vector<bool> visited_face_nearly(
+        faces.size(),
+        false); // visited if is already in a collection
+
+    for (size_t i = 0; i < faces.size(); i++) {
+        if (visited_face_nearly[i]) continue;
+        visited_face_nearly[i] = true;
+
+        // init a new collection with face[i]
+        coplanar_triangle_collection collection;
+
+        collection.face_ids.push_back(i);
+        collection.a_pos = vertices_rational[faces[i][0]];
+        collection.b_pos = vertices_rational[faces[i][1]];
+        collection.c_pos = vertices_rational[faces[i][2]];
+        collection.normal =
+            (collection.a_pos - collection.b_pos).cross(collection.a_pos - collection.c_pos);
+        collection.param_u = collection.b_pos - collection.a_pos;
+        collection.param_v = collection.normal.cross(collection.param_v);
+
+        collection.normal_f = to_double(collection.normal).normalized();
+        collection.a_pos_f = to_double(collection.a_pos);
+        collection.param_u_f = to_double(collection.param_u).normalized();
+        collection.param_v_f = to_double(collection.param_v).normalized();
+
+
+        // bfs
+        std::queue<size_t> bfs_queue;
+        for (int j = 0; j < face_adj_list[i].size(); j++) {
+            if (!visited_face_nearly[face_adj_list[i][j]]) bfs_queue.push(face_adj_list[i][j]);
+        }
+        while (!bfs_queue.empty()) {
+            size_t fid = bfs_queue.front();
+            bfs_queue.pop();
+            // std::cout << "faces.size(): " << faces.size() << std::endl;
+            // std::cout << "fid: " << fid << std::endl;
+            if (visited_face_nearly[fid]) continue;
+
+            // check if nearly coplanar
+            if (is_triangle_nearly_coplanar_collection(
+                    vertices_rational[faces[fid][0]],
+                    vertices_rational[faces[fid][1]],
+                    vertices_rational[faces[fid][2]],
+                    collection)) {
+                visited_face_nearly[fid] = true;
+                collection.face_ids.push_back(fid);
+                for (int j = 0; j < face_adj_list[fid].size(); j++) {
+                    if (!visited_face_nearly[face_adj_list[fid][j]])
+                        bfs_queue.push(face_adj_list[fid][j]);
+                }
+            }
+        }
+        collections_nearly.push_back(collection);
+    }
+    // return collections;
+    // pass to tetwild;
+
+    // test code
+    for (int i = 0; i < visited_face_nearly.size(); i++) {
+        if (!visited_face_nearly[i])
+            std::cout << "INPUT TRIANGLE NOT INSERT INTO ANY NEAR COPLANAR COLLECTION!!!"
+                      << std::endl;
+    }
+
+    triangle_collections_from_input_surface.nearly_coplanar_collections = collections_nearly;
+
+    std::vector<size_t> exact_to_nearly_map(collections.size());
+    // get correspondence exact to nealy;
+    for (int i = 0; i < collections.size(); i++) {
+        size_t member_fid = collections[i].face_ids[0];
+        for (int j = 0; j < collections_nearly.size(); j++) {
+            if (std::find(
+                    collections_nearly[j].face_ids.begin(),
+                    collections_nearly[j].face_ids.end(),
+                    member_fid) != collections_nearly[j].face_ids.end()) {
+                exact_to_nearly_map[i] = j;
+                break;
+            }
+        }
+    }
+
+    triangle_collections_from_input_surface.exact_to_nearly_map = exact_to_nearly_map;
+
+    // debug code
+    for (int i = 0; i < collections.size(); i++) {
+        std::cout << "collection " << i << ": ";
+        for (int j = 0; j < collections[i].face_ids.size(); j++) {
+            std::cout << collections[i].face_ids[j] << " ";
+        }
+        std::cout << std::endl;
+    }
+
+    for (int i = 0; i < collections_nearly.size(); i++) {
+        std::cout << "nearly collection " << i << ": ";
+        for (int j = 0; j < collections_nearly[i].face_ids.size(); j++) {
+            std::cout << collections_nearly[i].face_ids[j] << " ";
+        }
+        std::cout << std::endl;
+    }
+
+    for (int i = 0; i < exact_to_nearly_map.size(); i++) {
+        std::cout << "exact to nearly map " << i << " --> " << exact_to_nearly_map[i] << std::endl;
+    }
+}
+
+bool tetwild::TetWild::is_point_in_triangle(
+    const Vector3r& p,
+    const Vector3r& a,
+    const Vector3r& b,
+    const Vector3r& c)
+{
+    Vector3r AB_AC = (b - a).cross(c - a);
+    Vector3r AB_AP = (b - a).cross(p - a);
+    Vector3r BC_BP = (c - b).cross(p - b);
+    Vector3r CA_CP = (a - c).cross(p - c);
+    if (AB_AC.dot(AB_AP) < 0 || AB_AC.dot(BC_BP) < 0 || AB_AC.dot(CA_CP) < 0) return false;
+    return true;
+}
+
+bool tetwild::TetWild::is_point_in_collection(const Vector3r& p, size_t collection_id)
+{
+    for (int i = 0;
+         i < triangle_collections_from_input_surface.collections[collection_id].face_ids.size();
+         i++) {
+        size_t tri_vid1 =
+            triangle_collections_from_input_surface.input_faces
+                [triangle_collections_from_input_surface.collections[collection_id].face_ids[i]][0];
+        size_t tri_vid2 =
+            triangle_collections_from_input_surface.input_faces
+                [triangle_collections_from_input_surface.collections[collection_id].face_ids[i]][1];
+        size_t tri_vid3 =
+            triangle_collections_from_input_surface.input_faces
+                [triangle_collections_from_input_surface.collections[collection_id].face_ids[i]][2];
+        Vector3r tri_v1_pos =
+            triangle_collections_from_input_surface.input_vertices_rational[tri_vid1];
+        Vector3r tri_v2_pos =
+            triangle_collections_from_input_surface.input_vertices_rational[tri_vid2];
+        Vector3r tri_v3_pos =
+            triangle_collections_from_input_surface.input_vertices_rational[tri_vid3];
+        if (is_point_in_triangle(p, tri_v1_pos, tri_v2_pos, tri_v3_pos)) return true;
+    }
+    return false;
+}
+
+int tetwild::TetWild::find_collection_for_tracked_surface(const Tuple& t)
+{
+    size_t fid = t.fid(*this);
+    size_t vid1 = t.vid(*this);
+    size_t vid2 = t.switch_vertex(*this).vid(*this);
+    size_t vid3 = t.switch_edge(*this).switch_vertex(*this).vid(*this);
+    int in_collection = -1;
+
+    bool flag = false;
+
+    Vector3r v1_pos = m_vertex_attribute[vid1].m_pos;
+    Vector3r v2_pos = m_vertex_attribute[vid2].m_pos;
+    Vector3r v3_pos = m_vertex_attribute[vid3].m_pos;
+
+    for (size_t i = 0; i < triangle_collections_from_input_surface.collections.size(); i++) {
+        // check coplanarity
+        if (!is_triangle_coplanar_collection(
+                v1_pos,
+                v2_pos,
+                v3_pos,
+                triangle_collections_from_input_surface.collections[i]))
+            continue;
+
+        // debug code
+        // in_collection = i;
+        // break;
+
+        // check containment by point in any triangle in the collection
+        if (is_point_in_collection(v1_pos, i) && is_point_in_collection(v2_pos, i) &&
+            is_point_in_collection(v3_pos, i)) {
+            in_collection = i;
+            break;
+        }
+    }
+
+    // debug code
+    // if (in_collection == -1) {
+    //     int o1 = orient3d_t(
+    //         triangle_collections_from_input_surface.collections[1].a_pos,
+    //         triangle_collections_from_input_surface.collections[1].b_pos,
+    //         triangle_collections_from_input_surface.collections[1].c_pos,
+    //         v1_pos);
+
+    //     int o2 = orient3d_t(
+    //         triangle_collections_from_input_surface.collections[1].a_pos,
+    //         triangle_collections_from_input_surface.collections[1].b_pos,
+    //         triangle_collections_from_input_surface.collections[1].c_pos,
+    //         v2_pos);
+
+    //     int o3 = orient3d_t(
+    //         triangle_collections_from_input_surface.collections[1].a_pos,
+    //         triangle_collections_from_input_surface.collections[1].b_pos,
+    //         triangle_collections_from_input_surface.collections[1].c_pos,
+    //         v3_pos);
+
+    //     std::cout.precision(15);
+    //     std::cout << "o1: " << o1 << std::endl;
+    //     std::cout << "o2: " << o2 << std::endl;
+    //     std::cout << "o3: " << o3 << std::endl;
+
+    //     std::cout << "a_pos: " << triangle_collections_from_input_surface.collections[1].a_pos[0]
+    //               << " " << triangle_collections_from_input_surface.collections[1].a_pos[1] << "
+    //               "
+    //               << triangle_collections_from_input_surface.collections[1].a_pos[2] <<
+    //               std::endl;
+    //     std::cout << "b_pos: " << triangle_collections_from_input_surface.collections[1].b_pos[0]
+    //               << " " << triangle_collections_from_input_surface.collections[1].b_pos[1] << "
+    //               "
+    //               << triangle_collections_from_input_surface.collections[1].b_pos[2] <<
+    //               std::endl;
+    //     std::cout << "c_pos: " << triangle_collections_from_input_surface.collections[1].c_pos[0]
+    //               << " " << triangle_collections_from_input_surface.collections[1].c_pos[1] << "
+    //               "
+    //               << triangle_collections_from_input_surface.collections[1].c_pos[2] <<
+    //               std::endl;
+    //     std::cout << "v1_pos: " << v1_pos[0] << " " << v1_pos[1] << " " << v1_pos[2] <<
+    //     std::endl; std::cout << "v2_pos: " << v2_pos[0] << " " << v2_pos[1] << " " << v2_pos[2]
+    //     << std::endl; std::cout << "v3_pos: " << v3_pos[0] << " " << v3_pos[1] << " " <<
+    //     v3_pos[2] << std::endl;
+
+    //     std::ofstream outfile("unmatched_triangle.obj");
+    //     outfile << "v " << v1_pos[0] << " " << v1_pos[1] << " " << v1_pos[2] << std::endl;
+    //     outfile << "v " << v2_pos[0] << " " << v2_pos[1] << " " << v2_pos[2] << std::endl;
+    //     outfile << "v " << v3_pos[0] << " " << v3_pos[1] << " " << v3_pos[2] << std::endl;
+    //     outfile << "f 1 2 3";
+    //     exit(0);
+    // }
+
+    return in_collection;
+}
+
+bool tetwild::TetWild::check_vertex_param_type()
+{
+    for (auto v : get_vertices()) {
+        size_t vid = v.vid(*this);
+        if (m_vertex_attribute[vid].m_is_on_surface) {
+            if (m_vertex_attribute[vid].face_param_type.size() == 0) {
+                std::cout << "missing face param" << std::endl;
+                return false;
+            }
+            if (m_vertex_attribute[vid].face_nearly_param_type.size() == 0) {
+                std::cout << "missing nearly face param" << std::endl;
+                return false;
+            }
+        }
+    }
+    return true;
 }

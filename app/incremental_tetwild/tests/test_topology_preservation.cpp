@@ -2,7 +2,7 @@
 #include <common.h>
 #include <wmtk/TetMesh.h>
 
-#include <igl/copyleft/cgal/remesh_intersections.h>
+// #include <igl/copyleft/cgal/remesh_intersections.h>
 #include <igl/read_triangle_mesh.h>
 #include <igl/write_triangle_mesh.h>
 #include <catch2/catch.hpp>

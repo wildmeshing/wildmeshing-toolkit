@@ -329,6 +329,19 @@ bool tetwild::TetWild::collapse_edge_before(const Tuple& loc) // input is an edg
     //     }
     // }
 
+    if (m_params.preserve_geometry) {
+        if (m_vertex_attribute[v1_id].is_freezed) return false;
+
+        // only collapse when param_type v1 is included in param_type v2
+        if (m_vertex_attribute[v1_id].face_param_type.size() <
+            m_vertex_attribute[v2_id].face_param_type.size())
+            return false;
+        auto s = wmtk::set_intersection(
+            m_vertex_attribute[v1_id].face_param_type,
+            m_vertex_attribute[v2_id].face_param_type);
+        if (s.size() != m_vertex_attribute[v1_id].face_param_type.size()) return false;
+    }
+
     return true;
 }
 
@@ -522,6 +535,16 @@ bool tetwild::TetWild::collapse_edge_after(const Tuple& loc)
     //         "{}",
     //         cache.global_nonmani_ver_cnt,
     //         nonmani_ver_cnt);
+    // }
+
+    // geometry preservation
+    // if (m_params.preserve_geometry) {
+    //     std::vector<size_t> after_edge_incident_param_type = wmtk::set_intersection(
+    //         m_vertex_attribute[loc.vid(*this)].face_param_type,
+    //         m_vertex_attribute[loc.switch_vertex(*this).vid(*this)].face_param_type,
+    //     );
+
+
     // }
 
     //// update attrs

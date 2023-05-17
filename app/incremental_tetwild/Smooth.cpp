@@ -15,6 +15,15 @@
 bool tetwild::TetWild::smooth_before(const Tuple& t)
 {
     if (!m_vertex_attribute[t.vid(*this)].on_bbox_faces.empty()) return false;
+
+    // for geometry preservation
+    if (m_params.preserve_geometry) {
+        if (m_vertex_attribute[t.vid(*this)].m_is_on_surface)
+            if (m_vertex_attribute[t.vid(*this)].is_freezed ||
+                m_vertex_attribute[t.vid(*this)].in_edge_param.size() > 1)
+                return false;
+    }
+
     if (m_vertex_attribute[t.vid(*this)].m_is_rounded) return true;
     // try to round.
     // Note: no need to roll back.
@@ -109,12 +118,48 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
 
         // auto project = wmtk::try_project(m_vertex_attribute[vid].m_posf, neighbor_assemble);
         auto project = Eigen::Vector3d();
-        if (boundaries_tree.initialized()) {
-            // std::cout << "in smoothing open boundary" << std::endl;
-            boundaries_tree.nearest_point(m_vertex_attribute[vid].m_posf, project);
 
-        } else
-            project = wmtk::try_project(m_vertex_attribute[vid].m_posf, neighbor_assemble);
+        if (m_params.preserve_geometry) {
+            if (m_vertex_attribute[vid].in_edge_param.size() > 0) {
+                // project to param edge
+                int edge_param_id = m_vertex_attribute[vid].in_edge_param[0];
+                const auto& edge_param = edge_params[edge_param_id];
+
+                double t =
+                    (m_vertex_attribute[vid].m_posf - edge_param.origin).dot(edge_param.direction);
+                project = edge_param.origin + t * edge_param.direction;
+            } else {
+                // project to the parametrization plane
+                // std::cout << "boundary vertex" << std::endl;
+                // std::cout << "face_nearly_param_type " << vid << ": "
+                //           << m_vertex_attribute[vid].face_nearly_param_type.size() << std::endl;
+                int collection_nearly_id = m_vertex_attribute[vid].face_nearly_param_type[0];
+                // std::cout << "ollection_nearly_id " << vid << ": " << collection_nearly_id <<
+                // std::endl;
+
+                assert(
+                    collection_nearly_id <
+                    triangle_collections_from_input_surface.nearly_coplanar_collections.size());
+                const auto& collection = triangle_collections_from_input_surface
+                                             .nearly_coplanar_collections[collection_nearly_id];
+                double dist =
+                    (m_vertex_attribute[vid].m_posf - collection.a_pos_f).dot(collection.normal_f);
+                project = m_vertex_attribute[vid].m_posf - dist * collection.normal_f;
+            }
+
+
+        } else {
+            if (boundaries_tree.initialized()) {
+                // project to envelope
+                // std::cout << "in smoothing open boundary" << std::endl;
+                boundaries_tree.nearest_point(m_vertex_attribute[vid].m_posf, project);
+
+            } else
+                // project to neighborhood
+                project = wmtk::try_project(m_vertex_attribute[vid].m_posf, neighbor_assemble);
+        }
+
+
         m_vertex_attribute[vid].m_posf = project;
         for (auto& n : neighbor_assemble) {
             n[0] = m_vertex_attribute[vid].m_posf[0];
@@ -160,10 +205,43 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
         }
         // auto project = wmtk::try_project(m_vertex_attribute[vid].m_posf, neighbor_assemble);
         auto project = Eigen::Vector3d();
-        if (triangles_tree.initialized())
-            triangles_tree.nearest_point(m_vertex_attribute[vid].m_posf, project);
-        else
-            project = wmtk::try_project(m_vertex_attribute[vid].m_posf, neighbor_assemble);
+        if (m_params.preserve_geometry) {
+            if (m_vertex_attribute[vid].in_edge_param.size() > 0) {
+                // project to param edge
+                int edge_param_id = m_vertex_attribute[vid].in_edge_param[0];
+                const auto& edge_param = edge_params[edge_param_id];
+
+                double t =
+                    (m_vertex_attribute[vid].m_posf - edge_param.origin).dot(edge_param.direction);
+                project = edge_param.origin + t * edge_param.direction;
+            } else {
+                // project to the parametrization plane
+                // std::cout << "surface vertex" << std::endl;
+                // std::cout << "face_nearly_param_type " << vid << ": "
+                //           << m_vertex_attribute[vid].face_nearly_param_type.size() <<
+                //           std::endl;
+                int collection_nearly_id = m_vertex_attribute[vid].face_nearly_param_type[0];
+                // std::cout << "ollection_nearly_id " << vid << ": " << collection_nearly_id <<
+                // std::endl;
+
+                // std::cout << collection_nearly_id << std::endl;
+                assert(
+                    collection_nearly_id <
+                    triangle_collections_from_input_surface.nearly_coplanar_collections.size());
+                const auto& collection = triangle_collections_from_input_surface
+                                             .nearly_coplanar_collections[collection_nearly_id];
+                double dist =
+                    (m_vertex_attribute[vid].m_posf - collection.a_pos_f).dot(collection.normal_f);
+                project = m_vertex_attribute[vid].m_posf - dist * collection.normal_f;
+            }
+
+        } else {
+            if (triangles_tree.initialized())
+                triangles_tree.nearest_point(m_vertex_attribute[vid].m_posf, project);
+            else
+                project = wmtk::try_project(m_vertex_attribute[vid].m_posf, neighbor_assemble);
+        }
+
         m_vertex_attribute[vid].m_posf = project;
         for (auto& n : neighbor_assemble) {
             for (auto kk = 0; kk < 3; kk++) n[kk] = m_vertex_attribute[vid].m_posf[kk];

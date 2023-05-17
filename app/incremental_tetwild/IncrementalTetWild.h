@@ -50,6 +50,23 @@ public:
     // for open boundary
     bool m_is_on_open_boundary = false;
 
+    // for geometry preservation
+    // exact
+    std::vector<size_t> face_param_type;
+    std::vector<std::pair<wmtk::Rational, wmtk::Rational>> uv_coords;
+    std::vector<std::pair<double, double>> uv_coords_f;
+    // nearly
+    std::vector<size_t> face_nearly_param_type;
+    // std::vector<std::pair<wmtk::Rational, wmtk::Rational>> uv_nearly;
+    std::vector<std::pair<double, double>> uv_nearly_f;
+
+    bool is_freezed = false;
+    bool is_on_collection_boundary = false;
+    // this is only for initialization
+    std::vector<size_t> connected_collection_boundary_vertices;
+
+    std::vector<size_t> in_edge_param;
+
     VertexAttributes(){};
     VertexAttributes(const Vector3r& p);
 };
@@ -69,6 +86,11 @@ public:
 
     bool m_is_surface_fs = false; // 0; 1
     int m_is_bbox_fs = -1; //-1; 0~5
+
+    // for geometry preservation
+    // need to update in merge?
+    int from_input_collection_id = -1; // default -1 should only >-1 when is on surface
+    int from_input_nearly_collection_id = -1;
 
     int m_surface_tags = -1; // never used?
 
@@ -364,6 +386,8 @@ private:
         size_t v2_id;
         bool is_edge_on_surface = false;
         bool is_edge_open_boundary = false;
+        std::vector<size_t> v1_param_type;
+        std::vector<size_t> v2_param_type;
 
         std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
     };
@@ -386,6 +410,9 @@ private:
         std::map<std::pair<size_t, size_t>, int> edge_link;
         std::map<size_t, int> vertex_link;
         size_t global_nonmani_ver_cnt;
+
+        // for geometry preservation
+        std::vector<size_t> edge_incident_param_type;
     };
     tbb::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
 
@@ -429,6 +456,12 @@ public:
         const std::vector<std::vector<size_t>>& polygon_cells,
         const std::vector<bool>& polygon_faces_on_input_surface);
 
+    void output_embedded_polygon_surface_mesh(
+        std::string output_dir,
+        const std::vector<Vector3r>& v_rational,
+        const std::vector<std::vector<size_t>>& polygon_faces,
+        const std::vector<bool>& polygon_faces_on_input_surface);
+
     void output_tetrahedralized_embedded_mesh(
         std::string output_dir,
         const std::vector<Vector3r>& v_rational,
@@ -452,6 +485,121 @@ public:
     // for topology preservation
     int count_vertex_links(const Tuple& v);
     int count_edge_links(const Tuple& e);
+
+    // for geometry preservation
+    struct coplanar_triangle_collection
+    {
+        std::vector<size_t> face_ids;
+        std::vector<size_t> tracked_face_ids;
+        // std::map<std::pair<size_t, size_t>, bool> presented_edges;
+        Vector3r normal;
+        Vector3r a_pos; // a is the origin of the uv plane
+        Vector3r b_pos;
+        Vector3r c_pos;
+        Vector3r param_u; // b-a // can be vector3d then can be normalized
+        Vector3r param_v; // u.cross(b-a)
+        // for nearly
+        Vector3d normal_f = Vector3d(0, 0, 0);
+        Vector3d a_pos_f = Vector3d(0, 0, 0);
+        Vector3d param_u_f = Vector3d(0, 0, 0);
+        Vector3d param_v_f = Vector3d(0, 0, 0);
+    };
+
+    bool is_triangle_coplanar_collection(
+        const Vector3r& v1,
+        const Vector3r& v2,
+        const Vector3r& v3,
+        const coplanar_triangle_collection& collection);
+
+    bool is_triangle_nearly_coplanar_collection(
+        const Vector3r& v1,
+        const Vector3r& v2,
+        const Vector3r& v3,
+        const coplanar_triangle_collection& collection,
+        double theta);
+
+    std::vector<std::vector<size_t>> transfer_vf_to_face_face_connectivity(
+        size_t num_v,
+        std::vector<std::array<size_t, 3>> faces);
+
+
+    struct triangle_collections
+    {
+        std::vector<coplanar_triangle_collection> collections;
+        std::vector<coplanar_triangle_collection> nearly_coplanar_collections;
+        std::vector<size_t> exact_to_nearly_map;
+        std::vector<Vector3r> input_vertices_rational;
+        std::vector<std::array<size_t, 3>> input_faces;
+        // can add parameterizations here
+    };
+    triangle_collections triangle_collections_from_input_surface;
+
+    struct edge_parametrization
+    {
+        Vector3d direction;
+        Vector3d origin;
+    };
+    std::vector<edge_parametrization> edge_params;
+
+    void detect_coplanar_triangle_collections(
+        const std::vector<Vector3d>& vertices,
+        const std::vector<std::array<size_t, 3>>& faces);
+
+    int find_collection_for_tracked_surface(const Tuple& t);
+
+    bool is_point_in_triangle(
+        const Vector3r& p,
+        const Vector3r& a,
+        const Vector3r& b,
+        const Vector3r& c);
+    bool is_point_in_collection(const Vector3r& p, size_t collection_id);
+
+
+    // debug functions
+    int orient3D(
+        vol_rem::bigrational px,
+        vol_rem::bigrational py,
+        vol_rem::bigrational pz,
+        vol_rem::bigrational qx,
+        vol_rem::bigrational qy,
+        vol_rem::bigrational qz,
+        vol_rem::bigrational rx,
+        vol_rem::bigrational ry,
+        vol_rem::bigrational rz,
+        vol_rem::bigrational sx,
+        vol_rem::bigrational sy,
+        vol_rem::bigrational sz);
+
+    bool checkTrackedFaces(
+        std::vector<vol_rem::bigrational>& vol_coords,
+        const std::vector<double>& surf_coords,
+        std::vector<uint32_t>& facets,
+        std::vector<uint32_t>& facets_on_input,
+        const std::vector<uint32_t>& surf_tris);
+
+    int orient3D_wmtk_rational(
+        wmtk::Rational px,
+        wmtk::Rational py,
+        wmtk::Rational pz,
+        wmtk::Rational qx,
+        wmtk::Rational qy,
+        wmtk::Rational qz,
+        wmtk::Rational rx,
+        wmtk::Rational ry,
+        wmtk::Rational rz,
+        wmtk::Rational sx,
+        wmtk::Rational sy,
+        wmtk::Rational sz);
+
+    bool checkTrackedFaces_wmtk_rational(
+        std::vector<wmtk::Rational>& vol_coords,
+        const std::vector<double>& surf_coords,
+        std::vector<uint32_t>& facets,
+        std::vector<uint32_t>& facets_on_input,
+        const std::vector<uint32_t>& surf_tris);
+
+    bool check_vertex_param_type();
 };
+
 
 } // namespace tetwild
