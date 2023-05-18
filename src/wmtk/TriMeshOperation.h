@@ -123,7 +123,10 @@ class SingleTupleOperationInfo
 {
 public:
     void reset() { m_return_tuple_opt.local().reset(); }
-    void assign(const TriMeshTuple& t) { m_return_tuple_opt.local() = t; }
+    void assign(const TriMeshTuple& t)
+    {
+        m_return_tuple_opt.local() = std::make_optional<TriMeshTuple>(t);
+    }
     operator bool() const { return m_return_tuple_opt.local().has_value(); }
 
     std::optional<TriMeshTuple> get_return_tuple_opt() const { return m_return_tuple_opt.local(); }

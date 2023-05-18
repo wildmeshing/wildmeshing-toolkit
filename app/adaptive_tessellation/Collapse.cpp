@@ -380,6 +380,7 @@ void AdaptiveTessellationCollapseEdgeOperation::assign_collapsed_edge_attributes
     const size_t new_vertex_vid = new_vertex_tuple.vid(m);
     auto& op_cache = m_op_cache.local();
 
+
     //==========
     // for every triangle in the seam-ful one ring nbd lets look for boundary edges
     //==========
@@ -403,6 +404,7 @@ void AdaptiveTessellationCollapseEdgeOperation::assign_collapsed_edge_attributes
             const auto& mirror = mopt.value();
             m.set_mirror_edge_data(edge, mirror);
             m.set_mirror_edge_data(mirror, edge);
+
         }
 
 
@@ -562,7 +564,7 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::after(AdaptiveTessellation
         }
     }
 
-
+    ///// TODO get all mirror vertices' error
     auto one_ring = m.get_one_ring_tris_for_vertex(edge_tuple);
     // check invariants here since get_area_accuracy_error_per_face requires valid triangle
     if (!m.invariants(one_ring)) return false;

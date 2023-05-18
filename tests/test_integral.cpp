@@ -173,11 +173,11 @@ void test_sampling(const MeshType& mesh, std::array<wmtk::Image, 3> displaced)
             const auto value_bilinear = wmtk::internal::sample_bilinear(displaced, u, v);
             const auto value_bicubic = wmtk::internal::sample_bicubic(displaced, u, v);
             for (size_t i = 0; i < 3; ++i) {
-                const auto value_pixel = displaced[i].get_raw_image()(x, y);
+                const auto value_pixel = displaced[i].get_raw_image()(y, x);
                 CAPTURE(x, y, u, v);
                 REQUIRE_THAT(value_nearest[i], Catch::Matchers::WithinRel(value_pixel, 1e-5f));
                 REQUIRE_THAT(value_bilinear[i], Catch::Matchers::WithinRel(value_pixel, 1e-5f));
-                // REQUIRE_THAT(value_bicubic, Catch::Matchers::WithinRel(value_pixel, 1e-2f));
+                REQUIRE_THAT(value_bicubic[i], Catch::Matchers::WithinRel(value_pixel, 1e-5f));
             }
         }
     }
@@ -192,7 +192,7 @@ void test_sampling(const MeshType& mesh, std::array<wmtk::Image, 3> displaced)
                 const float v = (static_cast<float>(y) + 0.5 + dist(gen)) / static_cast<float>(h);
                 const auto value_nearest = wmtk::internal::sample_nearest(displaced, u, v);
                 for (size_t i = 0; i < 3; ++i) {
-                    const auto value_pixel = displaced[i].get_raw_image()(x, y);
+                    const auto value_pixel = displaced[i].get_raw_image()(y, x);
                     CAPTURE(x, y, u, v);
                     REQUIRE_THAT(value_nearest[i], Catch::Matchers::WithinRel(value_pixel, 1e-5f));
                 }
@@ -211,10 +211,10 @@ void test_sampling(const MeshType& mesh, std::array<wmtk::Image, 3> displaced)
             const auto q10 = wmtk::internal::sample_bilinear(displaced, u05, v00);
             const auto q11 = wmtk::internal::sample_bilinear(displaced, u05, v05);
             for (size_t i = 0; i < 3; ++i) {
-                const auto p00 = displaced[i].get_raw_image()(x, y);
-                const auto p10 = displaced[i].get_raw_image()(x + 1, y);
-                const auto p01 = displaced[i].get_raw_image()(x, y + 1);
-                const auto p11 = displaced[i].get_raw_image()(x + 1, y + 1);
+                const auto p00 = displaced[i].get_raw_image()(y, x);
+                const auto p10 = displaced[i].get_raw_image()(y, x + 1);
+                const auto p01 = displaced[i].get_raw_image()(y + 1, x);
+                const auto p11 = displaced[i].get_raw_image()(y + 1, x + 1);
                 CAPTURE(x, y);
                 REQUIRE_THAT(q01[i], Catch::Matchers::WithinRel(0.5f * (p00 + p01), 1e-5f));
                 REQUIRE_THAT(q10[i], Catch::Matchers::WithinRel(0.5f * (p00 + p10), 1e-5f));

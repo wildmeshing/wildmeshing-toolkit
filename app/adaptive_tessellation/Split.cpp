@@ -81,7 +81,9 @@ bool AdaptiveTessellationSplitEdgeOperation::after(
     AdaptiveTessellation& m,
     wmtk::TriMeshOperation::ExecuteReturnData& ret_data)
 {
+    assert(bool(*this));
     if (wmtk::TriMeshSplitEdgeOperation::after(m, ret_data)) {
+        assert(bool(*this));
         const Eigen::Vector2d p =
             (m.vertex_attrs[op_cache.local().v1].pos + m.vertex_attrs[op_cache.local().v2].pos) /
             2.0;
@@ -151,12 +153,29 @@ bool AdaptiveTessellationSplitEdgeOperation::after(
                              .eid(m)]
                 .curve_id = std::nullopt;
         }
-
-        // update the face_attrs (accuracy error)
-        if (!m.mesh_parameters.m_ignore_embedding) {
-            // TODO update the new faces accruacy error in face_attrs
-        }
     }
+    assert(bool(*this));
+    // update the face_attrs (accuracy error)
+    if (!m.mesh_parameters.m_ignore_embedding) {
+        assert(bool(*this));
+        auto modified_tris = modified_tuples(m);
+        // get a vector of new traingles uvs
+        std::vector<std::array<float, 6>> modified_tris_uv(modified_tris.size());
+        for (int i = 0; i < modified_tris.size(); i++) {
+            auto tri = modified_tris[i];
+            auto verts = m.oriented_tri_vids(tri);
+            std::array<float, 6> tri_uv;
+            for (int i = 0; i < 3; i++) {
+                tri_uv[i * 2] = m.vertex_attrs[verts[i]].pos(0);
+                tri_uv[i * 2 + 1] = m.vertex_attrs[verts[i]].pos(1);
+            }
+            modified_tris_uv[i] = tri_uv;
+        }
+        std::vector<float> renewed_errors(modified_tris.size());
+        m.m_texture_integral.get_error_per_triangle(modified_tris_uv, renewed_errors);
+        m.set_faces_accuracy_error(modified_tris, renewed_errors);
+    }
+
     return ret_data.success;
 }
 
@@ -222,19 +241,19 @@ wmtk::TriMeshOperation::ExecuteReturnData AdaptiveTessellationPairedSplitEdgeOpe
     const Tuple& t)
 {
     bool old_t_is_seam = m.is_seam_edge(t);
-    bool old_t_is_boundary = m.is_boundary_edge(t) & (!old_t_is_seam);
+    bool old_t_is_boundary = m.is_boundary_edge(t) && (!old_t_is_seam);
     assert(m.check_mesh_connectivity_validity());
     assert(m.is_seam_edge(t) == mirror_edge_tuple.has_value());
-    TriMeshSplitEdgeOperation::ExecuteReturnData ret_data =
-        TriMeshSplitEdgeOperation::execute(m, t);
+    TriMeshOperation::ExecuteReturnData ret_data = split_edge.execute(m, t);
     if (!ret_data.success) return ret_data;
+    assert(bool(split_edge));
     split_edge.return_edge_tuple = ret_data.tuple;
     assert(split_edge.return_edge_tuple.vid(m) == t.vid(m));
     if (old_t_is_seam) {
         wmtk::logger().info("execute seam");
         assert(t.vid(m) == m.get_oriented_mirror_edge(mirror_edge_tuple.value()).vid(m));
-        TriMeshSplitEdgeOperation::ExecuteReturnData mirror_ret_data =
-            TriMeshSplitEdgeOperation::execute(m, mirror_edge_tuple.value());
+        TriMeshOperation::ExecuteReturnData mirror_ret_data =
+            mirror_split_edge.execute(m, mirror_edge_tuple.value());
         if (!mirror_ret_data.success) return ret_data;
         mirror_split_edge.return_edge_tuple = mirror_ret_data.tuple;
         assert(mirror_split_edge.return_edge_tuple.vid(m) == mirror_edge_tuple.value().vid(m));
@@ -369,6 +388,7 @@ bool AdaptiveTessellationPairedSplitEdgeOperation::after(
     AdaptiveTessellation& m,
     wmtk::TriMeshOperation::ExecuteReturnData& ret_data)
 {
+    assert(bool(split_edge));
     split_edge.after(m, ret_data);
     if (!ret_data.success) return false;
     // nullify the inside edges old mirror info
@@ -389,6 +409,9 @@ bool AdaptiveTessellationPairedSplitEdgeOperation::after(
         assert(paired_op_cache.local().after_sibling_edges.size() == 8);
         ret_data.success &=
             mirror_split_edge.after(m, ret_data); // after doesn't use contents of ret_data
+        // enforce the mirror_split_edge t to be the same as the primary t
+        m.vertex_attrs[mirror_split_edge.return_edge_tuple.vid(m)].t =
+            m.vertex_attrs[split_edge.return_edge_tuple.vid(m)].t;
         // now do the siling edge tranfering
         if (!ret_data.success) return false;
         // it's a seam edge update mirror edge data using the sibling edges
