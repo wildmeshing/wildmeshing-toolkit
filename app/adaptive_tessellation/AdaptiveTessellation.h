@@ -359,6 +359,11 @@ public:
     bool is_seam_edge(const TriMesh::Tuple& t) const;
     bool is_seam_vertex(const TriMesh::Tuple& t) const;
 
+    // reports true if it is a boundary edge ignoring seams
+    bool is_stitched_boundary_edge(const TriMesh::Tuple& t) const;
+    // reports true if it is a boundary vertex ignoring seams
+    bool is_stitched_boundary_vertex(const TriMesh::Tuple& t) const;
+
 
     VertexAttributes& get_vertex_attrs(const Tuple& t);
     const VertexAttributes& get_vertex_attrs(const Tuple& t) const;

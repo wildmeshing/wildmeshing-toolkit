@@ -125,26 +125,43 @@ auto AdaptiveTessellationPairedCollapseEdgeOperation::seamed_links_of_vertex(
     } else {
         all_mirror_vertices.emplace_back(vertex);
     }
-    for (const TriMesh::Tuple& vtup : all_mirror_vertices) {
-        auto links = TriMeshEdgeCollapseOperation::links_of_vertex(mesh, vtup);
+    size_t vid = vertex.vid(mesh);
+    std::vector<size_t>& lk_vid = ret.vertex;
+    std::vector<std::array<size_t, 2>>& lk_e_vid = ret.edge;
 
-        ret.infinite_vertex |= links.infinite_vertex;
+    for (const TriMeshTuple& mirror_vertex_tuple : all_mirror_vertices) {
+        const std::vector<Tuple> vid_ring = mesh.get_one_ring_edges_for_vertex(mirror_vertex_tuple);
 
-        vector_sort(links.vertex);
-        vector_sort(links.edge);
-        vector_sort(links.infinite_edge);
-        set_union_inplace(ret.vertex, links.vertex);
-        set_union_inplace(ret.edge, links.edge);
-        set_union_inplace(ret.infinite_edge, links.infinite_edge);
+        // if i have a boundary vertex then
+        for (const auto& e_vid : vid_ring) {
+            const size_t vid = e_vid.vid(mesh);
+            if (mesh.is_stitched_boundary_edge(e_vid)) {
+                ret.infinite_vertex = true;
+                ret.infinite_edge.emplace_back(vid);
+            }
+            lk_vid.push_back(vid);
+        }
+        std::vector<Tuple> vid_tris = mesh.get_one_ring_tris_for_vertex(vertex);
+        for (const auto& v_tri_t : vid_tris) {
+            const size_t fid = v_tri_t.fid(mesh);
+            const auto& tri_con = tri_connectivity(mesh)[fid];
+            const auto& indices = tri_con.m_indices;
+            int l = tri_con.find(vid);
+            assert(l != -1);
+            size_t i0 = indices[(l + 1) % 3];
+            size_t i1 = indices[(l + 2) % 3];
+            auto& vids = lk_e_vid.emplace_back(std::array<size_t, 2>{{i0, i1}});
+            std::sort(vids.begin(), vids.end());
+        }
     }
 
+    vector_sort(ret.vertex);
+    vector_sort(ret.edge);
+    vector_sort(ret.infinite_edge);
 
     ret.edge = mirror_edge_vids(mesh, ret.edge);
     ret.vertex = mirror_vids(mesh, ret.vertex);
     ret.infinite_edge = mirror_vids(mesh, ret.infinite_edge);
-    vector_sort(ret.vertex);
-    vector_sort(ret.edge);
-    vector_sort(ret.infinite_edge);
 
     return ret;
 }

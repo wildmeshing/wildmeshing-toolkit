@@ -1135,6 +1135,18 @@ bool AdaptiveTessellation::is_seam_vertex(const TriMesh::Tuple& t) const
     }
     return false;
 }
+bool AdaptiveTessellation::is_stitched_boundary_edge(const TriMesh::Tuple& t) const
+{
+    return is_boundary_edge(t) && !is_seam_edge(t);
+}
+bool AdaptiveTessellation::is_stitched_boundary_vertex(const TriMesh::Tuple& t) const
+{
+    // it is seam vertex if it's incident to a seam edge
+    for (auto& e : get_one_ring_edges_for_vertex(t)) {
+        if (is_stitched_boundary_edge(e)) return true;
+    }
+    return false;
+}
 
 void AdaptiveTessellation::set_mirror_edge_data(
     const TriMesh::Tuple& primary_t,
@@ -1148,14 +1160,13 @@ std::optional<TriMesh::Tuple> AdaptiveTessellation::get_sibling_edge_opt(
 {
     if (is_boundary_edge(t)) {
         if (is_seam_edge(t)) {
-            return std::make_optional<TriMesh::Tuple>(get_oriented_mirror_edge(t));
+            return get_oriented_mirror_edge(t);
         } else {
             return std::nullopt;
         }
     } else {
         assert(t.switch_face(*this).has_value());
-        return std::make_optional<TriMesh::Tuple>(
-            t.switch_face(*this).value().switch_vertex(*this));
+        return t.switch_face(*this).value().switch_vertex(*this);
         // return the sibling edge that's of opposite diretion
     }
 }

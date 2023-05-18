@@ -742,7 +742,6 @@ TEST_CASE("paired collapse")
             }
         }
     }
-    spdlog::warn("0===========================");
     ////////// ======= interior edge collapse
     // acsii art diamond
     //                1          4
@@ -766,9 +765,7 @@ TEST_CASE("paired collapse")
     REQUIRE(!m.edge_attrs[primary_edge6.eid(m)].curve_id.has_value());
     REQUIRE(primary_edge6.is_valid(m));
     AdaptiveTessellationPairedCollapseEdgeOperation op4;
-    spdlog::warn("0==========================run=");
     op4(m, primary_edge6);
-    spdlog::warn("1===========================");
     // acsii art diamond
     //                1    4
     //              /(2) ||(1)\ 

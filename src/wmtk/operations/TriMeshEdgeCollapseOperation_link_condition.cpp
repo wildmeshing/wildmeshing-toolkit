@@ -15,7 +15,7 @@ auto TriMeshEdgeCollapseOperation::links_of_vertex(const TriMesh& mesh, const Tu
     // if i have a boundary vertex then
     for (const auto& e_vid : vid_ring) {
         const size_t vid = e_vid.vid(mesh);
-        if (!e_vid.switch_face(mesh).has_value()) {
+        if (mesh.is_boundary_edge(e_vid)) {
             ret.infinite_vertex = true;
             ret.infinite_edge.emplace_back(vid);
         }
@@ -41,15 +41,6 @@ std::tuple<std::vector<size_t>, bool> TriMeshEdgeCollapseOperation::edge_link_of
     const TriMesh& mesh,
     const Tuple& edge)
 {
-    // auto links = edge_link_of_edge(mesh, edge);
-    // std::vector<size_t> ret;
-    // ret.reserve(links.size());
-    // std::transform(
-    //     links.begin(),
-    //     links.end(),
-    //     std::back_inserter(ret),
-    //     [&](const Tuple& t) -> size_t { return t.vid(mesh); });
-    // return ret;
     auto get_opposing_vertex_vid = [&mesh](const Tuple& edge) -> size_t {
         return edge.switch_edge(mesh).switch_vertex(mesh).vid(mesh);
     };
