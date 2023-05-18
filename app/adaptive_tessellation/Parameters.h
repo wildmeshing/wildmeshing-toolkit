@@ -17,7 +17,8 @@ enum class EDGE_LEN_TYPE {
     PT_PER_PIXEL,
     MIPMAP,
     ACCURACY,
-    AREA_ACCURACY
+    AREA_ACCURACY,
+    TRI_QUADRICS
 };
 struct Parameters
 {
@@ -82,7 +83,7 @@ public:
     double m_accuracy_threshold = 0.001;
     double m_accuracy_safeguard_ratio = 1.1;
 
-    EDGE_LEN_TYPE m_edge_length_type = EDGE_LEN_TYPE::ACCURACY;
+    EDGE_LEN_TYPE m_edge_length_type = EDGE_LEN_TYPE::AREA_ACCURACY;
     SAMPLING_MODE m_sampling_mode = SAMPLING_MODE::BICUBIC;
     DISPLACEMENT_MODE m_displacement_mode = DISPLACEMENT_MODE::PLANE;
     std::shared_ptr<wmtk::Displacement> m_displacement;

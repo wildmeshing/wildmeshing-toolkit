@@ -576,7 +576,14 @@ void AdaptiveTessellation::write_vtk(const std::filesystem::path& path)
     std::vector<double> scalar_field;
     for (const auto& e : get_edges()) {
         if (!e.is_valid(*this)) continue;
-        auto cost = std::get<0>(get_area_accuracy_error_for_split(e));
+        double cost = 0.;
+        if (mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::TRI_QUADRICS) {
+            cost = get_quadrics_area_accuracy_error_for_split(e);
+        }
+        if (mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
+            cost = std::get<0>(get_cached_area_accuracy_error_for_split(e));
+        }
+
         // Eigen::Matrix<double, 2, 1> pos1 = vertex_attrs[e.vid(*this)].pos;
         // Eigen::Matrix<double, 2, 1> pos2 =
         // vertex_attrs[e.switch_vertex(*this).vid(*this)].pos; Eigen::Matrix<double, 2, 1>
@@ -622,20 +629,7 @@ void AdaptiveTessellation::write_perface_vtk(const std::filesystem::path& path)
 
     std::vector<double> scalar_field2;
     for (const auto& f : get_faces()) {
-        // if (!f.is_valid(*this)) continue;
-        // auto vids1 = oriented_tri_vertices(f);
-        // Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle1;
-        // for (int i = 0; i < 3; i++) {
-        //     triangle1.row(i) = vertex_attrs[vids1[i].vid(*this)].pos;
-        // }
-        // if (wmtk::polygon_signed_area(triangle1) < 0) {
-        //     Eigen::Matrix<double, 1, 2, Eigen::RowMajor> tmp;
-        //     tmp = triangle1.row(0);
-        //     triangle1.row(0) = triangle1.row(1);
-        //     triangle1.row(1) = tmp;
-        // }
-        // auto error = mesh_parameters.m_displacement->get_error_per_triangle(triangle1);
-        auto error = face_attrs[f.fid(*this)].accuracy_error;
+        auto error = face_attrs[f.fid(*this)].face_error.cached_error;
         scalar_field2.emplace_back(error);
     }
     writer.add_cell_scalar_field("scalar_field", scalar_field2);

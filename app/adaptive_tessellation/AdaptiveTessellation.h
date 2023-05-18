@@ -18,8 +18,8 @@
 #include <lagrange/views.h>
 #include <tbb/concurrent_vector.h>
 #include <wmtk/TriMesh.h>
-#include <wmtk/image/TextureIntegral.h>
 #include <wmtk/image/QuadricIntegral.h>
+#include <wmtk/image/TextureIntegral.h>
 #include <wmtk/utils/AMIPS2D.h>
 #include <wmtk/utils/AMIPS2D_autodiff.h>
 #include <wmtk/utils/BoundaryParametrization.h>
@@ -30,6 +30,7 @@
 #include <wmtk/utils/Image.h>
 #include <wmtk/utils/MipMap.h>
 #include <wmtk/utils/PolygonClipping.h>
+#include <wmtk/utils/Quadric.h>
 #include <wmtk/utils/json_sink.h>
 #include <wmtk/utils/load_image_exr.h>
 #include <Eigen/Core>
@@ -64,8 +65,16 @@ class FaceAttributes
 {
 public:
     std::array<std::optional<wmtk::TriMesh::Tuple>, 3> mirror_edges;
-    double accuracy_error; // cacheing the accuracy error for each face
-                           // doesn't support autodiff
+    struct Error
+    {
+        // storing the distance quadrature error for each face
+        double cached_error; // cacheing the accuracy error for each face
+                             // doesn't support autodiff
+
+        // storing the Quadric for each face
+        wmtk::Quadric<double> quadric;
+    };
+    Error face_error;
 };
 
 class EdgeAttributes
@@ -221,6 +230,8 @@ public:
         const std::vector<TriMesh::Tuple>& tris,
         const std::vector<float>& computed_errors);
 
+    void prepare_distance_quadrature_cached_energy();
+    void prepare_quadrics();
 
     // Exports V and F of the stored mesh
     void export_uv(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
@@ -335,7 +346,7 @@ public:
     std::vector<TriMesh::Tuple> new_edges_after(const std::vector<TriMesh::Tuple>& tris) const;
 
     // Smoothing
-    void prepare_quadrics(wmtk::QuadricEnergy &energy);
+    void prepare_quadrics(wmtk::QuadricEnergy& energy);
     void smooth_all_vertices();
     bool smooth_before(const Tuple& t);
     bool smooth_after(const Tuple& t);
@@ -367,12 +378,16 @@ public:
     double get_mesh_energy(const Eigen::VectorXd& v_flat);
 
     double get_edge_accuracy_error(const Tuple& edge_tuple) const;
+
     double get_area_accuracy_error_per_face(const Tuple& edge_tuple) const;
     double get_area_accuracy_error_per_face_triangle_matrix(
         Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle) const;
     // return in order {total_error, face1_error, face2_error}
-    std::tuple<double, double, double> get_area_accuracy_error_for_split(
+    std::tuple<double, double, double> get_cached_area_accuracy_error_for_split(
         const Tuple& edge_tuple) const;
+    std::tuple<double, double, double> get_projected_relative_error_for_split(
+        const Tuple& edge_tuple) const;
+    double get_quadrics_area_accuracy_error_for_split(const Tuple& face_tuple) const;
 
     void get_nminfo_for_vertex(const Tuple& v, wmtk::NewtonMethodInfo& nminfo) const;
 

@@ -5,6 +5,7 @@ using namespace wmtk;
 
 //// preprocess the mesh for remeshing
 // similar to mesh_processing. for debugging purpose
+// using distance integral error not quadrics
 void AdaptiveTessellation::mesh_preprocessing(
     const std::filesystem::path& input_mesh_path,
     const std::filesystem::path& displaced_image_path)

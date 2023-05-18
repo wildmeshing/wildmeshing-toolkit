@@ -103,6 +103,14 @@ void AdaptiveTessellation::mesh_preprocessing(
         position_image_path,
         normal_image_path,
         height_image_path);
+
+    m_quadric_integral =
+        wmtk::QuadricIntegral(displaced, wmtk::QuadricIntegral::QuadricType::Plane);
+    m_texture_integral = wmtk::TextureIntegral(std::move(displaced));
+}
+
+void AdaptiveTessellation::prepare_distance_quadrature_cached_energy()
+{
     std::vector<std::array<float, 6>> uv_triangles(tri_capacity());
     std::vector<TriMesh::Tuple> tris_tuples = get_faces();
     for (int i = 0; i < tris_tuples.size(); i++) {
@@ -115,13 +123,30 @@ void AdaptiveTessellation::mesh_preprocessing(
         }
     }
     std::vector<float> computed_errors(tri_capacity());
-    m_quadric_integral =
-        wmtk::QuadricIntegral(displaced, wmtk::QuadricIntegral::QuadricType::Plane);
-    m_texture_integral = wmtk::TextureIntegral(std::move(displaced));
     m_texture_integral.get_error_per_triangle(uv_triangles, computed_errors);
     set_faces_accuracy_error(tris_tuples, computed_errors);
 }
 
+void AdaptiveTessellation::prepare_quadrics()
+{
+    wmtk::logger().info("preparing quadrics");
+    auto facets = get_faces();
+    std::vector<wmtk::Quadric<double>> compressed_quadrics(facets.size());
+    m_quadric_integral.get_quadric_per_triangle(
+        facets.size(),
+        [&](int f) -> std::array<float, 6> {
+            // Get triangle uv positions
+            std::array<Tuple, 3> local_tuples = oriented_tri_vertices(facets[f]);
+            const Eigen::Vector2f& p0 = vertex_attrs[local_tuples[0].vid(*this)].pos.cast<float>();
+            const Eigen::Vector2f& p1 = vertex_attrs[local_tuples[1].vid(*this)].pos.cast<float>();
+            const Eigen::Vector2f& p2 = vertex_attrs[local_tuples[2].vid(*this)].pos.cast<float>();
+            return {p0.x(), p0.y(), p1.x(), p1.y(), p2.x(), p2.y()};
+        },
+        compressed_quadrics);
+    for (size_t i = 0; i < facets.size(); ++i) {
+        face_attrs[facets[i].fid(*this)].face_error.quadric = compressed_quadrics[i];
+    }
+}
 // return E0, E1 of corresponding seam edges in uv mesh
 // set up the seam vertex coloring
 std::pair<Eigen::MatrixXi, Eigen::MatrixXi> AdaptiveTessellation::seam_edges_set_up(
@@ -308,7 +333,8 @@ void AdaptiveTessellation::set_parameters(
     const bool boundary_parameter)
 {
     if (mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::ACCURACY ||
-        mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY)
+        mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY ||
+        mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::TRI_QUADRICS)
         mesh_parameters.m_accuracy_threshold = target_accuracy;
     mesh_parameters.m_quality_threshold = target_edge_length;
 
@@ -329,7 +355,7 @@ void AdaptiveTessellation::set_parameters(
     set_energy(energy_type);
     set_edge_length_measurement(edge_len_type);
     mesh_parameters.m_boundary_parameter = boundary_parameter;
-} // namespace adaptive_tessellation
+}
 
 void AdaptiveTessellation::set_parameters(
     const double target_edge_length,
@@ -438,7 +464,7 @@ void AdaptiveTessellation::set_faces_accuracy_error(
 {
     // update the face_attrs with modified tris error
     for (int i = 0; i < tris.size(); i++) {
-        face_attrs[tris[i].fid(*this)].accuracy_error = computed_errors[i];
+        face_attrs[tris[i].fid(*this)].face_error.cached_error = computed_errors[i];
     }
 }
 
@@ -476,12 +502,13 @@ void AdaptiveTessellation::set_edge_length_measurement(const EDGE_LEN_TYPE edge_
             return this->get_edge_accuracy_error(edge_tuple);
         };
         break;
-        // don't set for AREA_ACCURACY since it is more intricate
-    // case EDGE_LEN_TYPE::AREA_ACCURACY:
-    //     mesh_parameters.m_get_length = [&](const Tuple& edge_tuple) -> double {
-    //         return this->get_area_accuracy_error(edge_tuple);
-    //     };
-    // break;
+        // for AREA_ACCURACY and TRI_QUADRICS errors are calculated using dedicated functions
+        // but we want to do the preprocessing for each facefor them
+
+    // we cache each face error for AREA_ACCURACY
+    case EDGE_LEN_TYPE::AREA_ACCURACY: prepare_distance_quadrature_cached_energy(); break;
+    // we cache each face quadrics for TRI_QUADRICS
+    case EDGE_LEN_TYPE::TRI_QUADRICS: prepare_quadrics(); break;
     default: break;
     }
 }
@@ -863,76 +890,110 @@ double AdaptiveTessellation::get_area_accuracy_error_per_face_triangle_matrix(
     return mesh_parameters.m_displacement->get_error_per_triangle(triangle);
 }
 
-std::tuple<double, double, double> AdaptiveTessellation::get_area_accuracy_error_for_split(
+std::tuple<double, double, double> AdaptiveTessellation::get_cached_area_accuracy_error_for_split(
     const Tuple& edge_tuple) const
 {
     double error = 0.;
     double error1 = 0.;
     double error2 = 0.;
     if (mesh_parameters.m_split_absolute_error_metric) {
-        error1 = face_attrs[edge_tuple.fid(*this)].accuracy_error;
+        error1 = face_attrs[edge_tuple.fid(*this)].face_error.cached_error;
         if (edge_tuple.switch_face(*this).has_value()) {
-            error2 = face_attrs[edge_tuple.switch_face(*this).value().fid(*this)].accuracy_error;
+            error2 = face_attrs[edge_tuple.switch_face(*this).value().fid(*this)]
+                         .face_error.cached_error;
         } else {
             if (is_seam_edge(edge_tuple))
-                error2 = face_attrs[get_oriented_mirror_edge(edge_tuple).fid(*this)].accuracy_error;
+                error2 = face_attrs[get_oriented_mirror_edge(edge_tuple).fid(*this)]
+                             .face_error.cached_error;
             else
                 error2 = error1;
         }
         error = (error1 + error2) * get_length2d(edge_tuple);
-    } else {
-        ///////// !!! TODO this is not deleted keep here just in case
-        error1 = face_attrs[edge_tuple.fid(*this)].accuracy_error;
-        if (edge_tuple.switch_face(*this).has_value()) {
-            error2 = face_attrs[edge_tuple.switch_face(*this).value().fid(*this)].accuracy_error;
-        } else
-            error2 = error1;
-        double e_before = error1 + error2;
-
-        double e_after, error_after_1, error_after_2, error_after_3, error_after_4;
-        std::vector<std::array<float, 6>> new_triangles(2);
-        std::vector<float> new_computed_errors(2);
-
-        const Eigen::Vector2f mid_point_uv =
-            (0.5 * (vertex_attrs[edge_tuple.vid(*this)].pos +
-                    vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].pos))
-                .cast<float>();
-        const Eigen::Vector2f uv1 = vertex_attrs[edge_tuple.vid(*this)].pos.cast<float>();
-        const Eigen::Vector2f uv2 =
-            vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].pos.cast<float>();
-        const Eigen::Vector2f uv3 =
-            vertex_attrs[edge_tuple.switch_edge(*this).switch_vertex(*this).vid(*this)]
-                .pos.cast<float>();
-
-        new_triangles[0] = {uv1(0), uv1(1), mid_point_uv(0), mid_point_uv(1), uv3(0), uv3(1)};
-        new_triangles[1] = {uv2(0), uv2(1), mid_point_uv(0), mid_point_uv(1), uv3(0), uv3(1)};
-        m_texture_integral.get_error_per_triangle(new_triangles, new_computed_errors);
-        error_after_1 = new_computed_errors[0];
-        error_after_2 = new_computed_errors[1];
-        if (edge_tuple.switch_face(*this).has_value()) {
-            const Eigen::Vector2f uv4 = vertex_attrs[edge_tuple.switch_face(*this)
-                                                         .value()
-                                                         .switch_edge(*this)
-                                                         .switch_vertex(*this)
-                                                         .vid(*this)]
-                                            .pos.cast<float>();
-
-            new_triangles[0] = {uv1(0), uv1(1), mid_point_uv(0), mid_point_uv(1), uv4(0), uv4(1)};
-            new_triangles[1] = {uv2(0), uv2(1), mid_point_uv(0), mid_point_uv(1), uv4(0), uv4(1)};
-            m_texture_integral.get_error_per_triangle(new_triangles, new_computed_errors);
-
-            error_after_3 = new_computed_errors[0];
-            error_after_4 = new_computed_errors[1];
-        } else {
-            // TODO set error after 3 and 4 to the the mirror face error when it's seam
-            error_after_3 = error_after_1;
-            error_after_4 = error_after_2;
-        }
-        e_after = error_after_1 + error_after_2 + error_after_3 + error_after_4;
-        error = e_before - e_after;
     }
     return {error, error1, error2};
 }
+
+std::tuple<double, double, double> AdaptiveTessellation::get_projected_relative_error_for_split(
+    const Tuple& edge_tuple) const
+{
+    ///////// THIS IS NOT USED
+    double error, error1, error2;
+    error1 = face_attrs[edge_tuple.fid(*this)].face_error.cached_error;
+    if (edge_tuple.switch_face(*this).has_value()) {
+        error2 =
+            face_attrs[edge_tuple.switch_face(*this).value().fid(*this)].face_error.cached_error;
+    } else
+        error2 = error1;
+    double e_before = error1 + error2;
+
+    double e_after, error_after_1, error_after_2, error_after_3, error_after_4;
+    std::vector<std::array<float, 6>> new_triangles(2);
+    std::vector<float> new_computed_errors(2);
+
+    const Eigen::Vector2f mid_point_uv =
+        (0.5 * (vertex_attrs[edge_tuple.vid(*this)].pos +
+                vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].pos))
+            .cast<float>();
+    const Eigen::Vector2f uv1 = vertex_attrs[edge_tuple.vid(*this)].pos.cast<float>();
+    const Eigen::Vector2f uv2 =
+        vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].pos.cast<float>();
+    const Eigen::Vector2f uv3 =
+        vertex_attrs[edge_tuple.switch_edge(*this).switch_vertex(*this).vid(*this)]
+            .pos.cast<float>();
+
+    new_triangles[0] = {uv1(0), uv1(1), mid_point_uv(0), mid_point_uv(1), uv3(0), uv3(1)};
+    new_triangles[1] = {uv2(0), uv2(1), mid_point_uv(0), mid_point_uv(1), uv3(0), uv3(1)};
+    m_texture_integral.get_error_per_triangle(new_triangles, new_computed_errors);
+    error_after_1 = new_computed_errors[0];
+    error_after_2 = new_computed_errors[1];
+    if (edge_tuple.switch_face(*this).has_value()) {
+        const Eigen::Vector2f uv4 =
+            vertex_attrs
+                [edge_tuple.switch_face(*this).value().switch_edge(*this).switch_vertex(*this).vid(
+                     *this)]
+                    .pos.cast<float>();
+
+        new_triangles[0] = {uv1(0), uv1(1), mid_point_uv(0), mid_point_uv(1), uv4(0), uv4(1)};
+        new_triangles[1] = {uv2(0), uv2(1), mid_point_uv(0), mid_point_uv(1), uv4(0), uv4(1)};
+        m_texture_integral.get_error_per_triangle(new_triangles, new_computed_errors);
+
+        error_after_3 = new_computed_errors[0];
+        error_after_4 = new_computed_errors[1];
+    } else {
+        // TODO set error after 3 and 4 to the the mirror face error when it's seam
+        error_after_3 = error_after_1;
+        error_after_4 = error_after_2;
+    }
+    e_after = error_after_1 + error_after_2 + error_after_3 + error_after_4;
+    error = e_before - e_after;
+    return {error, error1, error2};
+}
+
+double AdaptiveTessellation::get_quadrics_area_accuracy_error_for_split(
+    const Tuple& edge_tuple) const
+{
+    wmtk::Quadric<double> q1 = face_attrs[edge_tuple.fid(*this)].face_error.quadric;
+    // if it's boundary edge, duplicate the quadric
+    wmtk::Quadric<double> q2 =
+        edge_tuple.switch_face(*this).has_value()
+            ? face_attrs[edge_tuple.switch_face(*this).value().fid(*this)].face_error.quadric
+            : q1;
+    wmtk::Quadric<double> q = q1 + q2;
+
+    auto v1_pos = vertex_attrs[edge_tuple.vid(*this)].pos;
+    auto v2_pos = vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].pos;
+    Eigen::Matrix<double, 3, 1> v1_world_pos =
+        mesh_parameters.m_displacement->get(v1_pos(0), v1_pos(1));
+    Eigen::Matrix<double, 3, 1> v2_world_pos =
+        mesh_parameters.m_displacement->get(v2_pos(0), v2_pos(1));
+
+    double energy =
+        v1_world_pos.transpose() * q.A() * v1_world_pos - 2.0 * v1_world_pos.dot(q.b()) + q.c;
+    energy += v2_world_pos.transpose() * q.A() * v2_world_pos - 2.0 * v2_world_pos.dot(q.b()) + q.c;
+
+    return energy;
+}
+
 
 void AdaptiveTessellation::get_nminfo_for_vertex(const Tuple& v, wmtk::NewtonMethodInfo& nminfo)
     const

@@ -223,9 +223,9 @@ auto swap_accuracy_cost = [](auto& m, const TriMesh::Tuple& e, const double vale
             e_after = m.mesh_parameters.m_displacement->get_error_per_edge(t3_pos, t4_pos);
             // positive if error decreases
             return e_before - e_after;
-        } else
-        // (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY)
-        {
+        } else if (
+            m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY ||
+            m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::TRI_QUADRICS) {
             assert(e.switch_face(m).has_value());
             TriMesh::Tuple other_face = e.switch_face(m).value();
             size_t other_vid = other_face.switch_edge(m).switch_vertex(m).vid(m);
@@ -264,8 +264,6 @@ auto swap_accuracy_cost = [](auto& m, const TriMesh::Tuple& e, const double vale
             if (polygon_signed_area(triangle1) <= 0 || polygon_signed_area(triangle2) <= 0) {
                 return -std::numeric_limits<double>::infinity();
             } else {
-                // e_after = m.mesh_parameters.m_displacement->get_error_per_triangle(triangle1);
-                // e_after += m.mesh_parameters.m_displacement->get_error_per_triangle(triangle2);
                 e_after = compute_errors[0] + compute_errors[1];
             }
             if (valence_cost <= 0) return -std::numeric_limits<double>::infinity();

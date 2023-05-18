@@ -524,7 +524,12 @@ void AdaptiveTessellation::split_all_edges()
         executor.priority = [&](auto& m, auto _, auto& e) {
             double error = 0.;
             if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
-                error = std::get<0>(m.get_area_accuracy_error_for_split(e));
+                // error already scaled by 2d edge length
+                error = std::get<0>(m.get_cached_area_accuracy_error_for_split(e));
+            } else if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::TRI_QUADRICS) {
+                // error is not scaled by 2d edge length yet
+                error = m.get_quadrics_area_accuracy_error_for_split(e);
+                error *= m.get_length2d(e);
             } else
                 error = m.mesh_parameters.m_get_length(e);
             return error;
@@ -533,10 +538,14 @@ void AdaptiveTessellation::split_all_edges()
         executor.is_weight_up_to_date = [](auto& m, auto& ele) {
             auto& [weight, op, tup] = ele;
             double total_error = 0.;
+            double unscaled_total_error = 0.;
             double error1 = 0.;
             double error2 = 0.;
             if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
                 std::tie(total_error, error1, error2) = m.get_area_accuracy_error_for_split(tup);
+            } else if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::TRI_QUADRICS) {
+                unscaled_total_error = m.get_quadrics_area_accuracy_error_for_split(tup);
+                total_error = total_error * m.get_length2d(tup);
             } else
                 total_error = m.mesh_parameters.m_get_length(tup);
             // check if out of date
@@ -545,9 +554,11 @@ void AdaptiveTessellation::split_all_edges()
             if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::ACCURACY) {
                 if (total_error < m.mesh_parameters.m_accuracy_threshold) return false;
             } else if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
-                if (error1 < m.mesh_parameters.m_accuracy_threshold &&
-                    error2 < m.mesh_parameters.m_accuracy_threshold) {
-                    // wmtk::logger().info("error1 {} error2 {}", error1, error2);
+                if (error1 + error2 < m.mesh_parameters.m_accuracy_threshold) {
+                    return false;
+                }
+            } else if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::TRI_QUADRICS) {
+                if (unscaled_total_error < m.mesh_parameters.m_accuracy_threshold) {
                     return false;
                 }
             } else if (total_error < 4. / 3. * m.mesh_parameters.m_quality_threshold)
