@@ -139,7 +139,7 @@ auto TriMeshEdgeCollapseOperation::modified_tuples(const TriMesh& m) const -> st
 
     assert(new_tup_opt.has_value());
     const Tuple& new_tup = new_tup_opt.value();
-    spdlog::error(new_tup.info());
+    //spdlog::error(new_tup.info());
     return m.get_one_ring_tris_for_vertex(new_tup);
 }
 
@@ -167,9 +167,9 @@ std::string TriMeshEdgeCollapseOperation::name() const
 
 std::vector<size_t> TriMeshEdgeCollapseOperation::fids_containing_edge(
     const TriMesh& m,
-    const Tuple& t) const
+    const Tuple& edge) const
 {
-    const auto faces = m.tris_bounded_by_edge(t);
+    const auto faces = m.tris_bounded_by_edge(edge);
     std::vector<size_t> fids;
     std::transform(faces.begin(), faces.end(), std::back_inserter(fids), [&](const Tuple& t) {
         return t.fid(m);
