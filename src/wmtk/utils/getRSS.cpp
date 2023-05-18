@@ -35,13 +35,13 @@
 
 #include "getRSS.h"
 
-
+namespace wmtk {
 /**
  * Returns the peak (maximum so far) resident set size (physical
  * memory use) measured in bytes, or zero if the value cannot be
  * determined on this OS.
  */
-size_t wmtk::getPeakRSS()
+size_t getPeakRSS()
 {
 #if defined(_WIN32)
     /* Windows -------------------------------------------------- */
@@ -84,7 +84,7 @@ size_t wmtk::getPeakRSS()
  * Returns the current resident set size (physical memory use) measured
  * in bytes, or zero if the value cannot be determined on this OS.
  */
-size_t wmtk::getCurrentRSS()
+size_t getCurrentRSS()
 {
 #if defined(_WIN32)
     /* Windows -------------------------------------------------- */
@@ -118,3 +118,4 @@ size_t wmtk::getCurrentRSS()
     return (size_t)0L; /* Unsupported. */
 #endif
 }
+} // namespace wmtk
