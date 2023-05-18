@@ -175,7 +175,7 @@ int main(int argc, char** argv)
 
 
     m.mesh_parameters.ATlogger =
-        wmtk::make_json_file_logger("ATlogger", output_folder / "runtime.log", true);
+        wmtk::make_json_file_logger("ATlogger", output_folder / "runtime.json", true);
 
 
     m.set_parameters(
@@ -194,7 +194,7 @@ int main(int argc, char** argv)
     {
         LoggerDataCollector ldc;
         ldc.evaluate_mesh(m);
-        ldc.log_json(m, "before_remeshing");
+        ldc.log_json_verbose(m, "before_remeshing");
     }
 
     LoggerDataCollector ldc;
@@ -205,7 +205,7 @@ int main(int argc, char** argv)
     m.consolidate_mesh();
 
     ldc.evaluate_mesh(m);
-    ldc.log_json(m, "after_remeshing");
+    ldc.log_json_verbose(m, "after_remeshing");
 
     auto finish_time = lagrange::get_timestamp();
     auto duration = lagrange::timestamp_diff_in_seconds(start_time, finish_time);

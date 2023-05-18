@@ -17,7 +17,7 @@ class LoggerDataCollector
         double std_dev_ = -std::numeric_limits<double>::max();
 
     public:
-        void compute_statistics(std::vector<double>& data)
+        StatisticsObj(std::vector<double> data)
         {
             std::sort(data.begin(), data.end());
 
@@ -36,20 +36,25 @@ class LoggerDataCollector
             std_dev_ = std::sqrt(sq_sum / data.size());
         }
 
-        double min() const { return min_; }
-        double max() const { return max_; }
-        double mean() const { return mean_; }
-        double median() const { return median_; }
-        double std_dev() const { return std_dev_; }
+        nlohmann::json to_json() const
+        {
+            // const nlohmann::json& js,
+            return {
+                {"min", min_},
+                {"max", max_},
+                {"mean", mean_},
+                {"median", median_},
+                {"std_dev", std_dev_}};
+        }
     };
 
     size_t peak_memory_ = -1; // peak memory in bytes
     size_t num_faces_ = -1;
     size_t num_vertices_ = -1;
-    StatisticsObj edge_length_;
-    StatisticsObj energy_;
-    StatisticsObj area_;
-    // StatisticsObj min_angle_;
+    std::vector<double> triangle_energies_;
+    std::vector<double> triangle_areas_;
+    // std::vector<double> triangle_min_angles_;
+    std::vector<double> edge_lengths_;
 
     mutable igl::Timer timer_;
     bool timer_started_ = false;
@@ -73,42 +78,39 @@ public:
             const auto faces = mesh.get_faces();
             num_faces_ = faces.size();
 
-            std::vector<double> energy_vec;
-            std::vector<double> area_vec;
-            // std::vector<double> min_angle_vec;
-            energy_vec.reserve(num_faces_);
-            area_vec.reserve(num_faces_);
-            // min_angle_vec.reserve(num_faces_);
+            triangle_energies_.reserve(num_faces_);
+            triangle_areas_.reserve(num_faces_);
+            // triangle_min_angles.reserve(num_faces_);
 
             for (const Tuple& f : faces) {
                 const auto vids = mesh.oriented_tri_vertices(f);
                 Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle;
+                Eigen::Matrix<double, 3, 3, Eigen::RowMajor> triangle_displaced;
                 for (size_t i = 0; i < 3; ++i) {
                     triangle.row(i) = mesh.vertex_attrs[vids[i].vid(mesh)].pos;
+                    triangle_displaced.row(i) =
+                        mesh.mesh_parameters.m_displacement->get(triangle(i, 0), triangle(i, 1));
                 }
-                const double triangle_area = wmtk::polygon_signed_area(triangle);
+                Eigen::Matrix<double, 1, 1> double_area;
+                igl::doublearea(triangle_displaced, Eigen::Matrix<int, 1, 3>{0, 1, 2}, double_area);
+                const double triangle_area = std::sqrt(double_area(0, 0));
                 const double triangle_energy =
                     mesh.mesh_parameters.m_displacement->get_error_per_triangle(triangle);
 
-                area_vec.emplace_back(triangle_area);
-                energy_vec.emplace_back(triangle_energy);
+                triangle_areas_.emplace_back(triangle_area);
+                triangle_energies_.emplace_back(triangle_energy);
             }
-
-            area_.compute_statistics(area_vec);
-            energy_.compute_statistics(energy_vec);
         }
         // edge stuff
         {
             const auto edges = mesh.get_edges();
 
-            std::vector<double> edge_length_vec;
-            edge_length_vec.reserve(edges.size());
+            edge_lengths_.reserve(edges.size());
 
             for (const Tuple e : edges) {
                 const double l = mesh.get_length3d(e);
-                edge_length_vec.emplace_back(l);
+                edge_lengths_.emplace_back(l);
             }
-            edge_length_.compute_statistics(edge_length_vec);
         }
         // vertex stuff
         {
@@ -138,34 +140,53 @@ public:
      * @param mesh
      * @param log_name name of the log message
      */
-    void log_json(const AdaptiveTessellation& mesh, const std::string& log_name) const
+    void log_json(
+        const AdaptiveTessellation& mesh,
+        const std::string& log_name,
+        const bool with_vectors = false) const
     {
         const double runtime = (timer_started_ && timer_stopped_) ? time_in_seconds() : -1;
 
-        mesh.mesh_parameters.log(
-            {{log_name,
-              {{"peak_memory", peak_memory_},
-               {"num_faces", num_faces_},
-               {"num_vertices", num_vertices_},
-               {"runtime", runtime},
-               {"edge_length",
-                {{"min", edge_length_.min()},
-                 {"max", edge_length_.max()},
-                 {"mean", edge_length_.mean()},
-                 {"median", edge_length_.median()},
-                 {"std_dev", edge_length_.std_dev()}}},
-               {"energy",
-                {{"min", energy_.min()},
-                 {"max", energy_.max()},
-                 {"mean", energy_.mean()},
-                 {"median", energy_.median()},
-                 {"std_dev", energy_.std_dev()}}},
-               {"area",
-                {{"min", area_.min()},
-                 {"max", area_.max()},
-                 {"mean", area_.mean()},
-                 {"median", area_.median()},
-                 {"std_dev", area_.std_dev()}}}}}});
+        nlohmann::json info = general_info_to_json();
+        if (with_vectors) {
+            nlohmann::json vec_info = vectors_to_json();
+            info.insert(vec_info.begin(), vec_info.end());
+        }
+
+        mesh.mesh_parameters.log({log_name, info});
+    }
+
+    void log_json_verbose(const AdaptiveTessellation& mesh, const std::string& log_name)
+    {
+        log_json(mesh, log_name, true);
+    }
+
+private:
+    nlohmann::json general_info_to_json() const
+    {
+        StatisticsObj edge_length_stats(edge_lengths_);
+        StatisticsObj energy_stats(triangle_energies_);
+        StatisticsObj area_stats(triangle_areas_);
+        // StatisticsObj min_angle_stats(triangle_min_angles_);
+
+        const double runtime = (timer_started_ && timer_stopped_) ? time_in_seconds() : -1;
+
+        return {
+            {"peak_memory", peak_memory_},
+            {"num_faces", num_faces_},
+            {"num_vertices", num_vertices_},
+            {"runtime", runtime},
+            {"edge_length_stats", edge_length_stats.to_json()},
+            {"triangle_energy_stats", energy_stats.to_json()},
+            {"triangle_area_stats", area_stats.to_json()}};
+    }
+
+    nlohmann::json vectors_to_json() const
+    {
+        return {
+            {"edge_lengths", edge_lengths_},
+            {"triangle_energies", triangle_energies_},
+            {"triangle_areas", triangle_areas_}};
     }
 };
 } // namespace adaptive_tessellation
