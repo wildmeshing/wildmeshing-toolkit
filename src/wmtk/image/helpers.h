@@ -111,6 +111,58 @@ Eigen::Vector<float, N> sample_bilinear(const std::array<wmtk::Image, N>& images
 template <size_t N>
 Eigen::Vector<float, N> sample_bicubic(const std::array<wmtk::Image, N>& images, float u, float v)
 {
+#if 0
+    auto w = images[0].width();
+    auto h = images[0].height();
+    // x, y are between 0 and 1
+    auto x = u * static_cast<float>(w);
+    auto y = v * static_cast<float>(h);
+
+    const auto sx = static_cast<int>(std::floor(static_cast<double>(x) - 0.5));
+    const auto sy = static_cast<int>(std::floor(static_cast<double>(y) - 0.5));
+    using ivec2 = struct { int x, y; };
+    std::array<ivec2, 4> bicubic_taps = {
+        ivec2{ std::clamp(sx - 1, 0, w - 1), std::clamp(sy - 1, 0, h - 1) },
+        ivec2{ std::clamp(sx + 0, 0, w - 1), std::clamp(sy + 0, 0, h - 1) },
+        ivec2{ std::clamp(sx + 1, 0, w - 1), std::clamp(sy + 1, 0, h - 1) },
+        ivec2{ std::clamp(sx + 2, 0, w - 1), std::clamp(sy + 2, 0, h - 1) }
+    };
+
+    auto bicubic_samples = [](const wmtk::Image& image, const std::array<ivec2, 4>& c) {
+        BicubicVector<float> samples;
+
+        samples( 0) = fetch_texel(image, c[0].x, c[0].y);
+        samples( 1) = fetch_texel(image, c[1].x, c[0].y);
+        samples( 2) = fetch_texel(image, c[2].x, c[0].y);
+        samples( 3) = fetch_texel(image, c[3].x, c[0].y);
+
+        samples( 4) = fetch_texel(image, c[0].x, c[1].y);
+        samples( 5) = fetch_texel(image, c[1].x, c[1].y);
+        samples( 6) = fetch_texel(image, c[2].x, c[1].y);
+        samples( 7) = fetch_texel(image, c[3].x, c[1].y);
+
+        samples( 8) = fetch_texel(image, c[0].x, c[2].y);
+        samples( 9) = fetch_texel(image, c[1].x, c[2].y);
+        samples(10) = fetch_texel(image, c[2].x, c[2].y);
+        samples(11) = fetch_texel(image, c[3].x, c[2].y);
+
+        samples(12) = fetch_texel(image, c[0].x, c[3].y);
+        samples(13) = fetch_texel(image, c[1].x, c[3].y);
+        samples(14) = fetch_texel(image, c[2].x, c[3].y);
+        samples(15) = fetch_texel(image, c[3].x, c[3].y);
+
+        return samples;
+    };
+
+    // use bicubic interpolation
+    Eigen::Vector<float, N> res;
+    for (size_t k = 0; k < N; ++k) {
+        BicubicVector<float> sample_vector = bicubic_samples(images[k], bicubic_taps);
+        BicubicVector<float> bicubic_coeff = get_bicubic_matrix() * sample_vector;
+        res[k] = eval_bicubic_coeffs(bicubic_coeff, x, y);
+    }
+    return res;
+#else
     auto w = images[0].width();
     auto h = images[0].height();
     // x, y are between 0 and 1
@@ -132,6 +184,7 @@ Eigen::Vector<float, N> sample_bicubic(const std::array<wmtk::Image, N>& images,
         res[k] = eval_bicubic_coeffs(bicubic_coeff, x, y);
     }
     return res;
+#endif
 }
 
 inline uint32_t to_morton_z_order(uint16_t x, uint16_t y)
