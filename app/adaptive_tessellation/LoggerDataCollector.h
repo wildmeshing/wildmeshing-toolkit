@@ -1,6 +1,6 @@
 #pragma once
 
-#include <igl/Timer.h>
+#include <spdlog/stopwatch.h>
 #include "AdaptiveTessellation.h"
 #include "wmtk/utils/getRSS.h"
 
@@ -58,9 +58,9 @@ class LoggerDataCollector
     // std::vector<double> triangle_min_angles_;
     std::vector<double> edge_lengths_;
 
-    mutable igl::Timer timer_;
-    bool timer_started_ = false;
-    bool timer_stopped_ = false;
+    // mutable igl::Timer timer_;
+    std::unique_ptr<spdlog::stopwatch> timer_;
+    double runtime_ = -1;
 
 public:
     /**
@@ -121,18 +121,17 @@ public:
         }
     }
 
-    void start_timer()
-    {
-        timer_.start();
-        timer_started_ = true;
-    }
+    void start_timer() { timer_ = std::make_unique<spdlog::stopwatch>(); }
     void stop_timer()
     {
-        timer_.stop();
-        timer_stopped_ = true;
+        if (timer_ != nullptr) {
+            runtime_ = timer_->elapsed().count();
+        } else {
+            wmtk::logger().warn("stop_timer() was called but timer was never started");
+        }
     }
 
-    double time_in_seconds() const { return timer_.getElapsedTimeInSec(); }
+    double time_in_seconds() const { return runtime_; }
 
     /**
      * @brief Log collected data using the mesh logger.
@@ -147,8 +146,6 @@ public:
         const std::string& log_name,
         const bool with_vectors = false) const
     {
-        const double runtime = (timer_started_ && timer_stopped_) ? time_in_seconds() : -1;
-
         nlohmann::json info = general_info_to_json();
         if (with_vectors) {
             nlohmann::json vec_info = vectors_to_json();
@@ -171,13 +168,11 @@ private:
         const StatisticsObj area_stats(triangle_areas_);
         // const StatisticsObj min_angle_stats(triangle_min_angles_);
 
-        const double runtime = (timer_started_ && timer_stopped_) ? time_in_seconds() : -1;
-
         return {
             {"peak_memory", peak_memory_},
             {"num_faces", num_faces_},
             {"num_vertices", num_vertices_},
-            {"runtime", runtime},
+            {"runtime", runtime_},
             {"edge_length_stats", edge_length_stats},
             {"triangle_energy_stats", energy_stats},
             {"triangle_area_stats", area_stats}};
