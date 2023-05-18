@@ -26,7 +26,7 @@ public:
     Image() = default;
     Image(int height_, int width_) { m_image.resize(height_, width_); };
 
-    ImageMatrixf& get_raw_image() { return m_image; }
+    ImageMatrixf& get_raw_image_mutable() { return m_image; }
     const ImageMatrixf& get_raw_image() const { return m_image; }
 
 public:

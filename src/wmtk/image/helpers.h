@@ -151,18 +151,21 @@ inline uint32_t to_morton_z_order(uint16_t x, uint16_t y)
 template <size_t N>
 inline std::array<wmtk::Image, N> convert_image_to_morton_z_order(const std::array<wmtk::Image, N>& linear_image)
 {
-    auto zorder_image = linear_image;
-    auto num_planes = linear_image.size();
+    std::array<wmtk::Image, N> zorder_image;
+    auto planes = linear_image.size();
     auto width = linear_image[0].width();
     auto height = linear_image[0].height();
-    for (int k = 0; k < num_planes; ++k)
+    for (int k = 0; k < planes; ++k)
     {
+        zorder_image[k] = wmtk::Image(height, width);
+        auto&& zorder_plane = zorder_image[k].get_raw_image_mutable().data();
+        auto&& linear_plane = linear_image[k].get_raw_image();
         for (int y = 0; y < height; ++y)
         {
             for (int x = 0; x < width; ++x)
             {
                 auto zoffset = wmtk::internal::to_morton_z_order(x, y);
-                zorder_image[k].get_raw_image().data()[zoffset] = linear_image[k].get_raw_image().coeff(x, y);
+                zorder_plane[zoffset] = linear_plane(x, y);
             }
         }
     }
