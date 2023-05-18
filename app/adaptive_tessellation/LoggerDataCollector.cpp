@@ -111,7 +111,7 @@ void LoggerDataCollector::evaluate_mesh(const AdaptiveTessellation& mesh)
 
         edge_lengths_.reserve(edges.size());
 
-        for (const Tuple e : edges) {
+        for (const Tuple& e : edges) {
             const double l = mesh.get_length3d(e);
             edge_lengths_.emplace_back(l);
         }
