@@ -30,12 +30,12 @@ auto TriMeshEdgeCollapseOperation::execute(TriMesh& m, const Tuple& loc0) -> Exe
 
 
     // get the fids
-    auto n1_fids = vertex_connectivity[vid1].m_conn_tris;
+    const auto& n1_fids = vertex_connectivity[vid1].m_conn_tris;
 
-    auto n2_fids = vertex_connectivity[vid2].m_conn_tris;
+    const auto& n2_fids = vertex_connectivity[vid2].m_conn_tris;
 
     // get the fids that will be modified
-    auto n12_intersect_fids = set_intersection(n1_fids, n2_fids);
+    auto n12_intersect_fids = fids_containing_edge(m, loc0);
     // check if the triangles intersection is the one adjcent to the edge
     size_t test_fid1 = loc0.fid(m);
     TriMesh::Tuple loc1 = m.switch_face(loc0).value_or(loc0);
@@ -62,30 +62,30 @@ auto TriMeshEdgeCollapseOperation::execute(TriMesh& m, const Tuple& loc0) -> Exe
 
     // record the fids that will be modified/erased for roll back on failure
     vector_unique(n12_union_fids);
-    std::vector<std::pair<size_t, TriangleConnectivity>> old_tris(n12_union_fids.size());
 
     for (const size_t fid : n12_union_fids) {
         tri_connectivity[fid].hash++;
     }
     // modify the triangles
     // the m_conn_tris needs to be sorted
-    size_t new_vid = get_next_empty_slot_v(m);
-    for (size_t fid : n1_fids) {
-        if (tri_connectivity[fid].m_is_removed)
-            continue;
-        else {
-            int j = tri_connectivity[fid].find(vid1);
-            tri_connectivity[fid].m_indices[j] = new_vid;
+    const size_t new_vid = get_next_empty_slot_v(m);
+
+    auto update_fid_vids = [&](const std::vector<size_t> fids, const size_t old_vid) {
+        for (size_t fid : fids) {
+            auto& tri_con = tri_connectivity[fid];
+            if (tri_con.m_is_removed) {
+                continue;
+            }
+            for (size_t& id : tri_con.m_indices) {
+                if (id == old_vid) {
+                    id = new_vid;
+                }
+            }
         }
-    }
-    for (size_t fid : n2_fids) {
-        if (tri_connectivity[fid].m_is_removed)
-            continue;
-        else {
-            int j = tri_connectivity[fid].find(vid2);
-            tri_connectivity[fid].m_indices[j] = new_vid;
-        }
-    }
+    };
+
+    update_fid_vids(n1_fids, vid1);
+    update_fid_vids(n2_fids, vid2);
 
     // now work on vids
     // add in the new vertex
@@ -102,12 +102,10 @@ auto TriMeshEdgeCollapseOperation::execute(TriMesh& m, const Tuple& loc0) -> Exe
 
     // remove the erased fids from the vertices' (the one of the triangles that is not the end
     // points of the edge) connectivity list
-    std::vector<std::pair<size_t, size_t>> same_edge_vid_fid;
     for (size_t fid : n12_intersect_fids) {
         auto f_vids = tri_connectivity[fid].m_indices;
         for (size_t f_vid : f_vids) {
             if (f_vid != vid1 && f_vid != vid2) {
-                same_edge_vid_fid.emplace_back(f_vid, fid);
                 assert(vector_contains(vertex_connectivity[f_vid].m_conn_tris, fid));
                 vector_erase(vertex_connectivity[f_vid].m_conn_tris, fid);
             }
@@ -128,86 +126,26 @@ auto TriMeshEdgeCollapseOperation::execute(TriMesh& m, const Tuple& loc0) -> Exe
     return_t = Tuple(new_vid, (j_ret + 2) % 3, new_fid, m);
     assert(new_t.is_valid(m));
 
-    new_tris = m.get_one_ring_tris_for_vertex(new_t);
+    assign(new_t);
+    new_tris = modified_tuples(m);
 
     ret_data.success = true;
     return ret_data;
 }
-namespace {
-    constexpr static size_t dummy = std::numeric_limits<size_t>::max();
-}
 
-auto TriMeshEdgeCollapseOperation::links_of_vertex(const TriMesh& mesh, const Tuple& vertex)  -> LinksOfVertex{
-
-
-    size_t vid = vertex.vid(mesh);
-    auto vid_ring = mesh.get_one_ring_edges_for_vertex(vertex);
-
-    LinksOfVertex ret;
-    std::vector<size_t>& lk_vid = ret.vertex;
-    std::vector<std::pair<size_t, size_t>>& lk_e_vid = ret.edge;
-
-    for (const auto& e_vid : vid_ring) {
-        if (!e_vid.switch_face(mesh).has_value()) {
-            lk_vid.push_back(dummy);
-            lk_e_vid.emplace_back(e_vid.vid(mesh), dummy);
-        }
-        lk_vid.push_back(e_vid.vid(mesh));
-    }
-    std::vector<Tuple> vid_tris = mesh.get_one_ring_tris_for_vertex(vertex);
-    for (const auto& v_tri_t : vid_tris) {
-        const size_t fid = v_tri_t.fid(mesh);
-        const auto& tri_con = tri_connectivity(mesh)[fid];
-        const auto& indices = tri_con.m_indices;
-        auto l = tri_con.find(vid);
-        assert(l != -1);
-        auto i0 = indices[(l + 1) % 3], i1 = indices[(l + 2) % 3];
-        lk_e_vid.emplace_back(std::min(i0, i1), std::max(i0, i1));
-    }
-    vector_unique(lk_vid);
-    std::sort(lk_e_vid.begin(), lk_e_vid.end());
-    return ret;
-
-}
-std::vector<size_t> TriMeshEdgeCollapseOperation::edge_link_of_edge(const TriMesh& mesh, const Tuple& edge) {
-
-    std::vector<size_t> lk_edge;
-    lk_edge.push_back((edge.switch_edge(mesh)).switch_vertex(mesh).vid(mesh));
-    if (!edge.switch_face(mesh).has_value()) {
-        lk_edge.push_back(dummy);
-    } else {
-        lk_edge.push_back(
-            ((edge.switch_face(mesh).value()).switch_edge(mesh)).switch_vertex(mesh).vid(mesh));
-    }
-    vector_sort(lk_edge);
-    return lk_edge;
-}
-
-bool TriMeshEdgeCollapseOperation::check_link_condition(const TriMesh& mesh, const Tuple& edge)
+auto TriMeshEdgeCollapseOperation::modified_tuples(const TriMesh& m) const -> std::vector<Tuple>
 {
-    assert(edge.is_valid(mesh));
-    // the edge initially points at the first of two vertex links we are computing
-    const LinksOfVertex v1 = links_of_vertex(mesh, edge);
-    const LinksOfVertex v2 = links_of_vertex(mesh, edge.switch_vertex(mesh));
+    const auto& new_tup_opt = get_return_tuple_opt();
 
-    // compute vertex link condition 
-    auto lk_vid12 = set_intersection(v1.vertex, v2.vertex);
-    bool v_link = lk_vid12 == edge_link_of_edge(mesh, edge);
+    assert(new_tup_opt.has_value());
+    const Tuple& new_tup = new_tup_opt.value();
+    spdlog::error(new_tup.info());
+    return m.get_one_ring_tris_for_vertex(new_tup);
+}
 
-    // check edge link condition
-    // in 2d edge link for an edge is always empty
-
-    std::vector<std::pair<size_t, size_t>> res;
-    const auto & lk_e_vid1 = v1.edge;
-    const auto & lk_e_vid2 = v2.edge;
-    std::set_intersection(
-        lk_e_vid1.begin(),
-        lk_e_vid1.end(),
-        lk_e_vid2.begin(),
-        lk_e_vid2.end(),
-        std::back_inserter(res));
-    const bool e_link = res.empty();
-    return v_link && e_link;
+auto TriMeshEdgeCollapseOperation::new_vertex(const TriMesh& m) const -> std::optional<Tuple>
+{
+    return get_return_tuple_opt();
 }
 
 
@@ -226,4 +164,16 @@ std::string TriMeshEdgeCollapseOperation::name() const
 {
     return "edge_collapse";
 }
+
+std::vector<size_t> TriMeshEdgeCollapseOperation::fids_containing_edge(
+    const TriMesh& m,
+    const Tuple& t) const
+{
+    const auto faces = m.tris_bounded_by_edge(t);
+    std::vector<size_t> fids;
+    std::transform(faces.begin(), faces.end(), std::back_inserter(fids), [&](const Tuple& t) {
+        return t.fid(m);
+    });
+    return fids;
 }
+} // namespace wmtk

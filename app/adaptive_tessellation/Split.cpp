@@ -2,6 +2,7 @@
 using namespace adaptive_tessellation;
 using namespace wmtk;
 
+
 // every edge is split if it is longer than 4/5 L
 
 auto split_renew = [](auto& m, auto op, auto& tris) {
@@ -80,7 +81,9 @@ bool AdaptiveTessellationSplitEdgeOperation::after(
     AdaptiveTessellation& m,
     wmtk::TriMeshOperation::ExecuteReturnData& ret_data)
 {
+    assert(bool(*this));
     if (wmtk::TriMeshSplitEdgeOperation::after(m, ret_data)) {
+        assert(bool(*this));
         const Eigen::Vector2d p =
             (m.vertex_attrs[op_cache.local().v1].pos + m.vertex_attrs[op_cache.local().v2].pos) /
             2.0;
@@ -151,6 +154,28 @@ bool AdaptiveTessellationSplitEdgeOperation::after(
                 .curve_id = std::nullopt;
         }
     }
+    assert(bool(*this));
+    // update the face_attrs (accuracy error)
+    if (!m.mesh_parameters.m_ignore_embedding) {
+        assert(bool(*this));
+        auto modified_tris = modified_tuples(m);
+        // get a vector of new traingles uvs
+        std::vector<std::array<float, 6>> modified_tris_uv(modified_tris.size());
+        for (int i = 0; i < modified_tris.size(); i++) {
+            auto tri = modified_tris[i];
+            auto verts = m.oriented_tri_vids(tri);
+            std::array<float, 6> tri_uv;
+            for (int i = 0; i < 3; i++) {
+                tri_uv[i * 2] = m.vertex_attrs[verts[i]].pos(0);
+                tri_uv[i * 2 + 1] = m.vertex_attrs[verts[i]].pos(1);
+            }
+            modified_tris_uv[i] = tri_uv;
+        }
+        std::vector<float> renewed_errors(modified_tris.size());
+        m.m_texture_integral.get_error_per_triangle(modified_tris_uv, renewed_errors);
+        m.set_faces_accuracy_error(modified_tris, renewed_errors);
+    }
+
     return ret_data.success;
 }
 
@@ -216,19 +241,19 @@ wmtk::TriMeshOperation::ExecuteReturnData AdaptiveTessellationPairedSplitEdgeOpe
     const Tuple& t)
 {
     bool old_t_is_seam = m.is_seam_edge(t);
-    bool old_t_is_boundary = m.is_boundary_edge(t) & (!old_t_is_seam);
+    bool old_t_is_boundary = m.is_boundary_edge(t) && (!old_t_is_seam);
     assert(m.check_mesh_connectivity_validity());
     assert(m.is_seam_edge(t) == mirror_edge_tuple.has_value());
-    TriMeshSplitEdgeOperation::ExecuteReturnData ret_data =
-        TriMeshSplitEdgeOperation::execute(m, t);
+    TriMeshOperation::ExecuteReturnData ret_data = split_edge.execute(m, t);
     if (!ret_data.success) return ret_data;
+    assert(bool(split_edge));
     split_edge.return_edge_tuple = ret_data.tuple;
     assert(split_edge.return_edge_tuple.vid(m) == t.vid(m));
     if (old_t_is_seam) {
         wmtk::logger().info("execute seam");
         assert(t.vid(m) == m.get_oriented_mirror_edge(mirror_edge_tuple.value()).vid(m));
-        TriMeshSplitEdgeOperation::ExecuteReturnData mirror_ret_data =
-            TriMeshSplitEdgeOperation::execute(m, mirror_edge_tuple.value());
+        TriMeshOperation::ExecuteReturnData mirror_ret_data =
+            mirror_split_edge.execute(m, mirror_edge_tuple.value());
         if (!mirror_ret_data.success) return ret_data;
         mirror_split_edge.return_edge_tuple = mirror_ret_data.tuple;
         assert(mirror_split_edge.return_edge_tuple.vid(m) == mirror_edge_tuple.value().vid(m));
@@ -363,6 +388,7 @@ bool AdaptiveTessellationPairedSplitEdgeOperation::after(
     AdaptiveTessellation& m,
     wmtk::TriMeshOperation::ExecuteReturnData& ret_data)
 {
+    assert(bool(split_edge));
     split_edge.after(m, ret_data);
     if (!ret_data.success) return false;
     // nullify the inside edges old mirror info
@@ -383,6 +409,9 @@ bool AdaptiveTessellationPairedSplitEdgeOperation::after(
         assert(paired_op_cache.local().after_sibling_edges.size() == 8);
         ret_data.success &=
             mirror_split_edge.after(m, ret_data); // after doesn't use contents of ret_data
+        // enforce the mirror_split_edge t to be the same as the primary t
+        m.vertex_attrs[mirror_split_edge.return_edge_tuple.vid(m)].t =
+            m.vertex_attrs[split_edge.return_edge_tuple.vid(m)].t;
         // now do the siling edge tranfering
         if (!ret_data.success) return false;
         // it's a seam edge update mirror edge data using the sibling edges
@@ -492,84 +521,37 @@ void AdaptiveTessellation::split_all_edges()
     wmtk::logger().info("size for edges to be split is {}", collect_all_ops.size());
     auto setup_and_execute = [&](auto executor) {
         addPairedCustomOps(executor);
-        // executor.stopping_criterion_checking_frequency = 100;
         executor.renew_neighbor_tuples = split_renew;
         executor.priority = [&](auto& m, auto _, auto& e) {
-            auto error = m.mesh_parameters.m_get_length(e);
+            double error = 0.;
+            if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
+                error = std::get<0>(m.get_area_accuracy_error_for_split(e));
+            } else
+                error = m.mesh_parameters.m_get_length(e);
             return error;
         };
         executor.num_threads = NUM_THREADS;
         executor.is_weight_up_to_date = [](auto& m, auto& ele) {
             auto& [weight, op, tup] = ele;
-            double length = 0.;
+            double total_error = 0.;
             double error1 = 0.;
             double error2 = 0.;
             if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
-                if (m.mesh_parameters.m_split_absolute_error_metric) {
-                    error1 = m.get_area_accuracy_error_per_face(tup);
-                    if (tup.switch_face(m).has_value()) {
-                        error2 = m.get_area_accuracy_error_per_face(tup.switch_face(m).value());
-                    } else {
-                        if (m.is_seam_edge(tup))
-                            error2 =
-                                m.get_area_accuracy_error_per_face(m.get_oriented_mirror_edge(tup));
-                        else
-                            error2 = error1;
-                    }
-                    length = (error1 + error2) * m.get_length2d(tup);
-                } else {
-                    ///////// !!! TODO this should be deleted
-                    error1 = m.get_area_accuracy_error_per_face(tup);
-                    if (tup.switch_face(m).has_value()) {
-                        error2 = m.get_area_accuracy_error_per_face(tup.switch_face(m).value());
-                    } else
-                        error2 = error1;
-                    double e_before = error1 + error2;
-                    Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle;
-                    double e_after, error_after_1, error_after_2, error_after_3, error_after_4;
-
-                    triangle.row(0) = m.vertex_attrs[tup.vid(m)].pos;
-                    triangle.row(1) = (m.vertex_attrs[tup.vid(m)].pos +
-                                       m.vertex_attrs[tup.switch_vertex(m).vid(m)].pos) /
-                                      2.;
-                    triangle.row(2) =
-                        m.vertex_attrs[tup.switch_edge(m).switch_vertex(m).vid(m)].pos;
-
-                    error_after_1 = m.get_area_accuracy_error_per_face_triangle_matrix(triangle);
-                    triangle.row(0) = m.vertex_attrs[tup.switch_vertex(m).vid(m)].pos;
-                    error_after_2 = m.get_area_accuracy_error_per_face_triangle_matrix(triangle);
-                    if (tup.switch_face(m).has_value()) {
-                        triangle.row(2) = m.vertex_attrs[(tup.switch_face(m).value())
-                                                             .switch_edge(m)
-                                                             .switch_vertex(m)
-                                                             .vid(m)]
-                                              .pos;
-                        error_after_3 =
-                            m.get_area_accuracy_error_per_face_triangle_matrix(triangle);
-                        triangle.row(0) = m.vertex_attrs[tup.vid(m)].pos;
-                        error_after_4 =
-                            m.get_area_accuracy_error_per_face_triangle_matrix(triangle);
-                    } else {
-                        error_after_3 = error_after_1;
-                        error_after_4 = error_after_2;
-                    }
-                    e_after = error_after_1 + error_after_2 + error_after_3 + error_after_4;
-                    length = e_before - e_after;
-                }
+                std::tie(total_error, error1, error2) = m.get_area_accuracy_error_for_split(tup);
             } else
-                length = m.mesh_parameters.m_get_length(tup);
+                total_error = m.mesh_parameters.m_get_length(tup);
             // check if out of date
-            if (!is_close(length, weight)) return false;
+            if (!is_close(total_error, weight)) return false;
             // check if meet operating threshold
             if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::ACCURACY) {
-                if (length < m.mesh_parameters.m_accuracy_threshold) return false;
+                if (total_error < m.mesh_parameters.m_accuracy_threshold) return false;
             } else if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
                 if (error1 < m.mesh_parameters.m_accuracy_threshold &&
                     error2 < m.mesh_parameters.m_accuracy_threshold) {
                     // wmtk::logger().info("error1 {} error2 {}", error1, error2);
                     return false;
                 }
-            } else if (length < 4. / 3. * m.mesh_parameters.m_quality_threshold)
+            } else if (total_error < 4. / 3. * m.mesh_parameters.m_quality_threshold)
                 return false;
             return true;
         };
@@ -629,8 +611,6 @@ bool AdaptiveTessellation::split_edge_after(const Tuple& edge_tuple) // not used
         vertex_attrs[vid].boundary_vertex = true;
         vertex_attrs[vid].t = mesh_parameters.m_boundary.uv_to_t(vertex_attrs[vid].pos).second;
     }
-    // wmtk::logger().info("new 3d position {}", mesh_parameters.m_displacement->get(p(0),
-    // p(1)));
     success_cnt++;
     return true;
 }

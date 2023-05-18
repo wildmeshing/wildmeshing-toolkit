@@ -11,12 +11,13 @@ bool wmtk::inversion_check_with_dofx(
     const wmtk::DofVector& dofx)
 {
     for (auto& nminfo : nminfos) {
+        Eigen::Vector2d A;
+        if (dofx.size() == 1) {
+            A = boundary_mapping.t_to_uv(nminfo.curve_id, dofx(0));
+        } else
+            A = dofx;
         for (auto i = 0; i < nminfo.neighbors.rows(); i++) {
-            Eigen::Vector2d A, B, C;
-            if (dofx.size() == 1) {
-                A = boundary_mapping.t_to_uv(nminfo.curve_id, dofx(0));
-            } else
-                A = dofx;
+            Eigen::Vector2d B, C;
             B << nminfo.neighbors(i, 0), nminfo.neighbors(i, 1);
             C << nminfo.neighbors(i, 2), nminfo.neighbors(i, 3);
             auto res = igl::predicates::orient2d(A, B, C);
@@ -34,7 +35,10 @@ void wmtk::optimization_state_update(
 {
     // assume no inversion
     assert(inversion_check_with_dofx(boundary_mapping, nminfos, state.dofx));
-    auto total_energy = 0.;
+    wmtk::logger().info(
+        "   :: in optimization_state_update curent dofx {}",
+        state.dofx.transpose());
+    double total_energy = 0.;
     Eigen::Vector2d total_jac = Eigen::Vector2d::Zero();
     Eigen::Matrix2d total_hess = Eigen::Matrix2d::Zero();
     for (auto& nminfo : nminfos) {
@@ -43,6 +47,7 @@ void wmtk::optimization_state_update(
             // pass the state energy
             state.two_opposite_vertices = nminfo.neighbors.row(i);
             state.scaling = nminfo.target_length;
+            state.idx = nminfo.facet_ids(i);
             assert(boundary_mapping.num_curves() > 0);
             DofsToPositions dofs_to_pos(boundary_mapping, nminfo.curve_id);
             energy_def.eval(state, dofs_to_pos);
@@ -51,6 +56,10 @@ void wmtk::optimization_state_update(
             total_jac += state.gradient;
             total_hess += state.hessian;
         }
+        wmtk::logger().info("   :: in optimization_state_update one nminfo done");
+        wmtk::logger().info(
+            "   :: in optimization_state_update energy of one nminfo {}",
+            state.value);
     }
     state.value = total_energy;
     state.gradient = total_jac;
@@ -67,10 +76,11 @@ void wmtk::linesearch_update_dofx(
     int max_iter)
 {
     auto lr = 0.5;
-
+    const State fallback_state = state;
     DofVector fallback_dofx = state.dofx;
     DofVector old_dofx;
     double old_energy = state.value;
+    int line_search_iter = 0;
     while (lr > std::numeric_limits<double>::denorm_min() && state.value >= old_energy) {
         old_dofx = state.dofx;
         // update dofx in state
@@ -78,11 +88,28 @@ void wmtk::linesearch_update_dofx(
         if (inversion_check_with_dofx(boundary_mapping, nminfos, state.dofx)) {
             // can only compute energy when the triangle isn't flipped
             optimization_state_update(energy_def, nminfos, boundary_mapping, state);
-            if (state.value < old_energy) return;
+            if (state.value < old_energy) break;
+        } else {
+            wmtk::logger().info("line search cause traingle flip");
+            // triangle is flipped revert to old dofx
+            state.dofx = old_dofx;
+            ////// TODO for now just return
+            state = fallback_state;
+            break;
+            //////
         }
+        wmtk::logger().info("energy {} > old energy {} ", state.value, old_energy);
         lr /= 2.;
+        ////// TODO for now just return
+        state = fallback_state;
+        break;
+        //////
+        line_search_iter++;
     }
-    if (state.value >= old_energy) state.dofx = fallback_dofx;
+    wmtk::logger().info("line search iter: {}", line_search_iter);
+    if (state.value >= old_energy) {
+        state = fallback_state;
+    }
     return;
 }
 
@@ -115,8 +142,8 @@ void wmtk::optimization_dofx_update(
     wmtk::State& state)
 {
     wmtk::State old_state = state;
-    auto line_search_iters = 12;
-    optimization_state_update(energy_def, nminfos, boundary_mapping, state);
+    auto line_search_iters = 12; // arbitrarily assigned not used
+
     if (state.value == std::numeric_limits<double>::infinity()) {
         logger().info("////////// energy is infinity. skip.");
         return;
@@ -130,6 +157,9 @@ void wmtk::optimization_dofx_update(
         search_dir(0) = dir(0);
     } else
         search_dir = dir;
+    wmtk::logger().info("///////////  old pos is {}", state.dofx.transpose());
+    wmtk::logger().info("///////////  line search start ");
+    auto linesearch_start_time = lagrange::get_timestamp();
     wmtk::linesearch_update_dofx(
         search_dir,
         energy_def,
@@ -137,7 +167,14 @@ void wmtk::optimization_dofx_update(
         nminfos,
         state,
         line_search_iters);
-
+    auto linesearch_end_time = lagrange::get_timestamp();
+    wmtk::logger().info(
+        "///////////  line search end using {}s",
+        lagrange::timestamp_diff_in_seconds(linesearch_start_time, linesearch_end_time));
+    wmtk::logger().info("///////////  new pos is {}", state.dofx.transpose());
+    ////// TODO for now don't fall through to gradient descent
+    return;
+    //////
     // if newton's method do not update the dofx, then try gradien descent
     if ((state.dofx - old_state.dofx).squaredNorm() < std::numeric_limits<double>::denorm_min()) {
         state = old_state;
@@ -147,6 +184,8 @@ void wmtk::optimization_dofx_update(
             search_dir(0) = dir(0);
         } else
             search_dir = dir;
+        wmtk::logger().info("///////////  line search for gradient-descent start ");
+        linesearch_start_time = lagrange::get_timestamp();
         wmtk::linesearch_update_dofx(
             search_dir,
             energy_def,
@@ -154,5 +193,9 @@ void wmtk::optimization_dofx_update(
             nminfos,
             state,
             line_search_iters);
+        linesearch_end_time = lagrange::get_timestamp();
+        wmtk::logger().info(
+            "///////////  line search for gradient-descent end using {}s",
+            lagrange::timestamp_diff_in_seconds(linesearch_start_time, linesearch_end_time));
     }
 }

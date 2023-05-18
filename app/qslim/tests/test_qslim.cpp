@@ -9,7 +9,7 @@ using namespace app::qslim;
 
 TEST_CASE("qec", "[test_qslim][.]")
 {
-    const std::string root(WMT_DATA_DIR);
+    const std::string root(WMTK_DATA_DIR);
     const std::string path = root + "/piece_0.obj";
 
     Eigen::MatrixXd V;
@@ -38,7 +38,7 @@ TEST_CASE("qec", "[test_qslim][.]")
 
 TEST_CASE("qec_cost", "[test_qslim]")
 {
-    const std::string root(WMT_DATA_DIR);
+    const std::string root(WMTK_DATA_DIR);
     const std::string path = root + "/upsample_box.obj";
 
     Eigen::MatrixXd V;

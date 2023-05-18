@@ -6,8 +6,15 @@ namespace wmtk {
 struct LinksOfVertex
 {
     std::vector<size_t> vertex;
-    std::vector<std::pair<size_t, size_t>> edge;
+    bool infinite_vertex = false;
+
+    // finite edges as vids on the opposite edge of each triangle
+    std::vector<std::array<size_t, 2>> edge;
+
+    // vids of boundary edges (infinite link edges)
+    std::vector<size_t> infinite_edge;
 };
+
 /**
  * Collapse an edge
  *
@@ -16,8 +23,45 @@ struct LinksOfVertex
  * introduced
  * @note collapse edge a,b and generate a new vertex c
  * @return if collapse succeed
+ *
+ *
+ *
  */
-class TriMeshEdgeCollapseOperation : public TriMeshOperation
+// Given an input triangle with tuple X
+//   --------------------------
+//   |\          /\          /|
+//   | \        /  \   A    / |
+//   |  \      /    \      /  |
+//   |   \    /  X   \    /   |
+//   |    \  /        \  /    |
+//   |     \/          \/     |
+//   ------X-----X-------------
+//   |     /\          /\     |
+//   |    /  \        /  \    |
+//   |   /    \      /    \   |
+//   |  /      \    /      \  |
+//   | /        \  /        \ |
+//   |/          \/          \|
+//   --------------------------
+//
+// it is transformed to
+//   ---------------
+//   |\     |     /|
+//   | \ o  | X  / |
+//   |  \   o   /  |
+//   |   \  |  X   |
+//   |    \ | /    |
+//   |     \|/     |
+//   -------X-------
+//   |     /|\     |
+//   |    / | \    |
+//   |   /  |  \   |
+//   |  /   |   \  |
+//   | /    |    \ |
+//   |/     |     \|
+//   ---------------
+//   returns X, or if the triangle A does not exist then edge/face O are chosen
+class TriMeshEdgeCollapseOperation : public TriMeshOperation, public SingleTupleOperationInfo
 {
 public:
     ExecuteReturnData execute(TriMesh& m, const Tuple& t) override;
@@ -32,9 +76,25 @@ public:
      */
     static bool check_link_condition(const TriMesh& m, const Tuple& t);
 
-    // computes the 
-    static LinksOfVertex links_of_vertex(const TriMesh& m, const Tuple& vertex);
-    static std::vector<size_t> edge_link_of_edge(const TriMesh& m, const Tuple& edge);
 
+    std::vector<Tuple> modified_tuples(const TriMesh& m) const;
+    void assign(const Tuple& t) override { SingleTupleOperationInfo::assign(t); }
+    void mark_failed() override { SingleTupleOperationInfo::reset(); }
+    std::optional<Tuple> new_vertex(const TriMesh& m) const;
+
+//protected:
+    constexpr static size_t link_dummy = std::numeric_limits<size_t>::max();
+    std::vector<size_t> fids_containing_edge(const TriMesh& m, const Tuple& t) const;
+
+    static LinksOfVertex links_of_vertex(const TriMesh& m, const Tuple& vertex);
+
+
+    // returns the vids opposite to an edge, including a bool for the "infinite" vertex if no
+    // opposite exists
+    static std::tuple<std::vector<size_t>, bool> edge_link_of_edge_vids(
+        const TriMesh& m,
+        const Tuple& edge);
+    // static std::vector<Tuple> edge_link_of_edge(const TriMesh& m, const Tuple& edge);
 };
-}
+
+} // namespace wmtk

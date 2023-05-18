@@ -18,6 +18,8 @@
 #include <lagrange/views.h>
 #include <tbb/concurrent_vector.h>
 #include <wmtk/TriMesh.h>
+#include <wmtk/image/TextureIntegral.h>
+#include <wmtk/image/QuadricIntegral.h>
 #include <wmtk/utils/AMIPS2D.h>
 #include <wmtk/utils/AMIPS2D_autodiff.h>
 #include <wmtk/utils/BoundaryParametrization.h>
@@ -28,6 +30,8 @@
 #include <wmtk/utils/Image.h>
 #include <wmtk/utils/MipMap.h>
 #include <wmtk/utils/PolygonClipping.h>
+#include <wmtk/utils/json_sink.h>
+#include <wmtk/utils/load_image_exr.h>
 #include <Eigen/Core>
 #include <finitediff.hpp>
 #include <lean_vtk.hpp>
@@ -52,6 +56,7 @@ public:
 
     // Vertices marked as fixed cannot be modified by any local operation
     bool fixed = false;
+    // a cache variable
     bool boundary_vertex = false;
 };
 
@@ -104,9 +109,14 @@ public:
     // mapping is built at loading and is not maintained during the mesh operations
     // since seam vertices at t-junctions should not be modified,
     // those colorings do not need updates
-    std::unordered_map<size_t, int> uv_index_to_color;
+    std::unordered_map<size_t, int> uv_index_to_color = {};
     // each color can have 1 vertex, 2 vertices, or 3 above vertices
-    std::vector<std::vector<size_t>> color_to_uv_indices;
+    std::vector<std::vector<size_t>> color_to_uv_indices = {};
+
+    // texture integraler
+    wmtk::TextureIntegral m_texture_integral;
+
+    wmtk::QuadricIntegral m_quadric_integral;
 
 public:
     AdaptiveTessellation(){};
@@ -156,11 +166,22 @@ public:
     Eigen::Matrix<uint64_t, Eigen::Dynamic, 2, Eigen::RowMajor> get_bnd_edge_matrix();
 
     //// preprocess the mesh for remeshing
-    // 1. set feature vertex fixed
-    // 2. set start/end/t-junction of curve fixed
-    // 3. assign each boudnary edge a curveid
-    // 4. set initial accuracy error for each triangle
-    void mesh_preprocessing();
+    //// replace function create_paired_seam_mesh_with_offset, and mesh_construct_boundaries
+    // 0. create mesh
+    // 1. vertex_attrs: initiate uv pos and pos_world
+    // 2. face_attrs:   set seam local edge mirror data
+    // 3. build seam vertex index to color mapping
+    // 4. construct boundary parametrization
+    // 5. vertex_attrs: set boundary vertex with boudary tag
+    //                  set boundary vertex curve_id, and boundary paramter t
+    //                  set feature vertex as fixed, set strat/end/t-junction of curve fixed
+    // 6. edge_attrs:   set curve-id for each edge
+    // 7. face_attrs:   set initial accuracy error for each triangle
+    void mesh_preprocessing(
+        const std::filesystem::path& input_mesh_path,
+        const std::filesystem::path& position_image_path,
+        const std::filesystem::path& normal_image_path,
+        const std::filesystem::path& height_image_path);
 
     bool invariants(const std::vector<Tuple>& new_tris);
 
@@ -178,33 +199,63 @@ public:
         const Eigen::MatrixXi& F,
         const Eigen::MatrixXi& E0,
         const Eigen::MatrixXi& E1);
+    // return E0, E1 of corresponding seam edges in uv mesh
+    // set up the seam vertex coloring
+    std::pair<Eigen::MatrixXi, Eigen::MatrixXi> seam_edges_set_up(
+        const Eigen::MatrixXd& V,
+        const Eigen::MatrixXi& F,
+        const wmtk::TriMesh& m_3d,
+        const Eigen::MatrixXd& VT,
+        const Eigen::MatrixXi& FT);
+    // for each vertex that's seam vertex, assign same color for mirror vertices
+    // build the mapping from uv_index to color
+    // and mapping from color to uv_index
+    void set_seam_vertex_coloring(
+        const Eigen::MatrixXd& V,
+        const Eigen::MatrixXi& F,
+        const wmtk::TriMesh& m_3d,
+        const Eigen::MatrixXd& VT,
+        const Eigen::MatrixXi& FT);
+
+    void set_faces_accuracy_error(
+        const std::vector<TriMesh::Tuple>& tris,
+        const std::vector<float>& computed_errors);
+
 
     // Exports V and F of the stored mesh
-    void export_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
-
-    // Exports V and F of the stored mesh
-    void export_mesh_without_invalid_faces(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
-
-    // Exports V and F of the stored mesh
-    void export_mesh_with_displacement(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
+    void export_uv(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
 
     /**
-     * @brief Exports the mesh including UV coordinates
+     * @brief Exports the texture mesh with applied displacement and the texture mesh itself.
+     *
+     * @param vertices igl format vertices
+     * @param faces igl format faces
+     * @param vertices_uv igl format texture vertices
+     * @param faces_uv igl format texture faces
+     */
+    void export_displaced_uv(
+        Eigen::MatrixXd& vertices,
+        Eigen::MatrixXi& faces,
+        Eigen::MatrixXd& vertices_uv,
+        Eigen::MatrixXi& faces_uv) const;
+
+    /**
+     * @brief Exports the mesh including texture coordinates.
      *
      * @param V igl format vertices
      * @param F igl format faces
      * @param VT igl format texture vertices
      * @param FT igl format texture faces
      */
-    void export_mesh(
+    void export_mesh_with_displacement(
         Eigen::MatrixXd& V,
         Eigen::MatrixXi& F,
         Eigen::MatrixXd& VT,
         Eigen::MatrixXi& FT) const;
 
     /**
-     * @brief Exports the mesh including UV coordinates where all 3D positions are mapped onto the
-     * input.
+     * @brief Exports the mesh including UV coordinates where all 3D positions are mapped onto
+     * the input.
      *
      * @param V igl format vertices
      * @param F igl format faces
@@ -228,34 +279,52 @@ public:
      */
     void remove_seams(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
 
-    // Exports V and F of the stored mesh
-    void export_seamless_mesh_with_displacement(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
-
-    // Writes a triangle mesh in OBJ format
-    void write_obj(const std::string& path);
+    /**
+     * @brief Write texture faces and vertices in OBJ format.
+     *
+     * To represent vertices in OBJ, the 2D positions are extended to 3D where the third coordinate
+     * is 0.
+     *
+     * @param path name of the OBJ file
+     */
+    void write_obj_only_texture_coords(const std::filesystem::path& path);
 
     // Writes a triangle mesh in ply format
-    void write_ply(const std::string& path);
-    void write_vtk(const std::string& path);
-    void write_perface_vtk(const std::string& path);
+    void write_ply(const std::filesystem::path& path);
+    void write_vtk(const std::filesystem::path& path);
+    void write_perface_vtk(const std::filesystem::path& path);
 
-    void write_displaced_obj(
-        const std::string& path,
-        const std::function<double(double, double)>& displacement);
-    void write_displaced_obj(
-        const std::string& path,
-        const std::shared_ptr<wmtk::Displacement> displacement);
-    void write_displaced_seamless_obj(
-        const std::string& path,
-        const std::shared_ptr<wmtk::Displacement> displacement);
-    void write_world_obj(
-        const std::string& path,
-        const std::shared_ptr<wmtk::Displacement> displacement);
-    void write_obj_with_texture_coords(const std::string& path);
+    /**
+     * @brief Write triangle mesh with world positions in OBJ format.
+     *
+     * World positions and texture coordinates are written. World positions should be computed
+     * before using the function `displace_self_intersection_free`. For getting the displacement
+     * with potential intersections, use `write_obj_displaced`.
+     *
+     * @param path name of the OBJ file
+     */
+    void write_obj(const std::filesystem::path& path);
+    /**
+     * @brief Write triangle mesh with displaced UV positions in OBJ format.
+     *
+     * Displaced UV positions and texture coordinates are written.
+     *
+     * @param path name of the OBJ file
+     */
+    void write_obj_displaced(const std::filesystem::path& path);
+    /**
+     * @brief Write triangle mesh in OBJ format where UV positions are mapped onto the input
+     * triangles.
+     *
+     * Mapped positions and texture coordinates are written.
+     *
+     * @param path name of the OBJ file
+     */
+    void write_obj_mapped_on_input(const std::filesystem::path& path);
 
     // Computes the quality of a triangle
     double get_quality(const Tuple& loc, int idx = 0) const;
-    std::pair<double, Eigen::Vector2d> get_one_ring_energy(const Tuple& loc) const;
+    std::pair<double, Eigen::Vector2d> get_one_ring_energy(const Tuple& loc);
 
     // Computes the average quality of a mesh
     Eigen::VectorXd get_quality_all_triangles();
@@ -266,14 +335,14 @@ public:
     std::vector<TriMesh::Tuple> new_edges_after(const std::vector<TriMesh::Tuple>& tris) const;
 
     // Smoothing
+    void prepare_quadrics(wmtk::QuadricEnergy &energy);
     void smooth_all_vertices();
     bool smooth_before(const Tuple& t);
     bool smooth_after(const Tuple& t);
 
     // Collapse
     void collapse_all_edges();
-    bool collapse_edge_before(const Tuple& t);
-    bool collapse_edge_after(const Tuple& t);
+
     // Split
     void split_all_edges();
     bool split_edge_before(const Tuple& t);
@@ -301,7 +370,9 @@ public:
     double get_area_accuracy_error_per_face(const Tuple& edge_tuple) const;
     double get_area_accuracy_error_per_face_triangle_matrix(
         Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle) const;
-    double get_area_accuracy_error(const Tuple& edge_tuple) const;
+    // return in order {total_error, face1_error, face2_error}
+    std::tuple<double, double, double> get_area_accuracy_error_for_split(
+        const Tuple& edge_tuple) const;
 
     void get_nminfo_for_vertex(const Tuple& v, wmtk::NewtonMethodInfo& nminfo) const;
 
@@ -310,21 +381,39 @@ public:
     // return the sibling if t is interior
     // return nullopt if t is boundary
     std::optional<TriMesh::Tuple> get_sibling_edge_opt(const TriMesh::Tuple& t) const;
+    // given an edge returns an opt that provides a mirror edge if it exists
+    std::optional<TriMesh::Tuple> get_mirror_edge_opt(const TriMesh::Tuple& t) const;
     // given a seam edge retrieve its mirror edge in opposite direction (half egde conventions )
     TriMesh::Tuple get_oriented_mirror_edge(const TriMesh::Tuple& t) const;
     // given a seam edge with vid v retrieve the correpsonding vertex on the mirror edge
     TriMesh::Tuple get_mirror_vertex(const TriMesh::Tuple& t) const;
     // return a vector of mirror vertices. store v itself at index 0 of the returned vector
     // !!! assume no operation has made fixed vertices outdated
-    std::vector<TriMesh::Tuple> get_all_mirror_vertices(const TriMesh::Tuple& v);
-    std::vector<size_t> get_all_mirror_vids(const TriMesh::Tuple& v);
+    std::vector<TriMesh::Tuple> get_all_mirror_vertices(const TriMesh::Tuple& v) const;
+    std::vector<size_t> get_all_mirror_vids(const TriMesh::Tuple& v) const;
     // set primary_t's mirror edge data to a ccw ordered mirror_edge
     void set_mirror_edge_data(const TriMesh::Tuple& primary_t, const TriMesh::Tuple& mirror_edge);
     bool is_seam_edge(const TriMesh::Tuple& t) const;
     bool is_seam_vertex(const TriMesh::Tuple& t) const;
 
+    // reports true if it is a boundary edge ignoring seams
+    bool is_stitched_boundary_edge(const TriMesh::Tuple& t) const;
+    // reports true if it is a boundary vertex ignoring seams
+    bool is_stitched_boundary_vertex(const TriMesh::Tuple& t) const;
+
+
+    VertexAttributes& get_vertex_attrs(const Tuple& t);
+    const VertexAttributes& get_vertex_attrs(const Tuple& t) const;
+    FaceAttributes& get_face_attrs(const Tuple& t);
+    const FaceAttributes& get_face_attrs(const Tuple& t) const;
+    EdgeAttributes& get_edge_attrs(const Tuple& t);
+    const EdgeAttributes& get_edge_attrs(const Tuple& t) const;
+
 
     ////// debug/unit test helper functions
+    void mesh_preprocessing(
+        const std::filesystem::path& input_mesh_path,
+        const std::filesystem::path& displaced_image_path);
     void gradient_debug(int max_its);
     // set early termination for a execution pass for unit test and debugging purpose
     template <typename Executor>
@@ -339,8 +428,8 @@ public:
         p_vertex_attrs = &vertex_attrs;
         p_face_attrs = &face_attrs;
         p_edge_attrs = &edge_attrs;
-        // Convert from eigen to internal representation (TODO: move to utils and remove it from all
-        // app)
+        // Convert from eigen to internal representation (TODO: move to utils and remove it from
+        // all app)
         std::vector<std::array<size_t, 3>> tri(F.rows());
         for (int i = 0; i < F.rows(); i++) {
             tri[i][0] = (size_t)F(i, 0);
@@ -357,5 +446,7 @@ public:
         //     assert(!is_inverted(tri));
         // }
     }
+
+    double avg_edge_len() const;
 };
 } // namespace adaptive_tessellation
