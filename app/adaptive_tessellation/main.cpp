@@ -187,7 +187,9 @@ int main(int argc, char** argv)
         energy_type,
         edge_len_type,
         boundary_parameter_on);
+    //// TODO DEBUG
     m.mesh_parameters.m_early_stopping_number = 100;
+    ////
     m.set_vertex_world_positions(); // compute 3d positions for each vertex
 
     m.smooth_all_vertices();
