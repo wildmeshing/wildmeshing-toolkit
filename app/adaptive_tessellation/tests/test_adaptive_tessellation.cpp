@@ -276,6 +276,7 @@ TEST_CASE("autodiff vs finitediff")
 
 TEST_CASE("paired split")
 {
+#include <wmtk/utils/DisableWarnings.hpp>
     //////////// ======== seam edge split
     // acsii art diamond
     //               1            4
@@ -289,6 +290,7 @@ TEST_CASE("paired split")
     //            \(1) |cv1     |(2) /
     //             \   |        |   /
     //               2            5
+#include <wmtk/utils/EnableWarnings.hpp>
 
     Eigen::MatrixXd V(6, 2);
     Eigen::MatrixXi F(2, 3);
@@ -383,6 +385,7 @@ TEST_CASE("paired split")
         }
     }
 
+#include <wmtk/utils/DisableWarnings.hpp>
     //////////======= interior edge split
     // acsii art diamond
     //                1    4
@@ -398,12 +401,14 @@ TEST_CASE("paired split")
     //             \    ||    /
     //              \(1)||(2)/
     //                2    5
+#include <wmtk/utils/EnableWarnings.hpp>
     wmtk::TriMesh::Tuple primary_edge3 = wmtk::TriMesh::Tuple(0, 1, 0, m);
     REQUIRE(!m.edge_attrs[primary_edge3.eid(m)].curve_id.has_value());
     REQUIRE(!m.is_seam_edge(primary_edge3));
     REQUIRE(!m.is_boundary_edge(primary_edge3));
     AdaptiveTessellationPairedSplitEdgeOperation op2;
     op2(m, primary_edge3);
+#include <wmtk/utils/DisableWarnings.hpp>
     // acsii art diamond
     //                1    4
     //              /(2)/||(1)\ 
@@ -418,6 +423,7 @@ TEST_CASE("paired split")
     //             \   | ||    /
     //              \(1)\||(2)/
     //                2     5
+#include <wmtk/utils/EnableWarnings.hpp>
     REQUIRE(m.vert_capacity() == 9);
     REQUIRE(m.tri_capacity() == 6);
 
@@ -459,6 +465,7 @@ TEST_CASE("paired split")
         }
     }
 
+#include <wmtk/utils/DisableWarnings.hpp>
     ////////// ======= boundary edge split
     // acsii art diamond
     //                1    4
@@ -474,6 +481,7 @@ TEST_CASE("paired split")
     //             \   | ||    /
     //              \(1)\||(2)/
     //                2     5
+#include <wmtk/utils/EnableWarnings.hpp>
     wmtk::TriMesh::Tuple primary_edge4 = wmtk::TriMesh::Tuple(3, 2, 1, m);
     REQUIRE(m.edge_attrs[primary_edge4.eid(m)].curve_id.has_value());
     REQUIRE(m.edge_attrs[primary_edge4.eid(m)].curve_id.value() == 2);
@@ -481,6 +489,7 @@ TEST_CASE("paired split")
     REQUIRE(!m.is_seam_edge(primary_edge4));
     AdaptiveTessellationPairedSplitEdgeOperation op3;
     op3(m, primary_edge4);
+#include <wmtk/utils/DisableWarnings.hpp>
     // acsii art diamond
     //                1    4
     //              /(2)/||(1)\ 
@@ -495,6 +504,7 @@ TEST_CASE("paired split")
     //             \   | ||    /
     //              \(1)\||(2)/
     //                2     5
+#include <wmtk/utils/EnableWarnings.hpp>
 
     REQUIRE(m.vert_capacity() == 10);
     REQUIRE(m.tri_capacity() == 7);
@@ -681,6 +691,7 @@ TEST_CASE("paired collapse", "[myfail][.]")
     F.row(1) << 3, 4, 5;
     AdaptiveTessellation m;
 
+#include <wmtk/utils/DisableWarnings.hpp>
     //////////// ======== seam edge split
     // acsii art diamond
     //               1            4
@@ -695,6 +706,7 @@ TEST_CASE("paired collapse", "[myfail][.]")
     //             \   |        |   /
     //               2            5
 
+#include <wmtk/utils/EnableWarnings.hpp>
     // lambda function for checking each face's mirror data
     auto check_all_faces_mirror_info = [&m]() -> bool {
         for (auto& f : m.get_faces()) {
@@ -791,6 +803,7 @@ TEST_CASE("paired collapse", "[myfail][.]")
 
     REQUIRE(check_all_faces_mirror_info());
 
+#include <wmtk/utils/DisableWarnings.hpp>
     ////////// ======= interior edge collapse
     // acsii art diamond
     //                1          4
@@ -806,6 +819,7 @@ TEST_CASE("paired collapse", "[myfail][.]")
     //             \   | |      |    /
     //              \(1)\|      |(2)/
     //                2           5
+#include <wmtk/utils/EnableWarnings.hpp>
 
     REQUIRE(m.tri_capacity() == 7);
     wmtk::TriMesh::Tuple primary_edge6 = wmtk::TriMesh::Tuple(6, 1, 4, m);
@@ -818,6 +832,7 @@ TEST_CASE("paired collapse", "[myfail][.]")
     auto retdata = op4.execute(m, primary_edge6);
     REQUIRE(retdata.success);
     REQUIRE(op4.after(m));
+#include <wmtk/utils/DisableWarnings.hpp>
     // acsii art diamond
     //                1    4
     //              /(2) ||(1)\ 
@@ -832,6 +847,7 @@ TEST_CASE("paired collapse", "[myfail][.]")
     //             \     ||    /
     //              \(1) ||(2)/
     //                2     5
+#include <wmtk/utils/EnableWarnings.hpp>
     int face_cnt = 0;
     for (auto& f : m.get_faces()) {
         face_cnt++;
@@ -884,6 +900,7 @@ TEST_CASE("paired collapse", "[myfail][.]")
         }
     }
 
+#include <wmtk/utils/DisableWarnings.hpp>
     ////////// ======= boundary edge collapse
     //                1    4
     //              /(2) ||(1)\ 
@@ -898,6 +915,7 @@ TEST_CASE("paired collapse", "[myfail][.]")
     //             \     ||    /
     //              \(1) ||(2)/
     //                2     5
+#include <wmtk/utils/EnableWarnings.hpp>
     wmtk::TriMesh::Tuple primary_edge7 = wmtk::TriMesh::Tuple(3, 2, 1, m);
     REQUIRE(primary_edge7.switch_vertex(m).vid(m) == 9);
     REQUIRE(!m.is_seam_vertex(primary_edge7));
@@ -908,6 +926,7 @@ TEST_CASE("paired collapse", "[myfail][.]")
 
     AdaptiveTessellationPairedCollapseEdgeOperation op5;
     op5(m, primary_edge7);
+#include <wmtk/utils/DisableWarnings.hpp>
     // acsii art diamond
     //                1    4
     //              /(2) ||(1)\ 
@@ -922,6 +941,7 @@ TEST_CASE("paired collapse", "[myfail][.]")
     //             \     ||    /
     //              \(1) ||(2)/
     //                2     5
+#include <wmtk/utils/EnableWarnings.hpp>
     const auto& primary_edge7_opt = op5.collapse_edge.get_return_tuple_opt();
     REQUIRE(primary_edge7_opt.has_value());
     const auto& primary_edge7_ret = primary_edge7_opt.value();
@@ -977,7 +997,7 @@ TEST_CASE("paired collapse", "[myfail][.]")
             }
         }
     }
-
+#include <wmtk/utils/DisableWarnings.hpp>
     ////////// ======= seam edge collapse
     // acsii art diamond
     //                1    4
@@ -993,6 +1013,7 @@ TEST_CASE("paired collapse", "[myfail][.]")
     //             \     ||    /
     //              \(1) ||(2)/
     //                2     5
+#include <wmtk/utils/EnableWarnings.hpp>
     wmtk::TriMesh::Tuple primary_edge8 = wmtk::TriMesh::Tuple(7, 0, 3, m);
     REQUIRE(primary_edge8.switch_vertex(m).vid(m) == 5);
     REQUIRE(m.is_seam_vertex(primary_edge8));
@@ -1003,6 +1024,7 @@ TEST_CASE("paired collapse", "[myfail][.]")
     AdaptiveTessellationPairedCollapseEdgeOperation op6;
     op6(m, primary_edge8);
 
+#include <wmtk/utils/DisableWarnings.hpp>
     // acsii art diamond
     //                1    4
     //              /(2) ||(1)\ 
@@ -1017,6 +1039,7 @@ TEST_CASE("paired collapse", "[myfail][.]")
     //             \     ||    /
     //              \(1) ||(2)/
     //                13    12
+#include <wmtk/utils/EnableWarnings.hpp>
 
     const auto& primary_edge8_opt = op6.collapse_edge.get_return_tuple_opt();
     const auto& primary_edge9_opt = op6.collapse_mirror_edge.get_return_tuple_opt();
@@ -1162,6 +1185,7 @@ TEST_CASE("paired swap")
             }
         }
     }
+#include <wmtk/utils/DisableWarnings.hpp>
     ////////// ======= interior edge swap
     // acsii art diamond
     //                1          4
@@ -1177,6 +1201,7 @@ TEST_CASE("paired swap")
     //             \   | |      |    /
     //              \(1)\|      |(2)/
     //                2           5
+#include <wmtk/utils/EnableWarnings.hpp>
     wmtk::TriMesh::Tuple primary_edge5 = wmtk::TriMesh::Tuple(7, 1, 6, m);
     REQUIRE(primary_edge5.is_valid(m));
     REQUIRE(primary_edge5.vid(m) == 7);
@@ -1188,6 +1213,7 @@ TEST_CASE("paired swap")
     REQUIRE(!op4);
     REQUIRE(op4_modified_tuples.size() == 0);
 
+#include <wmtk/utils/DisableWarnings.hpp>
     ////////// ======= interior edge swap
     // acsii art diamond
     //                1          4
@@ -1203,6 +1229,7 @@ TEST_CASE("paired swap")
     //             \   | |      |    /
     //              \(1)\|      |(2)/
     //                2           5
+#include <wmtk/utils/EnableWarnings.hpp>
 
     wmtk::TriMesh::Tuple primary_edge6 = wmtk::TriMesh::Tuple(7, 2, 3, m);
     REQUIRE(primary_edge6.is_valid(m));
@@ -1213,6 +1240,7 @@ TEST_CASE("paired swap")
     op5(m, primary_edge6);
     std::vector<TriMeshTuple> op5_modified_tuples = op5.modified_tuples(m);
 
+#include <wmtk/utils/DisableWarnings.hpp>
     // acsii art diamond
     //                1          4
     //              /(2)/|      |(1)\ 
@@ -1227,6 +1255,7 @@ TEST_CASE("paired swap")
     //             \   | |      |  |  /
     //              \(1)\|      |(2)/
     //                2           5
+#include <wmtk/utils/EnableWarnings.hpp>
 
     REQUIRE(op5_modified_tuples.size() == 2);
     const wmtk::TriMesh::Tuple op5_ret = op5.get_return_tuple_opt().value();
@@ -1274,6 +1303,7 @@ TEST_CASE("paired swap")
         }
     }
 
+#include <wmtk/utils/DisableWarnings.hpp>
     // acsii art diamond
     //                1          4
     //              /(2)/|      |(1)\ 
@@ -1290,6 +1320,7 @@ TEST_CASE("paired swap")
     //                2           5
     ////////// ======= seam edge swap
     /// should be rejected. not swapping seam edge
+#include <wmtk/utils/EnableWarnings.hpp>
     wmtk::TriMesh::Tuple primary_edge7 = wmtk::TriMesh::Tuple(5, 0, 3, m);
     REQUIRE(primary_edge7.is_valid(m));
     REQUIRE(primary_edge7.vid(m) == 5);

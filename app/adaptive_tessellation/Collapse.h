@@ -76,6 +76,7 @@ public:
         double length3d = 0;
         size_t partition_id;
 
+#include <wmtk/utils/DisableWarnings.hpp>
         // Given an input triangle with tuple X
         //               v_top
         //   ------------o-------------
@@ -111,6 +112,7 @@ public:
         //   | /    |    \ |
         //   |/     |     \|
         //   ---------------
+#include <wmtk/utils/EnableWarnings.hpp>
 
         // pairs of vids for edges where a vertex changes in the collapse
         std::unordered_map<size_t, SeamData> new_vertex_seam_data;

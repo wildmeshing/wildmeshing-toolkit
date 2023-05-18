@@ -70,7 +70,12 @@ bool TriMeshEdgeCollapseOperation::check_link_condition(const TriMesh& mesh, con
     const bool lk_vid12_infinite = v1.infinite_vertex && v2.infinite_vertex;
 
     const auto [edge_link, edge_link_has_infinite] = edge_link_of_edge_vids(mesh, edge);
-    bool v_link = lk_vid12 == edge_link && lk_vid12_infinite == edge_link_has_infinite;
+
+    // over finite vertices v_link
+    const bool v_link_fin =  lk_vid12 == edge_link;
+    // over infinite vertices v_link
+    const bool v_link_inf = lk_vid12_infinite == edge_link_has_infinite;
+    const bool v_link = v_link_fin && v_link_inf;
 
     // check edge link condition
     // in 2d edge link for an edge is always empty
