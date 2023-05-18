@@ -143,7 +143,7 @@ Eigen::Vector<float, N> sample_bilinear(const std::array<wmtk::Image, N>& images
 template <size_t N>
 Eigen::Vector<float, N> sample_bicubic(const std::array<wmtk::Image, N>& images, float u, float v)
 {
-#if 0
+#if 1
     auto w = images[0].width();
     auto h = images[0].height();
     // x, y are between 0 and 1
