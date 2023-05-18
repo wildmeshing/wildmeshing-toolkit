@@ -46,7 +46,11 @@ std::shared_ptr<spdlog::logger> make_json_file_logger(
 
     // dunno why make_shared didn't work for me today
     std::shared_ptr<spdlog::logger> js_logger;
-    js_logger.reset(new spdlog::logger(name, {console_sink, file_sink}));
+    if (also_output_stdout) {
+        js_logger.reset(new spdlog::logger(name, {console_sink, file_sink}));
+    } else {
+        js_logger.reset(new spdlog::logger(name, {file_sink}));
+    }
 
     set_json_format(*js_logger, messages_are_json);
     return js_logger;

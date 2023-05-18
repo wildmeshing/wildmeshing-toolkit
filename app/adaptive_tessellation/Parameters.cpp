@@ -7,7 +7,6 @@ void Parameters::log(
                 // per-operation things
     const
 {
-    std::cout << js.dump() << std::endl;
     ATlogger->error(js.dump());
 
 

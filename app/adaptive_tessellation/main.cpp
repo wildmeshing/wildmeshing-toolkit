@@ -77,32 +77,28 @@ int main(int argc, char** argv)
     ZoneScopedN("adaptive_tessellation_main");
     lagrange::enable_fpe();
     CLI::App app{argv[0]};
-    path input_folder;
     path config_json;
     path output_folder;
+    bool log_to_stdout = false;
 
-    app.add_option("-i, --input", input_folder, "input folder")->required(false);
     app.add_option("-c, --config", config_json, "input json file")->required(false);
     app.add_option("-o, --output", output_folder, "output folder")->required(false);
+    app.add_flag("--log_to_stdout", log_to_stdout, "write log output also to std out");
 
 
     CLI11_PARSE(app, argc, argv);
-
-    if (input_folder.empty()) {
-        input_folder = ".";
-        wmtk::logger().info("No input path specified. Using current working directory.");
-    }
-    ensure_path_exists(input_folder);
-
     if (config_json.empty()) {
         config_json = "config.json";
         wmtk::logger().info("No config file specified. Using default: {}", config_json.string());
     }
+    ensure_path_exists(config_json);
 
-    ensure_path_exists(input_folder / config_json);
+    const path input_folder = config_json.parent_path();
+    ensure_path_exists(input_folder);
+
     json config;
     {
-        std::ifstream jsonFile(input_folder / config_json);
+        std::ifstream jsonFile(config_json);
         jsonFile >> config;
     }
     // Access the parameters in the JSON file
@@ -173,9 +169,11 @@ int main(int argc, char** argv)
     wmtk::logger().info("///// energy type: {}", energy_type);
     wmtk::logger().info("///// energy length type: {}", edge_len_type);
 
-
-    m.mesh_parameters.ATlogger =
-        wmtk::make_json_file_logger("ATlogger", output_folder / "runtime.json", true);
+    m.mesh_parameters.ATlogger = wmtk::make_json_file_logger(
+        "ATlogger",
+        output_folder / "adaptive_tessellation_log.json",
+        true,
+        log_to_stdout);
 
 
     m.set_parameters(
