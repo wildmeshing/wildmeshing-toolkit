@@ -7,7 +7,7 @@ void Parameters::log(
                 // per-operation things
     const
 {
-    ATlogger->error(js.dump());
+    ATlogger->info(js.dump());
 
 
     if (flush) {
