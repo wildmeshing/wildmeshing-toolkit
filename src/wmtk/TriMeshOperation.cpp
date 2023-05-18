@@ -206,11 +206,6 @@ auto TriMeshSplitEdgeOperation::execute(TriMesh& m, const Tuple& t) -> ExecuteRe
     return_tuple = Tuple(vid1, eid, fid1, m);
     assert(return_tuple.is_valid(m));
 
-#if defined(_DEBUG)
-    auto new_vertex = Tuple(new_vid, (l + 2) % 3, new_fid, m);
-    assert(new_vertex.is_valid(m));
-    assert(new_vertex == this->new_vertex(m));
-#endif
     assign(return_tuple);
     new_tris = modified_tuples(m);
     ret_data.success = true;
@@ -265,7 +260,7 @@ auto TriMeshSplitEdgeOperation::original_endpoints(TriMesh& m, const Tuple& t) c
 }
 auto TriMeshSplitEdgeOperation::modified_tuples(const TriMesh& m) -> std::vector<Tuple>
 {
-    if (bool(*this)) {
+    if (!bool(*this)) {
         return {};
     }
 

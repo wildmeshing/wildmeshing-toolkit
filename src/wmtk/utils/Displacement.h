@@ -314,8 +314,8 @@ protected:
     std::array<std::unique_ptr<wmtk::Sampling>, 3> m_position_sampler;
     std::array<wmtk::Image, 3> m_normal_image;
     std::array<std::unique_ptr<wmtk::Sampling>, 3> m_normal_sampler;
-    double m_normalization_scale = 0.0;
-    Eigen::Matrix<double, 3, 1> m_normalization_offset;
+    double m_normalization_scale = 1.0;
+    Eigen::Vector3d m_normalization_offset = Eigen::Vector3d::Zero();
 
 public:
     void set_sampling_mode(const wmtk::SAMPLING_MODE sampling_mode) override
@@ -341,7 +341,9 @@ public:
         Eigen::Matrix<double, 3, 1> displace_3d;
         for (auto i = 0; i < 3; i++) {
             double p = m_position_sampler[i]->sample(u, v);
-            double d = 2.0 * m_normal_sampler[i]->sample(u, v) - 1.0;
+
+            double d = m_normal_sampler[i]->sample(u, v) - 0.5;
+
             displace_3d(i, 0) = p * m_normalization_scale - m_normalization_offset(i, 0) + z * d;
         }
         return displace_3d;
@@ -353,7 +355,9 @@ public:
         Eigen::Matrix<DScalar, 3, 1> displace_3d;
         for (auto i = 0; i < 3; i++) {
             DScalar p = m_position_sampler[i]->sample(u, v);
-            DScalar d = 2.0 * m_normal_sampler[i]->sample(u, v) - 1.0;
+
+            DScalar d = m_normal_sampler[i]->sample(u, v) - 0.5;
+
             displace_3d(i, 0) = p * m_normalization_scale - m_normalization_offset(i, 0) + z * d;
         }
         return displace_3d;

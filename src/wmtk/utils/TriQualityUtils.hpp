@@ -10,6 +10,7 @@ namespace wmtk {
 struct NewtonMethodInfo
 {
     Eigen::MatrixXd neighbors; /// N x 4 matrix (2 vtx per triangle)
+    Eigen::VectorXi facet_ids; /// N x 1 vector of facet ids
     double target_length;
     int curve_id = 0;
 };

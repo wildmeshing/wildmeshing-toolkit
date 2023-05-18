@@ -9,7 +9,7 @@
 #include <sec/envelope/SampleEnvelope.hpp>
 using namespace wmtk;
 namespace adaptive_tessellation {
-enum class ENERGY_TYPE { AMIPS, SYMDI, EDGE_LENGTH, EDGE_QUADRATURE, AREA_QUADRATURE };
+enum class ENERGY_TYPE { AMIPS, SYMDI, EDGE_LENGTH, EDGE_QUADRATURE, AREA_QUADRATURE, QUADRICS };
 enum class EDGE_LEN_TYPE {
     LINEAR2D,
     LINEAR3D,
@@ -27,6 +27,8 @@ struct Parameters
 public:
     json js_log;
     std::string m_output_folder = "./";
+    std::shared_ptr<spdlog::logger> ATlogger =
+        wmtk::make_json_file_logger("ATlogger", m_output_folder + "/runtime.log", true);
     // default envelop use_exact = true
     sample_envelope::SampleEnvelope m_envelope;
     bool m_has_envelope = false;
@@ -78,14 +80,14 @@ public:
 
     double m_quality_threshold = 0.01;
     double m_accuracy_threshold = 0.001;
-    double m_accruacy_safeguard_ratio = 1.1;
+    double m_accuracy_safeguard_ratio = 1.1;
 
     EDGE_LEN_TYPE m_edge_length_type = EDGE_LEN_TYPE::ACCURACY;
     SAMPLING_MODE m_sampling_mode = SAMPLING_MODE::BICUBIC;
     DISPLACEMENT_MODE m_displacement_mode = DISPLACEMENT_MODE::PLANE;
     std::shared_ptr<wmtk::Displacement> m_displacement;
     double m_scale = 1.0;
-    Eigen::Matrix<double, 1, 3> m_offset;
+    Eigen::Matrix<double, 1, 3> m_offset = Eigen::Vector3d::Zero();
 
     bool m_swap_using_valence = 1;
     bool m_split_absolute_error_metric = 1;
@@ -94,5 +96,26 @@ public:
     int m_early_stopping_number = std::numeric_limits<size_t>::max();
     // only operate to modify topologies
     bool m_ignore_embedding = false;
+    // used for scaling the height map
+    double m_normalization_scale = 1.0;
+    bool m_do_not_output = false;
+
+public:
+    void log(
+        const nlohmann::json& js,
+        bool flush = false) // flush should force file output immediately, but will be slow for
+                            // per-operation things
+    {
+        std::cout << js.dump() << std::endl;
+        ATlogger->error(js.dump());
+
+
+        if (flush) {
+            ATlogger->flush();
+        }
+    }
+
+    // log that always writes to file immediately beause it's flushing
+    void log_flush(const nlohmann::json& js) { log(js, true); }
 };
 } // namespace adaptive_tessellation
