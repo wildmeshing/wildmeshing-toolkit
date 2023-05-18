@@ -28,12 +28,27 @@ void addCustomOps(Executor& e)
 {
     e.add_operation(std::make_shared<AdaptiveTessellationCollapseEdgeOperation>());
 }
+
+std::string_view constraint_type(
+    AdaptiveTessellationCollapseEdgeOperation::ConstrainedBoundaryType cbt)
+{
+    using ConstrainedBoundaryType =
+        AdaptiveTessellationCollapseEdgeOperation::ConstrainedBoundaryType;
+    switch (cbt) {
+    case ConstrainedBoundaryType::NoConstraints: return "Neither";
+    case ConstrainedBoundaryType::TupleSideConstrained: return "TupleSide";
+    case ConstrainedBoundaryType::OtherSideConstrained: return "OtherSide";
+    case ConstrainedBoundaryType::BothConstrained: return "Both";
+    }
+    return "";
+}
 } // namespace
 
 void AdaptiveTessellationCollapseEdgeOperation::store_merged_seam_data(
     const AdaptiveTessellation& m,
     const Tuple& edge_tuple)
 {
+    // edge_tuple is the edge that will be collapsed
     OpCache& op_cache = m_op_cache.local();
     auto& vertex_seam_data_map = op_cache.new_vertex_seam_data;
     auto& edge_seam_data_map = op_cache.opposing_edge_seam_data;
@@ -41,6 +56,23 @@ void AdaptiveTessellationCollapseEdgeOperation::store_merged_seam_data(
     const size_t v1 = op_cache.v1;
     const size_t v2 = op_cache.v2;
     assert(v1 != v2);
+
+    std::optional<Tuple> collapse_mirror;
+    if (m.is_seam_edge(edge_tuple)) {
+        collapse_mirror = m.get_oriented_mirror_edge(edge_tuple);
+    }
+    // if exists, should be edge_tuple.vid == collapse_mirror_vertex.vid
+    // edge_tuple.oriented_mirror points to the other vid so i have to switch
+    std::optional<size_t> collapse_mirror_vertex;
+    if (collapse_mirror.has_value()) {
+        collapse_mirror_vertex = collapse_mirror.value().switch_vertex(m).vid(m);
+    }
+
+
+    // helper to identify if two half-edges only differ by orientation
+    auto is_same_face_edge = [&](const Tuple& a, const Tuple& b) -> bool {
+        return a.fid(m) == b.fid(m) && a.local_eid(m) == b.local_eid(m);
+    };
 
     auto edge_tuple_to_vids = [&](const Tuple& t) {
         std::array<size_t, 2> r{{t.vid(m), t.switch_vertex(m).vid(m)}};
@@ -57,24 +89,55 @@ void AdaptiveTessellationCollapseEdgeOperation::store_merged_seam_data(
     // store edges that will be radial from the new vertex
     // assumes the vid is not one of the input edge vids
     // edge tuple pointing from the radial vertex to the center vertex
-    auto store_new_vertex_edge = [&](const Tuple& edge_tuple) {
-        assert(edge_tuple.vid(m) != v1 && edge_tuple.vid(m) != v2);
-        if (!m.is_boundary_edge(edge_tuple)) {
+    auto store_new_vertex_edge = [&](const Tuple& radial_edge) {
+        assert(radial_edge.vid(m) != v1 && radial_edge.vid(m) != v2);
+        if (!m.is_boundary_edge(radial_edge)) {
             return;
         }
         std::optional<std::array<size_t, 2>> mirror_edge_vids_opt;
-        if (m.is_seam_edge(edge_tuple)) {
-            const Tuple mt = m.get_oriented_mirror_edge(edge_tuple);
-            const size_t mirror_vid = mt.switch_vertex(m).vid(m);
-            mirror_edge_vids_opt = std::array<size_t, 2>{{mirror_vid, mirror_vid}};
+        if (m.is_seam_edge(radial_edge)) {
+            const Tuple mt = m.get_oriented_mirror_edge(radial_edge);
+            // vid that is not a mirror of the collapsed edge
+            const size_t mirror_radial_vid = mt.switch_vertex(m).vid(m);
+            if (collapse_mirror_vertex.has_value()) {
+                const size_t mirror_vid = mt.vid(m);
+                if (mirror_vid == collapse_mirror_vertex.value()) {
+                    mirror_edge_vids_opt =
+                        std::array<size_t, 2>{{mirror_radial_vid, mirror_radial_vid}};
+                }
+            }
+            if (!mirror_edge_vids_opt.has_value()) {
+                mirror_edge_vids_opt = edge_tuple_to_vids(mt);
+            }
         }
 
-        const auto curveid_opt = m.get_edge_attrs(edge_tuple).curve_id;
+        const auto curveid_opt = m.get_edge_attrs(radial_edge).curve_id;
         assert(curveid_opt.has_value());
 
-        vertex_seam_data_map[edge_tuple.vid(m)] =
+        if (mirror_edge_vids_opt.has_value()) {
+            spdlog::info(
+                "Tracking new vertex data {} which has mirror {}, curveid {}",
+                radial_edge.vid(m),
+                mirror_edge_vids_opt.value(),
+                curveid_opt.value());
+        } else {
+            spdlog::info(
+                "Tracking new vertex data {} which has no mirror, curveid {}",
+                radial_edge.vid(m),
+                curveid_opt.value());
+        }
+        vertex_seam_data_map[radial_edge.vid(m)] =
             SeamData{.mirror_edge_vids = mirror_edge_vids_opt, .curve_id = curveid_opt.value()};
     };
+
+
+    for (const Tuple& edge : m.get_one_ring_edges_for_vertex(edge_tuple)) {
+        if (edge.vid(m) != v2) store_new_vertex_edge(edge);
+    }
+
+    for (const Tuple& edge : m.get_one_ring_edges_for_vertex(edge_tuple.switch_vertex(m))) {
+        if (edge.vid(m) != v1) store_new_vertex_edge(edge);
+    }
 
 
     // fids for triangles we dont want to use opposing edge with
@@ -85,22 +148,26 @@ void AdaptiveTessellationCollapseEdgeOperation::store_merged_seam_data(
             bad_opposing_tris.begin(),
             bad_opposing_tris.end(),
             std::back_inserter(ret),
-            [&](const Tuple& t) -> size_t { return t.vid(m); });
+            [&](const Tuple& t) -> size_t { return t.fid(m); });
         std::sort(ret.begin(), ret.end());
         return ret;
     }();
 
     const auto bad_face = [&](const Tuple& t) -> bool {
         size_t fid = t.fid(m);
+        spdlog::info("{} in {}", fid, bad_opposing_fids);
         return std::binary_search(bad_opposing_fids.begin(), bad_opposing_fids.end(), fid);
     };
 
     // takes in a edge that does not includ either input edge vids
     auto store_opposing_edge = [&](const Tuple& edge_tuple) {
+        spdlog::info("Starting on {}", edge_tuple.info());
         if (!m.is_boundary_edge(edge_tuple)) {
+            spdlog::info("not boundary");
             return;
         }
         if (bad_face(edge_tuple)) {
+            spdlog::info("bad face");
             return;
         }
         std::optional<std::array<size_t, 2>> mirror_edge_vids_opt;
@@ -116,6 +183,20 @@ void AdaptiveTessellationCollapseEdgeOperation::store_merged_seam_data(
 
         const auto curveid_opt = m.get_edge_attrs(edge_tuple).curve_id;
         assert(curveid_opt.has_value());
+        if (mirror_edge_vids_opt.has_value()) {
+            spdlog::info(
+                "Tracking new vertex data {},{} which has mirror {} curveid {}",
+                v0,
+                v1,
+                mirror_edge_vids_opt.value(),
+                curveid_opt.value());
+        } else {
+            spdlog::info(
+                "Tracking edge {},{} which has mirror no curveid {}",
+                v0,
+                v1,
+                curveid_opt.value());
+        }
         edge_seam_data_map[std::array<size_t, 2>{{v0, v1}}] =
             SeamData{.mirror_edge_vids = mirror_edge_vids_opt, .curve_id = curveid_opt.value()};
     };
@@ -125,22 +206,19 @@ void AdaptiveTessellationCollapseEdgeOperation::store_merged_seam_data(
         const Tuple e = tri.switch_vertex(m).switch_edge(m);
         size_t a = e.vid(m);
         size_t b = e.switch_vertex(m).vid(m);
+        spdlog::info("Considering storing opposing edge {} {}", a, b);
         if (a != v2 && b != v2) store_opposing_edge(e);
+        spdlog::info("==");
     }
     for (const Tuple& tri : m.get_one_ring_tris_for_vertex(edge_tuple.switch_vertex(m))) {
         const Tuple e = tri.switch_vertex(m).switch_edge(m);
         size_t a = e.vid(m);
         size_t b = e.switch_vertex(m).vid(m);
+        spdlog::info("Considering storing opposing edge {} {}", a, b);
         if (a != v1 && b != v1) store_opposing_edge(e);
+        spdlog::info("==");
     }
 
-    for (const Tuple& edge : m.get_one_ring_edges_for_vertex(edge_tuple)) {
-        if (edge.vid(m) != v2) store_new_vertex_edge(edge);
-    }
-
-    for (const Tuple& edge : m.get_one_ring_edges_for_vertex(edge_tuple.switch_vertex(m))) {
-        if (edge.vid(m) != v1) store_new_vertex_edge(edge);
-    }
 
     // store the 1 ring tris of b
 
@@ -176,11 +254,15 @@ auto AdaptiveTessellationCollapseEdgeOperation::get_constrained_boundary_type(
     const Tuple& t) const -> ConstrainedBoundaryType
 {
     ConstrainedBoundaryType primary = get_constrained_boundary_type_per_face(m, t);
+    spdlog::warn("Primary constrained_boundary type: {}", constraint_type(primary));
     if (const auto oface_opt = t.switch_face(m); oface_opt.has_value()) {
         ConstrainedBoundaryType secondary =
             get_constrained_boundary_type_per_face(m, oface_opt.value());
+        spdlog::warn("Secondary constrained_boundary type: {}", constraint_type(secondary));
 
-        return merge(primary, secondary);
+        auto m = merge(primary, secondary);
+        spdlog::warn("Merged constrained boundary type: {}", constraint_type(m));
+        return m;
     } else {
         return primary;
     }
@@ -421,6 +503,14 @@ bool AdaptiveTessellationCollapseEdgeOperation::after(AdaptiveTessellation& m)
     OpCache& op_cache = m_op_cache.local();
     const Tuple& return_edge_tuple = get_return_tuple_opt().value();
 
+    {
+        const Tuple t = return_edge_tuple;
+        spdlog::warn(
+            "NONPAIR returns return tuple is: {} {} {}",
+            t.info(),
+            t.vid(m),
+            t.switch_vertex(m).vid(m));
+    }
 
     return true;
 }
@@ -510,6 +600,7 @@ void AdaptiveTessellationCollapseEdgeOperation::assign_collapsed_edge_attributes
             auto eopt = m.tuple_from_edge_vids_opt(m0, m1);
             assert(eopt.has_value());
             const Tuple mirror = eopt.value();
+            spdlog::info("Latching {} {}", edge.info(), mirror.info());
             m.set_mirror_edge_data(edge, mirror);
             m.set_mirror_edge_data(mirror, edge);
         }
@@ -518,10 +609,12 @@ void AdaptiveTessellationCollapseEdgeOperation::assign_collapsed_edge_attributes
 
     // TODO: cache tris that have already been used
     for (const auto& [other_vertex, seam_data] : op_cache.new_vertex_seam_data) {
+        spdlog::warn("Trying to latch new v: {} {}", new_vertex_vid, other_vertex);
         try_latching_seam_data(new_vertex_vid, other_vertex, seam_data);
     }
     for (const auto& [edge_vids, seam_data] : op_cache.opposing_edge_seam_data) {
         const auto& [a, b] = edge_vids;
+        spdlog::warn("Trying to latch old edge {} {}", a, b);
         try_latching_seam_data(a, b, seam_data);
     }
 }
@@ -537,13 +630,18 @@ AdaptiveTessellationPairedCollapseEdgeOperation::operator bool() const
 {
     return operation_success_T(collapse_edge, collapse_mirror_edge, input_edge_is_mirror());
 }
-void AdaptiveTessellationPairedCollapseEdgeOperation::set_input_edge_mirror(
+void AdaptiveTessellationPairedCollapseEdgeOperation::set_input_mirror(
     const AdaptiveTessellation& m,
     const Tuple& t)
 {
     auto& op_cache = m_op_cache.local();
     if (m.get_mirror_edge_opt(t)) {
-        op_cache.mirror_edge_tuple_opt = m.get_mirror_edge_opt(t);
+        op_cache.mirror_edge_tuple_opt = m.get_oriented_mirror_edge(t).switch_vertex(m);
+        spdlog::warn(
+            "Mirror input edge will be: {} {} {}",
+            op_cache.mirror_edge_tuple_opt->info(),
+            op_cache.mirror_edge_tuple_opt->vid(m),
+            op_cache.mirror_edge_tuple_opt->switch_vertex(m).vid(m));
     }
 }
 
@@ -564,7 +662,7 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::before(
         return false;
     }
 
-    set_input_edge_mirror(m, t);
+    set_input_mirror(m, t);
 
 
     if (input_edge_is_mirror()) {
@@ -605,20 +703,61 @@ wmtk::TriMeshOperation::ExecuteReturnData AdaptiveTessellationPairedCollapseEdge
     auto& mirror_edge_cache = collapse_mirror_edge.m_op_cache.local();
     auto& op_cache = m_op_cache.local();
 
+    {
+        spdlog::warn(
+            "base op started iwth : {} {} {}",
+            t.info(),
+            t.vid(m),
+            t.switch_vertex(m).vid(m));
+    }
 
     spdlog::info("PC exec primary");
     wmtk::TriMeshOperation::ExecuteReturnData ret_data = collapse_edge.execute(m, t);
 
+
     if (!ret_data) return ret_data;
+    {
+        const Tuple t = collapse_edge.get_return_tuple_opt().value();
+        spdlog::warn("returned : {} {} {}", t.info(), t.vid(m), t.switch_vertex(m).vid(m));
+    }
 
     // if we have a mirror edge we need to
     if (input_edge_is_mirror()) {
         spdlog::info("PC exec secondary");
         const Tuple& mirror_edge_tuple = op_cache.mirror_edge_tuple_opt.value();
+        {
+            const Tuple t = mirror_edge_tuple;
+            spdlog::warn(
+                "mirror op started iwth : {} {} {}",
+                t.info(),
+                t.vid(m),
+                t.switch_vertex(m).vid(m));
+        }
         wmtk::TriMeshOperation::ExecuteReturnData ret_data2 =
-            collapse_mirror_edge.execute(m, mirror_edge_tuple.switch_vertex(m));
+            collapse_mirror_edge.execute(m, mirror_edge_tuple);
+
+        if (!ret_data2.success) {
+            return ret_data2;
+        } else {
+            {
+                const Tuple t = collapse_mirror_edge.get_return_tuple_opt().value();
+                spdlog::warn(
+                    "mirrored op returned : {} {} {}",
+                    t.info(),
+                    t.vid(m),
+                    t.switch_vertex(m).vid(m));
+            }
+        }
     }
 
+
+    spdlog::info("{} {}", bool(collapse_edge), bool(collapse_mirror_edge));
+    collapse_edge.assign_collapsed_edge_attributes(m, collapse_mirror_edge.new_vertex(m));
+
+
+    if (input_edge_is_mirror()) {
+        collapse_mirror_edge.assign_collapsed_edge_attributes(m, collapse_edge.new_vertex(m));
+    }
     ret_data.success = bool(*this);
     ret_data.new_tris = modified_tuples(m);
     spdlog::info("PC exec done");
@@ -656,15 +795,27 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::after(AdaptiveTessellation
     if (!collapse_edge.after(m)) {
         return false;
     }
-
-    const auto& new_vertex_attr = collapse_edge.assign_new_vertex_attributes(m);
-
-    collapse_edge.assign_collapsed_edge_attributes(m, collapse_mirror_edge.new_vertex(m));
+    {
+        const Tuple t = collapse_edge.get_return_tuple_opt().value();
+        spdlog::warn("return tuple is: {} {} {}", t.info(), t.vid(m), t.switch_vertex(m).vid(m));
+    }
     if (input_edge_is_mirror()) {
+        {
+            const Tuple t = collapse_mirror_edge.get_return_tuple_opt().value();
+            spdlog::warn(
+                "mirror return tuple is: {} {} {}",
+                t.info(),
+                t.vid(m),
+                t.switch_vertex(m).vid(m));
+        }
         if (!collapse_mirror_edge.after(m)) {
             return false;
         }
-        collapse_mirror_edge.assign_collapsed_edge_attributes(m, collapse_edge.new_vertex(m));
+    }
+
+    const auto& new_vertex_attr = collapse_edge.assign_new_vertex_attributes(m);
+
+    if (input_edge_is_mirror()) {
         // const Tuple& mirror_edge_tuple = collapse_mirror_edge.get_return_tuple_opt().value();
         auto& mirror_vertex_attr = collapse_mirror_edge.assign_new_vertex_attributes(m);
 

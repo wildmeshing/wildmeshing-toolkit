@@ -4,22 +4,18 @@
 #include <igl/Timer.h>
 #include <igl/doublearea.h>
 #include <igl/predicates/predicates.h>
-#include <igl/read_triangle_mesh.h>
-#include <igl/writeDMAT.h>
-#include <igl/write_triangle_mesh.h>
 #include <lagrange/SurfaceMesh.h>
 #include <lagrange/attribute_names.h>
 #include <lagrange/bvh/EdgeAABBTree.h>
 #include <lagrange/foreach_attribute.h>
-#include <lagrange/io/load_mesh.h>
 #include <lagrange/triangulate_polygonal_facets.h>
 #include <lagrange/utils/fpe.h>
 #include <lagrange/utils/timing.h>
 #include <lagrange/views.h>
 #include <tbb/concurrent_vector.h>
 #include <wmtk/TriMesh.h>
-#include <wmtk/image/TextureIntegral.h>
 #include <wmtk/image/QuadricIntegral.h>
+#include <wmtk/image/TextureIntegral.h>
 #include <wmtk/utils/AMIPS2D.h>
 #include <wmtk/utils/AMIPS2D_autodiff.h>
 #include <wmtk/utils/BoundaryParametrization.h>
@@ -335,7 +331,7 @@ public:
     std::vector<TriMesh::Tuple> new_edges_after(const std::vector<TriMesh::Tuple>& tris) const;
 
     // Smoothing
-    void prepare_quadrics(wmtk::QuadricEnergy &energy);
+    void prepare_quadrics(wmtk::QuadricEnergy& energy);
     void smooth_all_vertices();
     bool smooth_before(const Tuple& t);
     bool smooth_after(const Tuple& t);
