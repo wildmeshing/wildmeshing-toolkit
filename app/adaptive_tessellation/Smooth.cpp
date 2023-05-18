@@ -66,12 +66,22 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::before(AdaptiveTessellation&
     // m.write_obj(m.mesh_parameters.m_output_folder + fmt::format("/smooth_{:04d}_2d.obj", cnt));
 
     if (wmtk::TriMeshSmoothVertexOperation::before(m, t)) {
-        assert(!m.vertex_attrs[t.vid(m)].fixed);
-        if (m.is_seam_vertex(t)) {
-            wmtk::logger().info("///// seam vertex smooth");
+        if (m.vertex_attrs[t.vid(m)].fixed) return false;
+        if (m.mesh_parameters.m_bnd_freeze && m.is_boundary_vertex(t)) return false;
+
+        if (m.is_boundary_vertex(t)) {
+            if (m.is_seam_vertex(t)) {
+                wmtk::logger().info("///// seam vertex smooth");
+            }
+            for (auto& e : m.get_one_ring_edges_for_vertex(t)) {
+                if (m.is_boundary_edge(e)) {
+                    m.vertex_attrs[t.vid(m)].curve_id = m.edge_attrs[e.eid(m)].curve_id.value();
+                    break;
+                }
+            }
         }
         cnt++;
-        return m.smooth_before(t);
+        return true;
     }
 
     return false;
@@ -189,6 +199,7 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::after(
     wmtk::logger().info(
         "smooth time: {}",
         lagrange::timestamp_diff_in_seconds(smooth_start_time, smooth_end_time));
+
     // m.mesh_parameters.log(
     //     {{"smooth_op_" + std::to_string(cnt),
     //       {{"before_energy", std::to_string(before_energy)},
@@ -199,6 +210,7 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::after(
     //         std::to_string(
     //             lagrange::timestamp_diff_in_seconds(smooth_start_time, smooth_end_time))}}}});
     cnt++;
+
     return ret_data.success;
 }
 
@@ -356,6 +368,7 @@ void adaptive_tessellation::AdaptiveTessellation::smooth_all_vertices()
     if (auto quadric_energy = dynamic_cast<QuadricEnergy*>(mesh_parameters.m_energy.get());
         quadric_energy) {
         prepare_quadrics(*quadric_energy);
+        wmtk::logger().info("!!!!!!! using quadric");
     }
     time = timer.getElapsedTime();
     wmtk::logger().info("vertex smoothing prepare time: {}s", time);
