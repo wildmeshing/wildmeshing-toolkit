@@ -231,7 +231,11 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::check_seamed_link_conditio
     const auto [edge_link, edge_link_has_infinite] = seamed_edge_link_of_edge(mesh, edge);
     spdlog::info("Edge link {}", edge_link);
     spdlog::info("egdge link infinite: {}", edge_link_has_infinite);
-    bool v_link = lk_vid12 == edge_link && lk_vid12_infinite == edge_link_has_infinite;
+    // over finite vertices v_link
+    const bool v_link_fin =  lk_vid12 == edge_link;
+    // over infinite vertices v_link
+    const bool v_link_inf = lk_vid12_infinite == edge_link_has_infinite
+    bool v_link = v_link_fin && v_link_inf;
 
     // check edge link condition
     // in 2d edge link for an edge is always empty
