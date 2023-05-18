@@ -39,7 +39,7 @@ inline float fetch_texel(const wmtk::Image& image, int offset)
 
 inline float fetch_texel(const wmtk::Image& image, int x, int y)
 {
-    return image.get_raw_image()(x, y);
+    return image.get_raw_image()(y, x);
 }
 
 template <size_t N>
