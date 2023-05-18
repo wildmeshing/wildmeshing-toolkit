@@ -235,10 +235,10 @@ int main(int argc, char** argv)
 
     mesh_new.consolidate_mesh();
 
-    mesh_new.output_mesh("test_embed_output.msh");
+    mesh_new.output_mesh(output_path + "after_insertion.msh");
     std::cout << "here3" << std::endl;
 
-    mesh_new.output_faces("test_embed_output_surface.obj", [](auto& f) {
+    mesh_new.output_faces(output_path + "after_insertion_surface.obj", [](auto& f) {
         return f.m_is_surface_fs;
     });
 
@@ -246,9 +246,9 @@ int main(int argc, char** argv)
         return f.from_input_collection_id > -1;
     });
 
-    mesh_new.output_faces("test_embed_output_bbox.obj", [](auto& f) {
-        return f.m_is_bbox_fs != -1;
-    });
+    // mesh_new.output_faces("test_embed_output_bbox.obj", [](auto& f) {
+    //     return f.m_is_bbox_fs != -1;
+    // });
 
     std::cout << "here4" << std::endl;
 

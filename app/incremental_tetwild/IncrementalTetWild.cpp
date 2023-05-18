@@ -1457,25 +1457,26 @@ void tetwild::TetWild::detect_coplanar_triangle_collections(
     triangle_collections_from_input_surface.exact_to_nearly_map = exact_to_nearly_map;
 
     // debug code
-    for (int i = 0; i < collections.size(); i++) {
-        std::cout << "collection " << i << ": ";
-        for (int j = 0; j < collections[i].face_ids.size(); j++) {
-            std::cout << collections[i].face_ids[j] << " ";
-        }
-        std::cout << std::endl;
-    }
+    // for (int i = 0; i < collections.size(); i++) {
+    //     std::cout << "collection " << i << ": ";
+    //     for (int j = 0; j < collections[i].face_ids.size(); j++) {
+    //         std::cout << collections[i].face_ids[j] << " ";
+    //     }
+    //     std::cout << std::endl;
+    // }
 
-    for (int i = 0; i < collections_nearly.size(); i++) {
-        std::cout << "nearly collection " << i << ": ";
-        for (int j = 0; j < collections_nearly[i].face_ids.size(); j++) {
-            std::cout << collections_nearly[i].face_ids[j] << " ";
-        }
-        std::cout << std::endl;
-    }
+    // for (int i = 0; i < collections_nearly.size(); i++) {
+    //     std::cout << "nearly collection " << i << ": ";
+    //     for (int j = 0; j < collections_nearly[i].face_ids.size(); j++) {
+    //         std::cout << collections_nearly[i].face_ids[j] << " ";
+    //     }
+    //     std::cout << std::endl;
+    // }
 
-    for (int i = 0; i < exact_to_nearly_map.size(); i++) {
-        std::cout << "exact to nearly map " << i << " --> " << exact_to_nearly_map[i] << std::endl;
-    }
+    // for (int i = 0; i < exact_to_nearly_map.size(); i++) {
+    //     std::cout << "exact to nearly map " << i << " --> " << exact_to_nearly_map[i] <<
+    //     std::endl;
+    // }
 }
 
 bool tetwild::TetWild::is_point_in_triangle(

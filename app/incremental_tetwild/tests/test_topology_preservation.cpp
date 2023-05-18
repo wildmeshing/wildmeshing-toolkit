@@ -5,9 +5,11 @@
 // #include <igl/copyleft/cgal/remesh_intersections.h>
 #include <igl/read_triangle_mesh.h>
 #include <igl/write_triangle_mesh.h>
+#include <wmtk/utils/AMIPS.h>
 #include <catch2/catch.hpp>
 #include <wmtk/utils/io.hpp>
 #include "spdlog/common.h"
+
 
 using namespace wmtk;
 using namespace tetwild;
