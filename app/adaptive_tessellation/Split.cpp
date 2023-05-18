@@ -87,7 +87,6 @@ bool AdaptiveTessellationSplitEdgeOperation::after(
         const Eigen::Vector2d p =
             (m.vertex_attrs[op_cache.local().v1].pos + m.vertex_attrs[op_cache.local().v2].pos) /
             2.0;
-        wmtk::logger().info(p);
         auto vid = return_edge_tuple.switch_vertex(m).vid(m);
         // update the vertex_attrs
         m.vertex_attrs[vid].pos = p;
