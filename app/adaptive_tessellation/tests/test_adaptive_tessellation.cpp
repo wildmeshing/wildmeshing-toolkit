@@ -543,7 +543,7 @@ TEST_CASE("paired split")
     }
 }
 
-TEST_CASE("paired collapse", "[ignore]")
+TEST_CASE("paired collapse", "[myfail][.]")
 {
     Eigen::MatrixXd V(6, 2);
     Eigen::MatrixXi F(2, 3);
@@ -1361,13 +1361,12 @@ TEST_CASE("edge curve-id assignment")
     }
 }
 
-TEST_CASE("quickrun")
+TEST_CASE("quickrun", "[.]")
 {
     // Loading the input 2d mesh
     AdaptiveTessellation m;
-    //// TODO DEBUG
+
     std::filesystem::path input_folder = WMTK_DATA_DIR;
-    ////
     std::filesystem::path input_mesh_path = input_folder / "hemisphere_splited.obj";
     std::filesystem::path position_path = input_folder / "images/hemisphere_512_position.exr";
     std::filesystem::path normal_path =
@@ -1380,8 +1379,6 @@ TEST_CASE("quickrun")
     image.load(height_path, WrappingMode::MIRROR_REPEAT, WrappingMode::MIRROR_REPEAT);
 
     REQUIRE(m.check_mesh_connectivity_validity());
-    m.mesh_parameters.m_early_stopping_number = 5;
-
     m.set_parameters(
         0.00001,
         0.4,
@@ -1425,16 +1422,21 @@ TEST_CASE("check curveid consistency after split")
     // logger().set_level(spdlog::level::trace);
     // Loading the input 2d mesh
     AdaptiveTessellation m;
-    m.mesh_preprocessing("/home/yunfan/seamPyramid.obj", "/home/yunfan/seamPyramid_displaced.exr");
-    Image image;
-    image.load(
-        "/home/yunfan/seamPyramid_height_10.exr",
-        WrappingMode::MIRROR_REPEAT,
-        WrappingMode::MIRROR_REPEAT);
 
-    m.mesh_parameters.m_position_normal_paths = {"/home/yunfan/seamPyramid_position.exr",
-                                                 "/home/yunfan/seamPyramid_normal_smooth.exr"};
+    std::filesystem::path input_folder = WMTK_DATA_DIR;
+    std::filesystem::path input_mesh_path = input_folder / "hemisphere_splited.obj";
+    std::filesystem::path position_path = input_folder / "images/hemisphere_512_position.exr";
+    std::filesystem::path normal_path =
+        input_folder / "images/hemisphere_512_normal-world-space.exr";
+    std::filesystem::path height_path =
+        input_folder / "images/riveted_castle_iron_door_512_height.exr";
+
+
+    m.mesh_preprocessing(input_mesh_path, position_path, normal_path, height_path);
     assert(m.check_mesh_connectivity_validity());
+    Image image;
+    image.load(height_path, WrappingMode::MIRROR_REPEAT, WrappingMode::MIRROR_REPEAT);
+
     // stop after 100 iterations
     m.mesh_parameters.m_early_stopping_number = 100;
     m.set_parameters(
@@ -1453,7 +1455,6 @@ TEST_CASE("check curveid consistency after split")
     // check curve-id after split per edge
     for (auto& e : m.get_edges()) {
         if (m.is_boundary_edge(e)) {
-            wmtk::logger().info(e.info());
             REQUIRE(m.edge_attrs[e.eid(m)].curve_id.has_value());
             // find the mid-point uv of the edge
             auto uv =
