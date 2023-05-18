@@ -46,6 +46,8 @@ class LoggerDataCollector
                 {"median", median_},
                 {"std_dev", std_dev_}};
         }
+
+        operator nlohmann::json() const { return to_json(); }
     };
 
     size_t peak_memory_ = -1; // peak memory in bytes
@@ -164,10 +166,10 @@ public:
 private:
     nlohmann::json general_info_to_json() const
     {
-        StatisticsObj edge_length_stats(edge_lengths_);
-        StatisticsObj energy_stats(triangle_energies_);
-        StatisticsObj area_stats(triangle_areas_);
-        // StatisticsObj min_angle_stats(triangle_min_angles_);
+        const StatisticsObj edge_length_stats(edge_lengths_);
+        const StatisticsObj energy_stats(triangle_energies_);
+        const StatisticsObj area_stats(triangle_areas_);
+        // const StatisticsObj min_angle_stats(triangle_min_angles_);
 
         const double runtime = (timer_started_ && timer_stopped_) ? time_in_seconds() : -1;
 
@@ -176,9 +178,9 @@ private:
             {"num_faces", num_faces_},
             {"num_vertices", num_vertices_},
             {"runtime", runtime},
-            {"edge_length_stats", edge_length_stats.to_json()},
-            {"triangle_energy_stats", energy_stats.to_json()},
-            {"triangle_area_stats", area_stats.to_json()}};
+            {"edge_length_stats", edge_length_stats},
+            {"triangle_energy_stats", energy_stats},
+            {"triangle_area_stats", area_stats}};
     }
 
     nlohmann::json vectors_to_json() const
