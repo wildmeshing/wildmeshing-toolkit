@@ -33,24 +33,29 @@ inline std::tuple<size_t, size_t, float> sample_coord(const float coord, const s
     return std::make_tuple(coord0, coord1, t);
 };
 
-inline float fetch_texel(const wmtk::Image& image, int offset)
+inline uint32_t to_morton_z_order(uint16_t x, uint16_t y)
+{
+    constexpr auto swizzle = [](uint16_t x) {
+        uint32_t z = x; // x &= 0x00'00'FF'FF
+        z = (z ^ (z << 8)) & 0x00'FF'00'FF;
+        z = (z ^ (z << 4)) & 0x0F'0F'0F'0F;
+        z = (z ^ (z << 2)) & 0x33'33'33'33;
+        z = (z ^ (z << 1)) & 0x55'55'55'55;
+        return z;
+    };
+    auto z = (swizzle(y) << 1) + swizzle(x);
+    return z;
+}
+
+inline float fetch_texel_offset(const wmtk::Image& image, int offset)
 {
     return image.get_raw_image().data()[offset];
 }
 
-inline float fetch_texel(const wmtk::Image& image, int x, int y)
+inline float fetch_texel_zorder(const wmtk::Image& image, int x, int y)
 {
-    return image.get_raw_image()(y, x);
-}
-
-template <size_t N>
-Eigen::Vector<float, N> fetch_texels(const std::array<wmtk::Image, N>& images, int x, int y)
-{
-    Eigen::Vector<float, N> res;
-    for (size_t k = 0; k < N; ++k) {
-        res[k] = fetch_texel(images[k], x, y);
-    }
-    return res;
+    auto zoffset = to_morton_z_order(x, y);
+    return fetch_texel_offset(image, zoffset);
 }
 
 template <size_t N>
@@ -59,9 +64,35 @@ Eigen::Vector<float, N> fetch_texels_zorder(const std::array<wmtk::Image, N>& im
     Eigen::Vector<float, N> res;
     auto zoffset = to_morton_z_order(x, y);
     for (size_t k = 0; k < N; ++k) {
-        res[k] = fetch_texel(images[k], zoffset);
+        res[k] = fetch_texel_offset(images[k], zoffset);
     }
     return res;
+}
+
+inline float fetch_texel_eigen(const wmtk::Image& image, int x, int y)
+{
+    return image.get_raw_image()(y, x);
+}
+
+template <size_t N>
+Eigen::Vector<float, N> fetch_texel_eigen(const std::array<wmtk::Image, N>& images, int x, int y)
+{
+    Eigen::Vector<float, N> res;
+    for (size_t k = 0; k < N; ++k) {
+        res[k] = fetch_texel_eigen(images[k], x, y);
+    }
+    return res;
+}
+
+inline float fetch_texel(const wmtk::Image& image, int x, int y)
+{
+    return fetch_texel_eigen(image, x, y);
+}
+
+template <size_t N>
+Eigen::Vector<float, N> fetch_texels(const std::array<wmtk::Image, N>& images, int x, int y)
+{
+    return fetch_texel_eigen(images, x, y);
 }
 
 template <size_t N>
@@ -286,20 +317,6 @@ inline Classification pixel_inside_triangle(
     return Classification::Unknown;
 }
 
-inline uint32_t to_morton_z_order(uint16_t x, uint16_t y)
-{
-    constexpr auto swizzle = [](uint16_t x) {
-        uint32_t z = x; // x &= 0x00'00'FF'FF
-        z = (z ^ (z << 8)) & 0x00'FF'00'FF;
-        z = (z ^ (z << 4)) & 0x0F'0F'0F'0F;
-        z = (z ^ (z << 2)) & 0x33'33'33'33;
-        z = (z ^ (z << 1)) & 0x55'55'55'55;
-        return z;
-    };
-    auto z = (swizzle(y) << 1) + swizzle(x);
-    return z;
-}
-
 template <size_t N>
 inline std::array<wmtk::Image, N> convert_image_to_morton_z_order(const std::array<wmtk::Image, N>& linear_image)
 {
@@ -315,7 +332,7 @@ inline std::array<wmtk::Image, N> convert_image_to_morton_z_order(const std::arr
         {
             for (int x = 0; x < width; ++x)
             {
-                auto zoffset = wmtk::internal::to_morton_z_order(x, y);
+                auto zoffset = to_morton_z_order(x, y);
                 zorder_plane[zoffset] = fetch_texel(linear_image[k], x, y);
             }
         }
