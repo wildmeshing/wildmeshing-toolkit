@@ -19,7 +19,7 @@ template <typename OpType>
 bool operation_success_T(const OpType& primary, const OpType& secondary, bool has_mirror)
 {
     const bool normal_ok = bool(primary);
-    const bool mirror_ok = !has_mirror && bool(secondary);
+    const bool mirror_ok = !has_mirror || bool(secondary);
     return normal_ok && mirror_ok;
 }
 } // namespace adaptive_tessellation

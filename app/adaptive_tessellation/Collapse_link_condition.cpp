@@ -121,7 +121,7 @@ auto AdaptiveTessellationPairedCollapseEdgeOperation::seamed_links_of_vertex(
     LinksOfVertex ret;
     std::vector<TriMesh::Tuple> all_mirror_vertices;
     if (mesh.is_seam_vertex(vertex)) {
-        all_mirror_vertices = mesh.get_all_mirror_vertices(vertex);
+        all_mirror_vertices = vids_to_tuples(mesh, mesh.get_all_mirror_vids(vertex));
     } else {
         all_mirror_vertices.emplace_back(vertex);
     }
@@ -141,12 +141,12 @@ auto AdaptiveTessellationPairedCollapseEdgeOperation::seamed_links_of_vertex(
             }
             lk_vid.push_back(vid);
         }
-        std::vector<Tuple> vid_tris = mesh.get_one_ring_tris_for_vertex(vertex);
+        std::vector<Tuple> vid_tris = mesh.get_one_ring_tris_for_vertex(mirror_vertex_tuple);
         for (const auto& v_tri_t : vid_tris) {
             const size_t fid = v_tri_t.fid(mesh);
             const auto& tri_con = tri_connectivity(mesh)[fid];
             const auto& indices = tri_con.m_indices;
-            int l = tri_con.find(vid);
+            int l = tri_con.find(mirror_vertex_tuple.vid(mesh));
             assert(l != -1);
             size_t i0 = indices[(l + 1) % 3];
             size_t i1 = indices[(l + 2) % 3];
@@ -177,12 +177,14 @@ AdaptiveTessellationPairedCollapseEdgeOperation::seamed_edge_link_of_edge(
     lk_edge.push_back(get_opposing_vertex_vid(edge));
     const std::optional<Tuple> other_face_opt = mesh.get_sibling_edge_opt(edge);
     bool has_infinite = false;
-    if (!other_face_opt.has_value()) {
+    if (mesh.is_stitched_boundary_edge(edge)) {
         has_infinite = true;
     } else {
         lk_edge.push_back(get_opposing_vertex_vid(other_face_opt.value()));
     }
+
     vector_sort(lk_edge);
+    lk_edge = mirror_vids(mesh, lk_edge);
     return {lk_edge, has_infinite};
 }
 
@@ -211,13 +213,25 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::check_seamed_link_conditio
     const LinksOfVertex v1 = seamed_links_of_vertex(mesh, edge);
     const LinksOfVertex v2 = seamed_links_of_vertex(mesh, edge.switch_vertex(mesh));
 
+
+    spdlog::info("v1 vertex: {}", v1.vertex);
+    spdlog::info("v1 vertex has infinite: {}", v1.infinite_vertex);
+    spdlog::info("v1 edge: {}", v1.edge);
+    spdlog::info("v1 infinite_edge: {}", v1.infinite_edge);
+
+    spdlog::info("v2 vertex: {}", v2.vertex);
+    spdlog::info("v2 vertex has infinite: {}", v2.infinite_vertex);
+    spdlog::info("v2 edge: {}", v2.edge);
+    spdlog::info("v2 infinite_edge: {}", v2.infinite_edge);
+
     // compute vertex link condition
     auto lk_vid12 = set_intersection(v1.vertex, v2.vertex);
     const bool lk_vid12_infinite = v1.infinite_vertex && v2.infinite_vertex;
 
     const auto [edge_link, edge_link_has_infinite] = seamed_edge_link_of_edge(mesh, edge);
-    bool v_link = lk_vid12 == edge_link && edge_link_has_infinite &&
-                  lk_vid12_infinite == edge_link_has_infinite;
+    spdlog::info("Edge link {}", edge_link);
+    spdlog::info("egdge link infinite: {}", edge_link_has_infinite);
+    bool v_link = lk_vid12 == edge_link && lk_vid12_infinite == edge_link_has_infinite;
 
     // check edge link condition
     // in 2d edge link for an edge is always empty
@@ -241,5 +255,6 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::check_seamed_link_conditio
         lk_e_vid2_inf.end(),
         std::back_inserter(res_inf));
     const bool e_link = res.empty() && res_inf.empty();
+    spdlog::info("Link condition values {} {}", v_link, e_link);
     return v_link && e_link;
 }

@@ -681,6 +681,49 @@ TEST_CASE("paired collapse", "[myfail][.]")
     F.row(1) << 3, 4, 5;
     AdaptiveTessellation m;
 
+    //////////// ======== seam edge split
+    // acsii art diamond
+    //               1            4
+    //             /   |        |   \     
+    //     cv3    / (2)|        |(1) \   cv2
+    //           /     |     cv0| |pe1\    
+    //          /      |        | |/   \   
+    //        0(0)   f0|        |f1   (0)3
+    //          \   /| |        |      /
+    //           \pe2| |        |     /
+    //            \(1) |cv1     |(2) /
+    //             \   |        |   /
+    //               2            5
+
+    // lambda function for checking each face's mirror data
+    auto check_all_faces_mirror_info = [&m]() -> bool {
+        for (auto& f : m.get_faces()) {
+            assert(f.is_valid(m));
+            for (int j = 0; j < 3; j++) {
+                wmtk::TriMesh::Tuple e = m.tuple_from_edge(f.fid(m), j);
+                e = e.is_ccw(m) ? e : e.switch_vertex(m);
+                auto mirror_opt = m.face_attrs[e.fid(m)].mirror_edges[e.local_eid(m)];
+                wmtk::logger().info("primary edge {}", e.info());
+                wmtk::logger().info("mirror edge has value {}", mirror_opt.has_value());
+                if (mirror_opt.has_value()) {
+                    auto mirror_tup = mirror_opt.value();
+                    wmtk::logger().info("mirror edge {}", mirror_tup.info());
+                    auto primary_from_data =
+                        m.face_attrs[mirror_tup.fid(m)].mirror_edges[mirror_tup.local_eid(m)];
+                    wmtk::logger().info(
+                        "primary edge from data has value {}",
+                        primary_from_data.has_value());
+                    wmtk::logger().info(
+                        "primary edge from data {}",
+                        primary_from_data.value().info());
+                    if (!primary_from_data.has_value()) return false;
+                    if (!(e == primary_from_data.value())) return false;
+                }
+            }
+        }
+        return true;
+    };
+
     m.create_mesh_debug(V, F);
     m.mesh_parameters.m_ignore_embedding = true;
     // set up mesh
@@ -698,6 +741,9 @@ TEST_CASE("paired collapse", "[myfail][.]")
     m.edge_attrs[primary_edge2.switch_edge(m).eid(m)].curve_id = std::make_optional<int>(3);
     m.edge_attrs[primary_edge2.switch_vertex(m).switch_edge(m).eid(m)].curve_id =
         std::make_optional<int>(3);
+    REQUIRE(check_all_faces_mirror_info());
+
+
     // split a few times
     AdaptiveTessellationPairedSplitEdgeOperation op;
     op(m, primary_edge2);
@@ -742,6 +788,9 @@ TEST_CASE("paired collapse", "[myfail][.]")
             }
         }
     }
+
+    REQUIRE(check_all_faces_mirror_info());
+
     ////////// ======= interior edge collapse
     // acsii art diamond
     //                1          4
@@ -752,20 +801,23 @@ TEST_CASE("paired collapse", "[myfail][.]")
     //          /    /   |      |  /f1  \   
     //        0(0)--8|--6|      |7----(0)3
     //          \    \<--|cv1   |       /
-    //           \   |pe5|      |      /
+    //           \   |pe6|      |      /
     //            \ f0\f4|      | f3  /
     //             \   | |      |    /
     //              \(1)\|      |(2)/
     //                2           5
 
+    REQUIRE(m.tri_capacity() == 7);
     wmtk::TriMesh::Tuple primary_edge6 = wmtk::TriMesh::Tuple(6, 1, 4, m);
     REQUIRE(m.is_seam_vertex(primary_edge6));
     REQUIRE(!m.is_boundary_edge(primary_edge6));
-    REQUIRE(!m.is_seam_edge(primary_edge6));
     REQUIRE(!m.edge_attrs[primary_edge6.eid(m)].curve_id.has_value());
     REQUIRE(primary_edge6.is_valid(m));
     AdaptiveTessellationPairedCollapseEdgeOperation op4;
-    op4(m, primary_edge6);
+    REQUIRE(op4.before(m, primary_edge6));
+    auto retdata = op4.execute(m, primary_edge6);
+    REQUIRE(retdata.success);
+    REQUIRE(op4.after(m));
     // acsii art diamond
     //                1    4
     //              /(2) ||(1)\ 
@@ -774,24 +826,32 @@ TEST_CASE("paired collapse", "[myfail][.]")
     //           /       ||   /  \    
     //          /        ||  /f1  \   
     //        0(0)-----10||7----(0)3
-    //          \       |||       /
-    //           \      |||      /
-    //            \ f0 \||| f3  /
+    //          \  <---  ||       /
+    //           \       ||      /
+    //            \ f0   || f3  /
     //             \     ||    /
     //              \(1) ||(2)/
     //                2     5
+    int face_cnt = 0;
+    for (auto& f : m.get_faces()) {
+        face_cnt++;
+    }
+    REQUIRE(face_cnt == 5);
     const auto& primary_edge6_opt = op4.collapse_edge.get_return_tuple_opt();
     REQUIRE(primary_edge6_opt.has_value());
     const auto& primary_edge6_ret = primary_edge6_opt.value();
     REQUIRE(primary_edge6_ret.is_valid(m));
     REQUIRE(primary_edge6_ret.vid(m) == 10);
-    REQUIRE(m.vert_capacity() == 9);
-    REQUIRE(m.is_seam_edge(primary_edge6_ret));
-    REQUIRE(m.edge_attrs[primary_edge6_ret.eid(m)].curve_id.has_value());
-    REQUIRE(m.edge_attrs[primary_edge6_ret.eid(m)].curve_id.value() == 1);
-    REQUIRE(m.get_oriented_mirror_edge(primary_edge6_ret).is_valid(m));
-    REQUIRE(m.get_oriented_mirror_edge(primary_edge6_ret).fid(m) == 3);
-    REQUIRE(m.get_oriented_mirror_edge(primary_edge6_ret).vid(m) == 5);
+    REQUIRE(m.vert_capacity() == 11);
+    REQUIRE(primary_edge6_ret.switch_vertex(m).vid(m) == 0);
+    REQUIRE(!m.is_seam_edge(primary_edge6_ret));
+    auto swapped_pe6_ret = primary_edge6_ret.switch_edge(m);
+    REQUIRE(m.edge_attrs[swapped_pe6_ret.eid(m)].curve_id.has_value());
+    REQUIRE(m.edge_attrs[swapped_pe6_ret.eid(m)].curve_id.value() == 1);
+    REQUIRE(m.get_oriented_mirror_edge(swapped_pe6_ret).is_valid(m));
+    REQUIRE(m.get_oriented_mirror_edge(swapped_pe6_ret).fid(m) == 3);
+    REQUIRE(m.get_oriented_mirror_edge(swapped_pe6_ret).vid(m) == 5);
+    REQUIRE(check_all_faces_mirror_info());
     spdlog::warn("2===========================");
     /////// debug
     for (auto& e : m.get_edges()) {
@@ -886,6 +946,7 @@ TEST_CASE("paired collapse", "[myfail][.]")
     REQUIRE(m.edge_attrs[primary_edge7_ret.switch_edge(m).eid(m)].curve_id.has_value());
     REQUIRE(m.edge_attrs[primary_edge7_ret.switch_edge(m).eid(m)].curve_id.value() == 2);
 
+    REQUIRE(check_all_faces_mirror_info());
     /////// debug
     for (auto& e : m.get_edges()) {
         REQUIRE(e.is_valid(m));

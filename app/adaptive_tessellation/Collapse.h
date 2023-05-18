@@ -63,7 +63,8 @@ public:
     friend class AdaptiveTessellationPairedCollapseEdgeOperation;
     struct SeamData
     {
-        std::optional<Tuple> mirror_edge_tuple;
+        // Note that if we know that this is a radial edge we populate both with the same value
+        std::optional<std::array<size_t, 2>> mirror_edge_vids;
         size_t curve_id;
     };
     struct OpCache
@@ -113,6 +114,7 @@ public:
 
         // pairs of vids for edges where a vertex changes in the collapse
         std::unordered_map<size_t, SeamData> new_vertex_seam_data;
+        std::map<std::array<size_t, 2>, SeamData> opposing_edge_seam_data;
     };
     mutable tbb::enumerable_thread_specific<OpCache> m_op_cache;
 
@@ -147,7 +149,9 @@ public:
         const VertexAttributes& attr) const;
 
     //
-    void assign_collapsed_edge_attributes(AdaptiveTessellation& m) const;
+    void assign_collapsed_edge_attributes(
+        AdaptiveTessellation& m,
+        const std::optional<Tuple>& new_mirror_vertex_opt) const;
 };
 
 class AdaptiveTessellationPairedCollapseEdgeOperation

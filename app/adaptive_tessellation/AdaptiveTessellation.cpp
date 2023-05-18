@@ -655,6 +655,7 @@ bool AdaptiveTessellation::invariants(const std::vector<Tuple>& new_tris)
     if (mesh_parameters.m_has_envelope) {
         for (auto& t : new_tris) {
             std::array<Eigen::Vector3d, 3> tris;
+            spdlog::warn("{}", t.info());
             auto vs = oriented_tri_vertices(t);
             for (auto j = 0; j < 3; j++) {
                 tris[j] << vertex_attrs[vs[j].vid(*this)].pos(0),
@@ -1260,6 +1261,7 @@ TriMesh::Tuple AdaptiveTessellation::get_mirror_vertex(const TriMesh::Tuple& t) 
 
 // return a vector of mirror vertices. store v itself at index 0 of the returned vector
 // assume no operation has made fixed vertices outdated
+// TODO maybe delete?
 std::vector<TriMesh::Tuple> AdaptiveTessellation::get_all_mirror_vertices(
     const TriMesh::Tuple& v) const
 {
