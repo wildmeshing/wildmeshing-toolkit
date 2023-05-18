@@ -42,12 +42,23 @@ void AdaptiveTessellationCollapseEdgeOperation::store_merged_seam_data(
     const size_t v2 = op_cache.v2;
     assert(v1 != v2);
 
+    auto edge_tuple_to_vids = [&](const Tuple& t) {
+        std::array<size_t, 2> r{{t.vid(m), t.switch_vertex(m).vid(m)}};
+        std::sort(r.begin(), r.end());
+        return r;
+    };
+
+    const auto base_edge_vids = edge_tuple_to_vids(edge_tuple);
+
+    // const skippable_edge = [&](const Tuple& e) {
+    //     return base_edge_vids == edge_tuple_to_vids(e);
+
+    //};
     // store edges that will be radial from the new vertex
     // assumes the vid is not one of the input edge vids
     // edge tuple pointing from the radial vertex to the center vertex
     auto store_new_vertex_edge = [&](const Tuple& edge_tuple) {
         assert(edge_tuple.vid(m) != v1 && edge_tuple.vid(m) != v2);
-        ;
         if (!m.is_boundary_edge(edge_tuple)) {
             return;
         }
@@ -64,9 +75,32 @@ void AdaptiveTessellationCollapseEdgeOperation::store_merged_seam_data(
         vertex_seam_data_map[edge_tuple.vid(m)] =
             SeamData{.mirror_edge_vids = mirror_edge_vids_opt, .curve_id = curveid_opt.value()};
     };
+
+
+    // fids for triangles we dont want to use opposing edge with
+    const std::vector<size_t> bad_opposing_fids = [&]() {
+        const std::vector<Tuple> bad_opposing_tris = m.tris_bounded_by_edge(edge_tuple);
+        std::vector<size_t> ret;
+        std::transform(
+            bad_opposing_tris.begin(),
+            bad_opposing_tris.end(),
+            std::back_inserter(ret),
+            [&](const Tuple& t) -> size_t { return t.vid(m); });
+        std::sort(ret.begin(), ret.end());
+        return ret;
+    }();
+
+    const auto bad_face = [&](const Tuple& t) -> bool {
+        size_t fid = t.fid(m);
+        return std::binary_search(bad_opposing_fids.begin(), bad_opposing_fids.end(), fid);
+    };
+
     // takes in a edge that does not includ either input edge vids
     auto store_opposing_edge = [&](const Tuple& edge_tuple) {
         if (!m.is_boundary_edge(edge_tuple)) {
+            return;
+        }
+        if (bad_face(edge_tuple)) {
             return;
         }
         std::optional<std::array<size_t, 2>> mirror_edge_vids_opt;
@@ -78,8 +112,7 @@ void AdaptiveTessellationCollapseEdgeOperation::store_merged_seam_data(
             const size_t mirror_vid1 = mt.switch_vertex(m).vid(m);
             mirror_edge_vids_opt = std::array<size_t, 2>{{mirror_vid0, mirror_vid1}};
         }
-        size_t v0 = edge_tuple.vid(m);
-        size_t v1 = edge_tuple.switch_vertex(m).vid(m);
+        const auto [v0, v1] = edge_tuple_to_vids(edge_tuple);
 
         const auto curveid_opt = m.get_edge_attrs(edge_tuple).curve_id;
         assert(curveid_opt.has_value());
@@ -172,8 +205,8 @@ auto AdaptiveTessellationCollapseEdgeOperation::get_constrained_boundary_type_pe
             return true;
         }
 
-        // if a vertex is on boundary then the other one cannot be on a boundary unless it's on an
-        // edge
+        // if a vertex is on boundary then the other one cannot be on a boundary unless it's on
+        // an edge
         // TODO: make sure boundary vertices are properly handled
         if (edge_is_boundary) {
             return false;
