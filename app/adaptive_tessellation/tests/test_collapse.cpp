@@ -169,6 +169,17 @@ TEST_CASE("paired collapse", "[myfail][.]")
     auto retdata = op4.execute(m, primary_edge6);
     REQUIRE(retdata.success);
     REQUIRE(op4.after(m));
+    {
+        std::vector<size_t> affected_fids{{0, 1, 2, 3, 6}};
+        CHECK(retdata.new_tris == op4.modified_triangles(m));
+        CHECK(retdata.new_tris.size() == affected_fids.size());
+        for (const auto& ftup : retdata.new_tris) {
+            CHECK(ftup.is_valid(m));
+            size_t fid = ftup.fid(m);
+            CHECK(std::binary_search(affected_fids.begin(), affected_fids.end(), fid));
+        }
+    }
+
 #include <wmtk/utils/DisableWarnings.hpp>
     // acsii art diamond
     //                1    4
@@ -285,6 +296,17 @@ TEST_CASE("paired collapse", "[myfail][.]")
     REQUIRE(primary_edge7_ret.is_valid(m));
     REQUIRE(primary_edge7_ret.vid(m) == 11);
     REQUIRE(primary_edge7_ret.switch_vertex(m).vid(m) == 4);
+
+    {
+        std::vector<size_t> affected_fids{{0, 2, 3, 6}};
+        auto new_tris = op5.modified_triangles(m);
+        CHECK(new_tris.size() == affected_fids.size());
+        for (const auto& ftup : new_tris) {
+            CHECK(ftup.is_valid(m));
+            size_t fid = ftup.fid(m);
+            CHECK(std::binary_search(affected_fids.begin(), affected_fids.end(), fid));
+        }
+    }
     int valid_verts_cnt = 0;
     for (auto& v : m.get_vertices()) {
         if (v.is_valid(m)) {
@@ -425,6 +447,17 @@ TEST_CASE("paired collapse", "[myfail][.]")
     for (auto& f : m.get_faces()) {
         if (f.is_valid(m)) {
             valid_faces_cnt++;
+        }
+    }
+
+    {
+        std::vector<size_t> affected_fids{{2,6}};
+        auto new_tris = op6.modified_triangles(m);
+        CHECK(new_tris.size() == affected_fids.size());
+        for (const auto& ftup : new_tris) {
+            CHECK(ftup.is_valid(m));
+            size_t fid = ftup.fid(m);
+            CHECK(std::binary_search(affected_fids.begin(), affected_fids.end(), fid));
         }
     }
     REQUIRE(valid_faces_cnt == 2);

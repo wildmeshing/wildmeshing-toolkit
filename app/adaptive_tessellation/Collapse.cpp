@@ -455,7 +455,7 @@ bool AdaptiveTessellationCollapseEdgeOperation::after(
     AdaptiveTessellation& m,
     ExecuteReturnData& ret_data)
 {
-    return after(m);
+    return ret_data.success = after(m);
 }
 bool AdaptiveTessellationCollapseEdgeOperation::after(AdaptiveTessellation& m)
 {
@@ -679,7 +679,7 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::after(
     ExecuteReturnData& ret_data)
 {
     assert(ret_data.success);
-    return after(m);
+    return ret_data.success = after(m);
 }
 bool AdaptiveTessellationPairedCollapseEdgeOperation::after(AdaptiveTessellation& m)
 {
