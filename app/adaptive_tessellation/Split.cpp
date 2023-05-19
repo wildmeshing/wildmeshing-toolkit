@@ -187,6 +187,7 @@ bool AdaptiveTessellationSplitEdgeOperation::after(
     if (!m.mesh_parameters.m_ignore_embedding) {
         assert(bool(*this));
         auto modified_tris = modified_tuples(m);
+        assert(modified_tris.size() == 2 || modified_tris.size() == 4);
         if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
             // get a vector of new traingles uvs
             std::vector<std::array<float, 6>> modified_tris_uv(modified_tris.size());
@@ -204,7 +205,22 @@ bool AdaptiveTessellationSplitEdgeOperation::after(
             m.m_texture_integral.get_error_per_triangle(modified_tris_uv, renewed_errors);
             m.set_faces_cached_distance_integral(modified_tris, renewed_errors);
         } else if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::TRI_QUADRICS) {
-            ///////TODO
+            std::vector<wmtk::Quadric<double>> compressed_quadrics(modified_tris.size());
+            m.m_quadric_integral.get_quadric_per_triangle(
+                modified_tris.size(),
+                [&](int f) -> std::array<float, 6> {
+                    // Get triangle uv positions
+                    std::array<Tuple, 3> local_tuples = m.oriented_tri_vertices(modified_tris[f]);
+                    const Eigen::Vector2f& p0 =
+                        m.vertex_attrs[local_tuples[0].vid(m)].pos.cast<float>();
+                    const Eigen::Vector2f& p1 =
+                        m.vertex_attrs[local_tuples[1].vid(m)].pos.cast<float>();
+                    const Eigen::Vector2f& p2 =
+                        m.vertex_attrs[local_tuples[2].vid(m)].pos.cast<float>();
+                    return {p0.x(), p0.y(), p1.x(), p1.y(), p2.x(), p2.y()};
+                },
+                compressed_quadrics);
+            m.set_faces_quadrics(modified_tris, compressed_quadrics);
         }
     }
 
