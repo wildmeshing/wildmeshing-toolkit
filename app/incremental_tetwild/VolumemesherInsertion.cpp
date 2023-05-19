@@ -1242,6 +1242,15 @@ void tetwild::TetWild::init_from_Volumeremesher(
     }
     std::cout << "#freezed vertices: " << cnt_freeze << std::endl;
 
+    std::ofstream freezed_v("freezed_vertices.obj");
+    for (auto v : get_vertices()) {
+        if (m_vertex_attribute[v.vid(*this)].is_freezed) {
+            freezed_v << "v " << m_vertex_attribute[v.vid(*this)].m_posf[0] << " "
+                      << m_vertex_attribute[v.vid(*this)].m_posf[1] << " "
+                      << m_vertex_attribute[v.vid(*this)].m_posf[2] << std::endl;
+        }
+    }
+
 
     std::cout << "#edge_params: " << edge_params.size() << std::endl;
 

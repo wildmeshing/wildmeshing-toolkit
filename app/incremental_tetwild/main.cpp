@@ -421,6 +421,7 @@ int main(int argc, char** argv)
             matF.row(i) << outface[i][0], outface[i][1], outface[i][2];
         }
         igl::write_triangle_mesh(output_path + "_surface.obj", matV, matF);
+
         wmtk::logger().info("Output face size {}", outface.size());
         wmtk::logger().info("======= finish =========");
     }
