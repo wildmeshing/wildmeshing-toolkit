@@ -107,7 +107,7 @@ int main(int argc, char** argv)
         output_folder = "./output";
         wmtk::logger().info("No input path specified. Using './output'.");
     }
-    std::filesystem::create_directory(output_folder);
+    std::filesystem::create_directories(output_folder);
     ensure_path_exists(output_folder);
     const path output_file = output_folder / config["output_file"];
     const path output_json = output_folder / config["output_json"];
