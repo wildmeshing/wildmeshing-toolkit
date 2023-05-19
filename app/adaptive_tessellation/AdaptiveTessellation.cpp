@@ -2,6 +2,7 @@
 #include <fastenvelope/FastEnvelope.h>
 #include <igl/Timer.h>
 #include <igl/predicates/predicates.h>
+#include <igl/readOBJ.h>
 #include <igl/remove_unreferenced.h>
 #include <lagrange/utils/timing.h>
 #include <tbb/concurrent_vector.h>
@@ -65,10 +66,9 @@ void AdaptiveTessellation::mesh_preprocessing(
     wmtk::TriMesh m_3d;
     std::vector<std::array<size_t, 3>> tris;
     for (auto f = 0; f < input_F_.rows(); f++) {
-        std::array<size_t, 3> tri = {
-            (size_t)input_F_(f, 0),
-            (size_t)input_F_(f, 1),
-            (size_t)input_F_(f, 2)};
+        std::array<size_t, 3> tri = {(size_t)input_F_(f, 0),
+                                     (size_t)input_F_(f, 1),
+                                     (size_t)input_F_(f, 2)};
         tris.emplace_back(tri);
     }
     m_3d.create_mesh(input_V_.rows(), tris);
@@ -125,11 +125,6 @@ void AdaptiveTessellation::prepare_distance_quadrature_cached_energy()
         }
     }
     std::vector<float> computed_errors(tri_capacity());
-
-    m_quadric_integral =
-        wmtk::QuadricIntegral(displaced, wmtk::QuadricIntegral::QuadricType::Triangle);
-    m_texture_integral = wmtk::TextureIntegral(std::move(displaced));
-
     m_texture_integral.get_error_per_triangle(uv_triangles, computed_errors);
     set_faces_cached_distance_integral(tris_tuples, computed_errors);
 }
