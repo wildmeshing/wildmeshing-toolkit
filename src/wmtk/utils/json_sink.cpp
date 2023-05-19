@@ -1,6 +1,7 @@
 #include "json_sink.h"
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/async.h>
 #include <spdlog/spdlog.h>
 namespace wmtk {
 namespace {
@@ -44,9 +45,18 @@ std::shared_ptr<spdlog::logger> make_json_file_logger(
     console_sink->set_level(spdlog::level::trace);
 
 
+    std::vector<std::shared_ptr<spdlog::sinks::sink>> sinks;
+    sinks.emplace_back(file_sink);
+    if(also_output_stdout) {
+        sinks.emplace_back(console_sink);
+    }
     // dunno why make_shared didn't work for me today
     std::shared_ptr<spdlog::logger> js_logger;
-    js_logger.reset(new spdlog::logger(name, {console_sink, file_sink}));
+
+    spdlog::init_thread_pool(8192,1);
+
+    js_logger.reset(new spdlog::async_logger(name, sinks.begin(),sinks.end(), spdlog::thread_pool(), spdlog::async_overflow_policy::block));
+
 
     set_json_format(*js_logger, messages_are_json);
     return js_logger;
