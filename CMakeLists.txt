@@ -19,6 +19,25 @@ else()
     endif()
 endif()
 
+# Enable ccache if available
+find_program(CCACHE_PROGRAM ccache)
+if(CCACHE_PROGRAM)
+    option(WMTK_WITH_CCACHE "Enable ccache when building WMTK" ${WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT})
+else()
+    option(WMTK_WITH_CCACHE "Enable ccache when building WMTK" OFF)
+endif()
+if(WMTK_WITH_CCACHE AND CCACHE_PROGRAM)
+    set(ccacheEnv
+        CCACHE_BASEDIR=${CMAKE_BINARY_DIR}
+        CCACHE_SLOPPINESS=clang_index_store,include_file_ctime,include_file_mtime,locale,pch_defines,time_macros
+    )
+    foreach(lang IN ITEMS C CXX)
+        set(CMAKE_${lang}_COMPILER_LAUNCHER
+            ${CMAKE_COMMAND} -E env ${ccacheEnv} ${CCACHE_PROGRAM}
+        )
+    endforeach()
+endif()
+
 # ###############################################################################
 project(WildMeshingToolkit DESCRIPTION "A mesh optimization toolkit")
 

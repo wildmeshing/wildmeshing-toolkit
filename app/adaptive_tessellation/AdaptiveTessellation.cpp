@@ -24,6 +24,105 @@ double AdaptiveTessellation::avg_edge_len() const
     return avg_len / edges.size();
 }
 
+//// preprocess the mesh for remeshing
+//// replace function create_paired_seam_mesh_with_offset, and mesh_construct_boundaries
+// 0. create mesh
+// 1. vertex_attrs: initiate uv pos and pos_world
+// 2. face_attrs:   set seam local edge mirror data
+// 3. build seam vertex index to color mapping
+// 4. construct boundary parametrization
+// 5. vertex_attrs: set boundary vertex with boudary tag
+//                  set boundary vertex curve_id, and boundary paramter t
+//                  set feature vertex as fixed, set strat/end/t-junction of curve fixed
+// 6. edge_attrs:   set curve-id for each edge
+// 7. face_attrs:   set initial accuracy error for each triangle
+// 8. initiate the texture integraler
+void AdaptiveTessellation::mesh_preprocessing(
+    const std::filesystem::path& input_mesh_path,
+    const std::filesystem::path& position_image_path,
+    const std::filesystem::path& normal_image_path,
+    const std::filesystem::path& height_image_path)
+{
+    mesh_parameters.m_position_normal_paths = {position_image_path, normal_image_path};
+    Eigen::MatrixXd CN, FN;
+    // igl::read_triangle_mesh(input_mesh_path.string(), input_V_, input_F_);
+    // igl::readOBJ(input_mesh_path.string(), V, VT, CN, F, FT, FN);
+    igl::readOBJ(input_mesh_path.string(), input_V_, input_VT_, CN, input_F_, input_FT_, FN);
+
+    {
+        Eigen::MatrixXd V_buf;
+        Eigen::MatrixXi F_buf;
+        Eigen::MatrixXi map_old_to_new_v_ids;
+        igl::remove_unreferenced(input_VT_, input_FT_, V_buf, F_buf, map_old_to_new_v_ids);
+        input_VT_ = V_buf;
+        input_FT_ = F_buf;
+        assert(input_FT_.rows() == input_F_.rows());
+    }
+
+    wmtk::logger().info("///// #v : {} {}", input_VT_.rows(), input_VT_.cols());
+    wmtk::logger().info("///// #f : {} {}", input_FT_.rows(), input_FT_.cols());
+    wmtk::TriMesh m_3d;
+    std::vector<std::array<size_t, 3>> tris;
+    for (auto f = 0; f < input_F_.rows(); f++) {
+        std::array<size_t, 3> tri = {
+            (size_t)input_F_(f, 0),
+            (size_t)input_F_(f, 1),
+            (size_t)input_F_(f, 2)};
+        tris.emplace_back(tri);
+    }
+    m_3d.create_mesh(input_V_.rows(), tris);
+    create_mesh(input_VT_, input_FT_);
+    // set up seam edges and seam vertex coloring
+    Eigen::MatrixXi E0, E1;
+    std::tie(E0, E1) = seam_edges_set_up(input_V_, input_F_, m_3d, input_VT_, input_FT_);
+    set_seam_vertex_coloring(input_V_, input_F_, m_3d, input_VT_, input_FT_);
+    assert(E0.rows() == E1.rows());
+    // construct the boundary map for boundary parametrization
+    mesh_parameters.m_boundary.construct_boundaries(input_VT_, input_FT_, E0, E1);
+    // mark boundary vertices as boundary_vertex
+    // but this is not indiscriminatively rejected for all operations
+    // other operations are conditioned on whether m_bnd_freeze is turned on
+    // also obtain the boudnary parametrizatin t for each vertex
+    // for now keep the per vertex curve-id. but this is now a edge property
+    for (auto v : this->get_vertices()) {
+        if (is_boundary_vertex(v)) {
+            vertex_attrs[v.vid(*this)].boundary_vertex = is_boundary_vertex(v);
+            set_feature(v);
+            // one vertex can have more than one curve-id.
+            // current curve-id ofr vertex is arbitrarily picked among them
+            std::tie(vertex_attrs[v.vid(*this)].curve_id, vertex_attrs[v.vid(*this)].t) =
+                mesh_parameters.m_boundary.uv_to_t(vertex_attrs[v.vid(*this)].pos);
+        }
+    }
+    // after the boundary is constructed, set the start and end of each curve to be fixed
+    set_fixed();
+    // assign curve-id to each edge using the curve-it assigned for each vertex
+    assign_edge_curveid();
+    // cache the initial accuracy error per triangle
+    std::array<wmtk::Image, 3> displaced = wmtk::combine_position_normal_texture(
+        mesh_parameters.m_normalization_scale,
+        position_image_path,
+        normal_image_path,
+        height_image_path);
+    std::vector<std::array<float, 6>> uv_triangles(tri_capacity());
+    std::vector<TriMesh::Tuple> tris_tuples = get_faces();
+    for (int i = 0; i < tris_tuples.size(); i++) {
+        auto oriented_vids = oriented_tri_vids(tris_tuples[i]);
+        for (int j = 0; j < 3; j++) {
+            uv_triangles[tris_tuples[i].fid(*this)][2 * j + 0] =
+                vertex_attrs[oriented_vids[j]].pos[0];
+            uv_triangles[tris_tuples[i].fid(*this)][2 * j + 1] =
+                vertex_attrs[oriented_vids[j]].pos[1];
+        }
+    }
+    std::vector<float> computed_errors(tri_capacity());
+    m_quadric_integral =
+        wmtk::QuadricIntegral(displaced, wmtk::QuadricIntegral::QuadricType::Triangle);
+    m_texture_integral = wmtk::TextureIntegral(std::move(displaced));
+    m_texture_integral.get_error_per_triangle(uv_triangles, computed_errors);
+    set_faces_accuracy_error(tris_tuples, computed_errors);
+}
+
 
 // return E0, E1 of corresponding seam edges in uv mesh
 // set up the seam vertex coloring
@@ -159,35 +258,39 @@ void AdaptiveTessellation::set_seam_vertex_coloring(
                         // add new color
                         color_to_uv_indices.emplace_back(1, current_v);
                     }
-                    for (auto& e_3d : m_3d.get_one_ring_edges_for_vertex(edge1_3d)) {
+                    for (const auto& e_3d : m_3d.get_one_ring_edges_for_vertex(edge1_3d)) {
                         if (!e_3d.switch_face(m_3d).has_value()) {
                             // Boundary edge, skipping...
                             continue;
                         } else {
-                            auto e2_3d = e_3d.switch_face(m_3d).value();
-                            auto fj = e2_3d.fid(m_3d);
-                            size_t lvj1, lvj2;
-                            for (auto i = 0; i < 3; i++) {
-                                if (F(fj, i) == edge1_3d.vid(m_3d)) lvj1 = i;
-                                if (F(fj, i) == e2_3d.vid(m_3d)) lvj2 = i;
-                            }
-                            assert(F(fi, lvi1) == F(fj, lvj1));
-                            // this is a mirror vertex at a seam edge
-                            if (current_v != FT(fj, lvj1)) {
-                                int current_v_color = uv_index_to_color[current_v];
-                                // the mirror vertex has not been colored yet
-                                if (uv_index_to_color.find(FT(fj, lvj1)) ==
-                                    uv_index_to_color.end()) {
-                                    // add the color or the primary vertex to the mirror vertex
-                                    uv_index_to_color.insert({FT(fj, lvj1), current_v_color});
+                            for (const auto e2_3d : {e_3d, e_3d.switch_face(m_3d).value()}) {
+                                auto fj = e2_3d.fid(m_3d);
+                                size_t lvj1;
+                                for (auto i = 0; i < 3; i++) {
+                                    if (F(fj, i) == edge1_3d.vid(m_3d)) lvj1 = i;
                                 }
-                                // if the mirror vertex is not in the color busket, add it
-                                if (std::find(
-                                        color_to_uv_indices[current_v_color].begin(),
-                                        color_to_uv_indices[current_v_color].end(),
-                                        FT(fj, lvj1)) == color_to_uv_indices[current_v_color].end())
-                                    color_to_uv_indices[current_v_color].emplace_back(FT(fj, lvj1));
-                                assert(uv_index_to_color[FT(fj, lvj1)] == current_v_color);
+                                assert(F(fi, lvi1) == F(fj, lvj1));
+                                // this is a mirror vertex at a seam edge
+                                if (current_v != FT(fj, lvj1)) {
+                                    int current_v_color = uv_index_to_color.at(current_v);
+                                    assert(current_v_color == current_color);
+                                    // the mirror vertex has not been colored yet
+                                    if (uv_index_to_color.find(FT(fj, lvj1)) ==
+                                        uv_index_to_color.end()) {
+                                        // add the color or the primary vertex to the mirror vertex
+                                        uv_index_to_color.insert({FT(fj, lvj1), current_v_color});
+                                    }
+                                    // if the mirror vertex is not in the color busket, add it
+                                    if (std::find(
+                                            color_to_uv_indices[current_v_color].begin(),
+                                            color_to_uv_indices[current_v_color].end(),
+                                            FT(fj, lvj1)) ==
+                                        color_to_uv_indices[current_v_color].end()) {
+                                        color_to_uv_indices[current_v_color].emplace_back(
+                                            FT(fj, lvj1));
+                                    }
+                                    assert(uv_index_to_color[FT(fj, lvj1)] == current_v_color);
+                                }
                             }
                         }
                     }
