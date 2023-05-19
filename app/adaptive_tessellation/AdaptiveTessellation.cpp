@@ -37,6 +37,7 @@ double AdaptiveTessellation::avg_edge_len() const
 // 6. edge_attrs:   set curve-id for each edge
 // 7. face_attrs:   set initial accuracy error for each triangle
 // 8. initiate the texture integraler
+// 9. initiate the quadric integraler
 void AdaptiveTessellation::mesh_preprocessing(
     const std::filesystem::path& input_mesh_path,
     const std::filesystem::path& position_image_path,
@@ -124,7 +125,7 @@ void AdaptiveTessellation::prepare_distance_quadrature_cached_energy()
     }
     std::vector<float> computed_errors(tri_capacity());
     m_texture_integral.get_error_per_triangle(uv_triangles, computed_errors);
-    set_faces_accuracy_error(tris_tuples, computed_errors);
+    set_faces_cached_distance_integral(tris_tuples, computed_errors);
 }
 
 void AdaptiveTessellation::prepare_quadrics()
@@ -143,9 +144,7 @@ void AdaptiveTessellation::prepare_quadrics()
             return {p0.x(), p0.y(), p1.x(), p1.y(), p2.x(), p2.y()};
         },
         compressed_quadrics);
-    for (size_t i = 0; i < facets.size(); ++i) {
-        face_attrs[facets[i].fid(*this)].face_error.quadric = compressed_quadrics[i];
-    }
+    set_faces_quadrics(facets, compressed_quadrics);
 }
 // return E0, E1 of corresponding seam edges in uv mesh
 // set up the seam vertex coloring
@@ -332,7 +331,7 @@ void AdaptiveTessellation::set_parameters(
     const EDGE_LEN_TYPE edge_len_type,
     const bool boundary_parameter)
 {
-    if (mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::ACCURACY ||
+    if (mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::EDGE_ACCURACY ||
         mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY ||
         mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::TRI_QUADRICS)
         mesh_parameters.m_accuracy_threshold = target_accuracy;
@@ -458,15 +457,27 @@ void AdaptiveTessellation::set_energy(const ENERGY_TYPE energy_type)
     mesh_parameters.m_energy = std::move(energy_ptr);
 }
 
-void AdaptiveTessellation::set_faces_accuracy_error(
+void AdaptiveTessellation::set_faces_cached_distance_integral(
     const std::vector<TriMesh::Tuple>& tris,
     const std::vector<float>& computed_errors)
 {
     // update the face_attrs with modified tris error
     for (int i = 0; i < tris.size(); i++) {
-        face_attrs[tris[i].fid(*this)].face_error.cached_error = computed_errors[i];
+        face_attrs[tris[i].fid(*this)].accuracy_measure.cached_distance_integral =
+            computed_errors[i];
     }
 }
+
+void AdaptiveTessellation::set_faces_quadrics(
+    const std::vector<TriMesh::Tuple>& tris,
+    const std::vector<wmtk::Quadric<double>>& compressed_quadrics)
+{
+    // update the face_attrs with modified tris error
+    for (int i = 0; i < tris.size(); i++) {
+        face_attrs[tris[i].fid(*this)].accuracy_measure.quadric = compressed_quadrics[i];
+    }
+}
+
 
 void AdaptiveTessellation::set_edge_length_measurement(const EDGE_LEN_TYPE edge_len_type)
 {
@@ -497,7 +508,7 @@ void AdaptiveTessellation::set_edge_length_measurement(const EDGE_LEN_TYPE edge_
             return this->get_length_mipmap(edge_tuple);
         };
         break;
-    case EDGE_LEN_TYPE::ACCURACY:
+    case EDGE_LEN_TYPE::EDGE_ACCURACY:
         mesh_parameters.m_get_length = [&](const Tuple& edge_tuple) -> double {
             return this->get_edge_accuracy_error(edge_tuple);
         };
@@ -890,27 +901,24 @@ double AdaptiveTessellation::get_area_accuracy_error_per_face_triangle_matrix(
     return mesh_parameters.m_displacement->get_error_per_triangle(triangle);
 }
 
-std::tuple<double, double, double> AdaptiveTessellation::get_cached_area_accuracy_error_for_split(
-    const Tuple& edge_tuple) const
+double AdaptiveTessellation::get_cached_area_accuracy_error_for_split(const Tuple& edge_tuple) const
 {
-    double error = 0.;
     double error1 = 0.;
     double error2 = 0.;
-    if (mesh_parameters.m_split_absolute_error_metric) {
-        error1 = face_attrs[edge_tuple.fid(*this)].face_error.cached_error;
-        if (edge_tuple.switch_face(*this).has_value()) {
-            error2 = face_attrs[edge_tuple.switch_face(*this).value().fid(*this)]
-                         .face_error.cached_error;
-        } else {
-            if (is_seam_edge(edge_tuple))
-                error2 = face_attrs[get_oriented_mirror_edge(edge_tuple).fid(*this)]
-                             .face_error.cached_error;
-            else
-                error2 = error1;
-        }
-        error = (error1 + error2) * get_length2d(edge_tuple);
+
+    error1 = face_attrs[edge_tuple.fid(*this)].accuracy_measure.cached_distance_integral;
+    if (edge_tuple.switch_face(*this).has_value()) {
+        error2 = face_attrs[edge_tuple.switch_face(*this).value().fid(*this)]
+                     .accuracy_measure.cached_distance_integral;
+    } else {
+        if (is_seam_edge(edge_tuple))
+            error2 = face_attrs[get_oriented_mirror_edge(edge_tuple).fid(*this)]
+                         .accuracy_measure.cached_distance_integral;
+        else
+            error2 = error1;
     }
-    return {error, error1, error2};
+
+    return (error1 + error2);
 }
 
 std::tuple<double, double, double> AdaptiveTessellation::get_projected_relative_error_for_split(
@@ -918,10 +926,10 @@ std::tuple<double, double, double> AdaptiveTessellation::get_projected_relative_
 {
     ///////// THIS IS NOT USED
     double error, error1, error2;
-    error1 = face_attrs[edge_tuple.fid(*this)].face_error.cached_error;
+    error1 = face_attrs[edge_tuple.fid(*this)].accuracy_measure.cached_distance_integral;
     if (edge_tuple.switch_face(*this).has_value()) {
-        error2 =
-            face_attrs[edge_tuple.switch_face(*this).value().fid(*this)].face_error.cached_error;
+        error2 = face_attrs[edge_tuple.switch_face(*this).value().fid(*this)]
+                     .accuracy_measure.cached_distance_integral;
     } else
         error2 = error1;
     double e_before = error1 + error2;
@@ -969,29 +977,18 @@ std::tuple<double, double, double> AdaptiveTessellation::get_projected_relative_
     return {error, error1, error2};
 }
 
-double AdaptiveTessellation::get_quadrics_area_accuracy_error_for_split(
-    const Tuple& edge_tuple) const
+double AdaptiveTessellation::get_one_ring_quadrics_error_for_vertex(const Tuple& v) const
 {
-    wmtk::Quadric<double> q1 = face_attrs[edge_tuple.fid(*this)].face_error.quadric;
-    // if it's boundary edge, duplicate the quadric
-    wmtk::Quadric<double> q2 =
-        edge_tuple.switch_face(*this).has_value()
-            ? face_attrs[edge_tuple.switch_face(*this).value().fid(*this)].face_error.quadric
-            : q1;
-    wmtk::Quadric<double> q = q1 + q2;
-
-    auto v1_pos = vertex_attrs[edge_tuple.vid(*this)].pos;
-    auto v2_pos = vertex_attrs[edge_tuple.switch_vertex(*this).vid(*this)].pos;
-    Eigen::Matrix<double, 3, 1> v1_world_pos =
-        mesh_parameters.m_displacement->get(v1_pos(0), v1_pos(1));
-    Eigen::Matrix<double, 3, 1> v2_world_pos =
-        mesh_parameters.m_displacement->get(v2_pos(0), v2_pos(1));
-
-    double energy =
-        v1_world_pos.transpose() * q.A() * v1_world_pos - 2.0 * v1_world_pos.dot(q.b()) + q.c;
-    energy += v2_world_pos.transpose() * q.A() * v2_world_pos - 2.0 * v2_world_pos.dot(q.b()) + q.c;
-
-    return energy;
+    double ret = 0.0;
+    wmtk::Quadric<double> q;
+    for (const Tuple& tri : get_one_ring_tris_for_vertex(v)) {
+        q += get_face_attrs(tri).accuracy_measure.quadric;
+    }
+    auto v_pos = vertex_attrs[v.vid(*this)].pos;
+    Eigen::Matrix<double, 3, 1> v_world_pos =
+        mesh_parameters.m_displacement->get(v_pos(0), v_pos(1));
+    ret = v_world_pos.transpose() * q.A() * v_world_pos - 2.0 * v_world_pos.dot(q.b()) + q.c;
+    return ret;
 }
 
 

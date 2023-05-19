@@ -68,7 +68,7 @@ void AdaptiveTessellation::mesh_preprocessing(
     std::vector<float> computed_errors(tri_capacity());
     m_texture_integral = wmtk::TextureIntegral(std::move(displaced));
     m_texture_integral.get_error_per_triangle(uv_triangles, computed_errors);
-    set_faces_accuracy_error(tris_tuples, computed_errors);
+    set_faces_cached_distance_integral(tris_tuples, computed_errors);
 }
 // get the energy defined by edge_length_energy over each face of the mesh
 // assuming the vert_capacity() == get_vertices.size()

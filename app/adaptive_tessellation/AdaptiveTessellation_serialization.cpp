@@ -578,10 +578,10 @@ void AdaptiveTessellation::write_vtk(const std::filesystem::path& path)
         if (!e.is_valid(*this)) continue;
         double cost = 0.;
         if (mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::TRI_QUADRICS) {
-            cost = get_quadrics_area_accuracy_error_for_split(e);
+            cost = get_quadrics_area_accuracy_error_for_split(e) * get_length2d(e);
         }
         if (mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
-            cost = std::get<0>(get_cached_area_accuracy_error_for_split(e));
+            cost = get_cached_area_accuracy_error_for_split(e) * get_length2d(e);
         }
 
         // Eigen::Matrix<double, 2, 1> pos1 = vertex_attrs[e.vid(*this)].pos;
@@ -629,7 +629,7 @@ void AdaptiveTessellation::write_perface_vtk(const std::filesystem::path& path)
 
     std::vector<double> scalar_field2;
     for (const auto& f : get_faces()) {
-        auto error = face_attrs[f.fid(*this)].face_error.cached_error;
+        auto error = face_attrs[f.fid(*this)].accuracy_measure.cached_distance_integral;
         scalar_field2.emplace_back(error);
     }
     writer.add_cell_scalar_field("scalar_field", scalar_field2);
