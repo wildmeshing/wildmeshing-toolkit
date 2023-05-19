@@ -126,10 +126,14 @@ auto TriMeshEdgeCollapseOperation::execute(TriMesh& m, const Tuple& loc0) -> Exe
 
     const size_t gfid = new_vertex_conn.m_conn_tris[0];
     int j = tri_connectivity[gfid].find(new_vid);
+#if defined(_DEBUG)
     auto new_t = Tuple(new_vid, (j + 2) % 3, gfid, m);
+    assert(new_t.is_valid(m));
+#endif
+
+
     int j_ret = tri_connectivity[new_fid].find(new_vid);
     return_t = Tuple(new_vid, (j_ret + 2) % 3, new_fid, m);
-    assert(new_t.is_valid(m));
 
     assign(return_t);
     new_tris = modified_tuples(m);
