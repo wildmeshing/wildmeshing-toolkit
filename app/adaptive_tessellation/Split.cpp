@@ -15,6 +15,35 @@ auto split_renew = [](auto& m, auto op, auto& tris) {
     return optup;
 };
 
+double AdaptiveTessellation::get_quadrics_area_accuracy_error_for_split(
+    const Tuple& edge_tuple) const
+{
+    double energy = get_one_ring_quadrics_error_for_vertex(edge_tuple);
+    energy += get_one_ring_quadrics_error_for_vertex(edge_tuple.switch_vertex(*this));
+    energy +=
+        get_one_ring_quadrics_error_for_vertex(edge_tuple.switch_edge(*this).switch_vertex(*this));
+    if (edge_tuple.switch_face(*this).has_value()) {
+        energy += get_one_ring_quadrics_error_for_vertex(
+            edge_tuple.switch_face(*this).value().switch_edge(*this).switch_vertex(*this));
+    } else {
+        if (is_seam_edge(edge_tuple)) {
+            energy += get_one_ring_quadrics_error_for_vertex(
+                get_oriented_mirror_edge(edge_tuple).switch_edge(*this).switch_vertex(*this));
+            energy += get_one_ring_quadrics_error_for_vertex(
+                get_oriented_mirror_edge(edge_tuple).switch_vertex(*this));
+            energy += get_one_ring_quadrics_error_for_vertex(get_oriented_mirror_edge(edge_tuple));
+        } else
+            energy *= 2;
+    }
+    return energy;
+}
+
+void AdaptiveTessellationPairedSplitEdgeOperation::mark_failed()
+{
+    split_edge.mark_failed();
+    mirror_split_edge.mark_failed();
+}
+
 template <typename Executor>
 void addPairedCustomOps(Executor& e)
 {
@@ -158,21 +187,25 @@ bool AdaptiveTessellationSplitEdgeOperation::after(
     if (!m.mesh_parameters.m_ignore_embedding) {
         assert(bool(*this));
         auto modified_tris = modified_tuples(m);
-        // get a vector of new traingles uvs
-        std::vector<std::array<float, 6>> modified_tris_uv(modified_tris.size());
-        for (int i = 0; i < modified_tris.size(); i++) {
-            auto tri = modified_tris[i];
-            auto verts = m.oriented_tri_vids(tri);
-            std::array<float, 6> tri_uv;
-            for (int i = 0; i < 3; i++) {
-                tri_uv[i * 2] = m.vertex_attrs[verts[i]].pos(0);
-                tri_uv[i * 2 + 1] = m.vertex_attrs[verts[i]].pos(1);
+        if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
+            // get a vector of new traingles uvs
+            std::vector<std::array<float, 6>> modified_tris_uv(modified_tris.size());
+            for (int i = 0; i < modified_tris.size(); i++) {
+                auto tri = modified_tris[i];
+                auto verts = m.oriented_tri_vids(tri);
+                std::array<float, 6> tri_uv;
+                for (int i = 0; i < 3; i++) {
+                    tri_uv[i * 2] = m.vertex_attrs[verts[i]].pos(0);
+                    tri_uv[i * 2 + 1] = m.vertex_attrs[verts[i]].pos(1);
+                }
+                modified_tris_uv[i] = tri_uv;
             }
-            modified_tris_uv[i] = tri_uv;
+            std::vector<float> renewed_errors(modified_tris.size());
+            m.m_texture_integral.get_error_per_triangle(modified_tris_uv, renewed_errors);
+            m.set_faces_cached_distance_integral(modified_tris, renewed_errors);
+        } else if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::TRI_QUADRICS) {
+            ///////TODO
         }
-        std::vector<float> renewed_errors(modified_tris.size());
-        m.m_texture_integral.get_error_per_triangle(modified_tris_uv, renewed_errors);
-        m.set_faces_accuracy_error(modified_tris, renewed_errors);
     }
 
     return ret_data.success;
@@ -522,45 +555,40 @@ void AdaptiveTessellation::split_all_edges()
         addPairedCustomOps(executor);
         executor.renew_neighbor_tuples = split_renew;
         executor.priority = [&](auto& m, auto _, auto& e) {
-            double error = 0.;
+            double priority = 0.;
             if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
-                // error already scaled by 2d edge length
-                error = std::get<0>(m.get_cached_area_accuracy_error_for_split(e));
+                // priority already scaled by 2d edge length
+                priority = m.get_cached_area_accuracy_error_for_split(e) * m.get_length2d(e);
             } else if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::TRI_QUADRICS) {
                 // error is not scaled by 2d edge length yet
-                error = m.get_quadrics_area_accuracy_error_for_split(e);
-                error *= m.get_length2d(e);
+                priority = m.get_quadrics_area_accuracy_error_for_split(e) * m.get_length2d(e);
             } else
-                error = m.mesh_parameters.m_get_length(e);
-            return error;
+                priority = m.mesh_parameters.m_get_length(e);
+            return priority;
         };
         executor.num_threads = NUM_THREADS;
         executor.is_weight_up_to_date = [](auto& m, auto& ele) {
             auto& [weight, op, tup] = ele;
             double total_error = 0.;
             double unscaled_total_error = 0.;
-            double error1 = 0.;
-            double error2 = 0.;
+
             if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
-                std::tie(total_error, error1, error2) = m.get_area_accuracy_error_for_split(tup);
+                unscaled_total_error = m.get_cached_area_accuracy_error_for_split(tup);
+                total_error = unscaled_total_error * m.get_length2d(tup);
             } else if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::TRI_QUADRICS) {
                 unscaled_total_error = m.get_quadrics_area_accuracy_error_for_split(tup);
-                total_error = total_error * m.get_length2d(tup);
-            } else
+                total_error = unscaled_total_error * m.get_length2d(tup);
+            } else {
                 total_error = m.mesh_parameters.m_get_length(tup);
+                unscaled_total_error = total_error;
+            }
             // check if out of date
             if (!is_close(total_error, weight)) return false;
             // check if meet operating threshold
-            if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::ACCURACY) {
-                if (total_error < m.mesh_parameters.m_accuracy_threshold) return false;
-            } else if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
-                if (error1 + error2 < m.mesh_parameters.m_accuracy_threshold) {
-                    return false;
-                }
-            } else if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::TRI_QUADRICS) {
-                if (unscaled_total_error < m.mesh_parameters.m_accuracy_threshold) {
-                    return false;
-                }
+            if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::EDGE_ACCURACY ||
+                m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY ||
+                m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::TRI_QUADRICS) {
+                if (unscaled_total_error < m.mesh_parameters.m_accuracy_threshold) return false;
             } else if (total_error < 4. / 3. * m.mesh_parameters.m_quality_threshold)
                 return false;
             return true;
@@ -575,6 +603,7 @@ void AdaptiveTessellation::split_all_edges()
         setup_and_execute(executor);
     } else {
         auto executor = wmtk::ExecutePass<AdaptiveTessellation, ExecutionPolicy::kSeq>();
+        // used for debugging for early termination
         set_early_termination_number(mesh_parameters.m_early_stopping_number, executor);
         setup_and_execute(executor);
     }

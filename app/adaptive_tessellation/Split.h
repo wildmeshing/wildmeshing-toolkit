@@ -13,6 +13,14 @@
 #include "wmtk/ExecutionScheduler.hpp"
 using namespace wmtk;
 
+/// split:      it is done purely to improve accuracy of the mesh
+/// priority:   measured the summed one-ring quadric error of 4 vertices (scaled by the 2d edge length so the longer get higher weight)
+///             for boundary edges, the error is 2x the sum of the one-ring quadric error of 2 vertices (scaled by the 2d edge length)
+///             for seam edges, the error is the sum of the one-ring quadric error of both sides of the seam (scaled)
+/// scheduling; descending order of priority
+/// stop cond:  if summed one-ring quadric error is less than the accuracy threshold, stop
+/// after:      update the quadric of the new faces. and after error is measured by the sum of the one-ring quadric error of 4 vertices
+
 namespace adaptive_tessellation {
 class AdaptiveTessellationSplitEdgeOperation : public wmtk::TriMeshOperationShim<
                                                    AdaptiveTessellation,
@@ -79,5 +87,6 @@ public:
     bool before(AdaptiveTessellation& m, const Tuple& t);
     bool after(AdaptiveTessellation& m, ExecuteReturnData& ret_data);
     std::string name() const override { return split_edge.name(); };
+    void mark_failed() override;
 };
 } // namespace adaptive_tessellation
