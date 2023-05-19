@@ -9,7 +9,7 @@ void set_json_format(spdlog::sinks::sink& logger, bool messages_are_json)
     // borrowed from github.com/mtao/balsa
     if (messages_are_json) {
         const static std::string pattern = {
-            "{\"time\": \"%Y-%m-%dT%H:%M:%S.%f%z\", \"epoch_secs\": %E, \"epoch_ms\": %e, "
+            "{\"time\": \"%Y-%m-%dT%H:%M:%S.%f%z\", \"epoch_secs\": %E, \"epoch_ms\": \"%e\", "
             "\"name\": \"%n\", \"level\": \"%^%l%$\", \"process\": %P, \"thread\": %t, "
             "\"message\": %v}"};
         logger.set_pattern(pattern);
