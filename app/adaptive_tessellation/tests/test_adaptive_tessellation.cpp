@@ -667,7 +667,7 @@ TEST_CASE("test_link_check", "[test_pre_check]")
     }
 }
 
-TEST_CASE("paired collapse", "[.]")
+TEST_CASE("paired collapse", "[myfail][.]")
 {
     Eigen::MatrixXd V(6, 2);
     Eigen::MatrixXi F(2, 3);
@@ -1499,6 +1499,9 @@ TEST_CASE("uv-index and coloring test")
     }
 }
 
+// TODO special case for link condition in seamed mesh. a tube with a seam edge in
+// the middle
+
 TEST_CASE("edge curve-id assignment")
 {
     AdaptiveTessellation m;
@@ -1734,60 +1737,4 @@ TEST_CASE("mirror vertex t_to_uv")
             }
         }
     }
-}
-
-TEST_CASE("quadric split", "[.]")
-{
-    // Loading the input 2d mesh
-    AdaptiveTessellation m;
-
-    std::filesystem::path input_folder = WMTK_DATA_DIR;
-    std::filesystem::path input_mesh_path = input_folder / "hemisphere_splited.obj";
-    std::filesystem::path position_path = input_folder / "images/hemisphere_512_position.exr";
-    std::filesystem::path normal_path =
-        input_folder / "images/hemisphere_512_normal-world-space.exr";
-    std::filesystem::path height_path =
-        input_folder / "images/riveted_castle_iron_door_512_height.exr";
-
-    m.mesh_preprocessing(input_mesh_path, position_path, normal_path, height_path);
-    Image image;
-    image.load(height_path, WrappingMode::MIRROR_REPEAT, WrappingMode::MIRROR_REPEAT);
-
-    REQUIRE(m.check_mesh_connectivity_validity());
-    m.set_parameters(
-        0.00001,
-        0.4,
-        image,
-        WrappingMode::MIRROR_REPEAT,
-        SAMPLING_MODE::BICUBIC,
-        DISPLACEMENT_MODE::MESH_3D,
-        adaptive_tessellation::ENERGY_TYPE::QUADRICS,
-        adaptive_tessellation::EDGE_LEN_TYPE::AREA_ACCURACY,
-        1);
-    // m.split_all_edges();
-    // m.write_obj_displaced("split_result.obj");
-    // m.swap_all_edges();
-    // m.write_obj_displaced("swap_result.obj");
-    m.smooth_all_vertices();
-    m.write_obj_displaced("smooth_result_quadrics.obj");
-    m.write_obj("smooth_result_2d.obj");
-
-    AdaptiveTessellation m2;
-    m2.mesh_preprocessing(input_mesh_path, position_path, normal_path, height_path);
-    REQUIRE(m.check_mesh_connectivity_validity());
-    // m.mesh_parameters.m_early_stopping_number = 1;
-
-    m.set_parameters(
-        0.00001,
-        0.4,
-        image,
-        WrappingMode::MIRROR_REPEAT,
-        SAMPLING_MODE::BICUBIC,
-        DISPLACEMENT_MODE::MESH_3D,
-        adaptive_tessellation::ENERGY_TYPE::AREA_QUADRATURE,
-        adaptive_tessellation::EDGE_LEN_TYPE::AREA_ACCURACY,
-        1);
-
-    m.smooth_all_vertices();
-    m.write_obj_displaced("smooth_result_default.obj");
 }

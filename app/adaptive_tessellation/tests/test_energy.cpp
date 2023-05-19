@@ -251,6 +251,8 @@ TEST_CASE("2 rand tris")
                     input_tri[i * 2 + 1] = dofx(1);
                 }
                 E->eval(state, dof_to_pos);
+
+                std::cout << itr++ << state.gradient.stableNorm() << std::endl;
             } while (state.gradient.stableNorm() > 1e-3);
             E->eval(state, dof_to_pos);
             REQUIRE(abs(state.value - mini_energy[e]) < 1e-2);
