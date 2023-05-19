@@ -1,3 +1,6 @@
+#include <igl/read_triangle_mesh.h>
+#include <igl/writeDMAT.h>
+#include <igl/write_triangle_mesh.h>
 #include "AdaptiveTessellation.h"
 using namespace adaptive_tessellation;
 using namespace wmtk;

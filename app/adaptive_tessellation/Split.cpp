@@ -1,4 +1,5 @@
 #include "Split.h"
+#include "PairUtils.hpp"
 using namespace adaptive_tessellation;
 using namespace wmtk;
 
@@ -612,4 +613,9 @@ bool AdaptiveTessellation::split_edge_after(const Tuple& edge_tuple) // not used
     }
     success_cnt++;
     return true;
+}
+void AdaptiveTessellationPairedSplitEdgeOperation::mark_failed()
+{
+    split_edge.mark_failed();
+    mirror_split_edge.mark_failed();
 }

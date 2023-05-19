@@ -17,12 +17,14 @@ lagrange_include_modules(io)
 lagrange_include_modules(core)
 add_library(wmtk_adaptive_tessellation
 	Collapse.cpp
+	Collapse_link_condition.cpp
 	Swap.cpp
 	Split.cpp
 	Smooth.cpp
 	Smooth.h
 	Collapse.h
 	AdaptiveTessellation.cpp
+	AdaptiveTessellation_attributes.cpp
     AdaptiveTessellation_debug.cpp
     AdaptiveTessellation_serialization.cpp
 	AdaptiveTessellation.h

@@ -72,14 +72,15 @@ template <
     typename BaseOperationType = TriMeshOperation
 #if defined(__cpp_concepts)
     >
-requires(
-    std::is_base_of_v<TriMesh, MeshType>&& std::is_base_of_v<TriMeshOperation, BaseOperationType>)
+    requires(
+        std::is_base_of_v<TriMesh, MeshType> &&
+        std::is_base_of_v<TriMeshOperation, BaseOperationType>)
 #else
     ,
     typename = std::enable_if_t<std::is_base_of_v<TriMesh, MeshType>, void>,
     typename = std::enable_if_t<std::is_base_of_v<TriMeshOperation, BaseOperationType>, void>>
 #endif
-    class TriMeshOperationShim : public BaseOperationType
+class TriMeshOperationShim : public BaseOperationType
 {
 public:
     using ExecuteReturnData = TriMeshOperation::ExecuteReturnData;
@@ -167,10 +168,10 @@ public:
     // returns a tuple to the new vertex created by this operation, where the
     // input is the tuple passed into after's ret_data.tuple.
     Tuple new_vertex(const TriMesh& m, const Tuple& t) const { return t.switch_vertex(m); }
-    Tuple new_vertex(const TriMesh& m);
+    Tuple new_vertex(const TriMesh& m) const;
     std::array<Tuple, 2> original_endpoints(TriMesh& m, const Tuple& t) const;
 
-    std::vector<Tuple> modified_tuples(const TriMesh& m);
+    std::vector<Tuple> modified_tuples(const TriMesh& m) const;
 
     void assign(const Tuple& t) override { SingleTupleOperationInfo::assign(t); }
     void mark_failed() override { SingleTupleOperationInfo::reset(); }
@@ -193,7 +194,7 @@ public:
     bool after(TriMesh& m, ExecuteReturnData& ret_data) override;
     std::string name() const override;
 
-    std::vector<Tuple> modified_tuples(const TriMesh& m);
+    std::vector<Tuple> modified_tuples(const TriMesh& m) const;
     void assign(const Tuple& t) override { SingleTupleOperationInfo::assign(t); }
     void mark_failed() override { SingleTupleOperationInfo::reset(); }
 };
@@ -215,7 +216,7 @@ public:
     std::string name() const override;
     // bool invariants(TriMesh& m, ExecuteReturnData& ret_data) override;
 
-    std::vector<Tuple> modified_tuples(const TriMesh& m);
+    std::vector<Tuple> modified_tuples(const TriMesh& m) const;
     void assign(const Tuple& t) override { SingleTupleOperationInfo::assign(t); }
     void mark_failed() override { SingleTupleOperationInfo::reset(); }
 };

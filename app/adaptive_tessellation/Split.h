@@ -79,5 +79,7 @@ public:
     bool before(AdaptiveTessellation& m, const Tuple& t);
     bool after(AdaptiveTessellation& m, ExecuteReturnData& ret_data);
     std::string name() const override { return split_edge.name(); };
+
+    void mark_failed() override;
 };
 } // namespace adaptive_tessellation
