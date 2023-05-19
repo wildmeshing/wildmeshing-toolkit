@@ -115,7 +115,7 @@ void AdaptiveTessellationCollapseEdgeOperation::store_merged_seam_data(
         assert(curveid_opt.has_value());
 
         vertex_seam_data_map[radial_edge.vid(m)] =
-            SeamData{.mirror_edge_vids = mirror_edge_vids_opt, .curve_id = curveid_opt.value()};
+            SeamData{mirror_edge_vids_opt, static_cast<size_t>(curveid_opt.value())};
     };
 
 
@@ -168,7 +168,7 @@ void AdaptiveTessellationCollapseEdgeOperation::store_merged_seam_data(
         const auto curveid_opt = m.get_edge_attrs(edge_tuple).curve_id;
         assert(curveid_opt.has_value());
         edge_seam_data_map[std::array<size_t, 2>{{v0, v1}}] =
-            SeamData{.mirror_edge_vids = mirror_edge_vids_opt, .curve_id = curveid_opt.value()};
+            SeamData{mirror_edge_vids_opt, static_cast<size_t>(curveid_opt.value())};
     };
 
     // store the 1 ring tris of a
