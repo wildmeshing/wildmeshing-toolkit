@@ -268,11 +268,11 @@ TEST_CASE("paired collapse", "[myfail][.]")
     //                1    4
     //              /(2) ||(1)\ 
     //             /     ||    \ 
-    //            /f2    || f6  \     
-    //           /       ||      \    
-    //          /        ||       \   
+    //            /f2    || f6|\\     
+    //           /       ||     \\    
+    //          /        ||      \\   
     //        0(0)-----10||7----(0)11
-    //          \        || <---  /
+    //          \        ||       /
     //           \       ||      /
     //            \ f0   || f3  /
     //             \     ||    /
@@ -284,6 +284,7 @@ TEST_CASE("paired collapse", "[myfail][.]")
     const auto& primary_edge7_ret = primary_edge7_opt.value();
     REQUIRE(primary_edge7_ret.is_valid(m));
     REQUIRE(primary_edge7_ret.vid(m) == 11);
+    REQUIRE(primary_edge7_ret.switch_vertex(m).vid(m) == 4);
     int valid_verts_cnt = 0;
     for (auto& v : m.get_vertices()) {
         if (v.is_valid(m)) {
@@ -299,9 +300,12 @@ TEST_CASE("paired collapse", "[myfail][.]")
     }
     REQUIRE(valid_faces_cnt == 4);
     REQUIRE(!m.is_seam_edge(primary_edge7_ret));
-    REQUIRE(!m.edge_attrs[primary_edge7_ret.eid(m)].curve_id.has_value());
-    REQUIRE(m.edge_attrs[primary_edge7_ret.switch_edge(m).eid(m)].curve_id.has_value());
-    REQUIRE(m.edge_attrs[primary_edge7_ret.switch_edge(m).eid(m)].curve_id.value() == 2);
+    REQUIRE(!m.edge_attrs[primary_edge7_ret.switch_edge(m).eid(m)].curve_id.has_value());
+    REQUIRE(m.edge_attrs[primary_edge7_ret.eid(m)].curve_id.has_value());
+    REQUIRE(m.edge_attrs[primary_edge7_ret.eid(m)].curve_id.value() == 2);
+    // REQUIRE(!m.edge_attrs[primary_edge7_ret.eid(m)].curve_id.has_value());
+    // REQUIRE(m.edge_attrs[primary_edge7_ret.switch_edge(m).eid(m)].curve_id.has_value());
+    // REQUIRE(m.edge_attrs[primary_edge7_ret.switch_edge(m).eid(m)].curve_id.value() == 2);
 
     REQUIRE(check_all_faces_mirror_info());
     /////// debug
@@ -353,13 +357,32 @@ TEST_CASE("paired collapse", "[myfail][.]")
 #include <wmtk/utils/EnableWarnings.hpp>
     wmtk::TriMesh::Tuple primary_edge8 = wmtk::TriMesh::Tuple(7, 0, 3, m);
     REQUIRE(primary_edge8.switch_vertex(m).vid(m) == 5);
+    {
+        auto mirror_edge = m.get_oriented_mirror_edge(primary_edge8);
+
+        REQUIRE(mirror_edge.vid(m) == 2);
+        REQUIRE(mirror_edge.switch_vertex(m).vid(m) == 10);
+    }
     REQUIRE(m.is_seam_vertex(primary_edge8));
     REQUIRE(m.is_seam_edge(primary_edge8));
     REQUIRE(m.edge_attrs[primary_edge8.eid(m)].curve_id.has_value());
     REQUIRE(m.edge_attrs[primary_edge8.eid(m)].curve_id.value() == 0);
 
     AdaptiveTessellationPairedCollapseEdgeOperation op6;
-    op6(m, primary_edge8);
+    REQUIRE(op6.before(m, primary_edge8));
+
+    const auto mirror_input_opt = op6.get_mirror_edge_tuple_opt();
+    REQUIRE(mirror_input_opt.has_value());
+    const TriMeshTuple mirror_input = mirror_input_opt.value();
+    spdlog::warn(mirror_input.info());
+    REQUIRE(mirror_input.vid(m) == 10);
+    REQUIRE(mirror_input.switch_vertex(m).vid(m) == 2);
+    {
+        auto retdata = op6.execute(m, primary_edge8);
+        REQUIRE(retdata.success);
+    }
+    REQUIRE(op6.after(m));
+
 
 #include <wmtk/utils/DisableWarnings.hpp>
     // acsii art diamond
@@ -368,15 +391,16 @@ TEST_CASE("paired collapse", "[myfail][.]")
     //             /     ||    \ 9
     //            /      ||     \     
     //           /       ||      \    
-    //          /    f2  ||  f3   \   
-    //        0(0)     | || |     (0)11
-    //          \      | || |     /
-    //           \  pe9| || |pe8 /
-    //            \    | || |   /
-    //             \  \| || |/ /
+    //          /    f2  ||  f6   \   
+    //        0(0)    /| ||       (0)11
+    //          \      | ||       /
+    //           \  pe9| ||  pe8 /
+    //            \    | ||  _  /
+    //             \   | ||  / /
     //              \(1) ||(2)/
     //                13    12
 #include <wmtk/utils/EnableWarnings.hpp>
+
 
     const auto& primary_edge8_opt = op6.collapse_edge.get_return_tuple_opt();
     const auto& primary_edge9_opt = op6.collapse_mirror_edge.get_return_tuple_opt();
@@ -384,10 +408,12 @@ TEST_CASE("paired collapse", "[myfail][.]")
     REQUIRE(primary_edge9_opt.has_value());
     const auto& primary_edge8_ret = primary_edge8_opt.value();
     const auto& primary_edge9_ret = primary_edge9_opt.value();
+
     REQUIRE(primary_edge8_ret.vid(m) == 12);
-    REQUIRE(primary_edge9_ret.vid(m) == 13);
     REQUIRE(primary_edge8_ret.switch_vertex(m).vid(m) == 11);
-    REQUIRE(primary_edge9_ret.switch_vertex(m).vid(m) == 0);
+
+    REQUIRE(primary_edge9_ret.vid(m) == 13);
+    REQUIRE(primary_edge9_ret.switch_vertex(m).vid(m) == 1);
     valid_verts_cnt = 0;
     for (auto& v : m.get_vertices()) {
         if (v.is_valid(m)) {
@@ -403,18 +429,38 @@ TEST_CASE("paired collapse", "[myfail][.]")
     }
     REQUIRE(valid_faces_cnt == 2);
     REQUIRE(!m.is_seam_edge(primary_edge8_ret));
-    REQUIRE(!m.is_seam_edge(primary_edge9_ret));
     REQUIRE(m.is_boundary_edge(primary_edge8_ret));
-    REQUIRE(m.is_boundary_edge(primary_edge9_ret));
     REQUIRE(m.edge_attrs[primary_edge8_ret.eid(m)].curve_id.has_value());
     REQUIRE(m.edge_attrs[primary_edge8_ret.eid(m)].curve_id.value() == 2);
-    REQUIRE(m.edge_attrs[primary_edge9_ret.eid(m)].curve_id.has_value());
-    REQUIRE(m.edge_attrs[primary_edge9_ret.eid(m)].curve_id.value() == 3);
     REQUIRE(m.is_seam_edge(primary_edge8_ret.switch_edge(m)));
     REQUIRE(m.is_seam_vertex(primary_edge8_ret));
-    REQUIRE(m.is_seam_edge(primary_edge9_ret.switch_edge(m)));
+    const auto primary_edge8_se = primary_edge8_ret.switch_edge(m);
+    REQUIRE(primary_edge8_se.vid(m) == 12);
+    REQUIRE(primary_edge8_se.switch_vertex(m).vid(m) == 4);
+    REQUIRE(m.is_seam_edge(primary_edge8_se));
+    REQUIRE(m.is_boundary_edge(primary_edge8_se));
+    REQUIRE(m.edge_attrs[primary_edge8_se.eid(m)].curve_id.has_value());
+    REQUIRE(m.edge_attrs[primary_edge8_se.eid(m)].curve_id.value() == 0);
+    REQUIRE(m.is_seam_vertex(primary_edge8_se));
+
+    REQUIRE(m.is_seam_edge(primary_edge9_ret));
+    REQUIRE(m.is_boundary_edge(primary_edge9_ret));
+    REQUIRE(m.edge_attrs[primary_edge9_ret.eid(m)].curve_id.has_value());
+    REQUIRE(m.edge_attrs[primary_edge9_ret.eid(m)].curve_id.value() == 1);
     REQUIRE(m.is_seam_vertex(primary_edge9_ret));
-    REQUIRE(m.get_oriented_mirror_edge(primary_edge8_ret.switch_edge(m)).vid(m) == 1);
+    const auto primary_edge9_se = primary_edge9_ret.switch_edge(m);
+    REQUIRE(!m.is_seam_edge(primary_edge9_se));
+    REQUIRE(m.is_boundary_edge(primary_edge9_se));
+    REQUIRE(m.edge_attrs[primary_edge9_se.eid(m)].curve_id.has_value());
+    REQUIRE(m.edge_attrs[primary_edge9_se.eid(m)].curve_id.value() == 3);
+    REQUIRE(m.is_seam_edge(primary_edge9_se.switch_edge(m)));
+    REQUIRE(m.is_seam_vertex(primary_edge9_se));
+
+    REQUIRE(m.get_oriented_mirror_edge(primary_edge8_se).vid(m) == 1);
+    REQUIRE(m.get_oriented_mirror_edge(primary_edge9_ret).vid(m) == 4);
+
+    spdlog::info(primary_edge8_ret.info());
+    spdlog::info(primary_edge9_ret.info());
 
     /////// debug
     for (auto& e : m.get_edges()) {
@@ -431,11 +477,11 @@ TEST_CASE("paired collapse", "[myfail][.]")
                 REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 1);
                 break;
             case 13:
-                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 3);
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 6);
                 REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 4);
                 break;
             case 1:
-                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 3);
+                REQUIRE(m.get_oriented_mirror_edge(e).fid(m) == 6);
                 REQUIRE(m.get_oriented_mirror_edge(e).vid(m) == 12);
                 break;
             case 4:

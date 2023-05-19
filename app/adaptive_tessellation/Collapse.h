@@ -219,12 +219,12 @@ public:
         const AdaptiveTessellation& m,
         const std::vector<Tuple>& tuples) const;
 
+    std::optional<Tuple> get_mirror_edge_tuple_opt() const;
+
 private:
     // stores the input edge's mirror for future use (if applicable)
     void set_input_mirror(const AdaptiveTessellation& m, const Tuple& t);
     bool input_edge_is_mirror() const;
-
-    std::optional<Tuple> get_mirror_edge_tuple_opt() const;
 
 
     // stores information about curves and mirrors to be rebuilt later

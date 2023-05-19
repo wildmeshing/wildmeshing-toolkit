@@ -600,7 +600,7 @@ void AdaptiveTessellationCollapseEdgeOperation::assign_collapsed_edge_attributes
             auto eopt = m.tuple_from_edge_vids_opt(m0, m1);
             assert(eopt.has_value());
             const Tuple mirror = eopt.value();
-            spdlog::info("Latching {} {}", edge.info(), mirror.info());
+            // spdlog::info("Latching {} {}", edge.info(), mirror.info());
             m.set_mirror_edge_data(edge, mirror);
             m.set_mirror_edge_data(mirror, edge);
         }
@@ -609,12 +609,12 @@ void AdaptiveTessellationCollapseEdgeOperation::assign_collapsed_edge_attributes
 
     // TODO: cache tris that have already been used
     for (const auto& [other_vertex, seam_data] : op_cache.new_vertex_seam_data) {
-        spdlog::warn("Trying to latch new v: {} {}", new_vertex_vid, other_vertex);
+        // spdlog::warn("Trying to latch new v: {} {}", new_vertex_vid, other_vertex);
         try_latching_seam_data(new_vertex_vid, other_vertex, seam_data);
     }
     for (const auto& [edge_vids, seam_data] : op_cache.opposing_edge_seam_data) {
         const auto& [a, b] = edge_vids;
-        spdlog::warn("Trying to latch old edge {} {}", a, b);
+        // spdlog::warn("Trying to latch old edge {} {}", a, b);
         try_latching_seam_data(a, b, seam_data);
     }
 }
