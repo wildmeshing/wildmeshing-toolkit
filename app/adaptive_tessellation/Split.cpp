@@ -158,7 +158,7 @@ bool AdaptiveTessellationSplitEdgeOperation::after(
     // update the face_attrs (accuracy error)
     if (!m.mesh_parameters.m_ignore_embedding) {
         assert(bool(*this));
-        auto modified_tris = modified_tuples(m);
+        auto modified_tris = modified_triangles(m);
         // get a vector of new traingles uvs
         std::vector<std::array<float, 6>> modified_tris_uv(modified_tris.size());
         for (int i = 0; i < modified_tris.size(); i++) {
@@ -619,3 +619,28 @@ void AdaptiveTessellationPairedSplitEdgeOperation::mark_failed()
     split_edge.mark_failed();
     mirror_split_edge.mark_failed();
 }
+auto AdaptiveTessellationSplitEdgeOperation::modified_triangles(const TriMesh& m) const -> std::vector<Tuple>
+{
+    return TriMeshSplitEdgeOperation::modified_triangles(m);
+    //const auto& at  = static_cast<const AdaptiveTessellation&>(m);
+    //if (!bool(*this)) {
+    //    return {};
+    //}
+
+    //const Tuple new_v = new_vertex(at);
+
+    //return at.get_one_ring_tris_accross_seams_for_vertex(new_v);
+}
+
+auto AdaptiveTessellationPairedSplitEdgeOperation::modified_triangles(const TriMesh& m) const -> std::vector<Tuple>
+{
+    const auto& at  = static_cast<const AdaptiveTessellation&>(m);
+    if (!bool(split_edge)) {
+        return {};
+    }
+
+    const Tuple new_v = split_edge.new_vertex(at);
+
+    return at.get_one_ring_tris_accross_seams_for_vertex(new_v);
+}
+

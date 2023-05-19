@@ -136,13 +136,13 @@ auto TriMeshEdgeCollapseOperation::execute(TriMesh& m, const Tuple& loc0) -> Exe
     return_t = Tuple(new_vid, (j_ret + 2) % 3, new_fid, m);
 
     assign(return_t);
-    new_tris = modified_tuples(m);
+    new_tris = modified_triangles(m);
 
     ret_data.success = true;
     return ret_data;
 }
 
-auto TriMeshEdgeCollapseOperation::modified_tuples(const TriMesh& m) const -> std::vector<Tuple>
+auto TriMeshEdgeCollapseOperation::modified_triangles(const TriMesh& m) const -> std::vector<Tuple>
 {
     const auto& new_tup_opt = get_return_tuple_opt();
 

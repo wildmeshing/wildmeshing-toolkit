@@ -136,6 +136,7 @@ public:
 
     bool after(AdaptiveTessellation& m, ExecuteReturnData& ret_data);
     bool after(AdaptiveTessellation& m);
+    std::vector<Tuple> modified_triangles(const TriMesh& m) const;
 
     void fill_cache(const AdaptiveTessellation& m, const Tuple& edge_tuple);
     void store_merged_seam_data(const AdaptiveTessellation& m, const Tuple& edge_tuple);
@@ -196,14 +197,14 @@ public:
     };
     mutable tbb::enumerable_thread_specific<OpCache> m_op_cache;
 
-    // std::vector<Tuple> modified_tuples(const TriMesh& m);
+    // std::vector<Tuple> modified_triangles(const TriMesh& m);
 
 public:
     ExecuteReturnData execute(AdaptiveTessellation& m, const Tuple& t);
     bool before(AdaptiveTessellation& m, const Tuple& t);
     bool after(AdaptiveTessellation& m, ExecuteReturnData& ret_data);
     bool after(AdaptiveTessellation& m);
-    std::vector<Tuple> modified_tuples(const AdaptiveTessellation& m) const;
+    std::vector<Tuple> modified_triangles(const TriMesh& m) const;
 
     operator bool() const;
     void mark_failed() override;
@@ -232,4 +233,5 @@ private:
     // populates curves and mirrors in the updated mesh
     void rebuild_boundary_data(AdaptiveTessellation& m);
 };
+
 } // namespace adaptive_tessellation

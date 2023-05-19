@@ -25,5 +25,6 @@ public:
     tbb::enumerable_thread_specific<
         std::map<std::array<size_t, 2>, std::pair<std::optional<Tuple>, int>>>
         vid_edge_to_mirror_edge;
+    std::vector<Tuple> modified_triangles(const TriMesh& m) const override;
 };
 } // namespace adaptive_tessellation

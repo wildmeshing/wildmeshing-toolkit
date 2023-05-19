@@ -73,7 +73,7 @@ bool AdaptiveTessellationSwapEdgeOperation::after(
     ExecuteReturnData& ret_data)
 {
     if (wmtk::TriMeshSwapEdgeOperation::after(m, ret_data)) {
-        const auto mod_tups = modified_tuples(m);
+        const auto mod_tups = modified_triangles(m);
         const auto& tri_con = tri_connectivity(m);
 
         // wipe out existing face attribute data beacuse it's invalidated
@@ -367,4 +367,18 @@ bool AdaptiveTessellation::swap_edge_after([[maybe_unused]] const Tuple& t)
     //     if (get_quality(tri) < 0) return false; // reject operations that cause triangle inversion
     // }
     return true;
+}
+auto AdaptiveTessellationSwapEdgeOperation::modified_triangles(const TriMesh& m) const -> std::vector<Tuple>
+{
+    //return TriMeshSwapEdgeOperation::modified_triangles(m);
+    const auto& at  = static_cast<const AdaptiveTessellation&>(m);
+    std::optional<Tuple> new_tuple_opt = get_return_tuple_opt();
+    if (!new_tuple_opt.has_value()) {
+        return {};
+    }
+    const Tuple& new_tuple = new_tuple_opt.value();
+    assert(new_tuple.is_valid(at));
+    std::optional<Tuple> new_other_face_opt = at.is_seam_edge(new_tuple) ? at.get_sibling_edge_opt(new_tuple) : m.switch_face(new_tuple);
+    assert(new_other_face_opt);
+    return {new_tuple, new_other_face_opt.value()};
 }

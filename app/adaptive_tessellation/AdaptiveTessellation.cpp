@@ -25,7 +25,6 @@ double AdaptiveTessellation::avg_edge_len() const
 }
 
 
-
 // return E0, E1 of corresponding seam edges in uv mesh
 // set up the seam vertex coloring
 std::pair<Eigen::MatrixXi, Eigen::MatrixXi> AdaptiveTessellation::seam_edges_set_up(
@@ -1231,5 +1230,19 @@ void AdaptiveTessellation::assign_edge_curveid()
     }
 }
 
+auto AdaptiveTessellation::get_one_ring_tris_accross_seams_for_vertex(const Tuple& vertex) const
+    -> std::vector<Tuple>
+{
+    if (!is_seam_vertex(vertex)) {
+        return get_one_ring_tris_for_vertex(vertex);
+    } else {
+        std::vector<Tuple> tris;
+        for (const auto& vert : get_all_mirror_vertices(vertex)) {
+            const auto ring = get_one_ring_tris_for_vertex(vert);
+            tris.insert(tris.end(), ring.begin(), ring.end());
+        }
+        return tris;
+    }
+}
 
 } // namespace adaptive_tessellation
