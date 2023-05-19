@@ -4,14 +4,10 @@
 #include <igl/Timer.h>
 #include <igl/doublearea.h>
 #include <igl/predicates/predicates.h>
-#include <igl/read_triangle_mesh.h>
-#include <igl/writeDMAT.h>
-#include <igl/write_triangle_mesh.h>
 #include <lagrange/SurfaceMesh.h>
 #include <lagrange/attribute_names.h>
 #include <lagrange/bvh/EdgeAABBTree.h>
 #include <lagrange/foreach_attribute.h>
-#include <lagrange/io/load_mesh.h>
 #include <lagrange/triangulate_polygonal_facets.h>
 #include <lagrange/utils/fpe.h>
 #include <lagrange/utils/timing.h>

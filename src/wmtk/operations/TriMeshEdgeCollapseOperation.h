@@ -11,6 +11,8 @@ struct LinksOfVertex
     // finite edges as vids on the opposite edge of each triangle
     std::vector<std::array<size_t, 2>> edge;
 
+    std::vector<std::array<size_t, 2>> edge_test;
+
     // vids of boundary edges (infinite link edges)
     std::vector<size_t> infinite_edge;
 };

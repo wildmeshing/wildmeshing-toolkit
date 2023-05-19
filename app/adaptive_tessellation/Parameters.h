@@ -111,7 +111,9 @@ public:
         const nlohmann::json& js,
         bool flush = false) // flush should force file output immediately, but will be slow for
                             // per-operation things
+
     const;
+
 
     // log that always writes to file immediately beause it's flushing
     void log_flush(const nlohmann::json& js) const { log(js, true); }

@@ -122,7 +122,6 @@ public:
         auto norm_T = [&](const Eigen::Matrix<T, Eigen::Dynamic, 1>& row_v) -> T {
             T ret = T(0.);
             for (auto i = 0; i < row_v.rows(); i++) {
-                auto debug_rowv = row_v(i, 0);
                 ret += pow(row_v(i, 0), 2);
             }
             return sqrt(ret);
@@ -195,8 +194,7 @@ public:
         }
         auto squared_norm_T = [&](const Eigen::Matrix<T, 3, 1>& row_v) -> T {
             T ret = T(0.);
-            for (auto i = 0; i < row_v.rows(); i++) {
-                auto debug_rowv = row_v(i, 0);
+            for (int i = 0; i < row_v.rows(); i++) {
                 ret += pow(row_v(i, 0), 2);
             }
             return ret;
@@ -267,7 +265,7 @@ public:
                     box,
                     m_cache.local().quad,
                     &m_cache.local().tmp);
-                for (auto i = 0; i < m_cache.local().quad.size(); ++i) {
+                for (size_t i = 0; i < m_cache.local().quad.size(); ++i) {
                     auto tmpu = T(m_cache.local().quad.points()(i, 0));
                     auto tmpv = T(m_cache.local().quad.points()(i, 1));
                     if (!check_degenerate())
