@@ -1738,3 +1738,36 @@ TEST_CASE("mirror vertex t_to_uv")
         }
     }
 }
+
+TEST_CASE("quadric split", "[.]")
+{
+    // Loading the input 2d mesh
+    AdaptiveTessellation m;
+
+    std::filesystem::path input_folder = WMTK_DATA_DIR;
+    std::filesystem::path input_mesh_path = input_folder / "bumpyDice.obj";
+    std::filesystem::path position_path = input_folder / "images/bumpyDice_128_position.exr";
+    std::filesystem::path normal_path =
+        input_folder / "images/bumpyDice_128_world_space_normals.exr";
+    std::filesystem::path height_path = input_folder / "images/bumpyDice_128_height.exr";
+
+    m.mesh_preprocessing(input_mesh_path, position_path, normal_path, height_path);
+    Image image;
+    image.load(height_path, WrappingMode::MIRROR_REPEAT, WrappingMode::MIRROR_REPEAT);
+
+    REQUIRE(m.check_mesh_connectivity_validity());
+    m.set_parameters(
+        0.00001,
+        0.4,
+        image,
+        WrappingMode::MIRROR_REPEAT,
+        SAMPLING_MODE::BICUBIC,
+        DISPLACEMENT_MODE::MESH_3D,
+        adaptive_tessellation::ENERGY_TYPE::QUADRICS,
+        adaptive_tessellation::EDGE_LEN_TYPE::TRI_QUADRICS,
+        1);
+    m.split_all_edges();
+    m.write_obj_displaced("split_result.obj");
+    // m.swap_all_edges();
+    // m.write_obj_displaced("swap_result.obj");
+}
