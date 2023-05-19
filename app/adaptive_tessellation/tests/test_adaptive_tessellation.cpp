@@ -1339,9 +1339,6 @@ TEST_CASE("mirror vertex t_to_uv")
 
 TEST_CASE("quadric split", "[.]")
 {
-    // Loading the input 2d mesh
-    AdaptiveTessellation m;
-
     std::filesystem::path input_folder = WMTK_DATA_DIR;
     std::filesystem::path input_mesh_path = input_folder / "bumpyDice.obj";
     std::filesystem::path position_path = input_folder / "images/bumpyDice_128_position.exr";
@@ -1349,23 +1346,40 @@ TEST_CASE("quadric split", "[.]")
         input_folder / "images/bumpyDice_128_world_space_normals.exr";
     std::filesystem::path height_path = input_folder / "images/bumpyDice_128_height.exr";
 
-    m.mesh_preprocessing(input_mesh_path, position_path, normal_path, height_path);
+
+    // AdaptiveTessellation m;
+    // m.mesh_preprocessing(input_mesh_path, position_path, normal_path, height_path);
     Image image;
     image.load(height_path, WrappingMode::MIRROR_REPEAT, WrappingMode::MIRROR_REPEAT);
+    // m.mesh_parameters.m_early_stopping_number = 20;
+    // REQUIRE(m.check_mesh_connectivity_validity());
+    // m.set_parameters(
+    //     0.00001,
+    //     0.4,
+    //     image,
+    //     WrappingMode::MIRROR_REPEAT,
+    //     SAMPLING_MODE::BICUBIC,
+    //     DISPLACEMENT_MODE::MESH_3D,
+    //     adaptive_tessellation::ENERGY_TYPE::QUADRICS,
+    //     adaptive_tessellation::EDGE_LEN_TYPE::TRI_QUADRICS,
+    //     1);
+    // m.split_all_edges();
+    // m.write_obj_displaced("quadrics_split_result.obj");
 
-    REQUIRE(m.check_mesh_connectivity_validity());
-    m.set_parameters(
+    AdaptiveTessellation m2;
+    m2.mesh_preprocessing(input_mesh_path, position_path, normal_path, height_path);
+    m2.mesh_parameters.m_early_stopping_number = 20;
+    REQUIRE(m2.check_mesh_connectivity_validity());
+    m2.set_parameters(
         0.00001,
         0.4,
         image,
         WrappingMode::MIRROR_REPEAT,
         SAMPLING_MODE::BICUBIC,
         DISPLACEMENT_MODE::MESH_3D,
-        adaptive_tessellation::ENERGY_TYPE::QUADRICS,
-        adaptive_tessellation::EDGE_LEN_TYPE::TRI_QUADRICS,
+        adaptive_tessellation::ENERGY_TYPE::AREA_QUADRATURE,
+        adaptive_tessellation::EDGE_LEN_TYPE::AREA_ACCURACY,
         1);
-    m.split_all_edges();
-    m.write_obj_displaced("split_result.obj");
-    // m.swap_all_edges();
-    // m.write_obj_displaced("swap_result.obj");
+    m2.split_all_edges();
+    m2.write_obj_displaced("area_split_result.obj");
 }

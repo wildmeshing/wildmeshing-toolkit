@@ -107,7 +107,7 @@ void AdaptiveTessellation::mesh_preprocessing(
         height_image_path);
 
     m_quadric_integral =
-        wmtk::QuadricIntegral(displaced, wmtk::QuadricIntegral::QuadricType::Plane);
+        wmtk::QuadricIntegral(displaced, wmtk::QuadricIntegral::QuadricType::Point);
     m_texture_integral = wmtk::TextureIntegral(std::move(displaced));
 }
 
@@ -993,7 +993,7 @@ double AdaptiveTessellation::get_one_ring_quadrics_error_for_vertex(const Tuple&
     auto v_pos = vertex_attrs[v.vid(*this)].pos;
     Eigen::Matrix<double, 3, 1> v_world_pos =
         mesh_parameters.m_displacement->get(v_pos(0), v_pos(1));
-    ret = v_world_pos.transpose() * q.A() * v_world_pos - 2.0 * v_world_pos.dot(q.b()) + q.c;
+    ret = q(v_world_pos);
     return ret;
 }
 
