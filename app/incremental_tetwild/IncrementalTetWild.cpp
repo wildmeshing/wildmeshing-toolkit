@@ -40,6 +40,20 @@ void tetwild::TetWild::mesh_improvement(int max_its)
     //
     ZoneScopedN("meshimprovementmain");
 
+    // rounding
+    std::atomic_int cnt_round(0);
+    std::atomic_int cnt_valid(0);
+
+    auto vertices = get_vertices();
+    for (auto v : vertices) {
+        // debug code
+        if (v.is_valid(*this)) cnt_valid++;
+
+        if (round(v)) cnt_round++;
+    }
+
+    wmtk::logger().info("cnt_round {}/{}", cnt_round, cnt_valid);
+
     compute_vertex_partition_morton();
 
     wmtk::logger().info("========it pre========");
@@ -136,6 +150,10 @@ std::tuple<double, double> tetwild::TetWild::local_operations(
                 // }
                 if (!check_vertex_param_type()) {
                     std::cout << "missing param!!!!!!!!" << std::endl;
+                    output_faces("buf_surface_miss_param.obj", [](auto& f) {
+                        return f.m_is_surface_fs;
+                    });
+                    // exit(0);
                 }
             }
         } else if (i == 2) {
@@ -1232,7 +1250,7 @@ bool tetwild::TetWild::is_triangle_nearly_coplanar_collection(
     Vector3d collection_normal = to_double(collection.normal);
     if (tri_normal.cross(collection_normal).norm() /
             (tri_normal.norm() * collection_normal.norm()) <
-        std::sin(theta))
+        std::sin(theta / 180 * M_PI))
         return true;
 
     return false;
@@ -1356,6 +1374,11 @@ void tetwild::TetWild::detect_coplanar_triangle_collections(
                 }
             }
         }
+        if (collection.face_ids.size() == 1) {
+            collection.effective = false;
+        } else {
+            collection.effective = true;
+        }
         collections.push_back(collection);
     }
     // return collections;
@@ -1416,7 +1439,8 @@ void tetwild::TetWild::detect_coplanar_triangle_collections(
                     vertices_rational[faces[fid][0]],
                     vertices_rational[faces[fid][1]],
                     vertices_rational[faces[fid][2]],
-                    collection)) {
+                    collection,
+                    2)) {
                 visited_face_nearly[fid] = true;
                 collection.face_ids.push_back(fid);
                 for (int j = 0; j < face_adj_list[fid].size(); j++) {
@@ -1424,6 +1448,11 @@ void tetwild::TetWild::detect_coplanar_triangle_collections(
                         bfs_queue.push(face_adj_list[fid][j]);
                 }
             }
+        }
+        if (collection.face_ids.size() == 1) {
+            collection.effective = false;
+        } else {
+            collection.effective = true;
         }
         collections_nearly.push_back(collection);
     }
@@ -1457,21 +1486,21 @@ void tetwild::TetWild::detect_coplanar_triangle_collections(
     triangle_collections_from_input_surface.exact_to_nearly_map = exact_to_nearly_map;
 
     // debug code
-    // for (int i = 0; i < collections.size(); i++) {
-    //     std::cout << "collection " << i << ": ";
-    //     for (int j = 0; j < collections[i].face_ids.size(); j++) {
-    //         std::cout << collections[i].face_ids[j] << " ";
-    //     }
-    //     std::cout << std::endl;
-    // }
+    for (int i = 0; i < collections.size(); i++) {
+        std::cout << "collection " << i << ": ";
+        for (int j = 0; j < collections[i].face_ids.size(); j++) {
+            std::cout << collections[i].face_ids[j] << " ";
+        }
+        std::cout << std::endl;
+    }
 
-    // for (int i = 0; i < collections_nearly.size(); i++) {
-    //     std::cout << "nearly collection " << i << ": ";
-    //     for (int j = 0; j < collections_nearly[i].face_ids.size(); j++) {
-    //         std::cout << collections_nearly[i].face_ids[j] << " ";
-    //     }
-    //     std::cout << std::endl;
-    // }
+    for (int i = 0; i < collections_nearly.size(); i++) {
+        std::cout << "nearly collection " << i << ": ";
+        for (int j = 0; j < collections_nearly[i].face_ids.size(); j++) {
+            std::cout << collections_nearly[i].face_ids[j] << " ";
+        }
+        std::cout << std::endl;
+    }
 
     // for (int i = 0; i < exact_to_nearly_map.size(); i++) {
     //     std::cout << "exact to nearly map " << i << " --> " << exact_to_nearly_map[i] <<
@@ -1611,18 +1640,28 @@ int tetwild::TetWild::find_collection_for_tracked_surface(const Tuple& t)
 
 bool tetwild::TetWild::check_vertex_param_type()
 {
+    std::ofstream file("missing_param_v.obj");
+    bool flag = true;
     for (auto v : get_vertices()) {
         size_t vid = v.vid(*this);
         if (m_vertex_attribute[vid].m_is_on_surface) {
-            if (m_vertex_attribute[vid].face_param_type.size() == 0) {
-                std::cout << "missing face param" << std::endl;
-                return false;
-            }
-            if (m_vertex_attribute[vid].face_nearly_param_type.size() == 0) {
+            // if (m_vertex_attribute[vid].face_param_type_with_ineffective.size() == 0) {
+            //     std::cout << "missing face param" << std::endl;
+            //     file<<"v " << m_vertex_attribute[vid].m_posf[0]<<" " <<
+            //     m_vertex_attribute[vid].m_posf[1]<<" "<< m_vertex_attribute[vid].m_posf[2]<<" "
+            //     << std::endl;
+            //     // return false;
+            //     flag = false;
+            // }
+            if (m_vertex_attribute[vid].face_nearly_param_type_with_ineffective.size() == 0) {
                 std::cout << "missing nearly face param" << std::endl;
-                return false;
+                file << "v " << m_vertex_attribute[vid].m_posf[0] << " "
+                     << m_vertex_attribute[vid].m_posf[1] << " "
+                     << m_vertex_attribute[vid].m_posf[2] << " " << std::endl;
+                // return false;
+                flag = false;
             }
         }
     }
-    return true;
+    return flag;
 }

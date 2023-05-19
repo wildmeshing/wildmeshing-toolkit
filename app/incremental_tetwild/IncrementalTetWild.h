@@ -53,10 +53,12 @@ public:
     // for geometry preservation
     // exact
     std::vector<size_t> face_param_type;
+    std::vector<size_t> face_param_type_with_ineffective;
     std::vector<std::pair<wmtk::Rational, wmtk::Rational>> uv_coords;
     std::vector<std::pair<double, double>> uv_coords_f;
     // nearly
     std::vector<size_t> face_nearly_param_type;
+    std::vector<size_t> face_nearly_param_type_with_ineffective;
     // std::vector<std::pair<wmtk::Rational, wmtk::Rational>> uv_nearly;
     std::vector<std::pair<double, double>> uv_nearly_f;
 
@@ -489,6 +491,7 @@ public:
     // for geometry preservation
     struct coplanar_triangle_collection
     {
+        bool effective = false;
         std::vector<size_t> face_ids;
         std::vector<size_t> tracked_face_ids;
         // std::map<std::pair<size_t, size_t>, bool> presented_edges;

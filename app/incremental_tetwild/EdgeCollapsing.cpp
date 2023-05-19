@@ -113,6 +113,7 @@ bool tetwild::TetWild::collapse_edge_before(const Tuple& loc) // input is an edg
     //     v2_id,
     //     cache.edge_length);
 
+
     ///check if on bbox/surface/boundary
     // bbox
     if (!VA[v1_id].on_bbox_faces.empty()) {
@@ -330,16 +331,31 @@ bool tetwild::TetWild::collapse_edge_before(const Tuple& loc) // input is an edg
     // }
 
     if (m_params.preserve_geometry) {
+        // if (m_vertex_attribute[v1_id].m_is_on_surface !=
+        // m_vertex_attribute[v2_id].m_is_on_surface)
+        //     return false;
+        if (m_vertex_attribute[v1_id].m_is_on_surface && !m_vertex_attribute[v2_id].m_is_on_surface)
+            return false;
         if (m_vertex_attribute[v1_id].is_freezed) return false;
 
+        if (m_vertex_attribute[v1_id].face_nearly_param_type.size() > 1) return false;
+
         // only collapse when param_type v1 is included in param_type v2
-        if (m_vertex_attribute[v1_id].face_param_type.size() <
-            m_vertex_attribute[v2_id].face_param_type.size())
+        if (m_vertex_attribute[v1_id].face_nearly_param_type.size() >
+            m_vertex_attribute[v2_id].face_nearly_param_type.size())
             return false;
         auto s = wmtk::set_intersection(
-            m_vertex_attribute[v1_id].face_param_type,
-            m_vertex_attribute[v2_id].face_param_type);
-        if (s.size() != m_vertex_attribute[v1_id].face_param_type.size()) return false;
+            m_vertex_attribute[v1_id].face_nearly_param_type,
+            m_vertex_attribute[v2_id].face_nearly_param_type);
+        if (s.size() != m_vertex_attribute[v1_id].face_nearly_param_type.size()) return false;
+
+        if (m_vertex_attribute[v1_id].in_edge_param.size() >
+            m_vertex_attribute[v2_id].in_edge_param.size())
+            return false;
+        auto s2 = wmtk::set_intersection(
+            m_vertex_attribute[v1_id].in_edge_param,
+            m_vertex_attribute[v2_id].in_edge_param);
+        if (s2.size() != m_vertex_attribute[v1_id].in_edge_param.size()) return false;
     }
 
     return true;

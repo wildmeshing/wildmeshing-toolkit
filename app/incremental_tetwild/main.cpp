@@ -65,19 +65,15 @@ int main(int argc, char** argv)
         params.preserve_global_topology,
         "preserve the global topology");
     app.add_flag("--preserve-geometry", params.preserve_geometry, "preserve geometry");
-    if (params.preserve_global_topology) {
-        skip_simplify = true;
-    }
-    if (params.preserve_geometry) {
-        skip_simplify = true;
-    }
 
     CLI11_PARSE(app, argc, argv);
+
 
     std::vector<Eigen::Vector3d> verts;
     std::vector<std::array<size_t, 3>> tris;
     std::pair<Eigen::Vector3d, Eigen::Vector3d> box_minmax;
-    double remove_duplicate_esp = params.epsr;
+    // double remove_duplicate_esp = params.epsr;
+    double remove_duplicate_esp = 2e-3;
     std::vector<size_t> modified_nonmanifold_v;
     wmtk::stl_to_manifold_wmtk_input(
         input_path,
@@ -110,7 +106,12 @@ int main(int argc, char** argv)
     surf_mesh.create_mesh(verts.size(), tris, modified_nonmanifold_v, envelope_size / 2);
     assert(surf_mesh.check_mesh_connectivity_validity());
 
-
+    if (params.preserve_global_topology) {
+        skip_simplify = true;
+    }
+    if (params.preserve_geometry) {
+        skip_simplify = true;
+    }
     if (skip_simplify == false) {
         wmtk::logger().info("input {} simplification", input_path);
         surf_mesh.collapse_shortest(0);
@@ -242,7 +243,7 @@ int main(int argc, char** argv)
         return f.m_is_surface_fs;
     });
 
-    mesh_new.output_faces("matched_surface.obj", [](auto& f) {
+    mesh_new.output_faces(output_path + "matched_surface.obj", [](auto& f) {
         return f.from_input_collection_id > -1;
     });
 

@@ -166,9 +166,10 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
     auto old_pos = m_vertex_attribute[vid].m_posf;
     auto old_asssembles = assembles;
 
-    bool preserve_geo =
-        m_params.preserve_geometry &&
-        (m_vertex_attribute[vid].m_is_on_surface || m_vertex_attribute[vid].m_is_on_open_boundary);
+    // bool preserve_geo =
+    //     m_params.preserve_geometry && (m_vertex_attribute[vid].face_nearly_param_type.size() >
+    //     0);
+    bool preserve_geo = m_params.preserve_geometry;
 
     if (preserve_geo) {
         if (m_vertex_attribute[vid].in_edge_param.size() > 0) {
@@ -213,7 +214,7 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
                 hessian);
 
             m_vertex_attribute[vid].m_posf = param(t);
-        } else {
+        } else if (m_vertex_attribute[vid].face_nearly_param_type.size() > 0) {
             // use face param
 
             Vector3d o, x, y;

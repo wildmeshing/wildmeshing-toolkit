@@ -903,11 +903,42 @@ void tetwild::TetWild::init_from_Volumeremesher(
                 //                                      .from_input_nearly_collection_id]
                 //     .tracked_face_ids.push_back(f_id_for_geo);
 
+                size_t f_v1 = f.vid(*this);
+                size_t f_v2 = f.switch_vertex(*this).vid(*this);
+                size_t f_v3 = f.switch_edge(*this).switch_vertex(*this).vid(*this);
                 // v1
                 // exact
 
-                size_t f_v1 = f.vid(*this);
-                m_vertex_attribute[f_v1].face_param_type.push_back(in_collection);
+
+                if (triangle_collections_from_input_surface.collections[in_collection].effective) {
+                    m_vertex_attribute[f_v1].face_param_type.push_back(in_collection);
+                    m_vertex_attribute[f_v2].face_param_type.push_back(in_collection);
+                    m_vertex_attribute[f_v3].face_param_type.push_back(in_collection);
+                }
+
+                m_vertex_attribute[f_v1].face_param_type_with_ineffective.push_back(in_collection);
+                m_vertex_attribute[f_v2].face_param_type_with_ineffective.push_back(in_collection);
+                m_vertex_attribute[f_v3].face_param_type_with_ineffective.push_back(in_collection);
+
+                if (triangle_collections_from_input_surface
+                        .nearly_coplanar_collections[triangle_collections_from_input_surface
+                                                         .exact_to_nearly_map[in_collection]]
+                        .effective) {
+                    m_vertex_attribute[f_v1].face_nearly_param_type.push_back(
+                        triangle_collections_from_input_surface.exact_to_nearly_map[in_collection]);
+                    m_vertex_attribute[f_v2].face_nearly_param_type.push_back(
+                        triangle_collections_from_input_surface.exact_to_nearly_map[in_collection]);
+                    m_vertex_attribute[f_v3].face_nearly_param_type.push_back(
+                        triangle_collections_from_input_surface.exact_to_nearly_map[in_collection]);
+                }
+
+                m_vertex_attribute[f_v1].face_nearly_param_type_with_ineffective.push_back(
+                    triangle_collections_from_input_surface.exact_to_nearly_map[in_collection]);
+                m_vertex_attribute[f_v2].face_nearly_param_type_with_ineffective.push_back(
+                    triangle_collections_from_input_surface.exact_to_nearly_map[in_collection]);
+                m_vertex_attribute[f_v3].face_nearly_param_type_with_ineffective.push_back(
+                    triangle_collections_from_input_surface.exact_to_nearly_map[in_collection]);
+
 
                 // wmtk::Rational u1, v1;
                 // u1 = (m_vertex_attribute[f_v1].m_pos -
@@ -923,8 +954,10 @@ void tetwild::TetWild::init_from_Volumeremesher(
                 //     std::make_pair(u1.to_double(), v1.to_double()));
 
                 // nearly
-                m_vertex_attribute[f_v1].face_nearly_param_type.push_back(
-                    triangle_collections_from_input_surface.exact_to_nearly_map[in_collection]);
+
+                // m_vertex_attribute[f_v1].face_nearly_param_type.push_back(
+                //     triangle_collections_from_input_surface.exact_to_nearly_map[in_collection]);
+
 
                 // double u1_f, v1_f;
                 // u1_f = (m_vertex_attribute[f_v1].m_posf -
@@ -940,8 +973,8 @@ void tetwild::TetWild::init_from_Volumeremesher(
 
                 // v2
                 // exact
-                size_t f_v2 = f.switch_vertex(*this).vid(*this);
-                m_vertex_attribute[f_v2].face_param_type.push_back(in_collection);
+
+                // m_vertex_attribute[f_v2].face_param_type.push_back(in_collection);
 
                 // wmtk::Rational u2, v2;
                 // u2 = (m_vertex_attribute[f_v2].m_pos -
@@ -957,8 +990,8 @@ void tetwild::TetWild::init_from_Volumeremesher(
                 //     std::make_pair(u2.to_double(), v2.to_double()));
 
                 // nearly
-                m_vertex_attribute[f_v2].face_nearly_param_type.push_back(
-                    triangle_collections_from_input_surface.exact_to_nearly_map[in_collection]);
+                // m_vertex_attribute[f_v2].face_nearly_param_type.push_back(
+                //     triangle_collections_from_input_surface.exact_to_nearly_map[in_collection]);
 
                 // double u2_f, v2_f;
                 // u2_f = (m_vertex_attribute[f_v2].m_posf -
@@ -973,8 +1006,8 @@ void tetwild::TetWild::init_from_Volumeremesher(
 
                 // v3
                 // exact
-                size_t f_v3 = f.switch_edge(*this).switch_vertex(*this).vid(*this);
-                m_vertex_attribute[f_v3].face_param_type.push_back(in_collection);
+
+                // m_vertex_attribute[f_v3].face_param_type.push_back(in_collection);
 
                 // wmtk::Rational u3, v3;
                 // u3 = (m_vertex_attribute[f_v3].m_pos -
@@ -990,8 +1023,8 @@ void tetwild::TetWild::init_from_Volumeremesher(
                 //     std::make_pair(u3.to_double(), v3.to_double()));
 
                 // nearly
-                m_vertex_attribute[f_v3].face_nearly_param_type.push_back(
-                    triangle_collections_from_input_surface.exact_to_nearly_map[in_collection]);
+                // m_vertex_attribute[f_v3].face_nearly_param_type.push_back(
+                //     triangle_collections_from_input_surface.exact_to_nearly_map[in_collection]);
 
                 // double u3_f, v3_f;
                 // u3_f = (m_vertex_attribute[f_v3].m_posf -
@@ -1012,6 +1045,10 @@ void tetwild::TetWild::init_from_Volumeremesher(
             if (m_vertex_attribute[v.vid(*this)].m_is_on_surface) {
                 wmtk::vector_unique(m_vertex_attribute[v.vid(*this)].face_param_type);
                 wmtk::vector_unique(m_vertex_attribute[v.vid(*this)].face_nearly_param_type);
+                wmtk::vector_unique(
+                    m_vertex_attribute[v.vid(*this)].face_param_type_with_ineffective);
+                wmtk::vector_unique(
+                    m_vertex_attribute[v.vid(*this)].face_nearly_param_type_with_ineffective);
                 // if (m_vertex_attribute[v.vid(*this)].face_param_type.size() == 0) {
                 //     std::cout << "0 size face param!" << std::endl;
                 // }
@@ -1027,12 +1064,22 @@ void tetwild::TetWild::init_from_Volumeremesher(
 
         // get vertices on nearly coplanar collection boundaries or open boundaries
         int cnt_on_collection_boundary = 0;
+        std::ofstream file("debug1.obj");
+        int xxx = 1;
         for (auto v : vs) {
             if (!m_vertex_attribute[v.vid(*this)].m_is_on_surface) continue;
-            if (m_vertex_attribute[v.vid(*this)].m_is_on_open_boundary ||
-                m_vertex_attribute[v.vid(*this)].face_nearly_param_type.size() > 1) {
+            if (m_vertex_attribute[v.vid(*this)].face_nearly_param_type.size() > 1 ||
+                (m_vertex_attribute[v.vid(*this)].face_nearly_param_type.size() == 1 &&
+                 m_vertex_attribute[v.vid(*this)].face_nearly_param_type_with_ineffective.size() >
+                     1) ||
+                (m_vertex_attribute[v.vid(*this)].m_is_on_open_boundary &&
+                 m_vertex_attribute[v.vid(*this)].face_nearly_param_type.size() > 0)) {
                 m_vertex_attribute[v.vid(*this)].is_on_collection_boundary = true;
                 std::cout << v.vid(*this) << " ";
+                file << "v " << m_vertex_attribute[v.vid(*this)].m_posf[0] << " "
+                     << m_vertex_attribute[v.vid(*this)].m_posf[1] << " "
+                     << m_vertex_attribute[v.vid(*this)].m_posf[2] << std::endl;
+                xxx++;
                 cnt_on_collection_boundary++;
             }
         }
@@ -1057,12 +1104,20 @@ void tetwild::TetWild::init_from_Volumeremesher(
                         m_vertex_attribute[v.vid(*this)]
                             .connected_collection_boundary_vertices.push_back(v_or.vid(*this));
                         // is_collection_boundary_edge[e.eid(*this)] = true;
+                        file << "v " << m_vertex_attribute[v.vid(*this)].m_posf[0] << " "
+                             << m_vertex_attribute[v.vid(*this)].m_posf[1] << " "
+                             << m_vertex_attribute[v.vid(*this)].m_posf[2] << std::endl;
+                        file << "v " << m_vertex_attribute[v_or.vid(*this)].m_posf[0] << " "
+                             << m_vertex_attribute[v_or.vid(*this)].m_posf[1] << " "
+                             << m_vertex_attribute[v_or.vid(*this)].m_posf[2] << std::endl;
+                        file << "l " << xxx << " " << xxx + 1 << std::endl;
+                        xxx += 2;
                         cnt_collection_be++;
                     }
                 }
             }
         }
-        std::cout << "#collection be: " << cnt_collection_be << std::endl;
+        // std::cout << "#collection be: " << cnt_collection_be << std::endl;
 
 
         // debug code
@@ -1075,7 +1130,7 @@ void tetwild::TetWild::init_from_Volumeremesher(
         // std::vector<bool> visited(edges.size(), false);
         std::map<std::pair<size_t, size_t>, bool> visited;
         double theta = 2;
-        double tol = std::cos(theta);
+        double tol = std::cos(theta / 180 * M_PI);
         for (size_t i = 0; i < edges.size(); i++) {
             // check is collection boundary edge
             size_t v1 = edges[i].vid(*this);
@@ -1169,38 +1224,6 @@ void tetwild::TetWild::init_from_Volumeremesher(
 
             edge_params.push_back(ep);
         }
-
-        // // get all edge params
-        // std::vector<bool> visited(vs.size(), false);
-        // for (size_t i = 0; i < vs.size(); i++) {
-        //     if (visited[i] || !m_vertex_attribute[i].is_on_collection_boundary ||
-        //         m_vertex_attribute[i].is_freezed)
-        //         continue;
-        //     if (m_vertex_attribute[i].connected_collection_boundary_vertices.size() > 2) {
-        //         m_vertex_attribute[i].is_freezed = true;
-        //         continue;
-        //     }
-
-        //     // find endpoint on one side
-        //     size_t current = i;
-        //     size_t next = m_vertex_attribute[i].connected_collection_boundary_vertices[0];
-
-        //     Vector3d direction =
-        //         m_vertex_attribute[next].m_posf - m_vertex_attribute[current].m_posf;
-
-        //     while (m_vertex_attribute[next].connected_collection_boundary_vertices.size() == 2) {
-        //         size_t tmp_cur = next;
-        //         next = m_vertex_attribute[next].connected_collection_boundary_vertices[0];
-        //         if (next==current) next =
-        //         m_vertex_attribute[tmp_cur].connected_collection_boundary_vertices[1]; current =
-        //         tmp_cur;
-        //     }
-
-        //     size_t end_point_1 = next;
-
-
-        //     // find endpoint on the other side
-        // }
     }
 
     // test code
@@ -1227,19 +1250,19 @@ void tetwild::TetWild::init_from_Volumeremesher(
         std::cout << "missing param!!!!!!!!" << std::endl;
     }
 
-    // rounding
-    std::atomic_int cnt_round(0);
-    std::atomic_int cnt_valid(0);
+    // // rounding
+    // std::atomic_int cnt_round(0);
+    // std::atomic_int cnt_valid(0);
 
-    auto vertices = get_vertices();
-    for (auto v : vertices) {
-        // debug code
-        if (v.is_valid(*this)) cnt_valid++;
+    // auto vertices = get_vertices();
+    // for (auto v : vertices) {
+    //     // debug code
+    //     if (v.is_valid(*this)) cnt_valid++;
 
-        if (round(v)) cnt_round++;
-    }
+    //     if (round(v)) cnt_round++;
+    // }
 
-    wmtk::logger().info("cnt_round {}/{}", cnt_round, cnt_valid);
+    // wmtk::logger().info("cnt_round {}/{}", cnt_round, cnt_valid);
 }
 
 // void tetwild::TetWild::init_from_file(std::string input_dir)

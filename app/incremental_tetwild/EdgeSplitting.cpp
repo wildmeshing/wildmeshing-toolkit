@@ -161,22 +161,31 @@ bool tetwild::TetWild::split_edge_after(const Tuple& loc)
             m_vertex_attribute[v1_id].face_param_type,
             m_vertex_attribute[v2_id].face_param_type);
 
+        m_vertex_attribute[v_id].face_param_type_with_ineffective = wmtk::set_intersection(
+            m_vertex_attribute[v1_id].face_param_type_with_ineffective,
+            m_vertex_attribute[v2_id].face_param_type_with_ineffective);
+
         m_vertex_attribute[v_id].face_nearly_param_type = wmtk::set_intersection(
             m_vertex_attribute[v1_id].face_nearly_param_type,
             m_vertex_attribute[v2_id].face_nearly_param_type);
+
+        m_vertex_attribute[v_id].face_nearly_param_type_with_ineffective = wmtk::set_intersection(
+            m_vertex_attribute[v1_id].face_nearly_param_type_with_ineffective,
+            m_vertex_attribute[v2_id].face_nearly_param_type_with_ineffective);
+
 
         m_vertex_attribute[v_id].in_edge_param = wmtk::set_intersection(
             m_vertex_attribute[v1_id].in_edge_param,
             m_vertex_attribute[v2_id].in_edge_param);
 
         // debug code
-        if (m_vertex_attribute[v_id].m_is_on_surface) {
-            if (m_vertex_attribute[v_id].face_param_type.size() == 0) {
-                std::cout << "face param " << v_id << std::endl;
-                std::cout << m_vertex_attribute[v1_id].face_param_type.size() << " "
-                          << m_vertex_attribute[v2_id].face_param_type.size() << std::endl;
-            }
-        }
+        // if (m_vertex_attribute[v_id].m_is_on_surface) {
+        //     if (m_vertex_attribute[v_id].face_param_type.size() == 0) {
+        //         // std::cout << "face param " << v_id << std::endl;
+        //         // std::cout << m_vertex_attribute[v1_id].face_param_type.size() << " "
+        //         //           << m_vertex_attribute[v2_id].face_param_type.size() << std::endl;
+        //     }
+        // }
     }
     /// update face attribute
     // add new and erase old
