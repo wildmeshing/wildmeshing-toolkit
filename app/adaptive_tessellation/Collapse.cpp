@@ -578,10 +578,6 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::input_edge_is_mirror() con
     return op_cache.mirror_edge_tuple_opt.has_value();
 }
 
-AdaptiveTessellationPairedCollapseEdgeOperation::operator bool() const
-{
-    return operation_success_T(collapse_edge, collapse_mirror_edge, input_edge_is_mirror());
-}
 void AdaptiveTessellationPairedCollapseEdgeOperation::set_input_mirror(
     const AdaptiveTessellation& m,
     const Tuple& t)
@@ -749,6 +745,10 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::after(AdaptiveTessellation
     return true;
 }
 
+AdaptiveTessellationPairedCollapseEdgeOperation::operator bool() const
+{
+    return operation_success_T(collapse_edge, collapse_mirror_edge, input_edge_is_mirror());
+}
 void AdaptiveTessellationPairedCollapseEdgeOperation::mark_failed()
 {
     collapse_edge.mark_failed();
