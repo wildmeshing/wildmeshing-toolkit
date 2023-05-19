@@ -99,19 +99,11 @@ Quadric<double> compute_pixel_plane_quadric(const Stencil& patch, double sigma_q
     const double stdev_q = stdev_from_patch(patch).norm();
 
     // We want more uncertainty when the area is small, so we divide by the 3d area
-    if (mean_n.norm() < std::numeric_limits<double>::denorm_min()) {
-        sigma_n = 1;
-    } else {
-        sigma_n /= mean_n.norm();
-    }
+    sigma_n /= std::max(1e-6, mean_n.norm());
 
     // We want more uncertainty when the patch is small, so we divide by the 3d pos standard
     // deviation
-    if (stdev_q < std::numeric_limits<double>::denorm_min()) {
-        sigma_q = 1;
-    } else {
-        sigma_q /= stdev_q;
-    }
+    sigma_q /= std::max(1e-6, stdev_q);
 
     return Quadric<double>::probabilistic_plane_quadric(mean_q, mean_n, sigma_q, sigma_n);
 }
@@ -121,11 +113,7 @@ Quadric<double> compute_pixel_triangle_quadric(const Stencil& patch, double sigm
     Quadric<double> q;
     const double stdev_q = stdev_from_patch(patch).norm();
     // We want more uncertainty when the patch is small, so we divide by the standard deviation
-    if (stdev_q <= std::numeric_limits<double>::denorm_min()) {
-        sigma_q = 1;
-    } else {
-        sigma_q /= stdev_q;
-    }
+    sigma_q /= std::max(1e-6, stdev_q);
 
     for (int i = 1; i <= 8; ++i) {
         const Eigen::Vector3d p0 = patch.col(0).cast<double>();

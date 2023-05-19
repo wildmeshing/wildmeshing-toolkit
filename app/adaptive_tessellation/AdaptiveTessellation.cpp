@@ -64,9 +64,10 @@ void AdaptiveTessellation::mesh_preprocessing(
     wmtk::TriMesh m_3d;
     std::vector<std::array<size_t, 3>> tris;
     for (auto f = 0; f < input_F_.rows(); f++) {
-        std::array<size_t, 3> tri = {(size_t)input_F_(f, 0),
-                                     (size_t)input_F_(f, 1),
-                                     (size_t)input_F_(f, 2)};
+        std::array<size_t, 3> tri = {
+            (size_t)input_F_(f, 0),
+            (size_t)input_F_(f, 1),
+            (size_t)input_F_(f, 2)};
         tris.emplace_back(tri);
     }
     m_3d.create_mesh(input_V_.rows(), tris);
@@ -256,35 +257,39 @@ void AdaptiveTessellation::set_seam_vertex_coloring(
                         // add new color
                         color_to_uv_indices.emplace_back(1, current_v);
                     }
-                    for (auto& e_3d : m_3d.get_one_ring_edges_for_vertex(edge1_3d)) {
+                    for (const auto& e_3d : m_3d.get_one_ring_edges_for_vertex(edge1_3d)) {
                         if (!e_3d.switch_face(m_3d).has_value()) {
                             // Boundary edge, skipping...
                             continue;
                         } else {
-                            auto e2_3d = e_3d.switch_face(m_3d).value();
-                            auto fj = e2_3d.fid(m_3d);
-                            size_t lvj1, lvj2;
-                            for (auto i = 0; i < 3; i++) {
-                                if (F(fj, i) == edge1_3d.vid(m_3d)) lvj1 = i;
-                                if (F(fj, i) == e2_3d.vid(m_3d)) lvj2 = i;
-                            }
-                            assert(F(fi, lvi1) == F(fj, lvj1));
-                            // this is a mirror vertex at a seam edge
-                            if (current_v != FT(fj, lvj1)) {
-                                int current_v_color = uv_index_to_color[current_v];
-                                // the mirror vertex has not been colored yet
-                                if (uv_index_to_color.find(FT(fj, lvj1)) ==
-                                    uv_index_to_color.end()) {
-                                    // add the color or the primary vertex to the mirror vertex
-                                    uv_index_to_color.insert({FT(fj, lvj1), current_v_color});
+                            for (const auto e2_3d : {e_3d, e_3d.switch_face(m_3d).value()}) {
+                                auto fj = e2_3d.fid(m_3d);
+                                size_t lvj1;
+                                for (auto i = 0; i < 3; i++) {
+                                    if (F(fj, i) == edge1_3d.vid(m_3d)) lvj1 = i;
                                 }
-                                // if the mirror vertex is not in the color busket, add it
-                                if (std::find(
-                                        color_to_uv_indices[current_v_color].begin(),
-                                        color_to_uv_indices[current_v_color].end(),
-                                        FT(fj, lvj1)) == color_to_uv_indices[current_v_color].end())
-                                    color_to_uv_indices[current_v_color].emplace_back(FT(fj, lvj1));
-                                assert(uv_index_to_color[FT(fj, lvj1)] == current_v_color);
+                                assert(F(fi, lvi1) == F(fj, lvj1));
+                                // this is a mirror vertex at a seam edge
+                                if (current_v != FT(fj, lvj1)) {
+                                    int current_v_color = uv_index_to_color.at(current_v);
+                                    assert(current_v_color == current_color);
+                                    // the mirror vertex has not been colored yet
+                                    if (uv_index_to_color.find(FT(fj, lvj1)) ==
+                                        uv_index_to_color.end()) {
+                                        // add the color or the primary vertex to the mirror vertex
+                                        uv_index_to_color.insert({FT(fj, lvj1), current_v_color});
+                                    }
+                                    // if the mirror vertex is not in the color busket, add it
+                                    if (std::find(
+                                            color_to_uv_indices[current_v_color].begin(),
+                                            color_to_uv_indices[current_v_color].end(),
+                                            FT(fj, lvj1)) ==
+                                        color_to_uv_indices[current_v_color].end()) {
+                                        color_to_uv_indices[current_v_color].emplace_back(
+                                            FT(fj, lvj1));
+                                    }
+                                    assert(uv_index_to_color[FT(fj, lvj1)] == current_v_color);
+                                }
                             }
                         }
                     }
