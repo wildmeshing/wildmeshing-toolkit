@@ -1,14 +1,5 @@
 #include <wmtk/operations/TriMeshEdgeCollapseOperation.h>
 namespace wmtk {
-/*
-namespace {
-
-void print_tup(const TriMesh& m, const Tuple& t, std::string_view prefix)
-{
-spdlog::warn("{}: {} {} {}", prefix, t.info(), t.vid(m), t.switch_vertex(m).vid(m));
-}
-} // namespace
-*/
 
 auto TriMeshEdgeCollapseOperation::execute(TriMesh& m, const Tuple& loc0) -> ExecuteReturnData
 {
@@ -34,7 +25,6 @@ auto TriMeshEdgeCollapseOperation::execute(TriMesh& m, const Tuple& loc0) -> Exe
             // print_tup(m, new_tup_opt.value(), "TECO::execute: Using default new_tup_opt ");
         }
         new_fid = new_tup_opt.value().fid(m);
-        spdlog::info("TECO::execute: Created new fid {}", new_fid);
     }
 
     // get the vids
@@ -46,7 +36,6 @@ auto TriMeshEdgeCollapseOperation::execute(TriMesh& m, const Tuple& loc0) -> Exe
     const auto& n1_fids = vertex_connectivity[vid1].m_conn_tris;
 
     const auto& n2_fids = vertex_connectivity[vid2].m_conn_tris;
-    spdlog::info("neighboring triangles: {} {}", n1_fids, n2_fids);
 
     // get the fids that will be modified
     auto n12_intersect_fids = fids_containing_edge(m, loc0);
@@ -60,7 +49,6 @@ auto TriMeshEdgeCollapseOperation::execute(TriMesh& m, const Tuple& loc0) -> Exe
         vector_contains(n12_intersect_fids, test_fid2));
     // now mark the vertices as removed so the assertion for tuple validity in switch operations
     // won't fail
-    spdlog::info("Removing vertices {} {} and removing faces {}", vid1, vid2, n12_intersect_fids);
     vertex_connectivity[vid1].m_is_removed = true;
     vertex_connectivity[vid2].m_is_removed = true;
     for (size_t fid : n12_intersect_fids) {
@@ -77,7 +65,6 @@ auto TriMeshEdgeCollapseOperation::execute(TriMesh& m, const Tuple& loc0) -> Exe
 
     // record the fids that will be modified/erased for roll back on failure
     vector_unique(n12_union_fids);
-    spdlog::info("Updating hashes for fids {}", n12_union_fids);
 
     for (const size_t fid : n12_union_fids) {
         tri_connectivity[fid].hash++;
@@ -89,9 +76,6 @@ auto TriMeshEdgeCollapseOperation::execute(TriMesh& m, const Tuple& loc0) -> Exe
     auto update_fid_vids = [&](const std::vector<size_t> fids, const size_t old_vid) {
         for (size_t fid : fids) {
             auto& tri_con = tri_connectivity[fid];
-#if defined(_DEBUG)
-            const auto tri_con_saved = tri_con;
-#endif
             if (tri_con.m_is_removed) {
                 continue;
             }
@@ -100,15 +84,6 @@ auto TriMeshEdgeCollapseOperation::execute(TriMesh& m, const Tuple& loc0) -> Exe
                     id = new_vid;
                 }
             }
-#if defined(_DEBUG)
-            if (tri_con_saved != tri_con) {
-                spdlog::info(
-                    "Triangle {} vertices moved from {} to {}",
-                    fid,
-                    tri_con_saved,
-                    tri_con);
-            }
-#endif
         }
     };
 
@@ -150,23 +125,10 @@ auto TriMeshEdgeCollapseOperation::execute(TriMesh& m, const Tuple& loc0) -> Exe
     assert(!new_vertex_conn.m_conn_tris.empty());
 
     const size_t gfid = new_vertex_conn.m_conn_tris[0];
-    spdlog::info("gfid: {} was in {}", gfid, new_vertex_conn.m_conn_tris);
     int j = tri_connectivity[gfid].find(new_vid);
     auto new_t = Tuple(new_vid, (j + 2) % 3, gfid, m);
-    spdlog::info(
-        "j was {}, new_t is {} with {} {}",
-        j,
-        new_t.info(),
-        new_t.vid(m),
-        new_t.switch_vertex(m).vid(m));
     int j_ret = tri_connectivity[new_fid].find(new_vid);
     return_t = Tuple(new_vid, (j_ret + 2) % 3, new_fid, m);
-    spdlog::info(
-        "j_ret was {}, return_t is {} with {} {}",
-        j_ret,
-        return_t.info(),
-        return_t.vid(m),
-        return_t.switch_vertex(m).vid(m));
     assert(new_t.is_valid(m));
 
     assign(return_t);
@@ -182,7 +144,6 @@ auto TriMeshEdgeCollapseOperation::modified_tuples(const TriMesh& m) const -> st
 
     assert(new_tup_opt.has_value());
     const Tuple& new_tup = new_tup_opt.value();
-    // spdlog::error(new_tup.info());
     return m.get_one_ring_tris_for_vertex(new_tup);
 }
 
