@@ -35,6 +35,7 @@ auto TriMeshEdgeCollapseOperation::links_of_vertex(const TriMesh& mesh, const Tu
     }
     vector_unique(lk_vid);
     vector_unique(lk_e_vid);
+    vector_unique(ret.infinite_edge);
     return ret;
 }
 std::tuple<std::vector<size_t>, bool> TriMeshEdgeCollapseOperation::edge_link_of_edge_vids(
@@ -69,7 +70,12 @@ bool TriMeshEdgeCollapseOperation::check_link_condition(const TriMesh& mesh, con
     const bool lk_vid12_infinite = v1.infinite_vertex && v2.infinite_vertex;
 
     const auto [edge_link, edge_link_has_infinite] = edge_link_of_edge_vids(mesh, edge);
-    bool v_link = lk_vid12 == edge_link && lk_vid12_infinite == edge_link_has_infinite;
+
+    // over finite vertices v_link
+    const bool v_link_fin =  lk_vid12 == edge_link;
+    // over infinite vertices v_link
+    const bool v_link_inf = lk_vid12_infinite == edge_link_has_infinite;
+    const bool v_link = v_link_fin && v_link_inf;
 
     // check edge link condition
     // in 2d edge link for an edge is always empty
@@ -83,6 +89,8 @@ bool TriMeshEdgeCollapseOperation::check_link_condition(const TriMesh& mesh, con
         lk_e_vid2.begin(),
         lk_e_vid2.end(),
         std::back_inserter(res));
+
+    
     const auto& lk_e_vid1_inf = v1.infinite_edge;
     const auto& lk_e_vid2_inf = v2.infinite_edge;
     std::vector<size_t> res_inf;

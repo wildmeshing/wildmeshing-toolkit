@@ -15,13 +15,6 @@ namespace wmtk {
 template <class T>
 inline std::vector<T> set_intersection(const std::vector<T>& v1, const std::vector<T>& v2)
 {
-    const bool v1empty = v1.empty();
-    const bool v2empty = v2.empty();
-    if(v2empty) {
-        return v1;
-    } else if(v1empty) {
-        return v2;
-    }
     if(v1.size()>1) {
         assert(std::is_sorted(v1.begin(), v1.end()));
     }

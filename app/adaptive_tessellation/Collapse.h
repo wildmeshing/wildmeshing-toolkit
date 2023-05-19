@@ -76,6 +76,7 @@ public:
         double length3d = 0;
         size_t partition_id;
 
+#include <wmtk/utils/DisableWarnings.hpp>
         // Given an input triangle with tuple X
         //               v_top
         //   ------------o-------------
@@ -111,6 +112,7 @@ public:
         //   | /    |    \ |
         //   |/     |     \|
         //   ---------------
+#include <wmtk/utils/EnableWarnings.hpp>
 
         // pairs of vids for edges where a vertex changes in the collapse
         std::unordered_map<size_t, SeamData> new_vertex_seam_data;
@@ -217,12 +219,12 @@ public:
         const AdaptiveTessellation& m,
         const std::vector<Tuple>& tuples) const;
 
+    std::optional<Tuple> get_mirror_edge_tuple_opt() const;
+
 private:
     // stores the input edge's mirror for future use (if applicable)
-    void set_input_edge_mirror(const AdaptiveTessellation& m, const Tuple& t);
+    void set_input_mirror(const AdaptiveTessellation& m, const Tuple& t);
     bool input_edge_is_mirror() const;
-
-    std::optional<Tuple> get_mirror_edge_tuple_opt() const;
 
 
     // stores information about curves and mirrors to be rebuilt later
