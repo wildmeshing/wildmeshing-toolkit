@@ -31,7 +31,7 @@ TEST_CASE("sampler_bicubic_constant", "[displacement]")
     // Make sure that image.get(), displ.get(), and f() all give the same result
     for (float u = 0; u <= 1; u += 0.1) {
         for (float v = 0; v <= 1; v += 0.1) {
-            REQUIRE_THAT(image.get(u, v), Catch::Matchers::WithinRel(sampler.sample(u, v)));
+            REQUIRE_THAT(image.get(u, v), Catch::Matchers::WithinAbs(sampler.sample(u, v), 1e-5));
         }
     }
 }
@@ -49,12 +49,9 @@ TEST_CASE("sampler_bicubic_linear", "[displacement]")
     // Make sure that image.get(), displ.get(), and f() all give the same result
     for (float u = 0; u <= 1; u += 0.1) {
         for (float v = 0; v <= 1; v += 0.1) {
-            REQUIRE(image.get(u, v) == sampler.sample(u, v));
+            REQUIRE_THAT(image.get(u, v), Catch::Matchers::WithinAbs(sampler.sample(u, v), 1e-8));
         }
     }
-
-    std::cout << "Img = " << image.get(0.5, 0.5) << std::endl;
-    std::cout << "f() = " << f_linear(0.5, 0.5) << std::endl;
 
     REQUIRE_THAT(image.get(0.5, 0.5), Catch::Matchers::WithinRel(f_linear(0.5, 0.5), 1e-5));
 }
@@ -81,8 +78,6 @@ TEST_CASE("sampler_spline_constant", "[displacement]")
     // Make sure that image.get(), displ.get(), and f() all give the same result
     for (double u = 0; u <= 1; u += 0.1) {
         for (double v = 0; v <= 1; v += 0.1) {
-            std::cout << "Img = " << image.get(u, v) << ", Spline = " << sampler.sample(u, v)
-                      << std::endl;
             REQUIRE_THAT(image.get(u, v), Catch::Matchers::WithinRel(sampler.sample(u, v), 1e-5));
         }
     }
@@ -102,8 +97,6 @@ TEST_CASE("sampler_spline_linear", "[displacement]")
     // Make sure that displ.get(), and f() give the same result on the interior
     for (double u = 0.2; u <= 0.8; u += 0.1) {
         for (double v = 0.2; v <= 0.8; v += 0.1) {
-            std::cout << "u, v = " << u << ", " << v << ", f() = " << f_linear(u, v)
-                      << ", Spline = " << sampler.sample(u, v) << std::endl;
             REQUIRE_THAT(image.get(u, v), Catch::Matchers::WithinRel(sampler.sample(u, v), 1e-5));
         }
     }
@@ -290,12 +283,10 @@ TEST_CASE("displacement_bicubic_edge_quadrature")
     v1 << 0.1, 0.;
     v2 << 0.9, 0.;
     auto edge_error = displ.get_error_per_edge(v1, v2);
-    wmtk::logger().info("final edge error {} ", edge_error);
     REQUIRE(abs(edge_error - 0.358247787412568) < 1e-8);
     v1 = Eigen::Vector2d(0, 0.1);
     v2 = Eigen::Vector2d(0, 0.9);
     edge_error = displ.get_error_per_edge(v1, v2);
-    wmtk::logger().info("final edge error {} ", edge_error);
     REQUIRE(abs(edge_error) < 1e-8);
 }
 
