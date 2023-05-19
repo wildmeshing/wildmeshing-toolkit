@@ -29,7 +29,10 @@ add_library(wmtk_adaptive_tessellation
     AdaptiveTessellation_serialization.cpp
 	AdaptiveTessellation.h
 	Parameters.h
+	Parameters.cpp
 	GlobalIntersection.h
+	LoggerDataCollector.h
+	LoggerDataCollector.cpp
 )
 add_library(wmtk::adaptive_tessellation ALIAS wmtk_adaptive_tessellation)
 

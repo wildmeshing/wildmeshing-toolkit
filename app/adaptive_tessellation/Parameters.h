@@ -1,12 +1,17 @@
 #pragma once
+#include <wmtk/TriMesh.h>
+#include <wmtk/utils/BoundaryParametrization.h>
 #include <wmtk/utils/Displacement.h>
+#include <wmtk/utils/Energy2d.h>
 #include <wmtk/utils/Image.h>
 #include <wmtk/utils/MipMap.h>
 #include <wmtk/utils/autodiff.h>
 #include <wmtk/utils/bicubic_interpolation.h>
+#include <wmtk/utils/json_sink.h>
 #include <Eigen/Dense>
 #include <nlohmann/json.hpp>
 #include <sec/envelope/SampleEnvelope.hpp>
+
 using namespace wmtk;
 namespace adaptive_tessellation {
 enum class ENERGY_TYPE { AMIPS, SYMDI, EDGE_LENGTH, EDGE_QUADRATURE, AREA_QUADRATURE, QUADRICS };
@@ -106,17 +111,9 @@ public:
         const nlohmann::json& js,
         bool flush = false) // flush should force file output immediately, but will be slow for
                             // per-operation things
-    {
-        std::cout << js.dump() << std::endl;
-        ATlogger->error(js.dump());
-
-
-        if (flush) {
-            ATlogger->flush();
-        }
-    }
+    const;
 
     // log that always writes to file immediately beause it's flushing
-    void log_flush(const nlohmann::json& js) { log(js, true); }
+    void log_flush(const nlohmann::json& js) const { log(js, true); }
 };
 } // namespace adaptive_tessellation

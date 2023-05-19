@@ -180,28 +180,15 @@ inline Classification pixel_inside_triangle(
     const Eigen::Matrix<double, 3, 2, Eigen::RowMajor>& triangle,
     const Eigen::AlignedBox2d& pixel)
 {
-    bool all_inside = true;
-    bool all_outside = true;
     for (int k = 0; k < 4; ++k) {
         bool inside = point_in_triangle(
             triangle,
             pixel.corner(static_cast<Eigen::AlignedBox2d::CornerType>(k)));
         if (!inside) {
-            all_inside = false;
-        } else {
-            all_outside = false;
-        }
-        if (!all_inside && !all_outside) {
-            break;
+            return Classification::Unknown;
         }
     }
-    if (all_inside) {
-        return Classification::Inside;
-    }
-    if (all_outside) {
-        return Classification::Outside;
-    }
-    return Classification::Unknown;
+    return Classification::Inside;
 }
 
 } // namespace wmtk::internal

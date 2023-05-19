@@ -62,17 +62,6 @@ Stencil adjusted_stencil(const Stencil& p)
     return q;
 }
 
-double avg_distance_from_patch(const Stencil& patch)
-{
-    double dist = 0;
-    for (int i = 1; i < 8; ++i) {
-        const Eigen::Vector3d p0 = patch.col(0).cast<double>();
-        const Eigen::Vector3d p1 = patch.col(i).cast<double>();
-        dist += (p1 - p0).stableNorm();
-    }
-    return dist / 8;
-}
-
 // Return unnormalized vector to weight the resulting quadric by the area of the patch
 Eigen::Vector3d normal_from_patch(const Stencil& patch)
 {
@@ -97,19 +86,35 @@ Eigen::Vector3d stdev_from_patch(const Stencil& patch)
     return std;
 }
 
+Quadric<double> compute_pixel_point_quadric(const Stencil& patch)
+{
+    const Eigen::Vector3d p0 = patch.col(0).cast<double>();
+    return Quadric<double>::point_quadric(p0);
+}
+
 Quadric<double> compute_pixel_plane_quadric(const Stencil& patch, double sigma_q, double sigma_n)
 {
-    const auto mean_p = patch.col(0).cast<double>();
+    const auto mean_q = patch.col(0).cast<double>();
     const auto mean_n = normal_from_patch(patch);
-    sigma_q *= stdev_from_patch(patch).norm();
-    sigma_n /= mean_n.norm();
-    return Quadric<double>::probabilistic_plane_quadric(mean_p, mean_n, sigma_q, sigma_n);
+    const double stdev_q = stdev_from_patch(patch).norm();
+
+    // We want more uncertainty when the area is small, so we divide by the 3d area
+    sigma_n /= std::max(1e-6, mean_n.norm());
+
+    // We want more uncertainty when the patch is small, so we divide by the 3d pos standard
+    // deviation
+    sigma_q /= std::max(1e-6, stdev_q);
+
+    return Quadric<double>::probabilistic_plane_quadric(mean_q, mean_n, sigma_q, sigma_n);
 }
 
 Quadric<double> compute_pixel_triangle_quadric(const Stencil& patch, double sigma_q)
 {
     Quadric<double> q;
-    sigma_q *= stdev_from_patch(patch).norm();
+    const double stdev_q = stdev_from_patch(patch).norm();
+    // We want more uncertainty when the patch is small, so we divide by the standard deviation
+    sigma_q /= std::max(1e-6, stdev_q);
+
     for (int i = 1; i <= 8; ++i) {
         const Eigen::Vector3d p0 = patch.col(0).cast<double>();
         const Eigen::Vector3d p1 = patch.col(i).cast<double>();
@@ -117,12 +122,6 @@ Quadric<double> compute_pixel_triangle_quadric(const Stencil& patch, double sigm
         q += Quadric<double>::probabilistic_triangle_quadric(p0, p1, p2, sigma_q);
     }
     return q;
-}
-
-Quadric<double> compute_pixel_point_quadric(const Stencil& patch)
-{
-    const Eigen::Vector3d p0 = patch.col(0).cast<double>();
-    return Quadric<double>::point_quadric(p0);
 }
 
 void set_coefficients_from_quadric(
