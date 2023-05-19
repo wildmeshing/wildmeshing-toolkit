@@ -4,22 +4,18 @@
 #include <igl/Timer.h>
 #include <igl/doublearea.h>
 #include <igl/predicates/predicates.h>
-#include <igl/read_triangle_mesh.h>
-#include <igl/writeDMAT.h>
-#include <igl/write_triangle_mesh.h>
 #include <lagrange/SurfaceMesh.h>
 #include <lagrange/attribute_names.h>
 #include <lagrange/bvh/EdgeAABBTree.h>
 #include <lagrange/foreach_attribute.h>
-#include <lagrange/io/load_mesh.h>
 #include <lagrange/triangulate_polygonal_facets.h>
 #include <lagrange/utils/fpe.h>
 #include <lagrange/utils/timing.h>
 #include <lagrange/views.h>
 #include <tbb/concurrent_vector.h>
 #include <wmtk/TriMesh.h>
-#include <wmtk/image/TextureIntegral.h>
 #include <wmtk/image/QuadricIntegral.h>
+#include <wmtk/image/TextureIntegral.h>
 #include <wmtk/utils/AMIPS2D.h>
 #include <wmtk/utils/AMIPS2D_autodiff.h>
 #include <wmtk/utils/BoundaryParametrization.h>
@@ -56,6 +52,7 @@ public:
 
     // Vertices marked as fixed cannot be modified by any local operation
     bool fixed = false;
+    // a cache variable
     bool boundary_vertex = false;
 };
 
@@ -334,15 +331,14 @@ public:
     std::vector<TriMesh::Tuple> new_edges_after(const std::vector<TriMesh::Tuple>& tris) const;
 
     // Smoothing
-    void prepare_quadrics(wmtk::QuadricEnergy &energy);
+    void prepare_quadrics(wmtk::QuadricEnergy& energy);
     void smooth_all_vertices();
     bool smooth_before(const Tuple& t);
     bool smooth_after(const Tuple& t);
 
     // Collapse
     void collapse_all_edges();
-    bool collapse_edge_before(const Tuple& t);
-    bool collapse_edge_after(const Tuple& t);
+
     // Split
     void split_all_edges();
     bool split_edge_before(const Tuple& t);
@@ -389,12 +385,25 @@ public:
     TriMesh::Tuple get_mirror_vertex(const TriMesh::Tuple& t) const;
     // return a vector of mirror vertices. store v itself at index 0 of the returned vector
     // !!! assume no operation has made fixed vertices outdated
-    std::vector<TriMesh::Tuple> get_all_mirror_vertices(const TriMesh::Tuple& v);
-    std::vector<size_t> get_all_mirror_vids(const TriMesh::Tuple& v);
+    std::vector<TriMesh::Tuple> get_all_mirror_vertices(const TriMesh::Tuple& v) const;
+    std::vector<size_t> get_all_mirror_vids(const TriMesh::Tuple& v) const;
     // set primary_t's mirror edge data to a ccw ordered mirror_edge
     void set_mirror_edge_data(const TriMesh::Tuple& primary_t, const TriMesh::Tuple& mirror_edge);
     bool is_seam_edge(const TriMesh::Tuple& t) const;
     bool is_seam_vertex(const TriMesh::Tuple& t) const;
+
+    // reports true if it is a boundary edge ignoring seams
+    bool is_stitched_boundary_edge(const TriMesh::Tuple& t) const;
+    // reports true if it is a boundary vertex ignoring seams
+    bool is_stitched_boundary_vertex(const TriMesh::Tuple& t) const;
+
+
+    VertexAttributes& get_vertex_attrs(const Tuple& t);
+    const VertexAttributes& get_vertex_attrs(const Tuple& t) const;
+    FaceAttributes& get_face_attrs(const Tuple& t);
+    const FaceAttributes& get_face_attrs(const Tuple& t) const;
+    EdgeAttributes& get_edge_attrs(const Tuple& t);
+    const EdgeAttributes& get_edge_attrs(const Tuple& t) const;
 
 
     ////// debug/unit test helper functions

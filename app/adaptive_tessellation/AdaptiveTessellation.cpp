@@ -123,6 +123,7 @@ void AdaptiveTessellation::mesh_preprocessing(
     set_faces_accuracy_error(tris_tuples, computed_errors);
 }
 
+
 // return E0, E1 of corresponding seam edges in uv mesh
 // set up the seam vertex coloring
 std::pair<Eigen::MatrixXi, Eigen::MatrixXi> AdaptiveTessellation::seam_edges_set_up(
@@ -660,6 +661,7 @@ bool AdaptiveTessellation::invariants(const std::vector<Tuple>& new_tris)
     if (mesh_parameters.m_has_envelope) {
         for (auto& t : new_tris) {
             std::array<Eigen::Vector3d, 3> tris;
+            spdlog::warn("{}", t.info());
             auto vs = oriented_tri_vertices(t);
             for (auto j = 0; j < 3; j++) {
                 tris[j] << vertex_attrs[vs[j].vid(*this)].pos(0),
@@ -1189,13 +1191,25 @@ void AdaptiveTessellation::flatten_dofs(Eigen::VectorXd& v_flat)
 
 bool AdaptiveTessellation::is_seam_edge(const TriMesh::Tuple& t) const
 {
-    return face_attrs[t.fid(*this)].mirror_edges[t.local_eid(*this)].has_value();
+    return get_mirror_edge_opt(t).has_value();
 }
 bool AdaptiveTessellation::is_seam_vertex(const TriMesh::Tuple& t) const
 {
     // it is seam vertex if it's incident to a seam edge
     for (auto& e : get_one_ring_edges_for_vertex(t)) {
         if (is_seam_edge(e)) return true;
+    }
+    return false;
+}
+bool AdaptiveTessellation::is_stitched_boundary_edge(const TriMesh::Tuple& t) const
+{
+    return is_boundary_edge(t) && !is_seam_edge(t);
+}
+bool AdaptiveTessellation::is_stitched_boundary_vertex(const TriMesh::Tuple& t) const
+{
+    // it is seam vertex if it's incident to a seam edge
+    for (auto& e : get_one_ring_edges_for_vertex(t)) {
+        if (is_stitched_boundary_edge(e)) return true;
     }
     return false;
 }
@@ -1212,14 +1226,13 @@ std::optional<TriMesh::Tuple> AdaptiveTessellation::get_sibling_edge_opt(
 {
     if (is_boundary_edge(t)) {
         if (is_seam_edge(t)) {
-            return std::make_optional<TriMesh::Tuple>(get_oriented_mirror_edge(t));
+            return get_oriented_mirror_edge(t);
         } else {
             return std::nullopt;
         }
     } else {
         assert(t.switch_face(*this).has_value());
-        return std::make_optional<TriMesh::Tuple>(
-            t.switch_face(*this).value().switch_vertex(*this));
+        return t.switch_face(*this).value().switch_vertex(*this);
         // return the sibling edge that's of opposite diretion
     }
 }
@@ -1254,7 +1267,9 @@ TriMesh::Tuple AdaptiveTessellation::get_mirror_vertex(const TriMesh::Tuple& t) 
 
 // return a vector of mirror vertices. store v itself at index 0 of the returned vector
 // assume no operation has made fixed vertices outdated
-std::vector<TriMesh::Tuple> AdaptiveTessellation::get_all_mirror_vertices(const TriMesh::Tuple& v)
+// TODO maybe delete?
+std::vector<TriMesh::Tuple> AdaptiveTessellation::get_all_mirror_vertices(
+    const TriMesh::Tuple& v) const
 {
     assert(is_seam_vertex(v));
     std::vector<TriMesh::Tuple> ret_vertices;
@@ -1262,7 +1277,7 @@ std::vector<TriMesh::Tuple> AdaptiveTessellation::get_all_mirror_vertices(const 
     ret_vertices.emplace_back(v);
     if (vertex_attrs[v.vid(*this)].fixed) {
         // use the same color vids to initiate Tuples
-        auto same_color_uv_indices = color_to_uv_indices[uv_index_to_color[v.vid(*this)]];
+        auto same_color_uv_indices = color_to_uv_indices.at(uv_index_to_color.at(v.vid(*this)));
         for (auto mirror_vid : same_color_uv_indices)
             ret_vertices.emplace_back(tuple_from_vertex(mirror_vid));
     } else
@@ -1271,7 +1286,7 @@ std::vector<TriMesh::Tuple> AdaptiveTessellation::get_all_mirror_vertices(const 
 }
 
 // get all mirror_vids using navigation
-std::vector<size_t> AdaptiveTessellation::get_all_mirror_vids(const TriMesh::Tuple& v)
+std::vector<size_t> AdaptiveTessellation::get_all_mirror_vids(const TriMesh::Tuple& v) const
 {
     std::vector<size_t> ret_vertices_vid;
     std::queue<TriMesh::Tuple> queue;
