@@ -65,16 +65,16 @@ class FaceAttributes
 {
 public:
     std::array<std::optional<wmtk::TriMesh::Tuple>, 3> mirror_edges;
-    struct Error
+    struct AccuracyMeasure
     {
         // storing the distance quadrature error for each face
-        double cached_error; // cacheing the accuracy error for each face
-                             // doesn't support autodiff
+        double cached_distance_integral; // cacheing the accuracy error for each face
+                                         // doesn't support autodiff
 
         // storing the Quadric for each face
         wmtk::Quadric<double> quadric;
     };
-    Error face_error;
+    AccuracyMeasure accuracy_measure;
 };
 
 class EdgeAttributes
@@ -226,9 +226,13 @@ public:
         const Eigen::MatrixXd& VT,
         const Eigen::MatrixXi& FT);
 
-    void set_faces_accuracy_error(
+    void set_faces_cached_distance_integral(
         const std::vector<TriMesh::Tuple>& tris,
         const std::vector<float>& computed_errors);
+
+    void set_faces_quadrics(
+        const std::vector<TriMesh::Tuple>& tris,
+        const std::vector<wmtk::Quadric<double>>& compressed_quadrics);
 
     void prepare_distance_quadrature_cached_energy();
     void prepare_quadrics();
@@ -360,6 +364,8 @@ public:
     bool split_edge_after(const Tuple& t);
     // Swap
     void swap_all_edges();
+    void swap_all_edges_accuracy_pass();
+    void swap_all_edges_quality_pass();
     bool swap_edge_before(const Tuple& t);
     bool swap_edge_after(const Tuple& t);
 
@@ -383,11 +389,11 @@ public:
     double get_area_accuracy_error_per_face_triangle_matrix(
         Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle) const;
     // return in order {total_error, face1_error, face2_error}
-    std::tuple<double, double, double> get_cached_area_accuracy_error_for_split(
-        const Tuple& edge_tuple) const;
+    double get_cached_area_accuracy_error_for_split(const Tuple& edge_tuple) const;
     std::tuple<double, double, double> get_projected_relative_error_for_split(
         const Tuple& edge_tuple) const;
     double get_quadrics_area_accuracy_error_for_split(const Tuple& face_tuple) const;
+    double get_one_ring_quadrics_error_for_vertex(const Tuple& v) const;
 
     void get_nminfo_for_vertex(const Tuple& v, wmtk::NewtonMethodInfo& nminfo) const;
 
