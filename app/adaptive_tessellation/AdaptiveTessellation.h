@@ -476,5 +476,6 @@ public:
     std::vector<Tuple> get_one_ring_tris_accross_seams_for_vertex(const Tuple& vertex) const;
 
     double avg_edge_len() const;
+    void  update_energy_cache(const std::vector<Tuple>& tris);
 };
 } // namespace adaptive_tessellation
