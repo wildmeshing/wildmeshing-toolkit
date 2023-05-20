@@ -103,14 +103,14 @@ public:
         const Eigen::Matrix<T, 2, 1>& uv1,
         const Eigen::Matrix<T, 2, 1>& uv2) const
     {
+        throw std::runtime_error("get_error_per_edge should not be called");
         auto p1_displaced = get(uv1(0), uv1(1));
         auto p2_displaced = get(uv2(0), uv2(1));
         // get the pixel index of p1 and p2
         auto get_coordinate = [&](const T& x, const T& y) -> std::pair<int, int> {
             auto [xx, yy] = m_image.get_pixel_index(get_value(x), get_value(y));
-            return {
-                m_image.get_coordinate(xx, m_image.get_wrapping_mode_x()),
-                m_image.get_coordinate(yy, m_image.get_wrapping_mode_y())};
+            return {m_image.get_coordinate(xx, m_image.get_wrapping_mode_x()),
+                    m_image.get_coordinate(yy, m_image.get_wrapping_mode_y())};
         };
         auto [xx1, yy1] = get_coordinate(uv1(0), uv1(1));
         auto [xx2, yy2] = get_coordinate(uv2(0), uv2(1));
@@ -201,9 +201,8 @@ public:
         };
         auto get_coordinate = [&](const double& x, const double& y) -> std::pair<int, int> {
             auto [xx, yy] = m_image.get_pixel_index(get_value(x), get_value(y));
-            return {
-                m_image.get_coordinate(xx, m_image.get_wrapping_mode_x()),
-                m_image.get_coordinate(yy, m_image.get_wrapping_mode_y())};
+            return {m_image.get_coordinate(xx, m_image.get_wrapping_mode_x()),
+                    m_image.get_coordinate(yy, m_image.get_wrapping_mode_y())};
         };
         auto bbox_min = bbox.min();
         auto bbox_max = bbox.max();

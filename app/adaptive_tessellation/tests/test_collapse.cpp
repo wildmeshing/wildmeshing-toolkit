@@ -22,7 +22,7 @@ TEST_CASE("paired collapse", "[myfail][.]")
     F.row(0) << 0, 2, 1;
     F.row(1) << 3, 4, 5;
     AdaptiveTessellation m;
-
+    m.mesh_parameters.m_ignore_embedding = true;
 #include <wmtk/utils/DisableWarnings.hpp>
     //////////// ======== seam edge split
     // acsii art diamond

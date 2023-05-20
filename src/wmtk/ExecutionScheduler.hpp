@@ -271,7 +271,6 @@ public:
             while ([&]() { return Q.try_pop(ele_in_queue); }()) {
                 auto& [weight, op, tup, retry] = ele_in_queue;
                 if (!tup.is_valid(m)) continue;
-
                 std::vector<Elem> renewed_elements;
                 {
                     auto locked_vid = lock_vertices(

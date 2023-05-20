@@ -718,13 +718,14 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::after(AdaptiveTessellation
 
     // check invariants here since get_area_accuracy_error_per_face requires valid triangle
     if (!m.invariants(one_ring)) return false;
-
-    if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
-        for (const Tuple& tri : one_ring) {
-            double one_ring_tri_error = m.get_area_accuracy_error_per_face(tri);
-            if (one_ring_tri_error > m.mesh_parameters.m_accuracy_safeguard_ratio *
-                                         m.mesh_parameters.m_accuracy_threshold)
-                return false;
+    if (!m.mesh_parameters.m_ignore_embedding) {
+        if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
+            for (const Tuple& tri : one_ring) {
+                double one_ring_tri_error = m.get_area_accuracy_error_per_face(tri);
+                if (one_ring_tri_error > m.mesh_parameters.m_accuracy_safeguard_ratio *
+                                             m.mesh_parameters.m_accuracy_threshold)
+                    return false;
+            }
         }
     }
 

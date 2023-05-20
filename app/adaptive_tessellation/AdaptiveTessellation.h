@@ -26,6 +26,7 @@
 #include <wmtk/utils/Image.h>
 #include <wmtk/utils/MipMap.h>
 #include <wmtk/utils/PolygonClipping.h>
+#include <wmtk/utils/Quadric.h>
 #include <wmtk/utils/json_sink.h>
 #include <wmtk/utils/load_image_exr.h>
 #include <Eigen/Core>
@@ -60,8 +61,16 @@ class FaceAttributes
 {
 public:
     std::array<std::optional<wmtk::TriMesh::Tuple>, 3> mirror_edges;
-    double accuracy_error; // cacheing the accuracy error for each face
-                           // doesn't support autodiff
+    struct AccuracyMeasure
+    {
+        // storing the distance quadrature error for each face
+        double cached_distance_integral; // cacheing the accuracy error for each face
+                                         // doesn't support autodiff
+
+        // storing the Quadric for each face
+        // wmtk::Quadric<double> quadric;
+    };
+    AccuracyMeasure accuracy_measure;
 };
 
 class EdgeAttributes
@@ -213,10 +222,16 @@ public:
         const Eigen::MatrixXd& VT,
         const Eigen::MatrixXi& FT);
 
-    void set_faces_accuracy_error(
+    void set_faces_cached_distance_integral(
         const std::vector<TriMesh::Tuple>& tris,
         const std::vector<float>& computed_errors);
 
+    void set_faces_quadrics(
+        const std::vector<TriMesh::Tuple>& tris,
+        const std::vector<wmtk::Quadric<double>>& compressed_quadrics);
+
+    void prepare_distance_quadrature_cached_energy();
+    void prepare_quadrics();
 
     // Exports V and F of the stored mesh
     void export_uv(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
@@ -318,6 +333,13 @@ public:
      */
     void write_obj_mapped_on_input(const std::filesystem::path& path);
 
+    /**
+     * @brief Write displaced UV positions in HDF format.
+     *
+     * @param path name of the OBJ file
+     */
+    void write_hdf_displaced_uv(const std::filesystem::path& path);
+
     // Computes the quality of a triangle
     double get_quality(const Tuple& loc, int idx = 0) const;
     std::pair<double, Eigen::Vector2d> get_one_ring_energy(const Tuple& loc);
@@ -345,6 +367,8 @@ public:
     bool split_edge_after(const Tuple& t);
     // Swap
     void swap_all_edges();
+    void swap_all_edges_accuracy_pass();
+    void swap_all_edges_quality_pass();
     bool swap_edge_before(const Tuple& t);
     bool swap_edge_after(const Tuple& t);
 
@@ -363,12 +387,17 @@ public:
     double get_mesh_energy(const Eigen::VectorXd& v_flat);
 
     double get_edge_accuracy_error(const Tuple& edge_tuple) const;
+
     double get_area_accuracy_error_per_face(const Tuple& edge_tuple) const;
     double get_area_accuracy_error_per_face_triangle_matrix(
         Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle) const;
     // return in order {total_error, face1_error, face2_error}
-    std::tuple<double, double, double> get_area_accuracy_error_for_split(
+    double get_cached_area_accuracy_error_for_split(const Tuple& edge_tuple) const;
+    std::tuple<double, double, double> get_projected_relative_error_for_split(
         const Tuple& edge_tuple) const;
+    double get_quadrics_area_accuracy_error_for_split(const Tuple& face_tuple) const;
+    double get_one_ring_quadrics_error_for_vertex(const Tuple& v) const;
+    double get_quadric_error_for_face(const Tuple& f) const;
 
     void get_nminfo_for_vertex(const Tuple& v, wmtk::NewtonMethodInfo& nminfo) const;
 
@@ -407,6 +436,7 @@ public:
 
 
     ////// debug/unit test helper functions
+    double get_two_faces_quadrics_error_for_edge(const Tuple& e0) const;
     void mesh_preprocessing(
         const std::filesystem::path& input_mesh_path,
         const std::filesystem::path& displaced_image_path);

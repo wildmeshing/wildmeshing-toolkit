@@ -305,6 +305,7 @@ TEST_CASE("paired split")
     AdaptiveTessellation m;
     m.create_mesh_debug(V, F);
     m.mesh_parameters.m_ignore_embedding = true;
+    m.mesh_parameters.m_do_not_output = true;
     wmtk::TriMesh::Tuple primary_edge1 = wmtk::TriMesh::Tuple(4, 0, 1, m);
     wmtk::TriMesh::Tuple primary_edge2 = wmtk::TriMesh::Tuple(2, 0, 0, m);
     primary_edge1 = primary_edge1.is_ccw(m) ? primary_edge1 : primary_edge1.switch_vertex(m);
@@ -676,7 +677,6 @@ TEST_CASE("test_link_check", "[test_pre_check]")
             pass_edge));
     }
 }
-
 
 TEST_CASE("paired swap")
 {
@@ -1099,7 +1099,6 @@ TEST_CASE("uv-index and coloring test")
     }
 }
 
-// TODO special case for link condition in seamed mesh. a tube with a seam edge in
 // the middle
 
 TEST_CASE("edge curve-id assignment")
@@ -1337,4 +1336,64 @@ TEST_CASE("mirror vertex t_to_uv")
             }
         }
     }
+}
+
+TEST_CASE("quadric split", "[.]")
+{
+    std::filesystem::path input_folder = WMTK_DATA_DIR;
+    std::filesystem::path input_mesh_path = input_folder / "bumpyDice.obj";
+    std::filesystem::path position_path = input_folder / "images/bumpyDice_128_position.exr";
+    std::filesystem::path normal_path =
+        input_folder / "images/bumpyDice_128_world_space_normals.exr";
+    std::filesystem::path height_path = input_folder / "images/bumpyDice_128_height.exr";
+
+
+    AdaptiveTessellation m;
+    m.mesh_preprocessing(input_mesh_path, position_path, normal_path, height_path);
+    Image image;
+    image.load(height_path, WrappingMode::MIRROR_REPEAT, WrappingMode::MIRROR_REPEAT);
+
+    m.mesh_parameters.m_output_folder = "test_quadrics_Split";
+    REQUIRE(m.check_mesh_connectivity_validity());
+    m.set_parameters(
+        0.00001,
+        0.4,
+        image,
+        WrappingMode::MIRROR_REPEAT,
+        SAMPLING_MODE::BICUBIC,
+        DISPLACEMENT_MODE::MESH_3D,
+        adaptive_tessellation::ENERGY_TYPE::QUADRICS,
+        adaptive_tessellation::EDGE_LEN_TYPE::TRI_QUADRICS,
+        1);
+    m.split_all_edges();
+    m.write_obj_displaced(m.mesh_parameters.m_output_folder + "/quadrics_split_result.obj");
+}
+
+TEST_CASE("old split", "[.]")
+{
+    std::filesystem::path input_folder = WMTK_DATA_DIR;
+    std::filesystem::path input_mesh_path = input_folder / "bumpyDice.obj";
+    std::filesystem::path position_path = input_folder / "images/bumpyDice_128_position.exr";
+    std::filesystem::path normal_path =
+        input_folder / "images/bumpyDice_128_world_space_normals.exr";
+    std::filesystem::path height_path = input_folder / "images/bumpyDice_128_height.exr";
+
+    AdaptiveTessellation m;
+    m.mesh_preprocessing(input_mesh_path, position_path, normal_path, height_path);
+    Image image;
+    image.load(height_path, WrappingMode::MIRROR_REPEAT, WrappingMode::MIRROR_REPEAT);
+    m.mesh_parameters.m_output_folder = "test_old_Split";
+    REQUIRE(m.check_mesh_connectivity_validity());
+    m.set_parameters(
+        0.0000001,
+        0.4,
+        image,
+        WrappingMode::MIRROR_REPEAT,
+        SAMPLING_MODE::BICUBIC,
+        DISPLACEMENT_MODE::MESH_3D,
+        adaptive_tessellation::ENERGY_TYPE::AREA_QUADRATURE,
+        adaptive_tessellation::EDGE_LEN_TYPE::AREA_ACCURACY,
+        1);
+    m.split_all_edges();
+    m.write_obj_displaced(m.mesh_parameters.m_output_folder + "/area_split_result.obj");
 }
