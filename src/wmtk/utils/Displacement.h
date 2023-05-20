@@ -103,14 +103,14 @@ public:
         const Eigen::Matrix<T, 2, 1>& uv1,
         const Eigen::Matrix<T, 2, 1>& uv2) const
     {
+        throw std::runtime_error("get_error_per_edge should not be called");
         auto p1_displaced = get(uv1(0), uv1(1));
         auto p2_displaced = get(uv2(0), uv2(1));
         // get the pixel index of p1 and p2
         auto get_coordinate = [&](const T& x, const T& y) -> std::pair<int, int> {
             auto [xx, yy] = m_image.get_pixel_index(get_value(x), get_value(y));
-            return {
-                m_image.get_coordinate(xx, m_image.get_wrapping_mode_x()),
-                m_image.get_coordinate(yy, m_image.get_wrapping_mode_y())};
+            return {m_image.get_coordinate(xx, m_image.get_wrapping_mode_x()),
+                    m_image.get_coordinate(yy, m_image.get_wrapping_mode_y())};
         };
         auto [xx1, yy1] = get_coordinate(uv1(0), uv1(1));
         auto [xx2, yy2] = get_coordinate(uv2(0), uv2(1));
@@ -122,7 +122,6 @@ public:
         auto norm_T = [&](const Eigen::Matrix<T, Eigen::Dynamic, 1>& row_v) -> T {
             T ret = T(0.);
             for (auto i = 0; i < row_v.rows(); i++) {
-                auto debug_rowv = row_v(i, 0);
                 ret += pow(row_v(i, 0), 2);
             }
             return sqrt(ret);
@@ -195,17 +194,15 @@ public:
         }
         auto squared_norm_T = [&](const Eigen::Matrix<T, 3, 1>& row_v) -> T {
             T ret = T(0.);
-            for (auto i = 0; i < row_v.rows(); i++) {
-                auto debug_rowv = row_v(i, 0);
+            for (int i = 0; i < row_v.rows(); i++) {
                 ret += pow(row_v(i, 0), 2);
             }
             return ret;
         };
         auto get_coordinate = [&](const double& x, const double& y) -> std::pair<int, int> {
             auto [xx, yy] = m_image.get_pixel_index(get_value(x), get_value(y));
-            return {
-                m_image.get_coordinate(xx, m_image.get_wrapping_mode_x()),
-                m_image.get_coordinate(yy, m_image.get_wrapping_mode_y())};
+            return {m_image.get_coordinate(xx, m_image.get_wrapping_mode_x()),
+                    m_image.get_coordinate(yy, m_image.get_wrapping_mode_y())};
         };
         auto bbox_min = bbox.min();
         auto bbox_max = bbox.max();
@@ -267,7 +264,7 @@ public:
                     box,
                     m_cache.local().quad,
                     &m_cache.local().tmp);
-                for (auto i = 0; i < m_cache.local().quad.size(); ++i) {
+                for (size_t i = 0; i < m_cache.local().quad.size(); ++i) {
                     auto tmpu = T(m_cache.local().quad.points()(i, 0));
                     auto tmpv = T(m_cache.local().quad.points()(i, 1));
                     if (!check_degenerate())
@@ -342,7 +339,7 @@ public:
         for (auto i = 0; i < 3; i++) {
             double p = m_position_sampler[i]->sample(u, v);
 
-            double d = m_normal_sampler[i]->sample(u, v) - 0.5;
+            double d = 2 * m_normal_sampler[i]->sample(u, v) - 1;
 
             displace_3d(i, 0) = p * m_normalization_scale - m_normalization_offset(i, 0) + z * d;
         }
@@ -356,7 +353,7 @@ public:
         for (auto i = 0; i < 3; i++) {
             DScalar p = m_position_sampler[i]->sample(u, v);
 
-            DScalar d = m_normal_sampler[i]->sample(u, v) - 0.5;
+            DScalar d = 2 * m_normal_sampler[i]->sample(u, v) - 1;
 
             displace_3d(i, 0) = p * m_normalization_scale - m_normalization_offset(i, 0) + z * d;
         }

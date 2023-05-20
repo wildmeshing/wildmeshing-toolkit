@@ -151,11 +151,9 @@ inline std::array<wmtk::Image, 3> load_rgb_image(const std::filesystem::path& pa
 
 std::array<wmtk::Image, 3> combine_position_normal_texture(
     double normalization_scale,
+    const Eigen::Matrix<double, 1, 3>& offset,
     const std::filesystem::path& position_path,
     const std::filesystem::path& normal_path,
     const std::filesystem::path& texture_path);
 
-std::array<wmtk::Image, 3> load_rgb_image(const std::filesystem::path& path);
-
-wmtk::Image buffer_to_image(const std::vector<float>& buffer, int w, int h);
 } // namespace wmtk

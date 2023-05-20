@@ -131,6 +131,7 @@ void Image::load(
     m_image.colwise().reverseInPlace();
     set_wrapping_mode(mode_x, mode_y);
 }
+
 // down sample a image to size/2 by size/2
 // used for mipmap construction
 Image Image::down_sample() const
@@ -153,6 +154,7 @@ Image Image::down_sample() const
 
 std::array<wmtk::Image, 3> wmtk::combine_position_normal_texture(
     double normalization_scale,
+    const Eigen::Matrix<double, 1, 3>& offset,
     const std::filesystem::path& position_path,
     const std::filesystem::path& normal_path,
     const std::filesystem::path& height_path)
@@ -173,12 +175,12 @@ std::array<wmtk::Image, 3> wmtk::combine_position_normal_texture(
     auto h = h_p;
     std::vector<float> buffer_r_d(buffer_size), buffer_g_d(buffer_size), buffer_b_d(buffer_size);
     for (int i = 0; i < buffer_size; i++) {
-        buffer_r_d[i] =
-            buffer_r_p[i] + normalization_scale * buffer_r_h[i] * (2.0 * buffer_r_n[i] - 1.0);
-        buffer_g_d[i] =
-            buffer_g_p[i] + normalization_scale * buffer_g_h[i] * (2.0 * buffer_g_n[i] - 1.0);
-        buffer_b_d[i] =
-            buffer_b_p[i] + normalization_scale * buffer_b_h[i] * (2.0 * buffer_b_n[i] - 1.0);
+        buffer_r_d[i] = buffer_r_p[i] * normalization_scale +
+                        buffer_r_h[i] * (2.0 * buffer_r_n[i] - 1.0) - offset[0];
+        buffer_g_d[i] = buffer_g_p[i] * normalization_scale +
+                        buffer_g_h[i] * (2.0 * buffer_g_n[i] - 1.0) - offset[1];
+        buffer_b_d[i] = buffer_b_p[i] * normalization_scale +
+                        buffer_b_h[i] * (2.0 * buffer_b_n[i] - 1.0) - offset[2];
     }
     // auto res = save_image_exr_3channels(
     //     w,

@@ -62,17 +62,6 @@ Stencil adjusted_stencil(const Stencil& p)
     return q;
 }
 
-double avg_distance_from_patch(const Stencil& patch)
-{
-    double dist = 0;
-    for (int i = 1; i < 8; ++i) {
-        const Eigen::Vector3d p0 = patch.col(0).cast<double>();
-        const Eigen::Vector3d p1 = patch.col(i).cast<double>();
-        dist += (p1 - p0).stableNorm();
-    }
-    return dist / 8;
-}
-
 // Return unnormalized vector to weight the resulting quadric by the area of the patch
 Eigen::Vector3d normal_from_patch(const Stencil& patch)
 {
@@ -97,19 +86,35 @@ Eigen::Vector3d stdev_from_patch(const Stencil& patch)
     return std;
 }
 
+Quadric<double> compute_pixel_point_quadric(const Stencil& patch)
+{
+    const Eigen::Vector3d p0 = patch.col(0).cast<double>();
+    return Quadric<double>::point_quadric(p0);
+}
+
 Quadric<double> compute_pixel_plane_quadric(const Stencil& patch, double sigma_q, double sigma_n)
 {
-    const auto mean_p = patch.col(0).cast<double>();
+    const auto mean_q = patch.col(0).cast<double>();
     const auto mean_n = normal_from_patch(patch);
-    sigma_q *= stdev_from_patch(patch).norm();
-    sigma_n /= mean_n.norm();
-    return Quadric<double>::probabilistic_plane_quadric(mean_p, mean_n, sigma_q, sigma_n);
+    const double stdev_q = stdev_from_patch(patch).norm();
+
+    // We want more uncertainty when the area is small, so we divide by the 3d area
+    sigma_n /= std::max(1e-6, mean_n.norm());
+
+    // We want more uncertainty when the patch is small, so we divide by the 3d pos standard
+    // deviation
+    sigma_q /= std::max(1e-6, stdev_q);
+
+    return Quadric<double>::probabilistic_plane_quadric(mean_q, mean_n, sigma_q, sigma_n);
 }
 
 Quadric<double> compute_pixel_triangle_quadric(const Stencil& patch, double sigma_q)
 {
     Quadric<double> q;
-    sigma_q *= stdev_from_patch(patch).norm();
+    const double stdev_q = stdev_from_patch(patch).norm();
+    // We want more uncertainty when the patch is small, so we divide by the standard deviation
+    sigma_q /= std::max(1e-6, stdev_q);
+
     for (int i = 1; i <= 8; ++i) {
         const Eigen::Vector3d p0 = patch.col(0).cast<double>();
         const Eigen::Vector3d p1 = patch.col(i).cast<double>();
@@ -117,12 +122,6 @@ Quadric<double> compute_pixel_triangle_quadric(const Stencil& patch, double sigm
         q += Quadric<double>::probabilistic_triangle_quadric(p0, p1, p2, sigma_q);
     }
     return q;
-}
-
-Quadric<double> compute_pixel_point_quadric(const Stencil& patch)
-{
-    const Eigen::Vector3d p0 = patch.col(0).cast<double>();
-    return Quadric<double>::point_quadric(p0);
 }
 
 void set_coefficients_from_quadric(
@@ -174,17 +173,14 @@ Quadric<double> quadric_from_coefficients(const Eigen::Vector<float, 10>& coeffs
 }
 
 // Optimized implementation that switches between nearest and bilinear interpolation
-template <typename DisplacementFunc>
+template <bool Exact, typename DisplacementFunc>
 Quadric<double> get_quadric_per_triangle_adaptive(
     const std::array<wmtk::Image, 10>& images,
     const Eigen::Matrix<double, 3, 2, Eigen::RowMajor>& triangle_uv,
     tbb::enumerable_thread_specific<QuadratureCache>& m_cache,
+    const int order,
     DisplacementFunc get)
 {
-    const int order = 1;
-    // constexpr int Degree = 2;
-    // const int order = 2 * (Degree - 1);
-
     Eigen::AlignedBox2d bbox_uv;
     for (const auto& p : triangle_uv.rowwise()) {
         bbox_uv.extend(p.transpose());
@@ -231,12 +227,15 @@ Quadric<double> get_quadric_per_triangle_adaptive(
             box.extend(pixel_coord.cast<double>().cwiseProduct(pixel_size));
             box.extend(
                 (pixel_coord + Eigen::Vector2i::Ones()).cast<double>().cwiseProduct(pixel_size));
-            auto sign = internal::point_in_triangle_quick(edges, box.center(), pixel_radius);
-            if (sign == internal::Classification::Unknown) {
-                sign = internal::pixel_inside_triangle(triangle_uv, box);
-            }
-            if (sign == internal::Classification::Outside) {
-                continue;
+            internal::Classification sign = internal::Classification::Unknown;
+            if constexpr (!Exact) {
+                auto sign = internal::point_in_triangle_quick(edges, box.center(), pixel_radius);
+                if (sign == internal::Classification::Unknown) {
+                    sign = internal::pixel_inside_triangle(triangle_uv, box);
+                }
+                if (sign == internal::Classification::Outside) {
+                    continue;
+                }
             }
             if (sign == internal::Classification::Inside) {
                 q += quadric_from_coefficients(images, x, y) * pixel_size(0) * pixel_size(1);
@@ -277,6 +276,10 @@ QuadricIntegral::QuadricIntegral(
     QuadricType quadric_type)
     : m_cache(lagrange::make_value_ptr<Cache>())
 {
+    // Default option for quadric integrator
+    m_sampling_method = SamplingMethod::Bilinear;
+    m_integration_method = IntegrationMethod::Adaptive;
+
     // Relative uncertainty on point positions
     const double sigma_q = 1e-4;
 
@@ -314,10 +317,12 @@ QuadricIntegral::QuadricIntegral(
     });
 }
 
-void QuadricIntegral::get_quadric_per_triangle(
+template <QuadricIntegral::SamplingMethod Sampling, QuadricIntegral::IntegrationMethod Integration>
+void QuadricIntegral::get_quadric_per_triangle_internal(
     int num_triangles,
     lagrange::function_ref<std::array<float, 6>(int)> get_triangle,
-    lagrange::span<wmtk::Quadric<double>> output_quadrics) const
+    lagrange::span<wmtk::Quadric<double>> output_quadrics,
+    int order) const
 {
     assert(num_triangles == output_quadrics.size());
     tbb::parallel_for(0, num_triangles, [&](int i) {
@@ -327,15 +332,90 @@ void QuadricIntegral::get_quadric_per_triangle(
         triangle.row(1) << input_triangle[2], input_triangle[3];
         triangle.row(2) << input_triangle[4], input_triangle[5];
         auto sampling_func = [&](double u, double v) -> Eigen::Matrix<float, 10, 1> {
-            return internal::sample_bilinear(m_quadrics, u, v);
+            if constexpr (Sampling == SamplingMethod::Bicubic) {
+                return internal::sample_bicubic(m_quadrics, u, v);
+            } else if constexpr (Sampling == SamplingMethod::Nearest) {
+                return internal::sample_nearest(m_quadrics, u, v);
+            } else if constexpr (Sampling == SamplingMethod::Bilinear) {
+                return internal::sample_bilinear(m_quadrics, u, v);
+            }
         };
 
-        output_quadrics[i] = get_quadric_per_triangle_adaptive(
-            m_quadrics,
-            triangle,
-            m_cache->quadrature_cache,
-            sampling_func);
+        if constexpr (Integration == IntegrationMethod::Exact) {
+            output_quadrics[i] = get_quadric_per_triangle_adaptive<true>(
+                m_quadrics,
+                triangle,
+                m_cache->quadrature_cache,
+                order,
+                sampling_func);
+        } else {
+            output_quadrics[i] = get_quadric_per_triangle_adaptive<false>(
+                m_quadrics,
+                triangle,
+                m_cache->quadrature_cache,
+                order,
+                sampling_func);
+        }
     });
+}
+
+void QuadricIntegral::get_quadric_per_triangle(
+    int num_triangles,
+    lagrange::function_ref<std::array<float, 6>(int)> get_triangle,
+    lagrange::span<wmtk::Quadric<double>> output_quadrics) const
+{
+    int order = 1;
+    if (m_quadrature_order == QuadratureOrder::Full) {
+        constexpr int Degree = 2;
+        order = 2 * (Degree - 1);
+    }
+
+    assert(num_triangles == output_quadrics.size());
+    switch (m_sampling_method) {
+    case SamplingMethod::Bicubic:
+        if (m_integration_method == IntegrationMethod::Exact) {
+            get_quadric_per_triangle_internal<SamplingMethod::Bicubic, IntegrationMethod::Exact>(
+                num_triangles,
+                get_triangle,
+                output_quadrics,
+                order);
+        } else {
+            get_quadric_per_triangle_internal<SamplingMethod::Bicubic, IntegrationMethod::Adaptive>(
+                num_triangles,
+                get_triangle,
+                output_quadrics,
+                order);
+        }
+        break;
+    case SamplingMethod::Nearest:
+        if (m_integration_method == IntegrationMethod::Exact) {
+            get_quadric_per_triangle_internal<SamplingMethod::Nearest, IntegrationMethod::Exact>(
+                num_triangles,
+                get_triangle,
+                output_quadrics,
+                order);
+        } else {
+            get_quadric_per_triangle_internal<SamplingMethod::Nearest, IntegrationMethod::Adaptive>(
+                num_triangles,
+                get_triangle,
+                output_quadrics,
+                order);
+        }
+        break;
+    case SamplingMethod::Bilinear:
+        if (m_integration_method == IntegrationMethod::Exact) {
+            get_quadric_per_triangle_internal<SamplingMethod::Bilinear, IntegrationMethod::Exact>(
+                num_triangles,
+                get_triangle,
+                output_quadrics,
+                order);
+        } else {
+            get_quadric_per_triangle_internal<
+                SamplingMethod::Bilinear,
+                IntegrationMethod::Adaptive>(num_triangles, get_triangle, output_quadrics, order);
+        }
+        break;
+    }
 }
 
 } // namespace wmtk

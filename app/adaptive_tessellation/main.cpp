@@ -34,6 +34,8 @@
 #include <wmtk/utils/ManifoldUtils.hpp>
 #include <wmtk/utils/TriQualityUtils.hpp>
 #include "AdaptiveTessellation.h"
+#include "GlobalIntersection.h"
+#include "LoggerDataCollector.h"
 #include "Parameters.h"
 
 template <class T>
@@ -76,32 +78,28 @@ int main(int argc, char** argv)
     ZoneScopedN("adaptive_tessellation_main");
     lagrange::enable_fpe();
     CLI::App app{argv[0]};
-    path input_folder;
     path config_json;
     path output_folder;
+    bool log_to_stdout = false;
 
-    app.add_option("-i, --input", input_folder, "input folder")->required(false);
     app.add_option("-c, --config", config_json, "input json file")->required(false);
     app.add_option("-o, --output", output_folder, "output folder")->required(false);
+    app.add_flag("--log_to_stdout", log_to_stdout, "write log output also to std out");
 
 
     CLI11_PARSE(app, argc, argv);
-
-    if (input_folder.empty()) {
-        input_folder = ".";
-        wmtk::logger().info("No input path specified. Using current working directory.");
-    }
-    ensure_path_exists(input_folder);
-
     if (config_json.empty()) {
         config_json = "config.json";
         wmtk::logger().info("No config file specified. Using default: {}", config_json.string());
     }
+    ensure_path_exists(config_json);
 
-    ensure_path_exists(input_folder / config_json);
+    const path input_folder = config_json.parent_path();
+    ensure_path_exists(input_folder);
+
     json config;
     {
-        std::ifstream jsonFile(input_folder / config_json);
+        std::ifstream jsonFile(config_json);
         jsonFile >> config;
     }
     // Access the parameters in the JSON file
@@ -109,8 +107,8 @@ int main(int argc, char** argv)
     if (output_folder.empty()) {
         output_folder = "./output";
         wmtk::logger().info("No input path specified. Using './output'.");
-        std::filesystem::create_directory(output_folder);
     }
+    std::filesystem::create_directories(output_folder);
     ensure_path_exists(output_folder);
     const path output_file = output_folder / config["output_file"];
     const path output_json = output_folder / config["output_json"];
@@ -172,9 +170,11 @@ int main(int argc, char** argv)
     wmtk::logger().info("///// energy type: {}", energy_type);
     wmtk::logger().info("///// energy length type: {}", edge_len_type);
 
-
-    m.mesh_parameters.ATlogger =
-        wmtk::make_json_file_logger("ATlogger", output_folder / "runtime.log", true);
+    m.mesh_parameters.ATlogger = wmtk::make_json_file_logger(
+        "ATlogger",
+        output_folder / "adaptive_tessellation_log.json",
+        true,
+        log_to_stdout);
 
 
     m.set_parameters(
@@ -187,10 +187,37 @@ int main(int argc, char** argv)
         energy_type,
         edge_len_type,
         boundary_parameter_on);
-    m.mesh_parameters.m_early_stopping_number = 100;
+    //// TODO DEBUG
+    // m.mesh_parameters.m_early_stopping_number = 100;
+    ////
     m.set_vertex_world_positions(); // compute 3d positions for each vertex
 
-    m.smooth_all_vertices();
+    {
+        LoggerDataCollector ldc;
+        ldc.evaluate_mesh(m);
+        ldc.log_json(m, "before_remeshing");
+    }
+
+    {
+        LoggerDataCollector ldc;
+        ldc.start_timer();
+        m.split_all_edges();
+        ldc.stop_timer();
+        ldc.evaluate_mesh(m);
+        ldc.log_json(m, "after_split");
+        m.write_obj_displaced("after_split.obj");
+    }
+
+    //{
+    //    LoggerDataCollector ldc;
+    //    ldc.start_timer();
+    //    m.smooth_all_vertices();
+    //    ldc.stop_timer();
+    //    ldc.evaluate_mesh(m);
+    //    ldc.log_json(m, "after_smooth");
+    //    m.write_obj_displaced("after_smooth.obj");
+    //}
+
     m.consolidate_mesh();
 
     auto finish_time = lagrange::get_timestamp();
@@ -198,7 +225,16 @@ int main(int argc, char** argv)
     wmtk::logger().info("!!!!finished {}!!!!", duration);
     m.mesh_parameters.js_log["total_time"] = duration;
 
-    m.write_obj_displaced(output_file);
+    m.mesh_parameters.ATlogger->flush();
+
+    m.write_obj_displaced(
+        output_file.parent_path() /
+        (output_file.stem().string() + std::string("_max_displacement") +
+         output_file.extension().string()));
+
+    displace_self_intersection_free(m);
+    m.write_obj(output_file);
+
     // Save the optimized mesh
     wmtk::logger().info("///// output : {}", output_file);
     js_o << std::setw(4) << m.mesh_parameters.js_log << std::endl;

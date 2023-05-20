@@ -1,5 +1,7 @@
 #pragma once
 
+#include "IntegralBase.h"
+
 #include <lagrange/utils/span.h>
 #include <lagrange/utils/value_ptr.h>
 #include <wmtk/utils/Image.h>
@@ -8,7 +10,7 @@
 
 namespace wmtk {
 
-class TextureIntegral
+class TextureIntegral : public IntegralBase
 {
 public:
     TextureIntegral(); // default constructor
@@ -20,18 +22,7 @@ public:
 
     TextureIntegral(std::array<wmtk::Image, 3> data);
 
-    enum class SamplingMethod {
-        Nearest,
-        Bilinear,
-        Bicubic,
-    };
-
-    enum class IntegrationMethod { Exact, Adaptive };
-
 public:
-    void set_sampling_method(SamplingMethod method) { m_sampling_method = method; }
-    void set_integration_method(IntegrationMethod method) { m_integration_method = method; }
-
     ///
     /// Computes the error integral per triangle.
     ///
@@ -65,14 +56,13 @@ protected:
     template <SamplingMethod sampling_method, IntegrationMethod integration_method>
     void get_error_per_triangle_internal(
         lagrange::span<const std::array<float, 6>> input_triangles,
-        lagrange::span<float> output_errors) const;
+        lagrange::span<float> output_errors,
+        int order) const;
 
-private:
+protected:
     struct Cache;
     std::array<wmtk::Image, 3> m_data;
     lagrange::value_ptr<Cache> m_cache;
-    SamplingMethod m_sampling_method = SamplingMethod::Bicubic;
-    IntegrationMethod m_integration_method = IntegrationMethod::Exact;
 };
 
 } // namespace wmtk

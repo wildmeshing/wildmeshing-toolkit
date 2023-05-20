@@ -51,6 +51,7 @@ public:
          * @brief incident triangles of a given vertex
          *
          */
+        // TODO: this needs to be private
         std::vector<size_t> m_conn_tris;
         /**
          * @brief is the vertex removed
@@ -58,16 +59,32 @@ public:
          */
         bool m_is_removed = true;
 
-        inline size_t& operator[](const size_t index)
-        {
-            assert(index < m_conn_tris.size());
-            return m_conn_tris[index];
-        }
+        // inline size_t& operator[](const size_t index)
+        //{
+        //     assert(index < m_conn_tris.size());
+        //     return m_conn_tris[index];
+        // }
 
         inline size_t operator[](const size_t index) const
         {
             assert(index < m_conn_tris.size());
             return m_conn_tris[index];
+        }
+
+        void insert(const size_t value) { set_insert(m_conn_tris, value); }
+        // replace the value stored at an index by another value
+        void replace(const size_t index, const size_t value)
+        {
+            assert(index < m_conn_tris.size());
+            auto it = m_conn_tris.begin() + index;
+            m_conn_tris.erase(it);
+            set_insert(m_conn_tris, value);
+        }
+        // replace a value with another value
+        void replace_value(const size_t index, const size_t value)
+        {
+            vector_erase(m_conn_tris, index);
+            insert(value);
         }
     };
 
@@ -178,6 +195,11 @@ public:
      * @return vector of Tuples
      */
     Tuple init_from_edge(size_t vid1, size_t vid2, size_t fid) const;
+    // same as init_from_edge but if the edge doesn't exist it returns returns nohting
+    std::optional<Tuple> init_from_edge_opt(size_t vid1, size_t vid2, size_t fid) const;
+
+    // generates a tuple from
+    std::optional<Tuple> init_from_edge_opt(size_t vid1, size_t vid2) const;
 
     template <typename T>
     using vector = tbb::concurrent_vector<T>;
@@ -352,35 +374,28 @@ public:
      * of the triangle
      * @return a face Tuple
      */
-    Tuple tuple_from_tri(size_t fid) const
-    {
-        if (fid >= m_tri_connectivity.size() || m_tri_connectivity[fid].m_is_removed)
-            return Tuple();
-        auto vid = m_tri_connectivity[fid][0];
-        return Tuple(vid, 1, fid, *this);
-    }
+    Tuple tuple_from_tri(size_t fid) const;
     /**
      * Generate avertex Tuple using local vid and global fid
      * @param vid globale vid for the triangle
      * @note tuple refers to vid
      */
-    Tuple tuple_from_vertex(size_t vid) const
-    {
-        auto fid = m_vertex_connectivity[vid][0];
-        auto eid = m_tri_connectivity[fid].find(vid);
-        return Tuple(vid, (eid + 1) % 3, fid, *this);
-    }
+    Tuple tuple_from_vertex(size_t vid) const;
     /**
      * Generate a edge Tuple using global fid and local eid
      * @param fid globale fid for the triangle
      * @param local_eid local eid
      * @return tuple refers to the edge
      */
-    Tuple tuple_from_edge(size_t fid, size_t local_eid) const
-    {
-        auto vid = m_tri_connectivity[fid][(local_eid + 1) % 3];
-        return Tuple(vid, local_eid, fid, *this);
-    }
+    Tuple tuple_from_edge(size_t fid, size_t local_eid) const;
+
+    /**
+     * Generate a edge Tuple using two vids
+     * @param a global vid
+     * @param another global vid
+     * @return tuple refers to the edge
+     */
+    std::optional<Tuple> tuple_from_edge_vids_opt(size_t vid1, size_t vid2) const;
 
     /**
      * Generate the tuples for the tuples at the boundary of a triangle
@@ -388,6 +403,13 @@ public:
      * @return array of tuples storing the three edges
      */
     std::array<Tuple, 3> triangle_boundary_edge_tuples(const Tuple& triangle) const;
+
+    // returns edge tuples that all represent teh same edge, but attached to different triangles
+    std::vector<Tuple> tris_bounded_by_edge(const Tuple& edge) const;
+
+private:
+    std::vector<size_t> tri_fids_bounded_by_edge(const Tuple& edge) const;
+    std::vector<size_t> tri_fids_bounded_by_edge_vids(size_t v0, size_t v1) const;
 
     // private:
 protected:
@@ -400,20 +422,11 @@ protected:
      * @brief Start the phase where the attributes that will be modified can be recorded
      *
      */
-    void start_protected_attributes()
-    {
-        if (p_vertex_attrs) p_vertex_attrs->begin_protect();
-        if (p_edge_attrs) p_edge_attrs->begin_protect();
-        if (p_face_attrs) p_face_attrs->begin_protect();
-    }
+    void start_protected_attributes();
     /**
      * @brief Start caching the connectivity that will be modified
      */
-    void start_protected_connectivity()
-    {
-        m_vertex_connectivity.begin_protect();
-        m_tri_connectivity.begin_protect();
-    }
+    void start_protected_connectivity();
 
     /**
      * @brief End the modification phase

@@ -24,6 +24,7 @@ private:
 public:
     void print_info() const;
     std::string info() const;
+    operator std::string() const { return info(); }
 
     //         v2        /
     //       /    \      /
@@ -143,6 +144,7 @@ public:
         return (
             std::tie(a.m_vid, a.m_local_eid, a.m_fid, a.m_hash) ==
             std::tie(t.m_vid, t.m_local_eid, t.m_fid, t.m_hash));
+
     }
 };
 } // namespace wmtk
