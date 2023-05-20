@@ -58,11 +58,11 @@ public:
     struct PairedOpCache
     {
         // split edge is edge 0
-        //     /\                                   / \ 
-        //    /  \                                 / ｜\ 
+        //     /\                                   / \
+        //    /  \                                 / ｜\
         // s2/2  1\s1                           s2/2'|1'\ s1
-        //  / ---> \                             /->^｜v \   
-        // /___0____\           ===>            /_0'_｜_6_\    
+        //  / ---> \                             /->^｜v \
+        // /___0____\           ===>            /_0'_｜_6_\
         // if size == 3, it's a boundary edge,
         // before_sibling_edges: nullopt, s1, s2
         // mirror data of ^ v in the middle needs to be nullified
@@ -87,6 +87,7 @@ public:
     bool before(AdaptiveTessellation& m, const Tuple& t);
     bool after(AdaptiveTessellation& m, ExecuteReturnData& ret_data);
     std::string name() const override { return split_edge.name(); };
+
     void mark_failed() override;
 };
 } // namespace adaptive_tessellation

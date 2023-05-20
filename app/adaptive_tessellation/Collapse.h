@@ -203,9 +203,9 @@ public:
     bool before(AdaptiveTessellation& m, const Tuple& t);
     bool after(AdaptiveTessellation& m, ExecuteReturnData& ret_data);
     bool after(AdaptiveTessellation& m);
-    operator bool() const;
     std::vector<Tuple> modified_tuples(const AdaptiveTessellation& m) const;
 
+    operator bool() const;
     void mark_failed() override;
 
     static bool check_seamed_link_condition(AdaptiveTessellation& m, const Tuple& t);

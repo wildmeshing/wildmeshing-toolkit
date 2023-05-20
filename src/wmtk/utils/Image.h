@@ -155,9 +155,5 @@ std::array<wmtk::Image, 3> combine_position_normal_texture(
     const std::filesystem::path& position_path,
     const std::filesystem::path& normal_path,
     const std::filesystem::path& texture_path);
-std::array<wmtk::Image, 3> combine_position_normal_texture(
-    double normalization_scale,
-    const std::filesystem::path& position_path,
-    const std::filesystem::path& normal_path,
-    const std::filesystem::path& height_path);
+
 } // namespace wmtk

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "IntegralBase.h"
+
 #include <lagrange/utils/function_ref.h>
 #include <lagrange/utils/span.h>
 #include <lagrange/utils/value_ptr.h>
@@ -10,7 +12,7 @@
 
 namespace wmtk {
 
-class QuadricIntegral
+class QuadricIntegral : public IntegralBase
 {
 public:
     enum class QuadricType {
@@ -54,7 +56,15 @@ public:
         lagrange::function_ref<std::array<float, 6>(int)> get_triangle,
         lagrange::span<wmtk::Quadric<double>> output_quadrics) const;
 
-private:
+protected:
+    template <SamplingMethod sampling_method, IntegrationMethod integration_method>
+    void get_quadric_per_triangle_internal(
+        int num_triangles,
+        lagrange::function_ref<std::array<float, 6>(int)> get_triangle,
+        lagrange::span<wmtk::Quadric<double>> output_quadrics,
+        int order) const;
+
+protected:
     struct Cache;
 
     // Quadrics coefficients

@@ -701,7 +701,6 @@ bool AdaptiveTessellation::invariants(const std::vector<Tuple>& new_tris)
     if (mesh_parameters.m_has_envelope) {
         for (auto& t : new_tris) {
             std::array<Eigen::Vector3d, 3> tris;
-            spdlog::warn("{}", t.info());
             auto vs = oriented_tri_vertices(t);
             for (auto j = 0; j < 3; j++) {
                 tris[j] << vertex_attrs[vs[j].vid(*this)].pos(0),

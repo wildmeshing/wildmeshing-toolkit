@@ -338,7 +338,7 @@ public:
         for (auto i = 0; i < 3; i++) {
             double p = m_position_sampler[i]->sample(u, v);
 
-            double d = 2. * m_normal_sampler[i]->sample(u, v) - 1.;
+            double d = 2 * m_normal_sampler[i]->sample(u, v) - 1;
 
             displace_3d(i, 0) = p * m_normalization_scale - m_normalization_offset(i, 0) + z * d;
         }
@@ -352,7 +352,7 @@ public:
         for (auto i = 0; i < 3; i++) {
             DScalar p = m_position_sampler[i]->sample(u, v);
 
-            DScalar d = 2. * m_normal_sampler[i]->sample(u, v) - 1.;
+            DScalar d = 2 * m_normal_sampler[i]->sample(u, v) - 1;
 
             displace_3d(i, 0) = p * m_normalization_scale - m_normalization_offset(i, 0) + z * d;
         }

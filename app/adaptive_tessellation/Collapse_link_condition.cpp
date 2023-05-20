@@ -214,23 +214,12 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::check_seamed_link_conditio
     const LinksOfVertex v2 = seamed_links_of_vertex(mesh, edge.switch_vertex(mesh));
 
 
-    spdlog::info("v1 vertex: {}", v1.vertex);
-    spdlog::info("v1 vertex has infinite: {}", v1.infinite_vertex);
-    spdlog::info("v1 edge: {}", v1.edge);
-    spdlog::info("v1 infinite_edge: {}", v1.infinite_edge);
-
-    spdlog::info("v2 vertex: {}", v2.vertex);
-    spdlog::info("v2 vertex has infinite: {}", v2.infinite_vertex);
-    spdlog::info("v2 edge: {}", v2.edge);
-    spdlog::info("v2 infinite_edge: {}", v2.infinite_edge);
 
     // compute vertex link condition
     auto lk_vid12 = set_intersection(v1.vertex, v2.vertex);
     const bool lk_vid12_infinite = v1.infinite_vertex && v2.infinite_vertex;
 
     const auto [edge_link, edge_link_has_infinite] = seamed_edge_link_of_edge(mesh, edge);
-    spdlog::info("Edge link {}", edge_link);
-    spdlog::info("egdge link infinite: {}", edge_link_has_infinite);
     // over finite vertices v_link
     const bool v_link_fin =  lk_vid12 == edge_link;
     // over infinite vertices v_link
@@ -259,6 +248,5 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::check_seamed_link_conditio
         lk_e_vid2_inf.end(),
         std::back_inserter(res_inf));
     const bool e_link = res.empty() && res_inf.empty();
-    spdlog::info("Link condition values {} {}", v_link, e_link);
     return v_link && e_link;
 }

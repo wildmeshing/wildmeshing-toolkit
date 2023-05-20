@@ -1,4 +1,5 @@
 #include "Split.h"
+#include "PairUtils.hpp"
 using namespace adaptive_tessellation;
 using namespace wmtk;
 
@@ -57,12 +58,6 @@ double AdaptiveTessellation::get_quadrics_area_accuracy_error_for_split(
         // energy *= 2;
     }
     return energy;
-}
-
-void AdaptiveTessellationPairedSplitEdgeOperation::mark_failed()
-{
-    split_edge.mark_failed();
-    mirror_split_edge.mark_failed();
 }
 
 template <typename Executor>
@@ -290,29 +285,14 @@ bool AdaptiveTessellationPairedSplitEdgeOperation::before(AdaptiveTessellation& 
     assert(m.is_seam_edge(t) == mirror_edge_tuple.has_value());
     bool split_mirror_edge_success =
         m.is_seam_edge(t) ? mirror_split_edge.before(m, mirror_edge_tuple.value()) : true;
-    if (!m.mesh_parameters.m_do_not_output) {
-        if (cnt % 1000 == 0) {
-            wmtk::logger().info("========= !!! current iteration {}", cnt);
-            if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
-                m.write_obj_displaced(
-                    m.mesh_parameters.m_output_folder + fmt::format("/area_split_{:04d}.obj", cnt));
-                m.write_vtk(
-                    m.mesh_parameters.m_output_folder + fmt::format("/area_split_{:04d}.vtu", cnt));
-            }
-            // m.write_vtk(m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}.vtu", cnt));
-            // m.write_perface_vtk(
-            // m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}_face.vtu", cnt));
-            else if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::TRI_QUADRICS) {
-                m.write_obj_displaced(
-                    m.mesh_parameters.m_output_folder +
-                    fmt::format("/quadrics_split_{:04d}.obj", cnt));
-                m.write_vtk(
-                    m.mesh_parameters.m_output_folder +
-                    fmt::format("/quadrics_split_{:04d}.vtu", cnt));
-                // m.write_obj(m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}_2d.obj", cnt));}
-            }
-        }
+    // m.write_vtk(m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}.vtu", cnt));
+    // m.write_perface_vtk(
+    //     m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}_face.vtu", cnt));
+    if (cnt % 1000 == 0) {
+        m.write_obj_displaced(
+            m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}.obj", cnt));
     }
+    // m.write_obj(m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}_2d.obj", cnt));
     cnt++;
     assert(
         (paired_op_cache.local().before_sibling_edges.size() == 3 ||
@@ -710,4 +690,9 @@ bool AdaptiveTessellation::split_edge_after(const Tuple& edge_tuple) // not used
     }
     success_cnt++;
     return true;
+}
+void AdaptiveTessellationPairedSplitEdgeOperation::mark_failed()
+{
+    split_edge.mark_failed();
+    mirror_split_edge.mark_failed();
 }
