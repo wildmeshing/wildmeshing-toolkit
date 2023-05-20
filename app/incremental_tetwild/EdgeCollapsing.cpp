@@ -435,10 +435,32 @@ bool tetwild::TetWild::collapse_edge_after(const Tuple& loc)
             Tuple f2 = t.switch_face(*this);
             Tuple f3 = t.switch_edge(*this).switch_face(*this);
             Tuple f4 = t.switch_vertex(*this).switch_edge(*this).switch_face(*this);
-            if (m_face_attribute[f1.fid(*this)].m_is_surface_fs) surface_fs.push_back(f1);
-            if (m_face_attribute[f2.fid(*this)].m_is_surface_fs) surface_fs.push_back(f2);
-            if (m_face_attribute[f3.fid(*this)].m_is_surface_fs) surface_fs.push_back(f3);
-            if (m_face_attribute[f4.fid(*this)].m_is_surface_fs) surface_fs.push_back(f4);
+
+            auto f1vs = get_face_vertices(f1);
+            auto f2vs = get_face_vertices(f2);
+            auto f3vs = get_face_vertices(f3);
+            auto f4vs = get_face_vertices(f4);
+            if (m_vertex_attribute[f1vs[0].vid(*this)].m_is_on_surface &&
+                m_vertex_attribute[f1vs[1].vid(*this)].m_is_on_surface &&
+                m_vertex_attribute[f1vs[2].vid(*this)].m_is_on_surface) {
+                if (m_face_attribute[f1.fid(*this)].m_is_surface_fs) surface_fs.push_back(f1);
+            }
+
+            if (m_vertex_attribute[f2vs[0].vid(*this)].m_is_on_surface &&
+                m_vertex_attribute[f2vs[1].vid(*this)].m_is_on_surface &&
+                m_vertex_attribute[f2vs[2].vid(*this)].m_is_on_surface) {
+                if (m_face_attribute[f2.fid(*this)].m_is_surface_fs) surface_fs.push_back(f2);
+            }
+            if (m_vertex_attribute[f3vs[0].vid(*this)].m_is_on_surface &&
+                m_vertex_attribute[f3vs[1].vid(*this)].m_is_on_surface &&
+                m_vertex_attribute[f3vs[2].vid(*this)].m_is_on_surface) {
+                if (m_face_attribute[f3.fid(*this)].m_is_surface_fs) surface_fs.push_back(f3);
+            }
+            if (m_vertex_attribute[f4vs[0].vid(*this)].m_is_on_surface &&
+                m_vertex_attribute[f4vs[1].vid(*this)].m_is_on_surface &&
+                m_vertex_attribute[f4vs[2].vid(*this)].m_is_on_surface) {
+                if (m_face_attribute[f4.fid(*this)].m_is_surface_fs) surface_fs.push_back(f4);
+            }
         }
         for (auto f : surface_fs) {
             // e1 = v1v2 e2 = v1v3 e3 = v2v3
