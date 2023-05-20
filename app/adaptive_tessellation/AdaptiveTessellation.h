@@ -333,6 +333,13 @@ public:
      */
     void write_obj_mapped_on_input(const std::filesystem::path& path);
 
+    /**
+     * @brief Write displaced UV positions in HDF format.
+     *
+     * @param path name of the OBJ file
+     */
+    void write_hdf_displaced_uv(const std::filesystem::path& path);
+
     // Computes the quality of a triangle
     double get_quality(const Tuple& loc, int idx = 0) const;
     std::pair<double, Eigen::Vector2d> get_one_ring_energy(const Tuple& loc);

@@ -4,6 +4,8 @@
 #include <igl/write_triangle_mesh.h>
 #include <lagrange/io/load_mesh.h>
 #include <lean_vtk.hpp>
+#include <paraviewo/HDF5VTUWriter.hpp>
+#include <paraviewo/ParaviewWriter.hpp>
 #include "AdaptiveTessellation.h"
 
 using namespace adaptive_tessellation;
@@ -690,4 +692,29 @@ void AdaptiveTessellation::write_obj_mapped_on_input(const std::filesystem::path
     export_mesh_mapped_on_input(V, F, VT, FT);
     igl::writeOBJ(path.string(), V, F, CN, FN, VT, FT);
     wmtk::logger().info("============>> current edge length {}", avg_edge_len());
+}
+
+void AdaptiveTessellation::write_hdf_displaced_uv(const std::filesystem::path& path)
+{
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    Eigen::MatrixXd CN;
+    Eigen::MatrixXd FN;
+    Eigen::MatrixXd VT;
+    Eigen::MatrixXi FT;
+    export_displaced_uv(V, F, VT, FT);
+
+    paraviewo::HDF5VTUWriter writer;
+    writer.add_field("UV", VT);
+
+    Eigen::MatrixXd v_quadric_error;
+    v_quadric_error.resize(V.rows(), 1);
+
+    for (const Tuple& t : get_vertices()) {
+        const size_t i = t.vid(*this);
+        v_quadric_error(i, 0) = get_one_ring_quadrics_error_for_vertex(t);
+    }
+
+    writer.add_field("quadrics", v_quadric_error);
+    writer.write_mesh(path.string(), V, F);
 }

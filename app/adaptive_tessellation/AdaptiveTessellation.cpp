@@ -1018,6 +1018,7 @@ double AdaptiveTessellation::get_two_faces_quadrics_error_for_edge(const Tuple& 
         ret += q(v1_world_pos);
         ret += q(v2_world_pos);
         ret += q(v3_world_pos);
+        return ret;
     };
 
 
