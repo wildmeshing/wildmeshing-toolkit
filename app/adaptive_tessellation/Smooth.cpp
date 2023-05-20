@@ -408,9 +408,10 @@ void adaptive_tessellation::AdaptiveTessellation::smooth_all_vertices()
     }
 }
 
-auto AdaptiveTessellationSmoothVertexOperation::modified_triangles(const TriMesh& m) const -> std::vector<Tuple>
+auto AdaptiveTessellationSmoothVertexOperation::modified_triangles(const TriMesh& m) const
+    -> std::vector<Tuple>
 {
-    const auto& at  = static_cast<const AdaptiveTessellation&>(m);
+    const auto& at = static_cast<const AdaptiveTessellation&>(m);
     if (!bool(*this)) {
         return {};
     }
@@ -419,9 +420,10 @@ auto AdaptiveTessellationSmoothVertexOperation::modified_triangles(const TriMesh
 
     return at.get_one_ring_tris_for_vertex(new_v);
 }
-auto AdaptiveTessellationSmoothSeamVertexOperation::modified_triangles(const TriMesh& m) const -> std::vector<Tuple>
+auto AdaptiveTessellationSmoothSeamVertexOperation::modified_triangles(const TriMesh& m) const
+    -> std::vector<Tuple>
 {
-    const auto& at  = static_cast<const AdaptiveTessellation&>(m);
+    const auto& at = static_cast<const AdaptiveTessellation&>(m);
     if (!bool(*this)) {
         return {};
     }

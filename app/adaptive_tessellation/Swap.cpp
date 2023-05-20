@@ -497,17 +497,19 @@ bool AdaptiveTessellation::swap_edge_after([[maybe_unused]] const Tuple& t)
     // }
     return true;
 }
-auto AdaptiveTessellationSwapEdgeOperation::modified_triangles(const TriMesh& m) const -> std::vector<Tuple>
+auto AdaptiveTessellationSwapEdgeOperation::modified_triangles(const TriMesh& m) const
+    -> std::vector<Tuple>
 {
-    //return TriMeshSwapEdgeOperation::modified_triangles(m);
-    const auto& at  = static_cast<const AdaptiveTessellation&>(m);
+    // return TriMeshSwapEdgeOperation::modified_triangles(m);
+    const auto& at = static_cast<const AdaptiveTessellation&>(m);
     std::optional<Tuple> new_tuple_opt = get_return_tuple_opt();
     if (!new_tuple_opt.has_value()) {
         return {};
     }
     const Tuple& new_tuple = new_tuple_opt.value();
     assert(new_tuple.is_valid(at));
-    std::optional<Tuple> new_other_face_opt = at.is_seam_edge(new_tuple) ? at.get_sibling_edge_opt(new_tuple) : m.switch_face(new_tuple);
+    std::optional<Tuple> new_other_face_opt =
+        at.is_seam_edge(new_tuple) ? at.get_sibling_edge_opt(new_tuple) : m.switch_face(new_tuple);
     assert(new_other_face_opt);
     return {new_tuple, new_other_face_opt.value()};
 }

@@ -89,7 +89,7 @@ public:
     bool after(AdaptiveTessellation& m, ExecuteReturnData& ret_data);
     std::string name() const override { return split_edge.name(); };
 
-    std::vector<Tuple> modified_triangles(const TriMesh& m) const ;
+    std::vector<Tuple> modified_triangles(const TriMesh& m) const;
 
 
     void mark_failed() override;
