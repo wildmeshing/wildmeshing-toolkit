@@ -121,6 +121,8 @@ void AdaptiveTessellation::mesh_preprocessing(
     m_quadric_integral =
         wmtk::QuadricIntegral(displaced, wmtk::QuadricIntegral::QuadricType::Point);
     m_texture_integral = wmtk::TextureIntegral(std::move(displaced));
+    m_texture_integral.set_integration_method(
+        wmtk::IntegralBase::IntegrationMethod::Exact); // Adaptive or Exact
 }
 
 void AdaptiveTessellation::prepare_distance_quadrature_cached_energy()
@@ -238,6 +240,35 @@ std::pair<Eigen::MatrixXi, Eigen::MatrixXi> AdaptiveTessellation::seam_edges_set
     assert(E0.rows() == E1.rows());
     return {E0, E1};
 } // namespace adaptive_tessellation
+
+double AdaptiveTessellation::barrier_energy_per_face(TriMesh::Tuple& t) const
+{
+    // get the 3 vertices of the triangle
+    std::array<Tuple, 3> local_tuples = oriented_tri_vertices(t);
+    const Eigen::Vector2d& p1 = vertex_attrs[local_tuples[0].vid(*this)].pos;
+    const Eigen::Vector2d& p2 = vertex_attrs[local_tuples[1].vid(*this)].pos;
+    const Eigen::Vector2d& p3 = vertex_attrs[local_tuples[2].vid(*this)].pos;
+    auto v1 = mesh_parameters.m_displacement->get(p1(0), p1(1));
+    auto v2 = mesh_parameters.m_displacement->get(p2(0), p2(1));
+    auto v3 = mesh_parameters.m_displacement->get(p3(0), p3(1));
+    /// energy barrier term
+    Eigen::Matrix<double, 3, 1> v2_v1 = v2 - v1;
+    Eigen::Matrix<double, 3, 1> v3_v1 = v3 - v1;
+    double area = (v2_v1.cross(v3_v1)).squaredNorm();
+    // wmtk::logger().info("----current area {}", area.getValue());
+    double A_hat = 1; // this is arbitrary now
+    assert(A_hat > 0);
+    if (area <= 0) {
+        return std::numeric_limits<double>::infinity();
+    }
+    if (area < A_hat) {
+        assert((area / A_hat) < 1.0);
+        double barrier_energy = -(area - A_hat) * (area - A_hat) * log(area / A_hat);
+        // wmtk::logger().info("----current barrier energy {}", barrier_energy.getValue());
+        return barrier_energy;
+    }
+    return 0.;
+}
 
 // TODO wait why I'm doing this? The coloring isn't used anymore.
 // i wanted to use it for get_all_mirror_vertex
@@ -914,7 +945,8 @@ double AdaptiveTessellation::get_area_accuracy_error_per_face_triangle_matrix(
     return mesh_parameters.m_displacement->get_error_per_triangle(triangle);
 }
 
-double AdaptiveTessellation::get_cached_area_accuracy_error_for_split(const Tuple& edge_tuple) const
+// return the sum of the accuracy error of the two incident faces
+double AdaptiveTessellation::get_cached_area_accuracy_error_per_edge(const Tuple& edge_tuple) const
 {
     double error1 = 0.;
     double error2 = 0.;
