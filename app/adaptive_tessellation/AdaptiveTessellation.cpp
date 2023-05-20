@@ -937,6 +937,8 @@ double AdaptiveTessellation::get_cached_area_accuracy_error_for_split(const Tupl
 std::tuple<double, double, double> AdaptiveTessellation::get_projected_relative_error_for_split(
     const Tuple& edge_tuple) const
 {
+    throw std::runtime_error("should not be used");
+
     ///////// THIS IS NOT USED
     double error, error1, error2;
     error1 = face_attrs[edge_tuple.fid(*this)].accuracy_measure.cached_distance_integral;
@@ -1094,9 +1096,10 @@ double AdaptiveTessellation::get_two_faces_quadrics_error_for_edge(const Tuple& 
         ret += get_quadric_error_for_face(get_oriented_mirror_edge(e0));
     }
 
+    throw std::runtime_error("Not fully implemented, should not be used");
+
     return ret;
 }
-
 
 void AdaptiveTessellation::get_nminfo_for_vertex(const Tuple& v, wmtk::NewtonMethodInfo& nminfo)
     const
