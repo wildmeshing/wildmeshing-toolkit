@@ -397,6 +397,7 @@ public:
         const Tuple& edge_tuple) const;
     double get_quadrics_area_accuracy_error_for_split(const Tuple& face_tuple) const;
     double get_one_ring_quadrics_error_for_vertex(const Tuple& v) const;
+    double get_quadric_error_for_face(const Tuple& f) const;
 
     void get_nminfo_for_vertex(const Tuple& v, wmtk::NewtonMethodInfo& nminfo) const;
 

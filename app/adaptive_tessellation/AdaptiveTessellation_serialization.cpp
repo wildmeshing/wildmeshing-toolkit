@@ -714,7 +714,19 @@ void AdaptiveTessellation::write_hdf_displaced_uv(const std::filesystem::path& p
         const size_t i = t.vid(*this);
         v_quadric_error(i, 0) = get_one_ring_quadrics_error_for_vertex(t);
     }
+    writer.add_field("v_quadrics", v_quadric_error);
 
-    writer.add_field("quadrics", v_quadric_error);
+    Eigen::MatrixXd f_quadric_error;
+    Eigen::MatrixXd f_area_error;
+    f_quadric_error.resize(F.rows(), 1);
+    f_area_error.resize(F.rows(), 1);
+    for (const Tuple& t : get_faces()) {
+        const size_t i = t.fid(*this);
+        f_quadric_error(i, 0) = get_quadric_error_for_face(t);
+        f_area_error(i, 0) = face_attrs[i].accuracy_measure.cached_distance_integral;
+    }
+    writer.add_cell_field("f_quadrics", f_quadric_error);
+    writer.add_cell_field("f_area_error", f_area_error);
+
     writer.write_mesh(path.string(), V, F);
 }

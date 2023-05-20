@@ -14,16 +14,23 @@
 
 using namespace wmtk;
 namespace adaptive_tessellation {
-enum class ENERGY_TYPE { AMIPS, SYMDI, EDGE_LENGTH, EDGE_QUADRATURE, AREA_QUADRATURE, QUADRICS };
+enum class ENERGY_TYPE {
+    AMIPS = 0,
+    SYMDI = 1,
+    EDGE_LENGTH = 2,
+    EDGE_QUADRATURE = 3,
+    AREA_QUADRATURE = 4,
+    QUADRICS = 5
+};
 enum class EDGE_LEN_TYPE {
-    LINEAR2D,
-    LINEAR3D,
-    N_IMPLICIT_POINTS,
-    PT_PER_PIXEL,
-    MIPMAP,
-    EDGE_ACCURACY,
-    AREA_ACCURACY,
-    TRI_QUADRICS
+    LINEAR2D = 0,
+    LINEAR3D = 1,
+    N_IMPLICIT_POINTS = 2,
+    PT_PER_PIXEL = 3,
+    MIPMAP = 4,
+    EDGE_ACCURACY = 5,
+    AREA_ACCURACY = 6,
+    TRI_QUADRICS = 7
 };
 struct Parameters
 {
@@ -66,6 +73,7 @@ public:
     // taking gradients or hessian
     std::function<Eigen::Vector3d(const double&, const double&)> m_project_to_3d =
         [&](const double& u, const double& v) -> Eigen::Vector3d {
+        throw std::runtime_error("should not be used");
         DiffScalarBase::setVariableCount(2);
         auto z = this->m_get_z(DScalar(u), DScalar(v)).getValue();
         return Eigen::Vector3d(u, v, z);

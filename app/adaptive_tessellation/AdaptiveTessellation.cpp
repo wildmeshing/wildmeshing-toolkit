@@ -6,6 +6,7 @@
 #include <igl/remove_unreferenced.h>
 #include <lagrange/utils/timing.h>
 #include <tbb/concurrent_vector.h>
+#include <wmtk/quadrature/TriangleQuadrature.h>
 #include <wmtk/utils/AMIPS2D.h>
 #include <wmtk/utils/AMIPS2D_autodiff.h>
 #include <Eigen/Core>
@@ -66,9 +67,10 @@ void AdaptiveTessellation::mesh_preprocessing(
     wmtk::TriMesh m_3d;
     std::vector<std::array<size_t, 3>> tris;
     for (auto f = 0; f < input_F_.rows(); f++) {
-        std::array<size_t, 3> tri = {(size_t)input_F_(f, 0),
-                                     (size_t)input_F_(f, 1),
-                                     (size_t)input_F_(f, 2)};
+        std::array<size_t, 3> tri = {
+            (size_t)input_F_(f, 0),
+            (size_t)input_F_(f, 1),
+            (size_t)input_F_(f, 2)};
         tris.emplace_back(tri);
     }
     m_3d.create_mesh(input_V_.rows(), tris);
@@ -759,9 +761,13 @@ double AdaptiveTessellation::get_length3d(const Tuple& edge_tuple) const
 {
     auto v1 = edge_tuple.vid(*this);
     auto v2 = edge_tuple.switch_vertex(*this).vid(*this);
-    auto v13d = mesh_parameters.m_project_to_3d(vertex_attrs[v1].pos(0), vertex_attrs[v1].pos(1));
-    auto v23d = mesh_parameters.m_project_to_3d(vertex_attrs[v2].pos(0), vertex_attrs[v2].pos(1));
-    return (v13d - v23d).stableNorm();
+
+    auto v1_3d =
+        mesh_parameters.m_displacement->get(vertex_attrs[v1].pos(0), vertex_attrs[v1].pos(1));
+    auto v2_3d =
+        mesh_parameters.m_displacement->get(vertex_attrs[v2].pos(0), vertex_attrs[v2].pos(1));
+
+    return (v1_3d - v2_3d).stableNorm();
 }
 
 double AdaptiveTessellation::get_length_n_implicit_points(const Tuple& edge_tuple) const
@@ -997,42 +1003,95 @@ double AdaptiveTessellation::get_one_ring_quadrics_error_for_vertex(const Tuple&
     ret = q(v_world_pos);
     return ret;
 }
+
+double AdaptiveTessellation::get_quadric_error_for_face(const Tuple& f) const
+{
+    wmtk::Quadric<double> q = get_face_attrs(f).accuracy_measure.quadric;
+
+    Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle_uv;
+    triangle_uv.row(0) = vertex_attrs[f.vid(*this)].pos.transpose();
+    triangle_uv.row(1) = vertex_attrs[f.switch_vertex(*this).vid(*this)].pos.transpose();
+    triangle_uv.row(2) =
+        vertex_attrs[f.switch_edge(*this).switch_vertex(*this).vid(*this)].pos.transpose();
+
+    auto get = [&](auto uv) -> Eigen::Matrix<double, 1, 3> {
+        return mesh_parameters.m_displacement->get(uv(0), uv(1)).transpose();
+    };
+
+    Eigen::Matrix3d triangle_3d;
+    triangle_3d.row(0) = get(triangle_uv.row(0));
+    triangle_3d.row(1) = get(triangle_uv.row(1));
+    triangle_3d.row(2) = get(triangle_uv.row(2));
+
+    if (0) {
+        // Quadric integrated over the face
+        auto triangle_area_2d = [](auto a, auto b, auto c) {
+            return ((a[0] - b[0]) * (a[1] - c[1]) - (a[0] - c[0]) * (a[1] - b[1])) / 2;
+        };
+
+        double uv_area =
+            triangle_area_2d(triangle_uv.row(0), triangle_uv.row(1), triangle_uv.row(2));
+        if (uv_area < std::numeric_limits<double>::denorm_min()) {
+            return 0;
+        }
+        q /= uv_area;
+
+        const double u1 = triangle_uv(0, 0);
+        const double v1 = triangle_uv(0, 1);
+        const double u2 = triangle_uv(1, 0);
+        const double v2 = triangle_uv(1, 1);
+        const double u3 = triangle_uv(2, 0);
+        const double v3 = triangle_uv(2, 1);
+        const double denom = ((v2 - v3) * (u1 - u3) + (u3 - u2) * (v1 - v3));
+        if (denom < std::numeric_limits<double>::denorm_min()) {
+            // Degenerate triangle
+            return 0.;
+        }
+
+        auto get_p_interpolated = [&](double u, double v) -> Eigen::Matrix<double, 3, 1> {
+            auto lambda1 = ((v2 - v3) * (u - u3) + (u3 - u2) * (v - v3)) / denom;
+            auto lambda2 = ((v3 - v1) * (u - u3) + (u1 - u3) * (v - v3)) / denom;
+            auto lambda3 = 1 - lambda1 - lambda2;
+            return (lambda1 * triangle_3d.row(0) + lambda2 * triangle_3d.row(1) +
+                   lambda3 * triangle_3d.row(2)).transpose();
+        };
+
+        const int order = 2;
+        Quadrature quadr;
+        TriangleQuadrature::transformed_triangle_quadrature(order, triangle_uv, quadr);
+
+        double ret = 0;
+        for (size_t i = 0; i < quadr.size(); ++i) {
+            double u = quadr.points()(i, 0);
+            double v = quadr.points()(i, 1);
+            Eigen::Matrix<double, 3, 1> p = get_p_interpolated(u, v);
+            ret += q(p);
+        }
+    } else {
+        // Quadric evaluated at the vertices
+        double ret = 0;
+        ret += q(triangle_3d.row(0).transpose());
+        ret += q(triangle_3d.row(1).transpose());
+        ret += q(triangle_3d.row(2).transpose());
+        return ret;
+    }
+}
+
 double AdaptiveTessellation::get_two_faces_quadrics_error_for_edge(const Tuple& e0) const
 {
     double ret = 0.0;
 
-
-    auto quadrics_eval_per_face = [&](const Tuple& e) -> double {
-        wmtk::Quadric<double> q;
-        q += get_face_attrs(e).accuracy_measure.quadric;
-
-        auto v1_pos = vertex_attrs[e.vid(*this)].pos;
-        Eigen::Matrix<double, 3, 1> v1_world_pos =
-            mesh_parameters.m_displacement->get(v1_pos(0), v1_pos(1));
-        auto v2_pos = vertex_attrs[e.switch_vertex(*this).vid(*this)].pos;
-        Eigen::Matrix<double, 3, 1> v2_world_pos =
-            mesh_parameters.m_displacement->get(v2_pos(0), v2_pos(1));
-        auto v3_pos = vertex_attrs[e.switch_edge(*this).switch_vertex(*this).vid(*this)].pos;
-        Eigen::Matrix<double, 3, 1> v3_world_pos =
-            mesh_parameters.m_displacement->get(v3_pos(0), v3_pos(1));
-        ret += q(v1_world_pos);
-        ret += q(v2_world_pos);
-        ret += q(v3_world_pos);
-        return ret;
-    };
-
-
-    quadrics_eval_per_face(e0);
+    ret += get_quadric_error_for_face(e0);
     // interior
     if (e0.switch_face(*this).has_value()) {
-        quadrics_eval_per_face(e0.switch_face(*this).value());
+        ret += get_quadric_error_for_face(e0.switch_face(*this).value());
     }
     // boundary
+    // TODO
 
     if (is_seam_edge(e0)) {
-        quadrics_eval_per_face(get_oriented_mirror_edge(e0));
+        ret += get_quadric_error_for_face(get_oriented_mirror_edge(e0));
     }
-
 
     return ret;
 }

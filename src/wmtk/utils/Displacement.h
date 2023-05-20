@@ -103,6 +103,7 @@ public:
         const Eigen::Matrix<T, 2, 1>& uv1,
         const Eigen::Matrix<T, 2, 1>& uv2) const
     {
+        throw std::runtime_error("get_error_per_edge should not be called");
         auto p1_displaced = get(uv1(0), uv1(1));
         auto p2_displaced = get(uv2(0), uv2(1));
         // get the pixel index of p1 and p2

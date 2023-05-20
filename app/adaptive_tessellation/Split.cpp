@@ -245,7 +245,8 @@ bool AdaptiveTessellationSplitEdgeOperation::after(
 
 bool AdaptiveTessellationPairedSplitEdgeOperation::before(AdaptiveTessellation& m, const Tuple& t)
 {
-    static std::atomic_int cnt = 0;
+    static std::atomic_int g_cnt = 0;
+    int cnt = g_cnt++;
     assert(t.is_valid(m));
     // TODO is this thread safe?
     mirror_edge_tuple = std::nullopt; // reset the mirror edge tuple
@@ -291,9 +292,9 @@ bool AdaptiveTessellationPairedSplitEdgeOperation::before(AdaptiveTessellation& 
     if (cnt % 1000 == 0) {
         m.write_obj_displaced(
             m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}.obj", cnt));
+        m.write_hdf_displaced_uv(m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}.hdf", cnt));
     }
     // m.write_obj(m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}_2d.obj", cnt));
-    cnt++;
     assert(
         (paired_op_cache.local().before_sibling_edges.size() == 3 ||
          paired_op_cache.local().before_sibling_edges.size() == 6));
