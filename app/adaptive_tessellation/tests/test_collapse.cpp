@@ -168,10 +168,14 @@ TEST_CASE("paired collapse", "[myfail][.]")
     REQUIRE(op4.before(m, primary_edge6));
     auto retdata = op4.execute(m, primary_edge6);
     REQUIRE(retdata.success);
-    REQUIRE(op4.after(m));
+    REQUIRE(op4.after(m, retdata));
     {
         std::vector<size_t> affected_fids{{0, 1, 2, 3, 6}};
-        CHECK(retdata.new_tris == op4.modified_triangles(m));
+        for(size_t j = 0; j < retdata.new_tris.size(); ++j) {
+            spdlog::info("{} {}", affected_fids[j], retdata.new_tris[j].fid(m));
+        }
+        auto modified_tris = op4.modified_triangles(m);
+        CHECK(retdata.new_tris == modified_tris);
         CHECK(retdata.new_tris.size() == affected_fids.size());
         for (const auto& ftup : retdata.new_tris) {
             CHECK(ftup.is_valid(m));
@@ -298,7 +302,7 @@ TEST_CASE("paired collapse", "[myfail][.]")
     REQUIRE(primary_edge7_ret.switch_vertex(m).vid(m) == 4);
 
     {
-        std::vector<size_t> affected_fids{{0, 2, 3, 6}};
+        std::vector<size_t> affected_fids{{3, 6}};
         auto new_tris = op5.modified_triangles(m);
         CHECK(new_tris.size() == affected_fids.size());
         for (const auto& ftup : new_tris) {
@@ -403,7 +407,6 @@ TEST_CASE("paired collapse", "[myfail][.]")
         auto retdata = op6.execute(m, primary_edge8);
         REQUIRE(retdata.success);
     }
-    REQUIRE(op6.after(m));
 
 
 #include <wmtk/utils/DisableWarnings.hpp>

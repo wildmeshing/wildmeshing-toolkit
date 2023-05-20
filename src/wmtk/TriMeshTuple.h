@@ -24,6 +24,7 @@ private:
 public:
     void print_info() const;
     std::string info() const;
+    operator std::string() const { return info(); }
 
     //         v2        /
     //       /    \      /

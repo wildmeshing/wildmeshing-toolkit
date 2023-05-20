@@ -667,11 +667,10 @@ wmtk::TriMeshOperation::ExecuteReturnData AdaptiveTessellationPairedCollapseEdge
         collapse_mirror_edge.assign_collapsed_edge_attributes(m, collapse_edge.new_vertex(m));
     }
     ret_data.success = bool(*this);
-    ret_data.new_tris = modified_triangles(m);
+    // ret_data.new_tris = modified_triangles(m);
 
     return ret_data;
 }
-
 
 
 bool AdaptiveTessellationPairedCollapseEdgeOperation::after(
@@ -679,7 +678,9 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::after(
     ExecuteReturnData& ret_data)
 {
     assert(ret_data.success);
-    return ret_data.success = after(m);
+    ret_data.success = after(m);
+    ret_data.new_tris = modified_triangles(m);
+    return ret_data;
 }
 bool AdaptiveTessellationPairedCollapseEdgeOperation::after(AdaptiveTessellation& m)
 {
@@ -822,27 +823,34 @@ void AdaptiveTessellationPairedCollapseEdgeOperation::rebuild_boundary_data(Adap
         // ov1 ~ mv2, mv2 ~ ov1
     }
 }
-auto AdaptiveTessellationPairedCollapseEdgeOperation::modified_triangles(const TriMesh& m) const -> std::vector<Tuple>
+auto AdaptiveTessellationPairedCollapseEdgeOperation::modified_triangles(const TriMesh& m) const
+    -> std::vector<Tuple>
 {
-    const auto& at  = static_cast<const AdaptiveTessellation&>(m);
+    const auto& at = static_cast<const AdaptiveTessellation&>(m);
     if (!bool(*this)) {
         return {};
     }
 
     const Tuple new_v = collapse_edge.get_return_tuple_opt().value();
 
-    return at.get_one_ring_tris_accross_seams_for_vertex(new_v);
-    //return collapse_edge.modified_triangles(m);
+    if (at.is_seam_vertex(new_v)) {
+        for (const auto& vert : at.get_all_mirror_vertices(new_v)) {
+        }
+    }
+    auto r = at.get_one_ring_tris_accross_seams_for_vertex(new_v);
+    return r;
+    // return collapse_edge.modified_triangles(m);
 }
-auto AdaptiveTessellationCollapseEdgeOperation::modified_triangles(const TriMesh& m) const -> std::vector<Tuple>
+auto AdaptiveTessellationCollapseEdgeOperation::modified_triangles(const TriMesh& m) const
+    -> std::vector<Tuple>
 {
     return TriMeshEdgeCollapseOperation::modified_triangles(m);
-    //const auto& at  = static_cast<const AdaptiveTessellation&>(m);
-    //if (!bool(*this)) {
-    //    return {};
-    //}
+    // const auto& at  = static_cast<const AdaptiveTessellation&>(m);
+    // if (!bool(*this)) {
+    //     return {};
+    // }
 
-    //const Tuple new_v = get_return_tuple_opt().value();
+    // const Tuple new_v = get_return_tuple_opt().value();
 
-    //return at.get_one_ring_tris_accross_seams_for_vertex(new_v);
+    // return at.get_one_ring_tris_accross_seams_for_vertex(new_v);
 }
