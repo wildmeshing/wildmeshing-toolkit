@@ -271,7 +271,6 @@ public:
             while ([&]() { return Q.try_pop(ele_in_queue); }()) {
                 auto& [weight, op, tup, retry] = ele_in_queue;
                 if (!tup.is_valid(m)) continue;
-                wmtk::logger().info("current tuple {} {}", tup.vid(m), tup.switch_vertex(m).vid(m));
                 std::vector<Elem> renewed_elements;
                 {
                     auto locked_vid = lock_vertices(
@@ -298,7 +297,6 @@ public:
                             operation_cleanup(m);
                             continue;
                         } // this can encode, in qslim, recompute(energy) == weight.
-                        wmtk::logger().info("current weight {}", weight);
                         std::vector<std::pair<Op, Tuple>> renewed_tuples;
                         if constexpr (std::is_base_of<wmtk::TriMesh, AppMesh>::value) {
                             auto ret_data = (*new_edit_operation_maps[op])(m, tup);

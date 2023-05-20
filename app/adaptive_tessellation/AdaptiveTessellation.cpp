@@ -99,9 +99,20 @@ void AdaptiveTessellation::mesh_preprocessing(
     set_fixed();
     // assign curve-id to each edge using the curve-it assigned for each vertex
     assign_edge_curveid();
+
+    const Eigen::MatrixXd box_min = input_V_.colwise().minCoeff();
+    const Eigen::MatrixXd box_max = input_V_.colwise().maxCoeff();
+    double max_comp = (box_max - box_min).maxCoeff();
+    Eigen::MatrixXd scene_offset = -box_min;
+    Eigen::MatrixXd scene_extent = box_max - box_min;
+    scene_offset.array() -= (scene_extent.array() - max_comp) * 0.5;
+    mesh_parameters.m_scale = max_comp;
+    mesh_parameters.m_offset = scene_offset;
+
     // cache the initial accuracy error per triangle
     std::array<wmtk::Image, 3> displaced = wmtk::combine_position_normal_texture(
-        mesh_parameters.m_normalization_scale,
+        mesh_parameters.m_scale,
+        mesh_parameters.m_offset,
         position_image_path,
         normal_image_path,
         height_image_path);
@@ -342,15 +353,6 @@ void AdaptiveTessellation::set_parameters(
         mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::TRI_QUADRICS)
         mesh_parameters.m_accuracy_threshold = target_accuracy;
     mesh_parameters.m_quality_threshold = target_edge_length;
-
-    const Eigen::MatrixXd box_min = input_V_.colwise().minCoeff();
-    const Eigen::MatrixXd box_max = input_V_.colwise().maxCoeff();
-    double max_comp = (box_max - box_min).maxCoeff();
-    Eigen::MatrixXd scene_offset = -box_min;
-    Eigen::MatrixXd scene_extent = box_max - box_min;
-    scene_offset.array() -= (scene_extent.array() - max_comp) * 0.5;
-    mesh_parameters.m_scale = max_comp;
-    mesh_parameters.m_offset = scene_offset;
 
     // setting needs to be in the order of image-> displacement-> energy-> edge_length
     // set the image first since it is used for displacement and energy setting
@@ -996,6 +998,44 @@ double AdaptiveTessellation::get_one_ring_quadrics_error_for_vertex(const Tuple&
     ret = q(v_world_pos);
     return ret;
 }
+double AdaptiveTessellation::get_two_faces_quadrics_error_for_edge(const Tuple& e0) const
+{
+    double ret = 0.0;
+
+
+    auto quadrics_eval_per_face = [&](const Tuple& e) -> double {
+        wmtk::Quadric<double> q;
+        q += get_face_attrs(e).accuracy_measure.quadric;
+
+        auto v1_pos = vertex_attrs[e.vid(*this)].pos;
+        Eigen::Matrix<double, 3, 1> v1_world_pos =
+            mesh_parameters.m_displacement->get(v1_pos(0), v1_pos(1));
+        auto v2_pos = vertex_attrs[e.switch_vertex(*this).vid(*this)].pos;
+        Eigen::Matrix<double, 3, 1> v2_world_pos =
+            mesh_parameters.m_displacement->get(v2_pos(0), v2_pos(1));
+        auto v3_pos = vertex_attrs[e.switch_edge(*this).switch_vertex(*this).vid(*this)].pos;
+        Eigen::Matrix<double, 3, 1> v3_world_pos =
+            mesh_parameters.m_displacement->get(v3_pos(0), v3_pos(1));
+        ret += q(v1_world_pos);
+        ret += q(v2_world_pos);
+        ret += q(v3_world_pos);
+    };
+
+
+    quadrics_eval_per_face(e0);
+    // interior
+    if (e0.switch_face(*this).has_value()) {
+        quadrics_eval_per_face(e0.switch_face(*this).value());
+    }
+    // boundary
+
+    if (is_seam_edge(e0)) {
+        quadrics_eval_per_face(get_oriented_mirror_edge(e0));
+    }
+
+
+    return ret;
+}
 
 
 void AdaptiveTessellation::get_nminfo_for_vertex(const Tuple& v, wmtk::NewtonMethodInfo& nminfo)
@@ -1303,6 +1343,7 @@ std::optional<TriMesh::Tuple> AdaptiveTessellation::get_mirror_edge_opt(
 // given a seam edge retrieve its mirror edge in opposite direction (half egde conventions )
 TriMesh::Tuple AdaptiveTessellation::get_oriented_mirror_edge(const TriMesh::Tuple& t) const
 {
+    assert(t.is_valid(*this));
     assert(is_seam_edge(t));
     TriMesh::Tuple mirror_edge = get_mirror_edge_opt(t).value();
     assert(is_seam_edge(mirror_edge));

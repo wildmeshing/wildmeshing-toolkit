@@ -103,7 +103,6 @@ public:
     // only operate to modify topologies
     bool m_ignore_embedding = false;
     // used for scaling the height map
-    double m_normalization_scale = 1.0;
     bool m_do_not_output = false;
 
 public:
@@ -112,7 +111,7 @@ public:
         bool flush = false) // flush should force file output immediately, but will be slow for
                             // per-operation things
 
-    const;
+        const;
 
 
     // log that always writes to file immediately beause it's flushing

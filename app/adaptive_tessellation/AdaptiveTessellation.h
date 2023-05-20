@@ -428,6 +428,7 @@ public:
 
 
     ////// debug/unit test helper functions
+    double get_two_faces_quadrics_error_for_edge(const Tuple& e0) const;
     void mesh_preprocessing(
         const std::filesystem::path& input_mesh_path,
         const std::filesystem::path& displaced_image_path);
