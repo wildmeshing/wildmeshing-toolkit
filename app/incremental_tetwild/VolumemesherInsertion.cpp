@@ -1463,6 +1463,60 @@ void tetwild::TetWild::init_from_Volumeremesher(
         std::cout << "missing param!!!!!!!!" << std::endl;
     }
 
+    // check 174 1444
+    std::cout << "v 174:" << std::endl;
+    std::cout << "coord: " << m_vertex_attribute[174].m_posf[0] << " "
+              << m_vertex_attribute[174].m_posf[1] << " " << m_vertex_attribute[174].m_posf[2]
+              << std::endl;
+    std::cout << "coord rational: " << m_vertex_attribute[174].m_pos[0].to_double() << " "
+              << m_vertex_attribute[174].m_pos[1].to_double() << " "
+              << m_vertex_attribute[174].m_pos[2].to_double() << std::endl;
+    std::cout << "is freezed: " << m_vertex_attribute[174].is_freezed << std::endl;
+    std::cout << "effective face params: ";
+    for (int i = 0; i < m_vertex_attribute[174].face_nearly_param_type.size(); i++) {
+        std::cout << m_vertex_attribute[174].face_nearly_param_type[i] << " ";
+    }
+    std::cout << std::endl;
+    std::cout << "all face params: ";
+    for (int i = 0; i < m_vertex_attribute[174].face_nearly_param_type_with_ineffective.size();
+         i++) {
+        std::cout << m_vertex_attribute[174].face_nearly_param_type_with_ineffective[i] << " ";
+    }
+    std::cout << std::endl;
+    std::cout << "edge params: ";
+    for (int i = 0; i < m_vertex_attribute[174].in_edge_param.size(); i++) {
+        std::cout << m_vertex_attribute[174].in_edge_param[i] << " ";
+    }
+    std::cout << std::endl;
+
+
+    std::cout << "v 1444:" << std::endl;
+    std::cout << "coord: " << m_vertex_attribute[1444].m_posf[0] << " "
+              << m_vertex_attribute[1444].m_posf[1] << " " << m_vertex_attribute[1444].m_posf[2]
+              << std::endl;
+    std::cout << "coord rational: " << m_vertex_attribute[1444].m_pos[0].to_double() << " "
+              << m_vertex_attribute[1444].m_pos[1].to_double() << " "
+              << m_vertex_attribute[1444].m_pos[2].to_double() << std::endl;
+
+    std::cout << "is freezed: " << m_vertex_attribute[1444].is_freezed << std::endl;
+    std::cout << "effective face params: ";
+    for (int i = 0; i < m_vertex_attribute[1444].face_nearly_param_type.size(); i++) {
+        std::cout << m_vertex_attribute[1444].face_nearly_param_type[i] << " ";
+    }
+    std::cout << std::endl;
+    std::cout << "all face params: ";
+    for (int i = 0; i < m_vertex_attribute[1444].face_nearly_param_type_with_ineffective.size();
+         i++) {
+        std::cout << m_vertex_attribute[1444].face_nearly_param_type_with_ineffective[i] << " ";
+    }
+    std::cout << std::endl;
+    std::cout << "edge params: ";
+    for (int i = 0; i < m_vertex_attribute[1444].in_edge_param.size(); i++) {
+        std::cout << m_vertex_attribute[1444].in_edge_param[i] << " ";
+    }
+    std::cout << std::endl;
+
+
     // // rounding
     // std::atomic_int cnt_round(0);
     // std::atomic_int cnt_valid(0);

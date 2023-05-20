@@ -155,7 +155,7 @@ bool tetwild::TetWild::split_edge_after(const Tuple& loc)
     m_vertex_attribute[v_id].m_is_on_open_boundary = split_cache.local().is_edge_open_boundary;
 
     // geometry preservation
-    if (m_params.preserve_geometry) {
+    if (m_params.preserve_geometry && m_vertex_attribute[v_id].m_is_on_surface) {
         // new vertex param type = intersection of the edge vertices
         m_vertex_attribute[v_id].face_param_type = wmtk::set_intersection(
             m_vertex_attribute[v1_id].face_param_type,
@@ -217,6 +217,21 @@ bool tetwild::TetWild::split_edge_after(const Tuple& loc)
     m_vertex_attribute[v_id].m_sizing_scalar =
         (m_vertex_attribute[v1_id].m_sizing_scalar + m_vertex_attribute[v2_id].m_sizing_scalar) / 2;
 
+    // if (m_vertex_attribute[v_id].m_is_on_surface) {
+    //     if (!check_vertex_param_type()) {
+    //         std::cout << v1_id << " " << v2_id << std::endl;
+    //         for (auto vp : m_vertex_attribute[v1_id].face_nearly_param_type_with_ineffective)
+    //             std::cout << vp << " ";
+    //         std::cout << std::endl;
+    //         for (auto vp : m_vertex_attribute[v2_id].face_nearly_param_type_with_ineffective)
+    //             std::cout << vp << " ";
+    //         std::cout << std::endl;
+    //         output_faces("bug_surface_miss_param_after_split.obj", [](auto& f) {
+    //             return f.m_is_surface_fs;
+    //         });
+    //         // exit(0);
+    //     }
+    // }
 
     return true;
 }

@@ -120,3 +120,75 @@ TEST_CASE("jacobian_test", "[geometry preservation]")
     std::cout << "H[1]: " << H.col(1) << std::endl << " hvfd: " << dvfd2 << std::endl;
     //     J.col(0) == dufd; J.col(1) == dvfd;
 }
+
+TEST_CASE("jacobian_test_edge", "[geometry preservation]")
+{
+    Vector3d o(1, 0, 1);
+    Vector3d d(1, 2, 0);
+    d = d.normalized();
+    Vector3d old_pos(2, 2, 1);
+    std::array<double, 12> T = {{2, 2, 1, 2, 4, 2, -2, 2, 2, 2, 2, -2}};
+    double t = (old_pos - o).dot(d);
+    std::cout << t << std::endl;
+    // param function
+    auto param = [&o, &d](double t) { return o + t * d; };
+    // jacobian with chainrule
+    auto jac = [&d](const std::array<double, 12>& T) {
+        Vector3d jac_param;
+        jac_param = d;
+
+        Vector3d jac_amips;
+        wmtk::AMIPS_jacobian(T, jac_amips);
+
+        double result = jac_amips.dot(jac_param);
+        return result;
+    };
+
+    // FD gradient
+    double eps = 1e-4;
+    auto du = t;
+    du += eps; // du = uv; du[0] += eps;
+    auto duT = T; // duT = T;
+
+    for (auto j = 0; j < 3; j++) {
+        duT[j] = param(du)[j]; // only filling the front point x,y,z.
+    }
+    double dufd = (wmtk::AMIPS_energy(duT) - wmtk::AMIPS_energy(T)) / eps;
+
+    double J;
+    J = jac(T);
+    std::cout << "AMIPS(T): " << wmtk::AMIPS_energy(T) << std::endl;
+    std::cout << "AMIPS(duT): " << wmtk::AMIPS_energy(duT) << std::endl;
+    std::cout << "J: " << J << " dufd: " << dufd << std::endl;
+
+    // end of FD
+
+    // hessian with chainrule
+    auto hessian = [&d](const std::array<double, 12>& T) {
+        Vector3d jac_param;
+        jac_param = d;
+
+        Eigen::Matrix3d hessian_amips;
+        wmtk::AMIPS_hessian(T, hessian_amips);
+
+        double result = jac_param.transpose() * hessian_amips * jac_param;
+        return result;
+    };
+
+    du = t;
+    du += eps;
+    duT = T;
+
+    for (auto j = 0; j < 3; j++) {
+        duT[j] = param(du)[j]; // only filling the front point x,y,z.
+    }
+    double jacdu, jacn;
+    jacdu = jac(duT);
+    jacn = jac(T);
+    double dufd2 = (jacdu - jacn) / eps;
+
+    double H;
+    H = hessian(T);
+    std::cout << "H: " << H << std::endl << " hufd: " << dufd2 << std::endl;
+    //     J.col(0) == dufd; J.col(1) == dvfd;
+}

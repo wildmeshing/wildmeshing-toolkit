@@ -51,6 +51,8 @@ int main(int argc, char** argv)
     app.add_option("--max-its", max_its, "max # its");
     app.add_option("-e, --epsr", params.epsr, "relative eps wrt diag of bbox");
     app.add_option("-r, --rlen", params.lr, "relative ideal edge length wrt diag of bbox");
+    app.add_option("--stop-energy", params.stop_energy, "stop max energy");
+
 
     app.add_flag(
         "--filter-with-input",
@@ -220,6 +222,11 @@ int main(int argc, char** argv)
         tet_face_on_input_surface);
     // exit(0);
 
+    mesh_new.output_faces(output_path + "after_insertion_surface.obj", [](auto& f) {
+        return f.m_is_surface_fs;
+    });
+
+
     double insertion_time = insertion_timer.getElapsedTime();
     wmtk::logger().info("volume remesher insertion time: {}s", insertion_time);
 
@@ -239,9 +246,6 @@ int main(int argc, char** argv)
     mesh_new.output_mesh(output_path + "after_insertion.msh");
     std::cout << "here3" << std::endl;
 
-    mesh_new.output_faces(output_path + "after_insertion_surface.obj", [](auto& f) {
-        return f.m_is_surface_fs;
-    });
 
     mesh_new.output_faces(output_path + "matched_surface.obj", [](auto& f) {
         return f.from_input_collection_id > -1;

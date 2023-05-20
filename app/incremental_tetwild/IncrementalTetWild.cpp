@@ -134,6 +134,10 @@ std::tuple<double, double> tetwild::TetWild::local_operations(
                 // }
                 if (!check_vertex_param_type()) {
                     std::cout << "missing param!!!!!!!!" << std::endl;
+                    output_faces("bug_surface_miss_param_after_split.obj", [](auto& f) {
+                        return f.m_is_surface_fs;
+                    });
+                    // exit(0);
                 }
             }
         } else if (i == 1) {
@@ -150,7 +154,7 @@ std::tuple<double, double> tetwild::TetWild::local_operations(
                 // }
                 if (!check_vertex_param_type()) {
                     std::cout << "missing param!!!!!!!!" << std::endl;
-                    output_faces("buf_surface_miss_param.obj", [](auto& f) {
+                    output_faces("buf_surface_miss_param_after_collpase.obj", [](auto& f) {
                         return f.m_is_surface_fs;
                     });
                     // exit(0);
@@ -667,12 +671,27 @@ std::tuple<double, double> tetwild::TetWild::get_max_avg_energy()
     //     avg_energy += std::cbrt(q);
     //     cnt++;
     // });
+    std::ofstream large_tet("large_energy_tet.obj");
 
     for (int i = 0; i < tet_capacity(); i++) {
         auto tup = tuple_from_tet(i);
         if (!tup.is_valid(*this)) continue;
+        auto vs = oriented_tet_vertices(tup);
+        int cnt_freeze = 0;
+        for (auto v : vs) {
+            if (m_vertex_attribute[v.vid(*this)].is_freezed) cnt_freeze++;
+        }
+        if (cnt_freeze > 1) continue;
+
         auto q = m_tet_attribute[tup.tid(*this)].m_quality;
         max_energy = std::max(max_energy, q);
+        if (q > 1e6) {
+            for (auto v : vs) {
+                large_tet << "v " << m_vertex_attribute[v.vid(*this)].m_posf[0] << " "
+                          << m_vertex_attribute[v.vid(*this)].m_posf[1] << " "
+                          << m_vertex_attribute[v.vid(*this)].m_posf[2] << std::endl;
+            }
+        }
         avg_energy += std::cbrt(q);
         cnt++;
     }
