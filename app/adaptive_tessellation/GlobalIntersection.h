@@ -167,7 +167,14 @@ inline void displace_self_intersection_free(AdaptiveTessellation& mesh)
         }
         Eigen::MatrixXd buf = vertices_current;
         buf.row(i) = vertices_target.row(i);
-        const double t = ipc::compute_collision_free_stepsize(collisionMesh, vertices_current, buf);
+        const double t = ipc::compute_collision_free_stepsize(
+            collisionMesh,
+            vertices_current,
+            buf,
+            ipc::DEFAULT_BROAD_PHASE_METHOD,
+            0.0,
+            ipc::DEFAULT_CCD_TOLERANCE,
+            1000);
 
         const Eigen::Vector3d& p0 = vertices_current.row(i);
         const Eigen::Vector3d& p1 = vertices_target.row(i);
