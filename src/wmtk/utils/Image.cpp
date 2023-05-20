@@ -131,6 +131,7 @@ void Image::load(
     m_image.colwise().reverseInPlace();
     set_wrapping_mode(mode_x, mode_y);
 }
+
 // down sample a image to size/2 by size/2
 // used for mipmap construction
 Image Image::down_sample() const
@@ -153,7 +154,7 @@ Image Image::down_sample() const
 
 std::array<wmtk::Image, 3> wmtk::combine_position_normal_texture(
     double normalization_scale,
-    Eigen::Matrix<double, 1, 3>& offset,
+    const Eigen::Matrix<double, 1, 3>& offset,
     const std::filesystem::path& position_path,
     const std::filesystem::path& normal_path,
     const std::filesystem::path& height_path)

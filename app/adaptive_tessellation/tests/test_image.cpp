@@ -1,3 +1,4 @@
+#include <igl/read_triangle_mesh.h>
 #include <wmtk/utils/Image.h>
 #include <wmtk/utils/MipMap.h>
 #include <catch2/catch.hpp>
@@ -63,16 +64,37 @@ TEST_CASE("mipmap")
     }
 }
 
+namespace {
+
+std::pair<double, Eigen::RowVector3d> compute_mesh_normalization(const Eigen::MatrixXd& V)
+{
+    const Eigen::RowVector3d box_min = V.colwise().minCoeff();
+    const Eigen::RowVector3d box_max = V.colwise().maxCoeff();
+    const Eigen::RowVector3d scene_extent = box_max - box_min;
+    const double max_comp = scene_extent.maxCoeff();
+    Eigen::RowVector3d scene_offset = -box_min;
+    scene_offset -= (scene_extent.array() - max_comp).matrix() * 0.5;
+    return {max_comp, scene_offset};
+}
+
+} // namespace
+
 TEST_CASE("combined displaced map")
 {
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    igl::read_triangle_mesh(WMTK_DATA_DIR "/hemisphere.obj", V, F);
+    auto [scale, offset] = compute_mesh_normalization(V);
+
     std::array<wmtk::Image, 3> displaced_images = wmtk::combine_position_normal_texture(
-        (double)1.,
-        "/home/yunfan/seamPyramid_position.exr",
-        "/home/yunfan/seamPyramid_normal_smooth.exr",
-        "/home/yunfan/seamPyramid_height_10.exr");
+        scale,
+        offset,
+        WMTK_DATA_DIR "/images/hemisphere_512_position.exr",
+        WMTK_DATA_DIR "/images/hemisphere_512_normal-world-space.exr",
+        WMTK_DATA_DIR "/images/riveted_castle_iron_door_512_height.exr");
 
     std::array<wmtk::Image, 3> displaced_from_precomputed =
-        wmtk::load_rgb_image("/home/yunfan/seamPyramid_displaced.exr");
+        wmtk::load_rgb_image(WMTK_DATA_DIR "/images/hemisphere_512_displaced.exr");
     REQUIRE(displaced_from_precomputed[0].width() == displaced_images[0].width());
     REQUIRE(displaced_from_precomputed[0].height() == displaced_images[0].height());
     REQUIRE(displaced_from_precomputed[1].width() == displaced_images[1].width());
@@ -82,14 +104,14 @@ TEST_CASE("combined displaced map")
     for (int i = 0; i < displaced_from_precomputed[0].height(); i++) {
         for (int j = 0; j < displaced_from_precomputed[0].width(); j++) {
             REQUIRE_THAT(
-                displaced_from_precomputed[0].get_pixel(i, j),
-                Catch::Matchers::WithinAbs(displaced_images[0].get_pixel(i, j), (float)1e-5));
+                displaced_from_precomputed[0].get_pixel(i, j) * scale - offset[0],
+                Catch::Matchers::WithinRel(displaced_images[0].get_pixel(i, j), (float)1e-2));
             REQUIRE_THAT(
-                displaced_from_precomputed[1].get_pixel(i, j),
-                Catch::Matchers::WithinAbs(displaced_images[1].get_pixel(i, j), (float)1e-5));
+                displaced_from_precomputed[1].get_pixel(i, j) * scale - offset[1],
+                Catch::Matchers::WithinRel(displaced_images[1].get_pixel(i, j), (float)1e-2));
             REQUIRE_THAT(
-                displaced_from_precomputed[2].get_pixel(i, j),
-                Catch::Matchers::WithinAbs(displaced_images[2].get_pixel(i, j), (float)1e-5));
+                displaced_from_precomputed[2].get_pixel(i, j) * scale - offset[2],
+                Catch::Matchers::WithinRel(displaced_images[2].get_pixel(i, j), (float)1e-2));
         }
     }
 }

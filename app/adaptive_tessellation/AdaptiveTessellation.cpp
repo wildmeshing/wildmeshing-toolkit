@@ -482,9 +482,10 @@ void AdaptiveTessellation::set_faces_quadrics(
     const std::vector<TriMesh::Tuple>& tris,
     const std::vector<wmtk::Quadric<double>>& compressed_quadrics)
 {
+    throw std::runtime_error("do not use");
     // update the face_attrs with modified tris error
     for (int i = 0; i < tris.size(); i++) {
-        face_attrs[tris[i].fid(*this)].accuracy_measure.quadric = compressed_quadrics[i];
+        // face_attrs[tris[i].fid(*this)].accuracy_measure.quadric = compressed_quadrics[i];
     }
 }
 
@@ -994,10 +995,11 @@ std::tuple<double, double, double> AdaptiveTessellation::get_projected_relative_
 
 double AdaptiveTessellation::get_one_ring_quadrics_error_for_vertex(const Tuple& v) const
 {
+    throw std::runtime_error("do not use");
     double ret = 0.0;
     wmtk::Quadric<double> q;
     for (const Tuple& tri : get_one_ring_tris_for_vertex(v)) {
-        q += get_face_attrs(tri).accuracy_measure.quadric;
+        // q += get_face_attrs(tri).accuracy_measure.quadric;
     }
     auto v_pos = vertex_attrs[v.vid(*this)].pos;
     Eigen::Matrix<double, 3, 1> v_world_pos =
@@ -1008,7 +1010,9 @@ double AdaptiveTessellation::get_one_ring_quadrics_error_for_vertex(const Tuple&
 
 double AdaptiveTessellation::get_quadric_error_for_face(const Tuple& f) const
 {
-    wmtk::Quadric<double> q = get_face_attrs(f).accuracy_measure.quadric;
+    throw std::runtime_error("do not use");
+    wmtk::Quadric<double> q;
+    // q += get_face_attrs(f).accuracy_measure.quadric;
 
     Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle_uv;
     triangle_uv.row(0) = vertex_attrs[f.vid(*this)].pos.transpose();
