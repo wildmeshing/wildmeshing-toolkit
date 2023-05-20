@@ -646,4 +646,3 @@ auto AdaptiveTessellationPairedSplitEdgeOperation::modified_triangles(const TriM
 
     return at.get_one_ring_tris_accross_seams_for_vertex(new_v);
 }
-

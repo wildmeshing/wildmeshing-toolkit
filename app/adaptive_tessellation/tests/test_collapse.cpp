@@ -171,7 +171,7 @@ TEST_CASE("paired collapse", "[myfail][.]")
     REQUIRE(op4.after(m, retdata));
     {
         std::vector<size_t> affected_fids{{0, 1, 2, 3, 6}};
-        for(size_t j = 0; j < retdata.new_tris.size(); ++j) {
+        for (size_t j = 0; j < retdata.new_tris.size(); ++j) {
             spdlog::info("{} {}", affected_fids[j], retdata.new_tris[j].fid(m));
         }
         auto modified_tris = op4.modified_triangles(m);
@@ -454,7 +454,7 @@ TEST_CASE("paired collapse", "[myfail][.]")
     }
 
     {
-        std::vector<size_t> affected_fids{{2,6}};
+        std::vector<size_t> affected_fids{{2, 6}};
         auto new_tris = op6.modified_triangles(m);
         CHECK(new_tris.size() == affected_fids.size());
         for (const auto& ftup : new_tris) {
