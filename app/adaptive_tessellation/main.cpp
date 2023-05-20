@@ -195,23 +195,37 @@ int main(int argc, char** argv)
     {
         LoggerDataCollector ldc;
         ldc.evaluate_mesh(m);
-        ldc.log_json_verbose(m, "before_remeshing");
+        ldc.log_json(m, "before_remeshing");
     }
 
-    LoggerDataCollector ldc;
-    ldc.start_timer();
-    m.split_all_edges();
-    ldc.stop_timer();
+    {
+        LoggerDataCollector ldc;
+        ldc.start_timer();
+        m.split_all_edges();
+        ldc.stop_timer();
+        ldc.evaluate_mesh(m);
+        ldc.log_json(m, "after_split");
+        m.write_obj_displaced("after_split.obj");
+    }
+
+    //{
+    //    LoggerDataCollector ldc;
+    //    ldc.start_timer();
+    //    m.smooth_all_vertices();
+    //    ldc.stop_timer();
+    //    ldc.evaluate_mesh(m);
+    //    ldc.log_json(m, "after_smooth");
+    //    m.write_obj_displaced("after_smooth.obj");
+    //}
 
     m.consolidate_mesh();
-
-    ldc.evaluate_mesh(m);
-    ldc.log_json_verbose(m, "after_remeshing");
 
     auto finish_time = lagrange::get_timestamp();
     auto duration = lagrange::timestamp_diff_in_seconds(start_time, finish_time);
     wmtk::logger().info("!!!!finished {}!!!!", duration);
     m.mesh_parameters.js_log["total_time"] = duration;
+
+    m.mesh_parameters.ATlogger->flush();
 
     m.write_obj_displaced(
         output_file.parent_path() /
