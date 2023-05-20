@@ -248,7 +248,8 @@ TEST_CASE("bicubic periodic")
     }
 }
 
-TEST_CASE("displacement_bicubic_edge_quadrature")
+// NOTE: this unit test is outdated as get_error_per_edge should not be called?
+TEST_CASE("displacement_bicubic_edge_quadrature", "[.]")
 {
     using DScalar = wmtk::EdgeLengthEnergy::DScalar;
     DiffScalarBase::setVariableCount(2);

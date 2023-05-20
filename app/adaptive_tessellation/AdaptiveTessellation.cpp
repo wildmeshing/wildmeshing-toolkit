@@ -938,7 +938,7 @@ double AdaptiveTessellation::get_cached_area_accuracy_error_for_split(const Tupl
 std::tuple<double, double, double> AdaptiveTessellation::get_projected_relative_error_for_split(
     const Tuple& edge_tuple) const
 {
-    throw std::runtime_error("should not be used");
+    throw std::runtime_error("ATshould not be used");
 
     ///////// THIS IS NOT USED
     double error, error1, error2;
