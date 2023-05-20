@@ -41,18 +41,18 @@ void tetwild::TetWild::mesh_improvement(int max_its)
     ZoneScopedN("meshimprovementmain");
 
     // rounding
-    std::atomic_int cnt_round(0);
-    std::atomic_int cnt_valid(0);
+    // std::atomic_int cnt_round(0);
+    // std::atomic_int cnt_valid(0);
 
-    auto vertices = get_vertices();
-    for (auto v : vertices) {
-        // debug code
-        if (v.is_valid(*this)) cnt_valid++;
+    // auto vertices = get_vertices();
+    // for (auto v : vertices) {
+    //     // debug code
+    //     if (v.is_valid(*this)) cnt_valid++;
 
-        if (round(v)) cnt_round++;
-    }
+    //     if (round(v)) cnt_round++;
+    // }
 
-    wmtk::logger().info("cnt_round {}/{}", cnt_round, cnt_valid);
+    // wmtk::logger().info("cnt_round {}/{}", cnt_round, cnt_valid);
 
     compute_vertex_partition_morton();
 

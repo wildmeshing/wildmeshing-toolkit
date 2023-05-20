@@ -841,24 +841,6 @@ void tetwild::TetWild::init_from_Volumeremesher(
     }
     wmtk::logger().info("#open boundary edges: {}", open_boundary_cnt);
 
-    // // rounding
-    // std::atomic_int cnt_round(0);
-    // std::atomic_int cnt_valid(0);
-
-    // auto vertices = get_vertices();
-    // for (auto v : vertices) {
-    //     // debug code
-    //     if (v.is_valid(*this)) cnt_valid++;
-
-    //     if (round(v)) cnt_round++;
-    // }
-
-    // wmtk::logger().info("cnt_round {}/{}", cnt_round, cnt_valid);
-
-    // init qualities
-    auto& m = *this;
-    for_each_tetra([&m](auto& t) { m.m_tet_attribute[t.tid(m)].m_quality = m.get_quality(t); });
-
 
     // enable on for tests
     // debug codes
@@ -1530,6 +1512,23 @@ void tetwild::TetWild::init_from_Volumeremesher(
     // }
 
     // wmtk::logger().info("cnt_round {}/{}", cnt_round, cnt_valid);
+    // // rounding
+    std::atomic_int cnt_round(0);
+    std::atomic_int cnt_valid(0);
+
+    auto vertices = get_vertices();
+    for (auto v : vertices) {
+        // debug code
+        if (v.is_valid(*this)) cnt_valid++;
+
+        if (round(v)) cnt_round++;
+    }
+
+    wmtk::logger().info("cnt_round {}/{}", cnt_round, cnt_valid);
+
+    // init qualities
+    auto& m = *this;
+    for_each_tetra([&m](auto& t) { m.m_tet_attribute[t.tid(m)].m_quality = m.get_quality(t); });
 }
 
 // void tetwild::TetWild::init_from_file(std::string input_dir)
