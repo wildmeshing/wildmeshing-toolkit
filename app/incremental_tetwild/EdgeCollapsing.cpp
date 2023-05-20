@@ -429,16 +429,19 @@ bool tetwild::TetWild::collapse_edge_after(const Tuple& loc)
         auto tvs = oriented_tet_vertices(tet);
 
         // coplanar check
-        auto tmp1 = wmtk::set_intersection(
-            m_vertex_attribute[tvs[0].vid(*this)].face_nearly_param_type,
-            m_vertex_attribute[tvs[1].vid(*this)].face_nearly_param_type);
+        if (m_params.preserve_geometry) {
+            auto tmp1 = wmtk::set_intersection(
+                m_vertex_attribute[tvs[0].vid(*this)].face_nearly_param_type,
+                m_vertex_attribute[tvs[1].vid(*this)].face_nearly_param_type);
 
-        auto tmp2 = wmtk::set_intersection(
-            m_vertex_attribute[tvs[2].vid(*this)].face_nearly_param_type,
-            m_vertex_attribute[tvs[3].vid(*this)].face_nearly_param_type);
+            auto tmp2 = wmtk::set_intersection(
+                m_vertex_attribute[tvs[2].vid(*this)].face_nearly_param_type,
+                m_vertex_attribute[tvs[3].vid(*this)].face_nearly_param_type);
 
-        auto tmp = wmtk::set_intersection(tmp1, tmp2);
-        if (tmp.size() > 0) return false;
+            auto tmp = wmtk::set_intersection(tmp1, tmp2);
+            if (tmp.size() > 0) return false;
+        }
+
 
         if (is_inverted(tet)) {
             // if (debug_flag) std::cout << "tet inverted reject" << std::endl;
