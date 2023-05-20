@@ -803,6 +803,8 @@ void AdaptiveTessellation::mesh_preprocessing(
     m_quadric_integral =
         wmtk::QuadricIntegral(displaced, wmtk::QuadricIntegral::QuadricType::Triangle);
     m_texture_integral = wmtk::TextureIntegral(std::move(displaced));
+    m_texture_integral.set_integration_method(
+        wmtk::IntegralBase::IntegrationMethod::Exact); // Adaptive or Exact
     m_texture_integral.get_error_per_triangle(uv_triangles, computed_errors);
     set_faces_accuracy_error(tris_tuples, computed_errors);
 }
