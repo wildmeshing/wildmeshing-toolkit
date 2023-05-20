@@ -390,8 +390,7 @@ void AdaptiveTessellation::swap_all_edges_accuracy_pass()
         executor.is_weight_up_to_date = [](auto& m, auto& ele) {
             auto& [weight, op, tup] = ele;
             if (weight < 0) return false;
-            double current_cost = 0.;
-            current_cost = swap_accuracy_cost(m, tup);
+            double current_cost = swap_accuracy_cost(m, tup);
             if (current_cost < 0.) return false;
             if (!is_close(current_cost, weight)) return false;
             return true;
@@ -435,20 +434,63 @@ void AdaptiveTessellation::swap_all_edges_quality_pass()
         };
         executor.num_threads = NUM_THREADS;
         executor.is_weight_up_to_date = [](auto& m, auto& ele) {
-            auto& [weight, op, tup] = ele;
+            auto& [weight, op, e] = ele;
             if (weight < 0) return false;
-            double current_cost = 0.;
-            current_cost = swap_valence_cost(m, tup);
+            double current_cost = swap_valence_cost(m, e);
             if (current_cost < 0.) return false;
             if (!is_close(current_cost, weight)) return false;
             // check for the accuracy safegurads
             // simulate the swap and check if the accuracy is still within the threshold
-            if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::EDGE_ACCURACY) {
-                /////// TODO
-            } else if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
+            if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
+                TriMesh::Tuple other_face = e.switch_face(m).value();
+                size_t v1 = e.vid(m);
+                size_t v2 = e.switch_vertex(m).vid(m);
+                size_t v4 = (e.switch_edge(m)).switch_vertex(m).vid(m);
+                size_t v3 = other_face.switch_edge(m).switch_vertex(m).vid(m);
+                // get oriented vids
+                std::array<size_t, 3> vids1 = m.oriented_tri_vids(e);
+                std::array<size_t, 3> vids2 = m.oriented_tri_vids(other_face);
+
+                Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle1;
+                Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle2;
+
+                std::vector<std::array<float, 6>> modified_tris(2);
+                std::vector<float> compute_errors(2);
+                // replace the vids with the swapped vids
+                for (auto i = 0; i < 3; i++) {
+                    if (vids1[i] == e.switch_vertex(m).vid(m)) vids1[i] = v3;
+                    if (vids2[i] == e.vid(m)) vids2[i] = v4;
+                }
+                for (auto i = 0; i < 3; i++) {
+                    modified_tris[0][i * 2] = m.vertex_attrs[vids1[i]].pos(0);
+                    modified_tris[0][i * 2 + 1] = m.vertex_attrs[vids1[i]].pos(1);
+                    modified_tris[1][i * 2] = m.vertex_attrs[vids2[i]].pos(0);
+                    modified_tris[1][i * 2 + 1] = m.vertex_attrs[vids2[i]].pos(1);
+
+                    triangle1.row(i) = m.vertex_attrs[vids1[i]].pos;
+                    triangle2.row(i) = m.vertex_attrs[vids2[i]].pos;
+                }
+
+                m.m_texture_integral.get_error_per_triangle(modified_tris, compute_errors);
+
+                if (polygon_signed_area(triangle1) <= 0 || polygon_signed_area(triangle2) <= 0) {
+                    return false;
+                } else {
+                    double safeguard_accuracy = m.mesh_parameters.m_accuracy_threshold *
+                                                m.mesh_parameters.m_accuracy_safeguard_ratio;
+                    if (compute_errors[0] > safeguard_accuracy ||
+                        compute_errors[1] > safeguard_accuracy) {
+                        return false;
+                    } else {
+                        return true;
+                    }
+                }
+            } else if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::EDGE_ACCURACY) {
+                throw std::runtime_error("EDGE_ACCURACY is not supported for swap quality pass");
                 /////// TODO
             } else if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::TRI_QUADRICS) {
                 /////// TODO
+                throw std::runtime_error("TRI_QUADRICS is not supported for swap quality pass");
             }
             return true;
         };

@@ -68,7 +68,7 @@ public:
                                          // doesn't support autodiff
 
         // storing the Quadric for each face
-        // wmtk::Quadric<double> quadric;
+        wmtk::Quadric<double> quadric;
     };
     AccuracyMeasure accuracy_measure;
 };

@@ -67,10 +67,9 @@ void AdaptiveTessellation::mesh_preprocessing(
     wmtk::TriMesh m_3d;
     std::vector<std::array<size_t, 3>> tris;
     for (auto f = 0; f < input_F_.rows(); f++) {
-        std::array<size_t, 3> tri = {
-            (size_t)input_F_(f, 0),
-            (size_t)input_F_(f, 1),
-            (size_t)input_F_(f, 2)};
+        std::array<size_t, 3> tri = {(size_t)input_F_(f, 0),
+                                     (size_t)input_F_(f, 1),
+                                     (size_t)input_F_(f, 2)};
         tris.emplace_back(tri);
     }
     m_3d.create_mesh(input_V_.rows(), tris);
@@ -482,10 +481,10 @@ void AdaptiveTessellation::set_faces_quadrics(
     const std::vector<TriMesh::Tuple>& tris,
     const std::vector<wmtk::Quadric<double>>& compressed_quadrics)
 {
-    throw std::runtime_error("do not use");
+    throw std::runtime_error("set face quadrics do not use");
     // update the face_attrs with modified tris error
     for (int i = 0; i < tris.size(); i++) {
-        // face_attrs[tris[i].fid(*this)].accuracy_measure.quadric = compressed_quadrics[i];
+        face_attrs[tris[i].fid(*this)].accuracy_measure.quadric = compressed_quadrics[i];
     }
 }
 
@@ -938,7 +937,7 @@ double AdaptiveTessellation::get_cached_area_accuracy_error_for_split(const Tupl
 std::tuple<double, double, double> AdaptiveTessellation::get_projected_relative_error_for_split(
     const Tuple& edge_tuple) const
 {
-    throw std::runtime_error("should not be used");
+    throw std::runtime_error("get relative error for split should not be used");
 
     ///////// THIS IS NOT USED
     double error, error1, error2;
@@ -995,7 +994,7 @@ std::tuple<double, double, double> AdaptiveTessellation::get_projected_relative_
 
 double AdaptiveTessellation::get_one_ring_quadrics_error_for_vertex(const Tuple& v) const
 {
-    throw std::runtime_error("do not use");
+    throw std::runtime_error("get quadrics error for vertex do not use");
     double ret = 0.0;
     wmtk::Quadric<double> q;
     for (const Tuple& tri : get_one_ring_tris_for_vertex(v)) {
@@ -1010,7 +1009,7 @@ double AdaptiveTessellation::get_one_ring_quadrics_error_for_vertex(const Tuple&
 
 double AdaptiveTessellation::get_quadric_error_for_face(const Tuple& f) const
 {
-    throw std::runtime_error("do not use");
+    throw std::runtime_error("get quadrics erorr for face do not use");
     wmtk::Quadric<double> q;
     // q += get_face_attrs(f).accuracy_measure.quadric;
 
@@ -1100,7 +1099,7 @@ double AdaptiveTessellation::get_two_faces_quadrics_error_for_edge(const Tuple& 
         ret += get_quadric_error_for_face(get_oriented_mirror_edge(e0));
     }
 
-    throw std::runtime_error("Not fully implemented, should not be used");
+    throw std::runtime_error("two faces quadrics error Not fully implemented, should not be used");
 
     return ret;
 }
