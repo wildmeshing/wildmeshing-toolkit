@@ -41,18 +41,18 @@ void tetwild::TetWild::mesh_improvement(int max_its)
     ZoneScopedN("meshimprovementmain");
 
     // rounding
-    std::atomic_int cnt_round(0);
-    std::atomic_int cnt_valid(0);
+    // std::atomic_int cnt_round(0);
+    // std::atomic_int cnt_valid(0);
 
-    auto vertices = get_vertices();
-    for (auto v : vertices) {
-        // debug code
-        if (v.is_valid(*this)) cnt_valid++;
+    // auto vertices = get_vertices();
+    // for (auto v : vertices) {
+    //     // debug code
+    //     if (v.is_valid(*this)) cnt_valid++;
 
-        if (round(v)) cnt_round++;
-    }
+    //     if (round(v)) cnt_round++;
+    // }
 
-    wmtk::logger().info("cnt_round {}/{}", cnt_round, cnt_valid);
+    // wmtk::logger().info("cnt_round {}/{}", cnt_round, cnt_valid);
 
     compute_vertex_partition_morton();
 
@@ -132,13 +132,13 @@ std::tuple<double, double> tetwild::TetWild::local_operations(
                 // for (auto f : faces) {
                 //     auto x = f.fid(*this);
                 // }
-                if (!check_vertex_param_type()) {
-                    std::cout << "missing param!!!!!!!!" << std::endl;
-                    output_faces("bug_surface_miss_param_after_split.obj", [](auto& f) {
-                        return f.m_is_surface_fs;
-                    });
-                    // exit(0);
-                }
+                // if (!check_vertex_param_type()) {
+                //     std::cout << "missing param!!!!!!!!" << std::endl;
+                //     output_faces("bug_surface_miss_param_after_split.obj", [](auto& f) {
+                //         return f.m_is_surface_fs;
+                //     });
+                //     // exit(0);
+                // }
             }
         } else if (i == 1) {
             for (int n = 0; n < ops[i]; n++) {
@@ -152,13 +152,13 @@ std::tuple<double, double> tetwild::TetWild::local_operations(
                 // for (auto f : faces) {
                 //     auto x = f.fid(*this);
                 // }
-                if (!check_vertex_param_type()) {
-                    std::cout << "missing param!!!!!!!!" << std::endl;
-                    output_faces("buf_surface_miss_param_after_collpase.obj", [](auto& f) {
-                        return f.m_is_surface_fs;
-                    });
-                    // exit(0);
-                }
+                // if (!check_vertex_param_type()) {
+                //     std::cout << "missing param!!!!!!!!" << std::endl;
+                //     output_faces("buf_surface_miss_param_after_collpase.obj", [](auto& f) {
+                //         return f.m_is_surface_fs;
+                //     });
+                //     // exit(0);
+                // }
             }
         } else if (i == 2) {
             for (int n = 0; n < ops[i]; n++) {

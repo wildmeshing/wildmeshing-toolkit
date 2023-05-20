@@ -99,11 +99,11 @@ bool tetwild::TetWild::collapse_edge_before(const Tuple& loc) // input is an edg
     auto loc1 = switch_vertex(loc);
     size_t v2_id = loc1.vid(*this);
 
-    bool debug_flag = (v1_id == 1060 && v2_id == 174);
-    if (debug_flag) {
-        std::cout << m_vertex_attribute[v1_id].m_posf.transpose() << std::endl;
-        std::cout << m_vertex_attribute[v2_id].m_posf.transpose() << std::endl;
-    }
+    // bool debug_flag = (v1_id == 1060 && v2_id == 174);
+    // if (debug_flag) {
+    //     std::cout << m_vertex_attribute[v1_id].m_posf.transpose() << std::endl;
+    //     std::cout << m_vertex_attribute[v2_id].m_posf.transpose() << std::endl;
+    // }
     //
     cache.v1_id = v1_id;
     cache.v2_id = v2_id;
@@ -131,7 +131,7 @@ bool tetwild::TetWild::collapse_edge_before(const Tuple& loc) // input is an edg
                     on_bbox) == VA[v2_id].on_bbox_faces.end()) {
                 // debug code
                 // wmtk::logger().info("edge {} not passing bbox before check!", loc.fid(*this));
-                if (debug_flag) std::cout << "box reject" << std::endl;
+                // if (debug_flag) std::cout << "box reject" << std::endl;
                 return false;
             }
     }
@@ -141,7 +141,7 @@ bool tetwild::TetWild::collapse_edge_before(const Tuple& loc) // input is an edg
         if (!VA[v2_id].m_is_on_surface && m_envelope.is_outside(VA[v2_id].m_posf)) {
             // debug code
             // wmtk::logger().info("edge {} not passing surface before check!", loc.fid(*this));
-            if (debug_flag) std::cout << "surface reject" << std::endl;
+            // if (debug_flag) std::cout << "surface reject" << std::endl;
 
             return false;
         }
@@ -151,7 +151,7 @@ bool tetwild::TetWild::collapse_edge_before(const Tuple& loc) // input is an edg
     if (cache.edge_length > 0 && VA[v1_id].m_is_on_open_boundary) {
         if (!VA[v2_id].m_is_on_open_boundary &&
             m_open_boundary_envelope.is_outside(VA[v2_id].m_posf)) {
-            if (debug_flag) std::cout << "open boundary reject" << std::endl;
+            // if (debug_flag) std::cout << "open boundary reject" << std::endl;
 
             return false;
         }
@@ -346,12 +346,12 @@ bool tetwild::TetWild::collapse_edge_before(const Tuple& loc) // input is an edg
         //     return false;
         if (m_vertex_attribute[v1_id].m_is_on_surface &&
             !m_vertex_attribute[v2_id].m_is_on_surface) {
-            if (debug_flag) std::cout << "param surface reject" << std::endl;
+            // if (debug_flag) std::cout << "param surface reject" << std::endl;
             return false;
         }
 
         if (m_vertex_attribute[v1_id].is_freezed) {
-            if (debug_flag) std::cout << "param freeze reject" << std::endl;
+            // if (debug_flag) std::cout << "param freeze reject" << std::endl;
             return false;
         }
 
@@ -361,7 +361,7 @@ bool tetwild::TetWild::collapse_edge_before(const Tuple& loc) // input is an edg
         // only collapse when param_type v1 is included in param_type v2
         if (m_vertex_attribute[v1_id].face_nearly_param_type.size() >
             m_vertex_attribute[v2_id].face_nearly_param_type.size()) {
-            if (debug_flag) std::cout << "face param set larger reject" << std::endl;
+            // if (debug_flag) std::cout << "face param set larger reject" << std::endl;
 
             return false;
         }
@@ -370,14 +370,14 @@ bool tetwild::TetWild::collapse_edge_before(const Tuple& loc) // input is an edg
             m_vertex_attribute[v1_id].face_nearly_param_type,
             m_vertex_attribute[v2_id].face_nearly_param_type);
         if (s.size() != m_vertex_attribute[v1_id].face_nearly_param_type.size()) {
-            if (debug_flag) std::cout << "face param not subset reject" << std::endl;
+            // if (debug_flag) std::cout << "face param not subset reject" << std::endl;
 
             return false;
         }
 
         if (m_vertex_attribute[v1_id].in_edge_param.size() >
             m_vertex_attribute[v2_id].in_edge_param.size()) {
-            if (debug_flag) std::cout << "edge param set larger reject" << std::endl;
+            // if (debug_flag) std::cout << "edge param set larger reject" << std::endl;
             return false;
         }
 
@@ -385,7 +385,7 @@ bool tetwild::TetWild::collapse_edge_before(const Tuple& loc) // input is an edg
             m_vertex_attribute[v1_id].in_edge_param,
             m_vertex_attribute[v2_id].in_edge_param);
         if (s2.size() != m_vertex_attribute[v1_id].in_edge_param.size()) {
-            if (debug_flag) std::cout << "fedge param not subset reject" << std::endl;
+            // if (debug_flag) std::cout << "fedge param not subset reject" << std::endl;
 
             return false;
         }
@@ -401,13 +401,13 @@ bool tetwild::TetWild::collapse_edge_after(const Tuple& loc)
     size_t v1_id = cache.v1_id;
     size_t v2_id = cache.v2_id;
 
-    bool debug_flag = (v1_id == 1060 && v2_id == 174);
+    // bool debug_flag = (v1_id == 1060 && v2_id == 174);
 
 
     if (!TetMesh::collapse_edge_after(loc)) {
         // debug code
         // wmtk::logger().info("edge {} not pass connectivity after check", loc.fid(*this));
-        if (debug_flag) std::cout << "connectivity reject" << std::endl;
+        // if (debug_flag) std::cout << "connectivity reject" << std::endl;
 
         return false;
     }
@@ -441,14 +441,14 @@ bool tetwild::TetWild::collapse_edge_after(const Tuple& loc)
         if (tmp.size() > 0) return false;
 
         if (is_inverted(tet)) {
-            if (debug_flag) std::cout << "tet inverted reject" << std::endl;
+            // if (debug_flag) std::cout << "tet inverted reject" << std::endl;
 
             return false;
         }
         double q = get_quality(tet);
         if (q > cache.max_energy) {
-            if (debug_flag)
-                std::cout << "energy reject " << q << " " << cache.max_energy << std::endl;
+            // if (debug_flag)
+            //     std::cout << "energy reject " << q << " " << cache.max_energy << std::endl;
 
             return false;
         }
@@ -466,7 +466,7 @@ bool tetwild::TetWild::collapse_edge_after(const Tuple& loc)
             bool is_out = m_envelope.is_outside(
                 {{VA[vids[0]].m_posf, VA[vids[1]].m_posf, VA[vids[2]].m_posf}});
             if (is_out) {
-                if (debug_flag) std::cout << "surface enve reject" << std::endl;
+                // if (debug_flag) std::cout << "surface enve reject" << std::endl;
 
                 return false;
             }
@@ -673,7 +673,7 @@ bool tetwild::TetWild::collapse_edge_after(const Tuple& loc)
         //
         auto [_, global_fid] = tuple_from_face({{v2_id, old_vids[1], old_vids[2]}});
         if (global_fid == -1) {
-            if (debug_flag) std::cout << "whatever reject" << std::endl;
+            // if (debug_flag) std::cout << "whatever reject" << std::endl;
 
             return false;
         }
