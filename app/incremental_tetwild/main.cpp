@@ -222,12 +222,14 @@ int main(int argc, char** argv)
         tet_face_on_input_surface);
     // exit(0);
 
+    double insertion_time = insertion_timer.getElapsedTime();
+
+
     mesh_new.output_faces(output_path + "after_insertion_surface.obj", [](auto& f) {
         return f.m_is_surface_fs;
     });
 
 
-    double insertion_time = insertion_timer.getElapsedTime();
     wmtk::logger().info("volume remesher insertion time: {}s", insertion_time);
 
     mesh_new.output_tetrahedralized_embedded_mesh(
@@ -386,6 +388,7 @@ int main(int argc, char** argv)
     fout << "eps: " << params.eps << std::endl;
     fout << "threads: " << NUM_THREADS << std::endl;
     fout << "time: " << time << std::endl;
+    fout << "insertion and preprocessing" << insertion_time << std::endl;
     fout.close();
 
     wmtk::logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
