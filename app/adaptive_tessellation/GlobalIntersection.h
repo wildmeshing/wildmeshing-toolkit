@@ -128,38 +128,42 @@ inline void displace_self_intersection_free(AdaptiveTessellation& mesh)
 
     // move only half the possible distance and iterate a few times
     std::vector<bool> vertex_is_converged(vertices_current.rows(), false);
-    for (int r = 0; r < 4; ++r) {
-        spdlog::info("Iteration {} of 4", r);
-        for (int i = 0; i < vertices_current.rows(); i++) {
-            if (vertex_is_converged[i]) {
-                continue;
-            }
-            Eigen::MatrixXd buf = vertices_current;
-            buf.row(i) = vertices_target.row(i);
-            const double t =
-                0.5 * ipc::compute_collision_free_stepsize(collisionMesh, vertices_current, buf);
-
-            if (t == 0) {
-                vertex_is_converged[i] = true;
-                continue;
-            }
-
-            const Eigen::Vector3d& p0 = vertices_current.row(i);
-            const Eigen::Vector3d& p1 = vertices_target.row(i);
-            const Eigen::Vector3d p = (1 - t) * p0 + t * p1;
-
-
-            vertices_current.row(i) = p;
-            // mesh.vertex_attrs[map_new_to_old_v_ids(i)].pos_world = p;
-            update_pos_world(i, p);
-        }
-    }
+    // for (int r = 0; r < 4; ++r) {
+    //     spdlog::info("Iteration {} of 4", r);
+    //     for (int i = 0; i < vertices_current.rows(); i++) {
+    //         if (vertex_is_converged[i]) {
+    //             continue;
+    //         }
+    //         Eigen::MatrixXd buf = vertices_current;
+    //         buf.row(i) = vertices_target.row(i);
+    //         const double t =
+    //             0.5 * ipc::compute_collision_free_stepsize(collisionMesh, vertices_current, buf);
+    //
+    //         if (t == 0) {
+    //             vertex_is_converged[i] = true;
+    //             continue;
+    //         }
+    //
+    //         const Eigen::Vector3d& p0 = vertices_current.row(i);
+    //         const Eigen::Vector3d& p1 = vertices_target.row(i);
+    //         const Eigen::Vector3d p = (1 - t) * p0 + t * p1;
+    //
+    //
+    //         vertices_current.row(i) = p;
+    //        // mesh.vertex_attrs[map_new_to_old_v_ids(i)].pos_world = p;
+    //        update_pos_world(i, p);
+    //    }
+    //}
 
     // move vertices as far as possible
     spdlog::info("Final vertex displacing.");
     for (int i = 0; i < vertices_current.rows(); i++) {
         if (vertex_is_converged[i]) {
             continue;
+        }
+        if (i % (vertices_current.rows() / 10) == 0) {
+            double prcnt = 100 * static_cast<double>(i) / vertices_current.rows();
+            spdlog::info("{}% done", prcnt);
         }
         Eigen::MatrixXd buf = vertices_current;
         buf.row(i) = vertices_target.row(i);
