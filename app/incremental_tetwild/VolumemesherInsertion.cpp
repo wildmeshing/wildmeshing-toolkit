@@ -1165,7 +1165,7 @@ void tetwild::TetWild::init_from_Volumeremesher(
 
         // std::vector<bool> visited(edges.size(), false);
         std::map<std::pair<size_t, size_t>, bool> visited;
-        double theta = 2;
+        double theta = 5;
         double tol = std::cos(theta / 180 * M_PI);
         for (size_t i = 0; i < edges.size(); i++) {
             // check is collection boundary edge
@@ -1227,7 +1227,8 @@ void tetwild::TetWild::init_from_Volumeremesher(
             // compute a new edge param
 
 
-            Vector3d direction = m_vertex_attribute[v1].m_posf - m_vertex_attribute[v2].m_posf;
+            Vector3d direction =
+                (m_vertex_attribute[v1].m_posf - m_vertex_attribute[v2].m_posf).normalized();
 
             edge_parametrization ep;
             ep.direction = direction;
@@ -1292,8 +1293,8 @@ void tetwild::TetWild::init_from_Volumeremesher(
                 // check if nearly colinear
                 Vector3d next_direction =
                     m_vertex_attribute[next].m_posf - m_vertex_attribute[endpoint1].m_posf;
-                if (next_direction.dot(direction) / (next_direction.norm() * direction.norm()) >
-                    tol) {
+                if (next_direction.dot(direction) >
+                    tol * (next_direction.norm() * direction.norm())) {
                     visited[std::make_pair(next, endpoint1)] = true;
                     visited[std::make_pair(endpoint1, next)] = true;
                     edge_vertices.push_back(next);
@@ -1376,8 +1377,8 @@ void tetwild::TetWild::init_from_Volumeremesher(
                 // check if nearly colinear
                 Vector3d next_direction =
                     m_vertex_attribute[next].m_posf - m_vertex_attribute[endpoint2].m_posf;
-                if (next_direction.dot(-direction) / (next_direction.norm() * direction.norm()) >
-                    tol) {
+                if (next_direction.dot(-direction) >
+                    tol * (next_direction.norm() * direction.norm())) {
                     visited[std::make_pair(next, endpoint2)] = true;
                     visited[std::make_pair(endpoint2, next)] = true;
                     edge_vertices.push_back(next);
