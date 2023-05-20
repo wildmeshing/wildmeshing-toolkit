@@ -2,6 +2,16 @@
 #include <wmtk/TriMeshOperation.h>
 #include "AdaptiveTessellation.h"
 
+/// swap:       accuracy pass: done to improve accuracy of the mesh
+///             quality pass: done to improve quality (valence for each vertex)
+/// priority:   accuracy pass: summed one-ring quadric error of 4 vertices, priority =  before - after
+///             quality pass: valence diffference to 6 for each vertex, priority =  before - after
+/// scheduling; descending order of priority
+/// stop cond:  if priority <0 (swap does not improve accruacy/quality), stop
+//              quality pass stop when swap for quality exceeds the quality safeguard threshold
+/// after:      update the quadric of the new faces. and after error is measured by the sum of the one-ring quadric error of 4 vertices
+
+
 namespace adaptive_tessellation {
 class AdaptiveTessellationSwapEdgeOperation : public wmtk::TriMeshOperationShim<
                                                   AdaptiveTessellation,
@@ -25,5 +35,6 @@ public:
     tbb::enumerable_thread_specific<
         std::map<std::array<size_t, 2>, std::pair<std::optional<Tuple>, int>>>
         vid_edge_to_mirror_edge;
+    std::vector<Tuple> modified_triangles(const TriMesh& m) const override;
 };
 } // namespace adaptive_tessellation

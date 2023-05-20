@@ -455,7 +455,7 @@ bool AdaptiveTessellationCollapseEdgeOperation::after(
     AdaptiveTessellation& m,
     ExecuteReturnData& ret_data)
 {
-    return after(m);
+    return ret_data.success = after(m);
 }
 bool AdaptiveTessellationCollapseEdgeOperation::after(AdaptiveTessellation& m)
 {
@@ -667,33 +667,20 @@ wmtk::TriMeshOperation::ExecuteReturnData AdaptiveTessellationPairedCollapseEdge
         collapse_mirror_edge.assign_collapsed_edge_attributes(m, collapse_edge.new_vertex(m));
     }
     ret_data.success = bool(*this);
-    ret_data.new_tris = modified_tuples(m);
+    // ret_data.new_tris = modified_triangles(m);
 
     return ret_data;
 }
 
-
-auto AdaptiveTessellationPairedCollapseEdgeOperation::modified_tuples(
-    const AdaptiveTessellation& m) const -> std::vector<Tuple>
-{
-    const Tuple& return_tuple = collapse_edge.get_return_tuple_opt().value();
-    std::vector<size_t> all_mirrors = m.get_all_mirror_vids(return_tuple);
-
-    std::vector<Tuple> one_ring;
-    for (const size_t ret_vid : all_mirrors) {
-        auto a = m.get_one_ring_tris_for_vertex(m.tuple_from_vertex(ret_vid));
-        one_ring.insert(one_ring.end(), a.begin(), a.end());
-    }
-    return one_ring;
-    // modified_tuples_T(m, collapse_edge, collapse_mirror_edge);
-}
 
 bool AdaptiveTessellationPairedCollapseEdgeOperation::after(
     AdaptiveTessellation& m,
     ExecuteReturnData& ret_data)
 {
     assert(ret_data.success);
-    return after(m);
+    ret_data.success = after(m);
+    ret_data.new_tris = modified_triangles(m);
+    return ret_data;
 }
 bool AdaptiveTessellationPairedCollapseEdgeOperation::after(AdaptiveTessellation& m)
 {
@@ -731,13 +718,14 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::after(AdaptiveTessellation
 
     // check invariants here since get_area_accuracy_error_per_face requires valid triangle
     if (!m.invariants(one_ring)) return false;
-
-    if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
-        for (const Tuple& tri : one_ring) {
-            double one_ring_tri_error = m.get_area_accuracy_error_per_face(tri);
-            if (one_ring_tri_error > m.mesh_parameters.m_accuracy_safeguard_ratio *
-                                         m.mesh_parameters.m_accuracy_threshold)
-                return false;
+    if (!m.mesh_parameters.m_ignore_embedding) {
+        if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
+            for (const Tuple& tri : one_ring) {
+                double one_ring_tri_error = m.get_area_accuracy_error_per_face(tri);
+                if (one_ring_tri_error > m.mesh_parameters.m_accuracy_safeguard_ratio *
+                                             m.mesh_parameters.m_accuracy_threshold)
+                    return false;
+            }
         }
     }
 
@@ -835,4 +823,35 @@ void AdaptiveTessellationPairedCollapseEdgeOperation::rebuild_boundary_data(Adap
 
         // ov1 ~ mv2, mv2 ~ ov1
     }
+}
+auto AdaptiveTessellationPairedCollapseEdgeOperation::modified_triangles(const TriMesh& m) const
+    -> std::vector<Tuple>
+{
+    const auto& at = static_cast<const AdaptiveTessellation&>(m);
+    if (!bool(*this)) {
+        return {};
+    }
+
+    const Tuple new_v = collapse_edge.get_return_tuple_opt().value();
+
+    if (at.is_seam_vertex(new_v)) {
+        for (const auto& vert : at.get_all_mirror_vertices(new_v)) {
+        }
+    }
+    auto r = at.get_one_ring_tris_accross_seams_for_vertex(new_v);
+    return r;
+    // return collapse_edge.modified_triangles(m);
+}
+auto AdaptiveTessellationCollapseEdgeOperation::modified_triangles(const TriMesh& m) const
+    -> std::vector<Tuple>
+{
+    return TriMeshEdgeCollapseOperation::modified_triangles(m);
+    // const auto& at  = static_cast<const AdaptiveTessellation&>(m);
+    // if (!bool(*this)) {
+    //     return {};
+    // }
+
+    // const Tuple new_v = get_return_tuple_opt().value();
+
+    // return at.get_one_ring_tris_accross_seams_for_vertex(new_v);
 }

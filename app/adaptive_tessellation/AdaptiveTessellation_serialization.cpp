@@ -4,6 +4,8 @@
 #include <igl/write_triangle_mesh.h>
 #include <lagrange/io/load_mesh.h>
 #include <lean_vtk.hpp>
+#include <paraviewo/HDF5VTUWriter.hpp>
+#include <paraviewo/ParaviewWriter.hpp>
 #include "AdaptiveTessellation.h"
 
 using namespace adaptive_tessellation;
@@ -556,7 +558,6 @@ void AdaptiveTessellation::write_vtk(const std::filesystem::path& path)
     Eigen::MatrixXi F;
 
     export_uv(V, F);
-    wmtk::logger().info("=== # vertices {}", V.rows());
     for (int i = 0; i < V.rows(); i++) {
         auto p = mesh_parameters.m_displacement->get(V(i, 0), V(i, 1));
         points.emplace_back(p(0));
@@ -579,7 +580,14 @@ void AdaptiveTessellation::write_vtk(const std::filesystem::path& path)
     std::vector<double> scalar_field;
     for (const auto& e : get_edges()) {
         if (!e.is_valid(*this)) continue;
-        auto cost = std::get<0>(get_area_accuracy_error_for_split(e));
+        double cost = 0.;
+        if (mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::TRI_QUADRICS) {
+            cost = get_quadrics_area_accuracy_error_for_split(e);
+        }
+        if (mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
+            cost = get_cached_area_accuracy_error_for_split(e) * get_length2d(e);
+        }
+
         // Eigen::Matrix<double, 2, 1> pos1 = vertex_attrs[e.vid(*this)].pos;
         // Eigen::Matrix<double, 2, 1> pos2 =
         // vertex_attrs[e.switch_vertex(*this).vid(*this)].pos; Eigen::Matrix<double, 2, 1>
@@ -625,20 +633,10 @@ void AdaptiveTessellation::write_perface_vtk(const std::filesystem::path& path)
 
     std::vector<double> scalar_field2;
     for (const auto& f : get_faces()) {
-        // if (!f.is_valid(*this)) continue;
-        // auto vids1 = oriented_tri_vertices(f);
-        // Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle1;
-        // for (int i = 0; i < 3; i++) {
-        //     triangle1.row(i) = vertex_attrs[vids1[i].vid(*this)].pos;
-        // }
-        // if (wmtk::polygon_signed_area(triangle1) < 0) {
-        //     Eigen::Matrix<double, 1, 2, Eigen::RowMajor> tmp;
-        //     tmp = triangle1.row(0);
-        //     triangle1.row(0) = triangle1.row(1);
-        //     triangle1.row(1) = tmp;
-        // }
-        // auto error = mesh_parameters.m_displacement->get_error_per_triangle(triangle1);
-        auto error = face_attrs[f.fid(*this)].accuracy_error;
+        double error = 0.;
+        if (mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY)
+            error = face_attrs[f.fid(*this)].accuracy_measure.cached_distance_integral;
+
         scalar_field2.emplace_back(error);
     }
     writer.add_cell_scalar_field("scalar_field", scalar_field2);
@@ -697,114 +695,45 @@ void AdaptiveTessellation::write_obj_mapped_on_input(const std::filesystem::path
     igl::writeOBJ(path.string(), V, F, CN, FN, VT, FT);
     wmtk::logger().info("============>> current edge length {}", avg_edge_len());
 }
-//// preprocess the mesh for remeshing
-//// replace function create_paired_seam_mesh_with_offset, and mesh_construct_boundaries
-// 0. create mesh
-// 1. vertex_attrs: initiate uv pos and pos_world
-// 2. face_attrs:   set seam local edge mirror data
-// 3. build seam vertex index to color mapping
-// 4. construct boundary parametrization
-// 5. vertex_attrs: set boundary vertex with boudary tag
-//                  set boundary vertex curve_id, and boundary paramter t
-//                  set feature vertex as fixed, set strat/end/t-junction of curve fixed
-// 6. edge_attrs:   set curve-id for each edge
-// 7. face_attrs:   set initial accuracy error for each triangle
-// 8. initiate the texture integraler
-void AdaptiveTessellation::mesh_preprocessing(
-    const std::filesystem::path& input_mesh_path,
-    const std::filesystem::path& position_image_path,
-    const std::filesystem::path& normal_image_path,
-    const std::filesystem::path& height_image_path)
+
+void AdaptiveTessellation::write_hdf_displaced_uv(const std::filesystem::path& path)
 {
-    mesh_parameters.m_position_normal_paths = {position_image_path, normal_image_path};
-    Eigen::MatrixXd CN, FN;
-    // igl::read_triangle_mesh(input_mesh_path.string(), input_V_, input_F_);
-    // igl::readOBJ(input_mesh_path.string(), V, VT, CN, F, FT, FN);
-    igl::readOBJ(input_mesh_path.string(), input_V_, input_VT_, CN, input_F_, input_FT_, FN);
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    Eigen::MatrixXd CN;
+    Eigen::MatrixXd FN;
+    Eigen::MatrixXd VT;
+    Eigen::MatrixXi FT;
+    export_displaced_uv(V, F, VT, FT);
 
-    {
-        Eigen::MatrixXd V_buf;
-        Eigen::MatrixXi F_buf;
-        Eigen::MatrixXi map_old_to_new_v_ids;
-        igl::remove_unreferenced(input_VT_, input_FT_, V_buf, F_buf, map_old_to_new_v_ids);
-        input_VT_ = V_buf;
-        input_FT_ = F_buf;
-        assert(input_FT_.rows() == input_F_.rows());
-    }
+    paraviewo::HDF5VTUWriter writer;
+    writer.add_field("UV", VT);
 
-    wmtk::logger().info("///// #v : {} {}", input_VT_.rows(), input_VT_.cols());
-    wmtk::logger().info("///// #f : {} {}", input_FT_.rows(), input_FT_.cols());
-    wmtk::TriMesh m_3d;
-    std::vector<std::array<size_t, 3>> tris;
-    for (auto f = 0; f < input_F_.rows(); f++) {
-        std::array<size_t, 3> tri = {
-            (size_t)input_F_(f, 0),
-            (size_t)input_F_(f, 1),
-            (size_t)input_F_(f, 2)};
-        tris.emplace_back(tri);
-    }
-    m_3d.create_mesh(input_V_.rows(), tris);
-    create_mesh(input_VT_, input_FT_);
-    // set up seam edges and seam vertex coloring
-    Eigen::MatrixXi E0, E1;
-    std::tie(E0, E1) = seam_edges_set_up(input_V_, input_F_, m_3d, input_VT_, input_FT_);
-    set_seam_vertex_coloring(input_V_, input_F_, m_3d, input_VT_, input_FT_);
-    assert(E0.rows() == E1.rows());
-    // construct the boundary map for boundary parametrization
-    mesh_parameters.m_boundary.construct_boundaries(input_VT_, input_FT_, E0, E1);
-    // mark boundary vertices as boundary_vertex
-    // but this is not indiscriminatively rejected for all operations
-    // other operations are conditioned on whether m_bnd_freeze is turned on
-    // also obtain the boudnary parametrizatin t for each vertex
-    // for now keep the per vertex curve-id. but this is now a edge property
-    for (auto v : this->get_vertices()) {
-        if (is_boundary_vertex(v)) {
-            vertex_attrs[v.vid(*this)].boundary_vertex = is_boundary_vertex(v);
-            set_feature(v);
-            // one vertex can have more than one curve-id.
-            // current curve-id ofr vertex is arbitrarily picked among them
-            std::tie(vertex_attrs[v.vid(*this)].curve_id, vertex_attrs[v.vid(*this)].t) =
-                mesh_parameters.m_boundary.uv_to_t(vertex_attrs[v.vid(*this)].pos);
+    if (0) {
+        Eigen::MatrixXd v_quadric_error;
+        v_quadric_error.resize(V.rows(), 1);
+        for (const Tuple& t : get_vertices()) {
+            const size_t i = t.vid(*this);
+            v_quadric_error(i, 0) = get_one_ring_quadrics_error_for_vertex(t);
         }
-    }
-    // after the boundary is constructed, set the start and end of each curve to be fixed
-    set_fixed();
-    // assign curve-id to each edge using the curve-it assigned for each vertex
-    assign_edge_curveid();
+        writer.add_field("v_quadrics", v_quadric_error);
 
-    const Eigen::MatrixXd box_min = input_V_.colwise().minCoeff();
-    const Eigen::MatrixXd box_max = input_V_.colwise().maxCoeff();
-    double max_comp = (box_max - box_min).maxCoeff();
-    Eigen::MatrixXd scene_offset = -box_min;
-    Eigen::MatrixXd scene_extent = box_max - box_min;
-    scene_offset.array() -= (scene_extent.array() - max_comp) * 0.5;
-    mesh_parameters.m_scale = max_comp;
-    mesh_parameters.m_offset = scene_offset;
-
-    // cache the initial accuracy error per triangle
-    std::array<wmtk::Image, 3> displaced = wmtk::combine_position_normal_texture(
-        mesh_parameters.m_scale,
-        mesh_parameters.m_offset,
-        position_image_path,
-        normal_image_path,
-        height_image_path);
-    std::vector<std::array<float, 6>> uv_triangles(tri_capacity());
-    std::vector<TriMesh::Tuple> tris_tuples = get_faces();
-    for (int i = 0; i < tris_tuples.size(); i++) {
-        auto oriented_vids = oriented_tri_vids(tris_tuples[i]);
-        for (int j = 0; j < 3; j++) {
-            uv_triangles[tris_tuples[i].fid(*this)][2 * j + 0] =
-                vertex_attrs[oriented_vids[j]].pos[0];
-            uv_triangles[tris_tuples[i].fid(*this)][2 * j + 1] =
-                vertex_attrs[oriented_vids[j]].pos[1];
+        Eigen::MatrixXd f_quadric_error;
+        f_quadric_error.resize(F.rows(), 1);
+        for (const Tuple& t : get_faces()) {
+            const size_t i = t.fid(*this);
+            f_quadric_error(i, 0) = get_quadric_error_for_face(t);
         }
+        writer.add_cell_field("f_quadrics", f_quadric_error);
     }
-    std::vector<float> computed_errors(tri_capacity());
-    m_quadric_integral =
-        wmtk::QuadricIntegral(displaced, wmtk::QuadricIntegral::QuadricType::Triangle);
-    m_texture_integral = wmtk::TextureIntegral(std::move(displaced));
-    m_texture_integral.set_integration_method(
-        wmtk::IntegralBase::IntegrationMethod::Adaptive); // Adaptive or Exact
-    m_texture_integral.get_error_per_triangle(uv_triangles, computed_errors);
-    set_faces_accuracy_error(tris_tuples, computed_errors);
+
+    Eigen::MatrixXd f_area_error;
+    f_area_error.resize(F.rows(), 1);
+    for (const Tuple& t : get_faces()) {
+        const size_t i = t.fid(*this);
+        f_area_error(i, 0) = face_attrs[i].accuracy_measure.cached_distance_integral;
+    }
+    writer.add_cell_field("f_area_error", f_area_error);
+
+    writer.write_mesh(path.string(), V, F);
 }

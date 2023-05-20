@@ -214,14 +214,13 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::check_seamed_link_conditio
     const LinksOfVertex v2 = seamed_links_of_vertex(mesh, edge.switch_vertex(mesh));
 
 
-
     // compute vertex link condition
     auto lk_vid12 = set_intersection(v1.vertex, v2.vertex);
     const bool lk_vid12_infinite = v1.infinite_vertex && v2.infinite_vertex;
 
     const auto [edge_link, edge_link_has_infinite] = seamed_edge_link_of_edge(mesh, edge);
     // over finite vertices v_link
-    const bool v_link_fin =  lk_vid12 == edge_link;
+    const bool v_link_fin = lk_vid12 == edge_link;
     // over infinite vertices v_link
     const bool v_link_inf = lk_vid12_infinite == edge_link_has_infinite;
     bool v_link = v_link_fin && v_link_inf;
