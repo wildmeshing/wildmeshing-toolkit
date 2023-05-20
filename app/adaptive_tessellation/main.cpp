@@ -34,6 +34,7 @@
 #include <wmtk/utils/ManifoldUtils.hpp>
 #include <wmtk/utils/TriQualityUtils.hpp>
 #include "AdaptiveTessellation.h"
+#include "GlobalIntersection.h"
 #include "LoggerDataCollector.h"
 #include "Parameters.h"
 
@@ -212,7 +213,14 @@ int main(int argc, char** argv)
     wmtk::logger().info("!!!!finished {}!!!!", duration);
     m.mesh_parameters.js_log["total_time"] = duration;
 
-    m.write_obj_displaced(output_file);
+    m.write_obj_displaced(
+        output_file.parent_path() /
+        (output_file.stem().string() + std::string("_max_displacement") +
+         output_file.extension().string()));
+
+    displace_self_intersection_free(m);
+    m.write_obj(output_file);
+
     // Save the optimized mesh
     wmtk::logger().info("///// output : {}", output_file);
     js_o << std::setw(4) << m.mesh_parameters.js_log << std::endl;
