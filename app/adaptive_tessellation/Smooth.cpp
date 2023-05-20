@@ -428,5 +428,5 @@ auto AdaptiveTessellationSmoothSeamVertexOperation::modified_triangles(const Tri
 
     const Tuple new_v = get_return_tuple_opt().value();
 
-    return at.get_one_ring_tris_for_vertex(new_v);
+    return at.get_one_ring_tris_accross_seams_for_vertex(new_v);
 }
