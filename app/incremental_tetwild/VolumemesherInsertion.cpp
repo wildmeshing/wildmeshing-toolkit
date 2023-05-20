@@ -1100,24 +1100,78 @@ void tetwild::TetWild::init_from_Volumeremesher(
                 if (m_vertex_attribute[v_or.vid(*this)].is_on_collection_boundary) {
                     auto e = tuple_from_edge({{v.vid(*this), v_or.vid(*this)}});
                     if (is_edge_on_surface(e)) {
+                        auto incident_tets = get_incident_tets_for_edge(e);
+                        std::vector<size_t> incident_surface_faces;
+                        for (auto t : incident_tets) {
+                            std::vector<Tuple> f(4);
+                            f[0] = t;
+                            f[1] = t.switch_face(*this);
+                            f[2] = t.switch_edge(*this).switch_face(*this);
+                            f[3] = t.switch_vertex(*this).switch_edge(*this).switch_face(*this);
+
+                            for (int h = 0; h < 4; h++) {
+                                if (!m_face_attribute[f[h].fid(*this)].m_is_surface_fs) continue;
+                                auto vs = get_face_vertices(f[h]);
+                                std::array<size_t, 3> vids = {
+                                    {vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
+                                if (std::find(vids.begin(), vids.end(), v.vid(*this)) !=
+                                        vids.end() &&
+                                    std::find(vids.begin(), vids.end(), v_or.vid(*this)) !=
+                                        vids.end()) {
+                                    incident_surface_faces.push_back(f[h].fid(*this));
+                                }
+                            }
+                        }
+                        wmtk::vector_unique(incident_surface_faces);
+
+                        bool boundary_flag = false;
+                        for (int k = 0; k < int(incident_surface_faces.size()) - 1; k++) {
+                            if (m_face_attribute[incident_surface_faces[k]]
+                                    .from_input_nearly_collection_id !=
+                                m_face_attribute[incident_surface_faces[k + 1]]
+                                    .from_input_nearly_collection_id) {
+                                boundary_flag = true;
+                                break;
+                            }
+                        }
+
+                        if (!boundary_flag) continue;
                         // std::cout << v.vid(*this) << " " << v_or.vid(*this) << std::endl;
                         m_vertex_attribute[v.vid(*this)]
                             .connected_collection_boundary_vertices.push_back(v_or.vid(*this));
                         // is_collection_boundary_edge[e.eid(*this)] = true;
-                        file << "v " << m_vertex_attribute[v.vid(*this)].m_posf[0] << " "
-                             << m_vertex_attribute[v.vid(*this)].m_posf[1] << " "
-                             << m_vertex_attribute[v.vid(*this)].m_posf[2] << std::endl;
-                        file << "v " << m_vertex_attribute[v_or.vid(*this)].m_posf[0] << " "
-                             << m_vertex_attribute[v_or.vid(*this)].m_posf[1] << " "
-                             << m_vertex_attribute[v_or.vid(*this)].m_posf[2] << std::endl;
-                        file << "l " << xxx << " " << xxx + 1 << std::endl;
-                        xxx += 2;
+                        // file << "v " << m_vertex_attribute[v.vid(*this)].m_posf[0] << " "
+                        //      << m_vertex_attribute[v.vid(*this)].m_posf[1] << " "
+                        //      << m_vertex_attribute[v.vid(*this)].m_posf[2] << std::endl;
+                        // file << "v " << m_vertex_attribute[v_or.vid(*this)].m_posf[0] << " "
+                        //      << m_vertex_attribute[v_or.vid(*this)].m_posf[1] << " "
+                        //      << m_vertex_attribute[v_or.vid(*this)].m_posf[2] << std::endl;
+                        // file << "l " << xxx << " " << xxx + 1 << std::endl;
+                        // xxx += 2;
                         cnt_collection_be++;
                     }
                 }
             }
         }
         // std::cout << "#collection be: " << cnt_collection_be << std::endl;
+
+        for (auto v : get_vertices()) {
+            if (m_vertex_attribute[v.vid(*this)].is_on_collection_boundary) {
+                std::cout << m_vertex_attribute[v.vid(*this)]
+                                 .connected_collection_boundary_vertices.size()
+                          << ": ";
+
+                for (int j = 0;
+                     j <
+                     m_vertex_attribute[v.vid(*this)].connected_collection_boundary_vertices.size();
+                     j++) {
+                    std::cout << m_vertex_attribute[v.vid(*this)]
+                                     .connected_collection_boundary_vertices[j]
+                              << " ";
+                }
+                std::cout << std::endl;
+            }
+        }
 
 
         // debug code
@@ -1141,6 +1195,49 @@ void tetwild::TetWild::init_from_Volumeremesher(
                     m_vertex_attribute[v1].connected_collection_boundary_vertices.end(),
                     v2) == m_vertex_attribute[v1].connected_collection_boundary_vertices.end())
                 continue;
+
+            // auto e = edges[i];
+            // auto incident_tets = get_incident_tets_for_edge(e);
+            // std::vector<size_t> incident_surface_faces;
+            // for (auto t : incident_tets) {
+            //     std::vector<Tuple> f(4);
+            //     f[0] = t;
+            //     f[1] = t.switch_face(*this);
+            //     f[2] = t.switch_edge(*this).switch_face(*this);
+            //     f[3] = t.switch_vertex(*this).switch_edge(*this).switch_face(*this);
+
+            //     for (int h = 0; h < 4; h++) {
+            //         if (!m_face_attribute[f[h].fid(*this)].m_is_surface_fs) continue;
+            //         auto vs = get_face_vertices(f[h]);
+            //         std::array<size_t, 3> vids = {
+            //             {vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
+            //         if (std::find(vids.begin(), vids.end(), v1) != vids.end() &&
+            //             std::find(vids.begin(), vids.end(), v2) != vids.end()) {
+            //             incident_surface_faces.push_back(f[h].fid(*this));
+            //         }
+            //     }
+            // }
+            // wmtk::vector_unique(incident_surface_faces);
+
+            // bool boundary_flag = false;
+            // for (int k = 0; k < int(incident_surface_faces.size()) - 1; k++) {
+            //     if (m_face_attribute[incident_surface_faces[k]].from_input_nearly_collection_id
+            //     !=
+            //         m_face_attribute[incident_surface_faces[k +
+            //         1]].from_input_nearly_collection_id) boundary_flag = true;
+            // }
+
+            // if (!boundary_flag) continue;
+
+            file << "v " << m_vertex_attribute[v1].m_posf[0] << " "
+                 << m_vertex_attribute[v1].m_posf[1] << " " << m_vertex_attribute[v1].m_posf[2]
+                 << std::endl;
+            file << "v " << m_vertex_attribute[v2].m_posf[0] << " "
+                 << m_vertex_attribute[v2].m_posf[1] << " " << m_vertex_attribute[v2].m_posf[2]
+                 << std::endl;
+            file << "l " << xxx << " " << xxx + 1 << std::endl;
+            xxx += 2;
+
 
             visited[std::make_pair(v1, v2)] = true;
             visited[std::make_pair(v2, v1)] = true;
@@ -1170,6 +1267,46 @@ void tetwild::TetWild::init_from_Volumeremesher(
                 if (next == previous)
                     next = m_vertex_attribute[endpoint1].connected_collection_boundary_vertices[1];
 
+                // auto candidate_e1 = tuple_from_edge({{next, endpoint1}});
+
+                // auto incident_tets_d1 = get_incident_tets_for_edge(candidate_e1);
+                // std::vector<size_t> incident_surface_faces_d1;
+                // for (auto t : incident_tets_d1) {
+                //     std::vector<Tuple> f(4);
+                //     f[0] = t;
+                //     f[1] = t.switch_face(*this);
+                //     f[2] = t.switch_edge(*this).switch_face(*this);
+                //     f[3] = t.switch_vertex(*this).switch_edge(*this).switch_face(*this);
+
+                //     for (int h = 0; h < 4; h++) {
+                //         if (!m_face_attribute[f[h].fid(*this)].m_is_surface_fs) continue;
+                //         auto vs = get_face_vertices(f[h]);
+                //         std::array<size_t, 3> vids = {
+                //             {vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
+                //         if (std::find(vids.begin(), vids.end(), endpoint1) != vids.end() &&
+                //             std::find(vids.begin(), vids.end(), next) != vids.end()) {
+                //             incident_surface_faces_d1.push_back(f[h].fid(*this));
+                //         }
+                //     }
+                // }
+                // wmtk::vector_unique(incident_surface_faces_d1);
+
+                // bool boundary_flag_d1 = false;
+                // for (int k = 0; k < int(incident_surface_faces_d1.size()) - 1; k++) {
+                //     if (m_face_attribute[incident_surface_faces_d1[k]]
+                //             .from_input_nearly_collection_id !=
+                //         m_face_attribute[incident_surface_faces_d1[k + 1]]
+                //             .from_input_nearly_collection_id) {
+                //         boundary_flag_d1 = true;
+                //         break;
+                //     }
+                // }
+
+                // if (!boundary_flag_d1) {
+                //     std::cout << endpoint1 << std::endl;
+                //     break;
+                // }
+
                 // check if nearly colinear
                 Vector3d next_direction =
                     m_vertex_attribute[next].m_posf - m_vertex_attribute[endpoint1].m_posf;
@@ -1179,10 +1316,25 @@ void tetwild::TetWild::init_from_Volumeremesher(
                     visited[std::make_pair(endpoint1, next)] = true;
                     edge_vertices.push_back(next);
 
+                    file << "v " << m_vertex_attribute[next].m_posf[0] << " "
+                         << m_vertex_attribute[next].m_posf[1] << " "
+                         << m_vertex_attribute[next].m_posf[2] << std::endl;
+                    file << "v " << m_vertex_attribute[endpoint1].m_posf[0] << " "
+                         << m_vertex_attribute[endpoint1].m_posf[1] << " "
+                         << m_vertex_attribute[endpoint1].m_posf[2] << std::endl;
+                    file << "l " << xxx << " " << xxx + 1 << std::endl;
+                    xxx += 2;
+
                     // go to next
                     previous = endpoint1;
                     endpoint1 = next;
+
+
+                    // debug code
+
                 } else {
+                    std::cout << endpoint1 << std::endl;
+
                     break;
                 }
             }
@@ -1198,6 +1350,47 @@ void tetwild::TetWild::init_from_Volumeremesher(
                 if (next == previous)
                     next = m_vertex_attribute[endpoint2].connected_collection_boundary_vertices[1];
 
+                // auto candidate_e2 = tuple_from_edge({{next, endpoint2}});
+
+                // auto incident_tets_d2 = get_incident_tets_for_edge(candidate_e2);
+                // std::vector<size_t> incident_surface_faces_d2;
+                // for (auto t : incident_tets_d2) {
+                //     std::vector<Tuple> f(4);
+                //     f[0] = t;
+                //     f[1] = t.switch_face(*this);
+                //     f[2] = t.switch_edge(*this).switch_face(*this);
+                //     f[3] = t.switch_vertex(*this).switch_edge(*this).switch_face(*this);
+
+                //     for (int h = 0; h < 4; h++) {
+                //         if (!m_face_attribute[f[h].fid(*this)].m_is_surface_fs) continue;
+                //         auto vs = get_face_vertices(f[h]);
+                //         std::array<size_t, 3> vids = {
+                //             {vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
+                //         if (std::find(vids.begin(), vids.end(), next) != vids.end() &&
+                //             std::find(vids.begin(), vids.end(), endpoint2) != vids.end()) {
+                //             incident_surface_faces_d2.push_back(f[h].fid(*this));
+                //         }
+                //     }
+                // }
+                // wmtk::vector_unique(incident_surface_faces_d2);
+
+                // bool boundary_flag_d2 = false;
+                // for (int k = 0; k < int(incident_surface_faces_d2.size()) - 1; k++) {
+                //     if (m_face_attribute[incident_surface_faces_d2[k]]
+                //             .from_input_nearly_collection_id !=
+                //         m_face_attribute[incident_surface_faces_d2[k + 1]]
+                //             .from_input_nearly_collection_id) {
+                //         boundary_flag_d2 = true;
+
+                //         break;
+                //     }
+                // }
+
+                // if (!boundary_flag_d2) {
+                //     std::cout << "endpoint2:" << endpoint2 << std::endl;
+                //     break;
+                // }
+
                 // check if nearly colinear
                 Vector3d next_direction =
                     m_vertex_attribute[next].m_posf - m_vertex_attribute[endpoint2].m_posf;
@@ -1207,14 +1400,25 @@ void tetwild::TetWild::init_from_Volumeremesher(
                     visited[std::make_pair(endpoint2, next)] = true;
                     edge_vertices.push_back(next);
 
+                    // debug code
+                    file << "v " << m_vertex_attribute[next].m_posf[0] << " "
+                         << m_vertex_attribute[next].m_posf[1] << " "
+                         << m_vertex_attribute[next].m_posf[2] << std::endl;
+                    file << "v " << m_vertex_attribute[endpoint2].m_posf[0] << " "
+                         << m_vertex_attribute[endpoint2].m_posf[1] << " "
+                         << m_vertex_attribute[endpoint2].m_posf[2] << std::endl;
+                    file << "l " << xxx << " " << xxx + 1 << std::endl;
+                    xxx += 2;
+                    //
                     // go to next
                     previous = endpoint2;
                     endpoint2 = next;
                 } else {
+                    std::cout << "noncolinear stop at endpoint2:" << endpoint2 << std::endl;
                     break;
                 }
             }
-
+            //
             // set edge params
             for (auto v : edge_vertices) {
                 m_vertex_attribute[v].in_edge_param.push_back(ep_id);
