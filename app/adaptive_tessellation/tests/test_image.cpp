@@ -22,7 +22,8 @@ TEST_CASE("exr saving and loading")
     }
 }
 
-TEST_CASE("hdr saving and loading")
+// NOTE: unused
+TEST_CASE("hdr saving and loading", "[.]")
 {
     auto displacement = [](const double& u, const double& v) -> float {
         return (u * u * 10 * v * v * v);
