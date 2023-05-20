@@ -132,13 +132,13 @@ std::tuple<double, double> tetwild::TetWild::local_operations(
                 // for (auto f : faces) {
                 //     auto x = f.fid(*this);
                 // }
-                if (!check_vertex_param_type()) {
-                    std::cout << "missing param!!!!!!!!" << std::endl;
-                    output_faces("bug_surface_miss_param_after_split.obj", [](auto& f) {
-                        return f.m_is_surface_fs;
-                    });
-                    // exit(0);
-                }
+                // if (!check_vertex_param_type()) {
+                //     std::cout << "missing param!!!!!!!!" << std::endl;
+                //     output_faces("bug_surface_miss_param_after_split.obj", [](auto& f) {
+                //         return f.m_is_surface_fs;
+                //     });
+                //     // exit(0);
+                // }
             }
         } else if (i == 1) {
             for (int n = 0; n < ops[i]; n++) {
@@ -152,13 +152,13 @@ std::tuple<double, double> tetwild::TetWild::local_operations(
                 // for (auto f : faces) {
                 //     auto x = f.fid(*this);
                 // }
-                if (!check_vertex_param_type()) {
-                    std::cout << "missing param!!!!!!!!" << std::endl;
-                    output_faces("buf_surface_miss_param_after_collpase.obj", [](auto& f) {
-                        return f.m_is_surface_fs;
-                    });
-                    // exit(0);
-                }
+                // if (!check_vertex_param_type()) {
+                //     std::cout << "missing param!!!!!!!!" << std::endl;
+                //     output_faces("buf_surface_miss_param_after_collpase.obj", [](auto& f) {
+                //         return f.m_is_surface_fs;
+                //     });
+                //     // exit(0);
+                // }
             }
         } else if (i == 2) {
             for (int n = 0; n < ops[i]; n++) {
