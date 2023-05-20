@@ -5,6 +5,7 @@
 #include <lagrange/utils/span.h>
 #include <lagrange/utils/value_ptr.h>
 #include <wmtk/utils/Image.h>
+#include <wmtk/utils/autodiff.h>
 
 #include <array>
 
@@ -12,6 +13,10 @@ namespace wmtk {
 
 class TextureIntegral : public IntegralBase
 {
+public:
+    using DScalar = DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d>;
+    using DTriangle = Eigen::Matrix<DScalar, 3, 2, Eigen::RowMajor>;
+
 public:
     TextureIntegral(); // default constructor
     TextureIntegral(const TextureIntegral&) = delete; // copy constructor
@@ -52,12 +57,18 @@ public:
         lagrange::span<const std::array<float, 6>> input_triangles,
         lagrange::span<float> output_errors) const;
 
+    /// Same as above, but computes an autodiffable error for a single triangle.
+    DScalar get_error_one_triangle(const DTriangle& input_triangle) const;
+
 protected:
     template <SamplingMethod sampling_method, IntegrationMethod integration_method>
     void get_error_per_triangle_internal(
         lagrange::span<const std::array<float, 6>> input_triangles,
         lagrange::span<float> output_errors,
         int order) const;
+
+    template <SamplingMethod sampling_method, IntegrationMethod integration_method>
+    DScalar get_error_one_triangle_internal(const DTriangle& input_triangle, int order) const;
 
 protected:
     struct Cache;
