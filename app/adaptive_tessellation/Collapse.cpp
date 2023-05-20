@@ -730,6 +730,8 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::after(AdaptiveTessellation
     }
 
     rebuild_boundary_data(m);
+    m.update_energy_cache(modified_triangles(m));
+
     return true;
 }
 

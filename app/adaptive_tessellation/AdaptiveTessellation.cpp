@@ -1530,4 +1530,45 @@ auto AdaptiveTessellation::get_one_ring_tris_accross_seams_for_vertex(const Tupl
     }
 }
 
+
+void AdaptiveTessellation::update_energy_cache(const std::vector<Tuple>& tris)
+{
+    // update the face_attrs (accuracy error)
+    if (!mesh_parameters.m_ignore_embedding) {
+        // get a vector of new traingles uvs
+        if (mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
+            std::vector<std::array<float, 6>> modified_tris_uv(tris.size());
+            for (int i = 0; i < tris.size(); i++) {
+                auto tri = tris[i];
+                auto verts = oriented_tri_vids(tri);
+                std::array<float, 6> tri_uv;
+                for (int i = 0; i < 3; i++) {
+                    tri_uv[i * 2] = vertex_attrs[verts[i]].pos(0);
+                    tri_uv[i * 2 + 1] = vertex_attrs[verts[i]].pos(1);
+                }
+                modified_tris_uv[i] = tri_uv;
+            }
+            std::vector<float> renewed_errors(tris.size());
+            m_texture_integral.get_error_per_triangle(modified_tris_uv, renewed_errors);
+            set_faces_cached_distance_integral(tris, renewed_errors);
+        } else if (mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::TRI_QUADRICS) {
+            std::vector<wmtk::Quadric<double>> compressed_quadrics(tris.size());
+            m_quadric_integral.get_quadric_per_triangle(
+                tris.size(),
+                [&](int f) -> std::array<float, 6> {
+                    // Get triangle uv positions
+                    const std::array<Tuple, 3> local_tuples = oriented_tri_vertices(tris[f]);
+                    const Eigen::Vector2f p0 =
+                        vertex_attrs[local_tuples[0].vid(*this)].pos.cast<float>();
+                    const Eigen::Vector2f p1 =
+                        vertex_attrs[local_tuples[1].vid(*this)].pos.cast<float>();
+                    const Eigen::Vector2f p2 =
+                        vertex_attrs[local_tuples[2].vid(*this)].pos.cast<float>();
+                    return {p0.x(), p0.y(), p1.x(), p1.y(), p2.x(), p2.y()};
+                },
+                compressed_quadrics);
+            set_faces_quadrics(tris, compressed_quadrics);
+        }
+    }
+}
 } // namespace adaptive_tessellation

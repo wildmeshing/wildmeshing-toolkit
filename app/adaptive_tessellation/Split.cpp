@@ -199,46 +199,7 @@ bool AdaptiveTessellationSplitEdgeOperation::after(
         }
     }
     assert(bool(*this));
-    // update the face_attrs (accuracy error)
-    if (!m.mesh_parameters.m_ignore_embedding) {
-        assert(bool(*this));
-        auto modified_tris = modified_triangles(m);
-        assert(modified_tris.size() == 2 || modified_tris.size() == 4);
-        if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
-            // get a vector of new traingles uvs
-            std::vector<std::array<float, 6>> modified_tris_uv(modified_tris.size());
-            for (int i = 0; i < modified_tris.size(); i++) {
-                auto tri = modified_tris[i];
-                auto verts = m.oriented_tri_vids(tri);
-                std::array<float, 6> tri_uv;
-                for (int i = 0; i < 3; i++) {
-                    tri_uv[i * 2] = m.vertex_attrs[verts[i]].pos(0);
-                    tri_uv[i * 2 + 1] = m.vertex_attrs[verts[i]].pos(1);
-                }
-                modified_tris_uv[i] = tri_uv;
-            }
-            std::vector<float> renewed_errors(modified_tris.size());
-            m.m_texture_integral.get_error_per_triangle(modified_tris_uv, renewed_errors);
-            m.set_faces_cached_distance_integral(modified_tris, renewed_errors);
-        } else if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::TRI_QUADRICS) {
-            std::vector<wmtk::Quadric<double>> compressed_quadrics(modified_tris.size());
-            m.m_quadric_integral.get_quadric_per_triangle(
-                modified_tris.size(),
-                [&](int f) -> std::array<float, 6> {
-                    // Get triangle uv positions
-                    std::array<Tuple, 3> local_tuples = m.oriented_tri_vertices(modified_tris[f]);
-                    const Eigen::Vector2f& p0 =
-                        m.vertex_attrs[local_tuples[0].vid(m)].pos.cast<float>();
-                    const Eigen::Vector2f& p1 =
-                        m.vertex_attrs[local_tuples[1].vid(m)].pos.cast<float>();
-                    const Eigen::Vector2f& p2 =
-                        m.vertex_attrs[local_tuples[2].vid(m)].pos.cast<float>();
-                    return {p0.x(), p0.y(), p1.x(), p1.y(), p2.x(), p2.y()};
-                },
-                compressed_quadrics);
-            m.set_faces_quadrics(modified_tris, compressed_quadrics);
-        }
-    }
+    m.update_energy_cache(modified_triangles(m));
 
     return ret_data.success;
 }
@@ -246,7 +207,6 @@ bool AdaptiveTessellationSplitEdgeOperation::after(
 bool AdaptiveTessellationPairedSplitEdgeOperation::before(AdaptiveTessellation& m, const Tuple& t)
 {
     static std::atomic_int g_cnt = 0;
-    int cnt = g_cnt++;
     assert(t.is_valid(m));
     // TODO is this thread safe?
     mirror_edge_tuple = std::nullopt; // reset the mirror edge tuple
@@ -286,9 +246,11 @@ bool AdaptiveTessellationPairedSplitEdgeOperation::before(AdaptiveTessellation& 
     assert(m.is_seam_edge(t) == mirror_edge_tuple.has_value());
     bool split_mirror_edge_success =
         m.is_seam_edge(t) ? mirror_split_edge.before(m, mirror_edge_tuple.value()) : true;
+    if(!m.mesh_parameters.m_do_not_output) {
     // m.write_vtk(m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}.vtu", cnt));
     // m.write_perface_vtk(
     //     m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}_face.vtu", cnt));
+    int cnt = g_cnt++;
     if (cnt % 1000 == 0) {
         m.write_obj_displaced(
             m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}.obj", cnt));
@@ -296,6 +258,7 @@ bool AdaptiveTessellationPairedSplitEdgeOperation::before(AdaptiveTessellation& 
             m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}.hdf", cnt));
     }
     // m.write_obj(m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}_2d.obj", cnt));
+    }
     assert(
         (paired_op_cache.local().before_sibling_edges.size() == 3 ||
          paired_op_cache.local().before_sibling_edges.size() == 6));

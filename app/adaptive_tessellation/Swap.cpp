@@ -133,46 +133,7 @@ bool AdaptiveTessellationSwapEdgeOperation::after(
             m.edge_attrs[edge_tup.eid(m)].curve_id = mirror_edge_curveid.second;
         }
 
-        // update the face_attrs (accuracy error)
-        if (!m.mesh_parameters.m_ignore_embedding) {
-            assert(bool(*this));
-            // get a vector of new traingles uvs
-            assert(mod_tups.size() == 2 || mod_tups.size() == 4);
-            if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
-                std::vector<std::array<float, 6>> modified_tris_uv(mod_tups.size());
-                for (int i = 0; i < mod_tups.size(); i++) {
-                    auto tri = mod_tups[i];
-                    auto verts = m.oriented_tri_vids(tri);
-                    std::array<float, 6> tri_uv;
-                    for (int i = 0; i < 3; i++) {
-                        tri_uv[i * 2] = m.vertex_attrs[verts[i]].pos(0);
-                        tri_uv[i * 2 + 1] = m.vertex_attrs[verts[i]].pos(1);
-                    }
-                    modified_tris_uv[i] = tri_uv;
-                }
-                std::vector<float> renewed_errors(mod_tups.size());
-                m.m_texture_integral.get_error_per_triangle(modified_tris_uv, renewed_errors);
-                m.set_faces_cached_distance_integral(mod_tups, renewed_errors);
-            } else if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::TRI_QUADRICS) {
-                std::vector<wmtk::Quadric<double>> compressed_quadrics(mod_tups.size());
-                m.m_quadric_integral.get_quadric_per_triangle(
-                    mod_tups.size(),
-                    [&](int f) -> std::array<float, 6> {
-                        // Get triangle uv positions
-                        std::array<Tuple, 3> local_tuples = m.oriented_tri_vertices(mod_tups[f]);
-                        const Eigen::Vector2f& p0 =
-                            m.vertex_attrs[local_tuples[0].vid(m)].pos.cast<float>();
-                        const Eigen::Vector2f& p1 =
-                            m.vertex_attrs[local_tuples[1].vid(m)].pos.cast<float>();
-                        const Eigen::Vector2f& p2 =
-                            m.vertex_attrs[local_tuples[2].vid(m)].pos.cast<float>();
-                        return {p0.x(), p0.y(), p1.x(), p1.y(), p2.x(), p2.y()};
-                    },
-                    compressed_quadrics);
-                m.set_faces_quadrics(mod_tups, compressed_quadrics);
-            }
-        }
-        return true;
+        m.update_energy_cache(mod_tups);
     }
     return ret_data;
 }
