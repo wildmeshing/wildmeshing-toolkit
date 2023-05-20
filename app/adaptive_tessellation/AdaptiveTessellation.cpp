@@ -1416,10 +1416,11 @@ TriMesh::Tuple AdaptiveTessellation::get_oriented_mirror_edge(const TriMesh::Tup
 }
 
 // given a seam edge with vid v retrieve the correpsonding vertex on the mirror edge
-TriMesh::Tuple AdaptiveTessellation::get_mirror_vertex(const TriMesh::Tuple& t) const
+TriMesh::Tuple AdaptiveTessellation::get_mirror_vertex(const TriMesh::Tuple& vertex) const
 {
-    assert(is_seam_edge(t));
-    TriMesh::Tuple mirror_edge = get_oriented_mirror_edge(t);
+    const TriMesh::Tuple& edge = vertex; // This code implicitly treats the edge as a vertex
+    assert(is_seam_edge(edge));
+    TriMesh::Tuple mirror_edge = get_oriented_mirror_edge(edge);
     return mirror_edge.switch_vertex(*this);
 }
 
@@ -1436,10 +1437,25 @@ std::vector<TriMesh::Tuple> AdaptiveTessellation::get_all_mirror_vertices(
     if (vertex_attrs[v.vid(*this)].fixed) {
         // use the same color vids to initiate Tuples
         auto same_color_uv_indices = color_to_uv_indices.at(uv_index_to_color.at(v.vid(*this)));
-        for (auto mirror_vid : same_color_uv_indices)
+        for (auto mirror_vid : same_color_uv_indices) {
             ret_vertices.emplace_back(tuple_from_vertex(mirror_vid));
-    } else
+        }
+    } else if (is_seam_edge(v)) {
         ret_vertices.emplace_back(get_mirror_vertex(v));
+    } else {
+        for (Tuple edge : get_one_ring_edges_for_vertex(v)) {
+            edge = edge.switch_vertex(*this);
+            if (is_seam_edge(edge)) {
+                ret_vertices.emplace_back(get_mirror_vertex(edge));
+            }
+        }
+    }
+    auto lt = [&](const Tuple& a, const Tuple& b) { return a.vid(*this) < b.vid(*this); };
+    auto eq = [&](const Tuple& a, const Tuple& b) { return a.vid(*this) == b.vid(*this); };
+    std::sort(ret_vertices.begin(), ret_vertices.end(), lt);
+    ret_vertices.erase(
+        std::unique(ret_vertices.begin(), ret_vertices.end(), eq),
+        ret_vertices.end());
     return ret_vertices;
 }
 
@@ -1488,5 +1504,23 @@ void AdaptiveTessellation::assign_edge_curveid()
     }
 }
 
+auto AdaptiveTessellation::get_one_ring_tris_accross_seams_for_vertex(const Tuple& vertex) const
+    -> std::vector<Tuple>
+{
+    if (!is_seam_vertex(vertex)) {
+        return get_one_ring_tris_for_vertex(vertex);
+    } else {
+        std::vector<Tuple> tris;
+        for (const auto& vert : get_all_mirror_vertices(vertex)) {
+            const auto ring = get_one_ring_tris_for_vertex(vert);
+            tris.insert(tris.end(), ring.begin(), ring.end());
+        }
+        auto lt = [&](const Tuple& a, const Tuple& b) { return a.fid(*this) < b.fid(*this); };
+        auto eq = [&](const Tuple& a, const Tuple& b) { return a.fid(*this) == b.fid(*this); };
+        std::sort(tris.begin(), tris.end(), lt);
+        tris.erase(std::unique(tris.begin(), tris.end(), eq), tris.end());
+        return tris;
+    }
+}
 
 } // namespace adaptive_tessellation

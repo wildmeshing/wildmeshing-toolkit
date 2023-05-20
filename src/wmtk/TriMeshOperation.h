@@ -122,6 +122,7 @@ private:
 class SingleTupleOperationInfo
 {
 public:
+    virtual ~SingleTupleOperationInfo() {}
     void reset() { m_return_tuple_opt.local().reset(); }
     void assign(const TriMeshTuple& t)
     {
@@ -130,6 +131,7 @@ public:
     operator bool() const { return m_return_tuple_opt.local().has_value(); }
 
     std::optional<TriMeshTuple> get_return_tuple_opt() const { return m_return_tuple_opt.local(); }
+    virtual std::vector<TriMeshTuple> modified_triangles(const TriMesh& m) const = 0;
 
 private:
     mutable tbb::enumerable_thread_specific<std::optional<TriMeshTuple>> m_return_tuple_opt;
@@ -171,7 +173,7 @@ public:
     Tuple new_vertex(const TriMesh& m) const;
     std::array<Tuple, 2> original_endpoints(TriMesh& m, const Tuple& t) const;
 
-    std::vector<Tuple> modified_tuples(const TriMesh& m) const;
+    std::vector<Tuple> modified_triangles(const TriMesh& m) const override;
 
     void assign(const Tuple& t) override { SingleTupleOperationInfo::assign(t); }
     void mark_failed() override { SingleTupleOperationInfo::reset(); }
@@ -194,7 +196,7 @@ public:
     bool after(TriMesh& m, ExecuteReturnData& ret_data) override;
     std::string name() const override;
 
-    std::vector<Tuple> modified_tuples(const TriMesh& m) const;
+    std::vector<Tuple> modified_triangles(const TriMesh& m) const override;
     void assign(const Tuple& t) override { SingleTupleOperationInfo::assign(t); }
     void mark_failed() override { SingleTupleOperationInfo::reset(); }
 };
@@ -216,7 +218,7 @@ public:
     std::string name() const override;
     // bool invariants(TriMesh& m, ExecuteReturnData& ret_data) override;
 
-    std::vector<Tuple> modified_tuples(const TriMesh& m) const;
+    std::vector<Tuple> modified_triangles(const TriMesh& m) const override;
     void assign(const Tuple& t) override { SingleTupleOperationInfo::assign(t); }
     void mark_failed() override { SingleTupleOperationInfo::reset(); }
 };

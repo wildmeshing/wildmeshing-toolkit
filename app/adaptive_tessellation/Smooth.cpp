@@ -407,3 +407,26 @@ void adaptive_tessellation::AdaptiveTessellation::smooth_all_vertices()
         wmtk::logger().info("vertex smoothing operation time serial: {}s", time);
     }
 }
+
+auto AdaptiveTessellationSmoothVertexOperation::modified_triangles(const TriMesh& m) const -> std::vector<Tuple>
+{
+    const auto& at  = static_cast<const AdaptiveTessellation&>(m);
+    if (!bool(*this)) {
+        return {};
+    }
+
+    const Tuple new_v = get_return_tuple_opt().value();
+
+    return at.get_one_ring_tris_for_vertex(new_v);
+}
+auto AdaptiveTessellationSmoothSeamVertexOperation::modified_triangles(const TriMesh& m) const -> std::vector<Tuple>
+{
+    const auto& at  = static_cast<const AdaptiveTessellation&>(m);
+    if (!bool(*this)) {
+        return {};
+    }
+
+    const Tuple new_v = get_return_tuple_opt().value();
+
+    return at.get_one_ring_tris_accross_seams_for_vertex(new_v);
+}

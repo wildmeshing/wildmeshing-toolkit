@@ -74,37 +74,37 @@ void addCustomOps(Executor& e)
 
 bool AdaptiveTessellationSplitEdgeOperation::before(AdaptiveTessellation& m, const Tuple& t)
 {
+    auto& my_op_cache = op_cache.local();
     if (wmtk::TriMeshSplitEdgeOperation::before(m, t)) {
         // record the operation cache
-        op_cache.local().v1 = t.vid(m);
-        op_cache.local().v2 = t.switch_vertex(m).vid(m);
-        op_cache.local().curve_id = m.edge_attrs[t.eid(m)].curve_id;
-        op_cache.local().before_curve_ids.resize(0); // clear the cache
+        my_op_cache.v1 = t.vid(m);
+        my_op_cache.v2 = t.switch_vertex(m).vid(m);
+        my_op_cache.curve_id = m.edge_attrs[t.eid(m)].curve_id;
+        my_op_cache.before_curve_ids.resize(0); // clear the cache
         // edge 2
-        op_cache.local().before_curve_ids.emplace_back(
-            m.edge_attrs[t.switch_edge(m).eid(m)].curve_id);
+        my_op_cache.before_curve_ids.emplace_back(m.edge_attrs[t.switch_edge(m).eid(m)].curve_id);
         // edge 1
-        op_cache.local().before_curve_ids.emplace_back(
+        my_op_cache.before_curve_ids.emplace_back(
             m.edge_attrs[t.switch_vertex(m).switch_edge(m).eid(m)].curve_id);
         if (t.switch_face(m).has_value()) {
             // edge 5
-            op_cache.local().before_curve_ids.emplace_back(
+            my_op_cache.before_curve_ids.emplace_back(
                 m.edge_attrs[t.switch_face(m).value().switch_edge(m).eid(m)].curve_id);
             // edge 4
-            op_cache.local().before_curve_ids.emplace_back(
+            my_op_cache.before_curve_ids.emplace_back(
                 m.edge_attrs[t.switch_face(m).value().switch_vertex(m).switch_edge(m).eid(m)]
                     .curve_id);
         }
         // record the mesh cache
         m.cache.local().partition_id = m.vertex_attrs[t.vid(m)].partition_id;
         if (m.is_boundary_vertex(t))
-            m.vertex_attrs[op_cache.local().v1].boundary_vertex = true;
+            m.vertex_attrs[my_op_cache.v1].boundary_vertex = true;
         else
-            m.vertex_attrs[op_cache.local().v1].boundary_vertex = false;
+            m.vertex_attrs[my_op_cache.v1].boundary_vertex = false;
         if (m.is_boundary_vertex(t.switch_vertex(m)))
-            m.vertex_attrs[op_cache.local().v2].boundary_vertex = true;
+            m.vertex_attrs[my_op_cache.v2].boundary_vertex = true;
         else
-            m.vertex_attrs[op_cache.local().v2].boundary_vertex = false;
+            m.vertex_attrs[my_op_cache.v2].boundary_vertex = false;
         return true;
     }
     return false;
@@ -127,31 +127,31 @@ bool AdaptiveTessellationSplitEdgeOperation::after(
     wmtk::TriMeshOperation::ExecuteReturnData& ret_data)
 {
     assert(bool(*this));
+    const auto& my_op_cache = op_cache.local();
     if (wmtk::TriMeshSplitEdgeOperation::after(m, ret_data)) {
         assert(bool(*this));
         const Eigen::Vector2d p =
-            (m.vertex_attrs[op_cache.local().v1].pos + m.vertex_attrs[op_cache.local().v2].pos) /
-            2.0;
+            (m.vertex_attrs[my_op_cache.v1].pos + m.vertex_attrs[my_op_cache.v2].pos) / 2.0;
         auto vid = return_edge_tuple.switch_vertex(m).vid(m);
         // update the vertex_attrs
         m.vertex_attrs[vid].pos = p;
         m.vertex_attrs[vid].partition_id = m.cache.local().partition_id;
-        m.vertex_attrs[vid].curve_id = m.vertex_attrs[op_cache.local().v1].curve_id;
-        if (m.vertex_attrs[op_cache.local().v1].boundary_vertex &&
-            m.vertex_attrs[op_cache.local().v2].boundary_vertex) {
+        m.vertex_attrs[vid].curve_id = m.vertex_attrs[my_op_cache.v1].curve_id;
+        if (m.vertex_attrs[my_op_cache.v1].boundary_vertex &&
+            m.vertex_attrs[my_op_cache.v2].boundary_vertex) {
             m.vertex_attrs[vid].boundary_vertex = true;
             m.vertex_attrs[vid].t =
                 m.mesh_parameters.m_boundary.uv_to_t(m.vertex_attrs[vid].pos).second;
         }
         // update the edge_attrs
-        m.edge_attrs[return_edge_tuple.eid(m)].curve_id = op_cache.local().curve_id;
+        m.edge_attrs[return_edge_tuple.eid(m)].curve_id = my_op_cache.curve_id;
         // edge 6
         auto edge_6 =
             return_edge_tuple.switch_vertex(m).switch_edge(m).switch_face(m).value().switch_edge(m);
-        m.edge_attrs[edge_6.eid(m)].curve_id = op_cache.local().curve_id;
+        m.edge_attrs[edge_6.eid(m)].curve_id = my_op_cache.curve_id;
         // edge 2'
         m.edge_attrs[return_edge_tuple.switch_edge(m).eid(m)].curve_id =
-            op_cache.local().before_curve_ids[0];
+            my_op_cache.before_curve_ids[0];
         // edge 1'
         auto edge_1_prime = return_edge_tuple.switch_vertex(m)
                                 .switch_edge(m)
@@ -160,7 +160,7 @@ bool AdaptiveTessellationSplitEdgeOperation::after(
                                 .switch_edge(m)
                                 .switch_vertex(m)
                                 .switch_edge(m);
-        m.edge_attrs[edge_1_prime.eid(m)].curve_id = op_cache.local().before_curve_ids[1];
+        m.edge_attrs[edge_1_prime.eid(m)].curve_id = my_op_cache.before_curve_ids[1];
         // nullify the middle interior edge outdated edge_attrs data
         m.edge_attrs[return_edge_tuple.switch_vertex(m).switch_edge(m).eid(m)].curve_id =
             std::nullopt;
@@ -169,10 +169,10 @@ bool AdaptiveTessellationSplitEdgeOperation::after(
             .curve_id = std::nullopt;
         // check if it has a neighbore face whose edge_attrs data also need to be updated/nullified
         if (return_edge_tuple.switch_face(m).has_value()) {
-            assert(op_cache.local().before_curve_ids.size() == 4);
+            assert(my_op_cache.before_curve_ids.size() == 4);
             // edge 4'
             m.edge_attrs[return_edge_tuple.switch_face(m).value().switch_edge(m).eid(m)].curve_id =
-                op_cache.local().before_curve_ids[2];
+                my_op_cache.before_curve_ids[2];
             // edge 5'
             auto edge_5_prime = return_edge_tuple.switch_face(m)
                                     .value()
@@ -183,7 +183,7 @@ bool AdaptiveTessellationSplitEdgeOperation::after(
                                     .switch_edge(m)
                                     .switch_vertex(m)
                                     .switch_edge(m);
-            m.edge_attrs[edge_5_prime.eid(m)].curve_id = op_cache.local().before_curve_ids[3];
+            m.edge_attrs[edge_5_prime.eid(m)].curve_id = my_op_cache.before_curve_ids[3];
             // nullify the middle interior edge outdated edge_attrs data
             m.edge_attrs
                 [return_edge_tuple.switch_face(m).value().switch_vertex(m).switch_edge(m).eid(m)]
@@ -202,7 +202,7 @@ bool AdaptiveTessellationSplitEdgeOperation::after(
     // update the face_attrs (accuracy error)
     if (!m.mesh_parameters.m_ignore_embedding) {
         assert(bool(*this));
-        auto modified_tris = modified_tuples(m);
+        auto modified_tris = modified_triangles(m);
         assert(modified_tris.size() == 2 || modified_tris.size() == 4);
         if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
             // get a vector of new traingles uvs
@@ -292,7 +292,8 @@ bool AdaptiveTessellationPairedSplitEdgeOperation::before(AdaptiveTessellation& 
     if (cnt % 1000 == 0) {
         m.write_obj_displaced(
             m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}.obj", cnt));
-        m.write_hdf_displaced_uv(m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}.hdf", cnt));
+        m.write_hdf_displaced_uv(
+            m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}.hdf", cnt));
     }
     // m.write_obj(m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}_2d.obj", cnt));
     assert(
@@ -696,4 +697,30 @@ void AdaptiveTessellationPairedSplitEdgeOperation::mark_failed()
 {
     split_edge.mark_failed();
     mirror_split_edge.mark_failed();
+}
+auto AdaptiveTessellationSplitEdgeOperation::modified_triangles(const TriMesh& m) const
+    -> std::vector<Tuple>
+{
+    return TriMeshSplitEdgeOperation::modified_triangles(m);
+    // const auto& at  = static_cast<const AdaptiveTessellation&>(m);
+    // if (!bool(*this)) {
+    //     return {};
+    // }
+
+    // const Tuple new_v = new_vertex(at);
+
+    // return at.get_one_ring_tris_accross_seams_for_vertex(new_v);
+}
+
+auto AdaptiveTessellationPairedSplitEdgeOperation::modified_triangles(const TriMesh& m) const
+    -> std::vector<Tuple>
+{
+    const auto& at = static_cast<const AdaptiveTessellation&>(m);
+    if (!bool(split_edge)) {
+        return {};
+    }
+
+    const Tuple new_v = split_edge.new_vertex(at);
+
+    return at.get_one_ring_tris_accross_seams_for_vertex(new_v);
 }
