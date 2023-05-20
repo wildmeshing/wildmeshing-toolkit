@@ -224,7 +224,10 @@ std::vector<std::array<size_t, 3>> tetwild::TetWild::triangulate_polygon_face(
                 (((b[0] * c[1] - b[1] * c[0]) != 0 || (b[1] * c[2] - b[2] * c[1]) != 0 ||
                   (b[0] * c[2] - b[2] * c[0]) != 0))) {
                 no_colinear = false;
-                std::array<size_t, 3> t = {cur.second, next.second, nextnext.second};
+                std::array<size_t, 3> t = {
+                    size_t(cur.second),
+                    size_t(next.second),
+                    size_t(nextnext.second)};
                 triangulated_faces.push_back(t);
                 points_vector.erase(points_vector.begin() + ((i + 1) % points_vector.size()));
                 break;
@@ -239,9 +242,9 @@ std::vector<std::array<size_t, 3>> tetwild::TetWild::triangulate_polygon_face(
     // cleanup convex polygon
     while (points_vector.size() >= 3) {
         std::array<size_t, 3> t = {
-            points_vector[0].second,
-            points_vector[1].second,
-            points_vector[points_vector.size() - 1].second};
+            size_t(points_vector[0].second),
+            size_t(points_vector[1].second),
+            size_t(points_vector[points_vector.size() - 1].second)};
         triangulated_faces.push_back(t);
         points_vector.erase(points_vector.begin());
     }
