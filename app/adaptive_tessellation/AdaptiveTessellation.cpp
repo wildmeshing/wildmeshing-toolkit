@@ -1053,7 +1053,8 @@ double AdaptiveTessellation::get_quadric_error_for_face(const Tuple& f) const
             auto lambda2 = ((v3 - v1) * (u - u3) + (u1 - u3) * (v - v3)) / denom;
             auto lambda3 = 1 - lambda1 - lambda2;
             return (lambda1 * triangle_3d.row(0) + lambda2 * triangle_3d.row(1) +
-                   lambda3 * triangle_3d.row(2)).transpose();
+                    lambda3 * triangle_3d.row(2))
+                .transpose();
         };
 
         const int order = 2;
