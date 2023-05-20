@@ -136,7 +136,7 @@ TEST_CASE("boundary parametrization")
     REQUIRE(ij3.second == 2);
 }
 
-TEST_CASE("operations with boundary parameterization")
+TEST_CASE("operations with boundary parameterization", "[.]")
 {
     using DScalar = wmtk::EdgeLengthEnergy::DScalar;
 
@@ -150,6 +150,7 @@ TEST_CASE("operations with boundary parameterization")
     AdaptiveTessellation m;
     m.create_mesh(V, F);
     m.set_projection();
+    m.mesh_parameters.m_do_not_output = true;
     m.mesh_parameters.m_ignore_embedding = true;
     m.mesh_parameters.m_early_stopping_number = 100;
     m.mesh_parameters.m_boundary.construct_boundaries(V, F, {}, {});

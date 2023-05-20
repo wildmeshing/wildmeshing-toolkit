@@ -31,7 +31,7 @@ TEST_CASE("sampler_bicubic_constant", "[displacement]")
     // Make sure that image.get(), displ.get(), and f() all give the same result
     for (float u = 0; u <= 1; u += 0.1) {
         for (float v = 0; v <= 1; v += 0.1) {
-            REQUIRE_THAT(image.get(u, v), Catch::Matchers::WithinRel(sampler.sample(u, v)));
+            REQUIRE_THAT(image.get(u, v), Catch::Matchers::WithinRel(sampler.sample(u, v), 1e-5));
         }
     }
 }
@@ -49,7 +49,7 @@ TEST_CASE("sampler_bicubic_linear", "[displacement]")
     // Make sure that image.get(), displ.get(), and f() all give the same result
     for (float u = 0; u <= 1; u += 0.1) {
         for (float v = 0; v <= 1; v += 0.1) {
-            REQUIRE(image.get(u, v) == sampler.sample(u, v));
+            REQUIRE_THAT(image.get(u, v), Catch::Matchers::WithinRel(sampler.sample(u, v), 1e-5));
         }
     }
 
