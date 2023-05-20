@@ -25,7 +25,6 @@ double AdaptiveTessellation::avg_edge_len() const
 }
 
 
-
 // return E0, E1 of corresponding seam edges in uv mesh
 // set up the seam vertex coloring
 std::pair<Eigen::MatrixXi, Eigen::MatrixXi> AdaptiveTessellation::seam_edges_set_up(
@@ -219,15 +218,6 @@ void AdaptiveTessellation::set_parameters(
         mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY)
         mesh_parameters.m_accuracy_threshold = target_accuracy;
     mesh_parameters.m_quality_threshold = target_edge_length;
-
-    const Eigen::MatrixXd box_min = input_V_.colwise().minCoeff();
-    const Eigen::MatrixXd box_max = input_V_.colwise().maxCoeff();
-    double max_comp = (box_max - box_min).maxCoeff();
-    Eigen::MatrixXd scene_offset = -box_min;
-    Eigen::MatrixXd scene_extent = box_max - box_min;
-    scene_offset.array() -= (scene_extent.array() - max_comp) * 0.5;
-    mesh_parameters.m_scale = max_comp;
-    mesh_parameters.m_offset = scene_offset;
 
     // setting needs to be in the order of image-> displacement-> energy-> edge_length
     // set the image first since it is used for displacement and energy setting

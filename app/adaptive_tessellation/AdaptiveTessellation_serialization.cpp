@@ -771,9 +771,20 @@ void AdaptiveTessellation::mesh_preprocessing(
     set_fixed();
     // assign curve-id to each edge using the curve-it assigned for each vertex
     assign_edge_curveid();
+
+    const Eigen::MatrixXd box_min = input_V_.colwise().minCoeff();
+    const Eigen::MatrixXd box_max = input_V_.colwise().maxCoeff();
+    double max_comp = (box_max - box_min).maxCoeff();
+    Eigen::MatrixXd scene_offset = -box_min;
+    Eigen::MatrixXd scene_extent = box_max - box_min;
+    scene_offset.array() -= (scene_extent.array() - max_comp) * 0.5;
+    mesh_parameters.m_scale = max_comp;
+    mesh_parameters.m_offset = scene_offset;
+
     // cache the initial accuracy error per triangle
     std::array<wmtk::Image, 3> displaced = wmtk::combine_position_normal_texture(
-        mesh_parameters.m_normalization_scale,
+        mesh_parameters.m_scale,
+        mesh_parameters.m_offset,
         position_image_path,
         normal_image_path,
         height_image_path);

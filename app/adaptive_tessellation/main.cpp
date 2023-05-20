@@ -187,7 +187,7 @@ int main(int argc, char** argv)
         edge_len_type,
         boundary_parameter_on);
     //// TODO DEBUG
-    m.mesh_parameters.m_early_stopping_number = 100;
+    // m.mesh_parameters.m_early_stopping_number = 100;
     ////
     m.set_vertex_world_positions(); // compute 3d positions for each vertex
 
@@ -199,7 +199,7 @@ int main(int argc, char** argv)
 
     LoggerDataCollector ldc;
     ldc.start_timer();
-    m.smooth_all_vertices();
+    m.split_all_edges();
     ldc.stop_timer();
 
     m.consolidate_mesh();

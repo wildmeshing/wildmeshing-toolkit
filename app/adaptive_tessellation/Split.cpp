@@ -224,9 +224,10 @@ bool AdaptiveTessellationPairedSplitEdgeOperation::before(AdaptiveTessellation& 
     // m.write_vtk(m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}.vtu", cnt));
     // m.write_perface_vtk(
     //     m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}_face.vtu", cnt));
-    // m.write_displaced_obj(
-    //     m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}.obj", cnt),
-    //     m.mesh_parameters.m_displacement);
+    if (cnt % 1000 == 0) {
+        m.write_obj_displaced(
+            m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}.obj", cnt));
+    }
     // m.write_obj(m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}_2d.obj", cnt));
     cnt++;
     assert(
