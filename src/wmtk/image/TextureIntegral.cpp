@@ -58,8 +58,9 @@ double get_error_per_triangle_exact(
     };
     auto get_coordinate = [&](const double& x, const double& y) -> std::pair<int, int> {
         auto [xx, yy] = m_image.get_pixel_index(get_value(x), get_value(y));
-        return {m_image.get_coordinate(xx, m_image.get_wrapping_mode_x()),
-                m_image.get_coordinate(yy, m_image.get_wrapping_mode_y())};
+        return {
+            m_image.get_coordinate(xx, m_image.get_wrapping_mode_x()),
+            m_image.get_coordinate(yy, m_image.get_wrapping_mode_y())};
     };
     auto bbox_min = bbox.min();
     auto bbox_max = bbox.max();
@@ -142,12 +143,10 @@ double get_error_per_triangle_adaptive(
     const std::array<wmtk::Image, 3>& images,
     const Eigen::Matrix<double, 3, 2, Eigen::RowMajor>& triangle_uv,
     tbb::enumerable_thread_specific<QuadratureCache>& m_cache,
+    const int order,
     DisplacementFunc get)
 {
     using T = double;
-    const int order = 1;
-    // constexpr int Degree = 2;
-    // const int order = 2 * (Degree - 1);
 
     Eigen::Matrix3d triangle_3d;
     triangle_3d.row(0) = get(triangle_uv(0, 0), triangle_uv(0, 1));
@@ -306,7 +305,8 @@ TextureIntegral::~TextureIntegral() = default;
 template <TextureIntegral::SamplingMethod Sampling, TextureIntegral::IntegrationMethod Integration>
 void TextureIntegral::get_error_per_triangle_internal(
     lagrange::span<const std::array<float, 6>> input_triangles,
-    lagrange::span<float> output_errors) const
+    lagrange::span<float> output_errors,
+    int order) const
 {
     assert(input_triangles.size() == output_errors.size());
     tbb::parallel_for(size_t(0), input_triangles.size(), [&](size_t i) {
@@ -323,17 +323,18 @@ void TextureIntegral::get_error_per_triangle_internal(
                 return internal::sample_bilinear(m_data, u, v).cast<double>();
             }
         };
-        if constexpr (Integration == IntegrationMethod::Exact)
+        if constexpr (Integration == IntegrationMethod::Exact) {
             output_errors[i] = get_error_per_triangle_exact(
                 m_data[0],
                 triangle,
                 m_cache->quadrature_cache,
                 sampling_func);
-        else if constexpr (Integration == IntegrationMethod::Adaptive) {
+        } else if constexpr (Integration == IntegrationMethod::Adaptive) {
             output_errors[i] = get_error_per_triangle_adaptive(
                 m_data,
                 triangle,
                 m_cache->quadrature_cache,
+                order,
                 sampling_func);
         }
     });
@@ -343,42 +344,54 @@ void TextureIntegral::get_error_per_triangle(
     lagrange::span<const std::array<float, 6>> input_triangles,
     lagrange::span<float> output_errors) const
 {
+    int order = 1;
+    if (m_quadrature_order == QuadratureOrder::Full) {
+        constexpr int Degree = 2;
+        order = 2 * (Degree - 1);
+    }
+
     assert(input_triangles.size() == output_errors.size());
     switch (m_sampling_method) {
     case SamplingMethod::Bicubic:
         if (m_integration_method == IntegrationMethod::Exact) {
             get_error_per_triangle_internal<SamplingMethod::Bicubic, IntegrationMethod::Exact>(
                 input_triangles,
-                output_errors);
+                output_errors,
+                order);
 
         } else {
             get_error_per_triangle_internal<SamplingMethod::Bicubic, IntegrationMethod::Adaptive>(
                 input_triangles,
-                output_errors);
+                output_errors,
+                order);
         }
         break;
     case SamplingMethod::Nearest:
         if (m_integration_method == IntegrationMethod::Exact) {
             get_error_per_triangle_internal<SamplingMethod::Nearest, IntegrationMethod::Exact>(
                 input_triangles,
-                output_errors);
+                output_errors,
+                order);
 
         } else {
             get_error_per_triangle_internal<SamplingMethod::Nearest, IntegrationMethod::Adaptive>(
                 input_triangles,
-                output_errors);
+                output_errors,
+                order);
         }
         break;
     case SamplingMethod::Bilinear:
         if (m_integration_method == IntegrationMethod::Exact) {
             get_error_per_triangle_internal<SamplingMethod::Bilinear, IntegrationMethod::Exact>(
                 input_triangles,
-                output_errors);
+                output_errors,
+                order);
 
         } else {
             get_error_per_triangle_internal<SamplingMethod::Bilinear, IntegrationMethod::Adaptive>(
                 input_triangles,
-                output_errors);
+                output_errors,
+                order);
         }
         break;
     }
