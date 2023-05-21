@@ -596,7 +596,6 @@ void AdaptiveTessellationPairedCollapseEdgeOperation::set_input_mirror(
         const Tuple mirror = m.get_oriented_mirror_edge(t).switch_vertex(m);
         assert(mirror.is_valid(m));
         op_cache.mirror_edge_tuple_opt = mirror;
-        spdlog::warn("{} {}", op_cache.mirror_edge_tuple_opt->info(), mirror.info());
     } else {
         op_cache.mirror_edge_tuple_opt = std::nullopt;
     }
@@ -609,6 +608,10 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::before(
 {
     auto& op_cache = m_op_cache.local();
     op_cache = {};
+    if (!utils::is_valid_trimesh_topology(m)) {
+        return false;
+    }
+
 
     if (!check_seamed_link_condition(m, t)) {
         return false;
@@ -624,7 +627,6 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::before(
 
     if (input_edge_is_mirror()) {
         const Tuple& mirror_edge_tuple = op_cache.mirror_edge_tuple_opt.value();
-        spdlog::warn("{}", mirror_edge_tuple.info());
         assert(mirror_edge_tuple.is_valid(m));
         if (!collapse_mirror_edge.before(m, mirror_edge_tuple)) {
             return false;
@@ -706,7 +708,9 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::after(AdaptiveTessellation
     static std::atomic_int cnt = 0;
     wmtk::logger().info("collapse edge: {}", cnt);
     auto& op_cache = m_op_cache.local();
-    const Tuple& return_tuple = collapse_edge.get_return_tuple_opt().value();
+    assert(bool(*this));
+
+    Tuple return_tuple = collapse_edge.get_return_tuple_opt().value();
     if (!collapse_edge.after(m)) {
         return false;
     }
@@ -727,8 +731,51 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::after(AdaptiveTessellation
             mirror_vertex_attr.pos_world = new_vertex_attr.pos_world;
         }
     }
+#if defined(_DEBUG)
 
+    if (!utils::is_valid_trimesh_topology(m)) {
+        spdlog::info("PairedCollapse invalid before building topology");
+        return false;
+    }
+#endif
     rebuild_boundary_data(m);
+#if defined(_DEBUG)
+    {
+        bool valid = true;
+        m.for_each_edge([&](const Tuple& edge) {
+            const auto mtup_opt = m.face_attrs[edge.fid(m)].mirror_edges[edge.local_eid(m)];
+            if (mtup_opt) {
+                if (!mtup_opt->is_valid(m)) {
+                    spdlog::warn(
+                        "Edge {} has a Mirror edge {} that is invalid",
+                        edge.info(),
+                        mtup_opt->info());
+                    valid = false;
+                } else {
+                    const auto omtup_opt =
+                        m.face_attrs[mtup_opt->fid(m)].mirror_edges[mtup_opt->local_eid(m)];
+                    if (!bool(omtup_opt)) {
+                        spdlog::warn(
+                            "Edge {} has a Mirror edge {} that does not have a mirror",
+                            edge.info(),
+                            mtup_opt->info());
+                        valid = false;
+                    } else if (!omtup_opt->is_valid(m)) {
+                        spdlog::warn(
+                            "Edge {} has a Mirror edge {} that has an invalid mirror {}",
+                            edge.info(),
+                            mtup_opt->info(),
+                            omtup_opt->info());
+                    }
+                }
+            }
+        });
+    }
+    if (!utils::is_valid_trimesh_topology(m)) {
+        spdlog::info("PairedCollapse invalid before building topology");
+        return false;
+    }
+#endif
 
     std::vector<size_t> all_mirrors = m.get_all_mirror_vids(return_tuple);
 
@@ -760,6 +807,9 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::after(AdaptiveTessellation
     m.write_obj_displaced(
         m.mesh_parameters.m_output_folder + fmt::format("/collapse_{:04d}.obj", cnt));
     cnt++;
+    if (!utils::is_valid_trimesh_topology(m)) {
+        return false;
+    }
     return true;
 }
 
