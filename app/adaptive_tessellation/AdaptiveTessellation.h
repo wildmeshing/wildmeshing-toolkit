@@ -187,8 +187,8 @@ public:
         const std::filesystem::path& position_image_path,
         const std::filesystem::path& normal_image_path,
         const std::filesystem::path& height_image_path,
-        float min_height,
-        float max_height);
+        float min_height = 0.f,
+        float max_height = 1.f);
 
     bool invariants(const std::vector<Tuple>& new_tris);
 

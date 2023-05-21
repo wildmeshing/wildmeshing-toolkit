@@ -17,8 +17,8 @@ class StatisticsObj
     double std_dev_ = std::numeric_limits<T>::lowest();
 
 public:
-    template <typename T>
-    StatisticsObj(std::vector<T> data)
+    template <typename U>
+    StatisticsObj(std::vector<U> data)
     {
         std::sort(data.begin(), data.end());
 
@@ -26,12 +26,12 @@ public:
         max_ = data[data.size() - 1];
         median_ = data[(data.size() - 1) / 2];
 
-        T sum = std::accumulate(data.begin(), data.end(), 0.0);
+        U sum = std::accumulate(data.begin(), data.end(), 0.0);
         mean_ = sum / data.size();
 
-        std::vector<T> diff(data.size());
-        std::transform(data.begin(), data.end(), diff.begin(), [this](T x) { return x - mean_; });
-        const T sq_sum = std::inner_product(diff.begin(), diff.end(), diff.begin(), 0.0);
+        std::vector<U> diff(data.size());
+        std::transform(data.begin(), data.end(), diff.begin(), [this](U x) { return x - mean_; });
+        const U sq_sum = std::inner_product(diff.begin(), diff.end(), diff.begin(), 0.0);
         std_dev_ = std::sqrt(sq_sum / data.size());
     }
 
