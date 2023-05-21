@@ -138,6 +138,16 @@ auto TriMeshEdgeCollapseOperation::execute(TriMesh& m, const Tuple& loc0) -> Exe
     assign(return_t);
     new_tris = modified_triangles(m);
 
+    for (const auto& tri : new_tris) {
+        for (const size_t index : m.oriented_tri_vids(tri)) {
+            assert(
+                std::find(
+                    vertex_connectivity[index].m_conn_tris.begin(),
+                    vertex_connectivity[index].m_conn_tris.end(),
+                    tri.fid(m)) != vertex_connectivity[index].m_conn_tris.end());
+        }
+    }
+
     ret_data.success = true;
     return ret_data;
 }

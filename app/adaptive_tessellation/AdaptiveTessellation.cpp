@@ -68,10 +68,9 @@ void AdaptiveTessellation::mesh_preprocessing(
     wmtk::TriMesh m_3d;
     std::vector<std::array<size_t, 3>> tris;
     for (auto f = 0; f < input_F_.rows(); f++) {
-        std::array<size_t, 3> tri = {
-            (size_t)input_F_(f, 0),
-            (size_t)input_F_(f, 1),
-            (size_t)input_F_(f, 2)};
+        std::array<size_t, 3> tri = {(size_t)input_F_(f, 0),
+                                     (size_t)input_F_(f, 1),
+                                     (size_t)input_F_(f, 2)};
         tris.emplace_back(tri);
     }
     m_3d.create_mesh(input_V_.rows(), tris);
@@ -1508,17 +1507,20 @@ std::vector<size_t> AdaptiveTessellation::get_all_mirror_vids(const TriMesh::Tup
 
     {
         assert(v.is_valid(*this));
-    const size_t vid = ret_vertices_vid.emplace_back(v.vid(*this));
-                assert(vid < m_vertex_connectivity.size());
+        const size_t vid = ret_vertices_vid.emplace_back(v.vid(*this));
+        assert(vid < m_vertex_connectivity.size());
     }
 
-    for (auto& e : get_one_ring_edges_for_vertex(v)) queue.push(e);
+    for (auto& e : get_one_ring_edges_for_vertex(v)) {
+        assert(e.is_valid(*this));
+        queue.push(e);
+    }
     while (!queue.empty()) {
         auto e = queue.front();
         queue.pop();
         if (is_seam_edge(e)) {
             auto mirror_v = get_mirror_vertex(e.switch_vertex(*this));
-                assert(mirror_v.is_valid(*this));
+            assert(mirror_v.is_valid(*this));
             if (std::find(ret_vertices_vid.begin(), ret_vertices_vid.end(), mirror_v.vid(*this)) ==
                 ret_vertices_vid.end()) {
                 const size_t vid = ret_vertices_vid.emplace_back(mirror_v.vid(*this));
