@@ -412,37 +412,38 @@ bool AdaptiveTessellationCollapseEdgeOperation::check_vertex_mergeability(
 bool AdaptiveTessellationCollapseEdgeOperation::before(AdaptiveTessellation& m, const Tuple& t)
 {
     m_op_cache.local() = {};
-    if (wmtk::TriMeshEdgeCollapseOperation::before(m, t)) {
-        wmtk::logger().info("pass in before");
-        if (!check_vertex_mergeability(m, t)) {
-            wmtk::logger().info("fail in mergeability check");
-            return false;
-        }
-        // TODO: currently edge mergeability just checks for double boundaries
-        // which is caught by link condition, is there something else?
-        // if(!check_edge_mergeability(m, t)) { return false; }
+    if (!wmtk::TriMeshEdgeCollapseOperation::before(m, t)) {
+        return false;
+    }
+    wmtk::logger().info("pass in before");
+    if (!check_vertex_mergeability(m, t)) {
+        wmtk::logger().info("fail in mergeability check");
+        return false;
+    }
+    // TODO: currently edge mergeability just checks for double boundaries
+    // which is caught by link condition, is there something else?
+    // if(!check_edge_mergeability(m, t)) { return false; }
 
-        // record boundary vertex as boudnary_vertex in vertex attribute for accurate collapse
-        // after boundary operations
+    // record boundary vertex as boudnary_vertex in vertex attribute for accurate collapse
+    // after boundary operations
 
-        const size_t my_vid = t.vid(m);
-        const Tuple other_tuple = t.switch_vertex(m);
-        const size_t other_vid = other_tuple.vid(m);
-        auto& my_vattr = m.vertex_attrs[my_vid];
-        auto& other_vattr = m.vertex_attrs[other_vid];
-        // record if the two vertices of the edge is boundary vertex
-        my_vattr.boundary_vertex = m.is_boundary_vertex(t);
-        other_vattr.boundary_vertex = m.is_boundary_vertex(other_tuple);
+    const size_t my_vid = t.vid(m);
+    const Tuple other_tuple = t.switch_vertex(m);
+    const size_t other_vid = other_tuple.vid(m);
+    auto& my_vattr = m.vertex_attrs[my_vid];
+    auto& other_vattr = m.vertex_attrs[other_vid];
+    // record if the two vertices of the edge is boundary vertex
+    my_vattr.boundary_vertex = m.is_boundary_vertex(t);
+    other_vattr.boundary_vertex = m.is_boundary_vertex(other_tuple);
 
 
-        fill_cache(m, t);
+    fill_cache(m, t);
 
-        // make sure that we'll be able to put a vertex in the right positoin
-        const ConstrainedBoundaryType cbt = m_op_cache.local().constrained_boundary_type;
-        if (cbt == ConstrainedBoundaryType::BothConstrained) {
-            wmtk::logger().info("fail in constrained boundary type");
-            return false;
-        }
+    // make sure that we'll be able to put a vertex in the right positoin
+    const ConstrainedBoundaryType cbt = m_op_cache.local().constrained_boundary_type;
+    if (cbt == ConstrainedBoundaryType::BothConstrained) {
+        wmtk::logger().info("fail in constrained boundary type");
+        return false;
     }
     return true;
 }
