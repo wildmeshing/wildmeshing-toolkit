@@ -226,25 +226,16 @@ CurveNetwork split_loops(
     return result;
 }
 
-Boundary::ParameterizedCurves parameterize_curves(
+// Compute parent curves for each curve in the input network.
+std::vector<int> compute_parent_curves(
     const CurveNetwork& input,
-    const Eigen::MatrixXd& V,
-    const std::map<Edge, int> edge_to_seam)
+    const std::map<Edge, int>& edge_to_seam)
 {
-    Boundary::ParameterizedCurves result;
-
+    std::vector<int> parent_curve(input.curves.size(), -1);
     std::unordered_map<int, int> seam_to_curve;
 
-    auto check_orientation = [&](const auto& curve, int parent_id) {
-        Edge e0(curve[0], curve[1]);
-        const int s0 = edge_to_seam.at(e0);
-        Edge e1(input.curves[parent_id][0], input.curves[parent_id][1]);
-        const int s1 = edge_to_seam.at(e1);
-        return s0 == s1;
-    };
-
     for (int curve_id = 0; curve_id < static_cast<int>(input.curves.size()); ++curve_id) {
-        auto curve = input.curves[curve_id];
+        const auto& curve = input.curves[curve_id];
         la_debug_assert(curve.size() > 1);
 
         // First pass on the curve to find the parent curve id
@@ -270,16 +261,126 @@ Boundary::ParameterizedCurves parameterize_curves(
         // Check if we need to flip the current curve
         if (parent_id != curve_id) {
             la_runtime_assert(
-                curve.size() == input.curves[parent_id].size(),
+                curve.size() + (input.is_closed[curve_id] ? 1 : 0) ==
+                    input.curves[parent_id].size() + (input.is_closed[parent_id] ? 1 : 0),
                 fmt::format(
-                    "Parent curve has {} vertices, while current curve has {} vertices",
-                    input.curves[parent_id].size(),
-                    curve.size()));
-            if (!check_orientation(curve, parent_id)) {
-                std::reverse(curve.begin(), curve.end());
-                la_runtime_assert(check_orientation(curve, parent_id));
+                    "Current curve #{} has {} vertices, while parent curve #{} has {} vertices",
+                    curve_id,
+                    curve.size(),
+                    parent_id,
+                    input.curves[parent_id].size()));
+        }
+
+        parent_curve[curve_id] = parent_id;
+    }
+
+    return parent_curve;
+}
+
+// When a curve and its parent do have the same periodicity, we:
+// 1. Use the open curve as the parent
+// 2. Rotate the child curve vertices to match its parent
+// 3. Make the child curve not periodic by duplicating the first vertex at the end
+CurveNetwork fix_curve_orientation_and_periodicity(
+    CurveNetwork input,
+    const std::vector<int>& parent_curve,
+    const std::map<Edge, int>& edge_to_seam)
+{
+    auto curve_edge_to_seam = [&](int curve_id, int i) {
+        int n = static_cast<int>(input.curves[curve_id].size());
+        i = (i + n) % n;
+        int j = (i + 1) % n;
+        Edge e(input.curves[curve_id][i], input.curves[curve_id][j]);
+        return edge_to_seam.at(e);
+    };
+
+    auto check_orientation = [&](int curve_id, int parent_id) {
+        for (int i = 0; i + (input.is_closed[curve_id] ? 0 : 1) <
+                        static_cast<int>(input.curves[curve_id].size());
+             ++i) {
+            if (curve_edge_to_seam(curve_id, i) != curve_edge_to_seam(parent_id, i)) {
+                return false;
             }
         }
+        return true;
+    };
+
+    for (int curve_id = 0; curve_id < static_cast<int>(input.curves.size()); ++curve_id) {
+        la_debug_assert(input.curves[curve_id].size() > 1);
+        int parent_id = parent_curve[curve_id];
+
+        if (curve_id != parent_id) {
+            // If curves have different periodicity, use the open curve as the parent
+            if (!input.is_closed[curve_id] && input.is_closed[parent_id]) {
+                std::swap(input.is_closed[curve_id], input.is_closed[parent_id]);
+                std::swap(input.curves[curve_id], input.curves[parent_id]);
+            }
+
+            if (input.is_closed[curve_id]) {
+                // If curve is closed, we need to rotate it (and maybe flip it) to match the parent
+                // curve
+                la_runtime_assert(
+                    input.curves[parent_id].size() > 2,
+                    "A closed curve cannot be matched to an open single-segment curve");
+
+                auto find_matching_edge = [&](int s) {
+                    for (int i = 0; i < input.curves[curve_id].size(); ++i) {
+                        if (curve_edge_to_seam(curve_id, i) == s) {
+                            return i;
+                        }
+                    }
+                    throw std::runtime_error("Could not find matching edge");
+                };
+
+                int s0 = curve_edge_to_seam(parent_id, 0);
+                int s1 = curve_edge_to_seam(parent_id, 1);
+
+                int i0 = find_matching_edge(s0);
+                if (s1 == curve_edge_to_seam(curve_id, i0 - 1)) {
+                    // Need to reverse the current curve
+                    std::reverse(input.curves[curve_id].begin(), input.curves[curve_id].end());
+                    i0 = find_matching_edge(s0);
+                }
+                la_runtime_assert(s1 == curve_edge_to_seam(curve_id, i0 + 1));
+                // Now rotate the current curve to match the parent curve
+                std::rotate(
+                    input.curves[curve_id].begin(),
+                    input.curves[curve_id].begin() + i0,
+                    input.curves[curve_id].end());
+            } else {
+                // If the curve is open, we only need to check if we need to flip it.
+                if (!check_orientation(curve_id, parent_id)) {
+                    std::reverse(input.curves[curve_id].begin(), input.curves[curve_id].end());
+                }
+            }
+
+            // If the curve is closed but not its parent, make current curve open by duplicating the
+            // first vertex at the end
+            if (input.is_closed[curve_id] && !input.is_closed[parent_id]) {
+                input.curves[curve_id].push_back(input.curves[curve_id][0]);
+                input.is_closed[curve_id] = false;
+            }
+
+            la_runtime_assert(check_orientation(curve_id, parent_id));
+        }
+    }
+
+    return input;
+}
+
+Boundary::ParameterizedCurves parameterize_curves(
+    CurveNetwork input,
+    const Eigen::MatrixXd& V,
+    const std::map<Edge, int>& edge_to_seam)
+{
+    Boundary::ParameterizedCurves result;
+    result.parent_curve = compute_parent_curves(input, edge_to_seam);
+    input =
+        fix_curve_orientation_and_periodicity(std::move(input), result.parent_curve, edge_to_seam);
+
+    for (int curve_id = 0; curve_id < static_cast<int>(input.curves.size()); ++curve_id) {
+        auto curve = input.curves[curve_id];
+        la_debug_assert(curve.size() > 1);
 
         // Second pass to parameterize the current curve
         std::vector<Eigen::Vector2d> positions;
@@ -301,19 +402,6 @@ Boundary::ParameterizedCurves parameterize_curves(
         result.positions.emplace_back(std::move(positions));
         result.arclengths.emplace_back(std::move(arclengths));
         result.periodic.emplace_back(input.is_closed[curve_id]);
-        result.parent_curve.emplace_back(parent_id);
-    }
-
-    // Sanity check: When two curves are paired, and one of them is "open", we make sure we use the
-    // open curve as the parent...
-    for (int curve_id = 0; curve_id < static_cast<int>(input.curves.size()); ++curve_id) {
-        int parent_id = result.parent_curve[curve_id];
-        if (parent_id != curve_id && result.periodic[parent_id] && !result.periodic[curve_id]) {
-            logger().warn("Found an open boundary polyline paired with a periodic parent polyline. "
-                          "Swapping them.");
-            result.parent_curve[parent_id] = curve_id;
-            result.parent_curve[curve_id] = curve_id;
-        }
     }
 
     return result;
