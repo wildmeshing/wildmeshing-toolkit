@@ -533,9 +533,8 @@ TEST_CASE("paired collapse", "[myfail][.]")
 TEST_CASE("collapse_example")
 {
     std::filesystem::path input_folder = "/home/yunfan/";
-    std::filesystem::path input_mesh_path = 
-"/home/yunfan/wildmeshing-toolkit/build_release_ninja/test_swap_accuracy_pass/area_swap_accuracy_result.obj";
-
+    std::filesystem::path input_mesh_path = "/home/yunfan/wildmeshing-toolkit/build_release_ninja/"
+                                            "test_swap_accuracy_pass/area_swap_accuracy_result.obj";
 
 
     std::filesystem::path position_path = input_folder / "seamPyramid_position.exr";
@@ -557,7 +556,7 @@ TEST_CASE("collapse_example")
         adaptive_tessellation::ENERGY_TYPE::AREA_QUADRATURE,
         adaptive_tessellation::EDGE_LEN_TYPE::AREA_ACCURACY,
         1);
-    m.mesh_parameters.m_accuracy_safeguard_ratio = 10.0;
+    // m.mesh_parameters.m_accuracy_safeguard_ratio = 10.0;
     m.collapse_all_edges();
     m.write_obj_displaced(m.mesh_parameters.m_output_folder + "/collapse_result.obj");
 }

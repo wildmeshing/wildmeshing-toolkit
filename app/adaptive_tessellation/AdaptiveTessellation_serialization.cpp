@@ -47,10 +47,9 @@ void AdaptiveTessellation::create_paired_seam_mesh_with_offset(
     wmtk::TriMesh m_3d;
     std::vector<std::array<size_t, 3>> tris;
     for (auto f = 0; f < input_F_.rows(); f++) {
-        std::array<size_t, 3> tri = {
-            (size_t)input_F_(f, 0),
-            (size_t)input_F_(f, 1),
-            (size_t)input_F_(f, 2)};
+        std::array<size_t, 3> tri = {(size_t)input_F_(f, 0),
+                                     (size_t)input_F_(f, 1),
+                                     (size_t)input_F_(f, 2)};
         tris.emplace_back(tri);
     }
     m_3d.create_mesh(input_V_.rows(), tris);
@@ -341,16 +340,18 @@ void AdaptiveTessellation::export_mesh_with_displacement(
 
     faces = faces_uv;
     remove_seams(vertices, faces);
-
+    vertices_uv = vertices;
+    faces_uv = faces;
+    return;
     // get rid of unreferenced vertices in both meshes
     Eigen::MatrixXd V_buf;
     Eigen::MatrixXi F_buf;
     Eigen::MatrixXi map_old_to_new_v_ids;
-    igl::remove_unreferenced(vertices, faces, V_buf, F_buf, map_old_to_new_v_ids);
-    vertices = V_buf;
-    faces = F_buf;
+    // igl::remove_unreferenced(vertices, faces, V_buf, F_buf, map_old_to_new_v_ids);
+    // vertices = V_buf;
+    // faces = F_buf;
 
-    igl::remove_unreferenced(vertices_uv, faces_uv, V_buf, F_buf, map_old_to_new_v_ids);
+    // igl::remove_unreferenced(vertices_uv, faces_uv, V_buf, F_buf, map_old_to_new_v_ids);
     vertices_uv = V_buf;
     faces_uv = F_buf;
 }
@@ -399,10 +400,9 @@ void AdaptiveTessellation::export_mesh_mapped_on_input(
         size_t j_min = -1;
         for (size_t j = 0; j < input_FT_.rows(); ++j) {
             const Eigen::Vector3i tri = input_FT_.row(j);
-            const std::array<Eigen::Vector2d, 3> pts = {
-                input_VT_.row(tri[0]),
-                input_VT_.row(tri[1]),
-                input_VT_.row(tri[2])};
+            const std::array<Eigen::Vector2d, 3> pts = {input_VT_.row(tri[0]),
+                                                        input_VT_.row(tri[1]),
+                                                        input_VT_.row(tri[2])};
             const Eigen::Vector3d bars =
                 compute_barycentric_coordinates(uv, pts[0], pts[1], pts[2]);
             const double bar_min = bars.minCoeff();
