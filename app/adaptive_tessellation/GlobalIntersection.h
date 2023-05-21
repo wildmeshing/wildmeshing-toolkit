@@ -190,6 +190,11 @@ inline void displace_self_intersection_free(AdaptiveTessellation& mesh)
         }
     };
 
+    for (size_t i = 0; i < vertices_current.rows(); ++i) {
+        const Eigen::Vector3d& p = vertices_current.row(i);
+        update_pos_world(i, p);
+    }
+
     // check for self intersections - if there are any, find edges that self intersect and split
     // them until no more self intersections exist
     Eigen::MatrixXi edges;

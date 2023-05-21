@@ -62,6 +62,15 @@ void AdaptiveTessellation::mesh_preprocessing(
         assert(input_FT_.rows() == input_F_.rows());
     }
 
+    {
+        Eigen::MatrixXi edges;
+        igl::edges(input_F_, edges);
+        const ipc::CollisionMesh collisionMesh(input_V_, edges, input_F_);
+        if (ipc::has_intersections(collisionMesh, input_V_)) {
+            wmtk::logger().error("Input mesh has self-intersections!");
+        }
+    }
+
     wmtk::logger().info("///// #v : {} {}", input_VT_.rows(), input_VT_.cols());
     wmtk::logger().info("///// #f : {} {}", input_FT_.rows(), input_FT_.cols());
     wmtk::TriMesh m_3d;
