@@ -335,7 +335,7 @@ void AreaAccuracyEnergy::eval(State& state, DofsToPositions& dof_to_positions) c
     }
 
     // total_energy = m_displ->get_error_per_triangle(triangle);
-    total_energy = m_texture_integral.get_error_one_triangle(triangle);
+    total_energy += m_texture_integral.get_error_one_triangle(triangle);
     state.value = total_energy.getValue();
     state.gradient = total_energy.getGradient();
     state.hessian = total_energy.getHessian();
