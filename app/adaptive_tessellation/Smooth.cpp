@@ -236,6 +236,7 @@ bool adaptive_tessellation::AdaptiveTessellation::smooth_before(const Tuple& t)
 
 bool adaptive_tessellation::AdaptiveTessellation::smooth_after(const Tuple& t)
 {
+    throw std::runtime_error("outdated smooth should not be used");
     static std::atomic_int cnt = 0;
     wmtk::logger().info("smothing op # {}", cnt);
     // Newton iterations are encapsulated here.

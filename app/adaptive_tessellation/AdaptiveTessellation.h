@@ -375,9 +375,6 @@ public:
     bool swap_edge_before(const Tuple& t);
     bool swap_edge_after(const Tuple& t);
 
-    double barrier_energy_per_face(TriMesh::Tuple& t) const; // face tuple
-
-
     void mesh_improvement(int max_its);
 
     double get_length2d(const Tuple& edge_tuple) const;
@@ -388,9 +385,13 @@ public:
     double get_length_n_implicit_points(const Tuple& edge_tuple) const;
     double get_length_1ptperpixel(const Tuple& edge_tuple) const;
     double get_length_mipmap(const Tuple& edge_tuple) const;
+    double barrier_energy_per_face(const TriMesh::Tuple& t) const; // face tuple
+    double barrier_energy_per_face(
+        const Eigen::Vector3d& A,
+        const Eigen::Vector3d& B,
+        const Eigen::Vector3d& C) const;
 
     void flatten_dofs(Eigen::VectorXd& v_flat);
-    double get_mesh_energy(const Eigen::VectorXd& v_flat);
 
     double get_edge_accuracy_error(const Tuple& edge_tuple) const;
 
@@ -480,9 +481,9 @@ public:
         //     assert(!is_inverted(tri));
         // }
     }
+    double get_mesh_energy(const Eigen::VectorXd& v_flat);
 
     std::vector<Tuple> get_one_ring_tris_accross_seams_for_vertex(const Tuple& vertex) const;
-
     double avg_edge_len() const;
 };
 } // namespace adaptive_tessellation
