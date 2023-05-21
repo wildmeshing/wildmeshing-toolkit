@@ -232,6 +232,7 @@ private:
     void store_boundary_data(const AdaptiveTessellation& m, const Tuple& t);
     // populates curves and mirrors in the updated mesh
     void rebuild_boundary_data(AdaptiveTessellation& m);
+    double priority(const TriMesh& m, const Tuple& t) const override;
 };
 
 } // namespace adaptive_tessellation

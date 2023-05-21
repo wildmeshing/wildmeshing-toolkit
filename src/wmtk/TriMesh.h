@@ -3,6 +3,7 @@
 #define USE_OPERATION_LOGGER
 #include <wmtk/TriMeshTuple.h>
 #include <wmtk/utils/VectorUtils.h>
+#include <wmtk/utils/validate_trimesh_topology.h>
 #include <wmtk/AttributeCollection.hpp>
 #include <wmtk/utils/Logger.hpp>
 
@@ -142,6 +143,7 @@ public:
     friend class TriMeshOperationRecorder;
     friend class OperationReplayer;
     friend class AttributeCollectionRecorder;
+    friend std::array<std::vector<size_t>, 2> utils::validate_trimesh_topology(const TriMesh& m);
 
     TriMesh();
     virtual ~TriMesh();

@@ -9,6 +9,8 @@ namespace {
 constexpr static size_t dummy = std::numeric_limits<size_t>::max();
 }
 
+// sort by accuracy - order from smallest error to largest; (yunfan will add in barrier to collapse)
+// perhaps try doing collapses that mitigate error the most
 namespace {
 auto renew = [](auto& m, auto op, auto& tris) {
     auto edges = m.new_edges_after(tris);
@@ -63,9 +65,10 @@ void AdaptiveTessellationCollapseEdgeOperation::store_merged_seam_data(
     }
     // if exists, should be edge_tuple.vid == collapse_mirror_vertex.vid
     // edge_tuple.oriented_mirror points to the other vid so i have to switch
-    std::optional<size_t> collapse_mirror_vertex;
+    std::optional<std::array<size_t, 2>> collapse_mirror_vids;
     if (collapse_mirror.has_value()) {
-        collapse_mirror_vertex = collapse_mirror.value().switch_vertex(m).vid(m);
+        const Tuple& mt = collapse_mirror.value();
+        collapse_mirror_vids = std::array<size_t, 2>{{mt.vid(m), mt.switch_vertex(m).vid(m)}};
     }
 
 
@@ -99,9 +102,10 @@ void AdaptiveTessellationCollapseEdgeOperation::store_merged_seam_data(
             const Tuple mt = m.get_oriented_mirror_edge(radial_edge);
             // vid that is not a mirror of the collapsed edge
             const size_t mirror_radial_vid = mt.switch_vertex(m).vid(m);
-            if (collapse_mirror_vertex.has_value()) {
+            if (collapse_mirror_vids.has_value()) {
                 const size_t mirror_vid = mt.vid(m);
-                if (mirror_vid == collapse_mirror_vertex.value()) {
+                const auto& [mv0, mv1] = collapse_mirror_vids.value();
+                if (mirror_vid == mv0 || mirror_vid == mv1) {
                     mirror_edge_vids_opt =
                         std::array<size_t, 2>{{mirror_radial_vid, mirror_radial_vid}};
                 }
@@ -318,12 +322,12 @@ void AdaptiveTessellationCollapseEdgeOperation::fill_cache(
     auto& other_vattr = m.vertex_attrs[other_vid];
 
 
-    if (!m.mesh_parameters.m_ignore_embedding) {
-        const double& length_3d = op_cache.length3d = m.mesh_parameters.m_get_length(t);
-        // adding heuristic decision. If length2 < 4. / 5. * 4. / 5. * m.m_target_l * m.m_target_l always collapse
-        // enforce heuristic
-        assert(length_3d < 4. / 5. * m.mesh_parameters.m_quality_threshold);
-    }
+    // if (!m.mesh_parameters.m_ignore_embedding) {
+    //     const double& length_3d = op_cache.length3d = m.mesh_parameters.m_get_length(t);
+    //     // adding heuristic decision. If length2 < 4. / 5. * 4. / 5. * m.m_target_l * m.m_target_l always collapse
+    //     // enforce heuristic
+    //     assert(length_3d < 4. / 5. * m.mesh_parameters.m_quality_threshold);
+    // }
 
     // record the two vertices vids to the operation cache
     op_cache.v1 = my_vid;
@@ -396,7 +400,9 @@ bool AdaptiveTessellationCollapseEdgeOperation::check_vertex_mergeability(
 {
     const auto& v1_attr = m.get_vertex_attrs(t);
     const auto& v2_attr = m.get_vertex_attrs(t.switch_vertex(m));
-
+    if (v1_attr.fixed || v2_attr.fixed) {
+        return false;
+    }
     if (m.mesh_parameters.m_bnd_freeze && (v1_attr.boundary_vertex || v2_attr.boundary_vertex)) {
         return false;
     }
@@ -406,37 +412,38 @@ bool AdaptiveTessellationCollapseEdgeOperation::check_vertex_mergeability(
 bool AdaptiveTessellationCollapseEdgeOperation::before(AdaptiveTessellation& m, const Tuple& t)
 {
     m_op_cache.local() = {};
-    if (wmtk::TriMeshEdgeCollapseOperation::before(m, t)) {
-        wmtk::logger().info("pass in before");
-        if (!check_vertex_mergeability(m, t)) {
-            wmtk::logger().info("fail in mergeability check");
-            return false;
-        }
-        // TODO: currently edge mergeability just checks for double boundaries
-        // which is caught by link condition, is there something else?
-        // if(!check_edge_mergeability(m, t)) { return false; }
+    if (!wmtk::TriMeshEdgeCollapseOperation::before(m, t)) {
+        return false;
+    }
+    wmtk::logger().info("pass in before");
+    if (!check_vertex_mergeability(m, t)) {
+        wmtk::logger().info("fail in mergeability check");
+        return false;
+    }
+    // TODO: currently edge mergeability just checks for double boundaries
+    // which is caught by link condition, is there something else?
+    // if(!check_edge_mergeability(m, t)) { return false; }
 
-        // record boundary vertex as boudnary_vertex in vertex attribute for accurate collapse
-        // after boundary operations
+    // record boundary vertex as boudnary_vertex in vertex attribute for accurate collapse
+    // after boundary operations
 
-        const size_t my_vid = t.vid(m);
-        const Tuple other_tuple = t.switch_vertex(m);
-        const size_t other_vid = other_tuple.vid(m);
-        auto& my_vattr = m.vertex_attrs[my_vid];
-        auto& other_vattr = m.vertex_attrs[other_vid];
-        // record if the two vertices of the edge is boundary vertex
-        my_vattr.boundary_vertex = m.is_boundary_vertex(t);
-        other_vattr.boundary_vertex = m.is_boundary_vertex(other_tuple);
+    const size_t my_vid = t.vid(m);
+    const Tuple other_tuple = t.switch_vertex(m);
+    const size_t other_vid = other_tuple.vid(m);
+    auto& my_vattr = m.vertex_attrs[my_vid];
+    auto& other_vattr = m.vertex_attrs[other_vid];
+    // record if the two vertices of the edge is boundary vertex
+    my_vattr.boundary_vertex = m.is_boundary_vertex(t);
+    other_vattr.boundary_vertex = m.is_boundary_vertex(other_tuple);
 
 
-        fill_cache(m, t);
+    fill_cache(m, t);
 
-        // make sure that we'll be able to put a vertex in the right positoin
-        const ConstrainedBoundaryType cbt = m_op_cache.local().constrained_boundary_type;
-        if (cbt == ConstrainedBoundaryType::BothConstrained) {
-            wmtk::logger().info("fail in constrained boundary type");
-            return false;
-        }
+    // make sure that we'll be able to put a vertex in the right positoin
+    const ConstrainedBoundaryType cbt = m_op_cache.local().constrained_boundary_type;
+    if (cbt == ConstrainedBoundaryType::BothConstrained) {
+        wmtk::logger().info("fail in constrained boundary type");
+        return false;
     }
     return true;
 }
@@ -555,6 +562,8 @@ void AdaptiveTessellationCollapseEdgeOperation::assign_collapsed_edge_attributes
             auto eopt = m.tuple_from_edge_vids_opt(m0, m1);
             assert(eopt.has_value());
             const Tuple mirror = eopt.value();
+            assert(mirror.is_valid(m));
+            assert(edge.is_valid(m));
             m.set_mirror_edge_data(edge, mirror);
             m.set_mirror_edge_data(mirror, edge);
         }
@@ -583,8 +592,12 @@ void AdaptiveTessellationPairedCollapseEdgeOperation::set_input_mirror(
     const Tuple& t)
 {
     auto& op_cache = m_op_cache.local();
-    if (m.get_mirror_edge_opt(t)) {
-        op_cache.mirror_edge_tuple_opt = m.get_oriented_mirror_edge(t).switch_vertex(m);
+    if (m.is_seam_edge(t)) {
+        const Tuple mirror = m.get_oriented_mirror_edge(t).switch_vertex(m);
+        assert(mirror.is_valid(m));
+        op_cache.mirror_edge_tuple_opt = mirror;
+    } else {
+        op_cache.mirror_edge_tuple_opt = std::nullopt;
     }
 }
 
@@ -594,6 +607,11 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::before(
     const Tuple& t)
 {
     auto& op_cache = m_op_cache.local();
+    op_cache = {};
+    if (!utils::is_valid_trimesh_topology(m)) {
+        return false;
+    }
+
 
     if (!check_seamed_link_condition(m, t)) {
         return false;
@@ -601,12 +619,15 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::before(
     if (!collapse_edge.before(m, t)) {
         return false;
     }
-
+    if (m.vertex_attrs[t.vid(m)].fixed || m.vertex_attrs[t.switch_vertex(m).vid(m)].fixed) {
+        return false;
+    }
     set_input_mirror(m, t);
 
 
     if (input_edge_is_mirror()) {
         const Tuple& mirror_edge_tuple = op_cache.mirror_edge_tuple_opt.value();
+        assert(mirror_edge_tuple.is_valid(m));
         if (!collapse_mirror_edge.before(m, mirror_edge_tuple)) {
             return false;
         }
@@ -684,8 +705,12 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::after(
 }
 bool AdaptiveTessellationPairedCollapseEdgeOperation::after(AdaptiveTessellation& m)
 {
+    static std::atomic_int cnt = 0;
+    wmtk::logger().info("collapse edge: {}", cnt);
     auto& op_cache = m_op_cache.local();
-    const Tuple& return_tuple = collapse_edge.get_return_tuple_opt().value();
+    assert(bool(*this));
+
+    Tuple return_tuple = collapse_edge.get_return_tuple_opt().value();
     if (!collapse_edge.after(m)) {
         return false;
     }
@@ -706,16 +731,63 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::after(AdaptiveTessellation
             mirror_vertex_attr.pos_world = new_vertex_attr.pos_world;
         }
     }
+#if defined(_DEBUG)
+
+    if (!utils::is_valid_trimesh_topology(m)) {
+        spdlog::info("PairedCollapse invalid before building topology");
+        return false;
+    }
+#endif
+    rebuild_boundary_data(m);
+#if defined(_DEBUG)
+    {
+        bool valid = true;
+        m.for_each_edge([&](const Tuple& edge) {
+            const auto mtup_opt = m.face_attrs[edge.fid(m)].mirror_edges[edge.local_eid(m)];
+            if (mtup_opt) {
+                if (!mtup_opt->is_valid(m)) {
+                    spdlog::warn(
+                        "Edge {} has a Mirror edge {} that is invalid",
+                        edge.info(),
+                        mtup_opt->info());
+                    valid = false;
+                } else {
+                    const auto omtup_opt =
+                        m.face_attrs[mtup_opt->fid(m)].mirror_edges[mtup_opt->local_eid(m)];
+                    if (!bool(omtup_opt)) {
+                        spdlog::warn(
+                            "Edge {} has a Mirror edge {} that does not have a mirror",
+                            edge.info(),
+                            mtup_opt->info());
+                        valid = false;
+                    } else if (!omtup_opt->is_valid(m)) {
+                        spdlog::warn(
+                            "Edge {} has a Mirror edge {} that has an invalid mirror {}",
+                            edge.info(),
+                            mtup_opt->info(),
+                            omtup_opt->info());
+                    }
+                }
+            }
+        });
+    }
+    if (!utils::is_valid_trimesh_topology(m)) {
+        spdlog::info("PairedCollapse invalid before building topology");
+        return false;
+    }
+#endif
 
     std::vector<size_t> all_mirrors = m.get_all_mirror_vids(return_tuple);
 
     std::vector<Tuple> one_ring;
     for (const size_t ret_vid : all_mirrors) {
-        auto a = m.get_one_ring_tris_for_vertex(m.tuple_from_vertex(ret_vid));
+        const Tuple vtup = m.tuple_from_vertex(ret_vid);
+        auto a = m.get_one_ring_tris_for_vertex(vtup);
         one_ring.insert(one_ring.end(), a.begin(), a.end());
     }
 
 
+    m.update_energy_cache(modified_triangles(m));
     // check invariants here since get_area_accuracy_error_per_face requires valid triangle
     if (!m.invariants(one_ring)) return false;
     if (!m.mesh_parameters.m_ignore_embedding) {
@@ -723,15 +795,21 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::after(AdaptiveTessellation
             for (const Tuple& tri : one_ring) {
                 double one_ring_tri_error = m.get_area_accuracy_error_per_face(tri);
                 if (one_ring_tri_error > m.mesh_parameters.m_accuracy_safeguard_ratio *
-                                             m.mesh_parameters.m_accuracy_threshold)
+                                             m.mesh_parameters.m_accuracy_threshold) {
+                    wmtk::logger().info("fail in energy check");
                     return false;
+                }
             }
         }
     }
 
-    rebuild_boundary_data(m);
-    m.update_energy_cache(modified_triangles(m));
 
+    m.write_obj_displaced(
+        m.mesh_parameters.m_output_folder + fmt::format("/collapse_{:04d}.obj", cnt));
+    cnt++;
+    if (!utils::is_valid_trimesh_topology(m)) {
+        return false;
+    }
     return true;
 }
 
@@ -753,6 +831,22 @@ auto AdaptiveTessellationPairedCollapseEdgeOperation::get_mirror_edge_tuple_opt(
 
     return op_cache.mirror_edge_tuple_opt;
 }
+double AdaptiveTessellationPairedCollapseEdgeOperation::priority(
+    const TriMesh& m,
+    const Tuple& edge) const
+{
+    const AdaptiveTessellation& at = static_cast<const AdaptiveTessellation&>(m);
+
+    double priority = 0.;
+    if (at.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
+        // priority already scaled by 2d edge length
+        return -at.get_cached_area_accuracy_error_per_edge(edge) * at.get_length2d(edge);
+    } else if (at.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::TRI_QUADRICS) {
+        // error is not scaled by 2d edge length
+        return -at.get_quadrics_area_accuracy_error_for_split(edge) * at.get_length2d(edge);
+    } else
+        return -at.mesh_parameters.m_get_length(edge);
+}
 
 void AdaptiveTessellation::collapse_all_edges()
 {
@@ -769,17 +863,31 @@ void AdaptiveTessellation::collapse_all_edges()
     wmtk::logger().info("=======collapse==========");
     wmtk::logger().info("size for edges to be collapse is {}", collect_all_ops.size());
     auto setup_and_execute = [&](auto executor) {
+        addPairedCustomOps(executor);
         executor.renew_neighbor_tuples = renew;
-        executor.priority = [&](auto& m, [[maybe_unused]] auto _, auto& e) {
-            return -m.get_length3d(e); // m.mesh_parameters.m_get_length(e);
+        executor.priority = [&](auto& m, auto o, auto& e) {
+            if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
+                // priority already scaled by 2d edge length
+                return -m.get_cached_area_accuracy_error_per_edge(e); // * m.get_length2d(edge);
+            } else if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::TRI_QUADRICS) {
+                // error is not scaled by 2d edge length
+                return -m.get_quadrics_area_accuracy_error_for_split(e) * m.get_length2d(e);
+            } else
+                return -m.mesh_parameters.m_get_length(e);
+            return executor.new_edit_operation_maps[o]->priority(m, e);
         };
         executor.num_threads = NUM_THREADS;
         executor.is_weight_up_to_date = [](auto& m, auto& ele) {
             auto& [weight, op, tup] = ele;
-            auto length = m.get_length3d(tup);
-            if (length != -weight) return false;
+            double energy =
+                m.get_cached_area_accuracy_error_per_edge(tup); // * at.get_length2d(edge);
+            if (energy != -weight) {
+                // wmtk::logger().info("outdated weight in queue");
+                // wmtk::logger().info("energy is {}, weight is {}", energy, weight);
+                return false;
+            }
 
-            if (length > (4. / 5. * m.mesh_parameters.m_quality_threshold)) return false;
+            //if (length > (4. / 5. * m.mesh_parameters.m_quality_threshold)) return false;
 
             return true;
         };

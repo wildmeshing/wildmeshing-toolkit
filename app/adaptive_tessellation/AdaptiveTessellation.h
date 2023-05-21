@@ -68,7 +68,7 @@ public:
                                          // doesn't support autodiff
 
         // storing the Quadric for each face
-        // wmtk::Quadric<double> quadric;
+        wmtk::Quadric<double> quadric;
     };
     AccuracyMeasure accuracy_measure;
 };
@@ -371,8 +371,14 @@ public:
     void swap_all_edges();
     void swap_all_edges_accuracy_pass();
     void swap_all_edges_quality_pass();
+    bool simulate_swap_is_degenerate(
+        const TriMesh::Tuple& e,
+        std::array<std::array<float, 6>, 2>& modified_tris) const;
     bool swap_edge_before(const Tuple& t);
     bool swap_edge_after(const Tuple& t);
+
+    double barrier_energy_per_face(TriMesh::Tuple& t) const; // face tuple
+
 
     void mesh_improvement(int max_its);
 
@@ -393,8 +399,8 @@ public:
     double get_area_accuracy_error_per_face(const Tuple& edge_tuple) const;
     double get_area_accuracy_error_per_face_triangle_matrix(
         Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle) const;
-    // return in order {total_error, face1_error, face2_error}
-    double get_cached_area_accuracy_error_for_split(const Tuple& edge_tuple) const;
+    // // return the sum of the accuracy error of the two incident faces
+    double get_cached_area_accuracy_error_per_edge(const Tuple& edge_tuple) const;
     std::tuple<double, double, double> get_projected_relative_error_for_split(
         const Tuple& edge_tuple) const;
     double get_quadrics_area_accuracy_error_for_split(const Tuple& face_tuple) const;
@@ -402,6 +408,8 @@ public:
     double get_quadric_error_for_face(const Tuple& f) const;
 
     void get_nminfo_for_vertex(const Tuple& v, wmtk::NewtonMethodInfo& nminfo) const;
+
+    void update_energy_cache(const std::vector<Tuple>& tris);
 
     // get sibling edge for paired operations
     // return the oriented mirror edge if t is seam
@@ -478,6 +486,5 @@ public:
     std::vector<Tuple> get_one_ring_tris_accross_seams_for_vertex(const Tuple& vertex) const;
 
     double avg_edge_len() const;
-    void  update_energy_cache(const std::vector<Tuple>& tris);
 };
 } // namespace adaptive_tessellation

@@ -49,6 +49,7 @@ void AdaptiveTessellation::mesh_preprocessing(
     float max_height)
 {
     mesh_parameters.m_position_normal_paths = {position_image_path, normal_image_path};
+    spdlog::info("{}", input_mesh_path.string());
     Eigen::MatrixXd CN, FN;
     // igl::read_triangle_mesh(input_mesh_path.string(), input_V_, input_F_);
     // igl::readOBJ(input_mesh_path.string(), V, VT, CN, F, FT, FN);
@@ -78,10 +79,9 @@ void AdaptiveTessellation::mesh_preprocessing(
     wmtk::TriMesh m_3d;
     std::vector<std::array<size_t, 3>> tris;
     for (auto f = 0; f < input_F_.rows(); f++) {
-        std::array<size_t, 3> tri = {
-            (size_t)input_F_(f, 0),
-            (size_t)input_F_(f, 1),
-            (size_t)input_F_(f, 2)};
+        std::array<size_t, 3> tri = {(size_t)input_F_(f, 0),
+                                     (size_t)input_F_(f, 1),
+                                     (size_t)input_F_(f, 2)};
         tris.emplace_back(tri);
     }
     m_3d.create_mesh(input_V_.rows(), tris);
@@ -134,7 +134,11 @@ void AdaptiveTessellation::mesh_preprocessing(
         wmtk::QuadricIntegral(displaced, wmtk::QuadricIntegral::QuadricType::Point);
     m_texture_integral = wmtk::TextureIntegral(std::move(displaced));
     m_texture_integral.set_integration_method(
+<<<<<<< HEAD
         wmtk::IntegralBase::IntegrationMethod::Adaptive); // Adaptive or Exact
+=======
+        wmtk::IntegralBase::IntegrationMethod::Exact); // Adaptive or Exact
+>>>>>>> yunfan/collapse_fix
 }
 
 void AdaptiveTessellation::prepare_distance_quadrature_cached_energy()
@@ -252,6 +256,35 @@ std::pair<Eigen::MatrixXi, Eigen::MatrixXi> AdaptiveTessellation::seam_edges_set
     assert(E0.rows() == E1.rows());
     return {E0, E1};
 } // namespace adaptive_tessellation
+
+double AdaptiveTessellation::barrier_energy_per_face(TriMesh::Tuple& t) const
+{
+    // get the 3 vertices of the triangle
+    std::array<Tuple, 3> local_tuples = oriented_tri_vertices(t);
+    const Eigen::Vector2d& p1 = vertex_attrs[local_tuples[0].vid(*this)].pos;
+    const Eigen::Vector2d& p2 = vertex_attrs[local_tuples[1].vid(*this)].pos;
+    const Eigen::Vector2d& p3 = vertex_attrs[local_tuples[2].vid(*this)].pos;
+    auto v1 = mesh_parameters.m_displacement->get(p1(0), p1(1));
+    auto v2 = mesh_parameters.m_displacement->get(p2(0), p2(1));
+    auto v3 = mesh_parameters.m_displacement->get(p3(0), p3(1));
+    /// energy barrier term
+    Eigen::Matrix<double, 3, 1> v2_v1 = v2 - v1;
+    Eigen::Matrix<double, 3, 1> v3_v1 = v3 - v1;
+    double area = (v2_v1.cross(v3_v1)).squaredNorm();
+    // wmtk::logger().info("----current area {}", area.getValue());
+    double A_hat = 1; // this is arbitrary now
+    assert(A_hat > 0);
+    if (area <= 0) {
+        return std::numeric_limits<double>::infinity();
+    }
+    if (area < A_hat) {
+        assert((area / A_hat) < 1.0);
+        double barrier_energy = -(area - A_hat) * (area - A_hat) * log(area / A_hat);
+        // wmtk::logger().info("----current barrier energy {}", barrier_energy.getValue());
+        return barrier_energy;
+    }
+    return 0.;
+}
 
 // TODO wait why I'm doing this? The coloring isn't used anymore.
 // i wanted to use it for get_all_mirror_vertex
@@ -497,10 +530,10 @@ void AdaptiveTessellation::set_faces_quadrics(
     const std::vector<TriMesh::Tuple>& tris,
     const std::vector<wmtk::Quadric<double>>& compressed_quadrics)
 {
-    throw std::runtime_error("do not use");
+    throw std::runtime_error("set face quadrics do not use");
     // update the face_attrs with modified tris error
     for (int i = 0; i < tris.size(); i++) {
-        // face_attrs[tris[i].fid(*this)].accuracy_measure.quadric = compressed_quadrics[i];
+        face_attrs[tris[i].fid(*this)].accuracy_measure.quadric = compressed_quadrics[i];
     }
 }
 
@@ -944,7 +977,8 @@ double AdaptiveTessellation::get_area_accuracy_error_per_face_triangle_matrix(
     return mesh_parameters.m_displacement->get_error_per_triangle(triangle);
 }
 
-double AdaptiveTessellation::get_cached_area_accuracy_error_for_split(const Tuple& edge_tuple) const
+// return the sum of the accuracy error of the two incident faces
+double AdaptiveTessellation::get_cached_area_accuracy_error_per_edge(const Tuple& edge_tuple) const
 {
     double error1 = 0.;
     double error2 = 0.;
@@ -967,7 +1001,7 @@ double AdaptiveTessellation::get_cached_area_accuracy_error_for_split(const Tupl
 std::tuple<double, double, double> AdaptiveTessellation::get_projected_relative_error_for_split(
     const Tuple& edge_tuple) const
 {
-    throw std::runtime_error("ATshould not be used");
+    throw std::runtime_error("get relative error for split should not be used");
 
     ///////// THIS IS NOT USED
     double error, error1, error2;
@@ -1024,7 +1058,7 @@ std::tuple<double, double, double> AdaptiveTessellation::get_projected_relative_
 
 double AdaptiveTessellation::get_one_ring_quadrics_error_for_vertex(const Tuple& v) const
 {
-    throw std::runtime_error("do not use");
+    throw std::runtime_error("get quadrics error for vertex do not use");
     double ret = 0.0;
     wmtk::Quadric<double> q;
     for (const Tuple& tri : get_one_ring_tris_for_vertex(v)) {
@@ -1039,7 +1073,7 @@ double AdaptiveTessellation::get_one_ring_quadrics_error_for_vertex(const Tuple&
 
 double AdaptiveTessellation::get_quadric_error_for_face(const Tuple& f) const
 {
-    throw std::runtime_error("do not use");
+    throw std::runtime_error("get quadrics erorr for face do not use");
     wmtk::Quadric<double> q;
     // q += get_face_attrs(f).accuracy_measure.quadric;
 
@@ -1129,7 +1163,7 @@ double AdaptiveTessellation::get_two_faces_quadrics_error_for_edge(const Tuple& 
         ret += get_quadric_error_for_face(get_oriented_mirror_edge(e0));
     }
 
-    throw std::runtime_error("Not fully implemented, should not be used");
+    throw std::runtime_error("two faces quadrics error Not fully implemented, should not be used");
 
     return ret;
 }
@@ -1502,17 +1536,26 @@ std::vector<size_t> AdaptiveTessellation::get_all_mirror_vids(const TriMesh::Tup
     std::vector<size_t> ret_vertices_vid;
     std::queue<TriMesh::Tuple> queue;
 
-    ret_vertices_vid.emplace_back(v.vid(*this));
+    {
+        assert(v.is_valid(*this));
+        const size_t vid = ret_vertices_vid.emplace_back(v.vid(*this));
+        assert(vid < m_vertex_connectivity.size());
+    }
 
-    for (auto& e : get_one_ring_edges_for_vertex(v)) queue.push(e);
+    for (auto& e : get_one_ring_edges_for_vertex(v)) {
+        assert(e.is_valid(*this));
+        queue.push(e);
+    }
     while (!queue.empty()) {
         auto e = queue.front();
         queue.pop();
         if (is_seam_edge(e)) {
             auto mirror_v = get_mirror_vertex(e.switch_vertex(*this));
+            assert(mirror_v.is_valid(*this));
             if (std::find(ret_vertices_vid.begin(), ret_vertices_vid.end(), mirror_v.vid(*this)) ==
                 ret_vertices_vid.end()) {
-                ret_vertices_vid.emplace_back(mirror_v.vid(*this));
+                const size_t vid = ret_vertices_vid.emplace_back(mirror_v.vid(*this));
+                assert(vid < m_vertex_connectivity.size());
                 for (auto& new_e : get_one_ring_edges_for_vertex(mirror_v)) queue.push(new_e);
             }
         }
