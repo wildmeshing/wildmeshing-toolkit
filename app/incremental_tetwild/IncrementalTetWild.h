@@ -118,6 +118,8 @@ public:
     Scalar m_quality;
     // Scalar m_scalar; // never used?
     bool m_is_outside; // never used?
+
+    bool part_id = -1;
 };
 
 class TetWild : public wmtk::TetMesh
@@ -602,6 +604,9 @@ public:
         const std::vector<uint32_t>& surf_tris);
 
     bool check_vertex_param_type();
+
+    // for boolean operations
+    int flood_fill();
 };
 
 

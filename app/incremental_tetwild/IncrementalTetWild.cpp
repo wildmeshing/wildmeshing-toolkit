@@ -1714,3 +1714,92 @@ bool tetwild::TetWild::check_vertex_param_type()
     }
     return flag;
 }
+
+int tetwild::TetWild::flood_fill()
+{
+    int current_id = 0;
+    auto tets = get_tets();
+    std::map<size_t, bool> visited;
+
+    for (auto t : tets) {
+        size_t tid = t.tid(*this);
+        if (visited.find(tid) != visited.end()) continue;
+
+        visited[tid] = true;
+
+        m_tet_attribute[tid].part_id = current_id;
+
+        auto f1 = t;
+        auto f2 = t.switch_face(*this);
+        auto f3 = t.switch_edge(*this).switch_face(*this);
+        auto f4 = t.switch_vertex(*this).switch_edge(*this).switch_face(*this);
+
+        std::queue<Tuple> bfs_queue;
+
+        if (!m_face_attribute[f1.fid(*this)].m_is_surface_fs) {
+            auto oppo_t = f1.switch_tetrahedron(*this);
+            if (oppo_t.has_value()) {
+                bfs_queue.push(*oppo_t);
+            }
+        }
+        if (!m_face_attribute[f2.fid(*this)].m_is_surface_fs) {
+            auto oppo_t = f2.switch_tetrahedron(*this);
+            if (oppo_t.has_value()) {
+                bfs_queue.push(*oppo_t);
+            }
+        }
+        if (!m_face_attribute[f3.fid(*this)].m_is_surface_fs) {
+            auto oppo_t = f3.switch_tetrahedron(*this);
+            if (oppo_t.has_value()) {
+                bfs_queue.push(*oppo_t);
+            }
+        }
+        if (!m_face_attribute[f4.fid(*this)].m_is_surface_fs) {
+            auto oppo_t = f4.switch_tetrahedron(*this);
+            if (oppo_t.has_value()) {
+                bfs_queue.push(*oppo_t);
+            }
+        }
+
+        while (!bfs_queue.empty()) {
+            auto tmp = bfs_queue.front();
+            bfs_queue.pop();
+            size_t tmp_id = tmp.tid(*this);
+            if (visited.find(tmp_id) != visited.end()) continue;
+
+            m_tet_attribute[tmp_id].part_id = current_id;
+
+            auto f_tmp1 = tmp;
+            auto f_tmp2 = tmp.switch_face(*this);
+            auto f_tmp3 = tmp.switch_edge(*this).switch_face(*this);
+            auto f_tmp4 = tmp.switch_vertex(*this).switch_edge(*this).switch_face(*this);
+
+            if (!m_face_attribute[f_tmp1.fid(*this)].m_is_surface_fs) {
+                auto oppo_t = f_tmp1.switch_tetrahedron(*this);
+                if (oppo_t.has_value()) {
+                    bfs_queue.push(*oppo_t);
+                }
+            }
+            if (!m_face_attribute[f_tmp2.fid(*this)].m_is_surface_fs) {
+                auto oppo_t = f_tmp2.switch_tetrahedron(*this);
+                if (oppo_t.has_value()) {
+                    bfs_queue.push(*oppo_t);
+                }
+            }
+            if (!m_face_attribute[f_tmp3.fid(*this)].m_is_surface_fs) {
+                auto oppo_t = f_tmp3.switch_tetrahedron(*this);
+                if (oppo_t.has_value()) {
+                    bfs_queue.push(*oppo_t);
+                }
+            }
+            if (!m_face_attribute[f_tmp4.fid(*this)].m_is_surface_fs) {
+                auto oppo_t = f_tmp4.switch_tetrahedron(*this);
+                if (oppo_t.has_value()) {
+                    bfs_queue.push(*oppo_t);
+                }
+            }
+        }
+
+        current_id++;
+    }
+}
