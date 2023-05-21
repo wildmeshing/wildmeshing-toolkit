@@ -79,9 +79,10 @@ void AdaptiveTessellation::mesh_preprocessing(
     wmtk::TriMesh m_3d;
     std::vector<std::array<size_t, 3>> tris;
     for (auto f = 0; f < input_F_.rows(); f++) {
-        std::array<size_t, 3> tri = {(size_t)input_F_(f, 0),
-                                     (size_t)input_F_(f, 1),
-                                     (size_t)input_F_(f, 2)};
+        std::array<size_t, 3> tri = {
+            (size_t)input_F_(f, 0),
+            (size_t)input_F_(f, 1),
+            (size_t)input_F_(f, 2)};
         tris.emplace_back(tri);
     }
     m_3d.create_mesh(input_V_.rows(), tris);
@@ -134,11 +135,7 @@ void AdaptiveTessellation::mesh_preprocessing(
         wmtk::QuadricIntegral(displaced, wmtk::QuadricIntegral::QuadricType::Point);
     m_texture_integral = wmtk::TextureIntegral(std::move(displaced));
     m_texture_integral.set_integration_method(
-<<<<<<< HEAD
-        wmtk::IntegralBase::IntegrationMethod::Adaptive); // Adaptive or Exact
-=======
         wmtk::IntegralBase::IntegrationMethod::Exact); // Adaptive or Exact
->>>>>>> yunfan/collapse_fix
 }
 
 void AdaptiveTessellation::prepare_distance_quadrature_cached_energy()
