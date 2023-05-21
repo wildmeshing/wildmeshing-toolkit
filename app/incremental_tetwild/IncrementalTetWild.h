@@ -119,7 +119,7 @@ public:
     // Scalar m_scalar; // never used?
     bool m_is_outside; // never used?
 
-    bool part_id = -1;
+    int part_id = -1;
 };
 
 class TetWild : public wmtk::TetMesh
