@@ -1506,7 +1506,11 @@ std::vector<size_t> AdaptiveTessellation::get_all_mirror_vids(const TriMesh::Tup
     std::vector<size_t> ret_vertices_vid;
     std::queue<TriMesh::Tuple> queue;
 
-    ret_vertices_vid.emplace_back(v.vid(*this));
+    {
+        assert(v.is_valid(*this));
+    const size_t vid = ret_vertices_vid.emplace_back(v.vid(*this));
+                assert(vid < m_vertex_connectivity.size());
+    }
 
     for (auto& e : get_one_ring_edges_for_vertex(v)) queue.push(e);
     while (!queue.empty()) {
@@ -1514,9 +1518,11 @@ std::vector<size_t> AdaptiveTessellation::get_all_mirror_vids(const TriMesh::Tup
         queue.pop();
         if (is_seam_edge(e)) {
             auto mirror_v = get_mirror_vertex(e.switch_vertex(*this));
+                assert(mirror_v.is_valid(*this));
             if (std::find(ret_vertices_vid.begin(), ret_vertices_vid.end(), mirror_v.vid(*this)) ==
                 ret_vertices_vid.end()) {
-                ret_vertices_vid.emplace_back(mirror_v.vid(*this));
+                const size_t vid = ret_vertices_vid.emplace_back(mirror_v.vid(*this));
+                assert(vid < m_vertex_connectivity.size());
                 for (auto& new_e : get_one_ring_edges_for_vertex(mirror_v)) queue.push(new_e);
             }
         }
