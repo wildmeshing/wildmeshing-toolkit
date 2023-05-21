@@ -209,7 +209,7 @@ int main(int argc, char** argv)
         ldc.stop_timer();
         ldc.evaluate_mesh(m);
         ldc.log_json(m, "after_split");
-        m.write_obj_displaced("after_split.obj");
+        m.write_obj_displaced(output_folder / "after_split.obj");
     }
 
     //{

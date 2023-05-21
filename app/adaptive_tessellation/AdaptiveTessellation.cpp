@@ -122,6 +122,8 @@ void AdaptiveTessellation::mesh_preprocessing(
     m_quadric_integral =
         wmtk::QuadricIntegral(displaced, wmtk::QuadricIntegral::QuadricType::Point);
     m_texture_integral = wmtk::TextureIntegral(std::move(displaced));
+    m_texture_integral.set_integration_method(
+        wmtk::IntegralBase::IntegrationMethod::Adaptive); // Adaptive or Exact
 }
 
 void AdaptiveTessellation::prepare_distance_quadrature_cached_energy()
