@@ -457,7 +457,9 @@ void AdaptiveTessellation::set_energy(const ENERGY_TYPE energy_type)
         energy_ptr = std::make_unique<wmtk::AccuracyEnergy>(mesh_parameters.m_displacement);
         break;
     case ENERGY_TYPE::AREA_QUADRATURE:
-        energy_ptr = std::make_unique<wmtk::AreaAccuracyEnergy>(mesh_parameters.m_displacement);
+        energy_ptr = std::make_unique<wmtk::AreaAccuracyEnergy>(
+            mesh_parameters.m_displacement,
+            std::cref(m_texture_integral));
         break;
     case ENERGY_TYPE::QUADRICS:
         energy_ptr = std::make_unique<wmtk::QuadricEnergy>(mesh_parameters.m_displacement);
