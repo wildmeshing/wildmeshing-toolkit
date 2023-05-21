@@ -599,9 +599,15 @@ bool tetwild::TetWild::collapse_edge_after(const Tuple& loc)
         for (auto [key, val] : cache.vertex_link) {
             if (key == v1_id) {
                 // the collpased vertex
-                if (val != after_vertex_link[v2_id]) return false;
+                if (val != after_vertex_link[v2_id]) {
+                    std::cout << "1" << std::endl;
+                    return false;
+                }
             } else {
-                if (val != after_vertex_link[key]) return false;
+                if (val != after_vertex_link[key]) {
+                    std::cout << "2" << std::endl;
+                    return false;
+                }
             }
         }
 
@@ -610,18 +616,33 @@ bool tetwild::TetWild::collapse_edge_after(const Tuple& loc)
             if (key.first == v2_id && key.second == v1_id) continue;
             if (key.first == v1_id) {
                 if (v2_id < key.second) {
-                    if (val != after_edge_link[std::make_pair(v2_id, key.second)]) return false;
+                    if (val != after_edge_link[std::make_pair(v2_id, key.second)]) {
+                        std::cout << "3" << std::endl;
+                        return false;
+                    }
                 } else {
-                    if (val != after_edge_link[std::make_pair(key.second, v2_id)]) return false;
+                    if (val != after_edge_link[std::make_pair(key.second, v2_id)]) {
+                        std::cout << "4" << std::endl;
+                        return false;
+                    }
                 }
             } else if (key.second == v1_id) {
                 if (v2_id < key.first) {
-                    if (val != after_edge_link[std::make_pair(v2_id, key.first)]) return false;
+                    if (val != after_edge_link[std::make_pair(v2_id, key.first)]) {
+                        std::cout << "5" << std::endl;
+                        return false;
+                    }
                 } else {
-                    if (val != after_edge_link[std::make_pair(key.first, v2_id)]) return false;
+                    if (val != after_edge_link[std::make_pair(key.first, v2_id)]) {
+                        std::cout << "6" << std::endl;
+                        return false;
+                    }
                 }
             } else {
-                if (val != after_edge_link[key]) return false;
+                if (val != after_edge_link[key]) {
+                    std::cout << "7" << std::endl;
+                    return false;
+                }
             }
         }
     }
