@@ -191,7 +191,8 @@ int main(int argc, char** argv)
     // m.mesh_parameters.m_early_stopping_number = 100;
     ////
     m.set_vertex_world_positions(); // compute 3d positions for each vertex
-
+    // displace_self_intersection_free(m);
+    // m.write_obj(output_file);
     {
         LoggerDataCollector ldc;
         ldc.evaluate_mesh(m);
@@ -232,7 +233,11 @@ int main(int argc, char** argv)
         (output_file.stem().string() + std::string("_max_displacement") +
          output_file.extension().string()));
 
-    displace_self_intersection_free(m);
+    {
+        spdlog::stopwatch sw;
+        displace_self_intersection_free(m);
+        wmtk::logger().info("Displacement runtime: {} seconds", sw);
+    }
     m.write_obj(output_file);
 
     // Save the optimized mesh
