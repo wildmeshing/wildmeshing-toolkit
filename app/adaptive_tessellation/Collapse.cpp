@@ -728,16 +728,18 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::after(AdaptiveTessellation
         }
     }
 
+    rebuild_boundary_data(m);
+
     std::vector<size_t> all_mirrors = m.get_all_mirror_vids(return_tuple);
 
     std::vector<Tuple> one_ring;
     for (const size_t ret_vid : all_mirrors) {
-        auto a = m.get_one_ring_tris_for_vertex(m.tuple_from_vertex(ret_vid));
+        const Tuple vtup = m.tuple_from_vertex(ret_vid);
+        auto a = m.get_one_ring_tris_for_vertex(vtup);
         one_ring.insert(one_ring.end(), a.begin(), a.end());
     }
 
 
-    rebuild_boundary_data(m);
     m.update_energy_cache(modified_triangles(m));
     // check invariants here since get_area_accuracy_error_per_face requires valid triangle
     if (!m.invariants(one_ring)) return false;
