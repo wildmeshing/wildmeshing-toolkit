@@ -1,4 +1,5 @@
 #include "Energy2dOptimizationUtils.h"
+#include <lagrange/utils/fpe.h>
 using namespace wmtk;
 // check every triangle in the assembles with the dofx whether any trinagle is flipped
 // if it is boundary vertex, dofx is t but needs to be converted to uv
@@ -33,6 +34,7 @@ void wmtk::optimization_state_update(
     const wmtk::Boundary& boundary_mapping,
     wmtk::State& state)
 {
+    lagrange::enable_fpe();
     // assume no inversion
     assert(inversion_check_with_dofx(boundary_mapping, nminfos, state.dofx));
     wmtk::logger().info(

@@ -47,6 +47,7 @@ public:
 
     std::pair<DScalar, DScalar> eval(const DofVector& dofx) const
     {
+        lagrange::enable_fpe();
         if (dofx.size() == 2) {
             DiffScalarBase::setVariableCount(2);
             DScalar x1(0, dofx(0));
