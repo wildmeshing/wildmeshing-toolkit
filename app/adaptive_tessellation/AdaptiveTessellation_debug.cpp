@@ -77,6 +77,7 @@ void AdaptiveTessellation::mesh_preprocessing(
 // assuming the vert_capacity() == get_vertices.size()
 double AdaptiveTessellation::get_mesh_energy(const Eigen::VectorXd& v_flat)
 {
+    throw std::runtime_error("AT::get_mesh_energy should not be used");
     double total_energy = 0;
     Eigen::MatrixXd energy_matrix;
     energy_matrix.resize(get_faces().size(), 2);
