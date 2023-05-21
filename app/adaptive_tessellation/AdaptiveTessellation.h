@@ -186,7 +186,9 @@ public:
         const std::filesystem::path& input_mesh_path,
         const std::filesystem::path& position_image_path,
         const std::filesystem::path& normal_image_path,
-        const std::filesystem::path& height_image_path);
+        const std::filesystem::path& height_image_path,
+        float min_height,
+        float max_height);
 
     bool invariants(const std::vector<Tuple>& new_tris);
 

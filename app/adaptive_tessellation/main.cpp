@@ -131,6 +131,8 @@ int main(int argc, char** argv)
     const adaptive_tessellation::EDGE_LEN_TYPE edge_len_type = config["edge_len_type"];
     const int max_iter = config["max_iter"];
     const bool boundary_parameter_on = config["boundary_parameter_on"];
+    const float min_height = config.value("min_height", 0.0f);
+    const float max_height = config.value("max_height", 1.0f);
 
     wmtk::logger().info("///// height map: {}", height_map_path);
     wmtk::logger().info("///// normal map: {}", normal_map_path);
@@ -147,12 +149,17 @@ int main(int argc, char** argv)
 
     Image height_map;
     height_map.load(height_map_path, wrapping_mode, wrapping_mode);
-
+    for (int c = 0; c < height_map.width(); ++c) {
+        for (int r = 0; r < height_map.height(); ++r) {
+            float h = height_map.get_raw_image()(r, c);
+            height_map.set(r, c, min_height * (1.f - h) + max_height * h);
+        }
+    }
 
     m.set_output_folder(output_folder);
     m.mesh_parameters.m_position_normal_paths = {position_map_path, normal_map_path};
 
-    m.mesh_preprocessing(input_file, position_map_path, normal_map_path, height_map_path);
+    m.mesh_preprocessing(input_file, position_map_path, normal_map_path, height_map_path, min_height, max_height);
 
     assert(m.check_mesh_connectivity_validity());
 

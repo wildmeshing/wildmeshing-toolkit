@@ -44,7 +44,9 @@ void AdaptiveTessellation::mesh_preprocessing(
     const std::filesystem::path& input_mesh_path,
     const std::filesystem::path& position_image_path,
     const std::filesystem::path& normal_image_path,
-    const std::filesystem::path& height_image_path)
+    const std::filesystem::path& height_image_path,
+    float min_height,
+    float max_height)
 {
     mesh_parameters.m_position_normal_paths = {position_image_path, normal_image_path};
     Eigen::MatrixXd CN, FN;

@@ -157,7 +157,9 @@ std::array<wmtk::Image, 3> wmtk::combine_position_normal_texture(
     const Eigen::Matrix<double, 1, 3>& offset,
     const std::filesystem::path& position_path,
     const std::filesystem::path& normal_path,
-    const std::filesystem::path& height_path)
+    const std::filesystem::path& height_path,
+    float min_height,
+    float max_height)
 {
     assert(std::filesystem::exists(position_path));
     auto [w_p, h_p, index_red_p, index_green_p, index_blue_p, buffer_r_p, buffer_g_p, buffer_b_p] =
@@ -192,14 +194,16 @@ std::array<wmtk::Image, 3> wmtk::combine_position_normal_texture(
         assert(buffer_r_p.size() == buffer_r_h.size());
         assert(buffer_r_p.size() == buffer_g_p.size());
         assert(buffer_r_p.size() == buffer_b_p.size());
+        auto scale = [&](float h) { return min_height * (1.f - h) + max_height * h; };
         // displaced = positions * normalization_scale + heights * (2.0 * normals - 1.0) - offset
-        for (int i = 0; i < buffer_size; i++) {
+        for (int i = 0; i < buffer_size; i++)
+        {
             buffer_r_d[i] = buffer_r_p[i] * normalization_scale +
-                            buffer_r_h[i] * (2.0 * buffer_r_n[i] - 1.0) - offset[0];
+                            scale(buffer_r_h[i]) * (2.0 * buffer_r_n[i] - 1.0) - offset[0];
             buffer_g_d[i] = buffer_g_p[i] * normalization_scale +
-                            buffer_g_h[i] * (2.0 * buffer_g_n[i] - 1.0) - offset[1];
+                            scale(buffer_g_h[i]) * (2.0 * buffer_g_n[i] - 1.0) - offset[1];
             buffer_b_d[i] = buffer_b_p[i] * normalization_scale +
-                            buffer_b_h[i] * (2.0 * buffer_b_n[i] - 1.0) - offset[2];
+                            scale(buffer_b_h[i]) * (2.0 * buffer_b_n[i] - 1.0) - offset[2];
         }
     } else {
         // Missing heightmap info: we use the position map as our displaced coordinates.
