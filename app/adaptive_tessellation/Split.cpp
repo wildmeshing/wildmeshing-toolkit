@@ -250,13 +250,15 @@ bool AdaptiveTessellationPairedSplitEdgeOperation::before(AdaptiveTessellation& 
         // m.write_vtk(m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}.vtu", cnt));
         // m.write_perface_vtk(
         //     m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}_face.vtu", cnt));
-        int cnt = g_cnt++;
-        if (cnt % 1000 == 0) {
-            m.write_obj_displaced(
+#if 0
+         int cnt = g_cnt++;
+         if (cnt % 1000 == 0) {
+             m.write_obj_displaced(
                 m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}.obj", cnt));
             m.write_hdf_displaced_uv(
                 m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}.hdf", cnt));
         }
+#endif
         // m.write_obj(m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}_2d.obj", cnt));
     }
     assert(
@@ -588,7 +590,7 @@ void AdaptiveTessellation::split_all_edges()
                 m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY ||
                 m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::TRI_QUADRICS) {
                 if (unscaled_total_error < m.mesh_parameters.m_accuracy_threshold) {
-                    wmtk::logger().info("accuracy smaller than threshold");
+                    wmtk::logger().debug("accuracy smaller than threshold");
                     return false;
                 }
             } else if (total_error < 4. / 3. * m.mesh_parameters.m_quality_threshold)

@@ -304,7 +304,7 @@ void AreaAccuracyEnergy::eval(State& state, DofsToPositions& dof_to_positions) c
     DScalar total_energy = DScalar(0);
     assert(state.two_opposite_vertices.rows() == 1);
     auto [x1, y1] = dof_to_positions.eval(state.dofx);
-    Eigen::Matrix<DScalar, 3, 2, 1> triangle;
+    Eigen::Matrix<DScalar, 3, 2, Eigen::RowMajor> triangle;
     triangle << x1, y1, DScalar(state.two_opposite_vertices(0, 0)),
         DScalar(state.two_opposite_vertices(0, 1)), DScalar(state.two_opposite_vertices(0, 2)),
         DScalar(state.two_opposite_vertices(0, 3));
@@ -334,7 +334,8 @@ void AreaAccuracyEnergy::eval(State& state, DofsToPositions& dof_to_positions) c
         total_energy += barrier_energy;
     }
 
-    total_energy = m_displ->get_error_per_triangle(triangle);
+    // total_energy = m_displ->get_error_per_triangle(triangle);
+    total_energy = m_texture_integral.get_error_one_triangle(triangle);
     state.value = total_energy.getValue();
     state.gradient = total_energy.getGradient();
     state.hessian = total_energy.getHessian();

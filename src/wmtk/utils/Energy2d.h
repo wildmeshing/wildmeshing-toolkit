@@ -3,6 +3,7 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
+#include <wmtk/image/TextureIntegral.h>
 #include <Eigen/LU>
 #include <iostream>
 #include "BoundaryParametrization.h"
@@ -148,12 +149,14 @@ public:
 class AreaAccuracyEnergy : public wmtk::Energy
 {
 public:
-    AreaAccuracyEnergy(std::shared_ptr<Displacement> displ)
+    AreaAccuracyEnergy(std::shared_ptr<Displacement> displ, const TextureIntegral &texture_integral)
         : m_displ(displ)
+        , m_texture_integral(texture_integral)
     {}
 
 public:
     std::shared_ptr<Displacement> m_displ; // Initiated using the Displacement class
+    const TextureIntegral& m_texture_integral;
 
 public:
     void eval([[maybe_unused]] State& state) const override{};

@@ -44,9 +44,12 @@ void AdaptiveTessellation::mesh_preprocessing(
     const std::filesystem::path& input_mesh_path,
     const std::filesystem::path& position_image_path,
     const std::filesystem::path& normal_image_path,
-    const std::filesystem::path& height_image_path)
+    const std::filesystem::path& height_image_path,
+    float min_height,
+    float max_height)
 {
     mesh_parameters.m_position_normal_paths = {position_image_path, normal_image_path};
+    spdlog::info("{}", input_mesh_path.string());
     Eigen::MatrixXd CN, FN;
     // igl::read_triangle_mesh(input_mesh_path.string(), input_V_, input_F_);
     // igl::readOBJ(input_mesh_path.string(), V, VT, CN, F, FT, FN);
@@ -62,14 +65,24 @@ void AdaptiveTessellation::mesh_preprocessing(
         assert(input_FT_.rows() == input_F_.rows());
     }
 
+    {
+        Eigen::MatrixXi edges;
+        igl::edges(input_F_, edges);
+        const ipc::CollisionMesh collisionMesh(input_V_, edges, input_F_);
+        if (ipc::has_intersections(collisionMesh, input_V_)) {
+            wmtk::logger().error("Input mesh has self-intersections!");
+        }
+    }
+
     wmtk::logger().info("///// #v : {} {}", input_VT_.rows(), input_VT_.cols());
     wmtk::logger().info("///// #f : {} {}", input_FT_.rows(), input_FT_.cols());
     wmtk::TriMesh m_3d;
     std::vector<std::array<size_t, 3>> tris;
     for (auto f = 0; f < input_F_.rows(); f++) {
-        std::array<size_t, 3> tri = {(size_t)input_F_(f, 0),
-                                     (size_t)input_F_(f, 1),
-                                     (size_t)input_F_(f, 2)};
+        std::array<size_t, 3> tri = {
+            (size_t)input_F_(f, 0),
+            (size_t)input_F_(f, 1),
+            (size_t)input_F_(f, 2)};
         tris.emplace_back(tri);
     }
     m_3d.create_mesh(input_V_.rows(), tris);
@@ -494,7 +507,9 @@ void AdaptiveTessellation::set_energy(const ENERGY_TYPE energy_type)
         energy_ptr = std::make_unique<wmtk::AccuracyEnergy>(mesh_parameters.m_displacement);
         break;
     case ENERGY_TYPE::AREA_QUADRATURE:
-        energy_ptr = std::make_unique<wmtk::AreaAccuracyEnergy>(mesh_parameters.m_displacement);
+        energy_ptr = std::make_unique<wmtk::AreaAccuracyEnergy>(
+            mesh_parameters.m_displacement,
+            std::cref(m_texture_integral));
         break;
     case ENERGY_TYPE::QUADRICS:
         energy_ptr = std::make_unique<wmtk::QuadricEnergy>(mesh_parameters.m_displacement);
@@ -579,10 +594,12 @@ void AdaptiveTessellation::set_image_function(
     mesh_parameters.m_wrapping_mode = wrapping_mode;
     mesh_parameters.m_image = image;
     mesh_parameters.m_get_z = [this](const DScalar& u, const DScalar& v) -> DScalar {
+        throw std::runtime_error("do not use");
         return this->mesh_parameters.m_image.get(u, v);
     };
     mesh_parameters.m_image_get_coordinate =
         [this](const double& x, const double& y) -> std::pair<int, int> {
+        throw std::runtime_error("do not use");
         auto [xx, yy] = this->mesh_parameters.m_image.get_pixel_index(x, y);
         return {
             this->mesh_parameters.m_image.get_coordinate(xx, this->mesh_parameters.m_wrapping_mode),
@@ -590,8 +607,9 @@ void AdaptiveTessellation::set_image_function(
                 yy,
                 this->mesh_parameters.m_wrapping_mode)};
     };
-    mesh_parameters.m_mipmap = wmtk::MipMap(image);
-    mesh_parameters.m_mipmap.set_wrapping_mode(wrapping_mode);
+    // skipped (not used currently, and image can be empty when using vector displacement)
+    // mesh_parameters.m_mipmap = wmtk::MipMap(image);
+    // mesh_parameters.m_mipmap.set_wrapping_mode(wrapping_mode);
 }
 
 void AdaptiveTessellation::set_displacement(const DISPLACEMENT_MODE displacement_mode)
@@ -606,10 +624,10 @@ void AdaptiveTessellation::set_displacement(const DISPLACEMENT_MODE displacement
         for (size_t i = 0; i < 2; i++) {
             std::filesystem::path path = mesh_parameters.m_position_normal_paths[i];
             wmtk::logger().debug("======= path {} {}", i, path);
-            std::array<wmtk::Image, 3> normal_images = wmtk::load_rgb_image(path);
-            position_normal_images[i * 3 + 0] = normal_images[0];
-            position_normal_images[i * 3 + 1] = normal_images[1];
-            position_normal_images[i * 3 + 2] = normal_images[2];
+            std::array<wmtk::Image, 3> rgb_image = wmtk::load_rgb_image(path);
+            position_normal_images[i * 3 + 0] = rgb_image[0];
+            position_normal_images[i * 3 + 1] = rgb_image[1];
+            position_normal_images[i * 3 + 2] = rgb_image[2];
         }
         displacement_ptr = std::make_shared<DisplacementMesh>(
             mesh_parameters.m_image,
@@ -624,6 +642,16 @@ void AdaptiveTessellation::set_displacement(const DISPLACEMENT_MODE displacement
             mesh_parameters.m_image,
             mesh_parameters.m_sampling_mode);
         break;
+    case DISPLACEMENT_MODE::VECTOR: {
+        // Directly use baked positions as our displaced 3d coordinate
+        auto displaced_positions = wmtk::load_rgb_image(mesh_parameters.m_position_normal_paths[0]);
+        displacement_ptr = std::make_shared<DisplacementVector>(
+            displaced_positions,
+            mesh_parameters.m_sampling_mode,
+            mesh_parameters.m_scale,
+            mesh_parameters.m_offset);
+        break;
+    }
     default: break;
     }
     mesh_parameters.m_displacement = displacement_ptr;
@@ -831,6 +859,7 @@ double AdaptiveTessellation::get_length_n_implicit_points(const Tuple& edge_tupl
 
 double AdaptiveTessellation::get_length_1ptperpixel(const Tuple& edge_tuple) const
 {
+    throw std::runtime_error("do no use");
     const auto& vid1 = edge_tuple.vid(*this);
     const auto& vid2 = edge_tuple.switch_vertex(*this).vid(*this);
     const auto& v12d = vertex_attrs[vid1].pos;
@@ -1511,17 +1540,26 @@ std::vector<size_t> AdaptiveTessellation::get_all_mirror_vids(const TriMesh::Tup
     std::vector<size_t> ret_vertices_vid;
     std::queue<TriMesh::Tuple> queue;
 
-    ret_vertices_vid.emplace_back(v.vid(*this));
+    {
+        assert(v.is_valid(*this));
+        const size_t vid = ret_vertices_vid.emplace_back(v.vid(*this));
+        assert(vid < m_vertex_connectivity.size());
+    }
 
-    for (auto& e : get_one_ring_edges_for_vertex(v)) queue.push(e);
+    for (auto& e : get_one_ring_edges_for_vertex(v)) {
+        assert(e.is_valid(*this));
+        queue.push(e);
+    }
     while (!queue.empty()) {
         auto e = queue.front();
         queue.pop();
         if (is_seam_edge(e)) {
             auto mirror_v = get_mirror_vertex(e.switch_vertex(*this));
+            assert(mirror_v.is_valid(*this));
             if (std::find(ret_vertices_vid.begin(), ret_vertices_vid.end(), mirror_v.vid(*this)) ==
                 ret_vertices_vid.end()) {
-                ret_vertices_vid.emplace_back(mirror_v.vid(*this));
+                const size_t vid = ret_vertices_vid.emplace_back(mirror_v.vid(*this));
+                assert(vid < m_vertex_connectivity.size());
                 for (auto& new_e : get_one_ring_edges_for_vertex(mirror_v)) queue.push(new_e);
             }
         }

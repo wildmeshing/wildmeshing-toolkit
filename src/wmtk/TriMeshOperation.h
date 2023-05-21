@@ -23,6 +23,7 @@ public:
 
     TriMeshOperation() {}
     virtual ~TriMeshOperation() {}
+    virtual double priority(const TriMesh& m, const Tuple& t) const { return 0; }
 
 protected:
     // returns the changed tris + whether success occured
@@ -132,8 +133,8 @@ public:
 
     std::optional<TriMeshTuple> get_return_tuple_opt() const { return m_return_tuple_opt.local(); }
     virtual std::vector<TriMeshTuple> modified_triangles(const TriMesh& m) const = 0;
-    //virtual std::vector<TriMeshTuple> modified_edges(const TriMesh& m) const = 0;
-    //virtual std::vector<TriMeshTuple> modified_vertices(const TriMesh& m) const = 0;
+    // virtual std::vector<TriMeshTuple> modified_edges(const TriMesh& m) const = 0;
+    // virtual std::vector<TriMeshTuple> modified_vertices(const TriMesh& m) const = 0;
 
 private:
     mutable tbb::enumerable_thread_specific<std::optional<TriMeshTuple>> m_return_tuple_opt;

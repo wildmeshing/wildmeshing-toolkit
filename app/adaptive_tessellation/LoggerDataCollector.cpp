@@ -7,16 +7,18 @@
 
 namespace adaptive_tessellation {
 
+template <typename T>
 class StatisticsObj
 {
-    double min_ = std::numeric_limits<double>::max();
-    double max_ = std::numeric_limits<double>::lowest();
-    double mean_ = std::numeric_limits<double>::lowest();
-    double median_ = std::numeric_limits<double>::lowest();
-    double std_dev_ = std::numeric_limits<double>::lowest();
+    double min_ = std::numeric_limits<T>::max();
+    double max_ = std::numeric_limits<T>::lowest();
+    double mean_ = std::numeric_limits<T>::lowest();
+    double median_ = std::numeric_limits<T>::lowest();
+    double std_dev_ = std::numeric_limits<T>::lowest();
 
 public:
-    StatisticsObj(std::vector<double> data)
+    template <typename T>
+    StatisticsObj(std::vector<T> data)
     {
         std::sort(data.begin(), data.end());
 
@@ -24,14 +26,12 @@ public:
         max_ = data[data.size() - 1];
         median_ = data[(data.size() - 1) / 2];
 
-        double sum = std::accumulate(data.begin(), data.end(), 0.0);
+        T sum = std::accumulate(data.begin(), data.end(), 0.0);
         mean_ = sum / data.size();
 
-        std::vector<double> diff(data.size());
-        std::transform(data.begin(), data.end(), diff.begin(), [this](double x) {
-            return x - mean_;
-        });
-        const double sq_sum = std::inner_product(diff.begin(), diff.end(), diff.begin(), 0.0);
+        std::vector<T> diff(data.size());
+        std::transform(data.begin(), data.end(), diff.begin(), [this](T x) { return x - mean_; });
+        const T sq_sum = std::inner_product(diff.begin(), diff.end(), diff.begin(), 0.0);
         std_dev_ = std::sqrt(sq_sum / data.size());
     }
 
@@ -86,24 +86,28 @@ void LoggerDataCollector::evaluate_mesh(const AdaptiveTessellation& mesh)
         triangle_areas_.reserve(num_faces_);
         // triangle_min_angles.reserve(num_faces_);
 
+        std::vector<std::array<float, 6>> triangles;
+        triangles.reserve(num_faces_);
         for (const Tuple& f : faces) {
             const auto vids = mesh.oriented_tri_vertices(f);
-            Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle;
+            std::array<float, 6> triangle;
             Eigen::Matrix<double, 3, 3, Eigen::RowMajor> triangle_displaced;
             for (size_t i = 0; i < 3; ++i) {
-                triangle.row(i) = mesh.vertex_attrs[vids[i].vid(mesh)].pos;
-                triangle_displaced.row(i) =
-                    mesh.mesh_parameters.m_displacement->get(triangle(i, 0), triangle(i, 1));
+                Eigen::Vector2d p = mesh.vertex_attrs[vids[i].vid(mesh)].pos;
+                triangle[2 * i + 0] = p[0];
+                triangle[2 * i + 1] = p[1];
+                triangle_displaced.row(i) = mesh.mesh_parameters.m_displacement->get(p[0], p[1]);
             }
+            triangles.emplace_back(triangle);
+
             Eigen::Matrix<double, 1, 1> double_area;
             igl::doublearea(triangle_displaced, Eigen::Matrix<int, 1, 3>{0, 1, 2}, double_area);
             const double triangle_area = std::sqrt(double_area(0, 0));
-            const double triangle_energy =
-                mesh.mesh_parameters.m_displacement->get_error_per_triangle(triangle);
-
             triangle_areas_.emplace_back(triangle_area);
-            triangle_energies_.emplace_back(triangle_energy);
         }
+
+        triangle_energies_.resize(triangles.size());
+        mesh.m_texture_integral.get_error_per_triangle({triangles}, {triangle_energies_});
     }
     // edge stuff
     {
@@ -125,9 +129,9 @@ void LoggerDataCollector::evaluate_mesh(const AdaptiveTessellation& mesh)
 
 nlohmann::json LoggerDataCollector::general_info_to_json() const
 {
-    const StatisticsObj edge_length_stats(edge_lengths_);
-    const StatisticsObj energy_stats(triangle_energies_);
-    const StatisticsObj area_stats(triangle_areas_);
+    const StatisticsObj<double> edge_length_stats(edge_lengths_);
+    const StatisticsObj<float> energy_stats(triangle_energies_);
+    const StatisticsObj<double> area_stats(triangle_areas_);
     // const StatisticsObj min_angle_stats(triangle_min_angles_);
 
     return {

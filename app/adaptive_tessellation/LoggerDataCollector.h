@@ -13,7 +13,7 @@ class LoggerDataCollector
     size_t peak_memory_ = -1; // peak memory in bytes
     size_t num_faces_ = -1;
     size_t num_vertices_ = -1;
-    std::vector<double> triangle_energies_;
+    std::vector<float> triangle_energies_;
     std::vector<double> triangle_areas_;
     // std::vector<double> triangle_min_angles_;
     std::vector<double> edge_lengths_;
