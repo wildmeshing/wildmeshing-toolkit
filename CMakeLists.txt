@@ -96,6 +96,8 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     lagrange::core
     Tracy::TracyClient
 )
+include(paraviewo)
+target_link_libraries(wildmeshing_toolkit PUBLIC paraviewo::paraviewo)
 
 # ###############################################################################
 # Subdirectories

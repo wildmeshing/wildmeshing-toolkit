@@ -607,6 +607,8 @@ public:
 
     // for boolean operations
     int flood_fill();
+
+    void save_paraview(const std::string& path, const bool use_hdf5);
 };
 
 
