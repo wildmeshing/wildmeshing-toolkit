@@ -57,6 +57,9 @@ inline std::filesystem::path get_existing_path(
     const std::filesystem::path& dir,
     const std::filesystem::path& f)
 {
+    if (f.empty()) {
+        return "";
+    }
     if (std::filesystem::exists(f)) {
         return f;
     }
@@ -64,7 +67,7 @@ inline std::filesystem::path get_existing_path(
         return dir / f;
     }
     wmtk::logger().critical("File `{}` does not exist.", f);
-    exit(-1);
+    throw std::runtime_error("Invalid argument");
 }
 
 using namespace wmtk;
@@ -116,9 +119,9 @@ int main(int argc, char** argv)
     FrameMark;
 
     const int image_size = config["image_size"];
-    const path height_map_path = get_existing_path(input_folder, config["height_map"]);
+    const path height_map_path = get_existing_path(input_folder, config.value("height_map", ""));
     const path position_map_path = get_existing_path(input_folder, config["position_map"]);
-    const path normal_map_path = get_existing_path(input_folder, config["normal_map"]);
+    const path normal_map_path = get_existing_path(input_folder, config.value("normal_map", ""));
     const double target_l = config["target_edge_length"];
     const double target_accuracy = config["target_accuracy"];
     const SAMPLING_MODE sampling_mode = config["sampling_mode"];
