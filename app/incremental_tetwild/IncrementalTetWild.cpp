@@ -24,6 +24,10 @@
 #include <wmtk/utils/GeoUtils.h>
 // clang-format on
 
+#include <paraviewo/HDF5VTUWriter.hpp>
+#include <paraviewo/VTUWriter.hpp>
+
+
 #include <geogram/points/kd_tree.h>
 #include <limits>
 
@@ -1703,7 +1707,7 @@ bool tetwild::TetWild::check_vertex_param_type()
             //     flag = false;
             // }
             if (m_vertex_attribute[vid].face_nearly_param_type_with_ineffective.size() == 0) {
-                std::cout << "missing nearly face param" << std::endl;
+                // std::cout << "missing nearly face param" << std::endl;
                 file << "v " << m_vertex_attribute[vid].m_posf[0] << " "
                      << m_vertex_attribute[vid].m_posf[1] << " "
                      << m_vertex_attribute[vid].m_posf[2] << " " << std::endl;
@@ -1820,4 +1824,44 @@ int tetwild::TetWild::flood_fill()
         current_id++;
     }
     return current_id;
+}
+
+void tetwild::TetWild::save_paraview(const std::string& path, const bool use_hdf5)
+{
+    consolidate_mesh();
+    // flood fill
+    int num_parts = flood_fill();
+    std::cout << "flood fill parts: " << num_parts << std::endl;
+    const auto& vs = get_vertices();
+    const auto& tets = get_tets();
+
+    Eigen::MatrixXd parts(tets.size(), 1), V(vs.size(), 3);
+    Eigen::MatrixXi T(tets.size(), 4);
+
+    int index = 0;
+    for (auto t : tets) {
+        size_t tid = t.tid(*this);
+        parts(index, 0) = m_tet_attribute[tid].part_id;
+
+        const auto& vs = oriented_tet_vertices(t);
+        for (int j = 0; j < 4; j++) T(index, j) = vs[j].vid(*this);
+
+        ++index;
+    }
+
+    for (auto v : vs) {
+        const auto vid = v.vid(*this);
+        V.row(vid) = m_vertex_attribute[vid].m_posf;
+    }
+
+    std::shared_ptr<paraviewo::ParaviewWriter> writer;
+    if (use_hdf5)
+        writer = std::make_shared<paraviewo::HDF5VTUWriter>();
+    else
+        writer = std::make_shared<paraviewo::VTUWriter>();
+
+    const auto out_path = path + (use_hdf5 ? ".hdf" : ".vtu");
+
+    writer->add_cell_field("part", parts);
+    writer->write_mesh(out_path, V, T);
 }

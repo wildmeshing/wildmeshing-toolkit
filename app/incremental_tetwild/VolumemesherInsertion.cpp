@@ -1043,9 +1043,9 @@ void tetwild::TetWild::init_from_Volumeremesher(
             }
         }
 
-        // if (!check_vertex_param_type()) {
-        //     std::cout << "missing param at here!!!!!!!!" << std::endl;
-        // }
+        if (m_params.preserve_geometry && !check_vertex_param_type()) {
+            std::cout << "missing param at here!!!!!!!!" << std::endl;
+        }
 
         // get vertices on nearly coplanar collection boundaries or open boundaries
         int cnt_on_collection_boundary = 0;
@@ -1445,9 +1445,9 @@ void tetwild::TetWild::init_from_Volumeremesher(
     std::cout << "#edge_params: " << edge_params.size() << std::endl;
 
 
-    // if (!check_vertex_param_type()) {
-    //     std::cout << "missing param!!!!!!!!" << std::endl;
-    // }
+    if (m_params.preserve_geometry && !check_vertex_param_type()) {
+        std::cout << "missing param!!!!!!!!" << std::endl;
+    }
 
     // check 174 1444
     // std::cout << "v 174:" << std::endl;

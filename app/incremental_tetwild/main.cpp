@@ -359,9 +359,8 @@ int main(int argc, char** argv)
     // /////////mesh improvement
     mesh_new.mesh_improvement(max_its);
 
-    // flood fill
-    int num_parts = mesh_new.flood_fill();
-    std::cout << "flood fill parts: " << num_parts << std::endl;
+    mesh_new.save_paraview(output_path, false);
+
 
     mesh_new.output_mesh(output_path + "after_optimization.msh");
     mesh_new.output_faces(output_path + "after_optimization_surface.obj", [](auto& f) {
