@@ -718,21 +718,22 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::after(AdaptiveTessellation
     }
 
 
-    // check invariants here since get_area_accuracy_error_per_face requires valid triangle
-    if (!m.invariants(one_ring)) return false;
-    if (!m.mesh_parameters.m_ignore_embedding) {
-        if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
-            for (const Tuple& tri : one_ring) {
-                double one_ring_tri_error = m.get_area_accuracy_error_per_face(tri);
-                if (one_ring_tri_error > m.mesh_parameters.m_accuracy_safeguard_ratio *
-                                             m.mesh_parameters.m_accuracy_threshold)
-                    return false;
-            }
-        }
-    }
 
     rebuild_boundary_data(m);
     m.update_energy_cache(modified_triangles(m));
+    // check invariants here since get_area_accuracy_error_per_face requires valid triangle
+    if (!m.invariants(one_ring)) return false;
+    if (!m.mesh_parameters.m_ignore_embedding) {
+
+        //if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
+        //    for (const Tuple& tri : one_ring) {
+        //        double one_ring_tri_error = m.get_area_accuracy_error_per_face(tri);
+        //        if (one_ring_tri_error > m.mesh_parameters.m_accuracy_safeguard_ratio *
+        //                                     m.mesh_parameters.m_accuracy_threshold)
+        //            return false;
+        //    }
+        //}
+    }
 
     return true;
 }
@@ -764,7 +765,7 @@ double AdaptiveTessellationPairedCollapseEdgeOperation::priority(
     double priority = 0.;
     if (at.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
         // priority already scaled by 2d edge length
-        return -at.get_cached_area_accuracy_error_per_edge(edge) * at.get_length2d(edge);
+        return -at.get_cached_area_accuracy_error_per_edge(edge);// * at.get_length2d(edge);
     } else if (at.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::TRI_QUADRICS) {
         // error is not scaled by 2d edge length
         return -at.get_quadrics_area_accuracy_error_for_split(edge) * at.get_length2d(edge);
@@ -794,10 +795,10 @@ void AdaptiveTessellation::collapse_all_edges()
         executor.num_threads = NUM_THREADS;
         executor.is_weight_up_to_date = [](auto& m, auto& ele) {
             auto& [weight, op, tup] = ele;
-            auto length = m.get_length3d(tup);
+        double energy  = at.get_cached_area_accuracy_error_per_edge(edge);// * at.get_length2d(edge);
             if (length != -weight) return false;
 
-            if (length > (4. / 5. * m.mesh_parameters.m_quality_threshold)) return false;
+            //if (length > (4. / 5. * m.mesh_parameters.m_quality_threshold)) return false;
 
             return true;
         };
