@@ -77,6 +77,13 @@ void tetwild::TetWild::mesh_improvement(int max_its)
         wmtk::logger().info("max energy {} stop {}", max_energy, m_params.stop_energy);
         if (max_energy < m_params.stop_energy) break;
         consolidate_mesh();
+
+        output_faces(
+            m_params.output_path + "after_iter" + std::to_string(it) + ".obj",
+            [](auto& f) { return f.m_is_surface_fs; });
+
+        output_mesh(m_params.output_path + "after_iter" + std::to_string(it) + ".msh");
+
         wmtk::logger().info("v {} t {}", vert_capacity(), tet_capacity());
 
         auto cnt_round = 0, cnt_verts = 0;

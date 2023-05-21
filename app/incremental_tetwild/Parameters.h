@@ -16,6 +16,7 @@ struct Parameters
     Vector3d box_max = Vector3d::Ones();
     bool preserve_global_topology = false;
     bool preserve_geometry = false;
+    std::string output_path;
 
     double splitting_l2 = -1.; // the lower bound length (squared) for edge split
     double collapsing_l2 =
