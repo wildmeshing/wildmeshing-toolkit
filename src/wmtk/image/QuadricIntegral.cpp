@@ -249,8 +249,8 @@ Quadric<double> get_quadric_per_triangle_adaptive(
                     quadr,
                     &m_cache.local().tmp);
                 for (size_t i = 0; i < quadr.size(); ++i) {
-                    double u = quadr.points()(i, 0);
-                    double v = quadr.points()(i, 1);
+                    float u = quadr.points()(i, 0);
+                    float v = quadr.points()(i, 1);
                     q += quadric_from_coefficients(get(u, v)) * quadr.weights()[i];
                 }
             }
@@ -331,7 +331,7 @@ void QuadricIntegral::get_quadric_per_triangle_internal(
         triangle.row(0) << input_triangle[0], input_triangle[1];
         triangle.row(1) << input_triangle[2], input_triangle[3];
         triangle.row(2) << input_triangle[4], input_triangle[5];
-        auto sampling_func = [&](double u, double v) -> Eigen::Matrix<float, 10, 1> {
+        auto sampling_func = [&](float u, float v) -> Eigen::Matrix<float, 10, 1> {
             if constexpr (Sampling == SamplingMethod::Bicubic) {
                 return internal::sample_bicubic(m_quadrics, u, v);
             } else if constexpr (Sampling == SamplingMethod::Nearest) {
