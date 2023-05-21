@@ -529,3 +529,30 @@ TEST_CASE("paired collapse", "[myfail][.]")
         }
     }
 }
+
+TEST_CASE("collapse_example")
+{
+    std::filesystem::path input_folder = "/home/yunfan/";
+    std::filesystem::path input_mesh_path = "area_split_result.obj";
+    std::filesystem::path position_path = input_folder / "seamPyramid_position.exr";
+    std::filesystem::path normal_path = input_folder / "seamPyramid_normal_smooth.exr";
+    std::filesystem::path height_path = input_folder / "seamPyramid_height_10.exr";
+    AdaptiveTessellation m;
+    m.mesh_preprocessing(input_mesh_path, position_path, normal_path, height_path);
+    Image image;
+    image.load(height_path, WrappingMode::MIRROR_REPEAT, WrappingMode::MIRROR_REPEAT);
+    m.mesh_parameters.m_output_folder = "test_swap_quality_pass";
+    REQUIRE(m.check_mesh_connectivity_validity());
+    m.set_parameters(
+        1e-9,
+        0.4,
+        image,
+        WrappingMode::MIRROR_REPEAT,
+        SAMPLING_MODE::BICUBIC,
+        DISPLACEMENT_MODE::MESH_3D,
+        adaptive_tessellation::ENERGY_TYPE::AREA_QUADRATURE,
+        adaptive_tessellation::EDGE_LEN_TYPE::AREA_ACCURACY,
+        1);
+    m.collapse_all_edges();
+    m.write_obj_displaced(m.mesh_parameters.m_output_folder + "/collapse_result.obj");
+}

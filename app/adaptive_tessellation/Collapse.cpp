@@ -9,6 +9,8 @@ namespace {
 constexpr static size_t dummy = std::numeric_limits<size_t>::max();
 }
 
+// sort by accuracy - order from smallest error to largest; (yunfan will add in barrier to collapse)
+// perhaps try doing collapses that mitigate error the most
 namespace {
 auto renew = [](auto& m, auto op, auto& tris) {
     auto edges = m.new_edges_after(tris);
@@ -753,6 +755,22 @@ auto AdaptiveTessellationPairedCollapseEdgeOperation::get_mirror_edge_tuple_opt(
 
     return op_cache.mirror_edge_tuple_opt;
 }
+double AdaptiveTessellationPairedCollapseEdgeOperation::priority(
+    const TriMesh& m,
+    const Tuple& edge) const
+{
+    const AdaptiveTessellation& at = static_cast<const AdaptiveTessellation&>(m);
+
+    double priority = 0.;
+    if (at.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
+        // priority already scaled by 2d edge length
+        return -at.get_cached_area_accuracy_error_per_edge(edge) * at.get_length2d(edge);
+    } else if (at.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::TRI_QUADRICS) {
+        // error is not scaled by 2d edge length
+        return -at.get_quadrics_area_accuracy_error_for_split(edge) * at.get_length2d(edge);
+    } else
+        return -at.mesh_parameters.m_get_length(edge);
+}
 
 void AdaptiveTessellation::collapse_all_edges()
 {
@@ -770,8 +788,8 @@ void AdaptiveTessellation::collapse_all_edges()
     wmtk::logger().info("size for edges to be collapse is {}", collect_all_ops.size());
     auto setup_and_execute = [&](auto executor) {
         executor.renew_neighbor_tuples = renew;
-        executor.priority = [&](auto& m, [[maybe_unused]] auto _, auto& e) {
-            return -m.get_length3d(e); // m.mesh_parameters.m_get_length(e);
+        executor.priority = [&](auto& m, auto o, auto& e) {
+            return executor.new_edit_operation_maps[o]->priority(m, e);
         };
         executor.num_threads = NUM_THREADS;
         executor.is_weight_up_to_date = [](auto& m, auto& ele) {

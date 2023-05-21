@@ -47,6 +47,7 @@ void AdaptiveTessellation::mesh_preprocessing(
     const std::filesystem::path& height_image_path)
 {
     mesh_parameters.m_position_normal_paths = {position_image_path, normal_image_path};
+    spdlog::info("{}", input_mesh_path.string());
     Eigen::MatrixXd CN, FN;
     // igl::read_triangle_mesh(input_mesh_path.string(), input_V_, input_F_);
     // igl::readOBJ(input_mesh_path.string(), V, VT, CN, F, FT, FN);
@@ -67,9 +68,10 @@ void AdaptiveTessellation::mesh_preprocessing(
     wmtk::TriMesh m_3d;
     std::vector<std::array<size_t, 3>> tris;
     for (auto f = 0; f < input_F_.rows(); f++) {
-        std::array<size_t, 3> tri = {(size_t)input_F_(f, 0),
-                                     (size_t)input_F_(f, 1),
-                                     (size_t)input_F_(f, 2)};
+        std::array<size_t, 3> tri = {
+            (size_t)input_F_(f, 0),
+            (size_t)input_F_(f, 1),
+            (size_t)input_F_(f, 2)};
         tris.emplace_back(tri);
     }
     m_3d.create_mesh(input_V_.rows(), tris);
