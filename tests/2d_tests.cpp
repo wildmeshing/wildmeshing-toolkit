@@ -32,6 +32,14 @@ TEST_CASE("load mesh and create TriMesh", "[test_mesh_creation]")
     m.create_mesh(3, tris);
     REQUIRE(m.tri_capacity() == tris.size());
     REQUIRE(m.vert_capacity() == 3);
+
+    TriMeshTuple t = m.tuple_from_tri(0);
+    REQUIRE(t.is_valid(m));
+    auto oriented_vertices = m.oriented_tri_vertices(t);
+    for(const auto& v: oriented_vertices) {
+        CHECK(v.is_ccw(m));
+    }
+
 }
 
 TEST_CASE("test generate tuples with 1 triangle", "[test_tuple_generation]")
