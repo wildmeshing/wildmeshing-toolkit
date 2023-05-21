@@ -542,10 +542,12 @@ void AdaptiveTessellation::set_image_function(
     mesh_parameters.m_wrapping_mode = wrapping_mode;
     mesh_parameters.m_image = image;
     mesh_parameters.m_get_z = [this](const DScalar& u, const DScalar& v) -> DScalar {
+        throw std::runtime_error("do not use");
         return this->mesh_parameters.m_image.get(u, v);
     };
     mesh_parameters.m_image_get_coordinate =
         [this](const double& x, const double& y) -> std::pair<int, int> {
+        throw std::runtime_error("do not use");
         auto [xx, yy] = this->mesh_parameters.m_image.get_pixel_index(x, y);
         return {
             this->mesh_parameters.m_image.get_coordinate(xx, this->mesh_parameters.m_wrapping_mode),
@@ -553,8 +555,9 @@ void AdaptiveTessellation::set_image_function(
                 yy,
                 this->mesh_parameters.m_wrapping_mode)};
     };
-    mesh_parameters.m_mipmap = wmtk::MipMap(image);
-    mesh_parameters.m_mipmap.set_wrapping_mode(wrapping_mode);
+    // skipped (not used currently, and image can be empty when using vector displacement)
+    // mesh_parameters.m_mipmap = wmtk::MipMap(image);
+    // mesh_parameters.m_mipmap.set_wrapping_mode(wrapping_mode);
 }
 
 void AdaptiveTessellation::set_displacement(const DISPLACEMENT_MODE displacement_mode)
@@ -569,10 +572,10 @@ void AdaptiveTessellation::set_displacement(const DISPLACEMENT_MODE displacement
         for (size_t i = 0; i < 2; i++) {
             std::filesystem::path path = mesh_parameters.m_position_normal_paths[i];
             wmtk::logger().debug("======= path {} {}", i, path);
-            std::array<wmtk::Image, 3> normal_images = wmtk::load_rgb_image(path);
-            position_normal_images[i * 3 + 0] = normal_images[0];
-            position_normal_images[i * 3 + 1] = normal_images[1];
-            position_normal_images[i * 3 + 2] = normal_images[2];
+            std::array<wmtk::Image, 3> rgb_image = wmtk::load_rgb_image(path);
+            position_normal_images[i * 3 + 0] = rgb_image[0];
+            position_normal_images[i * 3 + 1] = rgb_image[1];
+            position_normal_images[i * 3 + 2] = rgb_image[2];
         }
         displacement_ptr = std::make_shared<DisplacementMesh>(
             mesh_parameters.m_image,
@@ -587,6 +590,16 @@ void AdaptiveTessellation::set_displacement(const DISPLACEMENT_MODE displacement
             mesh_parameters.m_image,
             mesh_parameters.m_sampling_mode);
         break;
+    case DISPLACEMENT_MODE::VECTOR: {
+        // Directly use baked positions as our displaced 3d coordinate
+        auto displaced_positions = wmtk::load_rgb_image(mesh_parameters.m_position_normal_paths[0]);
+        displacement_ptr = std::make_shared<DisplacementVector>(
+            displaced_positions,
+            mesh_parameters.m_sampling_mode,
+            mesh_parameters.m_scale,
+            mesh_parameters.m_offset);
+        break;
+    }
     default: break;
     }
     mesh_parameters.m_displacement = displacement_ptr;
@@ -794,6 +807,7 @@ double AdaptiveTessellation::get_length_n_implicit_points(const Tuple& edge_tupl
 
 double AdaptiveTessellation::get_length_1ptperpixel(const Tuple& edge_tuple) const
 {
+    throw std::runtime_error("do no use");
     const auto& vid1 = edge_tuple.vid(*this);
     const auto& vid2 = edge_tuple.switch_vertex(*this).vid(*this);
     const auto& v12d = vertex_attrs[vid1].pos;

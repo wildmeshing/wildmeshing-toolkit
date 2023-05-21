@@ -12,17 +12,18 @@
 #include "autodiff.h"
 
 namespace wmtk {
-enum class DISPLACEMENT_MODE { MESH_3D, PLANE };
+
+enum class DISPLACEMENT_MODE { MESH_3D = 0, PLANE = 1, VECTOR = 2 };
+
 class Displacement
 {
 public:
     using DScalar = DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d>;
-    virtual ~Displacement(){};
+    virtual ~Displacement() = default;
 
 public:
     virtual Eigen::Matrix<double, 3, 1> get(double x, double y) const = 0;
     virtual Eigen::Matrix<DScalar, 3, 1> get(const DScalar& x, const DScalar& y) const = 0;
-    virtual Eigen::Matrix<double, 3, 1> get_position(double u, double v) const = 0;
     virtual double get_error_per_edge(
         const Eigen::Matrix<double, 2, 1>& p1,
         const Eigen::Matrix<double, 2, 1>& p2) const = 0;
@@ -39,10 +40,6 @@ template <typename Derived>
 class DisplacementImage : public Displacement
 {
 protected:
-    wmtk::Image m_image; // default, used for height map displaced value
-    std::unique_ptr<wmtk::Sampling> m_sampler;
-
-protected:
     struct QuadrCache
     {
         wmtk::Quadrature quad;
@@ -51,12 +48,9 @@ protected:
     tbb::enumerable_thread_specific<QuadrCache> m_cache;
 
 public:
-    DisplacementImage(const wmtk::Image img, const SAMPLING_MODE sampling_mode)
-        : m_image(img)
-    {
-        assert(m_image.width() == m_image.height());
-        set_sampling_mode(sampling_mode);
-    }
+    DisplacementImage() = default;
+    virtual ~DisplacementImage() = default;
+
     // prevent DisplacementImage being accidentally moved or copied
     DisplacementImage(DisplacementImage&&) = delete;
     DisplacementImage& operator=(DisplacementImage&&) = delete;
@@ -64,10 +58,6 @@ public:
     DisplacementImage& operator=(const DisplacementImage&) = delete;
 
 public:
-    virtual void set_sampling_mode(const SAMPLING_MODE sampling_mode)
-    {
-        m_sampler = create_sampler(m_image, sampling_mode);
-    }
     Eigen::Matrix<double, 3, 1> get(double u, double v) const override
     {
         return static_cast<const Derived*>(this)->get(u, v);
@@ -78,10 +68,8 @@ public:
         return static_cast<const Derived*>(this)->get(u, v);
     }
 
-    Eigen::Matrix<double, 3, 1> get_position(double u, double v) const override
-    {
-        return static_cast<const Derived*>(this)->get_position(u, v);
-    }
+protected:
+    virtual std::pair<int, int> get_coordinate(double x, double y) const = 0;
 
 public:
     inline double get_error_per_edge(
@@ -107,13 +95,8 @@ public:
         auto p1_displaced = get(uv1(0), uv1(1));
         auto p2_displaced = get(uv2(0), uv2(1));
         // get the pixel index of p1 and p2
-        auto get_coordinate = [&](const T& x, const T& y) -> std::pair<int, int> {
-            auto [xx, yy] = m_image.get_pixel_index(get_value(x), get_value(y));
-            return {m_image.get_coordinate(xx, m_image.get_wrapping_mode_x()),
-                    m_image.get_coordinate(yy, m_image.get_wrapping_mode_y())};
-        };
-        auto [xx1, yy1] = get_coordinate(uv1(0), uv1(1));
-        auto [xx2, yy2] = get_coordinate(uv2(0), uv2(1));
+        auto [xx1, yy1] = get_coordinate(get_value(uv1(0)), get_value(uv1(1)));
+        auto [xx2, yy2] = get_coordinate(get_value(uv2(0)), get_value(uv2(1)));
         // get all the pixels in between p1 and p2
         auto pixel_num = std::max(abs(xx2 - xx1), abs(yy2 - yy1));
         if (pixel_num <= 0) return T(0.);
@@ -199,11 +182,6 @@ public:
             }
             return ret;
         };
-        auto get_coordinate = [&](const double& x, const double& y) -> std::pair<int, int> {
-            auto [xx, yy] = m_image.get_pixel_index(get_value(x), get_value(y));
-            return {m_image.get_coordinate(xx, m_image.get_wrapping_mode_x()),
-                    m_image.get_coordinate(yy, m_image.get_wrapping_mode_y())};
-        };
         auto bbox_min = bbox.min();
         auto bbox_max = bbox.max();
         auto [xx1, yy1] = get_coordinate(bbox_min(0), bbox_min(1));
@@ -282,20 +260,58 @@ public:
     }
 };
 
-class DisplacementMesh : public DisplacementImage<DisplacementMesh>
+template <typename Derived>
+class DisplacementHeight : public DisplacementImage<Derived>
+{
+protected:
+    wmtk::Image m_image; // default, used for height map displaced value
+    std::unique_ptr<wmtk::Sampling> m_sampler;
+
+public:
+    DisplacementHeight(wmtk::Image img, const SAMPLING_MODE sampling_mode)
+        : m_image(std::move(img))
+    {
+        assert(m_image.width() == m_image.height());
+        set_sampling_mode(sampling_mode);
+    }
+
+    ~DisplacementHeight() = default;
+
+    // prevent DisplacementHeight being accidentally moved or copied
+    DisplacementHeight(DisplacementHeight&&) = delete;
+    DisplacementHeight& operator=(DisplacementHeight&&) = delete;
+    DisplacementHeight(const DisplacementHeight&) = delete;
+    DisplacementHeight& operator=(const DisplacementHeight&) = delete;
+
+protected:
+    virtual void set_sampling_mode(const SAMPLING_MODE sampling_mode)
+    {
+        m_sampler = create_sampler(m_image, sampling_mode);
+    }
+
+    virtual std::pair<int, int> get_coordinate(double x, double y) const override
+    {
+        auto [xx, yy] = m_image.get_pixel_index(get_value(x), get_value(y));
+        return {
+            m_image.get_coordinate(xx, m_image.get_wrapping_mode_x()),
+            m_image.get_coordinate(yy, m_image.get_wrapping_mode_y())};
+    }
+};
+
+class DisplacementMesh : public DisplacementHeight<DisplacementMesh>
 {
 public:
     using DScalar = DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d>;
-    using Super = DisplacementImage<DisplacementMesh>;
+    using Super = DisplacementHeight<DisplacementMesh>;
 
 public:
     DisplacementMesh(
-        const wmtk::Image img,
+        wmtk::Image img,
         std::array<wmtk::Image, 6> position_normal_images,
         const SAMPLING_MODE sampling_mode,
         double scale,
         Eigen::Matrix<double, 3, 1> offset)
-        : DisplacementImage(std::move(img), sampling_mode)
+        : DisplacementHeight(std::move(img), sampling_mode)
         , m_normalization_scale(scale)
         , m_normalization_offset(offset)
     {
@@ -306,6 +322,8 @@ public:
         assert(m_normal_image[0].width() != 0);
     };
 
+    ~DisplacementMesh() = default;
+
 protected:
     std::array<wmtk::Image, 3> m_position_image;
     std::array<std::unique_ptr<wmtk::Sampling>, 3> m_position_sampler;
@@ -314,8 +332,8 @@ protected:
     double m_normalization_scale = 1.0;
     Eigen::Vector3d m_normalization_offset = Eigen::Vector3d::Zero();
 
-public:
-    void set_sampling_mode(const wmtk::SAMPLING_MODE sampling_mode) override
+protected:
+    virtual void set_sampling_mode(const wmtk::SAMPLING_MODE sampling_mode) override
     {
         Super::set_sampling_mode(sampling_mode);
         for (auto i = 0; i < 3; i++) {
@@ -323,6 +341,8 @@ public:
             m_normal_sampler[i] = create_sampler(m_normal_image[i], sampling_mode);
         }
     }
+
+public:
     void set_position_normal_images(std::array<wmtk::Image, 6> images)
     {
         // first 3 of the input are position maps
@@ -332,7 +352,7 @@ public:
             m_normal_image[i] = images[3 + i];
         }
     }
-    Eigen::Matrix<double, 3, 1> get(double u, double v) const
+    Eigen::Matrix<double, 3, 1> get(double u, double v) const override
     {
         double z = m_sampler->sample(u, v);
         Eigen::Matrix<double, 3, 1> displace_3d;
@@ -346,7 +366,7 @@ public:
         return displace_3d;
     }
 
-    Eigen::Matrix<DScalar, 3, 1> get(const DScalar& u, const DScalar& v) const
+    Eigen::Matrix<DScalar, 3, 1> get(const DScalar& u, const DScalar& v) const override
     {
         DScalar z = m_sampler->sample(u, v);
         Eigen::Matrix<DScalar, 3, 1> displace_3d;
@@ -359,28 +379,86 @@ public:
         }
         return displace_3d;
     }
+};
 
-    Eigen::Matrix<double, 3, 1> get_position(double u, double v) const
+class DisplacementVector : public DisplacementImage<DisplacementMesh>
+{
+public:
+    using DScalar = DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d>;
+    using Super = DisplacementImage<DisplacementVector>;
+
+public:
+    DisplacementVector(
+        std::array<wmtk::Image, 3> displaced_positions,
+        const SAMPLING_MODE sampling_mode,
+        double scale,
+        Eigen::Matrix<double, 3, 1> offset)
+        : m_displaced_positions_image(displaced_positions)
+        , m_normalization_scale(scale)
+        , m_normalization_offset(offset)
+    {
+        set_sampling_mode(sampling_mode);
+        assert(m_displaced_positions_image[0].width() != 0);
+    };
+
+    ~DisplacementVector() = default;
+
+protected:
+    std::array<wmtk::Image, 3> m_displaced_positions_image;
+    std::array<std::unique_ptr<wmtk::Sampling>, 3> m_displaced_positions_sampler;
+    double m_normalization_scale = 1.0;
+    Eigen::Vector3d m_normalization_offset = Eigen::Vector3d::Zero();
+
+protected:
+    virtual std::pair<int, int> get_coordinate(double x, double y) const override
+    {
+        const auto& image = m_displaced_positions_image[0];
+        auto [xx, yy] = image.get_pixel_index(get_value(x), get_value(y));
+        return {
+            image.get_coordinate(xx, image.get_wrapping_mode_x()),
+            image.get_coordinate(yy, image.get_wrapping_mode_y())};
+    }
+
+    void set_sampling_mode(const wmtk::SAMPLING_MODE sampling_mode)
+    {
+        for (auto i = 0; i < 3; i++) {
+            m_displaced_positions_sampler[i] =
+                create_sampler(m_displaced_positions_image[i], sampling_mode);
+        }
+    }
+
+public:
+    Eigen::Matrix<double, 3, 1> get(double u, double v) const override
     {
         Eigen::Matrix<double, 3, 1> displace_3d;
         for (auto i = 0; i < 3; i++) {
-            double p = m_position_sampler[i]->sample(u, v);
-            displace_3d(i, 0) = p * m_normalization_scale - m_normalization_offset(i, 0);
+            double p = m_displaced_positions_sampler[i]->sample(u, v);
+            displace_3d[i] = p * m_normalization_scale - m_normalization_offset[i];
+        }
+        return displace_3d;
+    }
+
+    Eigen::Matrix<DScalar, 3, 1> get(const DScalar& u, const DScalar& v) const override
+    {
+        Eigen::Matrix<DScalar, 3, 1> displace_3d;
+        for (auto i = 0; i < 3; i++) {
+            DScalar p = m_displaced_positions_sampler[i]->sample(u, v);
+            displace_3d[i] = p * m_normalization_scale - m_normalization_offset[i];
         }
         return displace_3d;
     }
 };
 
-class DisplacementPlane : public DisplacementImage<DisplacementPlane>
+class DisplacementPlane : public DisplacementHeight<DisplacementPlane>
 {
     using DScalar = DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d>;
 
 public:
     DisplacementPlane(const wmtk::Image img, const SAMPLING_MODE sampling_mode)
-        : DisplacementImage(img, sampling_mode){};
+        : DisplacementHeight(img, sampling_mode){};
 
 public:
-    Eigen::Matrix<double, 3, 1> get(double u, double v) const
+    Eigen::Matrix<double, 3, 1> get(double u, double v) const override
     {
         auto z = m_sampler->sample(u, v);
         Eigen::Matrix<double, 3, 1> coord_3d;
@@ -388,7 +466,7 @@ public:
         return coord_3d;
     }
 
-    Eigen::Matrix<DScalar, 3, 1> get(const DScalar& u, const DScalar& v) const
+    Eigen::Matrix<DScalar, 3, 1> get(const DScalar& u, const DScalar& v) const override
     {
         auto z = m_sampler->sample(u, v);
         Eigen::Matrix<DScalar, 3, 1> coord_3d;
