@@ -120,6 +120,8 @@ int main(int argc, char** argv)
         surf_mesh.consolidate_mesh();
     }
 
+    params.output_path = output_path;
+
     //// get the simplified input
     std::vector<Eigen::Vector3d> vsimp(surf_mesh.vert_capacity());
     std::vector<std::array<size_t, 3>> fsimp(surf_mesh.tri_capacity());
