@@ -1707,7 +1707,7 @@ bool tetwild::TetWild::check_vertex_param_type()
             //     flag = false;
             // }
             if (m_vertex_attribute[vid].face_nearly_param_type_with_ineffective.size() == 0) {
-                std::cout << "missing nearly face param" << std::endl;
+                // std::cout << "missing nearly face param" << std::endl;
                 file << "v " << m_vertex_attribute[vid].m_posf[0] << " "
                      << m_vertex_attribute[vid].m_posf[1] << " "
                      << m_vertex_attribute[vid].m_posf[2] << " " << std::endl;
