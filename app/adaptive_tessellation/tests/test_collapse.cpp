@@ -533,8 +533,7 @@ TEST_CASE("paired collapse", "[myfail][.]")
 TEST_CASE("collapse_example")
 {
     std::filesystem::path input_folder = "/home/yunfan/";
-    std::filesystem::path input_mesh_path = "/home/yunfan/wildmeshing-toolkit/build_release_ninja/"
-                                            "test_swap_accuracy_pass/area_swap_accuracy_result.obj";
+    std::filesystem::path input_mesh_path = "/home/yunfan/data/area_swap_accuracy_result.obj";
 
 
     std::filesystem::path position_path = input_folder / "seamPyramid_position.exr";
