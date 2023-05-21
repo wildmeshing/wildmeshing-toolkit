@@ -670,6 +670,7 @@ void AdaptiveTessellation::write_obj(const std::filesystem::path& path)
 
 void AdaptiveTessellation::write_obj_displaced(const std::filesystem::path& path)
 {
+    wmtk::logger().info("============>> writing to {}", path);
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     Eigen::MatrixXd CN;

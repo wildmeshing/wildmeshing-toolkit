@@ -299,6 +299,7 @@ void AreaAccuracyEnergy::eval(State& state, DofsToPositions& dof_to_positions) c
 // measure edge quadrature. For each one-ring triangle only takes one edge, which will cover all the
 // one-ring edges without repeat
 {
+    lagrange::enable_fpe();
     DiffScalarBase::setVariableCount(2);
     DScalar total_energy = DScalar(0);
     assert(state.two_opposite_vertices.rows() == 1);
@@ -309,22 +310,19 @@ void AreaAccuracyEnergy::eval(State& state, DofsToPositions& dof_to_positions) c
         DScalar(state.two_opposite_vertices(0, 3));
 
 
-    Eigen::Matrix<DScalar, 3, 1> v1 = m_displ->get(x1, y1);
     DScalar v2u = DScalar(state.two_opposite_vertices(0, 0));
     DScalar v2v = DScalar(state.two_opposite_vertices(0, 1));
-    Eigen::Matrix<DScalar, 3, 1> v2 = m_displ->get(v2u, v2v);
+
     DScalar v3u = DScalar(state.two_opposite_vertices(0, 2));
     DScalar v3v = DScalar(state.two_opposite_vertices(0, 3));
-    Eigen::Matrix<DScalar, 3, 1> v3 = m_displ->get(v3u, v3v);
-    Eigen::Matrix<DScalar, 3, 1> V2_V1;
-    V2_V1 = v2 - v1;
-    Eigen::Matrix<DScalar, 3, 1> V3_V1;
-    V3_V1 = v3 - v1;
+
+
     // check if area is either inverted or smaller than certain A_hat
     DScalar area;
-    area = (V2_V1.cross(V3_V1)).squaredNorm();
+    // area = (V2_V1.cross(V3_V1)).squaredNorm();
+    area = sqrt(pow((v2u - x1) * (v3v - y1) + (v2v - y1) * (v3u - x1), 2)) / 2.0;
     // wmtk::logger().info("----current area {}", area.getValue());
-    double A_hat = 1; // this is arbitrary now
+    double A_hat = 1e-6; // this is arbitrary now
     assert(A_hat > 0);
     if (area <= 0) {
         total_energy += std::numeric_limits<double>::infinity();

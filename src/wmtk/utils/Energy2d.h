@@ -9,8 +9,8 @@
 #include "Displacement.h"
 #include "Image.h"
 #include "Logger.hpp"
-#include "autodiff.h"
 #include "Quadric.h"
+#include "autodiff.h"
 
 namespace wmtk {
 using DofVector = Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 2, 1>;
@@ -46,6 +46,7 @@ public:
 
     std::pair<DScalar, DScalar> eval(const DofVector& dofx) const
     {
+        lagrange::enable_fpe();
         if (dofx.size() == 2) {
             DiffScalarBase::setVariableCount(2);
             DScalar x1(0, dofx(0));
@@ -170,10 +171,10 @@ public:
         : m_displ(std::move(displ))
     {}
 
-    std::vector<wmtk::Quadric<double>> &facet_quadrics() { return m_facet_quadrics; }
+    std::vector<wmtk::Quadric<double>>& facet_quadrics() { return m_facet_quadrics; }
 
 public:
-    void eval([[maybe_unused]] State& state) const override {};
+    void eval([[maybe_unused]] State& state) const override{};
     void eval(State& state, DofsToPositions& x) const override;
 };
 

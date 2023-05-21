@@ -195,6 +195,7 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::after(
             m.mesh_parameters.m_boundary.t_to_uv(nminfos[i + 1].curve_id, state.dofx(0));
     }
     assert(m.invariants(one_ring_tris));
+    m.mesh_parameters.m_gradient += state.gradient;
     const auto smooth_end_time = lagrange::get_timestamp();
     wmtk::logger().info(
         "smooth time: {}",
@@ -368,6 +369,7 @@ void adaptive_tessellation::AdaptiveTessellation::smooth_all_vertices()
     }
     if (auto quadric_energy = dynamic_cast<QuadricEnergy*>(mesh_parameters.m_energy.get());
         quadric_energy) {
+        throw std::runtime_error("quadric energy is not supported");
         prepare_quadrics(*quadric_energy);
         wmtk::logger().info("!!!!!!! using quadric");
     }
@@ -400,10 +402,14 @@ void adaptive_tessellation::AdaptiveTessellation::smooth_all_vertices()
                 write_obj_displaced(
                     mesh_parameters.m_output_folder + fmt::format("/smooth_{:03d}.obj", itr));
             }
-
             itr++;
-        } while ((mesh_parameters.m_gradient / vert_capacity()).stableNorm() > 1e-4 && itr < 10);
+        } while ((mesh_parameters.m_gradient / vert_capacity()).stableNorm() >
+                     mesh_parameters.m_accuracy_threshold &&
+                 itr < 10);
         wmtk::logger().info("===== terminate smooth after {} itrs", itr);
+        wmtk::logger().info(
+            "gradient norm: {}",
+            (mesh_parameters.m_gradient / vert_capacity()).stableNorm());
         time = timer.getElapsedTime();
         wmtk::logger().info("vertex smoothing operation time serial: {}s", time);
     }

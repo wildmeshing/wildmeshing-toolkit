@@ -263,7 +263,7 @@ double AdaptiveTessellation::barrier_energy_per_face(
     Eigen::Vector3d v3_v1 = C - A;
     double area = (v2_v1.cross(v3_v1)).squaredNorm();
     // wmtk::logger().info("----current area {}", area.getValue());
-    double A_hat = 0.01; // this is arbitrary now
+    double A_hat = 1e-6; // this is arbitrary now
     assert(A_hat > 0);
     if (area <= 0) {
         return std::numeric_limits<double>::infinity();
