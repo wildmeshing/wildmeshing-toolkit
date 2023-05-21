@@ -415,7 +415,6 @@ bool AdaptiveTessellationCollapseEdgeOperation::before(AdaptiveTessellation& m, 
     if (!wmtk::TriMeshEdgeCollapseOperation::before(m, t)) {
         return false;
     }
-    wmtk::logger().info("pass in before");
     if (!check_vertex_mergeability(m, t)) {
         wmtk::logger().info("fail in mergeability check");
         return false;

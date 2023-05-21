@@ -254,22 +254,29 @@ std::pair<Eigen::MatrixXi, Eigen::MatrixXi> AdaptiveTessellation::seam_edges_set
     return {E0, E1};
 } // namespace adaptive_tessellation
 
-double AdaptiveTessellation::barrier_energy_per_face(TriMesh::Tuple& t) const
+double AdaptiveTessellation::barrier_energy_per_face(const TriMesh::Tuple& t) const
 {
     // get the 3 vertices of the triangle
     std::array<Tuple, 3> local_tuples = oriented_tri_vertices(t);
     const Eigen::Vector2d& p1 = vertex_attrs[local_tuples[0].vid(*this)].pos;
     const Eigen::Vector2d& p2 = vertex_attrs[local_tuples[1].vid(*this)].pos;
     const Eigen::Vector2d& p3 = vertex_attrs[local_tuples[2].vid(*this)].pos;
-    auto v1 = mesh_parameters.m_displacement->get(p1(0), p1(1));
-    auto v2 = mesh_parameters.m_displacement->get(p2(0), p2(1));
-    auto v3 = mesh_parameters.m_displacement->get(p3(0), p3(1));
+    Eigen::Vector3d v1 = mesh_parameters.m_displacement->get(p1(0), p1(1));
+    Eigen::Vector3d v2 = mesh_parameters.m_displacement->get(p2(0), p2(1));
+    Eigen::Vector3d v3 = mesh_parameters.m_displacement->get(p3(0), p3(1));
+    return barrier_energy_per_face(v1, v2, v3);
+}
+double AdaptiveTessellation::barrier_energy_per_face(
+    const Eigen::Vector3d& A,
+    const Eigen::Vector3d& B,
+    const Eigen::Vector3d& C) const
+{
     /// energy barrier term
-    Eigen::Matrix<double, 3, 1> v2_v1 = v2 - v1;
-    Eigen::Matrix<double, 3, 1> v3_v1 = v3 - v1;
+    Eigen::Vector3d v2_v1 = B - A;
+    Eigen::Vector3d v3_v1 = C - A;
     double area = (v2_v1.cross(v3_v1)).squaredNorm();
     // wmtk::logger().info("----current area {}", area.getValue());
-    double A_hat = 1; // this is arbitrary now
+    double A_hat = 1e-6; // this is arbitrary now
     assert(A_hat > 0);
     if (area <= 0) {
         return std::numeric_limits<double>::infinity();
