@@ -445,6 +445,17 @@ public:
     EdgeAttributes& get_edge_attrs(const Tuple& t);
     const EdgeAttributes& get_edge_attrs(const Tuple& t) const;
 
+    // accept split if max per face energy of the new tris is greater than the acceptance bound
+    bool scheduling_accept_for_split(const std::vector<Tuple>& new_tris, double acceptance) const;
+    // accept collapse if max per face energy of the new tris is smaller than the acceptance bound
+    bool scheduling_accept_for_collapse(const std::vector<Tuple>& new_tris, double acceptance)
+        const;
+    // accept swap if max per face energy of the new tris is smaller than the acceptance bound
+    // and Daniel's other condition
+    bool scheduling_accept_for_swap(const std::vector<Tuple>& new_tris, double acceptance) const;
+    double get_2d_tri_area(const Tuple& t) const;
+    double get_3d_tri_area(const Tuple& t) const;
+    double get_max_energy_area_ratio(const std::vector<Tuple>& new_tris) const;
 
     ////// debug/unit test helper functions
     double get_two_faces_quadrics_error_for_edge(const Tuple& e0) const;
