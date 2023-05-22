@@ -229,7 +229,7 @@ int main(int argc, char** argv)
     //    m.write_obj_displaced("after_smooth.obj");
     //}
 
-    m.consolidate_mesh();
+    // m.consolidate_mesh();
 
     auto finish_time = lagrange::get_timestamp();
     auto duration = lagrange::timestamp_diff_in_seconds(start_time, finish_time);
