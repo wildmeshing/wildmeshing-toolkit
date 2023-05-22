@@ -362,7 +362,18 @@ void AdaptiveTessellation::export_mesh_mapped_on_input(
 {
     auto tri_signed_area =
         [](const Eigen::Vector2d& a, const Eigen::Vector2d& b, const Eigen::Vector2d& c) -> double {
-        return 0.5 * (a[0] * (b[1] - c[1]) + b[0] * (c[1] - a[1]) + c[0] * (a[1] - b[1]));
+        //// Heron's formula
+        // const double l_c = (b - a).norm();
+        // const double l_a = (c - b).norm();
+        // const double l_b = (a - c).norm();
+        // const double s = 0.5 * (l_a + l_b + l_c);
+        // return std::sqrt(s * (s - l_a) * (s - l_b) * (s - l_c));
+
+        // return 0.5 * (a[0] * (b[1] - c[1]) + b[0] * (c[1] - a[1]) + c[0] * (a[1] - b[1]));
+
+        Eigen::Matrix3d d;
+        d << a[0], a[1], 1, b[0], b[1], 1, c[0], c[1], 1;
+        return 0.5 * d.determinant();
     };
 
     auto compute_barycentric_coordinates = [tri_signed_area](
