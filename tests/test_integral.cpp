@@ -149,7 +149,7 @@ void test_integral_reference(
         expected[f] = displacement.get_error_per_triangle(triangle);
     });
 
-    for (int f = 0; f < mesh.get_num_facets(); ++f) {
+    for (int f = 0; f < static_cast<int>(mesh.get_num_facets()); ++f) {
         wmtk::logger().debug(
             "error: {}",
             std::abs(expected[f] - computed_errors[f] * scale * scale));
@@ -224,6 +224,18 @@ void test_sampling(std::array<wmtk::Image, 3> displaced)
             }
         }
     }
+
+    // Check two bicubic sampling implementations on random positions
+    std::uniform_real_distribution<float> dist_uv(0.0f, 1.0f);
+    for (int k = 0; k < 100; ++k) {
+        const float u = dist_uv(gen);
+        const float v = dist_uv(gen);
+        const auto bicubic_new = wmtk::internal::sample_bicubic(displaced, u, v);
+        const auto bicubic_old = wmtk::internal::sample_bicubic_old(displaced, u, v);
+        for (size_t i = 0; i < 3; ++i) {
+            REQUIRE(bicubic_new[i] == bicubic_old[i]);
+        }
+    }
 }
 
 } // namespace
@@ -267,9 +279,9 @@ TEST_CASE("Morton Z-Order", "[utils][integral]")
     auto displacement_image_zorder =
         wmtk::internal::convert_image_to_morton_z_order(displacement_image_linear);
 
-    auto planes = displacement_image_linear.size();
-    auto width = displacement_image_linear[0].width();
-    auto height = displacement_image_linear[0].height();
+    auto planes = static_cast<int>(displacement_image_linear.size());
+    auto width = static_cast<int>(displacement_image_linear[0].width());
+    auto height = static_cast<int>(displacement_image_linear[0].height());
     for (int k = 0; k < planes; ++k) {
         for (int y = 0; y < height; ++y) {
             for (int x = 0; x < width; ++x) {

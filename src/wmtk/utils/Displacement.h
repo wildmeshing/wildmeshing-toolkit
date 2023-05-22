@@ -189,7 +189,6 @@ public:
         auto num_pixels = std::max(abs(xx2 - xx1), abs(yy2 - yy1)) + 1;
         assert(num_pixels > 0);
         const double pixel_size = bbox.diagonal().maxCoeff() / num_pixels;
-        typedef std::integral_constant<int, 2> cached_t;
 
         // calculate the barycentric coordinate of the a point using u, v cooridnates
         // returns the 3d coordinate on the current mesh
