@@ -37,7 +37,7 @@ T triangle_2d_area(
 {
     auto B_A = B - A;
     auto C_A = C - A;
-    double area = 0.5 * abs(B_A.x() * C_A.y() - B_A.y() * C_A.x());
+    T area = static_cast<T>(0.5) * abs(B_A.x() * C_A.y() - B_A.y() * C_A.x());
     return area;
 }
 

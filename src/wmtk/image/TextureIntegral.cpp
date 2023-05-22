@@ -2,11 +2,11 @@
 
 #include "helpers.h"
 
-#include <wmtk/quadrature/ClippedQuadrature.h>
-
 #include <lagrange/utils/assert.h>
 #include <tbb/enumerable_thread_specific.h>
 #include <tbb/parallel_for.h>
+#include <wmtk/quadrature/ClippedQuadrature.h>
+#include <wmtk/utils/TriQualityUtils.hpp>
 
 namespace wmtk {
 namespace {
@@ -57,9 +57,8 @@ T get_error_per_triangle_exact(
     };
     auto get_coordinate = [&](const double& x, const double& y) -> std::pair<int, int> {
         auto [xx, yy] = m_image.get_pixel_index(get_value(x), get_value(y));
-        return {
-            m_image.get_coordinate(xx, m_image.get_wrapping_mode_x()),
-            m_image.get_coordinate(yy, m_image.get_wrapping_mode_y())};
+        return {m_image.get_coordinate(xx, m_image.get_wrapping_mode_x()),
+                m_image.get_coordinate(yy, m_image.get_wrapping_mode_y())};
     };
     auto bbox_min = bbox.min();
     auto bbox_max = bbox.max();
@@ -133,6 +132,12 @@ T get_error_per_triangle_exact(
             }
         }
     }
+    // scaling by jacobian
+    value = value * wmtk::triangle_3d_area<T>(p1, p2, p3);
+    value = value / wmtk::triangle_2d_area<T>(
+                        triangle.row(0).transpose(),
+                        triangle.row(1).transpose(),
+                        triangle.row(2).transpose());
     return value;
 }
 
