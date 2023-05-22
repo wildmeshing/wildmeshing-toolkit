@@ -18,7 +18,7 @@ auto split_renew = [](auto& m, auto op, auto& tris) {
 
 auto split_no_renew = [](auto& m, auto op, auto& tris) {
     auto optup = std::vector<std::pair<std::string, wmtk::TriMesh::Tuple>>();
-
+    wmtk::logger().info("!!!!! no renewal !!!!!");
     return optup;
 };
 
@@ -82,6 +82,16 @@ bool AdaptiveTessellationSplitEdgeOperation::before(AdaptiveTessellation& m, con
 {
     auto& my_op_cache = op_cache.local();
     if (wmtk::TriMeshSplitEdgeOperation::before(m, t)) {
+        // check acceptance after the energy cache update
+        std::vector<TriMesh::Tuple> input_tris;
+        input_tris.emplace_back(t);
+        if (t.switch_face(m).has_value()) input_tris.emplace_back(t.switch_face(m).value());
+        if (!m.scheduling_accept_for_split(input_tris, m.mesh_parameters.m_accuracy_threshold)) {
+            wmtk::logger().info("split edge reject");
+            return false;
+        }
+        wmtk::logger().info("split edge accepted");
+
         // record the operation cache
         my_op_cache.v1 = t.vid(m);
         my_op_cache.v2 = t.switch_vertex(m).vid(m);
@@ -208,6 +218,7 @@ bool AdaptiveTessellationSplitEdgeOperation::after(
 
     // for AREA_ACCURACY
     m.update_energy_cache(modified_triangles(m));
+    return ret_data.success;
     // check acceptance after the energy cache update
     if (m.scheduling_accept_for_split(ret_data.new_tris, m.mesh_parameters.m_accuracy_threshold)) {
         wmtk::logger().info("split edge accepted");
@@ -264,9 +275,9 @@ bool AdaptiveTessellationPairedSplitEdgeOperation::before(AdaptiveTessellation& 
         m.is_seam_edge(t) ? mirror_split_edge.before(m, mirror_edge_tuple.value()) : true;
     if (!m.mesh_parameters.m_do_not_output) {
         // m.write_vtk(m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}.vtu", cnt));
-        int cnt = g_cnt++;
-        m.write_perface_vtk(
-            m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}_face.vtu", cnt));
+        // int cnt = g_cnt++;
+        // m.write_perface_vtk(
+        //     m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}_face.vtu", cnt));
 #if 0
          int cnt = g_cnt++;
          if (cnt % 1000 == 0) {
@@ -571,12 +582,13 @@ void AdaptiveTessellation::split_all_edges()
     wmtk::logger().info("size for edges to be split is {}", collect_all_ops.size());
     auto setup_and_execute = [&](auto executor) {
         addPairedCustomOps(executor);
-        executor.renew_neighbor_tuples = split_no_renew;
+        executor.renew_neighbor_tuples = split_renew;
         executor.priority = [&](auto& m, auto _, auto& e) {
             double priority = 0.;
             if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
                 // priority already scaled by 2d edge length
-                return m.get_cached_area_accuracy_error_per_edge(e) * m.get_length2d(e);
+                return m.get_length2d(e);
+                // return m.get_cached_area_accuracy_error_per_edge(e) * m.get_length2d(e);
             } else if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::TRI_QUADRICS) {
                 // error is not scaled by 2d edge length
                 return m.get_quadrics_area_accuracy_error_for_split(e) * m.get_length2d(e);
@@ -590,8 +602,9 @@ void AdaptiveTessellation::split_all_edges()
             double unscaled_total_error = 0.;
 
             if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
-                unscaled_total_error = m.get_cached_area_accuracy_error_per_edge(tup);
-                total_error = unscaled_total_error * m.get_length2d(tup);
+                // unscaled_total_error = m.get_cached_area_accuracy_error_per_edge(tup);
+                // total_error = unscaled_total_error * m.get_length2d(tup);
+                total_error = m.get_length2d(tup);
             } else if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::TRI_QUADRICS) {
                 unscaled_total_error = m.get_quadrics_area_accuracy_error_for_split(tup);
                 total_error = unscaled_total_error * m.get_length2d(tup);

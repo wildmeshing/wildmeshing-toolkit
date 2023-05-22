@@ -53,8 +53,10 @@ inline bool is_degenerate_2d_oriented_triangle_array(const std::array<float, 6>&
     auto res = igl::predicates::orient2d(A, B, C);
     if (res != igl::predicates::Orientation::POSITIVE)
         return true;
-    else
+    else {
+        if (triangle_2d_area(A, B, C) < 1e-10) return true;
         return false;
+    }
 }
 
 using DofVector = Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 2, 1>;
