@@ -237,12 +237,13 @@ TEST_CASE("2 rand tris")
                         input_tri[((i + 2) * 2) % 6],
                         input_tri[((i + 2) * 2 + 1) % 6]);
 
-                    state.target_triangle = {target_tri[i * 2],
-                                             target_tri[i * 2 + 1],
-                                             target_tri[((i + 1) % 3) * 2],
-                                             target_tri[((i + 1) % 3) * 2 + 1],
-                                             target_tri[((i + 2) % 3) * 2],
-                                             target_tri[((i + 2) % 3) * 2 + 1]};
+                    state.target_triangle = {
+                        target_tri[i * 2],
+                        target_tri[i * 2 + 1],
+                        target_tri[((i + 1) % 3) * 2],
+                        target_tri[((i + 1) % 3) * 2 + 1],
+                        target_tri[((i + 2) % 3) * 2],
+                        target_tri[((i + 2) % 3) * 2 + 1]};
 
                     wmtk::newton_method_with_fallback(*E, b, nminfo, dofx, state);
                     E->eval(state, dof_to_pos);

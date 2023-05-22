@@ -158,6 +158,12 @@ public:
 
 TEST_CASE("Boundary Parameterization", "[utils][boundary]")
 {
+    // SECTION("creature")
+    // {
+    //     BoundaryTester::test_boundary_parameterization(
+    //         lagrange::io::load_mesh<lagrange::SurfaceMesh32d>("creature_clean.obj"),
+    //         186);
+    // }
     SECTION("blub")
     {
         BoundaryTester::test_boundary_parameterization(

@@ -6,22 +6,42 @@
 #include "wmtk/TriMesh.h"
 
 namespace wmtk {
+
+void unique_vertex_tuples(const TriMesh& m, std::vector<TriMesh::Tuple>& vertices)
+{
+    std::sort(
+        vertices.begin(),
+        vertices.end(),
+        [&](const TriMesh::Tuple& a, const TriMesh::Tuple& b) -> bool {
+            return a.vid(m) < b.vid(m);
+        });
+    vertices.erase(std::unique(vertices.begin(), vertices.end()), vertices.end());
+}
+void unique_face_tuples(const TriMesh& m, std::vector<TriMesh::Tuple>& tris)
+{
+    std::sort(
+        tris.begin(),
+        tris.end(),
+        [&](const TriMesh::Tuple& a, const TriMesh::Tuple& b) -> bool {
+            return a.fid(m) < b.fid(m);
+        });
+    tris.erase(std::unique(tris.begin(), tris.end()), tris.end());
+}
+
 void unique_edge_tuples(const TetMesh& m, std::vector<TetMesh::Tuple>& edges)
 {
-    
     auto edge_ids = std::vector<size_t>();
     for (auto& e : edges) edge_ids.push_back(e.eid(m));
     std::sort(edge_ids.begin(), edge_ids.end());
     edge_ids.erase(std::unique(edge_ids.begin(), edge_ids.end()), edge_ids.end());
     edges.clear();
-    for (auto i:edge_ids) {
-        edges.emplace_back(m.tuple_from_edge(i/6, i%6));
+    for (auto i : edge_ids) {
+        edges.emplace_back(m.tuple_from_edge(i / 6, i % 6));
     }
 }
 
 void unique_edge_tuples(const TriMesh& m, std::vector<TriMesh::Tuple>& edges)
 {
-    
     std::vector<size_t> all_eids;
     for (auto e : edges) {
         all_eids.emplace_back(e.eid(m));
@@ -35,7 +55,6 @@ void unique_edge_tuples(const TriMesh& m, std::vector<TriMesh::Tuple>& edges)
 
 void unique_face_tuples(const TetMesh& m, std::vector<TetMesh::Tuple>& faces)
 {
-    
     std::stable_sort(
         faces.begin(),
         faces.end(),
@@ -53,7 +72,6 @@ void unique_face_tuples(const TetMesh& m, std::vector<TetMesh::Tuple>& faces)
 
 void unique_directed_edge_tuples(const TetMesh& m, std::vector<TetMesh::Tuple>& edges)
 {
-    
     std::stable_sort(
         edges.begin(),
         edges.end(),

@@ -1,15 +1,22 @@
 #pragma once
 
+#include "IntegralBase.h"
+
 #include <lagrange/utils/span.h>
 #include <lagrange/utils/value_ptr.h>
 #include <wmtk/utils/Image.h>
+#include <wmtk/utils/autodiff.h>
 
 #include <array>
 
 namespace wmtk {
 
-class TextureIntegral
+class TextureIntegral : public IntegralBase
 {
+public:
+    using DScalar = DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d>;
+    using DTriangle = Eigen::Matrix<DScalar, 3, 2, Eigen::RowMajor>;
+
 public:
     TextureIntegral(); // default constructor
     TextureIntegral(const TextureIntegral&) = delete; // copy constructor
@@ -20,18 +27,7 @@ public:
 
     TextureIntegral(std::array<wmtk::Image, 3> data);
 
-    enum class SamplingMethod {
-        Nearest,
-        Bilinear,
-        Bicubic,
-    };
-
-    enum class IntegrationMethod { Exact, Adaptive };
-
 public:
-    void set_sampling_method(SamplingMethod method) { m_sampling_method = method; }
-    void set_integration_method(IntegrationMethod method) { m_integration_method = method; }
-
     ///
     /// Computes the error integral per triangle.
     ///
@@ -61,18 +57,23 @@ public:
         lagrange::span<const std::array<float, 6>> input_triangles,
         lagrange::span<float> output_errors) const;
 
+    /// Same as above, but computes an autodiffable error for a single triangle.
+    DScalar get_error_one_triangle(const DTriangle& input_triangle) const;
+
 protected:
     template <SamplingMethod sampling_method, IntegrationMethod integration_method>
     void get_error_per_triangle_internal(
         lagrange::span<const std::array<float, 6>> input_triangles,
-        lagrange::span<float> output_errors) const;
+        lagrange::span<float> output_errors,
+        int order) const;
 
-private:
+    template <SamplingMethod sampling_method, IntegrationMethod integration_method>
+    DScalar get_error_one_triangle_internal(const DTriangle& input_triangle, int order) const;
+
+protected:
     struct Cache;
     std::array<wmtk::Image, 3> m_data;
     lagrange::value_ptr<Cache> m_cache;
-    SamplingMethod m_sampling_method = SamplingMethod::Bicubic;
-    IntegrationMethod m_integration_method = IntegrationMethod::Exact;
 };
 
 } // namespace wmtk

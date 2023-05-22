@@ -1,3 +1,6 @@
+#include <igl/read_triangle_mesh.h>
+#include <igl/writeDMAT.h>
+#include <igl/write_triangle_mesh.h>
 #include "AdaptiveTessellation.h"
 using namespace adaptive_tessellation;
 using namespace wmtk;
@@ -5,6 +8,7 @@ using namespace wmtk;
 
 //// preprocess the mesh for remeshing
 // similar to mesh_processing. for debugging purpose
+// using distance integral error not quadrics
 void AdaptiveTessellation::mesh_preprocessing(
     const std::filesystem::path& input_mesh_path,
     const std::filesystem::path& displaced_image_path)
@@ -67,12 +71,13 @@ void AdaptiveTessellation::mesh_preprocessing(
     std::vector<float> computed_errors(tri_capacity());
     m_texture_integral = wmtk::TextureIntegral(std::move(displaced));
     m_texture_integral.get_error_per_triangle(uv_triangles, computed_errors);
-    set_faces_accuracy_error(tris_tuples, computed_errors);
+    set_faces_cached_distance_integral(tris_tuples, computed_errors);
 }
 // get the energy defined by edge_length_energy over each face of the mesh
 // assuming the vert_capacity() == get_vertices.size()
 double AdaptiveTessellation::get_mesh_energy(const Eigen::VectorXd& v_flat)
 {
+    throw std::runtime_error("AT::get_mesh_energy should not be used");
     double total_energy = 0;
     Eigen::MatrixXd energy_matrix;
     energy_matrix.resize(get_faces().size(), 2);

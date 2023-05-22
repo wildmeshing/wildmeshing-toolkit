@@ -4,22 +4,18 @@
 #include <igl/Timer.h>
 #include <igl/doublearea.h>
 #include <igl/predicates/predicates.h>
-#include <igl/read_triangle_mesh.h>
-#include <igl/writeDMAT.h>
-#include <igl/write_triangle_mesh.h>
 #include <lagrange/SurfaceMesh.h>
 #include <lagrange/attribute_names.h>
 #include <lagrange/bvh/EdgeAABBTree.h>
 #include <lagrange/foreach_attribute.h>
-#include <lagrange/io/load_mesh.h>
 #include <lagrange/triangulate_polygonal_facets.h>
 #include <lagrange/utils/fpe.h>
 #include <lagrange/utils/timing.h>
 #include <lagrange/views.h>
 #include <tbb/concurrent_vector.h>
 #include <wmtk/TriMesh.h>
-#include <wmtk/image/TextureIntegral.h>
 #include <wmtk/image/QuadricIntegral.h>
+#include <wmtk/image/TextureIntegral.h>
 #include <wmtk/utils/AMIPS2D.h>
 #include <wmtk/utils/AMIPS2D_autodiff.h>
 #include <wmtk/utils/BoundaryParametrization.h>
@@ -30,6 +26,7 @@
 #include <wmtk/utils/Image.h>
 #include <wmtk/utils/MipMap.h>
 #include <wmtk/utils/PolygonClipping.h>
+#include <wmtk/utils/Quadric.h>
 #include <wmtk/utils/json_sink.h>
 #include <wmtk/utils/load_image_exr.h>
 #include <Eigen/Core>
@@ -56,6 +53,7 @@ public:
 
     // Vertices marked as fixed cannot be modified by any local operation
     bool fixed = false;
+    // a cache variable
     bool boundary_vertex = false;
 };
 
@@ -63,8 +61,16 @@ class FaceAttributes
 {
 public:
     std::array<std::optional<wmtk::TriMesh::Tuple>, 3> mirror_edges;
-    double accuracy_error; // cacheing the accuracy error for each face
-                           // doesn't support autodiff
+    struct AccuracyMeasure
+    {
+        // storing the distance quadrature error for each face
+        double cached_distance_integral; // cacheing the accuracy error for each face
+                                         // doesn't support autodiff
+
+        // storing the Quadric for each face
+        wmtk::Quadric<double> quadric;
+    };
+    AccuracyMeasure accuracy_measure;
 };
 
 class EdgeAttributes
@@ -180,7 +186,9 @@ public:
         const std::filesystem::path& input_mesh_path,
         const std::filesystem::path& position_image_path,
         const std::filesystem::path& normal_image_path,
-        const std::filesystem::path& height_image_path);
+        const std::filesystem::path& height_image_path,
+        float min_height = 0.f,
+        float max_height = 1.f);
 
     bool invariants(const std::vector<Tuple>& new_tris);
 
@@ -216,10 +224,16 @@ public:
         const Eigen::MatrixXd& VT,
         const Eigen::MatrixXi& FT);
 
-    void set_faces_accuracy_error(
+    void set_faces_cached_distance_integral(
         const std::vector<TriMesh::Tuple>& tris,
         const std::vector<float>& computed_errors);
 
+    void set_faces_quadrics(
+        const std::vector<TriMesh::Tuple>& tris,
+        const std::vector<wmtk::Quadric<double>>& compressed_quadrics);
+
+    void prepare_distance_quadrature_cached_energy();
+    void prepare_quadrics();
 
     // Exports V and F of the stored mesh
     void export_uv(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
@@ -321,6 +335,13 @@ public:
      */
     void write_obj_mapped_on_input(const std::filesystem::path& path);
 
+    /**
+     * @brief Write displaced UV positions in HDF format.
+     *
+     * @param path name of the OBJ file
+     */
+    void write_hdf_displaced_uv(const std::filesystem::path& path);
+
     // Computes the quality of a triangle
     double get_quality(const Tuple& loc, int idx = 0) const;
     std::pair<double, Eigen::Vector2d> get_one_ring_energy(const Tuple& loc);
@@ -334,21 +355,25 @@ public:
     std::vector<TriMesh::Tuple> new_edges_after(const std::vector<TriMesh::Tuple>& tris) const;
 
     // Smoothing
-    void prepare_quadrics(wmtk::QuadricEnergy &energy);
+    void prepare_quadrics(wmtk::QuadricEnergy& energy);
     void smooth_all_vertices();
     bool smooth_before(const Tuple& t);
     bool smooth_after(const Tuple& t);
 
     // Collapse
     void collapse_all_edges();
-    bool collapse_edge_before(const Tuple& t);
-    bool collapse_edge_after(const Tuple& t);
+
     // Split
     void split_all_edges();
     bool split_edge_before(const Tuple& t);
     bool split_edge_after(const Tuple& t);
     // Swap
     void swap_all_edges();
+    void swap_all_edges_accuracy_pass();
+    void swap_all_edges_quality_pass();
+    bool simulate_swap_is_degenerate(
+        const TriMesh::Tuple& e,
+        std::array<std::array<float, 6>, 2>& modified_tris) const;
     bool swap_edge_before(const Tuple& t);
     bool swap_edge_after(const Tuple& t);
 
@@ -362,19 +387,30 @@ public:
     double get_length_n_implicit_points(const Tuple& edge_tuple) const;
     double get_length_1ptperpixel(const Tuple& edge_tuple) const;
     double get_length_mipmap(const Tuple& edge_tuple) const;
+    double barrier_energy_per_face(const TriMesh::Tuple& t) const; // face tuple
+    double barrier_energy_per_face(
+        const Eigen::Vector3d& A,
+        const Eigen::Vector3d& B,
+        const Eigen::Vector3d& C) const;
 
     void flatten_dofs(Eigen::VectorXd& v_flat);
-    double get_mesh_energy(const Eigen::VectorXd& v_flat);
 
     double get_edge_accuracy_error(const Tuple& edge_tuple) const;
+
     double get_area_accuracy_error_per_face(const Tuple& edge_tuple) const;
     double get_area_accuracy_error_per_face_triangle_matrix(
         Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle) const;
-    // return in order {total_error, face1_error, face2_error}
-    std::tuple<double, double, double> get_area_accuracy_error_for_split(
+    // // return the sum of the accuracy error of the two incident faces
+    double get_cached_area_accuracy_error_per_edge(const Tuple& edge_tuple) const;
+    std::tuple<double, double, double> get_projected_relative_error_for_split(
         const Tuple& edge_tuple) const;
+    double get_quadrics_area_accuracy_error_for_split(const Tuple& face_tuple) const;
+    double get_one_ring_quadrics_error_for_vertex(const Tuple& v) const;
+    double get_quadric_error_for_face(const Tuple& f) const;
 
     void get_nminfo_for_vertex(const Tuple& v, wmtk::NewtonMethodInfo& nminfo) const;
+
+    void update_energy_cache(const std::vector<Tuple>& tris);
 
     // get sibling edge for paired operations
     // return the oriented mirror edge if t is seam
@@ -389,15 +425,29 @@ public:
     TriMesh::Tuple get_mirror_vertex(const TriMesh::Tuple& t) const;
     // return a vector of mirror vertices. store v itself at index 0 of the returned vector
     // !!! assume no operation has made fixed vertices outdated
-    std::vector<TriMesh::Tuple> get_all_mirror_vertices(const TriMesh::Tuple& v);
-    std::vector<size_t> get_all_mirror_vids(const TriMesh::Tuple& v);
+    std::vector<TriMesh::Tuple> get_all_mirror_vertices(const TriMesh::Tuple& v) const;
+    std::vector<size_t> get_all_mirror_vids(const TriMesh::Tuple& v) const;
     // set primary_t's mirror edge data to a ccw ordered mirror_edge
     void set_mirror_edge_data(const TriMesh::Tuple& primary_t, const TriMesh::Tuple& mirror_edge);
     bool is_seam_edge(const TriMesh::Tuple& t) const;
     bool is_seam_vertex(const TriMesh::Tuple& t) const;
 
+    // reports true if it is a boundary edge ignoring seams
+    bool is_stitched_boundary_edge(const TriMesh::Tuple& t) const;
+    // reports true if it is a boundary vertex ignoring seams
+    bool is_stitched_boundary_vertex(const TriMesh::Tuple& t) const;
+
+
+    VertexAttributes& get_vertex_attrs(const Tuple& t);
+    const VertexAttributes& get_vertex_attrs(const Tuple& t) const;
+    FaceAttributes& get_face_attrs(const Tuple& t);
+    const FaceAttributes& get_face_attrs(const Tuple& t) const;
+    EdgeAttributes& get_edge_attrs(const Tuple& t);
+    const EdgeAttributes& get_edge_attrs(const Tuple& t) const;
+
 
     ////// debug/unit test helper functions
+    double get_two_faces_quadrics_error_for_edge(const Tuple& e0) const;
     void mesh_preprocessing(
         const std::filesystem::path& input_mesh_path,
         const std::filesystem::path& displaced_image_path);
@@ -433,7 +483,9 @@ public:
         //     assert(!is_inverted(tri));
         // }
     }
+    double get_mesh_energy(const Eigen::VectorXd& v_flat);
 
+    std::vector<Tuple> get_one_ring_tris_accross_seams_for_vertex(const Tuple& vertex) const;
     double avg_edge_len() const;
 };
 } // namespace adaptive_tessellation

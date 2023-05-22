@@ -25,6 +25,7 @@ public:
     ExecuteReturnData execute(AdaptiveTessellation& m, const Tuple& t);
     bool before(AdaptiveTessellation& m, const Tuple& t);
     bool after(AdaptiveTessellation& m, ExecuteReturnData& ret_data);
+    std::vector<Tuple> modified_triangles(const TriMesh&) const override;
 };
 
 // a seam vertex can have more than one mirror vertex
@@ -38,4 +39,5 @@ public:
     ExecuteReturnData execute(AdaptiveTessellation& m, const Tuple& t);
     bool before(AdaptiveTessellation& m, const Tuple& t);
     bool after(AdaptiveTessellation& m, ExecuteReturnData& ret_data);
+    std::vector<Tuple> modified_triangles(const TriMesh&) const override;
 };

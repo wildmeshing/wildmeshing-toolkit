@@ -1,6 +1,8 @@
 #pragma once
+#include <wmtk/utils/DisableWarnings.hpp>
 #include <nanospline/BSplinePatch.h>
 #include <nanospline/arc_length.h>
+#include <wmtk/utils/EnableWarnings.hpp>
 #include <Eigen/Core>
 #include "Image.h"
 #include "bicubic_interpolation.h"

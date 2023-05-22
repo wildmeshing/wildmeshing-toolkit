@@ -11,24 +11,26 @@
 
 namespace wmtk::internal {
 
-inline std::tuple<size_t, size_t, float> sample_coord(const float coord, const size_t size)
+template <typename T>
+std::tuple<size_t, size_t, T> sample_coord(const T coord, const size_t size)
 {
-    assert(0.f <= coord && coord <= static_cast<float>(size));
+    const double xcoord = get_value(coord);
+    assert(0.f <= xcoord && xcoord <= static_cast<double>(size));
     size_t coord0, coord1;
-    float t;
-    if (coord <= 0.5f) {
+    T t(0.0);
+    if (xcoord <= 0.5f) {
         coord0 = 0;
         coord1 = 0;
-        t = 0.5f + coord;
-    } else if (coord + 0.5f >= static_cast<float>(size)) {
+        t = T(0.5) + coord;
+    } else if (xcoord + 0.5f >= static_cast<double>(size)) {
         coord0 = size - 1;
         coord1 = size - 1;
-        t = coord - (static_cast<float>(coord0) + 0.5f);
+        t = coord - (T(coord0) + T(0.5));
     } else {
         assert(1 < size);
-        coord0 = std::min(size - 2, static_cast<size_t>(coord - 0.5f));
+        coord0 = std::min(size - 2, static_cast<size_t>(xcoord - 0.5f));
         coord1 = coord0 + 1;
-        t = coord - (static_cast<float>(coord0) + 0.5f);
+        t = coord - (T(coord0) + T(0.5));
     }
     return std::make_tuple(coord0, coord1, t);
 };
@@ -95,23 +97,23 @@ Eigen::Vector<float, N> fetch_texels(const std::array<wmtk::Image, N>& images, i
     return fetch_texel_eigen(images, x, y);
 }
 
-template <size_t N>
-Eigen::Vector<float, N> sample_nearest(const std::array<wmtk::Image, N>& images, float u, float v)
+template <typename T, size_t N>
+Eigen::Vector<T, N> sample_nearest(const std::array<wmtk::Image, N>& images, T u, T v)
 {
     auto w = images[0].width();
     auto h = images[0].height();
     // x, y are between 0 and 1
-    auto x = u * static_cast<float>(w);
-    auto y = v * static_cast<float>(h);
+    auto x = get_value(u) * static_cast<float>(w);
+    auto y = get_value(v) * static_cast<float>(h);
 
     const auto sx = std::clamp(static_cast<int>(x), 0, w - 1);
     const auto sy = std::clamp(static_cast<int>(y), 0, h - 1);
 
-    return fetch_texels(images, sx, sy);
+    return fetch_texels(images, sx, sy).cast<T>();
 }
 
-template <size_t N>
-Eigen::Vector<float, N> sample_bilinear(const std::array<wmtk::Image, N>& images, float u, float v)
+template <typename T, size_t N>
+Eigen::Vector<T, N> sample_bilinear(const std::array<wmtk::Image, N>& images, T u, T v)
 {
     auto w = images[0].width();
     auto h = images[0].height();
@@ -122,26 +124,24 @@ Eigen::Vector<float, N> sample_bilinear(const std::array<wmtk::Image, N>& images
     const auto [x0, x1, tx] = sample_coord(x, w);
     const auto [y0, y1, ty] = sample_coord(y, h);
 
-    const Eigen::Vector4f weight(
-        (1.f - tx) * (1.f - ty),
-        (1.f - tx) * ty,
-        tx * (1.f - ty),
-        tx * ty);
+    const T _1(1.0);
+    const Eigen::Vector4<T> weight((_1 - tx) * (_1 - ty), (_1 - tx) * ty, tx * (_1 - ty), tx * ty);
 
-    Eigen::Vector<float, N> res;
+    Eigen::Vector<T, N> res;
     for (size_t k = 0; k < N; ++k) {
-        Eigen::Vector4f pix(fetch_texel(images[k], x0, y0),
-                            fetch_texel(images[k], x0, y1),
-                            fetch_texel(images[k], x1, y0),
-                            fetch_texel(images[k], x1, y1));
-        res[k] = pix.dot(weight);
+        Eigen::Vector4f pix(
+            fetch_texel(images[k], x0, y0),
+            fetch_texel(images[k], x0, y1),
+            fetch_texel(images[k], x1, y0),
+            fetch_texel(images[k], x1, y1));
+        res[k] = pix.cast<T>().dot(weight);
     }
 
     return res;
 }
 
-template <size_t N>
-Eigen::Vector<float, N> sample_bicubic(const std::array<wmtk::Image, N>& images, float u, float v)
+template <typename T, size_t N>
+Eigen::Vector<T, N> sample_bicubic(const std::array<wmtk::Image, N>& images, T u, T v)
 {
 #if 1
     auto w = images[0].width();
@@ -152,29 +152,31 @@ Eigen::Vector<float, N> sample_bicubic(const std::array<wmtk::Image, N>& images,
 
     const auto sx = static_cast<int>(std::floor(static_cast<double>(x) - 0.5));
     const auto sy = static_cast<int>(std::floor(static_cast<double>(y) - 0.5));
-    using ivec2 = struct { int x, y; };
-    std::array<ivec2, 4> bicubic_taps = {
-        ivec2{ std::clamp(sx - 1, 0, w - 1), std::clamp(sy - 1, 0, h - 1) },
-        ivec2{ std::clamp(sx + 0, 0, w - 1), std::clamp(sy + 0, 0, h - 1) },
-        ivec2{ std::clamp(sx + 1, 0, w - 1), std::clamp(sy + 1, 0, h - 1) },
-        ivec2{ std::clamp(sx + 2, 0, w - 1), std::clamp(sy + 2, 0, h - 1) }
+    using ivec2 = struct
+    {
+        int x, y;
     };
+    std::array<ivec2, 4> bicubic_taps = {
+        ivec2{std::clamp(sx - 1, 0, w - 1), std::clamp(sy - 1, 0, h - 1)},
+        ivec2{std::clamp(sx + 0, 0, w - 1), std::clamp(sy + 0, 0, h - 1)},
+        ivec2{std::clamp(sx + 1, 0, w - 1), std::clamp(sy + 1, 0, h - 1)},
+        ivec2{std::clamp(sx + 2, 0, w - 1), std::clamp(sy + 2, 0, h - 1)}};
 
     auto bicubic_samples = [](const wmtk::Image& image, const std::array<ivec2, 4>& c) {
         BicubicVector<float> samples;
 
-        samples( 0) = fetch_texel(image, c[0].x, c[0].y);
-        samples( 1) = fetch_texel(image, c[1].x, c[0].y);
-        samples( 2) = fetch_texel(image, c[2].x, c[0].y);
-        samples( 3) = fetch_texel(image, c[3].x, c[0].y);
+        samples(0) = fetch_texel(image, c[0].x, c[0].y);
+        samples(1) = fetch_texel(image, c[1].x, c[0].y);
+        samples(2) = fetch_texel(image, c[2].x, c[0].y);
+        samples(3) = fetch_texel(image, c[3].x, c[0].y);
 
-        samples( 4) = fetch_texel(image, c[0].x, c[1].y);
-        samples( 5) = fetch_texel(image, c[1].x, c[1].y);
-        samples( 6) = fetch_texel(image, c[2].x, c[1].y);
-        samples( 7) = fetch_texel(image, c[3].x, c[1].y);
+        samples(4) = fetch_texel(image, c[0].x, c[1].y);
+        samples(5) = fetch_texel(image, c[1].x, c[1].y);
+        samples(6) = fetch_texel(image, c[2].x, c[1].y);
+        samples(7) = fetch_texel(image, c[3].x, c[1].y);
 
-        samples( 8) = fetch_texel(image, c[0].x, c[2].y);
-        samples( 9) = fetch_texel(image, c[1].x, c[2].y);
+        samples(8) = fetch_texel(image, c[0].x, c[2].y);
+        samples(9) = fetch_texel(image, c[1].x, c[2].y);
         samples(10) = fetch_texel(image, c[2].x, c[2].y);
         samples(11) = fetch_texel(image, c[3].x, c[2].y);
 
@@ -202,7 +204,7 @@ Eigen::Vector<float, N> sample_bicubic(const std::array<wmtk::Image, N>& images,
     auto y = v * static_cast<float>(h);
 
     // use bicubic interpolation
-    Eigen::Vector<float, N> res;
+    Eigen::Vector<T, N> res;
     for (size_t k = 0; k < N; ++k) {
         BicubicVector<float> sample_vector = extract_samples(
             static_cast<size_t>(w),
@@ -293,45 +295,30 @@ inline Classification pixel_inside_triangle(
     const Eigen::Matrix<double, 3, 2, Eigen::RowMajor>& triangle,
     const Eigen::AlignedBox2d& pixel)
 {
-    bool all_inside = true;
-    bool all_outside = true;
     for (int k = 0; k < 4; ++k) {
         bool inside = point_in_triangle(
             triangle,
             pixel.corner(static_cast<Eigen::AlignedBox2d::CornerType>(k)));
         if (!inside) {
-            all_inside = false;
-        } else {
-            all_outside = false;
-        }
-        if (!all_inside && !all_outside) {
-            break;
+            return Classification::Unknown;
         }
     }
-    if (all_inside) {
-        return Classification::Inside;
-    }
-    if (all_outside) {
-        return Classification::Outside;
-    }
-    return Classification::Unknown;
+    return Classification::Inside;
 }
 
 template <size_t N>
-inline std::array<wmtk::Image, N> convert_image_to_morton_z_order(const std::array<wmtk::Image, N>& linear_image)
+inline std::array<wmtk::Image, N> convert_image_to_morton_z_order(
+    const std::array<wmtk::Image, N>& linear_image)
 {
     std::array<wmtk::Image, N> zorder_image;
     auto planes = linear_image.size();
     auto width = linear_image[0].width();
     auto height = linear_image[0].height();
-    for (int k = 0; k < planes; ++k)
-    {
+    for (int k = 0; k < planes; ++k) {
         zorder_image[k] = wmtk::Image(height, width);
         auto&& zorder_plane = zorder_image[k].get_raw_image_mutable().data();
-        for (int y = 0; y < height; ++y)
-        {
-            for (int x = 0; x < width; ++x)
-            {
+        for (int y = 0; y < height; ++y) {
+            for (int x = 0; x < width; ++x) {
                 auto zoffset = to_morton_z_order(x, y);
                 zorder_plane[zoffset] = fetch_texel(linear_image[k], x, y);
             }

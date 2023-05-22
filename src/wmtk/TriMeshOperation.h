@@ -23,6 +23,7 @@ public:
 
     TriMeshOperation() {}
     virtual ~TriMeshOperation() {}
+    virtual double priority(const TriMesh& m, const Tuple& t) const { return 0; }
 
 protected:
     // returns the changed tris + whether success occured
@@ -72,14 +73,15 @@ template <
     typename BaseOperationType = TriMeshOperation
 #if defined(__cpp_concepts)
     >
-requires(
-    std::is_base_of_v<TriMesh, MeshType>&& std::is_base_of_v<TriMeshOperation, BaseOperationType>)
+    requires(
+        std::is_base_of_v<TriMesh, MeshType> &&
+        std::is_base_of_v<TriMeshOperation, BaseOperationType>)
 #else
     ,
     typename = std::enable_if_t<std::is_base_of_v<TriMesh, MeshType>, void>,
     typename = std::enable_if_t<std::is_base_of_v<TriMeshOperation, BaseOperationType>, void>>
 #endif
-    class TriMeshOperationShim : public BaseOperationType
+class TriMeshOperationShim : public BaseOperationType
 {
 public:
     using ExecuteReturnData = TriMeshOperation::ExecuteReturnData;
@@ -121,6 +123,7 @@ private:
 class SingleTupleOperationInfo
 {
 public:
+    virtual ~SingleTupleOperationInfo() {}
     void reset() { m_return_tuple_opt.local().reset(); }
     void assign(const TriMeshTuple& t)
     {
@@ -129,6 +132,9 @@ public:
     operator bool() const { return m_return_tuple_opt.local().has_value(); }
 
     std::optional<TriMeshTuple> get_return_tuple_opt() const { return m_return_tuple_opt.local(); }
+    virtual std::vector<TriMeshTuple> modified_triangles(const TriMesh& m) const = 0;
+    // virtual std::vector<TriMeshTuple> modified_edges(const TriMesh& m) const = 0;
+    // virtual std::vector<TriMeshTuple> modified_vertices(const TriMesh& m) const = 0;
 
 private:
     mutable tbb::enumerable_thread_specific<std::optional<TriMeshTuple>> m_return_tuple_opt;
@@ -167,10 +173,10 @@ public:
     // returns a tuple to the new vertex created by this operation, where the
     // input is the tuple passed into after's ret_data.tuple.
     Tuple new_vertex(const TriMesh& m, const Tuple& t) const { return t.switch_vertex(m); }
-    Tuple new_vertex(const TriMesh& m);
+    Tuple new_vertex(const TriMesh& m) const;
     std::array<Tuple, 2> original_endpoints(TriMesh& m, const Tuple& t) const;
 
-    std::vector<Tuple> modified_tuples(const TriMesh& m);
+    std::vector<Tuple> modified_triangles(const TriMesh& m) const override;
 
     void assign(const Tuple& t) override { SingleTupleOperationInfo::assign(t); }
     void mark_failed() override { SingleTupleOperationInfo::reset(); }
@@ -193,7 +199,7 @@ public:
     bool after(TriMesh& m, ExecuteReturnData& ret_data) override;
     std::string name() const override;
 
-    std::vector<Tuple> modified_tuples(const TriMesh& m);
+    std::vector<Tuple> modified_triangles(const TriMesh& m) const override;
     void assign(const Tuple& t) override { SingleTupleOperationInfo::assign(t); }
     void mark_failed() override { SingleTupleOperationInfo::reset(); }
 };
@@ -215,7 +221,7 @@ public:
     std::string name() const override;
     // bool invariants(TriMesh& m, ExecuteReturnData& ret_data) override;
 
-    std::vector<Tuple> modified_tuples(const TriMesh& m);
+    std::vector<Tuple> modified_triangles(const TriMesh& m) const override;
     void assign(const Tuple& t) override { SingleTupleOperationInfo::assign(t); }
     void mark_failed() override { SingleTupleOperationInfo::reset(); }
 };

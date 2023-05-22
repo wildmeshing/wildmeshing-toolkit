@@ -3,14 +3,15 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
+#include <wmtk/image/TextureIntegral.h>
 #include <Eigen/LU>
 #include <iostream>
 #include "BoundaryParametrization.h"
 #include "Displacement.h"
 #include "Image.h"
 #include "Logger.hpp"
-#include "autodiff.h"
 #include "Quadric.h"
+#include "autodiff.h"
 
 namespace wmtk {
 using DofVector = Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 2, 1>;
@@ -46,6 +47,7 @@ public:
 
     std::pair<DScalar, DScalar> eval(const DofVector& dofx) const
     {
+        lagrange::enable_fpe();
         if (dofx.size() == 2) {
             DiffScalarBase::setVariableCount(2);
             DScalar x1(0, dofx(0));
@@ -147,12 +149,14 @@ public:
 class AreaAccuracyEnergy : public wmtk::Energy
 {
 public:
-    AreaAccuracyEnergy(std::shared_ptr<Displacement> displ)
+    AreaAccuracyEnergy(std::shared_ptr<Displacement> displ, const TextureIntegral &texture_integral)
         : m_displ(displ)
+        , m_texture_integral(texture_integral)
     {}
 
 public:
     std::shared_ptr<Displacement> m_displ; // Initiated using the Displacement class
+    const TextureIntegral& m_texture_integral;
 
 public:
     void eval([[maybe_unused]] State& state) const override{};
@@ -170,10 +174,10 @@ public:
         : m_displ(std::move(displ))
     {}
 
-    std::vector<wmtk::Quadric<double>> &facet_quadrics() { return m_facet_quadrics; }
+    std::vector<wmtk::Quadric<double>>& facet_quadrics() { return m_facet_quadrics; }
 
 public:
-    void eval([[maybe_unused]] State& state) const override {};
+    void eval([[maybe_unused]] State& state) const override{};
     void eval(State& state, DofsToPositions& x) const override;
 };
 

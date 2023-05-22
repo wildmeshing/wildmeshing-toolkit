@@ -206,8 +206,14 @@ auto TriMeshSplitEdgeOperation::execute(TriMesh& m, const Tuple& t) -> ExecuteRe
     return_tuple = Tuple(vid1, eid, fid1, m);
     assert(return_tuple.is_valid(m));
 
+#if defined(_DEBUG)
+    auto new_vertex = Tuple(new_vid, (l + 2) % 3, new_fid, m);
+    assert(new_vertex.is_valid(m));
+    // assert(new_vertex == this->new_vertex(m));
+#endif
+
     assign(return_tuple);
-    new_tris = modified_tuples(m);
+    new_tris = modified_triangles(m);
     ret_data.success = true;
     return ret_data;
 }
@@ -225,7 +231,7 @@ std::string TriMeshSplitEdgeOperation::name() const
     return "edge_split";
 }
 
-auto TriMeshSplitEdgeOperation::new_vertex(const TriMesh& m) -> Tuple
+auto TriMeshSplitEdgeOperation::new_vertex(const TriMesh& m) const -> Tuple
 {
     assert(bool(*this));
     const std::optional<Tuple>& new_tup = get_return_tuple_opt();
@@ -258,7 +264,7 @@ auto TriMeshSplitEdgeOperation::original_endpoints(TriMesh& m, const Tuple& t) c
 
     return {{t, face_opt->switch_edge(m).switch_vertex(m)}};
 }
-auto TriMeshSplitEdgeOperation::modified_tuples(const TriMesh& m) -> std::vector<Tuple>
+auto TriMeshSplitEdgeOperation::modified_triangles(const TriMesh& m) const -> std::vector<Tuple>
 {
     if (!bool(*this)) {
         return {};
@@ -331,13 +337,13 @@ auto TriMeshSwapEdgeOperation::execute(TriMesh& m, const Tuple& t) -> ExecuteRet
     assert(return_tuple.switch_vertex(m).vid(m) != vid1);
     assert(return_tuple.switch_vertex(m).vid(m) != vid2);
     assert(return_tuple.is_valid(m));
-    new_tris = modified_tuples(m);
+    new_tris = modified_triangles(m);
 
     ret_data.success = true;
     return ret_data;
 }
 
-auto TriMeshSwapEdgeOperation::modified_tuples(const TriMesh& m) -> std::vector<Tuple>
+auto TriMeshSwapEdgeOperation::modified_triangles(const TriMesh& m) const -> std::vector<Tuple>
 {
     const std::optional<Tuple>& new_tuple_opt = get_return_tuple_opt();
     if (!new_tuple_opt.has_value()) {
@@ -379,9 +385,9 @@ auto TriMeshSmoothVertexOperation::execute(TriMesh& m, const Tuple& t) -> Execut
 {
     assign(t);
     // always succeed and return the Tuple for the (vertex) that we pointed at
-    return {t, modified_tuples(m), true};
+    return {t, modified_triangles(m), true};
 }
-auto TriMeshSmoothVertexOperation::modified_tuples(const TriMesh& m) -> std::vector<Tuple>
+auto TriMeshSmoothVertexOperation::modified_triangles(const TriMesh& m) const -> std::vector<Tuple>
 {
     const auto& new_tup_opt = get_return_tuple_opt();
     assert(new_tup_opt);

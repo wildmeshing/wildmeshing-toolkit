@@ -1,23 +1,36 @@
 #pragma once
+#include <wmtk/TriMesh.h>
+#include <wmtk/utils/BoundaryParametrization.h>
 #include <wmtk/utils/Displacement.h>
+#include <wmtk/utils/Energy2d.h>
 #include <wmtk/utils/Image.h>
 #include <wmtk/utils/MipMap.h>
 #include <wmtk/utils/autodiff.h>
 #include <wmtk/utils/bicubic_interpolation.h>
+#include <wmtk/utils/json_sink.h>
 #include <Eigen/Dense>
 #include <nlohmann/json.hpp>
 #include <sec/envelope/SampleEnvelope.hpp>
+
 using namespace wmtk;
 namespace adaptive_tessellation {
-enum class ENERGY_TYPE { AMIPS, SYMDI, EDGE_LENGTH, EDGE_QUADRATURE, AREA_QUADRATURE, QUADRICS };
+enum class ENERGY_TYPE {
+    AMIPS = 0,
+    SYMDI = 1,
+    EDGE_LENGTH = 2,
+    EDGE_QUADRATURE = 3,
+    AREA_QUADRATURE = 4,
+    QUADRICS = 5
+};
 enum class EDGE_LEN_TYPE {
-    LINEAR2D,
-    LINEAR3D,
-    N_IMPLICIT_POINTS,
-    PT_PER_PIXEL,
-    MIPMAP,
-    ACCURACY,
-    AREA_ACCURACY
+    LINEAR2D = 0,
+    LINEAR3D = 1,
+    N_IMPLICIT_POINTS = 2,
+    PT_PER_PIXEL = 3,
+    MIPMAP = 4,
+    EDGE_ACCURACY = 5,
+    AREA_ACCURACY = 6,
+    TRI_QUADRICS = 7
 };
 struct Parameters
 {
@@ -60,6 +73,7 @@ public:
     // taking gradients or hessian
     std::function<Eigen::Vector3d(const double&, const double&)> m_project_to_3d =
         [&](const double& u, const double& v) -> Eigen::Vector3d {
+        throw std::runtime_error("should not be used");
         DiffScalarBase::setVariableCount(2);
         auto z = this->m_get_z(DScalar(u), DScalar(v)).getValue();
         return Eigen::Vector3d(u, v, z);
@@ -82,7 +96,7 @@ public:
     double m_accuracy_threshold = 0.001;
     double m_accuracy_safeguard_ratio = 1.1;
 
-    EDGE_LEN_TYPE m_edge_length_type = EDGE_LEN_TYPE::ACCURACY;
+    EDGE_LEN_TYPE m_edge_length_type = EDGE_LEN_TYPE::AREA_ACCURACY;
     SAMPLING_MODE m_sampling_mode = SAMPLING_MODE::BICUBIC;
     DISPLACEMENT_MODE m_displacement_mode = DISPLACEMENT_MODE::PLANE;
     std::shared_ptr<wmtk::Displacement> m_displacement;
@@ -97,7 +111,6 @@ public:
     // only operate to modify topologies
     bool m_ignore_embedding = false;
     // used for scaling the height map
-    double m_normalization_scale = 1.0;
     bool m_do_not_output = false;
 
 public:
@@ -105,17 +118,11 @@ public:
         const nlohmann::json& js,
         bool flush = false) // flush should force file output immediately, but will be slow for
                             // per-operation things
-    {
-        std::cout << js.dump() << std::endl;
-        ATlogger->error(js.dump());
 
+        const;
 
-        if (flush) {
-            ATlogger->flush();
-        }
-    }
 
     // log that always writes to file immediately beause it's flushing
-    void log_flush(const nlohmann::json& js) { log(js, true); }
+    void log_flush(const nlohmann::json& js) const { log(js, true); }
 };
 } // namespace adaptive_tessellation

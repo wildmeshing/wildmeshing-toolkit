@@ -131,6 +131,7 @@ void Image::load(
     m_image.colwise().reverseInPlace();
     set_wrapping_mode(mode_x, mode_y);
 }
+
 // down sample a image to size/2 by size/2
 // used for mipmap construction
 Image Image::down_sample() const
@@ -153,46 +154,71 @@ Image Image::down_sample() const
 
 std::array<wmtk::Image, 3> wmtk::combine_position_normal_texture(
     double normalization_scale,
+    const Eigen::Matrix<double, 1, 3>& offset,
     const std::filesystem::path& position_path,
     const std::filesystem::path& normal_path,
-    const std::filesystem::path& height_path)
+    const std::filesystem::path& height_path,
+    float min_height,
+    float max_height)
 {
-    // displaced = positions + normalization_scale * heights * (2.0 * normals - 1.0)
+    assert(std::filesystem::exists(position_path));
     auto [w_p, h_p, index_red_p, index_green_p, index_blue_p, buffer_r_p, buffer_g_p, buffer_b_p] =
         load_image_exr_split_3channels(position_path);
-    auto [w_n, h_n, index_red_n, index_green_n, index_blue_n, buffer_r_n, buffer_g_n, buffer_b_n] =
-        load_image_exr_split_3channels(normal_path);
-    auto [w_h, h_h, index_red_h, index_green_h, index_blue_h, buffer_r_h, buffer_g_h, buffer_b_h] =
-        load_image_exr_split_3channels(height_path);
-    assert(buffer_r_p.size() == buffer_r_n.size());
-    assert(buffer_r_p.size() == buffer_r_h.size());
-    assert(buffer_r_p.size() == buffer_g_p.size());
-    assert(buffer_r_p.size() == buffer_b_p.size());
+
     auto buffer_size = buffer_r_p.size();
-    auto w = w_p;
-    auto h = h_p;
-    std::vector<float> buffer_r_d(buffer_size), buffer_g_d(buffer_size), buffer_b_d(buffer_size);
-    for (int i = 0; i < buffer_size; i++) {
-        buffer_r_d[i] =
-            buffer_r_p[i] + normalization_scale * buffer_r_h[i] * (2.0 * buffer_r_n[i] - 1.0);
-        buffer_g_d[i] =
-            buffer_g_p[i] + normalization_scale * buffer_g_h[i] * (2.0 * buffer_g_n[i] - 1.0);
-        buffer_b_d[i] =
-            buffer_b_p[i] + normalization_scale * buffer_b_h[i] * (2.0 * buffer_b_n[i] - 1.0);
+    std::vector<float> buffer_r_d(buffer_size);
+    std::vector<float> buffer_g_d(buffer_size);
+    std::vector<float> buffer_b_d(buffer_size);
+
+    if (std::filesystem::exists(normal_path) && std::filesystem::exists(height_path)) {
+        // Load normal + heightmap and compute displaced positions.
+        auto
+            [w_n,
+             h_n,
+             index_red_n,
+             index_green_n,
+             index_blue_n,
+             buffer_r_n,
+             buffer_g_n,
+             buffer_b_n] = load_image_exr_split_3channels(normal_path);
+        auto
+            [w_h,
+             h_h,
+             index_red_h,
+             index_green_h,
+             index_blue_h,
+             buffer_r_h,
+             buffer_g_h,
+             buffer_b_h] = load_image_exr_split_3channels(height_path);
+        assert(buffer_r_p.size() == buffer_r_n.size());
+        assert(buffer_r_p.size() == buffer_r_h.size());
+        assert(buffer_r_p.size() == buffer_g_p.size());
+        assert(buffer_r_p.size() == buffer_b_p.size());
+        auto scale = [&](float h) { return min_height * (1.f - h) + max_height * h; };
+        // displaced = positions * normalization_scale + heights * (2.0 * normals - 1.0) - offset
+        for (int i = 0; i < buffer_size; i++)
+        {
+            buffer_r_d[i] = buffer_r_p[i] * normalization_scale +
+                            scale(buffer_r_h[i]) * (2.0 * buffer_r_n[i] - 1.0) - offset[0];
+            buffer_g_d[i] = buffer_g_p[i] * normalization_scale +
+                            scale(buffer_g_h[i]) * (2.0 * buffer_g_n[i] - 1.0) - offset[1];
+            buffer_b_d[i] = buffer_b_p[i] * normalization_scale +
+                            scale(buffer_b_h[i]) * (2.0 * buffer_b_n[i] - 1.0) - offset[2];
+        }
+    } else {
+        // Missing heightmap info: we use the position map as our displaced coordinates.
+        wmtk::logger().info("No heightmap provided: using positions as displaced coordinates.");
+        // displaced = positions * normalization_scale - offset
+        for (int i = 0; i < buffer_size; i++) {
+            buffer_r_d[i] = buffer_r_p[i] * normalization_scale - offset[0];
+            buffer_g_d[i] = buffer_g_p[i] * normalization_scale - offset[1];
+            buffer_b_d[i] = buffer_b_p[i] * normalization_scale - offset[2];
+        }
     }
-    // auto res = save_image_exr_3channels(
-    //     w,
-    //     h,
-    //     index_red_p,
-    //     index_green_p,
-    //     index_blue_p,
-    //     buffer_r_d,
-    //     buffer_g_d,
-    //     buffer_b_d,
-    //     displaced_path);
+
     return {
-        buffer_to_image(buffer_r_d, w, h),
-        buffer_to_image(buffer_g_d, w, h),
-        buffer_to_image(buffer_b_d, w, h),
+        buffer_to_image(buffer_r_d, w_p, h_p),
+        buffer_to_image(buffer_g_d, w_p, h_p),
+        buffer_to_image(buffer_b_d, w_p, h_p),
     };
 }

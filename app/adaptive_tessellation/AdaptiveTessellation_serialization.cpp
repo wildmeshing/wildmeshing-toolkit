@@ -2,7 +2,10 @@
 #include <igl/remove_unreferenced.h>
 #include <igl/writeDMAT.h>
 #include <igl/write_triangle_mesh.h>
+#include <lagrange/io/load_mesh.h>
 #include <lean_vtk.hpp>
+#include <paraviewo/HDF5VTUWriter.hpp>
+#include <paraviewo/ParaviewWriter.hpp>
 #include "AdaptiveTessellation.h"
 
 using namespace adaptive_tessellation;
@@ -44,10 +47,9 @@ void AdaptiveTessellation::create_paired_seam_mesh_with_offset(
     wmtk::TriMesh m_3d;
     std::vector<std::array<size_t, 3>> tris;
     for (auto f = 0; f < input_F_.rows(); f++) {
-        std::array<size_t, 3> tri = {
-            (size_t)input_F_(f, 0),
-            (size_t)input_F_(f, 1),
-            (size_t)input_F_(f, 2)};
+        std::array<size_t, 3> tri = {(size_t)input_F_(f, 0),
+                                     (size_t)input_F_(f, 1),
+                                     (size_t)input_F_(f, 2)};
         tris.emplace_back(tri);
     }
     m_3d.create_mesh(input_V_.rows(), tris);
@@ -114,8 +116,8 @@ void AdaptiveTessellation::create_paired_seam_mesh_with_offset(
                     } else {
                         // if not add it to the map and add to the edge matrix
                         seam_edges[{ej0, ej1}] = std::pair<size_t, size_t>(ei0, ei1);
-                        E0.row(seam_edge_cnt) << ei0, ei1;
-                        E1.row(seam_edge_cnt) << ej0, ej1;
+                        E0.row(seam_edge_cnt) << F(fi, lvi1), F(fi, lvi2);
+                        E1.row(seam_edge_cnt) << F(fj, lvj1), F(fj, lvj2);
                         seam_edge_cnt++;
                     }
                 }
@@ -396,10 +398,9 @@ void AdaptiveTessellation::export_mesh_mapped_on_input(
         size_t j_min = -1;
         for (size_t j = 0; j < input_FT_.rows(); ++j) {
             const Eigen::Vector3i tri = input_FT_.row(j);
-            const std::array<Eigen::Vector2d, 3> pts = {
-                input_VT_.row(tri[0]),
-                input_VT_.row(tri[1]),
-                input_VT_.row(tri[2])};
+            const std::array<Eigen::Vector2d, 3> pts = {input_VT_.row(tri[0]),
+                                                        input_VT_.row(tri[1]),
+                                                        input_VT_.row(tri[2])};
             const Eigen::Vector3d bars =
                 compute_barycentric_coordinates(uv, pts[0], pts[1], pts[2]);
             const double bar_min = bars.minCoeff();
@@ -555,7 +556,6 @@ void AdaptiveTessellation::write_vtk(const std::filesystem::path& path)
     Eigen::MatrixXi F;
 
     export_uv(V, F);
-    wmtk::logger().info("=== # vertices {}", V.rows());
     for (int i = 0; i < V.rows(); i++) {
         auto p = mesh_parameters.m_displacement->get(V(i, 0), V(i, 1));
         points.emplace_back(p(0));
@@ -578,7 +578,14 @@ void AdaptiveTessellation::write_vtk(const std::filesystem::path& path)
     std::vector<double> scalar_field;
     for (const auto& e : get_edges()) {
         if (!e.is_valid(*this)) continue;
-        auto cost = std::get<0>(get_area_accuracy_error_for_split(e));
+        double cost = 0.;
+        if (mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::TRI_QUADRICS) {
+            cost = get_quadrics_area_accuracy_error_for_split(e);
+        }
+        if (mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
+            cost = get_cached_area_accuracy_error_per_edge(e) * get_length2d(e);
+        }
+
         // Eigen::Matrix<double, 2, 1> pos1 = vertex_attrs[e.vid(*this)].pos;
         // Eigen::Matrix<double, 2, 1> pos2 =
         // vertex_attrs[e.switch_vertex(*this).vid(*this)].pos; Eigen::Matrix<double, 2, 1>
@@ -624,20 +631,10 @@ void AdaptiveTessellation::write_perface_vtk(const std::filesystem::path& path)
 
     std::vector<double> scalar_field2;
     for (const auto& f : get_faces()) {
-        // if (!f.is_valid(*this)) continue;
-        // auto vids1 = oriented_tri_vertices(f);
-        // Eigen::Matrix<double, 3, 2, Eigen::RowMajor> triangle1;
-        // for (int i = 0; i < 3; i++) {
-        //     triangle1.row(i) = vertex_attrs[vids1[i].vid(*this)].pos;
-        // }
-        // if (wmtk::polygon_signed_area(triangle1) < 0) {
-        //     Eigen::Matrix<double, 1, 2, Eigen::RowMajor> tmp;
-        //     tmp = triangle1.row(0);
-        //     triangle1.row(0) = triangle1.row(1);
-        //     triangle1.row(1) = tmp;
-        // }
-        // auto error = mesh_parameters.m_displacement->get_error_per_triangle(triangle1);
-        auto error = face_attrs[f.fid(*this)].accuracy_error;
+        double error = 0.;
+        if (mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY)
+            error = face_attrs[f.fid(*this)].accuracy_measure.cached_distance_integral;
+
         scalar_field2.emplace_back(error);
     }
     writer.add_cell_scalar_field("scalar_field", scalar_field2);
@@ -673,6 +670,7 @@ void AdaptiveTessellation::write_obj(const std::filesystem::path& path)
 
 void AdaptiveTessellation::write_obj_displaced(const std::filesystem::path& path)
 {
+    wmtk::logger().info("============>> writing to {}", path);
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     Eigen::MatrixXd CN;
@@ -695,4 +693,46 @@ void AdaptiveTessellation::write_obj_mapped_on_input(const std::filesystem::path
     export_mesh_mapped_on_input(V, F, VT, FT);
     igl::writeOBJ(path.string(), V, F, CN, FN, VT, FT);
     wmtk::logger().info("============>> current edge length {}", avg_edge_len());
+}
+
+void AdaptiveTessellation::write_hdf_displaced_uv(const std::filesystem::path& path)
+{
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    Eigen::MatrixXd CN;
+    Eigen::MatrixXd FN;
+    Eigen::MatrixXd VT;
+    Eigen::MatrixXi FT;
+    export_displaced_uv(V, F, VT, FT);
+
+    paraviewo::HDF5VTUWriter writer;
+    writer.add_field("UV", VT);
+
+    if (0) {
+        Eigen::MatrixXd v_quadric_error;
+        v_quadric_error.resize(V.rows(), 1);
+        for (const Tuple& t : get_vertices()) {
+            const size_t i = t.vid(*this);
+            v_quadric_error(i, 0) = get_one_ring_quadrics_error_for_vertex(t);
+        }
+        writer.add_field("v_quadrics", v_quadric_error);
+
+        Eigen::MatrixXd f_quadric_error;
+        f_quadric_error.resize(F.rows(), 1);
+        for (const Tuple& t : get_faces()) {
+            const size_t i = t.fid(*this);
+            f_quadric_error(i, 0) = get_quadric_error_for_face(t);
+        }
+        writer.add_cell_field("f_quadrics", f_quadric_error);
+    }
+
+    Eigen::MatrixXd f_area_error;
+    f_area_error.resize(F.rows(), 1);
+    for (const Tuple& t : get_faces()) {
+        const size_t i = t.fid(*this);
+        f_area_error(i, 0) = face_attrs[i].accuracy_measure.cached_distance_integral;
+    }
+    writer.add_cell_field("f_area_error", f_area_error);
+
+    writer.write_mesh(path.string(), V, F);
 }

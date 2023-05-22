@@ -5,13 +5,12 @@ void AMIPS::eval(State& state, DofsToPositions& dof_to_positions) const
 {
     DiffScalarBase::setVariableCount(2);
     auto [x1, y1] = dof_to_positions.eval(state.dofx);
-    auto input_triangle = std::array{
-        x1.getValue(),
-        y1.getValue(),
-        state.two_opposite_vertices(0, 0),
-        state.two_opposite_vertices(0, 1),
-        state.two_opposite_vertices(0, 2),
-        state.two_opposite_vertices(0, 3)};
+    auto input_triangle = std::array{x1.getValue(),
+                                     y1.getValue(),
+                                     state.two_opposite_vertices(0, 0),
+                                     state.two_opposite_vertices(0, 1),
+                                     state.two_opposite_vertices(0, 2),
+                                     state.two_opposite_vertices(0, 3)};
     auto target_triangle = state.target_triangle;
     for (auto i = 0; i < 6; i++) target_triangle[i] = state.scaling * target_triangle[i];
     int i = state.idx;
@@ -61,13 +60,12 @@ void SymDi::eval(State& state, DofsToPositions& dof_to_positions) const
     DiffScalarBase::setVariableCount(2);
 
     auto [x1, y1] = dof_to_positions.eval(state.dofx);
-    auto input_triangle = std::array{
-        x1.getValue(),
-        y1.getValue(),
-        state.two_opposite_vertices(0, 0),
-        state.two_opposite_vertices(0, 1),
-        state.two_opposite_vertices(0, 2),
-        state.two_opposite_vertices(0, 3)};
+    auto input_triangle = std::array{x1.getValue(),
+                                     y1.getValue(),
+                                     state.two_opposite_vertices(0, 0),
+                                     state.two_opposite_vertices(0, 1),
+                                     state.two_opposite_vertices(0, 2),
+                                     state.two_opposite_vertices(0, 3)};
     auto target_triangle = state.target_triangle;
     for (auto i = 0; i < 6; i++) target_triangle[i] = state.scaling * target_triangle[i];
     int i = state.idx;
@@ -301,32 +299,30 @@ void AreaAccuracyEnergy::eval(State& state, DofsToPositions& dof_to_positions) c
 // measure edge quadrature. For each one-ring triangle only takes one edge, which will cover all the
 // one-ring edges without repeat
 {
+    lagrange::enable_fpe();
     DiffScalarBase::setVariableCount(2);
     DScalar total_energy = DScalar(0);
     assert(state.two_opposite_vertices.rows() == 1);
     auto [x1, y1] = dof_to_positions.eval(state.dofx);
-    Eigen::Matrix<DScalar, 3, 2, 1> triangle;
+    Eigen::Matrix<DScalar, 3, 2, Eigen::RowMajor> triangle;
     triangle << x1, y1, DScalar(state.two_opposite_vertices(0, 0)),
         DScalar(state.two_opposite_vertices(0, 1)), DScalar(state.two_opposite_vertices(0, 2)),
         DScalar(state.two_opposite_vertices(0, 3));
 
 
-    Eigen::Matrix<DScalar, 3, 1> v1 = m_displ->get(x1, y1);
     DScalar v2u = DScalar(state.two_opposite_vertices(0, 0));
     DScalar v2v = DScalar(state.two_opposite_vertices(0, 1));
-    Eigen::Matrix<DScalar, 3, 1> v2 = m_displ->get(v2u, v2v);
+
     DScalar v3u = DScalar(state.two_opposite_vertices(0, 2));
     DScalar v3v = DScalar(state.two_opposite_vertices(0, 3));
-    Eigen::Matrix<DScalar, 3, 1> v3 = m_displ->get(v3u, v3v);
-    Eigen::Matrix<DScalar, 3, 1> V2_V1;
-    V2_V1 = v2 - v1;
-    Eigen::Matrix<DScalar, 3, 1> V3_V1;
-    V3_V1 = v3 - v1;
+
+
     // check if area is either inverted or smaller than certain A_hat
     DScalar area;
-    area = (V2_V1.cross(V3_V1)).squaredNorm();
+    // area = (V2_V1.cross(V3_V1)).squaredNorm();
+    area = sqrt(pow((v2u - x1) * (v3v - y1) + (v2v - y1) * (v3u - x1), 2)) / 2.0;
     // wmtk::logger().info("----current area {}", area.getValue());
-    double A_hat = 1; // this is arbitrary now
+    double A_hat = 1e-6; // this is arbitrary now
     assert(A_hat > 0);
     if (area <= 0) {
         total_energy += std::numeric_limits<double>::infinity();
@@ -338,7 +334,8 @@ void AreaAccuracyEnergy::eval(State& state, DofsToPositions& dof_to_positions) c
         total_energy += barrier_energy;
     }
 
-    total_energy = m_displ->get_error_per_triangle(triangle);
+    // total_energy = m_displ->get_error_per_triangle(triangle);
+    total_energy += m_texture_integral.get_error_one_triangle(triangle);
     state.value = total_energy.getValue();
     state.gradient = total_energy.getGradient();
     state.hessian = total_energy.getHessian();
@@ -355,8 +352,35 @@ void QuadricEnergy::eval(State& state, DofsToPositions& dof_to_positions) const
     auto p = m_displ->get(x1, y1);
 
     const auto& q = m_facet_quadrics[state.idx];
-    DScalar energy =
-        p.transpose() * q.A().cast<DScalar>() * p - DScalar(2.0) * p.dot(q.b().cast<DScalar>()) + DScalar(q.c);
+    DScalar energy = p.transpose() * q.A().cast<DScalar>() * p -
+                     DScalar(2.0) * p.dot(q.b().cast<DScalar>()) + DScalar(q.c);
+
+    DScalar v2u = DScalar(state.two_opposite_vertices(0, 0));
+    DScalar v2v = DScalar(state.two_opposite_vertices(0, 1));
+    Eigen::Matrix<DScalar, 3, 1> v2 = m_displ->get(v2u, v2v);
+    DScalar v3u = DScalar(state.two_opposite_vertices(0, 2));
+    DScalar v3v = DScalar(state.two_opposite_vertices(0, 3));
+    Eigen::Matrix<DScalar, 3, 1> v3 = m_displ->get(v3u, v3v);
+    Eigen::Matrix<DScalar, 3, 1> V2_V1;
+    V2_V1 = v2 - p;
+    Eigen::Matrix<DScalar, 3, 1> V3_V1;
+    V3_V1 = v3 - p;
+    // check if area is either inverted or smaller than certain A_hat
+    DScalar area;
+    area = (V2_V1.cross(V3_V1)).squaredNorm();
+    // wmtk::logger().info("----current area {}", area.getValue());
+    double A_hat = 1; // this is arbitrary now
+    assert(A_hat > 0);
+    if (area <= 0) {
+        energy += std::numeric_limits<double>::infinity();
+    }
+    if (area < A_hat) {
+        assert((area / A_hat) < 1.0);
+        DScalar barrier_energy = -(area - A_hat) * (area - A_hat) * log(area / A_hat);
+        // wmtk::logger().info("----current barrier energy {}", barrier_energy.getValue());
+        energy += barrier_energy;
+    }
+
     state.value = energy.getValue();
     state.gradient = energy.getGradient();
     state.hessian = energy.getHessian();

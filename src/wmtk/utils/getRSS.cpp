@@ -6,8 +6,10 @@
  */
 
 #if defined(_WIN32)
+// clang-format off
+#include <windows.h>    // must be included BEFORE psapi.h
 #include <psapi.h>
-#include <windows.h>
+// clang-format on
 
 #elif defined(__unix__) || defined(__unix) || defined(unix) || \
     (defined(__APPLE__) && defined(__MACH__))
@@ -31,7 +33,9 @@
 #error "Cannot define getPeakRSS( ) or getCurrentRSS( ) for an unknown OS."
 #endif
 
+#include "getRSS.h"
 
+namespace wmtk {
 /**
  * Returns the peak (maximum so far) resident set size (physical
  * memory use) measured in bytes, or zero if the value cannot be
@@ -114,3 +118,4 @@ size_t getCurrentRSS()
     return (size_t)0L; /* Unsupported. */
 #endif
 }
+} // namespace wmtk
