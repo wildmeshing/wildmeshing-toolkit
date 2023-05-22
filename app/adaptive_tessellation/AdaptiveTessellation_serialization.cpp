@@ -719,6 +719,8 @@ void AdaptiveTessellation::write_hdf_displaced_uv(const std::filesystem::path& p
     paraviewo::HDF5VTUWriter writer;
     writer.add_field("UV", VT);
 
+    const auto faces = get_faces();
+
     if (0) {
         Eigen::MatrixXd v_quadric_error;
         v_quadric_error.resize(V.rows(), 1);
@@ -730,18 +732,18 @@ void AdaptiveTessellation::write_hdf_displaced_uv(const std::filesystem::path& p
 
         Eigen::MatrixXd f_quadric_error;
         f_quadric_error.resize(F.rows(), 1);
-        for (const Tuple& t : get_faces()) {
-            const size_t i = t.fid(*this);
-            f_quadric_error(i, 0) = get_quadric_error_for_face(t);
+        for (size_t i = 0; i < faces.size(); ++i) {
+            const size_t id = faces[i].fid(*this);
+            f_quadric_error(i, 0) = get_quadric_error_for_face(faces[i]);
         }
         writer.add_cell_field("f_quadrics", f_quadric_error);
     }
 
     Eigen::MatrixXd f_area_error;
     f_area_error.resize(F.rows(), 1);
-    for (const Tuple& t : get_faces()) {
-        const size_t i = t.fid(*this);
-        f_area_error(i, 0) = face_attrs[i].accuracy_measure.cached_distance_integral;
+    for (size_t i = 0; i < faces.size(); ++i) {
+        const size_t id = faces[i].fid(*this);
+        f_area_error(i, 0) = face_attrs[id].accuracy_measure.cached_distance_integral;
     }
     writer.add_cell_field("f_area_error", f_area_error);
 
