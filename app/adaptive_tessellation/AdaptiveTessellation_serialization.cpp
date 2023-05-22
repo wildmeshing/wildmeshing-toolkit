@@ -340,18 +340,16 @@ void AdaptiveTessellation::export_mesh_with_displacement(
 
     faces = faces_uv;
     remove_seams(vertices, faces);
-    vertices_uv = vertices;
-    faces_uv = faces;
-    return;
+
     // get rid of unreferenced vertices in both meshes
     Eigen::MatrixXd V_buf;
     Eigen::MatrixXi F_buf;
     Eigen::MatrixXi map_old_to_new_v_ids;
-    // igl::remove_unreferenced(vertices, faces, V_buf, F_buf, map_old_to_new_v_ids);
-    // vertices = V_buf;
-    // faces = F_buf;
+    igl::remove_unreferenced(vertices, faces, V_buf, F_buf, map_old_to_new_v_ids);
+    vertices = V_buf;
+    faces = F_buf;
 
-    // igl::remove_unreferenced(vertices_uv, faces_uv, V_buf, F_buf, map_old_to_new_v_ids);
+    igl::remove_unreferenced(vertices_uv, faces_uv, V_buf, F_buf, map_old_to_new_v_ids);
     vertices_uv = V_buf;
     faces_uv = F_buf;
 }
@@ -585,8 +583,7 @@ void AdaptiveTessellation::write_vtk(const std::filesystem::path& path)
             cost = get_quadrics_area_accuracy_error_for_split(e);
         }
         if (mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
-            // TODO: what function should this be?
-            // cost = get_cached_area_accuracy_error_for_split(e) * get_length2d(e);
+            cost = get_cached_area_accuracy_error_per_edge(e) * get_length2d(e);
         }
 
         // Eigen::Matrix<double, 2, 1> pos1 = vertex_attrs[e.vid(*this)].pos;
@@ -673,6 +670,7 @@ void AdaptiveTessellation::write_obj(const std::filesystem::path& path)
 
 void AdaptiveTessellation::write_obj_displaced(const std::filesystem::path& path)
 {
+    wmtk::logger().info("============>> writing to {}", path);
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     Eigen::MatrixXd CN;
