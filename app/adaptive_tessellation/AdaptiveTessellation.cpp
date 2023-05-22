@@ -209,7 +209,7 @@ bool AdaptiveTessellation::has_self_intersections()
     std::sort(areas.begin(), areas.end());
 
     for (size_t i = 0; i < 10; ++i) {
-        if (area[i] < 1e-8) {
+        if (areas[i] < 1e-8) {
             wmtk::logger().info("Worst area {}: {}", i, areas[i]);
         }
     }
