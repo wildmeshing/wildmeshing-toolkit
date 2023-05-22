@@ -512,7 +512,7 @@ void AdaptiveTessellation::swap_all_edges_quality_pass()
     wmtk::logger().info("size for edges to be swap is {}", collect_all_ops.size());
     auto setup_and_execute = [&](auto executor) {
         addCustomOps(executor);
-        executor.renew_neighbor_tuples = swap_no_renew;
+        executor.renew_neighbor_tuples = swap_renew;
         executor.priority = [&](auto& m, [[maybe_unused]] auto _, auto& e) {
             if (m.is_boundary_edge(e))
                 return -std::numeric_limits<double>::infinity(); // boundary edge shouldn't swap

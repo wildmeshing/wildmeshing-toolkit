@@ -607,9 +607,9 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::before(
 {
     auto& op_cache = m_op_cache.local();
     op_cache = {};
-    if (!utils::is_valid_trimesh_topology(m)) {
-        return false;
-    }
+    // if (!utils::is_valid_trimesh_topology(m)) {
+    //     return false;
+    // }
 
 
     if (!check_seamed_link_condition(m, t)) {
@@ -790,15 +790,17 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::after(AdaptiveTessellation
     // check invariants here since get_area_accuracy_error_per_face requires valid triangle
     if (!m.invariants(one_ring)) return false;
     if (!m.mesh_parameters.m_ignore_embedding) {
-        if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
-            for (const Tuple& tri : one_ring) {
-                double one_ring_tri_error = m.get_area_accuracy_error_per_face(tri);
-                if (one_ring_tri_error > m.mesh_parameters.m_accuracy_safeguard_ratio *
-                                             m.mesh_parameters.m_accuracy_threshold) {
-                    wmtk::logger().info("fail in energy check");
-                    return false;
-                }
-            }
+        // check acceptance after the energy cache update
+        if (m.scheduling_accept_for_collapse(
+                modified_triangles(m),
+                m.mesh_parameters.m_accuracy_threshold)) {
+            wmtk::logger().info("collapse edge accepted");
+
+            return true;
+        } else {
+            wmtk::logger().info("collapse edge rejected");
+
+            return false;
         }
     }
 
@@ -806,9 +808,9 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::after(AdaptiveTessellation
     m.write_obj_displaced(
         m.mesh_parameters.m_output_folder + fmt::format("/collapse_{:04d}.obj", cnt));
     cnt++;
-    if (!utils::is_valid_trimesh_topology(m)) {
-        return false;
-    }
+    // if (!utils::is_valid_trimesh_topology(m)) {
+    //     return false;
+    // }
     return true;
 }
 
@@ -867,7 +869,7 @@ void AdaptiveTessellation::collapse_all_edges()
         executor.priority = [&](auto& m, auto o, auto& e) {
             if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
                 // priority already scaled by 2d edge length
-                return -m.get_cached_area_accuracy_error_per_edge(e); // * m.get_length2d(edge);
+                return -m.get_length2d(e);
             } else if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::TRI_QUADRICS) {
                 // error is not scaled by 2d edge length
                 return -m.get_quadrics_area_accuracy_error_for_split(e) * m.get_length2d(e);
@@ -878,8 +880,7 @@ void AdaptiveTessellation::collapse_all_edges()
         executor.num_threads = NUM_THREADS;
         executor.is_weight_up_to_date = [](auto& m, auto& ele) {
             auto& [weight, op, tup] = ele;
-            double energy =
-                m.get_cached_area_accuracy_error_per_edge(tup); // * at.get_length2d(edge);
+            double energy = m.get_length2d(tup);
             if (energy != -weight) {
                 // wmtk::logger().info("outdated weight in queue");
                 // wmtk::logger().info("energy is {}, weight is {}", energy, weight);
