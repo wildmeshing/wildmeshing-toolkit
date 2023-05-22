@@ -16,6 +16,12 @@ auto split_renew = [](auto& m, auto op, auto& tris) {
     return optup;
 };
 
+auto split_no_renew = [](auto& m, auto op, auto& tris) {
+    auto optup = std::vector<std::pair<std::string, wmtk::TriMesh::Tuple>>();
+
+    return optup;
+};
+
 auto split_quadrics_renew = [](auto& m, auto op, auto& tris) {
     // add all edges that touches the new faces
     std::vector<wmtk::TriMesh::Tuple> edges;
@@ -199,9 +205,19 @@ bool AdaptiveTessellationSplitEdgeOperation::after(
         }
     }
     assert(bool(*this));
-    m.update_energy_cache(modified_triangles(m));
 
-    return ret_data.success;
+    // for AREA_ACCURACY
+    m.update_energy_cache(modified_triangles(m));
+    // check acceptance after the energy cache update
+    if (m.scheduling_accept_for_split(ret_data.new_tris, m.mesh_parameters.m_accuracy_threshold)) {
+        wmtk::logger().info("split edge accepted");
+
+        return ret_data.success;
+    } else {
+        wmtk::logger().info("split edge rejected");
+        ret_data.success = false;
+        return false;
+    }
 }
 
 bool AdaptiveTessellationPairedSplitEdgeOperation::before(AdaptiveTessellation& m, const Tuple& t)
@@ -248,8 +264,9 @@ bool AdaptiveTessellationPairedSplitEdgeOperation::before(AdaptiveTessellation& 
         m.is_seam_edge(t) ? mirror_split_edge.before(m, mirror_edge_tuple.value()) : true;
     if (!m.mesh_parameters.m_do_not_output) {
         // m.write_vtk(m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}.vtu", cnt));
-        // m.write_perface_vtk(
-        //     m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}_face.vtu", cnt));
+        int cnt = g_cnt++;
+        m.write_perface_vtk(
+            m.mesh_parameters.m_output_folder + fmt::format("/split_{:04d}_face.vtu", cnt));
 #if 0
          int cnt = g_cnt++;
          if (cnt % 1000 == 0) {
@@ -421,7 +438,7 @@ bool AdaptiveTessellationPairedSplitEdgeOperation::after(
     wmtk::TriMeshOperation::ExecuteReturnData& ret_data)
 {
     assert(bool(split_edge));
-    split_edge.after(m, ret_data);
+    // if (!split_edge.after(m, ret_data)) return false;
     if (!ret_data.success) return false;
     // nullify the inside edges old mirror info
     m.face_attrs[split_edge.return_edge_tuple.switch_vertex(m).switch_edge(m).fid(m)]
@@ -535,10 +552,7 @@ bool AdaptiveTessellationPairedSplitEdgeOperation::after(
                           .switch_vertex(m)
                           .local_eid(m)] = std::nullopt;
 
-    if (m.scheduling_accept_for_split(ret_data.new_tris, m.mesh_parameters.m_accuracy_threshold))
-        return ret_data.success;
-    else
-        return false;
+    return ret_data.success;
 }
 
 void AdaptiveTessellation::split_all_edges()
@@ -557,7 +571,7 @@ void AdaptiveTessellation::split_all_edges()
     wmtk::logger().info("size for edges to be split is {}", collect_all_ops.size());
     auto setup_and_execute = [&](auto executor) {
         addPairedCustomOps(executor);
-        executor.renew_neighbor_tuples = split_renew;
+        executor.renew_neighbor_tuples = split_no_renew;
         executor.priority = [&](auto& m, auto _, auto& e) {
             double priority = 0.;
             if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
@@ -589,15 +603,19 @@ void AdaptiveTessellation::split_all_edges()
             if (!is_close(total_error, weight)) {
                 return false;
             }
+            // the acceptance for split is now in split_after for AREA_ACCURACY
+            if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) return true;
             // check if meet operating threshold
             if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::EDGE_ACCURACY ||
-                m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY ||
+                // m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY ||
                 m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::TRI_QUADRICS) {
                 if (unscaled_total_error < m.mesh_parameters.m_accuracy_threshold) {
                     wmtk::logger().debug("accuracy smaller than threshold");
                     return false;
                 }
-            } else if (total_error < 4. / 3. * m.mesh_parameters.m_quality_threshold)
+            }
+
+            else if (total_error < 4. / 3. * m.mesh_parameters.m_quality_threshold)
                 return false;
             return true;
         };

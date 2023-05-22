@@ -41,6 +41,11 @@ bool AdaptiveTessellation::scheduling_accept_for_split(
     double acceptance) const
 {
     double max_energy_area_ratio = get_max_energy_area_ratio(new_tris);
+    wmtk::logger().info(
+        "accept check {} > {} {}",
+        sqrt(max_energy_area_ratio),
+        acceptance,
+        sqrt(max_energy_area_ratio) > acceptance);
     return sqrt(max_energy_area_ratio) > acceptance;
 }
 // accept collapse if max per face energy of the new tris is smaller than the acceptance bound

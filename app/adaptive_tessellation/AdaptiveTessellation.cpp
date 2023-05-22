@@ -79,10 +79,9 @@ void AdaptiveTessellation::mesh_preprocessing(
     wmtk::TriMesh m_3d;
     std::vector<std::array<size_t, 3>> tris;
     for (auto f = 0; f < input_F_.rows(); f++) {
-        std::array<size_t, 3> tri = {
-            (size_t)input_F_(f, 0),
-            (size_t)input_F_(f, 1),
-            (size_t)input_F_(f, 2)};
+        std::array<size_t, 3> tri = {(size_t)input_F_(f, 0),
+                                     (size_t)input_F_(f, 1),
+                                     (size_t)input_F_(f, 2)};
         tris.emplace_back(tri);
     }
     m_3d.create_mesh(input_V_.rows(), tris);
@@ -401,11 +400,15 @@ void AdaptiveTessellation::set_parameters(
     const bool boundary_parameter)
 {
     if (mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::EDGE_ACCURACY ||
-        mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY ||
-        mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::TRI_QUADRICS)
+        mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::TRI_QUADRICS) {
+        throw std::runtime_error(
+            "parameters for edge accuracy and tri quadrics are not defined currently");
         mesh_parameters.m_accuracy_threshold = target_accuracy;
+    }
     mesh_parameters.m_quality_threshold = target_edge_length;
 
+    if (mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY)
+        mesh_parameters.m_accuracy_threshold = target_accuracy * mesh_parameters.m_scale;
     // setting needs to be in the order of image-> displacement-> energy-> edge_length
     // set the image first since it is used for displacement and energy setting
     set_image_function(image, wrapping_mode);
