@@ -534,7 +534,11 @@ bool AdaptiveTessellationPairedSplitEdgeOperation::after(
                           .switch_edge(m)
                           .switch_vertex(m)
                           .local_eid(m)] = std::nullopt;
-    return ret_data.success;
+
+    if (m.scheduling_accept_for_split(ret_data.new_tris, m.mesh_parameters.m_accuracy_threshold))
+        return ret_data.success;
+    else
+        return false;
 }
 
 void AdaptiveTessellation::split_all_edges()

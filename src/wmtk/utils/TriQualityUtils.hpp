@@ -15,6 +15,32 @@ struct NewtonMethodInfo
     int curve_id = 0;
 };
 
+// template get 3d tri area
+template <typename T>
+T triangle_3d_area(
+    const Eigen::Matrix<T, 3, 1>& A,
+    const Eigen::Matrix<T, 3, 1>& B,
+    const Eigen::Matrix<T, 3, 1>& C)
+{
+    auto B_A = B - A;
+    auto C_A = C - A;
+    T area = 0.5 * B_A.cross(C_A).norm();
+    return area;
+}
+
+// template get 3d tri area
+template <typename T>
+T triangle_2d_area(
+    const Eigen::Matrix<T, 2, 1>& A,
+    const Eigen::Matrix<T, 2, 1>& B,
+    const Eigen::Matrix<T, 2, 1>& C)
+{
+    auto B_A = B - A;
+    auto C_A = C - A;
+    double area = 0.5 * abs(B_A.x() * C_A.y() - B_A.y() * C_A.x());
+    return area;
+}
+
 using DofVector = Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 2, 1>;
 /**
  * Newton method or gradient descent.

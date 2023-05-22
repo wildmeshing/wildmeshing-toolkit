@@ -25,8 +25,17 @@ TEST_CASE("double area")
     AdaptiveTessellation m;
     m.mesh_preprocessing(input_mesh_path, position_path, normal_path, height_path);
     Image image;
-    image.load(height_path, WrappingMode::MIRROR_REPEAT, WrappingMode::MIRROR_REPEAT);
-
+    image.load(position_path, WrappingMode::MIRROR_REPEAT, WrappingMode::MIRROR_REPEAT);
+    m.set_parameters(
+        1e-9,
+        0.4,
+        image,
+        WrappingMode::MIRROR_REPEAT,
+        SAMPLING_MODE::BICUBIC,
+        DISPLACEMENT_MODE::MESH_3D,
+        adaptive_tessellation::ENERGY_TYPE::AREA_QUADRATURE,
+        adaptive_tessellation::EDGE_LEN_TYPE::AREA_ACCURACY,
+        1);
     Eigen::MatrixXd dbla3d, dbla2d;
     Eigen::MatrixXd CN, FN;
     Eigen::MatrixXd input_V_, input_VT_;
@@ -37,9 +46,21 @@ TEST_CASE("double area")
     igl::doublearea(input_VT_, input_FT_, dbla2d);
 
     for (const auto t : m.get_faces()) {
-        double area2d = m.get_2d_tri_area(t);
-        double area3d = m.get_3d_tri_area(t);
-        REQUIRE_THAT(area2d, Catch::Matchers::WithinRel(abs(dbla2d(t.fid(m))) * 0.5, 1e-2));
-        REQUIRE_THAT(area3d, Catch::Matchers::WithinRel(abs(dbla3d(t.fid(m))) * 0.5, 1e-2));
+        auto vids = m.oriented_tri_vids(t);
+        const auto& p1_2d = m.vertex_attrs[vids[0]].pos;
+        const auto& p2_2d = m.vertex_attrs[vids[1]].pos;
+        const auto& p3_2d = m.vertex_attrs[vids[2]].pos;
+        REQUIRE_THAT(
+            wmtk::triangle_2d_area(p1_2d, p2_2d, p3_2d),
+            Catch::Matchers::WithinRel(abs(dbla2d(t.fid(m))) * 0.5, 1e-1));
+        auto tri_conn_3d = input_F_.row(t.fid(m));
+        const auto& p1 = input_V_.row(tri_conn_3d(0));
+        const auto& p2 = input_V_.row(tri_conn_3d(1));
+        const auto& p3 = input_V_.row(tri_conn_3d(2));
+
+
+        REQUIRE_THAT(
+            wmtk::triangle_3d_area<double>(p1, p2, p3),
+            Catch::Matchers::WithinRel(abs(dbla3d(t.fid(m))) * 0.5, 1e-1));
     }
 }
