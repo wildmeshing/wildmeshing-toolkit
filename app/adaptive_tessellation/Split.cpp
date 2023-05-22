@@ -438,8 +438,8 @@ bool AdaptiveTessellationPairedSplitEdgeOperation::after(
     wmtk::TriMeshOperation::ExecuteReturnData& ret_data)
 {
     assert(bool(split_edge));
-    // if (!split_edge.after(m, ret_data)) return false;
-    if (!ret_data.success) return false;
+    if (!split_edge.after(m, ret_data)) return false;
+    // if (!ret_data.success) return false;
     // nullify the inside edges old mirror info
     m.face_attrs[split_edge.return_edge_tuple.switch_vertex(m).switch_edge(m).fid(m)]
         .mirror_edges[split_edge.return_edge_tuple.switch_vertex(m).switch_edge(m).local_eid(m)] =

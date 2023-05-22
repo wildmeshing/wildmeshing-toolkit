@@ -1,4 +1,5 @@
 #pragma once
+#include <igl/predicates/predicates.h>
 #include <wmtk/TriMeshOperation.h>
 #include "AdaptiveTessellation.h"
 

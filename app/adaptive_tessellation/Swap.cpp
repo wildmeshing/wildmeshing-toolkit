@@ -94,12 +94,11 @@ bool AdaptiveTessellationSwapEdgeOperation::before(AdaptiveTessellation& m, cons
     }
 
     if (wmtk::TriMeshSwapEdgeOperation::before(m, t)) {
-        wmtk::logger().info("swap {}", cnt);
+        // wmtk::logger().info("swap {}", cnt);
 
         if (!m.mesh_parameters.m_do_not_output) {
-            if (cnt % 500 == 0)
-                m.write_obj_displaced(
-                    m.mesh_parameters.m_output_folder + fmt::format("/swap_{:04d}.obj", cnt));
+            m.write_perface_vtk(
+                m.mesh_parameters.m_output_folder + fmt::format("/swap_{:04d}.vtk", cnt));
         }
 
         cnt++;
@@ -172,9 +171,37 @@ bool AdaptiveTessellationSwapEdgeOperation::after(
             m.edge_attrs[edge_tup.eid(m)].curve_id = mirror_edge_curveid.second;
         }
 
+        std::vector<std::array<float, 6>> modified_tris_uv(mod_tups.size());
+        for (int i = 0; i < mod_tups.size(); i++) {
+            auto tri = mod_tups[i];
+            auto verts = m.oriented_tri_vids(tri);
+            std::array<float, 6> tri_uv;
+            for (int i = 0; i < 3; i++) {
+                tri_uv[i * 2] = m.vertex_attrs[verts[i]].pos(0);
+                tri_uv[i * 2 + 1] = m.vertex_attrs[verts[i]].pos(1);
+            }
+            if (wmtk::is_degenerate_2d_oriented_triangle_array(tri_uv)) {
+                wmtk::logger().info("degenerate triangle after swap");
+                ret_data.success = false;
+                return false;
+            }
+        }
+
         m.update_energy_cache(mod_tups);
+        return ret_data;
+        // check acceptance after the energy cache update
+        if (m.scheduling_accept_for_swap(
+                ret_data.new_tris,
+                m.mesh_parameters.m_accuracy_threshold)) {
+            wmtk::logger().info("swap edge accepted");
+
+            return ret_data.success;
+        } else {
+            wmtk::logger().info("swap edge rejected");
+            ret_data.success = false;
+            return false;
+        }
     }
-    return ret_data;
 }
 
 
@@ -189,6 +216,10 @@ auto swap_renew = [](auto& m, auto op, auto& tris) {
     auto edges = m.new_edges_after(tris);
     auto optup = std::vector<std::pair<std::string, wmtk::TriMesh::Tuple>>();
     for (auto& e : edges) optup.emplace_back(op, e);
+    return optup;
+};
+auto swap_no_renew = [](auto& m, auto op, auto& tris) {
+    auto optup = std::vector<std::pair<std::string, wmtk::TriMesh::Tuple>>();
     return optup;
 };
 
@@ -406,7 +437,8 @@ void AdaptiveTessellation::swap_all_edges_accuracy_pass()
     // cache all the 3d pos since swap doesn't change 3d pos
     // for (auto& v : get_vertices()) {
     //     auto p = vertex_attrs[v.vid(*this)].pos;
-    //     vertex_attrs[v.vid(*this)].pos_world = mesh_parameters.m_displacement->get(p(0), p(1));
+    //     vertex_attrs[v.vid(*this)].pos_world = mesh_parameters.m_displacement->get(p(0),
+    //     p(1));
     // }
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     auto collect_tuples = tbb::concurrent_vector<Tuple>();
@@ -480,7 +512,7 @@ void AdaptiveTessellation::swap_all_edges_quality_pass()
     wmtk::logger().info("size for edges to be swap is {}", collect_all_ops.size());
     auto setup_and_execute = [&](auto executor) {
         addCustomOps(executor);
-        executor.renew_neighbor_tuples = swap_renew;
+        executor.renew_neighbor_tuples = swap_no_renew;
         executor.priority = [&](auto& m, [[maybe_unused]] auto _, auto& e) {
             if (m.is_boundary_edge(e))
                 return -std::numeric_limits<double>::infinity(); // boundary edge shouldn't swap
@@ -494,68 +526,8 @@ void AdaptiveTessellation::swap_all_edges_quality_pass()
             if (valence_cost <= 0.) return false;
             if (!is_close(valence_cost, weight)) return false;
 
-            // checking energy safeguard
-            double barrier_before_swap = 0.0;
-            double barrier_after_swap = 0.0;
-            TriMesh::Tuple other_face = e.switch_face(m).value();
-            size_t v1 = e.vid(m);
-            size_t v2 = e.switch_vertex(m).vid(m);
-            size_t v4 = (e.switch_edge(m)).switch_vertex(m).vid(m);
-            size_t v3 = other_face.switch_edge(m).switch_vertex(m).vid(m);
-            std::array<size_t, 3> vids1 = m.oriented_tri_vids(e);
-            std::array<size_t, 3> vids2 = m.oriented_tri_vids(other_face);
-            std::array<Eigen::Vector2d, 3> before_tri1, before_tri2;
-            std::array<Eigen::Vector2d, 3> after_tri1, after_tri2;
-            for (auto i = 0; i < 3; i++) {
-                before_tri1[i] = m.vertex_attrs[vids1[i]].pos;
-                before_tri2[i] = m.vertex_attrs[vids2[i]].pos;
-            }
-            // barrier_before_swap +=
-            //     m.barrier_energy_per_face(before_tri1[0], before_tri1[1], before_tri1[2]);
-            // barrier_before_swap +=
-            //     m.barrier_energy_per_face(before_tri2[0], before_tri2[1], before_tri2[2]);
 
-            // replace the vids with the swapped vids
-            for (auto i = 0; i < 3; i++) {
-                if (vids1[i] == v2) vids1[i] = v3;
-                if (vids2[i] == v1) vids2[i] = v4;
-            }
-            for (auto i = 0; i < 3; i++) {
-                after_tri1[i] = m.vertex_attrs[vids1[i]].pos;
-                after_tri2[i] = m.vertex_attrs[vids2[i]].pos;
-            }
-            // barrier_after_swap +=
-            //     m.barrier_energy_per_face(after_tri1[0], after_tri1[1], after_tri1[2]);
-            // barrier_after_swap +=
-            //     m.barrier_energy_per_face(after_tri2[0], after_tri2[1], after_tri2[2]);
-
-            // simulate the swap////// ==========================> done with barrier check now
-            std::array<std::array<float, 6>, 2> modified_tris;
-            // check is the simulated swap result in degenerate triangles
-            if (m.simulate_swap_is_degenerate(e, modified_tris)) return false;
-
-            // check for the accuracy safegurads
-            std::vector<std::array<float, 6>> modified_tris_vector(2);
-            for (auto i = 0; i < 3; i++) {
-                modified_tris_vector[0][i * 2] = m.vertex_attrs[vids1[i]].pos(0);
-                modified_tris_vector[0][i * 2 + 1] = m.vertex_attrs[vids1[i]].pos(1);
-                modified_tris_vector[1][i * 2] = m.vertex_attrs[vids2[i]].pos(0);
-                modified_tris_vector[1][i * 2 + 1] = m.vertex_attrs[vids2[i]].pos(1);
-            }
-
-            std::vector<float> compute_errors(2);
             if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
-                m.m_texture_integral.get_error_per_triangle(modified_tris_vector, compute_errors);
-
-                double safeguard_accuracy = m.mesh_parameters.m_accuracy_threshold *
-                                            m.mesh_parameters.m_accuracy_safeguard_ratio;
-                if (compute_errors[0] > safeguard_accuracy ||
-                    compute_errors[1] > safeguard_accuracy) {
-                    return false;
-                } else {
-                    return true;
-                }
-
             } else if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::EDGE_ACCURACY) {
                 throw std::runtime_error("EDGE_ACCURACY is not supported for swap quality pass");
                 /////// TODO

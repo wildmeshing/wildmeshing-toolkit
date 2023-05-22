@@ -1,6 +1,7 @@
 #pragma once
 
 #include <igl/point_simplex_squared_distance.h>
+#include <igl/predicates/predicates.h>
 #include <Eigen/Core>
 #include <optional>
 #include "Energy2d.h"
@@ -39,6 +40,21 @@ T triangle_2d_area(
     auto C_A = C - A;
     T area = static_cast<T>(0.5) * abs(B_A.x() * C_A.y() - B_A.y() * C_A.x());
     return area;
+}
+
+// use triangle is std vector that has the 2d coordinate of ABC ordered correctly to the orientation
+// return true if is degenerate (collinear/ flipped)
+// flase o.w.
+inline bool is_degenerate_2d_oriented_triangle_array(const std::array<float, 6>& triangle)
+{
+    Eigen::Vector2d A = Eigen::Vector2d(triangle[0], triangle[1]);
+    Eigen::Vector2d B = Eigen::Vector2d(triangle[2], triangle[3]);
+    Eigen::Vector2d C = Eigen::Vector2d(triangle[4], triangle[5]);
+    auto res = igl::predicates::orient2d(A, B, C);
+    if (res != igl::predicates::Orientation::POSITIVE)
+        return true;
+    else
+        return false;
 }
 
 using DofVector = Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 2, 1>;
