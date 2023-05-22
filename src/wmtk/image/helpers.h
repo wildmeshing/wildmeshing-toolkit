@@ -109,7 +109,7 @@ Eigen::Vector<T, N> sample_nearest(const std::array<wmtk::Image, N>& images, T u
     const auto sx = std::clamp(static_cast<int>(x), 0, w - 1);
     const auto sy = std::clamp(static_cast<int>(y), 0, h - 1);
 
-    return fetch_texels(images, sx, sy).cast<T>();
+    return fetch_texels(images, sx, sy).template cast<T>();
 }
 
 template <typename T, size_t N>
@@ -134,7 +134,7 @@ Eigen::Vector<T, N> sample_bilinear(const std::array<wmtk::Image, N>& images, T 
             fetch_texel(images[k], x0, y1),
             fetch_texel(images[k], x1, y0),
             fetch_texel(images[k], x1, y1));
-        res[k] = pix.cast<T>().dot(weight);
+        res[k] = pix.template cast<T>().dot(weight);
     }
 
     return res;
@@ -143,26 +143,27 @@ Eigen::Vector<T, N> sample_bilinear(const std::array<wmtk::Image, N>& images, T 
 template <typename T, size_t N>
 Eigen::Vector<T, N> sample_bicubic(const std::array<wmtk::Image, N>& images, T u, T v)
 {
-#if 1
     auto w = images[0].width();
     auto h = images[0].height();
     // x, y are between 0 and 1
     auto x = u * static_cast<float>(w);
     auto y = v * static_cast<float>(h);
 
-    const auto sx = static_cast<int>(std::floor(static_cast<double>(x) - 0.5));
-    const auto sy = static_cast<int>(std::floor(static_cast<double>(y) - 0.5));
-    using ivec2 = struct
+    const auto sx = static_cast<int>(std::floor(get_value(x) - 0.5));
+    const auto sy = static_cast<int>(std::floor(get_value(y) - 0.5));
+
+    struct vec2i
     {
         int x, y;
     };
-    std::array<ivec2, 4> bicubic_taps = {
-        ivec2{std::clamp(sx - 1, 0, w - 1), std::clamp(sy - 1, 0, h - 1)},
-        ivec2{std::clamp(sx + 0, 0, w - 1), std::clamp(sy + 0, 0, h - 1)},
-        ivec2{std::clamp(sx + 1, 0, w - 1), std::clamp(sy + 1, 0, h - 1)},
-        ivec2{std::clamp(sx + 2, 0, w - 1), std::clamp(sy + 2, 0, h - 1)}};
 
-    auto bicubic_samples = [](const wmtk::Image& image, const std::array<ivec2, 4>& c) {
+    std::array<vec2i, 4> bicubic_taps = {
+        vec2i{std::clamp(sx - 1, 0, w - 1), std::clamp(sy - 1, 0, h - 1)},
+        vec2i{std::clamp(sx + 0, 0, w - 1), std::clamp(sy + 0, 0, h - 1)},
+        vec2i{std::clamp(sx + 1, 0, w - 1), std::clamp(sy + 1, 0, h - 1)},
+        vec2i{std::clamp(sx + 2, 0, w - 1), std::clamp(sy + 2, 0, h - 1)}};
+
+    auto bicubic_samples = [](const wmtk::Image& image, const std::array<vec2i, 4>& c) {
         BicubicVector<float> samples;
 
         samples(0) = fetch_texel(image, c[0].x, c[0].y);
@@ -189,14 +190,18 @@ Eigen::Vector<T, N> sample_bicubic(const std::array<wmtk::Image, N>& images, T u
     };
 
     // use bicubic interpolation
-    Eigen::Vector<float, N> res;
+    Eigen::Vector<T, N> res;
     for (size_t k = 0; k < N; ++k) {
         BicubicVector<float> sample_vector = bicubic_samples(images[k], bicubic_taps);
         BicubicVector<float> bicubic_coeff = get_bicubic_matrix() * sample_vector;
         res[k] = eval_bicubic_coeffs(bicubic_coeff, x, y);
     }
     return res;
-#else
+}
+
+template <typename T, size_t N>
+Eigen::Vector<T, N> sample_bicubic_old(const std::array<wmtk::Image, N>& images, T u, T v)
+{
     auto w = images[0].width();
     auto h = images[0].height();
     // x, y are between 0 and 1
@@ -218,7 +223,6 @@ Eigen::Vector<T, N> sample_bicubic(const std::array<wmtk::Image, N>& images, T u
         res[k] = eval_bicubic_coeffs(bicubic_coeff, x, y);
     }
     return res;
-#endif
 }
 
 // inline bool point_in_triangle(
@@ -316,7 +320,7 @@ inline std::array<wmtk::Image, N> convert_image_to_morton_z_order(
     auto height = linear_image[0].height();
     for (int k = 0; k < planes; ++k) {
         zorder_image[k] = wmtk::Image(height, width);
-        auto&& zorder_plane = zorder_image[k].get_raw_image_mutable().data();
+        auto&& zorder_plane = zorder_image[k].ref_raw_image().data();
         for (int y = 0; y < height; ++y) {
             for (int x = 0; x < width; ++x) {
                 auto zoffset = to_morton_z_order(x, y);

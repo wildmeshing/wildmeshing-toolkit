@@ -264,17 +264,15 @@ TEST_CASE("Morton Z-Order", "[utils][integral]")
     std::string displaced_positions = WMTK_DATA_DIR "/images/hemisphere_512_displaced.exr";
 
     auto displacement_image_linear = load_rgb_image(displaced_positions);
-    auto displacement_image_zorder = wmtk::internal::convert_image_to_morton_z_order(displacement_image_linear);
+    auto displacement_image_zorder =
+        wmtk::internal::convert_image_to_morton_z_order(displacement_image_linear);
 
     auto planes = displacement_image_linear.size();
     auto width = displacement_image_linear[0].width();
     auto height = displacement_image_linear[0].height();
-    for (int k = 0; k < planes; ++k)
-    {
-        for (int y = 0; y < height; ++y)
-        {
-            for (int x = 0; x < width; ++x)
-            {
+    for (int k = 0; k < planes; ++k) {
+        for (int y = 0; y < height; ++y) {
+            for (int x = 0; x < width; ++x) {
                 auto zorder = wmtk::internal::fetch_texels_zorder(displacement_image_zorder, x, y);
                 auto linear = wmtk::internal::fetch_texels(displacement_image_linear, x, y);
                 REQUIRE(zorder == linear);
@@ -338,7 +336,7 @@ TEST_CASE("Texture Integral Benchmark", "[utils][!benchmark]")
 
     auto displacement_image_linear = load_rgb_image(displaced_positions);
     wmtk::TextureIntegral integral(displacement_image_linear);
-    
+
     BENCHMARK("Bicubic + Exact")
     {
         integral.set_sampling_method(wmtk::TextureIntegral::SamplingMethod::Bicubic);

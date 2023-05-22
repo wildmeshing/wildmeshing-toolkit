@@ -491,7 +491,7 @@ auto TextureIntegral::get_error_one_triangle(const DTriangle& input_triangle) co
                 IntegrationMethod::Adaptive>(input_triangle, order);
         }
     }
-    return {};
+    throw std::runtime_error("Invalid sampling method or integration method");
 }
 
 } // namespace wmtk
