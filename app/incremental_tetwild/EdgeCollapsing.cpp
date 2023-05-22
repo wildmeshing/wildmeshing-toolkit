@@ -253,6 +253,11 @@ bool tetwild::TetWild::collapse_edge_before(const Tuple& loc) // input is an edg
         cache.edge_link.clear();
         cache.vertex_link.clear();
 
+        // debug code
+        // cache.one_ring_surface_vertices.clear();
+        // cache.one_ring_surface_edges.clear();
+        // cache.one_ring_surface.clear();
+
         auto one_ring_tets = get_one_ring_tets_for_edge(loc);
         std::vector<Tuple> surface_fs;
         for (auto t : one_ring_tets) {
@@ -273,6 +278,40 @@ bool tetwild::TetWild::collapse_edge_before(const Tuple& loc) // input is an edg
             Tuple e1 = v1;
             Tuple e2 = v1.switch_edge(*this);
             Tuple e3 = v1.switch_vertex(*this).switch_edge(*this);
+
+            // debug code
+            // std::array<size_t, 3> face = {{v1.vid(*this), v2.vid(*this), v3.vid(*this)}};
+            // std::sort(face.begin(), face.end());
+            // cache.one_ring_surface.push_back(face);
+
+            // cache.one_ring_surface_vertices.push_back(v1.vid(*this));
+            // cache.one_ring_surface_vertices.push_back(v2.vid(*this));
+            // cache.one_ring_surface_vertices.push_back(v3.vid(*this));
+
+            // if (v1.vid(*this) < v2.vid(*this)) {
+            //     cache.one_ring_surface_edges.push_back(
+            //         std::make_pair(v1.vid(*this), v2.vid(*this)));
+            // } else {
+            //     cache.one_ring_surface_edges.push_back(
+            //         std::make_pair(v2.vid(*this), v1.vid(*this)));
+            // }
+
+            // if (v1.vid(*this) < v3.vid(*this)) {
+            //     cache.one_ring_surface_edges.push_back(
+            //         std::make_pair(v1.vid(*this), v3.vid(*this)));
+            // } else {
+            //     cache.one_ring_surface_edges.push_back(
+            //         std::make_pair(v3.vid(*this), v1.vid(*this)));
+            // }
+
+            // if (v2.vid(*this) < v3.vid(*this)) {
+            //     cache.one_ring_surface_edges.push_back(
+            //         std::make_pair(v2.vid(*this), v3.vid(*this)));
+            // } else {
+            //     cache.one_ring_surface_edges.push_back(
+            //         std::make_pair(v3.vid(*this), v2.vid(*this)));
+            // }
+
 
             if (cache.vertex_link.find(v1.vid(*this)) == cache.vertex_link.end()) {
                 cache.vertex_link[v1.vid(*this)] = count_vertex_links(v1);
@@ -326,6 +365,10 @@ bool tetwild::TetWild::collapse_edge_before(const Tuple& loc) // input is an edg
                 }
             }
         }
+
+        wmtk::vector_unique(cache.one_ring_surface_vertices);
+        wmtk::vector_unique(cache.one_ring_surface_edges);
+        wmtk::vector_unique(cache.one_ring_surface);
     }
 
     // test code
@@ -494,10 +537,45 @@ bool tetwild::TetWild::collapse_edge_after(const Tuple& loc)
         }
     }
 
+    //// update attrs
+    // tet attr
+    for (int i = 0; i < cache.changed_tids.size(); i++) {
+        m_tet_attribute[cache.changed_tids[i]].m_quality = qs[i];
+    }
+    // vertex attr
+    round(loc);
+    VA[v2_id].m_is_on_surface = VA[v1_id].m_is_on_surface || VA[v2_id].m_is_on_surface;
+    // open boundary
+    VA[v2_id].m_is_on_open_boundary =
+        VA[v1_id].m_is_on_open_boundary || VA[v2_id].m_is_on_open_boundary;
+
+    // no need to update on_bbox_faces
+    // face attr
+    for (auto& info : cache.changed_faces) {
+        auto& f_attr = info.first;
+        auto& old_vids = info.second;
+        //
+        auto [_, global_fid] = tuple_from_face({{v2_id, old_vids[1], old_vids[2]}});
+        if (global_fid == -1) {
+            // if (debug_flag) std::cout << "whatever reject" << std::endl;
+
+            return false;
+        }
+        m_face_attribute[global_fid] = f_attr;
+    }
+
+
     // global topology check
     if (m_params.preserve_global_topology) {
         std::map<std::pair<size_t, size_t>, int> after_edge_link;
         std::map<size_t, int> after_vertex_link;
+
+
+        // debug code
+        // std::vector<size_t> after_one_ring_surface_vertices;
+        // std::vector<std::pair<size_t, size_t>> after_one_ring_surface_edges;
+        // std::vector<std::array<size_t, 3>> after_one_ring_surface;
+
 
         auto one_ring_tets = get_one_ring_tets_for_vertex(loc);
         std::vector<Tuple> surface_fs;
@@ -541,6 +619,40 @@ bool tetwild::TetWild::collapse_edge_after(const Tuple& loc)
             Tuple e1 = v1;
             Tuple e2 = v1.switch_edge(*this);
             Tuple e3 = v1.switch_vertex(*this).switch_edge(*this);
+
+            // debug code
+
+            // std::array<size_t, 3> face = {{v1.vid(*this), v2.vid(*this), v3.vid(*this)}};
+            // std::sort(face.begin(), face.end());
+            // after_one_ring_surface.push_back(face);
+            // after_one_ring_surface_vertices.push_back(v1.vid(*this));
+            // after_one_ring_surface_vertices.push_back(v2.vid(*this));
+            // after_one_ring_surface_vertices.push_back(v3.vid(*this));
+
+            // if (v1.vid(*this) < v2.vid(*this)) {
+            //     after_one_ring_surface_edges.push_back(
+            //         std::make_pair(v1.vid(*this), v2.vid(*this)));
+            // } else {
+            //     after_one_ring_surface_edges.push_back(
+            //         std::make_pair(v2.vid(*this), v1.vid(*this)));
+            // }
+
+            // if (v1.vid(*this) < v3.vid(*this)) {
+            //     after_one_ring_surface_edges.push_back(
+            //         std::make_pair(v1.vid(*this), v3.vid(*this)));
+            // } else {
+            //     after_one_ring_surface_edges.push_back(
+            //         std::make_pair(v3.vid(*this), v1.vid(*this)));
+            // }
+
+            // if (v2.vid(*this) < v3.vid(*this)) {
+            //     after_one_ring_surface_edges.push_back(
+            //         std::make_pair(v2.vid(*this), v3.vid(*this)));
+            // } else {
+            //     after_one_ring_surface_edges.push_back(
+            //         std::make_pair(v3.vid(*this), v2.vid(*this)));
+            // }
+
 
             if (after_vertex_link.find(v1.vid(*this)) == after_vertex_link.end()) {
                 after_vertex_link[v1.vid(*this)] = count_vertex_links(v1);
@@ -595,17 +707,131 @@ bool tetwild::TetWild::collapse_edge_after(const Tuple& loc)
             }
         }
 
+        // wmtk::vector_unique(after_one_ring_surface_vertices);
+        // wmtk::vector_unique(after_one_ring_surface_edges);
+        // wmtk::vector_unique(after_one_ring_surface);
+
         // check if #links remain the same
         for (auto [key, val] : cache.vertex_link) {
             if (key == v1_id) {
                 // the collpased vertex
                 if (val != after_vertex_link[v2_id]) {
-                    std::cout << "1" << std::endl;
+                    // std::cout << "1" << std::endl;
+
+                    // // debug code
+                    // std::cout << "old one ring surface: ";
+                    // for (int i = 0; i < cache.one_ring_surface.size(); i++) {
+                    //     std::cout << "(" << cache.one_ring_surface[i][0] << ", "
+                    //               << cache.one_ring_surface[i][1] << ", "
+                    //               << cache.one_ring_surface[i][2] << ") ";
+                    // }
+                    // std::cout << std::endl;
+                    // std::cout << "collapsed edge vertices: " << v1_id << " " << v2_id <<
+                    // std::endl; std::cout << "old one ring vertices: "; for (int i = 0; i <
+                    // cache.one_ring_surface_vertices.size(); i++) {
+                    //     std::cout << cache.one_ring_surface_vertices[i] << " ";
+                    // }
+                    // std::cout << std::endl;
+                    // std::cout << "old one ring edges: ";
+                    // for (int i = 0; i < cache.one_ring_surface_edges.size(); i++) {
+                    //     std::cout << "(" << cache.one_ring_surface_edges[i].first << ","
+                    //               << cache.one_ring_surface_edges[i].second << ") "
+                    //               << " ";
+                    // }
+                    // std::cout << std::endl;
+                    // std::cout << "new_vertex: " << loc.vid(*this) << std::endl;
+                    // std::cout << "new one ring vertices: ";
+                    // for (int i = 0; i < after_one_ring_surface_vertices.size(); i++) {
+                    //     std::cout << after_one_ring_surface_vertices[i] << " ";
+                    // }
+                    // std::cout << std::endl;
+                    // std::cout << "new one ring edges: ";
+                    // for (int i = 0; i < after_one_ring_surface_edges.size(); i++) {
+                    //     std::cout << "(" << after_one_ring_surface_edges[i].first << ","
+                    //               << after_one_ring_surface_edges[i].second << ") "
+                    //               << " ";
+                    // }
+                    // std::cout << std::endl;
+                    // std::cout << "old vertex link count map: " << std::endl;
+                    // for (auto pair : cache.vertex_link) {
+                    //     std::cout << pair.first << ": " << pair.second << ", ";
+                    // }
+                    // std::cout << std::endl;
+                    // std::cout << "old edge link count map: " << std::endl;
+                    // for (auto pair : cache.edge_link) {
+                    //     std::cout << "(" << pair.first.first << ", " << pair.first.second << ")"
+                    //               << ": " << pair.second << ", ";
+                    // }
+                    // std::cout << std::endl;
+                    // std::cout << "new vertex link count map: " << std::endl;
+                    // for (auto pair : after_vertex_link) {
+                    //     std::cout << pair.first << ": " << pair.second << ", ";
+                    // }
+                    // std::cout << std::endl;
+                    // std::cout << "new edge link count map: " << std::endl;
+                    // for (auto pair : after_edge_link) {
+                    //     std::cout << "(" << pair.first.first << ", " << pair.first.second << ")"
+                    //               << ": " << pair.second << ", ";
+                    // }
+                    // std::cout << std::endl;
+
+                    // exit(0);
                     return false;
                 }
             } else {
                 if (val != after_vertex_link[key]) {
-                    std::cout << "2" << std::endl;
+                    // std::cout << "2" << std::endl;
+                    // std::cout << "collapsed edge vertices: " << v1_id << " " << v2_id <<
+                    // std::endl;
+
+                    // std::cout << "old one ring vertices: ";
+                    // for (int i = 0; i < cache.one_ring_surface_vertices.size(); i++) {
+                    //     std::cout << cache.one_ring_surface_vertices[i] << " ";
+                    // }
+                    // std::cout << std::endl;
+                    // std::cout << "old one ring edges: ";
+                    // for (int i = 0; i < cache.one_ring_surface_edges.size(); i++) {
+                    //     std::cout << "(" << cache.one_ring_surface_edges[i].first << ","
+                    //               << cache.one_ring_surface_edges[i].second << ") "
+                    //               << " ";
+                    // }
+                    // std::cout << std::endl;
+                    // std::cout << "new_vertex: " << loc.vid(*this) << std::endl;
+                    // std::cout << "new one ring vertices: ";
+                    // for (int i = 0; i < after_one_ring_surface_vertices.size(); i++) {
+                    //     std::cout << after_one_ring_surface_vertices[i] << " ";
+                    // }
+                    // std::cout << std::endl;
+                    // std::cout << "new one ring edges: ";
+                    // for (int i = 0; i < after_one_ring_surface_edges.size(); i++) {
+                    //     std::cout << "(" << after_one_ring_surface_edges[i].first << ","
+                    //               << after_one_ring_surface_edges[i].second << ") "
+                    //               << " ";
+                    // }
+                    // std::cout << std::endl;
+                    // std::cout << "old vertex link count map: " << std::endl;
+                    // for (auto pair : cache.vertex_link) {
+                    //     std::cout << pair.first << ": " << pair.second << ", ";
+                    // }
+                    // std::cout << std::endl;
+                    // std::cout << "old edge link count map: " << std::endl;
+                    // for (auto pair : cache.edge_link) {
+                    //     std::cout << "(" << pair.first.first << ", " << pair.first.second << ")"
+                    //               << ": " << pair.second << ", ";
+                    // }
+                    // std::cout << std::endl;
+                    // std::cout << "new vertex link count map: " << std::endl;
+                    // for (auto pair : after_vertex_link) {
+                    //     std::cout << pair.first << ": " << pair.second << ", ";
+                    // }
+                    // std::cout << std::endl;
+                    // std::cout << "new edge link count map: " << std::endl;
+                    // for (auto pair : after_edge_link) {
+                    //     std::cout << "(" << pair.first.first << ", " << pair.first.second << ")"
+                    //               << ": " << pair.second << ", ";
+                    // }
+                    // std::cout << std::endl;
+                    // exit(0);
                     return false;
                 }
             }
@@ -617,30 +843,300 @@ bool tetwild::TetWild::collapse_edge_after(const Tuple& loc)
             if (key.first == v1_id) {
                 if (v2_id < key.second) {
                     if (val != after_edge_link[std::make_pair(v2_id, key.second)]) {
-                        std::cout << "3" << std::endl;
+                        // std::cout << "3" << std::endl;
+                        // std::cout << "collapsed edge vertices: " << v1_id << " " << v2_id
+                        //           << std::endl;
+
+                        // std::cout << "old one ring vertices: ";
+                        // for (int i = 0; i < cache.one_ring_surface_vertices.size(); i++) {
+                        //     std::cout << cache.one_ring_surface_vertices[i] << " ";
+                        // }
+                        // std::cout << std::endl;
+                        // std::cout << "old one ring edges: ";
+                        // for (int i = 0; i < cache.one_ring_surface_edges.size(); i++) {
+                        //     std::cout << "(" << cache.one_ring_surface_edges[i].first << ","
+                        //               << cache.one_ring_surface_edges[i].second << ") "
+                        //               << std::endl;
+                        // }
+                        // std::cout << std::endl;
+                        // std::cout << "new_vertex: " << loc.vid(*this) << std::endl;
+                        // std::cout << "new one ring vertices: ";
+                        // for (int i = 0; i < after_one_ring_surface_vertices.size(); i++) {
+                        //     std::cout << after_one_ring_surface_vertices[i] << " ";
+                        // }
+                        // std::cout << std::endl;
+                        // std::cout << "new one ring edges: ";
+                        // for (int i = 0; i < after_one_ring_surface_edges.size(); i++) {
+                        //     std::cout << "(" << after_one_ring_surface_edges[i].first << ","
+                        //               << after_one_ring_surface_edges[i].second << ") "
+                        //               << std::endl;
+                        // }
+                        // std::cout << std::endl;
+                        // std::cout << "old vertex link count map: " << std::endl;
+                        // for (auto pair : cache.vertex_link) {
+                        //     std::cout << pair.first << ": " << pair.second << ", ";
+                        // }
+                        // std::cout << std::endl;
+                        // std::cout << "old edge link count map: " << std::endl;
+                        // for (auto pair : cache.edge_link) {
+                        //     std::cout << "(" << pair.first.first << ", " << pair.first.second <<
+                        //     ")"
+                        //               << ": " << pair.second << ", ";
+                        // }
+                        // std::cout << std::endl;
+                        // std::cout << "new vertex link count map: " << std::endl;
+                        // for (auto pair : after_vertex_link) {
+                        //     std::cout << pair.first << ": " << pair.second << ", ";
+                        // }
+                        // std::cout << std::endl;
+                        // std::cout << "new edge link count map: " << std::endl;
+                        // for (auto pair : after_edge_link) {
+                        //     std::cout << "(" << pair.first.first << ", " << pair.first.second <<
+                        //     ")"
+                        //               << ": " << pair.second << ", ";
+                        // }
+                        // std::cout << std::endl;
+                        // exit(0);
                         return false;
                     }
                 } else {
                     if (val != after_edge_link[std::make_pair(key.second, v2_id)]) {
-                        std::cout << "4" << std::endl;
+                        // std::cout << "4" << std::endl;
+                        // std::cout << "collapsed edge vertices: " << v1_id << " " << v2_id
+                        //           << std::endl;
+
+                        // std::cout << "old one ring vertices: ";
+                        // for (int i = 0; i < cache.one_ring_surface_vertices.size(); i++) {
+                        //     std::cout << cache.one_ring_surface_vertices[i] << " ";
+                        // }
+                        // std::cout << std::endl;
+                        // std::cout << "old one ring edges: ";
+                        // for (int i = 0; i < cache.one_ring_surface_edges.size(); i++) {
+                        //     std::cout << "(" << cache.one_ring_surface_edges[i].first << ","
+                        //               << cache.one_ring_surface_edges[i].second << ") "
+                        //               << std::endl;
+                        // }
+                        // std::cout << std::endl;
+                        // std::cout << "new_vertex: " << loc.vid(*this) << std::endl;
+                        // std::cout << "new one ring vertices: ";
+                        // for (int i = 0; i < after_one_ring_surface_vertices.size(); i++) {
+                        //     std::cout << after_one_ring_surface_vertices[i] << " ";
+                        // }
+                        // std::cout << std::endl;
+                        // std::cout << "new one ring edges: ";
+                        // for (int i = 0; i < after_one_ring_surface_edges.size(); i++) {
+                        //     std::cout << "(" << after_one_ring_surface_edges[i].first << ","
+                        //               << after_one_ring_surface_edges[i].second << ") "
+                        //               << std::endl;
+                        // }
+                        // std::cout << std::endl;
+                        // std::cout << "old vertex link count map: " << std::endl;
+                        // for (auto pair : cache.vertex_link) {
+                        //     std::cout << pair.first << ": " << pair.second << ", ";
+                        // }
+                        // std::cout << std::endl;
+                        // std::cout << "old edge link count map: " << std::endl;
+                        // for (auto pair : cache.edge_link) {
+                        //     std::cout << "(" << pair.first.first << ", " << pair.first.second <<
+                        //     ")"
+                        //               << ": " << pair.second << ", ";
+                        // }
+                        // std::cout << std::endl;
+                        // std::cout << "new vertex link count map: " << std::endl;
+                        // for (auto pair : after_vertex_link) {
+                        //     std::cout << pair.first << ": " << pair.second << ", ";
+                        // }
+                        // std::cout << std::endl;
+                        // std::cout << "new edge link count map: " << std::endl;
+                        // for (auto pair : after_edge_link) {
+                        //     std::cout << "(" << pair.first.first << ", " << pair.first.second <<
+                        //     ")"
+                        //               << ": " << pair.second << ", ";
+                        // }
+                        // std::cout << std::endl;
+                        // exit(0);
                         return false;
                     }
                 }
             } else if (key.second == v1_id) {
                 if (v2_id < key.first) {
                     if (val != after_edge_link[std::make_pair(v2_id, key.first)]) {
-                        std::cout << "5" << std::endl;
+                        // std::cout << "5" << std::endl;
+                        // std::cout << "collapsed edge vertices: " << v1_id << " " << v2_id
+                        //           << std::endl;
+
+                        // std::cout << "old one ring vertices: ";
+                        // for (int i = 0; i < cache.one_ring_surface_vertices.size(); i++) {
+                        //     std::cout << cache.one_ring_surface_vertices[i] << " ";
+                        // }
+                        // std::cout << std::endl;
+                        // std::cout << "old one ring edges: ";
+                        // for (int i = 0; i < cache.one_ring_surface_edges.size(); i++) {
+                        //     std::cout << "(" << cache.one_ring_surface_edges[i].first << ","
+                        //               << cache.one_ring_surface_edges[i].second << ") "
+                        //               << std::endl;
+                        // }
+                        // std::cout << std::endl;
+                        // std::cout << "new_vertex: " << loc.vid(*this) << std::endl;
+                        // std::cout << "new one ring vertices: ";
+                        // for (int i = 0; i < after_one_ring_surface_vertices.size(); i++) {
+                        //     std::cout << after_one_ring_surface_vertices[i] << " ";
+                        // }
+                        // std::cout << std::endl;
+                        // std::cout << "new one ring edges: ";
+                        // for (int i = 0; i < after_one_ring_surface_edges.size(); i++) {
+                        //     std::cout << "(" << after_one_ring_surface_edges[i].first << ","
+                        //               << after_one_ring_surface_edges[i].second << ") "
+                        //               << std::endl;
+                        // }
+                        // std::cout << std::endl;
+                        // std::cout << "old vertex link count map: " << std::endl;
+                        // for (auto pair : cache.vertex_link) {
+                        //     std::cout << pair.first << ": " << pair.second << ", ";
+                        // }
+                        // std::cout << std::endl;
+                        // std::cout << "old edge link count map: " << std::endl;
+                        // for (auto pair : cache.edge_link) {
+                        //     std::cout << "(" << pair.first.first << ", " << pair.first.second <<
+                        //     ")"
+                        //               << ": " << pair.second << ", ";
+                        // }
+                        // std::cout << std::endl;
+                        // std::cout << "new vertex link count map: " << std::endl;
+                        // for (auto pair : after_vertex_link) {
+                        //     std::cout << pair.first << ": " << pair.second << ", ";
+                        // }
+                        // std::cout << std::endl;
+                        // std::cout << "new edge link count map: " << std::endl;
+                        // for (auto pair : after_edge_link) {
+                        //     std::cout << "(" << pair.first.first << ", " << pair.first.second <<
+                        //     ")"
+                        //               << ": " << pair.second << ", ";
+                        // }
+                        // std::cout << std::endl;
+                        // exit(0);
                         return false;
                     }
                 } else {
                     if (val != after_edge_link[std::make_pair(key.first, v2_id)]) {
-                        std::cout << "6" << std::endl;
+                        // std::cout << "6" << std::endl;
+                        // std::cout << "collapsed edge vertices: " << v1_id << " " << v2_id
+                        //           << std::endl;
+
+                        // std::cout << "old one ring vertices: ";
+                        // for (int i = 0; i < cache.one_ring_surface_vertices.size(); i++) {
+                        //     std::cout << cache.one_ring_surface_vertices[i] << " ";
+                        // }
+                        // std::cout << std::endl;
+                        // std::cout << "old one ring edges: ";
+                        // for (int i = 0; i < cache.one_ring_surface_edges.size(); i++) {
+                        //     std::cout << "(" << cache.one_ring_surface_edges[i].first << ","
+                        //               << cache.one_ring_surface_edges[i].second << ") "
+                        //               << std::endl;
+                        // }
+                        // std::cout << std::endl;
+                        // std::cout << "new_vertex: " << loc.vid(*this) << std::endl;
+                        // std::cout << "new one ring vertices: ";
+                        // for (int i = 0; i < after_one_ring_surface_vertices.size(); i++) {
+                        //     std::cout << after_one_ring_surface_vertices[i] << " ";
+                        // }
+                        // std::cout << std::endl;
+                        // std::cout << "new one ring edges: ";
+                        // for (int i = 0; i < after_one_ring_surface_edges.size(); i++) {
+                        //     std::cout << "(" << after_one_ring_surface_edges[i].first << ","
+                        //               << after_one_ring_surface_edges[i].second << ") "
+                        //               << std::endl;
+                        // }
+                        // std::cout << std::endl;
+                        // std::cout << "old vertex link count map: " << std::endl;
+                        // for (auto pair : cache.vertex_link) {
+                        //     std::cout << pair.first << ": " << pair.second << ", ";
+                        // }
+                        // std::cout << std::endl;
+                        // std::cout << "old edge link count map: " << std::endl;
+                        // for (auto pair : cache.edge_link) {
+                        //     std::cout << "(" << pair.first.first << ", " << pair.first.second <<
+                        //     ")"
+                        //               << ": " << pair.second << ", ";
+                        // }
+                        // std::cout << std::endl;
+                        // std::cout << "new vertex link count map: " << std::endl;
+                        // for (auto pair : after_vertex_link) {
+                        //     std::cout << pair.first << ": " << pair.second << ", ";
+                        // }
+                        // std::cout << std::endl;
+                        // std::cout << "new edge link count map: " << std::endl;
+                        // for (auto pair : after_edge_link) {
+                        //     std::cout << "(" << pair.first.first << ", " << pair.first.second <<
+                        //     ")"
+                        //               << ": " << pair.second << ", ";
+                        // }
+                        // std::cout << std::endl;
+                        // exit(0);
                         return false;
                     }
                 }
             } else {
                 if (val != after_edge_link[key]) {
-                    std::cout << "7" << std::endl;
+                    // std::cout << "7" << std::endl;
+                    // std::cout << "old one ring surface: ";
+                    // for (int i = 0; i < cache.one_ring_surface.size(); i++) {
+                    //     std::cout << "(" << cache.one_ring_surface[i][0] << ", "
+                    //               << cache.one_ring_surface[i][1] << ", "
+                    //               << cache.one_ring_surface[i][2] << ") ";
+                    // }
+                    // std::cout << std::endl;
+                    // std::cout << "collapsed edge vertices: " << v1_id << " " << v2_id <<
+                    // std::endl;
+
+                    // std::cout << "old one ring vertices: ";
+                    // for (int i = 0; i < cache.one_ring_surface_vertices.size(); i++) {
+                    //     std::cout << cache.one_ring_surface_vertices[i] << " ";
+                    // }
+                    // std::cout << std::endl;
+                    // std::cout << "old one ring edges: ";
+                    // for (int i = 0; i < cache.one_ring_surface_edges.size(); i++) {
+                    //     std::cout << "(" << cache.one_ring_surface_edges[i].first << ","
+                    //               << cache.one_ring_surface_edges[i].second << ") "
+                    //               << " ";
+                    // }
+                    // std::cout << std::endl;
+                    // std::cout << "new_vertex: " << loc.vid(*this) << std::endl;
+                    // std::cout << "new one ring vertices: ";
+                    // for (int i = 0; i < after_one_ring_surface_vertices.size(); i++) {
+                    //     std::cout << after_one_ring_surface_vertices[i] << " ";
+                    // }
+                    // std::cout << std::endl;
+                    // std::cout << "new one ring edges: ";
+                    // for (int i = 0; i < after_one_ring_surface_edges.size(); i++) {
+                    //     std::cout << "(" << after_one_ring_surface_edges[i].first << ","
+                    //               << after_one_ring_surface_edges[i].second << ") "
+                    //               << " ";
+                    // }
+                    // std::cout << std::endl;
+                    // std::cout << "old vertex link count map: " << std::endl;
+                    // for (auto pair : cache.vertex_link) {
+                    //     std::cout << pair.first << ": " << pair.second << ", ";
+                    // }
+                    // std::cout << std::endl;
+                    // std::cout << "old edge link count map: " << std::endl;
+                    // for (auto pair : cache.edge_link) {
+                    //     std::cout << "(" << pair.first.first << ", " << pair.first.second << ")"
+                    //               << ": " << pair.second << ", ";
+                    // }
+                    // std::cout << std::endl;
+                    // std::cout << "new vertex link count map: " << std::endl;
+                    // for (auto pair : after_vertex_link) {
+                    //     std::cout << pair.first << ": " << pair.second << ", ";
+                    // }
+                    // std::cout << std::endl;
+                    // std::cout << "new edge link count map: " << std::endl;
+                    // for (auto pair : after_edge_link) {
+                    //     std::cout << "(" << pair.first.first << ", " << pair.first.second << ")"
+                    //               << ": " << pair.second << ", ";
+                    // }
+                    // std::cout << std::endl;
+                    // exit(0);
                     return false;
                 }
             }
@@ -677,32 +1173,32 @@ bool tetwild::TetWild::collapse_edge_after(const Tuple& loc)
 
     // }
 
-    //// update attrs
-    // tet attr
-    for (int i = 0; i < cache.changed_tids.size(); i++) {
-        m_tet_attribute[cache.changed_tids[i]].m_quality = qs[i];
-    }
-    // vertex attr
-    round(loc);
-    VA[v2_id].m_is_on_surface = VA[v1_id].m_is_on_surface || VA[v2_id].m_is_on_surface;
-    // open boundary
-    VA[v2_id].m_is_on_open_boundary =
-        VA[v1_id].m_is_on_open_boundary || VA[v2_id].m_is_on_open_boundary;
+    // //// update attrs
+    // // tet attr
+    // for (int i = 0; i < cache.changed_tids.size(); i++) {
+    //     m_tet_attribute[cache.changed_tids[i]].m_quality = qs[i];
+    // }
+    // // vertex attr
+    // round(loc);
+    // VA[v2_id].m_is_on_surface = VA[v1_id].m_is_on_surface || VA[v2_id].m_is_on_surface;
+    // // open boundary
+    // VA[v2_id].m_is_on_open_boundary =
+    //     VA[v1_id].m_is_on_open_boundary || VA[v2_id].m_is_on_open_boundary;
 
-    // no need to update on_bbox_faces
-    // face attr
-    for (auto& info : cache.changed_faces) {
-        auto& f_attr = info.first;
-        auto& old_vids = info.second;
-        //
-        auto [_, global_fid] = tuple_from_face({{v2_id, old_vids[1], old_vids[2]}});
-        if (global_fid == -1) {
-            // if (debug_flag) std::cout << "whatever reject" << std::endl;
+    // // no need to update on_bbox_faces
+    // // face attr
+    // for (auto& info : cache.changed_faces) {
+    //     auto& f_attr = info.first;
+    //     auto& old_vids = info.second;
+    //     //
+    //     auto [_, global_fid] = tuple_from_face({{v2_id, old_vids[1], old_vids[2]}});
+    //     if (global_fid == -1) {
+    //         // if (debug_flag) std::cout << "whatever reject" << std::endl;
 
-            return false;
-        }
-        m_face_attribute[global_fid] = f_attr;
-    }
+    //         return false;
+    //     }
+    //     m_face_attribute[global_fid] = f_attr;
+    // }
 
     return true;
 }

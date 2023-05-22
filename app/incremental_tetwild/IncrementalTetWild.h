@@ -415,6 +415,11 @@ private:
         std::map<size_t, int> vertex_link;
         size_t global_nonmani_ver_cnt;
 
+        // debug use
+        std::vector<size_t> one_ring_surface_vertices;
+        std::vector<std::pair<size_t, size_t>> one_ring_surface_edges;
+        std::vector<std::array<size_t, 3>> one_ring_surface;
+
         // for geometry preservation
         std::vector<size_t> edge_incident_param_type;
     };
