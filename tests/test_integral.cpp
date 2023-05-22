@@ -149,7 +149,7 @@ void test_integral_reference(
         expected[f] = displacement.get_error_per_triangle(triangle);
     });
 
-    for (int f = 0; f < mesh.get_num_facets(); ++f) {
+    for (int f = 0; f < static_cast<int>(mesh.get_num_facets()); ++f) {
         wmtk::logger().debug(
             "error: {}",
             std::abs(expected[f] - computed_errors[f] * scale * scale));
@@ -160,7 +160,7 @@ void test_integral_reference(
     wmtk::logger().info("done with integral test");
 }
 
-void test_sampling(const MeshType& mesh, std::array<wmtk::Image, 3> displaced)
+void test_sampling(std::array<wmtk::Image, 3> displaced)
 {
     // Check interpolation at pixel centers
     const int w = displaced[0].width();
@@ -224,6 +224,18 @@ void test_sampling(const MeshType& mesh, std::array<wmtk::Image, 3> displaced)
             }
         }
     }
+
+    // Check two bicubic sampling implementations on random positions
+    std::uniform_real_distribution<float> dist_uv(0.0f, 1.0f);
+    for (int k = 0; k < 100; ++k) {
+        const float u = dist_uv(gen);
+        const float v = dist_uv(gen);
+        const auto bicubic_new = wmtk::internal::sample_bicubic(displaced, u, v);
+        const auto bicubic_old = wmtk::internal::sample_bicubic_old(displaced, u, v);
+        for (size_t i = 0; i < 3; ++i) {
+            REQUIRE(bicubic_new[i] == bicubic_old[i]);
+        }
+    }
 }
 
 } // namespace
@@ -255,9 +267,30 @@ TEST_CASE("Texture Integral Reference", "[utils][integral]")
 TEST_CASE("Texture Integral Sampling", "[utils][integral]")
 {
     std::string displaced_positions = WMTK_DATA_DIR "/images/hemisphere_512_displaced.exr";
-    test_sampling(
-        lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMTK_DATA_DIR "/hemisphere.obj"),
-        load_rgb_image(displaced_positions));
+    auto displacement_image = load_rgb_image(displaced_positions);
+    test_sampling(displacement_image);
+}
+
+TEST_CASE("Morton Z-Order", "[utils][integral]")
+{
+    std::string displaced_positions = WMTK_DATA_DIR "/images/hemisphere_512_displaced.exr";
+
+    auto displacement_image_linear = load_rgb_image(displaced_positions);
+    auto displacement_image_zorder =
+        wmtk::internal::convert_image_to_morton_z_order(displacement_image_linear);
+
+    auto planes = static_cast<int>(displacement_image_linear.size());
+    auto width = static_cast<int>(displacement_image_linear[0].width());
+    auto height = static_cast<int>(displacement_image_linear[0].height());
+    for (int k = 0; k < planes; ++k) {
+        for (int y = 0; y < height; ++y) {
+            for (int x = 0; x < width; ++x) {
+                auto zorder = wmtk::internal::fetch_texels_zorder(displacement_image_zorder, x, y);
+                auto linear = wmtk::internal::fetch_texels(displacement_image_linear, x, y);
+                REQUIRE(zorder == linear);
+            }
+        }
+    }
 }
 
 TEST_CASE("Texture Integral Adaptive", "[utils][integral]")
@@ -312,7 +345,9 @@ TEST_CASE("Texture Integral Benchmark", "[utils][!benchmark]")
     auto uv_triangles = load_uv_triangles(WMTK_DATA_DIR "/hemisphere.obj");
 
     std::vector<float> computed_errors(uv_triangles.size());
-    wmtk::TextureIntegral integral(load_rgb_image(displaced_positions));
+
+    auto displacement_image_linear = load_rgb_image(displaced_positions);
+    wmtk::TextureIntegral integral(displacement_image_linear);
 
     BENCHMARK("Bicubic + Exact")
     {
