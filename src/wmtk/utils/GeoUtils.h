@@ -1,7 +1,6 @@
 #pragma once
 
 
-#include <igl/predicates/predicates.h>
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <optional>
