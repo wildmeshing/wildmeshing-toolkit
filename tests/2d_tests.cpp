@@ -417,7 +417,7 @@ TEST_CASE("edge_collapse", "[test_2d_operation]")
 
 TEST_CASE("swap_operation", "[test_2d_operation]")
 {
-    wmtk::TriMeshSwapEdgeOperation swap_op;
+    wmtk::TriMeshEdgeSwapOperation swap_op;
     SECTION("swap")
     {
         TriMesh m;
@@ -485,7 +485,7 @@ TEST_CASE("swap_operation", "[test_2d_operation]")
 
 TEST_CASE("split_operation", "[test_2d_operation]")
 {
-    wmtk::TriMeshSplitEdgeOperation split_op;
+    wmtk::TriMeshEdgeSplitOperation split_op;
     TriMesh m;
     SECTION("1_tri_split")
     {

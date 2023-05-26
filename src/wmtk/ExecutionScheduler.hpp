@@ -212,9 +212,9 @@ struct ExecutePass
         if constexpr (std::is_base_of<wmtk::TriMesh, AppMesh>::value) {
 
             add_operation<wmtk::TriMeshEdgeCollapseOperation>();
-            add_operation<wmtk::TriMeshSwapEdgeOperation>();
-            add_operation<wmtk::TriMeshSplitEdgeOperation>();
-            add_operation<wmtk::TriMeshSmoothVertexOperation>();
+            add_operation<wmtk::TriMeshEdgeSwapOperation>();
+            add_operation<wmtk::TriMeshEdgeSplitOperation>();
+            add_operation<wmtk::TriMeshVertexSmoothOperation>();
             add_operation<wmtk::TriMeshConsolidateOperation>();
         }
 
