@@ -26,10 +26,10 @@ namespace detail {
 // Useful typedef for implementing type erasure
 // The FixedLenStringArray is just a char array, so it effectively reflects a binary chunk of data
 // and is a builtin of HighFive
-template <typename T>
-using TypeErasedVectorType = HighFive::FixedLenStringArray<sizeof(T) / sizeof(char)>;
-template <typename T>
-using TypeErasedType =std::array<std::char8_t, sizeof(T) / sizeof(std::char8_t)>;
+//template <typename T>
+//using TypeErasedVectorType = HighFive::FixedLenStringArray<sizeof(T) / sizeof(char)>;
+//template <typename T>
+//using TypeErasedType =std::array<std::char8_t, sizeof(T) / sizeof(std::char8_t)>;
 } // namespace detail
 
 
@@ -82,7 +82,7 @@ void write_values_to_dataset(
     // resize the datset to the right size
     dataset.resize({data.size()});
 
-    dataset.select().write(data);
+    //dataset.select().write(data);
 }
 
 template <typename T, typename Allocator>

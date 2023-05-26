@@ -66,8 +66,12 @@ target_include_directories(wildmeshing_toolkit PUBLIC src)
 target_compile_definitions(wildmeshing_toolkit PUBLIC _USE_MATH_DEFINES)
 target_compile_definitions(wildmeshing_toolkit PUBLIC NOMINMAX)
 
+# Compile options
+target_compile_options(wildmeshing_toolkit PUBLIC -fconcepts)
+
 # C++ standard
 target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_17)
+
 
 
 # Set IDE folders
