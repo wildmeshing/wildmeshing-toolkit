@@ -245,8 +245,9 @@ HighFive::CompoundType AttributeCollectionSerialization<T>::datatype()
 template <typename T>
 AttributeCollectionUpdate AttributeCollectionSerialization<T>::record_value_changes()
 {
+    assert(attribute_collection.is_in_protect());
     const std::map<size_t, T>& rollback_list = attribute_collection.m_rollback_list.local();
-    const size_t old_size = attribute_collection.m_rollback_size.local();
+    const size_t old_size = attribute_collection.m_rollback_size.local().value();
     const auto& attributes = attribute_collection.m_attributes;
     // const tbb::concurrent_vector<T>& attributes = attribute_collection.m_attributes;
 
@@ -284,7 +285,7 @@ template <typename T>
 AttributeCollectionUpdate AttributeCollectionSerialization<T>::record_entire_state()
 {
     const std::map<size_t, T>& rollback_list = attribute_collection.m_rollback_list.local();
-    const size_t old_size = attribute_collection.m_rollback_size.local();
+    const size_t old_size = attribute_collection.m_rollback_size.local().value_or(attribute_collection.size());
     const auto& attributes = attribute_collection.m_attributes;
     // const tbb::concurrent_vector<T>& attributes = attribute_collection.m_attributes;
 

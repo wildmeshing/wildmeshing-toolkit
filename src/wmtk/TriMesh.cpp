@@ -5,7 +5,8 @@
 #include <wmtk/AttributeCollection.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
-#include "wmtk/utils/VectorUtils.h"
+#include <wmtk/utils/VectorUtils.h>
+#include <wmtk/operations/TriMeshConsolidateOperation.h>
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
@@ -77,7 +78,7 @@ TriMesh::TriMesh() {}
 TriMesh::~TriMesh() {}
 
 
-bool TriMesh::invariants(const std::vector<Tuple>&)
+bool TriMesh::invariants(const TriMeshOperation&)
 {
     return true;
 }
@@ -728,5 +729,24 @@ std::vector<size_t> TriMesh::tri_fids_bounded_by_edge_vids(size_t v0, size_t v1)
 
     // get the fids that will be modified
     return set_intersection(f0, f1);
+}
+
+auto TriMesh::start_protected_attributes_raii() -> ProtectedAttributeRAII
+{
+    auto get_opt = [](AbstractAttributeCollection* ptr) -> AttributeCollectionProtectRAII {
+        if (ptr != nullptr) {
+            return AttributeCollectionProtectRAII(*ptr);
+        } else {
+            return AttributeCollectionProtectRAII();
+        }
+    };
+    return std::array<AttributeCollectionProtectRAII, 3>{
+        {get_opt(p_vertex_attrs), get_opt(p_edge_attrs), get_opt(p_face_attrs)}};
+}
+auto TriMesh::start_protected_connectivity_raii() -> ProtectedConnectivityRAII
+{
+    return std::array<AttributeCollectionProtectRAII, 2>{
+        {AttributeCollectionProtectRAII(m_vertex_connectivity),
+         AttributeCollectionProtectRAII(m_tri_connectivity)}};
 }
 

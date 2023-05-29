@@ -32,6 +32,7 @@ class OperationRecorder;
 class TriMeshOperation;
 class TriMeshTupleData;
 class AttributeCollectionRecorder;
+class SingleTupleTriMeshOperation;
 
 
 class TriMesh
@@ -195,12 +196,14 @@ public:
      * @return vector of Tuples
      */
     Tuple init_from_edge(size_t vid1, size_t vid2, size_t fid) const;
+
     // same as init_from_edge but if the edge doesn't exist it returns returns nohting
     std::optional<Tuple> init_from_edge_opt(size_t vid1, size_t vid2, size_t fid) const;
 
     // generates a tuple from
     std::optional<Tuple> init_from_edge_opt(size_t vid1, size_t vid2) const;
 
+    // TODO: this is potentially very misleading. not to be allowed
     template <typename T>
     using vector = tbb::concurrent_vector<T>;
 
@@ -248,7 +251,7 @@ public:
      * @return true if the invairnats are not violated
      */
     // MTAO: TODO: figure out if invariants is a property of the mesh or a property o
-    virtual bool invariants(const std::vector<Tuple>&);
+    virtual bool invariants(const TriMeshOperation& op);
 
     /**
      * @brief get the current largest global fid
@@ -422,11 +425,15 @@ protected:
      * @brief Start the phase where the attributes that will be modified can be recorded
      *
      */
+    using ProtectedAttributeRAII = std::array<AttributeCollectionProtectRAII, 3>;
     void start_protected_attributes();
+    ProtectedAttributeRAII start_protected_attributes_raii();
     /**
      * @brief Start caching the connectivity that will be modified
      */
+    using ProtectedConnectivityRAII = std::array<AttributeCollectionProtectRAII, 2>;
     void start_protected_connectivity();
+    ProtectedConnectivityRAII start_protected_connectivity_raii();
 
     /**
      * @brief End the modification phase
