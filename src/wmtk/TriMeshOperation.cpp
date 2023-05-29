@@ -31,49 +31,41 @@ size_t TriMeshOperation::get_next_empty_slot_v(TriMesh& m)
 {
     return m.get_next_empty_slot_v();
 }
-
-
-auto TriMeshOperation::operator()(TriMesh& m, const Tuple& t) -> ExecuteReturnData
+TriMesh::ProtectedAttributeRAII TriMeshOperation::start_protected_attributes_raii(TriMesh& m)
 {
-    ExecuteReturnData retdata;
-    retdata.success = false;
-
-    mark_failed();
-    m.start_protected_connectivity();
-    m.start_protected_attributes();
-
-    retdata.success = before(m, t);
-    if (!retdata.success) {
-        goto finish;
-    }
-
-    retdata = execute(m, t);
-    assign(retdata.tuple);
-    if (!retdata.success) {
-        goto finish;
-    }
-
-    retdata.success = after(m, retdata) && invariants(m, retdata);
-    if (!retdata.success) {
-        goto finish;
-    }
-
-    //
-finish:
-    if (!retdata.success) {
-        m.rollback_protected();
-        mark_failed();
-    }
-    m.release_protected_connectivity();
-    m.release_protected_attributes();
-
-    return retdata;
+    return m.start_protected_attributes_raii();
+}
+TriMesh::ProtectedConnectivityRAII TriMeshOperation::start_protected_connectivity_raii(TriMesh& m)
+{
+    return m.start_protected_connectivity_raii();
 }
 
-bool TriMeshOperation::invariants(TriMesh& m, ExecuteReturnData& ret_data)
-{
-    return m.invariants(ret_data.new_tris);
+void TriMeshOperation::rollback_protected(TriMesh& m) {
+    m.rollback_protected();
 }
+    bool TriMeshOperation::invariants(TriMesh& m) {
+        return m.invariants(*this);
+    }
+
+
+bool TriMeshOperation::operator()(TriMesh& m, const Tuple& t)
+{
+    auto attr_raa = start_protected_attributes_raii(m);
+    auto con_raa = start_protected_connectivity_raii(m);
+
+    if (before(m, t)) {
+        if (execute(m, t)) { // success should be marked here
+            if (after(m)) {
+                if (invariants(m)) {
+                    return true;
+                }
+            }
+        }
+    }
+    m.rollback_protected();
+    return false;
+}
+
 
 void TriMeshOperation::set_vertex_size(TriMesh& m, size_t v_cnt)
 {
@@ -91,9 +83,4 @@ void TriMeshOperation::set_tri_size(TriMesh& m, size_t t_cnt)
     tri_con.m_attributes.grow_to_at_least(t_cnt);
     tri_con.shrink_to_fit();
 }
-
-
-
-
-
 
