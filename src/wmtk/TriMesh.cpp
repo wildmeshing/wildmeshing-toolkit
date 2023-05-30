@@ -139,6 +139,7 @@ bool TriMesh::is_boundary_vertex(const TriMesh::Tuple& t) const
 
 void TriMesh::consolidate_mesh()
 {
+    throw std::runtime_error("do not consolidate mesh");
     TriMeshConsolidateOperation op;
     op(*this, TriMesh::Tuple{});
 }
@@ -729,4 +730,3 @@ std::vector<size_t> TriMesh::tri_fids_bounded_by_edge_vids(size_t v0, size_t v1)
     // get the fids that will be modified
     return set_intersection(f0, f1);
 }
-

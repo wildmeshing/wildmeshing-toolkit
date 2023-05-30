@@ -234,7 +234,7 @@ std::string TriMeshSplitEdgeOperation::name() const
 auto TriMeshSplitEdgeOperation::new_vertex(const TriMesh& m) const -> Tuple
 {
     assert(bool(*this));
-    const std::optional<Tuple>& new_tup = get_return_tuple_opt();
+    const std::optional<Tuple> new_tup = get_return_tuple_opt();
     assert(new_tup.has_value());
     return new_tup.value().switch_vertex(m);
 }

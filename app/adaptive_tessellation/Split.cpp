@@ -87,10 +87,8 @@ bool AdaptiveTessellationSplitEdgeOperation::before(AdaptiveTessellation& m, con
         input_tris.emplace_back(t);
         if (t.switch_face(m).has_value()) input_tris.emplace_back(t.switch_face(m).value());
         if (!m.scheduling_accept_for_split(input_tris, m.mesh_parameters.m_accuracy_threshold)) {
-            wmtk::logger().info("split edge reject");
             return false;
         }
-        wmtk::logger().info("split edge accepted");
 
         // record the operation cache
         my_op_cache.v1 = t.vid(m);
@@ -216,19 +214,11 @@ bool AdaptiveTessellationSplitEdgeOperation::after(
     }
     assert(bool(*this));
 
-    // for AREA_ACCURACY
+    // for checking degenrate triangles
     m.update_energy_cache(modified_triangles(m));
-    return ret_data.success;
-    // check acceptance after the energy cache update
-    if (m.scheduling_accept_for_split(ret_data.new_tris, m.mesh_parameters.m_accuracy_threshold)) {
-        wmtk::logger().info("split edge accepted");
 
-        return ret_data.success;
-    } else {
-        wmtk::logger().info("split edge rejected");
-        ret_data.success = false;
-        return false;
-    }
+
+    return ret_data.success;
 }
 
 bool AdaptiveTessellationPairedSplitEdgeOperation::before(AdaptiveTessellation& m, const Tuple& t)
@@ -450,6 +440,7 @@ bool AdaptiveTessellationPairedSplitEdgeOperation::after(
 {
     assert(bool(split_edge));
     if (!split_edge.after(m, ret_data)) return false;
+
     // if (!ret_data.success) return false;
     // nullify the inside edges old mirror info
     m.face_attrs[split_edge.return_edge_tuple.switch_vertex(m).switch_edge(m).fid(m)]

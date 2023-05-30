@@ -416,7 +416,6 @@ bool AdaptiveTessellationCollapseEdgeOperation::before(AdaptiveTessellation& m, 
         return false;
     }
     if (!check_vertex_mergeability(m, t)) {
-        wmtk::logger().info("fail in mergeability check");
         return false;
     }
     // TODO: currently edge mergeability just checks for double boundaries
@@ -441,7 +440,6 @@ bool AdaptiveTessellationCollapseEdgeOperation::before(AdaptiveTessellation& m, 
     // make sure that we'll be able to put a vertex in the right positoin
     const ConstrainedBoundaryType cbt = m_op_cache.local().constrained_boundary_type;
     if (cbt == ConstrainedBoundaryType::BothConstrained) {
-        wmtk::logger().info("fail in constrained boundary type");
         return false;
     }
     return true;
@@ -705,7 +703,6 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::after(
 bool AdaptiveTessellationPairedCollapseEdgeOperation::after(AdaptiveTessellation& m)
 {
     static std::atomic_int cnt = 0;
-    wmtk::logger().info("collapse edge: {}", cnt);
     auto& op_cache = m_op_cache.local();
     assert(bool(*this));
 
@@ -785,8 +782,8 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::after(AdaptiveTessellation
         one_ring.insert(one_ring.end(), a.begin(), a.end());
     }
 
-
-    m.update_energy_cache(modified_triangles(m));
+    auto mod_tups = modified_triangles(m);
+    if (!m.update_energy_cache(mod_tups)) return false;
     // check invariants here since get_area_accuracy_error_per_face requires valid triangle
     if (!m.invariants(one_ring)) return false;
     if (!m.mesh_parameters.m_ignore_embedding) {
@@ -794,19 +791,15 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::after(AdaptiveTessellation
         if (m.scheduling_accept_for_collapse(
                 modified_triangles(m),
                 m.mesh_parameters.m_accuracy_threshold)) {
-            wmtk::logger().info("collapse edge accepted");
-
             return true;
         } else {
-            wmtk::logger().info("collapse edge rejected");
-
             return false;
         }
     }
 
 
-    m.write_obj_displaced(
-        m.mesh_parameters.m_output_folder + fmt::format("/collapse_{:04d}.obj", cnt));
+    // m.write_obj_displaced(
+    //     m.mesh_parameters.m_output_folder + fmt::format("/collapse_{:04d}.obj", cnt));
     cnt++;
     // if (!utils::is_valid_trimesh_topology(m)) {
     //     return false;
