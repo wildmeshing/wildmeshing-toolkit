@@ -174,6 +174,49 @@ void AdaptiveTessellation::prepare_quadrics()
     set_faces_quadrics(facets, compressed_quadrics);
 }
 
+bool AdaptiveTessellation::has_self_intersections()
+{
+    Eigen::MatrixXd vertices_target;
+    Eigen::MatrixXi faces_target;
+    Eigen::MatrixXd vertices_texture;
+    Eigen::MatrixXi faces_texture;
+    export_mesh_with_displacement(vertices_target, faces_target, vertices_texture, faces_texture);
+
+    Eigen::MatrixXi edges;
+    igl::edges(faces_texture, edges);
+    const ipc::CollisionMesh collisionMesh(vertices_texture, edges, faces_texture);
+    if (ipc::has_intersections(collisionMesh, vertices_texture)) {
+        return true;
+    }
+
+    auto tri_signed_area =
+        [](const Eigen::Vector2d& a, const Eigen::Vector2d& b, const Eigen::Vector2d& c) -> double {
+        Eigen::Matrix3d d;
+        d << a[0], a[1], 1, b[0], b[1], 1, c[0], c[1], 1;
+        return 0.5 * d.determinant();
+    };
+
+    std::vector<double> areas;
+    areas.reserve(faces_texture.rows());
+    for (size_t i = 0; i < faces_texture.rows(); ++i) {
+        const auto& a = vertices_texture.row(faces_texture(i, 0));
+        const auto& b = vertices_texture.row(faces_texture(i, 1));
+        const auto& c = vertices_texture.row(faces_texture(i, 2));
+
+        const double area = tri_signed_area(a, b, c);
+        areas.emplace_back(area);
+    }
+    std::sort(areas.begin(), areas.end());
+
+    for (size_t i = 0; i < 10; ++i) {
+        if (areas[i] < 1e-8) {
+            wmtk::logger().info("Worst area {}: {}", i, areas[i]);
+        }
+    }
+
+    return false;
+}
+
 // return E0, E1 of corresponding seam edges in uv mesh
 // set up the seam vertex coloring
 std::pair<Eigen::MatrixXi, Eigen::MatrixXi> AdaptiveTessellation::seam_edges_set_up(
