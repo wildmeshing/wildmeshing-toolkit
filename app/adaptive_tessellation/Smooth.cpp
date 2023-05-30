@@ -1,4 +1,5 @@
 
+#include <igl/predicates/predicates.h>
 #include "AdaptiveTessellation.h"
 #include "wmtk/ExecutionScheduler.hpp"
 
@@ -20,9 +21,9 @@ using namespace adaptive_tessellation;
 using namespace wmtk;
 
 class AdaptiveTessellationSmoothVertexOperation : public wmtk::TriMeshOperationShim<
-                                                  AdaptiveTessellation,
-                                                  AdaptiveTessellationSmoothVertexOperation,
-                                                  wmtk::TriMeshSmoothVertexOperation>
+                                                      AdaptiveTessellation,
+                                                      AdaptiveTessellationSmoothVertexOperation,
+                                                      wmtk::TriMeshSmoothVertexOperation>
 {
 public:
     ExecuteReturnData execute(AdaptiveTessellation& m, const Tuple& t)
@@ -32,7 +33,7 @@ public:
     bool before(AdaptiveTessellation& m, const Tuple& t)
     {
         if (wmtk::TriMeshSmoothVertexOperation::before(m, t)) {
-            return  m.smooth_before(t);
+            return m.smooth_before(t);
         }
         return false;
     }
@@ -52,12 +53,12 @@ public:
     }
 };
 
-    template <typename Executor>
-    void addCustomOps(Executor& e) {
-
-        e.add_operation(std::make_shared<AdaptiveTessellationSmoothVertexOperation>());
-    }
+template <typename Executor>
+void addCustomOps(Executor& e)
+{
+    e.add_operation(std::make_shared<AdaptiveTessellationSmoothVertexOperation>());
 }
+} // namespace
 
 bool adaptive_tessellation::AdaptiveTessellation::smooth_before(const Tuple& t)
 {

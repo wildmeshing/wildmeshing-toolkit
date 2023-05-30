@@ -6,8 +6,8 @@
  */
 
 #if defined(_WIN32)
+#include <windows.h>    // must be included BEFORE psapi.h
 #include <psapi.h>
-#include <windows.h>
 
 #elif defined(__unix__) || defined(__unix) || defined(unix) || \
     (defined(__APPLE__) && defined(__MACH__))
@@ -31,13 +31,15 @@
 #error "Cannot define getPeakRSS( ) or getCurrentRSS( ) for an unknown OS."
 #endif
 
+#include "getRSS.h"
+
 
 /**
  * Returns the peak (maximum so far) resident set size (physical
  * memory use) measured in bytes, or zero if the value cannot be
  * determined on this OS.
  */
-size_t getPeakRSS()
+size_t wmtk::getPeakRSS()
 {
 #if defined(_WIN32)
     /* Windows -------------------------------------------------- */
@@ -80,7 +82,7 @@ size_t getPeakRSS()
  * Returns the current resident set size (physical memory use) measured
  * in bytes, or zero if the value cannot be determined on this OS.
  */
-size_t getCurrentRSS()
+size_t wmtk::getCurrentRSS()
 {
 #if defined(_WIN32)
     /* Windows -------------------------------------------------- */
