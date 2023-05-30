@@ -1611,7 +1611,7 @@ auto AdaptiveTessellation::get_one_ring_tris_accross_seams_for_vertex(const Tupl
 }
 
 
-void AdaptiveTessellation::update_energy_cache(const std::vector<Tuple>& tris)
+bool AdaptiveTessellation::update_energy_cache(const std::vector<Tuple>& tris)
 {
     // update the face_attrs (accuracy error)
     if (!mesh_parameters.m_ignore_embedding) {
@@ -1626,11 +1626,13 @@ void AdaptiveTessellation::update_energy_cache(const std::vector<Tuple>& tris)
                     tri_uv[i * 2] = vertex_attrs[verts[i]].pos(0);
                     tri_uv[i * 2 + 1] = vertex_attrs[verts[i]].pos(1);
                 }
+                if (wmtk::is_degenerate_2d_oriented_triangle_array(tri_uv)) return false;
                 modified_tris_uv[i] = tri_uv;
             }
             std::vector<float> renewed_errors(tris.size());
             m_texture_integral.get_error_per_triangle(modified_tris_uv, renewed_errors);
             set_faces_cached_distance_integral(tris, renewed_errors);
+            return true;
         } else if (mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::TRI_QUADRICS) {
             std::vector<wmtk::Quadric<double>> compressed_quadrics(tris.size());
             m_quadric_integral.get_quadric_per_triangle(
@@ -1648,7 +1650,9 @@ void AdaptiveTessellation::update_energy_cache(const std::vector<Tuple>& tris)
                 },
                 compressed_quadrics);
             set_faces_quadrics(tris, compressed_quadrics);
+            return true;
         }
     }
+    return true;
 }
 } // namespace adaptive_tessellation

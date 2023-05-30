@@ -27,8 +27,13 @@ double AdaptiveTessellation::get_max_energy_area_ratio(const std::vector<Tuple>&
 {
     double max_energy_area_ratio = 0;
     for (const Tuple& t : new_tris) {
+        double area_3d = get_3d_tri_area(t);
+        if (area_3d < std::numeric_limits<double>::denorm_min()) {
+            return std::numeric_limits<double>::infinity();
+        }
         double energy_area_ratio =
-            get_face_attrs(t).accuracy_measure.cached_distance_integral / get_3d_tri_area(t);
+            get_face_attrs(t).accuracy_measure.cached_distance_integral / area_3d;
+
         if (energy_area_ratio > max_energy_area_ratio) {
             max_energy_area_ratio = energy_area_ratio;
         }
@@ -41,11 +46,6 @@ bool AdaptiveTessellation::scheduling_accept_for_split(
     double acceptance) const
 {
     double max_energy_area_ratio = get_max_energy_area_ratio(new_tris);
-    wmtk::logger().info(
-        "accept check {} > {} {}",
-        sqrt(max_energy_area_ratio),
-        acceptance,
-        sqrt(max_energy_area_ratio) > acceptance);
     return sqrt(max_energy_area_ratio) > acceptance;
 }
 // accept collapse if max per face energy of the new tris is smaller than the acceptance bound

@@ -410,7 +410,8 @@ public:
 
     void get_nminfo_for_vertex(const Tuple& v, wmtk::NewtonMethodInfo& nminfo) const;
 
-    void update_energy_cache(const std::vector<Tuple>& tris);
+    // check for degenerate triangle inside. bound is set to 1e-10
+    bool update_energy_cache(const std::vector<Tuple>& tris);
 
     // get sibling edge for paired operations
     // return the oriented mirror edge if t is seam
@@ -495,6 +496,7 @@ public:
         // }
     }
     double get_mesh_energy(const Eigen::VectorXd& v_flat);
+    float cumulated_per_face_error();
 
     std::vector<Tuple> get_one_ring_tris_accross_seams_for_vertex(const Tuple& vertex) const;
     double avg_edge_len() const;

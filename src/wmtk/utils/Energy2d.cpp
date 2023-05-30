@@ -309,7 +309,7 @@ void AreaAccuracyEnergy::eval(State& state, DofsToPositions& dof_to_positions) c
         DScalar(state.two_opposite_vertices(0, 1)), DScalar(state.two_opposite_vertices(0, 2)),
         DScalar(state.two_opposite_vertices(0, 3));
 
-
+    // is in order primary_vert, p2, p3
     DScalar v2u = DScalar(state.two_opposite_vertices(0, 0));
     DScalar v2v = DScalar(state.two_opposite_vertices(0, 1));
 
@@ -318,15 +318,13 @@ void AreaAccuracyEnergy::eval(State& state, DofsToPositions& dof_to_positions) c
 
 
     // check if area is either inverted or smaller than certain A_hat
+    DScalar dblarea = (v2u - x1) * (v3v - y1) - (v2v - y1) * (v3u - x1);
     DScalar area;
-    // area = (V2_V1.cross(V3_V1)).squaredNorm();
-    area = sqrt(pow((v2u - x1) * (v3v - y1) + (v2v - y1) * (v3u - x1), 2)) / 2.0;
+    area = dblarea * dblarea;
     // wmtk::logger().info("----current area {}", area.getValue());
     double A_hat = 1e-6; // this is arbitrary now
     assert(A_hat > 0);
-    if (area <= 0) {
-        total_energy += std::numeric_limits<double>::infinity();
-    }
+
     if (area < A_hat) {
         assert((area / A_hat) < 1.0);
         DScalar barrier_energy = -(area - A_hat) * (area - A_hat) * log(area / A_hat);
