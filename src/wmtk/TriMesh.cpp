@@ -2,11 +2,15 @@
 #include <igl/writeDMAT.h>
 #include <wmtk/TriMesh.h>
 #include <wmtk/TriMeshOperation.h>
+#include <wmtk/operations/TriMeshConsolidateOperation.h>
+#include <wmtk/operations/TriMeshEdgeCollapseOperation.h>
+#include <wmtk/operations/TriMeshEdgeSplitOperation.h>
+#include <wmtk/operations/TriMeshEdgeSwapOperation.h>
+#include <wmtk/operations/TriMeshVertexSmoothOperation.h>
+#include <wmtk/utils/VectorUtils.h>
 #include <wmtk/AttributeCollection.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
-#include <wmtk/utils/VectorUtils.h>
-#include <wmtk/operations/TriMeshConsolidateOperation.h>
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
@@ -15,6 +19,18 @@
 // clang-format on
 
 using namespace wmtk;
+
+std::map<std::string, std::shared_ptr<TriMeshOperation>> TriMesh::get_operations() const
+{
+    std::map<std::string, std::shared_ptr<TriMeshOperation>> r;
+    auto add_operation = [&](auto&& op) { r[op->name()] = op; };
+    add_operation(std::make_shared<wmtk::TriMeshEdgeCollapseOperation>());
+    add_operation(std::make_shared<wmtk::TriMeshEdgeSwapOperation>());
+    add_operation(std::make_shared<wmtk::TriMeshEdgeSplitOperation>());
+    add_operation(std::make_shared<wmtk::TriMeshVertexSmoothOperation>());
+    add_operation(std::make_shared<wmtk::TriMeshConsolidateOperation>());
+    return r;
+}
 
 class TriMesh::VertexMutex
 {
@@ -36,6 +52,10 @@ public:
 
     void reset_owner() { owner = std::numeric_limits<int>::max(); }
 };
+size_t TriMesh::get_valence_for_vertex(const Tuple& t) const
+{
+    return m_vertex_connectivity[t.vid(*this)].m_conn_tris.size();
+}
 bool TriMesh::try_set_vertex_mutex(const Tuple& v, int threadid)
 {
     bool got = m_vertex_mutex[v.vid(*this)].trylock();

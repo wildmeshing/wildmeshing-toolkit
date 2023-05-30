@@ -62,6 +62,13 @@ public:
     TriMesh();
     virtual ~TriMesh();
 
+
+    // Loads the operations for a particular application.
+    // mtao's note: i really don't like Mesh having so much per-application logic, we should be
+    // loading operation data in the executor instead of the data storage mechanism, but that is a
+    // refactor for future me
+    virtual std::map<std::string, std::shared_ptr<TriMeshOperation>> get_operations() const;
+
     /**
      * Copy connectivity from another mesh
      * @param o the other mesh who's connectivity is being copied
@@ -235,10 +242,7 @@ public:
      * @param t tuple pointing to a vertex
      * @return one-ring tris number
      */
-    size_t get_valence_for_vertex(const Tuple& t) const
-    {
-        return m_vertex_connectivity[t.vid(*this)].m_conn_tris.size();
-    }
+    size_t get_valence_for_vertex(const Tuple& t) const;
 
     /**
      * @brief Get the one ring tris for a vertex
@@ -441,96 +445,96 @@ public:
     int NUM_THREADS = 0;
 };
 
-    class TriMesh::VertexConnectivity
-    {
-    public:
-        /**
-         * @brief incident triangles of a given vertex
-         *
-         */
-        // TODO: this needs to be private
-        std::vector<size_t> m_conn_tris;
-        /**
-         * @brief is the vertex removed
-         *
-         */
-        bool m_is_removed = true;
-
-        // inline size_t& operator[](const size_t index)
-        //{
-        //     assert(index < m_conn_tris.size());
-        //     return m_conn_tris[index];
-        // }
-
-        inline size_t operator[](const size_t index) const
-        {
-            assert(index < m_conn_tris.size());
-            return m_conn_tris[index];
-        }
-
-        void insert(const size_t value) { set_insert(m_conn_tris, value); }
-        // replace the value stored at an index by another value
-        void replace(const size_t index, const size_t value)
-        {
-            assert(index < m_conn_tris.size());
-            auto it = m_conn_tris.begin() + index;
-            m_conn_tris.erase(it);
-            set_insert(m_conn_tris, value);
-        }
-        // replace a value with another value
-        void replace_value(const size_t index, const size_t value)
-        {
-            vector_erase(m_conn_tris, index);
-            insert(value);
-        }
-    };
-
+class TriMesh::VertexConnectivity
+{
+public:
     /**
-     * (internal use) Maintains a list of vertices of the given triangle
+     * @brief incident triangles of a given vertex
      *
      */
-    class TriMesh::TriangleConnectivity
+    // TODO: this needs to be private
+    std::vector<size_t> m_conn_tris;
+    /**
+     * @brief is the vertex removed
+     *
+     */
+    bool m_is_removed = true;
+
+    // inline size_t& operator[](const size_t index)
+    //{
+    //     assert(index < m_conn_tris.size());
+    //     return m_conn_tris[index];
+    // }
+
+    inline size_t operator[](const size_t index) const
     {
-    public:
-        /**
-         * @brief incident vertices of a given triangle
-         *
-         */
-        std::array<size_t, 3> m_indices;
-        /**
-         * @brief is the triangle removed
-         *
-         */
-        bool m_is_removed = true;
-        /**
-         * @brief the hash is changed every time there is an operation that influences the
-         * triangle
-         *
-         */
-        size_t hash = 0;
+        assert(index < m_conn_tris.size());
+        return m_conn_tris[index];
+    }
 
-        inline size_t& operator[](size_t index)
-        {
-            assert(index < 3);
-            return m_indices[index];
-        }
+    void insert(const size_t value) { set_insert(m_conn_tris, value); }
+    // replace the value stored at an index by another value
+    void replace(const size_t index, const size_t value)
+    {
+        assert(index < m_conn_tris.size());
+        auto it = m_conn_tris.begin() + index;
+        m_conn_tris.erase(it);
+        set_insert(m_conn_tris, value);
+    }
+    // replace a value with another value
+    void replace_value(const size_t index, const size_t value)
+    {
+        vector_erase(m_conn_tris, index);
+        insert(value);
+    }
+};
 
-        inline size_t operator[](size_t index) const
-        {
-            assert(index < 3);
-            return m_indices[index];
+/**
+ * (internal use) Maintains a list of vertices of the given triangle
+ *
+ */
+class TriMesh::TriangleConnectivity
+{
+public:
+    /**
+     * @brief incident vertices of a given triangle
+     *
+     */
+    std::array<size_t, 3> m_indices;
+    /**
+     * @brief is the triangle removed
+     *
+     */
+    bool m_is_removed = true;
+    /**
+     * @brief the hash is changed every time there is an operation that influences the
+     * triangle
+     *
+     */
+    size_t hash = 0;
+
+    inline size_t& operator[](size_t index)
+    {
+        assert(index < 3);
+        return m_indices[index];
+    }
+
+    inline size_t operator[](size_t index) const
+    {
+        assert(index < 3);
+        return m_indices[index];
+    }
+    /**
+     * @param vid global
+     * @return local vid of the vertex given the triangle
+     * \n -1 if the vertex is not incident to the triangle
+     */
+    inline int find(int v_id) const
+    {
+        for (int j = 0; j < 3; j++) {
+            if (v_id == m_indices[j]) return j;
         }
-        /**
-         * @param vid global
-         * @return local vid of the vertex given the triangle
-         * \n -1 if the vertex is not incident to the triangle
-         */
-        inline int find(int v_id) const
-        {
-            for (int j = 0; j < 3; j++) {
-                if (v_id == m_indices[j]) return j;
-            }
-            return -1;
-        }
-    };
+        return -1;
+    }
+};
 } // namespace wmtk

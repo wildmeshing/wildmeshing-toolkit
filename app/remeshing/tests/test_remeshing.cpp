@@ -83,15 +83,15 @@ TEST_CASE("test_swap", "[test_remeshing]")
     REQUIRE(m.check_mesh_connectivity_validity());
     auto edges = m.get_edges();
     int cnt = 0;
-    UniformRemeshingSwapEdgeOperation swap_op;
+    UniformRemeshingEdgeSwapOperation swap_op;
     for (auto edge : edges) {
         if (cnt > 200) break;
         if (!edge.is_valid(m)) continue;
         if (!(edge.switch_face(m)).has_value()) {
-            REQUIRE_FALSE(swap_op(m, edge).success);
+            REQUIRE_FALSE(swap_op(m, edge));
             continue;
         }
-        REQUIRE(swap_op(m, edge).success);
+        REQUIRE(swap_op(m, edge));
         cnt++;
     }
     REQUIRE(m.check_mesh_connectivity_validity());
@@ -297,7 +297,7 @@ TEST_CASE("swap orient", "[test_remeshing]")
         REQUIRE(!is_inverted(tri));
     }
 
-    UniformRemeshingSwapEdgeOperation swap_op;
+    UniformRemeshingEdgeSwapOperation swap_op;
     auto edges = m.get_edges();
     for (auto e : edges) {
         if (!m.is_boundary_edge(e)) {
