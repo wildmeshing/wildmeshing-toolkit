@@ -25,14 +25,15 @@ std::optional<size_t> AbstractAttributeCollection::end_protect()
 {
     std::optional<size_t>& rollback_size_opt = m_rollback_size.local();
     const bool is_in_protected = rollback_size_opt.has_value();
+    std::optional<size_t> ret;
     if (is_in_protect()) {
         for (auto recorder_ptr : recorder_ptrs) {
-            return recorder_ptr->record();
+            ret = recorder_ptr->record();
         }
     }
     rollback_size_opt.reset();
 
-    return {};
+    return ret;
 }
 
 bool AbstractAttributeCollection::is_in_protect() const

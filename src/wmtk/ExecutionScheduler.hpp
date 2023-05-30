@@ -210,21 +210,33 @@ struct ExecutePass
         }
     }
 
+#if !defined(__cpp_concepts)
+    template <bool Tet = IsTetMesh>
+#endif
     ExecutePass(const std::map<Op, OperatorFunc>& customized_ops)
 #if defined(__cpp_concepts)
         requires(std::is_base_of_v<wmtk::TetMesh, AppMesh>)
 #endif
         : ExecutePass()
     {
+#if !defined(__cpp_concepts)
+        static_assert(Tet);
+#endif
         if (!customized_ops.empty()) {
             edit_operation_maps.insert(customized_ops.begin(), customized_ops.end());
         }
     }
+#if !defined(__cpp_concepts)
+    template <bool Tet = IsTetMesh>
+#endif
     ExecutePass(const AppMesh& m)
 #if defined(__cpp_concepts)
         requires(std::is_base_of_v<wmtk::TriMesh, AppMesh>)
 #endif
     {
+#if !defined(__cpp_concepts)
+        static_assert(!Tet);
+#endif
         new_edit_operation_maps = m.get_operations();
     }
 

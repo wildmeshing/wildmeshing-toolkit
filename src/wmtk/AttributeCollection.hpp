@@ -174,6 +174,7 @@ struct AttributeCollection : public AbstractAttributeCollection
     size_t size() const override { return m_attributes.size(); }
     tbb::enumerable_thread_specific<std::map<size_t, T>> m_rollback_list;
     // experimenting with tbb, could be templated as well.
-    tbb::concurrent_vector<T> m_attributes;
+    //private:
+    mutable tbb::concurrent_vector<T> m_attributes;
 };
 } // namespace wmtk
