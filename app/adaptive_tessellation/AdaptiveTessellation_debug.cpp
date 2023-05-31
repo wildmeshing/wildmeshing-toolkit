@@ -163,3 +163,27 @@ void AdaptiveTessellation::gradient_debug(int max_its)
         mesh_parameters.m_gradient = Eigen::Vector2d(0., 0.);
     }
 }
+
+
+float AdaptiveTessellation::cumulated_per_face_error()
+{
+    std::vector<TriMesh::Tuple> tris_tuples = get_faces();
+    std::vector<std::array<float, 6>> uv_triangles(tris_tuples.size());
+    for (int i = 0; i < tris_tuples.size(); i++) {
+        auto oriented_vids = oriented_tri_vids(tris_tuples[i]);
+        for (int j = 0; j < 3; j++) {
+            uv_triangles[tris_tuples[i].fid(*this)][2 * j + 0] =
+                vertex_attrs[oriented_vids[j]].pos[0];
+            uv_triangles[tris_tuples[i].fid(*this)][2 * j + 1] =
+                vertex_attrs[oriented_vids[j]].pos[1];
+        }
+    }
+    std::vector<float> computed_errors(tris_tuples.size());
+    m_texture_integral.get_error_per_triangle(uv_triangles, computed_errors);
+    float total_error = 0;
+    lagrange::enable_fpe();
+    for (int i = 0; i < tris_tuples.size(); i++) {
+        total_error += computed_errors[i];
+    }
+    return total_error;
+}

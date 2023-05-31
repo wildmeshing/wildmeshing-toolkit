@@ -51,7 +51,7 @@ void wmtk::optimization_state_update(
             DofsToPositions dofs_to_pos(boundary_mapping, nminfo.curve_id);
             energy_def.eval(state, dofs_to_pos);
             total_energy += state.value;
-            assert(!std::isnan(total_energy));
+            assert(!std::isnan(state.value));
             total_jac += state.gradient;
             total_hess += state.hessian;
         }

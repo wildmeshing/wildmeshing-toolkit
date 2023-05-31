@@ -37,9 +37,8 @@ double AdaptiveTessellation::avg_edge_len() const
 //                  set boundary vertex curve_id, and boundary paramter t
 //                  set feature vertex as fixed, set strat/end/t-junction of curve fixed
 // 6. edge_attrs:   set curve-id for each edge
-// 7. face_attrs:   set initial accuracy error for each triangle
-// 8. initiate the texture integraler
-// 9. initiate the quadric integraler
+// 7. initiate the texture integraler
+// 8. initiate the quadric integraler
 void AdaptiveTessellation::mesh_preprocessing(
     const std::filesystem::path& input_mesh_path,
     const std::filesystem::path& position_image_path,
@@ -49,7 +48,7 @@ void AdaptiveTessellation::mesh_preprocessing(
     float max_height)
 {
     mesh_parameters.m_position_normal_paths = {position_image_path, normal_image_path};
-    spdlog::info("{}", input_mesh_path.string());
+    spdlog::info("input file: {}", input_mesh_path.string());
     Eigen::MatrixXd CN, FN;
     // igl::read_triangle_mesh(input_mesh_path.string(), input_V_, input_F_);
     // igl::readOBJ(input_mesh_path.string(), V, VT, CN, F, FT, FN);
@@ -345,6 +344,7 @@ void AdaptiveTessellation::set_seam_vertex_coloring(
     const Eigen::MatrixXi& FT)
 {
     color_to_uv_indices.reserve(VT.rows());
+    uv_index_to_color = {};
     assert(uv_index_to_color.empty());
     int current_color = 0;
     for (auto fi = 0; fi < m_3d.tri_capacity(); ++fi) {

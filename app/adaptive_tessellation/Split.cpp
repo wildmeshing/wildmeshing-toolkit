@@ -463,7 +463,7 @@ bool AdaptiveTessellationPairedSplitEdgeOperation::after(
         // enforce the mirror_split_edge t to be the same as the primary t
         m.vertex_attrs[mirror_split_edge.return_edge_tuple.vid(m)].t =
             m.vertex_attrs[split_edge.return_edge_tuple.vid(m)].t;
-        // now do the siling edge tranfering
+        // now do the sibling edge tranfering
         if (!ret_data.success) return false;
         // it's a seam edge update mirror edge data using the sibling edges
         // edge naming referring to the ascii in .h file

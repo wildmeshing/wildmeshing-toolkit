@@ -70,9 +70,6 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::before(AdaptiveTessellation&
         if (m.mesh_parameters.m_bnd_freeze && m.is_boundary_vertex(t)) return false;
 
         if (m.is_boundary_vertex(t)) {
-            // if (m.is_seam_vertex(t)) {
-            //     wmtk::logger().info("///// seam vertex smooth");
-            // }
             for (auto& e : m.get_one_ring_edges_for_vertex(t)) {
                 if (m.is_boundary_edge(e)) {
                     m.vertex_attrs[t.vid(m)].curve_id = m.edge_attrs[e.eid(m)].curve_id.value();
