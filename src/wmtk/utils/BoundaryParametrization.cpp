@@ -28,6 +28,8 @@ struct Edge
     auto key() const { return std::make_pair(v1, v2); }
 
     bool operator<(const Edge& e) const { return key() < e.key(); }
+
+    bool operator==(const Edge& e) const { return key() == e.key(); }
 };
 
 struct CurveNetwork
@@ -38,6 +40,11 @@ struct CurveNetwork
     std::vector<bool> is_closed;
 };
 
+struct Seam
+{
+    std::array<int, 2> e0;
+    std::array<int, 2> e1;
+};
 
 // A cone vertex is a vertex that lies at the intersection of more than two seams, or at the
 // endpoint of a seam.
@@ -284,7 +291,8 @@ std::vector<int> compute_parent_curves(
 CurveNetwork fix_curve_orientation_and_periodicity(
     CurveNetwork input,
     const std::vector<int>& parent_curve,
-    const std::map<Edge, int>& edge_to_seam)
+    const std::map<Edge, int>& edge_to_seam,
+    const std::vector<Seam>& seam_to_edges)
 {
     auto curve_edge_to_seam = [&](int curve_id, int i) {
         int n = static_cast<int>(input.curves[curve_id].size());
@@ -299,6 +307,24 @@ CurveNetwork fix_curve_orientation_and_periodicity(
                         static_cast<int>(input.curves[curve_id].size());
              ++i) {
             if (curve_edge_to_seam(curve_id, i) != curve_edge_to_seam(parent_id, i)) {
+                return false;
+            }
+        }
+        if (input.curves[curve_id].size() == 2) {
+            int sci = curve_edge_to_seam(curve_id, 0);
+            int spi = curve_edge_to_seam(parent_id, 0);
+            la_debug_assert(sci == spi);
+            auto s = seam_to_edges[sci];
+            auto a = Edge(s.e0[0], s.e1[0]);
+            auto b = Edge(s.e0[1], s.e1[1]);
+            auto c = Edge(input.curves[curve_id][0], input.curves[parent_id][0]);
+            auto d = Edge(input.curves[curve_id][1], input.curves[parent_id][1]);
+            if ((a == c && b == d) || (a == d && b == c)) {
+                return true;
+            } else {
+                c = Edge(input.curves[curve_id][0], input.curves[parent_id][1]);
+                d = Edge(input.curves[curve_id][1], input.curves[parent_id][0]);
+                la_debug_assert((a == c && b == d) || (a == d && b == c));
                 return false;
             }
         }
@@ -371,12 +397,16 @@ CurveNetwork fix_curve_orientation_and_periodicity(
 Boundary::ParameterizedCurves parameterize_curves(
     CurveNetwork input,
     const Eigen::MatrixXd& V,
-    const std::map<Edge, int>& edge_to_seam)
+    const std::map<Edge, int>& edge_to_seam,
+    const std::vector<Seam>& seam_to_edges)
 {
     Boundary::ParameterizedCurves result;
     result.parent_curve = compute_parent_curves(input, edge_to_seam);
-    input =
-        fix_curve_orientation_and_periodicity(std::move(input), result.parent_curve, edge_to_seam);
+    input = fix_curve_orientation_and_periodicity(
+        std::move(input),
+        result.parent_curve,
+        edge_to_seam,
+        seam_to_edges);
 
     for (int curve_id = 0; curve_id < static_cast<int>(input.curves.size()); ++curve_id) {
         auto curve = input.curves[curve_id];
@@ -419,11 +449,16 @@ void Boundary::construct_boundaries(
     igl::boundary_loop(F, paths);
 
     std::map<Edge, int> edge_to_seam;
+    std::vector<Seam> seam_to_edges(E0.rows());
     for (int i = 0; i < E0.rows(); ++i) {
         Edge e0(E0(i, 0), E0(i, 1));
         Edge e1(E1(i, 0), E1(i, 1));
         for (auto e : {e0, e1}) {
             auto [it, inserted] = edge_to_seam.try_emplace(e, i);
+            seam_to_edges[i] = {
+                {{E0(i, 0), E0(i, 1)}},
+                {{E1(i, 0), E1(i, 1)}},
+            };
             if (!inserted) {
                 throw std::runtime_error("Non-manifold seam edge detected");
             }
@@ -433,7 +468,8 @@ void Boundary::construct_boundaries(
     m_curves = parameterize_curves(
         split_loops(V, paths, edge_to_seam, compute_cone_vertices(V, E0, E1)),
         V,
-        edge_to_seam);
+        edge_to_seam,
+        seam_to_edges);
 }
 
 Boundary::ParameterizedSegment Boundary::t_to_segment(int curve_id, double t) const
