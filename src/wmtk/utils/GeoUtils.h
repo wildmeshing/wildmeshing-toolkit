@@ -1,9 +1,9 @@
 #pragma once
 
 
-#include <igl/predicates/predicates.h>
 #include <Eigen/Core>
 #include <Eigen/Dense>
+#include <optional>
 
 
 #include <array>
@@ -23,28 +23,17 @@ int orient3d_t(
 }
 
 template <>
-inline int orient3d_t(
+int orient3d_t(
     const Eigen::Matrix<double, 3, 1>& p1,
     const Eigen::Matrix<double, 3, 1>& p2,
     const Eigen::Matrix<double, 3, 1>& p3,
-    const Eigen::Matrix<double, 3, 1>& p4)
-{
-    igl::predicates::exactinit();
-
-    auto res = igl::predicates::orient3d(p1, p2, p3, p4);
-    return res == igl::predicates::Orientation::COPLANAR
-               ? 0
-               : (res == igl::predicates::Orientation::NEGATIVE ? -1 : 1);
-}
+    const Eigen::Matrix<double, 3, 1>& p4);
 
 
 template <typename T>
 T cross_2d(const Eigen::Matrix<T, 2, 1>& p1, const Eigen::Matrix<T, 2, 1>& p2)
 {
-    Eigen::Matrix<T, 2, 2> mat;
-    mat.col(0) = (p1);
-    mat.col(1) = (p2);
-    return mat.determinant();
+    return p1.homogeneous().cross(p2.homogeneous()).z();
 }
 
 
@@ -59,17 +48,62 @@ int orient2d_t(
 }
 
 template <>
-inline int orient2d_t(
+int orient2d_t(
     const Eigen::Matrix<double, 2, 1>& p1,
     const Eigen::Matrix<double, 2, 1>& p2,
-    const Eigen::Matrix<double, 2, 1>& p3)
-{
-    igl::predicates::exactinit();
+    const Eigen::Matrix<double, 2, 1>& p3);
 
-    auto res = igl::predicates::orient2d(p1, p2, p3);
-    return res == igl::predicates::Orientation::COLLINEAR
-               ? 0
-               : (res == igl::predicates::Orientation::NEGATIVE ? -1 : 1);
+template <typename T, bool EarlyOut = false>
+std::optional<std::tuple<Eigen::Matrix<T, 3, 1>, bool>> open_segment_triangle_intersection_3d(
+    const std::array<Eigen::Matrix<T, 3, 1>, 2>& seg,
+    const std::array<Eigen::Matrix<T, 3, 1>, 3>& tri)
+{
+    std::optional<std::tuple<Eigen::Matrix<T, 3, 1>, bool>> ret_value = std::nullopt;
+    const auto& [e0, e1] = seg;
+    const auto& [t0, t1, t2] = tri;
+
+    // Note: could potentially cache cofactors to reduce redundant ops
+
+    auto det = [](const auto& u, const auto& v, const auto& w) -> T { return u.cross(v).dot(w); };
+    auto detsum = [det](const auto& E, const auto& a, const auto& b, const auto& c) -> T {
+        return det(E, a, b) + det(E, c, a) + det(E, b, c);
+    };
+
+    const T d_0 = detsum(e0, t0, t1, t2);
+    const T d_1 = detsum(e1, t0, t1, t2);
+    const T d = d_0 - d_1;
+    const T D = det(t0, t1, t2);
+
+
+    // Coplanar
+    if (d == 0) return ret_value;
+
+
+    const T t = (d_0 - D) / d;
+
+    const bool t_outside = t <= 0 || t >= 1;
+    if (t_outside) return ret_value;
+
+    const T u = (detsum(e0, e1, t0, t2) + det(e1, t0, t2)) / d;
+
+    const bool u_outside = u < 0 || u > 1;
+    if constexpr (EarlyOut)
+        if (u_outside) return ret_value;
+
+    const T v = (detsum(e0, e1, t0, t1) - det(e1, t0, t1)) / d;
+    const bool v_outside = v < 0 || v > 1;
+    if constexpr (EarlyOut)
+        if (v_outside) return ret_value;
+    const bool uv_outside = u + v > 1;
+    if constexpr (EarlyOut)
+        if (uv_outside) return ret_value;
+
+
+    auto& [p, is_inside] = ret_value.emplace();
+    p = (1 - t) * e0 + t * e1;
+    is_inside = u_outside || v_outside || uv_outside;
+
+    return ret_value;
 }
 
 template <typename T>
@@ -78,69 +112,11 @@ bool open_segment_triangle_intersection_3d(
     const std::array<Eigen::Matrix<T, 3, 1>, 3>& tri,
     Eigen::Matrix<T, 3, 1>& p)
 {
-    Eigen::Matrix<T, 3, 1> e0, e1, t1, t2, t3;
-
-    for (int d = 0; d < 3; ++d) {
-        e0[d] = seg[0][d];
-        e1[d] = seg[1][d];
-
-        t1[d] = tri[0][d];
-        t2[d] = tri[1][d];
-        t3[d] = tri[2][d];
+    auto ret_opt = open_segment_triangle_intersection_3d<T, true>(seg, tri);
+    if (!ret_opt.has_value()) {
+        return false;
     }
-
-    const T d = e0[0] * t1[1] * t2[2] - e0[0] * t1[1] * t3[2] - e0[0] * t1[2] * t2[1] +
-                e0[0] * t1[2] * t3[1] + e0[0] * t2[1] * t3[2] - e0[0] * t2[2] * t3[1] -
-                e0[1] * t1[0] * t2[2] + e0[1] * t1[0] * t3[2] + e0[1] * t1[2] * t2[0] -
-                e0[1] * t1[2] * t3[0] - e0[1] * t2[0] * t3[2] + e0[1] * t2[2] * t3[0] +
-                e0[2] * t1[0] * t2[1] - e0[2] * t1[0] * t3[1] - e0[2] * t1[1] * t2[0] +
-                e0[2] * t1[1] * t3[0] + e0[2] * t2[0] * t3[1] - e0[2] * t2[1] * t3[0] -
-                e1[0] * t1[1] * t2[2] + e1[0] * t1[1] * t3[2] + e1[0] * t1[2] * t2[1] -
-                e1[0] * t1[2] * t3[1] - e1[0] * t2[1] * t3[2] + e1[0] * t2[2] * t3[1] +
-                e1[1] * t1[0] * t2[2] - e1[1] * t1[0] * t3[2] - e1[1] * t1[2] * t2[0] +
-                e1[1] * t1[2] * t3[0] + e1[1] * t2[0] * t3[2] - e1[1] * t2[2] * t3[0] -
-                e1[2] * t1[0] * t2[1] + e1[2] * t1[0] * t3[1] + e1[2] * t1[1] * t2[0] -
-                e1[2] * t1[1] * t3[0] - e1[2] * t2[0] * t3[1] + e1[2] * t2[1] * t3[0];
-
-    // Coplanar
-    if (d == 0) return false;
-
-    const T t = (e0[0] * t1[1] * t2[2] - e0[0] * t1[1] * t3[2] - e0[0] * t1[2] * t2[1] +
-                 e0[0] * t1[2] * t3[1] + e0[0] * t2[1] * t3[2] - e0[0] * t2[2] * t3[1] -
-                 e0[1] * t1[0] * t2[2] + e0[1] * t1[0] * t3[2] + e0[1] * t1[2] * t2[0] -
-                 e0[1] * t1[2] * t3[0] - e0[1] * t2[0] * t3[2] + e0[1] * t2[2] * t3[0] +
-                 e0[2] * t1[0] * t2[1] - e0[2] * t1[0] * t3[1] - e0[2] * t1[1] * t2[0] +
-                 e0[2] * t1[1] * t3[0] + e0[2] * t2[0] * t3[1] - e0[2] * t2[1] * t3[0] -
-                 t1[0] * t2[1] * t3[2] + t1[0] * t2[2] * t3[1] + t1[1] * t2[0] * t3[2] -
-                 t1[1] * t2[2] * t3[0] - t1[2] * t2[0] * t3[1] + t1[2] * t2[1] * t3[0]) /
-                d;
-    if (t <= 0 || t >= 1) return false;
-
-    const T u = (e0[0] * e1[1] * t3[2] + e0[0] * e1[2] * t1[1] - e0[0] * e1[1] * t1[2] -
-                 e0[0] * e1[2] * t3[1] - e0[0] * t1[1] * t3[2] + e0[0] * t1[2] * t3[1] +
-                 e0[1] * e1[0] * t1[2] - e0[1] * e1[0] * t3[2] - e0[1] * e1[2] * t1[0] +
-                 e0[1] * e1[2] * t3[0] + e0[1] * t1[0] * t3[2] - e0[1] * t1[2] * t3[0] -
-                 e0[2] * e1[0] * t1[1] + e0[2] * e1[0] * t3[1] + e0[2] * e1[1] * t1[0] -
-                 e0[2] * e1[1] * t3[0] - e0[2] * t1[0] * t3[1] + e0[2] * t1[1] * t3[0] +
-                 e1[0] * t1[1] * t3[2] - e1[0] * t1[2] * t3[1] - e1[1] * t1[0] * t3[2] +
-                 e1[1] * t1[2] * t3[0] + e1[2] * t1[0] * t3[1] - e1[2] * t1[1] * t3[0]) /
-                d;
-    if (u < 0 || u > 1) return false;
-
-    const T v = (e0[0] * e1[1] * t1[2] - e0[0] * e1[1] * t2[2] - e0[0] * e1[2] * t1[1] +
-                 e0[0] * e1[2] * t2[1] + e0[0] * t1[1] * t2[2] - e0[0] * t1[2] * t2[1] -
-                 e0[1] * e1[0] * t1[2] + e0[1] * e1[0] * t2[2] + e0[1] * e1[2] * t1[0] -
-                 e0[1] * e1[2] * t2[0] - e0[1] * t1[0] * t2[2] + e0[1] * t1[2] * t2[0] +
-                 e0[2] * e1[0] * t1[1] - e0[2] * e1[0] * t2[1] - e0[2] * e1[1] * t1[0] +
-                 e0[2] * e1[1] * t2[0] + e0[2] * t1[0] * t2[1] - e0[2] * t1[1] * t2[0] -
-                 e1[0] * t1[1] * t2[2] + e1[0] * t1[2] * t2[1] + e1[1] * t1[0] * t2[2] -
-                 e1[1] * t1[2] * t2[0] - e1[2] * t1[0] * t2[1] + e1[2] * t1[1] * t2[0]) /
-                d;
-
-    if (v < 0 || v > 1 || u + v > 1) return false;
-
-    p = (1 - t) * e0 + t * e1;
-
+    p = std::get<0>(ret_opt.value());
     return true;
 }
 
@@ -151,68 +127,11 @@ bool open_segment_plane_intersection_3d(
     Eigen::Matrix<T, 3, 1>& p,
     bool& is_inside)
 {
-    Eigen::Matrix<T, 3, 1> e0, e1, t1, t2, t3;
-
-    for (int d = 0; d < 3; ++d) {
-        e0[d] = seg[0][d];
-        e1[d] = seg[1][d];
-
-        t1[d] = tri[0][d];
-        t2[d] = tri[1][d];
-        t3[d] = tri[2][d];
+    auto ret_opt = open_segment_triangle_intersection_3d<T, false>(seg, tri);
+    if (!ret_opt.has_value()) {
+        return false;
     }
-
-    const T d = e0[0] * t1[1] * t2[2] - e0[0] * t1[1] * t3[2] - e0[0] * t1[2] * t2[1] +
-                e0[0] * t1[2] * t3[1] + e0[0] * t2[1] * t3[2] - e0[0] * t2[2] * t3[1] -
-                e0[1] * t1[0] * t2[2] + e0[1] * t1[0] * t3[2] + e0[1] * t1[2] * t2[0] -
-                e0[1] * t1[2] * t3[0] - e0[1] * t2[0] * t3[2] + e0[1] * t2[2] * t3[0] +
-                e0[2] * t1[0] * t2[1] - e0[2] * t1[0] * t3[1] - e0[2] * t1[1] * t2[0] +
-                e0[2] * t1[1] * t3[0] + e0[2] * t2[0] * t3[1] - e0[2] * t2[1] * t3[0] -
-                e1[0] * t1[1] * t2[2] + e1[0] * t1[1] * t3[2] + e1[0] * t1[2] * t2[1] -
-                e1[0] * t1[2] * t3[1] - e1[0] * t2[1] * t3[2] + e1[0] * t2[2] * t3[1] +
-                e1[1] * t1[0] * t2[2] - e1[1] * t1[0] * t3[2] - e1[1] * t1[2] * t2[0] +
-                e1[1] * t1[2] * t3[0] + e1[1] * t2[0] * t3[2] - e1[1] * t2[2] * t3[0] -
-                e1[2] * t1[0] * t2[1] + e1[2] * t1[0] * t3[1] + e1[2] * t1[1] * t2[0] -
-                e1[2] * t1[1] * t3[0] - e1[2] * t2[0] * t3[1] + e1[2] * t2[1] * t3[0];
-
-    // Coplanar
-    if (d == 0) return false;
-
-    const T t = (e0[0] * t1[1] * t2[2] - e0[0] * t1[1] * t3[2] - e0[0] * t1[2] * t2[1] +
-                 e0[0] * t1[2] * t3[1] + e0[0] * t2[1] * t3[2] - e0[0] * t2[2] * t3[1] -
-                 e0[1] * t1[0] * t2[2] + e0[1] * t1[0] * t3[2] + e0[1] * t1[2] * t2[0] -
-                 e0[1] * t1[2] * t3[0] - e0[1] * t2[0] * t3[2] + e0[1] * t2[2] * t3[0] +
-                 e0[2] * t1[0] * t2[1] - e0[2] * t1[0] * t3[1] - e0[2] * t1[1] * t2[0] +
-                 e0[2] * t1[1] * t3[0] + e0[2] * t2[0] * t3[1] - e0[2] * t2[1] * t3[0] -
-                 t1[0] * t2[1] * t3[2] + t1[0] * t2[2] * t3[1] + t1[1] * t2[0] * t3[2] -
-                 t1[1] * t2[2] * t3[0] - t1[2] * t2[0] * t3[1] + t1[2] * t2[1] * t3[0]) /
-                d;
-    if (t <= 0 || t >= 1) return false;
-
-    const T u = (e0[0] * e1[1] * t3[2] + e0[0] * e1[2] * t1[1] - e0[0] * e1[1] * t1[2] -
-                 e0[0] * e1[2] * t3[1] - e0[0] * t1[1] * t3[2] + e0[0] * t1[2] * t3[1] +
-                 e0[1] * e1[0] * t1[2] - e0[1] * e1[0] * t3[2] - e0[1] * e1[2] * t1[0] +
-                 e0[1] * e1[2] * t3[0] + e0[1] * t1[0] * t3[2] - e0[1] * t1[2] * t3[0] -
-                 e0[2] * e1[0] * t1[1] + e0[2] * e1[0] * t3[1] + e0[2] * e1[1] * t1[0] -
-                 e0[2] * e1[1] * t3[0] - e0[2] * t1[0] * t3[1] + e0[2] * t1[1] * t3[0] +
-                 e1[0] * t1[1] * t3[2] - e1[0] * t1[2] * t3[1] - e1[1] * t1[0] * t3[2] +
-                 e1[1] * t1[2] * t3[0] + e1[2] * t1[0] * t3[1] - e1[2] * t1[1] * t3[0]) /
-                d;
-    const T v = (e0[0] * e1[1] * t1[2] - e0[0] * e1[1] * t2[2] - e0[0] * e1[2] * t1[1] +
-                 e0[0] * e1[2] * t2[1] + e0[0] * t1[1] * t2[2] - e0[0] * t1[2] * t2[1] -
-                 e0[1] * e1[0] * t1[2] + e0[1] * e1[0] * t2[2] + e0[1] * e1[2] * t1[0] -
-                 e0[1] * e1[2] * t2[0] - e0[1] * t1[0] * t2[2] + e0[1] * t1[2] * t2[0] +
-                 e0[2] * e1[0] * t1[1] - e0[2] * e1[0] * t2[1] - e0[2] * e1[1] * t1[0] +
-                 e0[2] * e1[1] * t2[0] + e0[2] * t1[0] * t2[1] - e0[2] * t1[1] * t2[0] -
-                 e1[0] * t1[1] * t2[2] + e1[0] * t1[2] * t2[1] + e1[1] * t1[0] * t2[2] -
-                 e1[1] * t1[2] * t2[0] - e1[2] * t1[0] * t2[1] + e1[2] * t1[1] * t2[0]) /
-                d;
-
-    is_inside = true;
-    if (u < 0 || u > 1 || v < 0 || v > 1 || u + v > 1) is_inside = false;
-
-    p = (1 - t) * e0 + t * e1;
-
+    std::tie(p, is_inside) = ret_opt.value();
     return true;
 }
 

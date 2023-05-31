@@ -18,9 +18,7 @@ using namespace wmtk;
 using namespace app::remeshing;
 using namespace std::chrono;
 
-extern "C" {
-#include <wmtk/utils/getRSS.c>
-}
+#include <wmtk/utils/getRSS.h>
 
 void run_remeshing(std::string input, double len, std::string output, UniformRemeshing& m, int itrs)
 {

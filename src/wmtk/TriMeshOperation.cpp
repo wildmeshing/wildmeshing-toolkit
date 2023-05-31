@@ -40,19 +40,26 @@ auto TriMeshOperation::operator()(TriMesh& m, const Tuple& t) -> ExecuteReturnDa
 
     m.start_protected_connectivity();
     m.start_protected_attributes();
-    if (before(m, t)) {
-        retdata = execute(m, t);
 
-        if (retdata.success) {
-            if (!(after(m, retdata) && invariants(m, retdata))) {
-                retdata.success = false;
-            }
-        }
+    retdata.success = before(m, t);
+    if (!retdata.success) {
+        goto finish;
     }
 
-    if (retdata.success == false) {
-        m.rollback_protected_connectivity();
-        m.rollback_protected_attributes();
+    retdata = execute(m, t);
+    if (!retdata.success) {
+        goto finish;
+    }
+
+    retdata.success = after(m, retdata) && invariants(m, retdata);
+    if (!retdata.success) {
+        goto finish;
+    }
+
+    //
+finish:
+    if (!retdata.success) {
+        m.rollback_protected();
     }
     m.release_protected_connectivity();
     m.release_protected_attributes();

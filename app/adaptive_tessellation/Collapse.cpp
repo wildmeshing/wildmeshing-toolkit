@@ -44,14 +44,14 @@ public:
     bool after(AdaptiveTessellation& m, ExecuteReturnData& ret_data)
     {
         if (wmtk::TriMeshEdgeCollapseOperation::after(m, ret_data)) {
-            ret_data.success |= m.collapse_edge_after(ret_data.tuple);
+            ret_data.success &= m.collapse_edge_after(ret_data.tuple);
         }
         return ret_data;
     }
     bool invariants(AdaptiveTessellation& m, ExecuteReturnData& ret_data)
     {
         if (wmtk::TriMeshEdgeCollapseOperation::invariants(m, ret_data)) {
-            ret_data.success |= m.invariants(ret_data.new_tris);
+            ret_data.success &= m.invariants(ret_data.new_tris);
         }
         return ret_data;
     }

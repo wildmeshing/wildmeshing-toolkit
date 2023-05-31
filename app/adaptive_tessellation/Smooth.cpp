@@ -1,4 +1,5 @@
 
+#include <igl/predicates/predicates.h>
 #include "AdaptiveTessellation.h"
 #include "wmtk/ExecutionScheduler.hpp"
 
@@ -20,9 +21,9 @@ using namespace adaptive_tessellation;
 using namespace wmtk;
 
 class AdaptiveTessellationSmoothVertexOperation : public wmtk::TriMeshOperationShim<
-                                                  AdaptiveTessellation,
-                                                  AdaptiveTessellationSmoothVertexOperation,
-                                                  wmtk::TriMeshSmoothVertexOperation>
+                                                      AdaptiveTessellation,
+                                                      AdaptiveTessellationSmoothVertexOperation,
+                                                      wmtk::TriMeshSmoothVertexOperation>
 {
 public:
     ExecuteReturnData execute(AdaptiveTessellation& m, const Tuple& t)
@@ -32,32 +33,32 @@ public:
     bool before(AdaptiveTessellation& m, const Tuple& t)
     {
         if (wmtk::TriMeshSmoothVertexOperation::before(m, t)) {
-            return  m.smooth_before(t);
+            return m.smooth_before(t);
         }
         return false;
     }
     bool after(AdaptiveTessellation& m, ExecuteReturnData& ret_data)
     {
         if (wmtk::TriMeshSmoothVertexOperation::after(m, ret_data)) {
-            ret_data.success |= m.smooth_after(ret_data.tuple);
+            ret_data.success &= m.smooth_after(ret_data.tuple);
         }
         return ret_data;
     }
     bool invariants(AdaptiveTessellation& m, ExecuteReturnData& ret_data)
     {
         if (wmtk::TriMeshSmoothVertexOperation::invariants(m, ret_data)) {
-            ret_data.success |= m.invariants(ret_data.new_tris);
+            ret_data.success &= m.invariants(ret_data.new_tris);
         }
         return ret_data;
     }
 };
 
-    template <typename Executor>
-    void addCustomOps(Executor& e) {
-
-        e.add_operation(std::make_shared<AdaptiveTessellationSmoothVertexOperation>());
-    }
+template <typename Executor>
+void addCustomOps(Executor& e)
+{
+    e.add_operation(std::make_shared<AdaptiveTessellationSmoothVertexOperation>());
 }
+} // namespace
 
 bool adaptive_tessellation::AdaptiveTessellation::smooth_before(const Tuple& t)
 {
