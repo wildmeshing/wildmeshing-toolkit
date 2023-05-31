@@ -189,4 +189,10 @@ TEST_CASE("Boundary Parameterization", "[utils][boundary]")
                                                               "/hemisphere_splited.obj"),
             39);
     }
+    SECTION("pyramid")
+    {
+        BoundaryTester::test_boundary_parameterization(
+            lagrange::io::load_mesh<lagrange::SurfaceMesh32d>(WMTK_DATA_DIR "/seamPyramid.obj"),
+            3);
+    }
 }
