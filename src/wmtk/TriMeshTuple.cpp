@@ -89,8 +89,8 @@ std::optional<TriMeshTuple> TriMeshTuple::switch_face(const TriMesh& m) const
     const size_t v1 = this->switch_vertex(m).m_vid;
 
     // Intersect the 1-ring of the two vertices in the edge pointed by the tuple
-    std::vector<size_t> v0_fids = m.m_vertex_connectivity[v0].m_conn_tris;
-    std::vector<size_t> v1_fids = m.m_vertex_connectivity[v1].m_conn_tris;
+    const std::vector<size_t>& v0_fids = m.m_vertex_connectivity[v0].m_conn_tris;
+    const std::vector<size_t>& v1_fids = m.m_vertex_connectivity[v1].m_conn_tris;
 
     assert(std::is_sorted(v0_fids.begin(), v0_fids.end()));
     assert(std::is_sorted(v1_fids.begin(), v1_fids.end()));
@@ -100,8 +100,7 @@ std::optional<TriMeshTuple> TriMeshTuple::switch_face(const TriMesh& m) const
         v0_fids.end(),
         v1_fids.begin(),
         v1_fids.end(),
-        std::back_inserter(fids)); // make sure this is correct
-    std::array<size_t, 2> fids;
+        fids.begin()); // make sure this is correct
     const size_t isect_size = std::distance(fids.begin(), output_end);
     assert(isect_size == 1 || isect_size == 2);
 
@@ -158,16 +157,18 @@ bool TriMeshTuple::is_valid(const TriMesh& m) const
         return false;
     }
 
-    if (m.m_vertex_connectivity[m_vid].m_is_removed) {
+    const auto& vert_con = m.m_vertex_connectivity[m_vid];
+    if (vert_con.m_is_removed) {
         return false;
     }
 
-    if (m.m_tri_connectivity[m_fid].m_is_removed) {
+    const auto& tri_con = m.m_tri_connectivity[m_fid];
+    if (tri_con.m_is_removed) {
         return false;
     }
 
     // Condition 3: tuple m_hash check
-    if (m_hash != m.m_tri_connectivity[m_fid].hash) {
+    if (m_hash != tri_con.hash) {
         // assert(false);
         return false;
     }
@@ -178,13 +179,13 @@ bool TriMeshTuple::is_valid(const TriMesh& m) const
     assert(m_fid <= m.tri_capacity());
 
     // Condition 1: tid and vid are consistent
-    const int lvid = m.m_tri_connectivity[m_fid].find(m_vid);
+    const int lvid = m.tri_con.find(m_vid);
     assert(lvid == 0 || lvid == 1 || lvid == 2);
 
     // Condition 2: eid is valid
-    const int v0 = m.m_tri_connectivity[m_fid][0];
-    const int v1 = m.m_tri_connectivity[m_fid][1];
-    const int v2 = m.m_tri_connectivity[m_fid][2];
+    const int v0 = m.tri_con[0];
+    const int v1 = m.tri_con[1];
+    const int v2 = m.tri_con[2];
     switch (m_local_eid) {
     case 0: assert(m_vid == v1 || m_vid == v2); break;
     case 1: assert(m_vid == v0 || m_vid == v2); break;
