@@ -1,4 +1,12 @@
 #include "TriMesh.h"
+// Disable compiler warnings before including third party code
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcomment"
+#elif (defined(__GNUC__) || defined(__GNUG__)) && !(defined(__clang__) || defined(__INTEL_COMPILER))
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcomment"
+#endif
 
 namespace wmtk {
 void TriMeshTuple::update_hash(const TriMesh& m)
@@ -126,8 +134,8 @@ std::optional<TriMeshTuple> TriMeshTuple::switch_face(const TriMesh& m) const
 #if !defined(NDEBUG)
     size_t lv0_2 = fid2_tri_con.find(v0);
     size_t lv1_2 = fid2_tri_con.find(v1);
-    u // make sure the edges are legit values
-        assert(lv0_2 == 0 || lv0_2 == 1 || lv0_2 == 2);
+    // make sure the edges are legit values
+    assert(lv0_2 == 0 || lv0_2 == 1 || lv0_2 == 2);
     assert(lv1_2 == 0 || lv1_2 == 1 || lv1_2 == 2);
 
     // make sure the local eid is the "other" edge
@@ -179,13 +187,13 @@ bool TriMeshTuple::is_valid(const TriMesh& m) const
     assert(m_fid <= m.tri_capacity());
 
     // Condition 1: tid and vid are consistent
-    const int lvid = m.tri_con.find(m_vid);
+    const int lvid = tri_con.find(m_vid);
     assert(lvid == 0 || lvid == 1 || lvid == 2);
 
     // Condition 2: eid is valid
-    const int v0 = m.tri_con[0];
-    const int v1 = m.tri_con[1];
-    const int v2 = m.tri_con[2];
+    const int v0 = tri_con[0];
+    const int v1 = tri_con[1];
+    const int v2 = tri_con[2];
     switch (m_local_eid) {
     case 0: assert(m_vid == v1 || m_vid == v2); break;
     case 1: assert(m_vid == v0 || m_vid == v2); break;
