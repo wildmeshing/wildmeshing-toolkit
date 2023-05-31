@@ -1,7 +1,6 @@
-
 #include "TriMesh.h"
-#define WMTK_USE_ARARY_SWITCH_FACE
-using namespace wmtk;
+
+namespace wmtk {
 void TriMeshTuple::update_hash(const TriMesh& m)
 {
     assert(m_fid < m.m_tri_connectivity.size());
@@ -44,7 +43,6 @@ TriMeshTuple TriMeshTuple::switch_vertex(const TriMesh& m) const
     assert(is_valid(m));
     const auto& tri_con = m.m_tri_connectivity[m_fid].m_indices;
     const bool ccw = is_ccw(m);
-#if 1
 
 
     // 1|\
@@ -55,30 +53,8 @@ TriMeshTuple TriMeshTuple::switch_vertex(const TriMesh& m) const
     //
 
     TriMeshTuple loc = *this;
-    loc.m_vid= tri_con[(m_local_eid+(ccw?2:1))%3];
+    loc.m_vid = tri_con[(m_local_eid + (ccw ? 2 : 1)) % 3];
 
-#else
-
-    const auto [v0,v1,v2] = tri_con;
-
-    TriMeshTuple loc = *this;
-    switch (m_local_eid) {
-    case 0:
-        assert(m_vid == v1 || m_vid == v2);
-        loc.m_vid = m_vid == v1 ? v2 : v1;
-        break;
-    case 1:
-        assert(m_vid == v0 || m_vid == v2);
-        loc.m_vid = m_vid == v0 ? v2 : v0;
-        break;
-    case 2:
-        assert(m_vid == v0 || m_vid == v1);
-        loc.m_vid = m_vid == v0 ? v1 : v0;
-        break;
-    default:;
-    }
-    assert(loc.m_vid == tri_con[(m_local_eid+(ccw?2:1))%3]);
-#endif
     assert(loc.is_valid(m));
 
     return loc;
@@ -98,33 +74,9 @@ TriMeshTuple TriMeshTuple::switch_edge(const TriMesh& m) const
     // 0|___\2
     //   1
     //
-#if 1
     TriMeshTuple loc = *this;
     const bool ccw = is_ccw(m);
-    loc.m_local_eid = (m_local_eid+(ccw?2:1))%3;
-#else
-    const bool ccw = is_ccw(m);
-    const int lvid = m.m_tri_connectivity[m_fid].find(m_vid);
-    assert(lvid == 0 || lvid == 1 || lvid == 2);
-
-    TriMeshTuple loc = *this;
-    switch (lvid) {
-    case 0:
-        assert(m_local_eid == 1 || m_local_eid == 2);
-        loc.m_local_eid = m_local_eid == 1 ? 2 : 1;
-        break;
-    case 1:
-        assert(m_local_eid == 0 || m_local_eid == 2);
-        loc.m_local_eid = m_local_eid == 0 ? 2 : 0;
-        break;
-    case 2:
-        assert(m_local_eid == 0 || m_local_eid == 1);
-        loc.m_local_eid = m_local_eid == 0 ? 1 : 0;
-        break;
-    default:;
-    }
-    assert(loc.m_local_eid == (m_local_eid+(ccw?2:1))%3);
-#endif
+    loc.m_local_eid = (m_local_eid + (ccw ? 2 : 1)) % 3;
     assert(loc.is_valid(m));
     return loc;
 }
@@ -142,24 +94,15 @@ std::optional<TriMeshTuple> TriMeshTuple::switch_face(const TriMesh& m) const
 
     assert(std::is_sorted(v0_fids.begin(), v0_fids.end()));
     assert(std::is_sorted(v1_fids.begin(), v1_fids.end()));
-#if WMTK_USE_ARRAY_SWITCH_FACE
-    std::array<size_t,2> fids;
-#else
-    std::vector<size_t> fids;
-    fids.reserve(2);
-#endif
+    std::array<size_t, 2> fids;
     auto output_end = std::set_intersection(
         v0_fids.begin(),
         v0_fids.end(),
         v1_fids.begin(),
         v1_fids.end(),
         std::back_inserter(fids)); // make sure this is correct
-#if WMTK_USE_ARRAY_SWITCH_FACE
-    std::array<size_t,2> fids;
-    const size_t isect_size = std::distance(fids.begin(),output_end);
-#else
-    const size_t isect_size = fids.size();
-#endif
+    std::array<size_t, 2> fids;
+    const size_t isect_size = std::distance(fids.begin(), output_end);
     assert(isect_size == 1 || isect_size == 2);
 
     if (isect_size != 2) return {};
@@ -171,44 +114,21 @@ std::optional<TriMeshTuple> TriMeshTuple::switch_face(const TriMesh& m) const
 
     // Get sorted local indices of the two vertices in the new triangle
     const auto& fid2_tri_con = m.m_tri_connectivity[fid2];
-#if 1
 
     size_t local_eid = 4;
-    for(size_t j = 0; j < 3; ++j) {
-        if(fid2_tri_con[j] != v0&& fid2_tri_con[j] != v1) {
+    for (size_t j = 0; j < 3; ++j) {
+        if (fid2_tri_con[j] != v0 && fid2_tri_con[j] != v1) {
             local_eid = j;
             break;
         }
     }
     assert(local_eid != 4);
-    const TriMeshTuple loc(this->vid(m),local_eid, fid2, m) ;
-#if defined(_DEBUG)
+    const TriMeshTuple loc(this->vid(m), local_eid, fid2, m);
+#if !defined(NDEBUG)
     size_t lv0_2 = fid2_tri_con.find(v0);
     size_t lv1_2 = fid2_tri_con.find(v1);
-#endif
-#else
-    size_t lv0_2 = fid2_tri_con.find(v0);
-    size_t lv1_2 = fid2_tri_con.find(v1);
-    TriMeshTuple loc = *this;
-    loc.m_fid = fid2;
-
-    // Assign the edge id depending on the table
-    if (lv0_2 > lv1_2) std::swap(lv0_2, lv1_2);
-    if (lv0_2 == 0 && lv1_2 == 1) {
-        loc.m_local_eid = 2;
-    } else if (lv0_2 == 1 && lv1_2 == 2) {
-        loc.m_local_eid = 0;
-    } else if (lv0_2 == 0 && lv1_2 == 2) {
-        loc.m_local_eid = 1;
-    } else {
-        assert(false);
-    }
-
-    loc.update_hash(m);
-#endif
-#if defined(_DEBUG)
-    // make sure the edges are legit values
-    assert(lv0_2 == 0 || lv0_2 == 1 || lv0_2 == 2);
+    u // make sure the edges are legit values
+        assert(lv0_2 == 0 || lv0_2 == 1 || lv0_2 == 2);
     assert(lv1_2 == 0 || lv1_2 == 1 || lv1_2 == 2);
 
     // make sure the local eid is the "other" edge
@@ -275,3 +195,4 @@ bool TriMeshTuple::is_valid(const TriMesh& m) const
 
     return true;
 }
+} // namespace wmtk
