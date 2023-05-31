@@ -3,6 +3,8 @@
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
+#include <wmtk/operations/TriMeshEdgeCollapseOperation.h>
+#include <wmtk/operations/TriMeshOperationShim.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -17,7 +19,7 @@ class ShortestEdgeCollapseOperation : public wmtk::TriMeshOperationShim<
                                           wmtk::TriMeshEdgeCollapseOperation>
 {
 public:
-    ExecuteReturnData execute(ShortestEdgeCollapse& m, const Tuple& t)
+    bool execute(ShortestEdgeCollapse& m, const Tuple& t)
     {
         return wmtk::TriMeshEdgeCollapseOperation::execute(m, t);
     }
@@ -25,19 +27,22 @@ public:
     {
         return wmtk::TriMeshEdgeCollapseOperation::before(m, t) && m.collapse_edge_before(t);
     }
-    bool after(ShortestEdgeCollapse& m, ExecuteReturnData& ret_data)
+    bool after(ShortestEdgeCollapse& m)
     {
-        return wmtk::TriMeshEdgeCollapseOperation::after(m, ret_data) &&
-               m.collapse_edge_after(ret_data.tuple);
-    }
-    bool invariants(ShortestEdgeCollapse& m, ExecuteReturnData& ret_data)
-    {
-        return wmtk::TriMeshEdgeCollapseOperation::invariants(m, ret_data) &&
-               m.invariants(ret_data.new_tris);
+        return wmtk::TriMeshEdgeCollapseOperation::after(m) &&
+               m.collapse_edge_after(get_return_tuple_opt().value());
     }
 };
 } // namespace
 
+
+std::map<std::string, std::shared_ptr<wmtk::TriMeshOperation>> ShortestEdgeCollapse::get_operations() const
+{
+    std::map<std::string, std::shared_ptr<wmtk::TriMeshOperation>> r;
+    auto add_operation = [&](auto&& op) { r[op->name()] = op; };
+    add_operation(std::make_shared<ShortestEdgeCollapseOperation>());
+    return r;
+}
 ShortestEdgeCollapse::ShortestEdgeCollapse(
     std::vector<Eigen::Vector3d> _m_vertex_positions,
     int num_threads,
@@ -103,10 +108,10 @@ void ShortestEdgeCollapse::partition_mesh()
 }
 
 
-bool ShortestEdgeCollapse::invariants(const std::vector<Tuple>& new_tris)
+bool ShortestEdgeCollapse::invariants(const wmtk::TriMeshOperation& op)
 {
     if (m_has_envelope) {
-        for (auto& t : new_tris) {
+        for (auto& t : op.modified_triangles(*this)) {
             std::array<Eigen::Vector3d, 3> tris;
             auto vs = oriented_tri_vertices(t);
             for (auto j = 0; j < 3; j++) tris[j] = vertex_attrs[vs[j].vid(*this)].pos;
@@ -191,7 +196,6 @@ bool ShortestEdgeCollapse::collapse_shortest(int target_vert_number)
         return -len2;
     };
     auto setup_and_execute = [&](auto& executor) {
-        executor.add_operation(std::make_shared<ShortestEdgeCollapseOperation>());
         executor.num_threads = NUM_THREADS;
         spdlog::info("Num threads: {}", executor.num_threads);
         executor.renew_neighbor_tuples = renew;
@@ -206,14 +210,14 @@ bool ShortestEdgeCollapse::collapse_shortest(int target_vert_number)
     };
 
     if (NUM_THREADS > 0) {
-        auto executor = wmtk::ExecutePass<ShortestEdgeCollapse, ExecutionPolicy::kPartition>();
+        wmtk::ExecutePass<ShortestEdgeCollapse, ExecutionPolicy::kPartition> executor(static_cast<const ShortestEdgeCollapse&>(*this));
 
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) {
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<ShortestEdgeCollapse, ExecutionPolicy::kSeq>();
+        wmtk::ExecutePass<ShortestEdgeCollapse, ExecutionPolicy::kSeq> executor(static_cast<const ShortestEdgeCollapse&>(*this));
         setup_and_execute(executor);
     }
     return true;
