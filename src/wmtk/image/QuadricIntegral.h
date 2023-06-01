@@ -5,8 +5,8 @@
 #include <lagrange/utils/function_ref.h>
 #include <lagrange/utils/span.h>
 #include <lagrange/utils/value_ptr.h>
-#include <wmtk/utils/Image.h>
-#include <wmtk/utils/Quadric.h>
+#include <wmtk/image/Image.h>
+#include <wmtk/image/Quadric.h>
 
 #include <array>
 

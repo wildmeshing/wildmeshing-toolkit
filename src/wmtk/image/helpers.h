@@ -1,6 +1,6 @@
 #pragma once
 
-#include <wmtk/utils/Image.h>
+#include <wmtk/image/Image.h>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>

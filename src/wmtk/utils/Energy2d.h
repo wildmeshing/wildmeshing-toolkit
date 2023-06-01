@@ -7,11 +7,11 @@
 #include <Eigen/LU>
 #include <iostream>
 #include "BoundaryParametrization.h"
-#include "Displacement.h"
-#include "Image.h"
-#include "Logger.hpp"
-#include "Quadric.h"
-#include "autodiff.h"
+#include <wmtk/image/Displacement.h>
+#include <wmtk/image/Image.h>
+#include <wmtk/utils/Logger.hpp>
+#include <wmtk/image/Quadric.h>
+#include <wmtk/utils/autodiff.h>
 
 namespace wmtk {
 using DofVector = Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 2, 1>;
