@@ -134,6 +134,9 @@ const T &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>at</b> (size
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>size</b> () const override</td></tr>
 <tr class="separator:a38f8dd8f218ae1fc45dfa6c77aab2fda"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classwmtk_1_1_abstract_attribute_collection"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classwmtk_1_1_abstract_attribute_collection')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classwmtk_1_1_abstract_attribute_collection.html">wmtk::AbstractAttributeCollection</a></td></tr>
+<tr class="memitem:a3c4508373e91e934e89926f362fc0462 inherit pub_methods_classwmtk_1_1_abstract_attribute_collection"><td class="memItemLeft" align="right" valign="top"><a id="a3c4508373e91e934e89926f362fc0462"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_in_protect</b> () const</td></tr>
+<tr class="separator:a3c4508373e91e934e89926f362fc0462 inherit pub_methods_classwmtk_1_1_abstract_attribute_collection"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac33653a7a3ca829d818674ba0fb41ca4 inherit pub_methods_classwmtk_1_1_abstract_attribute_collection"><td class="memItemLeft" align="right" valign="top"><a id="ac33653a7a3ca829d818674ba0fb41ca4"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>has_recorders</b> () const</td></tr>
 <tr class="separator:ac33653a7a3ca829d818674ba0fb41ca4 inherit pub_methods_classwmtk_1_1_abstract_attribute_collection"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -156,12 +159,9 @@ tbb::concurrent_vector&lt; T &gt;&#160;</td><td class="memItemRight" valign="bot
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
 <tr class="inherit_header pro_attribs_classwmtk_1_1_abstract_attribute_collection"><td colspan="2" onclick="javascript:toggleInherit('pro_attribs_classwmtk_1_1_abstract_attribute_collection')"><img src="closed.png" alt="-"/>&#160;Protected Attributes inherited from <a class="el" href="classwmtk_1_1_abstract_attribute_collection.html">wmtk::AbstractAttributeCollection</a></td></tr>
-<tr class="memitem:a4ae06bdfaf4487577a4c84c140d9f6f0 inherit pro_attribs_classwmtk_1_1_abstract_attribute_collection"><td class="memItemLeft" align="right" valign="top"><a id="a4ae06bdfaf4487577a4c84c140d9f6f0"></a>
-tbb::enumerable_thread_specific&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_rollback_size</b></td></tr>
-<tr class="separator:a4ae06bdfaf4487577a4c84c140d9f6f0 inherit pro_attribs_classwmtk_1_1_abstract_attribute_collection"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2a2fdb091a249ad65f730030fd9d5d4f inherit pro_attribs_classwmtk_1_1_abstract_attribute_collection"><td class="memItemLeft" align="right" valign="top"><a id="a2a2fdb091a249ad65f730030fd9d5d4f"></a>
-tbb::enumerable_thread_specific&lt; bool &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>in_protected</b> {false}</td></tr>
-<tr class="separator:a2a2fdb091a249ad65f730030fd9d5d4f inherit pro_attribs_classwmtk_1_1_abstract_attribute_collection"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3d876a1403eae260bb8ba7fdd43a4a6d inherit pro_attribs_classwmtk_1_1_abstract_attribute_collection"><td class="memItemLeft" align="right" valign="top"><a id="a3d876a1403eae260bb8ba7fdd43a4a6d"></a>
+tbb::enumerable_thread_specific&lt; std::optional&lt; size_t &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_rollback_size</b></td></tr>
+<tr class="separator:a3d876a1403eae260bb8ba7fdd43a4a6d inherit pro_attribs_classwmtk_1_1_abstract_attribute_collection"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <hr/>The documentation for this class was generated from the following file:<ul>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/<a class="el" href="_attribute_collection_8hpp_source.html">AttributeCollection.hpp</a></li>

@@ -73,17 +73,21 @@ $(function() {
 <div class="title">wmtk::TriMesh::VertexConnectivity Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
-
-<p><code>#include &lt;<a class="el" href="_tri_mesh_8h_source.html">TriMesh.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a1d1c0e693e04b126a1d8771516cddbf0"><td class="memItemLeft" align="right" valign="top"><a id="a1d1c0e693e04b126a1d8771516cddbf0"></a>
-size_t &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator[]</b> (const size_t index)</td></tr>
-<tr class="separator:a1d1c0e693e04b126a1d8771516cddbf0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af411a598c085e8405e63edd3ccdeb115"><td class="memItemLeft" align="right" valign="top"><a id="af411a598c085e8405e63edd3ccdeb115"></a>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>operator[]</b> (const size_t index) const</td></tr>
 <tr class="separator:af411a598c085e8405e63edd3ccdeb115"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab9ce386304c2f619230cc315c86dfbe2"><td class="memItemLeft" align="right" valign="top"><a id="ab9ce386304c2f619230cc315c86dfbe2"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>insert</b> (const size_t value)</td></tr>
+<tr class="separator:ab9ce386304c2f619230cc315c86dfbe2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a543d7d7de51b9c297f90a321d216bea7"><td class="memItemLeft" align="right" valign="top"><a id="a543d7d7de51b9c297f90a321d216bea7"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>replace</b> (const size_t index, const size_t value)</td></tr>
+<tr class="separator:a543d7d7de51b9c297f90a321d216bea7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab3188c43e9e1352b462a19f445a00b05"><td class="memItemLeft" align="right" valign="top"><a id="ab3188c43e9e1352b462a19f445a00b05"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>replace_value</b> (const size_t index, const size_t value)</td></tr>
+<tr class="separator:ab3188c43e9e1352b462a19f445a00b05"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -96,9 +100,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 <tr class="memdesc:af85b47973f5937266c235d9f688b6742"><td class="mdescLeft">&#160;</td><td class="mdescRight">is the vertex removed <br /></td></tr>
 <tr class="separator:af85b47973f5937266c235d9f688b6742"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>(internal use) Maintains a list of triangles connected to the given vertex, and a flag to mark removal. </p>
-</div><hr/>The documentation for this class was generated from the following file:<ul>
+<hr/>The documentation for this class was generated from the following file:<ul>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/<a class="el" href="_tri_mesh_8h_source.html">TriMesh.h</a></li>
 </ul>
 </div><!-- contents -->

@@ -135,27 +135,29 @@ $(function() {
 <div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <span class="keywordtype">bool</span> collapse_edge_after(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a>&amp; t) ;</div>
 <div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <span class="keywordtype">bool</span> collapse_shortest(<span class="keywordtype">int</span> target_vertex_count);</div>
 <div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <span class="keywordtype">bool</span> write_triangle_mesh(std::string path);</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="classapp_1_1sec_1_1_shortest_edge_collapse.html#a46ee1a7dec6e94c3d6bd51b638662a59">invariants</a>(<span class="keyword">const</span> std::vector&lt;Tuple&gt;&amp; new_tris) <span class="keyword">override</span>;</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160; </div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00070"></a><span class="lineno"><a class="line" href="structapp_1_1sec_1_1_shortest_edge_collapse_1_1_position_info_cache.html">   70</a></span>&#160;    <span class="keyword">struct </span><a class="code" href="structapp_1_1sec_1_1_shortest_edge_collapse_1_1_position_info_cache.html">PositionInfoCache</a></div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    {</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;        Eigen::Vector3d v1p;</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;        Eigen::Vector3d v2p;</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    };</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    tbb::enumerable_thread_specific&lt;PositionInfoCache&gt; position_cache;</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160; </div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    std::vector&lt;TriMesh::Tuple&gt; new_edges_after(<span class="keyword">const</span> std::vector&lt;TriMesh::Tuple&gt;&amp; t) <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;};</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160; </div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="classapp_1_1sec_1_1_shortest_edge_collapse.html#abe214f6fdbb878dd37228b2ff4f9727f">invariants</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tri_mesh_operation.html">wmtk::TriMeshOperation</a>&amp; op) <span class="keyword">override</span>;</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    std::map&lt;std::string, std::shared_ptr&lt;wmtk::TriMeshOperation&gt;&gt; get_operations() <span class="keyword">const override</span>;</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160; </div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00071"></a><span class="lineno"><a class="line" href="structapp_1_1sec_1_1_shortest_edge_collapse_1_1_position_info_cache.html">   71</a></span>&#160;    <span class="keyword">struct </span><a class="code" href="structapp_1_1sec_1_1_shortest_edge_collapse_1_1_position_info_cache.html">PositionInfoCache</a></div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    {</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;        Eigen::Vector3d v1p;</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;        Eigen::Vector3d v2p;</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    };</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    tbb::enumerable_thread_specific&lt;PositionInfoCache&gt; position_cache;</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160; </div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    std::vector&lt;TriMesh::Tuple&gt; new_edges_after(<span class="keyword">const</span> std::vector&lt;TriMesh::Tuple&gt;&amp; t) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;};</div>
 <div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160; </div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;} <span class="comment">// namespace app::sec</span></div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160; </div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;} <span class="comment">// namespace app::sec</span></div>
 <div class="ttc" id="aclassapp_1_1sec_1_1_shortest_edge_collapse_html"><div class="ttname"><a href="classapp_1_1sec_1_1_shortest_edge_collapse.html">app::sec::ShortestEdgeCollapse</a></div><div class="ttdef"><b>Definition:</b> ShortestEdgeCollapse.h:35</div></div>
-<div class="ttc" id="aclassapp_1_1sec_1_1_shortest_edge_collapse_html_a46ee1a7dec6e94c3d6bd51b638662a59"><div class="ttname"><a href="classapp_1_1sec_1_1_shortest_edge_collapse.html#a46ee1a7dec6e94c3d6bd51b638662a59">app::sec::ShortestEdgeCollapse::invariants</a></div><div class="ttdeci">bool invariants(const std::vector&lt; Tuple &gt; &amp;new_tris) override</div><div class="ttdoc">User specified invariants that can't be violated.</div><div class="ttdef"><b>Definition:</b> ShortestEdgeCollapse.cpp:106</div></div>
+<div class="ttc" id="aclassapp_1_1sec_1_1_shortest_edge_collapse_html_abe214f6fdbb878dd37228b2ff4f9727f"><div class="ttname"><a href="classapp_1_1sec_1_1_shortest_edge_collapse.html#abe214f6fdbb878dd37228b2ff4f9727f">app::sec::ShortestEdgeCollapse::invariants</a></div><div class="ttdeci">bool invariants(const wmtk::TriMeshOperation &amp;op) override</div><div class="ttdoc">User specified invariants that can't be violated.</div><div class="ttdef"><b>Definition:</b> ShortestEdgeCollapse.cpp:111</div></div>
 <div class="ttc" id="aclasssample__envelope_1_1_sample_envelope_html"><div class="ttname"><a href="classsample__envelope_1_1_sample_envelope.html">sample_envelope::SampleEnvelope</a></div><div class="ttdef"><b>Definition:</b> SampleEnvelope.hpp:55</div></div>
-<div class="ttc" id="aclasswmtk_1_1_tri_mesh_html"><div class="ttname"><a href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></div><div class="ttdef"><b>Definition:</b> TriMesh.h:38</div></div>
-<div class="ttc" id="aclasswmtk_1_1_tri_mesh_tuple_html"><div class="ttname"><a href="classwmtk_1_1_tri_mesh_tuple.html">wmtk::TriMeshTuple</a></div><div class="ttdef"><b>Definition:</b> TriMeshTuple.h:12</div></div>
-<div class="ttc" id="astructapp_1_1sec_1_1_shortest_edge_collapse_1_1_position_info_cache_html"><div class="ttname"><a href="structapp_1_1sec_1_1_shortest_edge_collapse_1_1_position_info_cache.html">app::sec::ShortestEdgeCollapse::PositionInfoCache</a></div><div class="ttdef"><b>Definition:</b> ShortestEdgeCollapse.h:71</div></div>
+<div class="ttc" id="aclasswmtk_1_1_tri_mesh_html"><div class="ttname"><a href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></div><div class="ttdef"><b>Definition:</b> TriMesh.h:39</div></div>
+<div class="ttc" id="aclasswmtk_1_1_tri_mesh_operation_html"><div class="ttname"><a href="classwmtk_1_1_tri_mesh_operation.html">wmtk::TriMeshOperation</a></div><div class="ttdef"><b>Definition:</b> TriMeshOperation.h:7</div></div>
+<div class="ttc" id="aclasswmtk_1_1_tri_mesh_tuple_html"><div class="ttname"><a href="classwmtk_1_1_tri_mesh_tuple.html">wmtk::TriMeshTuple</a></div><div class="ttdef"><b>Definition:</b> TriMeshTuple.h:15</div></div>
+<div class="ttc" id="astructapp_1_1sec_1_1_shortest_edge_collapse_1_1_position_info_cache_html"><div class="ttname"><a href="structapp_1_1sec_1_1_shortest_edge_collapse_1_1_position_info_cache.html">app::sec::ShortestEdgeCollapse::PositionInfoCache</a></div><div class="ttdef"><b>Definition:</b> ShortestEdgeCollapse.h:72</div></div>
 <div class="ttc" id="astructapp_1_1sec_1_1_vertex_attributes_html"><div class="ttname"><a href="structapp_1_1sec_1_1_vertex_attributes.html">app::sec::VertexAttributes</a></div><div class="ttdef"><b>Definition:</b> ShortestEdgeCollapse.h:28</div></div>
 <div class="ttc" id="astructwmtk_1_1_attribute_collection_html"><div class="ttname"><a href="structwmtk_1_1_attribute_collection.html">wmtk::AttributeCollection&lt; VertexAttributes &gt;</a></div></div>
 </div><!-- fragment --></div><!-- contents -->

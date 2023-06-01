@@ -122,6 +122,9 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>begin_protect
 <tr class="memitem:ac668979e67b033466fd1303726345837"><td class="memItemLeft" align="right" valign="top"><a id="ac668979e67b033466fd1303726345837"></a>
 virtual std::optional&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>end_protect</b> ()</td></tr>
 <tr class="separator:ac668979e67b033466fd1303726345837"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3c4508373e91e934e89926f362fc0462"><td class="memItemLeft" align="right" valign="top"><a id="a3c4508373e91e934e89926f362fc0462"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_in_protect</b> () const</td></tr>
+<tr class="separator:a3c4508373e91e934e89926f362fc0462"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac33653a7a3ca829d818674ba0fb41ca4"><td class="memItemLeft" align="right" valign="top"><a id="ac33653a7a3ca829d818674ba0fb41ca4"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>has_recorders</b> () const</td></tr>
 <tr class="separator:ac33653a7a3ca829d818674ba0fb41ca4"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -134,12 +137,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>remove_recorder</b> (
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
-<tr class="memitem:a4ae06bdfaf4487577a4c84c140d9f6f0"><td class="memItemLeft" align="right" valign="top"><a id="a4ae06bdfaf4487577a4c84c140d9f6f0"></a>
-tbb::enumerable_thread_specific&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_rollback_size</b></td></tr>
-<tr class="separator:a4ae06bdfaf4487577a4c84c140d9f6f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2a2fdb091a249ad65f730030fd9d5d4f"><td class="memItemLeft" align="right" valign="top"><a id="a2a2fdb091a249ad65f730030fd9d5d4f"></a>
-tbb::enumerable_thread_specific&lt; bool &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>in_protected</b> {false}</td></tr>
-<tr class="separator:a2a2fdb091a249ad65f730030fd9d5d4f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3d876a1403eae260bb8ba7fdd43a4a6d"><td class="memItemLeft" align="right" valign="top"><a id="a3d876a1403eae260bb8ba7fdd43a4a6d"></a>
+tbb::enumerable_thread_specific&lt; std::optional&lt; size_t &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_rollback_size</b></td></tr>
+<tr class="separator:a3d876a1403eae260bb8ba7fdd43a4a6d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>

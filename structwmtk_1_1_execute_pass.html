@@ -107,9 +107,17 @@ template&lt;typename OpType &gt; </td></tr>
 template&lt;typename OpType &gt; </td></tr>
 <tr class="memitem:a6b71185eca10038526a70276ae779c89"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>add_operation</b> ()</td></tr>
 <tr class="separator:a6b71185eca10038526a70276ae779c89"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae3448b8e6120673df4dfa008ee0056b7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#ae3448b8e6120673df4dfa008ee0056b7">ExecutePass</a> (const std::map&lt; Op, OperatorFunc &gt; &amp;customized_ops={})</td></tr>
-<tr class="memdesc:ae3448b8e6120673df4dfa008ee0056b7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a new Execute Pass object. It contains the name-to-operation map and the functions that define the rules for operations.  <a href="structwmtk_1_1_execute_pass.html#ae3448b8e6120673df4dfa008ee0056b7">More...</a><br /></td></tr>
-<tr class="separator:ae3448b8e6120673df4dfa008ee0056b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afe72d11683b6cc09ef8c55796557aa32"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#afe72d11683b6cc09ef8c55796557aa32">ExecutePass</a> ()</td></tr>
+<tr class="memdesc:afe72d11683b6cc09ef8c55796557aa32"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a new Execute Pass object. It contains the name-to-operation map and the functions that define the rules for operations.  <a href="structwmtk_1_1_execute_pass.html#afe72d11683b6cc09ef8c55796557aa32">More...</a><br /></td></tr>
+<tr class="separator:afe72d11683b6cc09ef8c55796557aa32"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a266249d42e83c35e1d2a1b799c29d14e"><td class="memTemplParams" colspan="2"><a id="a266249d42e83c35e1d2a1b799c29d14e"></a>
+template&lt;bool Tet = IsTetMesh&gt; </td></tr>
+<tr class="memitem:a266249d42e83c35e1d2a1b799c29d14e"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><b>ExecutePass</b> (const std::map&lt; Op, OperatorFunc &gt; &amp;customized_ops)</td></tr>
+<tr class="separator:a266249d42e83c35e1d2a1b799c29d14e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abd2dec9f1b907e47e52faf5ea6e9c2ea"><td class="memTemplParams" colspan="2"><a id="abd2dec9f1b907e47e52faf5ea6e9c2ea"></a>
+template&lt;bool Tet = IsTetMesh&gt; </td></tr>
+<tr class="memitem:abd2dec9f1b907e47e52faf5ea6e9c2ea"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><b>ExecutePass</b> (const AppMesh &amp;m)</td></tr>
+<tr class="separator:abd2dec9f1b907e47e52faf5ea6e9c2ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae03155a3f43fae0bf5d13cf8ccbcea2e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#ae03155a3f43fae0bf5d13cf8ccbcea2e">operator()</a> (AppMesh &amp;m, const std::vector&lt; std::pair&lt; Op, Tuple &gt;&gt; &amp;operation_tuples)</td></tr>
 <tr class="memdesc:ae03155a3f43fae0bf5d13cf8ccbcea2e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Executes the operations for an application when the lambda function is invoked. The rules that are customizly defined for applications are applied.  <a href="structwmtk_1_1_execute_pass.html#ae03155a3f43fae0bf5d13cf8ccbcea2e">More...</a><br /></td></tr>
 <tr class="separator:ae03155a3f43fae0bf5d13cf8ccbcea2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -172,8 +180,8 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>get_partition_id</b
 <tr class="separator:a5eadf70a00a73556bb75af4067f7776c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="ae3448b8e6120673df4dfa008ee0056b7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae3448b8e6120673df4dfa008ee0056b7">&#9670;&nbsp;</a></span>ExecutePass()</h2>
+<a id="afe72d11683b6cc09ef8c55796557aa32"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afe72d11683b6cc09ef8c55796557aa32">&#9670;&nbsp;</a></span>ExecutePass()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -186,8 +194,7 @@ template&lt;class AppMesh , ExecutionPolicy policy = ExecutionPolicy::kSeq&gt; <
         <tr>
           <td class="memname"><a class="el" href="structwmtk_1_1_execute_pass.html">wmtk::ExecutePass</a>&lt; AppMesh, policy &gt;::<a class="el" href="structwmtk_1_1_execute_pass.html">ExecutePass</a> </td>
           <td>(</td>
-          <td class="paramtype">const std::map&lt; Op, OperatorFunc &gt; &amp;&#160;</td>
-          <td class="paramname"><em>customized_ops</em> = <code>{}</code></td><td>)</td>
+          <td class="paramname"></td><td>)</td>
           <td></td>
         </tr>
       </table>

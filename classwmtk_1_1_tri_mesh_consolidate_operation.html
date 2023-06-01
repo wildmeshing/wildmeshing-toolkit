@@ -76,7 +76,7 @@ $(function() {
 <p>removing the elements that are removed  
  <a href="classwmtk_1_1_tri_mesh_consolidate_operation.html#details">More...</a></p>
 
-<p><code>#include &lt;<a class="el" href="_tri_mesh_operation_8h_source.html">TriMeshOperation.h</a>&gt;</code></p>
+<p><code>#include &lt;<a class="el" href="_tri_mesh_consolidate_operation_8h_source.html">TriMeshConsolidateOperation.h</a>&gt;</code></p>
 <div class="dynheader">
 Inheritance diagram for wmtk::TriMeshConsolidateOperation:</div>
 <div class="dyncontent">
@@ -89,22 +89,28 @@ Inheritance diagram for wmtk::TriMeshConsolidateOperation:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ae7c2b4b5be353d54c177f6b6f07700d4"><td class="memItemLeft" align="right" valign="top"><a id="ae7c2b4b5be353d54c177f6b6f07700d4"></a>
-<a class="el" href="structwmtk_1_1_tri_mesh_operation_1_1_execute_return_data.html">ExecuteReturnData</a>&#160;</td><td class="memItemRight" valign="bottom"><b>execute</b> (<a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;m, const <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> &amp;t) override</td></tr>
-<tr class="separator:ae7c2b4b5be353d54c177f6b6f07700d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ace3252c6168807be027b3cbcae3a35c8"><td class="memItemLeft" align="right" valign="top"><a id="ace3252c6168807be027b3cbcae3a35c8"></a>
+<tr class="memitem:a70b9487ad4275d0fa8cc1ca9fc49a6fc"><td class="memItemLeft" align="right" valign="top"><a id="a70b9487ad4275d0fa8cc1ca9fc49a6fc"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>execute</b> (<a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;m, const <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> &amp;t) override</td></tr>
+<tr class="separator:a70b9487ad4275d0fa8cc1ca9fc49a6fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab1560a60dc7012a2238a75b791b62e47"><td class="memItemLeft" align="right" valign="top"><a id="ab1560a60dc7012a2238a75b791b62e47"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>before</b> (<a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;m, const <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> &amp;t) override</td></tr>
-<tr class="separator:ace3252c6168807be027b3cbcae3a35c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab8e9a67631ee289807795ae5e850a6b4"><td class="memItemLeft" align="right" valign="top"><a id="ab8e9a67631ee289807795ae5e850a6b4"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>after</b> (<a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;m, <a class="el" href="structwmtk_1_1_tri_mesh_operation_1_1_execute_return_data.html">ExecuteReturnData</a> &amp;ret_data) override</td></tr>
-<tr class="separator:ab8e9a67631ee289807795ae5e850a6b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac8dbbfe0321407a4b130b3773f115f5a"><td class="memItemLeft" align="right" valign="top"><a id="ac8dbbfe0321407a4b130b3773f115f5a"></a>
+<tr class="separator:ab1560a60dc7012a2238a75b791b62e47"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa766bb2a96a98043dd709e7ebc890121"><td class="memItemLeft" align="right" valign="top"><a id="aa766bb2a96a98043dd709e7ebc890121"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>after</b> (<a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;m) override</td></tr>
+<tr class="separator:aa766bb2a96a98043dd709e7ebc890121"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4bf7e67894f0dd48b84060ff20074a9a"><td class="memItemLeft" align="right" valign="top"><a id="a4bf7e67894f0dd48b84060ff20074a9a"></a>
+std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">TriMeshTuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>modified_triangles</b> (const <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;m) const override</td></tr>
+<tr class="separator:a4bf7e67894f0dd48b84060ff20074a9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a951f3502fea42d9cd00e23d64e6190ec"><td class="memItemLeft" align="right" valign="top"><a id="a951f3502fea42d9cd00e23d64e6190ec"></a>
 std::string&#160;</td><td class="memItemRight" valign="bottom"><b>name</b> () const override</td></tr>
-<tr class="separator:ac8dbbfe0321407a4b130b3773f115f5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:a951f3502fea42d9cd00e23d64e6190ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classwmtk_1_1_tri_mesh_operation"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classwmtk_1_1_tri_mesh_operation')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classwmtk_1_1_tri_mesh_operation.html">wmtk::TriMeshOperation</a></td></tr>
-<tr class="memitem:a529b8f7792ac8330e6085615a8c6bd52 inherit pub_methods_classwmtk_1_1_tri_mesh_operation"><td class="memItemLeft" align="right" valign="top"><a id="a529b8f7792ac8330e6085615a8c6bd52"></a>
-<a class="el" href="structwmtk_1_1_tri_mesh_operation_1_1_execute_return_data.html">ExecuteReturnData</a>&#160;</td><td class="memItemRight" valign="bottom"><b>operator()</b> (<a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;m, const <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> &amp;t)</td></tr>
-<tr class="separator:a529b8f7792ac8330e6085615a8c6bd52 inherit pub_methods_classwmtk_1_1_tri_mesh_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4a543b928fcad1974d0bef939f5289bf inherit pub_methods_classwmtk_1_1_tri_mesh_operation"><td class="memItemLeft" align="right" valign="top"><a id="a4a543b928fcad1974d0bef939f5289bf"></a>
+virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>operator()</b> (<a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;m, const <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> &amp;t)</td></tr>
+<tr class="separator:a4a543b928fcad1974d0bef939f5289bf inherit pub_methods_classwmtk_1_1_tri_mesh_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa01f7b30fba2dc5b2f849ebed65d8870 inherit pub_methods_classwmtk_1_1_tri_mesh_operation"><td class="memItemLeft" align="right" valign="top"><a id="aa01f7b30fba2dc5b2f849ebed65d8870"></a>
+virtual double&#160;</td><td class="memItemRight" valign="bottom"><b>priority</b> (const <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;m, const <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">Tuple</a> &amp;t) const</td></tr>
+<tr class="separator:aa01f7b30fba2dc5b2f849ebed65d8870 inherit pub_methods_classwmtk_1_1_tri_mesh_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
@@ -119,9 +125,9 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>VertexConnectivity</
 using&#160;</td><td class="memItemRight" valign="bottom"><b>TriangleConnectivity</b> = <a class="el" href="classwmtk_1_1_tri_mesh_1_1_triangle_connectivity.html">TriMesh::TriangleConnectivity</a></td></tr>
 <tr class="separator:af01ae33e9ab687d515f76c069ff2aea6 inherit pub_types_classwmtk_1_1_tri_mesh_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_methods_classwmtk_1_1_tri_mesh_operation"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_classwmtk_1_1_tri_mesh_operation')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classwmtk_1_1_tri_mesh_operation.html">wmtk::TriMeshOperation</a></td></tr>
-<tr class="memitem:ac47276462c92dde62196a6745c3fa7c4 inherit pro_methods_classwmtk_1_1_tri_mesh_operation"><td class="memItemLeft" align="right" valign="top"><a id="ac47276462c92dde62196a6745c3fa7c4"></a>
-virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>invariants</b> (<a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;m, <a class="el" href="structwmtk_1_1_tri_mesh_operation_1_1_execute_return_data.html">ExecuteReturnData</a> &amp;ret_data)</td></tr>
-<tr class="separator:ac47276462c92dde62196a6745c3fa7c4 inherit pro_methods_classwmtk_1_1_tri_mesh_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9e84042c064a43d3cc21e72069d71e1a inherit pro_methods_classwmtk_1_1_tri_mesh_operation"><td class="memItemLeft" align="right" valign="top"><a id="a9e84042c064a43d3cc21e72069d71e1a"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>invariants</b> (<a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;m)</td></tr>
+<tr class="separator:a9e84042c064a43d3cc21e72069d71e1a inherit pro_methods_classwmtk_1_1_tri_mesh_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4de7726c05dcbe5d73ce8c76772df9e1 inherit pro_methods_classwmtk_1_1_tri_mesh_operation"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_operation.html#a4de7726c05dcbe5d73ce8c76772df9e1">get_next_empty_slot_t</a> (<a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;m)</td></tr>
 <tr class="memdesc:a4de7726c05dcbe5d73ce8c76772df9e1 inherit pro_methods_classwmtk_1_1_tri_mesh_operation"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the next avaiblie global index for the triangle.  <a href="classwmtk_1_1_tri_mesh_operation.html#a4de7726c05dcbe5d73ce8c76772df9e1">More...</a><br /></td></tr>
 <tr class="separator:a4de7726c05dcbe5d73ce8c76772df9e1 inherit pro_methods_classwmtk_1_1_tri_mesh_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -147,6 +153,15 @@ static const <a class="el" href="structwmtk_1_1_attribute_collection.html">wmtk:
 <tr class="memitem:a2ee6a63e64df0b6240be050097c892e9 inherit pro_static_methods_classwmtk_1_1_tri_mesh_operation"><td class="memItemLeft" align="right" valign="top"><a id="a2ee6a63e64df0b6240be050097c892e9"></a>
 static const <a class="el" href="structwmtk_1_1_attribute_collection.html">wmtk::AttributeCollection</a>&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_triangle_connectivity.html">TriangleConnectivity</a> &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>tri_connectivity</b> (const <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;m)</td></tr>
 <tr class="separator:a2ee6a63e64df0b6240be050097c892e9 inherit pro_static_methods_classwmtk_1_1_tri_mesh_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab0f90491bf2f8ddcebfa76eaacd6d4bc inherit pro_static_methods_classwmtk_1_1_tri_mesh_operation"><td class="memItemLeft" align="right" valign="top"><a id="ab0f90491bf2f8ddcebfa76eaacd6d4bc"></a>
+static <a class="el" href="classwmtk_1_1_tri_mesh.html#a614a4589c15feede7ec687f42f604500">TriMesh::ProtectedAttributeRAII</a>&#160;</td><td class="memItemRight" valign="bottom"><b>start_protected_attributes_raii</b> (<a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;)</td></tr>
+<tr class="separator:ab0f90491bf2f8ddcebfa76eaacd6d4bc inherit pro_static_methods_classwmtk_1_1_tri_mesh_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab033c7aa3259320cc29bf6346d632fb8 inherit pro_static_methods_classwmtk_1_1_tri_mesh_operation"><td class="memItemLeft" align="right" valign="top"><a id="ab033c7aa3259320cc29bf6346d632fb8"></a>
+static <a class="el" href="classwmtk_1_1_tri_mesh.html#abc53578f958f6bc24dfef99b1730c963">TriMesh::ProtectedConnectivityRAII</a>&#160;</td><td class="memItemRight" valign="bottom"><b>start_protected_connectivity_raii</b> (<a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;)</td></tr>
+<tr class="separator:ab033c7aa3259320cc29bf6346d632fb8 inherit pro_static_methods_classwmtk_1_1_tri_mesh_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac670120eb152c7b496d12e88c0b6132f inherit pro_static_methods_classwmtk_1_1_tri_mesh_operation"><td class="memItemLeft" align="right" valign="top"><a id="ac670120eb152c7b496d12e88c0b6132f"></a>
+static void&#160;</td><td class="memItemRight" valign="bottom"><b>rollback_protected</b> (<a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;)</td></tr>
+<tr class="separator:ac670120eb152c7b496d12e88c0b6132f inherit pro_static_methods_classwmtk_1_1_tri_mesh_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>removing the elements that are removed </p>
@@ -157,8 +172,8 @@ static const <a class="el" href="structwmtk_1_1_attribute_collection.html">wmtk:
   </dd>
 </dl>
 </div><hr/>The documentation for this class was generated from the following files:<ul>
-<li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/<a class="el" href="_tri_mesh_operation_8h_source.html">TriMeshOperation.h</a></li>
-<li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/TriMeshOperation.cpp</li>
+<li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/operations/<a class="el" href="_tri_mesh_consolidate_operation_8h_source.html">TriMeshConsolidateOperation.h</a></li>
+<li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/operations/TriMeshConsolidateOperation.cpp</li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->

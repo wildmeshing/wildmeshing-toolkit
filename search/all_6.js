@@ -18,7 +18,7 @@ var searchData=
   ['get_5fone_5fring_5fvids_5ffor_5fvertex_5fadj_92',['get_one_ring_vids_for_vertex_adj',['../classwmtk_1_1_tet_mesh.html#a8bdd0460f834bf2be58997f11f9d285e',1,'wmtk::TetMesh::get_one_ring_vids_for_vertex_adj(size_t vid) const'],['../classwmtk_1_1_tet_mesh.html#adb4409199debd1c8489578ebb1f60774',1,'wmtk::TetMesh::get_one_ring_vids_for_vertex_adj(size_t vid, std::vector&lt; size_t &gt; &amp;cache)']]],
   ['get_5fone_5fring_5fvids_5ffor_5fvertex_5fwith_5fduplicates_93',['get_one_ring_vids_for_vertex_with_duplicates',['../classwmtk_1_1_tri_mesh.html#a069e719b032bfd8f9c6eb92c6b9bc41c',1,'wmtk::TriMesh']]],
   ['get_5ftets_94',['get_tets',['../classwmtk_1_1_tet_mesh.html#a4140b7b11e5de17d64d2d82408878fb6',1,'wmtk::TetMesh']]],
-  ['get_5fvalence_5ffor_5fvertex_95',['get_valence_for_vertex',['../classwmtk_1_1_tri_mesh.html#a24bb2f44a4eaf19f4e3ca2d0d53442f2',1,'wmtk::TriMesh']]],
+  ['get_5fvalence_5ffor_5fvertex_95',['get_valence_for_vertex',['../classwmtk_1_1_tri_mesh.html#aa3c08d21ff8b90a89c46bffdef477d0d',1,'wmtk::TriMesh']]],
   ['get_5fvertices_96',['get_vertices',['../classwmtk_1_1_tet_mesh.html#ab4c0a585fa3220f63dd237bfba4e6999',1,'wmtk::TetMesh::get_vertices()'],['../classwmtk_1_1_tri_mesh.html#a286a3f4e4b464723a1f7b17d9cb6a446',1,'wmtk::TriMesh::get_vertices()']]],
   ['getvariablecount_97',['getVariableCount',['../struct_diff_scalar_base.html#a663329a7a315a38a711116c4dd056995',1,'DiffScalarBase']]],
   ['gradient_5fdebug_98',['gradient_debug',['../classadaptive__tessellation_1_1_adaptive_tessellation.html#a5752961a51d1678439444a7fe36ff0e7',1,'adaptive_tessellation::AdaptiveTessellation']]]
