@@ -73,6 +73,7 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::before(AdaptiveTessellation&
             for (auto& e : m.get_one_ring_edges_for_vertex(t)) {
                 if (m.is_boundary_edge(e)) {
                     m.vertex_attrs[t.vid(m)].curve_id = m.edge_attrs[e.eid(m)].curve_id.value();
+
                     break;
                 }
             }
@@ -120,8 +121,12 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::after(
             wmtk::TriMesh::Tuple mirror_edge = m.get_oriented_mirror_edge(e);
             wmtk::TriMesh::Tuple mirror_v = mirror_edge;
             assert(m.get_mirror_vertex(mirror_v).vid(m) == ret_data.tuple.vid(m));
+
+            //// ---- before check for mirror v
             if (m.vertex_attrs[mirror_v.vid(m)].fixed) return false;
             if (m.mesh_parameters.m_bnd_freeze) return false;
+            //// ----
+            // transfer the curve_id to the mirror vertex on the fly using mirror edge
             m.vertex_attrs[mirror_v.vid(m)].curve_id =
                 m.edge_attrs[mirror_edge.eid(m)].curve_id.value();
             mirror_vertices.emplace_back(mirror_v);
@@ -129,6 +134,7 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::after(
             for (auto& mirror_v_tri : m.get_one_ring_tris_for_vertex(mirror_v)) {
                 one_ring_tris.emplace_back(mirror_v_tri);
             }
+
             m.get_nminfo_for_vertex(mirror_v, nminfo);
             nminfos.push_back(nminfo);
             break;
@@ -208,7 +214,7 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::after(
     //         std::to_string(
     //             lagrange::timestamp_diff_in_seconds(smooth_start_time, smooth_end_time))}}}});
     cnt++;
-
+    wmtk::logger().info("smoothing {}", cnt);
     return ret_data.success;
 }
 
