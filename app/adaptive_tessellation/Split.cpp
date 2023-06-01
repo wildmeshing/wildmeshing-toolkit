@@ -83,11 +83,15 @@ bool AdaptiveTessellationSplitEdgeOperation::before(AdaptiveTessellation& m, con
     auto& my_op_cache = op_cache.local();
     if (wmtk::TriMeshSplitEdgeOperation::before(m, t)) {
         // check acceptance after the energy cache update
-        std::vector<TriMesh::Tuple> input_tris;
-        input_tris.emplace_back(t);
-        if (t.switch_face(m).has_value()) input_tris.emplace_back(t.switch_face(m).value());
-        if (!m.scheduling_accept_for_split(input_tris, m.mesh_parameters.m_accuracy_threshold)) {
-            return false;
+        if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
+            std::vector<TriMesh::Tuple> input_tris;
+            input_tris.emplace_back(t);
+            if (t.switch_face(m).has_value()) input_tris.emplace_back(t.switch_face(m).value());
+            if (!m.scheduling_accept_for_split(
+                    input_tris,
+                    m.mesh_parameters.m_accuracy_threshold)) {
+                return false;
+            }
         }
 
         // record the operation cache
