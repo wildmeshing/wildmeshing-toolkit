@@ -101,9 +101,9 @@ TEST_CASE("double_recorder", "[attribute_recording]")
 
     for (size_t j = 0; j < attribute_collection.size(); ++j) {
         if (j % 2 == 0) {
-            REQUIRE(attribute_collection[j] == 3 * j);
-        } else {
-            REQUIRE(attribute_collection[j] == 2 * j);
+            REQUIRE(3 * j == attribute_collection.at(j));
+        } else {          
+            REQUIRE(2 * j == attribute_collection.at(j));
         }
     }
 

@@ -1,21 +1,8 @@
 #pragma once
-#include <wmtk/TriMeshOperation.h>
+#include <wmtk/operations/SingleTupleTriMeshOperation.h>
 
 
 namespace wmtk {
-struct LinksOfVertex
-{
-    std::vector<size_t> vertex;
-    bool infinite_vertex = false;
-
-    // finite edges as vids on the opposite edge of each triangle
-    std::vector<std::array<size_t, 2>> edge;
-
-    std::vector<std::array<size_t, 2>> edge_test;
-
-    // vids of boundary edges (infinite link edges)
-    std::vector<size_t> infinite_edge;
-};
 
 /**
  * Collapse an edge
@@ -63,12 +50,13 @@ struct LinksOfVertex
 //   |/     |     \|
 //   ---------------
 //   returns X, or if the triangle A does not exist then edge/face O are chosen
-class TriMeshEdgeCollapseOperation : public TriMeshOperation, public SingleTupleOperationInfo
+class LinksOfVertex;
+class TriMeshEdgeCollapseOperation : public SingleTupleTriMeshOperation
 {
 public:
-    ExecuteReturnData execute(TriMesh& m, const Tuple& t) override;
+    bool execute(TriMesh& m, const Tuple& t) override;
     bool before(TriMesh& m, const Tuple& t) override;
-    bool after(TriMesh& m, ExecuteReturnData& ret_data) override;
+    bool after(TriMesh& m) override;
     std::string name() const override;
 
     /**
@@ -80,11 +68,9 @@ public:
 
 
     std::vector<Tuple> modified_triangles(const TriMesh& m) const override;
-    void assign(const Tuple& t) override { SingleTupleOperationInfo::assign(t); }
-    void mark_failed() override { SingleTupleOperationInfo::reset(); }
     std::optional<Tuple> new_vertex(const TriMesh& m) const;
 
-//protected:
+    // protected:
     constexpr static size_t link_dummy = std::numeric_limits<size_t>::max();
     std::vector<size_t> fids_containing_edge(const TriMesh& m, const Tuple& t) const;
 
@@ -99,4 +85,18 @@ public:
     // static std::vector<Tuple> edge_link_of_edge(const TriMesh& m, const Tuple& edge);
 };
 
+
+struct LinksOfVertex
+{
+    std::vector<size_t> vertex;
+    bool infinite_vertex = false;
+
+    // finite edges as vids on the opposite edge of each triangle
+    std::vector<std::array<size_t, 2>> edge;
+
+    std::vector<std::array<size_t, 2>> edge_test;
+
+    // vids of boundary edges (infinite link edges)
+    std::vector<size_t> infinite_edge;
+};
 } // namespace wmtk

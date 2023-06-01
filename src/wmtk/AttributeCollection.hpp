@@ -6,6 +6,7 @@
 #include <tbb/concurrent_vector.h>
 #include <tbb/enumerable_thread_specific.h>
 
+#include <wmtk/utils/AttributeCollectionProtectRAII.h>
 #include <algorithm>
 #include <array>
 #include <cassert>
@@ -22,6 +23,8 @@ class AttributeCollectionRecorder;
 class AttributeCollectionReplayer;
 template <typename T>
 class AttributeCollectionSerialization;
+
+
 class AbstractAttributeCollection
 {
 public:
@@ -39,6 +42,9 @@ public:
     virtual std::optional<size_t> end_protect();
 
 
+    bool is_in_protect() const;
+
+
     template <typename T>
     friend class AttributeCollectionSerialization;
     friend class AttributeCollectionRecorder;
@@ -50,8 +56,7 @@ public:
     void remove_recorder(AttributeCollectionRecorder*);
 
 protected:
-    tbb::enumerable_thread_specific<size_t> m_rollback_size;
-    tbb::enumerable_thread_specific<bool> in_protected{false};
+    mutable tbb::enumerable_thread_specific<std::optional<size_t>> m_rollback_size;
 
 private:
     // the AttributeCollectionRecorder is in charge of cleaning this up
@@ -68,7 +73,7 @@ struct AttributeCollection : public AbstractAttributeCollection
     {
         if (from == to) return;
         // disallow unprotected access with an active recorder
-        if (!in_protected.local()) {
+        if (!is_in_protect()) {
             assert(!has_recorders());
         }
         m_attributes[to] = std::move(m_attributes[from]);
@@ -76,7 +81,7 @@ struct AttributeCollection : public AbstractAttributeCollection
     void resize(size_t s) override
     {
         // disallow unprotected access with an active recorder
-        if (!in_protected.local()) {
+        if (!is_in_protect()) {
             assert(!has_recorders());
 
         } else {
@@ -109,7 +114,7 @@ struct AttributeCollection : public AbstractAttributeCollection
     void grow_to_at_least(size_t s) override
     {
         // disallow unprotected access with an active recorder
-        if (!in_protected.local()) {
+        if (!is_in_protect()) {
             assert(!has_recorders());
         }
         m_attributes.grow_to_at_least(s);
@@ -121,11 +126,14 @@ struct AttributeCollection : public AbstractAttributeCollection
      */
     void rollback() override
     {
-        grow_to_at_least(m_rollback_size.local());
+        std::optional<size_t>& rollback_size_opt = m_rollback_size.local();
+        assert(rollback_size_opt.has_value());
+        grow_to_at_least(rollback_size_opt.value());
         for (auto& [i, v] : m_rollback_list.local()) {
             m_attributes[i] = std::move(v);
         }
-        in_protected.local() = false;
+        // reset the recording state, which is implemented by rollback_size having a value
+        m_rollback_size.local().reset();
         end_protect();
     }
     /**
@@ -152,7 +160,7 @@ struct AttributeCollection : public AbstractAttributeCollection
 
     T& operator[](size_t i)
     {
-        if (in_protected.local()) {
+        if (is_in_protect()) {
             m_rollback_list.local().emplace(i, m_attributes[i]);
         } else {
             // disallow unprotected access with an active recorder
@@ -166,6 +174,7 @@ struct AttributeCollection : public AbstractAttributeCollection
     size_t size() const override { return m_attributes.size(); }
     tbb::enumerable_thread_specific<std::map<size_t, T>> m_rollback_list;
     // experimenting with tbb, could be templated as well.
-    tbb::concurrent_vector<T> m_attributes;
+    //private:
+    mutable tbb::concurrent_vector<T> m_attributes;
 };
 } // namespace wmtk

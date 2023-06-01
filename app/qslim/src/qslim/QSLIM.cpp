@@ -6,6 +6,8 @@
 #include <Eigen/Geometry>
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
+#include <wmtk/operations/TriMeshOperationShim.hpp>
+#include <wmtk/operations/TriMeshEdgeCollapseOperation.h>
 
 using namespace wmtk;
 using namespace app::qslim;
@@ -13,45 +15,41 @@ using namespace app::qslim;
 
 namespace {
 class QSLIMEdgeCollapseOperation : public wmtk::TriMeshOperationShim<
-                                       QSLIM,
-                                       QSLIMEdgeCollapseOperation,
-                                       wmtk::TriMeshEdgeCollapseOperation>
+                                                  QSLIM,
+                                                  QSLIMEdgeCollapseOperation,
+                                                  wmtk::TriMeshEdgeCollapseOperation>
 {
 public:
-    ExecuteReturnData execute(QSLIM& m, const Tuple& t)
+    bool execute(QSLIM& m, const Tuple& t)
     {
         return wmtk::TriMeshEdgeCollapseOperation::execute(m, t);
     }
     bool before(QSLIM& m, const Tuple& t)
     {
         if (wmtk::TriMeshEdgeCollapseOperation::before(m, t)) {
-            return m.collapse_edge_before(t);
+            return  m.collapse_edge_before(t);
         }
         return false;
     }
-    bool after(QSLIM& m, ExecuteReturnData& ret_data)
+    bool after(QSLIM& m)
     {
-        if (wmtk::TriMeshEdgeCollapseOperation::after(m, ret_data)) {
-            ret_data.success &= m.collapse_edge_after(ret_data.tuple);
+        if (wmtk::TriMeshEdgeCollapseOperation::after(m)) {
+            return m.collapse_edge_after(get_return_tuple_opt().value());
         }
-        return ret_data;
-    }
-    bool invariants(QSLIM& m, ExecuteReturnData& ret_data)
-    {
-        if (wmtk::TriMeshEdgeCollapseOperation::invariants(m, ret_data)) {
-            ret_data.success &= m.invariants(ret_data.new_tris);
-        }
-        return ret_data;
+        return false;
     }
 };
 
 
-template <typename Executor>
-void addCustomOps(Executor& e)
-{
-    e.add_operation(std::make_shared<QSLIMEdgeCollapseOperation>());
-}
 } // namespace
+
+std::map<std::string, std::shared_ptr<wmtk::TriMeshOperation>> QSLIM::get_operations() const
+{
+    std::map<std::string, std::shared_ptr<wmtk::TriMeshOperation>> r;
+    auto add_operation = [&](auto&& op) { r[op->name()] = op; };
+    add_operation(std::make_shared<QSLIMEdgeCollapseOperation>());
+    return r;
+}
 
 QSLIM::QSLIM(std::vector<Eigen::Vector3d> _m_vertex_positions, int num_threads)
 {
@@ -307,10 +305,10 @@ double QSLIM::compute_cost_for_e(const TriMesh::Tuple& v_tuple)
     return cost;
 }
 
-bool QSLIM::invariants(const std::vector<Tuple>& new_tris)
+bool QSLIM::invariants(const wmtk::TriMeshOperation& op)
 {
     if (m_has_envelope) {
-        for (auto& t : new_tris) {
+        for (auto& t : op.modified_triangles(*this)) {
             std::array<Eigen::Vector3d, 3> tris;
             auto vs = oriented_tri_vertices(t);
             for (auto j = 0; j < 3; j++) tris[j] = vertex_attrs[vs[j].vid(*this)].pos;
@@ -403,7 +401,6 @@ bool QSLIM::collapse_qslim(int target_vert_number)
         return -compute_cost_for_e(new_e);
     };
     auto setup_and_execute = [&](auto& executor) {
-        addCustomOps(executor);
         executor.num_threads = NUM_THREADS;
         executor.renew_neighbor_tuples = renew;
         executor.priority = measure_priority;
@@ -426,13 +423,13 @@ bool QSLIM::collapse_qslim(int target_vert_number)
     };
 
     if (NUM_THREADS > 0) {
-        auto executor = wmtk::ExecutePass<QSLIM, ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<QSLIM, ExecutionPolicy::kPartition>(*this);
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) {
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<QSLIM, ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<QSLIM, ExecutionPolicy::kSeq>(*this);
         setup_and_execute(executor);
     }
     return true;
