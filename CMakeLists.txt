@@ -69,6 +69,7 @@ target_compile_definitions(wildmeshing_toolkit PUBLIC NOMINMAX)
 # C++ standard
 target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_17)
 
+#target_compile_options(wildmeshing_toolkit PUBLIC  -fconcepts)
 
 # Set IDE folders
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src" PREFIX "Source Files" FILES ${SRC_FILES})

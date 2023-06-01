@@ -120,7 +120,7 @@ struct ExecutePass
      */
     size_t max_retry_limit = 10;
 
-    /* 
+    /*
      * Add an operation to the set of operation types
      */
     template <typename OpType>
@@ -128,13 +128,13 @@ struct ExecutePass
     {
         new_edit_operation_maps[name] = op;
     }
-    /* 
+    /*
      * Add an operation using its default name
      */
     template <typename OpType>
     void add_operation(std::shared_ptr<OpType> op)
     {
-        add_operation(op,op->name());
+        add_operation(op, op->name());
     }
     // convenience function for when we want to default construct the op but use a custom name
     template <typename OpType>
@@ -156,8 +156,7 @@ struct ExecutePass
      *@note the constructor is differentiated by the type of mesh, namingly wmtk::TetMesh or
      *wmtk::TriMesh
      */
-
-    ExecutePass(const std::map<Op, OperatorFunc>& customized_ops = {})
+    ExecutePass()
     {
         if constexpr (std::is_base_of<wmtk::TetMesh, AppMesh>::value) {
             edit_operation_maps = {
@@ -209,18 +208,36 @@ struct ExecutePass
                          return {};
                  }}};
         }
-        if constexpr (std::is_base_of<wmtk::TriMesh, AppMesh>::value) {
+    }
 
-            add_operation<wmtk::TriMeshEdgeCollapseOperation>();
-            add_operation<wmtk::TriMeshSwapEdgeOperation>();
-            add_operation<wmtk::TriMeshSplitEdgeOperation>();
-            add_operation<wmtk::TriMeshSmoothVertexOperation>();
-            add_operation<wmtk::TriMeshConsolidateOperation>();
-        }
-
+#if !defined(__cpp_concepts)
+    template <bool Tet = IsTetMesh>
+#endif
+    ExecutePass(const std::map<Op, OperatorFunc>& customized_ops)
+#if defined(__cpp_concepts)
+        requires(std::is_base_of_v<wmtk::TetMesh, AppMesh>)
+#endif
+        : ExecutePass()
+    {
+#if !defined(__cpp_concepts)
+        static_assert(Tet);
+#endif
         if (!customized_ops.empty()) {
             edit_operation_maps.insert(customized_ops.begin(), customized_ops.end());
         }
+    }
+#if !defined(__cpp_concepts)
+    template <bool Tet = IsTetMesh>
+#endif
+    ExecutePass(const AppMesh& m)
+#if defined(__cpp_concepts)
+        requires(std::is_base_of_v<wmtk::TriMesh, AppMesh>)
+#endif
+    {
+#if !defined(__cpp_concepts)
+        static_assert(!Tet);
+#endif
+        new_edit_operation_maps = m.get_operations();
     }
 
 
@@ -301,9 +318,13 @@ public:
                         } // this can encode, in qslim, recompute(energy) == weight.
                         std::vector<std::pair<Op, Tuple>> renewed_tuples;
                         if constexpr (std::is_base_of<wmtk::TriMesh, AppMesh>::value) {
-                            auto ret_data = (*new_edit_operation_maps[op])( m, tup);
-                            if (ret_data.success) {
-                                renewed_tuples = renew_neighbor_tuples(m, op, ret_data.new_tris);
+                            auto& my_op = (*new_edit_operation_maps[op]);
+                            const bool success = my_op(m, tup);
+                            if (success) {
+                                // TODO: renew_neighbor_tuples should allow for triangles, edges, or
+                                // vertices
+                                renewed_tuples =
+                                    renew_neighbor_tuples(m, op, my_op.modified_triangles(m));
                                 cnt_success++;
                                 cnt_update++;
                             } else {

@@ -2,7 +2,7 @@
 include(wmtk_data)
 
 option(WMTK_APP_TETWILD "tetwild application" ON)
-option(WMTK_APP_ADAPTIVE_TESSELLATION "adaptive tessellation application" ON)
+option(WMTK_APP_ADAPTIVE_TESSELLATION "adaptive tessellation application" OFF)
 option(WMTK_APP_HARMTET "Harmonic Triangulation app" ON)
 option(WMTK_APP_UNIFORM_REMESH "uniform remesh for surfaces" ON)
 option(WMTK_APP_SEC "surface shortest edge collapse" ON)

@@ -102,11 +102,11 @@ std::optional<TriMeshTuple> TriMeshTuple::switch_face(const TriMesh& m) const
     const size_t v1 = this->switch_vertex(m).m_vid;
 
     // Intersect the 1-ring of the two vertices in the edge pointed by the tuple
-    std::vector<size_t> v0_fids = m.m_vertex_connectivity[v0].m_conn_tris;
-    std::vector<size_t> v1_fids = m.m_vertex_connectivity[v1].m_conn_tris;
+    const std::vector<size_t>& v0_fids = m.m_vertex_connectivity[v0].m_conn_tris;
+    const std::vector<size_t>& v1_fids = m.m_vertex_connectivity[v1].m_conn_tris;
 
-    std::sort(v0_fids.begin(), v0_fids.end());
-    std::sort(v1_fids.begin(), v1_fids.end());
+    assert(std::is_sorted(v0_fids.begin(), v0_fids.end()));
+    assert(std::is_sorted(v1_fids.begin(), v1_fids.end()));
     std::vector<int> fids;
     std::set_intersection(
         v0_fids.begin(),
