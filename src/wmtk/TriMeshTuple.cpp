@@ -104,6 +104,7 @@ std::optional<TriMeshTuple> TriMeshTuple::switch_face(const TriMesh& m) const
     assert(std::is_sorted(v1_fids.begin(), v1_fids.end()));
     std::array<size_t, 2> fids;
     auto output_end = std::set_intersection(
+
         v0_fids.begin(),
         v0_fids.end(),
         v1_fids.begin(),

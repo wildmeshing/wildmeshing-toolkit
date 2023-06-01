@@ -2,10 +2,15 @@
 #include <igl/writeDMAT.h>
 #include <wmtk/TriMesh.h>
 #include <wmtk/TriMeshOperation.h>
+#include <wmtk/operations/TriMeshConsolidateOperation.h>
+#include <wmtk/operations/TriMeshEdgeCollapseOperation.h>
+#include <wmtk/operations/TriMeshEdgeSplitOperation.h>
+#include <wmtk/operations/TriMeshEdgeSwapOperation.h>
+#include <wmtk/operations/TriMeshVertexSmoothOperation.h>
+#include <wmtk/utils/VectorUtils.h>
 #include <wmtk/AttributeCollection.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
-#include "wmtk/utils/VectorUtils.h"
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
@@ -14,6 +19,18 @@
 // clang-format on
 
 using namespace wmtk;
+
+std::map<std::string, std::shared_ptr<TriMeshOperation>> TriMesh::get_operations() const
+{
+    std::map<std::string, std::shared_ptr<TriMeshOperation>> r;
+    auto add_operation = [&](auto&& op) { r[op->name()] = op; };
+    add_operation(std::make_shared<wmtk::TriMeshEdgeCollapseOperation>());
+    add_operation(std::make_shared<wmtk::TriMeshEdgeSwapOperation>());
+    add_operation(std::make_shared<wmtk::TriMeshEdgeSplitOperation>());
+    add_operation(std::make_shared<wmtk::TriMeshVertexSmoothOperation>());
+    add_operation(std::make_shared<wmtk::TriMeshConsolidateOperation>());
+    return r;
+}
 
 class TriMesh::VertexMutex
 {
@@ -35,6 +52,10 @@ public:
 
     void reset_owner() { owner = std::numeric_limits<int>::max(); }
 };
+size_t TriMesh::get_valence_for_vertex(const Tuple& t) const
+{
+    return m_vertex_connectivity[t.vid(*this)].m_conn_tris.size();
+}
 bool TriMesh::try_set_vertex_mutex(const Tuple& v, int threadid)
 {
     bool got = m_vertex_mutex[v.vid(*this)].trylock();
@@ -77,7 +98,7 @@ TriMesh::TriMesh() {}
 TriMesh::~TriMesh() {}
 
 
-bool TriMesh::invariants(const std::vector<Tuple>&)
+bool TriMesh::invariants(const TriMeshOperation&)
 {
     return true;
 }
@@ -191,6 +212,7 @@ std::vector<wmtk::TriMesh::Tuple> TriMesh::get_one_ring_tris_for_vertex(
     return one_ring;
 }
 
+// edges pointing from the one-ring vertex to the center vertex
 std::vector<wmtk::TriMesh::Tuple> TriMesh::get_one_ring_edges_for_vertex(
     const wmtk::TriMesh::Tuple& t) const
 {
@@ -371,9 +393,18 @@ std::vector<TriMesh::Tuple> TriMesh::get_edges() const
 
 TriMesh::Tuple TriMesh::init_from_edge(size_t vid1, size_t vid2, size_t fid) const
 {
+    const auto opt = init_from_edge_opt(vid1, vid2, fid);
+    assert(opt.has_value());
+    return opt.value();
+}
+std::optional<TriMesh::Tuple> TriMesh::init_from_edge_opt(size_t vid1, size_t vid2, size_t fid)
+    const
+{
     auto a = m_tri_connectivity[fid].find(vid1);
     auto b = m_tri_connectivity[fid].find(vid2);
-    assert(a != -1 && b != -1);
+    if (a == -1 || b == -1) {
+        return {};
+    }
     // 0,1 - >2, 1,2-> 0, 0,2->1
     return Tuple(vid1, 3 - (a + b), fid, *this);
 }
@@ -614,11 +645,47 @@ std::array<std::optional<size_t>, 3> TriMesh::release_protected_attributes()
     return updates;
 }
 
+auto TriMesh::triangle_boundary_edge_tuples(const Tuple& triangle) const -> std::array<Tuple, 3>
+{
+    assert(triangle.is_valid(*this));
+    const size_t fid = triangle.fid(*this);
+
+    return {{tuple_from_edge(fid, 0), tuple_from_edge(fid, 1), tuple_from_edge(fid, 2)}};
+}
 void TriMesh::rollback_protected_attributes()
 {
     if (p_vertex_attrs) p_vertex_attrs->rollback();
     if (p_edge_attrs) p_edge_attrs->rollback();
     if (p_face_attrs) p_face_attrs->rollback();
+}
+
+auto TriMesh::tuple_from_tri(size_t fid) const -> Tuple
+{
+    if (fid >= m_tri_connectivity.size() || m_tri_connectivity[fid].m_is_removed) return Tuple();
+    auto vid = m_tri_connectivity[fid][0];
+    return Tuple(vid, 1, fid, *this);
+}
+
+auto TriMesh::tuple_from_vertex(size_t vid) const -> Tuple
+{
+    auto fid = m_vertex_connectivity[vid][0];
+    auto eid = m_tri_connectivity[fid].find(vid);
+    return Tuple(vid, (eid + 1) % 3, fid, *this);
+}
+
+auto TriMesh::tuple_from_edge_vids_opt(size_t vid1, size_t vid2) const -> std::optional<Tuple>
+{
+    const auto fids = tri_fids_bounded_by_edge_vids(vid1, vid2);
+    if (fids.size() > 0) {
+        return init_from_edge_opt(vid1, vid2, fids[0]);
+    }
+    return {};
+}
+
+auto TriMesh::tuple_from_edge(size_t fid, size_t local_eid) const -> Tuple
+{
+    auto vid = m_tri_connectivity[fid][(local_eid + 1) % 3];
+    return Tuple(vid, local_eid, fid, *this);
 }
 
 /**
@@ -635,3 +702,71 @@ void TriMesh::rollback_protected()
     rollback_protected_connectivity();
     rollback_protected_attributes();
 }
+
+void TriMesh::start_protected_attributes()
+{
+    if (p_vertex_attrs) p_vertex_attrs->begin_protect();
+    if (p_edge_attrs) p_edge_attrs->begin_protect();
+    if (p_face_attrs) p_face_attrs->begin_protect();
+}
+/**
+ * @brief Start caching the connectivity that will be modified
+ */
+void TriMesh::start_protected_connectivity()
+{
+    m_vertex_connectivity.begin_protect();
+    m_tri_connectivity.begin_protect();
+}
+
+auto TriMesh::tris_bounded_by_edge(const Tuple& edge) const -> std::vector<Tuple>
+{
+    std::vector<Tuple> ret;
+    const std::vector<size_t> fids = tri_fids_bounded_by_edge(edge);
+    const size_t v0 = edge.vid(*this);
+    const size_t v1 = edge.switch_vertex(*this).vid(*this);
+    ret.reserve(fids.size());
+    std::transform(
+        fids.begin(),
+        fids.end(),
+        std::back_inserter(ret),
+        [&](const size_t fid) -> Tuple { return init_from_edge(v0, v1, fid); });
+    return ret;
+}
+
+std::vector<size_t> TriMesh::tri_fids_bounded_by_edge(const Tuple& edge) const
+{
+    size_t v0 = edge.vid(*this);
+    size_t v1 = edge.switch_vertex(*this).vid(*this);
+    return tri_fids_bounded_by_edge_vids(v0, v1);
+}
+
+std::vector<size_t> TriMesh::tri_fids_bounded_by_edge_vids(size_t v0, size_t v1) const
+{
+    // get the fids
+    const auto& f0 = m_vertex_connectivity[v0].m_conn_tris;
+
+    const auto& f1 = m_vertex_connectivity[v1].m_conn_tris;
+
+    // get the fids that will be modified
+    return set_intersection(f0, f1);
+}
+
+auto TriMesh::start_protected_attributes_raii() -> ProtectedAttributeRAII
+{
+    auto get_opt = [](AbstractAttributeCollection* ptr) -> AttributeCollectionProtectRAII {
+        if (ptr != nullptr) {
+            return AttributeCollectionProtectRAII(*ptr);
+        } else {
+            return AttributeCollectionProtectRAII();
+        }
+    };
+    return std::array<AttributeCollectionProtectRAII, 3>{
+        {get_opt(p_vertex_attrs), get_opt(p_edge_attrs), get_opt(p_face_attrs)}};
+}
+auto TriMesh::start_protected_connectivity_raii() -> ProtectedConnectivityRAII
+{
+    return std::array<AttributeCollectionProtectRAII, 2>{
+        {AttributeCollectionProtectRAII(m_vertex_connectivity),
+         AttributeCollectionProtectRAII(m_tri_connectivity)}};
+}
+
