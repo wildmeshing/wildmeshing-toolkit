@@ -70,9 +70,6 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::before(AdaptiveTessellation&
         if (m.mesh_parameters.m_bnd_freeze && m.is_boundary_vertex(t)) return false;
 
         if (m.is_boundary_vertex(t)) {
-            if (m.is_seam_vertex(t)) {
-                wmtk::logger().info("///// seam vertex smooth");
-            }
             for (auto& e : m.get_one_ring_edges_for_vertex(t)) {
                 if (m.is_boundary_edge(e)) {
                     m.vertex_attrs[t.vid(m)].curve_id = m.edge_attrs[e.eid(m)].curve_id.value();
@@ -97,7 +94,7 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::after(
     // check if the vertex is fixed
     if (m.vertex_attrs[ret_data.tuple.vid(m)].fixed) return false;
     static std::atomic_int cnt = 0;
-    wmtk::logger().info("smothing op # {}", cnt);
+    // wmtk::logger().info("smothing op # {}", cnt);
 
     std::vector<wmtk::TriMesh::Tuple> one_ring_tris =
         m.get_one_ring_tris_for_vertex(ret_data.tuple);
@@ -159,8 +156,8 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::after(
         state);
     const double before_energy = state.value;
 
-    wmtk::logger().info("{} of nminfo", nminfos.size());
-    wmtk::logger().info("before energy: {}", state.value);
+    // wmtk::logger().info("{} of nminfo", nminfos.size());
+    // wmtk::logger().info("before energy: {}", state.value);
     wmtk::optimization_dofx_update(
         *m.mesh_parameters.m_energy,
         m.mesh_parameters.m_boundary,
@@ -196,10 +193,10 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::after(
     }
     assert(m.invariants(one_ring_tris));
     m.mesh_parameters.m_gradient += state.gradient;
-    const auto smooth_end_time = lagrange::get_timestamp();
-    wmtk::logger().info(
-        "smooth time: {}",
-        lagrange::timestamp_diff_in_seconds(smooth_start_time, smooth_end_time));
+    // const auto smooth_end_time = lagrange::get_timestamp();
+    // wmtk::logger().info(
+    //     "smooth time: {}",
+    //     lagrange::timestamp_diff_in_seconds(smooth_start_time, smooth_end_time));
 
     // m.mesh_parameters.log(
     //     {{"smooth_op_" + std::to_string(cnt),
@@ -402,6 +399,7 @@ void adaptive_tessellation::AdaptiveTessellation::smooth_all_vertices()
                 write_obj_displaced(
                     mesh_parameters.m_output_folder + fmt::format("/smooth_{:03d}.obj", itr));
             }
+            wmtk::logger().info("===== finished smooth itr {} =====", itr);
             itr++;
         } while ((mesh_parameters.m_gradient / vert_capacity()).stableNorm() >
                      mesh_parameters.m_accuracy_threshold &&

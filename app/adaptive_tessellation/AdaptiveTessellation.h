@@ -235,6 +235,8 @@ public:
     void prepare_distance_quadrature_cached_energy();
     void prepare_quadrics();
 
+    bool has_self_intersections();
+
     // Exports V and F of the stored mesh
     void export_uv(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
 

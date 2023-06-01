@@ -96,10 +96,10 @@ bool AdaptiveTessellationSwapEdgeOperation::before(AdaptiveTessellation& m, cons
     if (wmtk::TriMeshSwapEdgeOperation::before(m, t)) {
         // wmtk::logger().info("swap {}", cnt);
 
-        if (!m.mesh_parameters.m_do_not_output) {
-            m.write_perface_vtk(
-                m.mesh_parameters.m_output_folder + fmt::format("/swap_{:04d}.vtk", cnt));
-        }
+        // if (!m.mesh_parameters.m_do_not_output) {
+        //     m.write_perface_vtk(
+        //         m.mesh_parameters.m_output_folder + fmt::format("/swap_{:04d}.vtk", cnt));
+        // }
 
         cnt++;
         return m.swap_edge_before(t);
@@ -172,35 +172,11 @@ bool AdaptiveTessellationSwapEdgeOperation::after(
         }
 
         std::vector<std::array<float, 6>> modified_tris_uv(mod_tups.size());
-        for (int i = 0; i < mod_tups.size(); i++) {
-            auto tri = mod_tups[i];
-            auto verts = m.oriented_tri_vids(tri);
-            std::array<float, 6> tri_uv;
-            for (int i = 0; i < 3; i++) {
-                tri_uv[i * 2] = m.vertex_attrs[verts[i]].pos(0);
-                tri_uv[i * 2 + 1] = m.vertex_attrs[verts[i]].pos(1);
-            }
-            if (wmtk::is_degenerate_2d_oriented_triangle_array(tri_uv)) {
-                wmtk::logger().info("degenerate triangle after swap");
-                ret_data.success = false;
-                return false;
-            }
-        }
-
-        m.update_energy_cache(mod_tups);
-        return ret_data;
-        // check acceptance after the energy cache update
-        if (m.scheduling_accept_for_swap(
-                ret_data.new_tris,
-                m.mesh_parameters.m_accuracy_threshold)) {
-            wmtk::logger().info("swap edge accepted");
-
-            return ret_data.success;
-        } else {
-            wmtk::logger().info("swap edge rejected");
+        if (!m.update_energy_cache(mod_tups)) {
             ret_data.success = false;
             return false;
         }
+        return ret_data;
     }
 }
 

@@ -37,9 +37,8 @@ double AdaptiveTessellation::avg_edge_len() const
 //                  set boundary vertex curve_id, and boundary paramter t
 //                  set feature vertex as fixed, set strat/end/t-junction of curve fixed
 // 6. edge_attrs:   set curve-id for each edge
-// 7. face_attrs:   set initial accuracy error for each triangle
-// 8. initiate the texture integraler
-// 9. initiate the quadric integraler
+// 7. initiate the texture integraler
+// 8. initiate the quadric integraler
 void AdaptiveTessellation::mesh_preprocessing(
     const std::filesystem::path& input_mesh_path,
     const std::filesystem::path& position_image_path,
@@ -49,7 +48,7 @@ void AdaptiveTessellation::mesh_preprocessing(
     float max_height)
 {
     mesh_parameters.m_position_normal_paths = {position_image_path, normal_image_path};
-    spdlog::info("{}", input_mesh_path.string());
+    spdlog::info("input file: {}", input_mesh_path.string());
     Eigen::MatrixXd CN, FN;
     // igl::read_triangle_mesh(input_mesh_path.string(), input_V_, input_F_);
     // igl::readOBJ(input_mesh_path.string(), V, VT, CN, F, FT, FN);
@@ -172,6 +171,49 @@ void AdaptiveTessellation::prepare_quadrics()
         },
         compressed_quadrics);
     set_faces_quadrics(facets, compressed_quadrics);
+}
+
+bool AdaptiveTessellation::has_self_intersections()
+{
+    Eigen::MatrixXd vertices_target;
+    Eigen::MatrixXi faces_target;
+    Eigen::MatrixXd vertices_texture;
+    Eigen::MatrixXi faces_texture;
+    export_mesh_with_displacement(vertices_target, faces_target, vertices_texture, faces_texture);
+
+    Eigen::MatrixXi edges;
+    igl::edges(faces_texture, edges);
+    const ipc::CollisionMesh collisionMesh(vertices_texture, edges, faces_texture);
+    if (ipc::has_intersections(collisionMesh, vertices_texture)) {
+        return true;
+    }
+
+    auto tri_signed_area =
+        [](const Eigen::Vector2d& a, const Eigen::Vector2d& b, const Eigen::Vector2d& c) -> double {
+        Eigen::Matrix3d d;
+        d << a[0], a[1], 1, b[0], b[1], 1, c[0], c[1], 1;
+        return 0.5 * d.determinant();
+    };
+
+    std::vector<double> areas;
+    areas.reserve(faces_texture.rows());
+    for (size_t i = 0; i < faces_texture.rows(); ++i) {
+        const auto& a = vertices_texture.row(faces_texture(i, 0));
+        const auto& b = vertices_texture.row(faces_texture(i, 1));
+        const auto& c = vertices_texture.row(faces_texture(i, 2));
+
+        const double area = tri_signed_area(a, b, c);
+        areas.emplace_back(area);
+    }
+    std::sort(areas.begin(), areas.end());
+
+    for (size_t i = 0; i < 10; ++i) {
+        if (areas[i] < 1e-8) {
+            wmtk::logger().info("Worst area {}: {}", i, areas[i]);
+        }
+    }
+
+    return false;
 }
 
 // return E0, E1 of corresponding seam edges in uv mesh
@@ -302,6 +344,7 @@ void AdaptiveTessellation::set_seam_vertex_coloring(
     const Eigen::MatrixXi& FT)
 {
     color_to_uv_indices.reserve(VT.rows());
+    uv_index_to_color = {};
     assert(uv_index_to_color.empty());
     int current_color = 0;
     for (auto fi = 0; fi < m_3d.tri_capacity(); ++fi) {
