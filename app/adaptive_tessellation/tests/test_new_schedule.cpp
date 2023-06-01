@@ -179,10 +179,12 @@ TEST_CASE("inversed boundary")
         adaptive_tessellation::ENERGY_TYPE::AREA_QUADRATURE,
         adaptive_tessellation::EDGE_LEN_TYPE::AREA_ACCURACY,
         1);
-    m.split_all_edges();
 
     for (auto& v : m.get_vertices()) {
         // assert the position obtained using t is the same as the position cached
+        if (m.vertex_attrs[v.vid(m)].fixed) {
+            continue;
+        }
         REQUIRE(
             (m.vertex_attrs[v.vid(m)].pos - m.mesh_parameters.m_boundary.t_to_uv(
                                                 m.vertex_attrs[v.vid(m)].curve_id,
@@ -191,8 +193,107 @@ TEST_CASE("inversed boundary")
         for (auto& e : m.get_one_ring_edges_for_vertex(v)) {
             if (m.is_seam_edge(e)) {
                 wmtk::TriMesh::Tuple mirror_edge = m.get_oriented_mirror_edge(e);
+                REQUIRE(m.vertex_attrs[v.vid(m)].fixed == m.vertex_attrs[mirror_edge.vid(m)].fixed);
+                if (m.vertex_attrs[v.vid(m)].fixed) {
+                    continue;
+                }
                 m.vertex_attrs[mirror_edge.vid(m)].curve_id =
                     m.edge_attrs[mirror_edge.eid(m)].curve_id.value();
+                auto a = m.vertex_attrs[mirror_edge.vid(m)].pos;
+                auto b = m.mesh_parameters.m_boundary.t_to_uv(
+                    m.vertex_attrs[mirror_edge.vid(m)].curve_id,
+                    m.vertex_attrs[mirror_edge.vid(m)].t);
+                auto res = m.mesh_parameters.m_boundary.uv_to_t(a);
+                auto c = m.mesh_parameters.m_boundary.t_to_uv(res.first, res.second);
+                CAPTURE(
+                    v.vid(m),
+                    mirror_edge.vid(m),
+                    m.vertex_attrs[mirror_edge.vid(m)].fixed,
+                    a.transpose(),
+                    b.transpose(),
+                    c.transpose(),
+                    m.vertex_attrs[mirror_edge.vid(m)].curve_id,
+                    m.vertex_attrs[mirror_edge.vid(m)].t,
+                    res.first,
+                    res.second);
+                std::ofstream out("pts.xyz");
+                out << a[0] << " " << a[1] << " 0\n";
+                // out <<  b[0] << " " << b[1] << " 0\n";
+                REQUIRE(
+                    (m.vertex_attrs[mirror_edge.vid(m)].pos -
+                     m.mesh_parameters.m_boundary.t_to_uv(
+                         m.vertex_attrs[mirror_edge.vid(m)].curve_id,
+                         m.vertex_attrs[mirror_edge.vid(m)].t))
+                        .squaredNorm() < 1e-8);
+            }
+        }
+    }
+
+    m.split_all_edges();
+
+    for (auto& v : m.get_vertices()) {
+        // assert the position obtained using t is the same as the position cached
+        if (m.vertex_attrs[v.vid(m)].fixed || !m.vertex_attrs[v.vid(m)].boundary_vertex) {
+            continue;
+        }
+        for (auto& e : m.get_one_ring_edges_for_vertex(v)) {
+            if (m.edge_attrs[e.eid(m)].curve_id.has_value()) {
+                m.vertex_attrs[v.vid(m)].curve_id = m.edge_attrs[e.eid(m)].curve_id.value();
+            }
+        }
+        auto a = m.vertex_attrs[v.vid(m)].pos;
+        auto b = m.mesh_parameters.m_boundary.t_to_uv(
+            m.vertex_attrs[v.vid(m)].curve_id,
+            m.vertex_attrs[v.vid(m)].t);
+        auto res = m.mesh_parameters.m_boundary.uv_to_t(a);
+        auto c = m.mesh_parameters.m_boundary.t_to_uv(res.first, res.second);
+        CAPTURE(v.vid(m), m.vertex_attrs[v.vid(m)].pos.transpose());
+        CAPTURE(
+            v.vid(m),
+            m.vertex_attrs[v.vid(m)].fixed,
+            a.transpose(),
+            b.transpose(),
+            c.transpose(),
+            m.vertex_attrs[v.vid(m)].curve_id,
+            m.vertex_attrs[v.vid(m)].t,
+            res.first,
+            res.second);
+        std::ofstream out("pts.xyz");
+        out << a[0] << " " << a[1] << " 0\n";
+        // out << b[0] << " " << b[1] << " 0\n";
+        // out << c[0] << " " << c[1] << " 0\n";
+        REQUIRE(
+            (m.vertex_attrs[v.vid(m)].pos - m.mesh_parameters.m_boundary.t_to_uv(
+                                                m.vertex_attrs[v.vid(m)].curve_id,
+                                                m.vertex_attrs[v.vid(m)].t))
+                .squaredNorm() < 1e-8);
+        for (auto& e : m.get_one_ring_edges_for_vertex(v)) {
+            if (m.is_seam_edge(e)) {
+                wmtk::TriMesh::Tuple mirror_edge = m.get_oriented_mirror_edge(e);
+                REQUIRE(m.vertex_attrs[v.vid(m)].fixed == m.vertex_attrs[mirror_edge.vid(m)].fixed);
+                m.vertex_attrs[mirror_edge.vid(m)].curve_id =
+                    m.edge_attrs[mirror_edge.eid(m)].curve_id.value();
+                auto a = m.vertex_attrs[mirror_edge.vid(m)].pos;
+                auto b = m.mesh_parameters.m_boundary.t_to_uv(
+                    m.vertex_attrs[mirror_edge.vid(m)].curve_id,
+                    m.vertex_attrs[mirror_edge.vid(m)].t);
+                auto res = m.mesh_parameters.m_boundary.uv_to_t(a);
+                auto c = m.mesh_parameters.m_boundary.t_to_uv(res.first, res.second);
+                CAPTURE(
+                    v.vid(m),
+                    mirror_edge.vid(m),
+                    m.vertex_attrs[mirror_edge.vid(m)].fixed,
+                    m.vertex_attrs[mirror_edge.vid(m)].boundary_vertex,
+                    a.transpose(),
+                    b.transpose(),
+                    c.transpose(),
+                    m.vertex_attrs[mirror_edge.vid(m)].curve_id,
+                    m.vertex_attrs[mirror_edge.vid(m)].t,
+                    res.first,
+                    res.second);
+                std::ofstream out("pts.xyz");
+                out << a[0] << " " << a[1] << " 0\n";
+                // out <<  b[0] << " " << b[1] << " 0\n";
                 REQUIRE(
                     (m.vertex_attrs[mirror_edge.vid(m)].pos -
                      m.mesh_parameters.m_boundary.t_to_uv(
