@@ -160,7 +160,6 @@ bool TriMesh::is_boundary_vertex(const TriMesh::Tuple& t) const
 
 void TriMesh::consolidate_mesh()
 {
-    throw std::runtime_error("do not consolidate mesh");
     TriMeshConsolidateOperation op;
     op(*this, TriMesh::Tuple{});
 }

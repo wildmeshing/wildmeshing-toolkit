@@ -120,11 +120,6 @@ public:
      * @return vector of Tuples
      */
     Tuple init_from_edge(size_t vid1, size_t vid2, size_t fid) const;
-    // same as init_from_edge but if the edge doesn't exist it returns returns nohting
-    std::optional<Tuple> init_from_edge_opt(size_t vid1, size_t vid2, size_t fid) const;
-
-    // generates a tuple from
-    std::optional<Tuple> init_from_edge_opt(size_t vid1, size_t vid2) const;
 
     // same as init_from_edge but if the edge doesn't exist it returns returns nohting
     std::optional<Tuple> init_from_edge_opt(size_t vid1, size_t vid2, size_t fid) const;
