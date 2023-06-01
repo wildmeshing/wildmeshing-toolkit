@@ -1,5 +1,6 @@
 #include <sec/ShortestEdgeCollapse.h>
 #include <wmtk/TriMeshOperation.h>
+#include <wmtk/operations/TriMeshEdgeCollapseOperation.h>
 
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/ManifoldUtils.hpp>

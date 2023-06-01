@@ -9,15 +9,8 @@ public:
     using Tuple = TriMesh::Tuple;
     using VertexConnectivity = TriMesh::VertexConnectivity;
     using TriangleConnectivity = TriMesh::TriangleConnectivity;
-    struct ExecuteReturnData
-    {
-        Tuple tuple;
-        std::vector<Tuple> new_tris;
-        bool success = true;
-        operator bool() const { return success; }
-    };
 
-    ExecuteReturnData operator()(TriMesh& m, const Tuple& t);
+    virtual bool operator()(TriMesh& m, const Tuple& t);
     virtual std::string name() const = 0;
 
 
@@ -25,12 +18,15 @@ public:
     virtual ~TriMeshOperation() {}
     virtual double priority(const TriMesh& m, const Tuple& t) const { return 0; }
 
+    virtual double priority(const TriMesh& m, const Tuple& t) const { return 0; }
+    virtual std::vector<TriMeshTuple> modified_triangles(const TriMesh& m) const = 0;
+
 protected:
     // returns the changed tris + whether success occured
-    virtual ExecuteReturnData execute(TriMesh& m, const Tuple& t) = 0;
+    virtual bool execute(TriMesh& m, const Tuple& t) = 0;
     virtual bool before(TriMesh& m, const Tuple& t) = 0;
-    virtual bool after(TriMesh& m, ExecuteReturnData& ret_data) = 0;
-    virtual bool invariants(TriMesh& m, ExecuteReturnData& ret_data);
+    virtual bool after(TriMesh& m) = 0;
+    bool invariants(TriMesh& m);
 
     virtual void assign(const Tuple& t) {}
     virtual void mark_failed() {}
@@ -43,6 +39,9 @@ protected:
         const TriMesh& m);
     static const wmtk::AttributeCollection<TriangleConnectivity>& tri_connectivity(
         const TriMesh& m);
+    static TriMesh::ProtectedAttributeRAII start_protected_attributes_raii(TriMesh&);
+    static TriMesh::ProtectedConnectivityRAII start_protected_connectivity_raii(TriMesh&);
+    static void rollback_protected(TriMesh&);
 
     /**
      * @brief Get the next avaiblie global index for the triangle
@@ -67,56 +66,42 @@ protected:
 };
 
 
-template <
-    typename MeshType,
-    typename DerivedOperationType,
-    typename BaseOperationType = TriMeshOperation
-#if defined(__cpp_concepts)
-    >
-    requires(
-        std::is_base_of_v<TriMesh, MeshType> &&
-        std::is_base_of_v<TriMeshOperation, BaseOperationType>)
-#else
-    ,
-    typename = std::enable_if_t<std::is_base_of_v<TriMesh, MeshType>, void>,
-    typename = std::enable_if_t<std::is_base_of_v<TriMeshOperation, BaseOperationType>, void>>
-#endif
-class TriMeshOperationShim : public BaseOperationType
-{
-public:
-    using ExecuteReturnData = TriMeshOperation::ExecuteReturnData;
-    using Tuple = TriMeshOperation::Tuple;
-    DerivedOperationType& derived() { return static_cast<DerivedOperationType&>(*this); }
-    const DerivedOperationType& derived() const
-    {
-        return static_cast<const DerivedOperationType&>(*this);
-    }
 
-    ExecuteReturnData execute(TriMesh& m, const Tuple& t) override
-    {
-        return execute(static_cast<MeshType&>(m), t);
-    }
-    bool before(TriMesh& m, const Tuple& t) override
-    {
-        return before(static_cast<MeshType&>(m), t);
-    }
-    bool after(TriMesh& m, ExecuteReturnData& ret_data) override
-    {
-        return after(static_cast<MeshType&>(m), ret_data);
-    }
-    // bool invariants(TriMesh& m, ExecuteReturnData& ret_data) override
-    // {
-    //     return invariants(static_cast<MeshType&>(m), ret_data);
-    // }
+<<<<<<< HEAD
+ExecuteReturnData execute(TriMesh& m, const Tuple& t) override
+{
+    return execute(static_cast<MeshType&>(m), t);
+}
+bool before(TriMesh& m, const Tuple& t) override
+{
+    return before(static_cast<MeshType&>(m), t);
+}
+bool after(TriMesh& m, ExecuteReturnData& ret_data) override
+{
+    return after(static_cast<MeshType&>(m), ret_data);
+}
+// bool invariants(TriMesh& m, ExecuteReturnData& ret_data) override
+// {
+//     return invariants(static_cast<MeshType&>(m), ret_data);
+// }
 
 private:
-    ExecuteReturnData execute(MeshType& m, const Tuple& t) { return derived().execute(m, t); }
-    bool before(MeshType& m, const Tuple& t) { return derived().before(m, t); }
-    bool after(MeshType& m, ExecuteReturnData& ret_data) { return derived().after(m, ret_data); }
-    // bool invariants(MeshType& m, ExecuteReturnData& ret_data)
-    // {
-    //     return derived().invariants(m, ret_data);
-    // }
+ExecuteReturnData execute(MeshType& m, const Tuple& t)
+{
+    return derived().execute(m, t);
+}
+bool before(MeshType& m, const Tuple& t)
+{
+    return derived().before(m, t);
+}
+bool after(MeshType& m, ExecuteReturnData& ret_data)
+{
+    return derived().after(m, ret_data);
+}
+// bool invariants(MeshType& m, ExecuteReturnData& ret_data)
+// {
+//     return derived().invariants(m, ret_data);
+// }
 };
 
 
@@ -241,4 +226,3 @@ public:
 };
 } // namespace wmtk
 
-#include <wmtk/operations/TriMeshEdgeCollapseOperation.h>

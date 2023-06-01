@@ -1,12 +1,8 @@
 #include <wmtk/operations/TriMeshEdgeCollapseOperation.h>
 namespace wmtk {
 
-auto TriMeshEdgeCollapseOperation::execute(TriMesh& m, const Tuple& loc0) -> ExecuteReturnData
+bool TriMeshEdgeCollapseOperation::execute(TriMesh& m, const Tuple& loc0)
 {
-    ExecuteReturnData ret_data;
-    std::vector<Tuple>& new_tris = ret_data.new_tris;
-    Tuple& return_t = ret_data.tuple;
-
     auto& vertex_connectivity = this->vertex_connectivity(m);
     auto& tri_connectivity = this->tri_connectivity(m);
     // get fid for the return tuple
@@ -126,19 +122,20 @@ auto TriMeshEdgeCollapseOperation::execute(TriMesh& m, const Tuple& loc0) -> Exe
 
     const size_t gfid = new_vertex_conn.m_conn_tris[0];
     int j = tri_connectivity[gfid].find(new_vid);
-#if defined(_DEBUG)
+#if !defined(NDEBUG)
     auto new_t = Tuple(new_vid, (j + 2) % 3, gfid, m);
     assert(new_t.is_valid(m));
 #endif
 
 
     int j_ret = tri_connectivity[new_fid].find(new_vid);
-    return_t = Tuple(new_vid, (j_ret + 2) % 3, new_fid, m);
+    Tuple return_t = Tuple(new_vid, (j_ret + 2) % 3, new_fid, m);
 
-    assign(return_t);
-    new_tris = modified_triangles(m);
+    set_return_tuple(return_t);
 
-    for (const auto& tri : new_tris) {
+
+#if !defined(NDEBUG)
+    for (const auto& tri : modified_triangles(m)) {
         for (const size_t index : m.oriented_tri_vids(tri)) {
             assert(
                 std::find(
@@ -147,9 +144,9 @@ auto TriMeshEdgeCollapseOperation::execute(TriMesh& m, const Tuple& loc0) -> Exe
                     tri.fid(m)) != vertex_connectivity[index].m_conn_tris.end());
         }
     }
+#endif
 
-    ret_data.success = true;
-    return ret_data;
+    return true;
 }
 
 auto TriMeshEdgeCollapseOperation::modified_triangles(const TriMesh& m) const -> std::vector<Tuple>
@@ -172,10 +169,9 @@ bool TriMeshEdgeCollapseOperation::before(TriMesh& m, const Tuple& t)
     return check_link_condition(m, t);
 }
 
-bool TriMeshEdgeCollapseOperation::after(TriMesh& m, ExecuteReturnData& ret_data)
+bool TriMeshEdgeCollapseOperation::after(TriMesh& m)
 {
-    ret_data.success &= true;
-    return ret_data;
+    return true;
 }
 
 std::string TriMeshEdgeCollapseOperation::name() const
