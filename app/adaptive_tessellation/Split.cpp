@@ -445,10 +445,11 @@ bool AdaptiveTessellationPairedEdgeSplitOperation::after(AdaptiveTessellation& m
         {
             return false;
         }
+        const auto mirror_return_edge_tuple = mirror_split_edge.get_return_tuple_opt().value();
         // enforce the mirror_split_edge t to be the same as the primary t
         double t0 = m.vertex_attrs[mirror_return_edge_tuple.switch_vertex(m).vid(m)].t;
         double t1 = m.vertex_attrs[return_edge_tuple.switch_vertex(m).vid(m)].t;
-        assert(sd::abs(t0 - t1) < 1e-6);
+        assert(std::abs(t0 - t1) < 1e-6);
         m.vertex_attrs[mirror_return_edge_tuple.switch_vertex(m).vid(m)].t =
             m.vertex_attrs[return_edge_tuple.switch_vertex(m).vid(m)].t;
 
