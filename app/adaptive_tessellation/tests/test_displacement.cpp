@@ -1,4 +1,4 @@
-#include <wmtk/utils/Displacement.h>
+#include <wmtk/image/Displacement.h>
 #include <wmtk/utils/Energy2d.h>
 #include <catch2/catch.hpp>
 #include <iostream>

@@ -5,11 +5,11 @@
 #include <wmtk/quadrature/ClippedQuadrature.h>
 #include <wmtk/quadrature/TriangleQuadrature.h>
 #include <wmtk/utils/PolygonClipping.h>
-#include <wmtk/utils/Sampling.h>
+#include <wmtk/image/Sampling.h>
 #include <type_traits>
 #include "Image.h"
-#include "LineQuadrature.hpp"
-#include "autodiff.h"
+#include <wmtk/utils/LineQuadrature.hpp>
+#include <wmtk/utils/autodiff.h>
 
 namespace wmtk {
 

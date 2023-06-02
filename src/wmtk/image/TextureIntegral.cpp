@@ -291,6 +291,15 @@ T get_error_per_triangle_adaptive(
     }
     // logger().info("Num inside: {}, boundary: {}, total: {}", num_inside, num_boundary,
     // num_total);
+    // scaling by jacobian
+    const Eigen::Matrix<T, 3, 1> p1 = triangle_3d.col(0);
+    const Eigen::Matrix<T, 3, 1> p2 = triangle_3d.col(1);
+    const Eigen::Matrix<T, 3, 1> p3 = triangle_3d.col(2);
+    value = value * wmtk::triangle_3d_area<T>(p1, p2, p3);
+    value = value / wmtk::triangle_2d_area<T>(
+                        triangle_uv.row(0).transpose(),
+                        triangle_uv.row(1).transpose(),
+                        triangle_uv.row(2).transpose());
     return value;
 }
 

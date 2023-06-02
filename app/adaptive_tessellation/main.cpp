@@ -16,13 +16,6 @@
 #include <lagrange/views.h>
 #include <remeshing/UniformRemeshing.h>
 #include <spdlog/common.h>
-#include <wmtk/utils/AMIPS2D.h>
-#include <wmtk/utils/AMIPS2D_autodiff.h>
-#include <wmtk/utils/BoundaryParametrization.h>
-#include <wmtk/utils/Energy2d.h>
-#include <wmtk/utils/Image.h>
-#include <wmtk/utils/autodiff.h>
-#include <wmtk/utils/bicubic_interpolation.h>
 #include <wmtk/utils/json_sink.h>
 #include <CLI/CLI.hpp>
 #include <filesystem>

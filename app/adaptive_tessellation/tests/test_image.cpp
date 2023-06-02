@@ -1,6 +1,6 @@
 #include <igl/read_triangle_mesh.h>
-#include <wmtk/utils/Image.h>
-#include <wmtk/utils/MipMap.h>
+#include <wmtk/image/Image.h>
+#include <wmtk/image/MipMap.h>
 #include <catch2/catch.hpp>
 using namespace wmtk;
 TEST_CASE("exr saving and loading")

@@ -1,7 +1,8 @@
 #include <wmtk/image/TextureIntegral.h>
 #include <wmtk/image/helpers.h>
-#include <wmtk/utils/Displacement.h>
-#include <wmtk/utils/load_image_exr.h>
+#include <wmtk/image/Displacement.h>
+#include <wmtk/image/load_image_exr.h>
+#include <wmtk/utils/Logger.hpp>
 
 #include <lagrange/IndexedAttribute.h>
 #include <lagrange/attribute_names.h>

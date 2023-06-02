@@ -16,10 +16,10 @@
 #include <wmtk/utils/AMIPS2D.h>
 #include <wmtk/utils/AMIPS2D_autodiff.h>
 #include <wmtk/utils/BoundaryParametrization.h>
-#include <wmtk/utils/Image.h>
-#include <wmtk/utils/MipMap.h>
+#include <wmtk/image/Image.h>
+#include <wmtk/image/MipMap.h>
 #include <wmtk/utils/autodiff.h>
-#include <wmtk/utils/bicubic_interpolation.h>
+#include <wmtk/image/bicubic_interpolation.h>
 #include <catch2/catch.hpp>
 #include <finitediff.hpp>
 #include <functional>
@@ -283,9 +283,9 @@ TEST_CASE("test_link_check", "[test_pre_check]")
         auto elink = TriMeshEdgeCollapseOperation::edge_link_of_edge_vids(m, edge);
 
         auto svlink =
-            AdaptiveTessellationPairedCollapseEdgeOperation::seamed_links_of_vertex(m, edge);
+            AdaptiveTessellationPairedEdgeCollapseOperation::seamed_links_of_vertex(m, edge);
         auto selink =
-            AdaptiveTessellationPairedCollapseEdgeOperation::seamed_edge_link_of_edge(m, edge);
+            AdaptiveTessellationPairedEdgeCollapseOperation::seamed_edge_link_of_edge(m, edge);
         {
             const auto& [ee, ie] = elink;
             const auto& [see, sie] = selink;
@@ -342,7 +342,7 @@ TEST_CASE("test_link_check", "[test_pre_check]")
         check_link_results(edge);
 
         REQUIRE_FALSE(
-            AdaptiveTessellationPairedCollapseEdgeOperation::check_seamed_link_condition(m, edge));
+            AdaptiveTessellationPairedEdgeCollapseOperation::check_seamed_link_condition(m, edge));
     }
     SECTION("one_triangle")
     {
@@ -359,7 +359,7 @@ TEST_CASE("test_link_check", "[test_pre_check]")
         assert(edge.is_valid(m));
         check_link_results(edge);
         REQUIRE_FALSE(
-            AdaptiveTessellationPairedCollapseEdgeOperation::check_seamed_link_condition(m, edge));
+            AdaptiveTessellationPairedEdgeCollapseOperation::check_seamed_link_condition(m, edge));
     }
     SECTION("one_tet")
     {
@@ -376,7 +376,7 @@ TEST_CASE("test_link_check", "[test_pre_check]")
         assert(edge.is_valid(m));
         check_link_results(edge);
         REQUIRE_FALSE(
-            AdaptiveTessellationPairedCollapseEdgeOperation::check_seamed_link_condition(m, edge));
+            AdaptiveTessellationPairedEdgeCollapseOperation::check_seamed_link_condition(m, edge));
     }
     SECTION("non_manifold_after_collapse")
     {
@@ -391,12 +391,12 @@ TEST_CASE("test_link_check", "[test_pre_check]")
 
         TriMesh::Tuple fail_edge(5, 0, 1, m);
         check_link_results(fail_edge);
-        REQUIRE_FALSE(AdaptiveTessellationPairedCollapseEdgeOperation::check_seamed_link_condition(
+        REQUIRE_FALSE(AdaptiveTessellationPairedEdgeCollapseOperation::check_seamed_link_condition(
             m,
             fail_edge));
         TriMesh::Tuple pass_edge(0, 2, 0, m);
         check_link_results(pass_edge);
-        REQUIRE(AdaptiveTessellationPairedCollapseEdgeOperation::check_seamed_link_condition(
+        REQUIRE(AdaptiveTessellationPairedEdgeCollapseOperation::check_seamed_link_condition(
             m,
             pass_edge));
     }

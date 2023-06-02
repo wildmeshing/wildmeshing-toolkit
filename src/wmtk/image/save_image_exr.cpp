@@ -1,4 +1,7 @@
 #include "save_image_exr.h"
+#include <tinyexr.h>
+#include <cassert>
+#include <wmtk/utils/Logger.hpp>
 
 bool wmtk::save_image_exr_red_channel(
     size_t width,

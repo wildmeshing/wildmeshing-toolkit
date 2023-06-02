@@ -1,6 +1,8 @@
 #pragma once
 #include <igl/predicates/predicates.h>
 #include <wmtk/TriMeshOperation.h>
+#include <wmtk/operations/TriMeshEdgeSwapOperation.h>
+#include <wmtk/operations/TriMeshOperationShim.hpp>
 #include "AdaptiveTessellation.h"
 
 /// swap:       accuracy pass: done to improve accuracy of the mesh
@@ -14,17 +16,17 @@
 
 
 namespace adaptive_tessellation {
-class AdaptiveTessellationSwapEdgeOperation : public wmtk::TriMeshOperationShim<
+class AdaptiveTessellationEdgeSwapOperation : public wmtk::TriMeshOperationShim<
                                                   AdaptiveTessellation,
-                                                  AdaptiveTessellationSwapEdgeOperation,
-                                                  wmtk::TriMeshSwapEdgeOperation>
+                                                  AdaptiveTessellationEdgeSwapOperation,
+                                                  wmtk::TriMeshEdgeSwapOperation>
 {
 public:
-    AdaptiveTessellationSwapEdgeOperation();
-    ~AdaptiveTessellationSwapEdgeOperation();
-    ExecuteReturnData execute(AdaptiveTessellation& m, const Tuple& t);
+    AdaptiveTessellationEdgeSwapOperation();
+    ~AdaptiveTessellationEdgeSwapOperation();
+    bool execute(AdaptiveTessellation& m, const Tuple& t);
     bool before(AdaptiveTessellation& m, const Tuple& t);
-    bool after(AdaptiveTessellation& m, ExecuteReturnData& ret_data);
+    bool after(AdaptiveTessellation& m);
     //        _____s3_____                _____s3_____
     //       / \    3    /               /     3' _ / /
     //      /    \     4/s4          s1 /1'  ___ / 4'/s4

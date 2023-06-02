@@ -64,7 +64,7 @@ TEST_CASE("paired split")
             REQUIRE(!m.edge_attrs[e.eid(m)].curve_id.has_value());
         }
     }
-    AdaptiveTessellationPairedSplitEdgeOperation op;
+    AdaptiveTessellationPairedEdgeSplitOperation op;
     op(m, primary_edge2);
 
     // acsii art diamond
@@ -84,8 +84,8 @@ TEST_CASE("paired split")
 
     REQUIRE(m.vert_capacity() == 8);
     REQUIRE(m.tri_capacity() == 4);
-    primary_edge2 = op.split_edge.return_edge_tuple;
-    primary_edge1 = op.mirror_split_edge.return_edge_tuple;
+    primary_edge2 = op.split_edge.get_return_tuple_opt().value();
+    primary_edge1 = op.mirror_split_edge.get_return_tuple_opt().value();
     // checking for first face
     REQUIRE(m.face_attrs[0].mirror_edges[0].has_value());
     REQUIRE(m.face_attrs[0].mirror_edges[0].value().fid(m) == 3);
@@ -121,7 +121,7 @@ TEST_CASE("paired split")
         }
     }
     {
-        std::vector<size_t> affected_fids{{0,1,2,3}};
+        std::vector<size_t> affected_fids{{0, 1, 2, 3}};
         auto new_tris = op.modified_triangles(m);
         CHECK(new_tris.size() == affected_fids.size());
         for (const auto& ftup : new_tris) {
@@ -152,7 +152,7 @@ TEST_CASE("paired split")
     REQUIRE(!m.edge_attrs[primary_edge3.eid(m)].curve_id.has_value());
     REQUIRE(!m.is_seam_edge(primary_edge3));
     REQUIRE(!m.is_boundary_edge(primary_edge3));
-    AdaptiveTessellationPairedSplitEdgeOperation op2;
+    AdaptiveTessellationPairedEdgeSplitOperation op2;
     op2(m, primary_edge3);
 #include <wmtk/utils/DisableWarnings.hpp>
     // acsii art diamond
@@ -173,7 +173,7 @@ TEST_CASE("paired split")
     REQUIRE(m.vert_capacity() == 9);
     REQUIRE(m.tri_capacity() == 6);
 
-    primary_edge3 = op2.split_edge.return_edge_tuple;
+    primary_edge3 = op2.split_edge.get_return_tuple_opt().value();
     REQUIRE(!m.is_seam_edge(primary_edge3));
     REQUIRE(!m.is_boundary_edge(primary_edge3));
     REQUIRE(!m.edge_attrs[primary_edge3.eid(m)].curve_id.has_value());
@@ -211,7 +211,7 @@ TEST_CASE("paired split")
         }
     }
     {
-        std::vector<size_t> affected_fids{{0,2,4,5}};
+        std::vector<size_t> affected_fids{{0, 2, 4, 5}};
         auto new_tris = op2.modified_triangles(m);
         CHECK(new_tris.size() == affected_fids.size());
         for (const auto& ftup : new_tris) {
@@ -243,7 +243,7 @@ TEST_CASE("paired split")
     REQUIRE(m.edge_attrs[primary_edge4.eid(m)].curve_id.value() == 2);
     REQUIRE(m.is_boundary_edge(primary_edge4));
     REQUIRE(!m.is_seam_edge(primary_edge4));
-    AdaptiveTessellationPairedSplitEdgeOperation op3;
+    AdaptiveTessellationPairedEdgeSplitOperation op3;
     op3(m, primary_edge4);
 #include <wmtk/utils/DisableWarnings.hpp>
     // acsii art diamond
@@ -264,12 +264,12 @@ TEST_CASE("paired split")
 
     REQUIRE(m.vert_capacity() == 10);
     REQUIRE(m.tri_capacity() == 7);
-    primary_edge4 = op3.split_edge.return_edge_tuple;
+    primary_edge4 = op3.split_edge.get_return_tuple_opt().value();
     REQUIRE(m.edge_attrs[primary_edge4.eid(m)].curve_id.has_value());
     REQUIRE(m.edge_attrs[primary_edge4.eid(m)].curve_id.value() == 2);
     REQUIRE(m.is_boundary_edge(primary_edge4));
     REQUIRE(!m.is_seam_edge(primary_edge4));
-    wmtk::TriMesh::Tuple primary_edge5 = op3.split_edge.return_edge_tuple;
+    wmtk::TriMesh::Tuple primary_edge5 = op3.split_edge.get_return_tuple_opt().value();
     primary_edge5 =
         primary_edge5.switch_vertex(m).switch_edge(m).switch_face(m).value().switch_edge(m);
     REQUIRE(m.edge_attrs[primary_edge5.eid(m)].curve_id.has_value());
@@ -307,7 +307,7 @@ TEST_CASE("paired split")
     }
 
     {
-        std::vector<size_t> affected_fids{{1,6}};
+        std::vector<size_t> affected_fids{{1, 6}};
         auto new_tris = op3.modified_triangles(m);
         CHECK(new_tris.size() == affected_fids.size());
         for (const auto& ftup : new_tris) {

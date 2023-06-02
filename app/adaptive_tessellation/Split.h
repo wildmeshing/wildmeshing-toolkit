@@ -9,6 +9,8 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TriQualityUtils.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
+#include <wmtk/operations/TriMeshEdgeSplitOperation.h>
+#include <wmtk/operations/TriMeshOperationShim.hpp>
 #include "AdaptiveTessellation.h"
 #include "wmtk/ExecutionScheduler.hpp"
 using namespace wmtk;
@@ -22,13 +24,12 @@ using namespace wmtk;
 /// after:      update the quadric of the new faces. and after error is measured by the sum of the one-ring quadric error of 4 vertices
 
 namespace adaptive_tessellation {
-class AdaptiveTessellationSplitEdgeOperation : public wmtk::TriMeshOperationShim<
+class AdaptiveTessellationEdgeSplitOperation : public wmtk::TriMeshOperationShim<
                                                    AdaptiveTessellation,
-                                                   AdaptiveTessellationSplitEdgeOperation,
-                                                   wmtk::TriMeshSplitEdgeOperation>
+                                                   AdaptiveTessellationEdgeSplitOperation,
+                                                   wmtk::TriMeshEdgeSplitOperation>
 {
 public:
-    TriMesh::Tuple return_edge_tuple;
     struct OpCache
     {
         size_t v1;
@@ -40,21 +41,21 @@ public:
     tbb::enumerable_thread_specific<OpCache> op_cache;
 
 public:
-    ExecuteReturnData execute(AdaptiveTessellation& m, const Tuple& t);
+    bool execute(AdaptiveTessellation& m, const Tuple& t);
     bool before(AdaptiveTessellation& m, const Tuple& t);
-    bool after(AdaptiveTessellation& m, ExecuteReturnData& ret_data);
+    bool after(AdaptiveTessellation& m);
     std::vector<Tuple> modified_triangles(const TriMesh& m) const override;
 };
 
-class AdaptiveTessellationPairedSplitEdgeOperation
+class AdaptiveTessellationPairedEdgeSplitOperation
     : public wmtk::TriMeshOperationShim<
           AdaptiveTessellation,
-          AdaptiveTessellationPairedSplitEdgeOperation,
+          AdaptiveTessellationPairedEdgeSplitOperation,
           wmtk::TriMeshOperation>
 {
 public:
-    AdaptiveTessellationSplitEdgeOperation split_edge;
-    AdaptiveTessellationSplitEdgeOperation mirror_split_edge;
+    AdaptiveTessellationEdgeSplitOperation split_edge;
+    AdaptiveTessellationEdgeSplitOperation mirror_split_edge;
     std::optional<Tuple> mirror_edge_tuple; // same orientation as the original edge
     struct PairedOpCache
     {
@@ -84,9 +85,9 @@ public:
     tbb::enumerable_thread_specific<PairedOpCache> paired_op_cache;
 
 public:
-    ExecuteReturnData execute(AdaptiveTessellation& m, const Tuple& t);
+    bool execute(AdaptiveTessellation& m, const Tuple& t);
     bool before(AdaptiveTessellation& m, const Tuple& t);
-    bool after(AdaptiveTessellation& m, ExecuteReturnData& ret_data);
+    bool after(AdaptiveTessellation& m);
     std::string name() const override { return split_edge.name(); };
 
     std::vector<Tuple> modified_triangles(const TriMesh& m) const;
