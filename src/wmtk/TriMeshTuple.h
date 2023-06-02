@@ -26,11 +26,24 @@ public:
     std::string info() const;
     operator std::string() const { return info(); }
 
-    //         v2        /
-    //       /    \      /
-    //  e1  /      \  e0 /
-    //     v0 - - - v1   /
-    //         e2        /
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcomment"
+#elif (defined(__GNUC__) || defined(__GNUG__)) && !(defined(__clang__) || defined(__INTEL_COMPILER))
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcomment"
+#endif
+
+    //         v2
+    //       /    \
+    //  e1  /      \  e0
+    //     v0 - - - v1
+    //         e2
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#elif (defined(__GNUC__) || defined(__GNUG__)) && !(defined(__clang__) || defined(__INTEL_COMPILER))
+#pragma GCC diagnostic pop
+#endif
     /**
      * Construct a new TriMeshTuple object with global vertex/triangle index and local edge index
      *
