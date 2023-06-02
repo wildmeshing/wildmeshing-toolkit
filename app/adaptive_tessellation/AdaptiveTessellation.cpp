@@ -79,10 +79,9 @@ void AdaptiveTessellation::mesh_preprocessing(
     wmtk::TriMesh m_3d;
     std::vector<std::array<size_t, 3>> tris;
     for (auto f = 0; f < input_F_.rows(); f++) {
-        std::array<size_t, 3> tri = {
-            (size_t)input_F_(f, 0),
-            (size_t)input_F_(f, 1),
-            (size_t)input_F_(f, 2)};
+        std::array<size_t, 3> tri = {(size_t)input_F_(f, 0),
+                                     (size_t)input_F_(f, 1),
+                                     (size_t)input_F_(f, 2)};
         tris.emplace_back(tri);
     }
     m_3d.create_mesh(input_V_.rows(), tris);
@@ -549,7 +548,7 @@ void AdaptiveTessellation::set_energy(const ENERGY_TYPE energy_type)
     case ENERGY_TYPE::AMIPS: energy_ptr = std::make_unique<wmtk::AMIPS>(); break;
     case ENERGY_TYPE::SYMDI: energy_ptr = std::make_unique<wmtk::SymDi>(); break;
     case ENERGY_TYPE::EDGE_LENGTH:
-        energy_ptr = std::make_unique<wmtk::EdgeLengthEnergy>(mesh_parameters.m_get_z);
+        energy_ptr = std::make_unique<wmtk::EdgeLengthEnergy>(mesh_parameters.m_displacement);
         break;
     case ENERGY_TYPE::EDGE_QUADRATURE:
         energy_ptr = std::make_unique<wmtk::AccuracyEnergy>(mesh_parameters.m_displacement);
@@ -816,7 +815,7 @@ bool AdaptiveTessellation::invariants(const TriMeshOperation& op)
         return false;
     }
     const auto mod_tris = op.modified_triangles(*this);
-return invariants(mod_tris);
+    return invariants(mod_tris);
 }
 
 bool AdaptiveTessellation::invariants(const std::vector<TriMeshTuple>& mod_tris)
@@ -1239,7 +1238,7 @@ void AdaptiveTessellation::get_nminfo_for_vertex(const Tuple& v, wmtk::NewtonMet
     };
     std::vector<Tuple> one_ring_tris = get_one_ring_tris_for_vertex(v);
     nminfo.curve_id = vertex_attrs[v.vid(*this)].curve_id;
-    nminfo.target_length = mesh_parameters.m_target_l;
+    nminfo.target_length = mesh_parameters.m_quality_threshold;
     nminfo.neighbors.resize(one_ring_tris.size(), 4);
     nminfo.facet_ids.resize(one_ring_tris.size());
     for (auto i = 0; i < one_ring_tris.size(); i++) {

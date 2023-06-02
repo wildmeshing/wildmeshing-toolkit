@@ -66,7 +66,9 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::before(AdaptiveTessellation&
         if (m.is_boundary_vertex(t)) {
             for (auto& e : m.get_one_ring_edges_for_vertex(t)) {
                 if (m.is_boundary_edge(e)) {
+                    // set the curve_id of the vertex to the curve_id of the edge
                     m.vertex_attrs[t.vid(m)].curve_id = m.edge_attrs[e.eid(m)].curve_id.value();
+
                     break;
                 }
             }
@@ -113,6 +115,8 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::after(AdaptiveTessellation& 
             assert(m.get_mirror_vertex(mirror_v).vid(m) == ret_t.vid(m));
             if (m.vertex_attrs[mirror_v.vid(m)].fixed) return false;
             if (m.mesh_parameters.m_bnd_freeze) return false;
+            //// ----
+            // transfer the curve_id to the mirror vertex on the fly using mirror edge
             m.vertex_attrs[mirror_v.vid(m)].curve_id =
                 m.edge_attrs[mirror_edge.eid(m)].curve_id.value();
             mirror_vertices.emplace_back(mirror_v);
@@ -120,6 +124,7 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::after(AdaptiveTessellation& 
             for (auto& mirror_v_tri : m.get_one_ring_tris_for_vertex(mirror_v)) {
                 one_ring_tris.emplace_back(mirror_v_tri);
             }
+
             m.get_nminfo_for_vertex(mirror_v, nminfo);
             nminfos.push_back(nminfo);
             break;
@@ -131,6 +136,13 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::after(AdaptiveTessellation& 
     const auto old_t = m.vertex_attrs[ret_t.vid(m)].t;
 
     wmtk::State state = {};
+
+    if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::LINEAR3D ||
+        m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::LINEAR2D) {
+        state.scaling = m.mesh_parameters.m_quality_threshold;
+    }
+
+
     if (m.is_boundary_vertex(ret_t) && m.mesh_parameters.m_boundary_parameter) {
         state.dofx.resize(1);
         state.dofx[0] = m.vertex_attrs[ret_t.vid(m)].t; // t
@@ -199,6 +211,7 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::after(AdaptiveTessellation& 
     //             lagrange::timestamp_diff_in_seconds(smooth_start_time, smooth_end_time))}}}});
     cnt++;
 
+
     return true;
 }
 
@@ -226,7 +239,6 @@ bool adaptive_tessellation::AdaptiveTessellation::smooth_after(const Tuple& t)
 {
     throw std::runtime_error("outdated smooth should not be used");
     static std::atomic_int cnt = 0;
-    wmtk::logger().info("smothing op # {}", cnt);
     // Newton iterations are encapsulated here.
     auto vid = t.vid(*this);
     auto locs = get_one_ring_tris_for_vertex(t);
@@ -310,12 +322,7 @@ bool adaptive_tessellation::AdaptiveTessellation::smooth_after(const Tuple& t)
     if (!vertex_attrs[t.vid(*this)].fixed) {
         mesh_parameters.m_gradient += energy_gradient.second;
     }
-    wmtk::logger().debug(
-        "smoothing vertex {} before energy {} after energy {} gradient {}",
-        vid,
-        before_energy,
-        after_energy,
-        energy_gradient.second);
+
     assert(invariants(locs));
     cnt++;
     return true;

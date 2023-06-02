@@ -25,9 +25,10 @@ struct State
     wmtk::DofVector dofx;
     Eigen::MatrixXd two_opposite_vertices;
     int idx = 0; // facet index
+    double scaling = 1.; // target edge length
 
     ////// ==== archived ===== (keep for compilation)
-    double scaling = 1.;
+
     std::array<double, 6> target_triangle = {0., 0., 1., 0., 1. / 2., sqrt(3) / 2.};
     std::array<double, 6> input_triangle;
 };
@@ -113,23 +114,16 @@ class EdgeLengthEnergy : public wmtk::Energy
 {
 public:
     // m_displacement needs to be defined with 2 arguments of DScalar, and return a DScalar
-    EdgeLengthEnergy(std::function<DScalar(const DScalar&, const DScalar&)> displacement_func)
-        : m_displacement(std::move(displacement_func))
+    EdgeLengthEnergy(std::shared_ptr<Displacement> displ)
+        : m_displ(displ)
     {}
 
 public:
-    std::function<DScalar(const DScalar&, const DScalar&)> m_displacement;
+    std::shared_ptr<Displacement> m_displ; // Initiated using the Displacement class
 
 public:
     void eval([[maybe_unused]] State& state) const override{};
     void eval(State& state, DofsToPositions& x) const override;
-    // a wrapper function of m_displacement that takes 2 doubles and cast into DScalar, and
-    // returns a Vector3d
-    double displacement(const double& x, const double& y) const
-    {
-        double z = m_displacement(DScalar(x), DScalar(y)).getValue();
-        return z;
-    };
 };
 class AccuracyEnergy : public wmtk::Energy
 {
@@ -149,7 +143,7 @@ public:
 class AreaAccuracyEnergy : public wmtk::Energy
 {
 public:
-    AreaAccuracyEnergy(std::shared_ptr<Displacement> displ, const TextureIntegral &texture_integral)
+    AreaAccuracyEnergy(std::shared_ptr<Displacement> displ, const TextureIntegral& texture_integral)
         : m_displ(displ)
         , m_texture_integral(texture_integral)
     {}
