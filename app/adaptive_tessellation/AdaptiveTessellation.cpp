@@ -1230,7 +1230,7 @@ void AdaptiveTessellation::get_nminfo_for_vertex(const Tuple& v, wmtk::NewtonMet
     };
     std::vector<Tuple> one_ring_tris = get_one_ring_tris_for_vertex(v);
     nminfo.curve_id = vertex_attrs[v.vid(*this)].curve_id;
-    nminfo.target_length = mesh_parameters.m_target_l;
+    nminfo.target_length = mesh_parameters.m_quality_threshold;
     nminfo.neighbors.resize(one_ring_tris.size(), 4);
     nminfo.facet_ids.resize(one_ring_tris.size());
     for (auto i = 0; i < one_ring_tris.size(); i++) {

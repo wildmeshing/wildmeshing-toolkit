@@ -503,8 +503,7 @@ void AdaptiveTessellation::swap_all_edges_quality_pass()
             if (!is_close(valence_cost, weight)) return false;
 
 
-            if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
-            } else if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::EDGE_ACCURACY) {
+            if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::EDGE_ACCURACY) {
                 throw std::runtime_error("EDGE_ACCURACY is not supported for swap quality pass");
                 /////// TODO
             } else if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::TRI_QUADRICS) {

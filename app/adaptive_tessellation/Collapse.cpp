@@ -873,15 +873,24 @@ void AdaptiveTessellation::collapse_all_edges()
         executor.num_threads = NUM_THREADS;
         executor.is_weight_up_to_date = [](auto& m, auto& ele) {
             auto& [weight, op, tup] = ele;
-            double energy = m.get_length2d(tup);
-            if (energy != -weight) {
+            double error = m.get_length2d(tup);
+            if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
+                // priority already scaled by 2d edge length
+                error = m.get_length2d(tup);
+            } else if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::TRI_QUADRICS) {
+                // error is not scaled by 2d edge length
+                error = m.get_quadrics_area_accuracy_error_for_split(tup) * m.get_length2d(tup);
+            } else
+                error = m.mesh_parameters.m_get_length(tup);
+            if (error != -weight) {
                 // wmtk::logger().info("outdated weight in queue");
                 // wmtk::logger().info("energy is {}, weight is {}", energy, weight);
                 return false;
             }
-
-            //if (length > (4. / 5. * m.mesh_parameters.m_quality_threshold)) return false;
-
+            if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::LINEAR3D ||
+                m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::LINEAR2D) {
+                if (error > (4. / 5. * m.mesh_parameters.m_quality_threshold)) return false;
+            }
             return true;
         };
         executor(*this, collect_all_ops);

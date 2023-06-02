@@ -182,7 +182,7 @@ TEST_CASE("inversed boundary")
 
     for (auto& v : m.get_vertices()) {
         // assert the position obtained using t is the same as the position cached
-        if (m.vertex_attrs[v.vid(m)].fixed) {
+        if (m.vertex_attrs[v.vid(m)].fixed || !m.is_boundary_vertex(v)) {
             continue;
         }
         REQUIRE(
@@ -352,4 +352,40 @@ TEST_CASE("check cumulate energy")
         m.write_obj_displaced(output_file);
         cnt++;
     }
+}
+
+TEST_CASE("quality remesh")
+{
+    std::filesystem::path input_folder = WMTK_DATA_DIR;
+    std::filesystem::path input_mesh_path = input_folder / "seamPyramid.obj";
+    std::filesystem::path position_path = input_folder / "images/seamPyramid_position.exr";
+    std::filesystem::path normal_path = input_folder / "images/seamPyramid_normal_smooth.exr";
+    std::filesystem::path height_path = input_folder / "images/seamPyramid_height_10.exr";
+    AdaptiveTessellation m;
+    m.mesh_preprocessing(input_mesh_path, position_path, normal_path, height_path);
+    Image image;
+    image.load(height_path, WrappingMode::MIRROR_REPEAT, WrappingMode::MIRROR_REPEAT);
+    auto output_folder = get_path("test_quality", "");
+    REQUIRE(m.check_mesh_connectivity_validity());
+
+    m.set_parameters(
+        0.001,
+        0.1,
+        image,
+        WrappingMode::MIRROR_REPEAT,
+        SAMPLING_MODE::BICUBIC,
+        DISPLACEMENT_MODE::MESH_3D,
+        adaptive_tessellation::ENERGY_TYPE::EDGE_LENGTH,
+        adaptive_tessellation::EDGE_LEN_TYPE::LINEAR3D,
+        1);
+
+    m.mesh_parameters.m_output_folder = output_folder;
+    m.split_all_edges();
+    m.write_obj_displaced(m.mesh_parameters.m_output_folder + "/split_result.obj");
+    m.swap_all_edges_quality_pass();
+    m.write_obj_displaced(m.mesh_parameters.m_output_folder + "/swap_result.obj");
+    m.collapse_all_edges();
+    m.write_obj_displaced(m.mesh_parameters.m_output_folder + "/collapse_result.obj");
+    m.smooth_all_vertices();
+    m.write_obj_displaced(m.mesh_parameters.m_output_folder + "/smooth_result.obj");
 }

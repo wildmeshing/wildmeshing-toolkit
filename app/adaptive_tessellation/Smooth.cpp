@@ -72,6 +72,7 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::before(AdaptiveTessellation&
         if (m.is_boundary_vertex(t)) {
             for (auto& e : m.get_one_ring_edges_for_vertex(t)) {
                 if (m.is_boundary_edge(e)) {
+                    // set the curve_id of the vertex to the curve_id of the edge
                     m.vertex_attrs[t.vid(m)].curve_id = m.edge_attrs[e.eid(m)].curve_id.value();
 
                     break;
@@ -147,6 +148,11 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::after(
     const auto old_t = m.vertex_attrs[ret_data.tuple.vid(m)].t;
 
     wmtk::State state = {};
+    if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::LINEAR3D ||
+        m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::LINEAR2D) {
+        state.scaling = m.mesh_parameters.m_quality_threshold;
+    }
+
     if (m.is_boundary_vertex(ret_data.tuple) && m.mesh_parameters.m_boundary_parameter) {
         state.dofx.resize(1);
         state.dofx[0] = m.vertex_attrs[ret_data.tuple.vid(m)].t; // t
