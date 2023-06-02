@@ -9,5 +9,5 @@ var searchData=
   ['is_5fboundary_5fedge_446',['is_boundary_edge',['../classwmtk_1_1_tet_mesh_tuple.html#a60d935b45970d2609d76f74482398af9',1,'wmtk::TetMeshTuple::is_boundary_edge()'],['../classwmtk_1_1_tri_mesh.html#adcc31a34edcc7605d3bbfa25bae84ece',1,'wmtk::TriMesh::is_boundary_edge()']]],
   ['is_5fboundary_5fface_447',['is_boundary_face',['../classwmtk_1_1_tet_mesh_tuple.html#aba343e10dd650d1f70f0a973acacbc0c',1,'wmtk::TetMeshTuple']]],
   ['is_5fboundary_5fvertex_448',['is_boundary_vertex',['../classwmtk_1_1_tri_mesh.html#a3b067d4cb256162e5fa3ae8a217431d0',1,'wmtk::TriMesh']]],
-  ['is_5fvalid_449',['is_valid',['../classwmtk_1_1_tet_mesh_tuple.html#aa3893255311f162eb9241bd89df1f5c0',1,'wmtk::TetMeshTuple::is_valid()'],['../classwmtk_1_1_tri_mesh_tuple.html#a7b5600cb92f3d8c6a55b94816f32683c',1,'wmtk::TriMeshTuple::is_valid()']]]
+  ['is_5fvalid_449',['is_valid',['../classwmtk_1_1_tet_mesh_tuple.html#aa3893255311f162eb9241bd89df1f5c0',1,'wmtk::TetMeshTuple::is_valid()'],['../classwmtk_1_1_tri_mesh_tuple.html#aa8945c2e050170d95dd2a3e7db27c482',1,'wmtk::TriMeshTuple::is_valid()']]]
 ];
