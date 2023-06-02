@@ -19,16 +19,16 @@
 #include <wmtk/utils/AMIPS2D.h>
 #include <wmtk/utils/AMIPS2D_autodiff.h>
 #include <wmtk/utils/BoundaryParametrization.h>
-#include <wmtk/utils/Displacement.h>
+#include <wmtk/image/Displacement.h>
 #include <wmtk/utils/Energy2d.h>
 #include <wmtk/utils/Energy2dOptimizationUtils.h>
 #include <wmtk/utils/GeoUtils.h>
-#include <wmtk/utils/Image.h>
-#include <wmtk/utils/MipMap.h>
+#include <wmtk/image/Image.h>
+#include <wmtk/image/MipMap.h>
 #include <wmtk/utils/PolygonClipping.h>
-#include <wmtk/utils/Quadric.h>
+#include <wmtk/image/Quadric.h>
 #include <wmtk/utils/json_sink.h>
-#include <wmtk/utils/load_image_exr.h>
+#include <wmtk/image/load_image_exr.h>
 #include <Eigen/Core>
 #include <finitediff.hpp>
 #include <lean_vtk.hpp>
@@ -190,7 +190,8 @@ public:
         float min_height = 0.f,
         float max_height = 1.f);
 
-    bool invariants(const std::vector<Tuple>& new_tris);
+    bool invariants(const std::vector<wmtk::TriMeshTuple>& mod_tris);
+    bool invariants(const TriMeshOperation& op) override;
 
     // Initializes the mesh
     /**

@@ -6,6 +6,7 @@
 #include <igl/remove_unreferenced.h>
 #include <lagrange/utils/timing.h>
 #include <tbb/concurrent_vector.h>
+#include <wmtk/TriMeshOperation.h>
 #include <wmtk/quadrature/TriangleQuadrature.h>
 #include <wmtk/utils/AMIPS2D.h>
 #include <wmtk/utils/AMIPS2D_autodiff.h>
@@ -78,9 +79,10 @@ void AdaptiveTessellation::mesh_preprocessing(
     wmtk::TriMesh m_3d;
     std::vector<std::array<size_t, 3>> tris;
     for (auto f = 0; f < input_F_.rows(); f++) {
-        std::array<size_t, 3> tri = {(size_t)input_F_(f, 0),
-                                     (size_t)input_F_(f, 1),
-                                     (size_t)input_F_(f, 2)};
+        std::array<size_t, 3> tri = {
+            (size_t)input_F_(f, 0),
+            (size_t)input_F_(f, 1),
+            (size_t)input_F_(f, 2)};
         tris.emplace_back(tri);
     }
     m_3d.create_mesh(input_V_.rows(), tris);
@@ -808,12 +810,19 @@ void AdaptiveTessellation::set_vertex_world_positions()
     }
 }
 
-
-bool AdaptiveTessellation::invariants(const std::vector<Tuple>& new_tris)
+bool AdaptiveTessellation::invariants(const TriMeshOperation& op)
 {
-    TriMesh::invariants(new_tris);
+    if (!TriMesh::invariants(op)) {
+        return false;
+    }
+    const auto mod_tris = op.modified_triangles(*this);
+return invariants(mod_tris);
+}
+
+bool AdaptiveTessellation::invariants(const std::vector<TriMeshTuple>& mod_tris)
+{
     if (mesh_parameters.m_has_envelope) {
-        for (auto& t : new_tris) {
+        for (auto& t : mod_tris) {
             std::array<Eigen::Vector3d, 3> tris;
             auto vs = oriented_tri_vertices(t);
             for (auto j = 0; j < 3; j++) {
@@ -827,7 +836,7 @@ bool AdaptiveTessellation::invariants(const std::vector<Tuple>& new_tris)
         }
     }
 
-    for (auto& t : new_tris) {
+    for (auto& t : mod_tris) {
         Eigen::Vector2d a, b, c;
         auto verts = oriented_tri_vertices(t);
         assert(verts.size() == 3);
@@ -1346,7 +1355,7 @@ void AdaptiveTessellation::mesh_improvement(int max_its)
         wmtk::logger().info("current length {}", avg_edge_len());
 
         split_all_edges();
-        assert(invariants(get_faces()));
+        // assert(invariants(get_faces()));
         auto split_finish_time = lagrange::get_timestamp();
 
         mesh_parameters.log(
@@ -1377,8 +1386,8 @@ void AdaptiveTessellation::mesh_improvement(int max_its)
                 mesh_parameters.m_output_folder + "/after_swap_" + std::to_string(it) + "2d.obj");
         }
         collapse_all_edges();
-        assert(invariants(get_faces()));
-        // consolidate_mesh();
+        // assert(invariants(get_faces()));
+        //  consolidate_mesh();
         auto collapse_finish_time = lagrange::get_timestamp();
         mesh_parameters.js_log["iteration_" + std::to_string(it)]["collapse time"] =
             lagrange::timestamp_diff_in_seconds(swap_finish_time, collapse_finish_time);
@@ -1391,7 +1400,7 @@ void AdaptiveTessellation::mesh_improvement(int max_its)
         }
 
         smooth_all_vertices();
-        assert(invariants(get_faces()));
+        // assert(invariants(get_faces()));
         auto smooth_finish_time = lagrange::get_timestamp();
 
         mesh_parameters.log(

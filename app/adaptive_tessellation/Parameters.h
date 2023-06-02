@@ -1,12 +1,12 @@
 #pragma once
 #include <wmtk/TriMesh.h>
 #include <wmtk/utils/BoundaryParametrization.h>
-#include <wmtk/utils/Displacement.h>
+#include <wmtk/image/Displacement.h>
 #include <wmtk/utils/Energy2d.h>
-#include <wmtk/utils/Image.h>
-#include <wmtk/utils/MipMap.h>
+#include <wmtk/image/Image.h>
+#include <wmtk/image/MipMap.h>
 #include <wmtk/utils/autodiff.h>
-#include <wmtk/utils/bicubic_interpolation.h>
+#include <wmtk/image/bicubic_interpolation.h>
 #include <wmtk/utils/json_sink.h>
 #include <Eigen/Dense>
 #include <nlohmann/json.hpp>

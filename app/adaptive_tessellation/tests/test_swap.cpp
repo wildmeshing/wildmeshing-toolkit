@@ -3,8 +3,8 @@
 #include <catch2/catch.hpp>
 #include <wmtk/utils/ManifoldUtils.hpp>
 #include <wmtk/utils/TriQualityUtils.hpp>
-#include "Swap.h"
 #include "Split.h"
+#include "Swap.h"
 using namespace wmtk;
 using namespace lagrange;
 using namespace adaptive_tessellation;
@@ -42,17 +42,17 @@ TEST_CASE("paired swap")
     m.edge_attrs[primary_edge2.switch_vertex(m).switch_edge(m).eid(m)].curve_id =
         std::make_optional<int>(3);
     // split a few times
-    AdaptiveTessellationPairedSplitEdgeOperation op;
+    AdaptiveTessellationPairedEdgeSplitOperation op;
     op(m, primary_edge2);
     REQUIRE(m.vert_capacity() == 8);
     REQUIRE(m.tri_capacity() == 4);
     wmtk::TriMesh::Tuple primary_edge3 = wmtk::TriMesh::Tuple(0, 1, 0, m);
-    AdaptiveTessellationPairedSplitEdgeOperation op2;
+    AdaptiveTessellationPairedEdgeSplitOperation op2;
     op2(m, primary_edge3);
     REQUIRE(m.vert_capacity() == 9);
     REQUIRE(m.tri_capacity() == 6);
     wmtk::TriMesh::Tuple primary_edge4 = wmtk::TriMesh::Tuple(3, 2, 1, m);
-    AdaptiveTessellationPairedSplitEdgeOperation op3;
+    AdaptiveTessellationPairedEdgeSplitOperation op3;
     op3(m, primary_edge4);
     /////// make sure it is valid mesh
     REQUIRE(m.vert_capacity() == 10);
@@ -106,7 +106,7 @@ TEST_CASE("paired swap")
     REQUIRE(primary_edge5.is_valid(m));
     REQUIRE(primary_edge5.vid(m) == 7);
     REQUIRE(primary_edge5.switch_vertex(m).vid(m) == 9);
-    AdaptiveTessellationSwapEdgeOperation op4;
+    AdaptiveTessellationEdgeSwapOperation op4;
     // this operation should fail because of it would generate colinear traingles
     op4(m, primary_edge5);
     std::vector<TriMeshTuple> op4_modified_triangles = op4.modified_triangles(m);
@@ -145,12 +145,12 @@ TEST_CASE("paired swap")
     REQUIRE(primary_edge6.is_valid(m));
     REQUIRE(primary_edge6.vid(m) == 7);
     REQUIRE(primary_edge6.switch_vertex(m).vid(m) == 3);
-    AdaptiveTessellationSwapEdgeOperation op5;
+    AdaptiveTessellationEdgeSwapOperation op5;
     // this operation should fail because of it would generate colinear traingles
     op5(m, primary_edge6);
     std::vector<TriMeshTuple> op5_modified_triangles = op5.modified_triangles(m);
     {
-        std::vector<size_t> affected_fids{1,3};
+        std::vector<size_t> affected_fids{1, 3};
         auto new_tris = op5.modified_triangles(m);
         CHECK(new_tris.size() == affected_fids.size());
         for (const auto& ftup : new_tris) {
@@ -246,7 +246,7 @@ TEST_CASE("paired swap")
     REQUIRE(primary_edge7.vid(m) == 5);
     REQUIRE(primary_edge7.switch_vertex(m).vid(m) == 7);
     REQUIRE(m.is_seam_edge(primary_edge7));
-    AdaptiveTessellationSwapEdgeOperation op6;
+    AdaptiveTessellationEdgeSwapOperation op6;
     op6(m, primary_edge7);
     std::vector<TriMeshTuple> op6_modified_triangles = op6.modified_triangles(m);
     REQUIRE(!op6);
@@ -259,7 +259,7 @@ TEST_CASE("paired swap")
     REQUIRE(primary_edge8.vid(m) == 2);
     REQUIRE(primary_edge8.switch_vertex(m).vid(m) == 0);
     REQUIRE(m.is_boundary_edge(primary_edge8));
-    AdaptiveTessellationSwapEdgeOperation op7;
+    AdaptiveTessellationEdgeSwapOperation op7;
     op7(m, primary_edge8);
     REQUIRE(!op7);
     std::vector<TriMeshTuple> op7_modified_triangles = op7.modified_triangles(m);

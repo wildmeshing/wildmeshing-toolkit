@@ -94,17 +94,17 @@ TEST_CASE("paired collapse", "[myfail][.]")
 
 
     // split a few times
-    AdaptiveTessellationPairedSplitEdgeOperation op;
+    AdaptiveTessellationPairedEdgeSplitOperation op;
     op(m, primary_edge2);
     REQUIRE(m.vert_capacity() == 8);
     REQUIRE(m.tri_capacity() == 4);
     wmtk::TriMesh::Tuple primary_edge3 = wmtk::TriMesh::Tuple(0, 1, 0, m);
-    AdaptiveTessellationPairedSplitEdgeOperation op2;
+    AdaptiveTessellationPairedEdgeSplitOperation op2;
     op2(m, primary_edge3);
     REQUIRE(m.vert_capacity() == 9);
     REQUIRE(m.tri_capacity() == 6);
     wmtk::TriMesh::Tuple primary_edge4 = wmtk::TriMesh::Tuple(3, 2, 1, m);
-    AdaptiveTessellationPairedSplitEdgeOperation op3;
+    AdaptiveTessellationPairedEdgeSplitOperation op3;
     op3(m, primary_edge4);
     /////// make sure it is valid mesh
     REQUIRE(m.vert_capacity() == 10);
@@ -164,20 +164,20 @@ TEST_CASE("paired collapse", "[myfail][.]")
     REQUIRE(!m.is_boundary_edge(primary_edge6));
     REQUIRE(!m.edge_attrs[primary_edge6.eid(m)].curve_id.has_value());
     REQUIRE(primary_edge6.is_valid(m));
-    AdaptiveTessellationPairedCollapseEdgeOperation op4;
+    AdaptiveTessellationPairedEdgeCollapseOperation op4;
     REQUIRE(op4.before(m, primary_edge6));
-    auto retdata = op4.execute(m, primary_edge6);
-    REQUIRE(retdata.success);
-    REQUIRE(op4.after(m, retdata));
+    REQUIRE(op4.execute(m, primary_edge6));
+    REQUIRE(op4.after(m));
     {
+        const auto new_tris = op4.modified_triangles(m);
         std::vector<size_t> affected_fids{{0, 1, 2, 3, 6}};
-        for (size_t j = 0; j < retdata.new_tris.size(); ++j) {
-            spdlog::info("{} {}", affected_fids[j], retdata.new_tris[j].fid(m));
+        for (size_t j = 0; j < new_tris.size(); ++j) {
+            spdlog::info("{} {}", affected_fids[j], new_tris[j].fid(m));
         }
         auto modified_tris = op4.modified_triangles(m);
-        CHECK(retdata.new_tris == modified_tris);
-        CHECK(retdata.new_tris.size() == affected_fids.size());
-        for (const auto& ftup : retdata.new_tris) {
+        CHECK(new_tris == modified_tris);
+        CHECK(new_tris.size() == affected_fids.size());
+        for (const auto& ftup : new_tris) {
             CHECK(ftup.is_valid(m));
             size_t fid = ftup.fid(m);
             CHECK(std::binary_search(affected_fids.begin(), affected_fids.end(), fid));
@@ -276,7 +276,7 @@ TEST_CASE("paired collapse", "[myfail][.]")
     REQUIRE(m.edge_attrs[primary_edge7.eid(m)].curve_id.has_value());
     REQUIRE(m.edge_attrs[primary_edge7.eid(m)].curve_id.value() == 2);
 
-    AdaptiveTessellationPairedCollapseEdgeOperation op5;
+    AdaptiveTessellationPairedEdgeCollapseOperation op5;
     op5(m, primary_edge7);
 #include <wmtk/utils/DisableWarnings.hpp>
     // acsii art diamond
@@ -394,7 +394,7 @@ TEST_CASE("paired collapse", "[myfail][.]")
     REQUIRE(m.edge_attrs[primary_edge8.eid(m)].curve_id.has_value());
     REQUIRE(m.edge_attrs[primary_edge8.eid(m)].curve_id.value() == 0);
 
-    AdaptiveTessellationPairedCollapseEdgeOperation op6;
+    AdaptiveTessellationPairedEdgeCollapseOperation op6;
     REQUIRE(op6.before(m, primary_edge8));
 
     const auto mirror_input_opt = op6.get_mirror_edge_tuple_opt();
@@ -404,8 +404,7 @@ TEST_CASE("paired collapse", "[myfail][.]")
     REQUIRE(mirror_input.vid(m) == 10);
     REQUIRE(mirror_input.switch_vertex(m).vid(m) == 2);
     {
-        auto retdata = op6.execute(m, primary_edge8);
-        REQUIRE(retdata.success);
+        REQUIRE( op6.execute(m, primary_edge8));
     }
 
 

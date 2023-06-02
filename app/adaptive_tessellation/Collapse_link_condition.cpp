@@ -114,7 +114,7 @@ std::vector<size_t> mirror_vids(const AdaptiveTessellation& m, const std::vector
 }
 } // namespace
 
-auto AdaptiveTessellationPairedCollapseEdgeOperation::seamed_links_of_vertex(
+auto AdaptiveTessellationPairedEdgeCollapseOperation::seamed_links_of_vertex(
     AdaptiveTessellation& mesh,
     const TriMeshTuple& vertex) -> LinksOfVertex
 {
@@ -166,7 +166,7 @@ auto AdaptiveTessellationPairedCollapseEdgeOperation::seamed_links_of_vertex(
     return ret;
 }
 std::tuple<std::vector<size_t>, bool>
-AdaptiveTessellationPairedCollapseEdgeOperation::seamed_edge_link_of_edge(
+AdaptiveTessellationPairedEdgeCollapseOperation::seamed_edge_link_of_edge(
     AdaptiveTessellation& mesh,
     const TriMeshTuple& edge)
 {
@@ -188,7 +188,7 @@ AdaptiveTessellationPairedCollapseEdgeOperation::seamed_edge_link_of_edge(
     return {lk_edge, has_infinite};
 }
 
-auto AdaptiveTessellationPairedCollapseEdgeOperation::accumulate_mirror_vertices(
+auto AdaptiveTessellationPairedEdgeCollapseOperation::accumulate_mirror_vertices(
     const AdaptiveTessellation& m,
     const std::vector<Tuple>& vertices) const -> std::vector<Tuple>
 {
@@ -204,7 +204,7 @@ auto AdaptiveTessellationPairedCollapseEdgeOperation::accumulate_mirror_vertices
     wmtk::unique_vertex_tuples(m, ret);
     return ret;
 }
-bool AdaptiveTessellationPairedCollapseEdgeOperation::check_seamed_link_condition(
+bool AdaptiveTessellationPairedEdgeCollapseOperation::check_seamed_link_condition(
     AdaptiveTessellation& mesh,
     const TriMeshTuple& edge)
 {

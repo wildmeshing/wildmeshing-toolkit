@@ -22,20 +22,20 @@ auto renew = [](auto& m, auto op, auto& tris) {
 template <typename Executor>
 void addPairedCustomOps(Executor& e)
 {
-    e.add_operation(std::make_shared<AdaptiveTessellationPairedCollapseEdgeOperation>());
+    e.add_operation(std::make_shared<AdaptiveTessellationPairedEdgeCollapseOperation>());
 }
 
 template <typename Executor>
 void addCustomOps(Executor& e)
 {
-    e.add_operation(std::make_shared<AdaptiveTessellationCollapseEdgeOperation>());
+    e.add_operation(std::make_shared<AdaptiveTessellationEdgeCollapseOperation>());
 }
 
 std::string_view constraint_type(
-    AdaptiveTessellationCollapseEdgeOperation::ConstrainedBoundaryType cbt)
+    AdaptiveTessellationEdgeCollapseOperation::ConstrainedBoundaryType cbt)
 {
     using ConstrainedBoundaryType =
-        AdaptiveTessellationCollapseEdgeOperation::ConstrainedBoundaryType;
+        AdaptiveTessellationEdgeCollapseOperation::ConstrainedBoundaryType;
     switch (cbt) {
     case ConstrainedBoundaryType::NoConstraints: return "Neither";
     case ConstrainedBoundaryType::TupleSideConstrained: return "TupleSide";
@@ -46,7 +46,7 @@ std::string_view constraint_type(
 }
 } // namespace
 
-void AdaptiveTessellationCollapseEdgeOperation::store_merged_seam_data(
+void AdaptiveTessellationEdgeCollapseOperation::store_merged_seam_data(
     const AdaptiveTessellation& m,
     const Tuple& edge_tuple)
 {
@@ -211,7 +211,7 @@ void AdaptiveTessellationCollapseEdgeOperation::store_merged_seam_data(
     }
     */
 }
-auto AdaptiveTessellationCollapseEdgeOperation::merge(
+auto AdaptiveTessellationEdgeCollapseOperation::merge(
     ConstrainedBoundaryType a,
     ConstrainedBoundaryType b) -> ConstrainedBoundaryType
 {
@@ -219,7 +219,7 @@ auto AdaptiveTessellationCollapseEdgeOperation::merge(
     return static_cast<ConstrainedBoundaryType>(static_cast<char>(a) | static_cast<char>(b));
 }
 
-auto AdaptiveTessellationCollapseEdgeOperation::get_constrained_boundary_type(
+auto AdaptiveTessellationEdgeCollapseOperation::get_constrained_boundary_type(
     const AdaptiveTessellation& m,
     const Tuple& t) const -> ConstrainedBoundaryType
 {
@@ -234,7 +234,7 @@ auto AdaptiveTessellationCollapseEdgeOperation::get_constrained_boundary_type(
         return primary;
     }
 }
-auto AdaptiveTessellationCollapseEdgeOperation::get_constrained_boundary_type_per_face(
+auto AdaptiveTessellationEdgeCollapseOperation::get_constrained_boundary_type_per_face(
     const AdaptiveTessellation& m,
     const Tuple& t) const -> ConstrainedBoundaryType
 {
@@ -309,7 +309,7 @@ auto AdaptiveTessellationCollapseEdgeOperation::get_constrained_boundary_type_pe
     return ConstrainedBoundaryType::NoConstraints;
 }
 
-void AdaptiveTessellationCollapseEdgeOperation::fill_cache(
+void AdaptiveTessellationEdgeCollapseOperation::fill_cache(
     const AdaptiveTessellation& m,
     const Tuple& t)
 {
@@ -338,7 +338,7 @@ void AdaptiveTessellationCollapseEdgeOperation::fill_cache(
 
     store_merged_seam_data(m, t);
 }
-bool AdaptiveTessellationCollapseEdgeOperation::check_edge_mergeability(
+bool AdaptiveTessellationEdgeCollapseOperation::check_edge_mergeability(
     const AdaptiveTessellation& m,
     const Tuple& edge) const
 {
@@ -394,7 +394,7 @@ bool AdaptiveTessellationCollapseEdgeOperation::check_edge_mergeability(
 #endif
     return true;
 }
-bool AdaptiveTessellationCollapseEdgeOperation::check_vertex_mergeability(
+bool AdaptiveTessellationEdgeCollapseOperation::check_vertex_mergeability(
     const AdaptiveTessellation& m,
     const Tuple& t) const
 {
@@ -409,7 +409,7 @@ bool AdaptiveTessellationCollapseEdgeOperation::check_vertex_mergeability(
     return true;
 }
 
-bool AdaptiveTessellationCollapseEdgeOperation::before(AdaptiveTessellation& m, const Tuple& t)
+bool AdaptiveTessellationEdgeCollapseOperation::before(AdaptiveTessellation& m, const Tuple& t)
 {
     m_op_cache.local() = {};
     if (!wmtk::TriMeshEdgeCollapseOperation::before(m, t)) {
@@ -445,43 +445,32 @@ bool AdaptiveTessellationCollapseEdgeOperation::before(AdaptiveTessellation& m, 
     return true;
 }
 
-
-TriMeshOperation::ExecuteReturnData AdaptiveTessellationCollapseEdgeOperation::execute(
-    AdaptiveTessellation& m,
-    const Tuple& t)
+bool AdaptiveTessellationEdgeCollapseOperation::execute(AdaptiveTessellation& m, const Tuple& t)
 {
     OpCache& op_cache = m_op_cache.local();
     assert(m.check_mesh_connectivity_validity());
-    TriMeshOperation::ExecuteReturnData ret_data = TriMeshEdgeCollapseOperation::execute(m, t);
-    return ret_data;
+    return TriMeshEdgeCollapseOperation::execute(m, t);
 }
-bool AdaptiveTessellationCollapseEdgeOperation::after(
-    AdaptiveTessellation& m,
-    ExecuteReturnData& ret_data)
-{
-    return ret_data.success = after(m);
-}
-bool AdaptiveTessellationCollapseEdgeOperation::after(AdaptiveTessellation& m)
+bool AdaptiveTessellationEdgeCollapseOperation::after(AdaptiveTessellation& m)
 {
     const auto ret_tup = get_return_tuple_opt();
     if (!bool(ret_tup)) {
         return false;
     }
     OpCache& op_cache = m_op_cache.local();
-    const Tuple& return_edge_tuple = get_return_tuple_opt().value();
 
 
     return true;
 }
 
-auto AdaptiveTessellationCollapseEdgeOperation::assign_new_vertex_attributes(
+auto AdaptiveTessellationEdgeCollapseOperation::assign_new_vertex_attributes(
     AdaptiveTessellation& m,
     const VertexAttributes& attr) const -> VertexAttributes&
 {
     return m.get_vertex_attrs(get_return_tuple_opt().value()) = attr;
 }
 
-auto AdaptiveTessellationCollapseEdgeOperation::assign_new_vertex_attributes(
+auto AdaptiveTessellationEdgeCollapseOperation::assign_new_vertex_attributes(
     AdaptiveTessellation& m) const -> VertexAttributes&
 {
     assert(bool(*this));
@@ -518,7 +507,7 @@ auto AdaptiveTessellationCollapseEdgeOperation::assign_new_vertex_attributes(
     return return_v_attr;
 }
 
-void AdaptiveTessellationCollapseEdgeOperation::assign_collapsed_edge_attributes(
+void AdaptiveTessellationEdgeCollapseOperation::assign_collapsed_edge_attributes(
     AdaptiveTessellation& m,
     const std::optional<Tuple>& new_mirror_vertex_opt) const
 {
@@ -578,13 +567,13 @@ void AdaptiveTessellationCollapseEdgeOperation::assign_collapsed_edge_attributes
 }
 
 
-bool AdaptiveTessellationPairedCollapseEdgeOperation::input_edge_is_mirror() const
+bool AdaptiveTessellationPairedEdgeCollapseOperation::input_edge_is_mirror() const
 {
     auto& op_cache = m_op_cache.local();
     return op_cache.mirror_edge_tuple_opt.has_value();
 }
 
-void AdaptiveTessellationPairedCollapseEdgeOperation::set_input_mirror(
+void AdaptiveTessellationPairedEdgeCollapseOperation::set_input_mirror(
     const AdaptiveTessellation& m,
     const Tuple& t)
 {
@@ -599,7 +588,7 @@ void AdaptiveTessellationPairedCollapseEdgeOperation::set_input_mirror(
 }
 
 
-bool AdaptiveTessellationPairedCollapseEdgeOperation::before(
+bool AdaptiveTessellationPairedEdgeCollapseOperation::before(
     AdaptiveTessellation& m,
     const Tuple& t)
 {
@@ -635,9 +624,9 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::before(
         auto& a = collapse_edge_cache.constrained_boundary_type;
         auto& b = mirror_edge_cache.constrained_boundary_type;
 
-        const auto merged = AdaptiveTessellationCollapseEdgeOperation::merge(a, b);
+        const auto merged = AdaptiveTessellationEdgeCollapseOperation::merge(a, b);
         if (merged ==
-            AdaptiveTessellationCollapseEdgeOperation::ConstrainedBoundaryType::BothConstrained) {
+            AdaptiveTessellationEdgeCollapseOperation::ConstrainedBoundaryType::BothConstrained) {
             return false;
         }
         a = merged;
@@ -649,7 +638,7 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::before(
     return true;
 }
 
-wmtk::TriMeshOperation::ExecuteReturnData AdaptiveTessellationPairedCollapseEdgeOperation::execute(
+bool AdaptiveTessellationPairedEdgeCollapseOperation::execute(
     AdaptiveTessellation& m,
     const Tuple& t)
 {
@@ -658,22 +647,16 @@ wmtk::TriMeshOperation::ExecuteReturnData AdaptiveTessellationPairedCollapseEdge
     auto& op_cache = m_op_cache.local();
 
 
-    wmtk::TriMeshOperation::ExecuteReturnData ret_data = collapse_edge.execute(m, t);
-
-
-    if (!ret_data) return ret_data;
-    {
-        const Tuple t = collapse_edge.get_return_tuple_opt().value();
+    if (!collapse_edge.execute(m, t)) {
+        return false;
     }
+
 
     // if we have a mirror edge we need to
     if (input_edge_is_mirror()) {
         const Tuple& mirror_edge_tuple = op_cache.mirror_edge_tuple_opt.value();
-        wmtk::TriMeshOperation::ExecuteReturnData ret_data2 =
-            collapse_mirror_edge.execute(m, mirror_edge_tuple);
-
-        if (!ret_data2.success) {
-            return ret_data2;
+        if (!collapse_mirror_edge.execute(m, mirror_edge_tuple)) {
+            return false;
         }
     }
 
@@ -684,23 +667,11 @@ wmtk::TriMeshOperation::ExecuteReturnData AdaptiveTessellationPairedCollapseEdge
     if (input_edge_is_mirror()) {
         collapse_mirror_edge.assign_collapsed_edge_attributes(m, collapse_edge.new_vertex(m));
     }
-    ret_data.success = bool(*this);
-    // ret_data.new_tris = modified_triangles(m);
-
-    return ret_data;
+    return true;
 }
 
 
-bool AdaptiveTessellationPairedCollapseEdgeOperation::after(
-    AdaptiveTessellation& m,
-    ExecuteReturnData& ret_data)
-{
-    assert(ret_data.success);
-    ret_data.success = after(m);
-    ret_data.new_tris = modified_triangles(m);
-    return ret_data;
-}
-bool AdaptiveTessellationPairedCollapseEdgeOperation::after(AdaptiveTessellation& m)
+bool AdaptiveTessellationPairedEdgeCollapseOperation::after(AdaptiveTessellation& m)
 {
     static std::atomic_int cnt = 0;
     auto& op_cache = m_op_cache.local();
@@ -723,7 +694,7 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::after(AdaptiveTessellation
         auto& mirror_vertex_attr = collapse_mirror_edge.assign_new_vertex_attributes(m);
 
         if (collapse_edge.m_op_cache.local().constrained_boundary_type ==
-            AdaptiveTessellationCollapseEdgeOperation::ConstrainedBoundaryType::NoConstraints) {
+            AdaptiveTessellationEdgeCollapseOperation::ConstrainedBoundaryType::NoConstraints) {
             mirror_vertex_attr.pos_world = new_vertex_attr.pos_world;
         }
     }
@@ -807,17 +778,17 @@ bool AdaptiveTessellationPairedCollapseEdgeOperation::after(AdaptiveTessellation
     return true;
 }
 
-AdaptiveTessellationPairedCollapseEdgeOperation::operator bool() const
+AdaptiveTessellationPairedEdgeCollapseOperation::operator bool() const
 {
     return operation_success_T(collapse_edge, collapse_mirror_edge, input_edge_is_mirror());
 }
-void AdaptiveTessellationPairedCollapseEdgeOperation::mark_failed()
+void AdaptiveTessellationPairedEdgeCollapseOperation::mark_failed()
 {
     collapse_edge.mark_failed();
     collapse_mirror_edge.mark_failed();
 }
 
-auto AdaptiveTessellationPairedCollapseEdgeOperation::get_mirror_edge_tuple_opt() const
+auto AdaptiveTessellationPairedEdgeCollapseOperation::get_mirror_edge_tuple_opt() const
     -> std::optional<Tuple>
 {
     // note that curveid are handled by the individual operations
@@ -825,7 +796,7 @@ auto AdaptiveTessellationPairedCollapseEdgeOperation::get_mirror_edge_tuple_opt(
 
     return op_cache.mirror_edge_tuple_opt;
 }
-double AdaptiveTessellationPairedCollapseEdgeOperation::priority(
+double AdaptiveTessellationPairedEdgeCollapseOperation::priority(
     const TriMesh& m,
     const Tuple& edge) const
 {
@@ -899,7 +870,7 @@ void AdaptiveTessellation::collapse_all_edges()
 }
 
 
-void AdaptiveTessellationPairedCollapseEdgeOperation::store_boundary_data(
+void AdaptiveTessellationPairedEdgeCollapseOperation::store_boundary_data(
     const AdaptiveTessellation& m,
     const Tuple& t)
 {
@@ -907,7 +878,7 @@ void AdaptiveTessellationPairedCollapseEdgeOperation::store_boundary_data(
     auto& mirror_collapse_op_cache = collapse_mirror_edge.m_op_cache.local();
     OpCache& op_cache = m_op_cache.local();
 }
-void AdaptiveTessellationPairedCollapseEdgeOperation::rebuild_boundary_data(AdaptiveTessellation& m)
+void AdaptiveTessellationPairedEdgeCollapseOperation::rebuild_boundary_data(AdaptiveTessellation& m)
 {
     auto& collapse_op_cache = collapse_edge.m_op_cache.local();
     OpCache& op_cache = m_op_cache.local();
@@ -927,7 +898,7 @@ void AdaptiveTessellationPairedCollapseEdgeOperation::rebuild_boundary_data(Adap
         // ov1 ~ mv2, mv2 ~ ov1
     }
 }
-auto AdaptiveTessellationPairedCollapseEdgeOperation::modified_triangles(const TriMesh& m) const
+auto AdaptiveTessellationPairedEdgeCollapseOperation::modified_triangles(const TriMesh& m) const
     -> std::vector<Tuple>
 {
     const auto& at = static_cast<const AdaptiveTessellation&>(m);
@@ -945,7 +916,7 @@ auto AdaptiveTessellationPairedCollapseEdgeOperation::modified_triangles(const T
     return r;
     // return collapse_edge.modified_triangles(m);
 }
-auto AdaptiveTessellationCollapseEdgeOperation::modified_triangles(const TriMesh& m) const
+auto AdaptiveTessellationEdgeCollapseOperation::modified_triangles(const TriMesh& m) const
     -> std::vector<Tuple>
 {
     return TriMeshEdgeCollapseOperation::modified_triangles(m);

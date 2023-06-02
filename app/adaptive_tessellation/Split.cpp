@@ -69,19 +69,19 @@ double AdaptiveTessellation::get_quadrics_area_accuracy_error_for_split(
 template <typename Executor>
 void addPairedCustomOps(Executor& e)
 {
-    e.add_operation(std::make_shared<AdaptiveTessellationPairedSplitEdgeOperation>());
+    e.add_operation(std::make_shared<AdaptiveTessellationPairedEdgeSplitOperation>());
 }
 
 template <typename Executor>
 void addCustomOps(Executor& e)
 {
-    e.add_operation(std::make_shared<AdaptiveTessellationSplitEdgeOperation>());
+    e.add_operation(std::make_shared<AdaptiveTessellationEdgeSplitOperation>());
 }
 
-bool AdaptiveTessellationSplitEdgeOperation::before(AdaptiveTessellation& m, const Tuple& t)
+bool AdaptiveTessellationEdgeSplitOperation::before(AdaptiveTessellation& m, const Tuple& t)
 {
     auto& my_op_cache = op_cache.local();
-    if (wmtk::TriMeshSplitEdgeOperation::before(m, t)) {
+    if (wmtk::TriMeshEdgeSplitOperation::before(m, t)) {
         // check acceptance after the energy cache update
         std::vector<TriMesh::Tuple> input_tris;
         input_tris.emplace_back(t);
@@ -124,25 +124,18 @@ bool AdaptiveTessellationSplitEdgeOperation::before(AdaptiveTessellation& m, con
     return false;
 }
 
-TriMeshOperation::ExecuteReturnData AdaptiveTessellationSplitEdgeOperation::execute(
-    AdaptiveTessellation& m,
-    const Tuple& t)
+bool AdaptiveTessellationEdgeSplitOperation::execute(AdaptiveTessellation& m, const Tuple& t)
 {
     assert(m.check_mesh_connectivity_validity());
-    TriMeshSplitEdgeOperation::ExecuteReturnData ret_data =
-        TriMeshSplitEdgeOperation::execute(m, t);
-    return_edge_tuple = ret_data.tuple;
-
-    return ret_data;
+    return TriMeshEdgeSplitOperation::execute(m, t);
 }
 
-bool AdaptiveTessellationSplitEdgeOperation::after(
-    AdaptiveTessellation& m,
-    wmtk::TriMeshOperation::ExecuteReturnData& ret_data)
+bool AdaptiveTessellationEdgeSplitOperation::after(AdaptiveTessellation& m)
 {
     assert(bool(*this));
+    const auto return_edge_tuple = get_return_tuple_opt().value();
     const auto& my_op_cache = op_cache.local();
-    if (wmtk::TriMeshSplitEdgeOperation::after(m, ret_data)) {
+    if (wmtk::TriMeshEdgeSplitOperation::after(m)) {
         assert(bool(*this));
         const Eigen::Vector2d p =
             (m.vertex_attrs[my_op_cache.v1].pos + m.vertex_attrs[my_op_cache.v2].pos) / 2.0;
@@ -218,10 +211,10 @@ bool AdaptiveTessellationSplitEdgeOperation::after(
     m.update_energy_cache(modified_triangles(m));
 
 
-    return ret_data.success;
+    return true;
 }
 
-bool AdaptiveTessellationPairedSplitEdgeOperation::before(AdaptiveTessellation& m, const Tuple& t)
+bool AdaptiveTessellationPairedEdgeSplitOperation::before(AdaptiveTessellation& m, const Tuple& t)
 {
     static std::atomic_int g_cnt = 0;
     assert(t.is_valid(m));
@@ -286,7 +279,7 @@ bool AdaptiveTessellationPairedSplitEdgeOperation::before(AdaptiveTessellation& 
     return split_edge_success && split_mirror_edge_success;
 }
 
-wmtk::TriMeshOperation::ExecuteReturnData AdaptiveTessellationPairedSplitEdgeOperation::execute(
+bool AdaptiveTessellationPairedEdgeSplitOperation::execute(
     AdaptiveTessellation& m,
     const Tuple& t)
 {
@@ -294,31 +287,28 @@ wmtk::TriMeshOperation::ExecuteReturnData AdaptiveTessellationPairedSplitEdgeOpe
     bool old_t_is_boundary = m.is_boundary_edge(t) && (!old_t_is_seam);
     assert(m.check_mesh_connectivity_validity());
     assert(m.is_seam_edge(t) == mirror_edge_tuple.has_value());
-    TriMeshOperation::ExecuteReturnData ret_data = split_edge.execute(m, t);
-    if (!ret_data.success) return ret_data;
+    if (!split_edge.execute(m, t)) {
+        return false;
+    }
     assert(bool(split_edge));
-    split_edge.return_edge_tuple = ret_data.tuple;
-    assert(split_edge.return_edge_tuple.vid(m) == t.vid(m));
     if (old_t_is_seam) {
         // shouldn't asert here becuase the mirror edge of the mirror_edge_tuple is invalid now
         // assert(t.vid(m) == m.get_oriented_mirror_edge(mirror_edge_tuple.value()).vid(m));
-        TriMeshOperation::ExecuteReturnData mirror_ret_data =
-            mirror_split_edge.execute(m, mirror_edge_tuple.value());
-        if (!mirror_ret_data.success) return ret_data;
-        mirror_split_edge.return_edge_tuple = mirror_ret_data.tuple;
-        assert(mirror_split_edge.return_edge_tuple.vid(m) == mirror_edge_tuple.value().vid(m));
-        for (auto& nt : mirror_ret_data.new_tris) ret_data.new_tris.emplace_back(nt);
-        assert(ret_data.success && mirror_ret_data.success);
+        if (!mirror_split_edge.execute(m, mirror_edge_tuple.value())) {
+            return false;
+        }
     }
     /////===== populate the after sibling edges for easy update in after =====/////
     // edge naming referring to the ascii in .h file
 
+    const auto return_edge_tuple = split_edge.get_return_tuple_opt().value();
+    const auto mirror_return_edge_tuple = mirror_split_edge.get_return_tuple_opt().value();
     paired_op_cache.local().after_sibling_edges.resize(0);
     // 0'
-    assert(t.vid(m) == split_edge.return_edge_tuple.vid(m));
-    paired_op_cache.local().after_sibling_edges.emplace_back(split_edge.return_edge_tuple);
+    assert(t.vid(m) == return_edge_tuple.vid(m));
+    paired_op_cache.local().after_sibling_edges.emplace_back(return_edge_tuple);
     // 1'
-    auto edge_1_prime = split_edge.return_edge_tuple.switch_vertex(m)
+    auto edge_1_prime = return_edge_tuple.switch_vertex(m)
                             .switch_edge(m)
                             .switch_face(m)
                             .value()
@@ -327,40 +317,36 @@ wmtk::TriMeshOperation::ExecuteReturnData AdaptiveTessellationPairedSplitEdgeOpe
                             .switch_edge(m);
     assert(edge_1_prime.is_valid(m));
     assert(
-        split_edge.return_edge_tuple.switch_edge(m).switch_vertex(m).vid(m) ==
+        return_edge_tuple.switch_edge(m).switch_vertex(m).vid(m) ==
         edge_1_prime.switch_vertex(m).vid(m));
     paired_op_cache.local().after_sibling_edges.emplace_back(edge_1_prime);
     // 2'
-    auto edge_2_prime = split_edge.return_edge_tuple.switch_edge(m).switch_vertex(m);
+    auto edge_2_prime = return_edge_tuple.switch_edge(m).switch_vertex(m);
     assert(edge_2_prime.is_valid(m));
-    assert(edge_2_prime.switch_vertex(m).vid(m) == split_edge.return_edge_tuple.vid(m));
+    assert(edge_2_prime.switch_vertex(m).vid(m) == return_edge_tuple.vid(m));
     paired_op_cache.local().after_sibling_edges.emplace_back(edge_2_prime);
     // 6
-    auto edge_6 = split_edge.return_edge_tuple.switch_vertex(m)
-                      .switch_edge(m)
-                      .switch_face(m)
-                      .value()
-                      .switch_edge(m);
+    auto edge_6 =
+        return_edge_tuple.switch_vertex(m).switch_edge(m).switch_face(m).value().switch_edge(m);
     assert(edge_6.is_valid(m));
-    assert(edge_6.vid(m) == split_edge.return_edge_tuple.switch_vertex(m).vid(m));
+    assert(edge_6.vid(m) == return_edge_tuple.switch_vertex(m).vid(m));
     // old t is boundary edge but not seam
     if (old_t_is_boundary) {
         assert(!mirror_edge_tuple.has_value());
         paired_op_cache.local().after_sibling_edges.emplace_back(edge_6);
         assert(edge_6.is_valid(m));
         assert(paired_op_cache.local().after_sibling_edges.size() == 4);
-        return ret_data;
+        return true;
     }
     // old t is mirror edge
     if (old_t_is_seam) {
         assert(mirror_edge_tuple.has_value());
         // 3'
-        assert(mirror_split_edge.return_edge_tuple.vid(m) == mirror_edge_tuple.value().vid(m));
-        assert(mirror_split_edge.return_edge_tuple.is_valid(m));
-        paired_op_cache.local().after_sibling_edges.emplace_back(
-            mirror_split_edge.return_edge_tuple);
+        assert(mirror_return_edge_tuple.vid(m) == mirror_edge_tuple.value().vid(m));
+        assert(mirror_return_edge_tuple.is_valid(m));
+        paired_op_cache.local().after_sibling_edges.emplace_back(mirror_return_edge_tuple);
         // 4'
-        auto edge_4_prime = mirror_split_edge.return_edge_tuple.switch_vertex(m)
+        auto edge_4_prime = mirror_return_edge_tuple.switch_vertex(m)
                                 .switch_edge(m)
                                 .switch_face(m)
                                 .value()
@@ -370,27 +356,27 @@ wmtk::TriMeshOperation::ExecuteReturnData AdaptiveTessellationPairedSplitEdgeOpe
         assert(edge_4_prime.is_valid(m));
         assert(
             edge_4_prime.switch_vertex(m).vid(m) ==
-            mirror_split_edge.return_edge_tuple.switch_edge(m).switch_vertex(m).vid(m));
+            mirror_return_edge_tuple.switch_edge(m).switch_vertex(m).vid(m));
         paired_op_cache.local().after_sibling_edges.emplace_back(edge_4_prime);
         // 5'
-        auto edge_5_prime = mirror_split_edge.return_edge_tuple.switch_edge(m).switch_vertex(m);
+        auto edge_5_prime = mirror_return_edge_tuple.switch_edge(m).switch_vertex(m);
         assert(edge_5_prime.is_valid(m));
-        assert(edge_5_prime.switch_vertex(m).vid(m) == mirror_split_edge.return_edge_tuple.vid(m));
+        assert(edge_5_prime.switch_vertex(m).vid(m) == mirror_return_edge_tuple.vid(m));
         paired_op_cache.local().after_sibling_edges.emplace_back(edge_5_prime);
         // 6
         assert(edge_6.is_valid(m));
         paired_op_cache.local().after_sibling_edges.emplace_back(edge_6);
         // 7
-        auto edge_7 = mirror_split_edge.return_edge_tuple.switch_vertex(m)
+        auto edge_7 = mirror_return_edge_tuple.switch_vertex(m)
                           .switch_edge(m)
                           .switch_face(m)
                           .value()
                           .switch_edge(m);
         assert(edge_7.is_valid(m));
-        assert(edge_7.vid(m) == mirror_split_edge.return_edge_tuple.switch_vertex(m).vid(m));
+        assert(edge_7.vid(m) == mirror_return_edge_tuple.switch_vertex(m).vid(m));
         paired_op_cache.local().after_sibling_edges.emplace_back(edge_7);
         assert(paired_op_cache.local().after_sibling_edges.size() == 8);
-        return ret_data;
+        return true;
     }
     // old t is interior edge
     else {
@@ -399,9 +385,7 @@ wmtk::TriMeshOperation::ExecuteReturnData AdaptiveTessellationPairedSplitEdgeOpe
         // 3'
         auto edge_3_prime = edge_6.switch_face(m).value().switch_vertex(m);
         assert(edge_3_prime.is_valid(m));
-        assert(
-            edge_3_prime.switch_vertex(m).vid(m) ==
-            split_edge.return_edge_tuple.switch_vertex(m).vid(m));
+        assert(edge_3_prime.switch_vertex(m).vid(m) == return_edge_tuple.switch_vertex(m).vid(m));
         paired_op_cache.local().after_sibling_edges.emplace_back(edge_3_prime);
         // 4'
         auto edge_4_prime = edge_3_prime.switch_vertex(m)
@@ -412,75 +396,69 @@ wmtk::TriMeshOperation::ExecuteReturnData AdaptiveTessellationPairedSplitEdgeOpe
                                 .switch_vertex(m)
                                 .switch_edge(m);
         assert(edge_4_prime.is_valid(m));
-        assert(edge_4_prime.vid(m) == split_edge.return_edge_tuple.vid(m));
+        assert(edge_4_prime.vid(m) == return_edge_tuple.vid(m));
         paired_op_cache.local().after_sibling_edges.emplace_back(edge_4_prime);
         // 5'
         auto edge_5_prime = edge_3_prime.switch_edge(m).switch_vertex(m);
         assert(edge_5_prime.is_valid(m));
         assert(
             edge_5_prime.switch_edge(m).switch_vertex(m).vid(m) ==
-            split_edge.return_edge_tuple.switch_vertex(m).vid(m));
+            return_edge_tuple.switch_vertex(m).vid(m));
         paired_op_cache.local().after_sibling_edges.emplace_back(edge_5_prime);
         // 6
         assert(edge_6.is_valid(m));
         paired_op_cache.local().after_sibling_edges.emplace_back(edge_6);
         // 7
-        auto edge_7 = split_edge.return_edge_tuple.switch_face(m).value().switch_vertex(m);
+        auto edge_7 = return_edge_tuple.switch_face(m).value().switch_vertex(m);
         assert(edge_7.is_valid(m));
-        assert(edge_7.switch_vertex(m).vid(m) == split_edge.return_edge_tuple.vid(m));
+        assert(edge_7.switch_vertex(m).vid(m) == return_edge_tuple.vid(m));
         paired_op_cache.local().after_sibling_edges.emplace_back(edge_7);
         assert(paired_op_cache.local().after_sibling_edges.size() == 8);
     }
-    return ret_data;
+    return true;
 }
 
-bool AdaptiveTessellationPairedSplitEdgeOperation::after(
-    AdaptiveTessellation& m,
-    wmtk::TriMeshOperation::ExecuteReturnData& ret_data)
+bool AdaptiveTessellationPairedEdgeSplitOperation::after(AdaptiveTessellation& m)
 {
     assert(bool(split_edge));
-    if (!split_edge.after(m, ret_data)) return false;
+    if (!split_edge.after(m)) return false;
 
+    const auto return_edge_tuple = split_edge.get_return_tuple_opt().value();
     // if (!ret_data.success) return false;
     // nullify the inside edges old mirror info
-    m.face_attrs[split_edge.return_edge_tuple.switch_vertex(m).switch_edge(m).fid(m)]
-        .mirror_edges[split_edge.return_edge_tuple.switch_vertex(m).switch_edge(m).local_eid(m)] =
+    m.face_attrs[return_edge_tuple.switch_vertex(m).switch_edge(m).fid(m)]
+        .mirror_edges[return_edge_tuple.switch_vertex(m).switch_edge(m).local_eid(m)] =
         std::nullopt;
-    m.face_attrs
-        [split_edge.return_edge_tuple.switch_vertex(m).switch_edge(m).switch_face(m).value().fid(m)]
-            .mirror_edges[split_edge.return_edge_tuple.switch_vertex(m)
-                              .switch_edge(m)
-                              .switch_face(m)
-                              .value()
-                              .local_eid(m)] = std::nullopt;
+    m.face_attrs[return_edge_tuple.switch_vertex(m).switch_edge(m).switch_face(m).value().fid(m)]
+        .mirror_edges
+            [return_edge_tuple.switch_vertex(m).switch_edge(m).switch_face(m).value().local_eid(
+                m)] = std::nullopt;
 
     // old t is seam edge
     if (mirror_edge_tuple.has_value()) {
         assert(paired_op_cache.local().before_sibling_edges.size() == 6);
         assert(paired_op_cache.local().after_sibling_edges.size() == 8);
-        ret_data.success &=
-            mirror_split_edge.after(m, ret_data); // after doesn't use contents of ret_data
+        if (!mirror_split_edge.after(m)) // after doesn't use contents of ret_data
+        {
+            return false;
+        }
         // enforce the mirror_split_edge t to be the same as the primary t
-        m.vertex_attrs[mirror_split_edge.return_edge_tuple.vid(m)].t =
-            m.vertex_attrs[split_edge.return_edge_tuple.vid(m)].t;
+    const auto mirror_return_edge_tuple = mirror_split_edge.get_return_tuple_opt().value();
+        m.vertex_attrs[mirror_return_edge_tuple.vid(m)].t =
+            m.vertex_attrs[return_edge_tuple.vid(m)].t;
         // now do the sibling edge tranfering
-        if (!ret_data.success) return false;
         // it's a seam edge update mirror edge data using the sibling edges
         // edge naming referring to the ascii in .h file
         assert(paired_op_cache.local().after_sibling_edges[7].is_valid(m));
         assert(paired_op_cache.local().after_sibling_edges[6].is_valid(m));
+        m.set_mirror_edge_data(return_edge_tuple, paired_op_cache.local().after_sibling_edges[7]);
+        m.set_mirror_edge_data(paired_op_cache.local().after_sibling_edges[7], return_edge_tuple);
         m.set_mirror_edge_data(
-            split_edge.return_edge_tuple,
-            paired_op_cache.local().after_sibling_edges[7]);
-        m.set_mirror_edge_data(
-            paired_op_cache.local().after_sibling_edges[7],
-            split_edge.return_edge_tuple);
-        m.set_mirror_edge_data(
-            mirror_split_edge.return_edge_tuple,
+            mirror_return_edge_tuple,
             paired_op_cache.local().after_sibling_edges[6]);
         m.set_mirror_edge_data(
             paired_op_cache.local().after_sibling_edges[6],
-            mirror_split_edge.return_edge_tuple);
+            mirror_return_edge_tuple);
     }
 
     // now we update 1_prime, 2_prime, s1, s2 mirror data if they are seam edges
@@ -511,7 +489,7 @@ bool AdaptiveTessellationPairedSplitEdgeOperation::after(
 
     // now we update 4_prime, 5_prime, s4, s5 mirror data if s4, s5 exist and if they are seam
     // edges
-    if (paired_op_cache.local().before_sibling_edges.size() == 3) return ret_data.success;
+    if (paired_op_cache.local().before_sibling_edges.size() == 3) return true;
     assert(paired_op_cache.local().before_sibling_edges.size() == 6);
     assert(paired_op_cache.local().after_sibling_edges.size() == 8);
     if (paired_op_cache.local().before_sibling_edges[4].has_value() &&
@@ -554,7 +532,7 @@ bool AdaptiveTessellationPairedSplitEdgeOperation::after(
                           .switch_vertex(m)
                           .local_eid(m)] = std::nullopt;
 
-    return ret_data.success;
+    return true;
 }
 
 void AdaptiveTessellation::split_all_edges()
@@ -683,15 +661,15 @@ bool AdaptiveTessellation::split_edge_after(const Tuple& edge_tuple) // not used
     success_cnt++;
     return true;
 }
-void AdaptiveTessellationPairedSplitEdgeOperation::mark_failed()
+void AdaptiveTessellationPairedEdgeSplitOperation::mark_failed()
 {
     split_edge.mark_failed();
     mirror_split_edge.mark_failed();
 }
-auto AdaptiveTessellationSplitEdgeOperation::modified_triangles(const TriMesh& m) const
+auto AdaptiveTessellationEdgeSplitOperation::modified_triangles(const TriMesh& m) const
     -> std::vector<Tuple>
 {
-    return TriMeshSplitEdgeOperation::modified_triangles(m);
+    return TriMeshEdgeSplitOperation::modified_triangles(m);
     // const auto& at  = static_cast<const AdaptiveTessellation&>(m);
     // if (!bool(*this)) {
     //     return {};
@@ -702,7 +680,7 @@ auto AdaptiveTessellationSplitEdgeOperation::modified_triangles(const TriMesh& m
     // return at.get_one_ring_tris_accross_seams_for_vertex(new_v);
 }
 
-auto AdaptiveTessellationPairedSplitEdgeOperation::modified_triangles(const TriMesh& m) const
+auto AdaptiveTessellationPairedEdgeSplitOperation::modified_triangles(const TriMesh& m) const
     -> std::vector<Tuple>
 {
     const auto& at = static_cast<const AdaptiveTessellation&>(m);

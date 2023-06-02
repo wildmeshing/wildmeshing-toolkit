@@ -1,5 +1,7 @@
 #pragma once
 #include <igl/Timer.h>
+#include <wmtk/operations/TriMeshVertexSmoothOperation.h>
+#include <wmtk/operations/TriMeshOperationShim.hpp>
 #include <wmtk/utils/AMIPS2D.h>
 #include <wmtk/utils/Energy2dOptimizationUtils.h>
 #include <wmtk/utils/ScalarUtils.h>
@@ -16,15 +18,15 @@
 using namespace adaptive_tessellation;
 using namespace wmtk;
 
-class AdaptiveTessellationSmoothVertexOperation : public wmtk::TriMeshOperationShim<
+class AdaptiveTessellationVertexSmoothOperation : public wmtk::TriMeshOperationShim<
                                                       AdaptiveTessellation,
-                                                      AdaptiveTessellationSmoothVertexOperation,
-                                                      wmtk::TriMeshSmoothVertexOperation>
+                                                      AdaptiveTessellationVertexSmoothOperation,
+                                                      wmtk::TriMeshVertexSmoothOperation>
 {
 public:
-    ExecuteReturnData execute(AdaptiveTessellation& m, const Tuple& t);
+    bool execute(AdaptiveTessellation& m, const Tuple& t);
     bool before(AdaptiveTessellation& m, const Tuple& t);
-    bool after(AdaptiveTessellation& m, ExecuteReturnData& ret_data);
+    bool after(AdaptiveTessellation& m);
     std::vector<Tuple> modified_triangles(const TriMesh&) const override;
 };
 
@@ -33,11 +35,11 @@ class AdaptiveTessellationSmoothSeamVertexOperation
     : public wmtk::TriMeshOperationShim<
           AdaptiveTessellation,
           AdaptiveTessellationSmoothSeamVertexOperation,
-          wmtk::TriMeshSmoothVertexOperation>
+          wmtk::TriMeshVertexSmoothOperation>
 {
 public:
-    ExecuteReturnData execute(AdaptiveTessellation& m, const Tuple& t);
+    bool execute(AdaptiveTessellation& m, const Tuple& t);
     bool before(AdaptiveTessellation& m, const Tuple& t);
-    bool after(AdaptiveTessellation& m, ExecuteReturnData& ret_data);
+    bool after(AdaptiveTessellation& m);
     std::vector<Tuple> modified_triangles(const TriMesh&) const override;
 };

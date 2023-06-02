@@ -12,15 +12,17 @@
 #include <wmtk/utils/TupleUtils.hpp>
 #include "AdaptiveTessellation.h"
 #include "wmtk/ExecutionScheduler.hpp"
+#include <wmtk/operations/TriMeshOperationShim.hpp>
+#include <wmtk/operations/TriMeshEdgeCollapseOperation.h>
 
 namespace adaptive_tessellation {
 
 
-// CollapseEdgeOperation stores some details on the collapse that it occurred and fixing seams on
+// EdgeCollapseOperation stores some details on the collapse that it occurred and fixing seams on
 // JUST the result of merging two edges (i.e the attributes of
 // v_new <-> v_top and v_new <-> v_bot)
 //
-// CollapseEdgePairOperation is responsible for updating all other edges
+// EdgeCollapsePairOperation is responsible for updating all other edges
 //
 
 // seam cases:
@@ -38,9 +40,9 @@ namespace adaptive_tessellation {
 // one end was a or b (F)
 // - b has attributes that need to be updated
 
-class AdaptiveTessellationCollapseEdgeOperation : public wmtk::TriMeshOperationShim<
+class AdaptiveTessellationEdgeCollapseOperation : public wmtk::TriMeshOperationShim<
                                                       AdaptiveTessellation,
-                                                      AdaptiveTessellationCollapseEdgeOperation,
+                                                      AdaptiveTessellationEdgeCollapseOperation,
                                                       wmtk::TriMeshEdgeCollapseOperation>
 {
 public:
@@ -60,7 +62,7 @@ public:
     //
 
 
-    friend class AdaptiveTessellationPairedCollapseEdgeOperation;
+    friend class AdaptiveTessellationPairedEdgeCollapseOperation;
     struct SeamData
     {
         // Note that if we know that this is a radial edge we populate both with the same value
@@ -122,7 +124,7 @@ public:
 
 
 public:
-    ExecuteReturnData execute(AdaptiveTessellation& m, const Tuple& t);
+    bool execute(AdaptiveTessellation& m, const Tuple& t);
     bool before(AdaptiveTessellation& m, const Tuple& t);
     bool check_vertex_mergeability(const AdaptiveTessellation& m, const Tuple& t) const;
     bool check_edge_mergeability(const AdaptiveTessellation& m, const Tuple& t) const;
@@ -134,7 +136,6 @@ public:
         const AdaptiveTessellation& m,
         const Tuple& t) const;
 
-    bool after(AdaptiveTessellation& m, ExecuteReturnData& ret_data);
     bool after(AdaptiveTessellation& m);
     std::vector<Tuple> modified_triangles(const TriMesh& m) const;
 
@@ -157,17 +158,17 @@ public:
         const std::optional<Tuple>& new_mirror_vertex_opt) const;
 };
 
-class AdaptiveTessellationPairedCollapseEdgeOperation
+class AdaptiveTessellationPairedEdgeCollapseOperation
     : public wmtk::TriMeshOperationShim<
           AdaptiveTessellation,
-          AdaptiveTessellationPairedCollapseEdgeOperation,
+          AdaptiveTessellationPairedEdgeCollapseOperation,
           wmtk::TriMeshOperation>
 {
 public:
-    AdaptiveTessellationCollapseEdgeOperation collapse_edge;
-    AdaptiveTessellationCollapseEdgeOperation collapse_mirror_edge;
+    AdaptiveTessellationEdgeCollapseOperation collapse_edge;
+    AdaptiveTessellationEdgeCollapseOperation collapse_mirror_edge;
     std::string name() const override { return collapse_edge.name(); }
-    struct SeamData : public AdaptiveTessellationCollapseEdgeOperation::SeamData
+    struct SeamData : public AdaptiveTessellationEdgeCollapseOperation::SeamData
     {
         size_t fid;
     };
@@ -200,9 +201,8 @@ public:
     // std::vector<Tuple> modified_triangles(const TriMesh& m);
 
 public:
-    ExecuteReturnData execute(AdaptiveTessellation& m, const Tuple& t);
+    bool execute(AdaptiveTessellation& m, const Tuple& t);
     bool before(AdaptiveTessellation& m, const Tuple& t);
-    bool after(AdaptiveTessellation& m, ExecuteReturnData& ret_data);
     bool after(AdaptiveTessellation& m);
     std::vector<Tuple> modified_triangles(const TriMesh& m) const;
 

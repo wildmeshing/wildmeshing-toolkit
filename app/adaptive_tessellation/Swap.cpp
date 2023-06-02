@@ -16,8 +16,8 @@
 using namespace adaptive_tessellation;
 using namespace wmtk;
 
-AdaptiveTessellationSwapEdgeOperation::AdaptiveTessellationSwapEdgeOperation() = default;
-AdaptiveTessellationSwapEdgeOperation::~AdaptiveTessellationSwapEdgeOperation() = default;
+AdaptiveTessellationEdgeSwapOperation::AdaptiveTessellationEdgeSwapOperation() = default;
+AdaptiveTessellationEdgeSwapOperation::~AdaptiveTessellationEdgeSwapOperation() = default;
 bool AdaptiveTessellation::simulate_swap_is_degenerate(
     const TriMesh::Tuple& e,
     std::array<std::array<float, 6>, 2>& modified_tris) const
@@ -59,12 +59,11 @@ bool AdaptiveTessellation::simulate_swap_is_degenerate(
     }
     return false;
 }
-auto AdaptiveTessellationSwapEdgeOperation::execute(AdaptiveTessellation& m, const Tuple& t)
-    -> ExecuteReturnData
+bool AdaptiveTessellationEdgeSwapOperation::execute(AdaptiveTessellation& m, const Tuple& t)
 {
-    return wmtk::TriMeshSwapEdgeOperation::execute(m, t);
+    return wmtk::TriMeshEdgeSwapOperation::execute(m, t);
 }
-bool AdaptiveTessellationSwapEdgeOperation::before(AdaptiveTessellation& m, const Tuple& t)
+bool AdaptiveTessellationEdgeSwapOperation::before(AdaptiveTessellation& m, const Tuple& t)
 {
     static std::atomic_int cnt = 0;
     assert(t.is_valid(m));
@@ -93,7 +92,7 @@ bool AdaptiveTessellationSwapEdgeOperation::before(AdaptiveTessellation& m, cons
         }
     }
 
-    if (wmtk::TriMeshSwapEdgeOperation::before(m, t)) {
+    if (wmtk::TriMeshEdgeSwapOperation::before(m, t)) {
         // wmtk::logger().info("swap {}", cnt);
 
         // if (!m.mesh_parameters.m_do_not_output) {
@@ -106,11 +105,10 @@ bool AdaptiveTessellationSwapEdgeOperation::before(AdaptiveTessellation& m, cons
     }
     return false;
 }
-bool AdaptiveTessellationSwapEdgeOperation::after(
-    AdaptiveTessellation& m,
-    ExecuteReturnData& ret_data)
+bool AdaptiveTessellationEdgeSwapOperation::after(
+    AdaptiveTessellation& m)
 {
-    if (wmtk::TriMeshSwapEdgeOperation::after(m, ret_data)) {
+    if (wmtk::TriMeshEdgeSwapOperation::after(m)) {
         const auto mod_tups = modified_triangles(m);
         const auto& tri_con = tri_connectivity(m);
 
@@ -173,10 +171,9 @@ bool AdaptiveTessellationSwapEdgeOperation::after(
 
         std::vector<std::array<float, 6>> modified_tris_uv(mod_tups.size());
         if (!m.update_energy_cache(mod_tups)) {
-            ret_data.success = false;
             return false;
         }
-        return ret_data;
+        return true;
     }
 }
 
@@ -184,7 +181,7 @@ bool AdaptiveTessellationSwapEdgeOperation::after(
 template <typename Executor>
 void addCustomOps(Executor& e)
 {
-    e.add_operation(std::make_shared<AdaptiveTessellationSwapEdgeOperation>());
+    e.add_operation(std::make_shared<AdaptiveTessellationEdgeSwapOperation>());
 }
 
 
@@ -558,10 +555,10 @@ bool AdaptiveTessellation::swap_edge_after([[maybe_unused]] const Tuple& t)
     // }
     return true;
 }
-auto AdaptiveTessellationSwapEdgeOperation::modified_triangles(const TriMesh& m) const
+auto AdaptiveTessellationEdgeSwapOperation::modified_triangles(const TriMesh& m) const
     -> std::vector<Tuple>
 {
-    // return TriMeshSwapEdgeOperation::modified_triangles(m);
+    // return TriMeshEdgeSwapOperation::modified_triangles(m);
     const auto& at = static_cast<const AdaptiveTessellation&>(m);
     std::optional<Tuple> new_tuple_opt = get_return_tuple_opt();
     if (!new_tuple_opt.has_value()) {
