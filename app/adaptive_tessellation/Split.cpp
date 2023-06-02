@@ -304,7 +304,6 @@ bool AdaptiveTessellationPairedEdgeSplitOperation::execute(AdaptiveTessellation&
     // edge naming referring to the ascii in .h file
 
     const auto return_edge_tuple = split_edge.get_return_tuple_opt().value();
-    const auto mirror_return_edge_tuple = mirror_split_edge.get_return_tuple_opt().value();
     paired_op_cache.local().after_sibling_edges.resize(0);
     // 0'
     assert(t.vid(m) == return_edge_tuple.vid(m));
@@ -342,6 +341,7 @@ bool AdaptiveTessellationPairedEdgeSplitOperation::execute(AdaptiveTessellation&
     }
     // old t is mirror edge
     if (old_t_is_seam) {
+        const auto mirror_return_edge_tuple = mirror_split_edge.get_return_tuple_opt().value();
         assert(mirror_edge_tuple.has_value());
         // 3'
         assert(mirror_return_edge_tuple.vid(m) == mirror_edge_tuple.value().vid(m));

@@ -79,10 +79,9 @@ void AdaptiveTessellation::mesh_preprocessing(
     wmtk::TriMesh m_3d;
     std::vector<std::array<size_t, 3>> tris;
     for (auto f = 0; f < input_F_.rows(); f++) {
-        std::array<size_t, 3> tri = {
-            (size_t)input_F_(f, 0),
-            (size_t)input_F_(f, 1),
-            (size_t)input_F_(f, 2)};
+        std::array<size_t, 3> tri = {(size_t)input_F_(f, 0),
+                                     (size_t)input_F_(f, 1),
+                                     (size_t)input_F_(f, 2)};
         tris.emplace_back(tri);
     }
     m_3d.create_mesh(input_V_.rows(), tris);
@@ -816,7 +815,7 @@ bool AdaptiveTessellation::invariants(const TriMeshOperation& op)
         return false;
     }
     const auto mod_tris = op.modified_triangles(*this);
-return invariants(mod_tris);
+    return invariants(mod_tris);
 }
 
 bool AdaptiveTessellation::invariants(const std::vector<TriMeshTuple>& mod_tris)
@@ -1251,8 +1250,6 @@ void AdaptiveTessellation::get_nminfo_for_vertex(const Tuple& v, wmtk::NewtonMet
             if (local_tuples[j].vid(*this) == v.vid(*this)) {
                 const Eigen::Vector2d& v2 = vertex_attrs[local_tuples[(j + 1) % 3].vid(*this)].pos;
                 const Eigen::Vector2d& v3 = vertex_attrs[local_tuples[(j + 2) % 3].vid(*this)].pos;
-                wmtk::logger().info("   v {}", vertex_attrs[v.vid(*this)].pos);
-                wmtk::logger().info("   v2 {} v3 {}", v2, v3);
                 nminfo.neighbors.row(i) << v2(0), v2(1), v3(0), v3(1);
                 assert(!is_inverted_coordinates(v2, v3, vertex_attrs[v.vid(*this)].pos));
                 // sanity check. Should not be inverted

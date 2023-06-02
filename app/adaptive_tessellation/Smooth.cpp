@@ -210,7 +210,6 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::after(AdaptiveTessellation& 
     //         std::to_string(
     //             lagrange::timestamp_diff_in_seconds(smooth_start_time, smooth_end_time))}}}});
     cnt++;
-    wmtk::logger().info("smoothing {}", cnt);
 
 
     return true;
@@ -240,7 +239,6 @@ bool adaptive_tessellation::AdaptiveTessellation::smooth_after(const Tuple& t)
 {
     throw std::runtime_error("outdated smooth should not be used");
     static std::atomic_int cnt = 0;
-    wmtk::logger().info("smothing op # {}", cnt);
     // Newton iterations are encapsulated here.
     auto vid = t.vid(*this);
     auto locs = get_one_ring_tris_for_vertex(t);
@@ -324,12 +322,7 @@ bool adaptive_tessellation::AdaptiveTessellation::smooth_after(const Tuple& t)
     if (!vertex_attrs[t.vid(*this)].fixed) {
         mesh_parameters.m_gradient += energy_gradient.second;
     }
-    wmtk::logger().debug(
-        "smoothing vertex {} before energy {} after energy {} gradient {}",
-        vid,
-        before_energy,
-        after_energy,
-        energy_gradient.second);
+
     assert(invariants(locs));
     cnt++;
     return true;
