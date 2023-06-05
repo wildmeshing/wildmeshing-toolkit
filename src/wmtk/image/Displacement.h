@@ -102,36 +102,31 @@ public:
         if (pixel_num <= 0) return T(0.);
         assert(pixel_num > 0);
         T error = T(0.0);
-        auto norm_T = [&](const Eigen::Matrix<T, Eigen::Dynamic, 1>& row_v) -> T {
-            T ret = T(0.);
-            for (auto i = 0; i < row_v.rows(); i++) {
-                ret += pow(row_v(i, 0), 2);
-            }
-            return sqrt(ret);
+        auto lerp = [](const auto& a, const auto& b, const T& t) {
+            return (1.-t) * a + t * b;
         };
         for (int i = 0; i < pixel_num; i++) {
             const auto r0 = T(i) / pixel_num;
             const auto r1 = T(i + 1) / pixel_num;
-            Eigen::Matrix<T, 2, 1> pixel_uv1 = uv1 * (1. - r0) + uv2 * r0;
-            Eigen::Matrix<T, 2, 1> pixel_uv2 = uv1 * (1. - r1) + uv2 * r1;
-            Eigen::Matrix<T, 3, 1> pixel_p1 = p1_displaced * (1. - r0) + p2_displaced * r0;
-            Eigen::Matrix<T, 3, 1> pixel_p2 = p1_displaced * (1. - r1) + p2_displaced * r1;
+            Eigen::Matrix<T, 2, 1> pixel_uv1 = lerp(uv1,uv2,r0);
+            Eigen::Matrix<T, 2, 1> pixel_uv2 = lerp(uv1,uv2,r1);
+            Eigen::Matrix<T, 3, 1> pixel_p1 = lerp(p1_displaced,p2_displaced,r0);
+            Eigen::Matrix<T, 3, 1> pixel_p2 = lerp(p1_displaced,p2_displaced,r1);
             wmtk::LineQuadrature quad;
             quad.get_quadrature(order);
 
             T unweighted_error = T(0.0);
             for (int j = 0; j < quad.points.rows(); j++) {
-                Eigen::Matrix<T, 2, 1> tmpuv =
-                    T(1 - quad.points(j, 0)) * pixel_uv1 + T(quad.points(j, 0)) * pixel_uv2;
+                const T t = T(quad.points(j,0));
+                Eigen::Matrix<T, 2, 1> tmpuv = lerp(pixel_uv1,pixel_uv2, t);
                 Eigen::Matrix<T, 3, 1> tmpp_displaced = get(tmpuv(0), tmpuv(1));
 
-                Eigen::Matrix<T, 3, 1> tmpp_tri =
-                    T(1 - quad.points(j, 0)) * pixel_p1 + T(quad.points(j, 0)) * pixel_p2;
+                Eigen::Matrix<T, 3, 1> tmpp_tri = lerp(pixel_p1,pixel_p2,t);
                 Eigen::Matrix<T, 3, 1> diffp = tmpp_tri - tmpp_displaced;
-                unweighted_error += T(quad.weights(j)) * norm_T(diffp);
+                unweighted_error += T(quad.weights(j)) *diffp.norm();
             }
             auto diffuv = pixel_uv1 - pixel_uv2;
-            error += unweighted_error * norm_T(diffuv);
+            error += unweighted_error * diffuv.norm();
         }
         assert(error >= 0);
         return error;
@@ -164,9 +159,6 @@ public:
 
         lagrange::enable_fpe();
 
-        Eigen::Matrix<T, 3, 1> p1 = get(triangle(0, 0), triangle(0, 1));
-        Eigen::Matrix<T, 3, 1> p2 = get(triangle(1, 0), triangle(1, 1));
-        Eigen::Matrix<T, 3, 1> p3 = get(triangle(2, 0), triangle(2, 1));
         Eigen::AlignedBox2d bbox;
         Eigen::Matrix<double, 3, 2, 1> triangle_double;
         for (auto i = 0; i < 3; i++) {
@@ -175,59 +167,59 @@ public:
             triangle_double.row(i) << p_double(0), p_double(1);
             bbox.extend(p_double);
         }
-        auto squared_norm_T = [&](const Eigen::Matrix<T, 3, 1>& row_v) -> T {
-            T ret = T(0.);
-            for (int i = 0; i < row_v.rows(); i++) {
-                ret += pow(row_v(i, 0), 2);
-            }
-            return ret;
-        };
-        auto bbox_min = bbox.min();
-        auto bbox_max = bbox.max();
-        auto [xx1, yy1] = get_coordinate(bbox_min(0), bbox_min(1));
-        auto [xx2, yy2] = get_coordinate(bbox_max(0), bbox_max(1));
-        auto num_pixels = std::max(abs(xx2 - xx1), abs(yy2 - yy1)) + 1;
+        const auto bbox_min = bbox.min();
+        const auto bbox_max = bbox.max();
+        const auto [xx1, yy1] = get_coordinate(bbox_min(0), bbox_min(1));
+        const auto [xx2, yy2] = get_coordinate(bbox_max(0), bbox_max(1));
+        const int num_pixels = std::max(abs(xx2 - xx1), abs(yy2 - yy1)) + 1;
         assert(num_pixels > 0);
         const double pixel_size = bbox.diagonal().maxCoeff() / num_pixels;
 
+        auto vol = [](const auto& a, const auto& b) -> T{
+            return a.x() * b.y() - b.x() * a.y();
+
+            //return d1.homogeneous().cross(d2.homogeneous()).z();
+        };
         // calculate the barycentric coordinate of the a point using u, v cooridnates
         // returns the 3d coordinate on the current mesh
-        auto get_p_tri = [&](const T& u, const T& v) -> Eigen::Matrix<T, 3, 1> {
+        auto get_p_tri = [&](const auto& p) -> Eigen::Matrix<T, 3, 1> {
             /*
             λ1 = ((v2 - v3)(u - u3) + (u3 - u2)(v - v3)) / ((v2 - v3)(u1 - u3) + (u3 - u2)(v1 - v3))
             λ2 = ((v3 - v1)(u - u3) + (u1 - u3)(v - v3)) / ((v2 - v3)(u1 - u3) + (u3 - u2)(v1 - v3))
             λ3 = 1 - λ1 - λ2
             z = λ1 * z1 + λ2 * z2 + λ3 * z3
             */
-            auto u1 = triangle(0, 0);
-            auto v1 = triangle(0, 1);
-            auto u2 = triangle(1, 0);
-            auto v2 = triangle(1, 1);
-            auto u3 = triangle(2, 0);
-            auto v3 = triangle(2, 1);
+            auto p1 = triangle.row(0);
+            auto p2 = triangle.row(1);
+            auto p3 = triangle.row(2);
+            auto d23 = p2 - p3;
+            auto d13 = p1 - p3;
+            auto dp3 = p - p3;
 
-            auto lambda1 = ((v2 - v3) * (u - u3) + (u3 - u2) * (v - v3)) /
-                           ((v2 - v3) * (u1 - u3) + (u3 - u2) * (v1 - v3));
-            auto lambda2 = ((v3 - v1) * (u - u3) + (u1 - u3) * (v - v3)) /
-                           ((v2 - v3) * (u1 - u3) + (u3 - u2) * (v1 - v3));
-            auto lambda3 = 1 - lambda1 - lambda2;
-            Eigen::Matrix<T, 3, 1> p_tri = (lambda1 * p1 + lambda2 * p2 + lambda3 * p3);
+            T v = vol(d13,d23);
+
+            Eigen::Matrix<T,3,1> p_tri;
+
+            p_tri.x() = vol(dp3,d23) / v;
+            p_tri.y()= vol(dp3,d13) / v;
+            p_tri.z() = 1 - p_tri.template head<2>().sum();
+
             return p_tri;
         };
 
         auto check_degenerate = [&]() -> bool {
-            auto u1 = triangle(0, 0);
-            auto v1 = triangle(0, 1);
-            auto u2 = triangle(1, 0);
-            auto v2 = triangle(1, 1);
-            auto u3 = triangle(2, 0);
-            auto v3 = triangle(2, 1);
-            if ((v2 - v3) * (u1 - u3) + (u3 - u2) * (v1 - v3) == 0.) return false;
-            if ((v2 - v3) * (u1 - u3) + (u3 - u2) * (v1 - v3) == 0.) return false;
-            return true;
+            auto p1 = triangle.row(0);
+            auto p2 = triangle.row(1);
+            auto p3 = triangle.row(2);
+            auto d23 = p2 - p3;
+            auto d13 = p1 - p3;
+            T v = vol(d13,d23);
+            return v != 0.;
         };
 
         T value = T(0.);
+        auto& cache= m_cache.local();
+        auto& quad = cache.quad;
         for (auto y = 0; y < num_pixels; ++y) {
             for (auto x = 0; x < num_pixels; ++x) {
                 Eigen::AlignedBox2d box;
@@ -239,18 +231,18 @@ public:
                     order,
                     triangle_double,
                     box,
-                    m_cache.local().quad,
-                    &m_cache.local().tmp);
-                for (size_t i = 0; i < m_cache.local().quad.size(); ++i) {
-                    auto tmpu = T(m_cache.local().quad.points()(i, 0));
-                    auto tmpv = T(m_cache.local().quad.points()(i, 1));
+                    quad,
+                    &cache.tmp);
+                for (size_t i = 0; i < quad.size(); ++i) {
+                    auto p = quad.points().row(i);
+                    auto pT = p.template cast<T>();
                     if (!check_degenerate())
                         continue;
                     else {
-                        Eigen::Matrix<T, 3, 1> tmpp_displaced = get(tmpu, tmpv);
-                        Eigen::Matrix<T, 3, 1> tmpp_tri = get_p_tri(tmpu, tmpv);
+                        Eigen::Matrix<T, 3, 1> tmpp_displaced = get(pT.x(),pT.y());
+                        Eigen::Matrix<T, 3, 1> tmpp_tri = get_p_tri(pT);
                         Eigen::Matrix<T, 3, 1> diffp = tmpp_displaced - tmpp_tri;
-                        value += squared_norm_T(diffp) * T(m_cache.local().quad.weights()[i]);
+                        value += diffp.squaredNorm() * T(quad.weights()(i));
                     }
                 }
             }
