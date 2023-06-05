@@ -2,14 +2,14 @@
 
 #include <lagrange/utils/fpe.h>
 #include <tbb/enumerable_thread_specific.h>
+#include <wmtk/image/Sampling.h>
 #include <wmtk/quadrature/ClippedQuadrature.h>
 #include <wmtk/quadrature/TriangleQuadrature.h>
 #include <wmtk/utils/PolygonClipping.h>
-#include <wmtk/image/Sampling.h>
-#include <type_traits>
-#include "Image.h"
-#include <wmtk/utils/LineQuadrature.hpp>
 #include <wmtk/utils/autodiff.h>
+#include <type_traits>
+#include <wmtk/utils/LineQuadrature.hpp>
+#include "Image.h"
 
 namespace wmtk {
 
@@ -102,28 +102,26 @@ public:
         if (pixel_num <= 0) return T(0.);
         assert(pixel_num > 0);
         T error = T(0.0);
-        auto lerp = [](const auto& a, const auto& b, const T& t) {
-            return (1.-t) * a + t * b;
-        };
+        auto lerp = [](const auto& a, const auto& b, const T& t) { return (1. - t) * a + t * b; };
         for (int i = 0; i < pixel_num; i++) {
             const auto r0 = T(i) / pixel_num;
             const auto r1 = T(i + 1) / pixel_num;
-            Eigen::Matrix<T, 2, 1> pixel_uv1 = lerp(uv1,uv2,r0);
-            Eigen::Matrix<T, 2, 1> pixel_uv2 = lerp(uv1,uv2,r1);
-            Eigen::Matrix<T, 3, 1> pixel_p1 = lerp(p1_displaced,p2_displaced,r0);
-            Eigen::Matrix<T, 3, 1> pixel_p2 = lerp(p1_displaced,p2_displaced,r1);
+            Eigen::Matrix<T, 2, 1> pixel_uv1 = lerp(uv1, uv2, r0);
+            Eigen::Matrix<T, 2, 1> pixel_uv2 = lerp(uv1, uv2, r1);
+            Eigen::Matrix<T, 3, 1> pixel_p1 = lerp(p1_displaced, p2_displaced, r0);
+            Eigen::Matrix<T, 3, 1> pixel_p2 = lerp(p1_displaced, p2_displaced, r1);
             wmtk::LineQuadrature quad;
             quad.get_quadrature(order);
 
             T unweighted_error = T(0.0);
             for (int j = 0; j < quad.points.rows(); j++) {
-                const T t = T(quad.points(j,0));
-                Eigen::Matrix<T, 2, 1> tmpuv = lerp(pixel_uv1,pixel_uv2, t);
+                const T t = T(quad.points(j, 0));
+                Eigen::Matrix<T, 2, 1> tmpuv = lerp(pixel_uv1, pixel_uv2, t);
                 Eigen::Matrix<T, 3, 1> tmpp_displaced = get(tmpuv(0), tmpuv(1));
 
-                Eigen::Matrix<T, 3, 1> tmpp_tri = lerp(pixel_p1,pixel_p2,t);
+                Eigen::Matrix<T, 3, 1> tmpp_tri = lerp(pixel_p1, pixel_p2, t);
                 Eigen::Matrix<T, 3, 1> diffp = tmpp_tri - tmpp_displaced;
-                unweighted_error += T(quad.weights(j)) *diffp.norm();
+                unweighted_error += T(quad.weights(j)) * diffp.norm();
             }
             auto diffuv = pixel_uv1 - pixel_uv2;
             error += unweighted_error * diffuv.norm();
@@ -158,6 +156,12 @@ public:
         const int order = 2 * (Degree - 1);
 
         lagrange::enable_fpe();
+        auto p1 = triangle.row(0);
+        auto p2 = triangle.row(1);
+        auto p3 = triangle.row(2);
+        Eigen::Matrix<T, 3, 1> P1 = get(p1.x(), p1.y());
+        Eigen::Matrix<T, 3, 1> P2 = get(p2.x(), p2.y());
+        Eigen::Matrix<T, 3, 1> P3 = get(p3.x(), p3.y());
 
         Eigen::AlignedBox2d bbox;
         Eigen::Matrix<double, 3, 2, 1> triangle_double;
@@ -175,10 +179,10 @@ public:
         assert(num_pixels > 0);
         const double pixel_size = bbox.diagonal().maxCoeff() / num_pixels;
 
-        auto vol = [](const auto& a, const auto& b) -> T{
+        auto vol = [](const auto& a, const auto& b) -> T {
             return a.x() * b.y() - b.x() * a.y();
 
-            //return d1.homogeneous().cross(d2.homogeneous()).z();
+            // return d1.homogeneous().cross(d2.homogeneous()).z();
         };
         // calculate the barycentric coordinate of the a point using u, v cooridnates
         // returns the 3d coordinate on the current mesh
@@ -189,36 +193,30 @@ public:
             λ3 = 1 - λ1 - λ2
             z = λ1 * z1 + λ2 * z2 + λ3 * z3
             */
-            auto p1 = triangle.row(0);
-            auto p2 = triangle.row(1);
-            auto p3 = triangle.row(2);
             auto d23 = p2 - p3;
             auto d13 = p1 - p3;
             auto dp3 = p - p3;
 
-            T v = vol(d13,d23);
+            T v = vol(d13, d23);
 
-            Eigen::Matrix<T,3,1> p_tri;
 
-            p_tri.x() = vol(dp3,d23) / v;
-            p_tri.y()= vol(dp3,d13) / v;
-            p_tri.z() = 1 - p_tri.template head<2>().sum();
+            T lambda1 = vol(dp3, d23) / v;
+            T lambda2 = vol(dp3, d13) / v;
+            T lambda3 = 1 - (lambda1 + lambda2);
 
+            Eigen::Matrix<T, 3, 1> p_tri = (lambda1 * P1 + lambda2 * P2 + lambda3 * P3);
             return p_tri;
         };
 
         auto check_degenerate = [&]() -> bool {
-            auto p1 = triangle.row(0);
-            auto p2 = triangle.row(1);
-            auto p3 = triangle.row(2);
             auto d23 = p2 - p3;
             auto d13 = p1 - p3;
-            T v = vol(d13,d23);
+            T v = vol(d13, d23);
             return v != 0.;
         };
 
         T value = T(0.);
-        auto& cache= m_cache.local();
+        auto& cache = m_cache.local();
         auto& quad = cache.quad;
         for (auto y = 0; y < num_pixels; ++y) {
             for (auto x = 0; x < num_pixels; ++x) {
@@ -227,19 +225,15 @@ public:
                 box.extend(
                     bbox.min() + Eigen::Vector2d((x + 1) * pixel_size, (y + 1) * pixel_size));
                 wmtk::ClippedQuadrature rules;
-                rules.clipped_triangle_box_quadrature(
-                    order,
-                    triangle_double,
-                    box,
-                    quad,
-                    &cache.tmp);
+                rules
+                    .clipped_triangle_box_quadrature(order, triangle_double, box, quad, &cache.tmp);
                 for (size_t i = 0; i < quad.size(); ++i) {
                     auto p = quad.points().row(i);
                     auto pT = p.template cast<T>();
                     if (!check_degenerate())
                         continue;
                     else {
-                        Eigen::Matrix<T, 3, 1> tmpp_displaced = get(pT.x(),pT.y());
+                        Eigen::Matrix<T, 3, 1> tmpp_displaced = get(pT.x(), pT.y());
                         Eigen::Matrix<T, 3, 1> tmpp_tri = get_p_tri(pT);
                         Eigen::Matrix<T, 3, 1> diffp = tmpp_displaced - tmpp_tri;
                         value += diffp.squaredNorm() * T(quad.weights()(i));
