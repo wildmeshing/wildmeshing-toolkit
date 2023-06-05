@@ -6,6 +6,7 @@
 #include <tbb/enumerable_thread_specific.h>
 #include <tbb/parallel_for.h>
 #include <wmtk/quadrature/ClippedQuadrature.h>
+#include <wmtk/utils/BarycentricTriangle.h>
 #include <wmtk/utils/TriQualityUtils.hpp>
 
 namespace wmtk {
@@ -36,9 +37,11 @@ T get_error_per_triangle_exact(
     constexpr int Degree = 4;
     const int order = 2 * (Degree - 1);
 
-    Eigen::Matrix<T, 3, 1> p1 = get(triangle(0, 0), triangle(0, 1));
-    Eigen::Matrix<T, 3, 1> p2 = get(triangle(1, 0), triangle(1, 1));
-    Eigen::Matrix<T, 3, 1> p3 = get(triangle(2, 0), triangle(2, 1));
+    Eigen::Matrix3<T> triangle_3d;
+    triangle_3d.col(0) = get(triangle(0, 0), triangle(0, 1));
+    triangle_3d.col(1) = get(triangle(1, 0), triangle(1, 1));
+    triangle_3d.col(2) = get(triangle(2, 0), triangle(2, 1));
+
     Eigen::AlignedBox2d bbox;
     Eigen::Matrix<double, 3, 2, 1> triangle_double;
     for (auto i = 0; i < 3; i++) {
@@ -57,8 +60,9 @@ T get_error_per_triangle_exact(
     };
     auto get_coordinate = [&](const double& x, const double& y) -> std::pair<int, int> {
         auto [xx, yy] = m_image.get_pixel_index(get_value(x), get_value(y));
-        return {m_image.get_coordinate(xx, m_image.get_wrapping_mode_x()),
-                m_image.get_coordinate(yy, m_image.get_wrapping_mode_y())};
+        return {
+            m_image.get_coordinate(xx, m_image.get_wrapping_mode_x()),
+            m_image.get_coordinate(yy, m_image.get_wrapping_mode_y())};
     };
     auto bbox_min = bbox.min();
     auto bbox_max = bbox.max();
@@ -70,44 +74,14 @@ T get_error_per_triangle_exact(
 
     // calculate the barycentric coordinate of the a point using u, v cooridnates
     // returns the 3d coordinate on the current mesh
-    auto get_p_tri = [&](const T& u, const T& v) -> Eigen::Matrix<T, 3, 1> {
-        /*
-        λ1 = ((v2 - v3)(u - u3) + (u3 - u2)(v - v3)) / ((v2 - v3)(u1 - u3) + (u3 - u2)(v1 - v3))
-        λ2 = ((v3 - v1)(u - u3) + (u1 - u3)(v - v3)) / ((v2 - v3)(u1 - u3) + (u3 - u2)(v1 - v3))
-        λ3 = 1 - λ1 - λ2
-        z = λ1 * z1 + λ2 * z2 + λ3 * z3
-        */
-        auto u1 = triangle(0, 0);
-        auto v1 = triangle(0, 1);
-        auto u2 = triangle(1, 0);
-        auto v2 = triangle(1, 1);
-        auto u3 = triangle(2, 0);
-        auto v3 = triangle(2, 1);
-
-        auto lambda1 = ((v2 - v3) * (u - u3) + (u3 - u2) * (v - v3)) /
-                       ((v2 - v3) * (u1 - u3) + (u3 - u2) * (v1 - v3));
-        auto lambda2 = ((v3 - v1) * (u - u3) + (u1 - u3) * (v - v3)) /
-                       ((v2 - v3) * (u1 - u3) + (u3 - u2) * (v1 - v3));
-        auto lambda3 = 1 - lambda1 - lambda2;
-        Eigen::Matrix<T, 3, 1> p_tri = (lambda1 * p1 + lambda2 * p2 + lambda3 * p3);
-        return p_tri;
-    };
-
-    auto check_degenerate = [&]() -> bool {
-        auto u1 = triangle(0, 0);
-        auto v1 = triangle(0, 1);
-        auto u2 = triangle(1, 0);
-        auto v2 = triangle(1, 1);
-        auto u3 = triangle(2, 0);
-        auto v3 = triangle(2, 1);
-        if ((v2 - v3) * (u1 - u3) + (u3 - u2) * (v1 - v3) == 0.) return false;
-        if ((v2 - v3) * (u1 - u3) + (u3 - u2) * (v1 - v3) == 0.) return false;
-        return true;
-    };
+    BarycentricTriangle<T> bary(triangle.row(0), triangle.row(1), triangle.row(2));
+    if (bary.is_degenerate()) {
+        return T(0.);
+    }
 
     T value = T(0.);
-    for (auto x = 0; x < num_pixels; ++x) {
-        for (auto y = 0; y < num_pixels; ++y) {
+    for (auto y = 0; y < num_pixels; ++y) {
+        for (auto x = 0; x < num_pixels; ++x) {
             Eigen::AlignedBox2d box;
             box.extend(bbox.min() + Eigen::Vector2d(x * pixel_size, y * pixel_size));
             box.extend(bbox.min() + Eigen::Vector2d((x + 1) * pixel_size, (y + 1) * pixel_size));
@@ -121,19 +95,16 @@ T get_error_per_triangle_exact(
             for (auto i = 0; i < cache.local().quad.size(); ++i) {
                 auto tmpu = T(cache.local().quad.points()(i, 0));
                 auto tmpv = T(cache.local().quad.points()(i, 1));
-                if (!check_degenerate())
-                    continue;
-                else {
-                    Eigen::Matrix<T, 3, 1> tmpp_displaced = get(tmpu, tmpv);
-                    Eigen::Matrix<T, 3, 1> tmpp_tri = get_p_tri(tmpu, tmpv);
-                    Eigen::Matrix<T, 3, 1> diffp = tmpp_displaced - tmpp_tri;
-                    value += squared_norm_T(diffp) * T(cache.local().quad.weights()[i]);
-                }
+                Eigen::Matrix<T, 3, 1> tmpp_displaced = get(tmpu, tmpv);
+                Eigen::Matrix<T, 3, 1> tmpp_tri = triangle_3d * bary.get({tmpu, tmpv});
+                Eigen::Matrix<T, 3, 1> diffp = tmpp_displaced - tmpp_tri;
+                value += squared_norm_T(diffp) * T(cache.local().quad.weights()[i]);
             }
         }
     }
     // scaling by jacobian
-    value = value * wmtk::triangle_3d_area<T>(p1, p2, p3);
+    value = value *
+            wmtk::triangle_3d_area<T>(triangle_3d.col(0), triangle_3d.col(1), triangle_3d.col(2));
     value = value / wmtk::triangle_2d_area<T>(
                         triangle.row(0).transpose(),
                         triangle.row(1).transpose(),
@@ -182,38 +153,15 @@ T get_error_per_triangle_adaptive(
     const auto max_pixel = get_coordinate(bbox_uv.max()(0), bbox_uv.max()(1));
     const Eigen::Vector2d pixel_size(1.0 / w, 1.0 / h);
 
-    const auto u1 = triangle_uv(0, 0);
-    const auto v1 = triangle_uv(0, 1);
-    const auto u2 = triangle_uv(1, 0);
-    const auto v2 = triangle_uv(1, 1);
-    const auto u3 = triangle_uv(2, 0);
-    const auto v3 = triangle_uv(2, 1);
-    const auto denom = ((v2 - v3) * (u1 - u3) + (u3 - u2) * (v1 - v3));
-    if (get_value(denom) < std::numeric_limits<double>::denorm_min()) {
-        // Degenerate triangle
-        return T(0.0);
+    BarycentricTriangle<T> bary(triangle_uv.row(0), triangle_uv.row(1), triangle_uv.row(2));
+    if (bary.is_degenerate()) {
+        return T(0.);
     }
 
     const std::array<Eigen::Hyperplane<double, 2>, 3> edges = {
         Eigen::Hyperplane<double, 2>::Through(triangle_uv_d.row(0), triangle_uv_d.row(1)),
         Eigen::Hyperplane<double, 2>::Through(triangle_uv_d.row(1), triangle_uv_d.row(2)),
         Eigen::Hyperplane<double, 2>::Through(triangle_uv_d.row(2), triangle_uv_d.row(0)),
-    };
-
-    // calculate the barycentric coordinate of the a point using u, v coordinates
-    // returns the 3d coordinate on the current mesh
-    auto get_p_interpolated = [&](double u, double v) -> Eigen::Matrix<T, 3, 1> {
-        /*
-        λ1 = ((v2 - v3)(u - u3) + (u3 - u2)(v - v3)) / ((v2 - v3)(u1 - u3) + (u3 - u2)(v1 - v3))
-        λ2 = ((v3 - v1)(u - u3) + (u1 - u3)(v - v3)) / ((v2 - v3)(u1 - u3) + (u3 - u2)(v1 - v3))
-        λ3 = 1 - λ1 - λ2
-        z = λ1 * z1 + λ2 * z2 + λ3 * z3
-        */
-        auto lambda1 = ((v2 - v3) * (u - u3) + (u3 - u2) * (v - v3)) / denom;
-        auto lambda2 = ((v3 - v1) * (u - u3) + (u1 - u3) * (v - v3)) / denom;
-        auto lambda3 = 1 - lambda1 - lambda2;
-        return lambda1 * triangle_3d.col(0) + lambda2 * triangle_3d.col(1) +
-               lambda3 * triangle_3d.col(2);
     };
 
     T value = T(0.);
@@ -238,8 +186,7 @@ T get_error_per_triangle_adaptive(
             }
             if (sign == internal::Classification::Inside) {
                 ++num_inside;
-                Eigen::Matrix<T, 3, 1> p_tri =
-                    get_p_interpolated(box.center().x(), box.center().y());
+                Eigen::Matrix<T, 3, 1> p_tri = triangle_3d * bary.get(box.center().cast<T>());
                 Eigen::Matrix<T, 3, 1> p_displaced = internal::fetch_texels(images, x, y).cast<T>();
                 value += (p_displaced - p_tri).squaredNorm() * pixel_size(0) * pixel_size(1);
                 if (0) {
@@ -259,7 +206,7 @@ T get_error_per_triangle_adaptive(
                             double v = quadr.points()(i, 1);
                             Eigen::Matrix<T, 3, 1> p_displaced2 =
                                 internal::sample_nearest(images, u, v).cast<T>();
-                            Eigen::Matrix<T, 3, 1> p_tri2 = get_p_interpolated(u, v);
+                            Eigen::Matrix<T, 3, 1> p_tri2 = triangle_3d * bary.get({u, v});
                             la_runtime_assert(p_displaced2 == p_displaced);
                         }
                         double diff =
@@ -283,7 +230,7 @@ T get_error_per_triangle_adaptive(
                     const double u = quadr.points()(i, 0);
                     const double v = quadr.points()(i, 1);
                     Eigen::Matrix<T, 3, 1> p_displaced = get_scalar(u, v).template cast<T>();
-                    Eigen::Matrix<T, 3, 1> p_tri = get_p_interpolated(u, v);
+                    Eigen::Matrix<T, 3, 1> p_tri = triangle_3d * bary.get({u, v});
                     value += (p_displaced - p_tri).squaredNorm() * quadr.weights()[i];
                 }
             }
