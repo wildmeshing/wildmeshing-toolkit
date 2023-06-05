@@ -226,7 +226,7 @@ public:
 
 
             T lambda1 = vol(dp3, d23) / v;
-            T lambda2 = vol(dp3, d13) / v;
+            T lambda2 = -vol(dp3, d13) / v;
             T lambda3 = 1 - (lambda1 + lambda2);
 
             Eigen::Matrix<T, 3, 1> p_tri = (lambda1 * P1 + lambda2 * P2 + lambda3 * P3);
@@ -304,8 +304,9 @@ protected:
     virtual std::pair<int, int> get_coordinate(double x, double y) const override
     {
         auto [xx, yy] = m_image.get_pixel_index(get_value(x), get_value(y));
-        return {m_image.get_coordinate(xx, m_image.get_wrapping_mode_x()),
-                m_image.get_coordinate(yy, m_image.get_wrapping_mode_y())};
+        return {
+            m_image.get_coordinate(xx, m_image.get_wrapping_mode_x()),
+            m_image.get_coordinate(yy, m_image.get_wrapping_mode_y())};
     }
 };
 
@@ -425,8 +426,9 @@ protected:
     {
         const auto& image = m_displaced_positions_image[0];
         auto [xx, yy] = image.get_pixel_index(get_value(x), get_value(y));
-        return {image.get_coordinate(xx, image.get_wrapping_mode_x()),
-                image.get_coordinate(yy, image.get_wrapping_mode_y())};
+        return {
+            image.get_coordinate(xx, image.get_wrapping_mode_x()),
+            image.get_coordinate(yy, image.get_wrapping_mode_y())};
     }
 
     void set_sampling_mode(const wmtk::SAMPLING_MODE sampling_mode)

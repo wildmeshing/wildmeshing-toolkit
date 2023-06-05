@@ -1,6 +1,6 @@
+#include <wmtk/image/Displacement.h>
 #include <wmtk/image/TextureIntegral.h>
 #include <wmtk/image/helpers.h>
-#include <wmtk/image/Displacement.h>
 #include <wmtk/image/load_image_exr.h>
 #include <wmtk/utils/Logger.hpp>
 
@@ -92,6 +92,8 @@ void test_integral_reference(
     wmtk::Image height,
     std::array<wmtk::Image, 3> displaced)
 {
+    auto [scale, offset] = compute_mesh_normalization(mesh);
+
     auto& uv_attr = mesh.get_indexed_attribute<double>(lagrange::AttributeName::texcoord);
     auto uv_vertices = matrix_view(uv_attr.values());
     auto uv_facets = reshaped_view(uv_attr.indices(), 3);
@@ -115,7 +117,6 @@ void test_integral_reference(
     integral.get_error_per_triangle(uv_triangles, computed_errors);
 
     // Test with old engine
-    auto [scale, offset] = compute_mesh_normalization(mesh);
     wmtk::DisplacementMesh displacement(
         height,
         position_normal_images,
@@ -150,13 +151,14 @@ void test_integral_reference(
         expected[f] = displacement.get_error_per_triangle(triangle);
     });
 
+    // Preloaded displacement image is not scaled, so the computed error needs to be scaled
+    // according to the model size. The error is an area integral of a squared distance, so its unit
+    // is a L^4.
+    const double scale4 = scale * scale * scale * scale;
     for (int f = 0; f < static_cast<int>(mesh.get_num_facets()); ++f) {
-        wmtk::logger().debug(
-            "error: {}",
-            std::abs(expected[f] - computed_errors[f] * scale * scale));
-        REQUIRE_THAT(
-            computed_errors[f] * scale * scale,
-            Catch::Matchers::WithinRel(expected[f], 1e-2));
+        wmtk::logger().debug("error: {}", std::abs(expected[f] - computed_errors[f] * scale4));
+        CAPTURE(f);
+        REQUIRE_THAT(computed_errors[f] * scale4, Catch::Matchers::WithinRel(expected[f], 1e-2));
     }
     wmtk::logger().info("done with integral test");
 }
