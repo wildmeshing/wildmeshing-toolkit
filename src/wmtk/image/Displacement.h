@@ -72,6 +72,31 @@ protected:
     virtual std::pair<int, int> get_coordinate(double x, double y) const = 0;
 
 public:
+    template <class T>
+    inline T triangle_3d_area(
+        const Eigen::Matrix<T, 3, 1>& a,
+        const Eigen::Matrix<T, 3, 1>& b,
+        const Eigen::Matrix<T, 3, 1>& c)
+    {
+        const T n0 = (a(1) - b(1)) * (a(2) - c(2)) - (a(1) - c(1)) * (a(2) - b(2));
+        const T n1 = -(a(0) - b(0)) * (a(2) - c(2)) + (a(0) - c(0)) * (a(2) - b(2));
+        const T n2 = (a(0) - b(0)) * (a(1) - c(1)) - (a(0) - c(0)) * (a(1) - b(1));
+
+        return sqrt(n0 * n0 + n1 * n1 + n2 * n2) * static_cast<T>(0.5);
+    };
+
+    // template get 3d tri area
+    template <class T>
+    inline T triangle_2d_area(
+        const Eigen::Matrix<T, 2, 1>& A,
+        const Eigen::Matrix<T, 2, 1>& B,
+        const Eigen::Matrix<T, 2, 1>& C)
+    {
+        auto B_A = B - A;
+        auto C_A = C - A;
+        T area = static_cast<T>(0.5) * abs(B_A.x() * C_A.y() - B_A.y() * C_A.x());
+        return area;
+    };
     inline double get_error_per_edge(
         const Eigen::Matrix<double, 2, 1>& p1,
         const Eigen::Matrix<double, 2, 1>& p2) const override
@@ -201,13 +226,12 @@ public:
 
 
             T lambda1 = vol(dp3, d23) / v;
-            T lambda2 = vol(dp3, d13) / v;
+            T lambda2 = -vol(dp3, d13) / v;
             T lambda3 = 1 - (lambda1 + lambda2);
 
             Eigen::Matrix<T, 3, 1> p_tri = (lambda1 * P1 + lambda2 * P2 + lambda3 * P3);
             return p_tri;
         };
-
         auto check_degenerate = [&]() -> bool {
             auto d23 = p2 - p3;
             auto d13 = p1 - p3;
@@ -241,6 +265,9 @@ public:
                 }
             }
         }
+        value = value * triangle_3d_area<T>(P1, P2, P3);
+        value = value / triangle_2d_area<T>(p1.transpose(), p2.transpose(), p3.transpose());
+
         return value;
     }
 };
