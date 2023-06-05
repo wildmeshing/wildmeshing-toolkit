@@ -375,7 +375,7 @@ template&lt;class AppMesh , ExecutionPolicy policy = ExecutionPolicy::kSeq&gt; <
       </table>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line">= [](<span class="keyword">const</span> AppMesh&amp;) {</div>
-<div class="line">        <span class="keywordflow">return</span> <span class="keyword">false</span>; </div>
+<div class="line">        <span class="keywordflow">return</span> <span class="keyword">true</span>; </div>
 <div class="line">    }</div>
 </div><!-- fragment -->
 <p>Stopping Criterion based on the whole mesh For efficiency, not every time is checked. In serial, this may go over all the elements. For parallel, this involves synchronization. So there is a checking frequency. </p>

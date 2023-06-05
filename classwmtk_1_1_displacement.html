@@ -79,11 +79,14 @@ Inheritance diagram for wmtk::Displacement:</div>
  <div class="center">
   <img src="classwmtk_1_1_displacement.png" usemap="#wmtk::Displacement_map" alt=""/>
   <map id="wmtk::Displacement_map" name="wmtk::Displacement_map">
-<area href="classwmtk_1_1_displacement_image.html" alt="wmtk::DisplacementImage&lt; DisplacementSpline &gt;" shape="rect" coords="0,56,294,80"/>
-<area href="classwmtk_1_1_displacement_image.html" alt="wmtk::DisplacementImage&lt; DisplacementBicubic &gt;" shape="rect" coords="304,56,598,80"/>
-<area href="classwmtk_1_1_displacement_image.html" alt="wmtk::DisplacementImage&lt; Derived &gt;" shape="rect" coords="608,56,902,80"/>
-<area href="structwmtk_1_1_displacement_spline.html" alt="wmtk::DisplacementSpline" shape="rect" coords="0,112,294,136"/>
-<area href="structwmtk_1_1_displacement_bicubic.html" alt="wmtk::DisplacementBicubic" shape="rect" coords="304,112,598,136"/>
+<area href="classwmtk_1_1_displacement_image.html" alt="wmtk::DisplacementImage&lt; DisplacementMesh &gt;" shape="rect" coords="148,56,435,80"/>
+<area href="classwmtk_1_1_displacement_image.html" alt="wmtk::DisplacementImage&lt; Derived &gt;" shape="rect" coords="742,56,1029,80"/>
+<area href="classwmtk_1_1_displacement_height.html" alt="wmtk::DisplacementHeight&lt; DisplacementMesh &gt;" shape="rect" coords="0,112,287,136"/>
+<area href="classwmtk_1_1_displacement_vector.html" alt="wmtk::DisplacementVector" shape="rect" coords="297,112,584,136"/>
+<area href="classwmtk_1_1_displacement_height.html" alt="wmtk::DisplacementHeight&lt; DisplacementPlane &gt;" shape="rect" coords="594,112,881,136"/>
+<area href="classwmtk_1_1_displacement_height.html" alt="wmtk::DisplacementHeight&lt; Derived &gt;" shape="rect" coords="891,112,1178,136"/>
+<area href="classwmtk_1_1_displacement_mesh.html" alt="wmtk::DisplacementMesh" shape="rect" coords="0,168,287,192"/>
+<area href="classwmtk_1_1_displacement_plane.html" alt="wmtk::DisplacementPlane" shape="rect" coords="594,168,881,192"/>
   </map>
 </div></div>
 <table class="memberdecls">
@@ -95,21 +98,27 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>DScalar</b> = <a cla
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a902eb728fea4c0e9aa23c44c0d6edad4"><td class="memItemLeft" align="right" valign="top"><a id="a902eb728fea4c0e9aa23c44c0d6edad4"></a>
-virtual double&#160;</td><td class="memItemRight" valign="bottom"><b>get</b> (double x, double y) const =0</td></tr>
-<tr class="separator:a902eb728fea4c0e9aa23c44c0d6edad4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad14868857fe395f495d2517e5dfac17d"><td class="memItemLeft" align="right" valign="top"><a id="ad14868857fe395f495d2517e5dfac17d"></a>
-virtual <a class="el" href="struct_d_scalar2.html">DScalar</a>&#160;</td><td class="memItemRight" valign="bottom"><b>get</b> (const <a class="el" href="struct_d_scalar2.html">DScalar</a> &amp;x, const <a class="el" href="struct_d_scalar2.html">DScalar</a> &amp;y) const =0</td></tr>
-<tr class="separator:ad14868857fe395f495d2517e5dfac17d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af7b360d4a617f5088e252306d8f117ed"><td class="memItemLeft" align="right" valign="top"><a id="af7b360d4a617f5088e252306d8f117ed"></a>
+virtual Eigen::Matrix&lt; double, 3, 1 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get</b> (double x, double y) const =0</td></tr>
+<tr class="separator:af7b360d4a617f5088e252306d8f117ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad0dc77349be2c99de1c6495c0bfeaf37"><td class="memItemLeft" align="right" valign="top"><a id="ad0dc77349be2c99de1c6495c0bfeaf37"></a>
+virtual Eigen::Matrix&lt; <a class="el" href="struct_d_scalar2.html">DScalar</a>, 3, 1 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get</b> (const <a class="el" href="struct_d_scalar2.html">DScalar</a> &amp;x, const <a class="el" href="struct_d_scalar2.html">DScalar</a> &amp;y) const =0</td></tr>
+<tr class="separator:ad0dc77349be2c99de1c6495c0bfeaf37"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a236ea0f3bb852e7aec086fa902b577db"><td class="memItemLeft" align="right" valign="top"><a id="a236ea0f3bb852e7aec086fa902b577db"></a>
 virtual double&#160;</td><td class="memItemRight" valign="bottom"><b>get_error_per_edge</b> (const Eigen::Matrix&lt; double, 2, 1 &gt; &amp;p1, const Eigen::Matrix&lt; double, 2, 1 &gt; &amp;p2) const =0</td></tr>
 <tr class="separator:a236ea0f3bb852e7aec086fa902b577db"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaac5c433a6bf43a3a5f5d286efc629fb"><td class="memItemLeft" align="right" valign="top"><a id="aaac5c433a6bf43a3a5f5d286efc629fb"></a>
 virtual <a class="el" href="struct_d_scalar2.html">DScalar</a>&#160;</td><td class="memItemRight" valign="bottom"><b>get_error_per_edge</b> (const Eigen::Matrix&lt; <a class="el" href="struct_d_scalar2.html">DScalar</a>, 2, 1 &gt; &amp;p1, const Eigen::Matrix&lt; <a class="el" href="struct_d_scalar2.html">DScalar</a>, 2, 1 &gt; &amp;p2) const =0</td></tr>
 <tr class="separator:aaac5c433a6bf43a3a5f5d286efc629fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0eaa3f8353fde6a9a20297c190163ca7"><td class="memItemLeft" align="right" valign="top"><a id="a0eaa3f8353fde6a9a20297c190163ca7"></a>
+virtual double&#160;</td><td class="memItemRight" valign="bottom"><b>get_error_per_triangle</b> (const Eigen::Matrix&lt; double, 3, 2, Eigen::RowMajor &gt; &amp;triangle)=0</td></tr>
+<tr class="separator:a0eaa3f8353fde6a9a20297c190163ca7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac74f8cef31ba3ade137ece6328c78bc5"><td class="memItemLeft" align="right" valign="top"><a id="ac74f8cef31ba3ade137ece6328c78bc5"></a>
+virtual <a class="el" href="struct_d_scalar2.html">DScalar</a>&#160;</td><td class="memItemRight" valign="bottom"><b>get_error_per_triangle</b> (const Eigen::Matrix&lt; <a class="el" href="struct_d_scalar2.html">DScalar</a>, 3, 2, Eigen::RowMajor &gt; &amp;triangle)=0</td></tr>
+<tr class="separator:ac74f8cef31ba3ade137ece6328c78bc5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <hr/>The documentation for this class was generated from the following file:<ul>
-<li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/utils/<a class="el" href="_displacement_8h_source.html">Displacement.h</a></li>
+<li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/image/<a class="el" href="_displacement_8h_source.html">Displacement.h</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->

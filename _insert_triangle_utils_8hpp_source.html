@@ -309,7 +309,7 @@ $(function() {
 <div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; loc : edges) {</div>
 <div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;            <span class="keywordtype">size_t</span> v1_id = loc.vid(m);</div>
 <div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;            <span class="keyword">auto</span> tmp = m.<a class="code" href="classwmtk_1_1_tet_mesh.html#aa36c93721edee518e9ae101f1e52200b">switch_vertex</a>(loc);</div>
-<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;            <span class="keywordtype">size_t</span> v2_id = tmp.<a class="code" href="classwmtk_1_1_tet_mesh_tuple.html#a729dbfba7757bfb915f3fd453461524b">vid</a>(m);</div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;            <span class="keywordtype">size_t</span> v2_id = tmp.vid(m);</div>
 <div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;            std::array&lt;size_t, 2&gt; e = {{v1_id, v2_id}};</div>
 <div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;            <span class="keywordflow">if</span> (e[0] &gt; e[1]) std::swap(e[0], e[1]);</div>
 <div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;            edge_vids.push_back(e);</div>
@@ -475,7 +475,6 @@ $(function() {
 <div class="ttc" id="aclasswmtk_1_1_tet_mesh_html_abf1e7084f1eb6576871555eb46d34f8c"><div class="ttname"><a href="classwmtk_1_1_tet_mesh.html#abf1e7084f1eb6576871555eb46d34f8c">wmtk::TetMesh::tet_edges</a></div><div class="ttdeci">std::array&lt; Tuple, 6 &gt; tet_edges(const Tuple &amp;t) const</div><div class="ttdoc">get the 6 edges of a tet represented by Tuples</div><div class="ttdef"><b>Definition:</b> TetMesh.cpp:446</div></div>
 <div class="ttc" id="aclasswmtk_1_1_tet_mesh_html_ada134af13b8060dcce7f3ae21939ec2e"><div class="ttname"><a href="classwmtk_1_1_tet_mesh.html#ada134af13b8060dcce7f3ae21939ec2e">wmtk::TetMesh::oriented_tet_vertices</a></div><div class="ttdeci">std::array&lt; Tuple, 4 &gt; oriented_tet_vertices(const Tuple &amp;t) const</div><div class="ttdef"><b>Definition:</b> TetMesh.cpp:416</div></div>
 <div class="ttc" id="aclasswmtk_1_1_tet_mesh_tuple_html"><div class="ttname"><a href="classwmtk_1_1_tet_mesh_tuple.html">wmtk::TetMeshTuple</a></div><div class="ttdoc">a TetMeshTuple refers to a global vid and a global tet id, and a local edge id and local face id</div><div class="ttdef"><b>Definition:</b> TetMeshTuple.h:16</div></div>
-<div class="ttc" id="aclasswmtk_1_1_tet_mesh_tuple_html_a729dbfba7757bfb915f3fd453461524b"><div class="ttname"><a href="classwmtk_1_1_tet_mesh_tuple.html#a729dbfba7757bfb915f3fd453461524b">wmtk::TetMeshTuple::vid</a></div><div class="ttdeci">size_t vid(const TetMesh &amp;m) const</div><div class="ttdef"><b>Definition:</b> TetMeshTuple.cpp:112</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

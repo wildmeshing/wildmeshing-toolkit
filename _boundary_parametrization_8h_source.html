@@ -71,31 +71,114 @@ $(function() {
 <div class="contents">
 <div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="preprocessor">#pragma once</span></div>
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160; </div>
-<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &lt;igl/boundary_loop.h&gt;</span></div>
-<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &lt;igl/project_to_line_segment.h&gt;</span></div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &quot;Logger.hpp&quot;</span></div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160; </div>
 <div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &lt;Eigen/Cholesky&gt;</span></div>
 <div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="preprocessor">#include &lt;Eigen/Core&gt;</span></div>
 <div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="preprocessor">#include &lt;Eigen/Dense&gt;</span></div>
 <div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="preprocessor">#include &lt;Eigen/LU&gt;</span></div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="preprocessor">#include &lt;array&gt;</span></div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="preprocessor">#include &lt;cmath&gt;</span></div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="preprocessor">#include &quot;Logger.hpp&quot;</span></div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="keyword">namespace </span>wmtk {</div>
-<div class="line"><a name="l00013"></a><span class="lineno"><a class="line" href="classwmtk_1_1_boundary.html">   13</a></span>&#160;<span class="keyword">class </span><a class="code" href="classwmtk_1_1_boundary.html">Boundary</a></div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;{</div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;    std::vector&lt;std::vector&lt;Eigen::Vector2d&gt;&gt; m_boundaries;</div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    std::vector&lt;std::vector&lt;double&gt;&gt; m_arclengths;</div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160; </div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1_boundary.html#aac6d5d454ca6009e97a8a0c37ff7f921">construct_boudaries</a>(<span class="keyword">const</span> Eigen::MatrixXd&amp; V, <span class="keyword">const</span> Eigen::MatrixXi&amp; F);</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    Eigen::Vector2d t_to_uv(<span class="keywordtype">int</span> i, <span class="keywordtype">double</span> t) <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <span class="keywordtype">double</span> uv_to_t(<span class="keyword">const</span> Eigen::Vector2d&amp; v) <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    std::pair&lt;int, int&gt; uv_to_ij(<span class="keyword">const</span> Eigen::Vector2d&amp; v, <span class="keywordtype">double</span>&amp; t) <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;};</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;} <span class="comment">// namespace wmtk</span></div>
-<div class="ttc" id="aclasswmtk_1_1_boundary_html"><div class="ttname"><a href="classwmtk_1_1_boundary.html">wmtk::Boundary</a></div><div class="ttdef"><b>Definition:</b> BoundaryParametrization.h:14</div></div>
-<div class="ttc" id="aclasswmtk_1_1_boundary_html_aac6d5d454ca6009e97a8a0c37ff7f921"><div class="ttname"><a href="classwmtk_1_1_boundary.html#aac6d5d454ca6009e97a8a0c37ff7f921">wmtk::Boundary::construct_boudaries</a></div><div class="ttdeci">void construct_boudaries(const Eigen::MatrixXd &amp;V, const Eigen::MatrixXi &amp;F)</div><div class="ttdoc">construct m_boundaries which is a list of boundaries that are each a list of boundary vertices....</div><div class="ttdef"><b>Definition:</b> BoundaryParametrization.cpp:3</div></div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160; </div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="preprocessor">#include &lt;array&gt;</span></div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="preprocessor">#include &lt;cmath&gt;</span></div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160; </div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="keyword">namespace </span>wmtk {</div>
+<div class="line"><a name="l00014"></a><span class="lineno"><a class="line" href="classwmtk_1_1_boundary.html">   14</a></span>&#160;<span class="keyword">class </span><a class="code" href="classwmtk_1_1_boundary.html">Boundary</a></div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;{</div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00017"></a><span class="lineno"><a class="line" href="structwmtk_1_1_boundary_1_1_parameterized_curves.html">   17</a></span>&#160;    <span class="keyword">struct </span><a class="code" href="structwmtk_1_1_boundary_1_1_parameterized_curves.html">ParameterizedCurves</a></div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    {</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;        <span class="comment">// List of 2d positions for each curve</span></div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;        std::vector&lt;std::vector&lt;Eigen::Vector2d&gt;&gt; positions;</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160; </div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;        <span class="comment">// Whether a curve is a closed periodic curve, or an open polyline</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;        std::vector&lt;bool&gt; periodic;</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160; </div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;        <span class="comment">// Mapping from curve_id to its parent curve_id.</span></div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;        <span class="comment">// - For non-seam curves, this is the identity function.</span></div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;        <span class="comment">// - For a pair of seam curves (i, j), we map one to the other. I.e. parent[i] = i and</span></div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;        <span class="comment">//   parent[j] = i.</span></div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;        std::vector&lt;int&gt; parent_curve;</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;        <span class="comment">// Cumulative arclength along each curve. The size of the arclength vector is v+1, where v</span></div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;        <span class="comment">// is the number of vertices along the curve.</span></div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;        std::vector&lt;std::vector&lt;double&gt;&gt; arclengths;</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    };</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160; </div>
+<div class="line"><a name="l00036"></a><span class="lineno"><a class="line" href="structwmtk_1_1_boundary_1_1_parameterized_segment.html">   36</a></span>&#160;    <span class="keyword">struct </span><a class="code" href="structwmtk_1_1_boundary_1_1_parameterized_segment.html">ParameterizedSegment</a></div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    {</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;        <span class="comment">// First endpoint</span></div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        Eigen::Vector2d A;</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160; </div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        <span class="comment">// Second endpoint</span></div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        Eigen::Vector2d B;</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        <span class="comment">// Arclength at the start of the segment (A)</span></div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        <span class="keywordtype">double</span> t0;</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160; </div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        <span class="comment">// Normalization factor for the parameter t</span></div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        <span class="keywordtype">double</span> tlen;</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    };</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160; </div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <a class="code" href="structwmtk_1_1_boundary_1_1_parameterized_curves.html">ParameterizedCurves</a> m_curves;</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160; </div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1_boundary.html#a54c1378d8307ed6cf61b8168a1abf0f5">construct_boundaries</a>(</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;        <span class="keyword">const</span> Eigen::MatrixXd&amp; V,</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        <span class="keyword">const</span> Eigen::MatrixXi&amp; F,</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        <span class="keyword">const</span> Eigen::MatrixXi&amp; E0,</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;        <span class="keyword">const</span> Eigen::MatrixXi&amp; E1);</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160; </div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    <a class="code" href="structwmtk_1_1_boundary_1_1_parameterized_segment.html">ParameterizedSegment</a> <a class="code" href="classwmtk_1_1_boundary.html#a59adec6faa542687237cc22bea56fd0a">t_to_segment</a>(<span class="keywordtype">int</span> curve_id, <span class="keywordtype">double</span> t) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160; </div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    Eigen::Vector2d t_to_uv(<span class="keywordtype">int</span> curve_id, <span class="keywordtype">double</span> t)<span class="keyword"> const</span></div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;        <span class="keyword">auto</span> s = <a class="code" href="classwmtk_1_1_boundary.html#a59adec6faa542687237cc22bea56fd0a">t_to_segment</a>(curve_id, t);</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;        <span class="keywordflow">return</span> s.A + (s.B - s.A) * (t - s.t0) / s.tlen;</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    }</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160; </div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    std::pair&lt;int, double&gt; <a class="code" href="classwmtk_1_1_boundary.html#aac6f2765300ae46c7fa88b2838a82d7a">uv_to_t</a>(<span class="keyword">const</span> Eigen::Vector2d&amp; v) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160; </div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    std::pair&lt;int, int&gt; uv_to_ij(<span class="keyword">const</span> Eigen::Vector2d&amp; v, <span class="keywordtype">double</span>&amp; t) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160; </div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    <span class="keywordtype">double</span> upper_bound(<span class="keywordtype">int</span> curve_id)<span class="keyword"> const</span></div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;        <span class="keywordflow">return</span> m_curves.arclengths[parent_curve(curve_id)].back();</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;    }</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160; </div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;    <span class="keywordtype">bool</span> is_periodic(<span class="keywordtype">int</span> curve_id)<span class="keyword"> const </span>{ <span class="keywordflow">return</span> m_curves.periodic[curve_id]; }</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160; </div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;    <span class="keywordtype">size_t</span> num_curves()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> m_curves.arclengths.size(); }</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160; </div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;    <span class="comment">// ==== debug unit tests ====</span></div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    <span class="keywordtype">double</span> get_t_at_x(<span class="keywordtype">int</span> curve_id, <span class="keywordtype">int</span> x)<span class="keyword"> const </span>{ <span class="keywordflow">return</span> m_curves.arclengths[curve_id][x]; }</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    Eigen::Vector2d get_position_at_x(<span class="keywordtype">int</span> curve_id, <span class="keywordtype">int</span> x)<span class="keyword"> const</span></div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;        <span class="keywordflow">return</span> m_curves.positions[curve_id][x];</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;    }</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;    <span class="keywordtype">double</span> curve_size(<span class="keywordtype">int</span> curve_id)<span class="keyword"> const </span>{ <span class="keywordflow">return</span> m_curves.arclengths[curve_id].size(); }</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160; </div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;<span class="keyword">protected</span>:</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;    <span class="keyword">const</span> std::vector&lt;Eigen::Vector2d&gt;&amp; positions(<span class="keywordtype">int</span> curve_id)<span class="keyword"> const</span></div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;        <span class="keywordflow">return</span> m_curves.positions[curve_id];</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;    }</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160; </div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;    <span class="keyword">const</span> std::vector&lt;double&gt;&amp; arclengths(<span class="keywordtype">int</span> curve_id)<span class="keyword"> const</span></div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;        <span class="keywordflow">return</span> m_curves.arclengths[curve_id];</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;    }</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160; </div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;    <span class="keywordtype">int</span> parent_curve(<span class="keywordtype">int</span> curve_id)<span class="keyword"> const </span>{ <span class="keywordflow">return</span> m_curves.parent_curve[curve_id]; }</div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;};</div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160; </div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;} <span class="comment">// namespace wmtk</span></div>
+<div class="ttc" id="aclasswmtk_1_1_boundary_html"><div class="ttname"><a href="classwmtk_1_1_boundary.html">wmtk::Boundary</a></div><div class="ttdef"><b>Definition:</b> BoundaryParametrization.h:15</div></div>
+<div class="ttc" id="aclasswmtk_1_1_boundary_html_a54c1378d8307ed6cf61b8168a1abf0f5"><div class="ttname"><a href="classwmtk_1_1_boundary.html#a54c1378d8307ed6cf61b8168a1abf0f5">wmtk::Boundary::construct_boundaries</a></div><div class="ttdeci">void construct_boundaries(const Eigen::MatrixXd &amp;V, const Eigen::MatrixXi &amp;F, const Eigen::MatrixXi &amp;E0, const Eigen::MatrixXi &amp;E1)</div><div class="ttdef"><b>Definition:</b> BoundaryParametrization.cpp:442</div></div>
+<div class="ttc" id="aclasswmtk_1_1_boundary_html_a59adec6faa542687237cc22bea56fd0a"><div class="ttname"><a href="classwmtk_1_1_boundary.html#a59adec6faa542687237cc22bea56fd0a">wmtk::Boundary::t_to_segment</a></div><div class="ttdeci">ParameterizedSegment t_to_segment(int curve_id, double t) const</div><div class="ttdef"><b>Definition:</b> BoundaryParametrization.cpp:475</div></div>
+<div class="ttc" id="aclasswmtk_1_1_boundary_html_aac6f2765300ae46c7fa88b2838a82d7a"><div class="ttname"><a href="classwmtk_1_1_boundary.html#aac6f2765300ae46c7fa88b2838a82d7a">wmtk::Boundary::uv_to_t</a></div><div class="ttdeci">std::pair&lt; int, double &gt; uv_to_t(const Eigen::Vector2d &amp;v) const</div><div class="ttdef"><b>Definition:</b> BoundaryParametrization.cpp:507</div></div>
+<div class="ttc" id="astructwmtk_1_1_boundary_1_1_parameterized_curves_html"><div class="ttname"><a href="structwmtk_1_1_boundary_1_1_parameterized_curves.html">wmtk::Boundary::ParameterizedCurves</a></div><div class="ttdef"><b>Definition:</b> BoundaryParametrization.h:18</div></div>
+<div class="ttc" id="astructwmtk_1_1_boundary_1_1_parameterized_segment_html"><div class="ttname"><a href="structwmtk_1_1_boundary_1_1_parameterized_segment.html">wmtk::Boundary::ParameterizedSegment</a></div><div class="ttdef"><b>Definition:</b> BoundaryParametrization.h:37</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

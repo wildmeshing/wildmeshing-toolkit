@@ -1,4 +1,9 @@
 var searchData=
 [
-  ['print_5finfo_462',['print_info',['../classwmtk_1_1_tet_mesh_tuple.html#ae9c0309eebee8d0bfe7d5c79dcf24fca',1,'wmtk::TetMeshTuple::print_info() const'],['../classwmtk_1_1_tet_mesh_tuple.html#af1f4ee1d2975d95a3542818e0422556d',1,'wmtk::TetMeshTuple::print_info(const TetMesh &amp;m) const']]]
+  ['operation_5fupdate_5fconnectivity_5fimpl_574',['operation_update_connectivity_impl',['../classwmtk_1_1_tet_mesh.html#ac29b6743a2b1cfe96535c798c3d86982',1,'wmtk::TetMesh']]],
+  ['operator_28_29_575',['operator()',['../structwmtk_1_1_execute_pass.html#ae03155a3f43fae0bf5d13cf8ccbcea2e',1,'wmtk::ExecutePass']]],
+  ['oriented_5ftet_5fvertices_576',['oriented_tet_vertices',['../classwmtk_1_1_tet_mesh.html#ada134af13b8060dcce7f3ae21939ec2e',1,'wmtk::TetMesh']]],
+  ['oriented_5ftet_5fvids_577',['oriented_tet_vids',['../classwmtk_1_1_tet_mesh.html#a448bea95db3c98b8bae56c9c2edc0589',1,'wmtk::TetMesh']]],
+  ['oriented_5ftri_5fvertices_578',['oriented_tri_vertices',['../classwmtk_1_1_tri_mesh.html#aaab31eef8e025f6185a4760ed80be722',1,'wmtk::TriMesh::oriented_tri_vertices()'],['../classwmtk_1_1_tri_mesh_tuple.html#a78ca5ba9eb768f10c04ce2091034fd6b',1,'wmtk::TriMeshTuple::oriented_tri_vertices()']]],
+  ['oriented_5ftri_5fvids_579',['oriented_tri_vids',['../classwmtk_1_1_tri_mesh.html#a07f1bdac973f713076d7ea8073082ef5',1,'wmtk::TriMesh']]]
 ];

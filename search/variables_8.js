@@ -1,6 +1,4 @@
 var searchData=
 [
-  ['should_5frenew_536',['should_renew',['../structwmtk_1_1_execute_pass.html#a7073caa314f6fbd0e9ba43044872fa1c',1,'wmtk::ExecutePass']]],
-  ['stopping_5fcriterion_537',['stopping_criterion',['../structwmtk_1_1_execute_pass.html#adf9b2f5a9247ddce33ea9755fdd6f9b6',1,'wmtk::ExecutePass']]],
-  ['stopping_5fcriterion_5fchecking_5ffrequency_538',['stopping_criterion_checking_frequency',['../structwmtk_1_1_execute_pass.html#a4842b950c3f22f8f4b358dde129f226f',1,'wmtk::ExecutePass']]]
+  ['renew_5fneighbor_5ftuples_664',['renew_neighbor_tuples',['../structwmtk_1_1_execute_pass.html#af0f4f220460b40510ed4ce265b696df3',1,'wmtk::ExecutePass']]]
 ];

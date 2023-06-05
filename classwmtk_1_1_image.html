@@ -80,9 +80,12 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:af0bc1a5b93b24f3407c0f7d436563093"><td class="memItemLeft" align="right" valign="top"><a id="af0bc1a5b93b24f3407c0f7d436563093"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>Image</b> (int height_, int width_)</td></tr>
 <tr class="separator:af0bc1a5b93b24f3407c0f7d436563093"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab60e680cd9d610e6ebb10721308b54ae"><td class="memItemLeft" align="right" valign="top"><a id="ab60e680cd9d610e6ebb10721308b54ae"></a>
-auto&#160;</td><td class="memItemRight" valign="bottom"><b>get_raw_image</b> () const</td></tr>
-<tr class="separator:ab60e680cd9d610e6ebb10721308b54ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a20ece8f67aeb42764bc51591bb49cb28"><td class="memItemLeft" align="right" valign="top"><a id="a20ece8f67aeb42764bc51591bb49cb28"></a>
+ImageMatrixf &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>ref_raw_image</b> ()</td></tr>
+<tr class="separator:a20ece8f67aeb42764bc51591bb49cb28"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3fdb0047da5dcb3529dcd55ffe89cc2a"><td class="memItemLeft" align="right" valign="top"><a id="a3fdb0047da5dcb3529dcd55ffe89cc2a"></a>
+const ImageMatrixf &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>get_raw_image</b> () const</td></tr>
+<tr class="separator:a3fdb0047da5dcb3529dcd55ffe89cc2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a87401c9170c9eeaaac9a22366fa00248"><td class="memItemLeft" align="right" valign="top"><a id="a87401c9170c9eeaaac9a22366fa00248"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>width</b> () const</td></tr>
 <tr class="separator:a87401c9170c9eeaaac9a22366fa00248"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -92,42 +95,45 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>height</b> () const</t
 <tr class="memitem:a8d0e55f435266dae8e3d062a9ccaff37"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
 <tr class="memitem:a8d0e55f435266dae8e3d062a9ccaff37"><td class="memTemplItemLeft" align="right" valign="top">std::decay_t&lt; T &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_image.html#a8d0e55f435266dae8e3d062a9ccaff37">get</a> (const T &amp;u, const T &amp;v) const</td></tr>
 <tr class="separator:a8d0e55f435266dae8e3d062a9ccaff37"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a16df79c06df940cd07d7549d2ff15749"><td class="memItemLeft" align="right" valign="top"><a id="a16df79c06df940cd07d7549d2ff15749"></a>
+<tr class="memitem:a6ca6d0069acf6101c6b0aa8b716d2a51"><td class="memItemLeft" align="right" valign="top"><a id="a6ca6d0069acf6101c6b0aa8b716d2a51"></a>
+float&#160;</td><td class="memItemRight" valign="bottom"><b>get_pixel</b> (const int i, const int j) const</td></tr>
+<tr class="separator:a6ca6d0069acf6101c6b0aa8b716d2a51"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4b24d4855bde543f116c0c3c1dcd8cf2"><td class="memItemLeft" align="right" valign="top"><a id="a4b24d4855bde543f116c0c3c1dcd8cf2"></a>
 std::pair&lt; int, int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_pixel_index</b> (const double &amp;u, const double &amp;v) const</td></tr>
-<tr class="separator:a16df79c06df940cd07d7549d2ff15749"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a24d3c472441cfea87cc7aef0cd86ef96"><td class="memItemLeft" align="right" valign="top"><a id="a24d3c472441cfea87cc7aef0cd86ef96"></a>
+<tr class="separator:a4b24d4855bde543f116c0c3c1dcd8cf2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a92cb2ae0cd819025f3506a09e642262f"><td class="memItemLeft" align="right" valign="top"><a id="a92cb2ae0cd819025f3506a09e642262f"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>get_coordinate</b> (const int x, const WrappingMode mode) const</td></tr>
-<tr class="separator:a24d3c472441cfea87cc7aef0cd86ef96"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:a92cb2ae0cd819025f3506a09e642262f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a20e8ddc5cbd0da09c52d427e1182f9e3"><td class="memItemLeft" align="right" valign="top"><a id="a20e8ddc5cbd0da09c52d427e1182f9e3"></a>
 WrappingMode&#160;</td><td class="memItemRight" valign="bottom"><b>get_wrapping_mode_x</b> () const</td></tr>
 <tr class="separator:a20e8ddc5cbd0da09c52d427e1182f9e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a94bc148527fd2672ef5c193ea797c75a"><td class="memItemLeft" align="right" valign="top"><a id="a94bc148527fd2672ef5c193ea797c75a"></a>
 WrappingMode&#160;</td><td class="memItemRight" valign="bottom"><b>get_wrapping_mode_y</b> () const</td></tr>
 <tr class="separator:a94bc148527fd2672ef5c193ea797c75a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaad72a59fb4443e541a3630e45a111ea"><td class="memItemLeft" align="right" valign="top"><a id="aaad72a59fb4443e541a3630e45a111ea"></a>
+<tr class="memitem:aad0024d78ac7231e75903fd3a0cac25d"><td class="memItemLeft" align="right" valign="top"><a id="aad0024d78ac7231e75903fd3a0cac25d"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>set</b> (const std::function&lt; float(const double &amp;, const double &amp;)&gt; &amp;f, const WrappingMode mode_x=WrappingMode::CLAMP_TO_EDGE, const WrappingMode mode_y=WrappingMode::CLAMP_TO_EDGE)</td></tr>
-<tr class="separator:aaad72a59fb4443e541a3630e45a111ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:aad0024d78ac7231e75903fd3a0cac25d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a31fa845075a2575c95fe0354ce3fde98"><td class="memItemLeft" align="right" valign="top"><a id="a31fa845075a2575c95fe0354ce3fde98"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>set</b> (const int r, const int c, const float v)</td></tr>
 <tr class="separator:a31fa845075a2575c95fe0354ce3fde98"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac2fa7049b204bb5df4d23ee01af3349a"><td class="memItemLeft" align="right" valign="top"><a id="ac2fa7049b204bb5df4d23ee01af3349a"></a>
+<tr class="memitem:a3f3ab1d7becdab38c1232a5f692d2381"><td class="memItemLeft" align="right" valign="top"><a id="a3f3ab1d7becdab38c1232a5f692d2381"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>save</b> (const std::filesystem::path &amp;path) const</td></tr>
-<tr class="separator:ac2fa7049b204bb5df4d23ee01af3349a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa954b061a5106ab6f93d9e6534778562"><td class="memItemLeft" align="right" valign="top"><a id="aa954b061a5106ab6f93d9e6534778562"></a>
+<tr class="separator:a3f3ab1d7becdab38c1232a5f692d2381"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a543854e8cca5e2a85f4219678d096dfe"><td class="memItemLeft" align="right" valign="top"><a id="a543854e8cca5e2a85f4219678d096dfe"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>load</b> (const std::filesystem::path &amp;path, WrappingMode mode_x, WrappingMode mode_y)</td></tr>
-<tr class="separator:aa954b061a5106ab6f93d9e6534778562"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:a543854e8cca5e2a85f4219678d096dfe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1ee69323dff65f6d1e19e8348d1f929a"><td class="memItemLeft" align="right" valign="top"><a id="a1ee69323dff65f6d1e19e8348d1f929a"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>set_wrapping_mode</b> (WrappingMode mode_x, WrappingMode mode_y)</td></tr>
 <tr class="separator:a1ee69323dff65f6d1e19e8348d1f929a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a44cfe74c4c27569d458bae5c307cf198"><td class="memItemLeft" align="right" valign="top"><a id="a44cfe74c4c27569d458bae5c307cf198"></a>
+<tr class="memitem:a7e4b944b96dc342481c495344bd970ff"><td class="memItemLeft" align="right" valign="top"><a id="a7e4b944b96dc342481c495344bd970ff"></a>
 <a class="el" href="classwmtk_1_1_image.html">Image</a>&#160;</td><td class="memItemRight" valign="bottom"><b>down_sample</b> () const</td></tr>
-<tr class="separator:a44cfe74c4c27569d458bae5c307cf198"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:a7e4b944b96dc342481c495344bd970ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
-<tr class="memitem:a74ee18b0e99b55d3d293d54863256610"><td class="memItemLeft" align="right" valign="top"><a id="a74ee18b0e99b55d3d293d54863256610"></a>
-Eigen::Matrix&lt; float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_image</b></td></tr>
-<tr class="separator:a74ee18b0e99b55d3d293d54863256610"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1c40e363baac62569390e8e173b5147f"><td class="memItemLeft" align="right" valign="top"><a id="a1c40e363baac62569390e8e173b5147f"></a>
+ImageMatrixf&#160;</td><td class="memItemRight" valign="bottom"><b>m_image</b></td></tr>
+<tr class="separator:a1c40e363baac62569390e8e173b5147f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aed8f3387d1ffb7376e68e1ebbe604aa0"><td class="memItemLeft" align="right" valign="top"><a id="aed8f3387d1ffb7376e68e1ebbe604aa0"></a>
 WrappingMode&#160;</td><td class="memItemRight" valign="bottom"><b>m_mode_x</b> = WrappingMode::CLAMP_TO_EDGE</td></tr>
 <tr class="separator:aed8f3387d1ffb7376e68e1ebbe604aa0"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -140,6 +146,9 @@ Private Types</h2></td></tr>
 <tr class="memitem:a06ab40fd403093aaeaa90a08a59e145d"><td class="memItemLeft" align="right" valign="top"><a id="a06ab40fd403093aaeaa90a08a59e145d"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>DScalar</b> = <a class="el" href="struct_d_scalar2.html">DScalar2</a>&lt; double, Eigen::Vector2d, Eigen::Matrix2d &gt;</td></tr>
 <tr class="separator:a06ab40fd403093aaeaa90a08a59e145d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0b1a528d5ff3e1b54b859f2147dc2419"><td class="memItemLeft" align="right" valign="top"><a id="a0b1a528d5ff3e1b54b859f2147dc2419"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>ImageMatrixf</b> = Eigen::Matrix&lt; float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor|Eigen::AutoAlign &gt;</td></tr>
+<tr class="separator:a0b1a528d5ff3e1b54b859f2147dc2419"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="a8d0e55f435266dae8e3d062a9ccaff37"></a>
@@ -180,8 +189,8 @@ template&lt;class T &gt; </div>
 </div>
 </div>
 <hr/>The documentation for this class was generated from the following files:<ul>
-<li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/utils/<a class="el" href="_image_8h_source.html">Image.h</a></li>
-<li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/utils/Image.cpp</li>
+<li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/image/<a class="el" href="_image_8h_source.html">Image.h</a></li>
+<li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/image/Image.cpp</li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->

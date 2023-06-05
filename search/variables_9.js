@@ -1,4 +1,6 @@
 var searchData=
 [
-  ['target_5flength_539',['target_length',['../structwmtk_1_1_newton_method_info.html#a71952d3b77f05529c5b484ecdf45bfbb',1,'wmtk::NewtonMethodInfo']]]
+  ['should_5frenew_665',['should_renew',['../structwmtk_1_1_execute_pass.html#a7073caa314f6fbd0e9ba43044872fa1c',1,'wmtk::ExecutePass']]],
+  ['stopping_5fcriterion_666',['stopping_criterion',['../structwmtk_1_1_execute_pass.html#adf9b2f5a9247ddce33ea9755fdd6f9b6',1,'wmtk::ExecutePass']]],
+  ['stopping_5fcriterion_5fchecking_5ffrequency_667',['stopping_criterion_checking_frequency',['../structwmtk_1_1_execute_pass.html#a4842b950c3f22f8f4b358dde129f226f',1,'wmtk::ExecutePass']]]
 ];

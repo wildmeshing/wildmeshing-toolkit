@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['hash_526',['hash',['../classwmtk_1_1_tri_mesh_1_1_triangle_connectivity.html#ae80c31e0e64bcec276d7688027dc83bb',1,'wmtk::TriMesh::TriangleConnectivity']]]
+  ['facet_5fids_654',['facet_ids',['../structwmtk_1_1_newton_method_info.html#abf12b62328cdaf572a48ac9977301d7d',1,'wmtk::NewtonMethodInfo']]]
 ];

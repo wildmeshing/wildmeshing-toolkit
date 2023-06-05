@@ -85,18 +85,15 @@ Inheritance diagram for wmtk::EdgeLengthEnergy:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ac61d34c84ee9f444541524c5888387b8"><td class="memItemLeft" align="right" valign="top"><a id="ac61d34c84ee9f444541524c5888387b8"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>EdgeLengthEnergy</b> (std::function&lt; <a class="el" href="struct_d_scalar2.html">DScalar</a>(const <a class="el" href="struct_d_scalar2.html">DScalar</a> &amp;, const <a class="el" href="struct_d_scalar2.html">DScalar</a> &amp;)&gt; displacement_func)</td></tr>
-<tr class="separator:ac61d34c84ee9f444541524c5888387b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5d8595cdd2e086aa30cd0304339c0cb3"><td class="memItemLeft" align="right" valign="top"><a id="a5d8595cdd2e086aa30cd0304339c0cb3"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>EdgeLengthEnergy</b> (std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_displacement.html">Displacement</a> &gt; displ)</td></tr>
+<tr class="separator:a5d8595cdd2e086aa30cd0304339c0cb3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6ef584a08e0af0f3012edfd93d2d3fbf"><td class="memItemLeft" align="right" valign="top"><a id="a6ef584a08e0af0f3012edfd93d2d3fbf"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>eval</b> ([[maybe_unused]] <a class="el" href="structwmtk_1_1_state.html">State</a> &amp;state) const override</td></tr>
 <tr class="separator:a6ef584a08e0af0f3012edfd93d2d3fbf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae64864b8caf200395406a741fb7cb09c"><td class="memItemLeft" align="right" valign="top"><a id="ae64864b8caf200395406a741fb7cb09c"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>eval</b> (<a class="el" href="structwmtk_1_1_state.html">State</a> &amp;state, <a class="el" href="structwmtk_1_1_dofs_to_positions.html">DofsToPositions</a> &amp;x) const override</td></tr>
 <tr class="separator:ae64864b8caf200395406a741fb7cb09c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aba0f8fc0983b7f5591346e035fae3e04"><td class="memItemLeft" align="right" valign="top"><a id="aba0f8fc0983b7f5591346e035fae3e04"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>displacement</b> (const double &amp;x, const double &amp;y) const</td></tr>
-<tr class="separator:aba0f8fc0983b7f5591346e035fae3e04"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classwmtk_1_1_energy"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classwmtk_1_1_energy')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classwmtk_1_1_energy.html">wmtk::Energy</a></td></tr>
 <tr class="memitem:a55b7ee55da562a6c93805ebe27440d2c inherit pub_methods_classwmtk_1_1_energy"><td class="memItemLeft" align="right" valign="top"><a id="a55b7ee55da562a6c93805ebe27440d2c"></a>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>eval</b> (<a class="el" href="structwmtk_1_1_state.html">State</a> &amp;state) const =0</td></tr>
@@ -104,9 +101,9 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>eval</b> (<a 
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:a27d36b3027381ab8f46fe9c8de019a51"><td class="memItemLeft" align="right" valign="top"><a id="a27d36b3027381ab8f46fe9c8de019a51"></a>
-std::function&lt; <a class="el" href="struct_d_scalar2.html">DScalar</a>(const <a class="el" href="struct_d_scalar2.html">DScalar</a> &amp;, const <a class="el" href="struct_d_scalar2.html">DScalar</a> &amp;)&gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_displacement</b></td></tr>
-<tr class="separator:a27d36b3027381ab8f46fe9c8de019a51"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af595717dfd914413fce2e5fa732f6f70"><td class="memItemLeft" align="right" valign="top"><a id="af595717dfd914413fce2e5fa732f6f70"></a>
+std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_displacement.html">Displacement</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_displ</b></td></tr>
+<tr class="separator:af595717dfd914413fce2e5fa732f6f70"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="inherited"></a>
 Additional Inherited Members</h2></td></tr>

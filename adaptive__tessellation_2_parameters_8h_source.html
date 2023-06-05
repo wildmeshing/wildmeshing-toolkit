@@ -70,94 +70,143 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="preprocessor">#pragma once</span></div>
-<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="preprocessor">#include &lt;wmtk/utils/Displacement.h&gt;</span></div>
-<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &lt;wmtk/utils/Image.h&gt;</span></div>
-<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &lt;wmtk/utils/MipMap.h&gt;</span></div>
-<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &lt;wmtk/utils/autodiff.h&gt;</span></div>
-<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="preprocessor">#include &lt;wmtk/utils/bicubic_interpolation.h&gt;</span></div>
-<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="preprocessor">#include &lt;nlohmann/json.hpp&gt;</span></div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="preprocessor">#include &lt;sec/envelope/SampleEnvelope.hpp&gt;</span></div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="keyword">namespace </span>adaptive_tessellation {</div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="keyword">enum class</span> ENERGY_TYPE { AMIPS, SYMDI, EDGE_LENGTH, EDGE_QUADRATURE };</div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="keyword">enum class</span> EDGE_LEN_TYPE { LINEAR2D, LINEAR3D, N_IMPLICIT_POINTS, PT_PER_PIXEL, MIPMAP, ACCURACY };</div>
-<div class="line"><a name="l00012"></a><span class="lineno"><a class="line" href="structadaptive__tessellation_1_1_parameters.html">   12</a></span>&#160;<span class="keyword">struct </span><a class="code" href="structadaptive__tessellation_1_1_parameters.html">Parameters</a></div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;{</div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;    <span class="keyword">using</span> json = nlohmann::json;</div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    <span class="keyword">using</span> <a class="code" href="struct_d_scalar2.html">DScalar</a> = <a class="code" href="struct_d_scalar2.html">DScalar2&lt;double, Eigen::Vector2d, Eigen::Matrix2d&gt;</a>;</div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160; </div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    json js_log;</div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    std::string m_output_folder = <span class="stringliteral">&quot;./&quot;</span>;</div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    <span class="comment">// default envelop use_exact = true</span></div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    <a class="code" href="classsample__envelope_1_1_sample_envelope.html">sample_envelope::SampleEnvelope</a> m_envelope;</div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    <span class="keywordtype">bool</span> m_has_envelope = <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;    <span class="keywordtype">double</span> m_eps = 0.0; <span class="comment">// envelope size default to 0.0</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    <span class="keywordtype">bool</span> m_bnd_freeze = <span class="keyword">false</span>; <span class="comment">// freeze boundary default to false</span></div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160; </div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    <span class="keywordtype">double</span> m_target_l = -1.; <span class="comment">// targeted edge length</span></div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    <span class="keywordtype">double</span> m_target_lr = 5e-2; <span class="comment">// targeted relative edge lengths</span></div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160; </div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    <span class="comment">// Energy Assigned to undefined energy</span></div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <span class="comment">// TODO: why not the max double?</span></div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">double</span> MAX_ENERGY = std::numeric_limits&lt;double&gt;::infinity();</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    <span class="keywordtype">double</span> m_max_energy = -1;</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    <span class="keywordtype">double</span> m_stop_energy = 5;</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    Eigen::Vector2d m_gradient = Eigen::Vector2d(0., 0.);</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    std::unique_ptr&lt;wmtk::Energy&gt; m_energy;</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    std::function&lt;Eigen::RowVector2d(<span class="keyword">const</span> Eigen::RowVector2d&amp;)&gt; m_get_closest_point =</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;        [](<span class="keyword">const</span> Eigen::RowVector2d&amp; p) -&gt; Eigen::RowVector2d {</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        <span class="keywordflow">return</span> p;</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    }; <span class="comment">// dafault is to return the current point. Legacy, was once used for boundary projection</span></div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160; </div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <span class="comment">// this need to be a function acting on the uv domain [0,1]</span></div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    std::function&lt;Eigen::Vector3d(<span class="keyword">const</span> <span class="keywordtype">double</span>&amp;, <span class="keyword">const</span> <span class="keywordtype">double</span>&amp;)&gt;</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        m_adaptive_tessellation_displacement =</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;            [](<span class="keyword">const</span> <span class="keywordtype">double</span>&amp; u, <span class="keyword">const</span> <span class="keywordtype">double</span>&amp; v) -&gt; Eigen::Vector3d {</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        Eigen::Vector3d p(u, v, 0.);</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        <span class="keywordflow">return</span> p;</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    }; <span class="comment">// used for heuristic split, collapse. Default to return (u,v,0)</span></div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <span class="comment">// takes 2 DScalar and returns z coordinates in DScalar</span></div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="comment">// this is directly used by autodiff for taking Gradient and Hessian</span></div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    std::function&lt;<a class="code" href="struct_d_scalar2.html">DScalar</a>(<span class="keyword">const</span> <a class="code" href="struct_d_scalar2.html">DScalar</a>&amp;, <span class="keyword">const</span> <a class="code" href="struct_d_scalar2.html">DScalar</a>&amp;)&gt; m_get_z;</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <span class="comment">// takes 2 doubles and cast into DScalar. Then use the obtained z coordinate to consturct</span></div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <span class="comment">// directly a Vector3d</span></div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <span class="comment">// This is used to get a Vector3d for functions that requires 3d coordinates but no need for</span></div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    <span class="comment">// taking gradients or hessian</span></div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    std::function&lt;Eigen::Vector3d(<span class="keyword">const</span> <span class="keywordtype">double</span>&amp;, <span class="keyword">const</span> <span class="keywordtype">double</span>&amp;)&gt; m_project_to_3d =</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;        [&amp;](<span class="keyword">const</span> <span class="keywordtype">double</span>&amp; u, <span class="keyword">const</span> <span class="keywordtype">double</span>&amp; v) -&gt; Eigen::Vector3d {</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;        <a class="code" href="struct_diff_scalar_base.html#a9ec9c3461abcd98164a36ba6f4e7dfb7">DiffScalarBase::setVariableCount</a>(2);</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        <span class="keyword">auto</span> z = this-&gt;m_get_z(<a class="code" href="struct_d_scalar2.html">DScalar</a>(u), <a class="code" href="struct_d_scalar2.html">DScalar</a>(v)).getValue();</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;        <span class="keywordflow">return</span> Eigen::Vector3d(u, v, z);</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    };</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160; </div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <a class="code" href="classwmtk_1_1_boundary.html">wmtk::Boundary</a> m_boundary; <span class="comment">// stores boundary information</span></div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <span class="keywordtype">bool</span> m_boundary_parameter = <span class="keyword">true</span>; <span class="comment">// use boundary single variable parameterization</span></div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="preprocessor">#include &lt;wmtk/TriMesh.h&gt;</span></div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &lt;wmtk/utils/BoundaryParametrization.h&gt;</span></div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &lt;wmtk/image/Displacement.h&gt;</span></div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &lt;wmtk/utils/Energy2d.h&gt;</span></div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="preprocessor">#include &lt;wmtk/image/Image.h&gt;</span></div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="preprocessor">#include &lt;wmtk/image/MipMap.h&gt;</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="preprocessor">#include &lt;wmtk/utils/autodiff.h&gt;</span></div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="preprocessor">#include &lt;wmtk/image/bicubic_interpolation.h&gt;</span></div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="preprocessor">#include &lt;wmtk/utils/json_sink.h&gt;</span></div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="preprocessor">#include &lt;Eigen/Dense&gt;</span></div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="preprocessor">#include &lt;nlohmann/json.hpp&gt;</span></div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="preprocessor">#include &lt;sec/envelope/SampleEnvelope.hpp&gt;</span></div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160; </div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="keyword">using namespace </span>wmtk;</div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceadaptive__tessellation.html">adaptive_tessellation</a> {</div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="keyword">enum class</span> ENERGY_TYPE {</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    <a class="code" href="classwmtk_1_1_a_m_i_p_s.html">AMIPS</a> = 0,</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    SYMDI = 1,</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    EDGE_LENGTH = 2,</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    EDGE_QUADRATURE = 3,</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    AREA_QUADRATURE = 4,</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;    QUADRICS = 5</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;};</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="keyword">enum class</span> EDGE_LEN_TYPE {</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    LINEAR2D = 0,</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    LINEAR3D = 1,</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    N_IMPLICIT_POINTS = 2,</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    PT_PER_PIXEL = 3,</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    MIPMAP = 4,</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    EDGE_ACCURACY = 5,</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    AREA_ACCURACY = 6,</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    TRI_QUADRICS = 7</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;};</div>
+<div class="line"><a name="l00035"></a><span class="lineno"><a class="line" href="structadaptive__tessellation_1_1_parameters.html">   35</a></span>&#160;<span class="keyword">struct </span><a class="code" href="structadaptive__tessellation_1_1_parameters.html">Parameters</a></div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;{</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <span class="keyword">using</span> json = nlohmann::json;</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <span class="keyword">using</span> <a class="code" href="struct_d_scalar2.html">DScalar</a> = <a class="code" href="struct_d_scalar2.html">DScalar2&lt;double, Eigen::Vector2d, Eigen::Matrix2d&gt;</a>;</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    json js_log;</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    std::string m_output_folder = <span class="stringliteral">&quot;./&quot;</span>;</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    std::shared_ptr&lt;spdlog::logger&gt; ATlogger =</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        wmtk::make_json_file_logger(<span class="stringliteral">&quot;ATlogger&quot;</span>, m_output_folder + <span class="stringliteral">&quot;/runtime.log&quot;</span>, <span class="keyword">true</span>);</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    <span class="comment">// default envelop use_exact = true</span></div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <a class="code" href="classsample__envelope_1_1_sample_envelope.html">sample_envelope::SampleEnvelope</a> m_envelope;</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <span class="keywordtype">bool</span> m_has_envelope = <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    <span class="keywordtype">double</span> m_eps = 0.0; <span class="comment">// envelope size default to 0.0</span></div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <span class="keywordtype">bool</span> m_bnd_freeze = <span class="keyword">false</span>; <span class="comment">// freeze boundary default to false</span></div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160; </div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="keywordtype">double</span> m_target_l = -1.; <span class="comment">// targeted edge length</span></div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <span class="keywordtype">double</span> m_target_lr = 5e-2; <span class="comment">// targeted relative edge lengths</span></div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160; </div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <span class="comment">// Energy Assigned to undefined energy</span></div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <span class="comment">// TODO: why not the max double?</span></div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">double</span> MAX_ENERGY = std::numeric_limits&lt;double&gt;::infinity();</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    <span class="keywordtype">double</span> m_max_energy = -1;</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <span class="keywordtype">double</span> m_stop_energy = 5;</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    Eigen::Vector2d m_gradient = Eigen::Vector2d(0., 0.);</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    std::unique_ptr&lt;wmtk::Energy&gt; m_energy;</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160; </div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    std::function&lt;Eigen::RowVector2d(<span class="keyword">const</span> Eigen::RowVector2d&amp;)&gt; m_get_closest_point =</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        [](<span class="keyword">const</span> Eigen::RowVector2d&amp; p) -&gt; Eigen::RowVector2d {</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        <span class="keywordflow">return</span> p;</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    }; <span class="comment">// dafault is to return the current point. Legacy, was once used for boundary projection</span></div>
 <div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160; </div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    WrappingMode m_wrapping_mode = WrappingMode::MIRROR_REPEAT;</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160; </div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    std::function&lt;std::pair&lt;int, int&gt;(<span class="keyword">const</span> <span class="keywordtype">double</span>&amp;, <span class="keyword">const</span> <span class="keywordtype">double</span>&amp;)&gt; m_image_get_coordinate;</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160; </div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    <a class="code" href="classwmtk_1_1_image.html">wmtk::Image</a> m_image;</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160; </div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <a class="code" href="classwmtk_1_1_mip_map.html">wmtk::MipMap</a> m_mipmap;</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    std::function&lt;double(<span class="keyword">const</span> std::size_t&amp;, <span class="keyword">const</span> std::size_t&amp;)&gt; m_get_length;</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160; </div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    <span class="keywordtype">double</span> m_accuracy_threshold = 0.01;</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    <span class="keywordtype">bool</span> m_accuracy = 0;</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160; </div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    std::shared_ptr&lt;wmtk::Displacement&gt; m_displacement;</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;};</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;} <span class="comment">// namespace adaptive_tessellation</span></div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    <span class="comment">// takes 2 DScalar and returns z coordinates in DScalar</span></div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <span class="comment">// this is directly used by autodiff for taking Gradient and Hessian</span></div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    std::function&lt;<a class="code" href="struct_d_scalar2.html">DScalar</a>(<span class="keyword">const</span> <a class="code" href="struct_d_scalar2.html">DScalar</a>&amp;, <span class="keyword">const</span> <a class="code" href="struct_d_scalar2.html">DScalar</a>&amp;)&gt; m_get_z;</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    <span class="comment">// takes 2 doubles and cast into DScalar. Then use the obtained z coordinate to consturct</span></div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    <span class="comment">// directly a Vector3d</span></div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <span class="comment">// This is used to get a Vector3d for functions that requires 3d coordinates but no need for</span></div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <span class="comment">// taking gradients or hessian</span></div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    std::function&lt;Eigen::Vector3d(<span class="keyword">const</span> <span class="keywordtype">double</span>&amp;, <span class="keyword">const</span> <span class="keywordtype">double</span>&amp;)&gt; m_project_to_3d =</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        [&amp;](<span class="keyword">const</span> <span class="keywordtype">double</span>&amp; u, <span class="keyword">const</span> <span class="keywordtype">double</span>&amp; v) -&gt; Eigen::Vector3d {</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;should not be used&quot;</span>);</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;        <a class="code" href="struct_diff_scalar_base.html#a9ec9c3461abcd98164a36ba6f4e7dfb7">DiffScalarBase::setVariableCount</a>(2);</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        <span class="keyword">auto</span> z = this-&gt;m_get_z(<a class="code" href="struct_d_scalar2.html">DScalar</a>(u), <a class="code" href="struct_d_scalar2.html">DScalar</a>(v)).getValue();</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        <span class="keywordflow">return</span> Eigen::Vector3d(u, v, z);</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    };</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160; </div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    <a class="code" href="classwmtk_1_1_boundary.html">wmtk::Boundary</a> m_boundary; <span class="comment">// stores boundary information</span></div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    <span class="keywordtype">bool</span> m_boundary_parameter = <span class="keyword">true</span>; <span class="comment">// use boundary single variable parameterization</span></div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160; </div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    WrappingMode m_wrapping_mode = WrappingMode::MIRROR_REPEAT;</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160; </div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    std::function&lt;std::pair&lt;int, int&gt;(<span class="keyword">const</span> <span class="keywordtype">double</span>&amp;, <span class="keyword">const</span> <span class="keywordtype">double</span>&amp;)&gt; m_image_get_coordinate;</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160; </div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    <a class="code" href="classwmtk_1_1_image.html">wmtk::Image</a> m_image;</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    std::array&lt;std::filesystem::path, 2&gt; m_position_normal_paths;</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    <a class="code" href="classwmtk_1_1_mip_map.html">wmtk::MipMap</a> m_mipmap;</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160; </div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    std::function&lt;double(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tri_mesh_tuple.html">TriMesh::Tuple</a>&amp; edge_tuple)&gt; m_get_length;</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160; </div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    <span class="keywordtype">double</span> m_quality_threshold = 0.01;</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    <span class="keywordtype">double</span> m_accuracy_threshold = 0.001;</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;    <span class="keywordtype">double</span> m_accuracy_safeguard_ratio = 1.1;</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160; </div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    EDGE_LEN_TYPE m_edge_length_type = EDGE_LEN_TYPE::AREA_ACCURACY;</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;    SAMPLING_MODE m_sampling_mode = SAMPLING_MODE::BICUBIC;</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;    DISPLACEMENT_MODE m_displacement_mode = DISPLACEMENT_MODE::PLANE;</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;    std::shared_ptr&lt;wmtk::Displacement&gt; m_displacement;</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;    <span class="keywordtype">double</span> m_scale = 1.0;</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;    Eigen::Matrix&lt;double, 1, 3&gt; m_offset = Eigen::Vector3d::Zero();</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160; </div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    <span class="keywordtype">bool</span> m_swap_using_valence = 1;</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    <span class="keywordtype">bool</span> m_split_absolute_error_metric = 1;</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160; </div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;    <span class="comment">// early stopping after n operations. default to infinity</span></div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;    <span class="keywordtype">int</span> m_early_stopping_number = std::numeric_limits&lt;size_t&gt;::max();</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;    <span class="comment">// only operate to modify topologies</span></div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;    <span class="keywordtype">bool</span> m_ignore_embedding = <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;    <span class="comment">// used for scaling the height map</span></div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;    <span class="keywordtype">bool</span> m_do_not_output = <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160; </div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;    <span class="keywordtype">void</span> log(</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;        <span class="keyword">const</span> nlohmann::json&amp; js,</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;        <span class="keywordtype">bool</span> flush = <span class="keyword">false</span>) <span class="comment">// flush should force file output immediately, but will be slow for</span></div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;                            <span class="comment">// per-operation things</span></div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160; </div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;        <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160; </div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160; </div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;    <span class="comment">// log that always writes to file immediately beause it&#39;s flushing</span></div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;    <span class="keywordtype">void</span> log_flush(<span class="keyword">const</span> nlohmann::json&amp; js)<span class="keyword"> const </span>{ log(js, <span class="keyword">true</span>); }</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;};</div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;} <span class="comment">// namespace adaptive_tessellation</span></div>
 <div class="ttc" id="aclasssample__envelope_1_1_sample_envelope_html"><div class="ttname"><a href="classsample__envelope_1_1_sample_envelope.html">sample_envelope::SampleEnvelope</a></div><div class="ttdef"><b>Definition:</b> SampleEnvelope.hpp:55</div></div>
-<div class="ttc" id="aclasswmtk_1_1_boundary_html"><div class="ttname"><a href="classwmtk_1_1_boundary.html">wmtk::Boundary</a></div><div class="ttdef"><b>Definition:</b> BoundaryParametrization.h:14</div></div>
+<div class="ttc" id="aclasswmtk_1_1_a_m_i_p_s_html"><div class="ttname"><a href="classwmtk_1_1_a_m_i_p_s.html">wmtk::AMIPS</a></div><div class="ttdef"><b>Definition:</b> Energy2d.h:85</div></div>
+<div class="ttc" id="aclasswmtk_1_1_boundary_html"><div class="ttname"><a href="classwmtk_1_1_boundary.html">wmtk::Boundary</a></div><div class="ttdef"><b>Definition:</b> BoundaryParametrization.h:15</div></div>
 <div class="ttc" id="aclasswmtk_1_1_image_html"><div class="ttname"><a href="classwmtk_1_1_image.html">wmtk::Image</a></div><div class="ttdef"><b>Definition:</b> Image.h:16</div></div>
 <div class="ttc" id="aclasswmtk_1_1_mip_map_html"><div class="ttname"><a href="classwmtk_1_1_mip_map.html">wmtk::MipMap</a></div><div class="ttdef"><b>Definition:</b> MipMap.h:9</div></div>
+<div class="ttc" id="aclasswmtk_1_1_tri_mesh_tuple_html"><div class="ttname"><a href="classwmtk_1_1_tri_mesh_tuple.html">wmtk::TriMeshTuple</a></div><div class="ttdef"><b>Definition:</b> TriMeshTuple.h:15</div></div>
+<div class="ttc" id="anamespaceadaptive__tessellation_html"><div class="ttname"><a href="namespaceadaptive__tessellation.html">adaptive_tessellation</a></div><div class="ttdoc">after: update the quadric of the new faces. and after error is measured by the sum of the one-ring qu...</div><div class="ttdef"><b>Definition:</b> AdaptiveTessellation.cpp:20</div></div>
 <div class="ttc" id="astruct_d_scalar2_html"><div class="ttname"><a href="struct_d_scalar2.html">DScalar2</a></div><div class="ttdoc">Automatic differentiation scalar with first- and second-order derivatives.</div><div class="ttdef"><b>Definition:</b> autodiff.h:495</div></div>
 <div class="ttc" id="astruct_diff_scalar_base_html_a9ec9c3461abcd98164a36ba6f4e7dfb7"><div class="ttname"><a href="struct_diff_scalar_base.html#a9ec9c3461abcd98164a36ba6f4e7dfb7">DiffScalarBase::setVariableCount</a></div><div class="ttdeci">static void setVariableCount(size_t value)</div><div class="ttdoc">Set the independent variable count used by the automatic differentiation layer.</div><div class="ttdef"><b>Definition:</b> autodiff.h:56</div></div>
-<div class="ttc" id="astructadaptive__tessellation_1_1_parameters_html"><div class="ttname"><a href="structadaptive__tessellation_1_1_parameters.html">adaptive_tessellation::Parameters</a></div><div class="ttdef"><b>Definition:</b> Parameters.h:13</div></div>
+<div class="ttc" id="astructadaptive__tessellation_1_1_parameters_html"><div class="ttname"><a href="structadaptive__tessellation_1_1_parameters.html">adaptive_tessellation::Parameters</a></div><div class="ttdef"><b>Definition:</b> Parameters.h:36</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
