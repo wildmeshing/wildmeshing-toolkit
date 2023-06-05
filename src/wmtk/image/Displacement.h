@@ -2,15 +2,15 @@
 
 #include <lagrange/utils/fpe.h>
 #include <tbb/enumerable_thread_specific.h>
+#include <wmtk/image/Sampling.h>
 #include <wmtk/quadrature/ClippedQuadrature.h>
 #include <wmtk/quadrature/TriangleQuadrature.h>
 #include <wmtk/utils/PolygonClipping.h>
-#include <wmtk/image/Sampling.h>
-#include <type_traits>
-#include "Image.h"
-#include <wmtk/utils/LineQuadrature.hpp>
 #include <wmtk/utils/autodiff.h>
-
+#include <iostream>
+#include <type_traits>
+#include <wmtk/utils/LineQuadrature.hpp>
+#include "Image.h"
 namespace wmtk {
 
 enum class DISPLACEMENT_MODE { MESH_3D = 0, PLANE = 1, VECTOR = 2 };
@@ -72,6 +72,31 @@ protected:
     virtual std::pair<int, int> get_coordinate(double x, double y) const = 0;
 
 public:
+    template <class T>
+    inline T triangle_3d_area(
+        const Eigen::Matrix<T, 3, 1>& a,
+        const Eigen::Matrix<T, 3, 1>& b,
+        const Eigen::Matrix<T, 3, 1>& c)
+    {
+        const T n0 = (a(1) - b(1)) * (a(2) - c(2)) - (a(1) - c(1)) * (a(2) - b(2));
+        const T n1 = -(a(0) - b(0)) * (a(2) - c(2)) + (a(0) - c(0)) * (a(2) - b(2));
+        const T n2 = (a(0) - b(0)) * (a(1) - c(1)) - (a(0) - c(0)) * (a(1) - b(1));
+
+        return sqrt(n0 * n0 + n1 * n1 + n2 * n2) * static_cast<T>(0.5);
+    };
+
+    // template get 3d tri area
+    template <class T>
+    inline T triangle_2d_area(
+        const Eigen::Matrix<T, 2, 1>& A,
+        const Eigen::Matrix<T, 2, 1>& B,
+        const Eigen::Matrix<T, 2, 1>& C)
+    {
+        auto B_A = B - A;
+        auto C_A = C - A;
+        T area = static_cast<T>(0.5) * abs(B_A.x() * C_A.y() - B_A.y() * C_A.x());
+        return area;
+    };
     inline double get_error_per_edge(
         const Eigen::Matrix<double, 2, 1>& p1,
         const Eigen::Matrix<double, 2, 1>& p2) const override
@@ -214,16 +239,12 @@ public:
             Eigen::Matrix<T, 3, 1> p_tri = (lambda1 * p1 + lambda2 * p2 + lambda3 * p3);
             return p_tri;
         };
-
         auto check_degenerate = [&]() -> bool {
-            auto u1 = triangle(0, 0);
-            auto v1 = triangle(0, 1);
-            auto u2 = triangle(1, 0);
-            auto v2 = triangle(1, 1);
-            auto u3 = triangle(2, 0);
-            auto v3 = triangle(2, 1);
-            if ((v2 - v3) * (u1 - u3) + (u3 - u2) * (v1 - v3) == 0.) return false;
-            if ((v2 - v3) * (u1 - u3) + (u3 - u2) * (v1 - v3) == 0.) return false;
+            if (triangle_2d_area<T>(
+                    triangle.row(0).transpose(),
+                    triangle.row(1).transpose(),
+                    triangle.row(2).transpose()) < 1e-10)
+                return false;
             return true;
         };
 
@@ -255,6 +276,12 @@ public:
                 }
             }
         }
+        value = value * triangle_3d_area<T>(p1, p2, p3);
+        value = value / triangle_2d_area<T>(
+                            triangle.row(0).transpose(),
+                            triangle.row(1).transpose(),
+                            triangle.row(2).transpose());
+
         return value;
     }
 };
@@ -291,9 +318,8 @@ protected:
     virtual std::pair<int, int> get_coordinate(double x, double y) const override
     {
         auto [xx, yy] = m_image.get_pixel_index(get_value(x), get_value(y));
-        return {
-            m_image.get_coordinate(xx, m_image.get_wrapping_mode_x()),
-            m_image.get_coordinate(yy, m_image.get_wrapping_mode_y())};
+        return {m_image.get_coordinate(xx, m_image.get_wrapping_mode_x()),
+                m_image.get_coordinate(yy, m_image.get_wrapping_mode_y())};
     }
 };
 
@@ -413,9 +439,8 @@ protected:
     {
         const auto& image = m_displaced_positions_image[0];
         auto [xx, yy] = image.get_pixel_index(get_value(x), get_value(y));
-        return {
-            image.get_coordinate(xx, image.get_wrapping_mode_x()),
-            image.get_coordinate(yy, image.get_wrapping_mode_y())};
+        return {image.get_coordinate(xx, image.get_wrapping_mode_x()),
+                image.get_coordinate(yy, image.get_wrapping_mode_y())};
     }
 
     void set_sampling_mode(const wmtk::SAMPLING_MODE sampling_mode)
