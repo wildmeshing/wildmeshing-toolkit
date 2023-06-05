@@ -1,7 +1,7 @@
 #include "bicubic_interpolation.h"
 
 #include <spdlog/spdlog.h>
-#include "Logger.hpp"
+#include <wmtk/utils/Logger.hpp>
 using namespace wmtk;
 wmtk::BicubicVector<float> wmtk::extract_samples(
     const size_t width,

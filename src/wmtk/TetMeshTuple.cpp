@@ -2,7 +2,7 @@
 #include "TetMeshTuple.h"
 #include <wmtk/utils/TetMeshElementTopology.h>
 
-#include <Tracy.hpp>
+#include <tracy/Tracy.hpp>
 
 using namespace wmtk;
 

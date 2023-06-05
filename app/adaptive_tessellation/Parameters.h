@@ -1,14 +1,37 @@
 #pragma once
-#include <wmtk/utils/Displacement.h>
-#include <wmtk/utils/Image.h>
-#include <wmtk/utils/MipMap.h>
+#include <wmtk/TriMesh.h>
+#include <wmtk/utils/BoundaryParametrization.h>
+#include <wmtk/image/Displacement.h>
+#include <wmtk/utils/Energy2d.h>
+#include <wmtk/image/Image.h>
+#include <wmtk/image/MipMap.h>
 #include <wmtk/utils/autodiff.h>
-#include <wmtk/utils/bicubic_interpolation.h>
+#include <wmtk/image/bicubic_interpolation.h>
+#include <wmtk/utils/json_sink.h>
+#include <Eigen/Dense>
 #include <nlohmann/json.hpp>
 #include <sec/envelope/SampleEnvelope.hpp>
+
+using namespace wmtk;
 namespace adaptive_tessellation {
-enum class ENERGY_TYPE { AMIPS, SYMDI, EDGE_LENGTH, EDGE_QUADRATURE };
-enum class EDGE_LEN_TYPE { LINEAR2D, LINEAR3D, N_IMPLICIT_POINTS, PT_PER_PIXEL, MIPMAP, ACCURACY };
+enum class ENERGY_TYPE {
+    AMIPS = 0,
+    SYMDI = 1,
+    EDGE_LENGTH = 2,
+    EDGE_QUADRATURE = 3,
+    AREA_QUADRATURE = 4,
+    QUADRICS = 5
+};
+enum class EDGE_LEN_TYPE {
+    LINEAR2D = 0,
+    LINEAR3D = 1,
+    N_IMPLICIT_POINTS = 2,
+    PT_PER_PIXEL = 3,
+    MIPMAP = 4,
+    EDGE_ACCURACY = 5,
+    AREA_ACCURACY = 6,
+    TRI_QUADRICS = 7
+};
 struct Parameters
 {
     using json = nlohmann::json;
@@ -17,6 +40,8 @@ struct Parameters
 public:
     json js_log;
     std::string m_output_folder = "./";
+    std::shared_ptr<spdlog::logger> ATlogger =
+        wmtk::make_json_file_logger("ATlogger", m_output_folder + "/runtime.log", true);
     // default envelop use_exact = true
     sample_envelope::SampleEnvelope m_envelope;
     bool m_has_envelope = false;
@@ -39,14 +64,6 @@ public:
         return p;
     }; // dafault is to return the current point. Legacy, was once used for boundary projection
 
-    // this need to be a function acting on the uv domain [0,1]
-    std::function<Eigen::Vector3d(const double&, const double&)>
-        m_adaptive_tessellation_displacement =
-            [](const double& u, const double& v) -> Eigen::Vector3d {
-        Eigen::Vector3d p(u, v, 0.);
-        return p;
-    }; // used for heuristic split, collapse. Default to return (u,v,0)
-
     // takes 2 DScalar and returns z coordinates in DScalar
     // this is directly used by autodiff for taking Gradient and Hessian
     std::function<DScalar(const DScalar&, const DScalar&)> m_get_z;
@@ -56,6 +73,7 @@ public:
     // taking gradients or hessian
     std::function<Eigen::Vector3d(const double&, const double&)> m_project_to_3d =
         [&](const double& u, const double& v) -> Eigen::Vector3d {
+        throw std::runtime_error("should not be used");
         DiffScalarBase::setVariableCount(2);
         auto z = this->m_get_z(DScalar(u), DScalar(v)).getValue();
         return Eigen::Vector3d(u, v, z);
@@ -69,14 +87,42 @@ public:
     std::function<std::pair<int, int>(const double&, const double&)> m_image_get_coordinate;
 
     wmtk::Image m_image;
-
+    std::array<std::filesystem::path, 2> m_position_normal_paths;
     wmtk::MipMap m_mipmap;
 
-    std::function<double(const std::size_t&, const std::size_t&)> m_get_length;
+    std::function<double(const TriMesh::Tuple& edge_tuple)> m_get_length;
 
-    double m_accuracy_threshold = 0.01;
-    bool m_accuracy = 0;
+    double m_quality_threshold = 0.01;
+    double m_accuracy_threshold = 0.001;
+    double m_accuracy_safeguard_ratio = 1.1;
 
+    EDGE_LEN_TYPE m_edge_length_type = EDGE_LEN_TYPE::AREA_ACCURACY;
+    SAMPLING_MODE m_sampling_mode = SAMPLING_MODE::BICUBIC;
+    DISPLACEMENT_MODE m_displacement_mode = DISPLACEMENT_MODE::PLANE;
     std::shared_ptr<wmtk::Displacement> m_displacement;
+    double m_scale = 1.0;
+    Eigen::Matrix<double, 1, 3> m_offset = Eigen::Vector3d::Zero();
+
+    bool m_swap_using_valence = 1;
+    bool m_split_absolute_error_metric = 1;
+
+    // early stopping after n operations. default to infinity
+    int m_early_stopping_number = std::numeric_limits<size_t>::max();
+    // only operate to modify topologies
+    bool m_ignore_embedding = false;
+    // used for scaling the height map
+    bool m_do_not_output = false;
+
+public:
+    void log(
+        const nlohmann::json& js,
+        bool flush = false) // flush should force file output immediately, but will be slow for
+                            // per-operation things
+
+        const;
+
+
+    // log that always writes to file immediately beause it's flushing
+    void log_flush(const nlohmann::json& js) const { log(js, true); }
 };
 } // namespace adaptive_tessellation

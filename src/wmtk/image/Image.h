@@ -15,10 +15,11 @@ namespace wmtk {
 class Image
 {
     using DScalar = DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d>;
+    using ImageMatrixf =
+        Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor | Eigen::AutoAlign>;
 
 protected:
-    Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
-        m_image; // saving scanline images
+    ImageMatrixf m_image; // saving scanline images
     WrappingMode m_mode_x = WrappingMode::CLAMP_TO_EDGE;
     WrappingMode m_mode_y = WrappingMode::CLAMP_TO_EDGE;
 
@@ -26,7 +27,8 @@ public:
     Image() = default;
     Image(int height_, int width_) { m_image.resize(height_, width_); };
 
-    auto get_raw_image() const { return m_image; }
+    ImageMatrixf& ref_raw_image() { return m_image; }
+    const ImageMatrixf& get_raw_image() const { return m_image; }
 
 public:
     // point coordinates between [0, 1]
@@ -35,6 +37,7 @@ public:
 
     template <class T>
     std::decay_t<T> get(const T& u, const T& v) const;
+    float get_pixel(const int i, const int j) const { return m_image(i, j); };
     std::pair<int, int> get_pixel_index(const double& u, const double& v) const;
     int get_coordinate(const int x, const WrappingMode mode) const;
     WrappingMode get_wrapping_mode_x() const { return m_mode_x; };
@@ -83,5 +86,21 @@ std::decay_t<T> Image::get(const T& u, const T& v) const
         m_mode_y);
     BicubicVector<float> bicubic_coeff = get_bicubic_matrix() * sample_vector;
     return eval_bicubic_coeffs(bicubic_coeff, x, y);
-}
+};
+
+void split_and_save_3channels(const std::filesystem::path& path);
+
+wmtk::Image buffer_to_image(const std::vector<float>& buffer, int w, int h);
+
+std::array<wmtk::Image, 3> load_rgb_image(const std::filesystem::path& path);
+
+std::array<wmtk::Image, 3> combine_position_normal_texture(
+    double normalization_scale,
+    const Eigen::Matrix<double, 1, 3>& offset,
+    const std::filesystem::path& position_path,
+    const std::filesystem::path& normal_path,
+    const std::filesystem::path& texture_path,
+    float min_height = 0.f,
+    float max_height = 1.f);
+
 } // namespace wmtk

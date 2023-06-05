@@ -227,33 +227,32 @@ void TwoAndAHalf::eval(State& state) const
 void EdgeLengthEnergy::eval(State& state, DofsToPositions& dof_to_positions) const
 {
     DiffScalarBase::setVariableCount(2);
-    auto target_triangle = state.target_triangle;
     assert(state.scaling > 0);
-    DScalar total_energy = DScalar(0);
+
     double l_squared = std::pow(state.scaling, 2);
     assert(l_squared > 0);
-    for (auto i = 0; i < 6; i++) target_triangle[i] = state.scaling * target_triangle[i];
+
     assert(state.two_opposite_vertices.rows() == 1);
     auto [x1, y1] = dof_to_positions.eval(state.dofx);
+    DScalar total_energy = DScalar(0);
 
-    DScalar v1z = this->m_displacement(x1, y1);
+    Eigen::Matrix<DScalar, 3, 1> v1 = m_displ->get(x1, y1);
     DScalar v2u = DScalar(state.two_opposite_vertices(0, 0));
     DScalar v2v = DScalar(state.two_opposite_vertices(0, 1));
-    DScalar v2z = this->m_displacement(v2u, v2v);
+    Eigen::Matrix<DScalar, 3, 1> v2 = m_displ->get(v2u, v2v);
     DScalar v3u = DScalar(state.two_opposite_vertices(0, 2));
     DScalar v3v = DScalar(state.two_opposite_vertices(0, 3));
-    DScalar v3z = this->m_displacement(v3u, v3v);
-    Eigen::Matrix<DScalar, 3, 1> V2_V1;
-    V2_V1 << v2u - x1, v2v - y1, v2z - v1z;
-    Eigen::Matrix<DScalar, 3, 1> V3_V1;
-    V3_V1 << v3u - x1, v3v - y1, v3z - v1z;
-    Eigen::Matrix<DScalar, 3, 1> V3_V2;
-    V3_V2 << v3u - v2u, v3v - v2v, DScalar(v3z - v2z);
+    Eigen::Matrix<DScalar, 3, 1> v3 = m_displ->get(v3u, v3v);
+
+    Eigen::Matrix<DScalar, 3, 1> V2_V1 = v2 - v1;
+    Eigen::Matrix<DScalar, 3, 1> V3_V1 = v3 - v1;
+    Eigen::Matrix<DScalar, 3, 1> V3_V2 = v3 - v2;
 
     // check if area is either inverted or smaller than certain A_hat
+    // this is 3d area!!!
     DScalar area;
     area = (V2_V1.cross(V3_V1)).squaredNorm();
-
+    assert(area.getValue() > 0);
     // energies for edge length
     total_energy += pow((V2_V1.squaredNorm() - l_squared), 2);
     total_energy += pow((V3_V1.squaredNorm() - l_squared), 2);
@@ -261,16 +260,17 @@ void EdgeLengthEnergy::eval(State& state, DofsToPositions& dof_to_positions) con
 
     // energy barrier for small triangle only when A < A_hat
     // check if area is either inverted or smaller than certain A_hat
-    assert(state.scaling > 0);
-    double A_hat = 0.5 * (std::sqrt(3) / 2) * 0.5 * pow(state.scaling, 2); // this is arbitrary now
+    // wmtk::logger().info("----current area {}", area.getValue());
+    double A_hat = 1e-6; // this is arbitrary now
     assert(A_hat > 0);
-    if (area <= 0) {
-        total_energy += std::numeric_limits<double>::infinity();
-    }
+
     if (area < A_hat) {
         assert((area / A_hat) < 1.0);
-        total_energy += -(area - A_hat) * (area - A_hat) * log(area / A_hat);
+        DScalar barrier_energy = -(area - A_hat) * (area - A_hat) * log(area / A_hat);
+        // wmtk::logger().info("----current barrier energy {}", barrier_energy.getValue());
+        total_energy += barrier_energy;
     }
+
     state.value = total_energy.getValue();
     state.gradient = total_energy.getGradient();
     state.hessian = total_energy.getHessian();
@@ -294,4 +294,94 @@ void AccuracyEnergy::eval(State& state, DofsToPositions& dof_to_positions) const
     state.gradient = total_energy.getGradient();
     state.hessian = total_energy.getHessian();
 }
+
+void AreaAccuracyEnergy::eval(State& state, DofsToPositions& dof_to_positions) const
+// measure edge quadrature. For each one-ring triangle only takes one edge, which will cover all the
+// one-ring edges without repeat
+{
+    lagrange::enable_fpe();
+    DiffScalarBase::setVariableCount(2);
+    DScalar total_energy = DScalar(0);
+    assert(state.two_opposite_vertices.rows() == 1);
+    auto [x1, y1] = dof_to_positions.eval(state.dofx);
+    Eigen::Matrix<DScalar, 3, 2, Eigen::RowMajor> triangle;
+    triangle << x1, y1, DScalar(state.two_opposite_vertices(0, 0)),
+        DScalar(state.two_opposite_vertices(0, 1)), DScalar(state.two_opposite_vertices(0, 2)),
+        DScalar(state.two_opposite_vertices(0, 3));
+
+    // is in order primary_vert, p2, p3
+    DScalar v2u = DScalar(state.two_opposite_vertices(0, 0));
+    DScalar v2v = DScalar(state.two_opposite_vertices(0, 1));
+
+    DScalar v3u = DScalar(state.two_opposite_vertices(0, 2));
+    DScalar v3v = DScalar(state.two_opposite_vertices(0, 3));
+
+
+    // check if area is either inverted or smaller than certain A_hat
+    DScalar dblarea = (v2u - x1) * (v3v - y1) - (v2v - y1) * (v3u - x1);
+    DScalar area;
+    area = dblarea * dblarea;
+    // wmtk::logger().info("----current area {}", area.getValue());
+    double A_hat = 1e-6; // this is arbitrary now
+    assert(A_hat > 0);
+
+    if (area < A_hat) {
+        assert((area / A_hat) < 1.0);
+        DScalar barrier_energy = -(area - A_hat) * (area - A_hat) * log(area / A_hat);
+        // wmtk::logger().info("----current barrier energy {}", barrier_energy.getValue());
+        total_energy += barrier_energy;
+    }
+
+    // total_energy = m_displ->get_error_per_triangle(triangle);
+    total_energy += m_texture_integral.get_error_one_triangle(triangle);
+    state.value = total_energy.getValue();
+    state.gradient = total_energy.getGradient();
+    state.hessian = total_energy.getHessian();
+}
+
+void QuadricEnergy::eval(State& state, DofsToPositions& dof_to_positions) const
+// measure edge quadrature. For each one-ring triangle only takes one edge, which will cover all the
+// one-ring edges without repeat
+{
+    DiffScalarBase::setVariableCount(2);
+    assert(state.two_opposite_vertices.rows() == 1);
+    auto [x1, y1] = dof_to_positions.eval(state.dofx);
+
+    auto p = m_displ->get(x1, y1);
+
+    const auto& q = m_facet_quadrics[state.idx];
+    DScalar energy = p.transpose() * q.A().cast<DScalar>() * p -
+                     DScalar(2.0) * p.dot(q.b().cast<DScalar>()) + DScalar(q.c);
+
+    DScalar v2u = DScalar(state.two_opposite_vertices(0, 0));
+    DScalar v2v = DScalar(state.two_opposite_vertices(0, 1));
+    Eigen::Matrix<DScalar, 3, 1> v2 = m_displ->get(v2u, v2v);
+    DScalar v3u = DScalar(state.two_opposite_vertices(0, 2));
+    DScalar v3v = DScalar(state.two_opposite_vertices(0, 3));
+    Eigen::Matrix<DScalar, 3, 1> v3 = m_displ->get(v3u, v3v);
+    Eigen::Matrix<DScalar, 3, 1> V2_V1;
+    V2_V1 = v2 - p;
+    Eigen::Matrix<DScalar, 3, 1> V3_V1;
+    V3_V1 = v3 - p;
+    // check if area is either inverted or smaller than certain A_hat
+    DScalar area;
+    area = (V2_V1.cross(V3_V1)).squaredNorm();
+    // wmtk::logger().info("----current area {}", area.getValue());
+    double A_hat = 1; // this is arbitrary now
+    assert(A_hat > 0);
+    if (area <= 0) {
+        energy += std::numeric_limits<double>::infinity();
+    }
+    if (area < A_hat) {
+        assert((area / A_hat) < 1.0);
+        DScalar barrier_energy = -(area - A_hat) * (area - A_hat) * log(area / A_hat);
+        // wmtk::logger().info("----current barrier energy {}", barrier_energy.getValue());
+        energy += barrier_energy;
+    }
+
+    state.value = energy.getValue();
+    state.gradient = energy.getGradient();
+    state.hessian = energy.getHessian();
+}
+
 } // namespace wmtk

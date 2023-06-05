@@ -6,7 +6,7 @@
 #include <wmtk/utils/EnableWarnings.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
 
-#include <Tracy.hpp>
+#include <tracy/Tracy.hpp>
 using namespace wmtk;
 
 int wmtk::TetMesh::get_next_empty_slot_t()

@@ -1,18 +1,39 @@
 # ###############################################################################
-# Triwild
+# Adaptive Tessellation
 # ###############################################################################
+
+if(NOT WMTK_APP_UNIFORM_REMESH)
+    message(FATAL_ERROR "Adaptive tessellation requires remeshing app; try WMTK_APP_UNIFORM_REMESH=ON")
+endif()
+
+if(NOT WMTK_APP_SEC)
+    message(FATAL_ERROR "Adaptive tessellation requires shorted edge collapse app; try WMTK_APP_SEC=ON")
+endif()
 
 include(gmp)
 include(fenvelope)
-
+include(lagrange)
+lagrange_include_modules(io)
+lagrange_include_modules(core)
 add_library(wmtk_adaptive_tessellation
 	Collapse.cpp
+	Collapse_link_condition.cpp
 	Swap.cpp
 	Split.cpp
 	Smooth.cpp
+	Smooth.h
+	Collapse.h
 	AdaptiveTessellation.cpp
+	AdaptiveTessellation_attributes.cpp
+	AdaptiveTessellation_schedule_accept.cpp
+    AdaptiveTessellation_debug.cpp
+    AdaptiveTessellation_serialization.cpp
 	AdaptiveTessellation.h
 	Parameters.h
+	Parameters.cpp
+	GlobalIntersection.h
+	LoggerDataCollector.h
+	LoggerDataCollector.cpp
 )
 add_library(wmtk::adaptive_tessellation ALIAS wmtk_adaptive_tessellation)
 
@@ -26,9 +47,11 @@ target_link_libraries(wmtk_adaptive_tessellation PUBLIC
 	wmtk::remeshing_lib
 	igl::predicates
 	lagrange::bvh
+	lagrange::io
+	lagrange::core
 	gmp::gmp
+	stb::image
 )
-
 add_executable(adaptive_tessellation main.cpp)
 target_compile_options(adaptive_tessellation PRIVATE "-rdynamic")
 target_link_libraries(adaptive_tessellation PUBLIC wmtk::adaptive_tessellation)
