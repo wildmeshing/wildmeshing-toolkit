@@ -1,12 +1,12 @@
 #pragma once
 #include <wmtk/TriMesh.h>
-#include <wmtk/utils/BoundaryParametrization.h>
 #include <wmtk/image/Displacement.h>
-#include <wmtk/utils/Energy2d.h>
 #include <wmtk/image/Image.h>
 #include <wmtk/image/MipMap.h>
-#include <wmtk/utils/autodiff.h>
 #include <wmtk/image/bicubic_interpolation.h>
+#include <wmtk/utils/BoundaryParametrization.h>
+#include <wmtk/utils/Energy2d.h>
+#include <wmtk/utils/autodiff.h>
 #include <wmtk/utils/json_sink.h>
 #include <Eigen/Dense>
 #include <nlohmann/json.hpp>
@@ -39,9 +39,9 @@ struct Parameters
 
 public:
     json js_log;
-    std::string m_output_folder = "./";
+    std::filesystem::path m_output_folder = "./";
     std::shared_ptr<spdlog::logger> ATlogger =
-        wmtk::make_json_file_logger("ATlogger", m_output_folder + "/runtime.log", true);
+        wmtk::make_json_file_logger("ATlogger", m_output_folder / "runtime.log", true);
     // default envelop use_exact = true
     sample_envelope::SampleEnvelope m_envelope;
     bool m_has_envelope = false;

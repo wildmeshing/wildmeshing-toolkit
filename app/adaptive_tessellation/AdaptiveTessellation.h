@@ -14,21 +14,21 @@
 #include <lagrange/views.h>
 #include <tbb/concurrent_vector.h>
 #include <wmtk/TriMesh.h>
+#include <wmtk/image/Displacement.h>
+#include <wmtk/image/Image.h>
+#include <wmtk/image/MipMap.h>
+#include <wmtk/image/Quadric.h>
 #include <wmtk/image/QuadricIntegral.h>
 #include <wmtk/image/TextureIntegral.h>
+#include <wmtk/image/load_image_exr.h>
 #include <wmtk/utils/AMIPS2D.h>
 #include <wmtk/utils/AMIPS2D_autodiff.h>
 #include <wmtk/utils/BoundaryParametrization.h>
-#include <wmtk/image/Displacement.h>
 #include <wmtk/utils/Energy2d.h>
 #include <wmtk/utils/Energy2dOptimizationUtils.h>
 #include <wmtk/utils/GeoUtils.h>
-#include <wmtk/image/Image.h>
-#include <wmtk/image/MipMap.h>
 #include <wmtk/utils/PolygonClipping.h>
-#include <wmtk/image/Quadric.h>
 #include <wmtk/utils/json_sink.h>
-#include <wmtk/image/load_image_exr.h>
 #include <Eigen/Core>
 #include <finitediff.hpp>
 #include <lean_vtk.hpp>
@@ -190,6 +190,16 @@ public:
         float min_height = 0.f,
         float max_height = 1.f);
 
+    void mesh_preprocessing_from_intermediate(
+        const std::filesystem::path& input_mesh_path,
+        const std::filesystem::path& intermediate_mesh_path_uv,
+        const std::filesystem::path& intermediate_mesh_path_world,
+        const std::filesystem::path& position_image_path,
+        const std::filesystem::path& normal_image_path,
+        const std::filesystem::path& height_image_path,
+        float min_height = 0.f,
+        float max_height = 1.f);
+
     bool invariants(const std::vector<wmtk::TriMeshTuple>& mod_tris);
     bool invariants(const TriMeshOperation& op) override;
 
@@ -307,6 +317,9 @@ public:
 
     // Writes a triangle mesh in ply format
     void write_ply(const std::filesystem::path& path);
+    void write_ply_intermediate(
+        const std::filesystem::path& path_uv,
+        const std::filesystem::path& path_wold);
     void write_vtk(const std::filesystem::path& path);
     void write_perface_vtk(const std::filesystem::path& path);
 

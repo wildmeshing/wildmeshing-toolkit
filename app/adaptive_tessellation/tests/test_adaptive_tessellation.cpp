@@ -13,13 +13,13 @@
 #include <lagrange/utils/fpe.h>
 #include <lagrange/views.h>
 #include <remeshing/UniformRemeshing.h>
+#include <wmtk/image/Image.h>
+#include <wmtk/image/MipMap.h>
+#include <wmtk/image/bicubic_interpolation.h>
 #include <wmtk/utils/AMIPS2D.h>
 #include <wmtk/utils/AMIPS2D_autodiff.h>
 #include <wmtk/utils/BoundaryParametrization.h>
-#include <wmtk/image/Image.h>
-#include <wmtk/image/MipMap.h>
 #include <wmtk/utils/autodiff.h>
-#include <wmtk/image/bicubic_interpolation.h>
 #include <catch2/catch.hpp>
 #include <finitediff.hpp>
 #include <functional>
@@ -854,7 +854,7 @@ TEST_CASE("quadric split", "[.]")
         adaptive_tessellation::EDGE_LEN_TYPE::TRI_QUADRICS,
         1);
     m.split_all_edges();
-    m.write_obj_displaced(m.mesh_parameters.m_output_folder + "/quadrics_split_result.obj");
+    m.write_obj_displaced(m.mesh_parameters.m_output_folder / "quadrics_split_result.obj");
 }
 
 TEST_CASE("old split", "[.]")
@@ -883,7 +883,7 @@ TEST_CASE("old split", "[.]")
         adaptive_tessellation::EDGE_LEN_TYPE::AREA_ACCURACY,
         1);
     m.split_all_edges();
-    m.write_obj_displaced(m.mesh_parameters.m_output_folder + "/area_split_result.obj");
+    m.write_obj_displaced(m.mesh_parameters.m_output_folder / "area_split_result.obj");
 }
 
 TEST_CASE("swap with accuracy passes", "[.]")
@@ -911,9 +911,9 @@ TEST_CASE("swap with accuracy passes", "[.]")
         1);
     m.split_all_edges();
     m.swap_all_edges_accuracy_pass();
-    m.write_obj_displaced(m.mesh_parameters.m_output_folder + "/area_swap_accuracy_result.obj");
+    m.write_obj_displaced(m.mesh_parameters.m_output_folder / "area_swap_accuracy_result.obj");
     // m.swap_all_edges_quality_pass();
-    // m.write_obj_displaced(m.mesh_parameters.m_output_folder + "/area_swap_quality_result.obj");
+    // m.write_obj_displaced(m.mesh_parameters.m_output_folder / "area_swap_quality_result.obj");
 }
 
 TEST_CASE("swap with quality passes", "[.]")
@@ -941,7 +941,7 @@ TEST_CASE("swap with quality passes", "[.]")
         1);
     m.split_all_edges();
     m.swap_all_edges_quality_pass();
-    m.write_obj_displaced(m.mesh_parameters.m_output_folder + "/area_swap_quality_result.obj");
+    m.write_obj_displaced(m.mesh_parameters.m_output_folder / "area_swap_quality_result.obj");
 }
 
 TEST_CASE("pipeline test", "[.]")
@@ -969,15 +969,15 @@ TEST_CASE("pipeline test", "[.]")
         adaptive_tessellation::EDGE_LEN_TYPE::AREA_ACCURACY,
         1);
     // m.split_all_edges();
-    // m.write_obj_displaced(m.mesh_parameters.m_output_folder + "/split_result.obj");
+    // m.write_obj_displaced(m.mesh_parameters.m_output_folder / "split_result.obj");
     // m.swap_all_edges_accuracy_pass();
-    // m.write_obj_displaced(m.mesh_parameters.m_output_folder + "/swap_accuracy_result.obj");
+    // m.write_obj_displaced(m.mesh_parameters.m_output_folder / "swap_accuracy_result.obj");
     // m.swap_all_edges_quality_pass();
-    // m.write_obj_displaced(m.mesh_parameters.m_output_folder + "/swap_quality_result.obj");
+    // m.write_obj_displaced(m.mesh_parameters.m_output_folder / "swap_quality_result.obj");
     // m.collapse_all_edges();
-    // m.write_obj_displaced(m.mesh_parameters.m_output_folder + "/collapse_result.obj");
+    // m.write_obj_displaced(m.mesh_parameters.m_output_folder / "collapse_result.obj");
     m.smooth_all_vertices();
-    m.write_obj_displaced(m.mesh_parameters.m_output_folder + "/smooth_result.obj");
+    m.write_obj_displaced(m.mesh_parameters.m_output_folder / "smooth_result.obj");
 }
 
 TEST_CASE("early stop split test", "[.]")
@@ -1008,21 +1008,22 @@ TEST_CASE("early stop split test", "[.]")
         m.mesh_parameters.m_early_stopping_number = 200;
         m.split_all_edges();
         m.write_obj_displaced(
-            m.mesh_parameters.m_output_folder + "/itr" + std::to_string(cnt) + "/split_result.obj");
+            m.mesh_parameters.m_output_folder /
+            ("itr" + std::to_string(cnt) + "/split_result.obj"));
         // m.swap_all_edges_accuracy_pass();
         // m.write_obj_displaced(m.mesh_parameters.m_output_folder + "/swap_accuracy_result.obj");
         m.mesh_parameters.m_early_stopping_number = std::numeric_limits<size_t>::max();
 
         m.swap_all_edges_quality_pass();
         m.write_obj_displaced(
-            m.mesh_parameters.m_output_folder + "/itr" + std::to_string(cnt) +
-            "/swap_quality_result.obj");
+            m.mesh_parameters.m_output_folder /
+            ("itr" + std::to_string(cnt) + "/swap_quality_result.obj"));
         // m.collapse_all_edges();
-        // m.write_obj_displaced(m.mesh_parameters.m_output_folder + "/collapse_result.obj");
+        // m.write_obj_displaced(m.mesh_parameters.m_output_folder / "collapse_result.obj");
         m.smooth_all_vertices();
         m.write_obj_displaced(
-            m.mesh_parameters.m_output_folder + "/itr" + std::to_string(cnt) +
-            "/smooth_result.obj");
+            m.mesh_parameters.m_output_folder /
+            ("itr" + std::to_string(cnt) + "/smooth_result.obj"));
         cnt++;
     }
 }

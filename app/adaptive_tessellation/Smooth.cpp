@@ -394,7 +394,7 @@ void adaptive_tessellation::AdaptiveTessellation::smooth_all_vertices()
 
             if (!mesh_parameters.m_do_not_output) {
                 write_obj_displaced(
-                    mesh_parameters.m_output_folder + fmt::format("/smooth_{:03d}.obj", itr));
+                    mesh_parameters.m_output_folder / fmt::format("smooth_{:03d}.obj", itr));
             }
             wmtk::logger().info("===== finished smooth itr {} =====", itr);
             itr++;
