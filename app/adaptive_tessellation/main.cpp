@@ -77,7 +77,7 @@ int main(int argc, char** argv)
     path config_json;
     path output_folder;
     bool log_to_stdout = false;
-
+    std::filesystem::path input_folder = WMTK_DATA_DIR;
     app.add_option("-c, --config", config_json, "input json file")->required(false);
     app.add_option("-o, --output", output_folder, "output folder")->required(false);
     app.add_flag("--log_to_stdout", log_to_stdout, "write log output also to std out");
@@ -90,7 +90,7 @@ int main(int argc, char** argv)
     }
     ensure_path_exists(config_json);
 
-    const path input_folder = config_json.parent_path();
+    // const path input_folder = config_json.parent_path();
     ensure_path_exists(input_folder);
 
     json config;
@@ -152,7 +152,13 @@ int main(int argc, char** argv)
     m.set_output_folder(output_folder);
     m.mesh_parameters.m_position_normal_paths = {position_map_path, normal_map_path};
 
-    m.mesh_preprocessing(input_file, position_map_path, normal_map_path, height_map_path, min_height, max_height);
+    m.mesh_preprocessing(
+        input_file,
+        position_map_path,
+        normal_map_path,
+        height_map_path,
+        min_height,
+        max_height);
 
     assert(m.check_mesh_connectivity_validity());
 
@@ -211,7 +217,12 @@ int main(int argc, char** argv)
         ldc.log_json(m, "after_split");
         m.write_obj_displaced(output_folder / "after_split.obj");
     }
-
+    m.swap_all_edges_quality_pass();
+    m.write_obj_displaced(output_folder / "after_swap.obj");
+    m.collapse_all_edges();
+    m.write_obj_displaced(output_folder / "after_collapse.obj");
+    m.smooth_all_vertices();
+    m.write_obj_displaced(output_folder / "after_smooth.obj");
     //{
     //    LoggerDataCollector ldc;
     //    ldc.start_timer();

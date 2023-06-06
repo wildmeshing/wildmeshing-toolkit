@@ -183,6 +183,8 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::after(AdaptiveTessellation& 
         return false;
     }
 
+    auto mod_tups = modified_triangles(m);
+    if (!m.update_energy_cache(mod_tups)) return false;
     // now update the mirror vertices
     // TODO vertify if this update is correct with Jeremie
     assert(mirror_vertices.size() == nminfos.size() - 1);
@@ -194,6 +196,7 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::after(AdaptiveTessellation& 
             m.mesh_parameters.m_boundary.t_to_uv(nminfos[i + 1].curve_id, state.dofx(0));
     }
     assert(m.invariants(one_ring_tris));
+
     m.mesh_parameters.m_gradient += state.gradient;
     // const auto smooth_end_time = lagrange::get_timestamp();
     // wmtk::logger().info(
