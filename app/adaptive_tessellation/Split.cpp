@@ -422,6 +422,7 @@ bool AdaptiveTessellationPairedEdgeSplitOperation::execute(AdaptiveTessellation&
 
 bool AdaptiveTessellationPairedEdgeSplitOperation::after(AdaptiveTessellation& m)
 {
+    static std::atomic_int success_cnt = 0;
     assert(bool(split_edge));
     if (!split_edge.after(m)) return false;
 
@@ -568,8 +569,9 @@ void AdaptiveTessellation::split_all_edges()
             } else if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::TRI_QUADRICS) {
                 // error is not scaled by 2d edge length
                 return m.get_quadrics_area_accuracy_error_for_split(e) * m.get_length2d(e);
-            } else
+            } else {
                 return m.mesh_parameters.m_get_length(e);
+            }
         };
         executor.num_threads = NUM_THREADS;
         executor.is_weight_up_to_date = [](auto& m, auto& ele) {
@@ -603,9 +605,9 @@ void AdaptiveTessellation::split_all_edges()
                     return false;
                 }
             }
-
-            else if (total_error < 4. / 3. * m.mesh_parameters.m_quality_threshold)
+            if (total_error < 4. / 3. * m.mesh_parameters.m_quality_threshold) {
                 return false;
+            }
             return true;
         };
         executor(*this, collect_all_ops);
