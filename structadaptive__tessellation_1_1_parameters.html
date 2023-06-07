@@ -98,9 +98,9 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:a6ed7cbb7b18183b51f621ecf51eb1298"><td class="memItemLeft" align="right" valign="top"><a id="a6ed7cbb7b18183b51f621ecf51eb1298"></a>
 json&#160;</td><td class="memItemRight" valign="bottom"><b>js_log</b></td></tr>
 <tr class="separator:a6ed7cbb7b18183b51f621ecf51eb1298"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9736c306d1738b86ad8861cf77616949"><td class="memItemLeft" align="right" valign="top"><a id="a9736c306d1738b86ad8861cf77616949"></a>
-std::string&#160;</td><td class="memItemRight" valign="bottom"><b>m_output_folder</b> = &quot;./&quot;</td></tr>
-<tr class="separator:a9736c306d1738b86ad8861cf77616949"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af0d57b74b67e54d8ff27f51726c4629e"><td class="memItemLeft" align="right" valign="top"><a id="af0d57b74b67e54d8ff27f51726c4629e"></a>
+std::filesystem::path&#160;</td><td class="memItemRight" valign="bottom"><b>m_output_folder</b> = &quot;./&quot;</td></tr>
+<tr class="separator:af0d57b74b67e54d8ff27f51726c4629e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a793b74eea17b52bd07ac36be5230730b"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; spdlog::logger &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>ATlogger</b></td></tr>
 <tr class="separator:a793b74eea17b52bd07ac36be5230730b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1f39482ae0222f81693312a345ab8c01"><td class="memItemLeft" align="right" valign="top"><a id="a1f39482ae0222f81693312a345ab8c01"></a>
@@ -223,7 +223,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_do_not_output</b> =
       </table>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
-<div class="line">        wmtk::make_json_file_logger(<span class="stringliteral">&quot;ATlogger&quot;</span>, m_output_folder + <span class="stringliteral">&quot;/runtime.log&quot;</span>, <span class="keyword">true</span>)</div>
+<div class="line">        wmtk::make_json_file_logger(<span class="stringliteral">&quot;ATlogger&quot;</span>, m_output_folder / <span class="stringliteral">&quot;runtime.log&quot;</span>, <span class="keyword">true</span>)</div>
 </div><!-- fragment -->
 </div>
 </div>

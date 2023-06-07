@@ -165,6 +165,9 @@ Eigen::Matrix&lt; uint64_t, Eigen::Dynamic, 2, Eigen::RowMajor &gt;&#160;</td><t
 <tr class="memitem:a3106279f941fc1a14538b7c3e424394c"><td class="memItemLeft" align="right" valign="top"><a id="a3106279f941fc1a14538b7c3e424394c"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_preprocessing</b> (const std::filesystem::path &amp;input_mesh_path, const std::filesystem::path &amp;position_image_path, const std::filesystem::path &amp;normal_image_path, const std::filesystem::path &amp;height_image_path, float min_height=0.f, float max_height=1.f)</td></tr>
 <tr class="separator:a3106279f941fc1a14538b7c3e424394c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a38fcbd184067fff5a196910f81d52eef"><td class="memItemLeft" align="right" valign="top"><a id="a38fcbd184067fff5a196910f81d52eef"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_preprocessing_from_intermediate</b> (const std::filesystem::path &amp;input_mesh_path, const std::filesystem::path &amp;intermediate_mesh_path_uv, const std::filesystem::path &amp;intermediate_mesh_path_world, const std::filesystem::path &amp;position_image_path, const std::filesystem::path &amp;normal_image_path, const std::filesystem::path &amp;height_image_path, float min_height=0.f, float max_height=1.f)</td></tr>
+<tr class="separator:a38fcbd184067fff5a196910f81d52eef"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a94c47117abffaf1a77082841459ddfeb"><td class="memItemLeft" align="right" valign="top"><a id="a94c47117abffaf1a77082841459ddfeb"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>invariants</b> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_tuple.html">wmtk::TriMeshTuple</a> &gt; &amp;mod_tris)</td></tr>
 <tr class="separator:a94c47117abffaf1a77082841459ddfeb"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -219,6 +222,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>export_uv</b> (Eigen:
 <tr class="memitem:a0e41f915acd95a4a85c3662a9fe73b26"><td class="memItemLeft" align="right" valign="top"><a id="a0e41f915acd95a4a85c3662a9fe73b26"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>write_ply</b> (const std::filesystem::path &amp;path)</td></tr>
 <tr class="separator:a0e41f915acd95a4a85c3662a9fe73b26"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abbc452c43722e4a8e72d9adb1f7f9ab0"><td class="memItemLeft" align="right" valign="top"><a id="abbc452c43722e4a8e72d9adb1f7f9ab0"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>write_ply_intermediate</b> (const std::filesystem::path &amp;path_uv, const std::filesystem::path &amp;path_wold)</td></tr>
+<tr class="separator:abbc452c43722e4a8e72d9adb1f7f9ab0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a197302ef1a70b97b00641b87080a770e"><td class="memItemLeft" align="right" valign="top"><a id="a197302ef1a70b97b00641b87080a770e"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>write_vtk</b> (const std::filesystem::path &amp;path)</td></tr>
 <tr class="separator:a197302ef1a70b97b00641b87080a770e"><td class="memSeparator" colspan="2">&#160;</td></tr>
