@@ -183,8 +183,6 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::after(AdaptiveTessellation& 
         return false;
     }
 
-    auto mod_tups = modified_triangles(m);
-    if (!m.update_energy_cache(mod_tups)) return false;
     // now update the mirror vertices
     // TODO vertify if this update is correct with Jeremie
     assert(mirror_vertices.size() == nminfos.size() - 1);
@@ -195,6 +193,9 @@ bool AdaptiveTessellationSmoothSeamVertexOperation::after(AdaptiveTessellation& 
         m.vertex_attrs[mirror_v.vid(m)].pos =
             m.mesh_parameters.m_boundary.t_to_uv(nminfos[i + 1].curve_id, state.dofx(0));
     }
+
+    auto mod_tups = modified_triangles(m);
+    if (!m.update_energy_cache(mod_tups)) return false;
     assert(m.invariants(one_ring_tris));
 
     m.mesh_parameters.m_gradient += state.gradient;
@@ -401,13 +402,11 @@ void adaptive_tessellation::AdaptiveTessellation::smooth_all_vertices()
             }
             wmtk::logger().info("===== finished smooth itr {} =====", itr);
             itr++;
-        } while ((mesh_parameters.m_gradient / vert_capacity()).stableNorm() >
-                     mesh_parameters.m_accuracy_threshold &&
-                 itr < 10);
+            mesh_parameters.m_gradient = mesh_parameters.m_gradient / get_vertices().size();
+        } while (mesh_parameters.m_gradient.stableNorm() > 1e-10 && itr < 10);
         wmtk::logger().info("===== terminate smooth after {} itrs", itr);
-        wmtk::logger().info(
-            "gradient norm: {}",
-            (mesh_parameters.m_gradient / vert_capacity()).stableNorm());
+        wmtk::logger().info("gradient norm: {}", mesh_parameters.m_gradient);
+
         time = timer.getElapsedTime();
         wmtk::logger().info("vertex smoothing operation time serial: {}s", time);
     }

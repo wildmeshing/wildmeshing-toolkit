@@ -207,22 +207,32 @@ int main(int argc, char** argv)
         ldc.evaluate_mesh(m);
         ldc.log_json(m, "before_remeshing");
     }
+    for (auto i = 0; i < 100; i++) {
+        auto current_folder = output_folder / std::to_string(i);
+        if (!std::filesystem::exists(current_folder)) {
+            std::filesystem::create_directories(current_folder);
+        }
+        m.mesh_parameters.m_output_folder = current_folder;
+        {
+            LoggerDataCollector ldc;
+            ldc.start_timer();
+            m.split_all_edges();
+            ldc.stop_timer();
+            ldc.evaluate_mesh(m);
+            ldc.log_json(m, "after_split");
 
-    {
-        LoggerDataCollector ldc;
-        ldc.start_timer();
-        m.split_all_edges();
-        ldc.stop_timer();
-        ldc.evaluate_mesh(m);
-        ldc.log_json(m, "after_split");
-        m.write_obj_displaced(output_folder / "after_split.obj");
+            m.write_obj_displaced(current_folder / "after_split.obj");
+        }
+        m.swap_all_edges_quality_pass();
+        m.write_obj_displaced(current_folder / "after_swap.obj");
+        m.collapse_all_edges();
+        m.write_obj_displaced(current_folder / "after_collapse.obj");
+        m.smooth_all_vertices();
+        m.write_obj_displaced(current_folder / "after_smooth.obj");
+        if (m.mesh_parameters.m_gradient.stableNorm() < 1e-10) {
+            break;
+        }
     }
-    m.swap_all_edges_quality_pass();
-    m.write_obj_displaced(output_folder / "after_swap.obj");
-    m.collapse_all_edges();
-    m.write_obj_displaced(output_folder / "after_collapse.obj");
-    m.smooth_all_vertices();
-    m.write_obj_displaced(output_folder / "after_smooth.obj");
     //{
     //    LoggerDataCollector ldc;
     //    ldc.start_timer();
