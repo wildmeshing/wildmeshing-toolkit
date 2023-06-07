@@ -283,16 +283,28 @@ TEST_CASE("check cumulate energy")
 
 TEST_CASE("quality remesh")
 {
+    constexpr bool use_intermediate = false;
+
     std::filesystem::path input_folder = WMTK_DATA_DIR;
     std::filesystem::path input_mesh_path = input_folder / "seamPyramid.obj";
     std::filesystem::path position_path = input_folder / "images/seamPyramid_position.exr";
     std::filesystem::path normal_path = input_folder / "images/seamPyramid_normal_smooth.exr";
     std::filesystem::path height_path = input_folder / "images/seamPyramid_height_10.exr";
+    auto output_folder = get_path("test_quality", "");
     AdaptiveTessellation m;
-    m.mesh_preprocessing(input_mesh_path, position_path, normal_path, height_path);
+    if (use_intermediate) {
+        m.mesh_preprocessing_from_intermediate(
+            input_mesh_path,
+            output_folder / "split_result_uv.ply",
+            output_folder / "split_result_world.ply",
+            position_path,
+            normal_path,
+            height_path);
+    } else {
+        m.mesh_preprocessing(input_mesh_path, position_path, normal_path, height_path);
+    }
     Image image;
     image.load(height_path, WrappingMode::MIRROR_REPEAT, WrappingMode::MIRROR_REPEAT);
-    auto output_folder = get_path("test_quality", "");
     REQUIRE(m.check_mesh_connectivity_validity());
 
     m.set_parameters(
@@ -305,14 +317,23 @@ TEST_CASE("quality remesh")
         adaptive_tessellation::ENERGY_TYPE::EDGE_LENGTH,
         adaptive_tessellation::EDGE_LEN_TYPE::LINEAR3D,
         1);
-
+    std::string cp = std::filesystem::current_path().string();
     m.mesh_parameters.m_output_folder = output_folder;
-    m.split_all_edges();
-    m.write_obj_displaced(m.mesh_parameters.m_output_folder + "/split_result.obj");
+    if (!use_intermediate) {
+        m.split_all_edges();
+        m.write_obj_displaced(m.mesh_parameters.m_output_folder / "split_result.obj");
+        m.write_ply_intermediate(
+            output_folder / "split_result_uv.ply",
+            output_folder / "split_result_world.ply");
+    }
+    REQUIRE(!m.has_self_intersections());
     m.swap_all_edges_quality_pass();
-    m.write_obj_displaced(m.mesh_parameters.m_output_folder + "/swap_result.obj");
+    m.write_obj_displaced(m.mesh_parameters.m_output_folder / "swap_result.obj");
+    REQUIRE(!m.has_self_intersections());
     m.collapse_all_edges();
-    m.write_obj_displaced(m.mesh_parameters.m_output_folder + "/collapse_result.obj");
+    m.write_obj_displaced(m.mesh_parameters.m_output_folder / "collapse_result.obj");
+    REQUIRE(!m.has_self_intersections());
     m.smooth_all_vertices();
-    m.write_obj_displaced(m.mesh_parameters.m_output_folder + "/smooth_result.obj");
+    m.write_obj_displaced(m.mesh_parameters.m_output_folder / "smooth_result.obj");
+    REQUIRE(!m.has_self_intersections());
 }

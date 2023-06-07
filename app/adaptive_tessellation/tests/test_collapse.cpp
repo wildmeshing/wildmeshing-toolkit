@@ -404,7 +404,7 @@ TEST_CASE("paired collapse", "[myfail][.]")
     REQUIRE(mirror_input.vid(m) == 10);
     REQUIRE(mirror_input.switch_vertex(m).vid(m) == 2);
     {
-        REQUIRE( op6.execute(m, primary_edge8));
+        REQUIRE(op6.execute(m, primary_edge8));
     }
 
 
@@ -557,7 +557,7 @@ TEST_CASE("collapse_example", "[.]")
         1);
     // m.mesh_parameters.m_accuracy_safeguard_ratio = 10.0;
     m.collapse_all_edges();
-    m.write_obj_displaced(m.mesh_parameters.m_output_folder + "/collapse_result.obj");
+    m.write_obj_displaced(m.mesh_parameters.m_output_folder / "collapse_result.obj");
 }
 
 // TODO: sanitize inputs to not be just for yunfan's home dir
@@ -589,12 +589,12 @@ TEST_CASE("split_collapse_example", "[.]")
     // m.mesh_parameters.m_accuracy_safeguard_ratio = 10.0;
     m.mesh_parameters.m_accuracy_threshold = 1e-5;
     m.collapse_all_edges();
-    m.write_obj_displaced(m.mesh_parameters.m_output_folder + "/split_collapse_result.obj");
+    m.write_obj_displaced(m.mesh_parameters.m_output_folder / "split_collapse_result.obj");
     m.mesh_parameters.m_accuracy_threshold = 1e-9;
     m.split_all_edges();
-    m.write_obj_displaced(m.mesh_parameters.m_output_folder + "/SPLIT_collapse_result.obj");
+    m.write_obj_displaced(m.mesh_parameters.m_output_folder / "SPLIT_collapse_result.obj");
 
     m.mesh_parameters.m_accuracy_threshold = 1e-7;
     m.collapse_all_edges();
-    m.write_obj_displaced(m.mesh_parameters.m_output_folder + "/split_COLLAPSE_result.obj");
+    m.write_obj_displaced(m.mesh_parameters.m_output_folder / "split_COLLAPSE_result.obj");
 }

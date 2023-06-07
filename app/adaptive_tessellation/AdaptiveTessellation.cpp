@@ -3,6 +3,7 @@
 #include <igl/Timer.h>
 #include <igl/predicates/predicates.h>
 #include <igl/readOBJ.h>
+#include <igl/readPLY.h>
 #include <igl/remove_unreferenced.h>
 #include <lagrange/utils/timing.h>
 #include <tbb/concurrent_vector.h>
@@ -79,9 +80,10 @@ void AdaptiveTessellation::mesh_preprocessing(
     wmtk::TriMesh m_3d;
     std::vector<std::array<size_t, 3>> tris;
     for (auto f = 0; f < input_F_.rows(); f++) {
-        std::array<size_t, 3> tri = {(size_t)input_F_(f, 0),
-                                     (size_t)input_F_(f, 1),
-                                     (size_t)input_F_(f, 2)};
+        std::array<size_t, 3> tri = {
+            (size_t)input_F_(f, 0),
+            (size_t)input_F_(f, 1),
+            (size_t)input_F_(f, 2)};
         tris.emplace_back(tri);
     }
     m_3d.create_mesh(input_V_.rows(), tris);
@@ -136,6 +138,128 @@ void AdaptiveTessellation::mesh_preprocessing(
     m_texture_integral.set_integration_method(
         wmtk::IntegralBase::IntegrationMethod::Exact); // Adaptive or Exact
 }
+
+void AdaptiveTessellation::mesh_preprocessing_from_intermediate(
+    const std::filesystem::path& input_mesh_path,
+    const std::filesystem::path& intermediate_mesh_path_uv,
+    const std::filesystem::path& intermediate_mesh_path_world,
+    const std::filesystem::path& position_image_path,
+    const std::filesystem::path& normal_image_path,
+    const std::filesystem::path& height_image_path,
+    float min_height,
+    float max_height)
+{
+    mesh_parameters.m_position_normal_paths = {position_image_path, normal_image_path};
+    spdlog::info("input file: {}", input_mesh_path.string());
+    Eigen::MatrixXd CN, FN;
+    // igl::read_triangle_mesh(input_mesh_path.string(), input_V_, input_F_);
+    // igl::readOBJ(input_mesh_path.string(), V, VT, CN, F, FT, FN);
+    igl::readOBJ(input_mesh_path.string(), input_V_, input_VT_, CN, input_F_, input_FT_, FN);
+
+    {
+        Eigen::MatrixXd V_buf;
+        Eigen::MatrixXi F_buf;
+        Eigen::MatrixXi map_old_to_new_v_ids;
+        igl::remove_unreferenced(input_VT_, input_FT_, V_buf, F_buf, map_old_to_new_v_ids);
+        input_VT_ = V_buf;
+        input_FT_ = F_buf;
+        assert(input_FT_.rows() == input_F_.rows());
+    }
+
+    {
+        Eigen::MatrixXi edges;
+        igl::edges(input_F_, edges);
+        const ipc::CollisionMesh collisionMesh(input_V_, edges, input_F_);
+        if (ipc::has_intersections(collisionMesh, input_V_)) {
+            wmtk::logger().error("Input mesh has self-intersections!");
+        }
+    }
+
+    // read intermediate mesh
+    spdlog::info("intermediate uv file: {}", intermediate_mesh_path_uv.string());
+    spdlog::info("intermediate world file: {}", intermediate_mesh_path_world.string());
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    igl::readPLY(intermediate_mesh_path_world.string(), V, F);
+
+    Eigen::MatrixXd VT;
+    Eigen::MatrixXi FT;
+    {
+        Eigen::MatrixXd VT3;
+        igl::readPLY(intermediate_mesh_path_uv.string(), VT3, FT);
+        VT = VT3.leftCols(2);
+    }
+
+    {
+        Eigen::MatrixXi edges;
+        igl::edges(F, edges);
+        const ipc::CollisionMesh collisionMesh(V, edges, F);
+        if (ipc::has_intersections(collisionMesh, V)) {
+            wmtk::logger().error("Intermediate mesh has self-intersections!");
+        }
+    }
+
+    wmtk::logger().info("///// #v : {} {}", VT.rows(), VT.cols());
+    wmtk::logger().info("///// #f : {} {}", FT.rows(), FT.cols());
+    wmtk::TriMesh m_3d;
+    std::vector<std::array<size_t, 3>> tris;
+    for (auto f = 0; f < F.rows(); f++) {
+        std::array<size_t, 3> tri = {(size_t)F(f, 0), (size_t)F(f, 1), (size_t)F(f, 2)};
+        tris.emplace_back(tri);
+    }
+    m_3d.create_mesh(V.rows(), tris);
+    create_mesh(VT, FT);
+    // set up seam edges and seam vertex coloring
+    Eigen::MatrixXi E0, E1;
+    std::tie(E0, E1) = seam_edges_set_up(V, F, m_3d, VT, FT);
+    set_seam_vertex_coloring(V, F, m_3d, VT, FT);
+    assert(E0.rows() == E1.rows());
+    // construct the boundary map for boundary parametrization
+    mesh_parameters.m_boundary.construct_boundaries(VT, FT, E0, E1);
+    // mark boundary vertices as boundary_vertex
+    // but this is not indiscriminatively rejected for all operations
+    // other operations are conditioned on whether m_bnd_freeze is turned on
+    // also obtain the boudnary parametrizatin t for each vertex
+    // for now keep the per vertex curve-id. but this is now a edge property
+    for (auto v : this->get_vertices()) {
+        if (is_boundary_vertex(v)) {
+            vertex_attrs[v.vid(*this)].boundary_vertex = is_boundary_vertex(v);
+            set_feature(v);
+            // one vertex can have more than one curve-id.
+            // current curve-id ofr vertex is arbitrarily picked among them
+            std::tie(vertex_attrs[v.vid(*this)].curve_id, vertex_attrs[v.vid(*this)].t) =
+                mesh_parameters.m_boundary.uv_to_t(vertex_attrs[v.vid(*this)].pos);
+        }
+    }
+    // after the boundary is constructed, set the start and end of each curve to be fixed
+    set_fixed();
+    // assign curve-id to each edge using the curve-it assigned for each vertex
+    assign_edge_curveid();
+
+    const Eigen::MatrixXd box_min = input_V_.colwise().minCoeff();
+    const Eigen::MatrixXd box_max = input_V_.colwise().maxCoeff();
+    double max_comp = (box_max - box_min).maxCoeff();
+    Eigen::MatrixXd scene_offset = -box_min;
+    Eigen::MatrixXd scene_extent = box_max - box_min;
+    scene_offset.array() -= (scene_extent.array() - max_comp) * 0.5;
+    mesh_parameters.m_scale = max_comp;
+    mesh_parameters.m_offset = scene_offset;
+
+    // cache the initial accuracy error per triangle
+    std::array<wmtk::Image, 3> displaced = wmtk::combine_position_normal_texture(
+        mesh_parameters.m_scale,
+        mesh_parameters.m_offset,
+        position_image_path,
+        normal_image_path,
+        height_image_path);
+
+    m_quadric_integral =
+        wmtk::QuadricIntegral(displaced, wmtk::QuadricIntegral::QuadricType::Point);
+    m_texture_integral = wmtk::TextureIntegral(std::move(displaced));
+    m_texture_integral.set_integration_method(
+        wmtk::IntegralBase::IntegrationMethod::Exact); // Adaptive or Exact
+}
+
 
 void AdaptiveTessellation::prepare_distance_quadrature_cached_energy()
 {
@@ -1365,11 +1489,11 @@ void AdaptiveTessellation::mesh_improvement(int max_its)
 
         if (!mesh_parameters.m_do_not_output) {
             write_obj_displaced(
-                mesh_parameters.m_output_folder + "/after_split_" + std::to_string(it) + ".obj");
+                mesh_parameters.m_output_folder / ("after_split_" + std::to_string(it) + ".obj"));
             displace_self_intersection_free(*this);
             write_obj(
-                mesh_parameters.m_output_folder + "/after_split_" + std::to_string(it) +
-                "3d_intersection_free.obj");
+                mesh_parameters.m_output_folder /
+                ("after_split_" + std::to_string(it) + "3d_intersection_free.obj"));
         }
 
         swap_all_edges();
@@ -1380,9 +1504,9 @@ void AdaptiveTessellation::mesh_improvement(int max_its)
         // consolidate_mesh();
         if (!mesh_parameters.m_do_not_output) {
             write_obj_displaced(
-                mesh_parameters.m_output_folder + "/after_swap_" + std::to_string(it) + ".obj");
+                mesh_parameters.m_output_folder / ("after_swap_" + std::to_string(it) + ".obj"));
             write_obj_only_texture_coords(
-                mesh_parameters.m_output_folder + "/after_swap_" + std::to_string(it) + "2d.obj");
+                mesh_parameters.m_output_folder / ("after_swap_" + std::to_string(it) + "2d.obj"));
         }
         collapse_all_edges();
         // assert(invariants(get_faces()));
@@ -1392,10 +1516,11 @@ void AdaptiveTessellation::mesh_improvement(int max_its)
             lagrange::timestamp_diff_in_seconds(swap_finish_time, collapse_finish_time);
         if (!mesh_parameters.m_do_not_output) {
             write_obj_displaced(
-                mesh_parameters.m_output_folder + "/after_collapse_" + std::to_string(it) + ".obj");
+                mesh_parameters.m_output_folder /
+                ("after_collapse_" + std::to_string(it) + ".obj"));
             write_obj_only_texture_coords(
-                mesh_parameters.m_output_folder + "/after_collapse_" + std::to_string(it) +
-                "2d.obj");
+                mesh_parameters.m_output_folder /
+                ("after_collapse_" + std::to_string(it) + "2d.obj"));
         }
 
         smooth_all_vertices();
@@ -1408,9 +1533,10 @@ void AdaptiveTessellation::mesh_improvement(int max_its)
                lagrange::timestamp_diff_in_seconds(swap_finish_time, smooth_finish_time)}}});
         if (!mesh_parameters.m_do_not_output) {
             write_obj_displaced(
-                mesh_parameters.m_output_folder + "/after_smooth_" + std::to_string(it) + ".obj");
+                mesh_parameters.m_output_folder / ("after_smooth_" + std::to_string(it) + ".obj"));
             write_obj_only_texture_coords(
-                mesh_parameters.m_output_folder + "/after_smooth_" + std::to_string(it) + "2d.obj");
+                mesh_parameters.m_output_folder /
+                ("after_smooth_" + std::to_string(it) + "2d.obj"));
         }
 
         auto avg_grad = (mesh_parameters.m_gradient / vert_capacity()).stableNorm();
