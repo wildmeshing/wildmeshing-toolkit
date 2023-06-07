@@ -59,11 +59,13 @@ public:
     void partition_mesh();
 
 public:
-    bool collapse_edge_before(const Tuple& t) override;
-    bool collapse_edge_after(const Tuple& t) override;
+
+    bool collapse_edge_before(const Tuple& t) ;
+    bool collapse_edge_after(const Tuple& t) ;
     bool collapse_shortest(int target_vertex_count);
     bool write_triangle_mesh(std::string path);
-    bool invariants(const std::vector<Tuple>& new_tris) override;
+    bool invariants(const wmtk::TriMeshOperation& op) override;
+    std::map<std::string, std::shared_ptr<wmtk::TriMeshOperation>> get_operations() const override;
 
 private:
     struct PositionInfoCache
@@ -75,5 +77,6 @@ private:
 
     std::vector<TriMesh::Tuple> new_edges_after(const std::vector<TriMesh::Tuple>& t) const;
 };
+
 
 } // namespace app::sec

@@ -20,6 +20,9 @@ FetchContent_Declare(
     tbb
     URL https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2021.6.0-rc1.zip
     URL_HASH MD5=88f1dd24a1e393e66d7a851de6e8dc0c
+    # someday it would be nice to update tbb a bit more
+    #    URL https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2021.7.0.zip
+    #    URL_HASH MD5=011557fa6b7ff1b70345ef39de4ff4ad
 )
 
 option(TBB_TEST "Enable testing" OFF)

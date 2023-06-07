@@ -1,5 +1,6 @@
 #include <wmtk/TetMesh.h>
 
+#include <wmtk/utils/TetMeshElementTopology.h>
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/utils/TupleUtils.hpp>
 
@@ -10,6 +11,7 @@
 #include <limits>
 #include <type_traits>
 
+using namespace wmtk;
 bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
 {
     if (!collapse_edge_before(loc0)) return false;
@@ -36,13 +38,13 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
                     if (intersects(std::array<size_t, 1>{{vj}}, verts)) continue;
                     conn_verts.insert(vj);
                 }
-                for (auto e : m_local_edges) {
+                for (auto e : utils::tet_element_topology::local_edges) {
                     auto e0 = tet[e[0]], e1 = tet[e[1]];
                     auto edge = std::array<size_t, 2>{{std::min(e0, e1), std::max(e0, e1)}};
                     if (intersects(edge, verts)) continue;
                     conn_edges.emplace(edge);
                 }
-                for (auto f : m_local_faces) {
+                for (auto f : utils::tet_element_topology::local_faces) {
                     auto face = std::array<size_t, 3>{{tet[f[0]], tet[f[1]], tet[f[2]]}};
                     if (intersects(face, verts)) continue;
                     std::sort(face.begin(), face.end());
