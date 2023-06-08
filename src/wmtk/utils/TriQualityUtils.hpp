@@ -37,8 +37,8 @@ T triangle_2d_area(
     const Eigen::Matrix<T, 2, 1>& B,
     const Eigen::Matrix<T, 2, 1>& C)
 {
-    auto B_A = B - A;
-    auto C_A = C - A;
+    Eigen::Matrix<T, 2, 1> B_A = B - A;
+    Eigen::Matrix<T, 2, 1> C_A = C - A;
     T area = static_cast<T>(0.5) * abs(B_A.x() * C_A.y() - B_A.y() * C_A.x());
     return area;
 }
