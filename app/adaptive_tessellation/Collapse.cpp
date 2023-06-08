@@ -759,12 +759,14 @@ bool AdaptiveTessellationPairedEdgeCollapseOperation::after(AdaptiveTessellation
     if (!m.invariants(one_ring)) return false;
     if (!m.mesh_parameters.m_ignore_embedding) {
         // check acceptance after the energy cache update
-        if (m.scheduling_accept_for_collapse(
-                modified_triangles(m),
-                m.mesh_parameters.m_accuracy_threshold)) {
-            return true;
-        } else {
-            return false;
+        if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
+            if (m.scheduling_accept_for_collapse(
+                    modified_triangles(m),
+                    m.mesh_parameters.m_accuracy_threshold)) {
+                return true;
+            } else {
+                return false;
+            }
         }
     }
 
