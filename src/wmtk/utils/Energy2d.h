@@ -3,15 +3,15 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
-#include <wmtk/image/TextureIntegral.h>
-#include <Eigen/LU>
-#include <iostream>
-#include "BoundaryParametrization.h"
 #include <wmtk/image/Displacement.h>
 #include <wmtk/image/Image.h>
-#include <wmtk/utils/Logger.hpp>
 #include <wmtk/image/Quadric.h>
+#include <wmtk/image/TextureIntegral.h>
 #include <wmtk/utils/autodiff.h>
+#include <Eigen/LU>
+#include <iostream>
+#include <wmtk/utils/Logger.hpp>
+#include "BoundaryParametrization.h"
 
 namespace wmtk {
 using DofVector = Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 2, 1>;
@@ -125,10 +125,10 @@ public:
     void eval([[maybe_unused]] State& state) const override{};
     void eval(State& state, DofsToPositions& x) const override;
 };
-class AccuracyEnergy : public wmtk::Energy
+class EdgeAccuracyEnergy : public wmtk::Energy
 {
 public:
-    AccuracyEnergy(std::shared_ptr<Displacement> displ)
+    EdgeAccuracyEnergy(std::shared_ptr<Displacement> displ)
         : m_displ(displ)
     {}
 
@@ -169,6 +169,23 @@ public:
     {}
 
     std::vector<wmtk::Quadric<double>>& facet_quadrics() { return m_facet_quadrics; }
+
+public:
+    void eval([[maybe_unused]] State& state) const override{};
+    void eval(State& state, DofsToPositions& x) const override;
+};
+
+// use finite difference to calculate gradient and hessian
+// use fixed tangent plane
+class AMIPS3D : public wmtk::Energy
+{
+public:
+    AMIPS3D(std::shared_ptr<Displacement> displ)
+        : m_displ(displ)
+    {}
+
+public:
+    std::shared_ptr<Displacement> m_displ; // Initiated using the Displacement class
 
 public:
     void eval([[maybe_unused]] State& state) const override{};

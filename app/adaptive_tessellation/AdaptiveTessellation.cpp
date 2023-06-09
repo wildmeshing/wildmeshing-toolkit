@@ -80,10 +80,9 @@ void AdaptiveTessellation::mesh_preprocessing(
     wmtk::TriMesh m_3d;
     std::vector<std::array<size_t, 3>> tris;
     for (auto f = 0; f < input_F_.rows(); f++) {
-        std::array<size_t, 3> tri = {
-            (size_t)input_F_(f, 0),
-            (size_t)input_F_(f, 1),
-            (size_t)input_F_(f, 2)};
+        std::array<size_t, 3> tri = {(size_t)input_F_(f, 0),
+                                     (size_t)input_F_(f, 1),
+                                     (size_t)input_F_(f, 2)};
         tris.emplace_back(tri);
     }
     m_3d.create_mesh(input_V_.rows(), tris);
@@ -667,6 +666,7 @@ void AdaptiveTessellation::set_feature(Tuple& v)
 // assuming the m_triwild_displacement in mesh_parameter has been set
 void AdaptiveTessellation::set_energy(const ENERGY_TYPE energy_type)
 {
+    mesh_parameters.m_energy_type = energy_type;
     std::unique_ptr<Energy> energy_ptr;
     switch (energy_type) {
     case ENERGY_TYPE::AMIPS: energy_ptr = std::make_unique<wmtk::AMIPS>(); break;
@@ -675,7 +675,10 @@ void AdaptiveTessellation::set_energy(const ENERGY_TYPE energy_type)
         energy_ptr = std::make_unique<wmtk::EdgeLengthEnergy>(mesh_parameters.m_displacement);
         break;
     case ENERGY_TYPE::EDGE_QUADRATURE:
-        energy_ptr = std::make_unique<wmtk::AccuracyEnergy>(mesh_parameters.m_displacement);
+        energy_ptr = std::make_unique<wmtk::EdgeAccuracyEnergy>(mesh_parameters.m_displacement);
+        break;
+    case ENERGY_TYPE::AMIPS3D:
+        energy_ptr = std::make_unique<wmtk::AMIPS3D>(mesh_parameters.m_displacement);
         break;
     case ENERGY_TYPE::AREA_QUADRATURE:
         energy_ptr = std::make_unique<wmtk::AreaAccuracyEnergy>(

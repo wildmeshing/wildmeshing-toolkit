@@ -231,7 +231,9 @@ void EdgeLengthEnergy::eval(State& state, DofsToPositions& dof_to_positions) con
 
     double l_squared = std::pow(state.scaling, 2);
     assert(l_squared > 0);
-
+    //// trying this. so just minimizing for one ring edge length
+    l_squared = 0;
+    ////
     assert(state.two_opposite_vertices.rows() == 1);
     auto [x1, y1] = dof_to_positions.eval(state.dofx);
     DScalar total_energy = DScalar(0);
@@ -276,7 +278,7 @@ void EdgeLengthEnergy::eval(State& state, DofsToPositions& dof_to_positions) con
     state.hessian = total_energy.getHessian();
 }
 
-void AccuracyEnergy::eval(State& state, DofsToPositions& dof_to_positions) const
+void EdgeAccuracyEnergy::eval(State& state, DofsToPositions& dof_to_positions) const
 // measure edge quadrature. For each one-ring triangle only takes one edge, which will cover all the
 // one-ring edges without repeat
 {
@@ -382,6 +384,106 @@ void QuadricEnergy::eval(State& state, DofsToPositions& dof_to_positions) const
     state.value = energy.getValue();
     state.gradient = energy.getGradient();
     state.hessian = energy.getHessian();
+}
+
+// use finite difference to calculate gradient and hessian
+// use fixed tangent plane
+void AMIPS3D::eval(State& state, DofsToPositions& dof_to_positions) const
+{
+    DiffScalarBase::setVariableCount(2);
+
+    auto input_triangle = state.input_triangle;
+    auto target_triangle = state.target_triangle;
+    for (auto i = 0; i < 6; i++) target_triangle[i] = state.scaling * target_triangle[i];
+    assert(state.two_opposite_vertices.rows() == 1);
+    auto [x1, y1] = dof_to_positions.eval(state.dofx);
+    DScalar total_energy = DScalar(0);
+
+    Eigen::Matrix<DScalar, 3, 1> v1 = m_displ->get(x1, y1);
+    DScalar v2u = DScalar(state.two_opposite_vertices(0, 0));
+    DScalar v2v = DScalar(state.two_opposite_vertices(0, 1));
+    Eigen::Matrix<DScalar, 3, 1> v2 = m_displ->get(v2u, v2v);
+    DScalar v3u = DScalar(state.two_opposite_vertices(0, 2));
+    DScalar v3v = DScalar(state.two_opposite_vertices(0, 3));
+    Eigen::Matrix<DScalar, 3, 1> v3 = m_displ->get(v3u, v3v);
+
+    Eigen::Matrix<DScalar, 3, 1> V2_V1 = v2 - v1;
+    Eigen::Matrix<DScalar, 3, 1> V3_V1 = v3 - v1;
+    Eigen::Matrix<DScalar, 3, 1> V3_V2 = v3 - v2;
+
+    ////////////////////////
+    // tangent bases
+    Eigen::Matrix<DScalar, 3, 1> e1; // e1 = (V2 - V1).normalize()
+    e1 = V2_V1.stableNormalized();
+    // assert(V2_V1.norm() != 0); // check norm is not 0
+    // e1 = V2_V1 / V2_V1.norm();
+    Eigen::Matrix<DScalar, 3, 1> n;
+    n = V2_V1.cross(V3_V1);
+
+    if (n.lpNorm<Eigen::Infinity>().getValue() < std::numeric_limits<double>::denorm_min()) {
+        std::cout << "V1 " << std::endl;
+        std::cout << std::hexfloat << x1 << " " << y1 << v1(2) << std::endl;
+        std::cout << "V2 " << std::endl;
+        std::cout << std::hexfloat << v2(0) << " " << v2(1) << v2(2) << std::endl;
+        std::cout << "V3 " << std::endl;
+        std::cout << std::hexfloat << v3(0) << " " << v3(1) << v3(2) << std::endl;
+        assert(false);
+    }
+    n.stableNormalize();
+
+    // assert(n.norm() != 0); // check norm is not 0
+    // n = n / n.norm();
+    Eigen::Matrix<DScalar, 3, 1> e2;
+    e2 = n.cross(e1);
+    e2.stableNormalize();
+    //assert(e2.norm() != 0); // check norm is not 0
+    // e2 = e2 / e2.norm();
+    ////////////////////////
+
+
+    // project V1, V2, V3 to tangent plane to VT1, VT2, VT3
+
+    Eigen::Matrix<DScalar, 2, 1> VT1, VT2, VT3;
+    VT1 << DScalar(0.), DScalar(0.); // the origin
+    VT2 << V2_V1.dot(e1), DScalar(0.);
+    VT3 << V3_V1.dot(e1), V3_V1.dot(e2);
+
+    // now construct Dm as before in tangent plane
+    // (x2 - x1, y2 - y1, x3 - x1, y2 - y1).transpose
+    Eigen::Matrix<DScalar, 2, 2> Dm;
+    Dm << VT2.x() - VT1.x(), VT3.x() - VT1.x(), VT2.y() - VT1.y(), VT3.y() - VT1.y();
+
+    // define of transform matrix F = Dm@Ds.inv
+    Eigen::Matrix<DScalar, 2, 2> F;
+
+    Eigen::Matrix2d Ds, Dsinv;
+    Ds << target_triangle[2] - target_triangle[0], target_triangle[4] - target_triangle[0],
+        target_triangle[3] - target_triangle[1], target_triangle[5] - target_triangle[1];
+
+    auto Dsdet = Ds.determinant();
+    // no inversion
+    assert(Dsdet > 0);
+    if (std::abs(Dsdet) < std::numeric_limits<Scalar>::denorm_min()) {
+        state.value = std::numeric_limits<double>::infinity();
+        return;
+    }
+    Dsinv = Ds.inverse();
+
+    F << (Dm(0, 0) * Dsinv(0, 0) + Dm(0, 1) * Dsinv(1, 0)),
+        (Dm(0, 0) * Dsinv(0, 1) + Dm(0, 1) * Dsinv(1, 1)),
+        (Dm(1, 0) * Dsinv(0, 0) + Dm(1, 1) * Dsinv(1, 0)),
+        (Dm(1, 0) * Dsinv(0, 1) + Dm(1, 1) * Dsinv(1, 1));
+    auto Fdet = F.determinant();
+    assert(Fdet.getValue() > 0);
+    if (std::abs(Fdet.getValue()) < std::numeric_limits<Scalar>::denorm_min()) {
+        state.value = std::numeric_limits<double>::infinity();
+        return;
+    }
+
+    DScalar AMIPS_function = (F.transpose() * F).trace() / Fdet;
+    state.value = AMIPS_function.getValue();
+    state.gradient = AMIPS_function.getGradient();
+    state.hessian = AMIPS_function.getHessian();
 }
 
 } // namespace wmtk
