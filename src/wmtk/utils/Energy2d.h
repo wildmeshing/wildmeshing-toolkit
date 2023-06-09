@@ -1,18 +1,17 @@
 #pragma once
-#include <Eigen/Cholesky>
-#include <Eigen/Core>
-#include <Eigen/Dense>
-
+#include <igl/predicates/predicates.h>
 #include <wmtk/image/Displacement.h>
 #include <wmtk/image/Image.h>
 #include <wmtk/image/Quadric.h>
 #include <wmtk/image/TextureIntegral.h>
 #include <wmtk/utils/autodiff.h>
+#include <Eigen/Cholesky>
+#include <Eigen/Core>
+#include <Eigen/Dense>
 #include <Eigen/LU>
 #include <iostream>
 #include <wmtk/utils/Logger.hpp>
 #include "BoundaryParametrization.h"
-
 namespace wmtk {
 using DofVector = Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 2, 1>;
 struct State

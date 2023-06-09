@@ -392,34 +392,63 @@ void AMIPS3D::eval(State& state, DofsToPositions& dof_to_positions) const
 {
     DiffScalarBase::setVariableCount(2);
 
-    auto input_triangle = state.input_triangle;
     auto target_triangle = state.target_triangle;
     for (auto i = 0; i < 6; i++) target_triangle[i] = state.scaling * target_triangle[i];
     assert(state.two_opposite_vertices.rows() == 1);
     auto [x1, y1] = dof_to_positions.eval(state.dofx);
-    DScalar total_energy = DScalar(0);
 
-    Eigen::Matrix<DScalar, 3, 1> v1 = m_displ->get(x1, y1);
-    DScalar v2u = DScalar(state.two_opposite_vertices(0, 0));
-    DScalar v2v = DScalar(state.two_opposite_vertices(0, 1));
-    Eigen::Matrix<DScalar, 3, 1> v2 = m_displ->get(v2u, v2v);
-    DScalar v3u = DScalar(state.two_opposite_vertices(0, 2));
-    DScalar v3v = DScalar(state.two_opposite_vertices(0, 3));
-    Eigen::Matrix<DScalar, 3, 1> v3 = m_displ->get(v3u, v3v);
+    //////// check if the uv triangle is flipped or degenrate
+    // lambda function for checking if triangle is degenerate
+    auto triangle_2d_area = [](Eigen::Vector2d A, Eigen::Vector2d B, Eigen::Vector2d C) -> double {
+        Eigen::Matrix<double, 2, 1> B_A = B - A;
+        Eigen::Matrix<double, 2, 1> C_A = C - A;
+        double area = (0.5) * abs(B_A.x() * C_A.y() - B_A.y() * C_A.x());
+        return area;
+    };
+    auto is_degenerate_lambda = [&]() -> bool {
+        Eigen::Vector2d A = Eigen::Vector2d(x1.getValue(), y1.getValue());
+        Eigen::Vector2d B =
+            Eigen::Vector2d(state.two_opposite_vertices(0, 0), state.two_opposite_vertices(0, 1));
+        Eigen::Vector2d C =
+            Eigen::Vector2d(state.two_opposite_vertices(0, 2), state.two_opposite_vertices(0, 3));
+        auto res = igl::predicates::orient2d(A, B, C);
+        if (res != igl::predicates::Orientation::POSITIVE)
+            return true;
+        else {
+            if (triangle_2d_area(A, B, C) < 1e-10) return true;
+            return false;
+        }
+    };
+    assert(!is_degenerate_lambda());
+    /////////
+
+    const Eigen::Matrix<DScalar, 3, 1> v1 = m_displ->get(x1, y1);
+    const DScalar v2u = DScalar(state.two_opposite_vertices(0, 0));
+    const DScalar v2v = DScalar(state.two_opposite_vertices(0, 1));
+    const Eigen::Matrix<DScalar, 3, 1> v2 = m_displ->get(v2u, v2v);
+    const DScalar v3u = DScalar(state.two_opposite_vertices(0, 2));
+    const DScalar v3v = DScalar(state.two_opposite_vertices(0, 3));
+    const Eigen::Matrix<DScalar, 3, 1> v3 = m_displ->get(v3u, v3v);
+
+    wmtk::logger().info("===============");
+    wmtk::logger().info("V1 [{}, {}, {}]", v1(0).getValue(), v1(1).getValue(), v1(2).getValue());
+    wmtk::logger().info("V2 [{}, {}, {}]", v2(0).getValue(), v2(1).getValue(), v2(2).getValue());
+    wmtk::logger().info("V3 [{}, {}, {}]", v3(0).getValue(), v3(1).getValue(), v3(2).getValue());
 
     Eigen::Matrix<DScalar, 3, 1> V2_V1 = v2 - v1;
     Eigen::Matrix<DScalar, 3, 1> V3_V1 = v3 - v1;
-    Eigen::Matrix<DScalar, 3, 1> V3_V2 = v3 - v2;
-
     ////////////////////////
     // tangent bases
     Eigen::Matrix<DScalar, 3, 1> e1; // e1 = (V2 - V1).normalize()
     e1 = V2_V1.stableNormalized();
+    wmtk::logger()
+        .info("normalized e1 [{}, {}, {}]", e1(0).getValue(), e1(1).getValue(), e1(2).getValue());
     // assert(V2_V1.norm() != 0); // check norm is not 0
     // e1 = V2_V1 / V2_V1.norm();
     Eigen::Matrix<DScalar, 3, 1> n;
     n = V2_V1.cross(V3_V1);
-
+    wmtk::logger()
+        .info("unnormalized n [{}, {}, {}]", n(0).getValue(), n(1).getValue(), n(2).getValue());
     if (n.lpNorm<Eigen::Infinity>().getValue() < std::numeric_limits<double>::denorm_min()) {
         std::cout << "V1 " << std::endl;
         std::cout << std::hexfloat << x1 << " " << y1 << v1(2) << std::endl;
@@ -429,13 +458,37 @@ void AMIPS3D::eval(State& state, DofsToPositions& dof_to_positions) const
         std::cout << std::hexfloat << v3(0) << " " << v3(1) << v3(2) << std::endl;
         assert(false);
     }
-    n.stableNormalize();
-
+    n = n.stableNormalized();
+    wmtk::logger()
+        .info("normalized n [{}, {}, {}]", n(0).getValue(), n(1).getValue(), n(2).getValue());
     // assert(n.norm() != 0); // check norm is not 0
     // n = n / n.norm();
     Eigen::Matrix<DScalar, 3, 1> e2;
     e2 = n.cross(e1);
-    e2.stableNormalize();
+    Eigen::Matrix<double, 3, 1> e2_double;
+    e2_double << e2(0).getValue(), e2(1).getValue(), e2(2).getValue();
+
+    wmtk::logger()
+        .info("unnormlized e2 [{}, {}, {}]", e2(0).getValue(), e2(1).getValue(), e2(2).getValue());
+    e2 = e2.stableNormalized();
+    wmtk::logger().info(
+        "stabled normalized e2 [{}, {}, {}]",
+        e2(0).getValue(),
+        e2(1).getValue(),
+        e2(2).getValue());
+
+    /////////
+    auto e2_normal = e2.normalized();
+    wmtk::logger().info(
+        "stabled normalized e2_normal [{}, {}, {}]",
+        e2_normal(0).getValue(),
+        e2_normal(1).getValue(),
+        e2_normal(2).getValue());
+
+    wmtk::logger().info("e2_double {}", e2_double.transpose());
+    wmtk::logger().info("e2_double normalize {}", e2_double.normalized().transpose());
+    wmtk::logger().info("e2_double stable normalize {}", e2_double.stableNormalized().transpose());
+
     //assert(e2.norm() != 0); // check norm is not 0
     // e2 = e2 / e2.norm();
     ////////////////////////
@@ -447,18 +500,48 @@ void AMIPS3D::eval(State& state, DofsToPositions& dof_to_positions) const
     VT1 << DScalar(0.), DScalar(0.); // the origin
     VT2 << V2_V1.dot(e1), DScalar(0.);
     VT3 << V3_V1.dot(e1), V3_V1.dot(e2);
+    wmtk::logger().info("   ===============");
+    wmtk::logger().info("   VT1 [{}, {}]", VT1(0).getValue(), VT1(1).getValue());
+    wmtk::logger().info("   VT2 [{}, {}]", VT2(0).getValue(), VT2(1).getValue());
+    wmtk::logger().info("   VT3 [{}, {}]", VT3(0).getValue(), VT3(1).getValue());
+
+    Eigen::Matrix<DScalar, 3, 1> honest_VT1, honest_VT2, honest_VT3;
+    honest_VT1 << DScalar(0.), DScalar(0.), DScalar(0.); // the origin
+    honest_VT2 << V2_V1.dot(e1), V2_V1.dot(e2), V2_V1.dot(n);
+    honest_VT3 << V3_V1.dot(e1), V3_V1.dot(e2), V3_V1.dot(n);
+
+    wmtk::logger().info("       ===============");
+    wmtk::logger().info(
+        "       HVT1 [{}, {}, {}]",
+        honest_VT1(0).getValue(),
+        honest_VT1(1).getValue(),
+        honest_VT1(2).getValue());
+    wmtk::logger().info(
+        "       HVT2 [{}, {}, {}]",
+        honest_VT2(0).getValue(),
+        honest_VT2(1).getValue(),
+        honest_VT2(2).getValue());
+    wmtk::logger().info(
+        "       HVT3 [{}, {}, {}]",
+        honest_VT3(0).getValue(),
+        honest_VT3(1).getValue(),
+        honest_VT3(2).getValue());
 
     // now construct Dm as before in tangent plane
     // (x2 - x1, y2 - y1, x3 - x1, y2 - y1).transpose
     Eigen::Matrix<DScalar, 2, 2> Dm;
     Dm << VT2.x() - VT1.x(), VT3.x() - VT1.x(), VT2.y() - VT1.y(), VT3.y() - VT1.y();
-
+    assert(Dm.determinant().getValue() > 0);
     // define of transform matrix F = Dm@Ds.inv
     Eigen::Matrix<DScalar, 2, 2> F;
 
     Eigen::Matrix2d Ds, Dsinv;
-    Ds << target_triangle[2] - target_triangle[0], target_triangle[4] - target_triangle[0],
-        target_triangle[3] - target_triangle[1], target_triangle[5] - target_triangle[1];
+    Eigen::Vector2d target_A, target_B, target_C;
+    target_A << target_triangle[0], target_triangle[1];
+    target_B << target_triangle[2], target_triangle[3];
+    target_C << target_triangle[4], target_triangle[5];
+    Ds << target_B.x() - target_A.x(), target_C.x() - target_A.x(), target_B.y() - target_A.y(),
+        target_C.y() - target_A.y();
 
     auto Dsdet = Ds.determinant();
     // no inversion
