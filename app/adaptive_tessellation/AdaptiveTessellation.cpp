@@ -1353,6 +1353,7 @@ double AdaptiveTessellation::get_two_faces_quadrics_error_for_edge(const Tuple& 
     return ret;
 }
 
+// assumes the curve-id that's attached to the vertex is the same as the vertex's edge's curve id
 void AdaptiveTessellation::get_nminfo_for_vertex(const Tuple& v, wmtk::NewtonMethodInfo& nminfo)
     const
 {
