@@ -20,7 +20,8 @@ enum class ENERGY_TYPE {
     EDGE_LENGTH = 2,
     EDGE_QUADRATURE = 3,
     AREA_QUADRATURE = 4,
-    QUADRICS = 5
+    QUADRICS = 5,
+    AMIPS3D = 6
 };
 enum class EDGE_LEN_TYPE {
     LINEAR2D = 0,
@@ -97,6 +98,7 @@ public:
     double m_accuracy_safeguard_ratio = 1.1;
 
     EDGE_LEN_TYPE m_edge_length_type = EDGE_LEN_TYPE::AREA_ACCURACY;
+    ENERGY_TYPE m_energy_type = ENERGY_TYPE::EDGE_LENGTH;
     SAMPLING_MODE m_sampling_mode = SAMPLING_MODE::BICUBIC;
     DISPLACEMENT_MODE m_displacement_mode = DISPLACEMENT_MODE::PLANE;
     std::shared_ptr<wmtk::Displacement> m_displacement;
