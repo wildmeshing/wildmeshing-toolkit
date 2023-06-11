@@ -430,26 +430,20 @@ void AMIPS3D::eval(State& state, DofsToPositions& dof_to_positions) const
     const DScalar v3v = DScalar(state.two_opposite_vertices(0, 3));
     const Eigen::Matrix<DScalar, 3, 1> v3 = m_displ->get(v3u, v3v);
 
-    wmtk::logger().info("===============");
-    wmtk::logger().info("V1 [{}, {}, {}]", v1(0).getValue(), v1(1).getValue(), v1(2).getValue());
-    wmtk::logger().info("V2 [{}, {}, {}]", v2(0).getValue(), v2(1).getValue(), v2(2).getValue());
-    wmtk::logger().info("V3 [{}, {}, {}]", v3(0).getValue(), v3(1).getValue(), v3(2).getValue());
 
     Eigen::Matrix<DScalar, 3, 1> V2_V1 = v2 - v1;
     Eigen::Matrix<DScalar, 3, 1> V3_V1 = v3 - v1;
     ////////////////////////
     // tangent bases
     Eigen::Matrix<DScalar, 3, 1> e1; // e1 = (V2 - V1).normalize()
-    e1 = V2_V1.stableNormalized();
-    wmtk::logger()
-        .info("normalized e1 [{}, {}, {}]", e1(0).getValue(), e1(1).getValue(), e1(2).getValue());
-    // assert(V2_V1.norm() != 0); // check norm is not 0
-    // e1 = V2_V1 / V2_V1.norm();
+    // e1 = V2_V1.stableNormalized();
+    assert(V2_V1.norm() > 0); // check norm is not 0
+    e1 = V2_V1 / V2_V1.norm();
     Eigen::Matrix<DScalar, 3, 1> n;
     n = V2_V1.cross(V3_V1);
-    wmtk::logger()
-        .info("unnormalized n [{}, {}, {}]", n(0).getValue(), n(1).getValue(), n(2).getValue());
+
     if (n.lpNorm<Eigen::Infinity>().getValue() < std::numeric_limits<double>::denorm_min()) {
+        wmtk::logger().critical("n.lpNorm {}", n.lpNorm<Eigen::Infinity>().getValue());
         std::cout << "V1 " << std::endl;
         std::cout << std::hexfloat << x1 << " " << y1 << v1(2) << std::endl;
         std::cout << "V2 " << std::endl;
@@ -458,40 +452,14 @@ void AMIPS3D::eval(State& state, DofsToPositions& dof_to_positions) const
         std::cout << std::hexfloat << v3(0) << " " << v3(1) << v3(2) << std::endl;
         assert(false);
     }
-    n = n.stableNormalized();
-    wmtk::logger()
-        .info("normalized n [{}, {}, {}]", n(0).getValue(), n(1).getValue(), n(2).getValue());
-    // assert(n.norm() != 0); // check norm is not 0
-    // n = n / n.norm();
+    // n = n.stableNormalized();
+    assert(n.norm() > 0); // check norm is not 0
+    n = n / n.norm();
     Eigen::Matrix<DScalar, 3, 1> e2;
     e2 = n.cross(e1);
-    Eigen::Matrix<double, 3, 1> e2_double;
-    e2_double << e2(0).getValue(), e2(1).getValue(), e2(2).getValue();
-
-    wmtk::logger()
-        .info("unnormlized e2 [{}, {}, {}]", e2(0).getValue(), e2(1).getValue(), e2(2).getValue());
-    e2 = e2.stableNormalized();
-    wmtk::logger().info(
-        "stabled normalized e2 [{}, {}, {}]",
-        e2(0).getValue(),
-        e2(1).getValue(),
-        e2(2).getValue());
-
-    /////////
-    auto e2_normal = e2.normalized();
-    wmtk::logger().info(
-        "stabled normalized e2_normal [{}, {}, {}]",
-        e2_normal(0).getValue(),
-        e2_normal(1).getValue(),
-        e2_normal(2).getValue());
-
-    wmtk::logger().info("e2_double {}", e2_double.transpose());
-    wmtk::logger().info("e2_double normalize {}", e2_double.normalized().transpose());
-    wmtk::logger().info("e2_double stable normalize {}", e2_double.stableNormalized().transpose());
-
-    //assert(e2.norm() != 0); // check norm is not 0
-    // e2 = e2 / e2.norm();
-    ////////////////////////
+    // Eigen::Matrix<DScalar, 3, 1> e2_stableNormalized = e2.stableNormalized();
+    assert(e2.norm() > 0); // check norm is not 0
+    e2 = e2 / e2.norm();
 
 
     // project V1, V2, V3 to tangent plane to VT1, VT2, VT3
@@ -500,32 +468,6 @@ void AMIPS3D::eval(State& state, DofsToPositions& dof_to_positions) const
     VT1 << DScalar(0.), DScalar(0.); // the origin
     VT2 << V2_V1.dot(e1), DScalar(0.);
     VT3 << V3_V1.dot(e1), V3_V1.dot(e2);
-    wmtk::logger().info("   ===============");
-    wmtk::logger().info("   VT1 [{}, {}]", VT1(0).getValue(), VT1(1).getValue());
-    wmtk::logger().info("   VT2 [{}, {}]", VT2(0).getValue(), VT2(1).getValue());
-    wmtk::logger().info("   VT3 [{}, {}]", VT3(0).getValue(), VT3(1).getValue());
-
-    Eigen::Matrix<DScalar, 3, 1> honest_VT1, honest_VT2, honest_VT3;
-    honest_VT1 << DScalar(0.), DScalar(0.), DScalar(0.); // the origin
-    honest_VT2 << V2_V1.dot(e1), V2_V1.dot(e2), V2_V1.dot(n);
-    honest_VT3 << V3_V1.dot(e1), V3_V1.dot(e2), V3_V1.dot(n);
-
-    wmtk::logger().info("       ===============");
-    wmtk::logger().info(
-        "       HVT1 [{}, {}, {}]",
-        honest_VT1(0).getValue(),
-        honest_VT1(1).getValue(),
-        honest_VT1(2).getValue());
-    wmtk::logger().info(
-        "       HVT2 [{}, {}, {}]",
-        honest_VT2(0).getValue(),
-        honest_VT2(1).getValue(),
-        honest_VT2(2).getValue());
-    wmtk::logger().info(
-        "       HVT3 [{}, {}, {}]",
-        honest_VT3(0).getValue(),
-        honest_VT3(1).getValue(),
-        honest_VT3(2).getValue());
 
     // now construct Dm as before in tangent plane
     // (x2 - x1, y2 - y1, x3 - x1, y2 - y1).transpose

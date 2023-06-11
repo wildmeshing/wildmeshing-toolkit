@@ -660,7 +660,7 @@ void AdaptiveTessellation::set_feature(Tuple& v)
     // check if they are co linear. set fixed = true if not
     double costheta = ((p2 - p1).stableNormalized()).dot((p3 - p1).stableNormalized()); // cos theta
     double theta = std::acos(std::clamp<double>(costheta, -1, 1));
-    if (theta <= M_PI / 2) vertex_attrs[v.vid(*this)].fixed = true;
+    if (theta <= M_PI * 2./ 3.) vertex_attrs[v.vid(*this)].fixed = true;
 }
 
 // assuming the m_triwild_displacement in mesh_parameter has been set
