@@ -203,12 +203,23 @@ float AdaptiveTessellation::cumulated_per_face_error()
                     }
                 }
                 // vertify the position save in cache is not outated
-                assert(
-                    (vertex_attrs[anchor_vertex.vid(*this)].pos -
+                if ((vertex_attrs[anchor_vertex.vid(*this)].pos -
                      mesh_parameters.m_boundary.t_to_uv(
                          vertex_attrs[anchor_vertex.vid(*this)].curve_id,
                          state.dofx[0]))
-                        .norm() < 1e-5);
+                        .norm() > 1e-10) {
+                    wmtk::logger().info("!!!! pos and t to uv not the same !!!!!");
+                    wmtk::logger().info(
+                        "pos {} t_to_uv {} t {} curve_id {}",
+                        vertex_attrs[anchor_vertex.vid(*this)].pos,
+                        mesh_parameters.m_boundary.t_to_uv(
+                            vertex_attrs[anchor_vertex.vid(*this)].curve_id,
+                            state.dofx[0]),
+                        state.dofx[0],
+                        vertex_attrs[anchor_vertex.vid(*this)].curve_id);
+                    assert(false);
+                }
+
             } else {
                 state.dofx.resize(2);
                 state.dofx = vertex_attrs[anchor_vertex.vid(*this)].pos; // uv;

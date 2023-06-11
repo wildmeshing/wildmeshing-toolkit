@@ -403,9 +403,10 @@ void adaptive_tessellation::AdaptiveTessellation::smooth_all_vertices()
             wmtk::logger().info("===== finished smooth itr {} =====", itr);
             itr++;
             mesh_parameters.m_gradient = mesh_parameters.m_gradient / get_vertices().size();
+            wmtk::logger().info("   gradient : {}", mesh_parameters.m_gradient);
         } while (mesh_parameters.m_gradient.stableNorm() > 1e-10 && itr < 10);
         wmtk::logger().info("===== terminate smooth after {} itrs", itr);
-        wmtk::logger().info("gradient norm: {}", mesh_parameters.m_gradient);
+        wmtk::logger().info("final gradient : {}", mesh_parameters.m_gradient);
 
         time = timer.getElapsedTime();
         wmtk::logger().info("vertex smoothing operation time serial: {}s", time);
