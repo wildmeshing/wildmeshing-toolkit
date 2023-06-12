@@ -309,7 +309,9 @@ TEST_CASE("autodiff_vs_finitediff_PART_TWO", "[.]")
     Eigen::VectorXd finitediff_grad;
     fd::finite_gradient(V.row(0), f, finitediff_grad, fd::SECOND, 1e-2);
     // evaluate gradient at v0 with autodiff
-    auto v0_displ = displacement(DScalar(V(0, 0)), DScalar(V(0, 1)));
+    DScalar x(0, V(0, 0)); // First variable, initialized to V(0, 0)
+    DScalar y(1, V(0, 1)); // Second variable, initialized to V(0, 1)
+    auto v0_displ = displacement(x, y);
     spdlog::info(
         "v0 gradient FD = {}, autodiff = {}",
         finitediff_grad.transpose(),
