@@ -190,11 +190,13 @@ float AdaptiveTessellation::cumulated_per_face_error()
         for (int i = 0; i < tris_tuples.size(); i++) {
             wmtk::TriMesh::Tuple anchor_vertex = tris_tuples[i];
             wmtk::State state = {};
+            if (vertex_attrs[anchor_vertex.vid(*this)].fixed)
+                anchor_vertex = anchor_vertex.switch_vertex(*this);
             if (is_boundary_vertex(anchor_vertex) && mesh_parameters.m_boundary_parameter) {
                 state.dofx.resize(1);
                 state.dofx[0] = vertex_attrs[anchor_vertex.vid(*this)].t; // t
                 for (auto& e : get_one_ring_edges_for_vertex(anchor_vertex)) {
-                    if (is_boundary_edge(e)) {
+                    if (is_boundary_edge(e) && !vertex_attrs[e.vid(*this)].fixed) {
                         // set the curve_id of the vertex to the curve_id of the edge
                         vertex_attrs[anchor_vertex.vid(*this)].curve_id =
                             edge_attrs[e.eid(*this)].curve_id.value();
@@ -203,11 +205,12 @@ float AdaptiveTessellation::cumulated_per_face_error()
                     }
                 }
                 // vertify the position save in cache is not outated
-                if ((vertex_attrs[anchor_vertex.vid(*this)].pos -
+                if (!vertex_attrs[anchor_vertex.vid(*this)].fixed &&
+                    (vertex_attrs[anchor_vertex.vid(*this)].pos -
                      mesh_parameters.m_boundary.t_to_uv(
                          vertex_attrs[anchor_vertex.vid(*this)].curve_id,
                          state.dofx[0]))
-                        .norm() > 1e-10) {
+                            .norm() > 1e-10) {
                     wmtk::logger().info("!!!! pos and t to uv not the same !!!!!");
                     wmtk::logger().info(
                         "pos {} t_to_uv {} t {} curve_id {}",

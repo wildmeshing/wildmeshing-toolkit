@@ -351,9 +351,9 @@ TEST_CASE("test ply", "[.]")
 
     m.mesh_preprocessing_from_intermediate(
         input_mesh_path,
-        "/home/yunfan/data/adaptive_tessellation/results/bumpyDice_normal/~/10/"
+        "/home/yunfan/data/adaptive_tessellation/results/Pyramid_coarse/new_amips/31/"
         "after_collapse_uv.ply",
-        "/home/yunfan/data/adaptive_tessellation/results/bumpyDice_normal/~/10/"
+        "/home/yunfan/data/adaptive_tessellation/results/Pyramid_coarse/new_amips/31/"
         "after_collapse_world.ply",
         position_path,
         normal_path,

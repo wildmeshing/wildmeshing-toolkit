@@ -55,7 +55,7 @@ inline bool is_degenerate_2d_oriented_triangle_array(const std::array<float, 6>&
     if (res != igl::predicates::Orientation::POSITIVE)
         return true;
     else {
-        if (triangle_2d_area(A, B, C) < 1e-10) return true;
+        // if (triangle_2d_area(A, B, C) < 1e-10) return true;
         return false;
     }
 }
