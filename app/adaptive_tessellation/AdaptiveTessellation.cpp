@@ -80,10 +80,9 @@ void AdaptiveTessellation::mesh_preprocessing(
     wmtk::TriMesh m_3d;
     std::vector<std::array<size_t, 3>> tris;
     for (auto f = 0; f < input_F_.rows(); f++) {
-        std::array<size_t, 3> tri = {
-            (size_t)input_F_(f, 0),
-            (size_t)input_F_(f, 1),
-            (size_t)input_F_(f, 2)};
+        std::array<size_t, 3> tri = {(size_t)input_F_(f, 0),
+                                     (size_t)input_F_(f, 1),
+                                     (size_t)input_F_(f, 2)};
         tris.emplace_back(tri);
     }
     m_3d.create_mesh(input_V_.rows(), tris);
@@ -661,12 +660,13 @@ void AdaptiveTessellation::set_feature(Tuple& v)
     // check if they are co linear. set fixed = true if not
     double costheta = ((p2 - p1).stableNormalized()).dot((p3 - p1).stableNormalized()); // cos theta
     double theta = std::acos(std::clamp<double>(costheta, -1, 1));
-    if (theta <= M_PI / 2) vertex_attrs[v.vid(*this)].fixed = true;
+    if (theta <= M_PI * 2./ 3.) vertex_attrs[v.vid(*this)].fixed = true;
 }
 
 // assuming the m_triwild_displacement in mesh_parameter has been set
 void AdaptiveTessellation::set_energy(const ENERGY_TYPE energy_type)
 {
+    mesh_parameters.m_energy_type = energy_type;
     std::unique_ptr<Energy> energy_ptr;
     switch (energy_type) {
     case ENERGY_TYPE::AMIPS: energy_ptr = std::make_unique<wmtk::AMIPS>(); break;
@@ -675,7 +675,10 @@ void AdaptiveTessellation::set_energy(const ENERGY_TYPE energy_type)
         energy_ptr = std::make_unique<wmtk::EdgeLengthEnergy>(mesh_parameters.m_displacement);
         break;
     case ENERGY_TYPE::EDGE_QUADRATURE:
-        energy_ptr = std::make_unique<wmtk::AccuracyEnergy>(mesh_parameters.m_displacement);
+        energy_ptr = std::make_unique<wmtk::EdgeAccuracyEnergy>(mesh_parameters.m_displacement);
+        break;
+    case ENERGY_TYPE::AMIPS3D:
+        energy_ptr = std::make_unique<wmtk::AMIPS3D>(mesh_parameters.m_displacement);
         break;
     case ENERGY_TYPE::AREA_QUADRATURE:
         energy_ptr = std::make_unique<wmtk::AreaAccuracyEnergy>(
@@ -1350,6 +1353,7 @@ double AdaptiveTessellation::get_two_faces_quadrics_error_for_edge(const Tuple& 
     return ret;
 }
 
+// assumes the curve-id that's attached to the vertex is the same as the vertex's edge's curve id
 void AdaptiveTessellation::get_nminfo_for_vertex(const Tuple& v, wmtk::NewtonMethodInfo& nminfo)
     const
 {

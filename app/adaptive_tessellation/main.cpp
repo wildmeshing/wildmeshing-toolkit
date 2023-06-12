@@ -207,22 +207,103 @@ int main(int argc, char** argv)
         ldc.evaluate_mesh(m);
         ldc.log_json(m, "before_remeshing");
     }
+    for (auto i = 0; i < 100; i++) {
+        auto current_folder = output_folder / std::to_string(i);
+        if (!std::filesystem::exists(current_folder)) {
+            std::filesystem::create_directories(current_folder);
+        }
+        m.mesh_parameters.m_output_folder = current_folder;
+        {
+            LoggerDataCollector ldc;
+            ldc.start_timer();
+            wmtk::logger().info(
+                "!!!! cumulated error before split: {} ",
+                m.cumulated_per_face_error());
 
-    {
-        LoggerDataCollector ldc;
-        ldc.start_timer();
-        m.split_all_edges();
-        ldc.stop_timer();
-        ldc.evaluate_mesh(m);
-        ldc.log_json(m, "after_split");
-        m.write_obj_displaced(output_folder / "after_split.obj");
+            m.split_all_edges();
+            ldc.stop_timer();
+            ldc.evaluate_mesh(m);
+            ldc.log_json(m, "after_split");
+
+            m.write_ply_intermediate(
+                current_folder / "after_split_uv.ply",
+                current_folder / "after_split_world.ply");
+        }
+        ///// debug
+        for (auto tri : m.get_faces()) {
+            auto verts = m.oriented_tri_vids(tri);
+            std::array<float, 6> tri_uv;
+            for (int i = 0; i < 3; i++) {
+                tri_uv[i * 2] = m.vertex_attrs[verts[i]].pos(0);
+                tri_uv[i * 2 + 1] = m.vertex_attrs[verts[i]].pos(1);
+            }
+            if (wmtk::is_degenerate_2d_oriented_triangle_array(tri_uv)) exit(50000);
+        }
+
+        /////
+        wmtk::logger().info("!!!! cumulated error before swap: {} ", m.cumulated_per_face_error());
+
+        m.swap_all_edges_quality_pass();
+        m.write_ply_intermediate(
+            current_folder / "after_swap_uv.ply",
+            current_folder / "after_swap_world.ply");
+        ///// debug
+        for (auto tri : m.get_faces()) {
+            auto verts = m.oriented_tri_vids(tri);
+            std::array<float, 6> tri_uv;
+            for (int i = 0; i < 3; i++) {
+                tri_uv[i * 2] = m.vertex_attrs[verts[i]].pos(0);
+                tri_uv[i * 2 + 1] = m.vertex_attrs[verts[i]].pos(1);
+            }
+            if (wmtk::is_degenerate_2d_oriented_triangle_array(tri_uv)) exit(50000);
+        }
+
+        /////
+        wmtk::logger().info(
+            "!!!! cumulated error before collapse: {} ",
+            m.cumulated_per_face_error());
+        m.collapse_all_edges();
+        ///// debug
+        for (auto tri : m.get_faces()) {
+            auto verts = m.oriented_tri_vids(tri);
+            std::array<float, 6> tri_uv;
+            for (int i = 0; i < 3; i++) {
+                tri_uv[i * 2] = m.vertex_attrs[verts[i]].pos(0);
+                tri_uv[i * 2 + 1] = m.vertex_attrs[verts[i]].pos(1);
+            }
+            if (wmtk::is_degenerate_2d_oriented_triangle_array(tri_uv)) exit(50000);
+        }
+
+        /////
+        m.write_ply_intermediate(
+            current_folder / "after_collapse_uv.ply",
+            current_folder / "after_collapse_world.ply");
+        wmtk::logger().info(
+            "!!!! cumulated error before smooth: {} ",
+            m.cumulated_per_face_error());
+        m.smooth_all_vertices();
+        wmtk::logger().info("!!!! cumulated error after smooth: {} ", m.cumulated_per_face_error());
+        ///// debug
+        for (auto tri : m.get_faces()) {
+            auto verts = m.oriented_tri_vids(tri);
+            std::array<float, 6> tri_uv;
+            for (int i = 0; i < 3; i++) {
+                tri_uv[i * 2] = m.vertex_attrs[verts[i]].pos(0);
+                tri_uv[i * 2 + 1] = m.vertex_attrs[verts[i]].pos(1);
+            }
+            if (wmtk::is_degenerate_2d_oriented_triangle_array(tri_uv)) exit(50000);
+        }
+
+        /////
+        m.write_ply_intermediate(
+            current_folder / "after_smooth_uv.ply",
+            current_folder / "after_smooth_world.ply");
+
+
+        if (m.mesh_parameters.m_gradient.stableNorm() < 1e-10) {
+            break;
+        }
     }
-    m.swap_all_edges_quality_pass();
-    m.write_obj_displaced(output_folder / "after_swap.obj");
-    m.collapse_all_edges();
-    m.write_obj_displaced(output_folder / "after_collapse.obj");
-    m.smooth_all_vertices();
-    m.write_obj_displaced(output_folder / "after_smooth.obj");
     //{
     //    LoggerDataCollector ldc;
     //    ldc.start_timer();

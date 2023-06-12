@@ -337,3 +337,41 @@ TEST_CASE("quality remesh")
     m.write_obj_displaced(m.mesh_parameters.m_output_folder / "smooth_result.obj");
     REQUIRE(!m.has_self_intersections());
 }
+
+// load ply files here and check area with triangle_2d_area
+TEST_CASE("test ply", "[.]")
+{
+    std::filesystem::path input_folder = WMTK_DATA_DIR;
+    std::filesystem::path input_mesh_path = input_folder / "seamPyramid.obj";
+    std::filesystem::path position_path = input_folder / "images/seamPyramid_position.exr";
+    std::filesystem::path normal_path = input_folder / "images/seamPyramid_normal_smooth.exr";
+    std::filesystem::path height_path = input_folder / "images/seamPyramid_height_10.exr";
+
+    AdaptiveTessellation m;
+
+    m.mesh_preprocessing_from_intermediate(
+        input_mesh_path,
+        "/home/yunfan/data/adaptive_tessellation/results/Pyramid_coarse/new_amips/31/"
+        "after_collapse_uv.ply",
+        "/home/yunfan/data/adaptive_tessellation/results/Pyramid_coarse/new_amips/31/"
+        "after_collapse_world.ply",
+        position_path,
+        normal_path,
+        height_path);
+
+    ///// debug
+    for (auto tri : m.get_faces()) {
+        auto verts = m.oriented_tri_vids(tri);
+        std::array<float, 6> tri_uv;
+        for (int i = 0; i < 3; i++) {
+            tri_uv[i * 2] = m.vertex_attrs[verts[i]].pos(0);
+            tri_uv[i * 2 + 1] = m.vertex_attrs[verts[i]].pos(1);
+        }
+        if (wmtk::is_degenerate_2d_oriented_triangle_array(tri_uv)) {
+            wmtk::logger().warn("degenerate triangle detected {}", tri_uv);
+            exit(50000);
+        }
+    }
+
+    /////
+}

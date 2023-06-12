@@ -18,7 +18,6 @@ auto split_renew = [](auto& m, auto op, auto& tris) {
 
 auto split_no_renew = [](auto& m, auto op, auto& tris) {
     auto optup = std::vector<std::pair<std::string, wmtk::TriMesh::Tuple>>();
-    wmtk::logger().info("!!!!! no renewal !!!!!");
     return optup;
 };
 
@@ -212,7 +211,7 @@ bool AdaptiveTessellationEdgeSplitOperation::after(AdaptiveTessellation& m)
     assert(bool(*this));
 
     // for checking degenrate triangles
-    m.update_energy_cache(modified_triangles(m));
+    if (!m.update_energy_cache(modified_triangles(m))) return false;
 
 
     return true;
@@ -559,7 +558,7 @@ void AdaptiveTessellation::split_all_edges()
     wmtk::logger().info("size for edges to be split is {}", collect_all_ops.size());
     auto setup_and_execute = [&](auto executor) {
         addPairedCustomOps(executor);
-        executor.renew_neighbor_tuples = split_renew;
+        executor.renew_neighbor_tuples = split_no_renew;
         executor.priority = [&](auto& m, auto _, auto& e) {
             double priority = 0.;
             if (m.mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
