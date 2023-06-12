@@ -274,6 +274,53 @@ TEST_CASE("autodiff vs finitediff", "[.]")
     }
 }
 
+TEST_CASE("autodiff_vs_finitediff_PART_TWO", "[.]")
+{
+    using DScalar = wmtk::EdgeLengthEnergy::DScalar;
+    DiffScalarBase::setVariableCount(2);
+
+    Eigen::MatrixXd V(3, 2);
+    V.row(0) << 0, 0;
+    V.row(1) << 10, 0;
+    V.row(2) << 0, 10;
+    Eigen::MatrixXi F(1, 3);
+    F.row(0) << 0, 1, 2;
+    AdaptiveTessellation m;
+    m.create_mesh(V, F);
+    m.mesh_construct_boundaries(V, F, {}, {});
+    m.mesh_parameters.m_do_not_output = true;
+    auto displacement = [](const DScalar& u, const DScalar& v) -> DScalar { return 10 * u; };
+    m.set_parameters(4, displacement, EDGE_LEN_TYPE::LINEAR3D, ENERGY_TYPE::EDGE_LENGTH, true);
+
+    for (const auto& v : m.get_vertices()) {
+        REQUIRE(m.vertex_attrs[v.vid(m)].t >= 0);
+        m.vertex_attrs[v.vid(m)].fixed = false;
+    }
+    // m.smooth_all_vertices();
+
+    std::function<double(const Eigen::VectorXd&)> f =
+        [&displacement](const Eigen::VectorXd& p) -> double {
+        // TODO add proper energy term here!
+        auto d = displacement(DScalar(p[0]), DScalar(p[1]));
+        return d.getValue();
+    };
+
+    // evaluate gradient at v0 with FD
+    Eigen::VectorXd finitediff_grad;
+    fd::finite_gradient(V.row(0), f, finitediff_grad, fd::SECOND, 1e-2);
+    // evaluate gradient at v0 with autodiff
+    auto v0_displ = displacement(DScalar(V(0, 0)), DScalar(V(0, 1)));
+    spdlog::info(
+        "v0 gradient FD = {}, autodiff = {}",
+        finitediff_grad.transpose(),
+        v0_displ.getGradient().transpose());
+
+    // evaluate gradient for each vertex
+    for (const auto& v : m.get_vertices()) {
+        // TODO
+    }
+}
+
 // TODO: Try out sin(x) with periodic boundary cond + autodiff + gradient
 TEST_CASE("test_link_check", "[test_pre_check]")
 {
