@@ -351,18 +351,33 @@ TEST_CASE("test ply", "[.]")
 
     m.mesh_preprocessing_from_intermediate(
         input_mesh_path,
-        "/home/yunfan/data/adaptive_tessellation/results/Pyramid_coarse/new_amips/31/"
-        "after_collapse_uv.ply",
-        "/home/yunfan/data/adaptive_tessellation/results/Pyramid_coarse/new_amips/31/"
-        "after_collapse_world.ply",
+        "/home/yunfan/data/adaptive_tessellation/results/Pyramid_coarse/new_amips/30/"
+        "after_smooth_uv.ply",
+        "/home/yunfan/data/adaptive_tessellation/results/Pyramid_coarse/new_amips/30/"
+        "after_smooth_world.ply",
         position_path,
         normal_path,
         height_path);
-
+    Image image;
+    image.load(height_path, WrappingMode::MIRROR_REPEAT, WrappingMode::MIRROR_REPEAT);
+    REQUIRE(m.check_mesh_connectivity_validity());
+    m.set_parameters(
+        0.001,
+        0.1,
+        image,
+        WrappingMode::MIRROR_REPEAT,
+        SAMPLING_MODE::BICUBIC,
+        DISPLACEMENT_MODE::MESH_3D,
+        adaptive_tessellation::ENERGY_TYPE::AMIPS3D,
+        adaptive_tessellation::EDGE_LEN_TYPE::LINEAR3D,
+        1);
     ///// debug
+    m.split_all_edges();
+    m.swap_all_edges_quality_pass();
+    m.collapse_all_edges();
     for (auto tri : m.get_faces()) {
         auto verts = m.oriented_tri_vids(tri);
-        std::array<float, 6> tri_uv;
+        std::array<double, 6> tri_uv;
         for (int i = 0; i < 3; i++) {
             tri_uv[i * 2] = m.vertex_attrs[verts[i]].pos(0);
             tri_uv[i * 2 + 1] = m.vertex_attrs[verts[i]].pos(1);
@@ -372,6 +387,29 @@ TEST_CASE("test ply", "[.]")
             exit(50000);
         }
     }
+    std::array<double, 6> tri_ref1 = std::array<double, 6>{0.51961272523165003,
+                                                           0.048932818490359936,
+                                                           0.56442444080885101,
+                                                           0.058019773870274467,
+                                                           0.59402024195065839,
+                                                           0.064021234000608218};
+    std::array<double, 6> tri_ref2 = std::array<double, 6>{0.56442444080885101,
+                                                           0.058019773870274467,
+                                                           0.59402024195065839,
+                                                           0.064021234000608218,
+                                                           0.51961272523165003,
+                                                           0.048932818490359936};
+    std::array<double, 6> tri_ref3 = std::array<double, 6>{0.59402024195065839,
+                                                           0.064021234000608218,
+                                                           0.51961272523165003,
+                                                           0.048932818490359936,
+                                                           0.56442444080885101,
+                                                           0.058019773870274467};
 
+    m.smooth_all_vertices();
+    bool test1 = wmtk::is_degenerate_2d_oriented_triangle_array(tri_ref1);
+    bool test2 = wmtk::is_degenerate_2d_oriented_triangle_array(tri_ref2);
+    bool test3 = wmtk::is_degenerate_2d_oriented_triangle_array(tri_ref3);
+    wmtk::logger().info("bool 1 {} bool 2 {} bool 3 {}", test1, test2, test3);
     /////
 }
