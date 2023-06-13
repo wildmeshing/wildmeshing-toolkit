@@ -298,24 +298,31 @@ TEST_CASE("autodiff_vs_finitediff_PART_TWO", "[.]")
     }
     // m.smooth_all_vertices();
 
-    std::function<double(const Eigen::VectorXd&)> f =
-        [&displacement](const Eigen::VectorXd& p) -> double {
-        // TODO add proper energy term here!
-        auto d = displacement(DScalar(p[0]), DScalar(p[1]));
+    // TODO replace displacement function by the real energy function
+    std::function<DScalar(const DScalar&, const DScalar&)> eval = displacement;
+
+    std::function<double(const Eigen::VectorXd&)> fd_function =
+        [&eval](const Eigen::VectorXd& p) -> double {
+        const DScalar d = eval(DScalar(p[0]), DScalar(p[1]));
         return d.getValue();
     };
 
-    // evaluate gradient at v0 with FD
-    Eigen::VectorXd finitediff_grad;
-    fd::finite_gradient(V.row(0), f, finitediff_grad, fd::SECOND, 1e-2);
-    // evaluate gradient at v0 with autodiff
-    DScalar x(0, V(0, 0)); // First variable, initialized to V(0, 0)
-    DScalar y(1, V(0, 1)); // Second variable, initialized to V(0, 1)
-    auto v0_displ = displacement(x, y);
-    spdlog::info(
-        "v0 gradient FD = {}, autodiff = {}",
-        finitediff_grad.transpose(),
-        v0_displ.getGradient().transpose());
+    {
+        // evaluate gradient at v0
+        Eigen::Vector2d p = V.row(0);
+
+        Eigen::VectorXd finitediff_grad;
+        fd::finite_gradient(p, fd_function, finitediff_grad, fd::SECOND, 1e-2);
+
+        DScalar x(0, p[0]); // First variable, initialized to V(0, 0)
+        DScalar y(1, p[1]); // Second variable, initialized to V(0, 1)
+        const DScalar v0_displ = eval(x, y);
+        const Eigen::VectorXd autodiff_grad = v0_displ.getGradient();
+        spdlog::info(
+            "v0 gradient FD = {}, autodiff = {}",
+            finitediff_grad.transpose(),
+            autodiff_grad.transpose());
+    }
 
     // evaluate gradient for each vertex
     for (const auto& v : m.get_vertices()) {
