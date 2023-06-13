@@ -55,9 +55,27 @@ void wmtk::optimization_state_update(
                     wmtk::logger()
                         .error("A: {}, B: {}, C: {}", A.transpose(), B.transpose(), C.transpose());
                     wmtk::logger().error(
-                        "a different check {}",
+                        "a different check should be true {}",
                         wmtk::is_degenerate_2d_oriented_triangle_array(
-                            std::array<float, 6>{A.x(), A.y(), B.x(), B.y(), C.x(), C.y()}));
+                            std::array<double, 6>{A.x(), A.y(), B.x(), B.y(), C.x(), C.y()}));
+                    wmtk::logger().error(
+                        "checking the numerical different triangle, should be true {}",
+                        wmtk::is_degenerate_2d_oriented_triangle_array(
+                            std::array<double, 6>{0.5940202419506584,
+                                                  0.06402123400060822,
+                                                  0.51961272523165,
+                                                  0.04893281849035993,
+                                                  0.564424440808851,
+                                                  0.05801977387027447}));
+                    wmtk::logger().error(
+                        "checking the numerical different triangle, should be true {}",
+                        wmtk::is_degenerate_2d_oriented_triangle_array(
+                            std::array<double, 6>{0.5940202419506584,
+                                                  0.06402123400060822,
+                                                  0.51961272523165,
+                                                  0.048932818490359915,
+                                                  0.564424440808851,
+                                                  0.05801977387027447}));
                 } else {
                     wmtk::logger().warn(
                         "good tirangle A: {}, B: {}, C: {}",

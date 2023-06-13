@@ -46,7 +46,7 @@ T triangle_2d_area(
 // use triangle is std vector that has the 2d coordinate of ABC ordered correctly to the orientation
 // return true if is degenerate (collinear/ flipped)
 // flase o.w.
-bool is_degenerate_2d_oriented_triangle_array(const std::array<float, 6>& triangle);
+bool is_degenerate_2d_oriented_triangle_array(const std::array<double, 6>& triangle);
 
 double amips3d_error(
     const Eigen::Matrix<double, 3, 1>& p1,

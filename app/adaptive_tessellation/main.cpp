@@ -152,13 +152,22 @@ int main(int argc, char** argv)
     m.set_output_folder(output_folder);
     m.mesh_parameters.m_position_normal_paths = {position_map_path, normal_map_path};
 
-    m.mesh_preprocessing(
+    // m.mesh_preprocessing(
+    //     input_file,
+    //     position_map_path,
+    //     normal_map_path,
+    //     height_map_path,
+    //     min_height,
+    //     max_height);
+    m.mesh_preprocessing_from_intermediate(
         input_file,
+        "/home/yunfan/data/adaptive_tessellation/results/Pyramid_coarse/new_amips/30/"
+        "after_smooth_uv.ply",
+        "/home/yunfan/data/adaptive_tessellation/results/Pyramid_coarse/new_amips/30/"
+        "after_smooth_world.ply",
         position_map_path,
         normal_map_path,
-        height_map_path,
-        min_height,
-        max_height);
+        height_map_path);
 
     assert(m.check_mesh_connectivity_validity());
 
@@ -232,7 +241,7 @@ int main(int argc, char** argv)
         ///// debug
         for (auto tri : m.get_faces()) {
             auto verts = m.oriented_tri_vids(tri);
-            std::array<float, 6> tri_uv;
+            std::array<double, 6> tri_uv;
             for (int i = 0; i < 3; i++) {
                 tri_uv[i * 2] = m.vertex_attrs[verts[i]].pos(0);
                 tri_uv[i * 2 + 1] = m.vertex_attrs[verts[i]].pos(1);
@@ -250,7 +259,7 @@ int main(int argc, char** argv)
         ///// debug
         for (auto tri : m.get_faces()) {
             auto verts = m.oriented_tri_vids(tri);
-            std::array<float, 6> tri_uv;
+            std::array<double, 6> tri_uv;
             for (int i = 0; i < 3; i++) {
                 tri_uv[i * 2] = m.vertex_attrs[verts[i]].pos(0);
                 tri_uv[i * 2 + 1] = m.vertex_attrs[verts[i]].pos(1);
@@ -266,7 +275,7 @@ int main(int argc, char** argv)
         ///// debug
         for (auto tri : m.get_faces()) {
             auto verts = m.oriented_tri_vids(tri);
-            std::array<float, 6> tri_uv;
+            std::array<double, 6> tri_uv;
             for (int i = 0; i < 3; i++) {
                 tri_uv[i * 2] = m.vertex_attrs[verts[i]].pos(0);
                 tri_uv[i * 2 + 1] = m.vertex_attrs[verts[i]].pos(1);
@@ -286,7 +295,7 @@ int main(int argc, char** argv)
         ///// debug
         for (auto tri : m.get_faces()) {
             auto verts = m.oriented_tri_vids(tri);
-            std::array<float, 6> tri_uv;
+            std::array<double, 6> tri_uv;
             for (int i = 0; i < 3; i++) {
                 tri_uv[i * 2] = m.vertex_attrs[verts[i]].pos(0);
                 tri_uv[i * 2 + 1] = m.vertex_attrs[verts[i]].pos(1);

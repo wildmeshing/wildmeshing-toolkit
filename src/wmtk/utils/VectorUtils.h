@@ -15,10 +15,10 @@ namespace wmtk {
 template <class T>
 inline std::vector<T> set_intersection(const std::vector<T>& v1, const std::vector<T>& v2)
 {
-    if(v1.size()>1) {
+    if (v1.size() > 1) {
         assert(std::is_sorted(v1.begin(), v1.end()));
     }
-    if(v2.size()>1) {
+    if (v2.size() > 1) {
         assert(std::is_sorted(v2.begin(), v2.end()));
     }
 
@@ -31,18 +31,18 @@ inline std::vector<T> set_intersection(const std::vector<T>& v1, const std::vect
 template <class T>
 inline void vector_unique(std::vector<T>& v)
 {
-    if(v.size()>1) {
-    std::sort(v.begin(), v.end());
-    v.erase(std::unique(v.begin(), v.end()), v.end());
+    if (v.size() > 1) {
+        std::sort(v.begin(), v.end());
+        v.erase(std::unique(v.begin(), v.end()), v.end());
     }
 }
 
 template <class T, typename Comp, typename Equal>
 inline void vector_unique(std::vector<T>& v, Comp comp, Equal equal)
 {
-    if(v.size()>1) {
-    std::sort(v.begin(), v.end(), comp);
-    v.erase(std::unique(v.begin(), v.end(), equal), v.end());
+    if (v.size() > 1) {
+        std::sort(v.begin(), v.end(), comp);
+        v.erase(std::unique(v.begin(), v.end(), equal), v.end());
     }
 }
 
@@ -56,8 +56,8 @@ inline void vector_print(std::vector<T>& v)
 template <class T>
 inline void vector_sort(std::vector<T>& v)
 {
-    if(v.size()>1) {
-    std::sort(v.begin(), v.end());
+    if (v.size() > 1) {
+        std::sort(v.begin(), v.end());
     }
 }
 
@@ -117,5 +117,23 @@ void set_union_inplace(std::vector<T>& vec, const std::vector<T>& vec2)
     const auto boundary_it = vec.insert(vec.end(), vec2.begin(), vec2.end());
     std::inplace_merge(vec.begin(), boundary_it, vec.end());
     vector_unique(vec);
+}
+
+inline std::array<float, 6> cast_2d_coordinates_to_float(const std::array<double, 6> tri)
+{
+    std::array<float, 6> ret;
+    for (int i = 0; i < 6; i++) {
+        ret[i] = static_cast<float>(tri[i]);
+    }
+    return ret;
+}
+inline bool array_are_close(const std::array<double, 6> tri1, const std::array<double, 6> tri2)
+{
+    for (int i = 0; i < 6; i++) {
+        if (std::abs(tri1[i] - tri2[i]) > 1e-5) {
+            return false;
+        }
+    }
+    return true;
 }
 } // namespace wmtk

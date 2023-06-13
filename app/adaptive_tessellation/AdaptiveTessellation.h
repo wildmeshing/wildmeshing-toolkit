@@ -28,6 +28,7 @@
 #include <wmtk/utils/Energy2dOptimizationUtils.h>
 #include <wmtk/utils/GeoUtils.h>
 #include <wmtk/utils/PolygonClipping.h>
+#include <wmtk/utils/VectorUtils.h>
 #include <wmtk/utils/json_sink.h>
 #include <Eigen/Core>
 #include <finitediff.hpp>

@@ -660,7 +660,7 @@ void AdaptiveTessellation::set_feature(Tuple& v)
     // check if they are co linear. set fixed = true if not
     double costheta = ((p2 - p1).stableNormalized()).dot((p3 - p1).stableNormalized()); // cos theta
     double theta = std::acos(std::clamp<double>(costheta, -1, 1));
-    if (theta <= M_PI * 2./ 3.) vertex_attrs[v.vid(*this)].fixed = true;
+    if (theta <= M_PI * 2. / 3.) vertex_attrs[v.vid(*this)].fixed = true;
 }
 
 // assuming the m_triwild_displacement in mesh_parameter has been set
@@ -1798,21 +1798,53 @@ bool AdaptiveTessellation::update_energy_cache(const std::vector<Tuple>& tris)
     if (!mesh_parameters.m_ignore_embedding) {
         // get a vector of new traingles uvs
         // check if is degenerate
-        std::vector<std::array<float, 6>> modified_tris_uv(tris.size());
+        std::vector<std::array<double, 6>> modified_tris_uv(tris.size());
+        std::vector<std::array<float, 6>> modified_tris_uv_float(tris.size());
         for (int i = 0; i < tris.size(); i++) {
             auto tri = tris[i];
             auto verts = oriented_tri_vids(tri);
-            std::array<float, 6> tri_uv;
+            std::array<double, 6> tri_uv;
+            std::array<float, 6> tri_uv_float;
+            std::array<double, 6> tri_ref1, tri_ref2, tri_ref3;
+            tri_ref1 = std::array<double, 6>{0.51961272523165003,
+                                             0.048932818490359936,
+                                             0.56442444080885101,
+                                             0.058019773870274467,
+                                             0.59402024195065839,
+                                             0.064021234000608218};
+            tri_ref2 = std::array<double, 6>{0.56442444080885101,
+                                             0.058019773870274467,
+                                             0.59402024195065839,
+                                             0.064021234000608218,
+                                             0.51961272523165003,
+                                             0.048932818490359936};
+            tri_ref3 = std::array<double, 6>{0.59402024195065839,
+                                             0.064021234000608218,
+                                             0.51961272523165003,
+                                             0.048932818490359936,
+                                             0.56442444080885101,
+                                             0.058019773870274467};
             for (int i = 0; i < 3; i++) {
                 tri_uv[i * 2] = vertex_attrs[verts[i]].pos(0);
                 tri_uv[i * 2 + 1] = vertex_attrs[verts[i]].pos(1);
+                tri_uv_float[i * 2] = vertex_attrs[verts[i]].pos(0);
+                tri_uv_float[i * 2 + 1] = vertex_attrs[verts[i]].pos(1);
+            }
+            if (wmtk::array_are_close(tri_uv, tri_ref1) ||
+                wmtk::array_are_close(tri_uv, tri_ref2) ||
+                wmtk::array_are_close(tri_uv, tri_ref3)) {
+                wmtk::logger().warn("the triangle of problem in collapse {}", tri_uv);
+                wmtk::logger().critical(
+                    "it should be true here {}",
+                    wmtk::is_degenerate_2d_oriented_triangle_array(tri_uv));
             }
             if (wmtk::is_degenerate_2d_oriented_triangle_array(tri_uv)) return false;
             modified_tris_uv[i] = tri_uv;
+            modified_tris_uv_float[i] = tri_uv_float;
         }
         if (mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::AREA_ACCURACY) {
             std::vector<float> renewed_errors(tris.size());
-            m_texture_integral.get_error_per_triangle(modified_tris_uv, renewed_errors);
+            m_texture_integral.get_error_per_triangle(modified_tris_uv_float, renewed_errors);
             set_faces_cached_distance_integral(tris, renewed_errors);
             return true;
         } else if (mesh_parameters.m_edge_length_type == EDGE_LEN_TYPE::TRI_QUADRICS) {

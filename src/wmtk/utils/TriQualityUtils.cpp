@@ -634,7 +634,7 @@ void wmtk::newton_method_with_fallback(
     dofx = new_dofx;
 }
 
-bool wmtk::is_degenerate_2d_oriented_triangle_array(const std::array<float, 6>& triangle)
+bool wmtk::is_degenerate_2d_oriented_triangle_array(const std::array<double, 6>& triangle)
 {
     Eigen::Vector2d A = Eigen::Vector2d(triangle[0], triangle[1]);
     Eigen::Vector2d B = Eigen::Vector2d(triangle[2], triangle[3]);
