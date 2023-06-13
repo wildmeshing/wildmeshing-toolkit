@@ -307,26 +307,22 @@ TEST_CASE("autodiff_vs_finitediff_PART_TWO", "[.]")
         return d.getValue();
     };
 
-    {
-        // evaluate gradient at v0
-        Eigen::Vector2d p = V.row(0);
+    // evaluate gradient for each vertex
+    for (const auto& v : m.get_vertices()) {
+        Eigen::Vector2d p = m.vertex_attrs[v.vid(m)].pos;
 
         Eigen::VectorXd finitediff_grad;
         fd::finite_gradient(p, fd_function, finitediff_grad, fd::SECOND, 1e-2);
 
         DScalar x(0, p[0]); // First variable, initialized to V(0, 0)
         DScalar y(1, p[1]); // Second variable, initialized to V(0, 1)
-        const DScalar v0_displ = eval(x, y);
-        const Eigen::VectorXd autodiff_grad = v0_displ.getGradient();
+        const DScalar eval_autodiff_result = eval(x, y);
+        const Eigen::VectorXd autodiff_grad = eval_autodiff_result.getGradient();
         spdlog::info(
             "v0 gradient FD = {}, autodiff = {}",
             finitediff_grad.transpose(),
             autodiff_grad.transpose());
-    }
-
-    // evaluate gradient for each vertex
-    for (const auto& v : m.get_vertices()) {
-        // TODO
+        REQUIRE((finitediff_grad - autodiff_grad).squaredNorm() < 1e-10);
     }
 }
 
