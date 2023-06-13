@@ -412,9 +412,10 @@ void AMIPS3D::eval(State& state, DofsToPositions& dof_to_positions) const
         Eigen::Vector2d C =
             Eigen::Vector2d(state.two_opposite_vertices(0, 2), state.two_opposite_vertices(0, 3));
         auto res = igl::predicates::orient2d(A, B, C);
-        if (res != igl::predicates::Orientation::POSITIVE)
+        if (res != igl::predicates::Orientation::POSITIVE) {
+            wmtk::logger().info("inverted or colinear vertices are {} {} {}", A, B, C);
             return true;
-        else {
+        } else {
             // if (triangle_2d_area(A, B, C) < 1e-10) return true;
             return false;
         }

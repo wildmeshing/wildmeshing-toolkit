@@ -22,7 +22,9 @@ bool wmtk::inversion_check_with_dofx(
             B << nminfo.neighbors(i, 0), nminfo.neighbors(i, 1);
             C << nminfo.neighbors(i, 2), nminfo.neighbors(i, 3);
             auto res = igl::predicates::orient2d(A, B, C);
-            if (res != igl::predicates::Orientation::POSITIVE) return false;
+            if (res != igl::predicates::Orientation::POSITIVE) {
+                return false;
+            }
         }
     }
     return true;
@@ -36,7 +38,38 @@ void wmtk::optimization_state_update(
 {
     lagrange::enable_fpe();
     // assume no inversion
+    if (!inversion_check_with_dofx(boundary_mapping, nminfos, state.dofx)) {
+        wmtk::logger().error("inversion check failed");
+        for (auto& nminfo : nminfos) {
+            Eigen::Vector2d A;
+            if (state.dofx.size() == 1) {
+                A = boundary_mapping.t_to_uv(nminfo.curve_id, state.dofx(0));
+            } else
+                A = state.dofx;
+            for (auto i = 0; i < nminfo.neighbors.rows(); i++) {
+                Eigen::Vector2d B, C;
+                B << nminfo.neighbors(i, 0), nminfo.neighbors(i, 1);
+                C << nminfo.neighbors(i, 2), nminfo.neighbors(i, 3);
+                auto res = igl::predicates::orient2d(A, B, C);
+                if (res != igl::predicates::Orientation::POSITIVE) {
+                    wmtk::logger()
+                        .error("A: {}, B: {}, C: {}", A.transpose(), B.transpose(), C.transpose());
+                    wmtk::logger().error(
+                        "a different check {}",
+                        wmtk::is_degenerate_2d_oriented_triangle_array(
+                            std::array<float, 6>{A.x(), A.y(), B.x(), B.y(), C.x(), C.y()}));
+                } else {
+                    wmtk::logger().warn(
+                        "good tirangle A: {}, B: {}, C: {}",
+                        A.transpose(),
+                        B.transpose(),
+                        C.transpose());
+                }
+            }
+        }
+    }
     assert(inversion_check_with_dofx(boundary_mapping, nminfos, state.dofx));
+
     double total_energy = 0.;
     Eigen::Vector2d total_jac = Eigen::Vector2d::Zero();
     Eigen::Matrix2d total_hess = Eigen::Matrix2d::Zero();
