@@ -633,3 +633,94 @@ void wmtk::newton_method_with_fallback(
         new_dofx = compute_new_valid_pos(old_dofx, 0);
     dofx = new_dofx;
 }
+
+bool wmtk::is_degenerate_2d_oriented_triangle_array(const std::array<float, 6>& triangle)
+{
+    Eigen::Vector2d A = Eigen::Vector2d(triangle[0], triangle[1]);
+    Eigen::Vector2d B = Eigen::Vector2d(triangle[2], triangle[3]);
+    Eigen::Vector2d C = Eigen::Vector2d(triangle[4], triangle[5]);
+    auto res = igl::predicates::orient2d(A, B, C);
+    if (res != igl::predicates::Orientation::POSITIVE)
+        return true;
+    else {
+        // if (triangle_2d_area(A, B, C) < 1e-10) return true;
+        return false;
+    }
+}
+
+double wmtk::amips3d_error(
+    const Eigen::Matrix<double, 3, 1>& p1,
+    const Eigen::Matrix<double, 3, 1>& p2,
+    const Eigen::Matrix<double, 3, 1>& p3)
+{
+    Eigen::Matrix<double, 3, 1> V2_V1 = p2 - p1;
+    Eigen::Matrix<double, 3, 1> V3_V1 = p3 - p1;
+    ////////////////////////
+    // tangent bases
+    Eigen::Matrix<double, 3, 1> e1; // e1 = (V2 - V1).normalize()
+    // e1 = V2_V1.stableNormalized();
+    assert(V2_V1.norm() > 0); // check norm is not 0
+    e1 = V2_V1 / V2_V1.norm();
+    Eigen::Matrix<double, 3, 1> n;
+    n = V2_V1.cross(V3_V1);
+
+    if (n.lpNorm<Eigen::Infinity>() < std::numeric_limits<double>::denorm_min()) {
+        wmtk::logger().critical("n.lpNorm {}", n.lpNorm<Eigen::Infinity>());
+        wmtk::logger().critical("V1 {}", p1);
+        wmtk::logger().critical("V2 {}", p2);
+        wmtk::logger().critical("V3 {}", p3);
+        assert(false);
+    }
+    n = n.stableNormalized();
+    assert(n.norm() > 0); // check norm is not 0
+    // n = n / n.norm();
+    Eigen::Matrix<double, 3, 1> e2;
+    e2 = n.cross(e1);
+    // Eigen::Matrix<double, 3, 1> e2_stableNormalized = e2.stableNormalized();
+    assert(e2.norm() > 0); // check norm is not 0
+    // e2 = e2 / e2.norm();
+    e2 = e2.stableNormalized();
+
+    // project V1, V2, V3 to tangent plane to VT1, VT2, VT3
+
+    Eigen::Matrix<double, 2, 1> VT1, VT2, VT3;
+    VT1 << 0., 0.; // the origin
+    VT2 << V2_V1.dot(e1), 0.;
+    VT3 << V3_V1.dot(e1), V3_V1.dot(e2);
+
+    // now construct Dm as before in tangent plane
+    // (x2 - x1, y2 - y1, x3 - x1, y2 - y1).transpose
+    Eigen::Matrix<double, 2, 2> Dm;
+    Dm << VT2.x() - VT1.x(), VT3.x() - VT1.x(), VT2.y() - VT1.y(), VT3.y() - VT1.y();
+    assert(Dm.determinant() > 0);
+    // define of transform matrix F = Dm@Ds.inv
+    Eigen::Matrix<double, 2, 2> F;
+
+    Eigen::Matrix2d Ds, Dsinv;
+    Eigen::Vector2d target_A, target_B, target_C;
+    target_A << 0., 0.;
+    target_B << 1., 0.;
+    target_C << 1. / 2., sqrt(3) / 2.;
+    Ds << target_B.x() - target_A.x(), target_C.x() - target_A.x(), target_B.y() - target_A.y(),
+        target_C.y() - target_A.y();
+
+    auto Dsdet = Ds.determinant();
+    // no inversion
+    assert(Dsdet > 0);
+    if (std::abs(Dsdet) < std::numeric_limits<double>::denorm_min()) {
+        return std::numeric_limits<double>::infinity();
+    }
+    Dsinv = Ds.inverse();
+
+    F << (Dm(0, 0) * Dsinv(0, 0) + Dm(0, 1) * Dsinv(1, 0)),
+        (Dm(0, 0) * Dsinv(0, 1) + Dm(0, 1) * Dsinv(1, 1)),
+        (Dm(1, 0) * Dsinv(0, 0) + Dm(1, 1) * Dsinv(1, 0)),
+        (Dm(1, 0) * Dsinv(0, 1) + Dm(1, 1) * Dsinv(1, 1));
+    auto Fdet = F.determinant();
+    assert(Fdet > 0);
+    if (std::abs(Fdet) < std::numeric_limits<double>::denorm_min()) {
+        return std::numeric_limits<double>::infinity();
+    }
+
+    return (F.transpose() * F).trace() / Fdet;
+}

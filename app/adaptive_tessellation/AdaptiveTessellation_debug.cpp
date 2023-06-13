@@ -189,55 +189,11 @@ float AdaptiveTessellation::cumulated_per_face_error()
     } else if (mesh_parameters.m_energy_type == ENERGY_TYPE::AMIPS3D) {
         for (int i = 0; i < tris_tuples.size(); i++) {
             wmtk::TriMesh::Tuple anchor_vertex = tris_tuples[i];
-            wmtk::State state = {};
-            if (vertex_attrs[anchor_vertex.vid(*this)].fixed)
-                anchor_vertex = anchor_vertex.switch_vertex(*this);
-            if (is_boundary_vertex(anchor_vertex) && mesh_parameters.m_boundary_parameter) {
-                state.dofx.resize(1);
-                state.dofx[0] = vertex_attrs[anchor_vertex.vid(*this)].t; // t
-                for (auto& e : get_one_ring_edges_for_vertex(anchor_vertex)) {
-                    if (is_boundary_edge(e) && !vertex_attrs[e.vid(*this)].fixed) {
-                        // set the curve_id of the vertex to the curve_id of the edge
-                        vertex_attrs[anchor_vertex.vid(*this)].curve_id =
-                            edge_attrs[e.eid(*this)].curve_id.value();
-
-                        break;
-                    }
-                }
-                // vertify the position save in cache is not outated
-                if (!vertex_attrs[anchor_vertex.vid(*this)].fixed &&
-                    (vertex_attrs[anchor_vertex.vid(*this)].pos -
-                     mesh_parameters.m_boundary.t_to_uv(
-                         vertex_attrs[anchor_vertex.vid(*this)].curve_id,
-                         state.dofx[0]))
-                            .norm() > 1e-10) {
-                    wmtk::logger().info("!!!! pos and t to uv not the same !!!!!");
-                    wmtk::logger().info(
-                        "pos {} t_to_uv {} t {} curve_id {}",
-                        vertex_attrs[anchor_vertex.vid(*this)].pos,
-                        mesh_parameters.m_boundary.t_to_uv(
-                            vertex_attrs[anchor_vertex.vid(*this)].curve_id,
-                            state.dofx[0]),
-                        state.dofx[0],
-                        vertex_attrs[anchor_vertex.vid(*this)].curve_id);
-                    assert(false);
-                }
-
-            } else {
-                state.dofx.resize(2);
-                state.dofx = vertex_attrs[anchor_vertex.vid(*this)].pos; // uv;
-            }
-            wmtk::NewtonMethodInfo primary_nminfo;
-            std::vector<wmtk::NewtonMethodInfo> primary_nminfos;
-            primary_nminfos.resize(1);
-            get_nminfo_for_vertex(anchor_vertex, primary_nminfo);
-            primary_nminfos[0] = primary_nminfo;
-            wmtk::optimization_state_update(
-                *mesh_parameters.m_energy,
-                primary_nminfos,
-                mesh_parameters.m_boundary,
-                state);
-            total_error += state.value;
+            const auto v1 = get_vertex_attrs(anchor_vertex).pos;
+            const auto v2 = get_vertex_attrs(anchor_vertex.switch_vertex(*this)).pos;
+            const auto v3 =
+                get_vertex_attrs(anchor_vertex.switch_edge(*this).switch_vertex(*this)).pos;
+            total_error += get_amips3d_error_for_face(v1, v2, v3);
         }
     }
 

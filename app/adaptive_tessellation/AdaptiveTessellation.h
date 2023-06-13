@@ -424,6 +424,11 @@ public:
     double get_one_ring_quadrics_error_for_vertex(const Tuple& v) const;
     double get_quadric_error_for_face(const Tuple& f) const;
 
+    double get_amips3d_error_for_face(
+        const Eigen::Vector2d& A,
+        const Eigen::Vector2d& B,
+        const Eigen::Vector2d& C) const;
+
     void get_nminfo_for_vertex(const Tuple& v, wmtk::NewtonMethodInfo& nminfo) const;
 
     // check for degenerate triangle inside. bound is set to 1e-10

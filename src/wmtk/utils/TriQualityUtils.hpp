@@ -46,19 +46,12 @@ T triangle_2d_area(
 // use triangle is std vector that has the 2d coordinate of ABC ordered correctly to the orientation
 // return true if is degenerate (collinear/ flipped)
 // flase o.w.
-inline bool is_degenerate_2d_oriented_triangle_array(const std::array<float, 6>& triangle)
-{
-    Eigen::Vector2d A = Eigen::Vector2d(triangle[0], triangle[1]);
-    Eigen::Vector2d B = Eigen::Vector2d(triangle[2], triangle[3]);
-    Eigen::Vector2d C = Eigen::Vector2d(triangle[4], triangle[5]);
-    auto res = igl::predicates::orient2d(A, B, C);
-    if (res != igl::predicates::Orientation::POSITIVE)
-        return true;
-    else {
-        // if (triangle_2d_area(A, B, C) < 1e-10) return true;
-        return false;
-    }
-}
+bool is_degenerate_2d_oriented_triangle_array(const std::array<float, 6>& triangle);
+
+double amips3d_error(
+    const Eigen::Matrix<double, 3, 1>& p1,
+    const Eigen::Matrix<double, 3, 1>& p2,
+    const Eigen::Matrix<double, 3, 1>& p3);
 
 using DofVector = Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 2, 1>;
 /**
