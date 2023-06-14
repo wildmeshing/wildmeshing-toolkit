@@ -100,7 +100,7 @@ std::array<wmtk::Image, 3> combine_position_normal_texture(
     const std::filesystem::path& position_path,
     const std::filesystem::path& normal_path,
     const std::filesystem::path& texture_path,
-    float min_height = 0.f,
-    float max_height = 1.f);
+    float min_height,
+    float max_height);
 
 } // namespace wmtk

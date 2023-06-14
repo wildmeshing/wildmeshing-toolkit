@@ -197,52 +197,6 @@ MeshType advect_vertices(
     return mesh;
 }
 
-std::array<wmtk::Image, 3> combine_position_normal_texture(
-    double normalization_scale,
-    const std::filesystem::path& position_path,
-    const std::filesystem::path& normal_path,
-    const std::filesystem::path& height_path)
-{
-    // displaced = positions + normalization_scale * heights * (2.0 * normals - 1.0)
-    auto [w_p, h_p, index_red_p, index_green_p, index_blue_p, buffer_r_p, buffer_g_p, buffer_b_p] =
-        wmtk::load_image_exr_split_3channels(position_path);
-    auto [w_n, h_n, index_red_n, index_green_n, index_blue_n, buffer_r_n, buffer_g_n, buffer_b_n] =
-        wmtk::load_image_exr_split_3channels(normal_path);
-    auto [w_h, h_h, index_red_h, index_green_h, index_blue_h, buffer_r_h, buffer_g_h, buffer_b_h] =
-        wmtk::load_image_exr_split_3channels(height_path);
-    assert(buffer_r_p.size() == buffer_r_n.size());
-    assert(buffer_r_p.size() == buffer_r_h.size());
-    assert(buffer_r_p.size() == buffer_g_p.size());
-    assert(buffer_r_p.size() == buffer_b_p.size());
-    auto buffer_size = buffer_r_p.size();
-    auto w = w_p;
-    auto h = h_p;
-    std::vector<float> buffer_r_d(buffer_size), buffer_g_d(buffer_size), buffer_b_d(buffer_size);
-    for (int i = 0; i < buffer_size; i++) {
-        buffer_r_d[i] =
-            buffer_r_p[i] + normalization_scale * buffer_r_h[i] * (2.0 * buffer_r_n[i] - 1.0);
-        buffer_g_d[i] =
-            buffer_g_p[i] + normalization_scale * buffer_g_h[i] * (2.0 * buffer_g_n[i] - 1.0);
-        buffer_b_d[i] =
-            buffer_b_p[i] + normalization_scale * buffer_b_h[i] * (2.0 * buffer_b_n[i] - 1.0);
-    }
-    // auto res = save_image_exr_3channels(
-    //     w,
-    //     h,
-    //     index_red_p,
-    //     index_green_p,
-    //     index_blue_p,
-    //     buffer_r_d,
-    //     buffer_g_d,
-    //     buffer_b_d,
-    //     displaced_path);
-    return {
-        buffer_to_image(buffer_r_d, w, h),
-        buffer_to_image(buffer_g_d, w, h),
-        buffer_to_image(buffer_b_d, w, h),
-    };
-}
-
 } // namespace
 
 TEST_CASE("Quadric Integral Advection", "[utils][quadric]")
@@ -260,7 +214,7 @@ TEST_CASE("Quadric Integral Advection", "[utils][quadric]")
     //         base_dir / "textures_128/sphere_128_normal-world-space.exr";
     //     std::filesystem::path height_path =
     //         base_dir / "textures_128/alien_surface_panel_overgrown_128_height.exr";
-    //     return combine_position_normal_texture(scale, position_path, normal_path, height_path);
+    //     return wmtk::combine_position_normal_texture(scale, position_path, normal_path, height_path, 0, 1);
     // }();
 
     auto positions = load_rgb_image(WMTK_DATA_DIR "/images/hemisphere_512_displaced.exr");
