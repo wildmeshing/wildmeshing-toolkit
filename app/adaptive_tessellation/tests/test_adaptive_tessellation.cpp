@@ -274,6 +274,58 @@ TEST_CASE("autodiff vs finitediff", "[.]")
     }
 }
 
+TEST_CASE("autodiff_vs_finitediff_PART_TWO", "[.]")
+{
+    using DScalar = wmtk::EdgeLengthEnergy::DScalar;
+    DiffScalarBase::setVariableCount(2);
+
+    Eigen::MatrixXd V(3, 2);
+    V.row(0) << 0, 0;
+    V.row(1) << 10, 0;
+    V.row(2) << 0, 10;
+    Eigen::MatrixXi F(1, 3);
+    F.row(0) << 0, 1, 2;
+    AdaptiveTessellation m;
+    m.create_mesh(V, F);
+    m.mesh_construct_boundaries(V, F, {}, {});
+    m.mesh_parameters.m_do_not_output = true;
+    auto displacement = [](const DScalar& u, const DScalar& v) -> DScalar { return 10 * u; };
+    m.set_parameters(4, displacement, EDGE_LEN_TYPE::LINEAR3D, ENERGY_TYPE::EDGE_LENGTH, true);
+
+    for (const auto& v : m.get_vertices()) {
+        REQUIRE(m.vertex_attrs[v.vid(m)].t >= 0);
+        m.vertex_attrs[v.vid(m)].fixed = false;
+    }
+    // m.smooth_all_vertices();
+
+    // TODO replace displacement function by the real energy function
+    std::function<DScalar(const DScalar&, const DScalar&)> eval = displacement;
+
+    std::function<double(const Eigen::VectorXd&)> fd_function =
+        [&eval](const Eigen::VectorXd& p) -> double {
+        const DScalar d = eval(DScalar(p[0]), DScalar(p[1]));
+        return d.getValue();
+    };
+
+    // evaluate gradient for each vertex
+    for (const auto& v : m.get_vertices()) {
+        Eigen::Vector2d p = m.vertex_attrs[v.vid(m)].pos;
+
+        Eigen::VectorXd finitediff_grad;
+        fd::finite_gradient(p, fd_function, finitediff_grad, fd::SECOND, 1e-2);
+
+        DScalar x(0, p[0]); // First variable, initialized to V(0, 0)
+        DScalar y(1, p[1]); // Second variable, initialized to V(0, 1)
+        const DScalar eval_autodiff_result = eval(x, y);
+        const Eigen::VectorXd autodiff_grad = eval_autodiff_result.getGradient();
+        spdlog::info(
+            "v0 gradient FD = {}, autodiff = {}",
+            finitediff_grad.transpose(),
+            autodiff_grad.transpose());
+        REQUIRE((finitediff_grad - autodiff_grad).squaredNorm() < 1e-10);
+    }
+}
+
 // TODO: Try out sin(x) with periodic boundary cond + autodiff + gradient
 TEST_CASE("test_link_check", "[test_pre_check]")
 {
