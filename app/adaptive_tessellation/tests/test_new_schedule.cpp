@@ -351,10 +351,8 @@ TEST_CASE("test ply", "[.]")
 
     m.mesh_preprocessing_from_intermediate(
         input_mesh_path,
-        "/home/yunfan/data/adaptive_tessellation/results/Pyramid_coarse/new_amips/30/"
-        "after_smooth_uv.ply",
-        "/home/yunfan/data/adaptive_tessellation/results/Pyramid_coarse/new_amips/30/"
-        "after_smooth_world.ply",
+        input_folder / "adaptive_tessellation_test/after_smooth_uv.ply",
+        input_folder / "adaptive_tessellation_test/after_smooth_world.ply",
         position_path,
         normal_path,
         height_path);
