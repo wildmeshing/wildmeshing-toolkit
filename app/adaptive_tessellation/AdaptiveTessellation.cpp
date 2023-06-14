@@ -1802,7 +1802,7 @@ bool AdaptiveTessellation::update_energy_cache(const std::vector<Tuple>& tris)
         std::vector<std::array<float, 6>> modified_tris_uv_float(tris.size());
         for (int i = 0; i < tris.size(); i++) {
             auto tri = tris[i];
-            auto verts = oriented_tri_vids(tri);
+            auto verts = oriented_tri_vertices(tri);
             std::array<double, 6> tri_uv;
             std::array<float, 6> tri_uv_float;
             std::array<double, 6> tri_ref1, tri_ref2, tri_ref3;
@@ -1825,10 +1825,29 @@ bool AdaptiveTessellation::update_energy_cache(const std::vector<Tuple>& tris)
                                              0.56442444080885101,
                                              0.058019773870274467};
             for (int i = 0; i < 3; i++) {
-                tri_uv[i * 2] = vertex_attrs[verts[i]].pos(0);
-                tri_uv[i * 2 + 1] = vertex_attrs[verts[i]].pos(1);
-                tri_uv_float[i * 2] = vertex_attrs[verts[i]].pos(0);
-                tri_uv_float[i * 2 + 1] = vertex_attrs[verts[i]].pos(1);
+                auto vertex_attr = get_vertex_attrs(verts[i]);
+                if (is_boundary_vertex(verts[i]) && !vertex_attr.fixed) {
+                    int curve_id = -1;
+                    for (auto e : get_one_ring_edges_for_vertex(verts[i])) {
+                        if (is_boundary_edge(e)) {
+                            curve_id = edge_attrs[e.eid(*this)].curve_id.value();
+                            break;
+                        }
+                    }
+                    auto uv = mesh_parameters.m_boundary.t_to_uv(curve_id, vertex_attr.t);
+                    tri_uv[i * 2] = uv(0);
+                    tri_uv[i * 2 + 1] = uv(1);
+                    tri_uv_float[i * 2] = uv(0);
+                    tri_uv_float[i * 2 + 1] = uv(1);
+                }
+
+                else {
+                    auto uv = vertex_attr.pos;
+                    tri_uv[i * 2] = uv(0);
+                    tri_uv[i * 2 + 1] = uv(1);
+                    tri_uv_float[i * 2] = uv(0);
+                    tri_uv_float[i * 2 + 1] = uv(1);
+                }
             }
             if (wmtk::array_are_close(tri_uv, tri_ref1) ||
                 wmtk::array_are_close(tri_uv, tri_ref2) ||
