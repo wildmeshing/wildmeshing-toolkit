@@ -393,6 +393,7 @@ void AMIPS3D::eval(State& state, DofsToPositions& dof_to_positions) const
     DiffScalarBase::setVariableCount(2);
 
     auto target_triangle = state.target_triangle;
+    assert(state.scaling > 0.);
     for (auto i = 0; i < 6; i++) target_triangle[i] = state.scaling * target_triangle[i];
     assert(state.two_opposite_vertices.rows() == 1);
     auto [x1, y1] = dof_to_positions.eval(state.dofx);

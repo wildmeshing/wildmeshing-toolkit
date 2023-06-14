@@ -1,17 +1,17 @@
+#include <AdaptiveTessellation.h>
 #include <igl/predicates/predicates.h>
 #include <igl/read_triangle_mesh.h>
 #include <wmtk/utils/AMIPS2D.h>
 #include <wmtk/utils/AMIPS2D_autodiff.h>
 #include <wmtk/utils/BoundaryParametrization.h>
-#include <wmtk/utils/TriQualityUtils.hpp>
-
 #include <wmtk/utils/autodiff.h>
 #include <catch2/catch.hpp>
 #include <finitediff.hpp>
 #include <functional>
+#include <wmtk/utils/TriQualityUtils.hpp>
 
 using namespace wmtk;
-
+using namespace adaptive_tessellation;
 template <class T>
 using RowMatrix2 = Eigen::Matrix<T, Eigen::Dynamic, 2, Eigen::RowMajor>;
 using Index = uint64_t;
@@ -229,27 +229,26 @@ TEST_CASE("2 rand tris")
             int itr = 0;
             do {
                 old_tri = input_tri;
-                for (int i = 0; i < 3; i++) {
-                    dofx = Eigen::Vector2d(input_tri[i * 2], input_tri[i * 2 + 1]);
+                for (int j = 0; j < 3; j++) {
+                    dofx = Eigen::Vector2d(input_tri[j * 2], input_tri[j * 2 + 1]);
                     nminfo.neighbors.row(0) = Eigen::Matrix<double, 1, 4>(
-                        input_tri[((i + 1) * 2) % 6],
-                        input_tri[((i + 1) * 2 + 1) % 6],
-                        input_tri[((i + 2) * 2) % 6],
-                        input_tri[((i + 2) * 2 + 1) % 6]);
+                        input_tri[((j + 1) * 2) % 6],
+                        input_tri[((j + 1) * 2 + 1) % 6],
+                        input_tri[((j + 2) * 2) % 6],
+                        input_tri[((j + 2) * 2 + 1) % 6]);
 
-                    state.target_triangle = {
-                        target_tri[i * 2],
-                        target_tri[i * 2 + 1],
-                        target_tri[((i + 1) % 3) * 2],
-                        target_tri[((i + 1) % 3) * 2 + 1],
-                        target_tri[((i + 2) % 3) * 2],
-                        target_tri[((i + 2) % 3) * 2 + 1]};
+                    state.target_triangle = {target_tri[j * 2],
+                                             target_tri[j * 2 + 1],
+                                             target_tri[((j + 1) % 3) * 2],
+                                             target_tri[((j + 1) % 3) * 2 + 1],
+                                             target_tri[((j + 2) % 3) * 2],
+                                             target_tri[((j + 2) % 3) * 2 + 1]};
 
                     wmtk::newton_method_with_fallback(*E, b, nminfo, dofx, state);
                     E->eval(state, dof_to_pos);
 
-                    input_tri[i * 2] = dofx(0);
-                    input_tri[i * 2 + 1] = dofx(1);
+                    input_tri[j * 2] = dofx(0);
+                    input_tri[j * 2 + 1] = dofx(1);
                 }
                 E->eval(state, dof_to_pos);
 
@@ -262,3 +261,79 @@ TEST_CASE("2 rand tris")
 }
 // TODO: test for edge length error
 // TODO: test for accuracy error
+
+TEST_CASE("amips3d double")
+{
+    // Loading the input 2d mesh
+    AdaptiveTessellation m;
+
+    std::filesystem::path input_folder = WMTK_DATA_DIR;
+    std::filesystem::path input_mesh_path = input_folder / "hemisphere_splited.obj";
+    std::filesystem::path position_path = input_folder / "images/hemisphere_512_position.exr";
+    std::filesystem::path normal_path =
+        input_folder / "images/hemisphere_512_normal-world-space.exr";
+    std::filesystem::path height_path =
+        input_folder / "images/riveted_castle_iron_door_512_height.exr";
+
+    m.mesh_preprocessing(input_mesh_path, position_path, normal_path, height_path);
+    Image image;
+    image.load(height_path, WrappingMode::MIRROR_REPEAT, WrappingMode::MIRROR_REPEAT);
+
+    REQUIRE(m.check_mesh_connectivity_validity());
+    m.set_parameters(
+        0.00001,
+        0.4,
+        image,
+        WrappingMode::MIRROR_REPEAT,
+        SAMPLING_MODE::BICUBIC,
+        DISPLACEMENT_MODE::MESH_3D,
+        adaptive_tessellation::ENERGY_TYPE::AMIPS3D,
+        adaptive_tessellation::EDGE_LEN_TYPE::LINEAR3D,
+        1);
+    std::vector<TriMesh::Tuple> tris_tuples = m.get_faces();
+    for (int i = 0; i < tris_tuples.size(); i++) {
+        wmtk::TriMesh::Tuple anchor_vertex = tris_tuples[i];
+        const Eigen::Vector2d& v1 = m.get_vertex_attrs(anchor_vertex).pos;
+        Eigen::Vector2d v2;
+        Eigen::Vector2d v3;
+        std::vector<wmtk::NewtonMethodInfo> nminfos;
+        // push in current vertex's nminfo
+        wmtk::NewtonMethodInfo primary_nminfo;
+        primary_nminfo.neighbors.resize(1, 4);
+        primary_nminfo.facet_ids.resize(1);
+        primary_nminfo.facet_ids[0] = anchor_vertex.fid(m);
+        std::array<wmtk::TriMesh::Tuple, 3> local_tuples = m.oriented_tri_vertices(anchor_vertex);
+        for (size_t j = 0; j < 3; j++) {
+            if (local_tuples[j].vid(m) == anchor_vertex.vid(m)) {
+                v2 = Eigen::Vector2d(
+                    m.vertex_attrs[local_tuples[(j + 1) % 3].vid(m)].pos(0),
+                    m.vertex_attrs[local_tuples[(j + 1) % 3].vid(m)].pos(1));
+                v3 = Eigen::Vector2d(
+                    m.vertex_attrs[local_tuples[(j + 2) % 3].vid(m)].pos(0),
+                    m.vertex_attrs[local_tuples[(j + 2) % 3].vid(m)].pos(1));
+                primary_nminfo.neighbors.row(0) << v2(0), v2(1), v3(0), v3(1);
+                auto res = igl::predicates::orient2d(v2, v3, v1);
+                if (res != igl::predicates::Orientation::POSITIVE) exit(30000);
+
+                // sanity check. Should not be inverted
+            }
+        }
+        nminfos.emplace_back(primary_nminfo);
+
+        wmtk::State state = {};
+        state.dofx.resize(2);
+        state.dofx = v1; // uv;
+        state.scaling = 1.;
+        state.target_triangle = std::array<double, 6>{0., 0., 1., 0., 1. / 2., sqrt(3) / 2.};
+
+        // get current state: energy, gradient, hessiane
+        wmtk::optimization_state_update(
+            *m.mesh_parameters.m_energy,
+            nminfos,
+            m.mesh_parameters.m_boundary,
+            state);
+        double amips_double = m.get_amips3d_error_for_face(v1, v2, v3);
+        double amips_autodiff = state.value;
+        REQUIRE_THAT(amips_double, Catch::Matchers::WithinRel(amips_autodiff, 1e-10));
+    }
+}
