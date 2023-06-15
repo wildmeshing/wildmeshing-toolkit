@@ -129,7 +129,9 @@ void AdaptiveTessellation::mesh_preprocessing(
         mesh_parameters.m_offset,
         position_image_path,
         normal_image_path,
-        height_image_path);
+        height_image_path,
+        min_height,
+        max_height);
 
     m_quadric_integral =
         wmtk::QuadricIntegral(displaced, wmtk::QuadricIntegral::QuadricType::Point);
@@ -250,7 +252,9 @@ void AdaptiveTessellation::mesh_preprocessing_from_intermediate(
         mesh_parameters.m_offset,
         position_image_path,
         normal_image_path,
-        height_image_path);
+        height_image_path,
+        min_height,
+        max_height);
 
     m_quadric_integral =
         wmtk::QuadricIntegral(displaced, wmtk::QuadricIntegral::QuadricType::Point);

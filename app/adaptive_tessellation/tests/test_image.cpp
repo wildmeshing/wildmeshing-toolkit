@@ -92,7 +92,9 @@ TEST_CASE("combined displaced map")
         offset,
         WMTK_DATA_DIR "/images/hemisphere_512_position.exr",
         WMTK_DATA_DIR "/images/hemisphere_512_normal-world-space.exr",
-        WMTK_DATA_DIR "/images/riveted_castle_iron_door_512_height.exr");
+        WMTK_DATA_DIR "/images/riveted_castle_iron_door_512_height.exr",
+        0,
+        1);
 
     std::array<wmtk::Image, 3> displaced_from_precomputed =
         wmtk::load_rgb_image(WMTK_DATA_DIR "/images/hemisphere_512_displaced.exr");
