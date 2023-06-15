@@ -265,12 +265,12 @@ void AdaptiveTessellation::prepare_distance_quadrature_cached_energy()
     std::vector<std::array<float, 6>> uv_triangles(tri_capacity());
     std::vector<TriMesh::Tuple> tris_tuples = get_faces();
     for (int i = 0; i < tris_tuples.size(); i++) {
-        auto oriented_vids = oriented_tri_vids(tris_tuples[i]);
+        auto oriented_vertices = oriented_tri_vertices(tris_tuples[i]);
+
         for (int j = 0; j < 3; j++) {
-            uv_triangles[tris_tuples[i].fid(*this)][2 * j + 0] =
-                vertex_attrs[oriented_vids[j]].pos[0];
-            uv_triangles[tris_tuples[i].fid(*this)][2 * j + 1] =
-                vertex_attrs[oriented_vids[j]].pos[1];
+            auto uv = get_uv_position(oriented_vertices[j]);
+            uv_triangles[tris_tuples[i].fid(*this)][2 * j + 0] = uv(0);
+            uv_triangles[tris_tuples[i].fid(*this)][2 * j + 1] = uv(1);
         }
     }
     std::vector<float> computed_errors(tri_capacity());
@@ -288,9 +288,9 @@ void AdaptiveTessellation::prepare_quadrics()
         [&](int f) -> std::array<float, 6> {
             // Get triangle uv positions
             std::array<Tuple, 3> local_tuples = oriented_tri_vertices(facets[f]);
-            const Eigen::Vector2f& p0 = vertex_attrs[local_tuples[0].vid(*this)].pos.cast<float>();
-            const Eigen::Vector2f& p1 = vertex_attrs[local_tuples[1].vid(*this)].pos.cast<float>();
-            const Eigen::Vector2f& p2 = vertex_attrs[local_tuples[2].vid(*this)].pos.cast<float>();
+            const Eigen::Vector2f& p0 = get_uv_position(local_tuples[0]).cast<float>();
+            const Eigen::Vector2f& p1 = get_uv_position(local_tuples[1]).cast<float>();
+            const Eigen::Vector2f& p2 = get_uv_position(local_tuples[2]).cast<float>();
             return {p0.x(), p0.y(), p1.x(), p1.y(), p2.x(), p2.y()};
         },
         compressed_quadrics);
@@ -423,9 +423,9 @@ double AdaptiveTessellation::barrier_energy_per_face(const TriMesh::Tuple& t) co
 {
     // get the 3 vertices of the triangle
     std::array<Tuple, 3> local_tuples = oriented_tri_vertices(t);
-    const Eigen::Vector2d& p1 = vertex_attrs[local_tuples[0].vid(*this)].pos;
-    const Eigen::Vector2d& p2 = vertex_attrs[local_tuples[1].vid(*this)].pos;
-    const Eigen::Vector2d& p3 = vertex_attrs[local_tuples[2].vid(*this)].pos;
+    const Eigen::Vector2d& p1 = get_uv_position(local_tuples[0]);
+    const Eigen::Vector2d& p2 = get_uv_position(local_tuples[1]);
+    const Eigen::Vector2d& p3 = get_uv_position(local_tuples[2]);
     Eigen::Vector3d v1 = mesh_parameters.m_displacement->get(p1(0), p1(1));
     Eigen::Vector3d v2 = mesh_parameters.m_displacement->get(p2(0), p2(1));
     Eigen::Vector3d v3 = mesh_parameters.m_displacement->get(p3(0), p3(1));
@@ -1376,11 +1376,12 @@ void AdaptiveTessellation::get_nminfo_for_vertex(const Tuple& v, wmtk::NewtonMet
         nminfo.facet_ids[i] = tri.fid(*this);
         for (size_t j = 0; j < 3; j++) {
             if (local_tuples[j].vid(*this) == v.vid(*this)) {
-                const Eigen::Vector2d& v2 = vertex_attrs[local_tuples[(j + 1) % 3].vid(*this)].pos;
-                const Eigen::Vector2d& v3 = vertex_attrs[local_tuples[(j + 2) % 3].vid(*this)].pos;
+                const Eigen::Vector2d v2 = get_uv_position(local_tuples[(j + 1) % 3]);
+                const Eigen::Vector2d v3 = get_uv_position(local_tuples[(j + 2) % 3]);
                 nminfo.neighbors.row(i) << v2(0), v2(1), v3(0), v3(1);
                 assert(!is_inverted_coordinates(v2, v3, vertex_attrs[v.vid(*this)].pos));
                 // sanity check. Should not be inverted
+                break;
             }
         }
         assert(one_ring_tris.size() == nminfo.neighbors.rows());
@@ -1393,19 +1394,20 @@ std::pair<double, Eigen::Vector2d> AdaptiveTessellation::get_one_ring_energy(con
     std::vector<wmtk::TriMesh::Tuple> one_ring_tris = get_one_ring_tris_for_vertex(v);
     assert(one_ring_tris.size() > 0);
     wmtk::DofVector dofx;
-    if (is_boundary_vertex(v) && mesh_parameters.m_boundary_parameter) {
+    auto vertex_attr = get_vertex_attrs(v);
+    if (is_boundary_vertex(v) && mesh_parameters.m_boundary_parameter && !vertex_attr.fixed) {
         dofx.resize(1);
-        dofx[0] = vertex_attrs[v.vid(*this)].t; // t
+        dofx[0] = vertex_attr.t; // t
     } else {
         dofx.resize(2); // uv;
-        dofx = vertex_attrs[v.vid(*this)].pos;
+        dofx = vertex_attr.pos;
     }
 
     // assign curve id for vertex using the boundary edge of the one ring edges if it has one
     // (if it has more than one, it's ok to be the first one)
     for (auto& e : get_one_ring_edges_for_vertex(v)) {
         if (is_boundary_edge(e)) {
-            vertex_attrs[v.vid(*this)].curve_id = edge_attrs[e.eid(*this)].curve_id.value();
+            vertex_attr.curve_id = edge_attrs[e.eid(*this)].curve_id.value();
             break;
         }
     }
@@ -1452,9 +1454,9 @@ bool AdaptiveTessellation::is_inverted(const Tuple& loc) const
 
     // Use igl for checking orientation
     auto res = igl::predicates::orient2d(
-        vertex_attrs[vs[0].vid(*this)].pos,
-        vertex_attrs[vs[1].vid(*this)].pos,
-        vertex_attrs[vs[2].vid(*this)].pos);
+        get_uv_position(vs[0]),
+        get_uv_position(vs[1]),
+        get_uv_position(vs[2]));
     // The element is inverted if it not positive (i.e. it is negative or it is degenerate)
     return (res != igl::predicates::Orientation::POSITIVE);
 }
@@ -1760,9 +1762,7 @@ void AdaptiveTessellation::assign_edge_curveid()
             continue;
         }
         // find the mid-point uv of the edge
-        auto midpoint_uv =
-            (vertex_attrs[e.vid(*this)].pos + vertex_attrs[e.switch_vertex(*this).vid(*this)].pos) /
-            2.;
+        auto midpoint_uv = (get_uv_position(e) + get_uv_position(e.switch_vertex(*this))) / 2.;
         // use the mid-point uv to find edge curve id
         int curve_id = -1;
         double t = 0.;
@@ -1805,57 +1805,14 @@ bool AdaptiveTessellation::update_energy_cache(const std::vector<Tuple>& tris)
             auto verts = oriented_tri_vertices(tri);
             std::array<double, 6> tri_uv;
             std::array<float, 6> tri_uv_float;
-            std::array<double, 6> tri_ref1, tri_ref2, tri_ref3;
-            tri_ref1 = std::array<double, 6>{0.51961272523165003,
-                                             0.048932818490359936,
-                                             0.56442444080885101,
-                                             0.058019773870274467,
-                                             0.59402024195065839,
-                                             0.064021234000608218};
-            tri_ref2 = std::array<double, 6>{0.56442444080885101,
-                                             0.058019773870274467,
-                                             0.59402024195065839,
-                                             0.064021234000608218,
-                                             0.51961272523165003,
-                                             0.048932818490359936};
-            tri_ref3 = std::array<double, 6>{0.59402024195065839,
-                                             0.064021234000608218,
-                                             0.51961272523165003,
-                                             0.048932818490359936,
-                                             0.56442444080885101,
-                                             0.058019773870274467};
-            for (int i = 0; i < 3; i++) {
-                auto vertex_attr = get_vertex_attrs(verts[i]);
-                if (is_boundary_vertex(verts[i]) && !vertex_attr.fixed) {
-                    int curve_id = -1;
-                    for (auto e : get_one_ring_edges_for_vertex(verts[i])) {
-                        if (is_boundary_edge(e)) {
-                            curve_id = edge_attrs[e.eid(*this)].curve_id.value();
-                            break;
-                        }
-                    }
-                    auto uv = mesh_parameters.m_boundary.t_to_uv(curve_id, vertex_attr.t);
-                    tri_uv[i * 2] = uv(0);
-                    tri_uv[i * 2 + 1] = uv(1);
-                    tri_uv_float[i * 2] = uv(0);
-                    tri_uv_float[i * 2 + 1] = uv(1);
-                }
 
-                else {
-                    auto uv = vertex_attr.pos;
-                    tri_uv[i * 2] = uv(0);
-                    tri_uv[i * 2 + 1] = uv(1);
-                    tri_uv_float[i * 2] = uv(0);
-                    tri_uv_float[i * 2 + 1] = uv(1);
-                }
-            }
-            if (wmtk::array_are_close(tri_uv, tri_ref1) ||
-                wmtk::array_are_close(tri_uv, tri_ref2) ||
-                wmtk::array_are_close(tri_uv, tri_ref3)) {
-                wmtk::logger().warn("the triangle of problem in collapse {}", tri_uv);
-                wmtk::logger().critical(
-                    "it should be true here {}",
-                    wmtk::is_degenerate_2d_oriented_triangle_array(tri_uv));
+            for (int j = 0; j < 3; j++) {
+                auto vertex_attr = get_vertex_attrs(verts[j]);
+                auto uv = get_uv_position(verts[j]);
+                tri_uv[j * 2] = uv(0);
+                tri_uv[j * 2 + 1] = uv(1);
+                tri_uv_float[j * 2] = uv(0);
+                tri_uv_float[j * 2 + 1] = uv(1);
             }
             if (wmtk::is_degenerate_2d_oriented_triangle_array(tri_uv)) return false;
             modified_tris_uv[i] = tri_uv;
@@ -1873,12 +1830,9 @@ bool AdaptiveTessellation::update_energy_cache(const std::vector<Tuple>& tris)
                 [&](int f) -> std::array<float, 6> {
                     // Get triangle uv positions
                     const std::array<Tuple, 3> local_tuples = oriented_tri_vertices(tris[f]);
-                    const Eigen::Vector2f p0 =
-                        vertex_attrs[local_tuples[0].vid(*this)].pos.cast<float>();
-                    const Eigen::Vector2f p1 =
-                        vertex_attrs[local_tuples[1].vid(*this)].pos.cast<float>();
-                    const Eigen::Vector2f p2 =
-                        vertex_attrs[local_tuples[2].vid(*this)].pos.cast<float>();
+                    const Eigen::Vector2f p0 = get_uv_position(local_tuples[0]).cast<float>();
+                    const Eigen::Vector2f p1 = get_uv_position(local_tuples[1]).cast<float>();
+                    const Eigen::Vector2f p2 = get_uv_position(local_tuples[2]).cast<float>();
                     return {p0.x(), p0.y(), p1.x(), p1.y(), p2.x(), p2.y()};
                 },
                 compressed_quadrics);
@@ -1888,4 +1842,24 @@ bool AdaptiveTessellation::update_energy_cache(const std::vector<Tuple>& tris)
     }
     return true;
 }
+
+// helper function to get the uv position of vertex
+// using the the boundary paramterization t_to_uv if it is boundary vertex and not fixed
+Eigen::Vector2d AdaptiveTessellation::get_uv_position(const Tuple& v) const
+{
+    auto vertex_attr = get_vertex_attrs(v);
+    if (is_boundary_vertex(v) && !vertex_attr.fixed) {
+        int curve_id = -1;
+        for (auto e : get_one_ring_edges_for_vertex(v)) {
+            if (is_boundary_edge(e)) {
+                curve_id = edge_attrs[e.eid(*this)].curve_id.value();
+                break;
+            }
+        }
+        return mesh_parameters.m_boundary.t_to_uv(curve_id, vertex_attr.t);
+    } else {
+        return vertex_attr.pos;
+    }
+}
+
 } // namespace adaptive_tessellation

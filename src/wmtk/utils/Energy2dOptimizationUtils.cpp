@@ -1,5 +1,6 @@
 #include "Energy2dOptimizationUtils.h"
 #include <lagrange/utils/fpe.h>
+#include <iostream>
 using namespace wmtk;
 // check every triangle in the assembles with the dofx whether any trinagle is flipped
 // if it is boundary vertex, dofx is t but needs to be converted to uv
@@ -52,36 +53,19 @@ void wmtk::optimization_state_update(
                 C << nminfo.neighbors(i, 2), nminfo.neighbors(i, 3);
                 auto res = igl::predicates::orient2d(A, B, C);
                 if (res != igl::predicates::Orientation::POSITIVE) {
+                    wmtk::logger().error("A , B , C in hex coordinates");
+                    std::cout << std::hexfloat << "t in hex"
+                              << " " << state.dofx << std::endl;
+                    std::cout << std::hexfloat << "A in hex " << A(0) << " " << A(1) << std::endl;
+                    std::cout << std::hexfloat << "B in hex " << B(0) << " " << B(1) << std::endl;
+                    std::cout << std::hexfloat << "C in hex " << C(0) << " " << C(1) << std::endl;
                     wmtk::logger()
-                        .error("A: {}, B: {}, C: {}", A.transpose(), B.transpose(), C.transpose());
+                        .info("A {} B {} C {}", A.transpose(), B.transpose(), C.transpose());
                     wmtk::logger().error(
-                        "a different check should be true {}",
+                        "is_degenerate_check should be true {}",
                         wmtk::is_degenerate_2d_oriented_triangle_array(
                             std::array<double, 6>{A.x(), A.y(), B.x(), B.y(), C.x(), C.y()}));
-                    wmtk::logger().error(
-                        "checking the numerical different triangle, should be true {}",
-                        wmtk::is_degenerate_2d_oriented_triangle_array(
-                            std::array<double, 6>{0.5940202419506584,
-                                                  0.06402123400060822,
-                                                  0.51961272523165,
-                                                  0.04893281849035993,
-                                                  0.564424440808851,
-                                                  0.05801977387027447}));
-                    wmtk::logger().error(
-                        "checking the numerical different triangle, should be true {}",
-                        wmtk::is_degenerate_2d_oriented_triangle_array(
-                            std::array<double, 6>{0.5940202419506584,
-                                                  0.06402123400060822,
-                                                  0.51961272523165,
-                                                  0.048932818490359915,
-                                                  0.564424440808851,
-                                                  0.05801977387027447}));
-                } else {
-                    wmtk::logger().warn(
-                        "good tirangle A: {}, B: {}, C: {}",
-                        A.transpose(),
-                        B.transpose(),
-                        C.transpose());
+                    exit(300);
                 }
             }
         }

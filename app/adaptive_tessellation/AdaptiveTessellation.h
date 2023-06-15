@@ -366,6 +366,10 @@ public:
     // Computes the average quality of a mesh
     Eigen::VectorXd get_quality_all_triangles();
 
+    // helper function to get the uv position of vertex
+    // using the the boundary paramterization t_to_uv if it is boundary vertex and not fixed
+    Eigen::Vector2d get_uv_position(const Tuple& v) const;
+
     // Check if a triangle is inverted
     bool is_inverted(const Tuple& loc) const;
 
