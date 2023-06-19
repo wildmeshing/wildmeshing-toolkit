@@ -152,22 +152,14 @@ int main(int argc, char** argv)
     m.set_output_folder(output_folder);
     m.mesh_parameters.m_position_normal_paths = {position_map_path, normal_map_path};
 
-    // m.mesh_preprocessing(
-    //     input_file,
-    //     position_map_path,
-    //     normal_map_path,
-    //     height_map_path,
-    //     min_height,
-    //     max_height);
-    m.mesh_preprocessing_from_intermediate(
+    m.mesh_preprocessing(
         input_file,
-        "/home/yunfan/data/adaptive_tessellation/results/Pyramid_coarse/new_amips/30/"
-        "after_smooth_uv.ply",
-        "/home/yunfan/data/adaptive_tessellation/results/Pyramid_coarse/new_amips/30/"
-        "after_smooth_world.ply",
         position_map_path,
         normal_map_path,
-        height_map_path);
+        height_map_path,
+        min_height,
+        max_height);
+
 
     assert(m.check_mesh_connectivity_validity());
 
@@ -309,7 +301,7 @@ int main(int argc, char** argv)
             current_folder / "after_smooth_world.ply");
 
 
-        if (m.mesh_parameters.m_gradient.stableNorm() < 1e-10) {
+        if (m.mesh_parameters.m_gradient.stableNorm() < 1e-5) {
             break;
         }
     }

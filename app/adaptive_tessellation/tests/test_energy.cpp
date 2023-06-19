@@ -337,3 +337,96 @@ TEST_CASE("amips3d double")
         REQUIRE_THAT(amips_double, Catch::Matchers::WithinRel(amips_autodiff, 1e-10));
     }
 }
+
+TEST_CASE("combined energy")
+{
+    // Loading the input 2d mesh
+    AdaptiveTessellation m;
+
+    std::filesystem::path input_folder = WMTK_DATA_DIR;
+    std::filesystem::path input_mesh_path = input_folder / "hemisphere_splited.obj";
+    std::filesystem::path position_path = input_folder / "images/hemisphere_512_position.exr";
+    std::filesystem::path normal_path =
+        input_folder / "images/hemisphere_512_normal-world-space.exr";
+    std::filesystem::path height_path =
+        input_folder / "images/riveted_castle_iron_door_512_height.exr";
+
+    m.mesh_preprocessing(input_mesh_path, position_path, normal_path, height_path);
+    Image image;
+    image.load(height_path, WrappingMode::MIRROR_REPEAT, WrappingMode::MIRROR_REPEAT);
+
+    REQUIRE(m.check_mesh_connectivity_validity());
+    m.set_parameters(
+        0.00001,
+        0.4,
+        image,
+        WrappingMode::MIRROR_REPEAT,
+        SAMPLING_MODE::BICUBIC,
+        DISPLACEMENT_MODE::MESH_3D,
+        adaptive_tessellation::ENERGY_TYPE::COMBINED,
+        adaptive_tessellation::EDGE_LEN_TYPE::LINEAR3D,
+        1);
+    std::vector<TriMesh::Tuple> tris_tuples = m.get_faces();
+    m.prepare_distance_quadrature_cached_energy();
+    for (int i = 0; i < tris_tuples.size(); i++) {
+        wmtk::TriMesh::Tuple anchor_vertex = tris_tuples[i];
+
+        const Eigen::Vector2d& v1 = m.get_vertex_attrs(anchor_vertex).pos;
+        Eigen::Vector2d v2;
+        Eigen::Vector2d v3;
+        std::vector<wmtk::NewtonMethodInfo> nminfos;
+        // push in current vertex's nminfo
+        wmtk::NewtonMethodInfo primary_nminfo;
+        primary_nminfo.neighbors.resize(1, 4);
+        primary_nminfo.facet_ids.resize(1);
+        primary_nminfo.facet_ids[0] = anchor_vertex.fid(m);
+        primary_nminfo.target_length = m.mesh_parameters.m_quality_threshold;
+        std::array<wmtk::TriMesh::Tuple, 3> local_tuples = m.oriented_tri_vertices(anchor_vertex);
+        for (size_t j = 0; j < 3; j++) {
+            if (local_tuples[j].vid(m) == anchor_vertex.vid(m)) {
+                v2 = m.get_uv_position(local_tuples[(j + 1) % 3]);
+                v3 = m.get_uv_position(local_tuples[(j + 2) % 3]);
+
+                primary_nminfo.neighbors.row(0) << v2(0), v2(1), v3(0), v3(1);
+                auto res = igl::predicates::orient2d(v2, v3, v1);
+                if (res != igl::predicates::Orientation::POSITIVE) exit(30000);
+
+                // sanity check. Should not be inverted
+            }
+        }
+        nminfos.emplace_back(primary_nminfo);
+
+        wmtk::State state = {};
+        state.dofx.resize(2);
+        state.dofx = v1; // uv;
+        state.scaling = m.mesh_parameters.m_quality_threshold;
+        state.target_triangle = std::array<double, 6>{0., 0., 1., 0., 1. / 2., sqrt(3) / 2.};
+
+        // get current state: energy, gradient, hessiane
+        wmtk::optimization_state_update(
+            *m.mesh_parameters.m_energy,
+            nminfos,
+            m.mesh_parameters.m_boundary,
+            state);
+        // get amips using the double  definition
+        double amips_double = m.get_amips3d_error_for_face(v1, v2, v3);
+        // get accuracy error using double definition
+        double accuracy_double =
+            m.get_face_attrs(anchor_vertex).accuracy_measure.cached_distance_integral;
+
+        // double total_normalized_energy =
+        //     2. / amips_double + pow(m.mesh_parameters.m_quality_threshold, 4) / accuracy_double;
+
+        double total_normalized_energy =
+            (2. * accuracy_double + pow(m.mesh_parameters.m_quality_threshold, 4) * amips_double) /
+            (accuracy_double * amips_double);
+        wmtk::logger().info(
+            "##### accuracy_double {}, amips_double {}",
+            accuracy_double,
+            amips_double);
+        wmtk::logger().info("##### total_normalized_energy {}", total_normalized_energy);
+
+        double combined_autodiff = state.value;
+        REQUIRE_THAT(total_normalized_energy, Catch::Matchers::WithinRel(combined_autodiff, 1e-4));
+    }
+}

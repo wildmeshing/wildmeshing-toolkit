@@ -297,7 +297,9 @@ void EdgeAccuracyEnergy::eval(State& state, DofsToPositions& dof_to_positions) c
     state.hessian = total_energy.getHessian();
 }
 
-void AreaAccuracyEnergy::eval(State& state, DofsToPositions& dof_to_positions) const
+Energy::DScalar AreaAccuracyEnergy::get_area_accuracy_function(
+    State& state,
+    DofsToPositions& dof_to_positions) const
 // measure edge quadrature. For each one-ring triangle only takes one edge, which will cover all the
 // one-ring edges without repeat
 {
@@ -336,6 +338,16 @@ void AreaAccuracyEnergy::eval(State& state, DofsToPositions& dof_to_positions) c
 
     // total_energy = m_displ->get_error_per_triangle(triangle);
     total_energy += m_texture_integral.get_error_one_triangle(triangle);
+    return total_energy;
+}
+
+void AreaAccuracyEnergy::eval(State& state, DofsToPositions& dof_to_positions) const
+{
+    DScalar total_energy = get_area_accuracy_function(state, dof_to_positions);
+    if (total_energy.getValue() == std::numeric_limits<double>::infinity()) {
+        state.value = std::numeric_limits<double>::infinity();
+        return;
+    }
     state.value = total_energy.getValue();
     state.gradient = total_energy.getGradient();
     state.hessian = total_energy.getHessian();
@@ -388,7 +400,8 @@ void QuadricEnergy::eval(State& state, DofsToPositions& dof_to_positions) const
 
 // use finite difference to calculate gradient and hessian
 // use fixed tangent plane
-void AMIPS3D::eval(State& state, DofsToPositions& dof_to_positions) const
+auto AMIPS3D::get_amips3d_function(State& state, DofsToPositions& dof_to_positions) const
+    -> Energy::DScalar
 {
     DiffScalarBase::setVariableCount(2);
 
@@ -398,6 +411,9 @@ void AMIPS3D::eval(State& state, DofsToPositions& dof_to_positions) const
     assert(state.two_opposite_vertices.rows() == 1);
     auto [x1, y1] = dof_to_positions.eval(state.dofx);
 
+    wmtk::Energy::DScalar AMIPS_function =
+        DScalar(std::numeric_limits<wmtk::Energy::DScalar>::infinity());
+
     //////// check if the uv triangle is flipped or degenrate
     // lambda function for checking if triangle is degenerate
     auto triangle_2d_area = [](Eigen::Vector2d A, Eigen::Vector2d B, Eigen::Vector2d C) -> double {
@@ -406,7 +422,7 @@ void AMIPS3D::eval(State& state, DofsToPositions& dof_to_positions) const
         double area = (0.5) * abs(B_A.x() * C_A.y() - B_A.y() * C_A.x());
         return area;
     };
-    auto is_degenerate_lambda = [&]() -> bool {
+    auto is_degenerate_lambda = [&x1, &y1, &state]() -> bool {
         Eigen::Vector2d A = Eigen::Vector2d(x1.getValue(), y1.getValue());
         Eigen::Vector2d B =
             Eigen::Vector2d(state.two_opposite_vertices(0, 0), state.two_opposite_vertices(0, 1));
@@ -492,7 +508,7 @@ void AMIPS3D::eval(State& state, DofsToPositions& dof_to_positions) const
     assert(Dsdet > 0);
     if (std::abs(Dsdet) < std::numeric_limits<Scalar>::denorm_min()) {
         state.value = std::numeric_limits<double>::infinity();
-        return;
+        return AMIPS_function;
     }
     Dsinv = Ds.inverse();
 
@@ -504,13 +520,44 @@ void AMIPS3D::eval(State& state, DofsToPositions& dof_to_positions) const
     assert(Fdet.getValue() > 0);
     if (std::abs(Fdet.getValue()) < std::numeric_limits<Scalar>::denorm_min()) {
         state.value = std::numeric_limits<double>::infinity();
-        return;
+        return AMIPS_function;
     }
 
-    DScalar AMIPS_function = (F.transpose() * F).trace() / Fdet;
+    AMIPS_function = (F.transpose() * F).trace() / Fdet;
+    // DScalar AMIPS_function = Fdet / (F.transpose() * F).trace() * 2; // normalized AMIPS
+    return AMIPS_function;
+}
+void AMIPS3D::eval(State& state, DofsToPositions& dof_to_positions) const
+{
+    DScalar AMIPS_function = get_amips3d_function(state, dof_to_positions);
+    if (AMIPS_function.getValue() == std::numeric_limits<double>::infinity()) {
+        state.value = std::numeric_limits<double>::infinity();
+        return;
+    }
     state.value = AMIPS_function.getValue();
     state.gradient = AMIPS_function.getGradient();
     state.hessian = AMIPS_function.getHessian();
 }
 
+void CombinedEnergy::eval(State& state, DofsToPositions& dof_to_positions) const
+{
+    // get the un-normalized AMIPS and AREA_ACCURACY
+    DScalar amips3d_function = m_amips3d.get_amips3d_function(state, dof_to_positions);
+    DScalar area_accuracy_function =
+        m_area_accuracy.get_area_accuracy_function(state, dof_to_positions);
+    // normalize the AMIPS and AREA_ACCURACY energy
+    // DScalar total_energy = 2. / amips3d_function + pow(state.scaling, 4) / area_accuracy_function;
+    DScalar total_energy =
+        (2. * area_accuracy_function + pow(state.scaling, 4) * amips3d_function) /
+        (amips3d_function * area_accuracy_function);
+    wmtk::logger().info(
+        "$$$$ amips3d {} area_accuracy {} ",
+        amips3d_function.getValue(),
+        area_accuracy_function.getValue());
+    wmtk::logger().info("$$$$ total_energy {} ", total_energy.getValue());
+    state.value = total_energy.getValue();
+
+    state.gradient = total_energy.getGradient();
+    state.hessian = total_energy.getHessian();
+}
 } // namespace wmtk

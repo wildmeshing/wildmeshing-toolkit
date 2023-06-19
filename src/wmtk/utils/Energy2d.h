@@ -154,6 +154,7 @@ public:
 public:
     void eval([[maybe_unused]] State& state) const override{};
     void eval(State& state, DofsToPositions& x) const override;
+    DScalar get_area_accuracy_function(State& state, DofsToPositions& x) const;
 };
 
 class QuadricEnergy : public wmtk::Energy
@@ -174,8 +175,6 @@ public:
     void eval(State& state, DofsToPositions& x) const override;
 };
 
-// use finite difference to calculate gradient and hessian
-// use fixed tangent plane
 class AMIPS3D : public wmtk::Energy
 {
 public:
@@ -189,6 +188,25 @@ public:
 public:
     void eval([[maybe_unused]] State& state) const override{};
     void eval(State& state, DofsToPositions& x) const override;
+    DScalar get_amips3d_function(State& state, DofsToPositions& x) const;
 };
 
+class CombinedEnergy : public wmtk::Energy
+{
+public:
+    CombinedEnergy(std::shared_ptr<Displacement> displ, const TextureIntegral& texture_integral)
+        : m_displ(displ)
+        , m_texture_integral(texture_integral)
+    {}
+
+public:
+    std::shared_ptr<Displacement> m_displ; // Initiated using the Displacement class
+    const TextureIntegral& m_texture_integral;
+    AMIPS3D m_amips3d = AMIPS3D(m_displ);
+    AreaAccuracyEnergy m_area_accuracy = AreaAccuracyEnergy(m_displ, m_texture_integral);
+
+public:
+    void eval([[maybe_unused]] State& state) const override{};
+    void eval(State& state, DofsToPositions& x) const override;
+};
 } // namespace wmtk

@@ -21,7 +21,8 @@ enum class ENERGY_TYPE {
     EDGE_QUADRATURE = 3,
     AREA_QUADRATURE = 4,
     QUADRICS = 5,
-    AMIPS3D = 6
+    AMIPS3D = 6,
+    COMBINED = 7
 };
 enum class EDGE_LEN_TYPE {
     LINEAR2D = 0,

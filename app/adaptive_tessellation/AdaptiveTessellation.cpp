@@ -692,6 +692,11 @@ void AdaptiveTessellation::set_energy(const ENERGY_TYPE energy_type)
     case ENERGY_TYPE::QUADRICS:
         energy_ptr = std::make_unique<wmtk::QuadricEnergy>(mesh_parameters.m_displacement);
         break;
+    case ENERGY_TYPE::COMBINED:
+        energy_ptr = std::make_unique<wmtk::CombinedEnergy>(
+            mesh_parameters.m_displacement,
+            std::cref(m_texture_integral));
+        break;
     }
 
     mesh_parameters.m_energy = std::move(energy_ptr);
@@ -1458,9 +1463,9 @@ bool AdaptiveTessellation::is_inverted(const Tuple& loc) const
 
     // Use igl for checking orientation
     auto res = igl::predicates::orient2d(
-        get_uv_position(vs[0]),
-        get_uv_position(vs[1]),
-        get_uv_position(vs[2]));
+        get_vertex_attrs(vs[0]).pos,
+        get_vertex_attrs(vs[1]).pos,
+        get_vertex_attrs(vs[2]).pos);
     // The element is inverted if it not positive (i.e. it is negative or it is degenerate)
     return (res != igl::predicates::Orientation::POSITIVE);
 }
@@ -1766,7 +1771,8 @@ void AdaptiveTessellation::assign_edge_curveid()
             continue;
         }
         // find the mid-point uv of the edge
-        auto midpoint_uv = (get_uv_position(e) + get_uv_position(e.switch_vertex(*this))) / 2.;
+        auto midpoint_uv =
+            (get_vertex_attrs(e).pos + get_vertex_attrs(e.switch_vertex(*this)).pos) / 2.;
         // use the mid-point uv to find edge curve id
         int curve_id = -1;
         double t = 0.;
