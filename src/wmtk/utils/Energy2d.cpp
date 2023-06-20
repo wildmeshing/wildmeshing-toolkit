@@ -323,16 +323,17 @@ Energy::DScalar AreaAccuracyEnergy::get_area_accuracy_function(
 
     // check if area is either inverted or smaller than certain A_hat
     DScalar dblarea = (v2u - x1) * (v3v - y1) - (v2v - y1) * (v3u - x1);
-    DScalar area;
-    area = dblarea * dblarea;
+    DScalar squared_area;
+    squared_area = dblarea * dblarea * 0.25;
     // wmtk::logger().info("----current area {}", area.getValue());
     double A_hat = 1e-6; // this is arbitrary now
     assert(A_hat > 0);
 
-    if (area < A_hat) {
-        assert((area / A_hat) < 1.0);
-        DScalar barrier_energy = -(area - A_hat) * (area - A_hat) * log(area / A_hat);
-        // wmtk::logger().info("----current barrier energy {}", barrier_energy.getValue());
+    if (squared_area < A_hat) {
+        assert((squared_area / A_hat) < 1.0);
+        DScalar barrier_energy =
+            -(squared_area - A_hat) * (squared_area - A_hat) * log(squared_area / A_hat);
+        wmtk::logger().info("++++++ autodiff barrier energy {}", barrier_energy.getValue());
         total_energy += barrier_energy;
     }
 
@@ -551,9 +552,9 @@ void CombinedEnergy::eval(State& state, DofsToPositions& dof_to_positions) const
         (2. * area_accuracy_function + pow(state.scaling, 4) * amips3d_function) /
         (amips3d_function * area_accuracy_function);
     wmtk::logger().info(
-        "$$$$ amips3d {} area_accuracy {} ",
-        amips3d_function.getValue(),
-        area_accuracy_function.getValue());
+        "$$$$ area_accuracy {} amips3d {}",
+        area_accuracy_function.getValue(),
+        amips3d_function.getValue());
     wmtk::logger().info("$$$$ total_energy {} ", total_energy.getValue());
     state.value = total_energy.getValue();
 

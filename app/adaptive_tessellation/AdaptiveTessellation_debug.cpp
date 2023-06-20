@@ -170,17 +170,18 @@ float AdaptiveTessellation::cumulated_per_face_error()
     std::vector<TriMesh::Tuple> tris_tuples = get_faces();
     float total_error = 0;
     lagrange::enable_fpe();
-    if (mesh_parameters.m_energy_type == ENERGY_TYPE::AREA_QUADRATURE) {
-        std::vector<std::array<float, 6>> uv_triangles(tris_tuples.size());
-        for (int i = 0; i < tris_tuples.size(); i++) {
-            auto oriented_vids = oriented_tri_vids(tris_tuples[i]);
-            for (int j = 0; j < 3; j++) {
-                uv_triangles[tris_tuples[i].fid(*this)][2 * j + 0] =
-                    vertex_attrs[oriented_vids[j]].pos[0];
-                uv_triangles[tris_tuples[i].fid(*this)][2 * j + 1] =
-                    vertex_attrs[oriented_vids[j]].pos[1];
-            }
+    std::vector<std::array<float, 6>> uv_triangles(tris_tuples.size());
+    for (int i = 0; i < tris_tuples.size(); i++) {
+        auto oriented_vids = oriented_tri_vids(tris_tuples[i]);
+        for (int j = 0; j < 3; j++) {
+            uv_triangles[tris_tuples[i].fid(*this)][2 * j + 0] =
+                vertex_attrs[oriented_vids[j]].pos[0];
+            uv_triangles[tris_tuples[i].fid(*this)][2 * j + 1] =
+                vertex_attrs[oriented_vids[j]].pos[1];
         }
+    }
+
+    if (mesh_parameters.m_energy_type == ENERGY_TYPE::AREA_QUADRATURE) {
         std::vector<float> computed_errors(tris_tuples.size());
         m_texture_integral.get_error_per_triangle(uv_triangles, computed_errors);
         for (int i = 0; i < tris_tuples.size(); i++) {
@@ -188,14 +189,23 @@ float AdaptiveTessellation::cumulated_per_face_error()
         }
     } else if (mesh_parameters.m_energy_type == ENERGY_TYPE::AMIPS3D) {
         for (int i = 0; i < tris_tuples.size(); i++) {
-            wmtk::TriMesh::Tuple anchor_vertex = tris_tuples[i];
-            const auto v1 = get_vertex_attrs(anchor_vertex).pos;
-            const auto v2 = get_vertex_attrs(anchor_vertex.switch_vertex(*this)).pos;
-            const auto v3 =
-                get_vertex_attrs(anchor_vertex.switch_edge(*this).switch_vertex(*this)).pos;
+            const Eigen::Vector2d v1 = Eigen::Vector2d(uv_triangles[i][0], uv_triangles[i][1]);
+            const Eigen::Vector2d v2 = Eigen::Vector2d(uv_triangles[i][2], uv_triangles[i][3]);
+            const Eigen::Vector2d v3 = Eigen::Vector2d(uv_triangles[i][4], uv_triangles[i][5]);
             total_error += get_amips3d_error_for_face(v1, v2, v3);
         }
+    } else if (mesh_parameters.m_energy_type == ENERGY_TYPE::COMBINED) {
+        std::vector<float> computed_errors(tris_tuples.size());
+        m_texture_integral.get_error_per_triangle(uv_triangles, computed_errors);
+        for (int i = 0; i < tris_tuples.size(); i++) {
+            const Eigen::Vector2d v1 = Eigen::Vector2d(uv_triangles[i][0], uv_triangles[i][1]);
+            const Eigen::Vector2d v2 = Eigen::Vector2d(uv_triangles[i][2], uv_triangles[i][3]);
+            const Eigen::Vector2d v3 = Eigen::Vector2d(uv_triangles[i][4], uv_triangles[i][5]);
+            auto amips_energy = get_amips3d_error_for_face(v1, v2, v3);
+            total_error += (2 * computed_errors[i] +
+                            pow(mesh_parameters.m_quality_threshold, 4) * amips_energy) /
+                           (computed_errors[i] * amips_energy);
+        }
     }
-
     return total_error;
 }

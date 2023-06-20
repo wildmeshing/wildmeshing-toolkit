@@ -371,7 +371,7 @@ TEST_CASE("combined energy")
     for (int i = 0; i < tris_tuples.size(); i++) {
         wmtk::TriMesh::Tuple anchor_vertex = tris_tuples[i];
 
-        const Eigen::Vector2d& v1 = m.get_vertex_attrs(anchor_vertex).pos;
+        const Eigen::Vector2d& v1 = m.get_uv_position(anchor_vertex);
         Eigen::Vector2d v2;
         Eigen::Vector2d v3;
         std::vector<wmtk::NewtonMethodInfo> nminfos;
@@ -413,6 +413,17 @@ TEST_CASE("combined energy")
         // get accuracy error using double definition
         double accuracy_double =
             m.get_face_attrs(anchor_vertex).accuracy_measure.cached_distance_integral;
+        wmtk::logger().info("===== value before jacob {}", accuracy_double);
+        double area = wmtk::triangle_2d_area(v1, v2, v3);
+        double squared_area = pow(area, 2);
+        double A_hat = 1e-6;
+        if (squared_area < A_hat) {
+            assert((squared_area / A_hat) < 1.0);
+            double barrier_energy =
+                -(squared_area - A_hat) * (squared_area - A_hat) * log(squared_area / A_hat);
+            wmtk::logger().info("----double barrier energy {}", barrier_energy);
+            accuracy_double += barrier_energy;
+        }
 
         // double total_normalized_energy =
         //     2. / amips_double + pow(m.mesh_parameters.m_quality_threshold, 4) / accuracy_double;

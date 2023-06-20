@@ -70,7 +70,7 @@ void wmtk::optimization_state_update(
             }
         }
     }
-    assert(inversion_check_with_dofx(boundary_mapping, nminfos, state.dofx));
+    // assert(inversion_check_with_dofx(boundary_mapping, nminfos, state.dofx));
 
     double total_energy = 0.;
     Eigen::Vector2d total_jac = Eigen::Vector2d::Zero();

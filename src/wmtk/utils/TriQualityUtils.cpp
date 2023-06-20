@@ -643,7 +643,9 @@ bool wmtk::is_degenerate_2d_oriented_triangle_array(const std::array<double, 6>&
     if (res != igl::predicates::Orientation::POSITIVE)
         return true;
     else {
-        // if (triangle_2d_area(A, B, C) < 1e-10) return true;
+        double avg_edge_length = (A - B).norm() + (B - C).norm() + (C - A).norm();
+        avg_edge_length = avg_edge_length / 3.;
+        if (triangle_2d_area(A, B, C) / avg_edge_length < 1e-10) return true;
         return false;
     }
 }
