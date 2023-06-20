@@ -1,0 +1,159 @@
+#pragma once
+
+
+namespace wmtk {
+
+class Mesh
+{
+public:
+    Mesh();
+    virtual ~Mesh();
+
+    /**
+     * Generate the connectivity of the mesh
+     * @param n_vertices Input number of vertices
+     * @param cells tris/tets connectivity
+     */
+    void initialiaze(long n_vertices, const std::vector<std::vector<long>>& cells);
+
+    /**
+     * Generate a vector of Tuples from global vertex/edge/triangle/tetrahedron index
+     * @param type the type of tuple, can be vertex/edge/triangle/tetrahedron
+     * @return vector of Tuples refering to each type
+     */
+    std::vector<Tuple> get_all_of(const PrimitiveType& type) const;
+
+    /**
+     * Removes all unsed space
+     */
+    void clean();
+
+    virtual void split_edge(const Tuple& t) = 0;
+    virtual void collapse_edge(const Tuple& t) = 0;
+
+    /**
+     * @brief a duplicate of Tuple::switch_tuple funciton
+     */
+    Tuple switch_tuple(const PrimitiveType& type, const Tuple& t) const
+    {
+        return t.switch_tuple(*this, type);
+    }
+
+    /**
+     * @brief verify the connectivity validity of the mesh
+     * @note a valid mesh can have cells that are is_removed == true
+     */
+    bool check_mesh_connectivity_validity() const;
+
+
+    /**
+     * @brief Get the incident vertices for a triangle
+     *
+     * @param t tuple pointing to an face
+     * @return tuples of incident vertices
+     */
+    std::array<Tuple, 3> oriented_tri_vertices(const Tuple& t) const;
+
+    /**
+     * @brief Get the incident vertices for a triangle
+     *
+     * @param t tuple pointing to an face
+     * @return global vids of incident vertices
+     */
+    std::array<size_t, 3> oriented_tri_vids(const Tuple& t) const;
+
+    /**
+     * Generate a face Tuple using global cell id
+     * @param cid global cell for the triangle/tetrahedron
+     * @return a Tuple
+     */
+    Tuple tuple_from_cell(size_t cid) const = 0;
+
+    /**
+     * Generate avertex Tuple using local vid
+     * @param vid global vid
+     * @note tuple refers to vid
+     */
+    Tuple tuple_from_vertex(size_t vid) const;
+
+
+    /**
+     * @brief perform the given function for each face
+     *
+     */
+    void for_each_face(const std::function<void(const Tuple&)>&);
+
+    /**
+     * @brief perform the given function for each edge
+     *
+     */
+    void for_each_edge(const std::function<void(const Tuple&)>&);
+
+    /**
+     * @brief perform the given function for each vertex
+     *
+     */
+    void for_each_vertex(const std::function<void(const Tuple&)>&);
+
+
+protected:
+    MeshAttributes<bool> m_bool_attributes;
+    MeshAttributes<long> m_long_attributes;
+    MeshAttributes<double> m_double_attributes;
+    MeshAttributes<Rational> m_rational_attributes;
+
+
+    /**
+     * Generate the vertex connectivity of the mesh using the existing triangle structure
+     * @param n_vertices Input number of vertices
+     */
+    virtual void build_vertex_connectivity(size_t n_vertices) = 0;
+};
+
+
+class TriMesh : public Mesh
+{
+    TriMesh()
+    {
+        m_vf_handle = m_long_attributes.register_attribute("m_vf", PrimitiveType::Vertex, 1);
+        m_ef_handle = m_long_attributes.register_attribute("m_ef", PrimitiveType::Edge, 1);
+
+        m_fv_handle = m_long_attributes.register_attribute("m_fv", PrimitiveType::Triangle, 3);
+        m_fe_handle = m_long_attributes.register_attribute("m_fe", PrimitiveType::Triangle, 3);
+        m_ff_handle = m_long_attributes.register_attribute("m_ff", PrimitiveType::Triangle, 3);
+    }
+
+private:
+    AttributeHandle m_vf_handle;
+    AttributeHandle m_ef_handle;
+
+    AttributeHandle m_fv_handle;
+    AttributeHandle m_fe_handle;
+    AttributeHandle m_ff_handle;
+};
+
+class TetMesh : public Mesh
+{
+    TetMesh()
+    {
+        m_vt_handle = m_long_attributes.register_attribute("m_vt", PrimitiveType::Vertex, 1);
+        m_et_handle = m_long_attributes.register_attribute("m_et", PrimitiveType::Edge, 1);
+        m_ft_handle = m_long_attributes.register_attribute("m_ft", PrimitiveType::Triangle, 1);
+
+        m_tv_handle = m_long_attributes.register_attribute("m_tv", PrimitiveType::Tetrahedron, 4);
+        m_te_handle = m_long_attributes.register_attribute("m_te", PrimitiveType::Tetrahedron, 6);
+        m_tf_handle = m_long_attributes.register_attribute("m_tf", PrimitiveType::Tetrahedron, 4);
+        m_tt_handle = m_long_attributes.register_attribute("m_tt", PrimitiveType::Tetrahedron, 4);
+    }
+
+private:
+    AttributeHandle m_vt_handle;
+    AttributeHandle m_et_handle;
+    AttributeHandle m_ft_handle;
+
+    AttributeHandle m_tv_handle;
+    AttributeHandle m_te_handle;
+    AttributeHandle m_tf_handle;
+    AttributeHandle m_tt_handle;
+};
+} // namespace wmtk
