@@ -23,6 +23,8 @@ private:
 
 public:
     friend Mesh::id(const Tuple& tuple, const PrimitiveType& type) const;
+    friend Mesh::is_ccw(const Tuple& tuple) const;
+    friend Mesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const;
 
     Tuple(size_t local_vid, size_t local_eid, size_t local_fid, size_t global_cid, size_t hash)
         : m_local_vid(local_vid)
