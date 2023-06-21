@@ -26,12 +26,12 @@ class MeshAttributes
 
     AttributeHandle get_attribute_handle(const std::string& name) const;
 
-    const ConstMapResult get_attribute_vector(const std::string& name, const long index) const;
-    const ConstMapResult get_attribute_vector(const AttributeHandle& handle, const long index)
+    const ConstMapResult get_vector_attribute(const std::string& name, const long index) const;
+    const ConstMapResult get_vector_attribute(const AttributeHandle& handle, const long index)
         const;
 
-    MapResult get_attribute_vector(const std::string& name, const long index);
-    MapResult get_attribute_vector(const AttributeHandle& handle, const long index);
+    MapResult get_vector_attribute(const std::string& name, const long index);
+    MapResult get_vector_attribute(const AttributeHandle& handle, const long index);
 
     T get_scalar_attribute(const std::string& name, const long index) const;
     T get_scalar_attribute(const AttributeHandle& handle, const long index) const;

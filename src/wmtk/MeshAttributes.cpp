@@ -43,16 +43,16 @@ AttributeHandle MeshAttributes<T>::get_attribute_handle(const std::string& name)
 }
 
 template <typename T>
-const typename MeshAttributes<T>::ConstMapResult MeshAttributes<T>::get_attribute_vector(
+const typename MeshAttributes<T>::ConstMapResult MeshAttributes<T>::get_vector_attribute(
     const std::string& name,
     const long index) const
 {
     const auto& handle = m_handles.at(name);
-    return get_attribute_vector(handle, index);
+    return get_vector_attribute(handle, index);
 }
 
 template <typename T>
-const typename MeshAttributes<T>::ConstMapResult MeshAttributes<T>::get_attribute_vector(
+const typename MeshAttributes<T>::ConstMapResult MeshAttributes<T>::get_vector_attribute(
     const AttributeHandle& handle,
     const long index) const
 {
@@ -63,16 +63,16 @@ const typename MeshAttributes<T>::ConstMapResult MeshAttributes<T>::get_attribut
 }
 
 template <typename T>
-typename MeshAttributes<T>::MapResult MeshAttributes<T>::get_attribute_vector(
+typename MeshAttributes<T>::MapResult MeshAttributes<T>::get_vector_attribute(
     const std::string& name,
     const long index)
 {
     const auto& handle = m_handles.at(name);
-    return get_attribute_vector(handle, index);
+    return get_vector_attribute(handle, index);
 }
 
 template <typename T>
-typename MeshAttributes<T>::MapResult MeshAttributes<T>::get_attribute_vector(
+typename MeshAttributes<T>::MapResult MeshAttributes<T>::get_vector_attribute(
     const AttributeHandle& handle,
     const long index)
 {
