@@ -37,79 +37,49 @@ AttributeHandle MeshAttributes<T>::register_attribute(const std::string& name, l
 }
 
 template <typename T>
-AttributeHandle MeshAttributes<T>::get_attribute_handle(const std::string& name) const
+AttributeHandle MeshAttributes<T>::attribute_handle(const std::string& name) const
 {
     return m_handles.at(name);
 }
 
-template <typename T>
-const typename MeshAttributes<T>::ConstMapResult MeshAttributes<T>::get_vector_attribute(
-    const std::string& name,
-    const long index) const
-{
-    const auto& handle = m_handles.at(name);
-    return get_vector_attribute(handle, index);
-}
 
 template <typename T>
-const typename MeshAttributes<T>::ConstMapResult MeshAttributes<T>::get_vector_attribute(
+const typename MeshAttributes<T>::ConstMapResult MeshAttributes<T>::vector_attribute(
     const AttributeHandle& handle,
     const long index) const
 {
-    const auto& attr = current_attributes()[handle.index];
+    const auto& attr = m_attributes[handle.index];
     const long start = index * handle.stride;
 
     return ConstMapResult(&attr[start], handle.stride);
 }
 
-template <typename T>
-typename MeshAttributes<T>::MapResult MeshAttributes<T>::get_vector_attribute(
-    const std::string& name,
-    const long index)
-{
-    const auto& handle = m_handles.at(name);
-    return get_vector_attribute(handle, index);
-}
 
 template <typename T>
-typename MeshAttributes<T>::MapResult MeshAttributes<T>::get_vector_attribute(
+typename MeshAttributes<T>::MapResult MeshAttributes<T>::vector_attribute(
     const AttributeHandle& handle,
     const long index)
 {
-    auto& attr = current_attributes()[handle.index];
+    auto& attr = m_attributes[handle.index];
     const long start = index * handle.stride;
 
     return MapResult(&attr[start], handle.stride);
 }
 
 template <typename T>
-T MeshAttributes<T>::get_scalar_attribute(const std::string& name, const long index) const
-{
-    const auto& handle = m_handles.at(name);
-    return get_scalar_attribute(handle, index);
-}
-
-template <typename T>
-T MeshAttributes<T>::get_scalar_attribute(const AttributeHandle& handle, const long index) const
+T MeshAttributes<T>::scalar_attribute(const AttributeHandle& handle, const long index) const
 {
     assert(handle.stride == 1);
-    const auto& attr = current_attributes()[handle.index];
+    const auto& attr = m_attributes[handle.index];
 
     return attr[index];
 }
 
 template <typename T>
-T& MeshAttributes<T>::get_scalar_attribute(const std::string& name, const long index)
-{
-    const auto& handle = m_handles.at(name);
-    return get_scalar_attribute(handle, index);
-}
-
-template <typename T>
-T& MeshAttributes<T>::get_scalar_attribute(const AttributeHandle& handle, const long index)
+T& MeshAttributes<T>::scalar_attribute(const AttributeHandle& handle, const long index)
 {
     assert(handle.stride == 1);
-    auto& attr = current_attributes()[handle.index];
+    auto& attr = m_attributes[handle.index];
 
     return attr[index];
 }
@@ -117,7 +87,7 @@ T& MeshAttributes<T>::get_scalar_attribute(const AttributeHandle& handle, const 
 template <typename T>
 long MeshAttributes<T>::size() const
 {
-    const auto& attr = current_attributes();
+    const auto& attr = m_attributes;
     if (attr.empty()) return 0;
 
     return attr[0].size() / initial_stride;
@@ -126,7 +96,7 @@ long MeshAttributes<T>::size() const
 template <typename T>
 void MeshAttributes<T>::resize(const long size)
 {
-    auto& attr = current_attributes();
+    auto& attr = m_attributes;
 
     for (const auto& p : m_handles) {
         const auto& handle = p.second;

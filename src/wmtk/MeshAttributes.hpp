@@ -15,8 +15,20 @@ public:
 };
 
 template <typename T>
+class Transaction
+{
+public:
+    void apply();
+
+private:
+    MeshAttributes& m_attribute;
+};
+
+template <typename T>
 class MeshAttributes
 {
+    friend class Transaction<T>;
+
     typedef Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, 1>> MapResult;
     typedef Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, 1>> ConstMapResult;
 
@@ -24,46 +36,25 @@ class MeshAttributes
 
     AttributeHandle register_attribute(const std::string& name, long size);
 
-    AttributeHandle get_attribute_handle(const std::string& name) const;
+    AttributeHandle attribute_handle(const std::string& name) const;
 
-    const ConstMapResult get_vector_attribute(const std::string& name, const long index) const;
-    const ConstMapResult get_vector_attribute(const AttributeHandle& handle, const long index)
-        const;
+    const ConstMapResult vector_attribute(const AttributeHandle& handle, const long index) const;
+    MapResult vector_attribute(const AttributeHandle& handle, const long index);
 
-    MapResult get_vector_attribute(const std::string& name, const long index);
-    MapResult get_vector_attribute(const AttributeHandle& handle, const long index);
-
-    T get_scalar_attribute(const std::string& name, const long index) const;
-    T get_scalar_attribute(const AttributeHandle& handle, const long index) const;
-
-    T& get_scalar_attribute(const std::string& name, const long index);
-    T& get_scalar_attribute(const AttributeHandle& handle, const long index);
+    T scalar_attribute(const AttributeHandle& handle, const long index) const;
+    T& scalar_attribute(const AttributeHandle& handle, const long index);
 
 
     long size() const;
     void resize(const long size);
 
-    void rollback();
-    void begin_protect();
-    void end_protect();
-    bool is_in_protect() const;
+    Transaction<T> create_transaction();
 
 private:
     std::map<std::string, AttributeHandle> m_handles;
     long initial_stride = -1;
 
     std::vector<std::vector<T>> m_attributes;
-    std::vector<std::vector<T>> m_attributes_copy;
-
-    inline std::vector<std::vector<T>>& current_attributes()
-    {
-        return m_attributes_copy.empty() ? m_attributes : m_attributes_copy;
-    }
-
-    inline const std::vector<std::vector<T>>& current_attributes() const
-    {
-        return m_attributes_copy.empty() ? m_attributes : m_attributes_copy;
-    }
 };
 
 
