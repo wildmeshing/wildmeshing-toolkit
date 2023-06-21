@@ -15,18 +15,18 @@ class Tuple
 private:
     // if Tuple is in 2d mesh m_global_cid is the global triangle id, and local_fid is -1
     // if Tuple is in 3d mesh m_global_cid is the global tetrahedron id
-    size_t m_local_vid = -1;
-    size_t m_local_eid = -1;
-    size_t m_local_fid = -1;
-    size_t m_global_cid = -1;
-    size_t m_hash = -1;
+    long m_local_vid = -1;
+    long m_local_eid = -1;
+    long m_local_fid = -1;
+    long m_global_cid = -1;
+    long m_hash = -1;
 
 public:
     friend Mesh::id(const Tuple& tuple, const PrimitiveType& type) const;
     friend Mesh::is_ccw(const Tuple& tuple) const;
     friend Mesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const;
 
-    Tuple(size_t local_vid, size_t local_eid, size_t local_fid, size_t global_cid, size_t hash)
+    Tuple(long local_vid, long local_eid, long local_fid, long global_cid, long hash)
         : m_local_vid(local_vid)
         , m_local_eid(local_eid)
         , m_local_fid(local_fid)
