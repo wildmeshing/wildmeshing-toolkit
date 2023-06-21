@@ -9,27 +9,30 @@
 #include <wmtk/utils/Logger.hpp>
 
 namespace wmtk {
-
+class Mesh;
 class Tuple
 {
 private:
-    size_t m_local_vid = -1;
-    size_t m_local_eid = -1;
-    size_t m_local_fid = -1;
-    size_t m_global_cid = -1;
-    size_t m_hash = -1;
-
-    void update_hash(const Mesh& m);
+    // if Tuple is in 2d mesh m_global_cid is the global triangle id, and local_fid is -1
+    // if Tuple is in 3d mesh m_global_cid is the global tetrahedron id
+    long m_local_vid = -1;
+    long m_local_eid = -1;
+    long m_local_fid = -1;
+    long m_global_cid = -1;
+    long m_hash = -1;
 
 public:
-    Tuple(size_t local_vid, size_t local_eid, size_t local_fid, size_t global_cid, const Mesh& m)
+    friend Mesh::id(const Tuple& tuple, const PrimitiveType& type) const;
+    friend Mesh::is_ccw(const Tuple& tuple) const;
+    friend Mesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const;
+
+    Tuple(long local_vid, long local_eid, long local_fid, long global_cid, long hash)
         : m_local_vid(local_vid)
         , m_local_eid(local_eid)
         , m_local_fid(local_fid)
         , m_global_cid(global_cid)
-    {
-        update_hash(m);
-    }
+        , m_hash(hash)
+    {}
 #if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wcomment"
@@ -53,43 +56,5 @@ public:
     Tuple(Tuple&& other) = default;
     Tuple& operator=(const Tuple& other) = default;
     Tuple& operator=(Tuple&& other) = default;
-
-    /**
-     * @brief return the global id of the Tuple of the given dimension
-     *
-     * @param m
-     * @param dimension     d-0 -> vertex
-                            d-1 -> edge
-                            d-2 -> face
-                            d-3 -> tetrahedron
-     * @return size_t id of the entity
-     */
-    size_t id(const Mesh& m, const int dimension) const;
-    /**
-     * @brief switch in place the orientation of the Tuple of the given dimension
-     *
-     * @param m
-     * @param dimension d-0 -> switch vertex
-                        d-1 -> switch edge
-                        d-2 -> switch face
-                        d-3 -> switch tetrahedron
-     */
-    void sw(const Mesh& m, const int dimension) const;
-    /**
-     * @brief TODO this needs dimension?
-     *
-     * @param m
-     * @return true
-     * @return false
-     */
-    bool is_valid(const Mesh& m) const;
-    /**
-     * @brief TODO this needs dimension?
-     *
-     * @param m
-     * @return true if the Tuple is oriented counter-clockwise
-     * @return false
-     */
-    bool is_ccw(const Mesh& m) const;
 };
 } // namespace wmtk

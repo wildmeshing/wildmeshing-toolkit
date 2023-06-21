@@ -1,3 +1,4 @@
+#include <Tuple.h>
 #pragma once
 
 
@@ -32,14 +33,6 @@ public:
     virtual void collapse_edge(const Tuple& t) = 0;
 
     /**
-     * @brief a duplicate of Tuple::switch_tuple funciton
-     */
-    Tuple switch_tuple(const PrimitiveType& type, const Tuple& t) const
-    {
-        return t.switch_tuple(*this, type);
-    }
-
-    /**
      * @brief verify the connectivity validity of the mesh
      * @note a valid mesh can have cells that are is_removed == true
      */
@@ -60,21 +53,21 @@ public:
      * @param t tuple pointing to an face
      * @return global vids of incident vertices
      */
-    std::array<size_t, 3> oriented_tri_vids(const Tuple& t) const;
+    std::array<long, 3> oriented_tri_vids(const Tuple& t) const;
 
     /**
      * Generate a face Tuple using global cell id
      * @param cid global cell for the triangle/tetrahedron
      * @return a Tuple
      */
-    Tuple tuple_from_cell(size_t cid) const = 0;
+    Tuple tuple_from_cell(long cid) const = 0;
 
     /**
      * Generate avertex Tuple using local vid
      * @param vid global vid
      * @note tuple refers to vid
      */
-    Tuple tuple_from_vertex(size_t vid) const;
+    Tuple tuple_from_vertex(long vid) const;
 
 
     /**
@@ -115,7 +108,48 @@ protected:
      * Generate the vertex connectivity of the mesh using the existing triangle structure
      * @param n_vertices Input number of vertices
      */
-    virtual void build_vertex_connectivity(size_t n_vertices) = 0;
+    virtual void build_vertex_connectivity(long n_vertices) = 0;
+
+public:
+    /**
+     * @brief return the global id of the Tuple of the given dimension
+     *
+     * @param m
+     * @param type  d-0 -> vertex
+                    d-1 -> edge
+                    d-2 -> face
+                    d-3 -> tetrahedron
+     * @return long id of the entity
+     */
+    virtual long id(const Tuple& tuple, const PrimitiveType& type) const;
+    /**
+     * @brief switch the orientation of the Tuple of the given dimension
+     * @note this is not doen in place. Return a new Tuple of the switched state
+     *
+     * @param m
+     * @param type  d-0 -> switch vertex
+                    d-1 -> switch edge
+                    d-2 -> switch face
+                    d-3 -> switch tetrahedron
+    */
+    virtual Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const;
+    /**
+     * @brief TODO this needs dimension?
+     *
+     * @param m
+     * @return true if the Tuple is oriented counter-clockwise
+     * @return false
+     */
+    virtual bool is_ccw(const Tuple& tuple) const;
+
+    /**
+     * @brief TODO this needs dimension?
+     *
+     * @param m
+     * @return true
+     * @return false
+     */
+    bool is_valid(const Tuple& tuple) const;
 };
 
 
@@ -138,6 +172,16 @@ private:
     AttributeHandle m_fv_handle;
     AttributeHandle m_fe_handle;
     AttributeHandle m_ff_handle;
+
+public:
+    void split_edge(const Tuple& t) override;
+    void collapse_edge(const Tuple& t) override;
+
+    void build_vertex_connectivity(long n_vertices) override;
+
+    long id(const Tuple& tuple, const PrimitiveType& type) const override;
+    Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const override;
+    bool is_ccw(const Tuple& tuple) const override;
 };
 
 class TetMesh : public Mesh
@@ -163,5 +207,10 @@ private:
     AttributeHandle m_te_handle;
     AttributeHandle m_tf_handle;
     AttributeHandle m_tt_handle;
+
+public:
+    long id(const Tuple& tuple, const PrimitiveType& type) const override;
+    Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const override;
+    bool is_ccw(const Tuple& tuple) const override;
 };
 } // namespace wmtk
