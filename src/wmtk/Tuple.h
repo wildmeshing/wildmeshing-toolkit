@@ -13,6 +13,8 @@ namespace wmtk {
 class Tuple
 {
 private:
+    // if Tuple is in 2d mesh m_global_cid is the global triangle id, and local_fid is -1
+    // if Tuple is in 3d mesh m_global_cid is the global tetrahedron id
     size_t m_local_vid = -1;
     size_t m_local_eid = -1;
     size_t m_local_fid = -1;

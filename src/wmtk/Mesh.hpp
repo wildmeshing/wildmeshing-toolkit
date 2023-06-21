@@ -1,3 +1,4 @@
+#include <Tuple.h>
 #pragma once
 
 
@@ -112,7 +113,7 @@ public:
                     d-3 -> tetrahedron
      * @return size_t id of the entity
      */
-    virtual size_t id(const Mesh& m, const PrimitiveType& type) const;
+    virtual size_t id(const Tuple& tuple, const PrimitiveType& type) const;
     /**
      * @brief switch the orientation of the Tuple of the given dimension
      * @note this is not doen in place. Return a new Tuple of the switched state
@@ -123,7 +124,7 @@ public:
                     d-2 -> switch face
                     d-3 -> switch tetrahedron
     */
-    virtual Tuple switch_tuple(const Mesh& m, const PrimitiveType& type) const;
+    virtual Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const;
     /**
      * @brief TODO this needs dimension?
      *
@@ -131,7 +132,7 @@ public:
      * @return true
      * @return false
      */
-    virtual bool is_valid(const Mesh& m) const;
+    virtual bool is_valid(const Tuple& tuple) const;
     /**
      * @brief TODO this needs dimension?
      *
@@ -139,7 +140,7 @@ public:
      * @return true if the Tuple is oriented counter-clockwise
      * @return false
      */
-    virtual bool is_ccw(const Mesh& m) const;
+    virtual bool is_ccw(const Tuple& tuple) const;
 };
 
 
@@ -169,10 +170,10 @@ public:
 
     void build_vertex_connectivity(size_t n_vertices) override;
 
-    size_t id(const Mesh& m, const PrimitiveType& type) const override;
-    Tuple switch_tuple(const Mesh& m, const PrimitiveType& type) const override;
-    bool is_valid(const Mesh& m) const override;
-    bool is_ccw(const Mesh& m) const override;
+    size_t id(const Tuple& tuple, const PrimitiveType& type) const override;
+    Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const override;
+    bool is_valid(const Tuple& tuple) const override;
+    bool is_ccw(const Tuple& tuple) const override;
 };
 
 class TetMesh : public Mesh
@@ -198,5 +199,11 @@ private:
     AttributeHandle m_te_handle;
     AttributeHandle m_tf_handle;
     AttributeHandle m_tt_handle;
+
+public:
+    size_t id(const Tuple& tuple, const PrimitiveType& type) const override;
+    Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const override;
+    bool is_valid(const Tuple& tuple) const override;
+    bool is_ccw(const Tuple& tuple) const override;
 };
 } // namespace wmtk
