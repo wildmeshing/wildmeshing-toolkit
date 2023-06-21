@@ -1,108 +1,70 @@
-enum class PrimitiveType { Vertex, Edge, Triangle, Tetrahedron };
+#pragma once
+
+#include <Eigen/Core>
+
+#include <map>
+#include <vector>
+
+namespace wmtk {
+
+class AttributeHandle
+{
+public:
+    long index;
+    long stride;
+};
 
 template <typename T>
 class MeshAttributes
 {
-    MeshAttributes(const bool is_volume) { m_attributes.resize(is_volume ? 4 : 3); }
+    typedef Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, 1>> MapResult;
+    typedef Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, 1>> ConstMapResult;
 
-    AttributeHandle
-    register_attribute(const std::string& name, const PrimitiveType& type, long size)
-    {
-        assert(m_handles.find(name) == m_handles.end());
+    MeshAttributes();
 
-        AttributeHandler handle;
-        handle.type = type;
-        handle.stride = size;
+    AttributeHandle register_attribute(const std::string& name, long size);
 
-        const int index = handle.type_index();
+    AttributeHandle get_attribute_handle(const std::string& name) const;
 
-        const auto& attr = m_attributes[index];
+    const ConstMapResult get_vector_attribute(const std::string& name, const long index) const;
+    const ConstMapResult get_vector_attribute(const AttributeHandle& handle, const long index)
+        const;
 
-        handle.index = attr.size();
-        m_handles[name] = handle;
+    MapResult get_vector_attribute(const std::string& name, const long index);
+    MapResult get_vector_attribute(const AttributeHandle& handle, const long index);
 
-        if (handle.index == 0) initial_stride = size;
+    T get_scalar_attribute(const std::string& name, const long index) const;
+    T get_scalar_attribute(const AttributeHandle& handle, const long index) const;
 
-        attr.emplace_back();
-        if (handle.index > 0) {
-            assert(initial_stride > 0);
-            assert(attr.front().size() % initial_stride == 0);
-
-            attr.back().resize((attr.front().size() / initial_stride) * size);
-        }
+    T& get_scalar_attribute(const std::string& name, const long index);
+    T& get_scalar_attribute(const AttributeHandle& handle, const long index);
 
 
-        return handle;
-    }
+    long size() const;
+    void resize(const long size);
 
-    AttributeHandle get_attribute_handle(const std::string& name) const
-    {
-        return m_handles.at(name);
-    }
-
-    Eigen::Map<T> get_attribute(const std::string& name, const Tuple& tuple) const
-    {
-        auto& handle = m_handles.at(name);
-        return get_attribute(handle)
-    }
-
-    Eigen::Map<T> get_attribute(const AttributeHandle& handle, const Tuple& tuple)
-    {
-        const int index = handle.type_index();
-
-        const auto& attrs = m_attributes[index];
-        const auto& attr = attrs[handle.index];
-
-        const long gid = tuple.id(handle.type);
-        const long start = gid * handle.stride;
-
-        return Eigen::Map<T>(attr.begin() + start, attr.begin() + start + handle.stride);
-    }
-
-    T get_single_attribute(const std::string& name, const Tuple& tuple) const
-    {
-        auto& handle = m_handles.at(name);
-        return get_single_attribute(handle)
-    }
-
-    T get_single_attribute(const AttributeHandle& handle, const Tuple& tuple)
-    {
-        assert(handle.stride == 1);
-
-        const int index = handle.type_index();
-
-        const auto& attrs = m_attributes[index];
-        const auto& attr = attrs[handle.index];
-
-        const long gid = tuple.id(handle.type);
-
-        return attr[gid];
-    }
-
+    void rollback();
+    void begin_protect();
+    void end_protect();
+    bool is_in_protect() const;
 
 private:
     std::map<std::string, AttributeHandle> m_handles;
     long initial_stride = -1;
 
-    std::vector<std::vector<std::vector<T>>> m_attributes;
+    std::vector<std::vector<T>> m_attributes;
+    std::vector<std::vector<T>> m_attributes_copy;
+
+    inline std::vector<std::vector<T>>& current_attributes()
+    {
+        return m_attributes_copy.empty() ? m_attributes : m_attributes_copy;
+    }
+
+    inline const std::vector<std::vector<T>>& current_attributes() const
+    {
+        return m_attributes_copy.empty() ? m_attributes : m_attributes_copy;
+    }
 };
 
 
-class AttributeHandler
-{
-public:
-    PrimitiveType type;
-    long index;
-    long stride;
-
-    long type_index()
-    {
-        switch (type) {
-        case PrimitiveType::Vertex: return 0;
-        case PrimitiveType::Edge: return 1;
-        case PrimitiveType::Triangle: return 2;
-        case PrimitiveType::Tetrahedron: return 3;
-        default: assert(false); break;
-        }
-    }
-}
+} // namespace wmtk
