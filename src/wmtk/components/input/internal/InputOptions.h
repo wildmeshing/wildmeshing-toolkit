@@ -9,12 +9,12 @@ namespace internal {
 
 struct InputOptions
 {
-    std::string name;
     std::string type;
+    std::string name;
     std::filesystem::path file;
 };
 
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(InputOptions, name, type, file);
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(InputOptions, type, name, file);
 
 } // namespace internal
 } // namespace components

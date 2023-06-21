@@ -33,17 +33,20 @@ int main(int argc, char** argv)
         spec_json = json::parse(f);
     }
 
+    std::map<
+        std::string,
+        std::function<void(const nlohmann::json&, std::map<std::string, std::filesystem::path>&)>>
+        components;
+
+    // register components
+    components["input"] = wmtk::components::input;
+    components["mesh_info"] = wmtk::components::mesh_info;
+
     std::map<std::string, std::filesystem::path> files;
 
     // iterate through components array
     for (const json& component_json : spec_json["components"]) {
-        for (const auto& [component_name, component_options] : component_json.items()) {
-            if (component_name == "input") {
-                wmtk::components::input(component_options, files);
-            } else if (component_name == "mesh_info") {
-                wmtk::components::mesh_info(component_options, files);
-            }
-        }
+        components[component_json["type"]](component_json, files);
     }
 
 
