@@ -53,21 +53,21 @@ public:
      * @param t tuple pointing to an face
      * @return global vids of incident vertices
      */
-    std::array<size_t, 3> oriented_tri_vids(const Tuple& t) const;
+    std::array<long, 3> oriented_tri_vids(const Tuple& t) const;
 
     /**
      * Generate a face Tuple using global cell id
      * @param cid global cell for the triangle/tetrahedron
      * @return a Tuple
      */
-    Tuple tuple_from_cell(size_t cid) const = 0;
+    Tuple tuple_from_cell(long cid) const = 0;
 
     /**
      * Generate avertex Tuple using local vid
      * @param vid global vid
      * @note tuple refers to vid
      */
-    Tuple tuple_from_vertex(size_t vid) const;
+    Tuple tuple_from_vertex(long vid) const;
 
 
     /**
@@ -108,7 +108,7 @@ protected:
      * Generate the vertex connectivity of the mesh using the existing triangle structure
      * @param n_vertices Input number of vertices
      */
-    virtual void build_vertex_connectivity(size_t n_vertices) = 0;
+    virtual void build_vertex_connectivity(long n_vertices) = 0;
 
 public:
     /**
@@ -119,9 +119,9 @@ public:
                     d-1 -> edge
                     d-2 -> face
                     d-3 -> tetrahedron
-     * @return size_t id of the entity
+     * @return long id of the entity
      */
-    virtual size_t id(const Tuple& tuple, const PrimitiveType& type) const;
+    virtual long id(const Tuple& tuple, const PrimitiveType& type) const;
     /**
      * @brief switch the orientation of the Tuple of the given dimension
      * @note this is not doen in place. Return a new Tuple of the switched state
@@ -137,18 +137,19 @@ public:
      * @brief TODO this needs dimension?
      *
      * @param m
-     * @return true
-     * @return false
-     */
-    virtual bool is_valid(const Tuple& tuple) const;
-    /**
-     * @brief TODO this needs dimension?
-     *
-     * @param m
      * @return true if the Tuple is oriented counter-clockwise
      * @return false
      */
     virtual bool is_ccw(const Tuple& tuple) const;
+
+    /**
+     * @brief TODO this needs dimension?
+     *
+     * @param m
+     * @return true
+     * @return false
+     */
+    bool is_valid(const Tuple& tuple) const;
 };
 
 
@@ -176,11 +177,10 @@ public:
     void split_edge(const Tuple& t) override;
     void collapse_edge(const Tuple& t) override;
 
-    void build_vertex_connectivity(size_t n_vertices) override;
+    void build_vertex_connectivity(long n_vertices) override;
 
-    size_t id(const Tuple& tuple, const PrimitiveType& type) const override;
+    long id(const Tuple& tuple, const PrimitiveType& type) const override;
     Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const override;
-    bool is_valid(const Tuple& tuple) const override;
     bool is_ccw(const Tuple& tuple) const override;
 };
 
@@ -209,9 +209,8 @@ private:
     AttributeHandle m_tt_handle;
 
 public:
-    size_t id(const Tuple& tuple, const PrimitiveType& type) const override;
+    long id(const Tuple& tuple, const PrimitiveType& type) const override;
     Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const override;
-    bool is_valid(const Tuple& tuple) const override;
     bool is_ccw(const Tuple& tuple) const override;
 };
 } // namespace wmtk
