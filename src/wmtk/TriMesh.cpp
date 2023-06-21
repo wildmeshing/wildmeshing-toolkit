@@ -31,19 +31,26 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
         return ret_tuple;
         break;
     case PrimitiveType::Edge:
-        return Tuple(
-            tuple.m_local_eid,
-            tuple.m_local_fid,
-            tuple.m_local_vid,
-            tuple.m_global_cid,
-            tuple.m_hash);
+        Tuple ret_tuple = ccw ? Tuple(
+                                    tuple.m_local_vid,
+                                    (tuple.m_local_eid + 2) % 3,
+                                    tuple.m_local_fid,
+                                    tuple.m_global_cid,
+                                    tuple.m_hash)
+                              : Tuple(
+                                    tuple.m_local_vid,
+                                    (tuple.m_local_eid + 1) % 3,
+                                    tuple.m_local_fid,
+                                    tuple.m_global_cid,
+                                    tupe.m_hash);
+        return ret_tuple;
         break;
     case PrimitiveType::Triangle:
         return Tuple(
-            tuple.m_local_fid,
             tuple.m_local_vid,
             tuple.m_local_eid,
-            tuple.m_global_cid,
+            tuple.m_local_fid,
+            m_ff[tuple.m_global_cid + tuple.m_local_eid],
             tuple.m_hash);
         break;
     default: throw std::runtime_error("Tuple switch: Invalid primitive type"); break;
