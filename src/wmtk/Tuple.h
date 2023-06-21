@@ -9,7 +9,7 @@
 #include <wmtk/utils/Logger.hpp>
 
 namespace wmtk {
-
+class Mesh;
 class Tuple
 {
 private:
@@ -21,17 +21,16 @@ private:
     size_t m_global_cid = -1;
     size_t m_hash = -1;
 
-    void update_hash(const Mesh& m);
-
 public:
-    Tuple(size_t local_vid, size_t local_eid, size_t local_fid, size_t global_cid, const Mesh& m)
+    friend Mesh::id(const Tuple& tuple, const PrimitiveType& type) const;
+
+    Tuple(size_t local_vid, size_t local_eid, size_t local_fid, size_t global_cid, size_t hash)
         : m_local_vid(local_vid)
         , m_local_eid(local_eid)
         , m_local_fid(local_fid)
         , m_global_cid(global_cid)
-    {
-        update_hash(m);
-    }
+        , m_hash(hash)
+    {}
 #if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wcomment"
