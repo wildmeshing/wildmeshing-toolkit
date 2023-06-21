@@ -137,18 +137,19 @@ public:
      * @brief TODO this needs dimension?
      *
      * @param m
-     * @return true
-     * @return false
-     */
-    virtual bool is_valid(const Tuple& tuple) const;
-    /**
-     * @brief TODO this needs dimension?
-     *
-     * @param m
      * @return true if the Tuple is oriented counter-clockwise
      * @return false
      */
     virtual bool is_ccw(const Tuple& tuple) const;
+
+    /**
+     * @brief TODO this needs dimension?
+     *
+     * @param m
+     * @return true
+     * @return false
+     */
+    bool is_valid(const Tuple& tuple) const;
 };
 
 
@@ -180,7 +181,6 @@ public:
 
     size_t id(const Tuple& tuple, const PrimitiveType& type) const override;
     Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const override;
-    bool is_valid(const Tuple& tuple) const override;
     bool is_ccw(const Tuple& tuple) const override;
 };
 
@@ -211,7 +211,6 @@ private:
 public:
     size_t id(const Tuple& tuple, const PrimitiveType& type) const override;
     Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const override;
-    bool is_valid(const Tuple& tuple) const override;
     bool is_ccw(const Tuple& tuple) const override;
 };
 } // namespace wmtk
