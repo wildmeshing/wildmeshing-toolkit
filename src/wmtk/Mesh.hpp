@@ -32,14 +32,6 @@ public:
     virtual void collapse_edge(const Tuple& t) = 0;
 
     /**
-     * @brief a duplicate of Tuple::switch_tuple funciton
-     */
-    Tuple switch_tuple(const PrimitiveType& type, const Tuple& t) const
-    {
-        return t.switch_tuple(*this, type);
-    }
-
-    /**
      * @brief verify the connectivity validity of the mesh
      * @note a valid mesh can have cells that are is_removed == true
      */
@@ -108,6 +100,46 @@ protected:
      * @param n_vertices Input number of vertices
      */
     virtual void build_vertex_connectivity(size_t n_vertices) = 0;
+
+public:
+    /**
+     * @brief return the global id of the Tuple of the given dimension
+     *
+     * @param m
+     * @param type  d-0 -> vertex
+                    d-1 -> edge
+                    d-2 -> face
+                    d-3 -> tetrahedron
+     * @return size_t id of the entity
+     */
+    virtual size_t id(const Mesh& m, const PrimitiveType& type) const;
+    /**
+     * @brief switch the orientation of the Tuple of the given dimension
+     * @note this is not doen in place. Return a new Tuple of the switched state
+     *
+     * @param m
+     * @param type  d-0 -> switch vertex
+                    d-1 -> switch edge
+                    d-2 -> switch face
+                    d-3 -> switch tetrahedron
+    */
+    virtual Tuple switch_tuple(const Mesh& m, const PrimitiveType& type) const;
+    /**
+     * @brief TODO this needs dimension?
+     *
+     * @param m
+     * @return true
+     * @return false
+     */
+    virtual bool is_valid(const Mesh& m) const;
+    /**
+     * @brief TODO this needs dimension?
+     *
+     * @param m
+     * @return true if the Tuple is oriented counter-clockwise
+     * @return false
+     */
+    virtual bool is_ccw(const Mesh& m) const;
 };
 
 
@@ -130,6 +162,17 @@ private:
     AttributeHandle m_fv_handle;
     AttributeHandle m_fe_handle;
     AttributeHandle m_ff_handle;
+
+public:
+    void split_edge(const Tuple& t) override;
+    void collapse_edge(const Tuple& t) override;
+
+    void build_vertex_connectivity(size_t n_vertices) override;
+
+    size_t id(const Mesh& m, const PrimitiveType& type) const override;
+    Tuple switch_tuple(const Mesh& m, const PrimitiveType& type) const override;
+    bool is_valid(const Mesh& m) const override;
+    bool is_ccw(const Mesh& m) const override;
 };
 
 class TetMesh : public Mesh
