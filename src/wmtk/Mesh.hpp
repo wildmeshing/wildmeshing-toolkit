@@ -95,12 +95,20 @@ public:
      */
     void for_each_vertex(const std::function<void(const Tuple&)>&);
 
+    AttributeHandle
+    register_attribute(const std::string& name, const PrimitiveType& type, long size);
+
+    template <typename T>
+    T scalar_attribute(const AttributeHandle& handle, const PrimitiveType& type, const Tuble& tuble)
+        const;
+
+    long gid(const PrimitiveType& type);
 
 protected:
-    MeshAttributes<bool> m_bool_attributes;
-    MeshAttributes<long> m_long_attributes;
-    MeshAttributes<double> m_double_attributes;
-    MeshAttributes<Rational> m_rational_attributes;
+    std::vector<MeshAttributes<bool>> m_bool_attributes;
+    std::vector<MeshAttributes<long>> m_long_attributes;
+    std::vector<MeshAttributes<double>> m_double_attributes;
+    std::vector<MeshAttributes<Rational>> m_rational_attributes;
 
 
     /**
