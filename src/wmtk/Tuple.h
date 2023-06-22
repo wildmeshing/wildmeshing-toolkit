@@ -33,24 +33,13 @@ public:
         , m_global_cid(global_cid)
         , m_hash(hash)
     {}
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wcomment"
-#elif (defined(__GNUC__) || defined(__GNUG__)) && !(defined(__clang__) || defined(__INTEL_COMPILER))
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wcomment"
-#endif
 
     //         v2
     //       /    \
     //  e1  /      \  e0
     //     v0 - - - v1
     //         e2
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#elif (defined(__GNUC__) || defined(__GNUG__)) && !(defined(__clang__) || defined(__INTEL_COMPILER))
-#pragma GCC diagnostic pop
-#endif
+
     Tuple() = default;
     Tuple(const Tuple& other) = default;
     Tuple(Tuple&& other) = default;
