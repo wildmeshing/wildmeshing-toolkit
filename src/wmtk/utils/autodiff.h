@@ -32,7 +32,8 @@
 #include <Eigen/Core>
 #include <cmath>
 #include <stdexcept>
-// clang-format off
+#include <limits>
+
 /**
  * \brief Base class of all automatic differentiation types
  *
@@ -297,6 +298,11 @@ public:
 	// ======================================================================
 	/// @{ \name Miscellaneous functions
 	// ======================================================================
+
+	friend DScalar1 abs(const DScalar1 &s)
+	{
+		return s.value < 0?  -s: s;
+	}
 
 	friend DScalar1 sqrt(const DScalar1 &s)
 	{
@@ -713,7 +719,7 @@ public:
 
 	friend DScalar2 abs(const DScalar2 &s)
 	{
-		return s.value < 0?  -s: s;	
+		return s.value < 0?  -s: s;
 	}
 
 	friend DScalar2 sqrt(const DScalar2 &s)
@@ -983,5 +989,111 @@ std::ostream &operator<<(std::ostream &out, const DScalar2<Scalar, VecType, MatT
 		<< "]";
 	return out;
 }
+
+// clang-format on
+
+namespace std {
+
+template <typename _Scalar, typename _Gradient>
+class numeric_limits<DScalar1<_Scalar, _Gradient>>
+{
+public:
+    static const bool is_specialized = std::numeric_limits<_Scalar>::is_specialized;
+    static const bool is_signed = std::numeric_limits<_Scalar>::is_signed;
+    static const bool is_integer = std::numeric_limits<_Scalar>::is_integer;
+    static const bool is_exact = std::numeric_limits<_Scalar>::is_exact;
+    static const int radix = std::numeric_limits<_Scalar>::radix;
+    static const bool has_infinity = std::numeric_limits<_Scalar>::has_infinity;
+    static const bool has_quiet_NaN = std::numeric_limits<_Scalar>::has_quiet_NaN;
+    static const bool has_signaling_NaN = std::numeric_limits<_Scalar>::has_signaling_NaN;
+    static const bool is_iec559 = std::numeric_limits<_Scalar>::is_iec559;
+    static const bool is_bounded = std::numeric_limits<_Scalar>::is_bounded;
+    static const bool is_modulo = std::numeric_limits<_Scalar>::is_modulo;
+    static const bool traps = std::numeric_limits<_Scalar>::traps;
+    static const bool tinyness_before = std::numeric_limits<_Scalar>::tinyness_before;
+    static const std::float_denorm_style has_denorm = std::numeric_limits<_Scalar>::has_denorm;
+    static const bool has_denorm_loss = std::numeric_limits<_Scalar>::has_denorm_loss;
+    static const int min_exponent = std::numeric_limits<_Scalar>::min_exponent;
+    static const int max_exponent = std::numeric_limits<_Scalar>::max_exponent;
+    static const int min_exponent10 = std::numeric_limits<_Scalar>::min_exponent10;
+    static const int max_exponent10 = std::numeric_limits<_Scalar>::max_exponent10;
+    static const std::float_round_style round_style = std::numeric_limits<_Scalar>::round_style;
+    static const int digits = std::numeric_limits<_Scalar>::digits;
+    static const int digits10 = std::numeric_limits<_Scalar>::digits10;
+    static const int max_digits10 = std::numeric_limits<_Scalar>::max_digits10;
+
+    static constexpr _Scalar min() { return std::numeric_limits<_Scalar>::min(); }
+
+    static constexpr _Scalar max() { return std::numeric_limits<_Scalar>::max(); }
+
+    static constexpr _Scalar lowest() { return std::numeric_limits<_Scalar>::lowest(); }
+
+    static constexpr _Scalar epsilon() { return std::numeric_limits<_Scalar>::epsilon(); }
+
+    static constexpr _Scalar round_error() { return std::numeric_limits<_Scalar>::round_error(); }
+
+    static constexpr _Scalar infinity() { return std::numeric_limits<_Scalar>::infinity(); }
+
+    static constexpr _Scalar quiet_NaN() { return std::numeric_limits<_Scalar>::quiet_NaN(); }
+
+    static constexpr _Scalar signaling_NaN()
+    {
+        return std::numeric_limits<_Scalar>::signaling_NaN();
+    }
+
+    static constexpr _Scalar denorm_min() { return std::numeric_limits<_Scalar>::denorm_min(); }
+};
+
+template <typename _Scalar, typename _Gradient, typename _Hessian>
+class numeric_limits<DScalar2<_Scalar, _Gradient, _Hessian>>
+{
+public:
+    static const bool is_specialized = std::numeric_limits<_Scalar>::is_specialized;
+    static const bool is_signed = std::numeric_limits<_Scalar>::is_signed;
+    static const bool is_integer = std::numeric_limits<_Scalar>::is_integer;
+    static const bool is_exact = std::numeric_limits<_Scalar>::is_exact;
+    static const int radix = std::numeric_limits<_Scalar>::radix;
+    static const bool has_infinity = std::numeric_limits<_Scalar>::has_infinity;
+    static const bool has_quiet_NaN = std::numeric_limits<_Scalar>::has_quiet_NaN;
+    static const bool has_signaling_NaN = std::numeric_limits<_Scalar>::has_signaling_NaN;
+    static const bool is_iec559 = std::numeric_limits<_Scalar>::is_iec559;
+    static const bool is_bounded = std::numeric_limits<_Scalar>::is_bounded;
+    static const bool is_modulo = std::numeric_limits<_Scalar>::is_modulo;
+    static const bool traps = std::numeric_limits<_Scalar>::traps;
+    static const bool tinyness_before = std::numeric_limits<_Scalar>::tinyness_before;
+    static const std::float_denorm_style has_denorm = std::numeric_limits<_Scalar>::has_denorm;
+    static const bool has_denorm_loss = std::numeric_limits<_Scalar>::has_denorm_loss;
+    static const int min_exponent = std::numeric_limits<_Scalar>::min_exponent;
+    static const int max_exponent = std::numeric_limits<_Scalar>::max_exponent;
+    static const int min_exponent10 = std::numeric_limits<_Scalar>::min_exponent10;
+    static const int max_exponent10 = std::numeric_limits<_Scalar>::max_exponent10;
+    static const std::float_round_style round_style = std::numeric_limits<_Scalar>::round_style;
+    static const int digits = std::numeric_limits<_Scalar>::digits;
+    static const int digits10 = std::numeric_limits<_Scalar>::digits10;
+    static const int max_digits10 = std::numeric_limits<_Scalar>::max_digits10;
+
+    static constexpr _Scalar min() { return std::numeric_limits<_Scalar>::min(); }
+
+    static constexpr _Scalar max() { return std::numeric_limits<_Scalar>::max(); }
+
+    static constexpr _Scalar lowest() { return std::numeric_limits<_Scalar>::lowest(); }
+
+    static constexpr _Scalar epsilon() { return std::numeric_limits<_Scalar>::epsilon(); }
+
+    static constexpr _Scalar round_error() { return std::numeric_limits<_Scalar>::round_error(); }
+
+    static constexpr _Scalar infinity() { return std::numeric_limits<_Scalar>::infinity(); }
+
+    static constexpr _Scalar quiet_NaN() { return std::numeric_limits<_Scalar>::quiet_NaN(); }
+
+    static constexpr _Scalar signaling_NaN()
+    {
+        return std::numeric_limits<_Scalar>::signaling_NaN();
+    }
+
+    static constexpr _Scalar denorm_min() { return std::numeric_limits<_Scalar>::denorm_min(); }
+};
+
+} // namespace std
 
 #endif /* __AUTODIFF_H */

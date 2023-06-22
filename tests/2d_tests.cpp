@@ -38,6 +38,14 @@ TEST_CASE("load mesh and create TriMesh", "[test_mesh_creation]")
     m.create_mesh(3, tris);
     REQUIRE(m.tri_capacity() == tris.size());
     REQUIRE(m.vert_capacity() == 3);
+
+    TriMeshTuple t = m.tuple_from_tri(0);
+    REQUIRE(t.is_valid(m));
+    auto oriented_vertices = m.oriented_tri_vertices(t);
+    for(const auto& v: oriented_vertices) {
+        CHECK(v.is_ccw(m));
+    }
+
 }
 
 TEST_CASE("test generate tuples with 1 triangle", "[test_tuple_generation]")
@@ -335,6 +343,27 @@ TEST_CASE("test_link_check", "[test_pre_check]")
             {{{1, 2, 3}}, {{0, 1, 4}}, {{0, 2, 5}}, {{0, 1, 6}}, {{0, 2, 6}}, {{1, 2, 6}}};
         m.create_mesh(7, tris);
         TriMesh::Tuple edge(1, 2, 0, m);
+
+        REQUIRE(edge.vid(m) == 1);
+        REQUIRE(edge.switch_vertex(m).vid(m) == 2);
+
+        {
+            // short test for tris_bounded_by_edge
+            std::vector<TriMeshTuple> faces = m.tris_bounded_by_edge(edge);
+            for (const auto& f : faces) {
+                REQUIRE(f.is_valid(m));
+            }
+            std::vector<size_t> fids;
+            std::transform(
+                faces.begin(),
+                faces.end(),
+                std::back_inserter(fids),
+                [&](const TriMeshTuple& t) -> size_t { return t.fid(m); });
+            REQUIRE(std::is_sorted(fids.begin(), fids.end()));
+            CHECK(fids[0] == 0);
+            CHECK(fids[1] == 5);
+        }
+
         REQUIRE_FALSE(TriMeshEdgeCollapseOperation::check_link_condition(m, edge));
     }
     SECTION("one_triangle")

@@ -14,7 +14,7 @@
 #include <tbb/concurrent_vector.h>
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/fmt/bundled/format.h>
-#include <Tracy.hpp>
+#include <tracy/Tracy.hpp>
 #include <igl/predicates/predicates.h>
 #include <igl/winding_number.h>
 #include <igl/write_triangle_mesh.h>

@@ -2,7 +2,7 @@
 
 #include <Eigen/Dense>
 #include <type_traits>
-#include "autodiff.h"
+#include <wmtk/utils/autodiff.h>
 enum class WrappingMode { REPEAT, MIRROR_REPEAT, CLAMP_TO_EDGE };
 namespace wmtk {
 
