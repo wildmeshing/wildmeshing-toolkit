@@ -1,7 +1,15 @@
 #pragma once
+#include "MeshAttributes.hpp"
 
 
 namespace wmtk {
+
+    enum class PrimitiveType {
+        Vertex,
+        Edge,
+        Face,
+        Tetrahedron
+    };
 
 class Accessor;
 
@@ -148,11 +156,11 @@ class TriMesh : public Mesh
             m_long_attributes.register_attribute_with_accessor("m_ef", PrimitiveType::Edge, 1);
 
         m_fv_accessor =
-            m_long_attributes.register_attribute_with_accessor("m_fv", PrimitiveType::Triangle, 3);
+            m_long_attributes.register_attribute_with_accessor("m_fv", PrimitiveType::Face, 3);
         m_fe_accessor =
-            m_long_attributes.register_attribute_with_accessor("m_fe", PrimitiveType::Triangle, 3);
+            m_long_attributes.register_attribute_with_accessor("m_fe", PrimitiveType::Face, 3);
         m_ff_accessor =
-            m_long_attributes.register_attribute_with_accessor("m_ff", PrimitiveType::Triangle, 3);
+            m_long_attributes.register_attribute_with_accessor("m_ff", PrimitiveType::Face, 3);
     }
 
 private:
@@ -173,7 +181,7 @@ class TetMesh : public Mesh
         m_et_handle =
             m_long_attributes.register_attribute_with_accessor("m_et", PrimitiveType::Edge, 1);
         m_ft_handle =
-            m_long_attributes.register_attribute_with_accessor("m_ft", PrimitiveType::Triangle, 1);
+            m_long_attributes.register_attribute_with_accessor("m_ft", PrimitiveType::Face, 1);
 
         m_tv_handle = m_long_attributes.register_attribute_with_accessor(
             "m_tv",
