@@ -6,9 +6,11 @@
 namespace wmtk {
 
 enum class PrimitiveType { Vertex, Edge, Face, Tetrahedron };
+
 using Matl3 = Eigen::Matrix<long, Eigen::Dynamic, 3>;
 using Matl1 = Eigen::Matrix<long, Eigen::Dynamic, 1>;
 using Matl4 = Eigen::Matrix<long, Eigen::Dynamic, 4>;
+
 class Accessor;
 
 class Mesh
@@ -17,7 +19,6 @@ public:
     friend class Accessor;
     Mesh();
     virtual ~Mesh();
-
 
     /**
      * Generate a vector of Tuples from global vertex/edge/triangle/tetrahedron index
