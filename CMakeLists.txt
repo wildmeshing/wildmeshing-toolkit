@@ -68,7 +68,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # ###############################################################################
 
 # Core library
-set(SRC_FILES Mesh.hpp MeshAttributes.hpp MeshAttributes_impl.hpp Accessor.hpp Accessor_impl.hpp)
+set(SRC_FILES src/wmtk/Mesh.hpp src/wmtk/MeshAttributes.hpp src/wmtk/MeshAttributes_impl.hpp src/wmtk/Accessor.hpp src/wmtk/Accessor_impl.hpp)
 message(DEBUG "SRC_FILES: ${SRC_FILES}")
 
 add_library(wildmeshing_toolkit "${SRC_FILES}")

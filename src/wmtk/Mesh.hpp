@@ -1,6 +1,7 @@
 #include <Tuple.h>
 #pragma once
 #include "MeshAttributes.hpp"
+#include "Accessor.hpp"
 
 
 namespace wmtk {
@@ -284,28 +285,35 @@ void trimesh_topology_initialization(
     const Eigen::MatrixXi& F,
     const TriMesh& mesh)
 {
+    // Accessor<>
+    
     // std::vector<std::vector<long>> VF(vertex_capacity());
-    // for(int j = 0; j < triangle_capacity(); j) {
-    //  auto f = _topology_accessor.get_attribute<long>(m_fv_handle, j); // Eigen::Map // Eigen::Vector3i
-    //  for(long vidx: f) { VF[vidx].emplace_back(j);
-    //  long& vf = _topology_accessor.get_attribute_single<long>(m_vf_handle, vidx); // Eigen::Map // Eigen::Vector3i
-    //  v = j;
-    //  }
-    //  std::vector<std::array<long,2>> e_array;
-    //  for(int j = 0; j < triangle_capacity(); ++j) {
-    //  auto f = _topology_accessor.get_attribute<long>(m_fv_handle, j); // Eigen::Map // Eigen::Vector3i
-    //  for(int k = 0; k < 3; ++ k) {
-    //      int kp1 = (k+1)%3;
-    //      int a = f(k);
-    //      int b = f(kp1);
-    //      if(a > b) {
-    //      std::swap(a,b);
-    //      e_array.emplace_back(std::array<long,2>{{a,b}});
-    //      }
-    //      std::sort(e_array.begin(),e_array.end());
-    //      e_array.erase(std::unique(e_array.begin(),e_array.end()), e_array.end());
-    //  }
-    //  }
+    // for(int j = 0; j < triangle_capacity(); j) 
+    // {
+    //     auto f = _topology_accessor.get_attribute<long>(m_fv_handle, j); // Eigen::Map // Eigen::Vector3i
+    //     for(long vidx : f) { 
+    //         VF[vidx].emplace_back(j);
+    //         long& vf = _topology_accessor.get_attribute_single<long>(m_vf_handle, vidx); // Eigen::Map // Eigen::Vector3i
+    //         v = j;
+    //     }
+    // std::vector<std::array<long,2>> e_array;
+    // for(int j = 0; j < triangle_capacity(); ++j) 
+    // {
+    //     auto f = _topology_accessor.get_attribute<long>(m_fv_handle, j); // Eigen::Map // Eigen::Vector3i
+    //     for(int k = 0; k < 3; ++ k) 
+    //     {
+    //         int kp1 = (k+1)%3;
+    //         int a = f(k);
+    //         int b = f(kp1);
+    //         if(a > b) 
+    //         {
+    //             std::swap(a,b);
+    //             e_array.emplace_back(std::array<long,2>{{a,b}});
+    //         }
+    //         std::sort(e_array.begin(),e_array.end());
+    //         e_array.erase(std::unique(e_array.begin(),e_array.end()), e_array.end());
+    //     }
+    // }
 }
 
 void tetmesh_topology_initialization(
