@@ -1,12 +1,12 @@
 #pragma once
 
-#include <tbb/enumerable_thread_specific.h>
 #include <array>
 #include <cstddef>
 #include <optional>
 #include <string>
 #include <tuple>
 #include <wmtk/utils/Logger.hpp>
+#include "Primitive.hpp"
 
 namespace wmtk {
 class Mesh;
@@ -22,9 +22,10 @@ private:
     long m_hash = -1;
 
 public:
-    friend Mesh::id(const Tuple& tuple, const PrimitiveType& type) const;
-    friend Mesh::is_ccw(const Tuple& tuple) const;
-    friend Mesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const;
+    friend class Mesh;
+    //friend long Mesh::id(const Tuple& tuple, const PrimitiveType& type) const;
+    //friend Mesh::is_ccw(const Tuple& tuple) const;
+    //friend Mesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const;
 
     Tuple(long local_vid, long local_eid, long local_fid, long global_cid, long hash)
         : m_local_vid(local_vid)

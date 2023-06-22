@@ -1,16 +1,13 @@
 #pragma once
-#include <wmtk/TriMesh.h>
+#include <wmtk/Tuple.hpp>
 #include <type_traits>
 
 namespace wmtk {
 class TriMeshOperation
 {
 public:
-    using Tuple = TriMesh::Tuple;
-    using VertexConnectivity = TriMesh::VertexConnectivity;
-    using TriangleConnectivity = TriMesh::TriangleConnectivity;
 
-    virtual bool operator()(TriMesh& m, const Tuple& t);
+    bool operator()(TriMesh& m, const Tuple& t);
     virtual std::string name() const = 0;
 
 

@@ -1,22 +1,20 @@
-#include <Tuple.h>
 #pragma once
 #include "Accessor.hpp"
 #include "MeshAttributes.hpp"
+#include "Primitive.hpp"
+#include "Tuple.h"
 
 
 namespace wmtk {
-
-enum class PrimitiveType { Vertex, Edge, Face, Tetrahedron };
-
 using Matl3 = Eigen::Matrix<long, Eigen::Dynamic, 3>;
 using Matl1 = Eigen::Matrix<long, Eigen::Dynamic, 1>;
 using Matl4 = Eigen::Matrix<long, Eigen::Dynamic, 4>;
 
-class Accessor;
 
 class Mesh
 {
 public:
+    template <typename T>
     friend class Accessor;
     Mesh();
     virtual ~Mesh();
@@ -39,25 +37,22 @@ public:
     /**
      * @brief a duplicate of Tuple::switch_tuple function
      */
-    Tuple switch_tuple(const PrimitiveType& type, const Tuple& t) const
-    {
-        return t.switch_tuple(*this, type);
-    }
+    virtual Tuple switch_tuple(const PrimitiveType& type, const Tuple& t) const = 0;
 
     /**
      * @brief verify the connectivity validity of the mesh
      * @note a valid mesh can have cells that are is_removed == true
      */
-    bool check_mesh_connectivity_validity() const;
+    // bool check_mesh_connectivity_validity() const;
 
 
-    /**
-     * @brief Get the incident vertices for a triangle
-     *
-     * @param t tuple pointing to an face
-     * @return tuples of incident vertices
-     */
-    std::array<Tuple, 3> oriented_tri_vertices(const Tuple& t) const;
+    ///**
+    // * @brief Get the incident vertices for a triangle
+    // *
+    // * @param t tuple pointing to an face
+    // * @return tuples of incident vertices
+    // */
+    // std::array<Tuple, 3> oriented_tri_vertices(const Tuple& t) const;
 
     /**
      * @brief Get the incident vertices for a triangle
@@ -72,42 +67,49 @@ public:
      * @param cid global cell for the triangle/tetrahedron
      * @return a Tuple
      */
-    Tuple tuple_from_cell(long cid) const = 0;
+    Tuple tuple_from_cell(long cid) const;
 
     /**
      * Generate a vertex Tuple using local vid
      * @param vid global vid
      * @note tuple refers to vid
      */
-    Tuple tuple_from_vertex(long vid) const;
+    virtual Tuple tuple_from_vertex(long vid) const = 0;
 
 
-    /**
-     * @brief perform the given function for each face
-     *
-     */
-    void for_each_face(const std::function<void(const Tuple&)>&);
+    ///**
+    // * @brief perform the given function for each face
+    // *
+    // */
+    // void for_each_face(const std::function<void(const Tuple&)>&);
 
-    /**
-     * @brief perform the given function for each edge
-     *
-     */
-    void for_each_edge(const std::function<void(const Tuple&)>&);
+    ///**
+    // * @brief perform the given function for each edge
+    // *
+    // */
+    // void for_each_edge(const std::function<void(const Tuple&)>&);
 
-    /**
-     * @brief perform the given function for each vertex
-     *
-     */
-    void for_each_vertex(const std::function<void(const Tuple&)>&);
+    ///**
+    // * @brief perform the given function for each vertex
+    // *
+    // */
+    // void for_each_vertex(const std::function<void(const Tuple&)>&);
 
     AttributeHandle
     register_attribute(const std::string& name, const PrimitiveType& type, long size);
 
     template <typename T>
-    T scalar_attribute(const AttributeHandle& handle, const PrimitiveType& type, const Tuble& tuble)
+    T scalar_attribute(const AttributeHandle& handle, const PrimitiveType& type, const Tuple& tuble)
         const;
 
     long gid(const PrimitiveType& type);
+
+    template <typename T>
+    void register_attribute(const std::string& name, PrimitiveType ptype, long size);
+
+    template <typename T>
+    Accessor<T>
+    register_attribute_with_accessor(const std::string& name, PrimitiveType ptype, long size);
 
 protected:
     std::vector<MeshAttributes<bool>> m_bool_attributes;
@@ -115,18 +117,19 @@ protected:
     std::vector<MeshAttributes<double>> m_double_attributes;
     // std::vector<MeshAttributes<Rational>> m_rational_attributes;
     template <typename T>
-    MeshAttributes<T>& get_mesh_attributes()
+    MeshAttributes<T>& get_mesh_attributes(PrimitiveType ptype)
     {
-        if constexpr (std::is_same_as_v<T, bool>) {
-            return m_bool_attributes;
+        size_t index = get_simplex_dimension(ptype);
+        if constexpr (std::is_same_v<T, bool>) {
+            return m_bool_attributes[index];
         }
-        if constexpr (std::is_same_as_v<T, long>) {
-            return m_long_attributes;
+        if constexpr (std::is_same_v<T, long>) {
+            return m_long_attributes[index];
         }
-        if constexpr (std::is_same_as_v<T, double>) {
-            return m_double_attributes;
+        if constexpr (std::is_same_v<T, double>) {
+            return m_double_attributes[index];
         }
-        // if constexpr(std::is_same_as_v<T,Rational>) {
+        // if constexpr(std::is_same_v<T,Rational>) {
         //     return m_rational_attributes;
         // }
     }
@@ -189,27 +192,15 @@ public:
 
 class TriMesh : public Mesh
 {
-    TriMesh()
-    {
-        m_vf_accessor =
-            m_long_attributes.register_attribute_with_accessor("m_vf", PrimitiveType::Vertex, 1);
-        m_ef_accessor =
-            m_long_attributes.register_attribute_with_accessor("m_ef", PrimitiveType::Edge, 1);
-
-        m_fv_accessor =
-            m_long_attributes.register_attribute_with_accessor("m_fv", PrimitiveType::Face, 3);
-        m_fe_accessor =
-            m_long_attributes.register_attribute_with_accessor("m_fe", PrimitiveType::Face, 3);
-        m_ff_accessor =
-            m_long_attributes.register_attribute_with_accessor("m_ff", PrimitiveType::Face, 3);
-    }
+    TriMesh();
 
 private:
-    AttributeAccessor m_vf_accessor;
-    AttributeAccessor m_ef_accessor;
-    AttributeAccessor m_fv_accessor;
-    AttributeAccessor m_fe_accessor;
-    AttributeAccessor m_ff_accessor;
+    Accessor<long> m_vf_accessor;
+    Accessor<long> m_ef_accessor;
+
+    Accessor<long> m_fv_accessor;
+    Accessor<long> m_fe_accessor;
+    Accessor<long> m_ff_accessor;
 
 public:
     void split_edge(const Tuple& t) override;
@@ -231,41 +222,17 @@ public:
 
 class TetMesh : public Mesh
 {
-    TetMesh()
-    {
-        m_vt_handle =
-            m_long_attributes.register_attribute_with_accessor("m_vt", PrimitiveType::Vertex, 1);
-        m_et_handle =
-            m_long_attributes.register_attribute_with_accessor("m_et", PrimitiveType::Edge, 1);
-        m_ft_handle =
-            m_long_attributes.register_attribute_with_accessor("m_ft", PrimitiveType::Face, 1);
-
-        m_tv_handle = m_long_attributes.register_attribute_with_accessor(
-            "m_tv",
-            PrimitiveType::Tetrahedron,
-            4);
-        m_te_handle = m_long_attributes.register_attribute_with_accessor(
-            "m_te",
-            PrimitiveType::Tetrahedron,
-            6);
-        m_tf_handle = m_long_attributes.register_attribute_with_accessor(
-            "m_tf",
-            PrimitiveType::Tetrahedron,
-            4);
-        m_tt_handle = m_long_attributes.register_attribute_with_accessor(
-            "m_tt",
-            PrimitiveType::Tetrahedron,
-            4);
-    }
+    TetMesh();
 
 private:
-    AttributeAccessor m_vt_accessor;
-    AttributeAccessor m_et_accessor;
-    AttributeAccessor m_ft_accessor;
-    AttributeAccessor m_tv_accessor;
-    AttributeAccessor m_te_accessor;
-    AttributeAccessor m_tf_accessor;
-    AttributeAccessor m_tt_accessor;
+    Accessor<long> m_vt_accessor;
+    Accessor<long> m_et_accessor;
+    Accessor<long> m_ft_accessor;
+
+    Accessor<long> m_tv_accessor;
+    Accessor<long> m_te_accessor;
+    Accessor<long> m_tf_accessor;
+    Accessor<long> m_tt_accessor;
 
 public:
     long id(const Tuple& tuple, const PrimitiveType& type) const override;
@@ -281,9 +248,19 @@ public:
         Eigen::Ref<const Matl1>& FT) const;
 };
 
+template <typename T>
+void Mesh::register_attribute(const std::string& name, PrimitiveType ptype, long size)
+{
+    get_mesh_attributes<T>(ptype).register_attribute(name, size);
+}
+template <typename T>
+Accessor<T>
+Mesh::register_attribute_with_accessor(const std::string& name, PrimitiveType ptype, long size)
+{
+    return get_mesh_attributes<T>(ptype).register_attribute_with_accessor(name, size);
+}
 /**
  * @brief given the mesh connectivity in matrix format, initialize the topology data used for Mesh
- *
  * @param F input connectivity in (N x 3) matrix format (igl convention)
  * @param FV output connectivity in (N x 3) matrix format, same as F
  * @param FE three edges of every triangle in (N x 3) matrix format
@@ -291,9 +268,9 @@ public:
  * @param VF one adjacent triangle (arbitrarily chosen) of every vertex in (N x 1) matrix format
  * @param EF one adjacent triangle (arbitrarily chosen) of every edge in (N x 1) matrix format
  */
+
 void trimesh_topology_initialization(
     Eigen::Ref<const MaxtrixXi>& F,
-    Eigen::Ref<const Matl3>& FV,
     Eigen::Ref<const Matl3>& FE,
     Eigen::Ref<const Matl3>& FF,
     Eigen::Ref<const Matl1>& VF,

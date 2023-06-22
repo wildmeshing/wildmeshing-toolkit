@@ -35,6 +35,7 @@ AttributeHandle MeshAttributes<T>::register_attribute(const std::string& name, l
 
     return handle;
 }
+template <typename T>
 Accessor<T> MeshAttributes<T>::create_accessor(const AttributeHandle& handle)
 {
     return Accessor<T>(*this, handle);
@@ -48,9 +49,8 @@ AttributeHandle MeshAttributes<T>::attribute_handle(const std::string& name) con
 
 
 template <typename T>
-const typename MeshAttributes<T>::ConstMapResult MeshAttributes<T>::vector_attribute(
-    const AttributeHandle& handle,
-    const long index) const
+auto MeshAttributes<T>::vector_attribute(const AttributeHandle& handle, const long index) const
+    -> ConstMapResult
 {
     const auto& attr = m_attributes[handle.index];
     const long start = index * handle.stride;
@@ -108,31 +108,6 @@ void MeshAttributes<T>::resize(const long size)
     }
 }
 
-template <typename T>
-void MeshAttributes<T>::rollback()
-{
-    m_attributes_copy.clear();
-}
-
-template <typename T>
-void MeshAttributes<T>::begin_protect()
-{
-    m_attributes_copy = m_attributes;
-}
-
-template <typename T>
-void MeshAttributes<T>::end_protect()
-{
-    if (!m_attributes_copy.empty()) m_attributes = std::move(m_attributes_copy);
-
-    m_attributes_copy.clear();
-}
-
-template <typename T>
-bool MeshAttributes<T>::is_in_protect() const
-{
-    return !m_attributes_copy.empty();
-}
 
 template class MeshAttributes<char>;
 template class MeshAttributes<long>;
