@@ -5,12 +5,7 @@
 
 namespace wmtk {
 
-    enum class PrimitiveType {
-        Vertex,
-        Edge,
-        Face,
-        Tetrahedron
-    };
+enum class PrimitiveType { Vertex, Edge, Face, Tetrahedron };
 
 class Accessor;
 
@@ -176,7 +171,13 @@ public:
      * @return false
      */
     virtual bool is_ccw(const Tuple& tuple) const;
-
+    /**
+     * @brief give the upper bound for the number of entities of the given dimension
+     *
+     * @param type
+     * @return int
+     */
+    int capacity(const PrimitiveType& type) const;
     /**
      * @brief TODO this needs dimension?
      *
@@ -208,10 +209,20 @@ class TriMesh : public Mesh
 private:
     AttributeAccessor m_vf_accessor;
     AttributeAccessor m_ef_accessor;
-
     AttributeAccessor m_fv_accessor;
     AttributeAccessor m_fe_accessor;
     AttributeAccessor m_ff_accessor;
+
+public:
+    void split_edge(const Tuple& t) override;
+    void collapse_edge(const Tuple& t) override;
+
+    void build_vertex_connectivity(long n_vertices) override;
+
+    long id(const Tuple& tuple, const PrimitiveType& type) const override;
+    Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const override;
+    bool is_ccw(const Tuple& tuple) const override;
+    void initialize(const Eigen::MatrixXi& F) const override;
 };
 
 class TetMesh : public Mesh
@@ -247,10 +258,50 @@ private:
     AttributeAccessor m_vt_accessor;
     AttributeAccessor m_et_accessor;
     AttributeAccessor m_ft_accessor;
-
     AttributeAccessor m_tv_accessor;
     AttributeAccessor m_te_accessor;
     AttributeAccessor m_tf_accessor;
     AttributeAccessor m_tt_accessor;
+
+public:
+    long id(const Tuple& tuple, const PrimitiveType& type) const override;
+    Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const override;
+    bool is_ccw(const Tuple& tuple) const override;
+    void initialize(const Eigen::MatrixXi& F) const override;
 };
+
+void trimesh_topology_initialization(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const TriMesh& mesh)
+{
+    // std::vector<std::vector<long>> VF(vertex_capacity());
+    // for(int j = 0; j < triangle_capacity(); j) {
+    //  auto f = _topology_accessor.get_attribute<long>(m_fv_handle, j); // Eigen::Map // Eigen::Vector3i
+    //  for(long vidx: f) { VF[vidx].emplace_back(j);
+    //  long& vf = _topology_accessor.get_attribute_single<long>(m_vf_handle, vidx); // Eigen::Map // Eigen::Vector3i
+    //  v = j;
+    //  }
+    //  std::vector<std::array<long,2>> e_array;
+    //  for(int j = 0; j < triangle_capacity(); ++j) {
+    //  auto f = _topology_accessor.get_attribute<long>(m_fv_handle, j); // Eigen::Map // Eigen::Vector3i
+    //  for(int k = 0; k < 3; ++ k) {
+    //      int kp1 = (k+1)%3;
+    //      int a = f(k);
+    //      int b = f(kp1);
+    //      if(a > b) {
+    //      std::swap(a,b);
+    //      e_array.emplace_back(std::array<long,2>{{a,b}});
+    //      }
+    //      std::sort(e_array.begin(),e_array.end());
+    //      e_array.erase(std::unique(e_array.begin(),e_array.end()), e_array.end());
+    //  }
+    //  }
+}
+
+void tetmesh_topology_initialization(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const TetMesh& mesh)
+{}
 } // namespace wmtk
