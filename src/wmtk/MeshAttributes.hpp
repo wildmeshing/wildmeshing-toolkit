@@ -34,21 +34,24 @@ class MeshAttributes
 
     MeshAttributes();
 
-    AttributeHandle register_attribute(const std::string& name, long size);
+    void register_attribute(const std::string& name, long size);
 
-    AttributeHandle attribute_handle(const std::string& name) const;
-
-    const ConstMapResult vector_attribute(const AttributeHandle& handle, const long index) const;
-    MapResult vector_attribute(const AttributeHandle& handle, const long index);
-
-    T scalar_attribute(const AttributeHandle& handle, const long index) const;
-    T& scalar_attribute(const AttributeHandle& handle, const long index);
+    Accessor<T> register_attribute_with_accessor(const std::string& name, long size);
 
 
     long size() const;
     void resize(const long size);
 
-    Transaction<T> create_transaction();
+    Accessor<T> create_accessor(const AttributeHandle&);
+
+protected:
+    AttributeHandle attribute_handle(const std::string& name) const;
+
+    ConstMapResult vector_attribute(const AttributeHandle& handle, const long index) const;
+    MapResult vector_attribute(const AttributeHandle& handle, const long index);
+
+    T scalar_attribute(const AttributeHandle& handle, const long index) const;
+    T& scalar_attribute(const AttributeHandle& handle, const long index);
 
 private:
     std::map<std::string, AttributeHandle> m_handles;
@@ -59,3 +62,4 @@ private:
 
 
 } // namespace wmtk
+#include "MeshAttributes_impl.hpp"

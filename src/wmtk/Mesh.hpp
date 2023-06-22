@@ -1,12 +1,18 @@
 #include <Tuple.h>
 #pragma once
+#include "MeshAttributes.hpp"
 
 
 namespace wmtk {
 
+enum class PrimitiveType { Vertex, Edge, Face, Tetrahedron };
+
+class Accessor;
+
 class Mesh
 {
 public:
+    friend class Accessor;
     Mesh();
     virtual ~Mesh();
 
@@ -15,17 +21,17 @@ public:
      * @param n_vertices Input number of vertices
      * @param cells tris/tets connectivity
      */
-    void initialiaze(long n_vertices, const std::vector<std::vector<long>>& cells);
+    void initialize(long n_vertices, const std::vector<std::vector<long>>& cells);
 
     /**
      * Generate a vector of Tuples from global vertex/edge/triangle/tetrahedron index
      * @param type the type of tuple, can be vertex/edge/triangle/tetrahedron
-     * @return vector of Tuples refering to each type
+     * @return vector of Tuples referring to each type
      */
     std::vector<Tuple> get_all_of(const PrimitiveType& type) const;
 
     /**
-     * Removes all unsed space
+     * Removes all unset space
      */
     void clean();
 
@@ -63,7 +69,7 @@ public:
     Tuple tuple_from_cell(long cid) const = 0;
 
     /**
-     * Generate avertex Tuple using local vid
+     * Generate a vertex Tuple using local vid
      * @param vid global vid
      * @note tuple refers to vid
      */
@@ -101,7 +107,23 @@ protected:
     std::vector<MeshAttributes<bool>> m_bool_attributes;
     std::vector<MeshAttributes<long>> m_long_attributes;
     std::vector<MeshAttributes<double>> m_double_attributes;
-    std::vector<MeshAttributes<Rational>> m_rational_attributes;
+    // std::vector<MeshAttributes<Rational>> m_rational_attributes;
+    template <typename T>
+    MeshAttributes<T>& get_mesh_attributes()
+    {
+        if constexpr (std::is_same_as_v<T, bool>) {
+            return m_bool_attributes;
+        }
+        if constexpr (std::is_same_as_v<T, long>) {
+            return m_long_attributes;
+        }
+        if constexpr (std::is_same_as_v<T, double>) {
+            return m_double_attributes;
+        }
+        // if constexpr(std::is_same_as_v<T,Rational>) {
+        //     return m_rational_attributes;
+        // }
+    }
 
 
     /**
@@ -163,21 +185,25 @@ class TriMesh : public Mesh
 {
     TriMesh()
     {
-        m_vf_handle = m_long_attributes.register_attribute("m_vf", PrimitiveType::Vertex, 1);
-        m_ef_handle = m_long_attributes.register_attribute("m_ef", PrimitiveType::Edge, 1);
+        m_vf_accessor =
+            m_long_attributes.register_attribute_with_accessor("m_vf", PrimitiveType::Vertex, 1);
+        m_ef_accessor =
+            m_long_attributes.register_attribute_with_accessor("m_ef", PrimitiveType::Edge, 1);
 
-        m_fv_handle = m_long_attributes.register_attribute("m_fv", PrimitiveType::Triangle, 3);
-        m_fe_handle = m_long_attributes.register_attribute("m_fe", PrimitiveType::Triangle, 3);
-        m_ff_handle = m_long_attributes.register_attribute("m_ff", PrimitiveType::Triangle, 3);
+        m_fv_accessor =
+            m_long_attributes.register_attribute_with_accessor("m_fv", PrimitiveType::Face, 3);
+        m_fe_accessor =
+            m_long_attributes.register_attribute_with_accessor("m_fe", PrimitiveType::Face, 3);
+        m_ff_accessor =
+            m_long_attributes.register_attribute_with_accessor("m_ff", PrimitiveType::Face, 3);
     }
 
 private:
-    AttributeHandle m_vf_handle;
-    AttributeHandle m_ef_handle;
-
-    AttributeHandle m_fv_handle;
-    AttributeHandle m_fe_handle;
-    AttributeHandle m_ff_handle;
+    AttributeAccessor m_vf_accessor;
+    AttributeAccessor m_ef_accessor;
+    AttributeAccessor m_fv_accessor;
+    AttributeAccessor m_fe_accessor;
+    AttributeAccessor m_ff_accessor;
 
 public:
     void split_edge(const Tuple& t) override;
@@ -195,25 +221,39 @@ class TetMesh : public Mesh
 {
     TetMesh()
     {
-        m_vt_handle = m_long_attributes.register_attribute("m_vt", PrimitiveType::Vertex, 1);
-        m_et_handle = m_long_attributes.register_attribute("m_et", PrimitiveType::Edge, 1);
-        m_ft_handle = m_long_attributes.register_attribute("m_ft", PrimitiveType::Triangle, 1);
+        m_vt_handle =
+            m_long_attributes.register_attribute_with_accessor("m_vt", PrimitiveType::Vertex, 1);
+        m_et_handle =
+            m_long_attributes.register_attribute_with_accessor("m_et", PrimitiveType::Edge, 1);
+        m_ft_handle =
+            m_long_attributes.register_attribute_with_accessor("m_ft", PrimitiveType::Face, 1);
 
-        m_tv_handle = m_long_attributes.register_attribute("m_tv", PrimitiveType::Tetrahedron, 4);
-        m_te_handle = m_long_attributes.register_attribute("m_te", PrimitiveType::Tetrahedron, 6);
-        m_tf_handle = m_long_attributes.register_attribute("m_tf", PrimitiveType::Tetrahedron, 4);
-        m_tt_handle = m_long_attributes.register_attribute("m_tt", PrimitiveType::Tetrahedron, 4);
+        m_tv_handle = m_long_attributes.register_attribute_with_accessor(
+            "m_tv",
+            PrimitiveType::Tetrahedron,
+            4);
+        m_te_handle = m_long_attributes.register_attribute_with_accessor(
+            "m_te",
+            PrimitiveType::Tetrahedron,
+            6);
+        m_tf_handle = m_long_attributes.register_attribute_with_accessor(
+            "m_tf",
+            PrimitiveType::Tetrahedron,
+            4);
+        m_tt_handle = m_long_attributes.register_attribute_with_accessor(
+            "m_tt",
+            PrimitiveType::Tetrahedron,
+            4);
     }
 
 private:
-    AttributeHandle m_vt_handle;
-    AttributeHandle m_et_handle;
-    AttributeHandle m_ft_handle;
-
-    AttributeHandle m_tv_handle;
-    AttributeHandle m_te_handle;
-    AttributeHandle m_tf_handle;
-    AttributeHandle m_tt_handle;
+    AttributeAccessor m_vt_accessor;
+    AttributeAccessor m_et_accessor;
+    AttributeAccessor m_ft_accessor;
+    AttributeAccessor m_tv_accessor;
+    AttributeAccessor m_te_accessor;
+    AttributeAccessor m_tf_accessor;
+    AttributeAccessor m_tt_accessor;
 
 public:
     long id(const Tuple& tuple, const PrimitiveType& type) const override;
