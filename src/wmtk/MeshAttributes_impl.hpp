@@ -108,31 +108,6 @@ void MeshAttributes<T>::resize(const long size)
     }
 }
 
-template <typename T>
-void MeshAttributes<T>::rollback()
-{
-    m_attributes_copy.clear();
-}
-
-template <typename T>
-void MeshAttributes<T>::begin_protect()
-{
-    m_attributes_copy = m_attributes;
-}
-
-template <typename T>
-void MeshAttributes<T>::end_protect()
-{
-    if (!m_attributes_copy.empty()) m_attributes = std::move(m_attributes_copy);
-
-    m_attributes_copy.clear();
-}
-
-template <typename T>
-bool MeshAttributes<T>::is_in_protect() const
-{
-    return !m_attributes_copy.empty();
-}
 
 template class MeshAttributes<char>;
 template class MeshAttributes<long>;

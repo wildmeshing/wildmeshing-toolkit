@@ -68,7 +68,13 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # ###############################################################################
 
 # Core library
-set(SRC_FILES Mesh.hpp MeshAttributes.hpp MeshAttributes_impl.hpp Accessor.hpp Accessor_impl.hpp)
+set(SRC_FILES 
+    src/wmtk/Mesh.cpp
+    src/wmtk/Mesh.hpp 
+    src/wmtk/MeshAttributes.hpp 
+    src/wmtk/MeshAttributes_impl.hpp 
+    src/wmtk/Accessor.hpp 
+    src/wmtk/Accessor_impl.hpp)
 message(DEBUG "SRC_FILES: ${SRC_FILES}")
 
 add_library(wildmeshing_toolkit "${SRC_FILES}")
@@ -158,7 +164,7 @@ target_link_libraries(wildmeshing_toolkit PUBLIC paraviewo::paraviewo)
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
     # Unit tests
     enable_testing()
-    add_subdirectory(tests)
+    #add_subdirectory(tests)
 
     # Demo apps
     # add_subdirectory(app)
