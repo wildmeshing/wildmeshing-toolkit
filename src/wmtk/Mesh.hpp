@@ -1,7 +1,7 @@
 #include <Tuple.h>
 #pragma once
-#include "MeshAttributes.hpp"
 #include "Accessor.hpp"
+#include "MeshAttributes.hpp"
 
 
 namespace wmtk {
@@ -225,7 +225,8 @@ public:
         Eigen::Ref<const Matl3>& FE,
         Eigen::Ref<const Matl3>& FF,
         Eigen::Ref<const Matl1>& VF,
-        Eigen::Ref<const Matl1>& EF);
+        Eigen::Ref<const Matl1>& EF,
+        Eigen::Ref<const Matl4>& seam) const;
 };
 
 class TetMesh : public Mesh
@@ -280,40 +281,84 @@ public:
         Eigen::Ref<const Matl1>& FT) const;
 };
 
+/**
+ * @brief given the mesh connectivity in matrix format, initialize the topology data used for Mesh
+ *
+ * @param F input connectivity in (N x 3) matrix format (igl convention)
+ * @param FV output connectivity in (N x 3) matrix format, same as F
+ * @param FE three edges of every triangle in (N x 3) matrix format
+ * @param FF three edge-adjacent faces of every triangle in (N x 3) matrix format
+ * @param VF one adjacent triangle (arbitrarily chosen) of every vertex in (N x 1) matrix format
+ * @param EF one adjacent triangle (arbitrarily chosen) of every edge in (N x 1) matrix format
+ */
 void trimesh_topology_initialization(
-    const Eigen::MatrixXd& V,
-    const Eigen::MatrixXi& F,
-    const TriMesh& mesh)
+    Eigen::Ref<const MaxtrixXi>& F,
+    Eigen::Ref<const Matl3>& FV,
+    Eigen::Ref<const Matl3>& FE,
+    Eigen::Ref<const Matl3>& FF,
+    Eigen::Ref<const Matl1>& VF,
+    Eigen::Ref<const Matl1>& EF)
 {
-    // Accessor<>
-    
-    // std::vector<std::vector<long>> VF(vertex_capacity());
-    // for(int j = 0; j < triangle_capacity(); j) 
-    // {
-    //     auto f = _topology_accessor.get_attribute<long>(m_fv_handle, j); // Eigen::Map // Eigen::Vector3i
-    //     for(long vidx : f) { 
-    //         VF[vidx].emplace_back(j);
-    //         long& vf = _topology_accessor.get_attribute_single<long>(m_vf_handle, vidx); // Eigen::Map // Eigen::Vector3i
-    //         v = j;
-    //     }
-    // std::vector<std::array<long,2>> e_array;
-    // for(int j = 0; j < triangle_capacity(); ++j) 
-    // {
-    //     auto f = _topology_accessor.get_attribute<long>(m_fv_handle, j); // Eigen::Map // Eigen::Vector3i
-    //     for(int k = 0; k < 3; ++ k) 
-    //     {
-    //         int kp1 = (k+1)%3;
-    //         int a = f(k);
-    //         int b = f(kp1);
-    //         if(a > b) 
-    //         {
-    //             std::swap(a,b);
-    //             e_array.emplace_back(std::array<long,2>{{a,b}});
-    //         }
-    //         std::sort(e_array.begin(),e_array.end());
-    //         e_array.erase(std::unique(e_array.begin(),e_array.end()), e_array.end());
-    //     }
-    // }
+    std::vector<std::vector<long>> TTT;
+    FV.resize(F.rows(), F.cols());
+    FE.resize(F.rows(), F.cols());
+    FF.resize(F.rows(), F.cols());
+    VF.resize(F.rows(), 1);
+    EF.resize(F.rows(), 1);
+    TTT.resize(F.rows(), std::vector<long>(4));
+    for (int f = 0; f < F.rows(); ++f) {
+        for (int i = 0; i < F.cols(); ++i) {
+            // v1 v2 f ei
+            long v1 = std::static_cast<long>(F(f, i));
+            long v2 = std::static_cast<long>(F(f, (i + 1) % F.cols()));
+            if (v1 > v2) std::swap(v1, v2);
+            std::vector<long> r(4);
+            r[0] = v1;
+            r[1] = v2;
+            r[2] = f;
+            r[3] = i;
+            TTT[f] = r;
+            FV(f, i) = v1;
+        }
+    }
+    std::sort(TTT.begin(), TTT.end());
+
+    // iterate over TTT to initialize topology
+    // assumption is the same edge is always next to each other in the sorted TTT
+    int unique_edges = 0;
+    long v01 = TTT[0][0];
+    long v02 = TTT[0][1];
+    long f0 = TTT[0][2];
+    long e0 = TTT[0][3];
+    FE(f0, e0) = unique_edges;
+    VF(v01, 0) = f0;
+    VF(v02, 0) = f0;
+    EF(unique_edges, 0) = f0;
+
+    for (int i = 1; i < TTT.size(); ++i) {
+        int va1 = TTT[i][0];
+        int va2 = TTT[i][1];
+        int fa = TTT[i][2];
+        int eia = TTT[i][3];
+
+        int vb1 = TTT[i - 1][0];
+        int vb2 = TTT[i - 1][1];
+        int fb = TTT[i - 1][2];
+        int eib = TTT[i - 1][3];
+        if (va1 == vb1 & va2 == vb2) {
+            // same edge
+            FF(fa, eia) = fb;
+            FF(fb, eib) = fa;
+            continue;
+        } else {
+            unique_edges++;
+            FE(fa, eia) = unique_edges;
+            VF(va1, 0) = fa;
+            VF(va2, 0) = fa;
+            EF(unique_edges, 0) = fa;
+            FF(fa, eia) = -1;
+        }
+    }
 }
 
 void tetmesh_topology_initialization(
