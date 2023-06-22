@@ -7,6 +7,10 @@ namespace wmtk {
 
 enum class PrimitiveType { Vertex, Edge, Face, Tetrahedron };
 
+using Matl3 = Eigen::Matrix<long, Eigen::Dynamic, 3>;
+using Matl1 = Eigen::Matrix<long, Eigen::Dynamic, 1>;
+using Matl4 = Eigen::Matrix<long, Eigen::Dynamic, 4>;
+
 class Accessor;
 
 class Mesh
@@ -15,13 +19,6 @@ public:
     friend class Accessor;
     Mesh();
     virtual ~Mesh();
-
-    /**
-     * Generate the connectivity of the mesh
-     * @param n_vertices Input number of vertices
-     * @param cells tris/tets connectivity
-     */
-    void initialize(long n_vertices, const std::vector<std::vector<long>>& cells);
 
     /**
      * Generate a vector of Tuples from global vertex/edge/triangle/tetrahedron index
@@ -222,7 +219,12 @@ public:
     long id(const Tuple& tuple, const PrimitiveType& type) const override;
     Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const override;
     bool is_ccw(const Tuple& tuple) const override;
-    void initialize(const Eigen::MatrixXi& F) const override;
+    void initialize(
+        Eigen::Ref<const Matl3>& FV,
+        Eigen::Ref<const Matl3>& FE,
+        Eigen::Ref<const Matl3>& FF,
+        Eigen::Ref<const Matl1>& VF,
+        Eigen::Ref<const Matl1>& EF);
 };
 
 class TetMesh : public Mesh
@@ -267,7 +269,14 @@ public:
     long id(const Tuple& tuple, const PrimitiveType& type) const override;
     Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const override;
     bool is_ccw(const Tuple& tuple) const override;
-    void initialize(const Eigen::MatrixXi& F) const override;
+    void initialize(
+        Eigen::Ref<const Matl4>& TV,
+        Eigen::Ref<const Matl4>& TE,
+        Eigen::Ref<const Matl4>& TF,
+        Eigen::Ref<const Matl4>& TT,
+        Eigen::Ref<const Matl1>& VT,
+        Eigen::Ref<const Matl1>& ET,
+        Eigen::Ref<const Matl1>& FT) const;
 };
 
 void trimesh_topology_initialization(

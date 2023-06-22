@@ -23,6 +23,7 @@ public:
 private:
 MeshAttribute<T>& m_attribute;
 AttributeHandle m_handle;
-};
-}
+}; // namespace wmtk
+
+
 #include "Accessor_impl.hpp"
