@@ -35,6 +35,7 @@ AttributeHandle MeshAttributes<T>::register_attribute(const std::string& name, l
 
     return handle;
 }
+template <typename T>
 Accessor<T> MeshAttributes<T>::create_accessor(const AttributeHandle& handle)
 {
     return Accessor<T>(*this, handle);
@@ -48,9 +49,8 @@ AttributeHandle MeshAttributes<T>::attribute_handle(const std::string& name) con
 
 
 template <typename T>
-const typename MeshAttributes<T>::ConstMapResult MeshAttributes<T>::vector_attribute(
-    const AttributeHandle& handle,
-    const long index) const
+auto MeshAttributes<T>::vector_attribute(const AttributeHandle& handle, const long index) const
+    -> ConstMapResult
 {
     const auto& attr = m_attributes[handle.index];
     const long start = index * handle.stride;

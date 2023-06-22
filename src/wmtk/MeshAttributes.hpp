@@ -4,37 +4,24 @@
 
 #include <map>
 #include <vector>
+#include "Accessor.hpp"
+#include "AttributeHandle.hpp"
 
 namespace wmtk {
 
-class AttributeHandle
-{
-public:
-    long index;
-    long stride;
-};
-
-template <typename T>
-class Transaction
-{
-public:
-    void apply();
-
-private:
-    MeshAttributes& m_attribute;
-};
 
 template <typename T>
 class MeshAttributes
 {
-    friend class Transaction<T>;
+    friend class Accessor<T>;
+    friend class Mesh;
 
     typedef Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, 1>> MapResult;
     typedef Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, 1>> ConstMapResult;
 
     MeshAttributes();
 
-    void register_attribute(const std::string& name, long size);
+    AttributeHandle register_attribute(const std::string& name, long size);
 
     Accessor<T> register_attribute_with_accessor(const std::string& name, long size);
 

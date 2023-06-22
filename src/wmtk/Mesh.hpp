@@ -1,9 +1,8 @@
 #pragma once
-#include <Tuple.h>
 #include "Accessor.hpp"
 #include "MeshAttributes.hpp"
-#include "Accessor.hpp"
-#include "Primitive.h"
+#include "Primitive.hpp"
+#include "Tuple.h"
 
 
 namespace wmtk {
@@ -11,11 +10,11 @@ using Matl3 = Eigen::Matrix<long, Eigen::Dynamic, 3>;
 using Matl1 = Eigen::Matrix<long, Eigen::Dynamic, 1>;
 using Matl4 = Eigen::Matrix<long, Eigen::Dynamic, 4>;
 
-class Accessor;
 
 class Mesh
 {
 public:
+    template <typename T>
     friend class Accessor;
     Mesh();
     virtual ~Mesh();
@@ -38,10 +37,7 @@ public:
     /**
      * @brief a duplicate of Tuple::switch_tuple function
      */
-    Tuple switch_tuple(const PrimitiveType& type, const Tuple& t) const
-    {
-        return t.switch_tuple(*this, type);
-    }
+    virtual Tuple switch_tuple(const PrimitiveType& type, const Tuple& t) const = 0;
 
     /**
      * @brief verify the connectivity validity of the mesh
@@ -103,7 +99,7 @@ public:
     register_attribute(const std::string& name, const PrimitiveType& type, long size);
 
     template <typename T>
-    T scalar_attribute(const AttributeHandle& handle, const PrimitiveType& type, const Tuble& tuble)
+    T scalar_attribute(const AttributeHandle& handle, const PrimitiveType& type, const Tuple& tuble)
         const;
 
     long gid(const PrimitiveType& type);
@@ -236,20 +232,6 @@ private:
     Accessor<long> m_te_accessor;
     Accessor<long> m_tf_accessor;
     Accessor<long> m_tt_accessor;
-};
-
-template <typename T>
-void Mesh::register_attribute(const std::string& name, PrimitiveType ptype, long size)
-{
-    template get_mesh_attributes<T>(ptype).register_attribute(name, size);
-}
-
-template <typename T>
-Accessor<T>
-Mesh::register_attribute_with_accessor(const std::string& name, PrimitiveType ptype, long size)
-{
-    return get_mesh_attributes<T>(ptype).register_attribute_with_accessor(name, size);
-}
 
 public:
     long id(const Tuple& tuple, const PrimitiveType& type) const override;
@@ -265,32 +247,45 @@ public:
         Eigen::Ref<const Matl1>& FT) const;
 };
 
+template <typename T>
+void Mesh::register_attribute(const std::string& name, PrimitiveType ptype, long size)
+{
+    get_mesh_attributes<T>(ptype).register_attribute(name, size);
+}
+
+template <typename T>
+Accessor<T>
+Mesh::register_attribute_with_accessor(const std::string& name, PrimitiveType ptype, long size)
+{
+    return get_mesh_attributes<T>(ptype).register_attribute_with_accessor(name, size);
+}
+
 void trimesh_topology_initialization(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,
     const TriMesh& mesh)
 {
     // Accessor<>
-    
+
     // std::vector<std::vector<long>> VF(vertex_capacity());
-    // for(int j = 0; j < triangle_capacity(); j) 
+    // for(int j = 0; j < triangle_capacity(); j)
     // {
     //     auto f = _topology_accessor.get_attribute<long>(m_fv_handle, j); // Eigen::Map // Eigen::Vector3i
-    //     for(long vidx : f) { 
+    //     for(long vidx : f) {
     //         VF[vidx].emplace_back(j);
     //         long& vf = _topology_accessor.get_attribute_single<long>(m_vf_handle, vidx); // Eigen::Map // Eigen::Vector3i
     //         v = j;
     //     }
     // std::vector<std::array<long,2>> e_array;
-    // for(int j = 0; j < triangle_capacity(); ++j) 
+    // for(int j = 0; j < triangle_capacity(); ++j)
     // {
     //     auto f = _topology_accessor.get_attribute<long>(m_fv_handle, j); // Eigen::Map // Eigen::Vector3i
-    //     for(int k = 0; k < 3; ++ k) 
+    //     for(int k = 0; k < 3; ++ k)
     //     {
     //         int kp1 = (k+1)%3;
     //         int a = f(k);
     //         int b = f(kp1);
-    //         if(a > b) 
+    //         if(a > b)
     //         {
     //             std::swap(a,b);
     //             e_array.emplace_back(std::array<long,2>{{a,b}});

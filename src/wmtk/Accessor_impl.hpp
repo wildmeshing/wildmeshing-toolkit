@@ -1,22 +1,24 @@
 #pragma once
 #include "Accessor.hpp"
+#include "MeshAttributes.hpp"
 namespace wmtk {
 
 template <typename T>
-Accessor<T>::Accessor(Mesh& m, const AttributeHandle& handle)
-    : m_attribute(m.template get_mesh_attributes<T>())
+Accessor<T>::Accessor(MeshAttributes<T>& attrs, const AttributeHandle& handle)
+    : m_attribute(attrs)
     , m_handle(handle)
 {}
 
+
 template <typename T>
-ConstMapResult<T> Accessor<T>::vector_attribute(const long index) const
+auto Accessor<T>::vector_attribute(const long index) const -> ConstMapResult
 {
     return m_attribute.vector_attribute(m_handle, index);
 }
 template <typename T>
-MapResult<T> Accessor<T>::vector_attribute(const long index)
+auto Accessor<T>::vector_attribute(const long index) -> MapResult
 {
-    return.vector_attribute(m_handle, index);
+    return vector_attribute(m_handle, index);
 }
 
 template <typename T>
