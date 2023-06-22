@@ -1,15 +1,16 @@
+#include <Tuple.h>
 #pragma once
 #include "MeshAttributes.hpp"
+#include "Accessor.hpp"
 
 
 namespace wmtk {
 
-    enum class PrimitiveType {
-        Vertex,
-        Edge,
-        Face,
-        Tetrahedron
-    };
+enum class PrimitiveType { Vertex, Edge, Face, Tetrahedron };
+
+using Matl3 = Eigen::Matrix<long, Eigen::Dynamic, 3>;
+using Matl1 = Eigen::Matrix<long, Eigen::Dynamic, 1>;
+using Matl4 = Eigen::Matrix<long, Eigen::Dynamic, 4>;
 
 class Accessor;
 
@@ -19,13 +20,6 @@ public:
     friend class Accessor;
     Mesh();
     virtual ~Mesh();
-
-    /**
-     * Generate the connectivity of the mesh
-     * @param n_vertices Input number of vertices
-     * @param cells tris/tets connectivity
-     */
-    void initialize(long n_vertices, const std::vector<std::vector<long>>& cells);
 
     /**
      * Generate a vector of Tuples from global vertex/edge/triangle/tetrahedron index
@@ -71,21 +65,21 @@ public:
      * @param t tuple pointing to an face
      * @return global vids of incident vertices
      */
-    std::array<size_t, 3> oriented_tri_vids(const Tuple& t) const;
+    std::array<long, 3> oriented_tri_vids(const Tuple& t) const;
 
     /**
      * Generate a face Tuple using global cell id
      * @param cid global cell for the triangle/tetrahedron
      * @return a Tuple
      */
-    Tuple tuple_from_cell(size_t cid) const = 0;
+    Tuple tuple_from_cell(long cid) const = 0;
 
     /**
      * Generate a vertex Tuple using local vid
      * @param vid global vid
      * @note tuple refers to vid
      */
-    Tuple tuple_from_vertex(size_t vid) const;
+    Tuple tuple_from_vertex(long vid) const;
 
 
     /**
@@ -142,7 +136,54 @@ protected:
      * Generate the vertex connectivity of the mesh using the existing triangle structure
      * @param n_vertices Input number of vertices
      */
-    virtual void build_vertex_connectivity(size_t n_vertices) = 0;
+    virtual void build_vertex_connectivity(long n_vertices) = 0;
+
+public:
+    /**
+     * @brief return the global id of the Tuple of the given dimension
+     *
+     * @param m
+     * @param type  d-0 -> vertex
+                    d-1 -> edge
+                    d-2 -> face
+                    d-3 -> tetrahedron
+     * @return long id of the entity
+     */
+    virtual long id(const Tuple& tuple, const PrimitiveType& type) const;
+    /**
+     * @brief switch the orientation of the Tuple of the given dimension
+     * @note this is not doen in place. Return a new Tuple of the switched state
+     *
+     * @param m
+     * @param type  d-0 -> switch vertex
+                    d-1 -> switch edge
+                    d-2 -> switch face
+                    d-3 -> switch tetrahedron
+    */
+    virtual Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const;
+    /**
+     * @brief TODO this needs dimension?
+     *
+     * @param m
+     * @return true if the Tuple is oriented counter-clockwise
+     * @return false
+     */
+    virtual bool is_ccw(const Tuple& tuple) const;
+    /**
+     * @brief give the upper bound for the number of entities of the given dimension
+     *
+     * @param type
+     * @return int
+     */
+    int capacity(const PrimitiveType& type) const;
+    /**
+     * @brief TODO this needs dimension?
+     *
+     * @param m
+     * @return true
+     * @return false
+     */
+    bool is_valid(const Tuple& tuple) const;
 };
 
 
@@ -166,10 +207,25 @@ class TriMesh : public Mesh
 private:
     AttributeAccessor m_vf_accessor;
     AttributeAccessor m_ef_accessor;
-
     AttributeAccessor m_fv_accessor;
     AttributeAccessor m_fe_accessor;
     AttributeAccessor m_ff_accessor;
+
+public:
+    void split_edge(const Tuple& t) override;
+    void collapse_edge(const Tuple& t) override;
+
+    void build_vertex_connectivity(long n_vertices) override;
+
+    long id(const Tuple& tuple, const PrimitiveType& type) const override;
+    Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const override;
+    bool is_ccw(const Tuple& tuple) const override;
+    void initialize(
+        Eigen::Ref<const Matl3>& FV,
+        Eigen::Ref<const Matl3>& FE,
+        Eigen::Ref<const Matl3>& FF,
+        Eigen::Ref<const Matl1>& VF,
+        Eigen::Ref<const Matl1>& EF);
 };
 
 class TetMesh : public Mesh
@@ -205,10 +261,64 @@ private:
     AttributeAccessor m_vt_accessor;
     AttributeAccessor m_et_accessor;
     AttributeAccessor m_ft_accessor;
-
     AttributeAccessor m_tv_accessor;
     AttributeAccessor m_te_accessor;
     AttributeAccessor m_tf_accessor;
     AttributeAccessor m_tt_accessor;
+
+public:
+    long id(const Tuple& tuple, const PrimitiveType& type) const override;
+    Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const override;
+    bool is_ccw(const Tuple& tuple) const override;
+    void initialize(
+        Eigen::Ref<const Matl4>& TV,
+        Eigen::Ref<const Matl4>& TE,
+        Eigen::Ref<const Matl4>& TF,
+        Eigen::Ref<const Matl4>& TT,
+        Eigen::Ref<const Matl1>& VT,
+        Eigen::Ref<const Matl1>& ET,
+        Eigen::Ref<const Matl1>& FT) const;
 };
+
+void trimesh_topology_initialization(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const TriMesh& mesh)
+{
+    // Accessor<>
+    
+    // std::vector<std::vector<long>> VF(vertex_capacity());
+    // for(int j = 0; j < triangle_capacity(); j) 
+    // {
+    //     auto f = _topology_accessor.get_attribute<long>(m_fv_handle, j); // Eigen::Map // Eigen::Vector3i
+    //     for(long vidx : f) { 
+    //         VF[vidx].emplace_back(j);
+    //         long& vf = _topology_accessor.get_attribute_single<long>(m_vf_handle, vidx); // Eigen::Map // Eigen::Vector3i
+    //         v = j;
+    //     }
+    // std::vector<std::array<long,2>> e_array;
+    // for(int j = 0; j < triangle_capacity(); ++j) 
+    // {
+    //     auto f = _topology_accessor.get_attribute<long>(m_fv_handle, j); // Eigen::Map // Eigen::Vector3i
+    //     for(int k = 0; k < 3; ++ k) 
+    //     {
+    //         int kp1 = (k+1)%3;
+    //         int a = f(k);
+    //         int b = f(kp1);
+    //         if(a > b) 
+    //         {
+    //             std::swap(a,b);
+    //             e_array.emplace_back(std::array<long,2>{{a,b}});
+    //         }
+    //         std::sort(e_array.begin(),e_array.end());
+    //         e_array.erase(std::unique(e_array.begin(),e_array.end()), e_array.end());
+    //     }
+    // }
+}
+
+void tetmesh_topology_initialization(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const TetMesh& mesh)
+{}
 } // namespace wmtk

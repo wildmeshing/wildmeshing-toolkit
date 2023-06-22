@@ -18,11 +18,11 @@ public:
 
     T scalar_attribute(const long index) const;
     T& scalar_attribute(const long index);
-};
 
 private:
-MeshAttribute<T>& m_attribute;
-AttributeHandle m_handle;
-};
-}
+    MeshAttribute<T>& m_attribute;
+    AttributeHandle m_handle;
+}; 
+} // namespace wmtk
+
 #include "Accessor_impl.hpp"
