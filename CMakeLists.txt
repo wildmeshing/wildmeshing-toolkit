@@ -161,7 +161,7 @@ if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
     add_subdirectory(tests)
 
     # Demo apps
-    add_subdirectory(app)
+    # add_subdirectory(app)
 endif()
 
 if(WMTK_BUILD_DOCS)
