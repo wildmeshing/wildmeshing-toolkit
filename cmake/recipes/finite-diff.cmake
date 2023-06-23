@@ -12,3 +12,5 @@ FetchContent_Declare(
     GIT_TAG 632a73424cf3eafa8c6315ae0de3efe387936c17
 )
 FetchContent_MakeAvailable(finite-diff)
+
+set_target_properties(finitediff_finitediff PROPERTIES FOLDER third_party)
