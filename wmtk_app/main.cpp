@@ -1,6 +1,6 @@
 #include <jse/jse.h>
-#include <wmtk/components/input/input.h>
-#include <wmtk/components/mesh_info/mesh_info.h>
+#include <wmtk_components/input/input.h>
+#include <wmtk_components/mesh_info/mesh_info.h>
 #include <CLI/CLI.hpp>
 #include <filesystem>
 #include <nlohmann/json.hpp>
@@ -23,7 +23,7 @@ int main(int argc, char** argv)
         exit(-1);
     }
 
-    const path wmtk_spec_file = "wmtk_spec.json";
+    const path wmtk_spec_file = WMTK_APP_INPUT_SPEC;
     json rules_json;
     {
         std::ifstream f(wmtk_spec_file);
