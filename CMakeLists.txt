@@ -151,6 +151,7 @@ include(ipc-toolkit)
 target_compile_definitions(tight_inclusion PUBLIC TIGHT_INCLUSION_LIMIT_QUEUE_SIZE TI_LIMIT_QUEUE_SIZE)
 target_link_libraries(wildmeshing_toolkit PUBLIC ipc::toolkit)
 target_link_libraries(wildmeshing_toolkit PUBLIC paraviewo::paraviewo)
+include(jse)
 
 # ###############################################################################
 # Subdirectories
