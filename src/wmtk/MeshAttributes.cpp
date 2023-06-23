@@ -37,7 +37,6 @@ AttributeHandle MeshAttributes<T>::register_attribute(const std::string& name, l
     return handle;
 }
 
-
 template <typename T>
 AttributeHandle MeshAttributes<T>::attribute_handle(const std::string& name) const
 {

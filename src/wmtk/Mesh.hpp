@@ -8,6 +8,7 @@ using namespace Eigen;
 namespace wmtk {
 
 
+
 class Mesh
 {
 public:
@@ -158,7 +159,6 @@ public:
      * @return false
      */
     bool is_valid(const Tuple& tuple) const;
-
 private:
     std::vector<long> m_capacities;
     // 0x1 == true = is active
@@ -236,7 +236,6 @@ Mesh::register_attribute(const std::string& name, PrimitiveType ptype, long size
     // r.m_primitive_type = ptype;
     // return r;
 }
-
 /**
  * @brief given the mesh connectivity in matrix format, initialize the topology data used for Mesh
  * @param F input connectivity in (N x 3) matrix format (igl convention)

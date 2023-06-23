@@ -2,14 +2,14 @@
 #include "Primitive.hpp"
 namespace wmtk {
 
-class AttributeHandle
+struct AttributeHandle
 {
 public:
     long index;
     long stride;
 };
 template <typename T>
-class MeshAttributeHandle
+struct MeshAttributeHandle
 {
     AttributeHandle m_base_handle;
     PrimitiveType m_primitive_type;
