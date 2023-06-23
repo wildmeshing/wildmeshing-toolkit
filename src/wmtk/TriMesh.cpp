@@ -1,4 +1,4 @@
-#include <TriMesh.hpp>
+#include "TriMesh.hpp"
 
 namespace wmtk {
 TriMesh::TriMesh()
@@ -12,7 +12,7 @@ TriMesh::TriMesh()
 void TriMesh::split_edge(const Tuple& t) {}
 void TriMesh::collapse_edge(const Tuple& t) {}
 
-long TriMesh::id(const Tuple& tuple, const PrimitiveType& type) const override
+long TriMesh::id(const Tuple& tuple, const PrimitiveType& type) const
 {
     switch (type) {
     case PrimitiveType::Vertex: return m_fv[tuple.m_global_cid * 3 + tuple.m_local_vid]; break;
@@ -22,7 +22,7 @@ long TriMesh::id(const Tuple& tuple, const PrimitiveType& type) const override
     }
 }
 
-Tuple TriMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const override
+Tuple TriMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
 {
     bool ccw = is_ccw(tuple);
     switch (type) {
@@ -60,7 +60,7 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
     }
 }
 
-bool TriMesh::is_ccw(const Tuple& tuple) const override
+bool TriMesh::is_ccw(const Tuple& tuple) const
 {
     if (m_fv[tuple.m_global_cid * 3 + (tuple.m_local_eid + 1) % 3] == id(tuple, 0))
         return true;

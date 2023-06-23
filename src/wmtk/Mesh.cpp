@@ -1,4 +1,5 @@
 #include "Mesh.hpp"
+#include "Primitive.hpp"
 
 namespace wmtk {
 
@@ -37,15 +38,16 @@ long Mesh::capacity(PrimitiveType type) const
     }
 }
 
-void Mesh::mesh_attributes_reserve(const PrimitiveType& top_d)
+void Mesh::mesh_attributes_reserve(const PrimitiveType& top_d, long capacity)
 {
-    for (auto& d : PrimitiveType) {
-        if (top_d == PrimitiveType::Face && d == PrimitiveType::Tetrahedron) continue;
-        m_char_attributes[get_simplex_dimension(d)].reserve(capacity);
-        m_long_attributes[get_simplex_dimension(d)].reserve(capacity);
-        m_double_attributes[get_simplex_dimension(d)].reserve(capacity);
-        // m_rational_attributes[get_simplex_dimension(d)].reserve(capacity);
-    }
+    throw "not implemeted";
+    // for (auto& d : PrimitiveType) {
+    //     if (top_d == PrimitiveType::Face && d == PrimitiveType::Tetrahedron) continue;
+    //     m_char_attributes[get_simplex_dimension(d)].reserve(capacity);
+    //     m_long_attributes[get_simplex_dimension(d)].reserve(capacity);
+    //     m_double_attributes[get_simplex_dimension(d)].reserve(capacity);
+    //     // m_rational_attributes[get_simplex_dimension(d)].reserve(capacity);
+    // }
 }
 
 TetMesh::TetMesh()

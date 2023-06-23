@@ -1,10 +1,10 @@
 #pragma once
+
 #include "Accessor.hpp"
 #include "MeshAttributes.hpp"
 #include "Primitive.hpp"
-#include "Tuple.h"
+#include "Tuple.hpp"
 
-using namespace Eigen;
 namespace wmtk {
 class Mesh
 {
@@ -83,7 +83,7 @@ protected:
      *
      * @param top_d the top dimensional simplex
      */
-    void mesh_attributes_reserve(const PrimitiveType& top_d);
+    void mesh_attributes_reserve(const PrimitiveType& top_d, long capacity);
 
 public:
     /**

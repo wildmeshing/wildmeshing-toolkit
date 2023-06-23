@@ -8,10 +8,12 @@ set(SRC_FILES
     Mesh.hpp
     MeshAttributes.cpp
     MeshAttributes.hpp
+    TriMesh.cpp
+    TriMesh.hpp
     Primitive.hpp
-    Tuple.h
-    utils/trimesh_topology_initialization.h
-    utils/trimesh_topology_initialization.cpp
+    Tuple.hpp
 )
-message(DEBUG "SRC_FILES: ${SRC_FILES}")
-target_sources(wildmeshing_toolkit PRIVATE ${SOURCES})
+target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
+
+add_subdirectory(utils)
+add_subdirectory(autogen)

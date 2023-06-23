@@ -1,5 +1,7 @@
-#include <Mesh.hpp>
-using namespace Eigen;
+#pragma once
+
+#include "Mesh.hpp"
+
 namespace wmtk {
 class TriMesh : public Mesh
 {

@@ -1,8 +1,9 @@
 #pragma once
 
-#include <Eigen/Dense>
 #include "AttributeHandle.hpp"
-#include "Tuple.h"
+#include "Tuple.hpp"
+
+#include <Eigen/Dense>
 
 namespace wmtk {
 class Mesh;
@@ -44,4 +45,3 @@ private:
 template <typename T>
 Accessor(Mesh& mesh, const MeshAttributeHandle<T>&) -> Accessor<T>;
 } // namespace wmtk
-

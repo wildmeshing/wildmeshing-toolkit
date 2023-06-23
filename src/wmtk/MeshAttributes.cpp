@@ -1,4 +1,3 @@
-#pragma once
 #include "MeshAttributes.hpp"
 
 #include <cassert>
@@ -14,7 +13,6 @@ template <typename T>
 AttributeHandle MeshAttributes<T>::register_attribute(const std::string& name, long size)
 {
     assert(m_handles.find(name) == m_handles.end());
-    assert(!is_in_protect());
 
     AttributeHandle handle;
     handle.stride = size;

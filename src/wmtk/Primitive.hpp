@@ -1,9 +1,12 @@
 #pragma once
+
+#include <cassert>
+
 namespace wmtk {
 
 enum class PrimitiveType { Vertex, Edge, Face, Tetrahedron };
 
-constexpr size_t get_simplex_dimension(PrimitiveType t)
+constexpr long get_simplex_dimension(PrimitiveType t)
 {
     switch (t) {
     case PrimitiveType::Vertex: return 0;
