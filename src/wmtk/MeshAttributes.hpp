@@ -4,11 +4,13 @@
 
 #include <map>
 #include <vector>
-#include "Accessor.hpp"
 #include "AttributeHandle.hpp"
 
 namespace wmtk {
 
+class Mesh;
+template <typename T>
+class Accessor;
 
 template <typename T>
 class MeshAttributes
@@ -23,13 +25,10 @@ class MeshAttributes
 
     AttributeHandle register_attribute(const std::string& name, long size);
 
-    Accessor<T> register_attribute_with_accessor(const std::string& name, long size);
-
 
     long size() const;
-    void resize(const long size);
+    void reserve(const long size);
 
-    Accessor<T> create_accessor(const AttributeHandle&);
 
 protected:
     AttributeHandle attribute_handle(const std::string& name) const;
@@ -49,4 +48,3 @@ private:
 
 
 } // namespace wmtk
-#include "MeshAttributes_impl.hpp"

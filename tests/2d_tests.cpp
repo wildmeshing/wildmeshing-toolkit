@@ -1,16 +1,14 @@
-
-#include <wmtk/Mesh.hpp>
-
-#include <igl/read_triangle_mesh.h>
+#include <iostream>
 #include <stdlib.h>
+#include <catch2/catch.hpp>
+#include <igl/read_triangle_mesh.h>
+#include <wmtk/Mesh.hpp>
 // #include <wmtk/operations/TriMeshConsolidateOperation.h>
 // #include <wmtk/operations/TriMeshEdgeCollapseOperation.h>
 // #include <wmtk/operations/TriMeshEdgeSplitOperation.h>
 // #include <wmtk/operations/TriMeshEdgeSwapOperation.h>
 // #include <wmtk/operations/TriMeshVertexSmoothOperation.h>
-#include <catch2/catch.hpp>
-#include <highfive/H5File.hpp>
-#include <iostream>
+// #include <highfive/H5File.hpp>
 // #include <wmtk/operations/TriMeshOperationShim.hpp>
 
 
@@ -46,39 +44,39 @@ TEST_CASE("load mesh and create TriMesh", "[test_mesh_creation]")
     // }
 }
 
-// TEST_CASE("test generate tuples with 1 triangle", "[test_tuple_generation]")
-// {
-//     TriMesh m;
-//     std::vector<std::array<size_t, 3>> tris = {{0, 1, 2}};
-//     m.initialize(3, tris);
+TEST_CASE("test generate tuples with 1 triangle", "[test_tuple_generation]")
+{
+    TriMesh m;
+    // std::vector<std::array<size_t, 3>> tris = {{0, 1, 2}};
+    // m.initialize(3, tris);
 
-//     SECTION("test generation from vertics")
-//     {
-//         auto vertices_tuples = m.get_all_of(POINTS);
-//         REQUIRE(vertices_tuples.size() == 3);
-//         REQUIRE(vertices_tuples[0].vid(m) == 0);
-//         REQUIRE(vertices_tuples[1].vid(m) == 1);
-//         REQUIRE(vertices_tuples[2].vid(m) == 2);
-//     }
-//     SECTION("test generation from faces")
-//     {
-//         auto faces_tuples = m.get_faces();
-//         REQUIRE(faces_tuples.size() == 1);
+    // SECTION("test generation from vertics")
+    // {
+    //     auto vertices_tuples = m.get_all_of(POINTS);
+    //     REQUIRE(vertices_tuples.size() == 3);
+    //     REQUIRE(vertices_tuples[0].vid(m) == 0);
+    //     REQUIRE(vertices_tuples[1].vid(m) == 1);
+    //     REQUIRE(vertices_tuples[2].vid(m) == 2);
+    // }
+    // SECTION("test generation from faces")
+    // {
+    //     auto faces_tuples = m.get_faces();
+    //     REQUIRE(faces_tuples.size() == 1);
 
-//         // to test vid initialized correctly
-//         REQUIRE(faces_tuples[0].vid(m) == tris[0][0]);
+    //     // to test vid initialized correctly
+    //     REQUIRE(faces_tuples[0].vid(m) == tris[0][0]);
 
-//         // // to test the fid is a triangle touching this vertex
-//         // std::vector<size_t> tris = m_vertex_connectivity[faces_tuples[0].vid(*this)].m_conn_tris;
-//         // REQUIRE(std::find(tris.begin(), tris.end(), faces_tuples[0].fid(*this)) != tris.end());
-//     }
+    //     // // to test the fid is a triangle touching this vertex
+    //     // std::vector<size_t> tris = m_vertex_connectivity[faces_tuples[0].vid(*this)].m_conn_tris;
+    //     // REQUIRE(std::find(tris.begin(), tris.end(), faces_tuples[0].fid(*this)) != tris.end());
+    // }
 
-//     SECTION("test generation from edges")
-//     {
-//         auto edges_tuples = m.get_edges();
-//         REQUIRE(edges_tuples.size() == 3);
-//     }
-// }
+    // SECTION("test generation from edges")
+    // {
+    //     auto edges_tuples = m.get_edges();
+    //     REQUIRE(edges_tuples.size() == 3);
+    // }
+}
 
 // TEST_CASE("test generate tuples with 2 triangle", "[test_tuple_generation]")
 // {

@@ -7,11 +7,11 @@ Mesh::Mesh() = default;
 Mesh::~Mesh() = default;
 
 TriMesh::TriMesh()
-    : m_vf_accessor(register_attribute_with_accessor<long>("m_vf", PrimitiveType::Vertex, 1))
-    , m_ef_accessor(register_attribute_with_accessor<long>("m_ef", PrimitiveType::Edge, 1))
-    , m_fv_accessor(register_attribute_with_accessor<long>("m_fv", PrimitiveType::Face, 3))
-    , m_fe_accessor(register_attribute_with_accessor<long>("m_fe", PrimitiveType::Face, 3))
-    , m_ff_accessor(register_attribute_with_accessor<long>("m_ff", PrimitiveType::Face, 3))
+    : m_vf_handle(register_attribute<long>("m_vf", PrimitiveType::Vertex, 1))
+    , m_ef_handle(register_attribute<long>("m_ef", PrimitiveType::Edge, 1))
+    , m_fv_handle(register_attribute<long>("m_fv", PrimitiveType::Face, 3))
+    , m_fe_handle(register_attribute<long>("m_fe", PrimitiveType::Face, 3))
+    , m_ff_handle(register_attribute<long>("m_ff", PrimitiveType::Face, 3))
 {}
 
 void TriMesh::split_edge(const Tuple& t) {}
@@ -33,13 +33,13 @@ bool TriMesh::is_ccw(const Tuple& tuple) const
 }
 
 TetMesh::TetMesh()
-    : m_vt_accessor(register_attribute_with_accessor<long>("m_vt", PrimitiveType::Vertex, 1))
-    , m_et_accessor(register_attribute_with_accessor<long>("m_et", PrimitiveType::Edge, 1))
-    , m_ft_accessor(register_attribute_with_accessor<long>("m_ft", PrimitiveType::Face, 1))
-    , m_tv_accessor(register_attribute_with_accessor<long>("m_tv", PrimitiveType::Tetrahedron, 4))
-    , m_te_accessor(register_attribute_with_accessor<long>("m_te", PrimitiveType::Tetrahedron, 6))
-    , m_tf_accessor(register_attribute_with_accessor<long>("m_tf", PrimitiveType::Tetrahedron, 4))
-    , m_tt_accessor(register_attribute_with_accessor<long>("m_tt", PrimitiveType::Tetrahedron, 4))
+    : m_vt_handle(register_attribute<long>("m_vt", PrimitiveType::Vertex, 1))
+    , m_et_handle(register_attribute<long>("m_et", PrimitiveType::Edge, 1))
+    , m_ft_handle(register_attribute<long>("m_ft", PrimitiveType::Face, 1))
+    , m_tv_handle(register_attribute<long>("m_tv", PrimitiveType::Tetrahedron, 4))
+    , m_te_handle(register_attribute<long>("m_te", PrimitiveType::Tetrahedron, 6))
+    , m_tf_handle(register_attribute<long>("m_tf", PrimitiveType::Tetrahedron, 4))
+    , m_tt_handle(register_attribute<long>("m_tt", PrimitiveType::Tetrahedron, 4))
 {}
 
 long TetMesh::id(const Tuple& tuple, const PrimitiveType& type) const
@@ -58,13 +58,14 @@ bool TetMesh::is_ccw(const Tuple& tuple) const
 }
 
 void trimesh_topology_initialization(
-    Eigen::Ref<const RowVectors3l>& F,
-    Eigen::Ref<const RowVectors3l>& FE,
-    Eigen::Ref<const RowVectors3l>& FF,
-    Eigen::Ref<const VectorXl>& VF,
-    Eigen::Ref<const VectorXl>& EF)
+    Eigen::Ref<const Mesh::RowVectors3l> F,
+    Eigen::Ref<Mesh::RowVectors3l> FV,
+    Eigen::Ref<Mesh::RowVectors3l> FE,
+    Eigen::Ref<Mesh::RowVectors3l> FF,
+    Eigen::Ref<Mesh::VectorXl> VF,
+    Eigen::Ref<Mesh::VectorXl> EF)
 {
-    std::vector<std::vector<long>> TTT;
+    std::vector<std::vector<long>> TTT;  
     FV.resize(F.rows(), F.cols());
     FE.resize(F.rows(), F.cols());
     FF.resize(F.rows(), F.cols());
@@ -74,8 +75,8 @@ void trimesh_topology_initialization(
     for (int f = 0; f < F.rows(); ++f) {
         for (int i = 0; i < F.cols(); ++i) {
             // v1 v2 f ei
-            long v1 = std::static_cast<long>(F(f, i));
-            long v2 = std::static_cast<long>(F(f, (i + 1) % F.cols()));
+            long v1 = F(f, i);
+            long v2 = F(f, (i + 1) % F.cols());
             if (v1 > v2) std::swap(v1, v2);
             std::vector<long> r(4);
             r[0] = v1;
@@ -83,7 +84,7 @@ void trimesh_topology_initialization(
             r[2] = f;
             r[3] = i;
             TTT[f] = r;
-            FV(f, i) = v1;
+            //FV(f, i) = v1;
         }
     }
     std::sort(TTT.begin(), TTT.end());
@@ -127,8 +128,8 @@ void trimesh_topology_initialization(
 }
 
 void tetmesh_topology_initialization(
-    Eigen::Ref<const RowVectors3d>& V,
-    Eigen::Ref<const RowVectors4l>& F,
+    Eigen::Ref<const Mesh::RowVectors3d> V,
+    Eigen::Ref<const Mesh::RowVectors4l> F,
     TetMesh& mesh)
 {}
 } // namespace wmtk
