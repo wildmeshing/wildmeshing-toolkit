@@ -1,4 +1,4 @@
-#include <Mesh.hpp>
+#include <TriMesh.hpp>
 
 namespace wmtk {
 TriMesh::TriMesh()
@@ -68,4 +68,52 @@ bool TriMesh::is_ccw(const Tuple& tuple) const override
         return false;
 }
 
+void TriMesh::initialize(
+    Eigen::Ref<Mesh::RowVectors3l> FV,
+    Eigen::Ref<Mesh::RowVectors3l> FE,
+    Eigen::Ref<Mesh::RowVectors3l> FF,
+    Eigen::Ref<Mesh::VectorXl> VF,
+    Eigen::Ref<Mesh::VectorXl> EF)
+{
+    // reserve memory for attributes
+    mesh_attribute_reserve(PrimitiveType::Triangle);
+    // get Accessors for topology
+    Accessor<long> fv_accessor = create_accessor<long>(m_fv_handle);
+    Accessor<long> fe_accessor = create_accessor<long>(m_fe_handle);
+    Accessor<long> ff_accessor = create_accessor<long>(m_ff_handle);
+    Accessor<long> vf_accessor = create_accessor<long>(m_vf_handle);
+    Accessor<long> ef_accessor = create_accessor<long>(m_ef_handle);
+    // iterate over the matrices and fill attributes
+    // m_fv
+    for (long i = 0; i < FV.rows(); ++i) {
+        for (long j = 0; j < FV.cols(); ++j) {
+            long& v = fv_accessor.scalar_attribute(i * 3 + j);
+            v = FV(i, j);
+        }
+    }
+    // m_fe
+    for (long i = 0; i < FE.rows(); ++i) {
+        for (long j = 0; j < FE.cols(); ++j) {
+            long& e = fe_accessor.scalar_attribute(i * 3 + j);
+            e = FE(i, j);
+        }
+    }
+    // m_ff
+    for (long i = 0; i < FF.rows(); ++i) {
+        for (long j = 0; j < FF.cols(); ++j) {
+            long& f = ff_accessor.scalar_attribute(i * 3 + j);
+            f = FF(i, j);
+        }
+    }
+    // m_vf
+    for (long i = 0; i < VF.rows(); ++i) {
+        long& f = vf_accessor.scalar_attribute(i);
+        f = VF(i);
+    }
+    // m_ef
+    for (long i = 0; i < EF.rows(); ++i) {
+        long& f = ef_accessor.scalar_attribute(i);
+        f = EF(i);
+    }
+}
 } // namespace wmtk
