@@ -1,6 +1,6 @@
 #include <jse/jse.h>
-#include <wmtk/components/input/input.h>
-#include <wmtk/components/mesh_info/mesh_info.h>
+#include <wmtk_components/input/input.h>
+#include <wmtk_components/mesh_info/mesh_info.h>
 #include <CLI/CLI.hpp>
 #include <filesystem>
 #include <nlohmann/json.hpp>
