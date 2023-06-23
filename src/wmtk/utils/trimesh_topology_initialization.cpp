@@ -9,69 +9,84 @@ void trimesh_topology_initialization(
     Eigen::Ref<Mesh::VectorXl> VF,
     Eigen::Ref<Mesh::VectorXl> EF)
 {
+    // Make sure there are 3 columns
     assert(F.cols()==3);
+
+    char iv0 = 0;
+    char iv1 = 1;
+    char it = 2;
+    char ii = 3;
+
     std::vector<std::vector<long>> TTT;
-    FE.resize(F.rows(), 3);
-    FF.resize(F.rows(), 3);
 
     long vertex_count = F.coeffWise().max();
-    VF.resize(vertex_count, 1, -1);
     
-    TTT.resize(F.rows(), std::vector<long>(4));
-    for (int f = 0; f < F.rows(); ++f) {
-        for (int i = 0; i < F.cols(); ++i) {
-            // v1 v2 f ei
-            long v1 = F(f, i);
-            long v2 = F(f, (i + 1) % F.cols());
-            if (v1 > v2) std::swap(v1, v2);
-            std::vector<long> r(4);
-            r[0] = v1;
-            r[1] = v2;
-            r[2] = f;
-            r[3] = i;
-            TTT[f] = r;
-            // FV(f, i) = v1;
+    // Build a table for finding Faces and populate the corresponding
+    // topology relations
+    {
+        TTT.resize(T.rows()*4);
+        for (int t = 0; t < T.rows(); ++t) {
+            for (int i = 0; i < 3; ++i) {
+                // v1 v2 v3 f ei
+                long x = std::static_cast<long>(auto_2d_edge[i][0]);
+                long y = std::static_cast<long>(auto_2d_edge[i][1]);
+                if (x > y) swap(x, y);
+                
+                std::vector<long> r(4);
+                r[iv0] = x;
+                r[iv1] = y;
+                r[it] = t;
+                r[ii] = i;
+                TTT[t*3+i] = r;
+            }
         }
-    }
-    std::sort(TTT.begin(), TTT.end());
+        std::sort(TTT.begin(), TTT.end());
 
-    // iterate over TTT to initialize topology
-    // assumption is the same edge is always next to each other in the sorted TTT
-    int unique_edges = 0;
-    long v01 = TTT[0][0];
-    long v02 = TTT[0][1];
-    long f0 = TTT[0][2];
-    long e0 = TTT[0][3];
-    FE(f0, e0) = unique_edges;
-    VF(v01, 0) = f0;
-    VF(v02, 0) = f0;
-    EF(unique_edges, 0) = f0;
-
-    for (int i = 1; i < TTT.size(); ++i) {
-        int va1 = TTT[i][0];
-        int va2 = TTT[i][1];
-        int fa = TTT[i][2];
-        int eia = TTT[i][3];
-
-        int vb1 = TTT[i - 1][0];
-        int vb2 = TTT[i - 1][1];
-        int fb = TTT[i - 1][2];
-        int eib = TTT[i - 1][3];
-        if (va1 == vb1 & va2 == vb2) {
-            // same edge
-            FF(fa, eia) = fb;
-            FF(fb, eib) = fa;
-            continue;
-        } else {
-            unique_edges++;
-            FE(fa, eia) = unique_edges;
-            VF(va1, 0) = fa;
-            VF(va2, 0) = fa;
-            EF(unique_edges, 0) = fa;
-            FF(fa, eia) = -1;
+        // VF
+        VF.resize(vertex_count,1);
+        for (int i = 0; i < F.rows(); ++i) {
+            for (int j = 0; j < 3; ++j) {
+                VT[F[i,j]] = i;
+            }
         }
+
+        // Compute FE, FF, EF
+        FE.resize(T.rows(), 3);
+        FF.resize(T.rows(), 3);
+        vector<long> EF_temp;
+
+        // iterate over TTT to find faces
+        // for every entry check if the next is the same, and update the connectivity accordingly
+
+        for (int i = 0; i < TTT.size(); ++i) {
+            if ((i==(TTT.size()-1)) || (TTT[i][0] != TTT[i+1][0]) || (TTT[i][1] != TTT[i+1][1]))
+            {
+                // If the next tuple is empty, then this is a boundary edge
+                EF_temp.push_back(TTT[i][it]);
+                
+                TT(TTT[i][it],TTT[i][ii]) = -1;
+                TF(TTT[i][it],TTT[i][ii]) = EF_temp.size()-1;
+            }
+            else
+            {
+                // this is an internal edge, update both sides           
+                EF_temp.push_back(TTT[i][it]);
+                
+                TT(TTT[i][it],TTT[i][ii]) = TTT[i+1][it];
+                TF(TTT[i][it],TTT[i][ii]) = EF_temp.size()-1;
+                
+                TT(TTT[i+1][it],TTT[i+1][ii]) = TTT[i][it];
+                TF(TTT[i+1][it],TTT[i+1][ii]) = EF_temp.size()-1;
+
+                ++i; // skip the other entry
+            }
+        }
+
+        // copy EF
+        EF.resize(EF_temp.size());
+        for (long i=0; i<EF_temp.size();++i)
+            EF(i) = EF_temp(i);
     }
 }
-
 
 } // namespace wmtk
