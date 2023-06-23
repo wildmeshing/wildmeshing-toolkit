@@ -69,11 +69,11 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # ###############################################################################
 
 # Core library
-add_library(wildmeshing_toolkit src/wmtk/Mesh.cpp)
+add_library(wildmeshing_toolkit)
 add_library(wmtk::toolkit ALIAS wildmeshing_toolkit)
 add_subdirectory(src/wmtk)
 
-add_library(wildmeshing_components src/wmtk/Mesh.cpp)
+add_library(wildmeshing_components)
 add_library(wmtk::components ALIAS wildmeshing_components)
 add_subdirectory(components/wmtk_components)
 
