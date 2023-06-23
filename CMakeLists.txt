@@ -70,9 +70,9 @@ set(SRC_FILES
     src/wmtk/Mesh.cpp
     src/wmtk/Mesh.hpp 
     src/wmtk/MeshAttributes.hpp 
-    src/wmtk/MeshAttributes_impl.hpp 
+    src/wmtk/MeshAttributes.cpp 
     src/wmtk/Accessor.hpp 
-    src/wmtk/Accessor_impl.hpp)
+    src/wmtk/Accessor.cpp)
 message(DEBUG "SRC_FILES: ${SRC_FILES}")
 
 add_library(wildmeshing_toolkit "${SRC_FILES}")

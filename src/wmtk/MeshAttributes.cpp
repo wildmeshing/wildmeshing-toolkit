@@ -36,18 +36,7 @@ AttributeHandle MeshAttributes<T>::register_attribute(const std::string& name, l
 
     return handle;
 }
-template <typename T>
-Accessor<T> MeshAttributes<T>::create_accessor(const AttributeHandle& handle)
-{
-    return Accessor<T>(*this, handle);
-}
 
-template <typename T>
-Accessor<T> MeshAttributes<T>::register_attribute_with_accessor(const std::string& name, long size)
-{
-    auto handle = register_attribute(name, size);
-    return create_accessor(handle);
-}
 
 template <typename T>
 AttributeHandle MeshAttributes<T>::attribute_handle(const std::string& name) const
@@ -106,7 +95,7 @@ long MeshAttributes<T>::size() const
 }
 
 template <typename T>
-void MeshAttributes<T>::resize(const long size)
+void MeshAttributes<T>::reserve(const long size)
 {
     auto& attr = m_attributes;
 
