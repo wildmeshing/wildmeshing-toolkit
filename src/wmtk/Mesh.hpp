@@ -228,13 +228,14 @@ template <typename T>
 MeshAttributeHandle<T>
 Mesh::register_attribute(const std::string& name, PrimitiveType ptype, long size)
 {
-    return MeshAttributeHandle<T>{
-        .m_base_handle = get_mesh_attributes<T>(ptype).register_attribute(name, size),
-        .m_primitive_type = ptype};
-    // MeshAttributeHandle<T> r;
-    // r.m_base_handle = get_mesh_attributes<T>(ptype).register_attribute(name, size),
-    // r.m_primitive_type = ptype;
-    // return r;
+    //return MeshAttributeHandle<T>{
+    //    .m_base_handle = get_mesh_attributes<T>(ptype).register_attribute(name, size),
+    //    .m_primitive_type = ptype};
+
+     MeshAttributeHandle<T> r;
+     r.m_base_handle = get_mesh_attributes<T>(ptype).register_attribute(name, size),
+     r.m_primitive_type = ptype;
+     return r;
 }
 /**
  * @brief given the mesh connectivity in matrix format, initialize the topology data used for Mesh

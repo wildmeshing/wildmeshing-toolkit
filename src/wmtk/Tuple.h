@@ -5,7 +5,6 @@
 #include <optional>
 #include <string>
 #include <tuple>
-#include <wmtk/utils/Logger.hpp>
 #include "Primitive.hpp"
 
 namespace wmtk {
