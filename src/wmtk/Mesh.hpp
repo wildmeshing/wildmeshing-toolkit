@@ -15,8 +15,10 @@ public:
     using VectorXl = Eigen::Matrix<long, Eigen::Dynamic, 1>;
     using RowVectors4l = Eigen::Matrix<long, Eigen::Dynamic, 4>;
     using RowVectors3d = Eigen::Matrix<double, Eigen::Dynamic, 3>;
+
     template <typename T>
     friend class Accessor;
+
     Mesh();
     virtual ~Mesh();
 
@@ -35,17 +37,13 @@ public:
     virtual void split_edge(const Tuple& t) = 0;
     virtual void collapse_edge(const Tuple& t) = 0;
 
-    /**
-     * @brief a duplicate of Tuple::switch_tuple function
-     */
-    virtual Tuple switch_tuple(const PrimitiveType& type, const Tuple& t) const = 0;
-
     AttributeHandle
     register_attribute(const std::string& name, const PrimitiveType& type, long size);
 
     template <typename T>
     MeshAttributeHandle<T>
     register_attribute(const std::string& name, PrimitiveType type, long size);
+
     template <typename T>
     MeshAttributeHandle<T> get_attribute_handle(
         const std::string& name); // block standard topology tools
@@ -56,8 +54,6 @@ public:
     template <typename T>
     const Accessor<T> create_accessor(const MeshAttributeHandle<T>& handle) const;
 
-    long gid(const PrimitiveType& type);
-
 
 protected:
     std::vector<MeshAttributes<char>> m_char_attributes;
@@ -66,14 +62,22 @@ protected:
     // std::vector<MeshAttributes<Rational>> m_rational_attributes;
     template <typename T>
     MeshAttributes<T>& get_mesh_attributes(PrimitiveType ptype);
+
     template <typename T>
     MeshAttributes<T>& get_mesh_attributes(const MeshAttributeHandle<T>& handle);
+
     template <typename T>
     const MeshAttributes<T>& get_mesh_attributes(PrimitiveType ptype) const;
+
     template <typename T>
     const MeshAttributes<T>& get_mesh_attributes(const MeshAttributeHandle<T>& handle) const;
 
     Tuple tuple_from_cell(long cid) const;
+
+    virtual std::vector<Tuple> get_vertices() const = 0;
+    virtual std::vector<Tuple> get_edges() const = 0;
+    virtual std::vector<Tuple> get_faces() const = 0;
+    virtual std::vector<Tuple> get_tetrahedrons() const = 0;
 
 public:
     /**
@@ -122,7 +126,7 @@ public:
      * @return true if is valid
      * @return false
      */
-    bool is_valid(const Tuple& tuple, const PrimitiveType& type) const;
+    bool is_valid(const Tuple& tuple) const;
 
 private:
     std::vector<long> m_capacities;
@@ -156,6 +160,11 @@ public:
         Eigen::Ref<const VectorXl>& VF,
         Eigen::Ref<const VectorXl>& EF,
         Eigen::Ref<const RowVectors4l>& seam) const;
+
+    std::vector<Tuple> get_vertices() const override { throw "not implemented"; }
+    std::vector<Tuple> get_edges() const override { throw "not implemented"; }
+    std::vector<Tuple> get_faces() const override { throw "not implemented"; }
+    std::vector<Tuple> get_tetrahedrons() const override { throw "not implemented"; }
 };
 
 class TetMesh : public Mesh
