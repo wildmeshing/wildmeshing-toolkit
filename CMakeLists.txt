@@ -67,15 +67,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # ###############################################################################
 
 # Core library
-set(SRC_FILES
-    src/wmtk/Mesh.cpp
-    src/wmtk/Mesh.hpp
-    src/wmtk/MeshAttributes.hpp
-    src/wmtk/MeshAttributes.cpp
-    src/wmtk/Accessor.hpp
-    src/wmtk/Accessor.cpp)
-
-add_library(wildmeshing_toolkit "${SRC_FILES}")
+add_library(wildmeshing_toolkit src/wmtk/Mesh.cpp)
 add_library(wmtk::toolkit ALIAS wildmeshing_toolkit)
 add_subdirectory(src/wmtk)
 
