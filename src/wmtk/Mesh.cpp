@@ -58,13 +58,14 @@ bool TetMesh::is_ccw(const Tuple& tuple) const
 }
 
 void trimesh_topology_initialization(
-    Eigen::Ref<const RowVectors3l>& F,
-    Eigen::Ref<const RowVectors3l>& FE,
-    Eigen::Ref<const RowVectors3l>& FF,
-    Eigen::Ref<const VectorXl>& VF,
-    Eigen::Ref<const VectorXl>& EF)
+    Eigen::Ref<const RowVectors3l> F,
+    Eigen::Ref<RowVectors3l> FV,
+    Eigen::Ref<RowVectors3l> FE,
+    Eigen::Ref<RowVectors3l> FF,
+    Eigen::Ref<VectorXl> VF,
+    Eigen::Ref<VectorXl> EF)
 {
-    std::vector<std::vector<long>> TTT;
+    std::vector<std::vector<long>> TTT;  
     FV.resize(F.rows(), F.cols());
     FE.resize(F.rows(), F.cols());
     FF.resize(F.rows(), F.cols());
@@ -74,8 +75,8 @@ void trimesh_topology_initialization(
     for (int f = 0; f < F.rows(); ++f) {
         for (int i = 0; i < F.cols(); ++i) {
             // v1 v2 f ei
-            long v1 = std::static_cast<long>(F(f, i));
-            long v2 = std::static_cast<long>(F(f, (i + 1) % F.cols()));
+            long v1 = F(f, i);
+            long v2 = F(f, (i + 1) % F.cols());
             if (v1 > v2) std::swap(v1, v2);
             std::vector<long> r(4);
             r[0] = v1;
