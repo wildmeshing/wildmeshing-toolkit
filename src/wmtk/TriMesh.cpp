@@ -1,5 +1,7 @@
 #include "TriMesh.hpp"
 
+#include <wmtk/utils/trimesh_topology_initialization.h>
+
 namespace wmtk {
 TriMesh::TriMesh()
     : m_vf_handle(register_attribute<long>("m_vf", PrimitiveType::Vertex, 1))
@@ -134,12 +136,25 @@ void TriMesh::initialize(
     }
 }
 
+void TriMesh::initialize(Eigen::Ref<const RowVectors3l> F)
+{
+    RowVectors3l FE;
+    RowVectors3l FF;
+    VectorXl VF;
+    VectorXl EF;
+
+    trimesh_topology_initialization(F, FE, FF, VF, EF);
+
+    initialize(F, FE, FF, VF, EF);
+}
+
 std::vector<Tuple> TriMesh::get_all(const PrimitiveType& type) const
 {
     switch (type) {
     case PrimitiveType::Vertex: return get_vertices();
     case PrimitiveType::Edge: return get_edges(); break;
     case PrimitiveType::Face: return get_faces(); break;
+    case PrimitiveType::Tetrahedron:
     default: throw std::runtime_error("Invalid primitive type");
     }
 }

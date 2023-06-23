@@ -37,6 +37,8 @@ public:
         Eigen::Ref<const RowVectors3l> FF,
         Eigen::Ref<const VectorXl> VF,
         Eigen::Ref<const VectorXl> EF);
+
+    void initialize(Eigen::Ref<const RowVectors3l> F);
 };
 
 } // namespace wmtk

@@ -82,4 +82,11 @@ bool Mesh::is_valid(const Tuple& tuple) const
 }
 
 
+template MeshAttributeHandle<char>
+Mesh::register_attribute(const std::string&, PrimitiveType, long);
+template MeshAttributeHandle<long>
+Mesh::register_attribute(const std::string&, PrimitiveType, long);
+template MeshAttributeHandle<double>
+Mesh::register_attribute(const std::string&, PrimitiveType, long);
+
 } // namespace wmtk

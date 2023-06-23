@@ -50,8 +50,6 @@ public:
     template <typename T>
     const Accessor<T> create_accessor(const MeshAttributeHandle<T>& handle) const;
 
-    long capacity(const PrimitiveType& type) const;
-
 protected:
     std::vector<MeshAttributes<char>> m_char_attributes;
     std::vector<MeshAttributes<long>> m_long_attributes;
