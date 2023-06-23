@@ -77,10 +77,12 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
 bool TriMesh::is_ccw(const Tuple& tuple) const
 {
     throw "not implemeted";
-    // if (m_fv[tuple.m_global_cid * 3 + (tuple.m_local_eid + 1) % 3] == id(tuple, 0))
-    //     return true;
-    // else
-    //     return false;
+    Accessor<long> fv_accessor = create_accessor<long>(m_fv_handle);
+    auto fv = fv_accessor.vector_attribute(tuple);
+    if (fv((tuple.m_local_eid + 1) % 3) == id(tuple, PrimitiveType::Vertex))
+        return true;
+    else
+        return false;
 }
 
 void TriMesh::initialize(
@@ -102,21 +104,21 @@ void TriMesh::initialize(
     // m_fv
     for (long i = 0; i < FV.rows(); ++i) {
         for (long j = 0; j < FV.cols(); ++j) {
-            long& v = fv_accessor.scalar_attribute(i * 3 + j);
+            long& v = fv_accessor.vector_attribute(i)(j);
             v = FV(i, j);
         }
     }
     // m_fe
     for (long i = 0; i < FE.rows(); ++i) {
         for (long j = 0; j < FE.cols(); ++j) {
-            long& e = fe_accessor.scalar_attribute(i * 3 + j);
+            long& e = fe_accessor.vector_attribute(i)(j);
             e = FE(i, j);
         }
     }
     // m_ff
     for (long i = 0; i < FF.rows(); ++i) {
         for (long j = 0; j < FF.cols(); ++j) {
-            long& f = ff_accessor.scalar_attribute(i * 3 + j);
+            long& f = ff_accessor.vector_attribute(i)(j);
             f = FF(i, j);
         }
     }
