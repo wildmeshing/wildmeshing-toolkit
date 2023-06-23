@@ -8,7 +8,6 @@ using namespace Eigen;
 namespace wmtk {
 
 
-
 class Mesh
 {
 public:
@@ -26,7 +25,7 @@ public:
      * @param type the type of tuple, can be vertex/edge/triangle/tetrahedron
      * @return vector of Tuples referring to each type
      */
-    std::vector<Tuple> get_all_of(const PrimitiveType& type) const;
+    std::vector<Tuple> get_all(const PrimitiveType& type) const;
 
     /**
      * Removes all unset space
@@ -37,44 +36,12 @@ public:
     virtual void collapse_edge(const Tuple& t) = 0;
 
     /**
-     * @brief verify the connectivity validity of the mesh
-     * @note a valid mesh can have cells that are is_removed == true
+     * @brief a duplicate of Tuple::switch_tuple function
      */
-    // bool check_mesh_connectivity_validity() const;
+    virtual Tuple switch_tuple(const PrimitiveType& type, const Tuple& t) const = 0;
 
-    ///**
-    // * @brief Get the incident vertices for a triangle
-    // *
-    // * @param t tuple pointing to an face
-    // * @return tuples of incident vertices
-    // */
-    // std::array<Tuple, 3> oriented_tri_vertices(const Tuple& t) const;
-
-    /**
-     * @brief Get the incident vertices for a triangle
-     *
-     * @param t tuple pointing to an face
-     * @return global vids of incident vertices
-     */
-    std::array<long, 3> oriented_tri_vids(const Tuple& t) const;
-
-    ///**
-    // * @brief perform the given function for each face
-    // *
-    // */
-    // void for_each_face(const std::function<void(const Tuple&)>&);
-
-    ///**
-    // * @brief perform the given function for each edge
-    // *
-    // */
-    // void for_each_edge(const std::function<void(const Tuple&)>&);
-
-    ///**
-    // * @brief perform the given function for each vertex
-    // *
-    // */
-    // void for_each_vertex(const std::function<void(const Tuple&)>&);
+    AttributeHandle
+    register_attribute(const std::string& name, const PrimitiveType& type, long size);
 
     template <typename T>
     MeshAttributeHandle<T>
@@ -106,12 +73,7 @@ protected:
     template <typename T>
     const MeshAttributes<T>& get_mesh_attributes(const MeshAttributeHandle<T>& handle) const;
 
-
-    /**
-     * Generate the vertex connectivity of the mesh using the existing triangle structure
-     * @param n_vertices Input number of vertices
-     */
-    virtual void build_vertex_connectivity(long n_vertices) = 0;
+    Tuple tuple_from_cell(long cid) const;
 
 public:
     /**
@@ -152,13 +114,16 @@ public:
      */
     long capacity(PrimitiveType type) const;
     /**
-     * @brief TODO this needs dimension?
+     * @brief
      *
-     * @param m
-     * @return true
+     * @param tuple the tuple to be checked
+     * @param type only the top cell dimension, other validity follows with assumption of
+     * manifoldness. 2->triangle, 3->tetrahedron
+     * @return true if is valid
      * @return false
      */
-    bool is_valid(const Tuple& tuple) const;
+    bool is_valid(const Tuple& tuple, const PrimitiveType& type) const;
+
 private:
     std::vector<long> m_capacities;
     // 0x1 == true = is active
@@ -181,9 +146,6 @@ public:
 
     void split_edge(const Tuple& t) override;
     void collapse_edge(const Tuple& t) override;
-
-    void build_vertex_connectivity(long n_vertices) override;
-
     long id(const Tuple& tuple, const PrimitiveType& type) const override;
     Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const override;
     bool is_ccw(const Tuple& tuple) const override;
@@ -223,20 +185,6 @@ public:
         Eigen::Ref<const VectorXl>& ET,
         Eigen::Ref<const VectorXl>& FT) const;
 };
-
-template <typename T>
-MeshAttributeHandle<T>
-Mesh::register_attribute(const std::string& name, PrimitiveType ptype, long size)
-{
-    //return MeshAttributeHandle<T>{
-    //    .m_base_handle = get_mesh_attributes<T>(ptype).register_attribute(name, size),
-    //    .m_primitive_type = ptype};
-
-     MeshAttributeHandle<T> r;
-     r.m_base_handle = get_mesh_attributes<T>(ptype).register_attribute(name, size),
-     r.m_primitive_type = ptype;
-     return r;
-}
 /**
  * @brief given the mesh connectivity in matrix format, initialize the topology data used for Mesh
  * @param F input connectivity in (N x 3) matrix format (igl convention)
@@ -246,7 +194,6 @@ Mesh::register_attribute(const std::string& name, PrimitiveType ptype, long size
  * @param VF one adjacent triangle (arbitrarily chosen) of every vertex in (N x 1) matrix format
  * @param EF one adjacent triangle (arbitrarily chosen) of every edge in (N x 1) matrix format
  */
-
 void trimesh_topology_initialization(
     Eigen::Ref<const Mesh::RowVectors3l> F,
     Eigen::Ref<Mesh::RowVectors3l> FV,
