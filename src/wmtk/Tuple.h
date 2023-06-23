@@ -45,7 +45,8 @@ public:
     Tuple(Tuple&& other) = default;
     Tuple& operator=(const Tuple& other) = default;
     Tuple& operator=(Tuple&& other) = default;
-    bool operator==(const Tuple& a, const Tuple& t)
+
+    friend bool operator==(const Tuple& a, const Tuple& t)
     {
         return (
             std::tie(a.m_local_vid, a.m_local_eid, a.m_local_fid, a.m_global_cid, a.m_hash) ==

@@ -6,7 +6,10 @@ Mesh::Mesh() = default;
 
 Mesh::~Mesh() = default;
 
-long Mesh::capacity(PrimitiveType type) const {}
+long Mesh::capacity(PrimitiveType type) const
+{
+    throw "not impemented";
+}
 
 template <typename T>
 MeshAttributeHandle<T>
@@ -82,8 +85,7 @@ bool Mesh::is_valid(const Tuple& tuple) const
 std::vector<Tuple> Mesh::get_all(const PrimitiveType& type) const
 {
     switch (type) {
-    case PrimitiveType::Vertex: return {
-        }
+    case PrimitiveType::Vertex: return get_vertices();
     case PrimitiveType::Edge: return get_edges(); break;
     case PrimitiveType::Face: return get_faces(); break;
     case PrimitiveType::Tetrahedron: return get_tetrahedrons(); break;
