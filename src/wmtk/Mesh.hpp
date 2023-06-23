@@ -25,7 +25,7 @@ public:
      * @param type the type of tuple, can be vertex/edge/triangle/tetrahedron
      * @return vector of Tuples referring to each type
      */
-    std::vector<Tuple> get_all_of(const PrimitiveType& type) const;
+    std::vector<Tuple> get_all(const PrimitiveType& type) const;
 
     /**
      * Removes all unset space
@@ -36,90 +36,44 @@ public:
     virtual void collapse_edge(const Tuple& t) = 0;
 
     /**
-     * @brief verify the connectivity validity of the mesh
-     * @note a valid mesh can have cells that are is_removed == true
+     * @brief a duplicate of Tuple::switch_tuple function
      */
-    // bool check_mesh_connectivity_validity() const;
-
-    ///**
-    // * @brief Get the incident vertices for a triangle
-    // *
-    // * @param t tuple pointing to an face
-    // * @return tuples of incident vertices
-    // */
-    // std::array<Tuple, 3> oriented_tri_vertices(const Tuple& t) const;
-
-    /**
-     * @brief Get the incident vertices for a triangle
-     *
-     * @param t tuple pointing to an face
-     * @return global vids of incident vertices
-     */
-    std::array<long, 3> oriented_tri_vids(const Tuple& t) const;
-
-    ///**
-    // * @brief perform the given function for each face
-    // *
-    // */
-    // void for_each_face(const std::function<void(const Tuple&)>&);
-
-    ///**
-    // * @brief perform the given function for each edge
-    // *
-    // */
-    // void for_each_edge(const std::function<void(const Tuple&)>&);
-
-    ///**
-    // * @brief perform the given function for each vertex
-    // *
-    // */
-    // void for_each_vertex(const std::function<void(const Tuple&)>&);
+    virtual Tuple switch_tuple(const PrimitiveType& type, const Tuple& t) const = 0;
 
     AttributeHandle
     register_attribute(const std::string& name, const PrimitiveType& type, long size);
 
     template <typename T>
-    T scalar_attribute(const AttributeHandle& handle, const PrimitiveType& type, const Tuple& tuble)
-        const;
+    MeshAttributeHandle<T>
+    register_attribute(const std::string& name, PrimitiveType type, long size);
+    template <typename T>
+    MeshAttributeHandle<T> get_attribute_handle(
+        const std::string& name); // block standard topology tools
+
+    template <typename T>
+    Accessor<T> create_accessor(const MeshAttributeHandle<T>& handle);
+
+    template <typename T>
+    const Accessor<T> create_accessor(const MeshAttributeHandle<T>& handle) const;
 
     long gid(const PrimitiveType& type);
 
-    template <typename T>
-    void register_attribute(const std::string& name, PrimitiveType ptype, long size);
-
-    template <typename T>
-    Accessor<T>
-    register_attribute_with_accessor(const std::string& name, PrimitiveType ptype, long size);
 
 protected:
-    std::vector<MeshAttributes<bool>> m_bool_attributes;
+    std::vector<MeshAttributes<char>> m_char_attributes;
     std::vector<MeshAttributes<long>> m_long_attributes;
     std::vector<MeshAttributes<double>> m_double_attributes;
     // std::vector<MeshAttributes<Rational>> m_rational_attributes;
     template <typename T>
-    MeshAttributes<T>& get_mesh_attributes(PrimitiveType ptype)
-    {
-        size_t index = get_simplex_dimension(ptype);
-        if constexpr (std::is_same_v<T, bool>) {
-            return m_bool_attributes[index];
-        }
-        if constexpr (std::is_same_v<T, long>) {
-            return m_long_attributes[index];
-        }
-        if constexpr (std::is_same_v<T, double>) {
-            return m_double_attributes[index];
-        }
-        // if constexpr(std::is_same_v<T,Rational>) {
-        //     return m_rational_attributes;
-        // }
-    }
+    MeshAttributes<T>& get_mesh_attributes(PrimitiveType ptype);
+    template <typename T>
+    MeshAttributes<T>& get_mesh_attributes(const MeshAttributeHandle<T>& handle);
+    template <typename T>
+    const MeshAttributes<T>& get_mesh_attributes(PrimitiveType ptype) const;
+    template <typename T>
+    const MeshAttributes<T>& get_mesh_attributes(const MeshAttributeHandle<T>& handle) const;
 
-
-    /**
-     * Generate the vertex connectivity of the mesh using the existing triangle structure
-     * @param n_vertices Input number of vertices
-     */
-    virtual void build_vertex_connectivity(long n_vertices) = 0;
+    Tuple tuple_from_cell(long cid) const;
 
 public:
     /**
@@ -158,36 +112,40 @@ public:
      * @param type
      * @return int
      */
-    int capacity(const PrimitiveType& type) const;
+    long capacity(PrimitiveType type) const;
     /**
-     * @brief TODO this needs dimension?
+     * @brief
      *
-     * @param m
-     * @return true
+     * @param tuple the tuple to be checked
+     * @param type only the top cell dimension, other validity follows with assumption of
+     * manifoldness. 2->triangle, 3->tetrahedron
+     * @return true if is valid
      * @return false
      */
-    bool is_valid(const Tuple& tuple) const;
+    bool is_valid(const Tuple& tuple, const PrimitiveType& type) const;
+
+private:
+    std::vector<long> m_capacities;
+    // 0x1 == true = is active
+    std::vector<MeshAttributeHandle<char>> m_flags;
 };
 
 
 class TriMesh : public Mesh
 {
 private:
-    Accessor<long> m_vf_accessor;
-    Accessor<long> m_ef_accessor;
+    MeshAttributeHandle<long> m_vf_handle;
+    MeshAttributeHandle<long> m_ef_handle;
 
-    Accessor<long> m_fv_accessor;
-    Accessor<long> m_fe_accessor;
-    Accessor<long> m_ff_accessor;
+    MeshAttributeHandle<long> m_fv_handle;
+    MeshAttributeHandle<long> m_fe_handle;
+    MeshAttributeHandle<long> m_ff_handle;
 
 public:
     TriMesh();
 
     void split_edge(const Tuple& t) override;
     void collapse_edge(const Tuple& t) override;
-
-    void build_vertex_connectivity(long n_vertices) override;
-
     long id(const Tuple& tuple, const PrimitiveType& type) const override;
     Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const override;
     bool is_ccw(const Tuple& tuple) const override;
@@ -203,14 +161,14 @@ public:
 class TetMesh : public Mesh
 {
 private:
-    Accessor<long> m_vt_accessor;
-    Accessor<long> m_et_accessor;
-    Accessor<long> m_ft_accessor;
+    MeshAttributeHandle<long> m_vt_handle;
+    MeshAttributeHandle<long> m_et_handle;
+    MeshAttributeHandle<long> m_ft_handle;
 
-    Accessor<long> m_tv_accessor;
-    Accessor<long> m_te_accessor;
-    Accessor<long> m_tf_accessor;
-    Accessor<long> m_tt_accessor;
+    MeshAttributeHandle<long> m_tv_handle;
+    MeshAttributeHandle<long> m_te_handle;
+    MeshAttributeHandle<long> m_tf_handle;
+    MeshAttributeHandle<long> m_tt_handle;
 
 public:
     TetMesh();
@@ -227,19 +185,6 @@ public:
         Eigen::Ref<const VectorXl>& ET,
         Eigen::Ref<const VectorXl>& FT) const;
 };
-
-template <typename T>
-void Mesh::register_attribute(const std::string& name, PrimitiveType ptype, long size)
-{
-    get_mesh_attributes<T>(ptype).register_attribute(name, size);
-}
-template <typename T>
-Accessor<T>
-Mesh::register_attribute_with_accessor(const std::string& name, PrimitiveType ptype, long size)
-{
-    return get_mesh_attributes<T>(ptype).register_attribute_with_accessor(name, size);
-}
-
 /**
  * @brief given the mesh connectivity in matrix format, initialize the topology data used for Mesh
  * @param F input connectivity in (N x 3) matrix format (igl convention)
@@ -249,17 +194,69 @@ Mesh::register_attribute_with_accessor(const std::string& name, PrimitiveType pt
  * @param VF one adjacent triangle (arbitrarily chosen) of every vertex in (N x 1) matrix format
  * @param EF one adjacent triangle (arbitrarily chosen) of every edge in (N x 1) matrix format
  */
-
 void trimesh_topology_initialization(
-    Eigen::Ref<const RowVectors3l> F,
-    Eigen::Ref<RowVectors3l> FV,
-    Eigen::Ref<RowVectors3l> FE,
-    Eigen::Ref<RowVectors3l> FF,
-    Eigen::Ref<VectorXl> VF,
-    Eigen::Ref<VectorXl> EF);
+    Eigen::Ref<const Mesh::RowVectors3l> F,
+    Eigen::Ref<Mesh::RowVectors3l> FV,
+    Eigen::Ref<Mesh::RowVectors3l> FE,
+    Eigen::Ref<Mesh::RowVectors3l> FF,
+    Eigen::Ref<Mesh::VectorXl> VF,
+    Eigen::Ref<Mesh::VectorXl> EF);
 
 void tetmesh_topology_initialization(
-    Eigen::Ref<const RowVectors3d>& V,
-    Eigen::Ref<const RowVectors4l>& F,
+    Eigen::Ref<const Mesh::RowVectors3d> V,
+    Eigen::Ref<const Mesh::RowVectors4l> F,
     TetMesh& mesh);
+
+template <typename T>
+Accessor<T> Mesh::create_accessor(const MeshAttributeHandle<T>& handle)
+{
+    return Accessor(*this, handle);
+}
+
+template <typename T>
+const MeshAttributes<T>& Mesh::get_mesh_attributes(PrimitiveType ptype) const
+{
+    size_t index = get_simplex_dimension(ptype);
+    if constexpr (std::is_same_v<T, char>) {
+        return m_char_attributes[index];
+    }
+    if constexpr (std::is_same_v<T, long>) {
+        return m_long_attributes[index];
+    }
+    if constexpr (std::is_same_v<T, double>) {
+        return m_double_attributes[index];
+    }
+    // if constexpr(std::is_same_v<T,Rational>) {
+    //     return m_rational_attributes;
+    // }
+}
+template <typename T>
+const MeshAttributes<T>& Mesh::get_mesh_attributes(const MeshAttributeHandle<T>& handle) const
+{
+    return get_mesh_attributes<T>(handle.m_primitive_type);
+}
+
+template <typename T>
+MeshAttributes<T>& Mesh::get_mesh_attributes(PrimitiveType ptype)
+{
+    size_t index = get_simplex_dimension(ptype);
+    if constexpr (std::is_same_v<T, char>) {
+        return m_char_attributes[index];
+    }
+    if constexpr (std::is_same_v<T, long>) {
+        return m_long_attributes[index];
+    }
+    if constexpr (std::is_same_v<T, double>) {
+        return m_double_attributes[index];
+    }
+    // if constexpr(std::is_same_v<T,Rational>) {
+    //     return m_rational_attributes;
+    // }
+}
+
+template <typename T>
+MeshAttributes<T>& Mesh::get_mesh_attributes(const MeshAttributeHandle<T>& handle)
+{
+    return get_mesh_attributes<T>(handle.m_primitive_type);
+}
 } // namespace wmtk
