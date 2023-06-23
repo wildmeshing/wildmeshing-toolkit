@@ -1,4 +1,5 @@
-
+#pragma once
+#include "Mesh.hpp"
 class TetMesh : public Mesh
 {
 private:
@@ -10,10 +11,10 @@ private:
     MeshAttributeHandle<long> m_te_handle;
     MeshAttributeHandle<long> m_tf_handle;
     MeshAttributeHandle<long> m_tt_handle;
-    std::vector<Tuple> get_vertices() const; 
-    std::vector<Tuple> get_edges() const ;
-    std::vector<Tuple> get_faces() const ;
-    std::vector<Tuple> get_tetrahedrons() const ;
+    std::vector<Tuple> get_vertices() const;
+    std::vector<Tuple> get_edges() const;
+    std::vector<Tuple> get_faces() const;
+    std::vector<Tuple> get_tetrahedrons() const;
 
 public:
     TetMesh();
@@ -30,7 +31,8 @@ public:
         Eigen::Ref<const VectorXl>& ET,
         Eigen::Ref<const VectorXl>& FT) const;
 };
-// TODO: this tetmesh_topology_initialization should belong in a detail folder or something, not part of the tetmesh class
+// TODO: this tetmesh_topology_initialization should belong in a detail folder or something, not
+// part of the tetmesh class
 void tetmesh_topology_initialization(
     Eigen::Ref<const Mesh::RowVectors3d> V,
     Eigen::Ref<const Mesh::RowVectors4l> F,

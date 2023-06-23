@@ -1,4 +1,4 @@
-#include <Mesh.hpp>
+#include <TriMesh.hpp>
 
 namespace wmtk {
 TriMesh::TriMesh()
@@ -68,77 +68,74 @@ bool TriMesh::is_ccw(const Tuple& tuple) const override
         return false;
 }
 
-void trimesh_topology_initialization(
-    Eigen::Ref<const Mesh::RowVectors3l> F,
+void TriMesh::initialize(
     Eigen::Ref<Mesh::RowVectors3l> FV,
     Eigen::Ref<Mesh::RowVectors3l> FE,
     Eigen::Ref<Mesh::RowVectors3l> FF,
     Eigen::Ref<Mesh::VectorXl> VF,
     Eigen::Ref<Mesh::VectorXl> EF)
 {
-    std::vector<std::vector<long>> TTT;
-    FV.resize(F.rows(), F.cols());
-    FE.resize(F.rows(), F.cols());
-    FF.resize(F.rows(), F.cols());
-    VF.resize(F.rows(), 1);
-    EF.resize(F.rows(), 1);
-    TTT.resize(F.rows(), std::vector<long>(4));
-    for (int f = 0; f < F.rows(); ++f) {
-        for (int i = 0; i < F.cols(); ++i) {
-            // v1 v2 f ei
-            long v1 = F(f, i);
-            long v2 = F(f, (i + 1) % F.cols());
-            if (v1 > v2) std::swap(v1, v2);
-            std::vector<long> r(4);
-            r[0] = v1;
-            r[1] = v2;
-            r[2] = f;
-            r[3] = i;
-            TTT[f] = r;
-            // FV(f, i) = v1;
+    // reserve memory for attributes
+    mesh_attribute_reserve(PrimitiveType::Triangle);
+    // get Accessors for topology
+    Accessor<long> fv_accessor = create_accessor<long>(m_fv_handle);
+    Accessor<long> fe_accessor = create_accessor<long>(m_fe_handle);
+    Accessor<long> ff_accessor = create_accessor<long>(m_ff_handle);
+    Accessor<long> vf_accessor = create_accessor<long>(m_vf_handle);
+    Accessor<long> ef_accessor = create_accessor<long>(m_ef_handle);
+    // iterate over the matrices and fill attributes
+    // m_fv
+    for (long i = 0; i < FV.rows(); ++i) {
+        for (long j = 0; j < FV.cols(); ++j) {
+            long& v = fv_accessor.scalar_attribute(i * 3 + j);
+            v = FV(i, j);
         }
     }
-    std::sort(TTT.begin(), TTT.end());
-
-    // iterate over TTT to initialize topology
-    // assumption is the same edge is always next to each other in the sorted TTT
-    int unique_edges = 0;
-    long v01 = TTT[0][0];
-    long v02 = TTT[0][1];
-    long f0 = TTT[0][2];
-    long e0 = TTT[0][3];
-    FE(f0, e0) = unique_edges;
-    VF(v01, 0) = f0;
-    VF(v02, 0) = f0;
-    EF(unique_edges, 0) = f0;
-
-    for (int i = 1; i < TTT.size(); ++i) {
-        int va1 = TTT[i][0];
-        int va2 = TTT[i][1];
-        int fa = TTT[i][2];
-        int eia = TTT[i][3];
-
-        int vb1 = TTT[i - 1][0];
-        int vb2 = TTT[i - 1][1];
-        int fb = TTT[i - 1][2];
-        int eib = TTT[i - 1][3];
-        if (va1 == vb1 & va2 == vb2) {
-            // same edge
-            FF(fa, eia) = fb;
-            FF(fb, eib) = fa;
-            continue;
-        } else {
-            unique_edges++;
-            FE(fa, eia) = unique_edges;
-            VF(va1, 0) = fa;
-            VF(va2, 0) = fa;
-            EF(unique_edges, 0) = fa;
-            FF(fa, eia) = -1;
+    // m_fe
+    for (long i = 0; i < FE.rows(); ++i) {
+        for (long j = 0; j < FE.cols(); ++j) {
+            long& e = fe_accessor.scalar_attribute(i * 3 + j);
+            e = FE(i, j);
         }
+    }
+    // m_ff
+    for (long i = 0; i < FF.rows(); ++i) {
+        for (long j = 0; j < FF.cols(); ++j) {
+            long& f = ff_accessor.scalar_attribute(i * 3 + j);
+            f = FF(i, j);
+        }
+    }
+    // m_vf
+    for (long i = 0; i < VF.rows(); ++i) {
+        long& f = vf_accessor.scalar_attribute(i);
+        f = VF(i);
+    }
+    // m_ef
+    for (long i = 0; i < EF.rows(); ++i) {
+        long& f = ef_accessor.scalar_attribute(i);
+        f = EF(i);
     }
 }
 
-    std::vector<Tuple> TriMesh::get_vertices() const { throw "not implemented"; }
-    std::vector<Tuple> TriMesh::get_edges() const { throw "not implemented"; }
-    std::vector<Tuple> TriMesh::get_faces() const { throw "not implemented"; }
+std::vector<Tuple> TriMesh::get_all(const PrimitiveType& type) const
+{
+    switch (type) {
+    case PrimitiveType::Vertex: return get_vertices();
+    case PrimitiveType::Edge: return get_edges(); break;
+    case PrimitiveType::Face: return get_faces(); break;
+    default: throw std::runtime_error("Invalid primitive type");
+    }
+}
+std::vector<Tuple> TriMesh::get_vertices() const
+{
+    throw "not implemented";
+}
+std::vector<Tuple> TriMesh::get_edges() const
+{
+    throw "not implemented";
+}
+std::vector<Tuple> TriMesh::get_faces() const
+{
+    throw "not implemented";
+}
 } // namespace wmtk

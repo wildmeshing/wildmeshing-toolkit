@@ -6,8 +6,6 @@
 
 using namespace Eigen;
 namespace wmtk {
-
-
 class Mesh
 {
 public:
@@ -54,6 +52,7 @@ public:
     template <typename T>
     const Accessor<T> create_accessor(const MeshAttributeHandle<T>& handle) const;
 
+    long capacity(const PrimitiveType& type) const;
 
 protected:
     std::vector<MeshAttributes<char>> m_char_attributes;
@@ -74,6 +73,13 @@ protected:
 
     Tuple tuple_from_cell(long cid) const;
 
+
+    /**
+     * @brief reserve space for all attributes data types for all dimensional simplices
+     *
+     * @param top_d the top dimensional simplex
+     */
+    void mesh_attributes_reserve(const PrimitiveType& top_d);
 
 public:
     /**
@@ -107,7 +113,8 @@ public:
      */
     virtual bool is_ccw(const Tuple& tuple) const = 0;
     /**
-     * @brief give the upper bound for the number of entities of the given dimension
+     * @brief read in the m_capacities return the upper bound for the number of entities of the
+     * given dimension
      *
      * @param type
      * @return int
@@ -129,9 +136,6 @@ private:
     // 0x1 == true = is active
     std::vector<MeshAttributeHandle<char>> m_flags;
 };
-
-
-
 
 
 template <typename T>

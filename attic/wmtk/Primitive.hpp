@@ -16,4 +16,19 @@ constexpr size_t get_simplex_dimension(PrimitiveType t)
     assert(false);
     return -1;
 }
+
+constexpr PrimitiveType get_primitive_type(size_t d)
+{
+    switch (d) {
+    case 0: return PrimitiveType::Vertex;
+    case 1: return PrimitiveType::Edge;
+    case 2: return PrimitiveType::Face;
+    case 3: return PrimitiveType::Tetrahedron;
+    default:
+        throw std::runtime_error("Invalid dimension");
+        break; // just return at the end because compilers can be finicky
+    }
+
+    assert(false);
+}
 } // namespace wmtk
