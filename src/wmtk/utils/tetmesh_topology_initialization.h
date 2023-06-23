@@ -1,0 +1,175 @@
+
+#pragma once
+#include <spdlog/logger.h>
+#include <filesystem>
+namespace wmtk {
+
+
+/**
+ * @brief Given the mesh connectivity in matrix format, finds unique edges and faces and their relations
+ */
+
+void tetmesh_topology_initialization(
+    Eigen::Ref<const MaxtrixXi>& T,
+    Eigen::Ref<const Matl3>& TE,
+    Eigen::Ref<const Matl3>& TF,
+    Eigen::Ref<const Matl1>& TT,
+    Eigen::Ref<const Matl1>& FT,
+    Eigen::Ref<const Matl1>& ET,
+    Eigen::Ref<const Matl1>& VT)
+{
+    // First pass is identifying faces, and filling VT
+    std::vector<std::vector<long>> TTT;
+
+    char iv0 = 0;
+    char iv1 = 1;
+    char iv2 = 2;
+    char it = 3;
+    char ii = 4;
+
+
+    long vertex_count = T.coeffWise().max();
+
+    // Build a table for finding Faces and populate the corresponding
+    // topology relations
+    {
+        TTT.resize(T.rows()*4);
+        for (int t = 0; t < T.rows(); ++t) {
+            for (int i = 0; i < 4; ++i) {
+                // v1 v2 v3 f ei
+                long x = std::static_cast<long>(auto_3d_face[i][0]);
+                long y = std::static_cast<long>(auto_3d_face[i][1]);
+                long z = std::static_cast<long>(auto_3d_face[i][2]);
+                if (x > y) swap(x, y);
+                if (y > z) swap(y, z)
+                if (x > y) swap(x, y);
+                
+                std::vector<long> r(5);
+                r[iv0] = x;
+                r[iv1] = y;
+                r[iv2] = z;
+                r[it] = t;
+                r[ii] = i;
+                TTT[t*4+i] = r;
+            }
+        }
+        std::sort(TTT.begin(), TTT.end());
+
+        // VT
+        VT.resize(vertex_count,1);
+        for (int i = 0; i < T.rows(); ++i) {
+            for (int j = 0; j < T.cols(); ++j) {
+                VT[T[i,j]] = i;
+            }
+        }
+
+        // Compute TF, TT, and FT
+        TF.resize(T.rows(), 4);
+        TT.resize(T.rows(), 4);
+        vector<long> FT_temp;
+
+        // iterate over TTT to find faces
+        // for every entry check if the next is the same, and update the connectivity accordingly
+
+        for (int i = 0; i < TTT.size(); ++i) {
+            
+            
+            if ((i==TTT.size()-1) || (TTT[i][0] != TTT[i+1][0]) || (TTT[i][1] != TTT[i+1][1]) || (TTT[i][2] != TTT[i+1][2]))
+            {
+                // If the next tuple is empty, then this is a boundary face
+                FT_temp.push_back(TTT[i][it]);
+                
+                TT(TTT[i][it],TTT[i][ii]) = -1;
+                TF(TTT[i][it],TTT[i][ii]) = FT_temp.size()-1;
+            }
+            else
+            {
+                // this is an internal face, update both sides
+                // If the next tuple is empty, then this is a boundary face
+                
+                FT_temp.push_back(TTT[i][it]);
+                
+                TT(TTT[i][it],TTT[i][ii]) = TTT[i+1][it];
+                TF(TTT[i][it],TTT[i][ii]) = FT_temp.size()-1;
+                
+                TT(TTT[i+1][it],TTT[i+1][ii]) = TTT[i][it];
+                TF(TTT[i+1][it],TTT[i+1][ii]) = FT_temp.size()-1;
+
+                ++i; // skip the other entry
+            }
+        }
+
+        // copy FT
+        FT.resize(ft_temp.size());
+        for (long i=0; i<ft_temp.size();++i)
+            FT(i) = ft_temp(i);
+    }
+
+    // Build a table for finding edges and populate the corresponding
+    // topology relations
+    {
+        TTT.resize(T.rows()*6);
+        for (int t = 0; t < T.rows(); ++t) {
+            for (int i = 0; i < 6; ++i) {
+                // v1 v2 f ei
+                long x = std::static_cast<long>(auto_3d_edge[i][0]);
+                long y = std::static_cast<long>(auto_3d_edge[i][1]);
+                if (x > y) swap(x, y);
+                
+                std::vector<long> r(5);
+                r[iv0] = x;
+                r[iv1] = y;
+                r[iv2] = 0; // unused
+                r[it] = t;
+                r[ii] = i;
+                TTT[t*6+i] = r;
+            }
+        }
+        std::sort(TTT.begin(), TTT.end());
+
+        // Compute TE, ET
+        TE.resize(T.rows(), 4);
+        vector<long> ET_temp;
+
+
+        // iterate over TTT to find edges
+        // for every entry check if the next is the same, and update the connectivity accordingly
+        for (int i = 0; i < TTT.size(); ++i) {
+            
+            if ((i==TTT.size()-1) || (TTT[i][0] != TTT[i+1][0]) || (TTT[i][1] != TTT[i+1][1]))
+            {
+                assert(false); // This should never happen, an edge must belong to at least two faces
+            }
+            else
+            {
+                // new edge found
+                ET_temp.push_back(TTT[i][it]);
+
+                // update first copy
+                TT(TTT[i][it],TTT[i][ii]) = TTT[i+1][it];
+                TF(TTT[i][it],TTT[i][ii]) = ET_temp.size()-1;
+
+                // loop over all the copies
+                long j=1
+                while ((i+j<TTT.size()) < (TTT[i][0] == TTT[i+j][0]) && (TTT[i][1] == TTT[i+j][1]))
+                {                    
+                    TT(TTT[i+j][it],TTT[i+j][ii]) = TTT[i][it];
+                    TF(TTT[i+j][it],TTT[i+j][ii]) = ET_temp.size()-1;
+                    ++j;
+                }
+                assert(j>=2);
+                
+                i = i+j-1; // skip the visited entries
+            }
+        }
+
+        // copy ET
+        ET.resize(ET_temp.size());
+        for (long i=0; i<ET_temp.size();++i)
+            ET(i) = ET_temp(i);
+
+    }
+
+}
+
+}
