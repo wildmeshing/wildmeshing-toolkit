@@ -54,8 +54,6 @@ include(wmtk_warnings)
 include(wmtk_copy_dll)
 include(tracy)
 include(nlohmann_json)
-include(hdf5)
-include(high_five)
 
 # Sort projects inside the solution
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -109,6 +107,7 @@ igl_include(predicates)
 if(NOT TARGET spdlog)
     include(spdlog)
 endif()
+include(paraviewo)
 
 include(geogram)
 include(onetbb)
@@ -133,8 +132,6 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     lagrange::core
     Tracy::TracyClient
     nlohmann_json::nlohmann_json
-    HighFive::HighFive
-    hdf5::hdf5
     lagrange::bvh
     probabilistic_quadrics::probabilistic_quadrics
 )
@@ -153,7 +150,6 @@ target_link_libraries(wildmeshing_toolkit PUBLIC nanospline::nanospline)
 include(ipc-toolkit)
 target_compile_definitions(tight_inclusion PUBLIC TIGHT_INCLUSION_LIMIT_QUEUE_SIZE TI_LIMIT_QUEUE_SIZE)
 target_link_libraries(wildmeshing_toolkit PUBLIC ipc::toolkit)
-include(paraviewo)
 target_link_libraries(wildmeshing_toolkit PUBLIC paraviewo::paraviewo)
 
 # ###############################################################################

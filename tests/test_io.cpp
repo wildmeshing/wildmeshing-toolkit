@@ -1,3 +1,4 @@
+#include <h5pp/h5pp.h>
 #include <igl/edges.h>
 #include <igl/oriented_facets.h>
 #include <wmtk/Mesh.hpp>
@@ -243,4 +244,34 @@ TEST_CASE("paraviewo-tet", "[io][paraviewo]")
         writer.add_cell_field("face_idx", face_idx);
         writer.write_mesh("tetMesh_FaceAttributes.hdf", vertices, faces);
     }
+}
+
+TEST_CASE("h5pp", "[io][h5pp]")
+{
+    // Initialize a file
+    h5pp::File file("exampledir/example-03a-attributes-readwrite.h5", h5pp::FileAccess::REPLACE);
+
+    // Write an integer to file
+
+    file.writeDataset(42, "intGroup/myInt");
+
+    // We can now add attributes to the dataset
+    file.writeAttribute(
+        "this is some info about my int",
+        "intGroup/myInt",
+        "myInt_stringAttribute");
+    file.writeAttribute(3.14, "intGroup/myInt", "myInt_doubleAttribute");
+
+    // List all attributes associated with our dataset. The following will be printed:
+    //      {"myInt_stringAttribute", "myInt_doubleAttribute"}
+    h5pp::print("{}\n", file.getAttributeNames("intGroup/myInt"));
+
+    // Read the attribute data back
+    auto stringAttribute =
+        file.readAttribute<std::string>("intGroup/myInt", "myInt_stringAttribute");
+    auto doubleAttribute = file.readAttribute<double>("intGroup/myInt", "myInt_doubleAttribute");
+
+    // Print the data
+    h5pp::print("stringAttribute read: {}\n", stringAttribute);
+    h5pp::print("doubleAttribute read: {}\n", doubleAttribute);
 }
