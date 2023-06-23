@@ -1,4 +1,5 @@
 #include "Mesh.hpp"
+
 #include "Primitive.hpp"
 
 namespace wmtk {

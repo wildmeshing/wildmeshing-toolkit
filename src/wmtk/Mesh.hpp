@@ -5,6 +5,8 @@
 #include "Primitive.hpp"
 #include "Tuple.hpp"
 
+#include <Eigen/Core>
+
 namespace wmtk {
 class Mesh
 {
