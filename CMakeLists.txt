@@ -55,6 +55,8 @@ include(wmtk_colors)
 include(wmtk_warnings)
 include(wmtk_copy_dll)
 include(tracy)
+# Utility function to link libraries as system libraries to avoid warnings
+include(WMTKTargetLinkSystemLibraries)
 
 # Sort projects inside the solution
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -103,8 +105,8 @@ include(probabilistic_quadrics)
 include(lagrange)
 lagrange_include_modules(bvh)
 
-target_link_libraries(wildmeshing_toolkit PRIVATE wmtk::warnings)
-target_link_libraries(wildmeshing_toolkit PUBLIC
+wmtk_target_link_system_libraries(wildmeshing_toolkit PRIVATE wmtk::warnings)
+wmtk_target_link_system_libraries(wildmeshing_toolkit PUBLIC
     spdlog::spdlog
     igl::core
     igl::predicates
@@ -121,8 +123,8 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
 
 include(nlohmann_json)
 
-target_link_libraries(wildmeshing_components PRIVATE wmtk::warnings)
-target_link_libraries(wildmeshing_components PUBLIC
+wmtk_target_link_system_libraries(wildmeshing_components PRIVATE wmtk::warnings)
+wmtk_target_link_system_libraries(wildmeshing_components PUBLIC
     wildmeshing_toolkit
     nlohmann_json::nlohmann_json
 )
