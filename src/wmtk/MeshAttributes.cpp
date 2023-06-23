@@ -1,3 +1,4 @@
+#pragma once
 #include "MeshAttributes.hpp"
 
 #include <cassert>
@@ -34,11 +35,6 @@ AttributeHandle MeshAttributes<T>::register_attribute(const std::string& name, l
 
 
     return handle;
-}
-template <typename T>
-Accessor<T> MeshAttributes<T>::create_accessor(const AttributeHandle& handle)
-{
-    return Accessor<T>(*this, handle);
 }
 
 template <typename T>
@@ -98,7 +94,7 @@ long MeshAttributes<T>::size() const
 }
 
 template <typename T>
-void MeshAttributes<T>::resize(const long size)
+void MeshAttributes<T>::reserve(const long size)
 {
     auto& attr = m_attributes;
 

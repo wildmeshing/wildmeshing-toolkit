@@ -4,16 +4,17 @@
 #include "Primitive.hpp"
 #include "Tuple.h"
 
-
+using namespace Eigen;
 namespace wmtk {
-using Matl3 = Eigen::Matrix<long, Eigen::Dynamic, 3>;
-using Matl1 = Eigen::Matrix<long, Eigen::Dynamic, 1>;
-using Matl4 = Eigen::Matrix<long, Eigen::Dynamic, 4>;
 
 
 class Mesh
 {
 public:
+    using RowVectors3l = Eigen::Matrix<long, Eigen::Dynamic, 3>;
+    using VectorXl = Eigen::Matrix<long, Eigen::Dynamic, 1>;
+    using RowVectors4l = Eigen::Matrix<long, Eigen::Dynamic, 4>;
+    using RowVectors3d = Eigen::Matrix<double, Eigen::Dynamic, 3>;
     template <typename T>
     friend class Accessor;
     Mesh();
@@ -42,37 +43,35 @@ public:
     AttributeHandle
     register_attribute(const std::string& name, const PrimitiveType& type, long size);
 
+    template <typename T>
+    MeshAttributeHandle<T>
+    register_attribute(const std::string& name, PrimitiveType type, long size);
+    template <typename T>
+    MeshAttributeHandle<T> get_attribute_handle(
+        const std::string& name); // block standard topology tools
+
+    template <typename T>
+    Accessor<T> create_accessor(const MeshAttributeHandle<T>& handle);
+
+    template <typename T>
+    const Accessor<T> create_accessor(const MeshAttributeHandle<T>& handle) const;
+
     long gid(const PrimitiveType& type);
 
-    template <typename T>
-    void register_attribute(const std::string& name, PrimitiveType ptype, long size);
-
-    template <typename T>
-    Accessor<T>
-    register_attribute_with_accessor(const std::string& name, PrimitiveType ptype, long size);
 
 protected:
-    std::vector<MeshAttributes<bool>> m_bool_attributes;
+    std::vector<MeshAttributes<char>> m_char_attributes;
     std::vector<MeshAttributes<long>> m_long_attributes;
     std::vector<MeshAttributes<double>> m_double_attributes;
     // std::vector<MeshAttributes<Rational>> m_rational_attributes;
     template <typename T>
-    MeshAttributes<T>& get_mesh_attributes(PrimitiveType ptype)
-    {
-        size_t index = get_simplex_dimension(ptype);
-        if constexpr (std::is_same_v<T, bool>) {
-            return m_bool_attributes[index];
-        }
-        if constexpr (std::is_same_v<T, long>) {
-            return m_long_attributes[index];
-        }
-        if constexpr (std::is_same_v<T, double>) {
-            return m_double_attributes[index];
-        }
-        // if constexpr(std::is_same_v<T,Rational>) {
-        //     return m_rational_attributes;
-        // }
-    }
+    MeshAttributes<T>& get_mesh_attributes(PrimitiveType ptype);
+    template <typename T>
+    MeshAttributes<T>& get_mesh_attributes(const MeshAttributeHandle<T>& handle);
+    template <typename T>
+    const MeshAttributes<T>& get_mesh_attributes(PrimitiveType ptype) const;
+    template <typename T>
+    const MeshAttributes<T>& get_mesh_attributes(const MeshAttributeHandle<T>& handle) const;
 
     Tuple tuple_from_cell(long cid) const;
 
@@ -87,7 +86,7 @@ public:
                     d-3 -> tetrahedron
      * @return long id of the entity
      */
-    virtual long id(const Tuple& tuple, const PrimitiveType& type) const;
+    virtual long id(const Tuple& tuple, const PrimitiveType& type) const = 0;
     /**
      * @brief switch the orientation of the Tuple of the given dimension
      * @note this is not doen in place. Return a new Tuple of the switched state
@@ -98,7 +97,7 @@ public:
                     d-2 -> switch face
                     d-3 -> switch tetrahedron
     */
-    virtual Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const;
+    virtual Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const = 0;
     /**
      * @brief TODO this needs dimension?
      *
@@ -106,14 +105,14 @@ public:
      * @return true if the Tuple is oriented counter-clockwise
      * @return false
      */
-    virtual bool is_ccw(const Tuple& tuple) const;
+    virtual bool is_ccw(const Tuple& tuple) const = 0;
     /**
      * @brief give the upper bound for the number of entities of the given dimension
      *
      * @param type
      * @return int
      */
-    int capacity(const PrimitiveType& type) const;
+    long capacity(PrimitiveType type) const;
     /**
      * @brief
      *
@@ -124,78 +123,68 @@ public:
      * @return false
      */
     bool is_valid(const Tuple& tuple, const PrimitiveType& type) const;
+
+private:
+    std::vector<long> m_capacities;
+    // 0x1 == true = is active
+    std::vector<MeshAttributeHandle<char>> m_flags;
 };
 
 
 class TriMesh : public Mesh
 {
-    TriMesh();
-
 private:
-    Accessor<long> m_vf_accessor;
-    Accessor<long> m_ef_accessor;
+    MeshAttributeHandle<long> m_vf_handle;
+    MeshAttributeHandle<long> m_ef_handle;
 
-    Accessor<long> m_fv_accessor;
-    Accessor<long> m_fe_accessor;
-    Accessor<long> m_ff_accessor;
+    MeshAttributeHandle<long> m_fv_handle;
+    MeshAttributeHandle<long> m_fe_handle;
+    MeshAttributeHandle<long> m_ff_handle;
 
 public:
+    TriMesh();
+
     void split_edge(const Tuple& t) override;
     void collapse_edge(const Tuple& t) override;
-
-    void build_vertex_connectivity(long n_vertices) override;
-
     long id(const Tuple& tuple, const PrimitiveType& type) const override;
     Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const override;
     bool is_ccw(const Tuple& tuple) const override;
     void initialize(
-        Eigen::Ref<const Matl3>& FV,
-        Eigen::Ref<const Matl3>& FE,
-        Eigen::Ref<const Matl3>& FF,
-        Eigen::Ref<const Matl1>& VF,
-        Eigen::Ref<const Matl1>& EF,
-        Eigen::Ref<const Matl4>& seam) const;
+        Eigen::Ref<const RowVectors3l>& FV,
+        Eigen::Ref<const RowVectors3l>& FE,
+        Eigen::Ref<const RowVectors3l>& FF,
+        Eigen::Ref<const VectorXl>& VF,
+        Eigen::Ref<const VectorXl>& EF,
+        Eigen::Ref<const RowVectors4l>& seam) const;
 };
 
 class TetMesh : public Mesh
 {
-    TetMesh();
-
 private:
-    Accessor<long> m_vt_accessor;
-    Accessor<long> m_et_accessor;
-    Accessor<long> m_ft_accessor;
+    MeshAttributeHandle<long> m_vt_handle;
+    MeshAttributeHandle<long> m_et_handle;
+    MeshAttributeHandle<long> m_ft_handle;
 
-    Accessor<long> m_tv_accessor;
-    Accessor<long> m_te_accessor;
-    Accessor<long> m_tf_accessor;
-    Accessor<long> m_tt_accessor;
+    MeshAttributeHandle<long> m_tv_handle;
+    MeshAttributeHandle<long> m_te_handle;
+    MeshAttributeHandle<long> m_tf_handle;
+    MeshAttributeHandle<long> m_tt_handle;
 
 public:
+    TetMesh();
+
     long id(const Tuple& tuple, const PrimitiveType& type) const override;
     Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const override;
     bool is_ccw(const Tuple& tuple) const override;
     void initialize(
-        Eigen::Ref<const Matl4>& TV,
-        Eigen::Ref<const Matl4>& TE,
-        Eigen::Ref<const Matl4>& TF,
-        Eigen::Ref<const Matl4>& TT,
-        Eigen::Ref<const Matl1>& VT,
-        Eigen::Ref<const Matl1>& ET,
-        Eigen::Ref<const Matl1>& FT) const;
+        Eigen::Ref<const RowVectors4l>& TV,
+        Eigen::Ref<const RowVectors4l>& TE,
+        Eigen::Ref<const RowVectors4l>& TF,
+        Eigen::Ref<const RowVectors4l>& TT,
+        Eigen::Ref<const VectorXl>& VT,
+        Eigen::Ref<const VectorXl>& ET,
+        Eigen::Ref<const VectorXl>& FT) const;
 };
-
-template <typename T>
-void Mesh::register_attribute(const std::string& name, PrimitiveType ptype, long size)
-{
-    get_mesh_attributes<T>(ptype).register_attribute(name, size);
-}
-template <typename T>
-Accessor<T>
-Mesh::register_attribute_with_accessor(const std::string& name, PrimitiveType ptype, long size)
-{
-    return get_mesh_attributes<T>(ptype).register_attribute_with_accessor(name, size);
-}
 /**
  * @brief given the mesh connectivity in matrix format, initialize the topology data used for Mesh
  * @param F input connectivity in (N x 3) matrix format (igl convention)
@@ -206,78 +195,68 @@ Mesh::register_attribute_with_accessor(const std::string& name, PrimitiveType pt
  * @param EF one adjacent triangle (arbitrarily chosen) of every edge in (N x 1) matrix format
  */
 void trimesh_topology_initialization(
-    Eigen::Ref<const MatrixXi>& F,
-    Eigen::Ref<const Matl3>& FE,
-    Eigen::Ref<const Matl3>& FF,
-    Eigen::Ref<const Matl1>& VF,
-    Eigen::Ref<const Matl1>& EF)
-{
-    std::vector<std::vector<long>> TTT;
-    FV.resize(F.rows(), F.cols());
-    FE.resize(F.rows(), F.cols());
-    FF.resize(F.rows(), F.cols());
-    VF.resize(F.rows(), 1);
-    EF.resize(F.rows(), 1);
-    TTT.resize(F.rows(), std::vector<long>(4));
-    for (int f = 0; f < F.rows(); ++f) {
-        for (int i = 0; i < F.cols(); ++i) {
-            // v1 v2 f ei
-            long v1 = std::static_cast<long>(F(f, i));
-            long v2 = std::static_cast<long>(F(f, (i + 1) % F.cols()));
-            if (v1 > v2) std::swap(v1, v2);
-            std::vector<long> r(4);
-            r[0] = v1;
-            r[1] = v2;
-            r[2] = f;
-            r[3] = i;
-            TTT[f] = r;
-            FV(f, i) = v1;
-        }
-    }
-    std::sort(TTT.begin(), TTT.end());
-
-    // iterate over TTT to initialize topology
-    // assumption is the same edge is always next to each other in the sorted TTT
-    int unique_edges = 0;
-    long v01 = TTT[0][0];
-    long v02 = TTT[0][1];
-    long f0 = TTT[0][2];
-    long e0 = TTT[0][3];
-    FE(f0, e0) = unique_edges;
-    VF(v01, 0) = f0;
-    VF(v02, 0) = f0;
-    EF(unique_edges, 0) = f0;
-
-    for (int i = 1; i < TTT.size(); ++i) {
-        int va1 = TTT[i][0];
-        int va2 = TTT[i][1];
-        int fa = TTT[i][2];
-        int eia = TTT[i][3];
-
-        int vb1 = TTT[i - 1][0];
-        int vb2 = TTT[i - 1][1];
-        int fb = TTT[i - 1][2];
-        int eib = TTT[i - 1][3];
-        if (va1 == vb1 & va2 == vb2) {
-            // same edge
-            FF(fa, eia) = fb;
-            FF(fb, eib) = fa;
-            continue;
-        } else {
-            unique_edges++;
-            FE(fa, eia) = unique_edges;
-            VF(va1, 0) = fa;
-            VF(va2, 0) = fa;
-            EF(unique_edges, 0) = fa;
-            FF(fa, eia) = -1;
-        }
-    }
-    return;
-}
+    Eigen::Ref<const Mesh::RowVectors3l> F,
+    Eigen::Ref<Mesh::RowVectors3l> FV,
+    Eigen::Ref<Mesh::RowVectors3l> FE,
+    Eigen::Ref<Mesh::RowVectors3l> FF,
+    Eigen::Ref<Mesh::VectorXl> VF,
+    Eigen::Ref<Mesh::VectorXl> EF);
 
 void tetmesh_topology_initialization(
-    const Eigen::MatrixXd& V,
-    const Eigen::MatrixXi& F,
-    const TetMesh& mesh)
-{}
+    Eigen::Ref<const Mesh::RowVectors3d> V,
+    Eigen::Ref<const Mesh::RowVectors4l> F,
+    TetMesh& mesh);
+
+template <typename T>
+Accessor<T> Mesh::create_accessor(const MeshAttributeHandle<T>& handle)
+{
+    return Accessor(*this, handle);
+}
+
+template <typename T>
+const MeshAttributes<T>& Mesh::get_mesh_attributes(PrimitiveType ptype) const
+{
+    size_t index = get_simplex_dimension(ptype);
+    if constexpr (std::is_same_v<T, char>) {
+        return m_char_attributes[index];
+    }
+    if constexpr (std::is_same_v<T, long>) {
+        return m_long_attributes[index];
+    }
+    if constexpr (std::is_same_v<T, double>) {
+        return m_double_attributes[index];
+    }
+    // if constexpr(std::is_same_v<T,Rational>) {
+    //     return m_rational_attributes;
+    // }
+}
+template <typename T>
+const MeshAttributes<T>& Mesh::get_mesh_attributes(const MeshAttributeHandle<T>& handle) const
+{
+    return get_mesh_attributes<T>(handle.m_primitive_type);
+}
+
+template <typename T>
+MeshAttributes<T>& Mesh::get_mesh_attributes(PrimitiveType ptype)
+{
+    size_t index = get_simplex_dimension(ptype);
+    if constexpr (std::is_same_v<T, char>) {
+        return m_char_attributes[index];
+    }
+    if constexpr (std::is_same_v<T, long>) {
+        return m_long_attributes[index];
+    }
+    if constexpr (std::is_same_v<T, double>) {
+        return m_double_attributes[index];
+    }
+    // if constexpr(std::is_same_v<T,Rational>) {
+    //     return m_rational_attributes;
+    // }
+}
+
+template <typename T>
+MeshAttributes<T>& Mesh::get_mesh_attributes(const MeshAttributeHandle<T>& handle)
+{
+    return get_mesh_attributes<T>(handle.m_primitive_type);
+}
 } // namespace wmtk

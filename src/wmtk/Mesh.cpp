@@ -2,30 +2,34 @@
 
 namespace wmtk {
 
-Tuple Mesh::tuple_from_cell(long cid) const
+Mesh::Mesh() = default;
+
+Mesh::~Mesh() = default;
+
+long Mesh::capacity(PrimitiveType type) const {}
+
+template <typename T>
+MeshAttributeHandle<T>
+Mesh::register_attribute(const std::string& name, PrimitiveType ptype, long size)
 {
-    return Tuple(0, 0, 0, cid, 0);
-    // TODO: figure out how to compute hash
-    // return Tuple(0,0,0,cid, hash(cid));
+    // return MeshAttributeHandle<T>{
+    //    .m_base_handle = get_mesh_attributes<T>(ptype).register_attribute(name, size),
+    //    .m_primitive_type = ptype};
+
+    MeshAttributeHandle<T> r;
+    r.m_base_handle = get_mesh_attributes<T>(ptype).register_attribute(name, size),
+    r.m_primitive_type = ptype;
+    return r;
 }
 
-TriMesh::TriMesh()
-    : m_vf_accessor(register_attribute_with_accessor<long>("m_vf", PrimitiveType::Vertex, 1))
-    , m_ef_accessor(register_attribute_with_accessor<long>("m_ef", PrimitiveType::Edge, 1))
-    , m_fv_accessor(register_attribute_with_accessor<long>("m_fv", PrimitiveType::Face, 3))
-    , m_fe_accessor(register_attribute_with_accessor<long>("m_fe", PrimitiveType::Face, 3))
-    , m_ff_accessor(register_attribute_with_accessor<long>("m_ff", PrimitiveType::Face, 3))
-{}
-
-
 TetMesh::TetMesh()
-    : m_vt_accessor(register_attribute_with_accessor<long>("m_vt", PrimitiveType::Vertex, 1))
-    , m_et_accessor(register_attribute_with_accessor<long>("m_et", PrimitiveType::Edge, 1))
-    , m_ft_accessor(register_attribute_with_accessor<long>("m_ft", PrimitiveType::Face, 1))
-    , m_tv_accessor(register_attribute_with_accessor<long>("m_tv", PrimitiveType::Tetrahedron, 4))
-    , m_te_accessor(register_attribute_with_accessor<long>("m_te", PrimitiveType::Tetrahedron, 6))
-    , m_tf_accessor(register_attribute_with_accessor<long>("m_tf", PrimitiveType::Tetrahedron, 4))
-    , m_tt_accessor(register_attribute_with_accessor<long>("m_tt", PrimitiveType::Tetrahedron, 4))
+    : m_vt_handle(register_attribute<long>("m_vt", PrimitiveType::Vertex, 1))
+    , m_et_handle(register_attribute<long>("m_et", PrimitiveType::Edge, 1))
+    , m_ft_handle(register_attribute<long>("m_ft", PrimitiveType::Face, 1))
+    , m_tv_handle(register_attribute<long>("m_tv", PrimitiveType::Tetrahedron, 4))
+    , m_te_handle(register_attribute<long>("m_te", PrimitiveType::Tetrahedron, 6))
+    , m_tf_handle(register_attribute<long>("m_tf", PrimitiveType::Tetrahedron, 4))
+    , m_tt_handle(register_attribute<long>("m_tt", PrimitiveType::Tetrahedron, 4))
 {}
 
 // TODO
@@ -57,7 +61,6 @@ bool Mesh::is_valid(const Tuple& tuple) const
     default: throw std::runtime_error("tuple invlid failed local ids check");
     }
 }
-} // namespace wmtk
 
 std::vector<Tuple> Mesh::get_all(const PrimitiveType& type) const
 {
@@ -70,4 +73,24 @@ std::vector<Tuple> Mesh::get_all(const PrimitiveType& type) const
     default: throw std::runtime_error("Invalid primitive type");
     }
 }
+long TetMesh::id(const Tuple& tuple, const PrimitiveType& type) const
+{
+    return 0;
+}
+
+Tuple TetMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
+{
+    return Tuple(0, 0, 0, 0, 0);
+}
+
+bool TetMesh::is_ccw(const Tuple& tuple) const
+{
+    return false;
+}
+
+void tetmesh_topology_initialization(
+    Eigen::Ref<const Mesh::RowVectors3d> V,
+    Eigen::Ref<const Mesh::RowVectors4l> F,
+    TetMesh& mesh)
+{}
 } // namespace wmtk
