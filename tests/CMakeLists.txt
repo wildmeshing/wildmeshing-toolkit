@@ -5,7 +5,8 @@ list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/contrib)
 include(Catch)
 
 # Sources
-file(GLOB TEST_SOURCES CONFIGURE_DEPENDS "*.h" "*.cpp")
+# file(GLOB TEST_SOURCES CONFIGURE_DEPENDS "*.h" "*.cpp")
+set(TEST_SOURCES main.cpp 2d_tests.cpp)
 add_executable(wmtk_tests ${TEST_SOURCES})
 
 # Macros

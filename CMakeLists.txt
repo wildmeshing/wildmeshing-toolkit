@@ -164,7 +164,7 @@ target_link_libraries(wildmeshing_toolkit PUBLIC paraviewo::paraviewo)
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
     # Unit tests
     enable_testing()
-    #add_subdirectory(tests)
+    add_subdirectory(tests)
 
     # Demo apps
     # add_subdirectory(app)

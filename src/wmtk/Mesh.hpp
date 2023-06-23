@@ -35,16 +35,10 @@ public:
     virtual void collapse_edge(const Tuple& t) = 0;
 
     /**
-     * @brief a duplicate of Tuple::switch_tuple function
-     */
-    virtual Tuple switch_tuple(const PrimitiveType& type, const Tuple& t) const = 0;
-
-    /**
      * @brief verify the connectivity validity of the mesh
      * @note a valid mesh can have cells that are is_removed == true
      */
     // bool check_mesh_connectivity_validity() const;
-
 
     ///**
     // * @brief Get the incident vertices for a triangle
@@ -61,21 +55,6 @@ public:
      * @return global vids of incident vertices
      */
     std::array<long, 3> oriented_tri_vids(const Tuple& t) const;
-
-    /**
-     * Generate a face Tuple using global cell id
-     * @param cid global cell for the triangle/tetrahedron
-     * @return a Tuple
-     */
-    Tuple tuple_from_cell(long cid) const;
-
-    /**
-     * Generate a vertex Tuple using local vid
-     * @param vid global vid
-     * @note tuple refers to vid
-     */
-    virtual Tuple tuple_from_vertex(long vid) const = 0;
-
 
     ///**
     // * @brief perform the given function for each face
@@ -152,7 +131,7 @@ public:
                     d-3 -> tetrahedron
      * @return long id of the entity
      */
-    virtual long id(const Tuple& tuple, const PrimitiveType& type) const;
+    virtual long id(const Tuple& tuple, const PrimitiveType& type) const = 0;
     /**
      * @brief switch the orientation of the Tuple of the given dimension
      * @note this is not doen in place. Return a new Tuple of the switched state
@@ -163,7 +142,7 @@ public:
                     d-2 -> switch face
                     d-3 -> switch tetrahedron
     */
-    virtual Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const;
+    virtual Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const = 0;
     /**
      * @brief TODO this needs dimension?
      *
@@ -171,7 +150,7 @@ public:
      * @return true if the Tuple is oriented counter-clockwise
      * @return false
      */
-    virtual bool is_ccw(const Tuple& tuple) const;
+    virtual bool is_ccw(const Tuple& tuple) const = 0;
     /**
      * @brief give the upper bound for the number of entities of the given dimension
      *
@@ -192,8 +171,6 @@ public:
 
 class TriMesh : public Mesh
 {
-    TriMesh();
-
 private:
     Accessor<long> m_vf_accessor;
     Accessor<long> m_ef_accessor;
@@ -203,6 +180,8 @@ private:
     Accessor<long> m_ff_accessor;
 
 public:
+    TriMesh();
+
     void split_edge(const Tuple& t) override;
     void collapse_edge(const Tuple& t) override;
 
@@ -221,8 +200,6 @@ public:
 
 class TetMesh : public Mesh
 {
-    TetMesh();
-
 private:
     Accessor<long> m_vt_accessor;
     Accessor<long> m_et_accessor;
@@ -234,6 +211,8 @@ private:
     Accessor<long> m_tt_accessor;
 
 public:
+    TetMesh();
+
     long id(const Tuple& tuple, const PrimitiveType& type) const override;
     Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const override;
     bool is_ccw(const Tuple& tuple) const override;
@@ -260,45 +239,15 @@ Mesh::register_attribute_with_accessor(const std::string& name, PrimitiveType pt
     return get_mesh_attributes<T>(ptype).register_attribute_with_accessor(name, size);
 }
 
-void trimesh_topology_initialization(
-    const Eigen::MatrixXd& V,
-    const Eigen::MatrixXi& F,
-    const TriMesh& mesh)
-{
-    // Accessor<>
+// void trimesh_topology_initialization(
+//     const Eigen::MatrixXd& V,
+//     const Eigen::MatrixXi& F,
+//     const TriMesh& mesh)
+// {}
 
-    // std::vector<std::vector<long>> VF(vertex_capacity());
-    // for(int j = 0; j < triangle_capacity(); j)
-    // {
-    //     auto f = _topology_accessor.get_attribute<long>(m_fv_handle, j); // Eigen::Map // Eigen::Vector3i
-    //     for(long vidx : f) {
-    //         VF[vidx].emplace_back(j);
-    //         long& vf = _topology_accessor.get_attribute_single<long>(m_vf_handle, vidx); // Eigen::Map // Eigen::Vector3i
-    //         v = j;
-    //     }
-    // std::vector<std::array<long,2>> e_array;
-    // for(int j = 0; j < triangle_capacity(); ++j)
-    // {
-    //     auto f = _topology_accessor.get_attribute<long>(m_fv_handle, j); // Eigen::Map // Eigen::Vector3i
-    //     for(int k = 0; k < 3; ++ k)
-    //     {
-    //         int kp1 = (k+1)%3;
-    //         int a = f(k);
-    //         int b = f(kp1);
-    //         if(a > b)
-    //         {
-    //             std::swap(a,b);
-    //             e_array.emplace_back(std::array<long,2>{{a,b}});
-    //         }
-    //         std::sort(e_array.begin(),e_array.end());
-    //         e_array.erase(std::unique(e_array.begin(),e_array.end()), e_array.end());
-    //     }
-    // }
-}
-
-void tetmesh_topology_initialization(
-    const Eigen::MatrixXd& V,
-    const Eigen::MatrixXi& F,
-    const TetMesh& mesh)
-{}
+// void tetmesh_topology_initialization(
+//     const Eigen::MatrixXd& V,
+//     const Eigen::MatrixXi& F,
+//     const TetMesh& mesh)
+// {}
 } // namespace wmtk
