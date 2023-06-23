@@ -251,11 +251,12 @@ Mesh::register_attribute_with_accessor(const std::string& name, PrimitiveType pt
  */
 
 void trimesh_topology_initialization(
-    Eigen::Ref<const RowVectors3l>& F,
-    Eigen::Ref<const RowVectors3l>& FE,
-    Eigen::Ref<const RowVectors3l>& FF,
-    Eigen::Ref<const VectorXl>& VF,
-    Eigen::Ref<const VectorXl>& EF);
+    Eigen::Ref<const RowVectors3l> F,
+    Eigen::Ref<RowVectors3l> FV,
+    Eigen::Ref<RowVectors3l> FE,
+    Eigen::Ref<RowVectors3l> FF,
+    Eigen::Ref<VectorXl> VF,
+    Eigen::Ref<VectorXl> EF);
 
 void tetmesh_topology_initialization(
     Eigen::Ref<const RowVectors3d>& V,
