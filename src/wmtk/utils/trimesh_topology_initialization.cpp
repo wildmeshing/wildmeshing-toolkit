@@ -4,18 +4,19 @@ namespace {
 
 void trimesh_topology_initialization(
     Eigen::Ref<const Mesh::RowVectors3l> F,
-    Eigen::Ref<Mesh::RowVectors3l> FV,
     Eigen::Ref<Mesh::RowVectors3l> FE,
     Eigen::Ref<Mesh::RowVectors3l> FF,
     Eigen::Ref<Mesh::VectorXl> VF,
     Eigen::Ref<Mesh::VectorXl> EF)
 {
+    assert(F.cols()==3);
     std::vector<std::vector<long>> TTT;
-    FV.resize(F.rows(), F.cols());
-    FE.resize(F.rows(), F.cols());
-    FF.resize(F.rows(), F.cols());
-    VF.resize(F.rows(), 1);
-    EF.resize(F.rows(), 1);
+    FE.resize(F.rows(), 3);
+    FF.resize(F.rows(), 3);
+
+    long vertex_count = F.coeffWise().max();
+    VF.resize(vertex_count, 1, -1);
+    
     TTT.resize(F.rows(), std::vector<long>(4));
     for (int f = 0; f < F.rows(); ++f) {
         for (int i = 0; i < F.cols(); ++i) {
