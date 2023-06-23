@@ -11,6 +11,7 @@ set(SRC_FILES
     TriMesh.hpp
     Primitive.hpp
     Tuple.hpp
+    Types.hpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 

@@ -4,6 +4,7 @@
 #include "MeshAttributes.hpp"
 #include "Primitive.hpp"
 #include "Tuple.hpp"
+#include "Types.hpp"
 
 #include <Eigen/Core>
 
@@ -11,11 +12,6 @@ namespace wmtk {
 class Mesh
 {
 public:
-    using RowVectors3l = Eigen::Matrix<long, Eigen::Dynamic, 3>;
-    using VectorXl = Eigen::Matrix<long, Eigen::Dynamic, 1>;
-    using RowVectors4l = Eigen::Matrix<long, Eigen::Dynamic, 4>;
-    using RowVectors3d = Eigen::Matrix<double, Eigen::Dynamic, 3>;
-
     template <typename T>
     friend class Accessor;
 
@@ -27,7 +23,7 @@ public:
      * @param type the type of tuple, can be vertex/edge/triangle/tetrahedron
      * @return vector of Tuples referring to each type
      */
-    std::vector<Tuple> get_all(const PrimitiveType& type) const;
+    virtual std::vector<Tuple> get_all(const PrimitiveType& type) const = 0;
 
     /**
      * Removes all unset space
@@ -81,7 +77,7 @@ protected:
      *
      * @param top_d the top dimensional simplex
      */
-    void mesh_attributes_reserve(const PrimitiveType& top_d, long capacity);
+    void mesh_attributes_reserve(const PrimitiveType& top_d);
 
 public:
     /**

@@ -1,10 +1,6 @@
 #include <wmtk/utils/Logger.hpp>
 
-// clang-format off
-#include <wmtk/utils/DisableWarnings.hpp>
 #include <spdlog/sinks/stdout_color_sinks.h>
-#include <wmtk/utils/EnableWarnings.hpp>
-// clang-format on
 
 #include <sstream>
 

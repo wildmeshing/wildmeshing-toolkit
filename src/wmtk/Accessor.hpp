@@ -7,6 +7,7 @@
 
 namespace wmtk {
 class Mesh;
+class TriMesh;
 
 template <typename T>
 class MeshAttributes;
@@ -15,6 +16,8 @@ class Accessor
 {
 public:
     friend class Mesh;
+    friend class TriMesh;
+
     using MapResult = Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, 1>>;
     using ConstMapResult = Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, 1>>;
 

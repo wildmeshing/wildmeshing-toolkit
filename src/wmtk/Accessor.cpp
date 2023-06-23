@@ -1,7 +1,8 @@
-#pragma once
 #include "Accessor.hpp"
+
 #include "Mesh.hpp"
 #include "MeshAttributes.hpp"
+
 namespace wmtk {
 
 template <typename T>

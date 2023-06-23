@@ -1,9 +1,6 @@
 #pragma once
 
-
-#include "Mesh.hpp"
 #include "Primitive.hpp"
-#include "TriMesh.hpp"
 
 #include <array>
 #include <cstddef>
@@ -12,8 +9,9 @@
 #include <tuple>
 
 namespace wmtk {
+
 class Mesh;
-class TriMesh;
+
 class Tuple
 {
 private:

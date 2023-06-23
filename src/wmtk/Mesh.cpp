@@ -39,7 +39,7 @@ long Mesh::capacity(PrimitiveType type) const
     }
 }
 
-void Mesh::mesh_attributes_reserve(const PrimitiveType& top_d, long capacity)
+void Mesh::mesh_attributes_reserve(const PrimitiveType& top_d)
 {
     for (long dim = 0; dim < m_capacities.size(); ++dim) {
         const long capacity = m_capacities[dim];

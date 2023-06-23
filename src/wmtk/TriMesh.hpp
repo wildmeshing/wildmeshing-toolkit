@@ -23,18 +23,20 @@ private:
 public:
     TriMesh();
 
+    std::vector<Tuple> get_all(const PrimitiveType& type) const override;
+
+
     void split_edge(const Tuple& t) override;
     void collapse_edge(const Tuple& t) override;
     long id(const Tuple& tuple, const PrimitiveType& type) const override;
     Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const override;
     bool is_ccw(const Tuple& tuple) const override;
     void initialize(
-        Eigen::Ref<const RowVectors3l>& FV,
-        Eigen::Ref<const RowVectors3l>& FE,
-        Eigen::Ref<const RowVectors3l>& FF,
-        Eigen::Ref<const VectorXl>& VF,
-        Eigen::Ref<const VectorXl>& EF,
-        Eigen::Ref<const RowVectors4l>& seam) const;
+        Eigen::Ref<const RowVectors3l> FV,
+        Eigen::Ref<const RowVectors3l> FE,
+        Eigen::Ref<const RowVectors3l> FF,
+        Eigen::Ref<const VectorXl> VF,
+        Eigen::Ref<const VectorXl> EF);
 };
 
 } // namespace wmtk

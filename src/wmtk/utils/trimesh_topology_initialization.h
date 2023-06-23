@@ -1,14 +1,16 @@
 
 #pragma once
-#include <spdlog/logger.h>
-#include <filesystem>
+
+#include <wmtk/Types.hpp>
+
+
 namespace wmtk {
 
 void trimesh_topology_initialization(
-    Eigen::Ref<const Mesh::RowVectors3l> F,
-    Eigen::Ref<Mesh::RowVectors3l> FE,
-    Eigen::Ref<Mesh::RowVectors3l> FF,
-    Eigen::Ref<Mesh::VectorXl> VF,
-    Eigen::Ref<Mesh::VectorXl> EF);
+    Eigen::Ref<const RowVectors3l> F,
+    Eigen::Ref<RowVectors3l> FE,
+    Eigen::Ref<RowVectors3l> FF,
+    Eigen::Ref<VectorXl> VF,
+    Eigen::Ref<VectorXl> EF);
 
 }
