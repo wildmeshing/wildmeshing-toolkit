@@ -137,4 +137,8 @@ void trimesh_topology_initialization(
         }
     }
 }
+
+    std::vector<Tuple> TriMesh::get_vertices() const { throw "not implemented"; }
+    std::vector<Tuple> TriMesh::get_edges() const { throw "not implemented"; }
+    std::vector<Tuple> TriMesh::get_faces() const { throw "not implemented"; }
 } // namespace wmtk
