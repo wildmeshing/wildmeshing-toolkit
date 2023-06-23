@@ -12,3 +12,6 @@ FetchContent_Declare(
     GIT_SHALLOW TRUE
 )
 FetchContent_MakeAvailable(lean-vtk)
+
+set_target_properties(LeanVTK PROPERTIES FOLDER third_party)
+set_target_properties(TestLeanVTK PROPERTIES FOLDER third_party)
