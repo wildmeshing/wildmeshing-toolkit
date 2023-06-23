@@ -71,8 +71,14 @@ add_library(wildmeshing_toolkit src/wmtk/Mesh.cpp)
 add_library(wmtk::toolkit ALIAS wildmeshing_toolkit)
 add_subdirectory(src/wmtk)
 
+add_library(wildmeshing_components src/wmtk/Mesh.cpp)
+add_library(wmtk::components ALIAS wildmeshing_components)
+add_subdirectory(components/wmtk_components)
+
+
 # Include headers
 target_include_directories(wildmeshing_toolkit PUBLIC src)
+target_include_directories(wildmeshing_components PUBLIC components)
 
 # Compile definitions
 target_compile_definitions(wildmeshing_toolkit PUBLIC _USE_MATH_DEFINES)
@@ -85,6 +91,7 @@ target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_17)
 
 # Set IDE folders
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src" PREFIX "Source Files" FILES ${SRC_FILES})
+source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/components" PREFIX "Components Source Files" FILES ${SRC_FILES})
 
 # Dependencies
 include(libigl)
@@ -116,12 +123,23 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     paraviewo::paraviewo
 )
 
+include(nlohmann_json)
+
+target_link_libraries(wildmeshing_components PRIVATE wmtk::warnings)
+target_link_libraries(wildmeshing_components PUBLIC
+    wildmeshing_toolkit
+    nlohmann_json::nlohmann_json
+)
+
 # ###############################################################################
 # Subdirectories
 # ###############################################################################
 
 # Compile extras only if this is a top-level project
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
+    # Binary
+    add_subdirectory(wmtk_app)
+
     # Unit tests
     enable_testing()
     add_subdirectory(tests)
