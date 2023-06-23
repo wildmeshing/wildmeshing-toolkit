@@ -150,7 +150,7 @@ public:
      * @param type
      * @return int
      */
-    int capacity(const PrimitiveType& type) const;
+    long capacity(PrimitiveType type) const;
     /**
      * @brief TODO this needs dimension?
      *

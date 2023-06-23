@@ -22,6 +22,10 @@ long TriMesh::id(const Tuple& tuple, const PrimitiveType& type) const
     return 0;
 }
 
+long Mesh::capacity(PrimitiveType type) const {
+
+}
+
 Tuple TriMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
 { 
     return Tuple(0,0,0,0,0); 
