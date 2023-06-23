@@ -6,8 +6,6 @@
 
 using namespace Eigen;
 namespace wmtk {
-
-
 class Mesh
 {
 public:
@@ -58,6 +56,7 @@ public:
 
     long gid(const PrimitiveType& type);
 
+    long capacity(const PrimitiveType& type) const;
 
 protected:
     std::vector<MeshAttributes<char>> m_char_attributes;
@@ -107,7 +106,8 @@ public:
      */
     virtual bool is_ccw(const Tuple& tuple) const = 0;
     /**
-     * @brief give the upper bound for the number of entities of the given dimension
+     * @brief read in the m_capacities return the upper bound for the number of entities of the
+     * given dimension
      *
      * @param type
      * @return int
@@ -128,34 +128,6 @@ private:
     std::vector<long> m_capacities;
     // 0x1 == true = is active
     std::vector<MeshAttributeHandle<char>> m_flags;
-};
-
-
-class TriMesh : public Mesh
-{
-private:
-    MeshAttributeHandle<long> m_vf_handle;
-    MeshAttributeHandle<long> m_ef_handle;
-
-    MeshAttributeHandle<long> m_fv_handle;
-    MeshAttributeHandle<long> m_fe_handle;
-    MeshAttributeHandle<long> m_ff_handle;
-
-public:
-    TriMesh();
-
-    void split_edge(const Tuple& t) override;
-    void collapse_edge(const Tuple& t) override;
-    long id(const Tuple& tuple, const PrimitiveType& type) const override;
-    Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const override;
-    bool is_ccw(const Tuple& tuple) const override;
-    void initialize(
-        Eigen::Ref<const RowVectors3l>& FV,
-        Eigen::Ref<const RowVectors3l>& FE,
-        Eigen::Ref<const RowVectors3l>& FF,
-        Eigen::Ref<const VectorXl>& VF,
-        Eigen::Ref<const VectorXl>& EF,
-        Eigen::Ref<const RowVectors4l>& seam) const;
 };
 
 class TetMesh : public Mesh

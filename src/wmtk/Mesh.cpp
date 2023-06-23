@@ -22,6 +22,23 @@ Mesh::register_attribute(const std::string& name, PrimitiveType ptype, long size
     return r;
 }
 
+long capacity(PrimitiveType type) const
+{
+    switch (type) {
+    case PrimitiveType::Vertex: return m_capacities[0]; break;
+    case PrimitiveType::Edge: return m_capacities[1]; break;
+    case PrimitiveType::Face: return m_capacities[2]; break;
+    case PrimitiveType::Tetrahedron: {
+        if (m_capacities.size() < 4)
+            throw std::runtime_error("TetMesh not initialized");
+        else
+            return m_capacities[3];
+        break;
+    }
+    default: throw std::runtime_error("Invalid primitive type");
+    }
+}
+
 TetMesh::TetMesh()
     : m_vt_handle(register_attribute<long>("m_vt", PrimitiveType::Vertex, 1))
     , m_et_handle(register_attribute<long>("m_et", PrimitiveType::Edge, 1))
