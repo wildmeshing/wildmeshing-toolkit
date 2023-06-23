@@ -113,12 +113,12 @@ wmtk_target_link_system_libraries(wildmeshing_toolkit PUBLIC
     geogram
     TBB::tbb
     mshio::mshio
-    metis::metis
     lagrange::core
     Tracy::TracyClient
     lagrange::bvh
     probabilistic_quadrics::probabilistic_quadrics
     paraviewo::paraviewo
+    gmp::gmp
 )
 
 include(nlohmann_json)
