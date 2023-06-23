@@ -1,6 +1,9 @@
 #pragma once
 
 #include "Mesh.hpp"
+#include "Tuple.hpp"
+
+#include <Eigen/Core>
 
 namespace wmtk {
 class TriMesh : public Mesh
