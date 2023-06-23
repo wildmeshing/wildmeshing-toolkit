@@ -6,11 +6,6 @@ Mesh::Mesh() = default;
 
 Mesh::~Mesh() = default;
 
-long Mesh::capacity(PrimitiveType type) const
-{
-    throw "not impemented";
-}
-
 template <typename T>
 MeshAttributeHandle<T>
 Mesh::register_attribute(const std::string& name, PrimitiveType ptype, long size)
@@ -25,7 +20,7 @@ Mesh::register_attribute(const std::string& name, PrimitiveType ptype, long size
     return r;
 }
 
-long capacity(PrimitiveType type) const
+long Mesh::capacity(PrimitiveType type) const
 {
     switch (type) {
     case PrimitiveType::Vertex: return m_capacities[0]; break;
@@ -39,6 +34,17 @@ long capacity(PrimitiveType type) const
         break;
     }
     default: throw std::runtime_error("Invalid primitive type");
+    }
+}
+
+void Mesh::mesh_attributes_reserve(const PrimitiveType& top_d)
+{
+    for (auto& d : PrimitiveType) {
+        if (top_d == PrimitiveType::Face && d == PrimitiveType::Tetrahedron) continue;
+        m_char_attributes[get_simplex_dimension(d)].reserve(capacity);
+        m_long_attributes[get_simplex_dimension(d)].reserve(capacity);
+        m_double_attributes[get_simplex_dimension(d)].reserve(capacity);
+        // m_rational_attributes[get_simplex_dimension(d)].reserve(capacity);
     }
 }
 

@@ -78,6 +78,13 @@ protected:
     virtual std::vector<Tuple> get_faces() const = 0;
     virtual std::vector<Tuple> get_tetrahedrons() const = 0;
 
+    /**
+     * @brief reserve space for all attributes data types for all dimensional simplices
+     *
+     * @param top_d the top dimensional simplex
+     */
+    void mesh_attributes_reserve(const PrimitiveType& top_d);
+
 public:
     /**
      * @brief return the global id of the Tuple of the given dimension
