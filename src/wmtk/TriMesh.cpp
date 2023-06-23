@@ -1,4 +1,4 @@
-#include <Mesh.hpp>
+#include <TriMesh.hpp>
 
 namespace wmtk {
 TriMesh::TriMesh()
@@ -68,6 +68,21 @@ bool TriMesh::is_ccw(const Tuple& tuple) const override
         return false;
 }
 
+void TriMesh::initialize(
+    Eigen::Ref<const Mesh::RowVectors3l> F,
+    Eigen::Ref<Mesh::RowVectors3l> FV,
+    Eigen::Ref<Mesh::RowVectors3l> FE,
+    Eigen::Ref<Mesh::RowVectors3l> FF,
+    Eigen::Ref<Mesh::VectorXl> VF,
+    Eigen::Ref<Mesh::VectorXl> EF)
+{
+    // get Accessors for topology
+    Accessor<long> fv_accessor = create_accessor<long>(m_fv_handle);
+    Accessor<long> fe_accessor = create_accessor<long>(m_fe_handle);
+    Accessor<long> ff_accessor = create_accessor<long>(m_ff_handle);
+    Accessor<long> vf_accessor = create_accessor<long>(m_vf_handle);
+    Accessor<long> ef_accessor = create_accessor<long>(m_ef_handle);
+}
 void trimesh_topology_initialization(
     Eigen::Ref<const Mesh::RowVectors3l> F,
     Eigen::Ref<Mesh::RowVectors3l> FV,
