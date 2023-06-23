@@ -106,6 +106,7 @@ void MeshAttributes<T>::reserve(const long size)
 template class MeshAttributes<char>;
 template class MeshAttributes<long>;
 template class MeshAttributes<double>;
+template class MeshAttributes<long>;
 // template class MeshAttributes<bool>;
 
 } // namespace wmtk

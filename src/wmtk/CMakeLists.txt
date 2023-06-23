@@ -3,7 +3,6 @@ set(SRC_FILES
     Accessor.cpp
     Accessor.hpp
     AttributeHandle.hpp
-    CMakeLists.txt
     Mesh.cpp
     Mesh.hpp
     MeshAttributes.cpp
