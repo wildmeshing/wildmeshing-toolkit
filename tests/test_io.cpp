@@ -1,7 +1,7 @@
 #include <h5pp/h5pp.h>
 #include <igl/edges.h>
 #include <igl/oriented_facets.h>
-#include <wmtk/TriMesh.h>
+#include <wmtk/Mesh.hpp>
 #include <paraviewo/HDF5VTUWriter.hpp>
 #include <paraviewo/ParaviewWriter.hpp>
 #include <paraviewo/VTUWriter.hpp>

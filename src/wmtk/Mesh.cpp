@@ -2,12 +2,9 @@
 
 namespace wmtk {
 
-Tuple Mesh::tuple_from_cell(long cid) const
-{
-    return Tuple(0, 0, 0, cid, 0);
-    // TODO: figure out how to compute hash
-    // return Tuple(0,0,0,cid, hash(cid));
-}
+Mesh::Mesh() = default;
+
+Mesh::~Mesh() = default;
 
 TriMesh::TriMesh()
     : m_vf_accessor(register_attribute_with_accessor<long>("m_vf", PrimitiveType::Vertex, 1))
@@ -17,6 +14,23 @@ TriMesh::TriMesh()
     , m_ff_accessor(register_attribute_with_accessor<long>("m_ff", PrimitiveType::Face, 3))
 {}
 
+void TriMesh::split_edge(const Tuple& t) {}
+void TriMesh::collapse_edge(const Tuple& t) {}
+void TriMesh::build_vertex_connectivity(long n_vertices) {}
+long TriMesh::id(const Tuple& tuple, const PrimitiveType& type) const
+{
+    return 0;
+}
+
+Tuple TriMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
+{ 
+    return Tuple(0,0,0,0,0); 
+}
+
+bool TriMesh::is_ccw(const Tuple& tuple) const
+{
+    return false;
+}
 
 TetMesh::TetMesh()
     : m_vt_accessor(register_attribute_with_accessor<long>("m_vt", PrimitiveType::Vertex, 1))
@@ -28,6 +42,20 @@ TetMesh::TetMesh()
     , m_tt_accessor(register_attribute_with_accessor<long>("m_tt", PrimitiveType::Tetrahedron, 4))
 {}
 
+long TetMesh::id(const Tuple& tuple, const PrimitiveType& type) const
+{
+    return 0;
+}
+
+Tuple TetMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
+{ 
+    return Tuple(0,0,0,0,0); 
+}
+
+bool TetMesh::is_ccw(const Tuple& tuple) const
+{
+    return false;
+}
 
 void trimesh_topology_initialization(
     Eigen::Ref<const RowVectors3l>& F,
