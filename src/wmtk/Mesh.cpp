@@ -28,5 +28,46 @@ TetMesh::TetMesh()
     , m_tt_accessor(register_attribute_with_accessor<long>("m_tt", PrimitiveType::Tetrahedron, 4))
 {}
 
+// TODO
+bool Mesh::is_valid(const Tuple& tuple) const
+{
+    // condition 1: global cid stays in bound, and is not removed
 
+    // condition 2: hash
+
+
+    // Condition 3: local ids are consistent
+    const int v = tuple.m_local_vid;
+    switch (tuple.m_local_eid) {
+    case 0:
+        if (tuple.m_local_vid == 1 || tuple.m_local_vid == 2)
+            return true;
+        else
+            return false;
+    case 1:
+        if (tuple.m_local_vid == 0 || tuple.m_local_vid == 2)
+            return true;
+        else
+            return false;
+    case 2:
+        if (tuple.m_local_vid == 1 || tuple.m_local_vid == 0)
+            return true;
+        else
+            return false;
+    default: throw std::runtime_error("tuple invlid failed local ids check");
+    }
+}
+} // namespace wmtk
+
+std::vector<Tuple> Mesh::get_all(const PrimitiveType& type) const
+{
+    switch (type) {
+    case PrimitiveType::Vertex: return {
+        }
+    case PrimitiveType::Edge: return get_edges(); break;
+    case PrimitiveType::Face: return get_faces(); break;
+    case PrimitiveType::Tetrahedron: return get_tetrahedrons(); break;
+    default: throw std::runtime_error("Invalid primitive type");
+    }
+}
 } // namespace wmtk

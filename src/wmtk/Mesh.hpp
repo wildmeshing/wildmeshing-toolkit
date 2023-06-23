@@ -24,7 +24,7 @@ public:
      * @param type the type of tuple, can be vertex/edge/triangle/tetrahedron
      * @return vector of Tuples referring to each type
      */
-    std::vector<Tuple> get_all_of(const PrimitiveType& type) const;
+    std::vector<Tuple> get_all(const PrimitiveType& type) const;
 
     /**
      * Removes all unset space
@@ -39,68 +39,8 @@ public:
      */
     virtual Tuple switch_tuple(const PrimitiveType& type, const Tuple& t) const = 0;
 
-    /**
-     * @brief verify the connectivity validity of the mesh
-     * @note a valid mesh can have cells that are is_removed == true
-     */
-    // bool check_mesh_connectivity_validity() const;
-
-
-    ///**
-    // * @brief Get the incident vertices for a triangle
-    // *
-    // * @param t tuple pointing to an face
-    // * @return tuples of incident vertices
-    // */
-    // std::array<Tuple, 3> oriented_tri_vertices(const Tuple& t) const;
-
-    /**
-     * @brief Get the incident vertices for a triangle
-     *
-     * @param t tuple pointing to an face
-     * @return global vids of incident vertices
-     */
-    std::array<long, 3> oriented_tri_vids(const Tuple& t) const;
-
-    /**
-     * Generate a face Tuple using global cell id
-     * @param cid global cell for the triangle/tetrahedron
-     * @return a Tuple
-     */
-    Tuple tuple_from_cell(long cid) const;
-
-    /**
-     * Generate a vertex Tuple using local vid
-     * @param vid global vid
-     * @note tuple refers to vid
-     */
-    virtual Tuple tuple_from_vertex(long vid) const = 0;
-
-
-    ///**
-    // * @brief perform the given function for each face
-    // *
-    // */
-    // void for_each_face(const std::function<void(const Tuple&)>&);
-
-    ///**
-    // * @brief perform the given function for each edge
-    // *
-    // */
-    // void for_each_edge(const std::function<void(const Tuple&)>&);
-
-    ///**
-    // * @brief perform the given function for each vertex
-    // *
-    // */
-    // void for_each_vertex(const std::function<void(const Tuple&)>&);
-
     AttributeHandle
     register_attribute(const std::string& name, const PrimitiveType& type, long size);
-
-    template <typename T>
-    T scalar_attribute(const AttributeHandle& handle, const PrimitiveType& type, const Tuple& tuble)
-        const;
 
     long gid(const PrimitiveType& type);
 
@@ -134,12 +74,7 @@ protected:
         // }
     }
 
-
-    /**
-     * Generate the vertex connectivity of the mesh using the existing triangle structure
-     * @param n_vertices Input number of vertices
-     */
-    virtual void build_vertex_connectivity(long n_vertices) = 0;
+    Tuple tuple_from_cell(long cid) const;
 
 public:
     /**
@@ -180,13 +115,15 @@ public:
      */
     int capacity(const PrimitiveType& type) const;
     /**
-     * @brief TODO this needs dimension?
+     * @brief
      *
-     * @param m
-     * @return true
+     * @param tuple the tuple to be checked
+     * @param type only the top cell dimension, other validity follows with assumption of
+     * manifoldness. 2->triangle, 3->tetrahedron
+     * @return true if is valid
      * @return false
      */
-    bool is_valid(const Tuple& tuple) const;
+    bool is_valid(const Tuple& tuple, const PrimitiveType& type) const;
 };
 
 
@@ -268,9 +205,8 @@ Mesh::register_attribute_with_accessor(const std::string& name, PrimitiveType pt
  * @param VF one adjacent triangle (arbitrarily chosen) of every vertex in (N x 1) matrix format
  * @param EF one adjacent triangle (arbitrarily chosen) of every edge in (N x 1) matrix format
  */
-
 void trimesh_topology_initialization(
-    Eigen::Ref<const MaxtrixXi>& F,
+    Eigen::Ref<const MatrixXi>& F,
     Eigen::Ref<const Matl3>& FE,
     Eigen::Ref<const Matl3>& FF,
     Eigen::Ref<const Matl1>& VF,
@@ -336,6 +272,7 @@ void trimesh_topology_initialization(
             FF(fa, eia) = -1;
         }
     }
+    return;
 }
 
 void tetmesh_topology_initialization(
