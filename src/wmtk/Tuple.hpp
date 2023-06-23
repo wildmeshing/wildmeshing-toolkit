@@ -1,14 +1,17 @@
 #pragma once
 
+#include "Primitive.hpp"
+
 #include <array>
 #include <cstddef>
 #include <optional>
 #include <string>
 #include <tuple>
-#include "Primitive.hpp"
 
 namespace wmtk {
+
 class Mesh;
+
 class Tuple
 {
 private:

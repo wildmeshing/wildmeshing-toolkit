@@ -1,11 +1,13 @@
 #pragma once
 
-#include <Eigen/Dense>
 #include "AttributeHandle.hpp"
-#include "Tuple.h"
+#include "Tuple.hpp"
+
+#include <Eigen/Dense>
 
 namespace wmtk {
 class Mesh;
+class TriMesh;
 
 template <typename T>
 class MeshAttributes;
@@ -14,6 +16,8 @@ class Accessor
 {
 public:
     friend class Mesh;
+    friend class TriMesh;
+
     using MapResult = Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, 1>>;
     using ConstMapResult = Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, 1>>;
 
@@ -44,4 +48,3 @@ private:
 template <typename T>
 Accessor(Mesh& mesh, const MeshAttributeHandle<T>&) -> Accessor<T>;
 } // namespace wmtk
-
