@@ -14,13 +14,25 @@ void TriMesh::collapse_edge(const Tuple& t) {}
 
 long TriMesh::id(const Tuple& tuple, const PrimitiveType& type) const
 {
-    throw "not implemented";
-    // switch (type) {
-    // case PrimitiveType::Vertex: return m_fv[tuple.m_global_cid * 3 + tuple.m_local_vid]; break;
-    // case PrimitiveType::Edge: return m_fe[tuple.m_global_cid * 3 + tuple.m_local_eid]; break;
-    // case PrimitiveType::Triangle: return tuple.m_global_cid; break;
-    // default: throw std::runtime_error("Tuple id: Invalid primitive type");
-    // }
+    switch (type) {
+    case PrimitiveType::Vertex: {
+        Accessor<long> fv_accessor = create_accessor<long>(m_fv_handle);
+        auto fv = fv_accessor.vector_attribute(tuple);
+        return fv(tuple.m_local_vid);
+        break;
+    }
+    case PrimitiveType::Edge: {
+        Accessor<long> fe_accessor = create_accessor<long>(m_fe_handle);
+        auto fe = fe_accessor.vector_attribute(tuple);
+        return fe(tuple.m_local_eid);
+        break;
+    }
+    case PrimitiveType::Face: {
+        return tuple.m_global_cid;
+        break;
+    }
+    default: throw std::runtime_error("Tuple id: Invalid primitive type");
+    }
 }
 
 Tuple TriMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
