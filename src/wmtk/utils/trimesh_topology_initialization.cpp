@@ -1,7 +1,5 @@
 #include <wmtk/trimesh_topology_initialization.h>
 namespace wmtk {
-namespace {
-
 void trimesh_topology_initialization(
     Eigen::Ref<const Mesh::RowVectors3l> F,
     Eigen::Ref<Mesh::RowVectors3l> FE,

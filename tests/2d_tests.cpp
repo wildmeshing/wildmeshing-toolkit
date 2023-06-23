@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <catch2/catch.hpp>
 #include <igl/read_triangle_mesh.h>
-#include <wmtk/Mesh.hpp>
+#include <wmtk/TriMesh.hpp>
 // #include <wmtk/operations/TriMeshConsolidateOperation.h>
 // #include <wmtk/operations/TriMeshEdgeCollapseOperation.h>
 // #include <wmtk/operations/TriMeshEdgeSplitOperation.h>

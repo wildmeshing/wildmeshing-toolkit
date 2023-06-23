@@ -73,10 +73,6 @@ protected:
 
     Tuple tuple_from_cell(long cid) const;
 
-    virtual std::vector<Tuple> get_vertices() const = 0;
-    virtual std::vector<Tuple> get_edges() const = 0;
-    virtual std::vector<Tuple> get_faces() const = 0;
-    virtual std::vector<Tuple> get_tetrahedrons() const = 0;
 
     /**
      * @brief reserve space for all attributes data types for all dimensional simplices
@@ -141,54 +137,6 @@ private:
     std::vector<MeshAttributeHandle<char>> m_flags;
 };
 
-class TetMesh : public Mesh
-{
-private:
-    MeshAttributeHandle<long> m_vt_handle;
-    MeshAttributeHandle<long> m_et_handle;
-    MeshAttributeHandle<long> m_ft_handle;
-
-    MeshAttributeHandle<long> m_tv_handle;
-    MeshAttributeHandle<long> m_te_handle;
-    MeshAttributeHandle<long> m_tf_handle;
-    MeshAttributeHandle<long> m_tt_handle;
-
-public:
-    TetMesh();
-
-    long id(const Tuple& tuple, const PrimitiveType& type) const override;
-    Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const override;
-    bool is_ccw(const Tuple& tuple) const override;
-    void initialize(
-        Eigen::Ref<const RowVectors4l>& TV,
-        Eigen::Ref<const RowVectors4l>& TE,
-        Eigen::Ref<const RowVectors4l>& TF,
-        Eigen::Ref<const RowVectors4l>& TT,
-        Eigen::Ref<const VectorXl>& VT,
-        Eigen::Ref<const VectorXl>& ET,
-        Eigen::Ref<const VectorXl>& FT) const;
-};
-/**
- * @brief given the mesh connectivity in matrix format, initialize the topology data used for Mesh
- * @param F input connectivity in (N x 3) matrix format (igl convention)
- * @param FV output connectivity in (N x 3) matrix format, same as F
- * @param FE three edges of every triangle in (N x 3) matrix format
- * @param FF three edge-adjacent faces of every triangle in (N x 3) matrix format
- * @param VF one adjacent triangle (arbitrarily chosen) of every vertex in (N x 1) matrix format
- * @param EF one adjacent triangle (arbitrarily chosen) of every edge in (N x 1) matrix format
- */
-void trimesh_topology_initialization(
-    Eigen::Ref<const Mesh::RowVectors3l> F,
-    Eigen::Ref<Mesh::RowVectors3l> FV,
-    Eigen::Ref<Mesh::RowVectors3l> FE,
-    Eigen::Ref<Mesh::RowVectors3l> FF,
-    Eigen::Ref<Mesh::VectorXl> VF,
-    Eigen::Ref<Mesh::VectorXl> EF);
-
-void tetmesh_topology_initialization(
-    Eigen::Ref<const Mesh::RowVectors3d> V,
-    Eigen::Ref<const Mesh::RowVectors4l> F,
-    TetMesh& mesh);
 
 template <typename T>
 Accessor<T> Mesh::create_accessor(const MeshAttributeHandle<T>& handle)

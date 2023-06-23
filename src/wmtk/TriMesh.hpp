@@ -1,4 +1,5 @@
-#include <Mesh.hpp>
+#pragma once
+#include "Mesh.hpp"
 using namespace Eigen;
 namespace wmtk {
 class TriMesh : public Mesh
@@ -10,6 +11,10 @@ private:
     MeshAttributeHandle<long> m_fv_handle;
     MeshAttributeHandle<long> m_fe_handle;
     MeshAttributeHandle<long> m_ff_handle;
+
+    std::vector<Tuple> get_vertices() const;
+    std::vector<Tuple> get_edges() const;
+    std::vector<Tuple> get_faces() const;
 
 public:
     TriMesh();
@@ -24,6 +29,8 @@ public:
         Eigen::Ref<const RowVectors3l>& FE,
         Eigen::Ref<const RowVectors3l>& FF,
         Eigen::Ref<const VectorXl>& VF,
-        Eigen::Ref<const VectorXl>& EF) const;
+        Eigen::Ref<const VectorXl>& EF,
+        Eigen::Ref<const RowVectors4l>& seam) const;
 };
+
 } // namespace wmtk
