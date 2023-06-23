@@ -23,7 +23,7 @@ int main(int argc, char** argv)
         exit(-1);
     }
 
-    const path wmtk_spec_file = "wmtk_spec.json";
+    const path wmtk_spec_file = WMTK_APP_INPUT_SPEC;
     json rules_json;
     {
         std::ifstream f(wmtk_spec_file);

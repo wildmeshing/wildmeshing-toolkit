@@ -13,4 +13,4 @@ target_link_libraries(wmtk_app PUBLIC
     jse::jse
 )
 
-target_compile_definitions(wmtk_app PUBLIC WMTK_APP_INPUT_SPEC="${CMAKE_SOURCE_DIR}/input-spec.json")
+target_compile_definitions(wmtk_app PUBLIC WMTK_APP_INPUT_SPEC="${CMAKE_SOURCE_DIR}/wmtk_spec.json")

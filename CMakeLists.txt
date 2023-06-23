@@ -67,12 +67,12 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # ###############################################################################
 
 # Core library
-set(SRC_FILES 
+set(SRC_FILES
     src/wmtk/Mesh.cpp
-    src/wmtk/Mesh.hpp 
-    src/wmtk/MeshAttributes.hpp 
-    src/wmtk/MeshAttributes.cpp 
-    src/wmtk/Accessor.hpp 
+    src/wmtk/Mesh.hpp
+    src/wmtk/MeshAttributes.hpp
+    src/wmtk/MeshAttributes.cpp
+    src/wmtk/Accessor.hpp
     src/wmtk/Accessor.cpp)
 
 add_library(wildmeshing_toolkit "${SRC_FILES}")
@@ -96,10 +96,6 @@ target_compile_definitions(wildmeshing_toolkit PUBLIC NOMINMAX)
 target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_17)
 
 #target_compile_options(wildmeshing_toolkit PUBLIC  -fconcepts)
-
-# Set IDE folders
-source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src" PREFIX "Source Files" FILES ${SRC_FILES})
-source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/components" PREFIX "Components Source Files" FILES ${SRC_FILES})
 
 # Dependencies
 include(libigl)
