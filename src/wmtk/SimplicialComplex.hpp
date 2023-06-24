@@ -14,11 +14,11 @@ class Simplex
 {
     int _d;   // dimension
     Tuple _t; // tuple
-    int _global_id
+    int _global_id;
 public:
     Simplex(const int &d, const Tuple &t, const Mesh& m) : _d{d}, _t{t} 
     {
-        _global_id = m.id(t, d);
+        _global_id = m.id(t, static_cast<PrimitiveType>(d));
     }
 
     int global_id() const { return _global_id; }
@@ -113,11 +113,11 @@ public:
 
     SimplicialComplex() = default;
 
-    SimplicialComplex(const std::vector<Tuple> &tv, const int dim, const Mesh& m)
+    SimplicialComplex(const std::vector<Simplex> &ss)
     {
-        for (const Tuple &t : tv)
+        for (const Simplex &s : ss)
         {
-            add_simplex(Simplex(dim, t, m));
+            add_simplex(s);
         }
     }
 };
@@ -195,7 +195,7 @@ SimplicialComplex boundary(const Simplex &s, const Mesh &m)
     case 1:
         // bd(edge) = 2 vertices
         sc.add_simplex(Simplex(0, s.tuple(), m));
-        sc.add_simplex(Simplex(0, s.tuple().switch_tuple(static_cast<PrimitiveType>(0), m), m));
+        sc.add_simplex(Simplex(0, m.switch_tuple(s.tuple(),static_cast<PrimitiveType>(0)), m));
         /* code */
         break;
     case 0:
@@ -235,8 +235,8 @@ inline bool simplices_w_boundary_intersect(const Simplex &s1, const Simplex &s2,
 SimplicialComplex closed_star(const Simplex &s, const Mesh &m)
 {
     SimplicialComplex sc;
-    const int &cell_dim = m->cell_dimension(); // TODO: 2 for trimesh, 3 for tetmesh need it in Mesh class
-
+    // const int &cell_dim = m->cell_dimension(); // TODO: 2 for trimesh, 3 for tetmesh need it in Mesh class
+    const int cell_dim = dynamic_cast<const TriMesh*>(&m)?2:3;
     if (cell_dim == 2)
     {
         switch (s.dimension())
@@ -418,30 +418,30 @@ bool link_cond(Tuple t, const Mesh &m)
 /**
  * @brief get one ring neighbors of vertex in _t_
  */
-std::vector<Tuple> vertex_one_ring(Tuple t, const Mesh &m)
+std::vector<Simplex> vertex_one_ring(Tuple t, const Mesh &m)
 {
-    Simplex s(0, t);
+    Simplex s(0, t, m);
     SimplicialComplex sc_link = link(s, m);
     std::set<Simplex> one_ring_simplices = sc_link.get_simplices(0);
-    return std::vector<Tuple>(one_ring_simplices.begin(), one_ring_simplices.end());
+    return std::vector<Simplex>(one_ring_simplices.begin(), one_ring_simplices.end());
 }
 
-std::vector<Tuple> k_ring(Tuple t, const Mesh &m, int k)
+std::vector<Simplex> k_ring(Tuple t, const Mesh &m, int k)
 {
     if (k < 1)
         return {};
 
-    SimplicialComplex sc(vertex_one_ring(t, m), 0);
+    SimplicialComplex sc(vertex_one_ring(t, m));
     for (int i = 2; i <= k; ++i)
     {
         const auto simplices = sc.get_simplices();
         for (const Simplex &s : simplices)
         {
-            SimplicialComplex sc_or(vertex_one_ring(s.tuple(), m), 0);
+            SimplicialComplex sc_or(vertex_one_ring(s.tuple(), m));
             sc.unify_with_complex(sc_or);
         }
     }
 
     std::set<Simplex> k_ring_simplices = sc.get_simplices();
-    return std::vector<Tuple>(k_ring_simplices.begin(), k_ring_simplices.end());
+    return std::vector<Simplex>(k_ring_simplices.begin(), k_ring_simplices.end());
 }
