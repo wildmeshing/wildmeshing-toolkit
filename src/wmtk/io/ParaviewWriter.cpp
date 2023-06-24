@@ -18,16 +18,18 @@ ParaviewWriter::ParaviewInternalWriter::ParaviewInternalWriter()
 void ParaviewWriter::ParaviewInternalWriter::init(
     const std::filesystem::path& filename,
     const std::string& vertices_name,
-    const std::string& elements_name)
+    const std::string& elements_name,
+    const bool enabled)
 {
     m_vertices_name = vertices_name;
     m_elements_name = elements_name;
     m_filename = filename;
+    m_enabled = enabled;
 }
 
 ParaviewWriter::ParaviewInternalWriter::~ParaviewInternalWriter()
 {
-    m_paraview_file->write_mesh(m_filename, m_vertices, m_elements);
+    if (m_enabled) m_paraview_file->write_mesh(m_filename, m_vertices, m_elements);
 }
 
 
@@ -36,17 +38,12 @@ void ParaviewWriter::ParaviewInternalWriter::write(
     const long stride,
     const std::vector<double>& val)
 {
-    if (name == m_vertices_name) {
+    if (name == m_elements_name) {
         assert(stride == 2 || stride == 3);
 
-        m_vertices = Eigen::Map<const Eigen::MatrixXd>(&val[0], val.size() / stride, stride);
-
-    } else if (name == m_elements_name) {
-        assert(stride == 2 || stride == 3);
-
-        m_elements =
-            Eigen::Map<const Eigen::MatrixXd>(&val[0], val.size() / stride, stride).cast<int>();
-        return;
+        m_elements = Eigen::Map<const Eigen::MatrixXd>(&val[0], stride, val.size() / stride)
+                         .cast<int>()
+                         .transpose();
     } else {
         if (stride > 3) {
             logger().warn("Skpping {}, stride {} > 3", name, stride);
@@ -66,16 +63,17 @@ ParaviewWriter::ParaviewWriter(
     bool write_edges,
     bool write_faces,
     bool write_tetrahedra)
+    : m_vertices_name(vertices_name)
 {
     m_enabled[0] = write_points;
     m_enabled[1] = write_edges;
     m_enabled[2] = write_faces;
     m_enabled[3] = write_tetrahedra;
 
-    m_writers[0].init(filename.string() + "_verts.hdf5", vertices_name, "m_vf");
-    m_writers[1].init(filename.string() + "_edges.hdf5", vertices_name, "m_ef");
-    m_writers[2].init(filename.string() + "_faces.hdf5", vertices_name, "m_ff");
-    m_writers[3].init(filename.string() + "_tets.hdf5", vertices_name, "m_vf");
+    m_writers[0].init(filename.string() + "_verts.hdf5", vertices_name, "m_vf", m_enabled[0]);
+    m_writers[1].init(filename.string() + "_edges.hdf5", vertices_name, "m_ef", m_enabled[1]);
+    m_writers[2].init(filename.string() + "_faces.hdf5", vertices_name, "m_fv", m_enabled[2]);
+    m_writers[3].init(filename.string() + "_tets.hdf5", vertices_name, "m_vf", m_enabled[3]);
 }
 
 void ParaviewWriter::write(
@@ -133,7 +131,18 @@ void ParaviewWriter::write_internal(
     const long stride,
     const std::vector<double>& val)
 {
-    m_writers[type].write(name, stride, val);
+    if (name == m_vertices_name) {
+        assert(stride == 2 || stride == 3);
+
+        Eigen::MatrixXd V =
+            Eigen::Map<const Eigen::MatrixXd>(&val[0], stride, val.size() / stride).transpose();
+
+        for (int i = 0; i < m_writers.size(); ++i) {
+            if (m_enabled[i]) m_writers[i].vertices() = V;
+        }
+
+    } else if (m_enabled[type])
+        m_writers[type].write(name, stride, val);
 }
 
 
