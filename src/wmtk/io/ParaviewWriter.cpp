@@ -39,20 +39,34 @@ void ParaviewWriter::ParaviewInternalWriter::write(
     const std::vector<double>& val)
 {
     if (name == m_elements_name) {
-        assert(stride == 2 || stride == 3);
+        assert(stride == 2 || stride == 3 || stride == 4);
 
         m_elements = Eigen::Map<const Eigen::MatrixXd>(&val[0], stride, val.size() / stride)
                          .cast<int>()
                          .transpose();
     } else {
-        if (stride > 3) {
-            logger().warn("Skpping {}, stride {} > 3", name, stride);
-            return;
-        }
-
         Eigen::MatrixXd tmp =
-            Eigen::Map<const Eigen::MatrixXd>(&val[0], val.size() / stride, stride);
-        m_paraview_file->add_cell_field(name, tmp);
+            Eigen::Map<const Eigen::MatrixXd>(&val[0], stride, val.size() / stride).transpose();
+
+        if (stride == 1 || stride == 2 || stride == 3) {
+            m_paraview_file->add_cell_field(name, tmp);
+        } else if (stride % 3 == 0) {
+            for (long i = 0; i < stride; i += 3) {
+                m_paraview_file->add_cell_field(
+                    name + "_" + std::to_string(i / 3),
+                    tmp.block(0, i, tmp.rows(), 3));
+            }
+        } else if (stride % 2 == 0) {
+            for (long i = 0; i < stride; i += 2) {
+                m_paraview_file->add_cell_field(
+                    name + "_" + std::to_string(i / 2),
+                    tmp.block(0, i, tmp.rows(), 2));
+            }
+        } else {
+            for (long i = 0; i < stride; ++i) {
+                m_paraview_file->add_cell_field(name + "_" + std::to_string(i), tmp.col(i));
+            }
+        }
     }
 }
 
