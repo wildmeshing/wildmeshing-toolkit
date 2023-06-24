@@ -7,7 +7,7 @@ include(Catch)
 # Sources
 set(TEST_SOURCES
     main.cpp
-    test_topology_2d.cpp)
+    test_topology.cpp)
 add_executable(wmtk_tests ${TEST_SOURCES})
 
 # Macros

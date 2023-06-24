@@ -1,7 +1,14 @@
 #pragma once
+#include "Primitive.h"
+#include "Operation.h"
+
+namespace wmtk::operations {
 class OperationFactoryBase
 {
-    std::unique_ptr<Operation> create(const MeshType& m, const TupleType& t) const;
+    virtual std::unique_ptr<Operation> create(const MeshType& m, const TupleType& t) const;
+    PrimitiveType primitive() const { return m_primitive; }
+    private:
+    PrimitiveType m_primitive;
 };
 
 template <typename OperationType>
@@ -29,3 +36,4 @@ class OperationQueue
     std::queue<std::pair<std::string, Tuple>> queue;
 };
 
+}
