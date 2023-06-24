@@ -3,6 +3,7 @@
 #include <wmtk/Primitive.hpp>
 
 #include <filesystem>
+#include <vector>
 
 namespace wmtk {
 
