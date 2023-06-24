@@ -5,5 +5,7 @@ set(SRC_FILES
     MeshWriter.hpp
     MeshReader.hpp
     MeshReader.cpp
+    ParaviewWriter.hpp
+    ParaviewWriter.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

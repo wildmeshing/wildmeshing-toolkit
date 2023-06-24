@@ -14,7 +14,7 @@ class HDF5Writer : public MeshWriter
 public:
     HDF5Writer(const std::filesystem::path& filename);
 
-    bool write(const int dim) { return true; }
+    bool write(const int) override { return true; }
 
     void write(
         const std::string& name,
