@@ -43,6 +43,8 @@ public:
         Eigen::Ref<const VectorXl> FT);
     void initialize(Eigen::Ref<const RowVectors4l> T);
 
+    long _debug_id(const Tuple& tuple, const PrimitiveType& type) const;
+
 protected:
     long id(const Tuple& tuple, const PrimitiveType& type) const override;
 };
