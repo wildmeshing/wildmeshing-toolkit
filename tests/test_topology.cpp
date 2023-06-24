@@ -154,8 +154,7 @@ TEST_CASE("load meshes from libigl and test mesh topology", "[test_topology_2D]"
 
                 CHECK((FF.row(nb).array() == i).any());
 
-                if ((FF.row(nb).array() == i).any()) 
-                {
+                if ((FF.row(nb).array() == i).any()) {
                     int cnt = (FF.row(nb).array() == i).count();
                     CHECK(cnt == 1);
 
@@ -178,8 +177,7 @@ TEST_CASE("tetmesh_topology_initialization_1", "[test_topology_two_tedrahedra_1]
     // there are 7 unique faces and 9 unique edges
 
     Eigen::Matrix<long, 2, 4> T;
-    T << 0, 1, 2, 3, 
-        1, 2, 3, 4;
+    T << 0, 1, 2, 3, 1, 2, 3, 4;
 
     auto [TE, TF, TT, VT, ET, FT] = tetmesh_topology_initialization(T);
 
@@ -207,13 +205,11 @@ TEST_CASE("tetmesh_topology_initialization_1", "[test_topology_two_tedrahedra_1]
     for (int i = 0; i < TT.rows(); ++i) {
         for (int j = 0; j < 4; ++j) {
             long nb = TT(i, j);
-            if (nb < 0) 
-                continue;
+            if (nb < 0) continue;
 
             CHECK((TT.row(nb).array() == i).any());
 
-            if ((TT.row(nb).array() == i).any()) 
-            {
+            if ((TT.row(nb).array() == i).any()) {
                 int cnt = (TT.row(nb).array() == i).count();
                 CHECK(cnt == 1);
 
@@ -235,8 +231,7 @@ TEST_CASE("tetmesh_topology_initialization_2", "[test_topology_two_tedrahedra_2]
     // there are 8 unique faces and 12 unique edges
 
     Eigen::Matrix<long, 2, 4> T;
-    T << 0, 1, 2, 3,
-        4, 5, 6, 7;
+    T << 0, 1, 2, 3, 4, 5, 6, 7;
 
     auto [TE, TF, TT, VT, ET, FT] = tetmesh_topology_initialization(T);
 
@@ -264,13 +259,11 @@ TEST_CASE("tetmesh_topology_initialization_2", "[test_topology_two_tedrahedra_2]
     for (int i = 0; i < TT.rows(); ++i) {
         for (int j = 0; j < 4; ++j) {
             long nb = TT(i, j);
-            if (nb < 0) 
-                continue;
+            if (nb < 0) continue;
 
             CHECK((TT.row(nb).array() == i).any());
 
-            if ((TT.row(nb).array() == i).any()) 
-            {
+            if ((TT.row(nb).array() == i).any()) {
                 int cnt = (TT.row(nb).array() == i).count();
                 CHECK(cnt == 1);
 
