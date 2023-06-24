@@ -39,7 +39,7 @@ public:
 
     void initialize(Eigen::Ref<const RowVectors3l> F);
 
-    long debug_id(const Tuple& tuple, const PrimitiveType& type) const
+    long _debug_id(const Tuple& tuple, const PrimitiveType& type) const
     {
 #ifndef WMTK_USE_DEBUG_FUNCTIONS
         throw "Function can only be used for debugging!";
