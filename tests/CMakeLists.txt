@@ -5,10 +5,11 @@ list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/contrib)
 include(Catch)
 
 # Sources
-set(TEST_SOURCES 
-	main.cpp 
+set(TEST_SOURCES
+	main.cpp
 	test_topology.cpp
 	2d_tests.cpp
+    test_io.cpp
 )
 add_executable(wmtk_tests ${TEST_SOURCES})
 

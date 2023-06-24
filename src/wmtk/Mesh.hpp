@@ -6,6 +6,8 @@
 #include "Tuple.hpp"
 #include "Types.hpp"
 
+#include <wmtk/io/MeshWriter.hpp>
+
 #include <Eigen/Core>
 
 namespace wmtk {
@@ -17,6 +19,8 @@ public:
 
     Mesh(const long& dimension);
     virtual ~Mesh();
+
+    void serialize(MeshWriter& writer);
 
     /**
      * Generate a vector of Tuples from global vertex/edge/triangle/tetrahedron index
@@ -32,9 +36,6 @@ public:
 
     virtual void split_edge(const Tuple& t) = 0;
     virtual void collapse_edge(const Tuple& t) = 0;
-
-    AttributeHandle
-    register_attribute(const std::string& name, const PrimitiveType& type, long size);
 
     template <typename T>
     MeshAttributeHandle<T>

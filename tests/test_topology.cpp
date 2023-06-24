@@ -1,4 +1,6 @@
 #include <wmtk/utils/trimesh_topology_initialization.h>
+#include <wmtk/utils/tetmesh_topology_initialization.h>
+
 #include <wmtk/Mesh.hpp>
 
 #include <catch2/catch.hpp>
@@ -195,4 +197,63 @@ TEST_CASE("load mesh from libigl and test mesh topology", "[test_topology_2D]")
             }
         }
     }
+}
+
+TEST_CASE("tetmesh_topology_initialization_1", "[test_topology]")
+{
+    Eigen::Matrix<long, 2, 4> T;
+    T << 
+    0, 1, 2, 3,
+    1, 2, 3, 4;
+
+    auto [TE,TF,TT,FT,ET,VT] = tetmesh_topology_initialization(T);
+
+    std::cout << "T: \n" << T << std::endl;
+    std::cout << "TE: \n" << TE << std::endl;
+    std::cout << "TF: \n" << TF << std::endl;
+    std::cout << "TT: \n" << TT << std::endl;
+    std::cout << "FT: \n" << FT << std::endl;
+    std::cout << "ET: \n" << ET << std::endl;
+    std::cout << "VT: \n" << VT << std::endl;
+
+    
+    // // 1. Test relationship between EF and FE
+    // for (size_t i = 0; i < EF.size(); ++i)
+    // {
+    //     CHECK((FE.row(EF(i)).array() == i).any());
+    // }
+
+    // // 2. Test relationship between VF and F
+    // for (size_t i = 0; i < VF.size(); ++i)
+    // {
+    //     CHECK((F.row(VF(i)).array() == i).any());
+    // }
+    
+    // // 3. Test relationship between FF and FE
+    // for (size_t i = 0; i < FF.rows(); ++i)
+    // {
+    //     for (size_t j = 0; j < 3; ++j)
+    //     {
+    //         long nb = FF(i, j);
+    //         if (nb < 0) 
+    //             continue;
+            
+    //         CHECK((FF.row(nb).array() == i).any());
+
+    //         if ((FF.row(nb).array() == i).any())
+    //         {
+    //             int cnt = (FF.row(nb).array() == i).count();
+    //             CHECK(cnt == 1);
+
+    //             auto is_nb = (FE.row(nb).array() == i);
+    //             for (size_t k = 0; k < 3; ++k)
+    //             {
+    //                 if (is_nb(k))
+    //                 {
+    //                     CHECK(FE(i, j) == FE(nb, k));
+    //                 }
+    //             }
+    //         }    
+    //     }
+    // }
 }

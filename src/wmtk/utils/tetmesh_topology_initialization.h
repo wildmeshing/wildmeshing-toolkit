@@ -1,7 +1,8 @@
 
 #pragma once
-#include <spdlog/logger.h>
-#include <filesystem>
+
+#include <wmtk/Types.hpp>
+
 namespace wmtk {
 
 
@@ -9,12 +10,7 @@ namespace wmtk {
  * @brief Given the mesh connectivity in matrix format, finds unique edges and faces and their relations
  */
 
-void tetmesh_topology_initialization(
-    Eigen::Ref<const RowVectors3l>& T,
-    Eigen::Ref<RowVectors3l>& TE,
-    Eigen::Ref<RowVectors3l>& TF,
-    Eigen::Ref<RowVectors3l>& TT,
-    Eigen::Ref<VectorXl>& FT,
-    Eigen::Ref<VectorXl>& ET,
-    Eigen::Ref<VectorXl>& VT);
+std::tuple<RowVectors6l,RowVectors4l,RowVectors4l,VectorXl,VectorXl,VectorXl> tetmesh_topology_initialization(
+    Eigen::Ref<const RowVectors4l> T);
+    
 }
