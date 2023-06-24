@@ -10,6 +10,8 @@ class HDF5VTUWriter;
 }
 
 namespace wmtk {
+class Mesh;
+
 class ParaviewWriter : public MeshWriter
 {
 private:
@@ -22,7 +24,7 @@ private:
         void init(
             const std::filesystem::path& filename,
             const std::string& vertices_name,
-            const std::string& elements_name,
+            const Eigen::MatrixXi& elements,
             const bool enabled);
 
         void write(const std::string& name, const long stride, const std::vector<double>& val);
@@ -31,7 +33,6 @@ private:
 
     private:
         std::string m_vertices_name;
-        std::string m_elements_name;
 
         std::filesystem::path m_filename;
 
@@ -47,6 +48,7 @@ public:
     ParaviewWriter(
         const std::filesystem::path& filename,
         const std::string& vertices_name,
+        const Mesh& mesh,
         bool write_points = true,
         bool write_edges = true,
         bool write_faces = true,
@@ -77,6 +79,7 @@ public:
         const long type,
         const long stride,
         const std::vector<Rational>& val) override;
+
 
 private:
     std::array<ParaviewInternalWriter, 4> m_writers;

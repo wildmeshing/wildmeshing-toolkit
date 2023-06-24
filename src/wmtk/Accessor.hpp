@@ -9,6 +9,7 @@
 namespace wmtk {
 class Mesh;
 class TriMesh;
+class TetMesh;
 
 template <typename T>
 class MeshAttributes;
@@ -18,6 +19,7 @@ class Accessor
 public:
     friend class Mesh;
     friend class TriMesh;
+    friend class TetMesh;
     using MeshType = std::conditional_t<IsConst, const Mesh, Mesh>;
     using MeshAttributesType = std::conditional_t<IsConst, const Mesh, Mesh>;
 
@@ -33,6 +35,7 @@ public:
     T scalar_attribute(const Tuple& t) const;
     T& scalar_attribute(const Tuple& t);
 
+private:
     ConstMapResult vector_attribute(const long index) const;
     MapResult vector_attribute(const long index);
 
