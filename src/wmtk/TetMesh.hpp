@@ -15,6 +15,11 @@ private:
     MeshAttributeHandle<long> m_tf_handle;
     MeshAttributeHandle<long> m_tt_handle;
 
+    Tuple vertex_tuple_from_id() const;
+    Tuple edge_tuple_from_id(long id) const;
+    Tuple face_tuple_from_id(long id) const;
+    Tuple tuple_from_id(PrimitiveType ptype, long id) const override;
+
 public:
     TetMesh();
 
@@ -26,6 +31,7 @@ public:
     Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const override;
     bool is_ccw(const Tuple& tuple) const override;
     bool is_boundary(const Tuple& tuple) const override;
+    bool is_valid(const Tuple& tuple) const override;
 
     void initialize(
         Eigen::Ref<const RowVectors4l> TV,

@@ -13,14 +13,14 @@
 namespace wmtk {
 
 class Mesh;
-template <typename T>
+template <typename T, bool isConst>
 class Accessor;
 
 template <typename T>
 class MeshAttributes
 {
-    friend class Accessor<T>;
-    friend class Accessor<const T>;
+    friend class Accessor<T, false>;
+    friend class Accessor<T, true>;
     friend class Mesh;
 
     typedef Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, 1>> MapResult;
