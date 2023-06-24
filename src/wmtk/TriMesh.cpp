@@ -98,7 +98,6 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
 
 bool TriMesh::is_ccw(const Tuple& tuple) const
 {
-    throw "not implemeted";
     ConstAccessor<long> fv_accessor = create_accessor<long>(m_fv_handle);
     auto fv = fv_accessor.vector_attribute(tuple);
     if (fv((tuple.m_local_eid + 1) % 3) == id(tuple, PrimitiveType::Vertex))
@@ -132,34 +131,23 @@ void TriMesh::initialize(
     // iterate over the matrices and fill attributes
     // m_fv
     for (long i = 0; i < FV.rows(); ++i) {
-        for (long j = 0; j < FV.cols(); ++j) {
-            long& v = fv_accessor.vector_attribute(i)(j);
-            v = FV(i, j);
-        }
+        fv_accessor.vector_attribute(i) = FV.row(i).transpose();
     }
     // m_fe
     for (long i = 0; i < FE.rows(); ++i) {
-        for (long j = 0; j < FE.cols(); ++j) {
-            long& e = fe_accessor.vector_attribute(i)(j);
-            e = FE(i, j);
-        }
+        fe_accessor.vector_attribute(i) = FE.row(i).transpose();
     }
     // m_ff
     for (long i = 0; i < FF.rows(); ++i) {
-        for (long j = 0; j < FF.cols(); ++j) {
-            long& f = ff_accessor.vector_attribute(i)(j);
-            f = FF(i, j);
-        }
+        ff_accessor.vector_attribute(i) = FF.row(i).transpose();
     }
     // m_vf
     for (long i = 0; i < VF.rows(); ++i) {
-        long& f = vf_accessor.scalar_attribute(i);
-        f = VF(i);
+        vf_accessor.scalar_attribute(i) = VF(i);
     }
     // m_ef
     for (long i = 0; i < EF.rows(); ++i) {
-        long& f = ef_accessor.scalar_attribute(i);
-        f = EF(i);
+        ef_accessor.scalar_attribute(i) = EF(i);
     }
 }
 
