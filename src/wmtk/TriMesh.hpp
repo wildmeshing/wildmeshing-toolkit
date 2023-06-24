@@ -23,8 +23,6 @@ private:
 public:
     TriMesh();
 
-    std::vector<Tuple> get_all(const PrimitiveType& type) const override;
-
     void split_edge(const Tuple& t) override;
     void collapse_edge(const Tuple& t) override;
 

@@ -16,6 +16,7 @@ set(SRC_FILES
     Types.hpp
 	Simplex.hpp
 	SimplicialComplex.hpp
+	SimplicialComplex.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 

@@ -30,7 +30,7 @@ public:
      * @param type the type of tuple, can be vertex/edge/triangle/tetrahedron
      * @return vector of Tuples referring to each type
      */
-    virtual std::vector<Tuple> get_all(const PrimitiveType& type) const = 0;
+    std::vector<Tuple> get_all(const PrimitiveType& type) const;
 
     /**
      * Removes all unset space
