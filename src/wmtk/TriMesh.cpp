@@ -40,33 +40,48 @@ long TriMesh::id(const Tuple& tuple, const PrimitiveType& type) const
 
 Tuple TriMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
 {
-    // bool ccw = is_ccw(tuple);
-    // int offset = (tuple.m_local_vid*3 + tuple.m_local_eid);
-    
-    // switch (type) {
-    // case PrimitiveType::Vertex:
-    //     return Tuple(
-    //         wmtk::autogen::2d_tuple_table_vertex[offset][0],
-    //         wmtk::autogen::2d_tuple_table_vertex[offset][1],
-    //         tuple.m_local_fid,
-    //         tuple.m_global_cid,
-    //         tuple.m_hash);
+    bool ccw = is_ccw(tuple);
+    int offset = (tuple.m_local_vid * 3 + tuple.m_local_eid);
 
-    // case PrimitiveType::Edge:
-    //     return Tuple(
-    //         wmtk::autogen::2d_tuple_table_edge[offset][0],
-    //         wmtk::autogen::2d_tuple_table_edge[offset][1],
-    //         tuple.m_local_fid,
-    //         tuple.m_global_cid,
-    //         tuple.m_hash);
-    // case PrimitiveType::Triangle: {
-    //     thrown("read the attribute")
-    //     }
-    //     return Tuple(lvid_new, leid_new, tuple.m_local_fid, gcid_new, tuple.m_hash);
-    // }
-    // default: throw std::runtime_error("Tuple switch: Invalid primitive type"); break;
-    // }
-    throw("TODO");
+    switch (type) {
+    case PrimitiveType::Vertex:
+        return Tuple(
+            wmtk::autogen::auto_2d_table_vertex[offset][0],
+            wmtk::autogen::auto_2d_table_vertex[offset][1],
+            tuple.m_local_fid,
+            tuple.m_global_cid,
+            tuple.m_hash);
+
+    case PrimitiveType::Edge:
+        return Tuple(
+            wmtk::autogen::auto_2d_table_edge[offset][0],
+            wmtk::autogen::auto_2d_table_edge[offset][1],
+            tuple.m_local_fid,
+            tuple.m_global_cid,
+            tuple.m_hash);
+    case PrimitiveType::Face: {
+        long gvid = id(tuple, PrimitiveType::Vertex);
+        long geid = id(tuple, PrimitiveType::Edge);
+        Accessor<long> ff_accessor = create_accessor<long>(m_ff_handle);
+        auto ff = ff_accessor.vector_attribute(tuple);
+        long gcid_new = ff(tuple.m_local_eid);
+        long lvid_new, leid_new;
+        Accessor<long> fv_accessor = create_accessor<long>(m_fv_handle);
+        auto fv = fv_accessor.vector_attribute(gcid_new);
+        Accessor<long> fe_accessor = create_accessor<long>(m_fe_handle);
+        auto fe = fe_accessor.vector_attribute(gcid_new);
+        for (long i = 0; i < 3; ++i) {
+            if (fe(i) == geid) {
+                leid_new = fe(i);
+            }
+            if (fv(i) == gvid) {
+                lvid_new = fv(i);
+            }
+        }
+        return Tuple(lvid_new, leid_new, tuple.m_local_fid, gcid_new, tuple.m_hash);
+    }
+    default: throw std::runtime_error("Tuple switch: Invalid primitive type"); break;
+    }
 }
 
 bool TriMesh::is_ccw(const Tuple& tuple) const
