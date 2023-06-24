@@ -89,7 +89,6 @@ ParaviewWriter::ParaviewWriter(
 
             for (size_t j = 0; j < tuples.size(); ++j) {
                 const auto& t = tuples[j];
-                std::cout << t << std::endl;
                 long vid = mesh.id(t, PrimitiveType::Vertex);
                 cells[i](j, 0) = vid;
                 if (i > 0) {
