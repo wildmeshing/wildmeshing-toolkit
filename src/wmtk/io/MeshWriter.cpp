@@ -1,5 +1,7 @@
 #include "MeshWriter.hpp"
 
+#include <wmtk/utils/Rational.hpp>
+
 #include <h5pp/h5pp.h>
 
 namespace wmtk {
@@ -27,5 +29,10 @@ template void
 MeshWriter::write<long>(const std::string&, const long, const long, const std::vector<long>&);
 template void
 MeshWriter::write<double>(const std::string&, const long, const long, const std::vector<double>&);
+template void MeshWriter::write<Rational>(
+    const std::string&,
+    const long,
+    const long,
+    const std::vector<Rational>&);
 
 } // namespace wmtk
