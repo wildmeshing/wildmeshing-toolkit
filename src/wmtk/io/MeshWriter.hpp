@@ -2,6 +2,8 @@
 
 #include <wmtk/utils/Rational.hpp>
 
+#include <vector>
+
 namespace wmtk {
 
 class MeshWriter
