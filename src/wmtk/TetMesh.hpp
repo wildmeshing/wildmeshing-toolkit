@@ -31,6 +31,7 @@ public:
     Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const override;
     bool is_ccw(const Tuple& tuple) const override;
     bool is_boundary(const Tuple& tuple) const override;
+    bool is_valid(const Tuple& tuple) const override;
 
     void initialize(
         Eigen::Ref<const RowVectors4l> TV,

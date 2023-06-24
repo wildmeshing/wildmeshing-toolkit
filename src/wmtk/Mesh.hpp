@@ -7,6 +7,7 @@
 #include "Types.hpp"
 
 #include <wmtk/io/MeshWriter.hpp>
+#include <wmtk/io/ParaviewWriter.hpp>
 
 #include <Eigen/Core>
 
@@ -16,6 +17,7 @@ class Mesh
 public:
     template <typename T, bool isConst>
     friend class Accessor;
+    friend class ParaviewWriter;
 
     Mesh(const long& dimension);
     virtual ~Mesh();
@@ -151,9 +153,6 @@ public:
     virtual bool is_valid(const Tuple& tuple) const = 0;
 
 protected:
-
-    virtual Tuple tuple_from_id(PrimitiveType ptype, long id) const = 0;
-
     /**
      * @brief return the global id of the Tuple of the given dimension
      *
@@ -167,7 +166,6 @@ protected:
     virtual long id(const Tuple& tuple, const PrimitiveType& type) const = 0;
 
     void set_capacities(std::vector<long> capacities);
-
 };
 
 
