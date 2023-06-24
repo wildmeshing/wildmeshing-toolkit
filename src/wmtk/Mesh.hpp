@@ -15,7 +15,7 @@ public:
     template <typename T>
     friend class Accessor;
 
-    Mesh();
+    Mesh(const long& dimension);
     virtual ~Mesh();
 
     /**
@@ -48,7 +48,7 @@ public:
     Accessor<T> create_accessor(const MeshAttributeHandle<T>& handle);
 
     template <typename T>
-    const Accessor<T> create_accessor(const MeshAttributeHandle<T>& handle) const;
+    Accessor<const T> create_accessor(const MeshAttributeHandle<T>& handle) const;
 
 protected:
     std::vector<MeshAttributes<char>> m_char_attributes;
@@ -75,7 +75,9 @@ protected:
      *
      * @param top_d the top dimensional simplex
      */
-    void mesh_attributes_reserve(const PrimitiveType& top_d);
+    void reserve_attributes_to_fit();
+    void reserve_attributes(PrimitiveType type, long size);
+    void reserve_attributes(long dimension, long size);
 
 public:
     /**
@@ -127,6 +129,9 @@ public:
      */
     bool is_valid(const Tuple& tuple) const;
 
+protected:
+    void set_capacities(std::vector<long> capacities);
+
 private:
     std::vector<long> m_capacities;
     // 0x1 == true = is active
@@ -137,7 +142,12 @@ private:
 template <typename T>
 Accessor<T> Mesh::create_accessor(const MeshAttributeHandle<T>& handle)
 {
-    return Accessor(*this, handle);
+    return Accessor<T>(*this, handle);
+}
+template <typename T>
+Accessor<const T> Mesh::create_accessor(const MeshAttributeHandle<T>& handle) const
+{
+    return Accessor<const T>(*this, handle);
 }
 
 template <typename T>

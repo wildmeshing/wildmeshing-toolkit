@@ -6,13 +6,18 @@ include(Catch)
 
 # Sources
 # file(GLOB TEST_SOURCES CONFIGURE_DEPENDS "*.h" "*.cpp")
-set(TEST_SOURCES main.cpp test_topology.cpp)
+set(TEST_SOURCES 
+	main.cpp 
+	test_topology.cpp
+	2d_tests.cpp
+)
 add_executable(wmtk_tests ${TEST_SOURCES})
 
 
 
 # Macros
 target_compile_definitions(wmtk_tests PUBLIC CATCH_CONFIG_ENABLE_BENCHMARKING)
+target_compile_definitions(wmtk_tests PRIVATE -DWMTK_USE_DEBUG_FUNCTIONS)
 
 # Dependencies
 include(finite-diff)
