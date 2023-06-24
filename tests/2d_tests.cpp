@@ -337,68 +337,83 @@ TEST_CASE("double switches is identity", "[tuple_operation]")
 // // t.switch_vertex().switchedge().switchvertex().switchedge().switchvertex().switchedge() == t
 TEST_CASE("vertex_edge switches equals indentity", "[tuple_operation]")
 {
-    //     TriMesh m;
-    //     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 2, 3}}};
-    //     m.create_mesh(4, tris);
+    TriMesh m;
+    {
+        RowVectors3l tris;
+        tris.resize(2, 3);
+        tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
+        tris.row(1) = Eigen::Matrix<long, 3, 1>{2, 1, 3};
+        m.initialize(tris);
+    }
 
-    //     SECTION("test all tuples generated using vertices")
-    //     {
-    //         TriMesh::Tuple v_tuple_after;
-    //         auto vertices_tuples = m.get_vertices();
-    //         for (size_t i = 0; i < vertices_tuples.size(); i++) {
-    //             TriMesh::Tuple v_tuple = vertices_tuples[i];
-    //             v_tuple_after = v_tuple.switch_vertex(m);
-    //             v_tuple_after = v_tuple_after.switch_edge(m);
-    //             v_tuple_after = v_tuple_after.switch_vertex(m);
-    //             v_tuple_after = v_tuple_after.switch_edge(m);
-    //             v_tuple_after = v_tuple_after.switch_vertex(m);
-    //             v_tuple_after = v_tuple_after.switch_edge(m);
-    //             REQUIRE(tuple_equal(m, v_tuple, v_tuple_after));
-    //         }
-    //     }
-
-    //     SECTION("test all tuples generated using edges")
-    //     {
-    //         TriMesh::Tuple e_tuple_after;
-    //         auto edges_tuples = m.get_edges();
-    //         for (size_t i = 0; i < edges_tuples.size(); i++) {
-    //             TriMesh::Tuple e_tuple = edges_tuples[i];
-    //             e_tuple_after = e_tuple.switch_vertex(m);
-    //             e_tuple_after = e_tuple_after.switch_edge(m);
-    //             e_tuple_after = e_tuple_after.switch_vertex(m);
-    //             e_tuple_after = e_tuple_after.switch_edge(m);
-    //             e_tuple_after = e_tuple_after.switch_vertex(m);
-    //             e_tuple_after = e_tuple_after.switch_edge(m);
-    //             REQUIRE(tuple_equal(m, e_tuple, e_tuple_after));
-    //         }
-    //     }
-
-    //     SECTION("test all tuples generated using faces")
-    //     {
-    //         TriMesh::Tuple f_tuple_after;
-    //         auto faces_tuples = m.get_faces();
-    //         for (size_t i = 0; i < faces_tuples.size(); i++) {
-    //             TriMesh::Tuple f_tuple = faces_tuples[i];
-    //             f_tuple_after = f_tuple.switch_vertex(m);
-    //             f_tuple_after = f_tuple_after.switch_edge(m);
-    //             f_tuple_after = f_tuple_after.switch_vertex(m);
-    //             f_tuple_after = f_tuple_after.switch_edge(m);
-    //             f_tuple_after = f_tuple_after.switch_vertex(m);
-    //             f_tuple_after = f_tuple_after.switch_edge(m);
-    //             REQUIRE(tuple_equal(m, f_tuple, f_tuple_after));
-    //         }
-    //     }
+    SECTION("vertices")
+    {
+        const std::vector<Tuple> vertices = m.get_all(PrimitiveType::Vertex);
+        REQUIRE(vertices.size() == 4);
+        for (const auto& t : vertices) {
+            Tuple t_iter = t;
+            t_iter = m.switch_tuple(t_iter, PrimitiveType::Vertex);
+            t_iter = m.switch_tuple(t_iter, PrimitiveType::Edge);
+            t_iter = m.switch_tuple(t_iter, PrimitiveType::Vertex);
+            t_iter = m.switch_tuple(t_iter, PrimitiveType::Edge);
+            t_iter = m.switch_tuple(t_iter, PrimitiveType::Vertex);
+            t_iter = m.switch_tuple(t_iter, PrimitiveType::Edge);
+            CHECK(tuple_equal(m, t, t_iter));
+        }
+    }
+    SECTION("edges")
+    {
+        const std::vector<Tuple> edges = m.get_all(PrimitiveType::Edge);
+        REQUIRE(edges.size() == 4);
+        for (const auto& t : edges) {
+            Tuple t_iter = t;
+            t_iter = m.switch_tuple(t_iter, PrimitiveType::Vertex);
+            t_iter = m.switch_tuple(t_iter, PrimitiveType::Edge);
+            t_iter = m.switch_tuple(t_iter, PrimitiveType::Vertex);
+            t_iter = m.switch_tuple(t_iter, PrimitiveType::Edge);
+            t_iter = m.switch_tuple(t_iter, PrimitiveType::Vertex);
+            t_iter = m.switch_tuple(t_iter, PrimitiveType::Edge);
+            CHECK(tuple_equal(m, t, t_iter));
+        }
+    }
+    SECTION("faces")
+    {
+        const std::vector<Tuple> faces = m.get_all(PrimitiveType::Face);
+        REQUIRE(faces.size() == 2);
+        for (const auto& t : faces) {
+            Tuple t_iter = t;
+            t_iter = m.switch_tuple(t_iter, PrimitiveType::Vertex);
+            t_iter = m.switch_tuple(t_iter, PrimitiveType::Edge);
+            t_iter = m.switch_tuple(t_iter, PrimitiveType::Vertex);
+            t_iter = m.switch_tuple(t_iter, PrimitiveType::Edge);
+            t_iter = m.switch_tuple(t_iter, PrimitiveType::Vertex);
+            t_iter = m.switch_tuple(t_iter, PrimitiveType::Edge);
+            CHECK(tuple_equal(m, t, t_iter));
+        }
+    }
 }
 
 // TEST_CASE("test_link_check", "[test_pre_check]")
-// {
-//     TriMesh m;
-//     SECTION("extra_face_after_collapse")
-//     {
-//         std::vector<std::array<size_t, 3>> tris =
-//             {{{1, 2, 3}}, {{0, 1, 4}}, {{0, 2, 5}}, {{0, 1, 6}}, {{0, 2, 6}}, {{1, 2, 6}}};
-//         m.create_mesh(7, tris);
-//         TriMesh::Tuple edge(1, 2, 0, m);
+//{
+// TriMesh m;
+//{
+//     RowVectors3l tris;
+//     tris.resize(6, 3);
+//     tris.row(0) = Eigen::Matrix<long, 3, 1>{1, 2, 3};
+//     tris.row(1) = Eigen::Matrix<long, 3, 1>{0, 1, 4};
+//     tris.row(2) = Eigen::Matrix<long, 3, 1>{0, 2, 5};
+//     tris.row(3) = Eigen::Matrix<long, 3, 1>{0, 1, 6};
+//     tris.row(4) = Eigen::Matrix<long, 3, 1>{0, 2, 6};
+//     tris.row(5) = Eigen::Matrix<long, 3, 1>{1, 2, 6};
+//     m.initialize(tris);
+// }
+//      TriMesh m;
+//      SECTION("extra_face_after_collapse")
+//      {
+//          std::vector<std::array<size_t, 3>> tris =
+//              {{{1, 2, 3}}, {{0, 1, 4}}, {{0, 2, 5}}, {{0, 1, 6}}, {{0, 2, 6}}, {{1, 2, 6}}};
+//          m.create_mesh(7, tris);
+//          TriMesh::Tuple edge(1, 2, 0, m);
 
 //         REQUIRE(edge.vid(m) == 1);
 //         REQUIRE(edge.switch_vertex(m).vid(m) == 2);
@@ -458,7 +473,7 @@ TEST_CASE("vertex_edge switches equals indentity", "[tuple_operation]")
 //         TriMesh::Tuple pass_edge(0, 2, 0, m);
 //         REQUIRE(TriMeshEdgeCollapseOperation::check_link_condition(m, pass_edge));
 //     }
-// }
+//}
 // // test manifold (eid uniqueness)
 // TEST_CASE("test unique edge", "[test_2d_operation]")
 // {
