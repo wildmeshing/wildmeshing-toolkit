@@ -54,6 +54,15 @@ std::tuple<RowVectors6l,RowVectors4l,RowVectors4l,VectorXl,VectorXl,VectorXl> te
         }
         std::sort(TTT.begin(), TTT.end());
 
+        // std::ofstream file("TTT_F_debug.txt");
+        // for (const auto& row : TTT) {
+        //     for (const auto& element : row) {
+        //         file << element << " ";
+        //     }
+        //     file << std::endl;
+        // }
+        // file.close();
+
         // VT
         VT.resize(vertex_count,1);
         for (int i = 0; i < T.rows(); ++i) {
@@ -126,14 +135,14 @@ std::tuple<RowVectors6l,RowVectors4l,RowVectors4l,VectorXl,VectorXl,VectorXl> te
         }
         std::sort(TTT.begin(), TTT.end());
 
-        std::ofstream file("TTTdebug.txt");
-        for (const auto& row : TTT) {
-            for (const auto& element : row) {
-                file << element << " ";
-            }
-            file << std::endl;
-        }
-        file.close();
+        // std::ofstream file("TTT_E_debug.txt");
+        // for (const auto& row : TTT) {
+        //     for (const auto& element : row) {
+        //         file << element << " ";
+        //     }
+        //     file << std::endl;
+        // }
+        // file.close();
 
 
 
@@ -166,7 +175,7 @@ std::tuple<RowVectors6l,RowVectors4l,RowVectors4l,VectorXl,VectorXl,VectorXl> te
                 long j=1;
                 while ((i+j<TTT.size()) && (TTT[i][0] == TTT[i+j][0]) && (TTT[i][1] == TTT[i+j][1]))
                 {                    
-                    TF(TTT[i+j][it],TTT[i+j][ii]) = ET_temp.size()-1;
+                    TE(TTT[i+j][it],TTT[i+j][ii]) = ET_temp.size()-1;
                     ++j;
                 }
                 assert(j>=2);
