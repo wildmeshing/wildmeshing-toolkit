@@ -39,17 +39,22 @@ long TriMesh::id(const Tuple& tuple, const PrimitiveType& type) const
     }
 }
 
-    // bool ccw = is_ccw(tuple);
-    // int offset = (tuple.m_local_vid*3 + tuple.m_local_eid);
+// bool ccw = is_ccw(tuple);
+// int offset = (tuple.m_local_vid*3 + tuple.m_local_eid);
 
-    // switch (type) {
-    // case PrimitiveType::Vertex:
-    //     return Tuple(
-    //         wmtk::autogen::2d_tuple_table_vertex[offset][0],
-    //         wmtk::autogen::2d_tuple_table_vertex[offset][1],
-    //         tuple.m_local_fid,
-    //         tuple.m_global_cid,
-    //         tuple.m_hash);
+// switch (type) {
+// case PrimitiveType::Vertex:
+//     return Tuple(
+//         wmtk::autogen::2d_tuple_table_vertex[offset][0],
+//         wmtk::autogen::2d_tuple_table_vertex[offset][1],
+//         tuple.m_local_fid,
+//         tuple.m_global_cid,
+//         tuple.m_hash);
+bool TriMesh::is_boundary(const Tuple& tuple) const
+{
+    ConstAccessor<long> ff_accessor = create_accessor<long>(m_ff_handle);
+    return ff_accessor.scalar_attribute(tuple) < 0;
+}
 Tuple TriMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
 {
     bool ccw = is_ccw(tuple);
@@ -98,7 +103,6 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
 
 bool TriMesh::is_ccw(const Tuple& tuple) const
 {
-    throw "not implemeted";
     ConstAccessor<long> fv_accessor = create_accessor<long>(m_fv_handle);
     auto fv = fv_accessor.vector_attribute(tuple);
     if (fv((tuple.m_local_eid + 1) % 3) == id(tuple, PrimitiveType::Vertex))
@@ -116,10 +120,7 @@ void TriMesh::initialize(
 {
     // reserve memory for attributes
 
-    std::vector<long> cap{
-        static_cast<long>(FF.rows()),
-        static_cast<long>(VF.rows()),
-        static_cast<long>(EF.rows())};
+    std::vector<long> cap{VF.rows(), EF.rows(), FF.rows()};
     set_capacities(cap);
     reserve_attributes_to_fit();
 
@@ -130,36 +131,18 @@ void TriMesh::initialize(
     Accessor<long> vf_accessor = create_accessor<long>(m_vf_handle);
     Accessor<long> ef_accessor = create_accessor<long>(m_ef_handle);
     // iterate over the matrices and fill attributes
-    // m_fv
-    for (long i = 0; i < FV.rows(); ++i) {
-        for (long j = 0; j < FV.cols(); ++j) {
-            long& v = fv_accessor.vector_attribute(i)(j);
-            v = FV(i, j);
-        }
-    }
-    // m_fe
-    for (long i = 0; i < FE.rows(); ++i) {
-        for (long j = 0; j < FE.cols(); ++j) {
-            long& e = fe_accessor.vector_attribute(i)(j);
-            e = FE(i, j);
-        }
-    }
-    // m_ff
-    for (long i = 0; i < FF.rows(); ++i) {
-        for (long j = 0; j < FF.cols(); ++j) {
-            long& f = ff_accessor.vector_attribute(i)(j);
-            f = FF(i, j);
-        }
+    for (long i = 0; i < capacity(PrimitiveType::Face); ++i) {
+        fv_accessor.vector_attribute(i) = FV.row(i).transpose();
+        fe_accessor.vector_attribute(i) = FE.row(i).transpose();
+        ff_accessor.vector_attribute(i) = FF.row(i).transpose();
     }
     // m_vf
-    for (long i = 0; i < VF.rows(); ++i) {
-        long& f = vf_accessor.scalar_attribute(i);
-        f = VF(i);
+    for (long i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
+        vf_accessor.scalar_attribute(i) = VF(i);
     }
     // m_ef
-    for (long i = 0; i < EF.rows(); ++i) {
-        long& f = ef_accessor.scalar_attribute(i);
-        f = EF(i);
+    for (long i = 0; i < capacity(PrimitiveType::Edge); ++i) {
+        ef_accessor.scalar_attribute(i) = EF(i);
     }
 }
 

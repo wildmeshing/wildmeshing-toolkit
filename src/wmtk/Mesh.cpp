@@ -10,9 +10,24 @@ Mesh::Mesh(const long& dimension)
     m_long_attributes.resize(dimension);
     m_double_attributes.resize(dimension);
     m_capacities.resize(dimension, 0);
+
+    m_flags.reserve(dimension);
+    for (long j = 0; j < dimension; ++j) {
+        m_flags.emplace_back(register_attribute<char>("flags", static_cast<PrimitiveType>(j), 1));
+    }
 }
 
 Mesh::~Mesh() = default;
+
+void Mesh::serialize(MeshWriter& writer)
+{
+    for (long dim = 0; dim < m_capacities.size(); ++dim) {
+        if (!writer.write(dim)) continue;
+        m_char_attributes[dim].serialize(dim, writer);
+        m_long_attributes[dim].serialize(dim, writer);
+        m_double_attributes[dim].serialize(dim, writer);
+    }
+}
 
 template <typename T>
 MeshAttributeHandle<T>

@@ -127,16 +127,16 @@ TEST_CASE("load mesh from libigl and test mesh topology", "[test_topology_2D]")
     Eigen::MatrixXd V;
     Eigen::Matrix<long, -1, -1> F;
 
-    // std::vector<std::string> names = {
-    //     "/Octocat.obj", "/armadillo.obj",
-    //     "/blub.obj", "/bunny.obj",
-    //     "/circle.obj", "/fan.obj",
-    //     "/rocket.obj", "/sphere.obj",
-    //     "/test_triwild.obj", "/hemisphere.obj"
-    //     };
-
     std::vector<std::string> names = {
-        "/blub.obj", "/fan.obj"
+        "/Octocat.obj", 
+        "/armadillo.obj",
+        "/blub.obj",
+        "/bunny.obj",
+        "/circle.obj",
+        "/fan.obj",
+        "/sphere.obj",
+        "/test_triwild.obj",
+        "/hemisphere.obj"
         };
 
     for (auto name : names)
@@ -163,6 +163,8 @@ TEST_CASE("load mesh from libigl and test mesh topology", "[test_topology_2D]")
         // 2. Test relationship between VF and F
         for (int i = 0; i < VF.size(); ++i)
         {
+            if (VF(i) < 0)
+                continue;
             CHECK((F.row(VF(i)).array() == i).any());
         }
         
