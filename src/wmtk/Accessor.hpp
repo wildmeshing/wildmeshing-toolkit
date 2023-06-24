@@ -2,6 +2,7 @@
 
 #include "AttributeHandle.hpp"
 #include "Tuple.hpp"
+#include <type_traits>
 
 #include <Eigen/Dense>
 
@@ -17,12 +18,16 @@ class Accessor
 public:
     friend class Mesh;
     friend class TriMesh;
+    using Type = std::remove_const_t<T>;
 
-    using MapResult = Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, 1>>;
-    using ConstMapResult = Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, 1>>;
+    using MapResult = typename Eigen::Matrix<Type, Eigen::Dynamic, 1>::MapType;
+    using ConstMapResult = typename Eigen::Matrix<Type, Eigen::Dynamic, 1>::ConstMapType;
+
+    constexpr static bool IsConst = std::is_const_v<T>;
+    using MeshType = std::conditional_t<IsConst, const Mesh, Mesh>;
 
 
-    Accessor(Mesh& m, const MeshAttributeHandle<T>& handle);
+    Accessor(MeshType& m, const MeshAttributeHandle<Type>& handle);
 
     ConstMapResult vector_attribute(const Tuple& t) const;
     MapResult vector_attribute(const Tuple& t);
@@ -38,13 +43,19 @@ private:
     T& scalar_attribute(const long index);
 
 private:
-    MeshAttributes<T>& attributes();
-    const MeshAttributes<T>& attributes() const;
+    MeshAttributes<Type>& attributes();
+    const MeshAttributes<Type>& attributes() const;
 
-    Mesh& m_mesh;
-    MeshAttributeHandle<T> m_handle;
+    MeshType& m_mesh;
+    MeshAttributeHandle<Type> m_handle;
 };
 
+//template <typename T>
+//Accessor(Mesh& mesh, const MeshAttributeHandle<T>&) -> Accessor<T>;
+//template <typename T>
+//Accessor(const Mesh& mesh, const MeshAttributeHandle<T>&) -> Accessor<const T>;
+
+
 template <typename T>
-Accessor(Mesh& mesh, const MeshAttributeHandle<T>&) -> Accessor<T>;
+using ConstAccessor = Accessor<const T>;
 } // namespace wmtk

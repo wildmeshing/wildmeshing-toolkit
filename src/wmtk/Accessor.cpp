@@ -6,18 +6,24 @@
 namespace wmtk {
 
 template <typename T>
-Accessor<T>::Accessor(Mesh& mesh, const MeshAttributeHandle<T>& handle)
+Accessor<T>::Accessor(MeshType& mesh, const MeshAttributeHandle<Type>& handle)
     : m_mesh(mesh)
     , m_handle(handle)
 {}
 
 template <typename T>
-MeshAttributes<T>& Accessor<T>::attributes()
+auto Accessor<T>::attributes() -> MeshAttributes<Type>& 
 {
-    return m_mesh.get_mesh_attributes(m_handle);
+    if constexpr(!IsConst) {
+        return m_mesh.get_mesh_attributes(m_handle);
+    } else {
+        assert(false);
+        static MeshAttributes<Type> dummy;
+        return dummy;
+    }
 }
 template <typename T>
-const MeshAttributes<T>& Accessor<T>::attributes() const
+auto Accessor<T>::attributes() const-> const MeshAttributes<Type>& 
 {
     return m_mesh.get_mesh_attributes(m_handle);
 }
@@ -101,4 +107,7 @@ T& Accessor<T>::scalar_attribute(const Tuple& t)
 template class Accessor<char>;
 template class Accessor<long>;
 template class Accessor<double>;
+template class Accessor<const char>;
+template class Accessor<const long>;
+template class Accessor<const double>;
 } // namespace wmtk

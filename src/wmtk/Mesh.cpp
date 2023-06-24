@@ -4,7 +4,18 @@
 
 namespace wmtk {
 
-Mesh::Mesh() = default;
+Mesh::Mesh(const long& dimension)
+{
+    m_char_attributes.resize(dimension);
+    m_long_attributes.resize(dimension);
+    m_double_attributes.resize(dimension);
+    m_capacities.resize(dimension, 0);
+
+    m_flags.reserve(dimension);
+    for (long j = 0; j < dimension; ++j) {
+        m_flags.emplace_back(register_attribute<char>("flags", static_cast<PrimitiveType>(j), 1));
+    }
+}
 
 Mesh::~Mesh() = default;
 
@@ -24,30 +35,30 @@ Mesh::register_attribute(const std::string& name, PrimitiveType ptype, long size
 
 long Mesh::capacity(PrimitiveType type) const
 {
-    switch (type) {
-    case PrimitiveType::Vertex: return m_capacities[0]; break;
-    case PrimitiveType::Edge: return m_capacities[1]; break;
-    case PrimitiveType::Face: return m_capacities[2]; break;
-    case PrimitiveType::Tetrahedron: {
-        if (m_capacities.size() < 4)
-            throw std::runtime_error("TetMesh not initialized");
-        else
-            return m_capacities[3];
-        break;
-    }
-    default: throw std::runtime_error("Invalid primitive type");
-    }
+    return m_capacities.at(get_simplex_dimension(type));
 }
 
-void Mesh::mesh_attributes_reserve(const PrimitiveType& top_d)
+void Mesh::reserve_attributes_to_fit()
 {
     for (long dim = 0; dim < m_capacities.size(); ++dim) {
         const long capacity = m_capacities[dim];
-        m_char_attributes[dim].reserve(capacity);
-        m_long_attributes[dim].reserve(capacity);
-        m_double_attributes[dim].reserve(capacity);
-        // m_rational_attributes[get_simplex_dimension(d)].reserve(capacity);
+        reserve_attributes(dim, capacity);
     }
+}
+void Mesh::reserve_attributes(PrimitiveType type, long size)
+{
+    reserve_attributes(get_simplex_dimension(type), size);
+}
+void Mesh::reserve_attributes(long dimension, long capacity)
+{
+    m_char_attributes[dimension].reserve(capacity);
+    m_long_attributes[dimension].reserve(capacity);
+    m_double_attributes[dimension].reserve(capacity);
+}
+void Mesh::set_capacities(std::vector<long> capacities)
+{
+    assert(capacities.size() == m_capacities.size());
+    m_capacities = std::move(capacities);
 }
 
 

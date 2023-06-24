@@ -4,7 +4,7 @@
 
 namespace wmtk {
 
-enum class PrimitiveType { Vertex, Edge, Face, Tetrahedron };
+enum class PrimitiveType { Vertex = 0, Edge = 1, Face = 2, Tetrahedron = 3 };
 
 constexpr long get_simplex_dimension(PrimitiveType t)
 {

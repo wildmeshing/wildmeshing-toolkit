@@ -28,9 +28,9 @@ public:
 
     void split_edge(const Tuple& t) override;
     void collapse_edge(const Tuple& t) override;
-    long id(const Tuple& tuple, const PrimitiveType& type) const override;
     Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const override;
     bool is_ccw(const Tuple& tuple) const override;
+    bool is_boundary(const Tuple& tuple) const override;
     void initialize(
         Eigen::Ref<const RowVectors3l> FV,
         Eigen::Ref<const RowVectors3l> FE,
@@ -39,6 +39,18 @@ public:
         Eigen::Ref<const VectorXl> EF);
 
     void initialize(Eigen::Ref<const RowVectors3l> F);
+
+    long _debug_id(const Tuple& tuple, const PrimitiveType& type) const
+    {
+#ifndef WMTK_USE_DEBUG_FUNCTIONS
+        throw "Function can only be used for debugging!";
+#endif // !WMTK_USE_DEBUG_FUNCTIONS
+
+        return id(tuple, type);
+    }
+
+private:
+    long id(const Tuple& tuple, const PrimitiveType& type) const override;
 };
 
 } // namespace wmtk
