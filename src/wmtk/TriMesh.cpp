@@ -43,7 +43,7 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
 {
     // bool ccw = is_ccw(tuple);
     // int offset = (tuple.m_local_vid*3 + tuple.m_local_eid);
-    
+
     // switch (type) {
     // case PrimitiveType::Vertex:
     //     return Tuple(
@@ -89,7 +89,11 @@ void TriMesh::initialize(
     Eigen::Ref<const VectorXl> EF)
 {
     // reserve memory for attributes
-    mesh_attributes_reserve(PrimitiveType::Face);
+
+    std::vector<long> cap{FF.rows(), VF.rows(), EF.rows()};
+    set_capacities(cap);
+    reserve_attributes_to_fit();
+
     // get Accessors for topology
     Accessor<long> fv_accessor = create_accessor<long>(m_fv_handle);
     Accessor<long> fe_accessor = create_accessor<long>(m_fe_handle);

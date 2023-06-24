@@ -75,7 +75,9 @@ protected:
      *
      * @param top_d the top dimensional simplex
      */
-    void mesh_attributes_reserve(const PrimitiveType& top_d);
+    void reserve_attributes_to_fit();
+    void reserve_attributes(PrimitiveType type, long size);
+    void reserve_attributes(long dimension, long size);
 
 public:
     /**
@@ -126,6 +128,9 @@ public:
      * @return false
      */
     bool is_valid(const Tuple& tuple) const;
+
+protected:
+    void set_capacities(std::vector<long> capacities);
 
 private:
     std::vector<long> m_capacities;
