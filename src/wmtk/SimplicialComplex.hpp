@@ -3,9 +3,8 @@
 #include <queue>
 #include <set>
 #include <vector>
+#include "Mesh.hpp"
 #include "Simplex.hpp"
-#include "TetMesh.hpp"
-#include "TriMesh.hpp"
 
 namespace wmtk {
 

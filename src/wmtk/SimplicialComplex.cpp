@@ -1,5 +1,8 @@
 #include "SimplicialComplex.hpp"
 
+#include "TetMesh.hpp"
+#include "TriMesh.hpp"
+
 namespace wmtk {
 
 internal::SimplexSet SimplicialComplex::get_simplices(const PrimitiveType& ptype) const
