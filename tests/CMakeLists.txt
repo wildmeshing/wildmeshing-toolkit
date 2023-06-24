@@ -10,6 +10,7 @@ set(TEST_SOURCES
 	test_topology.cpp
 	2d_tests.cpp
     test_io.cpp
+    test_SC.cpp
 )
 add_executable(wmtk_tests ${TEST_SOURCES})
 
