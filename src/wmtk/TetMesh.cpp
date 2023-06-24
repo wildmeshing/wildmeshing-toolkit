@@ -15,6 +15,9 @@ TetMesh::TetMesh()
     , m_tt_handle(register_attribute<long>("m_tt", PrimitiveType::Tetrahedron, 4))
 {}
 
+Tuple TetMesh::vertex_tuple_from_id() const
+
+
 void TetMesh::initialize(
     Eigen::Ref<const RowVectors4l> TV,
     Eigen::Ref<const RowVectors6l> TE,
@@ -23,6 +26,7 @@ void TetMesh::initialize(
     Eigen::Ref<const VectorXl> VT,
     Eigen::Ref<const VectorXl> ET,
     Eigen::Ref<const VectorXl> FT)
+
 {
     // reserve memory for attributes
 
@@ -65,11 +69,20 @@ void TetMesh::initialize(
     }
 }
 
+Tuple TetMesh::edge_tuple_from_id() const
+
+
 void TetMesh::initialize(Eigen::Ref<const RowVectors4l> T)
 {
     auto [TE, TF, TT, VT, ET, FT] = tetmesh_topology_initialization(T);
     initialize(T, TE, TF, TT, VT, ET, FT);
 }
+
+Tuple TetMesh::face_tuple_from_id() const
+{
+    throw "not implemented";
+}
+
 
 void TetMesh::split_edge(const Tuple& t)
 {
