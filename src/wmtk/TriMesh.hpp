@@ -41,14 +41,7 @@ public:
         Eigen::Ref<const VectorXl> EF);
     void initialize(Eigen::Ref<const RowVectors3l> F);
 
-    long _debug_id(const Tuple& tuple, const PrimitiveType& type) const
-    {
-#ifndef WMTK_USE_DEBUG_FUNCTIONS
-        throw "Function can only be used for debugging!";
-#endif // !WMTK_USE_DEBUG_FUNCTIONS
-
-        return id(tuple, type);
-    }
+    long _debug_id(const Tuple& tuple, const PrimitiveType& type) const;
 
 protected:
     long id(const Tuple& tuple, const PrimitiveType& type) const override;
