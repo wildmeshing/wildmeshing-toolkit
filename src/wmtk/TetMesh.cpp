@@ -45,19 +45,24 @@ void TetMesh::initialize(
     Accessor<long> tt_accessor = create_accessor<long>(m_tt_handle);
 
     // iterate over the matrices and fill attributes
-    // for (long i = 0; i < capacity(PrimitiveType::Face); ++i) {
-    //     fv_accessor.vector_attribute(i) = FV.row(i).transpose();
-    //     fe_accessor.vector_attribute(i) = FE.row(i).transpose();
-    //     ff_accessor.vector_attribute(i) = FF.row(i).transpose();
-    // }
-    // // m_vf
-    // for (long i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
-    //     vf_accessor.scalar_attribute(i) = VF(i);
-    // }
-    // // m_ef
-    // for (long i = 0; i < capacity(PrimitiveType::Edge); ++i) {
-    //     ef_accessor.scalar_attribute(i) = EF(i);
-    // }
+    for (long i = 0; i < capacity(PrimitiveType::Tetrahedron); ++i) {
+        tv_accessor.vector_attribute(i) = TV.row(i).transpose();
+        te_accessor.vector_attribute(i) = TE.row(i).transpose();
+        tf_accessor.vector_attribute(i) = TF.row(i).transpose();
+        tt_accessor.vector_attribute(i) = TT.row(i).transpose();
+    }
+    // m_vt
+    for (long i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
+        vt_accessor.scalar_attribute(i) = VT(i);
+    }
+    // m_et
+    for (long i = 0; i < capacity(PrimitiveType::Edge); ++i) {
+        et_accessor.scalar_attribute(i) = ET(i);
+    }
+    // m_ft
+    for (long i = 0; i < capacity(PrimitiveType::Face); ++i) {
+        ft_accessor.scalar_attribute(i) = FT(i);
+    }
 }
 
 void TetMesh::initialize(Eigen::Ref<const RowVectors4l> T)
