@@ -42,7 +42,7 @@ long TriMesh::id(const Tuple& tuple, const PrimitiveType& type) const
 bool TriMesh::is_boundary(const Tuple& tuple) const
 {
     ConstAccessor<long> ff_accessor = create_accessor<long>(m_ff_handle);
-    return ff_accessor.scalar_attribute(tuple) < 0;
+    return ff_accessor.vector_attribute(tuple)(tuple.m_local_eid) < 0;
 }
 Tuple TriMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
 {
