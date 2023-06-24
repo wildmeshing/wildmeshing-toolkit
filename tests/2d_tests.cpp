@@ -1,7 +1,8 @@
-#include <iostream>
 #include <stdlib.h>
 #include <catch2/catch.hpp>
-#include <igl/read_triangle_mesh.h>
+#include <iostream>
+//#include <igl/read_triangle_mesh.h>
+#include <wmtk/utils/trimesh_topology_initialization.h>
 #include <wmtk/TriMesh.hpp>
 // #include <wmtk/operations/TriMeshConsolidateOperation.h>
 // #include <wmtk/operations/TriMeshEdgeCollapseOperation.h>
@@ -10,7 +11,6 @@
 // #include <wmtk/operations/TriMeshVertexSmoothOperation.h>
 // #include <highfive/H5File.hpp>
 // #include <wmtk/operations/TriMeshOperationShim.hpp>
-
 
 // template <>
 // HighFive::DataType HighFive::create_datatype<TriMesh::VertexConnectivity>() {
@@ -30,8 +30,26 @@ using namespace wmtk;
 TEST_CASE("load mesh and create TriMesh", "[test_mesh_creation]")
 {
     TriMesh m;
-    // std::vector<std::array<size_t, 3>> tris = {{0, 1, 2}};
-    // m.initialize(3, tris);
+    RowVectors3l tris;
+    tris.resize(1, 3);
+
+    tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
+    SECTION("init with FV, FE, FF, VF, EF")
+    {
+        RowVectors3l FE;
+        RowVectors3l FF;
+        VectorXl VF;
+        VectorXl EF;
+
+        trimesh_topology_initialization(tris, FE, FF, VF, EF);
+
+        m.initialize(tris, FE, FF, VF, EF);
+    }
+    SECTION("init directly from RowVectors3l")
+    {
+        m.initialize(tris);
+    }
+
     // // REQUIRE(m.tri_capacity() == tris.size()); // TODO:
     // // REQUIRE(m.vert_capacity() == 3); // TODO:
     // REQUIRE(check_mesh_connectivity_validity());
@@ -403,16 +421,14 @@ TEST_CASE("test generate tuples with 1 triangle", "[test_tuple_generation]")
 // // test manifold (eid uniqueness)
 // TEST_CASE("test unique edge", "[test_2d_operation]")
 // {
-//     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 3, 2}}, {{4, 1, 0}}, {{0, 2, 5}}};
-//     auto m = TriMesh();
-//     m.create_mesh(6, tris);
-//     REQUIRE(m.check_edge_manifold());
+//     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 3, 2}}, {{4, 1, 0}}, {{0, 2,
+//     5}}}; auto m = TriMesh(); m.create_mesh(6, tris); REQUIRE(m.check_edge_manifold());
 // }
 
 // TEST_CASE("edge_collapse", "[test_2d_operation]")
 // {
-//     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 3, 2}}, {{4, 1, 0}}, {{0, 2, 5}}};
-//     SECTION("rollback")
+//     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 3, 2}}, {{4, 1, 0}}, {{0, 2,
+//     5}}}; SECTION("rollback")
 //     {
 //         class NoCollapseCollapseOperation : public wmtk::TriMeshEdgeCollapseOperation
 //         {
@@ -541,4 +557,3 @@ TEST_CASE("test generate tuples with 1 triangle", "[test_tuple_generation]")
 //         for (auto e : edges) REQUIRE_FALSE(e.is_valid(m));
 //     }
 // }
-

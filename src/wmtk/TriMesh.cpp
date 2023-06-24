@@ -4,7 +4,8 @@
 
 namespace wmtk {
 TriMesh::TriMesh()
-    : m_vf_handle(register_attribute<long>("m_vf", PrimitiveType::Vertex, 1))
+    : Mesh(3)
+    , m_vf_handle(register_attribute<long>("m_vf", PrimitiveType::Vertex, 1))
     , m_ef_handle(register_attribute<long>("m_ef", PrimitiveType::Edge, 1))
     , m_fv_handle(register_attribute<long>("m_fv", PrimitiveType::Face, 3))
     , m_fe_handle(register_attribute<long>("m_fe", PrimitiveType::Face, 3))

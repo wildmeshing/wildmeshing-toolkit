@@ -15,7 +15,7 @@ public:
     template <typename T>
     friend class Accessor;
 
-    Mesh();
+    Mesh(const long& dimension);
     virtual ~Mesh();
 
     /**
