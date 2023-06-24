@@ -20,13 +20,13 @@ long TriMesh::id(const Tuple& tuple, const PrimitiveType& type) const
 {
     switch (type) {
     case PrimitiveType::Vertex: {
-        Accessor<long> fv_accessor = create_accessor<long>(m_fv_handle);
+        ConstAccessor<long> fv_accessor = create_accessor<long>(m_fv_handle);
         auto fv = fv_accessor.vector_attribute(tuple);
         return fv(tuple.m_local_vid);
         break;
     }
     case PrimitiveType::Edge: {
-        Accessor<long> fe_accessor = create_accessor<long>(m_fe_handle);
+        ConstAccessor<long> fe_accessor = create_accessor<long>(m_fe_handle);
         auto fe = fe_accessor.vector_attribute(tuple);
         return fe(tuple.m_local_eid);
         break;
@@ -73,7 +73,7 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
 bool TriMesh::is_ccw(const Tuple& tuple) const
 {
     throw "not implemeted";
-    Accessor<long> fv_accessor = create_accessor<long>(m_fv_handle);
+    ConstAccessor<long> fv_accessor = create_accessor<long>(m_fv_handle);
     auto fv = fv_accessor.vector_attribute(tuple);
     if (fv((tuple.m_local_eid + 1) % 3) == id(tuple, PrimitiveType::Vertex))
         return true;

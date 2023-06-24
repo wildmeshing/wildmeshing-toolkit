@@ -16,6 +16,7 @@ template <typename T>
 class MeshAttributes
 {
     friend class Accessor<T>;
+    friend class Accessor<const T>;
     friend class Mesh;
 
     typedef Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, 1>> MapResult;
