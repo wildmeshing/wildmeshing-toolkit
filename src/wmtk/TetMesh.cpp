@@ -18,7 +18,7 @@ Tuple TetMesh::edge_tuple_from_id() const
 {
     throw "not implemented";
 }
-Tuple TetMesh::triangle_tuple_from_id() const
+Tuple TetMesh::face_tuple_from_id() const
 {
     throw "not implemented";
 }

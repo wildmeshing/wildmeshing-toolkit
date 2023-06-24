@@ -160,20 +160,19 @@ Tuple TriMesh::tuple_from_id(const PrimitiveType type, const long gid) const
 {
     switch (type) {
     case PrimitiveType::Vertex: {
-        ConstAccessor<long> fv_accessor = create_accessor<long>(m_fv_handle);
-        return Tuple(-1, gid, -1, gid, 0);
+        return vertex_tuple_from_id(gid);
         break;
     }
     case PrimitiveType::Edge: {
-        return Tuple(-1, gid, -1, gid, 0);
+        return edge_tuple_from_id(gid);
         break;
     }
     case PrimitiveType::Face: {
-        return Tuple(-1, -1, gid, gid, 0);
+        return face_tuple_from_id(gid);
         break;
     }
     case PrimitiveType::Tetrahedron: {
-        return Tuple(-1, -1, -1, gid, 0);
+        throw std::runtime_error("no tet tuple supported for trimesh");
         break;
     }
     default: throw std::runtime_error("Invalid primitive type");
@@ -213,7 +212,7 @@ Tuple TriMesh::edge_tuple_from_id(long id) const
     }
     throw std::runtime_error("edge_tuple_from_id failed");
 }
-Tuple TriMesh::triangle_tuple_from_id(long id) const
+Tuple TriMesh::face_tuple_from_id(long id) const
 {
     Tuple f_tuple = Tuple(0, 2, id, -1, 0);
     assert(is_ccw(f_tuple));
