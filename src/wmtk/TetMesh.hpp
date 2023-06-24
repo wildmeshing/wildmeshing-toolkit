@@ -15,6 +15,11 @@ private:
     MeshAttributeHandle<long> m_tf_handle;
     MeshAttributeHandle<long> m_tt_handle;
 
+    Tuple vertex_tuple_from_id() const;
+    Tuple edge_tuple_from_id(long id) const;
+    Tuple face_tuple_from_id(long id) const;
+    Tuple tuple_from_id(PrimitiveType ptype, long id) const override;
+
 public:
     TetMesh();
 

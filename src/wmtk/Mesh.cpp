@@ -4,17 +4,18 @@
 
 namespace wmtk {
 
-Mesh::Mesh(const long& dimension):
-    m_char_attributes(dimension),
-    m_long_attributes(dimension),
-    m_double_attributes(dimension),
-    m_capacities(dimension, 0),
-    m_cell_hash_handle(register_attribute<long>("hash", static_cast<PrimitiveType>(dimension-1),1))
+Mesh::Mesh(const long& dimension)
+    : m_char_attributes(dimension)
+    , m_long_attributes(dimension)
+    , m_double_attributes(dimension)
+    , m_capacities(dimension, 0)
+    , m_cell_hash_handle(
+          register_attribute<long>("hash", static_cast<PrimitiveType>(dimension - 1), 1))
 {
-
     m_flag_handles.reserve(dimension);
     for (long j = 0; j < dimension; ++j) {
-        m_flag_handles.emplace_back(register_attribute<char>("flags", static_cast<PrimitiveType>(j), 1));
+        m_flag_handles.emplace_back(
+            register_attribute<char>("flags", static_cast<PrimitiveType>(j), 1));
     }
 }
 
@@ -71,38 +72,19 @@ void Mesh::set_capacities(std::vector<long> capacities)
     assert(capacities.size() == m_capacities.size());
     m_capacities = std::move(capacities);
 }
-
-
-// TODO
-bool Mesh::is_valid(const Tuple& tuple) const
-{
-    // condition 1: global cid stays in bound, and is not removed
-
-    // condition 2: hash
-
-
-    // Condition 3: local ids are consistent
-    const int v = tuple.m_local_vid;
-    switch (tuple.m_local_eid) {
-    case 0:
-        if (tuple.m_local_vid == 1 || tuple.m_local_vid == 2)
-            return true;
-        else
-            return false;
-    case 1:
-        if (tuple.m_local_vid == 0 || tuple.m_local_vid == 2)
-            return true;
-        else
-            return false;
-    case 2:
-        if (tuple.m_local_vid == 1 || tuple.m_local_vid == 0)
-            return true;
-        else
-            return false;
-    default: throw std::runtime_error("tuple invlid failed local ids check");
-    }
+ConstAccessor<char> get_flag_accessor(PrimitiveType type) const {
+    return create_accessor(m_flag_handles.at(get_simplex_dimension(type)));
+}
+Accessor<char> get_flag_accessor(PrimitiveType type)  {
+    return create_accessor(m_flag_handles.at(get_simplex_dimension(type)));
 }
 
+ConstAccessor<long> get_cell_hash_accessor() const {
+    return create_accessor(m_cell_hash_handle);
+}
+Accessor<long> get_cell_hash_accessor()  {
+    return create_accessor(m_cell_hash_handle);
+}
 
 template MeshAttributeHandle<char>
 Mesh::register_attribute(const std::string&, PrimitiveType, long);
