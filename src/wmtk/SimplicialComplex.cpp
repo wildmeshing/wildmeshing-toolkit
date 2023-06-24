@@ -1,6 +1,5 @@
 #include "SimplicialComplex.hpp"
 
-#include "TetMesh.hpp"
 #include "TriMesh.hpp"
 
 namespace wmtk {
@@ -48,14 +47,18 @@ bool SimplicialComplex::operator==(const SimplicialComplex& other) const
     return true;
 }
 
-SimplicialComplex get_union(const SimplicialComplex& sc1, const SimplicialComplex& sc2)
+SimplicialComplex SimplicialComplex::get_union(
+    const SimplicialComplex& sc1,
+    const SimplicialComplex& sc2)
 {
     SimplicialComplex u = sc1;
     u.unify_with_complex(sc2);
     return u;
 }
 
-SimplicialComplex get_intersection(const SimplicialComplex& A, const SimplicialComplex& B)
+SimplicialComplex SimplicialComplex::get_intersection(
+    const SimplicialComplex& A,
+    const SimplicialComplex& B)
 {
     SimplicialComplex sc_union = A;
     SimplicialComplex sc_intersection(A.key_comp());
@@ -70,7 +73,7 @@ SimplicialComplex get_intersection(const SimplicialComplex& A, const SimplicialC
     return sc_intersection;
 }
 
-SimplicialComplex boundary(const Simplex& s, const Mesh& m)
+SimplicialComplex SimplicialComplex::boundary(const Simplex& s, const Mesh& m)
 {
     SimplicialComplex sc(m);
 
@@ -132,14 +135,17 @@ SimplicialComplex boundary(const Simplex& s, const Mesh& m)
     return sc;
 }
 
-SimplicialComplex simplex_with_boundary(const Simplex& s, const Mesh& m)
+SimplicialComplex SimplicialComplex::simplex_with_boundary(const Simplex& s, const Mesh& m)
 {
     SimplicialComplex sc = boundary(s, m);
     sc.add_simplex(s);
     return sc;
 }
 
-bool simplices_w_boundary_intersect(const Simplex& s1, const Simplex& s2, const Mesh& m)
+bool SimplicialComplex::simplices_w_boundary_intersect(
+    const Simplex& s1,
+    const Simplex& s2,
+    const Mesh& m)
 {
     SimplicialComplex s1_bd = simplex_with_boundary(s1, m);
     SimplicialComplex s2_bd = simplex_with_boundary(s2, m);
@@ -147,7 +153,7 @@ bool simplices_w_boundary_intersect(const Simplex& s1, const Simplex& s2, const 
     return (s1_s2_int.get_simplices().size() != 0);
 }
 
-SimplicialComplex closed_star(const Simplex& s, const Mesh& m)
+SimplicialComplex SimplicialComplex::closed_star(const Simplex& s, const Mesh& m)
 {
     SimplicialComplex sc(m);
 
@@ -257,12 +263,12 @@ SimplicialComplex closed_star(const Simplex& s, const Mesh& m)
     return sc;
 }
 
-SimplicialComplex link(const Simplex& s, const Mesh& m)
+SimplicialComplex SimplicialComplex::link(const Simplex& s, const Mesh& m)
 {
     SimplicialComplex sc_clst = closed_star(s, m);
     SimplicialComplex sc(m);
     for (const Simplex& ss : sc_clst.get_simplices()) {
-        if (!simplices_w_boundary_intersect(s, ss, m)) {
+        if (!SimplicialComplex::simplices_w_boundary_intersect(s, ss, m)) {
             sc.add_simplex(ss);
         }
     }
@@ -270,7 +276,7 @@ SimplicialComplex link(const Simplex& s, const Mesh& m)
     return sc;
 }
 
-SimplicialComplex open_star(const Simplex& s, const Mesh& m)
+SimplicialComplex SimplicialComplex::open_star(const Simplex& s, const Mesh& m)
 {
     SimplicialComplex sc_clst = closed_star(s, m);
     SimplicialComplex sc(m);
@@ -287,7 +293,7 @@ SimplicialComplex open_star(const Simplex& s, const Mesh& m)
     return sc;
 }
 
-bool link_cond(Tuple t, const Mesh& m)
+bool SimplicialComplex::link_cond(Tuple t, const Mesh& m)
 {
     SimplicialComplex lhs = link(Simplex(PrimitiveType::Vertex, t), m); // lnk(a)
     lhs.unify_with_complex(link(
@@ -298,7 +304,7 @@ bool link_cond(Tuple t, const Mesh& m)
     return (lhs == rhs);
 }
 
-std::vector<Simplex> vertex_one_ring(Tuple t, const Mesh& m)
+std::vector<Simplex> SimplicialComplex::vertex_one_ring(Tuple t, const Mesh& m)
 {
     Simplex s(PrimitiveType::Vertex, t);
     SimplicialComplex sc_link = link(s, m);
@@ -306,7 +312,7 @@ std::vector<Simplex> vertex_one_ring(Tuple t, const Mesh& m)
     return std::vector<Simplex>(one_ring_simplices.begin(), one_ring_simplices.end());
 }
 
-std::vector<Simplex> k_ring(Tuple t, const Mesh& m, int k)
+std::vector<Simplex> SimplicialComplex::k_ring(Tuple t, const Mesh& m, int k)
 {
     if (k < 1) return {};
 

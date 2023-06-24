@@ -69,49 +69,52 @@ public:
     }
 
     auto key_comp() const { return simplices.key_comp(); }
+
+
+    static SimplicialComplex get_union(const SimplicialComplex& sc1, const SimplicialComplex& sc2);
+
+    static SimplicialComplex get_intersection(
+        const SimplicialComplex& A,
+        const SimplicialComplex& B);
+
+    /**
+     * @brief get the boundary of a simplex
+     */
+    static SimplicialComplex boundary(const Simplex& s, const Mesh& m);
+
+    /**
+     * @brief get complex of a simplex and its boundary
+     */
+    static SimplicialComplex simplex_with_boundary(const Simplex& s, const Mesh& m);
+
+    /**
+     * @brief check if simplices with their boundary intersect
+     */
+    static bool simplices_w_boundary_intersect(const Simplex& s1, const Simplex& s2, const Mesh& m);
+
+    static SimplicialComplex closed_star(const Simplex& s, const Mesh& m);
+
+    static SimplicialComplex link(const Simplex& s, const Mesh& m);
+
+    static SimplicialComplex open_star(const Simplex& s, const Mesh& m);
+
+    //////////////////////////////////
+    // check link condition
+    // input Tuple t --> edge (a,b)
+    // check if lnk(a) ∩ lnk(b) == lnk(ab)
+    //////////////////////////////////
+    static bool link_cond(Tuple t, const Mesh& m);
+
+    //////////////////////////////////
+    // k-ring
+    //////////////////////////////////
+
+    /**
+     * @brief get one ring neighbors of vertex in _t_
+     */
+    static std::vector<Simplex> vertex_one_ring(Tuple t, const Mesh& m);
+
+    static std::vector<Simplex> k_ring(Tuple t, const Mesh& m, int k);
 };
-
-SimplicialComplex get_union(const SimplicialComplex& sc1, const SimplicialComplex& sc2);
-
-SimplicialComplex get_intersection(const SimplicialComplex& A, const SimplicialComplex& B);
-
-/**
- * @brief get the boundary of a simplex
- */
-SimplicialComplex boundary(const Simplex& s, const Mesh& m);
-
-/**
- * @brief get complex of a simplex and its boundary
- */
-SimplicialComplex simplex_with_boundary(const Simplex& s, const Mesh& m);
-
-/**
- * @brief check if simplices with their boundary intersect
- */
-bool simplices_w_boundary_intersect(const Simplex& s1, const Simplex& s2, const Mesh& m);
-
-SimplicialComplex closed_star(const Simplex& s, const Mesh& m);
-
-SimplicialComplex link(const Simplex& s, const Mesh& m);
-
-SimplicialComplex open_star(const Simplex& s, const Mesh& m);
-
-//////////////////////////////////
-// check link condition
-// input Tuple t --> edge (a,b)
-// check if lnk(a) ∩ lnk(b) == lnk(ab)
-//////////////////////////////////
-bool link_cond(Tuple t, const Mesh& m);
-
-//////////////////////////////////
-// k-ring
-//////////////////////////////////
-
-/**
- * @brief get one ring neighbors of vertex in _t_
- */
-std::vector<Simplex> vertex_one_ring(Tuple t, const Mesh& m);
-
-std::vector<Simplex> k_ring(Tuple t, const Mesh& m, int k);
 
 } // namespace wmtk
