@@ -16,7 +16,7 @@ long TetMesh::id(const Tuple& tuple, const PrimitiveType& type) const override
 Tuple TetMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const override
 {
     assert(is_valid(tuple));
-    int o = (tuple.m_local_vid*6*4 + tuple.m_local_eid*6 + tuple.m_local_fid)*3;
+    int offset = (tuple.m_local_vid*6*4 + tuple.m_local_eid*6 + tuple.m_local_fid)*3;
     // bool ccw = is_ccw(tuple);
     switch (type) {
     case PrimitiveType::Vertex: 
