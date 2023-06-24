@@ -30,18 +30,18 @@ using namespace wmtk;
 TEST_CASE("load mesh and create TriMesh", "[test_mesh_creation]")
 {
     TriMesh m;
-    // std::vector<std::array<size_t, 3>> tris = {{0, 1, 2}};
-    // m.initialize(3, tris);
-    // // REQUIRE(m.tri_capacity() == tris.size()); // TODO:
-    // // REQUIRE(m.vert_capacity() == 3); // TODO:
-    // REQUIRE(check_mesh_connectivity_validity());
+    std::vector<std::array<size_t, 3>> tris = {{0, 1, 2}};
+    m.initialize(3, tris);
+    // REQUIRE(m.tri_capacity() == tris.size()); // TODO:
+    // REQUIRE(m.vert_capacity() == 3); // TODO:
+    REQUIRE(check_mesh_connectivity_validity());
 
-    // Tuple t = m.tuple_from_cell(0);
-    // REQUIRE(t.is_valid(m));
-    // auto oriented_vertices = m.oriented_tri_vertices(t);
-    // for(const auto& v: oriented_vertices) {
-    //     CHECK(v.is_ccw(m));
-    // }
+    Tuple t = m.tuple_from_cell(0);
+    REQUIRE(t.is_valid(m));
+    auto oriented_vertices = m.oriented_tri_vertices(t);
+    for(const auto& v: oriented_vertices) {
+        CHECK(v.is_ccw(m));
+    }
 }
 
 TEST_CASE("test generate tuples with 1 triangle", "[test_tuple_generation]")
