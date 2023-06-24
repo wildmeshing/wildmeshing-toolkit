@@ -4,26 +4,6 @@
 //#include <igl/read_triangle_mesh.h>
 #include <wmtk/utils/trimesh_topology_initialization.h>
 #include <wmtk/TriMesh.hpp>
-// #include <wmtk/operations/TriMeshConsolidateOperation.h>
-// #include <wmtk/operations/TriMeshEdgeCollapseOperation.h>
-// #include <wmtk/operations/TriMeshEdgeSplitOperation.h>
-// #include <wmtk/operations/TriMeshEdgeSwapOperation.h>
-// #include <wmtk/operations/TriMeshVertexSmoothOperation.h>
-// #include <highfive/H5File.hpp>
-// #include <wmtk/operations/TriMeshOperationShim.hpp>
-
-// template <>
-// HighFive::DataType HighFive::create_datatype<TriMesh::VertexConnectivity>() {
-// }
-// template <>
-// HighFive::DataType HighFive::create_datatype<TriMesh::TriangleConnectivity>(){
-//    {"indices", HighFive::create_datatype<size_t[3]>()},
-//    {"is_removed", HighFive::create_datatype<bool>()},
-//    {"hash", HighFive::create_datatype<size_t>()},
-
-// }
-// WMTK_HDF5_REGISTER_ATTRIBUTE_TYPE(wmtk::TriMesh::VertexConnectivity)
-// WMTK_HDF5_REGISTER_ATTRIBUTE_TYPE(wmtk::TriMesh::TriangleConnectivity)
 
 using namespace wmtk;
 
