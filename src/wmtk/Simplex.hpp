@@ -24,22 +24,22 @@ public:
     PrimitiveType primitive_type() const { return _ptype; }
     const Tuple& tuple() const { return _tuple; }
 
-    bool operator<(const Simplex& rhs) const
-    {
-        throw "use compare function in Mesh";
-        if (_ptype < rhs._ptype) {
-            return true;
-        }
-        if (_ptype > rhs._ptype) {
-            return false;
-        }
-        return global_id() < rhs.global_id();
-    }
-
-    bool operator==(const Simplex& rhs) const
-    {
-        throw "use compare function in Mesh";
-        return (_ptype == rhs._ptype) && (global_id() == rhs.global_id());
-    }
+    // bool operator<(const Simplex& rhs) const
+    //{
+    //     throw "use compare function in Mesh";
+    //     if (_ptype < rhs._ptype) {
+    //         return true;
+    //     }
+    //     if (_ptype > rhs._ptype) {
+    //         return false;
+    //     }
+    //     return global_id() < rhs.global_id();
+    // }
+    //
+    // bool operator==(const Simplex& rhs) const
+    //{
+    //     throw "use compare function in Mesh";
+    //     return (_ptype == rhs._ptype) && (global_id() == rhs.global_id());
+    // }
 };
 } // namespace wmtk

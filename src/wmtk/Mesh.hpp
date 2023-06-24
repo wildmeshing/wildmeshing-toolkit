@@ -3,6 +3,7 @@
 #include "Accessor.hpp"
 #include "MeshAttributes.hpp"
 #include "Primitive.hpp"
+#include "Simplex.hpp"
 #include "Tuple.hpp"
 #include "Types.hpp"
 
@@ -152,6 +153,10 @@ public:
      */
     virtual bool is_valid(const Tuple& tuple) const = 0;
 
+    bool simplex_is_equal(const Simplex& s0, const Simplex& s1) const;
+
+    bool simplex_is_less(const Simplex& s0, const Simplex& s1) const;
+
 protected:
     /**
      * @brief return the global id of the Tuple of the given dimension
@@ -164,6 +169,7 @@ protected:
         * @return long id of the entity
     */
     virtual long id(const Tuple& tuple, const PrimitiveType& type) const = 0;
+    long id(const Simplex& s) const { return id(s.tuple(), s.primitive_type()); }
 
     void set_capacities(std::vector<long> capacities);
 };

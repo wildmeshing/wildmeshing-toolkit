@@ -10,18 +10,34 @@
 
 using namespace wmtk;
 
+struct SimplexLessFunctor
+{
+    const Mesh& m;
+
+    SimplexLessFunctor(const Mesh& mm)
+        : m(mm)
+    {}
+
+    bool operator()(const Simplex& s0, const Simplex& s1) const
+    {
+        return m.simplex_is_less(s0, s1);
+    }
+};
+
+using SimplexSet = std::set<Simplex, SimplexLessFunctor>;
+
 class SimplicialComplex
 {
 private:
-    std::set<Simplex> simplexes;
+    SimplexSet simplices;
 
 public:
-    const std::set<Simplex>& get_simplices() const { return simplexes; }
+    const SimplexSet& get_simplices() const { return simplices; }
 
-    std::set<Simplex> get_simplices(const PrimitiveType& ptype) const
+    SimplexSet get_simplices(const PrimitiveType& ptype) const
     {
-        std::set<Simplex> ret;
-        for (const Simplex& s : simplexes) {
+        SimplexSet ret(simplices.key_comp());
+        for (const Simplex& s : simplices) {
             if (s.primitive_type() == ptype) {
                 ret.insert(s);
             }
@@ -38,7 +54,7 @@ public:
     bool add_simplex(const Simplex& s)
     {
         assert(s.primitive_type() != PrimitiveType::Invalid);
-        const auto [it, was_successful] = simplexes.insert(s);
+        const auto [it, was_successful] = simplices.insert(s);
         return was_successful;
     }
 
@@ -52,13 +68,13 @@ public:
 
     bool operator==(const SimplicialComplex& other) const
     {
-        if (simplexes.size() != other.simplexes.size()) {
+        if (simplices.size() != other.simplices.size()) {
             return false;
         }
         // this is N log(N) complexity
-        for (const auto& t1 : simplexes) {
-            const auto it = other.simplexes.find(t1);
-            if (it == other.simplexes.end()) {
+        for (const auto& t1 : simplices) {
+            const auto it = other.simplices.find(t1);
+            if (it == other.simplices.end()) {
                 return false;
             }
         }
@@ -66,16 +82,25 @@ public:
         return true;
     }
 
-    SimplicialComplex& operator=(const SimplicialComplex&) = default;
+    //    SimplicialComplex& operator=(const SimplicialComplex&) = default;
 
-    SimplicialComplex() = default;
+    SimplicialComplex(const Mesh& mm)
+        : simplices(SimplexLessFunctor(mm))
+    {}
 
-    SimplicialComplex(const std::vector<Simplex>& ss)
+    SimplicialComplex(const SimplexLessFunctor& slf)
+        : simplices(slf)
+    {}
+
+    SimplicialComplex(const std::vector<Simplex>& ss, const Mesh& mm)
+        : simplices(SimplexLessFunctor(mm))
     {
         for (const Simplex& s : ss) {
             add_simplex(s);
         }
     }
+
+    auto key_comp() const { return simplices.key_comp(); }
 };
 
 inline SimplicialComplex get_union(const SimplicialComplex& sc1, const SimplicialComplex& sc2)
@@ -88,7 +113,7 @@ inline SimplicialComplex get_union(const SimplicialComplex& sc1, const Simplicia
 inline SimplicialComplex get_intersection(const SimplicialComplex& A, const SimplicialComplex& B)
 {
     SimplicialComplex sc_union = A;
-    SimplicialComplex sc_intersection;
+    SimplicialComplex sc_intersection(A.key_comp());
 
     for (const auto& s : B.get_simplices()) {
         if (!sc_union.add_simplex(s)) {
@@ -113,9 +138,9 @@ inline SimplicialComplex get_intersection(const SimplicialComplex& A, const Simp
 /**
  * @brief get the boundary of a simplex
  */
-SimplicialComplex boundary(const Simplex& s, const Mesh& m)
+inline SimplicialComplex boundary(const Simplex& s, const Mesh& m)
 {
-    SimplicialComplex sc;
+    SimplicialComplex sc(m);
 
     constexpr PrimitiveType PV = PrimitiveType::Vertex;
     constexpr PrimitiveType PE = PrimitiveType::Edge;
@@ -179,7 +204,7 @@ SimplicialComplex boundary(const Simplex& s, const Mesh& m)
 /**
  * @brief get complex of a simplex and its boundary
  */
-SimplicialComplex simplex_with_boundary(const Simplex& s, const Mesh& m)
+inline SimplicialComplex simplex_with_boundary(const Simplex& s, const Mesh& m)
 {
     SimplicialComplex sc = boundary(s, m);
     sc.add_simplex(s);
@@ -199,9 +224,9 @@ inline bool simplices_w_boundary_intersect(const Simplex& s1, const Simplex& s2,
     return (s1_s2_int.get_simplices().size() != 0);
 }
 
-SimplicialComplex closed_star(const Simplex& s, const Mesh& m)
+inline SimplicialComplex closed_star(const Simplex& s, const Mesh& m)
 {
-    SimplicialComplex sc;
+    SimplicialComplex sc(m);
 
     constexpr PrimitiveType PV = PrimitiveType::Vertex;
     constexpr PrimitiveType PE = PrimitiveType::Edge;
@@ -309,10 +334,10 @@ SimplicialComplex closed_star(const Simplex& s, const Mesh& m)
     return sc;
 }
 
-SimplicialComplex link(const Simplex& s, const Mesh& m)
+inline SimplicialComplex link(const Simplex& s, const Mesh& m)
 {
     SimplicialComplex sc_clst = closed_star(s, m);
-    SimplicialComplex sc;
+    SimplicialComplex sc(m);
     for (const Simplex& ss : sc_clst.get_simplices()) {
         if (!simplices_w_boundary_intersect(s, ss, m)) {
             sc.add_simplex(ss);
@@ -322,10 +347,10 @@ SimplicialComplex link(const Simplex& s, const Mesh& m)
     return sc;
 }
 
-SimplicialComplex open_star(const Simplex& s, const Mesh& m)
+inline SimplicialComplex open_star(const Simplex& s, const Mesh& m)
 {
     SimplicialComplex sc_clst = closed_star(s, m);
-    SimplicialComplex sc;
+    SimplicialComplex sc(m);
     sc.add_simplex(s);
     for (const Simplex& ss : sc_clst.get_simplices()) {
         if (ss.primitive_type() <= s.primitive_type()) {
@@ -344,7 +369,7 @@ SimplicialComplex open_star(const Simplex& s, const Mesh& m)
 // input Tuple t --> edge (a,b)
 // check if lnk(a) ∩ lnk(b) == lnk(ab)
 //////////////////////////////////
-bool link_cond(Tuple t, const Mesh& m)
+inline bool link_cond(Tuple t, const Mesh& m)
 {
     SimplicialComplex lhs = link(Simplex(PrimitiveType::Vertex, t), m); // lnk(a)
     lhs.unify_with_complex(link(
@@ -361,27 +386,27 @@ bool link_cond(Tuple t, const Mesh& m)
 /**
  * @brief get one ring neighbors of vertex in _t_
  */
-std::vector<Simplex> vertex_one_ring(Tuple t, const Mesh& m)
+inline std::vector<Simplex> vertex_one_ring(Tuple t, const Mesh& m)
 {
     Simplex s(PrimitiveType::Vertex, t);
     SimplicialComplex sc_link = link(s, m);
-    std::set<Simplex> one_ring_simplices = sc_link.get_simplices(PrimitiveType::Vertex);
+    SimplexSet one_ring_simplices = sc_link.get_simplices(PrimitiveType::Vertex);
     return std::vector<Simplex>(one_ring_simplices.begin(), one_ring_simplices.end());
 }
 
-std::vector<Simplex> k_ring(Tuple t, const Mesh& m, int k)
+inline std::vector<Simplex> k_ring(Tuple t, const Mesh& m, int k)
 {
     if (k < 1) return {};
 
-    SimplicialComplex sc(vertex_one_ring(t, m));
+    SimplicialComplex sc(vertex_one_ring(t, m), m);
     for (int i = 2; i <= k; ++i) {
         const auto simplices = sc.get_simplices();
         for (const Simplex& s : simplices) {
-            SimplicialComplex sc_or(vertex_one_ring(s.tuple(), m));
+            SimplicialComplex sc_or(vertex_one_ring(s.tuple(), m), m);
             sc.unify_with_complex(sc_or);
         }
     }
 
-    std::set<Simplex> k_ring_simplices = sc.get_simplices();
+    SimplexSet k_ring_simplices = sc.get_simplices();
     return std::vector<Simplex>(k_ring_simplices.begin(), k_ring_simplices.end());
 }
