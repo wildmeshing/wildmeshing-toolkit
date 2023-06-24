@@ -131,13 +131,7 @@ void TriMesh::initialize(
 
 void TriMesh::initialize(Eigen::Ref<const RowVectors3l> F)
 {
-    RowVectors3l FE;
-    RowVectors3l FF;
-    VectorXl VF;
-    VectorXl EF;
-
-    trimesh_topology_initialization(F, FE, FF, VF, EF);
-
+    auto [FE, FF, VF, EF] = trimesh_topology_initialization(F);
     initialize(F, FE, FF, VF, EF);
 }
 
