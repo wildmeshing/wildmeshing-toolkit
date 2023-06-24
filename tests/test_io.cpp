@@ -43,10 +43,8 @@ TEST_CASE("paraview", "[io]")
 
     MeshUtils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, mesh);
 
-    ParaviewWriter writer("test.hdf5", "vertices", false, false, true, false);
+    ParaviewWriter writer("paraview", "vertices", false, false, true, false);
     mesh.serialize(writer);
-
-    MeshReader reader("paraview.hdf5");
 }
 
 // TEST_CASE("io", "[io][mshio]")
