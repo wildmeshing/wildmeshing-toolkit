@@ -8,7 +8,7 @@ include(Catch)
 # file(GLOB TEST_SOURCES CONFIGURE_DEPENDS "*.h" "*.cpp")
 set(TEST_SOURCES 
 	main.cpp 
-	test_topology_2d.cpp
+	test_topology.cpp
 	2d_tests.cpp
 )
 add_executable(wmtk_tests ${TEST_SOURCES})

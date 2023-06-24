@@ -16,9 +16,9 @@ private:
     MeshAttributeHandle<long> m_fe_handle;
     MeshAttributeHandle<long> m_ff_handle;
 
-    std::vector<Tuple> get_vertices() const;
-    std::vector<Tuple> get_edges() const;
-    std::vector<Tuple> get_faces() const;
+    std::vector<Tuple> get_all_vertices() const;
+    std::vector<Tuple> get_all_edges() const;
+    std::vector<Tuple> get_all_faces() const;
 
 public:
     TriMesh();

@@ -4,13 +4,15 @@
 #include <algorithm>
 
 namespace wmtk {
-void trimesh_topology_initialization(
-    Eigen::Ref<const RowVectors3l> F,
-    Eigen::Ref<RowVectors3l> FE,
-    Eigen::Ref<RowVectors3l> FF,
-    Eigen::Ref<VectorXl> VF,
-    Eigen::Ref<VectorXl> EF)
+
+
+       
+std::tuple<RowVectors3l,RowVectors3l,VectorXl,VectorXl> trimesh_topology_initialization(
+    Eigen::Ref<const RowVectors3l> F)
 {
+    RowVectors3l FE, FF;
+    VectorXl VF,EF;
+    
     // Make sure there are 3 columns
     assert(F.cols() == 3);
 
@@ -21,17 +23,17 @@ void trimesh_topology_initialization(
 
     std::vector<std::vector<long>> TTT;
 
-    long vertex_count = F.maxCoeff();
+    long vertex_count = F.maxCoeff() + 1;
 
     // Build a table for finding Faces and populate the corresponding
     // topology relations
     {
-        TTT.resize(F.rows() * 4);
+        TTT.resize(F.rows() * 3);
         for (int t = 0; t < F.rows(); ++t) {
             for (int i = 0; i < 3; ++i) {
                 // v1 v2 v3 f ei
-                long x = static_cast<long>(auto_2d_edges[i][0]);
-                long y = static_cast<long>(auto_2d_edges[i][1]);
+                long x = static_cast<long>(wmtk::autogen::auto_2d_edges[i][0]);
+                long y = static_cast<long>(wmtk::autogen::auto_2d_edges[i][1]);
                 if (x > y) std::swap(x, y);
 
                 std::vector<long> r(4);
@@ -86,6 +88,8 @@ void trimesh_topology_initialization(
         EF.resize(EF_temp.size());
         for (long i = 0; i < EF_temp.size(); ++i) EF(i) = EF_temp[i];
     }
+
+    return {FE, FF, VF, EF};
 }
 
 } // namespace wmtk
