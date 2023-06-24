@@ -55,11 +55,13 @@ protected:
     std::vector<MeshAttributes<char>> m_char_attributes;
     std::vector<MeshAttributes<long>> m_long_attributes;
     std::vector<MeshAttributes<double>> m_double_attributes;
+
 private:
     std::vector<long> m_capacities;
     // 0x1 == true = is active
     std::vector<MeshAttributeHandle<char>> m_flag_handles;
     MeshAttributeHandle<long> m_cell_hash_handle;
+
 protected:
     // std::vector<MeshAttributes<Rational>> m_rational_attributes;
     template <typename T>
@@ -87,17 +89,6 @@ protected:
     void reserve_attributes(long dimension, long size);
 
 public:
-    /**
-     * @brief return the global id of the Tuple of the given dimension
-     *
-     * @param m
-     * @param type  d-0 -> vertex
-                    d-1 -> edge
-                    d-2 -> face
-                    d-3 -> tetrahedron
-     * @return long id of the entity
-     */
-    virtual long id(const Tuple& tuple, const PrimitiveType& type) const = 0;
     /**
      * @brief switch the orientation of the Tuple of the given dimension
      * @note this is not doen in place. Return a new Tuple of the switched state
@@ -143,8 +134,19 @@ public:
     bool is_valid(const Tuple& tuple) const;
 
 protected:
-    void set_capacities(std::vector<long> capacities);
+    /**
+     * @brief return the global id of the Tuple of the given dimension
+     *
+     * @param m
+     * @param type  d-0 -> vertex
+                    d-1 -> edge
+                    d-2 -> face
+                    d-3 -> tetrahedron
+        * @return long id of the entity
+    */
+    virtual long id(const Tuple& tuple, const PrimitiveType& type) const = 0;
 
+    void set_capacities(std::vector<long> capacities);
 };
 
 
