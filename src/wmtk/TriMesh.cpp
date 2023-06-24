@@ -144,23 +144,23 @@ void TriMesh::initialize(Eigen::Ref<const RowVectors3l> F)
 std::vector<Tuple> TriMesh::get_all(const PrimitiveType& type) const
 {
     switch (type) {
-    case PrimitiveType::Vertex: return get_vertices();
-    case PrimitiveType::Edge: return get_edges(); break;
-    case PrimitiveType::Face: return get_faces(); break;
+    case PrimitiveType::Vertex: return get_all_vertices();
+    case PrimitiveType::Edge: return get_all_edges(); break;
+    case PrimitiveType::Face: return get_all_faces(); break;
     case PrimitiveType::Tetrahedron:
     default: throw std::runtime_error("Invalid primitive type");
     }
 }
 
-std::vector<Tuple> TriMesh::get_vertices() const
+std::vector<Tuple> TriMesh::get_all_vertices() const
 {
     throw "not implemented";
 }
-std::vector<Tuple> TriMesh::get_edges() const
+std::vector<Tuple> TriMesh::get_all_edges() const
 {
     throw "not implemented";
 }
-std::vector<Tuple> TriMesh::get_faces() const
+std::vector<Tuple> TriMesh::get_all_faces() const
 {
     throw "not implemented";
 }
