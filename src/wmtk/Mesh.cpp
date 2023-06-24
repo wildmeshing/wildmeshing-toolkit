@@ -10,6 +10,11 @@ Mesh::Mesh(const long& dimension)
     m_long_attributes.resize(dimension);
     m_double_attributes.resize(dimension);
     m_capacities.resize(dimension, 0);
+
+    m_flags.reserve(dimension);
+    for (long j = 0; j < dimension; ++j) {
+        m_flags.emplace_back(register_attribute<char>("flags", static_cast<PrimitiveType>(j), 1));
+    }
 }
 
 Mesh::~Mesh() = default;
