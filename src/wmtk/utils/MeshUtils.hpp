@@ -22,9 +22,10 @@ public:
             mesh.register_attribute<typename Mat::Scalar>(name, type, data.cols());
 
         auto accessor = mesh.create_accessor(handle);
-        // TODO use tuples
-        for (long i = 0; i < data.rows(); ++i) {
-            accessor.vector_attribute(i) = data.row(i).transpose();
+        const auto tuples = mesh.get_all(type);
+        for (size_t i = 0; i < tuples.size(); ++i) {
+            const auto& t = tuples[i];
+            accessor.vector_attribute(t) = data.row(i).transpose();
         }
 
         return handle;

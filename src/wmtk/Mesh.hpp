@@ -7,6 +7,7 @@
 #include "Types.hpp"
 
 #include <wmtk/io/MeshWriter.hpp>
+#include <wmtk/io/ParaviewWriter.hpp>
 
 #include <Eigen/Core>
 
@@ -16,6 +17,7 @@ class Mesh
 public:
     template <typename T, bool isConst>
     friend class Accessor;
+    friend class ParaviewWriter;
 
     Mesh(const long& dimension);
     virtual ~Mesh();
