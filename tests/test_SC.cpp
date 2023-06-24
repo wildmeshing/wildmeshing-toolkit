@@ -3,19 +3,17 @@
 
 // #include "SimplicialComplex.hpp"
 #include <catch2/catch.hpp>
-#include <wmtk/TriMesh.hpp>
-#include <wmtk/TetMesh.hpp>
 #include <wmtk/SimplicialComplex.hpp>
+#include <wmtk/TetMesh.hpp>
+#include <wmtk/TriMesh.hpp>
 
 using namespace wmtk;
 
 
 TEST_CASE("link-case1", "[SC][link]")
 {
-    RowVectors3l F(3,3);
-    F << 0,3,2,
-     0,1,3,
-     1,2,3; // 3 Faces
+    RowVectors3l F(3, 3);
+    F << 0, 3, 2, 0, 1, 3, 1, 2, 3; // 3 Faces
 
     // dump it to (Tri)Mesh
     TriMesh m;
@@ -27,16 +25,13 @@ TEST_CASE("link-case1", "[SC][link]")
 
 
     SimplicialComplex lnk_0 = link(Simplex(PrimitiveType::Vertex, t), m);
-    // SimplicialComplex lnk_1 = link(Simplex(PrimitiveType::Vertex, m.switch_tuple(t,PrimitiveType::Vertex)), m);
+    SimplicialComplex lnk_1 = link(Simplex(PrimitiveType::Vertex, m.switch_tuple(t,PrimitiveType::Vertex)), m);
     
     // SimplicialComplex lhs = get_intersection(lnk_0, lnk_1);
     // SimplicialComplex lnk_01 = link(Simplex(t, 1), m);
     // SimplicialComplex lnk_10 = link(Simplex(t.sw(0,m), 1), m);
     
-    std::cout << "lnk_0 vertex size = " << lnk_0.get_simplices(PrimitiveType::Vertex).size() << std::endl;
-    std::cout << "lnk_0 edge size = " << lnk_0.get_simplices(PrimitiveType::Edge).size() << std::endl;
-    std::cout << "lnk_0 face size = " << lnk_0.get_simplices(PrimitiveType::Face).size() << std::endl;
-    
+
     REQUIRE(lnk_0.get_simplices().size() == 5);
     // REQUIRE(lnk_1.get_simplices().size() == 5);
     // REQUIRE(lnk_01.get_simplices().size() == 1);
@@ -50,11 +45,8 @@ TEST_CASE("link-case1", "[SC][link]")
 
 TEST_CASE("link-case2", "[SC][link]")
 {
-    RowVectors3l F(4,3);
-    F << 0,3,1,
-         0,1,2,
-         0,2,4,
-         2,1,5; // 4 Faces
+    RowVectors3l F(4, 3);
+    F << 0, 3, 1, 0, 1, 2, 0, 2, 4, 2, 1, 5; // 4 Faces
 
     // dump it to (Tri)Mesh
     TriMesh m;
@@ -69,7 +61,7 @@ TEST_CASE("link-case2", "[SC][link]")
     // SimplicialComplex lhs = get_intersection(lnk_0, lnk_1, m);
     // SimplicialComplex lnk_01 = link(Simplex(t, 1), m);
     // SimplicialComplex lnk_10 = link(Simplex(t.sw(0,m), 1), m);
-    
+
 
     // REQUIRE(lnk_0.get_size() == 7);
     // REQUIRE(lnk_1.get_size() == 7);
@@ -83,11 +75,8 @@ TEST_CASE("link-case2", "[SC][link]")
 
 TEST_CASE("k-ring test", "[SC][k-ring]")
 {
-    RowVectors3l F(4,3);
-    F << 0,3,1,
-         0,1,2,
-         0,2,4,
-         2,1,5; // 4 Faces
+    RowVectors3l F(4, 3);
+    F << 0, 3, 1, 0, 1, 2, 0, 2, 4, 2, 1, 5; // 4 Faces
 
     // dump it to (Tri)Mesh
     TriMesh m;
@@ -105,11 +94,8 @@ TEST_CASE("k-ring test", "[SC][k-ring]")
 
 TEST_CASE("star", "[SC][open star]")
 {
-    RowVectors3l F(4,3);
-    F << 0,3,1,
-         0,1,2,
-         0,2,4,
-         2,1,5; // 4 Faces
+    RowVectors3l F(4, 3);
+    F << 0, 3, 1, 0, 1, 2, 0, 2, 4, 2, 1, 5; // 4 Faces
 
     // dump it to (Tri)Mesh
     TriMesh m;
@@ -129,6 +115,3 @@ TEST_CASE("star", "[SC][open star]")
     // SimplicialComplex sc_1 = open_star(Simlex(t, 2), m);
     // REQUIRE(sc_f.get_size() == 1);
 }
-
-
-
