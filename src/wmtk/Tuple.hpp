@@ -11,6 +11,8 @@
 namespace wmtk {
 
 class Mesh;
+class TriMesh;
+class TetMesh;
 
 class Tuple
 {
@@ -25,6 +27,8 @@ private:
 
 public:
     friend class Mesh;
+    friend class TriMesh;
+    friend class TetMesh;
     // friend long Mesh::id(const Tuple& tuple, const PrimitiveType& type) const;
     // friend Mesh::is_ccw(const Tuple& tuple) const;
     // friend Mesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const;
