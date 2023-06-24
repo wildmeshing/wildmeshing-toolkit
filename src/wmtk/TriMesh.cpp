@@ -144,7 +144,6 @@ void TriMesh::initialize(Eigen::Ref<const RowVectors3l> F)
 
 std::vector<Tuple> TriMesh::get_all(const PrimitiveType& type) const
 {
-    long dimension = get_simplex_dimension(type);
     ConstAccessor<char> flag_accessor = get_flag_accessor(type);
     std::vector<Tuple> ret;
     long cap = capacity(type);
@@ -191,6 +190,7 @@ Tuple TriMesh::vertex_tuple_from_id(long id) const
         if (fv(i) == id) {
             Tuple v_tuple = Tuple(i, (i + 2) % 3, f, -1, 0);
             assert(is_ccw(v_tuple));
+            assert(is_valid(v_tuple));
             return v_tuple;
         }
     }
@@ -199,11 +199,26 @@ Tuple TriMesh::vertex_tuple_from_id(long id) const
 
 Tuple TriMesh::edge_tuple_from_id(long id) const
 {
-    throw "not implemented";
+    ConstAccessor<long> ef_accessor = create_accessor<long>(m_ef_handle);
+    auto f = ef_accessor.scalar_attribute(id);
+    ConstAccessor<long> fe_accessor = create_accessor<long>(m_fe_handle);
+    auto fe = fe_accessor.vector_attribute(f);
+    for (long i = 0; i < 3; ++i) {
+        if (fe(i) == id) {
+            Tuple e_tuple = Tuple((i + 1) % 3, i, f, -1, 0);
+            assert(is_ccw(e_tuple));
+            assert(is_valid(e_tuple));
+            return e_tuple;
+        }
+    }
+    throw std::runtime_error("edge_tuple_from_id failed");
 }
 Tuple TriMesh::triangle_tuple_from_id(long id) const
 {
-    throw "not implemented";
+    Tuple f_tuple = Tuple(0, 2, id, -1, 0);
+    assert(is_ccw(f_tuple));
+    assert(is_valid(f_tuple));
+    return f_tuple;
 }
 // TODO
 bool TriMesh::is_valid(const Tuple& tuple) const
