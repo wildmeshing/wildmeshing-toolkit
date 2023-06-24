@@ -153,9 +153,6 @@ public:
     virtual bool is_valid(const Tuple& tuple) const = 0;
 
 protected:
-
-    virtual Tuple tuple_from_id(PrimitiveType ptype, long id) const = 0;
-
     /**
      * @brief return the global id of the Tuple of the given dimension
      *
@@ -169,7 +166,6 @@ protected:
     virtual long id(const Tuple& tuple, const PrimitiveType& type) const = 0;
 
     void set_capacities(std::vector<long> capacities);
-
 };
 
 
