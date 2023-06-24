@@ -33,7 +33,7 @@ private:
         std::string m_vertices_name;
         std::string m_elements_name;
 
-        std::string m_filename;
+        std::filesystem::path m_filename;
 
         bool m_enabled;
 
