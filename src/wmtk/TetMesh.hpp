@@ -11,10 +11,10 @@ private:
     MeshAttributeHandle<long> m_te_handle;
     MeshAttributeHandle<long> m_tf_handle;
     MeshAttributeHandle<long> m_tt_handle;
-    std::vector<Tuple> get_vertices() const;
-    std::vector<Tuple> get_edges() const;
-    std::vector<Tuple> get_faces() const;
-    std::vector<Tuple> get_tetrahedrons() const;
+    Tuple vertex_tuple_from_id() const;
+    Tuple edge_tuple_from_id(long id) const;
+    Tuple triangle_tuple_from_id(long id) const;
+    Tuple tuple_from_id(PrimitiveType ptype, long id) const override;
 
 public:
     TetMesh();
