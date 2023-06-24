@@ -18,7 +18,8 @@ class Simplex
 public:
     Simplex(const int &d, const Tuple &t, const Mesh& m) : _d{d}, _t{t} 
     {
-        _global_id = m.id(t, static_cast<PrimitiveType>(d));
+        _global_id = 0;
+        // _global_id = m.id(t, static_cast<PrimitiveType>(d));
     }
 
     int global_id() const { return _global_id; }
