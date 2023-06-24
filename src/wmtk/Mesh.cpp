@@ -4,7 +4,12 @@
 
 namespace wmtk {
 
-Mesh::Mesh() = default;
+Mesh::Mesh(const long& dimension)
+{
+    m_char_attributes.resize(dimension);
+    m_long_attributes.resize(dimension);
+    m_double_attributes.resize(dimension);
+}
 
 Mesh::~Mesh() = default;
 

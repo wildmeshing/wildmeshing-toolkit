@@ -33,9 +33,9 @@ void tetmesh_topology_initialization(
         for (int t = 0; t < T.rows(); ++t) {
             for (int i = 0; i < 4; ++i) {
                 // v1 v2 v3 f ei
-                long x = static_cast<long>(auto_3d_faces[i][0]);
-                long y = static_cast<long>(auto_3d_faces[i][1]);
-                long z = static_cast<long>(auto_3d_faces[i][2]);
+                long x = T(t,static_cast<long>(auto_3d_faces[i][0]));
+                long y = T(t,static_cast<long>(auto_3d_faces[i][1]));
+                long z = T(t,static_cast<long>(auto_3d_faces[i][2]));
                 if (x > y) std::swap(x, y);
                 if (y > z) std::swap(y, z);
                 if (x > y) std::swap(x, y);

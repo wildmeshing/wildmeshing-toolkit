@@ -15,7 +15,7 @@ public:
     template <typename T>
     friend class Accessor;
 
-    Mesh();
+    Mesh(const long& dimension);
     virtual ~Mesh();
 
     /**
@@ -48,7 +48,7 @@ public:
     Accessor<T> create_accessor(const MeshAttributeHandle<T>& handle);
 
     template <typename T>
-    const Accessor<T> create_accessor(const MeshAttributeHandle<T>& handle) const;
+    Accessor<const T> create_accessor(const MeshAttributeHandle<T>& handle) const;
 
 protected:
     std::vector<MeshAttributes<char>> m_char_attributes;
@@ -137,7 +137,12 @@ private:
 template <typename T>
 Accessor<T> Mesh::create_accessor(const MeshAttributeHandle<T>& handle)
 {
-    return Accessor(*this, handle);
+    return Accessor<T>(*this, handle);
+}
+template <typename T>
+Accessor<const T> Mesh::create_accessor(const MeshAttributeHandle<T>& handle) const
+{
+    return Accessor<const T>(*this, handle);
 }
 
 template <typename T>
