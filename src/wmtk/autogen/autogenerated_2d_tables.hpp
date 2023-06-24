@@ -6,7 +6,7 @@ static long auto_2d_edges[3][2] = {
   {0, 2},
   {0, 1}
 };
-static long auto_3d_table_vertex[9][2] = {
+static long auto_2d_table_vertex[9][2] = {
   {-1, -1},
   {2, 1},
   {1, 2},
@@ -17,7 +17,7 @@ static long auto_3d_table_vertex[9][2] = {
   {0, 1},
   {-1, -1}
 };
-static long auto_3d_table_edge[9][2] = {
+static long auto_2d_table_edge[9][2] = {
   {-1, -1},
   {0, 2},
   {0, 1},
