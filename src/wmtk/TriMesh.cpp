@@ -148,27 +148,21 @@ void TriMesh::initialize(Eigen::Ref<const RowVectors3l> F)
     initialize(F, FE, FF, VF, EF);
 }
 
+
+
+
 std::vector<Tuple> TriMesh::get_all(const PrimitiveType& type) const
 {
-    switch (type) {
-    case PrimitiveType::Vertex: return get_all_vertices();
-    case PrimitiveType::Edge: return get_all_edges(); break;
-    case PrimitiveType::Face: return get_all_faces(); break;
-    case PrimitiveType::Tetrahedron:
-    default: throw std::runtime_error("Invalid primitive type");
+    long simplex_index = get_simplex_dimension(type);
+    Accessor<char> flag_accessor= get_accessor(m_simplex_flag_handles[simplex_index]);
+    std::vector<Tuple> ret;
+    long cap = capacity(type);
+    ret.reserve(cap);
+    for(size_t index = 0; index < cap; ++index) {
+        if(!(flag_accessor.scalar_attribute(index) & 1)) {
+        ret.emplace_back(tuple_from_id(simplex_index,index));
+        }
     }
 }
 
-std::vector<Tuple> TriMesh::get_all_vertices() const
-{
-    throw "not implemented";
-}
-std::vector<Tuple> TriMesh::get_all_edges() const
-{
-    throw "not implemented";
-}
-std::vector<Tuple> TriMesh::get_all_faces() const
-{
-    throw "not implemented";
-}
 } // namespace wmtk
