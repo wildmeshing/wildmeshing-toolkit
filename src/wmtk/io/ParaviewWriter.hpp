@@ -22,19 +22,25 @@ private:
         void init(
             const std::filesystem::path& filename,
             const std::string& vertices_name,
-            const std::string& elements_name);
+            const std::string& elements_name,
+            const bool enabled);
 
+        void write(const std::string& name, const long stride, const std::vector<double>& val);
+
+        Eigen::MatrixXd& vertices() { return m_vertices; }
+
+    private:
         std::string m_vertices_name;
         std::string m_elements_name;
 
-        std::string m_filename;
+        std::filesystem::path m_filename;
+
+        bool m_enabled;
 
         std::shared_ptr<paraviewo::HDF5VTUWriter> m_paraview_file;
 
         Eigen::MatrixXd m_vertices;
         Eigen::MatrixXi m_elements;
-
-        void write(const std::string& name, const long stride, const std::vector<double>& val);
     };
 
 public:
@@ -46,7 +52,7 @@ public:
         bool write_faces = true,
         bool write_tetrahedra = true);
 
-    bool write(const int dim) override { return m_enabled[dim]; }
+    bool write(const int dim) override { return dim == 0 || m_enabled[dim]; }
 
     void write(
         const std::string& name,
@@ -75,6 +81,7 @@ public:
 private:
     std::array<ParaviewInternalWriter, 4> m_writers;
     std::array<bool, 4> m_enabled;
+    std::string m_vertices_name;
 
     void write_internal(
         const std::string& name,
