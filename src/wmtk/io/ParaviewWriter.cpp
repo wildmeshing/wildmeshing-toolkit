@@ -27,7 +27,7 @@ void ParaviewWriter::ParaviewInternalWriter::init(
 
 ParaviewWriter::ParaviewInternalWriter::~ParaviewInternalWriter()
 {
-    m_paraview_file->write_mesh(m_filename, m_vertices, m_elements);
+    m_paraview_file->write_mesh(m_filename.string(), m_vertices, m_elements);
 }
 
 

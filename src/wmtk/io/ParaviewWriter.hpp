@@ -27,7 +27,7 @@ private:
         std::string m_vertices_name;
         std::string m_elements_name;
 
-        std::string m_filename;
+        std::filesystem::path m_filename;
 
         std::shared_ptr<paraviewo::HDF5VTUWriter> m_paraview_file;
 
