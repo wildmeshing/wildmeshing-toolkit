@@ -47,10 +47,6 @@ std::tuple<RowVectors3l,RowVectors3l,VectorXl,VectorXl> trimesh_topology_initial
         }
         std::sort(TTT.begin(), TTT.end());
 
-        for (long xxx = 0; xxx < TTT.size(); ++xxx)
-            wmtk::logger().info("///// {} {} {} {}", TTT[xxx][0],TTT[xxx][1],TTT[xxx][2],TTT[xxx][3]);
-
-
         // VF
         VF.resize(vertex_count, 1);
         for (int i = 0; i < F.rows(); ++i) {
