@@ -110,11 +110,8 @@ ParaviewWriter::ParaviewWriter(
                     cells[i](j, 3) = mesh.id(t3, PrimitiveType::Vertex);
                 }
             }
-
-            std::cout << cells[i] << std::endl;
         }
     }
-
 
     m_writers[0].init(filename.string() + "_verts.hdf5", vertices_name, cells[0], m_enabled[0]);
     m_writers[1].init(filename.string() + "_edges.hdf5", vertices_name, cells[1], m_enabled[1]);
