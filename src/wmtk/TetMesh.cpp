@@ -1,6 +1,7 @@
 #include "TetMesh.hpp"
 
 #include <wmtk/utils/tetmesh_topology_initialization.h>
+#include <wmtk/utils/Logger.hpp>
 
 namespace wmtk {
 TetMesh::TetMesh()
@@ -87,6 +88,13 @@ void TetMesh::initialize(Eigen::Ref<const RowVectors4l> T)
 {
     auto [TE, TF, TT, VT, ET, FT] = tetmesh_topology_initialization(T);
     initialize(T, TE, TF, TT, VT, ET, FT);
+}
+
+long TetMesh::_debug_id(const Tuple& tuple, const PrimitiveType& type) const
+{
+    // do not remove this warning!
+    wmtk::logger().warn("This function must only be used for debugging!!");
+    return id(tuple, type);
 }
 
 Tuple TetMesh::face_tuple_from_id(long id) const
