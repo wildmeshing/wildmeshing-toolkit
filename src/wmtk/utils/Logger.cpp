@@ -38,7 +38,7 @@ void set_logger(std::shared_ptr<spdlog::logger> x)
     get_shared_logger() = std::move(x);
 }
 
-[[noreturn]] void log_and_throw_error(const std::string& msg)
+void log_and_throw_error(const std::string& msg)
 {
     logger().error(msg);
     throw std::runtime_error(msg);

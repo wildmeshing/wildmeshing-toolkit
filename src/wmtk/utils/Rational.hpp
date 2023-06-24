@@ -38,6 +38,13 @@ public:
         mpq_set(value, other.value);
     }
 
+    Rational(const std::string& num, const std::string& denom)
+    {
+        mpq_init(value);
+        std::string tmp = num + "/" + denom;
+        mpq_set_str(value, tmp.c_str(), 10);
+    }
+
     std::string numerator() const
     {
         mpz_t num;

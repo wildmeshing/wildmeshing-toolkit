@@ -23,6 +23,8 @@ spdlog::logger& logger();
 ///
 void set_logger(std::shared_ptr<spdlog::logger> logger);
 
+[[noreturn]] void log_and_throw_error(const std::string& msg);
+
 template <typename... Args>
 [[noreturn]] void log_and_throw_error(const std::string& msg, const Args&... args)
 {

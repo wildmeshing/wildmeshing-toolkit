@@ -1,5 +1,6 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/io/MeshReader.hpp>
 #include <wmtk/io/MeshWriter.hpp>
 
 #include <catch2/catch.hpp>
@@ -24,6 +25,8 @@ TEST_CASE("io", "[io][serialization]")
 
     MeshWriter writer("test.hdf5");
     mesh.serialize(writer);
+
+    MeshReader reader("test.hdf5");
 }
 
 // TEST_CASE("io", "[io][mshio]")
