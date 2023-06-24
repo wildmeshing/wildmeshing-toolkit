@@ -40,32 +40,33 @@ long TriMesh::id(const Tuple& tuple, const PrimitiveType& type) const
 
 Tuple TriMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
 {
-    bool ccw = is_ccw(tuple);
-    int offset = (tuple.m_local_vid*3 + tuple.m_local_eid);
+    // bool ccw = is_ccw(tuple);
+    // int offset = (tuple.m_local_vid*3 + tuple.m_local_eid);
     
-    switch (type) {
-    case PrimitiveType::Vertex:
-        return Tuple(
-            2d_tuple_table_vertex[offset][0],
-            2d_tuple_table_vertex[offset][1],
-            tuple.m_local_fid,
-            tuple.m_global_cid,
-            tuple.m_hash);
+    // switch (type) {
+    // case PrimitiveType::Vertex:
+    //     return Tuple(
+    //         wmtk::autogen::2d_tuple_table_vertex[offset][0],
+    //         wmtk::autogen::2d_tuple_table_vertex[offset][1],
+    //         tuple.m_local_fid,
+    //         tuple.m_global_cid,
+    //         tuple.m_hash);
 
-    case PrimitiveType::Edge:
-        return Tuple(
-            2d_tuple_table_edge[offset][0],
-            2d_tuple_table_edge[offset][1],
-            tuple.m_local_fid,
-            tuple.m_global_cid,
-            tuple.m_hash);
-    case PrimitiveType::Triangle: {
-        thrown("read the attribute")
-        }
-        return Tuple(lvid_new, leid_new, tuple.m_local_fid, gcid_new, tuple.m_hash);
-    }
-    default: throw std::runtime_error("Tuple switch: Invalid primitive type"); break;
-    }
+    // case PrimitiveType::Edge:
+    //     return Tuple(
+    //         wmtk::autogen::2d_tuple_table_edge[offset][0],
+    //         wmtk::autogen::2d_tuple_table_edge[offset][1],
+    //         tuple.m_local_fid,
+    //         tuple.m_global_cid,
+    //         tuple.m_hash);
+    // case PrimitiveType::Triangle: {
+    //     thrown("read the attribute")
+    //     }
+    //     return Tuple(lvid_new, leid_new, tuple.m_local_fid, gcid_new, tuple.m_hash);
+    // }
+    // default: throw std::runtime_error("Tuple switch: Invalid primitive type"); break;
+    // }
+    throw("TODO");
 }
 
 bool TriMesh::is_ccw(const Tuple& tuple) const

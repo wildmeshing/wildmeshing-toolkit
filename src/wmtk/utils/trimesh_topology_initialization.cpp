@@ -30,8 +30,8 @@ void trimesh_topology_initialization(
         for (int t = 0; t < F.rows(); ++t) {
             for (int i = 0; i < 3; ++i) {
                 // v1 v2 v3 f ei
-                long x = static_cast<long>(auto_2d_edges[i][0]);
-                long y = static_cast<long>(auto_2d_edges[i][1]);
+                long x = static_cast<long>(wmtk::autogen::auto_2d_edges[i][0]);
+                long y = static_cast<long>(wmtk::autogen::auto_2d_edges[i][1]);
                 if (x > y) std::swap(x, y);
 
                 std::vector<long> r(4);
