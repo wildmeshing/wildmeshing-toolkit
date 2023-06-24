@@ -38,6 +38,31 @@ public:
         mpq_set(value, other.value);
     }
 
+    std::string numerator() const
+    {
+        mpz_t num;
+        mpz_init(num);
+
+        mpq_get_num(num, value);
+        std::string v(mpz_get_str(NULL, 10, num));
+
+        mpz_clear(num);
+        return v;
+    }
+
+    std::string denominator() const
+    {
+        mpz_t denom;
+        mpz_init(denom);
+        mpq_get_den(denom, value);
+
+        std::string v(mpz_get_str(NULL, 10, denom));
+
+        mpz_clear(denom);
+        return v;
+    }
+
+
     ~Rational() { mpq_clear(value); }
 
     friend Rational operator+(const Rational& x, const Rational& y)
@@ -151,4 +176,4 @@ public:
 };
 
 
-} // namespace apps
+} // namespace wmtk
