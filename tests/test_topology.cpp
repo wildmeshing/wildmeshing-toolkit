@@ -14,7 +14,7 @@
 
 using namespace wmtk;
 
-TEST_CASE("load mesh from libigl and test mesh topology on a single triangle", "[test_topology]")
+TEST_CASE("test mesh topology on a single triangle", "[test_topology_single_triangle]")
 {
     Eigen::Matrix<long, 1, 3> F;
     F << 0, 1, 2;
@@ -59,7 +59,7 @@ TEST_CASE("load mesh from libigl and test mesh topology on a single triangle", "
     }
 }
 
-TEST_CASE("load mesh from libigl and test mesh topology on two triangles", "[test_topology]")
+TEST_CASE("test mesh topology on two triangles", "[test_topology_two_triangles]")
 {
     Eigen::Matrix<long, 2, 3> F;
     F << 0, 1, 2, 1, 3, 2;
@@ -105,7 +105,7 @@ TEST_CASE("load mesh from libigl and test mesh topology on two triangles", "[tes
     }
 }
 
-TEST_CASE("load mesh from libigl and test mesh topology", "[test_topology]")
+TEST_CASE("load meshes from libigl and test mesh topology", "[test_topology_2D]")
 {
     Eigen::MatrixXd V;
     Eigen::Matrix<long, -1, -1> F;
@@ -171,7 +171,7 @@ TEST_CASE("load mesh from libigl and test mesh topology", "[test_topology]")
     }
 }
 
-TEST_CASE("tetmesh_topology_initialization_1", "[test_topology]")
+TEST_CASE("tetmesh_topology_initialization_1", "[test_topology_two_tedrahedra_1]")
 {
     // Two tetrahedra are sharing one face
     // there are 7 unique faces and 9 unique edges
@@ -181,11 +181,52 @@ TEST_CASE("tetmesh_topology_initialization_1", "[test_topology]")
 
     auto [TE, TF, TT, VT, ET, FT] = tetmesh_topology_initialization(T);
 
+    // 1. Test the maximum in TE and TF
     CHECK(TE.maxCoeff() == 9 - 1);
     CHECK(TF.maxCoeff() == 7 - 1);
+    CHECK(TT.maxCoeff() == 1);
+
+    // 2. Test the relationship between ET and TE
+    for (int i = 0; i < ET.size(); ++i) {
+        CHECK((TE.row(ET(i)).array() == i).any());
+    }
+
+    // 3. Test the relationship between FT and TF
+    for (int i = 0; i < FT.size(); ++i) {
+        CHECK((TF.row(FT(i)).array() == i).any());
+    }
+
+    // 4. Test the relationship between VT and T
+    for (int i = 0; i < VT.size(); ++i) {
+        if (VT(i) < 0) continue;
+        CHECK((T.row(VT(i)).array() == i).any());
+    }
+
+    // 5. Test the relationship between TT and TF and TE
+    for (int i = 0; i < TT.rows(); ++i) {
+        for (int j = 0; j < 4; ++j) {
+            long nb = TT(i, j);
+            if (nb < 0) continue;
+
+            CHECK((TT.row(nb).array() == i).any());
+
+            if ((TT.row(nb).array() == i).any()) {
+                int cnt = (TT.row(nb).array() == i).count();
+                CHECK(cnt == 1);
+
+                auto is_nb = (TT.row(nb).array() == i);
+                for (int k = 0; k < 4; ++k) {
+                    if (is_nb(k)) {
+                        // wmtk::logger().info("{} {} {} {}", i, j, nb, k);
+                        CHECK(TF(i, j) == TF(nb, k));
+                    }
+                }
+            }
+        }
+    }
 }
 
-TEST_CASE("tetmesh_topology_initialization_2", "[test_topology]")
+TEST_CASE("tetmesh_topology_initialization_2", "[test_topology_two_tedrahedra_2]")
 {
     // Two tetrahedra not sharing anything
     // there are 8 unique faces and 12 unique edges
@@ -195,6 +236,47 @@ TEST_CASE("tetmesh_topology_initialization_2", "[test_topology]")
 
     auto [TE, TF, TT, VT, ET, FT] = tetmesh_topology_initialization(T);
 
+    // 1. Test the maximum in TE and TF
     CHECK(TE.maxCoeff() == 12 - 1);
     CHECK(TF.maxCoeff() == 8 - 1);
+    CHECK(TT.maxCoeff() == -1);
+
+    // 2. Test the relationship between ET and TE
+    for (int i = 0; i < ET.size(); ++i) {
+        CHECK((TE.row(ET(i)).array() == i).any());
+    }
+
+    // 3. Test the relationship between FT and TF
+    for (int i = 0; i < FT.size(); ++i) {
+        CHECK((TF.row(FT(i)).array() == i).any());
+    }
+
+    // 4. Test the relationship between VT and T
+    for (int i = 0; i < VT.size(); ++i) {
+        if (VT(i) < 0) continue;
+        CHECK((T.row(VT(i)).array() == i).any());
+    }
+
+    // 5. Test the relationship between TT and TF and TE
+    for (int i = 0; i < TT.rows(); ++i) {
+        for (int j = 0; j < 4; ++j) {
+            long nb = TT(i, j);
+            if (nb < 0) continue;
+
+            CHECK((TT.row(nb).array() == i).any());
+
+            if ((TT.row(nb).array() == i).any()) {
+                int cnt = (TT.row(nb).array() == i).count();
+                CHECK(cnt == 1);
+
+                auto is_nb = (TT.row(nb).array() == i);
+                for (int k = 0; k < 4; ++k) {
+                    if (is_nb(k)) {
+                        // wmtk::logger().info("{} {} {} {}", i, j, nb, k);
+                        CHECK(TF(i, j) == TF(nb, k));
+                    }
+                }
+            }
+        }
+    }
 }

@@ -32,11 +32,12 @@ public:
 
     void serialize(const int dim, MeshWriter& writer);
 
-    AttributeHandle register_attribute(const std::string& name, long size);
+    AttributeHandle register_attribute(const std::string& name, long size, bool replace = false);
 
     long size() const;
     void reserve(const long size);
 
+    bool operator==(const MeshAttributes<T>& other) const;
 
 protected:
     AttributeHandle attribute_handle(const std::string& name) const;
@@ -46,6 +47,8 @@ protected:
 
     T scalar_attribute(const AttributeHandle& handle, const long index) const;
     T& scalar_attribute(const AttributeHandle& handle, const long index);
+
+    void set(const AttributeHandle& handle, const std::vector<T>& val);
 
 private:
     std::map<std::string, AttributeHandle> m_handles;

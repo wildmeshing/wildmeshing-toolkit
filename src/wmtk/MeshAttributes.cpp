@@ -21,20 +21,26 @@ void MeshAttributes<T>::serialize(const int dim, MeshWriter& writer)
 }
 
 template <typename T>
-AttributeHandle MeshAttributes<T>::register_attribute(const std::string& name, long size)
+AttributeHandle
+MeshAttributes<T>::register_attribute(const std::string& name, long size, bool replace)
 {
-    assert(m_handles.find(name) == m_handles.end());
+    assert(replace || m_handles.find(name) == m_handles.end());
 
     AttributeHandle handle;
     handle.stride = size;
 
 
-    handle.index = m_attributes.size();
+    if (replace && m_handles.find(name) != m_handles.end()) {
+        auto it = m_handles.find(name);
+        handle.index = it->second.index;
+    } else {
+        handle.index = m_attributes.size();
+        m_attributes.emplace_back();
+    }
     m_handles[name] = handle;
 
     if (handle.index == 0) m_initial_stride = size;
 
-    m_attributes.emplace_back();
     if (handle.index > 0) {
         assert(m_initial_stride > 0);
         assert(m_attributes.front().size() % m_initial_stride == 0);
@@ -53,6 +59,12 @@ template <typename T>
 AttributeHandle MeshAttributes<T>::attribute_handle(const std::string& name) const
 {
     return m_handles.at(name);
+}
+
+template <typename T>
+bool MeshAttributes<T>::operator==(const MeshAttributes<T>& other) const
+{
+    return m_handles == other.m_handles && m_attributes == other.m_attributes;
 }
 
 
@@ -94,6 +106,12 @@ T& MeshAttributes<T>::scalar_attribute(const AttributeHandle& handle, const long
     auto& attr = m_attributes[handle.index];
 
     return attr[index];
+}
+
+template <typename T>
+void MeshAttributes<T>::set(const AttributeHandle& handle, const std::vector<T>& val)
+{
+    m_attributes[handle.index] = val;
 }
 
 template <typename T>
