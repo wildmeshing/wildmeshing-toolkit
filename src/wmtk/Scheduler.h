@@ -4,13 +4,13 @@
 namespace wmtk {
 
 
-class Executor
+class Scheduler 
 {
     using Op = std::pair<std::string, Tuple>;
-    template <typename OperationType>
-    void add_operation_type(const std::string& name)
+    template <typename OperationType, typename... Args>
+    void add_operation_type(const std::string& name, PrimitiveType primitive_type, Args... args)
     {
-        m_factories[name] = std::make_unique<OperationFactory<OperationType>>();
+        m_factories[name] = std::make_unique<OperationFactory<OperationType>>(primitive_type, std::forward<Args>(args)...);
     }
 
     void run_queue(const std::vector<Op>& tuples)
