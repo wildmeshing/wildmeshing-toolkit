@@ -16,6 +16,11 @@ internal::SimplexSet SimplicialComplex::get_simplices(const PrimitiveType& ptype
     return ret;
 }
 
+std::vector<Simplex> SimplicialComplex::get_simplex_vector() const
+{
+    return std::vector<Simplex>(simplices.begin(), simplices.end());
+}
+
 bool SimplicialComplex::add_simplex(const Simplex& s)
 {
     assert(s.primitive_type() != PrimitiveType::Invalid);
@@ -307,9 +312,8 @@ bool SimplicialComplex::link_cond(Tuple t, const Mesh& m)
 std::vector<Simplex> SimplicialComplex::vertex_one_ring(Tuple t, const Mesh& m)
 {
     Simplex s(PrimitiveType::Vertex, t);
-    SimplicialComplex sc_link = link(s, m);
-    internal::SimplexSet one_ring_simplices = sc_link.get_simplices(PrimitiveType::Vertex);
-    return std::vector<Simplex>(one_ring_simplices.begin(), one_ring_simplices.end());
+    const SimplicialComplex sc_link = link(s, m);
+    return sc_link.get_simplex_vector();
 }
 
 std::vector<Simplex> SimplicialComplex::k_ring(Tuple t, const Mesh& m, int k)
@@ -325,8 +329,7 @@ std::vector<Simplex> SimplicialComplex::k_ring(Tuple t, const Mesh& m, int k)
         }
     }
 
-    internal::SimplexSet k_ring_simplices = sc.get_simplices();
-    return std::vector<Simplex>(k_ring_simplices.begin(), k_ring_simplices.end());
+    return sc.get_simplex_vector();
 }
 
 } // namespace wmtk
