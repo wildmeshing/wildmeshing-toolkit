@@ -1,6 +1,7 @@
 #pragma once
 
 #include <type_traits>
+#include <memory>
 #include "AttributeHandle.hpp"
 #include "Tuple.hpp"
 
@@ -13,12 +14,14 @@ class TetMesh;
 enum class AccessorWriteMode {
     Immediate,
     Buffered
-}
+};
 
 template <typename T>
 class MeshAttributes;
+
 template <typename T>
-class AccessorWriteCache<T>
+class AccessorCache;
+
 template <typename T, bool IsConst = false>
 class Accessor
 {
@@ -38,6 +41,7 @@ public:
 
 
     Accessor(MeshType& m, const MeshAttributeHandle<T>& handle, AccessorWriteMode mode = AccessorWriteMode::Immediate);
+    ~Accessor();
 
     ConstMapResult vector_attribute(const Tuple& t) const;
     MapResultT vector_attribute(const Tuple& t);
@@ -60,7 +64,7 @@ private:
     MeshAttributeHandle<T> m_handle;
 
     AccessorWriteMode m_write_mode = AccessorWriteMode::Immediate;
-    std::unique_ptr<AccessorWriteCache> m_write_cache;
+    std::unique_ptr<AccessorCache<T>> m_write_cache;
 };
 
 // template <typename T>
