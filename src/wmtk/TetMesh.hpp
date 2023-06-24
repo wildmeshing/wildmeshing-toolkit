@@ -22,6 +22,7 @@ public:
     long id(const Tuple& tuple, const PrimitiveType& type) const override;
     Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const override;
     bool is_ccw(const Tuple& tuple) const override;
+    bool is_boundary(const Tuple& tuple) const override;
     void initialize(
         Eigen::Ref<const RowVectors4l>& TV,
         Eigen::Ref<const RowVectors4l>& TE,

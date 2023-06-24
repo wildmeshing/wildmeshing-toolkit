@@ -111,6 +111,12 @@ public:
      */
     virtual bool is_ccw(const Tuple& tuple) const = 0;
     /**
+     * @param tuple
+     * @return true if the edge tuple is a obundary one
+     * @return false
+     */
+    virtual bool is_boundary(const Tuple& edge) const = 0;
+    /**
      * @brief read in the m_capacities return the upper bound for the number of entities of the
      * given dimension
      *

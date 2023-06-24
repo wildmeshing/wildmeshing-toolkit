@@ -39,17 +39,22 @@ long TriMesh::id(const Tuple& tuple, const PrimitiveType& type) const
     }
 }
 
-    // bool ccw = is_ccw(tuple);
-    // int offset = (tuple.m_local_vid*3 + tuple.m_local_eid);
+// bool ccw = is_ccw(tuple);
+// int offset = (tuple.m_local_vid*3 + tuple.m_local_eid);
 
-    // switch (type) {
-    // case PrimitiveType::Vertex:
-    //     return Tuple(
-    //         wmtk::autogen::2d_tuple_table_vertex[offset][0],
-    //         wmtk::autogen::2d_tuple_table_vertex[offset][1],
-    //         tuple.m_local_fid,
-    //         tuple.m_global_cid,
-    //         tuple.m_hash);
+// switch (type) {
+// case PrimitiveType::Vertex:
+//     return Tuple(
+//         wmtk::autogen::2d_tuple_table_vertex[offset][0],
+//         wmtk::autogen::2d_tuple_table_vertex[offset][1],
+//         tuple.m_local_fid,
+//         tuple.m_global_cid,
+//         tuple.m_hash);
+bool TriMesh::is_boundary(const Tuple& tuple) const
+{
+    ConstAccessor<long> ff_accessor = create_accessor<long>(m_ff_handle);
+    return ff_accessor.scalar_attribute(tuple) < 0;
+}
 Tuple TriMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
 {
     bool ccw = is_ccw(tuple);
@@ -129,24 +134,17 @@ void TriMesh::initialize(
     Accessor<long> vf_accessor = create_accessor<long>(m_vf_handle);
     Accessor<long> ef_accessor = create_accessor<long>(m_ef_handle);
     // iterate over the matrices and fill attributes
-    // m_fv
-    for (long i = 0; i < FV.rows(); ++i) {
+    for (long i = 0; i < capacity(PrimitiveType::Face); ++i) {
         fv_accessor.vector_attribute(i) = FV.row(i).transpose();
-    }
-    // m_fe
-    for (long i = 0; i < FE.rows(); ++i) {
         fe_accessor.vector_attribute(i) = FE.row(i).transpose();
-    }
-    // m_ff
-    for (long i = 0; i < FF.rows(); ++i) {
         ff_accessor.vector_attribute(i) = FF.row(i).transpose();
     }
     // m_vf
-    for (long i = 0; i < VF.rows(); ++i) {
+    for (long i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
         vf_accessor.scalar_attribute(i) = VF(i);
     }
     // m_ef
-    for (long i = 0; i < EF.rows(); ++i) {
+    for (long i = 0; i < capacity(PrimitiveType::Edge); ++i) {
         ef_accessor.scalar_attribute(i) = EF(i);
     }
 }
