@@ -120,7 +120,11 @@ void ParaviewWriter::write(
     const long stride,
     const std::vector<Rational>& val)
 {
-    logger().warn("Rational not supported");
+    std::vector<double> tmp;
+    tmp.reserve(val.size());
+    for (const auto& v : val) tmp.push_back(double(v));
+
+    write_internal(name, type, stride, tmp);
 }
 
 void ParaviewWriter::write_internal(

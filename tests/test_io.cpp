@@ -2,6 +2,7 @@
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/io/HDF5Writer.hpp>
 #include <wmtk/io/MeshReader.hpp>
+#include <wmtk/io/ParaviewWriter.hpp>
 
 #include <catch2/catch.hpp>
 
@@ -9,7 +10,7 @@
 
 using namespace wmtk;
 
-TEST_CASE("io", "[io][serialization]")
+TEST_CASE("hdf5", "[io]")
 {
     Eigen::MatrixXd V;
     Eigen::Matrix<long, -1, -1> F;
@@ -24,6 +25,26 @@ TEST_CASE("io", "[io][serialization]")
     mesh.initialize(tris);
 
     HDF5Writer writer("test.hdf5");
+    mesh.serialize(writer);
+
+    MeshReader reader("test.hdf5");
+}
+
+TEST_CASE("paraview", "[io]")
+{
+    Eigen::MatrixXd V;
+    Eigen::Matrix<long, -1, -1> F;
+
+    igl::read_triangle_mesh(WMTK_DATA_DIR "/fan.obj", V, F);
+
+    RowVectors3l tris;
+    tris.resize(1, 3);
+    tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
+
+    TriMesh mesh;
+    mesh.initialize(F);
+
+    ParaviewWriter writer("test.hdf5", "vertices");
     mesh.serialize(writer);
 
     MeshReader reader("test.hdf5");
