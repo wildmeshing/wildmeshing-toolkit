@@ -26,17 +26,18 @@ TEST_CASE("link-case1", "[SC][link]")
     Tuple t(0, 2, -1, 1, hash);
 
 
-    // SimplicialComplex lnk_0 = link(Simplex(t, 0), m);
-    // SimplicialComplex lnk_1 = link(Simplex(t.sw(0, m), 0), m);
-    // SimplicialComplex lhs = get_intersection(lnk_0, lnk_1, m);
+    SimplicialComplex lnk_0 = link(Simplex(PrimitiveType::Vertex, t), m);
+    SimplicialComplex lnk_1 = link(Simplex(PrimitiveType::Vertex, m.switch_tuple(t,PrimitiveType::Vertex)), m);
+    
+    // SimplicialComplex lhs = get_intersection(lnk_0, lnk_1);
     // SimplicialComplex lnk_01 = link(Simplex(t, 1), m);
     // SimplicialComplex lnk_10 = link(Simplex(t.sw(0,m), 1), m);
     
 
-    // REQUIRE(lnk_0.get_size() == 5);
-    // REQUIRE(lnk_1.get_size() == 5);
-    // REQUIRE(lnk_01.get_size() == 1);
-    // REQUIRE(lhs.get_size() == 3);
+    REQUIRE(lnk_0.get_simplices().size() == 5);
+    // REQUIRE(lnk_1.get_simplices().size() == 5);
+    // REQUIRE(lnk_01.get_simplices().size() == 1);
+    // REQUIRE(lhs.get_simplices().size() == 3);
 
     // REQUIRE(lnk_01 == lnk_10);
 
