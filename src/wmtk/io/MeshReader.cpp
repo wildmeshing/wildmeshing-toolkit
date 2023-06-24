@@ -70,4 +70,25 @@ void MeshReader::set_attribute(
     auto accessor = mesh.create_accessor(handle);
 }
 
+template void MeshReader::set_attribute<char>(
+    const std::string&,
+    PrimitiveType,
+    long,
+    const std::vector<char>&,
+    Mesh&);
+
+template void MeshReader::set_attribute<long>(
+    const std::string&,
+    PrimitiveType,
+    long,
+    const std::vector<long>&,
+    Mesh&);
+
+template void MeshReader::set_attribute<double>(
+    const std::string&,
+    PrimitiveType,
+    long,
+    const std::vector<double>&,
+    Mesh&);
+
 } // namespace wmtk
