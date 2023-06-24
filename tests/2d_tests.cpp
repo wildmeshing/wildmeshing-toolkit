@@ -163,9 +163,9 @@ TEST_CASE("random 10 switches on 2 triangles", "[tuple_operation]")
                 case 0: t = m.switch_tuple(t, PrimitiveType::Vertex); break;
                 case 1: t = m.switch_tuple(t, PrimitiveType::Edge); break;
                 case 2:
-                    // TODO test if v_tuple is boundary
-                    REQUIRE(false);
-                    t = m.switch_tuple(t, PrimitiveType::Face);
+                    if (!m.is_boundary(t)) {
+                        t = m.switch_tuple(t, PrimitiveType::Face);
+                    }
                     break;
                 default: break;
                 }
@@ -184,9 +184,9 @@ TEST_CASE("random 10 switches on 2 triangles", "[tuple_operation]")
                 case 0: t = m.switch_tuple(t, PrimitiveType::Vertex); break;
                 case 1: t = m.switch_tuple(t, PrimitiveType::Edge); break;
                 case 2:
-                    // TODO test if v_tuple is boundary
-                    REQUIRE(false);
-                    t = m.switch_tuple(t, PrimitiveType::Face);
+                    if (!m.is_boundary(t)) {
+                        t = m.switch_tuple(t, PrimitiveType::Face);
+                    }
                     break;
                 default: break;
                 }
@@ -205,9 +205,9 @@ TEST_CASE("random 10 switches on 2 triangles", "[tuple_operation]")
                 case 0: t = m.switch_tuple(t, PrimitiveType::Vertex); break;
                 case 1: t = m.switch_tuple(t, PrimitiveType::Edge); break;
                 case 2:
-                    // TODO test if v_tuple is boundary
-                    REQUIRE(false);
-                    t = m.switch_tuple(t, PrimitiveType::Face);
+                    if (!m.is_boundary(t)) {
+                        t = m.switch_tuple(t, PrimitiveType::Face);
+                    }
                     break;
                 default: break;
                 }
