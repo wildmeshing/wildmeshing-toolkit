@@ -157,6 +157,8 @@ public:
      */
     virtual bool is_valid(const Tuple& tuple) const = 0;
 
+    void set_capacities_from_flags();
+
 protected:
     /**
      * @brief return the global id of the Tuple of the given dimension

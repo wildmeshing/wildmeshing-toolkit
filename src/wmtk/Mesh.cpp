@@ -90,6 +90,11 @@ Accessor<long> Mesh::get_cell_hash_accessor()
     return create_accessor(m_cell_hash_handle);
 }
 
+void Mesh::set_capacities_from_flags()
+{
+    throw "not implemented";
+}
+
 bool Mesh::operator==(const Mesh& other) const
 {
     return m_capacities == other.m_capacities && m_char_attributes == other.m_char_attributes &&

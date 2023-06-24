@@ -70,6 +70,8 @@ void MeshReader::set_attribute(
     auto accessor = mesh.create_accessor(handle);
 
     accessor.set_attribute(v);
+
+    mesh.set_capacities_from_flags();
 }
 
 
