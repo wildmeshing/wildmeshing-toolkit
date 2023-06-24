@@ -10,19 +10,19 @@ TetMesh::TetMesh()
     , m_tf_handle(register_attribute<long>("m_tf", PrimitiveType::Tetrahedron, 4))
     , m_tt_handle(register_attribute<long>("m_tt", PrimitiveType::Tetrahedron, 4))
 {}
-std::vector<Tuple> TetMesh::get_vertices() const
+Tuple TetMesh::vertex_tuple_from_id() const
 {
     throw "not implemented";
 }
-std::vector<Tuple> TetMesh::get_edges() const
+Tuple TetMesh::edge_tuple_from_id() const
 {
     throw "not implemented";
 }
-std::vector<Tuple> TetMesh::get_faces() const
+Tuple TetMesh::triangle_tuple_from_id() const
 {
     throw "not implemented";
 }
-std::vector<Tuple> TetMesh::get_tetrahedrons() const
+Tuple TetMesh::tetrahedron_tuple_from_id() const
 {
     throw "not implemented";
 }

@@ -138,6 +138,7 @@ public:
 
 protected:
     void set_capacities(std::vector<long> capacities);
+    virtual Tuple tuple_from_id(PrimitiveType ptype, long id) const = 0;
 
 private:
     std::vector<long> m_capacities;

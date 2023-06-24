@@ -16,9 +16,10 @@ private:
     MeshAttributeHandle<long> m_fe_handle;
     MeshAttributeHandle<long> m_ff_handle;
 
-    std::vector<Tuple> get_all_vertices() const;
-    std::vector<Tuple> get_all_edges() const;
-    std::vector<Tuple> get_all_faces() const;
+    Tuple vertex_tuple_from_id() const;
+    Tuple edge_tuple_from_id(long id) const;
+    Tuple triangle_tuple_from_id(long id) const;
+    Tuple tuple_from_id(PrimitiveType ptype, long id) const override;
 
 public:
     TriMesh();
