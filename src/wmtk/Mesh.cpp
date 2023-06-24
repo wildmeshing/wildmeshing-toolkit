@@ -71,6 +71,19 @@ void Mesh::set_capacities(std::vector<long> capacities)
     assert(capacities.size() == m_capacities.size());
     m_capacities = std::move(capacities);
 }
+ConstAccessor<char> get_flag_accessor(PrimitiveType type) const {
+    return create_accessor(m_flag_handles.at(get_simplex_dimension(type)));
+}
+Accessor<char> get_flag_accessor(PrimitiveType type)  {
+    return create_accessor(m_flag_handles.at(get_simplex_dimension(type)));
+}
+
+ConstAccessor<long> get_cell_hash_accessor() const {
+    return create_accessor(m_cell_hash_handle);
+}
+Accessor<long> get_cell_hash_accessor()  {
+    return create_accessor(m_cell_hash_handle);
+}
 
 template MeshAttributeHandle<char>
 Mesh::register_attribute(const std::string&, PrimitiveType, long);

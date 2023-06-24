@@ -51,10 +51,15 @@ public:
     template <typename T>
     Accessor<const T> create_accessor(const MeshAttributeHandle<T>& handle) const;
 
+    ConstAccessor<char> get_flag_accessor(PrimitiveType type) const;
+    ConstAccessor<long> get_cell_hash_accessor() const;
 protected:
     std::vector<MeshAttributes<char>> m_char_attributes;
     std::vector<MeshAttributes<long>> m_long_attributes;
     std::vector<MeshAttributes<double>> m_double_attributes;
+
+    Accessor<char> get_flag_accessor(PrimitiveType type);
+    Accessor<long> get_cell_hash_accessor();
 private:
     std::vector<long> m_capacities;
     // 0x1 == true = is active
