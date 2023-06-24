@@ -16,6 +16,14 @@ TetMesh::TetMesh()
 {}
 
 Tuple TetMesh::vertex_tuple_from_id() const
+{
+    throw "not implemented";
+}
+
+Tuple TetMesh::tuple_from_id(PrimitiveType ptype, long id) const
+{
+    throw "not implemented";
+}
 
 
 void TetMesh::initialize(
@@ -69,7 +77,10 @@ void TetMesh::initialize(
     }
 }
 
-Tuple TetMesh::edge_tuple_from_id() const
+Tuple TetMesh::edge_tuple_from_id(long id) const
+{
+    throw "not implemented";
+}
 
 
 void TetMesh::initialize(Eigen::Ref<const RowVectors4l> T)
@@ -78,7 +89,7 @@ void TetMesh::initialize(Eigen::Ref<const RowVectors4l> T)
     initialize(T, TE, TF, TT, VT, ET, FT);
 }
 
-Tuple TetMesh::face_tuple_from_id() const
+Tuple TetMesh::face_tuple_from_id(long id) const
 {
     throw "not implemented";
 }
@@ -119,6 +130,11 @@ Tuple TetMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
 }
 
 bool TetMesh::is_ccw(const Tuple& tuple) const
+{
+    throw "not implemented";
+}
+
+bool TetMesh::is_valid(const Tuple& tuple) const
 {
     throw "not implemented";
 }
