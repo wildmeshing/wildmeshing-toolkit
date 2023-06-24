@@ -1,8 +1,8 @@
 #pragma once
 
+#include <type_traits>
 #include "AttributeHandle.hpp"
 #include "Tuple.hpp"
-#include <type_traits>
 
 #include <Eigen/Dense>
 
@@ -35,7 +35,6 @@ public:
     T scalar_attribute(const Tuple& t) const;
     T& scalar_attribute(const Tuple& t);
 
-private:
     ConstMapResult vector_attribute(const long index) const;
     MapResult vector_attribute(const long index);
 
@@ -50,10 +49,10 @@ private:
     MeshAttributeHandle<Type> m_handle;
 };
 
-//template <typename T>
-//Accessor(Mesh& mesh, const MeshAttributeHandle<T>&) -> Accessor<T>;
-//template <typename T>
-//Accessor(const Mesh& mesh, const MeshAttributeHandle<T>&) -> Accessor<const T>;
+// template <typename T>
+// Accessor(Mesh& mesh, const MeshAttributeHandle<T>&) -> Accessor<T>;
+// template <typename T>
+// Accessor(const Mesh& mesh, const MeshAttributeHandle<T>&) -> Accessor<const T>;
 
 
 template <typename T>

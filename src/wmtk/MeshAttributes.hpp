@@ -49,7 +49,9 @@ protected:
 
 private:
     std::map<std::string, AttributeHandle> m_handles;
-    long initial_stride = -1;
+
+    long m_initial_stride = -1;
+    long m_internal_size = -1;
 
     std::vector<std::vector<T>> m_attributes;
 };

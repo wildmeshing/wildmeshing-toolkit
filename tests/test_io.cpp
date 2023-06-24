@@ -3,6 +3,7 @@
 #include <wmtk/io/HDF5Writer.hpp>
 #include <wmtk/io/MeshReader.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
+#include <wmtk/utils/MeshUtils.hpp>
 
 #include <catch2/catch.hpp>
 
@@ -37,17 +38,15 @@ TEST_CASE("paraview", "[io]")
 
     igl::read_triangle_mesh(WMTK_DATA_DIR "/fan.obj", V, F);
 
-    RowVectors3l tris;
-    tris.resize(1, 3);
-    tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
-
     TriMesh mesh;
     mesh.initialize(F);
 
-    ParaviewWriter writer("test.hdf5", "vertices");
+    MeshUtils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, mesh);
+
+    ParaviewWriter writer("test.hdf5", "vertices", false, false, true, false);
     mesh.serialize(writer);
 
-    MeshReader reader("test.hdf5");
+    MeshReader reader("paraview.hdf5");
 }
 
 // TEST_CASE("io", "[io][mshio]")

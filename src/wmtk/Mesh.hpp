@@ -37,9 +37,6 @@ public:
     virtual void split_edge(const Tuple& t) = 0;
     virtual void collapse_edge(const Tuple& t) = 0;
 
-    AttributeHandle
-    register_attribute(const std::string& name, const PrimitiveType& type, long size);
-
     template <typename T>
     MeshAttributeHandle<T>
     register_attribute(const std::string& name, PrimitiveType type, long size);

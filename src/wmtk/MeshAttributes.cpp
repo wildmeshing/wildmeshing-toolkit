@@ -32,14 +32,17 @@ AttributeHandle MeshAttributes<T>::register_attribute(const std::string& name, l
     handle.index = m_attributes.size();
     m_handles[name] = handle;
 
-    if (handle.index == 0) initial_stride = size;
+    if (handle.index == 0) m_initial_stride = size;
 
     m_attributes.emplace_back();
     if (handle.index > 0) {
-        assert(initial_stride > 0);
-        assert(m_attributes.front().size() % initial_stride == 0);
+        assert(m_initial_stride > 0);
+        assert(m_attributes.front().size() % m_initial_stride == 0);
 
-        m_attributes.back().resize((m_attributes.front().size() / initial_stride) * size);
+        m_attributes.back().resize((m_attributes.front().size() / m_initial_stride) * size);
+    } else if (m_internal_size > 0) {
+        // first attribute and resize called
+        m_attributes.front().resize(size * m_internal_size);
     }
 
 
@@ -99,17 +102,17 @@ long MeshAttributes<T>::size() const
     const auto& attr = m_attributes;
     if (attr.empty()) return 0;
 
-    return attr[0].size() / initial_stride;
+    return attr[0].size() / m_initial_stride;
 }
 
 template <typename T>
 void MeshAttributes<T>::reserve(const long size)
 {
-    auto& attr = m_attributes;
+    if (m_handles.empty()) m_internal_size = size;
 
     for (const auto& p : m_handles) {
         const auto& handle = p.second;
-        attr[handle.index].resize(handle.stride * size);
+        m_attributes[handle.index].resize(handle.stride * size);
     }
 }
 
