@@ -50,6 +50,22 @@ long Mesh::capacity(PrimitiveType type) const
     return m_capacities.at(get_simplex_dimension(type));
 }
 
+bool Mesh::simplex_is_equal(const Simplex& s0, const Simplex& s1) const
+{
+    return (s0.primitive_type() == s1.primitive_type()) && (id(s0) == id(s1));
+}
+
+bool Mesh::simplex_is_less(const Simplex& s0, const Simplex& s1) const
+{
+    if (s0.primitive_type() < s1.primitive_type()) {
+        return true;
+    }
+    if (s0.primitive_type() > s1.primitive_type()) {
+        return false;
+    }
+    return id(s0) < id(s1);
+}
+
 void Mesh::reserve_attributes_to_fit()
 {
     for (long dim = 0; dim < m_capacities.size(); ++dim) {
