@@ -12,7 +12,7 @@ std::tuple<RowVectors3l,RowVectors3l,VectorXl,VectorXl> trimesh_topology_initial
     Eigen::Ref<const RowVectors3l> F)
 {
     RowVectors3l FE, FF;
-    VectorXl VF,EF;
+    VectorXl VF, EF;
     
     // Make sure there are 3 columns
     assert(F.cols() == 3);
@@ -47,12 +47,8 @@ std::tuple<RowVectors3l,RowVectors3l,VectorXl,VectorXl> trimesh_topology_initial
         }
         std::sort(TTT.begin(), TTT.end());
 
-        for (long xxx = 0; xxx < TTT.size(); ++xxx)
-            wmtk::logger().info("///// {} {} {} {}", TTT[xxx][0],TTT[xxx][1],TTT[xxx][2],TTT[xxx][3]);
-
-
         // VF
-        VF.resize(vertex_count, 1);
+        VF = VectorXl::Constant(vertex_count, 1, -1);
         for (int i = 0; i < F.rows(); ++i) {
             for (int j = 0; j < 3; ++j) {
                 VF[F(i,j)] = i;

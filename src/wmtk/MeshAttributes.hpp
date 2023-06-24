@@ -1,10 +1,14 @@
 #pragma once
 
+#include "AttributeHandle.hpp"
+
+#include <wmtk/io/MeshWriter.hpp>
+
 #include <Eigen/Core>
 
 #include <map>
 #include <vector>
-#include "AttributeHandle.hpp"
+
 
 namespace wmtk {
 
@@ -26,6 +30,8 @@ class MeshAttributes
 public:
     MeshAttributes();
 
+    void serialize(const int dim, MeshWriter& writer);
+
     AttributeHandle register_attribute(const std::string& name, long size);
 
     long size() const;
@@ -43,7 +49,9 @@ protected:
 
 private:
     std::map<std::string, AttributeHandle> m_handles;
-    long initial_stride = -1;
+
+    long m_initial_stride = -1;
+    long m_internal_size = -1;
 
     std::vector<std::vector<T>> m_attributes;
 };
