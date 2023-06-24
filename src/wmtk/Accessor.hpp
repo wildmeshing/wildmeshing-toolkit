@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <type_traits>
 #include "AttributeHandle.hpp"
 #include "Tuple.hpp"
@@ -10,9 +11,14 @@ namespace wmtk {
 class Mesh;
 class TriMesh;
 class TetMesh;
+enum class AccessorWriteMode { Immediate, Buffered };
 
 template <typename T>
 class MeshAttributes;
+
+template <typename T>
+class AccessorCache;
+
 template <typename T, bool IsConst = false>
 class Accessor
 {
@@ -31,13 +37,19 @@ public:
     using TT = std::conditional_t<IsConst, T, T&>;
 
 
-    Accessor(MeshType& m, const MeshAttributeHandle<T>& handle);
+    Accessor(
+        MeshType& m,
+        const MeshAttributeHandle<T>& handle,
+        AccessorWriteMode mode = AccessorWriteMode::Immediate);
+    ~Accessor();
 
     ConstMapResult vector_attribute(const Tuple& t) const;
     MapResultT vector_attribute(const Tuple& t);
 
     T scalar_attribute(const Tuple& t) const;
     TT scalar_attribute(const Tuple& t);
+
+    void set_attribute(const std::vector<T>& value);
 
 private:
     ConstMapResult vector_attribute(const long index) const;
@@ -52,6 +64,9 @@ private:
 
     MeshType& m_mesh;
     MeshAttributeHandle<T> m_handle;
+
+    AccessorWriteMode m_write_mode = AccessorWriteMode::Immediate;
+    std::unique_ptr<AccessorCache<T>> m_write_cache;
 };
 
 // template <typename T>

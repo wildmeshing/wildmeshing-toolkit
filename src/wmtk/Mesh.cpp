@@ -33,14 +33,14 @@ void Mesh::serialize(MeshWriter& writer)
 
 template <typename T>
 MeshAttributeHandle<T>
-Mesh::register_attribute(const std::string& name, PrimitiveType ptype, long size)
+Mesh::register_attribute(const std::string& name, PrimitiveType ptype, long size, bool replace)
 {
     // return MeshAttributeHandle<T>{
     //    .m_base_handle = get_mesh_attributes<T>(ptype).register_attribute(name, size),
     //    .m_primitive_type = ptype};
 
     MeshAttributeHandle<T> r;
-    r.m_base_handle = get_mesh_attributes<T>(ptype).register_attribute(name, size),
+    r.m_base_handle = get_mesh_attributes<T>(ptype).register_attribute(name, size, replace),
     r.m_primitive_type = ptype;
     return r;
 }
@@ -90,11 +90,23 @@ Accessor<long> Mesh::get_cell_hash_accessor()
     return create_accessor(m_cell_hash_handle);
 }
 
+void Mesh::set_capacities_from_flags()
+{
+    throw "not implemented";
+}
+
+bool Mesh::operator==(const Mesh& other) const
+{
+    return m_capacities == other.m_capacities && m_char_attributes == other.m_char_attributes &&
+           m_long_attributes == other.m_long_attributes &&
+           m_double_attributes == other.m_double_attributes;
+}
+
 template MeshAttributeHandle<char>
-Mesh::register_attribute(const std::string&, PrimitiveType, long);
+Mesh::register_attribute(const std::string&, PrimitiveType, long, bool);
 template MeshAttributeHandle<long>
-Mesh::register_attribute(const std::string&, PrimitiveType, long);
+Mesh::register_attribute(const std::string&, PrimitiveType, long, bool);
 template MeshAttributeHandle<double>
-Mesh::register_attribute(const std::string&, PrimitiveType, long);
+Mesh::register_attribute(const std::string&, PrimitiveType, long, bool);
 
 } // namespace wmtk

@@ -1,4 +1,5 @@
 #include "Accessor.hpp"
+#include "AccessorCache.hpp"
 
 #include "Mesh.hpp"
 #include "MeshAttributes.hpp"
@@ -6,10 +7,17 @@
 namespace wmtk {
 
 template <typename T, bool IsConst>
-Accessor<T, IsConst>::Accessor(MeshType& mesh, const MeshAttributeHandle<T>& handle)
+Accessor<T, IsConst>::Accessor(
+    MeshType& mesh,
+    const MeshAttributeHandle<T>& handle,
+    AccessorWriteMode mode)
     : m_mesh(mesh)
     , m_handle(handle)
+    , m_write_mode(mode)
 {}
+
+template <typename T, bool IsConst>
+Accessor<T, IsConst>::~Accessor() = default;
 
 template <typename T, bool IsConst>
 auto Accessor<T, IsConst>::attributes() -> MeshAttributesType&
@@ -70,6 +78,17 @@ auto Accessor<T, IsConst>::scalar_attribute(const Tuple& t) -> TT
     long index = m_mesh.id(t, m_handle.m_primitive_type);
     return scalar_attribute(index);
 }
+
+template <typename T, bool IsConst>
+void Accessor<T, IsConst>::set_attribute(const std::vector<T>& value)
+{
+    if constexpr (IsConst) {
+        throw std::runtime_error("You cant modify a constant accessor");
+    } else
+        attributes().set(m_handle.m_base_handle, value);
+}
+
+
 // template <typename T, bool IsConst>
 // void MeshAttributes<T>::rollback()
 //{
