@@ -63,13 +63,13 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
     case PrimitiveType::Face: {
         long gvid = id(tuple, PrimitiveType::Vertex);
         long geid = id(tuple, PrimitiveType::Edge);
-        Accessor<long> ff_accessor = create_accessor<long>(m_ff_handle);
+        ConstAccessor<long> ff_accessor = create_accessor<long>(m_ff_handle);
         auto ff = ff_accessor.vector_attribute(tuple);
         long gcid_new = ff(tuple.m_local_eid);
         long lvid_new, leid_new;
-        Accessor<long> fv_accessor = create_accessor<long>(m_fv_handle);
+        ConstAccessor<long> fv_accessor = create_accessor<long>(m_fv_handle);
         auto fv = fv_accessor.vector_attribute(gcid_new);
-        Accessor<long> fe_accessor = create_accessor<long>(m_fe_handle);
+        ConstAccessor<long> fe_accessor = create_accessor<long>(m_fe_handle);
         auto fe = fe_accessor.vector_attribute(gcid_new);
         for (long i = 0; i < 3; ++i) {
             if (fe(i) == geid) {
