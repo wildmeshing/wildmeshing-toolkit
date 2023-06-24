@@ -5,7 +5,6 @@
 
 namespace wmtk {
 TetMesh::TetMesh()
-
     : Mesh(4)
     , m_vt_handle(register_attribute<long>("m_vt", PrimitiveType::Vertex, 1))
     , m_et_handle(register_attribute<long>("m_et", PrimitiveType::Edge, 1))
@@ -15,16 +14,6 @@ TetMesh::TetMesh()
     , m_tf_handle(register_attribute<long>("m_tf", PrimitiveType::Tetrahedron, 4))
     , m_tt_handle(register_attribute<long>("m_tt", PrimitiveType::Tetrahedron, 4))
 {}
-
-Tuple TetMesh::vertex_tuple_from_id() const
-{
-    throw "not implemented";
-}
-
-Tuple TetMesh::tuple_from_id(PrimitiveType ptype, long id) const
-{
-    throw "not implemented";
-}
 
 
 void TetMesh::initialize(
@@ -78,11 +67,6 @@ void TetMesh::initialize(
     }
 }
 
-Tuple TetMesh::edge_tuple_from_id(long id) const
-{
-    throw "not implemented";
-}
-
 
 void TetMesh::initialize(Eigen::Ref<const RowVectors4l> T)
 {
@@ -97,9 +81,48 @@ long TetMesh::_debug_id(const Tuple& tuple, const PrimitiveType& type) const
     return id(tuple, type);
 }
 
+Tuple TetMesh::vertex_tuple_from_id(long id) const
+{
+    throw "not implemented";
+}
+
+Tuple TetMesh::edge_tuple_from_id(long id) const
+{
+    throw "not implemented";
+}
+
 Tuple TetMesh::face_tuple_from_id(long id) const
 {
     throw "not implemented";
+}
+
+Tuple TetMesh::tet_tuple_from_id(long id) const
+{
+    throw "not implemented";
+}
+
+
+Tuple TetMesh::tuple_from_id(const PrimitiveType type, const long gid) const
+{
+    switch (type) {
+    case PrimitiveType::Vertex: {
+        return vertex_tuple_from_id(gid);
+        break;
+    }
+    case PrimitiveType::Edge: {
+        return edge_tuple_from_id(gid);
+        break;
+    }
+    case PrimitiveType::Face: {
+        return face_tuple_from_id(gid);
+        break;
+    }
+    case PrimitiveType::Tetrahedron: {
+        return tet_tuple_from_id(gid);
+        break;
+    }
+    default: throw std::runtime_error("Invalid primitive type");
+    }
 }
 
 
@@ -114,22 +137,33 @@ void TetMesh::collapse_edge(const Tuple& t)
 }
 
 
-std::vector<Tuple> TetMesh::get_all(const PrimitiveType& type) const
-{
-    throw "not implemented";
-
-    // switch (type) {
-    // case PrimitiveType::Vertex: return get_vertices();
-    // case PrimitiveType::Edge: return get_edges(); break;
-    // case PrimitiveType::Face: return get_faces(); break;
-    // case PrimitiveType::Tetrahedron: return get_tetrahedrons(); break;
-    // default: throw std::runtime_error("Invalid primitive type");
-    // }
-}
-
 long TetMesh::id(const Tuple& tuple, const PrimitiveType& type) const
 {
-    throw "not implemented";
+    switch (type) {
+    case PrimitiveType::Vertex: {
+        ConstAccessor<long> tv_accessor = create_accessor<long>(m_tv_handle);
+        auto tv = tv_accessor.vector_attribute(tuple);
+        return tv(tuple.m_local_vid);
+        break;
+    }
+    case PrimitiveType::Edge: {
+        ConstAccessor<long> te_accessor = create_accessor<long>(m_te_handle);
+        auto te = te_accessor.vector_attribute(tuple);
+        return te(tuple.m_local_eid);
+        break;
+    }
+    case PrimitiveType::Face: {
+        ConstAccessor<long> tf_accessor = create_accessor<long>(m_tf_handle);
+        auto tf = tf_accessor.vector_attribute(tuple);
+        return tf(tuple.m_local_fid);
+        break;
+    }
+    case PrimitiveType::Tetrahedron: {
+        return tuple.m_global_cid;
+        break;
+    }
+    default: throw std::runtime_error("Tuple id: Invalid primitive type");
+    }
 }
 
 Tuple TetMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
@@ -146,10 +180,12 @@ bool TetMesh::is_valid(const Tuple& tuple) const
 {
     throw "not implemented";
 }
+
 bool TetMesh::is_boundary(const Tuple& tuple) const
 {
     throw "not implemented";
     // ConstAccessor<long> tt_accessor = create_accessor<long>(m_tt_handle);
     // return tt_accessor.scalar_attribute(tuple) < 0;
 }
+
 } // namespace wmtk
