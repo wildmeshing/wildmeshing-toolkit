@@ -21,6 +21,20 @@ Mesh::Mesh(const long& dimension)
 
 Mesh::~Mesh() = default;
 
+std::vector<Tuple> Mesh::get_all(const PrimitiveType& type) const
+{
+    ConstAccessor<char> flag_accessor = get_flag_accessor(type);
+    std::vector<Tuple> ret;
+    long cap = capacity(type);
+    ret.reserve(cap);
+    for (size_t index = 0; index < cap; ++index) {
+        if (!(flag_accessor.scalar_attribute(index) & 1)) {
+            ret.emplace_back(tuple_from_id(type, index));
+        }
+    }
+    return ret;
+}
+
 void Mesh::serialize(MeshWriter& writer)
 {
     for (long dim = 0; dim < m_capacities.size(); ++dim) {
