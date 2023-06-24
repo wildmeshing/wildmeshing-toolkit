@@ -55,6 +55,12 @@ protected:
     std::vector<MeshAttributes<char>> m_char_attributes;
     std::vector<MeshAttributes<long>> m_long_attributes;
     std::vector<MeshAttributes<double>> m_double_attributes;
+private:
+    std::vector<long> m_capacities;
+    // 0x1 == true = is active
+    std::vector<MeshAttributeHandle<char>> m_flag_handles;
+    MeshAttributeHandle<long> m_cell_hash_handle;
+protected:
     // std::vector<MeshAttributes<Rational>> m_rational_attributes;
     template <typename T>
     MeshAttributes<T>& get_mesh_attributes(PrimitiveType ptype);
@@ -139,10 +145,6 @@ public:
 protected:
     void set_capacities(std::vector<long> capacities);
 
-private:
-    std::vector<long> m_capacities;
-    // 0x1 == true = is active
-    std::vector<MeshAttributeHandle<char>> m_flags;
 };
 
 
