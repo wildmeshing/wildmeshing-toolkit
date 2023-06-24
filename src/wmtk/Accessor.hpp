@@ -9,9 +9,15 @@
 namespace wmtk {
 class Mesh;
 class TriMesh;
+enum class AccessorWriteMode {
+    Immediate,
+    Buffered
+}
 
 template <typename T>
 class MeshAttributes;
+template <typename T>
+class AccessorWriteCache<T>
 template <typename T, bool IsConst = false>
 class Accessor
 {
@@ -25,7 +31,7 @@ public:
     using ConstMapResult = typename Eigen::Matrix<T, Eigen::Dynamic, 1>::ConstMapType;
 
 
-    Accessor(MeshType& m, const MeshAttributeHandle<T>& handle);
+    Accessor(MeshType& m, const MeshAttributeHandle<T>& handle, AccessorWriteMode mode = AccessorWriteMode::Immediate);
 
     ConstMapResult vector_attribute(const Tuple& t) const;
     MapResult vector_attribute(const Tuple& t);
@@ -45,6 +51,9 @@ private:
 
     MeshType& m_mesh;
     MeshAttributeHandle<T> m_handle;
+
+    AccessorWriteMode m_write_mode = AccessorWriteMode::Immediate;
+    std::unique_ptr<AccessorWriteCache> m_write_cache;
 };
 
 // template <typename T>
