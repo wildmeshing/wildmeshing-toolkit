@@ -27,13 +27,16 @@ TEST_CASE("link-case1", "[SC][link]")
 
 
     SimplicialComplex lnk_0 = link(Simplex(PrimitiveType::Vertex, t), m);
-    SimplicialComplex lnk_1 = link(Simplex(PrimitiveType::Vertex, m.switch_tuple(t,PrimitiveType::Vertex)), m);
+    // SimplicialComplex lnk_1 = link(Simplex(PrimitiveType::Vertex, m.switch_tuple(t,PrimitiveType::Vertex)), m);
     
     // SimplicialComplex lhs = get_intersection(lnk_0, lnk_1);
     // SimplicialComplex lnk_01 = link(Simplex(t, 1), m);
     // SimplicialComplex lnk_10 = link(Simplex(t.sw(0,m), 1), m);
     
-
+    std::cout << "lnk_0 vertex size = " << lnk_0.get_simplices(PrimitiveType::Vertex).size() << std::endl;
+    std::cout << "lnk_0 edge size = " << lnk_0.get_simplices(PrimitiveType::Edge).size() << std::endl;
+    std::cout << "lnk_0 face size = " << lnk_0.get_simplices(PrimitiveType::Face).size() << std::endl;
+    
     REQUIRE(lnk_0.get_simplices().size() == 5);
     // REQUIRE(lnk_1.get_simplices().size() == 5);
     // REQUIRE(lnk_01.get_simplices().size() == 1);
