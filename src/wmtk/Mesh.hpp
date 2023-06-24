@@ -14,7 +14,7 @@ namespace wmtk {
 class Mesh
 {
 public:
-    template <typename T>
+    template <typename T, bool isConst>
     friend class Accessor;
 
     Mesh(const long& dimension);
@@ -49,7 +49,7 @@ public:
     Accessor<T> create_accessor(const MeshAttributeHandle<T>& handle);
 
     template <typename T>
-    Accessor<const T> create_accessor(const MeshAttributeHandle<T>& handle) const;
+    ConstAccessor<T> create_accessor(const MeshAttributeHandle<T>& handle) const;
 
 protected:
     std::vector<MeshAttributes<char>> m_char_attributes;
@@ -154,9 +154,9 @@ Accessor<T> Mesh::create_accessor(const MeshAttributeHandle<T>& handle)
     return Accessor<T>(*this, handle);
 }
 template <typename T>
-Accessor<const T> Mesh::create_accessor(const MeshAttributeHandle<T>& handle) const
+ConstAccessor<T> Mesh::create_accessor(const MeshAttributeHandle<T>& handle) const
 {
-    return Accessor<const T>(*this, handle);
+    return ConstAccessor<T>(*this, handle);
 }
 
 template <typename T>

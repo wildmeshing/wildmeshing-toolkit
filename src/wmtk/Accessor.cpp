@@ -5,91 +5,91 @@
 
 namespace wmtk {
 
-template <typename T>
-Accessor<T>::Accessor(MeshType& mesh, const MeshAttributeHandle<Type>& handle)
+template <typename T, bool IsConst>
+Accessor<T,IsConst>::Accessor(MeshType& mesh, const MeshAttributeHandle<T>& handle)
     : m_mesh(mesh)
     , m_handle(handle)
 {}
 
-template <typename T>
-auto Accessor<T>::attributes() -> MeshAttributes<Type>& 
+template <typename T, bool IsConst>
+auto Accessor<T,IsConst>::attributes() -> MeshAttributes<T>& 
 {
     if constexpr(!IsConst) {
         return m_mesh.get_mesh_attributes(m_handle);
     } else {
         assert(false);
-        static MeshAttributes<Type> dummy;
+        static MeshAttributes<T> dummy;
         return dummy;
     }
 }
-template <typename T>
-auto Accessor<T>::attributes() const-> const MeshAttributes<Type>& 
+template <typename T, bool IsConst>
+auto Accessor<T,IsConst>::attributes() const-> const MeshAttributes<T>& 
 {
     return m_mesh.get_mesh_attributes(m_handle);
 }
 
-template <typename T>
-auto Accessor<T>::vector_attribute(const long index) const -> ConstMapResult
+template <typename T, bool IsConst>
+auto Accessor<T,IsConst>::vector_attribute(const long index) const -> ConstMapResult
 {
     return attributes().vector_attribute(m_handle.m_base_handle, index);
 }
-template <typename T>
-auto Accessor<T>::vector_attribute(const long index) -> MapResult
+template <typename T, bool IsConst>
+auto Accessor<T,IsConst>::vector_attribute(const long index) -> MapResult
 {
     return attributes().vector_attribute(m_handle.m_base_handle, index);
 }
 
-template <typename T>
-T Accessor<T>::scalar_attribute(const long index) const
+template <typename T, bool IsConst>
+T Accessor<T,IsConst>::scalar_attribute(const long index) const
 {
     return attributes().scalar_attribute(m_handle.m_base_handle, index);
 }
 
-template <typename T>
-T& Accessor<T>::scalar_attribute(const long index)
+template <typename T, bool IsConst>
+T& Accessor<T,IsConst>::scalar_attribute(const long index)
 {
     return attributes().scalar_attribute(m_handle.m_base_handle, index);
 }
-template <typename T>
-auto Accessor<T>::vector_attribute(const Tuple& t) const -> ConstMapResult
+template <typename T, bool IsConst>
+auto Accessor<T,IsConst>::vector_attribute(const Tuple& t) const -> ConstMapResult
 {
     long index = m_mesh.id(t, m_handle.m_primitive_type);
     return vector_attribute(index);
 }
-template <typename T>
-auto Accessor<T>::vector_attribute(const Tuple& t) -> MapResult
+template <typename T, bool IsConst>
+auto Accessor<T,IsConst>::vector_attribute(const Tuple& t) -> MapResult
 {
     long index = m_mesh.id(t, m_handle.m_primitive_type);
     return vector_attribute(index);
 }
 
-template <typename T>
-T Accessor<T>::scalar_attribute(const Tuple& t) const
+template <typename T, bool IsConst>
+T Accessor<T,IsConst>::scalar_attribute(const Tuple& t) const
 {
     long index = m_mesh.id(t, m_handle.m_primitive_type);
     return scalar_attribute(index);
 }
 
-template <typename T>
-T& Accessor<T>::scalar_attribute(const Tuple& t)
+template <typename T, bool IsConst>
+T& Accessor<T,IsConst>::scalar_attribute(const Tuple& t)
 {
     long index = m_mesh.id(t, m_handle.m_primitive_type);
     return scalar_attribute(index);
 }
-// template <typename T>
+// template <typename T, bool IsConst>
 // void MeshAttributes<T>::rollback()
 //{
 //     attributes()s_copy.clear();
 // }
 //
-// template <typename T>
+// template <typename T, bool IsConst>
 // void MeshAttributes<T>::begin_protect()
 //{
 //     attributes()s_copy =
 //     attributes()s;
 // }
 //
-// template <typename T>
+// template <typename T, bool IsConst>
 // void MeshAttributes<T>::end_protect()
 //{
 //     if (!attributes()s_copy.empty())
@@ -99,15 +99,15 @@ T& Accessor<T>::scalar_attribute(const Tuple& t)
 //     attributes()s_copy.clear();
 // }
 //
-// template <typename T>
+// template <typename T, bool IsConst>
 // bool MeshAttributes<T>::is_in_protect() const
 //{
 //     return !attributes()s_copy.empty();
 // }
-template class Accessor<char>;
-template class Accessor<long>;
-template class Accessor<double>;
-template class Accessor<const char>;
-template class Accessor<const long>;
-template class Accessor<const double>;
+template class Accessor<char,true>;
+template class Accessor<long,true>;
+template class Accessor<double,true>;
+template class Accessor<char,false>;
+template class Accessor<long,false>;
+template class Accessor<double,false>;
 } // namespace wmtk
