@@ -1,3 +1,5 @@
+#pragma once
+
 #include <vector>
 #include <set>
 #include <cassert>
@@ -164,35 +166,36 @@ SimplicialComplex boundary(const Simplex &s, const Mesh &m)
     // exhaustive implementation
     switch (s.dimension())
     {
-    case 3:                                                                        // bd(tet) = 4triangles + 6 edges + 4vertices
+    case 3:                                     
+        // bd(tet) = 4triangles + 6 edges + 4vertices
         sc.add_simplex(Simplex(0, s.tuple(), m));                                     // A
-        sc.add_simplex(Simplex(0, s.tuple().sw(0, m), m));                            // B
-        sc.add_simplex(Simplex(0, s.tuple().sw(1, m).sw(0, m), m));                   // C
-        sc.add_simplex(Simplex(0, s.tuple().sw(2, m).sw(0, m), m));                   // D
+        sc.add_simplex(Simplex(0, m.switch_tuple(s.tuple(),static_cast<PrimitiveType>(0)), m));                            // B
+        sc.add_simplex(Simplex(0, m.switch_tuple(m.switch_tuple(s.tuple(),static_cast<PrimitiveType>(1)),static_cast<PrimitiveType>(0)), m));                   // C
+        sc.add_simplex(Simplex(0, m.switch_tuple(m.switch_tuple(s.tuple(),static_cast<PrimitiveType>(2)),static_cast<PrimitiveType>(0)), m));                   // D
         sc.add_simplex(Simplex(1, s.tuple(), m));                                     // AB
-        sc.add_simplex(Simplex(1, s.tuple().sw(1, m), m));                            // AC
-        sc.add_simplex(Simplex(1, s.tuple().sw(0, m).sw(1, m), m));                   // BC
-        sc.add_simplex(Simplex(1, s.tuple().sw(2, m).sw(1, m), m));                   // AD
-        sc.add_simplex(Simplex(1, s.tuple().sw(0, m).sw(2, m).sw(1, m), m));          // BD
-        sc.add_simplex(Simplex(1, s.tuple().sw(1, m).sw(0, m).sw(2, m).sw(1, m), m)); // CD
+        sc.add_simplex(Simplex(1, m.switch_tuple(s.tuple(),static_cast<PrimitiveType>(1)), m));                            // AC
+        sc.add_simplex(Simplex(1, m.switch_tuple(m.switch_tuple(s.tuple(),static_cast<PrimitiveType>(0)),static_cast<PrimitiveType>(1)), m));                   // BC
+        sc.add_simplex(Simplex(1, m.switch_tuple(m.switch_tuple(s.tuple(),static_cast<PrimitiveType>(2)),static_cast<PrimitiveType>(1)), m));                   // AD
+        sc.add_simplex(Simplex(1, m.switch_tuple(m.switch_tuple(m.switch_tuple(s.tuple(),static_cast<PrimitiveType>(0)),static_cast<PrimitiveType>(2)),static_cast<PrimitiveType>(1)), m));          // BD
+        sc.add_simplex(Simplex(1, m.switch_tuple(m.switch_tuple(m.switch_tuple(m.switch_tuple(s.tuple(),static_cast<PrimitiveType>(1)),static_cast<PrimitiveType>(0)),static_cast<PrimitiveType>(2)),static_cast<PrimitiveType>(1)), m)); // CD
         sc.add_simplex(Simplex(2, s.tuple(), m));                                     // ABC
-        sc.add_simplex(Simplex(2, s.tuple().sw(2, m), m));                            // ABD
-        sc.add_simplex(Simplex(2, s.tuple().sw(1, m).sw(2, m), m));                   // ACD
-        sc.add_simplex(Simplex(2, s.tuple().sw(0, m).sw(1, m).sw(2, m), m));          // BCD
+        sc.add_simplex(Simplex(2, m.switch_tuple(s.tuple(),static_cast<PrimitiveType>(2)), m));                            // ABD
+        sc.add_simplex(Simplex(2, m.switch_tuple(m.switch_tuple(s.tuple(),static_cast<PrimitiveType>(1)),static_cast<PrimitiveType>(2)), m));                   // ACD
+        sc.add_simplex(Simplex(2, m.switch_tuple(m.switch_tuple(m.switch_tuple(s.tuple(),static_cast<PrimitiveType>(0)),static_cast<PrimitiveType>(1)),static_cast<PrimitiveType>(2)), m));          // BCD
         break;
     case 2: // bd(triangle) = 3edges + 3vertices
         sc.add_simplex(Simplex(0, s.tuple(), m));
-        sc.add_simplex(Simplex(0, s.tuple().sw(0, m), m));
-        sc.add_simplex(Simplex(0, s.tuple().sw(1, m).sw(0, m), m));
+        sc.add_simplex(Simplex(0, m.switch_tuple(s.tuple(),static_cast<PrimitiveType>(0)), m));
+        sc.add_simplex(Simplex(0, m.switch_tuple(m.switch_tuple(s.tuple(),static_cast<PrimitiveType>(1)),static_cast<PrimitiveType>(0)), m));
         sc.add_simplex(Simplex(1, s.tuple(), m));
-        sc.add_simplex(Simplex(1, s.tuple().sw(1, m), m));
-        sc.add_simplex(Simplex(1, s.tuple().sw(0, m).sw(1, m), m));
+        sc.add_simplex(Simplex(1, m.switch_tuple(s.tuple(),static_cast<PrimitiveType>(1)), m));
+        sc.add_simplex(Simplex(1, m.switch_tuple(m.switch_tuple(s.tuple(),static_cast<PrimitiveType>(0)),static_cast<PrimitiveType>(1)), m));
         /* code */
         break;
     case 1:
         // bd(edge) = 2 vertices
         sc.add_simplex(Simplex(0, s.tuple(), m));
-        sc.add_simplex(Simplex(0, s.tuple().sw(0, m), m));
+        sc.add_simplex(Simplex(0, s.tuple().switch_tuple(static_cast<PrimitiveType>(0), m), m));
         /* code */
         break;
     case 0:
@@ -250,11 +253,11 @@ SimplicialComplex closed_star(const Simplex &s, const Mesh &m)
                 {
                     if (!m.is_boundary(t))
                     {
-                        q.push(t.sw(2, m));
+                        q.push(m.switch_tuple(t, static_cast<PrimitiveType>(2)));
                     }
-                    if (!m.is_boundary(t.sw(1, m)))
+                    if (!m.is_boundary(m.switch_tuple(t, static_cast<PrimitiveType>(1))))
                     {
-                        q.push(t.sw(1, m).sw(2, m));
+                        q.push(m.switch_tuple(m.switch_tuple(t,static_cast<PrimitiveType>(1)),static_cast<PrimitiveType>(2)));
                     }
                 }
             }
@@ -264,7 +267,7 @@ SimplicialComplex closed_star(const Simplex &s, const Mesh &m)
             sc.add_simplex(Simplex(2, s.tuple(), m));
             if (!m.is_boundary(s.tuple()))
             {
-                sc.add_simplex(Simplex(2, s.tuple().sw(2, m), m));
+                sc.add_simplex(Simplex(2, m.switch_tuple(s.tuple(), static_cast<PrimitiveType>(2)), m));
             }
             break;
         case 2:
@@ -290,19 +293,19 @@ SimplicialComplex closed_star(const Simplex &s, const Mesh &m)
                 if (sc.add_simplex(Simplex(3, t, m)))
                 {
                     const Tuple t1 = t;
-                    const Tuple t2 = t.sw(2, m);
-                    const Tuple t3 = t.sw(1, m).sw(2, m);
+                    const Tuple t2 = m.switch_tuple(t,static_cast<PrimitiveType>(2));
+                    const Tuple t3 = m.switch_tuple(m.switch_tuple(t,static_cast<PrimitiveType>(1)),static_cast<PrimitiveType>(2));
                     if (!m.is_boundary(t1))
                     {
-                        q.push(t1.sw(3, m));
+                        q.push(m.switch_tuple(t1,static_cast<PrimitiveType>(3)));
                     }
                     if (!m.is_boundary(t2))
                     {
-                        q.push(t2.sw(3, m));
+                        q.push(m.switch_tuple(t2,static_cast<PrimitiveType>(3)));
                     }
                     if (!m.is_boundary(t3))
                     {
-                        q.push(t3.sw(3, m));
+                        q.push(m.switch_tuple(t3,static_cast<PrimitiveType>(3)));
                     }
                 }
             }
@@ -320,11 +323,11 @@ SimplicialComplex closed_star(const Simplex &s, const Mesh &m)
                 {
                     if (!m.is_boundary(t))
                     {
-                        q.push(t.sw(3, m));
+                        q.push(m.switch_tuple(t,static_cast<PrimitiveType>(3)));
                     }
-                    if (!m.is_boundary(t.sw(2, m)))
+                    if (!m.is_boundary(m.switch_tuple(t,static_cast<PrimitiveType>(2))))
                     {
-                        q.push(t.sw(2, m).sw(3, m));
+                        q.push(m.switch_tuple(m.switch_tuple(t,static_cast<PrimitiveType>(2)),static_cast<PrimitiveType>(3)));
                     }
                 }
             }
@@ -335,7 +338,7 @@ SimplicialComplex closed_star(const Simplex &s, const Mesh &m)
             sc.add_simplex(Simplex(3, s.tuple(), m));
             if (!m.is_boundary(s.tuple()))
             {
-                sc.add_simplex(Simplex(3, s.tuple().sw(3, m), m));
+                sc.add_simplex(Simplex(3, m.switch_tuple(s.tuple(),static_cast<PrimitiveType>(3)), m));
             }
             break;
         }
@@ -403,7 +406,7 @@ SimplicialComplex open_star(const Simplex &s, const Mesh &m)
 bool link_cond(Tuple t, const Mesh &m)
 {
     SimplicialComplex lhs = link(Simplex(0, t, m), m); // lnk(a)
-    lhs.unify_with_complex(link(Simplex(0, t.sw(0, m), m), m)); // Union lnk(b)
+    lhs.unify_with_complex(link(Simplex(0, m.switch_tuple(t,static_cast<PrimitiveType>(0)), m), m)); // Union lnk(b)
 
     SimplicialComplex rhs = link(Simplex(1, t, m), m); // lnk(ab)
     return (lhs == rhs);

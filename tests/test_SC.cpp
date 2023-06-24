@@ -23,7 +23,6 @@ TEST_CASE("link-case1", "[SC][link]")
     // get the tuple point to V(0), E(01), F(013)
     long hash = 0;
     Tuple t(0, 2, -1, 1, hash);
-
     // SimplicialComplex lnk_0 = link(Simplex(t, 0), m);
     // SimplicialComplex lnk_1 = link(Simplex(t.sw(0, m), 0), m);
     // SimplicialComplex lhs = get_intersection(lnk_0, lnk_1, m);
