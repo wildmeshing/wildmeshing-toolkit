@@ -4,7 +4,7 @@
 
 using namespace wmtk;
 
-TEST_CASE("test_get_edges", "[test_tuple_3d]")
+TEST_CASE("create TetMesh", "[test_tuple_3d]")
 {
     TetMesh m;
     {
@@ -25,9 +25,67 @@ TEST_CASE("test_get_edges", "[test_tuple_3d]")
     REQUIRE(tets.size() == 1);
 }
 
+TEST_CASE("TetMesh with 1 tet", "[test_tuple_3d]")
+{
+    TetMesh m;
+    {
+        RowVectors4l tets;
+        tets.resize(1, 4);
+        tets.row(0) = Eigen::Matrix<long, 4, 1>{0, 1, 2, 3};
+        m.initialize(tets);
+    }
+
+    SECTION("vertices")
+    {
+        const std::vector<Tuple> vertices = m.get_all(PrimitiveType::Vertex);
+        REQUIRE(vertices.size() == 4);
+        CHECK(false);
+        // CHECK(m._debug_id(vertices[0], PrimitiveType::Vertex) == 0);
+        // CHECK(m._debug_id(vertices[1], PrimitiveType::Vertex) == 1);
+        // CHECK(m._debug_id(vertices[2], PrimitiveType::Vertex) == 2);
+        // CHECK(m._debug_id(vertices[3], PrimitiveType::Vertex) == 3);
+        // CHECK(m._debug_id(vertices[0], PrimitiveType::Face) == 0);
+        // CHECK(m._debug_id(vertices[1], PrimitiveType::Face) == 0);
+        // CHECK(m._debug_id(vertices[2], PrimitiveType::Face) == 0);
+        // CHECK(m._debug_id(vertices[3], PrimitiveType::Face) == 0);
+    }
+    SECTION("edges")
+    {
+        const std::vector<Tuple> edges = m.get_all(PrimitiveType::Edge);
+        REQUIRE(edges.size() == 4);
+        //  TODO add test for edge ids
+        CHECK(false);
+        CHECK(false);
+        CHECK(false);
+        CHECK(false);
+    }
+    SECTION("faces")
+    {
+        const std::vector<Tuple> faces = m.get_all(PrimitiveType::Face);
+        REQUIRE(faces.size() == 3);
+        CHECK(false);
+        CHECK(false);
+        CHECK(false);
+    }
+    SECTION("tetrahedron")
+    {
+        const std::vector<Tuple> tets = m.get_all(PrimitiveType::Tetrahedron);
+        REQUIRE(tets.size() == 1);
+        // CHECK(m._debug_id(tets[0], PrimitiveType::Tetrahedron) == 0);
+        CHECK(false);
+    }
+}
+
 TEST_CASE("switch_vertex", "[test_tuple_3d]")
 {
-    REQUIRE(false);
+    TetMesh m;
+    {
+        RowVectors4l tets;
+        tets.resize(1, 4);
+        tets.row(0) = Eigen::Matrix<long, 4, 1>{0, 1, 2, 3};
+        m.initialize(tets);
+    }
+
 
     // TetMesh mesh;
     // mesh.init(4, {{{0, 1, 2, 3}}});
