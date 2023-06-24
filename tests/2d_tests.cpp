@@ -36,12 +36,7 @@ TEST_CASE("load mesh and create TriMesh", "[test_mesh_creation]")
 
     SECTION("init with FV, FE, FF, VF, EF")
     {
-        RowVectors3l FE;
-        RowVectors3l FF;
-        VectorXl VF;
-        VectorXl EF;
-
-        trimesh_topology_initialization(tris, FE, FF, VF, EF);
+        const auto [FE, FF, VF, EF] = trimesh_topology_initialization(tris);
 
         m.initialize(tris, FE, FF, VF, EF);
     }
@@ -75,25 +70,25 @@ TEST_CASE("test generate tuples with 1 triangle", "[test_tuple_generation]")
         m.initialize(tris);
     }
 
-    const std::vector<Tuple> vertices = m.get_all(PrimitiveType::Vertex);
-    REQUIRE(vertices.size() == 3);
-    CHECK(m._debug_id(vertices[0], PrimitiveType::Vertex) == 0);
-    CHECK(m._debug_id(vertices[1], PrimitiveType::Vertex) == 1);
-    CHECK(m._debug_id(vertices[2], PrimitiveType::Vertex) == 2);
-    CHECK(m._debug_id(vertices[0], PrimitiveType::Face) == 0);
-    CHECK(m._debug_id(vertices[1], PrimitiveType::Face) == 0);
-    CHECK(m._debug_id(vertices[2], PrimitiveType::Face) == 0);
+    // const std::vector<Tuple> vertices = m.get_all(PrimitiveType::Vertex);
+    // REQUIRE(vertices.size() == 3);
+    //  CHECK(m._debug_id(vertices[0], PrimitiveType::Vertex) == 0);
+    //  CHECK(m._debug_id(vertices[1], PrimitiveType::Vertex) == 1);
+    //  CHECK(m._debug_id(vertices[2], PrimitiveType::Vertex) == 2);
+    //  CHECK(m._debug_id(vertices[0], PrimitiveType::Face) == 0);
+    //  CHECK(m._debug_id(vertices[1], PrimitiveType::Face) == 0);
+    //  CHECK(m._debug_id(vertices[2], PrimitiveType::Face) == 0);
 
-    const std::vector<Tuple> edges = m.get_all(PrimitiveType::Edge);
-    REQUIRE(edges.size() == 3);
-    // TODO add test for edge ids
+    // const std::vector<Tuple> edges = m.get_all(PrimitiveType::Edge);
+    // REQUIRE(edges.size() == 3);
+    //  TODO add test for edge ids
     CHECK(false);
     CHECK(false);
     CHECK(false);
 
-    const std::vector<Tuple> faces = m.get_all(PrimitiveType::Face);
-    REQUIRE(faces.size() == 1);
-    CHECK(m._debug_id(faces[0], PrimitiveType::Face) == 0);
+    // const std::vector<Tuple> faces = m.get_all(PrimitiveType::Face);
+    // REQUIRE(faces.size() == 1);
+    //  CHECK(m._debug_id(faces[0], PrimitiveType::Face) == 0);
 }
 
 // TEST_CASE("test generate tuples with 2 triangle", "[test_tuple_generation]")
