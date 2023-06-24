@@ -46,6 +46,7 @@ project(WildMeshingToolkit DESCRIPTION "A mesh optimization toolkit" LANGUAGES C
 # ###############################################################################
 option(WMTK_BUILD_DOCS "Build doxygen" OFF)
 option (BUILD_SHARED_LIBS "Build Shared Libraries" OFF) # we globally want to disable this option due to use of TBB
+option(WMTK_USE_DEBUG_FUNCTIONS "Allow the usage of debug functions" ON)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/recipes/")
@@ -88,6 +89,9 @@ target_compile_definitions(wildmeshing_toolkit PUBLIC NOMINMAX)
 
 # C++ standard
 target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_17)
+if(WMTK_USE_DEBUG_FUNCTIONS)
+	target_compile_definitions(wildmeshing_toolkit PUBLIC -DWMTK_USE_DEBUG_FUNCTIONS)
+endif()
 
 #target_compile_options(wildmeshing_toolkit PUBLIC  -fconcepts)
 

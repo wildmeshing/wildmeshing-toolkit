@@ -1,7 +1,8 @@
-#include <iostream>
 #include <stdlib.h>
 #include <catch2/catch.hpp>
-#include <igl/read_triangle_mesh.h>
+#include <iostream>
+//#include <igl/read_triangle_mesh.h>
+#include <wmtk/utils/trimesh_topology_initialization.h>
 #include <wmtk/TriMesh.hpp>
 // #include <wmtk/operations/TriMeshConsolidateOperation.h>
 // #include <wmtk/operations/TriMeshEdgeCollapseOperation.h>
@@ -10,7 +11,6 @@
 // #include <wmtk/operations/TriMeshVertexSmoothOperation.h>
 // #include <highfive/H5File.hpp>
 // #include <wmtk/operations/TriMeshOperationShim.hpp>
-
 
 // template <>
 // HighFive::DataType HighFive::create_datatype<TriMesh::VertexConnectivity>() {
@@ -30,52 +30,65 @@ using namespace wmtk;
 TEST_CASE("load mesh and create TriMesh", "[test_mesh_creation]")
 {
     TriMesh m;
-    std::vector<std::array<size_t, 3>> tris = {{0, 1, 2}};
-    m.initialize(3, tris);
-    // REQUIRE(m.tri_capacity() == tris.size()); // TODO:
-    // REQUIRE(m.vert_capacity() == 3); // TODO:
-    REQUIRE(check_mesh_connectivity_validity());
+    RowVectors3l tris;
+    tris.resize(1, 3);
+    tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
 
-    Tuple t = m.tuple_from_cell(0);
-    REQUIRE(t.is_valid(m));
-    auto oriented_vertices = m.oriented_tri_vertices(t);
-    for(const auto& v: oriented_vertices) {
-        CHECK(v.is_ccw(m));
+    SECTION("init with FV, FE, FF, VF, EF")
+    {
+        const auto [FE, FF, VF, EF] = trimesh_topology_initialization(tris);
+
+        m.initialize(tris, FE, FF, VF, EF);
     }
+    SECTION("init directly from RowVectors3l")
+    {
+        m.initialize(tris);
+    }
+
+    // TODO add all the stuff below
+
+    // // REQUIRE(m.tri_capacity() == tris.size()); // TODO:
+    // // REQUIRE(m.vert_capacity() == 3); // TODO:
+    // REQUIRE(check_mesh_connectivity_validity());
+
+    // Tuple t = m.tuple_from_cell(0);
+    // REQUIRE(t.is_valid(m));
+    // auto oriented_vertices = m.oriented_tri_vertices(t);
+    // for(const auto& v: oriented_vertices) {
+    //     CHECK(v.is_ccw(m));
+    // }
+    REQUIRE(false);
 }
 
 TEST_CASE("test generate tuples with 1 triangle", "[test_tuple_generation]")
 {
     TriMesh m;
-    // std::vector<std::array<size_t, 3>> tris = {{0, 1, 2}};
-    // m.initialize(3, tris);
+    {
+        RowVectors3l tris;
+        tris.resize(1, 3);
+        tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
+        m.initialize(tris);
+    }
 
-    // SECTION("test generation from vertics")
-    // {
-    //     auto vertices_tuples = m.get_all_of(POINTS);
-    //     REQUIRE(vertices_tuples.size() == 3);
-    //     REQUIRE(vertices_tuples[0].vid(m) == 0);
-    //     REQUIRE(vertices_tuples[1].vid(m) == 1);
-    //     REQUIRE(vertices_tuples[2].vid(m) == 2);
-    // }
-    // SECTION("test generation from faces")
-    // {
-    //     auto faces_tuples = m.get_faces();
-    //     REQUIRE(faces_tuples.size() == 1);
+    // const std::vector<Tuple> vertices = m.get_all(PrimitiveType::Vertex);
+    // REQUIRE(vertices.size() == 3);
+    //  CHECK(m._debug_id(vertices[0], PrimitiveType::Vertex) == 0);
+    //  CHECK(m._debug_id(vertices[1], PrimitiveType::Vertex) == 1);
+    //  CHECK(m._debug_id(vertices[2], PrimitiveType::Vertex) == 2);
+    //  CHECK(m._debug_id(vertices[0], PrimitiveType::Face) == 0);
+    //  CHECK(m._debug_id(vertices[1], PrimitiveType::Face) == 0);
+    //  CHECK(m._debug_id(vertices[2], PrimitiveType::Face) == 0);
 
-    //     // to test vid initialized correctly
-    //     REQUIRE(faces_tuples[0].vid(m) == tris[0][0]);
+    // const std::vector<Tuple> edges = m.get_all(PrimitiveType::Edge);
+    // REQUIRE(edges.size() == 3);
+    //  TODO add test for edge ids
+    CHECK(false);
+    CHECK(false);
+    CHECK(false);
 
-    //     // // to test the fid is a triangle touching this vertex
-    //     // std::vector<size_t> tris = m_vertex_connectivity[faces_tuples[0].vid(*this)].m_conn_tris;
-    //     // REQUIRE(std::find(tris.begin(), tris.end(), faces_tuples[0].fid(*this)) != tris.end());
-    // }
-
-    // SECTION("test generation from edges")
-    // {
-    //     auto edges_tuples = m.get_edges();
-    //     REQUIRE(edges_tuples.size() == 3);
-    // }
+    // const std::vector<Tuple> faces = m.get_all(PrimitiveType::Face);
+    // REQUIRE(faces.size() == 1);
+    //  CHECK(m._debug_id(faces[0], PrimitiveType::Face) == 0);
 }
 
 // TEST_CASE("test generate tuples with 2 triangle", "[test_tuple_generation]")
@@ -403,16 +416,14 @@ TEST_CASE("test generate tuples with 1 triangle", "[test_tuple_generation]")
 // // test manifold (eid uniqueness)
 // TEST_CASE("test unique edge", "[test_2d_operation]")
 // {
-//     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 3, 2}}, {{4, 1, 0}}, {{0, 2, 5}}};
-//     auto m = TriMesh();
-//     m.create_mesh(6, tris);
-//     REQUIRE(m.check_edge_manifold());
+//     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 3, 2}}, {{4, 1, 0}}, {{0, 2,
+//     5}}}; auto m = TriMesh(); m.create_mesh(6, tris); REQUIRE(m.check_edge_manifold());
 // }
 
 // TEST_CASE("edge_collapse", "[test_2d_operation]")
 // {
-//     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 3, 2}}, {{4, 1, 0}}, {{0, 2, 5}}};
-//     SECTION("rollback")
+//     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 3, 2}}, {{4, 1, 0}}, {{0, 2,
+//     5}}}; SECTION("rollback")
 //     {
 //         class NoCollapseCollapseOperation : public wmtk::TriMeshEdgeCollapseOperation
 //         {
@@ -541,4 +552,3 @@ TEST_CASE("test generate tuples with 1 triangle", "[test_tuple_generation]")
 //         for (auto e : edges) REQUIRE_FALSE(e.is_valid(m));
 //     }
 // }
-

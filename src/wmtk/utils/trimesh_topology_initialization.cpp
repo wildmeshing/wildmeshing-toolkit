@@ -33,8 +33,8 @@ std::tuple<RowVectors3l,RowVectors3l,VectorXl,VectorXl> trimesh_topology_initial
         for (int t = 0; t < F.rows(); ++t) {
             for (int i = 0; i < 3; ++i) {
                 // v1 v2 v3 f ei
-                long x = static_cast<long>(wmtk::autogen::auto_2d_edges[i][0]);
-                long y = static_cast<long>(wmtk::autogen::auto_2d_edges[i][1]);
+                long x = F(t,static_cast<long>(wmtk::autogen::auto_2d_edges[i][0]));
+                long y = F(t,static_cast<long>(wmtk::autogen::auto_2d_edges[i][1]));
                 if (x > y) std::swap(x, y);
 
                 std::vector<long> r(4);

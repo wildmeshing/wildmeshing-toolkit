@@ -16,15 +16,17 @@ template <typename T>
 class MeshAttributes
 {
     friend class Accessor<T>;
+    friend class Accessor<const T>;
     friend class Mesh;
 
     typedef Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, 1>> MapResult;
     typedef Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, 1>> ConstMapResult;
 
+
+public:
     MeshAttributes();
 
     AttributeHandle register_attribute(const std::string& name, long size);
-
 
     long size() const;
     void reserve(const long size);
