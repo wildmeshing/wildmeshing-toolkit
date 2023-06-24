@@ -1,17 +1,10 @@
 // test code for SC
 // Psudo code now
 
-#include "SimplicialComplexV2.hpp"
+#include "SimplicialComplex.hpp"
 #include <catch2/catch.hpp>
 
-
-
-
-
-
-
-
-TEST_CASE("link-case1", "[SC][lkn]")
+TEST_CASE("link-case1", "[SC][link]")
 {
     // auto V = {
     //     {0,0,0},
