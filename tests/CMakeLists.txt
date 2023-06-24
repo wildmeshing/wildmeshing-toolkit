@@ -8,7 +8,7 @@ include(Catch)
 set(TEST_SOURCES
 	main.cpp
 	test_topology.cpp
-	2d_tests.cpp
+	test_tuple_2d.cpp
     test_io.cpp
     test_SC.cpp
 )
