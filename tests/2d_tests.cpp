@@ -45,10 +45,14 @@ TEST_CASE("load mesh and create TriMesh", "[test_mesh_creation]")
         m.initialize(tris);
     }
 
-    // TODO add all the stuff below
+    const std::vector<Tuple> vertices = m.get_all(PrimitiveType::Vertex);
+    REQUIRE(vertices.size() == 3);
+    const std::vector<Tuple> edges = m.get_all(PrimitiveType::Edge);
+    REQUIRE(edges.size() == 3);
+    const std::vector<Tuple> faces = m.get_all(PrimitiveType::Face);
+    REQUIRE(faces.size() == 1);
 
-    // // REQUIRE(m.tri_capacity() == tris.size()); // TODO:
-    // // REQUIRE(m.vert_capacity() == 3); // TODO:
+    // TODO add all the stuff below
     // REQUIRE(check_mesh_connectivity_validity());
 
     // Tuple t = m.tuple_from_cell(0);
