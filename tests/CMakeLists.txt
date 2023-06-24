@@ -9,13 +9,13 @@ set(TEST_SOURCES
 	main.cpp
 	test_topology.cpp
 	test_tuple_2d.cpp
+	test_tuple_3d.cpp
     test_io.cpp
 )
 add_executable(wmtk_tests ${TEST_SOURCES})
 
 # Macros
 target_compile_definitions(wmtk_tests PUBLIC CATCH_CONFIG_ENABLE_BENCHMARKING)
-target_compile_definitions(wmtk_tests PRIVATE -DWMTK_USE_DEBUG_FUNCTIONS)
 
 # Dependencies
 include(finite-diff)

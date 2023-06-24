@@ -12,18 +12,12 @@ Accessor<T, IsConst>::Accessor(MeshType& mesh, const MeshAttributeHandle<T>& han
 {}
 
 template <typename T, bool IsConst>
-auto Accessor<T, IsConst>::attributes() -> MeshAttributes<T>&
+auto Accessor<T, IsConst>::attributes() -> MeshAttributesType&
 {
-    if constexpr (!IsConst) {
-        return m_mesh.get_mesh_attributes(m_handle);
-    } else {
-        assert(false);
-        static MeshAttributes<T> dummy;
-        return dummy;
-    }
+    return m_mesh.get_mesh_attributes(m_handle);
 }
 template <typename T, bool IsConst>
-auto Accessor<T, IsConst>::attributes() const -> const MeshAttributes<T>&
+auto Accessor<T, IsConst>::attributes() const -> const MeshAttributesType&
 {
     return m_mesh.get_mesh_attributes(m_handle);
 }
@@ -34,7 +28,7 @@ auto Accessor<T, IsConst>::vector_attribute(const long index) const -> ConstMapR
     return attributes().vector_attribute(m_handle.m_base_handle, index);
 }
 template <typename T, bool IsConst>
-auto Accessor<T, IsConst>::vector_attribute(const long index) -> MapResult
+auto Accessor<T, IsConst>::vector_attribute(const long index) -> MapResultT
 {
     return attributes().vector_attribute(m_handle.m_base_handle, index);
 }
@@ -46,7 +40,7 @@ T Accessor<T, IsConst>::scalar_attribute(const long index) const
 }
 
 template <typename T, bool IsConst>
-T& Accessor<T, IsConst>::scalar_attribute(const long index)
+auto Accessor<T, IsConst>::scalar_attribute(const long index) -> TT
 {
     return attributes().scalar_attribute(m_handle.m_base_handle, index);
 }
@@ -57,7 +51,7 @@ auto Accessor<T, IsConst>::vector_attribute(const Tuple& t) const -> ConstMapRes
     return vector_attribute(index);
 }
 template <typename T, bool IsConst>
-auto Accessor<T, IsConst>::vector_attribute(const Tuple& t) -> MapResult
+auto Accessor<T, IsConst>::vector_attribute(const Tuple& t) -> MapResultT
 {
     long index = m_mesh.id(t, m_handle.m_primitive_type);
     return vector_attribute(index);
@@ -71,7 +65,7 @@ T Accessor<T, IsConst>::scalar_attribute(const Tuple& t) const
 }
 
 template <typename T, bool IsConst>
-T& Accessor<T, IsConst>::scalar_attribute(const Tuple& t)
+auto Accessor<T, IsConst>::scalar_attribute(const Tuple& t) -> TT
 {
     long index = m_mesh.id(t, m_handle.m_primitive_type);
     return scalar_attribute(index);
