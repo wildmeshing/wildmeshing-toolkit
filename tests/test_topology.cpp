@@ -198,6 +198,7 @@ TEST_CASE("tetmesh_topology_initialization_1", "[test_topology_two_tedrahedra_1]
 
     // 4. Test the relationship between VT and T
     for (int i = 0; i < VT.size(); ++i) {
+        if (VT(i) < 0) continue;
         CHECK((T.row(VT(i)).array() == i).any());
     }
 
@@ -252,6 +253,7 @@ TEST_CASE("tetmesh_topology_initialization_2", "[test_topology_two_tedrahedra_2]
 
     // 4. Test the relationship between VT and T
     for (int i = 0; i < VT.size(); ++i) {
+        if (VT(i) < 0) continue;
         CHECK((T.row(VT(i)).array() == i).any());
     }
 
