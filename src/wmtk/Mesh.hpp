@@ -7,6 +7,7 @@
 #include "Types.hpp"
 
 #include <wmtk/io/MeshWriter.hpp>
+#include <wmtk/io/ParaviewWriter.hpp>
 
 #include <Eigen/Core>
 
@@ -16,6 +17,7 @@ class Mesh
 public:
     template <typename T, bool isConst>
     friend class Accessor;
+    friend class ParaviewWriter;
 
     Mesh(const long& dimension);
     virtual ~Mesh();
@@ -51,14 +53,25 @@ public:
     template <typename T>
     ConstAccessor<T> create_accessor(const MeshAttributeHandle<T>& handle) const;
 
+    ConstAccessor<char> get_flag_accessor(PrimitiveType type) const;
+    ConstAccessor<long> get_cell_hash_accessor() const;
+
 protected:
     std::vector<MeshAttributes<char>> m_char_attributes;
     std::vector<MeshAttributes<long>> m_long_attributes;
     std::vector<MeshAttributes<double>> m_double_attributes;
 
+    Accessor<char> get_flag_accessor(PrimitiveType type);
+    Accessor<long> get_cell_hash_accessor();
+
 private:
     std::vector<long> m_capacities;
-    // 0x1 == true = is active
+
+    /**
+     * @brief   0x1 == true = is active (simplex exists)
+     *          all flag defaul to 0 (simplex doesn't exist)
+     *
+     */
     std::vector<MeshAttributeHandle<char>> m_flag_handles;
     MeshAttributeHandle<long> m_cell_hash_handle;
 
@@ -76,8 +89,14 @@ protected:
     template <typename T>
     const MeshAttributes<T>& get_mesh_attributes(const MeshAttributeHandle<T>& handle) const;
 
-    Tuple tuple_from_cell(long cid) const;
-
+    /**
+     * @brief internal function that returns the tuple of requested type, and has the global index
+     * cid
+     *
+     * @param gid
+     * @return Tuple
+     */
+    virtual Tuple tuple_from_id(const PrimitiveType type, const long gid) const = 0;
 
     /**
      * @brief reserve space for all attributes data types for all dimensional simplices
@@ -131,7 +150,7 @@ public:
      * @return true if is valid
      * @return false
      */
-    bool is_valid(const Tuple& tuple) const;
+    virtual bool is_valid(const Tuple& tuple) const = 0;
 
 protected:
     /**

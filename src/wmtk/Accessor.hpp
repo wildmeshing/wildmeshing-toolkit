@@ -9,6 +9,7 @@
 namespace wmtk {
 class Mesh;
 class TriMesh;
+class TetMesh;
 enum class AccessorWriteMode {
     Immediate,
     Buffered
@@ -24,30 +25,36 @@ class Accessor
 public:
     friend class Mesh;
     friend class TriMesh;
+    friend class TetMesh;
     using MeshType = std::conditional_t<IsConst, const Mesh, Mesh>;
-    using MeshAttributesType = std::conditional_t<IsConst, const Mesh, Mesh>;
+    using MeshAttributesType =
+        std::conditional_t<IsConst, const MeshAttributes<T>, MeshAttributes<T>>;
 
     using MapResult = typename Eigen::Matrix<T, Eigen::Dynamic, 1>::MapType;
     using ConstMapResult = typename Eigen::Matrix<T, Eigen::Dynamic, 1>::ConstMapType;
+
+    using MapResultT = std::conditional_t<IsConst, ConstMapResult, MapResult>;
+    using TT = std::conditional_t<IsConst, T, T&>;
 
 
     Accessor(MeshType& m, const MeshAttributeHandle<T>& handle, AccessorWriteMode mode = AccessorWriteMode::Immediate);
 
     ConstMapResult vector_attribute(const Tuple& t) const;
-    MapResult vector_attribute(const Tuple& t);
+    MapResultT vector_attribute(const Tuple& t);
 
     T scalar_attribute(const Tuple& t) const;
-    T& scalar_attribute(const Tuple& t);
-
-    ConstMapResult vector_attribute(const long index) const;
-    MapResult vector_attribute(const long index);
-
-    T scalar_attribute(const long index) const;
-    T& scalar_attribute(const long index);
+    TT scalar_attribute(const Tuple& t);
 
 private:
-    MeshAttributes<T>& attributes();
-    const MeshAttributes<T>& attributes() const;
+    ConstMapResult vector_attribute(const long index) const;
+    MapResultT vector_attribute(const long index);
+
+    T scalar_attribute(const long index) const;
+    TT scalar_attribute(const long index);
+
+private:
+    MeshAttributesType& attributes();
+    const MeshAttributesType& attributes() const;
 
     MeshType& m_mesh;
     MeshAttributeHandle<T> m_handle;

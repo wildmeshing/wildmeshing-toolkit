@@ -1,6 +1,7 @@
 #include "TetMesh.hpp"
 
 #include <wmtk/utils/tetmesh_topology_initialization.h>
+#include <wmtk/utils/Logger.hpp>
 
 namespace wmtk {
 TetMesh::TetMesh()
@@ -15,6 +16,17 @@ TetMesh::TetMesh()
     , m_tt_handle(register_attribute<long>("m_tt", PrimitiveType::Tetrahedron, 4))
 {}
 
+Tuple TetMesh::vertex_tuple_from_id() const
+{
+    throw "not implemented";
+}
+
+Tuple TetMesh::tuple_from_id(PrimitiveType ptype, long id) const
+{
+    throw "not implemented";
+}
+
+
 void TetMesh::initialize(
     Eigen::Ref<const RowVectors4l> TV,
     Eigen::Ref<const RowVectors6l> TE,
@@ -23,6 +35,7 @@ void TetMesh::initialize(
     Eigen::Ref<const VectorXl> VT,
     Eigen::Ref<const VectorXl> ET,
     Eigen::Ref<const VectorXl> FT)
+
 {
     // reserve memory for attributes
 
@@ -45,26 +58,50 @@ void TetMesh::initialize(
     Accessor<long> tt_accessor = create_accessor<long>(m_tt_handle);
 
     // iterate over the matrices and fill attributes
-    // for (long i = 0; i < capacity(PrimitiveType::Face); ++i) {
-    //     fv_accessor.vector_attribute(i) = FV.row(i).transpose();
-    //     fe_accessor.vector_attribute(i) = FE.row(i).transpose();
-    //     ff_accessor.vector_attribute(i) = FF.row(i).transpose();
-    // }
-    // // m_vf
-    // for (long i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
-    //     vf_accessor.scalar_attribute(i) = VF(i);
-    // }
-    // // m_ef
-    // for (long i = 0; i < capacity(PrimitiveType::Edge); ++i) {
-    //     ef_accessor.scalar_attribute(i) = EF(i);
-    // }
+    for (long i = 0; i < capacity(PrimitiveType::Tetrahedron); ++i) {
+        tv_accessor.vector_attribute(i) = TV.row(i).transpose();
+        te_accessor.vector_attribute(i) = TE.row(i).transpose();
+        tf_accessor.vector_attribute(i) = TF.row(i).transpose();
+        tt_accessor.vector_attribute(i) = TT.row(i).transpose();
+    }
+    // m_vt
+    for (long i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
+        vt_accessor.scalar_attribute(i) = VT(i);
+    }
+    // m_et
+    for (long i = 0; i < capacity(PrimitiveType::Edge); ++i) {
+        et_accessor.scalar_attribute(i) = ET(i);
+    }
+    // m_ft
+    for (long i = 0; i < capacity(PrimitiveType::Face); ++i) {
+        ft_accessor.scalar_attribute(i) = FT(i);
+    }
 }
+
+Tuple TetMesh::edge_tuple_from_id(long id) const
+{
+    throw "not implemented";
+}
+
 
 void TetMesh::initialize(Eigen::Ref<const RowVectors4l> T)
 {
     auto [TE, TF, TT, VT, ET, FT] = tetmesh_topology_initialization(T);
     initialize(T, TE, TF, TT, VT, ET, FT);
 }
+
+long TetMesh::_debug_id(const Tuple& tuple, const PrimitiveType& type) const
+{
+    // do not remove this warning!
+    wmtk::logger().warn("This function must only be used for debugging!!");
+    return id(tuple, type);
+}
+
+Tuple TetMesh::face_tuple_from_id(long id) const
+{
+    throw "not implemented";
+}
+
 
 void TetMesh::split_edge(const Tuple& t)
 {
@@ -101,6 +138,11 @@ Tuple TetMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
 }
 
 bool TetMesh::is_ccw(const Tuple& tuple) const
+{
+    throw "not implemented";
+}
+
+bool TetMesh::is_valid(const Tuple& tuple) const
 {
     throw "not implemented";
 }

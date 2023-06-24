@@ -1,6 +1,7 @@
 #include "ParaviewWriter.hpp"
 
 
+#include <wmtk/Mesh.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/Rational.hpp>
 
@@ -18,11 +19,12 @@ ParaviewWriter::ParaviewInternalWriter::ParaviewInternalWriter()
 void ParaviewWriter::ParaviewInternalWriter::init(
     const std::filesystem::path& filename,
     const std::string& vertices_name,
-    const std::string& elements_name,
+    const Eigen::MatrixXi& elements,
     const bool enabled)
 {
     m_vertices_name = vertices_name;
-    m_elements_name = elements_name;
+    m_elements = elements;
+
     m_filename = filename;
     m_enabled = enabled;
 }
@@ -38,34 +40,26 @@ void ParaviewWriter::ParaviewInternalWriter::write(
     const long stride,
     const std::vector<double>& val)
 {
-    if (name == m_elements_name) {
-        assert(stride == 2 || stride == 3 || stride == 4);
+    Eigen::MatrixXd tmp =
+        Eigen::Map<const Eigen::MatrixXd>(&val[0], stride, val.size() / stride).transpose();
 
-        m_elements = Eigen::Map<const Eigen::MatrixXd>(&val[0], stride, val.size() / stride)
-                         .cast<int>()
-                         .transpose();
+    if (stride == 1 || stride == 2 || stride == 3) {
+        m_paraview_file->add_cell_field(name, tmp);
+    } else if (stride % 3 == 0) {
+        for (long i = 0; i < stride; i += 3) {
+            m_paraview_file->add_cell_field(
+                name + "_" + std::to_string(i / 3),
+                tmp.block(0, i, tmp.rows(), 3));
+        }
+    } else if (stride % 2 == 0) {
+        for (long i = 0; i < stride; i += 2) {
+            m_paraview_file->add_cell_field(
+                name + "_" + std::to_string(i / 2),
+                tmp.block(0, i, tmp.rows(), 2));
+        }
     } else {
-        Eigen::MatrixXd tmp =
-            Eigen::Map<const Eigen::MatrixXd>(&val[0], stride, val.size() / stride).transpose();
-
-        if (stride == 1 || stride == 2 || stride == 3) {
-            m_paraview_file->add_cell_field(name, tmp);
-        } else if (stride % 3 == 0) {
-            for (long i = 0; i < stride; i += 3) {
-                m_paraview_file->add_cell_field(
-                    name + "_" + std::to_string(i / 3),
-                    tmp.block(0, i, tmp.rows(), 3));
-            }
-        } else if (stride % 2 == 0) {
-            for (long i = 0; i < stride; i += 2) {
-                m_paraview_file->add_cell_field(
-                    name + "_" + std::to_string(i / 2),
-                    tmp.block(0, i, tmp.rows(), 2));
-            }
-        } else {
-            for (long i = 0; i < stride; ++i) {
-                m_paraview_file->add_cell_field(name + "_" + std::to_string(i), tmp.col(i));
-            }
+        for (long i = 0; i < stride; ++i) {
+            m_paraview_file->add_cell_field(name + "_" + std::to_string(i), tmp.col(i));
         }
     }
 }
@@ -73,6 +67,7 @@ void ParaviewWriter::ParaviewInternalWriter::write(
 ParaviewWriter::ParaviewWriter(
     const std::filesystem::path& filename,
     const std::string& vertices_name,
+    const Mesh& mesh,
     bool write_points,
     bool write_edges,
     bool write_faces,
@@ -84,10 +79,44 @@ ParaviewWriter::ParaviewWriter(
     m_enabled[2] = write_faces;
     m_enabled[3] = write_tetrahedra;
 
-    m_writers[0].init(filename.string() + "_verts.hdf5", vertices_name, "m_vf", m_enabled[0]);
-    m_writers[1].init(filename.string() + "_edges.hdf5", vertices_name, "m_ef", m_enabled[1]);
-    m_writers[2].init(filename.string() + "_faces.hdf5", vertices_name, "m_fv", m_enabled[2]);
-    m_writers[3].init(filename.string() + "_tets.hdf5", vertices_name, "m_vf", m_enabled[3]);
+    std::array<Eigen::MatrixXi, 4> cells;
+
+    for (int i = 0; i < 4; ++i) {
+        auto pt = PrimitiveType(i);
+        if (m_enabled[i]) {
+            const auto tuples = mesh.get_all(pt);
+            cells[i].resize(tuples.size(), i + 1);
+
+            for (size_t j = 0; j < tuples.size(); ++j) {
+                const auto& t = tuples[j];
+                long vid = mesh.id(t, PrimitiveType::Vertex);
+                cells[i](j, 0) = vid;
+                if (i > 0) {
+                    auto t1 = mesh.switch_tuple(t, PrimitiveType::Vertex);
+
+                    cells[i](j, 1) = mesh.id(t1, PrimitiveType::Vertex);
+                }
+                if (i > 1) {
+                    auto t1 = mesh.switch_tuple(t, PrimitiveType::Edge);
+                    auto t2 = mesh.switch_tuple(t1, PrimitiveType::Vertex);
+
+                    cells[i](j, 2) = mesh.id(t2, PrimitiveType::Vertex);
+                }
+                if (i > 2) {
+                    auto t1 = mesh.switch_tuple(t, PrimitiveType::Face);
+                    auto t2 = mesh.switch_tuple(t1, PrimitiveType::Edge);
+                    auto t3 = mesh.switch_tuple(t2, PrimitiveType::Vertex);
+
+                    cells[i](j, 3) = mesh.id(t3, PrimitiveType::Vertex);
+                }
+            }
+        }
+    }
+
+    m_writers[0].init(filename.string() + "_verts.hdf5", vertices_name, cells[0], m_enabled[0]);
+    m_writers[1].init(filename.string() + "_edges.hdf5", vertices_name, cells[1], m_enabled[1]);
+    m_writers[2].init(filename.string() + "_faces.hdf5", vertices_name, cells[2], m_enabled[2]);
+    m_writers[3].init(filename.string() + "_tets.hdf5", vertices_name, cells[3], m_enabled[3]);
 }
 
 void ParaviewWriter::write(

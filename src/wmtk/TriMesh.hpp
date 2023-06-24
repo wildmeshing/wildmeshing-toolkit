@@ -16,9 +16,9 @@ private:
     MeshAttributeHandle<long> m_fe_handle;
     MeshAttributeHandle<long> m_ff_handle;
 
-    std::vector<Tuple> get_all_vertices() const;
-    std::vector<Tuple> get_all_edges() const;
-    std::vector<Tuple> get_all_faces() const;
+    Tuple vertex_tuple_from_id(long id) const;
+    Tuple edge_tuple_from_id(long id) const;
+    Tuple face_tuple_from_id(long id) const;
 
 public:
     TriMesh();
@@ -40,17 +40,21 @@ public:
         Eigen::Ref<const VectorXl> EF);
     void initialize(Eigen::Ref<const RowVectors3l> F);
 
-    long _debug_id(const Tuple& tuple, const PrimitiveType& type) const
-    {
-#ifndef WMTK_USE_DEBUG_FUNCTIONS
-        throw "Function can only be used for debugging!";
-#endif // !WMTK_USE_DEBUG_FUNCTIONS
+    long _debug_id(const Tuple& tuple, const PrimitiveType& type) const;
 
-        return id(tuple, type);
-    }
+    bool is_valid(const Tuple& tuple) const override;
 
 protected:
     long id(const Tuple& tuple, const PrimitiveType& type) const override;
+
+    /**
+     * @brief internal function that returns the tuple of requested type, and has the global index
+     * cid
+     *
+     * @param gid
+     * @return Tuple
+     */
+    Tuple tuple_from_id(const PrimitiveType type, const long gid) const override;
 };
 
 } // namespace wmtk
