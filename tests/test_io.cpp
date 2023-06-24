@@ -1,7 +1,7 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/io/HDF5Writer.hpp>
 #include <wmtk/io/MeshReader.hpp>
-#include <wmtk/io/MeshWriter.hpp>
 
 #include <catch2/catch.hpp>
 
@@ -23,7 +23,7 @@ TEST_CASE("io", "[io][serialization]")
     TriMesh mesh;
     mesh.initialize(tris);
 
-    MeshWriter writer("test.hdf5");
+    HDF5Writer writer("test.hdf5");
     mesh.serialize(writer);
 
     MeshReader reader("test.hdf5");

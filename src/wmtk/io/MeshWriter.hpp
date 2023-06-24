@@ -1,23 +1,40 @@
 #pragma once
 
-#include <filesystem>
-
-namespace h5pp {
-class File;
-}
+#include <wmtk/utils/Rational.hpp>
 
 namespace wmtk {
+
 class MeshWriter
 {
 public:
-    MeshWriter(const std::filesystem::path& filename);
+    virtual ~MeshWriter() {}
 
-    template <typename T>
-    void
-    write(const std::string& name, const long type, const long stride, const std::vector<T>& val);
+    virtual bool write(const int dim) = 0;
 
-private:
-    std::shared_ptr<h5pp::File> m_hdf5_file;
+
+    virtual void write(
+        const std::string& name,
+        const long type,
+        const long stride,
+        const std::vector<char>& val) = 0;
+
+    virtual void write(
+        const std::string& name,
+        const long type,
+        const long stride,
+        const std::vector<long>& val) = 0;
+
+    virtual void write(
+        const std::string& name,
+        const long type,
+        const long stride,
+        const std::vector<double>& val) = 0;
+
+    virtual void write(
+        const std::string& name,
+        const long type,
+        const long stride,
+        const std::vector<Rational>& val) = 0;
 };
 
 } // namespace wmtk
