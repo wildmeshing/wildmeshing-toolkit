@@ -55,38 +55,6 @@ void Mesh::mesh_attributes_reserve(const PrimitiveType& top_d)
     }
 }
 
-
-// TODO
-bool Mesh::is_valid(const Tuple& tuple) const
-{
-    // condition 1: global cid stays in bound, and is not removed
-
-    // condition 2: hash
-
-
-    // Condition 3: local ids are consistent
-    const int v = tuple.m_local_vid;
-    switch (tuple.m_local_eid) {
-    case 0:
-        if (tuple.m_local_vid == 1 || tuple.m_local_vid == 2)
-            return true;
-        else
-            return false;
-    case 1:
-        if (tuple.m_local_vid == 0 || tuple.m_local_vid == 2)
-            return true;
-        else
-            return false;
-    case 2:
-        if (tuple.m_local_vid == 1 || tuple.m_local_vid == 0)
-            return true;
-        else
-            return false;
-    default: throw std::runtime_error("tuple invlid failed local ids check");
-    }
-}
-
-
 template MeshAttributeHandle<char>
 Mesh::register_attribute(const std::string&, PrimitiveType, long);
 template MeshAttributeHandle<long>

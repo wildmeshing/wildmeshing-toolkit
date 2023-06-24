@@ -67,8 +67,14 @@ protected:
     template <typename T>
     const MeshAttributes<T>& get_mesh_attributes(const MeshAttributeHandle<T>& handle) const;
 
-    Tuple tuple_from_cell(long cid) const;
-
+    /**
+     * @brief internal function that returns the tuple of requested type, and has the global index
+     * cid
+     *
+     * @param gid
+     * @return Tuple
+     */
+    virtual Tuple tuple_from_id(const PrimitiveType type, const long gid) const = 0;
 
     /**
      * @brief reserve space for all attributes data types for all dimensional simplices
@@ -125,7 +131,7 @@ public:
      * @return true if is valid
      * @return false
      */
-    bool is_valid(const Tuple& tuple) const;
+    virtual bool is_valid(const Tuple& tuple) const = 0;
 
 private:
     std::vector<long> m_capacities;

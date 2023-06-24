@@ -47,6 +47,15 @@ public:
 
 private:
     long id(const Tuple& tuple, const PrimitiveType& type) const override;
+    bool is_valid(const Tuple& tuple) const override;
+    /**
+     * @brief internal function that returns the tuple of requested type, and has the global index
+     * cid
+     *
+     * @param gid
+     * @return Tuple
+     */
+    Tuple tuple_from_id(const PrimitiveType type, const long gid) const override;
 };
 
 } // namespace wmtk

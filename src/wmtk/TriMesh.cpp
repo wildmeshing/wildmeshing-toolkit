@@ -87,7 +87,6 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
 
 bool TriMesh::is_ccw(const Tuple& tuple) const
 {
-    throw "not implemeted";
     ConstAccessor<long> fv_accessor = create_accessor<long>(m_fv_handle);
     auto fv = fv_accessor.vector_attribute(tuple);
     if (fv((tuple.m_local_eid + 1) % 3) == id(tuple, PrimitiveType::Vertex))
@@ -151,21 +150,73 @@ void TriMesh::initialize(Eigen::Ref<const RowVectors3l> F)
     initialize(F, FE, FF, VF, EF);
 }
 
-
-
-
 std::vector<Tuple> TriMesh::get_all(const PrimitiveType& type) const
 {
-    long simplex_index = get_simplex_dimension(type);
-    Accessor<char> flag_accessor= get_accessor(m_simplex_flag_handles[simplex_index]);
+    // long simplex_index = get_simplex_dimension(type);
+    // Accessor<char> flag_accessor = get_accessor(m_simplex_flag_handles[simplex_index]);
     std::vector<Tuple> ret;
-    long cap = capacity(type);
-    ret.reserve(cap);
-    for(size_t index = 0; index < cap; ++index) {
-        if(!(flag_accessor.scalar_attribute(index) & 1)) {
-        ret.emplace_back(tuple_from_id(simplex_index,index));
-        }
+    // long cap = capacity(type);
+    // ret.reserve(cap);
+    // for (size_t index = 0; index < cap; ++index) {
+    //     if (!(flag_accessor.scalar_attribute(index) & 1)) {
+    //         ret.emplace_back(tuple_from_id(simplex_index, index));
+    //     }
+    // }
+
+    return ret;
+}
+
+// TODO
+bool TriMesh::is_valid(const Tuple& tuple) const
+{
+    // condition 1: global cid stays in bound, and is not removed
+    const long gid = tuple.m_global_cid;
+    // condition 2: hash
+
+
+    // Condition 3: local ids are consistent
+    const int v = tuple.m_local_vid;
+    switch (tuple.m_local_eid) {
+    case 0:
+        if (tuple.m_local_vid == 1 || tuple.m_local_vid == 2)
+            return true;
+        else
+            return false;
+    case 1:
+        if (tuple.m_local_vid == 0 || tuple.m_local_vid == 2)
+            return true;
+        else
+            return false;
+    case 2:
+        if (tuple.m_local_vid == 1 || tuple.m_local_vid == 0)
+            return true;
+        else
+            return false;
+    default: throw std::runtime_error("tuple invlid failed local ids check");
     }
 }
 
+Tuple TriMesh::tuple_from_id(const PrimitiveType type, const long gid) const
+{
+    switch (type) {
+    case PrimitiveType::Vertex: {
+        ConstAccessor<long> fv_accessor = create_accessor<long>(m_fv_handle);
+        return Tuple(-1, gid, -1, gid, 0);
+        break;
+    }
+    case PrimitiveType::Edge: {
+        return Tuple(-1, gid, -1, gid, 0);
+        break;
+    }
+    case PrimitiveType::Face: {
+        return Tuple(-1, -1, gid, gid, 0);
+        break;
+    }
+    case PrimitiveType::Tetrahedron: {
+        return Tuple(-1, -1, -1, gid, 0);
+        break;
+    }
+    default: throw std::runtime_error("Invalid primitive type");
+    }
+}
 } // namespace wmtk
