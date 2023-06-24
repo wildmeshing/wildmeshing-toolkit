@@ -4,7 +4,8 @@
 // #include "SimplicialComplex.hpp"
 #include <catch2/catch.hpp>
 #include <wmtk/TriMesh.hpp>
-
+#include <wmtk/TetMesh.hpp>
+#include <wmtk/SimplicialComplex.hpp>
 
 using namespace wmtk;
 
@@ -23,6 +24,8 @@ TEST_CASE("link-case1", "[SC][link]")
     // get the tuple point to V(0), E(01), F(013)
     long hash = 0;
     Tuple t(0, 2, -1, 1, hash);
+
+
     // SimplicialComplex lnk_0 = link(Simplex(t, 0), m);
     // SimplicialComplex lnk_1 = link(Simplex(t.sw(0, m), 0), m);
     // SimplicialComplex lhs = get_intersection(lnk_0, lnk_1, m);
@@ -103,8 +106,25 @@ TEST_CASE("star", "[SC][open star]")
          0,1,2,
          0,2,4,
          2,1,5; // 4 Faces
-    
+
     // dump it to (Tri)Mesh
     TriMesh m;
     m.initialize(F);
+
+    // get the tuple point to V(0), E(01), F(012)
+    long hash = 0;
+    Tuple t(0, 2, -1, 1, hash);
+
+
+    // SimplicialComplex sc_v = open_star(Simlex(t, 0), m);
+    // REQUIRE(sc_v.get_size() == 8);
+
+    // SimplicialComplex sc_e = open_star(Simlex(t, 1), m);
+    // REQUIRE(sc_e.get_size() == 3);
+
+    // SimplicialComplex sc_1 = open_star(Simlex(t, 2), m);
+    // REQUIRE(sc_f.get_size() == 1);
 }
+
+
+

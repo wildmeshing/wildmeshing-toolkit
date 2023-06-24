@@ -198,7 +198,7 @@ Tuple TriMesh::vertex_tuple_from_id(long id) const
     auto fv = fv_accessor.vector_attribute(f);
     for (long i = 0; i < 3; ++i) {
         if (fv(i) == id) {
-            Tuple v_tuple = Tuple(i, (i + 2) % 3, f, -1, 0);
+            Tuple v_tuple = Tuple(i, (i + 2) % 3, -1, f, 0);
             assert(is_ccw(v_tuple));
             assert(is_valid(v_tuple));
             return v_tuple;
@@ -215,7 +215,7 @@ Tuple TriMesh::edge_tuple_from_id(long id) const
     auto fe = fe_accessor.vector_attribute(f);
     for (long i = 0; i < 3; ++i) {
         if (fe(i) == id) {
-            Tuple e_tuple = Tuple((i + 1) % 3, i, f, -1, 0);
+            Tuple e_tuple = Tuple((i + 1) % 3, i, -1, f, 0);
             assert(is_ccw(e_tuple));
             assert(is_valid(e_tuple));
             return e_tuple;
@@ -225,7 +225,7 @@ Tuple TriMesh::edge_tuple_from_id(long id) const
 }
 Tuple TriMesh::face_tuple_from_id(long id) const
 {
-    Tuple f_tuple = Tuple(0, 2, id, -1, 0);
+    Tuple f_tuple = Tuple(0, 2, -1, id, 0);
     assert(is_ccw(f_tuple));
     assert(is_valid(f_tuple));
     return f_tuple;

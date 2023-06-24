@@ -4,6 +4,7 @@
 
 #include <array>
 #include <cstddef>
+#include <iostream>
 #include <optional>
 #include <string>
 #include <tuple>
@@ -58,6 +59,13 @@ public:
         return (
             std::tie(a.m_local_vid, a.m_local_eid, a.m_local_fid, a.m_global_cid, a.m_hash) ==
             std::tie(t.m_local_vid, t.m_local_eid, t.m_local_fid, t.m_global_cid, t.m_hash));
+    }
+
+    friend std::ostream& operator<<(std::ostream& os, const Tuple& t)
+    {
+        os << t.m_local_vid << " " << t.m_local_eid << " " << t.m_local_fid << " " << t.m_global_cid
+           << " " << t.m_hash;
+        return os;
     }
 };
 } // namespace wmtk

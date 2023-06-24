@@ -92,29 +92,26 @@ ParaviewWriter::ParaviewWriter(
                 long vid = mesh.id(t, PrimitiveType::Vertex);
                 cells[i](j, 0) = vid;
                 if (i > 0) {
-                    cells[i](j, 1) =
-                        mesh.id(mesh.switch_tuple(t, PrimitiveType::Vertex), PrimitiveType::Vertex);
+                    auto t1 = mesh.switch_tuple(t, PrimitiveType::Vertex);
+
+                    cells[i](j, 1) = mesh.id(t1, PrimitiveType::Vertex);
                 }
                 if (i > 1) {
-                    cells[i](j, 2) = mesh.id(
-                        mesh.switch_tuple(
-                            mesh.switch_tuple(t, PrimitiveType::Edge),
-                            PrimitiveType::Vertex),
-                        PrimitiveType::Vertex);
+                    auto t1 = mesh.switch_tuple(t, PrimitiveType::Edge);
+                    auto t2 = mesh.switch_tuple(t1, PrimitiveType::Vertex);
+
+                    cells[i](j, 2) = mesh.id(t2, PrimitiveType::Vertex);
                 }
                 if (i > 2) {
-                    cells[i](j, 3) = mesh.id(
-                        mesh.switch_tuple(
-                            mesh.switch_tuple(
-                                mesh.switch_tuple(t, PrimitiveType::Face),
-                                PrimitiveType::Edge),
-                            PrimitiveType::Vertex),
-                        PrimitiveType::Vertex);
+                    auto t1 = mesh.switch_tuple(t, PrimitiveType::Face);
+                    auto t2 = mesh.switch_tuple(t1, PrimitiveType::Edge);
+                    auto t3 = mesh.switch_tuple(t2, PrimitiveType::Vertex);
+
+                    cells[i](j, 3) = mesh.id(t3, PrimitiveType::Vertex);
                 }
             }
         }
     }
-
 
     m_writers[0].init(filename.string() + "_verts.hdf5", vertices_name, cells[0], m_enabled[0]);
     m_writers[1].init(filename.string() + "_edges.hdf5", vertices_name, cells[1], m_enabled[1]);
