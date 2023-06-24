@@ -19,6 +19,16 @@ Mesh::Mesh(const long& dimension)
 
 Mesh::~Mesh() = default;
 
+void Mesh::serialize(MeshWriter& writer)
+{
+    for (long dim = 0; dim < m_capacities.size(); ++dim) {
+        if (!writer.write(dim)) continue;
+        m_char_attributes[dim].serialize(dim, writer);
+        m_long_attributes[dim].serialize(dim, writer);
+        m_double_attributes[dim].serialize(dim, writer);
+    }
+}
+
 template <typename T>
 MeshAttributeHandle<T>
 Mesh::register_attribute(const std::string& name, PrimitiveType ptype, long size)
