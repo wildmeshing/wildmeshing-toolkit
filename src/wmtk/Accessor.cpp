@@ -1,4 +1,5 @@
 #include "Accessor.hpp"
+#include "AccessorCache.hpp"
 
 #include "Mesh.hpp"
 #include "MeshAttributes.hpp"
@@ -6,10 +7,14 @@
 namespace wmtk {
 
 template <typename T, bool IsConst>
-Accessor<T, IsConst>::Accessor(MeshType& mesh, const MeshAttributeHandle<T>& handle)
+Accessor<T, IsConst>::Accessor(MeshType& mesh, const MeshAttributeHandle<T>& handle, AccessorWriteMode mode)
     : m_mesh(mesh)
     , m_handle(handle)
+      , m_write_mode(mode)
 {}
+
+template <typename T, bool IsConst>
+    Accessor<T,IsConst>::~Accessor() = default;
 
 template <typename T, bool IsConst>
 auto Accessor<T, IsConst>::attributes() -> MeshAttributesType&
