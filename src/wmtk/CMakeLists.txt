@@ -9,6 +9,8 @@ set(SRC_FILES
     MeshAttributes.hpp
     TriMesh.cpp
     TriMesh.hpp
+    TetMesh.cpp
+    TetMesh.hpp
     Primitive.hpp
     Tuple.hpp
     Types.hpp
