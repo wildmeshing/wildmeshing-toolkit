@@ -53,6 +53,7 @@ public:
 
     ConstAccessor<char> get_flag_accessor(PrimitiveType type) const;
     ConstAccessor<long> get_cell_hash_accessor() const;
+
 protected:
     std::vector<MeshAttributes<char>> m_char_attributes;
     std::vector<MeshAttributes<long>> m_long_attributes;
@@ -60,11 +61,18 @@ protected:
 
     Accessor<char> get_flag_accessor(PrimitiveType type);
     Accessor<long> get_cell_hash_accessor();
+
 private:
     std::vector<long> m_capacities;
-    // 0x1 == true = is active
+
+    /**
+     * @brief   0x1 == true = is active (simplex exists)
+     *          all flag defaul to 0 (simplex doesn't exist)
+     *
+     */
     std::vector<MeshAttributeHandle<char>> m_flag_handles;
     MeshAttributeHandle<long> m_cell_hash_handle;
+
 protected:
     // std::vector<MeshAttributes<Rational>> m_rational_attributes;
     template <typename T>
@@ -156,7 +164,6 @@ public:
 protected:
     void set_capacities(std::vector<long> capacities);
     virtual Tuple tuple_from_id(PrimitiveType ptype, long id) const = 0;
-
 };
 
 

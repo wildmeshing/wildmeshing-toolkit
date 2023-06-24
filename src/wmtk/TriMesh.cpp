@@ -108,10 +108,9 @@ void TriMesh::initialize(
 {
     // reserve memory for attributes
 
-    std::vector<long> cap{
-        static_cast<long>(FF.rows()),
-        static_cast<long>(VF.rows()),
-        static_cast<long>(EF.rows())};
+    std::vector<long> cap{static_cast<long>(FF.rows()),
+                          static_cast<long>(VF.rows()),
+                          static_cast<long>(EF.rows())};
     set_capacities(cap);
     reserve_attributes_to_fit();
 
@@ -145,22 +144,15 @@ void TriMesh::initialize(Eigen::Ref<const RowVectors3l> F)
 
 std::vector<Tuple> TriMesh::get_all(const PrimitiveType& type) const
 {
-    // long simplex_index = get_simplex_dimension(type);
-    // Accessor<char> flag_accessor = get_accessor(m_simplex_flag_handles[simplex_index]);
+    long dimension = get_simplex_dimension(type);
+    ConstAccessor<char> flag_accessor = get_flag_accessor(type);
     std::vector<Tuple> ret;
-    // long cap = capacity(type);
-    // ret.reserve(cap);
-    // for (size_t index = 0; index < cap; ++index) {
-    //     if (!(flag_accessor.scalar_attribute(index) & 1)) {
-    //         ret.emplace_back(tuple_from_id(simplex_index, index));
-    //     }
-    // }
-
-
-    for (long index = 0; index < capacity(type); ++index) {
-        Tuple t = tuple_from_id(type, index);
-        // if(!(flag_accessor.scalar_attribute(index)) ret.emplace_back(tuple_from_id(simplex_index,
-        // index));
+    long cap = capacity(type);
+    ret.reserve(cap);
+    for (size_t index = 0; index < cap; ++index) {
+        if (!(flag_accessor.scalar_attribute(index) & 1)) {
+            ret.emplace_back(tuple_from_id(type, index));
+        }
     }
     return ret;
 }
@@ -191,8 +183,20 @@ Tuple TriMesh::tuple_from_id(const PrimitiveType type, const long gid) const
 
 Tuple TriMesh::vertex_tuple_from_id(long id) const
 {
-    throw "not implemented";
+    ConstAccessor<long> vf_accessor = create_accessor<long>(m_vf_handle);
+    auto f = vf_accessor.scalar_attribute(id);
+    ConstAccessor<long> fv_accessor = create_accessor<long>(m_fv_handle);
+    auto fv = fv_accessor.vector_attribute(f);
+    for (long i = 0; i < 3; ++i) {
+        if (fv(i) == id) {
+            Tuple v_tuple = Tuple(i, (i + 2) % 3, f, -1, 0);
+            assert(is_ccw(v_tuple));
+            return v_tuple;
+        }
+    }
+    throw std::runtime_error("vertex_tuple_from_id failed");
 }
+
 Tuple TriMesh::edge_tuple_from_id(long id) const
 {
     throw "not implemented";
