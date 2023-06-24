@@ -16,9 +16,10 @@ private:
     MeshAttributeHandle<long> m_fe_handle;
     MeshAttributeHandle<long> m_ff_handle;
 
-    std::vector<Tuple> get_all_vertices() const;
-    std::vector<Tuple> get_all_edges() const;
-    std::vector<Tuple> get_all_faces() const;
+    Tuple vertex_tuple_from_id(long id) const;
+    Tuple edge_tuple_from_id(long id) const;
+    Tuple face_tuple_from_id(long id) const;
+    Tuple tuple_from_id(PrimitiveType ptype, long id) const override;
 
 public:
     TriMesh();
@@ -51,6 +52,15 @@ public:
 
 protected:
     long id(const Tuple& tuple, const PrimitiveType& type) const override;
+    bool is_valid(const Tuple& tuple) const override;
+    /**
+     * @brief internal function that returns the tuple of requested type, and has the global index
+     * cid
+     *
+     * @param gid
+     * @return Tuple
+     */
+    Tuple tuple_from_id(const PrimitiveType type, const long gid) const override;
 };
 
 } // namespace wmtk
