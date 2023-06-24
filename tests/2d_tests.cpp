@@ -393,6 +393,54 @@ TEST_CASE("vertex_edge switches equals indentity", "[tuple_operation]")
     }
 }
 
+TEST_CASE("one-ring tuple iteration", "[tuple_operation]")
+{
+    TriMesh m;
+    {
+        RowVectors3l tris;
+        tris.resize(6, 3);
+        tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
+        tris.row(1) = Eigen::Matrix<long, 3, 1>{0, 2, 3};
+        tris.row(2) = Eigen::Matrix<long, 3, 1>{0, 3, 4};
+        tris.row(3) = Eigen::Matrix<long, 3, 1>{0, 4, 5};
+        tris.row(4) = Eigen::Matrix<long, 3, 1>{0, 5, 6};
+        tris.row(5) = Eigen::Matrix<long, 3, 1>{0, 6, 1};
+        m.initialize(tris);
+    }
+
+    const std::vector<Tuple> vertices = m.get_all(PrimitiveType::Vertex);
+    REQUIRE(vertices.size() == 7);
+    for (const auto& t : vertices) {
+        // face-edge switch
+        Tuple t_iter = t;
+        for (size_t i = 0; i < 6; ++i) {
+            if (m.is_boundary(t_iter)) {
+                break;
+            }
+            t_iter = m.switch_tuple(t_iter, PrimitiveType::Face);
+            t_iter = m.switch_tuple(t_iter, PrimitiveType::Edge);
+            if (tuple_equal(m, t, t_iter)) {
+                break;
+            }
+        }
+        CHECK((tuple_equal(m, t, t_iter) || m.is_boundary(t_iter)));
+        // edge-face switch
+        t_iter = t;
+        for (size_t i = 0; i < 6; ++i) {
+            t_iter = m.switch_tuple(t_iter, PrimitiveType::Edge);
+            if (m.is_boundary(t_iter)) {
+                break;
+            }
+            t_iter = m.switch_tuple(t_iter, PrimitiveType::Face);
+            if (tuple_equal(m, t, t_iter)) {
+                break;
+            }
+        }
+        CHECK((tuple_equal(m, t, t_iter) || m.is_boundary(t_iter)));
+    }
+}
+
+
 // TEST_CASE("test_link_check", "[test_pre_check]")
 //{
 // TriMesh m;
