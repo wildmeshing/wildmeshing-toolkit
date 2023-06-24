@@ -108,9 +108,12 @@ void TriMesh::initialize(
 {
     // reserve memory for attributes
 
-    std::vector<long> cap{static_cast<long>(FF.rows()),
-                          static_cast<long>(VF.rows()),
-                          static_cast<long>(EF.rows())};
+
+    std::vector<long> cap{
+        static_cast<long>(VF.rows()),
+        static_cast<long>(EF.rows()),
+        static_cast<long>(FF.rows())};
+
     set_capacities(cap);
     reserve_attributes_to_fit();
 

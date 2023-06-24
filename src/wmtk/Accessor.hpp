@@ -12,22 +12,20 @@ class TriMesh;
 
 template <typename T>
 class MeshAttributes;
-template <typename T>
+template <typename T, bool IsConst = false>
 class Accessor
 {
 public:
     friend class Mesh;
     friend class TriMesh;
-    using Type = std::remove_const_t<T>;
-
-    using MapResult = typename Eigen::Matrix<Type, Eigen::Dynamic, 1>::MapType;
-    using ConstMapResult = typename Eigen::Matrix<Type, Eigen::Dynamic, 1>::ConstMapType;
-
-    constexpr static bool IsConst = std::is_const_v<T>;
     using MeshType = std::conditional_t<IsConst, const Mesh, Mesh>;
+    using MeshAttributesType = std::conditional_t<IsConst, const Mesh, Mesh>;
+
+    using MapResult = typename Eigen::Matrix<T, Eigen::Dynamic, 1>::MapType;
+    using ConstMapResult = typename Eigen::Matrix<T, Eigen::Dynamic, 1>::ConstMapType;
 
 
-    Accessor(MeshType& m, const MeshAttributeHandle<Type>& handle);
+    Accessor(MeshType& m, const MeshAttributeHandle<T>& handle);
 
     ConstMapResult vector_attribute(const Tuple& t) const;
     MapResult vector_attribute(const Tuple& t);
@@ -42,11 +40,11 @@ public:
     T& scalar_attribute(const long index);
 
 private:
-    MeshAttributes<Type>& attributes();
-    const MeshAttributes<Type>& attributes() const;
+    MeshAttributes<T>& attributes();
+    const MeshAttributes<T>& attributes() const;
 
     MeshType& m_mesh;
-    MeshAttributeHandle<Type> m_handle;
+    MeshAttributeHandle<T> m_handle;
 };
 
 // template <typename T>
@@ -56,5 +54,5 @@ private:
 
 
 template <typename T>
-using ConstAccessor = Accessor<const T>;
+using ConstAccessor = Accessor<T, true>;
 } // namespace wmtk

@@ -4,17 +4,18 @@
 
 namespace wmtk {
 
-Mesh::Mesh(const long& dimension):
-    m_char_attributes(dimension),
-    m_long_attributes(dimension),
-    m_double_attributes(dimension),
-    m_capacities(dimension, 0),
-    m_cell_hash_handle(register_attribute<long>("hash", static_cast<PrimitiveType>(dimension-1),1))
+Mesh::Mesh(const long& dimension)
+    : m_char_attributes(dimension)
+    , m_long_attributes(dimension)
+    , m_double_attributes(dimension)
+    , m_capacities(dimension, 0)
+    , m_cell_hash_handle(
+          register_attribute<long>("hash", static_cast<PrimitiveType>(dimension - 1), 1))
 {
-
     m_flag_handles.reserve(dimension);
     for (long j = 0; j < dimension; ++j) {
-        m_flag_handles.emplace_back(register_attribute<char>("flags", static_cast<PrimitiveType>(j), 1));
+        m_flag_handles.emplace_back(
+            register_attribute<char>("flags", static_cast<PrimitiveType>(j), 1));
     }
 }
 

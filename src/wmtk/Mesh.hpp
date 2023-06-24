@@ -14,7 +14,7 @@ namespace wmtk {
 class Mesh
 {
 public:
-    template <typename T>
+    template <typename T, bool isConst>
     friend class Accessor;
 
     Mesh(const long& dimension);
@@ -49,7 +49,7 @@ public:
     Accessor<T> create_accessor(const MeshAttributeHandle<T>& handle);
 
     template <typename T>
-    Accessor<const T> create_accessor(const MeshAttributeHandle<T>& handle) const;
+    ConstAccessor<T> create_accessor(const MeshAttributeHandle<T>& handle) const;
 
     ConstAccessor<char> get_flag_accessor(PrimitiveType type) const;
     ConstAccessor<long> get_cell_hash_accessor() const;
@@ -107,17 +107,6 @@ protected:
 
 public:
     /**
-     * @brief return the global id of the Tuple of the given dimension
-     *
-     * @param m
-     * @param type  d-0 -> vertex
-                    d-1 -> edge
-                    d-2 -> face
-                    d-3 -> tetrahedron
-     * @return long id of the entity
-     */
-    virtual long id(const Tuple& tuple, const PrimitiveType& type) const = 0;
-    /**
      * @brief switch the orientation of the Tuple of the given dimension
      * @note this is not doen in place. Return a new Tuple of the switched state
      *
@@ -162,8 +151,23 @@ public:
     virtual bool is_valid(const Tuple& tuple) const = 0;
 
 protected:
-    void set_capacities(std::vector<long> capacities);
+
     virtual Tuple tuple_from_id(PrimitiveType ptype, long id) const = 0;
+
+    /**
+     * @brief return the global id of the Tuple of the given dimension
+     *
+     * @param m
+     * @param type  d-0 -> vertex
+                    d-1 -> edge
+                    d-2 -> face
+                    d-3 -> tetrahedron
+        * @return long id of the entity
+    */
+    virtual long id(const Tuple& tuple, const PrimitiveType& type) const = 0;
+
+    void set_capacities(std::vector<long> capacities);
+
 };
 
 
@@ -173,9 +177,9 @@ Accessor<T> Mesh::create_accessor(const MeshAttributeHandle<T>& handle)
     return Accessor<T>(*this, handle);
 }
 template <typename T>
-Accessor<const T> Mesh::create_accessor(const MeshAttributeHandle<T>& handle) const
+ConstAccessor<T> Mesh::create_accessor(const MeshAttributeHandle<T>& handle) const
 {
-    return Accessor<const T>(*this, handle);
+    return ConstAccessor<T>(*this, handle);
 }
 
 template <typename T>
