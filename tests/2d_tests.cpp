@@ -91,57 +91,47 @@ TEST_CASE("test generate tuples with 1 triangle", "[test_tuple_generation]")
     CHECK(m._debug_id(faces[0], PrimitiveType::Face) == 0);
 }
 
-// TEST_CASE("test generate tuples with 2 triangle", "[test_tuple_generation]")
-// {
-//     // 	   v3     /
-//     //     / \    /
-//     // 	  /f1 \   /
-//     // v2 -----v1 /
-//     // 	  \f0 /   /
-//     //     \ /    /
-//     // 	    v0    /
+TEST_CASE("test generate tuples with 2 triangle", "[test_tuple_generation]")
+{
+    // 	   v3     /
+    //     / \    /
+    // 	  /f1 \   /
+    // v2 -----v1 /
+    // 	  \f0 /   /
+    //     \ /    /
+    // 	    v0    /
 
-//     TriMesh m;
-//     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{2, 1, 3}}};
-//     m.initialize(4, tris);
+    TriMesh m;
+    {
+        RowVectors3l tris;
+        tris.resize(2, 3);
+        tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
+        tris.row(1) = Eigen::Matrix<long, 3, 1>{2, 1, 3};
+        m.initialize(tris);
+    }
 
-//     SECTION("test generation from vertics")
-//     {
-//         auto vertices_tuples = m.get_vertices();
-//         REQUIRE(vertices_tuples.size() == 4);
-//         REQUIRE(vertices_tuples[0].vid(m) == 0);
-//         REQUIRE(vertices_tuples[1].vid(m) == 1);
-//         REQUIRE(vertices_tuples[2].vid(m) == 2);
-//         REQUIRE(vertices_tuples[3].vid(m) == 3);
+    const std::vector<Tuple> vertices = m.get_all(PrimitiveType::Vertex);
+    REQUIRE(vertices.size() == 4);
+    CHECK(m._debug_id(vertices[0], PrimitiveType::Vertex) == 0);
+    CHECK(m._debug_id(vertices[1], PrimitiveType::Vertex) == 1);
+    CHECK(m._debug_id(vertices[2], PrimitiveType::Vertex) == 2);
+    CHECK(m._debug_id(vertices[3], PrimitiveType::Vertex) == 3);
+    CHECK(m._debug_id(vertices[0], PrimitiveType::Face) == 0);
+    CHECK(m._debug_id(vertices[3], PrimitiveType::Face) == 1);
 
-//         // test the faces are assigned correctly
-//         REQUIRE(vertices_tuples[1].fid(m) == 0);
-//         REQUIRE(vertices_tuples[2].fid(m) == 0);
-//     }
+    const std::vector<Tuple> edges = m.get_all(PrimitiveType::Edge);
+    REQUIRE(edges.size() == 4);
+    //  TODO add test for edge ids
+    CHECK(false);
+    CHECK(false);
+    CHECK(false);
+    CHECK(false);
 
-//     SECTION("test generation from faces")
-//     {
-//         auto faces_tuples = m.get_faces();
-//         REQUIRE(faces_tuples.size() == 2);
-
-//         // std::vector<size_t> conn_tris =
-//         //     m_vertex_connectivity[faces_tuples[0].vid(*this)].m_conn_tris;
-//         // REQUIRE(
-//         //     std::find(conn_tris.begin(), conn_tris.end(), faces_tuples[0].fid(*this)) !=
-//         //     conn_tris.end());
-//     }
-
-//     SECTION("test generation from edges")
-//     {
-//         auto edges_tuples = m.get_edges();
-//         REQUIRE(edges_tuples.size() == 5);
-//         REQUIRE(edges_tuples[0].fid(m) == 0);
-//         REQUIRE(edges_tuples[1].fid(m) == 0);
-//         REQUIRE(edges_tuples[2].fid(m) == 0);
-//         REQUIRE(edges_tuples[3].fid(m) == 1);
-//         REQUIRE(edges_tuples[4].fid(m) == 1);
-//     }
-// }
+    const std::vector<Tuple> faces = m.get_all(PrimitiveType::Face);
+    REQUIRE(faces.size() == 2);
+    CHECK(m._debug_id(faces[0], PrimitiveType::Face) == 0);
+    CHECK(m._debug_id(faces[1], PrimitiveType::Face) == 1);
+}
 
 // // for every quiry do a require
 // TEST_CASE("random 10 switches on 2 traingles", "[tuple_operation]")
