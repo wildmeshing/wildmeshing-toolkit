@@ -23,8 +23,24 @@ TEST_CASE("hdf5_2d", "[io]")
 
     HDF5Writer writer("test.hdf5");
     mesh.serialize(writer);
+}
+
+TEST_CASE("hdf5_2d_read", "[io]")
+{
+    RowVectors3l tris;
+    tris.resize(1, 3);
+    tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
+
+    TriMesh mesh, mesh1;
+    mesh.initialize(tris);
+
+    HDF5Writer writer("test.hdf5");
+    mesh.serialize(writer);
 
     MeshReader reader("test.hdf5");
+    reader.read(mesh1);
+
+    REQUIRE(mesh1 == mesh);
 }
 
 TEST_CASE("paraview_2d", "[io]")

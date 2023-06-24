@@ -40,8 +40,11 @@ public:
     virtual void collapse_edge(const Tuple& t) = 0;
 
     template <typename T>
-    MeshAttributeHandle<T>
-    register_attribute(const std::string& name, PrimitiveType type, long size);
+    MeshAttributeHandle<T> register_attribute(
+        const std::string& name,
+        PrimitiveType type,
+        long size,
+        bool replace = false);
 
     template <typename T>
     MeshAttributeHandle<T> get_attribute_handle(
@@ -55,6 +58,8 @@ public:
 
     ConstAccessor<char> get_flag_accessor(PrimitiveType type) const;
     ConstAccessor<long> get_cell_hash_accessor() const;
+
+    bool operator==(const Mesh& other) const;
 
 protected:
     std::vector<MeshAttributes<char>> m_char_attributes;
