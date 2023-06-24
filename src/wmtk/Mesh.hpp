@@ -6,6 +6,8 @@
 #include "Tuple.hpp"
 #include "Types.hpp"
 
+#include <wmtk/io/MeshWriter.hpp>
+
 #include <Eigen/Core>
 
 namespace wmtk {
@@ -17,6 +19,8 @@ public:
 
     Mesh(const long& dimension);
     virtual ~Mesh();
+
+    void serialize(MeshWriter& writer);
 
     /**
      * Generate a vector of Tuples from global vertex/edge/triangle/tetrahedron index

@@ -1,10 +1,14 @@
 #pragma once
 
+#include "AttributeHandle.hpp"
+
+#include <wmtk/io/MeshWriter.hpp>
+
 #include <Eigen/Core>
 
 #include <map>
 #include <vector>
-#include "AttributeHandle.hpp"
+
 
 namespace wmtk {
 
@@ -25,6 +29,8 @@ class MeshAttributes
 
 public:
     MeshAttributes();
+
+    void serialize(const int dim, MeshWriter& writer);
 
     AttributeHandle register_attribute(const std::string& name, long size);
 

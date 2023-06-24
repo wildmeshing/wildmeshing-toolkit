@@ -12,6 +12,15 @@ MeshAttributes<T>::MeshAttributes()
 {}
 
 template <typename T>
+void MeshAttributes<T>::serialize(const int dim, MeshWriter& writer)
+{
+    for (const auto& p : m_handles) {
+        const auto& handle = p.second;
+        writer.write(p.first, dim, handle.stride, m_attributes[handle.index]);
+    }
+}
+
+template <typename T>
 AttributeHandle MeshAttributes<T>::register_attribute(const std::string& name, long size)
 {
     assert(m_handles.find(name) == m_handles.end());
