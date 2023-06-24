@@ -53,7 +53,7 @@ bool TetMesh::is_ccw(const Tuple& tuple) const
 }
 bool TetMesh::is_boundary(const Tuple& tuple) const
 {
-    ConstAccessor<long> ff_accessor = create_accessor<long>(m_ff_handle);
-    return ff_accessor.scalar_attribute(tuple) < 0;
+    ConstAccessor<long> tt_accessor = create_accessor<long>(m_tt_handle);
+    return tt_accessor.scalar_attribute(tuple) < 0;
 }
 } // namespace wmtk
