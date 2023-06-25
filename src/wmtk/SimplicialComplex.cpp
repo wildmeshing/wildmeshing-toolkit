@@ -6,8 +6,8 @@ namespace wmtk {
 
 internal::SimplexSet SimplicialComplex::get_simplices(const PrimitiveType& ptype) const
 {
-    internal::SimplexSet ret(simplices.key_comp());
-    for (const Simplex& s : simplices) {
+    internal::SimplexSet ret(_simplices.key_comp());
+    for (const Simplex& s : _simplices) {
         if (s.primitive_type() == ptype) {
             ret.insert(s);
         }
@@ -18,13 +18,13 @@ internal::SimplexSet SimplicialComplex::get_simplices(const PrimitiveType& ptype
 
 std::vector<Simplex> SimplicialComplex::get_simplex_vector() const
 {
-    return std::vector<Simplex>(simplices.begin(), simplices.end());
+    return std::vector<Simplex>(_simplices.begin(), _simplices.end());
 }
 
 bool SimplicialComplex::add_simplex(const Simplex& s)
 {
     assert(s.primitive_type() != PrimitiveType::Invalid);
-    const auto [it, was_successful] = simplices.insert(s);
+    const auto [it, was_successful] = _simplices.insert(s);
     return was_successful;
 }
 
@@ -38,13 +38,13 @@ void SimplicialComplex::unify_with_complex(const SimplicialComplex& other)
 
 bool SimplicialComplex::operator==(const SimplicialComplex& other) const
 {
-    if (simplices.size() != other.simplices.size()) {
+    if (_simplices.size() != other._simplices.size()) {
         return false;
     }
     // this is N log(N) complexity
-    for (const auto& t1 : simplices) {
-        const auto it = other.simplices.find(t1);
-        if (it == other.simplices.end()) {
+    for (const auto& t1 : _simplices) {
+        const auto it = other._simplices.find(t1);
+        if (it == other._simplices.end()) {
             return false;
         }
     }
