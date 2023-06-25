@@ -21,6 +21,20 @@ Mesh::Mesh(const long& dimension)
 
 Mesh::~Mesh() = default;
 
+std::vector<Tuple> Mesh::get_all(const PrimitiveType& type) const
+{
+    ConstAccessor<char> flag_accessor = get_flag_accessor(type);
+    std::vector<Tuple> ret;
+    long cap = capacity(type);
+    ret.reserve(cap);
+    for (size_t index = 0; index < cap; ++index) {
+        if (!(flag_accessor.scalar_attribute(index) & 1)) {
+            ret.emplace_back(tuple_from_id(type, index));
+        }
+    }
+    return ret;
+}
+
 void Mesh::serialize(MeshWriter& writer)
 {
     for (long dim = 0; dim < m_capacities.size(); ++dim) {
@@ -48,6 +62,22 @@ Mesh::register_attribute(const std::string& name, PrimitiveType ptype, long size
 long Mesh::capacity(PrimitiveType type) const
 {
     return m_capacities.at(get_simplex_dimension(type));
+}
+
+bool Mesh::simplex_is_equal(const Simplex& s0, const Simplex& s1) const
+{
+    return (s0.primitive_type() == s1.primitive_type()) && (id(s0) == id(s1));
+}
+
+bool Mesh::simplex_is_less(const Simplex& s0, const Simplex& s1) const
+{
+    if (s0.primitive_type() < s1.primitive_type()) {
+        return true;
+    }
+    if (s0.primitive_type() > s1.primitive_type()) {
+        return false;
+    }
+    return id(s0) < id(s1);
 }
 
 void Mesh::reserve_attributes_to_fit()

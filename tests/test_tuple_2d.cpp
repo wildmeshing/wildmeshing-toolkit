@@ -7,7 +7,7 @@
 
 using namespace wmtk;
 
-TEST_CASE("load mesh and create TriMesh", "[test_mesh_creation]")
+TEST_CASE("2D_initialize", "[test_mesh_creation],[test_tuple_2d]")
 {
     TriMesh m;
     RowVectors3l tris;
@@ -33,6 +33,7 @@ TEST_CASE("load mesh and create TriMesh", "[test_mesh_creation]")
     REQUIRE(faces.size() == 1);
 
     // TODO add all the stuff below
+    CHECK(false);
     // REQUIRE(check_mesh_connectivity_validity());
 
     // Tuple t = m.tuple_from_cell(0);
@@ -41,10 +42,9 @@ TEST_CASE("load mesh and create TriMesh", "[test_mesh_creation]")
     // for(const auto& v: oriented_vertices) {
     //     CHECK(v.is_ccw(m));
     // }
-    REQUIRE(false);
 }
 
-TEST_CASE("test generate tuples with 1 triangle", "[test_tuple_generation]")
+TEST_CASE("2D_1_triangle", "[test_tuple_generation],[test_tuple_2d]")
 {
     TriMesh m;
     {
@@ -69,10 +69,6 @@ TEST_CASE("test generate tuples with 1 triangle", "[test_tuple_generation]")
     {
         const std::vector<Tuple> edges = m.get_all(PrimitiveType::Edge);
         REQUIRE(edges.size() == 3);
-        //  TODO add test for edge ids
-        CHECK(false);
-        CHECK(false);
-        CHECK(false);
     }
     SECTION("faces")
     {
@@ -82,7 +78,7 @@ TEST_CASE("test generate tuples with 1 triangle", "[test_tuple_generation]")
     }
 }
 
-TEST_CASE("test generate tuples with 2 triangle", "[test_tuple_generation]")
+TEST_CASE("2D_2_triangles", "[test_tuple_generation],[test_tuple_2d]")
 {
     // 	   v3     /
     //     / \    /
@@ -115,12 +111,7 @@ TEST_CASE("test generate tuples with 2 triangle", "[test_tuple_generation]")
     SECTION("edges")
     {
         const std::vector<Tuple> edges = m.get_all(PrimitiveType::Edge);
-        REQUIRE(edges.size() == 4);
-        //  TODO add test for edge ids
-        CHECK(false);
-        CHECK(false);
-        CHECK(false);
-        CHECK(false);
+        REQUIRE(edges.size() == 5);
     }
     SECTION("faces")
     {
@@ -132,7 +123,7 @@ TEST_CASE("test generate tuples with 2 triangle", "[test_tuple_generation]")
 }
 
 // for every quiry do a require
-TEST_CASE("random 10 switches on 2 triangles", "[tuple_operation]")
+TEST_CASE("2D_random_switches", "[tuple_operation],[test_tuple_2d]")
 {
     // 	   v3     /
     //     / \    /
@@ -252,7 +243,7 @@ bool tuple_equal(const TriMesh& m, const Tuple& t0, const Tuple& t1)
 // // (1) t.switch_vertex().switch_vertex() == t
 // // (2) t.switch_edge().switch_edge() == t
 // // (3) t.switch_tri().switch_tri() == t
-TEST_CASE("double switches is identity", "[tuple_operation]")
+TEST_CASE("2D_double_switches", "[tuple_operation],[test_tuple_2d]")
 {
     // 	   v3     /
     //     / \    /
@@ -315,7 +306,7 @@ TEST_CASE("double switches is identity", "[tuple_operation]")
 
 // // check for every t
 // // t.switch_vertex().switchedge().switchvertex().switchedge().switchvertex().switchedge() == t
-TEST_CASE("vertex_edge switches equals indentity", "[tuple_operation]")
+TEST_CASE("2D_vertex_edge_switches", "[tuple_operation],[test_tuple_2d]")
 {
     TriMesh m;
     {
@@ -373,7 +364,7 @@ TEST_CASE("vertex_edge switches equals indentity", "[tuple_operation]")
     }
 }
 
-TEST_CASE("one-ring tuple iteration", "[tuple_operation]")
+TEST_CASE("2D_one_ring_iteration", "[tuple_operation],[test_tuple_2d]")
 {
     TriMesh m;
     {

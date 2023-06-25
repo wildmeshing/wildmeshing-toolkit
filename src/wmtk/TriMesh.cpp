@@ -55,11 +55,13 @@ long TriMesh::id(const Tuple& tuple, const PrimitiveType& type) const
     default: throw std::runtime_error("Tuple id: Invalid primitive type");
     }
 }
+
 bool TriMesh::is_boundary(const Tuple& tuple) const
 {
     ConstAccessor<long> ff_accessor = create_accessor<long>(m_ff_handle);
-    return ff_accessor.scalar_attribute(tuple) < 0;
+    return ff_accessor.vector_attribute(tuple)(tuple.m_local_eid) < 0;
 }
+
 Tuple TriMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
 {
     bool ccw = is_ccw(tuple);
@@ -161,20 +163,6 @@ void TriMesh::initialize(Eigen::Ref<const RowVectors3l> F)
     initialize(F, FE, FF, VF, EF);
 }
 
-std::vector<Tuple> TriMesh::get_all(const PrimitiveType& type) const
-{
-    ConstAccessor<char> flag_accessor = get_flag_accessor(type);
-    std::vector<Tuple> ret;
-    long cap = capacity(type);
-    ret.reserve(cap);
-    for (size_t index = 0; index < cap; ++index) {
-        if (!(flag_accessor.scalar_attribute(index) & 1)) {
-            ret.emplace_back(tuple_from_id(type, index));
-        }
-    }
-    return ret;
-}
-
 long TriMesh::_debug_id(const Tuple& tuple, const PrimitiveType& type) const
 {
     // do not remove this warning!
@@ -238,6 +226,7 @@ Tuple TriMesh::edge_tuple_from_id(long id) const
     }
     throw std::runtime_error("edge_tuple_from_id failed");
 }
+
 Tuple TriMesh::face_tuple_from_id(long id) const
 {
     Tuple f_tuple = Tuple(0, 2, -1, id, 0);
@@ -245,6 +234,7 @@ Tuple TriMesh::face_tuple_from_id(long id) const
     assert(is_valid(f_tuple));
     return f_tuple;
 }
+
 // TODO
 bool TriMesh::is_valid(const Tuple& tuple) const
 {
