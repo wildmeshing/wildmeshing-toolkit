@@ -222,6 +222,7 @@ Tuple double_switch_edge(const TriMesh& m, const Tuple& t)
 
 Tuple double_switch_face(const TriMesh& m, const Tuple& t)
 {
+    if (m.is_boundary(t)) return t;
     Tuple t_after = m.switch_tuple(t, PrimitiveType::Face);
     t_after = m.switch_tuple(t_after, PrimitiveType::Face);
     return t_after;
@@ -278,7 +279,7 @@ TEST_CASE("2D_double_switches", "[tuple_operation],[test_tuple_2d]")
     SECTION("edges")
     {
         const std::vector<Tuple> edges = m.get_all(PrimitiveType::Edge);
-        REQUIRE(edges.size() == 4);
+        REQUIRE(edges.size() == 5);
         for (const auto& t : edges) {
             const Tuple t_after_v = double_switch_vertex(m, t);
             CHECK(tuple_equal(m, t, t_after_v));
@@ -335,7 +336,7 @@ TEST_CASE("2D_vertex_edge_switches", "[tuple_operation],[test_tuple_2d]")
     SECTION("edges")
     {
         const std::vector<Tuple> edges = m.get_all(PrimitiveType::Edge);
-        REQUIRE(edges.size() == 4);
+        REQUIRE(edges.size() == 5);
         for (const auto& t : edges) {
             Tuple t_iter = t;
             t_iter = m.switch_tuple(t_iter, PrimitiveType::Vertex);
