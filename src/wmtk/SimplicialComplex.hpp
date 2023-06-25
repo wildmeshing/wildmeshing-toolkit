@@ -39,6 +39,8 @@ public:
 
     internal::SimplexSet get_simplices(const PrimitiveType& ptype) const;
 
+    std::vector<Simplex> get_simplex_vector() const;
+
     /**
      * @brief Add simplex to the complex if it is not already in it.
      *
