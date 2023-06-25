@@ -14,8 +14,24 @@ TriMesh::TriMesh()
     , m_ff_handle(register_attribute<long>("m_ff", PrimitiveType::Face, 3))
 {}
 
-void TriMesh::split_edge(const Tuple& t) {}
-void TriMesh::collapse_edge(const Tuple& t) {}
+void TriMesh::split_edge(const Tuple& t)
+{
+    // delete star(edge)
+
+    // create new vertex
+
+    // create new edges
+
+    // create new faces
+
+    // glue the topology
+}
+void TriMesh::collapse_edge(const Tuple& t)
+{
+    // delete cstar(edge) intersect star(v1(edge))
+
+    // glue the topology
+}
 
 long TriMesh::id(const Tuple& tuple, const PrimitiveType& type) const
 {
@@ -110,10 +126,9 @@ void TriMesh::initialize(
     // reserve memory for attributes
 
 
-    std::vector<long> cap{
-        static_cast<long>(VF.rows()),
-        static_cast<long>(EF.rows()),
-        static_cast<long>(FF.rows())};
+    std::vector<long> cap{static_cast<long>(VF.rows()),
+                          static_cast<long>(EF.rows()),
+                          static_cast<long>(FF.rows())};
 
     set_capacities(cap);
     reserve_attributes_to_fit();
