@@ -327,7 +327,8 @@ Tuple TetMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
 
 bool TetMesh::is_ccw(const Tuple& tuple) const
 {
-    throw "not implemented";
+    // throw "not implemented";
+    return true;
 }
 
 bool TetMesh::is_valid(const Tuple& tuple) const

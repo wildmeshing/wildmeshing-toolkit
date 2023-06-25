@@ -32,16 +32,11 @@ TEST_CASE("2D_initialize", "[test_mesh_creation],[test_tuple_2d]")
     const std::vector<Tuple> faces = m.get_all(PrimitiveType::Face);
     REQUIRE(faces.size() == 1);
 
-    // TODO add all the stuff below
-    CHECK(false);
-    // REQUIRE(check_mesh_connectivity_validity());
 
-    // Tuple t = m.tuple_from_cell(0);
-    // REQUIRE(t.is_valid(m));
-    // auto oriented_vertices = m.oriented_tri_vertices(t);
-    // for(const auto& v: oriented_vertices) {
-    //     CHECK(v.is_ccw(m));
-    // }
+    REQUIRE(m.is_connectivity_valid());
+
+    const Tuple t = m.get_all(PrimitiveType::Face)[0];
+    REQUIRE(m.is_valid(t));
 }
 
 TEST_CASE("2D_1_triangle", "[test_tuple_generation],[test_tuple_2d]")
