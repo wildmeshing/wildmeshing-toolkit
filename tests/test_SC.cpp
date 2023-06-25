@@ -89,11 +89,12 @@ TEST_CASE("link-case1", "[SC][link]")
 
 
     SimplicialComplex lnk_0 = SimplicialComplex::link(Simplex(PrimitiveType::Vertex, t), m);
-    // SimplicialComplex lnk_1 = SimplicialComplex::link(Simplex(PrimitiveType::Vertex,
-    // m.switch_tuple(t,PrimitiveType::Vertex)), m);
+    SimplicialComplex lnk_1 = SimplicialComplex::link(
+        Simplex(PrimitiveType::Vertex, m.switch_tuple(t, PrimitiveType::Vertex)),
+        m);
 
 
-    // SimplicialComplex lhs = SimplicialComplex::get_intersection(lnk_0, lnk_1);
+    SimplicialComplex lhs = SimplicialComplex::get_intersection(lnk_0, lnk_1);
     SimplicialComplex lnk_01 = SimplicialComplex::link(Simplex(PrimitiveType::Edge, t), m);
     SimplicialComplex lnk_10 = SimplicialComplex::link(
         Simplex(PrimitiveType::Edge, m.switch_tuple(t, PrimitiveType::Edge)),
@@ -107,7 +108,7 @@ TEST_CASE("link-case1", "[SC][link]")
               << std::endl;
 
     REQUIRE(lnk_0.get_simplices().size() == 5);
-    // REQUIRE(lnk_1.get_simplices().size() == 5);
+    REQUIRE(lnk_1.get_simplices().size() == 5);
 
 
     std::cout << "lnk_01 Vertex size = " << lnk_01.get_simplices(PrimitiveType::Vertex).size()
@@ -117,7 +118,7 @@ TEST_CASE("link-case1", "[SC][link]")
     std::cout << "lnk_01 Face size = " << lnk_01.get_simplices(PrimitiveType::Face).size()
               << std::endl;
     REQUIRE(lnk_01.get_simplices().size() == 1);
-    // REQUIRE(lhs.get_simplices().size() == 3);
+    REQUIRE(lhs.get_simplices().size() == 3);
 
     std::cout << "lnk_10 Vertex size = " << lnk_10.get_simplices(PrimitiveType::Vertex).size()
               << std::endl;
@@ -127,7 +128,7 @@ TEST_CASE("link-case1", "[SC][link]")
               << std::endl;
     REQUIRE(lnk_01 == lnk_10);
 
-    // REQUIRE(SimplicialComplex::link_cond(t, m) == false);
+    REQUIRE(SimplicialComplex::link_cond(t, m) == false);
 }
 
 
@@ -145,6 +146,7 @@ TEST_CASE("link-case2", "[SC][link]")
     Tuple t(0, 2, -1, 1, hash);
 
     SimplicialComplex lnk_0 = SimplicialComplex::link(Simplex(PrimitiveType::Vertex, t), m);
+<<<<<<< HEAD
     // SimplicialComplex lnk_1 = SimplicialComplex::link(Simplex(PrimitiveType::Vertex,
     // m.switch_tuple(t,PrimitiveType::Vertex)), m);
 
@@ -153,16 +155,27 @@ TEST_CASE("link-case2", "[SC][link]")
     // SimplicialComplex lnk_01 = SimplicialComplex::link(Simplex(PrimitiveType::Edge, t), m);
     // SimplicialComplex lnk_10 = SimplicialComplex::link(Simplex(PrimitiveType::Edge,
     // m.switch_tuple(t,PrimitiveType::Edge)), m);
+    == == == = SimplicialComplex lnk_1 = SimplicialComplex::link(
+                 Simplex(PrimitiveType::Vertex, m.switch_tuple(t, PrimitiveType::Vertex)),
+                 m);
+
+
+    SimplicialComplex lhs = SimplicialComplex::get_intersection(lnk_0, lnk_1);
+    SimplicialComplex lnk_01 = SimplicialComplex::link(Simplex(PrimitiveType::Edge, t), m);
+    SimplicialComplex lnk_10 = SimplicialComplex::link(
+        Simplex(PrimitiveType::Edge, m.switch_tuple(t, PrimitiveType::Edge)),
+        m);
+>>>>>>> b251ca3e8c84fdd3f2e0caa2da70e4caa1002476
 
 
     REQUIRE(lnk_0.get_simplices().size() == 7);
-    // REQUIRE(lnk_1.get_simplices().size() == 7);
-    // REQUIRE(lnk_01.get_simplices().size() == 2);
+    REQUIRE(lnk_1.get_simplices().size() == 7);
+    REQUIRE(lnk_01.get_simplices().size() == 2);
 
-    // REQUIRE(lhs == lnk_01);
-    // REQUIRE(lnk_01 == lnk_10);
+    REQUIRE(lhs == lnk_01);
+    REQUIRE(lnk_01 == lnk_10);
 
-    // REQUIRE(link_cond(t, m) == true);
+    REQUIRE(SimplicialComplex::link_cond(t, m) == true);
 }
 
 TEST_CASE("k-ring test", "[SC][k-ring]")
@@ -178,10 +191,10 @@ TEST_CASE("k-ring test", "[SC][k-ring]")
     long hash = 0;
     Tuple t(1, 0, -1, 0, hash);
 
-    // REQUIRE(vertex_one_ring(t, m).size() == 2);
-    // REQUIRE(k_ring(t, m, 1).size() == 2);
-    // REQUIRE(k_ring(t, m, 2).size() == 6);
-    // REQUIRE(k_ring(t, m, 3).size() == 6);
+    REQUIRE(SimplicialComplex::vertex_one_ring(t, m).size() == 2);
+    REQUIRE(SimplicialComplex::k_ring(t, m, 1).size() == 2);
+    REQUIRE(SimplicialComplex::k_ring(t, m, 2).size() == 6);
+    REQUIRE(SimplicialComplex::k_ring(t, m, 3).size() == 6);
 }
 
 TEST_CASE("star", "[SC][open star]")
@@ -198,12 +211,12 @@ TEST_CASE("star", "[SC][open star]")
     Tuple t(0, 2, -1, 1, hash);
 
 
-    // SimplicialComplex sc_v = open_star(Simlex(t, 0), m);
-    // REQUIRE(sc_v.get_size() == 8);
+    SimplicialComplex sc_v = SimplicialComplex::open_star(Simplex(PrimitiveType::Vertex, t), m);
+    REQUIRE(sc_v.get_simplices().size() == 8);
 
-    // SimplicialComplex sc_e = open_star(Simlex(t, 1), m);
-    // REQUIRE(sc_e.get_size() == 3);
+    SimplicialComplex sc_e = SimplicialComplex::open_star(Simplex(PrimitiveType::Edge, t), m);
+    REQUIRE(sc_e.get_simplices().size() == 3);
 
-    // SimplicialComplex sc_1 = open_star(Simlex(t, 2), m);
-    // REQUIRE(sc_f.get_size() == 1);
+    SimplicialComplex sc_f = SimplicialComplex::open_star(Simplex(PrimitiveType::Face, t), m);
+    REQUIRE(sc_f.get_simplices().size() == 1);
 }
