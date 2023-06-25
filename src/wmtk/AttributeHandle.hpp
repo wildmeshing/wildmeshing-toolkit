@@ -9,7 +9,13 @@ public:
     long stride = -1;
 
     bool valid() const { return index >= 0 && stride >= 0; }
+
+    bool operator==(const AttributeHandle& other) const
+    {
+        return index == other.index && stride == other.stride;
+    }
 };
+
 template <typename T>
 struct MeshAttributeHandle
 {

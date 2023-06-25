@@ -28,4 +28,25 @@ static long auto_2d_table_edge[9][2] = {
   {2, 0},
   {-1, -1}
 };
+static long auto_2d_table_ccw[9][1] = {
+  {-1},
+  {0},
+  {1},
+  {1},
+  {-1},
+  {0},
+  {0},
+  {1},
+  {-1}
+};
+static long auto_2d_table_complete_vertex[3][2] = {
+  {0, 2},
+  {1, 0},
+  {2, 1}
+};
+static long auto_2d_table_complete_edge[3][2] = {
+  {1, 0},
+  {2, 1},
+  {0, 2}
+};
 }}

@@ -15,15 +15,13 @@ private:
     MeshAttributeHandle<long> m_tf_handle;
     MeshAttributeHandle<long> m_tt_handle;
 
-    Tuple vertex_tuple_from_id() const;
+    Tuple vertex_tuple_from_id(long id) const;
     Tuple edge_tuple_from_id(long id) const;
     Tuple face_tuple_from_id(long id) const;
-    Tuple tuple_from_id(PrimitiveType ptype, long id) const override;
+    Tuple tet_tuple_from_id(long id) const;
 
 public:
     TetMesh();
-
-    std::vector<Tuple> get_all(const PrimitiveType& type) const override;
 
     void split_edge(const Tuple& t) override;
     void collapse_edge(const Tuple& t) override;
@@ -47,6 +45,15 @@ public:
 
 protected:
     long id(const Tuple& tuple, const PrimitiveType& type) const override;
+
+    /**
+     * @brief internal function that returns the tuple of requested type, and has the global index
+     * cid
+     *
+     * @param gid
+     * @return Tuple
+     */
+    Tuple tuple_from_id(const PrimitiveType type, const long gid) const override;
 };
 
 } // namespace wmtk

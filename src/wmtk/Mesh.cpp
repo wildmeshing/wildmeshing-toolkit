@@ -1,5 +1,7 @@
 #include "Mesh.hpp"
 
+#include <wmtk/utils/Logger.hpp>
+
 #include "Primitive.hpp"
 
 namespace wmtk {
@@ -21,6 +23,20 @@ Mesh::Mesh(const long& dimension)
 
 Mesh::~Mesh() = default;
 
+std::vector<Tuple> Mesh::get_all(const PrimitiveType& type) const
+{
+    ConstAccessor<char> flag_accessor = get_flag_accessor(type);
+    std::vector<Tuple> ret;
+    long cap = capacity(type);
+    ret.reserve(cap);
+    for (size_t index = 0; index < cap; ++index) {
+        if (!(flag_accessor.scalar_attribute(index) & 1)) {
+            ret.emplace_back(tuple_from_id(type, index));
+        }
+    }
+    return ret;
+}
+
 void Mesh::serialize(MeshWriter& writer)
 {
     for (long dim = 0; dim < m_capacities.size(); ++dim) {
@@ -33,14 +49,14 @@ void Mesh::serialize(MeshWriter& writer)
 
 template <typename T>
 MeshAttributeHandle<T>
-Mesh::register_attribute(const std::string& name, PrimitiveType ptype, long size)
+Mesh::register_attribute(const std::string& name, PrimitiveType ptype, long size, bool replace)
 {
     // return MeshAttributeHandle<T>{
     //    .m_base_handle = get_mesh_attributes<T>(ptype).register_attribute(name, size),
     //    .m_primitive_type = ptype};
 
     MeshAttributeHandle<T> r;
-    r.m_base_handle = get_mesh_attributes<T>(ptype).register_attribute(name, size),
+    r.m_base_handle = get_mesh_attributes<T>(ptype).register_attribute(name, size, replace),
     r.m_primitive_type = ptype;
     return r;
 }
@@ -48,6 +64,22 @@ Mesh::register_attribute(const std::string& name, PrimitiveType ptype, long size
 long Mesh::capacity(PrimitiveType type) const
 {
     return m_capacities.at(get_simplex_dimension(type));
+}
+
+bool Mesh::simplex_is_equal(const Simplex& s0, const Simplex& s1) const
+{
+    return (s0.primitive_type() == s1.primitive_type()) && (id(s0) == id(s1));
+}
+
+bool Mesh::simplex_is_less(const Simplex& s0, const Simplex& s1) const
+{
+    if (s0.primitive_type() < s1.primitive_type()) {
+        return true;
+    }
+    if (s0.primitive_type() > s1.primitive_type()) {
+        return false;
+    }
+    return id(s0) < id(s1);
 }
 
 void Mesh::reserve_attributes_to_fit()
@@ -90,11 +122,30 @@ Accessor<long> Mesh::get_cell_hash_accessor()
     return create_accessor(m_cell_hash_handle);
 }
 
+void Mesh::set_capacities_from_flags()
+{
+    throw "not implemented";
+}
+
+bool Mesh::operator==(const Mesh& other) const
+{
+    return m_capacities == other.m_capacities && m_char_attributes == other.m_char_attributes &&
+           m_long_attributes == other.m_long_attributes &&
+           m_double_attributes == other.m_double_attributes;
+}
+
+bool Mesh::is_connectivity_valid() const
+{
+    wmtk::logger().warn("This function is not implemented");
+
+    return true;
+}
+
 template MeshAttributeHandle<char>
-Mesh::register_attribute(const std::string&, PrimitiveType, long);
+Mesh::register_attribute(const std::string&, PrimitiveType, long, bool);
 template MeshAttributeHandle<long>
-Mesh::register_attribute(const std::string&, PrimitiveType, long);
+Mesh::register_attribute(const std::string&, PrimitiveType, long, bool);
 template MeshAttributeHandle<double>
-Mesh::register_attribute(const std::string&, PrimitiveType, long);
+Mesh::register_attribute(const std::string&, PrimitiveType, long, bool);
 
 } // namespace wmtk
