@@ -74,6 +74,42 @@ TEST_CASE("simplex_comparison", "[SC]")
     }
 }
 
+TEST_CASE("simplex_set", "[SC]")
+{
+    TriMesh m;
+    {
+        RowVectors3l tris(2, 3);
+        tris << 0, 1, 2, 2, 1, 3;
+        m.initialize(tris);
+    }
+    const std::vector<Tuple> vertices = m.get_all(PrimitiveType::Vertex);
+    REQUIRE(vertices.size() == 4);
+    const std::vector<Tuple> edges = m.get_all(PrimitiveType::Edge);
+    REQUIRE(edges.size() == 5);
+    const std::vector<Tuple> faces = m.get_all(PrimitiveType::Face);
+    REQUIRE(faces.size() == 2);
+
+    const internal::SimplexLessFunctor slf(m);
+    internal::SimplexSet simplices(slf);
+    for (const auto& t : vertices) {
+        simplices.insert(Simplex(PrimitiveType::Vertex, t));
+    }
+    for (const auto& t : edges) {
+        simplices.insert(Simplex(PrimitiveType::Edge, t));
+    }
+    for (const auto& t : faces) {
+        simplices.insert(Simplex(PrimitiveType::Face, t));
+    }
+    REQUIRE(simplices.size() == 11);
+    auto [it, was_successful] = simplices.insert(Simplex(PrimitiveType::Vertex, vertices[0]));
+    REQUIRE_FALSE(was_successful);
+    REQUIRE(simplices.size() == 11);
+    std::tie(it, was_successful) = simplices.insert(
+        Simplex(PrimitiveType::Vertex, m.switch_tuple(vertices[0], PrimitiveType::Edge)));
+    REQUIRE_FALSE(was_successful);
+    REQUIRE(simplices.size() == 11);
+}
+
 TEST_CASE("link-case1", "[SC][link]")
 {
     RowVectors3l F(3, 3);
