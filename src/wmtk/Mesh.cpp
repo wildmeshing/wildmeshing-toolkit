@@ -1,5 +1,7 @@
 #include "Mesh.hpp"
 
+#include <wmtk/utils/Logger.hpp>
+
 #include "Primitive.hpp"
 
 namespace wmtk {
@@ -130,6 +132,13 @@ bool Mesh::operator==(const Mesh& other) const
     return m_capacities == other.m_capacities && m_char_attributes == other.m_char_attributes &&
            m_long_attributes == other.m_long_attributes &&
            m_double_attributes == other.m_double_attributes;
+}
+
+bool Mesh::is_connectivity_valid() const
+{
+    wmtk::logger().warn("This function is not implemented");
+
+    return true;
 }
 
 template MeshAttributeHandle<char>

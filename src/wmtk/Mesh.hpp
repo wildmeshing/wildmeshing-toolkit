@@ -62,6 +62,8 @@ public:
 
     bool operator==(const Mesh& other) const;
 
+    virtual bool is_connectivity_valid() const;
+
 protected:
     std::vector<MeshAttributes<char>> m_char_attributes;
     std::vector<MeshAttributes<long>> m_long_attributes;
