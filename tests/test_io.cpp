@@ -78,10 +78,14 @@ TEST_CASE("paraview_3d", "[io]")
     T << 0, 1, 2, 3, 4, 5, 6, 7;
     TetMesh mesh;
     mesh.initialize(T);
+    Eigen::MatrixXd V(8, 3);
+    V.setRandom();
+    MeshUtils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, mesh);
+
 
     // MeshUtils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, mesh);
 
-    ParaviewWriter writer("paraview", "vertices", mesh, false, false, true, false);
+    ParaviewWriter writer("paraview", "vertices", mesh, false, false, false, true);
     mesh.serialize(writer);
 }
 

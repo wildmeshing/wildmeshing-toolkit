@@ -3,6 +3,7 @@
 #include "Accessor.hpp"
 #include "MeshAttributes.hpp"
 #include "Primitive.hpp"
+#include "Simplex.hpp"
 #include "Tuple.hpp"
 #include "Types.hpp"
 
@@ -29,7 +30,7 @@ public:
      * @param type the type of tuple, can be vertex/edge/triangle/tetrahedron
      * @return vector of Tuples referring to each type
      */
-    virtual std::vector<Tuple> get_all(const PrimitiveType& type) const = 0;
+    std::vector<Tuple> get_all(const PrimitiveType& type) const;
 
     /**
      * Removes all unset space
@@ -159,6 +160,10 @@ public:
 
     void set_capacities_from_flags();
 
+    bool simplex_is_equal(const Simplex& s0, const Simplex& s1) const;
+
+    bool simplex_is_less(const Simplex& s0, const Simplex& s1) const;
+
 protected:
     /**
      * @brief return the global id of the Tuple of the given dimension
@@ -171,6 +176,7 @@ protected:
         * @return long id of the entity
     */
     virtual long id(const Tuple& tuple, const PrimitiveType& type) const = 0;
+    long id(const Simplex& s) const { return id(s.tuple(), s.primitive_type()); }
 
     void set_capacities(std::vector<long> capacities);
 };
