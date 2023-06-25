@@ -300,12 +300,14 @@ SimplicialComplex SimplicialComplex::open_star(const Simplex& s, const Mesh& m)
 
 bool SimplicialComplex::link_cond(Tuple t, const Mesh& m)
 {
-    SimplicialComplex lhs = link(Simplex(PrimitiveType::Vertex, t), m); // lnk(a)
-    lhs.unify_with_complex(link(
+    SimplicialComplex lnk_a = link(Simplex(PrimitiveType::Vertex, t), m); // lnk(a)    
+    SimplicialComplex lnk_b = link(
         Simplex(PrimitiveType::Vertex, m.switch_tuple(t, PrimitiveType::Vertex)),
-        m)); // Union lnk(b)
+        m); // lnk(b)
+    SimplicialComplex lhs = get_intersection(lnk_a, lnk_b);
 
     SimplicialComplex rhs = link(Simplex(PrimitiveType::Edge, t), m); // lnk(ab)
+
     return (lhs == rhs);
 }
 
