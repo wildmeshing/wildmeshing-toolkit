@@ -258,16 +258,4 @@ bool TriMesh::is_valid(const Tuple& tuple) const
            autogen::auto_2d_table_ccw[offset][0] >= 0;
 }
 
-std::vector<std::vector<long>> TriMesh::simplices_to_gids(
-    const std::vector<Simplex&> simplices) const
-{
-    std::vector<std::vector<long>> gids;
-    gids.resize(3);
-    for (auto simplex : simplices) {
-        long d = get_simplex_dimension(simplex.primitive_type());
-        assert(d < 3);
-        gids[d].emplace_back(id(simplex.tuple(), simplex.primitive_type()));
-    }
-    return gids;
-}
 } // namespace wmtk

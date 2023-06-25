@@ -134,6 +134,23 @@ bool Mesh::operator==(const Mesh& other) const
            m_double_attributes == other.m_double_attributes;
 }
 
+
+std::vector<std::vector<long>> Mesh::simplices_to_gids(
+    const std::vector<std::vector<Simplex>>& simplices) const
+{
+    std::vector<std::vector<long>> gids;
+    gids.resize(simplices.size());
+    for (int i = 0; i < simplices.size(); ++i) {
+        auto simplices_i = simplices[i];
+        for (auto simplex : simplices_i) {
+            long d = get_simplex_dimension(simplex.primitive_type());
+            assert(d < 3);
+            gids[d].emplace_back(id(simplex.tuple(), simplex.primitive_type()));
+        }
+    }
+    return gids;
+}
+
 bool Mesh::is_connectivity_valid() const
 {
     wmtk::logger().warn("This function is not implemented");

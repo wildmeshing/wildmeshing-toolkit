@@ -72,8 +72,8 @@ protected:
     Accessor<char> get_flag_accessor(PrimitiveType type);
     Accessor<long> get_cell_hash_accessor();
 
-    virtual std::vector<std::vector<long>> simplices_to_gids(
-        const std::vector<Simplex&> simplices) const = 0;
+    std::vector<std::vector<long>> simplices_to_gids(
+        const std::vector<std::vector<Simplex>>& simplices) const;
 
 private:
     std::vector<long> m_capacities;

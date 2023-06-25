@@ -53,8 +53,6 @@ protected:
      * @return Tuple
      */
     Tuple tuple_from_id(const PrimitiveType type, const long gid) const override;
-    std::vector<std::vector<long>> simplices_to_gids(
-        const std::vector<Simplex&> simplices) const override;
 };
 
 } // namespace wmtk
