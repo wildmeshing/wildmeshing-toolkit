@@ -6,8 +6,8 @@ namespace wmtk {
 
 internal::SimplexSet SimplicialComplex::get_simplices(const PrimitiveType& ptype) const
 {
-    internal::SimplexSet ret(simplices.key_comp());
-    for (const Simplex& s : simplices) {
+    internal::SimplexSet ret(_simplices.key_comp());
+    for (const Simplex& s : _simplices) {
         if (s.primitive_type() == ptype) {
             ret.insert(s);
         }
@@ -18,13 +18,13 @@ internal::SimplexSet SimplicialComplex::get_simplices(const PrimitiveType& ptype
 
 std::vector<Simplex> SimplicialComplex::get_simplex_vector() const
 {
-    return std::vector<Simplex>(simplices.begin(), simplices.end());
+    return std::vector<Simplex>(_simplices.begin(), _simplices.end());
 }
 
 bool SimplicialComplex::add_simplex(const Simplex& s)
 {
     assert(s.primitive_type() != PrimitiveType::Invalid);
-    const auto [it, was_successful] = simplices.insert(s);
+    const auto [it, was_successful] = _simplices.insert(s);
     return was_successful;
 }
 
@@ -38,13 +38,13 @@ void SimplicialComplex::unify_with_complex(const SimplicialComplex& other)
 
 bool SimplicialComplex::operator==(const SimplicialComplex& other) const
 {
-    if (simplices.size() != other.simplices.size()) {
+    if (_simplices.size() != other._simplices.size()) {
         return false;
     }
     // this is N log(N) complexity
-    for (const auto& t1 : simplices) {
-        const auto it = other.simplices.find(t1);
-        if (it == other.simplices.end()) {
+    for (const auto& t1 : _simplices) {
+        const auto it = other._simplices.find(t1);
+        if (it == other._simplices.end()) {
             return false;
         }
     }
@@ -300,12 +300,14 @@ SimplicialComplex SimplicialComplex::open_star(const Simplex& s, const Mesh& m)
 
 bool SimplicialComplex::link_cond(Tuple t, const Mesh& m)
 {
-    SimplicialComplex lhs = link(Simplex(PrimitiveType::Vertex, t), m); // lnk(a)
-    lhs.unify_with_complex(link(
+    SimplicialComplex lnk_a = link(Simplex(PrimitiveType::Vertex, t), m); // lnk(a)    
+    SimplicialComplex lnk_b = link(
         Simplex(PrimitiveType::Vertex, m.switch_tuple(t, PrimitiveType::Vertex)),
-        m)); // Union lnk(b)
+        m); // lnk(b)
+    SimplicialComplex lhs = get_intersection(lnk_a, lnk_b);
 
     SimplicialComplex rhs = link(Simplex(PrimitiveType::Edge, t), m); // lnk(ab)
+
     return (lhs == rhs);
 }
 
