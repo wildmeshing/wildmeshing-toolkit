@@ -135,29 +135,11 @@ TEST_CASE("link-case1", "[SC][link]")
     
     SimplicialComplex lnk_10 = SimplicialComplex::link(Simplex(PrimitiveType::Edge, m.switch_tuple(t,PrimitiveType::Vertex)), m);
     
-    std::cout << "lnk_0 Vertex size = " << lnk_0.get_simplices(PrimitiveType::Vertex).size() << std::endl;
-    std::cout << "lnk_0 Edge size = " << lnk_0.get_simplices(PrimitiveType::Edge).size() << std::endl;
-    std::cout << "lnk_0 Face size = " << lnk_0.get_simplices(PrimitiveType::Face).size() << std::endl;
-    
     REQUIRE(lnk_0.get_simplices().size() == 5);
     REQUIRE(lnk_1.get_simplices().size() == 5);
 
-
-    std::cout << "lnk_01 Vertex size = " << lnk_01.get_simplices(PrimitiveType::Vertex).size()
-              << std::endl;
-    std::cout << "lnk_01 Edge size = " << lnk_01.get_simplices(PrimitiveType::Edge).size()
-              << std::endl;
-    std::cout << "lnk_01 Face size = " << lnk_01.get_simplices(PrimitiveType::Face).size()
-              << std::endl;
     REQUIRE(lnk_01.get_simplices().size() == 1);
     REQUIRE(lhs.get_simplices().size() == 3);
-
-    std::cout << "lnk_10 Vertex size = " << lnk_10.get_simplices(PrimitiveType::Vertex).size()
-              << std::endl;
-    std::cout << "lnk_10 Edge size = " << lnk_10.get_simplices(PrimitiveType::Edge).size()
-              << std::endl;
-    std::cout << "lnk_10 Face size = " << lnk_10.get_simplices(PrimitiveType::Face).size()
-              << std::endl;
     REQUIRE(lnk_01 == lnk_10);
 
     REQUIRE(SimplicialComplex::link_cond(t, m) == false);
@@ -260,9 +242,6 @@ TEST_CASE("closed_star", "[SC][star]")
 
 
     SimplicialComplex sc_v = SimplicialComplex::closed_star(Simplex(PrimitiveType::Vertex, t), m);
-    std::cout << "sc_v Vertex size = " << sc_v.get_simplices(PrimitiveType::Vertex).size() << std::endl;
-    std::cout << "sc_v Edge size = " << sc_v.get_simplices(PrimitiveType::Edge).size() << std::endl;
-    std::cout << "sc_v Face size = " << sc_v.get_simplices(PrimitiveType::Face).size() << std::endl;
     REQUIRE(sc_v.get_simplices().size() == 15);
 
     SimplicialComplex sc_e = SimplicialComplex::closed_star(Simplex(PrimitiveType::Edge, t), m);
