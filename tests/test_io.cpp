@@ -85,7 +85,7 @@ TEST_CASE("paraview_3d", "[io]")
 
     // MeshUtils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, mesh);
 
-    ParaviewWriter writer("paraview", "vertices", mesh, false, false, false, true);
+    ParaviewWriter writer("paraview", "vertices", mesh, true, true, true, true);
     mesh.serialize(writer);
 }
 
