@@ -264,4 +264,17 @@ bool TriMesh::is_valid(const Tuple& tuple) const
     default: throw std::runtime_error("tuple invlid failed local ids check");
     }
 }
+
+std::vector<std::vector<long>> TriMesh::simplices_to_gids(
+    const std::vector<Simplex&> simplices) const
+{
+    std::vector<std::vector<long>> gids;
+    gids.resize(3);
+    for (auto simplex : simplices) {
+        long d = get_simplex_dimension(simplex.primitive_type());
+        assert(d < 3);
+        gids[d].emplace_back(id(simplex.tuple(), simplex.primitive_type()));
+    }
+    return gids;
+}
 } // namespace wmtk
