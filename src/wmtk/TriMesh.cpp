@@ -226,7 +226,12 @@ Tuple TriMesh::edge_tuple_from_id(long id) const
 
 Tuple TriMesh::face_tuple_from_id(long id) const
 {
-    Tuple f_tuple = Tuple(0, 2, -1, id, 0);
+    Tuple f_tuple = Tuple(
+        autogen::auto_2d_table_complete_vertex[0][0],
+        autogen::auto_2d_table_complete_vertex[0][1],
+        -1,
+        id,
+        0);
     assert(is_ccw(f_tuple));
     assert(is_valid(f_tuple));
     return f_tuple;
