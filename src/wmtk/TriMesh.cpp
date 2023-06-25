@@ -42,14 +42,16 @@ long TriMesh::id(const Tuple& tuple, const PrimitiveType& type) const
 
 bool TriMesh::is_boundary(const Tuple& tuple) const
 {
+    assert(is_valid(tuple));
     ConstAccessor<long> ff_accessor = create_accessor<long>(m_ff_handle);
     return ff_accessor.vector_attribute(tuple)(tuple.m_local_eid) < 0;
 }
 
 Tuple TriMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
 {
+    assert(is_valid(tuple));
     bool ccw = is_ccw(tuple);
-    int offset = (tuple.m_local_vid * 3 + tuple.m_local_eid);
+    int offset = tuple.m_local_vid * 3 + tuple.m_local_eid;
 
     switch (type) {
     case PrimitiveType::Vertex:
@@ -68,25 +70,32 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
             tuple.m_global_cid,
             tuple.m_hash);
     case PrimitiveType::Face: {
-        long gvid = id(tuple, PrimitiveType::Vertex);
-        long geid = id(tuple, PrimitiveType::Edge);
+        const long gvid = id(tuple, PrimitiveType::Vertex);
+        const long geid = id(tuple, PrimitiveType::Edge);
+
         ConstAccessor<long> ff_accessor = create_accessor<long>(m_ff_handle);
         auto ff = ff_accessor.vector_attribute(tuple);
+
         long gcid_new = ff(tuple.m_local_eid);
         long lvid_new, leid_new;
+
         ConstAccessor<long> fv_accessor = create_accessor<long>(m_fv_handle);
         auto fv = fv_accessor.vector_attribute(gcid_new);
+
         ConstAccessor<long> fe_accessor = create_accessor<long>(m_fe_handle);
         auto fe = fe_accessor.vector_attribute(gcid_new);
+
         for (long i = 0; i < 3; ++i) {
             if (fe(i) == geid) {
-                leid_new = fe(i);
+                leid_new = i;
             }
             if (fv(i) == gvid) {
-                lvid_new = fv(i);
+                lvid_new = i;
             }
         }
-        return Tuple(lvid_new, leid_new, tuple.m_local_fid, gcid_new, tuple.m_hash);
+        const Tuple res(lvid_new, leid_new, tuple.m_local_fid, gcid_new, tuple.m_hash);
+        assert(is_valid(res));
+        return res;
     }
     default: throw std::runtime_error("Tuple switch: Invalid primitive type"); break;
     }
@@ -94,12 +103,9 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
 
 bool TriMesh::is_ccw(const Tuple& tuple) const
 {
-    ConstAccessor<long> fv_accessor = create_accessor<long>(m_fv_handle);
-    auto fv = fv_accessor.vector_attribute(tuple);
-    if (fv((tuple.m_local_eid + 1) % 3) == id(tuple, PrimitiveType::Vertex))
-        return true;
-    else
-        return false;
+    assert(is_valid(tuple));
+    int offset = tuple.m_local_vid * 3 + tuple.m_local_eid;
+    return autogen::auto_2d_table_ccw[offset][0] == 1;
 }
 
 void TriMesh::initialize(
@@ -220,33 +226,10 @@ Tuple TriMesh::face_tuple_from_id(long id) const
     return f_tuple;
 }
 
-// TODO
 bool TriMesh::is_valid(const Tuple& tuple) const
 {
-    // condition 1: global cid stays in bound, and is not removed
-    const long gid = tuple.m_global_cid;
-    // condition 2: hash
-
-
-    // Condition 3: local ids are consistent
-    const int v = tuple.m_local_vid;
-    switch (tuple.m_local_eid) {
-    case 0:
-        if (tuple.m_local_vid == 1 || tuple.m_local_vid == 2)
-            return true;
-        else
-            return false;
-    case 1:
-        if (tuple.m_local_vid == 0 || tuple.m_local_vid == 2)
-            return true;
-        else
-            return false;
-    case 2:
-        if (tuple.m_local_vid == 1 || tuple.m_local_vid == 0)
-            return true;
-        else
-            return false;
-    default: throw std::runtime_error("tuple invlid failed local ids check");
-    }
+    int offset = tuple.m_local_vid * 3 + tuple.m_local_eid;
+    return tuple.m_local_vid >= 0 && tuple.m_local_eid >= 0 && tuple.m_global_cid >= 0 &&
+           autogen::auto_2d_table_ccw[offset][0] >= 0;
 }
 } // namespace wmtk
