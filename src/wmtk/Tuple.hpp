@@ -2,12 +2,6 @@
 
 #include "Primitive.hpp"
 
-#include <array>
-#include <cstddef>
-#include <iostream>
-#include <optional>
-#include <string>
-#include <tuple>
 
 namespace wmtk {
 
@@ -34,13 +28,7 @@ public:
     // friend Mesh::is_ccw(const Tuple& tuple) const;
     // friend Mesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const;
 
-    Tuple(long local_vid, long local_eid, long local_fid, long global_cid, long hash)
-        : m_local_vid(local_vid)
-        , m_local_eid(local_eid)
-        , m_local_fid(local_fid)
-        , m_global_cid(global_cid)
-        , m_hash(hash)
-    {}
+    Tuple(long local_vid, long local_eid, long local_fid, long global_cid, long hash);
 
     //         v2
     //       /    \
@@ -48,24 +36,12 @@ public:
     //     v0 - - - v1
     //         e2
 
-    Tuple() = default;
-    Tuple(const Tuple& other) = default;
-    Tuple(Tuple&& other) = default;
-    Tuple& operator=(const Tuple& other) = default;
-    Tuple& operator=(Tuple&& other) = default;
+    Tuple();
+    Tuple(const Tuple& other);
+    Tuple(Tuple&& other);
+    Tuple& operator=(const Tuple& other);
+    Tuple& operator=(Tuple&& other);
 
-    friend bool operator==(const Tuple& a, const Tuple& t)
-    {
-        return (
-            std::tie(a.m_local_vid, a.m_local_eid, a.m_local_fid, a.m_global_cid, a.m_hash) ==
-            std::tie(t.m_local_vid, t.m_local_eid, t.m_local_fid, t.m_global_cid, t.m_hash));
-    }
-
-    friend std::ostream& operator<<(std::ostream& os, const Tuple& t)
-    {
-        os << t.m_local_vid << " " << t.m_local_eid << " " << t.m_local_fid << " " << t.m_global_cid
-           << " " << t.m_hash;
-        return os;
-    }
+    bool operator==(const Tuple& t) const;
 };
 } // namespace wmtk

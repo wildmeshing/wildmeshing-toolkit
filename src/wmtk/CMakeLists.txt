@@ -12,6 +12,7 @@ set(SRC_FILES
     TetMesh.cpp
     TetMesh.hpp
     Primitive.hpp
+    Tuple.cpp
     Tuple.hpp
     Types.hpp
 	Simplex.hpp
