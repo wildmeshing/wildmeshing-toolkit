@@ -80,10 +80,6 @@ protected: // members
     std::vector<std::vector<long>> simplices_to_gids(
         const std::vector<std::vector<Simplex>>& simplices) const;
 
-    void delete_simplices(
-        const std::vector<std::vector<Simplex>>& simplices,
-        OperationState& state);
-
 private: // members
     std::vector<long> m_capacities;
 
