@@ -67,7 +67,7 @@ TEST_CASE("TetMesh with 1 tet", "[test_tuple_3d]")
         CHECK(false);
         CHECK(false);
     }
-    SECTION("tetrahedron")
+    SECTION("3Drahedron")
     {
         const std::vector<Tuple> tets = m.get_all(PrimitiveType::Tetrahedron);
         REQUIRE(tets.size() == 1);
@@ -75,7 +75,7 @@ TEST_CASE("TetMesh with 1 tet", "[test_tuple_3d]")
     }
 }
 
-TEST_CASE("switch_vertex", "[test_tuple_3d]")
+TEST_CASE("3D_switch_vertex", "[test_tuple_3d]")
 {
     TetMesh m;
     {
@@ -101,7 +101,7 @@ TEST_CASE("switch_vertex", "[test_tuple_3d]")
     // REQUIRE(tuple.vid(mesh) == t2.vid(mesh));
 }
 
-TEST_CASE("switch_edge", "[test_tuple_3d]")
+TEST_CASE("3D_switch_edge", "[test_tuple_3d]")
 {
     REQUIRE(false);
 
@@ -119,7 +119,7 @@ TEST_CASE("switch_edge", "[test_tuple_3d]")
     // REQUIRE(eid1 == eid2);
 }
 
-TEST_CASE("switch_face", "[test_tuple_3d]")
+TEST_CASE("3D_switch_face", "[test_tuple_3d]")
 {
     REQUIRE(false);
 
@@ -136,7 +136,7 @@ TEST_CASE("switch_face", "[test_tuple_3d]")
     // REQUIRE(fid1 == fid2);
 }
 
-TEST_CASE("switch_tet", "[test_tuple_3d]")
+TEST_CASE("3D_switch_tet", "[test_tuple_3d]")
 {
     REQUIRE(false);
 
@@ -154,7 +154,7 @@ TEST_CASE("switch_tet", "[test_tuple_3d]")
 }
 
 
-TEST_CASE("switch_face_tet", "[test_tuple_3d]")
+TEST_CASE("3D_switch_face_tet", "[test_tuple_3d]")
 {
     REQUIRE(false);
 
@@ -169,7 +169,7 @@ TEST_CASE("switch_face_tet", "[test_tuple_3d]")
     // REQUIRE(edge0 == edge1);
 }
 
-TEST_CASE("count_edge_on_boundary", "[test_tuple_3d]")
+TEST_CASE("3D_count_edge_on_boundary", "[test_tuple_3d]")
 {
     REQUIRE(false);
 
@@ -184,7 +184,7 @@ TEST_CASE("count_edge_on_boundary", "[test_tuple_3d]")
     // REQUIRE(cnt == 9);
 }
 
-TEST_CASE("tuple_iterator", "[test_tuple_3d]")
+TEST_CASE("3D_tuple_iterator", "[test_tuple_3d]")
 {
     REQUIRE(false);
 
