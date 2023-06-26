@@ -45,10 +45,10 @@ MeshAttributes<T>::register_attribute(const std::string& name, long size, bool r
         assert(m_initial_stride > 0);
         assert(m_attributes.front().size() % m_initial_stride == 0);
 
-        m_attributes.back().resize((m_attributes.front().size() / m_initial_stride) * size);
+        m_attributes.back().resize((m_attributes.front().size() / m_initial_stride) * size, T(0));
     } else if (m_internal_size > 0) {
         // first attribute and resize called
-        m_attributes.front().resize(size * m_internal_size);
+        m_attributes.front().resize(size * m_internal_size, T(0));
     }
 
 
