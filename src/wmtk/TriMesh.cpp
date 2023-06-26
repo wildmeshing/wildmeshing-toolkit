@@ -18,6 +18,8 @@ void TriMesh::split_edge(const Tuple& t)
 {
     // delete star(edge)
 
+    // record the deleted simplices topology attributes
+
     // create new vertex
 
     // create new edges
