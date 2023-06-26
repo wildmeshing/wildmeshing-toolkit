@@ -63,21 +63,25 @@ public:
     bool operator==(const Mesh& other) const;
 
     virtual bool is_connectivity_valid() const;
+protected:// member functions
+    Accessor<char> get_flag_accessor(PrimitiveType type);
+    Accessor<long> get_cell_hash_accessor();
 
-protected:
+    // provides new simplices - should ONLY be called in our atomic topological operations
+    // all returned simplices are active (i.e their flags say they exist)
+    [[nodiscard]] std::vector<long> request_simplex_indices(PrimitiveType type, long count);
+
+protected:// members
     std::vector<MeshAttributes<char>> m_char_attributes;
     std::vector<MeshAttributes<long>> m_long_attributes;
     std::vector<MeshAttributes<double>> m_double_attributes;
 
-    Accessor<char> get_flag_accessor(PrimitiveType type);
-    Accessor<long> get_cell_hash_accessor();
-
-private:
+private:// members
     std::vector<long> m_capacities;
 
     /**
-     * @brief   0x1 == true = is active (simplex exists)
-     *          all flag defaul to 0 (simplex doesn't exist)
+     * @brief   0x1 == true = simplex is active (simplex exists)
+     *          all flag defaul to 0
      *
      */
     std::vector<MeshAttributeHandle<char>> m_flag_handles;
