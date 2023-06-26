@@ -6,6 +6,8 @@
 #include <catch2/catch.hpp>
 
 #include <igl/read_triangle_mesh.h>
+#include <igl/readMESH.h>
+#include <igl/readMSH.h>
 
 #include <stdlib.h>
 #include <iostream>
@@ -240,6 +242,58 @@ TEST_CASE("tetmesh_topology_initialization_2", "[test_topology_two_tedrahedra_2]
     CHECK(TE.maxCoeff() == 12 - 1);
     CHECK(TF.maxCoeff() == 8 - 1);
     CHECK(TT.maxCoeff() == -1);
+
+    // 2. Test the relationship between ET and TE
+    for (int i = 0; i < ET.size(); ++i) {
+        CHECK((TE.row(ET(i)).array() == i).any());
+    }
+
+    // 3. Test the relationship between FT and TF
+    for (int i = 0; i < FT.size(); ++i) {
+        CHECK((TF.row(FT(i)).array() == i).any());
+    }
+
+    // 4. Test the relationship between VT and T
+    for (int i = 0; i < VT.size(); ++i) {
+        if (VT(i) < 0) continue;
+        CHECK((T.row(VT(i)).array() == i).any());
+    }
+
+    // 5. Test the relationship between TT and TF and TE
+    for (int i = 0; i < TT.rows(); ++i) {
+        for (int j = 0; j < 4; ++j) {
+            long nb = TT(i, j);
+            if (nb < 0) continue;
+
+            CHECK((TT.row(nb).array() == i).any());
+
+            if ((TT.row(nb).array() == i).any()) {
+                int cnt = (TT.row(nb).array() == i).count();
+                CHECK(cnt == 1);
+
+                auto is_nb = (TT.row(nb).array() == i);
+                for (int k = 0; k < 4; ++k) {
+                    if (is_nb(k)) {
+                        // wmtk::logger().info("{} {} {} {}", i, j, nb, k);
+                        CHECK(TF(i, j) == TF(nb, k));
+                    }
+                }
+            }
+        }
+    }
+}
+
+TEST_CASE("tetmesh_topology_initialization_3", "[test_topology_two_tedrahedra_3]")
+{
+    Eigen::MatrixXd V;
+    Eigen::Matrix<long, -1, -1> T, F;
+    igl::readMESH(WMTK_DATA_DIR "/bunny.mesh", V, T, F);
+
+    auto [TE, TF, TT, VT, ET, FT] = tetmesh_topology_initialization(T);
+
+    // 1. Test the maximum in TE and TF
+    CHECK(TE.maxCoeff() == (ET.size() - 1));
+    CHECK(TF.maxCoeff() == (FT.size() - 1));
 
     // 2. Test the relationship between ET and TE
     for (int i = 0; i < ET.size(); ++i) {

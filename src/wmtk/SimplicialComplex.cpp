@@ -300,7 +300,7 @@ SimplicialComplex SimplicialComplex::open_star(const Simplex& s, const Mesh& m)
 
 bool SimplicialComplex::link_cond(Tuple t, const Mesh& m)
 {
-    SimplicialComplex lnk_a = link(Simplex(PrimitiveType::Vertex, t), m); // lnk(a)    
+    SimplicialComplex lnk_a = link(Simplex(PrimitiveType::Vertex, t), m); // lnk(a)
     SimplicialComplex lnk_b = link(
         Simplex(PrimitiveType::Vertex, m.switch_tuple(t, PrimitiveType::Vertex)),
         m); // lnk(b)
@@ -315,7 +315,8 @@ std::vector<Simplex> SimplicialComplex::vertex_one_ring(Tuple t, const Mesh& m)
 {
     Simplex s(PrimitiveType::Vertex, t);
     const SimplicialComplex sc_link = link(s, m);
-    return sc_link.get_simplex_vector();
+    auto vs = sc_link.get_simplices(PrimitiveType::Vertex);
+    return std::vector<Simplex>(vs.begin(), vs.end());
 }
 
 std::vector<Simplex> SimplicialComplex::k_ring(Tuple t, const Mesh& m, int k)
@@ -331,7 +332,8 @@ std::vector<Simplex> SimplicialComplex::k_ring(Tuple t, const Mesh& m, int k)
         }
     }
 
-    return sc.get_simplex_vector();
+    auto vs = sc.get_simplices(PrimitiveType::Vertex);
+    return std::vector<Simplex>(vs.begin(), vs.end());
 }
 
 } // namespace wmtk

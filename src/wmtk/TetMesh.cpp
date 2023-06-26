@@ -252,7 +252,7 @@ long TetMesh::id(const Tuple& tuple, const PrimitiveType& type) const
 Tuple TetMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
 {
     assert(is_valid(tuple));
-    int offset = tuple.m_local_vid * 6 * 4 + tuple.m_local_eid * 6 + tuple.m_local_fid;
+    const long offset = tuple.m_local_vid * 6 * 4 + tuple.m_local_eid * 4 + tuple.m_local_fid;
     // bool ccw = is_ccw(tuple);
     switch (type) {
     case PrimitiveType::Vertex:
@@ -287,13 +287,13 @@ Tuple TetMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
 bool TetMesh::is_ccw(const Tuple& tuple) const
 {
     assert(is_valid(tuple));
-    const long offset = tuple.m_local_vid * 6 * 4 + tuple.m_local_eid * 6 + tuple.m_local_fid;
+    const long offset = tuple.m_local_vid * 6 * 4 + tuple.m_local_eid * 4 + tuple.m_local_fid;
     return autogen::auto_3d_table_ccw[offset][0] == 1;
 }
 
 bool TetMesh::is_valid(const Tuple& tuple) const
 {
-    const long offset = tuple.m_local_vid * 6 * 4 + tuple.m_local_eid * 6 + tuple.m_local_fid;
+    const long offset = tuple.m_local_vid * 6 * 4 + tuple.m_local_eid * 4 + tuple.m_local_fid;
     return auto_3d_table_ccw[offset][0] >= 0;
 }
 
