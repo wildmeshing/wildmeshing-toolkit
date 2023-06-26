@@ -42,6 +42,8 @@ public:
 
     bool is_valid(const Tuple& tuple) const override;
 
+    bool is_connectivity_valid() const override;
+
 protected:
     long id(const Tuple& tuple, const PrimitiveType& type) const override;
 
