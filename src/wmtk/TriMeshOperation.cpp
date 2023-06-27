@@ -6,10 +6,9 @@ namespace wmtk
 {
 class TriMesh::TriMeshOperationState
 {
-    TriMeshOperationState(TriMesh &m, Tuple operating_tuple);
-    void delete_simplices(
-    const std::vector<std::vector<wmtk::Simplex>>& simplices,
-    TriMesh::TriMeshOperationState& state);
+    public:
+    TriMeshOperationState(TriMesh &m, const Tuple &operating_tuple);
+    void delete_simplices( const std::vector<Simplex>& simplices, TriMesh::TriMeshOperationState& state);
 
     std::array<Accessor<char>, 3> flag_accessors;
 
@@ -37,7 +36,7 @@ class TriMesh::TriMeshOperationState
 };
 
 // constructor
-TriMesh::TriMeshOperationState::TriMeshOperationState(TriMesh &m, Tuple operating_tuple)
+TriMesh::TriMeshOperationState::TriMeshOperationState(TriMesh &m, const Tuple &operating_tuple)
     : flag_accessors({{m.get_flag_accessor(PrimitiveType::Vertex),
                        m.get_flag_accessor(PrimitiveType::Edge),
                        m.get_flag_accessor(PrimitiveType::Face)}})
@@ -49,10 +48,10 @@ TriMesh::TriMeshOperationState::TriMeshOperationState(TriMesh &m, Tuple operatin
     , edge_tuple(operating_tuple)
     , m_mesh(m)
 {
-    auto get_ears = [&](Tuple edge_tuple) -> std::array<std::optional<Tuple>, 2> {
+    auto get_ears = [&](Tuple e_tuple) -> std::array<std::optional<Tuple>, 2> {
         std::array<std::optional<Tuple>, 2> ears;
-        Tuple t1_edge = m_mesh.switch_tuple(edge_tuple, PrimitiveType::Edge);
-        Tuple t2_edge = m_mesh.switch_tuple(edge_tuple, PrimitiveType::Vertex);
+        Tuple t1_edge = m_mesh.switch_tuple(e_tuple, PrimitiveType::Edge);
+        Tuple t2_edge = m_mesh.switch_tuple(e_tuple, PrimitiveType::Vertex);
         t2_edge = m_mesh.switch_tuple(t2_edge, PrimitiveType::Edge);
 
         ears[0] = m_mesh.is_boundary(t1_edge)
@@ -63,22 +62,71 @@ TriMesh::TriMeshOperationState::TriMeshOperationState(TriMesh &m, Tuple operatin
                       : std::optional<Tuple>(m_mesh.switch_tuple(t2_edge, PrimitiveType::Face));
         return ears;
     };
-    edge_neighbors.emplace_back(get_ears(operating_tuple));
+    edge_neighbors.emplace_back(get_ears(edge_tuple));
 
-    if (!m_mesh.is_boundary(operating_tuple)) {
-        Tuple other_face = m_mesh.switch_tuple(operating_tuple, PrimitiveType::Face);
+    if (!m_mesh.is_boundary(edge_tuple)) {
+        Tuple other_face = m_mesh.switch_tuple(edge_tuple, PrimitiveType::Face);
         edge_neighbors.emplace_back(get_ears(other_face));
     }
 };
 
 void TriMesh::TriMeshOperationState::delete_simplices(
-    const std::vector<std::vector<wmtk::Simplex>>& simplices,
+    const std::vector<wmtk::Simplex>& simplices,
     TriMesh::TriMeshOperationState& state)
 {
-    for (const auto& simplices_d : simplices) {
-        for (const Simplex& simplex : simplices_d) {
-            state.flag_accessors[simplex.dimension()].scalar_attribute(simplex.tuple()) = 0;
-        }
+    for (const Simplex& simplex : simplices) {
+        state.flag_accessors[simplex.dimension()].scalar_attribute(simplex.tuple()) = 0;
+    }
+}
+
+void TriMesh::collapse_edge(const Tuple& t)
+{
+    constexpr PrimitiveType PV = PrimitiveType::Vertex;
+    constexpr PrimitiveType PE = PrimitiveType::Edge;
+    constexpr PrimitiveType PF = PrimitiveType::Face;
+    auto sw = [this](const Tuple& tt, const PrimitiveType& ptype) { return this->switch_tuple(tt, ptype); };
+    
+    bool is_t_boudanry = is_boundary(t);
+    TriMeshOperationState state(*this, t);
+    
+    Simplex V_A(PV, t), V_B(PV, sw(t, PV));
+    Simplex E_AB(PE, t), E_BC(PE, sw(sw(t, PV), PE)), E_AC(PE, sw(t, PE));
+    Simplex FA(PF, t);
+    long V_A_id = id(V_A.tuple(), PV);
+    long V_B_id = id(V_B.tuple(), PV);
+    long E_AB_id = id(E_AB.tuple(), PE);
+    long E_BC_id = id(E_BC.tuple(), PE);
+    long E_AC_id = id(E_AC.tuple(), PE);
+    long FA_id = id(FA.tuple(), PF);
+
+    std::vector<Simplex> simplices_other_side;
+    std::vector<long> simplices_other_side_id;
+    if (!is_t_boudanry)
+    {
+        // FB
+        simplices_other_side.push_back(Simplex(PF, sw(t, PF)));
+        simplices_other_side_id.push_back(id(simplices_other_side.back().tuple(), PF));
+        // AD
+        simplices_other_side.push_back(Simplex(PE, sw(sw(t, PF), PE)));
+        simplices_other_side_id.push_back(id(simplices_other_side.back().tuple(), PE));
+        // BD
+        simplices_other_side.push_back(Simplex(PE, sw(sw(sw(t, PF), PV), PE)));
+        simplices_other_side_id.push_back(id(simplices_other_side.back().tuple(), PE));
+        // D
+        simplices_other_side.push_back(Simplex(PV, sw(sw(sw(t, PF), PE), PV)));
+        simplices_other_side_id.push_back(id(simplices_other_side.back().tuple(), PV));
+
+    }
+
+    std::vector<Simplex> simplices_to_delete;
+    simplices_to_delete.push_back(V_B);
+    simplices_to_delete.push_back(E_BC);
+    simplices_to_delete.push_back(E_AB);
+    simplices_to_delete.push_back(FA);
+    if (!is_t_boudanry)
+    {
+        simplices_to_delete.push_back(simplices_other_side[0]); // FB
+        simplices_to_delete.push_back(simplices_other_side[2]); // BD
     }
 }
 
