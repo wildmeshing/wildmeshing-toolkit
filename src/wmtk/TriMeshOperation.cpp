@@ -25,7 +25,7 @@ class TriMesh::TriMeshOperationSate
     //         \  /
 
     // the neighbors are stored in the order of A, B, C, D if they exist
-    std::vector<std::array<std::optional<Tuple>, 2>> neighbors;
+    std::vector<std::array<std::optional<Tuple>, 2>> edge_neighbors;
 };
 
 // constructor
@@ -54,11 +54,11 @@ TriMeshOperationSate::TriMeshOperationState(Tuple operating_tuple)
                       : std::optional<Tuple>(switch_tuple(t2_edge, PrimitiveType::Face));
         return ears;
     };
-    neighbors.emplace_back(get_ears(operating_tuple));
+    edge_neighbors.emplace_back(get_ears(operating_tuple));
 
     if (!is_boundary(operating_edge)) {
         Tuple other_face = switch_tuple(operating_edge, PrimitiveType::Face);
-        neighbors.emplace_back(get_ears(other_face));
+        edge_neighbors.emplace_back(get_ears(other_face));
     }
 }
 
