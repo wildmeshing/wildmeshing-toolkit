@@ -11,6 +11,7 @@ set(SRC_FILES
     TriMesh.hpp
     TetMesh.cpp
     TetMesh.hpp
+    TriMeshOperation.cpp
     Primitive.hpp
     Tuple.hpp
     Types.hpp

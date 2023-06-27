@@ -17,6 +17,9 @@ public:
     {}
 
     PrimitiveType primitive_type() const { return _ptype; }
+    long dimension() const{
+        return get_simplex_dimension(_ptype);
+    }
     const Tuple& tuple() const { return _tuple; }
 };
 } // namespace wmtk
