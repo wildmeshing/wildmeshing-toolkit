@@ -39,19 +39,21 @@ class TriMesh::TriMeshOperationState
 
     struct SimplexSet
     {
-        long V_C_id;
-        long E_AB_id;
-        long E_BC_id;
-        long E_AC_id;
-        long F_ABC_id;
-        long F1_id;
-        long F2_id;
+        long V_C_id; // opposing vid
+        long E_AB_id;  // not necessary / stored in common
+        long E_BC_id; // left ear eid
+        long E_AC_id; // right ear eid
+        long F_ABC_id; // deleted fid
+        long F1_id; // left ear fid
+        long F2_id; // right ear fid
     };
+
+
 
     // common simplicies
     Simplex V_A, V_B, E_AB;
     long V_A_id, V_B_id, E_AB_id;
-    // other simplicies    
+    // simplices required per-face (other than those above)
     std::vector<SimplexSet> SimplexSets;
 
     std::vector<std::vector<long>> simplices_to_delete; // size 3 for vertex, edge, face
@@ -136,31 +138,43 @@ void TriMesh::TriMeshOperationState::merge()
         }
 
         // change VF for V_A,V_C
-        vf_accessor.scalar_attribute(V_A_id) = (SimplexSets[set_ind].F1_id < 0) ? SimplexSets[set_ind].F2_id : SimplexSets[set_ind].F1_id;
-        vf_accessor.scalar_attribute(SimplexSets[set_ind].V_C_id) = vf_accessor.scalar_attribute(V_A_id);
+        {
+            long& vf_a = vf_accessor.scalar_attribute(V_A_id);
+            const long f1 = SimplexSets[set_ind].F1_id;
+            const long f2 = SimplexSets[set_ind].F2_id;
+            vf_a = ( f1 < 0) ? f2 : f1;
+            vf_accessor.scalar_attribute(SimplexSets[set_ind].V_C_id) = vf_a;
+        }
         // change EF for E_AC
         ef_accessor.scalar_attribute(SimplexSets[set_ind].E_AC_id) = vf_accessor.scalar_attribute(V_A_id);
         // change FF and FE for  F1,F2
-        auto change_ff_fe = [set_ind, this](long fid_one, long fid_other) {
-            if (fid_one >= 0)
-            {
-                long index = 0;
-                while (index < 2 && this->ff_accessor.vector_attribute(fid_one)[index] != this->SimplexSets[set_ind].F_ABC_id)
-                {
-                    index++;
-                }
-                assert(this->ff_accessor.vector_attribute(fid_one)[index] == this->SimplexSets[set_ind].F_ABC_id); // assert find F_ABC in FF(f_one)
-                this->ff_accessor.vector_attribute(fid_one)[index] = fid_other;
-                this->fe_accessor.vector_attribute(fid_one)[index] = this->SimplexSets[set_ind].E_AC_id;
-            }
-        };
-        change_ff_fe(SimplexSets[set_ind].F1_id, SimplexSets[set_ind].F2_id);
-        change_ff_fe(SimplexSets[set_ind].F2_id, SimplexSets[set_ind].F1_id);
+
+        change_ff_fe(SimplexSets[set_ind],false);
+        change_ff_fe(SimplexSets[set_ind],true);
 
         simplices_to_delete[1].push_back(SimplexSets[set_ind].E_BC_id);
         simplices_to_delete[2].push_back(SimplexSets[set_ind].F_ABC_id);
     }
 };
+
+void TriMeshOperationState::change_ff_fe(const SimplexSet& set, bool first) {
+    long my_fid = set.F1_id;
+    long other_fid = set.F2_id;
+    if(!first) {
+        std::swap(my_fid,other_fid);
+    }
+    if (my_fid >= 0)
+    {
+        long index = 0;
+        while (index < 2 && this->ff_accessor.vector_attribute(my_fid)[index] != set.F_ABC_id)
+        {
+            index++;
+        }
+        assert(this->ff_accessor.vector_attribute(my_fid)[index] == set.F_ABC_id); // assert find F_ABC in FF(f_one)
+        this->ff_accessor.vector_attribute(my_fid)[index] = other_fid;
+        this->fe_accessor.vector_attribute(my_fid)[index] = set.E_AC_id;
+    }
+}
 
 void TriMesh::collapse_edge(const Tuple& t)
 {
@@ -184,7 +198,6 @@ void TriMesh::collapse_edge(const Tuple& t)
         for (long index = 0; index < 3; index++)
         {
             if (state.fv_accessor.vector_attribute(f)[index] == state.V_B_id)
-            {
                 state.fv_accessor.vector_attribute(f)[index] = state.V_A_id;
                 break;
             }
