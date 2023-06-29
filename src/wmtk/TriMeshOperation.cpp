@@ -130,13 +130,13 @@ void TriMesh::TriMeshOperationState::merge()
     simplices_to_delete[1].push_back(E_AB_id);
     for (int set_ind = 0; set_ind < SimplexSets.size(); set_ind++)
     {
-        if (SimplexSets[set_ind].F1_id == -1 && SimplexSets[set_ind].F2_id == -1)
+        if (SimplexSets[set_ind].F1_id < 0 && SimplexSets[set_ind].F2_id < 0)
         {
-            return; // TODO: throw exception
+            return; // TODO: throw exception, should be detected by link condition
         }
 
         // change VF for V_A,V_C
-        vf_accessor.scalar_attribute(V_A_id) = (SimplexSets[set_ind].F1_id == -1) ? SimplexSets[set_ind].F2_id : SimplexSets[set_ind].F1_id;
+        vf_accessor.scalar_attribute(V_A_id) = (SimplexSets[set_ind].F1_id < 0) ? SimplexSets[set_ind].F2_id : SimplexSets[set_ind].F1_id;
         vf_accessor.scalar_attribute(SimplexSets[set_ind].V_C_id) = vf_accessor.scalar_attribute(V_A_id);
         // change EF for E_AC
         ef_accessor.scalar_attribute(SimplexSets[set_ind].E_AC_id) = vf_accessor.scalar_attribute(V_A_id);
