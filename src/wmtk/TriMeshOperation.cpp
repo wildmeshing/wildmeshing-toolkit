@@ -142,7 +142,7 @@ void TriMesh::TriMeshOperationState::merge()
         ef_accessor.scalar_attribute(SimplexSets[set_ind].E_AC_id) = vf_accessor.scalar_attribute(V_A_id);
         // change FF and FE for  F1,F2
         auto change_ff_fe = [set_ind, this](long fid_one, long fid_other) {
-            if (fid_one != -1)
+            if (fid_one >= 0)
             {
                 long index = 0;
                 while (index < 2 && this->ff_accessor.vector_attribute(fid_one)[index] != this->SimplexSets[set_ind].F_ABC_id)
