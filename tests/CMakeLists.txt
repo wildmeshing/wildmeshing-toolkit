@@ -11,7 +11,7 @@ set(TEST_SOURCES
 	test_tuple_2d.cpp
 	test_tuple_3d.cpp
     test_io.cpp
-    test_SC.cpp
+    test_simplicial_complex.cpp
 )
 add_executable(wmtk_tests ${TEST_SOURCES})
 
