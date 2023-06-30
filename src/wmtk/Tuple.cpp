@@ -16,8 +16,8 @@ Tuple::Tuple(long local_vid, long local_eid, long local_fid, long global_cid, lo
 {}
 
 //         v2
-//       /    \
-    //  e1  /      \  e0
+//       /    \ .
+//  e1  /      \  e0
 //     v0 - - - v1
 //         e2
 
@@ -27,10 +27,19 @@ Tuple::Tuple(Tuple&& other) = default;
 Tuple& Tuple::operator=(const Tuple& other) = default;
 Tuple& Tuple::operator=(Tuple&& other) = default;
 
+bool Tuple::operator!=(const wmtk::Tuple& t) const
+{
+    return !(*this == t);
+}
 bool Tuple::operator==(const wmtk::Tuple& t) const
 {
     return std::tie(m_local_vid, m_local_eid, m_local_fid, m_global_cid, m_hash) ==
            std::tie(t.m_local_vid, t.m_local_eid, t.m_local_fid, t.m_global_cid, t.m_hash);
+}
+bool Tuple::same_ids(const wmtk::Tuple& t) const
+{
+    return std::tie(m_local_vid, m_local_eid, m_local_fid, m_global_cid ) ==
+           std::tie(t.m_local_vid, t.m_local_eid, t.m_local_fid, t.m_global_cid);
 }
 
 } // namespace wmtk

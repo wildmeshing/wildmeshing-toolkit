@@ -7,6 +7,7 @@ include(Catch)
 # Sources
 set(TEST_SOURCES
 	test_topology.cpp
+    test_tuple.cpp
     test_tuple_2d.cpp
 	test_tuple_3d.cpp
     test_io.cpp
