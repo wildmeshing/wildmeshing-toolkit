@@ -1,5 +1,5 @@
 #include <stdlib.h>
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <iostream>
 //#include <igl/read_triangle_mesh.h>
 #include <wmtk/utils/trimesh_topology_initialization.h>

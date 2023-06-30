@@ -6,9 +6,8 @@ include(Catch)
 
 # Sources
 set(TEST_SOURCES
-	main.cpp
 	test_topology.cpp
-	test_tuple_2d.cpp
+    test_tuple_2d.cpp
 	test_tuple_3d.cpp
     test_io.cpp
     test_simplicial_complex.cpp
@@ -27,7 +26,7 @@ lagrange_include_modules(io)
 target_link_libraries(wmtk_tests PUBLIC
     wmtk::toolkit
     wmtk::data
-    Catch2::Catch2
+    Catch2::Catch2WithMain
     lagrange::io
 )
 wmtk_copy_dll(wmtk_tests)

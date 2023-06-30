@@ -6,7 +6,7 @@
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/utils/MeshUtils.hpp>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include <igl/read_triangle_mesh.h>
 

@@ -2,7 +2,7 @@
 // Psudo code now
 
 // #include "SimplicialComplex.hpp"
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
