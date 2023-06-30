@@ -94,12 +94,12 @@ TriMesh::TriMeshOperationState::PerFaceData TriMesh::TriMeshOperationState::get_
     t2_edge = m_mesh.switch_tuple(t2_edge, PE);
 
     face_data.ears[0] =
-        EarGlobalIDs{.fid = ff_accessor.vector_attribute(t1_edge)(t1_edge.m_local_eid),
-                     .eid = m_mesh.id(t1_edge, PE)};
+        EarGlobalIDs{/*.fid = */ff_accessor.vector_attribute(t1_edge)(t1_edge.m_local_eid),
+                     /*.eid = */m_mesh.id(t1_edge, PE)};
 
     face_data.ears[1] =
-        EarGlobalIDs{.fid = ff_accessor.vector_attribute(t2_edge)(t2_edge.m_local_eid),
-                     .eid = m_mesh.id(t2_edge, PE)};
+        EarGlobalIDs{/*.fid = */ff_accessor.vector_attribute(t2_edge)(t2_edge.m_local_eid),
+                     /*.eid = */m_mesh.id(t2_edge, PE)};
 
     return face_data;
 }
@@ -156,12 +156,12 @@ void TriMesh::TriMeshOperationState::glue_ear_to_face(
 {
     if (ear_fid < 0) return;
 
-    // auto& ear_ff = ff_accessor.vector_attribute(ear_fid);
-    // auto& ear_fe = fe_accessor.vector_attribute(ear_fid);
+    auto ear_ff = ff_accessor.vector_attribute(ear_fid);
+    auto ear_fe = fe_accessor.vector_attribute(ear_fid);
     for (int i = 0; i < 3; i++) {
-        if (ff_accessor.vector_attribute(ear_fid)(i) == old_fid) {
-            ff_accessor.vector_attribute(ear_fid)(i) = new_face_fid;
-            fe_accessor.vector_attribute(ear_fid)(i) = eid;
+        if (ear_ff(i) == old_fid) {
+            ear_ff(i) = new_face_fid;
+            ear_fe(i) = eid;
             break;
         }
     }
