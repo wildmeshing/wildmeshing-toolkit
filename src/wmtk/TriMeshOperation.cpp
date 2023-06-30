@@ -329,8 +329,9 @@ std::array<long, 2> TriMesh::TriMeshOperationState::glue_new_triangle_topology(
     ef_accessor.scalar_attribute(spine_eid) = new_fids[0];
     // VF of opposing vertex
     // vf_accessor.scalar_attribute(end_point_vids[i]) = new_fids[0];  // TODO: ?????
-    vf_accessor.scalar_attribute(face_data.VC_id) = new_fids[0];
-    return std::array<long, 2>(new_fids);
+    vf_accessor.scalar_attribute(face_data.V_C_id) = new_fids[0];
+
+    return {new_fids[0], new_fids[1]};
 }
 
 void TriMesh::split_edge(const Tuple& t)
@@ -343,7 +344,7 @@ void TriMesh::TriMeshOperationState::split_edge()
 {
     // delete star(edge)
     SimplicialComplex edge_open_star =
-        wmtk::SimplicialComplex::open_star(Simplex(PrimitiveType::Edge, m_operating_tuple), *this);
+        wmtk::SimplicialComplex::open_star(Simplex(PrimitiveType::Edge, m_operating_tuple), m_mesh);
 
     for (const auto& simplex_d : edge_open_star) {
         simplices_to_delete[simplex_d.dimension()].emplace_back(
