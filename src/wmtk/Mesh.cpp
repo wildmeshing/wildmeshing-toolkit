@@ -62,13 +62,13 @@ Mesh::register_attribute(const std::string& name, PrimitiveType ptype, long size
     return r;
 }
 
-std::vector<long> Mesh::request_simplex_indices(PrimitiveType type, long count) {
-
+std::vector<long> Mesh::request_simplex_indices(PrimitiveType type, long count)
+{
     // passses back a set of new consecutive ids. in hte future this could do
     // something smarter for re-use but that's probably too much work
     long current_capacity = capacity(type);
     std::vector<long> ret(count);
-    std::iota(ret.begin(),ret.end(),current_capacity);
+    std::iota(ret.begin(), ret.end(), current_capacity);
 
 
     long new_capacity = ret.back() + 1;
@@ -78,7 +78,7 @@ std::vector<long> Mesh::request_simplex_indices(PrimitiveType type, long count) 
 
     // enable newly requested simplices
     Accessor<char> flag_accessor = get_flag_accessor(type);
-    for(const long simplex_index: ret) {
+    for (const long simplex_index : ret) {
         flag_accessor.scalar_attribute(simplex_index) |= 0x1;
     }
 
@@ -148,6 +148,8 @@ Accessor<long> Mesh::get_cell_hash_accessor()
 
 void Mesh::set_capacities_from_flags()
 {
+    // for(long
+
     throw "not implemented";
 }
 
@@ -177,6 +179,7 @@ std::vector<std::vector<long>> Mesh::simplices_to_gids(
 
 bool Mesh::is_connectivity_valid() const
 {
+    throw "not implemented";
     wmtk::logger().warn("This function is not implemented");
 
     return true;

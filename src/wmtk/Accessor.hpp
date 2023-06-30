@@ -51,6 +51,9 @@ public:
 
     void set_attribute(const std::vector<T>& value);
 
+    //returns the size of the underlying attribute
+    long size() const;
+
 private:
     ConstMapResult vector_attribute(const long index) const;
     MapResultT vector_attribute(const long index);

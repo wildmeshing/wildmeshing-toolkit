@@ -260,4 +260,94 @@ bool TriMesh::is_valid(const Tuple& tuple) const
            autogen::auto_2d_table_ccw[offset][0] >= 0;
 }
 
+bool TriMesh::is_connectivity_valid() const
+{
+
+    // get Accessors for topology
+    ConstAccessor<long> fv_accessor = create_accessor<long>(m_fv_handle);
+    ConstAccessor<long> fe_accessor = create_accessor<long>(m_fe_handle);
+    ConstAccessor<long> ff_accessor = create_accessor<long>(m_ff_handle);
+    ConstAccessor<long> vf_accessor = create_accessor<long>(m_vf_handle);
+    ConstAccessor<long> ef_accessor = create_accessor<long>(m_ef_handle);
+
+    // EF and FE
+    for (long i = 0; i < capacity(PrimitiveType::Edge); ++i) 
+    {
+        int cnt = 0;
+        for (long j = 0; j < 3; ++j)
+        {
+            if (fe_accessor.vector_attribute(ef_accessor.scalar_attribute(i))[j] == i)
+            {
+                cnt++;
+            }
+        }
+        if (cnt != 1)
+        {
+            // std::cout << "EF and FE not compatible" << std::endl;
+            return false;
+        }
+
+    } 
+
+    // VF and FV
+    for (long i = 0; i < capacity(PrimitiveType::Vertex); ++i)
+    {
+        int cnt = 0;
+        for (long j = 0; j < 3; ++j)
+        {
+            if (fv_accessor.vector_attribute(vf_accessor.scalar_attribute(i))[j] == i)
+            {
+                cnt++;
+            }
+        }
+        if (cnt != 1)
+        {
+            // std::cout << "VF and FV not compatible" << std::endl;
+            return false;
+        }
+    }
+
+    // FE and EF
+    for (long i = 0; i < capacity(PrimitiveType::Face); ++i)
+    {
+        for (long j = 0; j < 3; ++j)
+        {
+            long nb = ff_accessor.vector_attribute(i)[j];
+            if (nb == -1)
+            {
+                if (ef_accessor.scalar_attribute(fe_accessor.vector_attribute(i)[j]) != i)
+                {
+                    // std::cout << "FF and FE not compatible" << std::endl;
+                    return false;
+                }
+                continue;
+            }
+
+            int cnt = 0;
+            int id_in_nb;
+            for (long k = 0; k < 3; ++k)
+            {
+                if (ff_accessor.vector_attribute(nb)[k] == i)
+                {
+                    cnt++;
+                    id_in_nb = k;
+                }
+            }
+
+            if (cnt != 1)
+            {
+                // std::cout << "FF not valid" << std::endl;
+                return false;
+            }
+
+            if (fe_accessor.vector_attribute(i)[j] != fe_accessor.vector_attribute(nb)[id_in_nb])
+            {
+                // std::cout << "FF and FE not compatible" << std::endl;
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
 } // namespace wmtk
