@@ -177,14 +177,6 @@ std::vector<std::vector<long>> Mesh::simplices_to_gids(
     return gids;
 }
 
-bool Mesh::is_connectivity_valid() const
-{
-    throw "not implemented";
-    wmtk::logger().warn("This function is not implemented");
-
-    return true;
-}
-
 template MeshAttributeHandle<char>
 Mesh::register_attribute(const std::string&, PrimitiveType, long, bool);
 template MeshAttributeHandle<long>
