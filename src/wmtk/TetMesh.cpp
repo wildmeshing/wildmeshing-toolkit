@@ -6,6 +6,9 @@
 #include <wmtk/utils/Logger.hpp>
 
 namespace wmtk {
+
+using namespace autogen;
+
 TetMesh::TetMesh()
     : Mesh(4)
     , m_vt_handle(register_attribute<long>("m_vt", PrimitiveType::Vertex, 1))
@@ -89,7 +92,7 @@ Tuple TetMesh::vertex_tuple_from_id(long id) const
     auto t = vt_accessor.scalar_attribute(id);
     ConstAccessor<long> tv_accessor = create_accessor<long>(m_tv_handle);
     auto tv = tv_accessor.vector_attribute(t);
-    long lvid = -1, lvid2 = -1, leid = -1, lfid = -1;
+    long lvid = -1, leid = -1, lfid = -1;
 
     for (long i = 0; i < 4; ++i) {
         if (tv(i) == id) {
@@ -98,30 +101,10 @@ Tuple TetMesh::vertex_tuple_from_id(long id) const
         }
     }
 
-    for (long i = 0; i < 6; ++i) {
-        for (long j = 0; j < 2; ++j) {
-            if (auto_3d_edges[i][j] == lvid) {
-                leid = i;
-                lvid2 = auto_3d_edges[i][(j + 1) % 2];
-                break;
-            }
-        }
-        if (leid >= 0) break;
-    }
+    assert(auto_3d_table_complete_vertex[lvid][0] == lvid);
 
-
-    for (long i = 0; i < 4; ++i) {
-        int counter = 0;
-        for (long j = 0; j < 3; ++j) {
-            if (auto_3d_faces[i][j] == lvid || auto_3d_faces[i][j] == lvid2) {
-                ++counter;
-            }
-        }
-        if (counter == 2) {
-            lfid = i;
-            break;
-        }
-    }
+    leid = auto_3d_table_complete_vertex[lvid][1];
+    lfid = auto_3d_table_complete_vertex[lvid][2];
 
     if (lvid < 0 || leid < 0 || lfid < 0) throw std::runtime_error("vertex_tuple_from_id failed");
 
@@ -147,21 +130,10 @@ Tuple TetMesh::edge_tuple_from_id(long id) const
         }
     }
 
-    lvid = auto_3d_edges[leid][0];
-    long lvid2 = auto_3d_edges[leid][1];
+    assert(auto_3d_table_complete_edge[leid][1] == leid);
 
-    for (long i = 0; i < 4; ++i) {
-        int counter = 0;
-        for (long j = 0; j < 3; ++j) {
-            if (auto_3d_faces[i][j] == lvid || auto_3d_faces[i][j] == lvid2) {
-                ++counter;
-            }
-        }
-        if (counter == 2) {
-            lfid = i;
-            break;
-        }
-    }
+    lvid = auto_3d_table_complete_edge[leid][0];
+    lfid = auto_3d_table_complete_edge[leid][2];
 
     if (lvid < 0 || leid < 0 || lfid < 0) throw std::runtime_error("edge_tuple_from_id failed");
 
@@ -187,17 +159,10 @@ Tuple TetMesh::face_tuple_from_id(long id) const
         }
     }
 
-    lvid = auto_3d_faces[lfid][0];
+    assert(auto_3d_table_complete_face[lfid][2] == lfid);
 
-    for (long i = 0; i < 6; ++i) {
-        for (long j = 0; j < 2; ++j) {
-            if (auto_3d_edges[i][j] == lvid) {
-                leid = i;
-                break;
-            }
-        }
-        if (leid >= 0) break;
-    }
+    lvid = auto_3d_table_complete_face[lfid][0];
+    leid = auto_3d_table_complete_face[lfid][1];
 
     if (lvid < 0 || leid < 0 || lfid < 0) throw std::runtime_error("face_tuple_from_id failed");
 
@@ -209,18 +174,12 @@ Tuple TetMesh::face_tuple_from_id(long id) const
 
 Tuple TetMesh::tet_tuple_from_id(long id) const
 {
-    long lvid = -1, leid = 0, lfid = -1;
-    lvid = auto_3d_edges[leid][0];
+    long lvid = 0, leid = -1, lfid = -1;
 
-    for (long i = 0; i < 4; ++i) {
-        for (long j = 0; j < 3; ++j) {
-            if (auto_3d_faces[i][j] == lvid) {
-                lfid = i;
-                break;
-            }
-        }
-        if (lfid >= 0) break;
-    }
+    assert(auto_3d_table_complete_vertex[lvid][0] == lvid);
+
+    leid = auto_3d_table_complete_vertex[lvid][1];
+    lfid = auto_3d_table_complete_vertex[lvid][2];
 
     Tuple t_tuple = Tuple(lvid, leid, lfid, id, 0);
     assert(is_ccw(t_tuple));
@@ -293,7 +252,7 @@ long TetMesh::id(const Tuple& tuple, const PrimitiveType& type) const
 Tuple TetMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
 {
     assert(is_valid(tuple));
-    int offset = (tuple.m_local_vid * 6 * 4 + tuple.m_local_eid * 6 + tuple.m_local_fid);
+    const long offset = tuple.m_local_vid * 6 * 4 + tuple.m_local_eid * 4 + tuple.m_local_fid;
     // bool ccw = is_ccw(tuple);
     switch (type) {
     case PrimitiveType::Vertex:
@@ -327,20 +286,28 @@ Tuple TetMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
 
 bool TetMesh::is_ccw(const Tuple& tuple) const
 {
-    // throw "not implemented";
-    return true;
+    assert(is_valid(tuple));
+    const long offset = tuple.m_local_vid * 6 * 4 + tuple.m_local_eid * 4 + tuple.m_local_fid;
+    return autogen::auto_3d_table_ccw[offset][0] == 1;
 }
 
 bool TetMesh::is_valid(const Tuple& tuple) const
 {
-    const int offset = (tuple.m_local_vid * 6 * 4 + tuple.m_local_eid * 6 + tuple.m_local_fid);
-    return auto_3d_table_edge[offset][0] >= 0;
+    const long offset = tuple.m_local_vid * 6 * 4 + tuple.m_local_eid * 4 + tuple.m_local_fid;
+    return auto_3d_table_ccw[offset][0] >= 0;
 }
 
 bool TetMesh::is_boundary(const Tuple& tuple) const
 {
     ConstAccessor<long> tt_accessor = create_accessor<long>(m_tt_handle);
-    return tt_accessor.scalar_attribute(tuple) < 0;
+    return tt_accessor.vector_attribute(tuple)(tuple.m_local_fid) < 0;
 }
+
+bool TetMesh::is_connectivity_valid() const
+{
+    throw("Not implemented");
+    return true;
+}
+
 
 } // namespace wmtk

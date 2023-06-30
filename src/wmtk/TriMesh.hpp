@@ -6,20 +6,9 @@
 #include <Eigen/Core>
 
 namespace wmtk {
+
 class TriMesh : public Mesh
 {
-private:
-    MeshAttributeHandle<long> m_vf_handle;
-    MeshAttributeHandle<long> m_ef_handle;
-
-    MeshAttributeHandle<long> m_fv_handle;
-    MeshAttributeHandle<long> m_fe_handle;
-    MeshAttributeHandle<long> m_ff_handle;
-
-    Tuple vertex_tuple_from_id(long id) const;
-    Tuple edge_tuple_from_id(long id) const;
-    Tuple face_tuple_from_id(long id) const;
-
 public:
     TriMesh();
 
@@ -42,6 +31,8 @@ public:
 
     bool is_valid(const Tuple& tuple) const override;
 
+    bool is_connectivity_valid() const override;
+
 protected:
     long id(const Tuple& tuple, const PrimitiveType& type) const override;
 
@@ -53,6 +44,19 @@ protected:
      * @return Tuple
      */
     Tuple tuple_from_id(const PrimitiveType type, const long gid) const override;
+
+private:
+    MeshAttributeHandle<long> m_vf_handle;
+    MeshAttributeHandle<long> m_ef_handle;
+
+    MeshAttributeHandle<long> m_fv_handle;
+    MeshAttributeHandle<long> m_fe_handle;
+    MeshAttributeHandle<long> m_ff_handle;
+
+    Tuple vertex_tuple_from_id(long id) const;
+    Tuple edge_tuple_from_id(long id) const;
+    Tuple face_tuple_from_id(long id) const;
+    class TriMeshOperationState;
 };
 
 } // namespace wmtk

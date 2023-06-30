@@ -62,26 +62,15 @@ public:
 
     bool operator==(const Mesh& other) const;
 
-    virtual bool is_connectivity_valid() const;
+    virtual bool is_connectivity_valid() const = 0;
 
-protected:
-    std::vector<MeshAttributes<char>> m_char_attributes;
-    std::vector<MeshAttributes<long>> m_long_attributes;
-    std::vector<MeshAttributes<double>> m_double_attributes;
-
+protected: // member functions
     Accessor<char> get_flag_accessor(PrimitiveType type);
     Accessor<long> get_cell_hash_accessor();
 
-private:
-    std::vector<long> m_capacities;
-
-    /**
-     * @brief   0x1 == true = is active (simplex exists)
-     *          all flag defaul to 0 (simplex doesn't exist)
-     *
-     */
-    std::vector<MeshAttributeHandle<char>> m_flag_handles;
-    MeshAttributeHandle<long> m_cell_hash_handle;
+    // provides new simplices - should ONLY be called in our atomic topological operations
+    // all returned simplices are active (i.e their flags say they exist)
+    [[nodiscard]] std::vector<long> request_simplex_indices(PrimitiveType type, long count);
 
 protected:
     // std::vector<MeshAttributes<Rational>> m_rational_attributes;
@@ -105,7 +94,8 @@ protected:
      * @return Tuple
      */
     virtual Tuple tuple_from_id(const PrimitiveType type, const long gid) const = 0;
-
+    std::vector<std::vector<long>> simplices_to_gids(
+        const std::vector<std::vector<Simplex>>& simplices) const;
     /**
      * @brief reserve space for all attributes data types for all dimensional simplices
      *
@@ -114,6 +104,7 @@ protected:
     void reserve_attributes_to_fit();
     void reserve_attributes(PrimitiveType type, long size);
     void reserve_attributes(long dimension, long size);
+
 
 public:
     /**
@@ -127,6 +118,18 @@ public:
                     d-3 -> switch tetrahedron
     */
     virtual Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const = 0;
+
+
+    void set_capacities_from_flags();
+    /**
+     * @brief read in the m_capacities return the upper bound for the number of entities of the
+     * given dimension
+     *
+     * @param type
+     * @return int
+     */
+    long capacity(PrimitiveType type) const;
+
     /**
      * @brief TODO this needs dimension?
      *
@@ -142,14 +145,6 @@ public:
      */
     virtual bool is_boundary(const Tuple& edge) const = 0;
     /**
-     * @brief read in the m_capacities return the upper bound for the number of entities of the
-     * given dimension
-     *
-     * @param type
-     * @return int
-     */
-    long capacity(PrimitiveType type) const;
-    /**
      * @brief
      *
      * @param tuple the tuple to be checked
@@ -160,7 +155,6 @@ public:
      */
     virtual bool is_valid(const Tuple& tuple) const = 0;
 
-    void set_capacities_from_flags();
 
     bool simplex_is_equal(const Simplex& s0, const Simplex& s1) const;
 
@@ -181,6 +175,33 @@ protected:
     long id(const Simplex& s) const { return id(s.tuple(), s.primitive_type()); }
 
     void set_capacities(std::vector<long> capacities);
+
+private: // members
+    //=========================================================
+    // Storage of Mesh Attributes
+    //=========================================================
+    std::vector<MeshAttributes<char>> m_char_attributes;
+    std::vector<MeshAttributes<long>> m_long_attributes;
+    std::vector<MeshAttributes<double>> m_double_attributes;
+
+
+    //=========================================================
+    // Simplex Attribute
+    //=========================================================
+
+    // max index used for each type of simplex
+    std::vector<long> m_capacities;
+
+    /**
+     * @brief   0x1 == true = simplex is active (simplex exists)
+     *          all flag default to 0
+     *
+     */
+    std::vector<MeshAttributeHandle<char>> m_flag_handles;
+
+    // hashes for top level simplices (i.e cells) to identify whether tuples
+    // are invalid or not
+    MeshAttributeHandle<long> m_cell_hash_handle;
 };
 
 

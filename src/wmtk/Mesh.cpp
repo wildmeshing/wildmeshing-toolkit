@@ -1,4 +1,5 @@
 #include "Mesh.hpp"
+#include <numeric>
 
 #include <wmtk/utils/Logger.hpp>
 
@@ -59,6 +60,29 @@ Mesh::register_attribute(const std::string& name, PrimitiveType ptype, long size
     r.m_base_handle = get_mesh_attributes<T>(ptype).register_attribute(name, size, replace),
     r.m_primitive_type = ptype;
     return r;
+}
+
+std::vector<long> Mesh::request_simplex_indices(PrimitiveType type, long count)
+{
+    // passses back a set of new consecutive ids. in hte future this could do
+    // something smarter for re-use but that's probably too much work
+    long current_capacity = capacity(type);
+    std::vector<long> ret(count);
+    std::iota(ret.begin(), ret.end(), current_capacity);
+
+
+    long new_capacity = ret.back() + 1;
+    size_t simplex_dim = get_simplex_dimension(type);
+
+    m_capacities[simplex_dim] = new_capacity;
+
+    // enable newly requested simplices
+    Accessor<char> flag_accessor = get_flag_accessor(type);
+    for (const long simplex_index : ret) {
+        flag_accessor.scalar_attribute(simplex_index) |= 0x1;
+    }
+
+    return ret;
 }
 
 long Mesh::capacity(PrimitiveType type) const
@@ -124,6 +148,8 @@ Accessor<long> Mesh::get_cell_hash_accessor()
 
 void Mesh::set_capacities_from_flags()
 {
+    // for(long
+
     throw "not implemented";
 }
 
@@ -134,11 +160,21 @@ bool Mesh::operator==(const Mesh& other) const
            m_double_attributes == other.m_double_attributes;
 }
 
-bool Mesh::is_connectivity_valid() const
-{
-    wmtk::logger().warn("This function is not implemented");
 
-    return true;
+std::vector<std::vector<long>> Mesh::simplices_to_gids(
+    const std::vector<std::vector<Simplex>>& simplices) const
+{
+    std::vector<std::vector<long>> gids;
+    gids.resize(simplices.size());
+    for (int i = 0; i < simplices.size(); ++i) {
+        auto simplices_i = simplices[i];
+        for (auto simplex : simplices_i) {
+            long d = get_simplex_dimension(simplex.primitive_type());
+            assert(d < 3);
+            gids[d].emplace_back(id(simplex.tuple(), simplex.primitive_type()));
+        }
+    }
+    return gids;
 }
 
 template MeshAttributeHandle<char>

@@ -43,6 +43,7 @@ public:
 
     long _debug_id(const Tuple& tuple, const PrimitiveType& type) const;
 
+    bool is_connectivity_valid() const override;
 protected:
     long id(const Tuple& tuple, const PrimitiveType& type) const override;
 

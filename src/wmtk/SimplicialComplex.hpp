@@ -32,10 +32,11 @@ using SimplexSet = std::set<Simplex, SimplexLessFunctor>;
 class SimplicialComplex
 {
 private:
-    internal::SimplexSet simplices;
+    internal::SimplexLessFunctor _slf;
+    internal::SimplexSet _simplices;
 
 public:
-    const internal::SimplexSet& get_simplices() const { return simplices; }
+    const internal::SimplexSet& get_simplices() const { return _simplices; }
 
     internal::SimplexSet get_simplices(const PrimitiveType& ptype) const;
 
@@ -55,22 +56,25 @@ public:
     //    SimplicialComplex& operator=(const SimplicialComplex&) = default;
 
     SimplicialComplex(const Mesh& mm)
-        : simplices(internal::SimplexLessFunctor(mm))
+        : _slf(mm)
+        , _simplices(_slf)
     {}
 
     SimplicialComplex(const internal::SimplexLessFunctor& slf)
-        : simplices(slf)
+        : _slf(slf)
+        , _simplices(_slf)
     {}
 
     SimplicialComplex(const std::vector<Simplex>& ss, const Mesh& mm)
-        : simplices(internal::SimplexLessFunctor(mm))
+        : _slf(mm)
+        , _simplices(_slf)
     {
         for (const Simplex& s : ss) {
             add_simplex(s);
         }
     }
 
-    auto key_comp() const { return simplices.key_comp(); }
+    auto key_comp() const { return _simplices.key_comp(); }
 
 
     static SimplicialComplex get_union(const SimplicialComplex& sc1, const SimplicialComplex& sc2);
