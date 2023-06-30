@@ -13,13 +13,15 @@ class TriMesh::TriMeshOperationState
 public:
     TriMeshOperationState(TriMesh& m, const Tuple& operating_tuple);
     void delete_simplices();
-
+    void update_cell_hash();
+    
     std::array<Accessor<char>, 3> flag_accessors;
     Accessor<long> ff_accessor;
     Accessor<long> fe_accessor;
     Accessor<long> fv_accessor;
     Accessor<long> vf_accessor;
     Accessor<long> ef_accessor;
+    Accessor<long> hash_accessor;
 
 
     //           C
@@ -80,6 +82,7 @@ public:
         const std::array<long, 2> new_fids_bottom);
 
     std::vector<std::vector<long>> simplices_to_delete; // size 3 for vertex, edge, face
+    std::vector<long> cells_to_update_hash;
     TriMesh& m_mesh;
     Tuple m_operating_tuple;
 };
