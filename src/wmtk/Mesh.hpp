@@ -62,7 +62,7 @@ public:
 
     bool operator==(const Mesh& other) const;
 
-    virtual bool is_connectivity_valid() const;
+    virtual bool is_connectivity_valid() const = 0;
 
 protected: // member functions
     Accessor<char> get_flag_accessor(PrimitiveType type);
@@ -94,7 +94,8 @@ protected:
      * @return Tuple
      */
     virtual Tuple tuple_from_id(const PrimitiveType type, const long gid) const = 0;
-
+    std::vector<std::vector<long>> simplices_to_gids(
+        const std::vector<std::vector<Simplex>>& simplices) const;
     /**
      * @brief reserve space for all attributes data types for all dimensional simplices
      *
