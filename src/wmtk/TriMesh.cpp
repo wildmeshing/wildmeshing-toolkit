@@ -14,27 +14,6 @@ TriMesh::TriMesh()
     , m_ff_handle(register_attribute<long>("m_ff", PrimitiveType::Face, 3))
 {}
 
-void TriMesh::split_edge(const Tuple& t)
-{
-    // delete star(edge)
-
-    // record the deleted simplices topology attributes
-
-    // create new vertex
-
-    // create new edges
-
-    // create new faces
-
-    // glue the topology
-}
-void TriMesh::collapse_edge(const Tuple& t)
-{
-    // delete cstar(edge) intersect star(v1(edge))
-
-    // glue the topology
-}
-
 long TriMesh::id(const Tuple& tuple, const PrimitiveType& type) const
 {
     switch (type) {
@@ -111,7 +90,12 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
                 lvid_new = i;
             }
         }
-        const Tuple res(lvid_new, leid_new, tuple.m_local_fid, gcid_new, get_cell_hash_slow(gcid_new));
+        const Tuple res(
+            lvid_new,
+            leid_new,
+            tuple.m_local_fid,
+            gcid_new,
+            get_cell_hash_slow(gcid_new));
         assert(is_valid(res));
         return res;
     }
@@ -248,9 +232,9 @@ Tuple TriMesh::face_tuple_from_id(long id) const
         -1,
         id,
         get_cell_hash_slow(id)
-        
 
-        );
+
+    );
     assert(is_ccw(f_tuple));
     assert(is_valid(f_tuple));
     return f_tuple;
@@ -265,7 +249,6 @@ bool TriMesh::is_valid(const Tuple& tuple) const
 
 bool TriMesh::is_connectivity_valid() const
 {
-
     // get Accessors for topology
     ConstAccessor<long> fv_accessor = create_accessor<long>(m_fv_handle);
     ConstAccessor<long> fe_accessor = create_accessor<long>(m_fe_handle);
@@ -274,52 +257,39 @@ bool TriMesh::is_connectivity_valid() const
     ConstAccessor<long> ef_accessor = create_accessor<long>(m_ef_handle);
 
     // EF and FE
-    for (long i = 0; i < capacity(PrimitiveType::Edge); ++i) 
-    {
+    for (long i = 0; i < capacity(PrimitiveType::Edge); ++i) {
         int cnt = 0;
-        for (long j = 0; j < 3; ++j)
-        {
-            if (fe_accessor.vector_attribute(ef_accessor.scalar_attribute(i))[j] == i)
-            {
+        for (long j = 0; j < 3; ++j) {
+            if (fe_accessor.vector_attribute(ef_accessor.scalar_attribute(i))[j] == i) {
                 cnt++;
             }
         }
-        if (cnt != 1)
-        {
+        if (cnt != 1) {
             // std::cout << "EF and FE not compatible" << std::endl;
             return false;
         }
-
-    } 
+    }
 
     // VF and FV
-    for (long i = 0; i < capacity(PrimitiveType::Vertex); ++i)
-    {
+    for (long i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
         int cnt = 0;
-        for (long j = 0; j < 3; ++j)
-        {
-            if (fv_accessor.vector_attribute(vf_accessor.scalar_attribute(i))[j] == i)
-            {
+        for (long j = 0; j < 3; ++j) {
+            if (fv_accessor.vector_attribute(vf_accessor.scalar_attribute(i))[j] == i) {
                 cnt++;
             }
         }
-        if (cnt != 1)
-        {
+        if (cnt != 1) {
             // std::cout << "VF and FV not compatible" << std::endl;
             return false;
         }
     }
 
     // FE and EF
-    for (long i = 0; i < capacity(PrimitiveType::Face); ++i)
-    {
-        for (long j = 0; j < 3; ++j)
-        {
+    for (long i = 0; i < capacity(PrimitiveType::Face); ++i) {
+        for (long j = 0; j < 3; ++j) {
             long nb = ff_accessor.vector_attribute(i)[j];
-            if (nb == -1)
-            {
-                if (ef_accessor.scalar_attribute(fe_accessor.vector_attribute(i)[j]) != i)
-                {
+            if (nb == -1) {
+                if (ef_accessor.scalar_attribute(fe_accessor.vector_attribute(i)[j]) != i) {
                     // std::cout << "FF and FE not compatible" << std::endl;
                     return false;
                 }
@@ -328,23 +298,19 @@ bool TriMesh::is_connectivity_valid() const
 
             int cnt = 0;
             int id_in_nb;
-            for (long k = 0; k < 3; ++k)
-            {
-                if (ff_accessor.vector_attribute(nb)[k] == i)
-                {
+            for (long k = 0; k < 3; ++k) {
+                if (ff_accessor.vector_attribute(nb)[k] == i) {
                     cnt++;
                     id_in_nb = k;
                 }
             }
 
-            if (cnt != 1)
-            {
+            if (cnt != 1) {
                 // std::cout << "FF not valid" << std::endl;
                 return false;
             }
 
-            if (fe_accessor.vector_attribute(i)[j] != fe_accessor.vector_attribute(nb)[id_in_nb])
-            {
+            if (fe_accessor.vector_attribute(i)[j] != fe_accessor.vector_attribute(nb)[id_in_nb]) {
                 // std::cout << "FF and FE not compatible" << std::endl;
                 return false;
             }

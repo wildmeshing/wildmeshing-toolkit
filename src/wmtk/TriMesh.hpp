@@ -10,6 +10,7 @@ namespace wmtk {
 class TriMesh : public Mesh
 {
 public:
+    class TriMeshOperationState;
     TriMesh();
 
     void split_edge(const Tuple& t) override;
@@ -56,7 +57,6 @@ private:
     Tuple vertex_tuple_from_id(long id) const;
     Tuple edge_tuple_from_id(long id) const;
     Tuple face_tuple_from_id(long id) const;
-    class TriMeshOperationState;
 };
 
 } // namespace wmtk
