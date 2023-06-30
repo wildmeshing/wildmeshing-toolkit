@@ -56,14 +56,14 @@ public:
     // simplices required per-face (other than those above)
     std::vector<PerFaceData> FaceDatas;
     void glue_ear_to_face(
-    const long ear_fid,
-    const long new_face_fid,
-    const long old_fid,
-    const long eid);
+        const long ear_fid,
+        const long new_face_fid,
+        const long old_fid,
+        const long eid);
 
     void merge();
     void split_edge();
-    
+
     /**
      * @brief
      *
@@ -84,7 +84,8 @@ public:
     Tuple m_operating_tuple;
 };
 
-TriMesh::TriMeshOperationState::PerFaceData TriMesh::TriMeshOperationState::get_per_face_data(const Tuple& t)
+TriMesh::TriMeshOperationState::PerFaceData TriMesh::TriMeshOperationState::get_per_face_data(
+    const Tuple& t)
 {
     PerFaceData face_data;
     face_data.deleted_fid = m_mesh.id(t, PF);
@@ -183,12 +184,12 @@ void TriMesh::TriMeshOperationState::merge()
         const long f_ear_r = FaceDatas[face_index].ears[1].fid;
         vf_a = (f_ear_l < 0) ? f_ear_r : f_ear_l;
         vf_c = vf_a;
-        
+
         // change EF for E_AC
         const long e_ac = FaceDatas[face_index].ears[0].eid;
         long& ef_ac = ef_accessor.scalar_attribute(e_ac);
         ef_ac = vf_a;
-        
+
         // change FF and FE for ears
         glue_ear_to_face(f_ear_l, f_ear_r, FaceDatas[face_index].deleted_fid, e_ac);
         glue_ear_to_face(f_ear_r, f_ear_l, FaceDatas[face_index].deleted_fid, e_ac);
@@ -204,7 +205,8 @@ void TriMesh::collapse_edge(const Tuple& t)
     TriMeshOperationState state(*this, t);
 
     // get faces in open_star(B)
-    auto star_B_f = SimplicialComplex::open_star(Simplex(PV, switch_tuple(t, PV)), *this).get_simplices(PF);
+    auto star_B_f =
+        SimplicialComplex::open_star(Simplex(PV, switch_tuple(t, PV)), *this).get_simplices(PF);
     std::vector<long> faces_in_open_star_B_id;
     for (const Simplex& simplex : star_B_f) {
         faces_in_open_star_B_id.push_back(id(simplex.tuple(), PF));
@@ -238,12 +240,12 @@ void TriMesh::TriMeshOperationState::glue_new_faces_across_AB(
     long deleted_fid_bottom = FaceDatas[1].deleted_fid;
     auto ff_deleted_top = ff_accessor.vector_attribute(deleted_fid_top);
     auto ff_deleted_bottom = ff_accessor.vector_attribute(deleted_fid_bottom);
-    // TODO: ?????
+
     for (int i = 0; i < 3; i++) {
-        if (ff_deleted_top(i) == deleted_fid_top) {
+        if (ff_deleted_top(i) == deleted_fid_bottom) {
             local_eid_top = i;
         }
-        if (ff_deleted_bottom(i) == deleted_fid_bottom) {
+        if (ff_deleted_bottom(i) == deleted_fid_top) {
             local_eid_bottom = i;
         }
     }
@@ -273,7 +275,7 @@ std::array<long, 2> TriMesh::TriMeshOperationState::glue_new_triangle_topology(
     for (int i = 0; i < 2; ++i) {
         const EarGlobalIDs& ear = face_data.ears[i];
         const EarGlobalIDs& other_ear = face_data.ears[(i + 1) % 2];
-        // TODO: to check?
+
         const long ear_vid = end_point_vids[i];
         const long other_ear_vid = end_point_vids[(i + 1) % 2];
         const long my_fid = new_fids[i];
@@ -328,7 +330,6 @@ std::array<long, 2> TriMesh::TriMeshOperationState::glue_new_triangle_topology(
     // EF of the spine
     ef_accessor.scalar_attribute(spine_eid) = new_fids[0];
     // VF of opposing vertex
-    // vf_accessor.scalar_attribute(end_point_vids[i]) = new_fids[0];  // TODO: ?????
     vf_accessor.scalar_attribute(face_data.V_C_id) = new_fids[0];
 
     return {new_fids[0], new_fids[1]};
@@ -382,4 +383,3 @@ void TriMesh::TriMeshOperationState::split_edge()
 }
 
 } // namespace wmtk
-
