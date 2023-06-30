@@ -47,5 +47,8 @@ public:
     Tuple& operator=(Tuple&& other);
 
     bool operator==(const Tuple& t) const;
+    bool operator!=(const Tuple& t) const;
+    // equality comparison but skips the hash
+    bool same_ids(const Tuple& t) const;
 };
 } // namespace wmtk
