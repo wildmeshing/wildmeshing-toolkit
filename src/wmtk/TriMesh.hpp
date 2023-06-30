@@ -46,7 +46,7 @@ protected:
      */
     Tuple tuple_from_id(const PrimitiveType type, const long gid) const override;
 
-private:
+protected:
     MeshAttributeHandle<long> m_vf_handle;
     MeshAttributeHandle<long> m_ef_handle;
 

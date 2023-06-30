@@ -1,4 +1,5 @@
 #pragma once
+#include <wmtk/utils/Logger.hpp>
 #include "SimplicialComplex.hpp"
 #include "TriMesh.hpp"
 #include "Tuple.hpp"
@@ -11,6 +12,8 @@ constexpr PrimitiveType PF = PrimitiveType::Face;
 class TriMesh::TriMeshOperationState
 {
 public:
+    TriMeshOperationState();
+    TriMeshOperationState(TriMesh& m);
     TriMeshOperationState(TriMesh& m, const Tuple& operating_tuple);
     void delete_simplices();
 
@@ -83,4 +86,4 @@ public:
     TriMesh& m_mesh;
     Tuple m_operating_tuple;
 };
-}
+} // namespace wmtk
