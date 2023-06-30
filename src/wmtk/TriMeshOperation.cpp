@@ -346,18 +346,18 @@ void TriMesh::TriMeshOperationState::split_edge()
     SimplicialComplex edge_open_star =
         wmtk::SimplicialComplex::open_star(Simplex(PrimitiveType::Edge, m_operating_tuple), m_mesh);
 
-    for (const auto& simplex_d : edge_open_star) {
+    for (const auto& simplex_d : edge_open_star.get_simplices()) {
         simplices_to_delete[simplex_d.dimension()].emplace_back(
-            m_mesh.id(simplex_d, simplex_d.dimension()));
+            m_mesh.id(simplex_d.tuple(), simplex_d.primitive_type()));
     }
 
     // create new vertex
-    std::vector<long> new_vids = request_simplex_indices(PrimitiveType::Vertex, 1);
+    std::vector<long> new_vids = m_mesh.request_simplex_indices(PrimitiveType::Vertex, 1);
     assert(new_vids.size() == 1);
     const long new_vid = new_vids[0];
 
     // create new edges
-    std::vector<long> replacement_eids = request_simplex_indices(PrimitiveType::Edge, 2);
+    std::vector<long> replacement_eids = m_mesh.request_simplex_indices(PrimitiveType::Edge, 2);
     assert(replacement_eids.size() == 2);
 
     std::vector<std::array<long, 2>> new_fids;
@@ -374,7 +374,7 @@ void TriMesh::TriMeshOperationState::split_edge()
         std::array<long, 2> new_fids_top = new_fids[0];
         std::array<long, 2> new_fids_bottom = new_fids[1];
 
-        glue_faces_across_boundary(new_fids_top, new_fids_bottom);
+        glue_new_faces_across_AB(new_fids_top, new_fids_bottom);
     }
 
 
