@@ -11,7 +11,7 @@ namespace wmtk {
 class Mesh;
 class TriMesh;
 class TetMesh;
-enum class AccessorWriteMode { Immediate, Buffered };
+enum class AccessorCacheMode { Immediate, ReadBuffered, WriteBuffered, ReadWriteBuffered };
 
 template <typename T>
 class MeshAttributes;
@@ -40,7 +40,7 @@ public:
     Accessor(
         MeshType& m,
         const MeshAttributeHandle<T>& handle,
-        AccessorWriteMode mode = AccessorWriteMode::Immediate);
+        AccessorCacheMode mode = AccessorCacheMode::Immediate);
     ~Accessor();
 
     ConstMapResult vector_attribute(const Tuple& t) const;
@@ -68,8 +68,8 @@ private:
     MeshType& m_mesh;
     MeshAttributeHandle<T> m_handle;
 
-    AccessorWriteMode m_write_mode = AccessorWriteMode::Immediate;
-    std::unique_ptr<AccessorCache<T>> m_write_cache;
+    AccessorCacheMode m_cache_mode = AccessorCacheMode::Immediate;
+    std::unique_ptr<AccessorCache<T>> m_cache;
 };
 
 // template <typename T>

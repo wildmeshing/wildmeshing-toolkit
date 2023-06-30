@@ -60,6 +60,9 @@ public:
     ConstAccessor<char> get_flag_accessor(PrimitiveType type) const;
     ConstAccessor<long> get_cell_hash_accessor() const;
 
+    // utility function for getting a cell's hash - slow because it creates a new accessor
+    long get_cell_hash_slow(long cell_index) const;
+
     bool operator==(const Mesh& other) const;
 
     virtual bool is_connectivity_valid() const = 0;

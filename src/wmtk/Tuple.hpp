@@ -6,6 +6,8 @@
 namespace wmtk {
 
 class Mesh;
+class PointMesh;
+class EdgeMesh;
 class TriMesh;
 class TetMesh;
 
@@ -22,6 +24,8 @@ private:
 
 public:
     friend class Mesh;
+    friend class PointMesh;
+    friend class EdgeMesh;
     friend class TriMesh;
     friend class TetMesh;
     // friend long Mesh::id(const Tuple& tuple, const PrimitiveType& type) const;
