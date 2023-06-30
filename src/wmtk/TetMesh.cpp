@@ -303,4 +303,11 @@ bool TetMesh::is_boundary(const Tuple& tuple) const
     return tt_accessor.vector_attribute(tuple)(tuple.m_local_fid) < 0;
 }
 
+bool TetMesh::is_connectivity_valid() const
+{
+    throw("Not implemented");
+    return true;
+}
+
+
 } // namespace wmtk
