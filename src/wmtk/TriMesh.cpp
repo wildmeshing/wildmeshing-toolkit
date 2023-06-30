@@ -94,7 +94,7 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
                 lvid_new = i;
             }
         }
-        const Tuple res(lvid_new, leid_new, tuple.m_local_fid, gcid_new, tuple.m_hash);
+        const Tuple res(lvid_new, leid_new, tuple.m_local_fid, gcid_new, get_cell_hash_slow(gcid_new));
         assert(is_valid(res));
         return res;
     }
@@ -195,7 +195,7 @@ Tuple TriMesh::vertex_tuple_from_id(long id) const
         if (fv(i) == id) {
             assert(autogen::auto_2d_table_complete_vertex[i][0] == i);
             const long leid = autogen::auto_2d_table_complete_vertex[i][1];
-            Tuple v_tuple = Tuple(i, leid, -1, f, 0);
+            Tuple v_tuple = Tuple(i, leid, -1, f, get_cell_hash_slow(f));
             assert(is_ccw(v_tuple));
             assert(is_valid(v_tuple));
             return v_tuple;
@@ -215,7 +215,7 @@ Tuple TriMesh::edge_tuple_from_id(long id) const
             assert(autogen::auto_2d_table_complete_edge[i][1] == i);
             const long lvid = autogen::auto_2d_table_complete_edge[i][0];
 
-            Tuple e_tuple = Tuple(lvid, i, -1, f, 0);
+            Tuple e_tuple = Tuple(lvid, i, -1, f, get_cell_hash_slow(f));
             assert(is_ccw(e_tuple));
             assert(is_valid(e_tuple));
             return e_tuple;
@@ -231,7 +231,10 @@ Tuple TriMesh::face_tuple_from_id(long id) const
         autogen::auto_2d_table_complete_vertex[0][1],
         -1,
         id,
-        0);
+        get_cell_hash_slow(id)
+        
+
+        );
     assert(is_ccw(f_tuple));
     assert(is_valid(f_tuple));
     return f_tuple;

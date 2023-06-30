@@ -108,7 +108,7 @@ Tuple TetMesh::vertex_tuple_from_id(long id) const
 
     if (lvid < 0 || leid < 0 || lfid < 0) throw std::runtime_error("vertex_tuple_from_id failed");
 
-    Tuple v_tuple = Tuple(lvid, leid, lfid, t, -1);
+    Tuple v_tuple = Tuple(lvid, leid, lfid, t, get_cell_hash_slow(t));
     assert(is_ccw(v_tuple));
     assert(is_valid(v_tuple));
     return v_tuple;
@@ -137,7 +137,7 @@ Tuple TetMesh::edge_tuple_from_id(long id) const
 
     if (lvid < 0 || leid < 0 || lfid < 0) throw std::runtime_error("edge_tuple_from_id failed");
 
-    Tuple e_tuple = Tuple(lvid, leid, lfid, t, -1);
+    Tuple e_tuple = Tuple(lvid, leid, lfid, t, get_cell_hash_slow(t));
     assert(is_ccw(e_tuple));
     assert(is_valid(e_tuple));
     return e_tuple;
@@ -166,7 +166,7 @@ Tuple TetMesh::face_tuple_from_id(long id) const
 
     if (lvid < 0 || leid < 0 || lfid < 0) throw std::runtime_error("face_tuple_from_id failed");
 
-    Tuple f_tuple = Tuple(lvid, leid, lfid, t, -1);
+    Tuple f_tuple = Tuple(lvid, leid, lfid, t, get_cell_hash_slow(t));
     assert(is_ccw(f_tuple));
     assert(is_valid(f_tuple));
     return f_tuple;
@@ -181,7 +181,7 @@ Tuple TetMesh::tet_tuple_from_id(long id) const
     leid = auto_3d_table_complete_vertex[lvid][1];
     lfid = auto_3d_table_complete_vertex[lvid][2];
 
-    Tuple t_tuple = Tuple(lvid, leid, lfid, id, 0);
+    Tuple t_tuple = Tuple(lvid, leid, lfid, id, get_cell_hash_slow(id));
     assert(is_ccw(t_tuple));
     assert(is_valid(t_tuple));
     return t_tuple;

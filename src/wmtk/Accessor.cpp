@@ -10,10 +10,10 @@ template <typename T, bool IsConst>
 Accessor<T, IsConst>::Accessor(
     MeshType& mesh,
     const MeshAttributeHandle<T>& handle,
-    AccessorWriteMode mode)
+    AccessorCacheMode mode)
     : m_mesh(mesh)
     , m_handle(handle)
-    , m_write_mode(mode)
+    //, m_cache(mode)
 {}
 
 template <typename T, bool IsConst>

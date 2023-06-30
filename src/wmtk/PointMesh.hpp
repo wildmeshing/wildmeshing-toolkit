@@ -1,0 +1,41 @@
+#pragma once
+
+#include "Mesh.hpp"
+#include "Tuple.hpp"
+
+#include <Eigen/Core>
+
+namespace wmtk {
+    // Simple mesh without topology. Mainly useful for testing attributes without having to construct topologies
+class PointMesh : public Mesh
+{
+private:
+    Tuple vertex_tuple_from_id(long id) const;
+
+public:
+    PointMesh();
+    Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const override;
+    bool is_ccw(const Tuple& tuple) const override;
+    bool is_boundary(const Tuple& tuple) const override;
+
+    void initialize(
+            long count
+            );
+
+
+    bool is_valid(const Tuple& tuple) const override;
+
+protected:
+    long id(const Tuple& tuple, const PrimitiveType& type) const override;
+
+    /**
+     * @brief internal function that returns the tuple of requested type, and has the global index
+     * cid
+     *
+     * @param gid
+     * @return Tuple
+     */
+    Tuple tuple_from_id(const PrimitiveType type, const long gid) const override;
+};
+
+} // namespace wmtk

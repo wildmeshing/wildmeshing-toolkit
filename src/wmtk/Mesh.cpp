@@ -146,6 +146,11 @@ Accessor<long> Mesh::get_cell_hash_accessor()
     return create_accessor(m_cell_hash_handle);
 }
 
+long Mesh::get_cell_hash_slow(long cell_index) const {
+    ConstAccessor<long> hash_accessor = get_cell_hash_accessor();
+    return hash_accessor.scalar_attribute(cell_index);
+}
+
 void Mesh::set_capacities_from_flags()
 {
     // for(long
