@@ -5,6 +5,8 @@ set(SRC_FILES
     AttributeHandle.hpp
     Mesh.cpp
     Mesh.hpp
+    Attribute.hpp
+    Attribute.cpp
     MeshAttributes.cpp
     MeshAttributes.hpp
     PointMesh.cpp

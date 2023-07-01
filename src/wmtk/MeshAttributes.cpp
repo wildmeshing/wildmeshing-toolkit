@@ -1,5 +1,6 @@
 #include "MeshAttributes.hpp"
 
+#include <wmtk/io/MeshWriter.hpp>
 #include <wmtk/utils/Rational.hpp>
 
 #include <cassert>
@@ -12,22 +13,22 @@ MeshAttributes<T>::MeshAttributes()
 {}
 
 template <typename T>
-void MeshAttributes<T>::serialize(const int dim, MeshWriter& writer)
+void MeshAttributes<T>::serialize(const int dim, MeshWriter& writer) const
 {
     for (const auto& p : m_handles) {
         const auto& handle = p.second;
-        writer.write(p.first, dim, handle.stride, m_attributes[handle.index]);
+        const auto& attr = m_attributes[handle.index];
+        attr.serialize(p.first, dim, writer);
     }
 }
 
 template <typename T>
 AttributeHandle
-MeshAttributes<T>::register_attribute(const std::string& name, long size, bool replace)
+MeshAttributes<T>::register_attribute(const std::string& name, long stride, bool replace)
 {
     assert(replace || m_handles.find(name) == m_handles.end());
 
     AttributeHandle handle;
-    handle.stride = size;
 
 
     if (replace && m_handles.find(name) != m_handles.end()) {
@@ -35,21 +36,9 @@ MeshAttributes<T>::register_attribute(const std::string& name, long size, bool r
         handle.index = it->second.index;
     } else {
         handle.index = m_attributes.size();
-        m_attributes.emplace_back();
+        m_attributes.emplace_back(size(), stride);
     }
     m_handles[name] = handle;
-
-    if (handle.index == 0) m_initial_stride = size;
-
-    if (handle.index > 0) {
-        assert(m_initial_stride > 0);
-        assert(m_attributes.front().size() % m_initial_stride == 0);
-
-        m_attributes.back().resize((m_attributes.front().size() / m_initial_stride) * size, T(0));
-    } else if (m_internal_size > 0) {
-        // first attribute and resize called
-        m_attributes.front().resize(size * m_internal_size, T(0));
-    }
 
 
     return handle;
@@ -73,9 +62,7 @@ auto MeshAttributes<T>::vector_attribute(const AttributeHandle& handle, const lo
     -> ConstMapResult
 {
     const auto& attr = m_attributes[handle.index];
-    const long start = index * handle.stride;
-
-    return ConstMapResult(&attr[start], handle.stride);
+    return attr.vector_attribute(index);
 }
 
 
@@ -85,52 +72,43 @@ typename MeshAttributes<T>::MapResult MeshAttributes<T>::vector_attribute(
     const long index)
 {
     auto& attr = m_attributes[handle.index];
-    const long start = index * handle.stride;
-
-    return MapResult(&attr[start], handle.stride);
+    return attr.vector_attribute(index);
 }
 
 template <typename T>
 T MeshAttributes<T>::scalar_attribute(const AttributeHandle& handle, const long index) const
 {
-    assert(handle.stride == 1);
     const auto& attr = m_attributes[handle.index];
-
-    return attr[index];
+    return attr.scalar_attribute(index);
 }
 
 template <typename T>
 T& MeshAttributes<T>::scalar_attribute(const AttributeHandle& handle, const long index)
 {
-    assert(handle.stride == 1);
     auto& attr = m_attributes[handle.index];
-
-    return attr[index];
+    return attr.scalar_attribute(index);
 }
 
 template <typename T>
-void MeshAttributes<T>::set(const AttributeHandle& handle, const std::vector<T>& val)
+void MeshAttributes<T>::set(const AttributeHandle& handle, std::vector<T> val)
 {
-    m_attributes[handle.index] = val;
+    // TODO: should we validate the size of val compared to the internally held data?
+    auto& attr = m_attributes[handle.index];
+    attr.set(std::move(val));
 }
 
 template <typename T>
 long MeshAttributes<T>::size() const
 {
-    const auto& attr = m_attributes;
-    if (attr.empty()) return 0;
-
-    return attr[0].size() / m_initial_stride;
+    return m_size;
 }
 
 template <typename T>
 void MeshAttributes<T>::reserve(const long size)
 {
-    if (m_handles.empty()) m_internal_size = size;
-
-    for (const auto& p : m_handles) {
-        const auto& handle = p.second;
-        m_attributes[handle.index].resize(handle.stride * size);
+    m_size = size;
+    for (auto& attr : m_attributes) {
+        attr.reserve(size);
     }
 }
 
