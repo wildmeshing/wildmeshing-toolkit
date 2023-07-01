@@ -11,13 +11,17 @@ void Attribute<T>::serialize(const std::string& name, const int dim, MeshWriter&
 }
 
 template <typename T>
-Attribute<T>::Attribute(long size, long stride)
-    : m_data(size * stride, T(0))
-    , m_stride(stride)
-{}
+Attribute<T>::Attribute(long stride, long size)
+    : m_stride(stride)
+{
+    if (size > 0) {
+        m_data = std::vector<T>(size * stride, T(0));
+    }
+}
+
 
 template <typename T>
-bool operator==(const Attribute<T>& o) const
+bool Attribute<T>::operator==(const Attribute<T>& o) const
 {
     return m_stride == o.m_stride && m_data == o.m_data;
 }
@@ -25,7 +29,9 @@ bool operator==(const Attribute<T>& o) const
 template <typename T>
 void Attribute<T>::reserve(const long size)
 {
-    m_data.resize(m_stride * size, T(0));
+    if (size > m_data.size()) {
+        m_data.resize(m_stride * size, T(0));
+    }
 }
 template <typename T>
 long Attribute<T>::size() const
@@ -53,9 +59,7 @@ auto Attribute<T>::vector_attribute(const long index) const -> ConstMapResult
 
 
 template <typename T>
-typename Attribute<T>::MapResult Attribute<T>::vector_attribute(
-    const AttributeHandle& handle,
-    const long index)
+typename Attribute<T>::MapResult Attribute<T>::vector_attribute(const long index)
 {
     const long start = index * m_stride;
     return MapResult(m_data.data() + start, m_stride);

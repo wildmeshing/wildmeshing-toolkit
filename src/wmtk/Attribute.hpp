@@ -14,7 +14,8 @@ public:
 
     void serialize(const std::string& name, const int dim, MeshWriter& writer) const;
 
-    Attribute(long size, long stride);
+    // if size < 0 then the internal data is not initialized
+    Attribute(long stride, long size);
     ConstMapResult vector_attribute(const long index) const;
     MapResult vector_attribute(const long index);
 

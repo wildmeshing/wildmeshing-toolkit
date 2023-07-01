@@ -36,7 +36,7 @@ MeshAttributes<T>::register_attribute(const std::string& name, long stride, bool
         handle.index = it->second.index;
     } else {
         handle.index = m_attributes.size();
-        m_attributes.emplace_back(size(), stride);
+        m_attributes.emplace_back(stride, size());
     }
     m_handles[name] = handle;
 
