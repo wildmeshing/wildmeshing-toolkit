@@ -15,8 +15,6 @@ set(TEST_SOURCES
 )
 add_executable(wmtk_tests ${TEST_SOURCES})
 
-# Macros
-target_compile_definitions(wmtk_tests PUBLIC CATCH_CONFIG_ENABLE_BENCHMARKING)
 
 # Dependencies
 include(finite-diff)
