@@ -12,15 +12,11 @@ protected:
     template <typename T>
     friend class MeshAttributes;
     long index = -1;
-    long stride = -1;
 
 public:
-    bool valid() const { return index >= 0 && stride >= 0; }
+    bool valid() const { return index >= 0; }
 
-    bool operator==(const AttributeHandle& other) const
-    {
-        return index == other.index && stride == other.stride;
-    }
+    bool operator==(const AttributeHandle& other) const { return index == other.index; }
 };
 
 template <typename T>
