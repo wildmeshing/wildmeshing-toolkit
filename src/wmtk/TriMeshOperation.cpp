@@ -32,8 +32,8 @@ TriMesh::TriMeshOperationState::TriMeshOperationState(TriMesh& m)
     , ff_accessor(m.create_accessor<long>(m.m_ff_handle))
     , fe_accessor(m.create_accessor<long>(m.m_fe_handle))
     , fv_accessor(m.create_accessor<long>(m.m_fv_handle))
-    , vf_accessor(m.create_accessor<long>(m.m_ef_handle))
-    , ef_accessor(m.create_accessor<long>(m.m_vf_handle))
+    , vf_accessor(m.create_accessor<long>(m.m_vf_handle))
+    , ef_accessor(m.create_accessor<long>(m.m_ef_handle))
     , m_mesh(m)
 {}
 
@@ -45,8 +45,8 @@ TriMesh::TriMeshOperationState::TriMeshOperationState(TriMesh& m, const Tuple& o
     , ff_accessor(m.create_accessor<long>(m.m_ff_handle))
     , fe_accessor(m.create_accessor<long>(m.m_fe_handle))
     , fv_accessor(m.create_accessor<long>(m.m_fv_handle))
-    , vf_accessor(m.create_accessor<long>(m.m_ef_handle))
-    , ef_accessor(m.create_accessor<long>(m.m_vf_handle))
+    , vf_accessor(m.create_accessor<long>(m.m_vf_handle))
+    , ef_accessor(m.create_accessor<long>(m.m_ef_handle))
     , hash_accessor(m.get_cell_hash_accessor())
     , m_mesh(m)
     , m_operating_tuple(operating_tuple)
@@ -68,11 +68,16 @@ TriMesh::TriMeshOperationState::TriMeshOperationState(TriMesh& m, const Tuple& o
     auto C_tuple = m_mesh.switch_tuple(m_mesh.switch_tuple(m_operating_tuple, PE), PV);
     SimplicialComplex SC =
         wmtk::SimplicialComplex::open_star(Simplex(PV, m_operating_tuple), m_mesh);
-    SC.unify_with_complex(wmtk::SimplicialComplex::open_star(Simplex(PV, m_mesh.switch_tuple(m_operating_tuple, PV)), m_mesh));
+    SC.unify_with_complex(wmtk::SimplicialComplex::open_star(
+        Simplex(PV, m_mesh.switch_tuple(m_operating_tuple, PV)),
+        m_mesh));
     SC.unify_with_complex(wmtk::SimplicialComplex::open_star(Simplex(PV, C_tuple), m_mesh));
     if (!m_mesh.is_boundary(m_operating_tuple)) {
-        auto C_prime_tuple = m_mesh.switch_tuple(m_mesh.switch_tuple(m_mesh.switch_tuple(m_operating_tuple, PF), PE), PV);
-        SC.unify_with_complex(wmtk::SimplicialComplex::open_star(Simplex(PV, C_prime_tuple), m_mesh));
+        auto C_prime_tuple = m_mesh.switch_tuple(
+            m_mesh.switch_tuple(m_mesh.switch_tuple(m_operating_tuple, PF), PE),
+            PV);
+        SC.unify_with_complex(
+            wmtk::SimplicialComplex::open_star(Simplex(PV, C_prime_tuple), m_mesh));
     }
     auto cells_set = SC.get_simplices(PF);
     for (auto cell : cells_set) {
@@ -91,8 +96,7 @@ void TriMesh::TriMeshOperationState::delete_simplices()
 
 void TriMesh::TriMeshOperationState::update_cell_hash()
 {
-    for (const long& cell_id : cells_to_update_hash) 
-    {
+    for (const long& cell_id : cells_to_update_hash) {
         hash_accessor.scalar_attribute(cell_id)++;
     }
 }
