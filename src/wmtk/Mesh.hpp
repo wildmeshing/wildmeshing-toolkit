@@ -17,7 +17,7 @@ class Mesh
 {
 public:
     template <typename T, bool isConst>
-    friend class Accessor;
+    friend class AccessorBase;
     friend class ParaviewWriter;
 
     Mesh(const long& dimension);

@@ -1,8 +1,16 @@
-#include "AccessorBaseBase.hpp"
+#include "AccessorBase.hpp"
 #include "Mesh.hpp"
 #include "MeshAttributes.hpp"
 
 namespace wmtk {
+template <typename T, bool IsConst>
+AccessorBase<T, IsConst>::AccessorBase(MeshType& m, const MeshAttributeHandle<T>& handle)
+    : m_mesh(m)
+    , m_handle(handle)
+{}
+
+template <typename T, bool IsConst>
+AccessorBase<T, IsConst>::~AccessorBase() = default;
 
 template <typename T, bool IsConst>
 auto AccessorBase<T, IsConst>::attributes() -> MeshAttributesType&
@@ -14,26 +22,74 @@ auto AccessorBase<T, IsConst>::attributes() const -> const MeshAttributesType&
 {
     return m_mesh.get_mesh_attributes(m_handle);
 }
+template <typename T, bool IsConst>
+auto AccessorBase<T, IsConst>::attribute() -> AttributeT
+{
+    return attributes().attribute(m_handle.m_base_handle);
+}
+template <typename T, bool IsConst>
+auto AccessorBase<T, IsConst>::attribute() const -> const Attribute<T>&
+{
+    return attributes().attribute(m_handle.m_base_handle);
+}
 
 template <typename T, bool IsConst>
 auto AccessorBase<T, IsConst>::vector_attribute(const long index) const -> ConstMapResult
 {
-    auto buffer = attributes().vector_attribute(m_handle.m_base_handle, index);
-
-
+    auto buffer = attribute().const_vector_attribute(index);
     return buffer;
+}
+
+template <typename T, bool IsConst>
+auto AccessorBase<T, IsConst>::vector_attribute(const long index) -> MapResultT
+{
+    if constexpr (IsConst) {
+        auto buffer = attribute().const_vector_attribute(index);
+
+        return buffer;
+    } else {
+        auto buffer = attribute().vector_attribute(index);
+
+        return buffer;
+    }
 }
 
 template <typename T, bool IsConst>
 T AccessorBase<T, IsConst>::scalar_attribute(const long index) const
 {
-    auto value = attributes().scalar_attribute(m_handle.m_base_handle, index);
+    auto value = attribute().const_scalar_attribute(index);
     return value;
 }
 
 template <typename T, bool IsConst>
 auto AccessorBase<T, IsConst>::scalar_attribute(const long index) -> TT
 {
-    auto& value = attributes().scalar_attribute(m_handle.m_base_handle, index);
+    if constexpr (IsConst) {
+        auto value = attribute().const_scalar_attribute(index);
+        return value;
+    } else {
+        auto& value = attribute().scalar_attribute(index);
+        return value;
+    }
 }
+
+template <typename T, bool IsConst>
+long AccessorBase<T, IsConst>::index(const Tuple& t) const
+{
+    return m_mesh.id(t, m_handle.m_primitive_type);
+}
+template <typename T, bool IsConst>
+void AccessorBase<T, IsConst>::set_attribute(std::vector<T> value)
+{
+    if constexpr (IsConst) {
+        throw std::runtime_error("You cant modify a constant accessor");
+    } else
+        attribute().set(std::move(value));
+}
+template class AccessorBase<char, true>;
+template class AccessorBase<long, true>;
+template class AccessorBase<double, true>;
+template class AccessorBase<char, false>;
+template class AccessorBase<long, false>;
+template class AccessorBase<double, false>;
 } // namespace wmtk

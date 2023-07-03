@@ -24,6 +24,8 @@ public:
     friend class Mesh;
     friend class TriMesh;
     friend class TetMesh;
+
+    friend class AccessorCache<T>;
     using BaseType = AccessorBase<T, IsConst>;
     using MeshType = typename BaseType::MeshType; // const correct Mesh object
 
@@ -58,8 +60,13 @@ public:
     using BaseType::size; // const() -> long
     using BaseType::stride; // const() -> long
 
-protected:
     using BaseType::set_attribute; // (const vector<T>&) -> void
+protected:
+    ConstMapResult vector_attribute(const long index) const;
+    MapResultT vector_attribute(const long index);
+
+    T scalar_attribute(const long index) const;
+    TT scalar_attribute(const long index);
 
 private:
     AccessorAccessMode m_read_mode;

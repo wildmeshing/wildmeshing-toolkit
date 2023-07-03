@@ -58,36 +58,16 @@ bool MeshAttributes<T>::operator==(const MeshAttributes<T>& other) const
 
 
 template <typename T>
-auto MeshAttributes<T>::vector_attribute(const AttributeHandle& handle, const long index) const
-    -> ConstMapResult
+Attribute<T>& MeshAttributes<T>::attribute(const AttributeHandle& handle)
 {
-    const auto& attr = m_attributes[handle.index];
-    return attr.vector_attribute(index);
+    return m_attributes[handle.index];
 }
-
-
 template <typename T>
-typename MeshAttributes<T>::MapResult MeshAttributes<T>::vector_attribute(
-    const AttributeHandle& handle,
-    const long index)
+const Attribute<T>& MeshAttributes<T>::attribute(const AttributeHandle& handle) const
 {
-    auto& attr = m_attributes[handle.index];
-    return attr.vector_attribute(index);
+    return m_attributes[handle.index];
 }
 
-template <typename T>
-T MeshAttributes<T>::scalar_attribute(const AttributeHandle& handle, const long index) const
-{
-    const auto& attr = m_attributes[handle.index];
-    return attr.scalar_attribute(index);
-}
-
-template <typename T>
-T& MeshAttributes<T>::scalar_attribute(const AttributeHandle& handle, const long index)
-{
-    auto& attr = m_attributes[handle.index];
-    return attr.scalar_attribute(index);
-}
 
 template <typename T>
 void MeshAttributes<T>::set(const AttributeHandle& handle, std::vector<T> val)
