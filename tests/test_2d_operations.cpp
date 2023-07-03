@@ -28,7 +28,7 @@ public:
             }
         }
         wmtk::logger().error("local_vid1: {}, local_vid2: {}", local_vid1, local_vid2);
-        return Tuple(local_vid1, (3 - local_vid1 - local_vid2) % 3, fid, -1, 0);
+        return Tuple(local_vid1, (3 - local_vid1 - local_vid2) % 3, -1, fid, 0);
     }
 };
 
