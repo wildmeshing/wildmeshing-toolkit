@@ -1,4 +1,4 @@
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include <wmtk/Accessor.hpp>
 #include <wmtk/Mesh.hpp>
@@ -134,7 +134,30 @@ TEST_CASE("get per face data")
     }
 }
 
-TEST_CASE("delete simplices") {}
+TEST_CASE("delete simplices")
+{
+    // things can be marked as deleted but will still have the connectivity information
+    DEBUG_TriMesh m;
+    {
+        //  3--1--- 0 --1- 4
+        //   |     / \     |
+        //   2 f1 /2 1\ f2 |
+        //   |  0/ f0  \1  0
+        //   |  /       \  |
+        //   1  ----0----  2
+        //
+        RowVectors3l tris;
+        tris.resize(3, 3);
+        tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
+        tris.row(1) = Eigen::Matrix<long, 3, 1>{3, 1, 0};
+        tris.row(2) = Eigen::Matrix<long, 3, 1>{0, 2, 4};
+        m.initialize(tris);
+    }
+    REQUIRE(m.is_connectivity_valid());
+    Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
+    std::vector<std::vector<long>> simplices_to_delete(3);
+}
+
 TEST_CASE("operation state")
 {
     SECTION("single face")
