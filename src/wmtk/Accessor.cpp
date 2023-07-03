@@ -30,19 +30,19 @@ Accessor<T, IsConst>::Accessor(
         assert(m_write_mode == AccessorAccessMode::None);
     }
     if (accessor_requires_caching(read_mode) || accessor_requires_caching(write_mode)) {
-        m_cache.reset(new AccessorCache<T>());
-        // m_cache.reset(new AccessorCache<T>(*this, read_mode, write_mode));
+        // m_cache.reset(new AccessorCache<T>());
+        //  m_cache.reset(new AccessorCache<T>(*this, read_mode, write_mode));
     }
 }
 
 template <typename T, bool IsConst>
 Accessor<T, IsConst>::~Accessor()
 {
-    if constexpr (!IsConst) {
-        if (m_cache) {
-            m_cache->flush(*this);
-        }
-    }
+    // if constexpr (!IsConst) {
+    //     if (m_cache) {
+    //         m_cache->flush(*this);
+    //     }
+    // }
 }
 
 template <typename T, bool IsConst>

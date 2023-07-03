@@ -62,7 +62,8 @@ template <typename T>
 typename Attribute<T>::MapResult Attribute<T>::vector_attribute(const long index)
 {
     const long start = index * m_stride;
-    return MapResult(m_data.data() + start, m_stride);
+    auto buffer = MapResult(m_data.data() + start, m_stride);
+    return buffer;
 }
 
 template <typename T>

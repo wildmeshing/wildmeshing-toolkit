@@ -26,12 +26,11 @@ public:
     using MeshType = std::conditional_t<IsConst, const Mesh, Mesh>;
     using MeshAttributesType =
         std::conditional_t<IsConst, const MeshAttributes<T>, MeshAttributes<T>>;
-    using AttributeType = Attribute<T>;
 
-    using AttributeT = std::conditional_t<IsConst, const Attribute<T>, Attribute<T>>;
+    using AttributeType = std::conditional_t<IsConst, const Attribute<T>&, Attribute<T>>;
 
-    using MapResult = typename AttributeType::MapResult;
-    using ConstMapResult = typename AttributeType::ConstMapResult;
+    using MapResult = typename Attribute<T>::MapResult;
+    using ConstMapResult = typename Attribute<T>::ConstMapResult;
 
 
     using MapResultT = std::conditional_t<IsConst, ConstMapResult, MapResult>;
@@ -62,7 +61,7 @@ protected:
     MeshAttributesType& attributes();
     const MeshAttributesType& attributes() const;
 
-    AttributeT attribute();
+    AttributeType& attribute();
     const Attribute<T>& attribute() const;
 
     long index(const Tuple& t) const;

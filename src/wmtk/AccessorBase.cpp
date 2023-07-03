@@ -1,4 +1,5 @@
 #include "AccessorBase.hpp"
+#include <iostream>
 #include "Mesh.hpp"
 #include "MeshAttributes.hpp"
 
@@ -23,7 +24,7 @@ auto AccessorBase<T, IsConst>::attributes() const -> const MeshAttributesType&
     return m_mesh.get_mesh_attributes(m_handle);
 }
 template <typename T, bool IsConst>
-auto AccessorBase<T, IsConst>::attribute() -> AttributeT
+auto AccessorBase<T, IsConst>::attribute() -> AttributeType&
 {
     return attributes().attribute(m_handle.m_base_handle);
 }
@@ -48,7 +49,8 @@ auto AccessorBase<T, IsConst>::vector_attribute(const long index) -> MapResultT
 
         return buffer;
     } else {
-        auto buffer = attribute().vector_attribute(index);
+        auto& attr = attribute();
+        auto buffer = attr.vector_attribute(index);
 
         return buffer;
     }
@@ -83,8 +85,9 @@ void AccessorBase<T, IsConst>::set_attribute(std::vector<T> value)
 {
     if constexpr (IsConst) {
         throw std::runtime_error("You cant modify a constant accessor");
-    } else
+    } else {
         attribute().set(std::move(value));
+    }
 }
 template class AccessorBase<char, true>;
 template class AccessorBase<long, true>;

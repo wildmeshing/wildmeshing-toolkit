@@ -60,7 +60,8 @@ bool MeshAttributes<T>::operator==(const MeshAttributes<T>& other) const
 template <typename T>
 Attribute<T>& MeshAttributes<T>::attribute(const AttributeHandle& handle)
 {
-    return m_attributes[handle.index];
+    Attribute<T>& attr = m_attributes[handle.index];
+    return attr;
 }
 template <typename T>
 const Attribute<T>& MeshAttributes<T>::attribute(const AttributeHandle& handle) const
