@@ -88,7 +88,7 @@ SimplicialComplex SimplicialComplex::boundary(const Simplex& s, const Mesh& m)
 
     const Tuple t = s.tuple();
 
-    auto sw = [&m](const Tuple& t, const PrimitiveType& ptype) { return m.switch_tuple(t, ptype); };
+    auto sw = [&m](const Tuple& _t, const PrimitiveType& _ptype) { return m.switch_tuple(_t, _ptype); };
 
 
     // exhaustive implementation
@@ -134,6 +134,7 @@ SimplicialComplex SimplicialComplex::boundary(const Simplex& s, const Mesh& m)
         /* code */
         break;
     case PV: break;
+    case PrimitiveType::Invalid: assert(false); break;
     default: assert(false); break;
     }
 
@@ -169,7 +170,7 @@ SimplicialComplex SimplicialComplex::closed_star(const Simplex& s, const Mesh& m
 
     const Tuple t = s.tuple();
 
-    auto sw = [&m](const Tuple& t, const PrimitiveType& ptype) { return m.switch_tuple(t, ptype); };
+    auto sw = [&m](const Tuple& _t, const PrimitiveType& _ptype) { return m.switch_tuple(_t, _ptype); };
 
     // const int &cell_dim = m->cell_dimension(); // TODO: 2 for trimesh, 3 for tetmesh need it in Mesh class
     const int cell_dim = dynamic_cast<const TriMesh*>(&m) ? 2 : 3;
@@ -179,14 +180,14 @@ SimplicialComplex SimplicialComplex::closed_star(const Simplex& s, const Mesh& m
             std::queue<Tuple> q;
             q.push(s.tuple());
             while (!q.empty()) {
-                const Tuple t = q.front();
+                const Tuple cur_t = q.front();
                 q.pop();
-                if (sc.add_simplex(Simplex(PF, t))) {
-                    if (!m.is_boundary(t)) {
-                        q.push(sw(t, PF));
+                if (sc.add_simplex(Simplex(PF, cur_t))) {
+                    if (!m.is_boundary(cur_t)) {
+                        q.push(sw(cur_t, PF));
                     }
-                    if (!m.is_boundary(sw(t, PE))) {
-                        q.push(sw(sw(t, PE), PF));
+                    if (!m.is_boundary(sw(cur_t, PE))) {
+                        q.push(sw(sw(cur_t, PE), PF));
                     }
                 }
             }
@@ -199,6 +200,8 @@ SimplicialComplex SimplicialComplex::closed_star(const Simplex& s, const Mesh& m
             }
             break;
         case PF: sc.add_simplex(s); break;
+        case PT: assert(false); break;
+        case PrimitiveType::Invalid: assert(false); break;
         default: assert(false); break;
         }
     } else if (cell_dim == 3) {
@@ -207,12 +210,12 @@ SimplicialComplex SimplicialComplex::closed_star(const Simplex& s, const Mesh& m
             std::queue<Tuple> q;
             q.push(t);
             while (!q.empty()) {
-                Tuple t = q.front();
+                Tuple cur_t = q.front();
                 q.pop();
-                if (sc.add_simplex(Simplex(PF, t))) {
-                    const Tuple t1 = t;
-                    const Tuple t2 = sw(t, PF);
-                    const Tuple t3 = sw(sw(t, PE), PF);
+                if (sc.add_simplex(Simplex(PF, cur_t))) {
+                    const Tuple t1 = cur_t;
+                    const Tuple t2 = sw(cur_t, PF);
+                    const Tuple t3 = sw(sw(cur_t, PE), PF);
                     if (!m.is_boundary(t1)) {
                         q.push(sw(t1, PT));
                     }
@@ -230,14 +233,14 @@ SimplicialComplex SimplicialComplex::closed_star(const Simplex& s, const Mesh& m
             std::queue<Tuple> q;
             q.push(t);
             while (!q.empty()) {
-                Tuple t = q.front();
+                Tuple cur_t = q.front();
                 q.pop();
-                if (sc.add_simplex(Simplex(PT, t))) {
-                    if (!m.is_boundary(t)) {
-                        q.push(sw(t, PT));
+                if (sc.add_simplex(Simplex(PT, cur_t))) {
+                    if (!m.is_boundary(cur_t)) {
+                        q.push(sw(cur_t, PT));
                     }
-                    if (!m.is_boundary(sw(t, PF))) {
-                        q.push(sw(sw(t, PF), PT));
+                    if (!m.is_boundary(sw(cur_t, PF))) {
+                        q.push(sw(sw(cur_t, PF), PT));
                     }
                 }
             }
@@ -252,6 +255,10 @@ SimplicialComplex SimplicialComplex::closed_star(const Simplex& s, const Mesh& m
         }
         case PT: {
             sc.add_simplex(s);
+            break;
+        }
+        case PrimitiveType::Invalid: {
+            assert(false);
             break;
         }
         default: {
