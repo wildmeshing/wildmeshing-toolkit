@@ -28,7 +28,7 @@ public:
             }
         }
         wmtk::logger().error("local_vid1: {}, local_vid2: {}", local_vid1, local_vid2);
-        return Tuple(local_vid1, (3 - local_vid1 - local_vid2) % 3, fid, -1, 0);
+        return Tuple(local_vid1, (3 - local_vid1 - local_vid2) % 3, -1, fid, 0);
     }
 };
 
@@ -90,12 +90,12 @@ TEST_CASE("get per face data")
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
         TMOP state(m);
         TMOP::PerFaceData face_data = state.get_per_face_data(edge);
-        REQUIRE(face_data.V_C_id == 1);
+        REQUIRE(face_data.V_C_id == 0);
         REQUIRE(face_data.deleted_fid == 0);
         REQUIRE(face_data.ears.size() == 2);
         TMOP::EarGlobalIDs ear1 = face_data.ears[0];
         TMOP::EarGlobalIDs ear2 = face_data.ears[1];
-        REQUIRE(ear1.fid == -1);
+        REQUIRE(ear1.fid == 1);
         REQUIRE(ear1.eid > -1);
         REQUIRE(ear2.fid == -1);
         REQUIRE(ear2.eid > -1);
