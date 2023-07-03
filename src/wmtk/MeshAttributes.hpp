@@ -1,8 +1,8 @@
 #pragma once
 
+#include "Attribute.hpp"
 #include "AttributeHandle.hpp"
 
-#include <wmtk/io/MeshWriter.hpp>
 
 #include <Eigen/Core>
 
@@ -12,6 +12,7 @@
 
 namespace wmtk {
 
+class MeshWriter;
 class Mesh;
 template <typename T, bool isConst>
 class Accessor;
@@ -30,7 +31,7 @@ class MeshAttributes
 public:
     MeshAttributes();
 
-    void serialize(const int dim, MeshWriter& writer);
+    void serialize(const int dim, MeshWriter& writer) const;
 
     AttributeHandle register_attribute(const std::string& name, long size, bool replace = false);
 
@@ -48,15 +49,16 @@ protected:
     T scalar_attribute(const AttributeHandle& handle, const long index) const;
     T& scalar_attribute(const AttributeHandle& handle, const long index);
 
-    void set(const AttributeHandle& handle, const std::vector<T>& val);
+    // pass by value due to
+    //https://clang.llvm.org/extra/clang-tidy/checks/modernize/pass-by-value.html
+    void set(const AttributeHandle& handle, std::vector<T> val);
 
 private:
     std::map<std::string, AttributeHandle> m_handles;
 
-    long m_initial_stride = -1;
-    long m_internal_size = -1;
+    long m_size = -1;
 
-    std::vector<std::vector<T>> m_attributes;
+    std::vector<Attribute<T>> m_attributes;
 };
 
 
