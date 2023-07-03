@@ -5,53 +5,77 @@
 #include "MeshAttributes.hpp"
 
 namespace wmtk {
+namespace {
+constexpr static bool accessor_requires_caching(AccessorAccessMode mode)
+{
+    if (mode == AccessorAccessMode::Buffered) {
+        return true;
+    } else {
+        return false;
+    }
+}
+} // namespace
 
 template <typename T, bool IsConst>
 Accessor<T, IsConst>::Accessor(
     MeshType& mesh,
     const MeshAttributeHandle<T>& handle,
-    AccessorCacheMode mode)
+    AccessorAccessMode read_mode,
+    AccessorAccessMdoe write_mode)
     : m_mesh(mesh)
     , m_handle(handle)
-    //, m_cache(mode)
-{}
-
-template <typename T, bool IsConst>
-Accessor<T, IsConst>::~Accessor() = default;
-
-template <typename T, bool IsConst>
-auto Accessor<T, IsConst>::attributes() -> MeshAttributesType&
+    , m_read_mode(read_mode)
+    , m_write_mode(write_mode)
 {
-    return m_mesh.get_mesh_attributes(m_handle);
-}
-template <typename T, bool IsConst>
-auto Accessor<T, IsConst>::attributes() const -> const MeshAttributesType&
-{
-    return m_mesh.get_mesh_attributes(m_handle);
+    if constexpr (IsConst) {
+        assert(m_write_mode == AccessorAccessMode::None);
+    }
+    if (accessor_requires_caching(read_mode) || accessor_requires_caching(write_mode)) {
+        m_cache = std::make_unique<AccessorCache<T>>(*this, read_mode, write_mode);
+    }
 }
 
 template <typename T, bool IsConst>
-auto Accessor<T, IsConst>::vector_attribute(const long index) const -> ConstMapResult
+Accessor<T, IsConst>::~Accessor()
 {
-    return attributes().vector_attribute(m_handle.m_base_handle, index);
+    if (m_cache) {
+        m_cache->flush(*this);
+    }
 }
+
+template <typename T, bool IsConst>
+AccessorAccessMode Accessor<T, IsConst>::read_access_mode() const
+{
+    return m_read_mode;
+}
+
+template <typename T, bool IsConst>
+AccessorAccessMode Accessor<T, IsConst>::write_access_mode() const
+{
+    return m_write_mode;
+}
+
 template <typename T, bool IsConst>
 auto Accessor<T, IsConst>::vector_attribute(const long index) -> MapResultT
 {
-    return attributes().vector_attribute(m_handle.m_base_handle, index);
+    auto buffer = attributes().vector_attribute(m_handle.m_base_handle, index);
+    return buffer;
 }
 
 template <typename T, bool IsConst>
 T Accessor<T, IsConst>::scalar_attribute(const long index) const
 {
-    return attributes().scalar_attribute(m_handle.m_base_handle, index);
+    auto value = attributes().scalar_attribute(m_handle.m_base_handle, index);
+    return value;
 }
 
 template <typename T, bool IsConst>
 auto Accessor<T, IsConst>::scalar_attribute(const long index) -> TT
 {
-    return attributes().scalar_attribute(m_handle.m_base_handle, index);
+    auto& value = attributes().scalar_attribute(m_handle.m_base_handle, index);
 }
+
+
 template <typename T, bool IsConst>
 auto Accessor<T, IsConst>::vector_attribute(const Tuple& t) const -> ConstMapResult
 {
@@ -89,9 +113,10 @@ void Accessor<T, IsConst>::set_attribute(const std::vector<T>& value)
 }
 
 template <typename T, bool IsConst>
-    long Accessor<T,IsConst>::size() const {
-        return attributes().size();
-    }
+long Accessor<T, IsConst>::size() const
+{
+    return attributes().size();
+}
 
 // template <typename T, bool IsConst>
 // void MeshAttributes<T>::rollback()

@@ -2,6 +2,8 @@
 
 #include <memory>
 #include <type_traits>
+#include "AccessorAccessMode.hpp"
+#include "AccessorBase.hpp"
 #include "AttributeHandle.hpp"
 #include "Tuple.hpp"
 
@@ -11,37 +13,39 @@ namespace wmtk {
 class Mesh;
 class TriMesh;
 class TetMesh;
-enum class AccessorCacheMode { Immediate, ReadBuffered, WriteBuffered, ReadWriteBuffered };
-
-template <typename T>
-class MeshAttributes;
 
 template <typename T>
 class AccessorCache;
 
 template <typename T, bool IsConst = false>
-class Accessor
+class Accessor : public AccessorBase<T, IsConst>
 {
 public:
     friend class Mesh;
     friend class TriMesh;
     friend class TetMesh;
-    using MeshType = std::conditional_t<IsConst, const Mesh, Mesh>;
-    using MeshAttributesType =
-        std::conditional_t<IsConst, const MeshAttributes<T>, MeshAttributes<T>>;
+    using BaseType = AccessorBase<T, IsConst>;
+    using MeshType = typename BaseType::MeshType; // const correct Mesh object
 
-    using MapResult = typename Eigen::Matrix<T, Eigen::Dynamic, 1>::MapType;
-    using ConstMapResult = typename Eigen::Matrix<T, Eigen::Dynamic, 1>::ConstMapType;
+    using MapResult = typename BaseType::MapResult; // Eigen::Map<VectorX<T>>
+    using ConstMapResult = typename BaseType::ConstMapResult; // Eigen::Map<const VectorX<T>>
 
-    using MapResultT = std::conditional_t<IsConst, ConstMapResult, MapResult>;
-    using TT = std::conditional_t<IsConst, T, T&>;
+
+    using MapResultT = typename BaseType::MapResultT; // MapResult or ConstMapResult for constness
+    using TT = typename BaseType::TT; // T or T& for const correctness
 
 
     Accessor(
         MeshType& m,
         const MeshAttributeHandle<T>& handle,
-        AccessorCacheMode mode = AccessorCacheMode::Immediate);
+        AccessorAccessMode read_access_mode = AccessorAccessMode::Immediate,
+        AccessorAccessMode write_access_mode = IsConst ? AccessorAccessMode::None
+                                                       : AccessorAccessMode::Immediate);
+
     ~Accessor();
+
+    AccessorAccessMode read_access_mode() const;
+    AccessorAccessMode write_access_mode() const;
 
     ConstMapResult vector_attribute(const Tuple& t) const;
     MapResultT vector_attribute(const Tuple& t);
@@ -49,26 +53,18 @@ public:
     T scalar_attribute(const Tuple& t) const;
     TT scalar_attribute(const Tuple& t);
 
-    void set_attribute(const std::vector<T>& value);
+    // returns the size of the underlying attribute
 
-    //returns the size of the underlying attribute
-    long size() const;
+    using BaseType::size; // const() -> long
+    using BaseType::stride; // const() -> long
 
-private:
-    ConstMapResult vector_attribute(const long index) const;
-    MapResultT vector_attribute(const long index);
-
-    T scalar_attribute(const long index) const;
-    TT scalar_attribute(const long index);
+protected:
+    using BaseType::set_attribute; // (const vector<T>&) -> void
 
 private:
-    MeshAttributesType& attributes();
-    const MeshAttributesType& attributes() const;
+    AccessorAccessMode m_read_mode;
+    AccessorAccessMode m_write_mode;
 
-    MeshType& m_mesh;
-    MeshAttributeHandle<T> m_handle;
-
-    AccessorCacheMode m_cache_mode = AccessorCacheMode::Immediate;
     std::unique_ptr<AccessorCache<T>> m_cache;
 };
 
