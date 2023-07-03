@@ -27,7 +27,6 @@ public:
                 local_vid2 = i;
             }
         }
-        wmtk::logger().error("local_vid1: {}, local_vid2: {}", local_vid1, local_vid2);
         return Tuple(local_vid1, (3 - local_vid1 - local_vid2) % 3, -1, fid, 0);
     }
 };
@@ -100,9 +99,159 @@ TEST_CASE("get per face data")
         REQUIRE(ear2.fid == -1);
         REQUIRE(ear2.eid > -1);
     }
+
+    SECTION("two ears")
+    {
+        DEBUG_TriMesh m;
+        {
+            //  3--1--- 0 --1- 4
+            //   |     / \     |
+            //   2 f1 /2 1\ f2 |
+            //   |  0/ f0  \1  0
+            //   |  /       \  |
+            //   1  ----0----  2
+            //
+            RowVectors3l tris;
+            tris.resize(3, 3);
+            tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
+            tris.row(1) = Eigen::Matrix<long, 3, 1>{3, 1, 0};
+            tris.row(2) = Eigen::Matrix<long, 3, 1>{0, 2, 4};
+            m.initialize(tris);
+        }
+        REQUIRE(m.is_connectivity_valid());
+        Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
+        TMOP state(m);
+        TMOP::PerFaceData face_data = state.get_per_face_data(edge);
+        REQUIRE(face_data.V_C_id == 0);
+        REQUIRE(face_data.deleted_fid == 0);
+        REQUIRE(face_data.ears.size() == 2);
+        TMOP::EarGlobalIDs ear1 = face_data.ears[0];
+        TMOP::EarGlobalIDs ear2 = face_data.ears[1];
+        REQUIRE(ear1.fid == 1);
+        REQUIRE(ear1.eid > -1);
+        REQUIRE(ear2.fid == 2);
+        REQUIRE(ear2.eid > -1);
+    }
 }
+
 TEST_CASE("delete simplices") {}
-TEST_CASE("operation state") {}
+TEST_CASE("operation state")
+{
+    SECTION("single face")
+    {
+        DEBUG_TriMesh m;
+        {
+            //         0
+            //        / \   
+            //       2   1  \ 
+            //      /  0  \  \|
+            //     /       \ 
+            //  1  ----0---- 2
+            //
+            RowVectors3l tris;
+            tris.resize(1, 3);
+            tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
+            m.initialize(tris);
+        }
+        REQUIRE(m.is_connectivity_valid());
+        Tuple edge = m.edge_tuple_between_v1_v2(0, 2, 0);
+        REQUIRE(m._debug_id(edge, PrimitiveType::Vertex) == 0);
+        REQUIRE(m._debug_id(edge, PrimitiveType::Face) == 0);
+        REQUIRE(
+            m._debug_id(m.switch_tuple(edge, PrimitiveType::Vertex), PrimitiveType::Vertex) == 2);
+        TMOP state(m, edge);
+
+        REQUIRE(state.flag_accessors.size() == 3);
+        REQUIRE(state.end_point_vids.size() == 2);
+        REQUIRE(state.end_point_vids[0] == 0);
+        REQUIRE(state.end_point_vids[1] == 2);
+        REQUIRE(state.E_AB_id == m._debug_id(edge, PrimitiveType::Edge));
+        REQUIRE(state.FaceDatas.size() == 1);
+    }
+    SECTION("one ear")
+    {
+        DEBUG_TriMesh m;
+        {
+            //  3--1--- 0
+            //   |     / \ 
+            //   2 f1 /2   1
+            //   |  0/ f0  \ 
+            //   |  /       \ 
+            //  1  ----0---- 2
+            //
+            RowVectors3l tris;
+            tris.resize(2, 3);
+            tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
+            tris.row(1) = Eigen::Matrix<long, 3, 1>{3, 1, 0};
+            m.initialize(tris);
+        }
+        REQUIRE(m.is_connectivity_valid());
+        Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
+        TMOP state(m, edge);
+
+        REQUIRE(state.flag_accessors.size() == 3);
+        REQUIRE(state.end_point_vids.size() == 2);
+        REQUIRE(state.end_point_vids[0] == 1);
+        REQUIRE(state.end_point_vids[1] == 2);
+        REQUIRE(state.E_AB_id == m._debug_id(edge, PrimitiveType::Edge));
+        REQUIRE(state.FaceDatas.size() == 1);
+
+        REQUIRE(state.FaceDatas[0].ears.size() == 2);
+    }
+    SECTION("one ear")
+    {
+        DEBUG_TriMesh m;
+        {
+            //  3--1--- 0
+            //   |     / \ 
+            //   2 f1 /2   1
+            //   |  0/ f0  \ 
+            //   |  /       \ 
+            //  1  ----0---- 2
+            //     \        /
+            //      \  f2  /
+            //       \    /
+            //        \  /
+            //         4
+            RowVectors3l tris;
+            tris.resize(3, 3);
+            tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
+            tris.row(1) = Eigen::Matrix<long, 3, 1>{3, 1, 0};
+            tris.row(2) = Eigen::Matrix<long, 3, 1>{1, 4, 2};
+            m.initialize(tris);
+        }
+        REQUIRE(m.is_connectivity_valid());
+        Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
+        TMOP state(m, edge);
+
+        REQUIRE(state.flag_accessors.size() == 3);
+        REQUIRE(state.end_point_vids.size() == 2);
+        REQUIRE(state.end_point_vids[0] == 1);
+        REQUIRE(state.end_point_vids[1] == 2);
+        REQUIRE(state.E_AB_id == m._debug_id(edge, PrimitiveType::Edge));
+        REQUIRE(state.FaceDatas.size() == 2);
+
+        REQUIRE(state.FaceDatas[0].V_C_id == 0);
+        REQUIRE(state.FaceDatas[0].deleted_fid == 0);
+        REQUIRE(state.FaceDatas[0].ears.size() == 2);
+        TMOP::EarGlobalIDs ear1 = state.FaceDatas[0].ears[0];
+        TMOP::EarGlobalIDs ear2 = state.FaceDatas[0].ears[1];
+        REQUIRE(ear1.fid == 1);
+        REQUIRE(ear1.eid > -1);
+        REQUIRE(ear2.fid == -1);
+        REQUIRE(ear2.eid > -1);
+
+        REQUIRE(state.FaceDatas[1].V_C_id == 4);
+        REQUIRE(state.FaceDatas[1].deleted_fid == 2);
+        REQUIRE(state.FaceDatas[1].ears.size() == 2);
+        ear1 = state.FaceDatas[1].ears[0];
+        ear2 = state.FaceDatas[1].ears[1];
+        REQUIRE(ear1.fid == -1);
+        REQUIRE(ear1.eid > -1);
+        REQUIRE(ear2.fid == -1);
+        REQUIRE(ear2.eid > -1);
+    }
+}
 TEST_CASE("glue ear to face") {}
 TEST_CASE("hash update") {}
 

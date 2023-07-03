@@ -10,9 +10,6 @@ TriMesh::TriMeshOperationState::PerFaceData TriMesh::TriMeshOperationState::get_
     face_data.deleted_fid = m_mesh.id(t, PF);
     Tuple t1_edge = m_mesh.switch_tuple(t, PE);
     face_data.V_C_id = m_mesh.id(m_mesh.switch_tuple(t1_edge, PV), PV);
-
-    wmtk::logger().error("deleted_fid: {}", m_mesh.id(m_mesh.switch_tuple(t1_edge, PV), PV));
-    wmtk::logger().error("deleted_fid: {}", face_data.V_C_id);
     Tuple t2_edge = m_mesh.switch_tuple(t, PV);
     t2_edge = m_mesh.switch_tuple(t2_edge, PE);
 
