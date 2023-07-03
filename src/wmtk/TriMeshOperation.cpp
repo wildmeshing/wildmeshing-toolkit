@@ -34,6 +34,7 @@ TriMesh::TriMeshOperationState::TriMeshOperationState(TriMesh& m)
     , fv_accessor(m.create_accessor<long>(m.m_fv_handle))
     , vf_accessor(m.create_accessor<long>(m.m_vf_handle))
     , ef_accessor(m.create_accessor<long>(m.m_ef_handle))
+    , hash_accessor(m.get_cell_hash_accessor())
     , m_mesh(m)
 {}
 
