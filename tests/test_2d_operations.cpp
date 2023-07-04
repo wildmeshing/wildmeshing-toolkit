@@ -156,6 +156,19 @@ TEST_CASE("delete simplices")
     REQUIRE(m.is_connectivity_valid());
     Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
     std::vector<std::vector<long>> simplices_to_delete(3);
+    simplices_to_delete[1] = std::vector<long>{m._debug_id(edge, PrimitiveType::Edge)};
+    simplices_to_delete[2] = std::vector<long>{m._debug_id(edge, PrimitiveType::Face)};
+
+
+    TMOP state(m);
+    state.simplices_to_delete = simplices_to_delete;
+    state.delete_simplices();
+    REQUIRE(state.flag_accessors[1].scalar_attribute(edge) == 0);
+    REQUIRE(state.flag_accessors[2].scalar_attribute(edge) == 0);
+    REQUIRE(state.ff_accessor.vector_attribute(edge)[0] == -1);
+    REQUIRE(state.ff_accessor.vector_attribute(edge)[1] == 2);
+    REQUIRE(state.ff_accessor.vector_attribute(edge)[2] == 1);
+    REQUIRE(state.ef_accessor.scalar_attribute(edge) == 0);
 }
 
 TEST_CASE("operation state")
