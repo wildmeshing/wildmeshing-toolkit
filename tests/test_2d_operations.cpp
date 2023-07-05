@@ -61,6 +61,10 @@ public:
         default: throw std::runtime_error("Invalid PrimitiveType");
         }
     }
+
+    void reserve_attributes(PrimitiveType type, long size) {
+        Mesh::reserve_attributes(type,size);
+    }
 };
 
 TEST_CASE("get per face data")
@@ -377,6 +381,7 @@ TEST_CASE("glue new faces across AB")
             tris.row(2) = Eigen::Matrix<long, 3, 1>{1, 4, 2};
             m.initialize(tris);
         }
+        m.reserve_attributes(PrimitiveType::Face, 10);
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
         TMOP state(m, edge);

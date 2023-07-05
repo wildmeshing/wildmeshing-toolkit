@@ -20,6 +20,7 @@ set(SRC_FILES
     TriMeshOperation.hpp
     TriMeshOperation.cpp
     Primitive.hpp
+    Primitive.cpp
     Tuple.cpp
     Tuple.hpp
     Types.hpp
