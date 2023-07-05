@@ -40,14 +40,12 @@ public:
     Accessor(
         MeshType& m,
         const MeshAttributeHandle<T>& handle,
-        AccessorAccessMode read_access_mode = AccessorAccessMode::Immediate,
-        AccessorAccessMode write_access_mode = IsConst ? AccessorAccessMode::None
-                                                       : AccessorAccessMode::Immediate);
+        AccessorAccessMode access_mode = IsConst ? AccessorAccessMode::None
+                                                 : AccessorAccessMode::Immediate);
 
     ~Accessor();
 
-    AccessorAccessMode read_access_mode() const;
-    AccessorAccessMode write_access_mode() const;
+    AccessorAccessMode access_mode() const;
 
     ConstMapResult vector_attribute(const Tuple& t) const;
     MapResultT vector_attribute(const Tuple& t);
@@ -69,8 +67,7 @@ protected:
     TT scalar_attribute(const long index);
 
 private:
-    AccessorAccessMode m_read_mode;
-    AccessorAccessMode m_write_mode;
+    AccessorAccessMode m_mode;
 
     std::unique_ptr<AccessorCache<T>> m_cache;
 };

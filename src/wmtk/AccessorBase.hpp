@@ -18,10 +18,11 @@ class AccessorCache;
 
 // The basic implementation of an accessor using indices.
 // This should never be
-template <typename T, bool IsConst = false>
+template <typename _T, bool IsConst = false>
 class AccessorBase
 {
 public:
+    using T = _T;
     friend class AccessorCache<T>;
     using MeshType = std::conditional_t<IsConst, const Mesh, Mesh>;
     using MeshAttributesType =

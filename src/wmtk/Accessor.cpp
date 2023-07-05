@@ -20,16 +20,11 @@ template <typename T, bool IsConst>
 Accessor<T, IsConst>::Accessor(
     MeshType& mesh,
     const MeshAttributeHandle<T>& handle,
-    AccessorAccessMode read_mode,
-    AccessorAccessMode write_mode)
+    AccessorAccessMode mode)
     : BaseType(mesh, handle)
-    , m_read_mode(read_mode)
-    , m_write_mode(write_mode)
+    , m_mode(mode)
 {
-    if constexpr (IsConst) {
-        assert(m_write_mode == AccessorAccessMode::None);
-    }
-    if (accessor_requires_caching(read_mode) || accessor_requires_caching(write_mode)) {
+    if (accessor_requires_caching(mode)) {
         // m_cache.reset(new AccessorCache<T>());
         //  m_cache.reset(new AccessorCache<T>(*this, read_mode, write_mode));
     }
@@ -46,40 +41,50 @@ Accessor<T, IsConst>::~Accessor()
 }
 
 template <typename T, bool IsConst>
-AccessorAccessMode Accessor<T, IsConst>::read_access_mode() const
+AccessorAccessMode Accessor<T, IsConst>::access_mode() const
 {
-    return m_read_mode;
-}
-
-template <typename T, bool IsConst>
-AccessorAccessMode Accessor<T, IsConst>::write_access_mode() const
-{
-    return m_write_mode;
+    return m_mode;
 }
 
 template <typename T, bool IsConst>
 auto Accessor<T, IsConst>::vector_attribute(const long index) const -> ConstMapResult
 {
-    return BaseType::vector_attribute(index);
+    if (m_cache) {
+        return m_cache->const_vector_attribute(*this, m_mode, index);
+    } else {
+        return BaseType::vector_attribute(index);
+    }
 }
 
 
 template <typename T, bool IsConst>
 auto Accessor<T, IsConst>::vector_attribute(const long index) -> MapResultT
 {
-    return BaseType::vector_attribute(index);
+    if (m_cache) {
+        return m_cache->vector_attribute(*this, m_mode, index);
+    } else {
+        return BaseType::vector_attribute(index);
+    }
 }
 
 template <typename T, bool IsConst>
 T Accessor<T, IsConst>::scalar_attribute(const long index) const
 {
-    return BaseType::scalar_attribute(index);
+    if (m_cache) {
+        return m_cache->const_scalar_attribute(*this, m_mode, index);
+    } else {
+        return BaseType::scalar_attribute(index);
+    }
 }
 
 template <typename T, bool IsConst>
 auto Accessor<T, IsConst>::scalar_attribute(const long index) -> TT
 {
-    return BaseType::scalar_attribute(index);
+    if (m_cache) {
+        return m_cache->scalar_attribute(*this, m_mode, index);
+    } else {
+        return BaseType::scalar_attribute(index);
+    }
 }
 
 

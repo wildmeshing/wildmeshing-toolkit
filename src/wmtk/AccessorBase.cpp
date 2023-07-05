@@ -37,6 +37,12 @@ auto AccessorBase<T, IsConst>::attribute() const -> const Attribute<T>&
 template <typename T, bool IsConst>
 auto AccessorBase<T, IsConst>::vector_attribute(const long index) const -> ConstMapResult
 {
+    return const_vector_attribute(index);
+}
+
+template <typename T, bool IsConst>
+auto AccessorBase<T, IsConst>::const_vector_attribute(const long index) const -> ConstMapResult
+{
     auto buffer = attribute().const_vector_attribute(index);
     return buffer;
 }
@@ -57,10 +63,15 @@ auto AccessorBase<T, IsConst>::vector_attribute(const long index) -> MapResultT
 }
 
 template <typename T, bool IsConst>
-T AccessorBase<T, IsConst>::scalar_attribute(const long index) const
+T AccessorBase<T, IsConst>::const_scalar_attribute(const long index) const
 {
     auto value = attribute().const_scalar_attribute(index);
     return value;
+}
+template <typename T, bool IsConst>
+T AccessorBase<T, IsConst>::scalar_attribute(const long index) const
+{
+    return const_scalar_attribute(index);
 }
 
 template <typename T, bool IsConst>
