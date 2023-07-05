@@ -51,7 +51,7 @@ void Attribute<T>::set(std::vector<T> val)
     m_data = std::move(val);
 }
 template <typename T>
-auto Attribute<T>::vector_attribute(const long index) const -> ConstMapResult
+auto Attribute<T>::const_vector_attribute(const long index) const -> ConstMapResult
 {
     const long start = index * m_stride;
     return ConstMapResult(m_data.data() + start, m_stride);
@@ -62,11 +62,12 @@ template <typename T>
 typename Attribute<T>::MapResult Attribute<T>::vector_attribute(const long index)
 {
     const long start = index * m_stride;
-    return MapResult(m_data.data() + start, m_stride);
+    auto buffer = MapResult(m_data.data() + start, m_stride);
+    return buffer;
 }
 
 template <typename T>
-T Attribute<T>::scalar_attribute(const long index) const
+T Attribute<T>::const_scalar_attribute(const long index) const
 {
     assert(m_stride == 1);
     return m_data[index];

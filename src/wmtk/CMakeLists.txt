@@ -2,6 +2,8 @@
 set(SRC_FILES
     Accessor.cpp
     Accessor.hpp
+    AccessorBase.cpp
+    AccessorBase.hpp
     AttributeHandle.hpp
     Mesh.cpp
     Mesh.hpp

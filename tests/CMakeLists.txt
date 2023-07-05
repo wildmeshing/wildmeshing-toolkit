@@ -15,6 +15,7 @@ set(TEST_SOURCES
     test_io.cpp
     test_simplicial_complex.cpp
     test_2d_operations.cpp
+    test_accessor.cpp
 )
 add_executable(wmtk_tests ${TEST_SOURCES})
 

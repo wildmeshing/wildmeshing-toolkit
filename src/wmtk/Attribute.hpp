@@ -16,10 +16,10 @@ public:
 
     // if size < 0 then the internal data is not initialized
     Attribute(long stride, long size);
-    ConstMapResult vector_attribute(const long index) const;
+    ConstMapResult const_vector_attribute(const long index) const;
     MapResult vector_attribute(const long index);
 
-    T scalar_attribute(const long index) const;
+    T const_scalar_attribute(const long index) const;
     T& scalar_attribute(const long index);
 
     void set(std::vector<T> val);

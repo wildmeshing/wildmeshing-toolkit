@@ -26,7 +26,7 @@ private:
     friend class Mesh;
     friend class MeshAttributes<T>;
     template <typename U, bool IsConst>
-    friend class Accessor;
+    friend class AccessorBase;
     AttributeHandle m_base_handle;
     PrimitiveType m_primitive_type = PrimitiveType::Invalid;
 

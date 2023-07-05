@@ -10,7 +10,7 @@ namespace wmtk {
 using namespace autogen;
 
 TetMesh::TetMesh()
-    : Mesh(4)
+    : Mesh(3)
     , m_vt_handle(register_attribute<long>("m_vt", PrimitiveType::Vertex, 1))
     , m_et_handle(register_attribute<long>("m_et", PrimitiveType::Edge, 1))
     , m_ft_handle(register_attribute<long>("m_ft", PrimitiveType::Face, 1))
@@ -39,7 +39,6 @@ void TetMesh::initialize(
         static_cast<long>(FT.rows()),
         static_cast<long>(TT.rows())};
     set_capacities(cap);
-    reserve_attributes_to_fit();
 
     // get Accessors for topology
     Accessor<long> vt_accessor = create_accessor<long>(m_vt_handle);
