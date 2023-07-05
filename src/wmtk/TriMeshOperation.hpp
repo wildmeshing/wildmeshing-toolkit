@@ -17,7 +17,7 @@ public:
     TriMeshOperationState(TriMesh& m, const Tuple& operating_tuple);
     void delete_simplices();
     void update_cell_hash();
-    
+
     std::array<Accessor<char>, 3> flag_accessors;
     Accessor<long> ff_accessor;
     Accessor<long> fe_accessor;
@@ -83,6 +83,7 @@ public:
     void glue_new_faces_across_AB(
         const std::array<long, 2> new_fids_top,
         const std::array<long, 2> new_fids_bottom);
+    std::vector<long> request_simplex_indices(const PrimitiveType type, long count);
 
     std::vector<std::vector<long>> simplices_to_delete; // size 3 for vertex, edge, face
     std::vector<long> cells_to_update_hash;

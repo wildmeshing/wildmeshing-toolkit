@@ -203,6 +203,10 @@ void TriMesh::TriMeshOperationState::glue_new_faces_across_AB(
     long deleted_fid_bottom = FaceDatas[1].deleted_fid;
     auto ff_deleted_top = ff_accessor.vector_attribute(deleted_fid_top);
     auto ff_deleted_bottom = ff_accessor.vector_attribute(deleted_fid_bottom);
+    assert(m_mesh.capacity(PF) > new_fids_top[0]);
+    assert(m_mesh.capacity(PF) > new_fids_top[1]);
+    assert(m_mesh.capacity(PF) > new_fids_bottom[0]);
+    assert(m_mesh.capacity(PF) > new_fids_bottom[1]);
 
     for (int i = 0; i < 3; i++) {
         if (ff_deleted_top(i) == deleted_fid_bottom) {
@@ -342,6 +346,13 @@ void TriMesh::TriMeshOperationState::split_edge()
     }
     update_cell_hash();
     delete_simplices();
+}
+
+std::vector<long> TriMesh::TriMeshOperationState::request_simplex_indices(
+    const PrimitiveType type,
+    long count)
+{
+    return m_mesh.request_simplex_indices(type, count);
 }
 
 } // namespace wmtk

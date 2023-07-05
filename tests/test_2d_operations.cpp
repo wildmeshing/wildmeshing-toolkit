@@ -1,10 +1,12 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include <numeric>
 #include <wmtk/Accessor.hpp>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/TriMeshOperation.hpp>
 #include <wmtk/utils/Logger.hpp>
+
 
 using namespace wmtk;
 
@@ -34,18 +36,30 @@ public:
     }
 
     template <typename T>
-    AccessorBase<T,false> create_base_accessor(const MeshAttributeHandle<T>& handle) {
-        return AccessorBase<T,false>(*this,handle);
+    AccessorBase<T, false> create_base_accessor(const MeshAttributeHandle<T>& handle)
+    {
+        return AccessorBase<T, false>(*this, handle);
     }
 
     template <typename T>
-    AccessorBase<T,true> create_const_base_accessor(const MeshAttributeHandle<T>& handle) const {
-
-        return AccessorBase<T,true>(*this,handle);
+    AccessorBase<T, true> create_const_base_accessor(const MeshAttributeHandle<T>& handle) const
+    {
+        return AccessorBase<T, true>(*this, handle);
     }
     template <typename T>
-    AccessorBase<T,true> create_base_accessor(const MeshAttributeHandle<T>& handle) const {
+    AccessorBase<T, true> create_base_accessor(const MeshAttributeHandle<T>& handle) const
+    {
         return create_const_base_accessor(handle);
+    }
+
+    const MeshAttributeHandle<long>& f_handle(const PrimitiveType type) const
+    {
+        switch (type) {
+        case PrimitiveType::Vertex: return m_fv_handle;
+        case PrimitiveType::Edge: return m_fe_handle;
+        case PrimitiveType::Face: return m_ff_handle;
+        default: throw std::runtime_error("Invalid PrimitiveType");
+        }
     }
 };
 
@@ -368,26 +382,31 @@ TEST_CASE("glue new faces across AB")
         TMOP state(m, edge);
 
         REQUIRE(state.FaceDatas.size() == 2);
-        std::array<long, 2> new_fids_top = {3, 4};
-        std::array<long, 2> new_fids_bottom = {5, 6};
+
+        auto new_fids = state.request_simplex_indices(PrimitiveType::Face, 4);
+        std::array<long, 2> new_fids_top = {new_fids[0], new_fids[1]};
+        std::array<long, 2> new_fids_bottom = {new_fids[2], new_fids[3]};
         state.glue_new_faces_across_AB(new_fids_top, new_fids_bottom);
+
+        wmtk::logger().info("2");
 
         long local_eid_top = 0;
         long local_eid_bottom = 1;
+        wmtk::logger().info("3");
 
-        // REQUIRE(
-        //     state.ff_accessor.vector_attribute(new_fids_top[0])[local_eid_top] ==
-        //     new_fids_bottom[0]);
-        // REQUIRE(
-        //     state.ff_accessor.vector_attribute(new_fids_top[1])[local_eid_top] ==
-        //     new_fids_bottom[1]);
+        auto ff_accessor = m.create_base_accessor<long>(m.f_handle(PrimitiveType::Face));
+        wmtk::logger().info("4");
 
-        // REQUIRE(
-        //     state.ff_accessor.vector_attribute(new_fids_bottom[0])[local_eid_bottom] ==
-        //     new_fids_top[0]);
-        // REQUIRE(
-        //     state.ff_accessor.vector_attribute(new_fids_bottom[1])[local_eid_bottom] ==
-        //     new_fids_top[1]);
+        REQUIRE(ff_accessor.vector_attribute(new_fids_top[0])[local_eid_top] == new_fids_bottom[0]);
+        wmtk::logger().info("5");
+        REQUIRE(ff_accessor.vector_attribute(new_fids_top[1])[local_eid_top] == new_fids_bottom[1]);
+        wmtk::logger().info("6");
+        REQUIRE(
+            ff_accessor.vector_attribute(new_fids_bottom[0])[local_eid_bottom] == new_fids_top[0]);
+        wmtk::logger().info("7");
+        REQUIRE(
+            ff_accessor.vector_attribute(new_fids_bottom[1])[local_eid_bottom] == new_fids_top[1]);
+        wmtk::logger().info("8");
     }
 }
 
