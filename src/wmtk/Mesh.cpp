@@ -126,6 +126,7 @@ void Mesh::set_capacities(std::vector<long> capacities)
 {
     assert(capacities.size() == m_capacities.size());
     m_capacities = std::move(capacities);
+    reserve_attributes_to_fit();
 }
 ConstAccessor<char> Mesh::get_flag_accessor(PrimitiveType type) const
 {
@@ -153,6 +154,9 @@ long Mesh::get_cell_hash_slow(long cell_index) const
 
 void Mesh::set_capacities_from_flags()
 {
+    for(const auto& flag_handle: m_flag_handles) {
+        auto fa = create_const_accessor(flag_handle);
+    }
     // for(long
 
     throw "not implemented";

@@ -14,6 +14,16 @@ template <typename T, bool IsConst>
 AccessorBase<T, IsConst>::~AccessorBase() = default;
 
 template <typename T, bool IsConst>
+long AccessorBase<T, IsConst>::size() const {
+    return attribute().size();
+}
+
+template <typename T, bool IsConst>
+long AccessorBase<T, IsConst>::stride() const {
+    return attribute().stride();
+}
+
+template <typename T, bool IsConst>
 auto AccessorBase<T, IsConst>::attributes() -> MeshAttributesType&
 {
     return m_mesh.get_mesh_attributes(m_handle);

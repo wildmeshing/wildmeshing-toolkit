@@ -39,7 +39,6 @@ void TetMesh::initialize(
         static_cast<long>(FT.rows()),
         static_cast<long>(TT.rows())};
     set_capacities(cap);
-    reserve_attributes_to_fit();
 
     // get Accessors for topology
     Accessor<long> vt_accessor = create_accessor<long>(m_vt_handle);
