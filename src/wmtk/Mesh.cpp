@@ -66,6 +66,16 @@ std::vector<long> Mesh::request_simplex_indices(PrimitiveType type, long count)
     // passses back a set of new consecutive ids. in hte future this could do
     // something smarter for re-use but that's probably too much work
     long current_capacity = capacity(type);
+
+    // enable newly requested simplices
+    Accessor<char> flag_accessor = get_flag_accessor(type);
+    long max_size = flag_accessor.size();
+
+    if(current_capacity + count >= max_size) {
+        logger().warn("Requested more {} simplices than available (have {}, wanted {}, can only have at most {}",  primitive_type_name(type), current_capacity, count, max_size);
+        return {};
+    }
+
     std::vector<long> ret(count);
     std::iota(ret.begin(), ret.end(), current_capacity);
 
@@ -75,8 +85,7 @@ std::vector<long> Mesh::request_simplex_indices(PrimitiveType type, long count)
 
     m_capacities[simplex_dim] = new_capacity;
 
-    // enable newly requested simplices
-    Accessor<char> flag_accessor = get_flag_accessor(type);
+
     for (const long simplex_index : ret) {
         flag_accessor.scalar_attribute(simplex_index) |= 0x1;
     }
