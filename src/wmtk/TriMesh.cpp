@@ -6,7 +6,7 @@
 
 namespace wmtk {
 TriMesh::TriMesh()
-    : Mesh(3)
+    : Mesh(2)
     , m_vf_handle(register_attribute<long>("m_vf", PrimitiveType::Vertex, 1))
     , m_ef_handle(register_attribute<long>("m_ef", PrimitiveType::Edge, 1))
     , m_fv_handle(register_attribute<long>("m_fv", PrimitiveType::Face, 3))

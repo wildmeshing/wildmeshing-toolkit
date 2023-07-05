@@ -10,7 +10,7 @@ namespace wmtk {
 using namespace autogen;
 
 TetMesh::TetMesh()
-    : Mesh(4)
+    : Mesh(3)
     , m_vt_handle(register_attribute<long>("m_vt", PrimitiveType::Vertex, 1))
     , m_et_handle(register_attribute<long>("m_et", PrimitiveType::Edge, 1))
     , m_ft_handle(register_attribute<long>("m_ft", PrimitiveType::Face, 1))
