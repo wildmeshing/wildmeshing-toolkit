@@ -20,6 +20,8 @@ public:
     friend class Accessor;
     friend class ParaviewWriter;
 
+    // dimension is the dimension of the top level simplex in this mesh
+    // That is, a TriMesh is a 2, a TetMesh is a 3
     Mesh(const long& dimension);
     virtual ~Mesh();
 
