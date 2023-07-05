@@ -43,6 +43,7 @@ long PointMesh::id(const Tuple& tuple, const PrimitiveType& type) const
 {
     switch (type) {
     case PrimitiveType::Vertex:
+        return tuple.m_global_cid;
     default: throw std::runtime_error("Tuple switch: Invalid primitive type"); break;
     }
 }

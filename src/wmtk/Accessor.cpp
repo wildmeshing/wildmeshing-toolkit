@@ -47,7 +47,7 @@ AccessorAccessMode Accessor<T, IsConst>::access_mode() const
 }
 
 template <typename T, bool IsConst>
-auto Accessor<T, IsConst>::vector_attribute(const long index) const -> ConstMapResult
+auto Accessor<T, IsConst>::cacheable_const_vector_attribute(const long index) const -> ConstMapResult
 {
     if (m_cache) {
         return m_cache->const_vector_attribute(*this, m_mode, index);
@@ -58,7 +58,7 @@ auto Accessor<T, IsConst>::vector_attribute(const long index) const -> ConstMapR
 
 
 template <typename T, bool IsConst>
-auto Accessor<T, IsConst>::vector_attribute(const long index) -> MapResultT
+auto Accessor<T, IsConst>::cacheable_vector_attribute(const long index) -> MapResultT
 {
     if (m_cache) {
         return m_cache->vector_attribute(*this, m_mode, index);
@@ -68,7 +68,7 @@ auto Accessor<T, IsConst>::vector_attribute(const long index) -> MapResultT
 }
 
 template <typename T, bool IsConst>
-T Accessor<T, IsConst>::scalar_attribute(const long index) const
+T Accessor<T, IsConst>::cacheable_const_scalar_attribute(const long index) const
 {
     if (m_cache) {
         return m_cache->const_scalar_attribute(*this, m_mode, index);
@@ -78,7 +78,7 @@ T Accessor<T, IsConst>::scalar_attribute(const long index) const
 }
 
 template <typename T, bool IsConst>
-auto Accessor<T, IsConst>::scalar_attribute(const long index) -> TT
+auto Accessor<T, IsConst>::cacheable_scalar_attribute(const long index) -> TT
 {
     if (m_cache) {
         return m_cache->scalar_attribute(*this, m_mode, index);
@@ -91,28 +91,41 @@ auto Accessor<T, IsConst>::scalar_attribute(const long index) -> TT
 template <typename T, bool IsConst>
 auto Accessor<T, IsConst>::vector_attribute(const Tuple& t) const -> ConstMapResult
 {
+    return const_vector_attribute(t);
+}
+
+
+template <typename T, bool IsConst>
+auto Accessor<T, IsConst>::const_vector_attribute(const Tuple& t) const -> ConstMapResult
+{
     const long idx = BaseType::index(t);
-    return vector_attribute(idx);
+    return cacheable_const_vector_attribute(idx);
 }
 template <typename T, bool IsConst>
 auto Accessor<T, IsConst>::vector_attribute(const Tuple& t) -> MapResultT
 {
     const long idx = BaseType::index(t);
-    return vector_attribute(idx);
+    return cacheable_vector_attribute(idx);
 }
 
 template <typename T, bool IsConst>
 T Accessor<T, IsConst>::scalar_attribute(const Tuple& t) const
 {
+    return const_scalar_attribute(t);
+}
+
+template <typename T, bool IsConst>
+T Accessor<T, IsConst>::const_scalar_attribute(const Tuple& t) const
+{
     const long idx = BaseType::index(t);
-    return scalar_attribute(idx);
+    return cacheable_const_scalar_attribute(idx);
 }
 
 template <typename T, bool IsConst>
 auto Accessor<T, IsConst>::scalar_attribute(const Tuple& t) -> TT
 {
     const long idx = BaseType::index(t);
-    return scalar_attribute(idx);
+    return cacheable_scalar_attribute(idx);
 }
 
 

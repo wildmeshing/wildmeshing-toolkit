@@ -47,9 +47,11 @@ public:
 
     AccessorAccessMode access_mode() const;
 
+    ConstMapResult const_vector_attribute(const Tuple& t) const;
     ConstMapResult vector_attribute(const Tuple& t) const;
     MapResultT vector_attribute(const Tuple& t);
 
+    T const_scalar_attribute(const Tuple& t) const;
     T scalar_attribute(const Tuple& t) const;
     TT scalar_attribute(const Tuple& t);
 
@@ -60,11 +62,13 @@ public:
 
     using BaseType::set_attribute; // (const vector<T>&) -> void
 protected:
-    ConstMapResult vector_attribute(const long index) const;
-    MapResultT vector_attribute(const long index);
+    ConstMapResult cacheable_const_vector_attribute(const long index) const;
+    MapResultT cacheable_vector_attribute(const long index);
 
-    T scalar_attribute(const long index) const;
-    TT scalar_attribute(const long index);
+    T cacheable_const_scalar_attribute(const long index) const;
+    TT cacheable_scalar_attribute(const long index);
+    using BaseType::scalar_attribute;
+    using BaseType::vector_attribute;
 
 private:
     AccessorAccessMode m_mode;
