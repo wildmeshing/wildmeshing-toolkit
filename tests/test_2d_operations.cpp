@@ -62,9 +62,7 @@ public:
         }
     }
 
-    void reserve_attributes(PrimitiveType type, long size) {
-        Mesh::reserve_attributes(type,size);
-    }
+    void reserve_attributes(PrimitiveType type, long size) { Mesh::reserve_attributes(type, size); }
 };
 
 TEST_CASE("get per face data")
@@ -393,25 +391,21 @@ TEST_CASE("glue new faces across AB")
         std::array<long, 2> new_fids_bottom = {new_fids[2], new_fids[3]};
         state.glue_new_faces_across_AB(new_fids_top, new_fids_bottom);
 
-        wmtk::logger().info("2");
 
         long local_eid_top = 0;
         long local_eid_bottom = 1;
-        wmtk::logger().info("3");
 
         auto ff_accessor = m.create_base_accessor<long>(m.f_handle(PrimitiveType::Face));
-        wmtk::logger().info("4");
 
         REQUIRE(ff_accessor.vector_attribute(new_fids_top[0])[local_eid_top] == new_fids_bottom[0]);
-        wmtk::logger().info("5");
+
         REQUIRE(ff_accessor.vector_attribute(new_fids_top[1])[local_eid_top] == new_fids_bottom[1]);
-        wmtk::logger().info("6");
+
         REQUIRE(
             ff_accessor.vector_attribute(new_fids_bottom[0])[local_eid_bottom] == new_fids_top[0]);
-        wmtk::logger().info("7");
+
         REQUIRE(
             ff_accessor.vector_attribute(new_fids_bottom[1])[local_eid_bottom] == new_fids_top[1]);
-        wmtk::logger().info("8");
     }
 }
 
