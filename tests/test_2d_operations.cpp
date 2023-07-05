@@ -10,6 +10,7 @@ using namespace wmtk;
 
 using TM = TriMesh;
 using TMOP = TriMesh::TriMeshOperationState;
+using MapResult = typename Eigen::Matrix<long, Eigen::Dynamic, 1>::MapType;
 class DEBUG_TriMesh : public TriMesh
 {
 public:
@@ -234,7 +235,7 @@ TEST_CASE("operation state")
 
         REQUIRE(state.FaceDatas[0].ears.size() == 2);
     }
-    SECTION("one ear")
+    SECTION("interior edge")
     {
         DEBUG_TriMesh m;
         {
@@ -296,9 +297,87 @@ TEST_CASE("glue new faces across AB")
 {
     // test the assumption of correct orientation
     // new face correspondance accross AB
+    SECTION("single face")
+    {
+        // when the edge is on the boundary (indcated by FaceDatas size), there is no glue
+        // across AB
+        DEBUG_TriMesh m;
+        {
+            //         0
+            //        / \   
+            //       2   1  \ 
+            //      /  0  \  \|
+            //     /       \ 
+            //  1  ----0---- 2
+            //
+            RowVectors3l tris;
+            tris.resize(1, 3);
+            tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
+            m.initialize(tris);
+        }
+        REQUIRE(m.is_connectivity_valid());
+        Tuple edge = m.edge_tuple_between_v1_v2(0, 2, 0);
+        REQUIRE(m._debug_id(edge, PrimitiveType::Vertex) == 0);
+        REQUIRE(m._debug_id(edge, PrimitiveType::Face) == 0);
+        REQUIRE(
+            m._debug_id(m.switch_tuple(edge, PrimitiveType::Vertex), PrimitiveType::Vertex) == 2);
+        TMOP state(m, edge);
+        REQUIRE(state.FaceDatas.size() == 1);
+    }
+    SECTION("interior edge")
+    {
+        DEBUG_TriMesh m;
+        {
+            //  3--1--- 0
+            //   |     / \ 
+            //   2 f1 /2   1
+            //   |  0/ f0  \ 
+            //   |  /  0    \ 
+            //  1  --------- 2
+            //     \   1    /
+            //      2  f2  0
+            //       \    /
+            //        \  /
+            //         4
+            RowVectors3l tris;
+            tris.resize(3, 3);
+            tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
+            tris.row(1) = Eigen::Matrix<long, 3, 1>{3, 1, 0};
+            tris.row(2) = Eigen::Matrix<long, 3, 1>{1, 4, 2};
+            m.initialize(tris);
+        }
+        REQUIRE(m.is_connectivity_valid());
+        Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
+        TMOP state(m, edge);
+
+        REQUIRE(state.FaceDatas.size() == 2);
+        std::array<long, 2> new_fids_top = {3, 4};
+        std::array<long, 2> new_fids_bottom = {5, 6};
+        state.glue_new_faces_across_AB(new_fids_top, new_fids_bottom);
+
+        long local_eid_top = 0;
+        long local_eid_bottom = 1;
+
+        // REQUIRE(
+        //     state.ff_accessor.vector_attribute(new_fids_top[0])[local_eid_top] ==
+        //     new_fids_bottom[0]);
+        // REQUIRE(
+        //     state.ff_accessor.vector_attribute(new_fids_top[1])[local_eid_top] ==
+        //     new_fids_bottom[1]);
+
+        // REQUIRE(
+        //     state.ff_accessor.vector_attribute(new_fids_bottom[0])[local_eid_bottom] ==
+        //     new_fids_top[0]);
+        // REQUIRE(
+        //     state.ff_accessor.vector_attribute(new_fids_bottom[1])[local_eid_bottom] ==
+        //     new_fids_top[1]);
+    }
 }
 
-TEST_CASE("glue new triangle topology") {}
+TEST_CASE("glue new triangle topology")
+{
+    // old faces are not recycled
+}
 
 TEST_CASE("simplices to delete for split") {}
 
