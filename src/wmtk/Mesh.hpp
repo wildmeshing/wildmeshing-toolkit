@@ -17,9 +17,11 @@ class Mesh
 {
 public:
     template <typename T, bool isConst>
-    friend class Accessor;
+    friend class AccessorBase;
     friend class ParaviewWriter;
 
+    // dimension is the dimension of the top level simplex in this mesh
+    // That is, a TriMesh is a 2, a TetMesh is a 3
     Mesh(const long& dimension);
     virtual ~Mesh();
 
@@ -54,6 +56,8 @@ public:
     template <typename T>
     Accessor<T> create_accessor(const MeshAttributeHandle<T>& handle);
 
+    template <typename T>
+    ConstAccessor<T> create_const_accessor(const MeshAttributeHandle<T>& handle) const;
     template <typename T>
     ConstAccessor<T> create_accessor(const MeshAttributeHandle<T>& handle) const;
 
@@ -177,6 +181,7 @@ protected:
     virtual long id(const Tuple& tuple, const PrimitiveType& type) const = 0;
     long id(const Simplex& s) const { return id(s.tuple(), s.primitive_type()); }
 
+    // specifies the number of simplices of each type and resizes attributes appropritely
     void set_capacities(std::vector<long> capacities);
 
 private: // members
@@ -214,9 +219,14 @@ Accessor<T> Mesh::create_accessor(const MeshAttributeHandle<T>& handle)
     return Accessor<T>(*this, handle);
 }
 template <typename T>
-ConstAccessor<T> Mesh::create_accessor(const MeshAttributeHandle<T>& handle) const
+ConstAccessor<T> Mesh::create_const_accessor(const MeshAttributeHandle<T>& handle) const
 {
     return ConstAccessor<T>(*this, handle);
+}
+template <typename T>
+ConstAccessor<T> Mesh::create_accessor(const MeshAttributeHandle<T>& handle) const
+{
+    return create_const_accessor(handle);
 }
 
 template <typename T>

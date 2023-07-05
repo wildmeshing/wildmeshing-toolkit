@@ -17,8 +17,10 @@ public:
     auto edge_tuple_between_v1_v2(const long v1, const long v2, const long fid) const -> Tuple
     {
         ConstAccessor<long> fv = create_accessor<long>(m_fv_handle);
+        auto fv_base = create_base_accessor<long>(m_fv_handle);
         Tuple face = face_tuple_from_id(fid);
         auto fv0 = fv.vector_attribute(face);
+        REQUIRE(fv0 == fv_base.vector_attribute(fid));
         long local_vid1 = -1, local_vid2 = -1;
         for (long i = 0; i < fv0.size(); ++i) {
             if (fv0[i] == v1) {
@@ -29,6 +31,21 @@ public:
             }
         }
         return Tuple(local_vid1, (3 - local_vid1 - local_vid2) % 3, -1, fid, 0);
+    }
+
+    template <typename T>
+    AccessorBase<T,false> create_base_accessor(const MeshAttributeHandle<T>& handle) {
+        return AccessorBase<T,false>(*this,handle);
+    }
+
+    template <typename T>
+    AccessorBase<T,true> create_const_base_accessor(const MeshAttributeHandle<T>& handle) const {
+
+        return AccessorBase<T,true>(*this,handle);
+    }
+    template <typename T>
+    AccessorBase<T,true> create_base_accessor(const MeshAttributeHandle<T>& handle) const {
+        return create_const_base_accessor(handle);
     }
 };
 

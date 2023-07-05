@@ -6,8 +6,15 @@ Tuple PointMesh::vertex_tuple_from_id(long id) const
 }
 
 PointMesh::PointMesh()
-    : Mesh(1)
+    : Mesh(0)
 {}
+
+
+PointMesh::PointMesh(long size): PointMesh()  {
+    set_capacities({size});
+    reserve_attributes_to_fit();
+}
+
 Tuple PointMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
 {
     throw std::runtime_error("Tuple switch: Invalid primitive type");

@@ -8,15 +8,14 @@
 namespace wmtk {
 
 Mesh::Mesh(const long& dimension)
-    : m_char_attributes(dimension)
-    , m_long_attributes(dimension)
-    , m_double_attributes(dimension)
-    , m_capacities(dimension, 0)
-    , m_cell_hash_handle(
-          register_attribute<long>("hash", static_cast<PrimitiveType>(dimension - 1), 1))
+    : m_char_attributes(dimension + 1)
+    , m_long_attributes(dimension + 1)
+    , m_double_attributes(dimension + 1)
+    , m_capacities(dimension + 1, 0)
+    , m_cell_hash_handle(register_attribute<long>("hash", static_cast<PrimitiveType>(dimension), 1))
 {
-    m_flag_handles.reserve(dimension);
-    for (long j = 0; j < dimension; ++j) {
+    m_flag_handles.reserve(dimension + 1);
+    for (long j = 0; j <= dimension; ++j) {
         m_flag_handles.emplace_back(
             register_attribute<char>("flags", static_cast<PrimitiveType>(j), 1));
     }
@@ -127,6 +126,7 @@ void Mesh::set_capacities(std::vector<long> capacities)
 {
     assert(capacities.size() == m_capacities.size());
     m_capacities = std::move(capacities);
+    reserve_attributes_to_fit();
 }
 ConstAccessor<char> Mesh::get_flag_accessor(PrimitiveType type) const
 {
@@ -146,13 +146,17 @@ Accessor<long> Mesh::get_cell_hash_accessor()
     return create_accessor(m_cell_hash_handle);
 }
 
-long Mesh::get_cell_hash_slow(long cell_index) const {
+long Mesh::get_cell_hash_slow(long cell_index) const
+{
     ConstAccessor<long> hash_accessor = get_cell_hash_accessor();
     return hash_accessor.scalar_attribute(cell_index);
 }
 
 void Mesh::set_capacities_from_flags()
 {
+    for(const auto& flag_handle: m_flag_handles) {
+        auto fa = create_const_accessor(flag_handle);
+    }
     // for(long
 
     throw "not implemented";
