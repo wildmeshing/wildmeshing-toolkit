@@ -244,7 +244,6 @@ bool TriMesh::is_valid(const Tuple& tuple) const
 bool TriMesh::is_connectivity_valid() const
 {
     // get Accessors for topology
-<<<<<<< HEAD
     ConstAccessor<long> fv_accessor = create_const_accessor<long>(m_fv_handle);
     ConstAccessor<long> fe_accessor = create_const_accessor<long>(m_fe_handle);
     ConstAccessor<long> ff_accessor = create_const_accessor<long>(m_ff_handle);

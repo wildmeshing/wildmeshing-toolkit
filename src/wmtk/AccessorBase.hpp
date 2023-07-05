@@ -8,12 +8,14 @@
 
 #include <Eigen/Dense>
 
+class DEBUG_TriMesh;
 namespace wmtk {
 
 template <typename T>
 class MeshAttributes;
 template <typename T>
 class AccessorCache;
+
 
 
 // The basic implementation of an accessor using indices.
@@ -24,6 +26,7 @@ class AccessorBase
 public:
     using T = _T;
     friend class AccessorCache<T>;
+    friend class DEBUG_TriMesh;
     using MeshType = std::conditional_t<IsConst, const Mesh, Mesh>;
     using MeshAttributesType =
         std::conditional_t<IsConst, const MeshAttributes<T>, MeshAttributes<T>>;
@@ -43,9 +46,6 @@ public:
     long size() const;
     long stride() const;
 
-protected:
-    AccessorBase(MeshType& m, const MeshAttributeHandle<T>& handle);
-    ~AccessorBase();
 
     void set_attribute(std::vector<T> value);
 
@@ -66,6 +66,10 @@ protected:
     const Attribute<T>& attribute() const;
 
     long index(const Tuple& t) const;
+
+    ~AccessorBase();
+    AccessorBase(MeshType& m, const MeshAttributeHandle<T>& handle);
+protected:
 
     MeshType& m_mesh;
     MeshAttributeHandle<T> m_handle;
