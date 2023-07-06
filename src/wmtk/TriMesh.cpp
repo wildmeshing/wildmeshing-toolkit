@@ -72,7 +72,7 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
         auto ff = ff_accessor.vector_attribute(tuple);
 
         long gcid_new = ff(tuple.m_local_eid);
-        long lvid_new, leid_new;
+        long lvid_new = -1, leid_new = -1;
 
         ConstAccessor<long> fv_accessor = create_const_accessor<long>(m_fv_handle);
         auto fv = fv_accessor.vector_attribute(gcid_new);
@@ -88,6 +88,8 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
                 lvid_new = i;
             }
         }
+        assert(lvid_new != -1);
+        assert(leid_new != -1);
         const Tuple res(
             lvid_new,
             leid_new,
