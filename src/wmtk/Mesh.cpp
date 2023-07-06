@@ -71,8 +71,14 @@ std::vector<long> Mesh::request_simplex_indices(PrimitiveType type, long count)
     Accessor<char> flag_accessor = get_flag_accessor(type);
     long max_size = flag_accessor.size();
 
-    if(current_capacity + count >= max_size) {
-        logger().warn("Requested more {} simplices than available (have {}, wanted {}, can only have at most {}",  primitive_type_name(type), current_capacity, count, max_size);
+    if (current_capacity + count > max_size) {
+        logger().warn(
+            "Requested more {} simplices than available (have {}, wanted {}, can only have at most "
+            "{}",
+            primitive_type_name(type),
+            current_capacity,
+            count,
+            max_size);
         return {};
     }
 
@@ -163,7 +169,7 @@ long Mesh::get_cell_hash_slow(long cell_index) const
 
 void Mesh::set_capacities_from_flags()
 {
-    for(const auto& flag_handle: m_flag_handles) {
+    for (const auto& flag_handle : m_flag_handles) {
         auto fa = create_const_accessor(flag_handle);
     }
     // for(long

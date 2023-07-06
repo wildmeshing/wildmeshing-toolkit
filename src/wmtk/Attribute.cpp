@@ -29,7 +29,7 @@ bool Attribute<T>::operator==(const Attribute<T>& o) const
 template <typename T>
 void Attribute<T>::reserve(const long size)
 {
-    if (size > m_data.size()) {
+    if (size > (m_data.size() / m_stride)) {
         m_data.resize(m_stride * size, T(0));
     }
 }
