@@ -53,6 +53,7 @@ void Attribute<T>::set(std::vector<T> val)
 template <typename T>
 auto Attribute<T>::const_vector_attribute(const long index) const -> ConstMapResult
 {
+    assert(index < size());
     const long start = index * m_stride;
     return ConstMapResult(m_data.data() + start, m_stride);
 }
@@ -61,6 +62,7 @@ auto Attribute<T>::const_vector_attribute(const long index) const -> ConstMapRes
 template <typename T>
 typename Attribute<T>::MapResult Attribute<T>::vector_attribute(const long index)
 {
+    assert(index < size());
     const long start = index * m_stride;
     auto buffer = MapResult(m_data.data() + start, m_stride);
     return buffer;
@@ -69,6 +71,7 @@ typename Attribute<T>::MapResult Attribute<T>::vector_attribute(const long index
 template <typename T>
 T Attribute<T>::const_scalar_attribute(const long index) const
 {
+    assert(index < size());
     assert(m_stride == 1);
     return m_data[index];
 }
@@ -76,6 +79,7 @@ T Attribute<T>::const_scalar_attribute(const long index) const
 template <typename T>
 T& Attribute<T>::scalar_attribute(const long index)
 {
+    assert(index < size());
     assert(m_stride == 1);
     return m_data[index];
 }

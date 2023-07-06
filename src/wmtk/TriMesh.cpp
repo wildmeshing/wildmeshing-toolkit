@@ -124,25 +124,35 @@ void TriMesh::initialize(
 
     set_capacities(cap);
 
+
     // get Accessors for topology
     Accessor<long> fv_accessor = create_accessor<long>(m_fv_handle);
     Accessor<long> fe_accessor = create_accessor<long>(m_fe_handle);
     Accessor<long> ff_accessor = create_accessor<long>(m_ff_handle);
     Accessor<long> vf_accessor = create_accessor<long>(m_vf_handle);
     Accessor<long> ef_accessor = create_accessor<long>(m_ef_handle);
+
+    Accessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
+    Accessor<char> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
+    Accessor<char> f_flag_accessor = get_flag_accessor(PrimitiveType::Face);
+
     // iterate over the matrices and fill attributes
     for (long i = 0; i < capacity(PrimitiveType::Face); ++i) {
         fv_accessor.vector_attribute(i) = FV.row(i).transpose();
         fe_accessor.vector_attribute(i) = FE.row(i).transpose();
         ff_accessor.vector_attribute(i) = FF.row(i).transpose();
+
+        f_flag_accessor.scalar_attribute(i) |= 0x1;
     }
     // m_vf
     for (long i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
         vf_accessor.scalar_attribute(i) = VF(i);
+        v_flag_accessor.scalar_attribute(i) |= 0x1;
     }
     // m_ef
     for (long i = 0; i < capacity(PrimitiveType::Edge); ++i) {
         ef_accessor.scalar_attribute(i) = EF(i);
+        e_flag_accessor.scalar_attribute(i) |= 0x1;
     }
 }
 
@@ -255,7 +265,8 @@ bool TriMesh::is_connectivity_valid() const
 
     // EF and FE
     for (long i = 0; i < capacity(PrimitiveType::Edge); ++i) {
-        if (e_flag_accessor.scalar_attribute(i) == 0) {
+        if (e_flag_accessor.scalar_attribute(i) != 0) {
+            std::cout << "Edge " << i << " is deleted" << std::endl;
             continue;
         }
         int cnt = 0;
@@ -272,7 +283,8 @@ bool TriMesh::is_connectivity_valid() const
 
     // VF and FV
     for (long i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
-        if (v_flag_accessor.scalar_attribute(i) == 0) {
+        if (v_flag_accessor.scalar_attribute(i) != 0) {
+            std::cout << "Vertex " << i << " is deleted" << std::endl;
             continue;
         }
         int cnt = 0;
@@ -289,7 +301,8 @@ bool TriMesh::is_connectivity_valid() const
 
     // FE and EF
     for (long i = 0; i < capacity(PrimitiveType::Face); ++i) {
-        if (f_flag_accessor.scalar_attribute(i) == 0) {
+        if (f_flag_accessor.scalar_attribute(i) != 0) {
+            std::cout << "Face " << i << " is deleted" << std::endl;
             continue;
         }
         for (long j = 0; j < 3; ++j) {

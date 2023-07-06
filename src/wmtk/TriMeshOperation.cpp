@@ -90,7 +90,7 @@ void TriMesh::TriMeshOperationState::delete_simplices()
 {
     for (int d = 0; d < 3; d++) {
         for (long& simplex_id : simplices_to_delete[d]) {
-            flag_accessors[d].scalar_attribute(simplex_id) = 0;
+            flag_accessors[d].scalar_attribute(simplex_id) = 1;
         }
     }
 }
@@ -231,11 +231,11 @@ std::array<long, 2> TriMesh::TriMeshOperationState::glue_new_triangle_topology(
     const PerFaceData& face_data)
 {
     // create new faces
-    std::vector<long> new_fids = m_mesh.request_simplex_indices(PrimitiveType::Face, 2);
+    std::vector<long> new_fids = this->request_simplex_indices(PrimitiveType::Face, 2);
     assert(new_fids.size() == 2);
     // std::array<long, 2> = {new_fids[0], new_fids[1]};
     // create new edges
-    std::vector<long> spine_edge = m_mesh.request_simplex_indices(PrimitiveType::Edge, 1);
+    std::vector<long> spine_edge = this->request_simplex_indices(PrimitiveType::Edge, 1);
     assert(spine_edge[0] > -1);
     long spine_eid = spine_edge[0];
 
@@ -320,12 +320,12 @@ void TriMesh::TriMeshOperationState::split_edge()
     }
 
     // create new vertex
-    std::vector<long> new_vids = m_mesh.request_simplex_indices(PrimitiveType::Vertex, 1);
+    std::vector<long> new_vids = request_simplex_indices(PrimitiveType::Vertex, 1);
     assert(new_vids.size() == 1);
     const long new_vid = new_vids[0];
 
     // create new edges
-    std::vector<long> replacement_eids = m_mesh.request_simplex_indices(PrimitiveType::Edge, 2);
+    std::vector<long> replacement_eids = request_simplex_indices(PrimitiveType::Edge, 2);
     assert(replacement_eids.size() == 2);
 
     std::vector<std::array<long, 2>> new_fids;
@@ -352,6 +352,8 @@ std::vector<long> TriMesh::TriMeshOperationState::request_simplex_indices(
     const PrimitiveType type,
     long count)
 {
+    m_mesh.reserve_attributes(type, m_mesh.capacity(type) + count + 1);
+
     return m_mesh.request_simplex_indices(type, count);
 }
 
