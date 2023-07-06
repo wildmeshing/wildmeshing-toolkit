@@ -1,6 +1,6 @@
 #pragma once
 
 namespace wmtk {
-enum class AccessorAccessMode { None, Immediate, Buffered };
+enum class AccessorAccessMode { Immediate, Buffered };
 
 } // namespace wmtk

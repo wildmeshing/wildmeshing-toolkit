@@ -52,6 +52,7 @@ public:
             const auto& dat = it->second.data;
             return typename AccessorBase<T, IsConst>::ConstMapResult(dat.data(), dat.size());
         }
+        case AccessorAccessMode::Immediate:
         default: {
         }
         }
@@ -68,6 +69,7 @@ public:
             auto& dat = it->second.data;
             return typename AccessorBase<T, IsConst>::MapResultT(dat.data(), dat.size());
         }
+        case AccessorAccessMode::Immediate:
         default: {
         }
         }
@@ -83,6 +85,7 @@ public:
             auto it = load(accessor, index);
             return it->second.data[0];
         }
+        case AccessorAccessMode::Immediate:
         default: {
         }
         }
@@ -100,6 +103,7 @@ public:
             auto it = load(accessor, index);
             return it->second.data[0];
         }
+        case AccessorAccessMode::Immediate:
         default: {
         }
         }

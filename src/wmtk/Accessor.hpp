@@ -40,8 +40,7 @@ public:
     Accessor(
         MeshType& m,
         const MeshAttributeHandle<T>& handle,
-        AccessorAccessMode access_mode = IsConst ? AccessorAccessMode::None
-                                                 : AccessorAccessMode::Immediate);
+        AccessorAccessMode access_mode = AccessorAccessMode::Immediate);
 
     ~Accessor();
 
