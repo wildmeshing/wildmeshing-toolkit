@@ -30,6 +30,7 @@ long TriMesh::id(const Tuple& tuple, const PrimitiveType& type) const
     case PrimitiveType::Face: {
         return tuple.m_global_cid;
     }
+    case PrimitiveType::Tetrahedron:
     default: throw std::runtime_error("Tuple id: Invalid primitive type");
     }
 }
