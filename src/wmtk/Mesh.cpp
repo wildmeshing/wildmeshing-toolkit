@@ -30,7 +30,7 @@ std::vector<Tuple> Mesh::get_all(const PrimitiveType& type) const
     long cap = capacity(type);
     ret.reserve(cap);
     for (size_t index = 0; index < cap; ++index) {
-        if (!(flag_accessor.scalar_attribute(index) & 1)) {
+        if ((flag_accessor.scalar_attribute(index) & 1)) {
             ret.emplace_back(tuple_from_id(type, index));
         }
     }
@@ -71,8 +71,14 @@ std::vector<long> Mesh::request_simplex_indices(PrimitiveType type, long count)
     Accessor<char> flag_accessor = get_flag_accessor(type);
     long max_size = flag_accessor.size();
 
-    if(current_capacity + count >= max_size) {
-        logger().warn("Requested more {} simplices than available (have {}, wanted {}, can only have at most {}",  primitive_type_name(type), current_capacity, count, max_size);
+    if (current_capacity + count >= max_size) {
+        logger().warn(
+            "Requested more {} simplices than available (have {}, wanted {}, can only have at most "
+            "{}",
+            primitive_type_name(type),
+            current_capacity,
+            count,
+            max_size);
         return {};
     }
 
@@ -163,7 +169,7 @@ long Mesh::get_cell_hash_slow(long cell_index) const
 
 void Mesh::set_capacities_from_flags()
 {
-    for(const auto& flag_handle: m_flag_handles) {
+    for (const auto& flag_handle : m_flag_handles) {
         auto fa = create_const_accessor(flag_handle);
     }
     // for(long

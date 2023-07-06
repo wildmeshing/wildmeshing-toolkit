@@ -320,12 +320,12 @@ void TriMesh::TriMeshOperationState::split_edge()
     }
 
     // create new vertex
-    std::vector<long> new_vids = request_simplex_indices(PrimitiveType::Vertex, 1);
+    std::vector<long> new_vids = this->request_simplex_indices(PrimitiveType::Vertex, 1);
     assert(new_vids.size() == 1);
     const long new_vid = new_vids[0];
 
     // create new edges
-    std::vector<long> replacement_eids = request_simplex_indices(PrimitiveType::Edge, 2);
+    std::vector<long> replacement_eids = this->request_simplex_indices(PrimitiveType::Edge, 2);
     assert(replacement_eids.size() == 2);
 
     std::vector<std::array<long, 2>> new_fids;
