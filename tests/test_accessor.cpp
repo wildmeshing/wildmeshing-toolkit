@@ -93,9 +93,11 @@ TEST_CASE("test_accessor_caching")
     auto long_handle = m.register_attribute<long>("long", wmtk::PrimitiveType::Vertex, 1);
     auto double_handle = m.register_attribute<double>("double", wmtk::PrimitiveType::Vertex, 3);
 
+    auto immediate_long_acc = m.create_accessor(long_handle);
+    auto immediate_double_acc = m.create_accessor(double_handle);
 
-    auto long_acc = m.create_accessor(long_handle);
-    auto double_acc = m.create_accessor(double_handle);
+    auto long_acc = m.create_accessor(long_handle, wmtk::AccessorAccessMode::Buffered);
+    auto double_acc = m.create_accessor(double_handle, wmtk::AccessorAccessMode::Buffered);
 
     auto vertices = m.get_all(wmtk::PrimitiveType::Vertex);
 
@@ -109,8 +111,17 @@ TEST_CASE("test_accessor_caching")
 
     for (const wmtk::Tuple& tup : vertices) {
         long id = m.id(tup);
+        long_acc.scalar_attribute(tup) = id;
+        Eigen::Vector3d x(3 * id, 3 * id + 1, 3 * id + 2);
+        double_acc.vector_attribute(tup) = x;
+    }
+    for (const wmtk::Tuple& tup : vertices) {
+        long id = m.id(tup);
         CHECK(long_acc.const_scalar_attribute(tup) == id);
         Eigen::Vector3d x(3 * id, 3 * id + 1, 3 * id + 2);
         CHECK((double_acc.const_vector_attribute(tup) == x));
+
+        CHECK(immediate_long_acc.const_scalar_attribute(tup) == 0);
+        CHECK((immediate_double_acc.const_vector_attribute(tup).array() == 0).all());
     }
 }

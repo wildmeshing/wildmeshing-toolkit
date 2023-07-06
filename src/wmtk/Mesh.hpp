@@ -54,12 +54,18 @@ public:
         const std::string& name); // block standard topology tools
 
     template <typename T>
-    Accessor<T> create_accessor(const MeshAttributeHandle<T>& handle);
+    Accessor<T> create_accessor(
+        const MeshAttributeHandle<T>& handle,
+        AccessorAccessMode mode = AccessorAccessMode::Immediate);
 
     template <typename T>
-    ConstAccessor<T> create_const_accessor(const MeshAttributeHandle<T>& handle) const;
+    ConstAccessor<T> create_const_accessor(
+        const MeshAttributeHandle<T>& handle,
+        AccessorAccessMode mode = AccessorAccessMode::Immediate) const;
     template <typename T>
-    ConstAccessor<T> create_accessor(const MeshAttributeHandle<T>& handle) const;
+    ConstAccessor<T> create_accessor(
+        const MeshAttributeHandle<T>& handle,
+        AccessorAccessMode mode = AccessorAccessMode::Immediate) const;
 
     ConstAccessor<char> get_flag_accessor(PrimitiveType type) const;
     ConstAccessor<long> get_cell_hash_accessor() const;
@@ -214,19 +220,23 @@ private: // members
 
 
 template <typename T>
-Accessor<T> Mesh::create_accessor(const MeshAttributeHandle<T>& handle)
+Accessor<T> Mesh::create_accessor(const MeshAttributeHandle<T>& handle, AccessorAccessMode mode)
 {
-    return Accessor<T>(*this, handle);
+    return Accessor<T>(*this, handle, mode);
 }
 template <typename T>
-ConstAccessor<T> Mesh::create_const_accessor(const MeshAttributeHandle<T>& handle) const
+ConstAccessor<T> Mesh::create_const_accessor(
+    const MeshAttributeHandle<T>& handle,
+    AccessorAccessMode mode) const
 {
-    return ConstAccessor<T>(*this, handle);
+    return ConstAccessor<T>(*this, handle, mode);
 }
 template <typename T>
-ConstAccessor<T> Mesh::create_accessor(const MeshAttributeHandle<T>& handle) const
+ConstAccessor<T> Mesh::create_accessor(
+    const MeshAttributeHandle<T>& handle,
+    AccessorAccessMode mode) const
 {
-    return create_const_accessor(handle);
+    return create_const_accessor(handle, mode);
 }
 
 template <typename T>
