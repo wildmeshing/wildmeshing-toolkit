@@ -22,7 +22,7 @@ message(STATUS "Third-party: creating target 'Catch2::Catch2'")
 include(FetchContent)
 FetchContent_Declare(
     catch2
-    URL https://github.com/catchorg/Catch2/archive/refs/tags/v2.13.8.zip
-    URL_HASH MD5=78148e1a75aea786038fb8d21b9455f2
+    URL https://github.com/catchorg/Catch2/archive/refs/tags/v3.3.2.zip
+    URL_HASH MD5=d44e362204de1820de9077a65cc81767
 )
 FetchContent_MakeAvailable(catch2)
