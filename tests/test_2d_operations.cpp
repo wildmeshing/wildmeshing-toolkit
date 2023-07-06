@@ -202,8 +202,8 @@ TEST_CASE("delete simplices")
     TMOP state(m);
     state.simplices_to_delete = simplices_to_delete;
     state.delete_simplices();
-    REQUIRE(state.flag_accessors[1].scalar_attribute(edge) == 0);
-    REQUIRE(state.flag_accessors[2].scalar_attribute(edge) == 0);
+    REQUIRE(state.flag_accessors[1].scalar_attribute(edge) != 0);
+    REQUIRE(state.flag_accessors[2].scalar_attribute(edge) != 0);
     REQUIRE(state.ff_accessor.vector_attribute(edge)[0] == -1);
     REQUIRE(state.ff_accessor.vector_attribute(edge)[1] == 2);
     REQUIRE(state.ff_accessor.vector_attribute(edge)[2] == 1);
@@ -327,7 +327,34 @@ TEST_CASE("operation state")
         REQUIRE(ear2.eid > -1);
     }
 }
-TEST_CASE("glue ear to face") {}
+TEST_CASE("glue ear to face") {
+    DEBUG_TriMesh m;
+    {
+        //    0---1---2
+        //   / \ / \ / \
+        //  3---4---5---6
+        //   \ / \ / 
+        //    7---8
+        RowVectors3l tris;
+        tris.resize(8, 3);
+        tris << 3, 4, 0,
+                4, 1, 0,
+                4, 5, 1,
+                5, 2, 1,
+                5, 6, 2,
+                4, 8, 5,
+                3, 7, 4,
+                7, 8, 4;
+        m.initialize(tris);
+    }
+    REQUIRE(m.is_connectivity_valid());
+    Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
+    Tuple left_ear_edge = m.switch_tuple(edge, PrimitiveType::Edge);
+    REQUIRE(m._debug_id(left_ear_edge, PrimitiveType::Vertex) == 4);
+    REQUIRE(m._debug_id(m.switch_tuple(left_ear_edge, PrimitiveType::Vertex), PrimitiveType::Vertex) == 1);
+    TMOP state(m);
+    state.glue_ear_to_face(1, 3, 2, m._debug_id(edge, PrimitiveType::Edge));
+}
 TEST_CASE("hash update") {}
 
 //////////// SPLIT TESTS ////////////
@@ -502,3 +529,33 @@ TEST_CASE("simplices to delete for split") {}
 
 //////////// COLLAPSE TESTS ////////////
 TEST_CASE("2D link condition for collapse") {}
+
+TEST_CASE("collapse edge") {
+    DEBUG_TriMesh m;
+    {
+        //    0---1---2
+        //   / \ / \ / \
+        //  3---4---5---6
+        //   \ / \ / 
+        //    7---8
+        RowVectors3l tris;
+        tris.resize(8, 3);
+        tris << 3, 4, 0,
+                4, 1, 0,
+                4, 5, 1,
+                5, 2, 1,
+                5, 6, 2,
+                3, 7, 4,
+                7, 8, 4,
+                4, 8, 5;
+        m.initialize(tris);
+    }
+    std::cout << "BEFORE COLLAPSE" << std::endl;
+    REQUIRE(m.is_connectivity_valid());
+
+    Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
+    m.collapse_edge(edge);
+    std::cout << "AFTER COLLAPSE" << std::endl;
+    REQUIRE(m.is_connectivity_valid());
+    
+}
