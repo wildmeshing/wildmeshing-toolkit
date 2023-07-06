@@ -77,10 +77,10 @@ TEST_CASE("get per face data")
         DEBUG_TriMesh m;
         {
             //         0
-            //        / \   
-            //       2   1  \ 
+            //        / \   .
+            //       2   1  \ .
             //      /  0  \  \|
-            //     /       \ 
+            //     /       \ .
             //  1  ----0---- 2
             //
             RowVectors3l tris;
@@ -112,10 +112,10 @@ TEST_CASE("get per face data")
         DEBUG_TriMesh m;
         {
             //  3--1--- 0
-            //   |     / \ 
+            //   |     / \ .
             //   2 f1 /2   1
-            //   |  0/ f0  \ 
-            //   |  /       \ 
+            //   |  0/ f0  \ .
+            //   |  /       \ .
             //  1  ----0---- 2
             //
             RowVectors3l tris;
@@ -217,10 +217,10 @@ TEST_CASE("operation state")
         DEBUG_TriMesh m;
         {
             //         0
-            //        / \   
-            //       2   1  \ 
+            //        / \   .
+            //       2   1  \ .
             //      /  0  \  \|
-            //     /       \ 
+            //     /       \ .
             //  1  ----0---- 2
             //
             RowVectors3l tris;
@@ -248,10 +248,10 @@ TEST_CASE("operation state")
         DEBUG_TriMesh m;
         {
             //  3--1--- 0
-            //   |     / \ 
+            //   |     / \ .
             //   2 f1 /2   1
-            //   |  0/ f0  \ 
-            //   |  /       \ 
+            //   |  0/ f0  \ .
+            //   |  /       \ .
             //  1  ----0---- 2
             //
             RowVectors3l tris;
@@ -278,10 +278,10 @@ TEST_CASE("operation state")
         DEBUG_TriMesh m;
         {
             //  3--1--- 0
-            //   |     / \ 
+            //   |     / \ .
             //   2 f1 /2   1
-            //   |  0/ f0  \ 
-            //   |  /       \ 
+            //   |  0/ f0  \ .
+            //   |  /       \ .
             //  1  ----0---- 2
             //     \        /
             //      \  f2  /
@@ -331,9 +331,9 @@ TEST_CASE("glue ear to face") {
     DEBUG_TriMesh m;
     {
         //    0---1---2
-        //   / \ / \ / \
+        //   / \ / \ / \ .
         //  3---4---5---6
-        //   \ / \ / 
+        //   \ / \ /  .
         //    7---8
         RowVectors3l tris;
         tris.resize(8, 3);
@@ -369,10 +369,10 @@ TEST_CASE("glue new faces across AB")
         DEBUG_TriMesh m;
         {
             //         0
-            //        / \   
-            //       2   1  \ 
+            //        / \   .
+            //       2   1  \ .
             //      /  0  \  \|
-            //     /       \ 
+            //     /       \ .
             //  1  ----0---- 2
             //
             RowVectors3l tris;
@@ -394,10 +394,10 @@ TEST_CASE("glue new faces across AB")
         DEBUG_TriMesh m;
         {
             //  3--1--- 0
-            //   |     / \ 
+            //   |     / \ .
             //   2 f1 /2   1
-            //   |  0/ f0  \ 
-            //   |  /  0    \ 
+            //   |  0/ f0  \ .
+            //   |  /  0    \ .
             //  1  --------- 2
             //     \   1    /
             //      2  f2  0
@@ -447,10 +447,10 @@ TEST_CASE("glue new triangle", "[old faces not recycled]")
     DEBUG_TriMesh m;
     {
         //  3--1--- 0
-        //   |     / \ 
+        //   |     / \ .
         //   2 f1 /2   1
-        //   |  0/ f0  \ 
-        //   |  /  0    \ 
+        //   |  0/ f0  \ .
+        //   |  /  0    \ .
         //  1  -------- 2
         //     \   1    /
         //      \  f2  /
@@ -534,9 +534,9 @@ TEST_CASE("collapse edge") {
     DEBUG_TriMesh m;
     {
         //    0---1---2
-        //   / \ / \ / \
+        //   / \ / \ / \ .
         //  3---4---5---6
-        //   \ / \ / 
+        //   \ / \ /  .
         //    7---8
         RowVectors3l tris;
         tris.resize(8, 3);
