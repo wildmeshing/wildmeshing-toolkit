@@ -30,7 +30,7 @@ std::vector<Tuple> Mesh::get_all(const PrimitiveType& type) const
     long cap = capacity(type);
     ret.reserve(cap);
     for (size_t index = 0; index < cap; ++index) {
-        if (!(flag_accessor.scalar_attribute(index) & 1)) {
+        if ((flag_accessor.scalar_attribute(index) & 1)) {
             ret.emplace_back(tuple_from_id(type, index));
         }
     }
