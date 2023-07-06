@@ -453,8 +453,8 @@ TEST_CASE("glue new triangle", "[old faces not recycled]")
     REQUIRE(replacement_eids.size() == 2);
 
     std::vector<std::array<long, 2>> new_fids;
-    for (int i = 0; i < state.FaceDatas.size(); ++i) {
-        auto face_data = state.FaceDatas[i];
+    for (size_t i = 0; i < state.FaceDatas.size(); ++i) {
+        const auto& face_data = state.FaceDatas[i];
         // glue the topology
         std::array<long, 2> new_fid_per_face =
             state.glue_new_triangle_topology(new_vid, replacement_eids, face_data);
