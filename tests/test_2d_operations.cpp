@@ -494,6 +494,15 @@ TEST_CASE("glue new triangle", "[old faces not recycled]")
         REQUIRE(ff_accessor.vector_attribute(new_fids[0][0])[0] == -1);
         REQUIRE(ff_accessor.vector_attribute(new_fids[0][1])[0] == -1);
 
+        auto fe_accessor = m.create_base_accessor<long>(m.f_handle(PrimitiveType::Edge));
+
+        REQUIRE(fe_accessor.vector_attribute(new_fids[0][0])[0] == replacement_eids[0]);
+        REQUIRE(fe_accessor.vector_attribute(new_fids[0][0])[1] == 5);
+        REQUIRE(fe_accessor.vector_attribute(new_fids[0][0])[2] == state.FaceDatas[0].ears[0].eid);
+
+        REQUIRE(fe_accessor.vector_attribute(new_fids[0][1])[0] == replacement_eids[1]);
+        REQUIRE(fe_accessor.vector_attribute(new_fids[0][1])[1] == state.FaceDatas[0].ears[1].eid);
+        REQUIRE(fe_accessor.vector_attribute(new_fids[0][1])[2] == 5);
 
         auto vf_accessor = m.create_base_accessor<long>(m.vf_handle());
         REQUIRE(vf_accessor.scalar_attribute(new_vid) == new_fids[0][0]);
@@ -574,6 +583,24 @@ TEST_CASE("glue new triangle", "[old faces not recycled]")
         REQUIRE(ff_accessor.vector_attribute(new_fids[0][1])[2] == new_fids[0][0]);
         REQUIRE(ff_accessor.vector_attribute(new_fids[1][0])[0] == new_fids[1][1]);
         REQUIRE(ff_accessor.vector_attribute(new_fids[1][1])[2] == new_fids[1][0]);
+
+        auto fe_accessor = m.create_base_accessor<long>(m.f_handle(PrimitiveType::Edge));
+
+        REQUIRE(fe_accessor.vector_attribute(new_fids[0][0])[0] == replacement_eids[0]);
+        REQUIRE(fe_accessor.vector_attribute(new_fids[0][0])[1] == 9);
+        REQUIRE(fe_accessor.vector_attribute(new_fids[0][0])[2] == state.FaceDatas[0].ears[0].eid);
+
+        REQUIRE(fe_accessor.vector_attribute(new_fids[0][1])[0] == replacement_eids[1]);
+        REQUIRE(fe_accessor.vector_attribute(new_fids[0][1])[1] == state.FaceDatas[0].ears[1].eid);
+        REQUIRE(fe_accessor.vector_attribute(new_fids[0][1])[2] == 9);
+
+        REQUIRE(fe_accessor.vector_attribute(new_fids[1][0])[1] == replacement_eids[0]);
+        REQUIRE(fe_accessor.vector_attribute(new_fids[1][0])[0] == 10);
+        REQUIRE(fe_accessor.vector_attribute(new_fids[1][0])[2] == state.FaceDatas[1].ears[0].eid);
+
+        REQUIRE(fe_accessor.vector_attribute(new_fids[1][1])[1] == replacement_eids[1]);
+        REQUIRE(fe_accessor.vector_attribute(new_fids[1][1])[0] == state.FaceDatas[1].ears[1].eid);
+        REQUIRE(fe_accessor.vector_attribute(new_fids[1][1])[2] == 10);
 
         auto vf_accessor = m.create_base_accessor<long>(m.vf_handle());
         REQUIRE(vf_accessor.scalar_attribute(new_vid) == new_fids[1][0]);
