@@ -90,7 +90,7 @@ void TriMesh::TriMeshOperationState::delete_simplices()
 {
     for (int d = 0; d < 3; d++) {
         for (long& simplex_id : simplices_to_delete[d]) {
-            flag_accessors[d].scalar_attribute(simplex_id) = 1;
+            flag_accessors[d].scalar_attribute(simplex_id) = 0;
         }
     }
 }
