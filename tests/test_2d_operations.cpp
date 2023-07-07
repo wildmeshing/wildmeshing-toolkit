@@ -590,7 +590,78 @@ TEST_CASE("glue new triangle", "[old faces not recycled]")
     }
 }
 
-TEST_CASE("simplices to delete for split") {}
+TEST_CASE("simplices to delete for split")
+{
+    SECTION("boundary edge")
+    {
+        // old faces are not recycled
+        DEBUG_TriMesh m;
+        {
+            //         0
+            //        / \ 
+            //       /2   1
+            //      / f0  \ 
+            //     /  0    \ 
+            //  1  --------- 2
+
+            RowVectors3l tris;
+            tris.resize(1, 3);
+            tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
+            m.initialize(tris);
+        }
+        REQUIRE(m.is_connectivity_valid());
+        Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
+        TMOP state(m, edge);
+
+        state.split_edge();
+
+        REQUIRE(state.simplices_to_delete.size() == 3);
+        REQUIRE(state.simplices_to_delete[0].size() == 0);
+
+        REQUIRE(state.simplices_to_delete[1].size() == 1);
+        REQUIRE(state.simplices_to_delete[1][0] == m._debug_id(edge, PrimitiveType::Edge));
+        REQUIRE(state.simplices_to_delete[2].size() == 1);
+        REQUIRE(state.simplices_to_delete[2][0] == 0);
+    }
+    SECTION("interior edge")
+    {
+        // old faces are not recycled
+        DEBUG_TriMesh m;
+        {
+            //  3--1--- 0
+            //   |     / \ 
+            //   2 f1 /2   1
+            //   |  0/ f0  \ 
+            //   |  /  0    \ 
+            //  1  -------- 2
+            //     \   1    /
+            //      \  f2  /
+            //       2    0
+            //        \  /
+            //         4
+            RowVectors3l tris;
+            tris.resize(3, 3);
+            tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
+            tris.row(1) = Eigen::Matrix<long, 3, 1>{3, 1, 0};
+            tris.row(2) = Eigen::Matrix<long, 3, 1>{1, 4, 2};
+            m.initialize(tris);
+        }
+        REQUIRE(m.is_connectivity_valid());
+        Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
+        TMOP state(m, edge);
+
+        state.split_edge();
+
+        REQUIRE(state.simplices_to_delete.size() == 3);
+        REQUIRE(state.simplices_to_delete[0].size() == 0);
+
+        REQUIRE(state.simplices_to_delete[1].size() == 1);
+        REQUIRE(state.simplices_to_delete[1][0] == m._debug_id(edge, PrimitiveType::Edge));
+        REQUIRE(state.simplices_to_delete[2].size() == 2);
+        REQUIRE(state.simplices_to_delete[2][0] == 0);
+        REQUIRE(state.simplices_to_delete[2][1] == 2);
+    }
+}
 
 //////////// COLLAPSE TESTS ////////////
 TEST_CASE("2D link condition for collapse") {}

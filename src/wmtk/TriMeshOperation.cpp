@@ -312,7 +312,6 @@ void TriMesh::TriMeshOperationState::split_edge()
         simplices_to_delete[simplex_d.dimension()].emplace_back(
             m_mesh.id(simplex_d.tuple(), simplex_d.primitive_type()));
     }
-
     // create new vertex
     std::vector<long> new_vids = this->request_simplex_indices(PrimitiveType::Vertex, 1);
     assert(new_vids.size() == 1);
