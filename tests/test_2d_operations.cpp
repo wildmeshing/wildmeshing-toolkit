@@ -202,8 +202,8 @@ TEST_CASE("delete simplices")
     TMOP state(m);
     state.simplices_to_delete = simplices_to_delete;
     state.delete_simplices();
-    REQUIRE(state.flag_accessors[1].scalar_attribute(edge) != 0);
-    REQUIRE(state.flag_accessors[2].scalar_attribute(edge) != 0);
+    REQUIRE(state.flag_accessors[1].scalar_attribute(edge) == 0);
+    REQUIRE(state.flag_accessors[2].scalar_attribute(edge) == 0);
     REQUIRE(state.ff_accessor.vector_attribute(edge)[0] == -1);
     REQUIRE(state.ff_accessor.vector_attribute(edge)[1] == 2);
     REQUIRE(state.ff_accessor.vector_attribute(edge)[2] == 1);
