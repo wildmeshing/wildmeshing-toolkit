@@ -270,6 +270,11 @@ std::array<long, 2> TriMesh::TriMeshOperationState::glue_new_triangle_topology(
                 my_fe(j) = spine_eid;
             }
 
+            if (my_fe(j) == E_AB_id) {
+                // FE of the replacement edge
+                my_fe(j) = replacement_eids[i];
+            }
+
             if (my_fv(j) == other_ear_vid) {
                 // FV of the new to new
                 my_fv(j) = new_vid;

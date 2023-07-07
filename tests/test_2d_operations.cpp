@@ -663,6 +663,34 @@ TEST_CASE("simplices to delete for split")
     }
 }
 
+TEST_CASE("split edge")
+{
+    DEBUG_TriMesh m;
+    {
+        //    0---1---2
+        //   / \ / \ / \
+        //  3---4---5---6
+        //   \ / \ /
+        //    7---8
+        RowVectors3l tris;
+        tris.resize(8, 3);
+        tris.row(0) << 3, 4, 0;
+        tris.row(1) << 4, 1, 0;
+        tris.row(2) << 4, 5, 1;
+        tris.row(3) << 5, 2, 1;
+        tris.row(4) << 5, 6, 2;
+        tris.row(5) << 3, 7, 4;
+        tris.row(6) << 7, 8, 4;
+        tris.row(7) << 4, 8, 5;
+        m.initialize(tris);
+    }
+    REQUIRE(m.is_connectivity_valid());
+
+    Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
+    m.split_edge(edge);
+    REQUIRE(m.is_connectivity_valid());
+}
+
 //////////// COLLAPSE TESTS ////////////
 TEST_CASE("2D link condition for collapse") {}
 
