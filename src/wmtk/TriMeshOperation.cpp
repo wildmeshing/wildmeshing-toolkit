@@ -285,13 +285,6 @@ std::array<long, 2> TriMesh::TriMeshOperationState::glue_new_triangle_topology(
 
         // EF of the new
         ef_accessor.scalar_attribute(replacement_eids[i]) = my_fid;
-
-        // FF of the boundary edge. Set this to the old neighbor for now
-        // will handle properly when gluing faces across boundary AB
-        // TODO: make sure that we cache this outdated neighbor insted of reading from it.
-        // This assumes that the old fid is not re-used
-        ff_accessor.vector_attribute(my_fid)(m_operating_tuple.m_local_eid) =
-            ff_accessor.vector_attribute(deleted_fid)(m_operating_tuple.m_local_eid);
     }
 
     // use first new fid as the fid for new vertex, spine edge, and opposing vertex
