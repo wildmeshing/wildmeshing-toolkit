@@ -689,6 +689,22 @@ TEST_CASE("split edge")
     Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
     m.split_edge(edge);
     REQUIRE(m.is_connectivity_valid());
+
+    Tuple edge2 = m.edge_tuple_between_v1_v2(3, 0, 0);
+    m.split_edge(edge2);
+    REQUIRE(m.is_connectivity_valid());
+
+    Tuple edge3 = m.edge_tuple_between_v1_v2(4, 7, 6);
+    m.split_edge(edge3);
+    REQUIRE(m.is_connectivity_valid());
+
+    Tuple edge4 = m.edge_tuple_between_v1_v2(4, 9, 8);
+    m.split_edge(edge4);
+    REQUIRE(m.is_connectivity_valid());
+
+    Tuple edge5 = m.edge_tuple_between_v1_v2(5, 6, 4);
+    m.split_edge(edge5);
+    REQUIRE(m.is_connectivity_valid());
 }
 
 //////////// COLLAPSE TESTS ////////////
