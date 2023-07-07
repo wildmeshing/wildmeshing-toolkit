@@ -7,7 +7,7 @@ namespace wmtk {
 
 class Simplex
 {
-    PrimitiveType _ptype = PrimitiveType::Invalid;
+    PrimitiveType _ptype;
     Tuple _tuple;
 
 public:
