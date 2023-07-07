@@ -231,10 +231,13 @@ std::array<long, 2> TriMesh::TriMeshOperationState::glue_new_triangle_topology(
     const PerFaceData& face_data)
 {
     // create new faces
+    m_mesh.reserve_attributes(PrimitiveType::Face, m_mesh.capacity(PrimitiveType::Face) + 2 + 1);
     std::vector<long> new_fids = this->request_simplex_indices(PrimitiveType::Face, 2);
     assert(new_fids.size() == 2);
     // std::array<long, 2> = {new_fids[0], new_fids[1]};
     // create new edges
+    m_mesh.reserve_attributes(PrimitiveType::Edge, m_mesh.capacity(PrimitiveType::Edge) + 1 + 2);
+
     std::vector<long> spine_edge = this->request_simplex_indices(PrimitiveType::Edge, 1);
     assert(spine_edge[0] > -1);
     long spine_eid = spine_edge[0];
@@ -352,7 +355,7 @@ std::vector<long> TriMesh::TriMeshOperationState::request_simplex_indices(
     const PrimitiveType type,
     long count)
 {
-    m_mesh.reserve_attributes(type, m_mesh.capacity(type) + count + 1);
+    m_mesh.reserve_attributes(type, m_mesh.capacity(type) + count);
 
     return m_mesh.request_simplex_indices(type, count);
 }

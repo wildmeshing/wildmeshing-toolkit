@@ -71,7 +71,7 @@ std::vector<long> Mesh::request_simplex_indices(PrimitiveType type, long count)
     Accessor<char> flag_accessor = get_flag_accessor(type);
     long max_size = flag_accessor.size();
 
-    if (current_capacity + count >= max_size) {
+    if (current_capacity + count > max_size) {
         logger().warn(
             "Requested more {} simplices than available (have {}, wanted {}, can only have at most "
             "{}",
