@@ -43,6 +43,9 @@ public:
         AccessorCacheMode mode = AccessorCacheMode::Immediate);
     ~Accessor();
 
+    Accessor(const Accessor&) = delete;
+    Accessor& operator=(const Accessor&) = delete;
+
     ConstMapResult vector_attribute(const Tuple& t) const;
     MapResultT vector_attribute(const Tuple& t);
 

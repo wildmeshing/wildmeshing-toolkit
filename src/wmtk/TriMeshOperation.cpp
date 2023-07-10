@@ -26,9 +26,7 @@ TriMesh::TriMeshOperationState::PerFaceData TriMesh::TriMeshOperationState::get_
 
 // constructor
 TriMesh::TriMeshOperationState::TriMeshOperationState(TriMesh& m, const Tuple& operating_tuple)
-    : flag_accessors({{m.get_flag_accessor(PrimitiveType::Vertex),
-                       m.get_flag_accessor(PrimitiveType::Edge),
-                       m.get_flag_accessor(PrimitiveType::Face)}})
+    : flag_accessors{{m.get_flag_accessor(PrimitiveType::Vertex), m.get_flag_accessor(PrimitiveType::Edge), m.get_flag_accessor(PrimitiveType::Face)}}
     , ff_accessor(m.create_accessor<long>(m.m_ff_handle))
     , fe_accessor(m.create_accessor<long>(m.m_fe_handle))
     , fv_accessor(m.create_accessor<long>(m.m_fv_handle))
