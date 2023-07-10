@@ -1,20 +1,30 @@
 #pragma once
 #include "Primitive.hpp"
+#include <type_traits>
 namespace wmtk {
 template <typename T>
 class MeshAttributes;
 template <typename T, bool IsConst>
 class Accessor;
+template <typename T>
+class MeshAttribteHandle;
 
 class AttributeHandle
 {
 protected:
     template <typename T>
     friend class MeshAttributes;
+    template <typename T>
+    friend class MeshAttributeHandle;
     long index = -1;
-
+    AttributeHandle(long i): index(i) {}
 public:
-    bool valid() const { return index >= 0; }
+    AttributeHandle() = default;
+    AttributeHandle(const AttributeHandle&) = default;
+    AttributeHandle(AttributeHandle&&) = default;
+    AttributeHandle& operator=(const AttributeHandle&) = default;
+    AttributeHandle& operator=(AttributeHandle&&) = default;
+
 
     bool operator==(const AttributeHandle& other) const { return index == other.index; }
 };
@@ -28,12 +38,18 @@ private:
     template <typename U, bool IsConst>
     friend class Accessor;
     AttributeHandle m_base_handle;
-    PrimitiveType m_primitive_type = PrimitiveType::Invalid;
+    PrimitiveType m_primitive_type;
 
+    MeshAttributeHandle(AttributeHandle ah, PrimitiveType pt): m_base_handle(ah), m_primitive_type(pt)  {}
+    MeshAttributeHandle(long index, PrimitiveType pt): MeshAttributeHandle(AttributeHandle(index),pt) {}
 public:
-    bool valid() const
-    {
-        return m_base_handle.valid() && m_primitive_type != PrimitiveType::Invalid;
-    }
+    MeshAttributeHandle() = default;
+    MeshAttributeHandle(const MeshAttributeHandle&) = default;
+    MeshAttributeHandle(MeshAttributeHandle&&) = default;
+    MeshAttributeHandle& operator=(const MeshAttributeHandle&) = default;
+    MeshAttributeHandle& operator=(MeshAttributeHandle&&) = default;
+
+    template <typename U>
+    bool operator==(const MeshAttributeHandle& o) const { return std::is_same_v<T,U> && m_base_handle == o.m_base_handle && m_primitive_type == o.m_primitive_type; }
 };
 } // namespace wmtk
