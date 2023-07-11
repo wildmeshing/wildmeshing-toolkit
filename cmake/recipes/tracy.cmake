@@ -26,6 +26,8 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(tracy)
 
+set_target_properties(TracyClient PROPERTIES FOLDER third_party)
+
 ################################################################################
 # Global flags
 ################################################################################

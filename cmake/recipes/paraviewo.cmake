@@ -16,3 +16,8 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(paraviewo)
 
 set_target_properties(paraviewo PROPERTIES FOLDER third_party)
+set_target_properties(fmt PROPERTIES FOLDER third_party)
+set_target_properties(tinyxml2 PROPERTIES FOLDER third_party)
+
+set_target_properties(hdf5-static PROPERTIES FOLDER third_party)
+set_target_properties(hdf5_hl-static PROPERTIES FOLDER third_party)
