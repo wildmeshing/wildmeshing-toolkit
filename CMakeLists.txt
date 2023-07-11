@@ -143,7 +143,16 @@ if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
 
     # Unit tests
     enable_testing()
+
+    # Include Catch2 stuff
+    include(catch2)
+    FetchContent_GetProperties(catch2)
+    list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/contrib)
+    include(Catch)
+    include(wmtk_data)
+
     add_subdirectory(tests)
+    add_subdirectory(components_tests)
 endif()
 
 if(WMTK_BUILD_DOCS)

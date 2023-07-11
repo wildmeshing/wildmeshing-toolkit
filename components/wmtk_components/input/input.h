@@ -12,6 +12,10 @@ inline void input(const nlohmann::json& j, std::map<std::string, std::filesystem
 
     InputOptions options = j.get<InputOptions>();
 
+    if (!std::filesystem::exists(options.file)) {
+        throw std::runtime_error(std::string("file") + options.file.string() + " not found");
+    }
+
     files[options.name] = options.file;
 }
 } // namespace components

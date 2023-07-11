@@ -1,9 +1,3 @@
-# Include Catch2 stuff
-include(catch2)
-FetchContent_GetProperties(catch2)
-list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/contrib)
-include(Catch)
-include(wmtk_data)
 lagrange_include_modules(io)
 
 # Sources
