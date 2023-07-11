@@ -25,7 +25,7 @@ TEST_CASE("component_input", "[components,input]")
         json component_json = {
             {"type", "input"},
             {"name", "input_mesh"},
-            {"file", "SomeRandomNameThatDoesNotExist1234abcd--+?"}};
+            {"file", "In case you ever name your file like that: What is wrong with you?"}};
 
         std::map<std::string, std::filesystem::path> files;
         CHECK_THROWS(wmtk::components::input(component_json, files));
