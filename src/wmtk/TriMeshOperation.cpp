@@ -139,6 +139,10 @@ void TriMesh::TriMeshOperationState::merge()
             return; // TODO: throw exception, should be detected by link condition
         }
 
+        if (FaceDatas[face_index].ears[0].fid == FaceDatas[face_index].ears[1].fid) {
+            return; // TODO: throw exception, non-manifold
+        }
+
         // change VF for V_A,V_C
         long& vf_a = vf_accessor.scalar_attribute(end_point_vids[0]);
         long& vf_c = vf_accessor.scalar_attribute(FaceDatas[face_index].V_C_id);

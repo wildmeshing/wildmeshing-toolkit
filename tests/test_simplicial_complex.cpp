@@ -143,6 +143,7 @@ TEST_CASE("link-case1", "[SC][link]")
     REQUIRE(lnk_01 == lnk_10);
 
     REQUIRE(SimplicialComplex::link_cond(t, m) == false);
+    REQUIRE(SimplicialComplex::link_cond_bd_2d(t, m) == false);
 }
 
 
@@ -178,6 +179,7 @@ TEST_CASE("link-case2", "[SC][link]")
     REQUIRE(lnk_01 == lnk_10);
 
     REQUIRE(SimplicialComplex::link_cond(t, m) == true);
+    REQUIRE(SimplicialComplex::link_cond_bd_2d(t, m) == false);
 }
 
 TEST_CASE("k-ring", "[SC][k-ring]")

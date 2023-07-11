@@ -318,6 +318,75 @@ bool SimplicialComplex::link_cond(Tuple t, const Mesh& m)
     return (lhs == rhs);
 }
 
+// work for 2-manifold case only for now
+bool SimplicialComplex::link_cond_bd_2d(Tuple t, const Mesh& m)
+{
+    // step1 check normal link condition
+    if (!link_cond(t, m))
+    {
+        return false;
+    }
+    // check if dummy vertex w is included in the lhs
+    
+    auto get_bd_edges = [&m](const Tuple &_v)
+    {
+        Simplex input_v(PrimitiveType::Vertex, _v);
+        std::vector<Tuple> ret;
+        // get one_ring_edges from open_star
+        auto one_ring_edges = open_star(input_v, m).get_simplices(PrimitiveType::Edge);
+        for (auto _e : one_ring_edges)
+        {
+            if (m.is_boundary(_e.tuple()))
+            {
+                if (m.simplex_is_equal(Simplex(PrimitiveType::Vertex, _e.tuple()), input_v))
+                {
+                    ret.push_back(m.switch_tuple(_e.tuple(), PrimitiveType::Vertex));
+                }
+                else
+                {
+                    ret.push_back(_e.tuple());
+                }
+            }
+        }
+        return ret;
+    };
+    // case 1: edge ab is a boundary edge, in this case dummy vertex w is in lnk(ab), need to check if there are any common edges connected with w in lnk_w^0(a)∩lnk_w^0(b)
+    auto bd_neighbors_a = get_bd_edges(t);
+    auto bd_neighbors_b = get_bd_edges(m.switch_tuple(t, PrimitiveType::Vertex));
+    if (m.is_boundary(t))
+    {
+        assert(bd_neighbors_a.size() == 2); // if guarantee 2-manifold
+        assert(bd_neighbors_b.size() == 2); // if guarantee 2-manifold
+        for (auto e_a : bd_neighbors_a)
+        {
+            for (auto e_b : bd_neighbors_b)
+            {
+                if (m.simplex_is_equal(Simplex(PrimitiveType::Vertex, e_a), Simplex(PrimitiveType::Vertex, e_b)))
+                {
+                    // find common edge, link condition fails
+                    return false;
+                }
+            }
+        }
+    }
+    else
+    {
+        if (bd_neighbors_a.size() == 0 || bd_neighbors_b.size() == 0)
+        {
+            // in this case, lnk_w^0(a) ∩ lnk_w^0(b) == lnk(a) ∩ lnk(b) == lnk(ab) == lnk_w^0(ab)
+            return true;
+        }
+        else
+        {
+            // in this case w \in lhs but not \in rhs
+            return false;
+        }
+
+    }
+
+    return true;
+}
+
 std::vector<Simplex> SimplicialComplex::vertex_one_ring(Tuple t, const Mesh& m)
 {
     Simplex s(PrimitiveType::Vertex, t);
