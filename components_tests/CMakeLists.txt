@@ -1,6 +1,7 @@
 # Sources
 set(TEST_SOURCES
 	test_input.cpp
+    test_mesh_info.cpp
 )
 add_executable(wmtk_components_tests ${TEST_SOURCES})
 
