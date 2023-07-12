@@ -2,8 +2,6 @@
 set(SRC_FILES
     Accessor.cpp
     Accessor.hpp
-    AccessorBase.cpp
-    AccessorBase.hpp
     AttributeHandle.hpp
     Mesh.cpp
     Mesh.hpp
@@ -32,4 +30,5 @@ target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 
 add_subdirectory(io)
 add_subdirectory(utils)
+#add_subdirectory(attribute)
 add_subdirectory(autogen)
