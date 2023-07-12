@@ -1,14 +1,14 @@
 #include "Accessor.hpp"
-#include "AccessorCache.hpp"
+#include "attribute/AttributeCache.hpp"
 
 #include "Mesh.hpp"
 #include "MeshAttributes.hpp"
 
 namespace wmtk {
 namespace {
-constexpr static bool accessor_requires_caching(AccessorAccessMode mode)
+constexpr static bool accessor_requires_caching(AttributeAccessMode mode)
 {
-    if (mode == AccessorAccessMode::Buffered) {
+    if (mode == AttributeAccessMode::Buffered) {
         return true;
     } else {
         return false;
@@ -20,13 +20,12 @@ template <typename T, bool IsConst>
 Accessor<T, IsConst>::Accessor(
     MeshType& mesh,
     const MeshAttributeHandle<T>& handle,
-    AccessorAccessMode mode)
-    : BaseType(mesh, handle)
+    AttributeAccessMode mode)
+    : BaseType(const_cast<Mesh&>(mesh), handle)
     , m_mode(mode)
 {
     if (accessor_requires_caching(mode)) {
-        // m_cache.reset(new AccessorCache<T>());
-        //  m_cache.reset(new AccessorCache<T>(*this, read_mode, write_mode));
+        m_cache = mesh.request_accessor_cache();
     }
 }
 
@@ -41,18 +40,19 @@ Accessor<T, IsConst>::~Accessor()
 }
 
 template <typename T, bool IsConst>
-AccessorAccessMode Accessor<T, IsConst>::access_mode() const
+AttributeAccessMode Accessor<T, IsConst>::access_mode() const
 {
     return m_mode;
 }
 
 template <typename T, bool IsConst>
-auto Accessor<T, IsConst>::cacheable_const_vector_attribute(const long index) const -> ConstMapResult
+auto Accessor<T, IsConst>::cacheable_const_vector_attribute(const long index) const
+    -> ConstMapResult
 {
     if (m_cache) {
         return m_cache->const_vector_attribute(*this, m_mode, index);
     } else {
-        return BaseType::vector_attribute(index);
+        return BaseType::const_vector_attribute(index);
     }
 }
 
@@ -73,7 +73,7 @@ T Accessor<T, IsConst>::cacheable_const_scalar_attribute(const long index) const
     if (m_cache) {
         return m_cache->const_scalar_attribute(*this, m_mode, index);
     } else {
-        return BaseType::scalar_attribute(index);
+        return BaseType::const_scalar_attribute(index);
     }
 }
 
@@ -88,13 +88,23 @@ auto Accessor<T, IsConst>::cacheable_scalar_attribute(const long index) -> TT
 }
 
 
+//===================================================
+// These following methods just forward to to const names
 template <typename T, bool IsConst>
 auto Accessor<T, IsConst>::vector_attribute(const Tuple& t) const -> ConstMapResult
 {
     return const_vector_attribute(t);
 }
+template <typename T, bool IsConst>
+T Accessor<T, IsConst>::scalar_attribute(const Tuple& t) const
+{
+    return const_scalar_attribute(t);
+}
+//===================================================
 
 
+//===================================================
+// These methods just compute the index and forward it
 template <typename T, bool IsConst>
 auto Accessor<T, IsConst>::const_vector_attribute(const Tuple& t) const -> ConstMapResult
 {
@@ -108,11 +118,6 @@ auto Accessor<T, IsConst>::vector_attribute(const Tuple& t) -> MapResultT
     return cacheable_vector_attribute(idx);
 }
 
-template <typename T, bool IsConst>
-T Accessor<T, IsConst>::scalar_attribute(const Tuple& t) const
-{
-    return const_scalar_attribute(t);
-}
 
 template <typename T, bool IsConst>
 T Accessor<T, IsConst>::const_scalar_attribute(const Tuple& t) const
@@ -127,6 +132,7 @@ auto Accessor<T, IsConst>::scalar_attribute(const Tuple& t) -> TT
     const long idx = BaseType::index(t);
     return cacheable_scalar_attribute(idx);
 }
+//===================================================
 
 
 // template <typename T, bool IsConst>

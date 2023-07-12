@@ -13,6 +13,33 @@ public:
         return PointMesh::id(tup, wmtk::PrimitiveType::Vertex);
     }
 };
+
+
+template <typename VectorAcc>
+void populate(DEBUG_PointMesh& m, VectorAcc& va)
+{
+    auto vertices = m.get_all(wmtk::PrimitiveType::Vertex);
+    size_t stride = va.stride();
+    Eigen::Matrix<typename VectorAcc::T, Eigen::Dynamic, 1> x;
+    for (const wmtk::Tuple& tup : vertices) {
+        long id = m.id(tup);
+        auto v = va.vector_attribute(tup);
+        std::iota(v.begin(), v.end(), stride * id);
+    }
+}
+template <typename VectorAcc>
+void check(DEBUG_PointMesh& m, VectorAcc& va)
+{
+    auto vertices = m.get_all(wmtk::PrimitiveType::Vertex);
+    size_t stride = va.stride();
+    Eigen::Matrix<typename VectorAcc::T, Eigen::Dynamic, 1> x;
+    for (const wmtk::Tuple& tup : vertices) {
+        long id = m.id(tup);
+        auto v = va.vector_attribute(tup);
+        std::iota(x.begin(), x.end(), stride * id);
+        CHECK(v == x);
+    }
+}
 } // namespace
 
 TEST_CASE("test_accessor_basic")
@@ -96,32 +123,52 @@ TEST_CASE("test_accessor_caching")
     auto immediate_long_acc = m.create_accessor(long_handle);
     auto immediate_double_acc = m.create_accessor(double_handle);
 
-    auto long_acc = m.create_accessor(long_handle, wmtk::AccessorAccessMode::Buffered);
-    auto double_acc = m.create_accessor(double_handle, wmtk::AccessorAccessMode::Buffered);
 
     auto vertices = m.get_all(wmtk::PrimitiveType::Vertex);
 
-    // check characteristics are all right
-    REQUIRE(long_acc.size() == size);
-    REQUIRE(double_acc.size() == size);
-    REQUIRE(long_acc.stride() == 1);
-    REQUIRE(double_acc.stride() == 3);
 
-    // use global set to force all values
+    {
+        auto long_acc = m.create_accessor(long_handle, wmtk::AccessorAccessMode::Buffered);
+        auto double_acc = m.create_accessor(double_handle, wmtk::AccessorAccessMode::Buffered);
 
+        // check characteristics are all right
+        REQUIRE(long_acc.size() == size);
+        REQUIRE(double_acc.size() == size);
+        REQUIRE(long_acc.stride() == 1);
+        REQUIRE(double_acc.stride() == 3);
+
+        // use global set to force all values
+
+        for (const wmtk::Tuple& tup : vertices) {
+            long id = m.id(tup);
+            long_acc.scalar_attribute(tup) = id;
+            Eigen::Vector3d x(3 * id, 3 * id + 1, 3 * id + 2);
+            double_acc.vector_attribute(tup) = x;
+        }
+        for (const wmtk::Tuple& tup : vertices) {
+            long id = m.id(tup);
+            CHECK(long_acc.const_scalar_attribute(tup) == id);
+            Eigen::Vector3d x(3 * id, 3 * id + 1, 3 * id + 2);
+            CHECK((double_acc.const_vector_attribute(tup) == x));
+
+            CHECK(immediate_long_acc.const_scalar_attribute(tup) == 0);
+            CHECK((immediate_double_acc.const_vector_attribute(tup).array() == 0).all());
+        }
+    }
+    // test that the accessors above unbuffered when they finished scope
     for (const wmtk::Tuple& tup : vertices) {
         long id = m.id(tup);
-        long_acc.scalar_attribute(tup) = id;
+        CHECK(immediate_long_acc.const_scalar_attribute(tup) == id);
         Eigen::Vector3d x(3 * id, 3 * id + 1, 3 * id + 2);
-        double_acc.vector_attribute(tup) = x;
+        CHECK((immediate_double_acc.const_vector_attribute(tup) == x));
     }
-    for (const wmtk::Tuple& tup : vertices) {
-        long id = m.id(tup);
-        CHECK(long_acc.const_scalar_attribute(tup) == id);
-        Eigen::Vector3d x(3 * id, 3 * id + 1, 3 * id + 2);
-        CHECK((double_acc.const_vector_attribute(tup) == x));
+}
 
-        CHECK(immediate_long_acc.const_scalar_attribute(tup) == 0);
-        CHECK((immediate_double_acc.const_vector_attribute(tup).array() == 0).all());
-    }
+TEST_CASE("test_accessor_caching_scope")
+{
+    long size = 20;
+    DEBUG_PointMesh m(size);
+    REQUIRE(size == m.capacity(wmtk::PrimitiveType::Vertex));
+    auto long_handle = m.register_attribute<long>("long", wmtk::PrimitiveType::Vertex, 1);
+    auto double_handle = m.register_attribute<double>("double", wmtk::PrimitiveType::Vertex, 3);
 }

@@ -2,8 +2,8 @@
 
 #include <memory>
 #include <type_traits>
-#include "AccessorAccessMode.hpp"
-#include "AccessorBase.hpp"
+#include "attribute/AttributeAccessMode.hpp"
+#include "attribute/AccessorBase.hpp"
 #include "AttributeHandle.hpp"
 #include "Tuple.hpp"
 
@@ -18,33 +18,37 @@ template <typename T>
 class AccessorCache;
 
 template <typename T, bool IsConst = false>
-class Accessor : public AccessorBase<T, IsConst>
+class Accessor : public AccessorBase<T>
 {
 public:
     friend class Mesh;
     friend class TriMesh;
     friend class TetMesh;
+    using Scalar = T;
 
     friend class AccessorCache<T>;
-    using BaseType = AccessorBase<T, IsConst>;
-    using MeshType = typename BaseType::MeshType; // const correct Mesh object
+    using BaseType = AccessorBase<T>;
+    using MeshType = std::conditional_t<IsConst, const Mesh, Mesh>; // const correct Mesh object
 
     using MapResult = typename BaseType::MapResult; // Eigen::Map<VectorX<T>>
     using ConstMapResult = typename BaseType::ConstMapResult; // Eigen::Map<const VectorX<T>>
 
 
-    using MapResultT = typename BaseType::MapResultT; // MapResult or ConstMapResult for constness
-    using TT = typename BaseType::TT; // T or T& for const correctness
+    using MapResultT = std::conditional_t<IsConst, ConstMapResult, MapResult>; // MapResult or ConstMapResult for constness
+
+
+    // T or T& for const correctness
+    using TT = std::conditional_t<IsConst, T, T&>;
 
 
     Accessor(
         MeshType& m,
         const MeshAttributeHandle<T>& handle,
-        AccessorAccessMode access_mode = AccessorAccessMode::Immediate);
+        AttributeAccessMode access_mode = AttributeAccessMode::Immediate);
 
     ~Accessor();
 
-    AccessorAccessMode access_mode() const;
+    AttributeAccessMode access_mode() const;
 
     ConstMapResult const_vector_attribute(const Tuple& t) const;
     ConstMapResult vector_attribute(const Tuple& t) const;
@@ -70,9 +74,9 @@ protected:
     using BaseType::vector_attribute;
 
 private:
-    AccessorAccessMode m_mode;
+    AttributeAccessMode m_mode;
 
-    std::unique_ptr<AccessorCache<T>> m_cache;
+    std::shared_ptr<AccessorCache<T>> m_cache;
 };
 
 // template <typename T>

@@ -14,14 +14,13 @@ namespace wmtk {
 
 class MeshWriter;
 class Mesh;
-template <typename T, bool isConst>
+template <typename T>
 class AccessorBase;
 
 template <typename T>
 class MeshAttributes
 {
-    friend class AccessorBase<T, false>;
-    friend class AccessorBase<T, true>;
+    friend class AccessorBase<T>;
     friend class Mesh;
 
     typedef Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, 1>> MapResult;
@@ -33,7 +32,7 @@ public:
 
     void serialize(const int dim, MeshWriter& writer) const;
 
-    AttributeHandle register_attribute(const std::string& name, long size, bool replace = false);
+    [[nodiscard]] AttributeHandle register_attribute(const std::string& name, long size, bool replace = false);
 
     long size() const;
     void reserve(const long size);

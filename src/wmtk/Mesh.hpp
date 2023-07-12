@@ -13,10 +13,12 @@
 #include <Eigen/Core>
 
 namespace wmtk {
+// thread management tool that we will PImpl
+class AttributeScopeManager;
 class Mesh
 {
 public:
-    template <typename T, bool isConst>
+    template <typename T>
     friend class AccessorBase;
     friend class ParaviewWriter;
 
@@ -55,17 +57,14 @@ public:
 
     template <typename T>
     Accessor<T> create_accessor(
-        const MeshAttributeHandle<T>& handle,
-        AccessorAccessMode mode = AccessorAccessMode::Immediate);
+        const MeshAttributeHandle<T>& handle);
 
     template <typename T>
     ConstAccessor<T> create_const_accessor(
-        const MeshAttributeHandle<T>& handle,
-        AccessorAccessMode mode = AccessorAccessMode::Immediate) const;
+        const MeshAttributeHandle<T>& handle) const;
     template <typename T>
     ConstAccessor<T> create_accessor(
-        const MeshAttributeHandle<T>& handle,
-        AccessorAccessMode mode = AccessorAccessMode::Immediate) const;
+        const MeshAttributeHandle<T>& handle) const;
 
     ConstAccessor<char> get_flag_accessor(PrimitiveType type) const;
     ConstAccessor<long> get_cell_hash_accessor() const;
@@ -190,6 +189,11 @@ protected:
     // specifies the number of simplices of each type and resizes attributes appropritely
     void set_capacities(std::vector<long> capacities);
 
+
+
+    //std::shared_ptr<AccessorCache> request_accesor_cache();
+    //[[nodiscard]] AccessorScopeHandle push_accesor_scope();
+
 private: // members
     //=========================================================
     // Storage of Mesh Attributes
@@ -198,6 +202,10 @@ private: // members
     std::vector<MeshAttributes<long>> m_long_attributes;
     std::vector<MeshAttributes<double>> m_double_attributes;
 
+    // PImpl'd manager of per-thread update stacks
+    // Every time a new access scope is requested the manager creates another level of indirection
+    // for updates
+    std::unique_ptr<AttributeScopeManager> m_attribute_scope_manager;
 
     //=========================================================
     // Simplex Attribute
@@ -220,23 +228,21 @@ private: // members
 
 
 template <typename T>
-Accessor<T> Mesh::create_accessor(const MeshAttributeHandle<T>& handle, AccessorAccessMode mode)
+Accessor<T> Mesh::create_accessor(const MeshAttributeHandle<T>& handle)
 {
-    return Accessor<T>(*this, handle, mode);
+    return Accessor<T>(*this, handle);
 }
 template <typename T>
 ConstAccessor<T> Mesh::create_const_accessor(
-    const MeshAttributeHandle<T>& handle,
-    AccessorAccessMode mode) const
+    const MeshAttributeHandle<T>& handle) const
 {
-    return ConstAccessor<T>(*this, handle, mode);
+    return ConstAccessor<T>(*this, handle);
 }
 template <typename T>
 ConstAccessor<T> Mesh::create_accessor(
-    const MeshAttributeHandle<T>& handle,
-    AccessorAccessMode mode) const
+    const MeshAttributeHandle<T>& handle) const
 {
-    return create_const_accessor(handle, mode);
+    return create_const_accessor(handle);
 }
 
 template <typename T>
