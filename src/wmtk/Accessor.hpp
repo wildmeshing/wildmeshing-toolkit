@@ -47,10 +47,13 @@ public:
         AttributeAccessMode access_mode = AttributeAccessMode::Immediate);
 
     ~Accessor();
+    Accessor(const Accessor&) = delete;
+    Accessor& operator=(const Accessor&) = delete;
 
     AttributeAccessMode access_mode() const;
 
     ConstMapResult const_vector_attribute(const Tuple& t) const;
+
     ConstMapResult vector_attribute(const Tuple& t) const;
     MapResultT vector_attribute(const Tuple& t);
 
