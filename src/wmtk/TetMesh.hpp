@@ -5,20 +5,6 @@
 namespace wmtk {
 class TetMesh : public Mesh
 {
-private:
-    MeshAttributeHandle<long> m_vt_handle;
-    MeshAttributeHandle<long> m_et_handle;
-    MeshAttributeHandle<long> m_ft_handle;
-
-    MeshAttributeHandle<long> m_tv_handle;
-    MeshAttributeHandle<long> m_te_handle;
-    MeshAttributeHandle<long> m_tf_handle;
-    MeshAttributeHandle<long> m_tt_handle;
-
-    Tuple vertex_tuple_from_id(long id) const;
-    Tuple edge_tuple_from_id(long id) const;
-    Tuple face_tuple_from_id(long id) const;
-    Tuple tet_tuple_from_id(long id) const;
 
 public:
     TetMesh();
@@ -55,6 +41,20 @@ protected:
      * @return Tuple
      */
     Tuple tuple_from_id(const PrimitiveType type, const long gid) const override;
+private:
+    MeshAttributeHandle<long> m_vt_handle;
+    MeshAttributeHandle<long> m_et_handle;
+    MeshAttributeHandle<long> m_ft_handle;
+
+    MeshAttributeHandle<long> m_tv_handle;
+    MeshAttributeHandle<long> m_te_handle;
+    MeshAttributeHandle<long> m_tf_handle;
+    MeshAttributeHandle<long> m_tt_handle;
+
+    Tuple vertex_tuple_from_id(long id) const;
+    Tuple edge_tuple_from_id(long id) const;
+    Tuple face_tuple_from_id(long id) const;
+    Tuple tet_tuple_from_id(long id) const;
 };
 
 } // namespace wmtk
