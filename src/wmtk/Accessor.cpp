@@ -89,9 +89,10 @@ void Accessor<T, IsConst>::set_attribute(const std::vector<T>& value)
 }
 
 template <typename T, bool IsConst>
-    long Accessor<T,IsConst>::size() const {
-        return attributes().size();
-    }
+long Accessor<T, IsConst>::size() const
+{
+    return attributes().attribute_size(m_handle.m_base_handle);
+}
 
 // template <typename T, bool IsConst>
 // void MeshAttributes<T>::rollback()

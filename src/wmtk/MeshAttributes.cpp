@@ -98,6 +98,12 @@ void MeshAttributes<T>::set(const AttributeHandle& handle, std::vector<T> val)
 }
 
 template <typename T>
+size_t MeshAttributes<T>::attribute_size(const AttributeHandle& handle) const
+{
+    return m_attributes[handle.index].size();
+}
+
+template <typename T>
 long MeshAttributes<T>::size() const
 {
     return m_size;

@@ -71,7 +71,9 @@ void MeshReader::set_attribute(
 
     accessor.set_attribute(v);
 
-    mesh.set_capacities_from_flags();
+    if (name == "flags") {
+        mesh.set_capacities_from_flags();
+    }
 }
 
 
