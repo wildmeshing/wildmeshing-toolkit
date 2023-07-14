@@ -154,7 +154,6 @@ long Mesh::get_cell_hash_slow(long cell_index) const
 void Mesh::set_capacities_from_flags()
 {
     for (long dim = 0; dim < m_capacities.size(); ++dim) {
-        //
         Accessor<char> flag_accessor = create_accessor<char>(m_flag_handles[dim]);
         m_capacities[dim] = flag_accessor.size();
     }

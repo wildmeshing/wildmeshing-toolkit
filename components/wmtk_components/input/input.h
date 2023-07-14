@@ -2,21 +2,8 @@
 #include <map>
 #include <nlohmann/json.hpp>
 
-#include "internal/InputOptions.h"
-
 namespace wmtk {
 namespace components {
-inline void input(const nlohmann::json& j, std::map<std::string, std::filesystem::path>& files)
-{
-    using namespace internal;
-
-    InputOptions options = j.get<InputOptions>();
-
-    if (!std::filesystem::exists(options.file)) {
-        throw std::runtime_error(std::string("file") + options.file.string() + " not found");
-    }
-
-    files[options.name] = options.file;
-}
+void input(const nlohmann::json& j, std::map<std::string, std::filesystem::path>& files);
 } // namespace components
 } // namespace wmtk
