@@ -17,10 +17,10 @@ void populate(DEBUG_PointMesh& m, VectorAcc& va, bool for_zeros = false)
     for (const wmtk::Tuple& tup : vertices) {
         long id = m.id(tup);
         auto v = va.vector_attribute(tup);
-        if(for_zeros) {
+        if (for_zeros) {
             v.setZero();
         } else {
-        std::iota(v.begin(), v.end(), stride * id);
+            std::iota(v.begin(), v.end(), stride * id);
         }
     }
 }
@@ -30,16 +30,23 @@ void check(DEBUG_PointMesh& m, VectorAcc& va, bool for_zeros = false)
     auto vertices = m.get_all(wmtk::PrimitiveType::Vertex);
     size_t stride = va.stride();
     Eigen::Matrix<typename VectorAcc::T, Eigen::Dynamic, 1> x;
+    bool is_scalar = va.stride() == 1;
     x.resize(va.stride());
     for (const wmtk::Tuple& tup : vertices) {
         long id = m.id(tup);
-        if(for_zeros) {
+        if (for_zeros) {
             CHECK((va.const_vector_attribute(tup).array() == 0).all());
+            if (is_scalar) {
+                CHECK(va.const_scalar_attribute(tup) == 0);
+            }
         } else {
             auto v = va.vector_attribute(tup);
             std::iota(x.begin(), x.end(), stride * id);
             CHECK(v == x);
-        } 
+            if (is_scalar) {
+                CHECK(va.const_scalar_attribute(tup) == id);
+            }
+        }
     }
 }
 } // namespace
@@ -134,7 +141,7 @@ TEST_CASE("test_accessor_caching")
 
     auto vertices = m.get_all(wmtk::PrimitiveType::Vertex);
 
-    REQUIRE(vertices.size() == size);
+    REQUIRE(long(vertices.size()) == size);
 
     {
         spdlog::info("Creating a scope");
@@ -192,7 +199,7 @@ TEST_CASE("test_accessor_caching")
     }
 }
 
-TEST_CASE("test_accessor_caching_scope")
+TEST_CASE("test_accessor_caching_scope_fails")
 {
     long size = 20;
     DEBUG_PointMesh m(size);
@@ -212,7 +219,71 @@ TEST_CASE("test_accessor_caching_scope")
         check(m, double_acc, false);
 
         scope.mark_failed();
+    }
+    check(m, long_acc, true);
+    check(m, double_acc, true);
+}
+TEST_CASE("test_accessor_caching_scope_success_fails")
+{
+    long size = 20;
+    DEBUG_PointMesh m(size);
+    REQUIRE(size == m.capacity(wmtk::PrimitiveType::Vertex));
+    auto long_handle = m.register_attribute<long>("long", wmtk::PrimitiveType::Vertex, 1);
+    auto double_handle = m.register_attribute<double>("double", wmtk::PrimitiveType::Vertex, 3);
+    auto long_acc = m.create_accessor(long_handle);
+    auto double_acc = m.create_accessor(double_handle);
+    {
+        spdlog::info("Creating a scope");
+        // TODO: create scope
 
+        auto scope = m.create_scope();
+        populate(m, long_acc, false);
+        populate(m, double_acc, false);
+        check(m, long_acc, false);
+        check(m, double_acc, false);
+        {
+            auto scope2 = m.create_scope();
+            populate(m, long_acc, true);
+            populate(m, double_acc, true);
+            check(m, long_acc, true);
+            check(m, double_acc, true);
+
+            scope2.mark_failed();
+        }
+    }
+    check(m, long_acc, false);
+    check(m, double_acc, false);
+}
+TEST_CASE("test_accessor_caching_scope_fails_success")
+{
+    long size = 20;
+    DEBUG_PointMesh m(size);
+    REQUIRE(size == m.capacity(wmtk::PrimitiveType::Vertex));
+    auto long_handle = m.register_attribute<long>("long", wmtk::PrimitiveType::Vertex, 1);
+    auto double_handle = m.register_attribute<double>("double", wmtk::PrimitiveType::Vertex, 3);
+    auto long_acc = m.create_accessor(long_handle);
+    auto double_acc = m.create_accessor(double_handle);
+    populate(m, long_acc, true);
+    populate(m, double_acc, true);
+    check(m, long_acc, true);
+    check(m, double_acc, true);
+    {
+        spdlog::info("Creating a scope");
+        // TODO: create scope
+        auto scope = m.create_scope();
+
+        populate(m, long_acc, false);
+        populate(m, double_acc, false);
+        check(m, long_acc, false);
+        check(m, double_acc, false);
+        {
+            auto scope2 = m.create_scope();
+            populate(m, long_acc, true);
+            populate(m, double_acc, true);
+            check(m, long_acc, true);
+            check(m, double_acc, true);
+        }
+        scope.mark_failed();
     }
     check(m, long_acc, true);
     check(m, double_acc, true);
