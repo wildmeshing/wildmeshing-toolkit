@@ -1,10 +1,9 @@
 #include "Accessor.hpp"
+#include "Mesh.hpp"
 #include "attribute/AttributeManager.hpp"
 #include "attribute/AttributeScope.hpp"
 #include "attribute/AttributeScopeStack.hpp"
-
-#include "Mesh.hpp"
-#include "MeshAttributes.hpp"
+#include "attribute/MeshAttributes.hpp"
 
 namespace wmtk {
 namespace {

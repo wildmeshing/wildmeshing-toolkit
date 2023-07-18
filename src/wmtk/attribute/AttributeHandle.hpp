@@ -1,6 +1,6 @@
 #pragma once
 #include <type_traits>
-#include "Primitive.hpp"
+#include "wmtk/Primitive.hpp"
 namespace wmtk {
 template <typename T>
 class MeshAttributes;

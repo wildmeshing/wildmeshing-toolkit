@@ -2,8 +2,8 @@
 
 #include <memory>
 #include <type_traits>
-#include "wmtk/Attribute.hpp"
-#include "wmtk/AttributeHandle.hpp"
+#include "Attribute.hpp"
+#include "AttributeHandle.hpp"
 #include "wmtk/Tuple.hpp"
 #include "wmtk/Types.hpp"
 

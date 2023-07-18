@@ -1,6 +1,6 @@
 #pragma once
 #include <memory>
-#include <wmtk/AttributeHandle.hpp>
+#include "AttributeHandle.hpp"
 
 namespace wmtk {
 class Mesh;

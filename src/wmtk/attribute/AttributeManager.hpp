@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include <wmtk/MeshAttributes.hpp>
+#include "MeshAttributes.hpp"
 #include <wmtk/utils/Rational.hpp>
 #include "AttributeScopeHandle.hpp"
 

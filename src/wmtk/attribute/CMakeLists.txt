@@ -1,11 +1,16 @@
 
 set(SRC_FILES
+    Attribute.hpp
+    Attribute.cpp
     AttributeCache.cpp
     AttributeCache.hpp
+    AttributeHandle.hpp
     AccessorBase.cpp
     AccessorBase.hpp
     AttributeScope.hpp
     AttributeScope.cpp
+    MeshAttributes.cpp
+    MeshAttributes.hpp
     AttributeScopeStack.hpp
     AttributeScopeStack.cpp
     AttributeCacheData.hpp

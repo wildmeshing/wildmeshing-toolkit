@@ -1,5 +1,5 @@
 #include "MeshAttributes.hpp"
-#include "attribute/PerThreadAttributeScopeStacks.hpp"
+#include "PerThreadAttributeScopeStacks.hpp"
 
 #include <wmtk/io/MeshWriter.hpp>
 #include <wmtk/utils/Rational.hpp>

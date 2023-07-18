@@ -3,7 +3,7 @@
 #include <memory>
 #include <optional>
 #include <type_traits>
-#include "AttributeHandle.hpp"
+#include "attribute/AttributeHandle.hpp"
 #include "Tuple.hpp"
 #include "attribute/AccessorBase.hpp"
 #include "attribute/AttributeAccessMode.hpp"

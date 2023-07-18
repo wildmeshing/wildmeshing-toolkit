@@ -1,5 +1,4 @@
 #include "AttributeManager.hpp"
-#include <wmtk/MeshAttributes.hpp>
 #include <wmtk/io/MeshWriter.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 #include "PerThreadAttributeScopeStacks.hpp"

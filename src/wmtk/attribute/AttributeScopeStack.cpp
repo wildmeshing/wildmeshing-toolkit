@@ -1,7 +1,7 @@
 #include "AttributeScopeStack.hpp"
 #include <wmtk/utils/Rational.hpp>
 #include "AttributeScope.hpp"
-#include "wmtk/Attribute.hpp"
+#include "Attribute.hpp"
 
 namespace wmtk {
 

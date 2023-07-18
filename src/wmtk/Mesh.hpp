@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Accessor.hpp"
-#include "MeshAttributes.hpp"
+#include "attribute/MeshAttributes.hpp"
 #include "Primitive.hpp"
 #include "Simplex.hpp"
 #include "Tuple.hpp"

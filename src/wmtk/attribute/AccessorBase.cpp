@@ -2,8 +2,8 @@
 #include <iostream>
 #include <wmtk/utils/Rational.hpp>
 #include "wmtk/Mesh.hpp"
-#include "wmtk/MeshAttributes.hpp"
-#include "wmtk/attribute/AttributeManager.hpp"
+#include "MeshAttributes.hpp"
+#include "AttributeManager.hpp"
 
 namespace wmtk {
 template <typename T>

@@ -2,13 +2,8 @@
 set(SRC_FILES
     Accessor.cpp
     Accessor.hpp
-    AttributeHandle.hpp
     Mesh.cpp
     Mesh.hpp
-    Attribute.hpp
-    Attribute.cpp
-    MeshAttributes.cpp
-    MeshAttributes.hpp
     PointMesh.cpp
     PointMesh.hpp
     TriMesh.cpp
