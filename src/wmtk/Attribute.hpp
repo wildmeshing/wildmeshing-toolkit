@@ -39,7 +39,7 @@ public:
     bool operator==(const Attribute<T>& o) const;
 
     void push_scope();
-    void pop_scope();
+    void pop_scope(bool apply_updates);
 
     // returns nullptr if no scope exists
     AttributeScopeStack<T>* get_local_scope_stack_ptr();

@@ -31,10 +31,10 @@ void MeshAttributes<T>::push_scope()
     }
 }
 template <typename T>
-void MeshAttributes<T>::pop_scope()
+void MeshAttributes<T>::pop_scope(bool apply_updates)
 {
     for (auto& attr : m_attributes) {
-        attr.pop_scope();
+        attr.pop_scope(apply_updates);
     }
 }
 template <typename T>

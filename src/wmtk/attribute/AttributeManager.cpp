@@ -81,19 +81,19 @@ void AttributeManager::push_scope()
         ma.push_scope();
     }
 }
-void AttributeManager::pop_scope()
+void AttributeManager::pop_scope(bool apply_updates)
 {
     for (auto& ma : m_char_attributes) {
-        ma.pop_scope();
+        ma.pop_scope(apply_updates);
     }
     for (auto& ma : m_long_attributes) {
-        ma.pop_scope();
+        ma.pop_scope(apply_updates);
     }
     for (auto& ma : m_double_attributes) {
-        ma.pop_scope();
+        ma.pop_scope(apply_updates);
     }
     for (auto& ma : m_rational_attributes) {
-        ma.pop_scope();
+        ma.pop_scope(apply_updates);
     }
 }
 } // namespace wmtk

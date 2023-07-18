@@ -6,8 +6,13 @@ AttributeScopeHandle::AttributeScopeHandle(AttributeManager& manager): m_manager
 {
     m_manager.push_scope();
 }
+
+
+void AttributeScopeHandle::mark_failed() {
+    m_failed = true;
+}
 AttributeScopeHandle::~AttributeScopeHandle()
 {
-    m_manager.pop_scope();
+    m_manager.pop_scope(!m_failed);
 }
 } // namespace wmtk

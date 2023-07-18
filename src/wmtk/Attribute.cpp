@@ -101,10 +101,10 @@ void Attribute<T>::push_scope()
     }
 }
 template <typename T>
-void Attribute<T>::pop_scope()
+void Attribute<T>::pop_scope(bool apply_updates)
 {
     if (m_scope_stacks) {
-        m_scope_stacks->local().pop(*this);
+        m_scope_stacks->local().pop(*this, apply_updates);
     }
 }
 

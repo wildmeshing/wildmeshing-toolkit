@@ -56,7 +56,7 @@ struct AttributeManager
     const MeshAttributes<T>& get(const MeshAttributeHandle<T>& handle) const;
 
     void push_scope();
-    void pop_scope();
+    void pop_scope(bool apply_updates = true);
 };
 
 template <typename T>

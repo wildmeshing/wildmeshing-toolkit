@@ -18,11 +18,13 @@ void AttributeScopeStack<T>::emplace()
     m_leaf = std::move(new_leaf);
 }
 template <typename T>
-void AttributeScopeStack<T>::pop(Attribute<T>& attribute)
+void AttributeScopeStack<T>::pop(Attribute<T>& attribute, bool apply_updates)
 {
     // delete myself by setting my parent to be the leaf
     assert(bool(m_leaf));
-    m_leaf->flush(attribute);
+    if (apply_updates) {
+        m_leaf->flush(attribute);
+    }
     m_leaf = std::move(m_leaf->pop_parent());
 }
 

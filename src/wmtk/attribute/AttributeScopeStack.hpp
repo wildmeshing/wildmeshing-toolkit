@@ -21,7 +21,7 @@ struct AttributeScopeStack
     AttributeScopeStack();
     ~AttributeScopeStack();
     void emplace();
-    void pop(Attribute<T>& attribute);
+    void pop(Attribute<T>& attribute, bool apply_updates);
     AttributeScope<T>* current_scope_ptr();
     const AttributeScope<T>* current_scope_ptr() const;
 
