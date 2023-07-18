@@ -27,9 +27,7 @@ Accessor<T, IsConst>::Accessor(
     , m_mesh(mesh)
     , m_mode(mode)
 {
-    if (accessor_requires_caching(mode)) {
-        m_cache_stack = attribute().get_local_scope_stack_ptr();
-    }
+    m_cache_stack = attribute().get_local_scope_stack_ptr();
 }
 template <typename T, bool IsConst>
 long Accessor<T, IsConst>::index(const Tuple& t) const
@@ -57,7 +55,7 @@ template <typename T, bool IsConst>
 auto Accessor<T, IsConst>::cacheable_const_vector_attribute(const long index) const
     -> ConstMapResult
 {
-    if (m_cache_stack) {
+    if (m_cache_stack && !m_cache_stack->empty()) {
         return m_cache_stack->current_scope_ptr()->const_vector_attribute(*this, m_mode, index);
     } else {
         return BaseType::const_vector_attribute(index);
@@ -154,6 +152,17 @@ auto Accessor<T, IsConst>::scalar_attribute(const Tuple& t) -> TT
 {
     const long idx = index(t);
     return cacheable_scalar_attribute(idx);
+}
+
+
+template <typename T, bool IsConst>
+std::optional<long> Accessor<T, IsConst>::stack_depth() const
+{
+    if (m_cache_stack != nullptr) {
+        return m_cache_stack->depth();
+    } else {
+        return {};
+    }
 }
 
 template class Accessor<char, true>;

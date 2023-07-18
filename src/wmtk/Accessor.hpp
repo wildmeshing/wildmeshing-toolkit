@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <type_traits>
 #include "AttributeHandle.hpp"
 #include "Tuple.hpp"
@@ -13,6 +14,7 @@ namespace wmtk {
 class Mesh;
 class TriMesh;
 class TetMesh;
+class PointMesh;
 template <typename T>
 class AttributeScopeStack;
 
@@ -24,6 +26,7 @@ class Accessor : public AccessorBase<T>
 {
 public:
     friend class Mesh;
+    friend class PointMesh;
     friend class TriMesh;
     friend class TetMesh;
     using Scalar = T;
@@ -72,6 +75,9 @@ public:
 
     using BaseType::attribute; // access to Attribute object being used here
     using BaseType::set_attribute; // (const vector<T>&) -> void
+    // shows the depth of scope stacks if they exist, mostly for debug
+    std::optional<long> stack_depth() const;
+
 protected:
     ConstMapResult cacheable_const_vector_attribute(const long index) const;
     MapResultT cacheable_vector_attribute(const long index);
@@ -81,6 +87,7 @@ protected:
     using BaseType::scalar_attribute;
     using BaseType::vector_attribute;
     long index(const Tuple& t) const;
+
 
 private:
     MeshType& m_mesh;

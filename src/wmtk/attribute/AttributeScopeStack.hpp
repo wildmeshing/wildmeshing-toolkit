@@ -27,6 +27,8 @@ struct AttributeScopeStack
 
     bool empty() const;
 
+    long depth() const;
+
 
 protected:
     std::unique_ptr<AttributeScope<T>> m_leaf;

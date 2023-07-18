@@ -35,6 +35,16 @@ bool AttributeScopeStack<T>::empty() const
 }
 
 template <typename T>
+long AttributeScopeStack<T>::depth() const
+{
+    if (bool(m_leaf)) {
+        return m_leaf->depth();
+    } else {
+        return 0;
+    }
+}
+
+template <typename T>
 AttributeScope<T>* AttributeScopeStack<T>::current_scope_ptr()
 {
     if (bool(m_leaf)) {

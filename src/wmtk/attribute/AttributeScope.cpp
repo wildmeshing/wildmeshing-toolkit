@@ -77,11 +77,17 @@ template <typename T>
 auto AttributeScope<T>::load_it(
     const AccessorBase<T>& accessor,
     AttributeAccessMode mode,
-    long index) const -> typename DataStorage::iterator
+    long index,
+    bool mark_dirty) const -> typename DataStorage::iterator
 {
     auto [it, was_inserted] = AttributeCache<T>::load_it(index);
+    it->second.dirty |= mark_dirty;
     if (was_inserted) {
-        it->second.data = load_const_cached_vector_value(accessor, index);
+        if (m_parent) {
+            it->second.data = m_parent->load_const_cached_vector_value(accessor, index);
+        } else {
+            it->second.data = accessor.const_vector_attribute(index);
+        }
     }
     return it;
 }
@@ -92,7 +98,7 @@ auto AttributeScope<T>::vector_attribute(
     AttributeAccessMode mode,
     long index) -> MapResult
 {
-    auto it = load_it(accessor, mode, index);
+    auto it = load_it(accessor, mode, index, true);
     return it->second.data_as_map();
 }
 
@@ -131,6 +137,16 @@ void AttributeScope<T>::flush(Attribute<T>& attr)
         AttributeCache<T>::flush_to(*m_parent);
     } else {
         AttributeCache<T>::flush_to(attr);
+    }
+}
+
+template <typename T>
+long AttributeScope<T>::depth() const
+{
+    if (bool(m_parent)) {
+        return 1 + m_parent->depth();
+    } else {
+        return 1;
     }
 }
 

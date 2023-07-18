@@ -35,8 +35,11 @@ private:
     T& load_cached_scalar_value(AccessorBase<T>& accessor, long index);
     T load_const_cached_scalar_value(const AccessorBase<T>& accessor, long index) const;
     // returns an iterator and makes sure a value is set
-    typename DataStorage::iterator
-    load_it(const AccessorBase<T>& accessor, AttributeAccessMode mode, long index) const;
+    typename DataStorage::iterator load_it(
+        const AccessorBase<T>& accessor,
+        AttributeAccessMode mode,
+        long index,
+        bool mark_dirty = false) const;
 
     AttributeCache<T>& get_cache() { return static_cast<AttributeCache<T>&>(*this); }
 
@@ -58,6 +61,8 @@ private:
 
     T const_scalar_attribute(const AccessorBase<T>& accessor, AttributeAccessMode mode, long index)
         const;
+
+    long depth() const;
 
 private:
     std::unique_ptr<AttributeScope<T>> m_parent;

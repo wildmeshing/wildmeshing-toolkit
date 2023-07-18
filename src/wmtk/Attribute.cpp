@@ -13,8 +13,10 @@ void Attribute<T>::serialize(const std::string& name, const int dim, MeshWriter&
 
 template <typename T>
 Attribute<T>::Attribute(long stride, long size)
-    : m_stride(stride)
+    : m_scope_stacks(new PerThreadAttributeScopeStacks<T>())
+    , m_stride(stride)
 {
+    assert(m_stride > 0);
     if (size > 0) {
         m_data = std::vector<T>(size * stride, T(0));
     }
@@ -55,8 +57,13 @@ template <typename T>
 auto Attribute<T>::const_vector_attribute(const long index) const -> ConstMapResult
 {
     assert(index < size());
+    assert(m_stride > 0);
     const long start = index * m_stride;
-    return ConstMapResult(m_data.data() + start, m_stride);
+    ConstMapResult R(m_data.data() + start, m_stride);
+
+    assert(R.size() == m_stride);
+
+    return R;
 }
 
 
@@ -64,9 +71,11 @@ template <typename T>
 typename Attribute<T>::MapResult Attribute<T>::vector_attribute(const long index)
 {
     assert(index < size());
+    assert(m_stride > 0);
     const long start = index * m_stride;
-    auto buffer = MapResult(m_data.data() + start, m_stride);
-    return buffer;
+    MapResult R(m_data.data() + start, m_stride);
+    assert(R.size() == m_stride);
+    return R;
 }
 
 template <typename T>
