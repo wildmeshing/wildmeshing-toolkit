@@ -28,13 +28,10 @@ public:
     friend class AccessorCache<T>;
     friend class DEBUG_TriMesh;
     using MeshAttributesType = MeshAttributes<T>;
-    using AttributeType =  Attribute<T>;
+    using AttributeType = Attribute<T>;
 
     using MapResult = typename VectorX<T>::MapType;
     using ConstMapResult = typename VectorX<T>::ConstMapType;
-
-
-
 
 
 public:
@@ -54,16 +51,24 @@ public:
     MeshAttributes<T>& attributes();
     const MeshAttributes<T>& attributes() const;
 
-    AttributeType& attribute();
+    Attribute<T>& attribute();
     const Attribute<T>& attribute() const;
 
-    long index(const Tuple& t) const;
 
     ~AccessorBase();
     AccessorBase(Mesh& m, const MeshAttributeHandle<T>& handle);
+    AccessorBase(AttributeManager& m, const MeshAttributeHandle<T>& handle);
+
+    const MeshAttributeHandle<T>& handle() const;
+    PrimitiveType primitive_type() const;
+
+    // convenience function for use within Accessor
+    // Mainly here to avoid having to friend an Accessor to Mesh as well
+    long index(const Mesh& m, const Tuple& t) const;
 
 protected:
-    Mesh& m_mesh;
+    // Mesh& m_mesh;
+    AttributeManager& m_attribute_manager;
     MeshAttributeHandle<T> m_handle;
 };
 

@@ -36,18 +36,18 @@ public:
     }
 
     template <typename T>
-    AccessorBase<T, false> create_base_accessor(const MeshAttributeHandle<T>& handle)
+    AccessorBase<T> create_base_accessor(const MeshAttributeHandle<T>& handle)
     {
-        return AccessorBase<T, false>(*this, handle);
+        return AccessorBase<T>(*this, handle);
     }
 
     template <typename T>
-    AccessorBase<T, true> create_const_base_accessor(const MeshAttributeHandle<T>& handle) const
+    AccessorBase<T> create_const_base_accessor(const MeshAttributeHandle<T>& handle) const
     {
-        return AccessorBase<T, true>(*this, handle);
+        return AccessorBase<T>(const_cast<DEBUG_TriMesh&>(*this), handle);
     }
     template <typename T>
-    AccessorBase<T, true> create_base_accessor(const MeshAttributeHandle<T>& handle) const
+    AccessorBase<T> create_base_accessor(const MeshAttributeHandle<T>& handle) const
     {
         return create_const_base_accessor(handle);
     }

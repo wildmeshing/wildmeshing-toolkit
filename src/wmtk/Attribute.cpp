@@ -1,4 +1,5 @@
 #include "Attribute.hpp"
+#include <wmtk/attribute/PerThreadAttributeScopeStacks.hpp>
 #include <wmtk/io/MeshWriter.hpp>
 #include <wmtk/utils/Rational.hpp>
 
@@ -83,6 +84,30 @@ T& Attribute<T>::scalar_attribute(const long index)
     assert(m_stride == 1);
     return m_data[index];
 }
+template <typename T>
+AttributeScopeStack<T>* Attribute<T>::get_local_scope_stack_ptr()
+{
+    if (bool(m_scope_stacks)) {
+        return &m_scope_stacks->local();
+    }
+    return nullptr;
+}
+
+template <typename T>
+void Attribute<T>::push_scope()
+{
+    if (m_scope_stacks) {
+        m_scope_stacks->local().emplace();
+    }
+}
+template <typename T>
+void Attribute<T>::pop_scope()
+{
+    if (m_scope_stacks) {
+        m_scope_stacks->local().pop(*this);
+    }
+}
+
 
 template class Attribute<char>;
 template class Attribute<long>;

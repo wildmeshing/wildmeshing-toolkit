@@ -1,5 +1,7 @@
 #include "Accessor.hpp"
-#include "attribute/AttributeCache.hpp"
+#include "attribute/AttributeManager.hpp"
+#include "attribute/AttributeScope.hpp"
+#include "attribute/AttributeScopeStack.hpp"
 
 #include "Mesh.hpp"
 #include "MeshAttributes.hpp"
@@ -22,11 +24,17 @@ Accessor<T, IsConst>::Accessor(
     const MeshAttributeHandle<T>& handle,
     AttributeAccessMode mode)
     : BaseType(const_cast<Mesh&>(mesh), handle)
+    , m_mesh(mesh)
     , m_mode(mode)
 {
     if (accessor_requires_caching(mode)) {
-        m_cache = mesh.request_accessor_cache();
+        m_cache_stack = attribute().get_local_scope_stack_ptr();
     }
+}
+template <typename T, bool IsConst>
+long Accessor<T, IsConst>::index(const Tuple& t) const
+{
+    return BaseType::index(m_mesh, t);
 }
 
 template <typename T, bool IsConst>
@@ -49,8 +57,8 @@ template <typename T, bool IsConst>
 auto Accessor<T, IsConst>::cacheable_const_vector_attribute(const long index) const
     -> ConstMapResult
 {
-    if (m_cache) {
-        return m_cache->const_vector_attribute(*this, m_mode, index);
+    if (m_cache_stack) {
+        return m_cache_stack->current_scope_ptr()->const_vector_attribute(*this, m_mode, index);
     } else {
         return BaseType::const_vector_attribute(index);
     }
@@ -60,8 +68,15 @@ auto Accessor<T, IsConst>::cacheable_const_vector_attribute(const long index) co
 template <typename T, bool IsConst>
 auto Accessor<T, IsConst>::cacheable_vector_attribute(const long index) -> MapResultT
 {
-    if (m_cache) {
-        return m_cache->vector_attribute(*this, m_mode, index);
+    if (m_cache_stack && !m_cache_stack->empty()) {
+        if constexpr (IsConst) {
+            return m_cache_stack->current_scope_ptr()->const_vector_attribute(*this, m_mode, index);
+        } else {
+            return m_cache_stack->current_scope_ptr()->vector_attribute(*this, m_mode, index);
+        }
+    }
+    if constexpr (IsConst) {
+        return BaseType::const_vector_attribute(index);
     } else {
         return BaseType::vector_attribute(index);
     }
@@ -70,8 +85,8 @@ auto Accessor<T, IsConst>::cacheable_vector_attribute(const long index) -> MapRe
 template <typename T, bool IsConst>
 T Accessor<T, IsConst>::cacheable_const_scalar_attribute(const long index) const
 {
-    if (m_cache) {
-        return m_cache->const_scalar_attribute(*this, m_mode, index);
+    if (m_cache_stack && !m_cache_stack->empty()) {
+        return m_cache_stack->current_scope_ptr()->const_scalar_attribute(*this, m_mode, index);
     } else {
         return BaseType::const_scalar_attribute(index);
     }
@@ -80,10 +95,18 @@ T Accessor<T, IsConst>::cacheable_const_scalar_attribute(const long index) const
 template <typename T, bool IsConst>
 auto Accessor<T, IsConst>::cacheable_scalar_attribute(const long index) -> TT
 {
-    if (m_cache) {
-        return m_cache->scalar_attribute(*this, m_mode, index);
+    if (m_cache_stack && !m_cache_stack->empty()) {
+        if constexpr (IsConst) {
+            return m_cache_stack->current_scope_ptr()->const_scalar_attribute(*this, m_mode, index);
+        } else {
+            return m_cache_stack->current_scope_ptr()->scalar_attribute(*this, m_mode, index);
+        }
     } else {
-        return BaseType::scalar_attribute(index);
+        if constexpr (IsConst) {
+            return BaseType::const_scalar_attribute(index);
+        } else {
+            return BaseType::scalar_attribute(index);
+        }
     }
 }
 
@@ -108,13 +131,13 @@ T Accessor<T, IsConst>::scalar_attribute(const Tuple& t) const
 template <typename T, bool IsConst>
 auto Accessor<T, IsConst>::const_vector_attribute(const Tuple& t) const -> ConstMapResult
 {
-    const long idx = BaseType::index(t);
+    const long idx = index(t);
     return cacheable_const_vector_attribute(idx);
 }
 template <typename T, bool IsConst>
 auto Accessor<T, IsConst>::vector_attribute(const Tuple& t) -> MapResultT
 {
-    const long idx = BaseType::index(t);
+    const long idx = index(t);
     return cacheable_vector_attribute(idx);
 }
 
@@ -122,47 +145,17 @@ auto Accessor<T, IsConst>::vector_attribute(const Tuple& t) -> MapResultT
 template <typename T, bool IsConst>
 T Accessor<T, IsConst>::const_scalar_attribute(const Tuple& t) const
 {
-    const long idx = BaseType::index(t);
+    const long idx = index(t);
     return cacheable_const_scalar_attribute(idx);
 }
 
 template <typename T, bool IsConst>
 auto Accessor<T, IsConst>::scalar_attribute(const Tuple& t) -> TT
 {
-    const long idx = BaseType::index(t);
+    const long idx = index(t);
     return cacheable_scalar_attribute(idx);
 }
-//===================================================
 
-
-// template <typename T, bool IsConst>
-// void MeshAttributes<T>::rollback()
-//{
-//     attributes()s_copy.clear();
-// }
-//
-// template <typename T, bool IsConst>
-// void MeshAttributes<T>::begin_protect()
-//{
-//     attributes()s_copy =
-//     attributes()s;
-// }
-//
-// template <typename T, bool IsConst>
-// void MeshAttributes<T>::end_protect()
-//{
-//     if (!attributes()s_copy.empty())
-//     attributes()s =
-//     std::move(attributes()s_copy);
-//
-//     attributes()s_copy.clear();
-// }
-//
-// template <typename T, bool IsConst>
-// bool MeshAttributes<T>::is_in_protect() const
-//{
-//     return !attributes()s_copy.empty();
-// }
 template class Accessor<char, true>;
 template class Accessor<long, true>;
 template class Accessor<double, true>;

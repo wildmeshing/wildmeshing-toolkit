@@ -1,64 +1,66 @@
 #pragma once
 
 #include <memory>
+#include "AttributeAccessMode.hpp"
+#include "AttributeCache.hpp"
 
 namespace wmtk {
 
-
-namespace detail {
+template <typename T, bool IsConst>
+class Accessor;
 
 template <typename T>
-class AttributeAccessorCache
-{
-    std::shared_ptr<AttributeCache<T>> get_cache(const AttributeHandle& handle);
-    std::vector<std::shared_ptr<AttributeCache<T>>> m_caches;
-};
+class AttributeScopeStack;
 
-template <typename U>
-typename CachePtrType = std::shared_ptr<AttributeAccessorCache<U>>;
-template <typename... T>
-using CachePtrStorage = std::tuple<CachePtrType<T>...>;
-
-} // namespace detail
-class AttributeScope
+template <typename T>
+class AttributeScope : public AttributeCache<T>
 {
 public:
+    template <typename U, bool IsConst>
+    friend class Accessor;
+    friend class AttributeScopeStack<T>;
     AttributeScope();
-    AttributeScope(std::unique_ptr<AttributeScope>&& parent);
-    AttributeScope(Mesh& mesh);
-
-
     ~AttributeScope();
+    AttributeScope(std::unique_ptr<AttributeScope<T>>&& parent);
 
-    template <typename U>
-    CachePtrType<U> get_caches_single_type(PrimitiveType type)
-    {
-        return std::get<U>(m_caches_per_type[simplex_dimension(type)]);
-    }
-    template <typename U>
-    std::shared_ptr<AttributeCache<T>> get_cache(const MeshAttributeHandle<T>& handle)
-    {
-        return get_caches_single_type<T>(handle.m_primitive_type).get_cache(handle.m_handle);
-    }
-
-    // pops the parent scope
-    std::unique_ptr<AttributeScope> pop_parent() { return std::move(m_parent); }
 
 private:
-    // stores a shared_ptr<AttributeAccessorCache<T>> for each type we awnt
-    // fr each dimension
-    std::vector<CachePtrStorage<double, long, char>> m_caches_per_dimension_per_type;
-    std::unique_ptr<AttributeScope> m_parent;
+    using MapResult = typename AttributeCache<T>::MapResult;
+    using ConstMapResult = typename AttributeCache<T>::ConstMapResult;
+    using DataStorage = typename AttributeCache<T>::DataStorage;
+    using AttributeCache<T>::m_data;
+    MapResult load_cached_vector_value(AccessorBase<T>& accessor, long index);
+    ConstMapResult load_const_cached_vector_value(const AccessorBase<T>& accessor, long index)
+        const;
+    T& load_cached_scalar_value(AccessorBase<T>& accessor, long index);
+    T load_const_cached_scalar_value(const AccessorBase<T>& accessor, long index) const;
+    // returns an iterator and makes sure a value is set
+    typename DataStorage::iterator
+    load_it(const AccessorBase<T>& accessor, AttributeAccessMode mode, long index) const;
+
+    AttributeCache<T>& get_cache() { return static_cast<AttributeCache<T>&>(*this); }
+
+    // flushes cache to parent scope unless there is no parent scope, in which
+    // case it flushes data to the underlying attribute storage
+    void flush(Attribute<T>& attr);
+
+    // pops the parent scope
+    std::unique_ptr<AttributeScope<T>> pop_parent();
+    MapResult vector_attribute(AccessorBase<T>& accessor, AttributeAccessMode mode, long index);
+
+    ConstMapResult const_vector_attribute(
+        const AccessorBase<T>& accessor,
+        AttributeAccessMode mode,
+        long index) const;
+
+
+    T& scalar_attribute(AccessorBase<T>& accessor, AttributeAccessMode mode, long index);
+
+    T const_scalar_attribute(const AccessorBase<T>& accessor, AttributeAccessMode mode, long index)
+        const;
+
+private:
+    std::unique_ptr<AttributeScope<T>> m_parent;
 };
 
-template <typename U>
-CachePtrType<U> get_caches_single_type(PrimitiveType type)
-{
-    return std::get<U>(m_caches_per_type[simplex_dimension(type)]);
-}
-template <typename U>
-std::shared_ptr<AttributeCache<T>> get_cache(const MeshAttributeHandle<T>& handle)
-{
-    return get_caches_single_type<T>(handle.m_primitive_type).get_cache(handle.m_handle);
-}
 } // namespace wmtk

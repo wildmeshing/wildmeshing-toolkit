@@ -1,11 +1,13 @@
 #include "AttributeScopeHandle.hpp"
-#include "AttributeScopeManager.hpp"
 #include "AttributeScope.hpp"
+#include "AttributeManager.hpp"
 namespace wmtk {
-    AttributeScopeHandle::AttributeScopeHandle(AttributeScopeManager& scope) {
-        m_scope_manager.push_scope();
-    }
-    AttributeScopeHandle::~AttributeScopeHandle() {
-        m_scope_manager.pop_scope();
-    }
+AttributeScopeHandle::AttributeScopeHandle(AttributeManager& manager): m_manager(manager)
+{
+    m_manager.push_scope();
 }
+AttributeScopeHandle::~AttributeScopeHandle()
+{
+    m_manager.pop_scope();
+}
+} // namespace wmtk

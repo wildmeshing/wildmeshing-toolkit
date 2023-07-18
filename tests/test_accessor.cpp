@@ -128,8 +128,9 @@ TEST_CASE("test_accessor_caching")
 
 
     {
-        auto long_acc = m.create_accessor(long_handle, wmtk::AccessorAccessMode::Buffered);
-        auto double_acc = m.create_accessor(double_handle, wmtk::AccessorAccessMode::Buffered);
+        // TODO: create scope
+        auto long_acc = m.create_accessor(long_handle);
+        auto double_acc = m.create_accessor(double_handle);
 
         // check characteristics are all right
         REQUIRE(long_acc.size() == size);

@@ -6,8 +6,9 @@
 #include "Simplex.hpp"
 #include "Tuple.hpp"
 #include "Types.hpp"
+#include "attribute/AttributeManager.hpp"
+#include "attribute/AttributeScopeHandle.hpp"
 
-#include <wmtk/io/MeshWriter.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 
 #include <Eigen/Core>
@@ -56,18 +57,21 @@ public:
         const std::string& name); // block standard topology tools
 
     template <typename T>
-    Accessor<T> create_accessor(
-        const MeshAttributeHandle<T>& handle);
+    Accessor<T> create_accessor(const MeshAttributeHandle<T>& handle);
 
     template <typename T>
-    ConstAccessor<T> create_const_accessor(
-        const MeshAttributeHandle<T>& handle) const;
+    ConstAccessor<T> create_const_accessor(const MeshAttributeHandle<T>& handle) const;
     template <typename T>
-    ConstAccessor<T> create_accessor(
-        const MeshAttributeHandle<T>& handle) const;
+    ConstAccessor<T> create_accessor(const MeshAttributeHandle<T>& handle) const;
+
+
+    // creates a scope as long as the AttributeScopeHandle exists
+    [[nodiscard]] AttributeScopeHandle create_scope();
+
 
     ConstAccessor<char> get_flag_accessor(PrimitiveType type) const;
     ConstAccessor<long> get_cell_hash_accessor() const;
+
 
     // utility function for getting a cell's hash - slow because it creates a new accessor
     long get_cell_hash_slow(long cell_index) const;
@@ -86,17 +90,6 @@ protected: // member functions
 
 protected:
     // std::vector<MeshAttributes<Rational>> m_rational_attributes;
-    template <typename T>
-    MeshAttributes<T>& get_mesh_attributes(PrimitiveType ptype);
-
-    template <typename T>
-    MeshAttributes<T>& get_mesh_attributes(const MeshAttributeHandle<T>& handle);
-
-    template <typename T>
-    const MeshAttributes<T>& get_mesh_attributes(PrimitiveType ptype) const;
-
-    template <typename T>
-    const MeshAttributes<T>& get_mesh_attributes(const MeshAttributeHandle<T>& handle) const;
 
     /**
      * @brief internal function that returns the tuple of requested type, and has the global index
@@ -190,29 +183,21 @@ protected:
     void set_capacities(std::vector<long> capacities);
 
 
-
-    //std::shared_ptr<AccessorCache> request_accesor_cache();
+    // std::shared_ptr<AccessorCache> request_accesor_cache();
     //[[nodiscard]] AccessorScopeHandle push_accesor_scope();
 
 private: // members
-    //=========================================================
-    // Storage of Mesh Attributes
-    //=========================================================
-    std::vector<MeshAttributes<char>> m_char_attributes;
-    std::vector<MeshAttributes<long>> m_long_attributes;
-    std::vector<MeshAttributes<double>> m_double_attributes;
+    AttributeManager m_attribute_manager;
 
     // PImpl'd manager of per-thread update stacks
     // Every time a new access scope is requested the manager creates another level of indirection
     // for updates
-    std::unique_ptr<AttributeScopeManager> m_attribute_scope_manager;
+    // std::unique_ptr<AttributeScopeManager> m_attribute_scope_manager;
 
     //=========================================================
     // Simplex Attribute
     //=========================================================
 
-    // max index used for each type of simplex
-    std::vector<long> m_capacities;
 
     /**
      * @brief   0x1 == true = simplex is active (simplex exists)
@@ -233,62 +218,14 @@ Accessor<T> Mesh::create_accessor(const MeshAttributeHandle<T>& handle)
     return Accessor<T>(*this, handle);
 }
 template <typename T>
-ConstAccessor<T> Mesh::create_const_accessor(
-    const MeshAttributeHandle<T>& handle) const
+ConstAccessor<T> Mesh::create_const_accessor(const MeshAttributeHandle<T>& handle) const
 {
     return ConstAccessor<T>(*this, handle);
 }
 template <typename T>
-ConstAccessor<T> Mesh::create_accessor(
-    const MeshAttributeHandle<T>& handle) const
+ConstAccessor<T> Mesh::create_accessor(const MeshAttributeHandle<T>& handle) const
 {
     return create_const_accessor(handle);
 }
 
-template <typename T>
-const MeshAttributes<T>& Mesh::get_mesh_attributes(PrimitiveType ptype) const
-{
-    size_t index = get_simplex_dimension(ptype);
-    if constexpr (std::is_same_v<T, char>) {
-        return m_char_attributes[index];
-    }
-    if constexpr (std::is_same_v<T, long>) {
-        return m_long_attributes[index];
-    }
-    if constexpr (std::is_same_v<T, double>) {
-        return m_double_attributes[index];
-    }
-    // if constexpr(std::is_same_v<T,Rational>) {
-    //     return m_rational_attributes;
-    // }
-}
-template <typename T>
-const MeshAttributes<T>& Mesh::get_mesh_attributes(const MeshAttributeHandle<T>& handle) const
-{
-    return get_mesh_attributes<T>(handle.m_primitive_type);
-}
-
-template <typename T>
-MeshAttributes<T>& Mesh::get_mesh_attributes(PrimitiveType ptype)
-{
-    size_t index = get_simplex_dimension(ptype);
-    if constexpr (std::is_same_v<T, char>) {
-        return m_char_attributes[index];
-    }
-    if constexpr (std::is_same_v<T, long>) {
-        return m_long_attributes[index];
-    }
-    if constexpr (std::is_same_v<T, double>) {
-        return m_double_attributes[index];
-    }
-    // if constexpr(std::is_same_v<T,Rational>) {
-    //     return m_rational_attributes;
-    // }
-}
-
-template <typename T>
-MeshAttributes<T>& Mesh::get_mesh_attributes(const MeshAttributeHandle<T>& handle)
-{
-    return get_mesh_attributes<T>(handle.m_primitive_type);
-}
 } // namespace wmtk

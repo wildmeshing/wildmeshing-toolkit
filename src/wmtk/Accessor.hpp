@@ -2,10 +2,10 @@
 
 #include <memory>
 #include <type_traits>
-#include "attribute/AttributeAccessMode.hpp"
-#include "attribute/AccessorBase.hpp"
 #include "AttributeHandle.hpp"
 #include "Tuple.hpp"
+#include "attribute/AccessorBase.hpp"
+#include "attribute/AttributeAccessMode.hpp"
 
 #include <Eigen/Dense>
 
@@ -13,9 +13,11 @@ namespace wmtk {
 class Mesh;
 class TriMesh;
 class TetMesh;
+template <typename T>
+class AttributeScopeStack;
 
 template <typename T>
-class AccessorCache;
+class AttributeCache;
 
 template <typename T, bool IsConst = false>
 class Accessor : public AccessorBase<T>
@@ -26,7 +28,7 @@ public:
     friend class TetMesh;
     using Scalar = T;
 
-    friend class AccessorCache<T>;
+    friend class AttributeCache<T>;
     using BaseType = AccessorBase<T>;
     using MeshType = std::conditional_t<IsConst, const Mesh, Mesh>; // const correct Mesh object
 
@@ -34,7 +36,9 @@ public:
     using ConstMapResult = typename BaseType::ConstMapResult; // Eigen::Map<const VectorX<T>>
 
 
-    using MapResultT = std::conditional_t<IsConst, ConstMapResult, MapResult>; // MapResult or ConstMapResult for constness
+    using MapResultT =
+        std::conditional_t<IsConst, ConstMapResult, MapResult>; // MapResult or ConstMapResult for
+                                                                // constness
 
 
     // T or T& for const correctness
@@ -66,6 +70,7 @@ public:
     using BaseType::size; // const() -> long
     using BaseType::stride; // const() -> long
 
+    using BaseType::attribute; // access to Attribute object being used here
     using BaseType::set_attribute; // (const vector<T>&) -> void
 protected:
     ConstMapResult cacheable_const_vector_attribute(const long index) const;
@@ -75,11 +80,13 @@ protected:
     TT cacheable_scalar_attribute(const long index);
     using BaseType::scalar_attribute;
     using BaseType::vector_attribute;
+    long index(const Tuple& t) const;
 
 private:
+    MeshType& m_mesh;
     AttributeAccessMode m_mode;
 
-    std::shared_ptr<AccessorCache<T>> m_cache;
+    AttributeScopeStack<T>* m_cache_stack = nullptr;
 };
 
 // template <typename T>

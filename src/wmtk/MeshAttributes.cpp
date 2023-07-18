@@ -1,4 +1,5 @@
 #include "MeshAttributes.hpp"
+#include "attribute/PerThreadAttributeScopeStacks.hpp"
 
 #include <wmtk/io/MeshWriter.hpp>
 #include <wmtk/utils/Rational.hpp>
@@ -22,6 +23,20 @@ void MeshAttributes<T>::serialize(const int dim, MeshWriter& writer) const
     }
 }
 
+template <typename T>
+void MeshAttributes<T>::push_scope()
+{
+    for (auto& attr : m_attributes) {
+        attr.push_scope();
+    }
+}
+template <typename T>
+void MeshAttributes<T>::pop_scope()
+{
+    for (auto& attr : m_attributes) {
+        attr.pop_scope();
+    }
+}
 template <typename T>
 AttributeHandle
 MeshAttributes<T>::register_attribute(const std::string& name, long stride, bool replace)
