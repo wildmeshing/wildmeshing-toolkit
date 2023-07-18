@@ -2,7 +2,6 @@
 #include <numeric>
 
 #include <wmtk/utils/Logger.hpp>
-#include "attribute/AttributeScopeManager.hpp"
 
 #include "Primitive.hpp"
 
