@@ -117,6 +117,13 @@ void Attribute<T>::pop_scope(bool apply_updates)
     }
 }
 
+template <typename T>
+void Attribute<T>::clear_current_scope()
+{
+    if (m_scope_stacks) {
+        m_scope_stacks->local().clear_current_scope();
+    }
+}
 
 template class Attribute<char>;
 template class Attribute<long>;

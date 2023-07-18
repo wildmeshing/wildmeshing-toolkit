@@ -1,9 +1,9 @@
 #pragma once
 
 #include <vector>
-#include "MeshAttributes.hpp"
 #include <wmtk/utils/Rational.hpp>
 #include "AttributeScopeHandle.hpp"
+#include "MeshAttributes.hpp"
 
 namespace wmtk {
 class Mesh;
@@ -57,6 +57,7 @@ struct AttributeManager
 
     void push_scope();
     void pop_scope(bool apply_updates = true);
+    void clear_current_scope();
 };
 
 template <typename T>

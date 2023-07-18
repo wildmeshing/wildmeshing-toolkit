@@ -40,6 +40,7 @@ public:
 
     void push_scope();
     void pop_scope(bool apply_updates);
+    void clear_current_scope();
 
     // returns nullptr if no scope exists
     AttributeScopeStack<T>* get_local_scope_stack_ptr();

@@ -12,6 +12,7 @@ AttributeScopeHandle::AttributeScopeHandle(AttributeManager& manager)
 void AttributeScopeHandle::mark_failed()
 {
     m_failed = true;
+    m_manager.clear_current_scope();
 }
 AttributeScopeHandle::~AttributeScopeHandle()
 {

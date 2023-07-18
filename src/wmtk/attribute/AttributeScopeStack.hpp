@@ -26,6 +26,7 @@ struct AttributeScopeStack
     const AttributeScope<T>* current_scope_ptr() const;
 
     bool empty() const;
+    void clear_current_scope();
 
     long depth() const;
 

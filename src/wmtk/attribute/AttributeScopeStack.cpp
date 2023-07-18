@@ -1,7 +1,7 @@
 #include "AttributeScopeStack.hpp"
 #include <wmtk/utils/Rational.hpp>
-#include "AttributeScope.hpp"
 #include "Attribute.hpp"
+#include "AttributeScope.hpp"
 
 namespace wmtk {
 
@@ -64,6 +64,13 @@ const AttributeScope<T>* AttributeScopeStack<T>::current_scope_ptr() const
     }
 }
 
+template <typename T>
+void AttributeScopeStack<T>::clear_current_scope()
+{
+    if (bool(m_leaf)) {
+        m_leaf->clear();
+    }
+}
 template class AttributeScopeStack<long>;
 template class AttributeScopeStack<double>;
 template class AttributeScopeStack<char>;

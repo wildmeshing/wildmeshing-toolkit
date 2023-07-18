@@ -38,6 +38,13 @@ void MeshAttributes<T>::pop_scope(bool apply_updates)
     }
 }
 template <typename T>
+void MeshAttributes<T>::clear_current_scope()
+{
+    for (auto& attr : m_attributes) {
+        attr.clear_current_scope();
+    }
+}
+template <typename T>
 AttributeHandle
 MeshAttributes<T>::register_attribute(const std::string& name, long stride, bool replace)
 {

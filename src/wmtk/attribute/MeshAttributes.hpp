@@ -41,6 +41,7 @@ public:
     bool operator==(const MeshAttributes<T>& other) const;
     void push_scope();
     void pop_scope(bool apply_updates = true);
+    void clear_current_scope();
 
 protected:
     AttributeHandle attribute_handle(const std::string& name) const;
