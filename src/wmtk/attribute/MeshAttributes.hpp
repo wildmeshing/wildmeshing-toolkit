@@ -14,14 +14,13 @@ namespace wmtk {
 
 class MeshWriter;
 class Mesh;
-template <typename T, bool isConst>
-class Accessor;
+template <typename T>
+class AccessorBase;
 
 template <typename T>
 class MeshAttributes
 {
-    friend class Accessor<T, false>;
-    friend class Accessor<T, true>;
+    friend class AccessorBase<T>;
     friend class Mesh;
 
     typedef Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, 1>> MapResult;
@@ -33,21 +32,23 @@ public:
 
     void serialize(const int dim, MeshWriter& writer) const;
 
-    AttributeHandle register_attribute(const std::string& name, long size, bool replace = false);
+    [[nodiscard]] AttributeHandle
+    register_attribute(const std::string& name, long size, bool replace = false);
 
     long size() const;
     void reserve(const long size);
 
     bool operator==(const MeshAttributes<T>& other) const;
+    void push_scope();
+    void pop_scope(bool apply_updates = true);
+    void clear_current_scope();
 
 protected:
     AttributeHandle attribute_handle(const std::string& name) const;
 
-    ConstMapResult vector_attribute(const AttributeHandle& handle, const long index) const;
-    MapResult vector_attribute(const AttributeHandle& handle, const long index);
 
-    T scalar_attribute(const AttributeHandle& handle, const long index) const;
-    T& scalar_attribute(const AttributeHandle& handle, const long index);
+    Attribute<T>& attribute(const AttributeHandle& handle);
+    const Attribute<T>& attribute(const AttributeHandle& handle) const;
 
     // pass by value due to
     //https://clang.llvm.org/extra/clang-tidy/checks/modernize/pass-by-value.html

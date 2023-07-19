@@ -14,6 +14,7 @@ private:
 
 public:
     PointMesh();
+    PointMesh(long size);
     Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const override;
     bool is_ccw(const Tuple& tuple) const override;
     bool is_boundary(const Tuple& tuple) const override;
@@ -25,6 +26,9 @@ public:
 
     bool is_valid(const Tuple& tuple) const override;
 
+    void split_edge(const Tuple& ) {}
+    void collapse_edge(const Tuple& ) {}
+    bool is_connectivity_valid() const override { return true;} 
 protected:
     long id(const Tuple& tuple, const PrimitiveType& type) const override;
 

@@ -1,4 +1,5 @@
 #include "Attribute.hpp"
+#include <wmtk/attribute/PerThreadAttributeScopeStacks.hpp>
 #include <wmtk/io/MeshWriter.hpp>
 #include <wmtk/utils/Rational.hpp>
 
@@ -12,8 +13,10 @@ void Attribute<T>::serialize(const std::string& name, const int dim, MeshWriter&
 
 template <typename T>
 Attribute<T>::Attribute(long stride, long size)
-    : m_stride(stride)
+    : m_scope_stacks(new PerThreadAttributeScopeStacks<T>())
+    , m_stride(stride)
 {
+    assert(m_stride > 0);
     if (size > 0) {
         m_data = std::vector<T>(size * stride, T(0));
     }
@@ -51,23 +54,34 @@ void Attribute<T>::set(std::vector<T> val)
     m_data = std::move(val);
 }
 template <typename T>
-auto Attribute<T>::vector_attribute(const long index) const -> ConstMapResult
+auto Attribute<T>::const_vector_attribute(const long index) const -> ConstMapResult
 {
+    assert(index < size());
+    assert(m_stride > 0);
     const long start = index * m_stride;
-    return ConstMapResult(m_data.data() + start, m_stride);
+    ConstMapResult R(m_data.data() + start, m_stride);
+
+    assert(R.size() == m_stride);
+
+    return R;
 }
 
 
 template <typename T>
 typename Attribute<T>::MapResult Attribute<T>::vector_attribute(const long index)
 {
+    assert(index < size());
+    assert(m_stride > 0);
     const long start = index * m_stride;
-    return MapResult(m_data.data() + start, m_stride);
+    MapResult R(m_data.data() + start, m_stride);
+    assert(R.size() == m_stride);
+    return R;
 }
 
 template <typename T>
-T Attribute<T>::scalar_attribute(const long index) const
+T Attribute<T>::const_scalar_attribute(const long index) const
 {
+    assert(index < size());
     assert(m_stride == 1);
     return m_data[index];
 }
@@ -75,8 +89,40 @@ T Attribute<T>::scalar_attribute(const long index) const
 template <typename T>
 T& Attribute<T>::scalar_attribute(const long index)
 {
+    assert(index < size());
     assert(m_stride == 1);
     return m_data[index];
+}
+template <typename T>
+AttributeScopeStack<T>* Attribute<T>::get_local_scope_stack_ptr()
+{
+    if (bool(m_scope_stacks)) {
+        return &m_scope_stacks->local();
+    }
+    return nullptr;
+}
+
+template <typename T>
+void Attribute<T>::push_scope()
+{
+    if (m_scope_stacks) {
+        m_scope_stacks->local().emplace();
+    }
+}
+template <typename T>
+void Attribute<T>::pop_scope(bool apply_updates)
+{
+    if (m_scope_stacks) {
+        m_scope_stacks->local().pop(*this, apply_updates);
+    }
+}
+
+template <typename T>
+void Attribute<T>::clear_current_scope()
+{
+    if (m_scope_stacks) {
+        m_scope_stacks->local().clear_current_scope();
+    }
 }
 
 template class Attribute<char>;

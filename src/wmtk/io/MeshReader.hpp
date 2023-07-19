@@ -17,7 +17,7 @@ public:
     void read(Mesh& mesh);
 
 private:
-    const std::filesystem::path& m_filename;
+    std::filesystem::path m_filename;
 
     template <typename T>
     void set_attribute(
