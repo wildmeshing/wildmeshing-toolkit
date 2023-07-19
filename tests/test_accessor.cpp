@@ -12,7 +12,7 @@ template <typename VectorAcc>
 void populate(DEBUG_PointMesh& m, VectorAcc& va, bool for_zeros = false)
 {
     auto vertices = m.get_all(wmtk::PrimitiveType::Vertex);
-    size_t stride = va.stride();
+    size_t dimension = va.dimension();
     Eigen::Matrix<typename VectorAcc::T, Eigen::Dynamic, 1> x;
     for (const wmtk::Tuple& tup : vertices) {
         long id = m.id(tup);
@@ -20,7 +20,7 @@ void populate(DEBUG_PointMesh& m, VectorAcc& va, bool for_zeros = false)
         if (for_zeros) {
             v.setZero();
         } else {
-            std::iota(v.begin(), v.end(), stride * id);
+            std::iota(v.begin(), v.end(), dimension * id);
         }
     }
 }
@@ -28,10 +28,10 @@ template <typename VectorAcc>
 void check(DEBUG_PointMesh& m, VectorAcc& va, bool for_zeros = false)
 {
     auto vertices = m.get_all(wmtk::PrimitiveType::Vertex);
-    size_t stride = va.stride();
+    size_t dimension = va.dimension();
     Eigen::Matrix<typename VectorAcc::T, Eigen::Dynamic, 1> x;
-    bool is_scalar = va.stride() == 1;
-    x.resize(va.stride());
+    bool is_scalar = va.dimension() == 1;
+    x.resize(va.dimension());
     for (const wmtk::Tuple& tup : vertices) {
         long id = m.id(tup);
         if (for_zeros) {
@@ -41,7 +41,7 @@ void check(DEBUG_PointMesh& m, VectorAcc& va, bool for_zeros = false)
             }
         } else {
             auto v = va.vector_attribute(tup);
-            std::iota(x.begin(), x.end(), stride * id);
+            std::iota(x.begin(), x.end(), dimension * id);
             CHECK(v == x);
             if (is_scalar) {
                 CHECK(va.const_scalar_attribute(tup) == id);
@@ -71,9 +71,9 @@ TEST_CASE("test_accessor_basic")
     REQUIRE(char_acc.size() == size);
     REQUIRE(long_acc.size() == size);
     REQUIRE(double_acc.size() == size);
-    REQUIRE(char_acc.stride() == 1);
-    REQUIRE(long_acc.stride() == 1);
-    REQUIRE(double_acc.stride() == 3);
+    REQUIRE(char_acc.dimension() == 1);
+    REQUIRE(long_acc.dimension() == 1);
+    REQUIRE(double_acc.dimension() == 3);
 
     // test default initialization to 0
     for (const wmtk::Tuple& tup : vertices) {
@@ -174,8 +174,8 @@ TEST_CASE("test_accessor_caching")
         // check characteristics are all right
         REQUIRE(long_acc.size() == size);
         REQUIRE(double_acc.size() == size);
-        REQUIRE(long_acc.stride() == 1);
-        REQUIRE(double_acc.stride() == 3);
+        REQUIRE(long_acc.dimension() == 1);
+        REQUIRE(double_acc.dimension() == 3);
 
         // use global set to force all values
 

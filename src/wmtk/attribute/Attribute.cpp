@@ -8,17 +8,17 @@ namespace wmtk {
 template <typename T>
 void Attribute<T>::serialize(const std::string& name, const int dim, MeshWriter& writer) const
 {
-    writer.write(name, dim, stride(), m_data);
+    writer.write(name, dim, dimension(), m_data);
 }
 
 template <typename T>
-Attribute<T>::Attribute(long stride, long size)
+Attribute<T>::Attribute(long dimension, long size)
     : m_scope_stacks(new PerThreadAttributeScopeStacks<T>())
-    , m_stride(stride)
+    , m_dimension(dimension)
 {
-    assert(m_stride > 0);
+    assert(m_dimension > 0);
     if (size > 0) {
-        m_data = std::vector<T>(size * stride, T(0));
+        m_data = std::vector<T>(size * dimension, T(0));
     }
 }
 
@@ -26,42 +26,42 @@ Attribute<T>::Attribute(long stride, long size)
 template <typename T>
 bool Attribute<T>::operator==(const Attribute<T>& o) const
 {
-    return m_stride == o.m_stride && m_data == o.m_data;
+    return m_dimension == o.m_dimension && m_data == o.m_data;
 }
 
 template <typename T>
 void Attribute<T>::reserve(const long size)
 {
-    if (size > (m_data.size() / m_stride)) {
-        m_data.resize(m_stride * size, T(0));
+    if (size > (m_data.size() / m_dimension)) {
+        m_data.resize(m_dimension * size, T(0));
     }
 }
 template <typename T>
 long Attribute<T>::size() const
 {
-    return m_data.size() / m_stride;
+    return m_data.size() / m_dimension;
 }
 template <typename T>
-long Attribute<T>::stride() const
+long Attribute<T>::dimension() const
 {
-    return m_stride;
+    return m_dimension;
 }
 
 template <typename T>
 void Attribute<T>::set(std::vector<T> val)
 {
-    assert(val.size() % m_stride == 0);
+    assert(val.size() % m_dimension == 0);
     m_data = std::move(val);
 }
 template <typename T>
 auto Attribute<T>::const_vector_attribute(const long index) const -> ConstMapResult
 {
     assert(index < size());
-    assert(m_stride > 0);
-    const long start = index * m_stride;
-    ConstMapResult R(m_data.data() + start, m_stride);
+    assert(m_dimension > 0);
+    const long start = index * m_dimension;
+    ConstMapResult R(m_data.data() + start, m_dimension);
 
-    assert(R.size() == m_stride);
+    assert(R.size() == m_dimension);
 
     return R;
 }
@@ -71,10 +71,10 @@ template <typename T>
 typename Attribute<T>::MapResult Attribute<T>::vector_attribute(const long index)
 {
     assert(index < size());
-    assert(m_stride > 0);
-    const long start = index * m_stride;
-    MapResult R(m_data.data() + start, m_stride);
-    assert(R.size() == m_stride);
+    assert(m_dimension > 0);
+    const long start = index * m_dimension;
+    MapResult R(m_data.data() + start, m_dimension);
+    assert(R.size() == m_dimension);
     return R;
 }
 
@@ -82,7 +82,7 @@ template <typename T>
 T Attribute<T>::const_scalar_attribute(const long index) const
 {
     assert(index < size());
-    assert(m_stride == 1);
+    assert(m_dimension == 1);
     return m_data[index];
 }
 
@@ -90,7 +90,7 @@ template <typename T>
 T& Attribute<T>::scalar_attribute(const long index)
 {
     assert(index < size());
-    assert(m_stride == 1);
+    assert(m_dimension == 1);
     return m_data[index];
 }
 template <typename T>
