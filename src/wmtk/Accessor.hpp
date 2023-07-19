@@ -1,9 +1,12 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <type_traits>
-#include "AttributeHandle.hpp"
+#include "attribute/AttributeHandle.hpp"
 #include "Tuple.hpp"
+#include "attribute/AccessorBase.hpp"
+#include "attribute/AttributeAccessMode.hpp"
 
 #include <Eigen/Dense>
 
@@ -11,68 +14,86 @@ namespace wmtk {
 class Mesh;
 class TriMesh;
 class TetMesh;
-enum class AccessorCacheMode { Immediate, ReadBuffered, WriteBuffered, ReadWriteBuffered };
+class PointMesh;
+template <typename T>
+class AttributeScopeStack;
 
 template <typename T>
-class MeshAttributes;
-
-template <typename T>
-class AccessorCache;
+class AttributeCache;
 
 template <typename T, bool IsConst = false>
-class Accessor
+class Accessor : public AccessorBase<T>
 {
 public:
     friend class Mesh;
+    friend class PointMesh;
     friend class TriMesh;
     friend class TetMesh;
-    using MeshType = std::conditional_t<IsConst, const Mesh, Mesh>;
-    using MeshAttributesType =
-        std::conditional_t<IsConst, const MeshAttributes<T>, MeshAttributes<T>>;
+    using Scalar = T;
 
-    using MapResult = typename Eigen::Matrix<T, Eigen::Dynamic, 1>::MapType;
-    using ConstMapResult = typename Eigen::Matrix<T, Eigen::Dynamic, 1>::ConstMapType;
+    friend class AttributeCache<T>;
+    using BaseType = AccessorBase<T>;
+    using MeshType = std::conditional_t<IsConst, const Mesh, Mesh>; // const correct Mesh object
 
-    using MapResultT = std::conditional_t<IsConst, ConstMapResult, MapResult>;
+    using MapResult = typename BaseType::MapResult; // Eigen::Map<VectorX<T>>
+    using ConstMapResult = typename BaseType::ConstMapResult; // Eigen::Map<const VectorX<T>>
+
+
+    using MapResultT =
+        std::conditional_t<IsConst, ConstMapResult, MapResult>; // MapResult or ConstMapResult for
+                                                                // constness
+
+
+    // T or T& for const correctness
     using TT = std::conditional_t<IsConst, T, T&>;
 
 
     Accessor(
         MeshType& m,
         const MeshAttributeHandle<T>& handle,
-        AccessorCacheMode mode = AccessorCacheMode::Immediate);
-    ~Accessor();
+        AttributeAccessMode access_mode = AttributeAccessMode::Immediate);
 
+    ~Accessor();
     Accessor(const Accessor&) = delete;
     Accessor& operator=(const Accessor&) = delete;
+
+    AttributeAccessMode access_mode() const;
+
+    ConstMapResult const_vector_attribute(const Tuple& t) const;
 
     ConstMapResult vector_attribute(const Tuple& t) const;
     MapResultT vector_attribute(const Tuple& t);
 
+    T const_scalar_attribute(const Tuple& t) const;
     T scalar_attribute(const Tuple& t) const;
     TT scalar_attribute(const Tuple& t);
 
-    void set_attribute(const std::vector<T>& value);
+    // returns the size of the underlying attribute
 
-    //returns the size of the underlying attribute
-    long size() const;
+    using BaseType::size; // const() -> long
+    using BaseType::stride; // const() -> long
+
+    using BaseType::attribute; // access to Attribute object being used here
+    using BaseType::set_attribute; // (const vector<T>&) -> void
+    // shows the depth of scope stacks if they exist, mostly for debug
+    std::optional<long> stack_depth() const;
+
+protected:
+    ConstMapResult cacheable_const_vector_attribute(const long index) const;
+    MapResultT cacheable_vector_attribute(const long index);
+
+    T cacheable_const_scalar_attribute(const long index) const;
+    TT cacheable_scalar_attribute(const long index);
+    using BaseType::scalar_attribute;
+    using BaseType::vector_attribute;
+    long index(const Tuple& t) const;
+
 
 private:
-    ConstMapResult vector_attribute(const long index) const;
-    MapResultT vector_attribute(const long index);
-
-    T scalar_attribute(const long index) const;
-    TT scalar_attribute(const long index);
-
-private:
-    MeshAttributesType& attributes();
-    const MeshAttributesType& attributes() const;
-
     MeshType& m_mesh;
-    MeshAttributeHandle<T> m_handle;
+    AttributeAccessMode m_mode;
 
-    AccessorCacheMode m_cache_mode = AccessorCacheMode::Immediate;
-    std::unique_ptr<AccessorCache<T>> m_cache;
+    AttributeScopeStack<T>* m_cache_stack = nullptr;
 };
 
 // template <typename T>

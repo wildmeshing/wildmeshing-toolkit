@@ -1,4 +1,5 @@
 #include "MeshAttributes.hpp"
+#include "PerThreadAttributeScopeStacks.hpp"
 
 #include <wmtk/io/MeshWriter.hpp>
 #include <wmtk/utils/Rational.hpp>
@@ -22,6 +23,27 @@ void MeshAttributes<T>::serialize(const int dim, MeshWriter& writer) const
     }
 }
 
+template <typename T>
+void MeshAttributes<T>::push_scope()
+{
+    for (auto& attr : m_attributes) {
+        attr.push_scope();
+    }
+}
+template <typename T>
+void MeshAttributes<T>::pop_scope(bool apply_updates)
+{
+    for (auto& attr : m_attributes) {
+        attr.pop_scope(apply_updates);
+    }
+}
+template <typename T>
+void MeshAttributes<T>::clear_current_scope()
+{
+    for (auto& attr : m_attributes) {
+        attr.clear_current_scope();
+    }
+}
 template <typename T>
 AttributeHandle
 MeshAttributes<T>::register_attribute(const std::string& name, long stride, bool replace)
@@ -58,36 +80,17 @@ bool MeshAttributes<T>::operator==(const MeshAttributes<T>& other) const
 
 
 template <typename T>
-auto MeshAttributes<T>::vector_attribute(const AttributeHandle& handle, const long index) const
-    -> ConstMapResult
+Attribute<T>& MeshAttributes<T>::attribute(const AttributeHandle& handle)
 {
-    const auto& attr = m_attributes[handle.index];
-    return attr.vector_attribute(index);
+    Attribute<T>& attr = m_attributes[handle.index];
+    return attr;
 }
-
-
 template <typename T>
-typename MeshAttributes<T>::MapResult MeshAttributes<T>::vector_attribute(
-    const AttributeHandle& handle,
-    const long index)
+const Attribute<T>& MeshAttributes<T>::attribute(const AttributeHandle& handle) const
 {
-    auto& attr = m_attributes[handle.index];
-    return attr.vector_attribute(index);
+    return m_attributes[handle.index];
 }
 
-template <typename T>
-T MeshAttributes<T>::scalar_attribute(const AttributeHandle& handle, const long index) const
-{
-    const auto& attr = m_attributes[handle.index];
-    return attr.scalar_attribute(index);
-}
-
-template <typename T>
-T& MeshAttributes<T>::scalar_attribute(const AttributeHandle& handle, const long index)
-{
-    auto& attr = m_attributes[handle.index];
-    return attr.scalar_attribute(index);
-}
 
 template <typename T>
 void MeshAttributes<T>::set(const AttributeHandle& handle, std::vector<T> val)

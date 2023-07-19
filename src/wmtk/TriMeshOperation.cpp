@@ -14,15 +14,29 @@ TriMesh::TriMeshOperationState::PerFaceData TriMesh::TriMeshOperationState::get_
     t2_edge = m_mesh.switch_tuple(t2_edge, PE);
 
     face_data.ears[0] =
-        EarGlobalIDs{/*.fid = */ff_accessor.vector_attribute(t1_edge)(t1_edge.m_local_eid),
-                     /*.eid = */m_mesh.id(t1_edge, PE)};
+        EarGlobalIDs{/*.fid = */ ff_accessor.vector_attribute(t1_edge)(t1_edge.m_local_eid),
+                     /*.eid = */ m_mesh.id(t1_edge, PE)};
 
     face_data.ears[1] =
-        EarGlobalIDs{/*.fid = */ff_accessor.vector_attribute(t2_edge)(t2_edge.m_local_eid),
-                     /*.eid = */m_mesh.id(t2_edge, PE)};
+        EarGlobalIDs{/*.fid = */ ff_accessor.vector_attribute(t2_edge)(t2_edge.m_local_eid),
+                     /*.eid = */ m_mesh.id(t2_edge, PE)};
 
     return face_data;
 }
+
+// constructor
+TriMesh::TriMeshOperationState::TriMeshOperationState(TriMesh& m)
+    : flag_accessors({{m.get_flag_accessor(PrimitiveType::Vertex),
+                       m.get_flag_accessor(PrimitiveType::Edge),
+                       m.get_flag_accessor(PrimitiveType::Face)}})
+    , ff_accessor(m.create_accessor<long>(m.m_ff_handle))
+    , fe_accessor(m.create_accessor<long>(m.m_fe_handle))
+    , fv_accessor(m.create_accessor<long>(m.m_fv_handle))
+    , vf_accessor(m.create_accessor<long>(m.m_vf_handle))
+    , ef_accessor(m.create_accessor<long>(m.m_ef_handle))
+    , hash_accessor(m.get_cell_hash_accessor())
+    , m_mesh(m)
+{}
 
 // constructor
 TriMesh::TriMeshOperationState::TriMeshOperationState(TriMesh& m, const Tuple& operating_tuple)
@@ -30,8 +44,8 @@ TriMesh::TriMeshOperationState::TriMeshOperationState(TriMesh& m, const Tuple& o
     , ff_accessor(m.create_accessor<long>(m.m_ff_handle))
     , fe_accessor(m.create_accessor<long>(m.m_fe_handle))
     , fv_accessor(m.create_accessor<long>(m.m_fv_handle))
-    , vf_accessor(m.create_accessor<long>(m.m_ef_handle))
-    , ef_accessor(m.create_accessor<long>(m.m_vf_handle))
+    , vf_accessor(m.create_accessor<long>(m.m_vf_handle))
+    , ef_accessor(m.create_accessor<long>(m.m_ef_handle))
     , hash_accessor(m.get_cell_hash_accessor())
     , m_mesh(m)
     , m_operating_tuple(operating_tuple)
@@ -53,11 +67,16 @@ TriMesh::TriMeshOperationState::TriMeshOperationState(TriMesh& m, const Tuple& o
     auto C_tuple = m_mesh.switch_tuple(m_mesh.switch_tuple(m_operating_tuple, PE), PV);
     SimplicialComplex SC =
         wmtk::SimplicialComplex::open_star(Simplex(PV, m_operating_tuple), m_mesh);
-    SC.unify_with_complex(wmtk::SimplicialComplex::open_star(Simplex(PV, m_mesh.switch_tuple(m_operating_tuple, PV)), m_mesh));
+    SC.unify_with_complex(wmtk::SimplicialComplex::open_star(
+        Simplex(PV, m_mesh.switch_tuple(m_operating_tuple, PV)),
+        m_mesh));
     SC.unify_with_complex(wmtk::SimplicialComplex::open_star(Simplex(PV, C_tuple), m_mesh));
     if (!m_mesh.is_boundary(m_operating_tuple)) {
-        auto C_prime_tuple = m_mesh.switch_tuple(m_mesh.switch_tuple(m_mesh.switch_tuple(m_operating_tuple, PF), PE), PV);
-        SC.unify_with_complex(wmtk::SimplicialComplex::open_star(Simplex(PV, C_prime_tuple), m_mesh));
+        auto C_prime_tuple = m_mesh.switch_tuple(
+            m_mesh.switch_tuple(m_mesh.switch_tuple(m_operating_tuple, PF), PE),
+            PV);
+        SC.unify_with_complex(
+            wmtk::SimplicialComplex::open_star(Simplex(PV, C_prime_tuple), m_mesh));
     }
     auto cells_set = SC.get_simplices(PF);
     for (auto cell : cells_set) {
@@ -69,15 +88,14 @@ void TriMesh::TriMeshOperationState::delete_simplices()
 {
     for (int d = 0; d < 3; d++) {
         for (long& simplex_id : simplices_to_delete[d]) {
-            flag_accessors[d].scalar_attribute(simplex_id) = 0;
+            flag_accessors[d].scalar_attribute(simplex_id) = 1;
         }
     }
 }
 
 void TriMesh::TriMeshOperationState::update_cell_hash()
 {
-    for (const long& cell_id : cells_to_update_hash) 
-    {
+    for (const long& cell_id : cells_to_update_hash) {
         hash_accessor.scalar_attribute(cell_id)++;
     }
 }
@@ -183,6 +201,10 @@ void TriMesh::TriMeshOperationState::glue_new_faces_across_AB(
     long deleted_fid_bottom = FaceDatas[1].deleted_fid;
     auto ff_deleted_top = ff_accessor.vector_attribute(deleted_fid_top);
     auto ff_deleted_bottom = ff_accessor.vector_attribute(deleted_fid_bottom);
+    assert(m_mesh.capacity(PF) > new_fids_top[0]);
+    assert(m_mesh.capacity(PF) > new_fids_top[1]);
+    assert(m_mesh.capacity(PF) > new_fids_bottom[0]);
+    assert(m_mesh.capacity(PF) > new_fids_bottom[1]);
 
     for (int i = 0; i < 3; i++) {
         if (ff_deleted_top(i) == deleted_fid_bottom) {
@@ -207,11 +229,14 @@ std::array<long, 2> TriMesh::TriMeshOperationState::glue_new_triangle_topology(
     const PerFaceData& face_data)
 {
     // create new faces
-    std::vector<long> new_fids = m_mesh.request_simplex_indices(PrimitiveType::Face, 2);
+    m_mesh.reserve_attributes(PrimitiveType::Face, m_mesh.capacity(PrimitiveType::Face) + 2 + 1);
+    std::vector<long> new_fids = this->request_simplex_indices(PrimitiveType::Face, 2);
     assert(new_fids.size() == 2);
     // std::array<long, 2> = {new_fids[0], new_fids[1]};
     // create new edges
-    std::vector<long> spine_edge = m_mesh.request_simplex_indices(PrimitiveType::Edge, 1);
+    m_mesh.reserve_attributes(PrimitiveType::Edge, m_mesh.capacity(PrimitiveType::Edge) + 1 + 2);
+
+    std::vector<long> spine_edge = this->request_simplex_indices(PrimitiveType::Edge, 1);
     assert(spine_edge[0] > -1);
     long spine_eid = spine_edge[0];
 
@@ -296,12 +321,12 @@ void TriMesh::TriMeshOperationState::split_edge()
     }
 
     // create new vertex
-    std::vector<long> new_vids = m_mesh.request_simplex_indices(PrimitiveType::Vertex, 1);
+    std::vector<long> new_vids = this->request_simplex_indices(PrimitiveType::Vertex, 1);
     assert(new_vids.size() == 1);
     const long new_vid = new_vids[0];
 
     // create new edges
-    std::vector<long> replacement_eids = m_mesh.request_simplex_indices(PrimitiveType::Edge, 2);
+    std::vector<long> replacement_eids = this->request_simplex_indices(PrimitiveType::Edge, 2);
     assert(replacement_eids.size() == 2);
 
     std::vector<std::array<long, 2>> new_fids;
@@ -322,6 +347,15 @@ void TriMesh::TriMeshOperationState::split_edge()
     }
     update_cell_hash();
     delete_simplices();
+}
+
+std::vector<long> TriMesh::TriMeshOperationState::request_simplex_indices(
+    const PrimitiveType type,
+    long count)
+{
+    m_mesh.reserve_attributes(type, m_mesh.capacity(type) + count);
+
+    return m_mesh.request_simplex_indices(type, count);
 }
 
 } // namespace wmtk
