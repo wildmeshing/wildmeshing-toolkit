@@ -9,7 +9,6 @@
 
 #include <Eigen/Dense>
 
-class DEBUG_TriMesh;
 namespace wmtk {
 
 template <typename T>
@@ -26,7 +25,6 @@ class AccessorBase
 public:
     using T = _T;
     friend class AccessorCache<T>;
-    friend class DEBUG_TriMesh;
     using MeshAttributesType = MeshAttributes<T>;
     using AttributeType = Attribute<T>;
 

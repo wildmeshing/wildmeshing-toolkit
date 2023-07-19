@@ -19,7 +19,7 @@ public:
     template <typename T>
     AccessorBase<T> create_const_base_accessor(const MeshAttributeHandle<T>& handle) const
     {
-        return AccessorBase<T>(const_cast<DEBUG_TriMesh&>(*this), handle);
+        return AccessorBase<T>(const_cast<DEBUG_PointMesh&>(*this), handle);
     }
 };
 } // namespace wmtk::tests
