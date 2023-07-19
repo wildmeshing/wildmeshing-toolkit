@@ -33,7 +33,7 @@ public:
     void serialize(const int dim, MeshWriter& writer) const;
 
     [[nodiscard]] AttributeHandle
-    register_attribute(const std::string& name, long size, bool replace = false);
+    register_attribute(const std::string& name, long dimension, bool replace = false);
 
     long size() const;
     void reserve(const long size);
@@ -57,6 +57,7 @@ protected:
 private:
     std::map<std::string, AttributeHandle> m_handles;
 
+    // The vector held in each Attribute in m_attributes has this size
     long m_size = -1;
 
     std::vector<Attribute<T>> m_attributes;

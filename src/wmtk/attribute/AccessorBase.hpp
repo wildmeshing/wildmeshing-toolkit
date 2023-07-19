@@ -35,7 +35,7 @@ public:
 public:
     // returns the size of the underlying attribute
     long size() const;
-    long stride() const;
+    long dimension() const;
 
 
     void set_attribute(std::vector<T> value);

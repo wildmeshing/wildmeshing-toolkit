@@ -29,9 +29,9 @@ long AccessorBase<T>::size() const
 }
 
 template <typename T>
-long AccessorBase<T>::stride() const
+long AccessorBase<T>::dimension() const
 {
-    return attribute().stride();
+    return attribute().dimension();
 }
 
 template <typename T>
