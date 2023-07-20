@@ -18,6 +18,8 @@ set(TEST_SOURCES
     test_accessor.cpp
     tools/DEBUG_PointMesh.hpp
     tools/DEBUG_TriMesh.hpp
+    tools/TriMesh_examples.hpp
+    tools/TriMesh_examples.cpp
 )
 add_executable(wmtk_tests ${TEST_SOURCES})
 

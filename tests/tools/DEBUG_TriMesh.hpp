@@ -6,6 +6,10 @@ namespace wmtk::tests {
 class DEBUG_TriMesh : public TriMesh
 {
 public:
+    using TriMesh::TriMesh;
+    using TriMesh::operator=;
+
+
     auto edge_tuple_between_v1_v2(const long v1, const long v2, const long fid) const -> Tuple
     {
         ConstAccessor<long> fv = create_accessor<long>(m_fv_handle);
@@ -60,11 +64,7 @@ public:
     void reserve_attributes(PrimitiveType type, long size) { Mesh::reserve_attributes(type, size); }
 
 
-    TriMeshOperationExecutor get_tmoe() {
-        return TriMeshOperationExecutor(*this);
-    } 
-    TriMeshOperationExecutor get_tmoe(const Tuple& t) {
-        return TriMeshOperationExecutor(*this, t);
-    } 
+    TriMeshOperationExecutor get_tmoe() { return TriMeshOperationExecutor(*this); }
+    TriMeshOperationExecutor get_tmoe(const Tuple& t) { return TriMeshOperationExecutor(*this, t); }
 };
 } // namespace wmtk::tests
