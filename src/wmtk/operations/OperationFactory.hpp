@@ -17,7 +17,7 @@ class OperationFactoryBase
 template <typename OperationType>
 class OperationFactory : public OperationFactoryBase
 {
-    std::unique_ptr<Operation> create(const TupleType& t) const
+    std::unique_ptr<Operation> create(const Tuple& t) const
     {
         return std::make_unique<OperationType>(m_mesh, t);
     }

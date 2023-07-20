@@ -9,7 +9,7 @@ namespace wmtk {
 bool TriMeshCollapseEdgeOperation::execute()
 {
     TriMesh& m = dynamic_cast<TriMesh&>(m_mesh);
-    m.collapse_edge(m_input_tuple);
+    m_output_tuple = m.collapse_edge(m_input_tuple);
     return true;
 }
 bool TriMeshCollapseEdgeOperation::before() const
@@ -21,14 +21,10 @@ std::string TriMeshCollapseEdgeOperation::name() const
     return "tri_mesh_collapse_edge";
 }
 
-Tuple TriMeshCollapseEdgeOperation::new_vertex() const
-{
-    return m_output_tuple;
-}
 
 std::vector<Tuple> TriMeshCollapseEdgeOperation::modified_triangles() const
 {
-    Simplex v(PrimitiveType::Vertex, new_vertex() );
+    Simplex v(PrimitiveType::Vertex, m_output_tuple );
     auto sc = SimplicialComplex::open_star(v, m_mesh);
     auto faces = sc.get_simplices(PrimitiveType::Face);
     std::vector<Tuple> ret;

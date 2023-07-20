@@ -1,5 +1,6 @@
 #pragma once
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/TriMesh_operations.hpp>
 
 namespace wmtk::tests {
 class DEBUG_TriMesh : public TriMesh
@@ -57,5 +58,13 @@ public:
 
 
     void reserve_attributes(PrimitiveType type, long size) { Mesh::reserve_attributes(type, size); }
+
+
+    TriMeshOperationExecutor get_tmoe() {
+        return TriMeshOperationExecutor(*this);
+    } 
+    TriMeshOperationExecutor get_tmoe(const Tuple& t) {
+        return TriMeshOperationExecutor(*this, t);
+    } 
 };
 } // namespace wmtk::tests

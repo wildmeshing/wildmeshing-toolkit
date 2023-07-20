@@ -9,8 +9,8 @@ class TetMesh : public Mesh
 public:
     TetMesh();
 
-    void split_edge(const Tuple& t) override;
-    void collapse_edge(const Tuple& t) override;
+    Tuple split_edge(const Tuple& t) override;
+    Tuple collapse_edge(const Tuple& t) override;
 
     Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const override;
     bool is_ccw(const Tuple& tuple) const override;

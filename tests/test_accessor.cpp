@@ -1,6 +1,6 @@
 #include <spdlog/spdlog.h>
 #include <numeric>
-#include "shims/DEBUG_PointMesh.hpp"
+#include "tools/DEBUG_PointMesh.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 

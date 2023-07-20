@@ -342,4 +342,11 @@ bool TriMesh::is_connectivity_valid() const
 
     return true;
 }
+
+Tuple TriMesh::with_different_cid(const Tuple& t, long cid)
+{
+    Tuple r = t;
+    r.m_global_cid = cid;
+    return r;
+}
 } // namespace wmtk

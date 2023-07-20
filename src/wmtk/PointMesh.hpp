@@ -26,8 +26,8 @@ public:
 
     bool is_valid(const Tuple& tuple) const override;
 
-    void split_edge(const Tuple& ) {}
-    void collapse_edge(const Tuple& ) {}
+    Tuple split_edge(const Tuple& ) override { return {};}
+    Tuple collapse_edge(const Tuple& ) override { return {};}
     bool is_connectivity_valid() const override { return true;} 
 protected:
     long id(const Tuple& tuple, const PrimitiveType& type) const override;
