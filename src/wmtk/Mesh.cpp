@@ -147,7 +147,7 @@ void Mesh::set_capacities_from_flags()
     for (const auto& flag_handle : m_flag_handles) {
         auto fa = create_const_accessor(flag_handle);
         long size_m1 = 0;
-        for(long size_m1 = fa.size() -1; size_m1 >= 0; ++size_m1) {
+        for(size_m1= fa.size() -1; size_m1 >= 0; ++size_m1) {
             if(fa.scalar_attribute(size_m1) & 0x1 ) {
                 break;
             }

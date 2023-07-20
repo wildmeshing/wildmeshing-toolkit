@@ -1,5 +1,5 @@
 #include "Operation.hpp"
-
+#include <wmtk/Mesh.hpp>
 
 namespace wmtk {
 Operation::Operation(Mesh& m)
@@ -10,7 +10,7 @@ Operation::~Operation() = default;
 
 bool Operation::operator()()
 {
-    auto scope = m.create_scope();
+    AttributeScopeHandle scope = m_mesh.create_scope();
 
     if (before()) {
         if (execute()) { // success should be marked here
@@ -19,7 +19,7 @@ bool Operation::operator()()
             }
         }
     }
-    scope->clear();
+    scope.mark_failed();
     return false;
 }
 
@@ -28,4 +28,17 @@ std::vector<double> Operation::priority() const
     return {0};
 }
 
+bool Operation::after() const
+{
+    // TODO: default implement the invariants
+    /*
+    for (const auto& invariant : invariants) {
+        if (!invariant(m_mesh, modified_triangles())) {
+            return false;
+        }
+    }
+    */
+    return true;
+}
 } // namespace wmtk
+
