@@ -29,6 +29,10 @@ class MeshAttributes
 
 public:
     MeshAttributes();
+    MeshAttributes(const MeshAttributes& o);
+    MeshAttributes(MeshAttributes&& o);
+    MeshAttributes& operator=(const MeshAttributes& o);
+    MeshAttributes& operator=(MeshAttributes&& o);
 
     void serialize(const int dim, MeshWriter& writer) const;
 

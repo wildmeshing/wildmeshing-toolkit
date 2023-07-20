@@ -9,6 +9,13 @@ AttributeManager::AttributeManager(long size)
     , m_double_attributes(size)
     , m_capacities(size, 0)
 {}
+
+AttributeManager::AttributeManager(const AttributeManager& o) = default;
+AttributeManager::AttributeManager(AttributeManager&& o) = default;
+AttributeManager& AttributeManager::operator=(const AttributeManager& o) = default;
+AttributeManager& AttributeManager::operator=(AttributeManager&& o) = default;
+
+
 AttributeManager::~AttributeManager() = default;
 
 void AttributeManager::serialize(MeshWriter& writer)

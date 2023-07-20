@@ -7,6 +7,10 @@
 
 namespace wmtk {
 
+    Mesh::Mesh(Mesh&& other) = default;
+    Mesh::Mesh(const Mesh& other) = default;
+    Mesh& Mesh::operator=(const Mesh& other) = default;
+    Mesh& Mesh::operator=(Mesh&& other) = default;
 Mesh::Mesh(const long& dimension)
     : m_attribute_manager(dimension + 1)
     , m_cell_hash_handle(register_attribute<long>("hash", static_cast<PrimitiveType>(dimension), 1))

@@ -12,6 +12,14 @@ namespace wmtk {
 template <typename T>
 MeshAttributes<T>::MeshAttributes()
 {}
+template <typename T>
+MeshAttributes<T>::MeshAttributes(const MeshAttributes& o) = default;
+template <typename T>
+MeshAttributes<T>::MeshAttributes(MeshAttributes&& o) = default;
+template <typename T>
+MeshAttributes<T>& MeshAttributes<T>::operator=(const MeshAttributes& o) = default;
+template <typename T>
+MeshAttributes<T>& MeshAttributes<T>::operator=(MeshAttributes&& o) = default;
 
 template <typename T>
 void MeshAttributes<T>::serialize(const int dim, MeshWriter& writer) const

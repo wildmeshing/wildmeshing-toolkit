@@ -26,6 +26,10 @@ public:
     // dimension is the dimension of the top level simplex in this mesh
     // That is, a TriMesh is a 2, a TetMesh is a 3
     Mesh(const long& dimension);
+    Mesh(Mesh&& other);
+    Mesh(const Mesh& other);
+    Mesh& operator=(const Mesh& other);
+    Mesh& operator=(Mesh&& other);
     virtual ~Mesh();
 
     void serialize(MeshWriter& writer);
