@@ -64,6 +64,8 @@ public:
     void reserve_attributes(PrimitiveType type, long size) { Mesh::reserve_attributes(type, size); }
 
 
+    long id(const Tuple& tuple, const PrimitiveType& type) const override { return TriMesh::id(tuple,type); }
+    long id(const Simplex& s) const { return id(s.tuple(), s.primitive_type()); }
     TriMeshOperationExecutor get_tmoe() { return TriMeshOperationExecutor(*this); }
     TriMeshOperationExecutor get_tmoe(const Tuple& t) { return TriMeshOperationExecutor(*this, t); }
 };

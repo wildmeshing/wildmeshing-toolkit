@@ -7,10 +7,10 @@
 
 namespace wmtk {
 
-    Mesh::Mesh(Mesh&& other) = default;
-    Mesh::Mesh(const Mesh& other) = default;
-    Mesh& Mesh::operator=(const Mesh& other) = default;
-    Mesh& Mesh::operator=(Mesh&& other) = default;
+Mesh::Mesh(Mesh&& other) = default;
+Mesh::Mesh(const Mesh& other) = default;
+Mesh& Mesh::operator=(const Mesh& other) = default;
+Mesh& Mesh::operator=(Mesh&& other) = default;
 Mesh::Mesh(const long& dimension)
     : m_attribute_manager(dimension + 1)
     , m_cell_hash_handle(register_attribute<long>("hash", static_cast<PrimitiveType>(dimension), 1))
@@ -123,6 +123,10 @@ void Mesh::set_capacities(std::vector<long> capacities)
 }
 ConstAccessor<char> Mesh::get_flag_accessor(PrimitiveType type) const
 {
+    return get_const_flag_accessor(type);
+}
+ConstAccessor<char> Mesh::get_const_flag_accessor(PrimitiveType type) const
+{
     return create_const_accessor(m_flag_handles.at(get_simplex_dimension(type)));
 }
 Accessor<char> Mesh::get_flag_accessor(PrimitiveType type)
@@ -130,9 +134,14 @@ Accessor<char> Mesh::get_flag_accessor(PrimitiveType type)
     return create_accessor(m_flag_handles.at(get_simplex_dimension(type)));
 }
 
-ConstAccessor<long> Mesh::get_cell_hash_accessor() const
+ConstAccessor<long> Mesh::get_const_cell_hash_accessor() const
 {
     return create_const_accessor(m_cell_hash_handle);
+}
+
+ConstAccessor<long> Mesh::get_cell_hash_accessor() const
+{
+    return get_const_cell_hash_accessor();
 }
 Accessor<long> Mesh::get_cell_hash_accessor()
 {
@@ -151,14 +160,13 @@ void Mesh::set_capacities_from_flags()
     for (const auto& flag_handle : m_flag_handles) {
         auto fa = create_const_accessor(flag_handle);
         long size_m1 = 0;
-        for(size_m1= fa.size() -1; size_m1 >= 0; ++size_m1) {
-            if(fa.scalar_attribute(size_m1) & 0x1 ) {
+        for (size_m1 = fa.size() - 1; size_m1 >= 0; ++size_m1) {
+            if (fa.scalar_attribute(size_m1) & 0x1) {
                 break;
             }
         }
         long size = size_m1 + 1;
         new_capacities.emplace_back(size);
-        
     }
     set_capacities(std::move(new_capacities));
 }

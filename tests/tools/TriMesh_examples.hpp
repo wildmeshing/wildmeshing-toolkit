@@ -14,6 +14,7 @@ namespace wmtk::tests {
 //
 TriMesh single_triangle();
 
+
 //  3--1--- 0
 //   |     / \ .
 //   2 f1 /2   1
@@ -21,7 +22,8 @@ TriMesh single_triangle();
 //   |  /       \ .
 //  1  ----0---- 2
 //
-TriMesh one_ear();
+TriMesh one_ear();// an alias for quad
+TriMesh quad();
 
 //  3--1--- 0 --1- 4
 //   |     / \     |
@@ -30,7 +32,21 @@ TriMesh one_ear();
 //   |  /       \  |
 //   1  ----0----  2
 //
-TriMesh two_ears();
+TriMesh two_neighbors();
+
+//
+//  4------ 0 ---- 3 
+//   |     / \     | 
+//   | f2 /   \ f0 | 
+//   |   / f1  \   | 
+//   |  /       \  | 
+//   2  ---------  1
+//      \       /  . 
+//       \ f3  /   . 
+//        \   /    . 
+//         \ /     . 
+//          5
+TriMesh three_neighbors();
 
 //  3--1--- 0
 //   |     / \ .

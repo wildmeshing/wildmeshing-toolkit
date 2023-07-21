@@ -90,6 +90,8 @@ public:
 
     ConstAccessor<char> get_flag_accessor(PrimitiveType type) const;
     ConstAccessor<long> get_cell_hash_accessor() const;
+    ConstAccessor<char> get_const_flag_accessor(PrimitiveType type) const;
+    ConstAccessor<long> get_const_cell_hash_accessor() const;
 
 
     // utility function for getting a cell's hash - slow because it creates a new accessor

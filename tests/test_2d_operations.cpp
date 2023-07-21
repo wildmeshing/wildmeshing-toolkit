@@ -89,7 +89,7 @@ TEST_CASE("get per face data")
             //   |  /       \  |
             //   1  ----0----  2
             //
-            m = two_ears();
+            m = two_neighbors();
         }
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
@@ -112,7 +112,7 @@ TEST_CASE("delete simplices")
     // things can be marked as deleted but will still have the connectivity information
     DEBUG_TriMesh m;
     {
-        m = two_ears();
+        m = two_neighbors();
     }
     REQUIRE(m.is_connectivity_valid());
     Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
