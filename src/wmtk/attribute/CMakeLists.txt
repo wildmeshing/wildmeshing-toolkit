@@ -23,3 +23,4 @@ set(SRC_FILES
     AttributeScopeHandle.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
+add_subdirectory(flags)
