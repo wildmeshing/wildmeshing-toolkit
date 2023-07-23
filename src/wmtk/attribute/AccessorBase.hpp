@@ -31,6 +31,8 @@ public:
     using MapResult = typename VectorX<T>::MapType;
     using ConstMapResult = typename VectorX<T>::ConstMapType;
 
+    friend class FlagInspector;
+    friend class FlagModifier;
 
 public:
     // returns the size of the underlying attribute

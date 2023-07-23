@@ -2,7 +2,7 @@
 #include <wmtk/Primitive.hpp>
 #include <wmtk/Accessor.hpp>
 
-namespace wmtk{
+namespace wmtk {
 
     enum class SimplexFlag: char {
         Active = 0x1,
