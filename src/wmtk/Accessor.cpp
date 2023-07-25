@@ -164,12 +164,6 @@ std::optional<long> Accessor<T, IsConst>::stack_depth() const
     }
 }
 
-template <typename T, bool IsConst>
-long Accessor<T, IsConst>::size() const
-{
-    return attributes().attribute_size(m_handle.m_base_handle);
-}
-
 template class Accessor<char, true>;
 template class Accessor<long, true>;
 template class Accessor<double, true>;

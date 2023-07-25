@@ -13,22 +13,20 @@ TriMesh::TriMeshOperationState::PerFaceData TriMesh::TriMeshOperationState::get_
     Tuple t2_edge = m_mesh.switch_tuple(t, PV);
     t2_edge = m_mesh.switch_tuple(t2_edge, PE);
 
-    face_data.ears[0] =
-        EarGlobalIDs{/*.fid = */ ff_accessor.vector_attribute(t1_edge)(t1_edge.m_local_eid),
-                     /*.eid = */ m_mesh.id(t1_edge, PE)};
+    face_data.ears[0] = EarGlobalIDs{
+        /*.fid = */ ff_accessor.vector_attribute(t1_edge)(t1_edge.m_local_eid),
+        /*.eid = */ m_mesh.id(t1_edge, PE)};
 
-    face_data.ears[1] =
-        EarGlobalIDs{/*.fid = */ ff_accessor.vector_attribute(t2_edge)(t2_edge.m_local_eid),
-                     /*.eid = */ m_mesh.id(t2_edge, PE)};
+    face_data.ears[1] = EarGlobalIDs{
+        /*.fid = */ ff_accessor.vector_attribute(t2_edge)(t2_edge.m_local_eid),
+        /*.eid = */ m_mesh.id(t2_edge, PE)};
 
     return face_data;
 }
 
 // constructor
 TriMesh::TriMeshOperationState::TriMeshOperationState(TriMesh& m)
-    : flag_accessors({{m.get_flag_accessor(PrimitiveType::Vertex),
-                       m.get_flag_accessor(PrimitiveType::Edge),
-                       m.get_flag_accessor(PrimitiveType::Face)}})
+    : flag_accessors{m.get_flag_accessor(PrimitiveType::Vertex), m.get_flag_accessor(PrimitiveType::Edge), m.get_flag_accessor(PrimitiveType::Face)}
     , ff_accessor(m.create_accessor<long>(m.m_ff_handle))
     , fe_accessor(m.create_accessor<long>(m.m_fe_handle))
     , fv_accessor(m.create_accessor<long>(m.m_fv_handle))

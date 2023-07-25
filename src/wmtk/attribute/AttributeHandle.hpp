@@ -10,7 +10,7 @@ template <typename T>
 class AccessorBase;
 template <typename T>
 class MeshAttribteHandle;
-class AttributeManager;
+struct AttributeManager;
 
 class AttributeHandle
 {
@@ -19,7 +19,7 @@ protected:
     friend class MeshAttributes;
     template <typename T>
     friend class MeshAttributeHandle;
-    friend class AttributeManager;
+    friend struct AttributeManager;
     long index = -1;
     AttributeHandle(long i)
         : index(i)
@@ -43,7 +43,7 @@ private:
     friend class Mesh;
     friend class MeshAttributes<T>;
     friend class AccessorBase<T>;
-    friend class AttributeManager;
+    friend struct AttributeManager;
     AttributeHandle m_base_handle;
     PrimitiveType m_primitive_type;
 
