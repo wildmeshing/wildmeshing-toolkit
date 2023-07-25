@@ -10,7 +10,7 @@ Operation::~Operation() = default;
 
 bool Operation::operator()()
 {
-    AttributeScopeHandle scope = m_mesh.create_scope();
+    auto scope = m_mesh.create_scope();
 
     if (before()) {
         if (execute()) { // success should be marked here
@@ -23,22 +23,21 @@ bool Operation::operator()()
     return false;
 }
 
-std::vector<double> Operation::priority() const
+bool Operation::before() const
 {
-    return {0};
-}
+    // TODO: process invariants
 
-bool Operation::after() const
-{
-    // TODO: default implement the invariants
-    /*
-    for (const auto& invariant : invariants) {
-        if (!invariant(m_mesh, modified_triangles())) {
-            return false;
-        }
-    }
-    */
+
     return true;
 }
+bool Operation::after() const
+{
+    // TODO: process invariants
+
+
+    return true;
+}
+
+
 } // namespace wmtk
 

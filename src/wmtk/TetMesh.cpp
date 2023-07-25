@@ -88,7 +88,7 @@ void TetMesh::initialize(Eigen::Ref<const RowVectors4l> T)
     initialize(T, TE, TF, TT, VT, ET, FT);
 }
 
-long TetMesh::_debug_id(const Tuple& tuple, const PrimitiveType& type) const
+long TetMesh::_debug_id(const Tuple& tuple, PrimitiveType type) const
 {
     // do not remove this warning!
     wmtk::logger().warn("This function must only be used for debugging!!");
@@ -229,7 +229,7 @@ Tuple TetMesh::collapse_edge(const Tuple& t)
     throw "not implemented";
 }
 
-long TetMesh::id(const Tuple& tuple, const PrimitiveType& type) const
+long TetMesh::id(const Tuple& tuple, PrimitiveType type) const
 {
     switch (type) {
     case PrimitiveType::Vertex: {
@@ -258,7 +258,7 @@ long TetMesh::id(const Tuple& tuple, const PrimitiveType& type) const
     }
 }
 
-Tuple TetMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
+Tuple TetMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
 {
     assert(is_valid(tuple));
     const long offset = tuple.m_local_vid * 6 * 4 + tuple.m_local_eid * 4 + tuple.m_local_fid;

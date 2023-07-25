@@ -53,6 +53,19 @@ TriMesh three_neighbors()
     return m;
 }
 
+TriMesh tetrahedron()
+{
+    TriMesh m;
+    RowVectors3l tris;
+    tris.resize(4, 3);
+    tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 3, 1};
+    tris.row(1) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
+    tris.row(2) = Eigen::Matrix<long, 3, 1>{0, 2, 3};
+    tris.row(3) = Eigen::Matrix<long, 3, 1>{2, 1, 3};
+    m.initialize(tris);
+    return m;
+}
+
 TriMesh interior_edge()
 {
     TriMesh m;

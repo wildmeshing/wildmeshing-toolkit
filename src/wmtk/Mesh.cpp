@@ -24,7 +24,7 @@ Mesh::Mesh(const long& dimension)
 
 Mesh::~Mesh() = default;
 
-std::vector<Tuple> Mesh::get_all(const PrimitiveType& type) const
+std::vector<Tuple> Mesh::get_all(PrimitiveType type) const
 {
     ConstAccessor<char> flag_accessor = get_flag_accessor(type);
     std::vector<Tuple> ret;

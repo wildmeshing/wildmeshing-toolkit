@@ -25,6 +25,11 @@ void AttributeScopeStack<T>::pop(Attribute<T>& attribute, bool apply_updates)
     if (apply_updates) {
         m_leaf->flush(attribute);
     }
+    if (!m_checkpoints.empty()) {
+        while (m_checkpoints.back() == m_leaf.get()) {
+            m_checkpoints.pop_back();
+        }
+    }
     m_leaf = std::move(m_leaf->pop_parent());
 }
 
@@ -69,6 +74,23 @@ void AttributeScopeStack<T>::clear_current_scope()
 {
     if (bool(m_leaf)) {
         m_leaf->clear();
+    }
+}
+
+template <typename T>
+long AttributeScopeStack<T>::add_checkpoint()
+{
+    long r = m_checkpoints.size();
+    m_checkpoints.push_back(m_leaf.get());
+    return r;
+}
+template <typename T>
+AttributeScope<T> const * AttributeScopeStack<T>::get_checkpoint(long index) const
+{
+    if (m_checkpoints.empty()) {
+        return nullptr;
+    } else {
+        return m_checkpoints.at(index);
     }
 }
 template class AttributeScopeStack<long>;

@@ -11,11 +11,15 @@ class TriMesh : public Mesh
 {
 public:
     TriMesh();
+    TriMesh(const TriMesh& o);
+    TriMesh(TriMesh&& o);
+    TriMesh& operator=(const TriMesh& o);
+    TriMesh& operator=(TriMesh&& o);
 
     Tuple split_edge(const Tuple& t) override;
     Tuple collapse_edge(const Tuple& t) override;
 
-    Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const override;
+    Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
     bool is_ccw(const Tuple& tuple) const override;
     bool is_boundary(const Tuple& tuple) const override;
 
@@ -27,14 +31,14 @@ public:
         Eigen::Ref<const VectorXl> EF);
     void initialize(Eigen::Ref<const RowVectors3l> F);
 
-    long _debug_id(const Tuple& tuple, const PrimitiveType& type) const;
+    long _debug_id(const Tuple& tuple, PrimitiveType type) const;
 
     bool is_valid(const Tuple& tuple) const override;
 
     bool is_connectivity_valid() const override;
 
 protected:
-    long id(const Tuple& tuple, const PrimitiveType& type) const override;
+    long id(const Tuple& tuple, PrimitiveType type) const override;
 
     /**
      * @brief internal function that returns the tuple of requested type, and has the global index

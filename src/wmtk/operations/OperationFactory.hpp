@@ -1,27 +1,42 @@
 #pragma once
+#include <wmtk/Primitive.hpp>
 #include "Operation.hpp"
-#include "wmtk/Primitive.hpp"
-#include "wmtk/Tuple.hpp"
 
-namespace wmtk::operations {
+namespace wmtk{
 class OperationFactoryBase
 {
-    // OperationFactoryBase(PrimitiveType p): m_primitive(p) {}
-    virtual std::unique_ptr<Operation> create(const Tuple& t) const = 0;
-    // PrimitiveType primitive() const { return m_primitive; }
-    // private:
-    // PrimitiveType m_primitive;
-    Mesh& m_mesh;
+    virtual std::unique_ptr<Operation> create(Mesh& m, const Tuple& t) const;
+    PrimitiveType primitive() const { return m_primitive; }
+    private:
+    PrimitiveType m_primitive;
 };
 
 template <typename OperationType>
 class OperationFactory : public OperationFactoryBase
 {
-    std::unique_ptr<Operation> create(const Tuple& t) const
+    public:
+    std::unique_ptr<Operation> create(Mesh& m, const Tuple& t) const
     {
-        return std::make_unique<OperationType>(m_mesh, t);
+        return std::make_unique<OperationType>(m, t);
     }
 };
 
+/*
+class OperationQueue
+{
+    void run()
+    {
+        while (!empty()) {
+            auto [name, tup] = pop_top();
+            auto new_op = get_factory(name)->create(m, tup);
+            if (new_op->run()) {
+                new_op->renew();
+            }
+        }
+    }
 
-} // namespace wmtk::operations
+    std::queue<std::pair<std::string, Tuple>> queue;
+};
+*/
+
+}

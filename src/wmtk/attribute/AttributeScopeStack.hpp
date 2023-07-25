@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include "AttributeHandle.hpp"
+#include <vector>
 
 namespace wmtk {
 class Mesh;
@@ -29,10 +30,13 @@ struct AttributeScopeStack
     void clear_current_scope();
 
     long depth() const;
+    long add_checkpoint();
+    AttributeScope<T> const* get_checkpoint(long index) const;
 
 
 protected:
     std::unique_ptr<AttributeScope<T>> m_leaf;
+    std::vector<AttributeScope<T>const *> m_checkpoints;
     // Mesh& m_mesh;
     // AttributeManager& m_attribute_manager;
     // MeshAttributeHandle<T> m_handle;

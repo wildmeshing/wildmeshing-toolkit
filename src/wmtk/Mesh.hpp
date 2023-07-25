@@ -39,7 +39,7 @@ public:
      * @param type the type of tuple, can be vertex/edge/triangle/tetrahedron
      * @return vector of Tuples referring to each type
      */
-    std::vector<Tuple> get_all(const PrimitiveType& type) const;
+    std::vector<Tuple> get_all(PrimitiveType type) const;
 
     /**
      * Removes all unset space
@@ -143,7 +143,7 @@ public:
                     d-2 -> switch face
                     d-3 -> switch tetrahedron
     */
-    virtual Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const = 0;
+    virtual Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const = 0;
 
 
     void set_capacities_from_flags();
@@ -197,7 +197,7 @@ protected:
                     d-3 -> tetrahedron
         * @return long id of the entity
     */
-    virtual long id(const Tuple& tuple, const PrimitiveType& type) const = 0;
+    virtual long id(const Tuple& tuple, PrimitiveType type) const = 0;
     long id(const Simplex& s) const { return id(s.tuple(), s.primitive_type()); }
 
     // specifies the number of simplices of each type and resizes attributes appropritely

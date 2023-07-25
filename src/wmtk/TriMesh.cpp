@@ -13,8 +13,12 @@ TriMesh::TriMesh()
     , m_fe_handle(register_attribute<long>("m_fe", PrimitiveType::Face, 3))
     , m_ff_handle(register_attribute<long>("m_ff", PrimitiveType::Face, 3))
 {}
+TriMesh::TriMesh(const TriMesh& o) = default;
+TriMesh::TriMesh(TriMesh&& o) = default;
+TriMesh& TriMesh::operator=(const TriMesh& o) = default;
+TriMesh& TriMesh::operator=(TriMesh&& o) = default;
 
-long TriMesh::id(const Tuple& tuple, const PrimitiveType& type) const
+long TriMesh::id(const Tuple& tuple, PrimitiveType type) const
 {
     switch (type) {
     case PrimitiveType::Vertex: {
@@ -42,7 +46,7 @@ bool TriMesh::is_boundary(const Tuple& tuple) const
     return ff_accessor.vector_attribute(tuple)(tuple.m_local_eid) < 0;
 }
 
-Tuple TriMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
+Tuple TriMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
 {
     assert(is_valid(tuple));
     bool ccw = is_ccw(tuple);
@@ -166,7 +170,7 @@ void TriMesh::initialize(Eigen::Ref<const RowVectors3l> F)
     initialize(F, FE, FF, VF, EF);
 }
 
-long TriMesh::_debug_id(const Tuple& tuple, const PrimitiveType& type) const
+long TriMesh::_debug_id(const Tuple& tuple, PrimitiveType type) const
 {
     // do not remove this warning!
     wmtk::logger().warn("This function must only be used for debugging!!");

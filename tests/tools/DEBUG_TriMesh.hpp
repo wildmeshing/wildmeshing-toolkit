@@ -7,6 +7,8 @@ class DEBUG_TriMesh : public TriMesh
 {
 public:
     using TriMesh::TriMesh;
+    DEBUG_TriMesh(const TriMesh& m): TriMesh(m) {}
+    DEBUG_TriMesh(TriMesh&& m): TriMesh(std::move(m)) {}
     using TriMesh::operator=;
 
 
@@ -64,7 +66,11 @@ public:
     void reserve_attributes(PrimitiveType type, long size) { Mesh::reserve_attributes(type, size); }
 
 
-    long id(const Tuple& tuple, const PrimitiveType& type) const override { return TriMesh::id(tuple,type); }
+    using TriMesh::tuple_from_id;
+    long id(const Tuple& tuple, PrimitiveType type) const override
+    {
+        return TriMesh::id(tuple, type);
+    }
     long id(const Simplex& s) const { return id(s.tuple(), s.primitive_type()); }
     TriMeshOperationExecutor get_tmoe() { return TriMeshOperationExecutor(*this); }
     TriMeshOperationExecutor get_tmoe(const Tuple& t) { return TriMeshOperationExecutor(*this, t); }

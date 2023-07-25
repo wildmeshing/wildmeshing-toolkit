@@ -48,6 +48,19 @@ TriMesh two_neighbors();
 //          5
 TriMesh three_neighbors();
 
+//  3------ 0 ---- 3 
+//   |     / \     | 
+//   | f2 /   \ f0 | 
+//   |   / f1  \   | 
+//   |  /       \  | 
+//   2  ---------  1
+//      \       /  . 
+//       \ f3  /   . 
+//        \   /    . 
+//         \ /     . 
+//          3
+TriMesh tetrahedron();
+
 //  3--1--- 0
 //   |     / \ .
 //   2 f1 /2   1
