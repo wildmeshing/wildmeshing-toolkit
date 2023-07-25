@@ -387,6 +387,87 @@ bool SimplicialComplex::link_cond_bd_2d(Tuple t, const Mesh& m)
     return true;
 }
 
+
+// Toplogical-holding condition, not necessarily guarantee geometric embedding
+bool SimplicialComplex::edge_collapse_possible_2d(Tuple t, const Mesh& m)
+{
+    // initial vertex join conditions:
+
+    // cannot collapse edges connecting two boundaries unless the edge itself is a boundary
+    // assert(tip(h) != boundary || tip(opp(h)) != boundary || h == boundary);
+    auto is_bd_v = [&m](const Tuple &_v)
+    {
+        Simplex input_v(PrimitiveType::Vertex, _v);
+        // get one_ring_edges from open_star
+        auto one_ring_edges = open_star(input_v, m).get_simplices(PrimitiveType::Edge);
+        for (auto _e : one_ring_edges)
+        {
+            if (m.is_boundary(_e.tuple()))
+            {
+                return true;
+            }
+        }
+        return false;
+    };
+    if (!(!is_bd_v(t) || !is_bd_v(m.switch_tuple(t, PrimitiveType::Vertex)) || m.is_boundary(t)))
+    {
+        return false;
+    }
+
+    auto next = [&m](const Tuple &_h)
+    {
+        return m.switch_tuple(m.switch_tuple(_h, PrimitiveType::Vertex), PrimitiveType::Edge);
+    };
+
+    auto opp = [&m](const Tuple &_h)
+    {
+        return m.switch_tuple(m.switch_tuple(_h, PrimitiveType::Face), PrimitiveType::Vertex);
+    };
+
+    // valence 1 check
+    // assert(next(h) != opp(h) || next(opp(h)) != h);
+    if (!m.is_boundary(t))
+    {
+        if (next(t) == opp(t) && next(opp(t)) == t)
+        {
+            return false;
+        }
+    }
+
+    // two face joins checks
+    // auto h0 = next(h);
+    // auto h1 = next(opp(h));
+    // conditions needed for join_face to work
+    // assert(face(h0) != face(opp(h0)));
+    // assert(face(h1) != face(opp(h1)));
+    // LEYI: equivalent check:
+    // assert(opp(h0) != next(h0))
+    // assert(opp(h1) != next(h1))
+
+    auto h0 = next(t);
+    if (!m.is_boundary(h0))
+    {
+        if (opp(h0) == next(h0))
+        {
+            return false;
+        }
+    }
+
+    if (!m.is_boundary(t))
+    {
+        auto h1 = next(opp(t));
+        if (!m.is_boundary(h1))
+        {
+            if (opp(h1) == next(h1))
+            {
+                return false;
+            }
+        }
+    }
+    
+    return true;
+}
+
 std::vector<Simplex> SimplicialComplex::vertex_one_ring(Tuple t, const Mesh& m)
 {
     Simplex s(PrimitiveType::Vertex, t);
