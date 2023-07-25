@@ -16,11 +16,11 @@ public:
     std::vector<Tuple> edge_onering() const ;
 
     Tuple new_vertex() const;
-    std::vector<Tuple> new_triangles() const ;
-    std::vector<Tuple> new_edges() const ;
+    //std::vector<Tuple> new_triangles() const ;
+    //std::vector<Tuple> new_edges() const ;
 
-    std::array<Tuple,2> spline_edges() const;
-    std::vector<Tuple> rib_edges() const;
+    //std::array<Tuple,2> spline_edges() const;
+    //std::vector<Tuple> rib_edges() const;
 
 
 

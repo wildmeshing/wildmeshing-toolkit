@@ -3,13 +3,14 @@
 #include <catch2/catch_test_macros.hpp>
 #include "tools/DEBUG_TriMesh.hpp"
 #include "tools/TriMesh_examples.hpp"
+#include <array>
 
 using namespace wmtk;
 using namespace wmtk::tests;
 namespace {
 struct MeshDebugInfo
 {
-    std::string name = "RENAME ME;
+    std::string name = "RENAME ME";
     long genus = -1;
     long simply_connected_components = -1;
     bool is_oriented = false;
@@ -20,7 +21,6 @@ void run_debug_trimesh(const DEBUG_TriMesh& m, const MeshDebugInfo& info)
     // validate that the info is ok
     REQUIRE(info.genus >= 0);
     REQUIRE(info.simply_connected_components>= 0);
-    REQUIRE(info.genus >= 0);
     for(const long count: info.simplex_counts) {
         REQUIRE(count >= 0);
     }

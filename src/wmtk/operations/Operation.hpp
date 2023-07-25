@@ -19,7 +19,6 @@ public:
     virtual ~Operation();
 
     virtual std::vector<double> priority() const { return {0}; }
-    virtual std::vector<Tuple> modified_triangles() const = 0;
 
 protected:
     virtual bool execute() = 0;
