@@ -185,8 +185,10 @@ void TriMesh::collapse_edge(const Tuple& t)
     for (long& f : faces_in_open_star_B_id) {
         for (long index = 0; index < 3; index++) {
             if (state.fv_accessor.vector_attribute(f)[index] == state.end_point_vids[1])
+            {
                 state.fv_accessor.vector_attribute(f)[index] = state.end_point_vids[0];
-            break;
+                break;
+            }
         }
     }
 

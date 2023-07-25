@@ -35,6 +35,10 @@ public:
         return Tuple(local_vid1, (3 - local_vid1 - local_vid2) % 3, -1, fid, 0);
     }
 
+    Tuple tuple_from_face_id(const long fid)
+    {
+        return tuple_from_id(PrimitiveType::Face, fid);
+    }
     template <typename T>
     AccessorBase<T, false> create_base_accessor(const MeshAttributeHandle<T>& handle)
     {
@@ -65,7 +69,6 @@ public:
     const MeshAttributeHandle<long>& vf_handle() const { return m_vf_handle; }
 
     const MeshAttributeHandle<long>& ef_handle() const { return m_ef_handle; }
-
 
     void reserve_attributes(PrimitiveType type, long size) { Mesh::reserve_attributes(type, size); }
 };
@@ -338,7 +341,7 @@ TEST_CASE("glue ear to face")
         //    7---8
         RowVectors3l tris;
         tris.resize(8, 3);
-        tris << 3, 4, 0, 4, 1, 0, 4, 5, 1, 5, 2, 1, 5, 6, 2, 4, 8, 5, 3, 7, 4, 7, 8, 4;
+        tris << 3, 4, 0, 4, 1, 0, 4, 5, 1, 5, 2, 1, 5, 6, 2, 3, 7, 4, 7, 8, 4, 4, 8, 5;
         m.initialize(tris);
     }
     REQUIRE(m.is_connectivity_valid());
@@ -349,7 +352,11 @@ TEST_CASE("glue ear to face")
         m._debug_id(m.switch_tuple(left_ear_edge, PrimitiveType::Vertex), PrimitiveType::Vertex) ==
         1);
     TMOP state(m);
+    auto ff_accessor_before = m.create_base_accessor<long>(m.f_handle(PrimitiveType::Face));
+    REQUIRE(ff_accessor_before.vector_attribute(1)(2)==2);
     state.glue_ear_to_face(1, 3, 2, m._debug_id(edge, PrimitiveType::Edge));
+    auto ff_accessor_after = m.create_base_accessor<long>(m.f_handle(PrimitiveType::Face));
+    REQUIRE(ff_accessor_after.vector_attribute(1)(2)==3);
 }
 TEST_CASE("hash update") {}
 
@@ -739,23 +746,70 @@ TEST_CASE("2D link condition for collapse") {}
 
 TEST_CASE("collapse edge")
 {
-    DEBUG_TriMesh m;
+    SECTION("case1")
     {
-        //    0---1---2
-        //   / \ / \ / \
-        //  3---4---5---6
-        //   \ / \ /
-        //    7---8
-        RowVectors3l tris;
-        tris.resize(8, 3);
-        tris << 3, 4, 0, 4, 1, 0, 4, 5, 1, 5, 2, 1, 5, 6, 2, 3, 7, 4, 7, 8, 4, 4, 8, 5;
-        m.initialize(tris);
-    }
-    std::cout << "BEFORE COLLAPSE" << std::endl;
-    REQUIRE(m.is_connectivity_valid());
+        DEBUG_TriMesh m;
+        {
+            //    0---1---2
+            //   / \ / \ / \
+            //  3---4---5---6
+            //   \ / \ /
+            //    7---8
+            RowVectors3l tris;
+            tris.resize(8, 3);
+            tris << 3, 4, 0, 4, 1, 0, 4, 5, 1, 5, 2, 1, 5, 6, 2, 3, 7, 4, 7, 8, 4, 4, 8, 5;
+            m.initialize(tris);
+        }
+        std::cout << "BEFORE COLLAPSE" << std::endl;
+        REQUIRE(m.is_connectivity_valid());
 
-    Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
-    m.collapse_edge(edge);
-    std::cout << "AFTER COLLAPSE" << std::endl;
-    REQUIRE(m.is_connectivity_valid());
+        Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
+        m.collapse_edge(edge);
+        std::cout << "AFTER COLLAPSE" << std::endl;
+        REQUIRE(m.is_connectivity_valid());
+
+        auto fv_accessor = m.create_base_accessor<long>(m.
+        f_handle(PrimitiveType::Vertex));
+        TMOP state(m);
+
+        REQUIRE(state.flag_accessors[2].scalar_attribute( m.tuple_from_face_id(2)) == 0);
+        REQUIRE(state.flag_accessors[2].scalar_attribute( m.tuple_from_face_id(7)) == 0);
+        REQUIRE(fv_accessor.vector_attribute(3)(0)==4);
+        REQUIRE(fv_accessor.vector_attribute(4)(0)==4);
+    }
+    SECTION("case2")
+    {
+         DEBUG_TriMesh m;
+        {
+            //    0---1---2
+            //   / \ / \ / \
+            //  3---4---5---6
+            //   \ / \ /
+            //    7---8
+            RowVectors3l tris;
+            tris.resize(8, 3);
+            tris << 3, 4, 0, 4, 1, 0, 4, 5, 1, 5, 2, 1, 5, 6, 2, 3, 7, 4, 7, 8, 4, 4, 8, 5;
+            m.initialize(tris);
+        }
+        std::cout << "BEFORE COLLAPSE" << std::endl;
+        REQUIRE(m.is_connectivity_valid());
+
+        Tuple edge = m.edge_tuple_between_v1_v2(0, 4, 0);
+        m.collapse_edge(edge);
+        std::cout << "AFTER COLLAPSE" << std::endl;
+        REQUIRE(m.is_connectivity_valid());
+
+        auto fv_accessor = m.create_base_accessor<long>(m.
+        f_handle(PrimitiveType::Vertex));
+        TMOP state(m);
+
+        REQUIRE(state.flag_accessors[2].scalar_attribute( m.tuple_from_face_id(0)) == 0);
+        REQUIRE(state.flag_accessors[2].scalar_attribute( m.tuple_from_face_id(1)) == 0);
+        REQUIRE(fv_accessor.vector_attribute(2)(0)==0);
+        REQUIRE(fv_accessor.vector_attribute(5)(2)==0);
+        REQUIRE(fv_accessor.vector_attribute(6)(2)==0);
+        REQUIRE(fv_accessor.vector_attribute(7)(0)==0);
+    }
+     
+    
 }
