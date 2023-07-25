@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cassert>
+#include <string_view>
 
 namespace wmtk {
 
@@ -16,7 +16,7 @@ constexpr long get_simplex_dimension(PrimitiveType t)
     default: break; // just return at the end because compilers can be finicky
     }
 
-    assert(false);
     return -2;
 }
+std::string_view primitive_type_name(PrimitiveType t);
 } // namespace wmtk

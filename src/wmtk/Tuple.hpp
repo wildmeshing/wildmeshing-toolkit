@@ -35,7 +35,7 @@ public:
     Tuple(long local_vid, long local_eid, long local_fid, long global_cid, long hash);
 
     //         v2
-    //       /    \
+    //       /    \.
     //  e1  /      \  e0
     //     v0 - - - v1
     //         e2

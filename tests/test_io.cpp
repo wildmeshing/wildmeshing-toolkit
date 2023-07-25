@@ -40,7 +40,7 @@ TEST_CASE("hdf5_2d_read", "[io]")
     MeshReader reader("test.hdf5");
     reader.read(mesh1);
 
-    REQUIRE(mesh1 == mesh);
+    CHECK(mesh1 == mesh);
 }
 
 TEST_CASE("paraview_2d", "[io]")

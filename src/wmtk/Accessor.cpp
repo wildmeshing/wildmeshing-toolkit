@@ -1,91 +1,167 @@
 #include "Accessor.hpp"
-#include "AccessorCache.hpp"
-
 #include "Mesh.hpp"
-#include "MeshAttributes.hpp"
+#include "attribute/AttributeManager.hpp"
+#include "attribute/AttributeScope.hpp"
+#include "attribute/AttributeScopeStack.hpp"
+#include "attribute/MeshAttributes.hpp"
 
 namespace wmtk {
+namespace {
+constexpr static bool accessor_requires_caching(AttributeAccessMode mode)
+{
+    if (mode == AttributeAccessMode::Buffered) {
+        return true;
+    } else {
+        return false;
+    }
+}
+} // namespace
 
 template <typename T, bool IsConst>
 Accessor<T, IsConst>::Accessor(
     MeshType& mesh,
     const MeshAttributeHandle<T>& handle,
-    AccessorCacheMode mode)
-    : m_mesh(mesh)
-    , m_handle(handle)
-    //, m_cache(mode)
-{}
-
-template <typename T, bool IsConst>
-Accessor<T, IsConst>::~Accessor() = default;
-
-template <typename T, bool IsConst>
-auto Accessor<T, IsConst>::attributes() -> MeshAttributesType&
+    AttributeAccessMode mode)
+    : BaseType(const_cast<Mesh&>(mesh), handle)
+    , m_mesh(mesh)
+    , m_mode(mode)
 {
-    return m_mesh.get_mesh_attributes(m_handle);
+    m_cache_stack = attribute().get_local_scope_stack_ptr();
 }
 template <typename T, bool IsConst>
-auto Accessor<T, IsConst>::attributes() const -> const MeshAttributesType&
+long Accessor<T, IsConst>::index(const Tuple& t) const
 {
-    return m_mesh.get_mesh_attributes(m_handle);
+    return BaseType::index(m_mesh, t);
 }
 
 template <typename T, bool IsConst>
-auto Accessor<T, IsConst>::vector_attribute(const long index) const -> ConstMapResult
+Accessor<T, IsConst>::~Accessor()
 {
-    return attributes().vector_attribute(m_handle.m_base_handle, index);
-}
-template <typename T, bool IsConst>
-auto Accessor<T, IsConst>::vector_attribute(const long index) -> MapResultT
-{
-    return attributes().vector_attribute(m_handle.m_base_handle, index);
-}
-
-template <typename T, bool IsConst>
-T Accessor<T, IsConst>::scalar_attribute(const long index) const
-{
-    return attributes().scalar_attribute(m_handle.m_base_handle, index);
+    // if constexpr (!IsConst) {
+    //     if (m_cache) {
+    //         m_cache->flush(*this);
+    //     }
+    // }
 }
 
 template <typename T, bool IsConst>
-auto Accessor<T, IsConst>::scalar_attribute(const long index) -> TT
+AttributeAccessMode Accessor<T, IsConst>::access_mode() const
 {
-    return attributes().scalar_attribute(m_handle.m_base_handle, index);
+    return m_mode;
 }
+
+template <typename T, bool IsConst>
+auto Accessor<T, IsConst>::cacheable_const_vector_attribute(const long index) const
+    -> ConstMapResult
+{
+    if (m_cache_stack && !m_cache_stack->empty()) {
+        return m_cache_stack->current_scope_ptr()->const_vector_attribute(*this, m_mode, index);
+    } else {
+        return BaseType::const_vector_attribute(index);
+    }
+}
+
+
+template <typename T, bool IsConst>
+auto Accessor<T, IsConst>::cacheable_vector_attribute(const long index) -> MapResultT
+{
+    if (m_cache_stack && !m_cache_stack->empty()) {
+        if constexpr (IsConst) {
+            return m_cache_stack->current_scope_ptr()->const_vector_attribute(*this, m_mode, index);
+        } else {
+            return m_cache_stack->current_scope_ptr()->vector_attribute(*this, m_mode, index);
+        }
+    }
+    if constexpr (IsConst) {
+        return BaseType::const_vector_attribute(index);
+    } else {
+        return BaseType::vector_attribute(index);
+    }
+}
+
+template <typename T, bool IsConst>
+T Accessor<T, IsConst>::cacheable_const_scalar_attribute(const long index) const
+{
+    if (m_cache_stack && !m_cache_stack->empty()) {
+        return m_cache_stack->current_scope_ptr()->const_scalar_attribute(*this, m_mode, index);
+    } else {
+        return BaseType::const_scalar_attribute(index);
+    }
+}
+
+template <typename T, bool IsConst>
+auto Accessor<T, IsConst>::cacheable_scalar_attribute(const long index) -> TT
+{
+    if (m_cache_stack && !m_cache_stack->empty()) {
+        if constexpr (IsConst) {
+            return m_cache_stack->current_scope_ptr()->const_scalar_attribute(*this, m_mode, index);
+        } else {
+            return m_cache_stack->current_scope_ptr()->scalar_attribute(*this, m_mode, index);
+        }
+    } else {
+        if constexpr (IsConst) {
+            return BaseType::const_scalar_attribute(index);
+        } else {
+            return BaseType::scalar_attribute(index);
+        }
+    }
+}
+
+
+//===================================================
+// These following methods just forward to to const names
 template <typename T, bool IsConst>
 auto Accessor<T, IsConst>::vector_attribute(const Tuple& t) const -> ConstMapResult
 {
-    long index = m_mesh.id(t, m_handle.m_primitive_type);
-    return vector_attribute(index);
+    return const_vector_attribute(t);
+}
+template <typename T, bool IsConst>
+T Accessor<T, IsConst>::scalar_attribute(const Tuple& t) const
+{
+    return const_scalar_attribute(t);
+}
+//===================================================
+
+
+//===================================================
+// These methods just compute the index and forward it
+template <typename T, bool IsConst>
+auto Accessor<T, IsConst>::const_vector_attribute(const Tuple& t) const -> ConstMapResult
+{
+    const long idx = index(t);
+    return cacheable_const_vector_attribute(idx);
 }
 template <typename T, bool IsConst>
 auto Accessor<T, IsConst>::vector_attribute(const Tuple& t) -> MapResultT
 {
-    long index = m_mesh.id(t, m_handle.m_primitive_type);
-    return vector_attribute(index);
+    const long idx = index(t);
+    return cacheable_vector_attribute(idx);
 }
 
+
 template <typename T, bool IsConst>
-T Accessor<T, IsConst>::scalar_attribute(const Tuple& t) const
+T Accessor<T, IsConst>::const_scalar_attribute(const Tuple& t) const
 {
-    long index = m_mesh.id(t, m_handle.m_primitive_type);
-    return scalar_attribute(index);
+    const long idx = index(t);
+    return cacheable_const_scalar_attribute(idx);
 }
 
 template <typename T, bool IsConst>
 auto Accessor<T, IsConst>::scalar_attribute(const Tuple& t) -> TT
 {
-    long index = m_mesh.id(t, m_handle.m_primitive_type);
-    return scalar_attribute(index);
+    const long idx = index(t);
+    return cacheable_scalar_attribute(idx);
 }
 
+
 template <typename T, bool IsConst>
-void Accessor<T, IsConst>::set_attribute(const std::vector<T>& value)
+std::optional<long> Accessor<T, IsConst>::stack_depth() const
 {
-    if constexpr (IsConst) {
-        throw std::runtime_error("You cant modify a constant accessor");
-    } else
-        attributes().set(m_handle.m_base_handle, value);
+    if (m_cache_stack != nullptr) {
+        return m_cache_stack->depth();
+    } else {
+        return {};
+    }
 }
 
 template <typename T, bool IsConst>
@@ -94,34 +170,6 @@ long Accessor<T, IsConst>::size() const
     return attributes().attribute_size(m_handle.m_base_handle);
 }
 
-// template <typename T, bool IsConst>
-// void MeshAttributes<T>::rollback()
-//{
-//     attributes()s_copy.clear();
-// }
-//
-// template <typename T, bool IsConst>
-// void MeshAttributes<T>::begin_protect()
-//{
-//     attributes()s_copy =
-//     attributes()s;
-// }
-//
-// template <typename T, bool IsConst>
-// void MeshAttributes<T>::end_protect()
-//{
-//     if (!attributes()s_copy.empty())
-//     attributes()s =
-//     std::move(attributes()s_copy);
-//
-//     attributes()s_copy.clear();
-// }
-//
-// template <typename T, bool IsConst>
-// bool MeshAttributes<T>::is_in_protect() const
-//{
-//     return !attributes()s_copy.empty();
-// }
 template class Accessor<char, true>;
 template class Accessor<long, true>;
 template class Accessor<double, true>;

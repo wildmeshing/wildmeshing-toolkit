@@ -8,6 +8,14 @@ Tuple PointMesh::vertex_tuple_from_id(long id) const
 PointMesh::PointMesh()
     : Mesh(0)
 {}
+
+
+PointMesh::PointMesh(long size)
+    : PointMesh()
+{
+    initialize(size);
+}
+
 Tuple PointMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
 {
     throw std::runtime_error("Tuple switch: Invalid primitive type");
@@ -24,7 +32,15 @@ bool PointMesh::is_boundary(const Tuple&) const
     return false;
 }
 
-void initialize(long count);
+void PointMesh::initialize(long count)
+{
+    set_capacities({count});
+    reserve_attributes_to_fit();
+    Accessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
+    for (long i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
+        v_flag_accessor.scalar_attribute(i) |= 0x1;
+    }
+}
 
 
 bool PointMesh::is_valid(const Tuple& tuple) const
@@ -35,7 +51,10 @@ bool PointMesh::is_valid(const Tuple& tuple) const
 long PointMesh::id(const Tuple& tuple, const PrimitiveType& type) const
 {
     switch (type) {
-    case PrimitiveType::Vertex:
+    case PrimitiveType::Vertex: return tuple.m_global_cid;
+    case PrimitiveType::Edge:
+    case PrimitiveType::Face:
+    case PrimitiveType::Tetrahedron:
     default: throw std::runtime_error("Tuple switch: Invalid primitive type"); break;
     }
 }

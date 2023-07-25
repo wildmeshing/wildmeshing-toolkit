@@ -15,6 +15,10 @@ set(TEST_SOURCES
 	test_tuple_3d.cpp
     test_io.cpp
     test_simplicial_complex.cpp
+    test_2d_operations.cpp
+    test_accessor.cpp
+    shims/DEBUG_PointMesh.hpp
+    shims/DEBUG_TriMesh.hpp
 )
 add_executable(wmtk_tests ${TEST_SOURCES})
 
