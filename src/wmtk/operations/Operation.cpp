@@ -1,28 +1,43 @@
-#include <wmtk/TriMeshOperation.h>
-#include <wmtk/utils/VectorUtils.h>
-using namespace wmtk;
+#include "Operation.hpp"
+#include <wmtk/Mesh.hpp>
 
-Operation::Operation() = default;
+namespace wmtk {
+Operation::Operation(Mesh& m)
+    : m_mesh(m)
+{}
 Operation::~Operation() = default;
 
 
 bool Operation::operator()()
 {
-    auto attr_raa = start_protected_attributes_raii(m);
-    auto con_raa = start_protected_connectivity_raii(m);
+    auto scope = m_mesh.create_scope();
 
-    if (before(m, t)) {
-        if (execute(m, t)) { // success should be marked here
-            if (after(m)) {
-                if (invariants(m)) {
-                    return true;
-                }
+    if (before()) {
+        if (execute()) { // success should be marked here
+            if (after()) {
+                return true;
             }
         }
     }
-    m.rollback_protected();
+    scope.mark_failed();
     return false;
 }
 
+bool Operation::before() const
+{
+    // TODO: process invariants
 
+
+    return true;
+}
+bool Operation::after() const
+{
+    // TODO: process invariants
+
+
+    return true;
+}
+
+
+} // namespace wmtk
 

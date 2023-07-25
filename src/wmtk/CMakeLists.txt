@@ -2,22 +2,18 @@
 set(SRC_FILES
     Accessor.cpp
     Accessor.hpp
-    AttributeHandle.hpp
     Mesh.cpp
     Mesh.hpp
-    Attribute.hpp
-    Attribute.cpp
-    MeshAttributes.cpp
-    MeshAttributes.hpp
     PointMesh.cpp
     PointMesh.hpp
     TriMesh.cpp
     TriMesh.hpp
     TetMesh.cpp
     TetMesh.hpp
-    TriMeshOperation.hpp
-    TriMeshOperation.cpp
+    TriMesh_operations.hpp
+    TriMesh_operations.cpp
     Primitive.hpp
+    Primitive.cpp
     Tuple.cpp
     Tuple.hpp
     Types.hpp
@@ -29,4 +25,6 @@ target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 
 add_subdirectory(io)
 add_subdirectory(utils)
+add_subdirectory(attribute)
+add_subdirectory(operations)
 add_subdirectory(autogen)

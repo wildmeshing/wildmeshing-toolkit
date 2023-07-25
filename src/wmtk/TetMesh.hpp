@@ -5,28 +5,14 @@
 namespace wmtk {
 class TetMesh : public Mesh
 {
-private:
-    MeshAttributeHandle<long> m_vt_handle;
-    MeshAttributeHandle<long> m_et_handle;
-    MeshAttributeHandle<long> m_ft_handle;
-
-    MeshAttributeHandle<long> m_tv_handle;
-    MeshAttributeHandle<long> m_te_handle;
-    MeshAttributeHandle<long> m_tf_handle;
-    MeshAttributeHandle<long> m_tt_handle;
-
-    Tuple vertex_tuple_from_id(long id) const;
-    Tuple edge_tuple_from_id(long id) const;
-    Tuple face_tuple_from_id(long id) const;
-    Tuple tet_tuple_from_id(long id) const;
 
 public:
     TetMesh();
 
-    void split_edge(const Tuple& t) override;
-    void collapse_edge(const Tuple& t) override;
+    Tuple split_edge(const Tuple& t) override;
+    Tuple collapse_edge(const Tuple& t) override;
 
-    Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const override;
+    Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
     bool is_ccw(const Tuple& tuple) const override;
     bool is_boundary(const Tuple& tuple) const override;
     bool is_valid(const Tuple& tuple) const override;
@@ -41,11 +27,11 @@ public:
         Eigen::Ref<const VectorXl> FT);
     void initialize(Eigen::Ref<const RowVectors4l> T);
 
-    long _debug_id(const Tuple& tuple, const PrimitiveType& type) const;
+    long _debug_id(const Tuple& tuple, PrimitiveType type) const;
 
     bool is_connectivity_valid() const override;
 protected:
-    long id(const Tuple& tuple, const PrimitiveType& type) const override;
+    long id(const Tuple& tuple, PrimitiveType type) const override;
 
     /**
      * @brief internal function that returns the tuple of requested type, and has the global index
@@ -55,6 +41,20 @@ protected:
      * @return Tuple
      */
     Tuple tuple_from_id(const PrimitiveType type, const long gid) const override;
+private:
+    MeshAttributeHandle<long> m_vt_handle;
+    MeshAttributeHandle<long> m_et_handle;
+    MeshAttributeHandle<long> m_ft_handle;
+
+    MeshAttributeHandle<long> m_tv_handle;
+    MeshAttributeHandle<long> m_te_handle;
+    MeshAttributeHandle<long> m_tf_handle;
+    MeshAttributeHandle<long> m_tt_handle;
+
+    Tuple vertex_tuple_from_id(long id) const;
+    Tuple edge_tuple_from_id(long id) const;
+    Tuple face_tuple_from_id(long id) const;
+    Tuple tet_tuple_from_id(long id) const;
 };
 
 } // namespace wmtk

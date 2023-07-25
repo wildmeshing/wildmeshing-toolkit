@@ -39,7 +39,6 @@ void TetMesh::initialize(
         static_cast<long>(FT.rows()),
         static_cast<long>(TT.rows())};
     set_capacities(cap);
-    reserve_attributes_to_fit();
 
     // get Accessors for topology
     Accessor<long> vt_accessor = create_accessor<long>(m_vt_handle);
@@ -51,24 +50,34 @@ void TetMesh::initialize(
     Accessor<long> tf_accessor = create_accessor<long>(m_tf_handle);
     Accessor<long> tt_accessor = create_accessor<long>(m_tt_handle);
 
+    Accessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
+    Accessor<char> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
+    Accessor<char> f_flag_accessor = get_flag_accessor(PrimitiveType::Face);
+    Accessor<char> t_flag_accessor = get_flag_accessor(PrimitiveType::Tetrahedron);
+
     // iterate over the matrices and fill attributes
     for (long i = 0; i < capacity(PrimitiveType::Tetrahedron); ++i) {
         tv_accessor.vector_attribute(i) = TV.row(i).transpose();
         te_accessor.vector_attribute(i) = TE.row(i).transpose();
         tf_accessor.vector_attribute(i) = TF.row(i).transpose();
         tt_accessor.vector_attribute(i) = TT.row(i).transpose();
+        t_flag_accessor.scalar_attribute(i) |= 0x1;
     }
     // m_vt
     for (long i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
         vt_accessor.scalar_attribute(i) = VT(i);
+        v_flag_accessor.scalar_attribute(i) |= 0x1;
+
     }
     // m_et
     for (long i = 0; i < capacity(PrimitiveType::Edge); ++i) {
         et_accessor.scalar_attribute(i) = ET(i);
+        e_flag_accessor.scalar_attribute(i) |= 0x1;
     }
     // m_ft
     for (long i = 0; i < capacity(PrimitiveType::Face); ++i) {
         ft_accessor.scalar_attribute(i) = FT(i);
+        f_flag_accessor.scalar_attribute(i) |= 0x1;
     }
 }
 
@@ -79,7 +88,7 @@ void TetMesh::initialize(Eigen::Ref<const RowVectors4l> T)
     initialize(T, TE, TF, TT, VT, ET, FT);
 }
 
-long TetMesh::_debug_id(const Tuple& tuple, const PrimitiveType& type) const
+long TetMesh::_debug_id(const Tuple& tuple, PrimitiveType type) const
 {
     // do not remove this warning!
     wmtk::logger().warn("This function must only be used for debugging!!");
@@ -210,17 +219,17 @@ Tuple TetMesh::tuple_from_id(const PrimitiveType type, const long gid) const
     }
 }
 
-void TetMesh::split_edge(const Tuple& t)
+Tuple TetMesh::split_edge(const Tuple& t)
 {
     throw "not implemented";
 }
 
-void TetMesh::collapse_edge(const Tuple& t)
+Tuple TetMesh::collapse_edge(const Tuple& t)
 {
     throw "not implemented";
 }
 
-long TetMesh::id(const Tuple& tuple, const PrimitiveType& type) const
+long TetMesh::id(const Tuple& tuple, PrimitiveType type) const
 {
     switch (type) {
     case PrimitiveType::Vertex: {
@@ -249,7 +258,7 @@ long TetMesh::id(const Tuple& tuple, const PrimitiveType& type) const
     }
 }
 
-Tuple TetMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
+Tuple TetMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
 {
     assert(is_valid(tuple));
     const long offset = tuple.m_local_vid * 6 * 4 + tuple.m_local_eid * 4 + tuple.m_local_fid;

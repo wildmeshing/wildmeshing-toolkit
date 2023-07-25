@@ -1,4 +1,5 @@
 #pragma once
+#include <wmtk/utils/Logger.hpp>
 #include "SimplicialComplex.hpp"
 #include "TriMesh.hpp"
 #include "Tuple.hpp"
@@ -8,13 +9,15 @@ constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
 constexpr PrimitiveType PF = PrimitiveType::Face;
 } // namespace
-class TriMesh::TriMeshOperationState
+class TriMesh::TriMeshOperationExecutor
 {
 public:
-    TriMeshOperationState(TriMesh& m, const Tuple& operating_tuple);
+    TriMeshOperationExecutor();
+    TriMeshOperationExecutor(TriMesh& m);
+    TriMeshOperationExecutor(TriMesh& m, const Tuple& operating_tuple);
     void delete_simplices();
     void update_cell_hash();
-    
+
     std::array<Accessor<char>, 3> flag_accessors;
     Accessor<long> ff_accessor;
     Accessor<long> fe_accessor;
@@ -25,10 +28,10 @@ public:
 
 
     //           C
-    //         /  \ 
+    //         /  \ .
     //    F1  /    \  F2
-    //       /      \ 
-    //      /        \ 
+    //       /      \ .
+    //      /        \ .
     //     A----------B
     //      \        /
     //       \      /
@@ -64,7 +67,7 @@ public:
         const long eid);
 
     void merge();
-    void split_edge();
+    Tuple split_edge();
 
     /**
      * @brief
@@ -80,10 +83,11 @@ public:
     void glue_new_faces_across_AB(
         const std::array<long, 2> new_fids_top,
         const std::array<long, 2> new_fids_bottom);
+    std::vector<long> request_simplex_indices(const PrimitiveType type, long count);
 
     std::vector<std::vector<long>> simplices_to_delete; // size 3 for vertex, edge, face
     std::vector<long> cells_to_update_hash;
     TriMesh& m_mesh;
     Tuple m_operating_tuple;
 };
-}
+} // namespace wmtk

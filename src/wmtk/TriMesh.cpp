@@ -13,47 +13,28 @@ TriMesh::TriMesh()
     , m_fe_handle(register_attribute<long>("m_fe", PrimitiveType::Face, 3))
     , m_ff_handle(register_attribute<long>("m_ff", PrimitiveType::Face, 3))
 {}
+TriMesh::TriMesh(const TriMesh& o) = default;
+TriMesh::TriMesh(TriMesh&& o) = default;
+TriMesh& TriMesh::operator=(const TriMesh& o) = default;
+TriMesh& TriMesh::operator=(TriMesh&& o) = default;
 
-void TriMesh::split_edge(const Tuple& t)
-{
-    // delete star(edge)
-
-    // record the deleted simplices topology attributes
-
-    // create new vertex
-
-    // create new edges
-
-    // create new faces
-
-    // glue the topology
-}
-void TriMesh::collapse_edge(const Tuple& t)
-{
-    // delete cstar(edge) intersect star(v1(edge))
-
-    // glue the topology
-}
-
-long TriMesh::id(const Tuple& tuple, const PrimitiveType& type) const
+long TriMesh::id(const Tuple& tuple, PrimitiveType type) const
 {
     switch (type) {
     case PrimitiveType::Vertex: {
-        ConstAccessor<long> fv_accessor = create_accessor<long>(m_fv_handle);
+        ConstAccessor<long> fv_accessor = create_const_accessor<long>(m_fv_handle);
         auto fv = fv_accessor.vector_attribute(tuple);
         return fv(tuple.m_local_vid);
-        break;
     }
     case PrimitiveType::Edge: {
-        ConstAccessor<long> fe_accessor = create_accessor<long>(m_fe_handle);
+        ConstAccessor<long> fe_accessor = create_const_accessor<long>(m_fe_handle);
         auto fe = fe_accessor.vector_attribute(tuple);
         return fe(tuple.m_local_eid);
-        break;
     }
     case PrimitiveType::Face: {
         return tuple.m_global_cid;
-        break;
     }
+    case PrimitiveType::Tetrahedron:
     default: throw std::runtime_error("Tuple id: Invalid primitive type");
     }
 }
@@ -61,11 +42,11 @@ long TriMesh::id(const Tuple& tuple, const PrimitiveType& type) const
 bool TriMesh::is_boundary(const Tuple& tuple) const
 {
     assert(is_valid(tuple));
-    ConstAccessor<long> ff_accessor = create_accessor<long>(m_ff_handle);
+    ConstAccessor<long> ff_accessor = create_const_accessor<long>(m_ff_handle);
     return ff_accessor.vector_attribute(tuple)(tuple.m_local_eid) < 0;
 }
 
-Tuple TriMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
+Tuple TriMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
 {
     assert(is_valid(tuple));
     bool ccw = is_ccw(tuple);
@@ -91,16 +72,16 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
         const long gvid = id(tuple, PrimitiveType::Vertex);
         const long geid = id(tuple, PrimitiveType::Edge);
 
-        ConstAccessor<long> ff_accessor = create_accessor<long>(m_ff_handle);
+        ConstAccessor<long> ff_accessor = create_const_accessor<long>(m_ff_handle);
         auto ff = ff_accessor.vector_attribute(tuple);
 
         long gcid_new = ff(tuple.m_local_eid);
-        long lvid_new, leid_new;
+        long lvid_new = -1, leid_new = -1;
 
-        ConstAccessor<long> fv_accessor = create_accessor<long>(m_fv_handle);
+        ConstAccessor<long> fv_accessor = create_const_accessor<long>(m_fv_handle);
         auto fv = fv_accessor.vector_attribute(gcid_new);
 
-        ConstAccessor<long> fe_accessor = create_accessor<long>(m_fe_handle);
+        ConstAccessor<long> fe_accessor = create_const_accessor<long>(m_fe_handle);
         auto fe = fe_accessor.vector_attribute(gcid_new);
 
         for (long i = 0; i < 3; ++i) {
@@ -111,10 +92,18 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
                 lvid_new = i;
             }
         }
-        const Tuple res(lvid_new, leid_new, tuple.m_local_fid, gcid_new, get_cell_hash_slow(gcid_new));
+        assert(lvid_new != -1);
+        assert(leid_new != -1);
+        const Tuple res(
+            lvid_new,
+            leid_new,
+            tuple.m_local_fid,
+            gcid_new,
+            get_cell_hash_slow(gcid_new));
         assert(is_valid(res));
         return res;
     }
+    case PrimitiveType::Tetrahedron:
     default: throw std::runtime_error("Tuple switch: Invalid primitive type"); break;
     }
 }
@@ -136,12 +125,13 @@ void TriMesh::initialize(
     // reserve memory for attributes
 
 
-    std::vector<long> cap{static_cast<long>(VF.rows()),
-                          static_cast<long>(EF.rows()),
-                          static_cast<long>(FF.rows())};
+    std::vector<long> cap{
+        static_cast<long>(VF.rows()),
+        static_cast<long>(EF.rows()),
+        static_cast<long>(FF.rows())};
 
     set_capacities(cap);
-    reserve_attributes_to_fit();
+
 
     // get Accessors for topology
     Accessor<long> fv_accessor = create_accessor<long>(m_fv_handle);
@@ -149,19 +139,28 @@ void TriMesh::initialize(
     Accessor<long> ff_accessor = create_accessor<long>(m_ff_handle);
     Accessor<long> vf_accessor = create_accessor<long>(m_vf_handle);
     Accessor<long> ef_accessor = create_accessor<long>(m_ef_handle);
+
+    Accessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
+    Accessor<char> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
+    Accessor<char> f_flag_accessor = get_flag_accessor(PrimitiveType::Face);
+
     // iterate over the matrices and fill attributes
     for (long i = 0; i < capacity(PrimitiveType::Face); ++i) {
         fv_accessor.vector_attribute(i) = FV.row(i).transpose();
         fe_accessor.vector_attribute(i) = FE.row(i).transpose();
         ff_accessor.vector_attribute(i) = FF.row(i).transpose();
+
+        f_flag_accessor.scalar_attribute(i) |= 0x1;
     }
     // m_vf
     for (long i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
         vf_accessor.scalar_attribute(i) = VF(i);
+        v_flag_accessor.scalar_attribute(i) |= 0x1;
     }
     // m_ef
     for (long i = 0; i < capacity(PrimitiveType::Edge); ++i) {
         ef_accessor.scalar_attribute(i) = EF(i);
+        e_flag_accessor.scalar_attribute(i) |= 0x1;
     }
 }
 
@@ -171,7 +170,7 @@ void TriMesh::initialize(Eigen::Ref<const RowVectors3l> F)
     initialize(F, FE, FF, VF, EF);
 }
 
-long TriMesh::_debug_id(const Tuple& tuple, const PrimitiveType& type) const
+long TriMesh::_debug_id(const Tuple& tuple, PrimitiveType type) const
 {
     // do not remove this warning!
     wmtk::logger().warn("This function must only be used for debugging!!");
@@ -183,29 +182,26 @@ Tuple TriMesh::tuple_from_id(const PrimitiveType type, const long gid) const
     switch (type) {
     case PrimitiveType::Vertex: {
         return vertex_tuple_from_id(gid);
-        break;
     }
     case PrimitiveType::Edge: {
         return edge_tuple_from_id(gid);
-        break;
     }
     case PrimitiveType::Face: {
         return face_tuple_from_id(gid);
-        break;
     }
     case PrimitiveType::Tetrahedron: {
         throw std::runtime_error("no tet tuple supported for trimesh");
         break;
     }
-    default: throw std::runtime_error("Invalid primitive type");
+    default: throw std::runtime_error("Invalid primitive type"); break;
     }
 }
 
 Tuple TriMesh::vertex_tuple_from_id(long id) const
 {
-    ConstAccessor<long> vf_accessor = create_accessor<long>(m_vf_handle);
+    ConstAccessor<long> vf_accessor = create_const_accessor<long>(m_vf_handle);
     auto f = vf_accessor.scalar_attribute(id);
-    ConstAccessor<long> fv_accessor = create_accessor<long>(m_fv_handle);
+    ConstAccessor<long> fv_accessor = create_const_accessor<long>(m_fv_handle);
     auto fv = fv_accessor.vector_attribute(f);
     for (long i = 0; i < 3; ++i) {
         if (fv(i) == id) {
@@ -222,9 +218,9 @@ Tuple TriMesh::vertex_tuple_from_id(long id) const
 
 Tuple TriMesh::edge_tuple_from_id(long id) const
 {
-    ConstAccessor<long> ef_accessor = create_accessor<long>(m_ef_handle);
+    ConstAccessor<long> ef_accessor = create_const_accessor<long>(m_ef_handle);
     auto f = ef_accessor.scalar_attribute(id);
-    ConstAccessor<long> fe_accessor = create_accessor<long>(m_fe_handle);
+    ConstAccessor<long> fe_accessor = create_const_accessor<long>(m_fe_handle);
     auto fe = fe_accessor.vector_attribute(f);
     for (long i = 0; i < 3; ++i) {
         if (fe(i) == id) {
@@ -248,9 +244,9 @@ Tuple TriMesh::face_tuple_from_id(long id) const
         -1,
         id,
         get_cell_hash_slow(id)
-        
 
-        );
+
+    );
     assert(is_ccw(f_tuple));
     assert(is_valid(f_tuple));
     return f_tuple;
@@ -265,61 +261,62 @@ bool TriMesh::is_valid(const Tuple& tuple) const
 
 bool TriMesh::is_connectivity_valid() const
 {
-
     // get Accessors for topology
-    ConstAccessor<long> fv_accessor = create_accessor<long>(m_fv_handle);
-    ConstAccessor<long> fe_accessor = create_accessor<long>(m_fe_handle);
-    ConstAccessor<long> ff_accessor = create_accessor<long>(m_ff_handle);
-    ConstAccessor<long> vf_accessor = create_accessor<long>(m_vf_handle);
-    ConstAccessor<long> ef_accessor = create_accessor<long>(m_ef_handle);
+    ConstAccessor<long> fv_accessor = create_const_accessor<long>(m_fv_handle);
+    ConstAccessor<long> fe_accessor = create_const_accessor<long>(m_fe_handle);
+    ConstAccessor<long> ff_accessor = create_const_accessor<long>(m_ff_handle);
+    ConstAccessor<long> vf_accessor = create_const_accessor<long>(m_vf_handle);
+    ConstAccessor<long> ef_accessor = create_const_accessor<long>(m_ef_handle);
+    ConstAccessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
+    ConstAccessor<char> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
+    ConstAccessor<char> f_flag_accessor = get_flag_accessor(PrimitiveType::Face);
 
     // EF and FE
-    for (long i = 0; i < capacity(PrimitiveType::Edge); ++i) 
-    {
+    for (long i = 0; i < capacity(PrimitiveType::Edge); ++i) {
+        if (e_flag_accessor.scalar_attribute(i) != 0) {
+            std::cout << "Edge " << i << " is deleted" << std::endl;
+            continue;
+        }
         int cnt = 0;
-        for (long j = 0; j < 3; ++j)
-        {
-            if (fe_accessor.vector_attribute(ef_accessor.scalar_attribute(i))[j] == i)
-            {
+        for (long j = 0; j < 3; ++j) {
+            if (fe_accessor.vector_attribute(ef_accessor.scalar_attribute(i))[j] == i) {
                 cnt++;
             }
         }
-        if (cnt != 1)
-        {
+        if (cnt != 1) {
             // std::cout << "EF and FE not compatible" << std::endl;
             return false;
         }
-
-    } 
+    }
 
     // VF and FV
-    for (long i = 0; i < capacity(PrimitiveType::Vertex); ++i)
-    {
+    for (long i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
+        if (v_flag_accessor.scalar_attribute(i) != 0) {
+            std::cout << "Vertex " << i << " is deleted" << std::endl;
+            continue;
+        }
         int cnt = 0;
-        for (long j = 0; j < 3; ++j)
-        {
-            if (fv_accessor.vector_attribute(vf_accessor.scalar_attribute(i))[j] == i)
-            {
+        for (long j = 0; j < 3; ++j) {
+            if (fv_accessor.vector_attribute(vf_accessor.scalar_attribute(i))[j] == i) {
                 cnt++;
             }
         }
-        if (cnt != 1)
-        {
+        if (cnt != 1) {
             // std::cout << "VF and FV not compatible" << std::endl;
             return false;
         }
     }
 
     // FE and EF
-    for (long i = 0; i < capacity(PrimitiveType::Face); ++i)
-    {
-        for (long j = 0; j < 3; ++j)
-        {
+    for (long i = 0; i < capacity(PrimitiveType::Face); ++i) {
+        if (f_flag_accessor.scalar_attribute(i) != 0) {
+            std::cout << "Face " << i << " is deleted" << std::endl;
+            continue;
+        }
+        for (long j = 0; j < 3; ++j) {
             long nb = ff_accessor.vector_attribute(i)[j];
-            if (nb == -1)
-            {
-                if (ef_accessor.scalar_attribute(fe_accessor.vector_attribute(i)[j]) != i)
-                {
+            if (nb == -1) {
+                if (ef_accessor.scalar_attribute(fe_accessor.vector_attribute(i)[j]) != i) {
                     // std::cout << "FF and FE not compatible" << std::endl;
                     return false;
                 }
@@ -328,23 +325,19 @@ bool TriMesh::is_connectivity_valid() const
 
             int cnt = 0;
             int id_in_nb;
-            for (long k = 0; k < 3; ++k)
-            {
-                if (ff_accessor.vector_attribute(nb)[k] == i)
-                {
+            for (long k = 0; k < 3; ++k) {
+                if (ff_accessor.vector_attribute(nb)[k] == i) {
                     cnt++;
                     id_in_nb = k;
                 }
             }
 
-            if (cnt != 1)
-            {
+            if (cnt != 1) {
                 // std::cout << "FF not valid" << std::endl;
                 return false;
             }
 
-            if (fe_accessor.vector_attribute(i)[j] != fe_accessor.vector_attribute(nb)[id_in_nb])
-            {
+            if (fe_accessor.vector_attribute(i)[j] != fe_accessor.vector_attribute(nb)[id_in_nb]) {
                 // std::cout << "FF and FE not compatible" << std::endl;
                 return false;
             }
@@ -352,5 +345,12 @@ bool TriMesh::is_connectivity_valid() const
     }
 
     return true;
+}
+
+Tuple TriMesh::with_different_cid(const Tuple& t, long cid)
+{
+    Tuple r = t;
+    r.m_global_cid = cid;
+    return r;
 }
 } // namespace wmtk
