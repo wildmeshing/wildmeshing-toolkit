@@ -1,4 +1,4 @@
-#include "input.h"
+#include "input.hpp"
 
 #include <igl/read_triangle_mesh.h>
 #include <wmtk/TriMesh.hpp>
@@ -6,7 +6,7 @@
 #include <wmtk/io/MeshReader.hpp>
 #include <wmtk/utils/MeshUtils.hpp>
 
-#include "internal/InputOptions.h"
+#include "internal/InputOptions.hpp"
 
 namespace wmtk {
 namespace components {

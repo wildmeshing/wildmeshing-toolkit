@@ -1,6 +1,6 @@
 
 set(SRC_FILES
-    internal/InputOptions.h
+    internal/InputOptions.hpp
     input.cpp
-	input.h)
+	input.hpp)
 target_sources(wildmeshing_components PRIVATE ${SRC_FILES})

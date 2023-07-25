@@ -1,6 +1,6 @@
-#include <wmtk_components/input/input.h>
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
+#include <wmtk_components/input/input.hpp>
 
 using json = nlohmann::json;
 

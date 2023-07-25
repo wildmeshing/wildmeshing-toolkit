@@ -1,4 +1,4 @@
-#include "output.h"
+#include "output.hpp"
 
 #include <igl/read_triangle_mesh.h>
 #include <wmtk/TriMesh.hpp>
@@ -7,7 +7,7 @@
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/utils/MeshUtils.hpp>
 
-#include "internal/OutputOptions.h"
+#include "internal/OutputOptions.hpp"
 
 namespace wmtk {
 namespace components {

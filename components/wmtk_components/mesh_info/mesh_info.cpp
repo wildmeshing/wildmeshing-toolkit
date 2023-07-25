@@ -1,4 +1,4 @@
-#include "mesh_info.h"
+#include "mesh_info.hpp"
 
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/io/MeshReader.hpp>
