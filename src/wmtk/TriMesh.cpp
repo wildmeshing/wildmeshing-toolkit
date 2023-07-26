@@ -13,8 +13,12 @@ TriMesh::TriMesh()
     , m_fe_handle(register_attribute<long>("m_fe", PrimitiveType::Face, 3))
     , m_ff_handle(register_attribute<long>("m_ff", PrimitiveType::Face, 3))
 {}
+TriMesh::TriMesh(const TriMesh& o) = default;
+TriMesh::TriMesh(TriMesh&& o) = default;
+TriMesh& TriMesh::operator=(const TriMesh& o) = default;
+TriMesh& TriMesh::operator=(TriMesh&& o) = default;
 
-long TriMesh::id(const Tuple& tuple, const PrimitiveType& type) const
+long TriMesh::id(const Tuple& tuple, PrimitiveType type) const
 {
     switch (type) {
     case PrimitiveType::Vertex: {
@@ -30,6 +34,7 @@ long TriMesh::id(const Tuple& tuple, const PrimitiveType& type) const
     case PrimitiveType::Face: {
         return tuple.m_global_cid;
     }
+    case PrimitiveType::Tetrahedron:
     default: throw std::runtime_error("Tuple id: Invalid primitive type");
     }
 }
@@ -41,7 +46,7 @@ bool TriMesh::is_boundary(const Tuple& tuple) const
     return ff_accessor.vector_attribute(tuple)(tuple.m_local_eid) < 0;
 }
 
-Tuple TriMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
+Tuple TriMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
 {
     assert(is_valid(tuple));
     bool ccw = is_ccw(tuple);
@@ -71,7 +76,7 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
         auto ff = ff_accessor.vector_attribute(tuple);
 
         long gcid_new = ff(tuple.m_local_eid);
-        long lvid_new, leid_new;
+        long lvid_new = -1, leid_new = -1;
 
         ConstAccessor<long> fv_accessor = create_const_accessor<long>(m_fv_handle);
         auto fv = fv_accessor.vector_attribute(gcid_new);
@@ -87,6 +92,8 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
                 lvid_new = i;
             }
         }
+        assert(lvid_new != -1);
+        assert(leid_new != -1);
         const Tuple res(
             lvid_new,
             leid_new,
@@ -96,6 +103,7 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const
         assert(is_valid(res));
         return res;
     }
+    case PrimitiveType::Tetrahedron:
     default: throw std::runtime_error("Tuple switch: Invalid primitive type"); break;
     }
 }
@@ -162,7 +170,7 @@ void TriMesh::initialize(Eigen::Ref<const RowVectors3l> F)
     initialize(F, FE, FF, VF, EF);
 }
 
-long TriMesh::_debug_id(const Tuple& tuple, const PrimitiveType& type) const
+long TriMesh::_debug_id(const Tuple& tuple, PrimitiveType type) const
 {
     // do not remove this warning!
     wmtk::logger().warn("This function must only be used for debugging!!");
@@ -337,5 +345,12 @@ bool TriMesh::is_connectivity_valid() const
     }
 
     return true;
+}
+
+Tuple TriMesh::with_different_cid(const Tuple& t, long cid)
+{
+    Tuple r = t;
+    r.m_global_cid = cid;
+    return r;
 }
 } // namespace wmtk

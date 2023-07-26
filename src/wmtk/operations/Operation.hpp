@@ -1,8 +1,11 @@
 #pragma once
 #include <wmtk/Tuple.hpp>
+#include <vector>
 #include <type_traits>
+#include <string>
 
 namespace wmtk {
+    class Mesh;
 class Operation
 {
 public:
@@ -12,21 +15,20 @@ public:
     virtual std::string name() const = 0;
 
 
-    Operation();
+    Operation(Mesh& m);
     virtual ~Operation();
 
     virtual std::vector<double> priority() const { return {0}; }
-    virtual std::vector<Tuple> modified_triangles() const = 0;
 
 protected:
     virtual bool execute() = 0;
-    virtual bool before() const = 0;
-    virtual bool after() const = 0;
+    // does invariant pre-checks
+    virtual bool before() const;
+    // does invariant pre-checks
+    virtual bool after() const;
 
-    virtual void assign(const Tuple& t) {}
-    virtual void mark_failed() {}
 
-    AccessorScope m_scope;
+    Mesh& m_mesh;
 
 };
 

@@ -1,28 +1,35 @@
 #pragma once
 
 #include "Accessor.hpp"
-#include "MeshAttributes.hpp"
+#include "attribute/MeshAttributes.hpp"
 #include "Primitive.hpp"
 #include "Simplex.hpp"
 #include "Tuple.hpp"
 #include "Types.hpp"
+#include "attribute/AttributeManager.hpp"
+#include "attribute/AttributeScopeHandle.hpp"
 
-#include <wmtk/io/MeshWriter.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 
 #include <Eigen/Core>
 
 namespace wmtk {
+// thread management tool that we will PImpl
+class AttributeScopeManager;
 class Mesh
 {
 public:
-    template <typename T, bool isConst>
+    template <typename T>
     friend class AccessorBase;
     friend class ParaviewWriter;
 
     // dimension is the dimension of the top level simplex in this mesh
     // That is, a TriMesh is a 2, a TetMesh is a 3
     Mesh(const long& dimension);
+    Mesh(Mesh&& other);
+    Mesh(const Mesh& other);
+    Mesh& operator=(const Mesh& other);
+    Mesh& operator=(Mesh&& other);
     virtual ~Mesh();
 
     void serialize(MeshWriter& writer);
@@ -32,15 +39,30 @@ public:
      * @param type the type of tuple, can be vertex/edge/triangle/tetrahedron
      * @return vector of Tuples referring to each type
      */
-    std::vector<Tuple> get_all(const PrimitiveType& type) const;
+    std::vector<Tuple> get_all(PrimitiveType type) const;
 
     /**
      * Removes all unset space
      */
     void clean();
 
-    virtual void split_edge(const Tuple& t) = 0;
-    virtual void collapse_edge(const Tuple& t) = 0;
+
+    // Split and collapse are the two atomic operations we want to support for each type of mesh.
+    // These functions are intended to be called within an single Operation and
+    // not on their own and the semantics between each derived Mesh class and
+    // its SplitEdge and CollapseEdge operations should be treated as internal
+    // implementation deatils.
+    //
+    // As such, the split_edge and collapse_edge functions JUST implement the
+    // updates to topological updates and any precondition / postcondition checks
+    // should be implemented by the user.
+    // 
+    // These functions take in a single tuple, referring to the edge being
+    // operated on, and return a single tuple that refers to the new topology.
+    // This returned tuple has specific meaning for each derived Mesh class
+
+    virtual Tuple split_edge(const Tuple& t) = 0;
+    virtual Tuple collapse_edge(const Tuple& t) = 0;
 
     template <typename T>
     MeshAttributeHandle<T> register_attribute(
@@ -61,8 +83,16 @@ public:
     template <typename T>
     ConstAccessor<T> create_accessor(const MeshAttributeHandle<T>& handle) const;
 
+
+    // creates a scope as long as the AttributeScopeHandle exists
+    [[nodiscard]] AttributeScopeHandle create_scope();
+
+
     ConstAccessor<char> get_flag_accessor(PrimitiveType type) const;
     ConstAccessor<long> get_cell_hash_accessor() const;
+    ConstAccessor<char> get_const_flag_accessor(PrimitiveType type) const;
+    ConstAccessor<long> get_const_cell_hash_accessor() const;
+
 
     // utility function for getting a cell's hash - slow because it creates a new accessor
     long get_cell_hash_slow(long cell_index) const;
@@ -81,17 +111,6 @@ protected: // member functions
 
 protected:
     // std::vector<MeshAttributes<Rational>> m_rational_attributes;
-    template <typename T>
-    MeshAttributes<T>& get_mesh_attributes(PrimitiveType ptype);
-
-    template <typename T>
-    MeshAttributes<T>& get_mesh_attributes(const MeshAttributeHandle<T>& handle);
-
-    template <typename T>
-    const MeshAttributes<T>& get_mesh_attributes(PrimitiveType ptype) const;
-
-    template <typename T>
-    const MeshAttributes<T>& get_mesh_attributes(const MeshAttributeHandle<T>& handle) const;
 
     /**
      * @brief internal function that returns the tuple of requested type, and has the global index
@@ -124,7 +143,7 @@ public:
                     d-2 -> switch face
                     d-3 -> switch tetrahedron
     */
-    virtual Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const = 0;
+    virtual Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const = 0;
 
 
     void set_capacities_from_flags();
@@ -178,27 +197,28 @@ protected:
                     d-3 -> tetrahedron
         * @return long id of the entity
     */
-    virtual long id(const Tuple& tuple, const PrimitiveType& type) const = 0;
+    virtual long id(const Tuple& tuple, PrimitiveType type) const = 0;
     long id(const Simplex& s) const { return id(s.tuple(), s.primitive_type()); }
 
     // specifies the number of simplices of each type and resizes attributes appropritely
     void set_capacities(std::vector<long> capacities);
 
-private: // members
-    //=========================================================
-    // Storage of Mesh Attributes
-    //=========================================================
-    std::vector<MeshAttributes<char>> m_char_attributes;
-    std::vector<MeshAttributes<long>> m_long_attributes;
-    std::vector<MeshAttributes<double>> m_double_attributes;
 
+    // std::shared_ptr<AccessorCache> request_accesor_cache();
+    //[[nodiscard]] AccessorScopeHandle push_accesor_scope();
+
+private: // members
+    AttributeManager m_attribute_manager;
+
+    // PImpl'd manager of per-thread update stacks
+    // Every time a new access scope is requested the manager creates another level of indirection
+    // for updates
+    // std::unique_ptr<AttributeScopeManager> m_attribute_scope_manager;
 
     //=========================================================
     // Simplex Attribute
     //=========================================================
 
-    // max index used for each type of simplex
-    std::vector<long> m_capacities;
 
     /**
      * @brief   0x1 == true = simplex is active (simplex exists)
@@ -229,50 +249,4 @@ ConstAccessor<T> Mesh::create_accessor(const MeshAttributeHandle<T>& handle) con
     return create_const_accessor(handle);
 }
 
-template <typename T>
-const MeshAttributes<T>& Mesh::get_mesh_attributes(PrimitiveType ptype) const
-{
-    size_t index = get_simplex_dimension(ptype);
-    if constexpr (std::is_same_v<T, char>) {
-        return m_char_attributes[index];
-    }
-    if constexpr (std::is_same_v<T, long>) {
-        return m_long_attributes[index];
-    }
-    if constexpr (std::is_same_v<T, double>) {
-        return m_double_attributes[index];
-    }
-    // if constexpr(std::is_same_v<T,Rational>) {
-    //     return m_rational_attributes;
-    // }
-}
-template <typename T>
-const MeshAttributes<T>& Mesh::get_mesh_attributes(const MeshAttributeHandle<T>& handle) const
-{
-    return get_mesh_attributes<T>(handle.m_primitive_type);
-}
-
-template <typename T>
-MeshAttributes<T>& Mesh::get_mesh_attributes(PrimitiveType ptype)
-{
-    size_t index = get_simplex_dimension(ptype);
-    if constexpr (std::is_same_v<T, char>) {
-        return m_char_attributes[index];
-    }
-    if constexpr (std::is_same_v<T, long>) {
-        return m_long_attributes[index];
-    }
-    if constexpr (std::is_same_v<T, double>) {
-        return m_double_attributes[index];
-    }
-    // if constexpr(std::is_same_v<T,Rational>) {
-    //     return m_rational_attributes;
-    // }
-}
-
-template <typename T>
-MeshAttributes<T>& Mesh::get_mesh_attributes(const MeshAttributeHandle<T>& handle)
-{
-    return get_mesh_attributes<T>(handle.m_primitive_type);
-}
 } // namespace wmtk

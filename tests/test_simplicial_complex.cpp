@@ -6,17 +6,14 @@
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
+#include "tools/DEBUG_TriMesh.hpp"
+#include "tools/TriMesh_examples.hpp"
 
 using namespace wmtk;
 
 TEST_CASE("simplex_comparison", "[SC]")
 {
-    TriMesh m;
-    {
-        RowVectors3l tris(2, 3);
-        tris << 0, 1, 2, 2, 1, 3;
-        m.initialize(tris);
-    }
+    TriMesh m = tests::quad();
 
     SECTION("vertices")
     {
@@ -76,12 +73,7 @@ TEST_CASE("simplex_comparison", "[SC]")
 
 TEST_CASE("simplex_set", "[SC]")
 {
-    TriMesh m;
-    {
-        RowVectors3l tris(2, 3);
-        tris << 0, 1, 2, 2, 1, 3;
-        m.initialize(tris);
-    }
+    TriMesh m = tests::quad();
     const std::vector<Tuple> vertices = m.get_all(PrimitiveType::Vertex);
     REQUIRE(vertices.size() == 4);
     const std::vector<Tuple> edges = m.get_all(PrimitiveType::Edge);
@@ -100,12 +92,13 @@ TEST_CASE("simplex_set", "[SC]")
     for (const auto& t : faces) {
         simplices.insert(Simplex(PrimitiveType::Face, t));
     }
+    // try inserting a valence 1 vertex
     REQUIRE(simplices.size() == 11);
-    auto [it, was_successful] = simplices.insert(Simplex(PrimitiveType::Vertex, vertices[0]));
+    auto [it, was_successful] = simplices.insert(Simplex(PrimitiveType::Vertex, vertices[2]));
     REQUIRE_FALSE(was_successful);
     REQUIRE(simplices.size() == 11);
     std::tie(it, was_successful) = simplices.insert(
-        Simplex(PrimitiveType::Vertex, m.switch_tuple(vertices[0], PrimitiveType::Edge)));
+        Simplex(PrimitiveType::Vertex, m.switch_tuple(vertices[2], PrimitiveType::Edge)));
     REQUIRE_FALSE(was_successful);
     REQUIRE(simplices.size() == 11);
 }
@@ -114,14 +107,32 @@ TEST_CASE("link-case1", "[SC][link]")
 {
     RowVectors3l F(3, 3);
     F << 0, 3, 2, 0, 1, 3, 1, 2, 3; // 3 Faces
+    //  triangular cone with 3 as the top / tetrahedron with 0 1 2 missing
+    //  2------ 3 ---- 2
+    //   |     / \     |
+    //   |    /   \    |
+    //   |   /  ^  \   |
+    //   |  /       \  |
+    //   0  ---------  1
+    //   ^      ^
+    //   Tuple is identified by the above arrows
 
     // dump it to (Tri)Mesh
-    TriMesh m;
+    tests::DEBUG_TriMesh m;
     m.initialize(F);
 
     // get the tuple point to V(0), E(01), F(013)
     long hash = 0;
     Tuple t(0, 2, -1, 1, hash);
+
+    // make sure this is the right tuple
+    REQUIRE(m.id(t, PrimitiveType::Face) == 1);
+    REQUIRE(m.id(t, PrimitiveType::Vertex) == 0);
+    REQUIRE(m.id(m.switch_tuple(t, PrimitiveType::Vertex), PrimitiveType::Vertex) == 1);
+    REQUIRE(
+        m.id(
+            m.switch_tuple(m.switch_tuple(t, PrimitiveType::Edge), PrimitiveType::Vertex),
+            PrimitiveType::Vertex) == 3);
 
 
     SimplicialComplex lnk_0 = SimplicialComplex::link(Simplex(PrimitiveType::Vertex, t), m);
@@ -132,9 +143,11 @@ TEST_CASE("link-case1", "[SC][link]")
 
     SimplicialComplex lhs = SimplicialComplex::get_intersection(lnk_0, lnk_1);
     SimplicialComplex lnk_01 = SimplicialComplex::link(Simplex(PrimitiveType::Edge, t), m);
-    
-    SimplicialComplex lnk_10 = SimplicialComplex::link(Simplex(PrimitiveType::Edge, m.switch_tuple(t,PrimitiveType::Vertex)), m);
-    
+
+    SimplicialComplex lnk_10 = SimplicialComplex::link(
+        Simplex(PrimitiveType::Edge, m.switch_tuple(t, PrimitiveType::Vertex)),
+        m);
+
     REQUIRE(lnk_0.get_simplices().size() == 5);
     REQUIRE(lnk_1.get_simplices().size() == 5);
 
@@ -149,16 +162,20 @@ TEST_CASE("link-case1", "[SC][link]")
 
 TEST_CASE("link-case2", "[SC][link]")
 {
-    RowVectors3l F(4, 3);
-    F << 0, 3, 1, 0, 1, 2, 0, 2, 4, 2, 1, 5; // 4 Faces
-
-    // dump it to (Tri)Mesh
-    TriMesh m;
-    m.initialize(F);
+    tests::DEBUG_TriMesh m;
+    m = tests::three_neighbors();
 
     // get the tuple point to V(0), E(01), F(012)
     long hash = 0;
     Tuple t(0, 2, -1, 1, hash);
+    // make sure this is the right tuple
+    REQUIRE(m.id(t, PrimitiveType::Face) == 1);
+    REQUIRE(m.id(t, PrimitiveType::Vertex) == 0);
+    REQUIRE(m.id(m.switch_tuple(t, PrimitiveType::Vertex), PrimitiveType::Vertex) == 1);
+    REQUIRE(
+        m.id(
+            m.switch_tuple(m.switch_tuple(t, PrimitiveType::Edge), PrimitiveType::Vertex),
+            PrimitiveType::Vertex) == 2);
 
     SimplicialComplex lnk_0 = SimplicialComplex::link(Simplex(PrimitiveType::Vertex, t), m);
     SimplicialComplex lnk_1 = SimplicialComplex::link(
@@ -168,7 +185,9 @@ TEST_CASE("link-case2", "[SC][link]")
 
     SimplicialComplex lhs = SimplicialComplex::get_intersection(lnk_0, lnk_1);
     SimplicialComplex lnk_01 = SimplicialComplex::link(Simplex(PrimitiveType::Edge, t), m);
-    SimplicialComplex lnk_10 = SimplicialComplex::link(Simplex(PrimitiveType::Edge, m.switch_tuple(t,PrimitiveType::Vertex)), m);
+    SimplicialComplex lnk_10 = SimplicialComplex::link(
+        Simplex(PrimitiveType::Edge, m.switch_tuple(t, PrimitiveType::Vertex)),
+        m);
 
 
     REQUIRE(lnk_0.get_simplices().size() == 7);
@@ -184,16 +203,13 @@ TEST_CASE("link-case2", "[SC][link]")
 
 TEST_CASE("k-ring", "[SC][k-ring]")
 {
-    RowVectors3l F(4, 3);
-    F << 0, 3, 1, 0, 1, 2, 0, 2, 4, 2, 1, 5; // 4 Faces
-
-    // dump it to (Tri)Mesh
-    TriMesh m;
-    m.initialize(F);
+    tests::DEBUG_TriMesh m;
+    m = tests::three_neighbors();
 
     // get the tuple point to V(3)
     long hash = 0;
     Tuple t(1, 0, -1, 0, hash);
+    REQUIRE(m.id(t, PrimitiveType::Vertex) == 3);
 
     auto ret1 = SimplicialComplex::vertex_one_ring(t, m);
     REQUIRE(ret1.size() == 2);
@@ -207,12 +223,8 @@ TEST_CASE("k-ring", "[SC][k-ring]")
 
 TEST_CASE("open_star", "[SC][star]")
 {
-    RowVectors3l F(4, 3);
-    F << 0, 3, 1, 0, 1, 2, 0, 2, 4, 2, 1, 5; // 4 Faces
-
-    // dump it to (Tri)Mesh
-    TriMesh m;
-    m.initialize(F);
+    tests::DEBUG_TriMesh m;
+    m = tests::three_neighbors();
 
     // get the tuple point to V(0), E(01), F(012)
     long hash = 0;
@@ -231,16 +243,18 @@ TEST_CASE("open_star", "[SC][star]")
 
 TEST_CASE("closed_star", "[SC][star]")
 {
-    RowVectors3l F(4, 3);
-    F << 0, 3, 1, 0, 1, 2, 0, 2, 4, 2, 1, 5; // 4 Faces
-
-    // dump it to (Tri)Mesh
-    TriMesh m;
-    m.initialize(F);
+    tests::DEBUG_TriMesh m;
+    m = tests::three_neighbors();
 
     // get the tuple point to V(0), E(01), F(012)
     long hash = 0;
     Tuple t(0, 2, -1, 1, hash);
+    REQUIRE(m.id(t, PrimitiveType::Vertex) == 0);
+    REQUIRE(m.id(m.switch_tuple(t, PrimitiveType::Vertex), PrimitiveType::Vertex) == 1);
+    REQUIRE(
+        m.id(
+            m.switch_tuple(m.switch_tuple(t, PrimitiveType::Edge), PrimitiveType::Vertex),
+            PrimitiveType::Vertex) == 2);
 
 
     SimplicialComplex sc_v = SimplicialComplex::closed_star(Simplex(PrimitiveType::Vertex, t), m);

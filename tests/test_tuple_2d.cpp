@@ -4,6 +4,7 @@
 //#include <igl/read_triangle_mesh.h>
 #include <wmtk/utils/trimesh_topology_initialization.h>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/utils/Logger.hpp>
 
 using namespace wmtk;
 
@@ -27,7 +28,6 @@ TEST_CASE("2D_initialize", "[test_mesh_creation],[test_tuple_2d]")
 
     const std::vector<Tuple> vertices = m.get_all(PrimitiveType::Vertex);
     REQUIRE(vertices.size() == 3);
-    return;
     const std::vector<Tuple> edges = m.get_all(PrimitiveType::Edge);
     REQUIRE(edges.size() == 3);
     const std::vector<Tuple> faces = m.get_all(PrimitiveType::Face);
@@ -226,12 +226,15 @@ Tuple double_switch_face(const TriMesh& m, const Tuple& t)
 
 bool tuple_equal(const TriMesh& m, const Tuple& t0, const Tuple& t1)
 {
+    const auto l = wmtk::logger().level();
+    wmtk::logger().set_level(spdlog::level::err);
     const long v0 = m._debug_id(t0, PrimitiveType::Vertex);
     const long e0 = m._debug_id(t0, PrimitiveType::Edge);
     const long f0 = m._debug_id(t0, PrimitiveType::Face);
     const long v1 = m._debug_id(t1, PrimitiveType::Vertex);
     const long e1 = m._debug_id(t1, PrimitiveType::Edge);
     const long f1 = m._debug_id(t1, PrimitiveType::Face);
+    wmtk::logger().set_level(l);
     return (v0 == v1) && (e0 == e1) && (f0 == f1);
 }
 

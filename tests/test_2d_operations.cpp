@@ -2,76 +2,18 @@
 
 #include <numeric>
 #include <wmtk/Accessor.hpp>
-#include <wmtk/Mesh.hpp>
-#include <wmtk/TriMesh.hpp>
-#include <wmtk/TriMeshOperation.hpp>
+#include <wmtk/TriMesh_operations.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include "tools/DEBUG_TriMesh.hpp"
+#include "tools/TriMesh_examples.hpp"
 
 
 using namespace wmtk;
+using namespace wmtk::tests;
 
 using TM = TriMesh;
-using TMOP = TriMesh::TriMeshOperationState;
 using MapResult = typename Eigen::Matrix<long, Eigen::Dynamic, 1>::MapType;
-class DEBUG_TriMesh : public TriMesh
-{
-public:
-    auto edge_tuple_between_v1_v2(const long v1, const long v2, const long fid) const -> Tuple
-    {
-        ConstAccessor<long> fv = create_accessor<long>(m_fv_handle);
-        auto fv_base = create_base_accessor<long>(m_fv_handle);
-        Tuple face = face_tuple_from_id(fid);
-        auto fv0 = fv.vector_attribute(face);
-        REQUIRE(fv0 == fv_base.vector_attribute(fid));
-        long local_vid1 = -1, local_vid2 = -1;
-        for (long i = 0; i < fv0.size(); ++i) {
-            if (fv0[i] == v1) {
-                local_vid1 = i;
-            }
-            if (fv0[i] == v2) {
-                local_vid2 = i;
-            }
-        }
-        return Tuple(local_vid1, (3 - local_vid1 - local_vid2) % 3, -1, fid, 0);
-    }
-
-    Tuple tuple_from_face_id(const long fid)
-    {
-        return tuple_from_id(PrimitiveType::Face, fid);
-    }
-    template <typename T>
-    AccessorBase<T, false> create_base_accessor(const MeshAttributeHandle<T>& handle)
-    {
-        return AccessorBase<T, false>(*this, handle);
-    }
-
-    template <typename T>
-    AccessorBase<T, true> create_const_base_accessor(const MeshAttributeHandle<T>& handle) const
-    {
-        return AccessorBase<T, true>(*this, handle);
-    }
-    template <typename T>
-    AccessorBase<T, true> create_base_accessor(const MeshAttributeHandle<T>& handle) const
-    {
-        return create_const_base_accessor(handle);
-    }
-
-    const MeshAttributeHandle<long>& f_handle(const PrimitiveType type) const
-    {
-        switch (type) {
-        case PrimitiveType::Vertex: return m_fv_handle;
-        case PrimitiveType::Edge: return m_fe_handle;
-        case PrimitiveType::Face: return m_ff_handle;
-        default: throw std::runtime_error("Invalid PrimitiveType");
-        }
-    }
-
-    const MeshAttributeHandle<long>& vf_handle() const { return m_vf_handle; }
-
-    const MeshAttributeHandle<long>& ef_handle() const { return m_ef_handle; }
-
-    void reserve_attributes(PrimitiveType type, long size) { Mesh::reserve_attributes(type, size); }
-};
+using TMOE = decltype(std::declval<DEBUG_TriMesh>().get_tmoe());
 
 TEST_CASE("get per face data")
 {
@@ -80,16 +22,14 @@ TEST_CASE("get per face data")
         DEBUG_TriMesh m;
         {
             //         0
-            //        / \   
-            //       2   1  \ 
+            //        / \   .
+            //       2   1  \ .
             //      /  0  \  \|
-            //     /       \ 
+            //     /       \ .
             //  1  ----0---- 2
             //
-            RowVectors3l tris;
-            tris.resize(1, 3);
-            tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
-            m.initialize(tris);
+
+            m = single_triangle();
         }
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(0, 2, 0);
@@ -97,14 +37,14 @@ TEST_CASE("get per face data")
         REQUIRE(m._debug_id(edge, PrimitiveType::Face) == 0);
         REQUIRE(
             m._debug_id(m.switch_tuple(edge, PrimitiveType::Vertex), PrimitiveType::Vertex) == 2);
-        TMOP state(m);
+        auto state = m.get_tmoe();
 
-        TMOP::PerFaceData face_data = state.get_per_face_data(edge);
+        TMOE::PerFaceData face_data = state.get_per_face_data(edge);
         REQUIRE(face_data.V_C_id == 1);
         REQUIRE(face_data.deleted_fid == 0);
         REQUIRE(face_data.ears.size() == 2);
-        TMOP::EarGlobalIDs ear1 = face_data.ears[0];
-        TMOP::EarGlobalIDs ear2 = face_data.ears[1];
+        TMOE::EarGlobalIDs ear1 = face_data.ears[0];
+        TMOE::EarGlobalIDs ear2 = face_data.ears[1];
         REQUIRE(ear1.fid == -1);
         REQUIRE(ear1.eid > -1);
         REQUIRE(ear2.fid == -1);
@@ -115,27 +55,23 @@ TEST_CASE("get per face data")
         DEBUG_TriMesh m;
         {
             //  3--1--- 0
-            //   |     / \ 
+            //   |     / \ .
             //   2 f1 /2   1
-            //   |  0/ f0  \ 
-            //   |  /       \ 
+            //   |  0/ f0  \ .
+            //   |  /       \ .
             //  1  ----0---- 2
             //
-            RowVectors3l tris;
-            tris.resize(2, 3);
-            tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
-            tris.row(1) = Eigen::Matrix<long, 3, 1>{3, 1, 0};
-            m.initialize(tris);
+            m = one_ear();
         }
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        TMOP state(m);
-        TMOP::PerFaceData face_data = state.get_per_face_data(edge);
+        auto state = m.get_tmoe();
+        TMOE::PerFaceData face_data = state.get_per_face_data(edge);
         REQUIRE(face_data.V_C_id == 0);
         REQUIRE(face_data.deleted_fid == 0);
         REQUIRE(face_data.ears.size() == 2);
-        TMOP::EarGlobalIDs ear1 = face_data.ears[0];
-        TMOP::EarGlobalIDs ear2 = face_data.ears[1];
+        TMOE::EarGlobalIDs ear1 = face_data.ears[0];
+        TMOE::EarGlobalIDs ear2 = face_data.ears[1];
         REQUIRE(ear1.fid == 1);
         REQUIRE(ear1.eid > -1);
         REQUIRE(ear2.fid == -1);
@@ -153,22 +89,17 @@ TEST_CASE("get per face data")
             //   |  /       \  |
             //   1  ----0----  2
             //
-            RowVectors3l tris;
-            tris.resize(3, 3);
-            tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
-            tris.row(1) = Eigen::Matrix<long, 3, 1>{3, 1, 0};
-            tris.row(2) = Eigen::Matrix<long, 3, 1>{0, 2, 4};
-            m.initialize(tris);
+            m = two_neighbors();
         }
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        TMOP state(m);
-        TMOP::PerFaceData face_data = state.get_per_face_data(edge);
+        auto state = m.get_tmoe();
+        TMOE::PerFaceData face_data = state.get_per_face_data(edge);
         REQUIRE(face_data.V_C_id == 0);
         REQUIRE(face_data.deleted_fid == 0);
         REQUIRE(face_data.ears.size() == 2);
-        TMOP::EarGlobalIDs ear1 = face_data.ears[0];
-        TMOP::EarGlobalIDs ear2 = face_data.ears[1];
+        TMOE::EarGlobalIDs ear1 = face_data.ears[0];
+        TMOE::EarGlobalIDs ear2 = face_data.ears[1];
         REQUIRE(ear1.fid == 1);
         REQUIRE(ear1.eid > -1);
         REQUIRE(ear2.fid == 2);
@@ -181,19 +112,7 @@ TEST_CASE("delete simplices")
     // things can be marked as deleted but will still have the connectivity information
     DEBUG_TriMesh m;
     {
-        //  3--1--- 0 --1- 4
-        //   |     / \     |
-        //   2 f1 /2 1\ f2 |
-        //   |  0/ f0  \1  0
-        //   |  /       \  |
-        //   1  ----0----  2
-        //
-        RowVectors3l tris;
-        tris.resize(3, 3);
-        tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
-        tris.row(1) = Eigen::Matrix<long, 3, 1>{3, 1, 0};
-        tris.row(2) = Eigen::Matrix<long, 3, 1>{0, 2, 4};
-        m.initialize(tris);
+        m = two_neighbors();
     }
     REQUIRE(m.is_connectivity_valid());
     Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
@@ -202,7 +121,7 @@ TEST_CASE("delete simplices")
     simplices_to_delete[2] = std::vector<long>{m._debug_id(edge, PrimitiveType::Face)};
 
 
-    TMOP state(m);
+    auto state = m.get_tmoe();
     state.simplices_to_delete = simplices_to_delete;
     state.delete_simplices();
     REQUIRE(state.flag_accessors[1].scalar_attribute(edge) == 0);
@@ -219,17 +138,7 @@ TEST_CASE("operation state")
     {
         DEBUG_TriMesh m;
         {
-            //         0
-            //        / \   
-            //       2   1  \ 
-            //      /  0  \  \|
-            //     /       \ 
-            //  1  ----0---- 2
-            //
-            RowVectors3l tris;
-            tris.resize(1, 3);
-            tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
-            m.initialize(tris);
+            m = single_triangle();
         }
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(0, 2, 0);
@@ -237,7 +146,7 @@ TEST_CASE("operation state")
         REQUIRE(m._debug_id(edge, PrimitiveType::Face) == 0);
         REQUIRE(
             m._debug_id(m.switch_tuple(edge, PrimitiveType::Vertex), PrimitiveType::Vertex) == 2);
-        TMOP state(m, edge);
+        auto state = m.get_tmoe(edge);
 
         REQUIRE(state.flag_accessors.size() == 3);
         REQUIRE(state.end_point_vids.size() == 2);
@@ -250,22 +159,11 @@ TEST_CASE("operation state")
     {
         DEBUG_TriMesh m;
         {
-            //  3--1--- 0
-            //   |     / \ 
-            //   2 f1 /2   1
-            //   |  0/ f0  \ 
-            //   |  /       \ 
-            //  1  ----0---- 2
-            //
-            RowVectors3l tris;
-            tris.resize(2, 3);
-            tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
-            tris.row(1) = Eigen::Matrix<long, 3, 1>{3, 1, 0};
-            m.initialize(tris);
+            m = one_ear();
         }
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        TMOP state(m, edge);
+        auto state = m.get_tmoe(edge);
 
         REQUIRE(state.flag_accessors.size() == 3);
         REQUIRE(state.end_point_vids.size() == 2);
@@ -281,26 +179,21 @@ TEST_CASE("operation state")
         DEBUG_TriMesh m;
         {
             //  3--1--- 0
-            //   |     / \ 
+            //   |     / \ .
             //   2 f1 /2   1
-            //   |  0/ f0  \ 
-            //   |  /       \ 
+            //   |  0/ f0  \ .
+            //   |  /       \ .
             //  1  ----0---- 2
             //     \        /
             //      \  f2  /
             //       \    /
             //        \  /
             //         4
-            RowVectors3l tris;
-            tris.resize(3, 3);
-            tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
-            tris.row(1) = Eigen::Matrix<long, 3, 1>{3, 1, 0};
-            tris.row(2) = Eigen::Matrix<long, 3, 1>{1, 4, 2};
-            m.initialize(tris);
+            m = interior_edge();
         }
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        TMOP state(m, edge);
+        auto state = m.get_tmoe(edge);
 
         REQUIRE(state.flag_accessors.size() == 3);
         REQUIRE(state.end_point_vids.size() == 2);
@@ -312,8 +205,8 @@ TEST_CASE("operation state")
         REQUIRE(state.FaceDatas[0].V_C_id == 0);
         REQUIRE(state.FaceDatas[0].deleted_fid == 0);
         REQUIRE(state.FaceDatas[0].ears.size() == 2);
-        TMOP::EarGlobalIDs ear1 = state.FaceDatas[0].ears[0];
-        TMOP::EarGlobalIDs ear2 = state.FaceDatas[0].ears[1];
+        TMOE::EarGlobalIDs ear1 = state.FaceDatas[0].ears[0];
+        TMOE::EarGlobalIDs ear2 = state.FaceDatas[0].ears[1];
         REQUIRE(ear1.fid == 1);
         REQUIRE(ear1.eid > -1);
         REQUIRE(ear2.fid == -1);
@@ -335,14 +228,11 @@ TEST_CASE("glue ear to face")
     DEBUG_TriMesh m;
     {
         //    0---1---2
-        //   / \ / \ / \
+        //   / \ / \ / \ .
         //  3---4---5---6
-        //   \ / \ /
+        //   \ / \ /  .
         //    7---8
-        RowVectors3l tris;
-        tris.resize(8, 3);
-        tris << 3, 4, 0, 4, 1, 0, 4, 5, 1, 5, 2, 1, 5, 6, 2, 3, 7, 4, 7, 8, 4, 4, 8, 5;
-        m.initialize(tris);
+        m = hex_plus_two();
     }
     REQUIRE(m.is_connectivity_valid());
     Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
@@ -351,12 +241,12 @@ TEST_CASE("glue ear to face")
     REQUIRE(
         m._debug_id(m.switch_tuple(left_ear_edge, PrimitiveType::Vertex), PrimitiveType::Vertex) ==
         1);
-    TMOP state(m);
+    auto state = m.get_tmoe();
     auto ff_accessor_before = m.create_base_accessor<long>(m.f_handle(PrimitiveType::Face));
-    REQUIRE(ff_accessor_before.vector_attribute(1)(2)==2);
+    REQUIRE(ff_accessor_before.vector_attribute(1)(2) == 2);
     state.glue_ear_to_face(1, 3, 2, m._debug_id(edge, PrimitiveType::Edge));
     auto ff_accessor_after = m.create_base_accessor<long>(m.f_handle(PrimitiveType::Face));
-    REQUIRE(ff_accessor_after.vector_attribute(1)(2)==3);
+    REQUIRE(ff_accessor_after.vector_attribute(1)(2) == 3);
 }
 TEST_CASE("hash update") {}
 
@@ -372,10 +262,10 @@ TEST_CASE("glue new faces across AB")
         DEBUG_TriMesh m;
         {
             //         0
-            //        / \   
-            //       2   1  \ 
+            //        / \   .
+            //       2   1  \ .
             //      /  0  \  \|
-            //     /       \ 
+            //     /       \ .
             //  1  ----0---- 2
             //
             RowVectors3l tris;
@@ -389,7 +279,7 @@ TEST_CASE("glue new faces across AB")
         REQUIRE(m._debug_id(edge, PrimitiveType::Face) == 0);
         REQUIRE(
             m._debug_id(m.switch_tuple(edge, PrimitiveType::Vertex), PrimitiveType::Vertex) == 2);
-        TMOP state(m, edge);
+        auto state = m.get_tmoe(edge);
         REQUIRE(state.FaceDatas.size() == 1);
     }
     SECTION("interior edge")
@@ -397,10 +287,10 @@ TEST_CASE("glue new faces across AB")
         DEBUG_TriMesh m;
         {
             //  3--1--- 0
-            //   |     / \ 
+            //   |     / \ .
             //   2 f1 /2   1
-            //   |  0/ f0  \ 
-            //   |  /  0    \ 
+            //   |  0/ f0  \ .
+            //   |  /  0    \ .
             //  1  --------- 2
             //     \   1    /
             //      2  f2  0
@@ -417,7 +307,7 @@ TEST_CASE("glue new faces across AB")
         m.reserve_attributes(PrimitiveType::Face, 10);
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        TMOP state(m, edge);
+        auto state = m.get_tmoe(edge);
 
         REQUIRE(state.FaceDatas.size() == 2);
 
@@ -464,7 +354,7 @@ TEST_CASE("glue new triangle", "[old faces not recycled]")
         }
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        TMOP state(m, edge);
+        auto state = m.get_tmoe();
 
         //  create new vertex
         std::vector<long> new_vids = state.request_simplex_indices(PrimitiveType::Vertex, 1);
@@ -528,10 +418,10 @@ TEST_CASE("glue new triangle", "[old faces not recycled]")
         DEBUG_TriMesh m;
         {
             //  3--1--- 0
-            //   |     / \ 
+            //   |     / \ .
             //   2 f1 /2   1
-            //   |  0/ f0  \ 
-            //   |  /  0    \ 
+            //   |  0/ f0  \ .
+            //   |  /  0    \ .
             //  1  -------- 2
             //     \   1    /
             //      \  f2  /
@@ -547,7 +437,7 @@ TEST_CASE("glue new triangle", "[old faces not recycled]")
         }
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        TMOP state(m, edge);
+        auto state = m.get_tmoe(edge);
 
         // create new vertex
         std::vector<long> new_vids = state.request_simplex_indices(PrimitiveType::Vertex, 1);
@@ -645,7 +535,7 @@ TEST_CASE("simplices to delete for split")
         }
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        TMOP state(m, edge);
+        auto state = m.get_tmoe();
 
         state.split_edge();
 
@@ -682,7 +572,7 @@ TEST_CASE("simplices to delete for split")
         }
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        TMOP state(m, edge);
+        auto state = m.get_tmoe();
 
         state.split_edge();
 
@@ -702,21 +592,11 @@ TEST_CASE("split edge")
     DEBUG_TriMesh m;
     {
         //    0---1---2
-        //   / \ / \ / \
+        //   / \ / \ / \ .
         //  3---4---5---6
         //   \ / \ /
         //    7---8
-        RowVectors3l tris;
-        tris.resize(8, 3);
-        tris.row(0) << 3, 4, 0;
-        tris.row(1) << 4, 1, 0;
-        tris.row(2) << 4, 5, 1;
-        tris.row(3) << 5, 2, 1;
-        tris.row(4) << 5, 6, 2;
-        tris.row(5) << 3, 7, 4;
-        tris.row(6) << 7, 8, 4;
-        tris.row(7) << 4, 8, 5;
-        m.initialize(tris);
+        m = hex_plus_two();
     }
     REQUIRE(m.is_connectivity_valid());
 
@@ -768,18 +648,17 @@ TEST_CASE("collapse edge")
         std::cout << "AFTER COLLAPSE" << std::endl;
         REQUIRE(m.is_connectivity_valid());
 
-        auto fv_accessor = m.create_base_accessor<long>(m.
-        f_handle(PrimitiveType::Vertex));
-        TMOP state(m);
+        auto fv_accessor = m.create_base_accessor<long>(m.f_handle(PrimitiveType::Vertex));
+        auto state = m.get_tmoe();
 
-        REQUIRE(state.flag_accessors[2].scalar_attribute( m.tuple_from_face_id(2)) == 0);
-        REQUIRE(state.flag_accessors[2].scalar_attribute( m.tuple_from_face_id(7)) == 0);
-        REQUIRE(fv_accessor.vector_attribute(3)(0)==4);
-        REQUIRE(fv_accessor.vector_attribute(4)(0)==4);
+        REQUIRE(state.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(2)) == 0);
+        REQUIRE(state.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(7)) == 0);
+        REQUIRE(fv_accessor.vector_attribute(3)(0) == 4);
+        REQUIRE(fv_accessor.vector_attribute(4)(0) == 4);
     }
     SECTION("case2")
     {
-         DEBUG_TriMesh m;
+        DEBUG_TriMesh m;
         {
             //    0---1---2
             //   / \ / \ / \
@@ -799,17 +678,14 @@ TEST_CASE("collapse edge")
         std::cout << "AFTER COLLAPSE" << std::endl;
         REQUIRE(m.is_connectivity_valid());
 
-        auto fv_accessor = m.create_base_accessor<long>(m.
-        f_handle(PrimitiveType::Vertex));
-        TMOP state(m);
+        auto fv_accessor = m.create_base_accessor<long>(m.f_handle(PrimitiveType::Vertex));
+        auto state = m.get_tmoe();
 
-        REQUIRE(state.flag_accessors[2].scalar_attribute( m.tuple_from_face_id(0)) == 0);
-        REQUIRE(state.flag_accessors[2].scalar_attribute( m.tuple_from_face_id(1)) == 0);
-        REQUIRE(fv_accessor.vector_attribute(2)(0)==0);
-        REQUIRE(fv_accessor.vector_attribute(5)(2)==0);
-        REQUIRE(fv_accessor.vector_attribute(6)(2)==0);
-        REQUIRE(fv_accessor.vector_attribute(7)(0)==0);
+        REQUIRE(state.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(0)) == 0);
+        REQUIRE(state.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(1)) == 0);
+        REQUIRE(fv_accessor.vector_attribute(2)(0) == 0);
+        REQUIRE(fv_accessor.vector_attribute(5)(2) == 0);
+        REQUIRE(fv_accessor.vector_attribute(6)(2) == 0);
+        REQUIRE(fv_accessor.vector_attribute(7)(0) == 0);
     }
-     
-    
 }

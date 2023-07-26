@@ -23,7 +23,6 @@ std::vector<Simplex> SimplicialComplex::get_simplex_vector() const
 
 bool SimplicialComplex::add_simplex(const Simplex& s)
 {
-    assert(s.primitive_type() != PrimitiveType::Invalid);
     const auto [it, was_successful] = _simplices.insert(s);
     return was_successful;
 }
@@ -134,7 +133,6 @@ SimplicialComplex SimplicialComplex::boundary(const Simplex& s, const Mesh& m)
         /* code */
         break;
     case PV: break;
-    case PrimitiveType::Invalid: assert(false); break;
     default: assert(false); break;
     }
 
@@ -201,7 +199,6 @@ SimplicialComplex SimplicialComplex::closed_star(const Simplex& s, const Mesh& m
             break;
         case PF: sc.add_simplex(s); break;
         case PT: assert(false); break;
-        case PrimitiveType::Invalid: assert(false); break;
         default: assert(false); break;
         }
     } else if (cell_dim == 3) {
@@ -255,10 +252,6 @@ SimplicialComplex SimplicialComplex::closed_star(const Simplex& s, const Mesh& m
         }
         case PT: {
             sc.add_simplex(s);
-            break;
-        }
-        case PrimitiveType::Invalid: {
-            assert(false);
             break;
         }
         default: {

@@ -9,12 +9,12 @@ constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
 constexpr PrimitiveType PF = PrimitiveType::Face;
 } // namespace
-class TriMesh::TriMeshOperationState
+class TriMesh::TriMeshOperationExecutor
 {
 public:
-    TriMeshOperationState();
-    TriMeshOperationState(TriMesh& m);
-    TriMeshOperationState(TriMesh& m, const Tuple& operating_tuple);
+    TriMeshOperationExecutor();
+    TriMeshOperationExecutor(TriMesh& m);
+    TriMeshOperationExecutor(TriMesh& m, const Tuple& operating_tuple);
     void delete_simplices();
     void update_cell_hash();
 
@@ -28,10 +28,10 @@ public:
 
 
     //           C
-    //         /  \ 
+    //         /  \ .
     //    F1  /    \  F2
-    //       /      \ 
-    //      /        \ 
+    //       /      \ .
+    //      /        \ .
     //     A----------B
     //      \        /
     //       \      /
@@ -67,7 +67,7 @@ public:
         const long eid);
 
     void merge();
-    void split_edge();
+    Tuple split_edge();
 
     /**
      * @brief
