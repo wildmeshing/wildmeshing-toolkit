@@ -11,6 +11,7 @@ TriMeshSplitEdgeOperation::TriMeshSplitEdgeOperation(Mesh& m, const Tuple& t)
 {}
 bool TriMeshSplitEdgeOperation::execute()
 {
+
     TriMesh& m = dynamic_cast<TriMesh&>(m_mesh);
 
 
@@ -38,6 +39,22 @@ bool TriMeshSplitEdgeOperation::before() const
 {
     return m_mesh.is_valid(m_input_tuple);
 }
+
+// potential after-like strucutre?
+//bool TriMeshSplitEdgeOperation::after() const
+//{
+//    // energy decrease
+//
+//    //ConstAccessor<double> current_positions = {}; // current scope
+//    //ConstAccessor<double> original_positions = {};// use checkpoint
+//
+//    //if(
+//    //        get_area(current_positions, one_ring(m_output_tuple)) 
+//    //        < 
+//    //        get_area(original_positions, one_ring(m_input_tuple))) {
+//    //    return false;;
+//    //}
+//}
 std::string TriMeshSplitEdgeOperation::name() const
 {
     return "tri_mesh_split_edge";

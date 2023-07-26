@@ -528,10 +528,7 @@ TEST_CASE("simplices to delete for split")
             //     /  0    \ 
             //  1  --------- 2
 
-            RowVectors3l tris;
-            tris.resize(1, 3);
-            tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
-            m.initialize(tris);
+            m = single_triangle();
         }
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);

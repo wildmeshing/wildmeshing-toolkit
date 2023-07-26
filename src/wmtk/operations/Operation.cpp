@@ -15,12 +15,12 @@ bool Operation::operator()()
     if (before()) {
         if (execute()) { // success should be marked here
             if (after()) {
-                return true;
+                return true; // scope destructor is called
             }
         }
     }
     scope.mark_failed();
-    return false;
+    return false; // scope destructor is called
 }
 
 bool Operation::before() const
