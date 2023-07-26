@@ -1,6 +1,6 @@
 
 set(SRC_FILES
-    internal/MeshInfoOptions.h
-    mesh_info.h
+    internal/MeshInfoOptions.hpp
+    mesh_info.hpp
     mesh_info.cpp)
 target_sources(wildmeshing_components PRIVATE ${SRC_FILES})

@@ -1,4 +1,7 @@
-#include "mesh_info.h"
+#include "mesh_info.hpp"
+
+#include <wmtk/TriMesh.hpp>
+#include <wmtk/io/MeshReader.hpp>
 
 namespace wmtk {
 namespace components {
@@ -8,16 +11,20 @@ void mesh_info(const nlohmann::json& j, std::map<std::string, std::filesystem::p
 
     MeshInfoOptions options = j.get<MeshInfoOptions>();
 
-    std::filesystem::path& file = files[options.input];
+    const std::filesystem::path& file = files[options.input];
 
-    // pseudo load
-    Eigen::MatrixXd V;
-    Eigen::MatrixXi F;
-    igl::readOFF(file.string(), V, F);
+    TriMesh mesh;
+    {
+        MeshReader reader(file);
+        reader.read(mesh);
+    }
+
+    const auto v_tuples = mesh.get_all(PrimitiveType::Vertex);
+    const auto f_tuples = mesh.get_all(PrimitiveType::Face);
 
     wmtk::logger().info("Mesh: {}", file.string());
-    wmtk::logger().info("Vertices: {}", V.rows());
-    wmtk::logger().info("Faces: {}", F.rows());
+    wmtk::logger().info("Vertices: {}", v_tuples.size());
+    wmtk::logger().info("Faces: {}", f_tuples.size());
 }
 } // namespace components
 } // namespace wmtk

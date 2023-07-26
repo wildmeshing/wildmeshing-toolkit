@@ -77,6 +77,9 @@ add_library(wildmeshing_components)
 add_library(wmtk::components ALIAS wildmeshing_components)
 add_subdirectory(components/wmtk_components)
 
+# Group source files for IDEs
+file(GLOB_RECURSE COMPONENTS_FILES_FOR_SOURCE_GROUP "components/*.cpp" "components/*.h" "components/*.hpp")
+source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/components/wmtk_components" PREFIX "src" FILES ${COMPONENTS_FILES_FOR_SOURCE_GROUP})
 
 # Include headers
 target_include_directories(wildmeshing_toolkit PUBLIC src)
@@ -140,6 +143,7 @@ if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
 
     # Unit tests
     enable_testing()
+
     add_subdirectory(tests)
 endif()
 

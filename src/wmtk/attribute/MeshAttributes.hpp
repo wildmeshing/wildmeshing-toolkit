@@ -58,6 +58,8 @@ protected:
     //https://clang.llvm.org/extra/clang-tidy/checks/modernize/pass-by-value.html
     void set(const AttributeHandle& handle, std::vector<T> val);
 
+    size_t attribute_size(const AttributeHandle& handle) const;
+
 private:
     std::map<std::string, AttributeHandle> m_handles;
 

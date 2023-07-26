@@ -26,3 +26,6 @@ FetchContent_Declare(
     URL_HASH MD5=d44e362204de1820de9077a65cc81767
 )
 FetchContent_MakeAvailable(catch2)
+
+set_target_properties(Catch2 PROPERTIES FOLDER third_party)
+set_target_properties(Catch2WithMain PROPERTIES FOLDER third_party)

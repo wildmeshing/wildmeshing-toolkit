@@ -156,19 +156,10 @@ long Mesh::get_cell_hash_slow(long cell_index) const
 
 void Mesh::set_capacities_from_flags()
 {
-    std::vector<long> new_capacities;
-    for (const auto& flag_handle : m_flag_handles) {
-        auto fa = create_const_accessor(flag_handle);
-        long size_m1 = 0;
-        for (size_m1 = fa.size() - 1; size_m1 >= 0; ++size_m1) {
-            if (fa.scalar_attribute(size_m1) & 0x1) {
-                break;
-            }
-        }
-        long size = size_m1 + 1;
-        new_capacities.emplace_back(size);
+    for (long dim = 0; dim < m_attribute_manager.m_capacities.size(); ++dim) {
+        Accessor<char> flag_accessor = create_accessor<char>(m_flag_handles[dim]);
+        m_attribute_manager.m_capacities[dim] = flag_accessor.size();
     }
-    set_capacities(std::move(new_capacities));
 }
 
 bool Mesh::operator==(const Mesh& other) const

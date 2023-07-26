@@ -4,6 +4,7 @@ FetchContent_GetProperties(catch2)
 list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/contrib)
 include(Catch)
 include(wmtk_data)
+
 lagrange_include_modules(io)
 
 # Sources
@@ -36,6 +37,10 @@ target_link_libraries(wmtk_tests PUBLIC
     Catch2::Catch2WithMain
     lagrange::io
 )
+
+add_subdirectory(components)
+source_group("components" REGULAR_EXPRESSION "components\/.*\.(cpp|h|hpp)?$")
+
 wmtk_copy_dll(wmtk_tests)
 
 # Register unit tests
