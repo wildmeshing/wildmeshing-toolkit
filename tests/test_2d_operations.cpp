@@ -532,7 +532,7 @@ TEST_CASE("simplices to delete for split")
         }
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        auto state = m.get_tmoe();
+        auto state = m.get_tmoe(edge);
 
         state.split_edge();
 
@@ -569,7 +569,7 @@ TEST_CASE("simplices to delete for split")
         }
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        auto state = m.get_tmoe();
+        auto state = m.get_tmoe(edge);
 
         state.split_edge();
 
