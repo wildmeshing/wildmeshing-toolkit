@@ -1,5 +1,5 @@
-#include <wmtk_components/input/input.h>
-#include <wmtk_components/mesh_info/mesh_info.h>
+#include <wmtk_components/input/input.hpp>
+#include <wmtk_components/mesh_info/mesh_info.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
 

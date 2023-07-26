@@ -1,5 +1,5 @@
-#include <wmtk_components/input/input.h>
-#include <wmtk_components/output/output.h>
+#include <wmtk_components/input/input.hpp>
+#include <wmtk_components/output/output.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
 
