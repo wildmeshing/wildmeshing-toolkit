@@ -5,6 +5,7 @@
 
 namespace wmtk {
 
+
 template <typename T>
 void Attribute<T>::serialize(const std::string& name, const int dim, MeshWriter& writer) const
 {
@@ -12,16 +13,48 @@ void Attribute<T>::serialize(const std::string& name, const int dim, MeshWriter&
 }
 
 template <typename T>
-Attribute<T>::Attribute(long dimension, long size)
+Attribute<T>::Attribute(long dimension)
     : m_scope_stacks(new PerThreadAttributeScopeStacks<T>())
     , m_dimension(dimension)
 {
     assert(m_dimension > 0);
+}
+
+template <typename T>
+Attribute<T>::Attribute(long dimension, long size)
+    : Attribute(dimension)
+{
     if (size > 0) {
         m_data = std::vector<T>(size * dimension, T(0));
     }
 }
 
+template <typename T>
+Attribute<T>::Attribute(const Attribute& o)
+    : Attribute(o.m_dimension)
+{
+    m_data = o.m_data;
+}
+template <typename T>
+Attribute<T>::Attribute(Attribute&& o)
+    : Attribute(o.m_dimension)
+{
+    m_data = std::move(o.m_data);
+}
+template <typename T>
+Attribute<T>& Attribute<T>::operator=(const Attribute& o)
+{
+    m_data = o.m_data;
+    m_dimension = o.m_dimension;
+    return *this;
+}
+template <typename T>
+Attribute<T>& Attribute<T>::operator=(Attribute&& o)
+{
+    m_data = std::move(o.m_data);
+    m_dimension = o.m_dimension;
+    return *this;
+}
 
 template <typename T>
 bool Attribute<T>::operator==(const Attribute<T>& o) const

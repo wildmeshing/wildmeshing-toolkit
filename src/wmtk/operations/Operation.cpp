@@ -10,7 +10,7 @@ Operation::~Operation() = default;
 
 bool Operation::operator()()
 {
-    AttributeScopeHandle scope = m_mesh.create_scope();
+    auto scope = m_mesh.create_scope();
 
     if (before()) {
         if (execute()) { // success should be marked here
@@ -22,17 +22,22 @@ bool Operation::operator()()
     scope.mark_failed();
     return false;
 }
-bool Operation::after() const
+
+bool Operation::before() const
 {
-    // TODO: default implement the invariants
-    /*
-    for (const auto& invariant : invariants) {
-        if (!invariant(m_mesh, modified_triangles())) {
-            return false;
-        }
-    }
-    */
+    // TODO: process invariants
+
+
     return true;
 }
+bool Operation::after() const
+{
+    // TODO: process invariants
+
+
+    return true;
+}
+
+
 } // namespace wmtk
 

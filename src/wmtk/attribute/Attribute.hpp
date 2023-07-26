@@ -25,6 +25,12 @@ public:
 
     // if size < 0 then the internal data is not initialized
     Attribute(long dimension, long size);
+    Attribute(long dimension);
+
+    Attribute(const Attribute& o);
+    Attribute(Attribute&& o);
+    Attribute& operator=(const Attribute& o);
+    Attribute& operator=(Attribute&& o);
     ConstMapResult const_vector_attribute(const long index) const;
     MapResult vector_attribute(const long index);
 

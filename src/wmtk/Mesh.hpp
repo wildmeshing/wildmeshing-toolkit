@@ -26,6 +26,10 @@ public:
     // dimension is the dimension of the top level simplex in this mesh
     // That is, a TriMesh is a 2, a TetMesh is a 3
     Mesh(const long& dimension);
+    Mesh(Mesh&& other);
+    Mesh(const Mesh& other);
+    Mesh& operator=(const Mesh& other);
+    Mesh& operator=(Mesh&& other);
     virtual ~Mesh();
 
     void serialize(MeshWriter& writer);
@@ -35,15 +39,30 @@ public:
      * @param type the type of tuple, can be vertex/edge/triangle/tetrahedron
      * @return vector of Tuples referring to each type
      */
-    std::vector<Tuple> get_all(const PrimitiveType& type) const;
+    std::vector<Tuple> get_all(PrimitiveType type) const;
 
     /**
      * Removes all unset space
      */
     void clean();
 
-    virtual void split_edge(const Tuple& t) = 0;
-    virtual void collapse_edge(const Tuple& t) = 0;
+
+    // Split and collapse are the two atomic operations we want to support for each type of mesh.
+    // These functions are intended to be called within an single Operation and
+    // not on their own and the semantics between each derived Mesh class and
+    // its SplitEdge and CollapseEdge operations should be treated as internal
+    // implementation deatils.
+    //
+    // As such, the split_edge and collapse_edge functions JUST implement the
+    // updates to topological updates and any precondition / postcondition checks
+    // should be implemented by the user.
+    // 
+    // These functions take in a single tuple, referring to the edge being
+    // operated on, and return a single tuple that refers to the new topology.
+    // This returned tuple has specific meaning for each derived Mesh class
+
+    virtual Tuple split_edge(const Tuple& t) = 0;
+    virtual Tuple collapse_edge(const Tuple& t) = 0;
 
     template <typename T>
     MeshAttributeHandle<T> register_attribute(
@@ -71,6 +90,8 @@ public:
 
     ConstAccessor<char> get_flag_accessor(PrimitiveType type) const;
     ConstAccessor<long> get_cell_hash_accessor() const;
+    ConstAccessor<char> get_const_flag_accessor(PrimitiveType type) const;
+    ConstAccessor<long> get_const_cell_hash_accessor() const;
 
 
     // utility function for getting a cell's hash - slow because it creates a new accessor
@@ -122,7 +143,7 @@ public:
                     d-2 -> switch face
                     d-3 -> switch tetrahedron
     */
-    virtual Tuple switch_tuple(const Tuple& tuple, const PrimitiveType& type) const = 0;
+    virtual Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const = 0;
 
 
     void set_capacities_from_flags();
@@ -176,7 +197,7 @@ protected:
                     d-3 -> tetrahedron
         * @return long id of the entity
     */
-    virtual long id(const Tuple& tuple, const PrimitiveType& type) const = 0;
+    virtual long id(const Tuple& tuple, PrimitiveType type) const = 0;
     long id(const Simplex& s) const { return id(s.tuple(), s.primitive_type()); }
 
     // specifies the number of simplices of each type and resizes attributes appropritely

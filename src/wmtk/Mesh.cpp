@@ -7,6 +7,10 @@
 
 namespace wmtk {
 
+Mesh::Mesh(Mesh&& other) = default;
+Mesh::Mesh(const Mesh& other) = default;
+Mesh& Mesh::operator=(const Mesh& other) = default;
+Mesh& Mesh::operator=(Mesh&& other) = default;
 Mesh::Mesh(const long& dimension)
     : m_attribute_manager(dimension + 1)
     , m_cell_hash_handle(register_attribute<long>("hash", static_cast<PrimitiveType>(dimension), 1))
@@ -20,7 +24,7 @@ Mesh::Mesh(const long& dimension)
 
 Mesh::~Mesh() = default;
 
-std::vector<Tuple> Mesh::get_all(const PrimitiveType& type) const
+std::vector<Tuple> Mesh::get_all(PrimitiveType type) const
 {
     ConstAccessor<char> flag_accessor = get_flag_accessor(type);
     std::vector<Tuple> ret;
@@ -119,6 +123,10 @@ void Mesh::set_capacities(std::vector<long> capacities)
 }
 ConstAccessor<char> Mesh::get_flag_accessor(PrimitiveType type) const
 {
+    return get_const_flag_accessor(type);
+}
+ConstAccessor<char> Mesh::get_const_flag_accessor(PrimitiveType type) const
+{
     return create_const_accessor(m_flag_handles.at(get_simplex_dimension(type)));
 }
 Accessor<char> Mesh::get_flag_accessor(PrimitiveType type)
@@ -126,9 +134,14 @@ Accessor<char> Mesh::get_flag_accessor(PrimitiveType type)
     return create_accessor(m_flag_handles.at(get_simplex_dimension(type)));
 }
 
-ConstAccessor<long> Mesh::get_cell_hash_accessor() const
+ConstAccessor<long> Mesh::get_const_cell_hash_accessor() const
 {
     return create_const_accessor(m_cell_hash_handle);
+}
+
+ConstAccessor<long> Mesh::get_cell_hash_accessor() const
+{
+    return get_const_cell_hash_accessor();
 }
 Accessor<long> Mesh::get_cell_hash_accessor()
 {

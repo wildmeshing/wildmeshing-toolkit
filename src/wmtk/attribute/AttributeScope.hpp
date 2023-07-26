@@ -64,8 +64,11 @@ private:
 
     long depth() const;
 
+    long checkpoint_index() const { return m_checkpoint_index; }
+
 private:
     std::unique_ptr<AttributeScope<T>> m_parent;
+    long m_checkpoint_index = -1;
 };
 
 } // namespace wmtk

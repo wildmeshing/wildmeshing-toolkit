@@ -12,7 +12,7 @@ public:
     std::string name() const override;
 
 
-    std::vector<Tuple> modified_triangles() const override;
+    std::vector<Tuple> modified_triangles() const ;
 
 
 protected:

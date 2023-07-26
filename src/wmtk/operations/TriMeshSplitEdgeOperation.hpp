@@ -11,9 +11,19 @@ public:
     std::string name() const override;
 
 
-    std::vector<Tuple> modified_triangles() const override;
+    std::vector<Tuple> triangle_onering() const ;
+    std::vector<Tuple> triangle_tworing() const ;
+    std::vector<Tuple> edge_onering() const ;
 
     Tuple new_vertex() const;
+    //std::vector<Tuple> new_triangles() const ;
+    //std::vector<Tuple> new_edges() const ;
+
+    //std::array<Tuple,2> spline_edges() const;
+    //std::vector<Tuple> rib_edges() const;
+
+
+
 
 protected:
     bool execute() override;

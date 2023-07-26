@@ -15,6 +15,11 @@ struct AttributeManager
 {
     AttributeManager(long size);
     ~AttributeManager();
+    AttributeManager(const AttributeManager& o);
+    AttributeManager(AttributeManager&& o);
+    AttributeManager& operator=(const AttributeManager& o);
+    AttributeManager& operator=(AttributeManager&& o);
+
     //=========================================================
     // Storage of Mesh Attributes
     //=========================================================
@@ -22,6 +27,7 @@ struct AttributeManager
     std::vector<MeshAttributes<long>> m_long_attributes;
     std::vector<MeshAttributes<double>> m_double_attributes;
     std::vector<MeshAttributes<Rational>> m_rational_attributes;
+
 
     // max index used for each type of simplex
     std::vector<long> m_capacities;

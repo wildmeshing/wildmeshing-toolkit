@@ -1,10 +1,17 @@
 #pragma once
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/TriMesh_operations.hpp>
 
 namespace wmtk::tests {
 class DEBUG_TriMesh : public TriMesh
 {
 public:
+    using TriMesh::TriMesh;
+    DEBUG_TriMesh(const TriMesh& m): TriMesh(m) {}
+    DEBUG_TriMesh(TriMesh&& m): TriMesh(std::move(m)) {}
+    using TriMesh::operator=;
+
+
     auto edge_tuple_between_v1_v2(const long v1, const long v2, const long fid) const -> Tuple
     {
         ConstAccessor<long> fv = create_accessor<long>(m_fv_handle);
@@ -57,5 +64,15 @@ public:
 
 
     void reserve_attributes(PrimitiveType type, long size) { Mesh::reserve_attributes(type, size); }
+
+
+    using TriMesh::tuple_from_id;
+    long id(const Tuple& tuple, PrimitiveType type) const override
+    {
+        return TriMesh::id(tuple, type);
+    }
+    long id(const Simplex& s) const { return id(s.tuple(), s.primitive_type()); }
+    TriMeshOperationExecutor get_tmoe() { return TriMeshOperationExecutor(*this); }
+    TriMeshOperationExecutor get_tmoe(const Tuple& t) { return TriMeshOperationExecutor(*this, t); }
 };
 } // namespace wmtk::tests
