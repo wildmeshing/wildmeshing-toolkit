@@ -46,5 +46,14 @@ public:
     Tuple(Tuple&& other) = default;
     Tuple& operator=(const Tuple& other) = default;
     Tuple& operator=(Tuple&& other) = default;
+
+    bool operator ==(const Tuple &other) const {
+        return m_local_vid == other.m_local_vid &&
+               m_local_eid == other.m_local_eid &&
+               m_local_fid == other.m_local_fid &&
+               m_global_cid == other.m_global_cid &&
+               m_hash == other.m_hash;
+    }
+
 };
 } // namespace wmtk
