@@ -354,7 +354,7 @@ TEST_CASE("glue new triangle", "[old faces not recycled]")
         }
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        auto state = m.get_tmoe();
+        auto state = m.get_tmoe(edge);
 
         //  create new vertex
         std::vector<long> new_vids = state.request_simplex_indices(PrimitiveType::Vertex, 1);
