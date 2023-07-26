@@ -110,7 +110,10 @@ public:
     // check if lnk(a) ∩ lnk(b) == lnk(ab)
     //////////////////////////////////
     static bool link_cond(Tuple t, const Mesh& m);
+    static bool link_cond_bd_2d(Tuple t, const Mesh& m);
 
+    // could be a replacement for link_cond_bd_2d
+    static bool edge_collapse_possible_2d(Tuple t, const Mesh& m);
     //////////////////////////////////
     // k-ring
     //////////////////////////////////

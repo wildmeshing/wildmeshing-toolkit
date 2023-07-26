@@ -88,7 +88,7 @@ void TriMesh::TriMeshOperationExecutor::delete_simplices()
 {
     for (int d = 0; d < 3; d++) {
         for (long& simplex_id : simplices_to_delete[d]) {
-            flag_accessors[d].scalar_attribute(simplex_id) = 1;
+            flag_accessors[d].scalar_attribute(simplex_id) = 0;
         }
     }
 }
@@ -137,6 +137,10 @@ void TriMesh::TriMeshOperationExecutor::merge()
             return; // TODO: throw exception, should be detected by link condition
         }
 
+        if (FaceDatas[face_index].ears[0].fid == FaceDatas[face_index].ears[1].fid) {
+            return; // TODO: throw exception, non-manifold
+        }
+
         // change VF for V_A,V_C
         long& vf_a = vf_accessor.scalar_attribute(end_point_vids[0]);
         long& vf_c = vf_accessor.scalar_attribute(FaceDatas[face_index].V_C_id);
@@ -179,8 +183,10 @@ Tuple TriMesh::collapse_edge(const Tuple& t)
     for (long& f : faces_in_open_star_B_id) {
         for (long index = 0; index < 3; index++) {
             if (state.fv_accessor.vector_attribute(f)[index] == state.end_point_vids[1])
+            {
                 state.fv_accessor.vector_attribute(f)[index] = state.end_point_vids[0];
-            break;
+                break;
+            }
         }
     }
 
@@ -231,12 +237,10 @@ std::array<long, 2> TriMesh::TriMeshOperationExecutor::glue_new_triangle_topolog
     const PerFaceData& face_data)
 {
     // create new faces
-    m_mesh.reserve_attributes(PrimitiveType::Face, m_mesh.capacity(PrimitiveType::Face) + 2 + 1);
     std::vector<long> new_fids = this->request_simplex_indices(PrimitiveType::Face, 2);
     assert(new_fids.size() == 2);
     // std::array<long, 2> = {new_fids[0], new_fids[1]};
     // create new edges
-    m_mesh.reserve_attributes(PrimitiveType::Edge, m_mesh.capacity(PrimitiveType::Edge) + 1 + 2);
 
     std::vector<long> spine_edge = this->request_simplex_indices(PrimitiveType::Edge, 1);
     assert(spine_edge[0] > -1);
@@ -272,6 +276,11 @@ std::array<long, 2> TriMesh::TriMeshOperationExecutor::glue_new_triangle_topolog
                 my_fe(j) = spine_eid;
             }
 
+            if (my_fe(j) == E_AB_id) {
+                // FE of the replacement edge
+                my_fe(j) = replacement_eids[i];
+            }
+
             if (my_fv(j) == other_ear_vid) {
                 // FV of the new to new
                 my_fv(j) = new_vid;
@@ -285,13 +294,6 @@ std::array<long, 2> TriMesh::TriMeshOperationExecutor::glue_new_triangle_topolog
 
         // EF of the new
         ef_accessor.scalar_attribute(replacement_eids[i]) = my_fid;
-
-        // FF of the boundary edge. Set this to the old neighbor for now
-        // will handle properly when gluing faces across boundary AB
-        // TODO: make sure that we cache this outdated neighbor insted of reading from it.
-        // This assumes that the old fid is not re-used
-        ff_accessor.vector_attribute(my_fid)(m_operating_tuple.m_local_eid) =
-            ff_accessor.vector_attribute(deleted_fid)(m_operating_tuple.m_local_eid);
     }
 
     // use first new fid as the fid for new vertex, spine edge, and opposing vertex
@@ -321,7 +323,6 @@ Tuple TriMesh::TriMeshOperationExecutor::split_edge()
         simplices_to_delete[simplex_d.dimension()].emplace_back(
             m_mesh.id(simplex_d.tuple(), simplex_d.primitive_type()));
     }
-
     // create new vertex
     std::vector<long> new_vids = this->request_simplex_indices(PrimitiveType::Vertex, 1);
     assert(new_vids.size() == 1);

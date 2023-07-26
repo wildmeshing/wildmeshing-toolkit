@@ -12,8 +12,9 @@ public:
     std::string name() const override;
 
 
-    std::vector<Tuple> modified_triangles() const ;
+    std::vector<Tuple> modified_triangles() const;
 
+    static PrimitiveType primitive_type() { return PrimitiveType::Edge; }
 
 protected:
     bool execute() override;

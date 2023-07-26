@@ -70,7 +70,7 @@ DEBUG_TriMesh test_collapse(const DEBUG_TriMesh& mesh, long edge_index, bool sho
 }
 } // namespace
 
-TEST_CASE("trimesh split collapse factories")
+TEST_CASE("trimesh split collapse factories", "[.]")
 {
     {
         DEBUG_TriMesh m;
