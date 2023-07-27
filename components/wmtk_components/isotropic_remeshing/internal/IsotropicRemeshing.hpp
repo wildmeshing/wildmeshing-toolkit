@@ -11,9 +11,10 @@ class IsotropicRemeshing
     TriMesh* m_mesh;
     double m_length_min = std::numeric_limits<double>::max();
     double m_length_max = std::numeric_limits<double>::lowest();
+    bool m_lock_boundary = true;
 
 public:
-    IsotropicRemeshing(TriMesh* mesh, const double length);
+    IsotropicRemeshing(TriMesh* mesh, const double length, const bool lock_boundary);
 
     void remeshing(const long iterations);
 
