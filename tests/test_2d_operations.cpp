@@ -650,8 +650,12 @@ TEST_CASE("collapse edge")
 
         REQUIRE(state.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(2)) == 0);
         REQUIRE(state.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(7)) == 0);
-        REQUIRE(fv_accessor.vector_attribute(3)(0) == 4);
-        REQUIRE(fv_accessor.vector_attribute(4)(0) == 4);
+        REQUIRE(fv_accessor.vector_attribute(0)(1) == 9);
+        REQUIRE(fv_accessor.vector_attribute(1)(0) == 9);
+        REQUIRE(fv_accessor.vector_attribute(3)(0) == 9);
+        REQUIRE(fv_accessor.vector_attribute(5)(2) == 9);
+        REQUIRE(fv_accessor.vector_attribute(6)(2) == 9);
+        REQUIRE(fv_accessor.vector_attribute(4)(0) == 9);
     }
     SECTION("case2")
     {
@@ -680,9 +684,10 @@ TEST_CASE("collapse edge")
 
         REQUIRE(state.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(0)) == 0);
         REQUIRE(state.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(1)) == 0);
-        REQUIRE(fv_accessor.vector_attribute(2)(0) == 0);
-        REQUIRE(fv_accessor.vector_attribute(5)(2) == 0);
-        REQUIRE(fv_accessor.vector_attribute(6)(2) == 0);
-        REQUIRE(fv_accessor.vector_attribute(7)(0) == 0);
+
+        REQUIRE(fv_accessor.vector_attribute(2)(0) == 9);
+        REQUIRE(fv_accessor.vector_attribute(5)(2) == 9);
+        REQUIRE(fv_accessor.vector_attribute(6)(2) == 9);
+        REQUIRE(fv_accessor.vector_attribute(7)(0) == 9);
     }
 }

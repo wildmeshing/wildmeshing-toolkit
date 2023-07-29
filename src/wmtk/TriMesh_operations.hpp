@@ -66,7 +66,7 @@ public:
         const long old_fid,
         const long eid);
 
-    void merge();
+    void merge(const long &new_vid);
     Tuple split_edge();
 
     /**

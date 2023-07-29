@@ -128,8 +128,9 @@ void TriMesh::TriMeshOperationExecutor::glue_ear_to_face(
     }
 }
 
-void TriMesh::TriMeshOperationExecutor::merge()
+void TriMesh::TriMeshOperationExecutor::merge(const long &new_vid)
 {
+    simplices_to_delete[0].push_back(end_point_vids[0]);
     simplices_to_delete[0].push_back(end_point_vids[1]);
     simplices_to_delete[1].push_back(E_AB_id);
     for (int face_index = 0; face_index < FaceDatas.size(); face_index++) {
@@ -141,18 +142,18 @@ void TriMesh::TriMeshOperationExecutor::merge()
             return; // TODO: throw exception, non-manifold
         }
 
-        // change VF for V_A,V_C
-        long& vf_a = vf_accessor.scalar_attribute(end_point_vids[0]);
+        // change VF for V_new,V_C
+        long& vf_new = vf_accessor.scalar_attribute(new_vid);
         long& vf_c = vf_accessor.scalar_attribute(FaceDatas[face_index].V_C_id);
         const long f_ear_l = FaceDatas[face_index].ears[0].fid;
         const long f_ear_r = FaceDatas[face_index].ears[1].fid;
-        vf_a = (f_ear_l < 0) ? f_ear_r : f_ear_l;
-        vf_c = vf_a;
+        vf_c = (f_ear_l < 0) ? f_ear_r : f_ear_l;
+        vf_new = vf_c;
 
         // change EF for E_AC
         const long e_ac = FaceDatas[face_index].ears[0].eid;
         long& ef_ac = ef_accessor.scalar_attribute(e_ac);
-        ef_ac = vf_a;
+        ef_ac = vf_c;
 
         // change FF and FE for ears
         glue_ear_to_face(f_ear_l, f_ear_r, FaceDatas[face_index].deleted_fid, e_ac);
@@ -168,24 +169,32 @@ Tuple TriMesh::collapse_edge(const Tuple& t)
     // TODO: check link_cond before collapse
     TriMeshOperationExecutor state(*this, t);
 
+    // create new vertex
+    std::vector<long> new_vids = state.request_simplex_indices(PrimitiveType::Vertex, 1);
+    assert(new_vids.size() == 1);
+    const long new_vid = new_vids[0];
+
     // get faces in open_star(B)
-    auto star_B_f =
-        SimplicialComplex::open_star(Simplex(PV, switch_tuple(t, PV)), *this).get_simplices(PF);
-    std::vector<long> faces_in_open_star_B_id;
+    auto star_A_f = SimplicialComplex::open_star(Simplex(PV, t), *this).get_simplices(PF);
+    auto star_B_f = SimplicialComplex::open_star(Simplex(PV, switch_tuple(t, PV)), *this).get_simplices(PF);
+    std::vector<long> faces_to_change_fv;
     for (const Simplex& simplex : star_B_f) {
-        faces_in_open_star_B_id.push_back(id(simplex.tuple(), PF));
+        faces_to_change_fv.push_back(id(simplex.tuple(), PF));
+    }
+    for (const Simplex& simplex : star_A_f) {
+        faces_to_change_fv.push_back(id(simplex.tuple(), PF));
     }
 
     // merge
-    state.merge();
+    state.merge(new_vid);
 
     // change FV for open_star_faces(V_B)
-    for (long& f : faces_in_open_star_B_id) {
+    for (long& f : faces_to_change_fv) {
         for (long index = 0; index < 3; index++) {
-            if (state.fv_accessor.vector_attribute(f)[index] == state.end_point_vids[1])
+            if (state.fv_accessor.vector_attribute(f)[index] == state.end_point_vids[1] || state.fv_accessor.vector_attribute(f)[index] == state.end_point_vids[0])
             {
-                state.fv_accessor.vector_attribute(f)[index] = state.end_point_vids[0];
-                break;
+                state.fv_accessor.vector_attribute(f)[index] = new_vid;
+                // break;
             }
         }
     }
@@ -194,7 +203,7 @@ Tuple TriMesh::collapse_edge(const Tuple& t)
     // delete simplices
     state.delete_simplices();
     // TODO: figure out how to make this more canonical (i.e similar to the previous implementation)
-    return tuple_from_id(PrimitiveType::Vertex, state.end_point_vids[0]);
+    return tuple_from_id(PrimitiveType::Vertex, new_vid);
 }
 
 void TriMesh::TriMeshOperationExecutor::glue_new_faces_across_AB(
