@@ -73,7 +73,8 @@ public:
 
     template <typename T>
     MeshAttributeHandle<T> get_attribute_handle(
-        const std::string& name); // block standard topology tools
+        const std::string& name,
+        const PrimitiveType ptype) const; // block standard topology tools
 
     template <typename T>
     Accessor<T> create_accessor(const MeshAttributeHandle<T>& handle);
@@ -264,6 +265,17 @@ template <typename T>
 ConstAccessor<T> Mesh::create_accessor(const MeshAttributeHandle<T>& handle) const
 {
     return create_const_accessor(handle);
+}
+
+template <typename T>
+MeshAttributeHandle<T> Mesh::get_attribute_handle(
+    const std::string& name,
+    const PrimitiveType ptype) const
+{
+    MeshAttributeHandle<T> r;
+    r.m_base_handle = m_attribute_manager.get<T>(ptype).attribute_handle(name);
+    r.m_primitive_type = ptype;
+    return r;
 }
 
 } // namespace wmtk
