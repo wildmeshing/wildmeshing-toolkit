@@ -14,6 +14,7 @@ set(TEST_SOURCES
     test_tuple_2d.cpp
 	test_tuple_3d.cpp
     test_io.cpp
+    test_execution.cpp
     test_simplicial_complex.cpp
     test_2d_operations.cpp
     test_2d_operation_construction.cpp
