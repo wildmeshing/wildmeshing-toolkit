@@ -2,17 +2,36 @@
 #include <wmtk/io/MeshWriter.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 #include "PerThreadAttributeScopeStacks.hpp"
+#include "PerThreadAttributesCheckpointHandler.hpp"
 namespace wmtk {
 AttributeManager::AttributeManager(long size)
     : m_char_attributes(size)
     , m_long_attributes(size)
     , m_double_attributes(size)
+    , m_rational_attributes(size)
     , m_capacities(size, 0)
+    , m_checkpoint_handler(new PerThreadAttributesCheckpointHandler())
 {}
 
-AttributeManager::AttributeManager(const AttributeManager& o) = default;
+AttributeManager::AttributeManager(const AttributeManager& o)
+    : m_char_attributes(o.m_char_attributes)
+    , m_long_attributes(o.m_long_attributes)
+    , m_double_attributes(o.m_double_attributes)
+    , m_rational_attributes(o.m_rational_attributes)
+    , m_capacities(o.m_capacities)
+    , m_checkpoint_handler(new PerThreadAttributesCheckpointHandler(*o.m_checkpoint_handler))
+{}
 AttributeManager::AttributeManager(AttributeManager&& o) = default;
-AttributeManager& AttributeManager::operator=(const AttributeManager& o) = default;
+AttributeManager& AttributeManager::operator=(const AttributeManager& o)
+{
+    m_char_attributes = o.m_char_attributes;
+    m_long_attributes = o.m_long_attributes;
+    m_double_attributes = o.m_double_attributes;
+    m_rational_attributes = o.m_rational_attributes;
+    m_capacities = o.m_capacities;
+    *m_checkpoint_handler = *o.m_checkpoint_handler;
+    return *this;
+}
 AttributeManager& AttributeManager::operator=(AttributeManager&& o) = default;
 
 

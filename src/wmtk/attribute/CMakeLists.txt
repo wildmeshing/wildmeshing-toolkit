@@ -21,5 +21,9 @@ set(SRC_FILES
     PerThreadAttributeScopeStacks.cpp
     AttributeScopeHandle.hpp
     AttributeScopeHandle.cpp
+    PerThreadAttributesCheckpointHandler.hpp
+    PerThreadAttributesCheckpointHandler.cpp
+    AttributesCheckpointHandle.hpp
+    AttributesCheckpointHandle.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
