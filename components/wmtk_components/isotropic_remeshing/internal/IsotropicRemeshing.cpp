@@ -29,13 +29,14 @@ void IsotropicRemeshing::remeshing(const long iterations)
 
 void IsotropicRemeshing::split_long_edges()
 {
-    throw "implementation missing";
+    throw "Very bad implementation. DO NOT USE!";
     // This is not how it's supposed to be done.
     // Do not copy!!!
 
     const std::vector<Tuple> edges = m_mesh->get_all(wmtk::PrimitiveType::Edge);
 
-    MeshAttributeHandle<double> pts_attr = m_mesh->get_attribute_handle<double>("position");
+    MeshAttributeHandle<double> pts_attr =
+        m_mesh->get_attribute_handle<double>("position", wmtk::PrimitiveType::Vertex);
     auto pts_accessor = m_mesh->create_const_accessor(pts_attr);
 
     for (const Tuple& e : edges) {
@@ -53,8 +54,6 @@ void IsotropicRemeshing::split_long_edges()
             m_mesh->split_edge(e);
         }
     }
-
-    throw "implementation missing";
 }
 
 void IsotropicRemeshing::collapse_short_edges()
@@ -65,7 +64,8 @@ void IsotropicRemeshing::collapse_short_edges()
 
     const std::vector<Tuple> edges = m_mesh->get_all(wmtk::PrimitiveType::Edge);
 
-    MeshAttributeHandle<double> pts_attr = m_mesh->get_attribute_handle<double>("position");
+    MeshAttributeHandle<double> pts_attr =
+        m_mesh->get_attribute_handle<double>("position", wmtk::PrimitiveType::Vertex);
     auto pts_accessor = m_mesh->create_const_accessor(pts_attr);
 
     for (const Tuple& e : edges) {
@@ -97,7 +97,8 @@ void IsotropicRemeshing::smooth_vertices()
     // TODO operators should be used here instead of modifying points directly
 
     const std::vector<Tuple> vertices = m_mesh->get_all(wmtk::PrimitiveType::Vertex);
-    MeshAttributeHandle<double> pts_attr = m_mesh->get_attribute_handle<double>("position");
+    MeshAttributeHandle<double> pts_attr =
+        m_mesh->get_attribute_handle<double>("position", wmtk::PrimitiveType::Vertex);
     auto pts_accessor = m_mesh->create_accessor(pts_attr);
 
     for (const Tuple& v : vertices) {
