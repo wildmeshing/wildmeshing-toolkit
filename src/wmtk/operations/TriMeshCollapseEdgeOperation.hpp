@@ -13,7 +13,7 @@ public:
 
 
     std::vector<Tuple> modified_triangles() const;
-
+    Tuple return_tuple() const;
     static PrimitiveType primitive_type() { return PrimitiveType::Edge; }
 
 protected:

@@ -13,10 +13,7 @@ bool TriMeshSplitEdgeOperation::execute()
 {
 
     TriMesh& m = dynamic_cast<TriMesh&>(m_mesh);
-
-
-
-    m.split_edge(m_input_tuple);
+    m_output_tuple = m.split_edge(m_input_tuple);
 
         //    for(const acc: tri_accessors) {
         //    ConstACcessor old_tri_acc(acc, checkpoint);
@@ -31,9 +28,7 @@ bool TriMeshSplitEdgeOperation::execute()
         //        acc.assign(old,edge);
         //    }
         //}
-            return true;;
-
-    return false;
+    return true;
 }
 bool TriMeshSplitEdgeOperation::before() const
 {
@@ -65,6 +60,10 @@ Tuple TriMeshSplitEdgeOperation::new_vertex() const
     return m_output_tuple;
 }
 
+Tuple TriMeshSplitEdgeOperation::return_tuple() const
+{
+    return m_output_tuple;
+}
 ///std::vector<Tuple> TriMeshSplitEdgeOperation::triangle_onering() const
 ///{
 ///    Simplex v(PrimitiveType::Vertex, new_vertex());

@@ -324,6 +324,9 @@ Tuple TriMesh::split_edge(const Tuple& t)
 }
 Tuple TriMesh::TriMeshOperationExecutor::split_edge()
 {
+
+    std::cout << "vid before split edge is " << m_mesh.id(m_operating_tuple, PrimitiveType::Vertex) << std::endl;
+
     // delete star(edge)
     SimplicialComplex edge_open_star =
         wmtk::SimplicialComplex::open_star(Simplex(PrimitiveType::Edge, m_operating_tuple), m_mesh);

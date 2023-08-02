@@ -29,7 +29,10 @@ std::string TriMeshCollapseEdgeOperation::name() const
     return "tri_mesh_collapse_edge";
 }
 
-
+Tuple TriMeshCollapseEdgeOperation::return_tuple() const
+{
+    return m_output_tuple;
+}
 std::vector<Tuple> TriMeshCollapseEdgeOperation::modified_triangles() const
 {
     Simplex v(PrimitiveType::Vertex, m_output_tuple);
