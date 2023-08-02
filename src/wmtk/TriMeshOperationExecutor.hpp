@@ -7,8 +7,6 @@ namespace wmtk {
 class TriMesh::TriMeshOperationExecutor
 {
 public:
-    TriMeshOperationExecutor();
-    TriMeshOperationExecutor(TriMesh& m);
     TriMeshOperationExecutor(TriMesh& m, const Tuple& operating_tuple);
     void delete_simplices();
     void update_cell_hash();
@@ -35,26 +33,36 @@ public:
     //          C'
     // the neighbors are stored in the order of A, B, C, D if they exist
     // vid, ear fid (-1 if it doesn't exit), ear eid
+
+    /**
+     * An ear is a face that is adjacent to a face that is incident to the edge on which the
+     * operation is performed. In other words, the ears are the neighboring faces to the ones that
+     * will be deleted by the operation.
+     */
     struct EarGlobalIDs
     {
         long fid = -1; // global fid of the ear, -1 if it doesn't exist
         long eid = -1; // global eid of the ear, -1 if it doesn't exist
     };
-    struct PerFaceData
+
+    /**
+     * Data on the incident face relevant for performing operations.
+     */
+    struct IncidentFaceData
     {
-        long V_C_id; // opposing vid
-        long deleted_fid = -1; // the face that will be deleted
+        long opposite_vid = -1; // opposing vid
+        long fid = -1; // the face that will be deleted
         std::array<EarGlobalIDs, 2> ears; // ear
     };
 
 
     // common simplicies
-    std::array<long, 2> end_point_vids; // V_A_id, V_B_id;
-    long E_AB_id;
+    std::array<long, 2> m_end_point_vids; // V_A_id, V_B_id;
+    long m_operating_tuple_id;
 
-    PerFaceData get_per_face_data(const Tuple& t);
+    IncidentFaceData get_incident_face_data(const Tuple& t);
     // simplices required per-face (other than those above)
-    std::vector<PerFaceData> FaceDatas;
+    std::vector<IncidentFaceData> m_incident_face_datas;
     void glue_ear_to_face(
         const long ear_fid,
         const long new_face_fid,
@@ -74,7 +82,7 @@ public:
     std::array<long, 2> glue_new_triangle_topology(
         const long new_vid,
         const std::vector<long>& replacement_eids,
-        const PerFaceData& face_data);
+        const IncidentFaceData& face_data);
     void glue_new_faces_across_AB(
         const std::array<long, 2> new_fids_top,
         const std::array<long, 2> new_fids_bottom);

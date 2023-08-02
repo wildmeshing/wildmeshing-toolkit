@@ -80,10 +80,6 @@ public:
     /**
      * @brief returns the TriMeshOperationExecutor
      */
-    TriMeshOperationExecutor get_tmoe() { return TriMeshOperationExecutor(*this); }
-    /**
-     * @brief returns the TriMeshOperationExecutor
-     */
     TriMeshOperationExecutor get_tmoe(const Tuple& t) { return TriMeshOperationExecutor(*this, t); }
 };
 
