@@ -17,11 +17,11 @@ TriMesh::TriMeshOperationExecutor::get_incident_face_data(const Tuple& t)
     face_data.opposite_vid = m_mesh.id(m_mesh.switch_tuple(t1_edge, PV), PV);
     const Tuple t2_edge = m_mesh.switch_tuple(m_mesh.switch_tuple(t, PV), PE);
 
-    face_data.ears[0] = EarGlobalIDs{
+    face_data.ears[0] = EarFace{
         /*.fid = */ ff_accessor.vector_attribute(t1_edge)(t1_edge.m_local_eid),
         /*.eid = */ m_mesh.id(t1_edge, PE)};
 
-    face_data.ears[1] = EarGlobalIDs{
+    face_data.ears[1] = EarFace{
         /*.fid = */ ff_accessor.vector_attribute(t2_edge)(t2_edge.m_local_eid),
         /*.eid = */ m_mesh.id(t2_edge, PE)};
 
@@ -43,10 +43,10 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
     , m_operating_tuple(operating_tuple)
 
 {
-    m_end_point_vids[0] = m_mesh.id(m_operating_tuple, PV);
-    m_end_point_vids[1] = m_mesh.id(m_mesh.switch_tuple(m_operating_tuple, PV), PV);
+    m_incident_vids[0] = m_mesh.id(m_operating_tuple, PV);
+    m_incident_vids[1] = m_mesh.id(m_mesh.switch_tuple(m_operating_tuple, PV), PV);
 
-    m_operating_tuple_id = m_mesh.id(m_operating_tuple, PE);
+    m_operating_edge_id = m_mesh.id(m_operating_tuple, PE);
     simplices_to_delete.resize(3);
 
     m_incident_face_datas.emplace_back(get_incident_face_data(m_operating_tuple));
@@ -123,9 +123,9 @@ void TriMesh::TriMeshOperationExecutor::glue_ear_to_face(
 
 void TriMesh::TriMeshOperationExecutor::merge(const long& new_vid)
 {
-    simplices_to_delete[0].push_back(m_end_point_vids[0]);
-    simplices_to_delete[0].push_back(m_end_point_vids[1]);
-    simplices_to_delete[1].push_back(m_operating_tuple_id);
+    simplices_to_delete[0].push_back(m_incident_vids[0]);
+    simplices_to_delete[0].push_back(m_incident_vids[1]);
+    simplices_to_delete[1].push_back(m_operating_edge_id);
     for (int face_index = 0; face_index < m_incident_face_datas.size(); face_index++) {
         if (m_incident_face_datas[face_index].ears[0].fid < 0 &&
             m_incident_face_datas[face_index].ears[1].fid < 0) {
@@ -187,8 +187,8 @@ Tuple TriMesh::collapse_edge(const Tuple& t)
     // change FV for open_star_faces(V_B)
     for (long& f : faces_to_change_fv) {
         for (long index = 0; index < 3; index++) {
-            if (state.fv_accessor.vector_attribute(f)[index] == state.m_end_point_vids[1] ||
-                state.fv_accessor.vector_attribute(f)[index] == state.m_end_point_vids[0]) {
+            if (state.fv_accessor.vector_attribute(f)[index] == state.incident_vids()[1] ||
+                state.fv_accessor.vector_attribute(f)[index] == state.incident_vids()[0]) {
                 state.fv_accessor.vector_attribute(f)[index] = new_vid;
                 // break;
             }
@@ -252,11 +252,11 @@ std::array<long, 2> TriMesh::TriMeshOperationExecutor::glue_new_triangle_topolog
     long spine_eid = spine_edge[0];
 
     for (int i = 0; i < 2; ++i) {
-        const EarGlobalIDs& ear = face_data.ears[i];
-        const EarGlobalIDs& other_ear = face_data.ears[(i + 1) % 2];
+        const EarFace& ear = face_data.ears[i];
+        const EarFace& other_ear = face_data.ears[(i + 1) % 2];
 
-        const long ear_vid = m_end_point_vids[i];
-        const long other_ear_vid = m_end_point_vids[(i + 1) % 2];
+        const long ear_vid = m_incident_vids[i];
+        const long other_ear_vid = m_incident_vids[(i + 1) % 2];
         const long my_fid = new_fids[i];
         const long other_fid = new_fids[(i + 1) % 2];
         // dummy transfer for new face attributes
@@ -281,7 +281,7 @@ std::array<long, 2> TriMesh::TriMeshOperationExecutor::glue_new_triangle_topolog
                 my_fe(j) = spine_eid;
             }
 
-            if (my_fe(j) == m_operating_tuple_id) {
+            if (my_fe(j) == m_operating_edge_id) {
                 // FE of the replacement edge
                 my_fe(j) = replacement_eids[i];
             }

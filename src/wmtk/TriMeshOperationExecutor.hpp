@@ -39,7 +39,7 @@ public:
      * operation is performed. In other words, the ears are the neighboring faces to the ones that
      * will be deleted by the operation.
      */
-    struct EarGlobalIDs
+    struct EarFace
     {
         long fid = -1; // global fid of the ear, -1 if it doesn't exist
         long eid = -1; // global eid of the ear, -1 if it doesn't exist
@@ -52,17 +52,18 @@ public:
     {
         long opposite_vid = -1; // opposing vid
         long fid = -1; // the face that will be deleted
-        std::array<EarGlobalIDs, 2> ears; // ear
+        std::array<EarFace, 2> ears; // ear
     };
 
+    const std::vector<IncidentFaceData>& incident_face_datas() const
+    {
+        return m_incident_face_datas;
+    }
 
-    // common simplicies
-    std::array<long, 2> m_end_point_vids; // V_A_id, V_B_id;
-    long m_operating_tuple_id;
+    const std::array<long, 2>& incident_vids() const { return m_incident_vids; }
 
-    IncidentFaceData get_incident_face_data(const Tuple& t);
-    // simplices required per-face (other than those above)
-    std::vector<IncidentFaceData> m_incident_face_datas;
+    const long operating_edge_id() const { return m_operating_edge_id; }
+
     void glue_ear_to_face(
         const long ear_fid,
         const long new_face_fid,
@@ -92,5 +93,15 @@ public:
     std::vector<long> cells_to_update_hash;
     TriMesh& m_mesh;
     Tuple m_operating_tuple;
+
+private:
+    // common simplicies
+    std::array<long, 2> m_incident_vids; // V_A_id, V_B_id;
+    long m_operating_edge_id;
+
+    // simplices required per-face
+    std::vector<IncidentFaceData> m_incident_face_datas;
+
+    IncidentFaceData get_incident_face_data(const Tuple& t);
 };
 } // namespace wmtk

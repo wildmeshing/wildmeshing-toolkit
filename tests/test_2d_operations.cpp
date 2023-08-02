@@ -19,7 +19,7 @@ constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
 constexpr PrimitiveType PF = PrimitiveType::Face;
 
-TEST_CASE("get_incident_face_data", "[operations][2D]")
+TEST_CASE("incident_face_data", "[operations][2D]")
 {
     SECTION("single_face")
     {
@@ -37,20 +37,20 @@ TEST_CASE("get_incident_face_data", "[operations][2D]")
         REQUIRE(m._debug_id(edge, PV) == 0);
         REQUIRE(m._debug_id(edge, PF) == 0);
         REQUIRE(m._debug_id(m.switch_tuple(edge, PV), PV) == 2);
-        auto state = m.get_tmoe(edge);
+        auto executor = m.get_tmoe(edge);
 
-        const std::vector<TMOE::IncidentFaceData> face_datas = state.m_incident_face_datas;
+        const std::vector<TMOE::IncidentFaceData>& face_datas = executor.incident_face_datas();
         REQUIRE(face_datas.size() == 1);
-        const TMOE::IncidentFaceData face_data = face_datas[0];
-        REQUIRE(face_data.opposite_vid == 1);
-        REQUIRE(face_data.fid == 0);
+        const TMOE::IncidentFaceData& face_data = face_datas[0];
+        CHECK(face_data.opposite_vid == 1);
+        CHECK(face_data.fid == 0);
         REQUIRE(face_data.ears.size() == 2);
-        TMOE::EarGlobalIDs ear1 = face_data.ears[0];
-        TMOE::EarGlobalIDs ear2 = face_data.ears[1];
-        REQUIRE(ear1.fid == -1);
-        REQUIRE(ear1.eid > -1);
-        REQUIRE(ear2.fid == -1);
-        REQUIRE(ear2.eid > -1);
+        TMOE::EarFace ear1 = face_data.ears[0];
+        TMOE::EarFace ear2 = face_data.ears[1];
+        CHECK(ear1.fid == -1);
+        CHECK(ear1.eid > -1);
+        CHECK(ear2.fid == -1);
+        CHECK(ear2.eid > -1);
     }
     SECTION("one_ear")
     {
@@ -65,22 +65,20 @@ TEST_CASE("get_incident_face_data", "[operations][2D]")
 
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        const auto state = m.get_tmoe(edge);
-        const std::vector<TMOE::IncidentFaceData> face_datas = state.m_incident_face_datas;
+        const auto executor = m.get_tmoe(edge);
+        const std::vector<TMOE::IncidentFaceData>& face_datas = executor.incident_face_datas();
         REQUIRE(face_datas.size() == 1);
-        const TMOE::IncidentFaceData face_data = face_datas[0];
-        // TMOE::IncidentFaceData face_data = state.get_incident_face_data(edge);
-        REQUIRE(face_data.opposite_vid == 0);
-        REQUIRE(face_data.fid == 0);
+        const TMOE::IncidentFaceData& face_data = face_datas[0];
+        CHECK(face_data.opposite_vid == 0);
+        CHECK(face_data.fid == 0);
         REQUIRE(face_data.ears.size() == 2);
-        TMOE::EarGlobalIDs ear1 = face_data.ears[0];
-        TMOE::EarGlobalIDs ear2 = face_data.ears[1];
-        REQUIRE(ear1.fid == 1);
-        REQUIRE(ear1.eid > -1);
-        REQUIRE(ear2.fid == -1);
-        REQUIRE(ear2.eid > -1);
+        TMOE::EarFace ear1 = face_data.ears[0];
+        TMOE::EarFace ear2 = face_data.ears[1];
+        CHECK(ear1.fid == 1);
+        CHECK(ear1.eid > -1);
+        CHECK(ear2.fid == -1);
+        CHECK(ear2.eid > -1);
     }
-
     SECTION("two_ears")
     {
         //  3--1--- 0 --1- 4
@@ -94,20 +92,19 @@ TEST_CASE("get_incident_face_data", "[operations][2D]")
 
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        auto state = m.get_tmoe(edge);
-        const std::vector<TMOE::IncidentFaceData> face_datas = state.m_incident_face_datas;
+        auto executor = m.get_tmoe(edge);
+        const std::vector<TMOE::IncidentFaceData>& face_datas = executor.incident_face_datas();
         REQUIRE(face_datas.size() == 1);
-        const TMOE::IncidentFaceData face_data = face_datas[0];
-        // TMOE::IncidentFaceData face_data = state.get_incident_face_data(edge);
-        REQUIRE(face_data.opposite_vid == 0);
-        REQUIRE(face_data.fid == 0);
+        const TMOE::IncidentFaceData& face_data = face_datas[0];
+        CHECK(face_data.opposite_vid == 0);
+        CHECK(face_data.fid == 0);
         REQUIRE(face_data.ears.size() == 2);
-        TMOE::EarGlobalIDs ear1 = face_data.ears[0];
-        TMOE::EarGlobalIDs ear2 = face_data.ears[1];
-        REQUIRE(ear1.fid == 1);
-        REQUIRE(ear1.eid > -1);
-        REQUIRE(ear2.fid == 2);
-        REQUIRE(ear2.eid > -1);
+        TMOE::EarFace ear1 = face_data.ears[0];
+        TMOE::EarFace ear2 = face_data.ears[1];
+        CHECK(ear1.fid == 1);
+        CHECK(ear1.eid > -1);
+        CHECK(ear2.fid == 2);
+        CHECK(ear2.eid > -1);
     }
 }
 
@@ -122,15 +119,15 @@ TEST_CASE("delete_simplices", "[operations][2D]")
     simplices_to_delete[2] = std::vector<long>{m._debug_id(edge, PF)};
 
 
-    auto state = m.get_tmoe(edge);
-    state.simplices_to_delete = simplices_to_delete;
-    state.delete_simplices();
-    REQUIRE(state.flag_accessors[1].scalar_attribute(edge) == 0);
-    REQUIRE(state.flag_accessors[2].scalar_attribute(edge) == 0);
-    REQUIRE(state.ff_accessor.vector_attribute(edge)[0] == -1);
-    REQUIRE(state.ff_accessor.vector_attribute(edge)[1] == 2);
-    REQUIRE(state.ff_accessor.vector_attribute(edge)[2] == 1);
-    REQUIRE(state.ef_accessor.scalar_attribute(edge) == 0);
+    auto executor = m.get_tmoe(edge);
+    executor.simplices_to_delete = simplices_to_delete;
+    executor.delete_simplices();
+    REQUIRE(executor.flag_accessors[1].scalar_attribute(edge) == 0);
+    REQUIRE(executor.flag_accessors[2].scalar_attribute(edge) == 0);
+    REQUIRE(executor.ff_accessor.vector_attribute(edge)[0] == -1);
+    REQUIRE(executor.ff_accessor.vector_attribute(edge)[1] == 2);
+    REQUIRE(executor.ff_accessor.vector_attribute(edge)[2] == 1);
+    REQUIRE(executor.ef_accessor.scalar_attribute(edge) == 0);
 }
 
 TEST_CASE("operation_state", "[operations][2D]")
@@ -144,14 +141,14 @@ TEST_CASE("operation_state", "[operations][2D]")
         REQUIRE(m._debug_id(edge, PV) == 0);
         REQUIRE(m._debug_id(edge, PF) == 0);
         REQUIRE(m._debug_id(m.switch_tuple(edge, PV), PV) == 2);
-        auto state = m.get_tmoe(edge);
+        auto executor = m.get_tmoe(edge);
 
-        REQUIRE(state.flag_accessors.size() == 3);
-        REQUIRE(state.m_end_point_vids.size() == 2);
-        REQUIRE(state.m_end_point_vids[0] == 0);
-        REQUIRE(state.m_end_point_vids[1] == 2);
-        REQUIRE(state.m_operating_tuple_id == m._debug_id(edge, PE));
-        REQUIRE(state.m_incident_face_datas.size() == 1);
+        REQUIRE(executor.flag_accessors.size() == 3);
+        REQUIRE(executor.incident_vids().size() == 2);
+        REQUIRE(executor.incident_vids()[0] == 0);
+        REQUIRE(executor.incident_vids()[1] == 2);
+        REQUIRE(executor.operating_edge_id() == m._debug_id(edge, PE));
+        REQUIRE(executor.incident_face_datas().size() == 1);
     }
     SECTION("one_ear")
     {
@@ -159,16 +156,16 @@ TEST_CASE("operation_state", "[operations][2D]")
 
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        auto state = m.get_tmoe(edge);
+        auto executor = m.get_tmoe(edge);
 
-        REQUIRE(state.flag_accessors.size() == 3);
-        REQUIRE(state.m_end_point_vids.size() == 2);
-        REQUIRE(state.m_end_point_vids[0] == 1);
-        REQUIRE(state.m_end_point_vids[1] == 2);
-        REQUIRE(state.m_operating_tuple_id == m._debug_id(edge, PE));
-        REQUIRE(state.m_incident_face_datas.size() == 1);
+        REQUIRE(executor.flag_accessors.size() == 3);
+        REQUIRE(executor.incident_vids().size() == 2);
+        REQUIRE(executor.incident_vids()[0] == 1);
+        REQUIRE(executor.incident_vids()[1] == 2);
+        REQUIRE(executor.operating_edge_id() == m._debug_id(edge, PE));
+        REQUIRE(executor.incident_face_datas().size() == 1);
 
-        REQUIRE(state.m_incident_face_datas[0].ears.size() == 2);
+        REQUIRE(executor.incident_face_datas()[0].ears.size() == 2);
     }
     SECTION("interior_edge")
     {
@@ -187,30 +184,30 @@ TEST_CASE("operation_state", "[operations][2D]")
 
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        auto state = m.get_tmoe(edge);
+        auto executor = m.get_tmoe(edge);
 
-        REQUIRE(state.flag_accessors.size() == 3);
-        REQUIRE(state.m_end_point_vids.size() == 2);
-        REQUIRE(state.m_end_point_vids[0] == 1);
-        REQUIRE(state.m_end_point_vids[1] == 2);
-        REQUIRE(state.m_operating_tuple_id == m._debug_id(edge, PE));
-        REQUIRE(state.m_incident_face_datas.size() == 2);
+        REQUIRE(executor.flag_accessors.size() == 3);
+        REQUIRE(executor.incident_vids().size() == 2);
+        REQUIRE(executor.incident_vids()[0] == 1);
+        REQUIRE(executor.incident_vids()[1] == 2);
+        REQUIRE(executor.operating_edge_id() == m._debug_id(edge, PE));
+        REQUIRE(executor.incident_face_datas().size() == 2);
 
-        REQUIRE(state.m_incident_face_datas[0].opposite_vid == 0);
-        REQUIRE(state.m_incident_face_datas[0].fid == 0);
-        REQUIRE(state.m_incident_face_datas[0].ears.size() == 2);
-        TMOE::EarGlobalIDs ear1 = state.m_incident_face_datas[0].ears[0];
-        TMOE::EarGlobalIDs ear2 = state.m_incident_face_datas[0].ears[1];
+        REQUIRE(executor.incident_face_datas()[0].opposite_vid == 0);
+        REQUIRE(executor.incident_face_datas()[0].fid == 0);
+        REQUIRE(executor.incident_face_datas()[0].ears.size() == 2);
+        TMOE::EarFace ear1 = executor.incident_face_datas()[0].ears[0];
+        TMOE::EarFace ear2 = executor.incident_face_datas()[0].ears[1];
         REQUIRE(ear1.fid == 1);
         REQUIRE(ear1.eid > -1);
         REQUIRE(ear2.fid == -1);
         REQUIRE(ear2.eid > -1);
 
-        REQUIRE(state.m_incident_face_datas[1].opposite_vid == 4);
-        REQUIRE(state.m_incident_face_datas[1].fid == 2);
-        REQUIRE(state.m_incident_face_datas[1].ears.size() == 2);
-        ear1 = state.m_incident_face_datas[1].ears[0];
-        ear2 = state.m_incident_face_datas[1].ears[1];
+        REQUIRE(executor.incident_face_datas()[1].opposite_vid == 4);
+        REQUIRE(executor.incident_face_datas()[1].fid == 2);
+        REQUIRE(executor.incident_face_datas()[1].ears.size() == 2);
+        ear1 = executor.incident_face_datas()[1].ears[0];
+        ear2 = executor.incident_face_datas()[1].ears[1];
         REQUIRE(ear1.fid == -1);
         REQUIRE(ear1.eid > -1);
         REQUIRE(ear2.fid == -1);
@@ -231,10 +228,10 @@ TEST_CASE("glue_ear_to_face", "[operations][2D]")
     Tuple left_ear_edge = m.switch_tuple(edge, PE);
     REQUIRE(m._debug_id(left_ear_edge, PV) == 4);
     REQUIRE(m._debug_id(m.switch_tuple(left_ear_edge, PV), PV) == 1);
-    auto state = m.get_tmoe(edge);
+    auto executor = m.get_tmoe(edge);
     auto ff_accessor_before = m.create_base_accessor<long>(m.f_handle(PF));
     REQUIRE(ff_accessor_before.vector_attribute(1)(2) == 2);
-    state.glue_ear_to_face(1, 3, 2, m._debug_id(edge, PE));
+    executor.glue_ear_to_face(1, 3, 2, m._debug_id(edge, PE));
     auto ff_accessor_after = m.create_base_accessor<long>(m.f_handle(PF));
     REQUIRE(ff_accessor_after.vector_attribute(1)(2) == 3);
 }
@@ -271,8 +268,8 @@ TEST_CASE("glue_new_faces_across_AB", "[operations][2D]")
         REQUIRE(m._debug_id(edge, PV) == 0);
         REQUIRE(m._debug_id(edge, PF) == 0);
         REQUIRE(m._debug_id(m.switch_tuple(edge, PV), PV) == 2);
-        auto state = m.get_tmoe(edge);
-        REQUIRE(state.m_incident_face_datas.size() == 1);
+        auto executor = m.get_tmoe(edge);
+        REQUIRE(executor.incident_face_datas().size() == 1);
     }
     SECTION("interior_edge")
     {
@@ -299,14 +296,14 @@ TEST_CASE("glue_new_faces_across_AB", "[operations][2D]")
         m.reserve_attributes(PF, 10);
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        auto state = m.get_tmoe(edge);
+        auto executor = m.get_tmoe(edge);
 
-        REQUIRE(state.m_incident_face_datas.size() == 2);
+        REQUIRE(executor.incident_face_datas().size() == 2);
 
-        auto new_fids = state.request_simplex_indices(PF, 4);
+        auto new_fids = executor.request_simplex_indices(PF, 4);
         std::array<long, 2> new_fids_top = {new_fids[0], new_fids[1]};
         std::array<long, 2> new_fids_bottom = {new_fids[2], new_fids[3]};
-        state.glue_new_faces_across_AB(new_fids_top, new_fids_bottom);
+        executor.glue_new_faces_across_AB(new_fids_top, new_fids_bottom);
 
 
         long local_eid_top = 0;
@@ -346,24 +343,24 @@ TEST_CASE("glue_new_triangle", "[old faces not recycled][operations][2D]")
         }
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        auto state = m.get_tmoe(edge);
+        auto executor = m.get_tmoe(edge);
 
         //  create new vertex
-        std::vector<long> new_vids = state.request_simplex_indices(PV, 1);
+        std::vector<long> new_vids = executor.request_simplex_indices(PV, 1);
         REQUIRE(new_vids.size() == 1);
         const long new_vid = new_vids[0];
 
         // create new edges
-        std::vector<long> replacement_eids = state.request_simplex_indices(PE, 2);
+        std::vector<long> replacement_eids = executor.request_simplex_indices(PE, 2);
         REQUIRE(replacement_eids.size() == 2);
 
         std::vector<std::array<long, 2>> new_fids;
-        REQUIRE(state.m_incident_face_datas.size() == 1);
-        for (size_t i = 0; i < state.m_incident_face_datas.size(); ++i) {
-            const auto& face_data = state.m_incident_face_datas[i];
+        REQUIRE(executor.incident_face_datas().size() == 1);
+        for (size_t i = 0; i < executor.incident_face_datas().size(); ++i) {
+            const auto& face_data = executor.incident_face_datas()[i];
             // glue the topology
             std::array<long, 2> new_fid_per_face =
-                state.glue_new_triangle_topology(new_vid, replacement_eids, face_data);
+                executor.glue_new_triangle_topology(new_vid, replacement_eids, face_data);
             new_fids.emplace_back(new_fid_per_face);
         }
         auto fv_accessor = m.create_base_accessor<long>(m.f_handle(PV));
@@ -389,12 +386,12 @@ TEST_CASE("glue_new_triangle", "[old faces not recycled][operations][2D]")
         REQUIRE(fe_accessor.vector_attribute(new_fids[0][0])[1] == 5);
         REQUIRE(
             fe_accessor.vector_attribute(new_fids[0][0])[2] ==
-            state.m_incident_face_datas[0].ears[0].eid);
+            executor.incident_face_datas()[0].ears[0].eid);
 
         REQUIRE(fe_accessor.vector_attribute(new_fids[0][1])[0] == replacement_eids[1]);
         REQUIRE(
             fe_accessor.vector_attribute(new_fids[0][1])[1] ==
-            state.m_incident_face_datas[0].ears[1].eid);
+            executor.incident_face_datas()[0].ears[1].eid);
         REQUIRE(fe_accessor.vector_attribute(new_fids[0][1])[2] == 5);
 
         auto vf_accessor = m.create_base_accessor<long>(m.vf_handle());
@@ -433,23 +430,23 @@ TEST_CASE("glue_new_triangle", "[old faces not recycled][operations][2D]")
         }
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        auto state = m.get_tmoe(edge);
+        auto executor = m.get_tmoe(edge);
 
         // create new vertex
-        std::vector<long> new_vids = state.request_simplex_indices(PV, 1);
+        std::vector<long> new_vids = executor.request_simplex_indices(PV, 1);
         REQUIRE(new_vids.size() == 1);
         const long new_vid = new_vids[0];
 
         // create new edges
-        std::vector<long> replacement_eids = state.request_simplex_indices(PE, 2);
+        std::vector<long> replacement_eids = executor.request_simplex_indices(PE, 2);
         REQUIRE(replacement_eids.size() == 2);
 
         std::vector<std::array<long, 2>> new_fids;
-        for (size_t i = 0; i < state.m_incident_face_datas.size(); ++i) {
-            const auto& face_data = state.m_incident_face_datas[i];
+        for (size_t i = 0; i < executor.incident_face_datas().size(); ++i) {
+            const auto& face_data = executor.incident_face_datas()[i];
             // glue the topology
             std::array<long, 2> new_fid_per_face =
-                state.glue_new_triangle_topology(new_vid, replacement_eids, face_data);
+                executor.glue_new_triangle_topology(new_vid, replacement_eids, face_data);
             new_fids.emplace_back(new_fid_per_face);
         }
         auto fv_accessor = m.create_base_accessor<long>(m.f_handle(PV));
@@ -483,24 +480,24 @@ TEST_CASE("glue_new_triangle", "[old faces not recycled][operations][2D]")
         REQUIRE(fe_accessor.vector_attribute(new_fids[0][0])[1] == 9);
         REQUIRE(
             fe_accessor.vector_attribute(new_fids[0][0])[2] ==
-            state.m_incident_face_datas[0].ears[0].eid);
+            executor.incident_face_datas()[0].ears[0].eid);
 
         REQUIRE(fe_accessor.vector_attribute(new_fids[0][1])[0] == replacement_eids[1]);
         REQUIRE(
             fe_accessor.vector_attribute(new_fids[0][1])[1] ==
-            state.m_incident_face_datas[0].ears[1].eid);
+            executor.incident_face_datas()[0].ears[1].eid);
         REQUIRE(fe_accessor.vector_attribute(new_fids[0][1])[2] == 9);
 
         REQUIRE(fe_accessor.vector_attribute(new_fids[1][0])[1] == replacement_eids[0]);
         REQUIRE(fe_accessor.vector_attribute(new_fids[1][0])[0] == 10);
         REQUIRE(
             fe_accessor.vector_attribute(new_fids[1][0])[2] ==
-            state.m_incident_face_datas[1].ears[0].eid);
+            executor.incident_face_datas()[1].ears[0].eid);
 
         REQUIRE(fe_accessor.vector_attribute(new_fids[1][1])[1] == replacement_eids[1]);
         REQUIRE(
             fe_accessor.vector_attribute(new_fids[1][1])[0] ==
-            state.m_incident_face_datas[1].ears[1].eid);
+            executor.incident_face_datas()[1].ears[1].eid);
         REQUIRE(fe_accessor.vector_attribute(new_fids[1][1])[2] == 10);
 
         auto vf_accessor = m.create_base_accessor<long>(m.vf_handle());
@@ -536,17 +533,17 @@ TEST_CASE("simplices_to_delete_for_split", "[operations][2D]")
         }
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        auto state = m.get_tmoe(edge);
+        auto executor = m.get_tmoe(edge);
 
-        state.split_edge();
+        executor.split_edge();
 
-        REQUIRE(state.simplices_to_delete.size() == 3);
-        REQUIRE(state.simplices_to_delete[0].size() == 0);
+        REQUIRE(executor.simplices_to_delete.size() == 3);
+        REQUIRE(executor.simplices_to_delete[0].size() == 0);
 
-        REQUIRE(state.simplices_to_delete[1].size() == 1);
-        REQUIRE(state.simplices_to_delete[1][0] == m._debug_id(edge, PE));
-        REQUIRE(state.simplices_to_delete[2].size() == 1);
-        REQUIRE(state.simplices_to_delete[2][0] == 0);
+        REQUIRE(executor.simplices_to_delete[1].size() == 1);
+        REQUIRE(executor.simplices_to_delete[1][0] == m._debug_id(edge, PE));
+        REQUIRE(executor.simplices_to_delete[2].size() == 1);
+        REQUIRE(executor.simplices_to_delete[2][0] == 0);
     }
     SECTION("interior_edge")
     {
@@ -573,32 +570,30 @@ TEST_CASE("simplices_to_delete_for_split", "[operations][2D]")
         }
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        auto state = m.get_tmoe(edge);
+        auto executor = m.get_tmoe(edge);
 
-        state.split_edge();
+        executor.split_edge();
 
-        REQUIRE(state.simplices_to_delete.size() == 3);
-        REQUIRE(state.simplices_to_delete[0].size() == 0);
+        REQUIRE(executor.simplices_to_delete.size() == 3);
+        REQUIRE(executor.simplices_to_delete[0].size() == 0);
 
-        REQUIRE(state.simplices_to_delete[1].size() == 1);
-        REQUIRE(state.simplices_to_delete[1][0] == m._debug_id(edge, PE));
-        REQUIRE(state.simplices_to_delete[2].size() == 2);
-        REQUIRE(state.simplices_to_delete[2][0] == 0);
-        REQUIRE(state.simplices_to_delete[2][1] == 2);
+        REQUIRE(executor.simplices_to_delete[1].size() == 1);
+        REQUIRE(executor.simplices_to_delete[1][0] == m._debug_id(edge, PE));
+        REQUIRE(executor.simplices_to_delete[2].size() == 2);
+        REQUIRE(executor.simplices_to_delete[2][0] == 0);
+        REQUIRE(executor.simplices_to_delete[2][1] == 2);
     }
 }
 
 TEST_CASE("split_edge", "[operations][2D]")
 {
-    DEBUG_TriMesh m;
-    {
-        //    0---1---2
-        //   / \ / \ / \ .
-        //  3---4---5---6
-        //   \ / \ /
-        //    7---8
-        m = hex_plus_two();
-    }
+    //    0---1---2
+    //   / \ / \ / \ .
+    //  3---4---5---6
+    //   \ / \ /
+    //    7---8
+    DEBUG_TriMesh m = hex_plus_two();
+
     REQUIRE(m.is_connectivity_valid());
 
     Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
@@ -630,20 +625,21 @@ TEST_CASE("2D_link_condition_for_collapse", "[operations][2D]")
 
 TEST_CASE("collapse_edge", "[operations][2D]")
 {
+    DEBUG_TriMesh m;
+    {
+        //    0---1---2
+        //   / \ / \ / \
+            //  3---4---5---6
+        //   \ / \ /
+        //    7---8
+        RowVectors3l tris;
+        tris.resize(8, 3);
+        tris << 3, 4, 0, 4, 1, 0, 4, 5, 1, 5, 2, 1, 5, 6, 2, 3, 7, 4, 7, 8, 4, 4, 8, 5;
+        m.initialize(tris);
+    }
+
     SECTION("case1")
     {
-        DEBUG_TriMesh m;
-        {
-            //    0---1---2
-            //   / \ / \ / \
-            //  3---4---5---6
-            //   \ / \ /
-            //    7---8
-            RowVectors3l tris;
-            tris.resize(8, 3);
-            tris << 3, 4, 0, 4, 1, 0, 4, 5, 1, 5, 2, 1, 5, 6, 2, 3, 7, 4, 7, 8, 4, 4, 8, 5;
-            m.initialize(tris);
-        }
         std::cout << "BEFORE COLLAPSE" << std::endl;
         REQUIRE(m.is_connectivity_valid());
 
@@ -653,10 +649,10 @@ TEST_CASE("collapse_edge", "[operations][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         auto fv_accessor = m.create_base_accessor<long>(m.f_handle(PV));
-        auto state = m.get_tmoe(edge);
+        auto executor = m.get_tmoe(edge);
 
-        REQUIRE(state.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(2)) == 0);
-        REQUIRE(state.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(7)) == 0);
+        REQUIRE(executor.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(2)) == 0);
+        REQUIRE(executor.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(7)) == 0);
         REQUIRE(fv_accessor.vector_attribute(0)(1) == 9);
         REQUIRE(fv_accessor.vector_attribute(1)(0) == 9);
         REQUIRE(fv_accessor.vector_attribute(3)(0) == 9);
@@ -666,18 +662,6 @@ TEST_CASE("collapse_edge", "[operations][2D]")
     }
     SECTION("case2")
     {
-        DEBUG_TriMesh m;
-        {
-            //    0---1---2
-            //   / \ / \ / \
-            //  3---4---5---6
-            //   \ / \ /
-            //    7---8
-            RowVectors3l tris;
-            tris.resize(8, 3);
-            tris << 3, 4, 0, 4, 1, 0, 4, 5, 1, 5, 2, 1, 5, 6, 2, 3, 7, 4, 7, 8, 4, 4, 8, 5;
-            m.initialize(tris);
-        }
         std::cout << "BEFORE COLLAPSE" << std::endl;
         REQUIRE(m.is_connectivity_valid());
 
@@ -687,10 +671,10 @@ TEST_CASE("collapse_edge", "[operations][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         auto fv_accessor = m.create_base_accessor<long>(m.f_handle(PV));
-        auto state = m.get_tmoe(edge);
+        auto executor = m.get_tmoe(edge);
 
-        REQUIRE(state.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(0)) == 0);
-        REQUIRE(state.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(1)) == 0);
+        REQUIRE(executor.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(0)) == 0);
+        REQUIRE(executor.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(1)) == 0);
 
         REQUIRE(fv_accessor.vector_attribute(2)(0) == 9);
         REQUIRE(fv_accessor.vector_attribute(5)(2) == 9);
