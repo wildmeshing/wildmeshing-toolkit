@@ -70,8 +70,9 @@ DEBUG_TriMesh test_collapse(const DEBUG_TriMesh& mesh, long edge_index, bool sho
 }
 } // namespace
 
-TEST_CASE("trimesh split collapse factories", "[.]")
+TEST_CASE("trimesh_split_collapse_factories", "[operations][2D]")
 {
+    SECTION("split")
     {
         DEBUG_TriMesh m;
         m = single_triangle();
@@ -83,6 +84,7 @@ TEST_CASE("trimesh split collapse factories", "[.]")
 
         test_split(m, e, true);
     }
+    SECTION("collapse")
     {
         DEBUG_TriMesh m;
         m = quad();

@@ -1,14 +1,18 @@
 #pragma once
 #include <wmtk/TriMesh.hpp>
-#include <wmtk/TriMesh_operations.hpp>
+#include <wmtk/TriMeshOperationExecutor.hpp>
 
 namespace wmtk::tests {
 class DEBUG_TriMesh : public TriMesh
 {
 public:
     using TriMesh::TriMesh;
-    DEBUG_TriMesh(const TriMesh& m): TriMesh(m) {}
-    DEBUG_TriMesh(TriMesh&& m): TriMesh(std::move(m)) {}
+    DEBUG_TriMesh(const TriMesh& m)
+        : TriMesh(m)
+    {}
+    DEBUG_TriMesh(TriMesh&& m)
+        : TriMesh(std::move(m))
+    {}
     using TriMesh::operator=;
 
 
@@ -31,10 +35,7 @@ public:
         return Tuple(local_vid1, (3 - local_vid1 - local_vid2) % 3, -1, fid, 0);
     }
 
-    Tuple tuple_from_face_id(const long fid)
-    {
-        return tuple_from_id(PrimitiveType::Face, fid);
-    }
+    Tuple tuple_from_face_id(const long fid) { return tuple_from_id(PrimitiveType::Face, fid); }
     template <typename T>
     AccessorBase<T> create_base_accessor(const MeshAttributeHandle<T>& handle)
     {
@@ -76,7 +77,13 @@ public:
         return TriMesh::id(tuple, type);
     }
     long id(const Simplex& s) const { return id(s.tuple(), s.primitive_type()); }
+    /**
+     * @brief returns the TriMeshOperationExecutor
+     */
     TriMeshOperationExecutor get_tmoe() { return TriMeshOperationExecutor(*this); }
+    /**
+     * @brief returns the TriMeshOperationExecutor
+     */
     TriMeshOperationExecutor get_tmoe(const Tuple& t) { return TriMeshOperationExecutor(*this, t); }
 };
 

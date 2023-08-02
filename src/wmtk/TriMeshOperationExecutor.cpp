@@ -1,7 +1,11 @@
 
-#include "TriMesh_operations.hpp"
+#include "TriMeshOperationExecutor.hpp"
 
 namespace wmtk {
+
+constexpr PrimitiveType PV = PrimitiveType::Vertex;
+constexpr PrimitiveType PE = PrimitiveType::Edge;
+constexpr PrimitiveType PF = PrimitiveType::Face;
 
 TriMesh::TriMeshOperationExecutor::PerFaceData TriMesh::TriMeshOperationExecutor::get_per_face_data(
     const Tuple& t)
@@ -128,7 +132,7 @@ void TriMesh::TriMeshOperationExecutor::glue_ear_to_face(
     }
 }
 
-void TriMesh::TriMeshOperationExecutor::merge(const long &new_vid)
+void TriMesh::TriMeshOperationExecutor::merge(const long& new_vid)
 {
     simplices_to_delete[0].push_back(end_point_vids[0]);
     simplices_to_delete[0].push_back(end_point_vids[1]);
@@ -176,7 +180,8 @@ Tuple TriMesh::collapse_edge(const Tuple& t)
 
     // get faces in open_star(B)
     auto star_A_f = SimplicialComplex::open_star(Simplex(PV, t), *this).get_simplices(PF);
-    auto star_B_f = SimplicialComplex::open_star(Simplex(PV, switch_tuple(t, PV)), *this).get_simplices(PF);
+    auto star_B_f =
+        SimplicialComplex::open_star(Simplex(PV, switch_tuple(t, PV)), *this).get_simplices(PF);
     std::vector<long> faces_to_change_fv;
     for (const Simplex& simplex : star_B_f) {
         faces_to_change_fv.push_back(id(simplex.tuple(), PF));
@@ -191,8 +196,8 @@ Tuple TriMesh::collapse_edge(const Tuple& t)
     // change FV for open_star_faces(V_B)
     for (long& f : faces_to_change_fv) {
         for (long index = 0; index < 3; index++) {
-            if (state.fv_accessor.vector_attribute(f)[index] == state.end_point_vids[1] || state.fv_accessor.vector_attribute(f)[index] == state.end_point_vids[0])
-            {
+            if (state.fv_accessor.vector_attribute(f)[index] == state.end_point_vids[1] ||
+                state.fv_accessor.vector_attribute(f)[index] == state.end_point_vids[0]) {
                 state.fv_accessor.vector_attribute(f)[index] = new_vid;
                 // break;
             }

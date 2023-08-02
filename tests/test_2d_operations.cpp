@@ -2,7 +2,7 @@
 
 #include <numeric>
 #include <wmtk/Accessor.hpp>
-#include <wmtk/TriMesh_operations.hpp>
+#include <wmtk/TriMeshOperationExecutor.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include "tools/DEBUG_TriMesh.hpp"
 #include "tools/TriMesh_examples.hpp"
@@ -15,9 +15,9 @@ using TM = TriMesh;
 using MapResult = typename Eigen::Matrix<long, Eigen::Dynamic, 1>::MapType;
 using TMOE = decltype(std::declval<DEBUG_TriMesh>().get_tmoe());
 
-TEST_CASE("get per face data")
+TEST_CASE("get per face data", "[operations][2D]")
 {
-    SECTION("single face")
+    SECTION("single_face")
     {
         DEBUG_TriMesh m;
         {
@@ -107,7 +107,7 @@ TEST_CASE("get per face data")
     }
 }
 
-TEST_CASE("delete simplices")
+TEST_CASE("delete simplices", "[operations][2D]")
 {
     // things can be marked as deleted but will still have the connectivity information
     DEBUG_TriMesh m;
@@ -132,7 +132,7 @@ TEST_CASE("delete simplices")
     REQUIRE(state.ef_accessor.scalar_attribute(edge) == 0);
 }
 
-TEST_CASE("operation state")
+TEST_CASE("operation state", "[operations][2D]")
 {
     SECTION("single face")
     {
@@ -223,7 +223,7 @@ TEST_CASE("operation state")
         REQUIRE(ear2.eid > -1);
     }
 }
-TEST_CASE("glue ear to face")
+TEST_CASE("glue ear to face", "[operations][2D]")
 {
     DEBUG_TriMesh m;
     {
@@ -248,10 +248,13 @@ TEST_CASE("glue ear to face")
     auto ff_accessor_after = m.create_base_accessor<long>(m.f_handle(PrimitiveType::Face));
     REQUIRE(ff_accessor_after.vector_attribute(1)(2) == 3);
 }
-TEST_CASE("hash update") {}
+TEST_CASE("hash update", "[operations][2D]")
+{
+    REQUIRE(false);
+}
 
 //////////// SPLIT TESTS ////////////
-TEST_CASE("glue new faces across AB")
+TEST_CASE("glue new faces across AB", "[operations][2D]")
 {
     // test the assumption of correct orientation
     // new face correspondance accross AB
@@ -334,7 +337,7 @@ TEST_CASE("glue new faces across AB")
     }
 }
 
-TEST_CASE("glue new triangle", "[old faces not recycled]")
+TEST_CASE("glue new triangle", "[old faces not recycled][operations][2D]")
 {
     SECTION("boundary edge")
     {
@@ -514,7 +517,7 @@ TEST_CASE("glue new triangle", "[old faces not recycled]")
     }
 }
 
-TEST_CASE("simplices to delete for split")
+TEST_CASE("simplices to delete for split", "[operations][2D]")
 {
     SECTION("boundary edge")
     {
@@ -584,7 +587,7 @@ TEST_CASE("simplices to delete for split")
     }
 }
 
-TEST_CASE("split edge")
+TEST_CASE("split edge", "[operations][2D]")
 {
     DEBUG_TriMesh m;
     {
@@ -619,9 +622,12 @@ TEST_CASE("split edge")
 }
 
 //////////// COLLAPSE TESTS ////////////
-TEST_CASE("2D link condition for collapse") {}
+TEST_CASE("2D link condition for collapse", "[operations][2D]")
+{
+    REQUIRE(false);
+}
 
-TEST_CASE("collapse edge")
+TEST_CASE("collapse edge", "[operations][2D]")
 {
     SECTION("case1")
     {

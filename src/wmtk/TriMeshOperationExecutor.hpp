@@ -4,11 +4,6 @@
 #include "TriMesh.hpp"
 #include "Tuple.hpp"
 namespace wmtk {
-namespace {
-constexpr PrimitiveType PV = PrimitiveType::Vertex;
-constexpr PrimitiveType PE = PrimitiveType::Edge;
-constexpr PrimitiveType PF = PrimitiveType::Face;
-} // namespace
 class TriMesh::TriMeshOperationExecutor
 {
 public:
@@ -66,7 +61,7 @@ public:
         const long old_fid,
         const long eid);
 
-    void merge(const long &new_vid);
+    void merge(const long& new_vid);
     Tuple split_edge();
 
     /**
