@@ -16,7 +16,7 @@
 
 using namespace wmtk;
 
-TEST_CASE("topology_of_single_triangle", "[topology],[2D]")
+TEST_CASE("topology_of_single_triangle", "[topology][2D]")
 {
     Eigen::Matrix<long, 1, 3> F;
     F << 0, 1, 2;
@@ -61,7 +61,7 @@ TEST_CASE("topology_of_single_triangle", "[topology],[2D]")
     }
 }
 
-TEST_CASE("topology_of_two_triangles", "[topology],[2D]")
+TEST_CASE("topology_of_two_triangles", "[topology][2D]")
 {
     Eigen::Matrix<long, 2, 3> F;
     F << 0, 1, 2, 1, 3, 2;
@@ -107,7 +107,7 @@ TEST_CASE("topology_of_two_triangles", "[topology],[2D]")
     }
 }
 
-TEST_CASE("topology_of_complex_meshes", "[topology],[2D]")
+TEST_CASE("topology_of_complex_meshes", "[topology][2D]")
 {
     Eigen::MatrixXd V;
     Eigen::Matrix<long, -1, -1> F;
@@ -173,7 +173,7 @@ TEST_CASE("topology_of_complex_meshes", "[topology],[2D]")
     }
 }
 
-TEST_CASE("topology_of_two_adjacent_tets", "[topology],[3D]")
+TEST_CASE("topology_of_two_adjacent_tets", "[topology][3D]")
 {
     // Two tetrahedra are sharing one face
     // there are 7 unique faces and 9 unique edges
@@ -228,7 +228,7 @@ TEST_CASE("topology_of_two_adjacent_tets", "[topology],[3D]")
     }
 }
 
-TEST_CASE("topology_of_two_independent_tets", "[topology],[3D]")
+TEST_CASE("topology_of_two_independent_tets", "[topology][3D]")
 {
     // Two tetrahedra not sharing anything
     // there are 8 unique faces and 12 unique edges
@@ -283,7 +283,7 @@ TEST_CASE("topology_of_two_independent_tets", "[topology],[3D]")
     }
 }
 
-TEST_CASE("topology_of_tet_bunny", "[topology],[3D]")
+TEST_CASE("topology_of_tet_bunny", "[topology][3D]")
 {
     Eigen::MatrixXd V;
     Eigen::Matrix<long, -1, -1> T, F;
