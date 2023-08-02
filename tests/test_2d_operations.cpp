@@ -554,7 +554,79 @@ TEST_CASE("split_edge", "[operations][2D]")
 }
 
 //////////// COLLAPSE TESTS ////////////
-TEST_CASE("2D_link_condition_for_collapse", "[operations][2D][.]")
+
+TEST_CASE("collapse edge")
+{
+    SECTION("case1")
+    {
+        DEBUG_TriMesh m;
+        {
+            //    0---1---2
+            //   / \ / \ / \
+            //  3---4---5---6
+            //   \ / \ /
+            //    7---8
+            RowVectors3l tris;
+            tris.resize(8, 3);
+            tris << 3, 4, 0, 4, 1, 0, 4, 5, 1, 5, 2, 1, 5, 6, 2, 3, 7, 4, 7, 8, 4, 4, 8, 5;
+            m.initialize(tris);
+        }
+        std::cout << "BEFORE COLLAPSE" << std::endl;
+        REQUIRE(m.is_connectivity_valid());
+
+        Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
+        m.collapse_edge(edge);
+        std::cout << "AFTER COLLAPSE" << std::endl;
+        REQUIRE(m.is_connectivity_valid());
+
+        auto fv_accessor = m.create_base_accessor<long>(m.f_handle(PrimitiveType::Vertex));
+        auto state = m.get_tmoe();
+
+        REQUIRE(state.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(2)) == 0);
+        REQUIRE(state.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(7)) == 0);
+        REQUIRE(fv_accessor.vector_attribute(0)(1) == 9);
+        REQUIRE(fv_accessor.vector_attribute(1)(0) == 9);
+        REQUIRE(fv_accessor.vector_attribute(3)(0) == 9);
+        REQUIRE(fv_accessor.vector_attribute(5)(2) == 9);
+        REQUIRE(fv_accessor.vector_attribute(6)(2) == 9);
+        REQUIRE(fv_accessor.vector_attribute(4)(0) == 9);
+    }
+    SECTION("case2")
+    {
+        DEBUG_TriMesh m;
+        {
+            //    0---1---2
+            //   / \ / \ / \
+            //  3---4---5---6
+            //   \ / \ /
+            //    7---8
+            RowVectors3l tris;
+            tris.resize(8, 3);
+            tris << 3, 4, 0, 4, 1, 0, 4, 5, 1, 5, 2, 1, 5, 6, 2, 3, 7, 4, 7, 8, 4, 4, 8, 5;
+            m.initialize(tris);
+        }
+        std::cout << "BEFORE COLLAPSE" << std::endl;
+        REQUIRE(m.is_connectivity_valid());
+
+        Tuple edge = m.edge_tuple_between_v1_v2(0, 4, 0);
+        m.collapse_edge(edge);
+        std::cout << "AFTER COLLAPSE" << std::endl;
+        REQUIRE(m.is_connectivity_valid());
+
+        auto fv_accessor = m.create_base_accessor<long>(m.f_handle(PrimitiveType::Vertex));
+        auto state = m.get_tmoe();
+
+        REQUIRE(state.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(0)) == 0);
+        REQUIRE(state.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(1)) == 0);
+
+        REQUIRE(fv_accessor.vector_attribute(2)(0) == 9);
+        REQUIRE(fv_accessor.vector_attribute(5)(2) == 9);
+        REQUIRE(fv_accessor.vector_attribute(6)(2) == 9);
+        REQUIRE(fv_accessor.vector_attribute(7)(0) == 9);
+    }
+}
+
+TEST_CASE("swap edge")
 {
     REQUIRE(false);
 }
