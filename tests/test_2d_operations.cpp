@@ -224,8 +224,8 @@ TEST_CASE("glue_ear_to_face", "[operations][2D]")
     DEBUG_TriMesh m = hex_plus_two();
 
     REQUIRE(m.is_connectivity_valid());
-    Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
-    Tuple left_ear_edge = m.switch_tuple(edge, PE);
+    const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
+    const Tuple left_ear_edge = m.switch_tuple(edge, PE);
     REQUIRE(m._debug_id(left_ear_edge, PV) == 4);
     REQUIRE(m._debug_id(m.switch_tuple(left_ear_edge, PV), PV) == 1);
     auto executor = m.get_tmoe(edge);
@@ -249,22 +249,9 @@ TEST_CASE("glue_new_faces_across_AB", "[operations][2D]")
     {
         // when the edge is on the boundary (indcated by FaceDatas size), there is no glue
         // across AB
-        DEBUG_TriMesh m;
-        {
-            //         0
-            //        / \   .
-            //       2   1  \ .
-            //      /  0  \  \|
-            //     /       \ .
-            //  1  ----0---- 2
-            //
-            RowVectors3l tris;
-            tris.resize(1, 3);
-            tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
-            m.initialize(tris);
-        }
+        DEBUG_TriMesh m = single_triangle();
         REQUIRE(m.is_connectivity_valid());
-        Tuple edge = m.edge_tuple_between_v1_v2(0, 2, 0);
+        const Tuple edge = m.edge_tuple_between_v1_v2(0, 2, 0);
         REQUIRE(m._debug_id(edge, PV) == 0);
         REQUIRE(m._debug_id(edge, PF) == 0);
         REQUIRE(m._debug_id(m.switch_tuple(edge, PV), PV) == 2);
@@ -273,36 +260,17 @@ TEST_CASE("glue_new_faces_across_AB", "[operations][2D]")
     }
     SECTION("interior_edge")
     {
-        DEBUG_TriMesh m;
-        {
-            //  3--1--- 0
-            //   |     / \ .
-            //   2 f1 /2   1
-            //   |  0/ f0  \ .
-            //   |  /  0    \ .
-            //  1  --------- 2
-            //     \   1    /
-            //      2  f2  0
-            //       \    /
-            //        \  /
-            //         4
-            RowVectors3l tris;
-            tris.resize(3, 3);
-            tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
-            tris.row(1) = Eigen::Matrix<long, 3, 1>{3, 1, 0};
-            tris.row(2) = Eigen::Matrix<long, 3, 1>{1, 4, 2};
-            m.initialize(tris);
-        }
+        DEBUG_TriMesh m = interior_edge();
         m.reserve_attributes(PF, 10);
         REQUIRE(m.is_connectivity_valid());
-        Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
+        const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
         auto executor = m.get_tmoe(edge);
 
         REQUIRE(executor.incident_face_datas().size() == 2);
 
-        auto new_fids = executor.request_simplex_indices(PF, 4);
-        std::array<long, 2> new_fids_top = {new_fids[0], new_fids[1]};
-        std::array<long, 2> new_fids_bottom = {new_fids[2], new_fids[3]};
+        const auto new_fids = executor.request_simplex_indices(PF, 4);
+        const std::array<long, 2> new_fids_top = {new_fids[0], new_fids[1]};
+        const std::array<long, 2> new_fids_bottom = {new_fids[2], new_fids[3]};
         executor.glue_new_faces_across_AB(new_fids_top, new_fids_bottom);
 
 
@@ -323,24 +291,11 @@ TEST_CASE("glue_new_faces_across_AB", "[operations][2D]")
     }
 }
 
-TEST_CASE("glue_new_triangle", "[old faces not recycled][operations][2D]")
+TEST_CASE("glue_new_triangle", "[operations][2D]")
 {
     SECTION("boundary_edge")
     {
-        DEBUG_TriMesh m;
-        {
-            //         0
-            //        / \ 
-            //       /2   1
-            //      / f0  \ 
-            //     /  0    \ 
-            //  1  --------- 2
-
-            RowVectors3l tris;
-            tris.resize(1, 3);
-            tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
-            m.initialize(tris);
-        }
+        DEBUG_TriMesh m = single_triangle();
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
         auto executor = m.get_tmoe(edge);
@@ -408,26 +363,7 @@ TEST_CASE("glue_new_triangle", "[old faces not recycled][operations][2D]")
     SECTION("interior_edge")
     {
         // old faces are not recycled
-        DEBUG_TriMesh m;
-        {
-            //  3--1--- 0
-            //   |     / \ .
-            //   2 f1 /2   1
-            //   |  0/ f0  \ .
-            //   |  /  0    \ .
-            //  1  -------- 2
-            //     \   1    /
-            //      \  f2  /
-            //       2    0
-            //        \  /
-            //         4
-            RowVectors3l tris;
-            tris.resize(3, 3);
-            tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
-            tris.row(1) = Eigen::Matrix<long, 3, 1>{3, 1, 0};
-            tris.row(2) = Eigen::Matrix<long, 3, 1>{1, 4, 2};
-            m.initialize(tris);
-        }
+        DEBUG_TriMesh m = interior_edge();
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
         auto executor = m.get_tmoe(edge);

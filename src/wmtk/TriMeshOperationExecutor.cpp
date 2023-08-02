@@ -159,49 +159,6 @@ void TriMesh::TriMeshOperationExecutor::merge(const long& new_vid)
     }
 };
 
-Tuple TriMesh::collapse_edge(const Tuple& t)
-{
-    // TODO: check link_cond before collapse
-    TriMeshOperationExecutor state(*this, t);
-
-    // create new vertex
-    std::vector<long> new_vids = state.request_simplex_indices(PrimitiveType::Vertex, 1);
-    assert(new_vids.size() == 1);
-    const long new_vid = new_vids[0];
-
-    // get faces in open_star(B)
-    auto star_A_f = SimplicialComplex::open_star(Simplex(PV, t), *this).get_simplices(PF);
-    auto star_B_f =
-        SimplicialComplex::open_star(Simplex(PV, switch_tuple(t, PV)), *this).get_simplices(PF);
-    std::vector<long> faces_to_change_fv;
-    for (const Simplex& simplex : star_B_f) {
-        faces_to_change_fv.push_back(id(simplex.tuple(), PF));
-    }
-    for (const Simplex& simplex : star_A_f) {
-        faces_to_change_fv.push_back(id(simplex.tuple(), PF));
-    }
-
-    // merge
-    state.merge(new_vid);
-
-    // change FV for open_star_faces(V_B)
-    for (long& f : faces_to_change_fv) {
-        for (long index = 0; index < 3; index++) {
-            if (state.fv_accessor.vector_attribute(f)[index] == state.incident_vids()[1] ||
-                state.fv_accessor.vector_attribute(f)[index] == state.incident_vids()[0]) {
-                state.fv_accessor.vector_attribute(f)[index] = new_vid;
-                // break;
-            }
-        }
-    }
-
-    state.update_cell_hash();
-    // delete simplices
-    state.delete_simplices();
-    // TODO: figure out how to make this more canonical (i.e similar to the previous implementation)
-    return tuple_from_id(PrimitiveType::Vertex, new_vid);
-}
-
 void TriMesh::TriMeshOperationExecutor::glue_new_faces_across_AB(
     const std::array<long, 2> new_fids_top,
     const std::array<long, 2> new_fids_bottom)
@@ -312,19 +269,13 @@ std::array<long, 2> TriMesh::TriMeshOperationExecutor::glue_new_triangle_topolog
     return {new_fids[0], new_fids[1]};
 }
 
-Tuple TriMesh::split_edge(const Tuple& t)
-{
-    // record the deleted simplices topology attributes
-    TriMesh::TriMeshOperationExecutor state(*this, t);
-    return state.split_edge();
-}
 Tuple TriMesh::TriMeshOperationExecutor::split_edge()
 {
     // delete star(edge)
     SimplicialComplex edge_open_star =
-        wmtk::SimplicialComplex::open_star(Simplex(PrimitiveType::Edge, m_operating_tuple), m_mesh);
+        SimplicialComplex::open_star(PrimitiveType::Edge, m_operating_tuple, m_mesh);
 
-    for (const auto& simplex_d : edge_open_star.get_simplices()) {
+    for (const Simplex& simplex_d : edge_open_star.get_simplices()) {
         simplices_to_delete[simplex_d.dimension()].emplace_back(
             m_mesh.id(simplex_d.tuple(), simplex_d.primitive_type()));
     }
@@ -334,15 +285,15 @@ Tuple TriMesh::TriMeshOperationExecutor::split_edge()
     const long new_vid = new_vids[0];
 
     // create new edges
-    std::vector<long> replacement_eids = this->request_simplex_indices(PrimitiveType::Edge, 2);
-    assert(replacement_eids.size() == 2);
+    std::vector<long> new_eids = this->request_simplex_indices(PrimitiveType::Edge, 2);
+    assert(new_eids.size() == 2);
 
     std::vector<std::array<long, 2>> new_fids;
     for (int i = 0; i < m_incident_face_datas.size(); ++i) {
         const IncidentFaceData& face_data = m_incident_face_datas[i];
         // glue the topology
         std::array<long, 2> new_fid_per_face =
-            glue_new_triangle_topology(new_vid, replacement_eids, face_data);
+            glue_new_triangle_topology(new_vid, new_eids, face_data);
         new_fids.emplace_back(new_fid_per_face);
     }
     assert(m_incident_face_datas.size() <= 2);
