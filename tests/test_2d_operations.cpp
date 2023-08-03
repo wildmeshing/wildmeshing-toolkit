@@ -554,38 +554,22 @@ TEST_CASE("split_edge", "[operations][2D]")
 }
 
 //////////// COLLAPSE TESTS ////////////
-TEST_CASE("2D_link_condition_for_collapse", "[operations][2D][.]")
-{
-    REQUIRE(false);
-}
 
-TEST_CASE("collapse_edge", "[operations][2D][.]")
+TEST_CASE("collapse_edge", "[operations][2D]")
 {
-    DEBUG_TriMesh m;
-    {
-        //    0---1---2
-        //   / \ / \ / \
-            //  3---4---5---6
-        //   \ / \ /
-        //    7---8
-        RowVectors3l tris;
-        tris.resize(8, 3);
-        tris << 3, 4, 0, 4, 1, 0, 4, 5, 1, 5, 2, 1, 5, 6, 2, 3, 7, 4, 7, 8, 4, 4, 8, 5;
-        m.initialize(tris);
-    }
-
+    DEBUG_TriMesh m = hex_plus_two();
     SECTION("case1")
     {
         std::cout << "BEFORE COLLAPSE" << std::endl;
         REQUIRE(m.is_connectivity_valid());
 
         Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
+        auto executor = m.get_tmoe(edge);
         m.collapse_edge(edge);
         std::cout << "AFTER COLLAPSE" << std::endl;
         REQUIRE(m.is_connectivity_valid());
 
         auto fv_accessor = m.create_base_accessor<long>(m.f_handle(PV));
-        auto executor = m.get_tmoe(edge);
 
         REQUIRE(executor.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(2)) == 0);
         REQUIRE(executor.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(7)) == 0);
@@ -602,12 +586,12 @@ TEST_CASE("collapse_edge", "[operations][2D][.]")
         REQUIRE(m.is_connectivity_valid());
 
         Tuple edge = m.edge_tuple_between_v1_v2(0, 4, 0);
+        auto executor = m.get_tmoe(edge);
         m.collapse_edge(edge);
         std::cout << "AFTER COLLAPSE" << std::endl;
         REQUIRE(m.is_connectivity_valid());
 
         auto fv_accessor = m.create_base_accessor<long>(m.f_handle(PV));
-        auto executor = m.get_tmoe(edge);
 
         REQUIRE(executor.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(0)) == 0);
         REQUIRE(executor.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(1)) == 0);
@@ -619,39 +603,63 @@ TEST_CASE("collapse_edge", "[operations][2D][.]")
     }
 }
 
-TEST_CASE("swap edge")
+TEST_CASE("swap_edge", "[operations][2D]")
 {
-    SECTION("case1")
+    SECTION("case ccw")
     {
-        DEBUG_TriMesh m;
-        {
-            //    0---1---2
-            //   / \ / \ / \
-            //  3---4---5---6
-            //   \ / \ /
-            //    7---8
-            RowVectors3l tris;
-            tris.resize(8, 3);
-            tris << 3, 4, 0, 4, 1, 0, 4, 5, 1, 5, 2, 1, 5, 6, 2, 3, 7, 4, 7, 8, 4, 4, 8, 5;
-            m.initialize(tris);
-        }
+        DEBUG_TriMesh m = hex_plus_two();
         std::cout << "BEFORE SWAP" << std::endl;
         REQUIRE(m.is_connectivity_valid());
 
         Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
-        OperationFactory<TriMeshSwapEdgeOperation> fact;
-        auto op = fact.create(m, edge);
-        (*op)(); 
+        TriMeshSwapEdgeOperation op(m,edge);
+        op();
+        auto ret = op.return_tuple();
         std::cout << "AFTER SWAP" << std::endl;
         REQUIRE(m.is_connectivity_valid());
 
+        std::cout << m.id(ret,PV) << "," << m.id(m.switch_tuple(ret, PV), PV) << std::endl;
         auto fv_accessor = m.create_base_accessor<long>(m.f_handle(PrimitiveType::Vertex));
         
+        REQUIRE(m.id(ret,PV) == 8);
+        REQUIRE(m.id(m.switch_tuple(ret, PV), PV) == 10);
         REQUIRE(fv_accessor.vector_attribute(10)(0) == 4);
         REQUIRE(fv_accessor.vector_attribute(10)(1) == 8);
         REQUIRE(fv_accessor.vector_attribute(10)(2) == 10);
         REQUIRE(fv_accessor.vector_attribute(11)(0) == 10);
         REQUIRE(fv_accessor.vector_attribute(11)(1) == 8);
         REQUIRE(fv_accessor.vector_attribute(11)(2) == 5);
+    }
+
+    SECTION("case cw")
+    {
+        DEBUG_TriMesh m = hex_plus_two();
+        std::cout << "BEFORE SWAP" << std::endl;
+        REQUIRE(m.is_connectivity_valid());
+
+        Tuple edge = m.edge_tuple_between_v1_v2(5, 4, 2);
+        auto executor = m.get_tmoe(edge);
+        TriMeshSwapEdgeOperation op(m,edge);
+        op();
+        auto ret = op.return_tuple();
+        std::cout << "AFTER SWAP" << std::endl;
+        REQUIRE(m.is_connectivity_valid());
+
+        std::cout << m.id(ret,PV) << "," << m.id(m.switch_tuple(ret, PV), PV) << std::endl;
+        auto fv_accessor = m.create_base_accessor<long>(m.f_handle(PrimitiveType::Vertex));
+        
+        // for (long i = 0; i < m.capacity(PF); i++)
+        // {
+        //     if (executor.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(i)) == 0) continue;
+        //     std::cout << fv_accessor.vector_attribute(i)(0) << " " << fv_accessor.vector_attribute(i)(1) << " " << fv_accessor.vector_attribute(i)(2) << std::endl;
+        // }
+        REQUIRE(m.id(ret,PV) == 10);
+        REQUIRE(m.id(m.switch_tuple(ret, PV), PV) == 8);
+        REQUIRE(fv_accessor.vector_attribute(11)(0) == 4);
+        REQUIRE(fv_accessor.vector_attribute(11)(1) == 8);
+        REQUIRE(fv_accessor.vector_attribute(11)(2) == 10);
+        REQUIRE(fv_accessor.vector_attribute(10)(0) == 10);
+        REQUIRE(fv_accessor.vector_attribute(10)(1) == 8);
+        REQUIRE(fv_accessor.vector_attribute(10)(2) == 5);
     }
 }

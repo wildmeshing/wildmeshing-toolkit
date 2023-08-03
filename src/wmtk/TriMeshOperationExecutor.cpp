@@ -146,7 +146,10 @@ void TriMesh::TriMeshOperationExecutor::merge(const long& new_vid)
         const long f_ear_l = face_data.ears[0].fid;
         const long f_ear_r = face_data.ears[1].fid;
         vf_c = (f_ear_l < 0) ? f_ear_r : f_ear_l;
-        vf_new = vf_c;
+        if (face_index == 0)
+        {
+            vf_new = vf_c;
+        }
 
         // change EF for E_AC
         const long e_ac = face_data.ears[0].eid;

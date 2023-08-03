@@ -31,6 +31,7 @@ Tuple TriMeshSwapEdgeOperation::return_tuple() const
 
 bool TriMeshSwapEdgeOperation::execute()
 {
+    bool is_ccw_input = m_mesh.is_ccw(m_input_tuple);
     Tuple split_result;
     TriMeshSplitEdgeOperation split(m_mesh, m_input_tuple);
     if (!split()) {
@@ -39,13 +40,20 @@ bool TriMeshSwapEdgeOperation::execute()
     split_result = split.return_tuple();
 
     // TODO: navigate collapse
-    Tuple collapse_input = m_mesh.switch_tuple(m_mesh.switch_tuple(split_result, PrimitiveType::Vertex),PrimitiveType::Edge);
+    Tuple collapse_input = m_mesh.switch_tuple(m_mesh.switch_tuple(m_mesh.switch_tuple(split_result, PrimitiveType::Vertex),PrimitiveType::Edge),PrimitiveType::Face);
     TriMeshCollapseEdgeOperation collapse(m_mesh, collapse_input);
     if (!collapse()) {
         return false;
     }
     m_output_tuple = collapse.return_tuple();
-
+    if (!is_ccw_input)
+    {
+        m_output_tuple = m_mesh.switch_tuple(m_output_tuple, PrimitiveType::Edge);
+    }
+    else
+    {
+        m_output_tuple = m_mesh.switch_tuple(m_mesh.switch_tuple(m_output_tuple, PrimitiveType::Face),PrimitiveType::Vertex);
+    }
     return true;
 }
 
