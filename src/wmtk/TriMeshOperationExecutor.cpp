@@ -274,6 +274,9 @@ std::array<long, 2> TriMesh::TriMeshOperationExecutor::glue_new_triangle_topolog
 
 Tuple TriMesh::TriMeshOperationExecutor::split_edge()
 {
+
+    std::cout << "vid before split edge is " << m_mesh.id(m_operating_tuple, PrimitiveType::Vertex) << std::endl;
+
     // delete star(edge)
     SimplicialComplex edge_open_star =
         SimplicialComplex::open_star(Simplex::edge(m_operating_tuple), m_mesh);

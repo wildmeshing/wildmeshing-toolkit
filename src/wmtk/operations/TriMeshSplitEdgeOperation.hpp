@@ -16,6 +16,7 @@ public:
     std::vector<Tuple> edge_onering() const;
 
     Tuple new_vertex() const;
+    Tuple return_tuple() const;
     // std::vector<Tuple> new_triangles() const ;
     // std::vector<Tuple> new_edges() const ;
 
