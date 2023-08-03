@@ -40,6 +40,14 @@ public:
 
     internal::SimplexSet get_simplices(const PrimitiveType& ptype) const;
 
+    internal::SimplexSet get_vertices() const { return get_simplices(PrimitiveType::Vertex); }
+    internal::SimplexSet get_edges() const { return get_simplices(PrimitiveType::Edge); }
+    internal::SimplexSet get_faces() const { return get_simplices(PrimitiveType::Face); }
+    internal::SimplexSet get_tetrahedra() const
+    {
+        return get_simplices(PrimitiveType::Tetrahedron);
+    }
+
     std::vector<Simplex> get_simplex_vector() const;
 
     /**
@@ -113,12 +121,6 @@ public:
      */
     static SimplicialComplex closed_star(const Simplex& s, const Mesh& m);
 
-    inline static SimplicialComplex
-    closed_star(const wmtk::PrimitiveType ptype, const wmtk::Tuple& tuple, const Mesh& m)
-    {
-        return closed_star({ptype, tuple}, m);
-    }
-
     /**
      * @brief The boundary of the closed star.
      *
@@ -127,22 +129,10 @@ public:
      */
     static SimplicialComplex link(const Simplex& s, const Mesh& m);
 
-    inline static SimplicialComplex
-    link(const wmtk::PrimitiveType ptype, const wmtk::Tuple& tuple, const Mesh& m)
-    {
-        return link({ptype, tuple}, m);
-    }
-
     /**
      * @brief The closed star without its boundary.
      */
     static SimplicialComplex open_star(const Simplex& s, const Mesh& m);
-
-    inline static SimplicialComplex
-    open_star(const wmtk::PrimitiveType ptype, const wmtk::Tuple& tuple, const Mesh& m)
-    {
-        return open_star({ptype, tuple}, m);
-    }
 
     //////////////////////////////////
     // check link condition

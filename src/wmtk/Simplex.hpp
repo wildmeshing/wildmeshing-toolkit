@@ -17,9 +17,12 @@ public:
     {}
 
     PrimitiveType primitive_type() const { return _ptype; }
-    long dimension() const{
-        return get_simplex_dimension(_ptype);
-    }
+    long dimension() const { return get_simplex_dimension(_ptype); }
     const Tuple& tuple() const { return _tuple; }
+
+    static Simplex vertex(const Tuple& t) { return Simplex(PrimitiveType::Vertex, t); }
+    static Simplex edge(const Tuple& t) { return Simplex(PrimitiveType::Edge, t); }
+    static Simplex face(const Tuple& t) { return Simplex(PrimitiveType::Face, t); }
+    static Simplex tetrahedron(const Tuple& t) { return Simplex(PrimitiveType::Tetrahedron, t); }
 };
 } // namespace wmtk

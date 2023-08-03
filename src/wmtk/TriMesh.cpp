@@ -37,13 +37,9 @@ Tuple TriMesh::collapse_edge(const Tuple& t)
     const long new_vid = new_vids[0];
 
     // get faces in open_star(B)
-    auto star_A_f = SimplicialComplex::open_star(PrimitiveType::Vertex, t, *this)
-                        .get_simplices(PrimitiveType::Face);
-    auto star_B_f = SimplicialComplex::open_star(
-                        PrimitiveType::Vertex,
-                        switch_tuple(t, PrimitiveType::Vertex),
-                        *this)
-                        .get_simplices(PrimitiveType::Face);
+    auto star_A_f = SimplicialComplex::open_star(Simplex::vertex(t), *this).get_faces();
+    auto star_B_f =
+        SimplicialComplex::open_star(Simplex::vertex(switch_vertex(t)), *this).get_faces();
     std::vector<long> faces_to_change_fv;
     for (const Simplex& simplex : star_B_f) {
         faces_to_change_fv.push_back(id(simplex.tuple(), PrimitiveType::Face));
