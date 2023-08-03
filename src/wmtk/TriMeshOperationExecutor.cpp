@@ -10,6 +10,12 @@ constexpr PrimitiveType PF = PrimitiveType::Face;
 TriMesh::TriMeshOperationExecutor::IncidentFaceData
 TriMesh::TriMeshOperationExecutor::get_incident_face_data(const Tuple& t)
 {
+    //         / \ 
+    //  ear1  /   \  ear2
+    //       /     \ 
+    //      /       \ 
+    //      ----t----
+
     IncidentFaceData face_data;
     face_data.fid = m_mesh.id(t, PF);
     const Tuple t1_edge = m_mesh.switch_tuple(t, PE);
@@ -127,35 +133,33 @@ void TriMesh::TriMeshOperationExecutor::merge(const long& new_vid)
     simplices_to_delete[0].push_back(m_incident_vids[1]);
     simplices_to_delete[1].push_back(m_operating_edge_id);
     for (int face_index = 0; face_index < m_incident_face_datas.size(); face_index++) {
-        if (m_incident_face_datas[face_index].ears[0].fid < 0 &&
-            m_incident_face_datas[face_index].ears[1].fid < 0) {
-            return; // TODO: throw exception, should be detected by link condition
-        }
+        const auto& face_data = m_incident_face_datas[face_index];
 
-        if (m_incident_face_datas[face_index].ears[0].fid ==
-            m_incident_face_datas[face_index].ears[1].fid) {
-            return; // TODO: throw exception, non-manifold
-        }
+        assert(
+            face_data.ears[0].fid > -1 ||
+            face_data.ears[1].fid > -1); // TODO: should be detected by link condition
+        // check manifoldness
+        assert(face_data.ears[0].fid != face_data.ears[1].fid);
 
         // change VF for V_new,V_C
         long& vf_new = vf_accessor.scalar_attribute(new_vid);
-        long& vf_c = vf_accessor.scalar_attribute(m_incident_face_datas[face_index].opposite_vid);
-        const long f_ear_l = m_incident_face_datas[face_index].ears[0].fid;
-        const long f_ear_r = m_incident_face_datas[face_index].ears[1].fid;
+        long& vf_c = vf_accessor.scalar_attribute(face_data.opposite_vid);
+        const long f_ear_l = face_data.ears[0].fid;
+        const long f_ear_r = face_data.ears[1].fid;
         vf_c = (f_ear_l < 0) ? f_ear_r : f_ear_l;
         vf_new = vf_c;
 
         // change EF for E_AC
-        const long e_ac = m_incident_face_datas[face_index].ears[0].eid;
+        const long e_ac = face_data.ears[0].eid;
         long& ef_ac = ef_accessor.scalar_attribute(e_ac);
         ef_ac = vf_c;
 
         // change FF and FE for ears
-        glue_ear_to_face(f_ear_l, f_ear_r, m_incident_face_datas[face_index].fid, e_ac);
-        glue_ear_to_face(f_ear_r, f_ear_l, m_incident_face_datas[face_index].fid, e_ac);
+        glue_ear_to_face(f_ear_l, f_ear_r, face_data.fid, e_ac);
+        glue_ear_to_face(f_ear_r, f_ear_l, face_data.fid, e_ac);
 
-        simplices_to_delete[1].push_back(m_incident_face_datas[face_index].ears[1].eid);
-        simplices_to_delete[2].push_back(m_incident_face_datas[face_index].fid);
+        simplices_to_delete[1].push_back(face_data.ears[1].eid);
+        simplices_to_delete[2].push_back(face_data.fid);
     }
 };
 
