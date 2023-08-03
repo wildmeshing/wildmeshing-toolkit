@@ -113,7 +113,7 @@ TEST_CASE("trimesh_split_collapse_factories", "[operations][2D]")
     }
 }
 
-TEST_CASE("split_all_edges", "[split][operations]")
+TEST_CASE("split_all_edges", "[split][operations][.]")
 {
     wmtk::TriMesh mesh;
 

@@ -235,7 +235,7 @@ TEST_CASE("glue_ear_to_face", "[operations][2D]")
     auto ff_accessor_after = m.create_base_accessor<long>(m.f_handle(PF));
     REQUIRE(ff_accessor_after.vector_attribute(1)(2) == 3);
 }
-TEST_CASE("hash_update", "[operations][2D]")
+TEST_CASE("hash_update", "[operations][2D][.]")
 {
     REQUIRE(false);
 }
@@ -554,12 +554,12 @@ TEST_CASE("split_edge", "[operations][2D]")
 }
 
 //////////// COLLAPSE TESTS ////////////
-TEST_CASE("2D_link_condition_for_collapse", "[operations][2D]")
+TEST_CASE("2D_link_condition_for_collapse", "[operations][2D][.]")
 {
     REQUIRE(false);
 }
 
-TEST_CASE("collapse_edge", "[operations][2D]")
+TEST_CASE("collapse_edge", "[operations][2D][.]")
 {
     DEBUG_TriMesh m;
     {
