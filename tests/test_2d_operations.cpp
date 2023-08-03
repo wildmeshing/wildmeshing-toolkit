@@ -8,6 +8,8 @@
 #include "tools/TriMesh_examples.hpp"
 #include <wmtk/operations/OperationFactory.hpp>
 #include <wmtk/operations/TriMeshSwapEdgeOperation.hpp>
+#include <wmtk/operations/TriMeshCollapseEdgeOperation.hpp>
+
 using namespace wmtk;
 using namespace wmtk::tests;
 
@@ -600,6 +602,39 @@ TEST_CASE("collapse_edge", "[operations][2D]")
         REQUIRE(fv_accessor.vector_attribute(5)(2) == 9);
         REQUIRE(fv_accessor.vector_attribute(6)(2) == 9);
         REQUIRE(fv_accessor.vector_attribute(7)(0) == 9);
+    }
+    SECTION("test return tuple")
+    {
+        DEBUG_TriMesh m = hex_plus_two();
+        std::cout << "BEFORE COLLAPSE" << std::endl;
+        REQUIRE(m.is_connectivity_valid());
+
+        Tuple edge = m.edge_tuple_between_v1_v2(3, 4, 0);
+        TriMeshCollapseEdgeOperation op(m,edge);
+        op();
+        auto ret = op.return_tuple();
+        std::cout << "AFTER COLLAPSE" << std::endl;
+        REQUIRE(m.is_connectivity_valid());
+        REQUIRE(op.is_return_tuple_from_left_ear() == false);
+        REQUIRE(m.id(ret, PV) == 9);
+        REQUIRE(m.id(m.switch_tuple(ret, PV), PV) == 1);
+    }
+
+    SECTION("test return tuple 2")
+    {
+        DEBUG_TriMesh m = hex_plus_two();
+        std::cout << "BEFORE COLLAPSE" << std::endl;
+        REQUIRE(m.is_connectivity_valid());
+
+        Tuple edge = m.edge_tuple_between_v1_v2(4, 3, 0);
+        TriMeshCollapseEdgeOperation op(m,edge);
+        op();
+        auto ret = op.return_tuple();
+        std::cout << "AFTER COLLAPSE" << std::endl;
+        REQUIRE(m.is_connectivity_valid());
+        REQUIRE(op.is_return_tuple_from_left_ear() == true);
+        REQUIRE(m.id(ret, PV) == 9);
+        REQUIRE(m.id(m.switch_tuple(ret, PV), PV) == 1);
     }
 }
 
