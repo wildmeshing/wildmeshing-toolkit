@@ -100,6 +100,30 @@ TriMesh hex_plus_two()
     return m;
 }
 
+TriMesh edge_region()
+{
+    //    0---1---2
+    //   / \ / \ / \ .
+    //  3---4---5---6
+    //   \ / \ / \ /
+    //    7---8---9
+    TriMesh m;
+    RowVectors3l tris;
+    tris.resize(10, 3);
+    tris.row(0) << 3, 4, 0;
+    tris.row(1) << 4, 1, 0;
+    tris.row(2) << 4, 5, 1;
+    tris.row(3) << 5, 2, 1;
+    tris.row(4) << 5, 6, 2;
+    tris.row(5) << 3, 7, 4;
+    tris.row(6) << 7, 8, 4;
+    tris.row(7) << 4, 8, 5;
+    tris.row(8) << 8, 9, 5;
+    tris.row(9) << 5, 9, 6;
+    m.initialize(tris);
+    return m;
+}
+
 TriMesh strip(long size)
 {
     TriMesh m;
@@ -126,4 +150,3 @@ TriMesh strip(long size)
     return m;
 }
 } // namespace wmtk::tests
-
