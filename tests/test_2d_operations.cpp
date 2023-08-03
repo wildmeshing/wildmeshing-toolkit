@@ -412,7 +412,7 @@ TEST_CASE("glue_ear_to_face", "[operations][2D]")
     auto executor = m.get_tmoe(edge);
     auto ff_accessor_before = m.create_base_accessor<long>(m.f_handle(PF));
     REQUIRE(ff_accessor_before.vector_attribute(1)(2) == 2);
-    executor.glue_ear_to_face(1, 3, 2, m._debug_id(edge, PE));
+    executor.update_fid_in_ear(1, 3, 2, m._debug_id(edge, PE));
     auto ff_accessor_after = m.create_base_accessor<long>(m.f_handle(PF));
     REQUIRE(ff_accessor_after.vector_attribute(1)(2) == 3);
 }

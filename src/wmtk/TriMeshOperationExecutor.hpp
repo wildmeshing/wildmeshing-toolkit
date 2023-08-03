@@ -84,7 +84,7 @@ public:
 
     const long operating_edge_id() const { return m_operating_edge_id; }
 
-    void glue_ear_to_face(
+    void update_fid_in_ear(
         const long ear_fid,
         const long new_face_fid,
         const long old_fid,
@@ -102,7 +102,7 @@ public:
     // return the two new fids in order
     std::array<long, 2> glue_new_triangle_topology(
         const long new_vid,
-        const std::vector<long>& replacement_eids,
+        const std::vector<long>& spine_eids,
         const IncidentFaceData& face_data);
     void glue_new_faces_across_AB(
         const std::array<long, 2> new_fids_top,
@@ -122,6 +122,6 @@ private:
     // simplices required per-face
     std::vector<IncidentFaceData> m_incident_face_datas;
 
-    IncidentFaceData get_incident_face_data(const Tuple& t);
+    IncidentFaceData get_incident_face_data(Tuple t);
 };
 } // namespace wmtk
