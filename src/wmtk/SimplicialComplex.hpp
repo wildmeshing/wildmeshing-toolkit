@@ -131,6 +131,8 @@ public:
 
     /**
      * @brief The closed star without its boundary.
+     *
+     * For performance reasons, `closed_star` should be used whenever possible.
      */
     static SimplicialComplex open_star(const Simplex& s, const Mesh& m);
 

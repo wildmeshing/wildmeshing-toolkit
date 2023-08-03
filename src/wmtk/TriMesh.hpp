@@ -28,6 +28,14 @@ public:
     Tuple switch_edge(const Tuple& tuple) const { return switch_tuple(tuple, PrimitiveType::Edge); }
     Tuple switch_face(const Tuple& tuple) const { return switch_tuple(tuple, PrimitiveType::Face); }
 
+    /**
+     * @brief jump to the next edge by performing a switch of vertex and edge
+     */
+    Tuple next_edge(const Tuple& tuple) const { return switch_edge(switch_vertex(tuple)); }
+    /**
+     * @brief jump to the previous edge by performing a switch of edge and vertex
+     */
+    Tuple prev_edge(const Tuple& tuple) const { return switch_vertex(switch_edge(tuple)); }
 
     bool is_ccw(const Tuple& tuple) const override;
     bool is_boundary(const Tuple& tuple) const override;
