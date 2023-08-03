@@ -5,9 +5,9 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include <igl/read_triangle_mesh.h>
 #include <igl/readMESH.h>
 #include <igl/readMSH.h>
+#include <igl/read_triangle_mesh.h>
 
 #include <stdlib.h>
 #include <iostream>
@@ -16,7 +16,7 @@
 
 using namespace wmtk;
 
-TEST_CASE("test mesh topology on a single triangle", "[test_topology_single_triangle]")
+TEST_CASE("topology_of_single_triangle", "[topology][2D]")
 {
     Eigen::Matrix<long, 1, 3> F;
     F << 0, 1, 2;
@@ -61,7 +61,7 @@ TEST_CASE("test mesh topology on a single triangle", "[test_topology_single_tria
     }
 }
 
-TEST_CASE("test mesh topology on two triangles", "[test_topology_two_triangles]")
+TEST_CASE("topology_of_two_triangles", "[topology][2D]")
 {
     Eigen::Matrix<long, 2, 3> F;
     F << 0, 1, 2, 1, 3, 2;
@@ -107,7 +107,7 @@ TEST_CASE("test mesh topology on two triangles", "[test_topology_two_triangles]"
     }
 }
 
-TEST_CASE("load meshes from libigl and test mesh topology", "[test_topology_2D]")
+TEST_CASE("topology_of_complex_meshes", "[topology][2D]")
 {
     Eigen::MatrixXd V;
     Eigen::Matrix<long, -1, -1> F;
@@ -173,7 +173,7 @@ TEST_CASE("load meshes from libigl and test mesh topology", "[test_topology_2D]"
     }
 }
 
-TEST_CASE("tetmesh_topology_initialization_1", "[test_topology_two_tedrahedra_1]")
+TEST_CASE("topology_of_two_adjacent_tets", "[topology][3D]")
 {
     // Two tetrahedra are sharing one face
     // there are 7 unique faces and 9 unique edges
@@ -228,7 +228,7 @@ TEST_CASE("tetmesh_topology_initialization_1", "[test_topology_two_tedrahedra_1]
     }
 }
 
-TEST_CASE("tetmesh_topology_initialization_2", "[test_topology_two_tedrahedra_2]")
+TEST_CASE("topology_of_two_independent_tets", "[topology][3D]")
 {
     // Two tetrahedra not sharing anything
     // there are 8 unique faces and 12 unique edges
@@ -283,7 +283,7 @@ TEST_CASE("tetmesh_topology_initialization_2", "[test_topology_two_tedrahedra_2]
     }
 }
 
-TEST_CASE("tetmesh_topology_initialization_3", "[test_topology_two_tedrahedra_3]")
+TEST_CASE("topology_of_tet_bunny", "[topology][3D]")
 {
     Eigen::MatrixXd V;
     Eigen::Matrix<long, -1, -1> T, F;
