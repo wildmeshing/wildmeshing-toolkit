@@ -3,10 +3,6 @@
 
 namespace wmtk {
 
-constexpr PrimitiveType PV = PrimitiveType::Vertex;
-constexpr PrimitiveType PE = PrimitiveType::Edge;
-constexpr PrimitiveType PF = PrimitiveType::Face;
-
 TriMesh::TriMeshOperationExecutor::IncidentFaceData
 TriMesh::TriMeshOperationExecutor::get_incident_face_data(const Tuple& t)
 {
@@ -47,55 +43,66 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
     , hash_accessor(m.get_cell_hash_accessor())
     , m_mesh(m)
     , m_operating_tuple(operating_tuple)
+    , simplices_to_delete(m)
 
 {
+    // store ids of edge and incident vertices
+    m_operating_edge_id = m_mesh.id_edge(m_operating_tuple);
     m_incident_vids[0] = m_mesh.id_vertex(m_operating_tuple);
     m_incident_vids[1] = m_mesh.id_vertex(m_mesh.switch_vertex(m_operating_tuple));
 
-    m_operating_edge_id = m_mesh.id_edge(m_operating_tuple);
-    simplices_to_delete.resize(3);
+    const SimplicialComplex edge_closed_star =
+        SimplicialComplex::closed_star(Simplex::edge(operating_tuple), m);
 
-    m_incident_face_datas.emplace_back(get_incident_face_data(m_operating_tuple));
-    if (!m_mesh.is_boundary(m_operating_tuple)) {
-        m_incident_face_datas.emplace_back(
-            get_incident_face_data(m_mesh.switch_face(m_operating_tuple)));
+    // get all faces incident to the edge
+    for (const Simplex& f : edge_closed_star.get_faces()) {
+        m_incident_face_datas.emplace_back(get_incident_face_data(f.tuple()));
     }
 
-    // add all cells to update hash
-    // Union of all one_ring faces of A,B,C,(C')
-    auto C_tuple = m_mesh.switch_vertex(m_mesh.switch_edge(m_operating_tuple));
-    SimplicialComplex SC =
-        wmtk::SimplicialComplex::open_star(Simplex(PV, m_operating_tuple), m_mesh);
-    SC.unify_with_complex(wmtk::SimplicialComplex::open_star(
-        Simplex(PV, m_mesh.switch_vertex(m_operating_tuple)),
-        m_mesh));
-    SC.unify_with_complex(wmtk::SimplicialComplex::open_star(Simplex::vertex(C_tuple), m_mesh));
-    if (!m_mesh.is_boundary(m_operating_tuple)) {
-        auto C_prime_tuple =
-            m_mesh.switch_vertex(m_mesh.switch_edge(m_mesh.switch_face(m_operating_tuple)));
-        SC.unify_with_complex(
-            wmtk::SimplicialComplex::open_star(Simplex::vertex(C_prime_tuple), m_mesh));
+    // update hash on all faces in the two-ring neighborhood
+    SimplicialComplex hash_update_region(m);
+    for (const Simplex& v : edge_closed_star.get_vertices()) {
+        const SimplicialComplex v_closed_star = SimplicialComplex::closed_star(v, m);
+        hash_update_region.unify_with_complex(v_closed_star);
     }
-    const auto& cells_set = SC.get_faces();
-    for (const auto& cell : cells_set) {
-        cells_to_update_hash.push_back(m_mesh.id(cell));
+    for (const Simplex& f : hash_update_region.get_faces()) {
+        cell_ids_to_update_hash.push_back(m_mesh.id(f));
     }
 };
 
 void TriMesh::TriMeshOperationExecutor::delete_simplices()
 {
-    for (int d = 0; d < 3; d++) {
-        for (const long& simplex_id : simplices_to_delete[d]) {
-            flag_accessors[d].scalar_attribute(simplex_id) = 0;
-        }
+    for (const Simplex& s : simplices_to_delete.get_simplices()) {
+        const long d = get_simplex_dimension(s.primitive_type());
+        const long id = m_mesh.id(s);
+        flag_accessors[d].scalar_attribute(id) = 0;
     }
 }
 
 void TriMesh::TriMeshOperationExecutor::update_cell_hash()
 {
-    for (const long& cell_id : cells_to_update_hash) {
+    for (const long& cell_id : cell_ids_to_update_hash) {
         hash_accessor.scalar_attribute(cell_id)++;
     }
+}
+
+const SimplicialComplex TriMesh::TriMeshOperationExecutor::get_split_simplices_to_delete(
+    const Tuple& tuple,
+    const TriMesh& m)
+{
+    return SimplicialComplex::open_star(Simplex::edge(tuple), m);
+}
+
+const SimplicialComplex TriMesh::TriMeshOperationExecutor::get_collapse_simplices_to_delete(
+    const Tuple& tuple,
+    const TriMesh& m)
+{
+    const SimplicialComplex vertex_open_star =
+        SimplicialComplex::open_star(Simplex::vertex(tuple), m);
+    const SimplicialComplex edge_closed_star =
+        SimplicialComplex::closed_star(Simplex::edge(tuple), m);
+
+    return SimplicialComplex::get_intersection(vertex_open_star, edge_closed_star);
 }
 
 /**
@@ -128,9 +135,8 @@ void TriMesh::TriMeshOperationExecutor::glue_ear_to_face(
 
 void TriMesh::TriMeshOperationExecutor::merge(const long& new_vid)
 {
-    simplices_to_delete[0].push_back(m_incident_vids[0]);
-    simplices_to_delete[0].push_back(m_incident_vids[1]);
-    simplices_to_delete[1].push_back(m_operating_edge_id);
+    simplices_to_delete = get_collapse_simplices_to_delete(m_operating_tuple, m_mesh);
+
     for (int face_index = 0; face_index < m_incident_face_datas.size(); face_index++) {
         const auto& face_data = m_incident_face_datas[face_index];
 
@@ -156,9 +162,6 @@ void TriMesh::TriMeshOperationExecutor::merge(const long& new_vid)
         // change FF and FE for ears
         glue_ear_to_face(f_ear_l, f_ear_r, face_data.fid, e_ac);
         glue_ear_to_face(f_ear_r, f_ear_l, face_data.fid, e_ac);
-
-        simplices_to_delete[1].push_back(face_data.ears[1].eid);
-        simplices_to_delete[2].push_back(face_data.fid);
     }
 };
 
@@ -174,10 +177,10 @@ void TriMesh::TriMeshOperationExecutor::glue_new_faces_across_AB(
     long deleted_fid_bottom = m_incident_face_datas[1].fid;
     auto ff_deleted_top = ff_accessor.vector_attribute(deleted_fid_top);
     auto ff_deleted_bottom = ff_accessor.vector_attribute(deleted_fid_bottom);
-    assert(m_mesh.capacity(PF) > new_fids_top[0]);
-    assert(m_mesh.capacity(PF) > new_fids_top[1]);
-    assert(m_mesh.capacity(PF) > new_fids_bottom[0]);
-    assert(m_mesh.capacity(PF) > new_fids_bottom[1]);
+    assert(m_mesh.capacity(PrimitiveType::Face) > new_fids_top[0]);
+    assert(m_mesh.capacity(PrimitiveType::Face) > new_fids_top[1]);
+    assert(m_mesh.capacity(PrimitiveType::Face) > new_fids_bottom[0]);
+    assert(m_mesh.capacity(PrimitiveType::Face) > new_fids_bottom[1]);
 
     for (int i = 0; i < 3; i++) {
         if (ff_deleted_top(i) == deleted_fid_bottom) {
@@ -278,9 +281,11 @@ Tuple TriMesh::TriMeshOperationExecutor::split_edge()
     SimplicialComplex edge_open_star =
         SimplicialComplex::open_star(Simplex::edge(m_operating_tuple), m_mesh);
 
-    for (const Simplex& simplex_d : edge_open_star.get_simplices()) {
-        simplices_to_delete[simplex_d.dimension()].emplace_back(m_mesh.id(simplex_d));
-    }
+    // for (const Simplex& simplex_d : edge_open_star.get_simplices()) {
+    //     simplices_to_delete[simplex_d.dimension()].emplace_back(m_mesh.id(simplex_d));
+    // }
+    simplices_to_delete = get_split_simplices_to_delete(m_operating_tuple, m_mesh);
+
     // create new vertex
     std::vector<long> new_vids = this->request_simplex_indices(PrimitiveType::Vertex, 1);
     assert(new_vids.size() == 1);

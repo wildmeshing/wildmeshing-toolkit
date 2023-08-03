@@ -108,19 +108,200 @@ TEST_CASE("incident_face_data", "[operations][2D]")
     }
 }
 
+TEST_CASE("get_split_simplices_to_delete", "[operations][split][2D]")
+{
+    SECTION("single_triangle")
+    {
+        const DEBUG_TriMesh m = single_triangle();
+        const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
+
+        SimplicialComplex sc_to_delete = TMOE::get_split_simplices_to_delete(edge, m);
+        const auto& simplices = sc_to_delete.get_simplices();
+
+        REQUIRE(simplices.size() == 2);
+        REQUIRE(sc_to_delete.get_vertices().size() == 0);
+        REQUIRE(sc_to_delete.get_edges().size() == 1);
+        REQUIRE(sc_to_delete.get_faces().size() == 1);
+
+        const Simplex edge_to_delete = *sc_to_delete.get_edges().begin();
+        CHECK(m._debug_id(edge_to_delete) == m._debug_id(edge, PE));
+        const Simplex face_to_delete = *sc_to_delete.get_faces().begin();
+        CHECK(m._debug_id(face_to_delete) == m._debug_id(edge, PF));
+    }
+    SECTION("hex_plus_two")
+    {
+        const DEBUG_TriMesh m = hex_plus_two();
+        const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
+
+        SimplicialComplex sc_to_delete = TMOE::get_split_simplices_to_delete(edge, m);
+        const auto& simplices = sc_to_delete.get_simplices();
+
+        REQUIRE(simplices.size() == 3);
+        REQUIRE(sc_to_delete.get_vertices().size() == 0);
+        REQUIRE(sc_to_delete.get_edges().size() == 1);
+        REQUIRE(sc_to_delete.get_faces().size() == 2);
+
+        const Simplex edge_to_delete = *sc_to_delete.get_edges().begin();
+        CHECK(m._debug_id(edge_to_delete) == m._debug_id(edge, PE));
+
+        // compare expected face ids with the actual ones that should be deleted
+        std::set<long> fid_expected;
+        fid_expected.insert(m._debug_id(edge, PF));
+        fid_expected.insert(m._debug_id(m.switch_face(edge), PF));
+
+        std::set<long> fid_actual;
+        for (const Simplex& f : sc_to_delete.get_faces()) {
+            const long fid = m._debug_id(f);
+            CHECK(fid_expected.find(fid) != fid_expected.end());
+            fid_actual.insert(fid);
+        }
+        CHECK(fid_actual.size() == fid_expected.size());
+    }
+}
+
+TEST_CASE("get_collapse_simplices_to_delete", "[operations][collapse][2D]")
+{
+    SECTION("interior_edge")
+    {
+        const DEBUG_TriMesh m = edge_region();
+        Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
+
+        SimplicialComplex sc_to_delete = TMOE::get_collapse_simplices_to_delete(edge, m);
+        const auto& simplices = sc_to_delete.get_simplices();
+
+        REQUIRE(simplices.size() == 6);
+        REQUIRE(sc_to_delete.get_vertices().size() == 1);
+        REQUIRE(sc_to_delete.get_edges().size() == 3);
+        REQUIRE(sc_to_delete.get_faces().size() == 2);
+
+        // V
+        const Simplex vertex_to_delete = *sc_to_delete.get_vertices().begin();
+        CHECK(m._debug_id(vertex_to_delete) == m._debug_id(edge, PV));
+
+        // E
+        std::set<long> eid_expected;
+        eid_expected.insert(m._debug_id(edge, PE));
+        eid_expected.insert(m._debug_id(m.switch_edge(edge), PE));
+        eid_expected.insert(m._debug_id(m.switch_edge(m.switch_face(edge)), PE));
+
+        std::set<long> eid_actual;
+        for (const Simplex& e : sc_to_delete.get_edges()) {
+            const long eid = m._debug_id(e);
+            CHECK(eid_expected.find(eid) != eid_expected.end());
+            eid_actual.insert(eid);
+        }
+        CHECK(eid_actual.size() == eid_expected.size());
+
+        // F
+        std::set<long> fid_expected;
+        fid_expected.insert(m._debug_id(edge, PF));
+        fid_expected.insert(m._debug_id(m.switch_face(edge), PF));
+
+        std::set<long> fid_actual;
+        for (const Simplex& f : sc_to_delete.get_faces()) {
+            const long fid = m._debug_id(f);
+            CHECK(fid_expected.find(fid) != fid_expected.end());
+            fid_actual.insert(fid);
+        }
+        CHECK(fid_actual.size() == fid_expected.size());
+    }
+    SECTION("boundary_edge")
+    {
+        const DEBUG_TriMesh m = edge_region();
+        Tuple edge = m.edge_tuple_between_v1_v2(7, 8, 6);
+
+        SimplicialComplex sc_to_delete = TMOE::get_collapse_simplices_to_delete(edge, m);
+        const auto& simplices = sc_to_delete.get_simplices();
+
+        REQUIRE(simplices.size() == 4);
+        REQUIRE(sc_to_delete.get_vertices().size() == 1);
+        REQUIRE(sc_to_delete.get_edges().size() == 2);
+        REQUIRE(sc_to_delete.get_faces().size() == 1);
+
+        // V
+        const Simplex vertex_to_delete = *sc_to_delete.get_vertices().begin();
+        CHECK(m._debug_id(vertex_to_delete) == m._debug_id(edge, PV));
+
+        // E
+        std::set<long> eid_expected;
+        eid_expected.insert(m._debug_id(edge, PE));
+        eid_expected.insert(m._debug_id(m.switch_edge(edge), PE));
+
+        std::set<long> eid_actual;
+        for (const Simplex& e : sc_to_delete.get_edges()) {
+            const long eid = m._debug_id(e);
+            CHECK(eid_expected.find(eid) != eid_expected.end());
+            eid_actual.insert(eid);
+        }
+        CHECK(eid_actual.size() == eid_expected.size());
+
+        // F
+        const Simplex face_to_delete = *sc_to_delete.get_faces().begin();
+        CHECK(m._debug_id(face_to_delete) == m._debug_id(edge, PF));
+    }
+    SECTION("interior_edge_incident_to_boundary")
+    {
+        const DEBUG_TriMesh m = edge_region();
+        Tuple edge = m.edge_tuple_between_v1_v2(7, 4, 5);
+
+        SimplicialComplex sc_to_delete = TMOE::get_collapse_simplices_to_delete(edge, m);
+        const auto& simplices = sc_to_delete.get_simplices();
+
+        REQUIRE(simplices.size() == 6);
+        REQUIRE(sc_to_delete.get_vertices().size() == 1);
+        REQUIRE(sc_to_delete.get_edges().size() == 3);
+        REQUIRE(sc_to_delete.get_faces().size() == 2);
+
+        // V
+        const Simplex vertex_to_delete = *sc_to_delete.get_vertices().begin();
+        CHECK(m._debug_id(vertex_to_delete) == m._debug_id(edge, PV));
+
+        // E
+        std::set<long> eid_expected;
+        eid_expected.insert(m._debug_id(edge, PE));
+        eid_expected.insert(m._debug_id(m.switch_edge(edge), PE));
+        eid_expected.insert(m._debug_id(m.switch_edge(m.switch_face(edge)), PE));
+
+        std::set<long> eid_actual;
+        for (const Simplex& e : sc_to_delete.get_edges()) {
+            const long eid = m._debug_id(e);
+            CHECK(eid_expected.find(eid) != eid_expected.end());
+            eid_actual.insert(eid);
+        }
+        CHECK(eid_actual.size() == eid_expected.size());
+
+        // F
+        std::set<long> fid_expected;
+        fid_expected.insert(m._debug_id(edge, PF));
+        fid_expected.insert(m._debug_id(m.switch_face(edge), PF));
+
+        std::set<long> fid_actual;
+        for (const Simplex& f : sc_to_delete.get_faces()) {
+            const long fid = m._debug_id(f);
+            CHECK(fid_expected.find(fid) != fid_expected.end());
+            fid_actual.insert(fid);
+        }
+        CHECK(fid_actual.size() == fid_expected.size());
+    }
+}
+
 TEST_CASE("delete_simplices", "[operations][2D]")
 {
+    // delete for split
+
     // things can be marked as deleted but will still have the connectivity information
     DEBUG_TriMesh m = two_neighbors();
     REQUIRE(m.is_connectivity_valid());
     Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
     std::vector<std::vector<long>> simplices_to_delete(3);
-    simplices_to_delete[1] = std::vector<long>{m._debug_id(edge, PE)};
-    simplices_to_delete[2] = std::vector<long>{m._debug_id(edge, PF)};
-
+    simplices_to_delete[1].emplace_back(m._debug_id(edge, PE));
+    simplices_to_delete[2].emplace_back(m._debug_id(edge, PF));
 
     auto executor = m.get_tmoe(edge);
-    executor.simplices_to_delete = simplices_to_delete;
+
+    // new way of getting simplices
+    executor.simplices_to_delete = TMOE::get_split_simplices_to_delete(edge, m);
+
     executor.delete_simplices();
     REQUIRE(executor.flag_accessors[1].scalar_attribute(edge) == 0);
     REQUIRE(executor.flag_accessors[2].scalar_attribute(edge) == 0);
@@ -473,13 +654,14 @@ TEST_CASE("simplices_to_delete_for_split", "[operations][2D]")
 
         executor.split_edge();
 
-        REQUIRE(executor.simplices_to_delete.size() == 3);
-        REQUIRE(executor.simplices_to_delete[0].size() == 0);
+        const SimplicialComplex& simplices_to_delete = executor.simplices_to_delete;
+        REQUIRE(simplices_to_delete.get_simplices().size() == 2);
+        REQUIRE(simplices_to_delete.get_vertices().size() == 0);
 
-        REQUIRE(executor.simplices_to_delete[1].size() == 1);
-        REQUIRE(executor.simplices_to_delete[1][0] == m._debug_id(edge, PE));
-        REQUIRE(executor.simplices_to_delete[2].size() == 1);
-        REQUIRE(executor.simplices_to_delete[2][0] == 0);
+        REQUIRE(simplices_to_delete.get_edges().size() == 1);
+        // REQUIRE(executor.simplices_to_delete[1][0] == m._debug_id(edge, PE));
+        REQUIRE(simplices_to_delete.get_faces().size() == 1);
+        // REQUIRE(executor.simplices_to_delete[2][0] == 0);
     }
     SECTION("interior_edge")
     {
@@ -510,14 +692,16 @@ TEST_CASE("simplices_to_delete_for_split", "[operations][2D]")
 
         executor.split_edge();
 
-        REQUIRE(executor.simplices_to_delete.size() == 3);
-        REQUIRE(executor.simplices_to_delete[0].size() == 0);
+        const SimplicialComplex& simplices_to_delete = executor.simplices_to_delete;
 
-        REQUIRE(executor.simplices_to_delete[1].size() == 1);
-        REQUIRE(executor.simplices_to_delete[1][0] == m._debug_id(edge, PE));
-        REQUIRE(executor.simplices_to_delete[2].size() == 2);
-        REQUIRE(executor.simplices_to_delete[2][0] == 0);
-        REQUIRE(executor.simplices_to_delete[2][1] == 2);
+        REQUIRE(simplices_to_delete.get_simplices().size() == 3);
+        REQUIRE(simplices_to_delete.get_vertices().size() == 0);
+
+        REQUIRE(simplices_to_delete.get_edges().size() == 1);
+        // REQUIRE(simplices_to_delete[1][0] == m._debug_id(edge, PE));
+        REQUIRE(simplices_to_delete.get_faces().size() == 2);
+        // REQUIRE(simplices_to_delete[2][0] == 0);
+        // REQUIRE(simplices_to_delete[2][1] == 2);
     }
 }
 

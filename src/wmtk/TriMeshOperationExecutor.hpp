@@ -55,6 +55,26 @@ public:
         std::array<EarFace, 2> ears; // ear
     };
 
+    /**
+     * @brief gather all simplices that are deleted in a split
+     *
+     * The deleted simplices are exactly the open star of the edge
+     */
+    static const SimplicialComplex get_split_simplices_to_delete(
+        const Tuple& tuple,
+        const TriMesh& m);
+
+    /**
+     * @brief gather all simplices that are deleted in a collapse
+     *
+     * The deleted simplices are the intersection of the open star of the vertex and the closed star
+     * of the edge. This comes down to one vertex, three edges, and two faces if the edge is on the
+     * interior. On the boundary it is one vertex, two edges, and one face.
+     */
+    static const SimplicialComplex get_collapse_simplices_to_delete(
+        const Tuple& tuple,
+        const TriMesh& m);
+
     const std::vector<IncidentFaceData>& incident_face_datas() const
     {
         return m_incident_face_datas;
@@ -89,8 +109,8 @@ public:
         const std::array<long, 2> new_fids_bottom);
     std::vector<long> request_simplex_indices(const PrimitiveType type, long count);
 
-    std::vector<std::vector<long>> simplices_to_delete; // size 3 for vertex, edge, face
-    std::vector<long> cells_to_update_hash;
+    SimplicialComplex simplices_to_delete;
+    std::vector<long> cell_ids_to_update_hash;
     TriMesh& m_mesh;
     Tuple m_operating_tuple;
 
