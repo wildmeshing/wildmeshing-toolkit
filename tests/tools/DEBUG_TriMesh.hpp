@@ -7,9 +7,20 @@ class DEBUG_TriMesh : public TriMesh
 {
 public:
     using TriMesh::TriMesh;
-    DEBUG_TriMesh(const TriMesh& m): TriMesh(m) {}
-    DEBUG_TriMesh(TriMesh&& m): TriMesh(std::move(m)) {}
+    DEBUG_TriMesh(const TriMesh& m)
+        : TriMesh(m)
+    {}
+    DEBUG_TriMesh(TriMesh&& m)
+        : TriMesh(std::move(m))
+    {}
     using TriMesh::operator=;
+
+
+    bool operator==(const DEBUG_TriMesh& o) const
+    {
+        return static_cast<const TriMesh&>(*this) == static_cast<const TriMesh&>(o);
+    }
+    bool operator!=(const DEBUG_TriMesh& o) const { return !(*this == o); }
 
 
     auto edge_tuple_between_v1_v2(const long v1, const long v2, const long fid) const -> Tuple
@@ -31,10 +42,7 @@ public:
         return Tuple(local_vid1, (3 - local_vid1 - local_vid2) % 3, -1, fid, 0);
     }
 
-    Tuple tuple_from_face_id(const long fid)
-    {
-        return tuple_from_id(PrimitiveType::Face, fid);
-    }
+    Tuple tuple_from_face_id(const long fid) { return tuple_from_id(PrimitiveType::Face, fid); }
     template <typename T>
     AccessorBase<T> create_base_accessor(const MeshAttributeHandle<T>& handle)
     {
