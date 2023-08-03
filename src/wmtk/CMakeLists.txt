@@ -10,8 +10,8 @@ set(SRC_FILES
     TriMesh.hpp
     TetMesh.cpp
     TetMesh.hpp
-    TriMesh_operations.hpp
-    TriMesh_operations.cpp
+    TriMeshOperationExecutor.hpp
+    TriMeshOperationExecutor.cpp
     Primitive.hpp
     Primitive.cpp
     Tuple.cpp

@@ -1,6 +1,6 @@
 #pragma once
 #include <wmtk/TriMesh.hpp>
-#include <wmtk/TriMesh_operations.hpp>
+#include <wmtk/TriMeshOperationExecutor.hpp>
 
 namespace wmtk::tests {
 class DEBUG_TriMesh : public TriMesh
@@ -84,7 +84,9 @@ public:
         return TriMesh::id(tuple, type);
     }
     long id(const Simplex& s) const { return id(s.tuple(), s.primitive_type()); }
-    TriMeshOperationExecutor get_tmoe() { return TriMeshOperationExecutor(*this); }
+    /**
+     * @brief returns the TriMeshOperationExecutor
+     */
     TriMeshOperationExecutor get_tmoe(const Tuple& t) { return TriMeshOperationExecutor(*this, t); }
 };
 

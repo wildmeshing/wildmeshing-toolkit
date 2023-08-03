@@ -15,6 +15,10 @@ using namespace wmtk::tests;
 
 namespace {
 
+constexpr PrimitiveType PV = PrimitiveType::Vertex;
+constexpr PrimitiveType PE = PrimitiveType::Edge;
+constexpr PrimitiveType PF = PrimitiveType::Face;
+
 // because TriMesh::split_edge isn'ta waare of preconditions we need to tell the system whether
 // something should succeed
 DEBUG_TriMesh test_split(const DEBUG_TriMesh& mesh, const Tuple& e, bool should_succeed)
@@ -36,8 +40,8 @@ DEBUG_TriMesh test_split(const DEBUG_TriMesh& mesh, const Tuple& e, bool should_
 }
 DEBUG_TriMesh test_split(const DEBUG_TriMesh& mesh, long edge_index, bool should_succeed)
 {
-    Tuple e = mesh.tuple_from_id(PrimitiveType::Edge, edge_index);
-    REQUIRE(mesh.id(e, PrimitiveType::Edge) == edge_index);
+    Tuple e = mesh.tuple_from_id(PE, edge_index);
+    REQUIRE(mesh.id(e, PE) == edge_index);
     return test_split(mesh, e, should_succeed);
 }
 
@@ -64,48 +68,83 @@ DEBUG_TriMesh test_collapse(const DEBUG_TriMesh& mesh, const Tuple& e, bool shou
 }
 DEBUG_TriMesh test_collapse(const DEBUG_TriMesh& mesh, long edge_index, bool should_succeed)
 {
-    Tuple e = mesh.tuple_from_id(PrimitiveType::Edge, edge_index);
-    REQUIRE(mesh.id(e, PrimitiveType::Edge) == edge_index);
+    Tuple e = mesh.tuple_from_id(PE, edge_index);
+    REQUIRE(mesh.id(e, PE) == edge_index);
     return test_collapse(mesh, e, should_succeed);
 }
 } // namespace
 
-TEST_CASE("trimesh split collapse factories", "[.]")
+TEST_CASE("trimesh_split_collapse_factories", "[operations][2D]")
 {
+    SECTION("split")
     {
         DEBUG_TriMesh m;
         m = single_triangle();
-        auto e = m.tuple_from_id(PrimitiveType::Edge, 0);
+        auto e = m.tuple_from_id(PE, 0);
 
-        REQUIRE(m.id(e, PrimitiveType::Edge) == 0);
-        REQUIRE(m.id(e, PrimitiveType::Vertex) == 0);
-        REQUIRE(m.id(m.switch_tuple(e, PrimitiveType::Vertex), PrimitiveType::Vertex) == 1);
+        REQUIRE(m.id(e, PE) == 0);
+        REQUIRE(m.id(e, PV) == 0);
+        REQUIRE(m.id(m.switch_tuple(e, PV), PV) == 1);
 
         test_split(m, e, true);
     }
+    SECTION("collapse")
     {
         DEBUG_TriMesh m;
         m = quad();
         {
-            auto e = m.tuple_from_id(PrimitiveType::Edge, 0);
+            auto e = m.tuple_from_id(PE, 0);
 
-            REQUIRE(m.id(e, PrimitiveType::Edge) == 0);
-            REQUIRE(m.id(e, PrimitiveType::Vertex) == 0);
-            REQUIRE(m.id(m.switch_tuple(e, PrimitiveType::Vertex), PrimitiveType::Vertex) == 1);
+            REQUIRE(m.id(e, PE) == 0);
+            REQUIRE(m.id(e, PV) == 0);
+            REQUIRE(m.id(m.switch_tuple(e, PV), PV) == 1);
 
             test_collapse(m, e, false);
         }
         {
-            auto e = m.tuple_from_id(PrimitiveType::Edge, 0);
+            auto e = m.tuple_from_id(PE, 0);
 
-            REQUIRE(m.id(e, PrimitiveType::Edge) == 0);
-            REQUIRE(m.id(e, PrimitiveType::Vertex) == 0);
-            REQUIRE(m.id(m.switch_tuple(e, PrimitiveType::Vertex), PrimitiveType::Vertex) == 1);
+            REQUIRE(m.id(e, PE) == 0);
+            REQUIRE(m.id(e, PV) == 0);
+            REQUIRE(m.id(m.switch_tuple(e, PV), PV) == 1);
 
             test_collapse(m, e, false);
         }
     }
 }
+
+TEST_CASE("split_all_edges", "[split][operations][.]")
+{
+    wmtk::TriMesh mesh;
+
+    // SECTION("single_triangle")
+    //{
+    //     mesh = single_triangle();
+    // }
+    // SECTION("quad")
+    //{
+    //     mesh = quad();
+    // }
+    SECTION("tetrahedron")
+    {
+        mesh = tetrahedron();
+    }
+
+    const std::vector<wmtk::Tuple> edges = mesh.get_all(PE);
+
+    wmtk::OperationFactory<wmtk::TriMeshSplitEdgeOperation> fact;
+
+    for (const wmtk::Tuple& e : edges) {
+        if (!mesh.is_valid(e)) {
+            continue;
+        }
+
+        auto op = fact.create(mesh, e);
+        bool result = (*op)(); // should run the split
+        REQUIRE(result);
+    }
+}
+
 /*
 TEST_CASE("get per face data")
 {
