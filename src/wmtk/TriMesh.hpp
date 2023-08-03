@@ -20,6 +20,23 @@ public:
     Tuple collapse_edge(const Tuple& t) override;
 
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
+
+    Tuple switch_vertex(const Tuple& tuple) const
+    {
+        return switch_tuple(tuple, PrimitiveType::Vertex);
+    }
+    Tuple switch_edge(const Tuple& tuple) const { return switch_tuple(tuple, PrimitiveType::Edge); }
+    Tuple switch_face(const Tuple& tuple) const { return switch_tuple(tuple, PrimitiveType::Face); }
+
+    /**
+     * @brief jump to the next edge by performing a switch of vertex and edge
+     */
+    Tuple next_edge(const Tuple& tuple) const { return switch_edge(switch_vertex(tuple)); }
+    /**
+     * @brief jump to the previous edge by performing a switch of edge and vertex
+     */
+    Tuple prev_edge(const Tuple& tuple) const { return switch_vertex(switch_edge(tuple)); }
+
     bool is_ccw(const Tuple& tuple) const override;
     bool is_boundary(const Tuple& tuple) const override;
 
@@ -39,6 +56,11 @@ public:
 
 protected:
     long id(const Tuple& tuple, PrimitiveType type) const override;
+    long id(const Simplex& simplex) const { return id(simplex.tuple(), simplex.primitive_type()); }
+
+    long id_vertex(const Tuple& tuple) const { return id(tuple, PrimitiveType::Vertex); }
+    long id_edge(const Tuple& tuple) const { return id(tuple, PrimitiveType::Edge); }
+    long id_face(const Tuple& tuple) const { return id(tuple, PrimitiveType::Face); }
 
     /**
      * @brief internal function that returns the tuple of requested type, and has the global index
