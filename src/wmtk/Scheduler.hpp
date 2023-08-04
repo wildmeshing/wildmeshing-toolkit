@@ -3,6 +3,7 @@
 #include "operations/Operation.hpp"
 #include "operations/OperationFactory.hpp"
 #include <string_view>
+#include <unordered_map>
 
 
 namespace wmtk {
