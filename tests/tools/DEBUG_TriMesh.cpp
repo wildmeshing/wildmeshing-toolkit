@@ -21,7 +21,7 @@ bool DEBUG_TriMesh::operator!=(const DEBUG_TriMesh& o) const
 }
 
 
-bool DEBUG_TriMesh::print_state() const {}
+void DEBUG_TriMesh::print_state() const {}
 
 
 auto DEBUG_TriMesh::edge_tuple_between_v1_v2(const long v1, const long v2, const long fid) const
