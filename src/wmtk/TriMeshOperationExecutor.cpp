@@ -67,8 +67,8 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
 {
     // store ids of edge and incident vertices
     m_operating_edge_id = m_mesh.id_edge(m_operating_tuple);
-    m_incident_vids[0] = m_mesh.id_vertex(m_operating_tuple);
-    m_incident_vids[1] = m_mesh.id_vertex(m_mesh.switch_vertex(m_operating_tuple));
+    m_spine_vids[0] = m_mesh.id_vertex(m_operating_tuple);
+    m_spine_vids[1] = m_mesh.id_vertex(m_mesh.switch_vertex(m_operating_tuple));
 
     const SimplicialComplex edge_closed_star =
         SimplicialComplex::closed_star(Simplex::edge(operating_tuple), m_mesh);
@@ -226,7 +226,7 @@ void TriMesh::TriMeshOperationExecutor::glue_new_faces_across_AB(
 std::array<long, 2> TriMesh::TriMeshOperationExecutor::glue_new_triangle_topology(
     const long v_new,
     const std::vector<long>& spine_eids,
-    const IncidentFaceData& face_data)
+    IncidentFaceData& face_data)
 {
     assert(spine_eids.size() == 2);
 
@@ -234,152 +234,102 @@ std::array<long, 2> TriMesh::TriMeshOperationExecutor::glue_new_triangle_topolog
     std::vector<long> new_fids = this->request_simplex_indices(PrimitiveType::Face, 2);
     assert(new_fids.size() == 2);
 
+    face_data.f0 = new_fids[0];
+    face_data.f1 = new_fids[1];
+
     std::vector<long> splitting_edges = this->request_simplex_indices(PrimitiveType::Edge, 1);
     assert(splitting_edges[0] > -1); // TODO: is this assert reasonable at all?
     const long splitting_eid = splitting_edges[0];
 
-    if (false) {
-        //           v2
-        //          /|\           
-        //   ef0   / | \   ef1
-        //        /  |  \         
-        //       /  oe   \        
-        //    ee0    |    ee1
-        //     /  f0 | f1  \      
-        //    /      |      \    
-        //   /       |       \     
-        // v0--se0-v_new-se1--v1
-        const long f0 = new_fids[0];
-        const long f1 = new_fids[1];
-        const long ef0 = face_data.ears[0].fid;
-        const long ef1 = face_data.ears[1].fid;
-        const long ee0 = face_data.ears[0].eid;
-        const long ee1 = face_data.ears[1].eid;
-        const long v0 = m_incident_vids[0];
-        const long v1 = m_incident_vids[1];
-        const long v2 = face_data.opposite_vid;
-        const long se0 = spine_eids[0];
-        const long se1 = spine_eids[1];
-        const long oe = splitting_eid;
-        const long f_old = face_data.fid;
+    //  ---------v2--------
+    // |        /|\        |
+    // | ef0   / | \   ef1 |
+    // |      /  |  \      |
+    // |     /  oe   \     |
+    // |  ee0    |    ee1  |
+    // |   /     |     \   |
+    // |  /  f0  |  f1  \  |
+    // | /       |       \ |
+    // v0--se0-v_new-se1--v1
+    const long f0 = new_fids[0];
+    const long f1 = new_fids[1];
+    const long ef0 = face_data.ears[0].fid;
+    const long ef1 = face_data.ears[1].fid;
+    const long ee0 = face_data.ears[0].eid;
+    const long ee1 = face_data.ears[1].eid;
+    const long v0 = m_spine_vids[0];
+    const long v1 = m_spine_vids[1];
+    const long v2 = face_data.opposite_vid;
+    const long se0 = spine_eids[0];
+    const long se1 = spine_eids[1];
+    const long oe = splitting_eid;
+    const long f_old = face_data.fid;
 
-        // f0
-        {
-            update_fid_in_ear(ef0, f0, f_old, ee0);
+    // f0
+    {
+        update_fid_in_ear(ef0, f0, f_old, ee0);
 
-            auto ff = ff_accessor.vector_attribute(f0);
-            ff[0] = f1;
-            ff[1] = ef0;
-            ff[2] = -1; // spine
+        auto fv = fv_accessor.vector_attribute(f0);
+        auto fe = fe_accessor.vector_attribute(f0);
+        auto ff = ff_accessor.vector_attribute(f0);
+        fv = fv_accessor.vector_attribute(f_old);
+        fe = fe_accessor.vector_attribute(f_old);
+        ff = ff_accessor.vector_attribute(f_old);
+        // correct old connectivity
+        for (size_t i = 0; i < 3; ++i) {
+            if (fe[i] == ee1) {
+                ff[i] = f1;
+                fe[i] = oe;
+            }
 
-            auto fe = fe_accessor.vector_attribute(f0);
-            fe[0] = oe;
-            fe[1] = ee0;
-            fe[2] = se0;
+            if (fe[i] == m_operating_edge_id) {
+                fe[i] = se0;
+            }
 
-            auto fv = fv_accessor.vector_attribute(f0);
-            fv[0] = v0;
-            fv[1] = v_new;
-            fv[2] = v2;
+            if (fv[i] == v1) {
+                fv[i] = v_new;
+            }
         }
+    }
+    // f1
+    {
+        update_fid_in_ear(ef1, f1, f_old, ee1);
 
-        // f1
-        {
-            update_fid_in_ear(ef1, f1, f_old, ee1);
+        auto fv = fv_accessor.vector_attribute(f1);
+        auto fe = fe_accessor.vector_attribute(f1);
+        auto ff = ff_accessor.vector_attribute(f1);
+        fv = fv_accessor.vector_attribute(f_old);
+        fe = fe_accessor.vector_attribute(f_old);
+        ff = ff_accessor.vector_attribute(f_old);
+        // correct old connectivity
+        for (size_t i = 0; i < 3; ++i) {
+            if (fe[i] == ee0) {
+                ff[i] = f0;
+                fe[i] = oe;
+            }
 
-            auto ff = ff_accessor.vector_attribute(f1);
-            ff[0] = ef1;
-            ff[1] = f0;
-            ff[2] = -1; // spine
+            if (fe[i] == m_operating_edge_id) {
+                fe[i] = se1;
+            }
 
-            auto fe = fe_accessor.vector_attribute(f1);
-            fe[0] = ee1;
-            fe[1] = oe;
-            fe[2] = se1;
-
-            auto fv = fv_accessor.vector_attribute(f1);
-            fv[0] = v_new;
-            fv[1] = v1;
-            fv[2] = v2;
+            if (fv[i] == v0) {
+                fv[i] = v_new;
+            }
         }
-
-        // assign each edge one face
-        ef_accessor.scalar_attribute(ee0) = f0;
-        ef_accessor.scalar_attribute(ee1) = f1;
-        ef_accessor.scalar_attribute(oe) = f0;
-        ef_accessor.scalar_attribute(se0) = f0;
-        ef_accessor.scalar_attribute(se1) = f1;
-        // assign each vertex one face
-        vf_accessor.scalar_attribute(v0) = f0;
-        vf_accessor.scalar_attribute(v1) = f1;
-        vf_accessor.scalar_attribute(v2) = f0;
-        vf_accessor.scalar_attribute(v_new) = f0;
-
-        // spine is dealt with later on
     }
 
-    for (int i = 0; i < 2; ++i) {
-        //         /|\ 
-        //   ear  / | \  other_ear
-        //       / m|o \ 
-        //      /   |   \ 
-        // ear_vid----other_ear_vid
-        const EarFace& ear = face_data.ears[i];
-        const EarFace& other_ear = face_data.ears[(i + 1) % 2];
+    // assign each edge one face
+    ef_accessor.scalar_attribute(ee0) = f0;
+    ef_accessor.scalar_attribute(ee1) = f1;
+    ef_accessor.scalar_attribute(oe) = f0;
+    ef_accessor.scalar_attribute(se0) = f0;
+    ef_accessor.scalar_attribute(se1) = f1;
+    // assign each vertex one face
+    vf_accessor.scalar_attribute(v0) = f0;
+    vf_accessor.scalar_attribute(v1) = f1;
+    vf_accessor.scalar_attribute(v2) = f0;
+    vf_accessor.scalar_attribute(v_new) = f0;
 
-        const long ear_vid = m_incident_vids[i];
-        const long other_ear_vid = m_incident_vids[(i + 1) % 2];
-        const long my_fid = new_fids[i];
-        const long other_fid = new_fids[(i + 1) % 2];
-        // dummy transfer for new face attributes
-        // this copies the deleted FF, FE, FV for two new faces. It handles the case of new to ear
-        long deleted_fid = face_data.fid;
-        ff_accessor.vector_attribute(my_fid) = ff_accessor.vector_attribute(deleted_fid);
-        fe_accessor.vector_attribute(my_fid) = fe_accessor.vector_attribute(deleted_fid);
-        fv_accessor.vector_attribute(my_fid) = fv_accessor.vector_attribute(deleted_fid);
-
-        update_fid_in_ear(ear.fid, my_fid, face_data.fid, ear.eid);
-
-        auto my_fe = fe_accessor.vector_attribute(my_fid);
-        auto my_ff = ff_accessor.vector_attribute(my_fid);
-        auto my_fv = fv_accessor.vector_attribute(my_fid);
-
-        // now glue FF, FE, FV of the new-new faces across the splitting edge
-        for (int j = 0; j < 3; j++) {
-            if (my_fe[j] == other_ear.eid) {
-                // FF of the new to new
-                my_ff[j] = other_fid;
-                // FE of the new to new
-                my_fe[j] = splitting_eid;
-            }
-
-            if (my_fe[j] == m_operating_edge_id) {
-                // FE of the replacement edge
-                my_fe[j] = spine_eids[i];
-            }
-
-            if (my_fv[j] == other_ear_vid) {
-                // FV of the new to new
-                my_fv[j] = v_new;
-            }
-        }
-        // VF of the ear
-        vf_accessor.scalar_attribute(ear_vid) = my_fid;
-
-        // EF of the ear
-        ef_accessor.scalar_attribute(ear.eid) = my_fid;
-
-        // EF of the new
-        ef_accessor.scalar_attribute(spine_eids[i]) = my_fid;
-    }
-
-    // use first new fid as the fid for new vertex, splitting edge, and opposing vertex
-    // VF of the new vertex
-    vf_accessor.scalar_attribute(v_new) = new_fids[0];
-    // EF of the spine
-    ef_accessor.scalar_attribute(splitting_eid) = new_fids[0];
-    // VF of opposing vertex
-    vf_accessor.scalar_attribute(face_data.opposite_vid) = new_fids[0];
 
     return {new_fids[0], new_fids[1]};
 }
@@ -398,7 +348,7 @@ Tuple TriMesh::TriMeshOperationExecutor::split_edge()
     assert(new_eids.size() == 2);
 
     std::vector<std::array<long, 2>> new_fids;
-    for (const IncidentFaceData& face_data : m_incident_face_datas) {
+    for (IncidentFaceData& face_data : m_incident_face_datas) {
         // glue the topology
         const std::array<long, 2> new_fids_per_face =
             glue_new_triangle_topology(new_vid, new_eids, face_data);

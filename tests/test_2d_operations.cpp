@@ -65,7 +65,7 @@ TEST_CASE("incident_face_data", "[operations][2D]")
 
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        const auto executor = m.get_tmoe(edge);
+        auto executor = m.get_tmoe(edge);
         const std::vector<TMOE::IncidentFaceData>& face_datas = executor.incident_face_datas();
         REQUIRE(face_datas.size() == 1);
         const TMOE::IncidentFaceData& face_data = face_datas[0];
@@ -484,62 +484,77 @@ TEST_CASE("glue_new_triangle", "[operations][2D]")
         //  create new vertex
         std::vector<long> new_vids = executor.request_simplex_indices(PV, 1);
         REQUIRE(new_vids.size() == 1);
-        const long new_vid = new_vids[0];
+        const long v_new = new_vids[0];
 
         // create new edges
-        std::vector<long> replacement_eids = executor.request_simplex_indices(PE, 2);
-        REQUIRE(replacement_eids.size() == 2);
+        std::vector<long> spine_eids = executor.request_simplex_indices(PE, 2);
+        REQUIRE(spine_eids.size() == 2);
 
         std::vector<std::array<long, 2>> new_fids;
         REQUIRE(executor.incident_face_datas().size() == 1);
         for (size_t i = 0; i < executor.incident_face_datas().size(); ++i) {
-            const auto& face_data = executor.incident_face_datas()[i];
+            auto& face_data = executor.incident_face_datas()[i];
             // glue the topology
             std::array<long, 2> new_fid_per_face =
-                executor.glue_new_triangle_topology(new_vid, replacement_eids, face_data);
+                executor.glue_new_triangle_topology(v_new, spine_eids, face_data);
             new_fids.emplace_back(new_fid_per_face);
         }
-        auto fv_accessor = m.create_base_accessor<long>(m.f_handle(PV));
-        REQUIRE(fv_accessor.vector_attribute(new_fids[0][0])[0] == 0);
-        REQUIRE(fv_accessor.vector_attribute(new_fids[0][0])[1] == 1);
-        REQUIRE(fv_accessor.vector_attribute(new_fids[0][0])[2] == new_vid);
+        REQUIRE(new_fids.size() == 1);
 
-        REQUIRE(fv_accessor.vector_attribute(new_fids[0][1])[0] == 0);
-        REQUIRE(fv_accessor.vector_attribute(new_fids[0][1])[1] == new_vid);
-        REQUIRE(fv_accessor.vector_attribute(new_fids[0][1])[2] == 2);
+        const long& f0 = new_fids[0][0];
+        const long& f1 = new_fids[0][1];
+        const long& se0 = spine_eids[0];
+        const long& se1 = spine_eids[1];
+        const long& ee0 = executor.incident_face_datas()[0].ears[0].eid;
+        const long& ee1 = executor.incident_face_datas()[0].ears[1].eid;
+
+        auto fv_accessor = m.create_base_accessor<long>(m.f_handle(PV));
+        const auto fv0 = fv_accessor.vector_attribute(f0);
+        const auto fv1 = fv_accessor.vector_attribute(f1);
+        CHECK(fv0[0] == 0);
+        CHECK(fv0[1] == 1);
+        CHECK(fv0[2] == v_new);
+
+        CHECK(fv1[0] == 0);
+        CHECK(fv1[1] == v_new);
+        CHECK(fv1[2] == 2);
 
         // the new fids generated are in top-down left-right order
         auto ff_accessor = m.create_base_accessor<long>(m.f_handle(PF));
+        const auto ff0 = ff_accessor.vector_attribute(f0);
+        const auto ff1 = ff_accessor.vector_attribute(f1);
+        CHECK(ff0[0] == -1);
+        CHECK(ff0[1] == f1);
+        CHECK(ff0[2] == -1);
 
-        REQUIRE(ff_accessor.vector_attribute(new_fids[0][0])[1] == new_fids[0][1]);
-        REQUIRE(ff_accessor.vector_attribute(new_fids[0][1])[2] == new_fids[0][0]);
-        REQUIRE(ff_accessor.vector_attribute(new_fids[0][0])[0] == -1);
-        REQUIRE(ff_accessor.vector_attribute(new_fids[0][1])[0] == -1);
+        CHECK(ff1[0] == -1);
+        CHECK(ff1[1] == -1);
+        CHECK(ff1[2] == f0);
 
         auto fe_accessor = m.create_base_accessor<long>(m.f_handle(PE));
+        const auto fe0 = fe_accessor.vector_attribute(f0);
+        const auto fe1 = fe_accessor.vector_attribute(f1);
 
-        REQUIRE(fe_accessor.vector_attribute(new_fids[0][0])[0] == replacement_eids[0]);
-        REQUIRE(fe_accessor.vector_attribute(new_fids[0][0])[1] == 5);
-        REQUIRE(
-            fe_accessor.vector_attribute(new_fids[0][0])[2] ==
-            executor.incident_face_datas()[0].ears[0].eid);
+        CHECK(fe0[0] == se0);
+        CHECK(fe0[1] == 5);
+        CHECK(fe0[2] == ee0);
 
-        REQUIRE(fe_accessor.vector_attribute(new_fids[0][1])[0] == replacement_eids[1]);
-        REQUIRE(
-            fe_accessor.vector_attribute(new_fids[0][1])[1] ==
-            executor.incident_face_datas()[0].ears[1].eid);
-        REQUIRE(fe_accessor.vector_attribute(new_fids[0][1])[2] == 5);
+        CHECK(fe1[0] == se1);
+        CHECK(fe1[1] == ee1);
+        CHECK(fe1[2] == 5);
 
         auto vf_accessor = m.create_base_accessor<long>(m.vf_handle());
-        REQUIRE(vf_accessor.scalar_attribute(new_vid) == new_fids[0][0]);
-        REQUIRE(vf_accessor.scalar_attribute(0) == new_fids[0][0]);
-        REQUIRE(vf_accessor.scalar_attribute(1) == new_fids[0][0]);
-        REQUIRE(vf_accessor.scalar_attribute(2) == new_fids[0][1]);
+        CHECK(vf_accessor.scalar_attribute(v_new) == f0);
+        CHECK(vf_accessor.scalar_attribute(0) == f0);
+        CHECK(vf_accessor.scalar_attribute(1) == f0);
+        CHECK(vf_accessor.scalar_attribute(2) == f1);
 
         auto ef_accessor = m.create_base_accessor<long>(m.ef_handle());
-        REQUIRE(ef_accessor.scalar_attribute(replacement_eids[0]) == new_fids[0][0]);
-        REQUIRE(ef_accessor.scalar_attribute(replacement_eids[1]) == new_fids[0][1]);
-        REQUIRE(ef_accessor.scalar_attribute(5) == new_fids[0][0]);
+        CHECK(ef_accessor.scalar_attribute(se0) == f0);
+        CHECK(ef_accessor.scalar_attribute(se1) == f1);
+        CHECK(ef_accessor.scalar_attribute(ee0) == f0);
+        CHECK(ef_accessor.scalar_attribute(ee1) == f1);
+        CHECK(ef_accessor.scalar_attribute(5) == f0);
     }
     SECTION("interior_edge")
     {
@@ -552,83 +567,124 @@ TEST_CASE("glue_new_triangle", "[operations][2D]")
         // create new vertex
         std::vector<long> new_vids = executor.request_simplex_indices(PV, 1);
         REQUIRE(new_vids.size() == 1);
-        const long new_vid = new_vids[0];
+        const long v_new = new_vids[0];
 
         // create new edges
-        std::vector<long> replacement_eids = executor.request_simplex_indices(PE, 2);
-        REQUIRE(replacement_eids.size() == 2);
+        std::vector<long> spine_eids = executor.request_simplex_indices(PE, 2);
+        REQUIRE(spine_eids.size() == 2);
 
         std::vector<std::array<long, 2>> new_fids;
         for (size_t i = 0; i < executor.incident_face_datas().size(); ++i) {
-            const auto& face_data = executor.incident_face_datas()[i];
+            auto& face_data = executor.incident_face_datas()[i];
             // glue the topology
             std::array<long, 2> new_fid_per_face =
-                executor.glue_new_triangle_topology(new_vid, replacement_eids, face_data);
+                executor.glue_new_triangle_topology(v_new, spine_eids, face_data);
             new_fids.emplace_back(new_fid_per_face);
         }
+        REQUIRE(new_fids.size() == 2);
+
         auto fv_accessor = m.create_base_accessor<long>(m.f_handle(PV));
-        REQUIRE(fv_accessor.vector_attribute(new_fids[0][0])[0] == 0);
-        REQUIRE(fv_accessor.vector_attribute(new_fids[0][0])[1] == 1);
-        REQUIRE(fv_accessor.vector_attribute(new_fids[0][0])[2] == new_vid);
-
-        REQUIRE(fv_accessor.vector_attribute(new_fids[0][1])[0] == 0);
-        REQUIRE(fv_accessor.vector_attribute(new_fids[0][1])[1] == new_vid);
-        REQUIRE(fv_accessor.vector_attribute(new_fids[0][1])[2] == 2);
-
-        REQUIRE(fv_accessor.vector_attribute(new_fids[1][0])[0] == 1);
-        REQUIRE(fv_accessor.vector_attribute(new_fids[1][0])[1] == 4);
-        REQUIRE(fv_accessor.vector_attribute(new_fids[1][0])[2] == new_vid);
-
-        REQUIRE(fv_accessor.vector_attribute(new_fids[1][1])[0] == new_vid);
-        REQUIRE(fv_accessor.vector_attribute(new_fids[1][1])[1] == 4);
-        REQUIRE(fv_accessor.vector_attribute(new_fids[1][1])[2] == 2);
-
-        // the new fids generated are in top-down left-right order
+        auto fe_accessor = m.create_base_accessor<long>(m.f_handle(PE));
         auto ff_accessor = m.create_base_accessor<long>(m.f_handle(PF));
 
-        REQUIRE(ff_accessor.vector_attribute(new_fids[0][0])[1] == new_fids[0][1]);
-        REQUIRE(ff_accessor.vector_attribute(new_fids[0][1])[2] == new_fids[0][0]);
-        REQUIRE(ff_accessor.vector_attribute(new_fids[1][0])[0] == new_fids[1][1]);
-        REQUIRE(ff_accessor.vector_attribute(new_fids[1][1])[2] == new_fids[1][0]);
-
-        auto fe_accessor = m.create_base_accessor<long>(m.f_handle(PE));
-
-        REQUIRE(fe_accessor.vector_attribute(new_fids[0][0])[0] == replacement_eids[0]);
-        REQUIRE(fe_accessor.vector_attribute(new_fids[0][0])[1] == 9);
-        REQUIRE(
-            fe_accessor.vector_attribute(new_fids[0][0])[2] ==
-            executor.incident_face_datas()[0].ears[0].eid);
-
-        REQUIRE(fe_accessor.vector_attribute(new_fids[0][1])[0] == replacement_eids[1]);
-        REQUIRE(
-            fe_accessor.vector_attribute(new_fids[0][1])[1] ==
-            executor.incident_face_datas()[0].ears[1].eid);
-        REQUIRE(fe_accessor.vector_attribute(new_fids[0][1])[2] == 9);
-
-        REQUIRE(fe_accessor.vector_attribute(new_fids[1][0])[1] == replacement_eids[0]);
-        REQUIRE(fe_accessor.vector_attribute(new_fids[1][0])[0] == 10);
-        REQUIRE(
-            fe_accessor.vector_attribute(new_fids[1][0])[2] ==
-            executor.incident_face_datas()[1].ears[0].eid);
-
-        REQUIRE(fe_accessor.vector_attribute(new_fids[1][1])[1] == replacement_eids[1]);
-        REQUIRE(
-            fe_accessor.vector_attribute(new_fids[1][1])[0] ==
-            executor.incident_face_datas()[1].ears[1].eid);
-        REQUIRE(fe_accessor.vector_attribute(new_fids[1][1])[2] == 10);
-
         auto vf_accessor = m.create_base_accessor<long>(m.vf_handle());
-        REQUIRE(vf_accessor.scalar_attribute(new_vid) == new_fids[1][0]);
-        REQUIRE(vf_accessor.scalar_attribute(0) == new_fids[0][0]);
-        REQUIRE(vf_accessor.scalar_attribute(4) == new_fids[1][0]);
-        REQUIRE(vf_accessor.scalar_attribute(1) == new_fids[1][0]);
-        REQUIRE(vf_accessor.scalar_attribute(2) == new_fids[1][1]);
 
         auto ef_accessor = m.create_base_accessor<long>(m.ef_handle());
-        REQUIRE(ef_accessor.scalar_attribute(replacement_eids[0]) == new_fids[1][0]);
-        REQUIRE(ef_accessor.scalar_attribute(replacement_eids[1]) == new_fids[1][1]);
-        REQUIRE(ef_accessor.scalar_attribute(9) == new_fids[0][0]);
-        REQUIRE(ef_accessor.scalar_attribute(10) == new_fids[1][0]);
+
+        const long& se0 = spine_eids[0];
+        const long& se1 = spine_eids[1];
+
+        // top
+        {
+            const long& f1 = new_fids[0][1];
+            const long& f0 = new_fids[0][0];
+            const long& ee0 = executor.incident_face_datas()[0].ears[0].eid;
+            const long& ee1 = executor.incident_face_datas()[0].ears[1].eid;
+
+            const auto fv0 = fv_accessor.vector_attribute(f0);
+            const auto fv1 = fv_accessor.vector_attribute(f1);
+            CHECK(fv0[0] == 0);
+            CHECK(fv0[1] == 1);
+            CHECK(fv0[2] == v_new);
+
+            CHECK(fv1[0] == 0);
+            CHECK(fv1[1] == v_new);
+            CHECK(fv1[2] == 2);
+
+            const auto ff0 = ff_accessor.vector_attribute(f0);
+            const auto ff1 = ff_accessor.vector_attribute(f1);
+            CHECK(ff0[0] == executor.incident_face_datas()[1].fid);
+            CHECK(ff0[1] == f1);
+            CHECK(ff0[2] == executor.incident_face_datas()[0].ears[0].fid);
+            CHECK(ff1[0] == executor.incident_face_datas()[1].fid);
+            CHECK(ff1[1] == -1);
+            CHECK(ff1[2] == f0);
+
+            const auto fe0 = fe_accessor.vector_attribute(f0);
+            const auto fe1 = fe_accessor.vector_attribute(f1);
+            CHECK(fe0[0] == spine_eids[0]);
+            CHECK(fe0[1] == 9);
+            CHECK(fe0[2] == ee0);
+
+            CHECK(fe1[0] == spine_eids[1]);
+            CHECK(fe1[1] == ee1);
+            CHECK(fe1[2] == 9);
+
+            CHECK(vf_accessor.scalar_attribute(0) == f0);
+
+            CHECK(ef_accessor.scalar_attribute(ee0) == f0);
+            CHECK(ef_accessor.scalar_attribute(ee1) == f1);
+            CHECK(ef_accessor.scalar_attribute(9) == f0);
+        }
+        // bottom
+        {
+            const long& f0 = new_fids[1][0];
+            const long& f1 = new_fids[1][1];
+            const long& ee0 = executor.incident_face_datas()[1].ears[0].eid;
+            const long& ee1 = executor.incident_face_datas()[1].ears[1].eid;
+
+            const auto fv0 = fv_accessor.vector_attribute(f0);
+            const auto fv1 = fv_accessor.vector_attribute(f1);
+
+            CHECK(fv0[0] == 1);
+            CHECK(fv0[1] == 4);
+            CHECK(fv0[2] == v_new);
+
+            CHECK(fv1[0] == v_new);
+            CHECK(fv1[1] == 4);
+            CHECK(fv1[2] == 2);
+
+            const auto ff0 = ff_accessor.vector_attribute(f0);
+            const auto ff1 = ff_accessor.vector_attribute(f1);
+            CHECK(ff0[0] == f1);
+            CHECK(ff0[1] == executor.incident_face_datas()[0].fid);
+            CHECK(ff0[2] == -1);
+
+            CHECK(ff1[0] == -1);
+            CHECK(ff1[1] == executor.incident_face_datas()[0].fid);
+            CHECK(ff1[2] == f0);
+
+            const auto fe0 = fe_accessor.vector_attribute(f0);
+            const auto fe1 = fe_accessor.vector_attribute(f1);
+            CHECK(fe0[0] == 10);
+            CHECK(fe0[1] == se0);
+            CHECK(fe0[2] == ee0);
+
+            CHECK(fe1[0] == ee1);
+            CHECK(fe1[1] == se1);
+            CHECK(fe1[2] == 10);
+
+            CHECK(vf_accessor.scalar_attribute(v_new) == f0);
+            CHECK(vf_accessor.scalar_attribute(4) == f0);
+            CHECK(vf_accessor.scalar_attribute(1) == f0);
+            CHECK(vf_accessor.scalar_attribute(2) == f1);
+
+            CHECK(ef_accessor.scalar_attribute(se0) == f0);
+            CHECK(ef_accessor.scalar_attribute(se1) == f1);
+            CHECK(ef_accessor.scalar_attribute(ee0) == f0);
+            CHECK(ef_accessor.scalar_attribute(ee1) == f1);
+            CHECK(ef_accessor.scalar_attribute(10) == f0);
+        }
     }
 }
 

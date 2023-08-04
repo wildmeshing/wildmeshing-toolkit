@@ -52,6 +52,8 @@ public:
     {
         long opposite_vid = -1; // opposing vid
         long fid = -1; // the face that will be deleted
+        long f0 = -1;
+        long f1 = -1;
         std::array<EarFace, 2> ears; // ear
     };
 
@@ -75,12 +77,9 @@ public:
         const Tuple& tuple,
         const TriMesh& m);
 
-    const std::vector<IncidentFaceData>& incident_face_datas() const
-    {
-        return m_incident_face_datas;
-    }
+    std::vector<IncidentFaceData>& incident_face_datas() { return m_incident_face_datas; }
 
-    const std::array<long, 2>& incident_vids() const { return m_incident_vids; }
+    const std::array<long, 2>& incident_vids() const { return m_spine_vids; }
 
     const long operating_edge_id() const { return m_operating_edge_id; }
 
@@ -103,7 +102,7 @@ public:
     std::array<long, 2> glue_new_triangle_topology(
         const long new_vid,
         const std::vector<long>& spine_eids,
-        const IncidentFaceData& face_data);
+        IncidentFaceData& face_data);
     void glue_new_faces_across_AB(
         const std::array<long, 2> new_fids_top,
         const std::array<long, 2> new_fids_bottom);
@@ -116,7 +115,7 @@ public:
 
 private:
     // common simplicies
-    std::array<long, 2> m_incident_vids; // V_A_id, V_B_id;
+    std::array<long, 2> m_spine_vids; // V_A_id, V_B_id;
     long m_operating_edge_id;
 
     // simplices required per-face
