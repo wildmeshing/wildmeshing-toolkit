@@ -13,8 +13,8 @@ void Scheduler::run_operation_on_all(PrimitiveType type, const std::string& name
     auto ops = create_operations(type, name);
     std::sort(ops.begin(), ops.end(), [](auto&& p_a, auto&& p_b) { return *p_a < *p_b; });
     enqueue_operations(std::move(ops));
-    run();
-    for (const auto& q : m_per_thread_queues) {
+    //run();
+    for (auto& q : m_per_thread_queues) {
         q.run();
     }
     // enqueue_operations(ops);
@@ -25,10 +25,10 @@ void Scheduler::run_operation_on_all(PrimitiveType type, const std::string& name
 void Scheduler::enqueue_operations(std::vector<std::unique_ptr<Operation>>&& ops)
 {
     size_t index = 0;
-    for (size_t index = 0; index < ops.size(); ++index) {
+    for (index = 0; index < ops.size(); ++index) {
         for (auto& queue : m_per_thread_queues) {
             if (index < ops.size()) {
-                queue.enqueue(std::(ops[index]));
+                queue.enqueue(std::move(ops[index]));
                 index++;
             } else {
                 return;
@@ -36,17 +36,26 @@ void Scheduler::enqueue_operations(std::vector<std::unique_ptr<Operation>>&& ops
         }
     }
 }
+    OperationFactoryBase const * Scheduler::get_factory(const std::string_view& name) const {
+        if(auto it = m_factories.find(std::string(name)); it != m_factories.end()) {
+            return it->second.get();
+        } else {
+            return nullptr;
+        }
+    }
 
 std::vector<std::unique_ptr<Operation>> Scheduler::create_operations(
     PrimitiveType type,
     const std::string& name)
 {
-    auto tups = m.get_all(type);
+    auto tups = m_mesh.get_all(type);
 
     std::vector<std::unique_ptr<Operation>> ops;
-    auto& factory = get_factory(name);
+    auto factory_ptr = get_factory(name);
+    assert(factory_ptr != nullptr);
     for (const auto& tup : tups) {
-        ops.emplace_back(factory->create(m, tup));
+        ops.emplace_back(factory_ptr->create(m_mesh, tup));
     }
+    return ops;
 }
 } // namespace wmtk

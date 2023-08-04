@@ -9,7 +9,7 @@ namespace wmtk {
 class OperationQueue
 {
 public:
-    void enqueue(std::unique_ptr<Operation>&& op) { queue.emplace(std::move(op)); }
+    void enqueue(std::unique_ptr<Operation>&& op) { queue.emplace_back(std::move(op)); }
     // void enqueue(const std::string, const Tuple& t)
     //{
     //     std::scoped_lock sl(mut);
@@ -26,12 +26,18 @@ public:
     // }
     void run()
     {
-        while (true) {
-            while (!empty()) {
-                auto op = pop_top();
-                (*op)();
-            }
+        for(auto&& op: queue) {
+            (*op)();
         }
+        // TODO: someday get a working queue implementation so w ecan continue to pop things off while the queue grows.
+        // proably this will just be replaced by a tbb structure to enable native thread stealing
+        //
+        // while (true) {
+        //     while (!empty()) {
+        //         auto op = pop_top();
+        //         (*op)();
+        //     }
+        // }
     }
 
     bool empty() const
@@ -40,18 +46,18 @@ public:
         return queue.empty();
     }
 
-    std::unique_ptr<Operation> pop_top()
-    {
-        std::scoped_lock lock(mut);
-        std::unique_ptr<Operation> op = std::move(queue.top());
-        queue.pop();
-        return op;
-    }
+    //std::unique_ptr<Operation> pop_top()
+    //{
+    //    std::scoped_lock lock(mut);
+    //    std::unique_ptr<Operation> op = std::move(queue.top());
+    //    queue.pop();
+    //    return op;
+    //}
 
     // std::queue<std::pair<std::string, Tuple>> queue;
 
-    std::mutex mut;
-    std::priority_queue<std::unique_ptr<Operation>> queue;
+    mutable std::mutex mut;
+    std::vector<std::unique_ptr<Operation>> queue;
     // uses a->priority() < b->priority()
 };
 } // namespace wmtk

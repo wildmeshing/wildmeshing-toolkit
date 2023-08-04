@@ -2,6 +2,7 @@
 #include "Mesh.hpp"
 #include "operations/Operation.hpp"
 #include "operations/OperationFactory.hpp"
+#include <string_view>
 
 
 namespace wmtk {
@@ -44,6 +45,8 @@ public:
 
 
     void run_operation_on_all(PrimitiveType type, const std::string& name);
+
+    OperationFactoryBase const* get_factory(const std::string_view& name) const;
 
 private:
     Mesh& m_mesh;
