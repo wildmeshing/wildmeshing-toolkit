@@ -26,38 +26,32 @@ public:
     // }
     void run()
     {
-        for(auto&& op: queue) {
-            (*op)();
-        }
-        // TODO: someday get a working queue implementation so w ecan continue to pop things off while the queue grows.
-        // proably this will just be replaced by a tbb structure to enable native thread stealing
-        //
-        // while (true) {
-        //     while (!empty()) {
-        //         auto op = pop_top();
-        //         (*op)();
-        //     }
-        // }
+         while (true) {
+             while (!empty()) {
+                 auto op = pop_top();
+                 (*op)();
+             }
+         }
     }
 
     bool empty() const
     {
         std::scoped_lock lock(mut);
-        return queue.empty();
+        return current_index < queue.size();
     }
 
-    //std::unique_ptr<Operation> pop_top()
-    //{
-    //    std::scoped_lock lock(mut);
-    //    std::unique_ptr<Operation> op = std::move(queue.top());
-    //    queue.pop();
-    //    return op;
-    //}
+    std::unique_ptr<Operation> pop_top()
+    {
+        std::scoped_lock lock(mut);
+        std::unique_ptr<Operation> op = std::move(queue[current_index++]);
+        return op;
+    }
 
     // std::queue<std::pair<std::string, Tuple>> queue;
 
     mutable std::mutex mut;
     std::vector<std::unique_ptr<Operation>> queue;
+    size_t current_index = 0;
     // uses a->priority() < b->priority()
 };
 } // namespace wmtk
