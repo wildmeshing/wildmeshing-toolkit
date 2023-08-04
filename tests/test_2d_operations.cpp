@@ -825,6 +825,40 @@ TEST_CASE("split_edge", "[operations][split][2D]")
     REQUIRE(m.is_connectivity_valid());
 }
 
+TEST_CASE("split_multiple_edges", "[operations][split][2D]")
+{
+    wmtk::TriMesh mesh;
+
+    SECTION("single_triangle")
+    {
+        mesh = single_triangle();
+    }
+    SECTION("quad")
+    {
+        mesh = quad();
+    }
+    SECTION("tetrahedron")
+    {
+        mesh = tetrahedron();
+    }
+    SECTION("edge_region")
+    {
+        mesh = edge_region();
+    }
+
+    for (size_t i = 0; i < 10; ++i) {
+        const std::vector<wmtk::Tuple> edges = mesh.get_all(PE);
+        for (const wmtk::Tuple& e : edges) {
+            if (!mesh.is_outdated(e)) {
+                continue;
+            }
+
+            mesh.split_edge(e);
+            REQUIRE(mesh.is_connectivity_valid());
+        }
+    }
+}
+
 //////////// COLLAPSE TESTS ////////////
 
 TEST_CASE("collapse_edge", "[operations][2D]")
