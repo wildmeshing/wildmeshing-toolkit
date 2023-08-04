@@ -66,7 +66,7 @@ MeshAttributes<T>::register_attribute(const std::string& name, long dimension, b
         handle.index = it->second.index;
     } else {
         handle.index = m_attributes.size();
-        m_attributes.emplace_back(dimension, size());
+        m_attributes.emplace_back(dimension, reserved_size());
     }
     m_handles[name] = handle;
 
@@ -115,15 +115,15 @@ size_t MeshAttributes<T>::attribute_size(const AttributeHandle& handle) const
 }
 
 template <typename T>
-long MeshAttributes<T>::size() const
+long MeshAttributes<T>::reserved_size() const
 {
-    return m_size;
+    return m_reserved_size;
 }
 
 template <typename T>
 void MeshAttributes<T>::reserve(const long size)
 {
-    m_size = size;
+    m_reserved_size = size;
     for (auto& attr : m_attributes) {
         attr.reserve(size);
     }

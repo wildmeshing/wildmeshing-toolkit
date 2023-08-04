@@ -39,7 +39,7 @@ public:
     [[nodiscard]] AttributeHandle
     register_attribute(const std::string& name, long dimension, bool replace = false);
 
-    long size() const;
+    long reserved_size() const;
     void reserve(const long size);
 
     bool operator==(const MeshAttributes<T>& other) const;
@@ -64,7 +64,7 @@ private:
     std::map<std::string, AttributeHandle> m_handles;
 
     // The vector held in each Attribute in m_attributes has this size
-    long m_size = -1;
+    long m_reserved_size = -1;
 
     std::vector<Attribute<T>> m_attributes;
 };
