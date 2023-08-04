@@ -111,7 +111,7 @@ void MeshAttributes<T>::set(const AttributeHandle& handle, std::vector<T> val)
 template <typename T>
 size_t MeshAttributes<T>::attribute_size(const AttributeHandle& handle) const
 {
-    return m_attributes[handle.index].size();
+    return m_attributes[handle.index].reserved_size();
 }
 
 template <typename T>

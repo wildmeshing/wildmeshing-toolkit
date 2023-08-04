@@ -58,7 +58,7 @@ std::vector<long> Mesh::request_simplex_indices(PrimitiveType type, long count)
 
     // enable newly requested simplices
     Accessor<char> flag_accessor = get_flag_accessor(type);
-    long max_size = flag_accessor.size();
+    long max_size = flag_accessor.reserved_size();
 
     if (current_capacity + count > max_size) {
         logger().warn(
@@ -158,7 +158,7 @@ void Mesh::set_capacities_from_flags()
 {
     for (long dim = 0; dim < m_attribute_manager.m_capacities.size(); ++dim) {
         Accessor<char> flag_accessor = create_accessor<char>(m_flag_handles[dim]);
-        m_attribute_manager.m_capacities[dim] = flag_accessor.size();
+        m_attribute_manager.m_capacities[dim] = flag_accessor.reserved_size();
     }
 }
 

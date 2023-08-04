@@ -68,9 +68,9 @@ TEST_CASE("test_accessor_basic")
     auto vertices = m.get_all(wmtk::PrimitiveType::Vertex);
 
     // check characteristics are all right
-    REQUIRE(char_acc.size() == size);
-    REQUIRE(long_acc.size() == size);
-    REQUIRE(double_acc.size() == size);
+    REQUIRE(char_acc.reserved_size() == size);
+    REQUIRE(long_acc.reserved_size() == size);
+    REQUIRE(double_acc.reserved_size() == size);
     REQUIRE(char_acc.dimension() == 1);
     REQUIRE(long_acc.dimension() == 1);
     REQUIRE(double_acc.dimension() == 3);
@@ -175,8 +175,8 @@ TEST_CASE("test_accessor_caching")
         }
 
         // check characteristics are all right
-        REQUIRE(long_acc.size() == size);
-        REQUIRE(double_acc.size() == size);
+        REQUIRE(long_acc.reserved_size() == size);
+        REQUIRE(double_acc.reserved_size() == size);
         REQUIRE(long_acc.dimension() == 1);
         REQUIRE(double_acc.dimension() == 3);
 
