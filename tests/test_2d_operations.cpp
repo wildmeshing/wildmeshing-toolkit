@@ -861,7 +861,7 @@ TEST_CASE("split_multiple_edges", "[operations][split][2D]")
 
 //////////// COLLAPSE TESTS ////////////
 
-TEST_CASE("collapse_edge", "[operations][2D]")
+TEST_CASE("collapse_edge", "[operations][2D][.]")
 {
     DEBUG_TriMesh m = hex_plus_two();
     SECTION("case1")
@@ -942,7 +942,7 @@ TEST_CASE("collapse_edge", "[operations][2D]")
     }
 }
 
-TEST_CASE("swap_edge", "[operations][2D]")
+TEST_CASE("swap_edge", "[operations][2D][.]")
 {
     SECTION("case ccw")
     {
