@@ -22,6 +22,7 @@ set(TEST_SOURCES
     test_example_meshes.cpp
     tools/DEBUG_PointMesh.hpp
     tools/DEBUG_TriMesh.hpp
+    tools/DEBUG_TriMesh.cpp
     tools/TriMesh_examples.hpp
     tools/TriMesh_examples.cpp
 )
