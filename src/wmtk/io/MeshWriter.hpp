@@ -13,6 +13,7 @@ public:
 
     virtual bool write(const int dim) = 0;
 
+    virtual void write_capacities(const std::vector<long>& capacities) = 0;
 
     virtual void write(
         const std::string& name,

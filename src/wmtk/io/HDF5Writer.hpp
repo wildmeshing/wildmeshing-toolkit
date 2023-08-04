@@ -16,6 +16,8 @@ public:
 
     bool write(const int) override { return true; }
 
+    void write_capacities(const std::vector<long>& capacities) override;
+
     void write(
         const std::string& name,
         const long type,

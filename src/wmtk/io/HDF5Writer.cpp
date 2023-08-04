@@ -91,6 +91,11 @@ void HDF5Writer::write(
     write_internal(name, type, stride, tmp);
 }
 
+void HDF5Writer::write_capacities(const std::vector<long>& capacities)
+{
+    m_hdf5_file->writeAttribute(capacities, "WMTK", "capacities");
+}
+
 template <typename T>
 void HDF5Writer::write_internal(
     const std::string& name,
