@@ -1,13 +1,13 @@
 #pragma once
 
 #include "Accessor.hpp"
-#include "attribute/MeshAttributes.hpp"
 #include "Primitive.hpp"
 #include "Simplex.hpp"
 #include "Tuple.hpp"
 #include "Types.hpp"
 #include "attribute/AttributeManager.hpp"
 #include "attribute/AttributeScopeHandle.hpp"
+#include "attribute/MeshAttributes.hpp"
 
 #include <wmtk/io/ParaviewWriter.hpp>
 
@@ -56,7 +56,7 @@ public:
     // As such, the split_edge and collapse_edge functions JUST implement the
     // updates to topological updates and any precondition / postcondition checks
     // should be implemented by the user.
-    // 
+    //
     // These functions take in a single tuple, referring to the edge being
     // operated on, and return a single tuple that refers to the new topology.
     // This returned tuple has specific meaning for each derived Mesh class
@@ -180,6 +180,14 @@ public:
      * @return false
      */
     virtual bool is_valid(const Tuple& tuple) const = 0;
+    /**
+     * @brief check if tuple was involved in a topological operation and is therefore invalid
+     *
+     * @param tuple the tuple to be checked
+     * @return true if tuple is outdated
+     * @return false otherwise
+     */
+    virtual bool is_outdated(const Tuple& tuple) const = 0;
 
 
     bool simplex_is_equal(const Simplex& s0, const Simplex& s1) const;

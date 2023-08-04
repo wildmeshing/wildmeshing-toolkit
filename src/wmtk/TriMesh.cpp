@@ -310,6 +310,13 @@ bool TriMesh::is_valid(const Tuple& tuple) const
            autogen::auto_2d_table_ccw[offset][0] >= 0;
 }
 
+bool TriMesh::is_outdated(const Tuple& tuple) const
+{
+    const long cid = id(tuple, PrimitiveType::Face);
+    ConstAccessor<long> ha = get_cell_hash_accessor();
+    return ha.scalar_attribute(cid) == tuple.m_hash;
+}
+
 bool TriMesh::is_connectivity_valid() const
 {
     // get Accessors for topology
@@ -325,7 +332,7 @@ bool TriMesh::is_connectivity_valid() const
     // EF and FE
     for (long i = 0; i < capacity(PrimitiveType::Edge); ++i) {
         if (e_flag_accessor.scalar_attribute(i) == 0) {
-            std::cout << "Edge " << i << " is deleted" << std::endl;
+            wmtk::logger().debug("Edge {} is deleted", i);
             continue;
         }
         int cnt = 0;
@@ -343,7 +350,7 @@ bool TriMesh::is_connectivity_valid() const
     // VF and FV
     for (long i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
         if (v_flag_accessor.scalar_attribute(i) == 0) {
-            std::cout << "Vertex " << i << " is deleted" << std::endl;
+            wmtk::logger().debug("Vertex {} is deleted", i);
             continue;
         }
         int cnt = 0;
@@ -361,7 +368,7 @@ bool TriMesh::is_connectivity_valid() const
     // FE and EF
     for (long i = 0; i < capacity(PrimitiveType::Face); ++i) {
         if (f_flag_accessor.scalar_attribute(i) == 0) {
-            std::cout << "Face " << i << " is deleted" << std::endl;
+            wmtk::logger().debug("Face {} is deleted", i);
             continue;
         }
         for (long j = 0; j < 3; ++j) {

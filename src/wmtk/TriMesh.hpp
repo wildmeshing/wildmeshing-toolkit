@@ -56,6 +56,8 @@ public:
 
     bool is_valid(const Tuple& tuple) const override;
 
+    bool is_outdated(const Tuple& tuple) const override;
+
     bool is_connectivity_valid() const override;
 
 protected:
