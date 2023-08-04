@@ -101,7 +101,7 @@ void TriMesh::TriMeshOperationExecutor::delete_simplices()
 void TriMesh::TriMeshOperationExecutor::update_cell_hash()
 {
     for (const long& cell_id : cell_ids_to_update_hash) {
-        hash_accessor.scalar_attribute(cell_id)++;
+        ++hash_accessor.scalar_attribute(cell_id);
     }
 }
 
@@ -191,41 +191,44 @@ void TriMesh::TriMeshOperationExecutor::merge(const long& new_vid)
     }
 };
 
-void TriMesh::TriMeshOperationExecutor::glue_new_faces_across_AB(
-    const std::array<long, 2> new_fids_top,
-    const std::array<long, 2> new_fids_bottom)
+void TriMesh::TriMeshOperationExecutor::connect_faces_across_spine()
 {
-    // find the local eid of AB of the two side of faces
+    // find the local eid of the spine of the two side of faces
+    assert(m_incident_face_datas.size() == 2);
+    const long f_old_top = m_incident_face_datas[0].fid;
+    const long f0_top = m_incident_face_datas[0].f0;
+    const long f1_top = m_incident_face_datas[0].f1;
+    const long f_old_bottom = m_incident_face_datas[1].fid;
+    const long f0_bottom = m_incident_face_datas[1].f0;
+    const long f1_bottom = m_incident_face_datas[1].f1;
+    auto ff_old_top = ff_accessor.vector_attribute(f_old_top);
+    auto ff_old_bottom = ff_accessor.vector_attribute(f_old_bottom);
+    assert(m_mesh.capacity(PrimitiveType::Face) > f0_top);
+    assert(m_mesh.capacity(PrimitiveType::Face) > f1_top);
+    assert(m_mesh.capacity(PrimitiveType::Face) > f0_bottom);
+    assert(m_mesh.capacity(PrimitiveType::Face) > f1_bottom);
+
+    // local edge ids are the same for both, f1 and f2
     long local_eid_top = -1;
     long local_eid_bottom = -1;
-    assert(m_incident_face_datas.size() == 2);
-    long deleted_fid_top = m_incident_face_datas[0].fid;
-    long deleted_fid_bottom = m_incident_face_datas[1].fid;
-    auto ff_deleted_top = ff_accessor.vector_attribute(deleted_fid_top);
-    auto ff_deleted_bottom = ff_accessor.vector_attribute(deleted_fid_bottom);
-    assert(m_mesh.capacity(PrimitiveType::Face) > new_fids_top[0]);
-    assert(m_mesh.capacity(PrimitiveType::Face) > new_fids_top[1]);
-    assert(m_mesh.capacity(PrimitiveType::Face) > new_fids_bottom[0]);
-    assert(m_mesh.capacity(PrimitiveType::Face) > new_fids_bottom[1]);
-
-    for (int i = 0; i < 3; i++) {
-        if (ff_deleted_top(i) == deleted_fid_bottom) {
+    for (size_t i = 0; i < 3; ++i) {
+        if (ff_old_top[i] == f_old_bottom) {
             local_eid_top = i;
         }
-        if (ff_deleted_bottom(i) == deleted_fid_top) {
+        if (ff_old_bottom[i] == f_old_top) {
             local_eid_bottom = i;
         }
     }
     assert(local_eid_top > -1);
     assert(local_eid_bottom > -1);
     // TODO write test for assumming top and bottom new fids are in right correspondence
-    ff_accessor.vector_attribute(new_fids_top[0])[local_eid_top] = new_fids_bottom[0];
-    ff_accessor.vector_attribute(new_fids_bottom[0])[local_eid_bottom] = new_fids_top[0];
-    ff_accessor.vector_attribute(new_fids_top[1])[local_eid_top] = new_fids_bottom[1];
-    ff_accessor.vector_attribute(new_fids_bottom[1])[local_eid_bottom] = new_fids_top[1];
+    ff_accessor.vector_attribute(f0_top)[local_eid_top] = f0_bottom;
+    ff_accessor.vector_attribute(f0_bottom)[local_eid_bottom] = f0_top;
+    ff_accessor.vector_attribute(f1_top)[local_eid_top] = f1_bottom;
+    ff_accessor.vector_attribute(f1_bottom)[local_eid_bottom] = f1_top;
 }
 
-std::array<long, 2> TriMesh::TriMeshOperationExecutor::glue_new_triangle_topology(
+void TriMesh::TriMeshOperationExecutor::replace_incident_face(
     const long v_new,
     const std::vector<long>& spine_eids,
     IncidentFaceData& face_data)
@@ -241,7 +244,6 @@ std::array<long, 2> TriMesh::TriMeshOperationExecutor::glue_new_triangle_topolog
 
     std::vector<long> splitting_edges = this->request_simplex_indices(PrimitiveType::Edge, 1);
     assert(splitting_edges[0] > -1); // TODO: is this assert reasonable at all?
-    const long splitting_eid = splitting_edges[0];
 
     //  ---------v2--------
     // |        /|\        |
@@ -253,19 +255,19 @@ std::array<long, 2> TriMesh::TriMeshOperationExecutor::glue_new_triangle_topolog
     // |  /  f0  |  f1  \  |
     // | /       |       \ |
     // v0--se0-v_new-se1--v1
-    const long f0 = new_fids[0];
-    const long f1 = new_fids[1];
-    const long ef0 = face_data.ears[0].fid;
-    const long ef1 = face_data.ears[1].fid;
-    const long ee0 = face_data.ears[0].eid;
-    const long ee1 = face_data.ears[1].eid;
-    const long v0 = m_spine_vids[0];
-    const long v1 = m_spine_vids[1];
-    const long v2 = face_data.opposite_vid;
-    const long se0 = spine_eids[0];
-    const long se1 = spine_eids[1];
-    const long oe = splitting_eid;
-    const long f_old = face_data.fid;
+    const long f0 = new_fids[0]; // face 0
+    const long f1 = new_fids[1]; // face 1
+    const long ef0 = face_data.ears[0].fid; // ear face 0
+    const long ef1 = face_data.ears[1].fid; // ear face 1
+    const long ee0 = face_data.ears[0].eid; // ear edge 0
+    const long ee1 = face_data.ears[1].eid; // ear edge 1
+    const long v0 = m_spine_vids[0]; // spine vertex 0
+    const long v1 = m_spine_vids[1]; // spine vertex 1
+    const long v2 = face_data.opposite_vid; // opposite vertex
+    const long se0 = spine_eids[0]; // spine edge 0
+    const long se1 = spine_eids[1]; // spine edge 1
+    const long oe = splitting_edges[0]; // orthogonal edge
+    const long f_old = face_data.fid; // old face
 
     // f0
     {
@@ -332,8 +334,9 @@ std::array<long, 2> TriMesh::TriMeshOperationExecutor::glue_new_triangle_topolog
     vf_accessor.scalar_attribute(v2) = f0;
     vf_accessor.scalar_attribute(v_new) = f0;
 
+    // face neighbors on the other side of the spine are updated separately
 
-    return {new_fids[0], new_fids[1]};
+    return;
 }
 
 Tuple TriMesh::TriMeshOperationExecutor::split_edge()
@@ -349,25 +352,17 @@ Tuple TriMesh::TriMeshOperationExecutor::split_edge()
     std::vector<long> new_eids = this->request_simplex_indices(PrimitiveType::Edge, 2);
     assert(new_eids.size() == 2);
 
-    std::vector<std::array<long, 2>> new_fids;
     for (IncidentFaceData& face_data : m_incident_face_datas) {
-        // glue the topology
-        const std::array<long, 2> new_fids_per_face =
-            glue_new_triangle_topology(new_vid, new_eids, face_data);
-        new_fids.emplace_back(new_fids_per_face);
+        replace_incident_face(new_vid, new_eids, face_data);
     }
     assert(m_incident_face_datas.size() <= 2);
-    // update FF on two sides of ab
     if (m_incident_face_datas.size() > 1) {
-        const std::array<long, 2>& new_fids_top = new_fids[0];
-        const std::array<long, 2>& new_fids_bottom = new_fids[1];
-
-        glue_new_faces_across_AB(new_fids_top, new_fids_bottom);
+        connect_faces_across_spine();
     }
     update_cell_hash();
     delete_simplices();
     // return Tuple new_fid, new_vid that points
-    return m_mesh.with_different_cid(m_operating_tuple, new_fids[0][0]);
+    return m_mesh.with_different_cid(m_operating_tuple, m_incident_face_datas[0].f0);
 }
 
 std::vector<long> TriMesh::TriMeshOperationExecutor::request_simplex_indices(
