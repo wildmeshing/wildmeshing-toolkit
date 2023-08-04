@@ -52,8 +52,8 @@ public:
     {
         long opposite_vid = -1; // opposing vid
         long fid = -1; // the face that will be deleted
-        long f0 = -1;
-        long f1 = -1;
+        long split_f0 = -1;
+        long split_f1 = -1;
         std::array<EarFace, 2> ears; // ear
     };
 
@@ -83,14 +83,16 @@ public:
 
     const long operating_edge_id() const { return m_operating_edge_id; }
 
-    void update_fid_in_ear(
+    void update_ids_in_ear(
         const long ear_fid,
-        const long new_face_fid,
+        const long new_fid,
         const long old_fid,
-        const long eid);
+        const long new_eid);
 
-    void merge(const long& new_vid);
+    void connect_ears();
     Tuple split_edge();
+
+    Tuple collapse_edge();
 
     /**
      * @brief

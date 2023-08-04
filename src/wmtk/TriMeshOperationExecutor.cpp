@@ -133,11 +133,11 @@ const SimplicialComplex TriMesh::TriMeshOperationExecutor::get_collapse_simplice
  * @param old_fid the data where the data is transfered from
  * @param eid the edge between two glued faces
  */
-void TriMesh::TriMeshOperationExecutor::update_fid_in_ear(
+void TriMesh::TriMeshOperationExecutor::update_ids_in_ear(
     const long ear_fid,
-    const long new_face_fid,
+    const long new_fid,
     const long old_fid,
-    const long eid)
+    const long new_eid)
 {
     //         /|
     //   ear  / |
@@ -150,44 +150,51 @@ void TriMesh::TriMeshOperationExecutor::update_fid_in_ear(
     auto ear_fe = fe_accessor.vector_attribute(ear_fid);
     for (int i = 0; i < 3; ++i) {
         if (ear_ff[i] == old_fid) {
-            ear_ff[i] = new_face_fid;
-            ear_fe[i] = eid; // TODO: this should have been the same eid before already. Check!
+            ear_ff[i] = new_fid;
+            ear_fe[i] = new_eid;
             break;
         }
     }
 }
 
-void TriMesh::TriMeshOperationExecutor::merge(const long& new_vid)
+void TriMesh::TriMeshOperationExecutor::connect_ears()
 {
-    simplices_to_delete = get_collapse_simplices_to_delete(m_operating_tuple, m_mesh);
+    assert(!m_incident_face_datas.empty());
 
-    for (int face_index = 0; face_index < m_incident_face_datas.size(); face_index++) {
-        const auto& face_data = m_incident_face_datas[face_index];
+    //  ---------v2--------
+    // |        / \        |
+    // | ef0   /   \   ef1 |
+    // |      /     \      |
+    // |     /       \     |
+    // |  ee0         ee1  |
+    // |   /   f_old   \   |
+    // |  /             \  |
+    // | /               \ |
+    // v0------ --> ------v1
+    // deleting: v0, ee0, f
 
-        assert(
-            face_data.ears[0].fid > -1 ||
-            face_data.ears[1].fid > -1); // TODO: should be detected by link condition
+    for (const auto& face_data : m_incident_face_datas) {
+        const long& ef0 = face_data.ears[0].fid;
+        const long& ee0 = face_data.ears[0].eid;
+        const long& ef1 = face_data.ears[1].fid;
+        const long& ee1 = face_data.ears[1].eid;
+        const long& f_old = face_data.fid;
+
+        // TODO: should be detected by link condition
+        assert(ef0 > -1 || ef1 > -1);
         // check manifoldness
-        assert(face_data.ears[0].fid != face_data.ears[1].fid);
+        assert(ef0 != ef1);
 
-        // change VF for V_new,V_C
-        long& vf_new = vf_accessor.scalar_attribute(new_vid);
-        long& vf_c = vf_accessor.scalar_attribute(face_data.opposite_vid);
-        const long f_ear_l = face_data.ears[0].fid;
-        const long f_ear_r = face_data.ears[1].fid;
-        vf_c = (f_ear_l < 0) ? f_ear_r : f_ear_l;
-        if (face_index == 0) {
-            vf_new = vf_c;
-        }
+        // change face for v2
+        long& v2_face = vf_accessor.scalar_attribute(face_data.opposite_vid);
+        // use ef0 if it exists
+        v2_face = (ef0 < 0) ? ef1 : ef0;
 
-        // change EF for E_AC
-        const long e_ac = face_data.ears[0].eid;
-        long& ef_ac = ef_accessor.scalar_attribute(e_ac);
-        ef_ac = vf_c;
+        ef_accessor.scalar_attribute(ee1) = v2_face;
 
         // change FF and FE for ears
-        update_fid_in_ear(f_ear_l, f_ear_r, face_data.fid, e_ac);
-        update_fid_in_ear(f_ear_r, f_ear_l, face_data.fid, e_ac);
+        update_ids_in_ear(ef0, ef1, f_old, ee1);
+        update_ids_in_ear(ef1, ef0, f_old, ee1);
     }
 };
 
@@ -196,11 +203,11 @@ void TriMesh::TriMeshOperationExecutor::connect_faces_across_spine()
     // find the local eid of the spine of the two side of faces
     assert(m_incident_face_datas.size() == 2);
     const long f_old_top = m_incident_face_datas[0].fid;
-    const long f0_top = m_incident_face_datas[0].f0;
-    const long f1_top = m_incident_face_datas[0].f1;
+    const long f0_top = m_incident_face_datas[0].split_f0;
+    const long f1_top = m_incident_face_datas[0].split_f1;
     const long f_old_bottom = m_incident_face_datas[1].fid;
-    const long f0_bottom = m_incident_face_datas[1].f0;
-    const long f1_bottom = m_incident_face_datas[1].f1;
+    const long f0_bottom = m_incident_face_datas[1].split_f0;
+    const long f1_bottom = m_incident_face_datas[1].split_f1;
     auto ff_old_top = ff_accessor.vector_attribute(f_old_top);
     auto ff_old_bottom = ff_accessor.vector_attribute(f_old_bottom);
     assert(m_mesh.capacity(PrimitiveType::Face) > f0_top);
@@ -239,8 +246,8 @@ void TriMesh::TriMeshOperationExecutor::replace_incident_face(
     std::vector<long> new_fids = this->request_simplex_indices(PrimitiveType::Face, 2);
     assert(new_fids.size() == 2);
 
-    face_data.f0 = new_fids[0];
-    face_data.f1 = new_fids[1];
+    face_data.split_f0 = new_fids[0];
+    face_data.split_f1 = new_fids[1];
 
     std::vector<long> splitting_edges = this->request_simplex_indices(PrimitiveType::Edge, 1);
     assert(splitting_edges[0] > -1); // TODO: is this assert reasonable at all?
@@ -271,7 +278,7 @@ void TriMesh::TriMeshOperationExecutor::replace_incident_face(
 
     // f0
     {
-        update_fid_in_ear(ef0, f0, f_old, ee0);
+        update_ids_in_ear(ef0, f0, f_old, ee0);
 
         auto fv = fv_accessor.vector_attribute(f0);
         auto fe = fe_accessor.vector_attribute(f0);
@@ -297,7 +304,7 @@ void TriMesh::TriMeshOperationExecutor::replace_incident_face(
     }
     // f1
     {
-        update_fid_in_ear(ef1, f1, f_old, ee1);
+        update_ids_in_ear(ef1, f1, f_old, ee1);
 
         auto fv = fv_accessor.vector_attribute(f1);
         auto fe = fe_accessor.vector_attribute(f1);
@@ -362,7 +369,49 @@ Tuple TriMesh::TriMeshOperationExecutor::split_edge()
     update_cell_hash();
     delete_simplices();
     // return Tuple new_fid, new_vid that points
-    return m_mesh.with_different_cid(m_operating_tuple, m_incident_face_datas[0].f0);
+    return m_mesh.with_different_cid(m_operating_tuple, m_incident_face_datas[0].split_f0);
+}
+
+Tuple TriMesh::TriMeshOperationExecutor::collapse_edge()
+{
+    //     --- ---
+    //   / \ / \ / \ .
+    //   ---X--- ---
+    //   \ / \ / \ /
+    //     --- ---
+    //
+    //     --- ---
+    //   /  \  \ / \ .
+    //   ------O----
+    //   \  /  / \ /
+    //     --- ---
+
+    simplices_to_delete = get_collapse_simplices_to_delete(m_operating_tuple, m_mesh);
+
+    const SimplicialComplex v0_star =
+        SimplicialComplex::closed_star(Simplex::vertex(m_operating_tuple), m_mesh);
+
+    connect_ears();
+
+    const long& v0 = m_spine_vids[0];
+    const long& v1 = m_spine_vids[1];
+
+    // replace v0 by v1 in incident faces
+    for (const Simplex& f : v0_star.get_faces()) {
+        const long fid = m_mesh.id(f);
+        auto fv = fv_accessor.vector_attribute(fid);
+        for (long i = 0; i < 3; ++i) {
+            if (fv[i] == v0) {
+                fv[i] = v1;
+                break;
+            }
+        }
+    }
+
+    update_cell_hash();
+    delete_simplices();
+    // return a ccw tuple from left ear if it exists, otherwise return a ccw tuple from right ear
+    return m_mesh.tuple_from_id(PrimitiveType::Vertex, v1);
 }
 
 std::vector<long> TriMesh::TriMeshOperationExecutor::request_simplex_indices(
