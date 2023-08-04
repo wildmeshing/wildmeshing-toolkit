@@ -1,3 +1,4 @@
+#include <spdlog/spdlog.h>
 #include <mutex>
 #include <queue>
 #include <vector>
@@ -26,18 +27,26 @@ public:
     // }
     void run()
     {
-         while (true) {
-             while (!empty()) {
-                 auto op = pop_top();
-                 (*op)();
-             }
-         }
+        spdlog::info("Running with queue starting at {} of {}", current_index, queue.size());
+        while (!empty()) {
+            execute_next();
+        }
+    }
+
+    void execute_next()
+    {
+        auto op = pop_top();
+        if ((*op)()) {
+            spdlog::info("Op succeeded");
+        } else {
+            spdlog::info("Op failed");
+        }
     }
 
     bool empty() const
     {
         std::scoped_lock lock(mut);
-        return current_index < queue.size();
+        return current_index >= queue.size();
     }
 
     std::unique_ptr<Operation> pop_top()

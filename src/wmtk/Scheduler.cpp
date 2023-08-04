@@ -11,9 +11,10 @@ Scheduler::~Scheduler() = default;
 void Scheduler::run_operation_on_all(PrimitiveType type, const std::string& name)
 {
     auto ops = create_operations(type, name);
+    spdlog::info("Created {} operations", ops.size());
     std::sort(ops.begin(), ops.end(), [](auto&& p_a, auto&& p_b) { return *p_a < *p_b; });
     enqueue_operations(std::move(ops));
-    //run();
+    // run();
     for (auto& q : m_per_thread_queues) {
         q.run();
     }
@@ -25,7 +26,7 @@ void Scheduler::run_operation_on_all(PrimitiveType type, const std::string& name
 void Scheduler::enqueue_operations(std::vector<std::unique_ptr<Operation>>&& ops)
 {
     size_t index = 0;
-    for (index = 0; index < ops.size(); ++index) {
+    for (index = 0; index < ops.size();) {
         for (auto& queue : m_per_thread_queues) {
             if (index < ops.size()) {
                 queue.enqueue(std::move(ops[index]));
@@ -36,13 +37,14 @@ void Scheduler::enqueue_operations(std::vector<std::unique_ptr<Operation>>&& ops
         }
     }
 }
-    OperationFactoryBase const * Scheduler::get_factory(const std::string_view& name) const {
-        if(auto it = m_factories.find(std::string(name)); it != m_factories.end()) {
-            return it->second.get();
-        } else {
-            return nullptr;
-        }
+OperationFactoryBase const* Scheduler::get_factory(const std::string_view& name) const
+{
+    if (auto it = m_factories.find(std::string(name)); it != m_factories.end()) {
+        return it->second.get();
+    } else {
+        return nullptr;
     }
+}
 
 std::vector<std::unique_ptr<Operation>> Scheduler::create_operations(
     PrimitiveType type,
