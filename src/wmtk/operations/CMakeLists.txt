@@ -7,5 +7,7 @@ set(SRC_FILES
     TriMeshSplitEdgeOperation.hpp
     TriMeshCollapseEdgeOperation.cpp
     TriMeshCollapseEdgeOperation.hpp
+    TriMeshSwapEdgeOperation.cpp
+    TriMeshSwapEdgeOperation.hpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

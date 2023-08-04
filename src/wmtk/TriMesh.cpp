@@ -65,7 +65,7 @@ Tuple TriMesh::collapse_edge(const Tuple& t)
     executor.update_cell_hash();
     // delete simplices
     executor.delete_simplices();
-    // TODO: figure out how to make this more canonical (i.e similar to the previous implementation)
+    // return a ccw tuple from left ear if it exists, otherwise return a ccw tuple from right ear
     return tuple_from_id(PrimitiveType::Vertex, new_vid);
 }
 
