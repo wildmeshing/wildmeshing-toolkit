@@ -811,6 +811,52 @@ TEST_CASE("split_edge", "[operations][split][2D]")
     REQUIRE(m.is_connectivity_valid());
 }
 
+TEST_CASE("split_return_tuple", "[operations][split][2D]")
+{
+    SECTION("single_triangle")
+    {
+        DEBUG_TriMesh m = single_triangle();
+        REQUIRE(m.is_connectivity_valid());
+
+        const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
+        const Tuple ret = m.split_edge(edge);
+        REQUIRE(m.is_connectivity_valid());
+        REQUIRE(m.is_valid(ret));
+        CHECK(!m.is_outdated(ret));
+        CHECK(m.id(ret, PV) == 3);
+        CHECK(m.id(m.switch_vertex(ret), PV) == 2);
+        CHECK(m.id(ret, PF) == 2);
+    }
+    SECTION("single_triangle_inverted")
+    {
+        DEBUG_TriMesh m = single_triangle();
+        REQUIRE(m.is_connectivity_valid());
+
+        const Tuple edge = m.edge_tuple_between_v1_v2(2, 1, 0);
+        const Tuple ret = m.split_edge(edge);
+        REQUIRE(m.is_connectivity_valid());
+        REQUIRE(m.is_valid(ret));
+        CHECK(!m.is_outdated(ret));
+        CHECK(m.id(ret, PV) == 3);
+        CHECK(m.id(m.switch_vertex(ret), PV) == 1);
+        CHECK(m.id(ret, PF) == 2);
+    }
+    SECTION("three_neighbors")
+    {
+        DEBUG_TriMesh m = three_neighbors();
+        REQUIRE(m.is_connectivity_valid());
+
+        const Tuple edge = m.edge_tuple_between_v1_v2(2, 1, 1);
+        const Tuple ret = m.split_edge(edge);
+        REQUIRE(m.is_connectivity_valid());
+        REQUIRE(m.is_valid(ret));
+        CHECK(!m.is_outdated(ret));
+        CHECK(m.id(ret, PV) == 6);
+        CHECK(m.id(m.switch_vertex(ret), PV) == 1);
+        CHECK(m.id(ret, PF) == 5);
+    }
+}
+
 TEST_CASE("split_multiple_edges", "[operations][split][2D]")
 {
     wmtk::TriMesh mesh;
@@ -835,7 +881,7 @@ TEST_CASE("split_multiple_edges", "[operations][split][2D]")
     for (size_t i = 0; i < 10; ++i) {
         const std::vector<wmtk::Tuple> edges = mesh.get_all(PE);
         for (const wmtk::Tuple& e : edges) {
-            if (!mesh.is_outdated(e)) {
+            if (mesh.is_outdated(e)) {
                 continue;
             }
 
@@ -847,7 +893,7 @@ TEST_CASE("split_multiple_edges", "[operations][split][2D]")
 
 //////////// COLLAPSE TESTS ////////////
 
-TEST_CASE("collapse_edge", "[operations][2D][.]")
+TEST_CASE("collapse_edge", "[operations][2D]")
 {
     DEBUG_TriMesh m = hex_plus_two();
     SECTION("interior_edge")
@@ -904,32 +950,48 @@ TEST_CASE("collapse_edge", "[operations][2D][.]")
 
         CHECK(fv_accessor.vector_attribute(0)[2] == 1);
     }
-    SECTION("return_tuple_ccw")
+}
+
+TEST_CASE("collapse_return_tuple", "[operations][2D]")
+{
+    DEBUG_TriMesh m = edge_region();
+    SECTION("interior")
     {
-        DEBUG_TriMesh m = hex_plus_two();
         REQUIRE(m.is_connectivity_valid());
 
-        Tuple edge = m.edge_tuple_between_v1_v2(3, 4, 0);
-        TriMeshCollapseEdgeOperation op(m, edge);
-        op();
-        auto ret = m.collapse_edge(edge);
+        const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
+        const Tuple ret = m.collapse_edge(edge);
         REQUIRE(m.is_connectivity_valid());
-        CHECK(op.is_return_tuple_from_left_ear() == false);
-        CHECK(m.id(ret, PV) == 4);
+        // CHECK(op.is_return_tuple_from_left_ear() == false);
+
+        CHECK(m.id(ret, PV) == 5);
+        CHECK(m.id(m.switch_vertex(ret), PV) == 1);
+        CHECK(m.id(ret, PF) == 1);
     }
-
-    SECTION("return_tuple_cw")
+    SECTION("from_boundary")
     {
-        DEBUG_TriMesh m = hex_plus_two();
         REQUIRE(m.is_connectivity_valid());
 
-        Tuple edge = m.edge_tuple_between_v1_v2(4, 3, 0);
-        TriMeshCollapseEdgeOperation op(m, edge);
-        op();
-        auto ret = op.return_tuple();
+        const Tuple edge = m.edge_tuple_between_v1_v2(3, 4, 0);
+        const Tuple ret = m.collapse_edge(edge);
         REQUIRE(m.is_connectivity_valid());
-        CHECK(op.is_return_tuple_from_left_ear() == true);
+        // CHECK(op.is_return_tuple_from_left_ear() == false);
+
+        CHECK(m.id(ret, PV) == 4);
+        CHECK(m.id(m.switch_vertex(ret), PV) == 0);
+        CHECK(m.id(ret, PF) == 1);
+    }
+    SECTION("to_boundary")
+    {
+        REQUIRE(m.is_connectivity_valid());
+
+        const Tuple edge = m.edge_tuple_between_v1_v2(4, 3, 0);
+        const Tuple ret = m.collapse_edge(edge);
+        REQUIRE(m.is_connectivity_valid());
+
         CHECK(m.id(ret, PV) == 3);
+        CHECK(m.id(m.switch_vertex(ret), PV) == 0);
+        CHECK(m.id(ret, PF) == 1);
     }
 }
 

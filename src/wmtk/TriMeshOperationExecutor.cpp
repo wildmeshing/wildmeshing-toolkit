@@ -371,14 +371,14 @@ Tuple TriMesh::TriMeshOperationExecutor::split_edge()
     // create new vertex (center)
     std::vector<long> new_vids = this->request_simplex_indices(PrimitiveType::Vertex, 1);
     assert(new_vids.size() == 1);
-    const long new_vid = new_vids[0];
+    const long v_new = new_vids[0];
 
     // create new edges (spine)
     std::vector<long> new_eids = this->request_simplex_indices(PrimitiveType::Edge, 2);
     assert(new_eids.size() == 2);
 
     for (IncidentFaceData& face_data : m_incident_face_datas) {
-        replace_incident_face(new_vid, new_eids, face_data);
+        replace_incident_face(v_new, new_eids, face_data);
     }
     assert(m_incident_face_datas.size() <= 2);
     if (m_incident_face_datas.size() > 1) {
@@ -388,7 +388,16 @@ Tuple TriMesh::TriMeshOperationExecutor::split_edge()
     update_cell_hash();
     delete_simplices();
     // return Tuple new_fid, new_vid that points
-    return m_mesh.with_different_cid(m_operating_tuple, m_incident_face_datas[0].split_f0);
+    const long new_tuple_fid = m_incident_face_datas[0].split_f1;
+    Tuple ret = m_mesh.edge_tuple_from_id(new_eids[1]);
+    if (m_mesh.id_vertex(ret) != v_new) {
+        ret = m_mesh.switch_vertex(ret);
+    }
+    if (m_mesh.id_face(ret) != new_tuple_fid) {
+        ret = m_mesh.switch_face(ret);
+    }
+    return ret;
+    // return m_mesh.with_different_cid(m_operating_tuple, m_incident_face_datas[0].split_f0);
 }
 
 Tuple TriMesh::TriMeshOperationExecutor::collapse_edge()
@@ -420,8 +429,26 @@ Tuple TriMesh::TriMeshOperationExecutor::collapse_edge()
     update_cell_hash();
     delete_simplices();
 
+    {
+        const long& ret_eid = m_incident_face_datas[0].ears[1].eid;
+        const long& ret_vid = m_spine_vids[1];
+        const long& ef0 = m_incident_face_datas[0].ears[0].fid;
+        const long& ef1 = m_incident_face_datas[0].ears[1].fid;
+
+        const long new_tuple_fid = (ef0 > -1) ? ef0 : ef1;
+
+        Tuple ret = m_mesh.edge_tuple_from_id(ret_eid);
+        if (m_mesh.id_vertex(ret) != ret_vid) {
+            ret = m_mesh.switch_vertex(ret);
+        }
+        if (m_mesh.id_face(ret) != new_tuple_fid) {
+            ret = m_mesh.switch_face(ret);
+        }
+        return ret;
+    }
+
     // return a ccw tuple from left ear if it exists, otherwise return a ccw tuple from right ear
-    return m_mesh.tuple_from_id(PrimitiveType::Vertex, v1);
+    // return m_mesh.tuple_from_id(PrimitiveType::Vertex, v1);
 }
 
 std::vector<long> TriMesh::TriMeshOperationExecutor::request_simplex_indices(
