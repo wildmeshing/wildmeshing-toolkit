@@ -3,10 +3,10 @@
 #include <memory>
 #include <optional>
 #include <type_traits>
-#include "attribute/AttributeHandle.hpp"
 #include "Tuple.hpp"
 #include "attribute/AccessorBase.hpp"
 #include "attribute/AttributeAccessMode.hpp"
+#include "attribute/AttributeHandle.hpp"
 
 #include <Eigen/Dense>
 
@@ -70,8 +70,8 @@ public:
 
     // returns the size of the underlying attribute
 
-    using BaseType::size; // const() -> long
     using BaseType::dimension; // const() -> long
+    using BaseType::size; // const() -> long
 
     using BaseType::attribute; // access to Attribute object being used here
     using BaseType::set_attribute; // (const vector<T>&) -> void
@@ -84,8 +84,15 @@ protected:
 
     T cacheable_const_scalar_attribute(const long index) const;
     TT cacheable_scalar_attribute(const long index);
-    using BaseType::scalar_attribute;
-    using BaseType::vector_attribute;
+
+    ConstMapResult const_vector_attribute(const long index) const;
+    MapResultT vector_attribute(const long index);
+
+    T const_scalar_attribute(const long index) const;
+    TT scalar_attribute(const long index);
+
+    // using BaseType::scalar_attribute;
+    // using BaseType::vector_attribute;
     long index(const Tuple& t) const;
 
 

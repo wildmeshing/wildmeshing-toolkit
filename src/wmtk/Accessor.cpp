@@ -138,6 +138,18 @@ auto Accessor<T, IsConst>::vector_attribute(const Tuple& t) -> MapResultT
     return cacheable_vector_attribute(idx);
 }
 
+template <typename T, bool IsConst>
+auto Accessor<T, IsConst>::const_vector_attribute(const long index) const -> ConstMapResult
+{
+    return cacheable_const_vector_attribute(index);
+}
+
+template <typename T, bool IsConst>
+auto Accessor<T, IsConst>::vector_attribute(const long index) -> MapResultT
+{
+    return cacheable_vector_attribute(index);
+}
+
 
 template <typename T, bool IsConst>
 T Accessor<T, IsConst>::const_scalar_attribute(const Tuple& t) const
@@ -151,6 +163,18 @@ auto Accessor<T, IsConst>::scalar_attribute(const Tuple& t) -> TT
 {
     const long idx = index(t);
     return cacheable_scalar_attribute(idx);
+}
+
+template <typename T, bool IsConst>
+T Accessor<T, IsConst>::const_scalar_attribute(const long index) const
+{
+    return cacheable_const_scalar_attribute(index);
+}
+
+template <typename T, bool IsConst>
+auto Accessor<T, IsConst>::scalar_attribute(const long index) -> TT
+{
+    return cacheable_scalar_attribute(index);
 }
 
 
