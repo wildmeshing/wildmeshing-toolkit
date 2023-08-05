@@ -277,7 +277,7 @@ bool TriMesh::is_outdated(const Tuple& tuple) const
 {
     const long cid = id(tuple, PrimitiveType::Face);
     ConstAccessor<long> ha = get_cell_hash_accessor();
-    return ha.scalar_attribute(cid) == tuple.m_hash;
+    return ha.scalar_attribute(cid) != tuple.m_hash;
 }
 
 bool TriMesh::is_connectivity_valid() const
