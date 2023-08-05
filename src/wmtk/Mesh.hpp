@@ -145,6 +145,13 @@ public:
     */
     virtual Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const = 0;
 
+    Tuple switch_vertex(const Tuple& tuple) const
+    {
+        return switch_tuple(tuple, PrimitiveType::Vertex);
+    }
+    Tuple switch_edge(const Tuple& tuple) const { return switch_tuple(tuple, PrimitiveType::Edge); }
+    Tuple switch_face(const Tuple& tuple) const { return switch_tuple(tuple, PrimitiveType::Face); }
+
 
     void set_capacities_from_flags();
     /**
@@ -170,6 +177,8 @@ public:
      * @return false
      */
     virtual bool is_boundary(const Tuple& edge) const = 0;
+
+    bool is_vertex_boundary(const Tuple& vertex);
     /**
      * @brief
      *

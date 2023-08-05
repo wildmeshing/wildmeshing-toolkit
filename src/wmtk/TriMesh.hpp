@@ -35,13 +35,6 @@ public:
 
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
 
-    Tuple switch_vertex(const Tuple& tuple) const
-    {
-        return switch_tuple(tuple, PrimitiveType::Vertex);
-    }
-    Tuple switch_edge(const Tuple& tuple) const { return switch_tuple(tuple, PrimitiveType::Edge); }
-    Tuple switch_face(const Tuple& tuple) const { return switch_tuple(tuple, PrimitiveType::Face); }
-
     /**
      * @brief jump to the next edge by performing a switch of vertex and edge
      */
