@@ -410,16 +410,11 @@ Tuple TriMesh::TriMeshOperationExecutor::collapse_edge()
     const SimplicialComplex v0_star =
         SimplicialComplex::closed_star(Simplex::vertex(m_operating_tuple), m_mesh);
 
+
     connect_ears();
 
     const long& v0 = m_spine_vids[0];
     const long& v1 = m_spine_vids[1];
-
-    {
-        const long f0 = ff_accessor.vector_attribute(1)[0];
-        const long f1 = ff_accessor.vector_attribute(1)[1];
-        const long f2 = ff_accessor.vector_attribute(1)[2];
-    }
 
     // replace v0 by v1 in incident faces
     for (const Simplex& f : v0_star.get_faces()) {
@@ -431,12 +426,6 @@ Tuple TriMesh::TriMeshOperationExecutor::collapse_edge()
                 break;
             }
         }
-    }
-
-    {
-        const long f0 = ff_accessor.vector_attribute(1)[0];
-        const long f1 = ff_accessor.vector_attribute(1)[1];
-        const long f2 = ff_accessor.vector_attribute(1)[2];
     }
 
     const long& ret_eid = m_incident_face_datas[0].ears[1].eid;

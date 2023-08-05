@@ -56,11 +56,15 @@ bool TriMeshSwapEdgeOperation::execute()
     //  \     /
     //   \   /
     //    \ /
-    TriMeshSplitEdgeOperation split_op(m_mesh, m_input_tuple);
-    if (!split_op()) {
-        return false;
+
+    Tuple split_ret;
+    {
+        TriMeshSplitEdgeOperation split_op(m_mesh, m_input_tuple);
+        if (!split_op()) {
+            return false;
+        }
+        split_ret = split_op.return_tuple();
     }
-    const Tuple& split_ret = split_op.return_tuple();
     // after split
     //    /|\
     //   / | \

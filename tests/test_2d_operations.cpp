@@ -995,7 +995,7 @@ TEST_CASE("collapse_return_tuple", "[operations][2D]")
     }
 }
 
-TEST_CASE("swap_edge", "[operations][2D][.]")
+TEST_CASE("swap_edge", "[operations][2D]")
 {
     SECTION("case ccw")
     {
@@ -1014,7 +1014,7 @@ TEST_CASE("swap_edge", "[operations][2D][.]")
 
         // std::cout << m.id(ret, PV) << "," << m.id(m.switch_tuple(ret, PV), PV) << std::endl;
 
-        auto fv_accessor = m.create_base_accessor<long>(m.f_handle(PrimitiveType::Vertex));
+        auto fv_accessor = m.create_accessor<long>(m.f_handle(PrimitiveType::Vertex));
         // REQUIRE(fv_accessor.vector_attribute(10)(0) == 4);
         // REQUIRE(fv_accessor.vector_attribute(10)(1) == 8);
         // REQUIRE(fv_accessor.vector_attribute(10)(2) == 10);
