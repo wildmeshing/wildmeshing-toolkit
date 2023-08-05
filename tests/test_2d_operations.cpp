@@ -117,34 +117,32 @@ TEST_CASE("get_split_simplices_to_delete", "[operations][split][2D]")
         const DEBUG_TriMesh m = single_triangle();
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
 
-        SimplicialComplex sc_to_delete = TMOE::get_split_simplices_to_delete(edge, m);
-        const auto& simplices = sc_to_delete.get_simplices();
+        std::array<std::vector<long>, 3> ids_to_delete =
+            TMOE::get_split_simplices_to_delete(edge, m);
 
-        REQUIRE(simplices.size() == 2);
-        REQUIRE(sc_to_delete.get_vertices().size() == 0);
-        REQUIRE(sc_to_delete.get_edges().size() == 1);
-        REQUIRE(sc_to_delete.get_faces().size() == 1);
+        REQUIRE(ids_to_delete[0].size() == 0);
+        REQUIRE(ids_to_delete[1].size() == 1);
+        REQUIRE(ids_to_delete[2].size() == 1);
 
-        const Simplex edge_to_delete = *sc_to_delete.get_edges().begin();
-        CHECK(m._debug_id(edge_to_delete) == m._debug_id(edge, PE));
-        const Simplex face_to_delete = *sc_to_delete.get_faces().begin();
-        CHECK(m._debug_id(face_to_delete) == m._debug_id(edge, PF));
+        const long edge_to_delete = ids_to_delete[1][0];
+        CHECK(edge_to_delete == m._debug_id(edge, PE));
+        const long face_to_delete = ids_to_delete[2][0];
+        CHECK(face_to_delete == m._debug_id(edge, PF));
     }
     SECTION("hex_plus_two")
     {
         const DEBUG_TriMesh m = hex_plus_two();
         const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
 
-        SimplicialComplex sc_to_delete = TMOE::get_split_simplices_to_delete(edge, m);
-        const auto& simplices = sc_to_delete.get_simplices();
+        std::array<std::vector<long>, 3> ids_to_delete =
+            TMOE::get_split_simplices_to_delete(edge, m);
 
-        REQUIRE(simplices.size() == 3);
-        REQUIRE(sc_to_delete.get_vertices().size() == 0);
-        REQUIRE(sc_to_delete.get_edges().size() == 1);
-        REQUIRE(sc_to_delete.get_faces().size() == 2);
+        REQUIRE(ids_to_delete[0].size() == 0);
+        REQUIRE(ids_to_delete[1].size() == 1);
+        REQUIRE(ids_to_delete[2].size() == 2);
 
-        const Simplex edge_to_delete = *sc_to_delete.get_edges().begin();
-        CHECK(m._debug_id(edge_to_delete) == m._debug_id(edge, PE));
+        const long edge_to_delete = ids_to_delete[1][0];
+        CHECK(edge_to_delete == m._debug_id(edge, PE));
 
         // compare expected face ids with the actual ones that should be deleted
         std::set<long> fid_expected;
@@ -152,10 +150,9 @@ TEST_CASE("get_split_simplices_to_delete", "[operations][split][2D]")
         fid_expected.insert(m._debug_id(m.switch_face(edge), PF));
 
         std::set<long> fid_actual;
-        for (const Simplex& f : sc_to_delete.get_faces()) {
-            const long fid = m._debug_id(f);
-            CHECK(fid_expected.find(fid) != fid_expected.end());
-            fid_actual.insert(fid);
+        for (const long& f : ids_to_delete[2]) {
+            CHECK(fid_expected.find(f) != fid_expected.end());
+            fid_actual.insert(f);
         }
         CHECK(fid_actual.size() == fid_expected.size());
     }
@@ -168,17 +165,16 @@ TEST_CASE("get_collapse_simplices_to_delete", "[operations][collapse][2D]")
         const DEBUG_TriMesh m = edge_region();
         Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
 
-        SimplicialComplex sc_to_delete = TMOE::get_collapse_simplices_to_delete(edge, m);
-        const auto& simplices = sc_to_delete.get_simplices();
+        std::array<std::vector<long>, 3> ids_to_delete =
+            TMOE::get_collapse_simplices_to_delete(edge, m);
 
-        REQUIRE(simplices.size() == 6);
-        REQUIRE(sc_to_delete.get_vertices().size() == 1);
-        REQUIRE(sc_to_delete.get_edges().size() == 3);
-        REQUIRE(sc_to_delete.get_faces().size() == 2);
+        REQUIRE(ids_to_delete[0].size() == 1);
+        REQUIRE(ids_to_delete[1].size() == 3);
+        REQUIRE(ids_to_delete[2].size() == 2);
 
         // V
-        const Simplex vertex_to_delete = *sc_to_delete.get_vertices().begin();
-        CHECK(m._debug_id(vertex_to_delete) == m._debug_id(edge, PV));
+        const long vertex_to_delete = ids_to_delete[0][0];
+        CHECK(vertex_to_delete == m._debug_id(edge, PV));
 
         // E
         std::set<long> eid_expected;
@@ -187,10 +183,9 @@ TEST_CASE("get_collapse_simplices_to_delete", "[operations][collapse][2D]")
         eid_expected.insert(m._debug_id(m.switch_edge(m.switch_face(edge)), PE));
 
         std::set<long> eid_actual;
-        for (const Simplex& e : sc_to_delete.get_edges()) {
-            const long eid = m._debug_id(e);
-            CHECK(eid_expected.find(eid) != eid_expected.end());
-            eid_actual.insert(eid);
+        for (const long& e : ids_to_delete[1]) {
+            CHECK(eid_expected.find(e) != eid_expected.end());
+            eid_actual.insert(e);
         }
         CHECK(eid_actual.size() == eid_expected.size());
 
@@ -200,10 +195,9 @@ TEST_CASE("get_collapse_simplices_to_delete", "[operations][collapse][2D]")
         fid_expected.insert(m._debug_id(m.switch_face(edge), PF));
 
         std::set<long> fid_actual;
-        for (const Simplex& f : sc_to_delete.get_faces()) {
-            const long fid = m._debug_id(f);
-            CHECK(fid_expected.find(fid) != fid_expected.end());
-            fid_actual.insert(fid);
+        for (const long& f : ids_to_delete[2]) {
+            CHECK(fid_expected.find(f) != fid_expected.end());
+            fid_actual.insert(f);
         }
         CHECK(fid_actual.size() == fid_expected.size());
     }
@@ -212,17 +206,16 @@ TEST_CASE("get_collapse_simplices_to_delete", "[operations][collapse][2D]")
         const DEBUG_TriMesh m = edge_region();
         Tuple edge = m.edge_tuple_between_v1_v2(7, 8, 6);
 
-        SimplicialComplex sc_to_delete = TMOE::get_collapse_simplices_to_delete(edge, m);
-        const auto& simplices = sc_to_delete.get_simplices();
+        std::array<std::vector<long>, 3> ids_to_delete =
+            TMOE::get_collapse_simplices_to_delete(edge, m);
 
-        REQUIRE(simplices.size() == 4);
-        REQUIRE(sc_to_delete.get_vertices().size() == 1);
-        REQUIRE(sc_to_delete.get_edges().size() == 2);
-        REQUIRE(sc_to_delete.get_faces().size() == 1);
+        REQUIRE(ids_to_delete[0].size() == 1);
+        REQUIRE(ids_to_delete[1].size() == 2);
+        REQUIRE(ids_to_delete[2].size() == 1);
 
         // V
-        const Simplex vertex_to_delete = *sc_to_delete.get_vertices().begin();
-        CHECK(m._debug_id(vertex_to_delete) == m._debug_id(edge, PV));
+        const long vertex_to_delete = ids_to_delete[0][0];
+        CHECK(vertex_to_delete == m._debug_id(edge, PV));
 
         // E
         std::set<long> eid_expected;
@@ -230,33 +223,31 @@ TEST_CASE("get_collapse_simplices_to_delete", "[operations][collapse][2D]")
         eid_expected.insert(m._debug_id(m.switch_edge(edge), PE));
 
         std::set<long> eid_actual;
-        for (const Simplex& e : sc_to_delete.get_edges()) {
-            const long eid = m._debug_id(e);
-            CHECK(eid_expected.find(eid) != eid_expected.end());
-            eid_actual.insert(eid);
+        for (const long& e : ids_to_delete[1]) {
+            CHECK(eid_expected.find(e) != eid_expected.end());
+            eid_actual.insert(e);
         }
         CHECK(eid_actual.size() == eid_expected.size());
 
         // F
-        const Simplex face_to_delete = *sc_to_delete.get_faces().begin();
-        CHECK(m._debug_id(face_to_delete) == m._debug_id(edge, PF));
+        const long face_to_delete = ids_to_delete[2][0];
+        CHECK(face_to_delete == m._debug_id(edge, PF));
     }
     SECTION("interior_edge_incident_to_boundary")
     {
         const DEBUG_TriMesh m = edge_region();
         Tuple edge = m.edge_tuple_between_v1_v2(7, 4, 5);
 
-        SimplicialComplex sc_to_delete = TMOE::get_collapse_simplices_to_delete(edge, m);
-        const auto& simplices = sc_to_delete.get_simplices();
+        std::array<std::vector<long>, 3> sc_to_delete =
+            TMOE::get_collapse_simplices_to_delete(edge, m);
 
-        REQUIRE(simplices.size() == 6);
-        REQUIRE(sc_to_delete.get_vertices().size() == 1);
-        REQUIRE(sc_to_delete.get_edges().size() == 3);
-        REQUIRE(sc_to_delete.get_faces().size() == 2);
+        REQUIRE(sc_to_delete[0].size() == 1);
+        REQUIRE(sc_to_delete[1].size() == 3);
+        REQUIRE(sc_to_delete[2].size() == 2);
 
         // V
-        const Simplex vertex_to_delete = *sc_to_delete.get_vertices().begin();
-        CHECK(m._debug_id(vertex_to_delete) == m._debug_id(edge, PV));
+        const long vertex_to_delete = sc_to_delete[0][0];
+        CHECK(vertex_to_delete == m._debug_id(edge, PV));
 
         // E
         std::set<long> eid_expected;
@@ -265,10 +256,9 @@ TEST_CASE("get_collapse_simplices_to_delete", "[operations][collapse][2D]")
         eid_expected.insert(m._debug_id(m.switch_edge(m.switch_face(edge)), PE));
 
         std::set<long> eid_actual;
-        for (const Simplex& e : sc_to_delete.get_edges()) {
-            const long eid = m._debug_id(e);
-            CHECK(eid_expected.find(eid) != eid_expected.end());
-            eid_actual.insert(eid);
+        for (const long& e : sc_to_delete[1]) {
+            CHECK(eid_expected.find(e) != eid_expected.end());
+            eid_actual.insert(e);
         }
         CHECK(eid_actual.size() == eid_expected.size());
 
@@ -278,10 +268,9 @@ TEST_CASE("get_collapse_simplices_to_delete", "[operations][collapse][2D]")
         fid_expected.insert(m._debug_id(m.switch_face(edge), PF));
 
         std::set<long> fid_actual;
-        for (const Simplex& f : sc_to_delete.get_faces()) {
-            const long fid = m._debug_id(f);
-            CHECK(fid_expected.find(fid) != fid_expected.end());
-            fid_actual.insert(fid);
+        for (const long& f : sc_to_delete[2]) {
+            CHECK(fid_expected.find(f) != fid_expected.end());
+            fid_actual.insert(f);
         }
         CHECK(fid_actual.size() == fid_expected.size());
     }
@@ -302,7 +291,7 @@ TEST_CASE("delete_simplices", "[operations][2D]")
     auto executor = m.get_tmoe(edge);
 
     // new way of getting simplices
-    executor.simplices_to_delete = TMOE::get_split_simplices_to_delete(edge, m);
+    executor.simplex_ids_to_delete = TMOE::get_split_simplices_to_delete(edge, m);
 
     executor.delete_simplices();
     REQUIRE(executor.flag_accessors[1].scalar_attribute(edge) == 0);
@@ -742,14 +731,12 @@ TEST_CASE("simplices_to_delete_for_split", "[operations][split][2D]")
 
         executor.split_edge();
 
-        const SimplicialComplex& simplices_to_delete = executor.simplices_to_delete;
-        REQUIRE(simplices_to_delete.get_simplices().size() == 2);
-        REQUIRE(simplices_to_delete.get_vertices().size() == 0);
-
-        REQUIRE(simplices_to_delete.get_edges().size() == 1);
-        // REQUIRE(executor.simplices_to_delete[1][0] == m._debug_id(edge, PE));
-        REQUIRE(simplices_to_delete.get_faces().size() == 1);
-        // REQUIRE(executor.simplices_to_delete[2][0] == 0);
+        const auto& ids_to_delete = executor.simplex_ids_to_delete;
+        REQUIRE(ids_to_delete[0].size() == 0);
+        REQUIRE(ids_to_delete[1].size() == 1);
+        REQUIRE(ids_to_delete[1][0] == m._debug_id(edge, PE));
+        REQUIRE(ids_to_delete[2].size() == 1);
+        REQUIRE(ids_to_delete[2][0] == 0);
     }
     SECTION("interior_edge")
     {
@@ -780,16 +767,15 @@ TEST_CASE("simplices_to_delete_for_split", "[operations][split][2D]")
 
         executor.split_edge();
 
-        const SimplicialComplex& simplices_to_delete = executor.simplices_to_delete;
+        const auto& ids_to_delete = executor.simplex_ids_to_delete;
 
-        REQUIRE(simplices_to_delete.get_simplices().size() == 3);
-        REQUIRE(simplices_to_delete.get_vertices().size() == 0);
+        REQUIRE(ids_to_delete[0].size() == 0);
 
-        REQUIRE(simplices_to_delete.get_edges().size() == 1);
-        // REQUIRE(simplices_to_delete[1][0] == m._debug_id(edge, PE));
-        REQUIRE(simplices_to_delete.get_faces().size() == 2);
-        // REQUIRE(simplices_to_delete[2][0] == 0);
-        // REQUIRE(simplices_to_delete[2][1] == 2);
+        REQUIRE(ids_to_delete[1].size() == 1);
+        REQUIRE(ids_to_delete[1][0] == m._debug_id(edge, PE));
+        REQUIRE(ids_to_delete[2].size() == 2);
+        REQUIRE(ids_to_delete[2][0] == 0);
+        REQUIRE(ids_to_delete[2][1] == 2);
     }
 }
 
@@ -864,37 +850,33 @@ TEST_CASE("split_multiple_edges", "[operations][split][2D]")
 TEST_CASE("collapse_edge", "[operations][2D][.]")
 {
     DEBUG_TriMesh m = hex_plus_two();
-    SECTION("case1")
+    SECTION("interior_edge")
     {
-        std::cout << "BEFORE COLLAPSE" << std::endl;
         REQUIRE(m.is_connectivity_valid());
 
         Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
         auto executor = m.get_tmoe(edge);
         m.collapse_edge(edge);
-        std::cout << "AFTER COLLAPSE" << std::endl;
         REQUIRE(m.is_connectivity_valid());
 
         auto fv_accessor = m.create_base_accessor<long>(m.f_handle(PV));
 
         REQUIRE(executor.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(2)) == 0);
         REQUIRE(executor.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(7)) == 0);
-        REQUIRE(fv_accessor.vector_attribute(0)(1) == 9);
-        REQUIRE(fv_accessor.vector_attribute(1)(0) == 9);
-        REQUIRE(fv_accessor.vector_attribute(3)(0) == 9);
-        REQUIRE(fv_accessor.vector_attribute(5)(2) == 9);
-        REQUIRE(fv_accessor.vector_attribute(6)(2) == 9);
-        REQUIRE(fv_accessor.vector_attribute(4)(0) == 9);
+        CHECK(fv_accessor.vector_attribute(0)[1] == 5);
+        CHECK(fv_accessor.vector_attribute(1)[0] == 5);
+        CHECK(fv_accessor.vector_attribute(3)[0] == 5);
+        CHECK(fv_accessor.vector_attribute(5)[2] == 5);
+        CHECK(fv_accessor.vector_attribute(6)[2] == 5);
+        CHECK(fv_accessor.vector_attribute(4)[0] == 5);
     }
-    SECTION("case2")
+    SECTION("edge_to_boundary")
     {
-        std::cout << "BEFORE COLLAPSE" << std::endl;
         REQUIRE(m.is_connectivity_valid());
 
         Tuple edge = m.edge_tuple_between_v1_v2(0, 4, 0);
         auto executor = m.get_tmoe(edge);
         m.collapse_edge(edge);
-        std::cout << "AFTER COLLAPSE" << std::endl;
         REQUIRE(m.is_connectivity_valid());
 
         auto fv_accessor = m.create_base_accessor<long>(m.f_handle(PV));
@@ -902,43 +884,52 @@ TEST_CASE("collapse_edge", "[operations][2D][.]")
         REQUIRE(executor.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(0)) == 0);
         REQUIRE(executor.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(1)) == 0);
 
-        REQUIRE(fv_accessor.vector_attribute(2)(0) == 9);
-        REQUIRE(fv_accessor.vector_attribute(5)(2) == 9);
-        REQUIRE(fv_accessor.vector_attribute(6)(2) == 9);
-        REQUIRE(fv_accessor.vector_attribute(7)(0) == 9);
+        CHECK(fv_accessor.vector_attribute(2)[0] == 4);
+        CHECK(fv_accessor.vector_attribute(5)[2] == 4);
+        CHECK(fv_accessor.vector_attribute(6)[2] == 4);
+        CHECK(fv_accessor.vector_attribute(7)[0] == 4);
     }
-    SECTION("test return tuple")
+    SECTION("boundary_edge")
+    {
+        REQUIRE(m.is_connectivity_valid());
+
+        Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 1);
+        auto executor = m.get_tmoe(edge);
+        m.collapse_edge(edge);
+        REQUIRE(m.is_connectivity_valid());
+
+        auto fv_accessor = m.create_base_accessor<long>(m.f_handle(PV));
+
+        REQUIRE(executor.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(1)) == 0);
+
+        CHECK(fv_accessor.vector_attribute(0)[2] == 1);
+    }
+    SECTION("return_tuple_ccw")
     {
         DEBUG_TriMesh m = hex_plus_two();
-        std::cout << "BEFORE COLLAPSE" << std::endl;
         REQUIRE(m.is_connectivity_valid());
 
         Tuple edge = m.edge_tuple_between_v1_v2(3, 4, 0);
         TriMeshCollapseEdgeOperation op(m, edge);
         op();
-        auto ret = op.return_tuple();
-        std::cout << "AFTER COLLAPSE" << std::endl;
+        auto ret = m.collapse_edge(edge);
         REQUIRE(m.is_connectivity_valid());
-        REQUIRE(op.is_return_tuple_from_left_ear() == false);
-        REQUIRE(m.id(ret, PV) == 9);
-        REQUIRE(m.id(m.switch_tuple(ret, PV), PV) == 1);
+        CHECK(op.is_return_tuple_from_left_ear() == false);
+        CHECK(m.id(ret, PV) == 4);
     }
 
-    SECTION("test return tuple 2")
+    SECTION("return_tuple_cw")
     {
         DEBUG_TriMesh m = hex_plus_two();
-        std::cout << "BEFORE COLLAPSE" << std::endl;
         REQUIRE(m.is_connectivity_valid());
 
         Tuple edge = m.edge_tuple_between_v1_v2(4, 3, 0);
         TriMeshCollapseEdgeOperation op(m, edge);
         op();
         auto ret = op.return_tuple();
-        std::cout << "AFTER COLLAPSE" << std::endl;
         REQUIRE(m.is_connectivity_valid());
-        REQUIRE(op.is_return_tuple_from_left_ear() == true);
-        REQUIRE(m.id(ret, PV) == 9);
-        REQUIRE(m.id(m.switch_tuple(ret, PV), PV) == 1);
+        CHECK(op.is_return_tuple_from_left_ear() == true);
+        CHECK(m.id(ret, PV) == 3);
     }
 }
 

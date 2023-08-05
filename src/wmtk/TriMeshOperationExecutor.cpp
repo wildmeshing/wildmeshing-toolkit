@@ -62,7 +62,6 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
     , hash_accessor(m.get_cell_hash_accessor())
     , m_mesh(m)
     , m_operating_tuple(operating_tuple)
-    , simplices_to_delete(m)
 
 {
     // store ids of edge and incident vertices
@@ -91,10 +90,10 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
 
 void TriMesh::TriMeshOperationExecutor::delete_simplices()
 {
-    for (const Simplex& s : simplices_to_delete.get_simplices()) {
-        const long d = get_simplex_dimension(s.primitive_type());
-        const long id = m_mesh.id(s);
-        flag_accessors[d].scalar_attribute(id) = 0;
+    for (size_t d = 0; d < simplex_ids_to_delete.size(); ++d) {
+        for (const long id : simplex_ids_to_delete[d]) {
+            flag_accessors[d].scalar_attribute(id) = 0;
+        }
     }
 }
 
@@ -105,14 +104,22 @@ void TriMesh::TriMeshOperationExecutor::update_cell_hash()
     }
 }
 
-const SimplicialComplex TriMesh::TriMeshOperationExecutor::get_split_simplices_to_delete(
+const std::array<std::vector<long>, 3>
+TriMesh::TriMeshOperationExecutor::get_split_simplices_to_delete(
     const Tuple& tuple,
     const TriMesh& m)
 {
-    return SimplicialComplex::open_star(Simplex::edge(tuple), m);
+    const SimplicialComplex sc = SimplicialComplex::open_star(Simplex::edge(tuple), m);
+    std::array<std::vector<long>, 3> ids;
+    for (const Simplex& s : sc.get_simplices()) {
+        ids[get_simplex_dimension(s.primitive_type())].emplace_back(m.id(s));
+    }
+
+    return ids;
 }
 
-const SimplicialComplex TriMesh::TriMeshOperationExecutor::get_collapse_simplices_to_delete(
+const std::array<std::vector<long>, 3>
+TriMesh::TriMeshOperationExecutor::get_collapse_simplices_to_delete(
     const Tuple& tuple,
     const TriMesh& m)
 {
@@ -121,7 +128,15 @@ const SimplicialComplex TriMesh::TriMeshOperationExecutor::get_collapse_simplice
     const SimplicialComplex edge_closed_star =
         SimplicialComplex::closed_star(Simplex::edge(tuple), m);
 
-    return SimplicialComplex::get_intersection(vertex_open_star, edge_closed_star);
+    const SimplicialComplex sc =
+        SimplicialComplex::get_intersection(vertex_open_star, edge_closed_star);
+
+    std::array<std::vector<long>, 3> ids;
+    for (const Simplex& s : sc.get_simplices()) {
+        ids[get_simplex_dimension(s.primitive_type())].emplace_back(m.id(s));
+    }
+
+    return ids;
 }
 
 /**
@@ -179,6 +194,8 @@ void TriMesh::TriMeshOperationExecutor::connect_ears()
         const long& ef1 = face_data.ears[1].fid;
         const long& ee1 = face_data.ears[1].eid;
         const long& f_old = face_data.fid;
+        const long& v1 = m_spine_vids[1];
+        const long& v0 = face_data.opposite_vid;
 
         // TODO: should be detected by link condition
         assert(ef0 > -1 || ef1 > -1);
@@ -186,11 +203,12 @@ void TriMesh::TriMeshOperationExecutor::connect_ears()
         assert(ef0 != ef1);
 
         // change face for v2
-        long& v2_face = vf_accessor.scalar_attribute(face_data.opposite_vid);
+        long& v2_face = vf_accessor.scalar_attribute(v0);
         // use ef0 if it exists
         v2_face = (ef0 < 0) ? ef1 : ef0;
 
         ef_accessor.scalar_attribute(ee1) = v2_face;
+        vf_accessor.scalar_attribute(v1) = v2_face;
 
         // change FF and FE for ears
         update_ids_in_ear(ef0, ef1, f_old, ee1);
@@ -348,7 +366,7 @@ void TriMesh::TriMeshOperationExecutor::replace_incident_face(
 
 Tuple TriMesh::TriMeshOperationExecutor::split_edge()
 {
-    simplices_to_delete = get_split_simplices_to_delete(m_operating_tuple, m_mesh);
+    simplex_ids_to_delete = get_split_simplices_to_delete(m_operating_tuple, m_mesh);
 
     // create new vertex (center)
     std::vector<long> new_vids = this->request_simplex_indices(PrimitiveType::Vertex, 1);
@@ -366,6 +384,7 @@ Tuple TriMesh::TriMeshOperationExecutor::split_edge()
     if (m_incident_face_datas.size() > 1) {
         connect_faces_across_spine();
     }
+
     update_cell_hash();
     delete_simplices();
     // return Tuple new_fid, new_vid that points
@@ -374,20 +393,9 @@ Tuple TriMesh::TriMeshOperationExecutor::split_edge()
 
 Tuple TriMesh::TriMeshOperationExecutor::collapse_edge()
 {
-    //     --- ---
-    //   / \ / \ / \ .
-    //   ---X--- ---
-    //   \ / \ / \ /
-    //     --- ---
-    //
-    //     --- ---
-    //   /  \  \ / \ .
-    //   ------O----
-    //   \  /  / \ /
-    //     --- ---
+    simplex_ids_to_delete = get_collapse_simplices_to_delete(m_operating_tuple, m_mesh);
 
-    simplices_to_delete = get_collapse_simplices_to_delete(m_operating_tuple, m_mesh);
-
+    // must collect star before changing connectivity
     const SimplicialComplex v0_star =
         SimplicialComplex::closed_star(Simplex::vertex(m_operating_tuple), m_mesh);
 
@@ -395,6 +403,7 @@ Tuple TriMesh::TriMeshOperationExecutor::collapse_edge()
 
     const long& v0 = m_spine_vids[0];
     const long& v1 = m_spine_vids[1];
+
 
     // replace v0 by v1 in incident faces
     for (const Simplex& f : v0_star.get_faces()) {
@@ -410,6 +419,7 @@ Tuple TriMesh::TriMeshOperationExecutor::collapse_edge()
 
     update_cell_hash();
     delete_simplices();
+
     // return a ccw tuple from left ear if it exists, otherwise return a ccw tuple from right ear
     return m_mesh.tuple_from_id(PrimitiveType::Vertex, v1);
 }

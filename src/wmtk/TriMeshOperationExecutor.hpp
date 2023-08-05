@@ -62,7 +62,7 @@ public:
      *
      * The deleted simplices are exactly the open star of the edge
      */
-    static const SimplicialComplex get_split_simplices_to_delete(
+    static const std::array<std::vector<long>, 3> get_split_simplices_to_delete(
         const Tuple& tuple,
         const TriMesh& m);
 
@@ -73,7 +73,7 @@ public:
      * of the edge. This comes down to one vertex, three edges, and two faces if the edge is on the
      * interior. On the boundary it is one vertex, two edges, and one face.
      */
-    static const SimplicialComplex get_collapse_simplices_to_delete(
+    static const std::array<std::vector<long>, 3> get_collapse_simplices_to_delete(
         const Tuple& tuple,
         const TriMesh& m);
 
@@ -108,7 +108,7 @@ public:
     void connect_faces_across_spine();
     std::vector<long> request_simplex_indices(const PrimitiveType type, long count);
 
-    SimplicialComplex simplices_to_delete;
+    std::array<std::vector<long>, 3> simplex_ids_to_delete;
     std::vector<long> cell_ids_to_update_hash;
     TriMesh& m_mesh;
     Tuple m_operating_tuple;
