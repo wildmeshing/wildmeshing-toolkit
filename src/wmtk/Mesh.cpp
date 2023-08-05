@@ -110,6 +110,22 @@ bool Mesh::is_vertex_boundary(const Tuple& vertex)
     return false;
 }
 
+bool Mesh::is_vertex_boundary(const Tuple& vertex) const
+{
+    const PrimitiveType ptype =
+        (m_attribute_manager.size() == 3) ? PrimitiveType::Edge : PrimitiveType::Face;
+
+    // go through all edges / vertices and check if they are boundary
+    const SimplicialComplex neigh = SimplicialComplex::open_star(Simplex::vertex(vertex), *this);
+    for (const Simplex& s : neigh.get_simplices(ptype)) {
+        if (is_boundary(s.tuple())) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 bool Mesh::simplex_is_equal(const Simplex& s0, const Simplex& s1) const
 {
     return (s0.primitive_type() == s1.primitive_type()) && (id(s0) == id(s1));

@@ -179,6 +179,8 @@ public:
      */
     virtual bool is_boundary(const Tuple& edge) const = 0;
 
+    bool is_vertex_boundary(const Tuple& vertex) const;
+
     bool is_vertex_boundary(const Tuple& vertex);
     /**
      * @brief
