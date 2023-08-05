@@ -170,6 +170,8 @@ void TriMesh::TriMeshOperationExecutor::update_ids_in_ear(
             break;
         }
     }
+
+    ef_accessor.scalar_attribute(new_eid) = ear_fid;
 }
 
 void TriMesh::TriMeshOperationExecutor::connect_ears()
@@ -195,7 +197,7 @@ void TriMesh::TriMeshOperationExecutor::connect_ears()
         const long& ee1 = face_data.ears[1].eid;
         const long& f_old = face_data.fid;
         const long& v1 = m_spine_vids[1];
-        const long& v0 = face_data.opposite_vid;
+        const long& v2 = face_data.opposite_vid;
 
         // TODO: should be detected by link condition
         assert(ef0 > -1 || ef1 > -1);
@@ -203,7 +205,7 @@ void TriMesh::TriMeshOperationExecutor::connect_ears()
         assert(ef0 != ef1);
 
         // change face for v2
-        long& v2_face = vf_accessor.scalar_attribute(v0);
+        long& v2_face = vf_accessor.scalar_attribute(v2);
         // use ef0 if it exists
         v2_face = (ef0 < 0) ? ef1 : ef0;
 
@@ -413,6 +415,11 @@ Tuple TriMesh::TriMeshOperationExecutor::collapse_edge()
     const long& v0 = m_spine_vids[0];
     const long& v1 = m_spine_vids[1];
 
+    {
+        const long f0 = ff_accessor.vector_attribute(1)[0];
+        const long f1 = ff_accessor.vector_attribute(1)[1];
+        const long f2 = ff_accessor.vector_attribute(1)[2];
+    }
 
     // replace v0 by v1 in incident faces
     for (const Simplex& f : v0_star.get_faces()) {
@@ -426,26 +433,34 @@ Tuple TriMesh::TriMeshOperationExecutor::collapse_edge()
         }
     }
 
+    {
+        const long f0 = ff_accessor.vector_attribute(1)[0];
+        const long f1 = ff_accessor.vector_attribute(1)[1];
+        const long f2 = ff_accessor.vector_attribute(1)[2];
+    }
+
+    const long& ret_eid = m_incident_face_datas[0].ears[1].eid;
+    const long& ret_vid = m_spine_vids[1];
+    const long& ef0 = m_incident_face_datas[0].ears[0].fid;
+    const long& ef1 = m_incident_face_datas[0].ears[1].fid;
+
+    const long new_tuple_fid = (ef0 > -1) ? ef0 : ef1;
+
+    Tuple ret = m_mesh.edge_tuple_from_id(ret_eid);
+    if (m_mesh.id_vertex(ret) != ret_vid) {
+        ret = m_mesh.switch_vertex(ret);
+    }
+    assert(m_mesh.id_vertex(ret) == ret_vid);
+    if (m_mesh.id_face(ret) != new_tuple_fid) {
+        ret = m_mesh.switch_face(ret);
+    }
+    assert(m_mesh.id_face(ret) == new_tuple_fid);
+
+
     update_cell_hash();
     delete_simplices();
 
-    {
-        const long& ret_eid = m_incident_face_datas[0].ears[1].eid;
-        const long& ret_vid = m_spine_vids[1];
-        const long& ef0 = m_incident_face_datas[0].ears[0].fid;
-        const long& ef1 = m_incident_face_datas[0].ears[1].fid;
-
-        const long new_tuple_fid = (ef0 > -1) ? ef0 : ef1;
-
-        Tuple ret = m_mesh.edge_tuple_from_id(ret_eid);
-        if (m_mesh.id_vertex(ret) != ret_vid) {
-            ret = m_mesh.switch_vertex(ret);
-        }
-        if (m_mesh.id_face(ret) != new_tuple_fid) {
-            ret = m_mesh.switch_face(ret);
-        }
-        return ret;
-    }
+    return ret;
 
     // return a ccw tuple from left ear if it exists, otherwise return a ccw tuple from right ear
     // return m_mesh.tuple_from_id(PrimitiveType::Vertex, v1);
