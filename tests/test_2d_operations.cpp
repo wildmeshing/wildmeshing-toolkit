@@ -997,7 +997,7 @@ TEST_CASE("collapse_return_tuple", "[operations][2D]")
 
 TEST_CASE("swap_edge", "[operations][2D]")
 {
-    SECTION("case ccw")
+    SECTION("counter_clockwise")
     {
         DEBUG_TriMesh m = interior_edge();
         REQUIRE(m.is_connectivity_valid());
@@ -1012,48 +1012,50 @@ TEST_CASE("swap_edge", "[operations][2D]")
         CHECK(m.id(ret, PV) == 4);
         CHECK(m.id(m.switch_vertex(ret), PV) == 0);
 
-        // std::cout << m.id(ret, PV) << "," << m.id(m.switch_tuple(ret, PV), PV) << std::endl;
-
-        auto fv_accessor = m.create_accessor<long>(m.f_handle(PrimitiveType::Vertex));
-        // REQUIRE(fv_accessor.vector_attribute(10)(0) == 4);
-        // REQUIRE(fv_accessor.vector_attribute(10)(1) == 8);
-        // REQUIRE(fv_accessor.vector_attribute(10)(2) == 10);
-        // REQUIRE(fv_accessor.vector_attribute(11)(0) == 10);
-        // REQUIRE(fv_accessor.vector_attribute(11)(1) == 8);
-        // REQUIRE(fv_accessor.vector_attribute(11)(2) == 5);
+        auto fv_accessor = m.create_const_base_accessor<long>(m.f_handle(PrimitiveType::Vertex));
+        auto f5_fv = fv_accessor.vector_attribute(5);
+        CHECK(f5_fv[0] == 1);
+        CHECK(f5_fv[1] == 4);
+        CHECK(f5_fv[2] == 0);
+        auto f6_fv = fv_accessor.vector_attribute(6);
+        CHECK(f6_fv[0] == 0);
+        CHECK(f6_fv[1] == 4);
+        CHECK(f6_fv[2] == 2);
     }
+    SECTION("clockwise")
+    {
+        DEBUG_TriMesh m = interior_edge();
+        REQUIRE(m.is_connectivity_valid());
 
-    // SECTION("case cw")
-    //{
-    //     DEBUG_TriMesh m = hex_plus_two();
-    //     std::cout << "BEFORE SWAP" << std::endl;
-    //     REQUIRE(m.is_connectivity_valid());
-    //
-    //     Tuple edge = m.edge_tuple_between_v1_v2(5, 4, 2);
-    //     auto executor = m.get_tmoe(edge);
-    //     TriMeshSwapEdgeOperation op(m, edge);
-    //     op();
-    //     auto ret = op.return_tuple();
-    //     std::cout << "AFTER SWAP" << std::endl;
-    //     REQUIRE(m.is_connectivity_valid());
-    //
-    //     std::cout << m.id(ret, PV) << "," << m.id(m.switch_tuple(ret, PV), PV) << std::endl;
-    //     auto fv_accessor = m.create_base_accessor<long>(m.f_handle(PrimitiveType::Vertex));
-    //
-    //    // for (long i = 0; i < m.capacity(PF); i++)
-    // {
-    //     if (executor.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(i)) == 0)
-    //     continue; std::cout << fv_accessor.vector_attribute(i)(0) << " " <<
-    //     fv_accessor.vector_attribute(i)(1) << " " << fv_accessor.vector_attribute(i)(2) <<
-    //     std::endl;
-    // }
-    //    REQUIRE(m.id(ret, PV) == 10);
-    //    REQUIRE(m.id(m.switch_tuple(ret, PV), PV) == 8);
-    //    REQUIRE(fv_accessor.vector_attribute(11)(0) == 4);
-    //    REQUIRE(fv_accessor.vector_attribute(11)(1) == 8);
-    //    REQUIRE(fv_accessor.vector_attribute(11)(2) == 10);
-    //    REQUIRE(fv_accessor.vector_attribute(10)(0) == 10);
-    //    REQUIRE(fv_accessor.vector_attribute(10)(1) == 8);
-    //    REQUIRE(fv_accessor.vector_attribute(10)(2) == 5);
-    //}
+        const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 2);
+        TriMeshSwapEdgeOperation op(m, edge);
+        const bool success = op();
+        REQUIRE(success);
+        const Tuple ret = op.return_tuple();
+        REQUIRE(m.is_connectivity_valid());
+
+        CHECK(m.id(ret, PV) == 4);
+        CHECK(m.id(m.switch_vertex(ret), PV) == 0);
+
+        auto fv_accessor = m.create_const_base_accessor<long>(m.f_handle(PrimitiveType::Vertex));
+        auto f5_fv = fv_accessor.vector_attribute(5);
+        CHECK(f5_fv[0] == 1);
+        CHECK(f5_fv[1] == 4);
+        CHECK(f5_fv[2] == 0);
+        auto f6_fv = fv_accessor.vector_attribute(6);
+        CHECK(f6_fv[0] == 0);
+        CHECK(f6_fv[1] == 4);
+        CHECK(f6_fv[2] == 2);
+    }
+    SECTION("single_triangle_fail")
+    {
+        DEBUG_TriMesh m = single_triangle();
+        REQUIRE(m.is_connectivity_valid());
+
+        const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
+        TriMeshSwapEdgeOperation op(m, edge);
+        const bool success = op();
+        REQUIRE(!success);
+        REQUIRE(m.is_connectivity_valid());
+    }
 }
