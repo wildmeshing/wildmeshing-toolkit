@@ -86,9 +86,11 @@ protected:
     TT cacheable_scalar_attribute(const long index);
 
     ConstMapResult const_vector_attribute(const long index) const;
+    ConstMapResult vector_attribute(const long index) const;
     MapResultT vector_attribute(const long index);
 
     T const_scalar_attribute(const long index) const;
+    T scalar_attribute(const long index) const;
     TT scalar_attribute(const long index);
 
     // using BaseType::scalar_attribute;
