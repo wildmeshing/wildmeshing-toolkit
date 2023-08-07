@@ -88,4 +88,19 @@ TriMesh hex_plus_two();
 //   \ / \ / \ /
 //    7---8---9
 TriMesh edge_region();
+
+
+//
+//  4------ 0 ---- 3
+//   |     / \     |
+//   | f1 /   \ f0 |
+//   |   /     \   |
+//   |  /       \  |
+//   2  ---------  1
+//      \       /  .
+//       \ f2  /   .
+//        \   /    .
+//         \ /     .
+//          5
+TriMesh three_individuals();
 } // namespace wmtk::tests
