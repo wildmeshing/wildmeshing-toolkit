@@ -7,6 +7,14 @@ Operation::Operation(Mesh& m)
 {}
 Operation::~Operation() = default;
 
+bool Operation::operator<(const Operation& o) const
+{
+    return priority() < o.priority();
+}
+bool Operation::operator==(const Operation& o) const
+{
+    return priority() == o.priority();
+}
 
 bool Operation::operator()()
 {

@@ -20,6 +20,11 @@ public:
 
     virtual std::vector<double> priority() const { return {0}; }
 
+
+    // TODO: spaceship things?
+    bool operator<(const Operation& o) const;
+    bool operator==(const Operation& o) const;
+
 protected:
     virtual bool execute() = 0;
     // does invariant pre-checks
