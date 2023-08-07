@@ -62,9 +62,9 @@ void run_debug_trimesh(const DEBUG_TriMesh& m, const MeshDebugInfo& info)
         long b = m.id(m.switch_tuple(f_tup, PrimitiveType::Vertex), PrimitiveType::Vertex );
         long c = m.id(
             m.switch_tuple(
-                m.switch_tuple(f_tup, PrimitiveType::Vertex
+                m.switch_tuple(f_tup, PrimitiveType::Edge
                     ),
-                PrimitiveType::Edge
+                PrimitiveType::Vertex
                 ),
             PrimitiveType::Vertex
             );
