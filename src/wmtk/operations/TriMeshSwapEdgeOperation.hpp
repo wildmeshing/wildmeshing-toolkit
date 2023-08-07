@@ -1,18 +1,27 @@
 
 #pragma once
-#include "TupleOperation.hpp"
+#include <optional>
+#include "Operation.hpp"
 
 namespace wmtk {
-// TODO: fill out pertinent virtuals
-class TriMeshEdgeOperation : public TupleOperation
+class TriMeshSwapEdgeOperation : public Operation
 {
-    TriMeshSwapEdgeOperation(TriMesh& m, Tuple& t);
+public:
+    TriMeshSwapEdgeOperation(TriMesh& m, const Tuple& t);
 
+    std::string name() const override;
+    Tuple return_tuple() const;
 
+    static PrimitiveType primitive_type() { return PrimitiveType::Edge; }
+
+protected:
     bool execute() override;
-    std::vector<Tuple> modified_triangles() const override;
+    bool before() const override;
 
 private:
-    std::vector<Tuple> m_modified_triangles;
+    Tuple m_input_tuple;
+    Tuple m_output_tuple;
 };
+
+
 } // namespace wmtk

@@ -146,6 +146,13 @@ public:
     */
     virtual Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const = 0;
 
+    Tuple switch_vertex(const Tuple& tuple) const
+    {
+        return switch_tuple(tuple, PrimitiveType::Vertex);
+    }
+    Tuple switch_edge(const Tuple& tuple) const { return switch_tuple(tuple, PrimitiveType::Edge); }
+    Tuple switch_face(const Tuple& tuple) const { return switch_tuple(tuple, PrimitiveType::Face); }
+
 
     void set_capacities_from_flags();
     /**
@@ -171,6 +178,8 @@ public:
      * @return false
      */
     virtual bool is_boundary(const Tuple& edge) const = 0;
+
+    bool is_vertex_boundary(const Tuple& vertex);
     /**
      * @brief
      *
@@ -181,6 +190,14 @@ public:
      * @return false
      */
     virtual bool is_valid(const Tuple& tuple) const = 0;
+    /**
+     * @brief check if tuple was involved in a topological operation and is therefore invalid
+     *
+     * @param tuple the tuple to be checked
+     * @return true if tuple is outdated
+     * @return false otherwise
+     */
+    virtual bool is_outdated(const Tuple& tuple) const = 0;
 
 
     bool simplex_is_equal(const Simplex& s0, const Simplex& s1) const;

@@ -13,15 +13,15 @@ namespace internal {
 
 struct SimplexLessFunctor
 {
-    const Mesh& m;
+    const Mesh* m;
 
     SimplexLessFunctor(const Mesh& mm)
-        : m(mm)
+        : m(&mm)
     {}
 
     bool operator()(const Simplex& s0, const Simplex& s1) const
     {
-        return m.simplex_is_less(s0, s1);
+        return m->simplex_is_less(s0, s1);
     }
 };
 
@@ -40,6 +40,14 @@ public:
 
     internal::SimplexSet get_simplices(const PrimitiveType& ptype) const;
 
+    internal::SimplexSet get_vertices() const { return get_simplices(PrimitiveType::Vertex); }
+    internal::SimplexSet get_edges() const { return get_simplices(PrimitiveType::Edge); }
+    internal::SimplexSet get_faces() const { return get_simplices(PrimitiveType::Face); }
+    internal::SimplexSet get_tetrahedra() const
+    {
+        return get_simplices(PrimitiveType::Tetrahedron);
+    }
+
     std::vector<Simplex> get_simplex_vector() const;
 
     /**
@@ -53,7 +61,7 @@ public:
 
     bool operator==(const SimplicialComplex& other) const;
 
-    //    SimplicialComplex& operator=(const SimplicialComplex&) = default;
+    SimplicialComplex& operator=(const SimplicialComplex&) = default;
 
     SimplicialComplex(const Mesh& mm)
         : _slf(mm)
@@ -84,24 +92,48 @@ public:
         const SimplicialComplex& B);
 
     /**
-     * @brief get the boundary of a simplex
+     * @brief Get the boundary of a simplex.
+     *
+     * The boundary of a simplex are all incident lower dimensional simplices.
+     * - Tetrahedron: 4 faces, 6 edges, 4 vertices
+     * - Triange: 3 edges, 3 vertices
+     * - Edge: 2 vertices
+     * - Vertex: none
+     *
      */
     static SimplicialComplex boundary(const Simplex& s, const Mesh& m);
 
     /**
-     * @brief get complex of a simplex and its boundary
+     * @brief the union of a simplex and its boundary
      */
     static SimplicialComplex simplex_with_boundary(const Simplex& s, const Mesh& m);
 
     /**
-     * @brief check if simplices with their boundary intersect
+     * @brief check if the intersection of simplices with their boundary is an empty set
      */
     static bool simplices_w_boundary_intersect(const Simplex& s1, const Simplex& s2, const Mesh& m);
 
+    /**
+     * @brief The union of all simplices with boundary that have s in their boundary.
+     *
+     * Example: The closed star of a vertex in a triangular mesh contains all triangles incident to
+     * the vertex and all vertices and edges incident to those triangles.
+     */
     static SimplicialComplex closed_star(const Simplex& s, const Mesh& m);
 
+    /**
+     * @brief The boundary of the closed star.
+     *
+     * Example: The link of a vertex in a triangle mesh is the ring of edges and vertices
+     * surrounding it.
+     */
     static SimplicialComplex link(const Simplex& s, const Mesh& m);
 
+    /**
+     * @brief The closed star without its boundary.
+     *
+     * For performance reasons, `closed_star` should be used whenever possible.
+     */
     static SimplicialComplex open_star(const Simplex& s, const Mesh& m);
 
     //////////////////////////////////
