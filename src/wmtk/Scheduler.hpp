@@ -1,4 +1,9 @@
 #pragma once
+#include "Mesh.hpp"
+#include "operations/Operation.hpp"
+#include "operations/OperationFactory.hpp"
+#include <string_view>
+#include <unordered_map>
 
 
 namespace wmtk {
@@ -10,77 +15,45 @@ namespace wmtk {
 //     scheduler.add_operation_type<SeamedTriMeshSplitEdgeOperation>("split_edge");
 // }
 
+class OperationQueue;
 class Scheduler
 {
+public:
+    Scheduler(Mesh& m);
+    ~Scheduler();
     // user specifies a sort of operation they want
+    // template <typename OperationType, typename... Args>
+    // void add_operation_type(const std::string& name, PrimitiveType primitive_type, Args... args)
+    //{
+    //    m_factories[name] = std::make_unique<OperationFactory<OperationType>>(
+    //        primitive_type,
+    //        std::forward<Args>(args)...);
+    //}
     template <typename OperationType, typename... Args>
-    void add_operation_type(const std::string& name, PrimitiveType primitive_type, Args... args)
+    void add_operation_type(const std::string& name, Args... args)
     {
-        m_factories[name] = std::make_unique<OperationFactory<OperationType>>(
-            primitive_type,
-            std::forward<Args>(args)...);
+        m_factories[name] =
+            std::make_unique<OperationFactory<OperationType>>(std::forward<Args>(args)...);
     }
 
-    void enqueue_operations(const std::vector<std::unique_ptr<Operation>>& ops)
-    {
-        size_t index = 0;
-        for (size_t index = 0; index < ops.size(); ++index) {
-            for (auto& queue : m_per_thread_queues) {
-                if (index < ops.size()) {
-                    actor.enqueue(std::(ops[index]));
-                    index++;
-                } else {
-                    return;
-                }
-            }
-        }
-    }
-
-
-    // sorts all of the operations according to the prioirty queue
-    void sort_operations_in_place(std::vector<std::unique_ptr<Operation>>& ops)
-    {
-        std::sort(ops.begin(), ops.end(), [](const auto& a_ptr, const auto& b_ptr) {
-            return a_ptr->priority() < b_ptr->priority();
-        });
-    }
+    void enqueue_operations(std::vector<std::unique_ptr<Operation>>&& ops);
 
 
     // creates all of the operations of a paritcular type to be run
     std::vector<std::unique_ptr<Operation>> create_operations(
         PrimitiveType type,
-        const std::string& name)
-    {
-        auto tups = m.get_all(type);
-
-        std::vector<std::unique_ptr<Operation>> ops;
-        auto& factory = get_factory(name);
-        for (const auto& tup : tups) {
-            ops.emplace_back(factory->create(m, tup));
-        }
-    }
+        const std::string& name);
 
 
-    std::unique_ptr<Operation> get_operation(const Op& pr)
-    {
-        const auto& [name, tup] = pr;
-        return get_factory(name)->create(m, tup);
-    }
+    void run_operation_on_all(PrimitiveType type, const std::string& name);
 
-
-    void run_operation(PrimitiveType type, const std::string& name)
-    {
-        auto ops = create_ops(type, name);
-        sort_operations_in_place(ops);
-        // enqueue_operations(ops);
-        // TODO: pick some strategy for running these operations
-        tbb::parallel_for(ops, [&](const auto& ops) { (*op)(); });
-    }
+    OperationFactoryBase const* get_factory(const std::string_view& name) const;
 
 private:
-    Mesh& m;
-    std::unordered_map<std::string, std::unique_ptr<OperationFactory>> m_factories;
+    Mesh& m_mesh;
+    std::unordered_map<std::string, std::unique_ptr<OperationFactoryBase>> m_factories;
     //    tbb::enumerable_per_thread<OperationQueue> m_per_thread_queues;
+    std::vector<OperationQueue> m_per_thread_queues;
 };
 
 } // namespace wmtk
