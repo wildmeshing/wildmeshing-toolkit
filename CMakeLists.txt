@@ -78,8 +78,10 @@ add_library(wmtk::components ALIAS wildmeshing_components)
 add_subdirectory(components/wmtk_components)
 
 # Group source files for IDEs
+file(GLOB_RECURSE WMTK_FILES_FOR_SOURCE_GROUP "src/*.cpp" "src/*.h" "src/*.hpp")
+source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src/wmtk" PREFIX "wmtk" FILES ${WMTK_FILES_FOR_SOURCE_GROUP})
 file(GLOB_RECURSE COMPONENTS_FILES_FOR_SOURCE_GROUP "components/*.cpp" "components/*.h" "components/*.hpp")
-source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/components/wmtk_components" PREFIX "src" FILES ${COMPONENTS_FILES_FOR_SOURCE_GROUP})
+source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/components/wmtk_components" PREFIX "components" FILES ${COMPONENTS_FILES_FOR_SOURCE_GROUP})
 
 # Include headers
 target_include_directories(wildmeshing_toolkit PUBLIC src)
