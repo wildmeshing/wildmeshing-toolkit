@@ -9,10 +9,10 @@ TriMeshCollapseEdgeOperation::TriMeshCollapseEdgeOperation(Mesh& m, const Tuple&
     : Operation(m)
     , m_input_tuple(t)
 {
-    if (m_mesh.is_valid(m_input_tuple)){
-        m_is_output_tuple_from_left_ear = !m_mesh.is_boundary(m_mesh.switch_tuple(m_input_tuple, PrimitiveType::Edge));
+    if (m_mesh.is_valid(m_input_tuple)) {
+        m_is_output_tuple_from_left_ear =
+            !m_mesh.is_boundary(m_mesh.switch_tuple(m_input_tuple, PrimitiveType::Edge));
     }
-    
 }
 
 bool TriMeshCollapseEdgeOperation::execute()
@@ -23,7 +23,10 @@ bool TriMeshCollapseEdgeOperation::execute()
 }
 bool TriMeshCollapseEdgeOperation::before() const
 {
-    if(!m_mesh.is_valid(m_input_tuple)) {
+    if (m_mesh.is_outdated(m_input_tuple)) {
+        return false;
+    }
+    if (!m_mesh.is_valid(m_input_tuple)) {
         return false;
     }
     return SimplicialComplex::link_cond_bd_2d(m_input_tuple, m_mesh);
