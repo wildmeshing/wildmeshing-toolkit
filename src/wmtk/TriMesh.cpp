@@ -28,45 +28,8 @@ Tuple TriMesh::split_edge(const Tuple& t)
 
 Tuple TriMesh::collapse_edge(const Tuple& t)
 {
-    // TODO: check link_cond before collapse
-    TriMeshOperationExecutor executor(*this, t);
-
-    // create new vertex
-    std::vector<long> new_vids = executor.request_simplex_indices(PrimitiveType::Vertex, 1);
-    assert(new_vids.size() == 1);
-    const long new_vid = new_vids[0];
-
-    // get faces in open_star(B)
-    auto star_A_f = SimplicialComplex::open_star(Simplex::vertex(t), *this).get_faces();
-    auto star_B_f =
-        SimplicialComplex::open_star(Simplex::vertex(switch_vertex(t)), *this).get_faces();
-    std::vector<long> faces_to_change_fv;
-    for (const Simplex& simplex : star_B_f) {
-        faces_to_change_fv.push_back(id(simplex.tuple(), PrimitiveType::Face));
-    }
-    for (const Simplex& simplex : star_A_f) {
-        faces_to_change_fv.push_back(id(simplex.tuple(), PrimitiveType::Face));
-    }
-
-    // merge
-    executor.merge(new_vid);
-
-    // change FV for open_star_faces(V_B)
-    for (long& f : faces_to_change_fv) {
-        for (long index = 0; index < 3; index++) {
-            if (executor.fv_accessor.vector_attribute(f)[index] == executor.incident_vids()[1] ||
-                executor.fv_accessor.vector_attribute(f)[index] == executor.incident_vids()[0]) {
-                executor.fv_accessor.vector_attribute(f)[index] = new_vid;
-                // break;
-            }
-        }
-    }
-
-    executor.update_cell_hash();
-    // delete simplices
-    executor.delete_simplices();
-    // return a ccw tuple from left ear if it exists, otherwise return a ccw tuple from right ear
-    return tuple_from_id(PrimitiveType::Vertex, new_vid);
+    TriMesh::TriMeshOperationExecutor executor(*this, t);
+    return executor.collapse_edge();
 }
 
 long TriMesh::id(const Tuple& tuple, PrimitiveType type) const
@@ -310,6 +273,13 @@ bool TriMesh::is_valid(const Tuple& tuple) const
            autogen::auto_2d_table_ccw[offset][0] >= 0;
 }
 
+bool TriMesh::is_outdated(const Tuple& tuple) const
+{
+    const long cid = id(tuple, PrimitiveType::Face);
+    ConstAccessor<long> ha = get_cell_hash_accessor();
+    return ha.scalar_attribute(cid) != tuple.m_hash;
+}
+
 bool TriMesh::is_connectivity_valid() const
 {
     // get Accessors for topology
@@ -325,7 +295,7 @@ bool TriMesh::is_connectivity_valid() const
     // EF and FE
     for (long i = 0; i < capacity(PrimitiveType::Edge); ++i) {
         if (e_flag_accessor.scalar_attribute(i) == 0) {
-            std::cout << "Edge " << i << " is deleted" << std::endl;
+            wmtk::logger().debug("Edge {} is deleted", i);
             continue;
         }
         int cnt = 0;
@@ -343,7 +313,7 @@ bool TriMesh::is_connectivity_valid() const
     // VF and FV
     for (long i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
         if (v_flag_accessor.scalar_attribute(i) == 0) {
-            std::cout << "Vertex " << i << " is deleted" << std::endl;
+            wmtk::logger().debug("Vertex {} is deleted", i);
             continue;
         }
         int cnt = 0;
@@ -361,7 +331,7 @@ bool TriMesh::is_connectivity_valid() const
     // FE and EF
     for (long i = 0; i < capacity(PrimitiveType::Face); ++i) {
         if (f_flag_accessor.scalar_attribute(i) == 0) {
-            std::cout << "Face " << i << " is deleted" << std::endl;
+            wmtk::logger().debug("Face {} is deleted", i);
             continue;
         }
         for (long j = 0; j < 3; ++j) {

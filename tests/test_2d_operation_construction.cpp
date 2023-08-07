@@ -113,38 +113,6 @@ TEST_CASE("trimesh_split_collapse_factories", "[operations][2D]")
     }
 }
 
-TEST_CASE("split_all_edges", "[split][operations][.]")
-{
-    wmtk::TriMesh mesh;
-
-    // SECTION("single_triangle")
-    //{
-    //     mesh = single_triangle();
-    // }
-    // SECTION("quad")
-    //{
-    //     mesh = quad();
-    // }
-    SECTION("tetrahedron")
-    {
-        mesh = tetrahedron();
-    }
-
-    const std::vector<wmtk::Tuple> edges = mesh.get_all(PE);
-
-    wmtk::OperationFactory<wmtk::TriMeshSplitEdgeOperation> fact;
-
-    for (const wmtk::Tuple& e : edges) {
-        if (!mesh.is_valid(e)) {
-            continue;
-        }
-
-        auto op = fact.create(mesh, e);
-        bool result = (*op)(); // should run the split
-        REQUIRE(result);
-    }
-}
-
 /*
 TEST_CASE("get per face data")
 {

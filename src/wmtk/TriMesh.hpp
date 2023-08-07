@@ -16,17 +16,24 @@ public:
     TriMesh& operator=(const TriMesh& o);
     TriMesh& operator=(TriMesh&& o);
 
+    /**
+     * @brief split edge t
+     *
+     * The returned tuple contains the new vertex. The face lies in the region where the input tuple
+     * face was, and the edge is oriented in the same direction as in the input.
+     */
     Tuple split_edge(const Tuple& t) override;
+    /**
+     * @brief collapse edge t
+     *
+     * The vertex in t is collapsed towards the one where the tuple is pointing to.
+     * The returned tuple contains the remaining vertex. The edge represents the face of t that was
+     * collapsed. The face is chosen such that the orientation of the tuple is the same as in the
+     * input. If this is not possible due to a boundary, the opposite face is chosen.
+     */
     Tuple collapse_edge(const Tuple& t) override;
 
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
-
-    Tuple switch_vertex(const Tuple& tuple) const
-    {
-        return switch_tuple(tuple, PrimitiveType::Vertex);
-    }
-    Tuple switch_edge(const Tuple& tuple) const { return switch_tuple(tuple, PrimitiveType::Edge); }
-    Tuple switch_face(const Tuple& tuple) const { return switch_tuple(tuple, PrimitiveType::Face); }
 
     /**
      * @brief jump to the next edge by performing a switch of vertex and edge
@@ -49,8 +56,14 @@ public:
     void initialize(Eigen::Ref<const RowVectors3l> F);
 
     long _debug_id(const Tuple& tuple, PrimitiveType type) const;
+    long _debug_id(const Simplex& simplex) const
+    {
+        return _debug_id(simplex.tuple(), simplex.primitive_type());
+    }
 
     bool is_valid(const Tuple& tuple) const override;
+
+    bool is_outdated(const Tuple& tuple) const override;
 
     bool is_connectivity_valid() const override;
 
