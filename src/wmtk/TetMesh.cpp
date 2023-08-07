@@ -67,7 +67,6 @@ void TetMesh::initialize(
     for (long i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
         vt_accessor.scalar_attribute(i) = VT(i);
         v_flag_accessor.scalar_attribute(i) |= 0x1;
-
     }
     // m_et
     for (long i = 0; i < capacity(PrimitiveType::Edge); ++i) {
@@ -304,6 +303,13 @@ bool TetMesh::is_valid(const Tuple& tuple) const
 {
     const long offset = tuple.m_local_vid * 6 * 4 + tuple.m_local_eid * 4 + tuple.m_local_fid;
     return auto_3d_table_ccw[offset][0] >= 0;
+}
+
+bool TetMesh::is_outdated(const Tuple& tuple) const
+{
+    const long cid = id(tuple, PrimitiveType::Tetrahedron);
+    ConstAccessor<long> ha = get_cell_hash_accessor();
+    return ha.scalar_attribute(cid) == tuple.m_hash;
 }
 
 bool TetMesh::is_boundary(const Tuple& tuple) const

@@ -5,7 +5,6 @@
 namespace wmtk {
 class TetMesh : public Mesh
 {
-
 public:
     TetMesh();
 
@@ -16,6 +15,8 @@ public:
     bool is_ccw(const Tuple& tuple) const override;
     bool is_boundary(const Tuple& tuple) const override;
     bool is_valid(const Tuple& tuple) const override;
+
+    bool is_outdated(const Tuple& tuple) const override;
 
     void initialize(
         Eigen::Ref<const RowVectors4l> TV,
@@ -30,6 +31,7 @@ public:
     long _debug_id(const Tuple& tuple, PrimitiveType type) const;
 
     bool is_connectivity_valid() const override;
+
 protected:
     long id(const Tuple& tuple, PrimitiveType type) const override;
 
@@ -41,6 +43,7 @@ protected:
      * @return Tuple
      */
     Tuple tuple_from_id(const PrimitiveType type, const long gid) const override;
+
 private:
     MeshAttributeHandle<long> m_vt_handle;
     MeshAttributeHandle<long> m_et_handle;

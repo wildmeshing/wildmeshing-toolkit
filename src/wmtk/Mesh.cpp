@@ -1,6 +1,7 @@
 #include "Mesh.hpp"
 #include <numeric>
 
+#include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 #include "Primitive.hpp"
@@ -91,6 +92,22 @@ std::vector<long> Mesh::request_simplex_indices(PrimitiveType type, long count)
 long Mesh::capacity(PrimitiveType type) const
 {
     return m_attribute_manager.m_capacities.at(get_simplex_dimension(type));
+}
+
+bool Mesh::is_vertex_boundary(const Tuple& vertex)
+{
+    const PrimitiveType ptype =
+        (m_attribute_manager.size() == 3) ? PrimitiveType::Edge : PrimitiveType::Face;
+
+    // go through all edges / vertices and check if they are boundary
+    const SimplicialComplex neigh = SimplicialComplex::open_star(Simplex::vertex(vertex), *this);
+    for (const Simplex& s : neigh.get_simplices(ptype)) {
+        if (is_boundary(s.tuple())) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 bool Mesh::simplex_is_equal(const Simplex& s0, const Simplex& s1) const
