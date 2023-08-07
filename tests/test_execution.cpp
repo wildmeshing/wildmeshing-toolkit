@@ -13,7 +13,7 @@ using namespace wmtk;
 using namespace wmtk::tests;
 
 
-TEST_CASE("test_execution_single_triangle")
+TEST_CASE("test_execution_single_triangle", "[scheduler],[2D]")
 {
     DEBUG_TriMesh m;
     m = single_triangle();
