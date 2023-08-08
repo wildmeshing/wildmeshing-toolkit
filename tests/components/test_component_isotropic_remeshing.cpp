@@ -1,11 +1,13 @@
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
+#include <wmtk/Scheduler.hpp>
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/io/MeshReader.hpp>
 #include <wmtk/operations/OperationFactory.hpp>
 #include <wmtk/operations/TriMeshCollapseEdgeOperation.hpp>
 #include <wmtk/operations/TriMeshSplitEdgeOperation.hpp>
+#include <wmtk/operations/TriMeshVertexSmoothOperation.hpp>
 #include <wmtk_components/input/input.hpp>
 #include <wmtk_components/isotropic_remeshing/internal/IsotropicRemeshing.hpp>
 #include <wmtk_components/isotropic_remeshing/isotropic_remeshing.hpp>
@@ -71,20 +73,29 @@ TEST_CASE("laplacian_smoothing", "[components],[isotropic_remeshing]")
         reader.read(mesh);
     }
 
-    const std::vector<wmtk::Tuple> vertices = mesh.get_all(wmtk::PrimitiveType::Vertex);
-    wmtk::MeshAttributeHandle<double> pts_attr =
-        mesh.get_attribute_handle<double>("position", wmtk::PrimitiveType::Vertex);
-    auto pts_accessor = mesh.create_accessor(pts_attr);
+    wmtk::Scheduler scheduler(mesh);
+    scheduler.add_operation_type<wmtk::TriMeshVertexSmoothOperation>("vertex_smooth");
 
-    // laplacian smoothing
-    for (const wmtk::Tuple& v : vertices) {
-        // const Eigen::Vector3d p = pts_accessor.vector_attribute(v);
-        std::vector<wmtk::Simplex> one_ring = wmtk::SimplicialComplex::vertex_one_ring(v, mesh);
-        Eigen::Vector3d p_mid(0, 0, 0);
-        for (const wmtk::Simplex& neigh : one_ring) {
-            p_mid += pts_accessor.vector_attribute(neigh.tuple());
-        }
-        p_mid /= one_ring.size();
-        pts_accessor.vector_attribute(v) = p_mid;
+    scheduler.run_operation_on_all(wmtk::PrimitiveType::Vertex, "vertex_smooth");
+
+    // const std::vector<wmtk::Tuple> vertices = mesh.get_all(wmtk::PrimitiveType::Vertex);
+    // wmtk::MeshAttributeHandle<double> pts_attr =
+    //     mesh.get_attribute_handle<double>("position", wmtk::PrimitiveType::Vertex);
+    // auto pts_accessor = mesh.create_accessor(pts_attr);
+    //
+    //// laplacian smoothing
+    // for (const wmtk::Tuple& v : vertices) {
+    //    // const Eigen::Vector3d p = pts_accessor.vector_attribute(v);
+    //    std::vector<wmtk::Simplex> one_ring = wmtk::SimplicialComplex::vertex_one_ring(v, mesh);
+    //    Eigen::Vector3d p_mid(0, 0, 0);
+    //    for (const wmtk::Simplex& neigh : one_ring) {
+    //        p_mid += pts_accessor.vector_attribute(neigh.tuple());
+    //    }
+    //    p_mid /= one_ring.size();
+    //    pts_accessor.vector_attribute(v) = p_mid;
+    //}
+
+    {
+        // output
     }
 }

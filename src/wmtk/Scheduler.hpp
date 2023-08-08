@@ -1,9 +1,10 @@
 #pragma once
+#include <string_view>
+#include <unordered_map>
 #include "Mesh.hpp"
 #include "operations/Operation.hpp"
 #include "operations/OperationFactory.hpp"
-#include <string_view>
-#include <unordered_map>
+#include "operations/TriMeshVertexSmoothOperationFactory.hpp"
 
 
 namespace wmtk {
