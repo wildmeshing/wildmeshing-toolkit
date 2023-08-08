@@ -6,6 +6,64 @@ namespace wmtk {
 namespace components {
 namespace internal {
 
+Eigen::Vector3d smooth(TriMesh& m, const Tuple& t)
+{
+    MeshAttributeHandle<double> pts_attr =
+        m.get_attribute_handle<double>("position", wmtk::PrimitiveType::Vertex);
+    auto pts_accessor = m.create_accessor(pts_attr);
+
+    std::vector<Simplex> one_ring = SimplicialComplex::vertex_one_ring(t, m);
+    Eigen::Vector3d p_mid(0, 0, 0);
+    for (const Simplex& neigh : one_ring) {
+        p_mid += pts_accessor.vector_attribute(neigh.tuple());
+    }
+    p_mid /= one_ring.size();
+    return p_mid;
+}
+
+Eigen::Vector3d tangential_smooth(TriMesh& m, const Tuple& t)
+{
+    MeshAttributeHandle<double> pts_attr =
+        m.get_attribute_handle<double>("position", wmtk::PrimitiveType::Vertex);
+    auto pts_accessor = m.create_accessor(pts_attr);
+
+    SimplicialComplex closed_star = SimplicialComplex::closed_star(Simplex::vertex(t), m);
+    auto one_ring_tris = closed_star.get_faces();
+    if (one_ring_tris.size() < 2) return pts_accessor.vector_attribute(t);
+    Eigen::Vector3d after_smooth = smooth(m, t);
+    // get normal and area of each face
+    auto area = [&pts_accessor](const std::vector<Tuple>& verts) {
+        const Eigen::Vector3d p0 = pts_accessor.vector_attribute(verts[0]);
+        const Eigen::Vector3d p1 = pts_accessor.vector_attribute(verts[1]);
+        const Eigen::Vector3d p2 = pts_accessor.vector_attribute(verts[2]);
+        return ((p0 - p2).cross(p1 - p2)).norm() / 2.0;
+    };
+    auto normal = [&pts_accessor](const std::vector<Tuple>& verts) {
+        const Eigen::Vector3d p0 = pts_accessor.vector_attribute(verts[0]);
+        const Eigen::Vector3d p1 = pts_accessor.vector_attribute(verts[1]);
+        const Eigen::Vector3d p2 = pts_accessor.vector_attribute(verts[2]);
+        return ((p0 - p2).cross(p1 - p2)).normalized();
+    };
+    auto w0 = 0.0;
+    Eigen::Vector3d n0(0.0, 0.0, 0.0);
+    for (const Simplex& f : one_ring_tris) {
+        const auto simplices = SimplicialComplex::boundary(f, m).get_simplex_vector();
+        std::vector<Tuple> verts;
+        for (const Simplex& s : simplices) {
+            if (s.primitive_type() == PrimitiveType::Vertex) {
+                verts.emplace_back(s.tuple());
+            }
+        }
+        w0 += area(verts);
+        n0 += area(verts) * normal(verts);
+    }
+    n0 /= w0;
+    if (n0.norm() < 1e-10) return pts_accessor.vector_attribute(t);
+    n0 = n0.normalized();
+    after_smooth += n0 * n0.transpose() * (pts_accessor.vector_attribute(t) - after_smooth);
+    return after_smooth;
+}
+
 IsotropicRemeshing::IsotropicRemeshing(TriMesh* mesh, const double length, const bool lock_boundary)
     : m_mesh{mesh}
     , m_length_min{(4. / 5.) * length}
