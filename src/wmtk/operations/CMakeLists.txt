@@ -3,6 +3,7 @@ set(SRC_FILES
     Operation.cpp
     OperationFactory.hpp
     OperationFactory.cpp
+    OperationQueue.hpp
     TriMeshSplitEdgeOperation.cpp
     TriMeshSplitEdgeOperation.hpp
     TriMeshCollapseEdgeOperation.cpp
