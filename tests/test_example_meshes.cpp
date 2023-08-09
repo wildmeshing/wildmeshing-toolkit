@@ -96,9 +96,7 @@ void run_debug_trimesh(const DEBUG_TriMesh& m, const MeshDebugInfo& info)
     // TODO: in the future we should check for some topological info
     // CHECK(genus(m) == info.genus);
     CHECK(trimesh_simply_connected_components(m) == info.simply_connected_components);
-    // for(long j = 0; j < 3; ++j) {
-    //    CHECK(simplex_count(m,j) == info.simplex_counts);
-    //}
+    CHECK(trimesh_simplex_counts(m) == info.simplex_counts);
 
     auto v_tups = m.get_all(PrimitiveType::Vertex);
     auto e_tups = m.get_all(PrimitiveType::Edge);
@@ -138,7 +136,7 @@ TEST_CASE("test_debug_trimeshes_single_triangle")
     info.name = "single_triangle";
     info.genus = 0;
     info.simply_connected_components = 1;
-    info.simplex_counts = std::array<long, 3>{{3, 3, 3}};
+    info.simplex_counts = std::array<long, 3>{{3, 3, 1}};
     run_debug_trimesh(m, info);
 }
 
@@ -150,6 +148,18 @@ TEST_CASE("test_debug_trimeshes_one_ear")
     info.name = "one_ear";
     info.genus = 0;
     info.simply_connected_components = 1;
-    info.simplex_counts = std::array<long, 3>{{3, 3, 3}};
+    info.simplex_counts = std::array<long, 3>{{4, 5, 2}};
+    run_debug_trimesh(m, info);
+}
+
+TEST_CASE("test_debug_trimeshes_two_components")
+{
+    DEBUG_TriMesh m;
+    m = three_triangles_with_two_components();
+    MeshDebugInfo info;
+    info.name = "three_triangles_with_two_components";
+    info.genus = 0;
+    info.simply_connected_components = 2;
+    info.simplex_counts = std::array<long, 3>{{7, 8, 3}};
     run_debug_trimesh(m, info);
 }

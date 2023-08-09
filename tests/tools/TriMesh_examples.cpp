@@ -160,4 +160,17 @@ TriMesh strip(long size)
     m.initialize(tris);
     return m;
 }
+
+TriMesh three_triangles_with_two_components()
+{
+    TriMesh m;
+    RowVectors3l tris;
+    tris.resize(3, 3);
+    tris.row(0) << 0, 1, 2;
+    tris.row(1) << 3, 6, 4;
+    tris.row(2) << 3, 5, 6;
+    m.initialize(tris);
+    return m;
+}
+
 } // namespace wmtk::tests

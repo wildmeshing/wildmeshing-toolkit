@@ -88,4 +88,9 @@ TriMesh hex_plus_two();
 //   \ / \ / \ /
 //    7---8---9
 TriMesh edge_region();
+
+//  0---1  3---4
+//  | /    | \ |
+//  2      5---6
+TriMesh three_triangles_with_two_components();
 } // namespace wmtk::tests
