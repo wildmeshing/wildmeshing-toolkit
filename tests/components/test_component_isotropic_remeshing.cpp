@@ -153,3 +153,30 @@ TEST_CASE("smoothing_simple_examples", "[components][isotropic_remeshing][2D]")
         CHECK((p5_after_smooth - Eigen::Vector3d{2, 0, 0}).squaredNorm() < 1e-10);
     }
 }
+
+TEST_CASE("split_long_edges", "[components][isotropic_remeshing][split][2D][.]")
+{
+    // This test does not fully work yet
+
+    DEBUG_TriMesh mesh = wmtk::tests::edge_region_with_position();
+
+    TriMeshSplitEdgeOperation::Settings op_settings;
+    op_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+    op_settings.min_squared_length = 1.1;
+
+    auto pos = mesh.create_accessor(op_settings.position);
+    const Tuple v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
+    const Tuple v5 = mesh.tuple_from_id(PrimitiveType::Vertex, 5);
+    // reposition interior vertices
+    pos.vector_attribute(v4) = Eigen::Vector3d{0.6, 0.9, 0};
+    pos.vector_attribute(v5) = Eigen::Vector3d{1.4, -0.9, 0};
+
+    Scheduler scheduler(mesh);
+    scheduler.add_operation_type<TriMeshSplitEdgeOperation, TriMeshSplitEdgeOperation::Settings>(
+        "edge_split",
+        op_settings);
+
+    scheduler.run_operation_on_all(PrimitiveType::Edge, "edge_split");
+
+    REQUIRE(mesh.get_all(PrimitiveType::Vertex).size() == 13);
+}
