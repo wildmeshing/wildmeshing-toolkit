@@ -31,7 +31,7 @@ bool TriMeshVertexSmoothOperation::before() const
 
 bool TriMeshVertexSmoothOperation::execute()
 {
-    const std::vector<Simplex> one_ring = SimplicialComplex::vertex_one_ring(m_tuple, m_mesh);
+    const std::vector<Simplex> one_ring = SimplicialComplex::vertex_one_ring(m_mesh, m_tuple);
     Eigen::Vector3d p_mid(0, 0, 0);
     for (const Simplex& s : one_ring) {
         p_mid += m_pos_accessor.vector_attribute(s.tuple());

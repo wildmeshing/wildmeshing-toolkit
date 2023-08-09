@@ -32,7 +32,7 @@ bool TriMeshCollapseEdgeOperation::before() const
     if (!m_mesh.is_valid(m_input_tuple)) {
         return false;
     }
-    return SimplicialComplex::link_cond_bd_2d(m_input_tuple, m_mesh);
+    return SimplicialComplex::link_cond_bd_2d(m_mesh, m_input_tuple);
 }
 
 std::string TriMeshCollapseEdgeOperation::name() const
