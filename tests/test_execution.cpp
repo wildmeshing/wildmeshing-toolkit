@@ -30,8 +30,6 @@ TEST_CASE("test_execution_single_triangle", "[scheduler][2D]")
 
 TEST_CASE("operation_with_settings", "[scheduler][operations][2D]")
 {
-    redirect_logger_to_cout();
-
     DEBUG_TriMesh m;
     SECTION("single_triangle")
     {
