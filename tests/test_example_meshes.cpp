@@ -25,12 +25,62 @@ std::array<long, 3> trimesh_simplex_counts(const DEBUG_TriMesh& m)
 }
 
 
+int trimesh_simply_connected_components(const DEBUG_TriMesh& m, std::vector<int> &component_ids)
+{
+    component_ids.resize(m.capacity(PrimitiveType::Face), -1);
+    auto all_face_tuples = m.get_all(PrimitiveType::Face);
+    int component_id = 0;
+    // BFS
+    for (int i = 0; i < all_face_tuples.size(); ++i) {
+        int fid = m.id(all_face_tuples[i], PrimitiveType::Face);
+        if (component_ids[fid] != -1) {
+            continue;
+        } // visited
+
+        std::queue<int> q;
+        q.push(fid);
+        while (!q.empty()) {
+            int cur_fid = q.front();
+            q.pop();
+
+            component_ids[cur_fid] = component_id;
+            auto f_tuple = m.tuple_from_face_id(cur_fid);
+            // push all adjacent faces
+            for (int j = 0; j < 3; ++j)
+            {
+                if (!m.is_boundary(f_tuple))
+                {   
+                    auto adj_face_tuple = m.switch_tuple(f_tuple, PrimitiveType::Face);
+                    long adj_fid = m.id(adj_face_tuple, PrimitiveType::Face);
+                    if (component_ids[adj_fid] == -1) {
+                        q.push(adj_fid);
+                    }  
+                }
+                f_tuple = m.switch_tuple(m.switch_tuple(f_tuple, PrimitiveType::Vertex), PrimitiveType::Edge);
+            } 
+        }
+        
+        component_id++;
+    }
+
+    return component_id;
+}
+
+int trimesh_simply_connected_components(const DEBUG_TriMesh& m)
+{
+    std::vector<int> component_ids;
+    return trimesh_simply_connected_components(m, component_ids);
+}
+
+
 int trimesh_genus(const DEBUG_TriMesh& m)
 {
     auto flag_f_accessor = m.get_flag_accessor(PrimitiveType::Face);
     std::cout << flag_f_accessor.scalar_attribute(m.tuple_from_face_id(0)) << std::endl;
     return 0;
 }
+
+
 
 void run_debug_trimesh(const DEBUG_TriMesh& m, const MeshDebugInfo& info)
 {
@@ -43,9 +93,9 @@ void run_debug_trimesh(const DEBUG_TriMesh& m, const MeshDebugInfo& info)
 
     REQUIRE(m.is_connectivity_valid());
 
-    // TODO :in the future we should check for some topological info
+    // TODO: in the future we should check for some topological info
     // CHECK(genus(m) == info.genus);
-    // CHECK(simply_connected_components(m) == info.simply_connected_components);
+    CHECK(trimesh_simply_connected_components(m) == info.simply_connected_components);
     // for(long j = 0; j < 3; ++j) {
     //    CHECK(simplex_count(m,j) == info.simplex_counts);
     //}
