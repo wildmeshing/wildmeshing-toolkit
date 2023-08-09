@@ -16,6 +16,22 @@ struct MeshDebugInfo
     bool is_oriented = false;
     std::array<long, 3> simplex_counts = std::array<long,3>{{-1,-1,-1}};
 };
+
+std::array<long, 3> trimesh_simplex_counts(const DEBUG_TriMesh& m)
+{
+    return std::array<long, 3>{{m.get_all(PrimitiveType::Vertex).size(),
+                                 m.get_all(PrimitiveType::Edge).size(),
+                                 m.get_all(PrimitiveType::Face).size()}};
+}
+
+
+int trimesh_genus(const DEBUG_TriMesh& m)
+{
+    auto flag_f_accessor = m.get_flag_accessor(PrimitiveType::Face);
+    std::cout << flag_f_accessor.scalar_attribute(m.tuple_from_face_id(0)) << std::endl;
+    return 0;
+}
+
 void run_debug_trimesh(const DEBUG_TriMesh& m, const MeshDebugInfo& info)
 {
     // validate that the info is ok
@@ -67,6 +83,7 @@ TEST_CASE("test_debug_trimeshes_single_triangle")
 {
     DEBUG_TriMesh m;
     m = single_triangle();
+    // trimesh_genus(m);
     MeshDebugInfo info;
     info.name = "single_triangle";
     info.genus = 0;

@@ -44,7 +44,7 @@ auto DEBUG_TriMesh::edge_tuple_between_v1_v2(const long v1, const long v2, const
     return Tuple(local_vid1, (3 - local_vid1 - local_vid2) % 3, -1, fid, 0);
 }
 
-Tuple DEBUG_TriMesh::tuple_from_face_id(const long fid)
+Tuple DEBUG_TriMesh::tuple_from_face_id(const long fid) const
 {
     return tuple_from_id(PrimitiveType::Face, fid);
 }
