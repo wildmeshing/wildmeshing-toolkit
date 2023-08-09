@@ -72,6 +72,31 @@ int trimesh_simply_connected_components(const DEBUG_TriMesh& m)
     return trimesh_simply_connected_components(m, component_ids);
 }
 
+int trimesh_n_bd_loops(const DEBUG_Trimesh& m)
+{
+    std::vector<int> component_ids;
+    int n_components = trimesh_simply_connected_components(m, component_ids);
+    std::vector<bool> is_component_visited(n_components, false);
+    auto all_edge_tuples = m.get_all(PrimitiveType::Edge);
+    int n_bd_loops = 0;
+    for (auto edge : all_edge_tuples)
+    {
+        if (m.is_boundary(edge))
+        {
+            long face_id = m.id(m.switch_tuple(edge, PrimitiveType::Face), PrimitiveType::Face);
+            if (!is_component_visited[component_ids[face_id]])
+            {
+                is_component_visited[component_ids[face_id]] = true;
+                n_bd_loops++;
+            }
+        }
+    }
+
+    return n_bd_loops;
+}
+
+
+
 
 int trimesh_genus(const DEBUG_TriMesh& m)
 {
@@ -133,6 +158,7 @@ TEST_CASE("test_debug_trimeshes_single_triangle")
     m = single_triangle();
     // trimesh_genus(m);
     MeshDebugInfo info;
+    REQUIRE(trimesh_n_bd_loops(m) == 1);
     info.name = "single_triangle";
     info.genus = 0;
     info.simply_connected_components = 1;
@@ -145,6 +171,7 @@ TEST_CASE("test_debug_trimeshes_one_ear")
     DEBUG_TriMesh m;
     m = one_ear();
     MeshDebugInfo info;
+    REQUIRE(trimesh_n_bd_loops(m) == 1);
     info.name = "one_ear";
     info.genus = 0;
     info.simply_connected_components = 1;
@@ -157,6 +184,7 @@ TEST_CASE("test_debug_trimeshes_two_components")
     DEBUG_TriMesh m;
     m = three_triangles_with_two_components();
     MeshDebugInfo info;
+    REQUIRE(trimesh_n_bd_loops(m) == 2);
     info.name = "three_triangles_with_two_components";
     info.genus = 0;
     info.simply_connected_components = 2;
