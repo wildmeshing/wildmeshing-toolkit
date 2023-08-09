@@ -6,7 +6,7 @@ namespace wmtk {
 TriMeshVertexSmoothOperation::TriMeshVertexSmoothOperation(
     Mesh& m,
     const Tuple& t,
-    const Settings& settings)
+    const OperationSettings<TriMeshVertexSmoothOperation>& settings)
     : Operation(m)
     , m_tuple(t)
     , m_pos_accessor(m.create_accessor<double>(settings.position))

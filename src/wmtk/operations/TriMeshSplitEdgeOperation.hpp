@@ -6,7 +6,10 @@ namespace wmtk {
 class TriMeshSplitEdgeOperation : public Operation
 {
 public:
-    TriMeshSplitEdgeOperation(Mesh& m, const Tuple& t);
+    TriMeshSplitEdgeOperation(
+        Mesh& m,
+        const Tuple& t,
+        const OperationSettings<TriMeshSplitEdgeOperation> = {});
 
     std::string name() const override;
 
@@ -36,4 +39,3 @@ private:
 
 
 } // namespace wmtk
-

@@ -4,7 +4,10 @@
 #include "TriMeshCollapseEdgeOperation.hpp"
 #include "TriMeshSplitEdgeOperation.hpp"
 namespace wmtk {
-TriMeshSwapEdgeOperation::TriMeshSwapEdgeOperation(TriMesh& m, const Tuple& t)
+TriMeshSwapEdgeOperation::TriMeshSwapEdgeOperation(
+    TriMesh& m,
+    const Tuple& t,
+    const OperationSettings<TriMeshSwapEdgeOperation>)
     : Operation(m)
     , m_input_tuple(t)
 {}
