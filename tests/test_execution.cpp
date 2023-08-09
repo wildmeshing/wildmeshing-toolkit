@@ -6,6 +6,7 @@
 #include <wmtk/Scheduler.hpp>
 #include <wmtk/operations/TriMeshCollapseEdgeOperation.hpp>
 #include <wmtk/operations/TriMeshSplitEdgeOperation.hpp>
+#include <wmtk/operations/TriMeshVertexSmoothOperation.hpp>
 #include "tools/DEBUG_TriMesh.hpp"
 #include "tools/TriMesh_examples.hpp"
 
@@ -13,7 +14,7 @@ using namespace wmtk;
 using namespace wmtk::tests;
 
 
-TEST_CASE("test_execution_single_triangle", "[scheduler],[2D]")
+TEST_CASE("test_execution_single_triangle", "[scheduler][2D]")
 {
     DEBUG_TriMesh m;
     m = single_triangle();
@@ -26,4 +27,29 @@ TEST_CASE("test_execution_single_triangle", "[scheduler],[2D]")
 
     DEBUG_TriMesh m2 = single_triangle();
     CHECK(m != m2);
+}
+
+TEST_CASE("operation_with_settings", "[scheduler][operations][2D]")
+{
+    DEBUG_TriMesh m;
+    m = single_triangle();
+    {
+        // assign positions
+        auto pos_handle = m.register_attribute<double>("position", PrimitiveType::Vertex, 3);
+        auto pos = m.create_accessor(pos_handle);
+        for (const Tuple& v : m.get_all(PrimitiveType::Vertex)) {
+            pos.vector_attribute(v) = Eigen::Vector3d{0, 0, 0};
+        }
+    }
+
+    TriMeshVertexSmoothOperation::Settings op_settings;
+    op_settings.position = m.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+
+    Scheduler scheduler(m);
+    scheduler
+        .add_operation_type<TriMeshVertexSmoothOperation, TriMeshVertexSmoothOperation::Settings>(
+            "vertex_smooth",
+            op_settings);
+
+    scheduler.run_operation_on_all(PrimitiveType::Vertex, "vertex_smooth");
 }
