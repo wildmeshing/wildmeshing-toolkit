@@ -15,6 +15,7 @@
 #include "../tools/TriMesh_examples.hpp"
 
 using json = nlohmann::json;
+using namespace wmtk;
 
 const std::filesystem::path data_dir = WMTK_DATA_DIR;
 
@@ -58,6 +59,7 @@ TEST_CASE("laplacian_smoothing", "[components],[isotropic_remeshing]")
 {
     std::map<std::string, std::filesystem::path> files;
 
+    // input
     {
         json input_component_json = {
             {"type", "input"},
@@ -73,29 +75,22 @@ TEST_CASE("laplacian_smoothing", "[components],[isotropic_remeshing]")
         reader.read(mesh);
     }
 
-    // wmtk::Scheduler scheduler(mesh);
-    // scheduler.add_operation_type<wmtk::TriMeshVertexSmoothOperation>("vertex_smooth");
-    //
-    // scheduler.run_operation_on_all(wmtk::PrimitiveType::Vertex, "vertex_smooth");
+    TriMeshVertexSmoothOperation::Settings op_settings;
+    op_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
 
-    // const std::vector<wmtk::Tuple> vertices = mesh.get_all(wmtk::PrimitiveType::Vertex);
-    // wmtk::MeshAttributeHandle<double> pts_attr =
-    //     mesh.get_attribute_handle<double>("position", wmtk::PrimitiveType::Vertex);
-    // auto pts_accessor = mesh.create_accessor(pts_attr);
-    //
-    //// laplacian smoothing
-    // for (const wmtk::Tuple& v : vertices) {
-    //    // const Eigen::Vector3d p = pts_accessor.vector_attribute(v);
-    //    std::vector<wmtk::Simplex> one_ring = wmtk::SimplicialComplex::vertex_one_ring(v, mesh);
-    //    Eigen::Vector3d p_mid(0, 0, 0);
-    //    for (const wmtk::Simplex& neigh : one_ring) {
-    //        p_mid += pts_accessor.vector_attribute(neigh.tuple());
-    //    }
-    //    p_mid /= one_ring.size();
-    //    pts_accessor.vector_attribute(v) = p_mid;
-    //}
+    Scheduler scheduler(mesh);
+    scheduler
+        .add_operation_type<TriMeshVertexSmoothOperation, TriMeshVertexSmoothOperation::Settings>(
+            "vertex_smooth",
+            op_settings);
 
+    for (int i = 0; i < 3; ++i) {
+        scheduler.run_operation_on_all(PrimitiveType::Vertex, "vertex_smooth");
+    }
+
+    // output
     {
-        // output
+        ParaviewWriter writer("bunny_smooth", "position", mesh, true, true, true, false);
+        mesh.serialize(writer);
     }
 }
