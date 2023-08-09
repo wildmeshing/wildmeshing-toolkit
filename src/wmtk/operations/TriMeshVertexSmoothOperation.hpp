@@ -26,6 +26,7 @@ protected:
 private:
     Tuple m_tuple;
     Accessor<double> m_pos_accessor;
+    bool m_smooth_boundary;
 };
 
 

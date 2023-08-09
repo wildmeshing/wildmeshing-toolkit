@@ -1,5 +1,3 @@
-
-
 #include <spdlog/spdlog.h>
 #include <array>
 #include <catch2/catch_test_macros.hpp>
@@ -9,6 +7,7 @@
 #include <wmtk/operations/TriMeshVertexSmoothOperation.hpp>
 #include "tools/DEBUG_TriMesh.hpp"
 #include "tools/TriMesh_examples.hpp"
+#include "tools/redirect_logger_to_cout.hpp"
 
 using namespace wmtk;
 using namespace wmtk::tests;
@@ -31,8 +30,17 @@ TEST_CASE("test_execution_single_triangle", "[scheduler][2D]")
 
 TEST_CASE("operation_with_settings", "[scheduler][operations][2D]")
 {
+    redirect_logger_to_cout();
+
     DEBUG_TriMesh m;
-    m = single_triangle();
+    SECTION("single_triangle")
+    {
+        m = single_triangle();
+    }
+    SECTION("edge_region")
+    {
+        m = edge_region();
+    }
     {
         // assign positions
         auto pos_handle = m.register_attribute<double>("position", PrimitiveType::Vertex, 3);
