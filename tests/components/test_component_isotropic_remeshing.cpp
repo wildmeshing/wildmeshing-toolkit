@@ -12,14 +12,16 @@
 #include <wmtk_components/isotropic_remeshing/internal/IsotropicRemeshing.hpp>
 #include <wmtk_components/isotropic_remeshing/isotropic_remeshing.hpp>
 #include <wmtk_components/output/output.hpp>
+#include "../tools/DEBUG_TriMesh.hpp"
 #include "../tools/TriMesh_examples.hpp"
 
 using json = nlohmann::json;
 using namespace wmtk;
+using namespace wmtk::tests;
 
 const std::filesystem::path data_dir = WMTK_DATA_DIR;
 
-TEST_CASE("component_isotropic_remeshing", "[components],[isotropic_remeshing]")
+TEST_CASE("component_isotropic_remeshing", "[components][isotropic_remeshing][2D][.]")
 {
     std::map<std::string, std::filesystem::path> files;
 
@@ -55,7 +57,7 @@ TEST_CASE("component_isotropic_remeshing", "[components],[isotropic_remeshing]")
     }
 }
 
-TEST_CASE("laplacian_smoothing", "[components],[isotropic_remeshing]")
+TEST_CASE("smoothing_bunny", "[components][isotropic_remeshing][2D]")
 {
     std::map<std::string, std::filesystem::path> files;
 
@@ -92,5 +94,62 @@ TEST_CASE("laplacian_smoothing", "[components],[isotropic_remeshing]")
     {
         ParaviewWriter writer("bunny_smooth", "position", mesh, true, true, true, false);
         mesh.serialize(writer);
+    }
+}
+
+TEST_CASE("smoothing_simple_examples", "[components][isotropic_remeshing][2D]")
+{
+    SECTION("hex_plus_two")
+    {
+        DEBUG_TriMesh mesh = wmtk::tests::hex_plus_two_with_position();
+
+        TriMeshVertexSmoothOperation::Settings op_settings;
+        op_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+
+        // offset interior vertex
+        auto pos = mesh.create_accessor(op_settings.position);
+        const Tuple v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
+        pos.vector_attribute(v4) = Eigen::Vector3d{0.6, 0.9, 0};
+
+        Scheduler scheduler(mesh);
+        scheduler.add_operation_type<
+            TriMeshVertexSmoothOperation,
+            TriMeshVertexSmoothOperation::Settings>("vertex_smooth", op_settings);
+
+        scheduler.run_operation_on_all(PrimitiveType::Vertex, "vertex_smooth");
+
+        Eigen::Vector3d after_smooth = pos.vector_attribute(v4);
+        CHECK((after_smooth - Eigen::Vector3d{1, 0, 0}).squaredNorm() == 0);
+    }
+
+    SECTION("edge_region")
+    {
+        DEBUG_TriMesh mesh = wmtk::tests::edge_region_with_position();
+
+        TriMeshVertexSmoothOperation::Settings op_settings;
+        op_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+
+        // offset interior vertex
+        auto pos = mesh.create_accessor(op_settings.position);
+        const Tuple v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
+        const Tuple v5 = mesh.tuple_from_id(PrimitiveType::Vertex, 5);
+        pos.vector_attribute(v4) = Eigen::Vector3d{0.6, 0.9, 0};
+        pos.vector_attribute(v5) = Eigen::Vector3d{1.4, -0.9, 0};
+
+        Scheduler scheduler(mesh);
+        scheduler.add_operation_type<
+            TriMeshVertexSmoothOperation,
+            TriMeshVertexSmoothOperation::Settings>("vertex_smooth", op_settings);
+
+        for (size_t i = 0; i < 10; ++i) {
+            scheduler.run_operation_on_all(PrimitiveType::Vertex, "vertex_smooth");
+            Eigen::Vector3d p4_after_smooth = pos.vector_attribute(v4);
+        }
+
+        Eigen::Vector3d p4_after_smooth = pos.vector_attribute(v4);
+        CHECK((p4_after_smooth - Eigen::Vector3d{1, 0, 0}).squaredNorm() < 1e-10);
+
+        Eigen::Vector3d p5_after_smooth = pos.vector_attribute(v5);
+        CHECK((p5_after_smooth - Eigen::Vector3d{2, 0, 0}).squaredNorm() < 1e-10);
     }
 }

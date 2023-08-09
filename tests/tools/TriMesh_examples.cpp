@@ -1,5 +1,5 @@
 #include "TriMesh_examples.hpp"
-
+#include <wmtk/utils/MeshUtils.hpp>
 
 namespace wmtk::tests {
 
@@ -89,6 +89,7 @@ TriMesh interior_edge()
     m.initialize(tris);
     return m;
 }
+
 TriMesh hex_plus_two()
 {
     //    0---1---2
@@ -108,6 +109,25 @@ TriMesh hex_plus_two()
     tris.row(6) << 7, 8, 4;
     tris.row(7) << 4, 8, 5;
     m.initialize(tris);
+    return m;
+}
+
+TriMesh hex_plus_two_with_position()
+{
+    TriMesh m = hex_plus_two();
+
+    Eigen::MatrixXd V;
+    V.resize(9, 3);
+    V.row(0) << 0.5, 1, 0;
+    V.row(1) << 1.5, 1, 0;
+    V.row(2) << 2.5, 1, 0;
+    V.row(3) << 0, 0, 0;
+    V.row(4) << 1, 0, 0;
+    V.row(5) << 2, 0, 0;
+    V.row(6) << 3, 0, 0;
+    V.row(7) << 0.5, -1, 0;
+    V.row(8) << 1.5, -1, 0;
+    MeshUtils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, m);
     return m;
 }
 
@@ -132,6 +152,26 @@ TriMesh edge_region()
     tris.row(8) << 8, 9, 5;
     tris.row(9) << 5, 9, 6;
     m.initialize(tris);
+    return m;
+}
+
+TriMesh edge_region_with_position()
+{
+    TriMesh m = edge_region();
+
+    Eigen::MatrixXd V;
+    V.resize(10, 3);
+    V.row(0) << 0.5, 1, 0;
+    V.row(1) << 1.5, 1, 0;
+    V.row(2) << 2.5, 1, 0;
+    V.row(3) << 0, 0, 0;
+    V.row(4) << 1, 0, 0;
+    V.row(5) << 2, 0, 0;
+    V.row(6) << 3, 0, 0;
+    V.row(7) << 0.5, -1, 0;
+    V.row(8) << 1.5, -1, 0;
+    V.row(9) << 2.5, -1, 0;
+    MeshUtils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, m);
     return m;
 }
 
