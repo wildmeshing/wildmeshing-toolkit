@@ -72,7 +72,7 @@ int trimesh_simply_connected_components(const DEBUG_TriMesh& m)
     return trimesh_simply_connected_components(m, component_ids);
 }
 
-int trimesh_n_bd_loops(const DEBUG_Trimesh& m)
+int trimesh_n_bd_loops(const DEBUG_TriMesh& m)
 {
     std::vector<int> component_ids;
     int n_components = trimesh_simply_connected_components(m, component_ids);
@@ -83,7 +83,7 @@ int trimesh_n_bd_loops(const DEBUG_Trimesh& m)
     {
         if (m.is_boundary(edge))
         {
-            long face_id = m.id(m.switch_tuple(edge, PrimitiveType::Face), PrimitiveType::Face);
+            long face_id = m.id(edge, PrimitiveType::Face);
             if (!is_component_visited[component_ids[face_id]])
             {
                 is_component_visited[component_ids[face_id]] = true;
