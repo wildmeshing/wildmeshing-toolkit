@@ -8,40 +8,15 @@ namespace wmtk {
 TriMeshSplitEdgeOperation::TriMeshSplitEdgeOperation(
     Mesh& m,
     const Tuple& t,
-    const OperationSettings<TriMeshSplitEdgeOperation>)
-    : Operation(m)
-    , m_input_tuple(t)
-{}
-TriMeshSplitEdgeOperation::TriMeshSplitEdgeOperation(
-    Mesh& m,
-    const Tuple& t,
-    const Settings& settings)
+    const OperationSettings<TriMeshSplitEdgeOperation> settings)
     : Operation(m)
     , m_input_tuple{t}
-    , m_pos_handle(std::make_unique<MeshAttributeHandle<double>>(settings.position))
-    , m_min_squared_length{settings.min_squared_length}
 {}
 bool TriMeshSplitEdgeOperation::execute()
 {
     // move vertex to center of old vertices
-    Eigen::Vector3d m_midpoint;
-    if (m_pos_handle) {
-        const Tuple& v0 = m_input_tuple;
-        const Tuple v1 = m_mesh.switch_vertex(m_input_tuple);
-        auto pos = m_mesh.create_accessor<double>(*m_pos_handle);
-        const Eigen::Vector3d p0 = pos.vector_attribute(v0);
-        const Eigen::Vector3d p1 = pos.vector_attribute(v1);
-
-        m_midpoint = 0.5 * (p0 + p1);
-    }
-
     TriMesh& m = dynamic_cast<TriMesh&>(m_mesh);
     m_output_tuple = m.split_edge(m_input_tuple);
-
-    if (m_pos_handle) {
-        auto pos = m_mesh.create_accessor<double>(*m_pos_handle);
-        pos.vector_attribute(m_output_tuple) = m_midpoint;
-    }
 
     //    for(const acc: tri_accessors) {
     //    ConstACcessor old_tri_acc(acc, checkpoint);
@@ -62,16 +37,6 @@ bool TriMeshSplitEdgeOperation::before() const
 {
     if (m_mesh.is_outdated(m_input_tuple) || !m_mesh.is_valid(m_input_tuple)) {
         return false;
-    }
-
-    if (m_pos_handle) {
-        const Tuple& v0 = m_input_tuple;
-        const Tuple v1 = m_mesh.switch_vertex(m_input_tuple);
-        auto pos = m_mesh.create_accessor<double>(*m_pos_handle);
-        const Eigen::Vector3d p0 = pos.vector_attribute(v0);
-        const Eigen::Vector3d p1 = pos.vector_attribute(v1);
-
-        return (p1 - p0).squaredNorm() > m_min_squared_length;
     }
 
     return true;

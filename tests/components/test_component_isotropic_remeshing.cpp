@@ -77,14 +77,11 @@ TEST_CASE("smoothing_bunny", "[components][isotropic_remeshing][2D]")
         reader.read(mesh);
     }
 
-    TriMeshVertexSmoothOperation::Settings op_settings;
+    OperationSettings<TriMeshVertexSmoothOperation> op_settings;
     op_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
 
     Scheduler scheduler(mesh);
-    scheduler
-        .add_operation_type<TriMeshVertexSmoothOperation, TriMeshVertexSmoothOperation::Settings>(
-            "vertex_smooth",
-            op_settings);
+    scheduler.add_operation_type<TriMeshVertexSmoothOperation>("vertex_smooth", op_settings);
 
     for (int i = 0; i < 3; ++i) {
         scheduler.run_operation_on_all(PrimitiveType::Vertex, "vertex_smooth");
@@ -103,7 +100,7 @@ TEST_CASE("smoothing_simple_examples", "[components][isotropic_remeshing][2D]")
     {
         DEBUG_TriMesh mesh = wmtk::tests::hex_plus_two_with_position();
 
-        TriMeshVertexSmoothOperation::Settings op_settings;
+        OperationSettings<TriMeshVertexSmoothOperation> op_settings;
         op_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
 
         // offset interior vertex
@@ -112,9 +109,7 @@ TEST_CASE("smoothing_simple_examples", "[components][isotropic_remeshing][2D]")
         pos.vector_attribute(v4) = Eigen::Vector3d{0.6, 0.9, 0};
 
         Scheduler scheduler(mesh);
-        scheduler.add_operation_type<
-            TriMeshVertexSmoothOperation,
-            TriMeshVertexSmoothOperation::Settings>("vertex_smooth", op_settings);
+        scheduler.add_operation_type<TriMeshVertexSmoothOperation>("vertex_smooth", op_settings);
 
         scheduler.run_operation_on_all(PrimitiveType::Vertex, "vertex_smooth");
 
@@ -126,7 +121,7 @@ TEST_CASE("smoothing_simple_examples", "[components][isotropic_remeshing][2D]")
     {
         DEBUG_TriMesh mesh = wmtk::tests::edge_region_with_position();
 
-        TriMeshVertexSmoothOperation::Settings op_settings;
+        OperationSettings<TriMeshVertexSmoothOperation> op_settings;
         op_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
 
         // offset interior vertex
@@ -137,9 +132,7 @@ TEST_CASE("smoothing_simple_examples", "[components][isotropic_remeshing][2D]")
         pos.vector_attribute(v5) = Eigen::Vector3d{1.4, -0.9, 0};
 
         Scheduler scheduler(mesh);
-        scheduler.add_operation_type<
-            TriMeshVertexSmoothOperation,
-            TriMeshVertexSmoothOperation::Settings>("vertex_smooth", op_settings);
+        scheduler.add_operation_type<TriMeshVertexSmoothOperation>("vertex_smooth", op_settings);
 
         for (size_t i = 0; i < 10; ++i) {
             scheduler.run_operation_on_all(PrimitiveType::Vertex, "vertex_smooth");
@@ -160,11 +153,13 @@ TEST_CASE("split_long_edges", "[components][isotropic_remeshing][split][2D][.]")
 
     DEBUG_TriMesh mesh = wmtk::tests::edge_region_with_position();
 
-    TriMeshSplitEdgeOperation::Settings op_settings;
-    op_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
-    op_settings.min_squared_length = 1.1;
+    // OperationSettings<TriMeshSplitEdgeOperation> op_settings;
+    // op_settings.position = std::make_unique<MeshAttributeHandle<double>>(
+    //     mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex));
+    // op_settings.min_squared_length = 1.1;
 
-    auto pos = mesh.create_accessor(op_settings.position);
+    auto pos =
+        mesh.create_accessor(mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex));
     const Tuple v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
     const Tuple v5 = mesh.tuple_from_id(PrimitiveType::Vertex, 5);
     // reposition interior vertices
@@ -172,9 +167,7 @@ TEST_CASE("split_long_edges", "[components][isotropic_remeshing][split][2D][.]")
     pos.vector_attribute(v5) = Eigen::Vector3d{1.4, -0.9, 0};
 
     Scheduler scheduler(mesh);
-    scheduler.add_operation_type<TriMeshSplitEdgeOperation, TriMeshSplitEdgeOperation::Settings>(
-        "edge_split",
-        op_settings);
+    scheduler.add_operation_type<TriMeshSplitEdgeOperation>("edge_split");
 
     scheduler.run_operation_on_all(PrimitiveType::Edge, "edge_split");
 

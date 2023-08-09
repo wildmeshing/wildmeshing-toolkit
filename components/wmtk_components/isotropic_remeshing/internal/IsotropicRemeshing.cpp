@@ -12,7 +12,7 @@ Eigen::Vector3d smooth(TriMesh& m, const Tuple& t)
         m.get_attribute_handle<double>("position", wmtk::PrimitiveType::Vertex);
     auto pts_accessor = m.create_accessor(pts_attr);
 
-    std::vector<Simplex> one_ring = SimplicialComplex::vertex_one_ring(t, m);
+    std::vector<Simplex> one_ring = SimplicialComplex::vertex_one_ring(m, t);
     Eigen::Vector3d p_mid(0, 0, 0);
     for (const Simplex& neigh : one_ring) {
         p_mid += pts_accessor.vector_attribute(neigh.tuple());
@@ -163,7 +163,7 @@ void IsotropicRemeshing::smooth_vertices()
         const Eigen::Vector3d p = pts_accessor.vector_attribute(v);
 
         // get neighbors
-        std::vector<Simplex> one_ring = SimplicialComplex::vertex_one_ring(v, *m_mesh);
+        std::vector<Simplex> one_ring = SimplicialComplex::vertex_one_ring(*m_mesh, v);
         Eigen::Vector3d p_mid(0, 0, 0);
         for (const Simplex& neigh : one_ring) {
             p_mid += pts_accessor.vector_attribute(neigh.tuple());

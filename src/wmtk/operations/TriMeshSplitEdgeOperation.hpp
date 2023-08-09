@@ -4,15 +4,16 @@
 #include "Operation.hpp"
 
 namespace wmtk {
+class TriMeshSplitEdgeOperation;
+
 class TriMeshSplitEdgeOperation : public Operation
 {
 public:
     TriMeshSplitEdgeOperation(
         Mesh& m,
         const Tuple& t,
-        const OperationSettings<TriMeshSplitEdgeOperation> = {});
-
-    TriMeshSplitEdgeOperation(Mesh& m, const Tuple& t, const Settings& settings);
+        const OperationSettings<TriMeshSplitEdgeOperation> settings =
+            OperationSettings<TriMeshSplitEdgeOperation>());
 
     std::string name() const override;
 
@@ -38,8 +39,6 @@ protected:
 private:
     Tuple m_input_tuple;
     Tuple m_output_tuple;
-    std::unique_ptr<MeshAttributeHandle<double>> m_pos_handle;
-    double m_min_squared_length;
 };
 
 
