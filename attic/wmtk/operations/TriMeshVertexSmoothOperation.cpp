@@ -1,5 +1,3 @@
-#include "TriMeshVertexSmoothOperation.hpp"
-#include "TriMeshVertexSmoothOperation.hpp"
 #include <wmtk/operations/TriMeshVertexSmoothOperation.h>
 
 namespace wmtk {
@@ -23,19 +21,9 @@ bool TriMeshVertexSmoothOperation::after(TriMesh& m)
 {
     return true;
 }
-TriMeshVertexSmoothOperation::TriMeshVertexSmoothOperation(
-    Mesh& m,
-    const Tuple& t,
-    const Settings& settings)
-{}
 std::string TriMeshVertexSmoothOperation::name() const
 {
     return "vertex_smooth";
-}
-
-bool TriMeshVertexSmoothOperation::execute()
-{
-    return false;
 }
 
 // bool TriMeshVertexSmoothOperation::invariants(TriMesh& m, ExecuteReturnData& ret_data)
