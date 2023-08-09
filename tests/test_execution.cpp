@@ -30,8 +30,6 @@ TEST_CASE("test_execution_single_triangle", "[scheduler][2D]")
 
 TEST_CASE("operation_with_settings", "[scheduler][operations][2D]")
 {
-    redirect_logger_to_cout();
-
     DEBUG_TriMesh m;
     SECTION("single_triangle")
     {
@@ -50,14 +48,11 @@ TEST_CASE("operation_with_settings", "[scheduler][operations][2D]")
         }
     }
 
-    TriMeshVertexSmoothOperation::Settings op_settings;
+    OperationSettings<TriMeshVertexSmoothOperation> op_settings;
     op_settings.position = m.get_attribute_handle<double>("position", PrimitiveType::Vertex);
 
     Scheduler scheduler(m);
-    scheduler
-        .add_operation_type<TriMeshVertexSmoothOperation, TriMeshVertexSmoothOperation::Settings>(
-            "vertex_smooth",
-            op_settings);
+    scheduler.add_operation_type<TriMeshVertexSmoothOperation>("vertex_smooth", op_settings);
 
     scheduler.run_operation_on_all(PrimitiveType::Vertex, "vertex_smooth");
 }

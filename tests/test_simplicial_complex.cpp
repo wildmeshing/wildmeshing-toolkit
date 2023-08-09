@@ -152,9 +152,9 @@ TEST_CASE("link-case1", "[simplicial_complex][link][2D]")
     REQUIRE(lhs.get_simplices().size() == 3);
     REQUIRE(lnk_01 == lnk_10);
 
-    REQUIRE(SimplicialComplex::link_cond(t, m) == false);
-    REQUIRE(SimplicialComplex::link_cond_bd_2d(t, m) == false);
-    REQUIRE(SimplicialComplex::edge_collapse_possible_2d(t, m) == true);
+    REQUIRE(SimplicialComplex::link_cond(m, t) == false);
+    REQUIRE(SimplicialComplex::link_cond_bd_2d(m, t) == false);
+    REQUIRE(SimplicialComplex::edge_collapse_possible_2d(m, t) == true);
 }
 
 
@@ -188,9 +188,9 @@ TEST_CASE("link-case2", "[simplicial_complex][link][2D]")
     REQUIRE(lhs == lnk_01);
     REQUIRE(lnk_01 == lnk_10);
 
-    REQUIRE(SimplicialComplex::link_cond(t, m) == true);
-    REQUIRE(SimplicialComplex::link_cond_bd_2d(t, m) == false);
-    REQUIRE(SimplicialComplex::edge_collapse_possible_2d(t, m) == false);
+    REQUIRE(SimplicialComplex::link_cond(m, t) == true);
+    REQUIRE(SimplicialComplex::link_cond_bd_2d(m, t) == false);
+    REQUIRE(SimplicialComplex::edge_collapse_possible_2d(m, t) == false);
 }
 
 TEST_CASE("k-ring", "[simplicial_complex][k-ring][2D]")
@@ -203,13 +203,13 @@ TEST_CASE("k-ring", "[simplicial_complex][k-ring][2D]")
     Tuple t(1, 0, -1, 0, hash);
     REQUIRE(m.id(t, PV) == 3);
 
-    auto ret1 = SimplicialComplex::vertex_one_ring(t, m);
+    auto ret1 = SimplicialComplex::vertex_one_ring(m, t);
     REQUIRE(ret1.size() == 2);
-    auto ret2 = SimplicialComplex::k_ring(t, m, 1);
+    auto ret2 = SimplicialComplex::k_ring(m, t, 1);
     REQUIRE(ret2.size() == 2);
-    auto ret3 = SimplicialComplex::k_ring(t, m, 2);
+    auto ret3 = SimplicialComplex::k_ring(m, t, 2);
     REQUIRE(ret3.size() == 6);
-    auto ret4 = SimplicialComplex::k_ring(t, m, 3);
+    auto ret4 = SimplicialComplex::k_ring(m, t, 3);
     REQUIRE(ret4.size() == 6);
 }
 

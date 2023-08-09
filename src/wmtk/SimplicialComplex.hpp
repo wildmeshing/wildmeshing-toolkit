@@ -141,21 +141,23 @@ public:
     // input Tuple t --> edge (a,b)
     // check if lnk(a) ∩ lnk(b) == lnk(ab)
     //////////////////////////////////
-    static bool link_cond(Tuple t, const Mesh& m);
-    static bool link_cond_bd_2d(Tuple t, const Mesh& m);
+    static bool link_cond(const Mesh& m, Tuple t);
+    static bool link_cond_bd_2d(const Mesh& m, Tuple t);
 
     // could be a replacement for link_cond_bd_2d
-    static bool edge_collapse_possible_2d(Tuple t, const Mesh& m);
+    static bool edge_collapse_possible_2d(const Mesh& m, Tuple t);
     //////////////////////////////////
     // k-ring
     //////////////////////////////////
 
     /**
      * @brief get one ring neighbors of vertex in _t_
+     *
+     * The vertex one ring does not include the vertex of the tuple itself.
      */
-    static std::vector<Simplex> vertex_one_ring(Tuple t, const Mesh& m);
+    static std::vector<Simplex> vertex_one_ring(const Mesh& m, Tuple t);
 
-    static std::vector<Simplex> k_ring(Tuple t, const Mesh& m, int k);
+    static std::vector<Simplex> k_ring(const Mesh& m, Tuple t, int k);
 };
 
 } // namespace wmtk

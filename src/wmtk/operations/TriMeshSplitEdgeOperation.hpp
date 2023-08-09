@@ -7,13 +7,10 @@ namespace wmtk {
 class TriMeshSplitEdgeOperation : public Operation
 {
 public:
-    struct Settings
-    {
-        MeshAttributeHandle<double> position;
-        double min_squared_length = std::numeric_limits<double>::lowest();
-    };
-
-    TriMeshSplitEdgeOperation(Mesh& m, const Tuple& t);
+    TriMeshSplitEdgeOperation(
+        Mesh& m,
+        const Tuple& t,
+        const OperationSettings<TriMeshSplitEdgeOperation> = {});
 
     TriMeshSplitEdgeOperation(Mesh& m, const Tuple& t, const Settings& settings);
 

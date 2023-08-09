@@ -35,11 +35,12 @@ public:
         m_factories[name] = std::make_unique<OperationFactory<OperationType>>();
     }
 
-    template <typename OperationType, typename SettingsType>
-    void add_operation_type(const std::string& name, const SettingsType& settings)
+    template <typename OperationType>
+    void add_operation_type(
+        const std::string& name,
+        const OperationSettings<OperationType>& settings)
     {
-        m_factories[name] =
-            std::make_unique<OperationFactory<OperationType, SettingsType>>(settings);
+        m_factories[name] = std::make_unique<OperationFactory<OperationType>>(settings);
     }
 
     void enqueue_operations(std::vector<std::unique_ptr<Operation>>&& ops);
