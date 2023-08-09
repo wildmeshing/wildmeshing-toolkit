@@ -4,7 +4,6 @@
 #include "Mesh.hpp"
 #include "operations/Operation.hpp"
 #include "operations/OperationFactory.hpp"
-#include "operations/TriMeshVertexSmoothOperationFactory.hpp"
 
 
 namespace wmtk {
@@ -30,11 +29,18 @@ public:
     //        primitive_type,
     //        std::forward<Args>(args)...);
     //}
-    template <typename OperationType, typename... Args>
-    void add_operation_type(const std::string& name, Args... args)
+
+    template <typename OperationType>
+    void add_operation_type(const std::string& name)
+    {
+        m_factories[name] = std::make_unique<OperationFactory<OperationType>>();
+    }
+
+    template <typename OperationType, typename OperationSettingsType>
+    void add_operation_type(const std::string& name, const OperationSettingsType& handles)
     {
         m_factories[name] =
-            std::make_unique<OperationFactory<OperationType>>(std::forward<Args>(args)...);
+            std::make_unique<OperationFactory<OperationType, OperationSettingsType>>(handles);
     }
 
     void enqueue_operations(std::vector<std::unique_ptr<Operation>>&& ops);

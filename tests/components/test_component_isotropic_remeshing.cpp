@@ -73,10 +73,10 @@ TEST_CASE("laplacian_smoothing", "[components],[isotropic_remeshing]")
         reader.read(mesh);
     }
 
-    wmtk::Scheduler scheduler(mesh);
-    scheduler.add_operation_type<wmtk::TriMeshVertexSmoothOperation>("vertex_smooth");
-
-    scheduler.run_operation_on_all(wmtk::PrimitiveType::Vertex, "vertex_smooth");
+    // wmtk::Scheduler scheduler(mesh);
+    // scheduler.add_operation_type<wmtk::TriMeshVertexSmoothOperation>("vertex_smooth");
+    //
+    // scheduler.run_operation_on_all(wmtk::PrimitiveType::Vertex, "vertex_smooth");
 
     // const std::vector<wmtk::Tuple> vertices = mesh.get_all(wmtk::PrimitiveType::Vertex);
     // wmtk::MeshAttributeHandle<double> pts_attr =

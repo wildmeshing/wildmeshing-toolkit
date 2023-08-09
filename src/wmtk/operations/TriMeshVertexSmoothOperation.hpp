@@ -7,10 +7,12 @@ namespace wmtk {
 class TriMeshVertexSmoothOperation : public Operation
 {
 public:
-    TriMeshVertexSmoothOperation(
-        Mesh& m,
-        const Tuple& t,
-        const MeshAttributeHandle<double>& position_handle);
+    struct Handles
+    {
+        MeshAttributeHandle<double> position;
+    };
+
+    TriMeshVertexSmoothOperation(Mesh& m, const Tuple& t, const Handles& handles);
 
     std::string name() const override;
 

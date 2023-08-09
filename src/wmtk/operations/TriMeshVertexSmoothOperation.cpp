@@ -2,13 +2,14 @@
 #include <wmtk/SimplicialComplex.hpp>
 
 namespace wmtk {
+
 TriMeshVertexSmoothOperation::TriMeshVertexSmoothOperation(
     Mesh& m,
     const Tuple& t,
-    const MeshAttributeHandle<double>& position_handle)
+    const Handles& handles)
     : Operation(m)
     , m_tuple(t)
-    , m_pos_accessor(m.create_accessor(position_handle))
+    , m_pos_accessor(m.create_accessor(handles.position))
 {}
 
 std::string TriMeshVertexSmoothOperation::name() const
