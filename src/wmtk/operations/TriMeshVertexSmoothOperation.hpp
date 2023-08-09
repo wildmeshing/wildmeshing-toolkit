@@ -7,24 +7,26 @@ namespace wmtk {
 class TriMeshVertexSmoothOperation : public Operation
 {
 public:
-    struct Handles
+    struct Settings
     {
         MeshAttributeHandle<double> position;
+        bool smooth_boundary = false;
     };
 
-    TriMeshVertexSmoothOperation(Mesh& m, const Tuple& t, const Handles& handles);
+    TriMeshVertexSmoothOperation(Mesh& m, const Tuple& t, const Settings& settings);
 
     std::string name() const override;
 
     static PrimitiveType primitive_type() { return PrimitiveType::Vertex; }
 
 protected:
-    bool execute() override;
     bool before() const override;
+    bool execute() override;
 
 private:
     Tuple m_tuple;
     Accessor<double> m_pos_accessor;
+    bool m_smooth_boundary;
 };
 
 

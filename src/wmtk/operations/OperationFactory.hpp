@@ -16,31 +16,31 @@ private:
     PrimitiveType m_primitive;
 };
 
-template <typename OperationType, typename OperationSettingsType = std::nullptr_t>
+template <typename OperationType, typename SettingsType = std::nullptr_t>
 class OperationFactory : public OperationFactoryBase
 {
 public:
     OperationFactory()
         : OperationFactoryBase(OperationType::primitive_type())
-        , m_handles(nullptr)
+        , m_settings(nullptr)
     {}
 
-    OperationFactory(const OperationSettingsType& handles)
+    OperationFactory(const SettingsType& settings)
         : OperationFactoryBase(OperationType::primitive_type())
-        , m_handles(handles)
+        , m_settings(settings)
     {}
 
     std::unique_ptr<Operation> create(Mesh& m, const Tuple& t) const override
     {
-        if constexpr (std::is_same<OperationSettingsType, std::nullptr_t>::value) {
+        if constexpr (std::is_same<SettingsType, std::nullptr_t>::value) {
             return std::make_unique<OperationType>(m, t);
         } else {
-            return std::make_unique<OperationType>(m, t, m_handles);
+            return std::make_unique<OperationType>(m, t, m_settings);
         }
     }
 
 protected:
-    const OperationSettingsType m_handles;
+    const SettingsType m_settings;
 };
 
 /*

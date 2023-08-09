@@ -29,18 +29,17 @@ public:
     //        primitive_type,
     //        std::forward<Args>(args)...);
     //}
-
     template <typename OperationType>
     void add_operation_type(const std::string& name)
     {
         m_factories[name] = std::make_unique<OperationFactory<OperationType>>();
     }
 
-    template <typename OperationType, typename OperationSettingsType>
-    void add_operation_type(const std::string& name, const OperationSettingsType& handles)
+    template <typename OperationType, typename SettingsType>
+    void add_operation_type(const std::string& name, const SettingsType& settings)
     {
         m_factories[name] =
-            std::make_unique<OperationFactory<OperationType, OperationSettingsType>>(handles);
+            std::make_unique<OperationFactory<OperationType, SettingsType>>(settings);
     }
 
     void enqueue_operations(std::vector<std::unique_ptr<Operation>>&& ops);
