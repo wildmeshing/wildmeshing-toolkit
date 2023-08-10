@@ -77,7 +77,7 @@ SimplicialComplex SimplicialComplex::get_intersection(
     return sc_intersection;
 }
 
-SimplicialComplex SimplicialComplex::boundary(const Simplex& s, const Mesh& m)
+SimplicialComplex SimplicialComplex::boundary(const Mesh& m, const Simplex& s)
 {
     SimplicialComplex sc(m);
 
@@ -141,25 +141,25 @@ SimplicialComplex SimplicialComplex::boundary(const Simplex& s, const Mesh& m)
     return sc;
 }
 
-SimplicialComplex SimplicialComplex::simplex_with_boundary(const Simplex& s, const Mesh& m)
+SimplicialComplex SimplicialComplex::simplex_with_boundary(const Mesh& m, const Simplex& s)
 {
-    SimplicialComplex sc = boundary(s, m);
+    SimplicialComplex sc = boundary(m, s);
     sc.add_simplex(s);
     return sc;
 }
 
 bool SimplicialComplex::simplices_w_boundary_intersect(
+    const Mesh& m,
     const Simplex& s1,
-    const Simplex& s2,
-    const Mesh& m)
+    const Simplex& s2)
 {
-    SimplicialComplex s1_bd = simplex_with_boundary(s1, m);
-    SimplicialComplex s2_bd = simplex_with_boundary(s2, m);
+    SimplicialComplex s1_bd = simplex_with_boundary(m, s1);
+    SimplicialComplex s2_bd = simplex_with_boundary(m, s2);
     SimplicialComplex s1_s2_int = get_intersection(s1_bd, s2_bd);
     return (s1_s2_int.get_simplices().size() != 0);
 }
 
-SimplicialComplex SimplicialComplex::closed_star(const Simplex& s, const Mesh& m)
+SimplicialComplex SimplicialComplex::closed_star(const Mesh& m, const Simplex& s)
 {
     SimplicialComplex sc(m);
 
@@ -267,17 +267,17 @@ SimplicialComplex SimplicialComplex::closed_star(const Simplex& s, const Mesh& m
 
     const auto top_simplices = sc.get_simplices();
     for (const Simplex& ts : top_simplices) {
-        sc.unify_with_complex(boundary(ts, m));
+        sc.unify_with_complex(boundary(m, ts));
     }
     return sc;
 }
 
-SimplicialComplex SimplicialComplex::link(const Simplex& s, const Mesh& m)
+SimplicialComplex SimplicialComplex::link(const Mesh& m, const Simplex& s)
 {
-    SimplicialComplex sc_clst = closed_star(s, m);
+    SimplicialComplex sc_clst = closed_star(m, s);
     SimplicialComplex sc(m);
     for (const Simplex& ss : sc_clst.get_simplices()) {
-        if (!SimplicialComplex::simplices_w_boundary_intersect(s, ss, m)) {
+        if (!SimplicialComplex::simplices_w_boundary_intersect(m, s, ss)) {
             sc.add_simplex(ss);
         }
     }
@@ -285,16 +285,16 @@ SimplicialComplex SimplicialComplex::link(const Simplex& s, const Mesh& m)
     return sc;
 }
 
-SimplicialComplex SimplicialComplex::open_star(const Simplex& s, const Mesh& m)
+SimplicialComplex SimplicialComplex::open_star(const Mesh& m, const Simplex& s)
 {
-    SimplicialComplex sc_clst = closed_star(s, m);
+    SimplicialComplex sc_clst = closed_star(m, s);
     SimplicialComplex sc(m);
     sc.add_simplex(s);
     for (const Simplex& ss : sc_clst.get_simplices()) {
         if (ss.primitive_type() <= s.primitive_type()) {
             continue;
         }
-        if (simplices_w_boundary_intersect(s, ss, m)) {
+        if (simplices_w_boundary_intersect(m, s, ss)) {
             sc.add_simplex(ss);
         }
     }
@@ -304,13 +304,12 @@ SimplicialComplex SimplicialComplex::open_star(const Simplex& s, const Mesh& m)
 
 bool SimplicialComplex::link_cond(const Mesh& m, Tuple t)
 {
-    SimplicialComplex lnk_a = link(Simplex(PrimitiveType::Vertex, t), m); // lnk(a)
-    SimplicialComplex lnk_b = link(
-        Simplex(PrimitiveType::Vertex, m.switch_tuple(t, PrimitiveType::Vertex)),
-        m); // lnk(b)
+    SimplicialComplex lnk_a = link(m, Simplex(PrimitiveType::Vertex, t)); // lnk(a)
+    SimplicialComplex lnk_b =
+        link(m, Simplex(PrimitiveType::Vertex, m.switch_tuple(t, PrimitiveType::Vertex))); // lnk(b)
     SimplicialComplex lhs = get_intersection(lnk_a, lnk_b);
 
-    SimplicialComplex rhs = link(Simplex(PrimitiveType::Edge, t), m); // lnk(ab)
+    SimplicialComplex rhs = link(m, Simplex(PrimitiveType::Edge, t)); // lnk(ab)
 
     return (lhs == rhs);
 }
@@ -328,8 +327,8 @@ bool SimplicialComplex::link_cond_bd_2d(const Mesh& m, Tuple t)
         Simplex input_v(PrimitiveType::Vertex, _v);
         std::vector<Tuple> ret;
         // get one_ring_edges from open_star
-        auto one_ring_edges = open_star(input_v, m).get_simplices(PrimitiveType::Edge);
-        for (auto _e : one_ring_edges) {
+        auto one_ring_edges = open_star(m, input_v).get_simplices(PrimitiveType::Edge);
+        for (const auto& _e : one_ring_edges) {
             if (m.is_boundary(_e.tuple())) {
                 if (m.simplex_is_equal(Simplex(PrimitiveType::Vertex, _e.tuple()), input_v)) {
                     ret.push_back(m.switch_tuple(_e.tuple(), PrimitiveType::Vertex));
@@ -381,8 +380,8 @@ bool SimplicialComplex::edge_collapse_possible_2d(const Mesh& m, Tuple t)
     auto is_bd_v = [&m](const Tuple& _v) {
         Simplex input_v(PrimitiveType::Vertex, _v);
         // get one_ring_edges from open_star
-        auto one_ring_edges = open_star(input_v, m).get_simplices(PrimitiveType::Edge);
-        for (auto _e : one_ring_edges) {
+        auto one_ring_edges = open_star(m, input_v).get_simplices(PrimitiveType::Edge);
+        for (const auto& _e : one_ring_edges) {
             if (m.is_boundary(_e.tuple())) {
                 return true;
             }
@@ -441,7 +440,7 @@ bool SimplicialComplex::edge_collapse_possible_2d(const Mesh& m, Tuple t)
 std::vector<Simplex> SimplicialComplex::vertex_one_ring(const Mesh& m, Tuple t)
 {
     Simplex s(PrimitiveType::Vertex, t);
-    const SimplicialComplex sc_link = link(s, m);
+    const SimplicialComplex sc_link = link(m, s);
     auto vs = sc_link.get_simplices(PrimitiveType::Vertex);
     return std::vector<Simplex>(vs.begin(), vs.end());
 }

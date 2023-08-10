@@ -52,7 +52,7 @@ bool TriMeshCollapseEdgeOperation::is_return_tuple_from_left_ear() const
 std::vector<Tuple> TriMeshCollapseEdgeOperation::modified_triangles() const
 {
     Simplex v(PrimitiveType::Vertex, m_output_tuple);
-    auto sc = SimplicialComplex::open_star(v, m_mesh);
+    auto sc = SimplicialComplex::open_star(m_mesh, v);
     auto faces = sc.get_simplices(PrimitiveType::Face);
     std::vector<Tuple> ret;
     for (const auto& face : faces) {

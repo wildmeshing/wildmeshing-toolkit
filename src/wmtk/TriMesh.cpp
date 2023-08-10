@@ -63,7 +63,7 @@ bool TriMesh::is_boundary(const Tuple& tuple) const
 bool TriMesh::is_vertex_boundary(const Tuple& vertex) const
 {
     // go through all edges and check if they are boundary
-    const SimplicialComplex neigh = SimplicialComplex::open_star(Simplex::vertex(vertex), *this);
+    const SimplicialComplex neigh = SimplicialComplex::open_star(*this, Simplex::vertex(vertex));
     for (const Simplex& s : neigh.get_edges()) {
         if (is_boundary(s.tuple())) {
             return true;

@@ -136,14 +136,14 @@ TEST_CASE("link-case1", "[simplicial_complex][link][2D]")
     REQUIRE(m.id(m.switch_tuple(m.switch_tuple(t, PE), PV), PV) == 3);
 
 
-    SimplicialComplex lnk_0 = SimplicialComplex::link(Simplex(PV, t), m);
-    SimplicialComplex lnk_1 = SimplicialComplex::link(Simplex(PV, m.switch_tuple(t, PV)), m);
+    SimplicialComplex lnk_0 = SimplicialComplex::link(m, Simplex(PV, t));
+    SimplicialComplex lnk_1 = SimplicialComplex::link(m, Simplex(PV, m.switch_tuple(t, PV)));
 
 
     SimplicialComplex lhs = SimplicialComplex::get_intersection(lnk_0, lnk_1);
-    SimplicialComplex lnk_01 = SimplicialComplex::link(Simplex(PE, t), m);
+    SimplicialComplex lnk_01 = SimplicialComplex::link(m, Simplex(PE, t));
 
-    SimplicialComplex lnk_10 = SimplicialComplex::link(Simplex(PE, m.switch_tuple(t, PV)), m);
+    SimplicialComplex lnk_10 = SimplicialComplex::link(m, Simplex(PE, m.switch_tuple(t, PV)));
 
     REQUIRE(lnk_0.get_simplices().size() == 5);
     REQUIRE(lnk_1.get_simplices().size() == 5);
@@ -172,13 +172,13 @@ TEST_CASE("link-case2", "[simplicial_complex][link][2D]")
     REQUIRE(m.id(m.switch_tuple(t, PV), PV) == 1);
     REQUIRE(m.id(m.switch_tuple(m.switch_tuple(t, PE), PV), PV) == 2);
 
-    SimplicialComplex lnk_0 = SimplicialComplex::link(Simplex(PV, t), m);
-    SimplicialComplex lnk_1 = SimplicialComplex::link(Simplex(PV, m.switch_tuple(t, PV)), m);
+    SimplicialComplex lnk_0 = SimplicialComplex::link(m, Simplex(PV, t));
+    SimplicialComplex lnk_1 = SimplicialComplex::link(m, Simplex(PV, m.switch_tuple(t, PV)));
 
 
     SimplicialComplex lhs = SimplicialComplex::get_intersection(lnk_0, lnk_1);
-    SimplicialComplex lnk_01 = SimplicialComplex::link(Simplex(PE, t), m);
-    SimplicialComplex lnk_10 = SimplicialComplex::link(Simplex(PE, m.switch_tuple(t, PV)), m);
+    SimplicialComplex lnk_01 = SimplicialComplex::link(m, Simplex(PE, t));
+    SimplicialComplex lnk_10 = SimplicialComplex::link(m, Simplex(PE, m.switch_tuple(t, PV)));
 
 
     REQUIRE(lnk_0.get_simplices().size() == 7);
@@ -223,13 +223,13 @@ TEST_CASE("open_star", "[simplicial_complex][star][2D]")
     Tuple t(0, 2, -1, 1, hash);
 
 
-    SimplicialComplex sc_v = SimplicialComplex::open_star(Simplex(PV, t), m);
+    SimplicialComplex sc_v = SimplicialComplex::open_star(m, Simplex(PV, t));
     REQUIRE(sc_v.get_simplices().size() == 8);
 
-    SimplicialComplex sc_e = SimplicialComplex::open_star(Simplex(PE, t), m);
+    SimplicialComplex sc_e = SimplicialComplex::open_star(m, Simplex(PE, t));
     REQUIRE(sc_e.get_simplices().size() == 3);
 
-    SimplicialComplex sc_f = SimplicialComplex::open_star(Simplex(PF, t), m);
+    SimplicialComplex sc_f = SimplicialComplex::open_star(m, Simplex(PF, t));
     REQUIRE(sc_f.get_simplices().size() == 1);
 }
 
@@ -246,12 +246,12 @@ TEST_CASE("closed_star", "[simplicial_complex][star][2D]")
     REQUIRE(m.id(m.switch_tuple(m.switch_tuple(t, PE), PV), PV) == 2);
 
 
-    SimplicialComplex sc_v = SimplicialComplex::closed_star(Simplex(PV, t), m);
+    SimplicialComplex sc_v = SimplicialComplex::closed_star(m, Simplex(PV, t));
     REQUIRE(sc_v.get_simplices().size() == 15);
 
-    SimplicialComplex sc_e = SimplicialComplex::closed_star(Simplex(PE, t), m);
+    SimplicialComplex sc_e = SimplicialComplex::closed_star(m, Simplex(PE, t));
     REQUIRE(sc_e.get_simplices().size() == 11);
 
-    SimplicialComplex sc_f = SimplicialComplex::closed_star(Simplex(PF, t), m);
+    SimplicialComplex sc_f = SimplicialComplex::closed_star(m, Simplex(PF, t));
     REQUIRE(sc_f.get_simplices().size() == 7);
 }
