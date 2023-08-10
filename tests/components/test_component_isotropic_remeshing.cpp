@@ -147,7 +147,7 @@ TEST_CASE("smoothing_simple_examples", "[components][isotropic_remeshing][2D]")
     }
 }
 
-TEST_CASE("split_long_edges", "[components][isotropic_remeshing][split][2D][.]")
+TEST_CASE("split_long_edges", "[components][isotropic_remeshing][split][2D]")
 {
     // This test does not fully work yet
 
@@ -233,4 +233,10 @@ TEST_CASE("split_long_edges", "[components][isotropic_remeshing][split][2D][.]")
         const double l_squared = (p1 - p0).squaredNorm();
         CHECK(l_squared < op_settings.min_squared_length);
     }
+}
+
+TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2D][.]")
+{
+    // todo
+    REQUIRE(false);
 }
