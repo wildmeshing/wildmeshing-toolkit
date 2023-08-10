@@ -5,14 +5,14 @@
 - Use self explaining variable names. If the existence of a variable is not obvious, write a comment explaining why it is there.
 - Write self explaining code. In case of doubt explain what the code does and why it was implemented that way. The same holds for tests.
 - Do not define global variables in header files.
-- Classes should be written in a file that has the same name as the class. For example, the class `TriMesh` is in the file _TriMesh.h_ and its implementation in _TriMesh.cpp_.
+- Classes should be written in a file that has the same name as the class. For example, the class `TriMesh` is in the file _TriMesh.hpp_ and its implementation in _TriMesh.cpp_.
 - Use `const` as much as possible.
 - Avoid complex nested expressions by splitting them up over multiple lines. Example:
   ```
   // hard to read
   CHECK(fv_accessor.vector_attribute(new_fids[0][0])[0] == 0);
   // better
-  const long& f0 = new_fids[0][0];
+  const long f0 = new_fids[0][0];
   const auto fv0 = fv_accessor.vector_attribute(f0);
   CHECK(fv0[0] == 0);
   ```
