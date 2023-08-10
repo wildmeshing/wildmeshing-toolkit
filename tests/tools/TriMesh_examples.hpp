@@ -93,4 +93,6 @@ TriMesh edge_region();
 //  | /    | \ |
 //  1      5---6
 TriMesh three_triangles_with_two_components();
+
+TriMesh nine_triangles_with_a_hole();
 } // namespace wmtk::tests
