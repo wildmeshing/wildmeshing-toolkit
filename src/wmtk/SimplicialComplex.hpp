@@ -101,17 +101,17 @@ public:
      * - Vertex: none
      *
      */
-    static SimplicialComplex boundary(const Simplex& s, const Mesh& m);
+    static SimplicialComplex boundary(const Mesh& m, const Simplex& s);
 
     /**
      * @brief the union of a simplex and its boundary
      */
-    static SimplicialComplex simplex_with_boundary(const Simplex& s, const Mesh& m);
+    static SimplicialComplex simplex_with_boundary(const Mesh& m, const Simplex& s);
 
     /**
      * @brief check if the intersection of simplices with their boundary is an empty set
      */
-    static bool simplices_w_boundary_intersect(const Simplex& s1, const Simplex& s2, const Mesh& m);
+    static bool simplices_w_boundary_intersect(const Mesh& m, const Simplex& s1, const Simplex& s2);
 
     /**
      * @brief The union of all simplices with boundary that have s in their boundary.
@@ -119,7 +119,7 @@ public:
      * Example: The closed star of a vertex in a triangular mesh contains all triangles incident to
      * the vertex and all vertices and edges incident to those triangles.
      */
-    static SimplicialComplex closed_star(const Simplex& s, const Mesh& m);
+    static SimplicialComplex closed_star(const Mesh& m, const Simplex& s);
 
     /**
      * @brief The boundary of the closed star.
@@ -127,14 +127,14 @@ public:
      * Example: The link of a vertex in a triangle mesh is the ring of edges and vertices
      * surrounding it.
      */
-    static SimplicialComplex link(const Simplex& s, const Mesh& m);
+    static SimplicialComplex link(const Mesh& m, const Simplex& s);
 
     /**
      * @brief The closed star without its boundary.
      *
      * For performance reasons, `closed_star` should be used whenever possible.
      */
-    static SimplicialComplex open_star(const Simplex& s, const Mesh& m);
+    static SimplicialComplex open_star(const Mesh& m, const Simplex& s);
 
     //////////////////////////////////
     // check link condition
@@ -145,7 +145,7 @@ public:
     static bool link_cond_bd_2d(const Mesh& m, Tuple t);
 
     // could be a replacement for link_cond_bd_2d
-    static bool edge_collapse_possible_2d(const Mesh& m, Tuple t);
+    static bool edge_collapse_possible_2d(const TriMesh& m, const Tuple& t);
     //////////////////////////////////
     // k-ring
     //////////////////////////////////
