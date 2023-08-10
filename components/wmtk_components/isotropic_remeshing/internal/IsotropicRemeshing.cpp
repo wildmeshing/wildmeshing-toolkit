@@ -27,7 +27,7 @@ Eigen::Vector3d tangential_smooth(TriMesh& m, const Tuple& t)
         m.get_attribute_handle<double>("position", wmtk::PrimitiveType::Vertex);
     auto pts_accessor = m.create_accessor(pts_attr);
 
-    SimplicialComplex closed_star = SimplicialComplex::closed_star(Simplex::vertex(t), m);
+    SimplicialComplex closed_star = SimplicialComplex::closed_star(m, Simplex::vertex(t));
     auto one_ring_tris = closed_star.get_faces();
     if (one_ring_tris.size() < 2) return pts_accessor.vector_attribute(t);
     Eigen::Vector3d after_smooth = smooth(m, t);
@@ -47,7 +47,7 @@ Eigen::Vector3d tangential_smooth(TriMesh& m, const Tuple& t)
     auto w0 = 0.0;
     Eigen::Vector3d n0(0.0, 0.0, 0.0);
     for (const Simplex& f : one_ring_tris) {
-        const auto simplices = SimplicialComplex::boundary(f, m).get_simplex_vector();
+        const auto simplices = SimplicialComplex::boundary(m, f).get_simplex_vector();
         std::vector<Tuple> verts;
         for (const Simplex& s : simplices) {
             if (s.primitive_type() == PrimitiveType::Vertex) {
