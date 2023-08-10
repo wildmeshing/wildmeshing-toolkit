@@ -16,6 +16,7 @@
   const auto fv0 = fv_accessor.vector_attribute(f0);
   CHECK(fv0[0] == 0);
   ```
+- Only use `auto` to abbreviate lengthy types like `std::vector<std::array<double,3>>`. If your variable is just a `Tuple` or a `Simplex`, avoid `auto`.
 
 ## Naming Conventions
 
