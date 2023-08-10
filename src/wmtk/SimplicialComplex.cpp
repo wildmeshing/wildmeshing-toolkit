@@ -371,64 +371,36 @@ bool SimplicialComplex::link_cond_bd_2d(const Mesh& m, Tuple t)
 
 
 // Toplogical-holding condition, not necessarily guarantee geometric embedding
-bool SimplicialComplex::edge_collapse_possible_2d(const Mesh& m, Tuple t)
+bool SimplicialComplex::edge_collapse_possible_2d(const TriMesh& m, const Tuple& t)
 {
-    // initial vertex join conditions:
-
     // cannot collapse edges connecting two boundaries unless the edge itself is a boundary
-    // assert(tip(h) != boundary || tip(opp(h)) != boundary || h == boundary);
-    auto is_bd_v = [&m](const Tuple& _v) {
-        Simplex input_v(PrimitiveType::Vertex, _v);
-        // get one_ring_edges from open_star
-        auto one_ring_edges = open_star(m, input_v).get_simplices(PrimitiveType::Edge);
-        for (const auto& _e : one_ring_edges) {
-            if (m.is_boundary(_e.tuple())) {
-                return true;
-            }
-        }
-        return false;
-    };
-    if (!(!is_bd_v(t) || !is_bd_v(m.switch_tuple(t, PrimitiveType::Vertex)) || m.is_boundary(t))) {
+    if (m.is_vertex_boundary(t) && m.is_vertex_boundary(m.switch_vertex(t)) && !m.is_boundary(t)) {
         return false;
     }
 
-    auto next = [&m](const Tuple& _h) {
-        return m.switch_tuple(m.switch_tuple(_h, PrimitiveType::Vertex), PrimitiveType::Edge);
-    };
+    auto opp = [&m](const Tuple& t) { return m.switch_vertex(m.switch_face(t)); };
 
-    auto opp = [&m](const Tuple& _h) {
-        return m.switch_tuple(m.switch_tuple(_h, PrimitiveType::Face), PrimitiveType::Vertex);
-    };
+    const Tuple h0 = m.next_edge(t);
+    const Tuple h0_next = m.next_edge(h0);
+
+    if (!m.is_boundary(h0)) {
+        const Tuple h0_opp = opp(h0);
+        if (h0_opp == h0_next) {
+            return false;
+        }
+    }
 
     // valence 1 check
-    // assert(next(h) != opp(h) || next(opp(h)) != h);
     if (!m.is_boundary(t)) {
-        if (next(t) == opp(t) && next(opp(t)) == t) {
+        const Tuple t_opp = opp(t);
+        const Tuple h1 = m.next_edge(t_opp);
+        const Tuple h1_next = m.next_edge(h1);
+        if (h0 == t_opp && h1 == t) {
             return false;
         }
-    }
-
-    // two face joins checks
-    // auto h0 = next(h);
-    // auto h1 = next(opp(h));
-    // conditions needed for join_face to work
-    // assert(face(h0) != face(opp(h0)));
-    // assert(face(h1) != face(opp(h1)));
-    // LEYI: equivalent check:
-    // assert(opp(h0) != next(h0))
-    // assert(opp(h1) != next(h1))
-
-    auto h0 = next(t);
-    if (!m.is_boundary(h0)) {
-        if (opp(h0) == next(h0)) {
-            return false;
-        }
-    }
-
-    if (!m.is_boundary(t)) {
-        auto h1 = next(opp(t));
         if (!m.is_boundary(h1)) {
-            if (opp(h1) == next(h1)) {
+            const Tuple h1_opp = opp(h1);
+            if (h1_opp == h1_next) {
                 return false;
             }
         }

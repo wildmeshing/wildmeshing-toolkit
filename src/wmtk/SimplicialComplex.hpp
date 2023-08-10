@@ -145,7 +145,7 @@ public:
     static bool link_cond_bd_2d(const Mesh& m, Tuple t);
 
     // could be a replacement for link_cond_bd_2d
-    static bool edge_collapse_possible_2d(const Mesh& m, Tuple t);
+    static bool edge_collapse_possible_2d(const TriMesh& m, const Tuple& t);
     //////////////////////////////////
     // k-ring
     //////////////////////////////////
