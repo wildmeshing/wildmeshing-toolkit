@@ -6,6 +6,8 @@ set(SRC_FILES
     OperationQueue.hpp
     TriMeshSplitEdgeOperation.hpp
     TriMeshSplitEdgeOperation.cpp
+    TriMeshSplitEdgeAtMidpointOperation.hpp
+    TriMeshSplitEdgeAtMidpointOperation.cpp
     TriMeshCollapseEdgeOperation.hpp
     TriMeshCollapseEdgeOperation.cpp
     TriMeshSwapEdgeOperation.hpp

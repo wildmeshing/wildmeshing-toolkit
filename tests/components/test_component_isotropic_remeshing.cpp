@@ -6,7 +6,7 @@
 #include <wmtk/io/MeshReader.hpp>
 #include <wmtk/operations/OperationFactory.hpp>
 #include <wmtk/operations/TriMeshCollapseEdgeOperation.hpp>
-#include <wmtk/operations/TriMeshSplitEdgeOperation.hpp>
+#include <wmtk/operations/TriMeshSplitEdgeAtMidpointOperation.hpp>
 #include <wmtk/operations/TriMeshVertexSmoothOperation.hpp>
 #include <wmtk_components/input/input.hpp>
 #include <wmtk_components/isotropic_remeshing/internal/IsotropicRemeshing.hpp>
@@ -153,23 +153,84 @@ TEST_CASE("split_long_edges", "[components][isotropic_remeshing][split][2D][.]")
 
     DEBUG_TriMesh mesh = wmtk::tests::edge_region_with_position();
 
-    // OperationSettings<TriMeshSplitEdgeOperation> op_settings;
-    // op_settings.position = std::make_unique<MeshAttributeHandle<double>>(
-    //     mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex));
-    // op_settings.min_squared_length = 1.1;
+    OperationSettings<TriMeshSplitEdgeAtMidpointOperation> op_settings;
+    op_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
 
-    auto pos =
-        mesh.create_accessor(mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex));
-    const Tuple v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
-    const Tuple v5 = mesh.tuple_from_id(PrimitiveType::Vertex, 5);
-    // reposition interior vertices
-    pos.vector_attribute(v4) = Eigen::Vector3d{0.6, 0.9, 0};
-    pos.vector_attribute(v5) = Eigen::Vector3d{1.4, -0.9, 0};
+    {
+        auto pos = mesh.create_accessor(op_settings.position);
+        const Tuple v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
+        const Tuple v5 = mesh.tuple_from_id(PrimitiveType::Vertex, 5);
+        // reposition interior vertices
+        pos.vector_attribute(v4) = Eigen::Vector3d{0.6, 0.9, 0};
+        pos.vector_attribute(v5) = Eigen::Vector3d{2.4, -0.9, 0};
+        // std::cout << (Eigen::Vector3d{0.6, 0.9, 0} - Eigen::Vector3d{2.4, -0.9, 0}).squaredNorm()
+        //           << std::endl;
+    }
 
-    Scheduler scheduler(mesh);
-    scheduler.add_operation_type<TriMeshSplitEdgeOperation>("edge_split");
+    SECTION("6.4")
+    {
+        //
+        op_settings.min_squared_length = 6.4;
 
-    scheduler.run_operation_on_all(PrimitiveType::Edge, "edge_split");
+        Scheduler scheduler(mesh);
+        scheduler.add_operation_type<TriMeshSplitEdgeAtMidpointOperation>(
+            "tri_mesh_split_edge_at_midpoint",
+            op_settings);
 
-    REQUIRE(mesh.get_all(PrimitiveType::Vertex).size() == 13);
+        size_t n_vertices = mesh.get_all(PrimitiveType::Vertex).size();
+        size_t n_iterations = 0;
+        for (; n_iterations < 10; ++n_iterations) {
+            scheduler.run_operation_on_all(PrimitiveType::Edge, "tri_mesh_split_edge_at_midpoint");
+
+            const size_t n_vertices_new = mesh.get_all(PrimitiveType::Vertex).size();
+            if (n_vertices_new == n_vertices) {
+                break;
+            } else {
+                n_vertices = n_vertices_new;
+            }
+        }
+
+        CHECK(n_iterations == 1);
+        REQUIRE(n_vertices == 11);
+
+        // check position of new vertex
+        auto pos = mesh.create_accessor(op_settings.position);
+        const Tuple v10 = mesh.tuple_from_id(PrimitiveType::Vertex, 10);
+        CHECK((pos.vector_attribute(v10) - Eigen::Vector3d{1.5, 0, 0}).squaredNorm() == 0);
+    }
+    SECTION("3.5")
+    {
+        //
+        op_settings.min_squared_length = 3.5;
+
+        Scheduler scheduler(mesh);
+        scheduler.add_operation_type<TriMeshSplitEdgeAtMidpointOperation>(
+            "tri_mesh_split_edge_at_midpoint",
+            op_settings);
+
+        size_t n_vertices = mesh.get_all(PrimitiveType::Vertex).size();
+        size_t n_iterations = 0;
+        for (; n_iterations < 10; ++n_iterations) {
+            scheduler.run_operation_on_all(PrimitiveType::Edge, "tri_mesh_split_edge_at_midpoint");
+
+            const size_t n_vertices_new = mesh.get_all(PrimitiveType::Vertex).size();
+            if (n_vertices_new == n_vertices) {
+                break;
+            } else {
+                n_vertices = n_vertices_new;
+            }
+        }
+
+        CHECK(n_iterations < 5);
+        CHECK(n_vertices == 15);
+    }
+
+    // check edge lengths
+    auto pos = mesh.create_accessor(op_settings.position);
+    for (const Tuple& e : mesh.get_all(PrimitiveType::Edge)) {
+        const Eigen::Vector3d p0 = pos.vector_attribute(e);
+        const Eigen::Vector3d p1 = pos.vector_attribute(mesh.switch_vertex(e));
+        const double l_squared = (p1 - p0).squaredNorm();
+        CHECK(l_squared < op_settings.min_squared_length);
+    }
 }
