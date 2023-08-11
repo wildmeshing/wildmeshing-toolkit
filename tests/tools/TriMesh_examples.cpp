@@ -175,6 +175,43 @@ TriMesh edge_region_with_position()
     return m;
 }
 
+TriMesh embedded_diamond()
+{
+    //      0---1
+    //     / \ / \
+    //    2---3---4
+    //   / \ / \ / \ .
+    //  5---6---7---8
+    //   \ / \ / \ /
+    //    9--10--11
+    //     \ / \ /
+    //     12---13
+    TriMesh m;
+    RowVectors3l tris;
+    tris.resize(16, 3);
+    tris.row(0) << 2, 3, 0;
+    tris.row(1) << 3, 1, 0;
+    tris.row(2) << 3, 4, 1;
+
+    tris.row(3) << 5, 6, 2;
+    tris.row(4) << 6, 3, 2;
+    tris.row(5) << 6, 7, 3;
+    tris.row(6) << 7, 4, 3;
+    tris.row(7) << 7, 8, 4;
+
+    tris.row(8) << 9, 6, 5;
+    tris.row(9) << 9, 10, 6;
+    tris.row(10) << 10, 7, 6;
+    tris.row(11) << 10, 11, 7;
+    tris.row(12) << 11, 8, 7;
+
+    tris.row(13) << 12, 10, 9;
+    tris.row(14) << 12, 13, 10;
+    tris.row(15) << 13, 11, 10;
+    m.initialize(tris);
+    return m;
+}
+
 TriMesh strip(long size)
 {
     TriMesh m;
