@@ -5,7 +5,7 @@
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/io/MeshReader.hpp>
 #include <wmtk/operations/OperationFactory.hpp>
-#include <wmtk/operations/TriMeshCollapseEdgeOperation.hpp>
+#include <wmtk/operations/TriMeshCollapseEdgeToMidOperation.hpp>
 #include <wmtk/operations/TriMeshSplitEdgeAtMidpointOperation.hpp>
 #include <wmtk/operations/TriMeshVertexSmoothOperation.hpp>
 #include <wmtk_components/input/input.hpp>
@@ -235,8 +235,56 @@ TEST_CASE("split_long_edges", "[components][isotropic_remeshing][split][2D]")
     }
 }
 
-TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2D][.]")
+TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2D]")
 {
-    // todo
+    DEBUG_TriMesh mesh = wmtk::tests::edge_region_with_position();
+
+    OperationSettings<TriMeshCollapseEdgeToMidOperation> op_settings;
+    op_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+
+    {
+        auto pos = mesh.create_accessor(op_settings.position);
+        const Tuple v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
+        const Tuple v5 = mesh.tuple_from_id(PrimitiveType::Vertex, 5);
+        // reposition interior vertices
+        pos.vector_attribute(v4) = Eigen::Vector3d{1.4, 0, 0};
+        pos.vector_attribute(v5) = Eigen::Vector3d{1.6, 0, 0};
+    }
+
+    op_settings.max_squared_length = 0.1;
+
+    Scheduler scheduler(mesh);
+    scheduler.add_operation_type<TriMeshCollapseEdgeToMidOperation>(
+        "tri_mesh_collapse_edge_to_mid",
+        op_settings);
+
+    size_t n_vertices = mesh.get_all(PrimitiveType::Vertex).size();
+    size_t n_iterations = 0;
+    for (; n_iterations < 10; ++n_iterations) {
+        scheduler.run_operation_on_all(PrimitiveType::Edge, "tri_mesh_collapse_edge_to_mid");
+
+        const size_t n_vertices_new = mesh.get_all(PrimitiveType::Vertex).size();
+        if (n_vertices_new == n_vertices) {
+            break;
+        } else {
+            n_vertices = n_vertices_new;
+        }
+    }
+
+    REQUIRE(n_iterations == 1);
+    REQUIRE(n_vertices == 9);
+
+    CHECK_THROWS(mesh.tuple_from_id(PrimitiveType::Vertex, 4));
+    const Tuple v5 = mesh.tuple_from_id(PrimitiveType::Vertex, 5);
+    REQUIRE(mesh.is_valid(v5));
+
+    auto pos = mesh.create_accessor(op_settings.position);
+    Eigen::Vector3d p5 = pos.vector_attribute(v5);
+    CHECK((p5 - Eigen::Vector3d{1.5, 0, 0}).squaredNorm() == 0);
+}
+
+TEST_CASE("swap_edge_for_valence", "[components][isotropic_remeshing][swap][2D][.]")
+{
+    // TODO
     REQUIRE(false);
 }

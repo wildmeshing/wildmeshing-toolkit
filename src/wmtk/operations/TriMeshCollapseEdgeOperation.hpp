@@ -4,6 +4,16 @@
 #include "Operation.hpp"
 
 namespace wmtk {
+class TriMeshCollapseEdgeOperation;
+
+template <>
+struct OperationSettings<TriMeshCollapseEdgeOperation>
+{
+    // TODO
+    // bool collapse_boundary_vertex_to_interior = false;
+    // bool collapse_boundary_edges = false;
+};
+
 class TriMeshCollapseEdgeOperation : public Operation
 {
 public:

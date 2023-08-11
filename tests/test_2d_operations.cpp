@@ -907,6 +907,8 @@ TEST_CASE("collapse_edge", "[operations][2D]")
 
         auto fv_accessor = m.create_base_accessor<long>(m.f_handle(PV));
 
+        CHECK_THROWS(m.tuple_from_id(PrimitiveType::Vertex, 4));
+
         REQUIRE(executor.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(2)) == 0);
         REQUIRE(executor.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(7)) == 0);
         CHECK(fv_accessor.vector_attribute(0)[1] == 5);
@@ -927,6 +929,8 @@ TEST_CASE("collapse_edge", "[operations][2D]")
 
         auto fv_accessor = m.create_base_accessor<long>(m.f_handle(PV));
 
+        CHECK_THROWS(m.tuple_from_id(PrimitiveType::Vertex, 0));
+
         REQUIRE(executor.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(0)) == 0);
         REQUIRE(executor.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(1)) == 0);
 
@@ -945,6 +949,8 @@ TEST_CASE("collapse_edge", "[operations][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         auto fv_accessor = m.create_base_accessor<long>(m.f_handle(PV));
+
+        CHECK_THROWS(m.tuple_from_id(PrimitiveType::Vertex, 0));
 
         REQUIRE(executor.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(1)) == 0);
 
