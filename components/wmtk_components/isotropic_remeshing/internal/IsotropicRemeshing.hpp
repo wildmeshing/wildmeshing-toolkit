@@ -21,11 +21,6 @@ public:
     IsotropicRemeshing(TriMesh* mesh, const double length, const bool lock_boundary);
 
     void remeshing(const long iterations);
-
-    void split_long_edges();
-    void collapse_short_edges();
-    void flip_edges_for_valence();
-    void smooth_vertices();
 };
 
 } // namespace internal

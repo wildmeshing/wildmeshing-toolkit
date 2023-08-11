@@ -345,7 +345,7 @@ TEST_CASE("swap_edge_for_valence", "[components][isotropic_remeshing][swap][2D]"
     }
 }
 
-TEST_CASE("component_isotropic_remeshing", "[components][isotropic_remeshing][2D][.]")
+TEST_CASE("component_isotropic_remeshing", "[components][isotropic_remeshing][2D]")
 {
     std::map<std::string, std::filesystem::path> files;
     {
@@ -366,12 +366,12 @@ TEST_CASE("component_isotropic_remeshing", "[components][isotropic_remeshing][2D
         {"lock_boundary", true}};
     REQUIRE_NOTHROW(wmtk::components::isotropic_remeshing(mesh_isotropic_remeshing_json, files));
 
-    {
-        json component_json = {
-            {"type", "output"},
-            {"input", "output_mesh"},
-            {"file", "bunny_isotropic_remeshing"}};
-
-        CHECK_NOTHROW(wmtk::components::output(component_json, files));
-    }
+    //{
+    //    json component_json = {
+    //        {"type", "output"},
+    //        {"input", "output_mesh"},
+    //        {"file", "bunny_isotropic_remeshing"}};
+    //
+    //    CHECK_NOTHROW(wmtk::components::output(component_json, files));
+    //}
 }

@@ -65,33 +65,12 @@ IsotropicRemeshing::IsotropicRemeshing(TriMesh* mesh, const double length, const
 void IsotropicRemeshing::remeshing(const long iterations)
 {
     for (long i = 0; i < iterations; ++i) {
-        split_long_edges();
-        collapse_short_edges();
-        flip_edges_for_valence();
-        smooth_vertices();
+        m_scheduler.run_operation_on_all(PrimitiveType::Edge, "tri_mesh_split_edge_at_midpoint");
+        m_scheduler.run_operation_on_all(PrimitiveType::Edge, "tri_mesh_collapse_edge_to_mid");
+        m_scheduler.run_operation_on_all(PrimitiveType::Edge, "TriMeshSwapEdgeOperation");
+        m_scheduler.run_operation_on_all(PrimitiveType::Vertex, "vertex_tangential_smooth");
     }
 }
-
-void IsotropicRemeshing::split_long_edges()
-{
-    m_scheduler.run_operation_on_all(PrimitiveType::Edge, "tri_mesh_split_edge_at_midpoint");
-}
-
-void IsotropicRemeshing::collapse_short_edges()
-{
-    m_scheduler.run_operation_on_all(PrimitiveType::Edge, "tri_mesh_collapse_edge_to_mid");
-}
-
-void IsotropicRemeshing::flip_edges_for_valence()
-{
-    m_scheduler.run_operation_on_all(PrimitiveType::Edge, "TriMeshSwapEdgeOperation");
-}
-
-void IsotropicRemeshing::smooth_vertices()
-{
-    m_scheduler.run_operation_on_all(PrimitiveType::Vertex, "vertex_tangential_smooth");
-}
-
 
 } // namespace internal
 } // namespace components
