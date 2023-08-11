@@ -11,6 +11,7 @@ struct OperationSettings<TriMeshVertexTangentialSmoothOperation>
 {
     MeshAttributeHandle<double> position;
     bool smooth_boundary = false;
+    double damping_factor = 1.0;
 };
 
 class TriMeshVertexTangentialSmoothOperation : public Operation
@@ -33,6 +34,7 @@ private:
     Tuple m_tuple;
     Accessor<double> m_pos_accessor;
     bool m_smooth_boundary;
+    double m_damping_factor;
 };
 
 

@@ -1,77 +1,64 @@
 #include "IsotropicRemeshing.hpp"
 
 #include <wmtk/SimplicialComplex.hpp>
+#include <wmtk/operations/TriMeshCollapseEdgeToMidOperation.hpp>
+#include <wmtk/operations/TriMeshSplitEdgeAtMidpointOperation.hpp>
+#include <wmtk/operations/TriMeshSwapEdgeOperation.hpp>
+#include <wmtk/operations/TriMeshVertexTangentialSmoothOperation.hpp>
 
 namespace wmtk {
 namespace components {
 namespace internal {
-
-Eigen::Vector3d smooth(TriMesh& m, const Tuple& t)
-{
-    MeshAttributeHandle<double> pts_attr =
-        m.get_attribute_handle<double>("position", wmtk::PrimitiveType::Vertex);
-    auto pts_accessor = m.create_accessor(pts_attr);
-
-    std::vector<Simplex> one_ring = SimplicialComplex::vertex_one_ring(m, t);
-    Eigen::Vector3d p_mid(0, 0, 0);
-    for (const Simplex& neigh : one_ring) {
-        p_mid += pts_accessor.vector_attribute(neigh.tuple());
-    }
-    p_mid /= one_ring.size();
-    return p_mid;
-}
-
-Eigen::Vector3d tangential_smooth(TriMesh& m, const Tuple& t)
-{
-    MeshAttributeHandle<double> pts_attr =
-        m.get_attribute_handle<double>("position", wmtk::PrimitiveType::Vertex);
-    auto pts_accessor = m.create_accessor(pts_attr);
-
-    SimplicialComplex closed_star = SimplicialComplex::closed_star(m, Simplex::vertex(t));
-    auto one_ring_tris = closed_star.get_faces();
-    if (one_ring_tris.size() < 2) return pts_accessor.vector_attribute(t);
-    Eigen::Vector3d after_smooth = smooth(m, t);
-    // get normal and area of each face
-    auto area = [&pts_accessor](const std::vector<Tuple>& verts) {
-        const Eigen::Vector3d p0 = pts_accessor.vector_attribute(verts[0]);
-        const Eigen::Vector3d p1 = pts_accessor.vector_attribute(verts[1]);
-        const Eigen::Vector3d p2 = pts_accessor.vector_attribute(verts[2]);
-        return ((p0 - p2).cross(p1 - p2)).norm() / 2.0;
-    };
-    auto normal = [&pts_accessor](const std::vector<Tuple>& verts) {
-        const Eigen::Vector3d p0 = pts_accessor.vector_attribute(verts[0]);
-        const Eigen::Vector3d p1 = pts_accessor.vector_attribute(verts[1]);
-        const Eigen::Vector3d p2 = pts_accessor.vector_attribute(verts[2]);
-        return ((p0 - p2).cross(p1 - p2)).normalized();
-    };
-    auto w0 = 0.0;
-    Eigen::Vector3d n0(0.0, 0.0, 0.0);
-    for (const Simplex& f : one_ring_tris) {
-        const auto simplices = SimplicialComplex::boundary(m, f).get_simplex_vector();
-        std::vector<Tuple> verts;
-        for (const Simplex& s : simplices) {
-            if (s.primitive_type() == PrimitiveType::Vertex) {
-                verts.emplace_back(s.tuple());
-            }
-        }
-        w0 += area(verts);
-        n0 += area(verts) * normal(verts);
-    }
-    n0 /= w0;
-    if (n0.norm() < 1e-10) return pts_accessor.vector_attribute(t);
-    n0 = n0.normalized();
-    after_smooth += n0 * n0.transpose() * (pts_accessor.vector_attribute(t) - after_smooth);
-    return after_smooth;
-}
 
 IsotropicRemeshing::IsotropicRemeshing(TriMesh* mesh, const double length, const bool lock_boundary)
     : m_mesh{mesh}
     , m_length_min{(4. / 5.) * length}
     , m_length_max{(4. / 3.) * length}
     , m_lock_boundary{lock_boundary}
+    , m_position_handle{m_mesh->get_attribute_handle<double>("position", PrimitiveType::Vertex)}
+    , m_scheduler(*m_mesh)
 {
     if (!m_lock_boundary) {
         throw std::runtime_error("free boundary is not implemented yet");
+    }
+
+    // split
+    {
+        OperationSettings<TriMeshSplitEdgeAtMidpointOperation> split_settings;
+        split_settings.position = m_position_handle;
+        split_settings.min_squared_length = m_length_max * m_length_max;
+
+        m_scheduler.add_operation_type<TriMeshSplitEdgeAtMidpointOperation>(
+            "tri_mesh_split_edge_at_midpoint",
+            split_settings);
+    }
+    // collapse
+    {
+        OperationSettings<TriMeshCollapseEdgeToMidOperation> op_settings;
+        op_settings.position = m_position_handle;
+        op_settings.max_squared_length = m_length_min * m_length_min;
+
+        m_scheduler.add_operation_type<TriMeshCollapseEdgeToMidOperation>(
+            "tri_mesh_collapse_edge_to_mid",
+            op_settings);
+    }
+    // flip
+    {
+        OperationSettings<TriMeshSwapEdgeOperation> op_settings;
+        op_settings.must_improve_valence = true;
+
+        m_scheduler.add_operation_type<TriMeshSwapEdgeOperation>(
+            "TriMeshSwapEdgeOperation",
+            op_settings);
+    }
+    // smooth
+    {
+        OperationSettings<TriMeshVertexTangentialSmoothOperation> op_settings;
+        op_settings.position = m_position_handle;
+
+        m_scheduler.add_operation_type<TriMeshVertexTangentialSmoothOperation>(
+            "vertex_tangential_smooth",
+            op_settings);
     }
 }
 
@@ -87,91 +74,22 @@ void IsotropicRemeshing::remeshing(const long iterations)
 
 void IsotropicRemeshing::split_long_edges()
 {
-    throw "Very bad implementation. DO NOT USE!";
-    // This is not how it's supposed to be done.
-    // Do not copy!!!
-
-    const std::vector<Tuple> edges = m_mesh->get_all(wmtk::PrimitiveType::Edge);
-
-    MeshAttributeHandle<double> pts_attr =
-        m_mesh->get_attribute_handle<double>("position", wmtk::PrimitiveType::Vertex);
-    auto pts_accessor = m_mesh->create_const_accessor(pts_attr);
-
-    for (const Tuple& e : edges) {
-        if (!m_mesh->is_valid(e)) {
-            continue;
-        }
-
-        const Tuple v0 = e;
-        const Tuple v1 = m_mesh->switch_tuple(e, PrimitiveType::Vertex);
-        const Eigen::Vector3d p0 = pts_accessor.vector_attribute(v0);
-        const Eigen::Vector3d p1 = pts_accessor.vector_attribute(v1);
-        const double l = (p1 - p0).norm();
-
-        if (l > m_length_max) {
-            m_mesh->split_edge(e);
-        }
-    }
+    m_scheduler.run_operation_on_all(PrimitiveType::Edge, "tri_mesh_split_edge_at_midpoint");
 }
 
 void IsotropicRemeshing::collapse_short_edges()
 {
-    throw "Very bad implementation. DO NOT USE!";
-    // This is not how it's supposed to be done.
-    // Do not copy!!!
-
-    const std::vector<Tuple> edges = m_mesh->get_all(wmtk::PrimitiveType::Edge);
-
-    MeshAttributeHandle<double> pts_attr =
-        m_mesh->get_attribute_handle<double>("position", wmtk::PrimitiveType::Vertex);
-    auto pts_accessor = m_mesh->create_const_accessor(pts_attr);
-
-    for (const Tuple& e : edges) {
-        if (!m_mesh->is_valid(e)) {
-            continue;
-        }
-
-        const Tuple v0 = e;
-        const Tuple v1 = m_mesh->switch_tuple(e, PrimitiveType::Vertex);
-        const Eigen::Vector3d p0 = pts_accessor.vector_attribute(v0);
-        const Eigen::Vector3d p1 = pts_accessor.vector_attribute(v1);
-        const double l = (p1 - p0).norm();
-
-        if (l > m_length_min) {
-            m_mesh->collapse_edge(e);
-        }
-    }
+    m_scheduler.run_operation_on_all(PrimitiveType::Edge, "tri_mesh_collapse_edge_to_mid");
 }
 
 void IsotropicRemeshing::flip_edges_for_valence()
 {
-    throw "implementation missing";
+    m_scheduler.run_operation_on_all(PrimitiveType::Edge, "TriMeshSwapEdgeOperation");
 }
 
 void IsotropicRemeshing::smooth_vertices()
 {
-    throw "Very bad implementation. DO NOT USE!";
-    // TODO this implementation of smoothing is NOT correct for isotropic remeshing!
-    // TODO operators should be used here instead of modifying points directly
-
-    const std::vector<Tuple> vertices = m_mesh->get_all(wmtk::PrimitiveType::Vertex);
-    MeshAttributeHandle<double> pts_attr =
-        m_mesh->get_attribute_handle<double>("position", wmtk::PrimitiveType::Vertex);
-    auto pts_accessor = m_mesh->create_accessor(pts_attr);
-
-    for (const Tuple& v : vertices) {
-        const Eigen::Vector3d p = pts_accessor.vector_attribute(v);
-
-        // get neighbors
-        std::vector<Simplex> one_ring = SimplicialComplex::vertex_one_ring(*m_mesh, v);
-        Eigen::Vector3d p_mid(0, 0, 0);
-        for (const Simplex& neigh : one_ring) {
-            p_mid += pts_accessor.vector_attribute(neigh.tuple());
-        }
-        p_mid /= one_ring.size();
-
-        pts_accessor.vector_attribute(v) = p_mid;
-    }
+    m_scheduler.run_operation_on_all(PrimitiveType::Vertex, "vertex_tangential_smooth");
 }
 
 
