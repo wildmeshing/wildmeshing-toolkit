@@ -345,7 +345,7 @@ TEST_CASE("swap_edge_for_valence", "[components][isotropic_remeshing][swap][2D]"
     }
 }
 
-TEST_CASE("component_isotropic_remeshing", "[components][isotropic_remeshing][2D]")
+TEST_CASE("component_isotropic_remeshing", "[components][isotropic_remeshing][2D][.]")
 {
     std::map<std::string, std::filesystem::path> files;
     {

@@ -6,7 +6,7 @@ using json = nlohmann::json;
 
 const std::filesystem::path data_dir = WMTK_DATA_DIR;
 
-TEST_CASE("component_input", "[components],[input]")
+TEST_CASE("component_input", "[components][input][.]")
 {
     SECTION("should pass")
     {
