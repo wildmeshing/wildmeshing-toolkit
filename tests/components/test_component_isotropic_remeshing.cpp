@@ -9,6 +9,7 @@
 #include <wmtk/operations/TriMeshSplitEdgeAtMidpointOperation.hpp>
 #include <wmtk/operations/TriMeshSwapEdgeOperation.hpp>
 #include <wmtk/operations/TriMeshVertexSmoothOperation.hpp>
+#include <wmtk/operations/TriMeshVertexTangentialSmoothOperation.hpp>
 #include <wmtk_components/input/input.hpp>
 #include <wmtk_components/isotropic_remeshing/internal/IsotropicRemeshing.hpp>
 #include <wmtk_components/isotropic_remeshing/isotropic_remeshing.hpp>
@@ -146,6 +147,44 @@ TEST_CASE("smoothing_simple_examples", "[components][isotropic_remeshing][2D]")
         Eigen::Vector3d p5_after_smooth = pos.vector_attribute(v5);
         CHECK((p5_after_smooth - Eigen::Vector3d{2, 0, 0}).squaredNorm() < 1e-10);
     }
+}
+
+TEST_CASE("tangential_smoothing", "[components][isotropic_remeshing][2D][.]")
+{
+    DEBUG_TriMesh mesh = wmtk::tests::hex_plus_two_with_position();
+
+    OperationSettings<TriMeshVertexTangentialSmoothOperation> op_settings;
+    op_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+
+    // offset interior vertex
+    auto pos = mesh.create_accessor(op_settings.position);
+    const Tuple v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
+
+    Eigen::Vector3d p_init;
+    SECTION("1_0_1")
+    {
+        p_init = Eigen::Vector3d{1, 0, 1};
+    }
+    SECTION("0.5_0.5_1")
+    {
+        p_init = Eigen::Vector3d{0.5, 0.5, 1};
+    }
+    SECTION("0_0_7")
+    {
+        p_init = Eigen::Vector3d{0, 0, 7};
+    }
+
+    pos.vector_attribute(v4) = p_init;
+
+    Scheduler scheduler(mesh);
+    scheduler.add_operation_type<TriMeshVertexTangentialSmoothOperation>(
+        "vertex_tangential_smooth",
+        op_settings);
+
+    scheduler.run_operation_on_all(PrimitiveType::Vertex, "vertex_tangential_smooth");
+
+    Eigen::Vector3d after_smooth = pos.vector_attribute(v4);
+    CHECK((after_smooth - Eigen::Vector3d{1, 0, p_init[2]}).squaredNorm() == 0);
 }
 
 TEST_CASE("split_long_edges", "[components][isotropic_remeshing][split][2D]")
@@ -287,43 +326,57 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
 TEST_CASE("swap_edge_for_valence", "[components][isotropic_remeshing][swap][2D]")
 {
     DEBUG_TriMesh mesh = wmtk::tests::embedded_diamond();
-    // swap edge to create inbalence in valence
+    SECTION("swap_success")
     {
+        // swap edge to create inbalence in valence
+        {
+            const Tuple e = mesh.edge_tuple_between_v1_v2(6, 7, 5);
+            TriMeshSwapEdgeOperation op(mesh, e);
+            const bool success = op();
+            REQUIRE(success);
+        }
+
+        // check valence
+        {
+            const Tuple v3 = mesh.tuple_from_id(PrimitiveType::Vertex, 3);
+            const Tuple v6 = mesh.tuple_from_id(PrimitiveType::Vertex, 6);
+            const Tuple v7 = mesh.tuple_from_id(PrimitiveType::Vertex, 7);
+            const Tuple v10 = mesh.tuple_from_id(PrimitiveType::Vertex, 10);
+            CHECK(SimplicialComplex::vertex_one_ring(mesh, v3).size() == 7);
+            CHECK(SimplicialComplex::vertex_one_ring(mesh, v10).size() == 7);
+            CHECK(SimplicialComplex::vertex_one_ring(mesh, v6).size() == 5);
+            CHECK(SimplicialComplex::vertex_one_ring(mesh, v7).size() == 5);
+        }
+
+
+        OperationSettings<TriMeshSwapEdgeOperation> op_settings;
+        op_settings.must_improve_valence = true;
+
+        Scheduler scheduler(mesh);
+        scheduler.add_operation_type<TriMeshSwapEdgeOperation>(
+            "TriMeshSwapEdgeOperation",
+            op_settings);
+        scheduler.run_operation_on_all(PrimitiveType::Edge, "TriMeshSwapEdgeOperation");
+
+        // check valence
+        {
+            const Tuple v3 = mesh.tuple_from_id(PrimitiveType::Vertex, 3);
+            const Tuple v6 = mesh.tuple_from_id(PrimitiveType::Vertex, 6);
+            const Tuple v7 = mesh.tuple_from_id(PrimitiveType::Vertex, 7);
+            const Tuple v10 = mesh.tuple_from_id(PrimitiveType::Vertex, 10);
+            CHECK(SimplicialComplex::vertex_one_ring(mesh, v3).size() == 6);
+            CHECK(SimplicialComplex::vertex_one_ring(mesh, v10).size() == 6);
+            CHECK(SimplicialComplex::vertex_one_ring(mesh, v6).size() == 6);
+            CHECK(SimplicialComplex::vertex_one_ring(mesh, v7).size() == 6);
+        }
+    }
+    SECTION("swap_fail")
+    {
+        OperationSettings<TriMeshSwapEdgeOperation> op_settings;
+        op_settings.must_improve_valence = true;
         const Tuple e = mesh.edge_tuple_between_v1_v2(6, 7, 5);
-        TriMeshSwapEdgeOperation op(mesh, e);
+        TriMeshSwapEdgeOperation op(mesh, e, op_settings);
         const bool success = op();
-        REQUIRE(success);
-    }
-
-    // check valence
-    {
-        const Tuple v3 = mesh.tuple_from_id(PrimitiveType::Vertex, 3);
-        const Tuple v6 = mesh.tuple_from_id(PrimitiveType::Vertex, 6);
-        const Tuple v7 = mesh.tuple_from_id(PrimitiveType::Vertex, 7);
-        const Tuple v10 = mesh.tuple_from_id(PrimitiveType::Vertex, 10);
-        CHECK(SimplicialComplex::vertex_one_ring(mesh, v3).size() == 7);
-        CHECK(SimplicialComplex::vertex_one_ring(mesh, v10).size() == 7);
-        CHECK(SimplicialComplex::vertex_one_ring(mesh, v6).size() == 5);
-        CHECK(SimplicialComplex::vertex_one_ring(mesh, v7).size() == 5);
-    }
-
-
-    OperationSettings<TriMeshSwapEdgeOperation> op_settings;
-    op_settings.must_improve_valence = true;
-
-    Scheduler scheduler(mesh);
-    scheduler.add_operation_type<TriMeshSwapEdgeOperation>("TriMeshSwapEdgeOperation", op_settings);
-    scheduler.run_operation_on_all(PrimitiveType::Edge, "TriMeshSwapEdgeOperation");
-
-    // check valence
-    {
-        const Tuple v3 = mesh.tuple_from_id(PrimitiveType::Vertex, 3);
-        const Tuple v6 = mesh.tuple_from_id(PrimitiveType::Vertex, 6);
-        const Tuple v7 = mesh.tuple_from_id(PrimitiveType::Vertex, 7);
-        const Tuple v10 = mesh.tuple_from_id(PrimitiveType::Vertex, 10);
-        CHECK(SimplicialComplex::vertex_one_ring(mesh, v3).size() == 6);
-        CHECK(SimplicialComplex::vertex_one_ring(mesh, v10).size() == 6);
-        CHECK(SimplicialComplex::vertex_one_ring(mesh, v6).size() == 6);
-        CHECK(SimplicialComplex::vertex_one_ring(mesh, v7).size() == 6);
+        CHECK(!success);
     }
 }

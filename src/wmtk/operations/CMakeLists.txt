@@ -16,5 +16,7 @@ set(SRC_FILES
     TriMeshSwapEdgeOperation.cpp
     TriMeshVertexSmoothOperation.hpp
     TriMeshVertexSmoothOperation.cpp
+    TriMeshVertexTangentialSmoothOperation.hpp
+    TriMeshVertexTangentialSmoothOperation.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
