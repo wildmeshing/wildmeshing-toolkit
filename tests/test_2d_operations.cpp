@@ -893,7 +893,7 @@ TEST_CASE("split_multiple_edges", "[operations][split][2D]")
 
 //////////// COLLAPSE TESTS ////////////
 
-TEST_CASE("collapse_edge", "[operations][2D]")
+TEST_CASE("collapse_edge", "[operations][collapse][2D]")
 {
     DEBUG_TriMesh m = hex_plus_two();
     SECTION("interior_edge")
@@ -958,7 +958,7 @@ TEST_CASE("collapse_edge", "[operations][2D]")
     }
 }
 
-TEST_CASE("collapse_return_tuple", "[operations][2D]")
+TEST_CASE("collapse_return_tuple", "[operations][collapse][2D]")
 {
     DEBUG_TriMesh m = edge_region();
     SECTION("interior")
@@ -1001,7 +1001,7 @@ TEST_CASE("collapse_return_tuple", "[operations][2D]")
     }
 }
 
-TEST_CASE("swap_edge", "[operations][2D]")
+TEST_CASE("swap_edge", "[operations][swap][2D]")
 {
     SECTION("counter_clockwise")
     {

@@ -4,13 +4,22 @@
 #include "Operation.hpp"
 
 namespace wmtk {
+class TriMeshSwapEdgeOperation;
+
+template <>
+struct OperationSettings<TriMeshSwapEdgeOperation>
+{
+    bool must_improve_valence = false;
+};
+
+
 class TriMeshSwapEdgeOperation : public Operation
 {
 public:
     TriMeshSwapEdgeOperation(
-        TriMesh& m,
+        Mesh& m,
         const Tuple& t,
-        const OperationSettings<TriMeshSwapEdgeOperation> = {});
+        const OperationSettings<TriMeshSwapEdgeOperation>& settings = {});
 
     std::string name() const override;
     Tuple return_tuple() const;
@@ -24,6 +33,7 @@ protected:
 private:
     Tuple m_input_tuple;
     Tuple m_output_tuple;
+    bool m_must_improve_valence;
 };
 
 
