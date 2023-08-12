@@ -8,9 +8,11 @@ namespace wmtk {
 TriMeshCollapseEdgeOperation::TriMeshCollapseEdgeOperation(
     Mesh& m,
     const Tuple& t,
-    const OperationSettings<TriMeshCollapseEdgeOperation>)
+    const OperationSettings<TriMeshCollapseEdgeOperation>& settings)
     : Operation(m)
-    , m_input_tuple(t)
+    , m_input_tuple{t}
+    , m_collapse_boundary_edges{settings.collapse_boundary_edges}
+    , m_collapse_boundary_vertex_to_interior{settings.collapse_boundary_vertex_to_interior}
 {
     if (m_mesh.is_valid(m_input_tuple)) {
         m_is_output_tuple_from_left_ear =
@@ -32,6 +34,14 @@ bool TriMeshCollapseEdgeOperation::before() const
     if (!m_mesh.is_valid(m_input_tuple)) {
         return false;
     }
+
+    if (!m_collapse_boundary_edges && m_mesh.is_boundary(m_input_tuple)) {
+        return false;
+    }
+    if (!m_collapse_boundary_vertex_to_interior && m_mesh.is_vertex_boundary(m_input_tuple)) {
+        return false;
+    }
+
     return SimplicialComplex::link_cond_bd_2d(m_mesh, m_input_tuple);
 }
 

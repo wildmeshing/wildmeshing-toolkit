@@ -9,9 +9,8 @@ class TriMeshCollapseEdgeOperation;
 template <>
 struct OperationSettings<TriMeshCollapseEdgeOperation>
 {
-    // TODO
-    // bool collapse_boundary_vertex_to_interior = false;
-    // bool collapse_boundary_edges = false;
+    bool collapse_boundary_vertex_to_interior = true;
+    bool collapse_boundary_edges = true;
 };
 
 class TriMeshCollapseEdgeOperation : public Operation
@@ -20,7 +19,7 @@ public:
     TriMeshCollapseEdgeOperation(
         Mesh& m,
         const Tuple& t,
-        const OperationSettings<TriMeshCollapseEdgeOperation> = {});
+        const OperationSettings<TriMeshCollapseEdgeOperation>& settings = {});
 
     std::string name() const override;
 
@@ -43,6 +42,8 @@ private:
     bool m_is_output_tuple_from_left_ear;
     Tuple m_input_tuple;
     Tuple m_output_tuple;
+    bool m_collapse_boundary_edges;
+    bool m_collapse_boundary_vertex_to_interior;
 };
 
 

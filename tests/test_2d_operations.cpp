@@ -896,11 +896,11 @@ TEST_CASE("split_multiple_edges", "[operations][split][2D]")
 TEST_CASE("collapse_edge", "[operations][collapse][2D]")
 {
     DEBUG_TriMesh m = hex_plus_two();
+    REQUIRE(m.is_connectivity_valid());
+
     SECTION("interior_edge")
     {
-        REQUIRE(m.is_connectivity_valid());
-
-        Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
+        const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
         auto executor = m.get_tmoe(edge);
         m.collapse_edge(edge);
         REQUIRE(m.is_connectivity_valid());
@@ -920,30 +920,45 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
     }
     SECTION("edge_to_boundary")
     {
-        REQUIRE(m.is_connectivity_valid());
-
-        Tuple edge = m.edge_tuple_between_v1_v2(0, 4, 0);
+        const Tuple edge = m.edge_tuple_between_v1_v2(4, 0, 0);
         auto executor = m.get_tmoe(edge);
         m.collapse_edge(edge);
         REQUIRE(m.is_connectivity_valid());
 
         auto fv_accessor = m.create_base_accessor<long>(m.f_handle(PV));
 
-        CHECK_THROWS(m.tuple_from_id(PrimitiveType::Vertex, 0));
+        CHECK_THROWS(m.tuple_from_id(PrimitiveType::Vertex, 4));
 
         REQUIRE(executor.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(0)) == 0);
         REQUIRE(executor.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(1)) == 0);
 
-        CHECK(fv_accessor.vector_attribute(2)[0] == 4);
-        CHECK(fv_accessor.vector_attribute(5)[2] == 4);
-        CHECK(fv_accessor.vector_attribute(6)[2] == 4);
-        CHECK(fv_accessor.vector_attribute(7)[0] == 4);
+        CHECK(fv_accessor.vector_attribute(2)[0] == 0);
+        CHECK(fv_accessor.vector_attribute(5)[2] == 0);
+        CHECK(fv_accessor.vector_attribute(6)[2] == 0);
+        CHECK(fv_accessor.vector_attribute(7)[0] == 0);
+    }
+    SECTION("edge_from_boundary_allowed")
+    {
+        const Tuple edge = m.edge_tuple_between_v1_v2(0, 4, 0);
+
+        TriMeshCollapseEdgeOperation op(m, edge);
+        const bool success = op();
+        CHECK(success);
+    }
+    SECTION("edge_from_boundary_prohibited")
+    {
+        const Tuple edge = m.edge_tuple_between_v1_v2(0, 4, 0);
+
+        OperationSettings<TriMeshCollapseEdgeOperation> op_settings;
+        op_settings.collapse_boundary_vertex_to_interior = false;
+
+        TriMeshCollapseEdgeOperation op(m, edge, op_settings);
+        const bool success = op();
+        CHECK(!success);
     }
     SECTION("boundary_edge")
     {
-        REQUIRE(m.is_connectivity_valid());
-
-        Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 1);
+        const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 1);
         auto executor = m.get_tmoe(edge);
         m.collapse_edge(edge);
         REQUIRE(m.is_connectivity_valid());
@@ -955,6 +970,25 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
         REQUIRE(executor.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(1)) == 0);
 
         CHECK(fv_accessor.vector_attribute(0)[2] == 1);
+    }
+    SECTION("boundary_edge_allowed")
+    {
+        const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 1);
+
+        TriMeshCollapseEdgeOperation op(m, edge);
+        const bool success = op();
+        CHECK(success);
+    }
+    SECTION("boundary_edge_prohibited")
+    {
+        const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 1);
+
+        OperationSettings<TriMeshCollapseEdgeOperation> op_settings;
+        op_settings.collapse_boundary_edges = false;
+
+        TriMeshCollapseEdgeOperation op(m, edge, op_settings);
+        const bool success = op();
+        CHECK(!success);
     }
 }
 
