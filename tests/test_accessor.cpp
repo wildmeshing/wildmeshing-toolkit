@@ -68,9 +68,9 @@ TEST_CASE("test_accessor_basic")
     auto vertices = m.get_all(wmtk::PrimitiveType::Vertex);
 
     // check characteristics are all right
-    REQUIRE(char_acc.size() == size);
-    REQUIRE(long_acc.size() == size);
-    REQUIRE(double_acc.size() == size);
+    REQUIRE(char_acc.reserved_size() == size);
+    REQUIRE(long_acc.reserved_size() == size);
+    REQUIRE(double_acc.reserved_size() == size);
     REQUIRE(char_acc.dimension() == 1);
     REQUIRE(long_acc.dimension() == 1);
     REQUIRE(double_acc.dimension() == 3);
@@ -83,21 +83,24 @@ TEST_CASE("test_accessor_basic")
     }
 
     // use global set to force all values
-
+    // NOTE that the ugly static casts are in this unit test because we want
+    // accessing the low level accessor data to be ugly.
+    // Please keep set_attribute hidden from teh public unless some ugly
+    // notation like these static asts exists
     {
         std::vector<char> d(size);
         std::iota(d.begin(), d.end(), char(0));
-        char_acc.set_attribute(d);
+        static_cast<wmtk::AccessorBase<char>&>(char_acc).set_attribute(d);
     }
     {
         std::vector<long> d(size);
         std::iota(d.begin(), d.end(), long(0));
-        long_acc.set_attribute(d);
+        static_cast<wmtk::AccessorBase<long>&>(long_acc).set_attribute(d);
     }
     {
         std::vector<double> d(3 * size);
         std::iota(d.begin(), d.end(), double(0));
-        double_acc.set_attribute(d);
+        static_cast<wmtk::AccessorBase<double>&>(double_acc).set_attribute(d);
     }
     for (const wmtk::Tuple& tup : vertices) {
         long id = m.id(tup);
@@ -172,8 +175,8 @@ TEST_CASE("test_accessor_caching")
         }
 
         // check characteristics are all right
-        REQUIRE(long_acc.size() == size);
-        REQUIRE(double_acc.size() == size);
+        REQUIRE(long_acc.reserved_size() == size);
+        REQUIRE(double_acc.reserved_size() == size);
         REQUIRE(long_acc.dimension() == 1);
         REQUIRE(double_acc.dimension() == 3);
 
