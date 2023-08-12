@@ -246,45 +246,180 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
     OperationSettings<TriMeshCollapseEdgeToMidOperation> op_settings;
     op_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
 
+    SECTION("interior")
     {
-        auto pos = mesh.create_accessor(op_settings.position);
-        const Tuple v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
+        {
+            auto pos = mesh.create_accessor(op_settings.position);
+            const Tuple v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
+            const Tuple v5 = mesh.tuple_from_id(PrimitiveType::Vertex, 5);
+            // reposition interior vertices
+            pos.vector_attribute(v4) = Eigen::Vector3d{1.4, 0, 0};
+            pos.vector_attribute(v5) = Eigen::Vector3d{1.6, 0, 0};
+        }
+
+        op_settings.max_squared_length = 0.1;
+
+        Scheduler scheduler(mesh);
+        scheduler.add_operation_type<TriMeshCollapseEdgeToMidOperation>(
+            "tri_mesh_collapse_edge_to_mid",
+            op_settings);
+
+        size_t n_vertices = mesh.get_all(PrimitiveType::Vertex).size();
+        size_t n_iterations = 0;
+        for (; n_iterations < 10; ++n_iterations) {
+            scheduler.run_operation_on_all(PrimitiveType::Edge, "tri_mesh_collapse_edge_to_mid");
+
+            const size_t n_vertices_new = mesh.get_all(PrimitiveType::Vertex).size();
+            if (n_vertices_new == n_vertices) {
+                break;
+            } else {
+                n_vertices = n_vertices_new;
+            }
+        }
+
+        REQUIRE(n_iterations == 1);
+        REQUIRE(n_vertices == 9);
+
+        CHECK_THROWS(mesh.tuple_from_id(PrimitiveType::Vertex, 4));
         const Tuple v5 = mesh.tuple_from_id(PrimitiveType::Vertex, 5);
-        // reposition interior vertices
-        pos.vector_attribute(v4) = Eigen::Vector3d{1.4, 0, 0};
-        pos.vector_attribute(v5) = Eigen::Vector3d{1.6, 0, 0};
+        REQUIRE(mesh.is_valid(v5));
+
+        auto pos = mesh.create_accessor(op_settings.position);
+        Eigen::Vector3d p5 = pos.vector_attribute(v5);
+        CHECK((p5 - Eigen::Vector3d{1.5, 0, 0}).squaredNorm() == 0);
     }
+    SECTION("towards_boundary_true")
+    {
+        {
+            auto pos = mesh.create_accessor(op_settings.position);
+            const Tuple v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
+            // reposition vertex
+            pos.vector_attribute(v4) = Eigen::Vector3d{0.6, 0.9, 0};
+        }
 
-    op_settings.max_squared_length = 0.1;
+        op_settings.max_squared_length = 0.1;
+        op_settings.collapse_towards_boundary = true;
 
-    Scheduler scheduler(mesh);
-    scheduler.add_operation_type<TriMeshCollapseEdgeToMidOperation>(
-        "tri_mesh_collapse_edge_to_mid",
-        op_settings);
+        Scheduler scheduler(mesh);
+        scheduler.add_operation_type<TriMeshCollapseEdgeToMidOperation>(
+            "tri_mesh_collapse_edge_to_mid",
+            op_settings);
 
-    size_t n_vertices = mesh.get_all(PrimitiveType::Vertex).size();
-    size_t n_iterations = 0;
-    for (; n_iterations < 10; ++n_iterations) {
+        size_t n_vertices = mesh.get_all(PrimitiveType::Vertex).size();
+        size_t n_iterations = 0;
+        for (; n_iterations < 10; ++n_iterations) {
+            scheduler.run_operation_on_all(PrimitiveType::Edge, "tri_mesh_collapse_edge_to_mid");
+
+            const size_t n_vertices_new = mesh.get_all(PrimitiveType::Vertex).size();
+            if (n_vertices_new == n_vertices) {
+                break;
+            } else {
+                n_vertices = n_vertices_new;
+            }
+        }
+
+        REQUIRE(n_iterations == 1);
+        REQUIRE(n_vertices == 9);
+
+        CHECK_THROWS(mesh.tuple_from_id(PrimitiveType::Vertex, 4));
+        const Tuple v0 = mesh.tuple_from_id(PrimitiveType::Vertex, 0);
+        REQUIRE(mesh.is_valid(v0));
+
+        auto pos = mesh.create_accessor(op_settings.position);
+        Eigen::Vector3d p0 = pos.vector_attribute(v0);
+        CHECK((p0 - Eigen::Vector3d{0.5, 1, 0}).squaredNorm() == 0);
+    }
+    SECTION("towards_boundary_false")
+    {
+        {
+            auto pos = mesh.create_accessor(op_settings.position);
+            const Tuple v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
+            // reposition vertex
+            pos.vector_attribute(v4) = Eigen::Vector3d{0.6, 0.9, 0};
+        }
+
+        op_settings.max_squared_length = 0.1;
+        op_settings.collapse_towards_boundary = false;
+
+        Scheduler scheduler(mesh);
+        scheduler.add_operation_type<TriMeshCollapseEdgeToMidOperation>(
+            "tri_mesh_collapse_edge_to_mid",
+            op_settings);
+
+        size_t n_vertices = mesh.get_all(PrimitiveType::Vertex).size();
+        size_t n_iterations = 0;
+        for (; n_iterations < 10; ++n_iterations) {
+            scheduler.run_operation_on_all(PrimitiveType::Edge, "tri_mesh_collapse_edge_to_mid");
+
+            const size_t n_vertices_new = mesh.get_all(PrimitiveType::Vertex).size();
+            if (n_vertices_new == n_vertices) {
+                break;
+            } else {
+                n_vertices = n_vertices_new;
+            }
+        }
+
+        REQUIRE(n_iterations == 1);
+        REQUIRE(n_vertices == 9);
+
+        CHECK_THROWS(mesh.tuple_from_id(PrimitiveType::Vertex, 4));
+        const Tuple v0 = mesh.tuple_from_id(PrimitiveType::Vertex, 0);
+        REQUIRE(mesh.is_valid(v0));
+
+        auto pos = mesh.create_accessor(op_settings.position);
+        Eigen::Vector3d p0 = pos.vector_attribute(v0);
+        CHECK((p0 - Eigen::Vector3d{0.55, 0.95, 0}).squaredNorm() == 0);
+    }
+    SECTION("collapse_boundary_true")
+    {
+        {
+            auto pos = mesh.create_accessor(op_settings.position);
+            const Tuple v1 = mesh.tuple_from_id(PrimitiveType::Vertex, 1);
+            // reposition vertex
+            pos.vector_attribute(v1) = Eigen::Vector3d{0.6, 1, 0};
+        }
+
+        op_settings.max_squared_length = 0.1;
+        op_settings.collapse_boundary_edges = true;
+
+        Scheduler scheduler(mesh);
+        scheduler.add_operation_type<TriMeshCollapseEdgeToMidOperation>(
+            "tri_mesh_collapse_edge_to_mid",
+            op_settings);
+
         scheduler.run_operation_on_all(PrimitiveType::Edge, "tri_mesh_collapse_edge_to_mid");
 
-        const size_t n_vertices_new = mesh.get_all(PrimitiveType::Vertex).size();
-        if (n_vertices_new == n_vertices) {
-            break;
-        } else {
-            n_vertices = n_vertices_new;
-        }
+        REQUIRE(mesh.get_all(PrimitiveType::Vertex).size() == 9);
+
+        CHECK_THROWS(mesh.tuple_from_id(PrimitiveType::Vertex, 1));
+        const Tuple v0 = mesh.tuple_from_id(PrimitiveType::Vertex, 0);
+        REQUIRE(mesh.is_valid(v0));
+
+        auto pos = mesh.create_accessor(op_settings.position);
+        Eigen::Vector3d p0 = pos.vector_attribute(v0);
+        CHECK((p0 - Eigen::Vector3d{0.55, 1, 0}).squaredNorm() == 0);
     }
+    SECTION("collapse_boundary_false")
+    {
+        {
+            auto pos = mesh.create_accessor(op_settings.position);
+            const Tuple v1 = mesh.tuple_from_id(PrimitiveType::Vertex, 1);
+            // reposition vertex
+            pos.vector_attribute(v1) = Eigen::Vector3d{0.6, 1, 0};
+        }
 
-    REQUIRE(n_iterations == 1);
-    REQUIRE(n_vertices == 9);
+        op_settings.max_squared_length = 0.1;
+        op_settings.collapse_boundary_edges = false;
 
-    CHECK_THROWS(mesh.tuple_from_id(PrimitiveType::Vertex, 4));
-    const Tuple v5 = mesh.tuple_from_id(PrimitiveType::Vertex, 5);
-    REQUIRE(mesh.is_valid(v5));
+        Scheduler scheduler(mesh);
+        scheduler.add_operation_type<TriMeshCollapseEdgeToMidOperation>(
+            "tri_mesh_collapse_edge_to_mid",
+            op_settings);
 
-    auto pos = mesh.create_accessor(op_settings.position);
-    Eigen::Vector3d p5 = pos.vector_attribute(v5);
-    CHECK((p5 - Eigen::Vector3d{1.5, 0, 0}).squaredNorm() == 0);
+        scheduler.run_operation_on_all(PrimitiveType::Edge, "tri_mesh_collapse_edge_to_mid");
+
+        REQUIRE(mesh.get_all(PrimitiveType::Vertex).size() == 10);
+    }
 }
 
 TEST_CASE("swap_edge_for_valence", "[components][isotropic_remeshing][swap][2D]")

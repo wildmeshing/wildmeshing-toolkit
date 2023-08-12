@@ -11,6 +11,8 @@ struct OperationSettings<TriMeshCollapseEdgeToMidOperation>
 {
     MeshAttributeHandle<double> position;
     double max_squared_length = std::numeric_limits<double>::max();
+    bool collapse_boundary_edges = true;
+    bool collapse_towards_boundary = false;
 };
 
 class TriMeshCollapseEdgeToMidOperation : public Operation
@@ -37,6 +39,8 @@ private:
 
     Accessor<double> m_pos_accessor;
     double m_max_squared_length;
+    bool m_collapse_boundary_edges;
+    bool m_collapse_towards_boundary;
 
     Eigen::Vector3d p0;
     Eigen::Vector3d p1;
