@@ -10,6 +10,7 @@ struct OperationSettings<TriMeshSplitEdgeAtMidpointOperation>
 {
     MeshAttributeHandle<double> position;
     double min_squared_length = -1;
+    bool split_boundary_edges = true;
 };
 
 class TriMeshSplitEdgeAtMidpointOperation : public Operation
@@ -35,6 +36,7 @@ private:
     Tuple m_output_tuple;
     Accessor<double> m_pos_accessor;
     double m_min_squared_length;
+    bool m_split_boundary_edges;
 
     Eigen::Vector3d p0;
     Eigen::Vector3d p1;

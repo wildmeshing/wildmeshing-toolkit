@@ -12,6 +12,7 @@ TriMeshSplitEdgeAtMidpointOperation::TriMeshSplitEdgeAtMidpointOperation(
     , m_input_tuple{t}
     , m_pos_accessor{m.create_accessor(settings.position)}
     , m_min_squared_length{settings.min_squared_length}
+    , m_split_boundary_edges{settings.split_boundary_edges}
 {
     p0 = m_pos_accessor.vector_attribute(m_input_tuple);
     p1 = m_pos_accessor.vector_attribute(m_mesh.switch_vertex(m_input_tuple));
@@ -36,7 +37,10 @@ bool TriMeshSplitEdgeAtMidpointOperation::before() const
 bool TriMeshSplitEdgeAtMidpointOperation::execute()
 {
     {
-        TriMeshSplitEdgeOperation split_op(m_mesh, m_input_tuple);
+        OperationSettings<TriMeshSplitEdgeOperation> op_settings;
+        op_settings.split_boundary_edges = m_split_boundary_edges;
+
+        TriMeshSplitEdgeOperation split_op(m_mesh, m_input_tuple, op_settings);
         if (!split_op()) {
             return false;
         }
