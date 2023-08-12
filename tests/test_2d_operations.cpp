@@ -5,6 +5,7 @@
 #include <wmtk/TriMeshOperationExecutor.hpp>
 #include <wmtk/operations/OperationFactory.hpp>
 #include <wmtk/operations/TriMeshCollapseEdgeOperation.hpp>
+#include <wmtk/operations/TriMeshSplitEdgeOperation.hpp>
 #include <wmtk/operations/TriMeshSwapEdgeOperation.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include "tools/DEBUG_TriMesh.hpp"
@@ -809,6 +810,33 @@ TEST_CASE("split_edge", "[operations][split][2D]")
     Tuple edge5 = m.edge_tuple_between_v1_v2(5, 6, 4);
     m.split_edge(edge5);
     REQUIRE(m.is_connectivity_valid());
+}
+
+TEST_CASE("split_edge_operation", "[operations][split][2D]")
+{
+    DEBUG_TriMesh m = hex_plus_two();
+
+    REQUIRE(m.is_connectivity_valid());
+    OperationSettings<TriMeshSplitEdgeOperation> op_settings;
+
+    const Tuple e = m.edge_tuple_between_v1_v2(0, 1, 1);
+    SECTION("split_boundary_true")
+    {
+        op_settings.split_boundary_edges = true;
+    }
+    SECTION("split_boundary_false")
+    {
+        op_settings.split_boundary_edges = false;
+    }
+
+    TriMeshSplitEdgeOperation op(m, e, op_settings);
+    const bool success = op();
+    CHECK(success == op_settings.split_boundary_edges);
+    if (op_settings.split_boundary_edges) {
+        CHECK(m.get_all(PrimitiveType::Vertex).size() == 10);
+    } else {
+        CHECK(m.get_all(PrimitiveType::Vertex).size() == 9);
+    }
 }
 
 TEST_CASE("split_return_tuple", "[operations][split][2D]")

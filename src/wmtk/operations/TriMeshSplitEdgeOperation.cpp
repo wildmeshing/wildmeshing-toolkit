@@ -11,6 +11,7 @@ TriMeshSplitEdgeOperation::TriMeshSplitEdgeOperation(
     const OperationSettings<TriMeshSplitEdgeOperation> settings)
     : Operation(m)
     , m_input_tuple{t}
+    , m_split_boundary_edges{settings.split_boundary_edges}
 {}
 bool TriMeshSplitEdgeOperation::execute()
 {
@@ -36,6 +37,10 @@ bool TriMeshSplitEdgeOperation::execute()
 bool TriMeshSplitEdgeOperation::before() const
 {
     if (m_mesh.is_outdated(m_input_tuple) || !m_mesh.is_valid(m_input_tuple)) {
+        return false;
+    }
+
+    if (!m_split_boundary_edges && m_mesh.is_boundary(m_input_tuple)) {
         return false;
     }
 

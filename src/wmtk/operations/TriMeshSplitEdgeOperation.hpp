@@ -6,6 +6,12 @@
 namespace wmtk {
 class TriMeshSplitEdgeOperation;
 
+template <>
+struct OperationSettings<TriMeshSplitEdgeOperation>
+{
+    bool split_boundary_edges = true;
+};
+
 class TriMeshSplitEdgeOperation : public Operation
 {
 public:
@@ -39,6 +45,8 @@ protected:
 private:
     Tuple m_input_tuple;
     Tuple m_output_tuple;
+
+    bool m_split_boundary_edges;
 };
 
 
