@@ -9,7 +9,9 @@ class TriMeshCollapseEdgeOperation;
 template <>
 struct OperationSettings<TriMeshCollapseEdgeOperation>
 {
+    // are collapses between boundary and interior vertices allowed
     bool collapse_boundary_vertex_to_interior = true;
+    // are collapses on boundary edges allowed
     bool collapse_boundary_edges = true;
 };
 

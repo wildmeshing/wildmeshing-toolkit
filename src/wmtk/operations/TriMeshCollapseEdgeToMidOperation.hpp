@@ -9,9 +9,14 @@ class TriMeshCollapseEdgeToMidOperation;
 template <>
 struct OperationSettings<TriMeshCollapseEdgeToMidOperation>
 {
+    // handle to vertex position
     MeshAttributeHandle<double> position;
+    // too long edges get ignored
     double max_squared_length = std::numeric_limits<double>::max();
+    // collapse on boundary
     bool collapse_boundary_edges = true;
+    // in case of a collapse between an interior and a boundary vertex, the vertex is not moved to
+    // the midpoint but to the boundary vertex position
     bool collapse_towards_boundary = false;
 };
 
