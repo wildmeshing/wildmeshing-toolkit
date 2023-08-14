@@ -5,6 +5,7 @@
 #include <wmtk/utils/trimesh_topology_initialization.h>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include "tools/DEBUG_TriMesh.hpp"
 #include "tools/TriMesh_examples.hpp"
 
 using namespace wmtk;
@@ -330,4 +331,38 @@ TEST_CASE("2D_one_ring_iteration", "[tuple_operation],[tuple_2d]")
         }
         CHECK((tuple_equal(m, t, t_iter) || m.is_boundary(t_iter)));
     }
+}
+
+TEST_CASE("2D_is_boundary", "[tuple_2d]")
+{
+    DEBUG_TriMesh m = edge_region();
+
+    size_t n_boundary_edges = 0;
+    for (const Tuple& e : m.get_all(PrimitiveType::Edge)) {
+        if (m.is_boundary(e)) {
+            ++n_boundary_edges;
+        }
+    }
+    CHECK(n_boundary_edges == 8);
+
+    size_t n_boundary_vertices = 0;
+    for (const Tuple& v : m.get_all(PrimitiveType::Vertex)) {
+        if (m.is_boundary_vertex(v)) {
+            ++n_boundary_vertices;
+        }
+    }
+    CHECK(n_boundary_vertices == 8);
+
+
+    const Tuple t1 = m.edge_tuple_between_v1_v2(0, 1, 1);
+    CHECK(m.is_boundary(t1));
+    CHECK(m.is_boundary_vertex(t1));
+
+    const Tuple t2 = m.switch_edge(t1);
+    CHECK(!m.is_boundary(t2));
+    CHECK(m.is_boundary_vertex(t2));
+
+    const Tuple t3 = m.switch_vertex(t2);
+    CHECK(!m.is_boundary(t3));
+    CHECK(!m.is_boundary_vertex(t3));
 }
