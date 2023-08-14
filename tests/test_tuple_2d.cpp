@@ -5,8 +5,10 @@
 #include <wmtk/utils/trimesh_topology_initialization.h>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include "tools/TriMesh_examples.hpp"
 
 using namespace wmtk;
+using namespace wmtk::tests;
 
 TEST_CASE("2D_initialize", "[mesh_creation],[tuple_2d]")
 {
@@ -17,9 +19,7 @@ TEST_CASE("2D_initialize", "[mesh_creation],[tuple_2d]")
 
     SECTION("init with FV, FE, FF, VF, EF")
     {
-        const auto [FE, FF, VF, EF] = trimesh_topology_initialization(tris);
-
-        m.initialize(tris, FE, FF, VF, EF);
+        m = single_triangle();
     }
     SECTION("init directly from RowVectors3l")
     {
@@ -42,13 +42,7 @@ TEST_CASE("2D_initialize", "[mesh_creation],[tuple_2d]")
 
 TEST_CASE("2D_1_triangle", "[tuple_generation],[tuple_2d]")
 {
-    TriMesh m;
-    {
-        RowVectors3l tris;
-        tris.resize(1, 3);
-        tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
-        m.initialize(tris);
-    }
+    TriMesh m = single_triangle();
 
     SECTION("vertices")
     {
@@ -121,22 +115,7 @@ TEST_CASE("2D_2_triangles", "[tuple_generation],[tuple_2d]")
 // for every quiry do a require
 TEST_CASE("2D_random_switches", "[tuple_operation],[tuple_2d]")
 {
-    // 	   v3     /
-    //     / \    /
-    // 	  /f1 \   /
-    // v2 -----v1 /
-    // 	  \f0 /   /
-    //     \ /    /
-    // 	    v0    /
-
-    TriMesh m;
-    {
-        RowVectors3l tris;
-        tris.resize(2, 3);
-        tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
-        tris.row(1) = Eigen::Matrix<long, 3, 1>{2, 1, 3};
-        m.initialize(tris);
-    }
+    TriMesh m = interior_edge();
 
     SECTION("vertices")
     {
@@ -223,27 +202,13 @@ TEST_CASE("2D_double_switches", "[tuple_operation],[tuple_2d]")
     // (1) t.switch_vertex().switch_vertex() == t
     // (2) t.switch_edge().switch_edge() == t
     // (3) t.switch_tri().switch_tri() == t
-    // 	   v3     /
-    //     / \    /
-    // 	  /f1 \   /
-    // v2 -----v1 /
-    // 	  \f0 /   /
-    //     \ /    /
-    // 	    v0    /
 
-    TriMesh m;
-    {
-        RowVectors3l tris;
-        tris.resize(2, 3);
-        tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
-        tris.row(1) = Eigen::Matrix<long, 3, 1>{2, 1, 3};
-        m.initialize(tris);
-    }
+    TriMesh m = interior_edge();
 
     SECTION("vertices")
     {
         const std::vector<Tuple> vertices = m.get_all(PrimitiveType::Vertex);
-        REQUIRE(vertices.size() == 4);
+        REQUIRE(vertices.size() == 5);
         for (const auto& t : vertices) {
             const Tuple t_after_v = m.switch_vertex(m.switch_vertex(t));
             CHECK(tuple_equal(m, t, t_after_v));
@@ -258,7 +223,7 @@ TEST_CASE("2D_double_switches", "[tuple_operation],[tuple_2d]")
     SECTION("edges")
     {
         const std::vector<Tuple> edges = m.get_all(PrimitiveType::Edge);
-        REQUIRE(edges.size() == 5);
+        REQUIRE(edges.size() == 7);
         for (const auto& t : edges) {
             const Tuple t_after_v = m.switch_vertex(m.switch_vertex(t));
             CHECK(tuple_equal(m, t, t_after_v));
@@ -273,7 +238,7 @@ TEST_CASE("2D_double_switches", "[tuple_operation],[tuple_2d]")
     SECTION("faces")
     {
         const std::vector<Tuple> faces = m.get_all(PrimitiveType::Face);
-        REQUIRE(faces.size() == 2);
+        REQUIRE(faces.size() == 3);
         for (const auto& t : faces) {
             const Tuple t_after_v = m.switch_vertex(m.switch_vertex(t));
             CHECK(tuple_equal(m, t, t_after_v));
@@ -289,19 +254,12 @@ TEST_CASE("2D_double_switches", "[tuple_operation],[tuple_2d]")
 
 TEST_CASE("2D_next_next_next", "[tuple_operation],[tuple_2d]")
 {
-    TriMesh m;
-    {
-        RowVectors3l tris;
-        tris.resize(2, 3);
-        tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
-        tris.row(1) = Eigen::Matrix<long, 3, 1>{2, 1, 3};
-        m.initialize(tris);
-    }
+    TriMesh m = interior_edge();
 
     SECTION("vertices")
     {
         const std::vector<Tuple> vertices = m.get_all(PrimitiveType::Vertex);
-        REQUIRE(vertices.size() == 4);
+        REQUIRE(vertices.size() == 5);
         for (const Tuple& t : vertices) {
             const Tuple t_iter = m.next_edge(m.next_edge(m.next_edge(t)));
             CHECK(tuple_equal(m, t, t_iter));
@@ -310,7 +268,7 @@ TEST_CASE("2D_next_next_next", "[tuple_operation],[tuple_2d]")
     SECTION("edges")
     {
         const std::vector<Tuple> edges = m.get_all(PrimitiveType::Edge);
-        REQUIRE(edges.size() == 5);
+        REQUIRE(edges.size() == 7);
         for (const Tuple& t : edges) {
             const Tuple t_iter = m.next_edge(m.next_edge(m.next_edge(t)));
             CHECK(tuple_equal(m, t, t_iter));
@@ -319,7 +277,7 @@ TEST_CASE("2D_next_next_next", "[tuple_operation],[tuple_2d]")
     SECTION("faces")
     {
         const std::vector<Tuple> faces = m.get_all(PrimitiveType::Face);
-        REQUIRE(faces.size() == 2);
+        REQUIRE(faces.size() == 3);
         for (const Tuple& t : faces) {
             const Tuple t_iter = m.next_edge(m.next_edge(m.next_edge(t)));
             CHECK(tuple_equal(m, t, t_iter));
