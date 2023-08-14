@@ -1,0 +1,39 @@
+#pragma once
+#include <optional>
+#include <wmtk/TriMesh.hpp>
+#include "Operation.hpp"
+
+namespace wmtk {
+class TriMeshVertexSmoothOperation;
+
+template <>
+struct OperationSettings<TriMeshVertexSmoothOperation>
+{
+    MeshAttributeHandle<double> position;
+    bool smooth_boundary = false;
+};
+
+class TriMeshVertexSmoothOperation : public Operation
+{
+public:
+    TriMeshVertexSmoothOperation(
+        Mesh& m,
+        const Tuple& t,
+        const OperationSettings<TriMeshVertexSmoothOperation>& settings);
+
+    std::string name() const override;
+
+    static PrimitiveType primitive_type() { return PrimitiveType::Vertex; }
+
+protected:
+    bool before() const override;
+    bool execute() override;
+
+private:
+    Tuple m_tuple;
+    Accessor<double> m_pos_accessor;
+    bool m_smooth_boundary;
+};
+
+
+} // namespace wmtk

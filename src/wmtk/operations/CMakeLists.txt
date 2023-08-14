@@ -3,11 +3,13 @@ set(SRC_FILES
     Operation.cpp
     OperationFactory.hpp
     OperationFactory.cpp
-    TriMeshSplitEdgeOperation.cpp
     TriMeshSplitEdgeOperation.hpp
-    TriMeshCollapseEdgeOperation.cpp
+    TriMeshSplitEdgeOperation.cpp
     TriMeshCollapseEdgeOperation.hpp
-    TriMeshSwapEdgeOperation.cpp
+    TriMeshCollapseEdgeOperation.cpp
     TriMeshSwapEdgeOperation.hpp
+    TriMeshSwapEdgeOperation.cpp
+    TriMeshVertexSmoothOperation.hpp
+    TriMeshVertexSmoothOperation.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

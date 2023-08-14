@@ -4,7 +4,10 @@
 #include "TriMeshCollapseEdgeOperation.hpp"
 #include "TriMeshSplitEdgeOperation.hpp"
 namespace wmtk {
-TriMeshSwapEdgeOperation::TriMeshSwapEdgeOperation(TriMesh& m, const Tuple& t)
+TriMeshSwapEdgeOperation::TriMeshSwapEdgeOperation(
+    TriMesh& m,
+    const Tuple& t,
+    const OperationSettings<TriMeshSwapEdgeOperation>)
     : Operation(m)
     , m_input_tuple(t)
 {}
@@ -26,12 +29,12 @@ bool TriMeshSwapEdgeOperation::before() const
     // do not allow swaps if one incident vertex has valence 3 (2 at boundary)
     const Tuple v0 = m_input_tuple;
     const Tuple v1 = m_mesh.switch_vertex(m_input_tuple);
-    size_t val0 = SimplicialComplex::vertex_one_ring(v0, m_mesh).size();
-    size_t val1 = SimplicialComplex::vertex_one_ring(v1, m_mesh).size();
-    if (m_mesh.is_vertex_boundary(v0)) {
+    size_t val0 = SimplicialComplex::vertex_one_ring(m_mesh, v0).size();
+    size_t val1 = SimplicialComplex::vertex_one_ring(m_mesh, v1).size();
+    if (m_mesh.is_boundary_vertex(v0)) {
         ++val0;
     }
-    if (m_mesh.is_vertex_boundary(v1)) {
+    if (m_mesh.is_boundary_vertex(v1)) {
         ++val1;
     }
     if (val0 < 4 || val1 < 4) {

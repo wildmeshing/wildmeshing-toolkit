@@ -60,6 +60,19 @@ bool TriMesh::is_boundary(const Tuple& tuple) const
     return ff_accessor.vector_attribute(tuple)(tuple.m_local_eid) < 0;
 }
 
+bool TriMesh::is_boundary_vertex(const Tuple& vertex) const
+{
+    // go through all edges and check if they are boundary
+    const SimplicialComplex neigh = SimplicialComplex::open_star(*this, Simplex::vertex(vertex));
+    for (const Simplex& s : neigh.get_edges()) {
+        if (is_boundary(s.tuple())) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 Tuple TriMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
 {
     assert(is_valid(tuple));

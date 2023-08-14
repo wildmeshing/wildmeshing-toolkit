@@ -74,7 +74,8 @@ public:
 
     template <typename T>
     MeshAttributeHandle<T> get_attribute_handle(
-        const std::string& name); // block standard topology tools
+        const std::string& name,
+        const PrimitiveType ptype) const; // block standard topology tools
 
     template <typename T>
     Accessor<T> create_accessor(const MeshAttributeHandle<T>& handle);
@@ -173,13 +174,16 @@ public:
      */
     virtual bool is_ccw(const Tuple& tuple) const = 0;
     /**
+     * @brief check if all tuple simplices besides the cell are on the boundary
+     *
      * @param tuple
-     * @return true if the edge tuple is a obundary one
-     * @return false
+     * @return true if all tuple simplices besides the cell are on the boundary
+     * @return false otherwise
      */
-    virtual bool is_boundary(const Tuple& edge) const = 0;
+    virtual bool is_boundary(const Tuple& tuple) const = 0;
 
-    bool is_vertex_boundary(const Tuple& vertex);
+    virtual bool is_boundary_vertex(const Tuple& vertex) const = 0;
+
     /**
      * @brief
      *
@@ -265,6 +269,17 @@ template <typename T>
 ConstAccessor<T> Mesh::create_accessor(const MeshAttributeHandle<T>& handle) const
 {
     return create_const_accessor(handle);
+}
+
+template <typename T>
+MeshAttributeHandle<T> Mesh::get_attribute_handle(
+    const std::string& name,
+    const PrimitiveType ptype) const
+{
+    MeshAttributeHandle<T> r;
+    r.m_base_handle = m_attribute_manager.get<T>(ptype).attribute_handle(name);
+    r.m_primitive_type = ptype;
+    return r;
 }
 
 } // namespace wmtk

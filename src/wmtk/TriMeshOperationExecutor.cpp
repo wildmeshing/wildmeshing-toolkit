@@ -70,7 +70,7 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
     m_spine_vids[1] = m_mesh.id_vertex(m_mesh.switch_vertex(m_operating_tuple));
 
     const SimplicialComplex edge_closed_star =
-        SimplicialComplex::closed_star(Simplex::edge(operating_tuple), m_mesh);
+        SimplicialComplex::closed_star(m_mesh, Simplex::edge(operating_tuple));
 
     // get all faces incident to the edge
     for (const Simplex& f : edge_closed_star.get_faces()) {
@@ -80,7 +80,7 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
     // update hash on all faces in the two-ring neighborhood
     SimplicialComplex hash_update_region(m);
     for (const Simplex& v : edge_closed_star.get_vertices()) {
-        const SimplicialComplex v_closed_star = SimplicialComplex::closed_star(v, m_mesh);
+        const SimplicialComplex v_closed_star = SimplicialComplex::closed_star(m_mesh, v);
         hash_update_region.unify_with_complex(v_closed_star);
     }
     for (const Simplex& f : hash_update_region.get_faces()) {
@@ -109,7 +109,7 @@ TriMesh::TriMeshOperationExecutor::get_split_simplices_to_delete(
     const Tuple& tuple,
     const TriMesh& m)
 {
-    const SimplicialComplex sc = SimplicialComplex::open_star(Simplex::edge(tuple), m);
+    const SimplicialComplex sc = SimplicialComplex::open_star(m, Simplex::edge(tuple));
     std::array<std::vector<long>, 3> ids;
     for (const Simplex& s : sc.get_simplices()) {
         ids[get_simplex_dimension(s.primitive_type())].emplace_back(m.id(s));
@@ -124,9 +124,9 @@ TriMesh::TriMeshOperationExecutor::get_collapse_simplices_to_delete(
     const TriMesh& m)
 {
     const SimplicialComplex vertex_open_star =
-        SimplicialComplex::open_star(Simplex::vertex(tuple), m);
+        SimplicialComplex::open_star(m, Simplex::vertex(tuple));
     const SimplicialComplex edge_closed_star =
-        SimplicialComplex::closed_star(Simplex::edge(tuple), m);
+        SimplicialComplex::closed_star(m, Simplex::edge(tuple));
 
     const SimplicialComplex sc =
         SimplicialComplex::get_intersection(vertex_open_star, edge_closed_star);
@@ -408,7 +408,7 @@ Tuple TriMesh::TriMeshOperationExecutor::collapse_edge()
 
     // must collect star before changing connectivity
     const SimplicialComplex v0_star =
-        SimplicialComplex::closed_star(Simplex::vertex(m_operating_tuple), m_mesh);
+        SimplicialComplex::closed_star(m_mesh, Simplex::vertex(m_operating_tuple));
 
 
     connect_ears();

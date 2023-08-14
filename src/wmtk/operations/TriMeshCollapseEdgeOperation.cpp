@@ -5,7 +5,10 @@
 #include "wmtk/SimplicialComplex.hpp"
 
 namespace wmtk {
-TriMeshCollapseEdgeOperation::TriMeshCollapseEdgeOperation(Mesh& m, const Tuple& t)
+TriMeshCollapseEdgeOperation::TriMeshCollapseEdgeOperation(
+    Mesh& m,
+    const Tuple& t,
+    const OperationSettings<TriMeshCollapseEdgeOperation>)
     : Operation(m)
     , m_input_tuple(t)
 {
@@ -29,7 +32,7 @@ bool TriMeshCollapseEdgeOperation::before() const
     if (!m_mesh.is_valid(m_input_tuple)) {
         return false;
     }
-    return SimplicialComplex::link_cond_bd_2d(m_input_tuple, m_mesh);
+    return SimplicialComplex::link_cond_bd_2d(m_mesh, m_input_tuple);
 }
 
 std::string TriMeshCollapseEdgeOperation::name() const
@@ -49,7 +52,7 @@ bool TriMeshCollapseEdgeOperation::is_return_tuple_from_left_ear() const
 std::vector<Tuple> TriMeshCollapseEdgeOperation::modified_triangles() const
 {
     Simplex v(PrimitiveType::Vertex, m_output_tuple);
-    auto sc = SimplicialComplex::open_star(v, m_mesh);
+    auto sc = SimplicialComplex::open_star(m_mesh, v);
     auto faces = sc.get_simplices(PrimitiveType::Face);
     std::vector<Tuple> ret;
     for (const auto& face : faces) {

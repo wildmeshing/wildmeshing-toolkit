@@ -7,7 +7,10 @@ namespace wmtk {
 class TriMeshSwapEdgeOperation : public Operation
 {
 public:
-    TriMeshSwapEdgeOperation(TriMesh& m, const Tuple& t);
+    TriMeshSwapEdgeOperation(
+        TriMesh& m,
+        const Tuple& t,
+        const OperationSettings<TriMeshSwapEdgeOperation> = {});
 
     std::string name() const override;
     Tuple return_tuple() const;

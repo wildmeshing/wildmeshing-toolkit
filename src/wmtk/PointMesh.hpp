@@ -19,6 +19,7 @@ public:
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
     bool is_ccw(const Tuple& tuple) const override;
     bool is_boundary(const Tuple& tuple) const override;
+    bool is_boundary_vertex(const Tuple& tuple) const override;
 
     void initialize(long count);
 
