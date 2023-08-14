@@ -4,7 +4,7 @@
 #include <wmtk/io/HDF5Writer.hpp>
 #include <wmtk/io/MeshReader.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
-#include <wmtk/utils/MeshUtils.hpp>
+#include <wmtk/utils/mesh_utils.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -53,7 +53,7 @@ TEST_CASE("paraview_2d", "[io]")
     TriMesh mesh;
     mesh.initialize(F);
 
-    MeshUtils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, mesh);
+    mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, mesh);
 
     ParaviewWriter writer("paraview", "vertices", mesh, true, true, true, false);
     mesh.serialize(writer);
@@ -80,10 +80,7 @@ TEST_CASE("paraview_3d", "[io]")
     mesh.initialize(T);
     Eigen::MatrixXd V(8, 3);
     V.setRandom();
-    MeshUtils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, mesh);
-
-
-    // MeshUtils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, mesh);
+    mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, mesh);
 
     ParaviewWriter writer("paraview", "vertices", mesh, true, true, true, true);
     mesh.serialize(writer);

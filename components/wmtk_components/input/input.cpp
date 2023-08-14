@@ -4,7 +4,7 @@
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/io/HDF5Writer.hpp>
 #include <wmtk/io/MeshReader.hpp>
-#include <wmtk/utils/MeshUtils.hpp>
+#include <wmtk/utils/mesh_utils.hpp>
 
 #include "internal/InputOptions.hpp"
 
@@ -31,7 +31,7 @@ void input(const nlohmann::json& j, std::map<std::string, std::filesystem::path>
 
         mesh.initialize(F);
 
-        MeshUtils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, mesh);
+        mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, mesh);
 
     } else {
         throw std::runtime_error(std::string("Unknown file type: ") + options.file.string());

@@ -5,7 +5,6 @@
 #include <wmtk/io/HDF5Writer.hpp>
 #include <wmtk/io/MeshReader.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
-#include <wmtk/utils/MeshUtils.hpp>
 
 #include "internal/OutputOptions.hpp"
 

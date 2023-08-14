@@ -61,6 +61,8 @@ TriMesh three_neighbors();
 //          3
 TriMesh tetrahedron();
 
+TriMesh tetrahedron_with_position();
+
 //  3--1--- 0
 //   |     / \ .
 //   2 f1 /2   1

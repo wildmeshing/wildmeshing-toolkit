@@ -6,17 +6,15 @@
 #include <wmtk/operations/TriMeshSwapEdgeOperation.hpp>
 #include <wmtk/operations/TriMeshVertexTangentialSmoothOperation.hpp>
 
-namespace wmtk {
-namespace components {
-namespace internal {
+namespace wmtk::components::internal {
 
-IsotropicRemeshing::IsotropicRemeshing(TriMesh* mesh, const double length, const bool lock_boundary)
+IsotropicRemeshing::IsotropicRemeshing(TriMesh& mesh, const double length, const bool lock_boundary)
     : m_mesh{mesh}
     , m_length_min{(4. / 5.) * length}
     , m_length_max{(4. / 3.) * length}
     , m_lock_boundary{lock_boundary}
-    , m_position_handle{m_mesh->get_attribute_handle<double>("position", PrimitiveType::Vertex)}
-    , m_scheduler(*m_mesh)
+    , m_position_handle{m_mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex)}
+    , m_scheduler(m_mesh)
 {
     if (!m_lock_boundary) {
         throw std::runtime_error("free boundary is not implemented yet");
@@ -72,6 +70,4 @@ void IsotropicRemeshing::remeshing(const long iterations)
     }
 }
 
-} // namespace internal
-} // namespace components
-} // namespace wmtk
+} // namespace wmtk::components::internal

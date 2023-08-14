@@ -33,8 +33,8 @@ bool TriMeshSwapEdgeOperation::before() const
     // do not allow swaps if one incident vertex has valence 3 (2 at boundary)
     const Tuple v0 = m_input_tuple;
     const Tuple v1 = m_mesh.switch_vertex(m_input_tuple);
-    int val0 = static_cast<int>(SimplicialComplex::vertex_one_ring(m_mesh, v0).size());
-    int val1 = static_cast<int>(SimplicialComplex::vertex_one_ring(m_mesh, v1).size());
+    long val0 = static_cast<long>(SimplicialComplex::vertex_one_ring(m_mesh, v0).size());
+    long val1 = static_cast<long>(SimplicialComplex::vertex_one_ring(m_mesh, v1).size());
     if (m_mesh.is_boundary_vertex(v0)) {
         ++val0;
     }
@@ -54,20 +54,20 @@ bool TriMeshSwapEdgeOperation::before() const
         const Tuple v2 = m_mesh.switch_vertex(m_mesh.switch_edge(m_input_tuple));
         const Tuple v3 =
             m_mesh.switch_vertex(m_mesh.switch_edge(m_mesh.switch_face(m_input_tuple)));
-        int val2 = static_cast<int>(SimplicialComplex::vertex_one_ring(m_mesh, v2).size());
-        int val3 = static_cast<int>(SimplicialComplex::vertex_one_ring(m_mesh, v3).size());
+        long val2 = static_cast<long>(SimplicialComplex::vertex_one_ring(m_mesh, v2).size());
+        long val3 = static_cast<long>(SimplicialComplex::vertex_one_ring(m_mesh, v3).size());
         if (m_mesh.is_boundary_vertex(v2)) {
-            ++val2;
+            val2 += 2;
         }
         if (m_mesh.is_boundary_vertex(v3)) {
-            ++val3;
+            val3 += 2;
         }
 
         // formula from: https://github.com/daniel-zint/hpmeshgen/blob/cdfb9163ed92523fcf41a127c8173097e935c0a3/src/HPMeshGen2/TriRemeshing.cpp#L315
-        const int val_before = std::max(std::abs(val0 - 6), std::abs(val1 - 6)) +
-                               std::max(std::abs(val2 - 6), std::abs(val3 - 6));
-        const int val_after = std::max(std::abs(val0 - 7), std::abs(val1 - 7)) +
-                              std::max(std::abs(val2 - 5), std::abs(val3 - 5));
+        const long val_before = std::max(std::abs(val0 - 6), std::abs(val1 - 6)) +
+                                std::max(std::abs(val2 - 6), std::abs(val3 - 6));
+        const long val_after = std::max(std::abs(val0 - 7), std::abs(val1 - 7)) +
+                               std::max(std::abs(val2 - 5), std::abs(val3 - 5));
 
         return val_after < val_before;
     }

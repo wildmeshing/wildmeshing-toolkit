@@ -9,6 +9,6 @@ set(SRC_FILES
     getRSS.cpp
     getRSS.h
     Rational.hpp
-    MeshUtils.hpp
+    mesh_utils.hpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

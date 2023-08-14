@@ -3,13 +3,11 @@
 #include <wmtk/Scheduler.hpp>
 #include <wmtk/TriMesh.hpp>
 
-namespace wmtk {
-namespace components {
-namespace internal {
+namespace wmtk::components::internal {
 
 class IsotropicRemeshing
 {
-    TriMesh* m_mesh;
+    TriMesh& m_mesh;
     double m_length_min = std::numeric_limits<double>::max();
     double m_length_max = std::numeric_limits<double>::lowest();
     bool m_lock_boundary = true;
@@ -18,11 +16,9 @@ class IsotropicRemeshing
     Scheduler m_scheduler;
 
 public:
-    IsotropicRemeshing(TriMesh* mesh, const double length, const bool lock_boundary);
+    IsotropicRemeshing(TriMesh& mesh, const double length, const bool lock_boundary);
 
     void remeshing(const long iterations);
 };
 
-} // namespace internal
-} // namespace components
-} // namespace wmtk
+} // namespace wmtk::components::internal
