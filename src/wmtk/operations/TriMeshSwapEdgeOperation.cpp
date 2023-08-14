@@ -31,10 +31,10 @@ bool TriMeshSwapEdgeOperation::before() const
     const Tuple v1 = m_mesh.switch_vertex(m_input_tuple);
     size_t val0 = SimplicialComplex::vertex_one_ring(m_mesh, v0).size();
     size_t val1 = SimplicialComplex::vertex_one_ring(m_mesh, v1).size();
-    if (m_mesh.is_vertex_boundary(v0)) {
+    if (m_mesh.is_boundary_vertex(v0)) {
         ++val0;
     }
-    if (m_mesh.is_vertex_boundary(v1)) {
+    if (m_mesh.is_boundary_vertex(v1)) {
         ++val1;
     }
     if (val0 < 4 || val1 < 4) {

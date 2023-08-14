@@ -319,7 +319,7 @@ bool TetMesh::is_boundary(const Tuple& tuple) const
     return tt_accessor.vector_attribute(tuple)(tuple.m_local_fid) < 0;
 }
 
-bool TetMesh::is_vertex_boundary(const Tuple& vertex) const
+bool TetMesh::is_boundary_vertex(const Tuple& vertex) const
 {
     // go through all faces and check if they are boundary
     const SimplicialComplex neigh = SimplicialComplex::open_star(*this, Simplex::vertex(vertex));
