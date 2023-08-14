@@ -374,7 +374,7 @@ bool SimplicialComplex::link_cond_bd_2d(const Mesh& m, Tuple t)
 bool SimplicialComplex::edge_collapse_possible_2d(const TriMesh& m, const Tuple& t)
 {
     // cannot collapse edges connecting two boundaries unless the edge itself is a boundary
-    if (m.is_vertex_boundary(t) && m.is_vertex_boundary(m.switch_vertex(t)) && !m.is_boundary(t)) {
+    if (m.is_boundary_vertex(t) && m.is_boundary_vertex(m.switch_vertex(t)) && !m.is_boundary(t)) {
         return false;
     }
 

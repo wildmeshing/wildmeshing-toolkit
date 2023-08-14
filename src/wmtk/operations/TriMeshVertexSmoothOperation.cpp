@@ -23,7 +23,7 @@ bool TriMeshVertexSmoothOperation::before() const
     if (m_mesh.is_outdated(m_tuple) || !m_mesh.is_valid(m_tuple)) {
         return false;
     }
-    if (!m_smooth_boundary && m_mesh.is_vertex_boundary(m_tuple)) {
+    if (!m_smooth_boundary && m_mesh.is_boundary_vertex(m_tuple)) {
         return false;
     }
     return true;

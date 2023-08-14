@@ -29,6 +29,7 @@ private:
 
         void write(const std::string& name, const long stride, const std::vector<double>& val);
 
+
         Eigen::MatrixXd& vertices() { return m_vertices; }
 
     private:
@@ -55,6 +56,8 @@ public:
         bool write_tetrahedra = true);
 
     bool write(const int dim) override { return dim == 0 || m_enabled[dim]; }
+    // paraview doesn't care about mesh capacities
+    void write_capacities(const std::vector<long>& capacities) override {}
 
     void write(
         const std::string& name,

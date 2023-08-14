@@ -103,4 +103,18 @@ TriMesh edge_region_with_position();
 //     \ / \ /
 //     13---14
 TriMesh embedded_diamond();
+
+//
+//  4------ 0 ---- 3
+//   |     / \     |
+//   | f1 /   \ f0 |
+//   |   /     \   |
+//   |  /       \  |
+//   2  ---------  1
+//      \       /  .
+//       \ f2  /   .
+//        \   /    .
+//         \ /     .
+//          5
+TriMesh three_individuals();
 } // namespace wmtk::tests

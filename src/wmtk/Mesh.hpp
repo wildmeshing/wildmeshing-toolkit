@@ -22,6 +22,7 @@ public:
     template <typename T>
     friend class AccessorBase;
     friend class ParaviewWriter;
+    friend class MeshReader;
 
     // dimension is the dimension of the top level simplex in this mesh
     // That is, a TriMesh is a 2, a TetMesh is a 3
@@ -173,13 +174,15 @@ public:
      */
     virtual bool is_ccw(const Tuple& tuple) const = 0;
     /**
+     * @brief check if all tuple simplices besides the cell are on the boundary
+     *
      * @param tuple
-     * @return true if the edge tuple is a obundary one
-     * @return false
+     * @return true if all tuple simplices besides the cell are on the boundary
+     * @return false otherwise
      */
-    virtual bool is_boundary(const Tuple& edge) const = 0;
+    virtual bool is_boundary(const Tuple& tuple) const = 0;
 
-    virtual bool is_vertex_boundary(const Tuple& vertex) const = 0;
+    virtual bool is_boundary_vertex(const Tuple& vertex) const = 0;
 
     /**
      * @brief

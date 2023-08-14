@@ -38,7 +38,7 @@ bool TriMeshSwapEdgeOperation::before() const
     if (m_mesh.is_vertex_boundary(v0)) {
         ++val0;
     }
-    if (m_mesh.is_vertex_boundary(v1)) {
+    if (m_mesh.is_boundary_vertex(v1)) {
         ++val1;
     }
     if (val0 < 4 || val1 < 4) {

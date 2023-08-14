@@ -17,8 +17,14 @@ template <typename T>
 class Attribute
 {
 public:
-    using MapResult = Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, 1>>;
-    using ConstMapResult = Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, 1>>;
+    template <int R>
+    using MapResultD = Eigen::Map<Eigen::Matrix<T, R, 1>>;
+    template <int R>
+    using ConstMapResultD = Eigen::Map<const Eigen::Matrix<T, R, 1>>;
+
+    using MapResult = MapResultD<Eigen::Dynamic>;
+    using ConstMapResult = ConstMapResultD<Eigen::Dynamic>;
+
 
     friend class AccessorBase<T>;
     void serialize(const std::string& name, const int dim, MeshWriter& writer) const;
@@ -34,12 +40,13 @@ public:
     ConstMapResult const_vector_attribute(const long index) const;
     MapResult vector_attribute(const long index);
 
+
     T const_scalar_attribute(const long index) const;
     T& scalar_attribute(const long index);
 
     void set(std::vector<T> val);
-    // The total number of elements in a vector
-    long size() const;
+    // The total number of elements in a vector. This is greater than the number of active values in the attribute, and the set of active values is handled by a higher level abstraction
+    long reserved_size() const;
     // The number of data for each element in the vector
     long dimension() const;
     void reserve(const long size);

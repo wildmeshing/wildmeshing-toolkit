@@ -237,4 +237,16 @@ TriMesh strip(long size)
     m.initialize(tris);
     return m;
 }
+
+TriMesh three_individuals()
+{
+    TriMesh m;
+    RowVectors3l tris;
+    tris.resize(3, 3);
+    tris.row(0) << 0, 3, 1;
+    tris.row(1) << 0, 2, 4;
+    tris.row(2) << 2, 1, 5;
+    m.initialize(tris);
+    return m;
+}
 } // namespace wmtk::tests
