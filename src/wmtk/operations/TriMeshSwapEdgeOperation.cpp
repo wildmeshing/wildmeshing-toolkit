@@ -35,7 +35,7 @@ bool TriMeshSwapEdgeOperation::before() const
     const Tuple v1 = m_mesh.switch_vertex(m_input_tuple);
     int val0 = static_cast<int>(SimplicialComplex::vertex_one_ring(m_mesh, v0).size());
     int val1 = static_cast<int>(SimplicialComplex::vertex_one_ring(m_mesh, v1).size());
-    if (m_mesh.is_vertex_boundary(v0)) {
+    if (m_mesh.is_boundary_vertex(v0)) {
         ++val0;
     }
     if (m_mesh.is_boundary_vertex(v1)) {
@@ -56,10 +56,10 @@ bool TriMeshSwapEdgeOperation::before() const
             m_mesh.switch_vertex(m_mesh.switch_edge(m_mesh.switch_face(m_input_tuple)));
         int val2 = static_cast<int>(SimplicialComplex::vertex_one_ring(m_mesh, v2).size());
         int val3 = static_cast<int>(SimplicialComplex::vertex_one_ring(m_mesh, v3).size());
-        if (m_mesh.is_vertex_boundary(v2)) {
+        if (m_mesh.is_boundary_vertex(v2)) {
             ++val2;
         }
-        if (m_mesh.is_vertex_boundary(v3)) {
+        if (m_mesh.is_boundary_vertex(v3)) {
             ++val3;
         }
 

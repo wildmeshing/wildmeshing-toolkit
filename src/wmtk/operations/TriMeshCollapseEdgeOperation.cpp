@@ -38,7 +38,7 @@ bool TriMeshCollapseEdgeOperation::before() const
     if (!m_collapse_boundary_edges && m_mesh.is_boundary(m_input_tuple)) {
         return false;
     }
-    if (!m_collapse_boundary_vertex_to_interior && m_mesh.is_vertex_boundary(m_input_tuple)) {
+    if (!m_collapse_boundary_vertex_to_interior && m_mesh.is_boundary_vertex(m_input_tuple)) {
         return false;
     }
 

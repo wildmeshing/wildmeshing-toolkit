@@ -45,8 +45,8 @@ bool TriMeshCollapseEdgeToMidOperation::execute()
     bool v0_is_boundary = false;
     bool v1_is_boundary = false;
     if (m_collapse_towards_boundary) {
-        v0_is_boundary = m_mesh.is_vertex_boundary(m_input_tuple);
-        v1_is_boundary = m_mesh.is_vertex_boundary(m_mesh.switch_vertex(m_input_tuple));
+        v0_is_boundary = m_mesh.is_boundary_vertex(m_input_tuple);
+        v1_is_boundary = m_mesh.is_boundary_vertex(m_mesh.switch_vertex(m_input_tuple));
     }
 
     // collapse
