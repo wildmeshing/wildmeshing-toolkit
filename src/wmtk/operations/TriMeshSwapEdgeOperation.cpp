@@ -10,7 +10,7 @@ TriMeshSwapEdgeOperation::TriMeshSwapEdgeOperation(
     const OperationSettings<TriMeshSwapEdgeOperation>& settings)
     : Operation(m)
     , m_input_tuple{t}
-    , m_must_improve_valence{settings.must_improve_valence}
+    , m_settings{settings}
 {}
 
 std::string TriMeshSwapEdgeOperation::name() const
@@ -50,7 +50,7 @@ bool TriMeshSwapEdgeOperation::before() const
     //  v0---v1
     //    \ /
     //     v3
-    if (m_must_improve_valence) {
+    if (m_settings.must_improve_valence) {
         const Tuple v2 = m_mesh.switch_vertex(m_mesh.switch_edge(m_input_tuple));
         const Tuple v3 =
             m_mesh.switch_vertex(m_mesh.switch_edge(m_mesh.switch_face(m_input_tuple)));

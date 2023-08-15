@@ -12,9 +12,7 @@ wmtk::TriMeshCollapseEdgeToMidOperation::TriMeshCollapseEdgeToMidOperation(
     : Operation(m)
     , m_input_tuple{t}
     , m_pos_accessor{m.create_accessor(settings.position)}
-    , m_max_squared_length{settings.max_squared_length}
-    , m_collapse_boundary_edges{settings.collapse_boundary_edges}
-    , m_collapse_towards_boundary{settings.collapse_towards_boundary}
+    , m_settings{settings}
 {
     p0 = m_pos_accessor.vector_attribute(m_input_tuple);
     p1 = m_pos_accessor.vector_attribute(m_mesh.switch_vertex(m_input_tuple));
@@ -37,14 +35,14 @@ bool TriMeshCollapseEdgeToMidOperation::before() const
     }
 
     const double l_squared = (p1 - p0).squaredNorm();
-    return l_squared < m_max_squared_length;
+    return l_squared < m_settings.max_squared_length;
 }
 
 bool TriMeshCollapseEdgeToMidOperation::execute()
 {
     bool v0_is_boundary = false;
     bool v1_is_boundary = false;
-    if (m_collapse_towards_boundary) {
+    if (m_settings.collapse_towards_boundary) {
         v0_is_boundary = m_mesh.is_boundary_vertex(m_input_tuple);
         v1_is_boundary = m_mesh.is_boundary_vertex(m_mesh.switch_vertex(m_input_tuple));
     }
@@ -52,7 +50,7 @@ bool TriMeshCollapseEdgeToMidOperation::execute()
     // collapse
     {
         OperationSettings<TriMeshCollapseEdgeOperation> op_settings;
-        op_settings.collapse_boundary_edges = m_collapse_boundary_edges;
+        op_settings.collapse_boundary_edges = m_settings.collapse_boundary_edges;
 
         TriMeshCollapseEdgeOperation split_op(m_mesh, m_input_tuple, op_settings);
         if (!split_op()) {

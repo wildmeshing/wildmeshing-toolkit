@@ -33,7 +33,7 @@ protected:
 private:
     Tuple m_input_tuple;
     Tuple m_output_tuple;
-    bool m_must_improve_valence;
+    const OperationSettings<TriMeshSwapEdgeOperation>& m_settings;
 };
 
 

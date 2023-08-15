@@ -35,8 +35,8 @@ private:
     Tuple m_input_tuple;
     Tuple m_output_tuple;
     Accessor<double> m_pos_accessor;
-    double m_min_squared_length;
-    bool m_split_boundary_edges;
+
+    const OperationSettings<TriMeshSplitEdgeAtMidpointOperation>& m_settings;
 
     Eigen::Vector3d p0;
     Eigen::Vector3d p1;

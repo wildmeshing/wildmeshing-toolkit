@@ -43,9 +43,7 @@ private:
     Tuple m_output_tuple;
 
     Accessor<double> m_pos_accessor;
-    double m_max_squared_length;
-    bool m_collapse_boundary_edges;
-    bool m_collapse_towards_boundary;
+    const OperationSettings<TriMeshCollapseEdgeToMidOperation>& m_settings;
 
     Eigen::Vector3d p0;
     Eigen::Vector3d p1;

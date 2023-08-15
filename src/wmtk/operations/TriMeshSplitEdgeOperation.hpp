@@ -46,7 +46,7 @@ private:
     Tuple m_input_tuple;
     Tuple m_output_tuple;
 
-    bool m_split_boundary_edges;
+    const OperationSettings<TriMeshSplitEdgeOperation>& m_settings;
 };
 
 

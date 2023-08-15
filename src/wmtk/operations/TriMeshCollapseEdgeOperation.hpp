@@ -30,9 +30,6 @@ public:
 
     // return a ccw tuple from left ear if it exists, otherwise return a ccw tuple from right ear
     Tuple return_tuple() const;
-    // return true if return_tuple() is from left ear, else return false and return_tuple() is from
-    // right ear
-    bool is_return_tuple_from_left_ear() const;
 
     static PrimitiveType primitive_type() { return PrimitiveType::Edge; }
 
@@ -41,11 +38,9 @@ protected:
     bool before() const override;
 
 private:
-    bool m_is_output_tuple_from_left_ear;
     Tuple m_input_tuple;
     Tuple m_output_tuple;
-    bool m_collapse_boundary_edges;
-    bool m_collapse_boundary_vertex_to_interior;
+    const OperationSettings<TriMeshCollapseEdgeOperation>& m_settings;
 };
 
 

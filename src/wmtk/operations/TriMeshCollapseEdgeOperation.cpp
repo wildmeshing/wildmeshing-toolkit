@@ -11,14 +11,8 @@ TriMeshCollapseEdgeOperation::TriMeshCollapseEdgeOperation(
     const OperationSettings<TriMeshCollapseEdgeOperation>& settings)
     : Operation(m)
     , m_input_tuple{t}
-    , m_collapse_boundary_edges{settings.collapse_boundary_edges}
-    , m_collapse_boundary_vertex_to_interior{settings.collapse_boundary_vertex_to_interior}
-{
-    if (m_mesh.is_valid(m_input_tuple)) {
-        m_is_output_tuple_from_left_ear =
-            !m_mesh.is_boundary(m_mesh.switch_tuple(m_input_tuple, PrimitiveType::Edge));
-    }
-}
+    , m_settings{settings}
+{}
 
 bool TriMeshCollapseEdgeOperation::execute()
 {
@@ -35,10 +29,11 @@ bool TriMeshCollapseEdgeOperation::before() const
         return false;
     }
 
-    if (!m_collapse_boundary_edges && m_mesh.is_boundary(m_input_tuple)) {
+    if (!m_settings.collapse_boundary_edges && m_mesh.is_boundary(m_input_tuple)) {
         return false;
     }
-    if (!m_collapse_boundary_vertex_to_interior && m_mesh.is_boundary_vertex(m_input_tuple)) {
+    if (!m_settings.collapse_boundary_vertex_to_interior &&
+        m_mesh.is_boundary_vertex(m_input_tuple)) {
         return false;
     }
 
@@ -55,10 +50,6 @@ Tuple TriMeshCollapseEdgeOperation::return_tuple() const
     return m_output_tuple;
 }
 
-bool TriMeshCollapseEdgeOperation::is_return_tuple_from_left_ear() const
-{
-    return m_is_output_tuple_from_left_ear;
-}
 std::vector<Tuple> TriMeshCollapseEdgeOperation::modified_triangles() const
 {
     Simplex v(PrimitiveType::Vertex, m_output_tuple);

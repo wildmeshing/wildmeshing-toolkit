@@ -12,8 +12,7 @@ TriMeshVertexTangentialSmoothOperation::TriMeshVertexTangentialSmoothOperation(
     : Operation(m)
     , m_tuple{t}
     , m_pos_accessor{m.create_accessor<double>(settings.position)}
-    , m_smooth_boundary{settings.smooth_boundary}
-    , m_damping_factor{settings.damping_factor}
+    , m_settings{settings}
 {}
 
 std::string TriMeshVertexTangentialSmoothOperation::name() const
@@ -26,7 +25,7 @@ bool TriMeshVertexTangentialSmoothOperation::before() const
     if (m_mesh.is_outdated(m_tuple) || !m_mesh.is_valid(m_tuple)) {
         return false;
     }
-    if (!m_smooth_boundary && m_mesh.is_boundary_vertex(m_tuple)) {
+    if (!m_settings.smooth_boundary && m_mesh.is_boundary_vertex(m_tuple)) {
         return false;
     }
     return true;
@@ -53,7 +52,7 @@ bool TriMeshVertexTangentialSmoothOperation::execute()
 
     // following Botsch&Kobbelt - Remeshing for Multiresolution Modeling
     m_pos_accessor.vector_attribute(m_tuple) =
-        p + m_damping_factor * (Eigen::Matrix3d::Identity() - n * n.transpose()) * (g - p);
+        p + m_settings.damping_factor * (Eigen::Matrix3d::Identity() - n * n.transpose()) * (g - p);
 
     return true;
 }
