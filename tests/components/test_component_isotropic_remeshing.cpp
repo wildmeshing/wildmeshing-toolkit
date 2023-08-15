@@ -114,7 +114,7 @@ TEST_CASE("smoothing_simple_examples", "[components][isotropic_remeshing][2D]")
     }
 }
 
-TEST_CASE("tangential_smoothing", "[components][isotropic_remeshing][2D][.]")
+TEST_CASE("tangential_smoothing", "[components][isotropic_remeshing][2D]")
 {
     DEBUG_TriMesh mesh = wmtk::tests::hex_plus_two_with_position();
 
@@ -150,6 +150,42 @@ TEST_CASE("tangential_smoothing", "[components][isotropic_remeshing][2D][.]")
 
     Eigen::Vector3d after_smooth = pos.vector_attribute(v4);
     CHECK((after_smooth - Eigen::Vector3d{1, 0, p_init[2]}).squaredNorm() == 0);
+}
+
+TEST_CASE("tangential_smoothing_boundary", "[components][isotropic_remeshing][2D]")
+{
+    DEBUG_TriMesh mesh = wmtk::tests::hex_plus_two_with_position();
+
+    OperationSettings<TriMeshVertexTangentialSmoothOperation> op_settings;
+    op_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+    op_settings.smooth_boundary = true;
+
+    // offset interior vertex
+    auto pos = mesh.create_accessor(op_settings.position);
+    const Tuple v1 = mesh.tuple_from_id(PrimitiveType::Vertex, 1);
+
+    Eigen::Vector3d p_init;
+    SECTION("1.7_1.1_0")
+    {
+        p_init = Eigen::Vector3d{1.7, 1.1, 0};
+    }
+    SECTION("2.2_2_0")
+    {
+        p_init = Eigen::Vector3d{2.2, 2, 0};
+    }
+    SECTION("2.2_2_5")
+    {
+        p_init = Eigen::Vector3d{2.2, 2, 5};
+    }
+
+    pos.vector_attribute(v1) = p_init;
+
+    TriMeshVertexTangentialSmoothOperation op(mesh, v1, op_settings);
+    const bool success = op();
+    REQUIRE(success);
+
+    Eigen::Vector3d after_smooth = pos.vector_attribute(v1);
+    CHECK((after_smooth - Eigen::Vector3d{1.5, p_init[1], p_init[2]}).squaredNorm() == 0);
 }
 
 TEST_CASE("split_long_edges", "[components][isotropic_remeshing][split][2D]")
