@@ -561,3 +561,42 @@ TEST_CASE("remeshing_tetrahedron", "[components][isotropic_remeshing][2D][.]")
     ParaviewWriter writer("tet_remeshing", "position", mesh, true, true, true, false);
     mesh.serialize(writer);
 }
+
+TEST_CASE("remeshing_with_boundary", "[components][isotropic_remeshing][2D]")
+{
+    using namespace wmtk::components::internal;
+
+    // input
+    TriMesh mesh = edge_region_with_position();
+
+    SECTION("lock_boundary_false")
+    {
+        IsotropicRemeshing isotropicRemeshing(mesh, 0.5, false);
+        isotropicRemeshing.remeshing(5);
+
+        size_t n_boundary_edges = 0;
+        for (const Tuple& e : mesh.get_all(PrimitiveType::Edge)) {
+            if (mesh.is_boundary(e)) {
+                ++n_boundary_edges;
+            }
+        }
+        CHECK(n_boundary_edges > 8);
+    }
+
+    SECTION("lock_boundary_true")
+    {
+        IsotropicRemeshing isotropicRemeshing(mesh, 0.5, true);
+        isotropicRemeshing.remeshing(5);
+
+        size_t n_boundary_edges = 0;
+        for (const Tuple& e : mesh.get_all(PrimitiveType::Edge)) {
+            if (mesh.is_boundary(e)) {
+                ++n_boundary_edges;
+            }
+        }
+        CHECK(n_boundary_edges == 8);
+
+        // ParaviewWriter writer("w_bd_remeshing", "position", mesh, true, true, true, false);
+        // mesh.serialize(writer);
+    }
+}

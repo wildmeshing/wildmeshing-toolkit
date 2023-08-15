@@ -16,15 +16,12 @@ IsotropicRemeshing::IsotropicRemeshing(TriMesh& mesh, const double length, const
     , m_position_handle{m_mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex)}
     , m_scheduler(m_mesh)
 {
-    if (!m_lock_boundary) {
-        throw std::runtime_error("free boundary is not implemented yet");
-    }
-
     // split
     {
         OperationSettings<TriMeshSplitEdgeAtMidpointOperation> split_settings{
             m_position_handle,
-            m_length_max * m_length_max};
+            m_length_max * m_length_max,
+            !m_lock_boundary};
 
         m_scheduler.add_operation_type<TriMeshSplitEdgeAtMidpointOperation>(
             "split",
@@ -34,7 +31,9 @@ IsotropicRemeshing::IsotropicRemeshing(TriMesh& mesh, const double length, const
     {
         OperationSettings<TriMeshCollapseEdgeToMidpointOperation> op_settings{
             m_position_handle,
-            m_length_min * m_length_min};
+            m_length_min * m_length_min,
+            !m_lock_boundary,
+            true};
 
         m_scheduler.add_operation_type<TriMeshCollapseEdgeToMidpointOperation>(
             "collapse",
@@ -48,7 +47,9 @@ IsotropicRemeshing::IsotropicRemeshing(TriMesh& mesh, const double length, const
     }
     // smooth
     {
-        OperationSettings<TriMeshVertexTangentialSmoothOperation> op_settings{m_position_handle};
+        OperationSettings<TriMeshVertexTangentialSmoothOperation> op_settings{
+            m_position_handle,
+            !m_lock_boundary};
 
         m_scheduler.add_operation_type<TriMeshVertexTangentialSmoothOperation>(
             "smooth",
