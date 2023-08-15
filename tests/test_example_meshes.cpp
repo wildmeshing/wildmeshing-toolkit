@@ -18,7 +18,7 @@ struct MeshDebugInfo
     std::array<long, 3> simplex_counts = std::array<long,3>{{-1,-1,-1}};
 };
 
-std::array<long, 3> trimesh_simplex_counts(const DEBUG_TriMesh& m)
+std::array<long, 3> trimesh_simplex_counts(const TriMesh& m)
 {
     return std::array<long, 3>{{long(m.get_all(PrimitiveType::Vertex).size()),
                                 long(m.get_all(PrimitiveType::Edge).size()),
@@ -26,14 +26,21 @@ std::array<long, 3> trimesh_simplex_counts(const DEBUG_TriMesh& m)
 }
 
 
+/***
+ * @brief compute the number of simply connected components in a mesh
+ * @param m the mesh
+ * @param component_ids output the component id of each face
+ * @return the number of simply connected components
+*/
+
 int trimesh_simply_connected_components(const DEBUG_TriMesh& m, std::vector<int> &component_ids)
 {
     component_ids.resize(m.capacity(PrimitiveType::Face), -1);
     auto all_face_tuples = m.get_all(PrimitiveType::Face);
     int component_id = 0;
     // BFS
-    for (size_t i = 0; i < all_face_tuples.size(); ++i) {
-        long fid = m.id(all_face_tuples[i], PrimitiveType::Face);
+    for (auto face_tuple : all_face_tuples) {
+        long fid = m.id(face_tuple, PrimitiveType::Face);
         if (component_ids[fid] != -1) {
             continue;
         } // visited
@@ -57,7 +64,7 @@ int trimesh_simply_connected_components(const DEBUG_TriMesh& m, std::vector<int>
                         q.push(adj_fid);
                     }  
                 }
-                f_tuple = m.switch_tuple(m.switch_tuple(f_tuple, PrimitiveType::Vertex), PrimitiveType::Edge);
+                f_tuple = m.switch_edge(m.switch_vertex(f_tuple));
             } 
         }
         
@@ -73,51 +80,49 @@ int trimesh_simply_connected_components(const DEBUG_TriMesh& m)
     return trimesh_simply_connected_components(m, component_ids);
 }
 
-int trimesh_n_bd_loops(const DEBUG_TriMesh& m)
+int trimesh_boundary_loops_count(const DEBUG_TriMesh& m)
 {
-    std::vector<int> bd_loops(m.capacity(PrimitiveType::Edge), -1);
+    std::vector<int> boundary_loop_ids(m.capacity(PrimitiveType::Edge), -1);
     auto all_edge_tuples = m.get_all(PrimitiveType::Edge);
-    int bd_loop_id = 0;
-    for (size_t i = 0; i < all_edge_tuples.size(); ++i) 
+    int boundary_loop_id = 0;
+    for (auto edge_tuple : all_edge_tuples) 
     {
-        if (!m.is_boundary(all_edge_tuples[i])) {
+        if (!m.is_boundary(edge_tuple)) {
             continue;
         }
-        long eid = m.id(all_edge_tuples[i], PrimitiveType::Edge);
-        if (bd_loops[eid] != -1) {
+        long eid = m.id(edge_tuple, PrimitiveType::Edge);
+        if (boundary_loop_ids[eid] != -1) {
             continue;
         } // visited
 
-        Tuple cur_edge = all_edge_tuples[i];
+        Tuple cur_edge = edge_tuple;
         long cur_eid = m.id(cur_edge, PrimitiveType::Edge);
         // find one boundary loop
-        while (bd_loops[m.id(all_edge_tuples[i], PrimitiveType::Edge)] == -1 || cur_eid != m.id(all_edge_tuples[i], PrimitiveType::Edge)) 
+        while (boundary_loop_ids[eid] == -1 || cur_eid != eid) 
         {
-            bd_loops[cur_eid] = bd_loop_id;
+            boundary_loop_ids[cur_eid] = boundary_loop_id;
 
             // find next boundary edge
-            cur_edge = m.switch_tuple(cur_edge, PrimitiveType::Vertex);
-            cur_edge = m.switch_tuple(cur_edge, PrimitiveType::Edge);
+            cur_edge = m.switch_edge(m.switch_vertex(cur_edge));
             while(!m.is_boundary(cur_edge))
             {
-                cur_edge = m.switch_tuple(cur_edge, PrimitiveType::Face);
-                cur_edge = m.switch_tuple(cur_edge, PrimitiveType::Edge);
+                cur_edge = m.switch_edge(m.switch_face(cur_edge));
             }
             
             cur_eid = m.id(cur_edge, PrimitiveType::Edge);
         }
         
-        bd_loop_id++;
+        boundary_loop_id++;
     }
 
-    return bd_loop_id;
+    return boundary_loop_id;
 }
 
-int trimesh_euler_char(const DEBUG_TriMesh& m)
+int trimesh_euler_characteristic(const DEBUG_TriMesh& m)
 {
     auto simplex_counts = trimesh_simplex_counts(m);
-    int n_bd_loops = trimesh_n_bd_loops(m);
-    return simplex_counts[0] - simplex_counts[1] + simplex_counts[2] + n_bd_loops;
+    int boundary_loops_count = trimesh_boundary_loops_count(m);
+    return simplex_counts[0] - simplex_counts[1] + simplex_counts[2] + boundary_loops_count;
 }
 
 int trimesh_genus(const DEBUG_TriMesh& m)
@@ -127,7 +132,7 @@ int trimesh_genus(const DEBUG_TriMesh& m)
         wmtk::logger().error("not a connected surface\n");
         throw std::runtime_error("GenusComputeError");
     }
-    return (2 - trimesh_euler_char(m)) / 2;
+    return (2 - trimesh_euler_characteristic(m)) / 2;
 }
 
 
@@ -182,7 +187,7 @@ TEST_CASE("test_debug_trimeshes_single_triangle")
     m = single_triangle();
     // trimesh_genus(m);
     MeshDebugInfo info;
-    REQUIRE(trimesh_n_bd_loops(m) == 1);
+    REQUIRE(trimesh_boundary_loops_count(m) == 1);
     info.name = "single_triangle";
     info.genus = 0;
     info.simply_connected_components = 1;
@@ -195,7 +200,7 @@ TEST_CASE("test_debug_trimeshes_one_ear")
     DEBUG_TriMesh m;
     m = one_ear();
     MeshDebugInfo info;
-    REQUIRE(trimesh_n_bd_loops(m) == 1);
+    REQUIRE(trimesh_boundary_loops_count(m) == 1);
     info.name = "one_ear";
     info.genus = 0;
     info.simply_connected_components = 1;
@@ -207,8 +212,7 @@ TEST_CASE("test_debug_trimeshes_two_components")
 {
     DEBUG_TriMesh m;
     m = three_triangles_with_two_components();
-    MeshDebugInfo info;
-    REQUIRE(trimesh_n_bd_loops(m) == 2);
+    REQUIRE(trimesh_boundary_loops_count(m) == 2);
     REQUIRE(trimesh_simply_connected_components(m) == 2);
 }
 
@@ -217,7 +221,7 @@ TEST_CASE("test_debug_trimeshes_hole")
     DEBUG_TriMesh m;
     m = nine_triangles_with_a_hole();
     MeshDebugInfo info;
-    REQUIRE(trimesh_n_bd_loops(m) == 2);
+    REQUIRE(trimesh_boundary_loops_count(m) == 2);
     info.name = "nine_triangles_with_a_hole";
     info.genus = 0;
     info.simply_connected_components = 1;
