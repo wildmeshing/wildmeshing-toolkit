@@ -8,7 +8,7 @@ namespace wmtk {
 TriMeshSplitEdgeOperation::TriMeshSplitEdgeOperation(
     Mesh& m,
     const Tuple& t,
-    const OperationSettings<TriMeshSplitEdgeOperation> settings)
+    const OperationSettings<TriMeshSplitEdgeOperation>& settings)
     : Operation(m)
     , m_input_tuple{t}
     , m_settings{settings}

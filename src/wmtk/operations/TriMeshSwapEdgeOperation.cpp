@@ -93,7 +93,8 @@ bool TriMeshSwapEdgeOperation::execute()
 
     Tuple split_ret;
     {
-        TriMeshSplitEdgeOperation split_op(m_mesh, m_input_tuple);
+        OperationSettings<TriMeshSplitEdgeOperation> op_settings;
+        TriMeshSplitEdgeOperation split_op(m_mesh, m_input_tuple, op_settings);
         if (!split_op()) {
             return false;
         }

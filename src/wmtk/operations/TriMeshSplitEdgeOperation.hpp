@@ -18,8 +18,7 @@ public:
     TriMeshSplitEdgeOperation(
         Mesh& m,
         const Tuple& t,
-        const OperationSettings<TriMeshSplitEdgeOperation> settings =
-            OperationSettings<TriMeshSplitEdgeOperation>());
+        const OperationSettings<TriMeshSplitEdgeOperation>& settings);
 
     std::string name() const override;
 
