@@ -25,8 +25,7 @@ void Scheduler::run_operation_on_all(PrimitiveType type, const std::string& name
 
 void Scheduler::enqueue_operations(std::vector<std::unique_ptr<Operation>>&& ops)
 {
-    size_t index = 0;
-    for (index = 0; index < ops.size();) {
+    for (size_t index = 0; index < ops.size();) {
         for (auto& queue : m_per_thread_queues) {
             if (index < ops.size()) {
                 queue.enqueue(std::move(ops[index]));
@@ -50,12 +49,14 @@ std::vector<std::unique_ptr<Operation>> Scheduler::create_operations(
     PrimitiveType type,
     const std::string& name)
 {
-    auto tups = m_mesh.get_all(type);
+    const auto tups = m_mesh.get_all(type);
 
     std::vector<std::unique_ptr<Operation>> ops;
     auto factory_ptr = get_factory(name);
     assert(factory_ptr != nullptr);
-    for (const auto& tup : tups) {
+
+    ops.reserve(tups.size());
+    for (const Tuple& tup : tups) {
         ops.emplace_back(factory_ptr->create(m_mesh, tup));
     }
     return ops;

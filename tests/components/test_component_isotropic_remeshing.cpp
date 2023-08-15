@@ -5,7 +5,7 @@
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/io/MeshReader.hpp>
 #include <wmtk/operations/OperationFactory.hpp>
-#include <wmtk/operations/TriMeshCollapseEdgeToMidOperation.hpp>
+#include <wmtk/operations/TriMeshCollapseEdgeToMidpointOperation.hpp>
 #include <wmtk/operations/TriMeshSplitEdgeAtMidpointOperation.hpp>
 #include <wmtk/operations/TriMeshSwapEdgeOperation.hpp>
 #include <wmtk/operations/TriMeshVertexSmoothOperation.hpp>
@@ -244,7 +244,7 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
 {
     DEBUG_TriMesh mesh = wmtk::tests::edge_region_with_position();
 
-    OperationSettings<TriMeshCollapseEdgeToMidOperation> op_settings;
+    OperationSettings<TriMeshCollapseEdgeToMidpointOperation> op_settings;
     op_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
 
     SECTION("interior")
@@ -261,7 +261,7 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
         op_settings.max_squared_length = 0.1;
 
         Scheduler scheduler(mesh);
-        scheduler.add_operation_type<TriMeshCollapseEdgeToMidOperation>(
+        scheduler.add_operation_type<TriMeshCollapseEdgeToMidpointOperation>(
             "tri_mesh_collapse_edge_to_mid",
             op_settings);
 
@@ -302,7 +302,7 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
         op_settings.collapse_towards_boundary = true;
 
         Scheduler scheduler(mesh);
-        scheduler.add_operation_type<TriMeshCollapseEdgeToMidOperation>(
+        scheduler.add_operation_type<TriMeshCollapseEdgeToMidpointOperation>(
             "tri_mesh_collapse_edge_to_mid",
             op_settings);
 
@@ -343,7 +343,7 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
         op_settings.collapse_towards_boundary = false;
 
         Scheduler scheduler(mesh);
-        scheduler.add_operation_type<TriMeshCollapseEdgeToMidOperation>(
+        scheduler.add_operation_type<TriMeshCollapseEdgeToMidpointOperation>(
             "tri_mesh_collapse_edge_to_mid",
             op_settings);
 
@@ -384,7 +384,7 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
         op_settings.collapse_boundary_edges = true;
 
         Scheduler scheduler(mesh);
-        scheduler.add_operation_type<TriMeshCollapseEdgeToMidOperation>(
+        scheduler.add_operation_type<TriMeshCollapseEdgeToMidpointOperation>(
             "tri_mesh_collapse_edge_to_mid",
             op_settings);
 
@@ -413,7 +413,7 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
         op_settings.collapse_boundary_edges = false;
 
         Scheduler scheduler(mesh);
-        scheduler.add_operation_type<TriMeshCollapseEdgeToMidOperation>(
+        scheduler.add_operation_type<TriMeshCollapseEdgeToMidpointOperation>(
             "tri_mesh_collapse_edge_to_mid",
             op_settings);
 

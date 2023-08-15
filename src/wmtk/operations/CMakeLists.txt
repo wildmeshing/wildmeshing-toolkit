@@ -10,8 +10,8 @@ set(SRC_FILES
     TriMeshSplitEdgeAtMidpointOperation.cpp
     TriMeshCollapseEdgeOperation.hpp
     TriMeshCollapseEdgeOperation.cpp
-    TriMeshCollapseEdgeToMidOperation.hpp
-    TriMeshCollapseEdgeToMidOperation.cpp
+    TriMeshCollapseEdgeToMidpointOperation.hpp
+    TriMeshCollapseEdgeToMidpointOperation.cpp
     TriMeshSwapEdgeOperation.hpp
     TriMeshSwapEdgeOperation.cpp
     TriMeshVertexSmoothOperation.hpp

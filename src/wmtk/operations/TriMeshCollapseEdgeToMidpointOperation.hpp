@@ -4,10 +4,10 @@
 #include "Operation.hpp"
 
 namespace wmtk {
-class TriMeshCollapseEdgeToMidOperation;
+class TriMeshCollapseEdgeToMidpointOperation;
 
 template <>
-struct OperationSettings<TriMeshCollapseEdgeToMidOperation>
+struct OperationSettings<TriMeshCollapseEdgeToMidpointOperation>
 {
     // handle to vertex position
     MeshAttributeHandle<double> position;
@@ -20,13 +20,13 @@ struct OperationSettings<TriMeshCollapseEdgeToMidOperation>
     bool collapse_towards_boundary = false;
 };
 
-class TriMeshCollapseEdgeToMidOperation : public Operation
+class TriMeshCollapseEdgeToMidpointOperation : public Operation
 {
 public:
-    TriMeshCollapseEdgeToMidOperation(
+    TriMeshCollapseEdgeToMidpointOperation(
         Mesh& m,
         const Tuple& t,
-        const OperationSettings<TriMeshCollapseEdgeToMidOperation>& settings);
+        const OperationSettings<TriMeshCollapseEdgeToMidpointOperation>& settings);
 
     std::string name() const override;
 
@@ -43,7 +43,7 @@ private:
     Tuple m_output_tuple;
 
     Accessor<double> m_pos_accessor;
-    const OperationSettings<TriMeshCollapseEdgeToMidOperation>& m_settings;
+    const OperationSettings<TriMeshCollapseEdgeToMidpointOperation>& m_settings;
 
     Eigen::Vector3d p0;
     Eigen::Vector3d p1;
