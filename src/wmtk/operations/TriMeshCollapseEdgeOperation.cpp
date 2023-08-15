@@ -8,15 +8,11 @@ namespace wmtk {
 TriMeshCollapseEdgeOperation::TriMeshCollapseEdgeOperation(
     Mesh& m,
     const Tuple& t,
-    const OperationSettings<TriMeshCollapseEdgeOperation>)
+    const OperationSettings<TriMeshCollapseEdgeOperation>& settings)
     : Operation(m)
-    , m_input_tuple(t)
-{
-    if (m_mesh.is_valid(m_input_tuple)) {
-        m_is_output_tuple_from_left_ear =
-            !m_mesh.is_boundary(m_mesh.switch_tuple(m_input_tuple, PrimitiveType::Edge));
-    }
-}
+    , m_input_tuple{t}
+    , m_settings{settings}
+{}
 
 bool TriMeshCollapseEdgeOperation::execute()
 {
@@ -32,6 +28,15 @@ bool TriMeshCollapseEdgeOperation::before() const
     if (!m_mesh.is_valid(m_input_tuple)) {
         return false;
     }
+
+    if (!m_settings.collapse_boundary_edges && m_mesh.is_boundary(m_input_tuple)) {
+        return false;
+    }
+    if (!m_settings.collapse_boundary_vertex_to_interior &&
+        m_mesh.is_boundary_vertex(m_input_tuple)) {
+        return false;
+    }
+
     return SimplicialComplex::link_cond_bd_2d(m_mesh, m_input_tuple);
 }
 
@@ -45,10 +50,6 @@ Tuple TriMeshCollapseEdgeOperation::return_tuple() const
     return m_output_tuple;
 }
 
-bool TriMeshCollapseEdgeOperation::is_return_tuple_from_left_ear() const
-{
-    return m_is_output_tuple_from_left_ear;
-}
 std::vector<Tuple> TriMeshCollapseEdgeOperation::modified_triangles() const
 {
     Simplex v(PrimitiveType::Vertex, m_output_tuple);

@@ -10,7 +10,7 @@ TriMeshVertexSmoothOperation::TriMeshVertexSmoothOperation(
     : Operation(m)
     , m_tuple(t)
     , m_pos_accessor(m.create_accessor<double>(settings.position))
-    , m_smooth_boundary(settings.smooth_boundary)
+    , m_settings{settings}
 {}
 
 std::string TriMeshVertexSmoothOperation::name() const
@@ -23,7 +23,7 @@ bool TriMeshVertexSmoothOperation::before() const
     if (m_mesh.is_outdated(m_tuple) || !m_mesh.is_valid(m_tuple)) {
         return false;
     }
-    if (!m_smooth_boundary && m_mesh.is_boundary_vertex(m_tuple)) {
+    if (!m_settings.smooth_boundary && m_mesh.is_boundary_vertex(m_tuple)) {
         return false;
     }
     return true;

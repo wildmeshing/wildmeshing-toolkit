@@ -61,6 +61,8 @@ TriMesh three_neighbors();
 //          3
 TriMesh tetrahedron();
 
+TriMesh tetrahedron_with_position();
+
 //  3--1--- 0
 //   |     / \ .
 //   2 f1 /2   1
@@ -82,6 +84,8 @@ TriMesh interior_edge();
 //    7---8
 TriMesh hex_plus_two();
 
+TriMesh hex_plus_two_with_position();
+
 //    0---1---2
 //   / \ / \ / \ .
 //  3---4---5---6
@@ -89,6 +93,18 @@ TriMesh hex_plus_two();
 //    7---8---9
 TriMesh edge_region();
 
+TriMesh edge_region_with_position();
+
+//      1---2
+//     / \ / \
+//    3---4---5
+//   / \ / \ / \ .
+//  6---7---8---9
+//   \ / \ / \ /
+//   10--11--12
+//     \ / \ /
+//     13---14
+TriMesh embedded_diamond();
 
 //
 //  4------ 0 ---- 3
