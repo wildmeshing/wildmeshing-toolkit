@@ -22,9 +22,9 @@ IsotropicRemeshing::IsotropicRemeshing(TriMesh& mesh, const double length, const
 
     // split
     {
-        OperationSettings<TriMeshSplitEdgeAtMidpointOperation> split_settings;
-        split_settings.position = m_position_handle;
-        split_settings.min_squared_length = m_length_max * m_length_max;
+        OperationSettings<TriMeshSplitEdgeAtMidpointOperation> split_settings{
+            m_position_handle,
+            m_length_max * m_length_max};
 
         m_scheduler.add_operation_type<TriMeshSplitEdgeAtMidpointOperation>(
             "tri_mesh_split_edge_at_midpoint",
@@ -32,9 +32,9 @@ IsotropicRemeshing::IsotropicRemeshing(TriMesh& mesh, const double length, const
     }
     // collapse
     {
-        OperationSettings<TriMeshCollapseEdgeToMidOperation> op_settings;
-        op_settings.position = m_position_handle;
-        op_settings.max_squared_length = m_length_min * m_length_min;
+        OperationSettings<TriMeshCollapseEdgeToMidOperation> op_settings{
+            m_position_handle,
+            m_length_min * m_length_min};
 
         m_scheduler.add_operation_type<TriMeshCollapseEdgeToMidOperation>(
             "tri_mesh_collapse_edge_to_mid",
@@ -42,8 +42,7 @@ IsotropicRemeshing::IsotropicRemeshing(TriMesh& mesh, const double length, const
     }
     // flip
     {
-        OperationSettings<TriMeshSwapEdgeOperation> op_settings;
-        op_settings.must_improve_valence = true;
+        OperationSettings<TriMeshSwapEdgeOperation> op_settings{true};
 
         m_scheduler.add_operation_type<TriMeshSwapEdgeOperation>(
             "TriMeshSwapEdgeOperation",
@@ -51,8 +50,7 @@ IsotropicRemeshing::IsotropicRemeshing(TriMesh& mesh, const double length, const
     }
     // smooth
     {
-        OperationSettings<TriMeshVertexTangentialSmoothOperation> op_settings;
-        op_settings.position = m_position_handle;
+        OperationSettings<TriMeshVertexTangentialSmoothOperation> op_settings{m_position_handle};
 
         m_scheduler.add_operation_type<TriMeshVertexTangentialSmoothOperation>(
             "vertex_tangential_smooth",
