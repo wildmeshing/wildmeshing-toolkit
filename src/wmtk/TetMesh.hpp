@@ -37,6 +37,11 @@ public:
 protected:
     long id(const Tuple& tuple, PrimitiveType type) const override;
 
+    long id_vertex(const Tuple& tuple) const { return id(tuple, PrimitiveType::Vertex); }
+    long id_edge(const Tuple& tuple) const { return id(tuple, PrimitiveType::Edge); }
+    long id_face(const Tuple& tuple) const { return id(tuple, PrimitiveType::Face); }
+    long id_tet(const Tuple& tuple) const { return id(tuple, PrimitiveType::Tetrahedron); }
+
     /**
      * @brief internal function that returns the tuple of requested type, and has the global index
      * cid
@@ -46,7 +51,8 @@ protected:
      */
     Tuple tuple_from_id(const PrimitiveType type, const long gid) const override;
 
-private:
+    // private:
+protected:
     MeshAttributeHandle<long> m_vt_handle;
     MeshAttributeHandle<long> m_et_handle;
     MeshAttributeHandle<long> m_ft_handle;
@@ -60,6 +66,9 @@ private:
     Tuple edge_tuple_from_id(long id) const;
     Tuple face_tuple_from_id(long id) const;
     Tuple tet_tuple_from_id(long id) const;
+
+    // internal structure that encapsulations the actual execution of split and collapse
+    class TetMeshOperationExecutor;
 };
 
 } // namespace wmtk

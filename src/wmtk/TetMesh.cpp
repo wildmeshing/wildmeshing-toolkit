@@ -287,7 +287,57 @@ Tuple TetMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
             tuple.m_global_cid,
             tuple.m_hash);
     case PrimitiveType::Tetrahedron: {
-        throw "Not implemented";
+        // need test
+        const long gvid = id(tuple, PrimitiveType::Vertex);
+        const long geid = id(tuple, PrimitiveType::Edge);
+        const long gfid = id(tuple, PrimitiveType::Face);
+
+        ConstAccessor<long> tt_accessor = create_const_accessor<long>(m_tt_handle);
+        auto tt = tt_accessor.vector_attribute(tuple);
+
+        long gcid_new = tt(tuple.m_local_fid);
+
+        /*handle exception here*/
+        // check if is_boundary allows removing this exception in 3d cases
+        if (gcid_new == -1) {
+            return Tuple(-1, -1, -1, -1, -1);
+        }
+        /*handle exception end*/
+
+        long lvid_new = -1, leid_new = -1, lfid_new = -1;
+
+        ConstAccessor<long> tv_accessor = create_const_accessor<long>(m_tv_handle);
+        auto tv = tv_accessor.vector_attribute(gcid_new);
+
+        ConstAccessor<long> te_accessor = create_const_accessor<long>(m_te_handle);
+        auto te = tv_accessor.vector_attribute(gcid_new);
+
+        ConstAccessor<long> tf_accessor = create_const_accessor<long>(m_tf_handle);
+        auto tf = tv_accessor.vector_attribute(gcid_new);
+
+        for (long i = 0; i < 4; ++i) {
+            if (tv(i) == gvid) {
+                lvid_new = i;
+            }
+            if (tf(i) == gfid) {
+                lfid_new = i;
+            }
+        }
+
+        for (long i = 0; i < 6; ++i) {
+            if (te(i) == geid) {
+                leid_new = i;
+                break; // check if the break is correct
+            }
+        }
+
+        assert(lvid_new != -1);
+        assert(leid_new != -1);
+        assert(lfid_new != -1);
+
+        const Tuple res(lvid_new, leid_new, lfid_new, gcid_new, get_cell_hash_slow(gcid_new));
+        assert(is_valid(res));
+        return res;
     }
     default: throw std::runtime_error("Tuple switch: Invalid primitive type"); break;
     }
