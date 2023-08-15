@@ -556,7 +556,7 @@ TEST_CASE("remeshing_tetrahedron", "[components][isotropic_remeshing][2D][.]")
     TriMesh mesh = tetrahedron_with_position();
 
     IsotropicRemeshing isotropicRemeshing(mesh, 0.5, true);
-    isotropicRemeshing.remeshing(10); // TODO: endless loop when reaching 19 iterations?
+    isotropicRemeshing.remeshing(20);
 
     ParaviewWriter writer("tet_remeshing", "position", mesh, true, true, true, false);
     mesh.serialize(writer);
