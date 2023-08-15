@@ -36,11 +36,11 @@ std::array<long, 3> trimesh_simplex_counts(const TriMesh& m)
 int trimesh_simply_connected_components(const DEBUG_TriMesh& m, std::vector<int> &component_ids)
 {
     component_ids.resize(m.capacity(PrimitiveType::Face), -1);
-    auto all_face_tuples = m.get_all(PrimitiveType::Face);
+    const auto all_face_tuples = m.get_all(PrimitiveType::Face);
     int component_id = 0;
     // BFS
     for (auto face_tuple : all_face_tuples) {
-        long fid = m.id(face_tuple, PrimitiveType::Face);
+        const long fid = m.id(face_tuple, PrimitiveType::Face);
         if (component_ids[fid] != -1) {
             continue;
         } // visited
@@ -83,14 +83,14 @@ int trimesh_simply_connected_components(const DEBUG_TriMesh& m)
 int trimesh_boundary_loops_count(const DEBUG_TriMesh& m)
 {
     std::vector<int> boundary_loop_ids(m.capacity(PrimitiveType::Edge), -1);
-    auto all_edge_tuples = m.get_all(PrimitiveType::Edge);
+    const auto all_edge_tuples = m.get_all(PrimitiveType::Edge);
     int boundary_loop_id = 0;
     for (auto edge_tuple : all_edge_tuples) 
     {
         if (!m.is_boundary(edge_tuple)) {
             continue;
         }
-        long eid = m.id(edge_tuple, PrimitiveType::Edge);
+        const long eid = m.id(edge_tuple, PrimitiveType::Edge);
         if (boundary_loop_ids[eid] != -1) {
             continue;
         } // visited
