@@ -97,7 +97,7 @@ void TriMesh::TriMeshOperationExecutor::delete_simplices()
     }
 }
 
-void TriMesh::TriMeshOperationExecutor::increment_cell_hash()
+void TriMesh::TriMeshOperationExecutor::update_cell_hash()
 {
     for (const long& cell_id : cell_ids_to_update_hash) {
         ++hash_accessor.scalar_attribute(cell_id);
@@ -387,7 +387,7 @@ Tuple TriMesh::TriMeshOperationExecutor::split_edge()
         connect_faces_across_spine();
     }
 
-    increment_cell_hash();
+    update_cell_hash();
     delete_simplices();
     // return Tuple new_fid, new_vid that points
     const long new_tuple_fid = m_incident_face_datas[0].split_f1;
@@ -446,7 +446,7 @@ Tuple TriMesh::TriMeshOperationExecutor::collapse_edge()
     assert(m_mesh.id_face(ret) == new_tuple_fid);
 
 
-    increment_cell_hash();
+    update_cell_hash();
     delete_simplices();
 
     return ret;

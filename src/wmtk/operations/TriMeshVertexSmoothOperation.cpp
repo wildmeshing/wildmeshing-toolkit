@@ -46,7 +46,7 @@ bool TriMeshVertexSmoothOperation::execute()
     for (const Simplex& s : star_faces) {
         incident_face_tuple.emplace_back(s.tuple());
     }
-    increment_cell_hash(incident_face_tuple);
+    update_cell_hash(incident_face_tuple);
 
 
     return true;

@@ -37,7 +37,7 @@ protected:
     // does invariant pre-checks
     virtual bool after() const;
 
-    void increment_cell_hash(const std::vector<Tuple>& cells);
+    void update_cell_hash(const std::vector<Tuple>& cells);
 
 
     Mesh& m_mesh;

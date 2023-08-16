@@ -424,7 +424,7 @@ TEST_CASE("hash_update", "[operations][2D]")
 
         CHECK(executor.hash_at_cell(0) == 0);
 
-        executor.increment_cell_hash();
+        executor.update_cell_hash();
 
         CHECK(executor.hash_at_cell(0) == 1);
     }
@@ -449,7 +449,7 @@ TEST_CASE("hash_update", "[operations][2D]")
         CHECK(executor.hash_at_cell(8) == 0);
         CHECK(executor.hash_at_cell(9) == 0);
 
-        executor.increment_cell_hash();
+        executor.update_cell_hash();
 
         CHECK(executor.hash_at_cell(0) == 1);
         CHECK(executor.hash_at_cell(1) == 1);

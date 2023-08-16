@@ -9,7 +9,7 @@ class TriMesh::TriMeshOperationExecutor
 public:
     TriMeshOperationExecutor(TriMesh& m, const Tuple& operating_tuple);
     void delete_simplices();
-    void increment_cell_hash();
+    void update_cell_hash();
 
     std::array<Accessor<char>, 3> flag_accessors;
     Accessor<long> ff_accessor;
