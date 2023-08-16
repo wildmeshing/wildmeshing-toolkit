@@ -39,6 +39,16 @@ bool TriMeshVertexSmoothOperation::execute()
     }
     p_mid /= one_ring.size();
 
+    const SimplicialComplex star = SimplicialComplex::closed_star(m_mesh, Simplex::vertex(m_tuple));
+    const auto star_faces = star.get_faces();
+    std::vector<Tuple> incident_face_tuple;
+    incident_face_tuple.reserve(star_faces.size());
+    for (const Simplex& s : star_faces) {
+        incident_face_tuple.emplace_back(s.tuple());
+    }
+    increment_cell_hash(incident_face_tuple);
+
+
     return true;
 }
 
