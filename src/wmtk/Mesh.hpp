@@ -24,6 +24,31 @@ public:
     friend class ParaviewWriter;
     friend class MeshReader;
 
+
+    // Interface for SyncMesh
+
+    // TODO: Need a wrapper for MeshAttributeHandle<Tuple>?
+
+    // size of dim(Mesh), store base_tuple for each simplex
+    std::vector<MeshAttributeHandle<long>> base_tuple_handle;
+
+    // if parent_mesh is not null, then this mesh is a child_mesh of parent_mesh
+    std::shared_ptr<Mesh> parent_mesh;
+    std::vector<std::shared_ptr<Mesh>> child_meshes;
+
+    // size of child_meshes.size(), store the map to the base_tuple of the child_meshes (on the top level simplex of each child_mesh)
+    // i.e. Dim(map_to_child[i]) == Dim(child_meshes[i])
+    std::vector<MeshAttributeHandle<long>> map_to_child_handles;
+    // store the map to the base_tuple of the parent_mesh
+    MeshAttributeHandle<long> map_to_parent_handle;
+    
+    // register child_meshes and the map from child_meshes to this mesh, child_mesh_simplex 
+    void register_child_mesh(std::shared_ptr<Mesh> child_mesh, const std::vector<long>&child_mesh_simplex_map);
+    
+    // helper function to check if this mesh is a valid child_mesh of parent_mesh
+    // i.e. the connectivity of this mesh is a subset of this in parent_mesh
+    bool is_child_mesh_valid() const;
+
     // dimension is the dimension of the top level simplex in this mesh
     // That is, a TriMesh is a 2, a TetMesh is a 3
     Mesh(const long& dimension);
