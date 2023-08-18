@@ -1,4 +1,5 @@
 #include "Operation.hpp"
+#include <wmtk/Accessor.hpp>
 #include <wmtk/Mesh.hpp>
 
 namespace wmtk {
@@ -46,6 +47,13 @@ bool Operation::after() const
     return true;
 }
 
+void Operation::update_cell_hash(const std::vector<Tuple>& cells)
+{
+    auto acc = m_mesh.get_cell_hash_accessor();
+    for (const Tuple& t : cells) {
+        ++acc.scalar_attribute(t);
+    }
+}
+
 
 } // namespace wmtk
-

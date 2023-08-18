@@ -23,6 +23,7 @@ public:
     friend class AccessorBase;
     friend class ParaviewWriter;
     friend class MeshReader;
+    friend class Operation;
 
     // dimension is the dimension of the top level simplex in this mesh
     // That is, a TriMesh is a 2, a TetMesh is a 3
