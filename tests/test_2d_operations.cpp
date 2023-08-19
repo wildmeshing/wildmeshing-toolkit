@@ -969,7 +969,8 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
     {
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 4, 0);
 
-        TriMeshCollapseEdgeOperation op(m, edge);
+        OperationSettings<TriMeshCollapseEdgeOperation> op_settings(m);
+        TriMeshCollapseEdgeOperation op(m, edge, op_settings);
         const bool success = op();
         CHECK(success);
     }
@@ -977,7 +978,7 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
     {
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 4, 0);
 
-        OperationSettings<TriMeshCollapseEdgeOperation> op_settings;
+        OperationSettings<TriMeshCollapseEdgeOperation> op_settings(m);
         op_settings.collapse_boundary_vertex_to_interior = false;
 
         TriMeshCollapseEdgeOperation op(m, edge, op_settings);
@@ -1003,7 +1004,8 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
     {
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 1);
 
-        TriMeshCollapseEdgeOperation op(m, edge);
+        OperationSettings<TriMeshCollapseEdgeOperation> op_settings(m);
+        TriMeshCollapseEdgeOperation op(m, edge, op_settings);
         const bool success = op();
         CHECK(success);
     }
@@ -1011,7 +1013,7 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
     {
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 1);
 
-        OperationSettings<TriMeshCollapseEdgeOperation> op_settings;
+        OperationSettings<TriMeshCollapseEdgeOperation> op_settings(m);
         op_settings.collapse_boundary_edges = false;
 
         TriMeshCollapseEdgeOperation op(m, edge, op_settings);

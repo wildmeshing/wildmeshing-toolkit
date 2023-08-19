@@ -3,9 +3,11 @@
 #include <type_traits>
 #include <vector>
 #include <wmtk/Tuple.hpp>
+#include <wmtk/invariants/InvariantCollection.hpp>
 
 namespace wmtk {
 class Mesh;
+class InvariantCollection;
 
 template <typename T>
 struct OperationSettings

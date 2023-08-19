@@ -119,7 +119,10 @@ bool TriMeshSwapEdgeOperation::execute()
     //  \  |  /
     //   \ | /
     //    \|/
-    TriMeshCollapseEdgeOperation coll_op(m_mesh, coll_input_tuple);
+
+    OperationSettings<TriMeshCollapseEdgeOperation> collapse_settings(
+        static_cast<TriMesh&>(m_mesh));
+    TriMeshCollapseEdgeOperation coll_op(m_mesh, coll_input_tuple, collapse_settings);
     if (!coll_op()) {
         return false;
     }

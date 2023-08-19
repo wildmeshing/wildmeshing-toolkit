@@ -1,44 +1,70 @@
 
 
 #include "TriMeshCollapseEdgeOperation.hpp"
+#include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
-#include "wmtk/SimplicialComplex.hpp"
+#include <wmtk/invariants/TriMeshLinkConditionInvariant.hpp>
 
 namespace wmtk {
+
+OperationSettings<TriMeshCollapseEdgeOperation>::OperationSettings(const TriMesh& m)
+{
+    // outdated + is valid tuple
+    invariants = basic_invariant_collection(m);
+    invariants.add(std::make_shared<TriMeshLinkConditionInvariant>(m));
+}
+
 TriMeshCollapseEdgeOperation::TriMeshCollapseEdgeOperation(
     Mesh& m,
     const Tuple& t,
     const OperationSettings<TriMeshCollapseEdgeOperation>& settings)
-    : Operation(m)
-    , m_input_tuple{t}
+    : TriMeshCollapseEdgeOperation(dynamic_cast<TriMesh&>(m), t, settings)
+{}
+TriMeshCollapseEdgeOperation::TriMeshCollapseEdgeOperation(
+    TriMesh& m,
+    const Tuple& t,
+    const OperationSettings<TriMeshCollapseEdgeOperation>& settings)
+    : TupleOperation(m, settings.invariants, t)
     , m_settings{settings}
 {}
 
 bool TriMeshCollapseEdgeOperation::execute()
 {
     TriMesh& m = dynamic_cast<TriMesh&>(m_mesh);
-    m_output_tuple = m.collapse_edge(m_input_tuple);
+    m_output_tuple = m.collapse_edge(input_tuple());
     return true;
 }
+
+std::vector<Tuple> TriMeshCollapseEdgeOperation::modified_primitives(
+    PrimitiveType type) const
+{
+    if (type == PrimitiveType::Face) {
+        return modified_triangles();
+    } else {
+        return {};
+    }
+}
+/*
 bool TriMeshCollapseEdgeOperation::before() const
 {
-    if (m_mesh.is_outdated(m_input_tuple)) {
+    if (m_mesh.is_outdated(input_tuple())) {
         return false;
     }
-    if (!m_mesh.is_valid(m_input_tuple)) {
+    if (!m_mesh.is_valid(input_tuple())) {
         return false;
     }
 
-    if (!m_settings.collapse_boundary_edges && m_mesh.is_boundary(m_input_tuple)) {
+    if (!m_settings.collapse_boundary_edges && m_mesh.is_boundary(input_tuple())) {
         return false;
     }
     if (!m_settings.collapse_boundary_vertex_to_interior &&
-        m_mesh.is_boundary_vertex(m_input_tuple)) {
+        m_mesh.is_boundary_vertex(input_tuple())) {
         return false;
     }
 
-    return SimplicialComplex::link_cond_bd_2d(m_mesh, m_input_tuple);
+    return SimplicialComplex::link_cond_bd_2d(m_mesh, input_tuple());
 }
+*/
 
 std::string TriMeshCollapseEdgeOperation::name() const
 {

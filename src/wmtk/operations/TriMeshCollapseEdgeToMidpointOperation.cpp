@@ -48,7 +48,7 @@ bool TriMeshCollapseEdgeToMidpointOperation::execute()
 
     // collapse
     {
-        OperationSettings<TriMeshCollapseEdgeOperation> op_settings;
+        OperationSettings<TriMeshCollapseEdgeOperation> op_settings(static_cast<TriMesh&>(m_mesh));
         op_settings.collapse_boundary_edges = m_settings.collapse_boundary_edges;
 
         TriMeshCollapseEdgeOperation split_op(m_mesh, m_input_tuple, op_settings);

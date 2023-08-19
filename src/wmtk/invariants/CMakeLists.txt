@@ -1,0 +1,17 @@
+set(SRC_FILES
+    Invariant.hpp
+    Invariant.cpp
+    TriMeshInvariant.hpp
+    TriMeshInvariant.cpp
+    TetMeshInvariant.hpp
+    TetMeshInvariant.cpp
+    MeshInvariant.hpp
+    MeshInvariant.cpp
+    InvariantCollection.hpp
+    InvariantCollection.cpp
+    ValidTupleInvariant.hpp
+    ValidTupleInvariant.cpp
+    TriMeshLinkConditionInvariant.hpp
+    TriMeshLinkConditionInvariant.cpp
+)
+target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

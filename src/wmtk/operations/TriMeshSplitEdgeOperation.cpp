@@ -9,21 +9,20 @@ TriMeshSplitEdgeOperation::TriMeshSplitEdgeOperation(
     Mesh& m,
     const Tuple& t,
     const OperationSettings<TriMeshSplitEdgeOperation>& settings)
-    : Operation(m)
-    , m_input_tuple{t}
+    : TupleOperation(m, settings.invariants, t)
     , m_settings{settings}
 {}
 bool TriMeshSplitEdgeOperation::execute()
 {
     // move vertex to center of old vertices
     TriMesh& m = dynamic_cast<TriMesh&>(m_mesh);
-    m_output_tuple = m.split_edge(m_input_tuple);
+    m_output_tuple = m.split_edge(input_tuple());
 
     //    for(const acc: tri_accessors) {
     //    ConstACcessor old_tri_acc(acc, checkpoint);
     // for(tri: new_triangles) {
 
-    //    value = old_tri_acc(m_input_tuple);
+    //    value = old_tri_acc(input_tuple());
     //        acc.assign(old,tri);
     //    }
     //}
@@ -36,11 +35,11 @@ bool TriMeshSplitEdgeOperation::execute()
 }
 bool TriMeshSplitEdgeOperation::before() const
 {
-    if (m_mesh.is_outdated(m_input_tuple) || !m_mesh.is_valid(m_input_tuple)) {
+    if (m_mesh.is_outdated(input_tuple()) || !m_mesh.is_valid(input_tuple())) {
         return false;
     }
 
-    if (!m_settings.split_boundary_edges && m_mesh.is_boundary(m_input_tuple)) {
+    if (!m_settings.split_boundary_edges && m_mesh.is_boundary(input_tuple())) {
         return false;
     }
 
@@ -58,7 +57,7 @@ bool TriMeshSplitEdgeOperation::before() const
 //    //if(
 //    //        get_area(current_positions, one_ring(m_output_tuple))
 //    //        <
-//    //        get_area(original_positions, one_ring(m_input_tuple))) {
+//    //        get_area(original_positions, one_ring(input_tuple()))) {
 //    //    return false;;
 //    //}
 //}
@@ -75,6 +74,16 @@ Tuple TriMeshSplitEdgeOperation::new_vertex() const
 Tuple TriMeshSplitEdgeOperation::return_tuple() const
 {
     return m_output_tuple;
+}
+
+std::vector<Tuple> TriMeshSplitEdgeOperation::modified_primitives(PrimitiveType type) const
+{
+    if (type == PrimitiveType::Face) {
+        // return modified_triangles();
+    } else if (type == PrimitiveType::Vertex) {
+        return {new_vertex()};
+    }
+    return {};
 }
 ///std::vector<Tuple> TriMeshSplitEdgeOperation::triangle_onering() const
 ///{
