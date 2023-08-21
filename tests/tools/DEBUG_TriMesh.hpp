@@ -21,7 +21,7 @@ public:
 
     auto edge_tuple_between_v1_v2(const long v1, const long v2, const long fid) const -> Tuple;
 
-    Tuple tuple_from_face_id(const long fid);
+    Tuple tuple_from_face_id(const long fid) const;
     template <typename T>
     AccessorBase<T> create_base_accessor(const MeshAttributeHandle<T>& handle)
     {

@@ -254,6 +254,36 @@ TriMesh strip(long size)
     return m;
 }
 
+
+TriMesh three_triangles_with_two_components()
+{
+    TriMesh m;
+    RowVectors3l tris;
+    tris.resize(3, 3);
+    tris.row(0) << 0, 1, 2;
+    tris.row(1) << 3, 6, 4;
+    tris.row(2) << 3, 5, 6;
+    m.initialize(tris);
+    return m;
+}
+
+TriMesh nine_triangles_with_a_hole()
+{
+    TriMesh m;
+    RowVectors3l tris;
+    tris.resize(9, 3);
+    tris.row(0) << 0, 1, 2;
+    tris.row(1) << 0, 2, 3;
+    tris.row(2) << 1, 4, 2;
+    tris.row(3) << 1, 6, 4;
+    tris.row(4) << 6, 7, 4;
+    tris.row(5) << 4, 7, 5;
+    tris.row(6) << 7, 8, 5;
+    tris.row(7) << 5, 8, 3;
+    tris.row(8) << 5, 3, 2;
+    m.initialize(tris);
+    return m;
+}
 TriMesh three_individuals()
 {
     TriMesh m;
@@ -265,4 +295,5 @@ TriMesh three_individuals()
     m.initialize(tris);
     return m;
 }
+
 } // namespace wmtk::tests
