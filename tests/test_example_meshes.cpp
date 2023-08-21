@@ -145,18 +145,19 @@ void run_debug_trimesh(const DEBUG_TriMesh& m, const MeshDebugInfo& info)
 
     // validate that the info is ok
     REQUIRE(info.boundary_curves >= 0);
-    REQUIRE(info.genus >= 0);
     REQUIRE(info.simply_connected_components>= 0);
     for(const long count: info.simplex_counts) {
         REQUIRE(count >= 0);
     }
 
     REQUIRE(m.is_connectivity_valid());
-
-    CHECK(trimesh_genus(m) == info.genus);
+    if (info.genus >= 0)
+    {
+        CHECK(trimesh_genus(m) == info.genus);
+    }    
     CHECK(trimesh_simply_connected_components(m) == info.simply_connected_components);
     CHECK(trimesh_simplex_counts(m) == info.simplex_counts);
-
+    REQUIRE(trimesh_boundary_loops_count(m) == info.boundary_curves);
     auto [v_count, e_count, f_count] = info.simplex_counts;
     auto v_tups = m.get_all(PrimitiveType::Vertex);
     auto e_tups = m.get_all(PrimitiveType::Edge);
@@ -248,7 +249,7 @@ TEST_CASE("test_debug_trimeshes_three_individuals")
     m = three_individuals();
     MeshDebugInfo info;
     info.name = "three_individuals";
-    info.genus = 0;
+    info.genus = -1; // not applicable here
     info.boundary_curves = 3;// each triangle is individual
     info.simply_connected_components = 3;
     info.simplex_counts = std::array<long, 3>{{6, 9, 3}};
@@ -309,6 +310,7 @@ TEST_CASE("test_debug_trimeshes_hole")
     REQUIRE(trimesh_boundary_loops_count(m) == 2);
     info.name = "nine_triangles_with_a_hole";
     info.genus = 0;
+    info.boundary_curves = 2;
     info.simply_connected_components = 1;
     info.simplex_counts = std::array<long, 3>{{9, 18, 9}};
     run_debug_trimesh(m, info);
