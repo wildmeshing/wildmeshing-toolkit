@@ -79,6 +79,7 @@ Tuple TriMeshSplitEdgeOperation::return_tuple() const
 std::vector<Tuple> TriMeshSplitEdgeOperation::modified_primitives(PrimitiveType type) const
 {
     if (type == PrimitiveType::Face) {
+        // TODO
         // return modified_triangles();
     } else if (type == PrimitiveType::Vertex) {
         return {new_vertex()};
