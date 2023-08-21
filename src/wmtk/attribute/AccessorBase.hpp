@@ -34,7 +34,7 @@ public:
 
 public:
     // returns the size of the underlying attribute
-    long size() const;
+    long reserved_size() const;
     long dimension() const;
 
 

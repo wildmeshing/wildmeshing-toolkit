@@ -70,8 +70,8 @@ public:
 
     // returns the size of the underlying attribute
 
+    using BaseType::reserved_size; // const() -> long
     using BaseType::dimension; // const() -> long
-    using BaseType::size; // const() -> long
 
     using BaseType::attribute; // access to Attribute object being used here
     using BaseType::set_attribute; // (const vector<T>&) -> void

@@ -5,12 +5,17 @@
 
 namespace wmtk {
 
-TriMeshSplitEdgeOperation::TriMeshSplitEdgeOperation(Mesh& m, const Tuple& t)
+TriMeshSplitEdgeOperation::TriMeshSplitEdgeOperation(
+    Mesh& m,
+    const Tuple& t,
+    const OperationSettings<TriMeshSplitEdgeOperation>& settings)
     : Operation(m)
-    , m_input_tuple(t)
+    , m_input_tuple{t}
+    , m_settings{settings}
 {}
 bool TriMeshSplitEdgeOperation::execute()
 {
+    // move vertex to center of old vertices
     TriMesh& m = dynamic_cast<TriMesh&>(m_mesh);
     m_output_tuple = m.split_edge(m_input_tuple);
 
@@ -31,7 +36,15 @@ bool TriMeshSplitEdgeOperation::execute()
 }
 bool TriMeshSplitEdgeOperation::before() const
 {
-    return !m_mesh.is_outdated(m_input_tuple) && m_mesh.is_valid(m_input_tuple);
+    if (m_mesh.is_outdated(m_input_tuple) || !m_mesh.is_valid(m_input_tuple)) {
+        return false;
+    }
+
+    if (!m_settings.split_boundary_edges && m_mesh.is_boundary(m_input_tuple)) {
+        return false;
+    }
+
+    return true;
 }
 
 // potential after-like strucutre?

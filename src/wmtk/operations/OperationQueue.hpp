@@ -27,7 +27,7 @@ public:
     // }
     void run()
     {
-        spdlog::info("Running with queue starting at {} of {}", current_index, queue.size());
+        spdlog::debug("Running with queue starting at {} of {}", current_index, queue.size());
         while (!empty()) {
             execute_next();
         }
@@ -37,9 +37,9 @@ public:
     {
         auto op = pop_top();
         if ((*op)()) {
-            spdlog::info("Op succeeded");
+            spdlog::debug("Op succeeded");
         } else {
-            spdlog::info("Op failed");
+            spdlog::debug("Op failed");
         }
     }
 

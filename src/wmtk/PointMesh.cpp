@@ -32,6 +32,12 @@ bool PointMesh::is_boundary(const Tuple&) const
     return false;
 }
 
+bool PointMesh::is_boundary_vertex(const Tuple&) const
+{
+    // every point is on the interior as it has no boundary simplices
+    return false;
+}
+
 void PointMesh::initialize(long count)
 {
     set_capacities({count});

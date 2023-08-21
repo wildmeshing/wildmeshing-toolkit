@@ -1,12 +1,24 @@
 #pragma once
 #include <optional>
+#include <wmtk/TriMesh.hpp>
 #include "Operation.hpp"
 
 namespace wmtk {
+class TriMeshSplitEdgeOperation;
+
+template <>
+struct OperationSettings<TriMeshSplitEdgeOperation>
+{
+    bool split_boundary_edges = true;
+};
+
 class TriMeshSplitEdgeOperation : public Operation
 {
 public:
-    TriMeshSplitEdgeOperation(Mesh& m, const Tuple& t);
+    TriMeshSplitEdgeOperation(
+        Mesh& m,
+        const Tuple& t,
+        const OperationSettings<TriMeshSplitEdgeOperation>& settings);
 
     std::string name() const override;
 
@@ -32,8 +44,9 @@ protected:
 private:
     Tuple m_input_tuple;
     Tuple m_output_tuple;
+
+    const OperationSettings<TriMeshSplitEdgeOperation>& m_settings;
 };
 
 
 } // namespace wmtk
-

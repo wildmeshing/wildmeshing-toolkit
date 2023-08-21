@@ -23,9 +23,9 @@ AccessorBase<T>::~AccessorBase() = default;
 
 
 template <typename T>
-long AccessorBase<T>::size() const
+long AccessorBase<T>::reserved_size() const
 {
-    return attribute().size();
+    return attribute().reserved_size();
 }
 
 template <typename T>
