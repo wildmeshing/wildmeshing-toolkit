@@ -17,7 +17,7 @@ VertexTangentialSmooth::VertexTangentialSmooth(
 
 std::string VertexTangentialSmooth::name() const
 {
-    return "vertex_tangential_smooth";
+    return "tri_mesh_vertex_tangential_smooth";
 }
 
 bool VertexTangentialSmooth::before() const

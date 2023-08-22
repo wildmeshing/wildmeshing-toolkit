@@ -12,7 +12,7 @@ EdgeSwap::EdgeSwap(wmtk::Mesh& m, const Tuple& t, const OperationSettings<EdgeSw
 
 std::string EdgeSwap::name() const
 {
-    return "TriMeshSwapEdgeOperation";
+    return "tri_mesh_edge_swap";
 }
 
 bool EdgeSwap::before() const

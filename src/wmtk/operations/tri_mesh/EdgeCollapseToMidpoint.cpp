@@ -19,7 +19,7 @@ EdgeCollapseToMidpoint::EdgeCollapseToMidpoint(
 
 std::string EdgeCollapseToMidpoint::name() const
 {
-    return "tri_mesh_collapse_edge_to_mid";
+    return "tri_mesh_edge_collapse_to_midpoint";
 }
 
 Tuple EdgeCollapseToMidpoint::return_tuple() const

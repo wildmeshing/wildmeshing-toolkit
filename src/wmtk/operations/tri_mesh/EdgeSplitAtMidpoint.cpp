@@ -18,7 +18,7 @@ EdgeSplitAtMidpoint::EdgeSplitAtMidpoint(
 }
 std::string EdgeSplitAtMidpoint::name() const
 {
-    return "tri_mesh_split_edge_at_midpoint";
+    return "tri_mesh_edge_split_at_midpoint";
 }
 Tuple EdgeSplitAtMidpoint::return_tuple() const
 {

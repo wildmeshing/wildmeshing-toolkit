@@ -42,7 +42,7 @@ bool EdgeCollapse::before() const
 
 std::string EdgeCollapse::name() const
 {
-    return "tri_mesh_collapse_edge";
+    return "tri_mesh_edge_collapse";
 }
 
 Tuple EdgeCollapse::return_tuple() const

@@ -15,7 +15,7 @@ VertexSmooth::VertexSmooth(
 
 std::string VertexSmooth::name() const
 {
-    return "vertex_smooth";
+    return "tri_mesh_vertex_smooth";
 }
 
 bool VertexSmooth::before() const

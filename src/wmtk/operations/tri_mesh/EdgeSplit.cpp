@@ -61,7 +61,7 @@ bool EdgeSplit::before() const
 //}
 std::string EdgeSplit::name() const
 {
-    return "tri_mesh_split_edge";
+    return "tri_mesh_edge_split";
 }
 
 Tuple EdgeSplit::new_vertex() const
