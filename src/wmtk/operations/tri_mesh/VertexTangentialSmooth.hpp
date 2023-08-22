@@ -1,25 +1,29 @@
 #pragma once
 #include <optional>
 #include <wmtk/TriMesh.hpp>
-#include "Operation.hpp"
+#include "../Operation.hpp"
 
 namespace wmtk::operations {
 namespace tri_mesh {
-class VertexSmooth;
+class VertexTangentialSmooth;
 }
 
 template <>
-struct OperationSettings<tri_mesh::VertexSmooth>
+struct OperationSettings<tri_mesh::VertexTangentialSmooth>
 {
     MeshAttributeHandle<double> position;
     bool smooth_boundary = false;
+    double damping_factor = 1.0;
 };
 
 namespace tri_mesh {
-class VertexSmooth : public Operation
+class VertexTangentialSmooth : public Operation
 {
 public:
-    VertexSmooth(wmtk::Mesh& m, const Tuple& t, const OperationSettings<VertexSmooth>& settings);
+    VertexTangentialSmooth(
+        wmtk::Mesh& m,
+        const Tuple& t,
+        const OperationSettings<VertexTangentialSmooth>& settings);
 
     std::string name() const override;
 
@@ -32,7 +36,7 @@ protected:
 private:
     Tuple m_tuple;
     Accessor<double> m_pos_accessor;
-    const OperationSettings<VertexSmooth>& m_settings;
+    const OperationSettings<VertexTangentialSmooth>& m_settings;
 };
 
 } // namespace tri_mesh

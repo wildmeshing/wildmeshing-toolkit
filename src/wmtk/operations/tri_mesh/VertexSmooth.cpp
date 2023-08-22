@@ -1,4 +1,4 @@
-#include "TriMeshVertexSmoothOperation.hpp"
+#include "VertexSmooth.hpp"
 
 #include <wmtk/SimplicialComplex.hpp>
 

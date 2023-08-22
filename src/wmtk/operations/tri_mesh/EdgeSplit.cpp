@@ -1,5 +1,5 @@
 
-#include "TriMeshSplitEdgeOperation.hpp"
+#include "EdgeSplit.hpp"
 #include <wmtk/TriMesh.hpp>
 #include "wmtk/SimplicialComplex.hpp"
 

@@ -1,8 +1,8 @@
-#include "TriMeshVertexTangentialSmoothOperation.hpp"
+#include "VertexTangentialSmooth.hpp"
 
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
-#include "TriMeshVertexSmoothOperation.hpp"
+#include "VertexSmooth.hpp"
 
 namespace wmtk::operations::tri_mesh {
 VertexTangentialSmooth::VertexTangentialSmooth(

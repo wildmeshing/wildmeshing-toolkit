@@ -1,10 +1,10 @@
 #include "IsotropicRemeshing.hpp"
 
 #include <wmtk/SimplicialComplex.hpp>
-#include <wmtk/operations/TriMeshCollapseEdgeToMidpointOperation.hpp>
-#include <wmtk/operations/TriMeshSplitEdgeAtMidpointOperation.hpp>
-#include <wmtk/operations/TriMeshSwapEdgeOperation.hpp>
-#include <wmtk/operations/TriMeshVertexTangentialSmoothOperation.hpp>
+#include <wmtk/operations/tri_mesh/EdgeCollapseToMidpoint.hpp>
+#include <wmtk/operations/tri_mesh/EdgeSplitAtMidpoint.hpp>
+#include <wmtk/operations/tri_mesh/EdgeSwap.hpp>
+#include <wmtk/operations/tri_mesh/VertexTangentialSmooth.hpp>
 
 namespace wmtk::components::internal {
 

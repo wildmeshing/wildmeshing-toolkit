@@ -2,9 +2,9 @@
 #include <array>
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/Scheduler.hpp>
-#include <wmtk/operations/TriMeshCollapseEdgeOperation.hpp>
-#include <wmtk/operations/TriMeshSplitEdgeOperation.hpp>
-#include <wmtk/operations/TriMeshVertexSmoothOperation.hpp>
+#include <wmtk/operations/tri_mesh/EdgeCollapse.hpp>
+#include <wmtk/operations/tri_mesh/EdgeSplit.hpp>
+#include <wmtk/operations/tri_mesh/VertexSmooth.hpp>
 #include "tools/DEBUG_TriMesh.hpp"
 #include "tools/TriMesh_examples.hpp"
 #include "tools/redirect_logger_to_cout.hpp"

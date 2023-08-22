@@ -1,6 +1,6 @@
 
 
-#include "TriMeshCollapseEdgeOperation.hpp"
+#include "EdgeCollapse.hpp"
 #include <wmtk/TriMesh.hpp>
 #include "wmtk/SimplicialComplex.hpp"
 

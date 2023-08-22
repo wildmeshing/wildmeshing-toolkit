@@ -5,11 +5,11 @@
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/io/MeshReader.hpp>
 #include <wmtk/operations/OperationFactory.hpp>
-#include <wmtk/operations/TriMeshCollapseEdgeToMidpointOperation.hpp>
-#include <wmtk/operations/TriMeshSplitEdgeAtMidpointOperation.hpp>
-#include <wmtk/operations/TriMeshSwapEdgeOperation.hpp>
-#include <wmtk/operations/TriMeshVertexSmoothOperation.hpp>
-#include <wmtk/operations/TriMeshVertexTangentialSmoothOperation.hpp>
+#include <wmtk/operations/tri_mesh/EdgeCollapseToMidpoint.hpp>
+#include <wmtk/operations/tri_mesh/EdgeSplitAtMidpoint.hpp>
+#include <wmtk/operations/tri_mesh/EdgeSwap.hpp>
+#include <wmtk/operations/tri_mesh/VertexSmooth.hpp>
+#include <wmtk/operations/tri_mesh/VertexTangentialSmooth.hpp>
 #include <wmtk_components/input/input.hpp>
 #include <wmtk_components/isotropic_remeshing/internal/IsotropicRemeshing.hpp>
 #include <wmtk_components/isotropic_remeshing/internal/IsotropicRemeshingOptions.hpp>

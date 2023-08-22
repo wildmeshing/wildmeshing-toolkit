@@ -1,7 +1,7 @@
-#include "TriMeshCollapseEdgeToMidpointOperation.hpp"
+#include "EdgeCollapseToMidpoint.hpp"
 
 #include <wmtk/TriMesh.hpp>
-#include "TriMeshCollapseEdgeOperation.hpp"
+#include "EdgeCollapse.hpp"
 
 namespace wmtk::operations::tri_mesh {
 EdgeCollapseToMidpoint::EdgeCollapseToMidpoint(

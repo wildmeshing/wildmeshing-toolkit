@@ -1,8 +1,8 @@
-#include "TriMeshSwapEdgeOperation.hpp"
+#include "EdgeSwap.hpp"
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
-#include "TriMeshCollapseEdgeOperation.hpp"
-#include "TriMeshSplitEdgeOperation.hpp"
+#include "EdgeCollapse.hpp"
+#include "EdgeSplit.hpp"
 namespace wmtk::operations::tri_mesh {
 EdgeSwap::EdgeSwap(wmtk::Mesh& m, const Tuple& t, const OperationSettings<EdgeSwap>& settings)
     : Operation(m)

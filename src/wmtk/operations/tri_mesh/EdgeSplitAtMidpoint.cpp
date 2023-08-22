@@ -1,7 +1,7 @@
-#include "TriMeshSplitEdgeAtMidpointOperation.hpp"
+#include "EdgeSplitAtMidpoint.hpp"
 
 #include <wmtk/TriMesh.hpp>
-#include "TriMeshSplitEdgeOperation.hpp"
+#include "EdgeSplit.hpp"
 
 namespace wmtk::operations::tri_mesh {
 EdgeSplitAtMidpoint::EdgeSplitAtMidpoint(
