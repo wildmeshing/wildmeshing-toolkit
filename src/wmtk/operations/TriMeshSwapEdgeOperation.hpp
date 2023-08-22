@@ -3,7 +3,7 @@
 #include <optional>
 #include "Operation.hpp"
 
-namespace wmtk {
+namespace wmtk::operations {
 class TriMeshSwapEdgeOperation;
 
 template <>
@@ -17,7 +17,7 @@ class TriMeshSwapEdgeOperation : public Operation
 {
 public:
     TriMeshSwapEdgeOperation(
-        Mesh& m,
+        wmtk::Mesh& m,
         const Tuple& t,
         const OperationSettings<TriMeshSwapEdgeOperation>& settings = {});
 
@@ -37,4 +37,4 @@ private:
 };
 
 
-} // namespace wmtk
+} // namespace wmtk::operations

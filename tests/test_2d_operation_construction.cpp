@@ -23,6 +23,8 @@ constexpr PrimitiveType PF = PrimitiveType::Face;
 // something should succeed
 DEBUG_TriMesh test_split(const DEBUG_TriMesh& mesh, const Tuple& e, bool should_succeed)
 {
+    using namespace operations;
+
     DEBUG_TriMesh m = mesh;
     OperationFactory<TriMeshSplitEdgeOperation> fact;
 
@@ -50,6 +52,8 @@ DEBUG_TriMesh test_split(const DEBUG_TriMesh& mesh, long edge_index, bool should
 // something should succeed
 DEBUG_TriMesh test_collapse(const DEBUG_TriMesh& mesh, const Tuple& e, bool should_succeed)
 {
+    using namespace operations;
+
     DEBUG_TriMesh m = mesh;
     OperationFactory<TriMeshCollapseEdgeOperation> fact;
 

@@ -2,7 +2,7 @@
 #include <wmtk/TriMesh.hpp>
 #include "Operation.hpp"
 
-namespace wmtk {
+namespace wmtk::operations {
 class TriMeshSplitEdgeAtMidpointOperation;
 
 template <>
@@ -17,7 +17,7 @@ class TriMeshSplitEdgeAtMidpointOperation : public Operation
 {
 public:
     TriMeshSplitEdgeAtMidpointOperation(
-        Mesh& m,
+        wmtk::Mesh& m,
         const Tuple& t,
         const OperationSettings<TriMeshSplitEdgeAtMidpointOperation>& settings);
 
@@ -43,4 +43,4 @@ private:
 };
 
 
-} // namespace wmtk
+} // namespace wmtk::operations

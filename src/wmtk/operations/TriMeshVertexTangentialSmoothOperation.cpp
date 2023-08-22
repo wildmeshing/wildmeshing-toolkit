@@ -4,9 +4,9 @@
 #include <wmtk/utils/mesh_utils.hpp>
 #include "TriMeshVertexSmoothOperation.hpp"
 
-namespace wmtk {
+namespace wmtk::operations {
 TriMeshVertexTangentialSmoothOperation::TriMeshVertexTangentialSmoothOperation(
-    Mesh& m,
+    wmtk::Mesh& m,
     const Tuple& t,
     const OperationSettings<TriMeshVertexTangentialSmoothOperation>& settings)
     : Operation(m)
@@ -88,4 +88,4 @@ bool TriMeshVertexTangentialSmoothOperation::execute()
 }
 
 
-} // namespace wmtk
+} // namespace wmtk::operations

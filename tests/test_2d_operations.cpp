@@ -814,6 +814,8 @@ TEST_CASE("split_edge", "[operations][split][2D]")
 
 TEST_CASE("split_edge_operation", "[operations][split][2D]")
 {
+    using namespace operations;
+
     DEBUG_TriMesh m = hex_plus_two();
 
     REQUIRE(m.is_connectivity_valid());
@@ -923,6 +925,8 @@ TEST_CASE("split_multiple_edges", "[operations][split][2D]")
 
 TEST_CASE("collapse_edge", "[operations][collapse][2D]")
 {
+    using namespace operations;
+
     DEBUG_TriMesh m = hex_plus_two();
     REQUIRE(m.is_connectivity_valid());
 
@@ -1065,6 +1069,8 @@ TEST_CASE("collapse_return_tuple", "[operations][collapse][2D]")
 
 TEST_CASE("swap_edge", "[operations][swap][2D]")
 {
+    using namespace operations;
+
     SECTION("counter_clockwise")
     {
         DEBUG_TriMesh m = interior_edge();

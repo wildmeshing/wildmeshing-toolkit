@@ -16,6 +16,7 @@ IsotropicRemeshing::IsotropicRemeshing(TriMesh& mesh, const double length, const
     , m_position_handle{m_mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex)}
     , m_scheduler(m_mesh)
 {
+    using namespace operations;
     // split
     {
         OperationSettings<TriMeshSplitEdgeAtMidpointOperation> split_settings{

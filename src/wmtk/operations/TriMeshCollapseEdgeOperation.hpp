@@ -3,7 +3,7 @@
 #include <optional>
 #include "Operation.hpp"
 
-namespace wmtk {
+namespace wmtk::operations {
 class TriMeshCollapseEdgeOperation;
 
 template <>
@@ -19,7 +19,7 @@ class TriMeshCollapseEdgeOperation : public Operation
 {
 public:
     TriMeshCollapseEdgeOperation(
-        Mesh& m,
+        wmtk::Mesh& m,
         const Tuple& t,
         const OperationSettings<TriMeshCollapseEdgeOperation>& settings = {});
 
@@ -44,4 +44,4 @@ private:
 };
 
 
-} // namespace wmtk
+} // namespace wmtk::operations

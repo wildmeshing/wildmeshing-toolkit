@@ -3,7 +3,7 @@
 #include <wmtk/TriMesh.hpp>
 #include "Operation.hpp"
 
-namespace wmtk {
+namespace wmtk::operations {
 class TriMeshVertexTangentialSmoothOperation;
 
 template <>
@@ -18,7 +18,7 @@ class TriMeshVertexTangentialSmoothOperation : public Operation
 {
 public:
     TriMeshVertexTangentialSmoothOperation(
-        Mesh& m,
+        wmtk::Mesh& m,
         const Tuple& t,
         const OperationSettings<TriMeshVertexTangentialSmoothOperation>& settings);
 
@@ -37,4 +37,4 @@ private:
 };
 
 
-} // namespace wmtk
+} // namespace wmtk::operations

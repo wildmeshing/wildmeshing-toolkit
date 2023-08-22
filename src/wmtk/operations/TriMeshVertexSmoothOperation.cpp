@@ -2,9 +2,9 @@
 
 #include <wmtk/SimplicialComplex.hpp>
 
-namespace wmtk {
+namespace wmtk::operations {
 TriMeshVertexSmoothOperation::TriMeshVertexSmoothOperation(
-    Mesh& m,
+    wmtk::Mesh& m,
     const Tuple& t,
     const OperationSettings<TriMeshVertexSmoothOperation>& settings)
     : Operation(m)
@@ -53,4 +53,4 @@ bool TriMeshVertexSmoothOperation::execute()
 }
 
 
-} // namespace wmtk
+} // namespace wmtk::operations

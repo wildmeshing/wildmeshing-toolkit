@@ -3,9 +3,9 @@
 #include <wmtk/TriMesh.hpp>
 #include "TriMeshCollapseEdgeOperation.hpp"
 #include "TriMeshSplitEdgeOperation.hpp"
-namespace wmtk {
+namespace wmtk::operations {
 TriMeshSwapEdgeOperation::TriMeshSwapEdgeOperation(
-    Mesh& m,
+    wmtk::Mesh& m,
     const Tuple& t,
     const OperationSettings<TriMeshSwapEdgeOperation>& settings)
     : Operation(m)
@@ -140,4 +140,4 @@ bool TriMeshSwapEdgeOperation::execute()
 }
 
 
-} // namespace wmtk
+} // namespace wmtk::operations

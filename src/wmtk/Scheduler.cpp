@@ -15,7 +15,7 @@ void Scheduler::run_operation_on_all(PrimitiveType type, const std::string& name
     std::sort(ops.begin(), ops.end(), [](auto&& p_a, auto&& p_b) { return *p_a < *p_b; });
     enqueue_operations(std::move(ops));
     // run();
-    for (auto& q : m_per_thread_queues) {
+    for (operations::OperationQueue& q : m_per_thread_queues) {
         q.run();
     }
     // enqueue_operations(ops);
@@ -23,10 +23,10 @@ void Scheduler::run_operation_on_all(PrimitiveType type, const std::string& name
     // tbb::parallel_for(ops, [&](const auto& ops) { (*op)(); });
 }
 
-void Scheduler::enqueue_operations(std::vector<std::unique_ptr<Operation>>&& ops)
+void Scheduler::enqueue_operations(std::vector<std::unique_ptr<operations::Operation>>&& ops)
 {
     for (size_t index = 0; index < ops.size();) {
-        for (auto& queue : m_per_thread_queues) {
+        for (operations::OperationQueue& queue : m_per_thread_queues) {
             if (index < ops.size()) {
                 queue.enqueue(std::move(ops[index]));
                 index++;
@@ -36,7 +36,7 @@ void Scheduler::enqueue_operations(std::vector<std::unique_ptr<Operation>>&& ops
         }
     }
 }
-OperationFactoryBase const* Scheduler::get_factory(const std::string_view& name) const
+operations::OperationFactoryBase const* Scheduler::get_factory(const std::string_view& name) const
 {
     if (auto it = m_factories.find(std::string(name)); it != m_factories.end()) {
         return it->second.get();
@@ -45,13 +45,13 @@ OperationFactoryBase const* Scheduler::get_factory(const std::string_view& name)
     }
 }
 
-std::vector<std::unique_ptr<Operation>> Scheduler::create_operations(
+std::vector<std::unique_ptr<operations::Operation>> Scheduler::create_operations(
     PrimitiveType type,
     const std::string& name)
 {
     const auto tups = m_mesh.get_all(type);
 
-    std::vector<std::unique_ptr<Operation>> ops;
+    std::vector<std::unique_ptr<operations::Operation>> ops;
     auto factory_ptr = get_factory(name);
     assert(factory_ptr != nullptr);
 

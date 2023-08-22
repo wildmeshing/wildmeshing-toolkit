@@ -26,6 +26,8 @@ const std::filesystem::path data_dir = WMTK_DATA_DIR;
 
 TEST_CASE("smoothing_bunny", "[components][isotropic_remeshing][2D]")
 {
+    using namespace operations;
+
     std::map<std::string, std::filesystem::path> files;
 
     // input
@@ -63,6 +65,8 @@ TEST_CASE("smoothing_bunny", "[components][isotropic_remeshing][2D]")
 
 TEST_CASE("smoothing_simple_examples", "[components][isotropic_remeshing][2D]")
 {
+    using namespace operations;
+
     SECTION("hex_plus_two")
     {
         DEBUG_TriMesh mesh = wmtk::tests::hex_plus_two_with_position();
@@ -116,6 +120,8 @@ TEST_CASE("smoothing_simple_examples", "[components][isotropic_remeshing][2D]")
 
 TEST_CASE("tangential_smoothing", "[components][isotropic_remeshing][2D]")
 {
+    using namespace operations;
+
     DEBUG_TriMesh mesh = wmtk::tests::hex_plus_two_with_position();
 
     OperationSettings<TriMeshVertexTangentialSmoothOperation> op_settings;
@@ -154,6 +160,8 @@ TEST_CASE("tangential_smoothing", "[components][isotropic_remeshing][2D]")
 
 TEST_CASE("tangential_smoothing_boundary", "[components][isotropic_remeshing][2D]")
 {
+    using namespace operations;
+
     DEBUG_TriMesh mesh = wmtk::tests::hex_plus_two_with_position();
 
     OperationSettings<TriMeshVertexTangentialSmoothOperation> op_settings;
@@ -190,6 +198,8 @@ TEST_CASE("tangential_smoothing_boundary", "[components][isotropic_remeshing][2D
 
 TEST_CASE("split_long_edges", "[components][isotropic_remeshing][split][2D]")
 {
+    using namespace operations;
+
     // This test does not fully work yet
 
     DEBUG_TriMesh mesh = wmtk::tests::edge_region_with_position();
@@ -278,6 +288,8 @@ TEST_CASE("split_long_edges", "[components][isotropic_remeshing][split][2D]")
 
 TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2D]")
 {
+    using namespace operations;
+
     DEBUG_TriMesh mesh = wmtk::tests::edge_region_with_position();
 
     OperationSettings<TriMeshCollapseEdgeToMidpointOperation> op_settings;
@@ -461,6 +473,8 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
 
 TEST_CASE("swap_edge_for_valence", "[components][isotropic_remeshing][swap][2D]")
 {
+    using namespace operations;
+
     DEBUG_TriMesh mesh = wmtk::tests::embedded_diamond();
     SECTION("swap_success")
     {
