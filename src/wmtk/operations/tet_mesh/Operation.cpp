@@ -8,6 +8,6 @@ Operation::Operation(Mesh& m)
 
 TetMesh& Operation::mesh() const
 {
-    return dynamic_cast<TetMesh&>(m_mesh);
+    return static_cast<TetMesh&>(m_mesh);
 }
 } // namespace wmtk::operations::tet_mesh

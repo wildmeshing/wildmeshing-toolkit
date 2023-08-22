@@ -8,6 +8,6 @@ Operation::Operation(Mesh& m)
 
 TriMesh& Operation::mesh() const
 {
-    return dynamic_cast<TriMesh&>(m_mesh);
+    return static_cast<TriMesh&>(m_mesh);
 }
 } // namespace wmtk::operations::tri_mesh
