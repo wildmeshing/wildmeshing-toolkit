@@ -4,10 +4,10 @@
 #include "TriMeshCollapseEdgeOperation.hpp"
 
 namespace wmtk::operations {
-TriMeshCollapseEdgeToMidpointOperation::TriMeshCollapseEdgeToMidpointOperation(
+TriMeshEdgeCollapseToMidpoint::TriMeshEdgeCollapseToMidpoint(
     wmtk::Mesh& m,
     const Tuple& t,
-    const OperationSettings<TriMeshCollapseEdgeToMidpointOperation>& settings)
+    const OperationSettings<TriMeshEdgeCollapseToMidpoint>& settings)
     : Operation(m)
     , m_input_tuple{t}
     , m_pos_accessor{m.create_accessor(settings.position)}
@@ -17,17 +17,17 @@ TriMeshCollapseEdgeToMidpointOperation::TriMeshCollapseEdgeToMidpointOperation(
     p1 = m_pos_accessor.vector_attribute(m_mesh.switch_vertex(m_input_tuple));
 }
 
-std::string TriMeshCollapseEdgeToMidpointOperation::name() const
+std::string TriMeshEdgeCollapseToMidpoint::name() const
 {
     return "tri_mesh_collapse_edge_to_mid";
 }
 
-Tuple TriMeshCollapseEdgeToMidpointOperation::return_tuple() const
+Tuple TriMeshEdgeCollapseToMidpoint::return_tuple() const
 {
     return m_output_tuple;
 }
 
-bool TriMeshCollapseEdgeToMidpointOperation::before() const
+bool TriMeshEdgeCollapseToMidpoint::before() const
 {
     if (m_mesh.is_outdated(m_input_tuple) || !m_mesh.is_valid(m_input_tuple)) {
         return false;
@@ -37,7 +37,7 @@ bool TriMeshCollapseEdgeToMidpointOperation::before() const
     return l_squared < m_settings.max_squared_length;
 }
 
-bool TriMeshCollapseEdgeToMidpointOperation::execute()
+bool TriMeshEdgeCollapseToMidpoint::execute()
 {
     bool v0_is_boundary = false;
     bool v1_is_boundary = false;
@@ -48,14 +48,14 @@ bool TriMeshCollapseEdgeToMidpointOperation::execute()
 
     // collapse
     {
-        OperationSettings<TriMeshCollapseEdgeOperation> op_settings;
+        OperationSettings<TriMeshEdgeCollapse> op_settings;
         op_settings.collapse_boundary_edges = m_settings.collapse_boundary_edges;
 
-        TriMeshCollapseEdgeOperation split_op(m_mesh, m_input_tuple, op_settings);
-        if (!split_op()) {
+        TriMeshEdgeCollapse collapse_op(m_mesh, m_input_tuple, op_settings);
+        if (!collapse_op()) {
             return false;
         }
-        m_output_tuple = split_op.return_tuple();
+        m_output_tuple = collapse_op.return_tuple();
     }
 
     if (v0_is_boundary && !v1_is_boundary) {

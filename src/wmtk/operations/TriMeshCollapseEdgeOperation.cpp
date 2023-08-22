@@ -5,22 +5,22 @@
 #include "wmtk/SimplicialComplex.hpp"
 
 namespace wmtk::operations {
-TriMeshCollapseEdgeOperation::TriMeshCollapseEdgeOperation(
+TriMeshEdgeCollapse::TriMeshEdgeCollapse(
     wmtk::Mesh& m,
     const Tuple& t,
-    const OperationSettings<TriMeshCollapseEdgeOperation>& settings)
+    const OperationSettings<TriMeshEdgeCollapse>& settings)
     : Operation(m)
     , m_input_tuple{t}
     , m_settings{settings}
 {}
 
-bool TriMeshCollapseEdgeOperation::execute()
+bool TriMeshEdgeCollapse::execute()
 {
     TriMesh& m = dynamic_cast<TriMesh&>(m_mesh);
     m_output_tuple = m.collapse_edge(m_input_tuple);
     return true;
 }
-bool TriMeshCollapseEdgeOperation::before() const
+bool TriMeshEdgeCollapse::before() const
 {
     if (m_mesh.is_outdated(m_input_tuple)) {
         return false;
@@ -40,17 +40,17 @@ bool TriMeshCollapseEdgeOperation::before() const
     return SimplicialComplex::link_cond_bd_2d(m_mesh, m_input_tuple);
 }
 
-std::string TriMeshCollapseEdgeOperation::name() const
+std::string TriMeshEdgeCollapse::name() const
 {
     return "tri_mesh_collapse_edge";
 }
 
-Tuple TriMeshCollapseEdgeOperation::return_tuple() const
+Tuple TriMeshEdgeCollapse::return_tuple() const
 {
     return m_output_tuple;
 }
 
-std::vector<Tuple> TriMeshCollapseEdgeOperation::modified_triangles() const
+std::vector<Tuple> TriMeshEdgeCollapse::modified_triangles() const
 {
     Simplex v(PrimitiveType::Vertex, m_output_tuple);
     auto sc = SimplicialComplex::open_star(m_mesh, v);

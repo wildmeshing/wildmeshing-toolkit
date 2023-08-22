@@ -3,23 +3,23 @@
 #include "Operation.hpp"
 
 namespace wmtk::operations {
-class TriMeshSplitEdgeAtMidpointOperation;
+class TriMeshEdgeSplitAtMidpoint;
 
 template <>
-struct OperationSettings<TriMeshSplitEdgeAtMidpointOperation>
+struct OperationSettings<TriMeshEdgeSplitAtMidpoint>
 {
     MeshAttributeHandle<double> position;
     double min_squared_length = -1;
     bool split_boundary_edges = true;
 };
 
-class TriMeshSplitEdgeAtMidpointOperation : public Operation
+class TriMeshEdgeSplitAtMidpoint : public Operation
 {
 public:
-    TriMeshSplitEdgeAtMidpointOperation(
+    TriMeshEdgeSplitAtMidpoint(
         wmtk::Mesh& m,
         const Tuple& t,
-        const OperationSettings<TriMeshSplitEdgeAtMidpointOperation>& settings);
+        const OperationSettings<TriMeshEdgeSplitAtMidpoint>& settings);
 
     std::string name() const override;
 
@@ -36,7 +36,7 @@ private:
     Tuple m_output_tuple;
     Accessor<double> m_pos_accessor;
 
-    const OperationSettings<TriMeshSplitEdgeAtMidpointOperation>& m_settings;
+    const OperationSettings<TriMeshEdgeSplitAtMidpoint>& m_settings;
 
     Eigen::Vector3d p0;
     Eigen::Vector3d p1;

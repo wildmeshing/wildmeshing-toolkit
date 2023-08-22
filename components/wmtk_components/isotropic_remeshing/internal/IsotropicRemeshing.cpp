@@ -19,42 +19,36 @@ IsotropicRemeshing::IsotropicRemeshing(TriMesh& mesh, const double length, const
     using namespace operations;
     // split
     {
-        OperationSettings<TriMeshSplitEdgeAtMidpointOperation> split_settings{
+        OperationSettings<TriMeshEdgeSplitAtMidpoint> split_settings{
             m_position_handle,
             m_length_max * m_length_max,
             !m_lock_boundary};
 
-        m_scheduler.add_operation_type<TriMeshSplitEdgeAtMidpointOperation>(
-            "split",
-            split_settings);
+        m_scheduler.add_operation_type<TriMeshEdgeSplitAtMidpoint>("split", split_settings);
     }
     // collapse
     {
-        OperationSettings<TriMeshCollapseEdgeToMidpointOperation> op_settings{
+        OperationSettings<TriMeshEdgeCollapseToMidpoint> op_settings{
             m_position_handle,
             m_length_min * m_length_min,
             !m_lock_boundary,
             true};
 
-        m_scheduler.add_operation_type<TriMeshCollapseEdgeToMidpointOperation>(
-            "collapse",
-            op_settings);
+        m_scheduler.add_operation_type<TriMeshEdgeCollapseToMidpoint>("collapse", op_settings);
     }
     // flip
     {
-        OperationSettings<TriMeshSwapEdgeOperation> op_settings{true};
+        OperationSettings<TriMeshEdgeSwap> op_settings{true};
 
-        m_scheduler.add_operation_type<TriMeshSwapEdgeOperation>("swap", op_settings);
+        m_scheduler.add_operation_type<TriMeshEdgeSwap>("swap", op_settings);
     }
     // smooth
     {
-        OperationSettings<TriMeshVertexTangentialSmoothOperation> op_settings{
+        OperationSettings<TriMeshVertexTangentialSmooth> op_settings{
             m_position_handle,
             !m_lock_boundary};
 
-        m_scheduler.add_operation_type<TriMeshVertexTangentialSmoothOperation>(
-            "smooth",
-            op_settings);
+        m_scheduler.add_operation_type<TriMeshVertexTangentialSmooth>("smooth", op_settings);
     }
 }
 

@@ -4,21 +4,21 @@
 #include "Operation.hpp"
 
 namespace wmtk::operations {
-class TriMeshSplitEdgeOperation;
+class TriMeshEdgeSplit;
 
 template <>
-struct OperationSettings<TriMeshSplitEdgeOperation>
+struct OperationSettings<TriMeshEdgeSplit>
 {
     bool split_boundary_edges = true;
 };
 
-class TriMeshSplitEdgeOperation : public Operation
+class TriMeshEdgeSplit : public Operation
 {
 public:
-    TriMeshSplitEdgeOperation(
+    TriMeshEdgeSplit(
         wmtk::Mesh& m,
         const Tuple& t,
-        const OperationSettings<TriMeshSplitEdgeOperation>& settings);
+        const OperationSettings<TriMeshEdgeSplit>& settings);
 
     std::string name() const override;
 
@@ -45,7 +45,7 @@ private:
     Tuple m_input_tuple;
     Tuple m_output_tuple;
 
-    const OperationSettings<TriMeshSplitEdgeOperation>& m_settings;
+    const OperationSettings<TriMeshEdgeSplit>& m_settings;
 };
 
 

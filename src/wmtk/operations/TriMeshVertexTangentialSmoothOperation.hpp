@@ -4,23 +4,23 @@
 #include "Operation.hpp"
 
 namespace wmtk::operations {
-class TriMeshVertexTangentialSmoothOperation;
+class TriMeshVertexTangentialSmooth;
 
 template <>
-struct OperationSettings<TriMeshVertexTangentialSmoothOperation>
+struct OperationSettings<TriMeshVertexTangentialSmooth>
 {
     MeshAttributeHandle<double> position;
     bool smooth_boundary = false;
     double damping_factor = 1.0;
 };
 
-class TriMeshVertexTangentialSmoothOperation : public Operation
+class TriMeshVertexTangentialSmooth : public Operation
 {
 public:
-    TriMeshVertexTangentialSmoothOperation(
+    TriMeshVertexTangentialSmooth(
         wmtk::Mesh& m,
         const Tuple& t,
-        const OperationSettings<TriMeshVertexTangentialSmoothOperation>& settings);
+        const OperationSettings<TriMeshVertexTangentialSmooth>& settings);
 
     std::string name() const override;
 
@@ -33,7 +33,7 @@ protected:
 private:
     Tuple m_tuple;
     Accessor<double> m_pos_accessor;
-    const OperationSettings<TriMeshVertexTangentialSmoothOperation>& m_settings;
+    const OperationSettings<TriMeshVertexTangentialSmooth>& m_settings;
 };
 
 

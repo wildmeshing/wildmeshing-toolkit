@@ -5,15 +5,15 @@
 
 namespace wmtk::operations {
 
-TriMeshSplitEdgeOperation::TriMeshSplitEdgeOperation(
+TriMeshEdgeSplit::TriMeshEdgeSplit(
     wmtk::Mesh& m,
     const Tuple& t,
-    const OperationSettings<TriMeshSplitEdgeOperation>& settings)
+    const OperationSettings<TriMeshEdgeSplit>& settings)
     : Operation(m)
     , m_input_tuple{t}
     , m_settings{settings}
 {}
-bool TriMeshSplitEdgeOperation::execute()
+bool TriMeshEdgeSplit::execute()
 {
     // move vertex to center of old vertices
     TriMesh& m = dynamic_cast<TriMesh&>(m_mesh);
@@ -34,7 +34,7 @@ bool TriMeshSplitEdgeOperation::execute()
     //}
     return true;
 }
-bool TriMeshSplitEdgeOperation::before() const
+bool TriMeshEdgeSplit::before() const
 {
     if (m_mesh.is_outdated(m_input_tuple) || !m_mesh.is_valid(m_input_tuple)) {
         return false;
@@ -62,17 +62,17 @@ bool TriMeshSplitEdgeOperation::before() const
 //    //    return false;;
 //    //}
 //}
-std::string TriMeshSplitEdgeOperation::name() const
+std::string TriMeshEdgeSplit::name() const
 {
     return "tri_mesh_split_edge";
 }
 
-Tuple TriMeshSplitEdgeOperation::new_vertex() const
+Tuple TriMeshEdgeSplit::new_vertex() const
 {
     return m_output_tuple;
 }
 
-Tuple TriMeshSplitEdgeOperation::return_tuple() const
+Tuple TriMeshEdgeSplit::return_tuple() const
 {
     return m_output_tuple;
 }

@@ -4,21 +4,21 @@
 #include "TriMeshCollapseEdgeOperation.hpp"
 #include "TriMeshSplitEdgeOperation.hpp"
 namespace wmtk::operations {
-TriMeshSwapEdgeOperation::TriMeshSwapEdgeOperation(
+TriMeshEdgeSwap::TriMeshEdgeSwap(
     wmtk::Mesh& m,
     const Tuple& t,
-    const OperationSettings<TriMeshSwapEdgeOperation>& settings)
+    const OperationSettings<TriMeshEdgeSwap>& settings)
     : Operation(m)
     , m_input_tuple{t}
     , m_settings{settings}
 {}
 
-std::string TriMeshSwapEdgeOperation::name() const
+std::string TriMeshEdgeSwap::name() const
 {
     return "TriMeshSwapEdgeOperation";
 }
 
-bool TriMeshSwapEdgeOperation::before() const
+bool TriMeshEdgeSwap::before() const
 {
     if (m_mesh.is_outdated(m_input_tuple)) {
         return false;
@@ -75,12 +75,12 @@ bool TriMeshSwapEdgeOperation::before() const
     return true;
 }
 
-Tuple TriMeshSwapEdgeOperation::return_tuple() const
+Tuple TriMeshEdgeSwap::return_tuple() const
 {
     return m_output_tuple;
 }
 
-bool TriMeshSwapEdgeOperation::execute()
+bool TriMeshEdgeSwap::execute()
 {
     // input
     //    / \
@@ -93,8 +93,8 @@ bool TriMeshSwapEdgeOperation::execute()
 
     Tuple split_ret;
     {
-        OperationSettings<TriMeshSplitEdgeOperation> op_settings;
-        TriMeshSplitEdgeOperation split_op(m_mesh, m_input_tuple, op_settings);
+        OperationSettings<TriMeshEdgeSplit> op_settings;
+        TriMeshEdgeSplit split_op(m_mesh, m_input_tuple, op_settings);
         if (!split_op()) {
             return false;
         }
@@ -119,7 +119,7 @@ bool TriMeshSwapEdgeOperation::execute()
     //  \  |  /
     //   \ | /
     //    \|/
-    TriMeshCollapseEdgeOperation coll_op(m_mesh, coll_input_tuple);
+    TriMeshEdgeCollapse coll_op(m_mesh, coll_input_tuple);
     if (!coll_op()) {
         return false;
     }
