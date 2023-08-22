@@ -4,9 +4,10 @@
 #include <vector>
 #include <wmtk/Tuple.hpp>
 
-namespace wmtk::operations {
+namespace wmtk {
 class Mesh;
 
+namespace operations {
 template <typename T>
 struct OperationSettings
 {
@@ -20,7 +21,7 @@ public:
     virtual std::string name() const = 0;
 
 
-    Operation(wmtk::Mesh& m);
+    Operation(Mesh& m);
     virtual ~Operation();
 
     virtual std::vector<double> priority() const { return {0}; }
@@ -40,8 +41,8 @@ protected:
     void update_cell_hash(const std::vector<Tuple>& cells);
 
 
-    wmtk::Mesh& m_mesh;
+    Mesh& m_mesh;
 };
 
-
-} // namespace wmtk::operations
+} // namespace operations
+} // namespace wmtk

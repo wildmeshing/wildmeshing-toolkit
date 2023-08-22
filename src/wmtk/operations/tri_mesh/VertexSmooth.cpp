@@ -28,7 +28,7 @@ bool VertexSmooth::before() const
 
 bool VertexSmooth::execute()
 {
-    const std::vector<Simplex> one_ring = SimplicialComplex::vertex_one_ring(m_mesh, m_tuple);
+    const std::vector<Simplex> one_ring = SimplicialComplex::vertex_one_ring(mesh(), m_tuple);
     auto p_mid = m_pos_accessor.vector_attribute(m_tuple);
     p_mid = Eigen::Vector3d::Zero();
     for (const Simplex& s : one_ring) {
@@ -36,7 +36,7 @@ bool VertexSmooth::execute()
     }
     p_mid /= one_ring.size();
 
-    const SimplicialComplex star = SimplicialComplex::closed_star(m_mesh, Simplex::vertex(m_tuple));
+    const SimplicialComplex star = SimplicialComplex::closed_star(mesh(), Simplex::vertex(m_tuple));
     const auto star_faces = star.get_faces();
     std::vector<Tuple> incident_face_tuple;
     incident_face_tuple.reserve(star_faces.size());
