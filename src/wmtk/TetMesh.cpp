@@ -298,10 +298,11 @@ Tuple TetMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
         long gcid_new = tt(tuple.m_local_fid);
 
         /*handle exception here*/
+        assert(gcid_new != -1);
         // check if is_boundary allows removing this exception in 3d cases
-        if (gcid_new == -1) {
-            return Tuple(-1, -1, -1, -1, -1);
-        }
+        // if (gcid_new == -1) {
+        //     return Tuple(-1, -1, -1, -1, -1);
+        // }
         /*handle exception end*/
 
         long lvid_new = -1, leid_new = -1, lfid_new = -1;
@@ -310,10 +311,10 @@ Tuple TetMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
         auto tv = tv_accessor.vector_attribute(gcid_new);
 
         ConstAccessor<long> te_accessor = create_const_accessor<long>(m_te_handle);
-        auto te = tv_accessor.vector_attribute(gcid_new);
+        auto te = te_accessor.vector_attribute(gcid_new);
 
         ConstAccessor<long> tf_accessor = create_const_accessor<long>(m_tf_handle);
-        auto tf = tv_accessor.vector_attribute(gcid_new);
+        auto tf = tf_accessor.vector_attribute(gcid_new);
 
         for (long i = 0; i < 4; ++i) {
             if (tv(i) == gvid) {
