@@ -4,7 +4,7 @@
 #include <vector>
 #include <wmtk/Tuple.hpp>
 
-namespace wmtk {
+namespace wmtk::operations {
 class Mesh;
 
 template <typename T>
@@ -20,7 +20,7 @@ public:
     virtual std::string name() const = 0;
 
 
-    Operation(Mesh& m);
+    Operation(wmtk::Mesh& m);
     virtual ~Operation();
 
     virtual std::vector<double> priority() const { return {0}; }
@@ -37,9 +37,11 @@ protected:
     // does invariant pre-checks
     virtual bool after() const;
 
+    void update_cell_hash(const std::vector<Tuple>& cells);
 
-    Mesh& m_mesh;
+
+    wmtk::Mesh& m_mesh;
 };
 
 
-} // namespace wmtk
+} // namespace wmtk::operations

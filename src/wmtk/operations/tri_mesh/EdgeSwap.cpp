@@ -1,24 +1,21 @@
-#include "TriMeshSwapEdgeOperation.hpp"
+#include "EdgeSwap.hpp"
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
-#include "TriMeshCollapseEdgeOperation.hpp"
-#include "TriMeshSplitEdgeOperation.hpp"
-namespace wmtk {
-TriMeshSwapEdgeOperation::TriMeshSwapEdgeOperation(
-    Mesh& m,
-    const Tuple& t,
-    const OperationSettings<TriMeshSwapEdgeOperation>& settings)
+#include "EdgeCollapse.hpp"
+#include "EdgeSplit.hpp"
+namespace wmtk::operations::tri_mesh {
+EdgeSwap::EdgeSwap(wmtk::Mesh& m, const Tuple& t, const OperationSettings<EdgeSwap>& settings)
     : Operation(m)
     , m_input_tuple{t}
     , m_settings{settings}
 {}
 
-std::string TriMeshSwapEdgeOperation::name() const
+std::string EdgeSwap::name() const
 {
-    return "TriMeshSwapEdgeOperation";
+    return "tri_mesh_edge_swap";
 }
 
-bool TriMeshSwapEdgeOperation::before() const
+bool EdgeSwap::before() const
 {
     if (m_mesh.is_outdated(m_input_tuple)) {
         return false;
@@ -75,12 +72,12 @@ bool TriMeshSwapEdgeOperation::before() const
     return true;
 }
 
-Tuple TriMeshSwapEdgeOperation::return_tuple() const
+Tuple EdgeSwap::return_tuple() const
 {
     return m_output_tuple;
 }
 
-bool TriMeshSwapEdgeOperation::execute()
+bool EdgeSwap::execute()
 {
     // input
     //    / \
@@ -93,8 +90,8 @@ bool TriMeshSwapEdgeOperation::execute()
 
     Tuple split_ret;
     {
-        OperationSettings<TriMeshSplitEdgeOperation> op_settings;
-        TriMeshSplitEdgeOperation split_op(m_mesh, m_input_tuple, op_settings);
+        OperationSettings<tri_mesh::EdgeSplit> op_settings;
+        tri_mesh::EdgeSplit split_op(m_mesh, m_input_tuple, op_settings);
         if (!split_op()) {
             return false;
         }
@@ -119,7 +116,7 @@ bool TriMeshSwapEdgeOperation::execute()
     //  \  |  /
     //   \ | /
     //    \|/
-    TriMeshCollapseEdgeOperation coll_op(m_mesh, coll_input_tuple);
+    tri_mesh::EdgeCollapse coll_op(m_mesh, coll_input_tuple);
     if (!coll_op()) {
         return false;
     }
@@ -140,4 +137,4 @@ bool TriMeshSwapEdgeOperation::execute()
 }
 
 
-} // namespace wmtk
+} // namespace wmtk::operations::tri_mesh

@@ -16,6 +16,9 @@
 namespace wmtk {
 // thread management tool that we will PImpl
 class AttributeScopeManager;
+namespace operations {
+class Operation;
+}
 
 class Mesh
 {
@@ -29,6 +32,7 @@ public:
     MultiMeshManager multi_mesh_manager;
 
     // TODO: Need a wrapper for MeshAttributeHandle<Tuple>?
+    friend class operations::Operation;
 
     // dimension is the dimension of the top level simplex in this mesh
     // That is, a TriMesh is a 2, a TetMesh is a 3

@@ -1,9 +1,9 @@
 #include "OperationFactory.hpp"
 
 
-namespace wmtk {
+namespace wmtk::operations {
 OperationFactoryBase::OperationFactoryBase(PrimitiveType t)
     : m_primitive(t)
 {}
 OperationFactoryBase::~OperationFactoryBase() = default;
-} // namespace wmtk
+} // namespace wmtk::operations
