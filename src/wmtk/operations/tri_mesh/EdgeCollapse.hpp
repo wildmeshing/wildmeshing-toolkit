@@ -31,7 +31,7 @@ public:
 
     std::vector<Tuple> modified_triangles() const;
 
-    // return a ccw tuple from left ear if it exists, otherwise return a ccw tuple from right ear
+    // return next-->opposite tuple if it exists, otherwise return previous-->opposite
     Tuple return_tuple() const;
 
     static PrimitiveType primitive_type() { return PrimitiveType::Edge; }

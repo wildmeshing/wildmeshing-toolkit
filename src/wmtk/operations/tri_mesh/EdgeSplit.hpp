@@ -22,18 +22,8 @@ public:
 
     std::string name() const override;
 
-
-    std::vector<Tuple> triangle_onering() const;
-    std::vector<Tuple> triangle_tworing() const;
-    std::vector<Tuple> edge_onering() const;
-
     Tuple new_vertex() const;
     Tuple return_tuple() const;
-    // std::vector<Tuple> new_triangles() const ;
-    // std::vector<Tuple> new_edges() const ;
-
-    // std::array<Tuple,2> spline_edges() const;
-    // std::vector<Tuple> rib_edges() const;
 
     static PrimitiveType primitive_type() { return PrimitiveType::Edge; }
 

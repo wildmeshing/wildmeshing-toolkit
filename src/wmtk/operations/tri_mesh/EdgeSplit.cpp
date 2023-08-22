@@ -44,21 +44,6 @@ bool EdgeSplit::before() const
     return true;
 }
 
-// potential after-like strucutre?
-// bool TriMeshSplitEdgeOperation::after() const
-//{
-//    // energy decrease
-//
-//    //ConstAccessor<double> current_positions = {}; // current scope
-//    //ConstAccessor<double> original_positions = {};// use checkpoint
-//
-//    //if(
-//    //        get_area(current_positions, one_ring(m_output_tuple))
-//    //        <
-//    //        get_area(original_positions, one_ring(m_input_tuple))) {
-//    //    return false;;
-//    //}
-//}
 std::string EdgeSplit::name() const
 {
     return "tri_mesh_edge_split";
@@ -73,37 +58,5 @@ Tuple EdgeSplit::return_tuple() const
 {
     return m_output_tuple;
 }
-///std::vector<Tuple> TriMeshSplitEdgeOperation::triangle_onering() const
-///{
-///    Simplex v(PrimitiveType::Vertex, new_vertex());
-///    auto sc = SimplicialComplex::open_star(v, m_mesh);
-///    auto faces = sc.get_simplices(PrimitiveType::Face);
-///    std::vector<Tuple> ret;
-///    for (const auto& face : faces) {
-///        ret.emplace_back(face.tuple());
-///    }
-///    return ret;
-///}
-///std::vector<Tuple> TriMeshSplitEdgeOperation::triangle_tworing() const
-///{
-///    throw "not implemented";
-///    return {};
-///}
 
-// std::vector<Tuple> new_triangles() const  {
-//     return triangle_onering();
-// }
-// std::vector<Tuple> new_edges() const  {
-//     return spline_edges + rib_edges();
-// }
-
-
-// bool MySplitEdge::after()const {
-//
-//    //for(const auto& tri: modified_triangles()) {
-//    //    positive_area_invariant(m,tri);
-//    //}
-//
-//
-//}
 } // namespace wmtk::operations::tri_mesh
