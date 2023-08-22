@@ -10,8 +10,8 @@ set(SRC_FILES
     TriMesh.hpp
     TetMesh.cpp
     TetMesh.hpp
-    TriMesh_operations.hpp
-    TriMesh_operations.cpp
+    TriMeshOperationExecutor.hpp
+    TriMeshOperationExecutor.cpp
     Primitive.hpp
     Primitive.cpp
     Tuple.cpp
@@ -20,6 +20,8 @@ set(SRC_FILES
 	Simplex.hpp
 	SimplicialComplex.hpp
 	SimplicialComplex.cpp
+    Scheduler.hpp
+    Scheduler.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 

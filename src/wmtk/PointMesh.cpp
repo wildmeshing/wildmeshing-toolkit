@@ -32,6 +32,12 @@ bool PointMesh::is_boundary(const Tuple&) const
     return false;
 }
 
+bool PointMesh::is_boundary_vertex(const Tuple&) const
+{
+    // every point is on the interior as it has no boundary simplices
+    return false;
+}
+
 void PointMesh::initialize(long count)
 {
     set_capacities({count});
@@ -46,6 +52,13 @@ void PointMesh::initialize(long count)
 bool PointMesh::is_valid(const Tuple& tuple) const
 {
     return true;
+}
+
+bool PointMesh::is_outdated(const Tuple& tuple) const
+{
+    const long fid = id(tuple, PrimitiveType::Face);
+    ConstAccessor<long> ha = get_cell_hash_accessor();
+    return ha.scalar_attribute(fid) == tuple.m_hash;
 }
 
 long PointMesh::id(const Tuple& tuple, PrimitiveType type) const

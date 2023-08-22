@@ -1,4 +1,5 @@
 #include "Operation.hpp"
+#include <wmtk/Accessor.hpp>
 #include <wmtk/Mesh.hpp>
 
 namespace wmtk {
@@ -7,6 +8,14 @@ Operation::Operation(Mesh& m)
 {}
 Operation::~Operation() = default;
 
+bool Operation::operator<(const Operation& o) const
+{
+    return priority() < o.priority();
+}
+bool Operation::operator==(const Operation& o) const
+{
+    return priority() == o.priority();
+}
 
 bool Operation::operator()()
 {
@@ -15,12 +24,12 @@ bool Operation::operator()()
     if (before()) {
         if (execute()) { // success should be marked here
             if (after()) {
-                return true;
+                return true; // scope destructor is called
             }
         }
     }
     scope.mark_failed();
-    return false;
+    return false; // scope destructor is called
 }
 
 bool Operation::before() const
@@ -38,6 +47,13 @@ bool Operation::after() const
     return true;
 }
 
+void Operation::update_cell_hash(const std::vector<Tuple>& cells)
+{
+    auto acc = m_mesh.get_cell_hash_accessor();
+    for (const Tuple& t : cells) {
+        ++acc.scalar_attribute(t);
+    }
+}
+
 
 } // namespace wmtk
-

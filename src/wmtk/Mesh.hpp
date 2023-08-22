@@ -1,13 +1,13 @@
 #pragma once
 
 #include "Accessor.hpp"
-#include "attribute/MeshAttributes.hpp"
 #include "Primitive.hpp"
 #include "Simplex.hpp"
 #include "Tuple.hpp"
 #include "Types.hpp"
 #include "attribute/AttributeManager.hpp"
 #include "attribute/AttributeScopeHandle.hpp"
+#include "attribute/MeshAttributes.hpp"
 
 #include <wmtk/io/ParaviewWriter.hpp>
 
@@ -22,6 +22,8 @@ public:
     template <typename T>
     friend class AccessorBase;
     friend class ParaviewWriter;
+    friend class MeshReader;
+    friend class Operation;
 
     // dimension is the dimension of the top level simplex in this mesh
     // That is, a TriMesh is a 2, a TetMesh is a 3
@@ -56,7 +58,7 @@ public:
     // As such, the split_edge and collapse_edge functions JUST implement the
     // updates to topological updates and any precondition / postcondition checks
     // should be implemented by the user.
-    // 
+    //
     // These functions take in a single tuple, referring to the edge being
     // operated on, and return a single tuple that refers to the new topology.
     // This returned tuple has specific meaning for each derived Mesh class
@@ -73,7 +75,8 @@ public:
 
     template <typename T>
     MeshAttributeHandle<T> get_attribute_handle(
-        const std::string& name); // block standard topology tools
+        const std::string& name,
+        const PrimitiveType ptype) const; // block standard topology tools
 
     template <typename T>
     Accessor<T> create_accessor(const MeshAttributeHandle<T>& handle);
@@ -145,6 +148,13 @@ public:
     */
     virtual Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const = 0;
 
+    Tuple switch_vertex(const Tuple& tuple) const
+    {
+        return switch_tuple(tuple, PrimitiveType::Vertex);
+    }
+    Tuple switch_edge(const Tuple& tuple) const { return switch_tuple(tuple, PrimitiveType::Edge); }
+    Tuple switch_face(const Tuple& tuple) const { return switch_tuple(tuple, PrimitiveType::Face); }
+
 
     void set_capacities_from_flags();
     /**
@@ -165,11 +175,16 @@ public:
      */
     virtual bool is_ccw(const Tuple& tuple) const = 0;
     /**
+     * @brief check if all tuple simplices besides the cell are on the boundary
+     *
      * @param tuple
-     * @return true if the edge tuple is a obundary one
-     * @return false
+     * @return true if all tuple simplices besides the cell are on the boundary
+     * @return false otherwise
      */
-    virtual bool is_boundary(const Tuple& edge) const = 0;
+    virtual bool is_boundary(const Tuple& tuple) const = 0;
+
+    virtual bool is_boundary_vertex(const Tuple& vertex) const = 0;
+
     /**
      * @brief
      *
@@ -180,6 +195,14 @@ public:
      * @return false
      */
     virtual bool is_valid(const Tuple& tuple) const = 0;
+    /**
+     * @brief check if tuple was involved in a topological operation and is therefore invalid
+     *
+     * @param tuple the tuple to be checked
+     * @return true if tuple is outdated
+     * @return false otherwise
+     */
+    virtual bool is_outdated(const Tuple& tuple) const = 0;
 
 
     bool simplex_is_equal(const Simplex& s0, const Simplex& s1) const;
@@ -247,6 +270,17 @@ template <typename T>
 ConstAccessor<T> Mesh::create_accessor(const MeshAttributeHandle<T>& handle) const
 {
     return create_const_accessor(handle);
+}
+
+template <typename T>
+MeshAttributeHandle<T> Mesh::get_attribute_handle(
+    const std::string& name,
+    const PrimitiveType ptype) const
+{
+    MeshAttributeHandle<T> r;
+    r.m_base_handle = m_attribute_manager.get<T>(ptype).attribute_handle(name);
+    r.m_primitive_type = ptype;
+    return r;
 }
 
 } // namespace wmtk

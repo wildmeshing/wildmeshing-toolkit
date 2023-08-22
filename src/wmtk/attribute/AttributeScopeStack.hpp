@@ -11,7 +11,7 @@ template <typename T>
 class AccessorBase;
 template <typename T>
 class AttributeScope;
-class AttributeManager;
+struct AttributeManager;
 
 
 template <typename T>

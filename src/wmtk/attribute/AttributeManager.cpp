@@ -26,6 +26,8 @@ void AttributeManager::serialize(MeshWriter& writer)
         m_long_attributes[dim].serialize(dim, writer);
         m_double_attributes[dim].serialize(dim, writer);
     }
+    // now that the WMTK link exists we can write hte capacities to that link
+    writer.write_capacities(m_capacities);
 }
 
 void AttributeManager::reserve_to_fit()

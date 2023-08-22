@@ -4,7 +4,7 @@
 #include <map>
 #include <nlohmann/json.hpp>
 #include <wmtk/utils/Logger.hpp>
-#include "internal/MeshInfoOptions.h"
+#include "internal/MeshInfoOptions.hpp"
 
 namespace wmtk {
 namespace components {

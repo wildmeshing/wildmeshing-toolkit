@@ -1,7 +1,7 @@
 #pragma once
 
 namespace wmtk {
-class AttributeManager;
+struct AttributeManager;
 class AttributeScopeHandle
 {
 public:

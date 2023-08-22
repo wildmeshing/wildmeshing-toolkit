@@ -1,24 +1,42 @@
 #pragma once
+#include <memory>
 #include <wmtk/Primitive.hpp>
 #include "Operation.hpp"
 
-namespace wmtk{
+namespace wmtk {
 class OperationFactoryBase
 {
-    virtual std::unique_ptr<Operation> create(Mesh& m, const Tuple& t) const;
+public:
+    OperationFactoryBase(PrimitiveType pt);
+    virtual ~OperationFactoryBase();
+    virtual std::unique_ptr<Operation> create(Mesh& m, const Tuple& t) const = 0;
     PrimitiveType primitive() const { return m_primitive; }
-    private:
+
+private:
     PrimitiveType m_primitive;
 };
 
 template <typename OperationType>
 class OperationFactory : public OperationFactoryBase
 {
-    public:
-    std::unique_ptr<Operation> create(Mesh& m, const Tuple& t) const
+public:
+    OperationFactory()
+        : OperationFactoryBase(OperationType::primitive_type())
+        , m_settings({})
+    {}
+
+    OperationFactory(const OperationSettings<OperationType>& settings)
+        : OperationFactoryBase(OperationType::primitive_type())
+        , m_settings(settings)
+    {}
+
+    std::unique_ptr<Operation> create(Mesh& m, const Tuple& t) const override
     {
-        return std::make_unique<OperationType>(m, t);
+        return std::make_unique<OperationType>(m, t, m_settings);
     }
+
+protected:
+    const OperationSettings<OperationType> m_settings;
 };
 
 /*
@@ -39,4 +57,4 @@ class OperationQueue
 };
 */
 
-}
+} // namespace wmtk

@@ -261,5 +261,7 @@ Options:
 ```
 
 ## License
+
 MIT License.
 
+## [Contribution Guide](contribution_guide.md)
