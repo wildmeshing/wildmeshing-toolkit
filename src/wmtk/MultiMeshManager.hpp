@@ -2,13 +2,14 @@
 #include "attribute/AttributeManager.hpp"
 #include "attribute/AttributeScopeHandle.hpp"
 #include "attribute/MeshAttributes.hpp"
-
+#include "Tuple.hpp"
 namespace wmtk
 {
+class Mesh;
 class MultiMeshManager
 {
     public:
-    
+
     MultiMeshManager();
     ~MultiMeshManager();
     MultiMeshManager(const MultiMeshManager& o);
@@ -37,8 +38,14 @@ class MultiMeshManager
     // i.e. the connectivity of this mesh is a subset of this in parent_mesh
     bool is_child_mesh_valid(const Mesh& parent_mesh) const;
 
+    // TODO: make it a free function? static function?
     // Map source_tuple from source_mesh to target_mesh
-    Tuple map_tuple_between_meshes(const Mesh& source_mesh, const Mesh& target_mesh, const Tuple& source_tuple) const;
-}
+    // Tuple map_tuple_between_meshes(const Mesh& source_mesh, const Mesh& target_mesh, MeshAttributeHandle<long> source_map_handle, const Tuple& source_tuple);
+
+    private:
+        // flag indicating if this mesh is a parent mesh
+        bool is_parent_mesh;
+        long child_id;
+};
 
 }

@@ -8,9 +8,9 @@
 #include "attribute/AttributeManager.hpp"
 #include "attribute/AttributeScopeHandle.hpp"
 #include "attribute/MeshAttributes.hpp"
-
+#include "MultiMeshManager.hpp"
 #include <wmtk/io/ParaviewWriter.hpp>
-
+#include "MultiMeshManager.hpp"
 #include <Eigen/Core>
 
 namespace wmtk {
@@ -19,16 +19,16 @@ class AttributeScopeManager;
 
 class Mesh
 {
+
 public:
     template <typename T>
     friend class AccessorBase;
     friend class ParaviewWriter;
     friend class MeshReader;
+    
+    MultiMeshManager multi_mesh_manager;
 
     // TODO: Need a wrapper for MeshAttributeHandle<Tuple>?
-
-    // flag indicating if this mesh is a parent mesh
-    bool is_parent_mesh;
 
     // dimension is the dimension of the top level simplex in this mesh
     // That is, a TriMesh is a 2, a TetMesh is a 3
