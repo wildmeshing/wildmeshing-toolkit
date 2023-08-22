@@ -4,14 +4,17 @@
 #include "Operation.hpp"
 
 namespace wmtk::operations {
+namespace tri_mesh {
 class TriMeshEdgeSplit;
+}
 
 template <>
-struct OperationSettings<TriMeshEdgeSplit>
+struct OperationSettings<tri_mesh::TriMeshEdgeSplit>
 {
     bool split_boundary_edges = true;
 };
 
+namespace tri_mesh {
 class TriMeshEdgeSplit : public Operation
 {
 public:
@@ -48,5 +51,5 @@ private:
     const OperationSettings<TriMeshEdgeSplit>& m_settings;
 };
 
-
+} // namespace tri_mesh
 } // namespace wmtk::operations

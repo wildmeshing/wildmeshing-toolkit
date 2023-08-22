@@ -3,7 +3,7 @@
 #include <wmtk/TriMesh.hpp>
 #include "TriMeshCollapseEdgeOperation.hpp"
 
-namespace wmtk::operations {
+namespace wmtk::operations::tri_mesh {
 TriMeshEdgeCollapseToMidpoint::TriMeshEdgeCollapseToMidpoint(
     wmtk::Mesh& m,
     const Tuple& t,
@@ -48,10 +48,10 @@ bool TriMeshEdgeCollapseToMidpoint::execute()
 
     // collapse
     {
-        OperationSettings<TriMeshEdgeCollapse> op_settings;
+        OperationSettings<tri_mesh::TriMeshEdgeCollapse> op_settings;
         op_settings.collapse_boundary_edges = m_settings.collapse_boundary_edges;
 
-        TriMeshEdgeCollapse collapse_op(m_mesh, m_input_tuple, op_settings);
+        tri_mesh::TriMeshEdgeCollapse collapse_op(m_mesh, m_input_tuple, op_settings);
         if (!collapse_op()) {
             return false;
         }
@@ -69,4 +69,4 @@ bool TriMeshEdgeCollapseToMidpoint::execute()
     return true;
 }
 
-} // namespace wmtk::operations
+} // namespace wmtk::operations::tri_mesh

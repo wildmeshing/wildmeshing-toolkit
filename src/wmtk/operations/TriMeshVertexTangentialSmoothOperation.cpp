@@ -4,7 +4,7 @@
 #include <wmtk/utils/mesh_utils.hpp>
 #include "TriMeshVertexSmoothOperation.hpp"
 
-namespace wmtk::operations {
+namespace wmtk::operations::tri_mesh {
 TriMeshVertexTangentialSmooth::TriMeshVertexTangentialSmooth(
     wmtk::Mesh& m,
     const Tuple& t,
@@ -35,10 +35,10 @@ bool TriMeshVertexTangentialSmooth::execute()
 {
     const Eigen::Vector3d p = m_pos_accessor.vector_attribute(m_tuple);
     {
-        OperationSettings<TriMeshVertexSmooth> op_settings;
+        OperationSettings<tri_mesh::TriMeshVertexSmooth> op_settings;
         op_settings.position = m_pos_accessor.handle();
         op_settings.smooth_boundary = m_settings.smooth_boundary;
-        TriMeshVertexSmooth split_op(m_mesh, m_tuple, op_settings);
+        tri_mesh::TriMeshVertexSmooth split_op(m_mesh, m_tuple, op_settings);
         if (!split_op()) {
             return false;
         }
@@ -88,4 +88,4 @@ bool TriMeshVertexTangentialSmooth::execute()
 }
 
 
-} // namespace wmtk::operations
+} // namespace wmtk::operations::tri_mesh

@@ -3,7 +3,7 @@
 #include <wmtk/TriMesh.hpp>
 #include "TriMeshCollapseEdgeOperation.hpp"
 #include "TriMeshSplitEdgeOperation.hpp"
-namespace wmtk::operations {
+namespace wmtk::operations::tri_mesh {
 TriMeshEdgeSwap::TriMeshEdgeSwap(
     wmtk::Mesh& m,
     const Tuple& t,
@@ -93,8 +93,8 @@ bool TriMeshEdgeSwap::execute()
 
     Tuple split_ret;
     {
-        OperationSettings<TriMeshEdgeSplit> op_settings;
-        TriMeshEdgeSplit split_op(m_mesh, m_input_tuple, op_settings);
+        OperationSettings<tri_mesh::TriMeshEdgeSplit> op_settings;
+        tri_mesh::TriMeshEdgeSplit split_op(m_mesh, m_input_tuple, op_settings);
         if (!split_op()) {
             return false;
         }
@@ -119,7 +119,7 @@ bool TriMeshEdgeSwap::execute()
     //  \  |  /
     //   \ | /
     //    \|/
-    TriMeshEdgeCollapse coll_op(m_mesh, coll_input_tuple);
+    tri_mesh::TriMeshEdgeCollapse coll_op(m_mesh, coll_input_tuple);
     if (!coll_op()) {
         return false;
     }
@@ -140,4 +140,4 @@ bool TriMeshEdgeSwap::execute()
 }
 
 
-} // namespace wmtk::operations
+} // namespace wmtk::operations::tri_mesh

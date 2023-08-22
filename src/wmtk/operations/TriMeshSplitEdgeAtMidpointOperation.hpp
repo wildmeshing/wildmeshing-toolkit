@@ -3,16 +3,19 @@
 #include "Operation.hpp"
 
 namespace wmtk::operations {
+namespace tri_mesh {
 class TriMeshEdgeSplitAtMidpoint;
+}
 
 template <>
-struct OperationSettings<TriMeshEdgeSplitAtMidpoint>
+struct OperationSettings<tri_mesh::TriMeshEdgeSplitAtMidpoint>
 {
     MeshAttributeHandle<double> position;
     double min_squared_length = -1;
     bool split_boundary_edges = true;
 };
 
+namespace tri_mesh {
 class TriMeshEdgeSplitAtMidpoint : public Operation
 {
 public:
@@ -42,5 +45,5 @@ private:
     Eigen::Vector3d p1;
 };
 
-
+} // namespace tri_mesh
 } // namespace wmtk::operations

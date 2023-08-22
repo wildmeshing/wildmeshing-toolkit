@@ -4,15 +4,18 @@
 #include "Operation.hpp"
 
 namespace wmtk::operations {
+namespace tri_mesh {
 class TriMeshVertexSmooth;
+}
 
 template <>
-struct OperationSettings<TriMeshVertexSmooth>
+struct OperationSettings<tri_mesh::TriMeshVertexSmooth>
 {
     MeshAttributeHandle<double> position;
     bool smooth_boundary = false;
 };
 
+namespace tri_mesh {
 class TriMeshVertexSmooth : public Operation
 {
 public:
@@ -35,5 +38,5 @@ private:
     const OperationSettings<TriMeshVertexSmooth>& m_settings;
 };
 
-
+} // namespace tri_mesh
 } // namespace wmtk::operations

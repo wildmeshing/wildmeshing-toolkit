@@ -4,7 +4,7 @@
 #include <wmtk/TriMesh.hpp>
 #include "wmtk/SimplicialComplex.hpp"
 
-namespace wmtk::operations {
+namespace wmtk::operations::tri_mesh {
 TriMeshEdgeCollapse::TriMeshEdgeCollapse(
     wmtk::Mesh& m,
     const Tuple& t,
@@ -61,4 +61,4 @@ std::vector<Tuple> TriMeshEdgeCollapse::modified_triangles() const
     }
     return ret;
 }
-} // namespace wmtk::operations
+} // namespace wmtk::operations::tri_mesh

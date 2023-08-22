@@ -4,15 +4,17 @@
 #include "Operation.hpp"
 
 namespace wmtk::operations {
+namespace tri_mesh {
 class TriMeshEdgeSwap;
+}
 
 template <>
-struct OperationSettings<TriMeshEdgeSwap>
+struct OperationSettings<tri_mesh::TriMeshEdgeSwap>
 {
     bool must_improve_valence = false;
 };
 
-
+namespace tri_mesh {
 class TriMeshEdgeSwap : public Operation
 {
 public:
@@ -36,5 +38,5 @@ private:
     const OperationSettings<TriMeshEdgeSwap>& m_settings;
 };
 
-
+} // namespace tri_mesh
 } // namespace wmtk::operations

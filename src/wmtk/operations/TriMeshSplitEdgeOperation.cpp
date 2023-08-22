@@ -3,7 +3,7 @@
 #include <wmtk/TriMesh.hpp>
 #include "wmtk/SimplicialComplex.hpp"
 
-namespace wmtk::operations {
+namespace wmtk::operations::tri_mesh {
 
 TriMeshEdgeSplit::TriMeshEdgeSplit(
     wmtk::Mesh& m,
@@ -109,4 +109,4 @@ Tuple TriMeshEdgeSplit::return_tuple() const
 //
 //
 //}
-} // namespace wmtk::operations
+} // namespace wmtk::operations::tri_mesh

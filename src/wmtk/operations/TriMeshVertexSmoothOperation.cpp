@@ -2,7 +2,7 @@
 
 #include <wmtk/SimplicialComplex.hpp>
 
-namespace wmtk::operations {
+namespace wmtk::operations::tri_mesh {
 TriMeshVertexSmooth::TriMeshVertexSmooth(
     wmtk::Mesh& m,
     const Tuple& t,
@@ -53,4 +53,4 @@ bool TriMeshVertexSmooth::execute()
 }
 
 
-} // namespace wmtk::operations
+} // namespace wmtk::operations::tri_mesh

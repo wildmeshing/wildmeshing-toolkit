@@ -4,10 +4,12 @@
 #include "Operation.hpp"
 
 namespace wmtk::operations {
+namespace tri_mesh {
 class TriMeshEdgeCollapse;
+}
 
 template <>
-struct OperationSettings<TriMeshEdgeCollapse>
+struct OperationSettings<tri_mesh::TriMeshEdgeCollapse>
 {
     // are collapses between boundary and interior vertices allowed
     bool collapse_boundary_vertex_to_interior = true;
@@ -15,6 +17,7 @@ struct OperationSettings<TriMeshEdgeCollapse>
     bool collapse_boundary_edges = true;
 };
 
+namespace tri_mesh {
 class TriMeshEdgeCollapse : public Operation
 {
 public:
@@ -43,5 +46,5 @@ private:
     const OperationSettings<TriMeshEdgeCollapse>& m_settings;
 };
 
-
+} // namespace tri_mesh
 } // namespace wmtk::operations

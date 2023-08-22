@@ -4,16 +4,19 @@
 #include "Operation.hpp"
 
 namespace wmtk::operations {
+namespace tri_mesh {
 class TriMeshVertexTangentialSmooth;
+}
 
 template <>
-struct OperationSettings<TriMeshVertexTangentialSmooth>
+struct OperationSettings<tri_mesh::TriMeshVertexTangentialSmooth>
 {
     MeshAttributeHandle<double> position;
     bool smooth_boundary = false;
     double damping_factor = 1.0;
 };
 
+namespace tri_mesh {
 class TriMeshVertexTangentialSmooth : public Operation
 {
 public:
@@ -36,5 +39,5 @@ private:
     const OperationSettings<TriMeshVertexTangentialSmooth>& m_settings;
 };
 
-
+} // namespace tri_mesh
 } // namespace wmtk::operations

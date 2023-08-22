@@ -3,7 +3,7 @@
 #include <wmtk/TriMesh.hpp>
 #include "TriMeshSplitEdgeOperation.hpp"
 
-namespace wmtk::operations {
+namespace wmtk::operations::tri_mesh {
 TriMeshEdgeSplitAtMidpoint::TriMeshEdgeSplitAtMidpoint(
     wmtk::Mesh& m,
     const Tuple& t,
@@ -50,4 +50,4 @@ bool TriMeshEdgeSplitAtMidpoint::execute()
 
     return true;
 }
-} // namespace wmtk::operations
+} // namespace wmtk::operations::tri_mesh
