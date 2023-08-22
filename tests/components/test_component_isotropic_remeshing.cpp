@@ -66,12 +66,13 @@ TEST_CASE("smoothing_bunny", "[components][isotropic_remeshing][2D]")
 TEST_CASE("smoothing_simple_examples", "[components][isotropic_remeshing][2D]")
 {
     using namespace operations;
+    using namespace tri_mesh;
 
     SECTION("hex_plus_two")
     {
         DEBUG_TriMesh mesh = wmtk::tests::hex_plus_two_with_position();
 
-        OperationSettings<tri_mesh::VertexSmooth> op_settings;
+        OperationSettings<VertexSmooth> op_settings;
         op_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
 
         // offset interior vertex
@@ -80,7 +81,7 @@ TEST_CASE("smoothing_simple_examples", "[components][isotropic_remeshing][2D]")
         pos.vector_attribute(v4) = Eigen::Vector3d{0.6, 0.9, 0};
 
         Scheduler scheduler(mesh);
-        scheduler.add_operation_type<tri_mesh::VertexSmooth>("vertex_smooth", op_settings);
+        scheduler.add_operation_type<VertexSmooth>("vertex_smooth", op_settings);
 
         scheduler.run_operation_on_all(PrimitiveType::Vertex, "vertex_smooth");
 
@@ -92,7 +93,7 @@ TEST_CASE("smoothing_simple_examples", "[components][isotropic_remeshing][2D]")
     {
         DEBUG_TriMesh mesh = wmtk::tests::edge_region_with_position();
 
-        OperationSettings<tri_mesh::VertexSmooth> op_settings;
+        OperationSettings<VertexSmooth> op_settings;
         op_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
 
         // offset interior vertex
@@ -103,7 +104,7 @@ TEST_CASE("smoothing_simple_examples", "[components][isotropic_remeshing][2D]")
         pos.vector_attribute(v5) = Eigen::Vector3d{1.4, -0.9, 0};
 
         Scheduler scheduler(mesh);
-        scheduler.add_operation_type<tri_mesh::VertexSmooth>("vertex_smooth", op_settings);
+        scheduler.add_operation_type<VertexSmooth>("vertex_smooth", op_settings);
 
         for (size_t i = 0; i < 10; ++i) {
             scheduler.run_operation_on_all(PrimitiveType::Vertex, "vertex_smooth");
@@ -121,10 +122,11 @@ TEST_CASE("smoothing_simple_examples", "[components][isotropic_remeshing][2D]")
 TEST_CASE("tangential_smoothing", "[components][isotropic_remeshing][2D]")
 {
     using namespace operations;
+    using namespace tri_mesh;
 
     DEBUG_TriMesh mesh = wmtk::tests::hex_plus_two_with_position();
 
-    OperationSettings<tri_mesh::VertexTangentialSmooth> op_settings;
+    OperationSettings<VertexTangentialSmooth> op_settings;
     op_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
 
     // offset interior vertex
@@ -148,9 +150,7 @@ TEST_CASE("tangential_smoothing", "[components][isotropic_remeshing][2D]")
     pos.vector_attribute(v4) = p_init;
 
     Scheduler scheduler(mesh);
-    scheduler.add_operation_type<tri_mesh::VertexTangentialSmooth>(
-        "vertex_tangential_smooth",
-        op_settings);
+    scheduler.add_operation_type<VertexTangentialSmooth>("vertex_tangential_smooth", op_settings);
 
     scheduler.run_operation_on_all(PrimitiveType::Vertex, "vertex_tangential_smooth");
 
@@ -161,10 +161,11 @@ TEST_CASE("tangential_smoothing", "[components][isotropic_remeshing][2D]")
 TEST_CASE("tangential_smoothing_boundary", "[components][isotropic_remeshing][2D]")
 {
     using namespace operations;
+    using namespace tri_mesh;
 
     DEBUG_TriMesh mesh = wmtk::tests::hex_plus_two_with_position();
 
-    OperationSettings<tri_mesh::VertexTangentialSmooth> op_settings;
+    OperationSettings<VertexTangentialSmooth> op_settings;
     op_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
     op_settings.smooth_boundary = true;
 
@@ -188,7 +189,7 @@ TEST_CASE("tangential_smoothing_boundary", "[components][isotropic_remeshing][2D
 
     pos.vector_attribute(v1) = p_init;
 
-    tri_mesh::VertexTangentialSmooth op(mesh, v1, op_settings);
+    VertexTangentialSmooth op(mesh, v1, op_settings);
     const bool success = op();
     REQUIRE(success);
 
@@ -199,12 +200,13 @@ TEST_CASE("tangential_smoothing_boundary", "[components][isotropic_remeshing][2D
 TEST_CASE("split_long_edges", "[components][isotropic_remeshing][split][2D]")
 {
     using namespace operations;
+    using namespace tri_mesh;
 
     // This test does not fully work yet
 
     DEBUG_TriMesh mesh = wmtk::tests::edge_region_with_position();
 
-    OperationSettings<tri_mesh::EdgeSplitAtMidpoint> op_settings;
+    OperationSettings<EdgeSplitAtMidpoint> op_settings;
     op_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
 
     {
@@ -289,10 +291,11 @@ TEST_CASE("split_long_edges", "[components][isotropic_remeshing][split][2D]")
 TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2D]")
 {
     using namespace operations;
+    using namespace tri_mesh;
 
     DEBUG_TriMesh mesh = wmtk::tests::edge_region_with_position();
 
-    OperationSettings<tri_mesh::EdgeCollapseToMidpoint> op_settings;
+    OperationSettings<EdgeCollapseToMidpoint> op_settings;
     op_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
 
     SECTION("interior")
@@ -309,7 +312,7 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
         op_settings.max_squared_length = 0.1;
 
         Scheduler scheduler(mesh);
-        scheduler.add_operation_type<tri_mesh::EdgeCollapseToMidpoint>(
+        scheduler.add_operation_type<EdgeCollapseToMidpoint>(
             "tri_mesh_collapse_edge_to_mid",
             op_settings);
 
@@ -350,7 +353,7 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
         op_settings.collapse_towards_boundary = true;
 
         Scheduler scheduler(mesh);
-        scheduler.add_operation_type<tri_mesh::EdgeCollapseToMidpoint>(
+        scheduler.add_operation_type<EdgeCollapseToMidpoint>(
             "tri_mesh_collapse_edge_to_mid",
             op_settings);
 
@@ -391,7 +394,7 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
         op_settings.collapse_towards_boundary = false;
 
         Scheduler scheduler(mesh);
-        scheduler.add_operation_type<tri_mesh::EdgeCollapseToMidpoint>(
+        scheduler.add_operation_type<EdgeCollapseToMidpoint>(
             "tri_mesh_collapse_edge_to_mid",
             op_settings);
 
@@ -432,7 +435,7 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
         op_settings.collapse_boundary_edges = true;
 
         Scheduler scheduler(mesh);
-        scheduler.add_operation_type<tri_mesh::EdgeCollapseToMidpoint>(
+        scheduler.add_operation_type<EdgeCollapseToMidpoint>(
             "tri_mesh_collapse_edge_to_mid",
             op_settings);
 
@@ -461,7 +464,7 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
         op_settings.collapse_boundary_edges = false;
 
         Scheduler scheduler(mesh);
-        scheduler.add_operation_type<tri_mesh::EdgeCollapseToMidpoint>(
+        scheduler.add_operation_type<EdgeCollapseToMidpoint>(
             "tri_mesh_collapse_edge_to_mid",
             op_settings);
 
@@ -474,6 +477,7 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
 TEST_CASE("swap_edge_for_valence", "[components][isotropic_remeshing][swap][2D]")
 {
     using namespace operations;
+    using namespace tri_mesh;
 
     DEBUG_TriMesh mesh = wmtk::tests::embedded_diamond();
     SECTION("swap_success")
@@ -499,11 +503,11 @@ TEST_CASE("swap_edge_for_valence", "[components][isotropic_remeshing][swap][2D]"
         }
 
 
-        OperationSettings<tri_mesh::EdgeSwap> op_settings;
+        OperationSettings<EdgeSwap> op_settings;
         op_settings.must_improve_valence = true;
 
         Scheduler scheduler(mesh);
-        scheduler.add_operation_type<tri_mesh::EdgeSwap>("TriMeshSwapEdgeOperation", op_settings);
+        scheduler.add_operation_type<EdgeSwap>("TriMeshSwapEdgeOperation", op_settings);
         scheduler.run_operation_on_all(PrimitiveType::Edge, "TriMeshSwapEdgeOperation");
 
         // check valence
@@ -520,10 +524,10 @@ TEST_CASE("swap_edge_for_valence", "[components][isotropic_remeshing][swap][2D]"
     }
     SECTION("swap_fail")
     {
-        OperationSettings<tri_mesh::EdgeSwap> op_settings;
+        OperationSettings<EdgeSwap> op_settings;
         op_settings.must_improve_valence = true;
         const Tuple e = mesh.edge_tuple_between_v1_v2(6, 7, 5);
-        tri_mesh::EdgeSwap op(mesh, e, op_settings);
+        EdgeSwap op(mesh, e, op_settings);
         const bool success = op();
         CHECK(!success);
     }
