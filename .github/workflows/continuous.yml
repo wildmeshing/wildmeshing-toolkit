@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - main
+      - hackathon/dev
   pull_request:
     branches:
       - main
+      - hackathon/dev
 
 env:
   CTEST_OUTPUT_ON_FAILURE: ON
