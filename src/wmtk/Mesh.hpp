@@ -16,6 +16,10 @@
 namespace wmtk {
 // thread management tool that we will PImpl
 class AttributeScopeManager;
+namespace operations {
+class Operation;
+}
+
 class Mesh
 {
 public:
@@ -23,7 +27,7 @@ public:
     friend class AccessorBase;
     friend class ParaviewWriter;
     friend class MeshReader;
-    friend class Operation;
+    friend class operations::Operation;
 
     // dimension is the dimension of the top level simplex in this mesh
     // That is, a TriMesh is a 2, a TetMesh is a 3

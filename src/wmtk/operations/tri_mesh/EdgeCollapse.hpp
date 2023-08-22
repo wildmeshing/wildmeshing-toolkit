@@ -1,13 +1,15 @@
 
 #pragma once
 #include <optional>
-#include "Operation.hpp"
+#include "../Operation.hpp"
 
-namespace wmtk {
-class TriMeshCollapseEdgeOperation;
+namespace wmtk::operations {
+namespace tri_mesh {
+class EdgeCollapse;
+}
 
 template <>
-struct OperationSettings<TriMeshCollapseEdgeOperation>
+struct OperationSettings<tri_mesh::EdgeCollapse>
 {
     // are collapses between boundary and interior vertices allowed
     bool collapse_boundary_vertex_to_interior = true;
@@ -15,20 +17,21 @@ struct OperationSettings<TriMeshCollapseEdgeOperation>
     bool collapse_boundary_edges = true;
 };
 
-class TriMeshCollapseEdgeOperation : public Operation
+namespace tri_mesh {
+class EdgeCollapse : public Operation
 {
 public:
-    TriMeshCollapseEdgeOperation(
-        Mesh& m,
+    EdgeCollapse(
+        wmtk::Mesh& m,
         const Tuple& t,
-        const OperationSettings<TriMeshCollapseEdgeOperation>& settings = {});
+        const OperationSettings<EdgeCollapse>& settings = {});
 
     std::string name() const override;
 
 
     std::vector<Tuple> modified_triangles() const;
 
-    // return a ccw tuple from left ear if it exists, otherwise return a ccw tuple from right ear
+    // return next-->opposite tuple if it exists, otherwise return previous-->opposite
     Tuple return_tuple() const;
 
     static PrimitiveType primitive_type() { return PrimitiveType::Edge; }
@@ -40,8 +43,8 @@ protected:
 private:
     Tuple m_input_tuple;
     Tuple m_output_tuple;
-    const OperationSettings<TriMeshCollapseEdgeOperation>& m_settings;
+    const OperationSettings<EdgeCollapse>& m_settings;
 };
 
-
-} // namespace wmtk
+} // namespace tri_mesh
+} // namespace wmtk::operations

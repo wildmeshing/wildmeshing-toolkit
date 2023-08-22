@@ -1,13 +1,15 @@
 #pragma once
 #include <optional>
 #include <wmtk/TriMesh.hpp>
-#include "Operation.hpp"
+#include "../Operation.hpp"
 
-namespace wmtk {
-class TriMeshCollapseEdgeToMidpointOperation;
+namespace wmtk::operations {
+namespace tri_mesh {
+class EdgeCollapseToMidpoint;
+}
 
 template <>
-struct OperationSettings<TriMeshCollapseEdgeToMidpointOperation>
+struct OperationSettings<tri_mesh::EdgeCollapseToMidpoint>
 {
     // handle to vertex position
     MeshAttributeHandle<double> position;
@@ -20,13 +22,14 @@ struct OperationSettings<TriMeshCollapseEdgeToMidpointOperation>
     bool collapse_towards_boundary = false;
 };
 
-class TriMeshCollapseEdgeToMidpointOperation : public Operation
+namespace tri_mesh {
+class EdgeCollapseToMidpoint : public Operation
 {
 public:
-    TriMeshCollapseEdgeToMidpointOperation(
-        Mesh& m,
+    EdgeCollapseToMidpoint(
+        wmtk::Mesh& m,
         const Tuple& t,
-        const OperationSettings<TriMeshCollapseEdgeToMidpointOperation>& settings);
+        const OperationSettings<EdgeCollapseToMidpoint>& settings);
 
     std::string name() const override;
 
@@ -43,11 +46,11 @@ private:
     Tuple m_output_tuple;
 
     Accessor<double> m_pos_accessor;
-    const OperationSettings<TriMeshCollapseEdgeToMidpointOperation>& m_settings;
+    const OperationSettings<EdgeCollapseToMidpoint>& m_settings;
 
     Eigen::Vector3d p0;
     Eigen::Vector3d p1;
 };
 
-
-} // namespace wmtk
+} // namespace tri_mesh
+} // namespace wmtk::operations

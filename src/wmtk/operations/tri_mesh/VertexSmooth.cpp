@@ -1,24 +1,24 @@
-#include "TriMeshVertexSmoothOperation.hpp"
+#include "VertexSmooth.hpp"
 
 #include <wmtk/SimplicialComplex.hpp>
 
-namespace wmtk {
-TriMeshVertexSmoothOperation::TriMeshVertexSmoothOperation(
-    Mesh& m,
+namespace wmtk::operations::tri_mesh {
+VertexSmooth::VertexSmooth(
+    wmtk::Mesh& m,
     const Tuple& t,
-    const OperationSettings<TriMeshVertexSmoothOperation>& settings)
+    const OperationSettings<VertexSmooth>& settings)
     : Operation(m)
     , m_tuple(t)
     , m_pos_accessor(m.create_accessor<double>(settings.position))
     , m_settings{settings}
 {}
 
-std::string TriMeshVertexSmoothOperation::name() const
+std::string VertexSmooth::name() const
 {
-    return "vertex_smooth";
+    return "tri_mesh_vertex_smooth";
 }
 
-bool TriMeshVertexSmoothOperation::before() const
+bool VertexSmooth::before() const
 {
     if (m_mesh.is_outdated(m_tuple) || !m_mesh.is_valid(m_tuple)) {
         return false;
@@ -29,7 +29,7 @@ bool TriMeshVertexSmoothOperation::before() const
     return true;
 }
 
-bool TriMeshVertexSmoothOperation::execute()
+bool VertexSmooth::execute()
 {
     const std::vector<Simplex> one_ring = SimplicialComplex::vertex_one_ring(m_mesh, m_tuple);
     auto p_mid = m_pos_accessor.vector_attribute(m_tuple);
@@ -53,4 +53,4 @@ bool TriMeshVertexSmoothOperation::execute()
 }
 
 
-} // namespace wmtk
+} // namespace wmtk::operations::tri_mesh

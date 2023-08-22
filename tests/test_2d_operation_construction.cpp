@@ -3,8 +3,8 @@
 #include <numeric>
 #include <wmtk/Accessor.hpp>
 #include <wmtk/operations/OperationFactory.hpp>
-#include <wmtk/operations/TriMeshCollapseEdgeOperation.hpp>
-#include <wmtk/operations/TriMeshSplitEdgeOperation.hpp>
+#include <wmtk/operations/tri_mesh/EdgeCollapse.hpp>
+#include <wmtk/operations/tri_mesh/EdgeSplit.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include "tools/DEBUG_TriMesh.hpp"
 #include "tools/TriMesh_examples.hpp"
@@ -23,8 +23,10 @@ constexpr PrimitiveType PF = PrimitiveType::Face;
 // something should succeed
 DEBUG_TriMesh test_split(const DEBUG_TriMesh& mesh, const Tuple& e, bool should_succeed)
 {
+    using namespace operations;
+
     DEBUG_TriMesh m = mesh;
-    OperationFactory<TriMeshSplitEdgeOperation> fact;
+    OperationFactory<tri_mesh::EdgeSplit> fact;
 
     auto op = fact.create(m, e);
     bool result = (*op)(); // should run the split
@@ -50,8 +52,10 @@ DEBUG_TriMesh test_split(const DEBUG_TriMesh& mesh, long edge_index, bool should
 // something should succeed
 DEBUG_TriMesh test_collapse(const DEBUG_TriMesh& mesh, const Tuple& e, bool should_succeed)
 {
+    using namespace operations;
+
     DEBUG_TriMesh m = mesh;
-    OperationFactory<TriMeshCollapseEdgeOperation> fact;
+    OperationFactory<tri_mesh::EdgeCollapse> fact;
 
     auto op = fact.create(m, e);
     bool result = (*op)(); // should run the split

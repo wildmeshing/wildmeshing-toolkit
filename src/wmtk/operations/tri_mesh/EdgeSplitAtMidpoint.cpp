@@ -1,13 +1,13 @@
-#include "TriMeshSplitEdgeAtMidpointOperation.hpp"
+#include "EdgeSplitAtMidpoint.hpp"
 
 #include <wmtk/TriMesh.hpp>
-#include "TriMeshSplitEdgeOperation.hpp"
+#include "EdgeSplit.hpp"
 
-namespace wmtk {
-TriMeshSplitEdgeAtMidpointOperation::TriMeshSplitEdgeAtMidpointOperation(
-    Mesh& m,
+namespace wmtk::operations::tri_mesh {
+EdgeSplitAtMidpoint::EdgeSplitAtMidpoint(
+    wmtk::Mesh& m,
     const Tuple& t,
-    const OperationSettings<TriMeshSplitEdgeAtMidpointOperation>& settings)
+    const OperationSettings<EdgeSplitAtMidpoint>& settings)
     : Operation(m)
     , m_input_tuple{t}
     , m_pos_accessor{m.create_accessor(settings.position)}
@@ -16,15 +16,15 @@ TriMeshSplitEdgeAtMidpointOperation::TriMeshSplitEdgeAtMidpointOperation(
     p0 = m_pos_accessor.vector_attribute(m_input_tuple);
     p1 = m_pos_accessor.vector_attribute(m_mesh.switch_vertex(m_input_tuple));
 }
-std::string TriMeshSplitEdgeAtMidpointOperation::name() const
+std::string EdgeSplitAtMidpoint::name() const
 {
-    return "tri_mesh_split_edge_at_midpoint";
+    return "tri_mesh_edge_split_at_midpoint";
 }
-Tuple TriMeshSplitEdgeAtMidpointOperation::return_tuple() const
+Tuple EdgeSplitAtMidpoint::return_tuple() const
 {
     return m_output_tuple;
 }
-bool TriMeshSplitEdgeAtMidpointOperation::before() const
+bool EdgeSplitAtMidpoint::before() const
 {
     if (m_mesh.is_outdated(m_input_tuple) || !m_mesh.is_valid(m_input_tuple)) {
         return false;
@@ -33,13 +33,13 @@ bool TriMeshSplitEdgeAtMidpointOperation::before() const
     const double l_squared = (p1 - p0).squaredNorm();
     return l_squared > m_settings.min_squared_length;
 }
-bool TriMeshSplitEdgeAtMidpointOperation::execute()
+bool EdgeSplitAtMidpoint::execute()
 {
     {
-        OperationSettings<TriMeshSplitEdgeOperation> op_settings;
+        OperationSettings<EdgeSplit> op_settings;
         op_settings.split_boundary_edges = m_settings.split_boundary_edges;
 
-        TriMeshSplitEdgeOperation split_op(m_mesh, m_input_tuple, op_settings);
+        EdgeSplit split_op(m_mesh, m_input_tuple, op_settings);
         if (!split_op()) {
             return false;
         }
@@ -50,4 +50,4 @@ bool TriMeshSplitEdgeAtMidpointOperation::execute()
 
     return true;
 }
-} // namespace wmtk
+} // namespace wmtk::operations::tri_mesh
