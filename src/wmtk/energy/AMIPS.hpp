@@ -2,6 +2,8 @@
 
 class AMIPS_2D : public wmtk::Energy
 {
+    using DScalar = DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d>;
+
 public:
     double energy_eval(const Tuple& tuple) const override{};
     DScalar energy_eval_autodiff(const Tuple& tuple) const override{};

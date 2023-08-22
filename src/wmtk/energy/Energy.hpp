@@ -4,13 +4,13 @@
 class Energy
 {
 private:
-    const Mesh& m;
-    const MeshAttributeHandle<double> position_handle;
+    const Mesh& m_mesh;
+    const MeshAttributeHandle<double> m_position_handle;
 
 
 public:
-    Energy(const Mesh& m, const MeshAttributeHandle<double>& position_handle);
-    Enegry(const Mesh& m);
+    Energy(const Mesh& mesh, const MeshAttributeHandle<double>& position_handle);
+    Enegry(const Mesh& mesh);
 
 public:
     virtual double energy_eval(const Tuple& tuple) const = 0;
