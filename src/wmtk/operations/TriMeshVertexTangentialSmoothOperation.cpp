@@ -5,22 +5,22 @@
 #include "TriMeshVertexSmoothOperation.hpp"
 
 namespace wmtk::operations::tri_mesh {
-TriMeshVertexTangentialSmooth::TriMeshVertexTangentialSmooth(
+VertexTangentialSmooth::VertexTangentialSmooth(
     wmtk::Mesh& m,
     const Tuple& t,
-    const OperationSettings<TriMeshVertexTangentialSmooth>& settings)
+    const OperationSettings<VertexTangentialSmooth>& settings)
     : Operation(m)
     , m_tuple{t}
     , m_pos_accessor{m.create_accessor<double>(settings.position)}
     , m_settings{settings}
 {}
 
-std::string TriMeshVertexTangentialSmooth::name() const
+std::string VertexTangentialSmooth::name() const
 {
     return "vertex_tangential_smooth";
 }
 
-bool TriMeshVertexTangentialSmooth::before() const
+bool VertexTangentialSmooth::before() const
 {
     if (m_mesh.is_outdated(m_tuple) || !m_mesh.is_valid(m_tuple)) {
         return false;
@@ -31,14 +31,14 @@ bool TriMeshVertexTangentialSmooth::before() const
     return true;
 }
 
-bool TriMeshVertexTangentialSmooth::execute()
+bool VertexTangentialSmooth::execute()
 {
     const Eigen::Vector3d p = m_pos_accessor.vector_attribute(m_tuple);
     {
-        OperationSettings<tri_mesh::TriMeshVertexSmooth> op_settings;
+        OperationSettings<tri_mesh::VertexSmooth> op_settings;
         op_settings.position = m_pos_accessor.handle();
         op_settings.smooth_boundary = m_settings.smooth_boundary;
-        tri_mesh::TriMeshVertexSmooth split_op(m_mesh, m_tuple, op_settings);
+        tri_mesh::VertexSmooth split_op(m_mesh, m_tuple, op_settings);
         if (!split_op()) {
             return false;
         }

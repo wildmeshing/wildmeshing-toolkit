@@ -4,10 +4,10 @@
 #include "TriMeshCollapseEdgeOperation.hpp"
 
 namespace wmtk::operations::tri_mesh {
-TriMeshEdgeCollapseToMidpoint::TriMeshEdgeCollapseToMidpoint(
+EdgeCollapseToMidpoint::EdgeCollapseToMidpoint(
     wmtk::Mesh& m,
     const Tuple& t,
-    const OperationSettings<TriMeshEdgeCollapseToMidpoint>& settings)
+    const OperationSettings<EdgeCollapseToMidpoint>& settings)
     : Operation(m)
     , m_input_tuple{t}
     , m_pos_accessor{m.create_accessor(settings.position)}
@@ -17,17 +17,17 @@ TriMeshEdgeCollapseToMidpoint::TriMeshEdgeCollapseToMidpoint(
     p1 = m_pos_accessor.vector_attribute(m_mesh.switch_vertex(m_input_tuple));
 }
 
-std::string TriMeshEdgeCollapseToMidpoint::name() const
+std::string EdgeCollapseToMidpoint::name() const
 {
     return "tri_mesh_collapse_edge_to_mid";
 }
 
-Tuple TriMeshEdgeCollapseToMidpoint::return_tuple() const
+Tuple EdgeCollapseToMidpoint::return_tuple() const
 {
     return m_output_tuple;
 }
 
-bool TriMeshEdgeCollapseToMidpoint::before() const
+bool EdgeCollapseToMidpoint::before() const
 {
     if (m_mesh.is_outdated(m_input_tuple) || !m_mesh.is_valid(m_input_tuple)) {
         return false;
@@ -37,7 +37,7 @@ bool TriMeshEdgeCollapseToMidpoint::before() const
     return l_squared < m_settings.max_squared_length;
 }
 
-bool TriMeshEdgeCollapseToMidpoint::execute()
+bool EdgeCollapseToMidpoint::execute()
 {
     bool v0_is_boundary = false;
     bool v1_is_boundary = false;
@@ -48,10 +48,10 @@ bool TriMeshEdgeCollapseToMidpoint::execute()
 
     // collapse
     {
-        OperationSettings<tri_mesh::TriMeshEdgeCollapse> op_settings;
+        OperationSettings<tri_mesh::EdgeCollapse> op_settings;
         op_settings.collapse_boundary_edges = m_settings.collapse_boundary_edges;
 
-        tri_mesh::TriMeshEdgeCollapse collapse_op(m_mesh, m_input_tuple, op_settings);
+        tri_mesh::EdgeCollapse collapse_op(m_mesh, m_input_tuple, op_settings);
         if (!collapse_op()) {
             return false;
         }

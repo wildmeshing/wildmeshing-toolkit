@@ -5,11 +5,11 @@
 
 namespace wmtk::operations {
 namespace tri_mesh {
-class TriMeshEdgeCollapse;
+class EdgeCollapse;
 }
 
 template <>
-struct OperationSettings<tri_mesh::TriMeshEdgeCollapse>
+struct OperationSettings<tri_mesh::EdgeCollapse>
 {
     // are collapses between boundary and interior vertices allowed
     bool collapse_boundary_vertex_to_interior = true;
@@ -18,13 +18,13 @@ struct OperationSettings<tri_mesh::TriMeshEdgeCollapse>
 };
 
 namespace tri_mesh {
-class TriMeshEdgeCollapse : public Operation
+class EdgeCollapse : public Operation
 {
 public:
-    TriMeshEdgeCollapse(
+    EdgeCollapse(
         wmtk::Mesh& m,
         const Tuple& t,
-        const OperationSettings<TriMeshEdgeCollapse>& settings = {});
+        const OperationSettings<EdgeCollapse>& settings = {});
 
     std::string name() const override;
 
@@ -43,7 +43,7 @@ protected:
 private:
     Tuple m_input_tuple;
     Tuple m_output_tuple;
-    const OperationSettings<TriMeshEdgeCollapse>& m_settings;
+    const OperationSettings<EdgeCollapse>& m_settings;
 };
 
 } // namespace tri_mesh

@@ -5,23 +5,20 @@
 
 namespace wmtk::operations {
 namespace tri_mesh {
-class TriMeshEdgeSplit;
+class EdgeSplit;
 }
 
 template <>
-struct OperationSettings<tri_mesh::TriMeshEdgeSplit>
+struct OperationSettings<tri_mesh::EdgeSplit>
 {
     bool split_boundary_edges = true;
 };
 
 namespace tri_mesh {
-class TriMeshEdgeSplit : public Operation
+class EdgeSplit : public Operation
 {
 public:
-    TriMeshEdgeSplit(
-        wmtk::Mesh& m,
-        const Tuple& t,
-        const OperationSettings<TriMeshEdgeSplit>& settings);
+    EdgeSplit(wmtk::Mesh& m, const Tuple& t, const OperationSettings<EdgeSplit>& settings);
 
     std::string name() const override;
 
@@ -48,7 +45,7 @@ private:
     Tuple m_input_tuple;
     Tuple m_output_tuple;
 
-    const OperationSettings<TriMeshEdgeSplit>& m_settings;
+    const OperationSettings<EdgeSplit>& m_settings;
 };
 
 } // namespace tri_mesh

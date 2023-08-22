@@ -5,11 +5,11 @@
 
 namespace wmtk::operations {
 namespace tri_mesh {
-class TriMeshEdgeCollapseToMidpoint;
+class EdgeCollapseToMidpoint;
 }
 
 template <>
-struct OperationSettings<tri_mesh::TriMeshEdgeCollapseToMidpoint>
+struct OperationSettings<tri_mesh::EdgeCollapseToMidpoint>
 {
     // handle to vertex position
     MeshAttributeHandle<double> position;
@@ -23,13 +23,13 @@ struct OperationSettings<tri_mesh::TriMeshEdgeCollapseToMidpoint>
 };
 
 namespace tri_mesh {
-class TriMeshEdgeCollapseToMidpoint : public Operation
+class EdgeCollapseToMidpoint : public Operation
 {
 public:
-    TriMeshEdgeCollapseToMidpoint(
+    EdgeCollapseToMidpoint(
         wmtk::Mesh& m,
         const Tuple& t,
-        const OperationSettings<TriMeshEdgeCollapseToMidpoint>& settings);
+        const OperationSettings<EdgeCollapseToMidpoint>& settings);
 
     std::string name() const override;
 
@@ -46,7 +46,7 @@ private:
     Tuple m_output_tuple;
 
     Accessor<double> m_pos_accessor;
-    const OperationSettings<TriMeshEdgeCollapseToMidpoint>& m_settings;
+    const OperationSettings<EdgeCollapseToMidpoint>& m_settings;
 
     Eigen::Vector3d p0;
     Eigen::Vector3d p1;
