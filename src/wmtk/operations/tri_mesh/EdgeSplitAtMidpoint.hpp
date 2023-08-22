@@ -20,7 +20,7 @@ class EdgeSplitAtMidpoint : public Operation
 {
 public:
     EdgeSplitAtMidpoint(
-        wmtk::Mesh& m,
+        Mesh& m,
         const Tuple& t,
         const OperationSettings<EdgeSplitAtMidpoint>& settings);
 

@@ -27,7 +27,7 @@ class EdgeCollapseToMidpoint : public Operation
 {
 public:
     EdgeCollapseToMidpoint(
-        wmtk::Mesh& m,
+        Mesh& m,
         const Tuple& t,
         const OperationSettings<EdgeCollapseToMidpoint>& settings);
 

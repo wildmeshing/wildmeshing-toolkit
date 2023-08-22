@@ -19,7 +19,7 @@ namespace tri_mesh {
 class VertexSmooth : public Operation
 {
 public:
-    VertexSmooth(wmtk::Mesh& m, const Tuple& t, const OperationSettings<VertexSmooth>& settings);
+    VertexSmooth(Mesh& m, const Tuple& t, const OperationSettings<VertexSmooth>& settings);
 
     std::string name() const override;
 

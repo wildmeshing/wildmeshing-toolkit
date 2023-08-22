@@ -21,7 +21,7 @@ class VertexTangentialSmooth : public Operation
 {
 public:
     VertexTangentialSmooth(
-        wmtk::Mesh& m,
+        Mesh& m,
         const Tuple& t,
         const OperationSettings<VertexTangentialSmooth>& settings);
 

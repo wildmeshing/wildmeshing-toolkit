@@ -4,7 +4,7 @@
 #include "EdgeCollapse.hpp"
 #include "EdgeSplit.hpp"
 namespace wmtk::operations::tri_mesh {
-EdgeSwap::EdgeSwap(wmtk::Mesh& m, const Tuple& t, const OperationSettings<EdgeSwap>& settings)
+EdgeSwap::EdgeSwap(Mesh& m, const Tuple& t, const OperationSettings<EdgeSwap>& settings)
     : Operation(m)
     , m_input_tuple{t}
     , m_settings{settings}

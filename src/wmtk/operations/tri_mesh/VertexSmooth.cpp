@@ -3,10 +3,7 @@
 #include <wmtk/SimplicialComplex.hpp>
 
 namespace wmtk::operations::tri_mesh {
-VertexSmooth::VertexSmooth(
-    wmtk::Mesh& m,
-    const Tuple& t,
-    const OperationSettings<VertexSmooth>& settings)
+VertexSmooth::VertexSmooth(Mesh& m, const Tuple& t, const OperationSettings<VertexSmooth>& settings)
     : Operation(m)
     , m_tuple(t)
     , m_pos_accessor(m.create_accessor<double>(settings.position))

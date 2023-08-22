@@ -5,10 +5,7 @@
 #include "wmtk/SimplicialComplex.hpp"
 
 namespace wmtk::operations::tri_mesh {
-EdgeCollapse::EdgeCollapse(
-    wmtk::Mesh& m,
-    const Tuple& t,
-    const OperationSettings<EdgeCollapse>& settings)
+EdgeCollapse::EdgeCollapse(Mesh& m, const Tuple& t, const OperationSettings<EdgeCollapse>& settings)
     : Operation(m)
     , m_input_tuple{t}
     , m_settings{settings}

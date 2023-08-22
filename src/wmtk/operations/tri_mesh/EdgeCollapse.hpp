@@ -21,10 +21,7 @@ namespace tri_mesh {
 class EdgeCollapse : public Operation
 {
 public:
-    EdgeCollapse(
-        wmtk::Mesh& m,
-        const Tuple& t,
-        const OperationSettings<EdgeCollapse>& settings = {});
+    EdgeCollapse(Mesh& m, const Tuple& t, const OperationSettings<EdgeCollapse>& settings = {});
 
     std::string name() const override;
 
