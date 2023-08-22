@@ -417,6 +417,35 @@ std::vector<Simplex> SimplicialComplex::vertex_one_ring(const Mesh& m, Tuple t)
     return std::vector<Simplex>(vs.begin(), vs.end());
 }
 
+std::vector<Simplex> SimplicialComplex::vertex_one_ring(const TriMesh& m, Tuple t)
+{
+    std::vector<Simplex> one_ring;
+    one_ring.reserve(6);
+
+    Tuple iter = t;
+    do {
+        one_ring.emplace_back(Simplex::vertex(m.switch_vertex(iter)));
+        if (m.is_boundary(iter)) {
+            break;
+        }
+        iter = m.switch_edge(m.switch_face(iter));
+    } while (iter != t);
+
+    // in case of a boundary, collect the other side too
+    if (iter != t) {
+        iter = m.switch_edge(t);
+        do {
+            one_ring.emplace_back(Simplex::vertex(m.switch_vertex(iter)));
+            if (m.is_boundary(iter)) {
+                break;
+            }
+            iter = m.switch_edge(m.switch_face(iter));
+        } while (iter != t);
+    }
+
+    return one_ring;
+}
+
 std::vector<Simplex> SimplicialComplex::k_ring(const Mesh& m, Tuple t, int k)
 {
     if (k < 1) return {};

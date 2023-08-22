@@ -157,6 +157,8 @@ public:
      */
     static std::vector<Simplex> vertex_one_ring(const Mesh& m, Tuple t);
 
+    static std::vector<Simplex> vertex_one_ring(const TriMesh& m, Tuple t);
+
     static std::vector<Simplex> k_ring(const Mesh& m, Tuple t, int k);
 };
 
