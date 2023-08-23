@@ -69,11 +69,36 @@ public:
         long eid_split = -1;
     };
 
+    /*
+               v3
+               /\\
+        ear1  /  \ \   ear2
+             /    \  \
+            /      \   \
+           /        \    \
+          /          \     \
+         /            \     _\ v4
+        /______________\_ -
+       v1     e12       v2
+    */
+
     struct TetSplitData
     {
         long tid_old = -1;
         long tid_new_1 = -1;
         long tid_new_2 = -1;
+        long fid_split = -1;
+        long v1;
+        long v2;
+        long v3;
+        long v4;
+        long e12;
+        long e13;
+        long e14;
+        long e23;
+        long e24;
+        long e34;
+
         EarTet ear_tet_1; // switch edge switch face
         EarTet ear_tet_2; // switch vertex switch edge switch face
         std::array<FaceSplitData, 2> new_face_data;
@@ -105,6 +130,12 @@ public:
     static const std::array<std::vector<long>, 4> get_collapse_simplices_to_delete(
         const Tuple& tuple,
         const TetMesh& m);
+
+    void update_ear_connectivity(
+        const long ear_tid,
+        const long new_tid,
+        const long old_tid,
+        const long common_fid);
 
     const std::array<long, 2>& incident_vids() const { return m_spine_vids; }
 

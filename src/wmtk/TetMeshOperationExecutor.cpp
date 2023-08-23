@@ -78,9 +78,10 @@ TetMesh::TetMeshOperationExecutor::TetMeshOperationExecutor(
         SimplicialComplex::closed_star(m_mesh, Simplex::edge(operating_tuple));
 
     // get all tets incident to the edge
-    for (const Simplex& t : edge_closed_star.get_tetrahedra()) {
-        m_incident_tet_datas.emplace_back(get_incident_tet_data(t.tuple()));
-    }
+    // have other implementation
+    // for (const Simplex& t : edge_closed_star.get_tetrahedra()) {
+    //     m_incident_tet_datas.emplace_back(get_incident_tet_data(t.tuple()));
+    // }
 
     // update hash on all tets in the two-ring neighborhood
     SimplicialComplex hash_update_region(m);
@@ -124,7 +125,9 @@ TetMesh::TetMeshOperationExecutor::get_split_simplices_to_delete(
 }
 
 const std::array<std::vector<long>, 4>
-TetMesh::TetMeshOperationExecutor::get_split_simplices_to_delete(const Tuple& tuple, TetMesh& m)
+TetMesh::TetMeshOperationExecutor::get_collapse_simplices_to_delete(
+    const Tuple& tuple,
+    const TetMesh& m)
 {
     const SimplicialComplex vertex_open_star =
         SimplicialComplex::open_star(m, Simplex::vertex(tuple));
@@ -132,7 +135,7 @@ TetMesh::TetMeshOperationExecutor::get_split_simplices_to_delete(const Tuple& tu
         SimplicialComplex::closed_star(m, Simplex::edge(tuple));
 
     const SimplicialComplex sc =
-        SimplicialComplex:: : get_intersection(vertex_open_star, edge_closed_star);
+        SimplicialComplex::get_intersection(vertex_open_star, edge_closed_star);
 
     std::array<std::vector<long>, 4> ids;
     for (const Simplex& s : sc.get_simplices()) {
@@ -140,14 +143,6 @@ TetMesh::TetMeshOperationExecutor::get_split_simplices_to_delete(const Tuple& tu
     }
 
     return ids;
-}
-
-const std::array<std::vector<long>, 4>
-TetMesh::TetMeshOperationExecutor::get_collapse_simplices_to_delete(
-    const Tuple& tuple,
-    const TriMesh& m)
-{
-    // TODO
 }
 
 void TetMesh::TetMeshOperationExecutor::update_ear_connectivity(
@@ -168,7 +163,7 @@ void TetMesh::TetMeshOperationExecutor::update_ear_connectivity(
         }
     }
 
-    ft_accessor.scalar_attribute(common_fid) = ear_fid;
+    ft_accessor.scalar_attribute(common_fid) = ear_tid;
 }
 
 Tuple TetMesh::TetMeshOperationExecutor::split_edge()
@@ -178,7 +173,7 @@ Tuple TetMesh::TetMeshOperationExecutor::split_edge()
     // create new vertex (center)
     std::vector<long> new_vids = this->request_simplex_indices(PrimitiveType::Vertex, 1);
     assert(new_vids.size() == 1);
-    const long v_new = vew_vids[0];
+    const long v_new = new_vids[0];
 
     // create new edges (spline)
     std::vector<long> new_eids = this->request_simplex_indices(PrimitiveType::Edge, 2);
@@ -208,18 +203,20 @@ Tuple TetMesh::TetMeshOperationExecutor::split_edge()
     */
     // incident face size = incident tet size if loop
     Tuple iter_tuple = m_operating_tuple;
-    bool loop_flag = false;
-    while (!is_boundary(iter_tuple)) {
-        iter_tuple = switch_tuple(iter_tuple, PrimitiveType::Tetrahedron);
+
+    bool loop_flag = false; // loop
+
+    while (!m_mesh.is_boundary(iter_tuple)) {
+        iter_tuple = m_mesh.switch_tuple(iter_tuple, PrimitiveType::Tetrahedron);
 
         // if no boundary, break;
-        if (id_tet(iter_tuple) == id_tet(m_operating_tuple)) {
+        if (m_mesh.id_tet(iter_tuple) == m_mesh.id_tet(m_operating_tuple)) {
             loop_flag = true;
             break;
         }
 
         // switch to another face
-        iter_tuple = switch_face(iter_tuple);
+        iter_tuple = m_mesh.switch_face(iter_tuple);
         incident_tets.emplace_back(iter_tuple);
         incident_faces.emplace_back(iter_tuple);
     }
@@ -239,19 +236,21 @@ Tuple TetMesh::TetMeshOperationExecutor::split_edge()
         incident_faces.clear();
 
         // go to the left boundary
-        iter_tuple = switch_face(m_operating_tuple);
-        while (!is_boundary(iter_tuple)) {
-            iter_tuple = switch_face(switch_tuple(iter_tuple, PrimitiveType::Tetrahedron));
+        iter_tuple = m_mesh.switch_face(m_operating_tuple);
+        while (!m_mesh.is_boundary(iter_tuple)) {
+            iter_tuple =
+                m_mesh.switch_face(m_mesh.switch_tuple(iter_tuple, PrimitiveType::Tetrahedron));
         }
 
         const Tuple last_face_tuple = iter_tuple;
-        iter_tuple = switch_face(iter_tuple);
+        iter_tuple = m_mesh.switch_face(iter_tuple);
 
         incident_tets.emplace_back(iter_tuple);
         incident_faces.emplace_back(iter_tuple);
 
-        while (!is_boundary(iter_tuple)) {
-            iter_tuple = switch_face(switch_tuple(iter_tuple, PrimitiveType::Tetrahedron));
+        while (!m_mesh.is_boundary(iter_tuple)) {
+            iter_tuple =
+                m_mesh.switch_face(m_mesh.switch_tuple(iter_tuple, PrimitiveType::Tetrahedron));
             incident_tets.emplace_back(iter_tuple);
             incident_faces.emplace_back(iter_tuple);
         }
@@ -272,7 +271,7 @@ Tuple TetMesh::TetMeshOperationExecutor::split_edge()
         std::vector<long> splitting_eids = this->request_simplex_indices(PrimitiveType::Edge, 1);
 
         FaceSplitData fsd;
-        fsd.fid_old = id_face(incident_faces[i]);
+        fsd.fid_old = m_mesh.id_face(incident_faces[i]);
         fsd.fid_new_1 = new_fids[0];
         fsd.fid_new_2 = new_fids[1];
         fsd.eid_spine_old = m_operating_edge_id;
@@ -291,31 +290,46 @@ Tuple TetMesh::TetMeshOperationExecutor::split_edge()
         std::vector<long> split_fids = this->request_simplex_indices(PrimitiveType::Face, 1);
 
         TetSplitData tsd;
-        tsd.tid_old = id_tet(incident_tets[i]);
+        tsd.tid_old = m_mesh.id_tet(incident_tets[i]);
         tsd.tid_new_1 = new_tids[0];
         tsd.tid_new_2 = new_tids[1];
         tsd.fid_split = split_fids[0];
 
         // get ears here
-        Tuple ear1 = switch_face(switch_edge(incident_tets[i]));
-        if (!is_boundary(ear1)) {
-            ear1 = switch_tuple(ear1, PrimitiveType::Tetrahedron);
-            tsd.ear_tet_1 = EarTet(id_tet(ear1), id_face(ear1));
+        Tuple ear1 = m_mesh.switch_face(m_mesh.switch_edge(incident_tets[i]));
+        if (!m_mesh.is_boundary(ear1)) {
+            ear1 = m_mesh.switch_tuple(ear1, PrimitiveType::Tetrahedron);
+            tsd.ear_tet_1 = EarTet{m_mesh.id_tet(ear1), m_mesh.id_face(ear1)};
         } else {
-            tsd.ear_tet_1 = EarTet(-1, id_face(ear1));
+            tsd.ear_tet_1 = EarTet{-1, m_mesh.id_face(ear1)};
         }
 
-        Tuple ear2 = switch_face(switch_edge(switch_vertex(incident_tets[i])));
-        if (!is_boundary(ear2)) {
-            ear2 = switch_tuple(ear2, PrimitiveType::Tetrahedron);
-            tsd.ear_tet_2 = EarTet(id_tet(ear2), id_face(ear2));
+        Tuple ear2 = m_mesh.switch_face(m_mesh.switch_edge(m_mesh.switch_vertex(incident_tets[i])));
+        if (!m_mesh.is_boundary(ear2)) {
+            ear2 = m_mesh.switch_tuple(ear2, PrimitiveType::Tetrahedron);
+            tsd.ear_tet_2 = EarTet{m_mesh.id_tet(ear2), m_mesh.id_face(ear2)};
         } else {
-            tsd.ear_tet_2 = EarTet(-1, id_face(ear2));
+            tsd.ear_tet_2 = EarTet{-1, m_mesh.id_face(ear2)};
         }
 
         tsd.new_face_data[0] =
             new_incident_face_data[(i + incident_face_cnt - 1) % incident_face_cnt];
         tsd.new_face_data[1] = new_incident_face_data[i];
+
+        tsd.v1 = m_mesh.id_vertex(incident_tets[i]);
+        tsd.v2 = m_mesh.id_vertex(m_mesh.switch_vertex(incident_tets[i]));
+        tsd.v3 = m_mesh.id_vertex(
+            m_mesh.switch_vertex(m_mesh.switch_edge(m_mesh.switch_face(incident_tets[i]))));
+        tsd.v4 = m_mesh.id_vertex(m_mesh.switch_vertex(m_mesh.switch_edge(incident_tets[i])));
+
+        tsd.e12 = m_mesh.id_edge(incident_tets[i]);
+        tsd.e14 = m_mesh.id_edge(m_mesh.switch_edge(incident_tets[i]));
+        tsd.e24 = m_mesh.id_edge(m_mesh.switch_edge(m_mesh.switch_vertex(incident_tets[i])));
+        tsd.e13 = m_mesh.id_edge(m_mesh.switch_edge(m_mesh.switch_face(incident_tets[i])));
+        tsd.e23 = m_mesh.id_edge(
+            m_mesh.switch_edge(m_mesh.switch_face(m_mesh.switch_vertex(incident_tets[i]))));
+        tsd.e34 = m_mesh.id_edge(m_mesh.switch_edge(
+            m_mesh.switch_vertex(m_mesh.switch_face(m_mesh.switch_edge(incident_tets[i])))));
     }
 
     // update connectivity
@@ -323,24 +337,22 @@ Tuple TetMesh::TetMeshOperationExecutor::split_edge()
         // prepare all indices
         const auto& data = new_incident_tet_data[i];
         const long vid_new = v_new;
-        // TODO
-        // const long v1 =      // m_operating_tuple.vid
-        // const long v2 =      // switch_vertex(m_operating_tuple.vid)
-        // const long v3 =      // old_face_0 opposite v
-        // const long v4 =      // old_face_1 opposite v
+        const long v1 = data.v1; // m_operating_tuple.vid
+        const long v2 = data.v2; // switch_vertex(m_operating_tuple.vid)
+        const long v3 = data.v3; // old_face_0 opposite v
+        const long v4 = data.v4; // old_face_1 opposite v
         const long e_spline_1 = new_eids[0];
         const long e_spline_2 = new_eids[1];
         const long e_split_1 = data.new_face_data[0].eid_split;
         const long e_split_2 = data.new_face_data[1].eid_split;
-        // TODO
-        // const long e12 =
-        // const long e13 =
-        // const long e23 =
-        // const long e14 =
-        // const long e24 =
-        // const long e34 =
-        const long f_ear_1 = data.ear_tet_1.eid;
-        const long f_ear_2 = data.ear_tet_2.eid;
+        const long e12 = data.e12;
+        const long e13 = data.e13;
+        const long e23 = data.e23;
+        const long e14 = data.e14;
+        const long e24 = data.e24;
+        const long e34 = data.e34;
+        const long f_ear_1 = data.ear_tet_1.fid;
+        const long f_ear_2 = data.ear_tet_2.fid;
         const long f1 = data.new_face_data[0].fid_new_1;
         const long f2 = data.new_face_data[0].fid_new_2;
         const long f_old_1 = data.new_face_data[0].fid_old; // f1 + f2
@@ -353,6 +365,59 @@ Tuple TetMesh::TetMeshOperationExecutor::split_edge()
         const long t1 = data.tid_new_1;
         const long t2 = data.tid_new_2;
         const long t_old = data.tid_old;
+        long t_f1; // prev t1
+        long t_f2; // prev t2
+        long t_f3; // next t1
+        long t_f4; // next t2
+
+        if (loop_flag) {
+            t_f1 = new_incident_tet_data
+                       [(i - 1 + new_incident_tet_data.size()) % new_incident_tet_data.size()]
+                           .tid_new_1;
+            t_f2 = new_incident_tet_data
+                       [(i - 1 + new_incident_tet_data.size()) % new_incident_tet_data.size()]
+                           .tid_new_2;
+            t_f3 = new_incident_tet_data
+                       [(i + 1 + new_incident_tet_data.size()) % new_incident_tet_data.size()]
+                           .tid_new_1;
+            t_f4 = new_incident_tet_data
+                       [(i + 1 + new_incident_tet_data.size()) % new_incident_tet_data.size()]
+                           .tid_new_2;
+        } else {
+            if (new_incident_tet_data.size() == 1) {
+                t_f1 = -1;
+                t_f2 = -1;
+                t_f3 = -1;
+                t_f4 = -1;
+            } else {
+                if (i == 0) {
+                    // no prev
+                    t_f1 = -1;
+                    t_f2 = -1;
+                    t_f3 =
+                        new_incident_tet_data
+                            [(i + 1 + new_incident_tet_data.size()) % new_incident_tet_data.size()]
+                                .tid_new_1;
+                    t_f4 =
+                        new_incident_tet_data
+                            [(i + 1 + new_incident_tet_data.size()) % new_incident_tet_data.size()]
+                                .tid_new_2;
+                }
+                if (i == new_incident_tet_data.size() - 1) {
+                    // no next
+                    t_f1 =
+                        new_incident_tet_data
+                            [(i - 1 + new_incident_tet_data.size()) % new_incident_tet_data.size()]
+                                .tid_new_1;
+                    t_f2 =
+                        new_incident_tet_data
+                            [(i - 1 + new_incident_tet_data.size()) % new_incident_tet_data.size()]
+                                .tid_new_2;
+                    t_f3 = -1;
+                    t_f4 = -1;
+                }
+            }
+        }
 
         // t1
         {
@@ -373,12 +438,168 @@ Tuple TetMesh::TetMeshOperationExecutor::split_edge()
                 f_old_1 --> f1
                 f_old_2 --> f3
                 f_ear_2 --> fsp
-                t(f_ear_2) --> t2
+                t(f_ear_2) t_ear_2 --> t2
                 t(f_old_1) --> -1 or tetdata[idx-1].t1
                 t(f_old_2) --> -1 or tetdata[idx+1].t1
             */
+            // copy t_old
+            tt = tt_accessor.vector_attribute(t_old);
+            tf = tf_accessor.vector_attribute(t_old);
+            te = te_accessor.vector_attribute(t_old);
+            tv = tv_accessor.vector_attribute(t_old);
+            for (size_t k = 0; k < 4; k++) {
+                // vertices
+                if (tv[k] == v2) {
+                    tv[k] = vid_new;
+                }
+
+                // faces and tets
+                if (tf[k] == f_old_1) {
+                    tf[k] = f1;
+                    tt[k] = t_f1;
+                }
+                if (tf[k] == f_old_2) {
+                    tf[k] = f3;
+                    tt[k] = t_f3;
+                }
+                if (tf[k] == f_ear_2) {
+                    tf[k] = f_split;
+                    tt[k] = t2;
+                }
+            }
+
+            for (size_t k = 0; k < 6; k++) {
+                // edges
+                if (te[k] == e24) {
+                    te[k] = e_split_2;
+                }
+                if (te[k] == e23) {
+                    te[k] = e_split_1;
+                }
+                if (te[k] == e12) {
+                    te[k] == e_spline_1;
+                }
+            }
         }
+
+        // t2
+        {
+            // update ear tet 2 (tt, tf)
+            update_ear_connectivity(t_ear_2, t2, t_old, f_ear_2);
+
+            auto tt = tt_accessor.vector_attribute(t2);
+            auto tf = tf_accessor.vector_attribute(t2);
+            auto te = te_accessor.vector_attribute(t2);
+            auto tv = tv_accessor.vector_attribute(t2);
+
+            /*
+                copy t_old
+                v1 --> v_new
+                e14 --> e_split2
+                e13 --> e_split1
+                e12 --> e_spline2
+                f_old_1 --> f2
+                f_old_2 --> f4
+                f_ear_1 --> fsp
+                t(f_ear_1) t_ear_1 --> t1
+                t(f_old_1) --> -1 or tetdata[idx-1].t2
+                t(f_old_2) --> -1 or tetdata[idx+1].t2
+            */
+            // copy t_old
+            tt = tt_accessor.vector_attribute(t_old);
+            tf = tf_accessor.vector_attribute(t_old);
+            te = te_accessor.vector_attribute(t_old);
+            tv = tv_accessor.vector_attribute(t_old);
+            for (size_t k = 0; k < 4; k++) {
+                // vertices
+                if (tv[k] == v1) {
+                    tv[k] = vid_new;
+                }
+
+                // faces and tets
+                if (tf[k] == f_old_1) {
+                    tf[k] = f2;
+                    tt[k] = t_f2;
+                }
+                if (tf[k] == f_old_2) {
+                    tf[k] = f4;
+                    tt[k] = t_f4;
+                }
+                if (tf[k] == f_ear_1) {
+                    tf[k] = f_split;
+                    tt[k] = t1;
+                }
+            }
+
+            for (size_t k = 0; k < 6; k++) {
+                // edges
+                if (te[k] == e14) {
+                    te[k] = e_split_2;
+                }
+                if (te[k] == e13) {
+                    te[k] = e_split_1;
+                }
+                if (te[k] == e12) {
+                    te[k] == e_spline_2;
+                }
+            }
+        }
+
+        // assign each face one tet
+        ft_accessor.scalar_attribute(f_ear_1) = t1;
+        ft_accessor.scalar_attribute(f_ear_2) = t2;
+        ft_accessor.scalar_attribute(f1) = t1;
+        ft_accessor.scalar_attribute(f2) = t2;
+        ft_accessor.scalar_attribute(f3) = t1;
+        ft_accessor.scalar_attribute(f4) = t2;
+        ft_accessor.scalar_attribute(f_split) = t1;
+
+        // assign each edge one tet
+        et_accessor.scalar_attribute(e13) = t1;
+        et_accessor.scalar_attribute(e23) = t2;
+        et_accessor.scalar_attribute(e14) = t1;
+        et_accessor.scalar_attribute(e24) = t2;
+        et_accessor.scalar_attribute(e34) = t1;
+        et_accessor.scalar_attribute(e_spline_1) = t1;
+        et_accessor.scalar_attribute(e_spline_2) = t2;
+        et_accessor.scalar_attribute(e_split_1) = t1;
+        et_accessor.scalar_attribute(e_split_2) = t1;
+
+        // assign each vertex one tet
+        vt_accessor.scalar_attribute(v1) = t1;
+        vt_accessor.scalar_attribute(v2) = t2;
+        vt_accessor.scalar_attribute(v3) = t1;
+        vt_accessor.scalar_attribute(v4) = t1;
+        vt_accessor.scalar_attribute(vid_new) = t1;
     }
+
+    // update hash and delete simplices
+    update_cell_hash();
+    delete_simplices();
+
+    // return tuple
+    // which one to return?
+    return Tuple();
+}
+
+Tuple TetMesh::TetMeshOperationExecutor::collapse_edge()
+{
+    simplex_ids_to_delete = get_collapse_simplices_to_delete(m_operating_tuple, m_mesh);
+
+    // collect star before changing connectivity
+    const SimplicialComplex v1_star =
+        SimplicialComplex::closed_star(m_mesh, Simplex::vertex(m_operating_tuple));
+
+    return Tuple();
+}
+
+std::vector<long> TetMesh::TetMeshOperationExecutor::request_simplex_indices(
+    const PrimitiveType type,
+    long count)
+{
+    m_mesh.reserve_attributes(type, m_mesh.capacity(type) + count);
+
+    return m_mesh.request_simplex_indices(type, count);
 }
 
 

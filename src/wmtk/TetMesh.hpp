@@ -36,6 +36,8 @@ public:
 
 protected:
     long id(const Tuple& tuple, PrimitiveType type) const override;
+    long id(const Simplex& simplex) const { return id(simplex.tuple(), simplex.primitive_type()); }
+
 
     long id_vertex(const Tuple& tuple) const { return id(tuple, PrimitiveType::Vertex); }
     long id_edge(const Tuple& tuple) const { return id(tuple, PrimitiveType::Edge); }
