@@ -104,6 +104,24 @@ public:
         std::array<FaceSplitData, 2> new_face_data;
     };
 
+    struct TetCollapseData
+    {
+        long tid_old = -1;
+        long v1;
+        long v2;
+        long v3;
+        long v4;
+        long e12;
+        long e13;
+        long e14;
+        long e23;
+        long e24;
+        long e34;
+
+        EarTet ear_tet_1; // switch edge switch face
+        EarTet ear_tet_2; // switch vertex switch edge switch face
+    };
+
 
     /**
      * @brief gather all simplices that are deleted in a split
