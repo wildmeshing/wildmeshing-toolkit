@@ -708,6 +708,9 @@ Tuple TetMesh::TetMeshOperationExecutor::collapse_edge()
         const long t_ear_2 = data.ear_tet_2.tid;
         const long t_old = data.tid_old;
 
+        // check by link condition
+        assert(t_ear_1 > -1 || t_ear_2 > -1);
+
         // collapse v1 to v2
         // update t_ear_1
 
@@ -752,6 +755,19 @@ Tuple TetMesh::TetMeshOperationExecutor::collapse_edge()
                 }
             }
         }
+
+        // assign tet for each face
+        ft_accessor.scalar_attribute(f_ear_2) = (t_ear_2 > -1) ? t_ear_2 : t_ear_1;
+
+        // assign tet for each edge
+        et_accessor.scalar_attribute(e23) = (t_ear_2 > -1) ? t_ear_2 : t_ear_1;
+        et_accessor.scalar_attribute(e24) = (t_ear_2 > -1) ? t_ear_2 : t_ear_1;
+        et_accessor.scalar_attribute(e34) = (t_ear_2 > -1) ? t_ear_2 : t_ear_1;
+
+        // assign tet for each vertex
+        vt_accessor.scalar_attribute(v2) = (t_ear_2 > -1) ? t_ear_2 : t_ear_1;
+        vt_accessor.scalar_attribute(v3) = (t_ear_2 > -1) ? t_ear_2 : t_ear_1;
+        vt_accessor.scalar_attribute(v4) = (t_ear_2 > -1) ? t_ear_2 : t_ear_1;
     }
 
     // update v1 one ring tv
@@ -771,6 +787,9 @@ Tuple TetMesh::TetMeshOperationExecutor::collapse_edge()
 
     // return tuple
     // which one to return?
+
+    update_cell_hash();
+    delete_simplices();
 
 
     return Tuple();
