@@ -6,7 +6,7 @@
 
 namespace wmtk::operations::tri_mesh {
 VertexTangentialSmooth::VertexTangentialSmooth(
-    wmtk::Mesh& m,
+    Mesh& m,
     const Tuple& t,
     const OperationSettings<VertexTangentialSmooth>& settings)
     : Operation(m)

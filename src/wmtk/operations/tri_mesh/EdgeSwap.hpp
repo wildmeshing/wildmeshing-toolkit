@@ -1,7 +1,7 @@
 
 #pragma once
 #include <optional>
-#include "../Operation.hpp"
+#include "Operation.hpp"
 
 namespace wmtk::operations {
 namespace tri_mesh {
@@ -18,7 +18,7 @@ namespace tri_mesh {
 class EdgeSwap : public Operation
 {
 public:
-    EdgeSwap(wmtk::Mesh& m, const Tuple& t, const OperationSettings<EdgeSwap>& settings = {});
+    EdgeSwap(Mesh& m, const Tuple& t, const OperationSettings<EdgeSwap>& settings = {});
 
     std::string name() const override;
     Tuple return_tuple() const;

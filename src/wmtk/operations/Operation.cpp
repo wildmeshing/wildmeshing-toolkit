@@ -1,9 +1,10 @@
 #include "Operation.hpp"
 #include <wmtk/Accessor.hpp>
 #include <wmtk/Mesh.hpp>
+#include "Operation.hpp"
 
 namespace wmtk::operations {
-Operation::Operation(wmtk::Mesh& m)
+Operation::Operation(Mesh& m)
     : m_mesh(m)
 {}
 Operation::~Operation() = default;

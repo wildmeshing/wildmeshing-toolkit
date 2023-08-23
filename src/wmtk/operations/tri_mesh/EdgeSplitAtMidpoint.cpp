@@ -5,7 +5,7 @@
 
 namespace wmtk::operations::tri_mesh {
 EdgeSplitAtMidpoint::EdgeSplitAtMidpoint(
-    wmtk::Mesh& m,
+    Mesh& m,
     const Tuple& t,
     const OperationSettings<EdgeSplitAtMidpoint>& settings)
     : Operation(m)

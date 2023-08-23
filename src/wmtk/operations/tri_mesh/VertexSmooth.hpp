@@ -1,7 +1,7 @@
 #pragma once
 #include <optional>
 #include <wmtk/TriMesh.hpp>
-#include "../Operation.hpp"
+#include "Operation.hpp"
 
 namespace wmtk::operations {
 namespace tri_mesh {
@@ -19,7 +19,7 @@ namespace tri_mesh {
 class VertexSmooth : public Operation
 {
 public:
-    VertexSmooth(wmtk::Mesh& m, const Tuple& t, const OperationSettings<VertexSmooth>& settings);
+    VertexSmooth(Mesh& m, const Tuple& t, const OperationSettings<VertexSmooth>& settings);
 
     std::string name() const override;
 
