@@ -90,9 +90,11 @@ public:
         const long new_eid);
 
     void connect_ears();
-    Tuple split_edge();
 
+    Tuple split_edge();
     Tuple collapse_edge();
+    Tuple split_edge_single_mesh();
+    Tuple collapse_edge_single_mesh();
 
     /**
      * @brief

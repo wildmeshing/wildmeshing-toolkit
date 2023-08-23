@@ -368,6 +368,11 @@ void TriMesh::TriMeshOperationExecutor::replace_incident_face(
 
 Tuple TriMesh::TriMeshOperationExecutor::split_edge()
 {
+    return split_edge_single_mesh();
+}
+
+Tuple TriMesh::TriMeshOperationExecutor::split_edge_single_mesh()
+{
     simplex_ids_to_delete = get_split_simplices_to_delete(m_operating_tuple, m_mesh);
 
     // create new vertex (center)
@@ -403,6 +408,12 @@ Tuple TriMesh::TriMeshOperationExecutor::split_edge()
 }
 
 Tuple TriMesh::TriMeshOperationExecutor::collapse_edge()
+{
+    return collapse_edge_single_mesh();
+}
+
+
+Tuple TriMesh::TriMeshOperationExecutor::collapse_edge_single_mesh()
 {
     simplex_ids_to_delete = get_collapse_simplices_to_delete(m_operating_tuple, m_mesh);
 

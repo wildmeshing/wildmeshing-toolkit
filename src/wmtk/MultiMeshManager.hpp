@@ -1,4 +1,5 @@
 #pragma once
+#include <tuple>
 #include "attribute/AttributeManager.hpp"
 #include "attribute/AttributeScopeHandle.hpp"
 #include "attribute/MeshAttributes.hpp"
@@ -21,13 +22,21 @@ class MultiMeshManager
     // Storage of MultiMesh
     //=========================================================
 
+
+    // helper function to read/write the map from source_tuple to target_tuple to the attribute
+    void write_tuple_map_attribute(MeshAttributeHandle<long> map_handle, Mesh& source_mesh, const Tuple& source_tuple, const Tuple& target_tuple);
+    std::tuple<Tuple, Tuple> read_tuple_map_attribute(MeshAttributeHandle<long> map_handle, const Mesh& source_mesh, const Tuple& source_tuple);
+
     // Child Meshes
     std::vector<std::shared_ptr<Mesh>> child_meshes;
 
+    // Only valid if this is_parent_mesh == true
     // size of child_meshes.size(), store the map to the base_tuple of the child_meshes (on the top level simplex of each child_mesh)
     // a map is a pair of two tuples, from a tuple in parent_mesh to a tuple in child_mesh
     // i.e. Dim(map_to_child[i]) == Dim(child_meshes[i])
     std::vector<MeshAttributeHandle<long>> map_to_child_handles;
+    
+    // Only valid if this is is_parent_mesh == false
     // store the map to the base_tuple of the parent_mesh
     MeshAttributeHandle<long> map_to_parent_handle;
     
