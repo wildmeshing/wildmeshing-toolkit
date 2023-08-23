@@ -29,6 +29,7 @@ public:
     friend class ParaviewWriter;
     friend class MeshReader;
     
+    virtual PrimitiveType top_simplex_type() = 0;
     MultiMeshManager multi_mesh_manager;
 
     // TODO: Need a wrapper for MeshAttributeHandle<Tuple>?
