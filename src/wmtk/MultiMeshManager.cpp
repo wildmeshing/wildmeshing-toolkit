@@ -1,5 +1,5 @@
 #include "MultiMeshManager.hpp"
-
+#include "Mesh.hpp"
 namespace wmtk
 {
     MultiMeshManager::MultiMeshManager()
@@ -16,7 +16,7 @@ namespace wmtk
     void MultiMeshManager::register_child_mesh(Mesh&parent_mesh, std::shared_ptr<Mesh> child_mesh, const std::vector<std::array<Tuple,2>>&child_mesh_simplex_map)
     {
         // TODO: implement this
-
+        child_mesh->register_attribute<long>("map_to_parent", PrimitiveType::Face, 10);
         // register child_mesh
         child_meshes.push_back(child_mesh);
         // register map_to_child
