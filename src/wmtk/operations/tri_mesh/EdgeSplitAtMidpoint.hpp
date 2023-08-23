@@ -1,6 +1,6 @@
 #pragma once
 #include <wmtk/TriMesh.hpp>
-#include "../Operation.hpp"
+#include "Operation.hpp"
 
 namespace wmtk::operations {
 namespace tri_mesh {
@@ -20,7 +20,7 @@ class EdgeSplitAtMidpoint : public Operation
 {
 public:
     EdgeSplitAtMidpoint(
-        wmtk::Mesh& m,
+        Mesh& m,
         const Tuple& t,
         const OperationSettings<EdgeSplitAtMidpoint>& settings);
 

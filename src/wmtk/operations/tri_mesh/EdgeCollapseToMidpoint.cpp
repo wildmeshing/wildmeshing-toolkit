@@ -5,7 +5,7 @@
 
 namespace wmtk::operations::tri_mesh {
 EdgeCollapseToMidpoint::EdgeCollapseToMidpoint(
-    wmtk::Mesh& m,
+    Mesh& m,
     const Tuple& t,
     const OperationSettings<EdgeCollapseToMidpoint>& settings)
     : Operation(m)
