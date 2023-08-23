@@ -1,7 +1,7 @@
 #pragma once
 #include <optional>
 #include <wmtk/TriMesh.hpp>
-#include "../Operation.hpp"
+#include "Operation.hpp"
 
 namespace wmtk::operations {
 namespace tri_mesh {
@@ -27,7 +27,7 @@ class EdgeCollapseToMidpoint : public Operation
 {
 public:
     EdgeCollapseToMidpoint(
-        wmtk::Mesh& m,
+        Mesh& m,
         const Tuple& t,
         const OperationSettings<EdgeCollapseToMidpoint>& settings);
 

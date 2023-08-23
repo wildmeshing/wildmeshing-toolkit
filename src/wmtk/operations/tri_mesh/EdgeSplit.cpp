@@ -5,7 +5,7 @@
 
 namespace wmtk::operations::tri_mesh {
 
-EdgeSplit::EdgeSplit(wmtk::Mesh& m, const Tuple& t, const OperationSettings<EdgeSplit>& settings)
+EdgeSplit::EdgeSplit(Mesh& m, const Tuple& t, const OperationSettings<EdgeSplit>& settings)
     : Operation(m)
     , m_input_tuple{t}
     , m_settings{settings}

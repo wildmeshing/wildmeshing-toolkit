@@ -1,7 +1,7 @@
 #pragma once
 #include <optional>
 #include <wmtk/TriMesh.hpp>
-#include "../Operation.hpp"
+#include "Operation.hpp"
 
 namespace wmtk::operations {
 namespace tri_mesh {
@@ -18,7 +18,7 @@ namespace tri_mesh {
 class EdgeSplit : public Operation
 {
 public:
-    EdgeSplit(wmtk::Mesh& m, const Tuple& t, const OperationSettings<EdgeSplit>& settings);
+    EdgeSplit(Mesh& m, const Tuple& t, const OperationSettings<EdgeSplit>& settings);
 
     std::string name() const override;
 

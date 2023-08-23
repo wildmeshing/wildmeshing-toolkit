@@ -4,7 +4,7 @@
 #include "EdgeCollapse.hpp"
 #include "EdgeSplit.hpp"
 namespace wmtk::operations::tri_mesh {
-EdgeSwap::EdgeSwap(wmtk::Mesh& m, const Tuple& t, const OperationSettings<EdgeSwap>& settings)
+EdgeSwap::EdgeSwap(Mesh& m, const Tuple& t, const OperationSettings<EdgeSwap>& settings)
     : Operation(m)
     , m_input_tuple{t}
     , m_settings{settings}
@@ -30,8 +30,8 @@ bool EdgeSwap::before() const
     // do not allow swaps if one incident vertex has valence 3 (2 at boundary)
     const Tuple v0 = m_input_tuple;
     const Tuple v1 = m_mesh.switch_vertex(m_input_tuple);
-    long val0 = static_cast<long>(SimplicialComplex::vertex_one_ring(m_mesh, v0).size());
-    long val1 = static_cast<long>(SimplicialComplex::vertex_one_ring(m_mesh, v1).size());
+    long val0 = static_cast<long>(SimplicialComplex::vertex_one_ring(mesh(), v0).size());
+    long val1 = static_cast<long>(SimplicialComplex::vertex_one_ring(mesh(), v1).size());
     if (m_mesh.is_boundary_vertex(v0)) {
         ++val0;
     }
@@ -51,8 +51,8 @@ bool EdgeSwap::before() const
         const Tuple v2 = m_mesh.switch_vertex(m_mesh.switch_edge(m_input_tuple));
         const Tuple v3 =
             m_mesh.switch_vertex(m_mesh.switch_edge(m_mesh.switch_face(m_input_tuple)));
-        long val2 = static_cast<long>(SimplicialComplex::vertex_one_ring(m_mesh, v2).size());
-        long val3 = static_cast<long>(SimplicialComplex::vertex_one_ring(m_mesh, v3).size());
+        long val2 = static_cast<long>(SimplicialComplex::vertex_one_ring(mesh(), v2).size());
+        long val3 = static_cast<long>(SimplicialComplex::vertex_one_ring(mesh(), v3).size());
         if (m_mesh.is_boundary_vertex(v2)) {
             val2 += 2;
         }

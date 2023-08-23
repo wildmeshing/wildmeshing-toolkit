@@ -1,7 +1,7 @@
 #pragma once
 #include <optional>
 #include <wmtk/TriMesh.hpp>
-#include "../Operation.hpp"
+#include "Operation.hpp"
 
 namespace wmtk::operations {
 namespace tri_mesh {
@@ -21,7 +21,7 @@ class VertexTangentialSmooth : public Operation
 {
 public:
     VertexTangentialSmooth(
-        wmtk::Mesh& m,
+        Mesh& m,
         const Tuple& t,
         const OperationSettings<VertexTangentialSmooth>& settings);
 
