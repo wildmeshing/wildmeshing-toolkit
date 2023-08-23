@@ -581,7 +581,9 @@ Tuple TetMesh::TetMeshOperationExecutor::split_edge()
 
     // return tuple
     // which one to return?
-    return Tuple();
+    Tuple ret = m_mesh.edge_tuple_from_id(new_eids[0]);
+
+    return ret;
 }
 
 Tuple TetMesh::TetMeshOperationExecutor::collapse_edge()
