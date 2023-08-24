@@ -13,24 +13,23 @@ EdgeCollapse::EdgeCollapse(Mesh& m, const Tuple& t, const OperationSettings<Edge
 
 bool EdgeCollapse::execute()
 {
-    TriMesh& m = dynamic_cast<TriMesh&>(m_mesh);
-    m_output_tuple = m.collapse_edge(m_input_tuple);
+    m_output_tuple = mesh().collapse_edge(m_input_tuple);
     return true;
 }
 bool EdgeCollapse::before() const
 {
-    if (m_mesh.is_outdated(m_input_tuple)) {
+    if (mesh().is_outdated(m_input_tuple)) {
         return false;
     }
-    if (!m_mesh.is_valid(m_input_tuple)) {
+    if (!mesh().is_valid(m_input_tuple)) {
         return false;
     }
 
-    if (!m_settings.collapse_boundary_edges && m_mesh.is_boundary(m_input_tuple)) {
+    if (!m_settings.collapse_boundary_edges && mesh().is_boundary(m_input_tuple)) {
         return false;
     }
     if (!m_settings.collapse_boundary_vertex_to_interior &&
-        m_mesh.is_boundary_vertex(m_input_tuple)) {
+        mesh().is_boundary_vertex(m_input_tuple)) {
         return false;
     }
 

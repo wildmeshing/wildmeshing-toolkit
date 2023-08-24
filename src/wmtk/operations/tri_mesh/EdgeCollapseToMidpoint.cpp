@@ -14,7 +14,7 @@ EdgeCollapseToMidpoint::EdgeCollapseToMidpoint(
     , m_settings{settings}
 {
     p0 = m_pos_accessor.vector_attribute(m_input_tuple);
-    p1 = m_pos_accessor.vector_attribute(m_mesh.switch_vertex(m_input_tuple));
+    p1 = m_pos_accessor.vector_attribute(mesh().switch_vertex(m_input_tuple));
 }
 
 std::string EdgeCollapseToMidpoint::name() const
@@ -29,7 +29,7 @@ Tuple EdgeCollapseToMidpoint::return_tuple() const
 
 bool EdgeCollapseToMidpoint::before() const
 {
-    if (m_mesh.is_outdated(m_input_tuple) || !m_mesh.is_valid(m_input_tuple)) {
+    if (mesh().is_outdated(m_input_tuple) || !mesh().is_valid(m_input_tuple)) {
         return false;
     }
 
@@ -42,8 +42,8 @@ bool EdgeCollapseToMidpoint::execute()
     bool v0_is_boundary = false;
     bool v1_is_boundary = false;
     if (m_settings.collapse_towards_boundary) {
-        v0_is_boundary = m_mesh.is_boundary_vertex(m_input_tuple);
-        v1_is_boundary = m_mesh.is_boundary_vertex(m_mesh.switch_vertex(m_input_tuple));
+        v0_is_boundary = mesh().is_boundary_vertex(m_input_tuple);
+        v1_is_boundary = mesh().is_boundary_vertex(mesh().switch_vertex(m_input_tuple));
     }
 
     // collapse
@@ -51,7 +51,7 @@ bool EdgeCollapseToMidpoint::execute()
         OperationSettings<tri_mesh::EdgeCollapse> op_settings;
         op_settings.collapse_boundary_edges = m_settings.collapse_boundary_edges;
 
-        tri_mesh::EdgeCollapse collapse_op(m_mesh, m_input_tuple, op_settings);
+        tri_mesh::EdgeCollapse collapse_op(mesh(), m_input_tuple, op_settings);
         if (!collapse_op()) {
             return false;
         }

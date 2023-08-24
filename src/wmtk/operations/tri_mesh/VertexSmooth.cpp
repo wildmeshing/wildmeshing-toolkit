@@ -17,10 +17,10 @@ std::string VertexSmooth::name() const
 
 bool VertexSmooth::before() const
 {
-    if (m_mesh.is_outdated(m_tuple) || !m_mesh.is_valid(m_tuple)) {
+    if (mesh().is_outdated(m_tuple) || !mesh().is_valid(m_tuple)) {
         return false;
     }
-    if (!m_settings.smooth_boundary && m_mesh.is_boundary_vertex(m_tuple)) {
+    if (!m_settings.smooth_boundary && mesh().is_boundary_vertex(m_tuple)) {
         return false;
     }
     return true;
