@@ -432,7 +432,7 @@ std::vector<Simplex> SimplicialComplex::vertex_one_ring(const TriMesh& m, Tuple 
     } while (iter != t);
 
     // in case of a boundary, collect the other side too
-    if (iter != t) {
+    if (iter != t || m.is_boundary(t)) {
         iter = m.switch_edge(t);
         do {
             one_ring.emplace_back(Simplex::vertex(m.switch_vertex(iter)));
