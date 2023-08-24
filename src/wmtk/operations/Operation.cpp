@@ -48,11 +48,17 @@ bool Operation::after() const
     return true;
 }
 
-void Operation::update_cell_hash(const std::vector<Tuple>& cells)
+void Operation::update_cell_hash(
+    const std::vector<Tuple>& cells,
+    std::vector<Tuple>& updated_tuples)
 {
     auto acc = m_mesh.get_cell_hash_accessor();
     for (const Tuple& t : cells) {
         ++acc.scalar_attribute(t);
+    }
+
+    for (Tuple& t : updated_tuples) {
+        t.m_hash = acc.scalar_attribute(t);
     }
 }
 

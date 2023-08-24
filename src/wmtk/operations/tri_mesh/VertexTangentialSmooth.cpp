@@ -38,10 +38,13 @@ bool VertexTangentialSmooth::execute()
         OperationSettings<tri_mesh::VertexSmooth> op_settings;
         op_settings.position = m_pos_accessor.handle();
         op_settings.smooth_boundary = m_settings.smooth_boundary;
-        tri_mesh::VertexSmooth split_op(mesh(), m_tuple, op_settings);
-        if (!split_op()) {
+        tri_mesh::VertexSmooth smooth_op(mesh(), m_tuple, op_settings);
+        if (!smooth_op()) {
             return false;
         }
+
+        m_tuple = smooth_op.return_tuple();
+        assert(!mesh().is_outdated(m_tuple));
     }
     const Eigen::Vector3d g = m_pos_accessor.vector_attribute(m_tuple); // center of gravity
 
