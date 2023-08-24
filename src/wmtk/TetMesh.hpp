@@ -10,7 +10,7 @@ public:
 
     Tuple split_edge(const Tuple& t) override;
     Tuple collapse_edge(const Tuple& t) override;
-    PrimitiveType top_simplex_type() override { return PrimitiveType::Tetrahedron; }
+    PrimitiveType top_simplex_type() const override { return PrimitiveType::Tetrahedron; }
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
     bool is_ccw(const Tuple& tuple) const override;
     bool is_boundary(const Tuple& tuple) const override;

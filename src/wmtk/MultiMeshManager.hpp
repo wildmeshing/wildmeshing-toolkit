@@ -4,6 +4,8 @@
 #include "attribute/AttributeScopeHandle.hpp"
 #include "attribute/MeshAttributes.hpp"
 #include "Tuple.hpp"
+#include <spdlog/spdlog.h>
+
 namespace wmtk
 {
 class Mesh;
@@ -24,8 +26,8 @@ class MultiMeshManager
 
 
     // helper function to read/write the map from source_tuple to target_tuple to the attribute
-    void write_tuple_map_attribute(MeshAttributeHandle<long> map_handle, Mesh& source_mesh, const Tuple& source_tuple, const Tuple& target_tuple);
-    std::tuple<Tuple, Tuple> read_tuple_map_attribute(MeshAttributeHandle<long> map_handle, const Mesh& source_mesh, const Tuple& source_tuple);
+    static void write_tuple_map_attribute(MeshAttributeHandle<long> map_handle, Mesh& source_mesh, const Tuple& source_tuple, const Tuple& target_tuple);
+    static std::tuple<Tuple, Tuple> read_tuple_map_attribute(MeshAttributeHandle<long> map_handle, const Mesh& source_mesh, const Tuple& source_tuple);
 
     // Child Meshes
     std::vector<std::shared_ptr<Mesh>> child_meshes;
@@ -41,15 +43,15 @@ class MultiMeshManager
     MeshAttributeHandle<long> map_to_parent_handle;
     
     // register child_meshes and the map from child_meshes to this mesh, child_mesh_simplex 
-    void register_child_mesh(Mesh&parent_mesh, std::shared_ptr<Mesh> child_mesh, const std::vector<std::array<Tuple,2>>&child_mesh_simplex_map);
+    static void register_child_mesh(Mesh&parent_mesh, std::shared_ptr<Mesh> child_mesh, const std::vector<std::array<Tuple,2>>&child_mesh_simplex_map);
 
     // helper function to check if this mesh is a valid child_mesh of parent_mesh
     // i.e. the connectivity of this mesh is a subset of this in parent_mesh
-    bool is_child_mesh_valid(const Mesh& parent_mesh) const;
+    static bool is_child_mesh_valid(const Mesh& parent_mesh);
 
     // TODO: make it a free function? static function?
     // Map source_tuple from source_mesh to target_mesh
-    // Tuple map_tuple_between_meshes(const Mesh& source_mesh, const Mesh& target_mesh, MeshAttributeHandle<long> source_map_handle, const Tuple& source_tuple);
+    static Tuple map_tuple_between_meshes(const Mesh& source_mesh, const Mesh& target_mesh, MeshAttributeHandle<long> source_map_handle, const Tuple& source_tuple);
 
     private:
         // flag indicating if this mesh is a parent mesh

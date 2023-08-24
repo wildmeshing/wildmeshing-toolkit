@@ -29,10 +29,9 @@ public:
     friend class ParaviewWriter;
     friend class MeshReader;
     
-    virtual PrimitiveType top_simplex_type() = 0;
+    virtual PrimitiveType top_simplex_type() const = 0;
     MultiMeshManager multi_mesh_manager;
 
-    // TODO: Need a wrapper for MeshAttributeHandle<Tuple>?
     friend class operations::Operation;
 
     // dimension is the dimension of the top level simplex in this mesh

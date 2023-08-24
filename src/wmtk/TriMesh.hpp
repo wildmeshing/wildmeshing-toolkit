@@ -16,7 +16,7 @@ public:
     TriMesh& operator=(const TriMesh& o);
     TriMesh& operator=(TriMesh&& o);
 
-    PrimitiveType top_simplex_type() override { return PrimitiveType::Face; }
+    PrimitiveType top_simplex_type() const override { return PrimitiveType::Face; }
     /**
      * @brief split edge t
      *
