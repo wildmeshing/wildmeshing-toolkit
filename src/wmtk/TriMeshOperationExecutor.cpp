@@ -398,6 +398,8 @@ Tuple TriMesh::TriMeshOperationExecutor::split_edge()
     if (m_mesh.id_face(ret) != new_tuple_fid) {
         ret = m_mesh.switch_face(ret);
     }
+    assert(m_mesh.is_valid(ret));
+
     return ret;
     // return m_mesh.with_different_cid(m_operating_tuple, m_incident_face_datas[0].split_f0);
 }
@@ -435,6 +437,9 @@ Tuple TriMesh::TriMeshOperationExecutor::collapse_edge()
 
     const long new_tuple_fid = (ef0 > -1) ? ef0 : ef1;
 
+    update_cell_hash();
+    delete_simplices();
+
     Tuple ret = m_mesh.edge_tuple_from_id(ret_eid);
     if (m_mesh.id_vertex(ret) != ret_vid) {
         ret = m_mesh.switch_vertex(ret);
@@ -444,10 +449,8 @@ Tuple TriMesh::TriMeshOperationExecutor::collapse_edge()
         ret = m_mesh.switch_face(ret);
     }
     assert(m_mesh.id_face(ret) == new_tuple_fid);
+    assert(m_mesh.is_valid(ret));
 
-
-    update_cell_hash();
-    delete_simplices();
 
     return ret;
 

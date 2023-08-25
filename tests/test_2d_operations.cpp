@@ -727,7 +727,8 @@ TEST_CASE("simplices_to_delete_for_split", "[operations][split][2D]")
             m = single_triangle();
         }
         REQUIRE(m.is_connectivity_valid());
-        Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
+        const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
+        const long edge_id = m._debug_id(edge, PE);
         auto executor = m.get_tmoe(edge);
 
         executor.split_edge();
@@ -735,7 +736,7 @@ TEST_CASE("simplices_to_delete_for_split", "[operations][split][2D]")
         const auto& ids_to_delete = executor.simplex_ids_to_delete;
         REQUIRE(ids_to_delete[0].size() == 0);
         REQUIRE(ids_to_delete[1].size() == 1);
-        REQUIRE(ids_to_delete[1][0] == m._debug_id(edge, PE));
+        REQUIRE(ids_to_delete[1][0] == edge_id);
         REQUIRE(ids_to_delete[2].size() == 1);
         REQUIRE(ids_to_delete[2][0] == 0);
     }
@@ -763,7 +764,8 @@ TEST_CASE("simplices_to_delete_for_split", "[operations][split][2D]")
             m.initialize(tris);
         }
         REQUIRE(m.is_connectivity_valid());
-        Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
+        const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
+        const long edge_id = m._debug_id(edge, PE);
         auto executor = m.get_tmoe(edge);
 
         executor.split_edge();
@@ -773,7 +775,7 @@ TEST_CASE("simplices_to_delete_for_split", "[operations][split][2D]")
         REQUIRE(ids_to_delete[0].size() == 0);
 
         REQUIRE(ids_to_delete[1].size() == 1);
-        REQUIRE(ids_to_delete[1][0] == m._debug_id(edge, PE));
+        REQUIRE(ids_to_delete[1][0] == edge_id);
         REQUIRE(ids_to_delete[2].size() == 2);
         REQUIRE(ids_to_delete[2][0] == 0);
         REQUIRE(ids_to_delete[2][1] == 2);
@@ -1030,6 +1032,7 @@ TEST_CASE("collapse_return_tuple", "[operations][collapse][2D]")
 
         const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
         const Tuple ret = m.collapse_edge(edge);
+        REQUIRE(m.is_valid(ret));
         REQUIRE(m.is_connectivity_valid());
         // CHECK(op.is_return_tuple_from_left_ear() == false);
 
