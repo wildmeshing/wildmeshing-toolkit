@@ -112,6 +112,18 @@ protected: // member functions
     Accessor<char> get_flag_accessor(PrimitiveType type);
     Accessor<long> get_cell_hash_accessor();
 
+    /**
+     * @brief update hashes in given cells
+     *
+     * @param cells vector of tuples in which the hash should be updated
+     * @param hash_accessor hash accessor
+     */
+    void update_cell_hashes(const std::vector<Tuple>& cells, Accessor<long>& hash_accessor);
+    /**
+     * @brief same as `update_cell_hashes` but slow because it creates a new accessor
+     */
+    void update_cell_hashes_slow(const std::vector<Tuple>& cells);
+
     // provides new simplices - should ONLY be called in our atomic topological operations
     // all returned simplices are active (i.e their flags say they exist)
     [[nodiscard]] std::vector<long> request_simplex_indices(PrimitiveType type, long count);
@@ -158,6 +170,10 @@ public:
     }
     Tuple switch_edge(const Tuple& tuple) const { return switch_tuple(tuple, PrimitiveType::Edge); }
     Tuple switch_face(const Tuple& tuple) const { return switch_tuple(tuple, PrimitiveType::Face); }
+    Tuple switch_tetrahedron(const Tuple& tuple) const
+    {
+        return switch_tuple(tuple, PrimitiveType::Tetrahedron);
+    }
 
 
     void set_capacities_from_flags();

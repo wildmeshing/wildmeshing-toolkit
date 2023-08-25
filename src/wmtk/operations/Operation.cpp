@@ -52,13 +52,11 @@ void Operation::update_cell_hash(
     const std::vector<Tuple>& cells,
     std::vector<Tuple>& updated_tuples)
 {
-    auto acc = m_mesh.get_cell_hash_accessor();
-    for (const Tuple& t : cells) {
-        ++acc.scalar_attribute(t);
-    }
+    Accessor<long> hash_accessor = m_mesh.get_cell_hash_accessor();
+    m_mesh.update_cell_hashes(cells, hash_accessor);
 
     for (Tuple& t : updated_tuples) {
-        t.m_hash = acc.scalar_attribute(t);
+        t.m_hash = hash_accessor.scalar_attribute(t);
     }
 }
 
