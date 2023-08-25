@@ -129,13 +129,16 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
         }
         assert(lvid_new != -1);
         assert(leid_new != -1);
+
+        ConstAccessor<long> hash_accessor = get_const_cell_hash_accessor();
+
         const Tuple res(
             lvid_new,
             leid_new,
             tuple.m_local_fid,
             gcid_new,
-            get_cell_hash_slow(gcid_new));
-        assert(is_valid_slow(res));
+            get_cell_hash(gcid_new, hash_accessor));
+        assert(is_valid(res, hash_accessor));
         return res;
     }
     case PrimitiveType::Tetrahedron:
@@ -267,9 +270,11 @@ Tuple TriMesh::edge_tuple_from_id(long id) const
             assert(autogen::auto_2d_table_complete_edge[i][1] == i);
             const long lvid = autogen::auto_2d_table_complete_edge[i][0];
 
-            Tuple e_tuple = Tuple(lvid, i, -1, f, get_cell_hash_slow(f));
+            ConstAccessor<long> hash_accessor = get_const_cell_hash_accessor();
+
+            Tuple e_tuple = Tuple(lvid, i, -1, f, get_cell_hash(f, hash_accessor));
             assert(is_ccw(e_tuple));
-            assert(is_valid_slow(e_tuple));
+            assert(is_valid(e_tuple, hash_accessor));
             return e_tuple;
         }
     }
