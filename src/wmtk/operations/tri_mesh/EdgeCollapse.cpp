@@ -18,9 +18,6 @@ bool EdgeCollapse::execute()
 }
 bool EdgeCollapse::before() const
 {
-    if (mesh().is_outdated(m_input_tuple)) {
-        return false;
-    }
     if (!mesh().is_valid(m_input_tuple)) {
         return false;
     }

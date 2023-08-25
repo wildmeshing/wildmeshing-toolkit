@@ -18,8 +18,6 @@ public:
 
     bool is_valid(const Tuple& tuple) const override;
 
-    bool is_outdated(const Tuple& tuple) const override;
-
     void initialize(
         Eigen::Ref<const RowVectors4l> TV,
         Eigen::Ref<const RowVectors6l> TE,

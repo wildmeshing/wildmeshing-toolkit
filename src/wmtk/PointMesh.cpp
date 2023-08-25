@@ -51,14 +51,8 @@ void PointMesh::initialize(long count)
 
 bool PointMesh::is_valid(const Tuple& tuple) const
 {
-    return true;
-}
-
-bool PointMesh::is_outdated(const Tuple& tuple) const
-{
-    const long fid = id(tuple, PrimitiveType::Face);
-    ConstAccessor<long> ha = get_cell_hash_accessor();
-    return ha.scalar_attribute(fid) == tuple.m_hash;
+    const long cid = tuple.m_global_cid;
+    return tuple.m_hash == get_cell_hash_slow(cid);
 }
 
 long PointMesh::id(const Tuple& tuple, PrimitiveType type) const

@@ -190,7 +190,7 @@ public:
     virtual bool is_boundary_vertex(const Tuple& vertex) const = 0;
 
     /**
-     * @brief
+     * @brief check validity of tuple including its hash
      *
      * @param tuple the tuple to be checked
      * @param type only the top cell dimension, other validity follows with assumption of
@@ -199,14 +199,6 @@ public:
      * @return false
      */
     virtual bool is_valid(const Tuple& tuple) const = 0;
-    /**
-     * @brief check if tuple was involved in a topological operation and is therefore invalid
-     *
-     * @param tuple the tuple to be checked
-     * @return true if tuple is outdated
-     * @return false otherwise
-     */
-    virtual bool is_outdated(const Tuple& tuple) const = 0;
 
 
     bool simplex_is_equal(const Simplex& s0, const Simplex& s1) const;

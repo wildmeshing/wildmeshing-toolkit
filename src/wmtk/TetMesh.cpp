@@ -303,14 +303,18 @@ bool TetMesh::is_ccw(const Tuple& tuple) const
 bool TetMesh::is_valid(const Tuple& tuple) const
 {
     const long offset = tuple.m_local_vid * 6 * 4 + tuple.m_local_eid * 4 + tuple.m_local_fid;
-    return auto_3d_table_ccw[offset][0] >= 0;
-}
+    const bool is_connectivity_valid = tuple.m_local_vid >= 0 && tuple.m_local_eid >= 0 &&
+                                       tuple.m_local_fid >= 0 && tuple.m_global_cid >= 0 &&
+                                       auto_3d_table_ccw[offset][0] >= 0;
 
-bool TetMesh::is_outdated(const Tuple& tuple) const
-{
-    const long cid = id(tuple, PrimitiveType::Tetrahedron);
-    ConstAccessor<long> ha = get_cell_hash_accessor();
-    return ha.scalar_attribute(cid) == tuple.m_hash;
+    if (!is_connectivity_valid) {
+        return false;
+    }
+
+    const long cid = tuple.m_global_cid;
+    const bool is_hash_valid = get_cell_hash_slow(cid) == tuple.m_hash;
+
+    return is_hash_valid;
 }
 
 bool TetMesh::is_boundary(const Tuple& tuple) const

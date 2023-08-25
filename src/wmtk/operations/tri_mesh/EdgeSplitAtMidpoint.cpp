@@ -26,7 +26,7 @@ Tuple EdgeSplitAtMidpoint::return_tuple() const
 }
 bool EdgeSplitAtMidpoint::before() const
 {
-    if (mesh().is_outdated(m_input_tuple) || !mesh().is_valid(m_input_tuple)) {
+    if (!mesh().is_valid(m_input_tuple)) {
         return false;
     }
 

@@ -852,7 +852,6 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         const Tuple ret = m.split_edge(edge);
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.is_valid(ret));
-        CHECK(!m.is_outdated(ret));
         CHECK(m.id(ret, PV) == 3);
         CHECK(m.id(m.switch_vertex(ret), PV) == 2);
         CHECK(m.id(ret, PF) == 2);
@@ -866,7 +865,6 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         const Tuple ret = m.split_edge(edge);
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.is_valid(ret));
-        CHECK(!m.is_outdated(ret));
         CHECK(m.id(ret, PV) == 3);
         CHECK(m.id(m.switch_vertex(ret), PV) == 1);
         CHECK(m.id(ret, PF) == 2);
@@ -880,7 +878,6 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         const Tuple ret = m.split_edge(edge);
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.is_valid(ret));
-        CHECK(!m.is_outdated(ret));
         CHECK(m.id(ret, PV) == 6);
         CHECK(m.id(m.switch_vertex(ret), PV) == 1);
         CHECK(m.id(ret, PF) == 5);
@@ -911,7 +908,7 @@ TEST_CASE("split_multiple_edges", "[operations][split][2D]")
     for (size_t i = 0; i < 10; ++i) {
         const std::vector<wmtk::Tuple> edges = mesh.get_all(PE);
         for (const wmtk::Tuple& e : edges) {
-            if (mesh.is_outdated(e)) {
+            if (!mesh.is_valid(e)) {
                 continue;
             }
 

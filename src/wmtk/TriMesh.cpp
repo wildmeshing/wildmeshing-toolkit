@@ -242,9 +242,14 @@ Tuple TriMesh::vertex_tuple_from_id(long id) const
         if (fv(i) == id) {
             assert(autogen::auto_2d_table_complete_vertex[i][0] == i);
             const long leid = autogen::auto_2d_table_complete_vertex[i][1];
-            Tuple v_tuple = Tuple(i, leid, -1, f, get_cell_hash_slow(f));
-            assert(is_ccw(v_tuple));
-            assert(is_valid(v_tuple));
+            Tuple v_tuple = Tuple(
+                i,
+                leid,
+                -1,
+                f,
+                get_cell_hash_slow(
+                    f)); // TODO replace by function that takes hash accessor as parameter
+            assert(is_ccw(v_tuple)); // is_ccw also checks for validity
             return v_tuple;
         }
     }
@@ -290,15 +295,18 @@ Tuple TriMesh::face_tuple_from_id(long id) const
 bool TriMesh::is_valid(const Tuple& tuple) const
 {
     int offset = tuple.m_local_vid * 3 + tuple.m_local_eid;
-    return tuple.m_local_vid >= 0 && tuple.m_local_eid >= 0 && tuple.m_global_cid >= 0 &&
-           autogen::auto_2d_table_ccw[offset][0] >= 0;
-}
+    const bool is_connectivity_valid = tuple.m_local_vid >= 0 && tuple.m_local_eid >= 0 &&
+                                       tuple.m_global_cid >= 0 &&
+                                       autogen::auto_2d_table_ccw[offset][0] >= 0;
 
-bool TriMesh::is_outdated(const Tuple& tuple) const
-{
-    const long cid = id(tuple, PrimitiveType::Face);
-    ConstAccessor<long> ha = get_cell_hash_accessor();
-    return ha.scalar_attribute(cid) != tuple.m_hash;
+    if (!is_connectivity_valid) {
+        return false;
+    }
+
+    const long cid = tuple.m_global_cid;
+    const bool is_hash_valid = get_cell_hash_slow(cid) == tuple.m_hash;
+
+    return is_hash_valid;
 }
 
 bool TriMesh::is_connectivity_valid() const

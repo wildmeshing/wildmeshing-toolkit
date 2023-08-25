@@ -22,7 +22,7 @@ const Tuple& VertexSmooth::return_tuple() const
 
 bool VertexSmooth::before() const
 {
-    if (mesh().is_outdated(m_input_tuple) || !mesh().is_valid(m_input_tuple)) {
+    if (!mesh().is_valid(m_input_tuple)) {
         return false;
     }
     if (!m_settings.smooth_boundary && mesh().is_boundary_vertex(m_input_tuple)) {
@@ -54,10 +54,10 @@ bool VertexSmooth::execute()
     std::vector<Tuple> tuple_updates{m_input_tuple};
     update_cell_hash(incident_face_tuple, tuple_updates);
 
-    assert(mesh().is_outdated(m_input_tuple));
+    assert(!mesh().is_valid(m_input_tuple));
 
     m_output_tuple = tuple_updates[0];
-    assert(!mesh().is_outdated(m_output_tuple));
+    assert(mesh().is_valid(m_output_tuple));
 
 
     return true;

@@ -26,8 +26,6 @@ public:
 
     bool is_valid(const Tuple& tuple) const override;
 
-    bool is_outdated(const Tuple& tuple) const override;
-
     Tuple split_edge(const Tuple&) override { return {}; }
     Tuple collapse_edge(const Tuple&) override { return {}; }
     bool is_connectivity_valid() const override { return true; }
