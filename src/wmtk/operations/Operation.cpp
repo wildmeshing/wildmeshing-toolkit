@@ -56,7 +56,7 @@ void Operation::update_cell_hash(
     m_mesh.update_cell_hashes(cells, hash_accessor);
 
     for (Tuple& t : updated_tuples) {
-        t.m_hash = hash_accessor.scalar_attribute(t);
+        t = m_mesh.resurrect_tuple(t, hash_accessor);
     }
 }
 

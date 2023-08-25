@@ -124,6 +124,19 @@ protected: // member functions
      */
     void update_cell_hashes_slow(const std::vector<Tuple>& cells);
 
+    /**
+     * @brief return the same tuple but with updated hash
+     *
+     * @param tuple tuple with potentially outdated hash
+     * @param hash_accessor hash accessor
+     * @return tuple with updated hash
+     */
+    Tuple resurrect_tuple(const Tuple& tuple, Accessor<long>& hash_accessor) const;
+    /**
+     * @brief same as `resurrect_tuple` but slow because it creates a new accessor
+     */
+    Tuple resurrect_tuple_slow(const Tuple& tuple);
+
     // provides new simplices - should ONLY be called in our atomic topological operations
     // all returned simplices are active (i.e their flags say they exist)
     [[nodiscard]] std::vector<long> request_simplex_indices(PrimitiveType type, long count);
