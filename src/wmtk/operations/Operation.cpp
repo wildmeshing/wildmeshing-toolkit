@@ -6,6 +6,7 @@
 namespace wmtk::operations {
 Operation::Operation(Mesh& m)
     : m_mesh(m)
+    , m_hash_accessor(m_mesh.get_cell_hash_accessor())
 {}
 Operation::~Operation() = default;
 
@@ -48,16 +49,14 @@ bool Operation::after() const
     return true;
 }
 
-void Operation::update_cell_hash(
-    const std::vector<Tuple>& cells,
-    std::vector<Tuple>& updated_tuples)
+void Operation::update_cell_hash(const std::vector<Tuple>& cells)
 {
-    Accessor<long> hash_accessor = m_mesh.get_cell_hash_accessor();
-    m_mesh.update_cell_hashes(cells, hash_accessor);
+    m_mesh.update_cell_hashes(cells, m_hash_accessor);
+}
 
-    for (Tuple& t : updated_tuples) {
-        t = m_mesh.resurrect_tuple(t, hash_accessor);
-    }
+Tuple Operation::resurrect_tuple(const Tuple& tuple)
+{
+    return m_mesh.resurrect_tuple(tuple, m_hash_accessor);
 }
 
 

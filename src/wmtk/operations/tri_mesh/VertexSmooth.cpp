@@ -50,13 +50,11 @@ bool VertexSmooth::execute()
         incident_face_tuple.emplace_back(s.tuple());
     }
 
-
-    std::vector<Tuple> tuple_updates{m_input_tuple};
-    update_cell_hash(incident_face_tuple, tuple_updates);
+    update_cell_hash(incident_face_tuple);
 
     assert(!mesh().is_valid(m_input_tuple));
 
-    m_output_tuple = tuple_updates[0];
+    m_output_tuple = resurrect_tuple(m_input_tuple);
     assert(mesh().is_valid(m_output_tuple));
 
 
