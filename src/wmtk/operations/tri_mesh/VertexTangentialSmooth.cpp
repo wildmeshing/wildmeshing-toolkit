@@ -22,7 +22,7 @@ std::string VertexTangentialSmooth::name() const
 
 bool VertexTangentialSmooth::before() const
 {
-    if (!mesh().is_valid(m_tuple)) {
+    if (!mesh().is_valid_slow(m_tuple)) {
         return false;
     }
     if (!m_settings.smooth_boundary && mesh().is_boundary_vertex(m_tuple)) {
@@ -44,7 +44,7 @@ bool VertexTangentialSmooth::execute()
         }
 
         m_tuple = smooth_op.return_tuple();
-        assert(mesh().is_valid(m_tuple));
+        assert(mesh().is_valid_slow(m_tuple));
     }
     const Eigen::Vector3d g = m_pos_accessor.vector_attribute(m_tuple); // center of gravity
 

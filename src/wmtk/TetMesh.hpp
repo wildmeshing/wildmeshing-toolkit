@@ -16,7 +16,7 @@ public:
     bool is_boundary(const Tuple& tuple) const override;
     bool is_boundary_vertex(const Tuple& tuple) const override;
 
-    bool is_valid(const Tuple& tuple) const override;
+    bool is_valid(const Tuple& tuple, ConstAccessor<long>& hash_accessor) const override;
 
     void initialize(
         Eigen::Ref<const RowVectors4l> TV,

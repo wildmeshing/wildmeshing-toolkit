@@ -17,7 +17,7 @@ std::string EdgeSwap::name() const
 
 bool EdgeSwap::before() const
 {
-    if (!mesh().is_valid(m_input_tuple)) {
+    if (!mesh().is_valid_slow(m_input_tuple)) {
         return false;
     }
     if (mesh().is_boundary(m_input_tuple)) {

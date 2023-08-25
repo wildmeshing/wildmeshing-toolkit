@@ -853,7 +853,7 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
         const Tuple ret = m.split_edge(edge);
         REQUIRE(m.is_connectivity_valid());
-        REQUIRE(m.is_valid(ret));
+        REQUIRE(m.is_valid_slow(ret));
         CHECK(m.id(ret, PV) == 3);
         CHECK(m.id(m.switch_vertex(ret), PV) == 2);
         CHECK(m.id(ret, PF) == 2);
@@ -866,7 +866,7 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 1, 0);
         const Tuple ret = m.split_edge(edge);
         REQUIRE(m.is_connectivity_valid());
-        REQUIRE(m.is_valid(ret));
+        REQUIRE(m.is_valid_slow(ret));
         CHECK(m.id(ret, PV) == 3);
         CHECK(m.id(m.switch_vertex(ret), PV) == 1);
         CHECK(m.id(ret, PF) == 2);
@@ -879,7 +879,7 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 1, 1);
         const Tuple ret = m.split_edge(edge);
         REQUIRE(m.is_connectivity_valid());
-        REQUIRE(m.is_valid(ret));
+        REQUIRE(m.is_valid_slow(ret));
         CHECK(m.id(ret, PV) == 6);
         CHECK(m.id(m.switch_vertex(ret), PV) == 1);
         CHECK(m.id(ret, PF) == 5);
@@ -910,7 +910,7 @@ TEST_CASE("split_multiple_edges", "[operations][split][2D]")
     for (size_t i = 0; i < 10; ++i) {
         const std::vector<wmtk::Tuple> edges = mesh.get_all(PE);
         for (const wmtk::Tuple& e : edges) {
-            if (!mesh.is_valid(e)) {
+            if (!mesh.is_valid_slow(e)) {
                 continue;
             }
 
@@ -1032,7 +1032,7 @@ TEST_CASE("collapse_return_tuple", "[operations][collapse][2D]")
 
         const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
         const Tuple ret = m.collapse_edge(edge);
-        REQUIRE(m.is_valid(ret));
+        REQUIRE(m.is_valid_slow(ret));
         REQUIRE(m.is_connectivity_valid());
         // CHECK(op.is_return_tuple_from_left_ear() == false);
 

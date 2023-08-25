@@ -119,7 +119,7 @@ Tuple TetMesh::vertex_tuple_from_id(long id) const
 
     Tuple v_tuple = Tuple(lvid, leid, lfid, t, get_cell_hash_slow(t));
     assert(is_ccw(v_tuple));
-    assert(is_valid(v_tuple));
+    assert(is_valid_slow(v_tuple));
     return v_tuple;
 }
 
@@ -148,7 +148,7 @@ Tuple TetMesh::edge_tuple_from_id(long id) const
 
     Tuple e_tuple = Tuple(lvid, leid, lfid, t, get_cell_hash_slow(t));
     assert(is_ccw(e_tuple));
-    assert(is_valid(e_tuple));
+    assert(is_valid_slow(e_tuple));
     return e_tuple;
 }
 
@@ -177,7 +177,7 @@ Tuple TetMesh::face_tuple_from_id(long id) const
 
     Tuple f_tuple = Tuple(lvid, leid, lfid, t, get_cell_hash_slow(t));
     assert(is_ccw(f_tuple));
-    assert(is_valid(f_tuple));
+    assert(is_valid_slow(f_tuple));
     return f_tuple;
 }
 
@@ -192,7 +192,7 @@ Tuple TetMesh::tet_tuple_from_id(long id) const
 
     Tuple t_tuple = Tuple(lvid, leid, lfid, id, get_cell_hash_slow(id));
     assert(is_ccw(t_tuple));
-    assert(is_valid(t_tuple));
+    assert(is_valid_slow(t_tuple));
     return t_tuple;
 }
 
@@ -260,7 +260,7 @@ long TetMesh::id(const Tuple& tuple, PrimitiveType type) const
 
 Tuple TetMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
 {
-    assert(is_valid(tuple));
+    assert(is_valid_slow(tuple));
     const long offset = tuple.m_local_vid * 6 * 4 + tuple.m_local_eid * 4 + tuple.m_local_fid;
     // bool ccw = is_ccw(tuple);
     switch (type) {
@@ -295,12 +295,12 @@ Tuple TetMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
 
 bool TetMesh::is_ccw(const Tuple& tuple) const
 {
-    assert(is_valid(tuple));
+    assert(is_valid_slow(tuple));
     const long offset = tuple.m_local_vid * 6 * 4 + tuple.m_local_eid * 4 + tuple.m_local_fid;
     return autogen::auto_3d_table_ccw[offset][0] == 1;
 }
 
-bool TetMesh::is_valid(const Tuple& tuple) const
+bool TetMesh::is_valid(const Tuple& tuple, ConstAccessor<long>& hash_accessor) const
 {
     const long offset = tuple.m_local_vid * 6 * 4 + tuple.m_local_eid * 4 + tuple.m_local_fid;
     const bool is_connectivity_valid = tuple.m_local_vid >= 0 && tuple.m_local_eid >= 0 &&
@@ -312,7 +312,7 @@ bool TetMesh::is_valid(const Tuple& tuple) const
     }
 
     const long cid = tuple.m_global_cid;
-    const bool is_hash_valid = get_cell_hash_slow(cid) == tuple.m_hash;
+    const bool is_hash_valid = get_cell_hash(cid, hash_accessor) == tuple.m_hash;
 
     return is_hash_valid;
 }

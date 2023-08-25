@@ -55,7 +55,7 @@ long TriMesh::id(const Tuple& tuple, PrimitiveType type) const
 
 bool TriMesh::is_boundary(const Tuple& tuple) const
 {
-    assert(is_valid(tuple));
+    assert(is_valid_slow(tuple));
     ConstAccessor<long> ff_accessor = create_const_accessor<long>(m_ff_handle);
     return ff_accessor.vector_attribute(tuple)(tuple.m_local_eid) < 0;
 }
@@ -83,7 +83,7 @@ bool TriMesh::is_boundary_vertex(const Tuple& vertex) const
 
 Tuple TriMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
 {
-    assert(is_valid(tuple));
+    assert(is_valid_slow(tuple));
     bool ccw = is_ccw(tuple);
     int offset = tuple.m_local_vid * 3 + tuple.m_local_eid;
 
@@ -135,7 +135,7 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
             tuple.m_local_fid,
             gcid_new,
             get_cell_hash_slow(gcid_new));
-        assert(is_valid(res));
+        assert(is_valid_slow(res));
         return res;
     }
     case PrimitiveType::Tetrahedron:
@@ -145,7 +145,7 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
 
 bool TriMesh::is_ccw(const Tuple& tuple) const
 {
-    assert(is_valid(tuple));
+    assert(is_valid_slow(tuple));
     int offset = tuple.m_local_vid * 3 + tuple.m_local_eid;
     return autogen::auto_2d_table_ccw[offset][0] == 1;
 }
@@ -269,7 +269,7 @@ Tuple TriMesh::edge_tuple_from_id(long id) const
 
             Tuple e_tuple = Tuple(lvid, i, -1, f, get_cell_hash_slow(f));
             assert(is_ccw(e_tuple));
-            assert(is_valid(e_tuple));
+            assert(is_valid_slow(e_tuple));
             return e_tuple;
         }
     }
@@ -288,11 +288,11 @@ Tuple TriMesh::face_tuple_from_id(long id) const
 
     );
     assert(is_ccw(f_tuple));
-    assert(is_valid(f_tuple));
+    assert(is_valid_slow(f_tuple));
     return f_tuple;
 }
 
-bool TriMesh::is_valid(const Tuple& tuple) const
+bool TriMesh::is_valid(const Tuple& tuple, ConstAccessor<long>& hash_accessor) const
 {
     int offset = tuple.m_local_vid * 3 + tuple.m_local_eid;
     const bool is_connectivity_valid = tuple.m_local_vid >= 0 && tuple.m_local_eid >= 0 &&
@@ -304,7 +304,7 @@ bool TriMesh::is_valid(const Tuple& tuple) const
     }
 
     const long cid = tuple.m_global_cid;
-    const bool is_hash_valid = get_cell_hash_slow(cid) == tuple.m_hash;
+    const bool is_hash_valid = get_cell_hash(cid, hash_accessor) == tuple.m_hash;
 
     return is_hash_valid;
 }

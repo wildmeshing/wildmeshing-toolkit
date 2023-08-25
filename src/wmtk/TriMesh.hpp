@@ -62,7 +62,7 @@ public:
         return _debug_id(simplex.tuple(), simplex.primitive_type());
     }
 
-    bool is_valid(const Tuple& tuple) const override;
+    bool is_valid(const Tuple& tuple, ConstAccessor<long>& hash_accessor) const override;
 
     bool is_connectivity_valid() const override;
 

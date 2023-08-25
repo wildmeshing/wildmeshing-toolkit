@@ -49,10 +49,10 @@ void PointMesh::initialize(long count)
 }
 
 
-bool PointMesh::is_valid(const Tuple& tuple) const
+bool PointMesh::is_valid(const Tuple& tuple, ConstAccessor<long>& hash_accessor) const
 {
     const long cid = tuple.m_global_cid;
-    return tuple.m_hash == get_cell_hash_slow(cid);
+    return tuple.m_hash == get_cell_hash(cid, hash_accessor);
 }
 
 long PointMesh::id(const Tuple& tuple, PrimitiveType type) const

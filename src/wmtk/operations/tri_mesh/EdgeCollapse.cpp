@@ -19,7 +19,7 @@ bool EdgeCollapse::execute()
 }
 bool EdgeCollapse::before() const
 {
-    if (!mesh().is_valid(m_input_tuple)) {
+    if (!mesh().is_valid_slow(m_input_tuple)) {
         return false;
     }
 

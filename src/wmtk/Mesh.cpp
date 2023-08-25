@@ -94,6 +94,12 @@ long Mesh::capacity(PrimitiveType type) const
     return m_attribute_manager.m_capacities.at(get_simplex_dimension(type));
 }
 
+bool Mesh::is_valid_slow(const Tuple& tuple) const
+{
+    ConstAccessor<long> hash_accessor = get_const_cell_hash_accessor();
+    return is_valid(tuple, hash_accessor);
+}
+
 bool Mesh::simplex_is_equal(const Simplex& s0, const Simplex& s1) const
 {
     return (s0.primitive_type() == s1.primitive_type()) && (id(s0) == id(s1));
@@ -176,10 +182,15 @@ Tuple Mesh::resurrect_tuple_slow(const Tuple& tuple)
     return resurrect_tuple(tuple, hash_accessor);
 }
 
+long Mesh::get_cell_hash(long cell_index, ConstAccessor<long>& hash_accessor) const
+{
+    return hash_accessor.scalar_attribute(cell_index);
+}
+
 long Mesh::get_cell_hash_slow(long cell_index) const
 {
     ConstAccessor<long> hash_accessor = get_cell_hash_accessor();
-    return hash_accessor.scalar_attribute(cell_index);
+    return get_cell_hash(cell_index, hash_accessor);
 }
 
 void Mesh::set_capacities_from_flags()

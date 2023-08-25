@@ -101,8 +101,10 @@ public:
     ConstAccessor<long> get_const_cell_hash_accessor() const;
 
 
+    long get_cell_hash(long cell_index, ConstAccessor<long>& hash_accessor) const;
     // utility function for getting a cell's hash - slow because it creates a new accessor
     long get_cell_hash_slow(long cell_index) const;
+
 
     bool operator==(const Mesh& other) const;
 
@@ -227,7 +229,8 @@ public:
      * @return true if is valid
      * @return false
      */
-    virtual bool is_valid(const Tuple& tuple) const = 0;
+    virtual bool is_valid(const Tuple& tuple, ConstAccessor<long>& hash_accessor) const = 0;
+    bool is_valid_slow(const Tuple& tuple) const;
 
 
     bool simplex_is_equal(const Simplex& s0, const Simplex& s1) const;

@@ -398,7 +398,7 @@ Tuple TriMesh::TriMeshOperationExecutor::split_edge()
     if (m_mesh.id_face(ret) != new_tuple_fid) {
         ret = m_mesh.switch_face(ret);
     }
-    assert(m_mesh.is_valid(ret));
+    assert(m_mesh.is_valid_slow(ret));
 
     return ret;
     // return m_mesh.with_different_cid(m_operating_tuple, m_incident_face_datas[0].split_f0);
@@ -449,7 +449,7 @@ Tuple TriMesh::TriMeshOperationExecutor::collapse_edge()
         ret = m_mesh.switch_face(ret);
     }
     assert(m_mesh.id_face(ret) == new_tuple_fid);
-    assert(m_mesh.is_valid(ret));
+    assert(m_mesh.is_valid_slow(ret));
 
 
     return ret;

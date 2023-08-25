@@ -24,7 +24,7 @@ public:
     void initialize(long count);
 
 
-    bool is_valid(const Tuple& tuple) const override;
+    bool is_valid(const Tuple& tuple, ConstAccessor<long>& hash_accessor) const override;
 
     Tuple split_edge(const Tuple&) override { return {}; }
     Tuple collapse_edge(const Tuple&) override { return {}; }
