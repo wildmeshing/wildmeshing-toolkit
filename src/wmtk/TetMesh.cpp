@@ -302,6 +302,7 @@ bool TetMesh::is_ccw(const Tuple& tuple) const
 
 bool TetMesh::is_valid(const Tuple& tuple) const
 {
+    if (tuple.is_null_tuple()) return false;
     const long offset = tuple.m_local_vid * 6 * 4 + tuple.m_local_eid * 4 + tuple.m_local_fid;
     return auto_3d_table_ccw[offset][0] >= 0;
 }

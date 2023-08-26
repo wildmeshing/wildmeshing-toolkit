@@ -3,8 +3,8 @@
 namespace wmtk
 {
     MultiMeshManager::MultiMeshManager()
-        : is_parent_mesh(false)
-        , child_id(-1)
+        : m_is_parent_mesh(false)
+        , m_child_id(-1)
     {
     }
 
@@ -58,13 +58,13 @@ namespace wmtk
         
         // update on child_mesh
         child_mesh->multi_mesh_manager.map_to_parent_handle = map_to_parent_handle;
-        child_mesh->multi_mesh_manager.is_parent_mesh = false;
-        child_mesh->multi_mesh_manager.child_id = long(parent_mesh.multi_mesh_manager.child_meshes.size());
+        child_mesh->multi_mesh_manager.m_is_parent_mesh = false;
+        child_mesh->multi_mesh_manager.m_child_id = long(parent_mesh.multi_mesh_manager.child_meshes.size());
 
         // update on parent_mesh
         parent_mesh.multi_mesh_manager.child_meshes.push_back(child_mesh);
         parent_mesh.multi_mesh_manager.map_to_child_handles.push_back(map_to_child_handle);
-        parent_mesh.multi_mesh_manager.is_parent_mesh = true;
+        parent_mesh.multi_mesh_manager.m_is_parent_mesh = true;
        
     }
 
@@ -75,6 +75,11 @@ namespace wmtk
 
         auto [source_mesh_base_tuple, target_mesh_base_tuple] = read_tuple_map_attribute(source_map_handle, source_mesh, source_tuple);
 
+        if (source_mesh_base_tuple.is_null_tuple())
+        {
+            return Tuple(); // return null tuple
+        }
+        
         if (source_mesh_ptype == PrimitiveType::Face && target_mesh_ptype == PrimitiveType::Face)
         {
             Tuple cur_tuple = source_tuple;

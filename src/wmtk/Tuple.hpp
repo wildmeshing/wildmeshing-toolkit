@@ -52,5 +52,7 @@ public:
     bool operator!=(const Tuple& t) const;
     // equality comparison but skips the hash
     bool same_ids(const Tuple& t) const;
+
+    bool is_null_tuple() const {return m_local_vid == -1 && m_local_eid == -1 && m_local_fid == -1 && m_global_cid == -1 && m_hash == -1;};
 };
 } // namespace wmtk

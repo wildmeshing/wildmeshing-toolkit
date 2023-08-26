@@ -409,7 +409,66 @@ Tuple TriMesh::TriMeshOperationExecutor::split_edge_single_mesh()
 
 Tuple TriMesh::TriMeshOperationExecutor::collapse_edge()
 {
-    return collapse_edge_single_mesh();
+    if (!m_mesh.multi_mesh_manager.is_parent_mesh()) {
+        return collapse_edge_single_mesh();
+    }
+    else
+    {
+        bool is_boundary_on_parent = m_mesh.is_boundary(m_operating_tuple);
+        
+        std::vector<std::pair<Tuple, Tuple>> operate_tuples_child;
+        for (auto child_mesh_ptr : m_mesh.multi_mesh_manager.child_meshes)
+        {
+            auto tuple_map_handle = m_mesh.multi_mesh_manager.map_to_child_handles[child_mesh_ptr->multi_mesh_manager.child_id()];
+            Tuple t_child = MultiMeshManager::map_tuple_between_meshes(m_mesh, *child_mesh_ptr, tuple_map_handle, m_operating_tuple);
+
+            Tuple t_opp_child; // assign a null tuple
+            if (!is_boundary_on_parent && child_mesh_ptr->is_boundary(t_child))
+            {
+                Tuple t_opp = m_mesh.switch_face(m_operating_tuple);
+                t_opp_child = MultiMeshManager::map_tuple_between_meshes(m_mesh, *child_mesh_ptr, tuple_map_handle, t_opp);
+            }
+          
+            operate_tuples_child.push_back(std::make_pair(t_child, t_opp_child));
+        }
+        
+
+        // do collapse on parent_mesh
+        Tuple ret_tuple = collapse_edge_single_mesh();
+
+        // get all tuples which need to update_hash
+        // cell_ids_to_update_hash;
+
+
+        for (auto child_mesh_ptr : m_mesh.multi_mesh_manager.child_meshes)
+        {
+            long child_id = child_mesh_ptr->multi_mesh_manager.child_id();
+            Tuple t_child = operate_tuples_child[child_id].first;
+            Tuple t_opp_child = operate_tuples_child[child_id].second;
+
+            if (child_mesh_ptr->top_simplex_type() == PrimitiveType::Face)
+            {
+                if (!t_child.is_null())
+                {
+                    TriMesh::TriMeshOperationExecutor executor(*child_mesh_ptr, t_child);
+                    executor.collapse_edge();
+                }
+                if (!t_opp_child.is_null() && )
+                {
+                    TriMesh::TriMeshOperationExecutor executor(*child_mesh_ptr, t_opp_child);
+                    executor.collapse_edge();
+                }
+                // TriMesh::TriMeshOperationExecutor executor(*this, t);
+                // return executor.collapse_edge();
+            }
+
+            // TODO: get all tuple all tuples which need to update_hash in child_mesh
+
+        }
+
+        return ret_tuple;
+    }
+
 }
 
 
