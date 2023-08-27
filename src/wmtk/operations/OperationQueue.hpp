@@ -3,7 +3,7 @@
 #include <queue>
 #include <vector>
 #include "OperationFactory.hpp"
-namespace wmtk {
+namespace wmtk::operations {
 // per thread objects
 // TODO:: this should be done with a proper tbb per-thread queue thing
 // just for demonstration of the desired logic
@@ -63,4 +63,4 @@ public:
     size_t current_index = 0;
     // uses a->priority() < b->priority()
 };
-} // namespace wmtk
+} // namespace wmtk::operations

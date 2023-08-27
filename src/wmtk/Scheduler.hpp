@@ -15,7 +15,9 @@ namespace wmtk {
 //     scheduler.add_operation_type<SeamedTriMeshSplitEdgeOperation>("split_edge");
 // }
 
+namespace operations {
 class OperationQueue;
+}
 class Scheduler
 {
 public:
@@ -32,35 +34,35 @@ public:
     template <typename OperationType>
     void add_operation_type(const std::string& name)
     {
-        m_factories[name] = std::make_unique<OperationFactory<OperationType>>();
+        m_factories[name] = std::make_unique<operations::OperationFactory<OperationType>>();
     }
 
     template <typename OperationType>
     void add_operation_type(
         const std::string& name,
-        const OperationSettings<OperationType>& settings)
+        const operations::OperationSettings<OperationType>& settings)
     {
-        m_factories[name] = std::make_unique<OperationFactory<OperationType>>(settings);
+        m_factories[name] = std::make_unique<operations::OperationFactory<OperationType>>(settings);
     }
 
-    void enqueue_operations(std::vector<std::unique_ptr<Operation>>&& ops);
+    void enqueue_operations(std::vector<std::unique_ptr<operations::Operation>>&& ops);
 
 
     // creates all of the operations of a paritcular type to be run
-    std::vector<std::unique_ptr<Operation>> create_operations(
+    std::vector<std::unique_ptr<operations::Operation>> create_operations(
         PrimitiveType type,
         const std::string& name);
 
 
     void run_operation_on_all(PrimitiveType type, const std::string& name);
 
-    OperationFactoryBase const* get_factory(const std::string_view& name) const;
+    operations::OperationFactoryBase const* get_factory(const std::string_view& name) const;
 
 private:
-    Mesh& m_mesh;
-    std::unordered_map<std::string, std::unique_ptr<OperationFactoryBase>> m_factories;
+    wmtk::Mesh& m_mesh;
+    std::unordered_map<std::string, std::unique_ptr<operations::OperationFactoryBase>> m_factories;
     //    tbb::enumerable_per_thread<OperationQueue> m_per_thread_queues;
-    std::vector<OperationQueue> m_per_thread_queues;
+    std::vector<operations::OperationQueue> m_per_thread_queues;
 };
 
 } // namespace wmtk

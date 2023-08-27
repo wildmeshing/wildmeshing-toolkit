@@ -1,8 +1,9 @@
 #include "Operation.hpp"
 #include <wmtk/Accessor.hpp>
 #include <wmtk/Mesh.hpp>
+#include "Operation.hpp"
 
-namespace wmtk {
+namespace wmtk::operations {
 Operation::Operation(Mesh& m)
     : m_mesh(m)
 {}
@@ -56,4 +57,4 @@ void Operation::update_cell_hash(const std::vector<Tuple>& cells)
 }
 
 
-} // namespace wmtk
+} // namespace wmtk::operations

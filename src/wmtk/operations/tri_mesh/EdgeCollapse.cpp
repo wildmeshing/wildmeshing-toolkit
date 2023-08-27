@@ -1,26 +1,23 @@
 
 
-#include "TriMeshCollapseEdgeOperation.hpp"
+#include "EdgeCollapse.hpp"
 #include <wmtk/TriMesh.hpp>
 #include "wmtk/SimplicialComplex.hpp"
 
-namespace wmtk {
-TriMeshCollapseEdgeOperation::TriMeshCollapseEdgeOperation(
-    Mesh& m,
-    const Tuple& t,
-    const OperationSettings<TriMeshCollapseEdgeOperation>& settings)
+namespace wmtk::operations::tri_mesh {
+EdgeCollapse::EdgeCollapse(Mesh& m, const Tuple& t, const OperationSettings<EdgeCollapse>& settings)
     : Operation(m)
     , m_input_tuple{t}
     , m_settings{settings}
 {}
 
-bool TriMeshCollapseEdgeOperation::execute()
+bool EdgeCollapse::execute()
 {
     TriMesh& m = dynamic_cast<TriMesh&>(m_mesh);
     m_output_tuple = m.collapse_edge(m_input_tuple);
     return true;
 }
-bool TriMeshCollapseEdgeOperation::before() const
+bool EdgeCollapse::before() const
 {
     if (m_mesh.is_outdated(m_input_tuple)) {
         return false;
@@ -37,23 +34,23 @@ bool TriMeshCollapseEdgeOperation::before() const
         return false;
     }
 
-    return SimplicialComplex::link_cond_bd_2d(m_mesh, m_input_tuple);
+    return SimplicialComplex::link_cond_bd_2d(mesh(), m_input_tuple);
 }
 
-std::string TriMeshCollapseEdgeOperation::name() const
+std::string EdgeCollapse::name() const
 {
-    return "tri_mesh_collapse_edge";
+    return "tri_mesh_edge_collapse";
 }
 
-Tuple TriMeshCollapseEdgeOperation::return_tuple() const
+Tuple EdgeCollapse::return_tuple() const
 {
     return m_output_tuple;
 }
 
-std::vector<Tuple> TriMeshCollapseEdgeOperation::modified_triangles() const
+std::vector<Tuple> EdgeCollapse::modified_triangles() const
 {
     Simplex v(PrimitiveType::Vertex, m_output_tuple);
-    auto sc = SimplicialComplex::open_star(m_mesh, v);
+    auto sc = SimplicialComplex::open_star(mesh(), v);
     auto faces = sc.get_simplices(PrimitiveType::Face);
     std::vector<Tuple> ret;
     for (const auto& face : faces) {
@@ -61,4 +58,4 @@ std::vector<Tuple> TriMeshCollapseEdgeOperation::modified_triangles() const
     }
     return ret;
 }
-} // namespace wmtk
+} // namespace wmtk::operations::tri_mesh

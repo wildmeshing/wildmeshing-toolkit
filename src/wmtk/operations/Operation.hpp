@@ -7,6 +7,7 @@
 namespace wmtk {
 class Mesh;
 
+namespace operations {
 template <typename T>
 struct OperationSettings
 {
@@ -43,5 +44,5 @@ protected:
     Mesh& m_mesh;
 };
 
-
+} // namespace operations
 } // namespace wmtk

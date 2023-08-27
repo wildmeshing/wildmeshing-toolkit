@@ -3,13 +3,13 @@
 #include <wmtk/Primitive.hpp>
 #include "Operation.hpp"
 
-namespace wmtk {
+namespace wmtk::operations {
 class OperationFactoryBase
 {
 public:
     OperationFactoryBase(PrimitiveType pt);
     virtual ~OperationFactoryBase();
-    virtual std::unique_ptr<Operation> create(Mesh& m, const Tuple& t) const = 0;
+    virtual std::unique_ptr<Operation> create(wmtk::Mesh& m, const Tuple& t) const = 0;
     PrimitiveType primitive() const { return m_primitive; }
 
 private:
@@ -30,7 +30,7 @@ public:
         , m_settings(settings)
     {}
 
-    std::unique_ptr<Operation> create(Mesh& m, const Tuple& t) const override
+    std::unique_ptr<Operation> create(wmtk::Mesh& m, const Tuple& t) const override
     {
         return std::make_unique<OperationType>(m, t, m_settings);
     }
@@ -57,4 +57,4 @@ class OperationQueue
 };
 */
 
-} // namespace wmtk
+} // namespace wmtk::operations

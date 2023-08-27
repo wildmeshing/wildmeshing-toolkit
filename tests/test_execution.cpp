@@ -2,9 +2,9 @@
 #include <array>
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/Scheduler.hpp>
-#include <wmtk/operations/TriMeshCollapseEdgeOperation.hpp>
-#include <wmtk/operations/TriMeshSplitEdgeOperation.hpp>
-#include <wmtk/operations/TriMeshVertexSmoothOperation.hpp>
+#include <wmtk/operations/tri_mesh/EdgeCollapse.hpp>
+#include <wmtk/operations/tri_mesh/EdgeSplit.hpp>
+#include <wmtk/operations/tri_mesh/VertexSmooth.hpp>
 #include "tools/DEBUG_TriMesh.hpp"
 #include "tools/TriMesh_examples.hpp"
 #include "tools/redirect_logger_to_cout.hpp"
@@ -18,7 +18,7 @@ TEST_CASE("test_execution_single_triangle", "[scheduler][2D]")
     DEBUG_TriMesh m;
     m = single_triangle();
     Scheduler scheduler(m);
-    scheduler.add_operation_type<TriMeshSplitEdgeOperation>("edge_split");
+    scheduler.add_operation_type<operations::tri_mesh::EdgeSplit>("edge_split");
 
 
     scheduler.run_operation_on_all(PrimitiveType::Edge, "edge_split");
@@ -30,6 +30,8 @@ TEST_CASE("test_execution_single_triangle", "[scheduler][2D]")
 
 TEST_CASE("operation_with_settings", "[scheduler][operations][2D]")
 {
+    using namespace operations;
+
     DEBUG_TriMesh m;
     SECTION("single_triangle")
     {
@@ -48,11 +50,11 @@ TEST_CASE("operation_with_settings", "[scheduler][operations][2D]")
         }
     }
 
-    OperationSettings<TriMeshVertexSmoothOperation> op_settings;
+    OperationSettings<tri_mesh::VertexSmooth> op_settings;
     op_settings.position = m.get_attribute_handle<double>("position", PrimitiveType::Vertex);
 
     Scheduler scheduler(m);
-    scheduler.add_operation_type<TriMeshVertexSmoothOperation>("vertex_smooth", op_settings);
+    scheduler.add_operation_type<tri_mesh::VertexSmooth>("vertex_smooth", op_settings);
 
     scheduler.run_operation_on_all(PrimitiveType::Vertex, "vertex_smooth");
 }
