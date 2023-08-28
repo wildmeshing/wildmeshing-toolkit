@@ -456,6 +456,7 @@ Tuple TriMesh::TriMeshOperationExecutor::split_edge()
                 }
 
                 // update_hash on neighboring cells
+                // TODO: put this in the update_hash function
                 for (auto child_cell_id : child_cell_ids_to_update_hash)
                 {
                     auto [t_child_old, t_parent_old] = MultiMeshManager::read_tuple_map_attribute(child_tri_mesh.multi_mesh_manager.map_to_parent_handle, child_tri_mesh, child_tri_mesh.tuple_from_id(PrimitiveType::Face, child_cell_id));
@@ -463,9 +464,9 @@ Tuple TriMesh::TriMeshOperationExecutor::split_edge()
                     long child_cell_hash = child_tri_mesh.get_cell_hash_accessor().scalar_attribute(child_cell_id);
                     long parent_cell_hash = m_mesh.get_cell_hash_accessor().scalar_attribute(t_parent_old.m_global_cid);
 
-                    Tuple t_child_new(t_child_old.m_local_vid, t_child_old.m_local_eid, t_child_old.m_local_fid, t_child_old.m_global_cid, child_cell_hash);
+                    Tuple t_child_new = t_child_old.tuple_update_hash(child_cell_hash);
 
-                    Tuple t_parent_new(t_parent_old.m_local_vid, t_parent_old.m_local_eid, t_parent_old.m_local_fid, t_parent_old.m_global_cid, parent_cell_hash);
+                    Tuple t_parent_new = t_parent_old.tuple_update_hash(parent_cell_hash);
 
                     MultiMeshManager::write_tuple_map_attribute(child_tri_mesh.multi_mesh_manager.map_to_parent_handle, child_tri_mesh, t_child_new, t_parent_new);
 
@@ -576,9 +577,9 @@ Tuple TriMesh::TriMeshOperationExecutor::collapse_edge()
                     long child_cell_hash = child_tri_mesh.get_cell_hash_accessor().scalar_attribute(child_cell_id);
                     long parent_cell_hash = m_mesh.get_cell_hash_accessor().scalar_attribute(t_parent_old.m_global_cid);
 
-                    Tuple t_child_new(t_child_old.m_local_vid, t_child_old.m_local_eid, t_child_old.m_local_fid, t_child_old.m_global_cid, child_cell_hash);
+                    Tuple t_child_new = t_child_old.tuple_update_hash(child_cell_hash);
 
-                    Tuple t_parent_new(t_parent_old.m_local_vid, t_parent_old.m_local_eid, t_parent_old.m_local_fid, t_parent_old.m_global_cid, parent_cell_hash);
+                    Tuple t_parent_new = t_parent_old.tuple_update_hash(parent_cell_hash);
 
                     MultiMeshManager::write_tuple_map_attribute(child_tri_mesh.multi_mesh_manager.map_to_parent_handle, child_tri_mesh, t_child_new, t_parent_new);
 
