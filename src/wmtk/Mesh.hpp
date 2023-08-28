@@ -67,8 +67,8 @@ public:
     // operated on, and return a single tuple that refers to the new topology.
     // This returned tuple has specific meaning for each derived Mesh class
 
-    virtual Tuple split_edge(const Tuple& t) = 0;
-    virtual Tuple collapse_edge(const Tuple& t) = 0;
+    virtual Tuple split_edge(const Tuple& t, Accessor<long>& hash_accessor) = 0;
+    virtual Tuple collapse_edge(const Tuple& t, Accessor<long>& hash_accessor) = 0;
 
     template <typename T>
     MeshAttributeHandle<T> register_attribute(

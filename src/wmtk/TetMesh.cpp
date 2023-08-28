@@ -227,12 +227,12 @@ Tuple TetMesh::tuple_from_id(const PrimitiveType type, const long gid) const
     }
 }
 
-Tuple TetMesh::split_edge(const Tuple& t)
+Tuple TetMesh::split_edge(const Tuple& t, Accessor<long>& hash_accessor)
 {
     throw "not implemented";
 }
 
-Tuple TetMesh::collapse_edge(const Tuple& t)
+Tuple TetMesh::collapse_edge(const Tuple& t, Accessor<long>& hash_accessor)
 {
     throw "not implemented";
 }

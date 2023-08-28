@@ -19,17 +19,15 @@ TriMesh::TriMesh(TriMesh&& o) = default;
 TriMesh& TriMesh::operator=(const TriMesh& o) = default;
 TriMesh& TriMesh::operator=(TriMesh&& o) = default;
 
-Tuple TriMesh::split_edge(const Tuple& t)
+Tuple TriMesh::split_edge(const Tuple& t, Accessor<long>& hash_accessor)
 {
-    // record the deleted simplices topology attributes
-    Accessor<long> hash_accessor = get_cell_hash_accessor();
+    // TODO record the deleted simplices topology attributes
     TriMesh::TriMeshOperationExecutor executor(*this, t, hash_accessor);
     return executor.split_edge();
 }
 
-Tuple TriMesh::collapse_edge(const Tuple& t)
+Tuple TriMesh::collapse_edge(const Tuple& t, Accessor<long>& hash_accessor)
 {
-    Accessor<long> hash_accessor = get_cell_hash_accessor();
     TriMesh::TriMeshOperationExecutor executor(*this, t, hash_accessor);
     return executor.collapse_edge();
 }

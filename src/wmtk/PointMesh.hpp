@@ -26,8 +26,8 @@ public:
 
     bool is_valid(const Tuple& tuple, ConstAccessor<long>& hash_accessor) const override;
 
-    Tuple split_edge(const Tuple&) override { return {}; }
-    Tuple collapse_edge(const Tuple&) override { return {}; }
+    Tuple split_edge(const Tuple&, Accessor<long>&) override { return {}; }
+    Tuple collapse_edge(const Tuple&, Accessor<long>&) override { return {}; }
     bool is_connectivity_valid() const override { return true; }
 
 protected:

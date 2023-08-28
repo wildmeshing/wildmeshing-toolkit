@@ -13,7 +13,7 @@ EdgeCollapse::EdgeCollapse(Mesh& m, const Tuple& t, const OperationSettings<Edge
 
 bool EdgeCollapse::execute()
 {
-    const Tuple t = mesh().collapse_edge(m_input_tuple);
+    const Tuple t = mesh().collapse_edge(m_input_tuple, m_hash_accessor);
     m_output_tuple = resurrect_tuple(t);
     return true;
 }

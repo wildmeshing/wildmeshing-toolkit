@@ -13,7 +13,7 @@ EdgeSplit::EdgeSplit(Mesh& m, const Tuple& t, const OperationSettings<EdgeSplit>
 bool EdgeSplit::execute()
 {
     // move vertex to center of old vertices
-    const Tuple t = mesh().split_edge(m_input_tuple);
+    const Tuple t = mesh().split_edge(m_input_tuple, m_hash_accessor);
     m_output_tuple = resurrect_tuple(t);
 
     //    for(const acc: tri_accessors) {
