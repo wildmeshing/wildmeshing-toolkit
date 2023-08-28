@@ -47,9 +47,13 @@ namespace wmtk
 
         auto map_to_parent_handle = child_mesh->register_attribute<long>("map_to_parent", map_ptype, 10);
         auto map_to_child_handle = parent_mesh.register_attribute<long>(fmt::format("map_to_child_{}", cur_child_id), map_ptype, 10);
+        for (long id = 0; id < parent_mesh.capacity(map_ptype); ++id)
+        {
+            write_tuple_map_attribute(map_to_child_handle, parent_mesh, Tuple(), Tuple());
+        }
 
         // register maps
-        for (long id = 0; id < child_mesh->capacity(child_mesh->top_simplex_type()); ++id)
+        for (long id = 0; id < child_mesh->capacity(map_ptype); ++id)
         {
             write_tuple_map_attribute(map_to_parent_handle, *child_mesh, child_mesh_simplex_map[id][0], child_mesh_simplex_map[id][1]);
 
