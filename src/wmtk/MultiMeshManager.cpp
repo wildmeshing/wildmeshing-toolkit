@@ -122,9 +122,24 @@ namespace wmtk
             return Tuple();
         }
     }
-    bool MultiMeshManager::is_child_mesh_valid(const Mesh& parent_mesh)
+
+    bool MultiMeshManager::is_child_mesh_valid(const Mesh& parent_mesh, const Mesh& child_mesh)
     {
-        // TODO: 
+        // TODO: implement this
+        
         return true;
+    }
+
+    std::vector<Tuple> MultiMeshManager::map_edge_tuple_to_all_children(const Mesh& parent_mesh, const Tuple& edge_tuple)
+    {
+        std::vector<Tuple> ret;
+        for (auto child_mesh_ptr : parent_mesh.multi_mesh_manager.child_meshes)
+        {
+            long child_id = child_mesh_ptr->multi_mesh_manager.child_id();
+            auto map_to_child_handle = parent_mesh.multi_mesh_manager.map_to_child_handles[child_id];
+            Tuple child_tuple = map_tuple_between_meshes(parent_mesh, *child_mesh_ptr, map_to_child_handle, edge_tuple);
+            ret.push_back(child_tuple);
+        }
+        return ret;
     }
 }

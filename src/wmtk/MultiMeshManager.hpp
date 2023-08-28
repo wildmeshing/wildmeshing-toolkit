@@ -48,11 +48,14 @@ class MultiMeshManager
 
     // helper function to check if this mesh is a valid child_mesh of parent_mesh
     // i.e. the connectivity of this mesh is a subset of this in parent_mesh
-    static bool is_child_mesh_valid(const Mesh& parent_mesh);
+    static bool is_child_mesh_valid(const Mesh& parent_mesh, const Mesh& child_mesh);
 
     // TODO: make it a free function? static function?
     // Map source_tuple from source_mesh to target_mesh
     static Tuple map_tuple_between_meshes(const Mesh& source_mesh, const Mesh& target_mesh, MeshAttributeHandle<long> source_map_handle, const Tuple& source_tuple);
+
+    // Utility function to map a edge tuple to all its children, used in operations
+    static std::vector<Tuple> map_edge_tuple_to_all_children(const Mesh& parent_mesh,const Tuple& edge_tuple);
 
     private:
         // flag indicating if this mesh is a parent mesh

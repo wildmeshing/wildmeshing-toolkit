@@ -375,20 +375,17 @@ Tuple TriMesh::TriMeshOperationExecutor::split_edge()
     {
         bool is_boundary_on_parent = m_mesh.is_boundary(m_operating_tuple);
         
-        std::vector<std::pair<Tuple, Tuple>> operate_tuples_child;
-        for (auto child_mesh_ptr : m_mesh.multi_mesh_manager.child_meshes)
+        std::vector<Tuple> vec_t_child;
+        std::vector<Tuple> vec_t_opp_child;
+        vec_t_child = MultiMeshManager::map_edge_tuple_to_all_children(m_mesh, m_operating_tuple);
+        if (!is_boundary_on_parent)
         {
-            auto tuple_map_handle = m_mesh.multi_mesh_manager.map_to_child_handles[child_mesh_ptr->multi_mesh_manager.child_id()];
-            Tuple t_child = MultiMeshManager::map_tuple_between_meshes(m_mesh, *child_mesh_ptr, tuple_map_handle, m_operating_tuple);
-
-            Tuple t_opp_child; // assign a null tuple
-            if (!is_boundary_on_parent)
-            {
-                Tuple t_opp = m_mesh.switch_face(m_operating_tuple);
-                t_opp_child = MultiMeshManager::map_tuple_between_meshes(m_mesh, *child_mesh_ptr, tuple_map_handle, t_opp);
-            }
-          
-            operate_tuples_child.push_back(std::make_pair(t_child, t_opp_child));
+            Tuple t_opp = m_mesh.switch_edge(m_operating_tuple);
+            vec_t_opp_child = MultiMeshManager::map_edge_tuple_to_all_children(m_mesh, t_opp);
+        }
+        else
+        {
+            vec_t_opp_child = std::vector<Tuple>(vec_t_child.size(), Tuple()); // fill with null Tuples
         }
 
         // do split on parent_mesh
@@ -398,8 +395,8 @@ Tuple TriMesh::TriMeshOperationExecutor::split_edge()
         {
             
             long child_id = child_mesh_ptr->multi_mesh_manager.child_id();
-            Tuple t_child = operate_tuples_child[child_id].first;
-            Tuple t_opp_child = operate_tuples_child[child_id].second;
+            Tuple t_child = vec_t_child[child_id];
+            Tuple t_opp_child = vec_t_opp_child[child_id];
 
             std::vector<long> child_cell_ids_to_update_hash;
             std::vector<std::pair<long,long>> child_new_cell_ids;
@@ -459,6 +456,7 @@ Tuple TriMesh::TriMeshOperationExecutor::split_edge()
                 // TODO: put this in the update_hash function
                 for (auto child_cell_id : child_cell_ids_to_update_hash)
                 {
+                    // TODO: check if cell has been deleted or not
                     auto [t_child_old, t_parent_old] = MultiMeshManager::read_tuple_map_attribute(child_tri_mesh.multi_mesh_manager.map_to_parent_handle, child_tri_mesh, child_tri_mesh.tuple_from_id(PrimitiveType::Face, child_cell_id));
 
                     long child_cell_hash = child_tri_mesh.get_cell_hash_accessor().scalar_attribute(child_cell_id);
@@ -523,24 +521,20 @@ Tuple TriMesh::TriMeshOperationExecutor::collapse_edge()
     }
     else
     {
-        bool is_boundary_on_parent = m_mesh.is_boundary(m_operating_tuple);
+       bool is_boundary_on_parent = m_mesh.is_boundary(m_operating_tuple);
         
-        std::vector<std::pair<Tuple, Tuple>> operate_tuples_child;
-        for (auto child_mesh_ptr : m_mesh.multi_mesh_manager.child_meshes)
+        std::vector<Tuple> vec_t_child;
+        std::vector<Tuple> vec_t_opp_child;
+        vec_t_child = MultiMeshManager::map_edge_tuple_to_all_children(m_mesh, m_operating_tuple);
+        if (!is_boundary_on_parent)
         {
-            auto tuple_map_handle = m_mesh.multi_mesh_manager.map_to_child_handles[child_mesh_ptr->multi_mesh_manager.child_id()];
-            Tuple t_child = MultiMeshManager::map_tuple_between_meshes(m_mesh, *child_mesh_ptr, tuple_map_handle, m_operating_tuple);
-
-            Tuple t_opp_child; // assign a null tuple
-            if (!is_boundary_on_parent)
-            {
-                Tuple t_opp = m_mesh.switch_face(m_operating_tuple);
-                t_opp_child = MultiMeshManager::map_tuple_between_meshes(m_mesh, *child_mesh_ptr, tuple_map_handle, t_opp);
-            }
-          
-            operate_tuples_child.push_back(std::make_pair(t_child, t_opp_child));
+            Tuple t_opp = m_mesh.switch_edge(m_operating_tuple);
+            vec_t_opp_child = MultiMeshManager::map_edge_tuple_to_all_children(m_mesh, t_opp);
         }
-        
+        else
+        {
+            vec_t_opp_child = std::vector<Tuple>(vec_t_child.size(), Tuple()); // fill with null Tuples
+        }
 
         // do collapse on parent_mesh
         Tuple ret_tuple = collapse_edge_single_mesh();
@@ -549,8 +543,8 @@ Tuple TriMesh::TriMeshOperationExecutor::collapse_edge()
         {
             
             long child_id = child_mesh_ptr->multi_mesh_manager.child_id();
-            Tuple t_child = operate_tuples_child[child_id].first;
-            Tuple t_opp_child = operate_tuples_child[child_id].second;
+            Tuple t_child = vec_t_child[child_id];
+            Tuple t_opp_child = vec_t_opp_child[child_id];
 
             std::vector<long> child_cell_ids_to_update_hash;
             if (child_mesh_ptr->top_simplex_type() == PrimitiveType::Face)
