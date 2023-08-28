@@ -1,4 +1,4 @@
-#include <wmtk/utils/autodiff.h>
+#include <wmtk/energy/utils/autodiff.h>
 #include "Energy.hpp"
 class DifferentiableEnergy : public Energy
 {
