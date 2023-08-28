@@ -10,7 +10,7 @@ double AMIPS_2D::energy_eval(const Tuple& tuple) const override
     Eigen::Vector2d uv3 = pos.vector_attribute(switch_vertex(switch_edge(tuple)));
 
     // return the energy
-    return energy_eval(uv1, uv2, uv3);
+    return energy_eval<double>(uv1, uv2, uv3);
 }
 DScalar AMIPS_2D::energy_eval_autodiff(const Tuple& tuple) const override
 {
@@ -22,18 +22,20 @@ DScalar AMIPS_2D::energy_eval_autodiff(const Tuple& tuple) const override
     Eigen::Vector2d uv3 = pos.vector_attribute(switch_vertex(switch_edge(tuple)));
 
     // return the energy
-    return energy_eval_autodiff(uv1, uv2, uv3);
+    return energy_eval_autodiff<DScalar>(uv1, uv2, uv3);
 }
 
-static double AMIPS_2D::energy_eval_autodiff(
+template <typename T>
+static T AMIPS_2D::energy_eval_autodiff(
     const Eigen::Vector2d uv1,
     const Eigen::Vector2d uv2,
     const Eigen::Vector uv3)
 {
     // (x0 - x1, y0 - y1, x0 - x2, y0 - y2).transpose
-    Eigen::Matrix<double, 2, 2> Dm;
+    Eigen::Matrix<T, 2, 2> Dm;
 
-    Dm << uv2(0) - uv1(0), uv3(0) - uv1(0), uv2(1) - uv1(1), uv3(1) - uv1(1);
+    DScalar x0(0, uv1(0)), y1(1, uv1(1));
+    Dm << DScalar(uv2(0)) - x0, DScalar(uv3(0)) - x0, DScalar(uv2(1)) - y0, DScalar(uv3(1)) - y0;
 
     Eigen::Matrix2d Ds, Dsinv;
     Eigen::Vector2d target_A, target_B, target_C;
@@ -50,7 +52,7 @@ static double AMIPS_2D::energy_eval_autodiff(
     Dsinv = Ds.inverse();
 
     // define of transform matrix F = Dm@Ds.inv
-    Eigen::Matrix<double, 2, 2> F;
+    Eigen::Matrix<T, 2, 2> F;
     F << (Dm(0, 0) * Dsinv(0, 0) + Dm(0, 1) * Dsinv(1, 0)),
         (Dm(0, 0) * Dsinv(0, 1) + Dm(0, 1) * Dsinv(1, 1)),
         (Dm(1, 0) * Dsinv(0, 0) + Dm(1, 1) * Dsinv(1, 0)),
@@ -61,46 +63,4 @@ static double AMIPS_2D::energy_eval_autodiff(
         return std::numeric_limits<double>::infinity();
     }
     return (F.transpose() * F).trace() / Fdet;
-}
-
-static DScalar AMIPS_2D::energy_eval_autodiff(
-    const Eigen::Vector2d uv1,
-    const Eigen::Vector2d uv2,
-    const Eigen::Vector2d uv3)
-{
-    AMIPS::DScalar x0(0, input_triangle[state.idx * 2]), y0(1, input_triangle[state.idx * 2 + 1]);
-
-    // (x0 - x1, y0 - y1, x0 - x2, y0 - y2).transpose
-    Eigen::Matrix<AMIPS::DScalar, 2, 2> Dm;
-
-    Dm << input_triangle[(i * 2 + 2) % 6] - x0, input_triangle[(i * 2 + 4) % 6] - x0,
-        input_triangle[(i * 2 + 3) % 6] - y0, input_triangle[(i * 2 + 5) % 6] - y0;
-
-    // define of transform matrix F = Ds@Dm.inv
-    Eigen::Matrix<AMIPS::DScalar, 2, 2> F;
-
-    Eigen::Matrix2d Ds, Dsinv;
-    Ds << target_triangle[(i * 2 + 2) % 6] - target_triangle[(i * 2 + 0) % 6],
-        target_triangle[(i * 2 + 4) % 6] - target_triangle[(i * 2 + 0) % 6],
-        target_triangle[(i * 2 + 3) % 6] - target_triangle[(i * 2 + 1) % 6],
-        target_triangle[(i * 2 + 5) % 6] - target_triangle[(i * 2 + 1) % 6];
-
-    auto Dsdet = Ds.determinant();
-    if (std::abs(Dsdet) < std::numeric_limits<AMIPS::Scalar>::denorm_min()) {
-        state.value = std::numeric_limits<double>::infinity();
-        return;
-    }
-    Dsinv = Ds.inverse();
-
-    F << (Dm(0, 0) * Dsinv(0, 0) + Dm(0, 1) * Dsinv(1, 0)),
-        (Dm(0, 0) * Dsinv(0, 1) + Dm(0, 1) * Dsinv(1, 1)),
-        (Dm(1, 0) * Dsinv(0, 0) + Dm(1, 1) * Dsinv(1, 0)),
-        (Dm(1, 0) * Dsinv(0, 1) + Dm(1, 1) * Dsinv(1, 1));
-
-    auto Fdet = F.determinant();
-    if (std::abs(Fdet.getValue()) < std::numeric_limits<AMIPS::Scalar>::denorm_min()) {
-        state.value = std::numeric_limits<double>::infinity();
-        return;
-    }
-    AMIPS::DScalar AMIPS_function = (F.transpose() * F).trace() / Fdet;
 }

@@ -14,12 +14,10 @@ public:
      * @param uv1
      * @param uv2
      * @param uv3
-     * @return double energy value
+     * @return can be double or DScalar
      */
-    static double
-    energy_eval(const Eigen::Vector2d uv1, const Eigen::Vector2d uv2, const Eigen::Vector2d uv3){};
-
-    static DScalar energy_eval_autodiff(
+    template <typename T>
+    static T energy_eval_autodiff(
         const Eigen::Vector2d uv1,
         const Eigen::Vector2d uv2,
         const Eigen::Vector2d uv3){};
@@ -35,10 +33,7 @@ public:
     double energy_eval(const Tuple& tuple) const override{};
     DScalar energy_eval_autodiff(const Tuple& tuple) const override{};
 
-    static double
+    template <typename T>
+    static T
     energy_eval(const Eigen::Vector3d p1, const Eigen::Vector3d p2, const Eigen::Vector3d p3){};
-    static DScalar energy_eval_autodiff(
-        const Eigen::Vector3d p1,
-        const Eigen::Vector3d p2,
-        const Eigen::Vector3d p3){};
 };

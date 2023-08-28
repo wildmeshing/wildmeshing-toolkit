@@ -1,6 +1,8 @@
+#pragma once
 #include <wmtk/Mesh.hpp>
 #include <wmtk/Tuple.hpp>
-
+namespace wmtk {
+namespace energy {
 class Energy
 {
 private:
@@ -9,9 +11,11 @@ private:
 
 
 public:
-    Energy(const Mesh& mesh, const MeshAttributeHandle<double>& position_handle);
-    Enegry(const Mesh& mesh);
+    Energy(const Mesh& mesh);
+    virtual ~Energy();
 
 public:
     virtual double energy_eval(const Tuple& tuple) const = 0;
-}
+};
+} // namespace energy
+} // namespace wmtk
