@@ -453,24 +453,7 @@ Tuple TriMesh::TriMeshOperationExecutor::split_edge()
                 }
 
                 // update_hash on neighboring cells
-                // TODO: put this in the update_hash function
-                for (auto child_cell_id : child_cell_ids_to_update_hash)
-                {
-                    // TODO: check if cell has been deleted or not
-                    auto [t_child_old, t_parent_old] = MultiMeshManager::read_tuple_map_attribute(child_tri_mesh.multi_mesh_manager.map_to_parent_handle, child_tri_mesh, child_tri_mesh.tuple_from_id(PrimitiveType::Face, child_cell_id));
-
-                    long child_cell_hash = child_tri_mesh.get_cell_hash_accessor().scalar_attribute(child_cell_id);
-                    long parent_cell_hash = m_mesh.get_cell_hash_accessor().scalar_attribute(t_parent_old.m_global_cid);
-
-                    Tuple t_child_new = t_child_old.tuple_update_hash(child_cell_hash);
-
-                    Tuple t_parent_new = t_parent_old.tuple_update_hash(parent_cell_hash);
-
-                    MultiMeshManager::write_tuple_map_attribute(child_tri_mesh.multi_mesh_manager.map_to_parent_handle, child_tri_mesh, t_child_new, t_parent_new);
-
-                    MultiMeshManager::write_tuple_map_attribute(m_mesh.multi_mesh_manager.map_to_child_handles[child_id], m_mesh, t_parent_new, t_child_new);
-
-                }
+                update_hash_in_map(child_tri_mesh, child_cell_ids_to_update_hash);
             }
         }
 
@@ -512,6 +495,27 @@ Tuple TriMesh::TriMeshOperationExecutor::split_edge_single_mesh()
     }
     return ret;
     // return m_mesh.with_different_cid(m_operating_tuple, m_incident_face_datas[0].split_f0);
+}
+
+void TriMesh::TriMeshOperationExecutor::update_hash_in_map(TriMesh& child_mesh, const std::vector<long>& child_cell_ids_to_update_hash)
+{
+    long child_id = child_mesh.multi_mesh_manager.child_id();
+    auto child_hash_accessor = child_mesh.get_cell_hash_accessor();
+    for (auto child_cell_id : child_cell_ids_to_update_hash)
+    {
+        auto [t_child_old, t_parent_old] = MultiMeshManager::read_tuple_map_attribute(child_mesh.multi_mesh_manager.map_to_parent_handle, child_mesh, child_mesh.tuple_from_id(child_mesh.top_simplex_type(), child_cell_id));
+
+        long child_cell_hash = child_hash_accessor.scalar_attribute(child_cell_id);
+        long parent_cell_hash = hash_at_cell(t_parent_old.m_global_cid);
+
+        Tuple t_child_new = t_child_old.tuple_update_hash(child_cell_hash);
+
+        Tuple t_parent_new = t_parent_old.tuple_update_hash(parent_cell_hash);
+
+        MultiMeshManager::write_tuple_map_attribute(child_mesh.multi_mesh_manager.map_to_parent_handle, child_mesh, t_child_new, t_parent_new);
+
+        MultiMeshManager::write_tuple_map_attribute(m_mesh.multi_mesh_manager.map_to_child_handles[child_id], m_mesh, t_parent_new, t_child_new);
+    }
 }
 
 Tuple TriMesh::TriMeshOperationExecutor::collapse_edge()
@@ -564,22 +568,7 @@ Tuple TriMesh::TriMeshOperationExecutor::collapse_edge()
                     child_cell_ids_to_update_hash.insert(child_cell_ids_to_update_hash.end(), executor_child.cell_ids_to_update_hash.begin(), executor_child.cell_ids_to_update_hash.end());
                 }
                 // update_hash
-                for (auto child_cell_id : child_cell_ids_to_update_hash)
-                {
-                    auto [t_child_old, t_parent_old] = MultiMeshManager::read_tuple_map_attribute(child_tri_mesh.multi_mesh_manager.map_to_parent_handle, child_tri_mesh, child_tri_mesh.tuple_from_id(PrimitiveType::Face, child_cell_id));
-
-                    long child_cell_hash = child_tri_mesh.get_cell_hash_accessor().scalar_attribute(child_cell_id);
-                    long parent_cell_hash = m_mesh.get_cell_hash_accessor().scalar_attribute(t_parent_old.m_global_cid);
-
-                    Tuple t_child_new = t_child_old.tuple_update_hash(child_cell_hash);
-
-                    Tuple t_parent_new = t_parent_old.tuple_update_hash(parent_cell_hash);
-
-                    MultiMeshManager::write_tuple_map_attribute(child_tri_mesh.multi_mesh_manager.map_to_parent_handle, child_tri_mesh, t_child_new, t_parent_new);
-
-                    MultiMeshManager::write_tuple_map_attribute(m_mesh.multi_mesh_manager.map_to_child_handles[child_id], m_mesh, t_parent_new, t_child_new);
-
-                }
+                update_hash_in_map(child_tri_mesh, child_cell_ids_to_update_hash);
             }
         }
 

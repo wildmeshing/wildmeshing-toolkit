@@ -118,6 +118,9 @@ public:
     long hash_at_cell(const long cell) { return hash_accessor.scalar_attribute(cell); }
 
 private:
+
+    void update_hash_in_map(TriMesh& child_mesh, const std::vector<long>& child_cell_ids_to_updat_hash);
+
     // common simplicies
     std::array<long, 2> m_spine_vids; // V_A_id, V_B_id;
     long m_operating_edge_id;
