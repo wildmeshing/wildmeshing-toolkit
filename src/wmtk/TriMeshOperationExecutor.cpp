@@ -435,17 +435,22 @@ Tuple TriMesh::TriMeshOperationExecutor::split_edge()
                 // update_hash on new cells
                 for (long i = 0; i < long(m_incident_face_datas.size()); i++)
                 {
-                    auto split_fs = child_new_cell_ids[i];
+                    const auto& split_fs = child_new_cell_ids[i];
                     long split_f1 = split_fs.first;
                     long split_f0 = split_fs.second;
                     if (split_f1 == -1) continue;
+                    
+                    const auto& incident_face_data = m_incident_face_datas[i];
+                    long split_f0_parent = incident_face_data.split_f0;
+                    long split_f1_parent = incident_face_data.split_f1;
+                    
                     Tuple tuple_child = child_tri_mesh.face_tuple_from_id(split_f1);
-                    Tuple tuple_parent = m_mesh.face_tuple_from_id(m_incident_face_datas[i].split_f1);
+                    Tuple tuple_parent = m_mesh.face_tuple_from_id(split_f1_parent);
                     MultiMeshManager::write_tuple_map_attribute(child_tri_mesh.multi_mesh_manager.map_to_parent_handle, child_tri_mesh, tuple_child, tuple_parent);
                     MultiMeshManager::write_tuple_map_attribute(m_mesh.multi_mesh_manager.map_to_child_handles[child_id], m_mesh, tuple_parent, tuple_child);
 
                     tuple_child = child_tri_mesh.face_tuple_from_id(split_f0);
-                    tuple_parent = m_mesh.face_tuple_from_id(m_incident_face_datas[i].split_f0);
+                    tuple_parent = m_mesh.face_tuple_from_id(split_f0_parent);
                     MultiMeshManager::write_tuple_map_attribute(child_tri_mesh.multi_mesh_manager.map_to_parent_handle, child_tri_mesh, tuple_child, tuple_parent);
                     MultiMeshManager::write_tuple_map_attribute(m_mesh.multi_mesh_manager.map_to_child_handles[child_id], m_mesh, tuple_parent, tuple_child);
                 }
