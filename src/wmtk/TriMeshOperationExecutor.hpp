@@ -7,7 +7,7 @@ namespace wmtk {
 class TriMesh::TriMeshOperationExecutor
 {
 public:
-    TriMeshOperationExecutor(TriMesh& m, const Tuple& operating_tuple);
+    TriMeshOperationExecutor(TriMesh& m, const Tuple& operating_tuple, Accessor<long>& hash_acc);
     void delete_simplices();
     void update_cell_hash();
 
@@ -17,7 +17,7 @@ public:
     Accessor<long> fv_accessor;
     Accessor<long> vf_accessor;
     Accessor<long> ef_accessor;
-    Accessor<long> hash_accessor;
+    Accessor<long>& hash_accessor;
 
 
     //           C

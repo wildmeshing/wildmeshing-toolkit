@@ -55,7 +55,10 @@ public:
      * @brief returns the TriMeshOperationExecutor
      */
     using TriMesh::tuple_from_id;
-    TriMeshOperationExecutor get_tmoe(const Tuple& t);
+
+    Accessor<long> get_cell_hash_accessor();
+
+    TriMeshOperationExecutor get_tmoe(const Tuple& t, Accessor<long>& hash_accessor);
 };
 
 } // namespace wmtk::tests

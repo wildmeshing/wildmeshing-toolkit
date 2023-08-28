@@ -85,11 +85,16 @@ long DEBUG_TriMesh::id(const Simplex& s) const
 {
     return id(s.tuple(), s.primitive_type());
 }
+Accessor<long> DEBUG_TriMesh::get_cell_hash_accessor()
+{
+    return TriMesh::get_cell_hash_accessor();
+}
 /**
  * @brief returns the TriMeshOperationExecutor
  */
-auto DEBUG_TriMesh::get_tmoe(const Tuple& t) -> TriMeshOperationExecutor
+auto DEBUG_TriMesh::get_tmoe(const Tuple& t, Accessor<long>& hash_accessor)
+    -> TriMeshOperationExecutor
 {
-    return TriMeshOperationExecutor(*this, t);
+    return TriMeshOperationExecutor(*this, t, hash_accessor);
 }
 } // namespace wmtk::tests
