@@ -1,41 +1,45 @@
 #include "AMIPS.hpp"
-
-double AMIPS_2D::energy_eval(const Tuple& tuple) const override
+using namespace wmtk;
+using namespace wmtk::energy;
+double AMIPS_2D::energy_eval(const Tuple& tuple) const
 {
     // get the uv coordinates of the triangle
-    ConstAccessor<double> pos = m_mesh.create_accessor(m_position_handle);
+    ConstAccessor<double> pos = m_mesh.create_const_accessor(m_position_handle);
 
     Eigen::Vector2d uv1 = pos.vector_attribute(tuple);
-    Eigen::Vector2d uv2 = pos.vector_attribute(switch_edge(switch_vertex(tuple)));
-    Eigen::Vector2d uv3 = pos.vector_attribute(switch_vertex(switch_edge(tuple)));
+    Eigen::Vector2d uv2 = pos.vector_attribute(m_mesh.switch_edge(m_mesh.switch_vertex(tuple)));
+    Eigen::Vector2d uv3 = pos.vector_attribute(m_mesh.switch_vertex(m_mesh.switch_edge(tuple)));
 
     // return the energy
     return energy_eval<double>(uv1, uv2, uv3);
 }
-DScalar AMIPS_2D::energy_eval_autodiff(const Tuple& tuple) const override
+DScalar AMIPS_2D::energy_eval_autodiff(const Tuple& tuple) const
 {
     // get the uv coordinates of the triangle
-    ConstAccessor<double> pos = m_mesh.create_accessor(m_position_handle);
+    ConstAccessor<double> pos = m_mesh.create_const_accessor(m_position_handle);
 
     Eigen::Vector2d uv1 = pos.vector_attribute(tuple);
-    Eigen::Vector2d uv2 = pos.vector_attribute(switch_edge(switch_vertex(tuple)));
-    Eigen::Vector2d uv3 = pos.vector_attribute(switch_vertex(switch_edge(tuple)));
+    Eigen::Vector2d uv2 = pos.vector_attribute(m_mesh.switch_edge(m_mesh.switch_vertex(tuple)));
+    Eigen::Vector2d uv3 = pos.vector_attribute(m_mesh.switch_vertex(m_mesh.switch_edge(tuple)));
 
     // return the energy
-    return energy_eval_autodiff<DScalar>(uv1, uv2, uv3);
+    return energy_eval<DScalar>(uv1, uv2, uv3);
 }
-
 template <typename T>
-static T AMIPS_2D::energy_eval_autodiff(
-    const Eigen::Vector2d uv1,
-    const Eigen::Vector2d uv2,
-    const Eigen::Vector uv3)
+auto AMIPS_2D::energy_eval(
+    const Eigen::Vector2d& uv1,
+    const Eigen::Vector2d& uv2,
+    const Eigen::Vector2d& uv3) -> T
 {
     // (x0 - x1, y0 - y1, x0 - x2, y0 - y2).transpose
     Eigen::Matrix<T, 2, 2> Dm;
 
-    DScalar x0(0, uv1(0)), y1(1, uv1(1));
-    Dm << DScalar(uv2(0)) - x0, DScalar(uv3(0)) - x0, DScalar(uv2(1)) - y0, DScalar(uv3(1)) - y0;
+    typedef Eigen::Matrix<T, 2, 1> Vec2T;
+    Vec2T uv1_;
+
+    get_local_vector<Vec2T>(uv1, 2, uv1_);
+
+    Dm << uv2(0) - uv1_(0), uv3(0) - uv1_(0), uv2(1) - uv1_(1), uv3(1) - uv1_(1);
 
     Eigen::Matrix2d Ds, Dsinv;
     Eigen::Vector2d target_A, target_B, target_C;
@@ -46,8 +50,8 @@ static T AMIPS_2D::energy_eval_autodiff(
         target_C.y() - target_A.y();
 
     auto Dsdet = Ds.determinant();
-    if (std::abs(Dsdet) < std::numeric_limits<AMIPS::Scalar>::denorm_min()) {
-        return std::numeric_limits<double>::infinity();
+    if (abs(Dsdet) < std::numeric_limits<Scalar>::denorm_min()) {
+        return static_cast<T>(std::numeric_limits<double>::infinity());
     }
     Dsinv = Ds.inverse();
 
@@ -59,8 +63,8 @@ static T AMIPS_2D::energy_eval_autodiff(
         (Dm(1, 0) * Dsinv(0, 1) + Dm(1, 1) * Dsinv(1, 1));
 
     auto Fdet = F.determinant();
-    if (std::abs(Fdet) < std::numeric_limits<double>::denorm_min()) {
-        return std::numeric_limits<double>::infinity();
+    if (abs(Fdet) < std::numeric_limits<Scalar>::denorm_min()) {
+        return static_cast<T>(std::numeric_limits<T>::infinity());
     }
     return (F.transpose() * F).trace() / Fdet;
 }
