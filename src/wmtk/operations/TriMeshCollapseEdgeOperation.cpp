@@ -1,18 +1,45 @@
 
 
 #include "TriMeshCollapseEdgeOperation.hpp"
+#include <spdlog/spdlog.h>
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/invariants/InteriorEdgeInvariant.hpp>
 #include <wmtk/invariants/TriMeshLinkConditionInvariant.hpp>
+#include <wmtk/invariants/ValidTupleInvariant.hpp>
+#include <wmtk/invariants/find_invariant_in_collection_by_type.hpp>
 
 namespace wmtk {
 
-OperationSettings<TriMeshCollapseEdgeOperation>::OperationSettings(const TriMesh& m)
+OperationSettings<TriMeshCollapseEdgeOperation>::OperationSettings() {}
+
+void OperationSettings<TriMeshCollapseEdgeOperation>::initialize_invariants(const TriMesh& m)
 {
     // outdated + is valid tuple
     invariants = basic_invariant_collection(m);
     invariants.add(std::make_shared<TriMeshLinkConditionInvariant>(m));
+    if (!collapse_boundary_edges) {
+        invariants.add(std::make_shared<InteriorEdgeInvariant>(m));
+    }
+    if (!collapse_boundary_vertex_to_interior) {
+        invariants.add(std::make_shared<InteriorVertexInvariant>(m));
+    }
 }
+
+bool OperationSettings<TriMeshCollapseEdgeOperation>::are_invariants_initialized() const
+{
+    if (!collapse_boundary_edges) {
+        return find_invariants_in_collection_by_type<InteriorEdgeInvariant>(invariants);
+    }
+
+    if (!collapse_boundary_vertex_to_interior) {
+        return find_invariants_in_collection_by_type<InteriorVertexInvariant>(invariants);
+    }
+    return find_invariants_in_collection_by_type<
+        ValidTupleInvariant,
+        TriMeshLinkConditionInvariant>(invariants);
+}
+
 
 TriMeshCollapseEdgeOperation::TriMeshCollapseEdgeOperation(
     Mesh& m,
@@ -26,7 +53,9 @@ TriMeshCollapseEdgeOperation::TriMeshCollapseEdgeOperation(
     const OperationSettings<TriMeshCollapseEdgeOperation>& settings)
     : TupleOperation(m, settings.invariants, t)
     , m_settings{settings}
-{}
+{
+    assert(m_settings.are_invariants_initialized());
+}
 
 bool TriMeshCollapseEdgeOperation::execute()
 {
@@ -35,8 +64,7 @@ bool TriMeshCollapseEdgeOperation::execute()
     return true;
 }
 
-std::vector<Tuple> TriMeshCollapseEdgeOperation::modified_primitives(
-    PrimitiveType type) const
+std::vector<Tuple> TriMeshCollapseEdgeOperation::modified_primitives(PrimitiveType type) const
 {
     if (type == PrimitiveType::Face) {
         return modified_triangles();
@@ -44,9 +72,10 @@ std::vector<Tuple> TriMeshCollapseEdgeOperation::modified_primitives(
         return {};
     }
 }
-/*
 bool TriMeshCollapseEdgeOperation::before() const
 {
+    return TupleOperation::before();
+
     if (m_mesh.is_outdated(input_tuple())) {
         return false;
     }
@@ -64,7 +93,6 @@ bool TriMeshCollapseEdgeOperation::before() const
 
     return SimplicialComplex::link_cond_bd_2d(m_mesh, input_tuple());
 }
-*/
 
 std::string TriMeshCollapseEdgeOperation::name() const
 {

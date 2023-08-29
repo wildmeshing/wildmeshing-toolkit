@@ -420,7 +420,7 @@ TEST_CASE("hash_update", "[operations][2D]")
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 2, 0);
 
         auto executor = m.get_tmoe(edge);
-        auto& ha = executor.hash_accessor;
+        // auto& ha = executor.hash_accessor;
 
         CHECK(executor.hash_at_cell(0) == 0);
 
@@ -436,7 +436,7 @@ TEST_CASE("hash_update", "[operations][2D]")
         const Tuple edge = m.edge_tuple_between_v1_v2(3, 7, 5);
 
         auto executor = m.get_tmoe(edge);
-        auto& ha = executor.hash_accessor;
+        // auto& ha = executor.hash_accessor;
 
         CHECK(executor.hash_at_cell(0) == 0);
         CHECK(executor.hash_at_cell(1) == 0);
@@ -718,10 +718,10 @@ TEST_CASE("simplices_to_delete_for_split", "[operations][split][2D]")
         DEBUG_TriMesh m;
         {
             //         0
-            //        / \ 
+            //        / \  .
             //       /2   1
-            //      / f0  \ 
-            //     /  0    \ 
+            //      / f0  \ .
+            //     /  0    \  .
             //  1  --------- 2
 
             m = single_triangle();
@@ -745,10 +745,10 @@ TEST_CASE("simplices_to_delete_for_split", "[operations][split][2D]")
         DEBUG_TriMesh m;
         {
             //  3--1--- 0
-            //   |     / \ 
+            //   |     / \ .
             //   2 f1 /2   1
-            //   |  0/ f0  \ 
-            //   |  /  0    \ 
+            //   |  0/ f0  \ .
+            //   |  /  0    \ .
             //  1  -------- 2
             //     \   1    /
             //      \  f2  /
@@ -818,6 +818,7 @@ TEST_CASE("split_edge_operation", "[operations][split][2D]")
 
     REQUIRE(m.is_connectivity_valid());
     OperationSettings<TriMeshSplitEdgeOperation> op_settings;
+    op_settings.initialize_invariants(m);
 
     const Tuple e = m.edge_tuple_between_v1_v2(0, 1, 1);
     SECTION("split_boundary_true")
@@ -828,6 +829,7 @@ TEST_CASE("split_edge_operation", "[operations][split][2D]")
     {
         op_settings.split_boundary_edges = false;
     }
+    op_settings.initialize_invariants(m);
 
     TriMeshSplitEdgeOperation op(m, e, op_settings);
     const bool success = op();
@@ -969,7 +971,8 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
     {
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 4, 0);
 
-        OperationSettings<TriMeshCollapseEdgeOperation> op_settings(m);
+        OperationSettings<TriMeshCollapseEdgeOperation> op_settings;
+        op_settings.initialize_invariants(m);
         TriMeshCollapseEdgeOperation op(m, edge, op_settings);
         const bool success = op();
         CHECK(success);
@@ -978,8 +981,9 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
     {
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 4, 0);
 
-        OperationSettings<TriMeshCollapseEdgeOperation> op_settings(m);
+        OperationSettings<TriMeshCollapseEdgeOperation> op_settings;
         op_settings.collapse_boundary_vertex_to_interior = false;
+        op_settings.initialize_invariants(m);
 
         TriMeshCollapseEdgeOperation op(m, edge, op_settings);
         const bool success = op();
@@ -1004,7 +1008,8 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
     {
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 1);
 
-        OperationSettings<TriMeshCollapseEdgeOperation> op_settings(m);
+        OperationSettings<TriMeshCollapseEdgeOperation> op_settings;
+        op_settings.initialize_invariants(m);
         TriMeshCollapseEdgeOperation op(m, edge, op_settings);
         const bool success = op();
         CHECK(success);
@@ -1013,8 +1018,9 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
     {
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 1);
 
-        OperationSettings<TriMeshCollapseEdgeOperation> op_settings(m);
+        OperationSettings<TriMeshCollapseEdgeOperation> op_settings;
         op_settings.collapse_boundary_edges = false;
+        op_settings.initialize_invariants(m);
 
         TriMeshCollapseEdgeOperation op(m, edge, op_settings);
         const bool success = op();

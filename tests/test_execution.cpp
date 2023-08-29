@@ -18,7 +18,9 @@ TEST_CASE("test_execution_single_triangle", "[scheduler][2D]")
     DEBUG_TriMesh m;
     m = single_triangle();
     Scheduler scheduler(m);
-    scheduler.add_operation_type<TriMeshSplitEdgeOperation>("edge_split");
+    OperationSettings<TriMeshSplitEdgeOperation> op_settings;
+    op_settings.initialize_invariants(m);
+    scheduler.add_operation_type<TriMeshSplitEdgeOperation>("edge_split", op_settings);
 
 
     scheduler.run_operation_on_all(PrimitiveType::Edge, "edge_split");

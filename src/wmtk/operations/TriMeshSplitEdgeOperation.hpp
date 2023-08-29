@@ -12,6 +12,11 @@ struct OperationSettings<TriMeshSplitEdgeOperation>
 {
     bool split_boundary_edges = true;
     InvariantCollection invariants;
+
+
+    void initialize_invariants(const TriMesh& m);
+    // debug functionality to make sure operations are constructed properly
+    bool are_invariants_initialized() const;
 };
 
 class TriMeshSplitEdgeOperation : public TupleOperation
@@ -42,7 +47,6 @@ public:
 
 protected:
     bool execute() override;
-    bool before() const override;
 
 private:
     Tuple m_output_tuple;

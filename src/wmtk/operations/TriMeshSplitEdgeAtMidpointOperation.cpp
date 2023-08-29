@@ -38,6 +38,7 @@ bool TriMeshSplitEdgeAtMidpointOperation::execute()
     {
         OperationSettings<TriMeshSplitEdgeOperation> op_settings;
         op_settings.split_boundary_edges = m_settings.split_boundary_edges;
+        op_settings.initialize_invariants(static_cast<TriMesh&>(m_mesh));
 
         TriMeshSplitEdgeOperation split_op(m_mesh, m_input_tuple, op_settings);
         if (!split_op()) {

@@ -55,6 +55,11 @@ long TriMesh::id(const Tuple& tuple, PrimitiveType type) const
 
 bool TriMesh::is_boundary(const Tuple& tuple) const
 {
+    return is_boundary_edge(tuple);
+}
+
+bool TriMesh::is_boundary_edge(const Tuple& tuple) const
+{
     assert(is_valid(tuple));
     ConstAccessor<long> ff_accessor = create_const_accessor<long>(m_ff_handle);
     return ff_accessor.vector_attribute(tuple)(tuple.m_local_eid) < 0;

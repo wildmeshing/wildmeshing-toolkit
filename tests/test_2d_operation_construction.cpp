@@ -24,7 +24,10 @@ constexpr PrimitiveType PF = PrimitiveType::Face;
 DEBUG_TriMesh test_split(const DEBUG_TriMesh& mesh, const Tuple& e, bool should_succeed)
 {
     DEBUG_TriMesh m = mesh;
-    OperationFactory<TriMeshSplitEdgeOperation> fact;
+
+    OperationSettings<TriMeshSplitEdgeOperation> op_settings;
+    op_settings.initialize_invariants(m);
+    OperationFactory<TriMeshSplitEdgeOperation> fact(op_settings);
 
     auto op = fact.create(m, e);
     bool result = (*op)(); // should run the split
@@ -51,7 +54,9 @@ DEBUG_TriMesh test_split(const DEBUG_TriMesh& mesh, long edge_index, bool should
 DEBUG_TriMesh test_collapse(const DEBUG_TriMesh& mesh, const Tuple& e, bool should_succeed)
 {
     DEBUG_TriMesh m = mesh;
-    OperationFactory<TriMeshCollapseEdgeOperation> fact;
+    OperationSettings<TriMeshCollapseEdgeOperation> op_settings;
+    op_settings.initialize_invariants(m);
+    OperationFactory<TriMeshCollapseEdgeOperation> fact(op_settings);
 
     auto op = fact.create(m, e);
     bool result = (*op)(); // should run the split

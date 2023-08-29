@@ -1,9 +1,29 @@
 
 #include "TriMeshSplitEdgeOperation.hpp"
+#include <spdlog/spdlog.h>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/invariants/InteriorEdgeInvariant.hpp>
+#include <wmtk/invariants/ValidTupleInvariant.hpp>
+#include <wmtk/invariants/find_invariant_in_collection_by_type.hpp>
 #include "wmtk/SimplicialComplex.hpp"
 
 namespace wmtk {
+
+void OperationSettings<TriMeshSplitEdgeOperation>::initialize_invariants(const TriMesh& m)
+{
+    // outdated + is valid tuple
+    invariants = basic_invariant_collection(m);
+
+    if (!split_boundary_edges) {
+        invariants.add(std::make_shared<InteriorEdgeInvariant>(m));
+    }
+}
+
+bool OperationSettings<TriMeshSplitEdgeOperation>::are_invariants_initialized() const
+{
+    return find_invariants_in_collection_by_type<ValidTupleInvariant>(invariants);
+}
+
 
 TriMeshSplitEdgeOperation::TriMeshSplitEdgeOperation(
     Mesh& m,
@@ -11,7 +31,10 @@ TriMeshSplitEdgeOperation::TriMeshSplitEdgeOperation(
     const OperationSettings<TriMeshSplitEdgeOperation>& settings)
     : TupleOperation(m, settings.invariants, t)
     , m_settings{settings}
-{}
+{
+    assert(m_settings.are_invariants_initialized());
+}
+
 bool TriMeshSplitEdgeOperation::execute()
 {
     // move vertex to center of old vertices
@@ -31,18 +54,6 @@ bool TriMeshSplitEdgeOperation::execute()
     //        acc.assign(old,edge);
     //    }
     //}
-    return true;
-}
-bool TriMeshSplitEdgeOperation::before() const
-{
-    if (m_mesh.is_outdated(input_tuple()) || !m_mesh.is_valid(input_tuple())) {
-        return false;
-    }
-
-    if (!m_settings.split_boundary_edges && m_mesh.is_boundary(input_tuple())) {
-        return false;
-    }
-
     return true;
 }
 

@@ -7,13 +7,21 @@ namespace wmtk {
 class TupleOperation : public Operation
 {
 public:
+
     TupleOperation(Mesh& m, const InvariantCollection& invariants, const Tuple& t);
+    // especially in the case of compound operations we might not know the input tuple at construction
+    // we therefore have to pass in a default invalid tuple and set the tuple later on
+    TupleOperation(Mesh& m, const InvariantCollection& invariants);
     static PrimitiveType primitive_type() { return PrimitiveType::Edge; }
 
     bool before() const override;
     bool after() const override;
     const Tuple& input_tuple() const;
 
+    // 
+    void set_input_tuple(const Tuple& t);
+
+    // Returns the set of tuples, organized by the type
     virtual std::vector<Tuple> modified_primitives(PrimitiveType) const;
 
 private:

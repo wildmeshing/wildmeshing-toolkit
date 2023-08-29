@@ -8,9 +8,15 @@ TupleOperation::TupleOperation(Mesh& m, const InvariantCollection& invariants, c
     , m_invariants(invariants)
     , m_input_tuple{t}
 {}
+TupleOperation::TupleOperation(Mesh& m, const InvariantCollection& invariants): TupleOperation(m,invariants,{})
+{}
 const Tuple& TupleOperation::input_tuple() const
 {
     return m_input_tuple;
+}
+
+void TupleOperation::set_input_tuple(const Tuple& t) {
+    m_input_tuple = t;
 }
 
 bool TupleOperation::before() const

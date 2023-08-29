@@ -3,7 +3,7 @@
 #include "MeshInvariant.hpp"
 
 namespace wmtk {
-class InteriorEdgeInvariant : public MeshInvariant
+class InteriorVertexInvariant : public MeshInvariant
 {
     using MeshInvariant::MeshInvariant;
     bool before(const Tuple& t) const override;

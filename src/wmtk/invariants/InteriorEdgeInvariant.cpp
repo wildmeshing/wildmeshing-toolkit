@@ -1,8 +1,10 @@
 #include "InteriorEdgeInvariant.hpp"
+#include <wmtk/Mesh.hpp>
 
 namespace wmtk {
-bool InteriorEdgeInvariant::before(const Tuple& t) override
+bool InteriorEdgeInvariant::before(const Tuple& t) const
 {
-    return mesh().is_boundary(t);
+    const bool result = !mesh().is_boundary_edge(t);
+    return result;
 }
 } // namespace wmtk

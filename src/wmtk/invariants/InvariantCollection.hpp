@@ -21,6 +21,11 @@ public:
     // pass by value so this can be internally moved
     void add(std::shared_ptr<Invariant> invariant);
 
+    const std::shared_ptr<Invariant>& get(long index) const;
+    long size() const;
+    bool empty() const;
+    const std::vector<std::shared_ptr<Invariant>>& invariants() const;
+
 private:
     std::vector<std::shared_ptr<Invariant>> m_invariants;
 };

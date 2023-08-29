@@ -94,6 +94,7 @@ bool TriMeshSwapEdgeOperation::execute()
     Tuple split_ret;
     {
         OperationSettings<TriMeshSplitEdgeOperation> op_settings;
+        op_settings.initialize_invariants(static_cast<TriMesh&>(m_mesh));
         TriMeshSplitEdgeOperation split_op(m_mesh, m_input_tuple, op_settings);
         if (!split_op()) {
             return false;
@@ -120,8 +121,9 @@ bool TriMeshSwapEdgeOperation::execute()
     //   \ | /
     //    \|/
 
-    OperationSettings<TriMeshCollapseEdgeOperation> collapse_settings(
-        static_cast<TriMesh&>(m_mesh));
+    OperationSettings<TriMeshCollapseEdgeOperation> collapse_settings;
+
+    collapse_settings.initialize_invariants(static_cast<TriMesh&>(m_mesh));
     TriMeshCollapseEdgeOperation coll_op(m_mesh, coll_input_tuple, collapse_settings);
     if (!coll_op()) {
         return false;

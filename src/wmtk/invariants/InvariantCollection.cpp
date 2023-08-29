@@ -38,4 +38,21 @@ InvariantCollection basic_invariant_collection(const Mesh& m)
     ic.add(std::make_shared<ValidTupleInvariant>(m));
     return ic;
 }
+
+const std::shared_ptr<Invariant>& InvariantCollection::get(long index) const
+{
+    return m_invariants.at(index);
+}
+long InvariantCollection::size() const
+{
+    return m_invariants.size();
+}
+bool InvariantCollection::empty() const
+{
+    return m_invariants.empty();
+}
+const std::vector<std::shared_ptr<Invariant>>& InvariantCollection::invariants() const
+{
+    return m_invariants;
+}
 } // namespace wmtk

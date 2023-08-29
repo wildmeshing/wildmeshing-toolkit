@@ -20,11 +20,6 @@ template <typename OperationType>
 class OperationFactory : public OperationFactoryBase
 {
 public:
-    OperationFactory()
-        : OperationFactoryBase(OperationType::primitive_type())
-        , m_settings({})
-    {}
-
     OperationFactory(const OperationSettings<OperationType>& settings)
         : OperationFactoryBase(OperationType::primitive_type())
         , m_settings(settings)

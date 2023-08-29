@@ -9,6 +9,10 @@ set(SRC_FILES
     MeshInvariant.cpp
     InvariantCollection.hpp
     InvariantCollection.cpp
+    InteriorVertexInvariant.hpp
+    InteriorVertexInvariant.cpp
+    InteriorEdgeInvariant.hpp
+    InteriorEdgeInvariant.cpp
     ValidTupleInvariant.hpp
     ValidTupleInvariant.cpp
     TriMeshLinkConditionInvariant.hpp
