@@ -1,17 +1,18 @@
 #pragma once
 #include <wmtk/Mesh.hpp>
+#include <wmtk/TriMesh.hpp>
 #include <wmtk/Tuple.hpp>
 namespace wmtk {
 namespace energy {
 class Energy
 {
-private:
-    const Mesh& m_mesh;
+protected:
+    Mesh& m_mesh;
     const MeshAttributeHandle<double> m_position_handle;
 
 
 public:
-    Energy(const Mesh& mesh);
+    Energy(Mesh& mesh);
     virtual ~Energy();
 
 public:
