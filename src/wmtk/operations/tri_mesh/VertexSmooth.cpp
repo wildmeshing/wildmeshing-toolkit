@@ -50,7 +50,7 @@ bool VertexSmooth::execute()
         incident_face_tuple.emplace_back(s.tuple());
     }
 
-    update_cell_hash(incident_face_tuple);
+    update_cell_hashes(incident_face_tuple);
 
     assert(!mesh().is_valid_slow(m_input_tuple));
 

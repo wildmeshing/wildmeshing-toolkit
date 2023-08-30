@@ -49,7 +49,7 @@ bool Operation::after() const
     return true;
 }
 
-void Operation::update_cell_hash(const std::vector<Tuple>& cells)
+void Operation::update_cell_hashes(const std::vector<Tuple>& cells)
 {
     m_mesh.update_cell_hashes(cells, m_hash_accessor);
 }

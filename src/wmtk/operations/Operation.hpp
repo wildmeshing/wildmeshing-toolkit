@@ -39,7 +39,7 @@ protected:
     // does invariant pre-checks
     virtual bool after() const;
 
-    void update_cell_hash(const std::vector<Tuple>& cells);
+    void update_cell_hashes(const std::vector<Tuple>& cells);
 
     Tuple resurrect_tuple(const Tuple& tuple);
 
