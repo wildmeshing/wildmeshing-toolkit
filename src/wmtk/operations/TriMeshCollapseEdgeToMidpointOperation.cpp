@@ -1,35 +1,27 @@
 #include "TriMeshCollapseEdgeToMidpointOperation.hpp"
+#include <wmtk/invariants/find_invariant_in_collection_by_type.hpp>
 #include <wmtk/SimplicialComplex.hpp>
 
 #include <wmtk/TriMesh.hpp>
-#include "TriMeshCollapseEdgeOperation.hpp"
+#include <wmtk/invariants/MaxEdgeLengthInvariant.hpp>
 
 namespace wmtk {
 
-void OperationSettings<TriMeshCollapseEdgeOperation>::initialize_invariants(const TriMesh& m)
+void OperationSettings<TriMeshCollapseEdgeToMidpointOperation>::initialize_invariants(const TriMesh& m)
 {
     collapse_settings.initialize_invariants(m);
-        invariants.add(std::make_shared<InteriorEdgeInvariant>(m));
+    collapse_settings.invariants.add(std::make_shared<MaxEdgeLengthInvariant>(m, position, max_squared_length));
 }
 
-bool OperationSettings<TriMeshCollapseEdgeOperation>::are_invariants_initialized() const
+bool OperationSettings<TriMeshCollapseEdgeToMidpointOperation>::are_invariants_initialized() const
 {
-    if (!collapse_boundary_edges) {
-        return find_invariants_in_collection_by_type<InteriorEdgeInvariant>(invariants);
-    }
-
-    if (!collapse_boundary_vertex_to_interior) {
-        return find_invariants_in_collection_by_type<InteriorVertexInvariant>(invariants);
-    }
-    return find_invariants_in_collection_by_type<
-        ValidTupleInvariant,
-        TriMeshLinkConditionInvariant>(invariants);
+        return collapse_settings.are_invariants_initialized() && find_invariants_in_collection_by_type<MaxEdgeLengthInvariant>(collapse_settings.invariants);
 }
 wmtk::TriMeshCollapseEdgeToMidpointOperation::TriMeshCollapseEdgeToMidpointOperation(
     Mesh& m,
     const Tuple& t,
     const OperationSettings<TriMeshCollapseEdgeToMidpointOperation>& settings)
-    : TupleOperation(m, settings.invariants, t)
+    : TupleOperation(m, settings.collapse_settings.invariants, t)
     , m_pos_accessor{m.create_accessor(settings.position)}
     , m_settings{settings}
 {
@@ -47,6 +39,7 @@ Tuple TriMeshCollapseEdgeToMidpointOperation::return_tuple() const
 
 bool TriMeshCollapseEdgeToMidpointOperation::before() const
 {
+    return TupleOperation::before();
     if(!TupleOperation::before()) {
         return false;
     }
@@ -72,11 +65,7 @@ bool TriMeshCollapseEdgeToMidpointOperation::execute()
 
     // collapse
     {
-        OperationSettings<TriMeshCollapseEdgeOperation> op_settings;
-        op_settings.collapse_boundary_edges = m_settings.collapse_boundary_edges;
-        op_settings.initialize_invariants(static_cast<TriMesh&>(m_mesh));
-
-        TriMeshCollapseEdgeOperation split_op(m_mesh, input_tuple(), op_settings);
+        TriMeshCollapseEdgeOperation split_op(m_mesh, input_tuple(), m_settings.collapse_settings);
         if (!split_op()) {
             return false;
         }

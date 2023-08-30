@@ -1,20 +1,32 @@
 #include "TriMeshSplitEdgeAtMidpointOperation.hpp"
+#include <wmtk/invariants/find_invariant_in_collection_by_type.hpp>
 
 #include <wmtk/TriMesh.hpp>
 #include "TriMeshSplitEdgeOperation.hpp"
+#include <wmtk/invariants/MinEdgeLengthInvariant.hpp>
 
 namespace wmtk {
+
+void OperationSettings<TriMeshSplitEdgeAtMidpointOperation>::initialize_invariants(const TriMesh& m)
+{
+    split_settings.initialize_invariants(m);
+    split_settings.invariants.add(std::make_shared<MinEdgeLengthInvariant>(m, position, min_squared_length));
+}
+
+bool OperationSettings<TriMeshSplitEdgeAtMidpointOperation>::are_invariants_initialized() const
+{
+        return split_settings.are_invariants_initialized() && find_invariants_in_collection_by_type<MinEdgeLengthInvariant>(split_settings.invariants);
+}
 TriMeshSplitEdgeAtMidpointOperation::TriMeshSplitEdgeAtMidpointOperation(
     Mesh& m,
     const Tuple& t,
     const OperationSettings<TriMeshSplitEdgeAtMidpointOperation>& settings)
-    : Operation(m)
-    , m_input_tuple{t}
+    : TupleOperation(m, settings.split_settings.invariants, t)
     , m_pos_accessor{m.create_accessor(settings.position)}
     , m_settings{settings}
 {
-    p0 = m_pos_accessor.vector_attribute(m_input_tuple);
-    p1 = m_pos_accessor.vector_attribute(m_mesh.switch_vertex(m_input_tuple));
+    p0 = m_pos_accessor.vector_attribute(input_tuple());
+    p1 = m_pos_accessor.vector_attribute(m_mesh.switch_vertex(input_tuple()));
 }
 std::string TriMeshSplitEdgeAtMidpointOperation::name() const
 {
@@ -26,7 +38,8 @@ Tuple TriMeshSplitEdgeAtMidpointOperation::return_tuple() const
 }
 bool TriMeshSplitEdgeAtMidpointOperation::before() const
 {
-    if (m_mesh.is_outdated(m_input_tuple) || !m_mesh.is_valid(m_input_tuple)) {
+    return TupleOperation::before();
+    if (m_mesh.is_outdated(input_tuple()) || !m_mesh.is_valid(input_tuple())) {
         return false;
     }
 
@@ -36,11 +49,7 @@ bool TriMeshSplitEdgeAtMidpointOperation::before() const
 bool TriMeshSplitEdgeAtMidpointOperation::execute()
 {
     {
-        OperationSettings<TriMeshSplitEdgeOperation> op_settings;
-        op_settings.split_boundary_edges = m_settings.split_boundary_edges;
-        op_settings.initialize_invariants(static_cast<TriMesh&>(m_mesh));
-
-        TriMeshSplitEdgeOperation split_op(m_mesh, m_input_tuple, op_settings);
+        TriMeshSplitEdgeOperation split_op(m_mesh, input_tuple(), m_settings.split_settings);
         if (!split_op()) {
             return false;
         }

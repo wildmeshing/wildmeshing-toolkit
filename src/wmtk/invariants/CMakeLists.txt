@@ -17,5 +17,9 @@ set(SRC_FILES
     ValidTupleInvariant.cpp
     TriMeshLinkConditionInvariant.hpp
     TriMeshLinkConditionInvariant.cpp
+    MaxEdgeLengthInvariant.hpp
+    MaxEdgeLengthInvariant.cpp
+    MinEdgeLengthInvariant.hpp
+    MinEdgeLengthInvariant.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

@@ -18,10 +18,11 @@ IsotropicRemeshing::IsotropicRemeshing(TriMesh& mesh, const double length, const
 {
     // split
     {
-        OperationSettings<TriMeshSplitEdgeAtMidpointOperation> split_settings{
-            m_position_handle,
-            m_length_max * m_length_max,
-            !m_lock_boundary};
+        OperationSettings<TriMeshSplitEdgeAtMidpointOperation> split_settings;
+        split_settings.position = m_position_handle,
+        split_settings.min_squared_length = m_length_min * m_length_min;
+        split_settings.split_settings.split_boundary_edges = !m_lock_boundary;
+        split_settings.initialize_invariants(m_mesh);
 
         m_scheduler.add_operation_type<TriMeshSplitEdgeAtMidpointOperation>(
             "split",
@@ -29,12 +30,13 @@ IsotropicRemeshing::IsotropicRemeshing(TriMesh& mesh, const double length, const
     }
     // collapse
     {
-        OperationSettings<TriMeshCollapseEdgeToMidpointOperation> op_settings{
-            m_position_handle,
-            m_length_min * m_length_min,
-            !m_lock_boundary,
-            true};
+        OperationSettings<TriMeshCollapseEdgeToMidpointOperation> op_settings;
+        op_settings.position = m_position_handle,
+        op_settings.max_squared_length = m_length_max * m_length_max;
+        op_settings.collapse_settings.collapse_boundary_edges = !m_lock_boundary;
+        op_settings.collapse_towards_boundary = true;
 
+        op_settings.initialize_invariants(m_mesh);
         m_scheduler.add_operation_type<TriMeshCollapseEdgeToMidpointOperation>(
             "collapse",
             op_settings);

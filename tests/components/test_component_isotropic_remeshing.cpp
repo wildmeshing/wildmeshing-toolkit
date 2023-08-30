@@ -195,6 +195,7 @@ TEST_CASE("split_long_edges", "[components][isotropic_remeshing][split][2D]")
     DEBUG_TriMesh mesh = wmtk::tests::edge_region_with_position();
 
     OperationSettings<TriMeshSplitEdgeAtMidpointOperation> op_settings;
+    op_settings.initialize_invariants(mesh);
     op_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
 
     {
@@ -295,6 +296,7 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
         }
 
         op_settings.max_squared_length = 0.1;
+        op_settings.initialize_invariants(mesh);
 
         Scheduler scheduler(mesh);
         scheduler.add_operation_type<TriMeshCollapseEdgeToMidpointOperation>(
@@ -337,6 +339,7 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
         op_settings.max_squared_length = 0.1;
         op_settings.collapse_towards_boundary = true;
 
+        op_settings.initialize_invariants(mesh);
         Scheduler scheduler(mesh);
         scheduler.add_operation_type<TriMeshCollapseEdgeToMidpointOperation>(
             "tri_mesh_collapse_edge_to_mid",
@@ -377,6 +380,7 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
 
         op_settings.max_squared_length = 0.1;
         op_settings.collapse_towards_boundary = false;
+        op_settings.initialize_invariants(mesh);
 
         Scheduler scheduler(mesh);
         scheduler.add_operation_type<TriMeshCollapseEdgeToMidpointOperation>(
@@ -417,7 +421,8 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
         }
 
         op_settings.max_squared_length = 0.1;
-        op_settings.collapse_boundary_edges = true;
+        op_settings.collapse_settings.collapse_boundary_edges = true;
+        op_settings.initialize_invariants(mesh);
 
         Scheduler scheduler(mesh);
         scheduler.add_operation_type<TriMeshCollapseEdgeToMidpointOperation>(
@@ -446,7 +451,8 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
         }
 
         op_settings.max_squared_length = 0.1;
-        op_settings.collapse_boundary_edges = false;
+        op_settings.collapse_settings.collapse_boundary_edges = false;
+        op_settings.initialize_invariants(mesh);
 
         Scheduler scheduler(mesh);
         scheduler.add_operation_type<TriMeshCollapseEdgeToMidpointOperation>(

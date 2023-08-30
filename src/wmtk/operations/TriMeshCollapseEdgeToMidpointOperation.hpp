@@ -2,6 +2,7 @@
 #include <optional>
 #include <wmtk/TriMesh.hpp>
 #include "TupleOperation.hpp"
+#include "TriMeshCollapseEdgeOperation.hpp"
 
 namespace wmtk {
 class TriMeshCollapseEdgeToMidpointOperation;
