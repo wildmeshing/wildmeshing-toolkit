@@ -195,8 +195,8 @@ TEST_CASE("split_long_edges", "[components][isotropic_remeshing][split][2D]")
     DEBUG_TriMesh mesh = wmtk::tests::edge_region_with_position();
 
     OperationSettings<TriMeshSplitEdgeAtMidpointOperation> op_settings;
-    op_settings.initialize_invariants(mesh);
     op_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+    op_settings.initialize_invariants(mesh);
 
     {
         auto pos = mesh.create_accessor(op_settings.position);
@@ -213,6 +213,7 @@ TEST_CASE("split_long_edges", "[components][isotropic_remeshing][split][2D]")
     {
         //
         op_settings.min_squared_length = 6.4;
+        op_settings.initialize_invariants(mesh);
 
         Scheduler scheduler(mesh);
         scheduler.add_operation_type<TriMeshSplitEdgeAtMidpointOperation>(
@@ -244,6 +245,7 @@ TEST_CASE("split_long_edges", "[components][isotropic_remeshing][split][2D]")
     {
         //
         op_settings.min_squared_length = 3.5;
+        op_settings.initialize_invariants(mesh);
 
         Scheduler scheduler(mesh);
         scheduler.add_operation_type<TriMeshSplitEdgeAtMidpointOperation>(

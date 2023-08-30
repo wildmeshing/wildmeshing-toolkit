@@ -3,10 +3,17 @@
 #include <wmtk/Mesh.hpp>
 
 namespace wmtk {
-    MinEdgeLengthInvariant::MinEdgeLengthInvariant(const Mesh& m, const MeshAttributeHandle<double>& coordinate, double threshold_squared): MeshInvariant(m), m_coordinate_handle(coordinate), m_threshold_squared(threshold_squared) {}
+MinEdgeLengthInvariant::MinEdgeLengthInvariant(
+    const Mesh& m,
+    const MeshAttributeHandle<double>& coordinate,
+    double threshold_squared)
+    : MeshInvariant(m)
+    , m_coordinate_handle(coordinate)
+    , m_threshold_squared(threshold_squared)
+{}
 bool MinEdgeLengthInvariant::before(const Tuple& t) const
 {
-   ConstAccessor<double> accessor = mesh().create_accessor(m_coordinate_handle);
+    ConstAccessor<double> accessor = mesh().create_accessor(m_coordinate_handle);
 
     auto p0 = accessor.vector_attribute(t);
     auto p1 = accessor.vector_attribute(mesh().switch_vertex(t));
