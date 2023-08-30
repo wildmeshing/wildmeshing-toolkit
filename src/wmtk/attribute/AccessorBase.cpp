@@ -1,9 +1,9 @@
 #include "AccessorBase.hpp"
 #include <iostream>
 #include <wmtk/utils/Rational.hpp>
-#include "wmtk/Mesh.hpp"
-#include "MeshAttributes.hpp"
 #include "AttributeManager.hpp"
+#include "MeshAttributes.hpp"
+#include "wmtk/Mesh.hpp"
 
 namespace wmtk {
 template <typename T>
@@ -68,6 +68,7 @@ PrimitiveType AccessorBase<T>::primitive_type() const
 template <typename T>
 long AccessorBase<T>::index(const Mesh& mesh, const Tuple& t) const
 {
+    assert(mesh.is_valid_slow(t));
     return mesh.id(t, m_handle.m_primitive_type);
 }
 

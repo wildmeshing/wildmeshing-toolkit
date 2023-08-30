@@ -113,13 +113,11 @@ auto Accessor<T, IsConst>::cacheable_scalar_attribute(const long index) -> TT
 template <typename T, bool IsConst>
 auto Accessor<T, IsConst>::vector_attribute(const Tuple& t) const -> ConstMapResult
 {
-    // assert(m_mesh.is_valid(t)); <-- done in const function
     return const_vector_attribute(t);
 }
 template <typename T, bool IsConst>
 T Accessor<T, IsConst>::scalar_attribute(const Tuple& t) const
 {
-    // assert(m_mesh.is_valid(t)); <-- done in const function
     return const_scalar_attribute(t);
 }
 //===================================================
@@ -130,14 +128,12 @@ T Accessor<T, IsConst>::scalar_attribute(const Tuple& t) const
 template <typename T, bool IsConst>
 auto Accessor<T, IsConst>::const_vector_attribute(const Tuple& t) const -> ConstMapResult
 {
-    assert(m_mesh.is_valid_slow(t));
     const long idx = index(t);
     return cacheable_const_vector_attribute(idx);
 }
 template <typename T, bool IsConst>
 auto Accessor<T, IsConst>::vector_attribute(const Tuple& t) -> MapResultT
 {
-    assert(m_mesh.is_valid_slow(t));
     const long idx = index(t);
     return cacheable_vector_attribute(idx);
 }
@@ -164,7 +160,6 @@ auto Accessor<T, IsConst>::vector_attribute(const long index) -> MapResultT
 template <typename T, bool IsConst>
 T Accessor<T, IsConst>::const_scalar_attribute(const Tuple& t) const
 {
-    assert(m_mesh.is_valid_slow(t));
     const long idx = index(t);
     return cacheable_const_scalar_attribute(idx);
 }
@@ -172,7 +167,6 @@ T Accessor<T, IsConst>::const_scalar_attribute(const Tuple& t) const
 template <typename T, bool IsConst>
 auto Accessor<T, IsConst>::scalar_attribute(const Tuple& t) -> TT
 {
-    assert(m_mesh.is_valid_slow(t));
     const long idx = index(t);
     return cacheable_scalar_attribute(idx);
 }
