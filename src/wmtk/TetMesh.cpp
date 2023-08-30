@@ -319,10 +319,7 @@ bool TetMesh::is_valid(const Tuple& tuple, ConstAccessor<long>& hash_accessor) c
         return false;
     }
 
-    const long cid = tuple.m_global_cid;
-    const bool is_hash_valid = get_cell_hash(cid, hash_accessor) == tuple.m_hash;
-
-    return is_hash_valid;
+    return Mesh::is_hash_valid(tuple, hash_accessor);
 }
 
 bool TetMesh::is_boundary(const Tuple& tuple) const

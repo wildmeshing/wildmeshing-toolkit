@@ -101,7 +101,7 @@ public:
     ConstAccessor<long> get_const_cell_hash_accessor() const;
 
 
-    long get_cell_hash(long cell_index, ConstAccessor<long>& hash_accessor) const;
+    long get_cell_hash(long cell_index, const ConstAccessor<long>& hash_accessor) const;
     // utility function for getting a cell's hash - slow because it creates a new accessor
     long get_cell_hash_slow(long cell_index) const;
 
@@ -237,6 +237,8 @@ public:
     virtual bool is_boundary(const Tuple& tuple) const = 0;
 
     virtual bool is_boundary_vertex(const Tuple& vertex) const = 0;
+
+    bool is_hash_valid(const Tuple& tuple, const ConstAccessor<long>& hash_accessor) const;
 
     /**
      * @brief check validity of tuple including its hash

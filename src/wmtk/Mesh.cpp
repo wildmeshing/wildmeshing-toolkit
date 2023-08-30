@@ -94,6 +94,12 @@ long Mesh::capacity(PrimitiveType type) const
     return m_attribute_manager.m_capacities.at(get_simplex_dimension(type));
 }
 
+bool Mesh::is_hash_valid(const Tuple& tuple, const ConstAccessor<long>& hash_accessor) const
+{
+    const long cid = tuple.m_global_cid;
+    return tuple.m_hash == get_cell_hash(cid, hash_accessor);
+}
+
 bool Mesh::is_valid_slow(const Tuple& tuple) const
 {
     ConstAccessor<long> hash_accessor = get_const_cell_hash_accessor();
@@ -194,7 +200,7 @@ Tuple Mesh::resurrect_tuple_slow(const Tuple& tuple)
     return resurrect_tuple(tuple, hash_accessor);
 }
 
-long Mesh::get_cell_hash(long cell_index, ConstAccessor<long>& hash_accessor) const
+long Mesh::get_cell_hash(long cell_index, const ConstAccessor<long>& hash_accessor) const
 {
     return hash_accessor.scalar_attribute(cell_index);
 }
