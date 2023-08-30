@@ -174,7 +174,14 @@ void Mesh::update_cell_hashes_slow(const std::vector<Tuple>& cells)
     update_cell_hashes(cells, hash_accessor);
 }
 
-Tuple Mesh::resurrect_tuple(const Tuple& tuple, Accessor<long>& hash_accessor) const
+Tuple Mesh::resurrect_tuple(const Tuple& tuple, const Accessor<long>& hash_accessor) const
+{
+    Tuple t = tuple;
+    t.m_hash = hash_accessor.scalar_attribute(tuple.m_global_cid);
+    return t;
+}
+
+Tuple Mesh::resurrect_tuple(const Tuple& tuple, const ConstAccessor<long>& hash_accessor) const
 {
     Tuple t = tuple;
     t.m_hash = hash_accessor.scalar_attribute(tuple.m_global_cid);

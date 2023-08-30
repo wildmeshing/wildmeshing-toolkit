@@ -135,13 +135,29 @@ protected: // member functions
     void update_cell_hashes_slow(const std::vector<Tuple>& cells);
 
     /**
-     * @brief return the same tuple but with updated hash
+     * @brief DEPRECATED return the same tuple but with updated hash
+     *
+     * This function should only be used in operations to create a valid return tuple in a known
+     * position.
      *
      * @param tuple tuple with potentially outdated hash
      * @param hash_accessor hash accessor
      * @return tuple with updated hash
      */
-    Tuple resurrect_tuple(const Tuple& tuple, Accessor<long>& hash_accessor) const;
+    Tuple resurrect_tuple(const Tuple& tuple, const Accessor<long>& hash_accessor) const;
+
+    /**
+     * @brief return the same tuple but with updated hash
+     *
+     * This function should only be used in operations to create a valid return tuple in a known
+     * position.
+     *
+     * @param tuple tuple with potentially outdated hash
+     * @param hash_accessor hash accessor
+     * @return tuple with updated hash
+     */
+    Tuple resurrect_tuple(const Tuple& tuple, const ConstAccessor<long>& hash_accessor) const;
+
     /**
      * @brief same as `resurrect_tuple` but slow because it creates a new accessor
      */
@@ -187,16 +203,10 @@ public:
     */
     virtual Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const = 0;
 
-    Tuple switch_vertex(const Tuple& tuple) const
-    {
-        return switch_tuple(tuple, PrimitiveType::Vertex);
-    }
-    Tuple switch_edge(const Tuple& tuple) const { return switch_tuple(tuple, PrimitiveType::Edge); }
-    Tuple switch_face(const Tuple& tuple) const { return switch_tuple(tuple, PrimitiveType::Face); }
-    Tuple switch_tetrahedron(const Tuple& tuple) const
-    {
-        return switch_tuple(tuple, PrimitiveType::Tetrahedron);
-    }
+    Tuple switch_vertex(const Tuple& tuple) const;
+    Tuple switch_edge(const Tuple& tuple) const;
+    Tuple switch_face(const Tuple& tuple) const;
+    Tuple switch_tetrahedron(const Tuple& tuple) const;
 
 
     void set_capacities_from_flags();
@@ -317,6 +327,23 @@ MeshAttributeHandle<T> Mesh::get_attribute_handle(
     r.m_base_handle = m_attribute_manager.get<T>(ptype).attribute_handle(name);
     r.m_primitive_type = ptype;
     return r;
+}
+
+inline Tuple Mesh::switch_vertex(const Tuple& tuple) const
+{
+    return switch_tuple(tuple, PrimitiveType::Vertex);
+}
+inline Tuple Mesh::switch_edge(const Tuple& tuple) const
+{
+    return switch_tuple(tuple, PrimitiveType::Edge);
+}
+inline Tuple Mesh::switch_face(const Tuple& tuple) const
+{
+    return switch_tuple(tuple, PrimitiveType::Face);
+}
+inline Tuple Mesh::switch_tetrahedron(const Tuple& tuple) const
+{
+    return switch_tuple(tuple, PrimitiveType::Tetrahedron);
 }
 
 } // namespace wmtk
