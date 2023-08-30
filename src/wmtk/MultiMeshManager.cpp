@@ -1,5 +1,6 @@
 #include "MultiMeshManager.hpp"
 #include "Mesh.hpp"
+#include "Types.hpp"
 namespace wmtk
 {
     MultiMeshManager::MultiMeshManager()
@@ -46,12 +47,13 @@ namespace wmtk
         long cur_child_id = long(parent_mesh.multi_mesh_manager.child_meshes.size());
 
         auto map_to_parent_handle = child_mesh->register_attribute<long>("map_to_parent", map_ptype, 10);
+        
         auto map_to_child_handle = parent_mesh.register_attribute<long>(fmt::format("map_to_child_{}", cur_child_id), map_ptype, 10);
         for (long id = 0; id < parent_mesh.capacity(map_ptype); ++id)
         {
-            write_tuple_map_attribute(map_to_child_handle, parent_mesh, Tuple(), Tuple());
+            auto map = parent_mesh.create_accessor(map_to_child_handle).vector_attribute(parent_mesh.tuple_from_id(map_ptype, id));
+            map = VectorXl::Constant(10, -1);
         }
-
         // register maps
         for (long id = 0; id < child_mesh->capacity(map_ptype); ++id)
         {
@@ -70,6 +72,19 @@ namespace wmtk
         parent_mesh.multi_mesh_manager.map_to_child_handles.push_back(map_to_child_handle);
         parent_mesh.multi_mesh_manager.m_is_parent_mesh = true;
        
+    }
+
+    void MultiMeshManager::register_child_mesh(Mesh& parent_mesh, std::shared_ptr<Mesh> child_mesh, const std::vector<long>& child_mesh_simplex_id_map)
+    {
+        PrimitiveType map_type = child_mesh->top_simplex_type();        
+        std::vector<std::array<Tuple,2>> child_mesh_simplex_map;
+        
+        for (long child_cell_id = 0; child_cell_id < long(child_mesh_simplex_id_map.size()); ++child_cell_id)
+        {
+            long parent_cell_id = child_mesh_simplex_id_map[child_cell_id];
+            child_mesh_simplex_map.push_back({child_mesh->tuple_from_id(map_type, child_cell_id), parent_mesh.tuple_from_id(map_type, parent_cell_id)});
+        }
+        register_child_mesh(parent_mesh, child_mesh, child_mesh_simplex_map);
     }
 
     Tuple MultiMeshManager::map_tuple_between_meshes(const Mesh& source_mesh, const Mesh& target_mesh, MeshAttributeHandle<long> source_map_handle, const Tuple& source_tuple)

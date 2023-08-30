@@ -45,7 +45,8 @@ class MultiMeshManager
     
     // register child_meshes and the map from child_meshes to this mesh, child_mesh_simplex 
     static void register_child_mesh(Mesh&parent_mesh, std::shared_ptr<Mesh> child_mesh, const std::vector<std::array<Tuple,2>>&child_mesh_simplex_map);
-
+    static void register_child_mesh(Mesh&parent_mesh, std::shared_ptr<Mesh> child_mesh, const std::vector<long>& child_mesh_simplex_id_map);
+    
     // helper function to check if this mesh is a valid child_mesh of parent_mesh
     // i.e. the connectivity of this mesh is a subset of this in parent_mesh
     static bool is_child_mesh_valid(const Mesh& parent_mesh, const Mesh& child_mesh);
