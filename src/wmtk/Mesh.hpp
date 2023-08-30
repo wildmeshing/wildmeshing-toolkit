@@ -115,6 +115,14 @@ protected: // member functions
     Accessor<long> get_cell_hash_accessor();
 
     /**
+     * @brief update hash in given cell
+     *
+     * @param cell tuple in which the hash should be updated
+     * @param hash_accessor hash accessor
+     */
+    void update_cell_hash(const Tuple& cell, Accessor<long>& hash_accessor);
+
+    /**
      * @brief update hashes in given cells
      *
      * @param cells vector of tuples in which the hash should be updated

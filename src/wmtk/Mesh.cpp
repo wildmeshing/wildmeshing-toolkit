@@ -155,11 +155,16 @@ Accessor<long> Mesh::get_cell_hash_accessor()
     return create_accessor(m_cell_hash_handle);
 }
 
+void Mesh::update_cell_hash(const Tuple& cell, Accessor<long>& hash_accessor)
+{
+    const long cid = cell.m_global_cid;
+    ++hash_accessor.scalar_attribute(cid);
+}
+
 void Mesh::update_cell_hashes(const std::vector<Tuple>& cells, Accessor<long>& hash_accessor)
 {
     for (const Tuple& t : cells) {
-        const long cid = t.m_global_cid;
-        ++hash_accessor.scalar_attribute(cid);
+        update_cell_hash(t, hash_accessor);
     }
 }
 
