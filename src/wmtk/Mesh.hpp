@@ -67,8 +67,8 @@ public:
     // operated on, and return a single tuple that refers to the new topology.
     // This returned tuple has specific meaning for each derived Mesh class
 
-    virtual Tuple split_edge(const Tuple& t) = 0;
-    virtual Tuple collapse_edge(const Tuple& t) = 0;
+    virtual Tuple split_edge(const Tuple& t, Accessor<long>& hash_accessor) = 0;
+    virtual Tuple collapse_edge(const Tuple& t, Accessor<long>& hash_accessor) = 0;
 
     template <typename T>
     MeshAttributeHandle<T> register_attribute(
@@ -101,8 +101,10 @@ public:
     ConstAccessor<long> get_const_cell_hash_accessor() const;
 
 
+    long get_cell_hash(long cell_index, const ConstAccessor<long>& hash_accessor) const;
     // utility function for getting a cell's hash - slow because it creates a new accessor
     long get_cell_hash_slow(long cell_index) const;
+
 
     bool operator==(const Mesh& other) const;
 
@@ -111,6 +113,55 @@ public:
 protected: // member functions
     Accessor<char> get_flag_accessor(PrimitiveType type);
     Accessor<long> get_cell_hash_accessor();
+
+    /**
+     * @brief update hash in given cell
+     *
+     * @param cell tuple in which the hash should be updated
+     * @param hash_accessor hash accessor
+     */
+    void update_cell_hash(const Tuple& cell, Accessor<long>& hash_accessor);
+
+    /**
+     * @brief update hashes in given cells
+     *
+     * @param cells vector of tuples in which the hash should be updated
+     * @param hash_accessor hash accessor
+     */
+    void update_cell_hashes(const std::vector<Tuple>& cells, Accessor<long>& hash_accessor);
+    /**
+     * @brief same as `update_cell_hashes` but slow because it creates a new accessor
+     */
+    void update_cell_hashes_slow(const std::vector<Tuple>& cells);
+
+    /**
+     * @brief DEPRECATED return the same tuple but with updated hash
+     *
+     * This function should only be used in operations to create a valid return tuple in a known
+     * position.
+     *
+     * @param tuple tuple with potentially outdated hash
+     * @param hash_accessor hash accessor
+     * @return tuple with updated hash
+     */
+    Tuple resurrect_tuple(const Tuple& tuple, const Accessor<long>& hash_accessor) const;
+
+    /**
+     * @brief return the same tuple but with updated hash
+     *
+     * This function should only be used in operations to create a valid return tuple in a known
+     * position.
+     *
+     * @param tuple tuple with potentially outdated hash
+     * @param hash_accessor hash accessor
+     * @return tuple with updated hash
+     */
+    Tuple resurrect_tuple(const Tuple& tuple, const ConstAccessor<long>& hash_accessor) const;
+
+    /**
+     * @brief same as `resurrect_tuple` but slow because it creates a new accessor
+     */
+    Tuple resurrect_tuple_slow(const Tuple& tuple);
 
     // provides new simplices - should ONLY be called in our atomic topological operations
     // all returned simplices are active (i.e their flags say they exist)
@@ -152,12 +203,10 @@ public:
     */
     virtual Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const = 0;
 
-    Tuple switch_vertex(const Tuple& tuple) const
-    {
-        return switch_tuple(tuple, PrimitiveType::Vertex);
-    }
-    Tuple switch_edge(const Tuple& tuple) const { return switch_tuple(tuple, PrimitiveType::Edge); }
-    Tuple switch_face(const Tuple& tuple) const { return switch_tuple(tuple, PrimitiveType::Face); }
+    Tuple switch_vertex(const Tuple& tuple) const;
+    Tuple switch_edge(const Tuple& tuple) const;
+    Tuple switch_face(const Tuple& tuple) const;
+    Tuple switch_tetrahedron(const Tuple& tuple) const;
 
 
     void set_capacities_from_flags();
@@ -189,8 +238,10 @@ public:
 
     virtual bool is_boundary_vertex(const Tuple& vertex) const = 0;
 
+    bool is_hash_valid(const Tuple& tuple, const ConstAccessor<long>& hash_accessor) const;
+
     /**
-     * @brief
+     * @brief check validity of tuple including its hash
      *
      * @param tuple the tuple to be checked
      * @param type only the top cell dimension, other validity follows with assumption of
@@ -198,15 +249,8 @@ public:
      * @return true if is valid
      * @return false
      */
-    virtual bool is_valid(const Tuple& tuple) const = 0;
-    /**
-     * @brief check if tuple was involved in a topological operation and is therefore invalid
-     *
-     * @param tuple the tuple to be checked
-     * @return true if tuple is outdated
-     * @return false otherwise
-     */
-    virtual bool is_outdated(const Tuple& tuple) const = 0;
+    virtual bool is_valid(const Tuple& tuple, ConstAccessor<long>& hash_accessor) const = 0;
+    bool is_valid_slow(const Tuple& tuple) const;
 
 
     bool simplex_is_equal(const Simplex& s0, const Simplex& s1) const;
@@ -285,6 +329,23 @@ MeshAttributeHandle<T> Mesh::get_attribute_handle(
     r.m_base_handle = m_attribute_manager.get<T>(ptype).attribute_handle(name);
     r.m_primitive_type = ptype;
     return r;
+}
+
+inline Tuple Mesh::switch_vertex(const Tuple& tuple) const
+{
+    return switch_tuple(tuple, PrimitiveType::Vertex);
+}
+inline Tuple Mesh::switch_edge(const Tuple& tuple) const
+{
+    return switch_tuple(tuple, PrimitiveType::Edge);
+}
+inline Tuple Mesh::switch_face(const Tuple& tuple) const
+{
+    return switch_tuple(tuple, PrimitiveType::Face);
+}
+inline Tuple Mesh::switch_tetrahedron(const Tuple& tuple) const
+{
+    return switch_tuple(tuple, PrimitiveType::Tetrahedron);
 }
 
 } // namespace wmtk

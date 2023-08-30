@@ -13,8 +13,8 @@ EdgeSplit::EdgeSplit(Mesh& m, const Tuple& t, const OperationSettings<EdgeSplit>
 bool EdgeSplit::execute()
 {
     // move vertex to center of old vertices
-    TriMesh& m = dynamic_cast<TriMesh&>(m_mesh);
-    m_output_tuple = m.split_edge(m_input_tuple);
+    const Tuple t = mesh().split_edge(m_input_tuple, m_hash_accessor);
+    m_output_tuple = resurrect_tuple(t);
 
     //    for(const acc: tri_accessors) {
     //    ConstACcessor old_tri_acc(acc, checkpoint);
@@ -33,11 +33,11 @@ bool EdgeSplit::execute()
 }
 bool EdgeSplit::before() const
 {
-    if (m_mesh.is_outdated(m_input_tuple) || !m_mesh.is_valid(m_input_tuple)) {
+    if (!mesh().is_valid_slow(m_input_tuple)) {
         return false;
     }
 
-    if (!m_settings.split_boundary_edges && m_mesh.is_boundary(m_input_tuple)) {
+    if (!m_settings.split_boundary_edges && mesh().is_boundary(m_input_tuple)) {
         return false;
     }
 

@@ -10,6 +10,9 @@ class PointMesh;
 class EdgeMesh;
 class TriMesh;
 class TetMesh;
+namespace operations {
+class Operation;
+}
 
 class Tuple
 {
@@ -28,6 +31,7 @@ public:
     friend class EdgeMesh;
     friend class TriMesh;
     friend class TetMesh;
+    friend class operations::Operation;
     // friend long Mesh::id(const Tuple& tuple, const PrimitiveType& type) const;
     // friend Mesh::is_ccw(const Tuple& tuple) const;
     // friend Mesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const;

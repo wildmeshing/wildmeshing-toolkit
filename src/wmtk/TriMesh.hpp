@@ -22,7 +22,7 @@ public:
      * The returned tuple contains the new vertex. The face lies in the region where the input tuple
      * face was, and the edge is oriented in the same direction as in the input.
      */
-    Tuple split_edge(const Tuple& t) override;
+    Tuple split_edge(const Tuple& t, Accessor<long>& hash_accessor) override;
     /**
      * @brief collapse edge t
      *
@@ -31,7 +31,7 @@ public:
      * collapsed. The face is chosen such that the orientation of the tuple is the same as in the
      * input. If this is not possible due to a boundary, the opposite face is chosen.
      */
-    Tuple collapse_edge(const Tuple& t) override;
+    Tuple collapse_edge(const Tuple& t, Accessor<long>& hash_accessor) override;
 
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
 
@@ -62,9 +62,7 @@ public:
         return _debug_id(simplex.tuple(), simplex.primitive_type());
     }
 
-    bool is_valid(const Tuple& tuple) const override;
-
-    bool is_outdated(const Tuple& tuple) const override;
+    bool is_valid(const Tuple& tuple, ConstAccessor<long>& hash_accessor) const override;
 
     bool is_connectivity_valid() const override;
 

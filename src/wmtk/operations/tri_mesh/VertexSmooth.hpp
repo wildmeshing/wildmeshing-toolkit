@@ -25,12 +25,15 @@ public:
 
     static PrimitiveType primitive_type() { return PrimitiveType::Vertex; }
 
+    const Tuple& return_tuple() const;
+
 protected:
     bool before() const override;
     bool execute() override;
 
 private:
-    Tuple m_tuple;
+    Tuple m_input_tuple;
+    Tuple m_output_tuple;
     Accessor<double> m_pos_accessor;
     const OperationSettings<VertexSmooth>& m_settings;
 };
