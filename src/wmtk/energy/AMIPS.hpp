@@ -6,6 +6,8 @@ namespace energy {
 class AMIPS_2D : public DifferentiableEnergy
 {
 public:
+    AMIPS_2D(const TriMesh& mesh);
+
     double energy_eval(const Tuple& tuple) const override;
     DScalar energy_eval_autodiff(const Tuple& tuple) const override;
 

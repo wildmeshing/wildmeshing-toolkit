@@ -1,6 +1,11 @@
 #include "AMIPS.hpp"
 using namespace wmtk;
 using namespace wmtk::energy;
+
+AMIPS_2D::AMIPS_2D(const TriMesh& mesh)
+    : DifferentiableEnergy(mesh)
+{}
+
 double AMIPS_2D::energy_eval(const Tuple& tuple) const
 {
     // get the uv coordinates of the triangle
