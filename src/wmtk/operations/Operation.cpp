@@ -54,7 +54,7 @@ void Operation::update_cell_hashes(const std::vector<Tuple>& cells)
     m_mesh.update_cell_hashes(cells, m_hash_accessor);
 }
 
-Tuple Operation::resurrect_tuple(const Tuple& tuple)
+Tuple Operation::resurrect_tuple(const Tuple& tuple) const
 {
     return m_mesh.resurrect_tuple(tuple, m_hash_accessor);
 }
