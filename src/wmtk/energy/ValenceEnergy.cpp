@@ -1,9 +1,11 @@
 #include "ValenceEnergy.hpp"
 #include <wmtk/SimplicialComplex.hpp>
 
-using namespace wmtk;
-using namespace wmtk::energy;
-
+namespace wmtk {
+namespace energy {
+ValenceEnergy::ValenceEnergy(const TriMesh& mesh)
+    : Energy(mesh)
+{}
 
 double ValenceEnergy::energy_eval(const Tuple& tuple) const
 {
@@ -48,3 +50,5 @@ double ValenceEnergy::energy_eval(const Tuple& tuple) const
 
     return static_cast<double>(val_before - val_after);
 }
+} // namespace energy
+} // namespace wmtk
