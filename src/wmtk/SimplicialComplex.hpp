@@ -151,11 +151,18 @@ public:
     //////////////////////////////////
 
     /**
-     * @brief get one ring neighbors of vertex in _t_
+     * @brief get one ring vertex neighbors of vertex in _t_
      *
      * The vertex one ring does not include the vertex of the tuple itself.
      */
     static std::vector<Simplex> vertex_one_ring(const Mesh& m, Tuple t);
+
+    /**
+     * @brief get one ring vertex neighbors of vertex in _t_
+     *
+     * The vertex one ring does not include the vertex of the tuple itself.
+     */
+    static std::vector<Simplex> vertex_one_ring(const TriMesh& m, Tuple t);
 
     static std::vector<Simplex> k_ring(const Mesh& m, Tuple t, int k);
 };

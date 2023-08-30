@@ -38,7 +38,7 @@ TEST_CASE("2D_initialize", "[mesh_creation],[tuple_2d]")
     REQUIRE(m.is_connectivity_valid());
 
     const Tuple t = m.get_all(PrimitiveType::Face)[0];
-    REQUIRE(m.is_valid(t));
+    REQUIRE(m.is_valid_slow(t));
 }
 
 TEST_CASE("2D_1_triangle", "[tuple_generation],[tuple_2d]")
@@ -134,7 +134,7 @@ TEST_CASE("2D_random_switches", "[tuple_operation],[tuple_2d]")
                     break;
                 default: break;
                 }
-                CHECK(m.is_valid(t));
+                CHECK(m.is_valid_slow(t));
             }
         }
     }
@@ -155,7 +155,7 @@ TEST_CASE("2D_random_switches", "[tuple_operation],[tuple_2d]")
                     break;
                 default: break;
                 }
-                CHECK(m.is_valid(t));
+                CHECK(m.is_valid_slow(t));
             }
         }
     }
@@ -176,7 +176,7 @@ TEST_CASE("2D_random_switches", "[tuple_operation],[tuple_2d]")
                     break;
                 default: break;
                 }
-                CHECK(m.is_valid(t));
+                CHECK(m.is_valid_slow(t));
             }
         }
     }

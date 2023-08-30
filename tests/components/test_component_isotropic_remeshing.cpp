@@ -77,7 +77,7 @@ TEST_CASE("smoothing_simple_examples", "[components][isotropic_remeshing][2D]")
 
         // offset interior vertex
         auto pos = mesh.create_accessor(op_settings.position);
-        const Tuple v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
+        Tuple v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
         pos.vector_attribute(v4) = Eigen::Vector3d{0.6, 0.9, 0};
 
         Scheduler scheduler(mesh);
@@ -85,6 +85,7 @@ TEST_CASE("smoothing_simple_examples", "[components][isotropic_remeshing][2D]")
 
         scheduler.run_operation_on_all(PrimitiveType::Vertex, "vertex_smooth");
 
+        v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
         Eigen::Vector3d after_smooth = pos.vector_attribute(v4);
         CHECK((after_smooth - Eigen::Vector3d{1, 0, 0}).squaredNorm() == 0);
     }
@@ -98,8 +99,8 @@ TEST_CASE("smoothing_simple_examples", "[components][isotropic_remeshing][2D]")
 
         // offset interior vertex
         auto pos = mesh.create_accessor(op_settings.position);
-        const Tuple v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
-        const Tuple v5 = mesh.tuple_from_id(PrimitiveType::Vertex, 5);
+        Tuple v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
+        Tuple v5 = mesh.tuple_from_id(PrimitiveType::Vertex, 5);
         pos.vector_attribute(v4) = Eigen::Vector3d{0.6, 0.9, 0};
         pos.vector_attribute(v5) = Eigen::Vector3d{1.4, -0.9, 0};
 
@@ -108,12 +109,14 @@ TEST_CASE("smoothing_simple_examples", "[components][isotropic_remeshing][2D]")
 
         for (size_t i = 0; i < 10; ++i) {
             scheduler.run_operation_on_all(PrimitiveType::Vertex, "vertex_smooth");
+            v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
             Eigen::Vector3d p4_after_smooth = pos.vector_attribute(v4);
         }
 
         Eigen::Vector3d p4_after_smooth = pos.vector_attribute(v4);
         CHECK((p4_after_smooth - Eigen::Vector3d{1, 0, 0}).squaredNorm() < 1e-10);
 
+        v5 = mesh.tuple_from_id(PrimitiveType::Vertex, 5);
         Eigen::Vector3d p5_after_smooth = pos.vector_attribute(v5);
         CHECK((p5_after_smooth - Eigen::Vector3d{2, 0, 0}).squaredNorm() < 1e-10);
     }
@@ -131,7 +134,7 @@ TEST_CASE("tangential_smoothing", "[components][isotropic_remeshing][2D]")
 
     // offset interior vertex
     auto pos = mesh.create_accessor(op_settings.position);
-    const Tuple v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
+    Tuple v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
 
     Eigen::Vector3d p_init;
     SECTION("1_0_1")
@@ -154,6 +157,7 @@ TEST_CASE("tangential_smoothing", "[components][isotropic_remeshing][2D]")
 
     scheduler.run_operation_on_all(PrimitiveType::Vertex, "vertex_tangential_smooth");
 
+    v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
     Eigen::Vector3d after_smooth = pos.vector_attribute(v4);
     CHECK((after_smooth - Eigen::Vector3d{1, 0, p_init[2]}).squaredNorm() == 0);
 }
@@ -171,7 +175,7 @@ TEST_CASE("tangential_smoothing_boundary", "[components][isotropic_remeshing][2D
 
     // offset interior vertex
     auto pos = mesh.create_accessor(op_settings.position);
-    const Tuple v1 = mesh.tuple_from_id(PrimitiveType::Vertex, 1);
+    Tuple v1 = mesh.tuple_from_id(PrimitiveType::Vertex, 1);
 
     Eigen::Vector3d p_init;
     SECTION("1.7_1.1_0")
@@ -193,6 +197,7 @@ TEST_CASE("tangential_smoothing_boundary", "[components][isotropic_remeshing][2D
     const bool success = op();
     REQUIRE(success);
 
+    v1 = mesh.tuple_from_id(PrimitiveType::Vertex, 1);
     Eigen::Vector3d after_smooth = pos.vector_attribute(v1);
     CHECK((after_smooth - Eigen::Vector3d{1.5, p_init[1], p_init[2]}).squaredNorm() == 0);
 }
@@ -334,7 +339,7 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
 
         CHECK_THROWS(mesh.tuple_from_id(PrimitiveType::Vertex, 4));
         const Tuple v5 = mesh.tuple_from_id(PrimitiveType::Vertex, 5);
-        REQUIRE(mesh.is_valid(v5));
+        REQUIRE(mesh.is_valid_slow(v5));
 
         auto pos = mesh.create_accessor(op_settings.position);
         Eigen::Vector3d p5 = pos.vector_attribute(v5);
@@ -375,7 +380,7 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
 
         CHECK_THROWS(mesh.tuple_from_id(PrimitiveType::Vertex, 4));
         const Tuple v0 = mesh.tuple_from_id(PrimitiveType::Vertex, 0);
-        REQUIRE(mesh.is_valid(v0));
+        REQUIRE(mesh.is_valid_slow(v0));
 
         auto pos = mesh.create_accessor(op_settings.position);
         Eigen::Vector3d p0 = pos.vector_attribute(v0);
@@ -416,7 +421,7 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
 
         CHECK_THROWS(mesh.tuple_from_id(PrimitiveType::Vertex, 4));
         const Tuple v0 = mesh.tuple_from_id(PrimitiveType::Vertex, 0);
-        REQUIRE(mesh.is_valid(v0));
+        REQUIRE(mesh.is_valid_slow(v0));
 
         auto pos = mesh.create_accessor(op_settings.position);
         Eigen::Vector3d p0 = pos.vector_attribute(v0);
@@ -445,7 +450,7 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
 
         CHECK_THROWS(mesh.tuple_from_id(PrimitiveType::Vertex, 1));
         const Tuple v0 = mesh.tuple_from_id(PrimitiveType::Vertex, 0);
-        REQUIRE(mesh.is_valid(v0));
+        REQUIRE(mesh.is_valid_slow(v0));
 
         auto pos = mesh.create_accessor(op_settings.position);
         Eigen::Vector3d p0 = pos.vector_attribute(v0);
