@@ -1,3 +1,4 @@
+#pragma once
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/Primitive.hpp>
 #include <wmtk/TriMesh.hpp>
@@ -23,7 +24,6 @@ TEST_CASE("energy_valence")
 
 
     const TriMesh tri_mesh = static_cast<const TriMesh&>(example_mesh);
-    const auto edges = tri_mesh.get_all(PrimitiveType::Edge);
 
     TriMeshValenceEnergy valence_energy(tri_mesh);
 
@@ -35,15 +35,16 @@ TEST_CASE("energy_valence")
 }
 
 TEST_CASE("amips2d")
-
 {
     SECTION("equilateral triangle")
     {
-        TriMesh m;
-        RowVectors3l tris;
-        tris.resize(1, 3);
-        tris.row(0) << 0, 1, 2;
-        m.initialize(tris);
-        // AMIPS_2D amips2d(m);
+        const DEBUG_TriMesh example_mesh = single_equilateral_triangle();
+        auto e1 = example_mesh.edge_tuple_between_v1_v2(0, 1, 0);
+        const TriMesh tri_mesh = static_cast<const TriMesh&>(example_mesh);
+
+        AMIPS_2D amips2d(tri_mesh);
+
+        // auto e1 = example_mesh.edge_tuple_between_v1_v2(0, 1, 0);
+        // REQUIRE(amips2d.energy_eval(e1) == 2.0);
     }
 }
