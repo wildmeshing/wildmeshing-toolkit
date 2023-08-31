@@ -5,8 +5,8 @@ set(SRC_FILES
     DifferentiableEnergy.hpp
     AMIPS.hpp
     AMIPS.cpp
-    ValenceEnergy.hpp
-    ValenceEnergy.cpp
+    TriMeshValenceEnergy.hpp
+    TriMeshValenceEnergy.cpp
     AreaAccuracy.hpp
     AreaAccuracy.cpp
 )

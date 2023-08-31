@@ -3,10 +3,10 @@
 namespace wmtk {
 namespace energy {
 
-class ValenceEnergy : public Energy
+class TriMeshValenceEnergy : public Energy
 {
 public:
-    ValenceEnergy(const TriMesh& mesh);
+    TriMeshValenceEnergy(const TriMesh& mesh);
     double energy_eval(const Tuple& tuple) const override;
 
 protected:

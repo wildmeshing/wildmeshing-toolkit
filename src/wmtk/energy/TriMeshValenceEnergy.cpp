@@ -1,13 +1,13 @@
-#include "ValenceEnergy.hpp"
 #include <wmtk/SimplicialComplex.hpp>
+#include "TriMeshValenceEnergy.hpp"
 
 namespace wmtk {
 namespace energy {
-ValenceEnergy::ValenceEnergy(const TriMesh& mesh)
+TriMeshValenceEnergy::TriMeshValenceEnergy(const TriMesh& mesh)
     : Energy(mesh)
 {}
 
-double ValenceEnergy::energy_eval(const Tuple& tuple) const
+double TriMeshValenceEnergy::energy_eval(const Tuple& tuple) const
 {
     // assume tuple is not a boundary edge
     const Tuple current_v = tuple;
@@ -43,12 +43,12 @@ double ValenceEnergy::energy_eval(const Tuple& tuple) const
     }
 
     // formula from: https://github.com/daniel-zint/hpmeshgen/blob/cdfb9163ed92523fcf41a127c8173097e935c0a3/src/HPMeshGen2/TriRemeshing.cpp#L315
-    const long val_before = std::max(std::abs(val0 - 6), std::abs(val1 - 6)) +
+    const long val_energy = std::max(std::abs(val0 - 6), std::abs(val1 - 6)) +
                             std::max(std::abs(val2 - 6), std::abs(val3 - 6));
-    const long val_after = std::max(std::abs(val0 - 7), std::abs(val1 - 7)) +
-                           std::max(std::abs(val2 - 5), std::abs(val3 - 5));
+    // const long val_after = std::max(std::abs(val0 - 7), std::abs(val1 - 7)) +
+    //                        std::max(std::abs(val2 - 5), std::abs(val3 - 5));
 
-    return static_cast<double>(val_before - val_after);
+    return static_cast<double>(val_energy);
 }
 } // namespace energy
 } // namespace wmtk
