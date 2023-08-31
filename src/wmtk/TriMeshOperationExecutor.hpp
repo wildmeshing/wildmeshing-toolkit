@@ -119,7 +119,7 @@ public:
 
 private:
 
-    void update_hash_in_map(TriMesh& child_mesh, const std::vector<long>& child_cell_ids_to_updat_hash);
+    void update_hash_in_map(TriMesh& child_mesh);
 
     // common simplicies
     std::array<long, 2> m_spine_vids; // V_A_id, V_B_id;

@@ -97,7 +97,10 @@ namespace wmtk
         {
             return Tuple(); // return null tuple
         }
-        
+        std::cout << source_mesh_base_tuple.m_global_cid << " " << source_mesh_base_tuple.m_hash << std::endl;
+        std::cout << target_mesh_base_tuple.m_global_cid << " " << target_mesh_base_tuple.m_hash << std::endl;
+        std::cout << source_tuple.m_global_cid << " " << source_tuple.m_hash << std::endl;
+
         if (source_mesh_ptype == PrimitiveType::Face && target_mesh_ptype == PrimitiveType::Face)
         {
             Tuple cur_tuple = source_tuple;
