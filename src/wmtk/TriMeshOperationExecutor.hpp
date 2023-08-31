@@ -119,7 +119,7 @@ public:
     long hash_at_cell(const long cell) { return hash_accessor.scalar_attribute(cell); }
 
 private:
-
+    std::vector<std::vector<Tuple>> prepare_operating_tuples_for_child_meshes() const;
     void update_hash_in_map(TriMesh& child_mesh);
 
     // common simplicies
