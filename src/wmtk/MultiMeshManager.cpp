@@ -51,8 +51,7 @@ namespace wmtk
         auto map_to_child_handle = parent_mesh.register_attribute<long>(fmt::format("map_to_child_{}", cur_child_id), map_ptype, 10);
         for (long id = 0; id < parent_mesh.capacity(map_ptype); ++id)
         {
-            auto map = parent_mesh.create_accessor(map_to_child_handle).vector_attribute(parent_mesh.tuple_from_id(map_ptype, id));
-            map = VectorXl::Constant(10, -1);
+            write_tuple_map_attribute(map_to_child_handle, parent_mesh, parent_mesh.tuple_from_id(map_ptype, id), Tuple());
         }
         // register maps
         for (long id = 0; id < child_mesh->capacity(map_ptype); ++id)
@@ -94,7 +93,7 @@ namespace wmtk
 
         auto [source_mesh_base_tuple, target_mesh_base_tuple] = read_tuple_map_attribute(source_map_handle, source_mesh, source_tuple);
 
-        if (source_mesh_base_tuple.is_null_tuple())
+        if (source_mesh_base_tuple.is_null_tuple() || target_mesh_base_tuple.is_null_tuple())
         {
             return Tuple(); // return null tuple
         }

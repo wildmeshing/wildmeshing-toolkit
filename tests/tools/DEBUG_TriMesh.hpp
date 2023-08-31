@@ -18,6 +18,7 @@ public:
     // uses spdlog to print out a variety of information about the mesh
     void print_state() const;
 
+    void print_vf() const;
 
     auto edge_tuple_between_v1_v2(const long v1, const long v2, const long fid) const -> Tuple;
 
