@@ -7,5 +7,7 @@ set(SRC_FILES
     AMIPS.cpp
     ValenceEnergy.hpp
     ValenceEnergy.cpp
+    AreaAccuracy.hpp
+    AreaAccuracy.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
