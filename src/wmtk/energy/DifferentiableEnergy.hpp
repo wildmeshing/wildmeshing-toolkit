@@ -6,17 +6,16 @@
 #include "Energy.hpp"
 namespace wmtk {
 namespace energy {
+
 using DScalar = DScalar2<double, Eigen::VectorXd, Eigen::MatrixXd>;
 using Scalar = typename DScalar::Scalar;
-
 
 class DifferentiableEnergy : public Energy
 {
 public:
-    DifferentiableEnergy(const TriMesh& mesh)
+    DifferentiableEnergy(const Mesh& mesh)
         : Energy(mesh){};
-    DifferentiableEnergy(const TetMesh& mesh)
-        : Energy(mesh){};
+
     virtual ~DifferentiableEnergy() = default;
 
 public:

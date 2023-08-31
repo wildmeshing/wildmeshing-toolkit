@@ -1,8 +1,9 @@
 #include "autodiff.h"
 
-
 namespace wmtk {
 namespace energy {
+using DScalar = DScalar2<double, Eigen::VectorXd, Eigen::MatrixXd>;
+using Scalar = typename DScalar::Scalar;
 template <class T>
 class AutoDiffAllocator
 {
@@ -21,6 +22,7 @@ template <typename AutoDiffVect>
 void get_local_vector(const Eigen::MatrixXd& data, const int size, AutoDiffVect& local_vector)
 {
     typedef typename AutoDiffVect::Scalar T;
+    DiffScalarBase::setVariableCount(size);
     const AutoDiffAllocator<T> allocate_auto_diff_scalar;
     local_vector.resize(size);
     for (int i = 0; i < size; ++i) {

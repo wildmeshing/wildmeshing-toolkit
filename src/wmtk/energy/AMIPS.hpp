@@ -28,11 +28,11 @@ public:
  * @brief TODO 3D AMIPS uses uv and displacement map to get the 3d cooridnates then evaluate
  *
  */
-class AMIPS_3D : public DifferentiableEnergy
+class AMIPS_3DEmbedded : public DifferentiableEnergy
 {
-    using DScalar = DScalar2<double, Eigen::VectorXd, Eigen::MatrixXd>;
-
 public:
+    AMIPS_3DEmbedded(const TriMesh& mesh);
+
     double energy_eval(const Tuple& tuple) const override;
     DScalar energy_eval_autodiff(const Tuple& tuple) const override;
 

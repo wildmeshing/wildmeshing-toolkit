@@ -11,3 +11,4 @@ set(SRC_FILES
     AreaAccuracy.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
+add_subdirectory(utils)
