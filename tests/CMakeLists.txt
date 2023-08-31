@@ -44,6 +44,10 @@ target_link_libraries(wmtk_tests PUBLIC
 add_subdirectory(components)
 source_group("components" REGULAR_EXPRESSION "components\/.*\.(cpp|h|hpp)?$")
 
+
+add_subdirectory(energy)
+source_group("energy" REGULAR_EXPRESSION "energy\/.*\.(cpp|h|hpp)?$")
+
 wmtk_copy_dll(wmtk_tests)
 
 # Register unit tests
