@@ -25,11 +25,12 @@ TriMesh::TriMeshOperationExecutor::get_incident_face_data(Tuple t)
         t = m_mesh.switch_vertex(t);
     }
     assert(m_mesh.simplex_is_equal(Simplex::vertex(t), Simplex::vertex(m_operating_tuple)));
-
+    
     const Tuple ear1_edge = m_mesh.switch_edge(t);
     const Tuple ear2_edge = m_mesh.switch_edge(m_mesh.switch_vertex(t));
 
     IncidentFaceData face_data;
+    face_data.local_operating_tuple = t;
     face_data.fid = m_mesh.id_face(t);
     face_data.opposite_vid = m_mesh.id_vertex(m_mesh.switch_vertex(ear1_edge));
 
@@ -68,15 +69,23 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
     m_operating_edge_id = m_mesh.id_edge(m_operating_tuple);
     m_spine_vids[0] = m_mesh.id_vertex(m_operating_tuple);
     m_spine_vids[1] = m_mesh.id_vertex(m_mesh.switch_vertex(m_operating_tuple));
-
+    
     const SimplicialComplex edge_closed_star =
         SimplicialComplex::closed_star(m_mesh, Simplex::edge(operating_tuple));
 
+
+    // TODO: this is a hack to get the incident faces for triangle mesh only
+    m_incident_face_datas.emplace_back(get_incident_face_data(operating_tuple));
+    if (!m_mesh.is_boundary(operating_tuple)) {
+        m_incident_face_datas.emplace_back(get_incident_face_data(m_mesh.switch_face(operating_tuple)));
+    }
+
+/*
     // get all faces incident to the edge
     for (const Simplex& f : edge_closed_star.get_faces()) {
         m_incident_face_datas.emplace_back(get_incident_face_data(f.tuple()));
     }
-
+*/
     // update hash on all faces in the two-ring neighborhood
     SimplicialComplex hash_update_region(m);
     for (const Simplex& v : edge_closed_star.get_vertices()) {
@@ -437,6 +446,7 @@ Tuple TriMesh::TriMeshOperationExecutor::split_edge()
 
                     if (executor_child.m_incident_face_datas.size() > 1)
                     {
+                        std::cout << "here!" << std::endl;
                         child_new_cell_ids[1] = std::make_pair(executor_child.m_incident_face_datas[1].split_f1, executor_child.m_incident_face_datas[1].split_f0);
                     }                    
                 }

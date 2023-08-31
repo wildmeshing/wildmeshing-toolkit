@@ -54,6 +54,7 @@ public:
         long fid = -1; // the face that will be deleted
         long split_f0 = -1;
         long split_f1 = -1;
+        Tuple local_operating_tuple; // the copy of edge m_operating_tuple in face(fid)
         std::array<EarFace, 2> ears; // ear
     };
 

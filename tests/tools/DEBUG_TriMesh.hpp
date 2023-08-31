@@ -19,7 +19,8 @@ public:
     void print_state() const;
 
     void print_vf() const;
-
+    Eigen::Matrix<long, 3, 1> fv_from_fid(const long fid) const;
+    
     auto edge_tuple_between_v1_v2(const long v1, const long v2, const long fid) const -> Tuple;
 
     Tuple tuple_from_face_id(const long fid) const;
