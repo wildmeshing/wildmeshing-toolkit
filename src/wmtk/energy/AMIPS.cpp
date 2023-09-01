@@ -1,4 +1,5 @@
 #include "AMIPS.hpp"
+#include <wmtk/utils/Logger.hpp>
 using namespace wmtk;
 using namespace wmtk::energy;
 
@@ -10,10 +11,11 @@ double AMIPS_2D::energy_eval(const Tuple& tuple) const
 {
     // get the uv coordinates of the triangle
     ConstAccessor<double> pos = m_mesh.create_const_accessor(m_position_handle);
-
-    Eigen::Vector2d uv1 = pos.vector_attribute(tuple);
-    Eigen::Vector2d uv2 = pos.vector_attribute(m_mesh.switch_edge(m_mesh.switch_vertex(tuple)));
-    Eigen::Vector2d uv3 = pos.vector_attribute(m_mesh.switch_vertex(m_mesh.switch_edge(tuple)));
+    Eigen::Vector2d uv1 = pos.vector_attribute(tuple).head<2>();
+    Eigen::Vector2d uv2 =
+        pos.vector_attribute(m_mesh.switch_edge(m_mesh.switch_vertex(tuple))).head<2>();
+    Eigen::Vector2d uv3 =
+        pos.vector_attribute(m_mesh.switch_vertex(m_mesh.switch_edge(tuple))).head<2>();
 
     // return the energy
     return energy_eval<double>(uv1, uv2, uv3);

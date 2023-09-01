@@ -19,8 +19,8 @@ TriMesh single_equilateral_triangle()
     Eigen::MatrixXd V;
     V.resize(3, 3);
     V.row(0) << 0., 0., 0;
-    V.row(1) << 0., 1, 0;
-    V.row(2) << 0.5, sqrt(3)/2., 0;
+    V.row(1) << 1., 0, 0;
+    V.row(2) << 0.5, sqrt(3) / 2., 0;
     mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, m);
     return m;
 }
