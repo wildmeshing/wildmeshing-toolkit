@@ -4,7 +4,8 @@
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
 #include <wmtk/invariants/InteriorVertexInvariant.hpp>
 #include <wmtk/invariants/InvariantCollection.hpp>
-#include "TupleOperation.hpp"
+#include <wmtk/operations/TupleOperation.hpp>
+#include "TriMeshOperation.hpp"
 
 namespace wmtk::operations {
 namespace tri_mesh {
@@ -29,18 +30,12 @@ struct OperationSettings<tri_mesh::EdgeCollapse>
 };
 
 namespace tri_mesh {
-class EdgeCollapse : public TupleOperation
+class EdgeCollapse : public TriMeshOperation, private TupleOperation
 {
 public:
     // constructor for default factory pattern construction
-    EdgeCollapse(
-        Mesh& m,
-        const Tuple& t,
-        const OperationSettings<EdgeCollapse>& settings);
-    EdgeCollapse(
-        TriMesh& m,
-        const Tuple& t,
-        const OperationSettings<EdgeCollapse>& settings);
+    EdgeCollapse(Mesh& m, const Tuple& t, const OperationSettings<EdgeCollapse>& settings);
+    EdgeCollapse(TriMesh& m, const Tuple& t, const OperationSettings<EdgeCollapse>& settings);
 
     std::string name() const override;
 
@@ -53,9 +48,10 @@ public:
 
     static PrimitiveType primitive_type() { return PrimitiveType::Edge; }
 
+    using TriMeshOperation::hash_accessor;
+
 protected:
     bool execute() override;
-    bool before() const override;
 
 private:
     Tuple m_output_tuple;

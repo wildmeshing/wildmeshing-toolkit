@@ -1111,7 +1111,8 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        tri_mesh::EdgeSwap op(m, edge);
+        OperationSettings<tri_mesh::EdgeSwap> settings;
+        tri_mesh::EdgeSwap op(m, edge, settings);
         const bool success = op();
         REQUIRE(success);
         const Tuple ret = op.return_tuple();
@@ -1136,7 +1137,8 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 2);
-        tri_mesh::EdgeSwap op(m, edge);
+        OperationSettings<tri_mesh::EdgeSwap> settings;
+        tri_mesh::EdgeSwap op(m, edge, settings);
         const bool success = op();
         REQUIRE(success);
         const Tuple ret = op.return_tuple();
@@ -1161,7 +1163,8 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        tri_mesh::EdgeSwap op(m, edge);
+        OperationSettings<tri_mesh::EdgeSwap> settings;
+        tri_mesh::EdgeSwap op(m, edge, settings);
         const bool success = op();
         REQUIRE(!success);
         REQUIRE(m.is_connectivity_valid());

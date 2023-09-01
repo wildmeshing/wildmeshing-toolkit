@@ -2,20 +2,21 @@
 #include "TupleOperation.hpp"
 #include <wmtk/invariants/InvariantCollection.hpp>
 
-namespace wmtk {
-TupleOperation::TupleOperation(Mesh& m, const InvariantCollection& invariants, const Tuple& t)
-    : Operation(m)
-    , m_invariants(invariants)
+namespace wmtk::operations {
+TupleOperation::TupleOperation(const InvariantCollection& invariants, const Tuple& t)
+    : m_invariants(invariants)
     , m_input_tuple{t}
 {}
-TupleOperation::TupleOperation(Mesh& m, const InvariantCollection& invariants): TupleOperation(m,invariants,{})
+TupleOperation::TupleOperation(const InvariantCollection& invariants)
+    : TupleOperation(invariants, {})
 {}
 const Tuple& TupleOperation::input_tuple() const
 {
     return m_input_tuple;
 }
 
-void TupleOperation::set_input_tuple(const Tuple& t) {
+void TupleOperation::set_input_tuple(const Tuple& t)
+{
     m_input_tuple = t;
 }
 
@@ -31,5 +32,5 @@ std::vector<Tuple> TupleOperation::modified_primitives(PrimitiveType) const
 {
     return {};
 }
-} // namespace wmtk
+} // namespace wmtk::operations
 

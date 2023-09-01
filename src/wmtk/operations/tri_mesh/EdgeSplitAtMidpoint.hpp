@@ -1,7 +1,7 @@
 #pragma once
 #include <wmtk/TriMesh.hpp>
-#include "TriMeshSplitEdgeOperation.hpp"
-#include "TupleOperation.hpp"
+#include <wmtk/operations/TupleOperation.hpp>
+#include "EdgeSplit.hpp"
 
 namespace wmtk::operations {
 namespace tri_mesh {
@@ -11,7 +11,7 @@ class EdgeSplitAtMidpoint;
 template <>
 struct OperationSettings<tri_mesh::EdgeSplitAtMidpoint>
 {
-    OperationSettings<TriMeshSplitEdgeOperation> split_settings;
+    OperationSettings<tri_mesh::EdgeSplit> split_settings;
     // handle to vertex position
     MeshAttributeHandle<double> position;
     // too short edges get ignored
@@ -24,7 +24,7 @@ struct OperationSettings<tri_mesh::EdgeSplitAtMidpoint>
 };
 
 namespace tri_mesh {
-class EdgeSplitAtMidpoint : public TupleOperation
+class EdgeSplitAtMidpoint : public TriMeshOperation, private TupleOperation
 {
 public:
     EdgeSplitAtMidpoint(

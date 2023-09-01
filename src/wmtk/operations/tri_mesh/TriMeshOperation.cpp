@@ -1,13 +1,25 @@
-#include "Operation.hpp"
+#include "TriMeshOperation.hpp"
 #include <wmtk/TriMesh.hpp>
 
 namespace wmtk::operations::tri_mesh {
-Operation::Operation(Mesh& m)
-    : wmtk::operations::Operation(m)
+TriMeshOperation::TriMeshOperation(TriMesh& m)
+    : m_mesh(m)
+    , m_hash_accessor(get_hash_accessor(m))
 {}
-
-TriMesh& Operation::mesh() const
+TriMeshOperation::TriMeshOperation(Mesh& m)
+    : TriMeshOperation(dynamic_cast<TriMesh&>(m))
+{}
+Accessor<long>& TriMeshOperation::hash_accessor()
 {
-    return static_cast<TriMesh&>(m_mesh);
+    return m_hash_accessor;
+}
+Mesh& TriMeshOperation::base_mesh() const
+{
+    return m_mesh;
+}
+
+TriMesh& TriMeshOperation::mesh() const
+{
+    return m_mesh;
 }
 } // namespace wmtk::operations::tri_mesh

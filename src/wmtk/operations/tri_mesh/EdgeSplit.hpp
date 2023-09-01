@@ -2,7 +2,8 @@
 #include <optional>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/invariants/InvariantCollection.hpp>
-#include "TupleOperation.hpp"
+#include <wmtk/operations/TupleOperation.hpp>
+#include "TriMeshOperation.hpp"
 
 namespace wmtk::operations {
 namespace tri_mesh {
@@ -22,7 +23,7 @@ struct OperationSettings<tri_mesh::EdgeSplit>
 };
 
 namespace tri_mesh {
-class EdgeSplit : public TupleOperation
+class EdgeSplit : public TriMeshOperation, private TupleOperation
 {
 public:
     EdgeSplit(Mesh& m, const Tuple& t, const OperationSettings<EdgeSplit>& settings);
@@ -44,6 +45,8 @@ public:
     // std::vector<Tuple> rib_edges() const;
 
     static PrimitiveType primitive_type() { return PrimitiveType::Edge; }
+
+    using TriMeshOperation::hash_accessor;
 
 protected:
     bool execute() override;

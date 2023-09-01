@@ -5,8 +5,8 @@
 #include "EdgeSplit.hpp"
 namespace wmtk::operations::tri_mesh {
 EdgeSwap::EdgeSwap(Mesh& m, const Tuple& t, const OperationSettings<EdgeSwap>& settings)
-    : Operation(m)
-    , m_input_tuple{t}
+    : TriMeshOperation(m)
+    , TupleOperation(settings.invariants, t)
     , m_settings{settings}
 {}
 
@@ -17,16 +17,16 @@ std::string EdgeSwap::name() const
 
 bool EdgeSwap::before() const
 {
-    if (!mesh().is_valid_slow(m_input_tuple)) {
+    if (!mesh().is_valid_slow(input_tuple())) {
         return false;
     }
-    if (mesh().is_boundary(m_input_tuple)) {
+    if (mesh().is_boundary(input_tuple())) {
         return false;
     }
 
     // do not allow swaps if one incident vertex has valence 3 (2 at boundary)
-    const Tuple v0 = m_input_tuple;
-    const Tuple v1 = mesh().switch_vertex(m_input_tuple);
+    const Tuple v0 = input_tuple();
+    const Tuple v1 = mesh().switch_vertex(input_tuple());
     long val0 = static_cast<long>(SimplicialComplex::vertex_one_ring(mesh(), v0).size());
     long val1 = static_cast<long>(SimplicialComplex::vertex_one_ring(mesh(), v1).size());
     if (mesh().is_boundary_vertex(v0)) {
@@ -45,9 +45,9 @@ bool EdgeSwap::before() const
     //    \ /
     //     v3
     if (m_settings.must_improve_valence) {
-        const Tuple v2 = mesh().switch_vertex(mesh().switch_edge(m_input_tuple));
+        const Tuple v2 = mesh().switch_vertex(mesh().switch_edge(input_tuple()));
         const Tuple v3 =
-            mesh().switch_vertex(mesh().switch_edge(mesh().switch_face(m_input_tuple)));
+            mesh().switch_vertex(mesh().switch_edge(mesh().switch_face(input_tuple())));
         long val2 = static_cast<long>(SimplicialComplex::vertex_one_ring(mesh(), v2).size());
         long val3 = static_cast<long>(SimplicialComplex::vertex_one_ring(mesh(), v3).size());
         if (mesh().is_boundary_vertex(v2)) {
@@ -89,7 +89,7 @@ bool EdgeSwap::execute()
     {
         OperationSettings<tri_mesh::EdgeSplit> op_settings;
         op_settings.initialize_invariants(mesh());
-        tri_mesh::EdgeSplit split_op(mesh(), m_input_tuple, op_settings);
+        tri_mesh::EdgeSplit split_op(mesh(), input_tuple(), op_settings);
         if (!split_op()) {
             return false;
         }

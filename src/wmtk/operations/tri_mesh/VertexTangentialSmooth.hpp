@@ -1,7 +1,9 @@
 #pragma once
 #include <optional>
-#include <wmtk/TriMesh.hpp>
-#include "Operation.hpp"
+#include <wmtk/invariants/InvariantCollection.hpp>
+#include <wmtk/operations/TupleOperation.hpp>
+#include "TriMeshOperation.hpp"
+#include "VertexSmooth.hpp"
 
 namespace wmtk::operations {
 namespace tri_mesh {
@@ -11,13 +13,12 @@ class VertexTangentialSmooth;
 template <>
 struct OperationSettings<tri_mesh::VertexTangentialSmooth>
 {
-    MeshAttributeHandle<double> position;
-    bool smooth_boundary = false;
+    OperationSettings<tri_mesh::VertexSmooth> smooth_settings;
     double damping_factor = 1.0;
 };
 
 namespace tri_mesh {
-class VertexTangentialSmooth : public Operation
+class VertexTangentialSmooth : public TriMeshOperation, private TupleOperation
 {
 public:
     VertexTangentialSmooth(
@@ -34,7 +35,6 @@ protected:
     bool execute() override;
 
 private:
-    Tuple m_tuple;
     Accessor<double> m_pos_accessor;
     const OperationSettings<VertexTangentialSmooth>& m_settings;
 };

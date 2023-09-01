@@ -5,8 +5,7 @@
 namespace wmtk {
 bool ValidTupleInvariant::before(const Tuple& t) const
 {
-    const bool result = mesh().is_valid(t) && !mesh().is_outdated(t);
-    spdlog::info("invar:checking valid tuple!: {}", result);
+    const bool result = mesh().is_valid_slow(t);
     return result;
 }
 } // namespace wmtk

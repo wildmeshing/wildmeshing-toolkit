@@ -1,8 +1,9 @@
 #pragma once
 #include <optional>
 #include <wmtk/TriMesh.hpp>
-#include "TupleOperation.hpp"
-#include "TriMeshCollapseEdgeOperation.hpp"
+#include <wmtk/operations/TupleOperation.hpp>
+#include <wmtk/operations/tri_mesh/TriMeshOperation.hpp>
+#include "EdgeCollapse.hpp"
 
 namespace wmtk::operations {
 namespace tri_mesh {
@@ -12,7 +13,7 @@ class EdgeCollapseToMidpoint;
 template <>
 struct OperationSettings<tri_mesh::EdgeCollapseToMidpoint>
 {
-    OperationSettings<TriMeshCollapseEdgeOperation> collapse_settings;
+    OperationSettings<tri_mesh::EdgeCollapse> collapse_settings;
     // handle to vertex position
     MeshAttributeHandle<double> position;
     // too long edges get ignored
@@ -27,7 +28,7 @@ struct OperationSettings<tri_mesh::EdgeCollapseToMidpoint>
 };
 
 namespace tri_mesh {
-class CEdgeCollapseToMidpoint : public TupleOperation
+class EdgeCollapseToMidpoint : public TriMeshOperation, private TupleOperation
 {
 public:
     EdgeCollapseToMidpoint(
@@ -51,7 +52,6 @@ private:
 
     Accessor<double> m_pos_accessor;
     const OperationSettings<EdgeCollapseToMidpoint>& m_settings;
-
 };
 
 } // namespace tri_mesh

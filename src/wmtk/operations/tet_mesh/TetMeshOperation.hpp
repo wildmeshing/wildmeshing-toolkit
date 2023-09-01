@@ -1,18 +1,26 @@
 #pragma once
-#include "../Operation.hpp"
+#include <wmtk/operations/Operation.hpp>
 
 namespace wmtk {
 class TetMesh;
 
 namespace operations::tet_mesh {
 
-class Operation : public wmtk::operations::Operation
+class TetMeshOperation : public virtual Operation
 {
 public:
-    Operation(Mesh& m);
+    TetMeshOperation(TetMesh& m);
+    // internally will try dynamic casting to check for mistakes
+    TetMeshOperation(Mesh& m);
 
 protected:
     TetMesh& mesh() const;
+    Mesh& base_mesh() const override;
+    Accessor<long>& hash_accessor() override;
+
+private:
+    TetMesh& m_mesh;
+    Accessor<long> m_hash_accessor;
 };
 
 

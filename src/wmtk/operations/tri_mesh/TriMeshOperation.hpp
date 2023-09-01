@@ -1,18 +1,26 @@
 #pragma once
-#include "../Operation.hpp"
+#include <wmtk/operations/Operation.hpp>
 
 namespace wmtk {
 class TriMesh;
 
 namespace operations::tri_mesh {
 
-class Operation : public wmtk::operations::Operation
+class TriMeshOperation : public virtual Operation
 {
 public:
-    Operation(Mesh& m);
+    TriMeshOperation(TriMesh& m);
+    // internally will try dynamic casting to check for mistakes
+    TriMeshOperation(Mesh& m);
 
 protected:
     TriMesh& mesh() const;
+    Mesh& base_mesh() const override;
+    Accessor<long>& hash_accessor() override;
+
+private:
+    TriMesh& m_mesh;
+    Accessor<long> m_hash_accessor;
 };
 
 

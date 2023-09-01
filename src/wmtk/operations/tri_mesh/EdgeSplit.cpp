@@ -1,20 +1,16 @@
 
+
 #include "EdgeSplit.hpp"
-#include <wmtk/TriMesh.hpp>
-#include "wmtk/SimplicialComplex.hpp"
-
-
 #include <spdlog/spdlog.h>
+#include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
 #include <wmtk/invariants/ValidTupleInvariant.hpp>
 #include <wmtk/invariants/find_invariant_in_collection_by_type.hpp>
-#include "EdgeSplit.hpp"
-#include "wmtk/SimplicialComplex.hpp"
 
 namespace wmtk::operations {
 
-void OperationSettings<EdgeSplit>::initialize_invariants(const TriMesh& m)
+void OperationSettings<tri_mesh::EdgeSplit>::initialize_invariants(const TriMesh& m)
 {
     // outdated + is valid tuple
     invariants = basic_invariant_collection(m);
@@ -24,7 +20,7 @@ void OperationSettings<EdgeSplit>::initialize_invariants(const TriMesh& m)
     }
 }
 
-bool OperationSettings<EdgeSplit>::are_invariants_initialized() const
+bool OperationSettings<tri_mesh::EdgeSplit>::are_invariants_initialized() const
 {
     return find_invariants_in_collection_by_type<ValidTupleInvariant>(invariants);
 }
@@ -32,7 +28,8 @@ bool OperationSettings<EdgeSplit>::are_invariants_initialized() const
 namespace tri_mesh {
 
 EdgeSplit::EdgeSplit(Mesh& m, const Tuple& t, const OperationSettings<EdgeSplit>& settings)
-    : TupleOperation(m, settings.invariants, t)
+    : TriMeshOperation(m)
+    , TupleOperation(settings.invariants, t)
     , m_settings{settings}
 {
     assert(m_settings.are_invariants_initialized());
@@ -41,8 +38,7 @@ EdgeSplit::EdgeSplit(Mesh& m, const Tuple& t, const OperationSettings<EdgeSplit>
 bool EdgeSplit::execute()
 {
     // move vertex to center of old vertices
-    TriMesh& m = dynamic_cast<TriMesh&>(m_mesh);
-    m_output_tuple = m.split_edge(input_tuple());
+    m_output_tuple = mesh().split_edge(input_tuple(), hash_accessor());
 
     //    for(const acc: tri_accessors) {
     //    ConstACcessor old_tri_acc(acc, checkpoint);
@@ -103,7 +99,7 @@ std::vector<Tuple> EdgeSplit::modified_primitives(PrimitiveType type) const
 ///std::vector<Tuple> EdgeSplit::triangle_onering() const
 ///{
 ///    Simplex v(PrimitiveType::Vertex, new_vertex());
-///    auto sc = SimplicialComplex::open_star(v, m_mesh);
+///    auto sc = SimplicialComplex::open_star(v, mesh());
 ///    auto faces = sc.get_simplices(PrimitiveType::Face);
 ///    std::vector<Tuple> ret;
 ///    for (const auto& face : faces) {

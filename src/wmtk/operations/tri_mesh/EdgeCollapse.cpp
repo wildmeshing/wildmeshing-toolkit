@@ -9,9 +9,9 @@
 
 namespace wmtk::operations {
 
-OperationSettings<EdgeCollapse>::OperationSettings() {}
+OperationSettings<tri_mesh::EdgeCollapse>::OperationSettings() {}
 
-void OperationSettings<EdgeCollapse>::initialize_invariants(const TriMesh& m)
+void OperationSettings<tri_mesh::EdgeCollapse>::initialize_invariants(const TriMesh& m)
 {
     // outdated + is valid tuple
     invariants = basic_invariant_collection(m);
@@ -24,7 +24,7 @@ void OperationSettings<EdgeCollapse>::initialize_invariants(const TriMesh& m)
     }
 }
 
-bool OperationSettings<EdgeCollapse>::are_invariants_initialized() const
+bool OperationSettings<tri_mesh::EdgeCollapse>::are_invariants_initialized() const
 {
     if (!collapse_boundary_edges) {
         return find_invariants_in_collection_by_type<InteriorEdgeInvariant>(invariants);
@@ -47,7 +47,8 @@ EdgeCollapse::EdgeCollapse(
     TriMesh& m,
     const Tuple& t,
     const OperationSettings<EdgeCollapse>& settings)
-    : TupleOperation(m, settings.invariants, t)
+    : TriMeshOperation(m)
+    , TupleOperation(settings.invariants, t)
     , m_settings{settings}
 {
     assert(m_settings.are_invariants_initialized());
@@ -55,8 +56,7 @@ EdgeCollapse::EdgeCollapse(
 
 bool EdgeCollapse::execute()
 {
-    TriMesh& m = dynamic_cast<TriMesh&>(m_mesh);
-    m_output_tuple = m.collapse_edge(input_tuple());
+    m_output_tuple = mesh().collapse_edge(input_tuple(), hash_accessor());
     return true;
 }
 
@@ -67,27 +67,6 @@ std::vector<Tuple> EdgeCollapse::modified_primitives(PrimitiveType type) const
     } else {
         return {};
     }
-}
-bool EdgeCollapse::before() const
-{
-    return TupleOperation::before();
-
-    if (m_mesh.is_outdated(input_tuple())) {
-        return false;
-    }
-    if (!m_mesh.is_valid(input_tuple())) {
-        return false;
-    }
-
-    if (!m_settings.collapse_boundary_edges && m_mesh.is_boundary(input_tuple())) {
-        return false;
-    }
-    if (!m_settings.collapse_boundary_vertex_to_interior &&
-        m_mesh.is_boundary_vertex(input_tuple())) {
-        return false;
-    }
-
-    return SimplicialComplex::link_cond_bd_2d(m_mesh, input_tuple());
 }
 
 std::string EdgeCollapse::name() const
@@ -103,7 +82,7 @@ Tuple EdgeCollapse::return_tuple() const
 std::vector<Tuple> EdgeCollapse::modified_triangles() const
 {
     Simplex v(PrimitiveType::Vertex, m_output_tuple);
-    auto sc = SimplicialComplex::open_star(m_mesh, v);
+    auto sc = SimplicialComplex::open_star(mesh(), v);
     auto faces = sc.get_simplices(PrimitiveType::Face);
     std::vector<Tuple> ret;
     for (const auto& face : faces) {
