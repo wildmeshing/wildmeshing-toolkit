@@ -19,15 +19,18 @@ public:
 };
 
 template <typename AutoDiffVect>
-void get_local_vector(const Eigen::MatrixXd& data, const int size, AutoDiffVect& local_vector)
+void get_local_vector(const Eigen::MatrixXd& data, const int size, AutoDiffVect& T_vector)
 {
     typedef typename AutoDiffVect::Scalar T;
     DiffScalarBase::setVariableCount(size);
     const AutoDiffAllocator<T> allocate_auto_diff_scalar;
-    local_vector.resize(size);
+    T_vector.resize(size);
     for (int i = 0; i < size; ++i) {
-        local_vector(i) = allocate_auto_diff_scalar(i, data(i));
+        T_vector(i) = allocate_auto_diff_scalar(i, data(i));
     }
 }
+template <typename AutoDiffVect>
+void get_double_vector(const AutoDiffVect& T_vector, const int size, Eigen::MatrixXd& double_t)
+{}
 } // namespace energy
 } // namespace wmtk

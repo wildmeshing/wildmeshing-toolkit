@@ -1,5 +1,6 @@
+#pragma once
 #include <wmtk/TriMesh.hpp>
-#include <wmtk/energy/utils/AutoDiffTypes.hpp>
+#include <wmtk/energy/utils/AutoDiffUtils.hpp>
 #include "autodiff.h"
 // #include <wmtk/image/DisplacementMap.hpp>
 
@@ -14,20 +15,22 @@ public:
     ~DofsToPosition();
 
     template <typename T>
-    Eigen::Matrix<T, 3, 1> operator()(const DofVectorX& dof) const
+    Eigen::Matrix<T, 3, 1> dof_to_pos(const Eigen::Matrix<double, Eigen::Dynamic, 1>& dof) const
     {
         Eigen::Matrix<T, 3, 1> pos;
         int size = dof.rows();
-        typedef Eigen::Matrix<T, size, 1> Vec2T;
-        Vec2T dofT;
-        get_local_vector<Vec2T>(dof, size, dofT);
+
         if (size == 2) {
+            Eigen::Matrix<T, 2, 1> dofT;
+            get_local_vector<Eigen::Matrix<T, 2, 1>>(dof, size, dofT);
             // TODO retrive position using displacement map
             // for now just return itself
             pos << dofT(0), dofT(1), static_cast<T>(0.0);
         } else
         //(dofx.size() == 1)
         {
+            Eigen::Matrix<T, 1, 1> dofT;
+            get_local_vector<Eigen::Matrix<T, 1, 1>>(dof, size, dofT);
             // curve parameterization
             // TODO can also be implemented as a overload operator()?
 
@@ -35,7 +38,7 @@ public:
         }
         return pos;
     }
-}
+};
 
 } // namespace energy
 } // namespace wmtk
