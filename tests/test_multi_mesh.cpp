@@ -50,6 +50,38 @@ TEST_CASE("test_register_child_mesh","[multimesh][2D]")
     REQUIRE(tuple6 == parent.tuple_from_id(PF,1));
 }
 
+TEST_CASE("test_multi_mesh_navigation","[multimesh][2D]")
+{
+    DEBUG_TriMesh parent = two_neighbors();
+    std::shared_ptr<DEBUG_TriMesh> child0_ptr = std::make_shared<DEBUG_TriMesh>(single_triangle());
+    std::vector<long> child0_map = {0};
+    std::shared_ptr<DEBUG_TriMesh> child1_ptr = std::make_shared<DEBUG_TriMesh>(one_ear());
+    std::vector<long> child1_map = {0,1};
+    std::shared_ptr<DEBUG_TriMesh> child2_ptr = std::make_shared<DEBUG_TriMesh>(two_neighbors_cut_on_edge01());
+    std::vector<long> child2_map = {0,1,2};
+
+    MultiMeshManager::register_child_mesh(parent, child0_ptr, child0_map);
+    MultiMeshManager::register_child_mesh(parent, child1_ptr, child1_map);
+    MultiMeshManager::register_child_mesh(parent, child2_ptr, child2_map);
+
+    Tuple edge = parent.edge_tuple_between_v1_v2(1, 0, 0);
+    Tuple edge_child0 = MultiMeshManager::map_tuple_between_meshes(parent, *child0_ptr, parent.multi_mesh_manager.map_to_child_handles[0], edge);
+    Tuple edge_child1 = MultiMeshManager::map_tuple_between_meshes(parent, *child1_ptr, parent.multi_mesh_manager.map_to_child_handles[1], edge);
+    Tuple edge_child2 = MultiMeshManager::map_tuple_between_meshes(parent, *child2_ptr, parent.multi_mesh_manager.map_to_child_handles[2], edge);
+
+    CHECK(edge_child0 == child0_ptr->edge_tuple_between_v1_v2(1, 0, 0));
+    CHECK(edge_child1 == child1_ptr->edge_tuple_between_v1_v2(1, 0, 0));
+    CHECK(edge_child2 == child2_ptr->edge_tuple_between_v1_v2(1, 0, 0));
+
+    CHECK(child0_ptr->switch_vertex(edge_child0) == MultiMeshManager::map_tuple_between_meshes(parent, *child0_ptr, parent.multi_mesh_manager.map_to_child_handles[0], parent.switch_vertex(edge)));
+    CHECK(child1_ptr->switch_vertex(edge_child1) == MultiMeshManager::map_tuple_between_meshes(parent, *child1_ptr, parent.multi_mesh_manager.map_to_child_handles[1], parent.switch_vertex(edge)));
+    CHECK(child2_ptr->switch_vertex(edge_child2) == MultiMeshManager::map_tuple_between_meshes(parent, *child2_ptr, parent.multi_mesh_manager.map_to_child_handles[2], parent.switch_vertex(edge)));
+
+    CHECK(child0_ptr->switch_edge(edge_child0) == MultiMeshManager::map_tuple_between_meshes(parent, *child0_ptr, parent.multi_mesh_manager.map_to_child_handles[0], parent.switch_edge(edge)));
+    CHECK(child1_ptr->switch_edge(edge_child1) == MultiMeshManager::map_tuple_between_meshes(parent, *child1_ptr, parent.multi_mesh_manager.map_to_child_handles[1], parent.switch_edge(edge)));
+    CHECK(child2_ptr->switch_edge(edge_child2) == MultiMeshManager::map_tuple_between_meshes(parent, *child2_ptr, parent.multi_mesh_manager.map_to_child_handles[2], parent.switch_edge(edge)));
+}
+
 TEST_CASE("test_split_multi_mesh","[multimesh][2D]")
 {
     DEBUG_TriMesh parent = two_neighbors();
