@@ -47,3 +47,17 @@ TEST_CASE("amips2d")
         REQUIRE(amips2d.energy_eval(e1) == 2.0);
     }
 }
+
+TEST_CASE("amips3d")
+{
+    SECTION("equilateral triangle")
+    {
+        const DEBUG_TriMesh example_mesh = single_equilateral_triangle();
+        auto e1 = example_mesh.edge_tuple_between_v1_v2(0, 1, 0);
+        const TriMesh tri_mesh = static_cast<const TriMesh&>(example_mesh);
+
+        AMIPS_2D amips2d(tri_mesh);
+
+        REQUIRE(amips2d.energy_eval(e1) == 2.0);
+    }
+}
