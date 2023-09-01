@@ -21,7 +21,7 @@ public:
 
     auto edge_tuple_between_v1_v2(const long v1, const long v2, const long fid) const -> Tuple;
 
-    Tuple tuple_from_face_id(const long fid);
+    Tuple tuple_from_face_id(const long fid) const;
     template <typename T>
     AccessorBase<T> create_base_accessor(const MeshAttributeHandle<T>& handle)
     {
@@ -55,7 +55,10 @@ public:
      * @brief returns the TriMeshOperationExecutor
      */
     using TriMesh::tuple_from_id;
-    TriMeshOperationExecutor get_tmoe(const Tuple& t);
+
+    Accessor<long> get_cell_hash_accessor();
+
+    TriMeshOperationExecutor get_tmoe(const Tuple& t, Accessor<long>& hash_accessor);
 };
 
 } // namespace wmtk::tests

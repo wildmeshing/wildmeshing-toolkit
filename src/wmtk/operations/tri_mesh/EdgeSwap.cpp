@@ -1,44 +1,38 @@
-#include "TriMeshSwapEdgeOperation.hpp"
+#include "EdgeSwap.hpp"
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
-#include "TriMeshCollapseEdgeOperation.hpp"
-#include "TriMeshSplitEdgeOperation.hpp"
-namespace wmtk {
-TriMeshSwapEdgeOperation::TriMeshSwapEdgeOperation(
-    Mesh& m,
-    const Tuple& t,
-    const OperationSettings<TriMeshSwapEdgeOperation>& settings)
+#include "EdgeCollapse.hpp"
+#include "EdgeSplit.hpp"
+namespace wmtk::operations::tri_mesh {
+EdgeSwap::EdgeSwap(Mesh& m, const Tuple& t, const OperationSettings<EdgeSwap>& settings)
     : Operation(m)
     , m_input_tuple{t}
     , m_settings{settings}
 {}
 
-std::string TriMeshSwapEdgeOperation::name() const
+std::string EdgeSwap::name() const
 {
-    return "TriMeshSwapEdgeOperation";
+    return "tri_mesh_edge_swap";
 }
 
-bool TriMeshSwapEdgeOperation::before() const
+bool EdgeSwap::before() const
 {
-    if (m_mesh.is_outdated(m_input_tuple)) {
+    if (!mesh().is_valid_slow(m_input_tuple)) {
         return false;
     }
-    if (!m_mesh.is_valid(m_input_tuple)) {
-        return false;
-    }
-    if (m_mesh.is_boundary(m_input_tuple)) {
+    if (mesh().is_boundary(m_input_tuple)) {
         return false;
     }
 
     // do not allow swaps if one incident vertex has valence 3 (2 at boundary)
     const Tuple v0 = m_input_tuple;
-    const Tuple v1 = m_mesh.switch_vertex(m_input_tuple);
-    long val0 = static_cast<long>(SimplicialComplex::vertex_one_ring(m_mesh, v0).size());
-    long val1 = static_cast<long>(SimplicialComplex::vertex_one_ring(m_mesh, v1).size());
-    if (m_mesh.is_boundary_vertex(v0)) {
+    const Tuple v1 = mesh().switch_vertex(m_input_tuple);
+    long val0 = static_cast<long>(SimplicialComplex::vertex_one_ring(mesh(), v0).size());
+    long val1 = static_cast<long>(SimplicialComplex::vertex_one_ring(mesh(), v1).size());
+    if (mesh().is_boundary_vertex(v0)) {
         ++val0;
     }
-    if (m_mesh.is_boundary_vertex(v1)) {
+    if (mesh().is_boundary_vertex(v1)) {
         ++val1;
     }
     if (val0 < 4 || val1 < 4) {
@@ -51,15 +45,15 @@ bool TriMeshSwapEdgeOperation::before() const
     //    \ /
     //     v3
     if (m_settings.must_improve_valence) {
-        const Tuple v2 = m_mesh.switch_vertex(m_mesh.switch_edge(m_input_tuple));
+        const Tuple v2 = mesh().switch_vertex(mesh().switch_edge(m_input_tuple));
         const Tuple v3 =
-            m_mesh.switch_vertex(m_mesh.switch_edge(m_mesh.switch_face(m_input_tuple)));
-        long val2 = static_cast<long>(SimplicialComplex::vertex_one_ring(m_mesh, v2).size());
-        long val3 = static_cast<long>(SimplicialComplex::vertex_one_ring(m_mesh, v3).size());
-        if (m_mesh.is_boundary_vertex(v2)) {
+            mesh().switch_vertex(mesh().switch_edge(mesh().switch_face(m_input_tuple)));
+        long val2 = static_cast<long>(SimplicialComplex::vertex_one_ring(mesh(), v2).size());
+        long val3 = static_cast<long>(SimplicialComplex::vertex_one_ring(mesh(), v3).size());
+        if (mesh().is_boundary_vertex(v2)) {
             val2 += 2;
         }
-        if (m_mesh.is_boundary_vertex(v3)) {
+        if (mesh().is_boundary_vertex(v3)) {
             val3 += 2;
         }
 
@@ -75,12 +69,12 @@ bool TriMeshSwapEdgeOperation::before() const
     return true;
 }
 
-Tuple TriMeshSwapEdgeOperation::return_tuple() const
+Tuple EdgeSwap::return_tuple() const
 {
     return m_output_tuple;
 }
 
-bool TriMeshSwapEdgeOperation::execute()
+bool EdgeSwap::execute()
 {
     // input
     //    / \
@@ -93,9 +87,9 @@ bool TriMeshSwapEdgeOperation::execute()
 
     Tuple split_ret;
     {
-        OperationSettings<TriMeshSplitEdgeOperation> op_settings;
-        op_settings.initialize_invariants(static_cast<TriMesh&>(m_mesh));
-        TriMeshSplitEdgeOperation split_op(m_mesh, m_input_tuple, op_settings);
+        OperationSettings<tri_mesh::EdgeSplit> op_settings;
+        op_settings.initialize_invariants(mesh());
+        tri_mesh::EdgeSplit split_op(mesh(), m_input_tuple, op_settings);
         if (!split_op()) {
             return false;
         }
@@ -111,7 +105,7 @@ bool TriMeshSwapEdgeOperation::execute()
     //    \|/
 
     // switch also face to keep edge orientation
-    const Tuple coll_input_tuple = m_mesh.switch_face(m_mesh.switch_edge(split_ret));
+    const Tuple coll_input_tuple = mesh().switch_face(mesh().switch_edge(split_ret));
     // switch edge - switch face
     //    /|\
     //   / ^ \
@@ -121,10 +115,10 @@ bool TriMeshSwapEdgeOperation::execute()
     //   \ | /
     //    \|/
 
-    OperationSettings<TriMeshCollapseEdgeOperation> collapse_settings;
+    OperationSettings<tri_mesh::EdgeCollapse> collapse_settings;
 
-    collapse_settings.initialize_invariants(static_cast<TriMesh&>(m_mesh));
-    TriMeshCollapseEdgeOperation coll_op(m_mesh, coll_input_tuple, collapse_settings);
+    collapse_settings.initialize_invariants(mesh());
+    tri_mesh::EdgeCollapse coll_op(mesh(), coll_input_tuple, collapse_settings);
     if (!coll_op()) {
         return false;
     }
@@ -139,10 +133,10 @@ bool TriMeshSwapEdgeOperation::execute()
     //   \ | /
     //    \|/
     // adjust return tuple to be the swapped edge in the same orientation as the input
-    m_output_tuple = m_mesh.switch_vertex(m_mesh.switch_edge(coll_ret));
+    m_output_tuple = mesh().switch_vertex(mesh().switch_edge(coll_ret));
 
     return true;
 }
 
 
-} // namespace wmtk
+} // namespace wmtk::operations::tri_mesh

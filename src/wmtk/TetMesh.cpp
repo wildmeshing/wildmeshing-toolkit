@@ -117,9 +117,11 @@ Tuple TetMesh::vertex_tuple_from_id(long id) const
 
     if (lvid < 0 || leid < 0 || lfid < 0) throw std::runtime_error("vertex_tuple_from_id failed");
 
-    Tuple v_tuple = Tuple(lvid, leid, lfid, t, get_cell_hash_slow(t));
+    ConstAccessor<long> hash_accessor = get_const_cell_hash_accessor();
+
+    Tuple v_tuple = Tuple(lvid, leid, lfid, t, get_cell_hash(t, hash_accessor));
     assert(is_ccw(v_tuple));
-    assert(is_valid(v_tuple));
+    assert(is_valid(v_tuple, hash_accessor));
     return v_tuple;
 }
 
@@ -146,9 +148,11 @@ Tuple TetMesh::edge_tuple_from_id(long id) const
 
     if (lvid < 0 || leid < 0 || lfid < 0) throw std::runtime_error("edge_tuple_from_id failed");
 
-    Tuple e_tuple = Tuple(lvid, leid, lfid, t, get_cell_hash_slow(t));
+    ConstAccessor<long> hash_accessor = get_const_cell_hash_accessor();
+
+    Tuple e_tuple = Tuple(lvid, leid, lfid, t, get_cell_hash(t, hash_accessor));
     assert(is_ccw(e_tuple));
-    assert(is_valid(e_tuple));
+    assert(is_valid(e_tuple, hash_accessor));
     return e_tuple;
 }
 
@@ -175,9 +179,11 @@ Tuple TetMesh::face_tuple_from_id(long id) const
 
     if (lvid < 0 || leid < 0 || lfid < 0) throw std::runtime_error("face_tuple_from_id failed");
 
-    Tuple f_tuple = Tuple(lvid, leid, lfid, t, get_cell_hash_slow(t));
+    ConstAccessor<long> hash_accessor = get_const_cell_hash_accessor();
+
+    Tuple f_tuple = Tuple(lvid, leid, lfid, t, get_cell_hash(t, hash_accessor));
     assert(is_ccw(f_tuple));
-    assert(is_valid(f_tuple));
+    assert(is_valid(f_tuple, hash_accessor));
     return f_tuple;
 }
 
@@ -190,9 +196,11 @@ Tuple TetMesh::tet_tuple_from_id(long id) const
     leid = auto_3d_table_complete_vertex[lvid][1];
     lfid = auto_3d_table_complete_vertex[lvid][2];
 
-    Tuple t_tuple = Tuple(lvid, leid, lfid, id, get_cell_hash_slow(id));
+    ConstAccessor<long> hash_accessor = get_const_cell_hash_accessor();
+
+    Tuple t_tuple = Tuple(lvid, leid, lfid, id, get_cell_hash(id, hash_accessor));
     assert(is_ccw(t_tuple));
-    assert(is_valid(t_tuple));
+    assert(is_valid(t_tuple, hash_accessor));
     return t_tuple;
 }
 
@@ -219,12 +227,12 @@ Tuple TetMesh::tuple_from_id(const PrimitiveType type, const long gid) const
     }
 }
 
-Tuple TetMesh::split_edge(const Tuple& t)
+Tuple TetMesh::split_edge(const Tuple& t, Accessor<long>& hash_accessor)
 {
     throw "not implemented";
 }
 
-Tuple TetMesh::collapse_edge(const Tuple& t)
+Tuple TetMesh::collapse_edge(const Tuple& t, Accessor<long>& hash_accessor)
 {
     throw "not implemented";
 }
@@ -260,7 +268,7 @@ long TetMesh::id(const Tuple& tuple, PrimitiveType type) const
 
 Tuple TetMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
 {
-    assert(is_valid(tuple));
+    assert(is_valid_slow(tuple));
     const long offset = tuple.m_local_vid * 6 * 4 + tuple.m_local_eid * 4 + tuple.m_local_fid;
     // bool ccw = is_ccw(tuple);
     switch (type) {
@@ -295,22 +303,23 @@ Tuple TetMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
 
 bool TetMesh::is_ccw(const Tuple& tuple) const
 {
-    assert(is_valid(tuple));
+    assert(is_valid_slow(tuple));
     const long offset = tuple.m_local_vid * 6 * 4 + tuple.m_local_eid * 4 + tuple.m_local_fid;
     return autogen::auto_3d_table_ccw[offset][0] == 1;
 }
 
-bool TetMesh::is_valid(const Tuple& tuple) const
+bool TetMesh::is_valid(const Tuple& tuple, ConstAccessor<long>& hash_accessor) const
 {
     const long offset = tuple.m_local_vid * 6 * 4 + tuple.m_local_eid * 4 + tuple.m_local_fid;
-    return auto_3d_table_ccw[offset][0] >= 0;
-}
+    const bool is_connectivity_valid = tuple.m_local_vid >= 0 && tuple.m_local_eid >= 0 &&
+                                       tuple.m_local_fid >= 0 && tuple.m_global_cid >= 0 &&
+                                       auto_3d_table_ccw[offset][0] >= 0;
 
-bool TetMesh::is_outdated(const Tuple& tuple) const
-{
-    const long cid = id(tuple, PrimitiveType::Tetrahedron);
-    ConstAccessor<long> ha = get_cell_hash_accessor();
-    return ha.scalar_attribute(cid) == tuple.m_hash;
+    if (!is_connectivity_valid) {
+        return false;
+    }
+
+    return Mesh::is_hash_valid(tuple, hash_accessor);
 }
 
 bool TetMesh::is_boundary(const Tuple& tuple) const

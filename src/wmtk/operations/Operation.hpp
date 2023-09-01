@@ -2,6 +2,7 @@
 #include <string>
 #include <type_traits>
 #include <vector>
+#include <wmtk/Accessor.hpp>
 #include <wmtk/Tuple.hpp>
 #include <wmtk/invariants/InvariantCollection.hpp>
 
@@ -9,6 +10,7 @@ namespace wmtk {
 class Mesh;
 class InvariantCollection;
 
+namespace operations {
 template <typename T>
 struct OperationSettings
 {
@@ -39,9 +41,14 @@ protected:
     // does invariant pre-checks
     virtual bool after() const;
 
+    void update_cell_hashes(const std::vector<Tuple>& cells);
+
+    Tuple resurrect_tuple(const Tuple& tuple) const;
+
 
     Mesh& m_mesh;
+    Accessor<long> m_hash_accessor;
 };
 
-
+} // namespace operations
 } // namespace wmtk

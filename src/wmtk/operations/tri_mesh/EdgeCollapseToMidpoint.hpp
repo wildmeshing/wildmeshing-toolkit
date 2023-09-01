@@ -4,11 +4,13 @@
 #include "TupleOperation.hpp"
 #include "TriMeshCollapseEdgeOperation.hpp"
 
-namespace wmtk {
-class TriMeshCollapseEdgeToMidpointOperation;
+namespace wmtk::operations {
+namespace tri_mesh {
+class EdgeCollapseToMidpoint;
+}
 
 template <>
-struct OperationSettings<TriMeshCollapseEdgeToMidpointOperation>
+struct OperationSettings<tri_mesh::EdgeCollapseToMidpoint>
 {
     OperationSettings<TriMeshCollapseEdgeOperation> collapse_settings;
     // handle to vertex position
@@ -24,13 +26,14 @@ struct OperationSettings<TriMeshCollapseEdgeToMidpointOperation>
     bool are_invariants_initialized() const;
 };
 
-class TriMeshCollapseEdgeToMidpointOperation : public TupleOperation
+namespace tri_mesh {
+class CEdgeCollapseToMidpoint : public TupleOperation
 {
 public:
-    TriMeshCollapseEdgeToMidpointOperation(
+    EdgeCollapseToMidpoint(
         Mesh& m,
         const Tuple& t,
-        const OperationSettings<TriMeshCollapseEdgeToMidpointOperation>& settings);
+        const OperationSettings<EdgeCollapseToMidpoint>& settings);
 
     std::string name() const override;
 
@@ -47,9 +50,9 @@ private:
     Tuple m_output_tuple;
 
     Accessor<double> m_pos_accessor;
-    const OperationSettings<TriMeshCollapseEdgeToMidpointOperation>& m_settings;
+    const OperationSettings<EdgeCollapseToMidpoint>& m_settings;
 
 };
 
-
-} // namespace wmtk
+} // namespace tri_mesh
+} // namespace wmtk::operations

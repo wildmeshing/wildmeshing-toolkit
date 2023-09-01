@@ -1,4 +1,4 @@
-#include "TriMeshCollapseEdgeToMidpointOperation.hpp"
+#include "CEdgeCollapseToMidpoint.hpp"
 #include <wmtk/invariants/find_invariant_in_collection_by_type.hpp>
 #include <wmtk/SimplicialComplex.hpp>
 
@@ -7,37 +7,37 @@
 
 namespace wmtk {
 
-void OperationSettings<TriMeshCollapseEdgeToMidpointOperation>::initialize_invariants(const TriMesh& m)
+void OperationSettings<CEdgeCollapseToMidpoint>::initialize_invariants(const TriMesh& m)
 {
     collapse_settings.initialize_invariants(m);
     collapse_settings.invariants.add(std::make_shared<MaxEdgeLengthInvariant>(m, position, max_squared_length));
 }
 
-bool OperationSettings<TriMeshCollapseEdgeToMidpointOperation>::are_invariants_initialized() const
+bool OperationSettings<CEdgeCollapseToMidpoint>::are_invariants_initialized() const
 {
         return collapse_settings.are_invariants_initialized() && find_invariants_in_collection_by_type<MaxEdgeLengthInvariant>(collapse_settings.invariants);
 }
-wmtk::TriMeshCollapseEdgeToMidpointOperation::TriMeshCollapseEdgeToMidpointOperation(
+wmtk::CEdgeCollapseToMidpoint::CEdgeCollapseToMidpoint(
     Mesh& m,
     const Tuple& t,
-    const OperationSettings<TriMeshCollapseEdgeToMidpointOperation>& settings)
+    const OperationSettings<CEdgeCollapseToMidpoint>& settings)
     : TupleOperation(m, settings.collapse_settings.invariants, t)
     , m_pos_accessor{m.create_accessor(settings.position)}
     , m_settings{settings}
 {
 }
 
-std::string TriMeshCollapseEdgeToMidpointOperation::name() const
+std::string CEdgeCollapseToMidpoint::name() const
 {
     return "tri_mesh_collapse_edge_to_mid";
 }
 
-Tuple TriMeshCollapseEdgeToMidpointOperation::return_tuple() const
+Tuple CEdgeCollapseToMidpoint::return_tuple() const
 {
     return m_output_tuple;
 }
 
-bool TriMeshCollapseEdgeToMidpointOperation::before() const
+bool CEdgeCollapseToMidpoint::before() const
 {
     return TupleOperation::before();
     if(!TupleOperation::before()) {
@@ -51,7 +51,7 @@ bool TriMeshCollapseEdgeToMidpointOperation::before() const
     return l_squared < m_settings.max_squared_length;
 }
 
-bool TriMeshCollapseEdgeToMidpointOperation::execute()
+bool CEdgeCollapseToMidpoint::execute()
 {
     // cache endpoint data for computing the midpoint
     bool v0_is_boundary = false;
@@ -65,7 +65,7 @@ bool TriMeshCollapseEdgeToMidpointOperation::execute()
 
     // collapse
     {
-        TriMeshCollapseEdgeOperation split_op(m_mesh, input_tuple(), m_settings.collapse_settings);
+        EdgeCollapse split_op(m_mesh, input_tuple(), m_settings.collapse_settings);
         if (!split_op()) {
             return false;
         }
@@ -85,10 +85,10 @@ bool TriMeshCollapseEdgeToMidpointOperation::execute()
 }
 
 
-std::vector<Tuple> TriMeshCollapseEdgeToMidpointOperation::modified_primitives(PrimitiveType type) const
+std::vector<Tuple> CEdgeCollapseToMidpoint::modified_primitives(PrimitiveType type) const
 {
     if (type == PrimitiveType::Face) {
-        // TODO: this is a copy paste from TriMeshCollapseEdgeOperation. Need to change operation structure to enable updated primitives
+        // TODO: this is a copy paste from EdgeCollapse. Need to change operation structure to enable updated primitives
     Simplex v(PrimitiveType::Vertex, m_output_tuple);
     auto sc = SimplicialComplex::open_star(m_mesh, v);
     auto faces = sc.get_simplices(PrimitiveType::Face);

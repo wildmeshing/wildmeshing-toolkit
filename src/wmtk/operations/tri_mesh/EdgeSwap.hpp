@@ -3,23 +3,22 @@
 #include <optional>
 #include "Operation.hpp"
 
-namespace wmtk {
-class TriMeshSwapEdgeOperation;
+namespace wmtk::operations {
+namespace tri_mesh {
+class EdgeSwap;
+}
 
 template <>
-struct OperationSettings<TriMeshSwapEdgeOperation>
+struct OperationSettings<tri_mesh::EdgeSwap>
 {
     bool must_improve_valence = false;
 };
 
-
-class TriMeshSwapEdgeOperation : public Operation
+namespace tri_mesh {
+class EdgeSwap : public Operation
 {
 public:
-    TriMeshSwapEdgeOperation(
-        Mesh& m,
-        const Tuple& t,
-        const OperationSettings<TriMeshSwapEdgeOperation>& settings = {});
+    EdgeSwap(Mesh& m, const Tuple& t, const OperationSettings<EdgeSwap>& settings = {});
 
     std::string name() const override;
     Tuple return_tuple() const;
@@ -33,8 +32,8 @@ protected:
 private:
     Tuple m_input_tuple;
     Tuple m_output_tuple;
-    const OperationSettings<TriMeshSwapEdgeOperation>& m_settings;
+    const OperationSettings<EdgeSwap>& m_settings;
 };
 
-
-} // namespace wmtk
+} // namespace tri_mesh
+} // namespace wmtk::operations

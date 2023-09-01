@@ -1,13 +1,15 @@
 #pragma once
 #include <wmtk/TriMesh.hpp>
-#include "TupleOperation.hpp"
 #include "TriMeshSplitEdgeOperation.hpp"
+#include "TupleOperation.hpp"
 
-namespace wmtk {
-class TriMeshSplitEdgeAtMidpointOperation;
+namespace wmtk::operations {
+namespace tri_mesh {
+class EdgeSplitAtMidpoint;
+}
 
 template <>
-struct OperationSettings<TriMeshSplitEdgeAtMidpointOperation>
+struct OperationSettings<tri_mesh::EdgeSplitAtMidpoint>
 {
     OperationSettings<TriMeshSplitEdgeOperation> split_settings;
     // handle to vertex position
@@ -21,13 +23,14 @@ struct OperationSettings<TriMeshSplitEdgeAtMidpointOperation>
     bool are_invariants_initialized() const;
 };
 
-class TriMeshSplitEdgeAtMidpointOperation : public TupleOperation
+namespace tri_mesh {
+class EdgeSplitAtMidpoint : public TupleOperation
 {
 public:
-    TriMeshSplitEdgeAtMidpointOperation(
+    EdgeSplitAtMidpoint(
         Mesh& m,
         const Tuple& t,
-        const OperationSettings<TriMeshSplitEdgeAtMidpointOperation>& settings);
+        const OperationSettings<EdgeSplitAtMidpoint>& settings);
 
     std::string name() const override;
 
@@ -43,11 +46,11 @@ private:
     Tuple m_output_tuple;
     Accessor<double> m_pos_accessor;
 
-    const OperationSettings<TriMeshSplitEdgeAtMidpointOperation>& m_settings;
+    const OperationSettings<EdgeSplitAtMidpoint>& m_settings;
 
     Eigen::Vector3d p0;
     Eigen::Vector3d p1;
 };
 
-
-} // namespace wmtk
+} // namespace tri_mesh
+} // namespace wmtk::operations

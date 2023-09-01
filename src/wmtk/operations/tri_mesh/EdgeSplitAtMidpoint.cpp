@@ -1,26 +1,30 @@
-#include "TriMeshSplitEdgeAtMidpointOperation.hpp"
+#include "EdgeSplitAtMidpoint.hpp"
 #include <wmtk/invariants/find_invariant_in_collection_by_type.hpp>
 
 #include <wmtk/TriMesh.hpp>
-#include "TriMeshSplitEdgeOperation.hpp"
 #include <wmtk/invariants/MinEdgeLengthInvariant.hpp>
+#include "EdgeSplit.hpp"
 
-namespace wmtk {
+namespace wmtk::operations {
 
-void OperationSettings<TriMeshSplitEdgeAtMidpointOperation>::initialize_invariants(const TriMesh& m)
+
+void OperationSettings<EdgeSplitAtMidpoint>::initialize_invariants(const TriMesh& m)
 {
     split_settings.initialize_invariants(m);
-    split_settings.invariants.add(std::make_shared<MinEdgeLengthInvariant>(m, position, min_squared_length));
+    split_settings.invariants.add(
+        std::make_shared<MinEdgeLengthInvariant>(m, position, min_squared_length));
 }
 
-bool OperationSettings<TriMeshSplitEdgeAtMidpointOperation>::are_invariants_initialized() const
+bool OperationSettings<EdgeSplitAtMidpoint>::are_invariants_initialized() const
 {
-        return split_settings.are_invariants_initialized() && find_invariants_in_collection_by_type<MinEdgeLengthInvariant>(split_settings.invariants);
+    return split_settings.are_invariants_initialized() &&
+           find_invariants_in_collection_by_type<MinEdgeLengthInvariant>(split_settings.invariants);
 }
-TriMeshSplitEdgeAtMidpointOperation::TriMeshSplitEdgeAtMidpointOperation(
+namespace tri_mesh {
+EdgeSplitAtMidpoint::EdgeSplitAtMidpoint(
     Mesh& m,
     const Tuple& t,
-    const OperationSettings<TriMeshSplitEdgeAtMidpointOperation>& settings)
+    const OperationSettings<EdgeSplitAtMidpoint>& settings)
     : TupleOperation(m, settings.split_settings.invariants, t)
     , m_pos_accessor{m.create_accessor(settings.position)}
     , m_settings{settings}
@@ -28,15 +32,15 @@ TriMeshSplitEdgeAtMidpointOperation::TriMeshSplitEdgeAtMidpointOperation(
     p0 = m_pos_accessor.vector_attribute(input_tuple());
     p1 = m_pos_accessor.vector_attribute(m_mesh.switch_vertex(input_tuple()));
 }
-std::string TriMeshSplitEdgeAtMidpointOperation::name() const
+std::string EdgeSplitAtMidpoint::name() const
 {
     return "tri_mesh_split_edge_at_midpoint";
 }
-Tuple TriMeshSplitEdgeAtMidpointOperation::return_tuple() const
+Tuple EdgeSplitAtMidpoint::return_tuple() const
 {
     return m_output_tuple;
 }
-bool TriMeshSplitEdgeAtMidpointOperation::before() const
+bool EdgeSplitAtMidpoint::before() const
 {
     return TupleOperation::before();
     if (m_mesh.is_outdated(input_tuple()) || !m_mesh.is_valid(input_tuple())) {
@@ -46,7 +50,7 @@ bool TriMeshSplitEdgeAtMidpointOperation::before() const
     const double l_squared = (p1 - p0).squaredNorm();
     return l_squared > m_settings.min_squared_length;
 }
-bool TriMeshSplitEdgeAtMidpointOperation::execute()
+bool EdgeSplitAtMidpoint::execute()
 {
     {
         TriMeshSplitEdgeOperation split_op(m_mesh, input_tuple(), m_settings.split_settings);

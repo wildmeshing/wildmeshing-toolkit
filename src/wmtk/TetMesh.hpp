@@ -8,8 +8,8 @@ class TetMesh : public Mesh
 public:
     TetMesh();
 
-    Tuple split_edge(const Tuple& t) override;
-    Tuple collapse_edge(const Tuple& t) override;
+    Tuple split_edge(const Tuple& t, Accessor<long>& hash_accessor) override;
+    Tuple collapse_edge(const Tuple& t, Accessor<long>& hash_accessor) override;
 
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
     bool is_ccw(const Tuple& tuple) const override;
@@ -17,9 +17,7 @@ public:
     bool is_boundary_vertex(const Tuple& tuple) const override;
     bool is_boundary_edge(const Tuple& tuple) const override;
 
-    bool is_valid(const Tuple& tuple) const override;
-
-    bool is_outdated(const Tuple& tuple) const override;
+    bool is_valid(const Tuple& tuple, ConstAccessor<long>& hash_accessor) const override;
 
     void initialize(
         Eigen::Ref<const RowVectors4l> TV,

@@ -1,10 +1,10 @@
 #include "IsotropicRemeshing.hpp"
 
 #include <wmtk/SimplicialComplex.hpp>
-#include <wmtk/operations/TriMeshCollapseEdgeToMidpointOperation.hpp>
-#include <wmtk/operations/TriMeshSplitEdgeAtMidpointOperation.hpp>
-#include <wmtk/operations/TriMeshSwapEdgeOperation.hpp>
-#include <wmtk/operations/TriMeshVertexTangentialSmoothOperation.hpp>
+#include <wmtk/operations/tri_mesh/EdgeCollapseToMidpoint.hpp>
+#include <wmtk/operations/tri_mesh/EdgeSplitAtMidpoint.hpp>
+#include <wmtk/operations/tri_mesh/EdgeSwap.hpp>
+#include <wmtk/operations/tri_mesh/VertexTangentialSmooth.hpp>
 
 namespace wmtk::components::internal {
 
@@ -16,6 +16,7 @@ IsotropicRemeshing::IsotropicRemeshing(TriMesh& mesh, const double length, const
     , m_position_handle{m_mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex)}
     , m_scheduler(m_mesh)
 {
+    using namespace operations;
     // split
     {
         OperationSettings<TriMeshSplitEdgeAtMidpointOperation> split_settings;
@@ -24,9 +25,7 @@ IsotropicRemeshing::IsotropicRemeshing(TriMesh& mesh, const double length, const
         split_settings.split_settings.split_boundary_edges = !m_lock_boundary;
         split_settings.initialize_invariants(m_mesh);
 
-        m_scheduler.add_operation_type<TriMeshSplitEdgeAtMidpointOperation>(
-            "split",
-            split_settings);
+        m_scheduler.add_operation_type<tri_mesh::EdgeSplitAtMidpoint>("split", split_settings);
     }
     // collapse
     {
@@ -37,25 +36,21 @@ IsotropicRemeshing::IsotropicRemeshing(TriMesh& mesh, const double length, const
         op_settings.collapse_towards_boundary = true;
 
         op_settings.initialize_invariants(m_mesh);
-        m_scheduler.add_operation_type<TriMeshCollapseEdgeToMidpointOperation>(
-            "collapse",
-            op_settings);
+        m_scheduler.add_operation_type<tri_mesh::EdgeCollapseToMidpoint>("collapse", op_settings);
     }
     // flip
     {
-        OperationSettings<TriMeshSwapEdgeOperation> op_settings{true};
+        OperationSettings<tri_mesh::EdgeSwap> op_settings{true};
 
-        m_scheduler.add_operation_type<TriMeshSwapEdgeOperation>("swap", op_settings);
+        m_scheduler.add_operation_type<tri_mesh::EdgeSwap>("swap", op_settings);
     }
     // smooth
     {
-        OperationSettings<TriMeshVertexTangentialSmoothOperation> op_settings{
+        OperationSettings<tri_mesh::VertexTangentialSmooth> op_settings{
             m_position_handle,
             !m_lock_boundary};
 
-        m_scheduler.add_operation_type<TriMeshVertexTangentialSmoothOperation>(
-            "smooth",
-            op_settings);
+        m_scheduler.add_operation_type<tri_mesh::VertexTangentialSmooth>("smooth", op_settings);
     }
 }
 

@@ -6,11 +6,13 @@
 #include <wmtk/invariants/InvariantCollection.hpp>
 #include "TupleOperation.hpp"
 
-namespace wmtk {
-class TriMeshCollapseEdgeOperation;
+namespace wmtk::operations {
+namespace tri_mesh {
+class EdgeCollapse;
+}
 
 template <>
-struct OperationSettings<TriMeshCollapseEdgeOperation>
+struct OperationSettings<tri_mesh::EdgeCollapse>
 {
     OperationSettings();
     // are collapses between boundary and interior vertices allowed
@@ -26,18 +28,19 @@ struct OperationSettings<TriMeshCollapseEdgeOperation>
     bool are_invariants_initialized() const;
 };
 
-class TriMeshCollapseEdgeOperation : public TupleOperation
+namespace tri_mesh {
+class EdgeCollapse : public TupleOperation
 {
 public:
     // constructor for default factory pattern construction
-    TriMeshCollapseEdgeOperation(
+    EdgeCollapse(
         Mesh& m,
         const Tuple& t,
-        const OperationSettings<TriMeshCollapseEdgeOperation>& settings);
-    TriMeshCollapseEdgeOperation(
+        const OperationSettings<EdgeCollapse>& settings);
+    EdgeCollapse(
         TriMesh& m,
         const Tuple& t,
-        const OperationSettings<TriMeshCollapseEdgeOperation>& settings);
+        const OperationSettings<EdgeCollapse>& settings);
 
     std::string name() const override;
 
@@ -45,7 +48,7 @@ public:
     std::vector<Tuple> modified_triangles() const;
     std::vector<Tuple> modified_primitives(PrimitiveType) const override;
 
-    // return a ccw tuple from left ear if it exists, otherwise return a ccw tuple from right ear
+    // return next-->opposite tuple if it exists, otherwise return previous-->opposite
     Tuple return_tuple() const;
 
     static PrimitiveType primitive_type() { return PrimitiveType::Edge; }
@@ -56,8 +59,8 @@ protected:
 
 private:
     Tuple m_output_tuple;
-    const OperationSettings<TriMeshCollapseEdgeOperation>& m_settings;
+    const OperationSettings<EdgeCollapse>& m_settings;
 };
 
-
-} // namespace wmtk
+} // namespace tri_mesh
+} // namespace wmtk::operations

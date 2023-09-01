@@ -1,0 +1,19 @@
+set(SRC_FILES
+    Operation.hpp
+    Operation.cpp
+    EdgeSplit.hpp
+    EdgeSplit.cpp
+    EdgeSplitAtMidpoint.hpp
+    EdgeSplitAtMidpoint.cpp
+    EdgeCollapse.hpp
+    EdgeCollapse.cpp
+    EdgeCollapseToMidpoint.hpp
+    EdgeCollapseToMidpoint.cpp
+    EdgeSwap.hpp
+    EdgeSwap.cpp
+    VertexSmooth.hpp
+    VertexSmooth.cpp
+    VertexTangentialSmooth.hpp
+    VertexTangentialSmooth.cpp
+)
+target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

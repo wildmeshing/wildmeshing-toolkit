@@ -19,16 +19,16 @@ TriMesh::TriMesh(TriMesh&& o) = default;
 TriMesh& TriMesh::operator=(const TriMesh& o) = default;
 TriMesh& TriMesh::operator=(TriMesh&& o) = default;
 
-Tuple TriMesh::split_edge(const Tuple& t)
+Tuple TriMesh::split_edge(const Tuple& t, Accessor<long>& hash_accessor)
 {
-    // record the deleted simplices topology attributes
-    TriMesh::TriMeshOperationExecutor executor(*this, t);
+    // TODO record the deleted simplices topology attributes
+    TriMesh::TriMeshOperationExecutor executor(*this, t, hash_accessor);
     return executor.split_edge();
 }
 
-Tuple TriMesh::collapse_edge(const Tuple& t)
+Tuple TriMesh::collapse_edge(const Tuple& t, Accessor<long>& hash_accessor)
 {
-    TriMesh::TriMeshOperationExecutor executor(*this, t);
+    TriMesh::TriMeshOperationExecutor executor(*this, t, hash_accessor);
     return executor.collapse_edge();
 }
 
@@ -60,7 +60,7 @@ bool TriMesh::is_boundary(const Tuple& tuple) const
 
 bool TriMesh::is_boundary_edge(const Tuple& tuple) const
 {
-    assert(is_valid(tuple));
+    assert(is_valid_slow(tuple));
     ConstAccessor<long> ff_accessor = create_const_accessor<long>(m_ff_handle);
     return ff_accessor.vector_attribute(tuple)(tuple.m_local_eid) < 0;
 }
@@ -68,19 +68,27 @@ bool TriMesh::is_boundary_edge(const Tuple& tuple) const
 bool TriMesh::is_boundary_vertex(const Tuple& vertex) const
 {
     // go through all edges and check if they are boundary
-    const SimplicialComplex neigh = SimplicialComplex::open_star(*this, Simplex::vertex(vertex));
-    for (const Simplex& s : neigh.get_edges()) {
-        if (is_boundary(s.tuple())) {
+    // const SimplicialComplex neigh = SimplicialComplex::open_star(*this, Simplex::vertex(vertex));
+    // for (const Simplex& s : neigh.get_edges()) {
+    //    if (is_boundary(s.tuple())) {
+    //        return true;
+    //    }
+    //}
+
+    Tuple t = vertex;
+    do {
+        if (is_boundary(t)) {
             return true;
         }
-    }
+        t = switch_edge(switch_face(t));
+    } while (t != vertex);
 
     return false;
 }
 
 Tuple TriMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
 {
-    assert(is_valid(tuple));
+    assert(is_valid_slow(tuple));
     bool ccw = is_ccw(tuple);
     int offset = tuple.m_local_vid * 3 + tuple.m_local_eid;
 
@@ -126,13 +134,16 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
         }
         assert(lvid_new != -1);
         assert(leid_new != -1);
+
+        ConstAccessor<long> hash_accessor = get_const_cell_hash_accessor();
+
         const Tuple res(
             lvid_new,
             leid_new,
             tuple.m_local_fid,
             gcid_new,
-            get_cell_hash_slow(gcid_new));
-        assert(is_valid(res));
+            get_cell_hash(gcid_new, hash_accessor));
+        assert(is_valid(res, hash_accessor));
         return res;
     }
     case PrimitiveType::Tetrahedron:
@@ -142,7 +153,7 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
 
 bool TriMesh::is_ccw(const Tuple& tuple) const
 {
-    assert(is_valid(tuple));
+    assert(is_valid_slow(tuple));
     int offset = tuple.m_local_vid * 3 + tuple.m_local_eid;
     return autogen::auto_2d_table_ccw[offset][0] == 1;
 }
@@ -239,9 +250,14 @@ Tuple TriMesh::vertex_tuple_from_id(long id) const
         if (fv(i) == id) {
             assert(autogen::auto_2d_table_complete_vertex[i][0] == i);
             const long leid = autogen::auto_2d_table_complete_vertex[i][1];
-            Tuple v_tuple = Tuple(i, leid, -1, f, get_cell_hash_slow(f));
-            assert(is_ccw(v_tuple));
-            assert(is_valid(v_tuple));
+            Tuple v_tuple = Tuple(
+                i,
+                leid,
+                -1,
+                f,
+                get_cell_hash_slow(
+                    f)); // TODO replace by function that takes hash accessor as parameter
+            assert(is_ccw(v_tuple)); // is_ccw also checks for validity
             return v_tuple;
         }
     }
@@ -259,9 +275,11 @@ Tuple TriMesh::edge_tuple_from_id(long id) const
             assert(autogen::auto_2d_table_complete_edge[i][1] == i);
             const long lvid = autogen::auto_2d_table_complete_edge[i][0];
 
-            Tuple e_tuple = Tuple(lvid, i, -1, f, get_cell_hash_slow(f));
+            ConstAccessor<long> hash_accessor = get_const_cell_hash_accessor();
+
+            Tuple e_tuple = Tuple(lvid, i, -1, f, get_cell_hash(f, hash_accessor));
             assert(is_ccw(e_tuple));
-            assert(is_valid(e_tuple));
+            assert(is_valid(e_tuple, hash_accessor));
             return e_tuple;
         }
     }
@@ -280,22 +298,22 @@ Tuple TriMesh::face_tuple_from_id(long id) const
 
     );
     assert(is_ccw(f_tuple));
-    assert(is_valid(f_tuple));
+    assert(is_valid_slow(f_tuple));
     return f_tuple;
 }
 
-bool TriMesh::is_valid(const Tuple& tuple) const
+bool TriMesh::is_valid(const Tuple& tuple, ConstAccessor<long>& hash_accessor) const
 {
     int offset = tuple.m_local_vid * 3 + tuple.m_local_eid;
-    return tuple.m_local_vid >= 0 && tuple.m_local_eid >= 0 && tuple.m_global_cid >= 0 &&
-           autogen::auto_2d_table_ccw[offset][0] >= 0;
-}
+    const bool is_connectivity_valid = tuple.m_local_vid >= 0 && tuple.m_local_eid >= 0 &&
+                                       tuple.m_global_cid >= 0 &&
+                                       autogen::auto_2d_table_ccw[offset][0] >= 0;
 
-bool TriMesh::is_outdated(const Tuple& tuple) const
-{
-    const long cid = id(tuple, PrimitiveType::Face);
-    ConstAccessor<long> ha = get_cell_hash_accessor();
-    return ha.scalar_attribute(cid) != tuple.m_hash;
+    if (!is_connectivity_valid) {
+        return false;
+    }
+
+    return Mesh::is_hash_valid(tuple, hash_accessor);
 }
 
 bool TriMesh::is_connectivity_valid() const

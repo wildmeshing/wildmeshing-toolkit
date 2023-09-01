@@ -1,9 +1,12 @@
 #include "Operation.hpp"
+#include <wmtk/Accessor.hpp>
 #include <wmtk/Mesh.hpp>
+#include "Operation.hpp"
 
-namespace wmtk {
+namespace wmtk::operations {
 Operation::Operation(Mesh& m)
     : m_mesh(m)
+    , m_hash_accessor(m_mesh.get_cell_hash_accessor())
 {}
 Operation::~Operation() = default;
 
@@ -46,6 +49,15 @@ bool Operation::after() const
     return true;
 }
 
+void Operation::update_cell_hashes(const std::vector<Tuple>& cells)
+{
+    m_mesh.update_cell_hashes(cells, m_hash_accessor);
+}
 
-} // namespace wmtk
+Tuple Operation::resurrect_tuple(const Tuple& tuple) const
+{
+    return m_mesh.resurrect_tuple(tuple, m_hash_accessor);
+}
 
+
+} // namespace wmtk::operations

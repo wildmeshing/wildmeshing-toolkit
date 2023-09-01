@@ -1,15 +1,20 @@
 
-#include "TriMeshSplitEdgeOperation.hpp"
+#include "EdgeSplit.hpp"
+#include <wmtk/TriMesh.hpp>
+#include "wmtk/SimplicialComplex.hpp"
+
+
 #include <spdlog/spdlog.h>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
 #include <wmtk/invariants/ValidTupleInvariant.hpp>
 #include <wmtk/invariants/find_invariant_in_collection_by_type.hpp>
+#include "EdgeSplit.hpp"
 #include "wmtk/SimplicialComplex.hpp"
 
-namespace wmtk {
+namespace wmtk::operations {
 
-void OperationSettings<TriMeshSplitEdgeOperation>::initialize_invariants(const TriMesh& m)
+void OperationSettings<EdgeSplit>::initialize_invariants(const TriMesh& m)
 {
     // outdated + is valid tuple
     invariants = basic_invariant_collection(m);
@@ -19,23 +24,21 @@ void OperationSettings<TriMeshSplitEdgeOperation>::initialize_invariants(const T
     }
 }
 
-bool OperationSettings<TriMeshSplitEdgeOperation>::are_invariants_initialized() const
+bool OperationSettings<EdgeSplit>::are_invariants_initialized() const
 {
     return find_invariants_in_collection_by_type<ValidTupleInvariant>(invariants);
 }
 
+namespace tri_mesh {
 
-TriMeshSplitEdgeOperation::TriMeshSplitEdgeOperation(
-    Mesh& m,
-    const Tuple& t,
-    const OperationSettings<TriMeshSplitEdgeOperation>& settings)
+EdgeSplit::EdgeSplit(Mesh& m, const Tuple& t, const OperationSettings<EdgeSplit>& settings)
     : TupleOperation(m, settings.invariants, t)
     , m_settings{settings}
 {
     assert(m_settings.are_invariants_initialized());
 }
 
-bool TriMeshSplitEdgeOperation::execute()
+bool EdgeSplit::execute()
 {
     // move vertex to center of old vertices
     TriMesh& m = dynamic_cast<TriMesh&>(m_mesh);
@@ -58,7 +61,7 @@ bool TriMeshSplitEdgeOperation::execute()
 }
 
 // potential after-like strucutre?
-// bool TriMeshSplitEdgeOperation::after() const
+// bool EdgeSplit::after() const
 //{
 //    // energy decrease
 //
@@ -72,22 +75,22 @@ bool TriMeshSplitEdgeOperation::execute()
 //    //    return false;;
 //    //}
 //}
-std::string TriMeshSplitEdgeOperation::name() const
+std::string EdgeSplit::name() const
 {
     return "tri_mesh_split_edge";
 }
 
-Tuple TriMeshSplitEdgeOperation::new_vertex() const
+Tuple EdgeSplit::new_vertex() const
 {
     return m_output_tuple;
 }
 
-Tuple TriMeshSplitEdgeOperation::return_tuple() const
+Tuple EdgeSplit::return_tuple() const
 {
     return m_output_tuple;
 }
 
-std::vector<Tuple> TriMeshSplitEdgeOperation::modified_primitives(PrimitiveType type) const
+std::vector<Tuple> EdgeSplit::modified_primitives(PrimitiveType type) const
 {
     if (type == PrimitiveType::Face) {
         // TODO
@@ -97,7 +100,7 @@ std::vector<Tuple> TriMeshSplitEdgeOperation::modified_primitives(PrimitiveType 
     }
     return {};
 }
-///std::vector<Tuple> TriMeshSplitEdgeOperation::triangle_onering() const
+///std::vector<Tuple> EdgeSplit::triangle_onering() const
 ///{
 ///    Simplex v(PrimitiveType::Vertex, new_vertex());
 ///    auto sc = SimplicialComplex::open_star(v, m_mesh);
@@ -108,7 +111,7 @@ std::vector<Tuple> TriMeshSplitEdgeOperation::modified_primitives(PrimitiveType 
 ///    }
 ///    return ret;
 ///}
-///std::vector<Tuple> TriMeshSplitEdgeOperation::triangle_tworing() const
+///std::vector<Tuple> EdgeSplit::triangle_tworing() const
 ///{
 ///    throw "not implemented";
 ///    return {};
@@ -130,4 +133,5 @@ std::vector<Tuple> TriMeshSplitEdgeOperation::modified_primitives(PrimitiveType 
 //
 //
 //}
-} // namespace wmtk
+} // namespace tri_mesh
+} // namespace wmtk::operations

@@ -4,11 +4,13 @@
 #include <wmtk/invariants/InvariantCollection.hpp>
 #include "TupleOperation.hpp"
 
-namespace wmtk {
-class TriMeshSplitEdgeOperation;
+namespace wmtk::operations {
+namespace tri_mesh {
+class EdgeSplit;
+}
 
 template <>
-struct OperationSettings<TriMeshSplitEdgeOperation>
+struct OperationSettings<tri_mesh::EdgeSplit>
 {
     bool split_boundary_edges = true;
     InvariantCollection invariants;
@@ -19,13 +21,11 @@ struct OperationSettings<TriMeshSplitEdgeOperation>
     bool are_invariants_initialized() const;
 };
 
-class TriMeshSplitEdgeOperation : public TupleOperation
+namespace tri_mesh {
+class EdgeSplit : public TupleOperation
 {
 public:
-    TriMeshSplitEdgeOperation(
-        Mesh& m,
-        const Tuple& t,
-        const OperationSettings<TriMeshSplitEdgeOperation>& settings);
+    EdgeSplit(Mesh& m, const Tuple& t, const OperationSettings<EdgeSplit>& settings);
 
     std::string name() const override;
 
@@ -51,8 +51,8 @@ protected:
 private:
     Tuple m_output_tuple;
 
-    const OperationSettings<TriMeshSplitEdgeOperation>& m_settings;
+    const OperationSettings<EdgeSplit>& m_settings;
 };
 
-
-} // namespace wmtk
+} // namespace tri_mesh
+} // namespace wmtk::operations

@@ -3,8 +3,8 @@
 #include <numeric>
 #include <wmtk/Accessor.hpp>
 #include <wmtk/operations/OperationFactory.hpp>
-#include <wmtk/operations/TriMeshCollapseEdgeOperation.hpp>
-#include <wmtk/operations/TriMeshSplitEdgeOperation.hpp>
+#include <wmtk/operations/tri_mesh/EdgeCollapse.hpp>
+#include <wmtk/operations/tri_mesh/EdgeSplit.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include "tools/DEBUG_TriMesh.hpp"
 #include "tools/TriMesh_examples.hpp"
@@ -23,18 +23,21 @@ constexpr PrimitiveType PF = PrimitiveType::Face;
 // something should succeed
 DEBUG_TriMesh test_split(const DEBUG_TriMesh& mesh, const Tuple& e, bool should_succeed)
 {
+    using namespace operations;
+
     DEBUG_TriMesh m = mesh;
 
-    OperationSettings<TriMeshSplitEdgeOperation> op_settings;
+    OperationSettings<tri_mesh::EdgeSplit> op_settings;
     op_settings.initialize_invariants(m);
-    OperationFactory<TriMeshSplitEdgeOperation> fact(op_settings);
+    OperationFactory<tri_mesh::EdgeSplit> fact(op_settings);
 
     auto op = fact.create(m, e);
     bool result = (*op)(); // should run the split
     REQUIRE(should_succeed == result);
     if (should_succeed) {
-        TriMesh m2 = mesh;
-        m2.split_edge(e);
+        DEBUG_TriMesh m2 = mesh;
+        Accessor<long> hash_accessor = m2.get_cell_hash_accessor();
+        m2.split_edge(e, hash_accessor);
         CHECK(m == m2);
     } else {
         CHECK(mesh == m); // check that a failed op returns to original state
@@ -53,18 +56,21 @@ DEBUG_TriMesh test_split(const DEBUG_TriMesh& mesh, long edge_index, bool should
 // something should succeed
 DEBUG_TriMesh test_collapse(const DEBUG_TriMesh& mesh, const Tuple& e, bool should_succeed)
 {
+    using namespace operations;
+
     DEBUG_TriMesh m = mesh;
-    OperationSettings<TriMeshCollapseEdgeOperation> op_settings;
+    OperationSettings<tri_mesh::EdgeCollapse> op_settings;
     op_settings.initialize_invariants(m);
-    OperationFactory<TriMeshCollapseEdgeOperation> fact(op_settings);
+    OperationFactory<tri_mesh::EdgeCollapse> fact(op_settings);
 
     auto op = fact.create(m, e);
     bool result = (*op)(); // should run the split
     REQUIRE(m.is_connectivity_valid());
     REQUIRE(should_succeed == result);
     if (should_succeed) {
-        TriMesh m2 = mesh;
-        m2.collapse_edge(e);
+        DEBUG_TriMesh m2 = mesh;
+        Accessor<long> hash_accessor = m2.get_cell_hash_accessor();
+        m2.collapse_edge(e, hash_accessor);
         CHECK(m == m2);
     } else {
         CHECK(mesh == m); // check that a failed op returns to original state
