@@ -156,4 +156,85 @@ namespace wmtk
         }
         return ret;
     }
+
+    bool MultiMeshManager::is_map_valid(const Mesh& parent_mesh) const
+    {
+        for (auto child_mesh_ptr : child_meshes)
+        {
+            long child_id = child_mesh_ptr->multi_mesh_manager.child_id();
+            PrimitiveType map_type = child_mesh_ptr->top_simplex_type();
+
+            auto parent_to_child_handle = map_to_child_handles[child_id];
+            auto child_to_parent_handle = child_mesh_ptr->multi_mesh_manager.map_to_parent_handle;
+            auto child_cell_flag_accessor = child_mesh_ptr->get_flag_accessor(map_type);
+
+            for (long id = 0; id < child_mesh_ptr->capacity(map_type); ++id)
+            {
+                if (child_cell_flag_accessor.scalar_attribute(child_mesh_ptr->tuple_from_id(map_type, id)) == 0)
+                {
+                    continue;
+                }
+
+                // 1. test if all maps in child_mesh exisits
+                // 2. test if tuples in maps are valid and up_to_date
+                // 3. test if map is symmetric
+                // 4. test switch_top_simplex operation
+
+                auto [child_tuple, parent_tuple] = read_tuple_map_attribute(child_to_parent_handle, *child_mesh_ptr, child_mesh_ptr->tuple_from_id(map_type, id));
+
+                if (!child_mesh_ptr->is_valid(child_tuple) || child_mesh_ptr->is_outdated(child_tuple))
+                {
+                    return false;
+                }
+                if (!parent_mesh.is_valid(parent_tuple) || parent_mesh.is_outdated(parent_tuple))
+                {
+                    return false;
+                }
+                
+                auto [parent_tuple_test, child_tuple_test] = read_tuple_map_attribute(parent_to_child_handle, parent_mesh, parent_tuple);
+
+                if (child_tuple_test != child_tuple || parent_tuple_test != parent_tuple)
+                {
+                    return false;
+                }
+
+                // for 4, current code support only mapping between triangle meshes
+                if (map_type == PrimitiveType::Face && parent_mesh.top_simplex_type() == PrimitiveType::Face)
+                {
+                    Tuple cur_child_tuple = child_tuple;
+                    Tuple cur_parent_tuple = parent_tuple;
+
+                    for (int i = 0; i < 3; i++)
+                    {
+                        if (!child_mesh_ptr->is_boundary(cur_child_tuple))
+                        {
+                            if (parent_mesh.is_boundary(cur_parent_tuple))
+                            {
+                                return false;
+                            }
+
+                            Tuple child_tuple_opp = child_mesh_ptr->switch_face(cur_child_tuple);
+                            Tuple parent_tuple_opp = parent_mesh.switch_face(cur_parent_tuple);
+
+                            if (parent_tuple_opp != map_tuple_between_meshes(*child_mesh_ptr, parent_mesh, child_to_parent_handle, child_tuple_opp))
+                            {
+                                return false;
+                            }
+
+                        }
+                        cur_child_tuple = child_mesh_ptr->switch_edge(child_mesh_ptr->switch_vertex(cur_child_tuple));
+                        cur_parent_tuple = parent_mesh.switch_edge(parent_mesh.switch_vertex(cur_parent_tuple));
+                    }
+                }
+                else
+                {
+                    // TODO: implement other cases
+                    continue;
+                }
+                
+            }
+            
+        }
+        return true;
+    }
 }

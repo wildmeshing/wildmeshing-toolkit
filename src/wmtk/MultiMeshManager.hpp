@@ -51,6 +51,8 @@ class MultiMeshManager
     // i.e. the connectivity of this mesh is a subset of this in parent_mesh
     static bool is_child_mesh_valid(const Mesh& parent_mesh, const Mesh& child_mesh);
 
+    bool is_map_valid(const Mesh& parent_mesh) const;
+
     // TODO: make it a free function? static function?
     // Map source_tuple from source_mesh to target_mesh
     static Tuple map_tuple_between_meshes(const Mesh& source_mesh, const Mesh& target_mesh, MeshAttributeHandle<long> source_map_handle, const Tuple& source_tuple);

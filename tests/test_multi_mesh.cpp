@@ -48,6 +48,8 @@ TEST_CASE("test_register_child_mesh","[multimesh][2D]")
 
     REQUIRE(tuple5 == child1_ptr->tuple_from_id(PF,1));
     REQUIRE(tuple6 == parent.tuple_from_id(PF,1));
+
+    REQUIRE(p_mul_manager.is_map_valid(parent) == true);
 }
 
 TEST_CASE("test_multi_mesh_navigation","[multimesh][2D]")
@@ -95,6 +97,7 @@ TEST_CASE("test_split_multi_mesh","[multimesh][2D]")
     MultiMeshManager::register_child_mesh(parent, child0_ptr, child0_map);
     MultiMeshManager::register_child_mesh(parent, child1_ptr, child1_map);
     MultiMeshManager::register_child_mesh(parent, child2_ptr, child2_map);
+    REQUIRE(parent.multi_mesh_manager.is_map_valid(parent) == true);
 
     Tuple edge = parent.edge_tuple_between_v1_v2(1, 0, 1);
     std::cout << "split edge (0,1)" << std::endl;
@@ -105,6 +108,7 @@ TEST_CASE("test_split_multi_mesh","[multimesh][2D]")
     REQUIRE(child0_ptr->is_connectivity_valid());
     REQUIRE(child1_ptr->is_connectivity_valid());
     REQUIRE(child2_ptr->is_connectivity_valid());
+    REQUIRE(parent.multi_mesh_manager.is_map_valid(parent) == true);
 
     CHECK(parent.fv_from_fid(2) == Eigen::Matrix<long, 3, 1>(0, 2, 4));
     CHECK(parent.fv_from_fid(3) == Eigen::Matrix<long, 3, 1>(5, 1, 2));
@@ -133,6 +137,7 @@ TEST_CASE("test_split_multi_mesh","[multimesh][2D]")
     REQUIRE(child0_ptr->is_connectivity_valid());
     REQUIRE(child1_ptr->is_connectivity_valid());
     REQUIRE(child2_ptr->is_connectivity_valid());
+    REQUIRE(parent.multi_mesh_manager.is_map_valid(parent) == true);  
 
     CHECK(parent.fv_from_fid(2) == Eigen::Matrix<long, 3, 1>(0, 2, 4));
     CHECK(parent.fv_from_fid(3) == Eigen::Matrix<long, 3, 1>(5, 1, 2));
@@ -160,7 +165,6 @@ TEST_CASE("test_split_multi_mesh","[multimesh][2D]")
     CHECK(child2_ptr->fv_from_fid(8) == Eigen::Matrix<long, 3, 1>(9, 7, 2));
     CHECK(child2_ptr->fv_from_fid(9) == Eigen::Matrix<long, 3, 1>(3, 10, 6));
     CHECK(child2_ptr->fv_from_fid(10) == Eigen::Matrix<long, 3, 1>(3, 8, 10));
-        
 }
 
 TEST_CASE("test_collapse_multi_mesh","[multimesh][2D]")
@@ -176,6 +180,7 @@ TEST_CASE("test_collapse_multi_mesh","[multimesh][2D]")
     MultiMeshManager::register_child_mesh(parent, child0_ptr, child0_map);
     MultiMeshManager::register_child_mesh(parent, child1_ptr, child1_map);
     MultiMeshManager::register_child_mesh(parent, child2_ptr, child2_map);
+    REQUIRE(parent.multi_mesh_manager.is_map_valid(parent) == true);
 
     Tuple edge = parent.edge_tuple_between_v1_v2(1, 2, 0);
     auto executor = parent.get_tmoe(edge);
@@ -185,6 +190,7 @@ TEST_CASE("test_collapse_multi_mesh","[multimesh][2D]")
     REQUIRE(child0_ptr->is_connectivity_valid());
     REQUIRE(child1_ptr->is_connectivity_valid());
     REQUIRE(child2_ptr->is_connectivity_valid());
+    REQUIRE(parent.multi_mesh_manager.is_map_valid(parent) == true);
 
     CHECK(parent.fv_from_fid(1) == Eigen::Matrix<long, 3, 1>(3, 2, 0));
     CHECK(parent.fv_from_fid(2) == Eigen::Matrix<long, 3, 1>(0, 2, 4));
@@ -193,7 +199,7 @@ TEST_CASE("test_collapse_multi_mesh","[multimesh][2D]")
     CHECK(child1_ptr->fv_from_fid(1) == Eigen::Matrix<long, 3, 1>(3, 2, 0));
     CHECK(child2_ptr->fv_from_fid(1) == Eigen::Matrix<long, 3, 1>(3, 5, 6));
     CHECK(child2_ptr->fv_from_fid(2) == Eigen::Matrix<long, 3, 1>(0, 2, 4));
-        
+    
 }
 
 
