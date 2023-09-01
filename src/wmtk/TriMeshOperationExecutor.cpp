@@ -400,21 +400,8 @@ Tuple TriMesh::TriMeshOperationExecutor::split_edge()
     }
     else
     {
-        // DEBUG:
-        std::cout << "t = " << m_operating_tuple.m_local_vid << " " << m_operating_tuple.m_local_eid << " " << m_operating_tuple.m_global_cid << std::endl;
-
         std::vector<std::vector<Tuple>> vec_t_child = prepare_operating_tuples_for_child_meshes();
-        
-        // DEBUG:
-        for (long i = 0; i < long(m_incident_face_datas.size()); ++i)
-        {
-            std::cout << "vec_t_child[" << i << "] = ";
-            for (long j = 0; j < long(vec_t_child[i].size()); ++j)
-            {
-                std::cout << vec_t_child[i][j].m_local_vid << " " << vec_t_child[i][j].m_local_eid << " " << vec_t_child[i][j].m_global_cid << " | ";
-            }
-            std::cout << std::endl;
-        }
+
         // do split on parent_mesh
         Tuple ret_tuple = split_edge_single_mesh();
 
@@ -425,8 +412,6 @@ Tuple TriMesh::TriMeshOperationExecutor::split_edge()
             {
                 // this child_mesh is a TriMesh
                 TriMesh& child_tri_mesh = *std::static_pointer_cast<TriMesh>(child_mesh_ptr);
-                // DEBUG:
-                std::cout << "do split on child_id = " << child_id << std::endl;
 
                 std::vector<std::pair<long,long>> child_new_cell_ids;   
                 for (long i = 0; i < long(m_incident_face_datas.size()); ++i)
@@ -458,12 +443,6 @@ Tuple TriMesh::TriMeshOperationExecutor::split_edge()
                     const auto& incident_face_data = m_incident_face_datas[i];
                     long split_f0_parent = incident_face_data.split_f0;
                     long split_f1_parent = incident_face_data.split_f1;
-                    
-                    // DEBUG:
-                    std::cout << "split_f0_child = " << split_f0_child << std::endl;
-                    std::cout << "split_f1_child = " << split_f1_child << std::endl;
-                    std::cout << "split_f0_parent = " << split_f0_parent << std::endl;
-                    std::cout << "split_f1_parent = " << split_f1_parent << std::endl;
 
                     Tuple tuple_child = (split_f0_child == -1) ? Tuple() : child_tri_mesh.face_tuple_from_id(split_f0_child);
                     Tuple tuple_parent = m_mesh.face_tuple_from_id(split_f0_parent);

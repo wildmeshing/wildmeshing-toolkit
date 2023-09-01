@@ -100,7 +100,6 @@ TEST_CASE("test_split_multi_mesh","[multimesh][2D]")
     REQUIRE(parent.multi_mesh_manager.is_map_valid(parent) == true);
 
     Tuple edge = parent.edge_tuple_between_v1_v2(1, 0, 1);
-    std::cout << "split edge (0,1)" << std::endl;
     auto executor = parent.get_tmoe(edge);
     executor.split_edge();
 
@@ -129,7 +128,6 @@ TEST_CASE("test_split_multi_mesh","[multimesh][2D]")
 
     // Do another edge_split
     edge = parent.edge_tuple_between_v1_v2(0, 5, 4);
-    std::cout << "split edge (0,5)" << std::endl;
     auto executor1 = parent.get_tmoe(edge);
     executor1.split_edge();
 
