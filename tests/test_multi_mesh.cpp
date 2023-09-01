@@ -36,8 +36,8 @@ TEST_CASE("test_register_child_mesh","[multimesh][2D]")
     
     auto [tuple3, tuple4] = MultiMeshManager::read_tuple_map_attribute(p_mul_manager.map_to_child_handles[0], parent, parent.tuple_from_id(PF,1));
 
-    REQUIRE(!tuple3.is_null_tuple());
-    REQUIRE(tuple4.is_null_tuple());
+    REQUIRE(!tuple3.is_null());
+    REQUIRE(tuple4.is_null());
 
     auto c2_mul_manager = child1_ptr->multi_mesh_manager;
 

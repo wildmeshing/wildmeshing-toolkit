@@ -42,7 +42,7 @@ bool Tuple::same_ids(const wmtk::Tuple& t) const
            std::tie(t.m_local_vid, t.m_local_eid, t.m_local_fid, t.m_global_cid);
 }
 
-bool Tuple::is_null_tuple() const
+bool Tuple::is_null() const
 {
     return m_local_vid == -1 && m_local_eid == -1 && m_local_fid == -1 && m_global_cid == -1 && m_hash == -1;
 }

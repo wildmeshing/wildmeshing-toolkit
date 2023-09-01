@@ -93,7 +93,7 @@ namespace wmtk
 
         auto [source_mesh_base_tuple, target_mesh_base_tuple] = read_tuple_map_attribute(source_map_handle, source_mesh, source_tuple);
 
-        if (source_mesh_base_tuple.is_null_tuple() || target_mesh_base_tuple.is_null_tuple())
+        if (source_mesh_base_tuple.is_null() || target_mesh_base_tuple.is_null())
         {
             return Tuple(); // return null tuple
         }

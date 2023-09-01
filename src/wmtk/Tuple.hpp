@@ -53,7 +53,7 @@ public:
     // equality comparison but skips the hash
     bool same_ids(const Tuple& t) const;
 
-    bool is_null_tuple() const;
+    bool is_null() const;
     Tuple tuple_update_hash(long new_hash) const;
 };
 } // namespace wmtk

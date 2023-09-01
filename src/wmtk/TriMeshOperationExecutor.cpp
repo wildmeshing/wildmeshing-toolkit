@@ -380,7 +380,7 @@ std::vector<std::vector<Tuple>> TriMesh::TriMeshOperationExecutor::prepare_opera
         for (long j = 0 ; j < long(vec_t_child[1].size()); ++j)
         {
             auto child_mesh_ptr = m_mesh.multi_mesh_manager.child_meshes[j];
-            if (vec_t_child[1][j].is_null_tuple() || vec_t_child[0][j].is_null_tuple())
+            if (vec_t_child[1][j].is_null() || vec_t_child[0][j].is_null())
             {
                 continue;
             }
@@ -417,7 +417,7 @@ Tuple TriMesh::TriMeshOperationExecutor::split_edge()
                 for (long i = 0; i < long(m_incident_face_datas.size()); ++i)
                 {
                     Tuple t_child = vec_t_child[i][child_id];
-                    if (t_child.is_null_tuple())
+                    if (t_child.is_null())
                     {
                         if (child_new_cell_ids.size() <= i)
                             child_new_cell_ids.emplace_back(-1, -1);
@@ -447,7 +447,7 @@ Tuple TriMesh::TriMeshOperationExecutor::split_edge()
                     Tuple tuple_child = (split_f0_child == -1) ? Tuple() : child_tri_mesh.face_tuple_from_id(split_f0_child);
                     Tuple tuple_parent = m_mesh.face_tuple_from_id(split_f0_parent);
 
-                    if (!tuple_child.is_null_tuple())
+                    if (!tuple_child.is_null())
                     {
                         MultiMeshManager::write_tuple_map_attribute(child_tri_mesh.multi_mesh_manager.map_to_parent_handle, child_tri_mesh, tuple_child, tuple_parent);
                     }
@@ -455,7 +455,7 @@ Tuple TriMesh::TriMeshOperationExecutor::split_edge()
                     
                     tuple_child = (split_f1_child == -1) ? Tuple() : child_tri_mesh.face_tuple_from_id(split_f1_child);
                     tuple_parent = m_mesh.face_tuple_from_id(split_f1_parent);
-                    if (!tuple_child.is_null_tuple())
+                    if (!tuple_child.is_null())
                     {
                         MultiMeshManager::write_tuple_map_attribute(child_tri_mesh.multi_mesh_manager.map_to_parent_handle, child_tri_mesh, tuple_child, tuple_parent);
                     }
@@ -520,7 +520,7 @@ void TriMesh::TriMeshOperationExecutor::update_hash_in_map(TriMesh& child_mesh)
         long parent_cell_hash = hash_at_cell(parent_cell_id);
         Tuple t_parent_new = t_parent_old.tuple_update_hash(parent_cell_hash);
 
-        if (t_child_old.is_null_tuple())
+        if (t_child_old.is_null())
         {
             MultiMeshManager::write_tuple_map_attribute(m_mesh.multi_mesh_manager.map_to_child_handles[child_id], m_mesh, t_parent_new, Tuple());
         }
@@ -560,7 +560,7 @@ Tuple TriMesh::TriMeshOperationExecutor::collapse_edge()
                 for (long i = 0; i < long(m_incident_face_datas.size()); ++i)
                 {
                     Tuple t_child = vec_t_child[i][child_id];
-                    if (t_child.is_null_tuple())
+                    if (t_child.is_null())
                     {
                         continue;
                     }

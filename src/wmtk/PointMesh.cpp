@@ -51,7 +51,7 @@ void PointMesh::initialize(long count)
 
 bool PointMesh::is_valid(const Tuple& tuple) const
 {
-    if (tuple.is_null_tuple()) return false;
+    if (tuple.is_null()) return false;
     return true;
 }
 
