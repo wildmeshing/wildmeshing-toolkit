@@ -101,30 +101,23 @@ namespace wmtk
         if (source_mesh_ptype == PrimitiveType::Face && target_mesh_ptype == PrimitiveType::Face)
         {
             Tuple cur_tuple = source_tuple;
-            std::vector<char> record_switch_operations;
+            std::vector<PrimitiveType> record_switch_operations;
             while (cur_tuple != source_mesh_base_tuple)
             {
                 cur_tuple = source_mesh.switch_tuple(cur_tuple, PrimitiveType::Vertex);
-                record_switch_operations.push_back('v');
+                record_switch_operations.push_back(PrimitiveType::Vertex);
                 if (cur_tuple == source_mesh_base_tuple)
                 {
                     break;
                 }
                 cur_tuple = source_mesh.switch_tuple(cur_tuple, PrimitiveType::Edge);
-                record_switch_operations.push_back('e');
+                record_switch_operations.push_back(PrimitiveType::Edge);
             }
 
             Tuple ret_tuple = target_mesh_base_tuple;
             for (int i = record_switch_operations.size() - 1; i >= 0; --i)
             {
-                if (record_switch_operations[i] == 'v')
-                {
-                    ret_tuple = target_mesh.switch_tuple(ret_tuple, PrimitiveType::Vertex);
-                }
-                else // record_switch_operations[i] == 'e'
-                {
-                    ret_tuple = target_mesh.switch_tuple(ret_tuple, PrimitiveType::Edge);
-                }
+                    ret_tuple = target_mesh.switch_tuple(ret_tuple, record_switch_operations[i]);
             }
 
             return ret_tuple;
