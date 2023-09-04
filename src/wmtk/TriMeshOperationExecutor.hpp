@@ -81,7 +81,7 @@ public:
 
     const std::array<long, 2>& incident_vids() const { return m_spine_vids; }
 
-    const long operating_edge_id() const { return m_operating_edge_id; }
+    long operating_edge_id() const { return m_operating_edge_id; }
 
     void update_ids_in_ear(
         const long ear_fid,

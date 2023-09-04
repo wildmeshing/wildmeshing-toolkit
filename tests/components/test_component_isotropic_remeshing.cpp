@@ -130,10 +130,10 @@ TEST_CASE("tangential_smoothing", "[components][isotropic_remeshing][2D]")
     DEBUG_TriMesh mesh = wmtk::tests::hex_plus_two_with_position();
 
     OperationSettings<VertexTangentialSmooth> op_settings;
-    op_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+    op_settings.smooth_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
 
     // offset interior vertex
-    auto pos = mesh.create_accessor(op_settings.position);
+    auto pos = mesh.create_accessor(op_settings.smooth_settings.position);
     Tuple v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
 
     Eigen::Vector3d p_init;
@@ -170,11 +170,11 @@ TEST_CASE("tangential_smoothing_boundary", "[components][isotropic_remeshing][2D
     DEBUG_TriMesh mesh = wmtk::tests::hex_plus_two_with_position();
 
     OperationSettings<VertexTangentialSmooth> op_settings;
-    op_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
-    op_settings.smooth_boundary = true;
+    op_settings.smooth_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+    op_settings.smooth_settings.smooth_boundary = true;
 
     // offset interior vertex
-    auto pos = mesh.create_accessor(op_settings.position);
+    auto pos = mesh.create_accessor(op_settings.smooth_settings.position);
     Tuple v1 = mesh.tuple_from_id(PrimitiveType::Vertex, 1);
 
     Eigen::Vector3d p_init;
@@ -213,6 +213,7 @@ TEST_CASE("split_long_edges", "[components][isotropic_remeshing][split][2D]")
 
     OperationSettings<EdgeSplitAtMidpoint> op_settings;
     op_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+    op_settings.initialize_invariants(mesh);
 
     {
         auto pos = mesh.create_accessor(op_settings.position);
@@ -229,6 +230,7 @@ TEST_CASE("split_long_edges", "[components][isotropic_remeshing][split][2D]")
     {
         //
         op_settings.min_squared_length = 6.4;
+        op_settings.initialize_invariants(mesh);
 
         Scheduler scheduler(mesh);
         scheduler.add_operation_type<tri_mesh::EdgeSplitAtMidpoint>(
@@ -260,6 +262,7 @@ TEST_CASE("split_long_edges", "[components][isotropic_remeshing][split][2D]")
     {
         //
         op_settings.min_squared_length = 3.5;
+        op_settings.initialize_invariants(mesh);
 
         Scheduler scheduler(mesh);
         scheduler.add_operation_type<tri_mesh::EdgeSplitAtMidpoint>(
@@ -315,6 +318,7 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
         }
 
         op_settings.max_squared_length = 0.1;
+        op_settings.initialize_invariants(mesh);
 
         Scheduler scheduler(mesh);
         scheduler.add_operation_type<EdgeCollapseToMidpoint>(
@@ -357,6 +361,7 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
         op_settings.max_squared_length = 0.1;
         op_settings.collapse_towards_boundary = true;
 
+        op_settings.initialize_invariants(mesh);
         Scheduler scheduler(mesh);
         scheduler.add_operation_type<EdgeCollapseToMidpoint>(
             "tri_mesh_collapse_edge_to_mid",
@@ -397,6 +402,7 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
 
         op_settings.max_squared_length = 0.1;
         op_settings.collapse_towards_boundary = false;
+        op_settings.initialize_invariants(mesh);
 
         Scheduler scheduler(mesh);
         scheduler.add_operation_type<EdgeCollapseToMidpoint>(
@@ -437,7 +443,8 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
         }
 
         op_settings.max_squared_length = 0.1;
-        op_settings.collapse_boundary_edges = true;
+        op_settings.collapse_settings.collapse_boundary_edges = true;
+        op_settings.initialize_invariants(mesh);
 
         Scheduler scheduler(mesh);
         scheduler.add_operation_type<EdgeCollapseToMidpoint>(
@@ -466,7 +473,8 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
         }
 
         op_settings.max_squared_length = 0.1;
-        op_settings.collapse_boundary_edges = false;
+        op_settings.collapse_settings.collapse_boundary_edges = false;
+        op_settings.initialize_invariants(mesh);
 
         Scheduler scheduler(mesh);
         scheduler.add_operation_type<EdgeCollapseToMidpoint>(
@@ -490,7 +498,9 @@ TEST_CASE("swap_edge_for_valence", "[components][isotropic_remeshing][swap][2D]"
         // swap edge to create inbalence in valence
         {
             const Tuple e = mesh.edge_tuple_between_v1_v2(6, 7, 5);
-            tri_mesh::EdgeSwap op(mesh, e);
+            OperationSettings<tri_mesh::EdgeSwap> settings;
+            //settings.initialize_invariants(mesh);
+            tri_mesh::EdgeSwap op(mesh, e, settings);
             const bool success = op();
             REQUIRE(success);
         }
@@ -510,6 +520,7 @@ TEST_CASE("swap_edge_for_valence", "[components][isotropic_remeshing][swap][2D]"
 
         OperationSettings<EdgeSwap> op_settings;
         op_settings.must_improve_valence = true;
+        //op_settings.initialize_invariants(mesh);
 
         Scheduler scheduler(mesh);
         scheduler.add_operation_type<EdgeSwap>("TriMeshSwapEdgeOperation", op_settings);

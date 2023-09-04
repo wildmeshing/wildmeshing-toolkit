@@ -328,6 +328,11 @@ bool TetMesh::is_boundary(const Tuple& tuple) const
     return tt_accessor.vector_attribute(tuple)(tuple.m_local_fid) < 0;
 }
 
+bool TetMesh::is_boundary_edge(const Tuple& vertex) const
+{
+    assert(false);
+    throw "NotImplemented";
+}
 bool TetMesh::is_boundary_vertex(const Tuple& vertex) const
 {
     // go through all faces and check if they are boundary

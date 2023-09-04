@@ -733,10 +733,10 @@ TEST_CASE("simplices_to_delete_for_split", "[operations][split][2D]")
         DEBUG_TriMesh m;
         {
             //         0
-            //        / \ 
+            //        / \  .
             //       /2   1
-            //      / f0  \ 
-            //     /  0    \ 
+            //      / f0  \ .
+            //     /  0    \  .
             //  1  --------- 2
 
             m = single_triangle();
@@ -762,10 +762,10 @@ TEST_CASE("simplices_to_delete_for_split", "[operations][split][2D]")
         DEBUG_TriMesh m;
         {
             //  3--1--- 0
-            //   |     / \ 
+            //   |     / \ .
             //   2 f1 /2   1
-            //   |  0/ f0  \ 
-            //   |  /  0    \ 
+            //   |  0/ f0  \ .
+            //   |  /  0    \ .
             //  1  -------- 2
             //     \   1    /
             //      \  f2  /
@@ -840,6 +840,7 @@ TEST_CASE("split_edge_operation", "[operations][split][2D]")
 
     REQUIRE(m.is_connectivity_valid());
     OperationSettings<tri_mesh::EdgeSplit> op_settings;
+    op_settings.initialize_invariants(m);
 
     const Tuple e = m.edge_tuple_between_v1_v2(0, 1, 1);
     SECTION("split_boundary_true")
@@ -850,6 +851,7 @@ TEST_CASE("split_edge_operation", "[operations][split][2D]")
     {
         op_settings.split_boundary_edges = false;
     }
+    op_settings.initialize_invariants(m);
 
     tri_mesh::EdgeSplit op(m, e, op_settings);
     const bool success = op();
@@ -996,7 +998,9 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
     {
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 4, 0);
 
-        tri_mesh::EdgeCollapse op(m, edge);
+        OperationSettings<tri_mesh::EdgeCollapse> op_settings;
+        op_settings.initialize_invariants(m);
+        tri_mesh::EdgeCollapse op(m, edge, op_settings);
         const bool success = op();
         CHECK(success);
     }
@@ -1006,6 +1010,7 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
 
         OperationSettings<tri_mesh::EdgeCollapse> op_settings;
         op_settings.collapse_boundary_vertex_to_interior = false;
+        op_settings.initialize_invariants(m);
 
         tri_mesh::EdgeCollapse op(m, edge, op_settings);
         const bool success = op();
@@ -1031,7 +1036,9 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
     {
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 1);
 
-        tri_mesh::EdgeCollapse op(m, edge);
+        OperationSettings<tri_mesh::EdgeCollapse> op_settings;
+        op_settings.initialize_invariants(m);
+        tri_mesh::EdgeCollapse op(m, edge, op_settings);
         const bool success = op();
         CHECK(success);
     }
@@ -1041,6 +1048,7 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
 
         OperationSettings<tri_mesh::EdgeCollapse> op_settings;
         op_settings.collapse_boundary_edges = false;
+        op_settings.initialize_invariants(m);
 
         tri_mesh::EdgeCollapse op(m, edge, op_settings);
         const bool success = op();
@@ -1103,7 +1111,8 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        tri_mesh::EdgeSwap op(m, edge);
+        OperationSettings<tri_mesh::EdgeSwap> settings;
+        tri_mesh::EdgeSwap op(m, edge, settings);
         const bool success = op();
         REQUIRE(success);
         const Tuple ret = op.return_tuple();
@@ -1128,7 +1137,8 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 2);
-        tri_mesh::EdgeSwap op(m, edge);
+        OperationSettings<tri_mesh::EdgeSwap> settings;
+        tri_mesh::EdgeSwap op(m, edge, settings);
         const bool success = op();
         REQUIRE(success);
         const Tuple ret = op.return_tuple();
@@ -1153,7 +1163,8 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        tri_mesh::EdgeSwap op(m, edge);
+        OperationSettings<tri_mesh::EdgeSwap> settings;
+        tri_mesh::EdgeSwap op(m, edge, settings);
         const bool success = op();
         REQUIRE(!success);
         REQUIRE(m.is_connectivity_valid());
