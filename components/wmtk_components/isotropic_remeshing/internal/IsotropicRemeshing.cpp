@@ -20,8 +20,11 @@ IsotropicRemeshing::IsotropicRemeshing(TriMesh& mesh, const double length, const
     // split
     {
         OperationSettings<tri_mesh::EdgeSplitAtMidpoint> split_settings;
-        split_settings.position = m_position_handle,
-        split_settings.min_squared_length = m_length_min * m_length_min;
+        split_settings.position = m_position_handle;
+        // thresholds are inverted because we continue splitting because we
+        // always split until we're under this length, which is the max
+        // required length for the op to happen
+        split_settings.min_squared_length = m_length_max * m_length_max;
         split_settings.split_settings.split_boundary_edges = !m_lock_boundary;
         split_settings.initialize_invariants(m_mesh);
 
@@ -30,8 +33,11 @@ IsotropicRemeshing::IsotropicRemeshing(TriMesh& mesh, const double length, const
     // collapse
     {
         OperationSettings<tri_mesh::EdgeCollapseToMidpoint> op_settings;
-        op_settings.position = m_position_handle,
-        op_settings.max_squared_length = m_length_max * m_length_max;
+        op_settings.position = m_position_handle;
+        // thresholds are inverted because we continue collapsing because we
+        // always collapse until we're over this length, which is the minimum
+        // required length for the op to happen
+        op_settings.max_squared_length = m_length_min * m_length_min;
         op_settings.collapse_settings.collapse_boundary_edges = !m_lock_boundary;
         op_settings.collapse_towards_boundary = true;
 
