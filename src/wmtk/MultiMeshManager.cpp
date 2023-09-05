@@ -15,6 +15,16 @@ namespace wmtk
     MultiMeshManager& MultiMeshManager::operator=(const MultiMeshManager& o) = default;
     MultiMeshManager& MultiMeshManager::operator=(MultiMeshManager&& o) = default;
 
+    bool MultiMeshManager::is_parent_mesh() const
+    {
+        return m_is_parent_mesh;
+    }
+
+    long MultiMeshManager::child_id() const
+    {
+        return m_child_id;
+    }
+
     void MultiMeshManager::write_tuple_map_attribute(MeshAttributeHandle<long> map_handle, Mesh& source_mesh, const Tuple& source_tuple, const Tuple& target_tuple)
     {
         auto map_accessor = source_mesh.create_accessor(map_handle);

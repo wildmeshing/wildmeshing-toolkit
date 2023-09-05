@@ -522,7 +522,7 @@ void TriMesh::TriMeshOperationExecutor::update_hash_in_map(TriMesh& child_mesh)
         auto [t_parent_old, t_child_old] = MultiMeshManager::read_tuple_map_attribute(m_mesh.multi_mesh_manager.map_to_child_handles[child_id], m_mesh, m_mesh.tuple_from_id(m_mesh.top_simplex_type(), parent_cell_id));
 
         long parent_cell_hash = hash_at_cell(parent_cell_id);
-        Tuple t_parent_new = t_parent_old.tuple_update_hash(parent_cell_hash);
+        Tuple t_parent_new = t_parent_old.with_updated_hash(parent_cell_hash);
 
         if (t_child_old.is_null())
         {
@@ -531,7 +531,7 @@ void TriMesh::TriMeshOperationExecutor::update_hash_in_map(TriMesh& child_mesh)
         else
         {
             long child_cell_hash = child_hash_accessor.scalar_attribute(t_child_old.m_global_cid);
-            Tuple t_child_new = t_child_old.tuple_update_hash(child_cell_hash);
+            Tuple t_child_new = t_child_old.with_updated_hash(child_cell_hash);
             MultiMeshManager::write_tuple_map_attribute(m_mesh.multi_mesh_manager.map_to_child_handles[child_id], m_mesh, t_parent_new, t_child_new);
 
             MultiMeshManager::write_tuple_map_attribute(child_mesh.multi_mesh_manager.map_to_parent_handle, child_mesh, t_child_new, t_parent_new);

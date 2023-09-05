@@ -58,6 +58,6 @@ public:
     bool same_ids(const Tuple& t) const;
 
     bool is_null() const;
-    Tuple tuple_update_hash(long new_hash) const;
+    Tuple with_updated_hash(long new_hash) const;
 };
 } // namespace wmtk

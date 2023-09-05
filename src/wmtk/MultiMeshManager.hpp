@@ -24,8 +24,8 @@ class MultiMeshManager
     // Storage of MultiMesh
     //=========================================================
 
-    bool is_parent_mesh() const { return m_is_parent_mesh; }
-    long child_id() const { return m_child_id; }
+    bool is_parent_mesh() const;
+    long child_id() const;
     // helper function to read/write the map from source_tuple to target_tuple to the attribute
     static void write_tuple_map_attribute(MeshAttributeHandle<long> map_handle, Mesh& source_mesh, const Tuple& source_tuple, const Tuple& target_tuple);
     static std::tuple<Tuple, Tuple> read_tuple_map_attribute(MeshAttributeHandle<long> map_handle, const Mesh& source_mesh, const Tuple& source_tuple);

@@ -47,7 +47,7 @@ bool Tuple::is_null() const
     return m_local_vid == -1 && m_local_eid == -1 && m_local_fid == -1 && m_global_cid == -1 && m_hash == -1;
 }
 
-Tuple Tuple::tuple_update_hash(long new_hash) const
+Tuple Tuple::with_updated_hash(long new_hash) const
 {
     return Tuple(m_local_vid, m_local_eid, m_local_fid, m_global_cid, new_hash);
 }
