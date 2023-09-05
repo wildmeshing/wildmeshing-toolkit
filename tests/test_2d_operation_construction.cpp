@@ -26,14 +26,18 @@ DEBUG_TriMesh test_split(const DEBUG_TriMesh& mesh, const Tuple& e, bool should_
     using namespace operations;
 
     DEBUG_TriMesh m = mesh;
-    OperationFactory<tri_mesh::EdgeSplit> fact;
+
+    OperationSettings<tri_mesh::EdgeSplit> op_settings;
+    op_settings.initialize_invariants(m);
+    OperationFactory<tri_mesh::EdgeSplit> fact(op_settings);
 
     auto op = fact.create(m, e);
     bool result = (*op)(); // should run the split
     REQUIRE(should_succeed == result);
     if (should_succeed) {
-        TriMesh m2 = mesh;
-        m2.split_edge(e);
+        DEBUG_TriMesh m2 = mesh;
+        Accessor<long> hash_accessor = m2.get_cell_hash_accessor();
+        m2.split_edge(e, hash_accessor);
         CHECK(m == m2);
     } else {
         CHECK(mesh == m); // check that a failed op returns to original state
@@ -55,15 +59,18 @@ DEBUG_TriMesh test_collapse(const DEBUG_TriMesh& mesh, const Tuple& e, bool shou
     using namespace operations;
 
     DEBUG_TriMesh m = mesh;
-    OperationFactory<tri_mesh::EdgeCollapse> fact;
+    OperationSettings<tri_mesh::EdgeCollapse> op_settings;
+    op_settings.initialize_invariants(m);
+    OperationFactory<tri_mesh::EdgeCollapse> fact(op_settings);
 
     auto op = fact.create(m, e);
     bool result = (*op)(); // should run the split
     REQUIRE(m.is_connectivity_valid());
     REQUIRE(should_succeed == result);
     if (should_succeed) {
-        TriMesh m2 = mesh;
-        m2.collapse_edge(e);
+        DEBUG_TriMesh m2 = mesh;
+        Accessor<long> hash_accessor = m2.get_cell_hash_accessor();
+        m2.collapse_edge(e, hash_accessor);
         CHECK(m == m2);
     } else {
         CHECK(mesh == m); // check that a failed op returns to original state

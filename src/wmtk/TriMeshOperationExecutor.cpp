@@ -53,14 +53,15 @@ TriMesh::TriMeshOperationExecutor::get_incident_face_data(Tuple t)
 // constructor
 TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
     TriMesh& m,
-    const Tuple& operating_tuple)
+    const Tuple& operating_tuple,
+    Accessor<long>& hash_acc)
     : flag_accessors{{m.get_flag_accessor(PrimitiveType::Vertex), m.get_flag_accessor(PrimitiveType::Edge), m.get_flag_accessor(PrimitiveType::Face)}}
     , ff_accessor(m.create_accessor<long>(m.m_ff_handle))
     , fe_accessor(m.create_accessor<long>(m.m_fe_handle))
     , fv_accessor(m.create_accessor<long>(m.m_fv_handle))
     , vf_accessor(m.create_accessor<long>(m.m_vf_handle))
     , ef_accessor(m.create_accessor<long>(m.m_ef_handle))
-    , hash_accessor(m.get_cell_hash_accessor())
+    , hash_accessor(hash_acc)
     , m_mesh(m)
     , m_operating_tuple(operating_tuple)
 
@@ -504,6 +505,8 @@ Tuple TriMesh::TriMeshOperationExecutor::split_edge_single_mesh()
     if (m_mesh.id_face(ret) != new_tuple_fid) {
         ret = m_mesh.switch_face(ret);
     }
+    assert(m_mesh.is_valid_slow(ret));
+
     return ret;
     // return m_mesh.with_different_cid(m_operating_tuple, m_incident_face_datas[0].split_f0);
 }
@@ -611,6 +614,9 @@ Tuple TriMesh::TriMeshOperationExecutor::collapse_edge_single_mesh()
 
     const long new_tuple_fid = (ef0 > -1) ? ef0 : ef1;
 
+    update_cell_hash();
+    delete_simplices();
+
     Tuple ret = m_mesh.edge_tuple_from_id(ret_eid);
     if (m_mesh.id_vertex(ret) != ret_vid) {
         ret = m_mesh.switch_vertex(ret);
@@ -620,10 +626,8 @@ Tuple TriMesh::TriMeshOperationExecutor::collapse_edge_single_mesh()
         ret = m_mesh.switch_face(ret);
     }
     assert(m_mesh.id_face(ret) == new_tuple_fid);
+    assert(m_mesh.is_valid_slow(ret));
 
-
-    update_cell_hash();
-    delete_simplices();
 
     return ret;
 

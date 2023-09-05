@@ -1,5 +1,5 @@
 set(SRC_FILES
-    Operation.hpp
-    Operation.cpp
+    TetMeshOperation.hpp
+    TetMeshOperation.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

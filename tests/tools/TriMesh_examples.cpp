@@ -206,7 +206,7 @@ TriMesh edge_region_with_position()
 TriMesh embedded_diamond()
 {
     //      0---1
-    //     / \ / \
+    //     / \ / \ .
     //    2---3---4
     //   / \ / \ / \ .
     //  5---6---7---8

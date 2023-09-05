@@ -1,0 +1,25 @@
+set(SRC_FILES
+    Invariant.hpp
+    Invariant.cpp
+    TriMeshInvariant.hpp
+    TriMeshInvariant.cpp
+    TetMeshInvariant.hpp
+    TetMeshInvariant.cpp
+    MeshInvariant.hpp
+    MeshInvariant.cpp
+    InvariantCollection.hpp
+    InvariantCollection.cpp
+    InteriorVertexInvariant.hpp
+    InteriorVertexInvariant.cpp
+    InteriorEdgeInvariant.hpp
+    InteriorEdgeInvariant.cpp
+    ValidTupleInvariant.hpp
+    ValidTupleInvariant.cpp
+    TriMeshLinkConditionInvariant.hpp
+    TriMeshLinkConditionInvariant.cpp
+    MaxEdgeLengthInvariant.hpp
+    MaxEdgeLengthInvariant.cpp
+    MinEdgeLengthInvariant.hpp
+    MinEdgeLengthInvariant.cpp
+)
+target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
