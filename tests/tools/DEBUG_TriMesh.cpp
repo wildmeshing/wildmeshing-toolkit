@@ -23,6 +23,29 @@ bool DEBUG_TriMesh::operator!=(const DEBUG_TriMesh& o) const
 
 void DEBUG_TriMesh::print_state() const {}
 
+void DEBUG_TriMesh::print_vf() const
+{
+    auto fv_accessor = create_base_accessor<long>(f_handle(PrimitiveType::Vertex));
+    auto f_flag_accessor = get_flag_accessor(PrimitiveType::Face);
+    for (long id = 0; id < capacity(PrimitiveType::Face); ++id)
+    {
+        auto fv = fv_accessor.vector_attribute(id);
+        if (f_flag_accessor.scalar_attribute(tuple_from_id(PrimitiveType::Face, id)) == 0)
+        {
+            std::cout << "face " << id << " is deleted" << std::endl;
+        }
+        else
+        {
+            std::cout << fv(0) << " " << fv(1) << " " << fv(2) << std::endl;
+        }
+    }
+}
+
+Eigen::Matrix<long, 3, 1> DEBUG_TriMesh::fv_from_fid(const long fid) const
+{
+    auto fv_accessor = create_base_accessor<long>(f_handle(PrimitiveType::Vertex));
+    return fv_accessor.vector_attribute(fid);
+}
 
 auto DEBUG_TriMesh::edge_tuple_between_v1_v2(const long v1, const long v2, const long fid) const
     -> Tuple

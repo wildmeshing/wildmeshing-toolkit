@@ -16,6 +16,8 @@ private:
 public:
     PointMesh();
     PointMesh(long size);
+
+    PrimitiveType top_simplex_type() const override { return PrimitiveType::Vertex; }
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
     bool is_ccw(const Tuple& tuple) const override;
     bool is_boundary(const Tuple& tuple) const override;
