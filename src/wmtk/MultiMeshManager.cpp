@@ -1,6 +1,7 @@
 #include "MultiMeshManager.hpp"
 #include "Mesh.hpp"
 #include "Types.hpp"
+#include "SimplicialComplex.hpp"
 namespace wmtk
 {
     MultiMeshManager::MultiMeshManager()
@@ -140,6 +141,22 @@ namespace wmtk
         }
     }
 
+    std::vector<Simplex> MultiMeshManager::find_all_simplex_in_child_mesh(const Mesh& parent_mesh, long child_id, const Simplex& simplex_parent)
+    {
+        auto child_mesh_ptr = parent_mesh.multi_mesh_manager.child_meshes[child_id];
+        PrimitiveType simplex_ptype = simplex_parent.primitive_type();
+        PrimitiveType childmesh_ptype = child_mesh_ptr->top_simplex_type();
+
+        if (simplex_ptype > childmesh_ptype)
+        {
+            // Can't find higher-dimensional simplex in child_mesh
+            return std::vector<Simplex>();
+        }
+
+        
+        return std::vector<Simplex>();
+    }
+
     bool MultiMeshManager::is_child_mesh_valid(const Mesh& parent_mesh, const Mesh& child_mesh)
     {
         // TODO: implement this
@@ -179,7 +196,7 @@ namespace wmtk
                 }
 
                 // 1. test if all maps in child_mesh exisits
-                // 2. test if tuples in maps are valid and up_to_date
+                // 2. test if tuples in maps are valid (and up_to_date)
                 // 3. test if map is symmetric
                 // 4. test switch_top_simplex operation
 
