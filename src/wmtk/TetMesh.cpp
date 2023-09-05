@@ -21,6 +21,11 @@ TetMesh::TetMesh()
     , m_tt_handle(register_attribute<long>("m_tt", PrimitiveType::Tetrahedron, 4))
 {}
 
+TetMesh::TetMesh(const TetMesh& o) = default;
+TetMesh::TetMesh(TetMesh&& o) = default;
+TetMesh& TetMesh::operator=(const TetMesh& o) = default;
+TetMesh& TetMesh::operator=(TetMesh&& o) = default;
+
 
 void TetMesh::initialize(
     Eigen::Ref<const RowVectors4l> TV,
@@ -221,6 +226,12 @@ Tuple TetMesh::tuple_from_id(const PrimitiveType type, const long gid) const
 
 Tuple TetMesh::split_edge(const Tuple& t)
 {
+    // prototype
+    // Executor exec;
+    // exec.populate_ears()
+    // exec.populate_faces();
+    // exec.run_split();
+
     throw "not implemented";
 }
 

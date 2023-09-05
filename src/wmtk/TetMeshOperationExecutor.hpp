@@ -7,7 +7,7 @@ namespace wmtk {
 class TetMesh::TetMeshOperationExecutor
 {
 public:
-    TetMeshOperationExecutor(TetMesh& m, const Tuple& operating_tuple);
+    TetMeshOperationExecutor(TetMesh& m, const Tuple& operating_tuple, Accessor<long>& hash_acc);
     void delete_simplices();
     void update_cell_hash();
 
@@ -19,7 +19,7 @@ public:
     Accessor<long> vt_accessor;
     Accessor<long> et_accessor;
     Accessor<long> ft_accessor;
-    Accessor<long> hash_accessor;
+    Accessor<long>& hash_accessor;
 
     //
     // E --------------- C --------------- F

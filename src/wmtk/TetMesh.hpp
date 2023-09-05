@@ -7,6 +7,10 @@ class TetMesh : public Mesh
 {
 public:
     TetMesh();
+    TetMesh(const TetMesh& o);
+    TetMesh(TetMesh&& o);
+    TetMesh& operator=(const TetMesh& o);
+    TetMesh& operator=(TetMesh&& o);
 
     Tuple split_edge(const Tuple& t) override;
     Tuple collapse_edge(const Tuple& t) override;

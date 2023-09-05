@@ -2,6 +2,7 @@
 
 namespace wmtk {
 
+// TODO: This is not used
 TetMesh::TetMeshOperationExecutor::IncidentTetData
 TetMesh::TetMeshOperationExecutor::get_incident_tet_data(Tuple t)
 {
@@ -55,7 +56,8 @@ TetMesh::TetMeshOperationExecutor::get_incident_tet_data(Tuple t)
 // constructor
 TetMesh::TetMeshOperationExecutor::TetMeshOperationExecutor(
     TetMesh& m,
-    const Tuple& operating_tuple)
+    const Tuple& operating_tuple,
+    Accessor<long>& hash_acc)
     : flag_accessors{{m.get_flag_accessor(PrimitiveType::Vertex), m.get_flag_accessor(PrimitiveType::Edge), m.get_flag_accessor(PrimitiveType::Face), m.get_flag_accessor(PrimitiveType::Tetrahedron)}}
     , tt_accessor(m.create_accessor<long>(m.m_tt_handle))
     , tf_accessor(m.create_accessor<long>(m.m_tf_handle))
@@ -64,7 +66,7 @@ TetMesh::TetMeshOperationExecutor::TetMeshOperationExecutor(
     , vt_accessor(m.create_accessor<long>(m.m_vt_handle))
     , et_accessor(m.create_accessor<long>(m.m_et_handle))
     , ft_accessor(m.create_accessor<long>(m.m_ft_handle))
-    , hash_accessor(m.get_cell_hash_accessor())
+    , hash_accessor(hash_acc)
     , m_mesh(m)
     , m_operating_tuple(operating_tuple)
 {
@@ -78,7 +80,7 @@ TetMesh::TetMeshOperationExecutor::TetMeshOperationExecutor(
         SimplicialComplex::closed_star(m_mesh, Simplex::edge(operating_tuple));
 
     // get all tets incident to the edge
-    // have other implementation
+    // TODO: having another implementation, remove this here
     // for (const Simplex& t : edge_closed_star.get_tetrahedra()) {
     //     m_incident_tet_datas.emplace_back(get_incident_tet_data(t.tuple()));
     // }
@@ -98,7 +100,7 @@ void TetMesh::TetMeshOperationExecutor::delete_simplices()
 {
     for (size_t d = 0; d < simplex_ids_to_delete.size(); ++d) {
         for (const long id : simplex_ids_to_delete[d]) {
-            flag_accessors[d].scalar_attribute(id) = 0;
+            flag_accessors[d].scalar_attribute(id) = 0; // TODO: reset single bit
         }
     }
 }
@@ -275,9 +277,9 @@ Tuple TetMesh::TetMeshOperationExecutor::split_edge()
         fsd.fid_new_1 = new_fids[0];
         fsd.fid_new_2 = new_fids[1];
         fsd.eid_spine_old = m_operating_edge_id;
-        fsd.eid_spine_1 = new_eids[0];
-        fsd.eid_spine_2 = new_eids[1];
-        fsd.eid_split = splitting_eids[0];
+        fsd.eid_spine_1 = new_eids[0]; // redundant
+        fsd.eid_spine_2 = new_eids[1]; // redundant
+        fsd.eid_split = splitting_eids[0]; // redundant
         new_incident_face_data.emplace_back(fsd);
     }
 
@@ -316,20 +318,23 @@ Tuple TetMesh::TetMeshOperationExecutor::split_edge()
             new_incident_face_data[(i + incident_face_cnt - 1) % incident_face_cnt];
         tsd.new_face_data[1] = new_incident_face_data[i];
 
-        tsd.v1 = m_mesh.id_vertex(incident_tets[i]);
-        tsd.v2 = m_mesh.id_vertex(m_mesh.switch_vertex(incident_tets[i]));
-        tsd.v3 = m_mesh.id_vertex(
-            m_mesh.switch_vertex(m_mesh.switch_edge(m_mesh.switch_face(incident_tets[i]))));
-        tsd.v4 = m_mesh.id_vertex(m_mesh.switch_vertex(m_mesh.switch_edge(incident_tets[i])));
+        tsd.v1 = m_mesh.id_vertex(incident_tets[i]); // redundant
+        tsd.v2 = m_mesh.id_vertex(m_mesh.switch_vertex(incident_tets[i])); // redundant
+        tsd.v3 = m_mesh.id_vertex(m_mesh.switch_vertex(
+            m_mesh.switch_edge(m_mesh.switch_face(incident_tets[i])))); // put in face
+        tsd.v4 = m_mesh.id_vertex(
+            m_mesh.switch_vertex(m_mesh.switch_edge(incident_tets[i]))); // put in face rename
 
-        tsd.e12 = m_mesh.id_edge(incident_tets[i]);
-        tsd.e14 = m_mesh.id_edge(m_mesh.switch_edge(incident_tets[i]));
-        tsd.e24 = m_mesh.id_edge(m_mesh.switch_edge(m_mesh.switch_vertex(incident_tets[i])));
-        tsd.e13 = m_mesh.id_edge(m_mesh.switch_edge(m_mesh.switch_face(incident_tets[i])));
-        tsd.e23 = m_mesh.id_edge(
-            m_mesh.switch_edge(m_mesh.switch_face(m_mesh.switch_vertex(incident_tets[i]))));
-        tsd.e34 = m_mesh.id_edge(m_mesh.switch_edge(
-            m_mesh.switch_vertex(m_mesh.switch_face(m_mesh.switch_edge(incident_tets[i])))));
+        tsd.e12 = m_mesh.id_edge(incident_tets[i]); // redundant
+        tsd.e14 = m_mesh.id_edge(m_mesh.switch_edge(incident_tets[i])); // face 1 ear 1 edge
+        tsd.e24 = m_mesh.id_edge(
+            m_mesh.switch_edge(m_mesh.switch_vertex(incident_tets[i]))); // face 2 ear 2 edge
+        tsd.e13 = m_mesh.id_edge(
+            m_mesh.switch_edge(m_mesh.switch_face(incident_tets[i]))); // face 1 ear 1 edge
+        tsd.e23 = m_mesh.id_edge(m_mesh.switch_edge(
+            m_mesh.switch_face(m_mesh.switch_vertex(incident_tets[i])))); // face 2 ear 1 edge
+        tsd.e34 = m_mesh.id_edge(m_mesh.switch_edge(m_mesh.switch_vertex(
+            m_mesh.switch_face(m_mesh.switch_edge(incident_tets[i]))))); // opposite edge
 
         new_incident_tet_data.emplace_back(tsd);
     }
@@ -340,9 +345,9 @@ Tuple TetMesh::TetMeshOperationExecutor::split_edge()
         const auto& data = new_incident_tet_data[i];
         const long vid_new = v_new;
         const long v1 = data.v1; // m_operating_tuple.vid
-        const long v2 = data.v2; // switch_vertex(m_operating_tuple.vid)
-        const long v3 = data.v3; // old_face_0 opposite v
-        const long v4 = data.v4; // old_face_1 opposite v
+        const long v2 = data.v2; // switch_vertex(m_operating_tuple)
+        const long v3 = data.v3; // f_old_1 opposite v
+        const long v4 = data.v4; // f_old_2 opposite v
         const long e_spline_1 = new_eids[0];
         const long e_spline_2 = new_eids[1];
         const long e_split_1 = data.new_face_data[0].eid_split;

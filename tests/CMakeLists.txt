@@ -20,12 +20,17 @@ set(TEST_SOURCES
     test_2d_operation_construction.cpp
     test_accessor.cpp
     test_example_meshes.cpp
+    test_3d_operations.cpp
     tools/DEBUG_PointMesh.hpp
     tools/DEBUG_TriMesh.hpp
     tools/DEBUG_TriMesh.cpp
     tools/TriMesh_examples.hpp
     tools/TriMesh_examples.cpp
     tools/redirect_logger_to_cout.hpp
+    tools/TetMesh_examples.hpp
+    tools/TetMesh_examples.cpp
+    tools/DEBUG_TetMesh.hpp;
+    tools/DEBUG_TetMesh.cpp;
 )
 add_executable(wmtk_tests ${TEST_SOURCES})
 
