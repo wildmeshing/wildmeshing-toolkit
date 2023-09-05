@@ -1,13 +1,13 @@
-#include <wmtk_components/input/input.hpp>
-#include <wmtk_components/mesh_info/mesh_info.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
+#include <wmtk_components/input/input.hpp>
+#include <wmtk_components/mesh_info/mesh_info.hpp>
 
 using json = nlohmann::json;
 
 const std::filesystem::path data_dir = WMTK_DATA_DIR;
 
-TEST_CASE("component_mesh_info", "[components],[mesh_info]")
+TEST_CASE("component_mesh_info", "[components][mesh_info][.]")
 {
     std::map<std::string, std::filesystem::path> files;
 

@@ -203,14 +203,58 @@ TEST_CASE("k-ring", "[simplicial_complex][k-ring][2D]")
     Tuple t(1, 0, -1, 0, hash);
     REQUIRE(m.id(t, PV) == 3);
 
-    auto ret1 = SimplicialComplex::vertex_one_ring(m, t);
-    REQUIRE(ret1.size() == 2);
-    auto ret2 = SimplicialComplex::k_ring(m, t, 1);
-    REQUIRE(ret2.size() == 2);
-    auto ret3 = SimplicialComplex::k_ring(m, t, 2);
-    REQUIRE(ret3.size() == 6);
-    auto ret4 = SimplicialComplex::k_ring(m, t, 3);
-    REQUIRE(ret4.size() == 6);
+    const auto ret0 = SimplicialComplex::vertex_one_ring(static_cast<Mesh&>(m), t);
+    CHECK(ret0.size() == 2);
+    const auto ret1 = SimplicialComplex::vertex_one_ring(m, t);
+    CHECK(ret1.size() == 2);
+    const auto ret2 = SimplicialComplex::k_ring(m, t, 1);
+    CHECK(ret2.size() == 2);
+    const auto ret3 = SimplicialComplex::k_ring(m, t, 2);
+    CHECK(ret3.size() == 6);
+    const auto ret4 = SimplicialComplex::k_ring(m, t, 3);
+    CHECK(ret4.size() == 6);
+}
+
+TEST_CASE("vertex_one_ring", "[simplicial_complex][2D]")
+{
+    tests::DEBUG_TriMesh m;
+    m = tests::hex_plus_two();
+
+    Tuple t;
+    std::vector<Simplex> ring0;
+    SECTION("interior")
+    {
+        t = m.edge_tuple_between_v1_v2(4, 5, 2);
+        ring0 = SimplicialComplex::vertex_one_ring(static_cast<Mesh&>(m), t);
+        CHECK(ring0.size() == 6);
+    }
+    SECTION("on_boundary_cw")
+    {
+        t = m.edge_tuple_between_v1_v2(0, 1, 1);
+        ring0 = SimplicialComplex::vertex_one_ring(static_cast<Mesh&>(m), t);
+        CHECK(ring0.size() == 3);
+    }
+    SECTION("on_boundary_ccw")
+    {
+        t = m.edge_tuple_between_v1_v2(0, 3, 0);
+        ring0 = SimplicialComplex::vertex_one_ring(static_cast<Mesh&>(m), t);
+        CHECK(ring0.size() == 3);
+    }
+    SECTION("single_boundary_triangle_cw")
+    {
+        t = m.edge_tuple_between_v1_v2(6, 5, 4);
+        ring0 = SimplicialComplex::vertex_one_ring(static_cast<Mesh&>(m), t);
+        CHECK(ring0.size() == 2);
+    }
+    SECTION("single_boundary_triangle_ccw")
+    {
+        t = m.edge_tuple_between_v1_v2(6, 2, 4);
+        ring0 = SimplicialComplex::vertex_one_ring(static_cast<Mesh&>(m), t);
+        CHECK(ring0.size() == 2);
+    }
+
+    const auto ret1 = SimplicialComplex::vertex_one_ring(m, t);
+    CHECK(ring0.size() == ret1.size());
 }
 
 TEST_CASE("open_star", "[simplicial_complex][star][2D]")

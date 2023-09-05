@@ -3,7 +3,7 @@
 #include <queue>
 #include <vector>
 #include "OperationFactory.hpp"
-namespace wmtk {
+namespace wmtk::operations {
 // per thread objects
 // TODO:: this should be done with a proper tbb per-thread queue thing
 // just for demonstration of the desired logic
@@ -27,7 +27,7 @@ public:
     // }
     void run()
     {
-        spdlog::info("Running with queue starting at {} of {}", current_index, queue.size());
+        spdlog::debug("Running with queue starting at {} of {}", current_index, queue.size());
         while (!empty()) {
             execute_next();
         }
@@ -37,9 +37,9 @@ public:
     {
         auto op = pop_top();
         if ((*op)()) {
-            spdlog::info("Op succeeded");
+            spdlog::debug("Op succeeded");
         } else {
-            spdlog::info("Op failed");
+            spdlog::debug("Op failed");
         }
     }
 
@@ -63,4 +63,4 @@ public:
     size_t current_index = 0;
     // uses a->priority() < b->priority()
 };
-} // namespace wmtk
+} // namespace wmtk::operations

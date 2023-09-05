@@ -12,17 +12,16 @@ public:
     TetMesh& operator=(const TetMesh& o);
     TetMesh& operator=(TetMesh&& o);
 
-    Tuple split_edge(const Tuple& t) override;
-    Tuple collapse_edge(const Tuple& t) override;
-
+    Tuple split_edge(const Tuple& t, Accessor<long>& hash_accessor) override;
+    Tuple collapse_edge(const Tuple& t, Accessor<long>& hash_accessor) override;
+    PrimitiveType top_simplex_type() const override { return PrimitiveType::Tetrahedron; }
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
     bool is_ccw(const Tuple& tuple) const override;
     bool is_boundary(const Tuple& tuple) const override;
     bool is_boundary_vertex(const Tuple& tuple) const override;
+    bool is_boundary_edge(const Tuple& tuple) const override;
 
-    bool is_valid(const Tuple& tuple) const override;
-
-    bool is_outdated(const Tuple& tuple) const override;
+    bool is_valid(const Tuple& tuple, ConstAccessor<long>& hash_accessor) const override;
 
     void initialize(
         Eigen::Ref<const RowVectors4l> TV,

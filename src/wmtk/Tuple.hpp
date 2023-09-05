@@ -10,6 +10,10 @@ class PointMesh;
 class EdgeMesh;
 class TriMesh;
 class TetMesh;
+namespace operations {
+class Operation;
+}
+class MultiMeshManager;
 
 class Tuple
 {
@@ -28,6 +32,8 @@ public:
     friend class EdgeMesh;
     friend class TriMesh;
     friend class TetMesh;
+    friend class operations::Operation;
+    friend class MultiMeshManager;
     // friend long Mesh::id(const Tuple& tuple, const PrimitiveType& type) const;
     // friend Mesh::is_ccw(const Tuple& tuple) const;
     // friend Mesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const;
@@ -50,5 +56,8 @@ public:
     bool operator!=(const Tuple& t) const;
     // equality comparison but skips the hash
     bool same_ids(const Tuple& t) const;
+
+    bool is_null() const;
+    Tuple with_updated_hash(long new_hash) const;
 };
 } // namespace wmtk

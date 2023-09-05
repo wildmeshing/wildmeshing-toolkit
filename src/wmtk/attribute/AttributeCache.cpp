@@ -11,7 +11,7 @@ AttributeCache<T>::~AttributeCache() = default;
 template <typename T>
 auto AttributeCache<T>::load_it(long index) const -> std::pair<typename DataStorage::iterator, bool>
 {
-    if (auto it = m_data.find(index); it != m_data.end()) {
+    if (const auto& it = m_data.find(index); it != m_data.end()) {
         return {it, false};
     } else {
         return m_data.try_emplace(index, false);
