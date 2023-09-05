@@ -6,6 +6,15 @@ using namespace wmtk::energy;
 AMIPS::AMIPS(const TriMesh& mesh)
     : DifferentiableEnergy(mesh)
 {}
+AMIPS_2D::AMIPS_2D(const TriMesh& mesh)
+    : AMIPS(mesh)
+{}
+
+AMIPS_3DEmbedded::AMIPS_3DEmbedded(const TriMesh& mesh, const image::Image& image)
+    : AMIPS(mesh)
+    , m_image(image)
+    , m_dofs_to_pos(image)
+{}
 
 double AMIPS_2D::energy_eval(const Tuple& tuple) const
 {
@@ -77,42 +86,73 @@ auto AMIPS_2D::energy_eval(
     return (F.transpose() * F).trace() / Fdet;
 }
 
+double AMIPS_3DEmbedded::energy_eval(const Tuple& tuple) const
+{
+    // get the uv coordinates of the triangle
+    ConstAccessor<double> pos = m_mesh.create_const_accessor(m_position_handle);
+    Eigen::Vector2d uv1 = pos.vector_attribute(tuple).head<2>();
+    Eigen::Vector2d uv2 =
+        pos.vector_attribute(m_mesh.switch_edge(m_mesh.switch_vertex(tuple))).head<2>();
+    Eigen::Vector2d uv3 =
+        pos.vector_attribute(m_mesh.switch_vertex(m_mesh.switch_edge(tuple))).head<2>();
+
+    // return the energy
+    return energy_eval<double>(uv1, uv2, uv3, m_target_triangle, m_dofs_to_pos);
+}
+DScalar AMIPS_3DEmbedded::energy_eval_autodiff(const Tuple& tuple) const
+{
+    // get the uv coordinates of the triangle
+    ConstAccessor<double> pos = m_mesh.create_const_accessor(m_position_handle);
+
+    Eigen::Vector2d uv1 = pos.vector_attribute(tuple);
+    Eigen::Vector2d uv2 = pos.vector_attribute(m_mesh.switch_edge(m_mesh.switch_vertex(tuple)));
+    Eigen::Vector2d uv3 = pos.vector_attribute(m_mesh.switch_vertex(m_mesh.switch_edge(tuple)));
+
+    // return the energy
+    return energy_eval<DScalar>(uv1, uv2, uv3, m_target_triangle, m_dofs_to_pos);
+}
 
 template <typename T>
 auto AMIPS_3DEmbedded::energy_eval(
     const Eigen::Vector2d& uv1,
     const Eigen::Vector2d& uv2,
     const Eigen::Vector2d& uv3,
-    const std::array<double, 6>& m_target_triangle) -> T
+    const std::array<double, 6>& m_target_triangle,
+    const DofsToPosition& m_dofs_to_pos) -> T
 {
-    DofsToPosition dof2pos;
-    Eigen::Matrix<T, 3, 1> pos1 = dof2pos.dof_to_pos<T>(uv1);
-    Eigen::Matrix<double, 3, 1> pos2 = dof2pos.dof_to_pos<double>(uv2);
-    Eigen::Matrix<double, 3, 1> pos3 = dof2pos.dof_to_pos<double>(uv3);
-    auto V2_V1 = pos2 - pos1;
-    auto V3_V1 = pos3 - pos1;
+    Eigen::Matrix<T, 3, 1> pos1 = m_dofs_to_pos.dof_to_pos<T>(uv1);
+    Eigen::Matrix<double, 3, 1> pos2 = m_dofs_to_pos.dof_to_pos<double>(uv2);
+    Eigen::Matrix<double, 3, 1> pos3 = m_dofs_to_pos.dof_to_pos<double>(uv3);
+    Eigen::Matrix<T, 3, 1> V2_V1;
+    V2_V1 << pos2(0) - pos1(0), pos2(1) - pos1(1), pos2(2) - pos1(2);
+    Eigen::Matrix<T, 3, 1> V3_V1;
+    V3_V1 << pos3(0) - pos1(0), pos3(1) - pos1(1), pos3(2) - pos1(2);
 
     // tangent bases
     // e1 = (V2 - V1).normalize()
     // e1 = V2_V1.stableNormalized();
     assert(V2_V1.norm() > 0); // check norm is not 0
-    auto e1 = V2_V1 / V2_V1.norm();
-    auto n = V2_V1.cross(V3_V1);
+    Eigen::Matrix<T, 3, 1> e1 = V2_V1 / V2_V1.norm();
+    Eigen::Matrix<T, 3, 1> n = V2_V1.cross(V3_V1);
 
-    // if (n.lpNorm<Eigen::Infinity>().getValue() < std::numeric_limits<double>::denorm_min()) {
-    //     wmtk::logger().critical("n.lpNorm {}", n.lpNorm<Eigen::Infinity>().getValue());
+    // #ifdef DEBUG
+    // Eigen::MatrixXd double_n;
+    // get_double_vecto(n, 3, double_n);
+    // if (double_n.lpNorm<Eigen::Infinity>() < std::numeric_limits<double>::denorm_min()) {
+    //     wmtk::logger().critical("n.lpNorm {}", double_n.lpNorm<Eigen::Infinity>());
     //     std::cout << "V1 " << std::endl;
-    //     std::cout << std::hexfloat << x1 << " " << y1 << v1(2) << std::endl;
+    //     std::cout << std::hexfloat << get_value(pos1(0))<< " " << y1 << v1(2) << std::endl;
     //     std::cout << "V2 " << std::endl;
     //     std::cout << std::hexfloat << v2(0) << " " << v2(1) << v2(2) << std::endl;
     //     std::cout << "V3 " << std::endl;
     //     std::cout << std::hexfloat << v3(0) << " " << v3(1) << v3(2) << std::endl;
     //     assert(false);
     // }
+    // #endif
     // n = n.stableNormalized();
     assert(n.norm() > 0); // check norm is not 0
     n = n / n.norm();
-    auto e2 = n.cross(e1);
+    Eigen::Matrix<T, 3, 1> e2 = n.cross(e1);
     // Eigen::Matrix<DScalar, 3, 1> e2_stableNormalized = e2.stableNormalized();
     assert(e2.norm() > 0); // check norm is not 0
     e2 = e2 / e2.norm();
@@ -129,7 +169,9 @@ auto AMIPS_3DEmbedded::energy_eval(
     // (x2 - x1, y2 - y1, x3 - x1, y2 - y1).transpose
     Eigen::Matrix<T, 2, 2> Dm;
     Dm << VT2.x() - VT1.x(), VT3.x() - VT1.x(), VT2.y() - VT1.y(), VT3.y() - VT1.y();
-    assert(Dm.determinant().getValue() > 0);
+
+    T Dmdet = Dm.determinant();
+    assert(wmtk::energy::get_value(Dmdet) > 0);
 
     Eigen::Matrix2d Ds, Dsinv;
     Eigen::Vector2d target_A, target_B, target_C;

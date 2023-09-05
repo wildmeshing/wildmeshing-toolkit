@@ -1,8 +1,10 @@
 #pragma once
 #include <wmtk/TriMesh.hpp>
-#include <wmtk/energy/utils/AutoDiffUtils.hpp>
+#include <wmtk/image/Image.hpp>
+#include <wmtk/image/Sampling.hpp>
+#include <wmtk/image/bicubic_interpolation.hpp>
+#include "AutoDiffUtils.hpp"
 #include "autodiff.h"
-// #include <wmtk/image/DisplacementMap.hpp>
 
 namespace wmtk {
 namespace energy {
@@ -10,9 +12,17 @@ class DofsToPosition
 { // size = 2: uv position, size =1, t of boundary curve
     using DofVectorX = Eigen::Matrix<double, Eigen::Dynamic, 1>;
 
+protected:
+    wmtk::image::SamplingBicubic m_sampling;
+
 public:
-    DofsToPosition();
-    ~DofsToPosition();
+    DofsToPosition() = default;
+    ~DofsToPosition() = default;
+    DofsToPosition& operator=(const DofsToPosition&) = default; // copy assignment operator
+    DofsToPosition& operator=(DofsToPosition&&) = default; // move assignment operator
+    DofsToPosition(const image::Image& image)
+        : m_sampling(image)
+    {}
 
     template <typename T>
     Eigen::Matrix<T, 3, 1> dof_to_pos(const Eigen::Matrix<double, Eigen::Dynamic, 1>& dof) const
@@ -25,7 +35,8 @@ public:
             get_local_vector<Eigen::Matrix<T, 2, 1>>(dof, size, dofT);
             // TODO retrive position using displacement map
             // for now just return itself
-            pos << dofT(0), dofT(1), static_cast<T>(0.0);
+            pos << dofT(0), dofT(1), m_sampling.sample_T(dofT(0), dofT(1));
+
         } else
         //(dofx.size() == 1)
         {

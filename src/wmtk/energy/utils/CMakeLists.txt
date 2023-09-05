@@ -1,5 +1,5 @@
 set(SRC_FILES
-    AutoDiffTypes.hpp
+    AutoDiffUtils.hpp
     autodiff.h
     autodiff.cpp
     DofsToPosition.hpp

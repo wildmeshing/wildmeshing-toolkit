@@ -1,3 +1,5 @@
+#include <wmtk/image/Image.hpp>
+#include <wmtk/image/Sampling.hpp>
 #include "DifferentiableEnergy.hpp"
 namespace wmtk {
 namespace energy {

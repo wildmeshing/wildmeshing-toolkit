@@ -1,8 +1,9 @@
+#pragma once
 #include <wmtk/energy/utils/autodiff.h>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/Tuple.hpp>
-#include <wmtk/energy/utils/AutoDiffTypes.hpp>
+// #include <wmtk/energy/utils/AutoDiffTypes.hpp>
 #include "Energy.hpp"
 namespace wmtk {
 namespace energy {

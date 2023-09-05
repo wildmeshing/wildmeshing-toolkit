@@ -31,3 +31,11 @@ add_subdirectory(attribute)
 add_subdirectory(operations)
 add_subdirectory(autogen)
 add_subdirectory(energy)
+add_subdirectory(image)
+
+include(stb)
+include(tinyexr)
+target_link_libraries(wildmeshing_toolkit PUBLIC
+    miniz # MTAO: I had a build issue with windows not finding miniz at linktime - adding here to make sure it's there?
+    tinyexr
+    stb::image)

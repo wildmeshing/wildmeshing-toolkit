@@ -1,6 +1,8 @@
 #pragma once
-#include <wmtk/energy/utils/DofsToPosition.hpp>
+#include <wmtk/image/Image.hpp>
 #include "DifferentiableEnergy.hpp"
+#include "utils/AutoDiffUtils.hpp"
+#include "utils/DofsToPosition.hpp"
 namespace wmtk {
 namespace energy {
 class AMIPS : public DifferentiableEnergy
@@ -35,9 +37,7 @@ public:
 class AMIPS_2D : public AMIPS
 {
 public:
-    AMIPS_2D(const TriMesh& mesh)
-        : AMIPS(mesh)
-    {}
+    AMIPS_2D(const TriMesh& mesh);
 
 public:
     double energy_eval(const Tuple& tuple) const override;
@@ -66,9 +66,7 @@ public:
 class AMIPS_3DEmbedded : public AMIPS
 {
 public:
-    AMIPS_3DEmbedded(const TriMesh& mesh)
-        : AMIPS(mesh)
-    {}
+    AMIPS_3DEmbedded(const TriMesh& mesh, const image::Image& image);
 
 public:
     double energy_eval(const Tuple& tuple) const override;
@@ -79,7 +77,12 @@ public:
         const Eigen::Vector2d& uv1,
         const Eigen::Vector2d& uv2,
         const Eigen::Vector2d& uv3,
-        const std::array<double, 6>& m_target_triangle);
+        const std::array<double, 6>& m_target_triangle,
+        const DofsToPosition& m_dofs_to_pos);
+
+protected:
+    image::Image m_image;
+    DofsToPosition m_dofs_to_pos;
 };
 } // namespace energy
 } // namespace wmtk
