@@ -411,7 +411,104 @@ bool TetMesh::is_boundary_vertex(const Tuple& vertex) const
 
 bool TetMesh::is_connectivity_valid() const
 {
-    throw("Not implemented");
+    // get Accessors for topology
+    ConstAccessor<long> tv_accessor = create_const_accessor<long>(m_tv_handle);
+    ConstAccessor<long> te_accessor = create_const_accessor<long>(m_te_handle);
+    ConstAccessor<long> tf_accessor = create_const_accessor<long>(m_tf_handle);
+    ConstAccessor<long> tt_accessor = create_const_accessor<long>(m_tt_handle);
+    ConstAccessor<long> vt_accessor = create_const_accessor<long>(m_vt_handle);
+    ConstAccessor<long> et_accessor = create_const_accessor<long>(m_et_handle);
+    ConstAccessor<long> ft_accessor = create_const_accessor<long>(m_et_handle);
+    ConstAccessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
+    ConstAccessor<char> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
+    ConstAccessor<char> f_flag_accessor = get_flag_accessor(PrimitiveType::Face);
+    ConstAccessor<char> t_flag_accessor = get_flag_accessor(PrimitiveType::Tetrahedron);
+
+    // VT and TV
+    for (long i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
+        if (v_flag_accessor.scalar_attribute(i) == 0) {
+            wmtk::logger().debug("Vertex {} is deleted", i);
+            continue;
+        }
+        int cnt = 0;
+        for (int j = 0; j < 4; ++j) {
+            if (tv_accessor.vector_attribute(vt_accessor.scalar_attribute(i))[j] == i) {
+                cnt++;
+            }
+        }
+        if (cnt != 1) {
+            return false;
+        }
+    }
+
+    // ET and TE
+    for (long i = 0; i < capacity(PrimitiveType::Edge); ++i) {
+        if (e_flag_accessor.scalar_attribute(i) == 0) {
+            wmtk::logger().debug("Edge {} is deleted", i);
+            continue;
+        }
+        int cnt = 0;
+        for (int j = 0; j < 6; ++j) {
+            if (te_accessor.vector_attribute(et_accessor.scalar_attribute(i))[j] == i) {
+                cnt++;
+            }
+        }
+        if (cnt != 1) {
+            return false;
+        }
+    }
+
+    // FT and TF
+    for (long i = 0; i < capacity(PrimitiveType::Face); ++i) {
+        if (f_flag_accessor.scalar_attribute(i) == 0) {
+            wmtk::logger().debug("Face {} is deleted", i);
+            continue;
+        }
+        int cnt = 0;
+        for (int j = 0; j < 4; ++j) {
+            if (tf_accessor.vector_attribute(ft_accessor.scalar_attribute(i))[j] == i) {
+                cnt++;
+            }
+        }
+        if (cnt != 1) {
+            return false;
+        }
+    }
+
+    // TF and TT
+    for (long i = 0; i < capacity(PrimitiveType::Tetrahedron); ++i) {
+        if (t_flag_accessor.scalar_attribute(i) == 0) {
+            wmtk::logger().debug("Tet {} is deleted", i);
+            continue;
+        }
+
+        for (int j = 0; j < 4; ++j) {
+            long nb = tt_accessor.vector_attribute(i)(j);
+            if (nb != -1) {
+                if (ft_accessor.scalar_attribute(tf_accessor.vector_attribute(i)(j)) != i) {
+                    return false;
+                }
+                continue;
+            }
+
+            int cnt = 0;
+            int id_in_nb;
+            for (int k = 0; k < 4; ++k) {
+                if (tt_accessor.vector_attribute(nb)(k) == 1) {
+                    cnt++;
+                    id_in_nb = k;
+                }
+            }
+            if (cnt != 1) {
+                return false;
+            }
+
+            if (tf_accessor.vector_attribute(i)(j) != tf_accessor.vector_attribute(nb)(id_in_nb)) {
+                return false;
+            }
+        }
+    }
+
     return true;
 }
 
