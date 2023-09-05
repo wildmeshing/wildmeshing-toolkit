@@ -175,11 +175,11 @@ namespace wmtk
 
                 auto [child_tuple, parent_tuple] = read_tuple_map_attribute(child_to_parent_handle, *child_mesh_ptr, child_mesh_ptr->tuple_from_id(map_type, id));
 
-                if (!child_mesh_ptr->is_valid(child_tuple) || child_mesh_ptr->is_outdated(child_tuple))
+                if (!child_mesh_ptr->is_valid_slow(child_tuple))
                 {
                     return false;
                 }
-                if (!parent_mesh.is_valid(parent_tuple) || parent_mesh.is_outdated(parent_tuple))
+                if (!parent_mesh.is_valid_slow(parent_tuple))
                 {
                     return false;
                 }

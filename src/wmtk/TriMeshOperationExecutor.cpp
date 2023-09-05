@@ -424,7 +424,8 @@ Tuple TriMesh::TriMeshOperationExecutor::split_edge()
                             child_new_cell_ids.emplace_back(-1, -1);
                         continue;
                     }
-                    TriMesh::TriMeshOperationExecutor executor_child(child_tri_mesh, t_child);
+                    auto child_hash_acc = child_tri_mesh.get_cell_hash_accessor();
+                    TriMesh::TriMeshOperationExecutor executor_child(child_tri_mesh, t_child, child_hash_acc);
                     executor_child.split_edge();
                     for (auto child_incident_face_data : executor_child.m_incident_face_datas)
                     {
@@ -567,7 +568,8 @@ Tuple TriMesh::TriMeshOperationExecutor::collapse_edge()
                     {
                         continue;
                     }
-                    TriMesh::TriMeshOperationExecutor executor_child(child_tri_mesh, t_child);
+                    auto child_hash_acc = child_tri_mesh.get_cell_hash_accessor();
+                    TriMesh::TriMeshOperationExecutor executor_child(child_tri_mesh, t_child, child_hash_acc);
                     executor_child.collapse_edge();
                 }
                 // update_hash

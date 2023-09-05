@@ -8,7 +8,9 @@ using namespace wmtk;
 using namespace wmtk::tests;
 
 using TM = TriMesh;
-using TMOE = decltype(std::declval<DEBUG_TriMesh>().get_tmoe(wmtk::Tuple()));
+using TMOE = decltype(std::declval<DEBUG_TriMesh>().get_tmoe(
+    wmtk::Tuple(),
+    std::declval<Accessor<long>&>()));
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
@@ -100,7 +102,8 @@ TEST_CASE("test_split_multi_mesh","[multimesh][2D]")
     REQUIRE(parent.multi_mesh_manager.is_map_valid(parent) == true);
 
     Tuple edge = parent.edge_tuple_between_v1_v2(1, 0, 1);
-    auto executor = parent.get_tmoe(edge);
+    auto parent_hash_acc = parent.get_cell_hash_accessor();
+    auto executor = parent.get_tmoe(edge, parent_hash_acc);
     executor.split_edge();
 
     REQUIRE(parent.is_connectivity_valid());
@@ -128,7 +131,7 @@ TEST_CASE("test_split_multi_mesh","[multimesh][2D]")
 
     // Do another edge_split
     edge = parent.edge_tuple_between_v1_v2(0, 5, 4);
-    auto executor1 = parent.get_tmoe(edge);
+    auto executor1 = parent.get_tmoe(edge, parent_hash_acc);
     executor1.split_edge();
 
     REQUIRE(parent.is_connectivity_valid());
@@ -181,7 +184,8 @@ TEST_CASE("test_collapse_multi_mesh","[multimesh][2D]")
     REQUIRE(parent.multi_mesh_manager.is_map_valid(parent) == true);
 
     Tuple edge = parent.edge_tuple_between_v1_v2(1, 2, 0);
-    auto executor = parent.get_tmoe(edge);
+    auto parent_hash_acc = parent.get_cell_hash_accessor();
+    auto executor = parent.get_tmoe(edge, parent_hash_acc);
     executor.collapse_edge();
 
     REQUIRE(parent.is_connectivity_valid());
