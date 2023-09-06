@@ -35,7 +35,7 @@ public:
      */
     DofsToPosition(const image::Image& image)
     {
-        m_sampling = std::make_unique<wmtk::image::SamplingImage<SamplingType>>(image);
+        m_sampling = std::make_unique<wmtk::image::SamplingBicubic>(image);
     }
 
 
