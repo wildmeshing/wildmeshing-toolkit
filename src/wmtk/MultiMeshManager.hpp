@@ -58,7 +58,7 @@ class MultiMeshManager
     // Map source_tuple from source_mesh to target_mesh
     static Tuple map_tuple_between_meshes(const Mesh& source_mesh, const Mesh& target_mesh, MeshAttributeHandle<long> source_map_handle, const Tuple& source_tuple);
 
-    static std::vector<Simplex> find_all_simplex_in_child_mesh(const Mesh& parent_mesh, long child_id, const Simplex& simplex_parent);
+    static std::vector<Simplex> find_all_simplices_in_child_mesh(const Mesh& parent_mesh, long child_id, const Simplex& simplex_parent);
 
 
     // Utility function to map a edge tuple to all its children, used in operations
