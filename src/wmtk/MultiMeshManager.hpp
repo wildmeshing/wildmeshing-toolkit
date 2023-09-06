@@ -3,6 +3,7 @@
 #include "attribute/AttributeManager.hpp"
 #include "attribute/AttributeScopeHandle.hpp"
 #include "attribute/MeshAttributes.hpp"
+#include "Simplex.hpp"
 #include "Tuple.hpp"
 #include <spdlog/spdlog.h>
 
@@ -56,6 +57,9 @@ class MultiMeshManager
     // TODO: make it a free function? static function?
     // Map source_tuple from source_mesh to target_mesh
     static Tuple map_tuple_between_meshes(const Mesh& source_mesh, const Mesh& target_mesh, MeshAttributeHandle<long> source_map_handle, const Tuple& source_tuple);
+
+    static std::vector<Simplex> find_all_simplices_in_child_mesh(const Mesh& parent_mesh, long child_id, const Simplex& simplex_parent);
+
 
     // Utility function to map a edge tuple to all its children, used in operations
     static std::vector<Tuple> map_edge_tuple_to_all_children(const Mesh& parent_mesh,const Tuple& edge_tuple);

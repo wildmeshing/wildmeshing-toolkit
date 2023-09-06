@@ -1,6 +1,7 @@
 #include "MultiMeshManager.hpp"
 #include "Mesh.hpp"
 #include "Types.hpp"
+#include "SimplicialComplex.hpp"
 namespace wmtk
 {
     MultiMeshManager::MultiMeshManager()
@@ -140,6 +141,36 @@ namespace wmtk
         }
     }
 
+    std::vector<Simplex> MultiMeshManager::find_all_simplices_in_child_mesh(const Mesh& parent_mesh, long child_id, const Simplex& simplex_parent)
+    {
+        auto child_mesh_ptr = parent_mesh.multi_mesh_manager.child_meshes[child_id];
+        auto map_to_child_handle = parent_mesh.multi_mesh_manager.map_to_child_handles[child_id];
+        PrimitiveType simplex_ptype = simplex_parent.primitive_type();
+        PrimitiveType childmesh_ptype = child_mesh_ptr->top_simplex_type();
+
+        if (simplex_ptype > childmesh_ptype)
+        {
+            // Can't find higher-dimensional simplex in child_mesh
+            return std::vector<Simplex>();
+        }
+
+        // Find all dim(child_mesh) simplex in open_star(simplex_parent)) in parent_mesh
+        auto top_simplex_in_open_star = SimplicialComplex::open_star(parent_mesh, simplex_parent).get_simplices(childmesh_ptype);
+
+        // map tuples to child_mesh and collect all distinct simplices
+        SimplicialComplex ret_sc(*child_mesh_ptr);
+        for (auto s : top_simplex_in_open_star)
+        {
+            auto child_tuple = map_tuple_between_meshes(parent_mesh, *child_mesh_ptr, map_to_child_handle, s.tuple());
+            if (!child_tuple.is_null())
+            {
+                ret_sc.add_simplex(Simplex(simplex_ptype, child_tuple));
+            }
+        }
+        
+        return ret_sc.get_simplex_vector();
+    }
+
     bool MultiMeshManager::is_child_mesh_valid(const Mesh& parent_mesh, const Mesh& child_mesh)
     {
         // TODO: implement this
@@ -179,7 +210,7 @@ namespace wmtk
                 }
 
                 // 1. test if all maps in child_mesh exisits
-                // 2. test if tuples in maps are valid and up_to_date
+                // 2. test if tuples in maps are valid (and up_to_date)
                 // 3. test if map is symmetric
                 // 4. test switch_top_simplex operation
 
