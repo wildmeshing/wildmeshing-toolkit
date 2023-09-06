@@ -34,6 +34,10 @@ public:
     void initialize(Eigen::Ref<const RowVectors4l> T);
 
     long _debug_id(const Tuple& tuple, PrimitiveType type) const;
+    long _debug_id(const Simplex& simplex) const
+    {
+        return _debug_id(simplex.tuple(), simplex.primitive_type());
+    }
 
     bool is_connectivity_valid() const override;
 
