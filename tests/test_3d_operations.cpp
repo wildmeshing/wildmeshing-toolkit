@@ -37,5 +37,11 @@ TEST_CASE("get_split_simplices_to_delete", "[operations][split][3d]")
         REQUIRE(ids_to_delete[1].size() == 1);
         REQUIRE(ids_to_delete[2].size() == 2);
         REQUIRE(ids_to_delete[3].size() == 1);
+
+        const long edge_to_delete = ids_to_delete[1][0];
+        CHECK(edge_to_delete == m._debug_id(edge, PE));
+        const long tet_to_delete = ids_to_delete[3][0];
+        CHECK(tet_to_delete == m._debug_id(edge, PT));
+        // TODO check faces
     }
 }

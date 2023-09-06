@@ -798,8 +798,9 @@ Tuple TetMesh::TetMeshOperationExecutor::collapse_edge()
     update_cell_hash();
     delete_simplices();
 
+    Tuple ret = m_mesh.vertex_tuple_from_id(v2);
 
-    return Tuple();
+    return ret;
 }
 
 std::vector<long> TetMesh::TetMeshOperationExecutor::request_simplex_indices(
