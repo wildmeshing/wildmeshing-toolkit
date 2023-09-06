@@ -30,6 +30,7 @@ TEST_CASE("get_split_simplices_to_delete", "[operations][split][3d]")
         const DEBUG_TetMesh m = single_tet();
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
 
+        // debugging code
         std::array<std::vector<long>, 4> ids_to_delete =
             TMOE::get_split_simplices_to_delete(edge, m);
 
@@ -60,5 +61,18 @@ TEST_CASE("get_split_simplices_to_delete", "[operations][split][3d]")
         const long tet_to_delete = ids_to_delete[3][0];
         CHECK(tet_to_delete == m._debug_id(edge, PT));
         // TODO check faces
+        const long face_to_delete_1 = m._debug_id(edge, PF);
+        const long face_to_delete_2 = m._debug_id(m.switch_tuple(edge, PF), PF);
+
+        // debugging code
+        std::cout << "fid1: " << face_to_delete_1 << std::endl;
+        std::cout << "fid2: " << face_to_delete_2 << std::endl;
+
+        REQUIRE(
+            std::find(ids_to_delete[2].begin(), ids_to_delete[2].end(), face_to_delete_1) !=
+            ids_to_delete[2].end());
+        REQUIRE(
+            std::find(ids_to_delete[2].begin(), ids_to_delete[2].end(), face_to_delete_2) !=
+            ids_to_delete[2].end());
     }
 }
