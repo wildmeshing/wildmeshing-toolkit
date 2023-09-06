@@ -1,4 +1,4 @@
-#pragma once
+
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/Primitive.hpp>
 #include <wmtk/TriMesh.hpp>
@@ -55,9 +55,11 @@ TEST_CASE("amips3d")
         const DEBUG_TriMesh example_mesh = single_equilateral_triangle();
         auto e1 = example_mesh.edge_tuple_between_v1_v2(0, 1, 0);
         const TriMesh tri_mesh = static_cast<const TriMesh&>(example_mesh);
+        std::function<double(double, double)> f = []([[maybe_unused]] double x,
+                                                     [[maybe_unused]] double y) { return 0.; };
 
-        AMIPS_2D amips2d(tri_mesh);
+        AMIPS_3DEmbedded<double> amips3d(tri_mesh, f);
 
-        REQUIRE(amips2d.energy_eval(e1) == 2.0);
+        REQUIRE(amips3d.energy_eval(e1) == 2.0);
     }
 }
