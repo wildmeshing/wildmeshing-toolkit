@@ -47,17 +47,16 @@ public:
 
         if (size == 2) {
             Eigen::Matrix<SamplingType, 2, 1> dofT;
-            get_local_vector<Eigen::Matrix<SamplingType, 2, 1>>(dof, size, dofT);
+            get_T_vector<Eigen::Matrix<SamplingType, 2, 1>>(dof, size, dofT);
             // TODO retrive position using displacement map
             // for now just return itself
-            pos << static_cast<SamplingType>(dofT(0)), static_cast<SamplingType>(dofT(1)),
-                m_sampling->sample(dofT(0), dofT(1));
+            pos << dofT(0), dofT(1), m_sampling->sample(dofT(0), dofT(1));
 
         } else
         //(dofx.size() == 1)
         {
             Eigen::Matrix<SamplingType, 1, 1> dofT;
-            get_local_vector<Eigen::Matrix<SamplingType, 1, 1>>(dof, size, dofT);
+            get_T_vector<Eigen::Matrix<SamplingType, 1, 1>>(dof, size, dofT);
             // curve parameterization
             // TODO can also be implemented as a overload operator()?
 

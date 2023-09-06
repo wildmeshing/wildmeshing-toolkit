@@ -53,7 +53,7 @@ auto AMIPS_2D::energy_eval(
     typedef Eigen::Matrix<T, 2, 1> Vec2T;
     Vec2T uv1_;
 
-    get_local_vector<Vec2T>(uv1, 2, uv1_);
+    get_T_vector<Vec2T>(uv1, 2, uv1_);
 
     Dm << uv2(0) - uv1_(0), uv3(0) - uv1_(0), uv2(1) - uv1_(1), uv3(1) - uv1_(1);
 

@@ -4,6 +4,7 @@
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/energy/AMIPS.hpp>
 #include <wmtk/energy/TriMeshValenceEnergy.hpp>
+#include <wmtk/energy/utils/DofsToPosition.hpp>
 #include "../tools/DEBUG_TriMesh.hpp"
 #include "../tools/TriMesh_examples.hpp"
 using namespace wmtk;
@@ -52,6 +53,10 @@ TEST_CASE("amips3d")
 {
     SECTION("equilateral triangle")
     {
+        DofsToPosition<double> dofs2pos([](double x, double y) { return 0.; });
+        Eigen::Vector2d dofs = Eigen::Vector2d::Zero(2);
+
+        Eigen::Vector3d pos = dofs2pos.dof_to_pos(dofs);
         const DEBUG_TriMesh example_mesh = single_equilateral_triangle();
         auto e1 = example_mesh.edge_tuple_between_v1_v2(0, 1, 0);
         const TriMesh tri_mesh = static_cast<const TriMesh&>(example_mesh);
