@@ -9,12 +9,69 @@ enum class SAMPLING_MODE { BICUBIC, SPLINE };
 class Sampling
 {
 public:
-    using DScalar = DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d>;
+    using DScalar = DScalar2<double, Eigen::Matrix<double, -1, 1>, Eigen::Matrix<double, -1, -1>>;
     virtual ~Sampling(){};
 
 public:
     virtual double sample(const double u, const double v) const = 0;
     virtual DScalar sample(const DScalar& u, const DScalar& v) const = 0;
+};
+
+template <typename SamplingType>
+class SamplingAnalyticFunction : public Sampling
+{
+protected:
+    std::function<SamplingType(SamplingType, SamplingType)> m_f;
+};
+
+// Specialization for SamplingAnalyticFunction<double>
+template <>
+class SamplingAnalyticFunction<double> : public Sampling
+{
+protected:
+    std::function<double(double, double)> m_f;
+
+public:
+    SamplingAnalyticFunction(std::function<double(double, double)> f)
+        : m_f(f)
+    {}
+
+    double sample(const double u, const double v) const override { return m_f(u, v); }
+
+    DScalar sample(const DScalar& u, const DScalar& v) const override
+    {
+        // Handle the case where SamplingType is double
+        //  return a default DScalar
+        return DScalar{m_f(u.getValue(), v.getValue()),
+                       Eigen::Vector2d::Zero(),
+                       Eigen::Matrix2d::Zero()};
+    }
+};
+
+// Specialization for SamplingAnalyticFunction<DScalar>
+template <>
+class SamplingAnalyticFunction<Sampling::DScalar> : public Sampling
+{
+protected:
+    std::function<Sampling::DScalar(Sampling::DScalar, Sampling::DScalar)> m_f;
+
+public:
+    SamplingAnalyticFunction(
+        std::function<Sampling::DScalar(Sampling::DScalar, Sampling::DScalar)> f)
+        : m_f(f)
+    {}
+
+    double sample(const double u, const double v) const override
+    {
+        // Handle the case where SamplingType is DScalar
+        //  return a default double
+        return m_f(DScalar(u), DScalar(v)).getValue();
+    }
+
+    Sampling::DScalar sample(const Sampling::DScalar& u, const Sampling::DScalar& v) const override
+    {
+        return m_f(u, v);
+    }
 };
 
 template <typename Derived>
