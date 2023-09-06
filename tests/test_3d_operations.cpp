@@ -33,6 +33,23 @@ TEST_CASE("get_split_simplices_to_delete", "[operations][split][3d]")
         std::array<std::vector<long>, 4> ids_to_delete =
             TMOE::get_split_simplices_to_delete(edge, m);
 
+        std::cout << "vertex: " << std::endl;
+        for (int i = 0; i < ids_to_delete[0].size(); i++) {
+            std::cout << ids_to_delete[0][i] << std::endl;
+        }
+        std::cout << "edge: " << std::endl;
+        for (int i = 0; i < ids_to_delete[1].size(); i++) {
+            std::cout << ids_to_delete[1][i] << std::endl;
+        }
+        std::cout << "face: " << std::endl;
+        for (int i = 0; i < ids_to_delete[2].size(); i++) {
+            std::cout << ids_to_delete[2][i] << std::endl;
+        }
+        std::cout << "tet: " << std::endl;
+        for (int i = 0; i < ids_to_delete[3].size(); i++) {
+            std::cout << ids_to_delete[3][i] << std::endl;
+        }
+
         REQUIRE(ids_to_delete[0].size() == 0);
         REQUIRE(ids_to_delete[1].size() == 1);
         REQUIRE(ids_to_delete[2].size() == 2);

@@ -267,14 +267,26 @@ TEST_CASE("open_star", "[simplicial_complex][star][2D]")
     Tuple t(0, 2, -1, 1, hash);
 
 
-    SimplicialComplex sc_v = SimplicialComplex::open_star(m, Simplex(PV, t));
-    REQUIRE(sc_v.get_simplices().size() == 8);
+    auto sc_v = SimplicialComplex::open_star(m, Simplex(PV, t)).get_simplex_vector();
+    REQUIRE(sc_v.size() == 8);
+    for (size_t i = 0; i < 8; i++)
+    {
+        REQUIRE(m.simplex_is_equal(Simplex(PV, t), Simplex(PV, sc_v[i].tuple())));
+    }
 
-    SimplicialComplex sc_e = SimplicialComplex::open_star(m, Simplex(PE, t));
-    REQUIRE(sc_e.get_simplices().size() == 3);
+    auto sc_e = SimplicialComplex::open_star(m, Simplex(PE, t)).get_simplex_vector();
+    REQUIRE(sc_e.size() == 3);
+    for (size_t i = 0; i < 3; i++)
+    {
+        REQUIRE(m.simplex_is_equal(Simplex(PE, t), Simplex(PE, sc_e[i].tuple())));
+    }
 
-    SimplicialComplex sc_f = SimplicialComplex::open_star(m, Simplex(PF, t));
-    REQUIRE(sc_f.get_simplices().size() == 1);
+    auto sc_f = SimplicialComplex::open_star(m, Simplex(PF, t)).get_simplex_vector();
+    REQUIRE(sc_f.size() == 1);
+    for (size_t i = 0; i < 1; i++)
+    {
+        REQUIRE(m.simplex_is_equal(Simplex(PF, t), Simplex(PF, sc_f[i].tuple())));
+    }
 }
 
 TEST_CASE("closed_star", "[simplicial_complex][star][2D]")
