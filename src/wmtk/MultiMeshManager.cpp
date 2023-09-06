@@ -157,6 +157,7 @@ namespace wmtk
         // Find all dim(child_mesh) simplex in open_star(simplex_parent)) in parent_mesh
         auto top_simplex_in_open_star = SimplicialComplex::open_star(parent_mesh, simplex_parent).get_simplices(childmesh_ptype);
 
+        // map tuples to child_mesh and collect all distinct simplices
         SimplicialComplex ret_sc(*child_mesh_ptr);
         for (auto s : top_simplex_in_open_star)
         {
