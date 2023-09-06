@@ -144,6 +144,7 @@ namespace wmtk
     std::vector<Simplex> MultiMeshManager::find_all_simplex_in_child_mesh(const Mesh& parent_mesh, long child_id, const Simplex& simplex_parent)
     {
         auto child_mesh_ptr = parent_mesh.multi_mesh_manager.child_meshes[child_id];
+        auto amp_to_child_handle = parent_mesh.multi_mesh_manager.map_to_child_handles[child_id];
         PrimitiveType simplex_ptype = simplex_parent.primitive_type();
         PrimitiveType childmesh_ptype = child_mesh_ptr->top_simplex_type();
 
@@ -153,8 +154,20 @@ namespace wmtk
             return std::vector<Simplex>();
         }
 
+        // Find all dim(child_mesh) simplex in open_star(simplex_parent)) in parent_mesh
+        auto top_simplex_in_open_star = SimplicialComplex::open_star(parent_mesh, simplex_parent).get_simplices(childmesh_ptype);
+
+        SimplicialComplex ret_sc(*child_mesh_ptr);
+        for (auto s : top_simplex_in_open_star)
+        {
+            auto child_tuple = map_tuple_between_meshes(parent_mesh, *child_mesh_ptr, amp_to_child_handle, s.tuple());
+            if (!child_tuple.is_null())
+            {
+                ret_sc.add_simplex(Simplex(simplex_ptype, child_tuple));
+            }
+        }
         
-        return std::vector<Simplex>();
+        return ret_sc.get_simplex_vector();
     }
 
     bool MultiMeshManager::is_child_mesh_valid(const Mesh& parent_mesh, const Mesh& child_mesh)
