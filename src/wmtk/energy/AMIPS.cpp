@@ -12,7 +12,7 @@ AMIPS_2D::AMIPS_2D(const TriMesh& mesh)
 
 Eigen::Matrix<double, 3, 2> AMIPS::get_target_triangle(double scaling) const
 {
-    const static std::array<double, 6> m_target_triangle = {0., 0., 1., 0., 1. / 2., sqrt(3) / 2.};
+    const static std::array<double, 6> m_target_triangle = {0., 1., 1. / 2., 0., 0., sqrt(3) / 2.};
     return scaling * Eigen::Matrix<double, 3, 2>::ConstMapType(m_target_triangle.data());
 }
 
@@ -168,7 +168,6 @@ auto AMIPS_3DEmbedded::energy_eval(
     // Eigen::Matrix<DScalar, 3, 1> e2_stableNormalized = e2.stableNormalized();
     assert(e2.norm() > 0); // check norm is not 0
     e2 = e2 / e2.norm();
-
 
     // project V1, V2, V3 to tangent plane to VT1, VT2, VT3
 

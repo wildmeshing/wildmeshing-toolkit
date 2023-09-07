@@ -53,17 +53,17 @@ TEST_CASE("amips3d")
 {
     SECTION("equilateral triangle")
     {
-        DofsToPosition<double> dofs2pos([](double x, double y) { return 0.; });
-        Eigen::Vector2d dofs = Eigen::Vector2d::Zero(2);
-
-        Eigen::Vector3d pos = dofs2pos.dof_to_pos(dofs);
         const DEBUG_TriMesh example_mesh = single_equilateral_triangle();
         auto e1 = example_mesh.edge_tuple_between_v1_v2(0, 1, 0);
         const TriMesh tri_mesh = static_cast<const TriMesh&>(example_mesh);
-        std::function<double(double, double)> f = []([[maybe_unused]] double x,
-                                                     [[maybe_unused]] double y) { return 0.; };
 
-        AMIPS_3DEmbedded<double> amips3d(tri_mesh, f);
+
+        AMIPS_3DEmbedded amips3d(
+            tri_mesh,
+            wmtk::image::SamplingAnalyticFunction::FunctionType::Linear,
+            0.0,
+            0.0,
+            1.0);
 
         REQUIRE(amips3d.energy_eval(e1) == 2.0);
     }

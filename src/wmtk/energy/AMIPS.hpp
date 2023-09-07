@@ -47,9 +47,14 @@ public:
         : AMIPS(mesh)
         , m_dofs_to_pos(image)
     {}
-    AMIPS_3DEmbedded(const TriMesh& mesh)
+    AMIPS_3DEmbedded(
+        const TriMesh& mesh,
+        const wmtk::image::SamplingAnalyticFunction::FunctionType type,
+        const double a,
+        const double b,
+        const double c)
         : AMIPS(mesh)
-        , m_dofs_to_pos()
+        , m_dofs_to_pos(type, a, b, c)
     {}
 
 
