@@ -17,60 +17,47 @@ public:
     virtual DScalar sample(const DScalar& u, const DScalar& v) const = 0;
 };
 
-template <typename SamplingType>
+
 class SamplingAnalyticFunction : public Sampling
 {
 protected:
-    std::function<SamplingType(SamplingType, SamplingType)> m_f;
-};
+    enum FunctionType { Linear, Quadratic };
 
-// Specialization for SamplingAnalyticFunction<double>
-template <>
-class SamplingAnalyticFunction<double> : public Sampling
-{
-protected:
-    std::function<double(double, double)> m_f;
+    FunctionType m_type = FunctionType::Linear;
+    double A = 0.0;
+    double B = 0.0;
+    double C = 0.0;
+
+    template <typename S>
+    auto _evaluate(const S& u, const S& v) const
+    {
+        if (m_type == Linear) {
+            return _evaluate_linear(u, v);
+        }
+    }
+
+    template <typename S>
+    auto _evaluate_linear(const S& u, const S& v) const
+    {
+        return A * u + B * v + C;
+    }
 
 public:
-    SamplingAnalyticFunction(std::function<double(double, double)> f)
-        : m_f(f)
-    {}
+    // make a contructor
+    SamplingAnalyticFunction() {}
 
-    double sample(const double u, const double v) const override { return m_f(u, v); }
 
+    void set_coefficients(const FunctionType type, double a, const double b, const double c)
+    {
+        m_type = type;
+        A = a;
+        B = b;
+        C = c;
+    }
+    double sample(const double u, const double v) const override { return _evaluate<double>(u, v); }
     DScalar sample(const DScalar& u, const DScalar& v) const override
     {
-        // Handle the case where SamplingType is double
-        //  return a default DScalar
-        return DScalar{m_f(u.getValue(), v.getValue()),
-                       Eigen::Vector2d::Zero(),
-                       Eigen::Matrix2d::Zero()};
-    }
-};
-
-// Specialization for SamplingAnalyticFunction<DScalar>
-template <>
-class SamplingAnalyticFunction<Sampling::DScalar> : public Sampling
-{
-protected:
-    std::function<Sampling::DScalar(Sampling::DScalar, Sampling::DScalar)> m_f;
-
-public:
-    SamplingAnalyticFunction(
-        std::function<Sampling::DScalar(Sampling::DScalar, Sampling::DScalar)> f)
-        : m_f(f)
-    {}
-
-    double sample(const double u, const double v) const override
-    {
-        // Handle the case where SamplingType is DScalar
-        //  return a default double
-        return m_f(DScalar(u), DScalar(v)).getValue();
-    }
-
-    Sampling::DScalar sample(const Sampling::DScalar& u, const Sampling::DScalar& v) const override
-    {
-        return m_f(u, v);
+        return _evaluate<DScalar>(u, v);
     }
 };
 
