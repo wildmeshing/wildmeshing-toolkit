@@ -15,6 +15,7 @@ class Method(Enum):
     Adaptive = 0
     Uniform = 1
     Adaptive_Tess = 2
+    Area_Accuracy = 3
 
 
 def displace_mesh(input_mesh: Path, intput_heightmap: Path, output_folder: Path, method: Method):
@@ -63,43 +64,58 @@ def displace_mesh(input_mesh: Path, intput_heightmap: Path, output_folder: Path,
 
 def write_config_json(input_mesh: Path, texture: Path, output_folder: Path, method: Method):
     meshname = input_mesh.name.removesuffix(".obj").lower()
-    texname = texture.name.removesuffix("_2048_height.exr")
+    # texname = texture.name.removesuffix("_2048_height.exr")
+    texname = texture.name.removesuffix(".exr")
     output_folder = output_folder.joinpath(f"{texname}/")
     output_mesh = output_folder.joinpath(f"{meshname}/{texname}.obj")
     output_mesh.parent.mkdir(parents=True, exist_ok=True)
     logfile = output_folder.joinpath(f"{meshname}/{texname}.json")
+     
+    image_folder = Path("/mnt/ssd2/yunfan/adaptive_tessellation/textures/3d_mesh/ninja/position_normal_lowres/")
+    all_images = list(image_folder.rglob("*.exr"))
+    image_list= []
+    for image in all_images:
+        image_list.append(str(image))
     config_dic = {
     "input_file": str(input_mesh),
     "output_file": str(output_mesh),
     "output_folder": str(output_folder),
     "output_json": str(logfile),
     "image_path": str(texture),
-    "image_size": 2048,
+    "image_size": 128,
     "wrapping_mode": 1,
-    "target_edge_length": 0.01,
-    "edge_len_type": 3,
-    "energy_type": 2,
+    "target_edge_length": 0.002,
+    "target_accuracy": 0.000000001,
+    "sampling_mode": 0,
+    "displacement_mode": 0,
+    "displacement_mesh_images": image_list,
+    "edge_len_type": 6,
+    "energy_type": 4,
     "boundary_parameter_on": True,
     "max_iter": 3
     }
     config_folder =Path("/mnt/ssd2/yunfan/adaptive_tessellation/config")
-    config_json = config_folder.joinpath(f"{meshname}/{texname}_config.json")
+    methodname = str(method).lower().removeprefix("method.")
+
+    config_json = config_folder.joinpath(f"{meshname}/{methodname}/{texname}_config.json")
     with open(config_json, "w") as outfile:
         # subprocess.run(["sudo", "chmod", "-R", "775",  config_folder], check=False)
         json.dump(config_dic, outfile)
 
 
-def displace_all():
+def displace_all(method: Method):
     all_meshes = [
         Path(x)
         for x in [
-            "/mnt/ssd2/yunfan/adaptive_tessellation/inputs/square.obj"
+            "/mnt/ssd2/yunfan/adaptive_tessellation/inputs/ninjaHead_Low.obj"
         ]
     ]
-    texture_folder = Path("/mnt/ssd2/yunfan/adaptive_tessellation/textures/")
-    all_textures = list(texture_folder.rglob("*2048_height.exr"))
+    # texture_folder = Path("/mnt/ssd2/yunfan/adaptive_tessellation/textures/")
+    texture_folder = Path("/mnt/ssd2/yunfan/adaptive_tessellation/textures/3d_mesh/ninja/height_image_lowres/")
+
+    # all_textures = list(texture_folder.rglob("*2048_height.exr"))
+    all_textures = list(texture_folder.rglob("*.exr"))
     # for method in Method:
-    method = 2
     methodname = str(method).lower().removeprefix("method.")
     output_folder = Path(f"/mnt/ssd2/yunfan/adaptive_tessellation/results/{methodname}")
     
@@ -109,20 +125,22 @@ def displace_all():
             # displace_mesh(mesh, texture, output_folder, method)
             
 def displace_mesh(input_config: Path):
-    displacement_cli = ("/home/yunfan/wildmeshing-toolkit/build_release/app/triwild/triwild")
+    displacement_cli = ("/home/yunfan/wildmeshing-toolkit/build_release/app/adaptive_tessellation/adaptive_tessellation")
     for config in input_config.iterdir():
+        print(str(config))
         args = [
         displacement_cli,
         "--config",
             str(config)]
         
-        print(" ".join(args).replace("build_release", "build_debug"))
+        # print(" ".join(args).replace("build_release", "build_debug"))
         
         subprocess.run(args, check=True)
 
 
 if __name__ == "__main__":
-    displace_all()
-    displace_mesh(Path("/mnt/ssd2/yunfan/adaptive_tessellation/config/square/"))
+    method = 4
+    displace_all(method)
+    # displace_mesh(Path("/mnt/ssd2/yunfan/adaptive_tessellation/config/square/",str(method)))
     
 

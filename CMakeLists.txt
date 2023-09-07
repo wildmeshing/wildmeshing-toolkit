@@ -19,6 +19,25 @@ else()
     endif()
 endif()
 
+# Enable ccache if available
+find_program(CCACHE_PROGRAM ccache)
+if(CCACHE_PROGRAM)
+    option(WMTK_WITH_CCACHE "Enable ccache when building WMTK" ${WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT})
+else()
+    option(WMTK_WITH_CCACHE "Enable ccache when building WMTK" OFF)
+endif()
+if(WMTK_WITH_CCACHE AND CCACHE_PROGRAM)
+    set(ccacheEnv
+        CCACHE_BASEDIR=${CMAKE_BINARY_DIR}
+        CCACHE_SLOPPINESS=clang_index_store,include_file_ctime,include_file_mtime,locale,pch_defines,time_macros
+    )
+    foreach(lang IN ITEMS C CXX)
+        set(CMAKE_${lang}_COMPILER_LAUNCHER
+            ${CMAKE_COMMAND} -E env ${ccacheEnv} ${CCACHE_PROGRAM}
+        )
+    endforeach()
+endif()
+
 # ###############################################################################
 project(WildMeshingToolkit DESCRIPTION "A mesh optimization toolkit")
 
@@ -94,6 +113,7 @@ include(onetbb)
 include(mshio)
 include(metis)
 include(gmp)
+include(probabilistic_quadrics)
 
 include(lagrange)
 lagrange_include_modules(bvh)
@@ -114,6 +134,7 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     HighFive::HighFive
     hdf5::hdf5
     lagrange::bvh
+    probabilistic_quadrics::probabilistic_quadrics
 )
 include(finite-diff)
 target_link_libraries(wildmeshing_toolkit PUBLIC finitediff::finitediff)
@@ -122,11 +143,14 @@ include(tinyexr)
 target_link_libraries(wildmeshing_toolkit PUBLIC
     miniz # MTAO: I had a build issue with windows not finding miniz at linktime - adding here to make sure it's there?
     tinyexr
-    stb)
+    stb::image)
 include(lean-vtk)
 target_link_libraries(wildmeshing_toolkit PUBLIC LeanVTK)
 include(nanospline)
 target_link_libraries(wildmeshing_toolkit PUBLIC nanospline::nanospline)
+include(ipc-toolkit)
+target_compile_definitions(tight_inclusion PUBLIC TIGHT_INCLUSION_LIMIT_QUEUE_SIZE TI_LIMIT_QUEUE_SIZE)
+target_link_libraries(wildmeshing_toolkit PUBLIC ipc::toolkit)
 include(paraviewo)
 target_link_libraries(wildmeshing_toolkit PUBLIC paraviewo::paraviewo)
 

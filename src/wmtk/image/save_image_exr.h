@@ -7,9 +7,6 @@
 #define TINYEXR_USE_MINIZ 0
 #define TINYEXR_USE_STB_ZLIB 1
 // #define TINYEXR_IMPLEMENTATION
-#include <tinyexr.h>
-#include <cassert>
-#include "Logger.hpp"
 namespace wmtk {
 
 bool save_image_exr_red_channel(
@@ -17,5 +14,14 @@ bool save_image_exr_red_channel(
     size_t height,
     const std::vector<float>& data,
     const std::filesystem::path& path);
-
-}
+bool save_image_exr_3channels(
+    size_t width,
+    size_t height,
+    int r,
+    int g,
+    int b,
+    const std::vector<float>& data_r,
+    const std::vector<float>& data_g,
+    const std::vector<float>& data_b,
+    const std::filesystem::path& path);
+} // namespace wmtk

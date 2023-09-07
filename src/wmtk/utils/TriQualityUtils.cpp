@@ -431,7 +431,7 @@ std::array<double, 6> wmtk::smooth_over_one_triangle(
     std::array<double, 6> input_triangle;
     input_triangle = triangle;
     auto norm = [](const std::array<double, 6>& a, const std::array<double, 6>& b) {
-        double ret;
+        double ret = 0.;
         for (int i = 0; i < 6; i++) {
             ret += std::pow(a[i] - b[i], 2);
         }
@@ -568,8 +568,7 @@ void wmtk::newton_method_with_fallback(
             state.two_opposite_vertices = nminfo.neighbors.row(i);
             state.dofx = dofx;
             state.scaling = nminfo.target_length;
-            assert(boundary_mapping.m_arclengths.size() > 0);
-            assert(boundary_mapping.m_boundaries.size() > 0);
+            assert(boundary_mapping.num_curves() > 0);
             DofsToPositions dofs_to_pos(boundary_mapping, nminfo.curve_id);
             energy_def.eval(state, dofs_to_pos);
             total_energy += state.value;

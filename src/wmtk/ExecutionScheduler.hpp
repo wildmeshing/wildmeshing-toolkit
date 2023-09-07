@@ -19,7 +19,7 @@
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
-#include <Tracy.hpp>
+#include <tracy/Tracy.hpp>
 
 #include <atomic>
 #include <cassert>
@@ -86,7 +86,7 @@ struct ExecutePass
      *
      */
     std::function<bool(const AppMesh&)> stopping_criterion = [](const AppMesh&) {
-        return false; // non-stop, process everything
+        return true; // non-stop, process everything
     };
     /**
      * @brief checking frequency to decide whether to stop execution given the stopping criterion
@@ -208,6 +208,14 @@ struct ExecutePass
                          return {};
                  }}};
         }
+        if constexpr (std::is_base_of<wmtk::TriMesh, AppMesh>::value) {
+            // keeping this trimesh behavior even though it really should be deprecated
+            //add_operation<wmtk::TriMeshEdgeCollapseOperation>();
+            //add_operation<wmtk::TriMeshSwapEdgeOperation>();
+            //add_operation<wmtk::TriMeshSplitEdgeOperation>();
+            //add_operation<wmtk::TriMeshSmoothVertexOperation>();
+            //add_operation<wmtk::TriMeshConsolidateOperation>();
+        }
     }
 
 #if !defined(__cpp_concepts)
@@ -289,7 +297,6 @@ public:
             while ([&]() { return Q.try_pop(ele_in_queue); }()) {
                 auto& [weight, op, tup, retry] = ele_in_queue;
                 if (!tup.is_valid(m)) continue;
-
                 std::vector<Elem> renewed_elements;
                 {
                     auto locked_vid = lock_vertices(

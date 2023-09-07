@@ -27,6 +27,9 @@ protected:
     virtual bool after(TriMesh& m) = 0;
     bool invariants(TriMesh& m);
 
+    virtual void assign(const Tuple& t) {}
+    virtual void mark_failed() {}
+
 
     // forwarding of operations in TriMesh
     static wmtk::AttributeCollection<VertexConnectivity>& vertex_connectivity(TriMesh& m);
