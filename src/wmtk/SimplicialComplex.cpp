@@ -333,6 +333,7 @@ SimplicialComplex SimplicialComplex::open_star(const Mesh& m, const Simplex& s)
                 sc.add_simplex(Simplex(PV, t));
                 sc.add_simplex(Simplex(PE, sw(t, PE)));
                 sc.add_simplex(Simplex(PE, sw(sw(t, PF), PE)));
+                sc.add_simplex(Simplex(PF, sw(sw(t, PE), PF)));
                 // intentional fall-through
             case PE:
                 sc.add_simplex(Simplex(PE, t));
