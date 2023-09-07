@@ -32,6 +32,16 @@ public:
         m_sampling = std::make_unique<wmtk::image::SamplingBicubic>(image);
     }
 
+    DofsToPosition(
+        const wmtk::image::SamplingAnalyticFunction::FunctionType type,
+        const double a,
+        const double b,
+        const double c)
+    {
+        m_sampling = std::make_unique<wmtk::image::SamplingAnalyticFunction>(type, a, b, c);
+    }
+
+
     template <typename T>
     Eigen::Matrix<T, 3, 1> dof_to_pos(const Eigen::Matrix<T, Eigen::Dynamic, 1>& dofT) const
     {

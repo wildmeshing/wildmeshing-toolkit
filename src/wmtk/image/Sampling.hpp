@@ -20,9 +20,10 @@ public:
 
 class SamplingAnalyticFunction : public Sampling
 {
-protected:
+public:
     enum FunctionType { Linear, Quadratic };
 
+protected:
     FunctionType m_type = FunctionType::Linear;
     double A = 0.0;
     double B = 0.0;
@@ -44,12 +45,20 @@ protected:
 
 public:
     // make a contructor
-    SamplingAnalyticFunction() {}
+    SamplingAnalyticFunction(
+        const FunctionType type,
+        const double a,
+        const double b,
+        const double c)
+        : m_type(type)
+        , A(a)
+        , B(b)
+        , C(c)
+    {}
 
 
-    void set_coefficients(const FunctionType type, double a, const double b, const double c)
+    void set_coefficients(double a, const double b, const double c)
     {
-        m_type = type;
         A = a;
         B = b;
         C = c;
