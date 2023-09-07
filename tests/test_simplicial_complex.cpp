@@ -6,8 +6,11 @@
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
+#include "tools/DEBUG_TetMesh.hpp"
 #include "tools/DEBUG_TriMesh.hpp"
+#include "tools/TetMesh_examples.hpp"
 #include "tools/TriMesh_examples.hpp"
+
 
 using namespace wmtk;
 
@@ -269,22 +272,19 @@ TEST_CASE("open_star", "[simplicial_complex][star][2D]")
 
     auto sc_v = SimplicialComplex::open_star(m, Simplex(PV, t)).get_simplex_vector();
     REQUIRE(sc_v.size() == 8);
-    for (size_t i = 0; i < 8; i++)
-    {
+    for (size_t i = 0; i < 8; i++) {
         REQUIRE(m.simplex_is_equal(Simplex(PV, t), Simplex(PV, sc_v[i].tuple())));
     }
 
     auto sc_e = SimplicialComplex::open_star(m, Simplex(PE, t)).get_simplex_vector();
     REQUIRE(sc_e.size() == 3);
-    for (size_t i = 0; i < 3; i++)
-    {
+    for (size_t i = 0; i < 3; i++) {
         REQUIRE(m.simplex_is_equal(Simplex(PE, t), Simplex(PE, sc_e[i].tuple())));
     }
 
     auto sc_f = SimplicialComplex::open_star(m, Simplex(PF, t)).get_simplex_vector();
     REQUIRE(sc_f.size() == 1);
-    for (size_t i = 0; i < 1; i++)
-    {
+    for (size_t i = 0; i < 1; i++) {
         REQUIRE(m.simplex_is_equal(Simplex(PF, t), Simplex(PF, sc_f[i].tuple())));
     }
 }
@@ -310,4 +310,14 @@ TEST_CASE("closed_star", "[simplicial_complex][star][2D]")
 
     SimplicialComplex sc_f = SimplicialComplex::closed_star(m, Simplex(PF, t));
     REQUIRE(sc_f.get_simplices().size() == 7);
+}
+
+TEST_CASE("closed_star_3d", "[simplicial_complex][closed_star][3D]")
+{
+    tests_3d::DEBUG_TetMesh m;
+    m = tests_3d::single_tet();
+
+    const Tuple t = m.edge_tuple_between_v1_v2(1, 2, 0);
+    SimplicialComplex sc_e = SimplicialComplex::closed_star(m, Simplex(PE, t));
+    REQUIRE(sc_e.get_simplices().size() == 15);
 }

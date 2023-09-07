@@ -48,5 +48,20 @@ TetMesh three_incident_tets()
     return m;
 }
 
+TetMesh six_cycle_tets()
+{
+    TetMesh m;
+    RowVectors4l tets;
+    tets.resize(6, 4);
+    tets.row(0) << 0, 1, 2, 3;
+    tets.row(1) << 0, 2, 3, 4;
+    tets.row(2) << 2, 5, 3, 4;
+    tets.row(3) << 6, 1, 2, 3;
+    tets.row(4) << 6, 2, 3, 7;
+    tets.row(5) << 7, 2, 3, 5;
+    m.initialize(tets);
+    return m;
+}
+
 
 } // namespace wmtk::tests_3d

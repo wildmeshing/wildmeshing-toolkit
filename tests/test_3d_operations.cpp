@@ -30,10 +30,10 @@ TEST_CASE("get_split_simplices_to_delete", "[operations][split][3d]")
         const DEBUG_TetMesh m = single_tet();
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
 
-        // debugging code
         std::array<std::vector<long>, 4> ids_to_delete =
             TMOE::get_split_simplices_to_delete(edge, m);
 
+        // debug code
         std::cout << "vertex: " << std::endl;
         for (int i = 0; i < ids_to_delete[0].size(); i++) {
             std::cout << ids_to_delete[0][i] << std::endl;
@@ -74,5 +74,57 @@ TEST_CASE("get_split_simplices_to_delete", "[operations][split][3d]")
         REQUIRE(
             std::find(ids_to_delete[2].begin(), ids_to_delete[2].end(), face_to_delete_2) !=
             ids_to_delete[2].end());
+    }
+    SECTION("three_incident_tets")
+    {
+        const DEBUG_TetMesh m = three_incident_tets();
+        const Tuple edge = m.edge_tuple_between_v1_v2(2, 3, 1);
+
+        std::array<std::vector<long>, 4> ids_to_delete =
+            TMOE::get_split_simplices_to_delete(edge, m);
+
+        std::cout << "test three incident tets" << std::endl;
+
+        REQUIRE(ids_to_delete[0].size() == 0);
+        REQUIRE(ids_to_delete[1].size() == 1);
+        REQUIRE(ids_to_delete[2].size() == 4);
+        REQUIRE(ids_to_delete[3].size() == 3);
+    }
+    SECTION("six_cycle_tets")
+    {
+        const DEBUG_TetMesh m = six_cycle_tets();
+        const Tuple edge = m.edge_tuple_between_v1_v2(2, 3, 5);
+
+        std::array<std::vector<long>, 4> ids_to_delete =
+            TMOE::get_split_simplices_to_delete(edge, m);
+
+        std::cout << "test six cycle tets" << std::endl;
+
+        REQUIRE(ids_to_delete[0].size() == 0);
+        REQUIRE(ids_to_delete[1].size() == 1);
+        REQUIRE(ids_to_delete[2].size() == 6);
+        REQUIRE(ids_to_delete[3].size() == 6);
+    }
+}
+
+TEST_CASE("get_collapse_simplices_to_delete", "[operations][collapse][3D]")
+{
+    SECTION("single_tet")
+    {
+        const DEBUG_TetMesh m = single_tet();
+        const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
+
+        std::array<std::vector<long>, 4> ids_to_delete =
+            TMOE::get_collapse_simplices_to_delete(edge, m);
+
+        std::cout << "face: " << std::endl;
+        for (int i = 0; i < ids_to_delete[2].size(); i++) {
+            std::cout << ids_to_delete[2][i] << std::endl;
+        }
+
+        REQUIRE(ids_to_delete[0].size() == 1);
+        REQUIRE(ids_to_delete[1].size() == 3);
+        REQUIRE(ids_to_delete[2].size() == 3);
+        REQUIRE(ids_to_delete[3].size() == 1);
     }
 }

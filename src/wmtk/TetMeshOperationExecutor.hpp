@@ -138,9 +138,9 @@ public:
      *
      * For interior case:
      * The deleted simplices are the one ring tets of the edge AND the one ring faces of the edge
-     * AND the edges where one of the endpoint is the tuple vertex and are contained in the deleted
-     * faces and the tuple vertex. This is the intersection of the open star of the tuple vertex and
-     * the close star of the edge.
+     * AND the edges and faces where one of the endpoint is the tuple vertex and are contained in
+     * the deleted faces and the tuple vertex. This is the intersection of the open star of the
+     * tuple vertex and the close star of the edge.
      *
      * For boundary case:
      * Same as above.

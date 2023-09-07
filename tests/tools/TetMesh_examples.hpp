@@ -44,5 +44,20 @@ TetMesh two_ears();
 
 TetMesh three_incident_tets();
 
+//        0 ---------- 4
+//       / \\        // \
+//      /   \ \     //   \
+//     /     \  \  //     \
+//    /       \   \3       \
+//  1 --------- 2/ -------- 5   tuple edge 2-3
+//    \       /  /\ \      /
+//     \     / /   \\     /
+//      \   //      \\   /
+//       \ //        \  /
+//        6 -----------7
+//
+
+TetMesh six_cycle_tets();
+
 
 } // namespace wmtk::tests_3d
