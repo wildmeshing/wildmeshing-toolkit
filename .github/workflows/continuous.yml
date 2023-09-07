@@ -4,10 +4,9 @@ on:
   push:
     branches:
       - main
-      - hackathon/dev
+      - hackathon/dev 
   pull_request:
     branches:
-      - main
       - hackathon/dev
 
 env:
@@ -21,15 +20,16 @@ jobs:
 
   Linux:
     name: ${{ matrix.name }} (${{ matrix.config }})
-    runs-on: ${{ matrix.os }}
+    runs-on: [self-hosted, Linux]
+    #runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
+        # os: [ubuntu-latest]
         config: [Debug, Release]
-        include:
-          - os: ubuntu-latest
-            name: Linux
+          # include:
+          #   - os: ubuntu-latest
+          #     name: Linux
     steps:
       - name: Checkout repository
         uses: actions/checkout@v1
@@ -79,15 +79,16 @@ jobs:
   MacOS:
     name: ${{ matrix.name }}-${{ matrix.arch }} (${{ matrix.config }})
     runs-on: ${{ matrix.os }}
+    runs-on: [self-hosted, MacOS]
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest]
-        arch: [x86_64] # arm64 no arm as GMP is binary
+        #os: [macos-latest]
+        #arch: [x86_64] # arm64 no arm as GMP is binary
         config: [Debug, Release]
-        include:
-          - os: macos-latest
-            name: macOS
+        #include:
+        #  - os: macos-latest
+        #    name: macOS
 
     steps:
       - name: Checkout repository
@@ -135,7 +136,8 @@ jobs:
 
   Windows:
     name: Windows (${{ matrix.config }})
-    runs-on: windows-2022
+    runs-on: [self-hosted, Windows]
+    #runs-on: windows-2022
     env:
       CC: cl.exe
       CXX: cl.exe
