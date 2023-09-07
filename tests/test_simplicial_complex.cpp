@@ -319,5 +319,10 @@ TEST_CASE("closed_star_3d", "[simplicial_complex][closed_star][3D]")
 
     const Tuple t = m.edge_tuple_between_v1_v2(1, 2, 0);
     SimplicialComplex sc_e = SimplicialComplex::closed_star(m, Simplex(PE, t));
+
+    REQUIRE(sc_e.get_vertices().size() == 4);
+    REQUIRE(sc_e.get_edges().size() == 6);
+    REQUIRE(sc_e.get_faces().size() == 4);
+    REQUIRE(sc_e.get_tetrahedra().size() == 1);
     REQUIRE(sc_e.get_simplices().size() == 15);
 }

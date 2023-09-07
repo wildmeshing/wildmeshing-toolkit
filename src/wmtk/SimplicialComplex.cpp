@@ -100,7 +100,7 @@ SimplicialComplex SimplicialComplex::boundary(const Mesh& m, const Simplex& s)
         sc.add_simplex(Simplex(PV, sw(t, PV))); // B
         sc.add_simplex(Simplex(PV, sw(sw(t, PE),
                                       PV))); // C
-        sc.add_simplex(Simplex(PV, sw(sw(t, PF),
+        sc.add_simplex(Simplex(PV, sw(sw(sw(t, PF), PE),
                                       PV))); // D
         sc.add_simplex(Simplex(PE, t)); // AB
         sc.add_simplex(Simplex(PE, sw(t, PE))); // AC
@@ -292,7 +292,7 @@ SimplicialComplex SimplicialComplex::link(const Mesh& m, const Simplex& s)
 SimplicialComplex SimplicialComplex::open_star(const Mesh& m, const Simplex& s)
 {
     SimplicialComplex sc(m);
-    
+
     constexpr PrimitiveType PV = PrimitiveType::Vertex;
     constexpr PrimitiveType PE = PrimitiveType::Edge;
     constexpr PrimitiveType PF = PrimitiveType::Face;
@@ -308,10 +308,8 @@ SimplicialComplex SimplicialComplex::open_star(const Mesh& m, const Simplex& s)
     const auto top_simplices = top_coface_simplex(m, s).get_simplices();
     for (const Simplex& ts : top_simplices) {
         auto t = ts.tuple();
-        if (cell_dim == 2)
-        {
-            switch (s_ptype)
-            {
+        if (cell_dim == 2) {
+            switch (s_ptype) {
             case PV:
                 sc.add_simplex(Simplex(PV, t));
                 sc.add_simplex(Simplex(PE, sw(t, PE)));
@@ -319,16 +317,12 @@ SimplicialComplex SimplicialComplex::open_star(const Mesh& m, const Simplex& s)
             case PE:
                 sc.add_simplex(Simplex(PE, t));
                 // intentional fall-through
-            case PF:
-                sc.add_simplex(Simplex(PF, t));
-                break;
+            case PF: sc.add_simplex(Simplex(PF, t)); break;
             case PT: assert(false); break;
             default: assert(false); break;
             }
-        } else if (cell_dim == 3)
-        {
-            switch (s_ptype)
-            {
+        } else if (cell_dim == 3) {
+            switch (s_ptype) {
             case PV:
                 sc.add_simplex(Simplex(PV, t));
                 sc.add_simplex(Simplex(PE, sw(t, PE)));
