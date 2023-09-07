@@ -100,7 +100,7 @@ SimplicialComplex SimplicialComplex::boundary(const Mesh& m, const Simplex& s)
         sc.add_simplex(Simplex(PV, sw(t, PV))); // B
         sc.add_simplex(Simplex(PV, sw(sw(t, PE),
                                       PV))); // C
-        sc.add_simplex(Simplex(PV, sw(sw(t, PF),
+        sc.add_simplex(Simplex(PV, sw(sw(sw(t, PF),PE),
                                       PV))); // D
         sc.add_simplex(Simplex(PE, t)); // AB
         sc.add_simplex(Simplex(PE, sw(t, PE))); // AC
@@ -333,6 +333,7 @@ SimplicialComplex SimplicialComplex::open_star(const Mesh& m, const Simplex& s)
                 sc.add_simplex(Simplex(PV, t));
                 sc.add_simplex(Simplex(PE, sw(t, PE)));
                 sc.add_simplex(Simplex(PE, sw(sw(t, PF), PE)));
+                sc.add_simplex(Simplex(PF, sw(sw(t, PE), PF)));
                 // intentional fall-through
             case PE:
                 sc.add_simplex(Simplex(PE, t));
