@@ -8,7 +8,7 @@
 namespace wmtk {
 namespace energy {
 
-using DScalar = DScalar2<double, Eigen::VectorXd, Eigen::MatrixXd>;
+using DScalar = DScalar2<double, Eigen::Matrix<double, -1, 1>, Eigen::Matrix<double, -1, -1>>;
 using Scalar = typename DScalar::Scalar;
 
 class DifferentiableEnergy : public Energy

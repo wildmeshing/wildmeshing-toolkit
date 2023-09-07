@@ -3,7 +3,7 @@
 
 namespace wmtk {
 namespace energy {
-using DScalar = DScalar2<double, Eigen::VectorXd, Eigen::MatrixXd>;
+using DScalar = DScalar2<double, Eigen::Matrix<double, -1, 1>, Eigen::Matrix<double, -1, -1>>;
 using Scalar = typename DScalar::Scalar;
 template <class T>
 class AutoDiffAllocator
@@ -40,7 +40,7 @@ inline double get_value(
 }
 
 template <typename AutoDiffVect>
-void get_local_vector(const Eigen::MatrixXd& data, const int size, AutoDiffVect& T_vector)
+void get_T_vector(const Eigen::MatrixXd& data, const int size, AutoDiffVect& T_vector)
 {
     typedef typename AutoDiffVect::Scalar T;
     DiffScalarBase::setVariableCount(size);
