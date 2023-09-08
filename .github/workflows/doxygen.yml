@@ -12,7 +12,6 @@ jobs:
       - uses: actions/checkout@v3
       - name: Config
         run: |
-          sudo apt-get install doxygen -y
           mkdir -p build
           cd build
           cmake -DWMTK_BUILD_DOCS=ON ..
