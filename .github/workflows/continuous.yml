@@ -94,7 +94,6 @@ jobs:
 
       - name: Dependencies
         run: |
-          brew install ccache
           echo 'CACHE_PATH=~/Library/Caches/ccache' >> "$GITHUB_ENV"
 
       - name: Cache Build
@@ -107,7 +106,7 @@ jobs:
 
       - name: Prepare ccache
         run: |
-          ccache --max-size=1.0G
+          ccache --max-size=20.0G
           ccache -V && ccache --show-stats && ccache --zero-stats
 
       - name: Configure
@@ -120,10 +119,10 @@ jobs:
             -DCMAKE_BUILD_TYPE=${{ matrix.config }}
 
       - name: Build
-        run: cd build; make -j2; ccache --show-stats
+        run: cd build; make -j8; ccache --show-stats
 
       - name: Tests
-        if: matrix.arch == 'x86_64' # no ARM vm on actions yet
+        #if: matrix.arch == 'x86_64' # no ARM vm on actions yet
         run: cd build; ctest --verbose --output-on-failure
 
   ####################
