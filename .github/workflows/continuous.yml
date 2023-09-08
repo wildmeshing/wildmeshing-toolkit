@@ -147,12 +147,13 @@ jobs:
         with:
           fetch-depth: 10
       - uses: seanmiddleditch/gha-setup-ninja@master
-
+         
       - name: Setup Conda
-        uses: s-weigand/setup-conda@v1
+        uses: s-weigand/setup-conda@v1.2.1
         with:
           conda-channels: anaconda, conda-forge
-          python-version: 3.6
+          python-version: 3.9
+          update-conda: true
 
       - name: Install Dependencies
         shell: powershell
