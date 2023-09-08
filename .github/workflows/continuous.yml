@@ -30,7 +30,7 @@ jobs:
         config: [Debug, Release]
         include:
           - os: ubuntu-latest
-          name: Linux
+            name: Linux
     steps:
       - name: Checkout repository
         uses: actions/checkout@v1
