@@ -79,7 +79,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [macos-latest]
-        arch: [ARM64] # arm64 no arm as GMP is binary
+        arch: [arm64] # arm64 no arm as GMP is binary
         config: [Debug, Release]
         include:
           - os: macos-latest
