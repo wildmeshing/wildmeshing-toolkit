@@ -1,6 +1,6 @@
 #include "AttributeScope.hpp"
 #include <wmtk/utils/Rational.hpp>
-namespace wmtk {
+namespace wmtk::attribute {
 
 template <typename T>
 AttributeScope<T>::AttributeScope() = default;
@@ -154,4 +154,4 @@ template class AttributeScope<long>;
 template class AttributeScope<double>;
 template class AttributeScope<char>;
 template class AttributeScope<Rational>;
-} // namespace wmtk
+} // namespace wmtk::attribute

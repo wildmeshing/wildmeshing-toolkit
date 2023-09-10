@@ -5,8 +5,6 @@ set(SRC_FILES
     AttributeCache.cpp
     AttributeCache.hpp
     AttributeHandle.hpp
-    AccessorBase.cpp
-    AccessorBase.hpp
     AttributeScope.hpp
     AttributeScope.cpp
     MeshAttributes.cpp
@@ -21,5 +19,20 @@ set(SRC_FILES
     PerThreadAttributeScopeStacks.cpp
     AttributeScopeHandle.hpp
     AttributeScopeHandle.cpp
+
+    AccessorBase.cpp
+    AccessorBase.hpp
+
+    CachingAccessor.cpp
+    CachingAccessor.hpp
+    
+    TupleAccessor.cpp
+    TupleAccessor.hpp
+    
+    ConstAccessor.cpp
+    ConstAccessor.hpp
+
+    MutableAccessor.cpp
+    MutableAccessor.hpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

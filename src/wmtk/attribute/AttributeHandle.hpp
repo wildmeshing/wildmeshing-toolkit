@@ -2,14 +2,16 @@
 #include <type_traits>
 #include "wmtk/Primitive.hpp"
 namespace wmtk {
+    class Mesh;
+namespace attribute {
 template <typename T>
 class MeshAttributes;
-template <typename T, bool IsConst>
-class Accessor;
 template <typename T>
 class AccessorBase;
 template <typename T>
-class MeshAttribteHandle;
+class TupleAccessor;
+template <typename T>
+class MeshAttributeHandle;
 struct AttributeManager;
 
 class AttributeHandle
@@ -40,9 +42,10 @@ template <typename T>
 class MeshAttributeHandle
 {
 private:
-    friend class Mesh;
+    friend class wmtk::Mesh;
     friend class MeshAttributes<T>;
     friend class AccessorBase<T>;
+    friend class TupleAccessor<T>;
     friend struct AttributeManager;
     AttributeHandle m_base_handle;
     PrimitiveType m_primitive_type;
@@ -69,4 +72,8 @@ public:
                m_primitive_type == o.m_primitive_type;
     }
 };
+} // namespace attribute
+using AttributeHandle = attribute::AttributeHandle;
+template <typename T>
+using MeshAttributeHandle = attribute::MeshAttributeHandle<T>;
 } // namespace wmtk

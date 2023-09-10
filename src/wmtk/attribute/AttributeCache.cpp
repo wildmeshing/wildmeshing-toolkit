@@ -1,7 +1,7 @@
 #include "AttributeCache.hpp"
 #include <wmtk/utils/Rational.hpp>
 
-namespace wmtk {
+namespace wmtk::attribute {
 
 
 template <typename T>

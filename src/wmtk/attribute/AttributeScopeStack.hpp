@@ -1,10 +1,11 @@
 #pragma once
 #include <memory>
-#include "AttributeHandle.hpp"
 #include <vector>
+#include "AttributeHandle.hpp"
 
 namespace wmtk {
 class Mesh;
+namespace attribute {
 template <typename T>
 class Attribute;
 template <typename T>
@@ -36,9 +37,10 @@ struct AttributeScopeStack
 
 protected:
     std::unique_ptr<AttributeScope<T>> m_leaf;
-    std::vector<AttributeScope<T>const *> m_checkpoints;
+    std::vector<AttributeScope<T> const*> m_checkpoints;
     // Mesh& m_mesh;
     // AttributeManager& m_attribute_manager;
     // MeshAttributeHandle<T> m_handle;
 };
+} // namespace attribute
 } // namespace wmtk

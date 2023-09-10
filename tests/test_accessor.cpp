@@ -13,7 +13,7 @@ void populate(DEBUG_PointMesh& m, VectorAcc& va, bool for_zeros = false)
 {
     auto vertices = m.get_all(wmtk::PrimitiveType::Vertex);
     size_t dimension = va.dimension();
-    Eigen::Matrix<typename VectorAcc::T, Eigen::Dynamic, 1> x;
+    Eigen::Matrix<typename VectorAcc::Scalar, Eigen::Dynamic, 1> x;
     for (const wmtk::Tuple& tup : vertices) {
         long id = m.id(tup);
         auto v = va.vector_attribute(tup);
@@ -29,7 +29,7 @@ void check(DEBUG_PointMesh& m, VectorAcc& va, bool for_zeros = false)
 {
     auto vertices = m.get_all(wmtk::PrimitiveType::Vertex);
     size_t dimension = va.dimension();
-    Eigen::Matrix<typename VectorAcc::T, Eigen::Dynamic, 1> x;
+    Eigen::Matrix<typename VectorAcc::Scalar, Eigen::Dynamic, 1> x;
     bool is_scalar = va.dimension() == 1;
     x.resize(va.dimension());
     for (const wmtk::Tuple& tup : vertices) {
@@ -65,6 +65,10 @@ TEST_CASE("test_accessor_basic")
     auto long_acc = m.create_accessor(long_handle);
     auto double_acc = m.create_accessor(double_handle);
 
+    auto char_bacc = m.create_base_accessor(char_handle);
+    auto long_bacc = m.create_base_accessor(long_handle);
+    auto double_bacc = m.create_base_accessor(double_handle);
+
     auto vertices = m.get_all(wmtk::PrimitiveType::Vertex);
 
     // check characteristics are all right
@@ -90,17 +94,17 @@ TEST_CASE("test_accessor_basic")
     {
         std::vector<char> d(size);
         std::iota(d.begin(), d.end(), char(0));
-        static_cast<wmtk::AccessorBase<char>&>(char_acc).set_attribute(d);
+        char_bacc.set_attribute(d);
     }
     {
         std::vector<long> d(size);
         std::iota(d.begin(), d.end(), long(0));
-        static_cast<wmtk::AccessorBase<long>&>(long_acc).set_attribute(d);
+        long_bacc.set_attribute(d);
     }
     {
         std::vector<double> d(3 * size);
         std::iota(d.begin(), d.end(), double(0));
-        static_cast<wmtk::AccessorBase<double>&>(double_acc).set_attribute(d);
+        double_bacc.set_attribute(d);
     }
     for (const wmtk::Tuple& tup : vertices) {
         long id = m.id(tup);

@@ -9,16 +9,16 @@
 
 #include <Eigen/Dense>
 
-namespace wmtk {
+namespace wmtk::attribute {
 
 template <typename T>
 class MeshAttributes;
 template <typename T>
 class AccessorCache;
 
-
 // The basic implementation of an accessor using indices.
-// This should never be
+// This should never be externally used except within the main accessor
+// interface, in unit tests, or in topological updates
 template <typename _T>
 class AccessorBase
 {
@@ -55,20 +55,21 @@ public:
 
     ~AccessorBase();
     AccessorBase(Mesh& m, const MeshAttributeHandle<T>& handle);
-    AccessorBase(AttributeManager& m, const MeshAttributeHandle<T>& handle);
 
     const MeshAttributeHandle<T>& handle() const;
     PrimitiveType primitive_type() const;
 
-    // convenience function for use within Accessor
-    // Mainly here to avoid having to friend an Accessor to Mesh as well
-    long index(const Mesh& m, const Tuple& t) const;
+    Mesh& mesh();
+    const Mesh& mesh() const;
+
 
 protected:
-    // Mesh& m_mesh;
-    AttributeManager& m_attribute_manager;
+    Mesh& m_mesh;
     MeshAttributeHandle<T> m_handle;
+
+    const AttributeManager& attribute_manager() const;
+    AttributeManager& attribute_manager();
 };
 
 
-} // namespace wmtk
+} // namespace wmtk::attribute

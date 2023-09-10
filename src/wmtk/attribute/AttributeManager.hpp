@@ -7,10 +7,11 @@
 
 namespace wmtk {
 class Mesh;
-template <typename T>
-class MeshAttributes;
 class MeshWriter;
 
+namespace attribute {
+template <typename T>
+class MeshAttributes;
 struct AttributeManager
 {
     AttributeManager(long size);
@@ -80,7 +81,7 @@ const MeshAttributes<T>& AttributeManager::get(PrimitiveType ptype) const
         return m_double_attributes[index];
     }
     if constexpr (std::is_same_v<T, Rational>) {
-        return m_rational_attributes;
+        return m_rational_attributes[index];
     }
 }
 
@@ -128,4 +129,5 @@ MeshAttributeHandle<T> AttributeManager::register_attribute(
     r.m_primitive_type = ptype;
     return r;
 }
+} // namespace attribute
 } // namespace wmtk
