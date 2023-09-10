@@ -29,8 +29,8 @@ void DEBUG_TriMesh::print_vf() const
     auto f_flag_accessor = get_flag_accessor(PrimitiveType::Face);
     for (long id = 0; id < capacity(PrimitiveType::Face); ++id)
     {
-        auto fv = fv_accessor.vector_attribute(id);
-        if (f_flag_accessor.scalar_attribute(tuple_from_id(PrimitiveType::Face, id)) == 0)
+        auto fv = fv_accessor.const_vector_attribute(id);
+        if (f_flag_accessor.const_scalar_attribute(tuple_from_id(PrimitiveType::Face, id)) == 0)
         {
             std::cout << "face " << id << " is deleted" << std::endl;
         }
@@ -74,7 +74,7 @@ auto DEBUG_TriMesh::edge_tuple_from_vids(const long v1, const long v2) const -> 
     for (long fid = 0; fid < capacity(PrimitiveType::Face); ++fid) {
     
         Tuple face = face_tuple_from_id(fid);
-        auto fv0 = fv.vector_attribute(face);
+        auto fv0 = fv.const_vector_attribute(face);
         long local_vid1 = -1, local_vid2 = -1;
         for (long i = 0; i < fv0.size(); ++i) {
             if (fv0[i] == v1) {
@@ -99,7 +99,7 @@ auto DEBUG_TriMesh::face_tuple_from_vids(const long v1, const long v2, const lon
     for (long fid = 0; fid < capacity(PrimitiveType::Face); ++fid) {
     
         Tuple face = face_tuple_from_id(fid);
-        auto fv0 = fv.vector_attribute(face);
+        auto fv0 = fv.const_vector_attribute(face);
         bool find_v1 = false, find_v2 = false, find_v3 = false;
         for (long i = 0; i < fv0.size(); ++i) {
             if (fv0[i] == v1) {
