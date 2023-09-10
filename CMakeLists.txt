@@ -87,7 +87,9 @@ add_library(wildmeshing_toolkit)
 add_library(wmtk::toolkit ALIAS wildmeshing_toolkit)
 add_subdirectory(src)
 
-
+# Group source files for IDEs
+file(GLOB_RECURSE WMTK_FILES_FOR_SOURCE_GROUP "src/wmtk/*.cpp" "src/wmtk/*.h" "src/wmtk/*.hpp")
+source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src/wmtk" PREFIX "wmtk" FILES ${WMTK_FILES_FOR_SOURCE_GROUP})
 
 
 # Compile definitions
