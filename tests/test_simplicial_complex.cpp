@@ -361,4 +361,6 @@ TEST_CASE("open_star_3d", "[simplicial_complex][open_star][3D]")
     CHECK(sc_t.get_simplices(PE).size() == 0);
     CHECK(sc_t.get_simplices(PF).size() == 0);
     CHECK(sc_t.get_simplices(PT).size() == 1);
+
+
 }

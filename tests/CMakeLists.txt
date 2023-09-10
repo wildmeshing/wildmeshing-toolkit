@@ -30,8 +30,10 @@ set(TEST_SOURCES
     tools/redirect_logger_to_cout.hpp
     tools/TetMesh_examples.hpp
     tools/TetMesh_examples.cpp
-    tools/DEBUG_TetMesh.hpp;
-    tools/DEBUG_TetMesh.cpp;
+    tools/DEBUG_TetMesh.hpp
+    tools/DEBUG_TetMesh.cpp
+
+    simplicial_complex_tests/circle_mesh_tests.cpp
 )
 add_executable(wmtk_tests ${TEST_SOURCES})
 
