@@ -93,16 +93,14 @@ void TriMesh::TriMeshOperationExecutor::delete_simplices()
 {
     for (size_t d = 0; d < simplex_ids_to_delete.size(); ++d) {
         for (const long id : simplex_ids_to_delete[d]) {
-            flag_accessors[d].scalar_attribute(id) = 0;
+            flag_accessors[d].index_access().scalar_attribute(id) = 0;
         }
     }
 }
 
 void TriMesh::TriMeshOperationExecutor::update_cell_hash()
 {
-    for (const long& cell_id : cell_ids_to_update_hash) {
-        ++hash_accessor.scalar_attribute(cell_id);
-    }
+    m_mesh.update_cell_hashes(cell_ids_to_update_hash, hash_accessor);
 }
 
 const std::array<std::vector<long>, 3>
@@ -162,8 +160,8 @@ void TriMesh::TriMeshOperationExecutor::update_ids_in_ear(
     //      -----
     if (ear_fid < 0) return;
 
-    auto ear_ff = ff_accessor.vector_attribute(ear_fid);
-    auto ear_fe = fe_accessor.vector_attribute(ear_fid);
+    auto ear_ff = ff_accessor.index_access().vector_attribute(ear_fid);
+    auto ear_fe = fe_accessor.index_access().vector_attribute(ear_fid);
     for (int i = 0; i < 3; ++i) {
         if (ear_ff[i] == old_fid) {
             ear_ff[i] = new_fid;
@@ -172,7 +170,7 @@ void TriMesh::TriMeshOperationExecutor::update_ids_in_ear(
         }
     }
 
-    ef_accessor.scalar_attribute(new_eid) = ear_fid;
+    ef_accessor.index_access().scalar_attribute(new_eid) = ear_fid;
 }
 
 void TriMesh::TriMeshOperationExecutor::connect_ears()
@@ -206,12 +204,12 @@ void TriMesh::TriMeshOperationExecutor::connect_ears()
         assert(ef0 != ef1);
 
         // change face for v2
-        long& v2_face = vf_accessor.scalar_attribute(v2);
+        long& v2_face = vf_accessor.index_access().scalar_attribute(v2);
         // use ef0 if it exists
         v2_face = (ef0 < 0) ? ef1 : ef0;
 
-        ef_accessor.scalar_attribute(ee1) = v2_face;
-        vf_accessor.scalar_attribute(v1) = v2_face;
+        ef_accessor.index_access().scalar_attribute(ee1) = v2_face;
+        vf_accessor.index_access().scalar_attribute(v1) = v2_face;
 
         // change FF and FE for ears
         update_ids_in_ear(ef0, ef1, f_old, ee1);
@@ -229,8 +227,8 @@ void TriMesh::TriMeshOperationExecutor::connect_faces_across_spine()
     const long f_old_bottom = m_incident_face_datas[1].fid;
     const long f0_bottom = m_incident_face_datas[1].split_f0;
     const long f1_bottom = m_incident_face_datas[1].split_f1;
-    auto ff_old_top = ff_accessor.vector_attribute(f_old_top);
-    auto ff_old_bottom = ff_accessor.vector_attribute(f_old_bottom);
+    auto ff_old_top = ff_accessor.index_access().vector_attribute(f_old_top);
+    auto ff_old_bottom = ff_accessor.index_access().vector_attribute(f_old_bottom);
     assert(m_mesh.capacity(PrimitiveType::Face) > f0_top);
     assert(m_mesh.capacity(PrimitiveType::Face) > f1_top);
     assert(m_mesh.capacity(PrimitiveType::Face) > f0_bottom);
@@ -250,10 +248,10 @@ void TriMesh::TriMeshOperationExecutor::connect_faces_across_spine()
     assert(local_eid_top > -1);
     assert(local_eid_bottom > -1);
     // TODO write test for assumming top and bottom new fids are in right correspondence
-    ff_accessor.vector_attribute(f0_top)[local_eid_top] = f0_bottom;
-    ff_accessor.vector_attribute(f0_bottom)[local_eid_bottom] = f0_top;
-    ff_accessor.vector_attribute(f1_top)[local_eid_top] = f1_bottom;
-    ff_accessor.vector_attribute(f1_bottom)[local_eid_bottom] = f1_top;
+    ff_accessor.index_access().vector_attribute(f0_top)[local_eid_top] = f0_bottom;
+    ff_accessor.index_access().vector_attribute(f0_bottom)[local_eid_bottom] = f0_top;
+    ff_accessor.index_access().vector_attribute(f1_top)[local_eid_top] = f1_bottom;
+    ff_accessor.index_access().vector_attribute(f1_bottom)[local_eid_bottom] = f1_top;
 }
 
 void TriMesh::TriMeshOperationExecutor::replace_incident_face(
@@ -301,12 +299,12 @@ void TriMesh::TriMeshOperationExecutor::replace_incident_face(
     {
         update_ids_in_ear(ef0, f0, f_old, ee0);
 
-        auto fv = fv_accessor.vector_attribute(f0);
-        auto fe = fe_accessor.vector_attribute(f0);
-        auto ff = ff_accessor.vector_attribute(f0);
-        fv = fv_accessor.vector_attribute(f_old);
-        fe = fe_accessor.vector_attribute(f_old);
-        ff = ff_accessor.vector_attribute(f_old);
+        auto fv = fv_accessor.index_access().vector_attribute(f0);
+        auto fe = fe_accessor.index_access().vector_attribute(f0);
+        auto ff = ff_accessor.index_access().vector_attribute(f0);
+        fv = fv_accessor.index_access().vector_attribute(f_old);
+        fe = fe_accessor.index_access().vector_attribute(f_old);
+        ff = ff_accessor.index_access().vector_attribute(f_old);
         // correct old connectivity
         for (size_t i = 0; i < 3; ++i) {
             if (fe[i] == ee1) {
@@ -327,12 +325,12 @@ void TriMesh::TriMeshOperationExecutor::replace_incident_face(
     {
         update_ids_in_ear(ef1, f1, f_old, ee1);
 
-        auto fv = fv_accessor.vector_attribute(f1);
-        auto fe = fe_accessor.vector_attribute(f1);
-        auto ff = ff_accessor.vector_attribute(f1);
-        fv = fv_accessor.vector_attribute(f_old);
-        fe = fe_accessor.vector_attribute(f_old);
-        ff = ff_accessor.vector_attribute(f_old);
+        auto fv = fv_accessor.index_access().vector_attribute(f1);
+        auto fe = fe_accessor.index_access().vector_attribute(f1);
+        auto ff = ff_accessor.index_access().vector_attribute(f1);
+        fv = fv_accessor.index_access().vector_attribute(f_old);
+        fe = fe_accessor.index_access().vector_attribute(f_old);
+        ff = ff_accessor.index_access().vector_attribute(f_old);
         // correct old connectivity
         for (size_t i = 0; i < 3; ++i) {
             if (fe[i] == ee0) {
@@ -351,16 +349,16 @@ void TriMesh::TriMeshOperationExecutor::replace_incident_face(
     }
 
     // assign each edge one face
-    ef_accessor.scalar_attribute(ee0) = f0;
-    ef_accessor.scalar_attribute(ee1) = f1;
-    ef_accessor.scalar_attribute(oe) = f0;
-    ef_accessor.scalar_attribute(se0) = f0;
-    ef_accessor.scalar_attribute(se1) = f1;
+    ef_accessor.index_access().scalar_attribute(ee0) = f0;
+    ef_accessor.index_access().scalar_attribute(ee1) = f1;
+    ef_accessor.index_access().scalar_attribute(oe) = f0;
+    ef_accessor.index_access().scalar_attribute(se0) = f0;
+    ef_accessor.index_access().scalar_attribute(se1) = f1;
     // assign each vertex one face
-    vf_accessor.scalar_attribute(v0) = f0;
-    vf_accessor.scalar_attribute(v1) = f1;
-    vf_accessor.scalar_attribute(v2) = f0;
-    vf_accessor.scalar_attribute(v_new) = f0;
+    vf_accessor.index_access().scalar_attribute(v0) = f0;
+    vf_accessor.index_access().scalar_attribute(v1) = f1;
+    vf_accessor.index_access().scalar_attribute(v2) = f0;
+    vf_accessor.index_access().scalar_attribute(v_new) = f0;
 
     // face neighbors on the other side of the spine are updated separately
 
@@ -422,7 +420,7 @@ Tuple TriMesh::TriMeshOperationExecutor::collapse_edge()
     // replace v0 by v1 in incident faces
     for (const Simplex& f : v0_star.get_faces()) {
         const long fid = m_mesh.id(f);
-        auto fv = fv_accessor.vector_attribute(fid);
+        auto fv = fv_accessor.index_access().vector_attribute(fid);
         for (long i = 0; i < 3; ++i) {
             if (fv[i] == v0) {
                 fv[i] = v1;

@@ -7,7 +7,7 @@
 #include <cassert>
 #include <utility>
 
-namespace wmtk {
+namespace wmtk::attribute {
 
 template <typename T>
 MeshAttributes<T>::MeshAttributes()
@@ -135,4 +135,4 @@ template class MeshAttributes<long>;
 template class MeshAttributes<double>;
 template class MeshAttributes<Rational>;
 
-} // namespace wmtk
+} // namespace wmtk::attribute

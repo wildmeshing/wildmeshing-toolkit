@@ -3,7 +3,7 @@
 #include "AttributeScopeStack.hpp"
 
 
-namespace wmtk {
+namespace wmtk::attribute {
 
 template <typename T>
 struct PerThreadAttributeScopeStacks
@@ -12,4 +12,4 @@ struct PerThreadAttributeScopeStacks
     const AttributeScopeStack<T>& local() const { return m_stacks.local(); }
     mutable tbb::enumerable_thread_specific<AttributeScopeStack<T>> m_stacks;
 };
-} // namespace wmtk
+} // namespace wmtk::attribute

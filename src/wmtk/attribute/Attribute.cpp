@@ -3,7 +3,7 @@
 #include <wmtk/io/MeshWriter.hpp>
 #include <wmtk/utils/Rational.hpp>
 
-namespace wmtk {
+namespace wmtk::attribute {
 
 
 template <typename T>
@@ -162,4 +162,4 @@ template class Attribute<char>;
 template class Attribute<long>;
 template class Attribute<double>;
 template class Attribute<Rational>;
-} // namespace wmtk
+} // namespace wmtk::attribute

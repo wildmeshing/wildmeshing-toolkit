@@ -30,8 +30,8 @@ auto DEBUG_TriMesh::edge_tuple_between_v1_v2(const long v1, const long v2, const
     ConstAccessor<long> fv = create_accessor<long>(m_fv_handle);
     auto fv_base = create_base_accessor<long>(m_fv_handle);
     Tuple face = face_tuple_from_id(fid);
-    auto fv0 = fv.vector_attribute(face);
-    REQUIRE(fv0 == fv_base.vector_attribute(fid));
+    auto fv0 = fv.const_vector_attribute(face);
+    REQUIRE(fv0 == fv_base.const_vector_attribute(fid));
     long local_vid1 = -1, local_vid2 = -1;
     for (long i = 0; i < fv0.size(); ++i) {
         if (fv0[i] == v1) {
