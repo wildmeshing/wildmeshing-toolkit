@@ -47,7 +47,7 @@ namespace wmtk
     std::tuple<Tuple, Tuple> MultiMeshManager::read_tuple_map_attribute(MeshAttributeHandle<long> map_handle, const Mesh& source_mesh, const Tuple& source_tuple)
     {
         auto map_accessor = source_mesh.create_accessor(map_handle);
-        auto map = map_accessor.vector_attribute(source_tuple);
+        auto map = map_accessor.const_vector_attribute(source_tuple);
 
         return std::make_tuple(Tuple(map(0), map(1), map(2), map(3), map(4)), Tuple(map(5), map(6), map(7), map(8), map(9)));
     }
