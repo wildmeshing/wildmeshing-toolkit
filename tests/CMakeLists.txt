@@ -20,6 +20,7 @@ set(TEST_SOURCES
     test_2d_operation_construction.cpp
     test_accessor.cpp
     test_example_meshes.cpp
+    test_multi_mesh.cpp
     tools/DEBUG_PointMesh.hpp
     tools/DEBUG_TriMesh.hpp
     tools/DEBUG_TriMesh.cpp

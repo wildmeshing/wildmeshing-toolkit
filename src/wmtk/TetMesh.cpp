@@ -310,6 +310,7 @@ bool TetMesh::is_ccw(const Tuple& tuple) const
 
 bool TetMesh::is_valid(const Tuple& tuple, ConstAccessor<long>& hash_accessor) const
 {
+    if (tuple.is_null()) return false;
     const long offset = tuple.m_local_vid * 6 * 4 + tuple.m_local_eid * 4 + tuple.m_local_fid;
     const bool is_connectivity_valid = tuple.m_local_vid >= 0 && tuple.m_local_eid >= 0 &&
                                        tuple.m_local_fid >= 0 && tuple.m_global_cid >= 0 &&
@@ -328,6 +329,11 @@ bool TetMesh::is_boundary(const Tuple& tuple) const
     return tt_accessor.vector_attribute(tuple)(tuple.m_local_fid) < 0;
 }
 
+bool TetMesh::is_boundary_edge(const Tuple& vertex) const
+{
+    assert(false);
+    throw "NotImplemented";
+}
 bool TetMesh::is_boundary_vertex(const Tuple& vertex) const
 {
     // go through all faces and check if they are boundary

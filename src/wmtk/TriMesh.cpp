@@ -55,6 +55,11 @@ long TriMesh::id(const Tuple& tuple, PrimitiveType type) const
 
 bool TriMesh::is_boundary(const Tuple& tuple) const
 {
+    return is_boundary_edge(tuple);
+}
+
+bool TriMesh::is_boundary_edge(const Tuple& tuple) const
+{
     assert(is_valid_slow(tuple));
     ConstAccessor<long> ff_accessor = create_const_accessor<long>(m_ff_handle);
     return ff_accessor.vector_attribute(tuple)(tuple.m_local_eid) < 0;
@@ -299,6 +304,7 @@ Tuple TriMesh::face_tuple_from_id(long id) const
 
 bool TriMesh::is_valid(const Tuple& tuple, ConstAccessor<long>& hash_accessor) const
 {
+    if (tuple.is_null()) return false;
     int offset = tuple.m_local_vid * 3 + tuple.m_local_eid;
     const bool is_connectivity_valid = tuple.m_local_vid >= 0 && tuple.m_local_eid >= 0 &&
                                        tuple.m_global_cid >= 0 &&

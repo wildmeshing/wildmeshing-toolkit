@@ -1,7 +1,8 @@
 #pragma once
 #include <optional>
-#include <wmtk/TriMesh.hpp>
-#include "Operation.hpp"
+#include <wmtk/invariants/InvariantCollection.hpp>
+#include <wmtk/operations/TupleOperation.hpp>
+#include "TriMeshOperation.hpp"
 
 namespace wmtk::operations {
 namespace tri_mesh {
@@ -13,10 +14,11 @@ struct OperationSettings<tri_mesh::VertexSmooth>
 {
     MeshAttributeHandle<double> position;
     bool smooth_boundary = false;
+    InvariantCollection invariants;
 };
 
 namespace tri_mesh {
-class VertexSmooth : public Operation
+class VertexSmooth : public TriMeshOperation, private TupleOperation
 {
 public:
     VertexSmooth(Mesh& m, const Tuple& t, const OperationSettings<VertexSmooth>& settings);
@@ -32,7 +34,6 @@ protected:
     bool execute() override;
 
 private:
-    Tuple m_input_tuple;
     Tuple m_output_tuple;
     Accessor<double> m_pos_accessor;
     const OperationSettings<VertexSmooth>& m_settings;

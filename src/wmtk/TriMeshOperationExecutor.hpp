@@ -54,6 +54,7 @@ public:
         long fid = -1; // the face that will be deleted
         long split_f0 = -1;
         long split_f1 = -1;
+        Tuple local_operating_tuple; // the copy of edge m_operating_tuple in face(fid)
         std::array<EarFace, 2> ears; // ear
     };
 
@@ -81,7 +82,7 @@ public:
 
     const std::array<long, 2>& incident_vids() const { return m_spine_vids; }
 
-    const long operating_edge_id() const { return m_operating_edge_id; }
+    long operating_edge_id() const { return m_operating_edge_id; }
 
     void update_ids_in_ear(
         const long ear_fid,
@@ -90,9 +91,11 @@ public:
         const long new_eid);
 
     void connect_ears();
-    Tuple split_edge();
 
+    Tuple split_edge();
     Tuple collapse_edge();
+    Tuple split_edge_single_mesh();
+    Tuple collapse_edge_single_mesh();
 
     /**
      * @brief
@@ -116,6 +119,9 @@ public:
     long hash_at_cell(const long cell) { return hash_accessor.scalar_attribute(cell); }
 
 private:
+    std::vector<std::vector<Tuple>> prepare_operating_tuples_for_child_meshes() const;
+    void update_hash_in_map(TriMesh& child_mesh);
+
     // common simplicies
     std::array<long, 2> m_spine_vids; // V_A_id, V_B_id;
     long m_operating_edge_id;

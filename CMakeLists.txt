@@ -68,34 +68,6 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # WildMeshingToolkit library
 # ###############################################################################
 
-# Core library
-add_library(wildmeshing_toolkit)
-add_library(wmtk::toolkit ALIAS wildmeshing_toolkit)
-add_subdirectory(src/wmtk)
-
-add_library(wildmeshing_components)
-add_library(wmtk::components ALIAS wildmeshing_components)
-add_subdirectory(components/wmtk_components)
-
-# Group source files for IDEs
-file(GLOB_RECURSE WMTK_FILES_FOR_SOURCE_GROUP "src/*.cpp" "src/*.h" "src/*.hpp")
-source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src/wmtk" PREFIX "wmtk" FILES ${WMTK_FILES_FOR_SOURCE_GROUP})
-file(GLOB_RECURSE COMPONENTS_FILES_FOR_SOURCE_GROUP "components/*.cpp" "components/*.h" "components/*.hpp")
-source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/components/wmtk_components" PREFIX "components" FILES ${COMPONENTS_FILES_FOR_SOURCE_GROUP})
-
-# Include headers
-target_include_directories(wildmeshing_toolkit PUBLIC src)
-target_include_directories(wildmeshing_components PUBLIC components)
-
-# Compile definitions
-target_compile_definitions(wildmeshing_toolkit PUBLIC _USE_MATH_DEFINES)
-target_compile_definitions(wildmeshing_toolkit PUBLIC NOMINMAX)
-
-# C++ standard
-target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_17)
-
-#target_compile_options(wildmeshing_toolkit PUBLIC  -fconcepts)
-
 # Dependencies
 include(libigl)
 include(spdlog)
@@ -109,6 +81,24 @@ include(probabilistic_quadrics)
 
 include(lagrange)
 lagrange_include_modules(bvh)
+
+# Core library
+add_library(wildmeshing_toolkit)
+add_library(wmtk::toolkit ALIAS wildmeshing_toolkit)
+add_subdirectory(src)
+
+
+
+
+# Compile definitions
+target_compile_definitions(wildmeshing_toolkit PUBLIC _USE_MATH_DEFINES)
+target_compile_definitions(wildmeshing_toolkit PUBLIC NOMINMAX)
+
+# C++ standard
+target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_17)
+
+#target_compile_options(wildmeshing_toolkit PUBLIC  -fconcepts)
+
 
 target_link_libraries(wildmeshing_toolkit PRIVATE wmtk::warnings)
 wmtk_target_link_system_libraries(wildmeshing_toolkit PUBLIC
@@ -128,11 +118,8 @@ wmtk_target_link_system_libraries(wildmeshing_toolkit PUBLIC
 
 include(nlohmann_json)
 
-target_link_libraries(wildmeshing_components PRIVATE wmtk::warnings)
-wmtk_target_link_system_libraries(wildmeshing_components PUBLIC
-    wildmeshing_toolkit
-    nlohmann_json::nlohmann_json
-)
+add_subdirectory(components)
+
 
 # ###############################################################################
 # Subdirectories

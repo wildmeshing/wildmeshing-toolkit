@@ -26,7 +26,10 @@ DEBUG_TriMesh test_split(const DEBUG_TriMesh& mesh, const Tuple& e, bool should_
     using namespace operations;
 
     DEBUG_TriMesh m = mesh;
-    OperationFactory<tri_mesh::EdgeSplit> fact;
+
+    OperationSettings<tri_mesh::EdgeSplit> op_settings;
+    op_settings.initialize_invariants(m);
+    OperationFactory<tri_mesh::EdgeSplit> fact(op_settings);
 
     auto op = fact.create(m, e);
     bool result = (*op)(); // should run the split
@@ -56,7 +59,9 @@ DEBUG_TriMesh test_collapse(const DEBUG_TriMesh& mesh, const Tuple& e, bool shou
     using namespace operations;
 
     DEBUG_TriMesh m = mesh;
-    OperationFactory<tri_mesh::EdgeCollapse> fact;
+    OperationSettings<tri_mesh::EdgeCollapse> op_settings;
+    op_settings.initialize_invariants(m);
+    OperationFactory<tri_mesh::EdgeCollapse> fact(op_settings);
 
     auto op = fact.create(m, e);
     bool result = (*op)(); // should run the split

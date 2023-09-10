@@ -1,6 +1,8 @@
 set(SRC_FILES
     Operation.hpp
     Operation.cpp
+    TupleOperation.hpp
+    TupleOperation.cpp
     OperationFactory.hpp
     OperationFactory.cpp
     OperationQueue.hpp

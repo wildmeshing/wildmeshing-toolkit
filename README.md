@@ -22,6 +22,8 @@ make
 
 You may need to install `gmp` before compiling the code. You can install `gmp` via [homebrew](https://brew.sh/).
 
+Perl ([Windows link](https://strawberryperl.com/)) needs to be installed before running `cmake`. This is a requirement from `hdf5`.
+
 ## Usage
 To reproduce figures from the paper, please use the commands from [reproduce_scripts](reproduce_scripts.sh). Note that the input data are from `wmtk-data-package.zip`. (Download: https://drive.google.com/drive/folders/1jFdQ77E2_n3EJF5_bPOOMEOxF4dyctjN?usp=sharing)
 

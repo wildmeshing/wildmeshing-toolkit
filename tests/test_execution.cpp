@@ -18,7 +18,9 @@ TEST_CASE("test_execution_single_triangle", "[scheduler][2D]")
     DEBUG_TriMesh m;
     m = single_triangle();
     Scheduler scheduler(m);
-    scheduler.add_operation_type<operations::tri_mesh::EdgeSplit>("edge_split");
+    operations::OperationSettings<operations::tri_mesh::EdgeSplit> op_settings;
+    op_settings.initialize_invariants(m);
+    scheduler.add_operation_type<operations::tri_mesh::EdgeSplit>("edge_split", op_settings);
 
 
     scheduler.run_operation_on_all(PrimitiveType::Edge, "edge_split");
@@ -50,7 +52,7 @@ TEST_CASE("operation_with_settings", "[scheduler][operations][2D]")
         }
     }
 
-    OperationSettings<tri_mesh::VertexSmooth> op_settings;
+    operations::OperationSettings<tri_mesh::VertexSmooth> op_settings;
     op_settings.position = m.get_attribute_handle<double>("position", PrimitiveType::Vertex);
 
     Scheduler scheduler(m);

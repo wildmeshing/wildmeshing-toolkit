@@ -16,6 +16,7 @@ public:
     TriMesh& operator=(const TriMesh& o);
     TriMesh& operator=(TriMesh&& o);
 
+    PrimitiveType top_simplex_type() const override { return PrimitiveType::Face; }
     /**
      * @brief split edge t
      *
@@ -47,6 +48,7 @@ public:
     bool is_ccw(const Tuple& tuple) const override;
     bool is_boundary(const Tuple& tuple) const override;
     bool is_boundary_vertex(const Tuple& tuple) const override;
+    bool is_boundary_edge(const Tuple& tuple) const override;
 
     void initialize(
         Eigen::Ref<const RowVectors3l> FV,
