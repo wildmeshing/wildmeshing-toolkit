@@ -304,6 +304,7 @@ Tuple TriMesh::face_tuple_from_id(long id) const
 
 bool TriMesh::is_valid(const Tuple& tuple, ConstAccessor<long>& hash_accessor) const
 {
+    if (tuple.is_null()) return false;
     int offset = tuple.m_local_vid * 3 + tuple.m_local_eid;
     const bool is_connectivity_valid = tuple.m_local_vid >= 0 && tuple.m_local_eid >= 0 &&
                                        tuple.m_global_cid >= 0 &&

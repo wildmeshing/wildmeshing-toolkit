@@ -8,10 +8,10 @@
 #include "attribute/AttributeManager.hpp"
 #include "attribute/AttributeScopeHandle.hpp"
 #include "attribute/MeshAttributes.hpp"
-
+#include "MultiMeshManager.hpp"
 #include <wmtk/io/ParaviewWriter.hpp>
-
 #include <Eigen/Core>
+#include <memory>
 
 namespace wmtk {
 // thread management tool that we will PImpl
@@ -25,8 +25,9 @@ namespace operations {
 class Operation;
 }
 
-class Mesh
+class Mesh : public std::enable_shared_from_this<Mesh>
 {
+
 public:
     template <typename T>
     friend class attribute::AccessorBase;
@@ -34,6 +35,11 @@ public:
     friend class attribute::TupleAccessor;
     friend class ParaviewWriter;
     friend class MeshReader;
+    friend class MultiMeshManager;
+
+    virtual PrimitiveType top_simplex_type() const = 0;
+    MultiMeshManager multi_mesh_manager;
+
     friend class operations::Operation;
 
     // dimension is the dimension of the top level simplex in this mesh

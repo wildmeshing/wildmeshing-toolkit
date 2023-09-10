@@ -100,7 +100,7 @@ SimplicialComplex SimplicialComplex::boundary(const Mesh& m, const Simplex& s)
         sc.add_simplex(Simplex(PV, sw(t, PV))); // B
         sc.add_simplex(Simplex(PV, sw(sw(t, PE),
                                       PV))); // C
-        sc.add_simplex(Simplex(PV, sw(sw(t, PF),
+        sc.add_simplex(Simplex(PV, sw(sw(sw(t, PF),PE),
                                       PV))); // D
         sc.add_simplex(Simplex(PE, t)); // AB
         sc.add_simplex(Simplex(PE, sw(t, PE))); // AC
@@ -159,10 +159,9 @@ bool SimplicialComplex::simplices_w_boundary_intersect(
     return (s1_s2_int.get_simplices().size() != 0);
 }
 
-SimplicialComplex SimplicialComplex::closed_star(const Mesh& m, const Simplex& s)
+SimplicialComplex SimplicialComplex::top_coface_simplex(const Mesh& m, const Simplex& s)
 {
     SimplicialComplex sc(m);
-
     constexpr PrimitiveType PV = PrimitiveType::Vertex;
     constexpr PrimitiveType PE = PrimitiveType::Edge;
     constexpr PrimitiveType PF = PrimitiveType::Face;
@@ -264,10 +263,15 @@ SimplicialComplex SimplicialComplex::closed_star(const Mesh& m, const Simplex& s
         }
         }
     }
+    return sc;
+}
 
-    const auto top_simplices = sc.get_simplices();
+SimplicialComplex SimplicialComplex::closed_star(const Mesh& m, const Simplex& s)
+{
+    SimplicialComplex sc(m);
+    const auto top_simplices = top_coface_simplex(m, s).get_simplices();
     for (const Simplex& ts : top_simplices) {
-        sc.unify_with_complex(boundary(m, ts));
+        sc.unify_with_complex(simplex_with_boundary(m, ts));
     }
     return sc;
 }
@@ -287,15 +291,63 @@ SimplicialComplex SimplicialComplex::link(const Mesh& m, const Simplex& s)
 
 SimplicialComplex SimplicialComplex::open_star(const Mesh& m, const Simplex& s)
 {
-    SimplicialComplex sc_clst = closed_star(m, s);
     SimplicialComplex sc(m);
-    sc.add_simplex(s);
-    for (const Simplex& ss : sc_clst.get_simplices()) {
-        if (ss.primitive_type() <= s.primitive_type()) {
-            continue;
-        }
-        if (simplices_w_boundary_intersect(m, s, ss)) {
-            sc.add_simplex(ss);
+    
+    constexpr PrimitiveType PV = PrimitiveType::Vertex;
+    constexpr PrimitiveType PE = PrimitiveType::Edge;
+    constexpr PrimitiveType PF = PrimitiveType::Face;
+    constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
+
+    auto sw = [&m](const Tuple& _t, const PrimitiveType& _ptype) {
+        return m.switch_tuple(_t, _ptype);
+    };
+
+    const long cell_dim = dynamic_cast<const TriMesh*>(&m) ? 2 : 3;
+    const PrimitiveType s_ptype = s.primitive_type();
+
+    const auto top_simplices = top_coface_simplex(m, s).get_simplices();
+    for (const Simplex& ts : top_simplices) {
+        auto t = ts.tuple();
+        if (cell_dim == 2)
+        {
+            switch (s_ptype)
+            {
+            case PV:
+                sc.add_simplex(Simplex(PV, t));
+                sc.add_simplex(Simplex(PE, sw(t, PE)));
+                // intentional fall-through
+            case PE:
+                sc.add_simplex(Simplex(PE, t));
+                // intentional fall-through
+            case PF:
+                sc.add_simplex(Simplex(PF, t));
+                break;
+            case PT: assert(false); break;
+            default: assert(false); break;
+            }
+        } else if (cell_dim == 3)
+        {
+            switch (s_ptype)
+            {
+            case PV:
+                sc.add_simplex(Simplex(PV, t));
+                sc.add_simplex(Simplex(PE, sw(t, PE)));
+                sc.add_simplex(Simplex(PE, sw(sw(t, PF), PE)));
+                sc.add_simplex(Simplex(PF, sw(sw(t, PE), PF)));
+                // intentional fall-through
+            case PE:
+                sc.add_simplex(Simplex(PE, t));
+                sc.add_simplex(Simplex(PF, sw(t, PF)));
+                // intentional fall-through
+            case PF:
+                sc.add_simplex(Simplex(PF, t));
+                // intentional fall-through
+            case PT:
+                sc.add_simplex(Simplex(PT, t));
+                // intentional fall-through
+                break;
+            default: assert(false); break;
+            }
         }
     }
 

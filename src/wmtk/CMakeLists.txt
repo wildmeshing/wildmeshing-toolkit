@@ -21,6 +21,8 @@ set(SRC_FILES
 	SimplicialComplex.cpp
     Scheduler.hpp
     Scheduler.cpp
+    MultiMeshManager.hpp
+    MultiMeshManager.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 
