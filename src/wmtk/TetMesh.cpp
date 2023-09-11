@@ -63,26 +63,26 @@ void TetMesh::initialize(
 
     // iterate over the matrices and fill attributes
     for (long i = 0; i < capacity(PrimitiveType::Tetrahedron); ++i) {
-        tv_accessor.vector_attribute(i) = TV.row(i).transpose();
-        te_accessor.vector_attribute(i) = TE.row(i).transpose();
-        tf_accessor.vector_attribute(i) = TF.row(i).transpose();
-        tt_accessor.vector_attribute(i) = TT.row(i).transpose();
-        t_flag_accessor.scalar_attribute(i) |= 0x1;
+        tv_accessor.index_access().vector_attribute(i) = TV.row(i).transpose();
+        te_accessor.index_access().vector_attribute(i) = TE.row(i).transpose();
+        tf_accessor.index_access().vector_attribute(i) = TF.row(i).transpose();
+        tt_accessor.index_access().vector_attribute(i) = TT.row(i).transpose();
+        t_flag_accessor.index_access().scalar_attribute(i) |= 0x1;
     }
     // m_vt
     for (long i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
-        vt_accessor.scalar_attribute(i) = VT(i);
-        v_flag_accessor.scalar_attribute(i) |= 0x1;
+        vt_accessor.index_access().scalar_attribute(i) = VT(i);
+        v_flag_accessor.index_access().scalar_attribute(i) |= 0x1;
     }
     // m_et
     for (long i = 0; i < capacity(PrimitiveType::Edge); ++i) {
-        et_accessor.scalar_attribute(i) = ET(i);
-        e_flag_accessor.scalar_attribute(i) |= 0x1;
+        et_accessor.index_access().scalar_attribute(i) = ET(i);
+        e_flag_accessor.index_access().scalar_attribute(i) |= 0x1;
     }
     // m_ft
     for (long i = 0; i < capacity(PrimitiveType::Face); ++i) {
-        ft_accessor.scalar_attribute(i) = FT(i);
-        f_flag_accessor.scalar_attribute(i) |= 0x1;
+        ft_accessor.index_access().scalar_attribute(i) = FT(i);
+        f_flag_accessor.index_access().scalar_attribute(i) |= 0x1;
     }
 }
 
@@ -103,9 +103,9 @@ long TetMesh::_debug_id(const Tuple& tuple, PrimitiveType type) const
 Tuple TetMesh::vertex_tuple_from_id(long id) const
 {
     ConstAccessor<long> vt_accessor = create_accessor<long>(m_vt_handle);
-    auto t = vt_accessor.scalar_attribute(id);
+    long t = vt_accessor.index_access().scalar_attribute(id);
     ConstAccessor<long> tv_accessor = create_accessor<long>(m_tv_handle);
-    auto tv = tv_accessor.vector_attribute(t);
+    auto tv = tv_accessor.index_access().vector_attribute(t);
     long lvid = -1, leid = -1, lfid = -1;
 
     for (long i = 0; i < 4; ++i) {
@@ -133,9 +133,9 @@ Tuple TetMesh::vertex_tuple_from_id(long id) const
 Tuple TetMesh::edge_tuple_from_id(long id) const
 {
     ConstAccessor<long> et_accessor = create_accessor<long>(m_et_handle);
-    auto t = et_accessor.scalar_attribute(id);
+    long t = et_accessor.index_access().scalar_attribute(id);
     ConstAccessor<long> te_accessor = create_accessor<long>(m_te_handle);
-    auto te = te_accessor.vector_attribute(t);
+    auto te = te_accessor.index_access().vector_attribute(t);
 
     long lvid = -1, leid = -1, lfid = -1;
 
@@ -164,9 +164,9 @@ Tuple TetMesh::edge_tuple_from_id(long id) const
 Tuple TetMesh::face_tuple_from_id(long id) const
 {
     ConstAccessor<long> ft_accessor = create_accessor<long>(m_ft_handle);
-    auto t = ft_accessor.scalar_attribute(id);
+    long t = ft_accessor.index_access().scalar_attribute(id);
     ConstAccessor<long> tf_accessor = create_accessor<long>(m_tf_handle);
-    auto tf = tf_accessor.vector_attribute(t);
+    auto tf = tf_accessor.index_access().vector_attribute(t);
 
     long lvid = -1, leid = -1, lfid = -1;
 

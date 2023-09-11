@@ -1,23 +1,24 @@
 #pragma once
 
 #include <memory>
+#include "Attribute.hpp"
 #include "AttributeAccessMode.hpp"
 #include "AttributeCache.hpp"
 
 namespace wmtk {
 
-template <typename T, bool IsConst>
-class Accessor;
 
+namespace attribute {
 template <typename T>
 class AttributeScopeStack;
+template <typename T>
+class CachingAccessor;
 
 template <typename T>
 class AttributeScope : public AttributeCache<T>
 {
 public:
-    template <typename U, bool IsConst>
-    friend class Accessor;
+    friend class CachingAccessor<T>;
     friend class AttributeScopeStack<T>;
     AttributeScope();
     ~AttributeScope();
@@ -71,4 +72,5 @@ private:
     long m_checkpoint_index = -1;
 };
 
+} // namespace attribute
 } // namespace wmtk

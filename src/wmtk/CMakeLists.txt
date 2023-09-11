@@ -1,6 +1,5 @@
 
 set(SRC_FILES
-    Accessor.cpp
     Accessor.hpp
     Mesh.cpp
     Mesh.hpp

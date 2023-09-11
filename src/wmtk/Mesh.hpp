@@ -15,7 +15,12 @@
 
 namespace wmtk {
 // thread management tool that we will PImpl
+namespace attribute {
 class AttributeScopeManager;
+template <typename T>
+class TupleAccessor;
+
+}
 namespace operations {
 class Operation;
 }
@@ -25,7 +30,9 @@ class Mesh : public std::enable_shared_from_this<Mesh>
 
 public:
     template <typename T>
-    friend class AccessorBase;
+    friend class attribute::AccessorBase;
+    template <typename T>
+    friend class attribute::TupleAccessor;
     friend class ParaviewWriter;
     friend class MeshReader;
     friend class MultiMeshManager;
@@ -98,7 +105,7 @@ public:
 
 
     // creates a scope as long as the AttributeScopeHandle exists
-    [[nodiscard]] AttributeScopeHandle create_scope();
+    [[nodiscard]] attribute::AttributeScopeHandle create_scope();
 
 
     ConstAccessor<char> get_flag_accessor(PrimitiveType type) const;
@@ -138,19 +145,23 @@ protected: // member functions
     /**
      * @brief same as `update_cell_hashes` but slow because it creates a new accessor
      */
-    void update_cell_hashes_slow(const std::vector<Tuple>& cells);
+    /**
+     * @brief update hash in given cell
+     *
+     * @param cell tuple in which the hash should be updated
+     * @param hash_accessor hash accessor
+     */
+    void update_cell_hash(const long cell_index, Accessor<long>& hash_accessor);
 
     /**
-     * @brief DEPRECATED return the same tuple but with updated hash
+     * @brief update hashes in given cells
      *
-     * This function should only be used in operations to create a valid return tuple in a known
-     * position.
-     *
-     * @param tuple tuple with potentially outdated hash
+     * @param cells vector of tuples in which the hash should be updated
      * @param hash_accessor hash accessor
-     * @return tuple with updated hash
      */
-    Tuple resurrect_tuple(const Tuple& tuple, const Accessor<long>& hash_accessor) const;
+    void update_cell_hashes(const std::vector<long>& cell_indices, Accessor<long>& hash_accessor);
+
+    void update_cell_hashes_slow(const std::vector<Tuple>& cells);
 
     /**
      * @brief return the same tuple but with updated hash
@@ -286,7 +297,7 @@ protected:
     //[[nodiscard]] AccessorScopeHandle push_accesor_scope();
 
 private: // members
-    AttributeManager m_attribute_manager;
+    attribute::AttributeManager m_attribute_manager;
 
     // PImpl'd manager of per-thread update stacks
     // Every time a new access scope is requested the manager creates another level of indirection

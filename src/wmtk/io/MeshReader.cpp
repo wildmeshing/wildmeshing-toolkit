@@ -76,9 +76,9 @@ void MeshReader::set_attribute(
     Mesh& mesh)
 {
     auto handle = mesh.register_attribute<T>(name, pt, stride, true);
-    auto accessor = mesh.create_accessor(handle);
+    auto accessor = attribute::AccessorBase<T>(mesh, handle);
 
-    static_cast<AccessorBase<T>&>(accessor).set_attribute(v);
+    accessor.set_attribute(v);
 }
 
 

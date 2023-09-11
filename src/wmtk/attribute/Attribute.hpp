@@ -6,6 +6,8 @@
 
 namespace wmtk {
 class MeshWriter;
+
+namespace attribute {
 template <typename T>
 class AccessorBase;
 
@@ -45,7 +47,8 @@ public:
     T& scalar_attribute(const long index);
 
     void set(std::vector<T> val);
-    // The total number of elements in a vector. This is greater than the number of active values in the attribute, and the set of active values is handled by a higher level abstraction
+    // The total number of elements in a vector. This is greater than the number of active values in
+    // the attribute, and the set of active values is handled by a higher level abstraction
     long reserved_size() const;
     // The number of data for each element in the vector
     long dimension() const;
@@ -65,4 +68,5 @@ private:
     std::unique_ptr<PerThreadAttributeScopeStacks<T>> m_scope_stacks;
     long m_dimension = -1;
 };
+} // namespace attribute
 } // namespace wmtk
