@@ -50,6 +50,9 @@ option (BUILD_SHARED_LIBS "Build Shared Libraries" OFF) # we globally want to di
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/recipes/")
 
+# check if Perl is installed (required by HDF5 but not set as required there)
+find_package (Perl REQUIRED)
+
 include(sanitizers)
 include(wmtk_colors)
 include(wmtk_warnings)
