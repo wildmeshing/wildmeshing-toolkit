@@ -29,8 +29,8 @@ auto DEBUG_TetMesh::edge_tuple_between_v1_v2(const long v1, const long v2, const
     ConstAccessor<long> tv = create_accessor<long>(m_tv_handle);
     auto tv_base = create_base_accessor<long>(m_tv_handle);
     Tuple tet = tet_tuple_from_id(tid);
-    auto tv0 = tv.vector_attribute(tet);
-    REQUIRE(tv0 == tv_base.vector_attribute(tid));
+    auto tv0 = tv.const_vector_attribute(tet);
+    REQUIRE(tv0 == tv_base.const_vector_attribute(tid));
     long local_vid1 = -1, local_vid2 = -1;
     for (long i = 0; i < tv0.size(); ++i) {
         if (tv0[i] == v1) {

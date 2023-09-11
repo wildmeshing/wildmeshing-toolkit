@@ -44,8 +44,8 @@ TetMesh::TetMeshOperationExecutor::get_incident_tet_data(Tuple t)
     // TODO: opposite_edge? vertices?
 
     // accessing ear tet id through TT to make it work also at boundaries
-    const long ear1_tid = tt_accessor.vector_attribute(ear1_face)[ear1_face.m_local_fid];
-    const long ear2_tid = tt_accessor.vector_attribute(ear2_face)[ear2_face.m_local_fid];
+    const long ear1_tid = tt_accessor.const_vector_attribute(ear1_face)[ear1_face.m_local_fid];
+    const long ear2_tid = tt_accessor.const_vector_attribute(ear2_face)[ear2_face.m_local_fid];
 
     tet_data.ears[0] = EarTet{ear1_tid, m_mesh.id_face(ear1_face)};
     tet_data.ears[1] = EarTet{ear2_tid, m_mesh.id_face(ear2_face)};
@@ -100,16 +100,14 @@ void TetMesh::TetMeshOperationExecutor::delete_simplices()
 {
     for (size_t d = 0; d < simplex_ids_to_delete.size(); ++d) {
         for (const long id : simplex_ids_to_delete[d]) {
-            flag_accessors[d].scalar_attribute(id) = 0; // TODO: reset single bit
+            flag_accessors[d].index_access().scalar_attribute(id) = 0; // TODO: reset single bit
         }
     }
 }
 
 void TetMesh::TetMeshOperationExecutor::update_cell_hash()
 {
-    for (const long& cell_id : cell_ids_to_update_hash) {
-        ++hash_accessor.scalar_attribute(cell_id);
-    }
+    m_mesh.update_cell_hashes(cell_ids_to_update_hash, hash_accessor);
 }
 
 const std::array<std::vector<long>, 4>
@@ -155,8 +153,8 @@ void TetMesh::TetMeshOperationExecutor::update_ear_connectivity(
 {
     if (ear_tid < 0) return;
 
-    auto ear_tt = tt_accessor.vector_attribute(ear_tid);
-    auto ear_tf = tf_accessor.vector_attribute(ear_tid);
+    auto ear_tt = tt_accessor.index_access().vector_attribute(ear_tid);
+    auto ear_tf = tf_accessor.index_access().vector_attribute(ear_tid);
     for (int i = 0; i < 4; i++) {
         if (ear_tt(i) == old_tid) {
             ear_tt(i) = new_tid;
@@ -165,7 +163,7 @@ void TetMesh::TetMeshOperationExecutor::update_ear_connectivity(
         }
     }
 
-    ft_accessor.scalar_attribute(common_fid) = ear_tid;
+    ft_accessor.index_access().scalar_attribute(common_fid) = ear_tid;
 }
 
 Tuple TetMesh::TetMeshOperationExecutor::split_edge()
@@ -431,10 +429,10 @@ Tuple TetMesh::TetMeshOperationExecutor::split_edge()
             // update ear tet 1 (tt, tf)
             update_ear_connectivity(t_ear_1, t1, t_old, f_ear_1);
 
-            auto tt = tt_accessor.vector_attribute(t1);
-            auto tf = tf_accessor.vector_attribute(t1);
-            auto te = te_accessor.vector_attribute(t1);
-            auto tv = tv_accessor.vector_attribute(t1);
+            auto tt = tt_accessor.index_access().vector_attribute(t1);
+            auto tf = tf_accessor.index_access().vector_attribute(t1);
+            auto te = te_accessor.index_access().vector_attribute(t1);
+            auto tv = tv_accessor.index_access().vector_attribute(t1);
 
             /*
                 copy t_old
@@ -450,10 +448,10 @@ Tuple TetMesh::TetMeshOperationExecutor::split_edge()
                 t(f_old_2) --> -1 or tetdata[idx+1].t1
             */
             // copy t_old
-            tt = tt_accessor.vector_attribute(t_old);
-            tf = tf_accessor.vector_attribute(t_old);
-            te = te_accessor.vector_attribute(t_old);
-            tv = tv_accessor.vector_attribute(t_old);
+            tt = tt_accessor.index_access().vector_attribute(t_old);
+            tf = tf_accessor.index_access().vector_attribute(t_old);
+            te = te_accessor.index_access().vector_attribute(t_old);
+            tv = tv_accessor.index_access().vector_attribute(t_old);
             for (size_t k = 0; k < 4; k++) {
                 // vertices
                 if (tv(k) == v2) {
@@ -494,10 +492,10 @@ Tuple TetMesh::TetMeshOperationExecutor::split_edge()
             // update ear tet 2 (tt, tf)
             update_ear_connectivity(t_ear_2, t2, t_old, f_ear_2);
 
-            auto tt = tt_accessor.vector_attribute(t2);
-            auto tf = tf_accessor.vector_attribute(t2);
-            auto te = te_accessor.vector_attribute(t2);
-            auto tv = tv_accessor.vector_attribute(t2);
+            auto tt = tt_accessor.index_access().vector_attribute(t2);
+            auto tf = tf_accessor.index_access().vector_attribute(t2);
+            auto te = te_accessor.index_access().vector_attribute(t2);
+            auto tv = tv_accessor.index_access().vector_attribute(t2);
 
             /*
                 copy t_old
@@ -513,10 +511,10 @@ Tuple TetMesh::TetMeshOperationExecutor::split_edge()
                 t(f_old_2) --> -1 or tetdata[idx+1].t2
             */
             // copy t_old
-            tt = tt_accessor.vector_attribute(t_old);
-            tf = tf_accessor.vector_attribute(t_old);
-            te = te_accessor.vector_attribute(t_old);
-            tv = tv_accessor.vector_attribute(t_old);
+            tt = tt_accessor.index_access().const_vector_attribute(t_old);
+            tf = tf_accessor.index_access().const_vector_attribute(t_old);
+            te = te_accessor.index_access().const_vector_attribute(t_old);
+            tv = tv_accessor.index_access().const_vector_attribute(t_old);
             for (size_t k = 0; k < 4; k++) {
                 // vertices
                 if (tv(k) == v1) {
@@ -553,31 +551,31 @@ Tuple TetMesh::TetMeshOperationExecutor::split_edge()
         }
 
         // assign each face one tet
-        ft_accessor.scalar_attribute(f_ear_1) = t1;
-        ft_accessor.scalar_attribute(f_ear_2) = t2;
-        ft_accessor.scalar_attribute(f1) = t1;
-        ft_accessor.scalar_attribute(f2) = t2;
-        ft_accessor.scalar_attribute(f3) = t1;
-        ft_accessor.scalar_attribute(f4) = t2;
-        ft_accessor.scalar_attribute(f_split) = t1;
+        ft_accessor.index_access().scalar_attribute(f_ear_1) = t1;
+        ft_accessor.index_access().scalar_attribute(f_ear_2) = t2;
+        ft_accessor.index_access().scalar_attribute(f1) = t1;
+        ft_accessor.index_access().scalar_attribute(f2) = t2;
+        ft_accessor.index_access().scalar_attribute(f3) = t1;
+        ft_accessor.index_access().scalar_attribute(f4) = t2;
+        ft_accessor.index_access().scalar_attribute(f_split) = t1;
 
         // assign each edge one tet
-        et_accessor.scalar_attribute(e13) = t1;
-        et_accessor.scalar_attribute(e23) = t2;
-        et_accessor.scalar_attribute(e14) = t1;
-        et_accessor.scalar_attribute(e24) = t2;
-        et_accessor.scalar_attribute(e34) = t1;
-        et_accessor.scalar_attribute(e_spline_1) = t1;
-        et_accessor.scalar_attribute(e_spline_2) = t2;
-        et_accessor.scalar_attribute(e_split_1) = t1;
-        et_accessor.scalar_attribute(e_split_2) = t1;
+        et_accessor.index_access().scalar_attribute(e13) = t1;
+        et_accessor.index_access().scalar_attribute(e23) = t2;
+        et_accessor.index_access().scalar_attribute(e14) = t1;
+        et_accessor.index_access().scalar_attribute(e24) = t2;
+        et_accessor.index_access().scalar_attribute(e34) = t1;
+        et_accessor.index_access().scalar_attribute(e_spline_1) = t1;
+        et_accessor.index_access().scalar_attribute(e_spline_2) = t2;
+        et_accessor.index_access().scalar_attribute(e_split_1) = t1;
+        et_accessor.index_access().scalar_attribute(e_split_2) = t1;
 
         // assign each vertex one tet
-        vt_accessor.scalar_attribute(v1) = t1;
-        vt_accessor.scalar_attribute(v2) = t2;
-        vt_accessor.scalar_attribute(v3) = t1;
-        vt_accessor.scalar_attribute(v4) = t1;
-        vt_accessor.scalar_attribute(vid_new) = t1;
+        vt_accessor.index_access().scalar_attribute(v1) = t1;
+        vt_accessor.index_access().scalar_attribute(v2) = t2;
+        vt_accessor.index_access().scalar_attribute(v3) = t1;
+        vt_accessor.index_access().scalar_attribute(v4) = t1;
+        vt_accessor.index_access().scalar_attribute(vid_new) = t1;
     }
 
     // update hash and delete simplices
@@ -729,9 +727,9 @@ Tuple TetMesh::TetMeshOperationExecutor::collapse_edge()
             v1 --> v2 (update later)
         */
         if (t_ear_1 != -1) {
-            auto tt = tt_accessor.vector_attribute(t_ear_1);
-            auto tf = tf_accessor.vector_attribute(t_ear_1);
-            auto te = te_accessor.vector_attribute(t_ear_1);
+            auto tt = tt_accessor.index_access().vector_attribute(t_ear_1);
+            auto tf = tf_accessor.index_access().vector_attribute(t_ear_1);
+            auto te = te_accessor.index_access().vector_attribute(t_ear_1);
 
             for (int k = 0; k < 4; k++) {
                 if (tf(k) == f_ear_1) {
@@ -753,7 +751,7 @@ Tuple TetMesh::TetMeshOperationExecutor::collapse_edge()
 
         // update t_ear_2
         if (t_ear_2 != -1) {
-            auto tt = tt_accessor.vector_attribute(t_ear_2);
+            auto tt = tt_accessor.index_access().vector_attribute(t_ear_2);
 
             for (int k = 0; k < 4; k++) {
                 if (tt(k) == t_old) {
@@ -764,17 +762,17 @@ Tuple TetMesh::TetMeshOperationExecutor::collapse_edge()
         }
 
         // assign tet for each face
-        ft_accessor.scalar_attribute(f_ear_2) = (t_ear_2 > -1) ? t_ear_2 : t_ear_1;
+        ft_accessor.index_access().scalar_attribute(f_ear_2) = (t_ear_2 > -1) ? t_ear_2 : t_ear_1;
 
         // assign tet for each edge
-        et_accessor.scalar_attribute(e23) = (t_ear_2 > -1) ? t_ear_2 : t_ear_1;
-        et_accessor.scalar_attribute(e24) = (t_ear_2 > -1) ? t_ear_2 : t_ear_1;
-        et_accessor.scalar_attribute(e34) = (t_ear_2 > -1) ? t_ear_2 : t_ear_1;
+        et_accessor.index_access().scalar_attribute(e23) = (t_ear_2 > -1) ? t_ear_2 : t_ear_1;
+        et_accessor.index_access().scalar_attribute(e24) = (t_ear_2 > -1) ? t_ear_2 : t_ear_1;
+        et_accessor.index_access().scalar_attribute(e34) = (t_ear_2 > -1) ? t_ear_2 : t_ear_1;
 
         // assign tet for each vertex
-        vt_accessor.scalar_attribute(v2) = (t_ear_2 > -1) ? t_ear_2 : t_ear_1;
-        vt_accessor.scalar_attribute(v3) = (t_ear_2 > -1) ? t_ear_2 : t_ear_1;
-        vt_accessor.scalar_attribute(v4) = (t_ear_2 > -1) ? t_ear_2 : t_ear_1;
+        vt_accessor.index_access().scalar_attribute(v2) = (t_ear_2 > -1) ? t_ear_2 : t_ear_1;
+        vt_accessor.index_access().scalar_attribute(v3) = (t_ear_2 > -1) ? t_ear_2 : t_ear_1;
+        vt_accessor.index_access().scalar_attribute(v4) = (t_ear_2 > -1) ? t_ear_2 : t_ear_1;
     }
 
     // update v1 one ring tv
@@ -783,7 +781,7 @@ Tuple TetMesh::TetMeshOperationExecutor::collapse_edge()
 
     for (const Simplex& t : v1_star.get_tetrahedra()) {
         const long tid = m_mesh.id(t);
-        auto tv = tv_accessor.vector_attribute(tid);
+        auto tv = tv_accessor.index_access().vector_attribute(tid);
         for (int i = 0; i < 4; i++) {
             if (tv(i) == v1) {
                 tv(i) = v2;

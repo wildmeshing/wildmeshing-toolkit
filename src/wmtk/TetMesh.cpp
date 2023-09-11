@@ -327,13 +327,13 @@ Tuple TetMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
         long lvid_new = -1, leid_new = -1, lfid_new = -1;
 
         ConstAccessor<long> tv_accessor = create_const_accessor<long>(m_tv_handle);
-        auto tv = tv_accessor.vector_attribute(gcid_new);
+        auto tv = tv_accessor.index_access().vector_attribute(gcid_new);
 
         ConstAccessor<long> te_accessor = create_const_accessor<long>(m_te_handle);
-        auto te = te_accessor.vector_attribute(gcid_new);
+        auto te = te_accessor.index_access().vector_attribute(gcid_new);
 
         ConstAccessor<long> tf_accessor = create_const_accessor<long>(m_tf_handle);
-        auto tf = tf_accessor.vector_attribute(gcid_new);
+        auto tf = tf_accessor.index_access().vector_attribute(gcid_new);
 
         for (long i = 0; i < 4; ++i) {
             if (tv(i) == gvid) {
@@ -426,13 +426,13 @@ bool TetMesh::is_connectivity_valid() const
 
     // VT and TV
     for (long i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
-        if (v_flag_accessor.scalar_attribute(i) == 0) {
+        if (v_flag_accessor.index_access().const_scalar_attribute(i) == 0) {
             wmtk::logger().debug("Vertex {} is deleted", i);
             continue;
         }
         int cnt = 0;
         for (int j = 0; j < 4; ++j) {
-            if (tv_accessor.vector_attribute(vt_accessor.scalar_attribute(i))[j] == i) {
+            if (tv_accessor.index_access().const_vector_attribute(vt_accessor.index_access().const_scalar_attribute(i))[j] == i) {
                 cnt++;
             }
         }
@@ -443,13 +443,13 @@ bool TetMesh::is_connectivity_valid() const
 
     // ET and TE
     for (long i = 0; i < capacity(PrimitiveType::Edge); ++i) {
-        if (e_flag_accessor.scalar_attribute(i) == 0) {
+        if (e_flag_accessor.index_access().const_scalar_attribute(i) == 0) {
             wmtk::logger().debug("Edge {} is deleted", i);
             continue;
         }
         int cnt = 0;
         for (int j = 0; j < 6; ++j) {
-            if (te_accessor.vector_attribute(et_accessor.scalar_attribute(i))[j] == i) {
+            if (te_accessor.index_access().const_vector_attribute(et_accessor.index_access().const_scalar_attribute(i))[j] == i) {
                 cnt++;
             }
         }
@@ -460,13 +460,13 @@ bool TetMesh::is_connectivity_valid() const
 
     // FT and TF
     for (long i = 0; i < capacity(PrimitiveType::Face); ++i) {
-        if (f_flag_accessor.scalar_attribute(i) == 0) {
+        if (f_flag_accessor.index_access().const_scalar_attribute(i) == 0) {
             wmtk::logger().debug("Face {} is deleted", i);
             continue;
         }
         int cnt = 0;
         for (int j = 0; j < 4; ++j) {
-            if (tf_accessor.vector_attribute(ft_accessor.scalar_attribute(i))[j] == i) {
+            if (tf_accessor.index_access().const_vector_attribute(ft_accessor.index_access().const_scalar_attribute(i))[j] == i) {
                 cnt++;
             }
         }
@@ -477,15 +477,15 @@ bool TetMesh::is_connectivity_valid() const
 
     // TF and TT
     for (long i = 0; i < capacity(PrimitiveType::Tetrahedron); ++i) {
-        if (t_flag_accessor.scalar_attribute(i) == 0) {
+        if (t_flag_accessor.index_access().const_scalar_attribute(i) == 0) {
             wmtk::logger().debug("Tet {} is deleted", i);
             continue;
         }
 
         for (int j = 0; j < 4; ++j) {
-            long nb = tt_accessor.vector_attribute(i)(j);
+            long nb = tt_accessor.index_access().const_vector_attribute(i)(j);
             if (nb != -1) {
-                if (ft_accessor.scalar_attribute(tf_accessor.vector_attribute(i)(j)) != i) {
+                if (ft_accessor.index_access().const_scalar_attribute(tf_accessor.index_access().const_vector_attribute(i)(j)) != i) {
                     return false;
                 }
                 continue;
@@ -494,7 +494,7 @@ bool TetMesh::is_connectivity_valid() const
             int cnt = 0;
             int id_in_nb;
             for (int k = 0; k < 4; ++k) {
-                if (tt_accessor.vector_attribute(nb)(k) == 1) {
+                if (tt_accessor.index_access().const_vector_attribute(nb)(k) == 1) {
                     cnt++;
                     id_in_nb = k;
                 }
@@ -503,7 +503,7 @@ bool TetMesh::is_connectivity_valid() const
                 return false;
             }
 
-            if (tf_accessor.vector_attribute(i)(j) != tf_accessor.vector_attribute(nb)(id_in_nb)) {
+            if (tf_accessor.index_access().const_vector_attribute(i)(j) != tf_accessor.index_access().const_vector_attribute(nb)(id_in_nb)) {
                 return false;
             }
         }

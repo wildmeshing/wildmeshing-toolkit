@@ -23,12 +23,12 @@ public:
     Tuple tuple_from_tet_id(const long tid);
 
     template <typename T>
-    AccessorBase<T> create_const_base_accessor(const MeshAttributeHandle<T>& handle) const
+    attribute::AccessorBase<T> create_const_base_accessor(const MeshAttributeHandle<T>& handle) const
     {
-        return AccessorBase<T>(const_cast<DEBUG_TetMesh&>(*this), handle);
+        return attribute::AccessorBase<T>(const_cast<DEBUG_TetMesh&>(*this), handle);
     }
     template <typename T>
-    AccessorBase<T> create_base_accessor(const MeshAttributeHandle<T>& handle) const
+    attribute::AccessorBase<T> create_base_accessor(const MeshAttributeHandle<T>& handle) const
     {
         return create_const_base_accessor(handle);
     }
