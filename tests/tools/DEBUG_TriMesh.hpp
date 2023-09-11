@@ -65,7 +65,7 @@ public:
 
     TriMeshOperationExecutor get_tmoe(const Tuple& t, Accessor<long>& hash_accessor);
 
-    std::vector<std::vector<long>> get_sorted_simplical_complex(const std::vector<Simplex> &sc) const;
+    std::vector<std::vector<long>> get_sorted_simplicial_complex(const std::vector<Simplex> &sc) const;
 };
 
 } // namespace wmtk::tests
