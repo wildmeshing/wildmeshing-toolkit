@@ -1,7 +1,7 @@
 #pragma once
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/TriMeshOperationExecutor.hpp>
-
+#include <wmtk/Simplex.hpp>
 namespace wmtk::tests {
 class DEBUG_TriMesh : public TriMesh
 {
@@ -64,6 +64,8 @@ public:
     Accessor<long> get_cell_hash_accessor();
 
     TriMeshOperationExecutor get_tmoe(const Tuple& t, Accessor<long>& hash_accessor);
+
+    std::vector<std::vector<long>> get_sorted_simplical_complex(const std::vector<Simplex> &sc) const;
 };
 
 } // namespace wmtk::tests

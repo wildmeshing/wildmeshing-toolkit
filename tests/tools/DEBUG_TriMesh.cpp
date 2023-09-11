@@ -1,6 +1,5 @@
 #include "DEBUG_TriMesh.hpp"
 #include <catch2/catch_test_macros.hpp>
-
 namespace wmtk::tests {
 
 DEBUG_TriMesh::DEBUG_TriMesh(const TriMesh& m)
@@ -174,4 +173,41 @@ auto DEBUG_TriMesh::get_tmoe(const Tuple& t, Accessor<long>& hash_accessor)
 {
     return TriMeshOperationExecutor(*this, t, hash_accessor);
 }
+
+std::vector<std::vector<long>> DEBUG_TriMesh::get_sorted_simplical_complex(const std::vector<Simplex> &sc) const
+{
+    std::vector<std::vector<long>> ret;
+    for (auto s : sc)
+    {
+        std::vector<long> s_vec;
+        Tuple t = s.tuple();
+        switch (s.primitive_type())
+        {
+        case PrimitiveType::Vertex:
+            s_vec.push_back(id(t, PrimitiveType::Vertex));
+            break;
+        case PrimitiveType::Edge:
+            s_vec.push_back(id(t, PrimitiveType::Vertex));
+            s_vec.push_back(id(switch_vertex(t), PrimitiveType::Vertex));
+            break;
+        case PrimitiveType::Face:
+            s_vec.push_back(id(t, PrimitiveType::Vertex));
+            s_vec.push_back(id(switch_vertex(t), PrimitiveType::Vertex));
+            s_vec.push_back(id(switch_vertex(switch_edge(t)), PrimitiveType::Vertex));
+            break;
+        default:
+            break;
+        }
+        std::sort(s_vec.begin(), s_vec.end());
+        ret.push_back(s_vec);
+    }
+    std::sort(ret.begin(), ret.end(), [](const std::vector<long>& a, const std::vector<long>& b) {
+        if (a.size() != b.size()) {
+            return a.size() < b.size();
+        }
+        return a < b;
+    });
+    return ret;
+}
+
 } // namespace wmtk::tests
