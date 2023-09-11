@@ -34,6 +34,8 @@ set(TEST_SOURCES
     tools/DEBUG_TetMesh.cpp
 
     simplicial_complex_tests/circle_mesh_tests.cpp
+    simplicial_complex_tests/3d_mesh_tests.cpp
+
 )
 add_executable(wmtk_tests ${TEST_SOURCES})
 
