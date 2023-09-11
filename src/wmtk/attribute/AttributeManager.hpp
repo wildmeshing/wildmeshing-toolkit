@@ -8,6 +8,7 @@
 namespace wmtk {
 class Mesh;
 class MeshWriter;
+class PerThreadAttributesCheckpointHandler;
 
 namespace attribute {
 template <typename T>
@@ -62,9 +63,13 @@ struct AttributeManager
     template <typename T>
     const MeshAttributes<T>& get(const MeshAttributeHandle<T>& handle) const;
 
+    // These work on a single thread
     void push_scope();
     void pop_scope(bool apply_updates = true);
     void clear_current_scope();
+    // a bit of PImpl
+    std::unique_ptr<PerThreadAttributesCheckpointHandler> m_checkpoint_handler;
+
 };
 
 template <typename T>
