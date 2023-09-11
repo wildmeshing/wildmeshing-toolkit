@@ -1,11 +1,13 @@
 set(SRC_FILES
     Operation.hpp
     Operation.cpp
+    TupleOperation.hpp
+    TupleOperation.cpp
     OperationFactory.hpp
     OperationFactory.cpp
-    TriMeshSplitEdgeOperation.cpp
-    TriMeshSplitEdgeOperation.hpp
-    TriMeshCollapseEdgeOperation.cpp
-    TriMeshCollapseEdgeOperation.hpp
+    OperationQueue.hpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
+
+add_subdirectory(tri_mesh)
+add_subdirectory(tet_mesh)

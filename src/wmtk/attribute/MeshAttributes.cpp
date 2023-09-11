@@ -7,7 +7,7 @@
 #include <cassert>
 #include <utility>
 
-namespace wmtk {
+namespace wmtk::attribute {
 
 template <typename T>
 MeshAttributes<T>::MeshAttributes()
@@ -66,7 +66,7 @@ MeshAttributes<T>::register_attribute(const std::string& name, long dimension, b
         handle.index = it->second.index;
     } else {
         handle.index = m_attributes.size();
-        m_attributes.emplace_back(dimension, size());
+        m_attributes.emplace_back(dimension, reserved_size());
     }
     m_handles[name] = handle;
 
@@ -111,19 +111,19 @@ void MeshAttributes<T>::set(const AttributeHandle& handle, std::vector<T> val)
 template <typename T>
 size_t MeshAttributes<T>::attribute_size(const AttributeHandle& handle) const
 {
-    return m_attributes[handle.index].size();
+    return m_attributes[handle.index].reserved_size();
 }
 
 template <typename T>
-long MeshAttributes<T>::size() const
+long MeshAttributes<T>::reserved_size() const
 {
-    return m_size;
+    return m_reserved_size;
 }
 
 template <typename T>
 void MeshAttributes<T>::reserve(const long size)
 {
-    m_size = size;
+    m_reserved_size = size;
     for (auto& attr : m_attributes) {
         attr.reserve(size);
     }
@@ -135,4 +135,4 @@ template class MeshAttributes<long>;
 template class MeshAttributes<double>;
 template class MeshAttributes<Rational>;
 
-} // namespace wmtk
+} // namespace wmtk::attribute

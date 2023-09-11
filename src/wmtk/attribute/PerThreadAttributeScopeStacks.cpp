@@ -2,7 +2,7 @@
 #include <wmtk/utils/Rational.hpp>
 
 
-namespace wmtk {
+namespace wmtk::attribute {
 template class PerThreadAttributeScopeStacks<long>;
 template class PerThreadAttributeScopeStacks<double>;
 template class PerThreadAttributeScopeStacks<char>;
@@ -46,7 +46,8 @@ const AttributeScope<T>* PerThreadAttributeScopeStacks<T>::current_scope_ptr() c
 template <typename T>
 void PerThreadAttributeScopeStacks<T>::clear_current_scope()
 {
-    local().clear_current_scope();;
+    local().clear_current_scope();
+    ;
 }
 
 template <typename T>
@@ -55,8 +56,8 @@ long PerThreadAttributeScopeStacks<T>::add_checkpoint()
     return local().add_checkpoint();
 }
 template <typename T>
-AttributeScope<T> const * PerThreadAttributeScopeStacks<T>::get_checkpoint(long index) const
+AttributeScope<T> const* PerThreadAttributeScopeStacks<T>::get_checkpoint(long index) const
 {
     return local().get_checkpoint(index);
 }
-} // namespace wmtk
+} // namespace wmtk::attribute

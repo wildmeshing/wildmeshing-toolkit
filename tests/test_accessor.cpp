@@ -13,7 +13,7 @@ void populate(DEBUG_PointMesh& m, VectorAcc& va, bool for_zeros = false)
 {
     auto vertices = m.get_all(wmtk::PrimitiveType::Vertex);
     size_t dimension = va.dimension();
-    Eigen::Matrix<typename VectorAcc::T, Eigen::Dynamic, 1> x;
+    Eigen::Matrix<typename VectorAcc::Scalar, Eigen::Dynamic, 1> x;
     for (const wmtk::Tuple& tup : vertices) {
         long id = m.id(tup);
         auto v = va.vector_attribute(tup);
@@ -29,7 +29,7 @@ void check(DEBUG_PointMesh& m, VectorAcc& va, bool for_zeros = false)
 {
     auto vertices = m.get_all(wmtk::PrimitiveType::Vertex);
     size_t dimension = va.dimension();
-    Eigen::Matrix<typename VectorAcc::T, Eigen::Dynamic, 1> x;
+    Eigen::Matrix<typename VectorAcc::Scalar, Eigen::Dynamic, 1> x;
     bool is_scalar = va.dimension() == 1;
     x.resize(va.dimension());
     for (const wmtk::Tuple& tup : vertices) {
@@ -65,12 +65,16 @@ TEST_CASE("test_accessor_basic")
     auto long_acc = m.create_accessor(long_handle);
     auto double_acc = m.create_accessor(double_handle);
 
+    auto char_bacc = m.create_base_accessor(char_handle);
+    auto long_bacc = m.create_base_accessor(long_handle);
+    auto double_bacc = m.create_base_accessor(double_handle);
+
     auto vertices = m.get_all(wmtk::PrimitiveType::Vertex);
 
     // check characteristics are all right
-    REQUIRE(char_acc.size() == size);
-    REQUIRE(long_acc.size() == size);
-    REQUIRE(double_acc.size() == size);
+    REQUIRE(char_acc.reserved_size() == size);
+    REQUIRE(long_acc.reserved_size() == size);
+    REQUIRE(double_acc.reserved_size() == size);
     REQUIRE(char_acc.dimension() == 1);
     REQUIRE(long_acc.dimension() == 1);
     REQUIRE(double_acc.dimension() == 3);
@@ -83,21 +87,24 @@ TEST_CASE("test_accessor_basic")
     }
 
     // use global set to force all values
-
+    // NOTE that the ugly static casts are in this unit test because we want
+    // accessing the low level accessor data to be ugly.
+    // Please keep set_attribute hidden from teh public unless some ugly
+    // notation like these static asts exists
     {
         std::vector<char> d(size);
         std::iota(d.begin(), d.end(), char(0));
-        char_acc.set_attribute(d);
+        char_bacc.set_attribute(d);
     }
     {
         std::vector<long> d(size);
         std::iota(d.begin(), d.end(), long(0));
-        long_acc.set_attribute(d);
+        long_bacc.set_attribute(d);
     }
     {
         std::vector<double> d(3 * size);
         std::iota(d.begin(), d.end(), double(0));
-        double_acc.set_attribute(d);
+        double_bacc.set_attribute(d);
     }
     for (const wmtk::Tuple& tup : vertices) {
         long id = m.id(tup);
@@ -172,8 +179,8 @@ TEST_CASE("test_accessor_caching")
         }
 
         // check characteristics are all right
-        REQUIRE(long_acc.size() == size);
-        REQUIRE(double_acc.size() == size);
+        REQUIRE(long_acc.reserved_size() == size);
+        REQUIRE(double_acc.reserved_size() == size);
         REQUIRE(long_acc.dimension() == 1);
         REQUIRE(double_acc.dimension() == 3);
 

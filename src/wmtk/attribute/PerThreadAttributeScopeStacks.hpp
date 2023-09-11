@@ -3,7 +3,7 @@
 #include "AttributeScopeStack.hpp"
 
 
-namespace wmtk {
+namespace wmtk::attribute {
 
 template <typename T>
 class PerThreadAttributeScopeStacks
@@ -26,4 +26,4 @@ class PerThreadAttributeScopeStacks
     private:
     mutable tbb::enumerable_thread_specific<AttributeScopeStack<T>> m_stacks;
 };
-} // namespace wmtk
+} // namespace wmtk::attribute

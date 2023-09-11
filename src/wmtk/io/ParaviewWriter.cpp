@@ -113,10 +113,10 @@ ParaviewWriter::ParaviewWriter(
         }
     }
 
-    m_writers[0].init(filename.string() + "_verts.hdf5", vertices_name, cells[0], m_enabled[0]);
-    m_writers[1].init(filename.string() + "_edges.hdf5", vertices_name, cells[1], m_enabled[1]);
-    m_writers[2].init(filename.string() + "_faces.hdf5", vertices_name, cells[2], m_enabled[2]);
-    m_writers[3].init(filename.string() + "_tets.hdf5", vertices_name, cells[3], m_enabled[3]);
+    m_writers[0].init(filename.string() + "_verts.hdf", vertices_name, cells[0], m_enabled[0]);
+    m_writers[1].init(filename.string() + "_edges.hdf", vertices_name, cells[1], m_enabled[1]);
+    m_writers[2].init(filename.string() + "_faces.hdf", vertices_name, cells[2], m_enabled[2]);
+    m_writers[3].init(filename.string() + "_tets.hdf", vertices_name, cells[3], m_enabled[3]);
 }
 
 void ParaviewWriter::write(

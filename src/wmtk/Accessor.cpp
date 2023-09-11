@@ -138,6 +138,24 @@ auto Accessor<T, IsConst>::vector_attribute(const Tuple& t) -> MapResultT
     return cacheable_vector_attribute(idx);
 }
 
+template <typename T, bool IsConst>
+auto Accessor<T, IsConst>::const_vector_attribute(const long index) const -> ConstMapResult
+{
+    return cacheable_const_vector_attribute(index);
+}
+
+template <typename T, bool IsConst>
+auto Accessor<T, IsConst>::vector_attribute(const long index) const -> ConstMapResult
+{
+    return cacheable_const_vector_attribute(index);
+}
+
+template <typename T, bool IsConst>
+auto Accessor<T, IsConst>::vector_attribute(const long index) -> MapResultT
+{
+    return cacheable_vector_attribute(index);
+}
+
 
 template <typename T, bool IsConst>
 T Accessor<T, IsConst>::const_scalar_attribute(const Tuple& t) const
@@ -153,6 +171,24 @@ auto Accessor<T, IsConst>::scalar_attribute(const Tuple& t) -> TT
     return cacheable_scalar_attribute(idx);
 }
 
+template <typename T, bool IsConst>
+T Accessor<T, IsConst>::const_scalar_attribute(const long index) const
+{
+    return cacheable_const_scalar_attribute(index);
+}
+
+template <typename T, bool IsConst>
+T Accessor<T, IsConst>::scalar_attribute(const long index) const
+{
+    return cacheable_const_scalar_attribute(index);
+}
+
+template <typename T, bool IsConst>
+auto Accessor<T, IsConst>::scalar_attribute(const long index) -> TT
+{
+    return cacheable_scalar_attribute(index);
+}
+
 
 template <typename T, bool IsConst>
 std::optional<long> Accessor<T, IsConst>::stack_depth() const
@@ -164,6 +200,19 @@ std::optional<long> Accessor<T, IsConst>::stack_depth() const
     }
 }
 
+
+template <typename T>
+auto MutableAccessor<T>::vector_attribute(const long index) -> MapResultT
+{
+    return cacheable_vector_attribute(index);
+}
+
+
+template <typename T>
+auto MutableAccessor<T>::scalar_attribute(const long index) -> TT
+{
+    return cacheable_scalar_attribute(index);
+}
 template class Accessor<char, true>;
 template class Accessor<long, true>;
 template class Accessor<double, true>;

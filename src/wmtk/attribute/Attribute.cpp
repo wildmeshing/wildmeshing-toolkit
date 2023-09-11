@@ -3,7 +3,7 @@
 #include <wmtk/io/MeshWriter.hpp>
 #include <wmtk/utils/Rational.hpp>
 
-namespace wmtk {
+namespace wmtk::attribute {
 
 
 template <typename T>
@@ -70,7 +70,7 @@ void Attribute<T>::reserve(const long size)
     }
 }
 template <typename T>
-long Attribute<T>::size() const
+long Attribute<T>::reserved_size() const
 {
     return m_data.size() / m_dimension;
 }
@@ -89,7 +89,7 @@ void Attribute<T>::set(std::vector<T> val)
 template <typename T>
 auto Attribute<T>::const_vector_attribute(const long index) const -> ConstMapResult
 {
-    assert(index < size());
+    assert(index < reserved_size());
     assert(m_dimension > 0);
     const long start = index * m_dimension;
     ConstMapResult R(m_data.data() + start, m_dimension);
@@ -103,7 +103,7 @@ auto Attribute<T>::const_vector_attribute(const long index) const -> ConstMapRes
 template <typename T>
 typename Attribute<T>::MapResult Attribute<T>::vector_attribute(const long index)
 {
-    assert(index < size());
+    assert(index < reserved_size());
     assert(m_dimension > 0);
     const long start = index * m_dimension;
     MapResult R(m_data.data() + start, m_dimension);
@@ -114,7 +114,7 @@ typename Attribute<T>::MapResult Attribute<T>::vector_attribute(const long index
 template <typename T>
 T Attribute<T>::const_scalar_attribute(const long index) const
 {
-    assert(index < size());
+    assert(index < reserved_size());
     assert(m_dimension == 1);
     return m_data[index];
 }
@@ -122,7 +122,7 @@ T Attribute<T>::const_scalar_attribute(const long index) const
 template <typename T>
 T& Attribute<T>::scalar_attribute(const long index)
 {
-    assert(index < size());
+    assert(index < reserved_size());
     assert(m_dimension == 1);
     return m_data[index];
 }
@@ -162,4 +162,4 @@ template class Attribute<char>;
 template class Attribute<long>;
 template class Attribute<double>;
 template class Attribute<Rational>;
-} // namespace wmtk
+} // namespace wmtk::attribute

@@ -1,31 +1,49 @@
 #include "AccessorBase.hpp"
 #include <iostream>
 #include <wmtk/utils/Rational.hpp>
-#include "wmtk/Mesh.hpp"
-#include "MeshAttributes.hpp"
 #include "AttributeManager.hpp"
+#include "MeshAttributes.hpp"
+#include "wmtk/Mesh.hpp"
 
-namespace wmtk {
+namespace wmtk::attribute {
 template <typename T>
 AccessorBase<T>::AccessorBase(Mesh& m, const MeshAttributeHandle<T>& handle)
-    : AccessorBase(m.m_attribute_manager, handle)
-{}
-
-
-template <typename T>
-AccessorBase<T>::AccessorBase(AttributeManager& am, const MeshAttributeHandle<T>& handle)
-    : m_attribute_manager(am)
+    : m_mesh(m)
     , m_handle(handle)
 {}
+
+template <typename T>
+Mesh& AccessorBase<T>::mesh()
+{
+    return m_mesh;
+}
+template <typename T>
+const Mesh& AccessorBase<T>::mesh() const
+{
+    return m_mesh;
+}
+
+template <typename T>
+const AttributeManager& AccessorBase<T>::attribute_manager() const
+{
+    return mesh().m_attribute_manager;
+}
+
+template <typename T>
+AttributeManager& AccessorBase<T>::attribute_manager()
+{
+    return mesh().m_attribute_manager;
+}
+
 
 template <typename T>
 AccessorBase<T>::~AccessorBase() = default;
 
 
 template <typename T>
-long AccessorBase<T>::size() const
+long AccessorBase<T>::reserved_size() const
 {
-    return attribute().size();
+    return attribute().reserved_size();
 }
 
 template <typename T>
@@ -37,12 +55,12 @@ long AccessorBase<T>::dimension() const
 template <typename T>
 auto AccessorBase<T>::attributes() -> MeshAttributes<T>&
 {
-    return m_attribute_manager.get(m_handle);
+    return attribute_manager().get(m_handle);
 }
 template <typename T>
 auto AccessorBase<T>::attributes() const -> const MeshAttributes<T>&
 {
-    return m_attribute_manager.get(m_handle);
+    return attribute_manager().get(m_handle);
 }
 template <typename T>
 auto AccessorBase<T>::attribute() -> Attribute<T>&
@@ -64,11 +82,6 @@ template <typename T>
 PrimitiveType AccessorBase<T>::primitive_type() const
 {
     return handle().m_primitive_type;
-}
-template <typename T>
-long AccessorBase<T>::index(const Mesh& mesh, const Tuple& t) const
-{
-    return mesh.id(t, m_handle.m_primitive_type);
 }
 
 template <typename T>
@@ -110,4 +123,4 @@ template class AccessorBase<char>;
 template class AccessorBase<long>;
 template class AccessorBase<double>;
 template class AccessorBase<Rational>;
-} // namespace wmtk
+} // namespace wmtk::attribute

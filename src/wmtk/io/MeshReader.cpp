@@ -1,6 +1,7 @@
 #include "MeshReader.hpp"
 
 #include <wmtk/Mesh.hpp>
+#include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/Rational.hpp>
 
 #include <h5pp/h5pp.h>
@@ -18,9 +19,14 @@ void MeshReader::read(Mesh& mesh)
 {
     h5pp::File m_hdf5_file(m_filename, h5pp::FileAccess::READONLY);
 
+    std::vector<long> capacities =
+        m_hdf5_file.readAttribute<std::vector<long>>("WMTK", "capacities");
+
+    mesh.set_capacities(capacities);
+
     const auto dsets = m_hdf5_file.findDatasets("", "WMTK");
     for (auto& s : dsets) {
-        const auto dataset = "WMTK/" + s;
+        const std::string dataset = "WMTK/" + s;
         const long stride = m_hdf5_file.readAttribute<long>(dataset, "stride");
         const long dimension = m_hdf5_file.readAttribute<long>(dataset, "dimension");
         const std::string type = m_hdf5_file.readAttribute<std::string>(dataset, "type");
@@ -44,6 +50,8 @@ void MeshReader::read(Mesh& mesh)
 
             set_attribute<double>(name, pt, stride, v, mesh);
         } else if (type == "rational") {
+            logger().error("We currently do not support reading rationals");
+            assert(false); //
             auto tmp = m_hdf5_file.readDataset<std::vector<std::array<std::string, 2>>>(dataset);
 
             std::vector<Rational> v;
@@ -53,6 +61,7 @@ void MeshReader::read(Mesh& mesh)
             // set_attribute<Rational>(name, pt, stride, v, mesh);
 
         } else {
+            logger().error("We currently do not support reading the type \"{}\"", type);
             assert(false);
         }
     }
@@ -67,13 +76,9 @@ void MeshReader::set_attribute(
     Mesh& mesh)
 {
     auto handle = mesh.register_attribute<T>(name, pt, stride, true);
-    auto accessor = mesh.create_accessor(handle);
+    auto accessor = attribute::AccessorBase<T>(mesh, handle);
 
     accessor.set_attribute(v);
-
-    if (name == "flags") {
-        mesh.set_capacities_from_flags();
-    }
 }
 
 

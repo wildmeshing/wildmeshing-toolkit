@@ -1,28 +1,38 @@
 #pragma once
 
-#include <memory>
-#include <optional>
-#include <type_traits>
-#include "attribute/AttributeHandle.hpp"
-#include "Tuple.hpp"
-#include "attribute/AccessorBase.hpp"
-#include "attribute/AttributeAccessMode.hpp"
+// #include <memory>
+// #include <optional>
+// #include <type_traits>
+// #include "Tuple.hpp"
+//#include "attribute/AccessorBase.hpp"
+//#include "attribute/AttributeAccessMode.hpp"
+//#include "attribute/AttributeHandle.hpp"
+#include "attribute/ConstAccessor.hpp"
+#include "attribute/MutableAccessor.hpp"
 
 #include <Eigen/Dense>
 
 namespace wmtk {
-class Mesh;
-class TriMesh;
-class TetMesh;
-class PointMesh;
-template <typename T>
-class AttributeScopeStack;
-
-template <typename T>
-class AttributeCache;
+// class Mesh;
+// class TriMesh;
+// class TetMesh;
+// class PointMesh;
+// namespace attribute {
+// template <typename T>
+// class AttributeScopeStack;
+//
+// template <typename T>
+// class AttributeCache;
+//} // namespace attribute
 
 template <typename T, bool IsConst = false>
-class Accessor : public AccessorBase<T>
+using Accessor =
+    std::conditional_t<IsConst, attribute::ConstAccessor<T>, attribute::MutableAccessor<T>>;
+
+
+/*
+template <typename T, bool IsConst = false>
+class Accessor : public attribute::AccessorBase<T>
 {
 public:
     friend class Mesh;
@@ -31,8 +41,8 @@ public:
     friend class TetMesh;
     using Scalar = T;
 
-    friend class AttributeCache<T>;
-    using BaseType = AccessorBase<T>;
+    friend class attribute::AttributeCache<T>;
+    using BaseType = attribute::AccessorBase<T>;
     using MeshType = std::conditional_t<IsConst, const Mesh, Mesh>; // const correct Mesh object
 
     using MapResult = typename BaseType::MapResult; // Eigen::Map<VectorX<T>>
@@ -70,8 +80,8 @@ public:
 
     // returns the size of the underlying attribute
 
-    using BaseType::size; // const() -> long
     using BaseType::dimension; // const() -> long
+    using BaseType::reserved_size; // const() -> long
 
     using BaseType::attribute; // access to Attribute object being used here
     using BaseType::set_attribute; // (const vector<T>&) -> void
@@ -84,8 +94,17 @@ protected:
 
     T cacheable_const_scalar_attribute(const long index) const;
     TT cacheable_scalar_attribute(const long index);
-    using BaseType::scalar_attribute;
-    using BaseType::vector_attribute;
+
+    ConstMapResult const_vector_attribute(const long index) const;
+    ConstMapResult vector_attribute(const long index) const;
+    MapResultT vector_attribute(const long index);
+
+    T const_scalar_attribute(const long index) const;
+    T scalar_attribute(const long index) const;
+    TT scalar_attribute(const long index);
+
+    // using BaseType::scalar_attribute;
+    // using BaseType::vector_attribute;
     long index(const Tuple& t) const;
 
 
@@ -93,7 +112,7 @@ private:
     MeshType& m_mesh;
     AttributeAccessMode m_mode;
 
-    AttributeScopeStack<T>* m_cache_stack = nullptr;
+    attribute::AttributeScopeStack<T>* m_cache_stack = nullptr;
 };
 
 // template <typename T>
@@ -102,6 +121,7 @@ private:
 // Accessor(const Mesh& mesh, const MeshAttributeHandle<T>&) -> Accessor<const T>;
 
 
+*/
 template <typename T>
 using ConstAccessor = Accessor<T, true>;
 } // namespace wmtk

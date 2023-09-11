@@ -3,7 +3,7 @@
 #include <wmtk/io/ParaviewWriter.hpp>
 #include "PerThreadAttributeScopeStacks.hpp"
 #include "PerThreadAttributesCheckpointHandler.hpp"
-namespace wmtk {
+namespace wmtk::attribute {
 AttributeManager::AttributeManager(long size)
     : m_char_attributes(size)
     , m_long_attributes(size)
@@ -45,6 +45,8 @@ void AttributeManager::serialize(MeshWriter& writer)
         m_long_attributes[dim].serialize(dim, writer);
         m_double_attributes[dim].serialize(dim, writer);
     }
+    // now that the WMTK link exists we can write hte capacities to that link
+    writer.write_capacities(m_capacities);
 }
 
 void AttributeManager::reserve_to_fit()
@@ -137,4 +139,4 @@ void AttributeManager::clear_current_scope()
         ma.clear_current_scope();
     }
 }
-} // namespace wmtk
+} // namespace wmtk::attribute

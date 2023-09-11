@@ -1,6 +1,5 @@
 
 set(SRC_FILES
-    Accessor.cpp
     Accessor.hpp
     Mesh.cpp
     Mesh.hpp
@@ -10,8 +9,8 @@ set(SRC_FILES
     TriMesh.hpp
     TetMesh.cpp
     TetMesh.hpp
-    TriMesh_operations.hpp
-    TriMesh_operations.cpp
+    TriMeshOperationExecutor.hpp
+    TriMeshOperationExecutor.cpp
     Primitive.hpp
     Primitive.cpp
     Tuple.cpp
@@ -20,6 +19,10 @@ set(SRC_FILES
 	Simplex.hpp
 	SimplicialComplex.hpp
 	SimplicialComplex.cpp
+    Scheduler.hpp
+    Scheduler.cpp
+    MultiMeshManager.hpp
+    MultiMeshManager.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 
@@ -28,3 +31,6 @@ add_subdirectory(utils)
 add_subdirectory(attribute)
 add_subdirectory(operations)
 add_subdirectory(autogen)
+add_subdirectory(invariants)
+
+
