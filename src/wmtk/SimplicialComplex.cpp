@@ -212,7 +212,7 @@ SimplicialComplex SimplicialComplex::top_coface_simplex(const Mesh& m, const Sim
             while (!q.empty()) {
                 Tuple cur_t = q.front();
                 q.pop();
-                if (sc.add_simplex(Simplex(PF, cur_t))) {
+                if (sc.add_simplex(Simplex(PT, cur_t))) {
                     const Tuple t1 = cur_t;
                     const Tuple t2 = sw(cur_t, PF);
                     const Tuple t3 = sw(sw(cur_t, PE), PF);
