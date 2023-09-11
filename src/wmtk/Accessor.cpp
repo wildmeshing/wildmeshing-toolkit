@@ -200,6 +200,19 @@ std::optional<long> Accessor<T, IsConst>::stack_depth() const
     }
 }
 
+
+template <typename T>
+auto MutableAccessor<T>::vector_attribute(const long index) -> MapResultT
+{
+    return cacheable_vector_attribute(index);
+}
+
+
+template <typename T>
+auto MutableAccessor<T>::scalar_attribute(const long index) -> TT
+{
+    return cacheable_scalar_attribute(index);
+}
 template class Accessor<char, true>;
 template class Accessor<long, true>;
 template class Accessor<double, true>;

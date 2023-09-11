@@ -22,7 +22,7 @@ double relative_to_absolute_length(const TriMesh& mesh, const double length_rel)
     p_max.setConstant(std::numeric_limits<double>::max());
 
     for (const Tuple& v : mesh.get_all(PrimitiveType::Vertex)) {
-        const Eigen::Vector3d p = pos.vector_attribute(v);
+        const Eigen::Vector3d p = pos.const_vector_attribute(v);
         p_max[0] = std::max(p_max[0], p[0]);
         p_max[1] = std::max(p_max[1], p[1]);
         p_max[2] = std::max(p_max[2], p[2]);

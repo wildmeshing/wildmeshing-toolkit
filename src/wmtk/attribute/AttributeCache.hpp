@@ -6,7 +6,7 @@
 #include "AttributeCacheData.hpp"
 
 
-namespace wmtk {
+namespace wmtk::attribute {
 template <typename T>
 class AttributeCache
 {

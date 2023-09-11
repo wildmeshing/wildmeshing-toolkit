@@ -44,7 +44,7 @@ void PointMesh::initialize(long count)
     reserve_attributes_to_fit();
     Accessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
     for (long i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
-        v_flag_accessor.scalar_attribute(i) |= 0x1;
+        v_flag_accessor.index_access().scalar_attribute(i) |= 0x1;
     }
 }
 

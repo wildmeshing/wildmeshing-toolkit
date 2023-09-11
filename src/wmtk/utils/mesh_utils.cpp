@@ -1,8 +1,9 @@
 #include "mesh_utils.hpp"
+#include <wmtk/TriMesh.hpp>
 
 namespace wmtk::mesh_utils {
 Eigen::Vector3d
-compute_face_normal_area_weighted(const Mesh& m, const Accessor<double>& pos, const Tuple& f)
+compute_face_normal_area_weighted(const TriMesh& m, const Accessor<double>& pos, const Tuple& f)
 {
     const Tuple v0 = f;
     const Tuple v1 = m.switch_vertex(f);
@@ -14,12 +15,12 @@ compute_face_normal_area_weighted(const Mesh& m, const Accessor<double>& pos, co
     return ((p0 - p2).cross(p1 - p2));
 }
 
-Eigen::Vector3d compute_face_normal(const Mesh& m, const Accessor<double>& pos, const Tuple& f)
+Eigen::Vector3d compute_face_normal(const TriMesh& m, const Accessor<double>& pos, const Tuple& f)
 {
     return compute_face_normal_area_weighted(m, pos, f).normalized();
 }
 
-Eigen::Vector3d compute_vertex_normal(const Mesh& m, const Accessor<double>& pos, const Tuple& v)
+Eigen::Vector3d compute_vertex_normal(const TriMesh& m, const Accessor<double>& pos, const Tuple& v)
 {
     const SimplicialComplex closed_star = SimplicialComplex::closed_star(m, Simplex::vertex(v));
 

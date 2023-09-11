@@ -116,7 +116,6 @@ public:
     TriMesh& m_mesh;
     Tuple m_operating_tuple;
 
-    long hash_at_cell(const long cell) { return hash_accessor.scalar_attribute(cell); }
 
 private:
     std::vector<std::vector<Tuple>> prepare_operating_tuples_for_child_meshes() const;

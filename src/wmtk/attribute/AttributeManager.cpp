@@ -2,7 +2,7 @@
 #include <wmtk/io/MeshWriter.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 #include "PerThreadAttributeScopeStacks.hpp"
-namespace wmtk {
+namespace wmtk::attribute {
 AttributeManager::AttributeManager(long size)
     : m_char_attributes(size)
     , m_long_attributes(size)
@@ -120,4 +120,4 @@ void AttributeManager::clear_current_scope()
         ma.clear_current_scope();
     }
 }
-} // namespace wmtk
+} // namespace wmtk::attribute

@@ -3,7 +3,7 @@
 #include "Attribute.hpp"
 #include "AttributeScope.hpp"
 
-namespace wmtk {
+namespace wmtk::attribute {
 
 template <typename T>
 AttributeScopeStack<T>::AttributeScopeStack() = default;
@@ -85,7 +85,7 @@ long AttributeScopeStack<T>::add_checkpoint()
     return r;
 }
 template <typename T>
-AttributeScope<T> const * AttributeScopeStack<T>::get_checkpoint(long index) const
+AttributeScope<T> const* AttributeScopeStack<T>::get_checkpoint(long index) const
 {
     if (m_checkpoints.empty()) {
         return nullptr;
@@ -97,4 +97,4 @@ template class AttributeScopeStack<long>;
 template class AttributeScopeStack<double>;
 template class AttributeScopeStack<char>;
 template class AttributeScopeStack<Rational>;
-} // namespace wmtk
+} // namespace wmtk::attribute
