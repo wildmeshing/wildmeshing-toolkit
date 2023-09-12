@@ -103,6 +103,9 @@ public:
     template <typename T>
     ConstAccessor<T> create_accessor(const MeshAttributeHandle<T>& handle) const;
 
+    template <typename T>
+    long get_attribute_dimension(const MeshAttributeHandle<T>& handle) const;
+
 
     // creates a scope as long as the AttributeScopeHandle exists
     [[nodiscard]] attribute::AttributeScopeHandle create_scope();
@@ -347,6 +350,10 @@ MeshAttributeHandle<T> Mesh::get_attribute_handle(
     r.m_base_handle = m_attribute_manager.get<T>(ptype).attribute_handle(name);
     r.m_primitive_type = ptype;
     return r;
+}
+template <typename T>
+long Mesh::get_attribute_dimension(const MeshAttributeHandle<T>& handle) const {
+    return m_attribute_manager.get_attribute_dimension(handle);
 }
 
 inline Tuple Mesh::switch_vertex(const Tuple& tuple) const
